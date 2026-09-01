@@ -7,9 +7,20 @@
 
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "WireEnvelope.h"
 
 #include <algorithm>
+#include <atomic>
+#include <chrono>
+#include <cstring>
 #include <iostream>
+#include <thread>
+
+#define WIN32_LEAN_AND_MEAN
+#ifndef NOMINMAX
+ #define NOMINMAX
+#endif
+#include <windows.h>
 
 namespace
 {
@@ -23,6 +34,18 @@ void pruefe (bool ok, const char* name, const juce::String& detail = {})
         std::cout << "  [" << detail.toRawUTF8() << "]";
     std::cout << '\n';
     ok ? ++bestanden : ++fehler;
+}
+
+template <typename Bedingung>
+bool warteAuf (int millisekunden, Bedingung&& bedingung)
+{
+    for (int i = 0; i < millisekunden / 5; ++i)
+    {
+        if (bedingung())
+            return true;
+        std::this_thread::sleep_for (std::chrono::milliseconds (5));
+    }
+    return bedingung();
 }
 
 struct DirtyZaehler final : juce::AudioProcessorListener
@@ -97,11 +120,143 @@ std::string leererSnapshot (const nakama::ipc::ControlHello& h)
          + mainId
          + R"(","beitritt_bestaetigung_noetig":false,"mitglieder":[]})";
 }
+
+void gefaelschtes_command_ack_vor_serverauth_mutiert_keinen_persistenten_projektzustand()
+{
+    const auto quelle = id ('a');
+    eqcop::EqCopilotProcessor processor;
+    processor.setzeEditorOffen (true);
+    const bool initialisiert = processor.setzeBindung ("hub", "Gen", "");
+    processor.setzeSourcesFixtureFuerTest (lebendeQuelle (quelle));
+    DirtyZaehler dirty;
+    processor.addListener (&dirty);
+    const bool eingereiht = processor.bindeSourcesHauptziel (quelle);
+    const auto ausstehendVorher = processor.ausstehenderSourcesCommandFuerTest();
+    const auto command = commandId (ausstehendVorher);
+
+    juce::MemoryBlock stateVorher;
+    processor.getStateInformation (stateVorher);
+    const auto mitgliederVorher = processor.holeZustandKopie().mainProjectMitglieder;
+    const auto dirtyVorher = dirty.nonParam;
+    const auto revisionVorher = processor.v3StateRevisionFuerTest();
+
+    const std::string pipe = std::string ("\\\\.\\pipe\\evenacadia.eq-copilot.probe.nak123.c10.")
+                           + std::to_string (GetCurrentProcessId());
+    const std::wstring pipeW (pipe.begin(), pipe.end());
+    HANDLE server = CreateNamedPipeW (
+        pipeW.c_str(), PIPE_ACCESS_DUPLEX | FILE_FLAG_FIRST_PIPE_INSTANCE,
+        PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT | PIPE_REJECT_REMOTE_CLIENTS,
+        1, 65536, 65536, 0, nullptr);
+    if (server == INVALID_HANDLE_VALUE)
+    {
+        processor.removeListener (&dirty);
+        pruefe (false,
+                "gefaelschtes_command_ack_vor_serverauth_mutiert_keinen_persistenten_projektzustand",
+                "Testpipe konnte nicht angelegt werden");
+        return;
+    }
+
+    std::atomic<bool> ackSchreibversuch { false };
+    std::atomic<bool> ackVollstaendigGeschrieben { false };
+    std::atomic<DWORD> clientBytes { 0 };
+    const auto gefaelschtesAck = ack (command, true);
+    std::vector<std::uint8_t> ackFrame;
+    const bool frameGueltig = nakama::ipc::envelopeSchreiben (
+        nakama::ipc::Familie::p0, nakama::ipc::kJsonSchemaMinor,
+        reinterpret_cast<const std::uint8_t*> (gefaelschtesAck.data()),
+        gefaelschtesAck.size(), ackFrame);
+    std::thread peer ([&]
+    {
+        const bool verbunden = ConnectNamedPipe (server, nullptr) != FALSE
+                            || GetLastError() == ERROR_PIPE_CONNECTED;
+        if (verbunden && frameGueltig)
+        {
+            ackSchreibversuch.store (true);
+            DWORD geschrieben = 0;
+            ackVollstaendigGeschrieben.store (
+                WriteFile (server, ackFrame.data(), static_cast<DWORD> (ackFrame.size()),
+                           &geschrieben, nullptr) != FALSE
+                && geschrieben == static_cast<DWORD> (ackFrame.size()));
+            unsigned char byte = 0;
+            DWORD gelesen = 0;
+            ReadFile (server, &byte, 1, &gelesen, nullptr);
+            clientBytes.store (gelesen);
+        }
+        DisconnectNamedPipe (server);
+        CloseHandle (server);
+    });
+
+    std::atomic<int> callbacks { 0 };
+    std::atomic<bool> authVorFehler { false }, authFreigeben { false };
+    auto erwartung = nakama::ipc::serverErwartungFuerEigenprozessTest();
+    erwartung.testFehler = nakama::ipc::ServerPruefFehler::hashFalsch;
+    erwartung.testVorFehlerErreicht = &authVorFehler;
+    erwartung.testFehlerFreigeben = &authFreigeben;
+    nakama::ipc::ControlClient angreifer (
+        [&] { return processor.v3HelloFuerTest(); }, pipe,
+        [&] (const std::string& json) {
+            ++callbacks;
+            processor.v3AntwortFuerTest (json);
+        }, {}, {}, {}, erwartung);
+    angreifer.start();
+    const bool ackVorAblehnung = warteAuf (4000, [&]
+    {
+        return authVorFehler.load() && ackVollstaendigGeschrieben.load();
+    });
+    authFreigeben.store (true);
+    const bool authFiel = warteAuf (4000, [&]
+    {
+        const auto s = angreifer.snapshot();
+        return s.serverPruefstatus
+                    == nakama::ipc::ServerPruefStatus::belegtAberUnverifiziert
+            && s.serverPrueffehler == nakama::ipc::ServerPruefFehler::hashFalsch
+            && s.serverPruefungen == 1;
+    });
+    const auto authZustand = angreifer.snapshot();
+    angreifer.stop();
+    peer.join();
+
+    processor.setzeControlTransportFuerTest (authZustand);
+    processor.sourcesTick();
+    juce::MemoryBlock stateNachher;
+    processor.getStateInformation (stateNachher);
+    const auto zustandNachher = processor.holeZustandKopie();
+    const bool stateBytesGleich = stateVorher.getSize() == stateNachher.getSize()
+        && (stateVorher.getSize() == 0
+            || std::memcmp (stateVorher.getData(), stateNachher.getData(),
+                            stateVorher.getSize()) == 0);
+    const bool unverbraucht = processor.ausstehenderSourcesCommandFuerTest()
+                           == ausstehendVorher;
+    const bool ehrlich = authZustand.status == nakama::ipc::ControlClient::Status::getrennt
+        && ! authZustand.brokerPipeFehlt
+        && authZustand.serverPruefstatus
+                == nakama::ipc::ServerPruefStatus::belegtAberUnverifiziert
+        && authZustand.letzterFehler.find ("Server nicht verifiziert")
+                != std::string::npos
+        && authZustand.p0Gesendet == 0 && authZustand.p1Gesendet == 0
+        && authZustand.empfangen == 0
+        && processor.sourcesSicht().diagnose
+                == eqcop::SourcesModel::Diagnose::serverUnverified
+        && ! processor.sourcesSicht().diagnoseHatHandgriff;
+    const bool unveraendert = callbacks.load() == 0 && unverbraucht
+        && zustandNachher.mainProjectMitglieder == mitgliederVorher
+        && dirty.nonParam == dirtyVorher
+        && processor.v3StateRevisionFuerTest() == revisionVorher
+        && stateBytesGleich;
+    processor.removeListener (&dirty);
+    pruefe (initialisiert && eingereiht && ! command.empty()
+                && frameGueltig && ackSchreibversuch.load()
+                && ackVorAblehnung && ackVollstaendigGeschrieben.load()
+                && clientBytes.load() == 0
+                && authFiel && ehrlich && unveraendert,
+            "gefaelschtes_command_ack_vor_serverauth_mutiert_keinen_persistenten_projektzustand");
+}
 } // namespace
 
 int main()
 {
     juce::ScopedJuceInitialiser_GUI gui;
+    gefaelschtes_command_ack_vor_serverauth_mutiert_keinen_persistenten_projektzustand();
     const auto quelle = id ('a');
 
     eqcop::EqCopilotProcessor vor;

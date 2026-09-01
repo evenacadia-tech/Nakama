@@ -57,12 +57,20 @@ fn main() {
                     .map(|p| p.display().to_string())
                     .unwrap_or_else(|| "keine — nur im Speicher".into())
             );
-            loop {
+            let fataler_listenerfehler = loop {
                 std::thread::sleep(std::time::Duration::from_millis(250));
+                if eqcop_broker::broker_hat_fatalen_v3_listenerfehler() {
+                    eprintln!("Fataler v3-Listenerfehler; Broker stoppt fail-closed");
+                    break true;
+                }
                 if eqcop_broker::broker_soll_idle_enden() {
                     println!("EQ-Copilot-Broker beendet sich nach lokaler Idlefrist selbst");
-                    break;
+                    break false;
                 }
+            };
+            eqcop_broker::broker_geordnet_stoppen();
+            if fataler_listenerfehler {
+                std::process::exit(1);
             }
         }
         Err(e) => {

@@ -1,0 +1,696 @@
+#![cfg(windows)]
+
+//! NAK-123 / Entwurf §66.2 — negative Sicherheitsvektoren fuer den echten
+//! v3-Named-Pipe-Listener. Jeder Test verwendet ausschliesslich einen
+//! `PROBE_PRAEFIX`-Namen; die Produktionspipe ist hier unerreichbar.
+
+use eqcop_broker::transport::pipetoken::PROBE_PRAEFIX;
+use eqcop_broker::transport::server_v3::{
+    v3_server_starten_fuer_security_vectors, V3AuthTestFehler, V3Griff, V3SecurityTestOptionen,
+    V3StartTestFehler, V3UebergabeBarriere, ZaehlSenke, MAX_VERBINDUNGEN, PIPE_INSTANZEN,
+};
+use eqcop_broker::transport::v3::{
+    envelope_pruefen, envelope_schreiben, Familie, MAX_BOOTSTRAP_BYTES,
+};
+use std::fs::{File, OpenOptions};
+use std::io::{BufRead, BufReader, Read, Write};
+use std::process::{Child, Command, Stdio};
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
+use std::time::{Duration, Instant};
+use windows_sys::Win32::Foundation::{CloseHandle, HANDLE, INVALID_HANDLE_VALUE};
+use windows_sys::Win32::Storage::FileSystem::{FILE_FLAG_FIRST_PIPE_INSTANCE, PIPE_ACCESS_DUPLEX};
+use windows_sys::Win32::System::Pipes::{
+    CreateNamedPipeW, PIPE_READMODE_BYTE, PIPE_REJECT_REMOTE_CLIENTS, PIPE_TYPE_BYTE, PIPE_WAIT,
+};
+
+struct FirstInstance(HANDLE);
+
+impl FirstInstance {
+    fn nehmen(name: &str) -> Option<Self> {
+        let mut breit: Vec<u16> = name.encode_utf16().collect();
+        breit.push(0);
+        let h = unsafe {
+            CreateNamedPipeW(
+                breit.as_ptr(),
+                PIPE_ACCESS_DUPLEX | FILE_FLAG_FIRST_PIPE_INSTANCE,
+                PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT | PIPE_REJECT_REMOTE_CLIENTS,
+                PIPE_INSTANZEN as u32,
+                4096,
+                4096,
+                0,
+                std::ptr::null(),
+            )
+        };
+        if h == INVALID_HANDLE_VALUE {
+            None
+        } else {
+            Some(Self(h))
+        }
+    }
+}
+
+impl Drop for FirstInstance {
+    fn drop(&mut self) {
+        unsafe { CloseHandle(self.0) };
+    }
+}
+
+fn probe_pipe(stichwort: &str) -> String {
+    format!(
+        "{PROBE_PRAEFIX}nak123.{stichwort}.{}.{}",
+        std::process::id(),
+        uuid::Uuid::new_v4().simple()
+    )
+}
+
+fn warten(ms: u64, mut bedingung: impl FnMut() -> bool) -> bool {
+    let ende = Instant::now() + Duration::from_millis(ms);
+    while Instant::now() < ende {
+        if bedingung() {
+            return true;
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    bedingung()
+}
+
+fn verbinden(name: &str) -> File {
+    let ende = Instant::now() + Duration::from_secs(5);
+    loop {
+        match OpenOptions::new().read(true).write(true).open(name) {
+            Ok(datei) => return datei,
+            Err(fehler) if Instant::now() < ende => {
+                let _ = fehler;
+                std::thread::sleep(Duration::from_millis(10));
+            }
+            Err(fehler) => panic!("Probe-Client konnte {name} nicht verbinden: {fehler}"),
+        }
+    }
+}
+
+fn bootstrap(json: &str) -> Vec<u8> {
+    let mut rahmen = (json.len() as u32).to_le_bytes().to_vec();
+    rahmen.extend_from_slice(json.as_bytes());
+    rahmen
+}
+
+fn adresse_json(nonce: char) -> String {
+    let id = nonce.to_string().repeat(32);
+    format!(
+        "{{\"logon_sid\":\"S-1-5-21-1-2-3-1001\",\
+         \"project_binding_id\":\"{id}\",\"session_epoch\":\"{id}\",\
+         \"instance_id\":\"{id}\",\"runtime_nonce\":\"{id}\"}}"
+    )
+}
+
+fn control_hello_json(typ: &str, connection_kind: &str, protocol: u32) -> String {
+    format!(
+        "{{\"type\":\"{typ}\",\"connection_kind\":\"{connection_kind}\",\"protocol\":{protocol},\
+         \"plugin_version\":\"0.3.0\",\"plugin_kind\":\"active_probe\",\
+         \"adresse\":{},\"audio\":{{\"samplerate\":48000,\"block_size\":512,\
+         \"channels\":2}}}}",
+        adresse_json('a')
+    )
+}
+
+fn control_hello() -> Vec<u8> {
+    bootstrap(&control_hello_json("hello", "control", 3))
+}
+
+fn telemetry_hello(link: &str, challenge: &str) -> Vec<u8> {
+    bootstrap(&format!(
+        "{{\"type\":\"hello\",\"connection_kind\":\"telemetry\",\"protocol\":3,\
+         \"plugin_version\":\"0.3.0\",\"adresse\":{},\"link_id\":\"{link}\",\
+         \"challenge\":\"{challenge}\"}}",
+        adresse_json('a')
+    ))
+}
+
+fn frame_lesen(datei: &mut File) -> serde_json::Value {
+    let mut kopf = [0u8; 4];
+    datei.read_exact(&mut kopf).expect("Framepraefix lesen");
+    let n = u32::from_le_bytes(kopf) as usize;
+    assert!(n > 0 && n <= 1024 * 1024);
+    let mut draht = kopf.to_vec();
+    draht.resize(4 + n, 0);
+    datei
+        .read_exact(&mut draht[4..])
+        .expect("vollstaendigen Frame lesen");
+    let rahmen = envelope_pruefen(&draht).expect("gueltiger v3-Frame");
+    serde_json::from_slice(&rahmen.payload).expect("JSON-Payload")
+}
+
+fn bootstrap_reject_lesen(datei: &mut File) -> serde_json::Value {
+    let mut kopf = [0u8; 4];
+    datei.read_exact(&mut kopf).expect("Rejectpraefix lesen");
+    let n = u32::from_le_bytes(kopf) as usize;
+    let mut payload = vec![0u8; n];
+    datei.read_exact(&mut payload).expect("Reject lesen");
+    serde_json::from_slice(&payload).expect("Reject ist JSON")
+}
+
+fn start(name: &str, optionen: V3SecurityTestOptionen) -> (V3Griff, Arc<ZaehlSenke>) {
+    let senke = Arc::new(ZaehlSenke::default());
+    let griff = v3_server_starten_fuer_security_vectors(name, senke.clone(), optionen)
+        .unwrap_or_else(|e| panic!("Security-Vector-Listener starten: {e}"));
+    (griff, senke)
+}
+
+fn spur_position(spur: &[&str], schritt: &str) -> usize {
+    spur.iter()
+        .position(|s| *s == schritt)
+        .unwrap_or_else(|| panic!("Schritt {schritt:?} fehlt in {spur:?}"))
+}
+
+fn assert_reihenfolge(spur: &[&str], schritte: &[&str]) {
+    let mut vorher = None;
+    for schritt in schritte {
+        let jetzt = spur_position(spur, schritt);
+        if let Some(v) = vorher {
+            assert!(v < jetzt, "Reihenfolge {schritte:?} in {spur:?}");
+        }
+        vorher = Some(jetzt);
+    }
+}
+
+fn assert_keine_fachlogik(senke: &ZaehlSenke) {
+    assert_eq!(senke.control_verbindungen.load(Ordering::SeqCst), 0);
+    assert_eq!(senke.telemetrie_verbindungen.load(Ordering::SeqCst), 0);
+    assert_eq!(senke.p0.load(Ordering::SeqCst), 0);
+    assert_eq!(senke.p1.load(Ordering::SeqCst), 0);
+    assert_eq!(senke.p2.load(Ordering::SeqCst), 0);
+}
+
+fn child_starten(name: &str, extra: Option<&str>) -> (Child, BufReader<std::process::ChildStdout>) {
+    let mut befehl = Command::new(env!("CARGO_BIN_EXE_eqcop-broker-v3probe"));
+    befehl
+        .arg(name)
+        .arg("90")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+    if let Some(extra) = extra {
+        befehl.arg(extra);
+    }
+    let mut child = befehl.spawn().expect("v3-Probeprozess starten");
+    let stdout = child.stdout.take().expect("Child-stdout");
+    let mut leser = BufReader::new(stdout);
+    let mut bereit = String::new();
+    leser.read_line(&mut bereit).expect("BEREIT lesen");
+    assert_eq!(bereit.trim(), format!("BEREIT {name}"));
+    (child, leser)
+}
+
+#[test]
+fn start_freier_name_bewaffnet_zwei_listener_vor_veroeffentlichung() {
+    let pipe = probe_pipe("a01-ok");
+    let threads = Arc::new(AtomicUsize::new(0));
+    let (mut griff, _) = start(
+        &pipe,
+        V3SecurityTestOptionen {
+            hilfsthread_zaehler: Some(threads.clone()),
+            ..V3SecurityTestOptionen::default()
+        },
+    );
+    assert!(warten(2000, || threads.load(Ordering::SeqCst) == 2));
+    assert_eq!(
+        griff.statistik.bewaffnete_listener.load(Ordering::SeqCst),
+        2
+    );
+    assert!(FirstInstance::nehmen(&pipe).is_none());
+    griff.stoppen();
+    assert_eq!(threads.load(Ordering::SeqCst), 0);
+}
+
+#[test]
+fn startfehler_nach_erstem_handle_raeumt_handles_threads_und_namen_vor_publish() {
+    for (name, fehler) in [
+        ("direkt", V3StartTestFehler::DirektNachErstemHandle),
+        ("zweite-instanz", V3StartTestFehler::ZweiteInstanz),
+        ("zweite-armierung", V3StartTestFehler::ZweiteArmierung),
+        ("wachhund", V3StartTestFehler::WachhundSpawn),
+        ("acceptor", V3StartTestFehler::AcceptorSpawn),
+    ] {
+        let pipe = probe_pipe(name);
+        let threads = Arc::new(AtomicUsize::new(0));
+        let senke = Arc::new(ZaehlSenke::default());
+        let ergebnis = v3_server_starten_fuer_security_vectors(
+            &pipe,
+            senke,
+            V3SecurityTestOptionen {
+                start_fehler: fehler,
+                hilfsthread_zaehler: Some(threads.clone()),
+                ..V3SecurityTestOptionen::default()
+            },
+        );
+        assert!(
+            ergebnis.is_err(),
+            "Fehlerkante {fehler:?} publizierte einen Griff"
+        );
+        assert_eq!(threads.load(Ordering::SeqCst), 0, "Fehlerkante {fehler:?}");
+        let _wieder_frei = FirstInstance::nehmen(&pipe)
+            .unwrap_or_else(|| panic!("Fehlerkante {fehler:?} liess den Namen besetzt"));
+    }
+}
+
+#[test]
+fn start_belegter_name_scheitert_ohne_zweiten_broker() {
+    let pipe = probe_pipe("a02");
+    let _fremd = FirstInstance::nehmen(&pipe).expect("Fremdserver belegt Namen");
+    let senke = Arc::new(ZaehlSenke::default());
+    assert!(v3_server_starten_fuer_security_vectors(
+        &pipe,
+        senke,
+        V3SecurityTestOptionen::default()
+    )
+    .is_err());
+}
+
+#[test]
+fn accept_bewaffnet_nachfolger_vor_worker_uebergabe_bei_zwei_listenern() {
+    let pipe = probe_pipe("a03");
+    let barriere = Arc::new(V3UebergabeBarriere::default());
+    let (mut griff, _) = start(
+        &pipe,
+        V3SecurityTestOptionen {
+            uebergabe_barriere: Some(barriere.clone()),
+            ..V3SecurityTestOptionen::default()
+        },
+    );
+    let client = verbinden(&pipe);
+    assert!(warten(3000, || barriere.erreicht()));
+    assert_eq!(griff.statistik.worker_uebergaben.load(Ordering::SeqCst), 0);
+    assert_eq!(
+        griff.statistik.bewaffnete_listener.load(Ordering::SeqCst),
+        2
+    );
+    assert!(FirstInstance::nehmen(&pipe).is_none());
+    barriere.freigeben();
+    assert!(warten(3000, || griff
+        .statistik
+        .worker_uebergaben
+        .load(Ordering::SeqCst)
+        == 1));
+    drop(client);
+    griff.stoppen();
+}
+
+#[test]
+fn ersatzlistener_fehler_behaelt_besitz_und_meldet_nicht_bereit() {
+    let pipe = probe_pipe("a04");
+    let (mut griff, _) = start(
+        &pipe,
+        V3SecurityTestOptionen {
+            ersatzlistener_fehler: true,
+            ..V3SecurityTestOptionen::default()
+        },
+    );
+    let client = verbinden(&pipe);
+    assert!(warten(3000, || griff
+        .statistik
+        .listener_fehler
+        .load(Ordering::SeqCst)
+        == 1));
+    assert!(griff.fataler_listenerfehler());
+    assert_eq!(griff.statistik.worker_uebergaben.load(Ordering::SeqCst), 0);
+    assert_eq!(
+        griff.statistik.bewaffnete_listener.load(Ordering::SeqCst),
+        1
+    );
+    assert!(FirstInstance::nehmen(&pipe).is_none());
+    griff.stoppen();
+    drop(client);
+    let _frei = FirstInstance::nehmen(&pipe).expect("Name erst nach geordnetem Stopp frei");
+}
+
+#[test]
+fn zwei_listener_plus_96_worker_erhalten_cap_und_namensbesitz() {
+    let pipe = probe_pipe("a05");
+    let (mut griff, _) = start(&pipe, V3SecurityTestOptionen::default());
+    let mut clients = Vec::with_capacity(MAX_VERBINDUNGEN);
+    for _ in 0..MAX_VERBINDUNGEN {
+        clients.push(verbinden(&pipe));
+    }
+    assert!(warten(4000, || griff
+        .statistik
+        .aktive_worker
+        .load(Ordering::SeqCst)
+        == MAX_VERBINDUNGEN as u64));
+    let ueber_cap = verbinden(&pipe);
+    assert!(warten(3000, || griff
+        .statistik
+        .am_worker_cap_abgewiesen
+        .load(Ordering::SeqCst)
+        == 1));
+    assert_eq!(
+        griff.statistik.aktive_worker.load(Ordering::SeqCst),
+        MAX_VERBINDUNGEN as u64
+    );
+    assert_eq!(
+        griff.statistik.worker_uebergaben.load(Ordering::SeqCst),
+        MAX_VERBINDUNGEN as u64
+    );
+    assert_eq!(
+        griff.statistik.bewaffnete_listener.load(Ordering::SeqCst),
+        2
+    );
+    assert!(FirstInstance::nehmen(&pipe).is_none());
+    drop(ueber_cap);
+    drop(clients);
+    assert!(warten(8000, || griff
+        .statistik
+        .aktive_worker
+        .load(Ordering::SeqCst)
+        == 0));
+    griff.stoppen();
+}
+
+#[test]
+fn prozesskill_gibt_name_frei() {
+    let pipe = probe_pipe("a07");
+    let (mut child, _stdout) = child_starten(&pipe, None);
+    assert!(FirstInstance::nehmen(&pipe).is_none());
+    child.kill().expect("Probeprozess hart beenden");
+    child.wait().expect("Probeprozess reap");
+    let _frei = FirstInstance::nehmen(&pipe).expect("Prozesskill gab Pipenamen nicht frei");
+}
+
+#[test]
+fn neustart_besetzt_name_vor_bereit() {
+    let pipe = probe_pipe("a08");
+    let (mut alt, _) = start(&pipe, V3SecurityTestOptionen::default());
+    alt.stoppen();
+    let fremd = FirstInstance::nehmen(&pipe).expect("Name nach altem Broker frei");
+    let senke = Arc::new(ZaehlSenke::default());
+    assert!(v3_server_starten_fuer_security_vectors(
+        &pipe,
+        senke,
+        V3SecurityTestOptionen::default()
+    )
+    .is_err());
+    drop(fremd);
+    let (mut neu, _) = start(&pipe, V3SecurityTestOptionen::default());
+    assert_eq!(neu.statistik.bewaffnete_listener.load(Ordering::SeqCst), 2);
+    neu.stoppen();
+}
+
+#[test]
+fn stoppen_schliesst_besitzlistener_zuletzt_und_neustart_ist_sofort_moeglich() {
+    let pipe = probe_pipe("a09");
+    let (mut griff, senke) = start(&pipe, V3SecurityTestOptionen::default());
+    let mut client = verbinden(&pipe);
+    client.write_all(&control_hello()).unwrap();
+    assert_eq!(frame_lesen(&mut client)["type"], "welcome");
+    assert!(warten(2000, || senke
+        .control_verbindungen
+        .load(Ordering::SeqCst)
+        == 1));
+    assert_eq!(griff.statistik.aktive_worker.load(Ordering::SeqCst), 1);
+    assert!(FirstInstance::nehmen(&pipe).is_none());
+    griff.stoppen();
+    assert_eq!(griff.statistik.aktive_worker.load(Ordering::SeqCst), 0);
+    assert_eq!(griff.gehaltene_handles(), 0);
+    griff.stoppen();
+    assert_eq!(
+        griff.statistik.bewaffnete_listener.load(Ordering::SeqCst),
+        0
+    );
+    assert_reihenfolge(&griff.sicherheits_spur(), &["close", "listeners_close"]);
+    drop(client);
+    let frei = FirstInstance::nehmen(&pipe).expect("Name nach idempotentem Stopp frei");
+    drop(frei);
+    let (mut neu, _) = start(&pipe, V3SecurityTestOptionen::default());
+    neu.stoppen();
+}
+
+#[test]
+fn gleiche_sid_wird_erst_nach_revert_angenommen() {
+    let pipe = probe_pipe("b01");
+    let (mut griff, senke) = start(&pipe, V3SecurityTestOptionen::default());
+    let mut client = verbinden(&pipe);
+    client.write_all(&control_hello()).unwrap();
+    let welcome = frame_lesen(&mut client);
+    assert_eq!(welcome["type"], "welcome");
+    assert!(warten(2000, || senke
+        .control_verbindungen
+        .load(Ordering::SeqCst)
+        == 1));
+    let spur = griff.sicherheits_spur();
+    assert_reihenfolge(
+        &spur,
+        &[
+            "connect",
+            "read",
+            "impersonate",
+            "sid",
+            "revert",
+            "self",
+            "hello_accept",
+        ],
+    );
+    drop(client);
+    griff.stoppen();
+}
+
+#[test]
+fn impersonation_fehlschlag_schliesst_ohne_serverkontext() {
+    auth_fehler_schliesst(
+        "b02",
+        V3AuthTestFehler::Impersonate,
+        &["read", "impersonate", "revert", "close"],
+    );
+}
+
+fn auth_fehler_schliesst(name: &str, fehler: V3AuthTestFehler, folge: &[&str]) {
+    let pipe = probe_pipe(name);
+    let (mut griff, senke) = start(
+        &pipe,
+        V3SecurityTestOptionen {
+            auth_fehler: fehler,
+            ..V3SecurityTestOptionen::default()
+        },
+    );
+    let mut client = verbinden(&pipe);
+    client.write_all(&control_hello()).unwrap();
+    assert!(warten(3000, || griff.sicherheits_spur().contains(&"close")));
+    assert_reihenfolge(&griff.sicherheits_spur(), folge);
+    assert_keine_fachlogik(&senke);
+    griff.stoppen();
+}
+
+#[test]
+fn tokenabfragefehler_revertiert_und_schliesst_ohne_senke() {
+    for (name, fehler, mit_sid) in [
+        ("open-token", V3AuthTestFehler::OpenThreadToken, false),
+        ("token-groesse", V3AuthTestFehler::TokenGroesse, false),
+        ("token-info", V3AuthTestFehler::TokenInformation, false),
+        ("sid-ungueltig", V3AuthTestFehler::SidUngueltig, true),
+    ] {
+        let folge = if mit_sid {
+            vec!["read", "impersonate", "sid", "revert", "close"]
+        } else {
+            vec!["read", "impersonate", "revert", "close"]
+        };
+        auth_fehler_schliesst(name, fehler, &folge);
+    }
+}
+
+#[test]
+fn fremde_sid_revertiert_und_erreicht_keinen_coordinator() {
+    auth_fehler_schliesst(
+        "b04",
+        V3AuthTestFehler::SidFremd,
+        &["read", "impersonate", "sid", "revert", "close"],
+    );
+}
+
+#[test]
+fn vollstaendiges_abzulehnendes_hello_impersoniert_prueft_sid_und_revertiert_vor_reject() {
+    let faelle = [
+        ("json", "{".to_string()),
+        ("typ", control_hello_json("welcome", "control", 3)),
+        ("kind", control_hello_json("hello", "fremd", 3)),
+        ("protokoll", control_hello_json("hello", "control", 2)),
+    ];
+    for (name, json) in faelle {
+        let pipe = probe_pipe(name);
+        let (mut griff, senke) = start(&pipe, V3SecurityTestOptionen::default());
+        let mut client = verbinden(&pipe);
+        client.write_all(&bootstrap(&json)).unwrap();
+        let reject = bootstrap_reject_lesen(&mut client);
+        assert_eq!(reject["type"], "reject");
+        assert!(warten(2000, || griff.sicherheits_spur().contains(&"close")));
+        assert_reihenfolge(
+            &griff.sicherheits_spur(),
+            &["read", "impersonate", "sid", "revert", "reject", "close"],
+        );
+        assert_keine_fachlogik(&senke);
+        assert!(!griff.sicherheits_spur().contains(&"hello_accept"));
+        griff.stoppen();
+    }
+}
+
+#[test]
+fn bootstrap_timeout_und_lesefehler_revertieren_jeweils_ohne_serverweiterlauf() {
+    enum Fall {
+        Eof,
+        Teilpraefix,
+        Uebergroesse,
+        Timeout,
+    }
+    for (name, fall) in [
+        ("eof", Fall::Eof),
+        ("teilpraefix", Fall::Teilpraefix),
+        ("uebergroesse", Fall::Uebergroesse),
+        ("timeout", Fall::Timeout),
+    ] {
+        let pipe = probe_pipe(name);
+        let (mut griff, senke) = start(&pipe, V3SecurityTestOptionen::default());
+        let mut client = verbinden(&pipe);
+        match fall {
+            Fall::Eof => drop(client),
+            Fall::Teilpraefix => {
+                client.write_all(&[4, 0]).unwrap();
+                drop(client);
+            }
+            Fall::Uebergroesse => {
+                client
+                    .write_all(&(MAX_BOOTSTRAP_BYTES + 1).to_le_bytes())
+                    .unwrap();
+            }
+            Fall::Timeout => {}
+        }
+        assert!(warten(7000, || griff.sicherheits_spur().contains(&"close")));
+        let spur = griff.sicherheits_spur();
+        assert_reihenfolge(&spur, &["connect", "revert", "close"]);
+        assert!(!spur.contains(&"impersonate"));
+        assert!(!spur.contains(&"sid"));
+        assert!(!spur.contains(&"hello_accept"));
+        assert_keine_fachlogik(&senke);
+        griff.stoppen();
+    }
+
+    let pipe = probe_pipe("cancel");
+    let (mut griff, senke) = start(&pipe, V3SecurityTestOptionen::default());
+    let client = verbinden(&pipe);
+    assert!(warten(2000, || {
+        griff.statistik.worker_uebergaben.load(Ordering::SeqCst) == 1
+            && griff.gehaltene_handles() == 1
+    }));
+    griff.stoppen();
+    let spur = griff.sicherheits_spur();
+    assert_reihenfolge(&spur, &["connect", "revert", "close", "listeners_close"]);
+    assert!(!spur.contains(&"impersonate"));
+    assert!(!spur.contains(&"sid"));
+    assert!(!spur.contains(&"hello_accept"));
+    assert_keine_fachlogik(&senke);
+    drop(client);
+}
+
+#[test]
+fn revert_fehlschlag_beendet_testbrokerprozess_fail_fast() {
+    let pipe = probe_pipe("b07");
+    let (mut child, _stdout) = child_starten(&pipe, Some("--security-revert-fail"));
+    let mut client = verbinden(&pipe);
+    client.write_all(&control_hello()).unwrap();
+    let ende = Instant::now() + Duration::from_secs(10);
+    let status = loop {
+        if let Some(status) = child.try_wait().expect("Childstatus") {
+            break status;
+        }
+        assert!(
+            Instant::now() < ende,
+            "Revert-Fehler liess den Broker weiterlaufen"
+        );
+        std::thread::sleep(Duration::from_millis(20));
+    };
+    assert!(!status.success());
+    let _frei = FirstInstance::nehmen(&pipe).expect("Fail-fast schloss Prozesshandles nicht");
+}
+
+#[test]
+fn control_und_telemetry_durchlaufen_die_identische_sid_kette() {
+    let pipe = probe_pipe("b08");
+    let (mut griff, senke) = start(&pipe, V3SecurityTestOptionen::default());
+    let mut control = verbinden(&pipe);
+    control.write_all(&control_hello()).unwrap();
+    let welcome = frame_lesen(&mut control);
+    let link = welcome["link_id"].as_str().unwrap();
+    let challenge = welcome["challenge"].as_str().unwrap();
+    let mut telemetrie = verbinden(&pipe);
+    telemetrie
+        .write_all(&telemetry_hello(link, challenge))
+        .unwrap();
+    assert_eq!(frame_lesen(&mut telemetrie)["type"], "welcome");
+    assert!(warten(2000, || senke
+        .telemetrie_verbindungen
+        .load(Ordering::SeqCst)
+        == 1));
+    let spur = griff.sicherheits_spur();
+    for schritt in [
+        "read",
+        "impersonate",
+        "sid",
+        "revert",
+        "self",
+        "hello_accept",
+    ] {
+        assert_eq!(
+            spur.iter().filter(|s| **s == schritt).count(),
+            2,
+            "{schritt}: {spur:?}"
+        );
+    }
+    for vorkommen in 0..2 {
+        let position = |schritt: &str| {
+            spur.iter()
+                .enumerate()
+                .filter(|(_, s)| **s == schritt)
+                .nth(vorkommen)
+                .map(|(i, _)| i)
+                .unwrap_or_else(|| panic!("{vorkommen}. {schritt} fehlt in {spur:?}"))
+        };
+        let folge = [
+            "read",
+            "impersonate",
+            "sid",
+            "revert",
+            "self",
+            "hello_accept",
+        ];
+        for paar in folge.windows(2) {
+            assert!(
+                position(paar[0]) < position(paar[1]),
+                "{folge:?} in {spur:?}"
+            );
+        }
+    }
+    drop(telemetrie);
+    drop(control);
+    griff.stoppen();
+}
+
+#[test]
+fn nach_revert_bleiben_envelope_und_trennpfade_im_self_kontext() {
+    let pipe = probe_pipe("b09");
+    let (mut griff, senke) = start(&pipe, V3SecurityTestOptionen::default());
+    let mut client = verbinden(&pipe);
+    client.write_all(&control_hello()).unwrap();
+    assert_eq!(frame_lesen(&mut client)["type"], "welcome");
+    let frame = envelope_schreiben(
+        Familie::P0,
+        1,
+        br#"{"type":"security_vector_after_revert"}"#,
+    )
+    .unwrap();
+    client.write_all(&frame).unwrap();
+    assert!(warten(2000, || senke.p0.load(Ordering::SeqCst) == 1));
+    drop(client);
+    assert!(warten(3000, || griff.sicherheits_spur().contains(&"close")));
+    let spur = griff.sicherheits_spur();
+    assert_eq!(spur.iter().filter(|s| **s == "impersonate").count(), 1);
+    assert_eq!(spur.iter().filter(|s| **s == "revert").count(), 1);
+    assert_reihenfolge(&spur, &["revert", "self", "hello_accept", "close"]);
+    griff.stoppen();
+}

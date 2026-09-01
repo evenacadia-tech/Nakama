@@ -197,7 +197,7 @@ target_include_directories(NakamaKern PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/state" "${CMAKE_CURRENT_SOURCE_DIR}/vertrag"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/ipc")
 target_link_libraries(NakamaKern PRIVATE NakamaKernJuce flatbuffers
-    PUBLIC Bcrypt Crypt32 Wintrust)
+    PUBLIC Advapi32 Bcrypt Crypt32 Wintrust)
 # T2-Befund 23.08.: Diese beiden hingen bis dahin NICHT am Kern. Vor S8 lagen
 # die vier Quellen per target_sources() IN den Verbraucherzielen und erbten
 # deren PUBLIC-Empfehlungsschalter — allen voran /W4. Die Kopf-Fassade leitet
@@ -294,7 +294,8 @@ function(nakama_sonde_ziel ziel identitaet klassendefine)
         sonde/SondeFactory.cpp
         src/AnalyseEngine.cpp)
     target_sources(${ziel} PRIVATE core/ipc/PipeToken.cpp)
-    target_include_directories(${ziel} PRIVATE sonde src core hostbridge)
+    target_include_directories(${ziel} PRIVATE sonde src core hostbridge
+        "${NAKAMA_BROKER_BINDING_DIR}")
 
     # JUCE_VST3_CAN_REPLACE_VST2=0 gehoert zur eingefrorenen Identitaet, nicht
     # zu den Bauoptionen: mit 1 leitete JUCE die Class-ID aus einer ANDEREN
@@ -354,7 +355,8 @@ function(nakama_sonde_nulltest ziel klassendefine)
         sonde/SondeProcessor.cpp
         src/AnalyseEngine.cpp)
     target_sources(${ziel} PRIVATE core/ipc/PipeToken.cpp)
-    target_include_directories(${ziel} PRIVATE sonde src core hostbridge)
+    target_include_directories(${ziel} PRIVATE sonde src core hostbridge
+        "${NAKAMA_BROKER_BINDING_DIR}")
     target_compile_definitions(${ziel} PRIVATE
         JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0
         ${klassendefine}=1 NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3=1)
@@ -382,7 +384,8 @@ function(nakama_sonde012_test ziel quelle)
         sonde/SondeProcessor.cpp
         src/AnalyseEngine.cpp
         core/ipc/PipeToken.cpp)
-    target_include_directories(${ziel} PRIVATE sonde src core hostbridge vertrag)
+    target_include_directories(${ziel} PRIVATE sonde src core hostbridge vertrag
+        "${NAKAMA_BROKER_BINDING_DIR}")
     target_compile_definitions(${ziel} PRIVATE
         JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0
         NAKAMA_SONDE_AKTIV=1 NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3=1)
@@ -453,10 +456,12 @@ target_sources(EqCopPipeProbe PRIVATE
     probe/PipeProbeMain.cpp
     src/PipeClient.cpp
 )
-target_include_directories(EqCopPipeProbe PRIVATE src)
-target_compile_definitions(EqCopPipeProbe PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
+target_include_directories(EqCopPipeProbe PRIVATE src "${NAKAMA_BROKER_BINDING_DIR}")
+target_compile_definitions(EqCopPipeProbe PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
 target_link_libraries(EqCopPipeProbe PRIVATE juce::juce_core
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+nakama_kern_anbinden(EqCopPipeProbe)
 
 # Adversarialer Client-Lifecycle ohne Produktionspipe: blockierte Reads,
 # Reconnect-Generation, SQOS, UTF-8/NUL, strikte ACK-Sequenz und absolute
@@ -467,9 +472,11 @@ target_sources(EqCopPipeClientTest PRIVATE
     src/PipeClient.cpp
 )
 target_include_directories(EqCopPipeClientTest PRIVATE src)
-target_compile_definitions(EqCopPipeClientTest PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
+target_compile_definitions(EqCopPipeClientTest PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
 target_link_libraries(EqCopPipeClientTest PRIVATE juce::juce_core Advapi32
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+nakama_kern_anbinden(EqCopPipeClientTest)
 
 # ── Nulltest: Passthrough-Beweis ohne Host ──────────────────────────────────
 juce_add_console_app(EqCopNullTest PRODUCT_NAME "eqcop-nulltest")

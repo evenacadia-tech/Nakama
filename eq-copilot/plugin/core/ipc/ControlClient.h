@@ -167,6 +167,12 @@ public:
         /// dieses Bit. Adress-/Audiofehler, Rejects, kaputte Welcomes und eine
         /// belegte Pipe duerfen den Lifecycle nie als "Broker fehlt" oeffnen.
         bool          brokerPipeFehlt = false;
+        ServerPruefStatus serverPruefstatus = ServerPruefStatus::nichtGeprueft;
+        ServerPruefFehler serverPrueffehler = ServerPruefFehler::keiner;
+        std::uint32_t serverPid = 0;
+        /// Vollstaendige Serverpruefungen an tatsaechlich geoeffneten
+        /// Pipehandles. Ein Reconnect muss diesen Zaehler erneut erhoehen.
+        std::uint64_t serverPruefungen = 0;
         int           verbindungsVersuche = 0;
         std::uint64_t p0Gesendet = 0;
         std::uint64_t p1Gesendet = 0;
@@ -212,7 +218,8 @@ public:
                    std::function<ControlStatus()> statusProvider = {},
                    std::function<void (bool verbunden)> beiLinkStatus = {},
                    std::function<void (const std::string&, std::uint8_t schemaMinor)>
-                       beiVersionierterAntwort = {});
+                       beiVersionierterAntwort = {},
+                   ServerErwartung serverErwartung = serverErwartungFuerEigenprozessTest());
     ~ControlClient();
 
     ControlClient (const ControlClient&) = delete;

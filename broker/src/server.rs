@@ -29,7 +29,8 @@ use windows_sys::Win32::Security::Authorization::{
     ConvertSidToStringSidW, ConvertStringSecurityDescriptorToSecurityDescriptorW,
 };
 use windows_sys::Win32::Security::{
-    GetTokenInformation, TokenUser, SECURITY_ATTRIBUTES, TOKEN_QUERY, TOKEN_USER,
+    CopySid, GetLengthSid, GetTokenInformation, IsValidSid, TokenUser, SECURITY_ATTRIBUTES,
+    TOKEN_QUERY, TOKEN_USER,
 };
 use windows_sys::Win32::Storage::FileSystem::{
     FlushFileBuffers, FILE_FLAG_FIRST_PIPE_INSTANCE, PIPE_ACCESS_DUPLEX,
@@ -59,11 +60,17 @@ const ANTWORT_FLUSH_TIMEOUT: std::time::Duration = std::time::Duration::from_mil
 /// Hält den LocalAlloc-Deskriptor am Leben, solange der Server läuft.
 pub(crate) struct Sicherheit {
     pub(crate) deskriptor: *mut core::ffi::c_void,
+    /// Exakte binäre SID, aus der auch der SDDL-Text gebaut wurde. Der v3-
+    /// Listener vergleicht jeden impersonierten Client gegen genau diese Bytes.
+    sid: Vec<u64>,
 }
 // SAFETY: `deskriptor` ist ein exklusiv besessener LocalAlloc-Block ohne
 // Thread-Affinität; nach dem Bau wird er nur noch gelesen (CreateNamedPipeW)
 // und genau einmal in Drop freigegeben — kein geteilter veränderlicher Zustand.
 unsafe impl Send for Sicherheit {}
+// SAFETY: Nach dem Konstruktor werden Deskriptor und SID nur gelesen. Beide
+// Allokationen leben bis zum letzten Besitzer und werden erst dann freigegeben.
+unsafe impl Sync for Sicherheit {}
 
 impl Drop for Sicherheit {
     fn drop(&mut self) {
@@ -73,6 +80,12 @@ impl Drop for Sicherheit {
             // und wird nur hier, genau einmal, freigegeben.
             unsafe { LocalFree(self.deskriptor) };
         }
+    }
+}
+
+impl Sicherheit {
+    pub(crate) fn user_sid(&self) -> *mut core::ffi::c_void {
+        self.sid.as_ptr().cast_mut().cast()
     }
 }
 
@@ -105,7 +118,7 @@ unsafe impl Send for HandleGuard {}
 // darf kein strengeres Alignment verlangen, als u64-Elemente garantieren.
 const _: () = assert!(std::mem::align_of::<TOKEN_USER>() <= std::mem::align_of::<u64>());
 
-pub(crate) fn aktueller_user_sid() -> Result<String, String> {
+fn aktueller_user_sid_mit_binaer() -> Result<(String, Vec<u64>), String> {
     let mut token: HANDLE = std::ptr::null_mut();
     // SAFETY: GetCurrentProcess liefert ein Pseudo-Handle (nicht zu schließen);
     // OpenProcessToken schreibt nur bei Erfolg ein gültiges Token nach `token`.
@@ -155,8 +168,23 @@ pub(crate) fn aktueller_user_sid() -> Result<String, String> {
     // TOKEN_USER-Struktur, das Alignment stimmt (u64-Puffer + Riegel oben),
     // und `User.Sid` zeigt in denselben, weiterhin lebenden Puffer.
     let sid_ptr = unsafe { (*puffer.as_ptr().cast::<TOKEN_USER>()).User.Sid };
+    // Die TokenInformation-Pufferadresse darf nicht zur zweiten Wahrheit
+    // werden. SID-Bytes einmal kopieren; genau diese Kopie bleibt zusammen mit
+    // dem daraus gebauten DACL-Deskriptor im `Sicherheit`-Objekt am Leben.
+    if unsafe { IsValidSid(sid_ptr) } == 0 {
+        return Err("TokenUser enthielt keine gueltige SID".into());
+    }
+    let sid_laenge = unsafe { GetLengthSid(sid_ptr) };
+    if sid_laenge == 0 {
+        return Err("GetLengthSid lieferte 0".into());
+    }
+    let mut sid_binaer = vec![0u64; (sid_laenge as usize).div_ceil(std::mem::size_of::<u64>())];
+    if unsafe { CopySid(sid_laenge, sid_binaer.as_mut_ptr().cast(), sid_ptr) } == 0 {
+        return Err(format!("CopySid: Win32 {}", unsafe { GetLastError() }));
+    }
+    let sid_ptr = sid_binaer.as_mut_ptr().cast();
     let mut sid_w: *mut u16 = std::ptr::null_mut();
-    // SAFETY: `sid_ptr` zeigt in den lebenden `puffer`; bei Erfolg alloziert
+    // SAFETY: `sid_ptr` zeigt in die lebende, unabhaengige SID-Kopie; bei Erfolg alloziert
     // die API einen nullterminierten UTF-16-String nach `sid_w`.
     if unsafe { ConvertSidToStringSidW(sid_ptr, &mut sid_w) } == 0 {
         // SAFETY: GetLastError liest nur den threadlokalen Fehlercode.
@@ -175,11 +203,15 @@ pub(crate) fn aktueller_user_sid() -> Result<String, String> {
         LocalFree(sid_w.cast());
         s
     };
-    Ok(sid)
+    Ok((sid, sid_binaer))
+}
+
+pub(crate) fn aktueller_user_sid() -> Result<String, String> {
+    aktueller_user_sid_mit_binaer().map(|(text, _)| text)
 }
 
 pub(crate) fn sicherheit_nur_user() -> Result<Sicherheit, String> {
-    let sid = aktueller_user_sid()?;
+    let (sid, sid_binaer) = aktueller_user_sid_mit_binaer()?;
     let sddl = format!("D:P(A;;GA;;;{sid})");
     let mut sddl_w: Vec<u16> = sddl.encode_utf16().collect();
     sddl_w.push(0);
@@ -198,7 +230,10 @@ pub(crate) fn sicherheit_nur_user() -> Result<Sicherheit, String> {
             return Err(format!("SDDL→Deskriptor: Win32 {}", GetLastError()));
         }
     }
-    Ok(Sicherheit { deskriptor })
+    Ok(Sicherheit {
+        deskriptor,
+        sid: sid_binaer,
+    })
 }
 
 fn fehler_merken(register: &Arc<Mutex<Register>>, text: String) {

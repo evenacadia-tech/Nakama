@@ -1,10 +1,9 @@
 // SONDE-010 — die gemeinsame Pipe-Mechanik der beiden v3-Clients.
 //
 // Warum eigen und nicht `src/PipeClient` wiederverwendet: PipeClient ist der
-// v2-PRODUKTPFAD. Er bleibt in diesem Ticket unangetastet — der heutige
-// Heartbeat ist weiterhin das, was Gen und Probeeq wirklich sprechen. Die
-// v3-Clients sind ein zweiter, danebenliegender Weg; sie teilen die LEHREN
-// von PipeClient, nicht seinen Code:
+// v2-PRODUKTPFAD, die v3-Clients sind ein zweiter, danebenliegender Weg. Beide
+// behalten ihre Framing-/I/O-Mechanik; seit NAK-123 teilen alle drei nur den
+// Serverbeweis am jeweils konkret geoeffneten Handle:
 //
 //   * `CreateFileW` mit SECURITY_SQOS_PRESENT | SECURITY_IDENTIFICATION —
 //     NAK-49/ACCESS-001 wird nicht wiederholt: ohne diese Flags darf ein
@@ -38,6 +37,88 @@ inline constexpr int kBackoffMaxMs   = 8000;
 /// Absolute Frist je Schreibvorgang und je Bootstrap-Antwort.
 inline constexpr int kIoFristMs = 5000;
 
+/// Ergebnis der Serverpruefung am KONKRETEN, noch unveroeffentlichten
+/// `CreateFileW`-Handle. Nur `nichtDa` darf den Broker-Startpfad oeffnen;
+/// `belegtAberUnverifiziert` ist ein Sicherheitsfehler und kein Livenessfehler.
+enum class ServerPruefStatus
+{
+    nichtGeprueft,
+    nichtDa,
+    verifiziert,
+    belegtAberUnverifiziert,
+};
+
+enum class ServerPruefFehler
+{
+    keiner,
+    pipeFehlt,
+    pipeOeffnen,
+    erwartungUngueltig,
+    serverPidNichtErmittelbar,
+    serverPidFalsch,
+    serverprozessNichtOeffnen,
+    serverTokenNichtOeffnen,
+    pluginTokenNichtOeffnen,
+    serverTokenUserNichtLesbar,
+    pluginTokenUserNichtLesbar,
+    serverSidUngueltig,
+    pluginSidUngueltig,
+    serverSidFalsch,
+    prozessbildNichtErmittelbar,
+    prozessbildNichtOeffnen,
+    erwarteteDateiNichtOeffnen,
+    dateiidentitaetFalsch,
+    hashFalsch,
+    signaturFehltOderUngueltig,
+    signerFalsch,
+};
+
+/// Manifestgebundene Erwartung fuer einen Brokerprozess. `erwarteterPid == 0`
+/// bedeutet im Produkt: PID am Pipehandle ermitteln, aber nicht vorab pinnen.
+/// Selbstgehostete Tests setzen ihn auf die eigene PID und bleiben dadurch
+/// ebenfalls fail-closed, ohne eine Ausnahme im Produktpfad zu brauchen.
+struct ServerErwartung
+{
+    std::wstring absoluterBrokerPfad;
+    std::string sha256;
+    std::string authenticodeThumbprint;
+    std::uint32_t erwarteterPid = 0;
+
+    /// Ausschliesslich deterministische Fehlerinjektion in den benannten
+    /// security_vectors-Tests. Produktziele lassen den Wert `keiner`.
+    ServerPruefFehler testFehler = ServerPruefFehler::keiner;
+    /// Optionale Testbarriere unmittelbar vor der abschliessenden Hash-/Signer-
+    /// Entscheidung. Sie misst auch im Erfolgsfall, dass vor der vollstaendigen
+    /// Verifikation kein Byte fliesst. Beide Zeiger muessen gemeinsam gesetzt
+    /// sein und bis zum Ende des Connectversuchs leben; Produktwerte sind null.
+    std::atomic<bool>* testVorFehlerErreicht = nullptr;
+    std::atomic<bool>* testFehlerFreigeben = nullptr;
+};
+
+struct ServerPruefBericht
+{
+    ServerPruefStatus status = ServerPruefStatus::nichtGeprueft;
+    ServerPruefFehler fehler = ServerPruefFehler::keiner;
+    std::uint32_t serverPid = 0;
+    std::uint32_t win32Fehler = 0;
+
+    bool ok() const noexcept { return status == ServerPruefStatus::verifiziert; }
+};
+
+/// Baut fuer selbstgehostete Testserver eine VOR dem Connect feststehende
+/// Erwartung aus einer Datei. Die Datei wird gehasht; ein leerer Rueckgabepfad
+/// ist damit kein permissiver Modus, sondern fuehrt spaeter fail-closed.
+ServerErwartung serverErwartungFuerTestdatei (const std::wstring& absoluterPfad,
+                                              std::uint32_t erwarteterPid = 0);
+ServerErwartung serverErwartungFuerEigenprozessTest();
+
+/// Gemeinsamer Serverbeweis fuer v3-Control, v3-Telemetry und den v2-Client.
+/// Der Aufrufer darf vor einem erfolgreichen Bericht weder den Handle
+/// veroeffentlichen noch ein einziges Byte senden.
+ServerPruefBericht namedPipeServerAuthentisieren (void* pipeHandle,
+                                                  const ServerErwartung& erwartung);
+const char* serverPruefFehlerName (ServerPruefFehler fehler) noexcept;
+
 /// Reine Existenzprobe fuer eine lokale Named Pipe. Sie oeffnet keine
 /// Verbindung und verbraucht deshalb keinen Server-Slot. `ERROR_PIPE_BUSY`
 /// bzw. das Nullzeitlimit bedeuten: Broker vorhanden, nur gerade belegt.
@@ -63,8 +144,10 @@ public:
     IpcVerbindung (const IpcVerbindung&) = delete;
     IpcVerbindung& operator= (const IpcVerbindung&) = delete;
 
-    /// Verbindet zu `pipeName`. `false` ⇒ `fehler` traegt den Grund.
-    bool oeffnen (const std::string& pipeName, std::string& fehler);
+    /// Verbindet zu `pipeName` und authentisiert den Server am tatsaechlich
+    /// geoeffneten Handle. `false` ⇒ `bericht` und `fehler` tragen den Grund.
+    bool oeffnen (const std::string& pipeName, const ServerErwartung& erwartung,
+                  ServerPruefBericht& bericht, std::string& fehler);
 
     /// Schliesst und bricht laufende I/O ab. Idempotent.
     void schliessen();

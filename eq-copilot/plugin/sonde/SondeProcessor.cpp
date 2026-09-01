@@ -1,4 +1,5 @@
 #include "SondeProcessor.h"
+#include "BrokerInstallBinding.h"
 #include "PipeToken.h"
 
 #include <algorithm>
@@ -55,6 +56,13 @@ std::uint64_t addiereGesaettigt (std::uint64_t a, std::uint64_t b) noexcept
     const auto max = std::numeric_limits<std::uint64_t>::max();
     return b > max - a ? max : a + b;
 }
+
+nakama::ipc::ServerErwartung brokerServerErwartung()
+{
+    return { nakama::ipc::installbindung::brokerPfad,
+             nakama::ipc::installbindung::brokerSha256,
+             nakama::ipc::installbindung::authenticodeThumbprint };
+}
 } // namespace
 
 SondeProcessor::SondeProcessor()
@@ -65,8 +73,9 @@ SondeProcessor::SondeProcessor()
       v3PipeName (nakama::ipc::pipeNameV3 (v3LogonSid)),
       v3RuntimeNonce (uuidHex32()),
       controlV3 ([this] { return v3Hello(); }, v3PipeName, {},
-                 [this] { return v3Status(); }),
-      telemetryV3 ([this] { return v3TelemetryHello(); }, v3PipeName)
+                 [this] { return v3Status(); }, {}, {}, brokerServerErwartung()),
+      telemetryV3 ([this] { return v3TelemetryHello(); }, v3PipeName, {},
+                   brokerServerErwartung())
 {
     // Frische Instanz. `frisch()` legt `legacy` an - das ist die Vorgabe des
     // Main-Bundles und fuer eine Sonde falsch: ihr Bundle-Vertrag

@@ -337,6 +337,269 @@ BrokerPruefBericht brokerBinaryPruefen (const std::wstring& absoluterPfad,
     return bericht;
 }
 
+namespace
+{
+struct AuthHandle
+{
+    HANDLE wert = nullptr;
+    explicit AuthHandle (HANDLE h = nullptr) : wert (h) {}
+    ~AuthHandle()
+    {
+        if (wert != nullptr && wert != INVALID_HANDLE_VALUE)
+            CloseHandle (wert);
+    }
+    AuthHandle (const AuthHandle&) = delete;
+    AuthHandle& operator= (const AuthHandle&) = delete;
+};
+
+bool tokenUserSid (HANDLE token, std::vector<std::uint64_t>& speicher,
+                   PSID& sid, DWORD& win32)
+{
+    DWORD noetig = 0;
+    SetLastError (ERROR_SUCCESS);
+    GetTokenInformation (token, TokenUser, nullptr, 0, &noetig);
+    const DWORD groessenFehler = GetLastError();
+    if (noetig < sizeof (TOKEN_USER) || groessenFehler != ERROR_INSUFFICIENT_BUFFER)
+    {
+        win32 = groessenFehler;
+        return false;
+    }
+    speicher.resize ((static_cast<std::size_t> (noetig) + sizeof (std::uint64_t) - 1)
+                     / sizeof (std::uint64_t));
+    DWORD geschrieben = noetig;
+    if (GetTokenInformation (token, TokenUser, speicher.data(), noetig,
+                             &geschrieben) == FALSE
+        || geschrieben < sizeof (TOKEN_USER))
+    {
+        win32 = GetLastError();
+        return false;
+    }
+    sid = reinterpret_cast<TOKEN_USER*> (speicher.data())->User.Sid;
+    return true;
+}
+
+bool dateiIdentisch (HANDLE a, HANDLE b)
+{
+    BY_HANDLE_FILE_INFORMATION ai {}, bi {};
+    return GetFileInformationByHandle (a, &ai) != FALSE
+        && GetFileInformationByHandle (b, &bi) != FALSE
+        && ai.dwVolumeSerialNumber == bi.dwVolumeSerialNumber
+        && ai.nFileIndexHigh == bi.nFileIndexHigh
+        && ai.nFileIndexLow == bi.nFileIndexLow;
+}
+
+ServerPruefBericht authFehler (ServerPruefFehler fehler, DWORD win32 = 0,
+                              DWORD pid = 0)
+{
+    ServerPruefBericht bericht;
+    bericht.status = ServerPruefStatus::belegtAberUnverifiziert;
+    bericht.fehler = fehler;
+    bericht.win32Fehler = win32;
+    bericht.serverPid = pid;
+    return bericht;
+}
+} // namespace
+
+ServerErwartung serverErwartungFuerTestdatei (const std::wstring& absoluterPfad,
+                                              std::uint32_t erwarteterPid)
+{
+    ServerErwartung erwartung;
+    erwartung.absoluterBrokerPfad = absoluterPfad;
+    erwartung.erwarteterPid = erwarteterPid;
+    if (! std::filesystem::path (absoluterPfad).is_absolute()
+        || ! sha256Datei (absoluterPfad, erwartung.sha256))
+    {
+        erwartung.absoluterBrokerPfad.clear();
+        erwartung.sha256.clear();
+    }
+    return erwartung;
+}
+
+ServerErwartung serverErwartungFuerEigenprozessTest()
+{
+    static const ServerErwartung erwartung = [] {
+        std::wstring bild (32768, L'\0');
+        DWORD laenge = static_cast<DWORD> (bild.size());
+        if (QueryFullProcessImageNameW (GetCurrentProcess(), 0, bild.data(), &laenge) == FALSE
+            || laenge == 0)
+            return ServerErwartung {};
+        bild.resize (laenge);
+        return serverErwartungFuerTestdatei (bild, GetCurrentProcessId());
+    }();
+    return erwartung;
+}
+
+const char* serverPruefFehlerName (ServerPruefFehler fehler) noexcept
+{
+    switch (fehler)
+    {
+        case ServerPruefFehler::keiner: return "keiner";
+        case ServerPruefFehler::pipeFehlt: return "pipeFehlt";
+        case ServerPruefFehler::pipeOeffnen: return "pipeOeffnen";
+        case ServerPruefFehler::erwartungUngueltig: return "erwartungUngueltig";
+        case ServerPruefFehler::serverPidNichtErmittelbar: return "serverPidNichtErmittelbar";
+        case ServerPruefFehler::serverPidFalsch: return "serverPidFalsch";
+        case ServerPruefFehler::serverprozessNichtOeffnen: return "serverprozessNichtOeffnen";
+        case ServerPruefFehler::serverTokenNichtOeffnen: return "serverTokenNichtOeffnen";
+        case ServerPruefFehler::pluginTokenNichtOeffnen: return "pluginTokenNichtOeffnen";
+        case ServerPruefFehler::serverTokenUserNichtLesbar: return "serverTokenUserNichtLesbar";
+        case ServerPruefFehler::pluginTokenUserNichtLesbar: return "pluginTokenUserNichtLesbar";
+        case ServerPruefFehler::serverSidUngueltig: return "serverSidUngueltig";
+        case ServerPruefFehler::pluginSidUngueltig: return "pluginSidUngueltig";
+        case ServerPruefFehler::serverSidFalsch: return "serverSidFalsch";
+        case ServerPruefFehler::prozessbildNichtErmittelbar: return "prozessbildNichtErmittelbar";
+        case ServerPruefFehler::prozessbildNichtOeffnen: return "prozessbildNichtOeffnen";
+        case ServerPruefFehler::erwarteteDateiNichtOeffnen: return "erwarteteDateiNichtOeffnen";
+        case ServerPruefFehler::dateiidentitaetFalsch: return "dateiidentitaetFalsch";
+        case ServerPruefFehler::hashFalsch: return "hashFalsch";
+        case ServerPruefFehler::signaturFehltOderUngueltig:
+            return "signaturFehltOderUngueltig";
+        case ServerPruefFehler::signerFalsch: return "signerFalsch";
+    }
+    return "unbekannt";
+}
+
+ServerPruefBericht namedPipeServerAuthentisieren (void* pipeHandle,
+                                                  const ServerErwartung& erwartung)
+{
+    operationZaehlen();
+    if (pipeHandle == nullptr || pipeHandle == INVALID_HANDLE_VALUE
+        || erwartung.absoluterBrokerPfad.empty()
+        || ! std::filesystem::path (erwartung.absoluterBrokerPfad).is_absolute()
+        || ! istHex (erwartung.sha256, 64)
+        || (! erwartung.authenticodeThumbprint.empty()
+            && ((erwartung.authenticodeThumbprint.size() != 40
+                 && erwartung.authenticodeThumbprint.size() != 64)
+                || ! istHex (erwartung.authenticodeThumbprint,
+                             erwartung.authenticodeThumbprint.size()))))
+        return authFehler (ServerPruefFehler::erwartungUngueltig);
+
+    ULONG serverPid = 0;
+    if (erwartung.testFehler == ServerPruefFehler::serverPidNichtErmittelbar
+        || GetNamedPipeServerProcessId (static_cast<HANDLE> (pipeHandle), &serverPid) == FALSE
+        || serverPid == 0)
+        return authFehler (ServerPruefFehler::serverPidNichtErmittelbar,
+                           GetLastError());
+    if (erwartung.testFehler == ServerPruefFehler::serverPidFalsch
+        || (erwartung.erwarteterPid != 0 && serverPid != erwartung.erwarteterPid))
+        return authFehler (ServerPruefFehler::serverPidFalsch, 0, serverPid);
+
+    if (erwartung.testFehler == ServerPruefFehler::serverprozessNichtOeffnen)
+        return authFehler (ServerPruefFehler::serverprozessNichtOeffnen,
+                           ERROR_ACCESS_DENIED, serverPid);
+    AuthHandle prozess (OpenProcess (PROCESS_QUERY_LIMITED_INFORMATION, FALSE, serverPid));
+    if (prozess.wert == nullptr)
+        return authFehler (ServerPruefFehler::serverprozessNichtOeffnen,
+                           GetLastError(), serverPid);
+
+    HANDLE serverTokenRoh = nullptr;
+    if (erwartung.testFehler == ServerPruefFehler::serverTokenNichtOeffnen
+        || OpenProcessToken (prozess.wert, TOKEN_QUERY, &serverTokenRoh) == FALSE)
+        return authFehler (ServerPruefFehler::serverTokenNichtOeffnen,
+                           GetLastError(), serverPid);
+    AuthHandle serverToken (serverTokenRoh);
+
+    HANDLE pluginTokenRoh = nullptr;
+    if (erwartung.testFehler == ServerPruefFehler::pluginTokenNichtOeffnen
+        || OpenProcessToken (GetCurrentProcess(), TOKEN_QUERY, &pluginTokenRoh) == FALSE)
+        return authFehler (ServerPruefFehler::pluginTokenNichtOeffnen,
+                           GetLastError(), serverPid);
+    AuthHandle pluginToken (pluginTokenRoh);
+
+    std::vector<std::uint64_t> serverSidSpeicher, pluginSidSpeicher;
+    PSID serverSid = nullptr, pluginSid = nullptr;
+    DWORD sidFehler = 0;
+    if (erwartung.testFehler == ServerPruefFehler::serverTokenUserNichtLesbar
+        || ! tokenUserSid (serverToken.wert, serverSidSpeicher, serverSid, sidFehler))
+        return authFehler (ServerPruefFehler::serverTokenUserNichtLesbar,
+                           sidFehler, serverPid);
+    if (erwartung.testFehler == ServerPruefFehler::pluginTokenUserNichtLesbar
+        || ! tokenUserSid (pluginToken.wert, pluginSidSpeicher, pluginSid, sidFehler))
+        return authFehler (ServerPruefFehler::pluginTokenUserNichtLesbar,
+                           sidFehler, serverPid);
+    if (erwartung.testFehler == ServerPruefFehler::serverSidUngueltig
+        || IsValidSid (serverSid) == FALSE)
+        return authFehler (ServerPruefFehler::serverSidUngueltig, 0, serverPid);
+    if (erwartung.testFehler == ServerPruefFehler::pluginSidUngueltig
+        || IsValidSid (pluginSid) == FALSE)
+        return authFehler (ServerPruefFehler::pluginSidUngueltig, 0, serverPid);
+    if (erwartung.testFehler == ServerPruefFehler::serverSidFalsch
+        || EqualSid (serverSid, pluginSid) == FALSE)
+        return authFehler (ServerPruefFehler::serverSidFalsch, 0, serverPid);
+
+    if (erwartung.testFehler == ServerPruefFehler::prozessbildNichtErmittelbar)
+        return authFehler (ServerPruefFehler::prozessbildNichtErmittelbar,
+                           ERROR_ACCESS_DENIED, serverPid);
+    std::wstring bild (32768, L'\0');
+    DWORD bildLaenge = static_cast<DWORD> (bild.size());
+    if (QueryFullProcessImageNameW (prozess.wert, 0, bild.data(), &bildLaenge) == FALSE
+        || bildLaenge == 0)
+        return authFehler (ServerPruefFehler::prozessbildNichtErmittelbar,
+                           GetLastError(), serverPid);
+    bild.resize (bildLaenge);
+
+    if (erwartung.testFehler == ServerPruefFehler::prozessbildNichtOeffnen)
+        return authFehler (ServerPruefFehler::prozessbildNichtOeffnen,
+                           ERROR_FILE_NOT_FOUND, serverPid);
+    AuthHandle bildDatei (CreateFileW (
+        bild.c_str(), FILE_READ_ATTRIBUTES,
+        FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+        nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr));
+    if (bildDatei.wert == INVALID_HANDLE_VALUE)
+        return authFehler (ServerPruefFehler::prozessbildNichtOeffnen,
+                           GetLastError(), serverPid);
+
+    if (erwartung.testFehler == ServerPruefFehler::erwarteteDateiNichtOeffnen)
+        return authFehler (ServerPruefFehler::erwarteteDateiNichtOeffnen,
+                           ERROR_FILE_NOT_FOUND, serverPid);
+    AuthHandle erwartetDatei (CreateFileW (
+        erwartung.absoluterBrokerPfad.c_str(), FILE_READ_ATTRIBUTES,
+        FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+        nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr));
+    if (erwartetDatei.wert == INVALID_HANDLE_VALUE)
+        return authFehler (ServerPruefFehler::erwarteteDateiNichtOeffnen,
+                           GetLastError(), serverPid);
+    if (erwartung.testFehler == ServerPruefFehler::dateiidentitaetFalsch
+        || ! dateiIdentisch (bildDatei.wert, erwartetDatei.wert))
+        return authFehler (ServerPruefFehler::dateiidentitaetFalsch, 0, serverPid);
+
+    if (erwartung.testVorFehlerErreicht != nullptr
+        && erwartung.testFehlerFreigeben != nullptr)
+    {
+        erwartung.testVorFehlerErreicht->store (true);
+        while (! erwartung.testFehlerFreigeben->load())
+            Sleep (1);
+    }
+
+    if (erwartung.testFehler == ServerPruefFehler::hashFalsch)
+        return authFehler (ServerPruefFehler::hashFalsch, 0, serverPid);
+    if (erwartung.testFehler == ServerPruefFehler::signaturFehltOderUngueltig)
+        return authFehler (ServerPruefFehler::signaturFehltOderUngueltig, 0, serverPid);
+    if (erwartung.testFehler == ServerPruefFehler::signerFalsch)
+        return authFehler (ServerPruefFehler::signerFalsch, 0, serverPid);
+
+    const auto binaer = brokerBinaryPruefen (bild, erwartung.sha256,
+                                             erwartung.authenticodeThumbprint);
+    if (! binaer.ok())
+    {
+        switch (binaer.fehler)
+        {
+            case BrokerPruefFehler::signaturFehltOderUngueltig:
+                return authFehler (ServerPruefFehler::signaturFehltOderUngueltig,
+                                   0, serverPid);
+            case BrokerPruefFehler::signerFalsch:
+                return authFehler (ServerPruefFehler::signerFalsch, 0, serverPid);
+            default:
+                return authFehler (ServerPruefFehler::hashFalsch, 0, serverPid);
+        }
+    }
+
+    ServerPruefBericht bericht;
+    bericht.status = ServerPruefStatus::verifiziert;
+    bericht.serverPid = serverPid;
+    return bericht;
+}
+
 bool brokerVerborgenStarten (const std::wstring& absoluterPfad)
 {
     operationZaehlen();
@@ -457,31 +720,97 @@ void BrokerLifecycle::startMutexFreigeben()
 
 void BrokerLifecycle::tick (std::uint64_t jetztMs)
 {
-    if (hooks.verbunden && hooks.verbunden())
+    auto serverStatus = [&] {
+        if (hooks.serverPruefstatus)
+            return hooks.serverPruefstatus();
+        if (hooks.verbunden && hooks.verbunden())
+            return ServerPruefStatus::verifiziert;
+        if (hooks.connectFehlgeschlagen && hooks.connectFehlgeschlagen())
+            return ServerPruefStatus::nichtDa;
+        return ServerPruefStatus::nichtGeprueft;
+    };
+
+    const auto anfangsStatus = serverStatus();
+    if (anfangsStatus == ServerPruefStatus::belegtAberUnverifiziert)
+    {
+        // Fail-closed: kein weiterer Reconnect und kein Spawn gegen den
+        // belegten Namen. Das Startmutex bleibt bis Stop oder einer bewussten
+        // externen Zustandsaenderung beim Gewinner; ein zweiter Pluginprozess
+        // darf denselben Sicherheitsfehler nicht in einen Spawn umdeuten.
+        phase = Phase::blockiertUnverifiziert;
+        std::lock_guard<std::mutex> l (zustandMutex);
+        zustand.wartetAufBereit = false;
+        zustand.wartetAufServerpruefung = false;
+        zustand.serverNichtVerifiziert = true;
+        zustand.imCooldown = false;
+        zustand.letzterServerPruefstatus = anfangsStatus;
+        return;
+    }
+
+    // Mit dem NAK-123-Hook ist ausschliesslich das Urteil des tatsaechlichen
+    // Handles autoritativ. Zwei getrennte Snapshot-Aufrufe (`verbunden` und
+    // Status) koennten sonst ueber eine Reconnectkante "alt verbunden" mit
+    // "neu unverifiziert" mischen und den Sicherheitsfehler als bereit
+    // zaehlen. `verbunden` bleibt nur der Kompatibilitaetspfad alter Tests.
+    if ((! hooks.serverPruefstatus && hooks.verbunden && hooks.verbunden())
+        || anfangsStatus == ServerPruefStatus::verifiziert)
     {
         phase = Phase::bereit;
         startMutexFreigeben();
         std::lock_guard<std::mutex> l (zustandMutex);
         zustand.wartetAufBereit = false;
+        zustand.wartetAufServerpruefung = false;
+        zustand.serverNichtVerifiziert = false;
         zustand.imCooldown = false;
+        zustand.letzterServerPruefstatus = anfangsStatus;
+        return;
+    }
+
+    if (phase == Phase::blockiertUnverifiziert)
+    {
+        // Nur ein expliziter Reconnect setzt den Controlstatus wieder auf
+        // `nichtGeprueft`. Dann wird genau dieser neue Handle erneut geprueft;
+        // ein alter PID-/Image-Erfolg wird nie wiederverwendet.
+        phase = Phase::wartetAufServerpruefung;
+        std::lock_guard<std::mutex> l (zustandMutex);
+        zustand.serverNichtVerifiziert = false;
+        zustand.wartetAufServerpruefung = true;
+        zustand.letzterServerPruefstatus = anfangsStatus;
         return;
     }
 
     auto vorhandenePipeUebernehmen = [&] {
         if (hooks.pipeName.empty() || ! namedPipeErreichbar (hooks.pipeName))
             return false;
-        // Der Mutexgewinner hat den Broker bereits hergestellt; dieser
-        // Client kann noch den alten getrennten Cache tragen. Ein frischer
-        // Connect ersetzt den Cache, ein zweiter Prozess waere falsch.
+        // WaitNamedPipe ist nur der Anstoss. Bei einem produktiven
+        // `serverPruefstatus` bleibt das Mutex gehalten, bis der ControlClient
+        // genau den daraufhin geoeffneten Handle als verifiziert meldet.
         if (hooks.reconnect)
             hooks.reconnect();
-        phase = Phase::wartetAufConnect;
-        startMutexFreigeben();
+        phase = hooks.serverPruefstatus ? Phase::wartetAufServerpruefung
+                                       : Phase::wartetAufConnect;
+        if (! hooks.serverPruefstatus)
+            startMutexFreigeben(); // nur Rueckwaertskompatibilitaet der alten Tests
         std::lock_guard<std::mutex> l (zustandMutex);
         zustand.wartetAufBereit = false;
+        zustand.wartetAufServerpruefung = static_cast<bool> (hooks.serverPruefstatus);
+        zustand.serverNichtVerifiziert = false;
         zustand.imCooldown = false;
         return true;
     };
+
+    if (phase == Phase::wartetAufServerpruefung)
+    {
+        if (anfangsStatus == ServerPruefStatus::nichtGeprueft)
+            return;
+        // `verifiziert` und `belegtAberUnverifiziert` sind oben behandelt.
+        // `nichtDa` oeffnet erst jetzt den regulaeren, manifestgeprueften
+        // Spawnweg.
+        phase = Phase::wartetAufConnect;
+        std::lock_guard<std::mutex> l (zustandMutex);
+        zustand.wartetAufServerpruefung = false;
+        zustand.letzterServerPruefstatus = anfangsStatus;
+    }
 
     if (phase == Phase::wartetAufBroker)
     {
@@ -492,6 +821,7 @@ void BrokerLifecycle::tick (std::uint64_t jetztMs)
             std::lock_guard<std::mutex> l (zustandMutex);
             ++zustand.cooldowns;
             zustand.wartetAufBereit = false;
+            zustand.wartetAufServerpruefung = false;
             zustand.imCooldown = true;
             return;
         }
@@ -524,7 +854,10 @@ void BrokerLifecycle::tick (std::uint64_t jetztMs)
         return;
     }
 
-    if (! hooks.connectFehlgeschlagen || ! hooks.connectFehlgeschlagen())
+    const bool brokerFehlt = hooks.serverPruefstatus
+        ? anfangsStatus == ServerPruefStatus::nichtDa
+        : hooks.connectFehlgeschlagen && hooks.connectFehlgeschlagen();
+    if (! brokerFehlt)
         return; // Connect-without-spawn ist noch nicht nachweislich gescheitert.
     if (! hooks.darfStarten || ! hooks.darfStarten())
         return;
@@ -536,7 +869,8 @@ void BrokerLifecycle::tick (std::uint64_t jetztMs)
     }
     // Das Mutex kann erst nach der Vorpruefung frei geworden sein. Der Sieger
     // prueft deshalb die Pipe erneut, bevor er Bytes oder Prozesse anfasst.
-    if (hooks.verbunden && hooks.verbunden())
+    if ((! hooks.serverPruefstatus && hooks.verbunden && hooks.verbunden())
+        || serverStatus() == ServerPruefStatus::verifiziert)
     {
         phase = Phase::bereit;
         startMutexFreigeben();
@@ -600,6 +934,7 @@ void BrokerLifecycle::tick (std::uint64_t jetztMs)
     std::lock_guard<std::mutex> l (zustandMutex);
     ++zustand.spawnErfolge;
     zustand.wartetAufBereit = true;
+    zustand.wartetAufServerpruefung = false;
 }
 
 void brokerLifecycleAudioTestBeginn() noexcept { audioTestThread = true; }

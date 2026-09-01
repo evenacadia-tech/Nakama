@@ -20,7 +20,10 @@ use std::time::{Duration, Instant};
 
 use eqcop_broker::broker_idle_aktualisieren;
 use eqcop_broker::transport::pipetoken::{ist_probe_pipename, PROBE_PRAEFIX};
-use eqcop_broker::transport::server_v3::{v3_server_starten, ZaehlSenke};
+use eqcop_broker::transport::server_v3::{
+    v3_server_starten, v3_server_starten_fuer_security_vectors, V3AuthTestFehler,
+    V3SecurityTestOptionen, ZaehlSenke,
+};
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -41,9 +44,22 @@ fn main() {
     }
     let sekunden: u64 = args.get(2).and_then(|s| s.parse().ok()).unwrap_or(30);
     let idle_self_exit = args.iter().any(|arg| arg == "--idle-self-exit");
+    let security_revert_fail = args.iter().any(|arg| arg == "--security-revert-fail");
 
     let senke = Arc::new(ZaehlSenke::default());
-    let mut griff = match v3_server_starten(&pipe, senke.clone(), "v3probe".into()) {
+    let start = if security_revert_fail {
+        v3_server_starten_fuer_security_vectors(
+            &pipe,
+            senke.clone(),
+            V3SecurityTestOptionen {
+                auth_fehler: V3AuthTestFehler::Revert,
+                ..V3SecurityTestOptionen::default()
+            },
+        )
+    } else {
+        v3_server_starten(&pipe, senke.clone(), "v3probe".into())
+    };
+    let mut griff = match start {
         Ok(g) => g,
         Err(e) => {
             eprintln!("Listener konnte nicht starten: {e}");
@@ -80,7 +96,7 @@ fn main() {
             && broker_idle_aktualisieren(
                 &mut idle_seit,
                 Instant::now(),
-                griff.statistik.aktive_controls.load(Ordering::SeqCst) as usize,
+                griff.aktive_worker() as usize,
             )
         {
             ende_grund = "idle_self_exit";
@@ -88,11 +104,19 @@ fn main() {
         }
     }
 
-    let s = &griff.statistik;
+    // A-06/A-09: Der Bericht wird erst NACH dem geordneten Gegenpfad
+    // ausgegeben. So misst er, dass bis zur Endeentscheidung zwei Listener
+    // besessen waren und nach den Joins kein Besitzhandle uebrig ist.
+    let s = griff.statistik.clone();
+    let besitzlistener_vor_stopp = s.bewaffnete_listener.load(Ordering::SeqCst);
+    griff.stoppen();
+    let besitzlistener_nach_stopp = s.bewaffnete_listener.load(Ordering::SeqCst);
     let bericht = serde_json::json!({
         "pipe": pipe,
         "ende_grund": ende_grund,
         "angenommen": s.angenommen.load(Ordering::SeqCst),
+        "besitzlistener_vor_stopp": besitzlistener_vor_stopp,
+        "besitzlistener_nach_stopp": besitzlistener_nach_stopp,
         "control_verbindungen": senke.control_verbindungen.load(Ordering::SeqCst),
         "telemetrie_verbindungen": senke.telemetrie_verbindungen.load(Ordering::SeqCst),
         "control_getrennt": senke.control_getrennt.load(Ordering::SeqCst),
@@ -117,5 +141,4 @@ fn main() {
     });
     println!("{}", serde_json::to_string(&bericht).unwrap_or_default());
     let _ = std::io::stdout().flush();
-    griff.stoppen();
 }

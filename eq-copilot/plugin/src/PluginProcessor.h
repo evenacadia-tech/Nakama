@@ -200,7 +200,12 @@ public:
     { v3Antwort (json, schemaMinor); }
     void setzeSourcesFixtureFuerTest (SourcesModel::Sicht fixture)
     { sourcesModel.setzeFixtureFuerTest (std::move (fixture)); }
+    void setzeControlTransportFuerTest (
+        const nakama::ipc::ControlClient::Snapshot& transport)
+    { sourcesModel.setzeControlTransport (transport); }
     std::string ausstehenderSourcesCommandFuerTest() const;
+    std::uint64_t v3StateRevisionFuerTest() const noexcept
+    { return v3StateRevision.load(); }
 #endif
     double holeSamplerate() const                          { return samplerateAtomic.load(); }
     int    holeBlockSize() const                           { return blockSizeAtomic.load(); }

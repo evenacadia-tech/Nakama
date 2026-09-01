@@ -273,6 +273,7 @@ fn echte_cpp_client_crashrunde(killpunkt: &str, erwartetes_ergebnis: &str) {
         .arg(&pipe)
         .arg(command_id)
         .arg(erwartetes_ergebnis)
+        .arg(env!("CARGO_BIN_EXE_eqcop-store-crash-worker"))
         .spawn()
         .expect("echten C++-ControlClient starten");
     marker_abwarten(&marker);

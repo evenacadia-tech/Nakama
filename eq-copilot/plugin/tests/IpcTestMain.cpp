@@ -763,6 +763,621 @@ std::string testPipeName (const char* fall)
          + std::to_string ((int) namensFolge.fetch_add (1)) + "." + fall;
 }
 
+ServerErwartung testExeErwartung (std::uint32_t pid = 0)
+{
+    const auto exe = juce::File::getSpecialLocation (
+        juce::File::currentExecutableFile).getFullPathName();
+    return serverErwartungFuerTestdatei (std::wstring (exe.toWideCharPointer()), pid);
+}
+
+bool serverHatKeinHello (TestServer& server)
+{
+    std::lock_guard<std::mutex> l (server.textMutex);
+    return server.letztesControlHello.empty() && server.letztesTelemetryHello.empty();
+}
+
+ControlHello nak123ControlHello()
+{
+    ControlHello h;
+    h.adresse = testAdresse (hex32 ('a'));
+    return h;
+}
+
+/// Derselbe Testserver in einem zweiten Prozess. Dadurch koennen C-05/C-09
+/// einen echten Besitzer-/PID-Wechsel herstellen, ohne eine fremde Binary
+/// oder die Produktionspipe zu verwenden.
+class ChildTestServer
+{
+public:
+    explicit ChildTestServer (std::string pipe) : pipeName (std::move (pipe)) {}
+    ~ChildTestServer() { stoppen(); }
+
+    ChildTestServer (const ChildTestServer&) = delete;
+    ChildTestServer& operator= (const ChildTestServer&) = delete;
+
+    bool starten()
+    {
+        if (prozess != nullptr)
+            return false;
+        SECURITY_ATTRIBUTES vererbbar {};
+        vererbbar.nLength = sizeof (vererbbar);
+        vererbbar.bInheritHandle = TRUE;
+        HANDLE kindStdin = nullptr;
+        if (CreatePipe (&kindStdin, &stdinSchreiben, &vererbbar, 0) == FALSE)
+            return false;
+        SetHandleInformation (stdinSchreiben, HANDLE_FLAG_INHERIT, 0);
+
+        const auto exeText = juce::File::getSpecialLocation (
+            juce::File::currentExecutableFile).getFullPathName();
+        const std::wstring exe (exeText.toWideCharPointer());
+        const std::wstring pipeW (pipeName.begin(), pipeName.end());
+        std::wstring befehl = L"\"" + exe + L"\" --nak123-test-server \""
+                            + pipeW + L"\"";
+        STARTUPINFOW start {};
+        start.cb = sizeof (start);
+        start.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
+        start.wShowWindow = SW_HIDE;
+        start.hStdInput = kindStdin;
+        start.hStdOutput = GetStdHandle (STD_OUTPUT_HANDLE);
+        start.hStdError = GetStdHandle (STD_ERROR_HANDLE);
+        PROCESS_INFORMATION info {};
+        const BOOL ok = CreateProcessW (
+            exe.c_str(), befehl.data(), nullptr, nullptr, TRUE,
+            CREATE_NO_WINDOW | CREATE_UNICODE_ENVIRONMENT,
+            nullptr, nullptr, &start, &info);
+        CloseHandle (kindStdin);
+        if (ok == FALSE)
+        {
+            CloseHandle (stdinSchreiben);
+            stdinSchreiben = nullptr;
+            return false;
+        }
+        CloseHandle (info.hThread);
+        prozess = info.hProcess;
+        prozessId = info.dwProcessId;
+        return warteAuf (5000, [&] { return namedPipeErreichbar (pipeName); });
+    }
+
+    void stoppen()
+    {
+        if (prozess == nullptr)
+            return;
+        if (stdinSchreiben != nullptr)
+        {
+            DWORD geschrieben = 0;
+            const char stop[] = "STOP\n";
+            WriteFile (stdinSchreiben, stop, sizeof (stop) - 1, &geschrieben, nullptr);
+            CloseHandle (stdinSchreiben);
+            stdinSchreiben = nullptr;
+        }
+        if (WaitForSingleObject (prozess, 5000) == WAIT_TIMEOUT)
+        {
+            TerminateProcess (prozess, 91);
+            WaitForSingleObject (prozess, 5000);
+        }
+        CloseHandle (prozess);
+        prozess = nullptr;
+        prozessId = 0;
+    }
+
+    void hartBeenden()
+    {
+        if (prozess == nullptr)
+            return;
+        if (stdinSchreiben != nullptr)
+        {
+            CloseHandle (stdinSchreiben);
+            stdinSchreiben = nullptr;
+        }
+        TerminateProcess (prozess, 92);
+        WaitForSingleObject (prozess, 5000);
+        CloseHandle (prozess);
+        prozess = nullptr;
+        prozessId = 0;
+    }
+
+    std::uint32_t pid() const noexcept { return prozessId; }
+
+private:
+    std::string pipeName;
+    HANDLE prozess = nullptr;
+    HANDLE stdinSchreiben = nullptr;
+    std::uint32_t prozessId = 0;
+};
+
+int nak123TestServerMain (const std::string& pipe)
+{
+    TestServer server (pipe);
+    if (! server.starten() || ! warteAuf (5000, [&] { return namedPipeErreichbar (pipe); }))
+        return 31;
+    std::string zeile;
+    std::getline (std::cin, zeile);
+    server.stoppen();
+    return zeile == "STOP" ? 0 : 32;
+}
+
+void fehlender_broker_ist_einzige_startbedingung_auch_mit_serverauth()
+{
+    const auto pipe = testPipeName ("c01-fehlt");
+    ControlClient client ([] { return nak123ControlHello(); }, pipe);
+    client.start();
+    const bool ok = warteAuf (3000, [&] {
+        const auto s = client.snapshot();
+        return s.status == ControlClient::Status::getrennt
+            && s.brokerPipeFehlt
+            && s.serverPruefstatus == ServerPruefStatus::nichtDa
+            && s.serverPrueffehler == ServerPruefFehler::pipeFehlt
+            && s.serverPruefungen == 0;
+    });
+    client.stop();
+    pruefe (ok, "fehlender_broker_ist_einzige_startbedingung_auch_mit_serverauth");
+}
+
+void serverauth_gueltiger_pid_sid_datei_hash_und_signer_vor_hello()
+{
+    const auto pipe = testPipeName ("c02-ok");
+    TestServer server (pipe);
+    server.starten();
+    std::atomic<bool> vorHash { false }, hashFreigeben { false };
+    auto erwartung = testExeErwartung (GetCurrentProcessId());
+    erwartung.testVorFehlerErreicht = &vorHash;
+    erwartung.testFehlerFreigeben = &hashFreigeben;
+    ControlClient client ([] { return nak123ControlHello(); }, pipe,
+                          {}, {}, {}, {}, erwartung);
+    client.start();
+    const bool vorHelloGehalten = warteAuf (4000, [&] { return vorHash.load(); });
+    const auto waehrendPruefung = client.snapshot();
+    const bool nullBytesVorVerifikation = serverHatKeinHello (server)
+        && waehrendPruefung.status == ControlClient::Status::verbindet
+        && waehrendPruefung.serverPruefstatus == ServerPruefStatus::nichtGeprueft
+        && waehrendPruefung.serverPruefungen == 0;
+    hashFreigeben.store (true);
+    const bool ok = warteAuf (5000, [&] {
+        const auto s = client.snapshot();
+        std::lock_guard<std::mutex> l (server.textMutex);
+        return s.status == ControlClient::Status::verbunden
+            && s.serverPruefstatus == ServerPruefStatus::verifiziert
+            && s.serverPrueffehler == ServerPruefFehler::keiner
+            && s.serverPid == GetCurrentProcessId()
+            && s.serverPruefungen == 1
+            && ! server.letztesControlHello.empty();
+    });
+    client.stop();
+    server.stoppen();
+    pruefe (vorHelloGehalten && nullBytesVorVerifikation && ok,
+            "serverauth_gueltiger_pid_sid_datei_hash_und_signer_vor_hello");
+}
+
+void serverauth_fremde_sid_und_tokenabfragefehler_senden_null_bytes()
+{
+    const std::vector<ServerPruefFehler> faelle {
+        ServerPruefFehler::serverprozessNichtOeffnen,
+        ServerPruefFehler::serverTokenNichtOeffnen,
+        ServerPruefFehler::pluginTokenNichtOeffnen,
+        ServerPruefFehler::serverTokenUserNichtLesbar,
+        ServerPruefFehler::pluginTokenUserNichtLesbar,
+        ServerPruefFehler::serverSidUngueltig,
+        ServerPruefFehler::pluginSidUngueltig,
+        ServerPruefFehler::serverSidFalsch,
+    };
+    bool alle = true;
+    for (const auto fehlerkante : faelle)
+    {
+        const auto pipe = testPipeName (serverPruefFehlerName (fehlerkante));
+        TestServer server (pipe);
+        server.starten();
+        auto erwartung = testExeErwartung (GetCurrentProcessId());
+        erwartung.testFehler = fehlerkante;
+        ControlClient client ([] { return nak123ControlHello(); }, pipe,
+                              {}, {}, {}, {}, erwartung);
+        client.start();
+        const bool fiel = warteAuf (3000, [&] {
+            const auto s = client.snapshot();
+            return s.status == ControlClient::Status::getrennt
+                && ! s.brokerPipeFehlt
+                && s.serverPruefstatus == ServerPruefStatus::belegtAberUnverifiziert
+                && s.serverPrueffehler == fehlerkante
+                && s.serverPruefungen == 1;
+        });
+        const auto versucheNachFehler = client.snapshot().verbindungsVersuche;
+        std::this_thread::sleep_for (std::chrono::milliseconds (600));
+        const auto danach = client.snapshot();
+        alle = alle && fiel && serverHatKeinHello (server)
+             && danach.verbindungsVersuche == versucheNachFehler
+             && danach.p0Gesendet == 0 && danach.p1Gesendet == 0;
+        client.stop();
+        server.stoppen();
+    }
+    pruefe (alle, "serverauth_fremde_sid_und_tokenabfragefehler_senden_null_bytes");
+}
+
+void serverauth_bild_dateiid_hash_signatur_und_signer_fail_closed()
+{
+    const std::vector<ServerPruefFehler> faelle {
+        ServerPruefFehler::prozessbildNichtErmittelbar,
+        ServerPruefFehler::prozessbildNichtOeffnen,
+        ServerPruefFehler::erwarteteDateiNichtOeffnen,
+        ServerPruefFehler::dateiidentitaetFalsch,
+        ServerPruefFehler::hashFalsch,
+        ServerPruefFehler::signaturFehltOderUngueltig,
+        ServerPruefFehler::signerFalsch,
+    };
+    bool alle = true;
+    for (const auto fehlerkante : faelle)
+    {
+        const auto pipe = testPipeName (serverPruefFehlerName (fehlerkante));
+        TestServer server (pipe);
+        server.starten();
+        auto erwartung = testExeErwartung (GetCurrentProcessId());
+        erwartung.testFehler = fehlerkante;
+        ControlClient client ([] { return nak123ControlHello(); }, pipe,
+                              {}, {}, {}, {}, erwartung);
+        client.start();
+        const bool fiel = warteAuf (3000, [&] {
+            const auto s = client.snapshot();
+            return s.serverPruefstatus == ServerPruefStatus::belegtAberUnverifiziert
+                && s.serverPrueffehler == fehlerkante
+                && s.serverPruefungen == 1;
+        });
+        alle = alle && fiel && serverHatKeinHello (server);
+        client.stop();
+        server.stoppen();
+    }
+    pruefe (alle, "serverauth_bild_dateiid_hash_signatur_und_signer_fail_closed");
+}
+
+void waitnamedpipe_toctou_wird_am_verbundenen_handle_erkannt()
+{
+    const auto pipe = testPipeName ("c05-toctou");
+    ChildTestServer erster (pipe);
+    const bool ersterDa = erster.starten() && namedPipeErreichbar (pipe);
+    const auto alterPid = erster.pid();
+    erster.stoppen();
+
+    TestServer neuer (pipe);
+    neuer.starten();
+    ControlClient client ([] { return nak123ControlHello(); }, pipe,
+                          {}, {}, {}, {}, testExeErwartung (alterPid));
+    client.start();
+    const bool erkannt = warteAuf (4000, [&] {
+        const auto s = client.snapshot();
+        return s.serverPrueffehler == ServerPruefFehler::serverPidFalsch
+            && s.serverPid == GetCurrentProcessId()
+            && s.serverPruefungen == 1;
+    });
+    const bool keinHello = serverHatKeinHello (neuer);
+    client.stop();
+    neuer.stoppen();
+    pruefe (ersterDa && alterPid != GetCurrentProcessId() && erkannt && keinHello,
+            "waitnamedpipe_toctou_wird_am_verbundenen_handle_erkannt");
+}
+
+void control_und_telemetry_authentisieren_jedes_handle()
+{
+    const auto pipe = testPipeName ("c06-beide");
+    TestServer server (pipe);
+    server.starten();
+    ControlClient control ([] { return nak123ControlHello(); }, pipe);
+    control.start();
+    const bool controlDa = warteAuf (5000, [&] {
+        return control.snapshot().status == ControlClient::Status::verbunden;
+    });
+    TelemetryClient telemetry ([&] {
+        TelemetryHello h;
+        h.adresse = testAdresse (hex32 ('a'));
+        const auto c = control.snapshot();
+        h.linkId = c.linkId;
+        h.challenge = c.challenge;
+        return h;
+    }, pipe);
+    telemetry.start();
+    const bool telemetryDa = warteAuf (5000, [&] {
+        return telemetry.snapshot().status == TelemetryClient::Status::verbunden;
+    });
+    const auto c = control.snapshot();
+    const auto t = telemetry.snapshot();
+    bool beideHello = false;
+    {
+        std::lock_guard<std::mutex> l (server.textMutex);
+        beideHello = ! server.letztesControlHello.empty()
+                 && ! server.letztesTelemetryHello.empty();
+    }
+    telemetry.stop();
+    control.stop();
+    server.stoppen();
+    pruefe (controlDa && telemetryDa && beideHello
+                && c.serverPruefstatus == ServerPruefStatus::verifiziert
+                && t.serverPruefstatus == ServerPruefStatus::verifiziert
+                && c.serverPruefungen == 1 && t.serverPruefungen == 1,
+            "control_und_telemetry_authentisieren_jedes_handle");
+}
+
+void vorhandene_pipe_wird_nur_mit_dem_authentisierten_handle_uebernommen()
+{
+    const auto pipe = testPipeName ("c07-tristate");
+    TestServer server (pipe);
+    server.starten();
+    std::atomic<ServerPruefStatus> status { ServerPruefStatus::nichtDa };
+    std::atomic<bool> staleVerbunden { false };
+    int reconnects = 0, spawns = 0;
+    BrokerLifecycleHooks hooks;
+    hooks.verbunden = [&] { return staleVerbunden.load(); };
+    hooks.connectFehlgeschlagen = [] { return true; };
+    hooks.serverPruefstatus = [&] { return status.load(); };
+    hooks.darfStarten = [] { return true; };
+    hooks.reconnect = [&] { ++reconnects; };
+    hooks.pruefen = [] { return BrokerPruefBericht {}; };
+    hooks.spawn = [&] { ++spawns; return true; };
+    hooks.mutexName = L"Local\\Nakama.NAK123.C07.ok."
+                    + std::to_wstring (GetCurrentProcessId());
+    hooks.pipeName = pipe;
+    BrokerLifecycle lifecycle (std::move (hooks));
+    lifecycle.tickFuerTest (0);
+    const auto wartend = lifecycle.snapshot();
+    status.store (ServerPruefStatus::verifiziert);
+    lifecycle.tickFuerTest (1);
+    const auto fertig = lifecycle.snapshot();
+    const bool ok = reconnects == 1 && spawns == 0
+                 && wartend.wartetAufServerpruefung
+                 && ! fertig.wartetAufServerpruefung
+                 && ! fertig.serverNichtVerifiziert
+                 && fertig.letzterServerPruefstatus == ServerPruefStatus::verifiziert;
+    server.stoppen();
+    pruefe (ok, "vorhandene_pipe_wird_nur_mit_dem_authentisierten_handle_uebernommen");
+}
+
+void unverifizierte_belegte_pipe_spawnt_und_reconnectet_nicht()
+{
+    const auto pipe = testPipeName ("c07-block");
+    TestServer server (pipe);
+    server.starten();
+    std::atomic<ServerPruefStatus> status { ServerPruefStatus::nichtDa };
+    std::atomic<bool> staleVerbunden { false };
+    int reconnects = 0, spawns = 0;
+    BrokerLifecycleHooks hooks;
+    hooks.verbunden = [&] { return staleVerbunden.load(); };
+    hooks.connectFehlgeschlagen = [] { return true; };
+    hooks.serverPruefstatus = [&] { return status.load(); };
+    hooks.darfStarten = [] { return true; };
+    hooks.reconnect = [&] { ++reconnects; };
+    hooks.pruefen = [] { return BrokerPruefBericht {}; };
+    hooks.spawn = [&] { ++spawns; return true; };
+    hooks.mutexName = L"Local\\Nakama.NAK123.C07.block."
+                    + std::to_wstring (GetCurrentProcessId());
+    hooks.pipeName = pipe;
+    BrokerLifecycle lifecycle (std::move (hooks));
+    lifecycle.tickFuerTest (0);
+    staleVerbunden.store (true);
+    status.store (ServerPruefStatus::belegtAberUnverifiziert);
+    lifecycle.tickFuerTest (1);
+    lifecycle.tickFuerTest (1000);
+    const auto s = lifecycle.snapshot();
+    const bool ok = reconnects == 1 && spawns == 0
+                 && s.serverNichtVerifiziert && ! s.wartetAufBereit
+                 && ! s.wartetAufServerpruefung
+                 && s.letzterServerPruefstatus
+                        == ServerPruefStatus::belegtAberUnverifiziert;
+    server.stoppen();
+    pruefe (ok, "unverifizierte_belegte_pipe_spawnt_und_reconnectet_nicht");
+    pruefe (ok, "vorhandene_fremdpipe_wird_nicht_adoptiert");
+}
+
+void spawn_pid_ersetzt_serverauth_nicht_und_fremdpipe_im_bereitfenster_faellt()
+{
+    const auto pipe = testPipeName ("c08-spawn");
+    ControlClient control ([] { return nak123ControlHello(); }, pipe);
+    control.start();
+    const bool fehlt = warteAuf (3000, [&] {
+        return control.snapshot().serverPruefstatus == ServerPruefStatus::nichtDa;
+    });
+    std::unique_ptr<ChildTestServer> kind;
+    int spawns = 0;
+    BrokerLifecycleHooks hooks;
+    hooks.verbunden = [&] {
+        return control.snapshot().status == ControlClient::Status::verbunden;
+    };
+    hooks.connectFehlgeschlagen = [&] { return control.snapshot().brokerPipeFehlt; };
+    hooks.serverPruefstatus = [&] { return control.snapshot().serverPruefstatus; };
+    hooks.darfStarten = [] { return true; };
+    hooks.reconnect = [&] { control.reconnect(); };
+    hooks.pruefen = [] { return BrokerPruefBericht {}; };
+    hooks.spawn = [&] {
+        ++spawns;
+        kind = std::make_unique<ChildTestServer> (pipe);
+        return kind->starten();
+    };
+    hooks.mutexName = L"Local\\Nakama.NAK123.C08."
+                    + std::to_wstring (GetCurrentProcessId());
+    hooks.pipeName = pipe;
+    BrokerLifecycle lifecycle (std::move (hooks));
+    lifecycle.tickFuerTest (0);
+    lifecycle.tickFuerTest (SPAWN_CONNECT_BACKOFF_START_MS);
+    const bool fiel = warteAuf (5000, [&] {
+        const auto s = control.snapshot();
+        return s.serverPruefstatus == ServerPruefStatus::belegtAberUnverifiziert
+            && s.serverPrueffehler == ServerPruefFehler::serverPidFalsch
+            && s.serverPruefungen == 1;
+    });
+    lifecycle.tickFuerTest (SPAWN_CONNECT_BACKOFF_START_MS + 1);
+    const auto ls = lifecycle.snapshot();
+    const auto cs = control.snapshot();
+    const bool ok = fehlt && spawns == 1 && fiel
+                 && ls.serverNichtVerifiziert && ! ls.wartetAufBereit
+                 && cs.status == ControlClient::Status::getrennt
+                 && cs.p0Gesendet == 0 && cs.p1Gesendet == 0;
+    control.stop();
+    if (kind != nullptr)
+        kind->stoppen();
+    pruefe (ok, "spawn_pid_ersetzt_serverauth_nicht_und_fremdpipe_im_bereitfenster_faellt");
+}
+
+void reconnect_prueft_pid_sid_und_bild_ohne_altfreigabe()
+{
+    const auto pipe = testPipeName ("c09-reconnect");
+    ChildTestServer erster (pipe);
+    const bool startA = erster.starten();
+    ControlClient control ([] { return nak123ControlHello(); }, pipe,
+                           {}, {}, {}, {}, testExeErwartung());
+    control.start();
+    const bool a = warteAuf (5000, [&] {
+        const auto s = control.snapshot();
+        return s.status == ControlClient::Status::verbunden
+            && s.serverPid == erster.pid() && s.serverPruefungen == 1;
+    });
+    const auto pidA = erster.pid();
+    erster.stoppen();
+    ChildTestServer zweiter (pipe);
+    const bool startB = zweiter.starten();
+    control.reconnect();
+    const bool b = warteAuf (5000, [&] {
+        const auto s = control.snapshot();
+        return s.status == ControlClient::Status::verbunden
+            && s.serverPid == zweiter.pid() && s.serverPruefungen >= 2;
+    });
+    const auto nachher = control.snapshot();
+    control.stop();
+    zweiter.stoppen();
+    const bool pidUndBildNeu = startA && startB && a && b
+        && pidA != nachher.serverPid
+        && nachher.serverPruefstatus == ServerPruefStatus::verifiziert;
+
+    // Das PID-Bein oben beweist den neuen Prozess. Diese zweite, am Hash-
+    // Abschluss arretierte Verbindung misst die Byte-Reihenfolge selbst:
+    // Auch beim Reconnect sieht der neue Server vor seiner eigenen C-02-
+    // Freigabe kein Hello und damit auch keinen wartenden P0/P1-Frame.
+    const auto ordnungsPipe = testPipeName ("c09-reconnect-order");
+    std::atomic<bool> vorHash { false }, hashFreigeben { true };
+    auto erwartung = testExeErwartung (GetCurrentProcessId());
+    erwartung.testVorFehlerErreicht = &vorHash;
+    erwartung.testFehlerFreigeben = &hashFreigeben;
+    TestServer ordnungA (ordnungsPipe);
+    ordnungA.starten();
+    ControlClient ordnungsClient ([] { return nak123ControlHello(); }, ordnungsPipe,
+                                  {}, {}, {}, {}, erwartung);
+    ordnungsClient.start();
+    const bool ordnungAStand = warteAuf (5000, [&] {
+        return ordnungsClient.snapshot().status == ControlClient::Status::verbunden;
+    });
+    hashFreigeben.store (false);
+    vorHash.store (false);
+    ordnungA.stoppen();
+    ordnungsClient.reconnect();
+    TestServer ordnungB (ordnungsPipe);
+    ordnungB.starten();
+    const bool reconnectInPruefung = warteAuf (5000, [&] { return vorHash.load(); });
+    const auto vorFreigabe = ordnungsClient.snapshot();
+    const bool reconnectNullBytes = serverHatKeinHello (ordnungB)
+        && vorFreigabe.status == ControlClient::Status::verbindet
+        && vorFreigabe.serverPruefstatus == ServerPruefStatus::nichtGeprueft;
+    hashFreigeben.store (true);
+    const bool ordnungBStand = warteAuf (5000, [&] {
+        const auto s = ordnungsClient.snapshot();
+        std::lock_guard<std::mutex> l (ordnungB.textMutex);
+        return s.status == ControlClient::Status::verbunden
+            && s.serverPruefstatus == ServerPruefStatus::verifiziert
+            && s.serverPruefungen >= 2
+            && ! ordnungB.letztesControlHello.empty();
+    });
+    ordnungsClient.stop();
+    ordnungB.stoppen();
+
+    // Reconnect waehrend der Pruefung: Das Ergebnis der alten Generation
+    // darf weder gezaehlt noch als Sicherheitsstatus veroeffentlicht werden.
+    // Die zweite Generation prueft denselben Handletyp erneut und liefert
+    // genau EINE sichtbare (hier absichtlich negative) Entscheidung.
+    const auto stalePipe = testPipeName ("c09-stale-auth");
+    std::atomic<bool> staleVorHash { false }, staleFreigeben { false };
+    auto staleErwartung = testExeErwartung (GetCurrentProcessId());
+    staleErwartung.testFehler = ServerPruefFehler::hashFalsch;
+    staleErwartung.testVorFehlerErreicht = &staleVorHash;
+    staleErwartung.testFehlerFreigeben = &staleFreigeben;
+    TestServer staleServer (stalePipe);
+    staleServer.starten();
+    ControlClient staleClient ([] { return nak123ControlHello(); }, stalePipe,
+                               {}, {}, {}, {}, staleErwartung);
+    staleClient.start();
+    const bool altePruefungHaelt = warteAuf (5000, [&] { return staleVorHash.load(); });
+    staleClient.reconnect();
+    staleFreigeben.store (true);
+    const bool nurNeueGenerationSichtbar = warteAuf (5000, [&] {
+        const auto s = staleClient.snapshot();
+        return s.serverPruefstatus == ServerPruefStatus::belegtAberUnverifiziert
+            && s.serverPrueffehler == ServerPruefFehler::hashFalsch
+            && s.serverPruefungen == 1 && s.verbindungsVersuche >= 2;
+    });
+    const bool staleNullBytes = serverHatKeinHello (staleServer);
+    staleClient.stop();
+    staleServer.stoppen();
+
+    const bool ok = pidUndBildNeu && ordnungAStand && reconnectInPruefung
+                 && reconnectNullBytes && ordnungBStand && altePruefungHaelt
+                 && nurNeueGenerationSichtbar && staleNullBytes;
+    pruefe (ok, "reconnect_prueft_pid_sid_und_bild_ohne_altfreigabe");
+    pruefe (ok, "reconnect_sendet_erst_nach_neuer_serverauth");
+}
+
+bool gepinnte_serverauth_verweigert_besitzer_nach_ende (const char* fall,
+                                                        bool harterCrash)
+{
+    const auto pipe = testPipeName (fall);
+    ChildTestServer erster (pipe);
+    const bool startA = erster.starten();
+    const auto pidA = erster.pid();
+    ControlClient control ([] { return nak123ControlHello(); }, pipe,
+                           {}, {}, {}, {}, testExeErwartung (pidA));
+    control.start();
+    const bool a = warteAuf (5000, [&] {
+        return control.snapshot().status == ControlClient::Status::verbunden;
+    });
+    if (harterCrash)
+        erster.hartBeenden();
+    else
+        erster.stoppen();
+    ChildTestServer zweiter (pipe);
+    const bool startB = zweiter.starten();
+    const auto pidB = zweiter.pid();
+    control.reconnect();
+    const bool verweigert = warteAuf (5000, [&] {
+        const auto s = control.snapshot();
+        return s.serverPruefstatus == ServerPruefStatus::belegtAberUnverifiziert
+            && s.serverPrueffehler == ServerPruefFehler::serverPidFalsch
+            && s.serverPid == zweiter.pid() && s.serverPruefungen >= 2;
+    });
+    control.stop();
+    zweiter.stoppen();
+    return startA && startB && a && pidA != pidB && verweigert;
+}
+
+void serverauth_nach_brokercrash_verweigert_pidwechsel_und_fremdbild()
+{
+    const bool pidWechsel = gepinnte_serverauth_verweigert_besitzer_nach_ende (
+        "a07-crash-pid", true);
+    const auto pipe = testPipeName ("a07-fremdbild");
+    TestServer fremdbild (pipe);
+    fremdbild.starten();
+    auto erwartung = testExeErwartung (GetCurrentProcessId());
+    erwartung.testFehler = ServerPruefFehler::dateiidentitaetFalsch;
+    ControlClient control ([] { return nak123ControlHello(); }, pipe,
+                           {}, {}, {}, {}, erwartung);
+    control.start();
+    const bool bildVerweigert = warteAuf (4000, [&] {
+        const auto s = control.snapshot();
+        return s.serverPrueffehler == ServerPruefFehler::dateiidentitaetFalsch
+            && s.serverPruefstatus == ServerPruefStatus::belegtAberUnverifiziert;
+    }) && serverHatKeinHello (fremdbild);
+    control.stop();
+    fremdbild.stoppen();
+    pruefe (pidWechsel && bildVerweigert,
+            "serverauth_nach_brokercrash_verweigert_pidwechsel_und_fremdbild");
+}
+
+void serverauth_nach_idle_exit_verweigert_fremde_pipe()
+{
+    pruefe (gepinnte_serverauth_verweigert_besitzer_nach_ende (
+                "a06-idle-pid", false),
+            "serverauth_nach_idle_exit_verweigert_fremde_pipe");
+}
+
 //==============================================================================
 juce::File wurzel()
 {
@@ -810,10 +1425,16 @@ struct WandernderVerbraucher
 
 int phaseBCommandClientMain (const std::string& pipeName,
                              const std::string& commandId,
-                             const std::string& erwartetesErgebnis)
+                             const std::string& erwartetesErgebnis,
+                             const std::string& serverBildUtf8)
 {
     if (! istHex32 (commandId))
         return 20;
+    const juce::String serverBildText = juce::String::fromUTF8 (serverBildUtf8.c_str());
+    const std::wstring serverBild (serverBildText.toWideCharPointer());
+    const auto serverErwartung = serverErwartungFuerTestdatei (serverBild);
+    if (serverErwartung.absoluterBrokerPfad.empty())
+        return 23;
     std::mutex ackMutex;
     std::string letztesAck;
     ControlClient control ([&] {
@@ -826,7 +1447,7 @@ int phaseBCommandClientMain (const std::string& pipeName,
             std::lock_guard<std::mutex> l (ackMutex);
             letztesAck = antwort;
         }
-    });
+    }, {}, {}, {}, serverErwartung);
     control.start();
     const bool verbunden = warteAuf (10000, [&] {
         return control.snapshot().status == ControlClient::Status::verbunden;
@@ -895,8 +1516,10 @@ int phaseBBinaryVerifyMain (const std::string& pfadUtf8,
 //==============================================================================
 int main (int argc, char** argv)
 {
-    if (argc == 5 && std::string (argv[1]) == "--phase-b-command-client")
-        return phaseBCommandClientMain (argv[2], argv[3], argv[4]);
+    if (argc == 3 && std::string (argv[1]) == "--nak123-test-server")
+        return nak123TestServerMain (argv[2]);
+    if (argc == 6 && std::string (argv[1]) == "--phase-b-command-client")
+        return phaseBCommandClientMain (argv[2], argv[3], argv[4], argv[5]);
     if (argc == 6 && std::string (argv[1]) == "--phase-b-verify-binary")
         return phaseBBinaryVerifyMain (argv[2], argv[3], argv[4], argv[5]);
 
@@ -3399,6 +4022,19 @@ int main (int argc, char** argv)
 
     abschnitt ("J · Phase B: Broker-Autostart und Signaturkette");
     {
+        fehlender_broker_ist_einzige_startbedingung_auch_mit_serverauth();
+        serverauth_gueltiger_pid_sid_datei_hash_und_signer_vor_hello();
+        serverauth_fremde_sid_und_tokenabfragefehler_senden_null_bytes();
+        serverauth_bild_dateiid_hash_signatur_und_signer_fail_closed();
+        waitnamedpipe_toctou_wird_am_verbundenen_handle_erkannt();
+        control_und_telemetry_authentisieren_jedes_handle();
+        vorhandene_pipe_wird_nur_mit_dem_authentisierten_handle_uebernommen();
+        unverifizierte_belegte_pipe_spawnt_und_reconnectet_nicht();
+        spawn_pid_ersetzt_serverauth_nicht_und_fremdpipe_im_bereitfenster_faellt();
+        reconnect_prueft_pid_sid_und_bild_ohne_altfreigabe();
+        serverauth_nach_brokercrash_verweigert_pidwechsel_und_fremdbild();
+        serverauth_nach_idle_exit_verweigert_fremde_pipe();
+
         pruefe (! spawnRetryFaellig (SPAWN_CONNECT_BACKOFF_START_MS - 1)
                     && spawnRetryFaellig (SPAWN_CONNECT_BACKOFF_START_MS)
                     && ! spawnBereitTimeoutAbgelaufen (SPAWN_BEREIT_TIMEOUT_MS - 1)
@@ -3727,7 +4363,8 @@ int main (int argc, char** argv)
                     ControlHello h;
                     h.adresse = testAdresse (hex32 ('a'));
                     return h;
-                }, pipe);
+                }, pipe, {}, {}, {}, {},
+                serverErwartungFuerTestdatei (exe, fremd.dwProcessId));
                 client.start();
                 realVerbunden = warteAuf (6000, [&] {
                     return client.snapshot().status == ControlClient::Status::verbunden;

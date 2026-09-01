@@ -23,6 +23,7 @@
 #include <atomic>
 #include <chrono>
 #include <cstring>
+#include <filesystem>
 #include <iostream>
 #include <memory>
 #include <mutex>
@@ -83,6 +84,14 @@ int main (int argc, char** argv)
     }
     const int sonden   = argc > 2 ? std::atoi (argv[2]) : 32;
     const int sekunden = argc > 3 ? std::atoi (argv[3]) : 8;
+    const auto brokerPfad = std::filesystem::absolute (
+        std::filesystem::path (L"broker/target/release/eqcop-broker-v3probe.exe"));
+    const auto serverErwartung = serverErwartungFuerTestdatei (brokerPfad.wstring());
+    if (serverErwartung.absoluterBrokerPfad.empty())
+    {
+        std::cerr << "VORAUSSETZUNG FEHLT: Broker-Testimage nicht hashbar" << std::endl;
+        return 3;
+    }
 
     std::cout << "SONDE-010 | Lastbein: " << sonden << " Sonden, " << sekunden
               << " s, Pipe " << pipe << std::endl;
@@ -129,7 +138,11 @@ int main (int argc, char** argv)
                     std::chrono::duration_cast<std::chrono::milliseconds> (
                         jetzt - roh->gesendet[seq]).count());
                 roh->beantwortet.fetch_add (1);
-            });
+            },
+            std::function<ControlStatus()> {},
+            std::function<void (bool)> {},
+            std::function<void (const std::string&, std::uint8_t)> {},
+            serverErwartung);
 
         s->telemetrie = std::make_unique<TelemetryClient> (
             [roh, a] {
@@ -141,7 +154,9 @@ int main (int argc, char** argv)
                 t.challenge = c;
                 return t;
             },
-            pipe);
+            pipe,
+            std::function<void (const std::uint8_t*, std::size_t, std::uint8_t)> {},
+            serverErwartung);
 
         alle.push_back (std::move (s));
     }

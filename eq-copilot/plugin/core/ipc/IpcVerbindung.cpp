@@ -41,10 +41,14 @@ bool IpcVerbindung::offen() const noexcept
     return handle != nullptr;
 }
 
-bool IpcVerbindung::oeffnen (const std::string& pipeName, std::string& fehler)
+bool IpcVerbindung::oeffnen (const std::string& pipeName,
+                             const ServerErwartung& erwartung,
+                             ServerPruefBericht& bericht,
+                             std::string& fehler)
 {
     schliessen();
     abbruch.store (false);
+    bericht = {};
 
     // Pipenamen sind reines ASCII (Praefix plus Base32-Token bzw. Probename).
     std::wstring breit;
@@ -85,7 +89,26 @@ bool IpcVerbindung::oeffnen (const std::string& pipeName, std::string& fehler)
     }
     if (h == INVALID_HANDLE_VALUE)
     {
+        bericht.status = letzterFehler == ERROR_FILE_NOT_FOUND
+            ? ServerPruefStatus::nichtDa
+            : ServerPruefStatus::belegtAberUnverifiziert;
+        bericht.fehler = letzterFehler == ERROR_FILE_NOT_FOUND
+            ? ServerPruefFehler::pipeFehlt : ServerPruefFehler::pipeOeffnen;
+        bericht.win32Fehler = letzterFehler;
         fehler = "Broker nicht erreichbar (Win32 " + std::to_string ((int) letzterFehler) + ")";
+        return false;
+    }
+
+    // NAK-123/C: Das lokale HANDLE bleibt bis zum VOLLSTAENDIGEN Serverbeweis
+    // ausschliesslich in dieser Funktion. Insbesondere wird vor diesem Aufruf
+    // weder ein Hello geschrieben noch der Handle unter `handleMutex`
+    // veroeffentlicht.
+    bericht = namedPipeServerAuthentisieren (h, erwartung);
+    if (! bericht.ok())
+    {
+        fehler = std::string ("Server nicht verifiziert: ")
+               + serverPruefFehlerName (bericht.fehler);
+        CloseHandle (h);
         return false;
     }
 
@@ -94,6 +117,7 @@ bool IpcVerbindung::oeffnen (const std::string& pipeName, std::string& fehler)
     {
         fehler = "CreateEvent Win32 " + std::to_string ((int) GetLastError());
         CloseHandle (h);
+        bericht.status = ServerPruefStatus::nichtGeprueft;
         return false;
     }
 

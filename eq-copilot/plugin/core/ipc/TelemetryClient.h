@@ -68,6 +68,10 @@ public:
     {
         Status        status = Status::getrennt;
         std::string   letzterFehler;
+        ServerPruefStatus serverPruefstatus = ServerPruefStatus::nichtGeprueft;
+        ServerPruefFehler serverPrueffehler = ServerPruefFehler::keiner;
+        std::uint32_t serverPid = 0;
+        std::uint64_t serverPruefungen = 0;
         int           verbindungsVersuche = 0;
         std::uint64_t gesendet = 0;
         std::uint64_t ersetzt = 0;      ///< aelteste ungesendete Frames (Cap 2)
@@ -100,7 +104,8 @@ public:
     TelemetryClient (std::function<TelemetryHello()> helloProvider,
                      std::string pipeName,
                      std::function<void (const std::uint8_t*, std::size_t,
-                                         std::uint8_t schemaMinor)> beiFrame = {});
+                                         std::uint8_t schemaMinor)> beiFrame = {},
+                     ServerErwartung serverErwartung = serverErwartungFuerEigenprozessTest());
     ~TelemetryClient();
 
     TelemetryClient (const TelemetryClient&) = delete;

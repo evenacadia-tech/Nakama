@@ -39,6 +39,7 @@ public:
     {
         keine,
         brokerUnavailable,
+        serverUnverified,
         authenticating,
         confirmationRequired,
         incompatible,

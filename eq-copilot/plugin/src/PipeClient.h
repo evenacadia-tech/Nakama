@@ -10,6 +10,8 @@
 // Probe EqCopPipeProbe denselben Code gegen den Broker fährt wie das Plugin.
 #pragma once
 
+#include "IpcVerbindung.h"
+
 #include <juce_core/juce_core.h>
 #include <atomic>
 #include <chrono>
@@ -87,6 +89,12 @@ public:
         juce::String brokerVersion;
         juce::String sessionToken;
         juce::String letzterFehler;
+        nakama::ipc::ServerPruefStatus serverPruefstatus
+            = nakama::ipc::ServerPruefStatus::nichtGeprueft;
+        nakama::ipc::ServerPruefFehler serverPrueffehler
+            = nakama::ipc::ServerPruefFehler::keiner;
+        std::uint32_t serverPid = 0;
+        std::uint64_t serverPruefungen = 0;
         int          verbindungsVersuche = 0;
         juce::int64  heartbeatsGesendet  = 0;
         juce::int64  heartbeatsBestaetigt = 0;
@@ -108,7 +116,9 @@ public:
                 std::function<StatsSnapshot()> statsProvider,
                 std::function<MessKompakt()> messProvider = {},
                 const juce::String& pipeName = {},
-                std::chrono::milliseconds ioTimeout = std::chrono::milliseconds { 5000 });
+                std::chrono::milliseconds ioTimeout = std::chrono::milliseconds { 5000 },
+                nakama::ipc::ServerErwartung serverErwartung
+                    = nakama::ipc::serverErwartungFuerEigenprozessTest());
     ~PipeClient();
 
     void start();
@@ -139,6 +149,7 @@ private:
     std::function<MessKompakt()>   messProvider;
     juce::String                   pipeName;
     const std::chrono::milliseconds ioTimeout;
+    const nakama::ipc::ServerErwartung serverErwartung;
 
     std::mutex              lebenslaufMutex;
     std::thread             thread;

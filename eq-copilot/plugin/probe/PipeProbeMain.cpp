@@ -9,6 +9,7 @@
 //   eqcop-pipe-probe.exe [pipe-name] [sekunden]
 #include "PipeClient.h"
 #include "EqCopilotIds.h"
+#include "BrokerInstallBinding.h"
 #include <cmath>
 #include <iostream>
 #include <limits>
@@ -51,7 +52,11 @@ static std::unique_ptr<eqcop::PipeClient> baueClient (const juce::String& sensor
             return s;
         },
         [] { return probeMessung(); },
-        pipeName);
+        pipeName, std::chrono::milliseconds { 5000 },
+        nakama::ipc::ServerErwartung {
+            nakama::ipc::installbindung::brokerPfad,
+            nakama::ipc::installbindung::brokerSha256,
+            nakama::ipc::installbindung::authenticodeThumbprint });
 }
 
 template <typename Bedingung>

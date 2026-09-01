@@ -160,10 +160,11 @@ bool featureFrameAlsFlatbuffer (const analyse::FeatureFrame& frame,
 struct TelemetryClient::Laufzeit
 {
     Laufzeit (std::function<TelemetryHello()> hp, std::string pn,
-              std::function<void (const std::uint8_t*, std::size_t,
-                                  std::uint8_t)> bf)
+               std::function<void (const std::uint8_t*, std::size_t,
+                                   std::uint8_t)> bf,
+               ServerErwartung se)
         : helloProvider (std::move (hp)), beiFrame (std::move (bf)),
-          pipeName (std::move (pn)) {}
+          pipeName (std::move (pn)), serverErwartung (std::move (se)) {}
 
     void threadLauf (std::uint64_t meinLauf, std::shared_ptr<IpcVerbindung> meine);
     bool eineVerbindung (std::uint64_t generation, std::uint64_t meinLauf,
@@ -181,6 +182,7 @@ struct TelemetryClient::Laufzeit
     std::function<TelemetryHello()> helloProvider;
     std::function<void (const std::uint8_t*, std::size_t, std::uint8_t)> beiFrame;
     std::string pipeName;
+    ServerErwartung serverErwartung;
 
     /// Die Verbindung des LAUFENDEN Laufs — wortgleich zum `ControlClient`
     /// (`B-TC-07`, NAK-104): ein abgeloester Lauf darf die Pipe eines
@@ -228,10 +230,12 @@ struct TelemetryClient::Laufzeit
 TelemetryClient::TelemetryClient (std::function<TelemetryHello()> helloProviderIn,
                                   std::string pipeNameIn,
                                   std::function<void (const std::uint8_t*, std::size_t,
-                                                      std::uint8_t)> beiFrameIn)
+                                                      std::uint8_t)> beiFrameIn,
+                                  ServerErwartung serverErwartungIn)
     : k (std::make_shared<Laufzeit> (std::move (helloProviderIn),
                                      std::move (pipeNameIn),
-                                     std::move (beiFrameIn)))
+                                     std::move (beiFrameIn),
+                                     std::move (serverErwartungIn)))
 {
 }
 
@@ -278,6 +282,9 @@ void TelemetryClient::stop()
         verbindung->schliessen();
         std::lock_guard<std::mutex> z (k->zustandMutex);
         k->zustand.status = Status::getrennt;
+        k->zustand.serverPruefstatus = ServerPruefStatus::nichtGeprueft;
+        k->zustand.serverPrueffehler = ServerPruefFehler::keiner;
+        k->zustand.serverPid = 0;
         return;
     }
 
@@ -291,6 +298,9 @@ void TelemetryClient::stop()
                 std::lock_guard<std::mutex> z (k->zustandMutex);
                 ++k->zustand.stopFristUeberschritten;
                 k->zustand.status = Status::getrennt;
+                k->zustand.serverPruefstatus = ServerPruefStatus::nichtGeprueft;
+                k->zustand.serverPrueffehler = ServerPruefFehler::keiner;
+                k->zustand.serverPid = 0;
             }
             thread.detach();
             return;
@@ -301,11 +311,23 @@ void TelemetryClient::stop()
     verbindung->schliessen();
     std::lock_guard<std::mutex> z (k->zustandMutex);
     k->zustand.status = Status::getrennt;
+    k->zustand.serverPruefstatus = ServerPruefStatus::nichtGeprueft;
+    k->zustand.serverPrueffehler = ServerPruefFehler::keiner;
+    k->zustand.serverPid = 0;
 }
 
 void TelemetryClient::reconnect()
 {
-    k->verbindungsGeneration.fetch_add (1);
+    {
+        std::lock_guard<std::mutex> z (k->zustandMutex);
+        // Die Generation wechselt unter derselben Sperre wie der sichtbare
+        // Auth-Zustand; ein alter Prueflauf kann den Reset damit nicht spaeter
+        // wieder ueberschreiben.
+        k->verbindungsGeneration.fetch_add (1);
+        k->zustand.serverPruefstatus = ServerPruefStatus::nichtGeprueft;
+        k->zustand.serverPrueffehler = ServerPruefFehler::keiner;
+        k->zustand.serverPid = 0;
+    }
     k->aktuelleVerbindung()->ioAbbrechen();
     k->warte.notify_all();
 }
@@ -381,6 +403,23 @@ void TelemetryClient::Laufzeit::threadLauf (std::uint64_t meinLauf,
             break;
         if (stand)
             backoffMs = kBackoffStartMs;
+
+        bool authBlockiert = false;
+        {
+            std::lock_guard<std::mutex> z (zustandMutex);
+            authBlockiert = zustand.serverPruefstatus
+                         == ServerPruefStatus::belegtAberUnverifiziert;
+        }
+        if (authBlockiert)
+        {
+            std::unique_lock<std::mutex> l (wartemutex);
+            warte.wait (l, [this, generation] {
+                return ! laeuft.load()
+                    || verbindungsGeneration.load() != generation;
+            });
+            backoffMs = kBackoffStartMs;
+            continue;
+        }
 
         {
             std::unique_lock<std::mutex> l (wartemutex);
@@ -483,27 +522,66 @@ bool TelemetryClient::Laufzeit::eineVerbindung (std::uint64_t generation,
 {
     {
         std::lock_guard<std::mutex> l (zustandMutex);
+        if (sollAbbrechen (generation))
+            return false;
         zustand.status = Status::verbindet;
+        zustand.serverPruefstatus = ServerPruefStatus::nichtGeprueft;
+        zustand.serverPrueffehler = ServerPruefFehler::keiner;
+        zustand.serverPid = 0;
         ++zustand.verbindungsVersuche;
     }
 
     if (! adresseGueltig (hello.adresse))
     {
         std::lock_guard<std::mutex> l (zustandMutex);
+        if (sollAbbrechen (generation))
+            return false;
         zustand.status = Status::getrennt;
         zustand.letzterFehler = "Adresse haelt den v3-Vertrag nicht (hex32/SID)";
         return false;
     }
 
     std::string fehler;
-    if (! verbindung.oeffnen (pipeName, fehler))
+    ServerPruefBericht serverBericht;
+    const bool serverGeoeffnet = verbindung.oeffnen (
+        pipeName, serverErwartung, serverBericht, fehler);
+    bool veralteteGeneration = false;
     {
         std::lock_guard<std::mutex> l (zustandMutex);
-        zustand.status = Status::getrennt;
-        if (! sollAbbrechen (generation))
-            zustand.letzterFehler = fehler;
+        veralteteGeneration = sollAbbrechen (generation);
+        if (! veralteteGeneration)
+        {
+            if (serverBericht.status == ServerPruefStatus::verifiziert
+                || serverBericht.status == ServerPruefStatus::belegtAberUnverifiziert)
+                ++zustand.serverPruefungen;
+
+            if (! serverGeoeffnet)
+            {
+                zustand.status = Status::getrennt;
+                zustand.serverPruefstatus = serverBericht.status;
+                zustand.serverPrueffehler = serverBericht.fehler;
+                zustand.serverPid = serverBericht.serverPid;
+                zustand.letzterFehler = fehler;
+            }
+            else
+            {
+                zustand.serverPruefstatus = ServerPruefStatus::verifiziert;
+                zustand.serverPrueffehler = ServerPruefFehler::keiner;
+                zustand.serverPid = serverBericht.serverPid;
+            }
+        }
+    }
+    if (veralteteGeneration)
+    {
+        // Wie beim Controlpfad gehoert das Urteil genau dieser Generation.
+        // Ein waehrend der Pruefung angeforderter Reconnect verwirft es samt
+        // Handle, bevor Status oder Bootstrapbytes sichtbar werden.
+        if (serverGeoeffnet)
+            verbindung.schliessen();
         return false;
     }
+    if (! serverGeoeffnet)
+        return false;
 
     const std::string helloJson =
         std::string ("{\"type\":\"hello\",\"connection_kind\":\"telemetry\",\"protocol\":3,")
@@ -613,6 +691,9 @@ bool TelemetryClient::Laufzeit::eineVerbindung (std::uint64_t generation,
         verbindung.schliessen();
         std::lock_guard<std::mutex> l (zustandMutex);
         zustand.status = Status::getrennt;
+        zustand.serverPruefstatus = ServerPruefStatus::nichtGeprueft;
+        zustand.serverPrueffehler = ServerPruefFehler::keiner;
+        zustand.serverPid = 0;
         return false;
     }
 
@@ -686,6 +767,9 @@ bool TelemetryClient::Laufzeit::eineVerbindung (std::uint64_t generation,
     {
         std::lock_guard<std::mutex> l (zustandMutex);
         zustand.status = Status::getrennt;
+        zustand.serverPruefstatus = ServerPruefStatus::nichtGeprueft;
+        zustand.serverPrueffehler = ServerPruefFehler::keiner;
+        zustand.serverPid = 0;
     }
     return true;
 }

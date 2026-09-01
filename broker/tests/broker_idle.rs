@@ -1,8 +1,48 @@
 use eqcop_broker::transport::pipetoken::PROBE_PRAEFIX;
+use eqcop_broker::transport::server_v3::PIPE_INSTANZEN;
 use eqcop_broker::{broker_idle_aktualisieren, BROKER_IDLE_ENDE_MS, BROKER_PRO_USER_MAX};
 use std::io::{BufRead, BufReader, Read, Write};
 use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
+use windows_sys::Win32::Foundation::{CloseHandle, HANDLE, INVALID_HANDLE_VALUE};
+use windows_sys::Win32::Storage::FileSystem::{
+    FILE_FLAG_FIRST_PIPE_INSTANCE, PIPE_ACCESS_DUPLEX,
+};
+use windows_sys::Win32::System::Pipes::{
+    CreateNamedPipeW, PIPE_READMODE_BYTE, PIPE_REJECT_REMOTE_CLIENTS, PIPE_TYPE_BYTE, PIPE_WAIT,
+};
+
+struct FirstInstance(HANDLE);
+
+impl FirstInstance {
+    fn nehmen(name: &str) -> Option<Self> {
+        let mut breit: Vec<u16> = name.encode_utf16().collect();
+        breit.push(0);
+        let h = unsafe {
+            CreateNamedPipeW(
+                breit.as_ptr(),
+                PIPE_ACCESS_DUPLEX | FILE_FLAG_FIRST_PIPE_INSTANCE,
+                PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT | PIPE_REJECT_REMOTE_CLIENTS,
+                PIPE_INSTANZEN as u32,
+                4096,
+                4096,
+                0,
+                std::ptr::null(),
+            )
+        };
+        if h == INVALID_HANDLE_VALUE {
+            None
+        } else {
+            Some(Self(h))
+        }
+    }
+}
+
+impl Drop for FirstInstance {
+    fn drop(&mut self) {
+        unsafe { CloseHandle(self.0) };
+    }
+}
 
 #[test]
 fn letzter_client_idle_stop_an_grenze() {
@@ -125,6 +165,10 @@ fn echter_brokerprozess_beendet_sich_nach_letztem_client_selbst() {
     leser.read_to_string(&mut bericht).unwrap();
     let bericht: serde_json::Value = serde_json::from_str(bericht.trim()).unwrap();
     assert_eq!(bericht["ende_grund"], "idle_self_exit");
+    assert_eq!(bericht["besitzlistener_vor_stopp"], 2);
+    assert_eq!(bericht["besitzlistener_nach_stopp"], 0);
     assert_eq!(bericht["control_verbindungen"], 1);
     assert_eq!(bericht["control_getrennt"], 1);
+    let _name_frei = FirstInstance::nehmen(&pipe)
+        .expect("idle_exit_schliesst_besitzlistener_zuletzt: Name nach Prozessende frei");
 }

@@ -612,12 +612,18 @@ int main()
         };
         const bool dateiFrei = freiVon ({ "juce::File", "FileInputStream",
                                           "FileOutputStream", "CreateFileW",
-                                          "ReadFile", "WriteFile", "std::fstream" });
+                                          "ReadFile", "WriteFile", "std::fstream",
+                                          "QueryFullProcessImageNameW",
+                                          "brokerBinaryPruefen" });
         const bool pipeFrei = freiVon ({ "ControlClient", "TelemetryClient",
                                          "IpcVerbindung", "NamedPipe",
-                                         "CreateNamedPipeW" });
+                                         "CreateNamedPipeW",
+                                         "namedPipeErreichbar",
+                                         "namedPipeServerAuthentisieren",
+                                         "GetNamedPipeServerProcessId" });
         const bool prozessFrei = freiVon ({ "BrokerLifecycle", "CreateProcessW",
-                                            "brokerVerborgenStarten", "ShellExecute" });
+                                            "brokerVerborgenStarten", "ShellExecute",
+                                            "OpenProcess", "OpenProcessToken" });
         const bool logFrei = freiVon ({ "juce::Logger", "std::cout", "printf (",
                                         "fprintf (", "OutputDebugString" });
         const auto storeText = repo.getChildFile ("broker/src/store.rs").loadFileAsString();

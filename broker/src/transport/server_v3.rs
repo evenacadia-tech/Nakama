@@ -45,31 +45,35 @@
 //! `server.rs`, damit es nur EINE Wahrheit ueber die Pipe-Sicherheit gibt.
 
 use std::collections::{HashMap, VecDeque};
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
 
 use windows_sys::Win32::Foundation::{
-    CloseHandle, GetLastError, ERROR_BROKEN_PIPE, ERROR_IO_PENDING, ERROR_NO_DATA,
-    ERROR_OPERATION_ABORTED, ERROR_PIPE_BUSY, ERROR_PIPE_CONNECTED, ERROR_PIPE_NOT_CONNECTED,
-    HANDLE, INVALID_HANDLE_VALUE, WAIT_OBJECT_0,
+    CloseHandle, GetLastError, ERROR_BROKEN_PIPE, ERROR_INSUFFICIENT_BUFFER, ERROR_IO_PENDING,
+    ERROR_NO_DATA, ERROR_NO_TOKEN, ERROR_OPERATION_ABORTED, ERROR_PIPE_BUSY, ERROR_PIPE_CONNECTED,
+    ERROR_PIPE_NOT_CONNECTED, HANDLE, INVALID_HANDLE_VALUE, WAIT_OBJECT_0,
 };
-use windows_sys::Win32::Security::SECURITY_ATTRIBUTES;
+use windows_sys::Win32::Security::{
+    CopySid, EqualSid, GetLengthSid, GetTokenInformation, IsValidSid, RevertToSelf, TokenUser,
+    SECURITY_ATTRIBUTES, TOKEN_QUERY, TOKEN_USER,
+};
 use windows_sys::Win32::Storage::FileSystem::{
     ReadFile, WriteFile, FILE_FLAG_FIRST_PIPE_INSTANCE, FILE_FLAG_OVERLAPPED, PIPE_ACCESS_DUPLEX,
 };
 use windows_sys::Win32::System::Pipes::{
-    ConnectNamedPipe, CreateNamedPipeW, DisconnectNamedPipe, PIPE_READMODE_BYTE,
-    PIPE_REJECT_REMOTE_CLIENTS, PIPE_TYPE_BYTE, PIPE_WAIT,
+    ConnectNamedPipe, CreateNamedPipeW, DisconnectNamedPipe, ImpersonateNamedPipeClient,
+    PIPE_READMODE_BYTE, PIPE_REJECT_REMOTE_CLIENTS, PIPE_TYPE_BYTE, PIPE_WAIT,
 };
 use windows_sys::Win32::System::Threading::{
-    CreateEventW, ResetEvent, SetEvent, WaitForMultipleObjects, WaitForSingleObject, INFINITE,
+    CreateEventW, GetCurrentThread, OpenThreadToken, ResetEvent, SetEvent, WaitForMultipleObjects,
+    WaitForSingleObject, INFINITE,
 };
 use windows_sys::Win32::System::IO::{CancelIoEx, GetOverlappedResult, OVERLAPPED};
 
 use crate::transport::bootstrap::{
-    bootstrap_lesen, neue_kennung, Bootstrap, BootstrapFehler, HelloControl, Kopplungen, Welcome,
+    bootstrap_lesen, neue_kennung, Bootstrap, HelloControl, Kopplungen, Welcome,
 };
 use crate::transport::v3::{
     envelope_schreiben, Familie, LeseErgebnis, Ratengrenze, StromLeser, MAX_FRAME_BYTES,
@@ -81,6 +85,78 @@ use crate::transport::warteschlange::{IngressErgebnis, IngressWarteschlange};
 /// Hoechstens so viele gleichzeitige Verbindungen. Zwei je Instanz (Control +
 /// Telemetry) mal 32 Sonden plus Reserve.
 pub const MAX_VERBINDUNGEN: usize = 96;
+
+/// 96 Worker plus zwei jederzeit bewaffnete Besitzlistener. Windows erlaubt
+/// hier 1..=255; alle Instanzen desselben Namens muessen denselben Wert nennen.
+pub const PIPE_INSTANZEN: usize = MAX_VERBINDUNGEN + 2;
+
+/// Deterministische Kanten fuer `broker/tests/security_vectors.rs`. Sie sind
+/// kein alternativer Produktpfad: dieselbe Startfunktion faehrt bis unmittelbar
+/// an die benannte Win32-/Threadkante und muss dann ihren normalen RAII-
+/// Gegenpfad beweisen.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum V3StartTestFehler {
+    #[default]
+    Keiner,
+    DirektNachErstemHandle,
+    ZweiteInstanz,
+    ZweiteArmierung,
+    WachhundSpawn,
+    AcceptorSpawn,
+}
+
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum V3AuthTestFehler {
+    #[default]
+    Keiner,
+    Impersonate,
+    OpenThreadToken,
+    TokenGroesse,
+    TokenInformation,
+    SidUngueltig,
+    SidFremd,
+    Revert,
+}
+
+#[derive(Default)]
+pub struct V3UebergabeBarriere {
+    erreicht: AtomicBool,
+    freigegeben: Mutex<bool>,
+    signal: Condvar,
+}
+
+impl V3UebergabeBarriere {
+    pub fn erreicht(&self) -> bool {
+        self.erreicht.load(Ordering::SeqCst)
+    }
+
+    pub fn freigeben(&self) {
+        if let Ok(mut frei) = self.freigegeben.lock() {
+            *frei = true;
+            self.signal.notify_all();
+        }
+    }
+
+    fn vor_worker_uebergabe_warten(&self) {
+        self.erreicht.store(true, Ordering::SeqCst);
+        let mut frei = self.freigegeben.lock().unwrap_or_else(|e| e.into_inner());
+        while !*frei {
+            frei = self.signal.wait(frei).unwrap_or_else(|e| e.into_inner());
+        }
+    }
+}
+
+#[derive(Clone, Default)]
+pub struct V3SecurityTestOptionen {
+    pub start_fehler: V3StartTestFehler,
+    pub auth_fehler: V3AuthTestFehler,
+    pub ersatzlistener_fehler: bool,
+    pub uebergabe_barriere: Option<Arc<V3UebergabeBarriere>>,
+    /// Pro Startversuch isolierter Zaehler fuer A-01. Er misst, dass ein
+    /// Rueckgabefehler keinen bereits gestarteten Wachhund-/Acceptor-Thread
+    /// hinterlaesst; Produktaufrufe setzen ihn nicht.
+    pub hilfsthread_zaehler: Option<Arc<AtomicUsize>>,
+}
 
 /// Frist fuer das Bootstrap-Hello. Ohne sie haelt ein lokaler Slowloris einen
 /// Verbindungsslot beliebig lange (Fehlerlexikon, wissen/engineering
@@ -288,6 +364,141 @@ impl Drop for Ereignis {
     }
 }
 
+/// Eine bereits mit `ConnectNamedPipe` bewaffnete Besitzinstanz. Die
+/// `OVERLAPPED`-Adresse liegt in einer Box und bleibt deshalb auch beim
+/// Verschieben zwischen Acceptor und Shutdown-Register stabil.
+struct ListenerInstanz {
+    h: HANDLE,
+    ereignis: Ereignis,
+    ov: Box<OVERLAPPED>,
+    ausstehend: bool,
+    sofort_verbunden: bool,
+}
+
+// SAFETY: Handle, Event und OVERLAPPED gehoeren exklusiv dieser Instanz. Sie
+// werden nie gleichzeitig von zwei Threads veraendert; beim Shutdown wandert
+// der ganze Besitzer nach dem Acceptor-Join zum stoppenden Thread.
+unsafe impl Send for ListenerInstanz {}
+
+impl ListenerInstanz {
+    fn neu(name_w: &[u16], attrs: &SECURITY_ATTRIBUTES, erste: bool) -> Result<Self, u32> {
+        let flags = PIPE_ACCESS_DUPLEX
+            | FILE_FLAG_OVERLAPPED
+            | if erste {
+                FILE_FLAG_FIRST_PIPE_INSTANCE
+            } else {
+                0
+            };
+        // SAFETY: Name ist nullterminiert, attrs und Deskriptor leben ueber den
+        // Aufruf. Das Handle wird unmittelbar in diesem RAII-Typ gebunden.
+        let h = unsafe {
+            CreateNamedPipeW(
+                name_w.as_ptr(),
+                flags,
+                PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT | PIPE_REJECT_REMOTE_CLIENTS,
+                PIPE_INSTANZEN as u32,
+                65536,
+                65536,
+                0,
+                attrs,
+            )
+        };
+        if h == INVALID_HANDLE_VALUE {
+            return Err(unsafe { GetLastError() });
+        }
+        let Some(ereignis) = Ereignis::neu() else {
+            let f = unsafe { GetLastError() };
+            unsafe { CloseHandle(h) };
+            return Err(f);
+        };
+        let ov = Box::new(leeres_overlapped(ereignis.roh()));
+        Ok(Self {
+            h,
+            ereignis,
+            ov,
+            ausstehend: false,
+            sofort_verbunden: false,
+        })
+    }
+
+    fn armieren(&mut self) -> Result<(), u32> {
+        // SAFETY: Handle/Event/OVERLAPPED gehoeren exklusiv `self`; die Box
+        // haelt die Adresse bis Completion oder Drop stabil.
+        unsafe {
+            ResetEvent(self.ereignis.roh());
+            *self.ov = leeres_overlapped(self.ereignis.roh());
+            let ok = ConnectNamedPipe(self.h, self.ov.as_mut());
+            if ok != 0 {
+                self.sofort_verbunden = true;
+                SetEvent(self.ereignis.roh());
+                return Ok(());
+            }
+            let f = GetLastError();
+            if f == ERROR_PIPE_CONNECTED {
+                self.sofort_verbunden = true;
+                SetEvent(self.ereignis.roh());
+                return Ok(());
+            }
+            if f == ERROR_IO_PENDING {
+                self.ausstehend = true;
+                return Ok(());
+            }
+            Err(f)
+        }
+    }
+
+    fn ereignis(&self) -> HANDLE {
+        self.ereignis.roh()
+    }
+
+    fn verbindung_fertig(&mut self) -> bool {
+        if self.sofort_verbunden {
+            return true;
+        }
+        if !self.ausstehend {
+            return false;
+        }
+        let mut n = 0u32;
+        // SAFETY: das Event hat signalisiert; OVERLAPPED/Handle leben.
+        let ok = unsafe { GetOverlappedResult(self.h, self.ov.as_mut(), &mut n, 0) } != 0;
+        if ok {
+            self.ausstehend = false;
+        }
+        ok
+    }
+
+    fn handle_uebernehmen(mut self) -> HANDLE {
+        debug_assert!(!self.ausstehend);
+        let h = self.h;
+        self.h = std::ptr::null_mut();
+        h
+    }
+}
+
+impl Drop for ListenerInstanz {
+    fn drop(&mut self) {
+        if self.h.is_null() || self.h == INVALID_HANDLE_VALUE {
+            return;
+        }
+        // Eine OVERLAPPED-Struktur darf erst nach bestaetigter Completion
+        // verschwinden. Cancel + blockierendes Result wird erst beim finalen
+        // Shutdown ausgefuehrt und kann nicht vom Peer offen gehalten werden.
+        if self.ausstehend {
+            unsafe {
+                CancelIoEx(self.h, self.ov.as_mut());
+                let mut verworfen = 0u32;
+                GetOverlappedResult(self.h, self.ov.as_mut(), &mut verworfen, 1);
+            }
+            self.ausstehend = false;
+        }
+        unsafe {
+            DisconnectNamedPipe(self.h);
+            CloseHandle(self.h);
+        }
+        self.h = std::ptr::null_mut();
+    }
+}
+
 /// Dauerhaft gesetztes Lebenszyklus-Signal einer Verbindung. Anders als das
 /// private I/O-Event eines `Ereignis` wird dieses Event absichtlich zwischen
 /// Reader und Writer geteilt und nach dem Setzen nie zurueckgesetzt.
@@ -453,6 +664,7 @@ fn ov_schreiben(h: HANDLE, e: HANDLE, daten: &[u8]) -> bool {
 /// darauf; geschlossen wird es, wenn der letzte geht.
 struct Verbindungsgriff {
     h: HANDLE,
+    sicherheits_spur: Arc<SicherheitsSpur>,
 }
 
 // SAFETY: Win32-HANDLEs sind prozessweite Kernel-Referenzen ohne
@@ -464,6 +676,43 @@ impl Drop for Verbindungsgriff {
     fn drop(&mut self) {
         // SAFETY: exklusiver Besitz ueber den Arc, genau einmal geschlossen.
         unsafe { CloseHandle(self.h) };
+        self.sicherheits_spur.push("close");
+    }
+}
+
+/// Ausschliesslich die Negativtests brauchen eine detaillierte API-Spur.
+/// Im Produkt bleibt sie abgeschaltet: kein wachsender Diagnosevektor und
+/// kein Trace-Mutex auf dem Verbindungsweg.
+struct SicherheitsSpur {
+    aktiv: bool,
+    inhalt: Mutex<Vec<&'static str>>,
+}
+
+impl SicherheitsSpur {
+    fn neu(aktiv: bool) -> Self {
+        Self {
+            aktiv,
+            inhalt: Mutex::new(Vec::new()),
+        }
+    }
+
+    fn push(&self, schritt: &'static str) {
+        if !self.aktiv {
+            return;
+        }
+        if let Ok(mut inhalt) = self.inhalt.lock() {
+            inhalt.push(schritt);
+        }
+    }
+
+    fn snapshot(&self) -> Vec<&'static str> {
+        if !self.aktiv {
+            return Vec::new();
+        }
+        self.inhalt
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .clone()
     }
 }
 
@@ -728,7 +977,9 @@ unsafe impl Send for HandleRegister {}
 pub struct V3Griff {
     stop: Arc<AtomicBool>,
     pipe_name: String,
+    acceptor_stop: Arc<EndeSignal>,
     acceptor: Option<JoinHandle<()>>,
+    rest_listener: Arc<Mutex<Vec<ListenerInstanz>>>,
     verbindungen: Arc<Mutex<Vec<JoinHandle<()>>>>,
     handles: Arc<Mutex<HandleRegister>>,
     /// Deadlines der noch nicht abgeschlossenen Bootstraps.
@@ -736,6 +987,8 @@ pub struct V3Griff {
     closer: V3Closer,
     wachhund: Option<JoinHandle<()>>,
     sender: V3Sender,
+    sicherheits_spur: Arc<SicherheitsSpur>,
+    uebergabe_barriere: Option<Arc<V3UebergabeBarriere>>,
     pub statistik: Arc<V3Statistik>,
 }
 
@@ -830,6 +1083,13 @@ pub struct V3Statistik {
     /// warten musste. Ist die Zahl 0, WAR die Grenze nie erreicht — ein Test
     /// darueber spraeche dann ueber nichts.
     pub acceptor_wartet_auf_instanz: AtomicU64,
+    /// Aktuelle Workerzahl; Listenerreserven zaehlen bewusst nicht hinein.
+    pub aktive_worker: AtomicU64,
+    /// Zwei nach erfolgreichem Start, null erst beim finalen Listener-Drop.
+    pub bewaffnete_listener: AtomicU64,
+    pub am_worker_cap_abgewiesen: AtomicU64,
+    pub listener_fehler: AtomicU64,
+    pub worker_uebergaben: AtomicU64,
     pub ingress_p2_verworfen: AtomicU64,
     /// Wie oft ein P1-Ueberlauf ohne P2 zum Verwerfen die Verbindung getrennt
     /// hat (Matrix `A-IN-04`). P1 faellt nie still: §53.9 gibt ihm den
@@ -920,12 +1180,36 @@ impl V3Griff {
         self.statistik.aktive_controls.load(Ordering::SeqCst)
     }
 
+    /// Alle bereits angenommenen v3-Verbindungen, einschliesslich eines noch
+    /// laufenden Bootstrap-Hellos. Auch dieser Zustand ist nicht idle: Der
+    /// Prozess darf einem gerade authentisierenden Client nicht unter dem
+    /// Handle wegsterben, nur weil der Coordinator ihn noch nicht kennt.
+    pub fn aktive_worker(&self) -> u64 {
+        self.statistik.aktive_worker.load(Ordering::SeqCst)
+    }
+
+    /// Ein Listener-/Ersatzfehler beendet den Acceptor fail-closed. Der
+    /// Prozess-Lifecycle liest dieses Signal und faehrt den Griff sofort
+    /// geordnet herunter; bis dahin bleiben die Restlistener in Besitz.
+    pub fn fataler_listenerfehler(&self) -> bool {
+        self.statistik.listener_fehler.load(Ordering::SeqCst) != 0
+    }
+
+    #[doc(hidden)]
+    pub fn sicherheits_spur(&self) -> Vec<&'static str> {
+        self.sicherheits_spur.snapshot()
+    }
+
     /// Gegenpfad zu `v3_server_starten`. Setzt Stop, weckt den parkenden
-    /// Acceptor mit einer eigenen Verbindung und bricht die I/O aller
-    /// lebenden Verbindungen ab; danach werden alle Threads gejoint.
+    /// Acceptor ueber sein Event und bricht die I/O aller lebenden
+    /// Verbindungen ab. Die beiden Besitzlistener bleiben waehrend aller
+    /// Joins offen und fallen als letzte Pipehandles.
     pub fn stoppen(&mut self) {
         self.stop.store(true, Ordering::SeqCst);
-        wecken(&self.pipe_name);
+        self.acceptor_stop.setzen();
+        if let Some(barriere) = &self.uebergabe_barriere {
+            barriere.freigeben();
+        }
         alle_io_abbrechen(&self.handles);
         if let Some(j) = self.acceptor.take() {
             let _ = j.join();
@@ -953,6 +1237,21 @@ impl V3Griff {
             }
         }
         let _ = self.bootstraps.lock().map(|mut b| b.clear());
+        let listener_geschlossen = {
+            let mut listener = self.rest_listener.lock().unwrap_or_else(|e| e.into_inner());
+            let vorhanden = !listener.is_empty();
+            listener.clear();
+            vorhanden
+        };
+        self.statistik
+            .bewaffnete_listener
+            .store(0, Ordering::SeqCst);
+        if listener_geschlossen {
+            // A-09: erst nachdem Acceptor, Wachhund und alle normalen
+            // Verbindungsworker beendet und deren Handles geschlossen sind,
+            // fallen die beiden letzten Besitzlistener.
+            self.sicherheits_spur.push("listeners_close");
+        }
     }
 }
 
@@ -1109,29 +1408,6 @@ fn fertige_ernten(verbindungen: &Arc<Mutex<Vec<JoinHandle<()>>>>) {
     }
 }
 
-/// Weckt einen in `ConnectNamedPipe` parkenden Acceptor.
-fn wecken(pipe_name: &str) {
-    let mut w: Vec<u16> = pipe_name.encode_utf16().collect();
-    w.push(0);
-    // SAFETY: `w` ist nullterminiert; ein Fehlschlag ist hier belanglos —
-    // der Acceptor beendet sich dann beim naechsten Durchlauf ueber `stop`.
-    unsafe {
-        let h = windows_sys::Win32::Storage::FileSystem::CreateFileW(
-            w.as_ptr(),
-            windows_sys::Win32::Foundation::GENERIC_READ,
-            0,
-            std::ptr::null(),
-            windows_sys::Win32::Storage::FileSystem::OPEN_EXISTING,
-            windows_sys::Win32::Storage::FileSystem::SECURITY_SQOS_PRESENT
-                | windows_sys::Win32::Storage::FileSystem::SECURITY_IDENTIFICATION,
-            std::ptr::null_mut(),
-        );
-        if h != INVALID_HANDLE_VALUE {
-            CloseHandle(h);
-        }
-    }
-}
-
 /// Legt die naechste Pipe-Instanz an — und gibt NICHT auf, wenn gerade alle
 /// belegt sind.
 ///
@@ -1146,46 +1422,104 @@ fn naechste_instanz(
     stop: &AtomicBool,
     verbindungen: &Arc<Mutex<Vec<JoinHandle<()>>>>,
     statistik: &Arc<V3Statistik>,
-) -> Option<HANDLE> {
+    fehler_injiziert: bool,
+) -> Result<ListenerInstanz, String> {
+    if fehler_injiziert {
+        return Err("Ersatzlistener-Fehler injiziert".into());
+    }
     let mut fremde_fehler = 0u32;
     loop {
         if stop.load(Ordering::SeqCst) {
-            return None;
+            return Err("Listenerstart wegen Serverstopp abgebrochen".into());
         }
-        // SAFETY: `name_w` ist nullterminiert, `attrs` lebt ueber den Aufruf.
-        let h = unsafe {
-            CreateNamedPipeW(
-                name_w.as_ptr(),
-                PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
-                PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT | PIPE_REJECT_REMOTE_CLIENTS,
-                MAX_VERBINDUNGEN as u32,
-                65536,
-                65536,
-                0,
-                attrs,
-            )
-        };
-        if h != INVALID_HANDLE_VALUE {
-            return Some(h);
-        }
-        // SAFETY: GetLastError liest nur den threadlokalen Fehlercode.
-        let f = unsafe { GetLastError() };
-        if f == ERROR_PIPE_BUSY {
-            statistik
-                .acceptor_wartet_auf_instanz
-                .fetch_add(1, Ordering::SeqCst);
-        } else {
-            // Nicht die Verbindungsgrenze, sondern etwas anderes. Ein paar
-            // Versuche sind billig; endlos zu drehen waere ein stiller Hang.
-            fremde_fehler += 1;
-            if fremde_fehler > 200 {
-                return None;
+        match ListenerInstanz::neu(name_w, attrs, false) {
+            Ok(mut listener) => match listener.armieren() {
+                Ok(()) => return Ok(listener),
+                Err(f) => {
+                    fremde_fehler += 1;
+                    if fremde_fehler > 200 {
+                        return Err(format!("ConnectNamedPipe Ersatzlistener: Win32 {f}"));
+                    }
+                }
+            },
+            Err(f) if f == ERROR_PIPE_BUSY => {
+                statistik
+                    .acceptor_wartet_auf_instanz
+                    .fetch_add(1, Ordering::SeqCst);
+            }
+            Err(f) => {
+                // Nicht die Verbindungsgrenze, sondern etwas anderes. Ein paar
+                // Versuche sind billig; endlos zu drehen waere ein stiller Hang.
+                fremde_fehler += 1;
+                if fremde_fehler > 200 {
+                    return Err(format!("CreateNamedPipe Ersatzlistener: Win32 {f}"));
+                }
             }
         }
         // Ein beendeter Nachbar gibt seinen Platz erst frei, wenn sein Handle
         // wirklich zu ist — also hier ernten, nicht nur schlafen.
         fertige_ernten(verbindungen);
         std::thread::sleep(Duration::from_millis(25));
+    }
+}
+
+struct WorkerPlatz {
+    zaehler: Arc<AtomicUsize>,
+    statistik: Arc<V3Statistik>,
+}
+
+struct TestHilfsthread {
+    zaehler: Option<Arc<AtomicUsize>>,
+}
+
+impl TestHilfsthread {
+    fn neu(zaehler: Option<Arc<AtomicUsize>>) -> Self {
+        if let Some(z) = &zaehler {
+            z.fetch_add(1, Ordering::SeqCst);
+        }
+        Self { zaehler }
+    }
+}
+
+impl Drop for TestHilfsthread {
+    fn drop(&mut self) {
+        if let Some(z) = &self.zaehler {
+            z.fetch_sub(1, Ordering::SeqCst);
+        }
+    }
+}
+
+impl Drop for WorkerPlatz {
+    fn drop(&mut self) {
+        let vorher = self.zaehler.fetch_sub(1, Ordering::SeqCst);
+        debug_assert!(vorher > 0);
+        self.statistik
+            .aktive_worker
+            .store(vorher.saturating_sub(1) as u64, Ordering::SeqCst);
+    }
+}
+
+fn worker_reservieren(
+    zaehler: &Arc<AtomicUsize>,
+    statistik: &Arc<V3Statistik>,
+) -> Option<WorkerPlatz> {
+    let mut stand = zaehler.load(Ordering::SeqCst);
+    loop {
+        if stand >= MAX_VERBINDUNGEN {
+            return None;
+        }
+        match zaehler.compare_exchange_weak(stand, stand + 1, Ordering::SeqCst, Ordering::SeqCst) {
+            Ok(_) => {
+                statistik
+                    .aktive_worker
+                    .store((stand + 1) as u64, Ordering::SeqCst);
+                return Some(WorkerPlatz {
+                    zaehler: zaehler.clone(),
+                    statistik: statistik.clone(),
+                });
+            }
+            Err(neu) => stand = neu,
+        }
     }
 }
 
@@ -1242,6 +1576,28 @@ pub fn v3_server_starten_mit_epoch_und_sender(
         Arc::new(AtomicU64::new(0)),
         Arc::new(AtomicBool::new(false)),
         Arc::new(AtomicU64::new(CANCEL_VOR_READ_INAKTIV)),
+        false,
+        V3SecurityTestOptionen::default(),
+    )
+}
+
+#[doc(hidden)]
+pub fn v3_server_starten_fuer_security_vectors(
+    pipe_name: &str,
+    senke: Arc<dyn Senke>,
+    optionen: V3SecurityTestOptionen,
+) -> Result<V3Griff, String> {
+    v3_server_starten_intern(
+        pipe_name,
+        senke,
+        "security-vectors".into(),
+        neue_kennung(),
+        V3Sender::neu(),
+        Arc::new(AtomicU64::new(0)),
+        Arc::new(AtomicBool::new(false)),
+        Arc::new(AtomicU64::new(CANCEL_VOR_READ_INAKTIV)),
+        true,
+        optionen,
     )
 }
 
@@ -1258,9 +1614,18 @@ fn v3_server_starten_intern(
     probe_verzoegerung_ms: Arc<AtomicU64>,
     writer_fehler_erzwungen: Arc<AtomicBool>,
     cancel_vor_read_phase: Arc<AtomicU64>,
+    sicherheits_spur_aktiv: bool,
+    security_optionen: V3SecurityTestOptionen,
 ) -> Result<V3Griff, String> {
-    let sicherheit = crate::server::sicherheit_nur_user()?;
+    let sicherheit = Arc::new(crate::server::sicherheit_nur_user()?);
     let stop = Arc::new(AtomicBool::new(false));
+    let acceptor_stop = Arc::new(
+        EndeSignal::neu()
+            .ok_or_else(|| "CreateEvent v3-Acceptorstop fehlgeschlagen".to_string())?,
+    );
+    let rest_listener: Arc<Mutex<Vec<ListenerInstanz>>> = Arc::new(Mutex::new(Vec::new()));
+    let aktive_worker = Arc::new(AtomicUsize::new(0));
+    let sicherheits_spur = Arc::new(SicherheitsSpur::neu(sicherheits_spur_aktiv));
     let verbindungen: Arc<Mutex<Vec<JoinHandle<()>>>> = Arc::new(Mutex::new(Vec::new()));
     let handles: Arc<Mutex<HandleRegister>> = Arc::new(Mutex::new(HandleRegister::default()));
     let bootstraps: Arc<Mutex<Vec<(u64, Instant)>>> = Arc::new(Mutex::new(Vec::new()));
@@ -1284,34 +1649,45 @@ fn v3_server_starten_intern(
         bInheritHandle: 0,
     };
 
-    // Erste Instanz synchron: ein fremder Besitzer des Namens muss SOFORT
-    // sichtbar scheitern, nicht die Haelfte der Sonden stehlen (M2-Fund).
-    // SAFETY: `name_w` ist nullterminiert, `attrs` lebt ueber den Aufruf.
-    let erstes = unsafe {
-        CreateNamedPipeW(
-            name_w.as_ptr(),
-            PIPE_ACCESS_DUPLEX | FILE_FLAG_FIRST_PIPE_INSTANCE | FILE_FLAG_OVERLAPPED,
-            PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT | PIPE_REJECT_REMOTE_CLIENTS,
-            MAX_VERBINDUNGEN as u32,
-            65536,
-            65536,
-            0,
-            &attrs,
-        )
-    };
-    if erstes == INVALID_HANDLE_VALUE {
-        // SAFETY: GetLastError liest nur den threadlokalen Fehlercode.
-        let f = unsafe { GetLastError() };
-        return Err(format!("CreateNamedPipe v3 (erste Instanz): Win32 {f}"));
+    // A-01: beide Besitzhandles werden synchron per RAII erzeugt UND mit
+    // ConnectNamedPipe bewaffnet, bevor irgendein Servergriff sichtbar wird.
+    let mut erster = ListenerInstanz::neu(&name_w, &attrs, true)
+        .map_err(|f| format!("CreateNamedPipe v3 (erste Instanz): Win32 {f}"))?;
+    if security_optionen.start_fehler == V3StartTestFehler::DirektNachErstemHandle {
+        return Err("Startfehler direkt nach erstem Handle injiziert".into());
+    }
+    erster
+        .armieren()
+        .map_err(|f| format!("ConnectNamedPipe v3 (erste Instanz): Win32 {f}"))?;
+    if security_optionen.start_fehler == V3StartTestFehler::ZweiteInstanz {
+        return Err("Startfehler zweite Instanz injiziert".into());
+    }
+    let mut zweiter = ListenerInstanz::neu(&name_w, &attrs, false)
+        .map_err(|f| format!("CreateNamedPipe v3 (zweite Instanz): Win32 {f}"))?;
+    zweiter
+        .armieren()
+        .map_err(|f| format!("ConnectNamedPipe v3 (zweite Instanz): Win32 {f}"))?;
+    if security_optionen.start_fehler == V3StartTestFehler::ZweiteArmierung {
+        // Beide OVERLAPPED-Connects stehen bereits. Dieser Gegenpfad misst
+        // deshalb nicht nur zwei rohe Handles, sondern auch Cancel +
+        // Completion vor dem Freigeben ihrer stabilen OVERLAPPED-Speicher.
+        return Err("Startfehler nach zweiter Armierung injiziert".into());
+    }
+    statistik.bewaffnete_listener.store(2, Ordering::SeqCst);
+
+    if security_optionen.start_fehler == V3StartTestFehler::WachhundSpawn {
+        return Err("Wachhund-Spawnfehler injiziert".into());
     }
 
     let stop_w = stop.clone();
     let handles_w = handles.clone();
     let bootstraps_w = bootstraps.clone();
     let verbindungen_w = verbindungen.clone();
+    let wachhund_testzaehler = security_optionen.hilfsthread_zaehler.clone();
     let wachhund = std::thread::Builder::new()
         .name("eqcop-v3-wachhund".into())
         .spawn(move || {
+            let _lebend = TestHilfsthread::neu(wachhund_testzaehler);
             while !stop_w.load(Ordering::SeqCst) {
                 std::thread::sleep(Duration::from_millis(100));
                 // Auch ohne neue Verbindung muessen fertige Threads fallen.
@@ -1341,11 +1717,17 @@ fn v3_server_starten_intern(
         })
         .map_err(|e| format!("Wachhundthread: {e}"))?;
 
-    // HANDLE ist ein roher Zeiger und damit nicht `Send`. Der Acceptor
-    // bekommt ihn deshalb als `isize` und setzt ihn drinnen wieder zusammen —
-    // dieselbe Form, die `HandleRegister` benutzt.
-    let erstes_isize = erstes as isize;
+    if security_optionen.start_fehler == V3StartTestFehler::AcceptorSpawn {
+        stop.store(true, Ordering::SeqCst);
+        acceptor_stop.setzen();
+        let _ = wachhund.join();
+        return Err("Acceptor-Spawnfehler injiziert".into());
+    }
+
     let stop2 = stop.clone();
+    let acceptor_stop2 = acceptor_stop.clone();
+    let rest_listener2 = rest_listener.clone();
+    let aktive_worker2 = aktive_worker.clone();
     let verbindungen2 = verbindungen.clone();
     let handles2 = handles.clone();
     let bootstraps2 = bootstraps.clone();
@@ -1353,57 +1735,141 @@ fn v3_server_starten_intern(
     let trennmelder2 = trennmelder.clone();
     let control_ausgaenge2 = control_ausgaenge.clone();
     let telemetrie_ausgaenge2 = telemetrie_ausgaenge.clone();
-    let acceptor = std::thread::Builder::new()
+    let sicherheit2 = sicherheit.clone();
+    let security_optionen2 = security_optionen.clone();
+    let sicherheits_spur2 = sicherheits_spur.clone();
+    let acceptor_testzaehler = security_optionen.hilfsthread_zaehler.clone();
+    let acceptor_ergebnis = std::thread::Builder::new()
         .name("eqcop-v3-acceptor".into())
         .spawn(move || {
-            // Der Deskriptor gehoert ab hier dem Acceptor.
-            let sicherheit = sicherheit;
+            let _lebend = TestHilfsthread::neu(acceptor_testzaehler);
             let attrs = SECURITY_ATTRIBUTES {
                 nLength: std::mem::size_of::<SECURITY_ATTRIBUTES>() as u32,
-                lpSecurityDescriptor: sicherheit.deskriptor,
+                lpSecurityDescriptor: sicherheit2.deskriptor,
                 bInheritHandle: 0,
             };
-            let ereignis = match Ereignis::neu() {
-                Some(e) => e,
-                None => return,
-            };
-            let mut naechstes: HANDLE = erstes_isize as HANDLE;
+            let mut listener = [Some(erster), Some(zweiter)];
+            let mut zusaetzlich = Vec::new();
             let mut folge: u64 = 0;
             loop {
                 if stop2.load(Ordering::SeqCst) {
-                    // SAFETY: `naechstes` ist ein gueltiges, noch nicht
-                    // uebergebenes Pipe-Handle.
-                    unsafe { CloseHandle(naechstes) };
                     break;
                 }
-                let verbunden = warten_auf_verbindung(naechstes, ereignis.roh());
-                if !verbunden {
-                    // SAFETY: exklusives Handle, genau einmal geschlossen.
-                    unsafe { CloseHandle(naechstes) };
-                    if stop2.load(Ordering::SeqCst) {
+                let warte_handles = [
+                    listener[0].as_ref().expect("Listener 0").ereignis(),
+                    listener[1].as_ref().expect("Listener 1").ereignis(),
+                    acceptor_stop2.roh(),
+                ];
+                // SAFETY: alle drei Eventhandles leben ueber den Wait.
+                let ausgang = unsafe {
+                    WaitForMultipleObjects(
+                        warte_handles.len() as u32,
+                        warte_handles.as_ptr(),
+                        0,
+                        INFINITE,
+                    )
+                };
+                if stop2.load(Ordering::SeqCst) || ausgang == WAIT_OBJECT_0 + 2 {
+                    break;
+                }
+                if ausgang != WAIT_OBJECT_0 && ausgang != WAIT_OBJECT_0 + 1 {
+                    statistik2.listener_fehler.fetch_add(1, Ordering::SeqCst);
+                    stop2.store(true, Ordering::SeqCst);
+                    acceptor_stop2.setzen();
+                    break;
+                }
+                let index = (ausgang - WAIT_OBJECT_0) as usize;
+                let mut angenommen = listener[index].take().expect("signalisierter Listener");
+                statistik2
+                    .bewaffnete_listener
+                    .fetch_sub(1, Ordering::SeqCst);
+                if !angenommen.verbindung_fertig() {
+                    zusaetzlich.push(angenommen);
+                    statistik2.listener_fehler.fetch_add(1, Ordering::SeqCst);
+                    stop2.store(true, Ordering::SeqCst);
+                    acceptor_stop2.setzen();
+                    alle_io_abbrechen(&handles2);
+                    break;
+                }
+                sicherheits_spur2.push("connect");
+                statistik2.angenommen.fetch_add(1, Ordering::SeqCst);
+
+                let Some(worker_platz) = worker_reservieren(&aktive_worker2, &statistik2) else {
+                    // A-05: der 97. Client wird geschlossen, solange der
+                    // andere Listener den Namen besitzt. Erst danach entsteht
+                    // seine neue Reserve; kein Worker sieht diesen Handle.
+                    drop(angenommen);
+                    statistik2
+                        .am_worker_cap_abgewiesen
+                        .fetch_add(1, Ordering::SeqCst);
+                    match naechste_instanz(
+                        &name_w,
+                        &attrs,
+                        &stop2,
+                        &verbindungen2,
+                        &statistik2,
+                        security_optionen2.ersatzlistener_fehler,
+                    ) {
+                        Ok(ersatz) => {
+                            listener[index] = Some(ersatz);
+                            statistik2
+                                .bewaffnete_listener
+                                .fetch_add(1, Ordering::SeqCst);
+                        }
+                        Err(_) => {
+                            statistik2.listener_fehler.fetch_add(1, Ordering::SeqCst);
+                            stop2.store(true, Ordering::SeqCst);
+                            acceptor_stop2.setzen();
+                            alle_io_abbrechen(&handles2);
+                            break;
+                        }
+                    }
+                    continue;
+                };
+
+                // A-03/A-04: der angenommene Handle und der zweite Listener
+                // bleiben beim Acceptor, bis der Ersatz ERZEUGT UND BEWAFFNET
+                // ist. Erst danach beginnt irgendeine Worker-Uebergabe.
+                match naechste_instanz(
+                    &name_w,
+                    &attrs,
+                    &stop2,
+                    &verbindungen2,
+                    &statistik2,
+                    security_optionen2.ersatzlistener_fehler,
+                ) {
+                    Ok(ersatz) => {
+                        listener[index] = Some(ersatz);
+                        statistik2
+                            .bewaffnete_listener
+                            .fetch_add(1, Ordering::SeqCst);
+                    }
+                    Err(_) => {
+                        drop(worker_platz);
+                        zusaetzlich.push(angenommen);
+                        statistik2.listener_fehler.fetch_add(1, Ordering::SeqCst);
+                        stop2.store(true, Ordering::SeqCst);
+                        acceptor_stop2.setzen();
+                        alle_io_abbrechen(&handles2);
                         break;
                     }
-                    match naechste_instanz(&name_w, &attrs, &stop2, &verbindungen2, &statistik2) {
-                        Some(h) => {
-                            naechstes = h;
-                            continue;
-                        }
-                        None => break,
-                    }
+                }
+                if let Some(barriere) = &security_optionen2.uebergabe_barriere {
+                    barriere.vor_worker_uebergabe_warten();
                 }
                 if stop2.load(Ordering::SeqCst) {
-                    // SAFETY: exklusives Handle.
-                    unsafe {
-                        DisconnectNamedPipe(naechstes);
-                        CloseHandle(naechstes);
-                    }
+                    drop(worker_platz);
+                    zusaetzlich.push(angenommen);
                     break;
                 }
 
                 folge += 1;
                 let id = folge;
-                let griff = Arc::new(Verbindungsgriff { h: naechstes });
-                statistik2.angenommen.fetch_add(1, Ordering::SeqCst);
+                let verbundenes_handle = angenommen.handle_uebernehmen();
+                let griff = Arc::new(Verbindungsgriff {
+                    h: verbundenes_handle,
+                    sicherheits_spur: sicherheits_spur2.clone(),
+                });
 
                 // Das Handle geht ins Abbruchregister, BEVOR der Thread
                 // existiert. Lief `stoppen()` frueher zwischen Spawn und
@@ -1415,7 +1881,7 @@ fn v3_server_starten_intern(
                 // `stop` selbst und endet.
                 {
                     let mut r = handles2.lock().unwrap_or_else(|e| e.into_inner());
-                    r.offen.push((id, naechstes as isize));
+                    r.offen.push((id, verbundenes_handle as isize));
                 }
                 // Der Eintrag gehoert ab hier dem Thread; scheitert `spawn`,
                 // faellt die Closure samt Eintrag und traegt ihn wieder aus.
@@ -1438,9 +1904,13 @@ fn v3_server_starten_intern(
                 let conn_stop = stop2.clone();
                 let control_ausgaenge = control_ausgaenge2.clone();
                 let telemetrie_ausgaenge = telemetrie_ausgaenge2.clone();
+                let erwartete_sicherheit = sicherheit2.clone();
+                let auth_fehler = security_optionen2.auth_fehler;
+                let sicherheits_spur = sicherheits_spur2.clone();
                 match std::thread::Builder::new()
                     .name("eqcop-v3-conn".into())
                     .spawn(move || {
+                        let _worker_platz = worker_platz;
                         // Testnaht: reisst das Fenster zwischen Annahme und
                         // erster Arbeit deterministisch auf. In Produktion
                         // steht hier 0 und der Aufruf kostet einen Ladevorgang.
@@ -1464,66 +1934,257 @@ fn v3_server_starten_intern(
                             cancel_vor_read,
                             control_ausgaenge,
                             telemetrie_ausgaenge,
+                            erwartete_sicherheit,
+                            auth_fehler,
+                            sicherheits_spur,
                             handle_eintrag,
                         );
                     }) {
-                    Ok(j) => verbindungen2
-                        .lock()
-                        .unwrap_or_else(|e| e.into_inner())
-                        .push(j),
-                    Err(_) => break,
+                    Ok(j) => {
+                        statistik2.worker_uebergaben.fetch_add(1, Ordering::SeqCst);
+                        verbindungen2
+                            .lock()
+                            .unwrap_or_else(|e| e.into_inner())
+                            .push(j)
+                    }
+                    Err(_) => {
+                        // Closure-Drop gibt Workerplatz, Handle und Register
+                        // frei. Beide Listener sind bereits wieder bewaffnet.
+                    }
                 }
 
-                // Beendete Nachbarn ernten, DANN die naechste Instanz holen —
-                // sonst zaehlt ein laengst toter Thread noch gegen die Grenze.
                 fertige_ernten(&verbindungen2);
-                match naechste_instanz(&name_w, &attrs, &stop2, &verbindungen2, &statistik2) {
-                    Some(h) => naechstes = h,
-                    None => break,
-                }
             }
-        })
-        .map_err(|e| format!("v3-Acceptorthread: {e}"))?;
+
+            // A-09: Nicht hier schliessen. Der Griff joint erst Acceptor,
+            // Wachhund und alle Worker; DANACH leert er dieses Register als
+            // letzten Pipebesitz. Auch ein fataler Ersatzfehler behaelt damit
+            // den Namen bis zum geordneten Gegenpfad.
+            let mut rest = rest_listener2.lock().unwrap_or_else(|e| e.into_inner());
+            for slot in listener.into_iter().flatten() {
+                rest.push(slot);
+            }
+            rest.append(&mut zusaetzlich);
+        });
+    let acceptor = match acceptor_ergebnis {
+        Ok(j) => j,
+        Err(e) => {
+            stop.store(true, Ordering::SeqCst);
+            acceptor_stop.setzen();
+            let _ = wachhund.join();
+            return Err(format!("v3-Acceptorthread: {e}"));
+        }
+    };
 
     Ok(V3Griff {
         stop,
         pipe_name: pipe_name.to_string(),
+        acceptor_stop,
         acceptor: Some(acceptor),
+        rest_listener,
         verbindungen,
         handles,
         bootstraps,
         closer,
         wachhund: Some(wachhund),
         sender,
+        sicherheits_spur,
+        uebergabe_barriere: security_optionen.uebergabe_barriere,
         statistik,
     })
 }
 
-/// `ConnectNamedPipe` auf einem overlapped Handle. `lpOverlapped` DARF hier
-/// nicht null sein — sonst meldet Win32 den Verbindungsaufbau falsch fertig.
-fn warten_auf_verbindung(h: HANDLE, e: HANDLE) -> bool {
-    // SAFETY: `h` ist die eben angelegte Pipe-Instanz, `e` gehoert dem
-    // Acceptor allein, `ov` lebt bis GetOverlappedResult zurueck ist.
+const _: () = assert!(std::mem::align_of::<TOKEN_USER>() <= std::mem::align_of::<u64>());
+
+struct TokenGriff(HANDLE);
+
+impl Drop for TokenGriff {
+    fn drop(&mut self) {
+        if !self.0.is_null() {
+            unsafe { CloseHandle(self.0) };
+        }
+    }
+}
+
+struct VerbindungsSicherheitsCleanup {
+    revertiert: bool,
+    auth_fehler: V3AuthTestFehler,
+    spur: Arc<SicherheitsSpur>,
+}
+
+impl VerbindungsSicherheitsCleanup {
+    fn spur(&self, schritt: &'static str) {
+        self.spur.push(schritt);
+    }
+
+    fn revertieren(&mut self) {
+        if self.revertiert {
+            return;
+        }
+        self.spur("revert");
+        if self.auth_fehler == V3AuthTestFehler::Revert || unsafe { RevertToSelf() } == 0 {
+            // Unter einem moeglicherweise fremden Threadtoken darf weder ein
+            // normaler Drop noch irgendeine Brokerfachlogik weiterlaufen.
+            std::process::abort();
+        }
+        self.revertiert = true;
+    }
+}
+
+impl Drop for VerbindungsSicherheitsCleanup {
+    fn drop(&mut self) {
+        self.revertieren();
+    }
+}
+
+fn client_sid_authentisieren(
+    h: HANDLE,
+    sicherheit: &crate::server::Sicherheit,
+    cleanup: &mut VerbindungsSicherheitsCleanup,
+) -> bool {
+    cleanup.spur("impersonate");
+    if cleanup.auth_fehler == V3AuthTestFehler::Impersonate
+        || unsafe { ImpersonateNamedPipeClient(h) } == 0
+    {
+        return false;
+    }
+
+    let mut token_roh: HANDLE = std::ptr::null_mut();
+    if cleanup.auth_fehler == V3AuthTestFehler::OpenThreadToken
+        || unsafe { OpenThreadToken(GetCurrentThread(), TOKEN_QUERY, 0, &mut token_roh) } == 0
+    {
+        return false;
+    }
+    let token = TokenGriff(token_roh);
+
+    let mut noetig = 0u32;
     unsafe {
-        ResetEvent(e);
-        let mut ov = leeres_overlapped(e);
-        let ok = ConnectNamedPipe(h, &mut ov);
-        if ok != 0 {
-            return true;
-        }
-        let f = GetLastError();
-        if f == ERROR_PIPE_CONNECTED {
-            return true;
-        }
-        if f != ERROR_IO_PENDING {
+        GetTokenInformation(token.0, TokenUser, std::ptr::null_mut(), 0, &mut noetig);
+    }
+    let groessen_fehler = unsafe { GetLastError() };
+    if cleanup.auth_fehler == V3AuthTestFehler::TokenGroesse
+        || groessen_fehler != ERROR_INSUFFICIENT_BUFFER
+        || noetig < std::mem::size_of::<TOKEN_USER>() as u32
+    {
+        return false;
+    }
+    let mut puffer = vec![0u64; (noetig as usize).div_ceil(std::mem::size_of::<u64>())];
+    if cleanup.auth_fehler == V3AuthTestFehler::TokenInformation
+        || unsafe {
+            GetTokenInformation(
+                token.0,
+                TokenUser,
+                puffer.as_mut_ptr().cast(),
+                noetig,
+                &mut noetig,
+            )
+        } == 0
+    {
+        return false;
+    }
+    let sid = unsafe { (*puffer.as_ptr().cast::<TOKEN_USER>()).User.Sid };
+    cleanup.spur("sid");
+    if cleanup.auth_fehler == V3AuthTestFehler::SidUngueltig || unsafe { IsValidSid(sid) } == 0 {
+        return false;
+    }
+
+    // B-04 testet keinen erfundenen Bool-Rueckgabewert, sondern einen echten
+    // `EqualSid`-Vergleich gegen eine andere, weiterhin gueltige SID. Dazu
+    // kopiert die Testnaht die erwartete User-SID und aendert ausschliesslich
+    // den letzten SubAuthority-Wert. Der Produktpfad vergleicht unveraendert
+    // gegen genau die SID, aus der auch die Pipe-DACL gebaut wurde.
+    let mut fremde_sid_speicher = Vec::<u64>::new();
+    let erwartete_sid = if cleanup.auth_fehler == V3AuthTestFehler::SidFremd {
+        let laenge = unsafe { GetLengthSid(sicherheit.user_sid()) };
+        if laenge < 12 {
             return false;
         }
-        if WaitForSingleObject(e, INFINITE) != WAIT_OBJECT_0 {
-            CancelIoEx(h, &ov);
+        fremde_sid_speicher.resize((laenge as usize).div_ceil(std::mem::size_of::<u64>()), 0);
+        if unsafe {
+            CopySid(
+                laenge,
+                fremde_sid_speicher.as_mut_ptr().cast(),
+                sicherheit.user_sid(),
+            )
+        } == 0
+        {
             return false;
         }
-        let mut n: u32 = 0;
-        GetOverlappedResult(h, &ov, &mut n, 1) != 0
+        let sid_bytes = fremde_sid_speicher.as_mut_ptr().cast::<u8>();
+        let anzahl = unsafe { *sid_bytes.add(1) } as usize;
+        if anzahl == 0 || 8 + anzahl * 4 > laenge as usize {
+            return false;
+        }
+        let letzte = unsafe { sid_bytes.add(8 + (anzahl - 1) * 4).cast::<u32>() };
+        let wert = unsafe { std::ptr::read_unaligned(letzte) };
+        unsafe { std::ptr::write_unaligned(letzte, wert.wrapping_add(1)) };
+        let fremd = fremde_sid_speicher.as_mut_ptr().cast();
+        if unsafe { IsValidSid(fremd) } == 0 {
+            return false;
+        }
+        fremd
+    } else {
+        sicherheit.user_sid()
+    };
+    if unsafe { EqualSid(sid, erwartete_sid) } == 0 {
+        return false;
+    }
+    drop(token);
+    cleanup.revertieren();
+
+    // Nach erfolgreichem Revert darf dieser Verbindungsthread kein Token mehr
+    // tragen. Ein spaeterer Envelope-/Queue-/Writepfad arbeitet damit
+    // nachweislich im Brokerkontext und impersoniert nicht erneut.
+    let mut gegenprobe: HANDLE = std::ptr::null_mut();
+    if unsafe { OpenThreadToken(GetCurrentThread(), TOKEN_QUERY, 0, &mut gegenprobe) } != 0 {
+        unsafe { CloseHandle(gegenprobe) };
+        return false;
+    }
+    if unsafe { GetLastError() } != ERROR_NO_TOKEN {
+        return false;
+    }
+    cleanup.spur("self");
+    true
+}
+
+enum BootstrapRahmenStand {
+    Unvollstaendig,
+    ZuGross,
+    Vollstaendig(usize),
+}
+
+fn bootstrap_rahmenstand(roh: &[u8]) -> BootstrapRahmenStand {
+    if roh.len() < 4 {
+        return BootstrapRahmenStand::Unvollstaendig;
+    }
+    let n = u32::from_le_bytes([roh[0], roh[1], roh[2], roh[3]]) as usize;
+    if n > crate::transport::v3::MAX_BOOTSTRAP_BYTES as usize {
+        return BootstrapRahmenStand::ZuGross;
+    }
+    let gesamt = 4usize.saturating_add(n);
+    if roh.len() < gesamt {
+        BootstrapRahmenStand::Unvollstaendig
+    } else {
+        BootstrapRahmenStand::Vollstaendig(gesamt)
+    }
+}
+
+fn bootstrap_reject_schreiben(
+    h: HANDLE,
+    ereignis: HANDLE,
+    grund: &str,
+    cleanup: &VerbindungsSicherheitsCleanup,
+) {
+    let payload = serde_json::json!({
+        "type": "reject",
+        "code": "protocol_mismatch",
+        "reason": grund.chars().take(500).collect::<String>()
+    });
+    if let Ok(payload) = serde_json::to_vec(&payload) {
+        let mut rahmen = (payload.len() as u32).to_le_bytes().to_vec();
+        rahmen.extend_from_slice(&payload);
+        cleanup.spur("reject");
+        let _ = ov_schreiben(h, ereignis, &rahmen);
     }
 }
 
@@ -1574,11 +2235,19 @@ fn verbindung_bedienen(
     cancel_vor_read_phase: Arc<AtomicU64>,
     control_ausgaenge: Arc<Mutex<HashMap<String, Arc<Ausgang>>>>,
     telemetrie_ausgaenge: Arc<Mutex<HashMap<String, Arc<Ausgang>>>>,
+    erwartete_sicherheit: Arc<crate::server::Sicherheit>,
+    auth_fehler: V3AuthTestFehler,
+    sicherheits_spur: Arc<SicherheitsSpur>,
     handle_eintrag: HandleEintrag,
 ) {
     // Der Acceptor hat das Handle schon registriert; der Eintrag traegt es
     // beim Verlassen dieser Funktion wieder aus.
     let _handle_eintrag = handle_eintrag;
+    let mut sicherheits_cleanup = VerbindungsSicherheitsCleanup {
+        revertiert: false,
+        auth_fehler,
+        spur: sicherheits_spur,
+    };
 
     // Und JETZT `stop` pruefen. Kam der Stop im Fenster zwischen Annahme und
     // diesem Punkt, endet der Thread hier — statt sich in einen Bootstrap-Read
@@ -1586,11 +2255,6 @@ fn verbindung_bedienen(
     if stop.load(Ordering::SeqCst) {
         return;
     }
-
-    // Jeder Lebenszyklus- und Diagnoseaufruf dieser Verbindung geht ueber den
-    // fristbegrenzten, abloesbaren Pfad — direkt auf diesem Thread waeren sie
-    // ein unbegrenztes `stoppen()` (T2-Befund 5 Runde 3).
-    let mut senkenruf = Senkenruf::neu(senke.clone(), statistik.clone());
 
     let leseereignis = match Ereignis::neu() {
         Some(e) => e,
@@ -1615,23 +2279,19 @@ fn verbindung_bedienen(
     let mut puffer = [0u8; 4096];
 
     // ── Bootstrap lesen ───────────────────────────────────────────────────
-    let (bs, verbraucht) = loop {
-        match bootstrap_lesen(&roh) {
-            Ok(x) => break x,
-            Err(BootstrapFehler::PraefixUnvollstaendig) | Err(BootstrapFehler::Unvollstaendig) => {}
-            Err(e) => {
+    let rahmen_laenge = loop {
+        match bootstrap_rahmenstand(&roh) {
+            BootstrapRahmenStand::Vollstaendig(n) => break n,
+            BootstrapRahmenStand::ZuGross => {
                 statistik
                     .geschlossen_bootstrap
                     .fetch_add(1, Ordering::SeqCst);
-                senkenruf.abweisen(format!("bootstrap: {e:?}"));
                 return;
             }
+            BootstrapRahmenStand::Unvollstaendig => {}
         }
         match ov_lesen(griff.h, leseereignis.roh(), None, &mut puffer) {
-            IoAusgang::Ende => {
-                senkenruf.abweisen("bootstrap: Verbindung vor dem Hello beendet");
-                return;
-            }
+            IoAusgang::Ende => return,
             IoAusgang::Bytes(n) => {
                 roh.extend_from_slice(&puffer[..n]);
                 // Die Laengengrenze des Hellos selbst prueft `bootstrap_lesen`
@@ -1648,7 +2308,6 @@ fn verbindung_bedienen(
                     statistik
                         .geschlossen_bootstrap
                         .fetch_add(1, Ordering::SeqCst);
-                    senkenruf.abweisen("bootstrap: mehr Bytes als ein Hello tragen darf");
                     return;
                 }
             }
@@ -1656,13 +2315,42 @@ fn verbindung_bedienen(
                 statistik
                     .geschlossen_bootstrap
                     .fetch_add(1, Ordering::SeqCst);
-                senkenruf.abweisen("bootstrap: Lesefehler oder Frist abgelaufen");
                 return;
             }
         }
     };
+    sicherheits_cleanup.spur("read");
+
+    // Die fachliche Auswertung ist absichtlich NACH der verbindlichen
+    // Impersonation/SID/Revert-Kette. Auch ein vollstaendig gerahmtes, aber
+    // syntaktisch oder semantisch abzulehnendes Hello darf vorher weder Reject
+    // noch Senke/Coordinator erreichen (B-05).
+    if !client_sid_authentisieren(griff.h, &erwartete_sicherheit, &mut sicherheits_cleanup) {
+        statistik
+            .geschlossen_bootstrap
+            .fetch_add(1, Ordering::SeqCst);
+        return;
+    }
+    let (bs, verbraucht) = match bootstrap_lesen(&roh[..rahmen_laenge]) {
+        Ok(x) => x,
+        Err(e) => {
+            statistik
+                .geschlossen_bootstrap
+                .fetch_add(1, Ordering::SeqCst);
+            bootstrap_reject_schreiben(
+                griff.h,
+                leseereignis.roh(),
+                &format!("bootstrap: {e:?}"),
+                &sicherheits_cleanup,
+            );
+            return;
+        }
+    };
     frist.erfuellt();
     roh.drain(0..verbraucht);
+
+    // Erst nach erfolgreichem Revert existiert ein Fachcallback-Helfer.
+    let mut senkenruf = Senkenruf::neu(senke.clone(), statistik.clone());
 
     // Die Writerqueue existiert bereits vor dem Telemetrie-Kopplungs-Callback:
     // ein Coordinator darf dabei den gehaltenen absoluten Messstand an einen
@@ -1677,14 +2365,15 @@ fn verbindung_bedienen(
                         \"reason\":\"dieser Endpunkt spricht nur v3\"}";
             let mut rahmen = (json.len() as u32).to_le_bytes().to_vec();
             rahmen.extend_from_slice(json.as_bytes());
+            sicherheits_cleanup.spur("reject");
             let _ = ov_schreiben(griff.h, leseereignis.roh(), &rahmen);
             statistik
                 .geschlossen_bootstrap
                 .fetch_add(1, Ordering::SeqCst);
-            senkenruf.abweisen("bootstrap: v2-Hello am v3-Endpunkt");
             return;
         }
         Bootstrap::V3Control(h) => {
+            sicherheits_cleanup.spur("hello_accept");
             let link = neue_kennung();
             let challenge = neue_kennung();
             {
@@ -1782,6 +2471,7 @@ fn verbindung_bedienen(
             (link, true)
         }
         Bootstrap::V3Telemetry(h) => {
+            sicherheits_cleanup.spur("hello_accept");
             let ok = {
                 let mut k = kopplungen.lock().unwrap_or_else(|e| e.into_inner());
                 k.telemetrie_koppeln(&h, id)
@@ -3034,20 +3724,36 @@ mod tests {
             offen.len()
         );
 
-        // Erst wenn der Acceptor an der Grenze WIRKLICH auf einen freien Platz
-        // wartet, ist die Lage hergestellt, ueber die dieser Test spricht. Ohne
-        // diesen Halt liesse der Test die Verbindungen womoeglich schon wieder
-        // los, bevor der Acceptor die Grenze ueberhaupt gesehen hat — und
-        // bewiese dann nichts.
+        // Die beiden Reservelistener liegen AUSSERHALB des Worker-Caps. Erst
+        // der naechste Client beweist deshalb, dass der Acceptor die 96er-
+        // Grenze selbst durchsetzt, ohne seinen Besitzlistener zu verlieren.
         let stat = griff.statistik.clone();
         assert!(
-            warte_auf(8000, || stat.acceptor_wartet_auf_instanz.load(Ordering::SeqCst) > 0),
-            "der Acceptor hat die Verbindungsgrenze nie erreicht ({} Verbindungen offen) —              entweder ist er schon beendet, oder der Test misst die falsche Lage",
+            warte_auf(8000, || stat.aktive_worker.load(Ordering::SeqCst)
+                == MAX_VERBINDUNGEN as u64),
+            "der Worker-Cap wurde nicht vollstaendig hergestellt ({} Verbindungen offen)",
             offen.len()
         );
+        let _ueber_cap = Testclient::mit_geduld(&pipe, 2000).expect("97. Client verbindet Reserve");
+        assert!(
+            warte_auf(4000, || stat
+                .am_worker_cap_abgewiesen
+                .load(Ordering::SeqCst)
+                > 0),
+            "der 97. Client wurde nicht sichtbar am Worker-Cap abgewiesen"
+        );
+        assert_eq!(
+            stat.aktive_worker.load(Ordering::SeqCst),
+            MAX_VERBINDUNGEN as u64
+        );
+        assert_eq!(stat.bewaffnete_listener.load(Ordering::SeqCst), 2);
 
         // Alles wieder loslassen — danach MUSS wieder jemand horchen.
         offen.clear();
+        assert!(warte_auf(8000, || stat
+            .aktive_worker
+            .load(Ordering::SeqCst)
+            == 0));
 
         let neu = Testclient::neu(&pipe);
         assert!(
@@ -3109,6 +3815,8 @@ mod tests {
             verzoegerung,
             Arc::new(AtomicBool::new(false)),
             Arc::new(AtomicU64::new(CANCEL_VOR_READ_INAKTIV)),
+            false,
+            V3SecurityTestOptionen::default(),
         )
         .unwrap();
 
@@ -4286,6 +4994,8 @@ mod tests {
                     Arc::new(AtomicU64::new(0)),
                     writer_fehler.clone(),
                     cancel_vor_read.clone(),
+                    false,
+                    V3SecurityTestOptionen::default(),
                 )
                 .unwrap()
             } else {

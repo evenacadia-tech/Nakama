@@ -6,6 +6,8 @@
 // der duennen Produktzielschicht; dieser Kern erfindet keine Identitaet.
 #pragma once
 
+#include "IpcVerbindung.h"
+
 #include <atomic>
 #include <condition_variable>
 #include <cstdint>
@@ -68,6 +70,7 @@ struct BrokerLifecycleHooks
 {
     std::function<bool()> verbunden;
     std::function<bool()> connectFehlgeschlagen;
+    std::function<ServerPruefStatus()> serverPruefstatus;
     std::function<bool()> darfStarten;
     std::function<void()> reconnect;
     std::function<BrokerPruefBericht()> pruefen;
@@ -88,8 +91,11 @@ public:
         std::uint64_t cooldowns = 0;
         std::uint64_t mutexVerloren = 0;
         bool wartetAufBereit = false;
+        bool wartetAufServerpruefung = false;
+        bool serverNichtVerifiziert = false;
         bool imCooldown = false;
         BrokerPruefFehler letzterPrueffehler = BrokerPruefFehler::keiner;
+        ServerPruefStatus letzterServerPruefstatus = ServerPruefStatus::nichtGeprueft;
     };
 
     explicit BrokerLifecycle (BrokerLifecycleHooks hooks);
@@ -107,7 +113,15 @@ public:
     void tickFuerTest (std::uint64_t jetztMs);
 
 private:
-    enum class Phase { wartetAufConnect, bereit, wartetAufBroker, cooldown };
+    enum class Phase
+    {
+        wartetAufConnect,
+        wartetAufServerpruefung,
+        blockiertUnverifiziert,
+        bereit,
+        wartetAufBroker,
+        cooldown
+    };
 
     void threadLauf();
     void tick (std::uint64_t jetztMs);

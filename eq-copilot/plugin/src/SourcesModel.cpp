@@ -385,7 +385,9 @@ void SourcesModel::controlEnde()
         if (e.hatMessZeit && e.zeile.messung != Messung::invalid)
             e.zeile.messung = Messung::stale;
     }
-    if (diagnose != Diagnose::incompatible && diagnose != Diagnose::storeDegraded)
+    if (diagnose != Diagnose::incompatible
+        && diagnose != Diagnose::storeDegraded
+        && diagnose != Diagnose::serverUnverified)
     {
         diagnose = Diagnose::brokerUnavailable;
         diagnoseHatHandgriff = true;
@@ -405,7 +407,10 @@ void SourcesModel::setzeControlTransport (
         neu = Diagnose::authenticating;
     else if (transport.status == nakama::ipc::ControlClient::Status::getrennt)
     {
-        if (inkompatiblerFehler (transport.letzterFehler))
+        if (transport.serverPruefstatus
+                == nakama::ipc::ServerPruefStatus::belegtAberUnverifiziert)
+            neu = Diagnose::serverUnverified;
+        else if (inkompatiblerFehler (transport.letzterFehler))
             neu = Diagnose::incompatible;
         else
         {
@@ -1062,6 +1067,7 @@ const char* wort (SourcesModel::Diagnose v)
 {
     switch (v) { case Diagnose::keine: return "";
         case Diagnose::brokerUnavailable: return "Broker unavailable";
+        case Diagnose::serverUnverified: return "Server not verified";
         case Diagnose::authenticating: return "Authenticating";
         case Diagnose::confirmationRequired: return "Join confirmation required";
         case Diagnose::incompatible: return "Incompatible broker or protocol";

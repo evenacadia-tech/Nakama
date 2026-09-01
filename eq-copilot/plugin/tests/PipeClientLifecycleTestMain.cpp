@@ -145,11 +145,14 @@ eqcop::HelloInfo hello (const juce::String& id)
 
 std::unique_ptr<eqcop::PipeClient> client (
     const juce::String& name, std::function<eqcop::HelloInfo()> provider,
-    std::chrono::milliseconds timeout = std::chrono::milliseconds { 5000 })
+    std::chrono::milliseconds timeout = std::chrono::milliseconds { 5000 },
+    nakama::ipc::ServerErwartung serverErwartung
+        = nakama::ipc::serverErwartungFuerEigenprozessTest())
 {
     return std::make_unique<eqcop::PipeClient> (
         std::move (provider), [] { return eqcop::StatsSnapshot {}; },
-        std::function<eqcop::MessKompakt()> {}, name, timeout);
+        std::function<eqcop::MessKompakt()> {}, name, timeout,
+        std::move (serverErwartung));
 }
 
 void pipeSchliessen (HANDLE h)
@@ -273,10 +276,53 @@ void reconnectGeneration()
     c->reconnect();
     umschalten.store (true);
     const bool zweiterKam = warteAuf (3000, [&] { return helloB.load(); });
+    const bool zweimalAuthentisiert = c->snapshot().serverPruefungen >= 2;
     pruefe (ersterKam && zweiterKam,
             "Reconnect waehrend Welcome verliert keine Konfigurationsgeneration");
+    pruefe (ersterKam && zweiterKam && zweimalAuthentisiert,
+            "pipeclient_reconnect_verwirft_serverfreigabe");
     c->stop();
     peer.join();
+}
+
+void pipeclient_sendet_vor_serverauth_keine_bytes()
+{
+    const auto name = testName ("serverauth-null-bytes");
+    const auto server = pipeAnlegen (name);
+    if (server == INVALID_HANDLE_VALUE)
+    {
+        pruefe (false, "pipeclient_sendet_vor_serverauth_keine_bytes");
+        return;
+    }
+    std::atomic<bool> angenommen { false }, helloGelesen { false };
+    std::thread peer ([&]
+    {
+        std::string frame;
+        angenommen.store (verbinden (server));
+        if (angenommen.load())
+            helloGelesen.store (liesFrame (server, frame));
+        pipeSchliessen (server);
+    });
+
+    auto erwartung = nakama::ipc::serverErwartungFuerEigenprozessTest();
+    erwartung.testFehler = nakama::ipc::ServerPruefFehler::hashFalsch;
+    auto c = client (name,
+                     [] { return hello ("abababababababababababababababab"); },
+                     std::chrono::milliseconds { 5000 }, erwartung);
+    c->start();
+    const bool fiel = warteAuf (3000, [&]
+    {
+        const auto s = c->snapshot();
+        return s.serverPruefstatus
+                    == nakama::ipc::ServerPruefStatus::belegtAberUnverifiziert
+            && s.serverPrueffehler == nakama::ipc::ServerPruefFehler::hashFalsch
+            && s.serverPruefungen == 1
+            && s.heartbeatsGesendet == 0;
+    });
+    c->stop();
+    peer.join();
+    pruefe (fiel && angenommen.load() && ! helloGelesen.load(),
+            "pipeclient_sendet_vor_serverauth_keine_bytes");
 }
 
 void ungueltigePeerBytes (bool nul)
@@ -555,6 +601,7 @@ int main()
     stoppFall (false);
     stoppFall (true);
     reconnectGeneration();
+    pipeclient_sendet_vor_serverauth_keine_bytes();
     ungueltigePeerBytes (false);
     ungueltigePeerBytes (true);
     falschesAck();

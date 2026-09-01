@@ -213,12 +213,14 @@ PipeClient::PipeClient (std::function<HelloInfo()> hp,
                         std::function<StatsSnapshot()> sp,
                         std::function<MessKompakt()> mp,
                         const juce::String& name,
-                        std::chrono::milliseconds timeout)
+                        std::chrono::milliseconds timeout,
+                        nakama::ipc::ServerErwartung serverErwartungIn)
     : helloProvider (std::move (hp)),
       statsProvider (std::move (sp)),
       messProvider (std::move (mp)),
       pipeName (name.isNotEmpty() ? name : juce::String (juce::CharPointer_UTF16 (kPipeName))),
-      ioTimeout (begrenzeIoTimeout (timeout))
+      ioTimeout (begrenzeIoTimeout (timeout)),
+      serverErwartung (std::move (serverErwartungIn))
 {
 }
 
@@ -260,7 +262,16 @@ void PipeClient::stop()
 
 void PipeClient::reconnect()
 {
-    verbindungsGeneration.fetch_add (1);
+    {
+        std::lock_guard<std::mutex> l (zustandMutex);
+        // Generation und sichtbarer Auth-Zustand wechseln gemeinsam. Damit
+        // darf ein vor reconnect() begonnener Prueflauf sein Ergebnis nicht
+        // in die neue Generation veroeffentlichen.
+        verbindungsGeneration.fetch_add (1);
+        zustand.serverPruefstatus = nakama::ipc::ServerPruefStatus::nichtGeprueft;
+        zustand.serverPrueffehler = nakama::ipc::ServerPruefFehler::keiner;
+        zustand.serverPid = 0;
+    }
     {
         std::lock_guard<std::mutex> l (wartemutex);
         warte.notify_all();
@@ -290,6 +301,23 @@ void PipeClient::threadLauf()
         }
         if (stand)
             backoffMs = kBackoffStartMs;           // Verbindung stand — frisch starten
+
+        bool authBlockiert = false;
+        {
+            std::lock_guard<std::mutex> l (zustandMutex);
+            authBlockiert = zustand.serverPruefstatus
+                == nakama::ipc::ServerPruefStatus::belegtAberUnverifiziert;
+        }
+        if (authBlockiert)
+        {
+            std::unique_lock<std::mutex> l (wartemutex);
+            warte.wait (l, [this, generation] {
+                return ! laeuft.load()
+                    || verbindungsGeneration.load() != generation;
+            });
+            backoffMs = kBackoffStartMs;
+            continue;
+        }
         {
             std::unique_lock<std::mutex> l (wartemutex);
             warte.wait_for (l, std::chrono::milliseconds (backoffMs),
@@ -313,6 +341,8 @@ bool PipeClient::eineVerbindung (std::uint64_t generation)
 {
     {
         std::lock_guard<std::mutex> l (zustandMutex);
+        if (sollAbbrechen (generation))
+            return false;
         zustand.status = Status::verbindet;
         zustand.verbindungsVersuche++;
         zustand.brokerVersion.clear();
@@ -320,6 +350,9 @@ bool PipeClient::eineVerbindung (std::uint64_t generation)
         zustand.protokollVersion = 0;
         zustand.konflikt = false;
         zustand.letztesAck.clear();
+        zustand.serverPruefstatus = nakama::ipc::ServerPruefStatus::nichtGeprueft;
+        zustand.serverPrueffehler = nakama::ipc::ServerPruefFehler::keiner;
+        zustand.serverPid = 0;
         zustand.heartbeatsGesendet = 0;
         zustand.heartbeatsBestaetigt = 0;
     }
@@ -333,18 +366,64 @@ bool PipeClient::eineVerbindung (std::uint64_t generation)
                             nullptr);
     if (h == INVALID_HANDLE_VALUE)
     {
-        const auto fehler = (int) GetLastError();
+        const auto fehler = GetLastError();
         std::lock_guard<std::mutex> l (zustandMutex);
+        if (sollAbbrechen (generation))
+            return false;
         zustand.status = Status::getrennt;
-        if (! sollAbbrechen (generation))
-            zustand.letzterFehler = "Broker nicht erreichbar (Win32 " + juce::String (fehler) + ")";
+        zustand.serverPruefstatus = fehler == ERROR_FILE_NOT_FOUND
+            ? nakama::ipc::ServerPruefStatus::nichtDa
+            : nakama::ipc::ServerPruefStatus::belegtAberUnverifiziert;
+        zustand.serverPrueffehler = fehler == ERROR_FILE_NOT_FOUND
+            ? nakama::ipc::ServerPruefFehler::pipeFehlt
+            : nakama::ipc::ServerPruefFehler::pipeOeffnen;
+        zustand.letzterFehler = "Broker nicht erreichbar (Win32 "
+                              + juce::String ((int) fehler) + ")";
         return false;
     }
 
+    // Derselbe NAK-123-Beweis wie in `IpcVerbindung`: noch bevor das HANDLE
+    // unter `handleMutex` sichtbar wird oder `sende()` ein Hello schreibt.
+    const auto serverBericht = nakama::ipc::namedPipeServerAuthentisieren (h, serverErwartung);
+    bool veralteteGeneration = false;
     {
-        std::lock_guard<std::mutex> l (handleMutex);
-        aktivesHandle = h;
+        std::lock_guard<std::mutex> l (zustandMutex);
+        veralteteGeneration = sollAbbrechen (generation);
+        if (! veralteteGeneration)
+        {
+            ++zustand.serverPruefungen;
+            if (! serverBericht.ok())
+            {
+                zustand.status = Status::getrennt;
+                zustand.serverPruefstatus = serverBericht.status;
+                zustand.serverPrueffehler = serverBericht.fehler;
+                zustand.serverPid = serverBericht.serverPid;
+                zustand.letzterFehler = "Server nicht verifiziert: "
+                                      + juce::String (nakama::ipc::serverPruefFehlerName (
+                                            serverBericht.fehler));
+            }
+            else
+            {
+                zustand.serverPruefstatus = nakama::ipc::ServerPruefStatus::verifiziert;
+                zustand.serverPrueffehler = nakama::ipc::ServerPruefFehler::keiner;
+                zustand.serverPid = serverBericht.serverPid;
+
+                // Die Handle-Freigabe liegt innerhalb derselben Generationsgrenze:
+                // reconnect() sieht danach entweder dieses Handle und cancelt es,
+                // oder dieser Lauf erkennt zuvor die veraltete Generation.
+                std::lock_guard<std::mutex> hLock (handleMutex);
+                aktivesHandle = h;
+            }
+        }
     }
+    if (veralteteGeneration || ! serverBericht.ok())
+    {
+        // Kein Handle und kein Byte eines veralteten oder unverifizierten
+        // Servers gelangen in den aktiven Connect-Pfad.
+        CloseHandle (h);
+        return false;
+    }
+
     bool welcomeKam = false;
     juce::String token;
 
@@ -512,6 +591,9 @@ bool PipeClient::eineVerbindung (std::uint64_t generation)
         zustand.protokollVersion = 0;
         zustand.konflikt = false;
         zustand.letztesAck.clear();
+        zustand.serverPruefstatus = nakama::ipc::ServerPruefStatus::nichtGeprueft;
+        zustand.serverPrueffehler = nakama::ipc::ServerPruefFehler::keiner;
+        zustand.serverPid = 0;
     }
     return welcomeKam;
 }

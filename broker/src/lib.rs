@@ -838,11 +838,11 @@ impl Drop for BrokerSupervisor {
 
 struct BrokerLauf {
     #[cfg(windows)]
-    _supervisor: BrokerSupervisor,
+    _supervisor: Mutex<Option<BrokerSupervisor>>,
     #[cfg(windows)]
-    _griff_v2: server::ServerGriff,
+    _griff_v2: Mutex<Option<server::ServerGriff>>,
     #[cfg(windows)]
-    _griff_v3: transport::server_v3::V3Griff,
+    _griff_v3: Mutex<Option<transport::server_v3::V3Griff>>,
     #[cfg(windows)]
     store: store::StoreWriter,
     #[cfg(windows)]
@@ -852,6 +852,7 @@ struct BrokerLauf {
     gestartet_ms: u64,
     bindungen_pfad: Option<PathBuf>,
     idle_seit: Mutex<Option<Instant>>,
+    beendet: AtomicBool,
 }
 
 static BROKER: OnceLock<Result<BrokerLauf, String>> = OnceLock::new();
@@ -920,12 +921,12 @@ pub fn broker_starten(bindungen_pfad: Option<PathBuf>) -> Result<(), String> {
                 })
                 .map_err(|e| format!("Coordinator-Tick: {e}"))?;
             Ok(BrokerLauf {
-                _supervisor: BrokerSupervisor {
+                _supervisor: Mutex::new(Some(BrokerSupervisor {
                     stop: supervisor_stop,
                     join: Some(supervisor_join),
-                },
-                _griff_v2: griff_v2,
-                _griff_v3: griff_v3,
+                })),
+                _griff_v2: Mutex::new(Some(griff_v2)),
+                _griff_v3: Mutex::new(Some(griff_v3)),
                 store,
                 coordinator,
                 register,
@@ -933,6 +934,7 @@ pub fn broker_starten(bindungen_pfad: Option<PathBuf>) -> Result<(), String> {
                 gestartet_ms: jetzt_ms(),
                 bindungen_pfad,
                 idle_seit: Mutex::new(Some(Instant::now())),
+                beendet: AtomicBool::new(false),
             })
         }
         #[cfg(not(windows))]
@@ -941,7 +943,53 @@ pub fn broker_starten(bindungen_pfad: Option<PathBuf>) -> Result<(), String> {
             Err("EQ-Copilot-Broker ist V1 nur für Windows gebaut".to_string())
         }
     });
-    ergebnis.as_ref().map(|_| ()).map_err(|e| e.clone())
+    ergebnis
+        .as_ref()
+        .map_err(|e| e.clone())
+        .and_then(|lauf| {
+            if lauf.beendet.load(Ordering::SeqCst) {
+                Err("Broker wurde in diesem Prozess bereits geordnet beendet".to_string())
+            } else {
+                Ok(())
+            }
+        })
+}
+
+/// Geordneter Gegenpfad fuer den normalen Prozessausstieg. Statische
+/// `OnceLock`-Werte werden beim Rueckweg aus `main` nicht gedroppt; ohne diese
+/// Funktion bliebe die Reihenfolge allein der OS-Prozessbereinigung
+/// ueberlassen. Der v3-Griff faellt bewusst nach Supervisor und v2 und joint
+/// intern erst Acceptor/Wachhund/Worker, bevor er den letzten Besitzlistener
+/// schliesst (NAK-123 A-06/A-09).
+pub fn broker_geordnet_stoppen() {
+    let Some(Ok(lauf)) = BROKER.get() else {
+        return;
+    };
+    if lauf.beendet.swap(true, Ordering::SeqCst) {
+        return;
+    }
+
+    #[cfg(windows)]
+    {
+        let supervisor = lauf
+            ._supervisor
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .take();
+        drop(supervisor);
+        let griff_v2 = lauf
+            ._griff_v2
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .take();
+        drop(griff_v2);
+        let griff_v3 = lauf
+            ._griff_v3
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .take();
+        drop(griff_v3);
+    }
 }
 
 pub fn broker_idle_ende_erreicht(idle: Duration, aktive_clients: usize) -> bool {
@@ -967,8 +1015,17 @@ pub fn broker_soll_idle_enden() -> bool {
     let Some(Ok(lauf)) = BROKER.get() else {
         return false;
     };
+    if lauf.beendet.load(Ordering::SeqCst) {
+        return false;
+    }
     #[cfg(windows)]
-    let aktive_v3 = lauf.coordinator.client_anzahl();
+    let aktive_v3 = lauf
+        ._griff_v3
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .as_ref()
+        .map(transport::server_v3::V3Griff::aktive_worker)
+        .unwrap_or(0) as usize;
     #[cfg(not(windows))]
     let aktive_v3 = 0usize;
     let aktive_v2 = lauf
@@ -984,8 +1041,35 @@ pub fn broker_soll_idle_enden() -> bool {
     broker_idle_aktualisieren(&mut idle, Instant::now(), aktive)
 }
 
+/// Sichtbarer Gegenpfad fuer einen fatal beendeten v3-Acceptor. Der Name ist
+/// zu diesem Zeitpunkt noch im `V3Griff` besessen; erst der anschliessende
+/// geordnete Stopp schliesst die Restlistener nach allen Joins.
+pub fn broker_hat_fatalen_v3_listenerfehler() -> bool {
+    let Some(Ok(lauf)) = BROKER.get() else {
+        return false;
+    };
+    if lauf.beendet.load(Ordering::SeqCst) {
+        return false;
+    }
+    #[cfg(windows)]
+    {
+        return lauf
+            ._griff_v3
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .as_ref()
+            .map(transport::server_v3::V3Griff::fataler_listenerfehler)
+            .unwrap_or(false);
+    }
+    #[cfg(not(windows))]
+    false
+}
+
 pub fn broker_store_sicht() -> Option<store::StoreSicht> {
     let lauf = BROKER.get()?.as_ref().ok()?;
+    if lauf.beendet.load(Ordering::SeqCst) {
+        return None;
+    }
     #[cfg(windows)]
     {
         return Some(lauf.store.handle().sicht());
@@ -999,7 +1083,7 @@ pub fn broker_store_sicht() -> Option<store::StoreSicht> {
 
 pub fn broker_status() -> BrokerStatus {
     match BROKER.get() {
-        Some(Ok(lauf)) => {
+        Some(Ok(lauf)) if !lauf.beendet.load(Ordering::SeqCst) => {
             let register = lauf.register.lock().expect("Register-Mutex");
             let sensoren = register.sensoren_snapshot(jetzt_ms());
             let sessions = sessions_bilden(&sensoren);
@@ -1018,6 +1102,7 @@ pub fn broker_status() -> BrokerStatus {
                 paare,
             }
         }
+        Some(Ok(_)) => status_ohne_lauf(vec!["Broker wurde geordnet beendet".to_string()]),
         Some(Err(e)) => status_ohne_lauf(vec![e.clone()]),
         None => status_ohne_lauf(vec!["Broker wurde noch nicht gestartet".to_string()]),
     }
@@ -1087,6 +1172,9 @@ pub fn profil_binden(sensor_id: &str, profil_id: Option<String>) -> Result<(), S
     let Some(Ok(lauf)) = BROKER.get() else {
         return Err("Broker läuft nicht".to_string());
     };
+    if lauf.beendet.load(Ordering::SeqCst) {
+        return Err("Broker läuft nicht".to_string());
+    }
     let mut register = lauf.register.lock().expect("Register-Mutex");
     register.profil_binden(sensor_id, profil_id);
     if let Some(pfad) = &lauf.bindungen_pfad {
@@ -1108,6 +1196,9 @@ pub fn aggregat_schreiben(
     let Some(Ok(lauf)) = BROKER.get() else {
         return Err("Broker läuft nicht".to_string());
     };
+    if lauf.beendet.load(Ordering::SeqCst) {
+        return Err("Broker läuft nicht".to_string());
+    }
     let (sensoren, token_kurz) = {
         let register = lauf.register.lock().expect("Register-Mutex");
         (

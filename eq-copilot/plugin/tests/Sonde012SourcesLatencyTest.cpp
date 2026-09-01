@@ -12,6 +12,7 @@
 #include <atomic>
 #include <chrono>
 #include <cmath>
+#include <filesystem>
 #include <iomanip>
 #include <iostream>
 #include <map>
@@ -83,10 +84,12 @@ struct Quelle
 
 struct Messlauf
 {
-    explicit Messlauf (std::string p, int anzahl) : pipe (std::move (p)), n (anzahl) {}
+    explicit Messlauf (std::string p, int anzahl, ServerErwartung erwartung)
+        : pipe (std::move (p)), n (anzahl), serverErwartung (std::move (erwartung)) {}
 
     std::string pipe;
     int n;
+    ServerErwartung serverErwartung;
     eqcop::SourcesModel model;
     std::unique_ptr<ControlClient> mainControl;
     std::unique_ptr<TelemetryClient> mainTelemetry;
@@ -134,7 +137,9 @@ struct Messlauf
                 const auto ergebnis = mainControl->sendeP1 ("subscribe_session", subscribe);
                 if (ergebnis == P1Ergebnis::abgewiesen || ergebnis == P1Ergebnis::zuGross)
                     model.controlEnde();
-            });
+            },
+            std::function<void (const std::string&, std::uint8_t)> {},
+            serverErwartung);
         mainTelemetry = std::make_unique<TelemetryClient> (
             [this, mainAdresse] {
                 TelemetryHello h;
@@ -162,7 +167,7 @@ struct Messlauf
                         jetzt - it->second).count());
                     ersteSamples.erase (it);
                 }
-            });
+            }, serverErwartung);
 
         mainControl->start();
         mainTelemetry->start();
@@ -180,14 +185,19 @@ struct Messlauf
                     h.hostAngeben = true;
                     h.hostPid = 4242;
                     return h;
-                }, pipe, std::function<void (const std::string&)>{}, [] { return status(); });
+                }, pipe, std::function<void (const std::string&)>{}, [] { return status(); },
+                std::function<void (bool)> {},
+                std::function<void (const std::string&, std::uint8_t)> {},
+                serverErwartung);
             q->telemetry = std::make_unique<TelemetryClient> (
                 [roh] {
                     TelemetryHello h;
                     h.adresse = roh->adresse;
                     roh->control->kopplung (h.linkId, h.challenge);
                     return h;
-                }, pipe);
+                }, pipe,
+                std::function<void (const std::uint8_t*, std::size_t, std::uint8_t)> {},
+                serverErwartung);
             q->control->start();
             q->telemetry->start();
             quellen.push_back (std::move (q));
@@ -297,11 +307,19 @@ int main (int argc, char** argv)
         std::cerr << "VERWEIGERT: genau ein Pipename aus dem Probe-Namensraum ist Pflicht\n";
         return 3;
     }
+    const auto brokerPfad = std::filesystem::absolute (
+        std::filesystem::path (L"broker/target/release/eqcop-broker-sonde012-probe.exe"));
+    const auto serverErwartung = serverErwartungFuerTestdatei (brokerPfad.wstring());
+    if (serverErwartung.absoluterBrokerPfad.empty())
+    {
+        std::cerr << "VORAUSSETZUNG FEHLT: SONDE-012-Probe-Broker nicht hashbar\n";
+        return 3;
+    }
     int fehler = 0;
     std::map<int, std::map<int, double>> ergebnisse;
     for (const int n : { 16, 32 })
     {
-        Messlauf lauf (argv[1], n);
+        Messlauf lauf (argv[1], n, serverErwartung);
         if (! lauf.starten())
         {
             lauf.stoppen();

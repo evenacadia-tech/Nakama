@@ -65,6 +65,13 @@ std::wstring brokerStartMutexName (const std::string& sid)
     aus.append (sid.begin(), sid.end());
     return aus;
 }
+
+nakama::ipc::ServerErwartung brokerServerErwartung()
+{
+    return { nakama::ipc::installbindung::brokerPfad,
+             nakama::ipc::installbindung::brokerSha256,
+             nakama::ipc::installbindung::authenticodeThumbprint };
+}
 } // namespace
 
 EqCopilotProcessor::EqCopilotProcessor()
@@ -90,17 +97,18 @@ EqCopilotProcessor::EqCopilotProcessor()
                 return h;
             },
             [this] { return statsSnapshot(); },
-            [this] { return messKompakt(); }),
+            [this] { return messKompakt(); }, {},
+            std::chrono::milliseconds { 5000 }, brokerServerErwartung()),
       controlV3 ([this] { return v3Hello(); }, v3PipeName,
                  {},
                  [this] { return v3Status(); },
-                 [this] (bool verbunden) { v3ControlLink (verbunden); },
-                 [this] (const std::string& json, std::uint8_t schemaMinor)
-                 { v3Antwort (json, schemaMinor); }),
+                  [this] (bool verbunden) { v3ControlLink (verbunden); },
+                  [this] (const std::string& json, std::uint8_t schemaMinor)
+                  { v3Antwort (json, schemaMinor); }, brokerServerErwartung()),
       telemetryV3 ([this] { return v3TelemetryHello(); }, v3PipeName,
                    [this] (const std::uint8_t* daten, std::size_t laenge,
-                           std::uint8_t minor)
-                   { v3Frame (daten, laenge, minor); }),
+                            std::uint8_t minor)
+                   { v3Frame (daten, laenge, minor); }, brokerServerErwartung()),
       brokerLifecycle (nakama::ipc::BrokerLifecycleHooks {
           [this] {
               return controlV3.snapshot().status
@@ -111,6 +119,7 @@ EqCopilotProcessor::EqCopilotProcessor()
               return s.status == nakama::ipc::ControlClient::Status::getrennt
                   && s.brokerPipeFehlt;
           },
+          [this] { return controlV3.snapshot().serverPruefstatus; },
           [this] { return darfBrokerStarten(); },
           [this] { controlV3.reconnect(); },
           [] {

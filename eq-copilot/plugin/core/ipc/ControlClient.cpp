@@ -76,16 +76,6 @@ bool fehlercodeHaeltVertrag (const std::string& code) noexcept
         || code == "rate_limited" || code == "internal";
 }
 
-bool brokerPipeFehltNachOeffnen (const std::string& fehler) noexcept
-{
-    // `IpcVerbindung::oeffnen` bildet den Win32-Code verlustfrei in genau
-    // diese interne Meldung ab. Nur ERROR_FILE_NOT_FOUND (2) bedeutet bei
-    // einer Named Pipe, dass kein Broker horcht. ERROR_PIPE_BUSY (231),
-    // Zugriff verweigert und jeder lokale Vertragsfehler sind ausdruecklich
-    // keine Startberechtigung.
-    return fehler == "Broker nicht erreichbar (Win32 2)";
-}
-
 // Liest einen JSON-String nur so weit, wie es fuer die eindeutige
 // `command_id`-Suche noetig ist. Escapes werden uebersprungen, aber nicht
 // interpretiert: weder ein Schluessel noch hex32 darf laut Vertrag ein Escape
@@ -530,11 +520,12 @@ struct ControlClient::Laufzeit
               std::function<void (const std::string&)> ba,
               std::function<ControlStatus()> sp,
               std::function<void (bool)> bl,
-              std::function<void (const std::string&, std::uint8_t)> bva)
+              std::function<void (const std::string&, std::uint8_t)> bva,
+              ServerErwartung se)
         : helloProvider (std::move (hp)), beiAntwort (std::move (ba)),
           statusProvider (std::move (sp)), beiLinkStatus (std::move (bl)),
           beiVersionierterAntwort (std::move (bva)),
-          pipeName (std::move (pn)) {}
+          pipeName (std::move (pn)), serverErwartung (std::move (se)) {}
 
     void threadLauf (std::uint64_t meinLauf, std::shared_ptr<IpcVerbindung> meine);
     bool eineVerbindung (std::uint64_t generation, std::uint64_t meinLauf,
@@ -560,6 +551,7 @@ struct ControlClient::Laufzeit
     std::function<void (const std::string&, std::uint8_t)> beiVersionierterAntwort;
     std::atomic<bool> linkAlsVerbundenGemeldet { false };
     std::string pipeName;
+    ServerErwartung serverErwartung;
     std::atomic<std::uint64_t> heartbeatFolge { 0 };
 
     /// Die Verbindung des LAUFENDEN Laufs. Jeder `start()` legt eine eigene an.
@@ -650,15 +642,17 @@ ControlClient::ControlClient (std::function<ControlHello()> helloProviderIn,
                               std::string pipeNameIn,
                               std::function<void (const std::string&)> beiAntwortIn,
                               std::function<ControlStatus()> statusProviderIn,
-                              std::function<void (bool)> beiLinkStatusIn,
-                              std::function<void (const std::string&, std::uint8_t)>
-                                  beiVersionierterAntwortIn)
+                               std::function<void (bool)> beiLinkStatusIn,
+                               std::function<void (const std::string&, std::uint8_t)>
+                                   beiVersionierterAntwortIn,
+                               ServerErwartung serverErwartungIn)
     : k (std::make_shared<Laufzeit> (std::move (helloProviderIn),
                                      std::move (pipeNameIn),
                                      std::move (beiAntwortIn),
                                      std::move (statusProviderIn),
                                      std::move (beiLinkStatusIn),
-                                     std::move (beiVersionierterAntwortIn)))
+                                     std::move (beiVersionierterAntwortIn),
+                                     std::move (serverErwartungIn)))
 {
 }
 
@@ -736,18 +730,27 @@ void ControlClient::stop()
     verbindung->schliessen();
     std::lock_guard<std::mutex> z (k->zustandMutex);
     k->zustand.status = Status::getrennt;
+    k->zustand.serverPruefstatus = ServerPruefStatus::nichtGeprueft;
+    k->zustand.serverPrueffehler = ServerPruefFehler::keiner;
+    k->zustand.serverPid = 0;
 }
 
 void ControlClient::reconnect()
 {
-    k->meldeLinkStatus (false);
     {
         std::lock_guard<std::mutex> l (k->zustandMutex);
+        // Generation und sichtbarer Auth-Zustand bilden eine atomare
+        // Zustandsgrenze. So kann ein alter Prueflauf sein Urteil nicht nach
+        // diesem Reset in die neue Verbindungsgeneration schreiben.
+        k->verbindungsGeneration.fetch_add (1);
         k->zustand.brokerPipeFehlt = false;
+        k->zustand.serverPruefstatus = ServerPruefStatus::nichtGeprueft;
+        k->zustand.serverPrueffehler = ServerPruefFehler::keiner;
+        k->zustand.serverPid = 0;
     }
-    k->verbindungsGeneration.fetch_add (1);
     k->aktuelleVerbindung()->ioAbbrechen();
     k->warte.notify_all();
+    k->meldeLinkStatus (false);
 }
 
 ControlClient::Snapshot ControlClient::snapshot() const { return k->snapshotIntern(); }
@@ -988,6 +991,26 @@ void ControlClient::Laufzeit::threadLauf (std::uint64_t meinLauf,
         if (stand)
             backoffMs = kBackoffStartMs;
 
+        bool authBlockiert = false;
+        {
+            std::lock_guard<std::mutex> z (zustandMutex);
+            authBlockiert = zustand.serverPruefstatus
+                         == ServerPruefStatus::belegtAberUnverifiziert;
+        }
+        if (authBlockiert)
+        {
+            // Kein automatischer Fallback und kein wiederholtes Anklopfen an
+            // einen belegten, aber unverifizierten Namen. Nur ein bewusster
+            // reconnect()/stop() aendert die Generation und loest die Sperre.
+            std::unique_lock<std::mutex> l (wartemutex);
+            warte.wait (l, [this, generation] {
+                return ! laeuft.load()
+                    || verbindungsGeneration.load() != generation;
+            });
+            backoffMs = kBackoffStartMs;
+            continue;
+        }
+
         {
             std::unique_lock<std::mutex> l (wartemutex);
             warte.wait_for (l, std::chrono::milliseconds (backoffMs), [this, generation] {
@@ -1015,8 +1038,13 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
 {
     {
         std::lock_guard<std::mutex> l (zustandMutex);
+        if (sollAbbrechen (generation))
+            return false;
         zustand.status = Status::verbindet;
         zustand.brokerPipeFehlt = false;
+        zustand.serverPruefstatus = ServerPruefStatus::nichtGeprueft;
+        zustand.serverPrueffehler = ServerPruefFehler::keiner;
+        zustand.serverPid = 0;
         ++zustand.verbindungsVersuche;
         zustand.linkId.clear();
         zustand.challenge.clear();
@@ -1039,6 +1067,8 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
     if (! adresseGueltig (hello.adresse))
     {
         std::lock_guard<std::mutex> l (zustandMutex);
+        if (sollAbbrechen (generation))
+            return false;
         zustand.status = Status::getrennt;
         zustand.letzterFehler = "Adresse haelt den v3-Vertrag nicht (hex32/SID)";
         return false;
@@ -1050,6 +1080,8 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
     if (! audioGueltig (hello.samplerate, hello.blockSize, hello.channels))
     {
         std::lock_guard<std::mutex> l (zustandMutex);
+        if (sollAbbrechen (generation))
+            return false;
         zustand.status = Status::getrennt;
         zustand.letzterFehler =
             "Audiolage haelt den v3-Vertrag nicht (samplerate/block_size/channels)";
@@ -1057,15 +1089,47 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
     }
 
     std::string fehler;
-    if (! verbindung.oeffnen (pipeName, fehler))
+    ServerPruefBericht serverBericht;
+    const bool serverGeoeffnet = verbindung.oeffnen (
+        pipeName, serverErwartung, serverBericht, fehler);
+    bool veralteteGeneration = false;
     {
         std::lock_guard<std::mutex> l (zustandMutex);
-        zustand.status = Status::getrennt;
-        zustand.brokerPipeFehlt = brokerPipeFehltNachOeffnen (fehler);
-        if (! sollAbbrechen (generation))
-            zustand.letzterFehler = fehler;
+        veralteteGeneration = sollAbbrechen (generation);
+        if (! veralteteGeneration)
+        {
+            if (serverBericht.status == ServerPruefStatus::verifiziert
+                || serverBericht.status == ServerPruefStatus::belegtAberUnverifiziert)
+                ++zustand.serverPruefungen;
+
+            if (! serverGeoeffnet)
+            {
+                zustand.status = Status::getrennt;
+                zustand.serverPruefstatus = serverBericht.status;
+                zustand.serverPrueffehler = serverBericht.fehler;
+                zustand.serverPid = serverBericht.serverPid;
+                zustand.brokerPipeFehlt = serverBericht.status == ServerPruefStatus::nichtDa;
+                zustand.letzterFehler = fehler;
+            }
+            else
+            {
+                zustand.serverPruefstatus = ServerPruefStatus::verifiziert;
+                zustand.serverPrueffehler = ServerPruefFehler::keiner;
+                zustand.serverPid = serverBericht.serverPid;
+            }
+        }
+    }
+    if (veralteteGeneration)
+    {
+        // Ein reconnect() kann waehrend PID-/SID-/Datei-/Hashpruefung die
+        // Generation wechseln. Das alte Urteil darf danach weder den neuen
+        // Lauf als verifiziert markieren noch dessen Lifecycle-Mutex loesen.
+        if (serverGeoeffnet)
+            verbindung.schliessen();
         return false;
     }
+    if (! serverGeoeffnet)
+        return false;
 
     std::string helloJson =
         std::string ("{\"type\":\"hello\",\"connection_kind\":\"control\",\"protocol\":3,")
@@ -1170,6 +1234,9 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
         verbindung.schliessen();
         std::lock_guard<std::mutex> l (zustandMutex);
         zustand.status = Status::getrennt;
+        zustand.serverPruefstatus = ServerPruefStatus::nichtGeprueft;
+        zustand.serverPrueffehler = ServerPruefFehler::keiner;
+        zustand.serverPid = 0;
         return false;
     }
 
@@ -1436,6 +1503,9 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
         {
             std::lock_guard<std::mutex> l (zustandMutex);
             zustand.status = Status::getrennt;
+            zustand.serverPruefstatus = ServerPruefStatus::nichtGeprueft;
+            zustand.serverPrueffehler = ServerPruefFehler::keiner;
+            zustand.serverPid = 0;
         }
         meldeLinkStatus (false);
     }

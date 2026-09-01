@@ -2,7 +2,7 @@
 
 ## Status
 
-**2 von 5 Entscheidungen gesammelt.** Der gemeinsame Umbau, die vollständige
+**3 von 5 Entscheidungen gesammelt.** Der gemeinsame Umbau, die vollständige
 Sichtprüfung und die Integration in die Detailabnahmen sowie den Blueprint
 folgen nach Entscheidung 5.
 
@@ -58,3 +58,20 @@ Damit ist für Gen Fläche 2 gesammelt:
   Dynamic-Werte bleiben erhalten.
 - Welche Ansicht unmittelbar nach dem Ausschalten bestehen bleibt und wohin
   der Fokus geht, bleibt als nächste Architekturfrage offen.
+
+## 3/5 — Nach dem Ausschalten zu den Grundwerten zurückkehren
+
+Auf die Frage nach Ansicht und Fokus unmittelbar nach dem Ausschalten von
+Dynamic wählt der User:
+
+> „A“
+
+Damit ist für Gen Fläche 2 gesammelt:
+
+- Das Ausschalten über den Control am Anfang der Dynamic-Ansicht setzt
+  `dynamic_enabled` auf `false`, lässt das objektgebundene Mini-Panel jedoch
+  geöffnet.
+- Im selben Panelkörper erscheinen wieder `Frequency`, `Gain` und `Q`.
+- Der Tastaturfokus geht auf den weiterhin sichtbaren Einstieg `DYN · OFF`.
+- Die fünf gespeicherten Dynamic-Werte bleiben unverändert und werden erst
+  nach einer erneuten Aktivierung wieder eingeblendet.

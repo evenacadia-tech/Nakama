@@ -46,10 +46,11 @@ Commits gehen ohne Rückfrage raus.
   vom 25.08. sind dafür Verlauf und liefern weder Raster noch Farben, Material
   oder Positionen. Eine neue visuelle Richtung entsteht erst in einem eigenen
   User-Schritt. Produktsprache Englisch; Docs, Commits und Gespräch Deutsch.
-- **Aktueller UI-Arbeitsmodus:** Pro Oberfläche genau eine echte offene
+- **Aktueller UI-Arbeitsmodus:** Pro User-Schritt genau eine echte offene
   Architekturfrage. Technische Grenzen vorher selbst aus Code, Tests und
-  Verträgen ableiten; nach jeder Antwort zuerst Skizze und Abnahme
-  aktualisieren. Der Wortlaut und aktuelle Stand stehen in
+  Verträgen ableiten. Antworten werden in festen Fünferblöcken gesammelt;
+  nach der fünften werden Skizze, Abnahmen und Blueprint gemeinsam
+  aktualisiert und sichtbar geprüft. Der Wortlaut und aktuelle Stand stehen in
   `design/abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md`.
 - **Keine toten UI-Elemente.** Jedes sichtbare Element führt einen Handgriff
   aus oder meldet ehrlich einen Zustand.
@@ -177,9 +178,11 @@ State-Migrationsstand und den letzten Installationsbeweis prüfen.
 2. Pro Oberfläche genau eine noch offene Frage zu Aufbau, Hierarchie,
    Sichtbarkeit, Objektbesitz oder Disclosure stellen. Funktionsumfang und
    technische Grenzen vorher selbst aus aktuellen Quellen klären.
-3. Nach jeder Antwort zuerst die laufende technische Skizze sichtbar
-   aktualisieren und den User-Wortlaut unter `design/abnahmen/` festhalten;
-   bereits Geschlossenes nicht erneut öffnen.
+3. Antworten in einem laufenden Fünferblock sammeln und den User-Wortlaut in
+   dessen Entscheidungsprotokoll sichern. Nach der fünften Antwort die
+   technische Skizze, die betroffenen Abnahmen und den Blueprint gemeinsam
+   aktualisieren und sichtbar prüfen; bereits Geschlossenes nicht erneut
+   öffnen.
 4. Farben, Material, Typografie und visuelle Feinheiten beginnen erst nach
    ausdrücklichem Wechsel in die visuelle Phase. Erst eine dokumentierte
    Abnahme erlaubt die Spiegelung in `eq-copilot/`.

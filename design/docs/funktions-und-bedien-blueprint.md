@@ -1339,17 +1339,25 @@ Behauptung über Herstellerintention oder Marktanteil.
 Die gezielten grauen Funktionsblätter werden in einer fortlaufenden
 Architektur-Fragenrunde konkretisiert. Es wird immer genau eine noch offene
 räumliche oder bedienerische Frage gestellt; technische Grenzen werden vorher
-aus den aktuellen Verträgen, Quellen und Tests abgeleitet. Nach jeder Antwort
-wird zuerst die laufende Skizze aktualisiert und der User-Wortlaut unter
-`design/abnahmen/` festgehalten.
+aus den aktuellen Verträgen, Quellen und Tests abgeleitet. Antworten werden in
+festen Fünferblöcken gesammelt. Nach der fünften Antwort werden die laufende
+Skizze, die betroffenen Abnahmen und dieser Blueprint gemeinsam aktualisiert
+und sichtbar geprüft; erst danach beginnt der nächste Block.
+
+Der jeweils laufende, noch nicht batchweise integrierte Entscheidungsstand
+steht in der jüngsten Datei `technische-ui-architektur-fuenferblock-*.md` unter
+`design/abnahmen/`. Bis zum Abschluss des Blocks kann er den Detailabschnitten
+dieses Blueprints zeitlich voraus sein.
 
 Gen Fläche 1 und die Grundhierarchie von Gen Fläche 2 besitzen bereits den in
 Abschnitt 4 beschriebenen User-entschiedenen Stand. Die Filtertyp-Mechanik,
 die freie Verankerung des kompakten Band-Panels und der zweireihige
-Dynamic-Ansichtswechsel im selben Panelkörper sind entschieden. Die
-Fragenrunde setzt bei der noch offenen Trennung zwischen Dynamic-Aktivierung
-und bloßem Öffnen der Werteansicht fort; danach folgen die Schließ-/Fokusregel,
-Probeeq und die gemeinsamen Regeln. Objektbesitz, Fokus, Tastaturweg und
+Dynamic-Ansichtswechsel im selben Panelkörper sind entschieden. Im laufenden
+Fünferblock ist die Kopplung `DYN · OFF` = aktivieren und öffnen als
+Entscheidung 1/5 gesammelt, aber noch nicht batchweise in die Detailabschnitte
+integriert. Als Nächstes folgt der ausdrückliche Bedienort zum Ausschalten;
+danach folgen die Schließ-/Fokusregel, Probeeq und die gemeinsamen Regeln.
+Objektbesitz, Fokus, Tastaturweg und
 Worst-Case-Zustände werden weiterhin am passenden Blatt geprüft. Farben,
 Material und visuelle Feinheiten bleiben bis zum ausdrücklichen Phasenwechsel
 getrennt.

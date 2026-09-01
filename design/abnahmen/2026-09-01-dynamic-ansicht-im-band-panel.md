@@ -1,5 +1,10 @@
 # 2026-09-01 — Dynamic wechselt im Band-Panel die Ansicht
 
+> **Aktueller Sammelstand:** Der nachfolgende Einzelstand wird nach 5/5
+> batchweise fortgeschrieben. Entscheidung 1/5 zur Aktivierung beim ersten
+> Öffnen steht bis dahin in
+> [`2026-09-01-technische-ui-architektur-fuenferblock-01.md`](2026-09-01-technische-ui-architektur-fuenferblock-01.md).
+
 ## Entscheid
 
 Auf die Frage, wie die fünf Dynamic-Werte aus dem kompakten Band-Panel

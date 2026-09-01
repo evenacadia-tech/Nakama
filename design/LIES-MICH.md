@@ -31,11 +31,12 @@ erst in einem eigenen Folgeschritt.
 Arbeitsmodus, bestätigter Strukturstand und die bewusst offenen nächsten
 Entscheide stehen in
 [`abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md`](abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md).
-Für diese Phase gilt: genau eine echte UI-Architekturfrage nach der anderen,
-technische Grenzen vorher selbst aus aktuellen Quellen ableiten und nach jeder
-Antwort zuerst die sichtbare Skizze sowie die Abnahme aktualisieren. Farben,
-Material und visuelle Feinheiten bleiben bis zum ausdrücklichen Wechsel der
-Phase außen vor.
+Für diese Phase gilt: genau eine echte UI-Architekturfrage nach der anderen
+und technische Grenzen vorher selbst aus aktuellen Quellen ableiten. Die
+Antworten werden in festen Fünferblöcken gesammelt; nach der fünften Antwort
+werden sichtbare Skizze, Abnahmen und Blueprint gemeinsam aktualisiert und
+geprüft. Farben, Material und visuelle Feinheiten bleiben bis zum
+ausdrücklichen Wechsel der Phase außen vor.
 
 ## Dein Job
 

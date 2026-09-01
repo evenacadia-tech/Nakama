@@ -52,6 +52,36 @@ User-Wortlaut und bindende Konsequenz werden zusätzlich unter `design/abnahmen/
 festgehalten; der Blueprint übernimmt die daraus entstandene aktuelle
 Funktionsarchitektur.
 
+## Taktänderung am 2026-09-01 — feste Fünferblöcke
+
+Der User ändert den Umbautakt ausdrücklich:
+
+> „WÄRE ES nicht sinnvoller wir sammeln wieder ein paar entscheidungen? nach
+> jeder frage direkt umbauen ist doch sehr umständlich ? wir können das fest
+> machen. immer 5 fragen dann umbauen“
+
+Dieser neuere Entscheid ersetzt die Einzelumbau-Regel für den weiteren Takt.
+Die übrigen Grenzen dieses Arbeitsmodus bleiben bestehen:
+
+1. Es wird weiterhin immer genau eine echte, technisch vorbereitete
+   Architekturfrage gestellt.
+2. Fünf beantwortete Architekturfragen bilden einen festen Entscheidungsblock.
+   Zwischen den Fragen wird nur der Wortlaut im laufenden Blockprotokoll
+   gesichert; Skizze, Detailabnahmen und Blueprint werden nicht einzeln
+   umgebaut.
+3. Nach der fünften Antwort werden alle fünf Entscheide gemeinsam in die
+   laufende Skizze und die betroffenen Abnahmen übernommen, im internen Browser
+   sichtbar geprüft und anschließend in den Blueprint integriert. Erst danach
+   beginnt der nächste Fünferblock.
+4. Ein Block wird nur durch einen neuen ausdrücklichen Userauftrag vorzeitig
+   umgebaut.
+5. Technische Grenzen werden weiterhin vor jeder Frage selbst ermittelt;
+   bereits Entschiedenes bleibt geschlossen. Farben, Materialien und visuelle
+   Feinheiten bleiben außerhalb dieser Phase.
+
+Der laufende Block steht in
+[`2026-09-01-technische-ui-architektur-fuenferblock-01.md`](2026-09-01-technische-ui-architektur-fuenferblock-01.md).
+
 ## Abgenommener Stand — Gen Fläche 1
 
 Die bisher einzeln bestätigten Strukturentscheide ergeben:
@@ -131,13 +161,15 @@ Zusammengefasst gilt:
 - Gen Fläche 1: ob Finding-Belege und Alternativen durch Ansichtswechsel in
   derselben Fläche oder mit einem anderen Mechanismus erscheinen. Die dazu
   gestellte Frage wurde noch nicht beantwortet.
-- Gen Fläche 2: Ein-/Ausschalten von `dynamic_enabled` gegenüber dem bloßen
-  Öffnen der entschiedenen Dynamic-Ansicht; endgültige Schließ- und Fokusregeln
-  des Mini-Panels.
+- Gen Fläche 2: Die Kopplung des ersten Öffnens mit der Aktivierung ist als
+  Entscheidung 1/5 im laufenden Fünferblock gesammelt. Offen bleiben der
+  ausdrückliche Bedienort zum Ausschalten von `dynamic_enabled` sowie die
+  endgültigen Schließ- und Fokusregeln des Mini-Panels.
 - Der Produktrückweg von Gen Fläche 2 zu Gen Fläche 1 ist durch den Entscheid
   zum einzigen **Vorwärtsweg** noch nicht festgelegt.
 - Probeeq und die gemeinsamen UI-Regeln wurden in dieser Runde noch nicht
   befragt.
 
-Die nächste Architekturfrage betrifft die noch offene Trennung zwischen
-Dynamic-Aktivierung und bloßem Öffnen der Werteansicht.
+Die nächste Architekturfrage betrifft den ausdrücklichen Bedienort zum
+Ausschalten eines aktiven Dynamic-Bands. Sie ist Entscheidung 2/5 des laufenden
+Blocks.

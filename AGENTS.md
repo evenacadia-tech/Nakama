@@ -107,9 +107,10 @@ Für Designaufgaben gilt zusätzlich diese Reihenfolge:
    diese designneutrale Phase Verlauf. Sie dürfen keine Raster-, Farb-,
    Material- oder Positionsentscheidung still ergänzen. Eine neue visuelle
    Richtung beginnt erst nach ausdrücklichem User-Wechsel in diese Phase.
-4. Genau eine echte, technisch noch offene UI-Architekturfrage stellen. Nach
-   jeder Antwort zuerst die laufende Skizze und die Abnahme aktualisieren,
-   bevor die nächste Frage folgt.
+4. Genau eine echte, technisch noch offene UI-Architekturfrage stellen. Die
+   Antworten werden in festen Fünferblöcken gesammelt. Erst nach der fünften
+   Antwort werden laufende Skizze, Abnahmen und Blueprint gemeinsam
+   aktualisiert und sichtbar geprüft; danach beginnt der nächste Block.
 5. Bei Audio-Plugin-Oberflächen den Skill `audio-plugin-ux` verwenden.
 
 Technische Grenzen vor der Frage aus aktuellem Code, Tests und Verträgen

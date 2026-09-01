@@ -608,10 +608,17 @@ Band-Slots als `bell`, wählt ihn und öffnet dasselbe Panel. Bei acht belegten
 Slots wird der Grenzfall sichtbar gemeldet; kein bestehendes Band wird still
 überschrieben.
 
-**[A]/[D] Zustandswahrheit:** Globale Zustände, aktiver Draft, Freeze,
+**[U]/[D] Dynamic-Disclosure:** Globale Zustände, aktiver Draft, Freeze,
 Automation und Preview dürfen nie spurlos eingeklappt sein. Der Filtertyp ist
 im objektgebundenen Mini-Panel sichtbar und diskret wechselbar; der feste
-Band-Slot bleibt dabei erhalten. Dynamic-Detail und endgültige
+Band-Slot bleibt dabei erhalten. Für ein aktives Dynamic-Band wechselt
+derselbe am Bandpunkt verankerte Panelkörper in eine zweireihige Ansicht für
+`Range`, `Threshold`, `Attack`, `Hold` und `Release`. Die normalen Felder
+`Frequency`, `Gain` und `Q` werden für diesen Teilschritt ersetzt und nicht in
+einem Nebenpanel oder Akkordeon gleichzeitig gezeigt. Bandidentität und
+Panelanker bleiben stabil; `priority_sidechain` bleibt vor P8 unsichtbar. Wie
+`dynamic_enabled` ein-/ausgeschaltet wird, ohne das bloße Öffnen der Ansicht
+mit einer Klangänderung zu vermischen, sowie die endgültigen
 Schließ-/Fokusregeln des Mini-Panels bleiben **[O]**.
 
 **[U] Zielwechsel:** Probeeq-Ziele folgen, soweit FL es belegt liefert, der
@@ -740,7 +747,7 @@ Abbruch/Rückweg und native JUCE-Semantik.
 | Band auswählen | Node/Curve | Bandliste oder nächstes/vorheriges Band | Deselect | Band-ID, Typ und aktiver Zustand |
 | Band anlegen | Klick/Drag oder Spectrum Grab | Add-Band-Aktion plus Frequenzfeld | Escape verwirft Draft | Ziel, Frequenz, Gain, Q, Slotverfügbarkeit |
 | Band formen | Drag und modifizierte Feingeste | Pfeile grob/fein, Textwerte | Default/Undo | Wert, Einheit, Grenzen, Clamp und Automation |
-| Banddynamik | Dynamic-Toggle am ausgewählten Band | Toggle plus Range/Threshold/Attack/Hold/Release-Felder | Disable/Reset | Aktivmarker und Gain-Bewegung; priority_sidechain erst bei Capability |
+| Banddynamik | Dynamic-Einstieg am ausgewählten Band; derselbe Panelkörper wechselt die Ansicht | zweireihige Range/Threshold/Attack/Hold/Release-Felder | Rückweg stellt Frequency/Gain/Q wieder her; Disable/Reset noch **[O]** | Aktivmarker und Gain-Bewegung; Öffnen und `dynamic_enabled` bleiben getrennte technische Vorgänge; priority_sidechain erst bei Capability |
 | Schutzbereich setzen | Range-Handles | zwei numerische Endpunkte | Reset/Cancel | Lower/Upper, Gültigkeit und betroffene Aktion |
 | Preview halten | Press-and-hold | Key-down/up auf fokussierter Aktion | Release/Fokusverlust/Timeout | Momentary action, Lease und Ziel |
 | 10-s-Kandidat starten | Klick | Enter/Space activation | **[A]** Escape/Expiry → Confirmed, Draft bleibt; Reject verwirft bewusst | Candidate state, Restzeit, Baseline; Detailsemantik noch **[O]** |
@@ -1267,6 +1274,10 @@ Schema:
     Preview, 10-s-Kandidat, Confirmed, Host-Geste, Cancel und Revert. Die
     Drei-Stufen-Geste für Proposals beantwortet diesen Detailvertrag noch
     nicht vollständig.
+15. **[O] Dynamic-Aktivierung:** Der zweireihige Ansichtswechsel ist
+    entschieden. Noch offen ist, ob und wo `dynamic_enabled` ein-/ausgeschaltet
+    wird, ohne dass das bloße Öffnen oder Verlassen der Werteansicht den Klang
+    verändert.
 
 Diese Punkte sind kein Freibrief für Platzhaltercontrols. Bis zur technischen
 oder User-Entscheidung bleibt die jeweilige Funktion ehrlich unavailable oder
@@ -1333,10 +1344,12 @@ wird zuerst die laufende Skizze aktualisiert und der User-Wortlaut unter
 `design/abnahmen/` festgehalten.
 
 Gen Fläche 1 und die Grundhierarchie von Gen Fläche 2 besitzen bereits den in
-Abschnitt 4 beschriebenen User-entschiedenen Stand. Die Filtertyp-Mechanik und
-die freie Verankerung des kompakten Band-Panels sind entschieden. Die
-Fragenrunde setzt beim noch offenen Dynamic-Detail desselben Panels fort;
-danach folgen Probeeq und die gemeinsamen Regeln. Objektbesitz, Fokus,
-Tastaturweg und Worst-Case-Zustände werden weiterhin am passenden Blatt
-geprüft. Farben, Material und visuelle Feinheiten bleiben bis zum
-ausdrücklichen Phasenwechsel getrennt.
+Abschnitt 4 beschriebenen User-entschiedenen Stand. Die Filtertyp-Mechanik,
+die freie Verankerung des kompakten Band-Panels und der zweireihige
+Dynamic-Ansichtswechsel im selben Panelkörper sind entschieden. Die
+Fragenrunde setzt bei der noch offenen Trennung zwischen Dynamic-Aktivierung
+und bloßem Öffnen der Werteansicht fort; danach folgen die Schließ-/Fokusregel,
+Probeeq und die gemeinsamen Regeln. Objektbesitz, Fokus, Tastaturweg und
+Worst-Case-Zustände werden weiterhin am passenden Blatt geprüft. Farben,
+Material und visuelle Feinheiten bleiben bis zum ausdrücklichen Phasenwechsel
+getrennt.

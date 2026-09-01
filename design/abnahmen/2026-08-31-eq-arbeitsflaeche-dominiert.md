@@ -94,7 +94,10 @@ Damit gilt für Gen Seite 2:
   kein kontinuierliches Filter-Morphing. Neu angelegte Bänder beginnen gemäß
   Parametervertrag als `bell`.
 - Dynamic-Detail sowie endgültige Schließ- und Fokusregeln des Mini-Panels
-  bleiben Gegenstand der folgenden Einzelentscheide.
+  bleiben Gegenstand der folgenden Einzelentscheide. Der Dynamic-Ansichtswechsel
+  wurde am 01.09.2026 in
+  [`2026-09-01-dynamic-ansicht-im-band-panel.md`](2026-09-01-dynamic-ansicht-im-band-panel.md)
+  fortgeführt.
 
 ## Filterkurven statt All-Caps-Typnamen
 
@@ -114,3 +117,19 @@ Damit gilt:
   Control wird.
 - Auswahl und aktueller Zustand werden zusätzlich über den Buttonzustand
   vermittelt; die Kurvenform bleibt der Bedeutungsträger des Filtertyps.
+
+## Fortsetzung am 01.09.2026 — Dynamic im selben Panelkörper
+
+Der User entscheidet zur Erreichbarkeit von `Range`, `Threshold`, `Attack`,
+`Hold` und `Release`:
+
+> „bezüglich dynamic : A“
+
+Damit wechselt derselbe am Bandpunkt verankerte Panelkörper in eine kompakte
+zweireihige Dynamic-Ansicht. Die fünf Werte ersetzen dort vorübergehend
+`Frequency`, `Gain` und `Q`; es entsteht weder ein angedocktes Nebenpanel noch
+ein nach unten wachsendes Akkordeon. Die genaue Konsequenz und technische
+Abgrenzung sind in
+[`2026-09-01-dynamic-ansicht-im-band-panel.md`](2026-09-01-dynamic-ansicht-im-band-panel.md)
+festgehalten. Noch offen bleiben Ein-/Ausschalten von `dynamic_enabled` sowie
+die endgültigen Schließ- und Fokusregeln.

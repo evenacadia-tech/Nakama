@@ -120,18 +120,24 @@ Zusammengefasst gilt:
 - Doppelklick auf eine freie Graphposition belegt dort den nächsten freien der
   acht Band-Slots, wählt ihn aus und öffnet dasselbe Mini-Panel. Sind alle acht
   Slots belegt, meldet die Oberfläche das am Graphen und überschreibt nichts.
+- Der Dynamic-Entscheid wird in
+  [`2026-09-01-dynamic-ansicht-im-band-panel.md`](2026-09-01-dynamic-ansicht-im-band-panel.md)
+  fortgeführt: Für ein aktives Dynamic-Band ersetzt eine zweireihige Ansicht
+  mit `Range`, `Threshold`, `Attack`, `Hold` und `Release` die normalen
+  Bandwerte innerhalb desselben verankerten Panelkörpers.
 
 ## Bewusst offen
 
 - Gen Fläche 1: ob Finding-Belege und Alternativen durch Ansichtswechsel in
   derselben Fläche oder mit einem anderen Mechanismus erscheinen. Die dazu
   gestellte Frage wurde noch nicht beantwortet.
-- Gen Fläche 2: Detailtiefe hinter `Dynamic`; endgültige Schließ- und
-  Fokusregeln des Mini-Panels.
+- Gen Fläche 2: Ein-/Ausschalten von `dynamic_enabled` gegenüber dem bloßen
+  Öffnen der entschiedenen Dynamic-Ansicht; endgültige Schließ- und Fokusregeln
+  des Mini-Panels.
 - Der Produktrückweg von Gen Fläche 2 zu Gen Fläche 1 ist durch den Entscheid
   zum einzigen **Vorwärtsweg** noch nicht festgelegt.
 - Probeeq und die gemeinsamen UI-Regeln wurden in dieser Runde noch nicht
   befragt.
 
-Die nächste Architekturfrage betrifft die noch offene Detailtiefe hinter
-`Dynamic` im kompakten Band-Panel.
+Die nächste Architekturfrage betrifft die noch offene Trennung zwischen
+Dynamic-Aktivierung und bloßem Öffnen der Werteansicht.

@@ -37,7 +37,7 @@ if (-not (Test-Path -LiteralPath $logoPath -PathType Leaf)) {
 
 $claudeArguments = @(
     '--remote-control', 'nakama-dirigent',
-    '--model', 'fable',
+    '--model', 'claude-fable-5-1[1m]',
     '--effort', 'xhigh',
     '--permission-mode', 'auto',
     '--name', 'nakama-dirigent',

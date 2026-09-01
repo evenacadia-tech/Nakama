@@ -15,7 +15,13 @@ pwsh -NoProfile -File tools/dirigent/start-dirigent.ps1
 
 Der Starter öffnet das lokale Windows-Terminal-Profil
 `Nakama · Champagne Night`, zeigt `tools/dirigent/logo.ps1` und ruft Claude mit
-Fable/xhigh, Auto-Modus und `/dirigent` auf. Fehlt das Profil oder scheitert die
+Fable 5.1/xhigh, Auto-Modus und `/dirigent` auf. Das Modell steht als voller
+Name `claude-fable-5-1[1m]` im Starter und in jedem Aufruf unten, nicht als
+Alias `fable`: User-Wort 01.09.2026 „dirigent soll fable 5.1 nicht fable 5
+sein". Der Alias löste am 01.09. zwar bereits auf 5.1 auf (vom User
+bestätigt), würde aber bei einem neueren Fable still wechseln; der volle Name
+hält die Entscheidung fest. Das Suffix `[1m]` hält das 1M-Kontextfenster, auf
+dem die 600k-Grenze aus §5 beruht. Fehlt das Profil oder scheitert die
 Terminal-Aktivierung, öffnet er ein normales lokales PowerShell-Fenster. Endet
 Claude, bleibt das Fenster der Ort der Fortsetzung (seit 01.09.2026): liegt die
 Markerdatei `nakama-dirigent-neustart.marker` im Temp-Ordner
@@ -29,7 +35,7 @@ oder dem Handy aus sieht. Ein Text an den User bleibt trotzdem die Ausnahme
 (§5: nur eine Design-/Produktfrage). Der direkte Ersatzaufruf lautet:
 
 ```powershell
-claude --remote-control nakama-dirigent --model fable --effort xhigh --permission-mode auto --name nakama-dirigent /dirigent
+claude --remote-control nakama-dirigent --model claude-fable-5-1[1m] --effort xhigh --permission-mode auto --name nakama-dirigent /dirigent
 ```
 
 Die projektweite native `statusLine` startet
@@ -534,8 +540,8 @@ Nach Absturz oder Neustart: Fortsetzung über den Picker oder deterministisch
 über die Session-ID; beide Wege setzen den Rollenvertrag erneut ausdrücklich:
 
 ```powershell
-claude --resume nakama-dirigent --model fable --effort xhigh --permission-mode auto
-claude --resume <session-id> --model fable --effort xhigh --permission-mode auto
+claude --resume nakama-dirigent --model claude-fable-5-1[1m] --effort xhigh --permission-mode auto
+claude --resume <session-id> --model claude-fable-5-1[1m] --effort xhigh --permission-mode auto
 ```
 
 Die fortgesetzte Sitzung beginnt mit `claude agents --json`, `CronList`,

@@ -109,7 +109,10 @@ function Write-JsonFileAtomic {
     try {
         $json = $Value | ConvertTo-Json -Depth 20 -Compress
         [IO.File]::WriteAllText($temporary, $json, $utf8)
-        Move-Item -LiteralPath $temporary -Destination $Path -Force
+        # .NET-Move statt Move-Item: das Cmdlet kostet je Aufruf rund 30 ms
+        # Provider-Overhead, und die Statuszeile schreibt bis zu fuenf Caches
+        # pro Aktualisierung (gemessen 01.09.2026).
+        [IO.File]::Move($temporary, $Path, $true)
     }
     catch {
         if (Test-Path -LiteralPath $temporary) {
@@ -471,10 +474,26 @@ function Get-TranscriptEvidence {
     $file = Get-Item -LiteralPath $TranscriptPath
     $cachePath = Get-CachePath $SessionId 'transcript'
     $cached = Read-JsonFile $cachePath
-    if ($null -ne $cached -and (Get-PropertyValue $cached 'Length') -eq $file.Length -and
-        (Get-PropertyValue $cached 'LastWriteTicks') -eq $file.LastWriteTimeUtc.Ticks -and
-        (Get-PropertyValue $cached 'HeadSha') -eq $HeadSha) {
-        return Get-PropertyValue $cached 'Evidence'
+
+    # Inkrementell (01.09.2026): das Transkript ist append-only. Vorher las jede
+    # Aenderung die ganze JSONL-Datei neu und parste jede Werkzeugzeile erneut -
+    # im 5-s-Takt und mit wachsender Sitzung (heute 1,4 MB) ein stetig steigender
+    # Preis. Jetzt haelt der Cache den Zwischenzustand und die Byteposition nach
+    # der letzten vollstaendigen Zeile; gelesen wird nur der Zuwachs. Aendert sich
+    # HEAD oder schrumpft die Datei, wird von vorn gelesen.
+    $offset = [long]0
+    $state = $null
+    if ($null -ne $cached -and (Get-PropertyValue $cached 'HeadSha') -eq $HeadSha -and
+        [int](Get-PropertyValue $cached 'Version') -eq 2) {
+        if ([long](Get-PropertyValue $cached 'Length') -eq $file.Length -and
+            (Get-PropertyValue $cached 'LastWriteTicks') -eq $file.LastWriteTimeUtc.Ticks) {
+            return Get-PropertyValue $cached 'Evidence'
+        }
+        $cachedOffset = [long](Get-PropertyValue $cached 'Offset')
+        if ($cachedOffset -ge 0 -and $cachedOffset -le $file.Length) {
+            $offset = $cachedOffset
+            $state = Get-PropertyValue $cached 'State'
+        }
     }
 
     $planRead = $false
@@ -486,7 +505,49 @@ function Get-TranscriptEvidence {
     $codexContracts = New-Object System.Collections.ArrayList
     $readPaths = New-Object System.Collections.ArrayList
     $controlMinutes = 0
-    foreach ($line in [IO.File]::ReadLines($TranscriptPath, [Text.Encoding]::UTF8)) {
+    if ($null -ne $state) {
+        $planRead = [bool](Get-PropertyValue $state 'PlanRead')
+        $headRead = [bool](Get-PropertyValue $state 'HeadRead')
+        foreach ($id in @(Get-PropertyValue $state 'HeadToolIds')) { [void]$headToolIds.Add([string]$id) }
+        foreach ($id in @(Get-PropertyValue $state 'CronListToolIds')) { [void]$cronListToolIds.Add([string]$id) }
+        foreach ($id in @(Get-PropertyValue $state 'QuestionToolIds')) { [void]$questionToolIds.Add([string]$id) }
+        foreach ($item in @(Get-PropertyValue $state 'WorkerContracts')) { [void]$contracts.Add($item) }
+        foreach ($item in @(Get-PropertyValue $state 'CodexContracts')) { [void]$codexContracts.Add($item) }
+        foreach ($item in @(Get-PropertyValue $state 'ReadPaths')) { [void]$readPaths.Add([string]$item) }
+        $controlMinutes = [int](Get-PropertyValue $state 'ControlMinutes')
+    }
+
+    # Zuwachs lesen - nur vollstaendige Zeilen. Die letzte Zeile kann gerade erst
+    # halb geschrieben sein; sie bleibt bis zum naechsten Aufruf unverbraucht.
+    $lines = @()
+    $stream = [IO.File]::Open($TranscriptPath, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::ReadWrite)
+    try {
+        $streamLength = $stream.Length
+        if ($streamLength -gt $offset) {
+            [void]$stream.Seek($offset, [IO.SeekOrigin]::Begin)
+            $buffer = New-Object byte[] ($streamLength - $offset)
+            $read = 0
+            while ($read -lt $buffer.Length) {
+                $n = $stream.Read($buffer, $read, $buffer.Length - $read)
+                if ($n -le 0) { break }
+                $read += $n
+            }
+            $last = -1
+            for ($i = $read - 1; $i -ge 0; $i--) {
+                if ($buffer[$i] -eq 10) { $last = $i; break }
+            }
+            if ($last -ge 0) {
+                $text = [Text.Encoding]::UTF8.GetString($buffer, 0, $last + 1)
+                if ($offset -eq 0) { $text = $text.TrimStart([char]0xFEFF) }
+                $lines = $text.Split([char]10)
+                $offset += $last + 1
+            }
+        }
+    }
+    finally {
+        $stream.Dispose()
+    }
+    foreach ($line in $lines) {
         if ($line.IndexOf('"tool_use"', [StringComparison]::Ordinal) -lt 0 -and
             $line.IndexOf('"tool_result"', [StringComparison]::Ordinal) -lt 0 -and
             $line.IndexOf('"compact', [StringComparison]::OrdinalIgnoreCase) -lt 0) { continue }
@@ -598,10 +659,24 @@ function Get-TranscriptEvidence {
         ControlMinutes = $controlMinutes
         ReadPaths = @($readPaths)
     }
+    $stateOut = [pscustomobject]@{
+        PlanRead = $planRead
+        HeadRead = $headRead
+        HeadToolIds = @($headToolIds)
+        CronListToolIds = @($cronListToolIds)
+        QuestionToolIds = @($questionToolIds)
+        WorkerContracts = @($contracts)
+        CodexContracts = @($codexContracts)
+        ReadPaths = @($readPaths)
+        ControlMinutes = $controlMinutes
+    }
     $snapshot = [pscustomobject]@{
+        Version = 2
         Length = $file.Length
         LastWriteTicks = $file.LastWriteTimeUtc.Ticks
         HeadSha = $HeadSha
+        Offset = $offset
+        State = $stateOut
         Evidence = $evidence
     }
     Write-JsonFileAtomic $cachePath $snapshot

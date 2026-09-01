@@ -30,6 +30,15 @@
 . "$(dirname "${BASH_SOURCE[0]}")/lib/schreibziel.sh"
 
 input=$(cat)
+# Vorfilter (01.09.2026): die Extraktion unten kostet je Aufruf zwei Subshells
+# und zwei sed-Pipelines - fuer JEDEN Bash-/PowerShell-Aufruf, auch `ls`. Steht
+# im rohen Werkzeug-JSON nirgends "git", kann der entzitierte Befehl es auch
+# nicht enthalten (Entzitieren fuegt nichts hinzu). Klein geschrieben, damit
+# `Git add -A` aus PowerShell (Befehle dort nicht case-sensitiv) nicht durchrutscht.
+case "${input,,}" in
+  *git*) ;;
+  *) exit 0 ;;
+esac
 cmd=$(befehl_ohne_zitate "$input")
 [ -n "$cmd" ] || exit 0
 
@@ -37,10 +46,15 @@ cmd=$(befehl_ohne_zitate "$input")
 # eines Befehlsstuecks. Vorher genuegte die Zeichenkette irgendwo — auch in
 # einem Kommentar (`git reset --hard # NAKAMA_GIT_RIEGEL_AUS=1`) hob sie den
 # ganzen Riegel auf (Gegenprobe Gemini 3.1 Pro, 22.08.2026).
-if printf '%s' "$cmd" | grep -Eq '(^|[;&|][[:space:]]*)NAKAMA_GIT_RIEGEL_AUS=1[[:space:]]'; then
-  exit 0
-fi
-case "$cmd" in
+notausgang='(^|[;&|][[:space:]]*)NAKAMA_GIT_RIEGEL_AUS=1[[:space:]]'
+while IFS= read -r zeile; do
+  if [[ $zeile =~ $notausgang ]]; then exit 0; fi
+done <<< "$cmd"
+# Nur der PROGRAMMNAME ist fallunabhaengig (Windows startet `Git add -A` als
+# git.exe); Unterbefehle und Flags bleiben wie sie sind - `-A`, `-D` und `-C`
+# bedeuten etwas anderes als `-a`, `-d` und `-c`. Ein Kleinschreiben des ganzen
+# Befehls liess am 01.09.2026 vier Kernproben durch.
+case "${cmd,,}" in
   *git*) ;;
   *) exit 0 ;;
 esac
@@ -62,9 +76,19 @@ pruef=$(printf '%s' "$cmd" \
 # vorgesehen waren — und `git -C` ist die Form, in der die Hooks dieses Repos
 # selbst git aufrufen.
 V='(^|[[:space:](){}])'             # Befehlsanfang im Stueck
-G="${V}([^[:space:]]*/)?git([[:space:]]+-[^[:space:]]+([[:space:]]+[^-][^[:space:]]*)?)*[[:space:]]+"
+G="${V}([^[:space:]]*/)?[Gg][Ii][Tt]([[:space:]]+-[^[:space:]]+([[:space:]]+[^-][^[:space:]]*)?)*[[:space:]]+"
 
-trifft() { printf '%s' "$pruef" | grep -Eq "$1"; }
+# Bash-eigene ERE statt `printf | grep -Eq`: jede Pruefung kostete zwei
+# Prozessstarts, bei zwoelf Mustern rund 0,6 s je git-Aufruf auf Windows
+# (gemessen 01.09.2026). Zeilenweise, damit die Semantik von grep erhalten
+# bleibt: ein Muster darf nie ueber zwei Befehlsstuecke hinweg treffen.
+trifft() {
+  local zeile
+  while IFS= read -r zeile; do
+    [[ $zeile =~ $1 ]] && return 0
+  done <<< "$pruef"
+  return 1
+}
 riegel() {
   echo "GIT-RIEGEL: $1" >&2
   echo "Notausgang, wenn der User es ausdruecklich will: NAKAMA_GIT_RIEGEL_AUS=1 vor den Befehl." >&2
@@ -78,7 +102,7 @@ fi
 # -u braucht die Pruefung ZEILENWEISE: "hat dieses Stueck -u UND keinen Pathspec".
 # Zwei getrennte greps ueber den ganzen Text wuerden ein '--' aus einem anderen
 # Befehlsstueck als Freibrief lesen.
-if printf '%s' "$pruef" | awk '/(^|[ (){}])git( +-[^ ]+)* +add/ && / -u( |$)/ && !/ -- / { gefunden = 1 } END { exit !gefunden }'; then
+if printf '%s' "$pruef" | awk '/(^|[ (){}])[Gg][Ii][Tt]( +-[^ ]+)* +add/ && / -u( |$)/ && !/ -- / { gefunden = 1 } END { exit !gefunden }'; then
   riegel "git add -u ohne Pathspec staged jede Aenderung an verfolgten Dateien, auch fremde. Mit Pfad: 'git add -u -- <pfad>'."
 fi
 if trifft "${G}commit([[:space:]]+[^[:space:]]+)*[[:space:]]+--amend"; then
@@ -109,7 +133,7 @@ fi
 # -D und "-d zusammen mit -f" sind dasselbe: erzwungenes Loeschen, auch nicht
 # gemergter Commits (Gegenprobe Gemini 3.1 Pro, 22.08.2026).
 if trifft "${G}branch[[:space:]]+([^[:space:]]+[[:space:]]+)*-[a-zA-Z]*D" \
-   || printf '%s' "$pruef" | awk '/(^|[ (){}])([^ ]*\/)?git( +-[^ ]+( +[^-][^ ]*)?)* +branch/ && / -[a-zA-Z]*d( |$)/ && / -[a-zA-Z]*f( |$)/ { g = 1 } END { exit !g }'; then
+   || printf '%s' "$pruef" | awk '/(^|[ (){}])([^ ]*\/)?[Gg][Ii][Tt]( +-[^ ]+( +[^-][^ ]*)?)* +branch/ && / -[a-zA-Z]*d( |$)/ && / -[a-zA-Z]*f( |$)/ { g = 1 } END { exit !g }'; then
   riegel "Erzwungenes Loeschen eines Branches samt nicht gemergter Commits. Entscheidung des Users."
 fi
 

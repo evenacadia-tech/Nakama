@@ -265,6 +265,41 @@ function Get-PlanSnapshot {
     return [pscustomobject]$result
 }
 
+function Get-PlanBilanzText {
+    <# Nur die Bilanzzeile aus docs/PLAN-STAND.md - ohne git, ohne Plan-JSON.
+       Fuer die Einzeile der Nicht-Dirigenten-Sessions. #>
+    try {
+        $text = [IO.File]::ReadAllText($script:PlanStand, [Text.Encoding]::UTF8)
+        if ($text -match '\*\*(\d+) von (\d+) abgenommen\*\*') { return "$($Matches[1])/$($Matches[2]) fertig" }
+        return 'Plan nicht lesbar'
+    }
+    catch {
+        return 'Plan nicht lesbar'
+    }
+}
+
+function Remove-StaleCockpitFiles {
+    <# Raeumt liegengebliebene Cockpit-Dateien im Temp-Ordner auf: Caches
+       beendeter Sessions (aelter als zwei Tage) und .tmp-Reste abgebrochener
+       atomarer Schreibvorgaenge (aelter als zehn Minuten). Am 01.09.2026 lagen
+       dort 43 Cache-Dateien aus fuenf toten Sessions und ein 0-Byte-.tmp.
+       Hoechstens alle zehn Minuten, gesteuert ueber eine Markerdatei. #>
+    try {
+        $temp = [IO.Path]::GetTempPath()
+        $marker = Join-Path $temp 'nakama-dirigent-aufraeumen.marker'
+        $now = [DateTime]::UtcNow
+        if ((Test-Path -LiteralPath $marker) -and ($now - (Get-Item -LiteralPath $marker).LastWriteTimeUtc).TotalMinutes -lt 10) { return }
+        [IO.File]::WriteAllText($marker, $now.ToString('o'))
+        foreach ($file in @(Get-ChildItem -LiteralPath $temp -Filter 'nakama-dirigent-*' -File -ErrorAction SilentlyContinue)) {
+            $age = $now - $file.LastWriteTimeUtc
+            $stale = ($file.Extension -eq '.tmp' -and $age.TotalMinutes -gt 10) -or
+                ($file.Extension -eq '.json' -and $age.TotalDays -gt 2)
+            if ($stale) { [IO.File]::Delete($file.FullName) }
+        }
+    }
+    catch { }
+}
+
 function Get-AgentSnapshot {
     param([string]$SessionId, [switch]$NoCache)
     $cachePath = Get-CachePath $SessionId 'agents'
@@ -393,7 +428,12 @@ function Invoke-CodexRateLimits {
     finally {
         if ($null -ne $process) {
             try {
-                if (-not $process.HasExited) { $process.Kill() }
+                # Erst stdin schliessen: der App-Server endet auf EOF von selbst
+                # (gemessen ~0,2 s). Kill nur noch als Rueckfall - ein harter
+                # Kill des pwsh-Wrappers liess codex.exe und node.exe frueher
+                # als Waisen bis zum EOF weiterlaufen.
+                try { $process.StandardInput.Close() } catch { }
+                if (-not $process.WaitForExit(1500) -and -not $process.HasExited) { $process.Kill($true) }
                 [void]$process.WaitForExit(1000)
             }
             catch { }
@@ -656,14 +696,18 @@ function Show-StatusLine {
         $modelName = [string](Get-NestedValue $inputData @('model', 'display_name'))
         $modelId = [string](Get-NestedValue $inputData @('model', 'id'))
         $effort = [string](Get-NestedValue $inputData @('effort', 'level'))
-        $planSnapshot = Get-PlanSnapshot
 
         if ($sessionName -notlike 'nakama-dirigent*') {
-            $planText = if ($planSnapshot.Ok) { "$($planSnapshot.Accepted)/$($planSnapshot.Total) fertig" } else { 'Plan nicht lesbar' }
-            Write-Output "NAKAMA · $modelName/$effort · $planText · Dirigent über /dirigent"
+            # Leichter Pfad (01.09.2026): jede Nicht-Dirigenten-Session fuhr hier
+            # alle 5 s vier git-Aufrufe plus Plan-JSON-Abgleich - bei vier
+            # parallelen Sessions dauerhaft rund ein Prozessstart pro Sekunde.
+            # Die Einzeile braucht nur die Bilanzzeile aus docs/PLAN-STAND.md.
+            Write-Output "NAKAMA · $modelName/$effort · $(Get-PlanBilanzText) · Dirigent über /dirigent"
             return
         }
 
+        Remove-StaleCockpitFiles
+        $planSnapshot = Get-PlanSnapshot
         $agentsSnapshot = Get-AgentSnapshot $sessionId
         $claudeRate = Get-ClaudeRateSnapshot $inputData $sessionId
         $codexRate = Get-CodexRateSnapshot $sessionId

@@ -16,7 +16,12 @@ pwsh -NoProfile -File tools/dirigent/start-dirigent.ps1
 Der Starter öffnet das lokale Windows-Terminal-Profil
 `Nakama · Champagne Night`, zeigt `tools/dirigent/logo.ps1` und ruft Claude mit
 Fable/xhigh, Auto-Modus und `/dirigent` auf. Fehlt das Profil oder scheitert die
-Terminal-Aktivierung, öffnet er ein normales lokales PowerShell-Fenster. Remote
+Terminal-Aktivierung, öffnet er ein normales lokales PowerShell-Fenster. Endet
+Claude, bleibt das Fenster der Ort der Fortsetzung (seit 01.09.2026): liegt die
+Markerdatei `nakama-dirigent-neustart.marker` im Temp-Ordner
+(`[IO.Path]::GetTempPath()`), startet der Starter sofort eine frische Session
+in demselben Fenster; ohne Marker meldet er Exitcode und Laufzeit und wartet
+auf Enter (neue Session) oder Esc (Fenster schließen). Remote
 Control ist seit 30.08.2026 Teil jedes Starts (User-Wort: „remote immer mit
 neuer Dirigentensession automatisch starten"): der Starter übergibt
 `--remote-control nakama-dirigent`, damit der User die Sitzung von claude.ai/code
@@ -355,7 +360,23 @@ sich.
 
 ### 3.5 Abschluss
 
-Kanon auf dem End-Stand. Rohausgaben von Kanonläufen gehören nicht in den
+Kanon auf dem End-Stand. Der Kanon läuft **nie** als sitzungsgebundener
+Hintergrundbefehl der Dirigenten-Session: endet die Session, stirbt er mit
+(01.09.2026: Lauf 3 zu NAK-123 nach 33 von 42 Beinen ohne Manifest verloren).
+Er wird abgekoppelt gestartet und über seine Logdatei gelesen:
+
+```powershell
+$log = Join-Path $env:TEMP 'nakama-<ticket>-kanon.log'
+$befehl = "pwsh -NoProfile -File tools/beweise.ps1 -Bauen -Ziel docs/beweise/<TICKET>.md -Anhaengen -Titel <TICKET> *> $log; Add-Content $log ('EXIT=' + `$LASTEXITCODE)"
+Start-Process pwsh -WindowStyle Hidden -WorkingDirectory (Get-Location) -ArgumentList '-NoProfile', '-Command', $befehl
+```
+
+Fertig ist der Lauf, wenn die letzte Logzeile mit `EXIT=` beginnt; bis dahin
+höchstens alle 15 Minuten `Get-Content $log -Tail 3` lesen. Ein hängendes
+Bein beendet der Runner selbst nach 60 Minuten (`-BeinZeitlimitMinuten`,
+Exit 124 mit `[Zeitlimit]`-Zeile) - ein Lauf ohne `EXIT=`-Zeile nach mehr
+als drei Stunden ist ein Befund gegen den Runner, kein Grund zu warten.
+Rohausgaben von Kanonläufen gehören nicht in den
 Lesetext des Manifests: sie liegen unter `docs/beweise/roh/<TICKET>-<sha>.md`,
 im Manifest steht die Kopfzeile mit Verweis (Runner-Umbau NAK-96; bis dahin
 nur der Abschlusslauf angehängt, keine Zwischenläufe). Beim Abschluss wird
@@ -432,9 +453,20 @@ ist endlich. Der Lauf endet planmäßig an dieser Grenze, nicht an einem Fehler:
   einen frischen Dirigenten Session zu starten"). Ab 500k kein neues Ticket
   und keine neue Prüfrunde; im nächsten sauberen Abschlussfenster (Worker
   beendet, Urteil im Manifest, Planstand gepusht, Loop/Beobachter/Worker
-  abgeräumt) `tools/dirigent/start-dirigent.ps1` abgekoppelt starten, in
-  `claude agents --json` prüfen, dass die neue Session läuft, dann die eigene
-  PID hart beenden. **Messung ausschließlich über die native Statuszeile**
+  abgeräumt) die Markerdatei `nakama-dirigent-neustart.marker` im Temp-Ordner
+  anlegen (`New-Item -ItemType File (Join-Path ([IO.Path]::GetTempPath())
+  'nakama-dirigent-neustart.marker') -Force`) und danach die eigene PID
+  beenden (`claude agents --json` nennt sie in der Zeile mit dem Namen
+  `nakama-dirigent`; `Stop-Process -Id <pid>`). Der Starter sieht den Marker
+  und startet sofort eine frische Session in demselben Terminalfenster; ein
+  abgekoppelter zweiter Starter, ein zweites Fenster und die Prüfung über
+  `claude agents --json` entfallen (seit 01.09.2026). Läuft die Session ohne
+  Starter (direkter Ersatzaufruf), stattdessen
+  `tools/dirigent/start-dirigent.ps1` abgekoppelt starten und die eigene PID
+  erst beenden, wenn `claude agents --json` die neue Session zeigt.
+  Eigene Hintergrundbefehle sterben mit der PID - deshalb gilt das Fenster nur
+  als sauber, wenn kein Kanon und kein Worker mehr läuft. **Messung
+  ausschließlich über die native Statuszeile**
   (`cockpit.ps1 -StatusLine`, Feld `context_window.used_percentage`) oder die
   vom User genannte Zahl. Der `<total_tokens>`-Restwert im Kontext ist ein
   Sitzungsbudget und kein Kontextmaß; die Größe des Session-Transkripts ist es

@@ -15,6 +15,13 @@ $powerShellPath = (Get-Command pwsh.exe -ErrorAction Stop).Source
 $terminalProfile = 'Nakama · Champagne Night'
 $terminalSettingsPath = Join-Path $env:LOCALAPPDATA 'Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json'
 $claudePath = Join-Path $env:USERPROFILE '.local\bin\claude.exe'
+# Markerdatei fuer den Neustart in demselben Fenster (siehe -InsideTerminal).
+$restartMarker = Join-Path ([IO.Path]::GetTempPath()) 'nakama-dirigent-neustart.marker'
+# Prüfhaken: NAKAMA_DIRIGENT_CLAUDE zeigt auf einen Ersatz fuer claude.exe,
+# damit sich die Neustartschleife ohne echte Claude-Session messen laesst.
+if ($env:NAKAMA_DIRIGENT_CLAUDE) {
+    $claudePath = $env:NAKAMA_DIRIGENT_CLAUDE
+}
 
 if (-not (Test-Path -LiteralPath $claudePath -PathType Leaf)) {
     $claudeCommand = Get-Command claude.exe -ErrorAction SilentlyContinue
@@ -174,6 +181,7 @@ if ($ValidateOnly) {
         TerminalFont = if ($null -ne $profile) { [string]$profile.font.face } else { '' }
         TerminalColorScheme = if ($null -ne $profile) { [string]$profile.colorScheme } else { '' }
         ClaudeArguments = $claudeArguments
+        RestartMarker = $restartMarker
         RemoteControl = $true
         PreviewStartsClaude = $false
         FallbackAvailable = $true
@@ -191,11 +199,47 @@ if ($InsideTerminal) {
         [Console]::WriteLine('Lokale Vorschau — Claude wurde nicht gestartet.')
         return
     }
-    & $claudePath @claudeArguments
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "Claude wurde mit Exitcode $LASTEXITCODE beendet."
+
+    # Neustart in demselben Fenster (01.09.2026). Vorher startete der Dirigent
+    # fuer eine frische Session den Starter abgekoppelt (neues Terminalfenster)
+    # und beendete danach seine eigene PID: das alte Fenster blieb mit einer
+    # roten Fehlermeldung stehen, und der Neustart hing an der COM-Aktivierung
+    # des Terminals. Jetzt legt der Dirigent nur die Markerdatei an und beendet
+    # sich (Skill §5); diese Schleife startet sofort eine frische Session hier.
+    # Ohne Marker (Absturz, /exit) wartet das Fenster auf eine Taste, statt
+    # blind neu zu starten - eine kaputte Konfiguration soll nicht in einer
+    # Endlosschleife kreisen.
+    $runde = 0
+    while ($true) {
+        $runde++
+        if (Test-Path -LiteralPath $restartMarker) { [IO.File]::Delete($restartMarker) }
+        $beginn = Get-Date
+        & $claudePath @claudeArguments
+        $exit = $LASTEXITCODE
+        $minuten = [int]((Get-Date) - $beginn).TotalMinutes
+        if (Test-Path -LiteralPath $restartMarker) {
+            [IO.File]::Delete($restartMarker)
+            [Console]::WriteLine('')
+            [Console]::WriteLine("Neustart angefordert · Session $runde lief $minuten min · frische Dirigenten-Session in diesem Fenster ...")
+            Start-Sleep -Seconds 2
+            [Console]::WriteLine('')
+            & $logoPath
+            [Console]::WriteLine('')
+            continue
+        }
+        [Console]::WriteLine('')
+        if ($exit -ne 0) {
+            [Console]::WriteLine("Claude wurde mit Exitcode $exit beendet · Session $runde lief $minuten min.")
+        }
+        else {
+            [Console]::WriteLine("Dirigent beendet · Session $runde lief $minuten min.")
+        }
+        [Console]::WriteLine('Enter = neue Dirigenten-Session in diesem Fenster · Esc = Fenster schliessen')
+        $taste = $null
+        try { $taste = [Console]::ReadKey($true) } catch { }
+        if ($null -eq $taste -or $taste.Key -eq [ConsoleKey]::Escape) { [Environment]::Exit(0) }
+        [Console]::WriteLine('')
     }
-    return
 }
 
 if ($null -ne $profile) {

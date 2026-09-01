@@ -1,5 +1,33 @@
 # NEXT-SESSION — Einstieg für die nächste Runde
 
+> ## ✅ NACHTRAG — 01.09.2026 spät, Fable-Sitzung e0375c12 (User-Gespräch, kein Dirigentenlauf): G2 NEEDS_WORK, Zwischenhalt PR2 eingeplant, Opus baut wieder
+>
+> **G2 steht auf T3 NEEDS_WORK 2026-09-01** (`docs/beweise/G2.md`): tragender
+> Defekt Broker-Impersonation, Register NAK-123. Die Nacharbeit lag fünf
+> Stunden als uncommitteter Codex-Bau im Worktree (31 Dateien, nie kompiliert,
+> Tests `NOT RUN`) und ist als benannter Zwischenstand committet (`c197fcd`),
+> damit der nächste Opus-Worker darauf aufbaut. `cargo check --tests` war grün,
+> die C++-Seite ist ungeprüft. Details: Nachtrag am Ende von
+> `docs/beweise/NAK-123.md`.
+>
+> **User-Entscheid 01.09. spät, wörtlich:** „opus wieder bauer und codex
+> prüfer . so wie am anfang, habe genug wochen kontigent". Skill §3.6 ist
+> umgestellt, Codex-Bau ist nur noch Fallback ab 85 % Claude-Woche; Skill §3.1
+> trägt die neue Regel für liegengebliebene Ticketstände.
+>
+> **Neuer Planschritt PR2** (`docs/plan/plan.json`, Phase P3 nach S18–19, vor
+> G3): Entwurf 0.4 plus Errata zu 0.5, Rangfolge Entwurf/Blueprint,
+> Fünferblock-Entscheide und Blueprint §15 in S26–28 bis S31b, S31b weg von
+> Figma und Rework-Bildern, Register-Triage, Prozessbilanz. Der Anlass steht
+> als User-Wortlaut im Schritt.
+>
+> **Als Nächstes (Planstand):** Nacharbeit an G2 → G2 PASS → PR2 → G3. NAK-121
+> (Modul-Aufteilung der Broker-Monolithen) bekommt in der PR2-Triage seinen
+> Ort im Plan.
+>
+> Der Dirigent wurde aus dieser Sitzung über `tools/dirigent/start-dirigent.ps1`
+> neu gestartet.
+
 > ## ✅ NACHTRAG — 01.09.2026, Fable-Sitzung 6c9e2d4e (Dirigent): SONDE-011 ABGESCHLOSSEN
 >
 > **S16–17 `SONDE-011` trägt T2 PASS 2026-09-01** (Manifest-Kopf mit

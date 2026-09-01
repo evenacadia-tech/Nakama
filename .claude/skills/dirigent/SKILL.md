@@ -110,6 +110,19 @@ steckt zusätzlich im Workernamen. Gate-Text, Fachquellen und Manifest nur für
 das konkrete Paket lesen; historische Übergaben und Protokolle sind keine
 Arbeitsquellen mehr.
 
+**Liegengebliebener Ticketstand (seit 01.09.2026).** Liegt ein uncommitteter
+Stand im Worktree, dessen Schreiber nicht mehr läuft (`claude agents --json`,
+kein Codex-Thread) und den das Ticketmanifest als eigenen Bau ausweist, ist er
+kein fremder Schreiber, sondern liegengebliebene Ticketarbeit: Der Dirigent
+committet ihn **vor** dem Workerstart mit explizitem Pathspec als benannten
+Zwischenstand (Betreff „<TICKET> Zwischenstand: <Bauer>, nicht kompiliert,
+Tests NOT RUN") und trägt das als datierten Nachtrag ins Manifest; der Worker
+baut auf diesem Commit weiter. Ein Zwischenstand-Commit ist kein
+Fortschrittsanspruch — der Kanon-Riegel und die Urteilsmarke bleiben die
+einzigen Belege. Ohne Manifestzuordnung bleibt der Stand fremd → Halt (§4).
+Anlass: der NAK-123-Bau vom 01.09. lag fünf Stunden ungenutzt im Worktree,
+weil kein Worker ihn anfassen durfte.
+
 ### 3.2 Bauen
 
 Der Worker ist ein frischer Opus-Hintergrundprozess im **sichtbaren** Checkout:
@@ -396,21 +409,39 @@ Codex-Dateien und alle exakt zur Dirigenten-Session gehörenden
 `claude agents --json` belegen, dass weder Loop noch Worker übrig sind. Weiter
 mit 3.1.
 
-## 3.6 Kontingentsparen — Codex baut (seit 30.08.2026)
+## 3.6 Bauer und Prüfer — Opus baut, Codex prüft (seit 01.09.2026)
 
-User-Wort 30.08.2026: „wir müssen wochennutzung sparen, schon bei 50 %.
-codex könnte nächste session das bauen übernehmen». Solange das
-Claude-Wochenfenster knapp ist (Richtwert: ab 50 %), gilt Codex-first:
+User-Wort 01.09.2026 spät, nach Fables Einschätzung des liegengebliebenen
+NAK-123-Zwischenstands: „opus wieder bauer und codex prüfer . so wie am
+anfang, habe genug wochen kontigent". Damit gilt wieder die Grundform aus
+§3.2 und §3.4:
 
-- Bau-Arbeit läuft primär als Codex-Thread `workspace-write` (Sol, Effort
-  nach §3.4-Regel; seit 30.08. gilt User-Wort «Sol auf max»: Sol-Effort durchgehend max, per Probelauf bestätigt). Codex stagt, committet und pusht nie; ein schlanker
-  Claude-Schritt (Fable misst den Diff, nötigenfalls ein minimaler
-  Opus-Worker) fährt Kanon, Commit und Push.
-- Opus-Worker nur, wo Codex nicht kann: Claude-Skills und Subagenten
-  (c-review/rust-review), User-Fragen-Flüsse, lange Orchestrierung.
-  Keine Opus-Fan-outs bei knappem Wochenfenster.
-- Der Prüfer bleibt ein frischer Codex-Thread; Bauer- und Prüfer-Thread
-  sind nie derselbe (§6).
+- Der Bauer ist ein frischer Opus-Worker (max) im sichtbaren Checkout. Er
+  kompiliert, fährt die Tests seines Tickets und den Kanon selbst (§3.5,
+  abgekoppelt) und übergibt keinen Stand mit Laufstatus `NOT RUN`.
+- Der Prüfer ist ein frischer, lesender Codex-Thread (Sol, Effort max —
+  User-Wort 30.08. «Sol auf max»); Bauer- und Prüfer-Thread sind nie
+  derselbe (§6).
+- Grund neben dem Kontingent: Ein Bauer ohne Compiler übergibt ungelaufenen
+  Code. NAK-123 lieferte am 01.09. rund 2 800 Zeilen Sicherheitscode mit
+  `NOT RUN` in den Worktree, und der externe Kanonlauf dazu ging verloren.
+
+Codex als Bauer (`workspace-write`, Sol max) ist seit dem 01.09. nur noch
+**Fallback**, wenn die Claude-Wochennutzung die 85-%-Warnschwelle aus §5
+erreicht hat. Dann gelten die Verlaufsregeln unten, und der Dirigent
+committet den Codex-Stand nach eigenem Kanonlauf als benannten Zwischenstand
+(§3.1), bevor irgendein anderer Schritt beginnt. Umgekehrt gilt der
+User-Fallback vom 31.08. weiter („falls Codex iwann an die Nutzungsgrenze
+stoßen sollte, mit Opus weitermachen"): stößt Codex als Prüfer an seine
+Grenze, prüft ein frischer Opus-Thread, nie der Bauer-Thread.
+
+Verlauf 30.08.–01.09.2026 (Codex-first, aufgehoben): User-Wort 30.08.2026:
+„wir müssen wochennutzung sparen, schon bei 50 %. codex könnte nächste
+session das bauen übernehmen». Regeln damals: Bau als Codex-Thread
+`workspace-write`; Codex stagt, committet und pusht nie; ein schlanker
+Claude-Schritt fährt Kanon, Commit und Push; Opus nur für Skills,
+Subagenten, Fragenflüsse und Orchestrierung; keine Opus-Fan-outs bei
+knappem Fenster.
 
 ## 4. Haltgründe
 

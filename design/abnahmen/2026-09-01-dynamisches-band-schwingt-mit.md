@@ -27,8 +27,10 @@ Abschluss von SONDE-012.
    der später bricht, ist der NAME) wird der Feldname noch vor dem
    R0-Einfrieren durch G2 reserviert; die Nutzlast entsteht mit dem EQ-Kern
    in S26–28. Eigentümer der Reservierung: S26–28.
-4. **Abgrenzung:** Die im UI-Arbeitsmodus noch offene Frage „Detailtiefe
-   hinter Dynamic" (Mini-Panel) bleibt offen; entschieden ist hier allein,
-   dass die laufende dynamische Wirkung im Kurvenbild sichtbar mitschwingt.
-   Anzeigeeinstellungen (U17.3) dürfen diese Wahrheit darstellen, aber nie
-   verfälschen.
+4. **Abgrenzung:** Dieser Entscheid legt die tatsächliche laufende Bewegung im
+   Kurvenbild fest. Aktivierung, Ausschalten, Rückweg, Schließen/Fokus und der
+   ruhige Aktivmarker des Mini-Panels wurden getrennt im abgeschlossenen
+   [`2026-09-01-technische-ui-architektur-fuenferblock-01.md`](2026-09-01-technische-ui-architektur-fuenferblock-01.md)
+   entschieden; beide Entscheide ergänzen einander und öffnen einander nicht
+   erneut. Anzeigeeinstellungen (U17.3) dürfen die Live-Wahrheit darstellen,
+   aber nie verfälschen.

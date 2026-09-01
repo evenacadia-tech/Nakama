@@ -152,9 +152,11 @@ historischen Kriterium.
    liefern in dieser Phase aber weder Layout noch Stil. Erst nach einem
    ausdrücklichen Wechsel in die visuelle Phase wird die dann vom User
    benannte Assetquelle wieder verbindlich.
-2. **Ein Schritt pro Runde.** Genau eine Frage öffnen, am lebenden Blatt
-   zeigen, User-Urteil einholen, festhalten — dann die nächste. Keine
-   Groß-Lieferungen mit zehn gleichzeitigen Entscheidungen.
+2. **Ein Schritt pro Runde, fünf pro Umbau.** Genau eine Frage öffnen und das
+   User-Urteil im laufenden Fünferblock wörtlich sichern — dann die nächste.
+   Nach der fünften Antwort werden lebendes Blatt, Detailabnahmen und Blueprint
+   gemeinsam umgebaut und sichtbar geprüft. Keine Groß-Lieferungen mit
+   gleichzeitigen Entscheidungen.
 3. **Der User entscheidet als Projektleiter die visuelle Richtung, du
    übersetzt.** Sie steht in den aktuellen drei Rework-Bildern und neueren
    ausdrücklichen User-Entscheiden. Varianten sind nur dort nötig, wo diese
@@ -168,13 +170,15 @@ historischen Kriterium.
    **`/fragen`** gestellt — er hält die Antwort wörtlich fest und arbeitet
    sie ein (`../docs/plan/LIES-MICH.md`). Die Briefing-Seite ist seit dem
    23.08.2026 abgeschafft.
-4. **Abnahmen sind bindend.** Jedes User-Urteil sofort als Datei in
-   `abnahmen/` festhalten (Format dort). Festgelegtes wird nicht ohne
-   neues User-Wort erneut zur Diskussion gestellt — genau das erzeugt
-   die „Ausbessern-Zeremonie", die dieses Projekt verhindern soll. Ein
-   neuer ausdrücklicher User-Entscheid oder eine neue User-Referenz kann den
-   älteren Stand ersetzen. Produktweite Entscheide stehen zusätzlich mit
-   Datum + Zitat an der dafür bezeichneten Stelle gemäß Wurzel-`CLAUDE.md`.
+4. **Abnahmen sind bindend.** Jedes User-Urteil sofort mit Wortlaut im
+   laufenden Fünferblock unter `abnahmen/` festhalten (Format dort). Nach 5/5
+   werden die betroffenen Detailabnahmen gemeinsam fortgeschrieben.
+   Festgelegtes wird nicht ohne neues User-Wort erneut zur Diskussion gestellt
+   — genau das erzeugt die „Ausbessern-Zeremonie", die dieses Projekt
+   verhindern soll. Ein neuer ausdrücklicher User-Entscheid oder eine neue
+   User-Referenz kann den älteren Stand ersetzen. Produktweite Entscheide
+   stehen zusätzlich mit Datum + Zitat an der dafür bezeichneten Stelle gemäß
+   Wurzel-`CLAUDE.md`.
 5. **Editor-Funktionen für den User sind Pflicht.** Jedes Blatt bekommt
    ein eingebautes Bedien-Panel: Look-Parameter live verstellbar (Farben,
    Typo-Größen, Dichte, Radien, Abstände), alle Zustände durchschaltbar,

@@ -79,8 +79,10 @@ Die übrigen Grenzen dieses Arbeitsmodus bleiben bestehen:
    bereits Entschiedenes bleibt geschlossen. Farben, Materialien und visuelle
    Feinheiten bleiben außerhalb dieser Phase.
 
-Der laufende Block steht in
+Der erste abgeschlossene Block steht in
 [`2026-09-01-technische-ui-architektur-fuenferblock-01.md`](2026-09-01-technische-ui-architektur-fuenferblock-01.md).
+Der nächste Block erhält sein Protokoll mit der ersten beantworteten Frage;
+vorher wird keine leere Entscheidungsdatei angelegt.
 
 ## Abgenommener Stand — Gen Fläche 1
 
@@ -153,23 +155,34 @@ Zusammengefasst gilt:
 - Der Dynamic-Entscheid wird in
   [`2026-09-01-dynamic-ansicht-im-band-panel.md`](2026-09-01-dynamic-ansicht-im-band-panel.md)
   fortgeführt: Für ein aktives Dynamic-Band ersetzt eine zweireihige Ansicht
-  mit `Range`, `Threshold`, `Attack`, `Hold` und `Release` die normalen
-  Bandwerte innerhalb desselben verankerten Panelkörpers.
+  mit einem kompakten Zustandscontrol sowie `Range`, `Threshold`, `Attack`,
+  `Hold` und `Release` die normalen Bandwerte innerhalb desselben verankerten
+  Panelkörpers. `DYN · OFF` aktiviert und öffnet; der Zustandscontrol schaltet
+  aus und kehrt ohne Werteverlust zu `Frequency`, `Gain` und `Q` zurück.
+- Ein Leerklick schließt das Mini-Panel nicht. Der sichtbare Schließen-Control
+  und, außerhalb einer laufenden Zahleneingabe, `Escape` schließen es und
+  fokussieren den Bandpunkt, ohne Parameter zu ändern.
+- Aktives Dynamic bleibt über eine zweite Kontur am Bandpunkt sichtbar. Die
+  Sollposition und das Zeigerziel bleiben dort stabil; innerer Punkt und
+  zugehöriger Kurvenzug sind für die tatsächliche Live-Auslenkung vorgesehen.
+  `Frame.band_dynamic_gain_db` ist dafür als Name reserviert; Feld-ID und
+  Runtime-Nutzlast entstehen erst mit S26–28 und dürfen vorher nicht simuliert
+  werden.
 
 ## Bewusst offen
 
 - Gen Fläche 1: ob Finding-Belege und Alternativen durch Ansichtswechsel in
   derselben Fläche oder mit einem anderen Mechanismus erscheinen. Die dazu
   gestellte Frage wurde noch nicht beantwortet.
-- Gen Fläche 2: Die Kopplung des ersten Öffnens mit der Aktivierung ist als
-  Entscheidung 1/5 im laufenden Fünferblock gesammelt. Offen bleiben der
-  ausdrückliche Bedienort zum Ausschalten von `dynamic_enabled` sowie die
-  endgültigen Schließ- und Fokusregeln des Mini-Panels.
+- Gen Fläche 2: Noch offen ist das Verhalten des bereits geöffneten
+  Mini-Panels, wenn der User einen anderen vorhandenen Bandpunkt auswählt.
+  Technisch darf das Panel danach nicht still auf dem alten Band schreiben;
+  ob es zum neuen Band mitwandert oder schließt, ist eine echte
+  Bedienarchitekturfrage.
 - Der Produktrückweg von Gen Fläche 2 zu Gen Fläche 1 ist durch den Entscheid
   zum einzigen **Vorwärtsweg** noch nicht festgelegt.
 - Probeeq und die gemeinsamen UI-Regeln wurden in dieser Runde noch nicht
   befragt.
 
-Die nächste Architekturfrage betrifft den ausdrücklichen Bedienort zum
-Ausschalten eines aktiven Dynamic-Bands. Sie ist Entscheidung 2/5 des laufenden
-Blocks.
+Die nächste Architekturfrage betrifft den Auswahlwechsel zu einem anderen
+Band bei geöffnetem Mini-Panel. Sie ist Frage 1/5 des nächsten Blocks.

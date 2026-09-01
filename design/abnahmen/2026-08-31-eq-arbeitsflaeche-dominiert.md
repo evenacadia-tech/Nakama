@@ -131,5 +131,34 @@ zweireihige Dynamic-Ansicht. Die fünf Werte ersetzen dort vorübergehend
 ein nach unten wachsendes Akkordeon. Die genaue Konsequenz und technische
 Abgrenzung sind in
 [`2026-09-01-dynamic-ansicht-im-band-panel.md`](2026-09-01-dynamic-ansicht-im-band-panel.md)
-festgehalten. Noch offen bleiben Ein-/Ausschalten von `dynamic_enabled` sowie
-die endgültigen Schließ- und Fokusregeln.
+festgehalten.
+
+## Integrierter Dynamic-Fünferblock vom 01.09.2026
+
+Der abgeschlossene
+[`2026-09-01-technische-ui-architektur-fuenferblock-01.md`](2026-09-01-technische-ui-architektur-fuenferblock-01.md)
+schließt Aktivierung, Ausschalten, Rückweg, Schließen und den sichtbaren
+Aktivbeleg für Dynamic:
+
+- `DYN · OFF` aktiviert und öffnet. `DYN · ON` ist danach nur noch der
+  Disclosure-Einstieg; Öffnen, Verlassen und Schließen deaktivieren das Band
+  nicht.
+- Der echte Ausschalter steht kompakt am Anfang der Dynamic-Ansicht.
+  Ausschalten erhält alle fünf Werte, stellt im selben Panel `Frequency`,
+  `Gain` und `Q` wieder her und fokussiert `DYN · OFF`.
+- Ein einfacher Leerklick im Graph schließt nichts. Per Zeiger schließt nur der
+  sichtbare Panel-Control. `Escape` verwirft zuerst eine laufende
+  Zahleneingabe und schließt andernfalls das Panel. Schließen verändert keine
+  Parameter und fokussiert den Bandpunkt.
+- Ein aktives Dynamic-Band besitzt eine zweite, ruhige Kontur an seiner
+  eingestellten Position. Der innere Punkt und der zugehörige Kurvenzug folgen
+  später der tatsächlichen Gain-Auslenkung; die Kontur bleibt als stabiler
+  Zustand und Bedienort stehen.
+
+`Frame.band_dynamic_gain_db` ist für S26–28 als künftiger Name reserviert; der
+aktuelle Runtime-Vertrag liefert noch keine Feld-ID oder Nutzlast. Probeeq
+führt den Wert später über den Featureframe zu Gen, Gens Master-EQ lokal ohne
+IPC. Bis dieser Weg gebaut ist, bleibt die laufende Bewegung eine benannte
+technische Lücke und darf nicht aus Einstellwerten erfunden werden. Im
+Funktionsblatt ist nur eine endliche Bewegungsprobe des Zielverhaltens
+enthalten.

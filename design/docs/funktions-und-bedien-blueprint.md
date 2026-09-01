@@ -613,13 +613,33 @@ Automation und Preview dürfen nie spurlos eingeklappt sein. Der Filtertyp ist
 im objektgebundenen Mini-Panel sichtbar und diskret wechselbar; der feste
 Band-Slot bleibt dabei erhalten. Für ein aktives Dynamic-Band wechselt
 derselbe am Bandpunkt verankerte Panelkörper in eine zweireihige Ansicht für
-`Range`, `Threshold`, `Attack`, `Hold` und `Release`. Die normalen Felder
-`Frequency`, `Gain` und `Q` werden für diesen Teilschritt ersetzt und nicht in
-einem Nebenpanel oder Akkordeon gleichzeitig gezeigt. Bandidentität und
-Panelanker bleiben stabil; `priority_sidechain` bleibt vor P8 unsichtbar. Wie
-`dynamic_enabled` ein-/ausgeschaltet wird, ohne das bloße Öffnen der Ansicht
-mit einer Klangänderung zu vermischen, sowie die endgültigen
-Schließ-/Fokusregeln des Mini-Panels bleiben **[O]**.
+einen kompakten `dynamic_enabled`-Zustandscontrol sowie `Range`, `Threshold`,
+`Attack`, `Hold` und `Release`. Die normalen Felder `Frequency`, `Gain` und `Q`
+werden für diesen Teilschritt ersetzt und nicht in einem Nebenpanel oder
+Akkordeon gleichzeitig gezeigt. `DYN · OFF` aktiviert und öffnet in einem
+Schritt. Bei bereits aktivem Band öffnet oder verlässt `DYN · ON` nur die
+Ansicht. Der Zustandscontrol am Anfang der Ansicht ist der ausdrückliche
+Ausschalter; er erhält die fünf Werte, stellt die Grundwerte wieder her und
+fokussiert `DYN · OFF`. Bandidentität und Panelanker bleiben stabil;
+`priority_sidechain` bleibt vor P8 unsichtbar.
+
+**[U] Mini-Panel-Schließen:** Per Zeiger schließt nur der eigene sichtbare
+Schließen-Control. Ein einfacher Klick auf freie Graphfläche lässt Panel,
+Auswahl und Parameter unverändert. `Escape` verwirft zuerst eine laufende
+Zahleneingabe; andernfalls schließt es das oberste nichtmodale Panel. Schließen
+verändert weder Bandparameter noch `dynamic_enabled` und gibt den Fokus an den
+zugehörigen Bandpunkt zurück.
+
+**[U]/[O] Dynamic-Aktivbeleg:** Ein aktives Band besitzt eine zweite, ruhige
+Kontur an seiner eingestellten Gain-Position. Diese Kontur ist zugleich der
+stabile direkte Bedienort; der innere Punkt und der zugehörige Kurvenzug folgen
+der tatsächlichen dynamischen Gain-Auslenkung. Bewegung und Kontur ergänzen
+sich, weil ein aktives Band unterhalb des Thresholds oder bei Range 0
+stillstehen kann. `Frame.band_dynamic_gain_db` ist für S26–28 als Name
+reserviert; Feld-ID und Runtime-Nutzlast sind noch nicht gebaut. Probeeq führt
+den Wert später mit Anzeigekadenz über den Featureframe zu Gen, Gens Master-EQ
+lokal ohne IPC. Bis zu diesem versionierten Telemetrieweg bleibt die native
+Bewegung technisch offen und darf nicht aus Einstellwerten erfunden werden.
 
 **[U] Zielwechsel:** Probeeq-Ziele folgen, soweit FL es belegt liefert, der
 Mixerreihenfolge. Der Master besitzt einen getrennten stabilen Einstieg und ist
@@ -747,7 +767,7 @@ Abbruch/Rückweg und native JUCE-Semantik.
 | Band auswählen | Node/Curve | Bandliste oder nächstes/vorheriges Band | Deselect | Band-ID, Typ und aktiver Zustand |
 | Band anlegen | Klick/Drag oder Spectrum Grab | Add-Band-Aktion plus Frequenzfeld | Escape verwirft Draft | Ziel, Frequenz, Gain, Q, Slotverfügbarkeit |
 | Band formen | Drag und modifizierte Feingeste | Pfeile grob/fein, Textwerte | Default/Undo | Wert, Einheit, Grenzen, Clamp und Automation |
-| Banddynamik | Dynamic-Einstieg am ausgewählten Band; derselbe Panelkörper wechselt die Ansicht | zweireihige Range/Threshold/Attack/Hold/Release-Felder | Rückweg stellt Frequency/Gain/Q wieder her; Disable/Reset noch **[O]** | Aktivmarker und Gain-Bewegung; Öffnen und `dynamic_enabled` bleiben getrennte technische Vorgänge; priority_sidechain erst bei Capability |
+| Banddynamik | `DYN · OFF` aktiviert und öffnet; `DYN · ON` öffnet/verlässt nur die Ansicht | Zustandscontrol plus Range/Threshold/Attack/Hold/Release in zwei Reihen | Ausschalten erhält Werte und stellt Frequency/Gain/Q wieder her; Escape verwirft Zahleneingabe oder schließt | zweite Kontur belegt Aktivzustand und Sollposition; innerer Punkt und Kurvenzug folgen erst mit nutzbarer autoritativer Live-Telemetrie der Gain-Auslenkung; priority_sidechain erst bei Capability |
 | Schutzbereich setzen | Range-Handles | zwei numerische Endpunkte | Reset/Cancel | Lower/Upper, Gültigkeit und betroffene Aktion |
 | Preview halten | Press-and-hold | Key-down/up auf fokussierter Aktion | Release/Fokusverlust/Timeout | Momentary action, Lease und Ziel |
 | 10-s-Kandidat starten | Klick | Enter/Space activation | **[A]** Escape/Expiry → Confirmed, Draft bleibt; Reject verwirft bewusst | Candidate state, Restzeit, Baseline; Detailsemantik noch **[O]** |
@@ -1274,10 +1294,13 @@ Schema:
     Preview, 10-s-Kandidat, Confirmed, Host-Geste, Cancel und Revert. Die
     Drei-Stufen-Geste für Proposals beantwortet diesen Detailvertrag noch
     nicht vollständig.
-15. **[O] Dynamic-Aktivierung:** Der zweireihige Ansichtswechsel ist
-    entschieden. Noch offen ist, ob und wo `dynamic_enabled` ein-/ausgeschaltet
-    wird, ohne dass das bloße Öffnen oder Verlassen der Werteansicht den Klang
-    verändert.
+15. **[O] Live-Dynamic-Auslenkung:** Aktivierung, Ausschalten, Rückweg,
+    Schließen und der persistente Konturmarker sind entschieden. Der aktuelle
+    v3-Vertrag reserviert `Frame.band_dynamic_gain_db` für S26–28, liefert aber
+    noch keine Feld-ID oder Runtime-Nutzlast. Vor nativer Bewegung von
+    Bandpunkt und Kurvenzug muss der Probeeq-Featureframe-Weg beziehungsweise
+    der lokale Master-Weg gebaut und gegen stale sowie nicht-endliche Werte
+    abgesichert werden.
 
 Diese Punkte sind kein Freibrief für Platzhaltercontrols. Bis zur technischen
 oder User-Entscheidung bleibt die jeweilige Funktion ehrlich unavailable oder
@@ -1351,13 +1374,17 @@ dieses Blueprints zeitlich voraus sein.
 
 Gen Fläche 1 und die Grundhierarchie von Gen Fläche 2 besitzen bereits den in
 Abschnitt 4 beschriebenen User-entschiedenen Stand. Die Filtertyp-Mechanik,
-die freie Verankerung des kompakten Band-Panels und der zweireihige
-Dynamic-Ansichtswechsel im selben Panelkörper sind entschieden. Im laufenden
-Fünferblock ist die Kopplung `DYN · OFF` = aktivieren und öffnen als
-Entscheidung 1/5 gesammelt, aber noch nicht batchweise in die Detailabschnitte
-integriert. Als Nächstes folgt der ausdrückliche Bedienort zum Ausschalten;
-danach folgen die Schließ-/Fokusregel, Probeeq und die gemeinsamen Regeln.
-Objektbesitz, Fokus, Tastaturweg und
-Worst-Case-Zustände werden weiterhin am passenden Blatt geprüft. Farben,
-Material und visuelle Feinheiten bleiben bis zum ausdrücklichen Phasenwechsel
-getrennt.
+die freie Verankerung des kompakten Band-Panels, Dynamic-Aktivierung und
+-Ausschalten, Rückweg, Schließen/Fokus sowie der sichtbare Aktivbeleg sind mit
+Fünferblock 01 gemeinsam integriert und im internen Browser geprüft. Die
+fortlaufende Live-Auslenkung bleibt eine technische Vertragslücke, keine
+offene Geschmacksfrage.
+
+Als nächste echte Architekturfrage ist zu klären, was mit dem bereits
+geöffneten Mini-Panel geschieht, wenn ein anderer vorhandener Bandpunkt
+ausgewählt wird. Das Panel darf technisch nicht still auf dem alten Band
+weiterschreiben; Mitwandern und Schließen sind die noch offenen
+Bedienmodelle. Diese Antwort beginnt Fünferblock 02. Objektbesitz, Fokus,
+Tastaturweg und Worst-Case-Zustände werden weiterhin am passenden Blatt
+geprüft. Farben, Material und visuelle Feinheiten bleiben bis zum
+ausdrücklichen Phasenwechsel getrennt.

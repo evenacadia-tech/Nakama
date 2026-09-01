@@ -1,8 +1,7 @@
 # 2026-09-01 — Dynamic wechselt im Band-Panel die Ansicht
 
-> **Aktueller Sammelstand:** Der nachfolgende Einzelstand wird nach 5/5
-> batchweise fortgeschrieben. Entscheidung 1/5 zur Aktivierung beim ersten
-> Öffnen steht bis dahin in
+> **Integrierter Stand:** Der Dynamic-Fünferblock ist abgeschlossen. Der
+> vollständige Wortlaut und der gemeinsame Browserbeleg stehen zusätzlich in
 > [`2026-09-01-technische-ui-architektur-fuenferblock-01.md`](2026-09-01-technische-ui-architektur-fuenferblock-01.md).
 
 ## Entscheid
@@ -30,6 +29,43 @@ Damit gilt für Gen Fläche 2:
   still verändern.
 - `priority_sidechain` erscheint vor P8 weiterhin nicht in dieser Ansicht.
 
+## Ergänzende Entscheide aus Fünferblock 01
+
+Der User entscheidet nacheinander:
+
+> „C“
+
+> „A“
+
+> „A“
+
+> „B“
+
+> „A ; DAS BANDSCHWINGT ja dann eh sichtbar mit, daran erkennt man es auch“
+
+Im Kontext der jeweils einzeln gestellten Architekturfrage folgt daraus:
+
+1. Ein Klick auf `DYN · OFF` aktiviert `dynamic_enabled` und öffnet die
+   Dynamic-Ansicht in einem Schritt. `DYN · ON` öffnet oder verlässt nur die
+   Ansicht; das Verlassen oder Schließen deaktiviert Dynamic nicht.
+2. Am Anfang der Dynamic-Ansicht sitzt ein kompakter, echter
+   `dynamic_enabled`-Zustandscontrol. Er ist der ausdrückliche Ausschalter und
+   ändert beim Ausschalten ausschließlich `dynamic_enabled`.
+3. Ausschalten lässt den Panelkörper offen, stellt `Frequency`, `Gain` und `Q`
+   wieder her und setzt den Fokus auf `DYN · OFF`. Range, Threshold, Attack,
+   Hold und Release bleiben gespeichert.
+4. Per Zeiger schließt nur der sichtbare Schließen-Control des Panels. Ein
+   einfacher Klick auf freie Graphfläche verändert weder Panel, Auswahl noch
+   Parameter. `Escape` verwirft zuerst eine laufende Zahleneingabe;
+   andernfalls schließt es das oberste nichtmodale Panel. Beide Schließwege
+   geben den Fokus an den Bandpunkt zurück und verändern keinen Klangzustand.
+5. Ein aktives Dynamic-Band bleibt durch eine zweite Kontur am Bandpunkt
+   erkennbar. Diese ruhige Kontur markiert Sollposition und stabiles
+   Bedienziel; der innere Punkt und der zugehörige Kurvenzug folgen der
+   tatsächlichen Gain-Auslenkung. Die Bewegung ergänzt die Kontur, weil ein
+   korrekt aktives Band in stillen Passagen oder bei Range 0 auch unbewegt sein
+   kann.
+
 ## Technische Grenze
 
 Der Parametervertrag besitzt je festem Band-Slot getrennt
@@ -39,22 +75,36 @@ die fünf Werte sind kontinuierliche Rampenparameter mit eigenen Einheiten und
 Grenzen. Das Öffnen einer Detailansicht und eine Klangzustandsänderung sind
 deshalb technisch verschiedene Vorgänge.
 
-Noch nicht entschieden ist, wie das Ein-/Ausschalten von `dynamic_enabled`
-gegenüber dem bloßen Öffnen der bereits aktiven Dynamic-Ansicht bedient wird.
-Auch die endgültigen Schließ- und Fokusregeln des gesamten Band-Panels bleiben
-offen.
+Der Name `Frame.band_dynamic_gain_db` ist im v3-Register für S26–28
+(`SONDE-015`) reserviert. Der heutige Runtime-Vertrag besitzt aber noch keine
+Feld-ID oder Nutzlast dafür: Probeeq soll den Wert später mit Anzeigekadenz im
+Featureframe liefern, Gens Master-EQ lokal ohne IPC. Die zweite Kontur kann
+aus `dynamic_enabled` wahrheitsgemäß dargestellt werden. Die fortlaufende
+Bewegung des inneren Punkts benötigt vor der nativen Umsetzung einen
+versionierten Telemetrieweg und darf nicht aus Range oder Threshold simuliert
+werden. Das Funktionsblatt kennzeichnet sich deshalb als Zielverhalten und
+zeigt nur beim Aktivieren eine einmalige Bewegungsprobe, keine scheinbare
+laufende Messung.
 
 ## Sichtprüfung
 
-Das laufende Funktionsblatt zeigt B3 mit aktiver Dynamic-Ansicht. Geprüft
-wurden:
+Das laufende Funktionsblatt zeigt B3 mit aktiver Dynamic-Ansicht. Nach 5/5
+wurden im internen Browser geprüft:
 
-- fünf benannte Werte in genau zwei Reihen;
-- derselbe 238 Pixel breite Panelkörper wie bei den Grundwerten;
-- freie Platzierung unter B3 sowie am weiter rechts liegenden B5;
-- vollständige Begrenzung innerhalb der Graphfläche ohne Überdeckung des
-  jeweiligen Bandpunkts;
-- Wechsel Dynamic → Grundwerte → Dynamic mit Fokus auf `Range` beim Öffnen;
+- der kompakte Ein-/Ausschalter plus fünf Werte als sechs Zellen in genau zwei
+  Reihen;
+- `DYN · OFF` → aktivieren/öffnen, `DYNAMIC · ON` → ausschalten/zurück und
+  `DYN · ON` → Ansicht verlassen, jeweils ohne Verlust der fünf Werte;
+- Fokus auf `Range` beim Öffnen und auf `DYN · OFF` nach dem Ausschalten;
+- explizites Schließen und zweistufiges Escape-Verhalten mit Rückfokus zum
+  Bandpunkt;
+- wirkungsloser einfacher Leerklick im Graph;
+- sichtbare Dynamic-Konturen für B3 und B5 auch bei geschlossener Werteansicht
+  sowie die endliche Bewegungsprobe von innerem Punkt und Kurvenzug beim
+  Aktivieren;
+- der 238 × 114 Pixel große Panelkörper vollständig und kollisionsfrei im
+  Graph: unter B3, unter B5 und oberhalb eines nahe am unteren Rand erzeugten
+  B7;
 - keine Browserfehler oder Warnungen.
 
 Die Prüfung betrifft nur funktionale Geometrie, Zustandswechsel und

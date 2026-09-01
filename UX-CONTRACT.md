@@ -16,6 +16,7 @@ replacement; it is not allowed to reopen those decisions.
 | Forward transition to Gen EQ | Gen Sources `SEND DRAFT` | only with a valid unconfirmed draft | state + focus test |
 | Source switcher | Shared source-strip controller | 1–16 probes; separate Master | overflow + auto-scroll test |
 | Band selection | EQ graph/controller | pointer, BAND control, keyboard | geometry + input-equivalence test |
+| Band precision panel | selected EQ band | object-anchored Type/Frequency/Gain/Q/Dynamic views | disclosure + focus + graph-edge test |
 | Parameter input | Shared parameter-field behavior | drag, numeric input, native named select | range + protected-zone tests |
 | Status feedback | Shared in-glass status/live region | neutral, warning, error | state + accessibility test |
 | Scrollbar | Global prototype stylesheet | stable-gutter exceptions only | computed-style/browser check |
@@ -41,6 +42,9 @@ The browser uses a deterministic `DemoAdapter`. The future VST3 editor will use 
 | Reject | REJECT | none | draft removed without revision | none | stable graph context |
 | Undo | undo control | none | last confirmed source revision restored | disabled with reason when ring empty | undo control |
 | External automation | inspection scenario | immediate authoritative value/curve change | confirmed state reflects host | open draft becomes stale; protected violation is shown, not hidden | current control unchanged |
+| Open Dynamic for an inactive band | `DYN · OFF` | `dynamic_enabled` changes at the block edge | the same panel opens its Dynamic view; stored values remain | unavailable/offline is explained without a false open state | Range field |
+| Disable Dynamic | leading state control in the Dynamic view | only `dynamic_enabled` changes | the same panel returns to Frequency/Gain/Q | five Dynamic values are retained | `DYN · OFF` |
+| Close band precision panel | explicit close control; Escape outside a dirty numeric edit | none | panel closes without parameter change | first Escape restores a dirty numeric field instead | owning band point |
 
 ## Hard invariants
 
@@ -56,6 +60,12 @@ The browser uses a deterministic `DemoAdapter`. The future VST3 editor will use 
 - Master is not part of source wheel order.
 - Mix remains `PLANNED` and explains the missing versioned parameter contract.
 - Sidechain source remains absent until its placement decision is approved.
+- Opening, leaving or closing the Dynamic view never disables an already active
+  Dynamic band. Only its explicit state control does.
+- A single click on empty EQ graph space does not close the band precision
+  panel or change its owning band.
+- Active Dynamic remains evident without text or color through a second contour
+  at the configured band position.
 - No visible element is a dead decoration except material and product identity.
 
 ## Navigation and input
@@ -66,9 +76,11 @@ unconfirmed draft into the EQ surface. A surface switcher in an external
 inspection or sketch tool is tooling, not product UI. The product return path
 from Gen EQ remains open and must not be invented from the legacy tablist.
 Source overflow keeps the selected source visible. Every drag has a BAND
-selector, keyboard arrows and/or numeric entry alternative. Escape closes the
-topmost non-modal panel or cancels an in-progress numeric edit; it never
-silently rejects a draft.
+selector, keyboard arrows and/or numeric entry alternative. In a dirty numeric
+field, the first Escape restores the entry value and keeps the panel open;
+otherwise Escape closes the topmost non-modal panel and returns focus to its
+owning object. It never silently rejects a draft. The EQ band panel also has an
+explicit close control; an empty-graph single click is not a close gesture.
 
 The fixed plug-in stage does not reflow. The surrounding inspection tool does. At 200% the whole stage is intentionally larger, matching the plug-in scale tier rather than behaving like a responsive website.
 
@@ -79,6 +91,17 @@ Critical conditions remain visible in the affected region instead of disappearin
 ## Motion and data truth
 
 Motion values come from `design/prototyp/contract/motion-tokens.json`. Pointer manipulation updates cursor, handle, number and curve in one frame. Measurement animation runs only while measuring. Spectrum input advances at 20Hz and display frames interpolate between samples. Reduced-motion mode removes transforms and keeps short opacity feedback. Audio ramps remain outside this contract.
+
+For Dynamic EQ, the outer band contour remains at configured gain as the stable
+state marker and hit target. The inner point and its response-curve segment may
+follow actual per-band gain excursion only when an authoritative runtime field
+with usable ID and payload exists. `Frame.band_dynamic_gain_db` is reserved for
+S26–28, but its field ID and runtime payload do not exist yet. Probeeq will
+later carry it in the feature frame; Gen Master provides it locally without
+IPC. Production UI must not synthesize continuous motion from Range or
+Threshold. The technical target sketch may use a finite, explicitly labeled
+activation demonstration, with no loop and no transform in reduced-motion
+mode.
 
 ## Approval gate
 

@@ -355,6 +355,19 @@ def main(argv: list[str]) -> int:
                 drift.append(aufruf["datei"])
                 continue
 
+            # E-A02/A9: Die drei Namen muessen in BEIDEN generierten Bindings
+            # stehen. Der Bytevergleich darunter faengt Drift; diese Zeile
+            # macht eine gemeinsame Auslassung in Schema und Alt-Binding rot.
+            sonde012_felder = ("lufs_i", "lufs_i_unsicherheit_lu", "lufs_i_status")
+            frisch_text = frisch.read_text(encoding="utf-8")
+            committed_text = committed.read_text(encoding="utf-8")
+            fehlend = [f for f in sonde012_felder
+                       if f not in frisch_text or f not in committed_text]
+            if fehlend:
+                print(f"  ROT: SONDE-012-Felder fehlen in {aufruf['datei']}: {fehlend}")
+                drift.append(aufruf["datei"])
+                continue
+
             a, b = sha256(committed), sha256(frisch)
             if a != b:
                 print(f"  ROT: DRIFT in {aufruf['ziel']}/{aufruf['datei']}")

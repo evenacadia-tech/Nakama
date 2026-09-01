@@ -674,6 +674,26 @@ def zusatz_gueltig() -> list[tuple[str, dict, str]]:
     ss["mitglieder"][0]["measurement_position"] = "post"
     faelle.append(("session-legacy-post", ss, "legacy darf POST fuehren"))
 
+    # SONDE-012 E-H02/H06: beide Grenzen und ein bewusst nicht normalisierter
+    # Name. Das Grundfixture ohne beide Felder bleibt der Positivbeweis fuer
+    # ihre Optionalitaet.
+    ss = copy.deepcopy(GRUND["session_snapshot"])
+    ss["mitglieder"][0]["host_bus_name"] = "K"
+    ss["mitglieder"][0]["host_mixer_index"] = 1
+    faelle.append(("probe-host-context-minimum", ss,
+                   "ein Codepoint und VST3-Index 1 sind die einschliesslichen Untergrenzen"))
+
+    ss = copy.deepcopy(GRUND["session_snapshot"])
+    ss["mitglieder"][0]["host_bus_name"] = "😀" * 120
+    ss["mitglieder"][0]["host_mixer_index"] = 9_007_199_254_740_991
+    faelle.append(("probe-host-context-maximum", ss,
+                   "120 Unicode-Codepoints und 2^53-1 sind die einschliesslichen Obergrenzen"))
+
+    ss = copy.deepcopy(GRUND["session_snapshot"])
+    ss["mitglieder"][0]["host_bus_name"] = "  MiXeD Bus  "
+    faelle.append(("probe-host-bus-name-codepointgetreu", ss,
+                   "angenommener Hosttext bleibt mit inneren und aeusseren Leerzeichen sowie Case unveraendert"))
+
     # Leere Sitzung.
     ss = copy.deepcopy(GRUND["session_snapshot"])
     ss["mitglieder"] = []
@@ -743,18 +763,6 @@ UNGUELTIG: list[tuple] = [
     ("reserviertes-feld-state-report-eq-enabled", "state_report", [setze("eq_enabled", True)],
      [v("/eq_enabled", f"{S}/state_report/additionalProperties", "additionalProperties")],
      "reservierter Betriebszustand ohne Anzeigezusage"),
-
-    ("reserviertes-feld-probe-descriptor-host-bus-name", "session_snapshot",
-     [setze("mitglieder", 0, "host_bus_name", "Bus 1")],
-     [v("/mitglieder/0/host_bus_name",
-        f"{S}/probe_descriptor_insert/additionalProperties", "additionalProperties")],
-     "reservierter optionaler Hostname ohne vorweggenommene Nutzlast"),
-
-    ("reserviertes-feld-probe-descriptor-host-mixer-index", "session_snapshot",
-     [setze("mitglieder", 0, "host_mixer_index", 7)],
-     [v("/mitglieder/0/host_mixer_index",
-        f"{S}/probe_descriptor_insert/additionalProperties", "additionalProperties")],
-     "reservierter optionaler Mixerindex ohne vorweggenommene Nutzlast"),
 
     ("typ-fehlt", "heartbeat", [loesche("type")],
      [v("/type", "#/oneOf", "oneOf")],
@@ -1231,6 +1239,48 @@ UNGUELTIG: list[tuple] = [
     ("label-zu-lang", "session_snapshot", [setze("mitglieder", 0, "label", "x" * 121)],
      [v("/mitglieder/0/label", f"{S}/probe_label/maxLength", "maxLength")],
      "das Label ist untrusted data und begrenzt"),
+
+    ("host-mixer-index-null", "session_snapshot",
+     [setze("mitglieder", 0, "host_mixer_index", 0)],
+     [v("/mitglieder/0/host_mixer_index", f"{S}/host_mixer_index/minimum", "minimum")],
+     "VST3 kChannelIndexKey beginnt bei 1"),
+
+    ("host-mixer-index-negativ", "session_snapshot",
+     [setze("mitglieder", 0, "host_mixer_index", -1)],
+     [v("/mitglieder/0/host_mixer_index", f"{S}/host_mixer_index/minimum", "minimum")],
+     "negative Hostindizes gelten als nicht geliefert"),
+
+    ("host-bus-name-leer", "session_snapshot",
+     [setze("mitglieder", 0, "host_bus_name", "")],
+     [v("/mitglieder/0/host_bus_name", f"{S}/host_bus_name/minLength", "minLength"),
+      v("/mitglieder/0/host_bus_name", f"{S}/host_bus_name/pattern", "pattern")],
+     "ein leerer Hostname gilt als nicht geliefert"),
+
+    ("host-bus-name-nur-whitespace", "session_snapshot",
+     [setze("mitglieder", 0, "host_bus_name", " \u00a0\u3000")],
+     [v("/mitglieder/0/host_bus_name", f"{S}/host_bus_name/pattern", "pattern")],
+     "Unicode-Whitespace allein ist kein sichtbarer Busname"),
+
+    ("host-bus-name-121-codepoints", "session_snapshot",
+     [setze("mitglieder", 0, "host_bus_name", "😀" * 121)],
+     [v("/mitglieder/0/host_bus_name", f"{S}/host_bus_name/maxLength", "maxLength")],
+     "121 Unicode-Codepoints liegen einen ueber der Annahmegrenze"),
+
+    ("host-bus-name-c0-steuerzeichen", "session_snapshot",
+     [setze("mitglieder", 0, "host_bus_name", "Bus\u001fA")],
+     [v("/mitglieder/0/host_bus_name", f"{S}/host_bus_name/pattern", "pattern")],
+     "C0-Steuerzeichen werden nicht als Hosttext angenommen"),
+
+    ("host-bus-name-c1-steuerzeichen", "session_snapshot",
+     [setze("mitglieder", 0, "host_bus_name", "Bus\u009fA")],
+     [v("/mitglieder/0/host_bus_name", f"{S}/host_bus_name/pattern", "pattern")],
+     "C1-Steuerzeichen werden nicht als Hosttext angenommen"),
+
+    ("host-mixer-namespace-drittes-feld", "session_snapshot",
+     [setze("mitglieder", 0, "host_mixer_namespace", "FL")],
+     [v("/mitglieder/0/host_mixer_namespace",
+        f"{S}/probe_descriptor_insert/additionalProperties", "additionalProperties")],
+     "E-H02 reserviert kein drittes Namespacefeld; bei Mehrdeutigkeit fehlt der Index"),
 
     ("pair-id-leer", "session_snapshot", [setze("mitglieder", 0, "pair_id", "")],
      [v("/mitglieder/0/pair_id", f"{S}/pair_id/minLength", "minLength")],
@@ -1717,10 +1767,19 @@ def rohtext_faelle() -> list[tuple[str, bytes, str]]:
     float32["baender"] = baender(221, "nakama_1_24_oct_30_18k_v1", "float32")
     float32["baender"]["werte"][0] = 0.5
 
+    host_index = copy.deepcopy(GRUND["session_snapshot"])
+    host_index["mitglieder"][0]["host_mixer_index"] = 1
+
     return [
         ("zahl-ueber-2hoch53",
          aus("heartbeat", '"sequence": 91', '"sequence": 9007199254740992'),
          "2^53 ist die erste ganze Zahl, die binary64 nicht mehr exakt traegt"),
+
+        ("host-mixer-index-ueber-json-sicher",
+         aus_daten(host_index, '"host_mixer_index": 1',
+                   '"host_mixer_index": 9007199254740992'),
+         "E-H02-Grenzfall: 2^53 faellt bereits am gemeinsamen Textriegel, bevor "
+         "C++, Rust oder Python daraus verschiedene Zahlen machen koennen"),
 
         ("zahl-bruch-rundet-nahe-2hoch53-ab",
          aus("heartbeat", '"sequence": 91', '"sequence": 9007199254740991.1'),

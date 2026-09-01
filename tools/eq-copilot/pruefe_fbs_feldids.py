@@ -29,6 +29,7 @@ Sieben Pruefungen:
      Riegel nie sieht (T2-Runde 3, Befund 6).
   7. JEDES Offsetfeld (string, Vektor, Tabelle) ist im Strukturriegel des
      Rust-Beins genannt — siehe unten, `pruefe_strukturriegel`.
+  8. Die SONDE-012-Felder behalten IDs, Typen und `= null`-Praesenzsemantik.
 
 Exitcodes: 0 alles gruen · 2 mindestens eine Pruefung rot · 3 Datei fehlt.
 """
@@ -325,6 +326,26 @@ def main() -> int:
     for name in erwartet:
         if name not in tabellen:
             fehler.append(f"{name}: in FELD-IDS.json gefuehrt, aber nicht mehr im Schema")
+
+    # 8. E-A02: Ein optionaler Skalar ohne `= null` verliert seine
+    # Anwesenheitsinformation, selbst wenn Name, Typ und ID gleich aussehen.
+    # Der generische ID-Abgleich oben kann genau diesen Drift nicht sehen.
+    sonde012 = {
+        "lufs_i": (11, "float"),
+        "lufs_i_unsicherheit_lu": (12, "float"),
+        "lufs_i_status": (13, "ubyte"),
+    }
+    frame = {feld: (fid, typ) for feld, fid, typ, _required
+             in tabellen.get("Frame", []) if feld in sonde012}
+    if frame != sonde012:
+        fehler.append(f"Frame: SONDE-012-Felder/Typen/IDs weichen ab — {frame}")
+    for feld, (fid, typ) in sonde012.items():
+        muster = (rf"^\s*{re.escape(feld)}\s*:\s*{typ}\s*=\s*null\s*"
+                  rf"\(\s*id\s*:\s*{fid}\s*\)\s*;")
+        if re.search(muster, roh, re.MULTILINE) is None:
+            fehler.append(
+                f"Frame.{feld}: `{typ} = null (id: {fid})` fehlt — "
+                "ohne = null ist Praesenz nicht von Abwesenheit unterscheidbar.")
 
     # 7. Offsetfeld-Abdeckung des Rust-Strukturriegels (T2-Runde 4, BL-A).
     offsetfelder = sum(

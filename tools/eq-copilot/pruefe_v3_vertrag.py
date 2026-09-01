@@ -70,7 +70,12 @@ MUSTER = {
     "^[0-9a-f]{64}$",
     "^[A-Za-z0-9+/]{37}[AQgw]==$",
     "^[A-Za-z0-9+/]{10}[AEIMQUYcgkosw048]=$",
+    r"^(?![\s\S]*[\u0000-\u001F\u007F-\u009F])(?=[\s\S]*\S)[\s\S]+$",
 }
+
+HOST_BUS_NAME_PATTERN = (
+    r"^(?![\s\S]*[\u0000-\u001F\u007F-\u009F])(?=[\s\S]*\S)[\s\S]+$")
+HOST_DESCRIPTOR_FELDER = {"host_bus_name", "host_mixer_index"}
 
 
 class Lauf:
@@ -589,7 +594,7 @@ def pruefe_discriminator_enginekante(lauf: Lauf) -> None:
               not p.is_valid({"validity": {}}))
 
 
-def pruefe_probe_descriptor(lauf: Lauf, schema: dict) -> None:
+def pruefe_probe_descriptor(lauf: Lauf, schema: dict, reserviert: dict) -> None:
     """§32.2-Kopplung: Messposition bestimmt die Aussageklasse (G1-Befund §4.1).
 
     Bis zum 24.08.2026 standen `measurement_position` und `aussageklasse`
@@ -638,6 +643,73 @@ def pruefe_probe_descriptor(lauf: Lauf, schema: dict) -> None:
         lauf.wahr(f"{name} verlangt beide Felder",
                   {"measurement_position", "aussageklasse"} <= set(zweig.get("required", [])))
         lauf.wahr(f"{name} ist strikt", zweig.get("additionalProperties") is False)
+        lauf.wahr(f"{name} fuehrt genau die zwei optionalen Hostfelder",
+                  {k for k in props if k.startswith("host_")} == HOST_DESCRIPTOR_FELDER
+                  and not (HOST_DESCRIPTOR_FELDER & set(zweig.get("required", []))))
+        lauf.wahr(f"{name} referenziert die gemeinsamen Hostfelddefinitionen",
+                  props.get("host_bus_name") == {"$ref": "#/$defs/host_bus_name"}
+                  and props.get("host_mixer_index") == {"$ref": "#/$defs/host_mixer_index"})
+
+    busname = defs.get("host_bus_name", {})
+    mixerindex = defs.get("host_mixer_index", {})
+    lauf.wahr("host_bus_name hat exakt Typ, Codepointgrenzen und H06-Muster",
+              busname.get("type") == "string"
+              and busname.get("minLength") == 1
+              and busname.get("maxLength") == 120
+              and busname.get("pattern") == HOST_BUS_NAME_PATTERN)
+    lauf.wahr("host_mixer_index hat exakt den JSON-sicheren VST3-Bereich",
+              mixerindex.get("type") == "integer"
+              and mixerindex.get("minimum") == 1
+              and mixerindex.get("maximum") == 9_007_199_254_740_991)
+    index_pruefer = jsonschema.Draft202012Validator(mixerindex)
+    lauf.wahr("H02-Indexgrenzen 1/Maximum gueltig, 0/negativ/Maximum+1 ungueltig",
+              index_pruefer.is_valid(1)
+              and index_pruefer.is_valid(9_007_199_254_740_991)
+              and not index_pruefer.is_valid(0)
+              and not index_pruefer.is_valid(-1)
+              and not index_pruefer.is_valid(9_007_199_254_740_992))
+
+    # E-H02: Die Version reist im Envelope, nicht als drittes Descriptorfeld.
+    version = reserviert.get("wire_envelope_schema_minor", {})
+    fassungen = version.get("fassungen", {})
+    lauf.wahr("host_channel_context_fields_are_optional_strict_and_versioned",
+              version.get("familie") == "P1"
+              and version.get("vorher") == 0
+              and version.get("aktuell") == 1
+              and fassungen.get("0", {}).get("probe_descriptor_hostfelder") == []
+              and set(fassungen.get("1", {}).get("probe_descriptor_hostfelder", []))
+                  == HOST_DESCRIPTOR_FELDER
+              and "schema_minor" in version.get("auswahlregel", "")
+              and "Wire-Envelope" in version.get("auswahlregel", ""))
+    lauf.wahr("probe_descriptor erfindet kein Versions- oder Namespacefeld",
+              all("schema_minor" not in defs[n].get("properties", {})
+                  and "host_mixer_namespace" not in defs[n].get("properties", {})
+                  for n in KOPPLUNG))
+
+    # Referenzbeweis der Auswahlregel: dieselben Payloadbytes ohne Hostfelder
+    # passen in Minor 0 und 1; erst Minor 1 darf die belegten Namen auswerten.
+    basis = json_laden_strikt((FIXTURES / "gueltig/session_snapshot.json")
+                              .read_text(encoding="utf-8"))
+    mit_host = copy.deepcopy(basis)
+    mit_host["mitglieder"][0]["host_bus_name"] = "Bus A"
+    mit_host["mitglieder"][0]["host_mixer_index"] = 1
+    schema_minor_0 = copy.deepcopy(schema)
+    for name in KOPPLUNG:
+        for feld in HOST_DESCRIPTOR_FELDER:
+            schema_minor_0["$defs"][name]["properties"].pop(feld, None)
+    pruefer_0 = jsonschema.Draft202012Validator(schema_minor_0)
+    pruefer_1 = jsonschema.Draft202012Validator(schema)
+    lauf.wahr("Empfaenger waehlt Descriptor-Schemafassung nach Envelope-Minor",
+              pruefer_0.is_valid(basis) and pruefer_1.is_valid(basis)
+              and not pruefer_0.is_valid(mit_host) and pruefer_1.is_valid(mit_host))
+
+    h06 = jsonschema.Draft202012Validator(busname)
+    lauf.wahr("H06 akzeptiert 1/120 Codepoints ohne Normalisierung",
+              h06.is_valid("K") and h06.is_valid("😀" * 120)
+              and h06.is_valid("  MiXeD Bus  "))
+    lauf.wahr("H06 lehnt leer/Whitespace/121/C0/C1 ab",
+              all(not h06.is_valid(wert) for wert in
+                  ("", " \t", "x" * 121, "A\u001fB", "A\u0085B")))
 
     matrix_ok = all(defs[n].get("properties", {}).get("plugin_kind") == erwartet
                     for n, erwartet in PLUGIN_KIND_MATRIX.items())
@@ -846,19 +918,27 @@ def pruefe_namen(lauf: Lauf, schema: dict, reserviert: dict) -> None:
               and "unsubscribe_session" not in schema["$defs"])
 
     felder = reserviert.get("reservierte_felder", [])
+    belegt = reserviert.get("belegte_felder", [])
     lauf.wahr("reserviertes_feld_hat_keine_nutzlast",
               all(set(f) == {"name", "eigentuemer", "grund"} for f in felder))
+    lauf.wahr("belegtes_feld_folgt_der_gleichen_Regelform",
+              all(set(f) == {"name", "eigentuemer", "grund"} for f in belegt))
     erwartete_felder = {
         "evidence_snapshot.ereignisse",
         "session_snapshot.contribution_inputs",
         "state_report.dsp",
         "command_ack.applied_dsp",
         "state_report.eq_enabled",
-        "probe_descriptor.host_bus_name",
-        "probe_descriptor.host_mixer_index",
     }
     lauf.wahr("reservierte Feldnamen sind exakt und kollisionsfrei",
               {f.get("name") for f in felder} == erwartete_felder)
+    erwartete_belegte = {
+        "probe_descriptor.host_bus_name",
+        "probe_descriptor.host_mixer_index",
+    }
+    lauf.wahr("SONDE-012-Hostfelder sind von reserviert auf belegt fortgeschrieben",
+              {f.get("name") for f in belegt} == erwartete_belegte
+              and not ({f.get("name") for f in felder} & erwartete_belegte))
 
     def feld_fehlt(definition: str, feld: str) -> bool:
         return feld not in schema["$defs"][definition].get("properties", {})
@@ -868,13 +948,14 @@ def pruefe_namen(lauf: Lauf, schema: dict, reserviert: dict) -> None:
         and feld_fehlt("session_snapshot", "contribution_inputs")
         and feld_fehlt("state_report", "dsp")
         and feld_fehlt("state_report", "eq_enabled")
-        and all(feld_fehlt(n, f) for n in KOPPLUNG
-                for f in ("host_bus_name", "host_mixer_index"))
         and all("applied_dsp" not in z.get("properties", {})
                 for z in schema["$defs"]["command_ack"].get("oneOf", []))
     )
     lauf.wahr("reservierte Felder sind im aktiven Vertrag weiter abgelehnt",
               aktive_felder_fehlen)
+    lauf.wahr("belegte Hostfelder stehen in jedem probe_descriptor-Zweig",
+              all(not feld_fehlt(n, f) for n in KOPPLUNG
+                  for f in HOST_DESCRIPTOR_FELDER))
 
 
 # ------------------------------------------------------------------ Fixturelauf
@@ -1073,7 +1154,7 @@ def main(argv: list[str]) -> int:
     pruefe_schema(lauf, schema)
     pruefe_discriminator_enginekante(lauf)
     pruefe_namen(lauf, schema, reserviert)
-    pruefe_probe_descriptor(lauf, schema)
+    pruefe_probe_descriptor(lauf, schema, reserviert)
     pruefe_bandkodierung(lauf, schema, quantisierung)
     pruefe_command_ack(lauf, schema)
     pruefe_fixtures(lauf, schema, manifest)

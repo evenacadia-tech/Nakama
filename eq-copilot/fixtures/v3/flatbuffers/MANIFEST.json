@@ -6,8 +6,8 @@
   "erzeugung": "Die .bin-Dateien entstehen mit dem GEPINNTEN flatc aus einer JSON-Beschreibung (flatc -b). Ein eigener Encoder waere eine dritte Implementierung des Formats, die niemand prueft.",
   "byte_mutation_von": "Markiert einen Puffer, den flatc nicht erzeugen KANN (falsche Dateikennung, abgeschnitten, zerstoerter Wurzeloffset). Er entsteht als Byte-Mutation des genannten gueltigen Puffers.",
   "regeln": "Die geschlossene Liste der Regelnamen steht in eq-copilot/schemas/v3/flatbuffers/README.md. Ein Verstoss ist (pfad, regel); die Menge wird kanonisch nach (pfad, regel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
-  "anzahl_gueltig": 14,
-  "anzahl_ungueltig": 72,
+  "anzahl_gueltig": 17,
+  "anzahl_ungueltig": 83,
   "fixtures": [
     {
       "datei": "gueltig/alle-validity-bits.bin",
@@ -67,6 +67,24 @@
       "datei": "gueltig/live-64-band.bin",
       "urteil": "gueltig",
       "warum": "der Regelfall: Sonde->Broker, genau EIN Eintrag (§33.1: Queuecap 2, replace-oldest - dort kann nie gebuendelt werden)",
+      "verstoesse": []
+    },
+    {
+      "datei": "gueltig/loudness-i-collecting.bin",
+      "urteil": "gueltig",
+      "warum": "Status 1 bedeutet collecting und traegt bewusst kein Zahlenpaar",
+      "verstoesse": []
+    },
+    {
+      "datei": "gueltig/loudness-i-gated.bin",
+      "urteil": "gueltig",
+      "warum": "Status 2 bedeutet gated und traegt bewusst kein Zahlenpaar",
+      "verstoesse": []
+    },
+    {
+      "datei": "gueltig/loudness-i-pair.bin",
+      "urteil": "gueltig",
+      "warum": "integrierte Lautheit reist nur gemeinsam mit endlicher Unsicherheit",
       "verstoesse": []
     },
     {
@@ -488,6 +506,151 @@
         {
           "pfad": "/eintraege/0/frame/korrelation",
           "regel": "korrelation_bereich"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/loudness-i-half-ohne-unsicherheit.bin",
+      "urteil": "ungueltig",
+      "warum": "lufs_i allein ist kein Wert mit Konfidenz; die uebrigen Framefelder bleiben pruefbar",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame",
+          "regel": "lufs_i_paar"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/loudness-i-half-ohne-wert.bin",
+      "urteil": "ungueltig",
+      "warum": "Unsicherheit allein ist kein Lautheitswert; die Paarregel ist symmetrisch",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame",
+          "regel": "lufs_i_paar"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/loudness-i-pair-plus-status.bin",
+      "urteil": "ungueltig",
+      "warum": "ein gueltiges Paar und ein Producergrund fuer ein fehlendes Paar widersprechen sich",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/lufs_i_status",
+          "regel": "lufs_i_status_mit_paar"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/loudness-i-status-0.bin",
+      "urteil": "ungueltig",
+      "warum": "nur 1=collecting und 2=gated sind belegte Statuswerte",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/lufs_i_status",
+          "regel": "lufs_i_status"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/loudness-i-status-3.bin",
+      "urteil": "ungueltig",
+      "warum": "nur 1=collecting und 2=gated sind belegte Statuswerte",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/lufs_i_status",
+          "regel": "lufs_i_status"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/loudness-i-unsicherheit-minus-inf.bin",
+      "urteil": "ungueltig",
+      "warum": "NaN und beide Unendlichkeitsrichtungen verwerfen das atomare Paar, ohne die restlichen Framefelder zu verdecken",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame",
+          "regel": "lufs_i_paar"
+        },
+        {
+          "pfad": "/eintraege/0/frame/lufs_i_unsicherheit_lu",
+          "regel": "nicht_endlich"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/loudness-i-unsicherheit-nan.bin",
+      "urteil": "ungueltig",
+      "warum": "NaN und beide Unendlichkeitsrichtungen verwerfen das atomare Paar, ohne die restlichen Framefelder zu verdecken",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame",
+          "regel": "lufs_i_paar"
+        },
+        {
+          "pfad": "/eintraege/0/frame/lufs_i_unsicherheit_lu",
+          "regel": "nicht_endlich"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/loudness-i-unsicherheit-plus-inf.bin",
+      "urteil": "ungueltig",
+      "warum": "NaN und beide Unendlichkeitsrichtungen verwerfen das atomare Paar, ohne die restlichen Framefelder zu verdecken",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame",
+          "regel": "lufs_i_paar"
+        },
+        {
+          "pfad": "/eintraege/0/frame/lufs_i_unsicherheit_lu",
+          "regel": "nicht_endlich"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/loudness-i-wert-minus-inf.bin",
+      "urteil": "ungueltig",
+      "warum": "NaN und beide Unendlichkeitsrichtungen verwerfen das atomare Paar, ohne die restlichen Framefelder zu verdecken",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame",
+          "regel": "lufs_i_paar"
+        },
+        {
+          "pfad": "/eintraege/0/frame/lufs_i",
+          "regel": "nicht_endlich"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/loudness-i-wert-nan.bin",
+      "urteil": "ungueltig",
+      "warum": "NaN und beide Unendlichkeitsrichtungen verwerfen das atomare Paar, ohne die restlichen Framefelder zu verdecken",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame",
+          "regel": "lufs_i_paar"
+        },
+        {
+          "pfad": "/eintraege/0/frame/lufs_i",
+          "regel": "nicht_endlich"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/loudness-i-wert-plus-inf.bin",
+      "urteil": "ungueltig",
+      "warum": "NaN und beide Unendlichkeitsrichtungen verwerfen das atomare Paar, ohne die restlichen Framefelder zu verdecken",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame",
+          "regel": "lufs_i_paar"
+        },
+        {
+          "pfad": "/eintraege/0/frame/lufs_i",
+          "regel": "nicht_endlich"
         }
       ]
     },

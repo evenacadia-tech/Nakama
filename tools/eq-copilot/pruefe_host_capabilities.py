@@ -13,7 +13,10 @@ Liest eq-copilot/identity/host-capabilities-fl-v1.json und prueft:
      erste Fassung mass nur Skriptkonstanten, nicht den Report).
   3. Ein `supported` braucht einen Termin; `unsupported` braucht den festen
      Fallback aus §53.6.
-  4. Die Smart-Disable-Aussage wird an den Ereignissen gemessen (kein
+  4. `host_channel_context` bleibt als Nicht-Wire-Beleg klar vom strikten
+     Zehnerobjekt getrennt; bis Termin C ist er ehrlich `unsupported` und
+     "nicht gemessen" mit dem U20-Fallback.
+  5. Die Smart-Disable-Aussage wird an den Ereignissen gemessen (kein
      zeitsprung_vor in den stummen Fenstern, regelmaessige Wrap-Kadenz) -
      `block_ohne_verarbeitung` zaehlt nur Bruecken-Asymmetrie (T2-Befund 5).
 
@@ -67,7 +70,37 @@ def main() -> int:
 
     erwartet = set(schema["$defs"]["capabilities"]["required"])
     pruefe(set(caps) == erwartet, "genau die zehn Schluessel aus §53.6")
+    pruefe(len(caps) == 10 and "host_channel_context" not in caps,
+           "host_channel_context ist kein elftes Wire-Bit im capabilities-Objekt")
     pruefe(set(report["belege"]) == erwartet, "jedes Bit hat einen Beleg")
+
+    # SONDE-012 E-C01: dokumentarische Hostfaehigkeit, nicht Wire-Vertrag.
+    kanal = report.get("host_channel_context", {})
+    pflicht_kanal = {
+        "wert", "beweis_nach_53_6", "termin", "rohfeld", "fallback_nach_53_6",
+    }
+    erlaubte_kanal = pflicht_kanal | {"datei"}
+    pruefe(pflicht_kanal <= set(kanal) and set(kanal) <= erlaubte_kanal,
+           "host_channel_context folgt der §53.6-Belegform und bleibt eigener Abschnitt")
+    pruefe(kanal.get("wert") in ("supported", "unsupported"),
+           "host_channel_context kennt nur supported|unsupported, kein unknown")
+    pruefe(kanal.get("fallback_nach_53_6")
+           == "U20-Rueckfall: gespeichertes User-Label, keine FL-Reihenfolge-Behauptung",
+           "host_channel_context traegt exakt den U20-Fallback ohne FL-Reihenfolge")
+
+    if kanal.get("termin") == "keiner":
+        pruefe(kanal.get("wert") == "unsupported"
+               and kanal.get("beweis_nach_53_6") == "nicht gemessen"
+               and kanal.get("rohfeld") == "nicht gemessen"
+               and "datei" not in kanal,
+               "channel_context_unmeasured_is_unsupported_with_no_termin_and_fallback")
+    else:
+        datei = str(kanal.get("datei", ""))
+        pruefe(kanal.get("termin") == "C" and datei.startswith("docs/beweise/termin-c/")
+               and datei.endswith(".json") and (WURZEL / datei).is_file()
+               and kanal.get("beweis_nach_53_6") != "nicht gemessen"
+               and kanal.get("rohfeld") != "nicht gemessen",
+               "gemessener host_channel_context verlangt Termin-C-Golden und Rohbeleg")
 
     # 2. Rohdaten lesen.
     b = json.loads((BEWEISE / "termin-b" / "host-probe-20260822-132644.json").read_text(encoding="utf-8"))

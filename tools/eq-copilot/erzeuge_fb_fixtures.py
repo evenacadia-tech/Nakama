@@ -218,6 +218,22 @@ def gueltige() -> list[tuple[str, dict, str]]:
         e["frame"]["band_stereo"] = band_stereo(wert, gueltig=gueltig)
         faelle.append((name, batch(e), warum))
 
+    e = eintrag()
+    e["frame"]["lufs_i"] = -14.2
+    e["frame"]["lufs_i_unsicherheit_lu"] = 0.7
+    faelle.append(("loudness-i-pair", batch(e),
+                   "integrierte Lautheit reist nur gemeinsam mit endlicher Unsicherheit"))
+
+    e = eintrag()
+    e["frame"]["lufs_i_status"] = 1
+    faelle.append(("loudness-i-collecting", batch(e),
+                   "Status 1 bedeutet collecting und traegt bewusst kein Zahlenpaar"))
+
+    e = eintrag()
+    e["frame"]["lufs_i_status"] = 2
+    faelle.append(("loudness-i-gated", batch(e),
+                   "Status 2 bedeutet gated und traegt bewusst kein Zahlenpaar"))
+
     lokal = eintrag()
     lokal["frame"]["transport"]["zeitbasis"] = "local_monotonic"
     del lokal["frame"]["transport"]["project_sample_start"]
@@ -639,6 +655,55 @@ def ungueltige() -> list[tuple[str, dict, list[dict], str]]:
         [v(f"{P}/lufs_s", "nicht_endlich")],
         "NaN wird abgelehnt, nicht sanitisiert: ein nicht messbarer Wert wird "
         "WEGGELASSEN (siehe gueltig/ohne-optionale-kennzahlen)"))
+
+    b = batch(eintrag())
+    b["eintraege"][0]["frame"]["lufs_i"] = -14.2
+    faelle.append((
+        "loudness-i-half-ohne-unsicherheit", b,
+        [v(P, "lufs_i_paar")],
+        "lufs_i allein ist kein Wert mit Konfidenz; die uebrigen Framefelder bleiben pruefbar"))
+
+    b = batch(eintrag())
+    b["eintraege"][0]["frame"]["lufs_i_unsicherheit_lu"] = 0.7
+    faelle.append((
+        "loudness-i-half-ohne-wert", b,
+        [v(P, "lufs_i_paar")],
+        "Unsicherheit allein ist kein Lautheitswert; die Paarregel ist symmetrisch"))
+
+    for name, feld, wert in [
+        ("loudness-i-wert-nan", "lufs_i", float("nan")),
+        ("loudness-i-wert-plus-inf", "lufs_i", float("inf")),
+        ("loudness-i-wert-minus-inf", "lufs_i", float("-inf")),
+        ("loudness-i-unsicherheit-nan", "lufs_i_unsicherheit_lu", float("nan")),
+        ("loudness-i-unsicherheit-plus-inf", "lufs_i_unsicherheit_lu", float("inf")),
+        ("loudness-i-unsicherheit-minus-inf", "lufs_i_unsicherheit_lu", float("-inf")),
+    ]:
+        b = batch(eintrag())
+        b["eintraege"][0]["frame"]["lufs_i"] = -14.2
+        b["eintraege"][0]["frame"]["lufs_i_unsicherheit_lu"] = 0.7
+        b["eintraege"][0]["frame"][feld] = wert
+        faelle.append((
+            name, b,
+            [v(P, "lufs_i_paar"), v(f"{P}/{feld}", "nicht_endlich")],
+            "NaN und beide Unendlichkeitsrichtungen verwerfen das atomare Paar, "
+            "ohne die restlichen Framefelder zu verdecken"))
+
+    b = batch(eintrag())
+    b["eintraege"][0]["frame"]["lufs_i"] = -14.2
+    b["eintraege"][0]["frame"]["lufs_i_unsicherheit_lu"] = 0.7
+    b["eintraege"][0]["frame"]["lufs_i_status"] = 1
+    faelle.append((
+        "loudness-i-pair-plus-status", b,
+        [v(f"{P}/lufs_i_status", "lufs_i_status_mit_paar")],
+        "ein gueltiges Paar und ein Producergrund fuer ein fehlendes Paar widersprechen sich"))
+
+    for status in (0, 3):
+        b = batch(eintrag())
+        b["eintraege"][0]["frame"]["lufs_i_status"] = status
+        faelle.append((
+            f"loudness-i-status-{status}", b,
+            [v(f"{P}/lufs_i_status", "lufs_i_status")],
+            "nur 1=collecting und 2=gated sind belegte Statuswerte"))
 
     # Jede optionale Frame-Kennzahl hat ein EIGENES Nichtendlich-Fixture. Ein
     # Sammelfall wuerde nur beweisen, dass irgendein Feld aus der Leserschleife

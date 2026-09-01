@@ -1481,6 +1481,9 @@ impl<'a> Frame<'a> {
   pub const VT_BREITE: ::flatbuffers::VOffsetT = 20;
   pub const VT_KORRELATION: ::flatbuffers::VOffsetT = 22;
   pub const VT_BAND_STEREO: ::flatbuffers::VOffsetT = 24;
+  pub const VT_LUFS_I: ::flatbuffers::VOffsetT = 26;
+  pub const VT_LUFS_I_UNSICHERHEIT_LU: ::flatbuffers::VOffsetT = 28;
+  pub const VT_LUFS_I_STATUS: ::flatbuffers::VOffsetT = 30;
 
   #[inline]
   pub unsafe fn init_from_table(table: ::flatbuffers::Table<'a>) -> Self {
@@ -1492,6 +1495,8 @@ impl<'a> Frame<'a> {
     args: &'args FrameArgs<'args>
   ) -> ::flatbuffers::WIPOffset<Frame<'bldr>> {
     let mut builder = FrameBuilder::new(_fbb);
+    if let Some(x) = args.lufs_i_unsicherheit_lu { builder.add_lufs_i_unsicherheit_lu(x); }
+    if let Some(x) = args.lufs_i { builder.add_lufs_i(x); }
     if let Some(x) = args.band_stereo { builder.add_band_stereo(x); }
     if let Some(x) = args.korrelation { builder.add_korrelation(x); }
     if let Some(x) = args.breite { builder.add_breite(x); }
@@ -1503,6 +1508,7 @@ impl<'a> Frame<'a> {
     builder.add_metrics_version(args.metrics_version);
     if let Some(x) = args.baender { builder.add_baender(x); }
     if let Some(x) = args.transport { builder.add_transport(x); }
+    if let Some(x) = args.lufs_i_status { builder.add_lufs_i_status(x); }
     builder.finish()
   }
 
@@ -1587,6 +1593,32 @@ impl<'a> Frame<'a> {
     // which contains a valid value in this slot
     unsafe { self._tab.get::<::flatbuffers::ForwardsUOffset<Bandwerte>>(Frame::VT_BAND_STEREO, None)}
   }
+  /// Integrierte, gegatete Lautheit und ihre Konfidenz reisen atomar. Beide
+  /// Floats sind praesent und endlich oder beide fehlen; ein halbes Paar ist
+  /// ein Consumerfehler, aber macht die uebrigen Framefelder nicht unlesbar.
+  #[inline]
+  pub fn lufs_i(&self) -> Option<f32> {
+    // Safety:
+    // Created from valid Table for this object
+    // which contains a valid value in this slot
+    unsafe { self._tab.get::<f32>(Frame::VT_LUFS_I, None)}
+  }
+  #[inline]
+  pub fn lufs_i_unsicherheit_lu(&self) -> Option<f32> {
+    // Safety:
+    // Created from valid Table for this object
+    // which contains a valid value in this slot
+    unsafe { self._tab.get::<f32>(Frame::VT_LUFS_I_UNSICHERHEIT_LU, None)}
+  }
+  /// Producergrund bei fehlendem Paar: 1=collecting, 2=gated. Status und ein
+  /// gueltiges Paar schliessen einander aus; Abwesenheit ist null, nicht 0.
+  #[inline]
+  pub fn lufs_i_status(&self) -> Option<u8> {
+    // Safety:
+    // Created from valid Table for this object
+    // which contains a valid value in this slot
+    unsafe { self._tab.get::<u8>(Frame::VT_LUFS_I_STATUS, None)}
+  }
 }
 
 impl ::flatbuffers::Verifiable for Frame<'_> {
@@ -1606,6 +1638,9 @@ impl ::flatbuffers::Verifiable for Frame<'_> {
      .visit_field::<f32>("breite", Self::VT_BREITE, false)?
      .visit_field::<f32>("korrelation", Self::VT_KORRELATION, false)?
      .visit_field::<::flatbuffers::ForwardsUOffset<Bandwerte>>("band_stereo", Self::VT_BAND_STEREO, false)?
+     .visit_field::<f32>("lufs_i", Self::VT_LUFS_I, false)?
+     .visit_field::<f32>("lufs_i_unsicherheit_lu", Self::VT_LUFS_I_UNSICHERHEIT_LU, false)?
+     .visit_field::<u8>("lufs_i_status", Self::VT_LUFS_I_STATUS, false)?
      .finish();
     Ok(())
   }
@@ -1622,6 +1657,9 @@ pub struct FrameArgs<'a> {
     pub breite: Option<f32>,
     pub korrelation: Option<f32>,
     pub band_stereo: Option<::flatbuffers::WIPOffset<Bandwerte<'a>>>,
+    pub lufs_i: Option<f32>,
+    pub lufs_i_unsicherheit_lu: Option<f32>,
+    pub lufs_i_status: Option<u8>,
 }
 impl<'a> Default for FrameArgs<'a> {
   #[inline]
@@ -1638,6 +1676,9 @@ impl<'a> Default for FrameArgs<'a> {
       breite: None,
       korrelation: None,
       band_stereo: None,
+      lufs_i: None,
+      lufs_i_unsicherheit_lu: None,
+      lufs_i_status: None,
     }
   }
 }
@@ -1692,6 +1733,18 @@ impl<'a: 'b, 'b, A: ::flatbuffers::Allocator + 'a> FrameBuilder<'a, 'b, A> {
     self.fbb_.push_slot_always::<::flatbuffers::WIPOffset<Bandwerte>>(Frame::VT_BAND_STEREO, band_stereo);
   }
   #[inline]
+  pub fn add_lufs_i(&mut self, lufs_i: f32) {
+    self.fbb_.push_slot_always::<f32>(Frame::VT_LUFS_I, lufs_i);
+  }
+  #[inline]
+  pub fn add_lufs_i_unsicherheit_lu(&mut self, lufs_i_unsicherheit_lu: f32) {
+    self.fbb_.push_slot_always::<f32>(Frame::VT_LUFS_I_UNSICHERHEIT_LU, lufs_i_unsicherheit_lu);
+  }
+  #[inline]
+  pub fn add_lufs_i_status(&mut self, lufs_i_status: u8) {
+    self.fbb_.push_slot_always::<u8>(Frame::VT_LUFS_I_STATUS, lufs_i_status);
+  }
+  #[inline]
   pub fn new(_fbb: &'b mut ::flatbuffers::FlatBufferBuilder<'a, A>) -> FrameBuilder<'a, 'b, A> {
     let start = _fbb.start_table();
     FrameBuilder {
@@ -1722,6 +1775,9 @@ impl ::core::fmt::Debug for Frame<'_> {
       ds.field("breite", &self.breite());
       ds.field("korrelation", &self.korrelation());
       ds.field("band_stereo", &self.band_stereo());
+      ds.field("lufs_i", &self.lufs_i());
+      ds.field("lufs_i_unsicherheit_lu", &self.lufs_i_unsicherheit_lu());
+      ds.field("lufs_i_status", &self.lufs_i_status());
       ds.finish()
   }
 }

@@ -599,6 +599,8 @@
         "aussageklasse": { "const": "beobachtend" },
         "label": { "$ref": "#/$defs/probe_label" },
         "pair_id": { "$ref": "#/$defs/pair_id" },
+        "host_bus_name": { "$ref": "#/$defs/host_bus_name" },
+        "host_mixer_index": { "$ref": "#/$defs/host_mixer_index" },
         "capabilities": { "$ref": "#/$defs/capabilities" },
         "frische": { "$ref": "#/$defs/frische" }
       }
@@ -624,6 +626,8 @@
         "aussageklasse": { "const": "beobachtend" },
         "label": { "$ref": "#/$defs/probe_label" },
         "pair_id": { "$ref": "#/$defs/pair_id" },
+        "host_bus_name": { "$ref": "#/$defs/host_bus_name" },
+        "host_mixer_index": { "$ref": "#/$defs/host_mixer_index" },
         "capabilities": { "$ref": "#/$defs/capabilities" },
         "frische": { "$ref": "#/$defs/frische" }
       }
@@ -649,6 +653,8 @@
         "aussageklasse": { "const": "beobachtend" },
         "label": { "$ref": "#/$defs/probe_label" },
         "pair_id": { "$ref": "#/$defs/pair_id" },
+        "host_bus_name": { "$ref": "#/$defs/host_bus_name" },
+        "host_mixer_index": { "$ref": "#/$defs/host_mixer_index" },
         "capabilities": { "$ref": "#/$defs/capabilities" },
         "frische": { "$ref": "#/$defs/frische" }
       }
@@ -674,6 +680,8 @@
         "aussageklasse": { "const": "beitrag" },
         "label": { "$ref": "#/$defs/probe_label" },
         "pair_id": { "$ref": "#/$defs/pair_id" },
+        "host_bus_name": { "$ref": "#/$defs/host_bus_name" },
+        "host_mixer_index": { "$ref": "#/$defs/host_mixer_index" },
         "capabilities": { "$ref": "#/$defs/capabilities_beitrag" },
         "frische": { "$ref": "#/$defs/frische" }
       }
@@ -683,6 +691,21 @@
       "$comment": "User-Label — untrusted data: wird gespeichert und angezeigt, nie interpretiert. Ein Hosthinweis (Trackname, Farbe) darf es nie still ueberschreiben (§32.2). Steht seit dem 24.08.2026 als eigene Definition, damit die vier `probe_descriptor_*`-Zweige sich NUR in den zwei `const` unterscheiden — vier Kopien derselben Feldregel waeren vier Stellen, an denen sie auseinanderlaufen kann.",
       "type": "string",
       "maxLength": 120
+    },
+
+    "host_bus_name": {
+      "description": "Optionaler, untrusted Host-Busname (SONDE-012 E-H02/E-H06). Leer, nur Whitespace, mehr als 120 Unicode-Codepoints oder ein C0-/C1-Steuerzeichen gelten als nicht geliefert und duerfen deshalb nicht auf die Leitung. Angenommene Werte bleiben codepointgetreu; es gibt kein Trimmen und keine Case-Normalisierung.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "pattern": "^(?![\\s\\S]*[\\u0000-\\u001F\\u007F-\\u009F])(?=[\\s\\S]*\\S)[\\s\\S]+$"
+    },
+
+    "host_mixer_index": {
+      "description": "Optionaler roher VST3-kChannelIndexKey-Wert (SONDE-012 E-H02): beginnt bei 1 und bleibt innerhalb der groessten JSON-sicheren Ganzzahl. Ausserhalb gilt der Hostwert als nicht geliefert.",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
     },
 
     "pair_id": {

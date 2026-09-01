@@ -81,6 +81,24 @@ fn base64_kette(wert: &str, alphabet: usize, schluss: &[u8], fuell: usize) -> bo
         && b[alphabet + 1..].iter().all(|&c| c == b'=')
 }
 
+fn ist_unicode_whitespace(c: char) -> bool {
+    matches!(c,
+        '\u{0009}'..='\u{000d}' | '\u{0020}' | '\u{0085}' | '\u{00a0}' |
+        '\u{1680}' | '\u{2000}'..='\u{200a}' | '\u{2028}' | '\u{2029}' |
+        '\u{202f}' | '\u{205f}' | '\u{3000}')
+}
+
+fn host_bus_name_passt(wert: &str) -> bool {
+    let mut hat_nicht_whitespace = false;
+    for c in wert.chars() {
+        if ('\u{0000}'..='\u{001f}').contains(&c) || ('\u{007f}'..='\u{009f}').contains(&c) {
+            return false;
+        }
+        hat_nicht_whitespace |= !ist_unicode_whitespace(c);
+    }
+    hat_nicht_whitespace
+}
+
 /// Geschlossene Mustertabelle — Spiegel von `musterPasst` in NakamaVertrag.cpp.
 ///
 /// 🔑 Jedes dieser Muster steht im Schema NEBEN einem festen `minLength ==
@@ -95,6 +113,9 @@ fn muster_passt(muster: &str, wert: &str) -> Option<bool> {
         "^[A-Za-z0-9+/]{37}[AQgw]==$" => Some(base64_kette(wert, 37, b"AQgw", 2)),
         "^[A-Za-z0-9+/]{10}[AEIMQUYcgkosw048]=$" => {
             Some(base64_kette(wert, 10, b"AEIMQUYcgkosw048", 1))
+        }
+        r"^(?![\s\S]*[\u0000-\u001F\u007F-\u009F])(?=[\s\S]*\S)[\s\S]+$" => {
+            Some(host_bus_name_passt(wert))
         }
         _ => None,
     }

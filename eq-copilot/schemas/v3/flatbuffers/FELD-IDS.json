@@ -83,7 +83,10 @@
         "psr_db": 7,
         "breite": 8,
         "korrelation": 9,
-        "band_stereo": 10
+        "band_stereo": 10,
+        "lufs_i": 11,
+        "lufs_i_unsicherheit_lu": 12,
+        "lufs_i_status": 13
       },
       "verbrannt": []
     },
@@ -104,6 +107,6 @@
 
   "erwartet_gesamt": {
     "tabellen": 8,
-    "felder": 48
+    "felder": 51
   }
 }

@@ -452,6 +452,8 @@ void pruefeFrame (const fb::Frame& f, const juce::String& p, juce::Array<Verstos
         { "psr_db",      f.psr_db() },
         { "breite",      f.breite() },
         { "korrelation", f.korrelation() },
+        { "lufs_i",      f.lufs_i() },
+        { "lufs_i_unsicherheit_lu", f.lufs_i_unsicherheit_lu() },
     };
     for (const auto& w : werte)
         if (w.wert.has_value() && ! std::isfinite (*w.wert))
@@ -463,6 +465,22 @@ void pruefeFrame (const fb::Frame& f, const juce::String& p, juce::Array<Verstos
 
     if (const auto b = f.breite(); b.has_value() && std::isfinite (*b) && *b < 0.0f)
         hinzu (out, p + "/breite", "breite_negativ");
+
+    const auto lufsI = f.lufs_i();
+    const auto unsicherheit = f.lufs_i_unsicherheit_lu();
+    const bool lufsIPaar = lufsI.has_value() && unsicherheit.has_value()
+                        && std::isfinite (*lufsI) && std::isfinite (*unsicherheit);
+    if (lufsI.has_value() != unsicherheit.has_value()
+        || (lufsI.has_value() && unsicherheit.has_value() && ! lufsIPaar))
+        hinzu (out, p, "lufs_i_paar");
+
+    if (const auto status = f.lufs_i_status(); status.has_value())
+    {
+        if (*status != 1u && *status != 2u)
+            hinzu (out, p + "/lufs_i_status", "lufs_i_status");
+        if (lufsIPaar)
+            hinzu (out, p + "/lufs_i_status", "lufs_i_status_mit_paar");
+    }
 }
 
 juce::Array<Verstoss> kanonisch (const juce::Array<Verstoss>& roh)

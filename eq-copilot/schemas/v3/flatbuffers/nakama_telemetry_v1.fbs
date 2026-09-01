@@ -228,6 +228,14 @@ table Frame {
   /// eigener Bandsatz, nie eine Umdeutung von `breite`: float32, 64 Werte,
   /// acht Bitmapbytes, gueltige Werte im Bereich [0, 1], saturated=false.
   band_stereo:Bandwerte (id: 10);
+  /// Integrierte, gegatete Lautheit und ihre Konfidenz reisen atomar. Beide
+  /// Floats sind praesent und endlich oder beide fehlen; ein halbes Paar ist
+  /// ein Consumerfehler, aber macht die uebrigen Framefelder nicht unlesbar.
+  lufs_i:float = null (id: 11);
+  lufs_i_unsicherheit_lu:float = null (id: 12);
+  /// Producergrund bei fehlendem Paar: 1=collecting, 2=gated. Status und ein
+  /// gueltiges Paar schliessen einander aus; Abwesenheit ist null, nicht 0.
+  lufs_i_status:ubyte = null (id: 13);
 }
 
 /// Ein Eintrag des Batches: genau eine Quelle mit genau ihrem aktuellen Frame.

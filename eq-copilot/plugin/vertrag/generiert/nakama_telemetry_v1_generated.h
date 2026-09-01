@@ -867,7 +867,10 @@ struct Frame FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
     VT_PSR_DB = 18,
     VT_BREITE = 20,
     VT_KORRELATION = 22,
-    VT_BAND_STEREO = 24
+    VT_BAND_STEREO = 24,
+    VT_LUFS_I = 26,
+    VT_LUFS_I_UNSICHERHEIT_LU = 28,
+    VT_LUFS_I_STATUS = 30
   };
   const nakama::v3::Transportstempel *transport() const {
     return GetPointer<const nakama::v3::Transportstempel *>(VT_TRANSPORT);
@@ -905,6 +908,20 @@ struct Frame FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   const nakama::v3::Bandwerte *band_stereo() const {
     return GetPointer<const nakama::v3::Bandwerte *>(VT_BAND_STEREO);
   }
+  /// Integrierte, gegatete Lautheit und ihre Konfidenz reisen atomar. Beide
+  /// Floats sind praesent und endlich oder beide fehlen; ein halbes Paar ist
+  /// ein Consumerfehler, aber macht die uebrigen Framefelder nicht unlesbar.
+  ::flatbuffers::Optional<float> lufs_i() const {
+    return GetOptional<float, float>(VT_LUFS_I);
+  }
+  ::flatbuffers::Optional<float> lufs_i_unsicherheit_lu() const {
+    return GetOptional<float, float>(VT_LUFS_I_UNSICHERHEIT_LU);
+  }
+  /// Producergrund bei fehlendem Paar: 1=collecting, 2=gated. Status und ein
+  /// gueltiges Paar schliessen einander aus; Abwesenheit ist null, nicht 0.
+  ::flatbuffers::Optional<uint8_t> lufs_i_status() const {
+    return GetOptional<uint8_t, uint8_t>(VT_LUFS_I_STATUS);
+  }
   template <bool B = false>
   bool Verify(::flatbuffers::VerifierTemplate<B> &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -922,6 +939,9 @@ struct Frame FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
            VerifyField<float>(verifier, VT_KORRELATION, 4) &&
            VerifyOffset(verifier, VT_BAND_STEREO) &&
            verifier.VerifyTable(band_stereo()) &&
+           VerifyField<float>(verifier, VT_LUFS_I, 4) &&
+           VerifyField<float>(verifier, VT_LUFS_I_UNSICHERHEIT_LU, 4) &&
+           VerifyField<uint8_t>(verifier, VT_LUFS_I_STATUS, 1) &&
            verifier.EndTable();
   }
 };
@@ -963,6 +983,15 @@ struct FrameBuilder {
   void add_band_stereo(::flatbuffers::Offset<nakama::v3::Bandwerte> band_stereo) {
     fbb_.AddOffset(Frame::VT_BAND_STEREO, band_stereo);
   }
+  void add_lufs_i(float lufs_i) {
+    fbb_.AddElement<float>(Frame::VT_LUFS_I, lufs_i);
+  }
+  void add_lufs_i_unsicherheit_lu(float lufs_i_unsicherheit_lu) {
+    fbb_.AddElement<float>(Frame::VT_LUFS_I_UNSICHERHEIT_LU, lufs_i_unsicherheit_lu);
+  }
+  void add_lufs_i_status(uint8_t lufs_i_status) {
+    fbb_.AddElement<uint8_t>(Frame::VT_LUFS_I_STATUS, lufs_i_status);
+  }
   explicit FrameBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -988,8 +1017,13 @@ inline ::flatbuffers::Offset<Frame> CreateFrame(
     ::flatbuffers::Optional<float> psr_db = ::flatbuffers::nullopt,
     ::flatbuffers::Optional<float> breite = ::flatbuffers::nullopt,
     ::flatbuffers::Optional<float> korrelation = ::flatbuffers::nullopt,
-    ::flatbuffers::Offset<nakama::v3::Bandwerte> band_stereo = 0) {
+    ::flatbuffers::Offset<nakama::v3::Bandwerte> band_stereo = 0,
+    ::flatbuffers::Optional<float> lufs_i = ::flatbuffers::nullopt,
+    ::flatbuffers::Optional<float> lufs_i_unsicherheit_lu = ::flatbuffers::nullopt,
+    ::flatbuffers::Optional<uint8_t> lufs_i_status = ::flatbuffers::nullopt) {
   FrameBuilder builder_(_fbb);
+  if(lufs_i_unsicherheit_lu) { builder_.add_lufs_i_unsicherheit_lu(*lufs_i_unsicherheit_lu); }
+  if(lufs_i) { builder_.add_lufs_i(*lufs_i); }
   builder_.add_band_stereo(band_stereo);
   if(korrelation) { builder_.add_korrelation(*korrelation); }
   if(breite) { builder_.add_breite(*breite); }
@@ -1001,6 +1035,7 @@ inline ::flatbuffers::Offset<Frame> CreateFrame(
   builder_.add_metrics_version(metrics_version);
   builder_.add_baender(baender);
   builder_.add_transport(transport);
+  if(lufs_i_status) { builder_.add_lufs_i_status(*lufs_i_status); }
   return builder_.Finish();
 }
 

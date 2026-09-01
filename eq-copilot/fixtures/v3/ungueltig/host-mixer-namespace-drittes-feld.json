@@ -34,7 +34,7 @@
         "stale": false,
         "letzter_kontakt_ms": 120
       },
-      "host_mixer_index": 7
+      "host_mixer_namespace": "FL"
     }
   ]
 }

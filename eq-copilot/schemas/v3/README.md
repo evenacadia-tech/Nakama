@@ -221,6 +221,7 @@ unbekanntes Schluesselwort.
 | Muster | Bedeutung |
 |---|---|
 | `^[0-9a-f]{32}$` | genau 32 Kleinbuchstaben-Hexziffern |
+| `^(?![\s\S]*[\u0000-\u001F\u007F-\u009F])(?=[\s\S]*\S)[\s\S]+$` | mindestens ein Nicht-Whitespace-Codepoint und kein C0-/C1-Steuerzeichen; die Laenge steht getrennt am Feld |
 
 `pruefe_v3_vertrag.py` prueft, dass jedes im Schema vorkommende `pattern` in
 dieser Tabelle steht.

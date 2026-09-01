@@ -163,6 +163,9 @@ abhängt.
 | `band_stereo_gitter` · `band_stereo_encoding` · `band_stereo_werte_i16` | Das optionale ID-10-Feld benutzt ausschließlich `nakama_log64_v1`, `float32` und keinen i16-Träger. |
 | `band_stereo_bandzahl` · `band_stereo_bitmap_laenge` | Stereo trägt genau 64 Werte und ein passendes 8-Byte-Bitmap. |
 | `band_stereo_bereich` · `band_stereo_saturated` | Jeder im Bitmap gesetzte Stereoanteil ist endlich und in [0,1]; `saturated` bleibt false. `nicht_endlich` benennt wie bei allen float32-Werten NaN/±inf. |
+| `lufs_i_paar` | `lufs_i` und `lufs_i_unsicherheit_lu` sind entweder beide präsent und endlich oder beide abwesend. Ein halbes oder nichtendliches Paar wird verworfen; andere Framefelder bleiben prüfbar. |
+| `lufs_i_status` | Ein präsenter Status ist genau 1 (`collecting`) oder 2 (`gated`). |
+| `lufs_i_status_mit_paar` | `lufs_i_status` reist nie zusammen mit einem gültigen endlichen Lautheitspaar. |
 
 Die sechs Transportrelationen sind damit in JSON und FlatBuffers dieselbe
 Aussage. Jede Relation besitzt ein regenerierbares Binär-Negativfixture; beide

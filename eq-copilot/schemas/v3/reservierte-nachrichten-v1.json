@@ -4,6 +4,35 @@
   "zweck": "Entwurf §33.3 zaehlt nach dem SONDE-011-Entscheid 26 Nachrichtenfamilien auf. SONDE-005a definiert die 17, deren Datenmodell im Entwurf entschieden ist. Die uebrigen 9 tragen Nutzlasten aus spaeteren Phasen — sie jetzt zu erfinden waere ein Vorgriff, den eine spaetere Phase teuer zuruecknehmen muesste (Bauaufteilung §6.2 'Kein Vorgriff').",
   "regel": "Ihre NAMEN sind trotzdem jetzt vergeben. Ein reservierter Discriminator wird vom v3-Parser ABGELEHNT (er steht nicht im oneOf des Schemas) und darf von keinem spaeteren Ticket fuer etwas anderes verwendet werden. Genau das ist der Vertragsanteil, der spaeter bricht, wenn man ihn heute offen laesst.",
   "pruefung": "pruefe_v3_vertrag.py prueft, dass sich reservierte und definierte Namen nicht ueberschneiden, dass alle reservierten Namen ohne Nutzlast bleiben und dass die Summe 26 ergibt.",
+  "wire_envelope_schema_minor": {
+    "familie": "P1",
+    "vorher": 0,
+    "aktuell": 1,
+    "auswahlregel": "Der Empfaenger waehlt die JSON-Schemafassung anhand von message_family und schema_minor im Wire-Envelope; im Payload entsteht kein weiteres Versionsfeld.",
+    "fassungen": {
+      "0": {
+        "probe_descriptor_hostfelder": []
+      },
+      "1": {
+        "probe_descriptor_hostfelder": [
+          "host_bus_name",
+          "host_mixer_index"
+        ]
+      }
+    }
+  },
+  "belegte_felder": [
+    {
+      "name": "probe_descriptor.host_bus_name",
+      "eigentuemer": "SONDE-012 (S18-19)",
+      "grund": "Seit Wire-Envelope-schema_minor 1 optional belegt: untrusted Host-Busname, 1 bis 120 Unicode-Codepoints, weder nur Whitespace noch mit C0-/C1-Steuerzeichen. Fehlen bedeutet: der Host liefert keinen Wert."
+    },
+    {
+      "name": "probe_descriptor.host_mixer_index",
+      "eigentuemer": "SONDE-012 (S18-19)",
+      "grund": "Seit Wire-Envelope-schema_minor 1 optional belegt: roher VST3-Index als JSON-integer 1 bis 9007199254740991. Fehlen bedeutet: der Host liefert keinen vergleichbaren Wert."
+    }
+  ],
   "reservierte_felder": [
     {
       "name": "evidence_snapshot.ereignisse",
@@ -29,16 +58,6 @@
       "name": "state_report.eq_enabled",
       "eigentuemer": "S29-31",
       "grund": "Betriebszustand des Sonden-EQ; die Reservierung enthaelt ausdruecklich keine Anzeigezusage."
-    },
-    {
-      "name": "probe_descriptor.host_bus_name",
-      "eigentuemer": "S18-19",
-      "grund": "Optionaler hostgelieferter Busname. Fehlen bedeutet nur: der Host liefert keinen Wert. Typ und Befuellung sind nicht vorweggenommen."
-    },
-    {
-      "name": "probe_descriptor.host_mixer_index",
-      "eigentuemer": "S18-19",
-      "grund": "Optionaler hostgelieferter Mixerindex. Fehlen bedeutet nur: der Host liefert keinen Wert. Typ und Bereich sind nicht vorweggenommen."
     }
   ],
   "hinweis_felder": "Dieselbe Regel wie fuer die Nachrichtennamen, eine Ebene tiefer: der Vertragsanteil, der spaeter bricht, wenn man ihn heute offen laesst, ist der NAME - nicht die Nutzlast.",

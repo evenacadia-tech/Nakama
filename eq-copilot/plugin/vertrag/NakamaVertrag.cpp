@@ -90,6 +90,29 @@ bool base64Kette (const juce::String& wert, int alphabet, const char* schluss, i
     return true;
 }
 
+bool istUnicodeWhitespace (juce::juce_wchar c) noexcept
+{
+    // Unicode White_Space explizit statt einer Bibliotheksheuristik: Rust,
+    // C++ und das jsonschema-Referenzbein beurteilen dieselben Codepoints.
+    return (c >= 0x0009 && c <= 0x000d) || c == 0x0020 || c == 0x0085
+        || c == 0x00a0 || c == 0x1680 || (c >= 0x2000 && c <= 0x200a)
+        || c == 0x2028 || c == 0x2029 || c == 0x202f || c == 0x205f
+        || c == 0x3000;
+}
+
+bool hostBusNamePasst (const juce::String& wert) noexcept
+{
+    bool hatNichtWhitespace = false;
+    for (auto z = wert.getCharPointer(); ! z.isEmpty(); ++z)
+    {
+        const auto c = *z;
+        if ((c >= 0x0000 && c <= 0x001f) || (c >= 0x007f && c <= 0x009f))
+            return false;
+        hatNichtWhitespace = hatNichtWhitespace || ! istUnicodeWhitespace (c);
+    }
+    return hatNichtWhitespace;
+}
+
 /*  Geschlossene Mustertabelle. Regex ist zwischen Python, C++ und Rust nicht
     in jeder Ecke gleich; deshalb gibt es hier keine Regex-Auswertung, sondern
     benannte Muster. Ein unbekanntes Muster bricht den Ladevorgang.
@@ -108,6 +131,8 @@ int musterPasst (const juce::String& muster, const juce::String& wert)
     if (muster == "^[0-9a-f]{64}$")                         return hexKette (wert, 64) ? 1 : 0;
     if (muster == "^[A-Za-z0-9+/]{37}[AQgw]==$")            return base64Kette (wert, 37, "AQgw", 2) ? 1 : 0;
     if (muster == "^[A-Za-z0-9+/]{10}[AEIMQUYcgkosw048]=$") return base64Kette (wert, 10, "AEIMQUYcgkosw048", 1) ? 1 : 0;
+    if (muster == R"(^(?![\s\S]*[\u0000-\u001F\u007F-\u009F])(?=[\s\S]*\S)[\s\S]+$)")
+        return hostBusNamePasst (wert) ? 1 : 0;
     return -1;
 }
 

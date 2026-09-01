@@ -14,6 +14,13 @@
   },
   "was_das_ist": "Entwurf §53.6: 'Capabilities sind maschinenlesbare Tatsachen aus Build UND laufendem Host. Ein Capabilitybit wird nur nach seinem Golden gesetzt.' Diese Datei traegt die zehn Bits des Vertrags fuer FL Studio, jedes mit dem Rohfeld, aus dem es gelesen wurde. §54 Exit-Gate: 'Kein unknown, spaeter pruefen darf P1 passieren' - deshalb gibt es nur supported|unsupported; was kein Geraet gemessen hat, ist unsupported mit seinem festen Fallback.",
   "regel": "Ein Bit aendert sich nur mit einer neuen Messung (Datei in docs/beweise/termin-*/), nie mit einer Versionsnummer (§53.6 letzter Satz). Die `capabilities` hier sind genau das Objekt aus schemas/v3/eq-ipc-v3.schema.json $defs/capabilities - pruefe_host_capabilities.py validiert es dagegen.",
+  "host_channel_context": {
+    "wert": "unsupported",
+    "beweis_nach_53_6": "nicht gemessen",
+    "termin": "keiner",
+    "rohfeld": "nicht gemessen",
+    "fallback_nach_53_6": "U20-Rueckfall: gespeichertes User-Label, keine FL-Reihenfolge-Behauptung"
+  },
   "capabilities": {
     "host_context_presence": "supported",
     "project_time_samples": "supported",

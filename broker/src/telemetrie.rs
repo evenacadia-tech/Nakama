@@ -348,6 +348,8 @@ fn pruefe_frame(f: &fb::Frame, p: &str, out: &mut Vec<Verstoss>) {
         ("psr_db", f.psr_db()),
         ("breite", f.breite()),
         ("korrelation", f.korrelation()),
+        ("lufs_i", f.lufs_i()),
+        ("lufs_i_unsicherheit_lu", f.lufs_i_unsicherheit_lu()),
     ] {
         if let Some(x) = wert {
             if !x.is_finite() {
@@ -363,6 +365,31 @@ fn pruefe_frame(f: &fb::Frame, p: &str, out: &mut Vec<Verstoss>) {
     if let Some(b) = f.breite() {
         if b.is_finite() && b < 0.0 {
             out.push(Verstoss::neu(&format!("{p}/breite"), "breite_negativ"));
+        }
+    }
+
+    let lufs_i = f.lufs_i();
+    let unsicherheit = f.lufs_i_unsicherheit_lu();
+    let lufs_i_paar = matches!((lufs_i, unsicherheit),
+        (Some(l), Some(u)) if l.is_finite() && u.is_finite());
+    if lufs_i.is_some() != unsicherheit.is_some()
+        || (lufs_i.is_some() && unsicherheit.is_some() && !lufs_i_paar)
+    {
+        out.push(Verstoss::neu(p, "lufs_i_paar"));
+    }
+
+    if let Some(status) = f.lufs_i_status() {
+        if status != 1 && status != 2 {
+            out.push(Verstoss::neu(
+                &format!("{p}/lufs_i_status"),
+                "lufs_i_status",
+            ));
+        }
+        if lufs_i_paar {
+            out.push(Verstoss::neu(
+                &format!("{p}/lufs_i_status"),
+                "lufs_i_status_mit_paar",
+            ));
         }
     }
 }

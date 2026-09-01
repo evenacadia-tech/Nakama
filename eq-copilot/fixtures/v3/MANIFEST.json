@@ -6,8 +6,8 @@
   "wurzel_skalar": "Markiert ein Fixture, dessen Wurzel weder Objekt noch Array ist. JUCEs JSON-Leser folgt RFC 4627 und lehnt es schon im PARSER ab; serde_json und Python folgen RFC 8259 und lehnen es erst am Schema ab. Beide Wege sind eine Ablehnung, nur an verschiedenen Stellen - die Verletzungsmenge gilt daher nur fuer die Beine mit RFC-8259-Parser.",
   "sortierung": "Verletzungen sind kanonisch nach (instanz, schema, schluessel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
   "textriegel_lehnt_ab": "Markiert ein Fixture, das der TEXTRIEGEL abweist, BEVOR ein Parser es sieht. Diese Fixtures tragen keine Verletzungsmenge, weil sie das Schema nie erreichen — eine erfundene waere eine Luege ueber den Ort der Ablehnung. Regeln und Begruendung: schemas/v3/README.md.",
-  "anzahl_gueltig": 48,
-  "anzahl_ungueltig": 172,
+  "anzahl_gueltig": 51,
+  "anzahl_ungueltig": 179,
   "fixtures": [
     {
       "datei": "gueltig/audible_intervention_begin.json",
@@ -217,6 +217,24 @@
       "datei": "gueltig/preview_renew.json",
       "urteil": "gueltig",
       "warum": "Grundform der Familie",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/probe-host-bus-name-codepointgetreu.json",
+      "urteil": "gueltig",
+      "warum": "angenommener Hosttext bleibt mit inneren und aeusseren Leerzeichen sowie Case unveraendert",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/probe-host-context-maximum.json",
+      "urteil": "gueltig",
+      "warum": "120 Unicode-Codepoints und 2^53-1 sind die einschliesslichen Obergrenzen",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/probe-host-context-minimum.json",
+      "urteil": "gueltig",
+      "warum": "ein Codepoint und VST3-Index 1 sind die einschliesslichen Untergrenzen",
       "verletzungen": []
     },
     {
@@ -1202,6 +1220,114 @@
       ]
     },
     {
+      "datei": "ungueltig/host-bus-name-121-codepoints.json",
+      "urteil": "ungueltig",
+      "warum": "121 Unicode-Codepoints liegen einen ueber der Annahmegrenze",
+      "verletzungen": [
+        {
+          "instanz": "/mitglieder/0/host_bus_name",
+          "schema": "#/$defs/host_bus_name/maxLength",
+          "schluessel": "maxLength"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/host-bus-name-c0-steuerzeichen.json",
+      "urteil": "ungueltig",
+      "warum": "C0-Steuerzeichen werden nicht als Hosttext angenommen",
+      "verletzungen": [
+        {
+          "instanz": "/mitglieder/0/host_bus_name",
+          "schema": "#/$defs/host_bus_name/pattern",
+          "schluessel": "pattern"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/host-bus-name-c1-steuerzeichen.json",
+      "urteil": "ungueltig",
+      "warum": "C1-Steuerzeichen werden nicht als Hosttext angenommen",
+      "verletzungen": [
+        {
+          "instanz": "/mitglieder/0/host_bus_name",
+          "schema": "#/$defs/host_bus_name/pattern",
+          "schluessel": "pattern"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/host-bus-name-leer.json",
+      "urteil": "ungueltig",
+      "warum": "ein leerer Hostname gilt als nicht geliefert",
+      "verletzungen": [
+        {
+          "instanz": "/mitglieder/0/host_bus_name",
+          "schema": "#/$defs/host_bus_name/minLength",
+          "schluessel": "minLength"
+        },
+        {
+          "instanz": "/mitglieder/0/host_bus_name",
+          "schema": "#/$defs/host_bus_name/pattern",
+          "schluessel": "pattern"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/host-bus-name-nur-whitespace.json",
+      "urteil": "ungueltig",
+      "warum": "Unicode-Whitespace allein ist kein sichtbarer Busname",
+      "verletzungen": [
+        {
+          "instanz": "/mitglieder/0/host_bus_name",
+          "schema": "#/$defs/host_bus_name/pattern",
+          "schluessel": "pattern"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/host-mixer-index-negativ.json",
+      "urteil": "ungueltig",
+      "warum": "negative Hostindizes gelten als nicht geliefert",
+      "verletzungen": [
+        {
+          "instanz": "/mitglieder/0/host_mixer_index",
+          "schema": "#/$defs/host_mixer_index/minimum",
+          "schluessel": "minimum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/host-mixer-index-null.json",
+      "urteil": "ungueltig",
+      "warum": "VST3 kChannelIndexKey beginnt bei 1",
+      "verletzungen": [
+        {
+          "instanz": "/mitglieder/0/host_mixer_index",
+          "schema": "#/$defs/host_mixer_index/minimum",
+          "schluessel": "minimum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/host-mixer-index-ueber-json-sicher.json",
+      "urteil": "ungueltig",
+      "warum": "E-H02-Grenzfall: 2^53 faellt bereits am gemeinsamen Textriegel, bevor C++, Rust oder Python daraus verschiedene Zahlen machen koennen",
+      "verletzungen": [],
+      "textriegel_lehnt_ab": true
+    },
+    {
+      "datei": "ungueltig/host-mixer-namespace-drittes-feld.json",
+      "urteil": "ungueltig",
+      "warum": "E-H02 reserviert kein drittes Namespacefeld; bei Mehrdeutigkeit fehlt der Index",
+      "verletzungen": [
+        {
+          "instanz": "/mitglieder/0/host_mixer_namespace",
+          "schema": "#/$defs/probe_descriptor_insert/additionalProperties",
+          "schluessel": "additionalProperties"
+        }
+      ]
+    },
+    {
       "datei": "ungueltig/host-ohne-pid.json",
       "urteil": "ungueltig",
       "warum": "pid ist ein starkes Signal; wer host sendet, sendet sie",
@@ -1723,30 +1849,6 @@
         {
           "instanz": "/applied_dsp",
           "schema": "#/$defs/command_ack/oneOf/0/additionalProperties",
-          "schluessel": "additionalProperties"
-        }
-      ]
-    },
-    {
-      "datei": "ungueltig/reserviertes-feld-probe-descriptor-host-bus-name.json",
-      "urteil": "ungueltig",
-      "warum": "reservierter optionaler Hostname ohne vorweggenommene Nutzlast",
-      "verletzungen": [
-        {
-          "instanz": "/mitglieder/0/host_bus_name",
-          "schema": "#/$defs/probe_descriptor_insert/additionalProperties",
-          "schluessel": "additionalProperties"
-        }
-      ]
-    },
-    {
-      "datei": "ungueltig/reserviertes-feld-probe-descriptor-host-mixer-index.json",
-      "urteil": "ungueltig",
-      "warum": "reservierter optionaler Mixerindex ohne vorweggenommene Nutzlast",
-      "verletzungen": [
-        {
-          "instanz": "/mitglieder/0/host_mixer_index",
-          "schema": "#/$defs/probe_descriptor_insert/additionalProperties",
           "schluessel": "additionalProperties"
         }
       ]

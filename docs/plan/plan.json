@@ -201,7 +201,7 @@
      "leitungsname": "Den vollständigen Messweg unabhängig und sicherheitsnah prüfen",
      "ticket": "Gate",
      "text": "Volles Programm: C++-, Rust- und Sicherheits-Review + Codex.",
-     "beleg": "",
+     "beleg": "docs/beweise/G2.md",
      "stufe": "T3"
     }
    ]

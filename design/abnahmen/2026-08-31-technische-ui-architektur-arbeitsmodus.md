@@ -52,6 +52,31 @@ User-Wortlaut und bindende Konsequenz werden zusätzlich unter `design/abnahmen/
 festgehalten; der Blueprint übernimmt die daraus entstandene aktuelle
 Funktionsarchitektur.
 
+### Nachtrag 02.09.2026 — die Skizze ist ein Stand, kein Ergebnis
+
+Der User stellt klar:
+
+> „mir ist einfach wichtig dass verstanden wird : Design ist genauso ein
+> lebendiger , sich entwickelnder prozess , wie der laufende Prozess der
+> Implementierung des Planes gerade. die Sketch HTML ist der derzeitige
+> Stand , nicht der finale . mir ist wichtig dass das alles commited ist"
+
+Bindende Konsequenz:
+
+1. Die technische Skizze liegt ab dem 02.09.2026 ausschließlich im Repo:
+   [`design/skizze/nakama-ui-technical-sketch.html`](../skizze/nakama-ui-technical-sketch.html)
+   mit Leseblatt [`design/skizze/LIES-MICH.md`](../skizze/LIES-MICH.md) und
+   datierten Sichtbelegen unter `design/skizze/belege/`. Der bis dahin
+   genutzte Codex-Visualisierungsordner im Home-Verzeichnis des PCs ist kein
+   Ablageort mehr; jede Fortschreibung nach einem Fünferblock wird dort im
+   Repo committet.
+2. Die Skizze ist der derzeitige Stand der entschiedenen Funktionsarchitektur
+   und wird nirgends als final, fertig oder abgenommen bezeichnet. Bindend
+   bleiben allein die datierten Abnahmen; die Skizze macht sie sichtbar.
+3. Zeigt die Skizze etwas, das keine Abnahme deckt, wird das im Leseblatt als
+   Vorgriff oder Lücke benannt und in einem folgenden Fünferblock gefragt,
+   nicht still entschieden.
+
 ## Taktänderung am 2026-09-01 — feste Fünferblöcke
 
 Der User ändert den Umbautakt ausdrücklich:

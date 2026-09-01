@@ -161,3 +161,13 @@ setzt alle fünf Entscheide gemeinsam um. Im internen Browser wurden am
 
 Farben, Material, Typografie und visuelle Feinheiten waren nicht Teil dieser
 Prüfung.
+
+## Nachtrag 02.09.2026 — Ablageort der Skizze
+
+Der oben genannte Pfad im Codex-Visualisierungsordner war der Arbeitsort am
+01.09.2026 und ist auf dem Laptop nicht erreichbar. Dieselbe Datei liegt seit
+dem 02.09.2026 byteidentisch im Repo unter
+[`design/skizze/nakama-ui-technical-sketch.html`](../skizze/nakama-ui-technical-sketch.html);
+Sichtbelege des Stands vom 02.09.2026 liegen unter `design/skizze/belege/`.
+Die Skizze ist der derzeitige Stand, nicht der finale (User-Wort 02.09.2026 in
+[`2026-08-31-technische-ui-architektur-arbeitsmodus.md`](2026-08-31-technische-ui-architektur-arbeitsmodus.md)).

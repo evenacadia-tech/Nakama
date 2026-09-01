@@ -132,7 +132,10 @@ later carry it in the feature frame; Gen Master provides it locally without
 IPC. Production UI must not synthesize continuous motion from Range or
 Threshold. The technical target sketch may use a finite, explicitly labeled
 activation demonstration, with no loop and no transform in reduced-motion
-mode.
+mode. That sketch is versioned at
+`design/skizze/nakama-ui-technical-sketch.html` and represents the current,
+not the final, state of the decided architecture (user decision 2 September
+2026, recorded in `design/abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md`).
 
 ## Approval gate
 

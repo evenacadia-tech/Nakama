@@ -116,3 +116,12 @@ Nicht als erledigt gilt weiterhin die native JUCE-/FL-Studio-Umsetzung. Der
 laufende funktionale Editor bleibt bis zur vorgesehenen Implementierungsphase
 fest auf 760×430; die Browserprüfung ist ein Architekturbeleg, kein
 Produktbeleg.
+
+## Nachtrag 02.09.2026 — Ablageort der Skizze
+
+Die oben genannte lokale Adresse `http://127.0.0.1:43117/…` war ein
+Vorschauserver der Session vom 01.09.2026. Die geprüfte Skizze liegt seit dem
+02.09.2026 im Repo unter
+[`design/skizze/nakama-ui-technical-sketch.html`](../skizze/nakama-ui-technical-sketch.html)
+und zeigt nur noch die eine Standardgröße 950×538; die hier gemessene
+Compact-Spalte ist mit dem neueren Entscheid entfallen.

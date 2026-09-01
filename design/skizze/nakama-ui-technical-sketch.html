@@ -1,0 +1,1461 @@
+<meta charset="utf-8">
+<title>Nakama technical UI sketch</title>
+<div id="nakama-tech-sketch" class="nk-sketch">
+  <div class="nk-inspector" aria-label="Technical sketch controls">
+    <div class="nk-inspector-group" aria-label="Surface">
+      <span class="nk-inspector-label">SURFACE</span>
+      <button type="button" class="nk-inspector-button" data-view="sources" aria-pressed="true">GEN · SOURCES</button>
+      <button type="button" class="nk-inspector-button" data-view="eq" aria-pressed="false">GEN · EQ</button>
+      <button type="button" class="nk-inspector-button" data-view="probe" aria-pressed="false">PROBEEQ</button>
+    </div>
+    <div class="nk-inspector-group" aria-label="Scenario">
+      <span class="nk-inspector-label">SCENARIO</span>
+      <button type="button" class="nk-inspector-button" data-state="confirmed" aria-pressed="false">CONFIRMED</button>
+      <button type="button" class="nk-inspector-button" data-state="proposal" aria-pressed="true">PROPOSAL</button>
+      <button type="button" class="nk-inspector-button" data-state="candidate" aria-pressed="false">CANDIDATE</button>
+      <button type="button" class="nk-inspector-button" data-state="offline" aria-pressed="false">LINK LOSS</button>
+    </div>
+  </div>
+
+  <div class="nk-stage-viewport" aria-label="Scaled inspection viewport">
+  <section class="nk-window" aria-label="Nakama technical UI sketch">
+    <div class="nk-gen" data-page="sources" hidden>
+      <header class="nk-header">
+        <div class="nk-brand"><span>NAKAMA</span><strong>GEN</strong></div>
+        <div class="nk-page-title">OVERVIEW</div>
+        <div class="nk-header-truth"><span class="nk-status-dot" aria-hidden="true"></span><span data-link-label>SESSION LINKED</span><span>REV 128</span></div>
+      </header>
+
+      <div class="nk-sources-layout">
+        <section class="nk-source-column" aria-label="Sources">
+          <div class="nk-section-head"><span>SOURCES</span><span>6 / 16</span></div>
+          <button type="button" class="nk-source-row" data-source="Lead Vox"><span>LEAD VOX</span><span class="nk-fresh">FRESH</span><small><span>SIGNAL</span><span>1 FINDING</span></small></button>
+          <button type="button" class="nk-source-row" data-source="Drums"><span>DRUMS</span><span class="nk-fresh">FRESH</span><small><span>SIGNAL</span><span>0 FINDINGS</span></small></button>
+          <button type="button" class="nk-source-row is-selected" data-source="Bass" aria-pressed="true"><span>BASS</span><span class="nk-fresh">FRESH</span><small><span>SIGNAL</span><span>3 FINDINGS</span></small></button>
+          <button type="button" class="nk-source-row" data-source="Piano"><span>PIANO</span><span class="nk-fresh">FRESH</span><small><span>SIGNAL</span><span>2 FINDINGS</span></small></button>
+          <button type="button" class="nk-source-row" data-source="Synth Pad"><span>SYNTH PAD</span><span class="nk-stale">STALE</span><small><span>SIGNAL</span><span>1 FINDING</span></small></button>
+          <button type="button" class="nk-source-row" data-source="Room"><span>ROOM</span><span class="nk-partial">PARTIAL</span><small><span>LOW SIGNAL</span><span>1 FINDING</span></small></button>
+          <div class="nk-source-more">+ 10 CONNECTED · ON DEMAND</div>
+        </section>
+
+        <section class="nk-evidence-stage" aria-label="Evidence for selected source">
+          <div class="nk-section-head"><span>TARGET · <b data-selected-source>BASS</b> <i>REFERENCE · <b data-reference-source>PIANO</b></i></span><span data-evidence-freshness>FRESH · 1.8 s · 92% SUPPORT</span></div>
+          <svg class="nk-evidence-svg" viewBox="0 0 520 210" role="img" aria-label="Frequency evidence between Bass and Piano from 20 hertz to 20 kilohertz">
+            <title data-evidence-title>Frequency evidence for Bass against Piano</title>
+            <desc data-evidence-desc>A supported overlap finding is highlighted from 180 to 260 hertz. The selected source is Bass and the comparison source is Piano.</desc>
+            <g class="nk-grid-lines">
+              <line x1="38" y1="36" x2="502" y2="36"></line><line x1="38" y1="78" x2="502" y2="78"></line>
+              <line x1="38" y1="120" x2="502" y2="120"></line><line x1="38" y1="162" x2="502" y2="162"></line>
+              <line x1="94" y1="20" x2="94" y2="174"></line><line x1="188" y1="20" x2="188" y2="174"></line>
+              <line x1="282" y1="20" x2="282" y2="174"></line><line x1="376" y1="20" x2="376" y2="174"></line><line x1="470" y1="20" x2="470" y2="174"></line>
+            </g>
+            <path class="nk-evidence-primary" d="M38 148 C82 141,114 112,150 104 C190 95,226 116,267 91 C309 66,346 62,386 79 C427 96,463 77,502 55"></path>
+            <path class="nk-evidence-compare" d="M38 158 C79 151,119 126,156 117 C196 107,230 78,271 85 C311 91,348 106,389 92 C430 77,465 84,502 74"></path>
+            <rect class="nk-evidence-zone" x="154" y="25" width="90" height="149" rx="2"></rect>
+            <line class="nk-evidence-marker" x1="199" y1="25" x2="199" y2="174"></line>
+            <circle class="nk-evidence-point" cx="199" cy="101" r="7"></circle>
+            <text x="167" y="42" class="nk-svg-label">180–260 Hz</text>
+            <text x="42" y="198" class="nk-svg-tick">20</text><text x="174" y="198" class="nk-svg-tick">200</text>
+            <text x="306" y="198" class="nk-svg-tick">2k</text><text x="468" y="198" class="nk-svg-tick">20k</text>
+            <text x="43" y="30" class="nk-svg-label" data-graph-target>BASS</text><text x="428" y="30" class="nk-svg-label" data-graph-reference>PIANO</text>
+          </svg>
+          <div class="nk-evidence-footer">
+            <span><b>PASSAGE</b> Bars 33–41</span>
+            <span><b>COMPARE</b> <span data-compare-label>Bass → Piano</span></span>
+            <span><b>CONFIDENCE</b> High</span>
+          </div>
+        </section>
+
+        <aside class="nk-finding-panel" aria-label="Current finding">
+          <div class="nk-section-head nk-finding-head"><span>FINDING 1 / 3</span><span class="nk-finding-head-actions"><button type="button" class="nk-inline-action" data-all-findings>ALL FINDINGS</button><span data-finding-state>READY TO SEND</span></span></div>
+          <div class="nk-finding-copy" data-finding-single>
+            <span class="nk-overline">LIKELY CAUSE</span>
+            <strong data-finding-cause>Masking at 220 Hz.</strong>
+            <span class="nk-overline">SMALLEST TEST</span>
+            <strong data-finding-test>B3 · 220 Hz · −2 dB · Q1.2</strong>
+            <span class="nk-overline">LISTEN FOR</span>
+            <span data-finding-listen>Piano clear; bass intact.</span>
+          </div>
+          <div class="nk-finding-list" data-finding-list hidden>
+            <div><b>01</b><span>Bass masks the piano left hand.</span><em>SELECTED</em></div>
+            <div><b>02</b><span>Low-mid buildup needs a second passage.</span><em>READY</em></div>
+            <div><b>03</b><span>High-band evidence is incomplete.</span><em>MORE DATA</em></div>
+          </div>
+          <div class="nk-finding-actions">
+            <button type="button" class="nk-action nk-action-hold" data-hold>HOLD TO AUDITION</button>
+            <button type="button" class="nk-action nk-action-primary nk-send-draft" data-send-draft>SEND DRAFT → EQ</button>
+            <button type="button" class="nk-action nk-action-quiet" data-reject>REJECT</button>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <div class="nk-gen" data-page="eq">
+      <header class="nk-header">
+        <div class="nk-brand"><span>NAKAMA</span><strong>GEN</strong></div>
+        <div class="nk-page-title">EQ CENTER</div>
+        <div class="nk-header-truth"><span class="nk-status-dot" aria-hidden="true"></span><span data-link-label>SESSION LINKED</span><span data-authority-label>CONFIRMED · REV 128</span></div>
+      </header>
+
+      <div class="nk-eq-page">
+        <div class="nk-target-strip" aria-label="EQ targets">
+          <span class="nk-strip-label">TARGET</span>
+          <button type="button" class="nk-target nk-target-master" data-target="MASTER">MASTER</button>
+          <span class="nk-target-divider" aria-hidden="true"></span>
+          <button type="button" class="nk-target" data-target="KICK">KICK</button>
+          <button type="button" class="nk-target" data-target="VOCALS">VOCALS</button>
+          <button type="button" class="nk-target is-selected" data-target="BASS" aria-pressed="true">BASS</button>
+          <button type="button" class="nk-target" data-target="PIANO">PIANO</button>
+          <span class="nk-target-note">WHEEL: PROBES · MASTER: FIXED</span>
+        </div>
+
+        <div class="nk-eq-grid">
+          <main class="nk-eq-main">
+            <div class="nk-eq-context">
+              <span><b data-target-label>BASS</b> · <span data-eq-link>LINKED</span> · POST</span>
+              <span>EDIT CURVE <b>A</b> · REF <b>PIANO</b></span>
+            </div>
+            <div class="nk-graph-wrap">
+              <svg class="nk-eq-svg" viewBox="0 0 720 218" role="img" aria-label="EQ graph for Bass with confirmed and proposal curves. Double-click a band point to edit it or an empty graph position to create a band there.">
+                <title>Bass EQ graph</title>
+                <desc>The solid curve is the confirmed Bass EQ. The dashed curve is a proposal. A protected region is shown from 3 to 6 kilohertz. Analyzer level and EQ gain use separately labeled scales. Double-clicking a band point opens its filter type, frequency, gain, Q and dynamic controls in a compact panel above or below that point. For an active dynamic band, an outer contour keeps the configured gain position and stable hit target visible while the inner point and its response-curve segment follow live gain excursion. The same panel body switches to a two-row view for Dynamic state, Range, Threshold, Attack, Hold and Release. Double-clicking an empty graph position creates a free bell band slot at that frequency and gain and opens the same controls.</desc>
+                <g class="nk-grid-lines">
+                  <line x1="44" y1="34" x2="682" y2="34"></line><line x1="44" y1="76" x2="682" y2="76"></line>
+                  <line x1="44" y1="108" x2="682" y2="108"></line><line x1="44" y1="140" x2="682" y2="140"></line><line x1="44" y1="182" x2="682" y2="182"></line>
+                  <line x1="107" y1="22" x2="107" y2="192"></line><line x1="212" y1="22" x2="212" y2="192"></line>
+                  <line x1="325" y1="22" x2="325" y2="192"></line><line x1="441" y1="22" x2="441" y2="192"></line><line x1="563" y1="22" x2="563" y2="192"></line>
+                </g>
+                <path class="nk-spectrum" transform="translate(44 0) scale(1.5263158 1) translate(-44 0)" d="M44 170 C72 118,82 136,104 94 C132 48,158 151,189 90 C220 29,244 127,272 78 C302 26,326 151,354 92 C382 35,410 119,462 70 L462 192 L44 192 Z"></path>
+                <rect class="nk-protected" x="496" y="22" width="87" height="170" rx="2"></rect>
+                <text x="503" y="38" class="nk-svg-label">PROTECTED</text>
+                <path class="nk-ref-curve" transform="translate(44 0) scale(1.5263158 1) translate(-44 0)" d="M44 108 C96 105,116 121,154 113 C199 103,219 92,255 106 C297 123,318 109,354 103 C398 96,424 109,462 105"></path>
+                <path class="nk-confirmed-curve" transform="translate(44 0) scale(1.5263158 1) translate(-44 0)" d="M44 108 C89 107,119 119,154 111 C194 102,219 83,255 102 C291 122,315 139,344 106 C378 69,402 98,462 91"></path>
+                <path class="nk-proposal-curve" transform="translate(44 0) scale(1.5263158 1) translate(-44 0)" d="M44 108 C89 107,119 119,154 111 C194 102,219 98,255 102 C291 122,315 139,344 106 C378 69,402 98,462 91"></path>
+                <path class="nk-band-live-curve" data-band-live-curve d="M282 104 C302 104 304 98 322 98 C340 98 342 104 362 104"></path>
+                <g class="nk-band-nodes" aria-hidden="true">
+                  <circle data-band-dyn-ring="1" class="nk-band-dyn-ring is-unused" cx="116" cy="107" r="13"></circle>
+                  <circle data-band-dyn-ring="2" class="nk-band-dyn-ring is-unused" cx="212" cy="111" r="13"></circle>
+                  <circle data-band-dyn-ring="3" class="nk-band-dyn-ring" cx="322" cy="98" r="15"></circle>
+                  <circle data-band-dyn-ring="4" class="nk-band-dyn-ring is-unused" cx="403" cy="116" r="13"></circle>
+                  <circle data-band-dyn-ring="5" class="nk-band-dyn-ring" cx="502" cy="106" r="13"></circle>
+                  <circle data-band-dyn-ring="6" class="nk-band-dyn-ring is-unused" cx="595" cy="94" r="13"></circle>
+                  <circle data-band-dyn-ring="7" class="nk-band-dyn-ring is-unused" cx="0" cy="0" r="13"></circle>
+                  <circle data-band-dyn-ring="8" class="nk-band-dyn-ring is-unused" cx="0" cy="0" r="13"></circle>
+                  <line data-band-disabled-mark="1" class="nk-band-disabled-mark is-unused" x1="0" y1="0" x2="0" y2="0"></line>
+                  <line data-band-disabled-mark="2" class="nk-band-disabled-mark" x1="205" y1="104" x2="219" y2="118"></line>
+                  <line data-band-disabled-mark="3" class="nk-band-disabled-mark is-unused" x1="0" y1="0" x2="0" y2="0"></line>
+                  <line data-band-disabled-mark="4" class="nk-band-disabled-mark is-unused" x1="0" y1="0" x2="0" y2="0"></line>
+                  <line data-band-disabled-mark="5" class="nk-band-disabled-mark is-unused" x1="0" y1="0" x2="0" y2="0"></line>
+                  <line data-band-disabled-mark="6" class="nk-band-disabled-mark is-unused" x1="0" y1="0" x2="0" y2="0"></line>
+                  <line data-band-disabled-mark="7" class="nk-band-disabled-mark is-unused" x1="0" y1="0" x2="0" y2="0"></line>
+                  <line data-band-disabled-mark="8" class="nk-band-disabled-mark is-unused" x1="0" y1="0" x2="0" y2="0"></line>
+                  <circle data-band-node="1" cx="116" cy="107" r="9"></circle><text data-band-label="1" x="116" y="111">1</text>
+                  <circle data-band-node="2" cx="212" cy="111" r="9"></circle><text data-band-label="2" x="212" y="115">2</text>
+                  <circle data-band-node="3" class="is-active" cx="322" cy="98" r="11"></circle><text data-band-label="3" x="322" y="102">3</text>
+                  <circle data-band-node="4" cx="403" cy="116" r="9"></circle><text data-band-label="4" x="403" y="120">4</text>
+                  <circle data-band-node="5" cx="502" cy="106" r="9"></circle><text data-band-label="5" x="502" y="110">5</text>
+                  <circle data-band-node="6" cx="595" cy="94" r="9"></circle><text data-band-label="6" x="595" y="98">6</text>
+                  <circle data-band-node="7" class="is-unused" cx="0" cy="0" r="9"></circle><text data-band-label="7" class="is-unused" x="0" y="0">7</text>
+                  <circle data-band-node="8" class="is-unused" cx="0" cy="0" r="9"></circle><text data-band-label="8" class="is-unused" x="0" y="0">8</text>
+                </g>
+                <g class="nk-band-hits">
+                  <foreignObject data-band-hit-wrap="1" x="98" y="89" width="36" height="36"><button xmlns="http://www.w3.org/1999/xhtml" type="button" class="nk-band-hit" data-band-point="1" data-tooltip="Double-click for Type, Freq, Gain, Q and Dyn" aria-controls="nk-band-panel" aria-expanded="false" aria-label="Band 1. Double-click for precision controls."></button></foreignObject>
+                  <foreignObject data-band-hit-wrap="2" x="194" y="93" width="36" height="36"><button xmlns="http://www.w3.org/1999/xhtml" type="button" class="nk-band-hit" data-band-point="2" data-tooltip="Double-click for Type, Freq, Gain, Q and Dyn" aria-controls="nk-band-panel" aria-expanded="false" aria-label="Band 2. Double-click for precision controls."></button></foreignObject>
+                  <foreignObject data-band-hit-wrap="3" x="304" y="80" width="36" height="36"><button xmlns="http://www.w3.org/1999/xhtml" type="button" class="nk-band-hit" data-band-point="3" data-tooltip="Double-click for Type, Freq, Gain, Q and Dyn" aria-controls="nk-band-panel" aria-expanded="true" aria-label="Band 3. Double-click for precision controls."></button></foreignObject>
+                  <foreignObject data-band-hit-wrap="4" x="385" y="98" width="36" height="36"><button xmlns="http://www.w3.org/1999/xhtml" type="button" class="nk-band-hit" data-band-point="4" data-tooltip="Double-click for Type, Freq, Gain, Q and Dyn" aria-controls="nk-band-panel" aria-expanded="false" aria-label="Band 4. Double-click for precision controls."></button></foreignObject>
+                  <foreignObject data-band-hit-wrap="5" x="484" y="88" width="36" height="36"><button xmlns="http://www.w3.org/1999/xhtml" type="button" class="nk-band-hit" data-band-point="5" data-tooltip="Double-click for Type, Freq, Gain, Q and Dyn" aria-controls="nk-band-panel" aria-expanded="false" aria-label="Band 5. Double-click for precision controls."></button></foreignObject>
+                  <foreignObject data-band-hit-wrap="6" x="577" y="76" width="36" height="36"><button xmlns="http://www.w3.org/1999/xhtml" type="button" class="nk-band-hit" data-band-point="6" data-tooltip="Double-click for Type, Freq, Gain, Q and Dyn" aria-controls="nk-band-panel" aria-expanded="false" aria-label="Band 6. Double-click for precision controls."></button></foreignObject>
+                  <foreignObject data-band-hit-wrap="7" class="is-unused" x="0" y="0" width="36" height="36"><button xmlns="http://www.w3.org/1999/xhtml" type="button" class="nk-band-hit" data-band-point="7" data-tooltip="Double-click for Type, Freq, Gain, Q and Dyn" aria-controls="nk-band-panel" aria-expanded="false" aria-label="Band 7. Double-click for precision controls." disabled></button></foreignObject>
+                  <foreignObject data-band-hit-wrap="8" class="is-unused" x="0" y="0" width="36" height="36"><button xmlns="http://www.w3.org/1999/xhtml" type="button" class="nk-band-hit" data-band-point="8" data-tooltip="Double-click for Type, Freq, Gain, Q and Dyn" aria-controls="nk-band-panel" aria-expanded="false" aria-label="Band 8. Double-click for precision controls." disabled></button></foreignObject>
+                </g>
+                <text x="8" y="34" class="nk-axis-label">ANALYZER</text><text x="10" y="49" class="nk-svg-tick">dBFS</text>
+                <text x="689" y="34" class="nk-axis-label">EQ</text><text x="689" y="49" class="nk-svg-tick">dB</text>
+                <text x="16" y="78" class="nk-svg-tick">−24</text><text x="16" y="142" class="nk-svg-tick">−48</text>
+                <text x="690" y="79" class="nk-svg-tick">+6</text><text x="698" y="112" class="nk-svg-tick">0</text><text x="690" y="145" class="nk-svg-tick">−6</text>
+                <text x="47" y="210" class="nk-svg-tick">20</text><text x="195" y="210" class="nk-svg-tick">200</text><text x="426" y="210" class="nk-svg-tick">2k</text><text x="654" y="210" class="nk-svg-tick">20k</text>
+              </svg>
+              <div class="nk-curve-key"><span><i class="nk-line-solid"></i>BASE</span><span class="nk-key-proposal"><i class="nk-line-dash"></i>DRAFT</span><span><i class="nk-line-ref"></i>REF · PIANO</span></div>
+              <div class="nk-band-notice" data-band-notice role="alert" hidden></div>
+              <div class="nk-band-panel" id="nk-band-panel" data-band-panel data-placement="below" aria-label="Band 3 precision controls">
+                <div class="nk-band-panel-head">
+                  <span class="nk-band-panel-id" data-band-panel-id>B3</span>
+                  <button type="button" class="nk-band-enabled" data-band-enabled aria-pressed="true" aria-label="Disable Band 3" title="Band enabled">ON</button>
+                  <button type="button" class="nk-band-type" data-band-type aria-expanded="false" aria-controls="nk-band-type-menu" aria-label="Band 3 filter type. Bell." title="Bell filter">
+                    <svg class="nk-filter-symbol" viewBox="0 0 36 20" aria-hidden="true"><path class="nk-filter-axis" d="M2 10 H34"></path><path class="nk-filter-curve" data-band-type-path d="M2 10 C10 10 10 3 18 3 C26 3 26 10 34 10"></path></svg>
+                  </button>
+                  <button type="button" class="nk-band-mode" data-band-mode aria-expanded="false" aria-controls="nk-band-mode-menu" aria-label="Band 3 channel mode. Stereo." title="Stereo">ST</button>
+                  <button type="button" class="nk-band-dyn" data-band-dyn aria-expanded="true" aria-controls="nk-band-dynamic-view">DYN · ON</button>
+                  <button type="button" class="nk-band-remove" data-band-remove aria-label="Remove Band 3" title="Remove Band">DEL</button>
+                  <button type="button" class="nk-band-close" data-band-close aria-label="Close band precision controls">×</button>
+                </div>
+                <div class="nk-band-values" data-band-values>
+                  <label>FREQ<input type="text" value="240 Hz" data-band-freq aria-label="Band 3 frequency"></label>
+                  <label>GAIN<input type="text" value="−1.5 dB" data-band-gain aria-label="Band 3 gain"></label>
+                  <label>Q<input type="text" value="1.20" data-band-q aria-label="Band 3 Q"></label>
+                </div>
+                <div class="nk-band-dynamic" id="nk-band-dynamic-view" data-band-dynamic aria-label="Dynamic parameters for Band 3">
+                  <div class="nk-band-dyn-state"><span>DYNAMIC</span><button type="button" data-band-dyn-enable aria-pressed="true" aria-label="Disable Dynamic for Band 3">ON</button></div>
+                  <label>RANGE<input type="text" value="−3.0 dB" data-band-dyn-range aria-label="Band 3 dynamic range"></label>
+                  <label>THRESHOLD<input type="text" value="−20.0 dBFS" data-band-dyn-threshold aria-label="Band 3 dynamic threshold"></label>
+                  <label>ATTACK<input type="text" value="10 ms" data-band-dyn-attack aria-label="Band 3 dynamic attack"></label>
+                  <label>HOLD<input type="text" value="0 ms" data-band-dyn-hold aria-label="Band 3 dynamic hold"></label>
+                  <label>RELEASE<input type="text" value="100 ms" data-band-dyn-release aria-label="Band 3 dynamic release"></label>
+                </div>
+                <div class="nk-band-type-menu" id="nk-band-type-menu" data-band-type-menu role="group" aria-label="Filter type for Band 3" hidden>
+                  <button type="button" data-filter-type="bell" aria-label="Bell filter" title="Bell filter"><svg class="nk-filter-symbol" viewBox="0 0 36 20" aria-hidden="true"><path class="nk-filter-axis" d="M2 10 H34"></path><path class="nk-filter-curve" d="M2 10 C10 10 10 3 18 3 C26 3 26 10 34 10"></path></svg></button>
+                  <button type="button" data-filter-type="low_shelf" aria-label="Low shelf filter" title="Low shelf filter"><svg class="nk-filter-symbol" viewBox="0 0 36 20" aria-hidden="true"><path class="nk-filter-axis" d="M2 10 H34"></path><path class="nk-filter-curve" d="M2 15 H9 C14 15 13 10 20 10 H34"></path></svg></button>
+                  <button type="button" data-filter-type="high_shelf" aria-label="High shelf filter" title="High shelf filter"><svg class="nk-filter-symbol" viewBox="0 0 36 20" aria-hidden="true"><path class="nk-filter-axis" d="M2 10 H34"></path><path class="nk-filter-curve" d="M2 10 H16 C23 10 22 5 27 5 H34"></path></svg></button>
+                  <button type="button" data-filter-type="notch" aria-label="Notch filter" title="Notch filter"><svg class="nk-filter-symbol" viewBox="0 0 36 20" aria-hidden="true"><path class="nk-filter-axis" d="M2 10 H34"></path><path class="nk-filter-curve" d="M2 10 C10 10 10 17 18 17 C26 17 26 10 34 10"></path></svg></button>
+                  <button type="button" data-filter-type="low_cut" aria-label="Low cut filter" title="Low cut filter"><svg class="nk-filter-symbol" viewBox="0 0 36 20" aria-hidden="true"><path class="nk-filter-axis" d="M2 10 H34"></path><path class="nk-filter-curve" d="M2 17 C9 17 9 16 12 14 C16 11 17 10 24 10 H34"></path></svg></button>
+                  <button type="button" data-filter-type="high_cut" aria-label="High cut filter" title="High cut filter"><svg class="nk-filter-symbol" viewBox="0 0 36 20" aria-hidden="true"><path class="nk-filter-axis" d="M2 10 H34"></path><path class="nk-filter-curve" d="M2 10 H12 C19 10 20 11 24 14 C27 16 27 17 34 17"></path></svg></button>
+                </div>
+                <div class="nk-band-mode-menu" id="nk-band-mode-menu" data-band-mode-menu role="group" aria-label="Channel mode for Band 3" hidden>
+                  <button type="button" data-channel-mode="stereo" aria-label="Stereo" title="Stereo">ST</button>
+                  <button type="button" data-channel-mode="left" aria-label="Left" title="Left">L</button>
+                  <button type="button" data-channel-mode="right" aria-label="Right" title="Right">R</button>
+                  <button type="button" data-channel-mode="mid" aria-label="Mid" title="Mid">M</button>
+                  <button type="button" data-channel-mode="side" aria-label="Side" title="Side">S</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="nk-lower-rail">
+              <div class="nk-global-strip">
+                <button type="button" class="nk-global-toggle" aria-expanded="false" data-global>GLOBAL · 2 ON <span aria-hidden="true">⌄</span></button>
+                <button type="button" class="nk-undo">UNDO · BASS</button>
+              </div>
+              <div class="nk-transaction-rail" aria-label="Current draft transaction" data-transaction-rail>
+                <span class="nk-transaction-state"><b data-transaction-kind>DRAFT</b><span data-transaction-target>BASS · B3</span></span>
+                <button type="button" class="nk-action nk-action-hold" data-hold>AUDITION · HOLD</button>
+                <button type="button" class="nk-action nk-action-primary" data-apply>APPLY · 10 s</button>
+                <button type="button" class="nk-action nk-action-quiet" data-reject>REJECT</button>
+                <span class="nk-sr-only" aria-live="polite" data-live-status>Confirmed audio remains authoritative.</span>
+              </div>
+            </div>
+            <div class="nk-global-details" hidden data-global-details>
+              <label>INPUT<input type="text" value="+0.0 dB"></label><label>OUTPUT<input type="text" value="−0.5 dB"></label><label>WIDTH<input type="text" value="100%"></label><span>A/B · A</span><span>PRESET · USER 04</span>
+            </div>
+          </main>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="nk-probe-page" data-page="probe" hidden>
+      <div class="nk-probe-shell">
+        <header class="nk-probe-head">
+          <div><span class="nk-probe-title">PROBEEQ</span><span data-probe-link>LINKED</span></div>
+          <strong data-probe-bus>BASS BUS</strong>
+        </header>
+        <div class="nk-probe-truth"><span data-probe-authority>CONFIRMED · REV 128</span><span>MODE · POST</span></div>
+        <div class="nk-probe-change">
+          <span class="nk-overline">CURRENT EQ CHANGE</span>
+          <strong data-probe-band>BAND 3</strong><strong data-probe-freq>240 Hz</strong><strong data-probe-gain>−1.5 dB</strong><strong data-probe-q>Q 1.20</strong>
+        </div>
+        <div class="nk-probe-controls">
+          <button type="button" aria-pressed="true">EQ · ON</button>
+          <button type="button" aria-pressed="false">BYPASS · OFF</button>
+          <label>MIX <input type="range" min="0" max="100" value="92" aria-label="Probeeq mix"><output>92%</output></label>
+        </div>
+        <div class="nk-probe-note" aria-live="polite" data-probe-note>Remote changes execute here; full band editing stays in Gen.</div>
+      </div>
+    </div>
+  </section>
+  </div>
+
+  <div class="nk-sketch-legend"><span>TARGET BEHAVIOR · NOT CURRENT BUILD · VISUAL STYLE OPEN</span><span>GEN EQ · DOUBLE-CLICK POINT / EMPTY SPACE → EDIT / CREATE</span><span>CLICK BAND → OPEN PANEL FOLLOWS · OFF ≠ REMOVE</span><span>DYN · OUTER CONTOUR = SET VALUE · INNER POINT + CURVE = LIVE EXCURSION TARGET</span><span>GEN · ONE LOGICAL SIZE 950×538 · COMPACT / RESIZE DEFERRED</span></div>
+</div>
+
+<style>
+  #nakama-tech-sketch {
+    --nk-page: light-dark(#ececea, #090b0d);
+    --nk-shell: light-dark(#f7f7f5, #101316);
+    --nk-surface: light-dark(#ffffff, #15191d);
+    --nk-surface-2: light-dark(#f0f1ef, #1b2025);
+    --nk-line: light-dark(#c7cac6, #353c42);
+    --nk-line-strong: light-dark(#868c88, #68727a);
+    --nk-text: light-dark(#171a18, #eef1ef);
+    --nk-muted: light-dark(#606761, #9aa3a9);
+    --nk-faint: light-dark(#dfe2de, #272d32);
+    --nk-edit: light-dark(#7b3945, #c96b79);
+    --nk-edit-soft: light-dark(rgba(123,57,69,.12), rgba(201,107,121,.14));
+    --nk-ref: light-dark(#416b78, #79a9b6);
+    --nk-ok: light-dark(#315d4f, #80bca6);
+    --nk-warn: light-dark(#785f25, #d3b867);
+    --nk-danger: light-dark(#873f3f, #e07b78);
+    --nk-stage-width: 950px;
+    --nk-stage-height: 538px;
+    color-scheme: light dark;
+    width: 100%;
+    color: var(--nk-text);
+    font-family: Inter, "Segoe UI", sans-serif;
+  }
+
+  #nakama-tech-sketch * { box-sizing: border-box; }
+  #nakama-tech-sketch [hidden] { display: none !important; }
+  #nakama-tech-sketch button,
+  #nakama-tech-sketch input,
+  #nakama-tech-sketch select { font: inherit; color: inherit; }
+
+  #nakama-tech-sketch .nk-inspector {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px 18px;
+    margin: 0 auto 10px;
+    width: min(100%, 950px);
+  }
+  #nakama-tech-sketch .nk-inspector-group { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+  #nakama-tech-sketch .nk-inspector-label { color: var(--nk-muted); font: 500 11px/1.2 "Cascadia Mono", monospace; letter-spacing: .08em; margin-right: 3px; }
+  #nakama-tech-sketch .nk-inspector-button {
+    min-height: 30px;
+    padding: 5px 9px;
+    border: 1px solid var(--nk-line);
+    border-radius: 5px;
+    background: var(--nk-surface);
+    color: var(--nk-muted);
+    cursor: pointer;
+    font: 500 11px/1.2 "Cascadia Mono", monospace;
+  }
+  #nakama-tech-sketch .nk-inspector-button[aria-pressed="true"] { background: var(--nk-text); color: var(--nk-shell); border-color: var(--nk-text); }
+  #nakama-tech-sketch[data-view="probe"] { --nk-stage-width: 760px; --nk-stage-height: 430px; }
+
+  #nakama-tech-sketch .nk-stage-viewport {
+    position: relative;
+    width: var(--nk-preview-width, 950px);
+    height: var(--nk-preview-height, 538px);
+    margin: 0 auto;
+  }
+
+  #nakama-tech-sketch .nk-window {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: var(--nk-stage-width);
+    height: var(--nk-stage-height);
+    margin: 0;
+    transform: translateX(-50%) scale(var(--nk-preview-scale, 1));
+    transform-origin: top center;
+    overflow: hidden;
+    border: 1px solid var(--nk-line-strong);
+    border-radius: 14px;
+    background: var(--nk-shell);
+    box-shadow: 0 18px 48px light-dark(rgba(30,35,32,.12), rgba(0,0,0,.38));
+  }
+  #nakama-tech-sketch .nk-gen { height: 100%; }
+  #nakama-tech-sketch .nk-header {
+    height: 52px;
+    display: grid;
+    grid-template-columns: 118px 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 0 14px;
+    border-bottom: 1px solid var(--nk-line);
+    background: var(--nk-surface);
+  }
+  #nakama-tech-sketch .nk-brand { display: flex; align-items: baseline; gap: 6px; letter-spacing: .12em; }
+  #nakama-tech-sketch .nk-brand span { font: 500 11px/1 "Cascadia Mono", monospace; color: var(--nk-muted); }
+  #nakama-tech-sketch .nk-brand strong { font: 500 16px/1 "Cascadia Mono", monospace; }
+  #nakama-tech-sketch .nk-page-title {
+    align-self: stretch;
+    display: grid;
+    place-items: center;
+    min-width: 88px;
+    padding: 0 10px;
+    border-bottom: 2px solid var(--nk-text);
+    color: var(--nk-text);
+    font: 500 11px/1 "Cascadia Mono", monospace;
+    letter-spacing: .04em;
+  }
+  #nakama-tech-sketch .nk-header-truth { display: flex; align-items: center; gap: 9px; color: var(--nk-muted); font: 500 11px/1 "Cascadia Mono", monospace; white-space: nowrap; }
+  #nakama-tech-sketch .nk-status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--nk-ok); }
+  #nakama-tech-sketch[data-state="offline"] .nk-status-dot { background: var(--nk-danger); }
+
+  #nakama-tech-sketch .nk-section-head,
+  #nakama-tech-sketch .nk-eq-context,
+  #nakama-tech-sketch .nk-probe-truth {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--nk-muted);
+    font: 500 11px/1.2 "Cascadia Mono", monospace;
+    letter-spacing: .04em;
+  }
+  #nakama-tech-sketch .nk-section-head b,
+  #nakama-tech-sketch .nk-eq-context b { color: var(--nk-text); font-weight: 500; }
+  #nakama-tech-sketch .nk-open-marker { color: var(--nk-warn); font-style: normal; }
+
+  #nakama-tech-sketch .nk-sources-layout {
+    height: calc(100% - 52px);
+    display: grid;
+    grid-template-columns: 180px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) 142px;
+    gap: 10px;
+    padding: 10px;
+  }
+  #nakama-tech-sketch .nk-source-column,
+  #nakama-tech-sketch .nk-evidence-stage,
+  #nakama-tech-sketch .nk-finding-panel {
+    min-width: 0;
+    border: 1px solid var(--nk-line);
+    border-radius: 8px;
+    background: var(--nk-surface);
+  }
+  #nakama-tech-sketch .nk-source-column { grid-column: 1; grid-row: 1 / 3; padding: 10px 8px 8px; }
+  #nakama-tech-sketch .nk-source-row {
+    width: 100%;
+    min-height: 42px;
+    margin-top: 5px;
+    padding: 6px 7px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 2px 8px;
+    text-align: left;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    background: transparent;
+    cursor: pointer;
+    font: 500 11px/1.2 "Cascadia Mono", monospace;
+  }
+  #nakama-tech-sketch .nk-source-row small { grid-column: 1 / -1; display: flex; justify-content: space-between; gap: 6px; color: var(--nk-muted); font-size: 11px; }
+  #nakama-tech-sketch .nk-source-row.is-selected { background: var(--nk-edit-soft); border-color: var(--nk-edit); }
+  #nakama-tech-sketch .nk-fresh { color: var(--nk-ok); }
+  #nakama-tech-sketch .nk-stale { color: var(--nk-danger); }
+  #nakama-tech-sketch .nk-partial { color: var(--nk-warn); }
+  #nakama-tech-sketch .nk-source-more { margin: 7px 3px 0; color: var(--nk-muted); font: 500 11px/1.2 "Cascadia Mono", monospace; }
+
+  #nakama-tech-sketch .nk-evidence-stage { grid-column: 2; grid-row: 1; display: grid; grid-template-rows: 24px minmax(0, 1fr) 30px; padding: 8px 10px; }
+  #nakama-tech-sketch .nk-evidence-stage .nk-section-head i { margin-left: 10px; color: var(--nk-muted); font-style: normal; }
+  #nakama-tech-sketch .nk-evidence-svg { width: 100%; height: 100%; min-height: 0; }
+  #nakama-tech-sketch .nk-grid-lines line { stroke: var(--nk-faint); stroke-width: 1; }
+  #nakama-tech-sketch .nk-evidence-primary { fill: none; stroke: var(--nk-edit); stroke-width: 3; }
+  #nakama-tech-sketch .nk-evidence-compare { fill: none; stroke: var(--nk-ref); stroke-width: 2; stroke-dasharray: 5 5; }
+  #nakama-tech-sketch .nk-evidence-zone { fill: var(--nk-edit-soft); stroke: var(--nk-edit); stroke-width: 1; stroke-dasharray: 4 4; }
+  #nakama-tech-sketch .nk-evidence-marker { stroke: var(--nk-line-strong); stroke-width: 1; }
+  #nakama-tech-sketch .nk-evidence-point { fill: var(--nk-shell); stroke: var(--nk-edit); stroke-width: 3; }
+  #nakama-tech-sketch .nk-svg-label,
+  #nakama-tech-sketch .nk-svg-tick,
+  #nakama-tech-sketch .nk-axis-label { fill: var(--nk-muted); font-family: "Cascadia Mono", monospace; font-size: 14px; }
+  #nakama-tech-sketch .nk-axis-label { font-size: 13px; letter-spacing: .05em; }
+  #nakama-tech-sketch .nk-evidence-footer { display: flex; justify-content: space-between; gap: 8px; align-items: center; border-top: 1px solid var(--nk-line); color: var(--nk-muted); font: 500 11px/1.2 "Cascadia Mono", monospace; }
+  #nakama-tech-sketch .nk-evidence-footer b { color: var(--nk-text); font-weight: 500; }
+
+  #nakama-tech-sketch .nk-finding-panel {
+    grid-column: 2;
+    grid-row: 2;
+    padding: 8px 10px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 220px;
+    grid-template-rows: 22px minmax(0, 1fr);
+    gap: 6px 12px;
+  }
+  #nakama-tech-sketch .nk-finding-head { grid-column: 1 / -1; grid-row: 1; }
+  #nakama-tech-sketch .nk-finding-head-actions { display: flex; align-items: center; gap: 8px; }
+  #nakama-tech-sketch .nk-inline-action {
+    min-height: 20px;
+    padding: 2px 6px;
+    border: 1px solid var(--nk-line);
+    border-radius: 4px;
+    background: var(--nk-surface-2);
+    cursor: pointer;
+    font: 500 10px/1 "Cascadia Mono", monospace;
+  }
+  #nakama-tech-sketch .nk-finding-copy { display: flex; flex-direction: column; gap: 4px; margin-top: 14px; }
+  #nakama-tech-sketch .nk-finding-copy { grid-column: 1; grid-row: 2; display: grid; grid-template-columns: 84px minmax(0, 1fr); align-content: center; gap: 3px 10px; min-width: 0; }
+  #nakama-tech-sketch .nk-finding-copy strong { font-size: 12px; font-weight: 500; }
+  #nakama-tech-sketch .nk-finding-copy > span:not(.nk-overline) { color: var(--nk-muted); font-size: 11px; }
+  #nakama-tech-sketch .nk-overline { color: var(--nk-muted); font: 500 10px/1.2 "Cascadia Mono", monospace; letter-spacing: .06em; }
+  #nakama-tech-sketch .nk-finding-list { grid-column: 1; grid-row: 2; display: grid; align-content: center; gap: 3px; }
+  #nakama-tech-sketch .nk-finding-list > div { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 8px; align-items: center; min-width: 0; font-size: 11px; }
+  #nakama-tech-sketch .nk-finding-list b { font: 500 10px/1 "Cascadia Mono", monospace; }
+  #nakama-tech-sketch .nk-finding-list span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #nakama-tech-sketch .nk-finding-list em { color: var(--nk-muted); font: 500 10px/1 "Cascadia Mono", monospace; font-style: normal; }
+  #nakama-tech-sketch .nk-finding-actions { grid-column: 2; grid-row: 2; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 5px; align-content: center; }
+  #nakama-tech-sketch .nk-finding-actions .nk-send-draft { grid-column: 1 / -1; grid-row: 2; }
+  #nakama-tech-sketch .nk-finding-actions [data-reject] { grid-column: 2; grid-row: 1; }
+  #nakama-tech-sketch .nk-action,
+  #nakama-tech-sketch .nk-target,
+  #nakama-tech-sketch .nk-global-toggle,
+  #nakama-tech-sketch .nk-undo,
+  #nakama-tech-sketch .nk-band-enabled,
+  #nakama-tech-sketch .nk-band-type,
+  #nakama-tech-sketch .nk-band-mode,
+  #nakama-tech-sketch .nk-band-dyn,
+  #nakama-tech-sketch .nk-band-remove,
+  #nakama-tech-sketch .nk-band-close,
+  #nakama-tech-sketch .nk-probe-controls button {
+    min-height: 30px;
+    border: 1px solid var(--nk-line);
+    border-radius: 5px;
+    background: var(--nk-surface-2);
+    cursor: pointer;
+    font: 500 11px/1.2 "Cascadia Mono", monospace;
+  }
+  #nakama-tech-sketch .nk-action-primary { border-color: var(--nk-edit); background: var(--nk-edit-soft); }
+  #nakama-tech-sketch .nk-action-hold:active,
+  #nakama-tech-sketch.is-holding .nk-action-hold { background: var(--nk-text); color: var(--nk-shell); }
+  #nakama-tech-sketch .nk-action-quiet { background: transparent; }
+  #nakama-tech-sketch button:disabled { cursor: not-allowed; opacity: .45; }
+
+  #nakama-tech-sketch .nk-eq-page { height: calc(100% - 52px); display: grid; grid-template-rows: 38px minmax(0, 1fr); padding: 0 10px 10px; }
+  #nakama-tech-sketch .nk-target-strip { display: flex; align-items: center; gap: 5px; min-width: 0; }
+  #nakama-tech-sketch .nk-strip-label,
+  #nakama-tech-sketch .nk-target-note { color: var(--nk-muted); font: 500 11px/1 "Cascadia Mono", monospace; white-space: nowrap; }
+  #nakama-tech-sketch .nk-target-note { margin-left: auto; }
+  #nakama-tech-sketch .nk-target { min-height: 26px; padding: 4px 8px; background: transparent; border-color: transparent; }
+  #nakama-tech-sketch .nk-target.is-selected { border-color: var(--nk-edit); background: var(--nk-edit-soft); }
+  #nakama-tech-sketch .nk-target-master { border-color: var(--nk-line-strong); }
+  #nakama-tech-sketch .nk-target-divider { width: 1px; height: 18px; background: var(--nk-line); }
+
+  #nakama-tech-sketch .nk-eq-grid { min-height: 0; display: block; }
+  #nakama-tech-sketch .nk-eq-main { position: relative; min-width: 0; height: 100%; display: grid; grid-template-rows: 22px minmax(0, 1fr) 34px; gap: 5px; }
+  #nakama-tech-sketch .nk-graph-wrap { min-height: 0; position: relative; border: 1px solid var(--nk-line); border-radius: 7px; background: var(--nk-surface); overflow: hidden; }
+  #nakama-tech-sketch .nk-eq-svg { width: 100%; height: 100%; }
+  #nakama-tech-sketch .nk-spectrum { fill: var(--nk-faint); opacity: .5; }
+  #nakama-tech-sketch .nk-protected { fill: var(--nk-edit-soft); stroke: var(--nk-edit); stroke-width: 1; stroke-dasharray: 3 3; }
+  #nakama-tech-sketch .nk-ref-curve { fill: none; stroke: var(--nk-ref); stroke-width: 1.6; stroke-dasharray: 3 4; opacity: .8; }
+  #nakama-tech-sketch .nk-confirmed-curve { fill: none; stroke: var(--nk-text); stroke-width: 2; }
+  #nakama-tech-sketch .nk-proposal-curve { fill: none; stroke: var(--nk-edit); stroke-width: 2.2; stroke-dasharray: 6 4; }
+  #nakama-tech-sketch .nk-band-live-curve { fill: none; stroke: var(--nk-text); stroke-width: 2; opacity: 0; pointer-events: none; }
+  #nakama-tech-sketch[data-state="confirmed"] .nk-proposal-curve,
+  #nakama-tech-sketch[data-state="offline"] .nk-proposal-curve { display: none; }
+  #nakama-tech-sketch[data-state="confirmed"] .nk-key-proposal,
+  #nakama-tech-sketch[data-state="offline"] .nk-key-proposal { display: none; }
+  #nakama-tech-sketch.is-holding .nk-proposal-curve { stroke-width: 3.5; }
+  #nakama-tech-sketch .nk-band-nodes circle { fill: var(--nk-shell); stroke: var(--nk-line-strong); stroke-width: 1.5; }
+  #nakama-tech-sketch .nk-band-nodes circle.is-active { fill: var(--nk-edit-soft); stroke: var(--nk-edit); stroke-width: 2.5; }
+  #nakama-tech-sketch .nk-band-nodes .nk-band-dyn-ring { fill: none; stroke: var(--nk-line-strong); stroke-width: 1.5; }
+  #nakama-tech-sketch .nk-band-nodes text { fill: var(--nk-text); font: 500 12px/1 "Cascadia Mono", monospace; text-anchor: middle; }
+  #nakama-tech-sketch .nk-band-nodes circle.is-disabled-band { fill: transparent; stroke-dasharray: 3 2; }
+  #nakama-tech-sketch .nk-band-nodes text.is-disabled-band { text-decoration: line-through; opacity: .62; }
+  #nakama-tech-sketch .nk-band-nodes .nk-band-dyn-ring.is-disabled-band { stroke-dasharray: 3 2; opacity: .62; }
+  #nakama-tech-sketch .nk-band-nodes .nk-band-disabled-mark { stroke: var(--nk-text); stroke-width: 1.5; pointer-events: none; }
+  #nakama-tech-sketch .nk-band-nodes .is-unused,
+  #nakama-tech-sketch .nk-band-hits .is-unused { display: none; }
+  #nakama-tech-sketch .nk-band-hits foreignObject { overflow: visible; }
+  #nakama-tech-sketch .nk-band-hit { width: 100%; height: 100%; min-height: 0; padding: 0; border: 0; border-radius: 50%; background: transparent; cursor: crosshair; }
+  #nakama-tech-sketch .nk-curve-key { position: absolute; left: 56px; bottom: 21px; display: flex; gap: 10px; color: var(--nk-muted); font: 500 11px/1 "Cascadia Mono", monospace; }
+  #nakama-tech-sketch .nk-curve-key span { display: flex; align-items: center; gap: 4px; }
+  #nakama-tech-sketch .nk-curve-key i { display: inline-block; width: 18px; height: 0; border-top: 2px solid var(--nk-text); }
+  #nakama-tech-sketch .nk-curve-key .nk-line-dash { border-color: var(--nk-edit); border-top-style: dashed; }
+  #nakama-tech-sketch .nk-curve-key .nk-line-ref { border-color: var(--nk-ref); border-top-style: dotted; }
+  #nakama-tech-sketch .nk-band-notice { position: absolute; z-index: 6; top: 8px; left: 50%; transform: translateX(-50%); max-width: calc(100% - 20px); padding: 5px 8px; border: 1px solid var(--nk-danger); border-radius: 5px; background: var(--nk-surface-2); color: var(--nk-danger); font: 500 10px/1.2 "Cascadia Mono", monospace; text-align: center; white-space: nowrap; }
+  #nakama-tech-sketch .nk-band-notice[hidden] { display: none; }
+
+  #nakama-tech-sketch .nk-band-panel {
+    position: absolute;
+    z-index: 5;
+    left: 8px;
+    top: 8px;
+    width: min(276px, calc(100% - 16px));
+    display: grid;
+    gap: 4px;
+    padding: 5px;
+    border: 1px solid var(--nk-line-strong);
+    border-radius: 7px;
+    background: var(--nk-surface-2);
+    box-shadow: 0 10px 24px light-dark(rgba(30,35,32,.16), rgba(0,0,0,.48));
+  }
+  #nakama-tech-sketch .nk-band-panel[hidden] { display: none; }
+  #nakama-tech-sketch .nk-band-panel-head { display: grid; grid-template-columns: 30px 32px minmax(38px, 1fr) 32px 58px 30px 26px; gap: 3px; }
+  #nakama-tech-sketch .nk-band-values { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+  #nakama-tech-sketch .nk-band-values[hidden],
+  #nakama-tech-sketch .nk-band-dynamic[hidden],
+  #nakama-tech-sketch .nk-band-mode-menu[hidden] { display: none; }
+  #nakama-tech-sketch .nk-band-dynamic { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+  #nakama-tech-sketch .nk-band-dyn-state { display: grid; grid-template-rows: 9px 1fr; color: var(--nk-muted); font: 500 10px/1 "Cascadia Mono", monospace; }
+  #nakama-tech-sketch .nk-band-dyn-state button { min-height: 24px; padding: 2px 4px; font-size: 10px; }
+  #nakama-tech-sketch .nk-band-panel label,
+  #nakama-tech-sketch .nk-global-details label { display: grid; grid-template-rows: 11px 1fr; color: var(--nk-muted); font: 500 11px/1 "Cascadia Mono", monospace; }
+  #nakama-tech-sketch .nk-band-panel input,
+  #nakama-tech-sketch .nk-global-details input {
+    width: 100%; min-width: 0; height: 27px; padding: 3px 5px; border: 1px solid var(--nk-line); border-radius: 4px; background: var(--nk-surface); font: 500 11px/1 "Cascadia Mono", monospace;
+  }
+  #nakama-tech-sketch .nk-band-panel .nk-band-dynamic label { grid-template-rows: 9px 1fr; font-size: 10px; }
+  #nakama-tech-sketch .nk-band-panel .nk-band-dynamic input { height: 24px; padding: 2px 4px; }
+  #nakama-tech-sketch .nk-band-panel-id { display: grid; place-items: center; color: var(--nk-text); font: 500 12px/1 "Cascadia Mono", monospace; }
+  #nakama-tech-sketch .nk-band-enabled,
+  #nakama-tech-sketch .nk-band-type,
+  #nakama-tech-sketch .nk-band-mode,
+  #nakama-tech-sketch .nk-band-dyn,
+  #nakama-tech-sketch .nk-band-remove,
+  #nakama-tech-sketch .nk-band-close { min-height: 25px; padding: 3px 5px; font-size: 10px; white-space: nowrap; }
+  #nakama-tech-sketch .nk-band-type { display: grid; place-items: center; padding: 2px 5px; }
+  #nakama-tech-sketch .nk-band-enabled[aria-pressed="false"] { border-style: dashed; }
+  #nakama-tech-sketch .nk-band-dyn[aria-expanded="true"] { border-color: var(--nk-edit); background: var(--nk-edit-soft); }
+  #nakama-tech-sketch .nk-band-mode[aria-expanded="true"] { border-color: var(--nk-edit); background: var(--nk-edit-soft); }
+  #nakama-tech-sketch .nk-band-remove { padding: 2px; font-size: 9px; }
+  #nakama-tech-sketch .nk-band-close { padding: 0; font-size: 16px; }
+  #nakama-tech-sketch .nk-band-type-menu,
+  #nakama-tech-sketch .nk-band-mode-menu { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding-top: 5px; border-top: 1px solid var(--nk-line); }
+  #nakama-tech-sketch .nk-band-type-menu[hidden] { display: none; }
+  #nakama-tech-sketch .nk-band-type-menu button,
+  #nakama-tech-sketch .nk-band-mode-menu button { min-height: 27px; display: grid; place-items: center; padding: 2px; }
+  #nakama-tech-sketch .nk-band-type-menu button[aria-pressed="true"],
+  #nakama-tech-sketch .nk-band-mode-menu button[aria-pressed="true"] { border-color: var(--nk-edit); background: var(--nk-edit-soft); }
+  #nakama-tech-sketch .nk-filter-symbol { display: block; width: 38px; height: 20px; overflow: visible; color: var(--nk-text); }
+  #nakama-tech-sketch .nk-filter-symbol path { fill: none; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+  #nakama-tech-sketch .nk-filter-axis { stroke: var(--nk-muted); stroke-width: 1; opacity: .45; }
+  #nakama-tech-sketch .nk-filter-curve { stroke: currentColor; stroke-width: 1.8; }
+  #nakama-tech-sketch .nk-lower-rail { min-width: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: stretch; gap: 8px; }
+  #nakama-tech-sketch .nk-global-strip { display: flex; align-items: center; gap: 5px; color: var(--nk-muted); font: 500 11px/1 "Cascadia Mono", monospace; }
+  #nakama-tech-sketch .nk-transaction-rail { min-width: 0; display: grid; grid-template-columns: minmax(92px, 1fr) 112px 100px 62px; align-items: center; gap: 5px; padding-left: 8px; border-left: 1px solid var(--nk-line); }
+  #nakama-tech-sketch .nk-transaction-state { min-width: 0; display: flex; flex-direction: column; gap: 2px; overflow: hidden; color: var(--nk-muted); font: 500 10px/1 "Cascadia Mono", monospace; }
+  #nakama-tech-sketch .nk-transaction-state b { color: var(--nk-edit); font-weight: 500; }
+  #nakama-tech-sketch .nk-transaction-state span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #nakama-tech-sketch .nk-transaction-rail .nk-action { min-height: 30px; padding: 4px 7px; font-size: 10px; white-space: nowrap; }
+  #nakama-tech-sketch .nk-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+  #nakama-tech-sketch .nk-global-details { position: absolute; left: 10px; right: 10px; bottom: 39px; z-index: 4; grid-template-columns: repeat(5,1fr); gap: 7px; padding: 8px; border: 1px solid var(--nk-line-strong); border-radius: 7px; background: var(--nk-surface); box-shadow: 0 12px 30px light-dark(rgba(30,35,32,.15), rgba(0,0,0,.45)); }
+  #nakama-tech-sketch .nk-global-details:not([hidden]) { display: grid; }
+  #nakama-tech-sketch .nk-global-details > span { align-self: end; min-height: 29px; padding: 9px 5px; border: 1px solid var(--nk-line); border-radius: 4px; font: 500 11px/1 "Cascadia Mono", monospace; }
+
+  #nakama-tech-sketch .nk-probe-page { height: 100%; display: grid; place-items: center; padding: 24px; background: var(--nk-page); }
+  #nakama-tech-sketch .nk-probe-shell { width: min(100%, 520px); padding: 18px; border: 1px solid var(--nk-line-strong); border-radius: 18px; background: var(--nk-shell); box-shadow: 0 18px 44px light-dark(rgba(30,35,32,.14), rgba(0,0,0,.38)); }
+  #nakama-tech-sketch .nk-probe-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+  #nakama-tech-sketch .nk-probe-head > div { display: flex; gap: 10px; align-items: center; color: var(--nk-ok); font: 500 11px/1 "Cascadia Mono", monospace; }
+  #nakama-tech-sketch .nk-probe-title { color: var(--nk-text); font-size: 18px; }
+  #nakama-tech-sketch .nk-probe-head strong { font: 500 12px/1 "Cascadia Mono", monospace; }
+  #nakama-tech-sketch .nk-probe-truth { margin-top: 12px; padding: 9px 0; border-top: 1px solid var(--nk-line); border-bottom: 1px solid var(--nk-line); }
+  #nakama-tech-sketch .nk-probe-change { margin-top: 12px; padding: 12px; display: grid; grid-template-columns: 1.2fr repeat(3,1fr); gap: 8px; align-items: end; border: 1px solid var(--nk-line); border-radius: 7px; background: var(--nk-surface); }
+  #nakama-tech-sketch .nk-probe-change .nk-overline { grid-column: 1 / -1; margin: 0; }
+  #nakama-tech-sketch .nk-probe-change strong { font: 500 13px/1.2 "Cascadia Mono", monospace; }
+  #nakama-tech-sketch .nk-probe-controls { display: grid; grid-template-columns: .8fr 1fr 1.6fr; gap: 8px; margin-top: 12px; }
+  #nakama-tech-sketch .nk-probe-controls label { min-height: 42px; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; padding: 0 10px; border: 1px solid var(--nk-line); border-radius: 5px; background: var(--nk-surface-2); font: 500 11px/1 "Cascadia Mono", monospace; }
+  #nakama-tech-sketch .nk-probe-controls input { width: 100%; accent-color: var(--nk-edit); }
+  #nakama-tech-sketch .nk-probe-note { margin-top: 12px; color: var(--nk-muted); font-size: 11px; text-align: center; }
+
+  #nakama-tech-sketch .nk-sketch-legend { width: min(100%, 950px); margin: 8px auto 0; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 5px 12px; color: var(--nk-muted); font: 500 11px/1.3 "Cascadia Mono", monospace; }
+
+  #nakama-tech-sketch[data-state="offline"] [data-link-label],
+  #nakama-tech-sketch[data-state="offline"] [data-probe-link] { color: var(--nk-danger); }
+  #nakama-tech-sketch[data-state="offline"] .nk-transaction-rail { border-left-color: var(--nk-danger); }
+
+  @media (pointer: coarse) {
+    #nakama-tech-sketch button { min-height: 44px; }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    #nakama-tech-sketch .nk-proposal-curve { transition: stroke-width 120ms ease; }
+    #nakama-tech-sketch .nk-band-nodes .is-dynamic-excursion { animation: nk-dynamic-excursion 760ms ease-in-out 1; }
+    #nakama-tech-sketch .nk-band-live-curve.is-dynamic-curve-excursion { animation: nk-dynamic-curve-excursion 760ms ease-in-out 1; }
+  }
+
+  @keyframes nk-dynamic-excursion {
+    0%, 100% { transform: translateY(0); }
+    46% { transform: translateY(var(--nk-dyn-shift, 6px)); }
+  }
+
+  @keyframes nk-dynamic-curve-excursion {
+    0%, 100% { opacity: 0; transform: translateY(0); }
+    16% { opacity: 1; transform: translateY(0); }
+    46% { opacity: 1; transform: translateY(var(--nk-dyn-shift, 6px)); }
+    82% { opacity: 1; }
+  }
+</style>
+
+<script>
+  (() => {
+    const root = document.getElementById('nakama-tech-sketch');
+    if (!root) return;
+
+    let view = 'eq';
+    let state = 'proposal';
+    let selectedTarget = 'BASS';
+    let selectedSource = 'Bass';
+    let candidateRemaining = 10;
+    let candidateTimer = null;
+    let holding = false;
+    let findingsOverview = false;
+    let selectedBand = '3';
+    let bandPanelOpen = true;
+    let typeMenuOpen = false;
+    let modeMenuOpen = false;
+    let dynamicViewOpen = true;
+    let bandNotice = '';
+    let numericEdit = null;
+    let lastRemovedBand = null;
+
+    const bandValues = {
+      1: { enabled: true, mode: 'stereo', type: 'low_cut', freq: '78 Hz', gain: '+1.0 dB', q: '0.72', dyn: false, dynRange: '+0.0 dB', threshold: '−20.0 dBFS', attack: '10 ms', hold: '0 ms', release: '100 ms', x: 116, y: 107, occupied: true },
+      2: { enabled: false, mode: 'left', type: 'bell', freq: '150 Hz', gain: '−0.8 dB', q: '1.05', dyn: false, dynRange: '+0.0 dB', threshold: '−20.0 dBFS', attack: '10 ms', hold: '0 ms', release: '100 ms', x: 212, y: 111, occupied: true },
+      3: { enabled: true, mode: 'stereo', type: 'bell', freq: '240 Hz', gain: '−1.5 dB', q: '1.20', dyn: true, dynRange: '−3.0 dB', threshold: '−20.0 dBFS', attack: '10 ms', hold: '0 ms', release: '100 ms', x: 322, y: 98, occupied: true },
+      4: { enabled: true, mode: 'right', type: 'notch', freq: '880 Hz', gain: '+0.6 dB', q: '0.90', dyn: false, dynRange: '+0.0 dB', threshold: '−20.0 dBFS', attack: '10 ms', hold: '0 ms', release: '100 ms', x: 403, y: 116, occupied: true },
+      5: { enabled: true, mode: 'mid', type: 'bell', freq: '3.6 kHz', gain: '−0.7 dB', q: '1.60', dyn: true, dynRange: '−2.0 dB', threshold: '−24.0 dBFS', attack: '18 ms', hold: '35 ms', release: '180 ms', x: 502, y: 106, occupied: true },
+      6: { enabled: true, mode: 'side', type: 'high_shelf', freq: '9.8 kHz', gain: '+1.2 dB', q: '0.65', dyn: false, dynRange: '+0.0 dB', threshold: '−20.0 dBFS', attack: '10 ms', hold: '0 ms', release: '100 ms', x: 595, y: 94, occupied: true },
+      7: { enabled: false, mode: 'stereo', type: 'bell', freq: '1.0 kHz', gain: '+0.0 dB', q: '1.00', dyn: false, dynRange: '+0.0 dB', threshold: '−20.0 dBFS', attack: '10 ms', hold: '0 ms', release: '100 ms', x: 360, y: 108, occupied: false },
+      8: { enabled: false, mode: 'stereo', type: 'bell', freq: '1.0 kHz', gain: '+0.0 dB', q: '1.00', dyn: false, dynRange: '+0.0 dB', threshold: '−20.0 dBFS', attack: '10 ms', hold: '0 ms', release: '100 ms', x: 360, y: 108, occupied: false }
+    };
+
+    const channelModeLabels = {
+      stereo: 'Stereo',
+      left: 'Left',
+      right: 'Right',
+      mid: 'Mid',
+      side: 'Side'
+    };
+
+    const channelModeShortLabels = {
+      stereo: 'ST',
+      left: 'L',
+      right: 'R',
+      mid: 'M',
+      side: 'S'
+    };
+
+    const filterTypeLabels = {
+      bell: 'Bell',
+      low_shelf: 'Low shelf',
+      high_shelf: 'High shelf',
+      notch: 'Notch',
+      low_cut: 'Low cut',
+      high_cut: 'High cut'
+    };
+
+    const filterTypePaths = {
+      bell: 'M2 10 C10 10 10 3 18 3 C26 3 26 10 34 10',
+      low_shelf: 'M2 15 H9 C14 15 13 10 20 10 H34',
+      high_shelf: 'M2 10 H16 C23 10 22 5 27 5 H34',
+      notch: 'M2 10 C10 10 10 17 18 17 C26 17 26 10 34 10',
+      low_cut: 'M2 17 C9 17 9 16 12 14 C16 11 17 10 24 10 H34',
+      high_cut: 'M2 10 H12 C19 10 20 11 24 14 C27 16 27 17 34 17'
+    };
+
+    const sourceEvidence = {
+      'Lead Vox': {
+        reference: 'Synth Pad', freshness: 'FRESH · 1.4 s · 89% SUPPORT', state: 'READY TO SEND', canDraft: true,
+        cause: 'Overlap at 2.8 kHz.', test: 'B4 · 2.8 kHz · −1.5 dB · Q1.4', listen: 'Vocal clear; pad intact.'
+      },
+      Drums: {
+        reference: 'Bass', freshness: 'FRESH · 1.1 s · 94% SUPPORT', state: 'NO CHANGE', canDraft: false,
+        cause: 'No change recommended.', test: 'Continue measurement · no draft', listen: 'Balance remains stable.'
+      },
+      Bass: {
+        reference: 'Piano', freshness: 'FRESH · 1.8 s · 92% SUPPORT', state: 'READY TO SEND', canDraft: true,
+        cause: 'Masking at 220 Hz.', test: 'B3 · 220 Hz · −2 dB · Q1.2', listen: 'Piano clear; bass intact.'
+      },
+      Piano: {
+        reference: 'Bass', freshness: 'FRESH · 1.8 s · 90% SUPPORT', state: 'READY TO SEND', canDraft: true,
+        cause: 'Competition at 220 Hz.', test: 'B2 · 220 Hz · −1 dB · Q1.2', listen: 'Bass clear; piano intact.'
+      },
+      'Synth Pad': {
+        reference: 'Lead Vox', freshness: 'STALE · 4.8 s · RE-MEASURE', state: 'STALE', canDraft: false,
+        cause: 'The measurement is too old.', test: 'Measure the passage again.', listen: 'No recommendation until evidence is fresh.'
+      },
+      Room: {
+        reference: 'Drums', freshness: 'PARTIAL · 62% SUPPORT', state: 'MORE DATA', canDraft: false,
+        cause: 'The passage provides too little support.', test: 'Extend the measured passage.', listen: 'No conclusion from partial evidence.'
+      }
+    };
+
+    const q = (selector) => root.querySelector(selector);
+    const qa = (selector) => Array.from(root.querySelectorAll(selector));
+
+    const fitStagePreview = () => {
+      const logicalWidth = view === 'probe' ? 760 : 950;
+      const logicalHeight = view === 'probe' ? 430 : 538;
+      const availableWidth = Math.max(1, root.clientWidth);
+      const scale = Math.min(1, availableWidth / logicalWidth);
+      root.style.setProperty('--nk-preview-scale', String(scale));
+      root.style.setProperty('--nk-preview-width', `${logicalWidth * scale}px`);
+      root.style.setProperty('--nk-preview-height', `${logicalHeight * scale}px`);
+      const stage = q('.nk-window');
+      if (stage) {
+        stage.dataset.logicalSize = `${logicalWidth}x${logicalHeight}`;
+        stage.dataset.previewScale = String(scale);
+      }
+    };
+
+    const stopCandidateTimer = () => {
+      if (candidateTimer !== null) window.clearInterval(candidateTimer);
+      candidateTimer = null;
+    };
+
+    const startCandidateTimer = () => {
+      stopCandidateTimer();
+      candidateRemaining = 10;
+      candidateTimer = window.setInterval(() => {
+        candidateRemaining = Math.max(0, candidateRemaining - 0.1);
+        if (candidateRemaining <= 0) {
+          stopCandidateTimer();
+          state = 'proposal';
+        }
+        render();
+      }, 100);
+    };
+
+    const stateText = {
+      confirmed: 'Confirmed audio is authoritative.',
+      proposal: 'Confirmed audio remains authoritative.',
+      candidate: 'Candidate audible; confirm again to keep it.',
+      offline: 'Remote locked; confirmed local audio remains.'
+    };
+
+    const positionBandPanel = () => {
+      const panel = q('[data-band-panel]');
+      const svg = q('.nk-eq-svg');
+      const graph = q('.nk-graph-wrap');
+      const band = bandValues[selectedBand];
+      if (!panel || !svg || !graph || !bandPanelOpen || panel.hidden || view !== 'eq') return;
+      const matrix = svg.getScreenCTM();
+      if (!matrix) return;
+
+      const point = svg.createSVGPoint();
+      point.x = band.x;
+      point.y = band.y;
+      const anchor = point.matrixTransform(matrix);
+      const graphRect = graph.getBoundingClientRect();
+      const anchorX = anchor.x - graphRect.left;
+      const anchorY = anchor.y - graphRect.top;
+      const panelWidth = panel.offsetWidth;
+      const panelHeight = panel.offsetHeight;
+      const previewScale = Number.parseFloat(q('.nk-window')?.dataset.previewScale || '1') || 1;
+      const logicalGraphWidth = graphRect.width / previewScale;
+      const logicalGraphHeight = graphRect.height / previewScale;
+      const inset = 8;
+      const gap = 18;
+      const logicalAnchorX = anchorX / previewScale;
+      const logicalAnchorY = anchorY / previewScale;
+      const spaceAbove = logicalAnchorY - gap - inset;
+      const spaceBelow = logicalGraphHeight - logicalAnchorY - gap - inset;
+      const placeBelow = spaceBelow >= panelHeight || (spaceBelow >= spaceAbove && spaceAbove < panelHeight);
+      const unclampedTop = placeBelow ? logicalAnchorY + gap : logicalAnchorY - gap - panelHeight;
+      const maxLeft = Math.max(inset, logicalGraphWidth - panelWidth - inset);
+      const maxTop = Math.max(inset, logicalGraphHeight - panelHeight - inset);
+      const left = Math.max(inset, Math.min(maxLeft, logicalAnchorX - panelWidth / 2));
+      const top = Math.max(inset, Math.min(maxTop, unclampedTop));
+
+      panel.style.left = `${left}px`;
+      panel.style.top = `${top}px`;
+      panel.dataset.placement = placeBelow ? 'below' : 'above';
+    };
+
+    const playDynamicExcursionDemo = (bandId) => {
+      if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+      const band = bandValues[bandId];
+      const parsedRange = Number.parseFloat(band.dynRange.replace('−', '-'));
+      const shift = parsedRange < 0 ? 6 : parsedRange > 0 ? -6 : 0;
+      const movingParts = [q(`[data-band-node="${bandId}"]`), q(`[data-band-label="${bandId}"]`)].filter(Boolean);
+      movingParts.forEach((part) => {
+        part.style.setProperty('--nk-dyn-shift', `${shift}px`);
+        part.classList.remove('is-dynamic-excursion');
+        void part.getBoundingClientRect();
+        part.classList.add('is-dynamic-excursion');
+        part.addEventListener('animationend', () => part.classList.remove('is-dynamic-excursion'), { once: true });
+      });
+      const curve = q('[data-band-live-curve]');
+      if (curve) {
+        curve.setAttribute('d', `M${band.x - 40} ${band.y + 6} C${band.x - 20} ${band.y + 6} ${band.x - 18} ${band.y} ${band.x} ${band.y} C${band.x + 18} ${band.y} ${band.x + 20} ${band.y + 6} ${band.x + 40} ${band.y + 6}`);
+        curve.style.setProperty('--nk-dyn-shift', `${shift}px`);
+        curve.classList.remove('is-dynamic-curve-excursion');
+        void curve.getBoundingClientRect();
+        curve.classList.add('is-dynamic-curve-excursion');
+        curve.addEventListener('animationend', () => curve.classList.remove('is-dynamic-curve-excursion'), { once: true });
+      }
+    };
+
+    const render = () => {
+      root.dataset.state = state;
+      root.dataset.view = view;
+      fitStagePreview();
+      root.classList.toggle('is-holding', holding);
+      qa('[data-page]').forEach((page) => { page.hidden = page.dataset.page !== view; });
+      qa('[data-view]').forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.view === view)));
+      qa('[data-state]').forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.state === state)));
+
+      const offline = state === 'offline';
+      const candidate = state === 'candidate';
+      const proposal = state === 'proposal';
+      const confirmed = state === 'confirmed';
+      const liveText = holding ? 'Audition active; release returns to confirmed.' : stateText[state];
+      const sourceData = sourceEvidence[selectedSource];
+      const referenceSource = sourceData.reference;
+
+      qa('[data-selected-source]').forEach((el) => { el.textContent = selectedSource.toUpperCase(); });
+      qa('[data-reference-source], [data-graph-reference]').forEach((el) => { el.textContent = referenceSource.toUpperCase(); });
+      qa('[data-graph-target]').forEach((el) => { el.textContent = selectedSource.toUpperCase(); });
+      qa('[data-compare-label]').forEach((el) => { el.textContent = `${selectedSource} → ${referenceSource}`; });
+      qa('[data-finding-cause]').forEach((el) => { el.textContent = sourceData.cause; });
+      qa('[data-finding-test]').forEach((el) => { el.textContent = sourceData.test; });
+      qa('[data-finding-listen]').forEach((el) => { el.textContent = sourceData.listen; });
+      qa('[data-evidence-title]').forEach((el) => { el.textContent = `Frequency evidence for ${selectedSource} against ${referenceSource}`; });
+      qa('[data-evidence-desc]').forEach((el) => { el.textContent = `A supported frequency finding for ${selectedSource} against ${referenceSource}. The graph remains on its stable full-range axis.`; });
+      const evidenceSvg = q('.nk-evidence-svg');
+      if (evidenceSvg) evidenceSvg.setAttribute('aria-label', `Frequency evidence between ${selectedSource} and ${referenceSource} from 20 hertz to 20 kilohertz`);
+      const findingSingle = q('[data-finding-single]');
+      const findingList = q('[data-finding-list]');
+      if (findingSingle) findingSingle.hidden = findingsOverview;
+      if (findingList) findingList.hidden = !findingsOverview;
+      qa('[data-all-findings]').forEach((button) => { button.textContent = findingsOverview ? 'CURRENT FINDING' : 'ALL FINDINGS'; });
+
+      qa('[data-link-label]').forEach((el) => { el.textContent = offline ? 'SESSION LINK LOST' : 'SESSION LINKED'; });
+      qa('[data-authority-label]').forEach((el) => {
+        el.textContent = offline ? 'LOCAL CONFIRMED · REV 128' : candidate ? `CANDIDATE · ${candidateRemaining.toFixed(1)} s` : proposal ? 'DRAFT · BASE REV 128' : 'CONFIRMED · REV 128';
+      });
+      qa('[data-live-status]').forEach((el) => { el.textContent = liveText; });
+      qa('[data-finding-state]').forEach((el) => { el.textContent = offline ? 'BLOCKED · LINK' : candidate ? `EQ CANDIDATE · ${candidateRemaining.toFixed(1)} s` : confirmed ? 'NO OPEN DRAFT' : sourceData.state; });
+      qa('[data-evidence-freshness]').forEach((el) => { el.textContent = offline ? 'STALE · LINK LOST' : sourceData.freshness; });
+      qa('[data-transaction-kind]').forEach((el) => { el.textContent = offline ? 'BLOCKED' : candidate ? 'CANDIDATE' : 'DRAFT'; });
+      qa('[data-transaction-target]').forEach((el) => { el.textContent = `${selectedTarget} · B${selectedBand}`; });
+      qa('[data-target-label]').forEach((el) => { el.textContent = selectedTarget; });
+      qa('[data-eq-link]').forEach((el) => { el.textContent = offline ? 'LINK LOST' : 'LINKED'; });
+
+      const band = bandValues[selectedBand];
+      qa('[data-band-dyn-ring]').forEach((ring) => {
+        const id = ring.dataset.bandDynRing;
+        const values = bandValues[id];
+        ring.setAttribute('cx', values.x);
+        ring.setAttribute('cy', values.y);
+        ring.setAttribute('r', id === selectedBand ? '15' : '13');
+        ring.classList.toggle('is-unused', !values.occupied || !values.dyn);
+        ring.classList.toggle('is-disabled-band', values.occupied && !values.enabled);
+      });
+      qa('[data-band-node]').forEach((node) => {
+        const id = node.dataset.bandNode;
+        const values = bandValues[id];
+        node.setAttribute('cx', values.x);
+        node.setAttribute('cy', values.y);
+        node.classList.toggle('is-unused', !values.occupied);
+        node.classList.toggle('is-active', values.occupied && id === selectedBand);
+        node.classList.toggle('is-disabled-band', values.occupied && !values.enabled);
+        node.setAttribute('r', id === selectedBand ? '11' : '9');
+      });
+      qa('[data-band-disabled-mark]').forEach((mark) => {
+        const id = mark.dataset.bandDisabledMark;
+        const values = bandValues[id];
+        const radius = id === selectedBand ? 9 : 7;
+        mark.setAttribute('x1', values.x - radius);
+        mark.setAttribute('y1', values.y - radius);
+        mark.setAttribute('x2', values.x + radius);
+        mark.setAttribute('y2', values.y + radius);
+        mark.classList.toggle('is-unused', !values.occupied || values.enabled);
+      });
+      qa('[data-band-label]').forEach((label) => {
+        const id = label.dataset.bandLabel;
+        const values = bandValues[id];
+        label.setAttribute('x', values.x);
+        label.setAttribute('y', values.y + 4);
+        label.classList.toggle('is-unused', !values.occupied);
+        label.classList.toggle('is-disabled-band', values.occupied && !values.enabled);
+      });
+      qa('[data-band-hit-wrap]').forEach((wrap) => {
+        const id = wrap.dataset.bandHitWrap;
+        const values = bandValues[id];
+        wrap.setAttribute('x', values.x - 18);
+        wrap.setAttribute('y', values.y - 18);
+        wrap.classList.toggle('is-unused', !values.occupied);
+      });
+      qa('[data-band-point]').forEach((button) => {
+        const values = bandValues[button.dataset.bandPoint];
+        button.disabled = !values.occupied;
+        button.setAttribute('aria-expanded', String(values.occupied && bandPanelOpen && button.dataset.bandPoint === selectedBand));
+        const enabledDescription = values.enabled ? ' Band is enabled.' : ' Band is bypassed and remains editable.';
+        const dynamicDescription = values.dyn
+          ? ' Dynamic is on. The outer contour marks the set gain; the inner point and response curve follow live gain excursion.'
+          : ' Dynamic is off.';
+        button.setAttribute('aria-label', `Band ${button.dataset.bandPoint}.${enabledDescription} Channel mode ${channelModeLabels[values.mode]}.${dynamicDescription} Double-click for precision controls.`);
+      });
+      const notice = q('[data-band-notice]');
+      if (notice) {
+        notice.hidden = !bandNotice;
+        notice.textContent = bandNotice;
+      }
+      const bandPanel = q('[data-band-panel]');
+      if (bandPanel) {
+        bandPanel.hidden = !bandPanelOpen;
+        bandPanel.setAttribute('aria-label', `Band ${selectedBand} precision controls. ${band.enabled ? 'Enabled' : 'Bypassed'}. ${filterTypeLabels[band.type]} filter. ${channelModeLabels[band.mode]} channel mode.`);
+        if (bandPanelOpen) window.queueMicrotask(positionBandPanel);
+      }
+      const bandPanelId = q('[data-band-panel-id]');
+      const bandEnabled = q('[data-band-enabled]');
+      const bandType = q('[data-band-type]');
+      const bandTypePath = q('[data-band-type-path]');
+      const bandTypeMenu = q('[data-band-type-menu]');
+      const bandMode = q('[data-band-mode]');
+      const bandModeMenu = q('[data-band-mode-menu]');
+      const bandRemove = q('[data-band-remove]');
+      const bandValueGrid = q('[data-band-values]');
+      const bandDynamic = q('[data-band-dynamic]');
+      const bandFreq = q('[data-band-freq]');
+      const bandGain = q('[data-band-gain]');
+      const bandQ = q('[data-band-q]');
+      const bandDyn = q('[data-band-dyn]');
+      const bandDynEnable = q('[data-band-dyn-enable]');
+      const bandDynRange = q('[data-band-dyn-range]');
+      const bandDynThreshold = q('[data-band-dyn-threshold]');
+      const bandDynAttack = q('[data-band-dyn-attack]');
+      const bandDynHold = q('[data-band-dyn-hold]');
+      const bandDynRelease = q('[data-band-dyn-release]');
+      if (bandPanelId) bandPanelId.textContent = `B${selectedBand}`;
+      if (bandEnabled) {
+        bandEnabled.textContent = band.enabled ? 'ON' : 'OFF';
+        bandEnabled.setAttribute('aria-pressed', String(band.enabled));
+        bandEnabled.setAttribute('aria-label', `${band.enabled ? 'Disable' : 'Enable'} Band ${selectedBand}`);
+        bandEnabled.setAttribute('title', band.enabled ? 'Band enabled' : 'Band bypassed');
+      }
+      if (bandType) {
+        bandType.setAttribute('aria-expanded', String(typeMenuOpen));
+        bandType.setAttribute('aria-label', `Band ${selectedBand} filter type. ${filterTypeLabels[band.type]}.`);
+        bandType.setAttribute('title', `${filterTypeLabels[band.type]} filter`);
+      }
+      if (bandTypePath) bandTypePath.setAttribute('d', filterTypePaths[band.type]);
+      if (bandTypeMenu) {
+        bandTypeMenu.hidden = !typeMenuOpen;
+        bandTypeMenu.setAttribute('aria-label', `Filter type for Band ${selectedBand}`);
+      }
+      if (bandMode) {
+        bandMode.textContent = channelModeShortLabels[band.mode];
+        bandMode.setAttribute('aria-expanded', String(modeMenuOpen));
+        bandMode.setAttribute('aria-label', `Band ${selectedBand} channel mode. ${channelModeLabels[band.mode]}.`);
+        bandMode.setAttribute('title', channelModeLabels[band.mode]);
+      }
+      if (bandModeMenu) {
+        bandModeMenu.hidden = !modeMenuOpen;
+        bandModeMenu.setAttribute('aria-label', `Channel mode for Band ${selectedBand}`);
+      }
+      if (bandRemove) {
+        bandRemove.setAttribute('aria-label', `Remove Band ${selectedBand}`);
+        bandRemove.setAttribute('title', `Remove Band ${selectedBand}`);
+      }
+      if (bandValueGrid) bandValueGrid.hidden = typeMenuOpen || modeMenuOpen || dynamicViewOpen;
+      if (bandDynamic) {
+        bandDynamic.hidden = !dynamicViewOpen;
+        bandDynamic.setAttribute('aria-label', `Dynamic parameters for Band ${selectedBand}`);
+      }
+      qa('[data-filter-type]').forEach((button) => {
+        const active = button.dataset.filterType === band.type;
+        button.setAttribute('aria-pressed', String(active));
+        button.setAttribute('aria-label', `${filterTypeLabels[button.dataset.filterType]} filter${active ? ', selected' : ''}`);
+        button.setAttribute('title', `${filterTypeLabels[button.dataset.filterType]} filter`);
+      });
+      qa('[data-channel-mode]').forEach((button) => {
+        const active = button.dataset.channelMode === band.mode;
+        button.setAttribute('aria-pressed', String(active));
+        button.setAttribute('aria-label', `${channelModeLabels[button.dataset.channelMode]}${active ? ', selected' : ''}`);
+        button.setAttribute('title', channelModeLabels[button.dataset.channelMode]);
+      });
+      if (bandFreq) { bandFreq.value = band.freq; bandFreq.setAttribute('aria-label', `Band ${selectedBand} frequency`); }
+      if (bandGain) { bandGain.value = band.gain; bandGain.setAttribute('aria-label', `Band ${selectedBand} gain`); }
+      if (bandQ) { bandQ.value = band.q; bandQ.setAttribute('aria-label', `Band ${selectedBand} Q`); }
+      if (bandDyn) {
+        bandDyn.setAttribute('aria-expanded', String(dynamicViewOpen));
+        bandDyn.setAttribute('aria-label', band.dyn
+          ? `Band ${selectedBand} dynamic controls. Dynamic is on. ${dynamicViewOpen ? 'Return to band controls.' : 'Open dynamic controls.'}`
+          : `Band ${selectedBand} dynamic controls. Dynamic is off. Activate and open dynamic controls.`);
+        bandDyn.setAttribute('title', band.dyn
+          ? (dynamicViewOpen ? 'Return to band controls' : 'Open dynamic controls')
+          : 'Enable Dynamic and open controls');
+        bandDyn.textContent = band.dyn ? 'DYN · ON' : 'DYN · OFF';
+      }
+      if (bandDynEnable) {
+        bandDynEnable.textContent = band.dyn ? 'ON' : 'OFF';
+        bandDynEnable.setAttribute('aria-pressed', String(band.dyn));
+        bandDynEnable.setAttribute('aria-label', `${band.dyn ? 'Disable' : 'Enable'} Dynamic for Band ${selectedBand}`);
+      }
+      if (bandDynRange) { bandDynRange.value = band.dynRange; bandDynRange.setAttribute('aria-label', `Band ${selectedBand} dynamic range`); }
+      if (bandDynThreshold) { bandDynThreshold.value = band.threshold; bandDynThreshold.setAttribute('aria-label', `Band ${selectedBand} dynamic threshold`); }
+      if (bandDynAttack) { bandDynAttack.value = band.attack; bandDynAttack.setAttribute('aria-label', `Band ${selectedBand} dynamic attack`); }
+      if (bandDynHold) { bandDynHold.value = band.hold; bandDynHold.setAttribute('aria-label', `Band ${selectedBand} dynamic hold`); }
+      if (bandDynRelease) { bandDynRelease.value = band.release; bandDynRelease.setAttribute('aria-label', `Band ${selectedBand} dynamic release`); }
+      const probeBand = q('[data-probe-band]');
+      const probeFreq = q('[data-probe-freq]');
+      const probeGain = q('[data-probe-gain]');
+      const probeQ = q('[data-probe-q]');
+      if (probeBand) probeBand.textContent = `BAND ${selectedBand}`;
+      if (probeFreq) probeFreq.textContent = band.freq;
+      if (probeGain) probeGain.textContent = band.gain;
+      if (probeQ) probeQ.textContent = `Q ${band.q}`;
+
+      const undo = q('.nk-undo');
+      if (undo) {
+        undo.textContent = lastRemovedBand ? `UNDO · REMOVE B${lastRemovedBand.id}` : 'UNDO · BASS';
+        undo.setAttribute('aria-label', lastRemovedBand ? `Undo removal of Band ${lastRemovedBand.id}` : 'Undo last confirmed change for Bass');
+      }
+
+      qa('.nk-band-panel input, [data-band-enabled], [data-band-type], [data-filter-type], [data-band-mode], [data-channel-mode], [data-band-remove], [data-global], .nk-global-details input, .nk-undo').forEach((control) => {
+        control.disabled = offline;
+      });
+      if (bandDyn) bandDyn.disabled = offline;
+      if (bandDynEnable) bandDynEnable.disabled = offline;
+
+      qa('[data-transaction-rail]').forEach((el) => { el.hidden = confirmed; });
+
+      qa('[data-hold]').forEach((button) => {
+        const belongsToSources = Boolean(button.closest('[data-page="sources"]'));
+        button.disabled = offline || candidate || confirmed || (belongsToSources && !sourceData.canDraft);
+        button.textContent = holding ? (belongsToSources ? 'AUDITION · RELEASE TO RETURN' : 'AUDITION · RELEASE') : (belongsToSources ? 'HOLD TO AUDITION' : 'AUDITION · HOLD');
+      });
+      qa('[data-send-draft]').forEach((button) => {
+        button.disabled = offline || candidate || confirmed || !sourceData.canDraft;
+        button.textContent = offline ? 'SEND BLOCKED' : candidate ? 'EQ CANDIDATE ACTIVE' : 'SEND DRAFT → EQ';
+      });
+      qa('[data-apply]').forEach((button) => {
+        button.disabled = offline || confirmed;
+        button.textContent = candidate ? `CONFIRM · ${candidateRemaining.toFixed(1)} s` : 'APPLY · 10 s';
+      });
+      qa('[data-reject]').forEach((button) => {
+        button.disabled = offline || confirmed;
+        button.textContent = candidate ? 'REVERT' : 'REJECT';
+      });
+
+      const probeLink = q('[data-probe-link]');
+      const probeAuthority = q('[data-probe-authority]');
+      const probeNote = q('[data-probe-note]');
+      if (probeLink) probeLink.textContent = offline ? 'BROKER OFFLINE' : 'LINKED';
+      if (probeAuthority) probeAuthority.textContent = offline ? 'LOCAL CONFIRMED · REV 128' : candidate ? 'REMOTE CANDIDATE · NOT SAVED' : proposal ? 'REMOTE PROPOSAL READY' : 'CONFIRMED · REV 128';
+      if (probeNote) probeNote.textContent = offline ? 'Local EQ, bypass and mix remain available; remote editing is locked.' : 'Remote changes execute here; full band editing stays in Gen.';
+    };
+
+    qa('[data-view]').forEach((button) => button.addEventListener('click', () => { view = button.dataset.view; render(); }));
+    qa('[data-state]').forEach((button) => button.addEventListener('click', () => {
+      stopCandidateTimer();
+      holding = false;
+      state = button.dataset.state;
+      if (state === 'candidate') startCandidateTimer();
+      render();
+    }));
+
+    qa('[data-target]').forEach((button) => button.addEventListener('click', () => {
+      selectedTarget = button.dataset.target;
+      qa('[data-target]').forEach((peer) => {
+        const active = peer === button;
+        peer.classList.toggle('is-selected', active);
+        peer.setAttribute('aria-pressed', String(active));
+      });
+      render();
+    }));
+
+    const openBandPanel = (button, moveFocus) => {
+      if (!bandValues[button.dataset.bandPoint].occupied) return;
+      selectedBand = button.dataset.bandPoint;
+      bandPanelOpen = true;
+      typeMenuOpen = false;
+      modeMenuOpen = false;
+      dynamicViewOpen = false;
+      bandNotice = '';
+      render();
+      if (moveFocus) q('[data-band-freq]')?.focus();
+    };
+    qa('[data-band-point]').forEach((button) => {
+      button.addEventListener('click', () => {
+        if (!bandValues[button.dataset.bandPoint].occupied) return;
+        selectedBand = button.dataset.bandPoint;
+        if (bandPanelOpen) {
+          typeMenuOpen = false;
+          modeMenuOpen = false;
+          dynamicViewOpen = false;
+          numericEdit = null;
+          bandNotice = '';
+        }
+        render();
+      });
+      button.addEventListener('dblclick', (event) => {
+        event.preventDefault();
+        openBandPanel(button, false);
+      });
+      button.addEventListener('keydown', (event) => {
+        if (!['Enter', ' '].includes(event.key)) return;
+        event.preventDefault();
+        openBandPanel(button, true);
+      });
+    });
+
+    q('[data-band-close]')?.addEventListener('click', () => {
+      bandPanelOpen = false;
+      typeMenuOpen = false;
+      modeMenuOpen = false;
+      dynamicViewOpen = false;
+      numericEdit = null;
+      render();
+      q(`[data-band-point="${selectedBand}"]`)?.focus();
+    });
+    q('[data-band-type]')?.addEventListener('click', () => {
+      typeMenuOpen = !typeMenuOpen;
+      modeMenuOpen = false;
+      dynamicViewOpen = false;
+      render();
+      if (typeMenuOpen) {
+        window.requestAnimationFrame(() => q(`[data-filter-type="${bandValues[selectedBand].type}"]`)?.focus());
+      }
+    });
+    qa('[data-filter-type]').forEach((button) => {
+      button.addEventListener('click', () => {
+        bandValues[selectedBand].type = button.dataset.filterType;
+        typeMenuOpen = false;
+        render();
+        q('[data-band-type]')?.focus();
+      });
+      button.addEventListener('keydown', (event) => {
+        if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
+        event.preventDefault();
+        const options = qa('[data-filter-type]');
+        const currentIndex = options.indexOf(button);
+        const columnDelta = event.key === 'ArrowUp' ? -3 : event.key === 'ArrowDown' ? 3 : event.key === 'ArrowLeft' ? -1 : 1;
+        options[(currentIndex + columnDelta + options.length) % options.length]?.focus();
+      });
+    });
+    q('[data-band-mode]')?.addEventListener('click', () => {
+      modeMenuOpen = !modeMenuOpen;
+      typeMenuOpen = false;
+      dynamicViewOpen = false;
+      render();
+      if (modeMenuOpen) {
+        window.requestAnimationFrame(() => q(`[data-channel-mode="${bandValues[selectedBand].mode}"]`)?.focus());
+      }
+    });
+    qa('[data-channel-mode]').forEach((button) => {
+      button.addEventListener('click', () => {
+        bandValues[selectedBand].mode = button.dataset.channelMode;
+        modeMenuOpen = false;
+        render();
+        q('[data-band-mode]')?.focus();
+      });
+      button.addEventListener('keydown', (event) => {
+        if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
+        event.preventDefault();
+        const options = qa('[data-channel-mode]');
+        const currentIndex = options.indexOf(button);
+        const columnDelta = event.key === 'ArrowUp' ? -3 : event.key === 'ArrowDown' ? 3 : event.key === 'ArrowLeft' ? -1 : 1;
+        options[(currentIndex + columnDelta + options.length) % options.length]?.focus();
+      });
+    });
+    q('[data-band-enabled]')?.addEventListener('click', () => {
+      const band = bandValues[selectedBand];
+      band.enabled = !band.enabled;
+      render();
+      window.requestAnimationFrame(() => q('[data-band-enabled]')?.focus());
+    });
+    q('[data-band-dyn]')?.addEventListener('click', () => {
+      const band = bandValues[selectedBand];
+      const wasOff = !band.dyn;
+      if (wasOff) band.dyn = true;
+      dynamicViewOpen = wasOff ? true : !dynamicViewOpen;
+      typeMenuOpen = false;
+      modeMenuOpen = false;
+      render();
+      if (dynamicViewOpen) {
+        window.requestAnimationFrame(() => {
+          if (wasOff) playDynamicExcursionDemo(selectedBand);
+          q('[data-band-dyn-range]')?.focus();
+        });
+      }
+    });
+    q('[data-band-dyn-enable]')?.addEventListener('click', () => {
+      const band = bandValues[selectedBand];
+      band.dyn = false;
+      dynamicViewOpen = false;
+      typeMenuOpen = false;
+      modeMenuOpen = false;
+      numericEdit = null;
+      render();
+      window.requestAnimationFrame(() => q('[data-band-dyn]')?.focus());
+    });
+    qa('.nk-band-panel input').forEach((input) => {
+      input.addEventListener('focus', () => { numericEdit = { input, originalValue: input.value, dirty: false }; });
+      input.addEventListener('input', () => {
+        if (numericEdit?.input === input) numericEdit.dirty = true;
+      });
+      input.addEventListener('blur', () => {
+        if (numericEdit?.input === input) numericEdit = null;
+      });
+    });
+    q('[data-band-panel]')?.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      if (numericEdit?.input === event.target && numericEdit.dirty) {
+        event.target.value = numericEdit.originalValue;
+        numericEdit = { input: event.target, originalValue: event.target.value, dirty: false };
+        return;
+      }
+      bandPanelOpen = false;
+      typeMenuOpen = false;
+      modeMenuOpen = false;
+      dynamicViewOpen = false;
+      numericEdit = null;
+      render();
+      q(`[data-band-point="${selectedBand}"]`)?.focus();
+    });
+    const eqSvg = q('.nk-eq-svg');
+    eqSvg?.addEventListener('dblclick', (event) => {
+      if (event.target.closest?.('[data-band-point]')) return;
+      event.preventDefault();
+      if (state === 'offline') {
+        bandNotice = 'REMOTE EDIT UNAVAILABLE · CONFIRMED LOCAL AUDIO REMAINS';
+        render();
+        return;
+      }
+      if (state === 'candidate') {
+        bandNotice = 'CANDIDATE ACTIVE · CONFIRM OR REVERT BEFORE ADDING A BAND';
+        render();
+        return;
+      }
+      const matrix = eqSvg.getScreenCTM();
+      if (!matrix) return;
+      const point = eqSvg.createSVGPoint();
+      point.x = event.clientX;
+      point.y = event.clientY;
+      const graphPoint = point.matrixTransform(matrix.inverse());
+      const x = Math.max(44, Math.min(682, graphPoint.x));
+      const y = Math.max(22, Math.min(192, graphPoint.y));
+      const freeBand = ['1', '2', '3', '4', '5', '6', '7', '8'].find((id) => !bandValues[id].occupied);
+      if (!freeBand) {
+        bandNotice = 'BAND LIMIT · 8 OCCUPIED — REMOVE ONE · OFF KEEPS ITS SLOT';
+        render();
+        return;
+      }
+      const ratio = (x - 44) / (682 - 44);
+      const frequencyHz = 20 * Math.pow(1000, ratio);
+      const gainDb = Math.max(-12, Math.min(12, (108 - y) * 6 / 32));
+      const formattedFreq = frequencyHz >= 1000 ? `${(frequencyHz / 1000).toFixed(1)} kHz` : `${Math.round(frequencyHz)} Hz`;
+      const gainSign = gainDb >= 0 ? '+' : '−';
+      bandValues[freeBand] = {
+        enabled: true,
+        mode: 'stereo',
+        type: 'bell',
+        freq: formattedFreq,
+        gain: `${gainSign}${Math.abs(gainDb).toFixed(1)} dB`,
+        q: '1.00',
+        dyn: false,
+        dynRange: '+0.0 dB',
+        threshold: '−20.0 dBFS',
+        attack: '10 ms',
+        hold: '0 ms',
+        release: '100 ms',
+        x,
+        y,
+        occupied: true
+      };
+      selectedBand = freeBand;
+      bandPanelOpen = true;
+      typeMenuOpen = false;
+      modeMenuOpen = false;
+      dynamicViewOpen = false;
+      bandNotice = '';
+      state = 'proposal';
+      render();
+    });
+
+    q('[data-band-remove]')?.addEventListener('click', () => {
+      const removedId = selectedBand;
+      const removedBand = bandValues[removedId];
+      if (!removedBand.occupied) return;
+      lastRemovedBand = { id: removedId, values: { ...removedBand } };
+      removedBand.occupied = false;
+      removedBand.enabled = false;
+      bandPanelOpen = false;
+      typeMenuOpen = false;
+      modeMenuOpen = false;
+      dynamicViewOpen = false;
+      numericEdit = null;
+      bandNotice = `BAND B${removedId} REMOVED · UNDO RESTORES SLOT B${removedId}`;
+      selectedBand = Object.keys(bandValues).find((id) => bandValues[id].occupied) || removedId;
+      render();
+      window.requestAnimationFrame(() => q('.nk-undo')?.focus());
+    });
+
+    q('.nk-undo')?.addEventListener('click', () => {
+      if (!lastRemovedBand) {
+        bandNotice = 'NO LOCAL BAND REMOVE TO UNDO · CONFIRMED REVISION UNCHANGED';
+        render();
+        return;
+      }
+      const restored = lastRemovedBand;
+      bandValues[restored.id] = { ...restored.values, occupied: true };
+      selectedBand = restored.id;
+      lastRemovedBand = null;
+      bandPanelOpen = true;
+      typeMenuOpen = false;
+      modeMenuOpen = false;
+      dynamicViewOpen = false;
+      numericEdit = null;
+      bandNotice = `BAND B${restored.id} RESTORED · SLOT AND VALUES RETAINED`;
+      render();
+      window.requestAnimationFrame(() => q('[data-band-enabled]')?.focus());
+    });
+
+    qa('[data-source]').forEach((button) => button.addEventListener('click', () => {
+      qa('[data-source]').forEach((peer) => {
+        const active = peer === button;
+        peer.classList.toggle('is-selected', active);
+        peer.setAttribute('aria-pressed', String(active));
+      });
+      selectedSource = button.dataset.source;
+      findingsOverview = false;
+      holding = false;
+      render();
+    }));
+
+    qa('[data-all-findings]').forEach((button) => button.addEventListener('click', () => {
+      findingsOverview = !findingsOverview;
+      render();
+    }));
+
+    const beginHold = (event) => {
+      if (state !== 'proposal') return;
+      if (event.type === 'keydown' && !['Enter', ' '].includes(event.key)) return;
+      if (event.type === 'keydown') event.preventDefault();
+      holding = true;
+      render();
+    };
+    const endHold = (event) => {
+      if (!holding) return;
+      if (event.type === 'keyup' && !['Enter', ' '].includes(event.key)) return;
+      holding = false;
+      render();
+    };
+    qa('[data-hold]').forEach((button) => {
+      button.addEventListener('pointerdown', beginHold);
+      button.addEventListener('pointerup', endHold);
+      button.addEventListener('pointercancel', endHold);
+      button.addEventListener('pointerleave', endHold);
+      button.addEventListener('keydown', beginHold);
+      button.addEventListener('keyup', endHold);
+      button.addEventListener('blur', endHold);
+    });
+
+    qa('[data-apply]').forEach((button) => button.addEventListener('click', () => {
+      if (state === 'proposal') {
+        state = 'candidate';
+        startCandidateTimer();
+      } else if (state === 'candidate') {
+        stopCandidateTimer();
+        state = 'confirmed';
+      }
+      render();
+    }));
+    qa('[data-send-draft]').forEach((button) => button.addEventListener('click', () => {
+      if (!sourceEvidence[selectedSource].canDraft || state !== 'proposal') return;
+      holding = false;
+      findingsOverview = false;
+      view = 'eq';
+      state = 'proposal';
+      selectedBand = '3';
+      bandPanelOpen = true;
+      typeMenuOpen = false;
+      modeMenuOpen = false;
+      dynamicViewOpen = false;
+      bandNotice = '';
+      render();
+      q('[data-page="eq"] [data-apply]')?.focus();
+    }));
+    qa('[data-reject]').forEach((button) => button.addEventListener('click', () => {
+      stopCandidateTimer();
+      holding = false;
+      state = 'confirmed';
+      render();
+    }));
+    qa('[data-open-eq]').forEach((button) => button.addEventListener('click', () => { view = 'eq'; state = 'proposal'; render(); }));
+
+    const globalButton = q('[data-global]');
+    const globalDetails = q('[data-global-details]');
+    if (globalButton && globalDetails) {
+      globalButton.addEventListener('click', () => {
+        const expanded = globalButton.getAttribute('aria-expanded') === 'true';
+        globalButton.setAttribute('aria-expanded', String(!expanded));
+        globalDetails.hidden = expanded;
+      });
+    }
+
+    window.addEventListener('resize', () => { fitStagePreview(); positionBandPanel(); });
+    render();
+  })();
+</script>

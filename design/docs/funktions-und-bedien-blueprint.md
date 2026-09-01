@@ -1,12 +1,20 @@
 # Nakama Funktions- und Bedien-Blueprint
 
-Stand: 31.08.2026
+Stand: 02.09.2026 (Ursprung 31.08.2026; zuletzt fortgeschrieben in den
+Abschnitten 0, 4, 15, 16 und 17)
 
 Status: lebende, designneutrale Produktspezifikation
 
 Geltungsbereich: Nakama Gen, Nakama Probeeq und die dazugehörigen Betriebswege
 
-Nächste technische Grenze: S16–17 / SONDE-011, danach P3 bis P9
+Nächste technische Grenze: G2-Nacharbeit (NAK-123) und die Planprüfung PR2,
+danach P4 bis P9. S16–17 (SONDE-011) und S18–19 (SONDE-012) sind seit dem
+01.09.2026 abgenommen.
+
+Laufende technische Skizze:
+[design/skizze/nakama-ui-technical-sketch.html](../skizze/nakama-ui-technical-sketch.html)
+mit Leseblatt [design/skizze/LIES-MICH.md](../skizze/LIES-MICH.md). Sie ist
+der derzeitige Stand, nicht der finale (User-Wort 02.09.2026).
 
 ## 0. Auftrag, Rang und Leseregel
 
@@ -1341,6 +1349,13 @@ Schema:
     Transaktion. Vor nativer Anzeige müssen Save/Load, Host-Automation,
     Migration und Wiederherstellung unter derselben festen Band-ID gemeinsam
     versioniert und getestet werden.
+17. **[O] Global-Sektion auf Gen Fläche 2:** Der eingeklappte Global-Bereich
+    der Skizze zeigt nur Input, Output, Width und A/B. Der am 24.08.2026
+    entschiedene Auto-Gain-Schalter neben Output sowie Bypass, Mix,
+    Preset/Copy und Revision/History aus Abschnitt 4.2 Zone 4 sind dort noch
+    nicht abgeleitet; ebenso wenig der Wortlaut der Halten-Aktion, der auf
+    Fläche 1 `HOLD TO AUDITION` und auf Fläche 2 `AUDITION · HOLD` lautet.
+    Kandidat für den nächsten Fünferblock (festgestellt 02.09.2026).
 
 Diese Punkte sind kein Freibrief für Platzhaltercontrols. Bis zur technischen
 oder User-Entscheidung bleibt die jeweilige Funktion ehrlich unavailable oder
@@ -1360,7 +1375,7 @@ außerhalb der Oberfläche.
 | [FL-Nakama-Sonden-Design-Entwurf.md](../../docs/FL-Nakama-Sonden-Design-Entwurf.md) | technische Funktionen, Objekte, Zustände und P2–P9 |
 | [bauaufteilung-sonden.md](../../docs/bauaufteilung-sonden.md) | Ticketgrenzen und Verantwortungen |
 | [plugin-wissen.md](../../docs/plugin-wissen.md) | heutiger Codezustand und noch nicht verdrahtete Pfade |
-| [SONDE-011.md](../../docs/beweise/SONDE-011.md) | belegte Phase-A-Grenze und offener Phase-B-/Ticketstatus |
+| [SONDE-011.md](../../docs/beweise/SONDE-011.md), [SONDE-012.md](../../docs/beweise/SONDE-012.md) | Koordinator-/Session-Schicht und passive Landkarte, beide T2 PASS 01.09.2026; das Phasengate G2 steht auf NEEDS_WORK ([G2.md](../../docs/beweise/G2.md), NAK-123) |
 | [fragen.json](../../docs/plan/fragen.json) | aktuelle Funktionsentscheide und offene Usertermine |
 
 ### 16.2 Bindende User-Entscheide
@@ -1435,6 +1450,13 @@ Fünferblock 02 integriert atomaren Panelbesitz beim Bandwechsel, den
 bandlokalen Kanalmodus, den stabilen Band-Bypass sowie die Trennung von
 Disable und wiederherstellbarem Remove. Beide Blöcke wurden in der laufenden
 Skizze und im internen Browser geprüft.
+
+Die Skizze liegt seit dem 02.09.2026 im Repo unter
+[design/skizze/nakama-ui-technical-sketch.html](../skizze/nakama-ui-technical-sketch.html);
+bis dahin lag sie nur im Codex-Visualisierungsordner des PCs. Sichtbelege des
+Stands vom 02.09.2026 liegen unter `design/skizze/belege/`. Sie ist der
+derzeitige Stand der entschiedenen Architektur, nicht der finale (User-Wort
+02.09.2026, festgehalten in der Arbeitsmodus-Abnahme vom 31.08.2026).
 
 Der aktuelle Größenentscheid setzt beide Gen-Flächen auf genau eine logische
 Standardgröße von 950×538. Compact, Fenster-Resize und größenabhängiges Reflow

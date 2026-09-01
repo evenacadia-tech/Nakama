@@ -43,6 +43,14 @@ werden sichtbare Skizze, Abnahmen und Blueprint gemeinsam aktualisiert und
 geprüft. Farben, Material und visuelle Feinheiten bleiben bis zum
 ausdrücklichen Wechsel der Phase außen vor.
 
+Die laufende technische Skizze liegt seit dem 02.09.2026 im Repo:
+[`skizze/nakama-ui-technical-sketch.html`](skizze/nakama-ui-technical-sketch.html),
+Leseblatt [`skizze/LIES-MICH.md`](skizze/LIES-MICH.md), Sichtbelege unter
+`skizze/belege/`. Sie ist der derzeitige Stand der entschiedenen
+Funktionsarchitektur, nicht der finale (User-Wort 02.09.2026: „die Sketch
+HTML ist der derzeitige Stand, nicht der finale"), und wird nach jedem
+Fünferblock dort fortgeschrieben und committet.
+
 ## Dein Job
 
 **Historischer visueller Arbeitsstand bis zum Funktionsneustart vom
@@ -163,8 +171,10 @@ historischen Kriterium.
    gemeinsam umgebaut und sichtbar geprüft. Keine Groß-Lieferungen mit
    gleichzeitigen Entscheidungen.
 3. **Der User entscheidet als Projektleiter die visuelle Richtung, du
-   übersetzt.** Sie steht in den aktuellen drei Rework-Bildern und neueren
-   ausdrücklichen User-Entscheiden. Varianten sind nur dort nötig, wo diese
+   übersetzt.** Seit dem Funktionsneustart vom 31.08.2026 steht sie im
+   Blueprint, in den datierten Abnahmen und in der laufenden technischen
+   Skizze (`skizze/`); die drei Rework-Bilder vom 25.08. sind Verlauf
+   (Regeln 1 und 7). Varianten sind nur dort nötig, wo diese
    Vorgaben eine konkrete Frage offenlassen (ein Zustand, den kein Stand
    zeigt; ein Grenzfall, der das Bild sprengt). Nichts Grundsätzliches
    (Stilrichtung, Metapher, Farbwelt) ohne sein Wort festlegen oder wieder
@@ -231,6 +241,11 @@ historischen Kriterium.
 - Prototyp = statisches HTML/CSS/JS in `prototyp/`, ohne Build-Kette,
   per Doppelklick lauffähig. Seine bestehende Grundstruktur wird nicht
   erneut als offene Anfangsentscheidung behandelt.
+- Technische Skizze = eine einzelne HTML-Datei in `skizze/`, ohne externe
+  Abhängigkeiten, per Doppelklick lauffähig; für Browser-Werkzeuge ohne
+  Dateizugriff über einen statischen Server im Ordner `design/`
+  (`skizze/LIES-MICH.md`). Ihre obere Leiste ist Inspektionswerkzeug, kein
+  Produkt-UI.
 
 ## Arbeitsweise
 

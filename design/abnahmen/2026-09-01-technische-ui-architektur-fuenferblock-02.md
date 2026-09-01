@@ -2,7 +2,7 @@
 
 ## Status
 
-**1 von 5 Entscheidungen gesammelt.** Skizze, Detailabnahmen,
+**2 von 5 Entscheidungen gesammelt.** Skizze, Detailabnahmen,
 Verhaltensvertrag und Blueprint werden gemäß dem festgelegten Fünfertakt erst
 nach Entscheidung 5 gemeinsam aktualisiert und im internen Browser geprüft.
 
@@ -32,3 +32,31 @@ Damit ist für Gen Fläche 2 gesammelt:
 
 Fokusdetails des Auswahlwechsels werden aus Eingabemodus und
 Zugänglichkeitsvertrag abgeleitet; sie sind nicht Teil dieses Entscheids.
+
+## 2/5 — Kanalmodus bleibt in der Grundansicht sichtbar
+
+Auf die Frage, wie der bandlokale Kanalmodus `Stereo`, `Left`, `Right`, `Mid`
+oder `Side` im kompakten Mini-Panel zugänglich wird, wählt der User:
+
+> „a“
+
+Damit ist für Gen Fläche 2 gesammelt:
+
+- Der aktuelle Kanalmodus bleibt als kompakter, bandlokaler Zustandscontrol
+  in der Grundansicht des Mini-Panels sichtbar.
+- Seine Aktivierung ersetzt innerhalb desselben Panelkörpers vorübergehend
+  `Frequency`, `Gain` und `Q` durch genau die fünf vertraglichen Modi. Es
+  entsteht weder ein zweites Popup noch eine dauerhaft breitere
+  Parameteransicht.
+- Eine Auswahl ändert ausschließlich `channel_mode` desselben festen
+  Band-Slots. Danach kehrt das Panel zur Grundansicht dieses Bands zurück;
+  der aktuelle Modus bleibt dort ablesbar.
+- Beim Wechsel zu einem anderen Band zeigt der Control dessen eigenen
+  Kanalmodus. Ein Modus wird weder vom vorherigen Band übernommen noch mit
+  Filtertyp oder Dynamic-Zustand gekoppelt.
+
+Technisch ist `channel_mode` ein diskreter, topologischer Blockrandparameter
+mit Default `stereo`; Freitext, Mehrfachwahl und Zwischenzustände sind daher
+ausgeschlossen. Englische Namen, aktueller Wert und Auswahlzustand bleiben
+über die zugängliche Control-Semantik eindeutig. Die spätere visuelle
+Kurzform ist nicht Teil dieses Entscheids.

@@ -63,6 +63,13 @@
 .PARAMETER Titel
     Ueberschrift des Manifests bzw. des angehaengten Abschnitts.
 
+.PARAMETER BeinZeitlimitMinuten
+    Zeitlimit je Bein in Minuten (Standard 60). Ein Bein, dessen Prozessbaum
+    danach noch lebt, wird beendet und mit Exit 124 rot gewertet; Bauschritte
+    bekommen das Dreifache. Hintergrund: am 01.09.2026 hing A4b zwei Stunden
+    in einem peer.join() nach zwei roten Pruefungen, und der Runner wartete
+    ohne Grenze.
+
 .EXAMPLE
     pwsh -File tools/beweise.ps1 -Ziel docs/beweise/S0-basislinie.md -Titel 'S0 | Basislinie'
 
@@ -76,6 +83,8 @@
       3  Voraussetzung fehlt (nicht gebaut, keine Fixtures, kein cargo)
       4  Laeufe gruen, aber Binaries aelter als die Quellen (nicht beglaubigt)
       5  Rohausgabe nicht reservierbar (Namen belegt) - nichts geschrieben
+    Ein Bein ueber dem Zeitlimit endet mit Exit 124 (Prozessbaum beendet) und
+    zaehlt als rot; der Grund steht als [Zeitlimit]-Zeile in seinem stderr.
     Reihenfolge der Beurteilung: 2 vor 3 vor 4. Code 5 entsteht erst nach dem
     Lauf, beim Schreiben, und ueberschreibt das Urteil - ohne Rohausgabe gibt
     es keine Beglaubigung.
@@ -86,7 +95,8 @@ param(
     [string] $Ziel,
     [switch] $Anhaengen,
     [switch] $Bauen,
-    [string] $Titel = 'Kanon-Lauf'
+    [string] $Titel = 'Kanon-Lauf',
+    [int] $BeinZeitlimitMinuten = 60
 )
 
 Set-StrictMode -Version Latest
@@ -119,6 +129,163 @@ function Argument-Quoten {
     return '"' + $s + '"'
 }
 
+# ---------------------------------------------------------------- Zeitlimit
+#
+# Kanon NAK-123 (01.09.2026): EqCopPipeClientTest hing nach zwei roten
+# Pruefungen zwei Stunden in peer.join(), und `Start-Process -Wait` wartete
+# ohne Grenze - der Dirigent stand so lange still. `-Wait` wartet ueber ein
+# Job-Objekt auf den Prozess UND seine Nachkommen (gemessen: 5,5 s statt 0,3 s
+# bei einem abgesetzten ping). Genau diese Semantik bleibt erhalten, nur mit
+# Frist: Job-Objekt selbst anlegen, Prozess zuweisen, warten, bei Ablauf den
+# ganzen Baum beenden.
+if (-not ('NakamaProzessbaum' -as [type])) {
+    Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+
+public static class NakamaProzessbaum
+{
+    [StructLayout(LayoutKind.Sequential)]
+    private struct Abrechnung
+    {
+        public long TotalUserTime;
+        public long TotalKernelTime;
+        public long ThisPeriodTotalUserTime;
+        public long ThisPeriodTotalKernelTime;
+        public uint TotalPageFaultCount;
+        public uint TotalProcesses;
+        public uint ActiveProcesses;
+        public uint TotalTerminatedProcesses;
+    }
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern IntPtr CreateJobObjectW(IntPtr attributes, string name);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool AssignProcessToJobObject(IntPtr job, IntPtr process);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool QueryInformationJobObject(IntPtr job, int klasse, ref Abrechnung info, int groesse, IntPtr rueckgabe);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool TerminateJobObject(IntPtr job, uint exitCode);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool CloseHandle(IntPtr handle);
+
+    public static IntPtr Erzeuge()
+    {
+        IntPtr job = CreateJobObjectW(IntPtr.Zero, null);
+        if (job == IntPtr.Zero) throw new System.ComponentModel.Win32Exception();
+        return job;
+    }
+
+    public static bool Zuweisen(IntPtr job, IntPtr prozess)
+    {
+        return AssignProcessToJobObject(job, prozess);
+    }
+
+    // JobObjectBasicAccountingInformation = 1
+    public static int Aktive(IntPtr job)
+    {
+        Abrechnung info = new Abrechnung();
+        if (!QueryInformationJobObject(job, 1, ref info, Marshal.SizeOf(typeof(Abrechnung)), IntPtr.Zero))
+            throw new System.ComponentModel.Win32Exception();
+        return (int)info.ActiveProcesses;
+    }
+
+    public static bool Beende(IntPtr job, uint exitCode)
+    {
+        return TerminateJobObject(job, exitCode);
+    }
+
+    public static void Schliessen(IntPtr job)
+    {
+        CloseHandle(job);
+    }
+}
+'@
+}
+
+function Toete-Prozessbaum {
+    <# Beendet Wurzel und Nachkommen. Die Nachkommen werden VOR dem Toeten
+       eingesammelt: nach dem Tod der Wurzel ist die Eltern-PID der Waisen nur
+       noch eine Zahl, die kein Baumlauf mehr aufloest. #>
+    param(
+        [Parameter(Mandatory)][System.Diagnostics.Process] $Wurzel,
+        [IntPtr] $Job = [IntPtr]::Zero,
+        [bool] $ImJob = $false
+    )
+    $nachkommen = New-Object System.Collections.Generic.List[int]
+    try {
+        $alle = @(Get-CimInstance Win32_Process -ErrorAction Stop | Select-Object ProcessId, ParentProcessId)
+        $offen = New-Object System.Collections.Generic.Queue[int]
+        $offen.Enqueue([int]$Wurzel.Id)
+        while ($offen.Count -gt 0) {
+            $id = $offen.Dequeue()
+            foreach ($kind in @($alle | Where-Object { $_.ParentProcessId -eq $id })) {
+                if (-not $nachkommen.Contains([int]$kind.ProcessId)) {
+                    $nachkommen.Add([int]$kind.ProcessId)
+                    $offen.Enqueue([int]$kind.ProcessId)
+                }
+            }
+        }
+    }
+    catch { }
+    if ($ImJob) { [void][NakamaProzessbaum]::Beende($Job, 124) }
+    try { if (-not $Wurzel.HasExited) { $Wurzel.Kill($true) } } catch { }
+    foreach ($id in $nachkommen) { Stop-Process -Id $id -Force -ErrorAction SilentlyContinue }
+    [void]$Wurzel.WaitForExit(5000)
+}
+
+function Warte-MitZeitlimit {
+    <# Wartet wie `Start-Process -Wait` auf Prozess und Nachkommen, aber
+       hoechstens Minuten lang. Liefert ExitCode (124 nach Ablauf) und einen
+       Vermerk fuer stderr ('' ohne Ablauf). #>
+    param(
+        [Parameter(Mandatory)][System.Diagnostics.Process] $Prozess,
+        [Parameter(Mandatory)][double] $Minuten,
+        [string] $Name = ''
+    )
+    $frist = [DateTime]::UtcNow.AddMinutes($Minuten)
+    $job = [IntPtr]::Zero
+    $imJob = $false
+    try {
+        $job = [NakamaProzessbaum]::Erzeuge()
+        if (-not $Prozess.HasExited) { $imJob = [NakamaProzessbaum]::Zuweisen($job, $Prozess.Handle) }
+    }
+    catch { $imJob = $false }
+
+    $vermerk = ''
+    $code = -1
+    try {
+        $rest = [int][Math]::Max(1, ($frist - [DateTime]::UtcNow).TotalMilliseconds)
+        [void]$Prozess.WaitForExit($rest)
+        if (-not $Prozess.HasExited) {
+            $vermerk = ('{0} (PID {1}) nach {2} min nicht beendet - Prozessbaum getoetet' -f $Name, $Prozess.Id, $Minuten)
+            Toete-Prozessbaum -Wurzel $Prozess -Job $job -ImJob $imJob
+            $code = 124
+        }
+        else {
+            $code = $Prozess.ExitCode
+            if ($imJob) {
+                while ([NakamaProzessbaum]::Aktive($job) -gt 0 -and [DateTime]::UtcNow -lt $frist) {
+                    Start-Sleep -Milliseconds 200
+                }
+                if ([NakamaProzessbaum]::Aktive($job) -gt 0) {
+                    $vermerk = ('Nachkommen von {0} (PID {1}) nach {2} min nicht beendet - Prozessbaum getoetet' -f $Name, $Prozess.Id, $Minuten)
+                    Toete-Prozessbaum -Wurzel $Prozess -Job $job -ImJob $imJob
+                    $code = 124
+                }
+            }
+        }
+    }
+    finally {
+        if ($job -ne [IntPtr]::Zero) { [NakamaProzessbaum]::Schliessen($job) }
+    }
+    [pscustomobject]@{ ExitCode = $code; Zeitlimit = $vermerk }
+}
+
 function Fuehre-Aus {
     <# Fuehrt ein Programm aus und liefert Exitcode, stdout, stderr und Dauer.
        stdout/stderr gehen getrennt in Temp-Dateien: kein PowerShell-Fehlerstrom
@@ -126,7 +293,8 @@ function Fuehre-Aus {
     param(
         [Parameter(Mandatory)][string] $Datei,
         [string[]] $Argumente = @(),
-        [string] $Arbeitsverzeichnis = $Wurzel
+        [string] $Arbeitsverzeichnis = $Wurzel,
+        [double] $ZeitlimitMinuten = $BeinZeitlimitMinuten
     )
 
     $ausDatei = [IO.Path]::GetTempFileName()
@@ -134,12 +302,14 @@ function Fuehre-Aus {
     $uhr = [Diagnostics.Stopwatch]::StartNew()
     $code = -1
     $fehlertext = ''
+    $zeitlimitText = ''
 
     try {
+        # Kein `Wait = $true` mehr: das Warten uebernimmt Warte-MitZeitlimit mit
+        # derselben Nachkommen-Semantik, aber mit Frist (siehe oben).
         $start = @{
             FilePath               = $Datei
             NoNewWindow            = $true
-            Wait                   = $true
             PassThru               = $true
             RedirectStandardOutput = $ausDatei
             RedirectStandardError  = $errDatei
@@ -149,8 +319,9 @@ function Fuehre-Aus {
 
         $prozess = Start-Process @start
         if ($null -ne $prozess) {
-            $prozess.WaitForExit()
-            $code = $prozess.ExitCode
+            $gewartet = Warte-MitZeitlimit -Prozess $prozess -Minuten $ZeitlimitMinuten -Name ([IO.Path]::GetFileName($Datei))
+            $code = $gewartet.ExitCode
+            $zeitlimitText = $gewartet.Zeitlimit
         }
     }
     catch {
@@ -163,6 +334,7 @@ function Fuehre-Aus {
     if (Test-Path -LiteralPath $ausDatei) { $aus = (Get-Content -LiteralPath $ausDatei -Raw -Encoding utf8) ?? '' }
     if (Test-Path -LiteralPath $errDatei) { $err = (Get-Content -LiteralPath $errDatei -Raw -Encoding utf8) ?? '' }
     if ($fehlertext) { $err = ($err + "`n[Start-Process] " + $fehlertext).Trim() }
+    if ($zeitlimitText) { $err = ($err + "`n[Zeitlimit] " + $zeitlimitText).Trim() }
     Remove-Item -LiteralPath $ausDatei, $errDatei -Force -ErrorAction SilentlyContinue
 
     [pscustomobject]@{
@@ -570,7 +742,7 @@ if ($Bauen) {
     $loesung = Join-Path $bauVerzeichnis 'EqCopilotSuite.sln'
     if (-not (Test-Path -LiteralPath $loesung)) {
         Write-Host 'Konfiguriere (erstmalig) ...' -ForegroundColor DarkGray
-        $k = Fuehre-Aus -Datei $cmakeBefehl -Argumente @('-S', 'eq-copilot', '-B', 'eq-copilot/build', '-G', 'Visual Studio 17 2022', '-A', 'x64')
+        $k = Fuehre-Aus -Datei $cmakeBefehl -Argumente @('-S', 'eq-copilot', '-B', 'eq-copilot/build', '-G', 'Visual Studio 17 2022', '-A', 'x64') -ZeitlimitMinuten (3 * $BeinZeitlimitMinuten)
         $bauProtokoll += [pscustomobject]@{ Schritt = 'configure'; ExitCode = $k.ExitCode; StdOut = $k.StdOut; StdErr = $k.StdErr; Sekunden = $k.Sekunden }
         if ($k.ExitCode -ne 0) { Bau-Abbruch -Schritt 'configure' -Lauf $k }
     }
@@ -584,7 +756,7 @@ if ($Bauen) {
     $zuBauen = @($kanon | Where-Object { $_.Art -eq 'plugin' -and -not (Ist-Stillgelegt $_) -and $cmakeText -match [regex]::Escape($_.Name) } | ForEach-Object { $_.Name })
     $zuBauen += @($gemesseneZiele | Where-Object { $cmakeText -match [regex]::Escape($_.Marker) } | ForEach-Object { $_.Ziel })
     Write-Host ('Baue: ' + ($zuBauen -join ', ')) -ForegroundColor DarkGray
-    $b = Fuehre-Aus -Datei $cmakeBefehl -Argumente (@('--build', 'eq-copilot/build', '--config', 'Release', '--target') + $zuBauen)
+    $b = Fuehre-Aus -Datei $cmakeBefehl -Argumente (@('--build', 'eq-copilot/build', '--config', 'Release', '--target') + $zuBauen) -ZeitlimitMinuten (3 * $BeinZeitlimitMinuten)
     $bauProtokoll += [pscustomobject]@{ Schritt = 'build'; ExitCode = $b.ExitCode; StdOut = $b.StdOut; StdErr = $b.StdErr; Sekunden = $b.Sekunden }
     if ($b.ExitCode -ne 0) { Bau-Abbruch -Schritt 'build' -Lauf $b }
 
@@ -597,7 +769,7 @@ if ($Bauen) {
         'build', '--release', '--manifest-path', 'broker/Cargo.toml',
         '--bin', 'eqcop-broker-v3probe', '--bin', 'eqcop-broker-sonde012-probe',
         '--bin', 'eqcop-broker',
-        '--color', 'never')
+        '--color', 'never') -ZeitlimitMinuten (3 * $BeinZeitlimitMinuten)
     $bauProtokoll += [pscustomobject]@{ Schritt = 'cargo-release'; ExitCode = $cargoRelease.ExitCode; StdOut = $cargoRelease.StdOut; StdErr = $cargoRelease.StdErr; Sekunden = $cargoRelease.Sekunden }
     if ($cargoRelease.ExitCode -ne 0) { Bau-Abbruch -Schritt 'cargo-release' -Lauf $cargoRelease }
 }

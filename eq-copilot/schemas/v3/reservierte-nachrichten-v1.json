@@ -68,6 +68,11 @@
   ],
   "reservierte_felder": [
     {
+      "name": "Frame.band_dynamic_gain_db",
+      "eigentuemer": "S26-28 (SONDE-015)",
+      "grund": "Momentane dynamische Verstaerkungsaenderung je Band fuer das sichtbare Mitschwingen des dynamischen EQ; nur der Name ist reserviert, Feld-ID und Nutzlast entstehen erst mit SONDE-015 (S26-28)."
+    },
+    {
       "name": "evidence_snapshot.ereignisse",
       "eigentuemer": "SONDE-013 (P4)",
       "grund": "Entwurf §33.2 zaehlt 'Ereignisse' als Inhalt des Evidenzsnapshots auf, aber der DynamicsEvent-Strom entsteht erst in §39.1 mit dem Dynamik- und Experimentkern. Ihn hier zu erfinden waere ein Vorgriff (Bauaufteilung §6.2). Der NAME ist trotzdem vergeben: `evidence_snapshot` ist strikt, ein Feld dieses Namens wird heute abgelehnt, und kein spaeteres Ticket darf ihn fuer etwas anderes verwenden."

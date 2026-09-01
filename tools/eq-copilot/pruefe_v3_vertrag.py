@@ -1099,6 +1099,7 @@ def pruefe_namen(lauf: Lauf, schema: dict, reserviert: dict) -> None:
     lauf.wahr("belegtes_feld_folgt_der_gleichen_Regelform",
               all(set(f) == {"name", "eigentuemer", "grund"} for f in belegt))
     erwartete_felder = {
+        "Frame.band_dynamic_gain_db",
         "evidence_snapshot.ereignisse",
         "session_snapshot.contribution_inputs",
         "state_report.dsp",

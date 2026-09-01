@@ -161,6 +161,19 @@ void pipeSchliessen (HANDLE h)
     CloseHandle (h);
 }
 
+/// Loest ein wartendes `ConnectNamedPipe` von aussen aus. Ohne diesen Weg
+/// wuerde ein Peer-Thread, auf dessen Verbindung der Test nicht mehr wartet,
+/// den Prozess beim `join()` blockieren.
+void wecken (const juce::String& name)
+{
+    HANDLE h = CreateFileW (name.toWideCharPointer(), GENERIC_READ, 0, nullptr,
+                            OPEN_EXISTING,
+                            SECURITY_SQOS_PRESENT | SECURITY_IDENTIFICATION,
+                            nullptr);
+    if (h != INVALID_HANDLE_VALUE)
+        CloseHandle (h);
+}
+
 void stoppFall (bool bisAck)
 {
     const auto name = testName (bisAck ? "stop-ack" : "stop-welcome");
@@ -282,6 +295,11 @@ void reconnectGeneration()
     pruefe (ersterKam && zweiterKam && zweimalAuthentisiert,
             "pipeclient_reconnect_verwirft_serverfreigabe");
     c->stop();
+    // Ohne diesen Weckruf haengt der Peer nach einem ROTEN Lauf fuer immer in
+    // `ConnectNamedPipe (zweiter)`, weil der gestoppte Client nicht mehr
+    // verbindet. Eine Pruefung, die statt rot zu werden den Kanon blockiert,
+    // ist keine Pruefung (Prueflistenzeile E-5).
+    wecken (name);
     peer.join();
 }
 

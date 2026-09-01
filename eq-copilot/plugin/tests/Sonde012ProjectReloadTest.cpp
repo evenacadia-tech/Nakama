@@ -125,6 +125,12 @@ void gefaelschtes_command_ack_vor_serverauth_mutiert_keinen_persistenten_projekt
 {
     const auto quelle = id ('a');
     eqcop::EqCopilotProcessor processor;
+    // Ohne eine vorbereitete Audiolage traegt `v3Hello()` samplerate/blockSize/
+    // channels = 0. Der ControlClient weist sein eigenes Hello dann schon vor
+    // `CreateFileW` ab ("Audiolage haelt den v3-Vertrag nicht"), oeffnet die
+    // Testpipe nie und misst den C-10-Angriff ueberhaupt nicht — der Peer
+    // haengt statt dessen in `ConnectNamedPipe`.
+    processor.prepareToPlay (48000.0, 512);
     processor.setzeEditorOffen (true);
     const bool initialisiert = processor.setzeBindung ("hub", "Gen", "");
     processor.setzeSourcesFixtureFuerTest (lebendeQuelle (quelle));
@@ -214,6 +220,17 @@ void gefaelschtes_command_ack_vor_serverauth_mutiert_keinen_persistenten_projekt
     });
     const auto authZustand = angreifer.snapshot();
     angreifer.stop();
+    // Ein ROTER Lauf darf den Kanon nicht blockieren: kommt der Client nicht
+    // an, steht der Peer noch in `ConnectNamedPipe` und `join()` kaeme nie
+    // zurueck (Prueflistenzeile E-5).
+    {
+        HANDLE weck = CreateFileW (pipeW.c_str(), GENERIC_READ, 0, nullptr,
+                                   OPEN_EXISTING,
+                                   SECURITY_SQOS_PRESENT | SECURITY_IDENTIFICATION,
+                                   nullptr);
+        if (weck != INVALID_HANDLE_VALUE)
+            CloseHandle (weck);
+    }
     peer.join();
 
     processor.setzeControlTransportFuerTest (authZustand);

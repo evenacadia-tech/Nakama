@@ -357,16 +357,40 @@ bool PipeClient::eineVerbindung (std::uint64_t generation)
         zustand.heartbeatsBestaetigt = 0;
     }
 
-    HANDLE h = CreateFileW (pipeName.toWideCharPointer(),
-                            GENERIC_READ | GENERIC_WRITE,
-                            0, nullptr, OPEN_EXISTING,
-                            FILE_FLAG_OVERLAPPED
-                                | SECURITY_SQOS_PRESENT
-                                | SECURITY_IDENTIFICATION,
-                            nullptr);
+    // ERROR_PIPE_BUSY ist Liveness, kein Sicherheitsurteil: der Name existiert,
+    // aber gerade horcht keine Instanz. Ohne diese Schleife faellt ein
+    // Reconnect, der genau ins Instanzwechselfenster des Brokers trifft, auf
+    // `belegtAberUnverifiziert` — und weil dieses Urteil nach Matrix C-07
+    // fail-closed und endgueltig ist, parkt der Clientthread danach dauerhaft
+    // im `authBlockiert`-Warten. Derselbe Retry steht seit NAK-104 im
+    // v3-Pfad (`IpcVerbindung::oeffnen`); C-06 verlangt fuer alle drei
+    // Connectpfade dieselbe Regel. Jede Runde prueft Stop und Generation, damit
+    // `stop()`/`reconnect()` weiterhin innerhalb einer Wartefrist greifen.
+    HANDLE h = INVALID_HANDLE_VALUE;
+    DWORD oeffnenFehler = 0;
+    for (int versuch = 0; versuch < 20; ++versuch)
+    {
+        if (sollAbbrechen (generation))
+            return false;
+        h = CreateFileW (pipeName.toWideCharPointer(),
+                         GENERIC_READ | GENERIC_WRITE,
+                         0, nullptr, OPEN_EXISTING,
+                         FILE_FLAG_OVERLAPPED
+                             | SECURITY_SQOS_PRESENT
+                             | SECURITY_IDENTIFICATION,
+                         nullptr);
+        if (h != INVALID_HANDLE_VALUE)
+            break;
+        oeffnenFehler = GetLastError();
+        if (oeffnenFehler != ERROR_PIPE_BUSY)
+            break;
+        // Rueckgabewert bewusst ignoriert: ein Zeitlimit ist hier kein Fehler,
+        // sondern der naechste Versuch.
+        WaitNamedPipeW (pipeName.toWideCharPointer(), 200);
+    }
     if (h == INVALID_HANDLE_VALUE)
     {
-        const auto fehler = GetLastError();
+        const auto fehler = oeffnenFehler;
         std::lock_guard<std::mutex> l (zustandMutex);
         if (sollAbbrechen (generation))
             return false;

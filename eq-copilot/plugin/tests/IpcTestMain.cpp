@@ -275,14 +275,33 @@ public:
     std::mutex kopplungMutex;
     std::string linkId = hex32 ('a'), challenge = hex32 ('b');
 
+    /// Startsynchronisation: `pipeSteht` wird erst gesetzt, wenn der Acceptor
+    /// seine erste Instanz angelegt hat; `startGescheitert`, wenn er es nicht
+    /// konnte (Name schon belegt).
+    std::atomic<bool> pipeSteht { false }, startGescheitert { false };
+
     explicit TestServer (std::string pipeName) : name (std::move (pipeName)) {}
     ~TestServer() { stoppen(); }
 
+    /// Kehrt erst zurueck, wenn die erste Pipeinstanz WIRKLICH existiert.
+    /// Vorher war das ein Rennen: `acceptorLauf` legt sie im Thread an,
+    /// waehrend der Aufrufer schon `namedPipeErreichbar` fragt. Fuer die
+    /// Tests, die ueber einen `ControlClient` mit Warteschleife verbinden,
+    /// blieb das folgenlos; die NAK-123-C-07-Tests ticken den Lifecycle
+    /// dagegen sofort einmal an und sahen den Namen mal, mal nicht.
     bool starten()
     {
         laeuft.store (true);
+        pipeSteht.store (false);
+        startGescheitert.store (false);
         acceptor = std::thread ([this] { acceptorLauf(); });
-        return true;
+        for (int i = 0; i < 1000; ++i)
+        {
+            if (pipeSteht.load() || startGescheitert.load())
+                break;
+            std::this_thread::sleep_for (std::chrono::milliseconds (2));
+        }
+        return pipeSteht.load();
     }
 
     void stoppen()
@@ -329,7 +348,11 @@ private:
                 8, 65536, 65536, 0, nullptr);
             erste = false;
             if (h == INVALID_HANDLE_VALUE)
+            {
+                startGescheitert.store (true);
                 return;
+            }
+            pipeSteht.store (true);
 
             OVERLAPPED ov {};
             ov.hEvent = CreateEventW (nullptr, TRUE, FALSE, nullptr);
@@ -1096,7 +1119,7 @@ void vorhandene_pipe_wird_nur_mit_dem_authentisierten_handle_uebernommen()
 {
     const auto pipe = testPipeName ("c07-tristate");
     TestServer server (pipe);
-    server.starten();
+    const bool serverSteht = server.starten();
     std::atomic<ServerPruefStatus> status { ServerPruefStatus::nichtDa };
     std::atomic<bool> staleVerbunden { false };
     int reconnects = 0, spawns = 0;
@@ -1117,7 +1140,7 @@ void vorhandene_pipe_wird_nur_mit_dem_authentisierten_handle_uebernommen()
     status.store (ServerPruefStatus::verifiziert);
     lifecycle.tickFuerTest (1);
     const auto fertig = lifecycle.snapshot();
-    const bool ok = reconnects == 1 && spawns == 0
+    const bool ok = serverSteht && reconnects == 1 && spawns == 0
                  && wartend.wartetAufServerpruefung
                  && ! fertig.wartetAufServerpruefung
                  && ! fertig.serverNichtVerifiziert
@@ -1130,7 +1153,7 @@ void unverifizierte_belegte_pipe_spawnt_und_reconnectet_nicht()
 {
     const auto pipe = testPipeName ("c07-block");
     TestServer server (pipe);
-    server.starten();
+    const bool serverSteht = server.starten();
     std::atomic<ServerPruefStatus> status { ServerPruefStatus::nichtDa };
     std::atomic<bool> staleVerbunden { false };
     int reconnects = 0, spawns = 0;
@@ -1152,7 +1175,7 @@ void unverifizierte_belegte_pipe_spawnt_und_reconnectet_nicht()
     lifecycle.tickFuerTest (1);
     lifecycle.tickFuerTest (1000);
     const auto s = lifecycle.snapshot();
-    const bool ok = reconnects == 1 && spawns == 0
+    const bool ok = serverSteht && reconnects == 1 && spawns == 0
                  && s.serverNichtVerifiziert && ! s.wartetAufBereit
                  && ! s.wartetAufServerpruefung
                  && s.letzterServerPruefstatus

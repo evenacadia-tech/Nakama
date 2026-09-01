@@ -131,11 +131,46 @@ PROBE = {
     "plugin_kind": "passive_probe",
     "measurement_position": "insert",
     "aussageklasse": "beobachtend",
+    "betrieb": "active",
     "label": "Klavier-Bus",
     "pair_id": None,
     "capabilities": CAPS,
     "frische": FRISCHE,
 }
+
+
+def minor_1_sessionform(daten: dict) -> dict:
+    """Hebt die historische Descriptor-Liste in die Minor-1-Mitgliedshuelle.
+
+    Die vielen handgeschriebenen Mutationen unten bleiben dadurch auf den
+    fachlichen Descriptorfeldern lesbar. Auf der Leitung liegt trotzdem nur
+    die neue Form; der Helfer ist idempotent fuer explizite B2b-Fixtures.
+    """
+    if not isinstance(daten, dict) or daten.get("type") != "session_snapshot":
+        return daten
+    neu = []
+    if not isinstance(daten.get("mitglieder"), list):
+        return daten
+    for eintrag in daten.get("mitglieder", []):
+        if "probe_descriptor" in eintrag or (
+            set(eintrag) <= {"adresse", "plugin_kind", "frische", "p2_reject"}
+            and "measurement_position" not in eintrag
+        ):
+            neu.append(eintrag)
+            continue
+        descriptor = copy.deepcopy(eintrag)
+        p2_reject = descriptor.pop("p2_reject", None)
+        mitglied = {
+            "adresse": copy.deepcopy(descriptor["adresse"]),
+            "plugin_kind": descriptor["plugin_kind"],
+            "frische": copy.deepcopy(descriptor["frische"]),
+            "probe_descriptor": descriptor,
+        }
+        if p2_reject is not None:
+            mitglied["p2_reject"] = p2_reject
+        neu.append(mitglied)
+    daten["mitglieder"] = neu
+    return daten
 
 STEUERKOPF = {
     "command_id": "55555555555555555555555555555555",
@@ -694,6 +729,28 @@ def zusatz_gueltig() -> list[tuple[str, dict, str]]:
     faelle.append(("probe-host-bus-name-codepointgetreu", ss,
                    "angenommener Hosttext bleibt mit inneren und aeusseren Leerzeichen sowie Case unveraendert"))
 
+    hb = copy.deepcopy(GRUND["heartbeat"])
+    hb["runtime"] = {
+        "messpunkt": "pre",
+        "betrieb": "suspended",
+        "host_bus_name": "Bus A",
+        "host_mixer_index": 1,
+    }
+    faelle.append(("heartbeat-runtime-vollstaendig", hb,
+                   "E-M01: ein vollstaendiger strikter Runtime-Block reist im Heartbeat"))
+
+    ss = copy.deepcopy(GRUND["session_snapshot"])
+    ss["mitglieder"][0]["p2_reject"] = {
+        "grund": "feature_batch_ungueltig", "zaehler": 1,
+    }
+    faelle.append(("session-p2-reject", ss,
+                   "E-L14: geschlossener Ablehnungsgrund und Zaehler ab 1 reisen je Quelle"))
+
+    ss = minor_1_sessionform(copy.deepcopy(GRUND["session_snapshot"]))
+    del ss["mitglieder"][0]["probe_descriptor"]
+    faelle.append(("session-mitglied-unclassified", ss,
+                   "E-M01/L23: Mitglied ohne gemeldeten Messpunkt bleibt ohne Descriptor sichtbar"))
+
     # Leere Sitzung.
     ss = copy.deepcopy(GRUND["session_snapshot"])
     ss["mitglieder"] = []
@@ -724,10 +781,56 @@ def setze(*pfad_und_wert):
 
 
 def v(instanz: str, schema: str, schluessel: str) -> dict:
+    if instanz == "/mitglieder/0":
+        instanz = "/mitglieder/0/probe_descriptor"
+    elif instanz.startswith("/mitglieder/0/"):
+        rest = instanz.removeprefix("/mitglieder/0/")
+        if not rest.startswith(("p2_reject", "probe_descriptor")):
+            instanz = "/mitglieder/0/probe_descriptor/" + rest
+    return {"instanz": instanz, "schema": schema, "schluessel": schluessel}
+
+
+def vm(instanz: str, schema: str, schluessel: str) -> dict:
+    """Verletzung an der Minor-1-Mitgliedshuelle, nicht am Descriptor."""
     return {"instanz": instanz, "schema": schema, "schluessel": schluessel}
 
 
 UNGUELTIG: list[tuple] = [
+    # --- SONDE-012 Runtime und P2-Fehlerkanal ----------------------------
+    ("heartbeat-runtime-ohne-messpunkt", "heartbeat",
+     [setze("runtime", {"betrieb": "active"})],
+     [v("/runtime", f"{S}/heartbeat_runtime/required/messpunkt", "required")],
+     "E-M01: ist runtime vorhanden, ist messpunkt Pflicht"),
+
+    ("heartbeat-runtime-betrieb-unbekannt", "heartbeat",
+     [setze("runtime", {"messpunkt": "insert", "betrieb": "sleeping"})],
+     [v("/runtime/betrieb", f"{S}/betrieb/enum", "enum")],
+     "E-L21/22: nur active, suspended und offline sind Vertragswerte"),
+
+    ("heartbeat-runtime-messpunkt-unbekannt", "heartbeat",
+     [setze("runtime", {"messpunkt": "send", "betrieb": "active"})],
+     [v("/runtime/messpunkt",
+        f"{S}/heartbeat_runtime/properties/messpunkt/enum", "enum")],
+     "E-M01: Runtime kennt nur insert, pre und post"),
+
+    ("heartbeat-runtime-hostname-zu-lang", "heartbeat",
+     [setze("runtime", {"messpunkt": "insert", "betrieb": "active",
+                        "host_bus_name": "😀" * 121})],
+     [v("/runtime/host_bus_name", f"{S}/host_bus_name/maxLength", "maxLength")],
+     "E-M01 verwendet exakt die B1-Codepointgrenze"),
+
+    ("session-p2-reject-freitext", "session_snapshot",
+     [setze("mitglieder", 0, "p2_reject",
+            {"grund": "CRC war heute komisch", "zaehler": 1})],
+     [v("/mitglieder/0/p2_reject/grund", f"{S}/p2_reject/properties/grund/enum", "enum")],
+     "E-L14 verbietet Freitextgruende auf dem Wire"),
+
+    ("session-p2-reject-zaehler-null", "session_snapshot",
+     [setze("mitglieder", 0, "p2_reject",
+            {"grund": "feature_batch_ungueltig", "zaehler": 0})],
+     [v("/mitglieder/0/p2_reject/zaehler", f"{S}/p2_reject/properties/zaehler/minimum", "minimum")],
+     "E-L14: ein vorhandener Ablehnungsstand beginnt bei 1"),
+
     # --- Discriminator ---------------------------------------------------
     ("unbekannter-typ", "heartbeat", [setze("type", "gibt_es_nicht")],
      [v("/type", "#/oneOf", "oneOf")],
@@ -937,7 +1040,9 @@ UNGUELTIG: list[tuple] = [
      "Wandzeit misst nur IPC-Latenz und darf musikalische Frames nie ausrichten (§32.3)"),
 
     ("plugin-kind-erfunden", "session_snapshot", [setze("mitglieder", 0, "plugin_kind", "hub")],
-     [v("/mitglieder/0/plugin_kind",
+     [vm("/mitglieder/0/plugin_kind",
+         f"{S}/session_mitglied/properties/plugin_kind/enum", "enum"),
+      v("/mitglieder/0/plugin_kind",
         f"{S}/probe_descriptor_insert/properties/plugin_kind/enum", "enum")],
      "`hub` ist die v2-Rolle; v3 kennt main|passive_probe|active_probe|legacy (§32.2)"),
 
@@ -1041,7 +1146,9 @@ UNGUELTIG: list[tuple] = [
      [v("/mitglieder/0/plugin_kind",
         f"{S}/probe_descriptor_beitrag/properties/plugin_kind/enum", "enum"),
       v("/mitglieder/0/plugin_kind",
-        f"{S}/probe_descriptor_beitrag/properties/plugin_kind/maxLength", "maxLength")],
+        f"{S}/probe_descriptor_beitrag/properties/plugin_kind/maxLength", "maxLength"),
+      vm("/mitglieder/0/plugin_kind",
+         f"{S}/session_mitglied/properties/plugin_kind/enum", "enum")],
      "der unerfuellbare Zweig bleibt auch gegen erfundene Klassen strikt"),
 
     ("beitrag-ohne-contribution-aux", "session_snapshot",
@@ -1455,7 +1562,8 @@ UNGUELTIG: list[tuple] = [
      "vier Positionen, keine fuenfte (§32.2)"),
 
     ("frische-ohne-stale", "session_snapshot", [loesche("mitglieder", 0, "frische", "stale")],
-     [v("/mitglieder/0/frische", f"{S}/frische/required/stale", "required")],
+     [vm("/mitglieder/0/frische", f"{S}/frische/required/stale", "required"),
+      v("/mitglieder/0/frische", f"{S}/frische/required/stale", "required")],
      "stale ist ein Zustand, der in JEDER UI-Fassung sichtbar sein muss (§0.4)"),
 
     ("cycle-ohne-active", "evidence_snapshot",
@@ -1755,7 +1863,7 @@ def rohtext_faelle() -> list[tuple[str, bytes, str]]:
     Beinen, nicht fuer eine ausgedachte.
     """
     def aus_daten(daten: dict, alt: str, neu: str) -> bytes:
-        text = als_text(daten).decode("utf-8")
+        text = als_text(minor_1_sessionform(copy.deepcopy(daten))).decode("utf-8")
         if alt not in text:
             raise SystemExit(f"Rohtext-Fixture: {alt!r} steht nicht in den Daten")
         return text.replace(alt, neu, 1).encode("utf-8")
@@ -1767,8 +1875,10 @@ def rohtext_faelle() -> list[tuple[str, bytes, str]]:
     float32["baender"] = baender(221, "nakama_1_24_oct_30_18k_v1", "float32")
     float32["baender"]["werte"][0] = 0.5
 
-    host_index = copy.deepcopy(GRUND["session_snapshot"])
-    host_index["mitglieder"][0]["host_mixer_index"] = 1
+    host_index = copy.deepcopy(GRUND["heartbeat"])
+    host_index["runtime"] = {
+        "messpunkt": "insert", "betrieb": "active", "host_mixer_index": 1,
+    }
 
     return [
         ("zahl-ueber-2hoch53",
@@ -1892,7 +2002,7 @@ def baue() -> tuple[dict, dict[str, dict], dict[str, bytes]]:
 
     for name, daten in GRUND.items():
         pfad = f"gueltig/{name}.json"
-        dateien[pfad] = daten
+        dateien[pfad] = minor_1_sessionform(copy.deepcopy(daten))
         eintraege.append({"datei": pfad, "urteil": "gueltig",
                           "warum": "Grundform der Familie", "verletzungen": []})
 
@@ -1900,7 +2010,7 @@ def baue() -> tuple[dict, dict[str, dict], dict[str, bytes]]:
         pfad = f"gueltig/{name}.json"
         if pfad in dateien:
             raise SystemExit(f"doppelter Fixturename: {pfad}")
-        dateien[pfad] = daten
+        dateien[pfad] = minor_1_sessionform(copy.deepcopy(daten))
         eintraege.append({"datei": pfad, "urteil": "gueltig",
                           "warum": warum, "verletzungen": []})
 
@@ -1911,6 +2021,7 @@ def baue() -> tuple[dict, dict[str, dict], dict[str, bytes]]:
         daten = copy.deepcopy(GRUND[grund])
         for m in mutationen:
             daten = wende_an(daten, m)
+        daten = minor_1_sessionform(daten)
         dateien[pfad] = daten
         eintrag = {"datei": pfad, "urteil": "ungueltig", "warum": warum,
                    "verletzungen": kanonisch(verletzungen)}

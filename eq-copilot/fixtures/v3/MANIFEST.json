@@ -6,8 +6,8 @@
   "wurzel_skalar": "Markiert ein Fixture, dessen Wurzel weder Objekt noch Array ist. JUCEs JSON-Leser folgt RFC 4627 und lehnt es schon im PARSER ab; serde_json und Python folgen RFC 8259 und lehnen es erst am Schema ab. Beide Wege sind eine Ablehnung, nur an verschiedenen Stellen - die Verletzungsmenge gilt daher nur fuer die Beine mit RFC-8259-Parser.",
   "sortierung": "Verletzungen sind kanonisch nach (instanz, schema, schluessel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
   "textriegel_lehnt_ab": "Markiert ein Fixture, das der TEXTRIEGEL abweist, BEVOR ein Parser es sieht. Diese Fixtures tragen keine Verletzungsmenge, weil sie das Schema nie erreichen — eine erfundene waere eine Luege ueber den Ort der Ablehnung. Regeln und Begruendung: schemas/v3/README.md.",
-  "anzahl_gueltig": 51,
-  "anzahl_ungueltig": 179,
+  "anzahl_gueltig": 54,
+  "anzahl_ungueltig": 185,
   "fixtures": [
     {
       "datei": "gueltig/audible_intervention_begin.json",
@@ -133,6 +133,12 @@
       "datei": "gueltig/heartbeat-ohne-optionales-feld.json",
       "urteil": "gueltig",
       "warum": "intervention_state_unknown ist optional",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/heartbeat-runtime-vollstaendig.json",
+      "urteil": "gueltig",
+      "warum": "E-M01: ein vollstaendiger strikter Runtime-Block reist im Heartbeat",
       "verletzungen": []
     },
     {
@@ -268,6 +274,18 @@
       "verletzungen": []
     },
     {
+      "datei": "gueltig/session-mitglied-unclassified.json",
+      "urteil": "gueltig",
+      "warum": "E-M01/L23: Mitglied ohne gemeldeten Messpunkt bleibt ohne Descriptor sichtbar",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/session-p2-reject.json",
+      "urteil": "gueltig",
+      "warum": "E-L14: geschlossener Ablehnungsgrund und Zaehler ab 1 reisen je Quelle",
+      "verletzungen": []
+    },
+    {
       "datei": "gueltig/session_snapshot.json",
       "urteil": "gueltig",
       "warum": "Grundform der Familie",
@@ -393,7 +411,7 @@
       "warum": "es gibt genau zwei Aussageklassen, keine dritte (§32.2)",
       "verletzungen": [
         {
-          "instanz": "/mitglieder/0/aussageklasse",
+          "instanz": "/mitglieder/0/probe_descriptor/aussageklasse",
           "schema": "#/$defs/probe_descriptor_insert/properties/aussageklasse/const",
           "schluessel": "const"
         }
@@ -405,7 +423,7 @@
       "warum": "ohne Aussageklasse waere eine Insert-Messung als Summenbeitrag lesbar (hartes Gate 7)",
       "verletzungen": [
         {
-          "instanz": "/mitglieder/0",
+          "instanz": "/mitglieder/0/probe_descriptor",
           "schema": "#/$defs/probe_descriptor_insert/required/aussageklasse",
           "schluessel": "required"
         }
@@ -585,12 +603,12 @@
       "warum": "eine Beitragsaussage setzt den diskreten Contribution-Aux-Bus nachweislich voraus; bei unsupported gilt nur Assoziation statt exakter Attribution (§53.6)",
       "verletzungen": [
         {
-          "instanz": "/mitglieder/0/capabilities/contribution_aux",
+          "instanz": "/mitglieder/0/probe_descriptor/capabilities/contribution_aux",
           "schema": "#/$defs/capabilities_beitrag/properties/contribution_aux/const",
           "schluessel": "const"
         },
         {
-          "instanz": "/mitglieder/0/plugin_kind",
+          "instanz": "/mitglieder/0/probe_descriptor/plugin_kind",
           "schema": "#/$defs/probe_descriptor_beitrag/properties/plugin_kind/maxLength",
           "schluessel": "maxLength"
         }
@@ -602,7 +620,7 @@
       "warum": "keine heutige Klasse darf den Beitragszweig fuehren",
       "verletzungen": [
         {
-          "instanz": "/mitglieder/0/plugin_kind",
+          "instanz": "/mitglieder/0/probe_descriptor/plugin_kind",
           "schema": "#/$defs/probe_descriptor_beitrag/properties/plugin_kind/maxLength",
           "schluessel": "maxLength"
         }
@@ -615,11 +633,16 @@
       "verletzungen": [
         {
           "instanz": "/mitglieder/0/plugin_kind",
+          "schema": "#/$defs/session_mitglied/properties/plugin_kind/enum",
+          "schluessel": "enum"
+        },
+        {
+          "instanz": "/mitglieder/0/probe_descriptor/plugin_kind",
           "schema": "#/$defs/probe_descriptor_beitrag/properties/plugin_kind/enum",
           "schluessel": "enum"
         },
         {
-          "instanz": "/mitglieder/0/plugin_kind",
+          "instanz": "/mitglieder/0/probe_descriptor/plugin_kind",
           "schema": "#/$defs/probe_descriptor_beitrag/properties/plugin_kind/maxLength",
           "schluessel": "maxLength"
         }
@@ -631,7 +654,7 @@
       "warum": "keine heutige Klasse darf den Beitragszweig fuehren",
       "verletzungen": [
         {
-          "instanz": "/mitglieder/0/plugin_kind",
+          "instanz": "/mitglieder/0/probe_descriptor/plugin_kind",
           "schema": "#/$defs/probe_descriptor_beitrag/properties/plugin_kind/maxLength",
           "schluessel": "maxLength"
         }
@@ -643,7 +666,7 @@
       "warum": "keine heutige Klasse darf den Beitragszweig fuehren",
       "verletzungen": [
         {
-          "instanz": "/mitglieder/0/plugin_kind",
+          "instanz": "/mitglieder/0/probe_descriptor/plugin_kind",
           "schema": "#/$defs/probe_descriptor_beitrag/properties/plugin_kind/maxLength",
           "schluessel": "maxLength"
         }
@@ -655,7 +678,7 @@
       "warum": "das fruehere Positivfixture ist nach der bindenden Klassenmatrix negativ",
       "verletzungen": [
         {
-          "instanz": "/mitglieder/0/plugin_kind",
+          "instanz": "/mitglieder/0/probe_descriptor/plugin_kind",
           "schema": "#/$defs/probe_descriptor_beitrag/properties/plugin_kind/maxLength",
           "schluessel": "maxLength"
         }
@@ -667,12 +690,12 @@
       "warum": "post_fader_contribution ist die einzige Beitragsposition und traegt immer `beitrag` (§32.2)",
       "verletzungen": [
         {
-          "instanz": "/mitglieder/0/aussageklasse",
+          "instanz": "/mitglieder/0/probe_descriptor/aussageklasse",
           "schema": "#/$defs/probe_descriptor_beitrag/properties/aussageklasse/const",
           "schluessel": "const"
         },
         {
-          "instanz": "/mitglieder/0/plugin_kind",
+          "instanz": "/mitglieder/0/probe_descriptor/plugin_kind",
           "schema": "#/$defs/probe_descriptor_beitrag/properties/plugin_kind/maxLength",
           "schluessel": "maxLength"
         }
@@ -1091,6 +1114,11 @@
           "instanz": "/mitglieder/0/frische",
           "schema": "#/$defs/frische/required/stale",
           "schluessel": "required"
+        },
+        {
+          "instanz": "/mitglieder/0/probe_descriptor/frische",
+          "schema": "#/$defs/frische/required/stale",
+          "schluessel": "required"
         }
       ]
     },
@@ -1143,6 +1171,54 @@
         {
           "instanz": "",
           "schema": "#/$defs/heartbeat/required/zaehler",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/heartbeat-runtime-betrieb-unbekannt.json",
+      "urteil": "ungueltig",
+      "warum": "E-L21/22: nur active, suspended und offline sind Vertragswerte",
+      "verletzungen": [
+        {
+          "instanz": "/runtime/betrieb",
+          "schema": "#/$defs/betrieb/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/heartbeat-runtime-hostname-zu-lang.json",
+      "urteil": "ungueltig",
+      "warum": "E-M01 verwendet exakt die B1-Codepointgrenze",
+      "verletzungen": [
+        {
+          "instanz": "/runtime/host_bus_name",
+          "schema": "#/$defs/host_bus_name/maxLength",
+          "schluessel": "maxLength"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/heartbeat-runtime-messpunkt-unbekannt.json",
+      "urteil": "ungueltig",
+      "warum": "E-M01: Runtime kennt nur insert, pre und post",
+      "verletzungen": [
+        {
+          "instanz": "/runtime/messpunkt",
+          "schema": "#/$defs/heartbeat_runtime/properties/messpunkt/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/heartbeat-runtime-ohne-messpunkt.json",
+      "urteil": "ungueltig",
+      "warum": "E-M01: ist runtime vorhanden, ist messpunkt Pflicht",
+      "verletzungen": [
+        {
+          "instanz": "/runtime",
+          "schema": "#/$defs/heartbeat_runtime/required/messpunkt",
           "schluessel": "required"
         }
       ]
@@ -1225,7 +1301,7 @@
       "warum": "121 Unicode-Codepoints liegen einen ueber der Annahmegrenze",
       "verletzungen": [
         {
-          "instanz": "/mitglieder/0/host_bus_name",
+          "instanz": "/mitglieder/0/probe_descriptor/host_bus_name",
           "schema": "#/$defs/host_bus_name/maxLength",
           "schluessel": "maxLength"
         }
@@ -1237,7 +1313,7 @@
       "warum": "C0-Steuerzeichen werden nicht als Hosttext angenommen",
       "verletzungen": [
         {
-          "instanz": "/mitglieder/0/host_bus_name",
+          "instanz": "/mitglieder/0/probe_descriptor/host_bus_name",
           "schema": "#/$defs/host_bus_name/pattern",
           "schluessel": "pattern"
         }
@@ -1249,7 +1325,7 @@
       "warum": "C1-Steuerzeichen werden nicht als Hosttext angenommen",
       "verletzungen": [
         {
-          "instanz": "/mitglieder/0/host_bus_name",
+          "instanz": "/mitglieder/0/probe_descriptor/host_bus_name",
           "schema": "#/$defs/host_bus_name/pattern",
           "schluessel": "pattern"
         }
@@ -1261,12 +1337,12 @@
       "warum": "ein leerer Hostname gilt als nicht geliefert",
       "verletzungen": [
         {
-          "instanz": "/mitglieder/0/host_bus_name",
+          "instanz": "/mitglieder/0/probe_descriptor/host_bus_name",
           "schema": "#/$defs/host_bus_name/minLength",
           "schluessel": "minLength"
         },
         {
-          "instanz": "/mitglieder/0/host_bus_name",
+          "instanz": "/mitglieder/0/probe_descriptor/host_bus_name",
           "schema": "#/$defs/host_bus_name/pattern",
           "schluessel": "pattern"
         }
@@ -1278,7 +1354,7 @@
       "warum": "Unicode-Whitespace allein ist kein sichtbarer Busname",
       "verletzungen": [
         {
-          "instanz": "/mitglieder/0/host_bus_name",
+          "instanz": "/mitglieder/0/probe_descriptor/host_bus_name",
           "schema": "#/$defs/host_bus_name/pattern",
           "schluessel": "pattern"
         }
@@ -1290,7 +1366,7 @@
       "warum": "negative Hostindizes gelten als nicht geliefert",
       "verletzungen": [
         {
-          "instanz": "/mitglieder/0/host_mixer_index",
+          "instanz": "/mitglieder/0/probe_descriptor/host_mixer_index",
           "schema": "#/$defs/host_mixer_index/minimum",
           "schluessel": "minimum"
         }
@@ -1302,7 +1378,7 @@
       "warum": "VST3 kChannelIndexKey beginnt bei 1",
       "verletzungen": [
         {
-          "instanz": "/mitglieder/0/host_mixer_index",
+          "instanz": "/mitglieder/0/probe_descriptor/host_mixer_index",
           "schema": "#/$defs/host_mixer_index/minimum",
           "schluessel": "minimum"
         }
@@ -1321,7 +1397,7 @@
       "warum": "E-H02 reserviert kein drittes Namespacefeld; bei Mehrdeutigkeit fehlt der Index",
       "verletzungen": [
         {
-          "instanz": "/mitglieder/0/host_mixer_namespace",
+          "instanz": "/mitglieder/0/probe_descriptor/host_mixer_namespace",
           "schema": "#/$defs/probe_descriptor_insert/additionalProperties",
           "schluessel": "additionalProperties"
         }
@@ -1345,7 +1421,7 @@
       "warum": "eine Standard-Insertprobe kennt ihren exakten Beitrag zur Mastersumme NICHT und darf sich nie so nennen (Gate 7, §49.2 Nr. 7)",
       "verletzungen": [
         {
-          "instanz": "/mitglieder/0/aussageklasse",
+          "instanz": "/mitglieder/0/probe_descriptor/aussageklasse",
           "schema": "#/$defs/probe_descriptor_insert/properties/aussageklasse/const",
           "schluessel": "const"
         }
@@ -1494,7 +1570,7 @@
       "warum": "null ist ein eigener Typ, nicht `fehlt`",
       "verletzungen": [
         {
-          "instanz": "/mitglieder/0/label",
+          "instanz": "/mitglieder/0/probe_descriptor/label",
           "schema": "#/$defs/probe_label/type",
           "schluessel": "type"
         }
@@ -1506,7 +1582,7 @@
       "warum": "das Label ist untrusted data und begrenzt",
       "verletzungen": [
         {
-          "instanz": "/mitglieder/0/label",
+          "instanz": "/mitglieder/0/probe_descriptor/label",
           "schema": "#/$defs/probe_label/maxLength",
           "schluessel": "maxLength"
         }
@@ -1588,7 +1664,7 @@
       "warum": "vier Positionen, keine fuenfte (§32.2)",
       "verletzungen": [
         {
-          "instanz": "/mitglieder/0/measurement_position",
+          "instanz": "/mitglieder/0/probe_descriptor/measurement_position",
           "schema": "#/$defs/probe_descriptor/oneOf",
           "schluessel": "oneOf"
         }
@@ -1600,7 +1676,7 @@
       "warum": "Pflichtfelder gelten auch im Arrayelement",
       "verletzungen": [
         {
-          "instanz": "/mitglieder/0",
+          "instanz": "/mitglieder/0/probe_descriptor",
           "schema": "#/$defs/probe_descriptor_insert/required/capabilities",
           "schluessel": "required"
         }
@@ -1643,7 +1719,7 @@
       "warum": "v2 und v3 begrenzen pair_id auf 64 Unicode-Codepoints",
       "verletzungen": [
         {
-          "instanz": "/mitglieder/0/pair_id",
+          "instanz": "/mitglieder/0/probe_descriptor/pair_id",
           "schema": "#/$defs/pair_id/maxLength",
           "schluessel": "maxLength"
         }
@@ -1655,7 +1731,7 @@
       "warum": "pair_id ist String oder null",
       "verletzungen": [
         {
-          "instanz": "/mitglieder/0/pair_id",
+          "instanz": "/mitglieder/0/probe_descriptor/pair_id",
           "schema": "#/$defs/pair_id/type",
           "schluessel": "type"
         }
@@ -1667,7 +1743,7 @@
       "warum": "null bezeichnet bereits 'kein Paar'; die leere Zeichenkette ist keine zweite Form",
       "verletzungen": [
         {
-          "instanz": "/mitglieder/0/pair_id",
+          "instanz": "/mitglieder/0/probe_descriptor/pair_id",
           "schema": "#/$defs/pair_id/minLength",
           "schluessel": "minLength"
         }
@@ -1692,6 +1768,11 @@
       "verletzungen": [
         {
           "instanz": "/mitglieder/0/plugin_kind",
+          "schema": "#/$defs/session_mitglied/properties/plugin_kind/enum",
+          "schluessel": "enum"
+        },
+        {
+          "instanz": "/mitglieder/0/probe_descriptor/plugin_kind",
           "schema": "#/$defs/probe_descriptor_insert/properties/plugin_kind/enum",
           "schluessel": "enum"
         }
@@ -1703,7 +1784,7 @@
       "warum": "die POST-Haelfte eines Paares ist beobachtend (§32.2)",
       "verletzungen": [
         {
-          "instanz": "/mitglieder/0/aussageklasse",
+          "instanz": "/mitglieder/0/probe_descriptor/aussageklasse",
           "schema": "#/$defs/probe_descriptor_post/properties/aussageklasse/const",
           "schluessel": "const"
         }
@@ -1715,7 +1796,7 @@
       "warum": "die PRE-Haelfte eines Paares ist beobachtend (§32.2)",
       "verletzungen": [
         {
-          "instanz": "/mitglieder/0/aussageklasse",
+          "instanz": "/mitglieder/0/probe_descriptor/aussageklasse",
           "schema": "#/$defs/probe_descriptor_pre/properties/aussageklasse/const",
           "schluessel": "const"
         }
@@ -1751,7 +1832,7 @@
       "warum": "main darf laut State-v2-Matrix keine POST-Position fuehren",
       "verletzungen": [
         {
-          "instanz": "/mitglieder/0/plugin_kind",
+          "instanz": "/mitglieder/0/probe_descriptor/plugin_kind",
           "schema": "#/$defs/probe_descriptor_post/properties/plugin_kind/enum",
           "schluessel": "enum"
         }
@@ -1763,7 +1844,7 @@
       "warum": "main darf laut State-v2-Matrix keine PRE-Position fuehren",
       "verletzungen": [
         {
-          "instanz": "/mitglieder/0/plugin_kind",
+          "instanz": "/mitglieder/0/probe_descriptor/plugin_kind",
           "schema": "#/$defs/probe_descriptor_pre/properties/plugin_kind/enum",
           "schluessel": "enum"
         }
@@ -1957,6 +2038,30 @@
         {
           "instanz": "/sequence",
           "schema": "#/$defs/heartbeat/properties/sequence/minimum",
+          "schluessel": "minimum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/session-p2-reject-freitext.json",
+      "urteil": "ungueltig",
+      "warum": "E-L14 verbietet Freitextgruende auf dem Wire",
+      "verletzungen": [
+        {
+          "instanz": "/mitglieder/0/p2_reject/grund",
+          "schema": "#/$defs/p2_reject/properties/grund/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/session-p2-reject-zaehler-null.json",
+      "urteil": "ungueltig",
+      "warum": "E-L14: ein vorhandener Ablehnungsstand beginnt bei 1",
+      "verletzungen": [
+        {
+          "instanz": "/mitglieder/0/p2_reject/zaehler",
+          "schema": "#/$defs/p2_reject/properties/zaehler/minimum",
           "schluessel": "minimum"
         }
       ]

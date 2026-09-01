@@ -1,6 +1,5 @@
 use eqcop_broker::coordinator::{
-    Coordinator, CoordinatorFlushTestHaken, ManualClock, SessionPush, STALE_NACH_MS,
-    TOMBSTONE_MS,
+    Coordinator, CoordinatorFlushTestHaken, ManualClock, SessionPush, STALE_NACH_MS, TOMBSTONE_MS,
 };
 use eqcop_broker::store::{
     busy_timeout_abgelaufen, checkpoint_ausloesen, commit_ausloesen, migration_1_checksum,
@@ -352,7 +351,8 @@ fn si_report(coordinator: &Coordinator, link: &str, adresse: &Adresse, sequence:
             "sequence": sequence,
             "state_revision": sequence,
             "capabilities": si_capabilities(),
-            "zaehler": {}
+            "zaehler": {},
+            "runtime": {"messpunkt": "insert", "betrieb": "active"}
         })),
     )
 }
@@ -483,13 +483,17 @@ fn produkt_coordinator_committet_alle_persistenten_p0_befehle_und_ackt_retries()
         si_coordinator_mit_store("produkt-p0", true);
     let main = si_hello(10, 100, "main");
     let probe = si_hello(11, 101, "active_probe");
-    assert!(coordinator
-        .control_hello_registrieren("main", &main)
-        .angenommen);
+    assert!(
+        coordinator
+            .control_hello_registrieren("main", &main)
+            .angenommen
+    );
     assert!(si_report(&coordinator, "main", &main.adresse, 1));
-    assert!(coordinator
-        .control_hello_registrieren("probe", &probe)
-        .angenommen);
+    assert!(
+        coordinator
+            .control_hello_registrieren("probe", &probe)
+            .angenommen
+    );
     assert!(si_state_report(&coordinator, "probe", &probe.adresse, 13));
     assert!(si_subscribe(&coordinator, "probe", &probe.adresse));
 
@@ -609,7 +613,12 @@ fn brokerneustart_sendet_keine_laufgebundenen_felder_der_alten_projektion() {
     let snapshot = push.snapshots().last().unwrap().1.clone();
     assert_eq!(snapshot["broker_epoch"], si_hex(91));
     assert!(snapshot["fuehrendes_main"].is_null());
-    assert!(snapshot["mitglieder"].as_array().unwrap().is_empty());
+    assert_eq!(snapshot["mitglieder"].as_array().unwrap().len(), 1);
+    assert_eq!(
+        snapshot["mitglieder"][0]["adresse"]["instance_id"],
+        si_hex(10)
+    );
+    assert!(snapshot["mitglieder"][0].get("probe_descriptor").is_none());
 }
 
 #[test]
@@ -619,13 +628,12 @@ fn resubscribe_uebernimmt_live_bestaetigungsbedarf_waehrend_store_flush_blockier
 
     // Der vorige Brokerlauf hinterlaesst fuer Main-Sitzung 2 eine gueltige
     // Projektion ohne Bestätigungsbedarf.
-    let alt = Coordinator::mit_store(
-        Arc::new(ManualClock::default()),
-        si_hex(90),
-        &writer,
-    );
+    let alt = Coordinator::mit_store(Arc::new(ManualClock::default()), si_hex(90), &writer);
     let main_a = si_hello(10, 100, "main");
-    assert!(alt.control_hello_registrieren("alt-main", &main_a).angenommen);
+    assert!(
+        alt.control_hello_registrieren("alt-main", &main_a)
+            .angenommen
+    );
     assert!(si_report(&alt, "alt-main", &main_a.adresse, 1));
     let (_, alt_payload) = writer
         .handle()
@@ -646,19 +654,25 @@ fn resubscribe_uebernimmt_live_bestaetigungsbedarf_waehrend_store_flush_blockier
     ));
     let push = Arc::new(PushProbe::neu(true));
     coordinator.session_push_setzen(push.clone());
-    assert!(coordinator
-        .control_hello_registrieren("main-a", &main_a)
-        .angenommen);
+    assert!(
+        coordinator
+            .control_hello_registrieren("main-a", &main_a)
+            .angenommen
+    );
     let mut main_b = si_hello(11, 101, "main");
     main_b.adresse.session_epoch = si_hex(3);
-    assert!(coordinator
-        .control_hello_registrieren("main-b", &main_b)
-        .angenommen);
+    assert!(
+        coordinator
+            .control_hello_registrieren("main-b", &main_b)
+            .angenommen
+    );
     let mut probe = si_hello(12, 102, "active_probe");
     probe.adresse.session_epoch = probe.adresse.project_binding_id.clone();
-    assert!(coordinator
-        .control_hello_registrieren("probe", &probe)
-        .angenommen);
+    assert!(
+        coordinator
+            .control_hello_registrieren("probe", &probe)
+            .angenommen
+    );
 
     let haken = CoordinatorFlushTestHaken::default();
     coordinator.flush_test_haken_setzen(haken.clone());
@@ -675,9 +689,17 @@ fn resubscribe_uebernimmt_live_bestaetigungsbedarf_waehrend_store_flush_blockier
     assert_eq!(race_snapshot["broker_epoch"], si_hex(99));
     assert_eq!(snapshot_wirkung(&race_snapshot), 1);
     assert_eq!(race_snapshot["beitritt_bestaetigung_noetig"], true);
-    // Die alten laufgebundenen Mitglieder duerfen ebenso wenig austreten;
-    // der persistierte absolute Rest bleibt weiterhin die K-04-Wirkung.
-    assert!(race_snapshot["mitglieder"].as_array().unwrap().is_empty());
+    // Alte laufgebundene Mitglieder werden nicht restauriert. Das in diesem
+    // Brokerlauf bereits verbundene Main bleibt nach E-M01/L23 dagegen als
+    // unclassified-Mitglied ohne Descriptor sichtbar.
+    assert_eq!(race_snapshot["mitglieder"].as_array().unwrap().len(), 1);
+    assert_eq!(
+        race_snapshot["mitglieder"][0]["adresse"]["instance_id"],
+        main_a.adresse.instance_id
+    );
+    assert!(race_snapshot["mitglieder"][0]
+        .get("probe_descriptor")
+        .is_none());
 }
 
 #[test]
@@ -685,9 +707,11 @@ fn projektionslesefehler_haelt_subscription_sichtbar_fail_closed() {
     let (ordner, mut writer, coordinator, _clock, push) =
         si_coordinator_mit_store("projektion-lesefehler", true);
     let main = si_hello(10, 100, "main");
-    assert!(coordinator
-        .control_hello_registrieren("main", &main)
-        .angenommen);
+    assert!(
+        coordinator
+            .control_hello_registrieren("main", &main)
+            .angenommen
+    );
     writer.stoppen();
     std::fs::remove_file(ordner.db()).unwrap();
     assert!(si_subscribe(&coordinator, "main", &main.adresse));
@@ -701,18 +725,20 @@ fn snapshot_commit_bleibt_bei_konkurrierenden_flushes_monoton() {
     let (_ordner, writer, coordinator, _clock, _push) =
         si_coordinator_mit_store("snapshot-commit-seriell", true);
     let main = si_hello(10, 100, "main");
-    assert!(coordinator
-        .control_hello_registrieren("main", &main)
-        .angenommen);
+    assert!(
+        coordinator
+            .control_hello_registrieren("main", &main)
+            .angenommen
+    );
     assert!(si_report(&coordinator, "main", &main.adresse, 1));
     let basis: Value = serde_json::from_slice(&coordinator.session_snapshot_json(
         &main.adresse.project_binding_id,
         &main.adresse.session_epoch,
     ))
     .unwrap();
-    let mut alt = basis["mitglieder"][0].clone();
+    let mut alt = basis["mitglieder"][0]["probe_descriptor"].clone();
     alt["label"] = Value::String("alt-erfasst".into());
-    let mut neu = basis["mitglieder"][0].clone();
+    let mut neu = basis["mitglieder"][0]["probe_descriptor"].clone();
     neu["label"] = Value::String("neu-committed".into());
 
     let haken = CoordinatorFlushTestHaken::default();
@@ -742,7 +768,10 @@ fn snapshot_commit_bleibt_bei_konkurrierenden_flushes_monoton() {
         .unwrap()
         .unwrap();
     let payload: Value = serde_json::from_slice(&payload).unwrap();
-    assert_eq!(payload["mitglieder"][0]["label"], "neu-committed");
+    assert_eq!(
+        payload["mitglieder"][0]["probe_descriptor"]["label"],
+        "neu-committed"
+    );
 }
 
 #[test]
@@ -761,9 +790,11 @@ fn cleanup_zwischen_zielermittlung_und_write_verhindert_den_alten_push() {
     let push = Arc::new(PushProbe::neu(true));
     coordinator.session_push_setzen(push.clone());
     let main = si_hello(10, 100, "main");
-    assert!(coordinator
-        .control_hello_registrieren("main", &main)
-        .angenommen);
+    assert!(
+        coordinator
+            .control_hello_registrieren("main", &main)
+            .angenommen
+    );
     assert!(si_subscribe(&coordinator, "main", &main.adresse));
     let push_vorher = push.snapshots().len();
     let c = coordinator.clone();
@@ -1397,9 +1428,11 @@ fn domain_event_ueberschreibt_session_snapshot_auch_beim_reconnect_nicht() {
     let push = Arc::new(PushProbe::neu(true));
     coordinator.session_push_setzen(push.clone());
     let client = si_hello(4, 404, "main");
-    assert!(coordinator
-        .control_hello_registrieren("reconnect", &client)
-        .angenommen);
+    assert!(
+        coordinator
+            .control_hello_registrieren("reconnect", &client)
+            .angenommen
+    );
     assert!(si_subscribe(&coordinator, "reconnect", &client.adresse));
     let letzter = push.snapshots().last().unwrap().1.clone();
     assert_eq!(letzter["type"], "session_snapshot");
@@ -2006,13 +2039,17 @@ fn session_subscription_sendet_nur_aktuellen_absoluten_snapshot() {
     );
     assert!(si_report(&coordinator, "main", &main.adresse, 1));
     assert!(si_subscribe(&coordinator, "main", &main.adresse));
-    let mut descriptor = push.snapshots().last().unwrap().1["mitglieder"][0].clone();
+    let mut descriptor =
+        push.snapshots().last().unwrap().1["mitglieder"][0]["probe_descriptor"].clone();
     descriptor["label"] = Value::String("aktuell".into());
     assert!(coordinator.descriptor_setzen("main", descriptor));
     let snapshots = push.snapshots();
     let letzter = &snapshots.last().unwrap().1;
     assert_eq!(letzter["type"], "session_snapshot");
-    assert_eq!(letzter["mitglieder"][0]["label"], "aktuell");
+    assert_eq!(
+        letzter["mitglieder"][0]["probe_descriptor"]["label"],
+        "aktuell"
+    );
     assert!(snapshots
         .iter()
         .all(|(_, wert)| wert.get("event_uuid").is_none()));
@@ -2092,10 +2129,12 @@ fn session_snapshot_koalesziert_nach_objektschluessel() {
     );
     assert!(si_report(&coordinator, "main", &main.adresse, 1));
     assert!(si_subscribe(&coordinator, "main", &main.adresse));
-    let mut descriptor = push.snapshots().last().unwrap().1["mitglieder"][0].clone();
+    let mut descriptor =
+        push.snapshots().last().unwrap().1["mitglieder"][0]["probe_descriptor"].clone();
     descriptor["label"] = Value::String("erster-stand".into());
     assert!(coordinator.descriptor_setzen("main", descriptor));
-    let mut descriptor = push.snapshots().last().unwrap().1["mitglieder"][0].clone();
+    let mut descriptor =
+        push.snapshots().last().unwrap().1["mitglieder"][0]["probe_descriptor"].clone();
     descriptor["label"] = Value::String("neuer-stand".into());
     assert!(coordinator.descriptor_setzen("main", descriptor));
     let outbox = writer.handle().outbox_lesen().unwrap();
@@ -2130,19 +2169,22 @@ fn p1_snapshot_abfluss_ohne_reconnect_aber_writefehler_liefert_aktuellen_snapsho
     assert!(si_subscribe(&coordinator, "main", &main.adresse));
     assert!(writer.handle().outbox_lesen().unwrap().is_empty());
 
-    let mut descriptor = push.snapshots().last().unwrap().1["mitglieder"][0].clone();
+    let mut descriptor =
+        push.snapshots().last().unwrap().1["mitglieder"][0]["probe_descriptor"].clone();
     descriptor["label"] = Value::String("erste-schuld".into());
     assert!(coordinator.descriptor_setzen("main", descriptor));
     assert_eq!(writer.handle().outbox_lesen().unwrap().len(), 1);
 
     push.erfolgreich.store(true, Ordering::SeqCst);
-    let mut descriptor = push.snapshots().last().unwrap().1["mitglieder"][0].clone();
+    let mut descriptor =
+        push.snapshots().last().unwrap().1["mitglieder"][0]["probe_descriptor"].clone();
     descriptor["label"] = Value::String("ohne-reconnect".into());
     assert!(coordinator.descriptor_setzen("main", descriptor));
     assert!(writer.handle().outbox_lesen().unwrap().is_empty());
 
     push.erfolgreich.store(false, Ordering::SeqCst);
-    let mut descriptor = push.snapshots().last().unwrap().1["mitglieder"][0].clone();
+    let mut descriptor =
+        push.snapshots().last().unwrap().1["mitglieder"][0]["probe_descriptor"].clone();
     descriptor["label"] = Value::String("nach-writefehler".into());
     assert!(coordinator.descriptor_setzen("main", descriptor));
     assert_eq!(writer.handle().outbox_lesen().unwrap().len(), 1);
@@ -2150,7 +2192,7 @@ fn p1_snapshot_abfluss_ohne_reconnect_aber_writefehler_liefert_aktuellen_snapsho
     assert!(si_subscribe(&coordinator, "main", &main.adresse));
     assert!(writer.handle().outbox_lesen().unwrap().is_empty());
     assert_eq!(
-        push.snapshots().last().unwrap().1["mitglieder"][0]["label"],
+        push.snapshots().last().unwrap().1["mitglieder"][0]["probe_descriptor"]["label"],
         "nach-writefehler"
     );
 }
@@ -2217,6 +2259,17 @@ fn blockierter_store_writer_bestaetigt_nichts_und_p2_laeuft() {
             .control_hello_registrieren("main", &main)
             .angenommen
     );
+    coordinator.control_registrieren(
+        "p2-probe",
+        Adresse {
+            logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001".into(),
+            project_binding_id: "1".repeat(32),
+            session_epoch: "2".repeat(32),
+            instance_id: format!("{:032x}", 3),
+            runtime_nonce: "4".repeat(32),
+        },
+    );
+    Senke::telemetrie_gekoppelt(coordinator.as_ref(), "p2-probe");
     let c = coordinator.clone();
     let a = main.adresse.clone();
     let heartbeat = std::thread::spawn(move || si_report(&c, "main", &a, 1));
@@ -2228,10 +2281,8 @@ fn blockierter_store_writer_bestaetigt_nichts_und_p2_laeuft() {
     assert!(!heartbeat.is_finished());
     Senke::p2(
         coordinator.as_ref(),
-        "main",
-        include_bytes!(
-            "../../eq-copilot/fixtures/v3/flatbuffers/gueltig/live-64-band.bin"
-        ),
+        "p2-probe",
+        include_bytes!("../../eq-copilot/fixtures/v3/flatbuffers/gueltig/live-64-band.bin"),
     );
     assert_eq!(coordinator.p2_live_frames(), 1);
     assert_eq!(writer.handle().sicht().commits, 0);
@@ -2254,7 +2305,8 @@ fn blockierter_writer_haelt_coordinator_und_store_nicht() {
     assert!(si_report(&coordinator, "main", &main.adresse, 1));
     assert!(si_subscribe(&coordinator, "main", &main.adresse));
     push.blockieren();
-    let mut descriptor = push.snapshots().last().unwrap().1["mitglieder"][0].clone();
+    let mut descriptor =
+        push.snapshots().last().unwrap().1["mitglieder"][0]["probe_descriptor"].clone();
     descriptor["label"] = Value::String("blockiert".into());
     let c = coordinator.clone();
     let aenderung = std::thread::spawn(move || c.descriptor_setzen("main", descriptor));

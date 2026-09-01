@@ -17,7 +17,10 @@
         "probe_descriptor_hostfelder": [
           "host_bus_name",
           "host_mixer_index"
-        ]
+        ],
+        "heartbeat_runtime": true,
+        "session_mitglied_probe_descriptor_optional": true,
+        "session_mitglied_p2_reject": true
       }
     }
   },
@@ -31,6 +34,21 @@
       "name": "probe_descriptor.host_mixer_index",
       "eigentuemer": "SONDE-012 (S18-19)",
       "grund": "Seit Wire-Envelope-schema_minor 1 optional belegt: roher VST3-Index als JSON-integer 1 bis 9007199254740991. Fehlen bedeutet: der Host liefert keinen vergleichbaren Wert."
+    },
+    {
+      "name": "heartbeat.runtime",
+      "eigentuemer": "SONDE-012 (S18-19)",
+      "grund": "Seit Wire-Envelope-schema_minor 1 optional belegt: strikter Runtime-Block mit verpflichtendem Messpunkt und Betriebszustand sowie den optionalen B1-Hostfeldern."
+    },
+    {
+      "name": "session_snapshot.mitglieder[].probe_descriptor",
+      "eigentuemer": "SONDE-012 (S18-19)",
+      "grund": "Seit Wire-Envelope-schema_minor 1 optional belegt: fehlt der Descriptor, bleibt die Quelle als Mitglied sichtbar und wird fail-closed als unclassified abgeleitet."
+    },
+    {
+      "name": "session_snapshot.mitglieder[].p2_reject",
+      "eigentuemer": "SONDE-012 (S18-19)",
+      "grund": "Seit Wire-Envelope-schema_minor 1 optional belegt: geschlossener Broker-Ablehnungsgrund und laufgebundener Zaehler ab 1; kein Freitext und keine Aenderung des letzten gueltigen Frames."
     }
   ],
   "reservierte_felder": [

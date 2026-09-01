@@ -22,6 +22,7 @@
 //! Kommentaren traegt, ist keiner.
 
 use crate::generiert::nakama_telemetry_v1_generated::nakama::v_3 as fb;
+use crate::transport::bootstrap::Adresse;
 use std::collections::BTreeSet;
 
 /// Ein einzelner Vertragsverstoss.
@@ -37,9 +38,38 @@ pub struct Verstoss {
     pub regel: String,
 }
 
+/// Vollstaendig aus einem verifizierten FeatureBatch gelesene Broker-Sicht.
+/// Der rohe Puffer bleibt die Wire-Wahrheit; diese kleine Sicht dient nur der
+/// Quelladressierung sowie Alter-/Fenster-/Lautheitsprojektion.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Quellframe {
+    pub adresse: Adresse,
+    pub sequence: u64,
+    pub sample_count: u32,
+    pub sample_rate: f64,
+    pub lufs_i_paar: Option<(f32, f32)>,
+    pub lufs_i_status: Option<u8>,
+}
+
+/// Ergebnis der Broker-Eingangspruefung. Ein ausschliesslich kaputtes
+/// LUFS-I-Paar entwertet nicht die uebrigen Framefelder: die drei optionalen
+/// Lautheitsfelder werden aus einer Kopie des Puffers entfernt und genau diese
+/// wieder gegen denselben Leser geprueft. Andere Verstoesse bleiben eine
+/// vollstaendige Ablehnung vor Mutation.
+#[derive(Debug, Clone, PartialEq)]
+pub struct BrokerBatch {
+    pub payload: Vec<u8>,
+    pub frames: Vec<Quellframe>,
+    pub lautheit_ungueltige_instance_ids: Vec<String>,
+    pub verstoesse: Vec<Verstoss>,
+}
+
 impl Verstoss {
     fn neu(pfad: &str, regel: &str) -> Self {
-        Verstoss { pfad: pfad.to_string(), regel: regel.to_string() }
+        Verstoss {
+            pfad: pfad.to_string(),
+            regel: regel.to_string(),
+        }
     }
 }
 
@@ -70,7 +100,9 @@ pub const Q_0P01_MIN: i16 = -14400; // -144.00 dB * 100
 pub const Q_0P01_MAX: i16 = 2400; //   24.00 dB * 100
 
 fn ist_hex32(s: &str) -> bool {
-    s.len() == 32 && s.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+    s.len() == 32
+        && s.bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
 }
 
 // -------------------------------------------------------------- Strukturriegel
@@ -288,7 +320,10 @@ pub fn pruefe(puffer: &[u8]) -> Vec<Verstoss> {
         let a = eintrag.quelle();
         pruefe_adresse(&a, &format!("{p}/quelle"), &mut out);
         if !gesehen.insert(a.instance_id().to_string()) {
-            out.push(Verstoss::neu(&format!("{p}/quelle/instance_id"), "quelle_doppelt"));
+            out.push(Verstoss::neu(
+                &format!("{p}/quelle/instance_id"),
+                "quelle_doppelt",
+            ));
         }
 
         pruefe_frame(&eintrag.frame(), &format!("{p}/frame"), &mut out);
@@ -299,6 +334,148 @@ pub fn pruefe(puffer: &[u8]) -> Vec<Verstoss> {
 
 pub fn gueltig(puffer: &[u8]) -> bool {
     pruefe(puffer).is_empty()
+}
+
+/// Prueft und liest genau die Information, die der Broker fuer den passiven
+/// Quellen-Slice benoetigt. Der Sonde->Broker-Sonderfall mit genau einem
+/// Quellframe wird im Coordinator gegen den gekoppelten Link erzwungen.
+pub fn fuer_broker(puffer: &[u8]) -> Result<BrokerBatch, Vec<Verstoss>> {
+    let verstoesse = pruefe(puffer);
+    if verstoesse.is_empty() {
+        let Some(frames) = quellframes_lesen(puffer) else {
+            return Err(vec![Verstoss::neu("", "verifier")]);
+        };
+        return Ok(BrokerBatch {
+            payload: puffer.to_vec(),
+            frames,
+            lautheit_ungueltige_instance_ids: Vec::new(),
+            verstoesse: Vec::new(),
+        });
+    }
+
+    let Some(indices) = ausschliesslich_lautheitsverstoesse(&verstoesse) else {
+        return Err(verstoesse);
+    };
+    let batch = fb::root_as_feature_batch(puffer).map_err(|_| verstoesse.clone())?;
+    let eintraege = batch.eintraege();
+    // Auf der Eingangsseite ist ein Batch genau ein Quellframe. Mehrere
+    // Eintraege hier zu reparieren waere gefaehrlich, weil FlatBuffers
+    // Vtables zwischen Tabellen teilen darf. Der Coordinator lehnt denselben
+    // Fall vor jeder Mutation mit einem klaren Brokergrund ab.
+    if eintraege.len() != 1 || indices.iter().any(|index| *index != 0) {
+        return Err(verstoesse);
+    }
+    let instance_id = eintraege.get(0).quelle().instance_id().to_owned();
+    let frame_loc = eintraege.get(0).frame()._tab.loc();
+    let Some(bereinigt) = lautheitsfelder_entfernen(puffer, frame_loc) else {
+        return Err(verstoesse);
+    };
+    if !pruefe(&bereinigt).is_empty() {
+        return Err(verstoesse);
+    }
+    let Some(frames) = quellframes_lesen(&bereinigt) else {
+        return Err(verstoesse);
+    };
+    Ok(BrokerBatch {
+        payload: bereinigt,
+        frames,
+        lautheit_ungueltige_instance_ids: vec![instance_id],
+        verstoesse,
+    })
+}
+
+fn ausschliesslich_lautheitsverstoesse(verstoesse: &[Verstoss]) -> Option<BTreeSet<usize>> {
+    let mut indices = BTreeSet::new();
+    for verstoss in verstoesse {
+        let lautheit = match verstoss.regel.as_str() {
+            "lufs_i_paar" | "lufs_i_status" | "lufs_i_status_mit_paar" => true,
+            "nicht_endlich" => {
+                verstoss.pfad.ends_with("/lufs_i")
+                    || verstoss.pfad.ends_with("/lufs_i_unsicherheit_lu")
+            }
+            _ => false,
+        };
+        if !lautheit {
+            return None;
+        }
+        let mut teile = verstoss.pfad.split('/');
+        if teile.next() != Some("") || teile.next() != Some("eintraege") {
+            return None;
+        }
+        let index = teile.next()?.parse::<usize>().ok()?;
+        indices.insert(index);
+    }
+    (!indices.is_empty()).then_some(indices)
+}
+
+fn lautheitsfelder_entfernen(puffer: &[u8], frame_loc: usize) -> Option<Vec<u8>> {
+    if frame_loc.checked_add(4)? > puffer.len() {
+        return None;
+    }
+    let vtable_abstand = i32::from_le_bytes([
+        puffer[frame_loc],
+        puffer[frame_loc + 1],
+        puffer[frame_loc + 2],
+        puffer[frame_loc + 3],
+    ]);
+    if vtable_abstand <= 0 {
+        return None;
+    }
+    let vtable_loc = frame_loc.checked_sub(vtable_abstand as usize)?;
+    if vtable_loc.checked_add(2)? > puffer.len() {
+        return None;
+    }
+    let vtable_len = u16::from_le_bytes([puffer[vtable_loc], puffer[vtable_loc + 1]]) as usize;
+    let mut aus = puffer.to_vec();
+    for slot in [
+        fb::Frame::VT_LUFS_I,
+        fb::Frame::VT_LUFS_I_UNSICHERHEIT_LU,
+        fb::Frame::VT_LUFS_I_STATUS,
+    ] {
+        let slot = slot as usize;
+        if slot + 2 <= vtable_len {
+            let pos = vtable_loc.checked_add(slot)?;
+            if pos.checked_add(2)? > aus.len() {
+                return None;
+            }
+            aus[pos] = 0;
+            aus[pos + 1] = 0;
+        }
+    }
+    Some(aus)
+}
+
+fn quellframes_lesen(puffer: &[u8]) -> Option<Vec<Quellframe>> {
+    let batch = fb::root_as_feature_batch(puffer).ok()?;
+    let mut frames = Vec::with_capacity(batch.eintraege().len());
+    for eintrag in batch.eintraege().iter() {
+        let quelle = eintrag.quelle();
+        let frame = eintrag.frame();
+        let transport = frame.transport();
+        let lufs_i_paar = match (frame.lufs_i(), frame.lufs_i_unsicherheit_lu()) {
+            (Some(lufs_i), Some(unsicherheit))
+                if lufs_i.is_finite() && unsicherheit.is_finite() =>
+            {
+                Some((lufs_i, unsicherheit))
+            }
+            _ => None,
+        };
+        frames.push(Quellframe {
+            adresse: Adresse {
+                logon_sid: quelle.logon_sid().to_owned(),
+                project_binding_id: quelle.project_binding_id().to_owned(),
+                session_epoch: quelle.session_epoch().to_owned(),
+                instance_id: quelle.instance_id().to_owned(),
+                runtime_nonce: quelle.runtime_nonce().to_owned(),
+            },
+            sequence: transport.sequence(),
+            sample_count: transport.sample_count(),
+            sample_rate: transport.sample_rate(),
+            lufs_i_paar,
+            lufs_i_status: frame.lufs_i_status(),
+        });
+    }
+    Some(frames)
 }
 
 fn kanonisch(v: Vec<Verstoss>) -> Vec<Verstoss> {
@@ -327,7 +504,10 @@ fn pruefe_adresse(a: &fb::Adresse, p: &str, out: &mut Vec<Verstoss>) {
 
 fn pruefe_frame(f: &fb::Frame, p: &str, out: &mut Vec<Verstoss>) {
     if f.metrics_version() < 1 {
-        out.push(Verstoss::neu(&format!("{p}/metrics_version"), "metrics_version"));
+        out.push(Verstoss::neu(
+            &format!("{p}/metrics_version"),
+            "metrics_version",
+        ));
     }
 
     pruefe_transport(&f.transport(), &format!("{p}/transport"), out);
@@ -359,7 +539,10 @@ fn pruefe_frame(f: &fb::Frame, p: &str, out: &mut Vec<Verstoss>) {
     }
     if let Some(k) = f.korrelation() {
         if k.is_finite() && !(-1.0..=1.0).contains(&k) {
-            out.push(Verstoss::neu(&format!("{p}/korrelation"), "korrelation_bereich"));
+            out.push(Verstoss::neu(
+                &format!("{p}/korrelation"),
+                "korrelation_bereich",
+            ));
         }
     }
     if let Some(b) = f.breite() {
@@ -401,35 +584,53 @@ fn pruefe_transport(t: &fb::Transportstempel, p: &str, out: &mut Vec<Verstoss>) 
     // Sender hat es weggelassen" ununterscheidbar von "der Host hat keinen
     // Context angelegt" — und das sind zwei verschiedene Konfidenzaussagen.
     if t.process_context_present().is_none() {
-        out.push(Verstoss::neu(&format!("{p}/process_context_present"), "context_bit_fehlt"));
+        out.push(Verstoss::neu(
+            &format!("{p}/process_context_present"),
+            "context_bit_fehlt",
+        ));
     }
     if t.zeitbasis() == fb::Zeitbasis::unbekannt {
         out.push(Verstoss::neu(&format!("{p}/zeitbasis"), "enum_unbekannt"));
     }
-    if fb::Zeitbasis::ENUM_VALUES.iter().all(|v| *v != t.zeitbasis()) {
+    if fb::Zeitbasis::ENUM_VALUES
+        .iter()
+        .all(|v| *v != t.zeitbasis())
+    {
         out.push(Verstoss::neu(&format!("{p}/zeitbasis"), "enum_unbekannt"));
     }
     if t.sample_count() > 1_048_576 {
-        out.push(Verstoss::neu(&format!("{p}/sample_count"), "sample_count_bereich"));
+        out.push(Verstoss::neu(
+            &format!("{p}/sample_count"),
+            "sample_count_bereich",
+        ));
     }
     let sr = t.sample_rate();
     if !sr.is_finite() {
         out.push(Verstoss::neu(&format!("{p}/sample_rate"), "nicht_endlich"));
     } else if sr <= 0.0 || sr > 768_000.0 {
-        out.push(Verstoss::neu(&format!("{p}/sample_rate"), "sample_rate_bereich"));
+        out.push(Verstoss::neu(
+            &format!("{p}/sample_rate"),
+            "sample_rate_bereich",
+        ));
     }
 
     // Ein gesetztes Bit ausserhalb der sieben bekannten. FlatBuffers prueft
     // das nicht; `ANY` ist die von flatc erzeugte Maske aller deklarierten.
     if t.gueltigkeit().bits() & !fb::Gueltigkeit::all().bits() != 0 {
-        out.push(Verstoss::neu(&format!("{p}/gueltigkeit"), "validity_unbekanntes_bit"));
+        out.push(Verstoss::neu(
+            &format!("{p}/gueltigkeit"),
+            "validity_unbekanntes_bit",
+        ));
     }
 
     let projektzeit = t.gueltigkeit().contains(fb::Gueltigkeit::project_time);
     match t.zeitbasis() {
         fb::Zeitbasis::project_samples => {
             if !projektzeit {
-                out.push(Verstoss::neu(&format!("{p}/gueltigkeit"), "project_time_bit_fehlt"));
+                out.push(Verstoss::neu(
+                    &format!("{p}/gueltigkeit"),
+                    "project_time_bit_fehlt",
+                ));
             }
             if t.project_sample_start().is_none() {
                 out.push(Verstoss::neu(
@@ -440,7 +641,10 @@ fn pruefe_transport(t: &fb::Transportstempel, p: &str, out: &mut Vec<Verstoss>) 
         }
         fb::Zeitbasis::local_monotonic => {
             if projektzeit {
-                out.push(Verstoss::neu(&format!("{p}/gueltigkeit"), "local_project_time_bit"));
+                out.push(Verstoss::neu(
+                    &format!("{p}/gueltigkeit"),
+                    "local_project_time_bit",
+                ));
             }
             if t.project_sample_start().is_some() {
                 out.push(Verstoss::neu(
@@ -463,7 +667,10 @@ fn pruefe_transport(t: &fb::Transportstempel, p: &str, out: &mut Vec<Verstoss>) 
         for (name, wert) in [("start_ppq", s.start_ppq()), ("end_ppq", s.end_ppq())] {
             if let Some(x) = wert {
                 if !x.is_finite() {
-                    out.push(Verstoss::neu(&format!("{p}/schleife/{name}"), "nicht_endlich"));
+                    out.push(Verstoss::neu(
+                        &format!("{p}/schleife/{name}"),
+                        "nicht_endlich",
+                    ));
                 }
             }
         }
@@ -493,7 +700,9 @@ fn pruefe_transport(t: &fb::Transportstempel, p: &str, out: &mut Vec<Verstoss>) 
         if let Some(g) = s.abgeleitete_grenzen() {
             let pg = format!("{p}/schleife/abgeleitete_grenzen");
             if g.herleitung() == fb::Herleitung::unbekannt
-                || fb::Herleitung::ENUM_VALUES.iter().all(|v| *v != g.herleitung())
+                || fb::Herleitung::ENUM_VALUES
+                    .iter()
+                    .all(|v| *v != g.herleitung())
             {
                 out.push(Verstoss::neu(&format!("{pg}/herleitung"), "enum_unbekannt"));
             }
@@ -538,8 +747,8 @@ fn pruefe_baender(b: &fb::Bandwerte, p: &str, out: &mut Vec<Verstoss>) {
     let gitter = b.gitter();
     let encoding = b.encoding();
 
-    let gitter_ok = gitter != fb::Bandgitter::unbekannt
-        && fb::Bandgitter::ENUM_VALUES.contains(&gitter);
+    let gitter_ok =
+        gitter != fb::Bandgitter::unbekannt && fb::Bandgitter::ENUM_VALUES.contains(&gitter);
     let encoding_ok = encoding != fb::BandEncoding::unbekannt
         && fb::BandEncoding::ENUM_VALUES.contains(&encoding);
     if !gitter_ok {
@@ -599,11 +808,17 @@ fn pruefe_baender(b: &fb::Bandwerte, p: &str, out: &mut Vec<Verstoss>) {
     let bm = b.gueltig_bitmap();
     let soll = anzahl.div_ceil(8);
     if bm.len() != soll {
-        out.push(Verstoss::neu(&format!("{p}/gueltig_bitmap"), "bitmap_laenge"));
+        out.push(Verstoss::neu(
+            &format!("{p}/gueltig_bitmap"),
+            "bitmap_laenge",
+        ));
     } else if anzahl % 8 != 0 && !bm.is_empty() {
         let genutzt = (1u8 << (anzahl % 8)) - 1;
         if bm.get(bm.len() - 1) & !genutzt != 0 {
-            out.push(Verstoss::neu(&format!("{p}/gueltig_bitmap"), "bitmap_fuellbits"));
+            out.push(Verstoss::neu(
+                &format!("{p}/gueltig_bitmap"),
+                "bitmap_fuellbits",
+            ));
         }
     }
 
@@ -615,7 +830,10 @@ fn pruefe_baender(b: &fb::Bandwerte, p: &str, out: &mut Vec<Verstoss>) {
             };
             for (i, w) in v.iter().enumerate() {
                 if w < min || w > max {
-                    out.push(Verstoss::neu(&format!("{p}/werte_i16/{i}"), "bandwert_bereich"));
+                    out.push(Verstoss::neu(
+                        &format!("{p}/werte_i16/{i}"),
+                        "bandwert_bereich",
+                    ));
                     break; // ein benannter Fall reicht; die Menge bleibt endlich
                 }
             }
@@ -624,7 +842,10 @@ fn pruefe_baender(b: &fb::Bandwerte, p: &str, out: &mut Vec<Verstoss>) {
     if let Some(v) = f32er {
         for (i, w) in v.iter().enumerate() {
             if !w.is_finite() {
-                out.push(Verstoss::neu(&format!("{p}/werte_f32/{i}"), "nicht_endlich"));
+                out.push(Verstoss::neu(
+                    &format!("{p}/werte_f32/{i}"),
+                    "nicht_endlich",
+                ));
                 break;
             }
         }
@@ -636,15 +857,24 @@ fn pruefe_band_stereo(b: &fb::Bandwerte, p: &str, out: &mut Vec<Verstoss>) {
         out.push(Verstoss::neu(&format!("{p}/gitter"), "band_stereo_gitter"));
     }
     if b.encoding() != fb::BandEncoding::float32 {
-        out.push(Verstoss::neu(&format!("{p}/encoding"), "band_stereo_encoding"));
+        out.push(Verstoss::neu(
+            &format!("{p}/encoding"),
+            "band_stereo_encoding",
+        ));
     }
     if b.werte_i16().is_some() {
-        out.push(Verstoss::neu(&format!("{p}/werte_i16"), "band_stereo_werte_i16"));
+        out.push(Verstoss::neu(
+            &format!("{p}/werte_i16"),
+            "band_stereo_werte_i16",
+        ));
     }
 
     let werte = b.werte_f32();
     if werte.as_ref().map_or(0, |w| w.len()) != BAENDER_GROB {
-        out.push(Verstoss::neu(&format!("{p}/werte_f32"), "band_stereo_bandzahl"));
+        out.push(Verstoss::neu(
+            &format!("{p}/werte_f32"),
+            "band_stereo_bandzahl",
+        ));
     }
     let bitmap = b.gueltig_bitmap();
     if bitmap.len() != 8 {
@@ -655,13 +885,15 @@ fn pruefe_band_stereo(b: &fb::Bandwerte, p: &str, out: &mut Vec<Verstoss>) {
     }
     if let Some(werte) = werte {
         for (i, wert) in werte.iter().enumerate() {
-            let gueltig = i / 8 < bitmap.len()
-                && bitmap.get(i / 8) & (1 << (i % 8)) != 0;
+            let gueltig = i / 8 < bitmap.len() && bitmap.get(i / 8) & (1 << (i % 8)) != 0;
             if !gueltig {
                 continue;
             }
             if !wert.is_finite() {
-                out.push(Verstoss::neu(&format!("{p}/werte_f32/{i}"), "nicht_endlich"));
+                out.push(Verstoss::neu(
+                    &format!("{p}/werte_f32/{i}"),
+                    "nicht_endlich",
+                ));
                 break;
             }
             if !(0.0..=1.0).contains(&wert) {
@@ -674,6 +906,9 @@ fn pruefe_band_stereo(b: &fb::Bandwerte, p: &str, out: &mut Vec<Verstoss>) {
         }
     }
     if b.saturated() {
-        out.push(Verstoss::neu(&format!("{p}/saturated"), "band_stereo_saturated"));
+        out.push(Verstoss::neu(
+            &format!("{p}/saturated"),
+            "band_stereo_saturated",
+        ));
     }
 }

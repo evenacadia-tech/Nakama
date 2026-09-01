@@ -28,8 +28,9 @@
   },
   "intervention_state_unknown": false,
   "runtime": {
-    "messpunkt": "insert",
-    "betrieb": "active",
-    "host_mixer_index": 9007199254740992
+    "messpunkt": "pre",
+    "betrieb": "suspended",
+    "host_bus_name": "Bus A",
+    "host_mixer_index": 1
   }
 }

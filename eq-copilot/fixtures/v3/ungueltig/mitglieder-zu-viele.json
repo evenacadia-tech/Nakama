@@ -14,25 +14,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -44,25 +59,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -74,25 +104,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -104,25 +149,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -134,25 +194,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -164,25 +239,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -194,25 +284,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -224,25 +329,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -254,25 +374,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -284,25 +419,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -314,25 +464,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -344,25 +509,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -374,25 +554,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -404,25 +599,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -434,25 +644,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -464,25 +689,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -494,25 +734,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -524,25 +779,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -554,25 +824,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -584,25 +869,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -614,25 +914,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -644,25 +959,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -674,25 +1004,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -704,25 +1049,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -734,25 +1094,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -764,25 +1139,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -794,25 +1184,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -824,25 +1229,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -854,25 +1274,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -884,25 +1319,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -914,25 +1364,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -944,25 +1409,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -974,25 +1454,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -1004,25 +1499,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -1034,25 +1544,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -1064,25 +1589,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -1094,25 +1634,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -1124,25 +1679,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -1154,25 +1724,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -1184,25 +1769,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -1214,25 +1814,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -1244,25 +1859,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -1274,25 +1904,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -1304,25 +1949,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -1334,25 +1994,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -1364,25 +2039,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -1394,25 +2084,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -1424,25 +2129,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -1454,25 +2174,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -1484,25 +2219,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -1514,25 +2264,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -1544,25 +2309,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -1574,25 +2354,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -1604,25 +2399,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -1634,25 +2444,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -1664,25 +2489,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -1694,25 +2534,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -1724,25 +2579,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -1754,25 +2624,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -1784,25 +2669,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -1814,25 +2714,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -1844,25 +2759,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -1874,25 +2804,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -1904,25 +2849,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     },
     {
@@ -1934,25 +2894,40 @@
         "runtime_nonce": "44444444444444444444444444444444"
       },
       "plugin_kind": "passive_probe",
-      "measurement_position": "insert",
-      "aussageklasse": "beobachtend",
-      "label": "Klavier-Bus",
-      "pair_id": null,
-      "capabilities": {
-        "host_context_presence": "supported",
-        "project_time_samples": "supported",
-        "sample_accurate_automation": "supported",
-        "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported",
-        "aux_priority_sidechain": "unsupported",
-        "contribution_aux": "supported",
-        "float64_processing": "unsupported",
-        "binary_telemetry": "supported",
-        "remote_control": "unsupported"
-      },
       "frische": {
         "stale": false,
         "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
       }
     }
   ]

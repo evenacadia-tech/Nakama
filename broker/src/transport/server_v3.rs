@@ -96,6 +96,12 @@ pub const RATE_PRO_SEKUNDE: u32 = 4000;
 /// die Antwort still unter den Tisch.
 pub const CAP_WRITER: usize = 256;
 
+/// Aktive additive Vertragsfassungen. Die Version lebt ausschliesslich im
+/// Wire-Envelope: Descriptor-Hostfelder und LUFS-I-Framefelder wurden in
+/// SONDE-012 B1 mit Minor 1 belegt.
+const P1_SCHEMA_MINOR: u8 = 1;
+const P2_SCHEMA_MINOR: u8 = 1;
+
 /// Was der I/O-Worker nach oben gibt. Bewusst byteorientiert: die Bedeutung
 /// des Payloads kennt erst der Coordinator.
 /// Frist, die der Verbindungsschluss einem LAUFENDEN Senkenaufruf noch
@@ -529,8 +535,8 @@ impl Eingang {
 }
 
 /// Writerqueue je Verbindung (Cap `CAP_WRITER`). P0-Antworten haben Vorrang;
-/// die Phase-B-P1-Ausgabe besteht ausschliesslich aus absoluten Snapshots und
-/// koalesziert auch in diesem letzten Pipe-Zwischenpuffer nach Objektschluessel.
+/// P1-Snapshots koaleszieren nach Objektschluessel, P2-Livestaende auf der
+/// getrennten Telemetrieverbindung nach `instance_id`.
 struct Ausgang {
     inhalt: Mutex<(VecDeque<AusgangEintrag>, bool)>,
     signal: Condvar,
@@ -540,6 +546,7 @@ struct Ausgang {
 enum Ausgangsart {
     P0,
     Snapshot(String),
+    Messframe(String),
 }
 
 struct AusgangEintrag {
@@ -580,6 +587,14 @@ impl Ausgang {
         .then_some(rx)
     }
 
+    fn messframe_einreihen(&self, instance_id: &str, frame: Vec<u8>) -> bool {
+        self.einreihen_eintrag(AusgangEintrag {
+            art: Ausgangsart::Messframe(instance_id.to_owned()),
+            frame,
+            geschrieben: None,
+        })
+    }
+
     fn einreihen_eintrag(&self, eintrag: AusgangEintrag) -> bool {
         let mut ersetzt = None;
         let ok = {
@@ -590,6 +605,19 @@ impl Ausgang {
                 if let Some(position) = g.0.iter().position(|alt| {
                     matches!(&alt.art, Ausgangsart::Snapshot(alt_schluessel)
                         if alt_schluessel == objekt_schluessel)
+                }) {
+                    ersetzt = Some(std::mem::replace(&mut g.0[position], eintrag));
+                    true
+                } else if g.0.len() >= CAP_WRITER {
+                    false
+                } else {
+                    g.0.push_back(eintrag);
+                    true
+                }
+            } else if let Ausgangsart::Messframe(instance_id) = &eintrag.art {
+                if let Some(position) = g.0.iter().position(|alt| {
+                    matches!(&alt.art, Ausgangsart::Messframe(alt_instance_id)
+                        if alt_instance_id == instance_id)
                 }) {
                     ersetzt = Some(std::mem::replace(&mut g.0[position], eintrag));
                     true
@@ -703,23 +731,25 @@ impl V3Closer {
 
 #[derive(Clone)]
 pub struct V3Sender {
-    ausgaenge: Arc<Mutex<HashMap<String, Arc<Ausgang>>>>,
+    control_ausgaenge: Arc<Mutex<HashMap<String, Arc<Ausgang>>>>,
+    telemetrie_ausgaenge: Arc<Mutex<HashMap<String, Arc<Ausgang>>>>,
 }
 
 impl V3Sender {
     pub fn neu() -> Self {
         Self {
-            ausgaenge: Arc::new(Mutex::new(HashMap::new())),
+            control_ausgaenge: Arc::new(Mutex::new(HashMap::new())),
+            telemetrie_ausgaenge: Arc::new(Mutex::new(HashMap::new())),
         }
     }
 
     pub fn snapshot_schreiben(&self, link_id: &str, payload: &[u8]) -> bool {
-        let frame = match envelope_schreiben(Familie::P1, 0, payload) {
+        let frame = match envelope_schreiben(Familie::P1, P1_SCHEMA_MINOR, payload) {
             Ok(frame) => frame,
             Err(_) => return false,
         };
         let ausgang = self
-            .ausgaenge
+            .control_ausgaenge
             .lock()
             .unwrap_or_else(|e| e.into_inner())
             .get(link_id)
@@ -733,11 +763,29 @@ impl V3Sender {
         };
         antwort.recv_timeout(SENKE_FRIST).unwrap_or(false)
     }
+
+    pub fn messframe_schreiben(&self, link_id: &str, instance_id: &str, payload: &[u8]) -> bool {
+        let frame = match envelope_schreiben(Familie::P2, P2_SCHEMA_MINOR, payload) {
+            Ok(frame) => frame,
+            Err(_) => return false,
+        };
+        let ausgang = self
+            .telemetrie_ausgaenge
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .get(link_id)
+            .cloned();
+        ausgang.is_some_and(|ausgang| ausgang.messframe_einreihen(instance_id, frame))
+    }
 }
 
 impl crate::coordinator::SessionPush for V3Sender {
     fn snapshot_schreiben(&self, link_id: &str, payload: &[u8]) -> bool {
         V3Sender::snapshot_schreiben(self, link_id, payload)
+    }
+
+    fn messframe_schreiben(&self, link_id: &str, instance_id: &str, payload: &[u8]) -> bool {
+        V3Sender::messframe_schreiben(self, link_id, instance_id, payload)
     }
 }
 
@@ -1202,7 +1250,8 @@ fn v3_server_starten_intern(
     };
     // Wartepunkte der Trennreihenfolge, einer je lebender Kopplung (`C-LS-06`).
     let trennmelder: TrennRegister = Arc::new(Mutex::new(HashMap::new()));
-    let ausgaenge = sender.ausgaenge.clone();
+    let control_ausgaenge = sender.control_ausgaenge.clone();
+    let telemetrie_ausgaenge = sender.telemetrie_ausgaenge.clone();
 
     let mut name_w: Vec<u16> = pipe_name.encode_utf16().collect();
     name_w.push(0);
@@ -1280,7 +1329,8 @@ fn v3_server_starten_intern(
     let bootstraps2 = bootstraps.clone();
     let statistik2 = statistik.clone();
     let trennmelder2 = trennmelder.clone();
-    let ausgaenge2 = ausgaenge.clone();
+    let control_ausgaenge2 = control_ausgaenge.clone();
+    let telemetrie_ausgaenge2 = telemetrie_ausgaenge.clone();
     let acceptor = std::thread::Builder::new()
         .name("eqcop-v3-acceptor".into())
         .spawn(move || {
@@ -1364,7 +1414,8 @@ fn v3_server_starten_intern(
                 let bv = broker_version.clone();
                 let be = broker_epoch.clone();
                 let conn_stop = stop2.clone();
-                let ausgaenge = ausgaenge2.clone();
+                let control_ausgaenge = control_ausgaenge2.clone();
+                let telemetrie_ausgaenge = telemetrie_ausgaenge2.clone();
                 match std::thread::Builder::new()
                     .name("eqcop-v3-conn".into())
                     .spawn(move || {
@@ -1389,7 +1440,8 @@ fn v3_server_starten_intern(
                             conn_stop,
                             writer_fehler,
                             cancel_vor_read,
-                            ausgaenge,
+                            control_ausgaenge,
+                            telemetrie_ausgaenge,
                             handle_eintrag,
                         );
                     }) {
@@ -1498,7 +1550,8 @@ fn verbindung_bedienen(
     stop: Arc<AtomicBool>,
     writer_fehler_erzwungen: Arc<AtomicBool>,
     cancel_vor_read_phase: Arc<AtomicU64>,
-    ausgaenge: Arc<Mutex<HashMap<String, Arc<Ausgang>>>>,
+    control_ausgaenge: Arc<Mutex<HashMap<String, Arc<Ausgang>>>>,
+    telemetrie_ausgaenge: Arc<Mutex<HashMap<String, Arc<Ausgang>>>>,
     handle_eintrag: HandleEintrag,
 ) {
     // Der Acceptor hat das Handle schon registriert; der Eintrag traegt es
@@ -1589,6 +1642,10 @@ fn verbindung_bedienen(
     frist.erfuellt();
     roh.drain(0..verbraucht);
 
+    // Die Writerqueue existiert bereits vor dem Telemetrie-Kopplungs-Callback:
+    // ein Coordinator darf dabei den gehaltenen absoluten Messstand an einen
+    // reconnectenden Subscriber einreihen, ohne auf Pipe-I/O zu warten.
+    let ausgang = Arc::new(Ausgang::neu());
     let (link_id, ist_control) = match bs {
         Bootstrap::V2 { .. } => {
             // Auf dem v3-Endpunkt gibt es kein v2-Register. Statt still zu
@@ -1747,9 +1804,17 @@ fn verbindung_bedienen(
             // endet diese Verbindung ohne Gegenstueck (`C-LS-04`), und ohne die
             // Ruecknahme wartete die Control-Seite die volle `SENKE_FRIST` auf
             // ein Ereignis, das nie kommt.
+            telemetrie_ausgaenge
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .insert(h.link_id.clone(), ausgang.clone());
             trennmelder_telemetrie_erwartet(&trennmelder, &h.link_id);
             let link_fuer_senke = h.link_id.clone();
             if !senkenruf.rufen(move |s| s.telemetrie_gekoppelt(&link_fuer_senke)) {
+                telemetrie_ausgaenge
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .remove(&h.link_id);
                 trennmelder_telemetrie_abgesagt(&trennmelder, &h.link_id);
                 kopplung_loesen(&kopplungen, &handles, &h.link_id, false);
                 return;
@@ -1760,13 +1825,17 @@ fn verbindung_bedienen(
 
     // ── Ab hier ausschliesslich v3-Frames, auf drei Threads ───────────────
     let eingang = Arc::new(Eingang::neu());
-    let ausgang = Arc::new(Ausgang::neu());
     if ist_control {
-        ausgaenge
+        control_ausgaenge
             .lock()
             .unwrap_or_else(|e| e.into_inner())
             .insert(link_id.clone(), ausgang.clone());
         statistik.aktive_controls.fetch_add(1, Ordering::SeqCst);
+    } else {
+        telemetrie_ausgaenge
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .insert(link_id.clone(), ausgang.clone());
     }
 
     let schreiber = {
@@ -2048,12 +2117,17 @@ fn verbindung_bedienen(
     // er vorher und wird hier entfernt, oder er sieht danach `schliessend`.
     eingang.schliessen();
     if ist_control {
-        ausgaenge
+        control_ausgaenge
             .lock()
             .unwrap_or_else(|e| e.into_inner())
             .remove(&link_id);
         statistik.aktive_controls.fetch_sub(1, Ordering::SeqCst);
         senke.control_schliesst(&link_id);
+    } else {
+        telemetrie_ausgaenge
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .remove(&link_id);
     }
     // Nach dem atomaren semantischen Gegenpfad faellt die KOPPLUNG ebenfalls
     // vor den fristbegrenzten Joins, nicht nach ihnen. Sonst blieb sie bei
@@ -2364,6 +2438,20 @@ mod tests {
     }
 
     #[test]
+    fn writerqueue_messframe_ersetzt_nur_dieselbe_quelle() {
+        let ausgang = Ausgang::neu();
+        assert!(ausgang.messframe_einreihen("quelle-a", b"a-alt".to_vec()));
+        assert!(ausgang.messframe_einreihen("quelle-b", b"b".to_vec()));
+        assert!(ausgang.messframe_einreihen("quelle-a", b"a-neu".to_vec()));
+        let a = ausgang.entnehmen().unwrap();
+        let b = ausgang.entnehmen().unwrap();
+        assert_eq!(a.art, Ausgangsart::Messframe("quelle-a".into()));
+        assert_eq!(a.frame, b"a-neu");
+        assert_eq!(b.art, Ausgangsart::Messframe("quelle-b".into()));
+        assert_eq!(b.frame, b"b");
+    }
+
+    #[test]
     fn writerqueue_cap_und_cap_plus_eins() {
         let ausgang = Ausgang::neu();
         for i in 0..CAP_WRITER {
@@ -2563,7 +2651,8 @@ mod tests {
                 "frames_dropped": 0,
                 "parse_errors": 0,
                 "queue_overflows": 0
-            }
+            },
+            "runtime": {"messpunkt": "insert", "betrieb": "active"}
         })
         .to_string())
     }
@@ -2575,6 +2664,21 @@ mod tests {
              \"challenge\":\"{challenge}\"}}",
             a = adresse_json(nonce)
         ))
+    }
+
+    fn telemetry_hello_adresse(adresse: &Adresse, link: &str, challenge: &str) -> Vec<u8> {
+        praefix(
+            &serde_json::json!({
+                "type": "hello",
+                "connection_kind": "telemetry",
+                "protocol": 3,
+                "plugin_version": "0.3.0",
+                "adresse": adresse,
+                "link_id": link,
+                "challenge": challenge
+            })
+            .to_string(),
+        )
     }
 
     /// Liest das v3-gerahmte `welcome` und gibt (link_id, challenge).
@@ -3394,6 +3498,22 @@ mod tests {
         None
     }
 
+    fn frame_roh_lesen(c: &Testclient) -> Option<crate::transport::v3::Rahmen> {
+        let mut puffer = [0u8; 65_536];
+        let mut roh: Vec<u8> = Vec::new();
+        for _ in 0..50 {
+            let n = c.lesen(&mut puffer);
+            if n == 0 {
+                return None;
+            }
+            roh.extend_from_slice(&puffer[..n]);
+            if let Ok(rahmen) = crate::transport::v3::envelope_pruefen(&roh) {
+                return Some(rahmen);
+            }
+        }
+        None
+    }
+
     /// Matrix `C-LS-02`/`C-LS-04` (Regel 5): `control_verbunden` ist
     /// ABGESCHLOSSEN, bevor das Welcome den Draht verlaesst — sonst kann
     /// `telemetrie_gekoppelt` auf dem anderen Verbindungsthread vorlaufen.
@@ -3992,6 +4112,93 @@ mod tests {
 
         drop(kaputt);
         drop(gueltig);
+        drop(griff);
+    }
+
+    #[test]
+    fn broker_p2_push_nutzt_subscriber_telemetriepipe_und_aktive_minors() {
+        let pipe = probe_pipe("sonde012-p2push");
+        let coordinator = Arc::new(crate::coordinator::Coordinator::default());
+        let sender = V3Sender::neu();
+        coordinator.session_push_setzen(Arc::new(sender.clone()));
+        let griff = v3_server_starten_mit_epoch_und_sender(
+            &pipe,
+            coordinator.clone(),
+            "test".into(),
+            neue_kennung(),
+            sender,
+        )
+        .unwrap();
+
+        let main_adresse = Adresse {
+            logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001".into(),
+            project_binding_id: "1".repeat(32),
+            session_epoch: "2".repeat(32),
+            instance_id: "a".repeat(32),
+            runtime_nonce: "b".repeat(32),
+        };
+        let main_control = Testclient::neu(&pipe).unwrap();
+        assert!(main_control.schreiben(&control_hello_fach(&main_adresse, "main", Some(7711),)));
+        let (main_link, main_challenge) = welcome_lesen(&main_control).expect("Main-Welcome");
+        let main_telemetrie = Testclient::neu(&pipe).unwrap();
+        assert!(main_telemetrie.schreiben(&telemetry_hello_adresse(
+            &main_adresse,
+            &main_link,
+            &main_challenge,
+        )));
+        assert!(welcome_lesen(&main_telemetrie).is_some());
+        assert!(main_control.schreiben(&vollstaendiger_heartbeat(&main_adresse, 1)));
+        assert!(frame_json_lesen(&main_control).is_some_and(|wert| wert["type"] == "heartbeat_ack"));
+        assert!(main_control.schreiben(&subscribe(&main_adresse)));
+        let snapshot = frame_roh_lesen(&main_control).expect("absoluter Snapshot");
+        assert_eq!(snapshot.kopf.familie, Familie::P1);
+        assert_eq!(snapshot.kopf.schema_minor, P1_SCHEMA_MINOR);
+        assert_eq!(
+            serde_json::from_slice::<serde_json::Value>(&snapshot.payload).unwrap()["type"],
+            "session_snapshot"
+        );
+
+        let source_adresse = Adresse {
+            logon_sid: main_adresse.logon_sid.clone(),
+            project_binding_id: main_adresse.project_binding_id.clone(),
+            session_epoch: main_adresse.session_epoch.clone(),
+            instance_id: format!("{:032x}", 3),
+            runtime_nonce: "4".repeat(32),
+        };
+        let source_control = Testclient::neu(&pipe).unwrap();
+        assert!(source_control.schreiben(&control_hello_fach(
+            &source_adresse,
+            "active_probe",
+            Some(7711),
+        )));
+        let (source_link, source_challenge) =
+            welcome_lesen(&source_control).expect("Source-Welcome");
+        let source_telemetrie = Testclient::neu(&pipe).unwrap();
+        assert!(source_telemetrie.schreiben(&telemetry_hello_adresse(
+            &source_adresse,
+            &source_link,
+            &source_challenge,
+        )));
+        assert!(welcome_lesen(&source_telemetrie).is_some());
+        assert!(source_control.schreiben(&vollstaendiger_heartbeat(&source_adresse, 1)));
+        assert!(
+            frame_json_lesen(&source_control).is_some_and(|wert| wert["type"] == "heartbeat_ack")
+        );
+
+        let payload =
+            include_bytes!("../../../eq-copilot/fixtures/v3/flatbuffers/gueltig/live-64-band.bin");
+        assert!(source_telemetrie
+            .schreiben(&envelope_schreiben(Familie::P2, P2_SCHEMA_MINOR, payload).unwrap()));
+        let weiter = frame_roh_lesen(&main_telemetrie).expect("P2-Push an Main");
+        assert_eq!(weiter.kopf.familie, Familie::P2);
+        assert_eq!(weiter.kopf.schema_minor, P2_SCHEMA_MINOR);
+        assert_eq!(weiter.payload, payload);
+        assert_eq!(coordinator.p2_live_frames(), 1);
+
+        drop(source_telemetrie);
+        drop(source_control);
+        drop(main_telemetrie);
+        drop(main_control);
         drop(griff);
     }
 

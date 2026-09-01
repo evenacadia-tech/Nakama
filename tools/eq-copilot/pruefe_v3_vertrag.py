@@ -641,7 +641,8 @@ def pruefe_probe_descriptor(lauf: Lauf, schema: dict, reserviert: dict) -> None:
                   props.get("aussageklasse") == {"const": klasse},
                   f"{props.get('aussageklasse')}")
         lauf.wahr(f"{name} verlangt beide Felder",
-                  {"measurement_position", "aussageklasse"} <= set(zweig.get("required", [])))
+                  {"measurement_position", "aussageklasse", "betrieb"}
+                  <= set(zweig.get("required", [])))
         lauf.wahr(f"{name} ist strikt", zweig.get("additionalProperties") is False)
         lauf.wahr(f"{name} fuehrt genau die zwei optionalen Hostfelder",
                   {k for k in props if k.startswith("host_")} == HOST_DESCRIPTOR_FELDER
@@ -649,6 +650,8 @@ def pruefe_probe_descriptor(lauf: Lauf, schema: dict, reserviert: dict) -> None:
         lauf.wahr(f"{name} referenziert die gemeinsamen Hostfelddefinitionen",
                   props.get("host_bus_name") == {"$ref": "#/$defs/host_bus_name"}
                   and props.get("host_mixer_index") == {"$ref": "#/$defs/host_mixer_index"})
+        lauf.wahr(f"{name} referenziert den gemeinsamen Betriebszustand",
+                  props.get("betrieb") == {"$ref": "#/$defs/betrieb"})
 
     busname = defs.get("host_bus_name", {})
     mixerindex = defs.get("host_mixer_index", {})
@@ -679,6 +682,9 @@ def pruefe_probe_descriptor(lauf: Lauf, schema: dict, reserviert: dict) -> None:
               and fassungen.get("0", {}).get("probe_descriptor_hostfelder") == []
               and set(fassungen.get("1", {}).get("probe_descriptor_hostfelder", []))
                   == HOST_DESCRIPTOR_FELDER
+              and fassungen.get("1", {}).get("heartbeat_runtime") is True
+              and fassungen.get("1", {}).get("session_mitglied_probe_descriptor_optional") is True
+              and fassungen.get("1", {}).get("session_mitglied_p2_reject") is True
               and "schema_minor" in version.get("auswahlregel", "")
               and "Wire-Envelope" in version.get("auswahlregel", ""))
     lauf.wahr("probe_descriptor erfindet kein Versions- oder Namespacefeld",
@@ -686,22 +692,36 @@ def pruefe_probe_descriptor(lauf: Lauf, schema: dict, reserviert: dict) -> None:
                   and "host_mixer_namespace" not in defs[n].get("properties", {})
                   for n in KOPPLUNG))
 
-    # Referenzbeweis der Auswahlregel: dieselben Payloadbytes ohne Hostfelder
-    # passen in Minor 0 und 1; erst Minor 1 darf die belegten Namen auswerten.
-    basis = json_laden_strikt((FIXTURES / "gueltig/session_snapshot.json")
-                              .read_text(encoding="utf-8"))
-    mit_host = copy.deepcopy(basis)
-    mit_host["mitglieder"][0]["host_bus_name"] = "Bus A"
-    mit_host["mitglieder"][0]["host_mixer_index"] = 1
+    # Referenzbeweis der Auswahlregel: Minor 0 liest die historische direkte
+    # Descriptorliste, Minor 1 die strikte Mitgliedshuelle. Nur die jeweils
+    # zum Envelope-Minor gehoerende Schemafassung darf den Payload annehmen.
+    basis_minor_1 = json_laden_strikt((FIXTURES / "gueltig/session_snapshot.json")
+                                      .read_text(encoding="utf-8"))
+    mit_host = copy.deepcopy(basis_minor_1)
+    mit_host["mitglieder"][0]["probe_descriptor"]["host_bus_name"] = "Bus A"
+    mit_host["mitglieder"][0]["probe_descriptor"]["host_mixer_index"] = 1
+    basis_minor_0 = copy.deepcopy(basis_minor_1)
+    basis_minor_0["mitglieder"] = [m["probe_descriptor"] for m in basis_minor_0["mitglieder"]]
+    for descriptor in basis_minor_0["mitglieder"]:
+        descriptor.pop("betrieb", None)
     schema_minor_0 = copy.deepcopy(schema)
     for name in KOPPLUNG:
+        schema_minor_0["$defs"][name]["required"].remove("betrieb")
+        schema_minor_0["$defs"][name]["properties"].pop("betrieb", None)
         for feld in HOST_DESCRIPTOR_FELDER:
             schema_minor_0["$defs"][name]["properties"].pop(feld, None)
+    schema_minor_0["$defs"]["heartbeat"]["properties"].pop("runtime", None)
+    schema_minor_0["$defs"]["session_snapshot"]["properties"]["mitglieder"]["items"] = {
+        "$ref": "#/$defs/probe_descriptor"
+    }
     pruefer_0 = jsonschema.Draft202012Validator(schema_minor_0)
     pruefer_1 = jsonschema.Draft202012Validator(schema)
-    lauf.wahr("Empfaenger waehlt Descriptor-Schemafassung nach Envelope-Minor",
-              pruefer_0.is_valid(basis) and pruefer_1.is_valid(basis)
-              and not pruefer_0.is_valid(mit_host) and pruefer_1.is_valid(mit_host))
+    lauf.wahr("Empfaenger waehlt die Session-Schemafassung nach Envelope-Minor",
+              pruefer_0.is_valid(basis_minor_0)
+              and not pruefer_1.is_valid(basis_minor_0)
+              and not pruefer_0.is_valid(basis_minor_1)
+              and pruefer_1.is_valid(basis_minor_1)
+              and pruefer_1.is_valid(mit_host))
 
     h06 = jsonschema.Draft202012Validator(busname)
     lauf.wahr("H06 akzeptiert 1/120 Codepoints ohne Normalisierung",
@@ -765,6 +785,85 @@ def pruefe_probe_descriptor(lauf: Lauf, schema: dict, reserviert: dict) -> None:
     beitragsriegel_gelockert.pop("maxLength", None)
     lauf.wahr("beitragsriegel_gelockert_faellt",
               beitragsriegel_gelockert != PLUGIN_KIND_MATRIX["probe_descriptor_beitrag"])
+
+
+def pruefe_runtime_und_p2_reject(lauf: Lauf, schema: dict) -> None:
+    defs = schema["$defs"]
+    runtime = defs.get("heartbeat_runtime", {})
+    runtime_props = runtime.get("properties", {})
+    lauf.wahr("heartbeat.runtime ist optional und referenziert den strikten Block",
+              defs["heartbeat"].get("properties", {}).get("runtime")
+              == {"$ref": "#/$defs/heartbeat_runtime"}
+              and "runtime" not in defs["heartbeat"].get("required", [])
+              and runtime.get("additionalProperties") is False)
+    lauf.wahr("runtime verlangt exakt Messpunkt und Betrieb",
+              set(runtime.get("required", [])) == {"messpunkt", "betrieb"}
+              and runtime_props.get("messpunkt", {}).get("enum")
+                  == ["insert", "pre", "post"]
+              and runtime_props.get("betrieb") == {"$ref": "#/$defs/betrieb"})
+    lauf.wahr("runtime nutzt exakt die zwei B1-Hostfelder und kein drittes",
+              {k for k in runtime_props if k.startswith("host_")}
+                  == HOST_DESCRIPTOR_FELDER
+              and runtime_props.get("host_bus_name")
+                  == {"$ref": "#/$defs/host_bus_name"}
+              and runtime_props.get("host_mixer_index")
+                  == {"$ref": "#/$defs/host_mixer_index"})
+    lauf.wahr("Betriebszustand ist exakt active/suspended/offline",
+              defs.get("betrieb", {}).get("enum")
+              == ["active", "suspended", "offline"])
+
+    mitglied = defs.get("session_mitglied", {})
+    mitglied_props = mitglied.get("properties", {})
+    lauf.wahr("session_snapshot fuehrt strikte Mitgliedshuelle",
+              defs["session_snapshot"]["properties"]["mitglieder"]["items"]
+                  == {"$ref": "#/$defs/session_mitglied"}
+              and mitglied.get("additionalProperties") is False
+              and set(mitglied.get("required", []))
+                  == {"adresse", "plugin_kind", "frische"})
+    lauf.wahr("probe_descriptor ist je Mitglied optional und unclassified bleibt darstellbar",
+              mitglied_props.get("probe_descriptor")
+                  == {"$ref": "#/$defs/probe_descriptor"}
+              and "probe_descriptor" not in mitglied.get("required", []))
+
+    reject = defs.get("p2_reject", {})
+    katalog = {
+        "feature_batch_ungueltig",
+        "quellframe_anzahl_ungueltig",
+        "routing_nicht_freigegeben",
+        "quelladresse_abweichend",
+        "lautheit_ungueltig",
+    }
+    lauf.wahr("p2_reject ist optional, strikt und je Mitglied",
+              mitglied_props.get("p2_reject") == {"$ref": "#/$defs/p2_reject"}
+              and "p2_reject" not in mitglied.get("required", [])
+              and reject.get("additionalProperties") is False
+              and set(reject.get("required", [])) == {"grund", "zaehler"})
+    lauf.wahr("p2_reject nutzt geschlossenen Katalog und Zaehler ab 1",
+              set(reject.get("properties", {}).get("grund", {}).get("enum", []))
+                  == katalog
+              and reject.get("properties", {}).get("zaehler")
+                  == {"type": "integer", "minimum": 1})
+    lauf.wahr("striktes error bleibt ohne quellbezogenen B2b-Kanal",
+              "p2_reject" not in defs["error"].get("properties", {})
+              and "adresse" not in defs["error"].get("properties", {}))
+
+    fixture_namen = {
+        p.name for p in (FIXTURES / "gueltig").glob("*.json")
+    } | {p.name for p in (FIXTURES / "ungueltig").glob("*.json")}
+    verlangt = {
+        "heartbeat-runtime-vollstaendig.json",
+        "heartbeat-runtime-ohne-messpunkt.json",
+        "heartbeat-runtime-messpunkt-unbekannt.json",
+        "heartbeat-runtime-betrieb-unbekannt.json",
+        "heartbeat-runtime-hostname-zu-lang.json",
+        "host-mixer-index-ueber-json-sicher.json",
+        "session-p2-reject.json",
+        "session-mitglied-unclassified.json",
+        "session-p2-reject-freitext.json",
+        "session-p2-reject-zaehler-null.json",
+    }
+    lauf.wahr("B2b-Cross-Language-Fixtures decken Runtime und p2_reject",
+              verlangt <= fixture_namen, ", ".join(sorted(verlangt - fixture_namen)))
 
 
 def zweige_nach_const(knoten: dict, discriminator: str) -> dict[str, dict]:
@@ -935,8 +1034,11 @@ def pruefe_namen(lauf: Lauf, schema: dict, reserviert: dict) -> None:
     erwartete_belegte = {
         "probe_descriptor.host_bus_name",
         "probe_descriptor.host_mixer_index",
+        "heartbeat.runtime",
+        "session_snapshot.mitglieder[].probe_descriptor",
+        "session_snapshot.mitglieder[].p2_reject",
     }
-    lauf.wahr("SONDE-012-Hostfelder sind von reserviert auf belegt fortgeschrieben",
+    lauf.wahr("SONDE-012-Minor-1-Felder sind als belegt fortgeschrieben",
               {f.get("name") for f in belegt} == erwartete_belegte
               and not ({f.get("name") for f in felder} & erwartete_belegte))
 
@@ -1155,6 +1257,7 @@ def main(argv: list[str]) -> int:
     pruefe_discriminator_enginekante(lauf)
     pruefe_namen(lauf, schema, reserviert)
     pruefe_probe_descriptor(lauf, schema, reserviert)
+    pruefe_runtime_und_p2_reject(lauf, schema)
     pruefe_bandkodierung(lauf, schema, quantisierung)
     pruefe_command_ack(lauf, schema)
     pruefe_fixtures(lauf, schema, manifest)

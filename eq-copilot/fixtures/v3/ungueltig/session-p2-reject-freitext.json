@@ -27,8 +27,8 @@
           "runtime_nonce": "44444444444444444444444444444444"
         },
         "plugin_kind": "passive_probe",
-        "measurement_position": "post_fader_contribution",
-        "aussageklasse": "beitrag",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
         "betrieb": "active",
         "label": "Klavier-Bus",
         "pair_id": null,
@@ -39,7 +39,7 @@
           "presentation_latency": "unsupported",
           "aux_compare_pre": "supported",
           "aux_priority_sidechain": "unsupported",
-          "contribution_aux": "unsupported",
+          "contribution_aux": "supported",
           "float64_processing": "unsupported",
           "binary_telemetry": "supported",
           "remote_control": "unsupported"
@@ -48,6 +48,10 @@
           "stale": false,
           "letzter_kontakt_ms": 120
         }
+      },
+      "p2_reject": {
+        "grund": "CRC war heute komisch",
+        "zaehler": 1
       }
     }
   ]

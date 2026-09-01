@@ -587,6 +587,7 @@
         "plugin_kind",
         "measurement_position",
         "aussageklasse",
+        "betrieb",
         "label",
         "capabilities",
         "frische"
@@ -597,6 +598,7 @@
         "plugin_kind": { "type": "string", "enum": ["main", "passive_probe", "active_probe", "legacy"] },
         "measurement_position": { "const": "insert" },
         "aussageklasse": { "const": "beobachtend" },
+        "betrieb": { "$ref": "#/$defs/betrieb" },
         "label": { "$ref": "#/$defs/probe_label" },
         "pair_id": { "$ref": "#/$defs/pair_id" },
         "host_bus_name": { "$ref": "#/$defs/host_bus_name" },
@@ -614,6 +616,7 @@
         "plugin_kind",
         "measurement_position",
         "aussageklasse",
+        "betrieb",
         "label",
         "capabilities",
         "frische"
@@ -624,6 +627,7 @@
         "plugin_kind": { "type": "string", "enum": ["passive_probe", "active_probe", "legacy"] },
         "measurement_position": { "const": "pre" },
         "aussageklasse": { "const": "beobachtend" },
+        "betrieb": { "$ref": "#/$defs/betrieb" },
         "label": { "$ref": "#/$defs/probe_label" },
         "pair_id": { "$ref": "#/$defs/pair_id" },
         "host_bus_name": { "$ref": "#/$defs/host_bus_name" },
@@ -641,6 +645,7 @@
         "plugin_kind",
         "measurement_position",
         "aussageklasse",
+        "betrieb",
         "label",
         "capabilities",
         "frische"
@@ -651,6 +656,7 @@
         "plugin_kind": { "type": "string", "enum": ["passive_probe", "active_probe", "legacy"] },
         "measurement_position": { "const": "post" },
         "aussageklasse": { "const": "beobachtend" },
+        "betrieb": { "$ref": "#/$defs/betrieb" },
         "label": { "$ref": "#/$defs/probe_label" },
         "pair_id": { "$ref": "#/$defs/pair_id" },
         "host_bus_name": { "$ref": "#/$defs/host_bus_name" },
@@ -668,6 +674,7 @@
         "plugin_kind",
         "measurement_position",
         "aussageklasse",
+        "betrieb",
         "label",
         "capabilities",
         "frische"
@@ -678,6 +685,7 @@
         "plugin_kind": { "type": "string", "enum": ["main", "passive_probe", "active_probe", "legacy"], "maxLength": 0 },
         "measurement_position": { "const": "post_fader_contribution" },
         "aussageklasse": { "const": "beitrag" },
+        "betrieb": { "$ref": "#/$defs/betrieb" },
         "label": { "$ref": "#/$defs/probe_label" },
         "pair_id": { "$ref": "#/$defs/pair_id" },
         "host_bus_name": { "$ref": "#/$defs/host_bus_name" },
@@ -706,6 +714,59 @@
       "type": "integer",
       "minimum": 1,
       "maximum": 9007199254740991
+    },
+
+    "betrieb": {
+      "description": "Vom Plugin gemeldeter Betriebszustand. Er ist von Control-Liveness und Messfrische getrennt (SONDE-012 E-L21/22).",
+      "type": "string",
+      "enum": ["active", "suspended", "offline"]
+    },
+
+    "heartbeat_runtime": {
+      "description": "Letzter vom Plugin gemeldeter Runtime-Stand (SONDE-012 E-M01). Der Block ist optional; wenn er reist, sind Messpunkt und Betrieb vollstaendig. Hostfelder verwenden exakt die seit Minor 1 belegten B1-Definitionen.",
+      "type": "object",
+      "required": ["messpunkt", "betrieb"],
+      "additionalProperties": false,
+      "properties": {
+        "messpunkt": { "type": "string", "enum": ["insert", "pre", "post"] },
+        "betrieb": { "$ref": "#/$defs/betrieb" },
+        "host_bus_name": { "$ref": "#/$defs/host_bus_name" },
+        "host_mixer_index": { "$ref": "#/$defs/host_mixer_index" }
+      }
+    },
+
+    "p2_reject": {
+      "description": "Letzte P2-Ablehnung der Quelle und ihr laufgebundener Zaehler (SONDE-012 E-L14). Der Grund ist der geschlossene Ablehnungskatalog des Brokers; Freitext reist nicht.",
+      "type": "object",
+      "required": ["grund", "zaehler"],
+      "additionalProperties": false,
+      "properties": {
+        "grund": {
+          "type": "string",
+          "enum": [
+            "feature_batch_ungueltig",
+            "quellframe_anzahl_ungueltig",
+            "routing_nicht_freigegeben",
+            "quelladresse_abweichend",
+            "lautheit_ungueltig"
+          ]
+        },
+        "zaehler": { "type": "integer", "minimum": 1 }
+      }
+    },
+
+    "session_mitglied": {
+      "description": "Mitglieds-/Control-Sicht einer Quelle. `probe_descriptor` fehlt bis zum ersten gemeldeten Messpunkt und bedeutet dann fail-closed `unclassified`; `p2_reject` ist davon unabhaengig.",
+      "type": "object",
+      "required": ["adresse", "plugin_kind", "frische"],
+      "additionalProperties": false,
+      "properties": {
+        "adresse": { "$ref": "#/$defs/adresse" },
+        "plugin_kind": { "type": "string", "enum": ["main", "passive_probe", "active_probe", "legacy"] },
+        "frische": { "$ref": "#/$defs/frische" },
+        "probe_descriptor": { "$ref": "#/$defs/probe_descriptor" },
+        "p2_reject": { "$ref": "#/$defs/p2_reject" }
+      }
     },
 
     "pair_id": {
@@ -847,7 +908,8 @@
         "intervention_state_unknown": {
           "$comment": "Sticky (§34.2): gesetzt nach Ringueberlauf, Control-Disconnect oder Sequenzluecke. Solange es steht, bleibt starke Evidenz gesperrt.",
           "type": "boolean"
-        }
+        },
+        "runtime": { "$ref": "#/$defs/heartbeat_runtime" }
       }
     },
 
@@ -894,7 +956,7 @@
           "type": "array",
           "minItems": 0,
           "maxItems": 64,
-          "items": { "$ref": "#/$defs/probe_descriptor" }
+          "items": { "$ref": "#/$defs/session_mitglied" }
         }
       }
     },

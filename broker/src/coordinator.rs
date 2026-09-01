@@ -131,6 +131,14 @@ pub trait SessionPush: Send + Sync {
     /// `true` bedeutet ausschliesslich: der volle Snapshot wurde auf die Pipe
     /// geschrieben. Es ist keine Empfängerwirkung und kein Wire-ACK.
     fn snapshot_schreiben(&self, link_id: &str, payload: &[u8]) -> bool;
+
+    /// Nichtblockierender, begrenzter P2-Push. `false` bedeutet, dass der
+    /// Subscriber keine gekoppelte Telemetrieausgabe besitzt oder deren
+    /// Queue den Frame nicht aufnehmen konnte. Der Broker wartet hier nie auf
+    /// Pipe-I/O; Rueckstau darf den Telemetrieeingang nicht blockieren.
+    fn messframe_schreiben(&self, _link_id: &str, _instance_id: &str, _payload: &[u8]) -> bool {
+        false
+    }
 }
 
 /// Einmalige, schlaflose Testnaht direkt nach dem Snapshot-Capture. Produktion
@@ -255,6 +263,61 @@ struct Intervention {
     link_id: String,
 }
 
+#[derive(Debug, Clone)]
+struct LiveMessframe {
+    adresse: Adresse,
+    payload: Vec<u8>,
+    empfangen: Duration,
+    sequence: u64,
+    sample_count: u32,
+    sample_rate: f64,
+}
+
+#[derive(Debug, Clone, Default)]
+struct Messfehler {
+    anzahl: u64,
+    aktuell: bool,
+    letzter_grund: Option<P2RejectGrund>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum P2RejectGrund {
+    FeatureBatchUngueltig,
+    QuellframeAnzahlUngueltig,
+    RoutingNichtFreigegeben,
+    QuelladresseAbweichend,
+    LautheitUngueltig,
+}
+
+impl P2RejectGrund {
+    const fn wire(self) -> &'static str {
+        match self {
+            Self::FeatureBatchUngueltig => "feature_batch_ungueltig",
+            Self::QuellframeAnzahlUngueltig => "quellframe_anzahl_ungueltig",
+            Self::RoutingNichtFreigegeben => "routing_nicht_freigegeben",
+            Self::QuelladresseAbweichend => "quelladresse_abweichend",
+            Self::LautheitUngueltig => "lautheit_ungueltig",
+        }
+    }
+}
+
+const JSON_SAFE_INTEGER_MAX: u64 = 9_007_199_254_740_991;
+#[cfg(test)]
+const P2_REJECT_KATALOG: [P2RejectGrund; 5] = [
+    P2RejectGrund::FeatureBatchUngueltig,
+    P2RejectGrund::QuellframeAnzahlUngueltig,
+    P2RejectGrund::RoutingNichtFreigegeben,
+    P2RejectGrund::QuelladresseAbweichend,
+    P2RejectGrund::LautheitUngueltig,
+];
+
+#[derive(Debug, Clone, Default)]
+struct Lautheitsstand {
+    zustand: Lautheitszustand,
+    letztes_gueltiges_paar: Option<(f32, f32, Duration)>,
+    ungueltig_anzahl: u64,
+}
+
 #[derive(Debug)]
 struct Stand {
     links: HashMap<String, LinkStand>,
@@ -272,6 +335,9 @@ struct Stand {
     cap_abweisungen: u64,
     store_verweigerungen: u64,
     p2_live_frames: u64,
+    messframes: HashMap<ClientKey, LiveMessframe>,
+    messfehler: HashMap<ClientKey, Messfehler>,
+    lautheit: HashMap<ClientKey, Lautheitsstand>,
     telemetry_links: HashSet<String>,
     telemetry_kopplungen: u64,
     conflict_guards: HashMap<String, HashSet<String>>,
@@ -297,6 +363,9 @@ impl Default for Stand {
             cap_abweisungen: 0,
             store_verweigerungen: 0,
             p2_live_frames: 0,
+            messframes: HashMap::new(),
+            messfehler: HashMap::new(),
+            lautheit: HashMap::new(),
             telemetry_links: HashSet::new(),
             telemetry_kopplungen: 0,
             conflict_guards: HashMap::new(),
@@ -365,6 +434,38 @@ pub struct ClientModellSicht {
     pub letzter_kontakt_ms: u64,
     pub join_kandidat: bool,
     pub bestaetigt: bool,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Lautheitszustand {
+    #[default]
+    Missing,
+    Paar,
+    Collecting,
+    Gated,
+    Invalid,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct MessframeSicht {
+    pub adresse: Adresse,
+    pub sequence: Option<u64>,
+    pub sample_count: Option<u32>,
+    pub sample_rate: Option<f64>,
+    pub fenster_ms: Option<f64>,
+    pub alter_ms: Option<u64>,
+    pub control_verbunden: bool,
+    pub control_stale: bool,
+    pub messung_ungueltig: bool,
+    pub verworfene_frames: u64,
+    pub letzter_fehler: Option<String>,
+    pub lautheitszustand: Lautheitszustand,
+    pub lufs_i: Option<f32>,
+    pub lufs_i_unsicherheit_lu: Option<f32>,
+    pub letztes_gueltiges_lufs_i: Option<f32>,
+    pub letztes_gueltiges_lufs_i_unsicherheit_lu: Option<f32>,
+    pub letztes_gueltiges_lufs_i_alter_ms: Option<u64>,
+    pub ungueltige_lautheitspaare: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -509,18 +610,15 @@ impl Coordinator {
             .links
             .iter()
             .filter(|(_, link)| {
-                stand
-                    .clients
-                    .get(&link.client_key)
-                    .is_some_and(|client| {
-                        client.session_ungebunden
-                            && Self::eindeutige_main_session_locked(
-                                stand,
-                                &link.wire_adresse,
-                                client.host_pid,
-                            )
-                            .is_some()
-                    })
+                stand.clients.get(&link.client_key).is_some_and(|client| {
+                    client.session_ungebunden
+                        && Self::eindeutige_main_session_locked(
+                            stand,
+                            &link.wire_adresse,
+                            client.host_pid,
+                        )
+                        .is_some()
+                })
             })
             .map(|(link_id, _)| link_id.clone())
             .collect()
@@ -567,6 +665,14 @@ impl Coordinator {
 
         let geerbt = stand.clients.get(&key).cloned();
         if let Some(alt) = &geerbt {
+            if alt.current_nonce != adresse.runtime_nonce {
+                // Liveframes und ihre Fehler gehoeren zur Runtime-Nonce. Die
+                // stabile Mitgliedschaft bleibt am ClientKey, aber ein neuer
+                // Prozess darf niemals die Messwahrheit des alten erben.
+                stand.messframes.remove(&key);
+                stand.messfehler.remove(&key);
+                stand.lautheit.remove(&key);
+            }
             if let Some(alter_link) = alt.current_link.as_deref() {
                 if alter_link != link_id && alt.current_nonce != adresse.runtime_nonce {
                     if let Some(link) = stand.links.get_mut(alter_link) {
@@ -623,7 +729,11 @@ impl Coordinator {
             join_kandidat: geerbt.as_ref().is_some_and(|c| c.join_kandidat),
             bestaetigt: geerbt.as_ref().is_some_and(|c| c.bestaetigt),
             explizit_bestaetigt: geerbt.as_ref().is_some_and(|c| c.explizit_bestaetigt),
-            descriptor: geerbt.as_ref().and_then(|c| c.descriptor.clone()),
+            // Runtime-Felder sind linkgebunden. Auch ein Reconnect derselben
+            // Runtime muss den laut E-M01 vorgeschriebenen ersten
+            // heartbeat.runtime erneut liefern; bis dahin bleibt die Quelle
+            // als Mitglied ohne Messdescriptor sichtbar.
+            descriptor: None,
             state_revision: geerbt.as_ref().and_then(|c| c.state_revision),
             state_hash: geerbt.as_ref().and_then(|c| c.state_hash.clone()),
             record_state_valid: geerbt.as_ref().is_some_and(|c| c.record_state_valid),
@@ -698,6 +808,9 @@ impl Coordinator {
                 // Der Marker ist keine Sessionidentitaet und darf nach dem
                 // kontrollierten Reconnect keinen Phantom-Tombstone erzeugen.
                 stand.clients.remove(&link.client_key);
+                stand.messframes.remove(&link.client_key);
+                stand.messfehler.remove(&link.client_key);
+                stand.lautheit.remove(&link.client_key);
             } else if let Some(client) = stand.clients.get_mut(&link.client_key) {
                 if client.current_link.as_deref() == Some(link_id) {
                     client.current_link = None;
@@ -872,6 +985,44 @@ impl Coordinator {
             if let (Some(store), Some(ord)) = (&self.store, gedeckt_bis) {
                 let _ = store.snapshot_schuld_kompaktieren(ziel, ord);
             }
+            self.messframes_an_subscriber_push(link_id);
+        }
+    }
+
+    /// Liefert dem neu verbundenen/gekoppelten Subscriber die aktuell
+    /// gehaltenen P2-Staende seiner Session. Snapshot und Liveframes bleiben
+    /// getrennte Familien; beide sind absolut, es gibt keinen Event-Replay.
+    fn messframes_an_subscriber_push(&self, link_id: &str) {
+        let push = self.push.lock().unwrap_or_else(|e| e.into_inner()).clone();
+        let Some(push) = push else { return };
+        let stand = self.stand.lock().expect("Coordinator vergiftet");
+        let Some(sub) = stand.subscriptions.get(link_id) else {
+            return;
+        };
+        let Some(ziel_link) = stand.links.get(link_id) else {
+            return;
+        };
+        if ziel_link.trennen
+            || !stand.routing_bereit
+            || ziel_link.adresse != sub.adresse
+            || !self.alias_register.session_push_erlaubt(
+                &ziel_link.alias_adressraum,
+                &ziel_link.alias_besitzer,
+                &ziel_link.adresse.instance_id,
+            )
+        {
+            return;
+        }
+        let session = ziel_link.client_key.session();
+        let mut frames = stand
+            .messframes
+            .iter()
+            .filter(|(key, _)| key.session() == session)
+            .map(|(key, frame)| (key.instance_id.clone(), frame.payload.clone()))
+            .collect::<Vec<_>>();
+        frames.sort_by(|a, b| a.0.cmp(&b.0));
+        for (instance_id, payload) in frames {
+            let _ = push.messframe_schreiben(link_id, &instance_id, &payload);
         }
     }
 
@@ -967,6 +1118,71 @@ impl Coordinator {
             .p2_live_frames
     }
 
+    pub fn messsicht(
+        &self,
+        project_binding_id: &str,
+        session_epoch: &str,
+        instance_id: &str,
+    ) -> Option<MessframeSicht> {
+        let jetzt = self.clock.jetzt();
+        let stand = self.stand.lock().expect("Coordinator vergiftet");
+        let (key, client) = stand.clients.iter().find(|(key, _)| {
+            key.project_binding_id == project_binding_id
+                && key.session_epoch == session_epoch
+                && key.instance_id == instance_id
+        })?;
+        let frame = stand.messframes.get(key);
+        let fehler = stand.messfehler.get(key).cloned().unwrap_or_default();
+        let lautheit = stand.lautheit.get(key).cloned().unwrap_or_default();
+        let (letztes_lufs_i, letzte_unsicherheit, letztes_alter) = lautheit
+            .letztes_gueltiges_paar
+            .map(|(lufs_i, unsicherheit, empfangen)| {
+                (
+                    Some(lufs_i),
+                    Some(unsicherheit),
+                    Some(
+                        jetzt
+                            .saturating_sub(empfangen)
+                            .as_millis()
+                            .min(u64::MAX as u128) as u64,
+                    ),
+                )
+            })
+            .unwrap_or((None, None, None));
+        let (lufs_i, lufs_i_unsicherheit_lu) = if lautheit.zustand == Lautheitszustand::Paar {
+            (letztes_lufs_i, letzte_unsicherheit)
+        } else {
+            (None, None)
+        };
+        Some(MessframeSicht {
+            adresse: frame
+                .map(|frame| frame.adresse.clone())
+                .unwrap_or_else(|| client.adresse.clone()),
+            sequence: frame.map(|frame| frame.sequence),
+            sample_count: frame.map(|frame| frame.sample_count),
+            sample_rate: frame.map(|frame| frame.sample_rate),
+            fenster_ms: frame.map(|frame| (frame.sample_count as f64 / frame.sample_rate) * 1000.0),
+            alter_ms: frame.map(|frame| {
+                jetzt
+                    .saturating_sub(frame.empfangen)
+                    .as_millis()
+                    .min(u64::MAX as u128) as u64
+            }),
+            control_verbunden: client.current_link.is_some(),
+            control_stale: client.stale,
+            messung_ungueltig: fehler.aktuell,
+            verworfene_frames: fehler.anzahl,
+            letzter_fehler: fehler.letzter_grund.map(|grund| grund.wire().to_owned()),
+            lautheitszustand: lautheit.zustand,
+            lufs_i,
+            lufs_i_unsicherheit_lu,
+            letztes_gueltiges_lufs_i: letztes_lufs_i,
+            letztes_gueltiges_lufs_i_unsicherheit_lu: letzte_unsicherheit,
+            letztes_gueltiges_lufs_i_alter_ms: letztes_alter,
+            ungueltige_lautheitspaare: lautheit.ungueltig_anzahl,
+        })
+    }
+
     pub fn telemetrie_kopplungen(&self) -> (usize, u64) {
         let stand = self.stand.lock().expect("Coordinator vergiftet");
         (stand.telemetry_links.len(), stand.telemetry_kopplungen)
@@ -1017,6 +1233,42 @@ impl Coordinator {
             .links
             .get(link_id)
             .is_some_and(|link| &link.wire_adresse == adresse)
+    }
+
+    fn aktueller_telemetrie_client_locked(stand: &Stand, link_id: &str) -> Option<ClientKey> {
+        if !stand.telemetry_links.contains(link_id) {
+            return None;
+        }
+        let link = stand.links.get(link_id)?;
+        if link.trennen {
+            return None;
+        }
+        let client = stand.clients.get(&link.client_key)?;
+        (client.current_link.as_deref() == Some(link_id)
+            && client.current_nonce == link.adresse.runtime_nonce)
+            .then(|| link.client_key.clone())
+    }
+
+    fn messframe_abweisen_locked(
+        stand: &mut Stand,
+        link_id: &str,
+        grund: P2RejectGrund,
+    ) -> Option<SessionKey> {
+        let Some(key) = Self::aktueller_telemetrie_client_locked(stand, link_id) else {
+            return None;
+        };
+        let session = key.session();
+        let fehler = stand.messfehler.entry(key).or_default();
+        fehler.anzahl = fehler.anzahl.saturating_add(1).min(JSON_SAFE_INTEGER_MAX);
+        fehler.aktuell = true;
+        fehler.letzter_grund = Some(grund);
+        stand.dirty_sessions.insert(session.clone());
+        Some(session)
+    }
+
+    fn messframe_abweisen(&self, link_id: &str, grund: P2RejectGrund) {
+        let mut stand = self.stand.lock().expect("Coordinator vergiftet");
+        let _ = Self::messframe_abweisen_locked(&mut stand, link_id, grund);
     }
 
     fn subscription_entfernen_locked(stand: &mut Stand, link_id: &str) {
@@ -1091,6 +1343,9 @@ impl Coordinator {
         let Some(client) = stand.clients.remove(key) else {
             return Vec::new();
         };
+        stand.messframes.remove(key);
+        stand.messfehler.remove(key);
+        stand.lautheit.remove(key);
         let link_ids: Vec<String> = stand
             .links
             .iter()
@@ -1251,8 +1506,10 @@ impl Coordinator {
                     .get(&link.client_key)
                     .map(|client| client.plugin_kind.clone())
                     .unwrap_or_default();
+                let runtime_gemeldet = wert.is_some_and(|v| v.get("runtime").is_some());
                 let descriptor =
                     wert.and_then(|v| Self::descriptor_aus_heartbeat(&link, &plugin_kind, v));
+                let capabilities = wert.and_then(|v| v.get("capabilities")).cloned();
                 if let Some(client) = stand.clients.get_mut(&link.client_key) {
                     if client.current_link.as_deref() != Some(link_id) {
                         return false;
@@ -1261,8 +1518,14 @@ impl Coordinator {
                     client.stale = false;
                     client.stale_seit = None;
                     client.join_kandidat = true;
-                    if descriptor.is_some() {
+                    if runtime_gemeldet {
                         client.descriptor = descriptor;
+                    } else if let (Some(descriptor), Some(capabilities)) =
+                        (client.descriptor.as_mut(), capabilities)
+                    {
+                        if let Some(objekt) = descriptor.as_object_mut() {
+                            objekt.insert("capabilities".into(), capabilities);
+                        }
                     }
                 }
                 Self::auto_join_locked(&mut stand, &link.client_key);
@@ -1317,9 +1580,7 @@ impl Coordinator {
             .get("state_hash")
             .and_then(Value::as_str)
             .map(str::to_owned);
-        let record_valid = wert
-            .pointer("/record_state/valid")
-            .and_then(Value::as_bool);
+        let record_valid = wert.pointer("/record_state/valid").and_then(Value::as_bool);
         let recording = wert
             .pointer("/record_state/recording")
             .and_then(Value::as_bool);
@@ -1351,21 +1612,40 @@ impl Coordinator {
         wert: &Value,
     ) -> Option<Value> {
         let capabilities = wert.get("capabilities")?.clone();
+        let runtime = wert.get("runtime")?.as_object()?;
+        let messpunkt = runtime.get("messpunkt")?.as_str()?;
+        let betrieb = runtime.get("betrieb")?.as_str()?;
         if !matches!(
             plugin_kind,
             "main" | "active_probe" | "passive_probe" | "legacy"
         ) {
             return None;
         }
-        Some(serde_json::json!({
+        if plugin_kind == "main" && messpunkt != "insert" {
+            return None;
+        }
+        if !matches!(messpunkt, "insert" | "pre" | "post")
+            || !matches!(betrieb, "active" | "suspended" | "offline")
+        {
+            return None;
+        }
+        let mut descriptor = serde_json::json!({
             "adresse": link.adresse,
             "plugin_kind": plugin_kind,
-            "measurement_position": "insert",
+            "measurement_position": messpunkt,
             "aussageklasse": "beobachtend",
+            "betrieb": betrieb,
             "label": "",
             "capabilities": capabilities,
             "frische": {"stale": false, "letzter_kontakt_ms": 0}
-        }))
+        });
+        let objekt = descriptor.as_object_mut()?;
+        for feld in ["host_bus_name", "host_mixer_index"] {
+            if let Some(wert) = runtime.get(feld) {
+                objekt.insert(feld.into(), wert.clone());
+            }
+        }
+        Some(descriptor)
     }
 
     pub fn descriptor_setzen(&self, link_id: &str, mut descriptor: Value) -> bool {
@@ -1519,6 +1799,41 @@ impl Coordinator {
         geaendert
     }
 
+    /// Fluechtiger Broker-Gegenpfad zur bestaetigten Mitgliedschaft. Die
+    /// persistente MainProject-/Host-Dirty-Wirkung gehoert der Plugin-Etappe;
+    /// hier wird ausschliesslich der aktuelle Sessiongraph atomar entbunden
+    /// und als absoluter Snapshot weitergegeben.
+    pub fn beitritt_aufheben(
+        &self,
+        project_binding_id: &str,
+        session_epoch: &str,
+        instance_id: &str,
+    ) -> bool {
+        let session = SessionKey {
+            project_binding_id: project_binding_id.into(),
+            session_epoch: session_epoch.into(),
+        };
+        let geaendert = {
+            let mut stand = self.stand.lock().expect("Coordinator vergiftet");
+            let key = stand
+                .clients
+                .keys()
+                .find(|key| &key.session() == &session && key.instance_id == instance_id)
+                .cloned();
+            let Some(key) = key else { return false };
+            let client = stand.clients.get_mut(&key).expect("Clientschluessel");
+            let geaendert = client.bestaetigt || client.explizit_bestaetigt;
+            client.bestaetigt = false;
+            client.explizit_bestaetigt = false;
+            client.join_kandidat = true;
+            Self::fuehrung_neu_bewerten_locked(&mut stand, &session);
+            stand.dirty_sessions.insert(session.clone());
+            geaendert
+        };
+        self.flush_session(&session, None);
+        geaendert
+    }
+
     pub fn fuehrung_uebergeben(
         &self,
         project_binding_id: &str,
@@ -1590,9 +1905,7 @@ impl Coordinator {
         let main_hosts: HashSet<u32> = stand
             .clients
             .iter()
-            .filter(|(key, client)| {
-                &key.session() == session && client.plugin_kind == "main"
-            })
+            .filter(|(key, client)| &key.session() == session && client.plugin_kind == "main")
             .filter_map(|(_, client)| client.host_pid)
             .collect();
         if stand.clients.iter().any(|(key, client)| {
@@ -1671,28 +1984,52 @@ impl Coordinator {
             .clients
             .iter()
             .filter(|(key, _)| &key.session() == session)
-            .filter_map(|(_, client)| {
-                let mut descriptor = client.descriptor.clone()?;
-                let objekt = descriptor.as_object_mut()?;
-                objekt.insert(
-                    "adresse".into(),
-                    serde_json::to_value(&client.adresse).ok()?,
-                );
-                objekt.insert(
-                    "plugin_kind".into(),
-                    Value::String(client.plugin_kind.clone()),
-                );
-                objekt.insert(
-                    "frische".into(),
-                    serde_json::json!({
-                        "stale": client.stale,
-                        "letzter_kontakt_ms": jetzt
-                            .saturating_sub(client.last_seen)
-                            .as_millis()
-                            .min(u64::MAX as u128) as u64
-                    }),
-                );
-                Some((effektive_adresse(&client.adresse), descriptor))
+            .map(|(key, client)| {
+                let adresse = serde_json::to_value(&client.adresse)
+                    .expect("Adresse ist immer JSON-serialisierbar");
+                let frische = serde_json::json!({
+                    "stale": client.stale,
+                    "letzter_kontakt_ms": jetzt
+                        .saturating_sub(client.last_seen)
+                        .as_millis()
+                        .min(u64::MAX as u128) as u64
+                });
+                let mut mitglied = serde_json::json!({
+                    "adresse": adresse,
+                    "plugin_kind": client.plugin_kind,
+                    "frische": frische
+                });
+                let mitglied_objekt = mitglied
+                    .as_object_mut()
+                    .expect("session_mitglied wird als Objekt erzeugt");
+
+                if let Some(mut descriptor) = client.descriptor.clone() {
+                    if let Some(objekt) = descriptor.as_object_mut() {
+                        objekt.insert(
+                            "adresse".into(),
+                            serde_json::to_value(&client.adresse)
+                                .expect("Adresse ist immer JSON-serialisierbar"),
+                        );
+                        objekt.insert(
+                            "plugin_kind".into(),
+                            Value::String(client.plugin_kind.clone()),
+                        );
+                        objekt.insert("frische".into(), frische.clone());
+                        mitglied_objekt.insert("probe_descriptor".into(), descriptor);
+                    }
+                }
+                if let Some(fehler) = stand.messfehler.get(key) {
+                    if let Some(grund) = fehler.letzter_grund {
+                        mitglied_objekt.insert(
+                            "p2_reject".into(),
+                            serde_json::json!({
+                                "grund": grund.wire(),
+                                "zaehler": fehler.anzahl
+                            }),
+                        );
+                    }
+                }
+                (effektive_adresse(&client.adresse), mitglied)
             })
             .collect();
         mitglieder.sort_by(|a, b| a.0.cmp(&b.0));
@@ -1714,8 +2051,8 @@ impl Coordinator {
         let shard = self.session_flush_shard(session);
         let _flush_guard = self.session_flush_schloesser
             [shard % self.session_flush_schloesser.len()]
-            .lock()
-            .unwrap_or_else(|e| e.into_inner());
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
 
         let (payload, ziele) = {
             let mut stand = self.stand.lock().expect("Coordinator vergiftet");
@@ -2073,7 +2410,9 @@ impl Coordinator {
             objekt.insert("code".into(), Value::String(code.into()));
         }
         let payload = serde_json::to_vec(&Value::Object(objekt)).ok()?;
-        v3_nachricht_lesen(&payload, "command_ack").is_some().then_some(payload)
+        v3_nachricht_lesen(&payload, "command_ack")
+            .is_some()
+            .then_some(payload)
     }
 
     fn persistierte_command_wirkung(payload: &[u8]) -> Option<(Value, u64, String)> {
@@ -2105,8 +2444,8 @@ impl Coordinator {
         let shard = self.session_flush_shard(&session);
         let _commit_guard = self.session_flush_schloesser
             [shard % self.session_flush_schloesser.len()]
-            .lock()
-            .unwrap_or_else(|e| e.into_inner());
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
         let Some(store) = &self.store else {
             return Self::command_ack(
                 command_id,
@@ -2226,14 +2565,13 @@ impl Coordinator {
                             .iter()
                             .filter(|(abo_link_id, sub)| {
                                 sub.session_epoch == session.session_epoch
-                                    && sub.adresse.project_binding_id
-                                        == session.project_binding_id
+                                    && sub.adresse.project_binding_id == session.project_binding_id
                                     && stand.links.get(*abo_link_id).is_some_and(|link| {
                                         !link.trennen
                                             && stand.routing_bereit
-                                            && !stand.conflict_guards.contains_key(
-                                                &effektive_adresse(&link.adresse),
-                                            )
+                                            && !stand
+                                                .conflict_guards
+                                                .contains_key(&effektive_adresse(&link.adresse))
                                             && self.alias_register.session_push_erlaubt(
                                                 &link.alias_adressraum,
                                                 &link.alias_besitzer,
@@ -2289,13 +2627,9 @@ impl Coordinator {
         event.snapshot_ziele = snapshot_ziele;
         match store.append(vec![event]) {
             Ok(ausgaenge) => match ausgaenge.first()? {
-                crate::store::AppendAusgang::Angewandt { .. } => Self::command_ack(
-                    command_id,
-                    "angewandt",
-                    revision,
-                    Some(&hash),
-                    None,
-                ),
+                crate::store::AppendAusgang::Angewandt { .. } => {
+                    Self::command_ack(command_id, "angewandt", revision, Some(&hash), None)
+                }
                 crate::store::AppendAusgang::IdempotentWiederholt { .. } => {
                     let payload = store.command_event_lesen(command_id).ok()??;
                     let (alt, revision, hash) = Self::persistierte_command_wirkung(&payload)?;
@@ -2378,9 +2712,7 @@ impl Coordinator {
                 );
                 None
             }
-            "preview_begin" | "preview_renew" | "preview_end" => {
-                self.persistenz_p0(link_id, &wert)
-            }
+            "preview_begin" | "preview_renew" | "preview_end" => self.persistenz_p0(link_id, &wert),
             _ => None,
         }
     }
@@ -2418,9 +2750,17 @@ impl crate::transport::server_v3::Senke for Coordinator {
 
     fn control_getrennt(&self, _link_id: &str) {}
     fn telemetrie_gekoppelt(&self, link_id: &str) {
-        let mut stand = self.stand.lock().expect("Coordinator vergiftet");
-        if stand.links.contains_key(link_id) && stand.telemetry_links.insert(link_id.into()) {
-            stand.telemetry_kopplungen = stand.telemetry_kopplungen.saturating_add(1);
+        let neu = {
+            let mut stand = self.stand.lock().expect("Coordinator vergiftet");
+            let neu =
+                stand.links.contains_key(link_id) && stand.telemetry_links.insert(link_id.into());
+            if neu {
+                stand.telemetry_kopplungen = stand.telemetry_kopplungen.saturating_add(1);
+            }
+            neu
+        };
+        if neu {
+            self.messframes_an_subscriber_push(link_id);
         }
     }
     fn telemetrie_getrennt(&self, link_id: &str) {
@@ -2451,12 +2791,118 @@ impl crate::transport::server_v3::Senke for Coordinator {
     }
 
     fn p2(&self, link_id: &str, payload: &[u8]) {
-        if !crate::telemetrie::pruefe(payload).is_empty() {
+        let batch = match crate::telemetrie::fuer_broker(payload) {
+            Ok(batch) => batch,
+            Err(_) => {
+                self.messframe_abweisen(link_id, P2RejectGrund::FeatureBatchUngueltig);
+                return;
+            }
+        };
+        if batch.frames.len() != 1 {
+            self.messframe_abweisen(link_id, P2RejectGrund::QuellframeAnzahlUngueltig);
             return;
         }
+        let frame = &batch.frames[0];
+        let push = self.push.lock().unwrap_or_else(|e| e.into_inner()).clone();
         {
             let mut stand = self.stand.lock().expect("Coordinator vergiftet");
+            let Some(key) = Self::aktueller_telemetrie_client_locked(&stand, link_id) else {
+                return;
+            };
+            let Some(link) = stand.links.get(link_id) else {
+                return;
+            };
+            if !self.dispatch_fuer_link_erlaubt_locked(&stand, link) {
+                let _ = Self::messframe_abweisen_locked(
+                    &mut stand,
+                    link_id,
+                    P2RejectGrund::RoutingNichtFreigegeben,
+                );
+                return;
+            }
+            if frame.adresse != link.adresse {
+                let _ = Self::messframe_abweisen_locked(
+                    &mut stand,
+                    link_id,
+                    P2RejectGrund::QuelladresseAbweichend,
+                );
+                return;
+            }
+
+            let jetzt = self.clock.jetzt();
+            let lautheit_ungueltig = batch
+                .lautheit_ungueltige_instance_ids
+                .iter()
+                .any(|instance_id| instance_id == &key.instance_id);
+            let lautheit = stand.lautheit.entry(key.clone()).or_default();
+            if lautheit_ungueltig {
+                lautheit.zustand = Lautheitszustand::Invalid;
+                lautheit.ungueltig_anzahl = lautheit.ungueltig_anzahl.saturating_add(1);
+            } else if let Some((lufs_i, unsicherheit)) = frame.lufs_i_paar {
+                lautheit.zustand = Lautheitszustand::Paar;
+                lautheit.letztes_gueltiges_paar = Some((lufs_i, unsicherheit, jetzt));
+            } else {
+                match frame.lufs_i_status {
+                    Some(1) => lautheit.zustand = Lautheitszustand::Collecting,
+                    Some(2) => lautheit.zustand = Lautheitszustand::Gated,
+                    _ => {}
+                }
+            }
+
+            {
+                let fehler = stand.messfehler.entry(key.clone()).or_default();
+                if lautheit_ungueltig {
+                    fehler.anzahl = fehler.anzahl.saturating_add(1).min(JSON_SAFE_INTEGER_MAX);
+                    fehler.letzter_grund = Some(P2RejectGrund::LautheitUngueltig);
+                }
+                // Der restliche Frame ist nach Entfernung der drei LUFS-I-Felder
+                // vollstaendig gueltig. Nur eine vollstaendige Ablehnung setzt die
+                // allgemeine Messachse auf invalid.
+                fehler.aktuell = false;
+            }
+            if lautheit_ungueltig {
+                let session = key.session();
+                stand.dirty_sessions.insert(session);
+            }
+            stand.messframes.insert(
+                key.clone(),
+                LiveMessframe {
+                    adresse: frame.adresse.clone(),
+                    payload: batch.payload.clone(),
+                    empfangen: jetzt,
+                    sequence: frame.sequence,
+                    sample_count: frame.sample_count,
+                    sample_rate: frame.sample_rate,
+                },
+            );
             stand.p2_live_frames = stand.p2_live_frames.saturating_add(1);
+
+            if let Some(push) = push.as_ref() {
+                let session = key.session();
+                let mut ziele = stand
+                    .subscriptions
+                    .iter()
+                    .filter(|(ziel_link_id, sub)| {
+                        sub.session_epoch == session.session_epoch
+                            && sub.adresse.project_binding_id == session.project_binding_id
+                            && stand.links.get(*ziel_link_id).is_some_and(|ziel_link| {
+                                !ziel_link.trennen
+                                    && stand.routing_bereit
+                                    && self.alias_register.session_push_erlaubt(
+                                        &ziel_link.alias_adressraum,
+                                        &ziel_link.alias_besitzer,
+                                        &ziel_link.adresse.instance_id,
+                                    )
+                            })
+                    })
+                    .map(|(ziel_link_id, _)| ziel_link_id.clone())
+                    .collect::<Vec<_>>();
+                ziele.sort();
+                for ziel_link_id in ziele {
+                    let _ =
+                        push.messframe_schreiben(&ziel_link_id, &key.instance_id, &batch.payload);
+                }
+            }
         }
         if self.dispatch_fuer_link_erlaubt(link_id) {
             let _ = self.evidence_dispatch();
@@ -2484,6 +2930,25 @@ fn persistenz_utc_ms() -> i64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn p2_reject_katalog_stimmt_mit_dem_strikten_wire_schema() {
+        let schema: Value = serde_json::from_str(include_str!(
+            "../../eq-copilot/schemas/v3/eq-ipc-v3.schema.json"
+        ))
+        .unwrap();
+        let wire = schema["$defs"]["p2_reject"]["properties"]["grund"]["enum"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|wert| wert.as_str().unwrap())
+            .collect::<HashSet<_>>();
+        let broker = P2_REJECT_KATALOG
+            .iter()
+            .map(|grund| grund.wire())
+            .collect::<HashSet<_>>();
+        assert_eq!(wire, broker);
+    }
 
     fn adresse(zeichen: char) -> Adresse {
         Adresse {
@@ -2533,7 +2998,8 @@ mod tests {
                 "frames_dropped": 0,
                 "parse_errors": 0,
                 "queue_overflows": 0
-            }
+            },
+            "runtime": {"messpunkt": "insert", "betrieb": "active"}
         }))
         .unwrap();
         let ack = c.p0_json(link_id, &payload).expect("heartbeat_ack");

@@ -78,7 +78,8 @@ fn report(c: &Coordinator, link: &str, adresse: &Adresse) -> bool {
             "sequence": 1,
             "state_revision": 0,
             "capabilities": capabilities(),
-            "zaehler": {}
+            "zaehler": {},
+            "runtime": {"messpunkt": "insert", "betrieb": "active"}
         })),
     )
 }
@@ -233,18 +234,24 @@ fn probe_ohne_eigene_epoche_uebernimmt_eindeutige_main_sitzung() {
 
     let sicht = c.modell_sicht(&hex(1), &hex(11));
     assert_eq!(sicht.clients.len(), 2);
-    assert_eq!(sicht.fuehrendes_main, Some(main.adresse.instance_id.clone()));
+    assert_eq!(
+        sicht.fuehrendes_main,
+        Some(main.adresse.instance_id.clone())
+    );
     let probe_sicht = sicht
         .clients
         .iter()
         .find(|client| client.adresse.instance_id == probe.adresse.instance_id)
         .expect("Probeeq ist Mitglied der Main-Sitzung");
     assert!(probe_sicht.bestaetigt);
-    assert_eq!(probe_sicht.adresse.session_epoch, main.adresse.session_epoch);
+    assert_eq!(
+        probe_sicht.adresse.session_epoch,
+        main.adresse.session_epoch
+    );
     assert!(c.modell_sicht(&hex(1), &hex(1)).clients.is_empty());
 
-    let snapshot: Value = serde_json::from_slice(&c.session_snapshot_json(&hex(1), &hex(11)))
-        .unwrap();
+    let snapshot: Value =
+        serde_json::from_slice(&c.session_snapshot_json(&hex(1), &hex(11))).unwrap();
     let probe_adresse = snapshot["mitglieder"]
         .as_array()
         .unwrap()
@@ -315,12 +322,16 @@ fn probe_join_bleibt_reihenfolgefest_und_bei_mehreren_mains_fail_closed() {
     assert!(probe_anmeldung.angenommen);
     assert!(probe_anmeldung.zu_schliessende_links.is_empty());
     assert!(report(&mehrdeutig, "probe", &probe.adresse));
-    assert!(mehrdeutig
-        .modell_sicht(&hex(2), &hex(21))
-        .beitritt_bestaetigung_noetig);
-    assert!(mehrdeutig
-        .modell_sicht(&hex(2), &hex(22))
-        .beitritt_bestaetigung_noetig);
+    assert!(
+        mehrdeutig
+            .modell_sicht(&hex(2), &hex(21))
+            .beitritt_bestaetigung_noetig
+    );
+    assert!(
+        mehrdeutig
+            .modell_sicht(&hex(2), &hex(22))
+            .beitritt_bestaetigung_noetig
+    );
     let kandidat = mehrdeutig.modell_sicht(&hex(2), &hex(2));
     assert_eq!(kandidat.clients.len(), 1);
     assert!(!kandidat.clients[0].bestaetigt);
@@ -648,13 +659,21 @@ fn alle_schemafesten_interventionsarten_sperren_dieselbe_evidenz() {
 #[test]
 fn p2_mutiert_erst_nach_flatbuffers_verifikation() {
     let (c, _) = coordinator();
-    let h = hello(1, 2, 10, 100, "active_probe", Some(9));
-    anmelden(&c, "probe", &h);
+    c.control_registrieren(
+        "probe",
+        Adresse {
+            logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001".into(),
+            project_binding_id: "1".repeat(32),
+            session_epoch: "2".repeat(32),
+            instance_id: format!("{:032x}", 3),
+            runtime_nonce: "4".repeat(32),
+        },
+    );
+    Senke::telemetrie_gekoppelt(&c, "probe");
     Senke::p2(&c, "probe", b"kein FlatBuffer");
     assert_eq!(c.p2_live_frames(), 0);
-    let gueltig = include_bytes!(
-        "../../eq-copilot/fixtures/v3/flatbuffers/gueltig/live-64-band.bin"
-    );
+    let gueltig =
+        include_bytes!("../../eq-copilot/fixtures/v3/flatbuffers/gueltig/live-64-band.bin");
     Senke::p2(&c, "probe", gueltig);
     assert_eq!(c.p2_live_frames(), 1);
 }

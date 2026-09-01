@@ -882,18 +882,33 @@ void EqCopilotEditor::uebernehmeSourcesLabel()
     if (it == sourcesAnzeige.quellen.end()
         || it->mitgliedschaft != SourcesModel::Mitgliedschaft::bestaetigt)
         return;
-    processor.benenneSourcesHauptziel (ziel,
-        sourcesLabelFeld.getText().substring (0, 120));
+    const auto label = sourcesLabelFeld.getText().substring (0, 120);
+    if (label == it->userLabel)
+        return;
+    if (processor.benenneSourcesHauptziel (ziel, label))
+    {
+        sourcesSchreibfehlerAktiv = false;
+        sourcesBedienstatus = "Stored fallback label saved.";
+    }
+    else
+    {
+        sourcesSchreibfehlerAktiv = true;
+        sourcesBedienstatus =
+            "Label update failed - write handover or target changed.";
+    }
     uiDirty = true;
 }
 
 void EqCopilotEditor::aktualisiereSourcesSteuerung()
 {
+    const auto vorherigesZiel = sourcesAktionsZiel;
     const auto it = std::find_if (sourcesAnzeige.quellen.begin(),
                                   sourcesAnzeige.quellen.end(),
         [] (const auto& q) { return q.hauptziel; });
     sourcesAktionsZiel = it == sourcesAnzeige.quellen.end()
                            ? std::string() : it->instanceId;
+    if (sourcesAktionsZiel != vorherigesZiel)
+        sourcesSchreibfehlerAktiv = false;
     const bool hatZiel = it != sourcesAnzeige.quellen.end();
     const bool bestaetigt = hatZiel
         && it->mitgliedschaft == SourcesModel::Mitgliedschaft::bestaetigt;
@@ -902,7 +917,19 @@ void EqCopilotEditor::aktualisiereSourcesSteuerung()
         && (sourcesAnzeige.diagnose != SourcesModel::Diagnose::confirmationRequired
             || sourcesAnzeige.diagnoseHatHandgriff));
     sourcesAktionKnopf.setVisible (mainFlaecheAktiv && hatZiel);
-    sourcesLabelFeld.setEnabled (bestaetigt);
+    const bool labelSchreibbar = bestaetigt && sourcesAnzeige.mainDarfSchreiben;
+    sourcesLabelFeld.setEnabled (labelSchreibbar);
+    if (! sourcesSchreibfehlerAktiv)
+    {
+        if (bestaetigt && ! sourcesAnzeige.mainDarfSchreiben)
+            sourcesBedienstatus =
+                "Label editing disabled - only the leading Main can write.";
+        else if (! bestaetigt)
+            sourcesBedienstatus = "Bind the source before editing its stored label.";
+        else
+            sourcesBedienstatus.clear();
+    }
+    sourcesLabelFeld.setTooltip (sourcesBedienstatus);
     sourcesLabelFeld.setVisible (mainFlaecheAktiv && hatZiel);
     if (hatZiel && ! sourcesLabelFeld.hasKeyboardFocus (true)
         && sourcesLabelFeld.getText() != it->userLabel)
@@ -1222,6 +1249,13 @@ void EqCopilotEditor::paintMainFlaeche (juce::Graphics& g)
     g.setColour (sourcesAnzeige.mainDarfSchreiben ? text : hinweis);
     g.drawText (fuehrung, rechts.removeFromTop (19),
                 juce::Justification::centredLeft);
+    if (sourcesBedienstatus.isNotEmpty())
+    {
+        g.setColour (sourcesSchreibfehlerAktiv ? hinweis : leise);
+        g.setFont (juce::FontOptions (11.0f));
+        g.drawFittedText (sourcesBedienstatus, rechts.removeFromTop (18),
+                          juce::Justification::centredLeft, 1);
+    }
 
     auto statusBox = rechts.removeFromTop (94).reduced (0, 5);
     g.setColour (feld);

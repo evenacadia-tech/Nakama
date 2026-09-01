@@ -170,14 +170,20 @@ bool liesDescriptor (const juce::var& v, const std::string& memberBinding,
                      const std::string& memberNonce,
                      const std::string& memberKind,
                      bool memberStale, std::uint64_t memberAlter,
-                     GelesenesMitglied& aus)
+                     std::uint8_t schemaMinor, GelesenesMitglied& aus)
 {
     const auto* o = objekt (v);
-    if (o == nullptr
-        || ! exakteFelder (*o,
+    const bool feldsatzGueltig = schemaMinor == 0
+        ? o != nullptr && exakteFelder (*o,
              { "adresse", "plugin_kind", "measurement_position", "aussageklasse",
-               "betrieb", "label", "capabilities", "frische" },
-             { "pair_id", "host_bus_name", "host_mixer_index" }))
+               "label", "capabilities", "frische" },
+             { "pair_id" })
+        : schemaMinor == nakama::ipc::kJsonSchemaMinor
+            && o != nullptr && exakteFelder (*o,
+                 { "adresse", "plugin_kind", "measurement_position", "aussageklasse",
+                   "betrieb", "label", "capabilities", "frische" },
+                 { "pair_id", "host_bus_name", "host_mixer_index" });
+    if (! feldsatzGueltig)
         return false;
     std::string b, s, i, n;
     if (! adresse (o->getProperty ("adresse"), b, s, i, n)
@@ -186,17 +192,23 @@ bool liesDescriptor (const juce::var& v, const std::string& memberBinding,
     const auto kind = o->getProperty ("plugin_kind");
     const auto pos = o->getProperty ("measurement_position");
     const auto klasse = o->getProperty ("aussageklasse");
-    const auto betrieb = o->getProperty ("betrieb");
     const auto label = o->getProperty ("label");
     if (! kind.isString() || kind.toString().toStdString() != memberKind
         || ! pos.isString() || messpunktAus (pos.toString()) == SourcesModel::Messpunkt::unbekannt
         || ((pos.toString() == "pre" || pos.toString() == "post")
             && memberKind == "main")
         || ! klasse.isString() || klasse.toString() != "beobachtend"
-        || ! betrieb.isString() || betriebAus (betrieb.toString()) == SourcesModel::Betrieb::unbekannt
         || ! label.isString() || label.toString().length() > 120
         || ! capabilities (o->getProperty ("capabilities")))
         return false;
+    if (schemaMinor == nakama::ipc::kJsonSchemaMinor)
+    {
+        const auto betrieb = o->getProperty ("betrieb");
+        if (! betrieb.isString()
+            || betriebAus (betrieb.toString()) == SourcesModel::Betrieb::unbekannt)
+            return false;
+        aus.betrieb = betriebAus (betrieb.toString());
+    }
     bool descriptorStale = false;
     std::uint64_t descriptorAlter = 0;
     if (! frische (o->getProperty ("frische"), descriptorStale, descriptorAlter)
@@ -213,7 +225,6 @@ bool liesDescriptor (const juce::var& v, const std::string& memberBinding,
 
     aus.descriptor = true;
     aus.messpunkt = messpunktAus (pos.toString());
-    aus.betrieb = betriebAus (betrieb.toString());
     aus.label = label.toString();
     if (o->hasProperty ("host_bus_name"))
     {
@@ -414,9 +425,15 @@ void SourcesModel::setzeControlTransport (
 }
 
 SourcesModel::SnapshotErgebnis SourcesModel::uebernehmeSessionSnapshot (
-    const std::string& json, Zeitpunkt empfangen, juce::String& fehler)
+    const std::string& json, std::uint8_t schemaMinor,
+    Zeitpunkt empfangen, juce::String& fehler)
 {
     fehler.clear();
+    if (schemaMinor > nakama::ipc::kJsonSchemaMinor)
+    {
+        fehler = "session_snapshot schema_minor is newer than this Main reader";
+        return SnapshotErgebnis::ungueltig;
+    }
     std::string erwarteteBindungLokal, erwarteteSessionLokal;
     {
         std::lock_guard<std::mutex> l (mutex);
@@ -440,9 +457,14 @@ SourcesModel::SnapshotErgebnis SourcesModel::uebernehmeSessionSnapshot (
     const auto typ = o->getProperty ("type");
     if (! typ.isString() || typ.toString() != "session_snapshot")
         return SnapshotErgebnis::ignoriert;
-    if (! exakteFelder (*o,
-          { "type", "session_epoch", "broker_epoch", "fuehrendes_main", "mitglieder" },
-          { "beitritt_bestaetigung_noetig", "store_degraded" }))
+    const bool wurzelFelderGueltig = schemaMinor == 0
+        ? exakteFelder (*o,
+              { "type", "session_epoch", "broker_epoch", "fuehrendes_main", "mitglieder" },
+              { "beitritt_bestaetigung_noetig" })
+        : exakteFelder (*o,
+              { "type", "session_epoch", "broker_epoch", "fuehrendes_main", "mitglieder" },
+              { "beitritt_bestaetigung_noetig", "store_degraded" });
+    if (! wurzelFelderGueltig)
     {
         fehler = "session_snapshot has an unexpected or missing field";
         return SnapshotErgebnis::ungueltig;
@@ -494,8 +516,14 @@ SourcesModel::SnapshotErgebnis SourcesModel::uebernehmeSessionSnapshot (
     for (const auto& wert : *mitglieder)
     {
         const auto* m = objekt (wert);
-        if (m == nullptr
-            || ! exakteFelder (*m, { "adresse", "plugin_kind", "frische" },
+        if (m == nullptr)
+        {
+            fehler = "session member has an unexpected or missing field";
+            return SnapshotErgebnis::ungueltig;
+        }
+        const juce::DynamicObject* member = m;
+        if (schemaMinor == nakama::ipc::kJsonSchemaMinor
+            && ! exakteFelder (*m, { "adresse", "plugin_kind", "frische" },
                                    { "probe_descriptor", "p2_reject" }))
         {
             fehler = "session member has an unexpected or missing field";
@@ -503,32 +531,36 @@ SourcesModel::SnapshotErgebnis SourcesModel::uebernehmeSessionSnapshot (
         }
         GelesenesMitglied gm;
         std::string binding, mitgliedSession;
-        if (! adresse (m->getProperty ("adresse"), binding, mitgliedSession,
+        if (! adresse (member->getProperty ("adresse"), binding, mitgliedSession,
                        gm.instanceId, gm.runtimeNonce)
             || binding != erwarteteBindungLokal || mitgliedSession != erwarteteSessionLokal)
         {
             fehler = "session member address does not match the subscribed session";
             return SnapshotErgebnis::ungueltig;
         }
-        const auto kind = m->getProperty ("plugin_kind");
+        const auto kind = member->getProperty ("plugin_kind");
         if (! kind.isString()
             || (kind.toString() != "main" && kind.toString() != "passive_probe"
                 && kind.toString() != "active_probe" && kind.toString() != "legacy")
-            || ! frische (m->getProperty ("frische"), gm.stale, gm.controlAlterMs))
+            || ! frische (member->getProperty ("frische"), gm.stale, gm.controlAlterMs))
         {
             fehler = "session member kind or freshness is invalid";
             return SnapshotErgebnis::ungueltig;
         }
         gm.pluginKind = kind.toString().toStdString();
-        if (m->hasProperty ("probe_descriptor")
-            && ! liesDescriptor (m->getProperty ("probe_descriptor"), binding,
+        const bool hatDescriptor = schemaMinor == 0 || m->hasProperty ("probe_descriptor");
+        const auto descriptor = schemaMinor == 0 ? wert : m->getProperty ("probe_descriptor");
+        if (hatDescriptor
+            && ! liesDescriptor (descriptor, binding,
                                  mitgliedSession, gm.instanceId, gm.runtimeNonce,
-                                 gm.pluginKind, gm.stale, gm.controlAlterMs, gm))
+                                 gm.pluginKind, gm.stale, gm.controlAlterMs,
+                                 schemaMinor, gm))
         {
             fehler = "probe_descriptor is invalid or disagrees with its member";
             return SnapshotErgebnis::ungueltig;
         }
-        if (m->hasProperty ("p2_reject")
+        if (schemaMinor == nakama::ipc::kJsonSchemaMinor
+            && m->hasProperty ("p2_reject")
             && ! liesReject (m->getProperty ("p2_reject"), gm))
         {
             fehler = "p2_reject is invalid";
@@ -608,11 +640,14 @@ SourcesModel::SnapshotErgebnis SourcesModel::uebernehmeSessionSnapshot (
             {
                 e.letzterRejectZaehler = gm.rejectZaehler;
                 e.zeile.p2RejectAktiv = true;
-                e.zeile.messung = Messung::invalid;
                 if (gm.rejectGrund == "lautheit_ungueltig")
                 {
                     e.zeile.lautheit = Lautheit::invalid;
                     e.zeile.lufsPaarVorhanden = false;
+                }
+                else
+                {
+                    e.zeile.messung = Messung::invalid;
                 }
             }
         }
@@ -687,7 +722,12 @@ bool SourcesModel::uebernehmeP2 (const std::uint8_t* daten, std::size_t laenge,
         e.zeile.messAlterMs = 0;
         e.zeile.fensterDauerMs = frame.sampleRate > 0.0
             ? static_cast<double> (frame.sampleCount) * 1000.0 / frame.sampleRate : 0.0;
-        e.zeile.p2RejectAktiv = false; // gueltiger spaeterer Frame ist Gegenpfad.
+        const bool lautheitsRejectAktiv = e.zeile.p2RejectAktiv
+            && e.zeile.p2RejectGrund == "lautheit_ungueltig";
+        const bool frameHatLautheitsaussage = frame.lufsPaar
+            || frame.lufsIStatus == 1 || frame.lufsIStatus == 2;
+        if (! lautheitsRejectAktiv || frameHatLautheitsaussage)
+            e.zeile.p2RejectAktiv = false;
         if (frame.lufsPaar)
         {
             e.zeile.lautheit = Lautheit::gueltig;
@@ -711,7 +751,8 @@ bool SourcesModel::uebernehmeP2 (const std::uint8_t* daten, std::size_t laenge,
             }
             else
             {
-                e.zeile.lautheit = Lautheit::missing;
+                if (! lautheitsRejectAktiv)
+                    e.zeile.lautheit = Lautheit::missing;
                 e.zeile.messung = Messung::partial;
             }
         }
@@ -903,7 +944,8 @@ void SourcesModel::aktualisiereAbgeleiteteZustaende (Eintrag& e, Zeitpunkt jetzt
             std::max<std::int64_t> (0, delta));
     }
 
-    if (e.zeile.p2RejectAktiv)
+    if (e.zeile.p2RejectAktiv
+        && e.zeile.p2RejectGrund != "lautheit_ungueltig")
     {
         e.zeile.messung = Messung::invalid;
         return;

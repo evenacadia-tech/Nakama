@@ -130,6 +130,27 @@ std::string snapshot (const std::vector<Mitglied>& mitglieder,
          + liste + "]}";
 }
 
+std::string snapshotMinor0 (const Mitglied& m,
+                            const std::string& binding = hex (1),
+                            const std::string& session = hex (2))
+{
+    const auto a = adresse (binding, session, m.id, m.nonce);
+    const auto frische = std::string (R"({"stale":)")
+        + (m.stale ? "true" : "false") + R"(,"letzter_kontakt_ms":)"
+        + std::to_string (m.controlAlter) + "}";
+    const auto descriptor = R"({"adresse":)" + a
+        + R"(,"plugin_kind":")" + m.kind
+        + R"(","measurement_position":")" + m.position
+        + R"(","aussageklasse":"beobachtend","label":)" + jsonText (m.label)
+        + R"(,"capabilities":)" + capabilities()
+        + R"(,"frische":)" + frische + "}";
+    return R"({"type":"session_snapshot","session_epoch":")" + session
+        + R"(","broker_epoch":")" + hex (8)
+        + R"(","fuehrendes_main":")" + hex (10)
+        + R"(","beitritt_bestaetigung_noetig":false,"mitglieder":[)"
+        + descriptor + "]}";
+}
+
 bool uebernehme (Model& m, const std::string& json, Zeitpunkt t)
 {
     juce::String grund;
@@ -266,6 +287,25 @@ int main()
         pruefe (m.uebernehmeSessionSnapshot (snapshot ({ mainPre }), t0, grund)
                     == Model::SnapshotErgebnis::ungueltig,
                 "snapshot_reader_enforces_the_strict_descriptor_branch");
+    }
+    {
+        Model m;
+        m.beginneSubscription (hex (1), hex (2), hex (10));
+        Mitglied legacy;
+        legacy.label = "Minor zero label";
+        juce::String grund;
+        const bool minor0Alt = m.uebernehmeSessionSnapshot (
+            snapshotMinor0 (legacy), 0, t0, grund)
+                == Model::SnapshotErgebnis::uebernommen;
+        legacy.hostName = "Minor one host";
+        const auto minor1Payload = snapshot ({ legacy });
+        const bool minor0LehntMinor1Feld = m.uebernehmeSessionSnapshot (
+            minor1Payload, 0, t0, grund) == Model::SnapshotErgebnis::ungueltig;
+        const bool minor1Traegt = m.uebernehmeSessionSnapshot (
+            minor1Payload, 1, t0, grund) == Model::SnapshotErgebnis::uebernommen
+            && m.sicht().quellen.front().hostBusName == "Minor one host";
+        pruefe (minor0Alt && minor0LehntMinor1Feld && minor1Traegt,
+                "json_minor_selects_historical_or_current_session_contract");
     }
     {
         Model m;
@@ -478,10 +518,32 @@ int main()
         uebernehme (m, snapshot ({ reject }, pair.frame.projectBindingId,
                                  pair.frame.sessionEpoch), t0 + std::chrono::milliseconds (1));
         const auto inv = m.sicht().quellen.front();
-        pruefe (inv.messung == Model::Messung::invalid
+        pruefe (inv.messung == Model::Messung::fresh
                 && inv.lautheit == Model::Lautheit::invalid
                 && ! inv.lufsPaarVorhanden,
-                "half_or_nonfinite_pair_maps_to_invalid_without_number");
+                "half_or_nonfinite_pair_invalidates_only_loudness_without_number");
+
+        Model p2DannP1, p1DannP2;
+        initialisiereFuer (p2DannP1, partial, t0);
+        initialisiereFuer (p1DannP2, partial, t0);
+        p2InModell (p2DannP1, partial, t0);
+        uebernehme (p2DannP1,
+                    snapshot ({ reject }, partial.frame.projectBindingId,
+                              partial.frame.sessionEpoch),
+                    t0 + std::chrono::milliseconds (1));
+        uebernehme (p1DannP2,
+                    snapshot ({ reject }, partial.frame.projectBindingId,
+                              partial.frame.sessionEpoch), t0);
+        p2InModell (p1DannP2, partial, t0 + std::chrono::milliseconds (1));
+        const auto a = p2DannP1.sicht().quellen.front();
+        const auto b = p1DannP2.sicht().quellen.front();
+        pruefe (a.messung == Model::Messung::partial
+                && b.messung == Model::Messung::partial
+                && a.lautheit == Model::Lautheit::invalid
+                && b.lautheit == Model::Lautheit::invalid
+                && a.p2RejectAktiv && b.p2RejectAktiv
+                && ! a.lufsPaarVorhanden && ! b.lufsPaarVorhanden,
+                "loudness_reject_is_deterministic_for_p1_p2_both_orders");
     }
     {
         Model m;

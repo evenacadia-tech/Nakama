@@ -19,6 +19,7 @@
           "host_mixer_index"
         ],
         "heartbeat_runtime": true,
+        "heartbeat_runtime_label": true,
         "session_mitglied_probe_descriptor_optional": true,
         "session_mitglied_p2_reject": true,
         "session_command": true,
@@ -47,7 +48,7 @@
     {
       "name": "heartbeat.runtime",
       "eigentuemer": "SONDE-012 (S18-19)",
-      "grund": "Seit Wire-Envelope-schema_minor 1 optional belegt: strikter Runtime-Block mit verpflichtendem Messpunkt und Betriebszustand sowie den optionalen B1-Hostfeldern."
+      "grund": "Seit Wire-Envelope-schema_minor 1 optional belegt: strikter Runtime-Block mit verpflichtendem Messpunkt und Betriebszustand sowie optionalem probe_label und den optionalen B1-Hostfeldern."
     },
     {
       "name": "session_snapshot.mitglieder[].probe_descriptor",

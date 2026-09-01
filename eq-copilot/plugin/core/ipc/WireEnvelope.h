@@ -46,6 +46,10 @@ inline constexpr std::uint32_t kMaxPayloadBytes = kMaxFrameBytes - kKopfBytes;
 /// Die einzige heute unterstuetzte Major-Version.
 inline constexpr std::uint8_t kSchemaMajor = 3u;
 
+/// Aktive JSON-Vertragsfassung fuer P0/P1. Minor 0 bleibt lesbar, wird aber
+/// gegen seinen historischen Feldsatz validiert; hoehere Werte sind fremd.
+inline constexpr std::uint8_t kJsonSchemaMinor = 1u;
+
 /// Bootstrap-Hello: hoechstens 16 KiB, nur u32-laengenpraefigiertes JSON (§53.9).
 inline constexpr std::uint32_t kMaxBootstrapBytes = 16u * 1024u;
 

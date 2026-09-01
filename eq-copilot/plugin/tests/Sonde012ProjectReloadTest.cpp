@@ -6,6 +6,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "PluginProcessor.h"
+#include "PluginEditor.h"
 
 #include <algorithm>
 #include <iostream>
@@ -57,6 +58,7 @@ eqcop::SourcesModel::Sicht lebendeQuelle (const std::string& instance)
     q.messpunkt = eqcop::SourcesModel::Messpunkt::insert;
     q.descriptorVorhanden = true;
     q.sichtbarerName = "Host Piano";
+    q.userLabel = "Reported fallback";
     q.hostBusName = "Host Piano";
     q.namensherkunft = eqcop::SourcesModel::Namensherkunft::host;
     q.lufsPaarVorhanden = true;
@@ -129,12 +131,15 @@ int main()
                                      && dirtyVor.nonParam == 0;
     vor.v3AntwortFuerTest (ack (bindId, true));
     vor.sourcesTick();
+    const auto nachBind = vor.holeZustandKopie();
+    const bool berichtetesLabelPersistiert = nachBind.mainProjectMitglieder.size() == 1
+        && nachBind.mainProjectMitglieder.front().label == "Reported fallback";
     const bool benannt = vor.benenneSourcesHauptziel (quelle, "Stored Piano");
     const bool noOp = ! vor.benenneSourcesHauptziel (quelle, "Stored Piano");
     pruefe (fremdEingereiht && fremdAbgelehnt && gebundenEingereiht
             && bindCommand.find ("\"command\":\"confirm_join\"")
                 != std::string::npos && ! bindId.empty() && vorAckNichtPersistiert
-            && benannt && noOp && dirtyVor.nonParam == 2,
+            && berichtetesLabelPersistiert && benannt && noOp && dirtyVor.nonParam == 2,
             "confirmed_join_ack_and_name_each_mark_host_dirty",
             juce::String (dirtyVor.nonParam));
 
@@ -196,27 +201,42 @@ int main()
             && reconnectWartet && nach.sourcesSicht().subscriptionAktiv,
             "main_client_subscribes_after_welcome_and_reconnect_resubscribes");
 
-    auto entfernenLive = lebendeQuelle (quelle);
-    entfernenLive.quellen.front().mitgliedschaft = eqcop::SourcesModel::Mitgliedschaft::bestaetigt;
-    nach.setzeSourcesFixtureFuerTest (std::move (entfernenLive));
-    const bool entferntEingereiht = nach.entferneSourcesHauptziel (quelle);
-    const auto unbindCommand = nach.ausstehenderSourcesCommandFuerTest();
-    const auto unbindId = commandId (unbindCommand);
-    const bool vorUnbindAckNochDa = nach.holeZustandKopie().mainProjectMitglieder.size() == 1
-                                 && dirtyNach.nonParam == 0;
-    nach.v3AntwortFuerTest (ack (unbindId, true));
-    nach.sourcesTick();
+    auto referenz = nach.sourcesSicht();
+    referenz.mainDarfSchreiben = false;
+    referenz.fuehrendesMain = id ('e');
+    nach.setzeSourcesFixtureFuerTest (std::move (referenz));
+    {
+        eqcop::EqCopilotEditor editor (nach);
+        editor.setSize (760, 430);
+        juce::Timer::callPendingTimersSynchronously();
+        const bool labelDeaktiviert = ! editor.sourcesLabelAktivFuerTest()
+            && editor.sourcesBedienstatusFuerTest().containsIgnoreCase ("leading Main");
+        editor.sourcesLabelSchreibversuchFuerTest ("Must not write");
+        const bool fehlschlagSichtbar = editor.sourcesBedienstatusFuerTest()
+            .containsIgnoreCase ("failed");
+        pruefe (labelDeaktiviert && fehlschlagSichtbar
+                && nach.holeZustandKopie().mainProjectMitglieder.front().label == "Stored Piano"
+                && dirtyNach.nonParam == 0,
+                "nonleading_main_disables_label_and_reports_failed_write");
+    }
+
+    nach.v3LinkFuerTest (true);
+    nach.v3AntwortFuerTest (leererSnapshot (hello));
+    const auto nurPersistent = nach.sourcesSicht();
+    const bool istNurPersistent = nurPersistent.mainDarfSchreiben
+        && nurPersistent.quellen.size() == 1
+        && nurPersistent.quellen.front().mitgliedschaft
+            == eqcop::SourcesModel::Mitgliedschaft::bestaetigt
+        && nurPersistent.quellen.front().runtimeNonce.empty();
+    const bool entferntLokal = nach.entferneSourcesHauptziel (quelle);
     const auto nachUnbind = nach.sourcesSicht();
+    const bool keineWireBehauptung = nach.ausstehenderSourcesCommandFuerTest().empty();
     const bool entferntSichtbar = nach.holeZustandKopie().mainProjectMitglieder.empty()
-        && nachUnbind.quellen.size() == 1
-        && nachUnbind.quellen.front().mitgliedschaft
-            == eqcop::SourcesModel::Mitgliedschaft::unclassified;
+        && nachUnbind.quellen.empty();
     const bool zweitesNoOp = ! nach.entferneSourcesHauptziel (quelle);
-    pruefe (entferntEingereiht
-            && unbindCommand.find ("\"command\":\"unbind_probe\"") != std::string::npos
-            && ! unbindId.empty() && vorUnbindAckNochDa
+    pruefe (istNurPersistent && entferntLokal && keineWireBehauptung
             && entferntSichtbar && zweitesNoOp && dirtyNach.nonParam == 1,
-            "confirmed_unbind_ack_removes_membership_and_marks_host_dirty_once",
+            "persistent_only_member_remove_needs_no_runtime_nonce_and_marks_host_dirty_once",
             juce::String (dirtyNach.nonParam));
     nach.removeListener (&dirtyNach);
 

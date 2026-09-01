@@ -92,9 +92,11 @@ EqCopilotProcessor::EqCopilotProcessor()
             [this] { return statsSnapshot(); },
             [this] { return messKompakt(); }),
       controlV3 ([this] { return v3Hello(); }, v3PipeName,
-                 [this] (const std::string& json) { v3Antwort (json); },
+                 {},
                  [this] { return v3Status(); },
-                 [this] (bool verbunden) { v3ControlLink (verbunden); }),
+                 [this] (bool verbunden) { v3ControlLink (verbunden); },
+                 [this] (const std::string& json, std::uint8_t schemaMinor)
+                 { v3Antwort (json, schemaMinor); }),
       telemetryV3 ([this] { return v3TelemetryHello(); }, v3PipeName,
                    [this] (const std::uint8_t* daten, std::size_t laenge,
                            std::uint8_t minor)
@@ -845,7 +847,8 @@ void EqCopilotProcessor::v3ControlLink (bool verbunden)
     telemetryV3.reconnect();
 }
 
-void EqCopilotProcessor::v3Antwort (const std::string& json)
+void EqCopilotProcessor::v3Antwort (const std::string& json,
+                                    std::uint8_t schemaMinor)
 {
     nakama::ipc::GelesenesCommandAck ack;
     if (nakama::ipc::commandAckHaeltVertrag (json, ack))
@@ -862,7 +865,7 @@ void EqCopilotProcessor::v3Antwort (const std::string& json)
     }
     juce::String fehler;
     const auto ergebnis = sourcesModel.uebernehmeSessionSnapshot (
-        json, SourcesModel::Uhr::now(), fehler);
+        json, schemaMinor, SourcesModel::Uhr::now(), fehler);
     if (ergebnis == SourcesModel::SnapshotErgebnis::ungueltig)
         sourcesModel.setzeDiagnoseFuerSichtbeweis (
             SourcesModel::Diagnose::incompatible, false);
@@ -1208,6 +1211,38 @@ bool EqCopilotProcessor::benenneSourcesHauptziel (const std::string& erwarteteIn
 
 bool EqCopilotProcessor::entferneSourcesHauptziel (const std::string& erwarteteInstanceId)
 {
+    const auto sicht = sourcesModel.sicht();
+    if (! sicht.mainDarfSchreiben
+        || ! sourcesModel.istAktuellesHauptziel (erwarteteInstanceId)
+        || ! nakama::ipc::istHex32 (erwarteteInstanceId))
+        return false;
+    const auto quelle = std::find_if (sicht.quellen.begin(), sicht.quellen.end(),
+        [&] (const auto& q) { return q.instanceId == erwarteteInstanceId && q.hauptziel; });
+    if (quelle == sicht.quellen.end()
+        || quelle->mitgliedschaft != SourcesModel::Mitgliedschaft::bestaetigt)
+        return false;
+    if (! nakama::ipc::istHex32 (quelle->runtimeNonce))
+    {
+        std::vector<nakama::state::MainProjectMitglied> kopie;
+        {
+            std::lock_guard<std::mutex> l (bindungMutex);
+            if (zustand.nurLesen || zustand.common.klasse != nakama::state::Klasse::main)
+                return false;
+            const auto gefunden = std::find_if (
+                zustand.mainProjectMitglieder.begin(), zustand.mainProjectMitglieder.end(),
+                [&] (const auto& m) {
+                    return m.instanceId.toStdString() == erwarteteInstanceId;
+                });
+            if (gefunden == zustand.mainProjectMitglieder.end())
+                return false;
+            zustand.mainProjectMitglieder.erase (gefunden);
+            kopie = zustand.mainProjectMitglieder;
+        }
+        sourcesModel.setzePersistenteMitglieder (kopie);
+        meldeHostDirty();
+        v3StateRevision.fetch_add (1);
+        return true;
+    }
     return sendeSourcesCommand (SourcesCommandArt::unbindProbe, erwarteteInstanceId);
 }
 
@@ -1248,6 +1283,8 @@ bool EqCopilotProcessor::sendeSourcesCommand (SourcesCommandArt art,
     auftrag.instanceId = erwarteteInstanceId;
     auftrag.projectBindingId = h.adresse.projectBindingId;
     auftrag.sessionEpoch = h.adresse.sessionEpoch;
+    if (art == SourcesCommandArt::confirmJoin)
+        auftrag.label = quelle->userLabel.substring (0, 120);
     const char* command = art == SourcesCommandArt::confirmJoin
                             ? "confirm_join" : "unbind_probe";
     auftrag.json = std::string ("{\"type\":\"session_command\",\"command\":\"")
@@ -1296,7 +1333,8 @@ void EqCopilotProcessor::wendeBestaetigteSourcesCommandsAn()
                 && zustand.mainProjectMitglieder.size()
                     < static_cast<std::size_t> (nakama::state::maxMainProjectMitglieder))
             {
-                zustand.mainProjectMitglieder.push_back ({ juce::String (befehl.instanceId), {} });
+                zustand.mainProjectMitglieder.push_back (
+                    { juce::String (befehl.instanceId), befehl.label });
                 geaendert = true;
             }
             else if (befehl.art == SourcesCommandArt::unbindProbe

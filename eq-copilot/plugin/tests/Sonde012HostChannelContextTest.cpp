@@ -90,9 +90,56 @@ int main()
         const bool jsonOk = runtimeAusJson (heartbeat, runtime)
             && runtime["messpunkt"].toString() == "insert"
             && runtime["betrieb"].toString() == "active"
+            && runtime["label"].toString() == "Stored Probe Name"
             && runtime["host_bus_name"].toString() == name;
         fall ("local_update_track_properties_reports_name_on_message_thread",
               p.hostCallbackAufMessageThreadFuerTest() && hostIst (status, name) && jsonOk);
+    }
+
+    {
+        nakama::sonde::SondeProcessor p;
+        binde (p, nakama::state::Messposition::insert, "State Label");
+        auto status = p.v3StatusFuerTest();
+        juce::var runtime;
+        const bool erster = status.runtime.labelGemeldet
+            && status.runtime.label == "State Label"
+            && runtimeAusJson (nakama::ipc::heartbeatAlsJson (
+                   p.v3HelloFuerTest().adresse, 9, status), runtime)
+            && runtime["label"].toString() == "State Label";
+        binde (p, nakama::state::Messposition::insert, "Changed Label");
+        status = p.v3StatusFuerTest();
+        const bool geaendert = status.runtime.labelGemeldet
+            && status.runtime.label == "Changed Label"
+            && runtimeAusJson (nakama::ipc::heartbeatAlsJson (
+                   p.v3HelloFuerTest().adresse, 10, status), runtime)
+            && runtime["label"].toString() == "Changed Label";
+        fall ("runtime_reports_stored_label_on_first_block_and_change",
+              erster && geaendert);
+    }
+
+    {
+        nakama::ipc::ControlStatus status;
+        status.runtime.gemeldet = true;
+        status.runtime.messpunkt = "insert";
+        status.runtime.betrieb = "active";
+        status.runtime.labelGemeldet = true;
+        status.runtime.label = wiederhole (0x1f642, 120).toStdString();
+        juce::var runtime;
+        const nakama::ipc::Adresse adresse {};
+        const bool maximum = runtimeAusJson (
+            nakama::ipc::heartbeatAlsJson (adresse, 11, status), runtime)
+            && runtime["label"].toString().length() == 120;
+        status.runtime.label = wiederhole (0x1f642, 121).toStdString();
+        const bool drueberFehlt = runtimeAusJson (
+            nakama::ipc::heartbeatAlsJson (adresse, 12, status), runtime)
+            && ! runtime.getDynamicObject()->hasProperty ("label");
+        status.runtime.label.clear();
+        const bool leerReist = runtimeAusJson (
+            nakama::ipc::heartbeatAlsJson (adresse, 13, status), runtime)
+            && runtime.getDynamicObject()->hasProperty ("label")
+            && runtime["label"].toString().isEmpty();
+        fall ("runtime_label_uses_probe_label_codepoint_boundary",
+              maximum && drueberFehlt && leerReist);
     }
 
     {

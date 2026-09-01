@@ -134,13 +134,19 @@ int sonde012Suite (const juce::File& ordner)
 
     auto invalid = sicht (1);
     invalid.quellen[0].messung = Model::Messung::invalid;
-    invalid.quellen[0].lautheit = Model::Lautheit::invalid;
+    invalid.quellen[0].lautheit = Model::Lautheit::missing;
     invalid.quellen[0].lufsPaarVorhanden = false;
     invalid.quellen[0].p2RejectAktiv = true;
-    invalid.quellen[0].p2RejectGrund = "lautheit_ungueltig";
+    invalid.quellen[0].p2RejectGrund = "feature_batch_ungueltig";
     invalid.quellen[0].p2RejectZaehler = 2;
     faelle.push_back ({ "sonde012-invalid-frame.png", invalid });
-    faelle.push_back ({ "sonde012-loudness-invalid-half-pair.png", invalid });
+    auto loudnessInvalid = sicht (1);
+    loudnessInvalid.quellen[0].lautheit = Model::Lautheit::invalid;
+    loudnessInvalid.quellen[0].lufsPaarVorhanden = false;
+    loudnessInvalid.quellen[0].p2RejectAktiv = true;
+    loudnessInvalid.quellen[0].p2RejectGrund = "lautheit_ungueltig";
+    loudnessInvalid.quellen[0].p2RejectZaehler = 2;
+    faelle.push_back ({ "sonde012-loudness-invalid-half-pair.png", loudnessInvalid });
 
     auto nameChange = sicht (1);
     nameChange.quellen[0].hostBusName = "Host Rename";
@@ -207,6 +213,11 @@ int sonde012Suite (const juce::File& ordner)
     findings.quellen[1].findingsOffen = 7;
     faelle.push_back ({ "sonde012-findings-count-0-and-many.png", findings });
     faelle.push_back ({ "sonde012-one-main-target-with-references.png", sicht (4) });
+
+    auto nichtFuehrend = sicht (1);
+    nichtFuehrend.mainDarfSchreiben = false;
+    nichtFuehrend.fuehrendesMain = hex (11);
+    faelle.push_back ({ "sonde012-nonleading-label-disabled.png", nichtFuehrend });
 
     int ok = 0;
     for (auto& fall : faelle)

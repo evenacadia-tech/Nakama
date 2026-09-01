@@ -683,6 +683,7 @@ def pruefe_probe_descriptor(lauf: Lauf, schema: dict, reserviert: dict) -> None:
               and set(fassungen.get("1", {}).get("probe_descriptor_hostfelder", []))
                   == HOST_DESCRIPTOR_FELDER
               and fassungen.get("1", {}).get("heartbeat_runtime") is True
+              and fassungen.get("1", {}).get("heartbeat_runtime_label") is True
               and fassungen.get("1", {}).get("session_mitglied_probe_descriptor_optional") is True
               and fassungen.get("1", {}).get("session_mitglied_p2_reject") is True
               and fassungen.get("1", {}).get("session_command") is True
@@ -815,6 +816,9 @@ def pruefe_runtime_und_p2_reject(lauf: Lauf, schema: dict) -> None:
                   == {"$ref": "#/$defs/host_bus_name"}
               and runtime_props.get("host_mixer_index")
                   == {"$ref": "#/$defs/host_mixer_index"})
+    lauf.wahr("runtime.label ist optional und exakt probe_label",
+              runtime_props.get("label") == {"$ref": "#/$defs/probe_label"}
+              and "label" not in runtime.get("required", []))
     lauf.wahr("Betriebszustand ist exakt active/suspended/offline",
               defs.get("betrieb", {}).get("enum")
               == ["active", "suspended", "offline"])

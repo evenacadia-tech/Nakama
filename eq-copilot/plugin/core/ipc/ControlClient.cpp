@@ -267,6 +267,40 @@ std::string jsonStringUntrusted (const std::string& roh)
     return aus;
 }
 
+bool utf8CodepointsBis (const std::string& text, std::size_t maximum) noexcept
+{
+    std::size_t codepoints = 0;
+    for (std::size_t i = 0; i < text.size();)
+    {
+        const auto erster = static_cast<unsigned char> (text[i]);
+        std::size_t bytes = 0;
+        std::uint32_t wert = 0;
+        if (erster <= 0x7f)      { bytes = 1; wert = erster; }
+        else if (erster >= 0xc2 && erster <= 0xdf)
+                                { bytes = 2; wert = erster & 0x1f; }
+        else if (erster >= 0xe0 && erster <= 0xef)
+                                { bytes = 3; wert = erster & 0x0f; }
+        else if (erster >= 0xf0 && erster <= 0xf4)
+                                { bytes = 4; wert = erster & 0x07; }
+        else return false;
+        if (i + bytes > text.size()) return false;
+        for (std::size_t j = 1; j < bytes; ++j)
+        {
+            const auto folge = static_cast<unsigned char> (text[i + j]);
+            if ((folge & 0xc0) != 0x80) return false;
+            wert = (wert << 6) | (folge & 0x3f);
+        }
+        if ((bytes == 3 && wert < 0x800)
+            || (bytes == 4 && wert < 0x10000)
+            || (wert >= 0xd800 && wert <= 0xdfff)
+            || wert > 0x10ffff)
+            return false;
+        i += bytes;
+        if (++codepoints > maximum) return false;
+    }
+    return true;
+}
+
 std::uint64_t jsonSafe (std::uint64_t wert) noexcept
 {
     return std::min (wert, kJsonSafeModulus - 1);
@@ -310,6 +344,8 @@ std::string runtimeJson (const ControlRuntime& runtime)
     std::string aus = ",\"runtime\":{\"messpunkt\":"
                     + jsonString (runtime.messpunkt)
                     + ",\"betrieb\":" + jsonString (runtime.betrieb);
+    if (runtime.labelGemeldet && utf8CodepointsBis (runtime.label, 120))
+        aus += ",\"label\":" + jsonStringUntrusted (runtime.label);
     // Ein ungueltiger optionaler Hostwert ist semantisch "nicht geliefert":
     // der vollstaendige Messpunkt-/Betriebsblock darf deshalb weiter reisen.
     if (runtime.hostBusNameGemeldet && ! runtime.hostBusName.empty())
@@ -493,9 +529,11 @@ struct ControlClient::Laufzeit
               std::string pn,
               std::function<void (const std::string&)> ba,
               std::function<ControlStatus()> sp,
-              std::function<void (bool)> bl)
+              std::function<void (bool)> bl,
+              std::function<void (const std::string&, std::uint8_t)> bva)
         : helloProvider (std::move (hp)), beiAntwort (std::move (ba)),
           statusProvider (std::move (sp)), beiLinkStatus (std::move (bl)),
+          beiVersionierterAntwort (std::move (bva)),
           pipeName (std::move (pn)) {}
 
     void threadLauf (std::uint64_t meinLauf, std::shared_ptr<IpcVerbindung> meine);
@@ -519,6 +557,7 @@ struct ControlClient::Laufzeit
     std::function<void (const std::string&)> beiAntwort;
     std::function<ControlStatus()> statusProvider;
     std::function<void (bool)> beiLinkStatus;
+    std::function<void (const std::string&, std::uint8_t)> beiVersionierterAntwort;
     std::atomic<bool> linkAlsVerbundenGemeldet { false };
     std::string pipeName;
     std::atomic<std::uint64_t> heartbeatFolge { 0 };
@@ -611,12 +650,15 @@ ControlClient::ControlClient (std::function<ControlHello()> helloProviderIn,
                               std::string pipeNameIn,
                               std::function<void (const std::string&)> beiAntwortIn,
                               std::function<ControlStatus()> statusProviderIn,
-                              std::function<void (bool)> beiLinkStatusIn)
+                              std::function<void (bool)> beiLinkStatusIn,
+                              std::function<void (const std::string&, std::uint8_t)>
+                                  beiVersionierterAntwortIn)
     : k (std::make_shared<Laufzeit> (std::move (helloProviderIn),
                                      std::move (pipeNameIn),
                                      std::move (beiAntwortIn),
                                      std::move (statusProviderIn),
-                                     std::move (beiLinkStatusIn)))
+                                     std::move (beiLinkStatusIn),
+                                     std::move (beiVersionierterAntwortIn)))
 {
 }
 
@@ -1215,6 +1257,14 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
                 ++zustand.familieAbweisungen;
                 return false;
             }
+            if (e.kopf.schemaMinor > kJsonSchemaMinor)
+            {
+                std::lock_guard<std::mutex> l (zustandMutex);
+                zustand.letzterFehler =
+                    "Envelope schema_minor ist neuer als der JSON-Leser — wird geschlossen";
+                ++zustand.envelopeAbweisungen;
+                return false;
+            }
 
             // Ratengrenze VOR dem Callback: ein Peer, der hinter dem welcome
             // beliebig viele Frames pipelined, darf den Aufrufer nicht damit
@@ -1239,8 +1289,13 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
                                        e.payloadLaenge);
             inFlightAck (antwort);
             // Nach `stop()` wird kein Callback mehr gerufen (`B-CC-10`).
-            if (beiAntwort && ! sollAbbrechen (generation))
-                beiAntwort (antwort);
+            if (! sollAbbrechen (generation))
+            {
+                if (beiVersionierterAntwort)
+                    beiVersionierterAntwort (antwort, e.kopf.schemaMinor);
+                else if (beiAntwort)
+                    beiAntwort (antwort);
+            }
         }
     };
 
@@ -1286,7 +1341,7 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
         if (etwasGesendet)
         {
             const auto familie = istP0 ? Familie::p0 : Familie::p1;
-            if (! envelopeSchreiben (familie, 0,
+            if (! envelopeSchreiben (familie, kJsonSchemaMinor,
                                      reinterpret_cast<const std::uint8_t*> (nachricht.data()),
                                      nachricht.size(), ausgang)
                 || ! verbindung.schreibenGenau (ausgang.data(), ausgang.size(),

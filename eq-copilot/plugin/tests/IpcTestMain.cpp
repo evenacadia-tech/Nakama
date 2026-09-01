@@ -236,12 +236,17 @@ public:
     /// 1 = Revision mit fuehrender Null, 2 = numerischer Fehler-state_hash,
     /// 3 = unbekannter Fehlercode, 4 = Erfolgs-ACK ohne Pflicht-Hash.
     std::atomic<int> commandAckVertragsbruch { 0 };
+    /// Minor fuer nach dem Welcome erzeugte P0-Antworten. Default 0 haelt
+    /// die Rueckwaertskompatibilitaet sichtbar; einzelne Tests setzen 1 bzw.
+    /// einen unbekannten Wert.
+    std::atomic<int> controlAntwortMinor { 0 };
     std::mutex textMutex;
     std::string letztesControlHello, letztesTelemetryHello, letzterAbweisungsgrund;
     /// Jeder empfangene P0-/P1-Payload, woertlich. Damit laesst sich pruefen,
     /// ob eine bestimmte Nachricht WIRKLICH angekommen ist — eine Zahl allein
     /// sagt nichts darueber, WELCHE fehlt.
     std::vector<std::string> p0Texte, p1Texte;
+    std::vector<std::uint8_t> p0Minors, p1Minors;
     /// Vollstaendiger zuletzt empfangener Telemetrie-Wireframe inklusive
     /// u32-Laengenpraefix. Damit misst der Sender-Test schema_minor an Offset
     /// 7 des tatsaechlich geschriebenen Rahmens.
@@ -639,13 +644,15 @@ private:
                     {
                         std::lock_guard<std::mutex> l (textMutex);
                         p0Texte.push_back (text);
+                        p0Minors.push_back (e.kopf.schemaMinor);
                     }
                     if (text.find ("\"heartbeat\"") != std::string::npos)
                     {
                         const std::string ack =
                             "{\"type\":\"heartbeat_ack\",\"sequence\":0,\"duplicate_instance_id\":false}";
                         std::vector<std::uint8_t> antwort;
-                        envelopeSchreiben (Familie::p0, 0,
+                        envelopeSchreiben (Familie::p0,
+                                           static_cast<std::uint8_t> (controlAntwortMinor.load()),
                                            reinterpret_cast<const std::uint8_t*> (ack.data()),
                                            ack.size(), antwort);
                         if (! schreiben (h, antwort.data(), antwort.size()))
@@ -712,6 +719,7 @@ private:
                 {
                     ++p1;
                     std::lock_guard<std::mutex> l (textMutex);
+                    p1Minors.push_back (e.kopf.schemaMinor);
                     p1Texte.emplace_back (reinterpret_cast<const char*> (e.payload),
                                           e.payloadLaenge);
                 }
@@ -1824,6 +1832,15 @@ int main (int argc, char** argv)
         control.sendeP1 ("sonde-1", "{\"type\":\"state_report\"}");
         pruefe (warteAuf (3000, [&] { return server.p1.load() >= 1; }),
                 "P1 kommt als P1-Familie an");
+        {
+            std::lock_guard<std::mutex> l (server.textMutex);
+            pruefe (! server.p0Minors.empty() && ! server.p1Minors.empty()
+                        && std::all_of (server.p0Minors.begin(), server.p0Minors.end(),
+                                       [] (auto m) { return m == 1u; })
+                        && std::all_of (server.p1Minors.begin(), server.p1Minors.end(),
+                                       [] (auto m) { return m == 1u; }),
+                    "ControlClient sendet P0 und P1 mit aktivem JSON-Minor");
+        }
 
         std::uint8_t p2Frame[128];
         std::memset (p2Frame, 0x5A, sizeof (p2Frame));
@@ -1857,6 +1874,41 @@ int main (int argc, char** argv)
         pruefe (control.snapshot().status == ControlClient::Status::getrennt
                     && telemetrie.snapshot().status == TelemetryClient::Status::getrennt,
                 "stop() trennt beide Verbindungen und kehrt zurueck");
+        server.stoppen();
+    }
+
+    abschnitt ("G1a · JSON-Minor wird bis zum C++-Empfaenger getragen");
+    {
+        TestServer server (testPipeName ("jsonminor"));
+        server.controlAntwortMinor.store (1);
+        server.starten();
+        std::atomic<int> empfangenerMinor { -1 };
+        ControlClient control (
+            [&] {
+                ControlHello h;
+                h.adresse = testAdresse (hex32 ('6'));
+                h.pluginKind = "main";
+                return h;
+            },
+            server.pipeName(), {}, {}, {},
+            [&] (const std::string&, std::uint8_t minor) {
+                empfangenerMinor.store (minor);
+            });
+        control.start();
+        const bool verbunden = warteAuf (4000, [&] {
+            return control.snapshot().status == ControlClient::Status::verbunden;
+        });
+        control.sendeP0 ("{\"type\":\"heartbeat\",\"sequence\":1}");
+        pruefe (verbunden && warteAuf (3000, [&] { return empfangenerMinor.load() == 1; }),
+                "ControlClient reicht den empfangenen Minor 1 an den Vertragsleser weiter");
+
+        server.controlAntwortMinor.store (2);
+        control.sendeP0 ("{\"type\":\"heartbeat\",\"sequence\":2}");
+        pruefe (warteAuf (3000, [&] {
+                    return control.snapshot().envelopeAbweisungen >= 1;
+                }),
+                "ein hoeherer unbekannter JSON-Minor schliesst wie ein Envelopeverstoss");
+        control.stop();
         server.stoppen();
     }
 

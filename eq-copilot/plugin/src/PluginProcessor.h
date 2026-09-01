@@ -195,7 +195,9 @@ public:
     }
     std::string v3SubscribeFuerTest() const { return v3SubscribeJson(); }
     void v3LinkFuerTest (bool verbunden) { v3ControlLink (verbunden); }
-    void v3AntwortFuerTest (const std::string& json) { v3Antwort (json); }
+    void v3AntwortFuerTest (const std::string& json,
+                            std::uint8_t schemaMinor = nakama::ipc::kJsonSchemaMinor)
+    { v3Antwort (json, schemaMinor); }
     void setzeSourcesFixtureFuerTest (SourcesModel::Sicht fixture)
     { sourcesModel.setzeFixtureFuerTest (std::move (fixture)); }
     std::string ausstehenderSourcesCommandFuerTest() const;
@@ -250,13 +252,14 @@ private:
     nakama::ipc::TelemetryHello v3TelemetryHello() const;
     std::string v3SubscribeJson() const;
     void v3ControlLink (bool verbunden);
-    void v3Antwort (const std::string& json);
+    void v3Antwort (const std::string& json, std::uint8_t schemaMinor);
     void v3Frame (const std::uint8_t*, std::size_t, std::uint8_t schemaMinor);
     enum class SourcesCommandArt { confirmJoin, unbindProbe };
     struct SourcesCommand
     {
         SourcesCommandArt art = SourcesCommandArt::confirmJoin;
         std::string commandId, instanceId, projectBindingId, sessionEpoch, json;
+        juce::String label;
     };
     bool sendeSourcesCommand (SourcesCommandArt, const std::string& erwarteteInstanceId);
     void wendeBestaetigteSourcesCommandsAn();

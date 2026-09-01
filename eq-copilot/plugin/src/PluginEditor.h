@@ -57,6 +57,15 @@ public:
 
     void paint (juce::Graphics&) override;
     void resized() override;
+#if defined(NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+    bool sourcesLabelAktivFuerTest() const { return sourcesLabelFeld.isEnabled(); }
+    juce::String sourcesBedienstatusFuerTest() const { return sourcesBedienstatus; }
+    void sourcesLabelSchreibversuchFuerTest (const juce::String& text)
+    {
+        sourcesLabelFeld.setText (text, juce::dontSendNotification);
+        uebernehmeSourcesLabel();
+    }
+#endif
 
 private:
     void timerCallback() override;
@@ -122,6 +131,8 @@ private:
     SourcesModel::Sicht sourcesAnzeige;
     juce::uint64 sourcesRevision = 0;
     std::string sourcesAktionsZiel;
+    juce::String sourcesBedienstatus;
+    bool sourcesSchreibfehlerAktiv = false;
     bool mainFlaecheAktiv = false;
 
     // M3: Diagnose-Cache — 1×/s auf der Snapshot-Kopie neu gerechnet

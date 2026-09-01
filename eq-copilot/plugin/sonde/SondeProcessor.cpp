@@ -494,6 +494,11 @@ nakama::ipc::ControlStatus SondeProcessor::v3Status() const
                 case nakama::state::Messposition::post_fader_contribution:
                     break;
             }
+            if (s.runtime.gemeldet)
+            {
+                s.runtime.labelGemeldet = true;
+                s.runtime.label = zustand.common.label.toStdString();
+            }
         }
     }
 

@@ -20,6 +20,7 @@
 
 #include "IpcQueues.h"
 #include "IpcVerbindung.h"
+#include "WireEnvelope.h"
 
 #include <atomic>
 #include <condition_variable>
@@ -111,6 +112,8 @@ struct ControlRuntime
     bool          gemeldet = false;
     std::string   messpunkt;
     std::string   betrieb;
+    bool          labelGemeldet = false;
+    std::string   label;
     bool          hostBusNameGemeldet = false;
     std::string   hostBusName;
     bool          hostMixerIndexGemeldet = false;
@@ -207,7 +210,9 @@ public:
                    std::string pipeName,
                    std::function<void (const std::string&)> beiAntwort = {},
                    std::function<ControlStatus()> statusProvider = {},
-                   std::function<void (bool verbunden)> beiLinkStatus = {});
+                   std::function<void (bool verbunden)> beiLinkStatus = {},
+                   std::function<void (const std::string&, std::uint8_t schemaMinor)>
+                       beiVersionierterAntwort = {});
     ~ControlClient();
 
     ControlClient (const ControlClient&) = delete;

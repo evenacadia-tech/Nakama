@@ -38,26 +38,95 @@ pub const LAST_SONDEN: usize = 32;
 pub const SESSION_SUBSCRIPTION_EVENT_REPLAY_MAX: usize = 0;
 const SESSION_COMMAND_REGISTER_MAX: usize = SESSION_CLIENT_CAP * SESSION_CLIENT_CAP;
 
-fn v3_schema() -> &'static crate::vertrag::Schema {
-    static SCHEMA: OnceLock<crate::vertrag::Schema> = OnceLock::new();
-    SCHEMA.get_or_init(|| {
-        let wurzel = serde_json::from_str(include_str!(
-            "../../eq-copilot/schemas/v3/eq-ipc-v3.schema.json"
-        ))
-        .expect("eingefrorenes v3-Schema ist JSON");
-        crate::vertrag::Schema::laden(wurzel).expect("eingefrorenes v3-Schema ist unterstuetzt")
-    })
+const JSON_SCHEMA_MINOR_AKTIV: u8 = 1;
+
+fn v3_schema_wurzel() -> Value {
+    serde_json::from_str(include_str!(
+        "../../eq-copilot/schemas/v3/eq-ipc-v3.schema.json"
+    ))
+    .expect("eingefrorenes v3-Schema ist JSON")
 }
 
-fn v3_nachricht_lesen(payload: &[u8], erwarteter_typ: &str) -> Option<Value> {
-    let wert = v3_nachricht_lesen_beliebig(payload)?;
+fn v3_schema_minor_0_wurzel() -> Value {
+    let mut wurzel = v3_schema_wurzel();
+    {
+        let defs = wurzel["$defs"]
+            .as_object_mut()
+            .expect("v3-$defs ist ein Objekt");
+        for name in [
+            "probe_descriptor_insert",
+            "probe_descriptor_pre",
+            "probe_descriptor_post",
+            "probe_descriptor_beitrag",
+        ] {
+            let zweig = defs[name]
+                .as_object_mut()
+                .expect("Probe-Descriptor-Zweig ist ein Objekt");
+            zweig["required"]
+                .as_array_mut()
+                .expect("Descriptor-required ist ein Array")
+                .retain(|wert| wert.as_str() != Some("betrieb"));
+            let props = zweig["properties"]
+                .as_object_mut()
+                .expect("Descriptor-properties ist ein Objekt");
+            props.remove("betrieb");
+            props.remove("host_bus_name");
+            props.remove("host_mixer_index");
+        }
+        defs["heartbeat"]["properties"]
+            .as_object_mut()
+            .expect("Heartbeat-properties ist ein Objekt")
+            .remove("runtime");
+        defs["session_snapshot"]["properties"]
+            .as_object_mut()
+            .expect("Snapshot-properties ist ein Objekt")
+            .remove("store_degraded");
+        defs["session_snapshot"]["properties"]["mitglieder"]["items"] =
+            serde_json::json!({"$ref": "#/$defs/probe_descriptor"});
+        defs.remove("session_command");
+    }
+    wurzel["oneOf"]
+        .as_array_mut()
+        .expect("v3-oneOf ist ein Array")
+        .retain(|zweig| {
+            zweig.get("$ref").and_then(Value::as_str) != Some("#/$defs/session_command")
+        });
+    wurzel
+}
+
+fn v3_schema(schema_minor: u8) -> Option<&'static crate::vertrag::Schema> {
+    static MINOR_0: OnceLock<crate::vertrag::Schema> = OnceLock::new();
+    static MINOR_1: OnceLock<crate::vertrag::Schema> = OnceLock::new();
+    match schema_minor {
+        0 => Some(MINOR_0.get_or_init(|| {
+            crate::vertrag::Schema::laden(v3_schema_minor_0_wurzel())
+                .expect("eingefrorenes v3-Minor-0-Schema ist unterstuetzt")
+        })),
+        JSON_SCHEMA_MINOR_AKTIV => Some(MINOR_1.get_or_init(|| {
+            crate::vertrag::Schema::laden(v3_schema_wurzel())
+                .expect("eingefrorenes v3-Minor-1-Schema ist unterstuetzt")
+        })),
+        _ => None,
+    }
+}
+
+fn v3_nachricht_lesen_mit_minor(
+    payload: &[u8],
+    erwarteter_typ: &str,
+    schema_minor: u8,
+) -> Option<Value> {
+    let wert = v3_nachricht_lesen_beliebig_mit_minor(payload, schema_minor)?;
     (wert.get("type").and_then(Value::as_str) == Some(erwarteter_typ)).then_some(wert)
 }
 
-fn v3_nachricht_lesen_beliebig(payload: &[u8]) -> Option<Value> {
+fn v3_nachricht_lesen_beliebig_mit_minor(payload: &[u8], schema_minor: u8) -> Option<Value> {
     crate::vertrag::textriegel_bytes(payload).ok()?;
     let wert: Value = serde_json::from_slice(payload).ok()?;
-    v3_schema().gueltig(&wert).then_some(wert)
+    v3_schema(schema_minor)?.gueltig(&wert).then_some(wert)
+}
+
+fn v3_nachricht_lesen(payload: &[u8], erwarteter_typ: &str) -> Option<Value> {
+    v3_nachricht_lesen_mit_minor(payload, erwarteter_typ, JSON_SCHEMA_MINOR_AKTIV)
 }
 
 fn projektion_mit_aktuellem_lauf(gespeichert: &[u8], live: &[u8]) -> Option<Vec<u8>> {
@@ -225,6 +294,7 @@ struct ClientStand {
     join_kandidat: bool,
     bestaetigt: bool,
     explizit_bestaetigt: bool,
+    ausdruecklich_ungebunden: bool,
     descriptor: Option<Value>,
     state_revision: Option<u64>,
     state_hash: Option<String>,
@@ -748,6 +818,7 @@ impl Coordinator {
             join_kandidat: geerbt.as_ref().is_some_and(|c| c.join_kandidat),
             bestaetigt: geerbt.as_ref().is_some_and(|c| c.bestaetigt),
             explizit_bestaetigt: geerbt.as_ref().is_some_and(|c| c.explizit_bestaetigt),
+            ausdruecklich_ungebunden: geerbt.as_ref().is_some_and(|c| c.ausdruecklich_ungebunden),
             // Runtime-Felder sind linkgebunden. Auch ein Reconnect derselben
             // Runtime muss den laut E-M01 vorgeschriebenen ersten
             // heartbeat.runtime erneut liefern; bis dahin bleibt die Quelle
@@ -858,7 +929,12 @@ impl Coordinator {
     }
 
     pub fn subscribe_json(&self, link_id: &str, payload: &[u8]) -> bool {
-        let Some(wert) = v3_nachricht_lesen(payload, "subscribe_session") else {
+        self.subscribe_json_mit_minor(link_id, payload, JSON_SCHEMA_MINOR_AKTIV)
+    }
+
+    fn subscribe_json_mit_minor(&self, link_id: &str, payload: &[u8], schema_minor: u8) -> bool {
+        let Some(wert) = v3_nachricht_lesen_mit_minor(payload, "subscribe_session", schema_minor)
+        else {
             return false;
         };
         let Ok(adresse) = serde_json::from_value::<Adresse>(wert["adresse"].clone()) else {
@@ -1592,7 +1668,11 @@ impl Coordinator {
     /// MainProjectState-Ingress: fachlich wirkt er nur auf den schon im Hello
     /// gebundenen Client und durchlaeuft dieselbe Join-Regel wie ein Heartbeat.
     pub fn state_report_json(&self, link_id: &str, payload: &[u8]) -> bool {
-        let Some(wert) = v3_nachricht_lesen(payload, "state_report") else {
+        self.state_report_json_mit_minor(link_id, payload, JSON_SCHEMA_MINOR_AKTIV)
+    }
+
+    fn state_report_json_mit_minor(&self, link_id: &str, payload: &[u8], schema_minor: u8) -> bool {
+        let Some(wert) = v3_nachricht_lesen_mit_minor(payload, "state_report", schema_minor) else {
             return false;
         };
         let Ok(adresse) = serde_json::from_value::<Adresse>(wert["adresse"].clone()) else {
@@ -1652,13 +1732,17 @@ impl Coordinator {
         {
             return None;
         }
+        let label = runtime
+            .get("label")
+            .and_then(Value::as_str)
+            .unwrap_or_default();
         let mut descriptor = serde_json::json!({
             "adresse": link.adresse,
             "plugin_kind": plugin_kind,
             "measurement_position": messpunkt,
             "aussageklasse": "beobachtend",
             "betrieb": betrieb,
-            "label": "",
+            "label": label,
             "capabilities": capabilities,
             "frische": {"stale": false, "letzter_kontakt_ms": 0}
         });
@@ -1735,7 +1819,7 @@ impl Coordinator {
         let mut sessions = HashSet::new();
         for betroffen in betroffene {
             if let Some(client) = stand.clients.get_mut(&betroffen) {
-                if !client.explizit_bestaetigt {
+                if !client.explizit_bestaetigt && !client.ausdruecklich_ungebunden {
                     client.bestaetigt = eindeutig
                         && betroffen.session() == key.session()
                         && (client.plugin_kind != "main"
@@ -1825,6 +1909,7 @@ impl Coordinator {
         client.join_kandidat = true;
         client.bestaetigt = true;
         client.explizit_bestaetigt = true;
+        client.ausdruecklich_ungebunden = false;
         Self::fuehrung_neu_bewerten_locked(stand, session);
         stand.dirty_sessions.insert(session.clone());
         geaendert
@@ -1864,9 +1949,11 @@ impl Coordinator {
         key: &ClientKey,
     ) -> bool {
         let client = stand.clients.get_mut(key).expect("Clientschluessel");
-        let geaendert = client.bestaetigt || client.explizit_bestaetigt;
+        let geaendert =
+            client.bestaetigt || client.explizit_bestaetigt || !client.ausdruecklich_ungebunden;
         client.bestaetigt = false;
         client.explizit_bestaetigt = false;
+        client.ausdruecklich_ungebunden = true;
         client.join_kandidat = true;
         Self::fuehrung_neu_bewerten_locked(stand, session);
         stand.dirty_sessions.insert(session.clone());
@@ -2042,19 +2129,21 @@ impl Coordinator {
                     .as_object_mut()
                     .expect("session_mitglied wird als Objekt erzeugt");
 
-                if let Some(mut descriptor) = client.descriptor.clone() {
-                    if let Some(objekt) = descriptor.as_object_mut() {
-                        objekt.insert(
-                            "adresse".into(),
-                            serde_json::to_value(&client.adresse)
-                                .expect("Adresse ist immer JSON-serialisierbar"),
-                        );
-                        objekt.insert(
-                            "plugin_kind".into(),
-                            Value::String(client.plugin_kind.clone()),
-                        );
-                        objekt.insert("frische".into(), frische.clone());
-                        mitglied_objekt.insert("probe_descriptor".into(), descriptor);
+                if !client.ausdruecklich_ungebunden {
+                    if let Some(mut descriptor) = client.descriptor.clone() {
+                        if let Some(objekt) = descriptor.as_object_mut() {
+                            objekt.insert(
+                                "adresse".into(),
+                                serde_json::to_value(&client.adresse)
+                                    .expect("Adresse ist immer JSON-serialisierbar"),
+                            );
+                            objekt.insert(
+                                "plugin_kind".into(),
+                                Value::String(client.plugin_kind.clone()),
+                            );
+                            objekt.insert("frische".into(), frische.clone());
+                            mitglied_objekt.insert("probe_descriptor".into(), descriptor);
+                        }
                     }
                 }
                 if let Some(fehler) = stand.messfehler.get(key) {
@@ -2841,7 +2930,16 @@ impl Coordinator {
     }
 
     fn p0_json(&self, link_id: &str, payload: &[u8]) -> Option<Vec<u8>> {
-        let wert = v3_nachricht_lesen_beliebig(payload)?;
+        self.p0_json_mit_minor(link_id, payload, JSON_SCHEMA_MINOR_AKTIV)
+    }
+
+    fn p0_json_mit_minor(
+        &self,
+        link_id: &str,
+        payload: &[u8],
+        schema_minor: u8,
+    ) -> Option<Vec<u8>> {
+        let wert = v3_nachricht_lesen_beliebig_mit_minor(payload, schema_minor)?;
         match wert.get("type")?.as_str()? {
             "heartbeat" => {
                 let adresse: Adresse = serde_json::from_value(wert["adresse"].clone()).ok()?;
@@ -2957,16 +3055,24 @@ impl crate::transport::server_v3::Senke for Coordinator {
         self.p0_json(link_id, payload)
     }
 
+    fn p0_mit_minor(&self, link_id: &str, schema_minor: u8, payload: &[u8]) -> Option<Vec<u8>> {
+        self.p0_json_mit_minor(link_id, payload, schema_minor)
+    }
+
     fn p1(&self, link_id: &str, payload: &[u8]) {
+        self.p1_mit_minor(link_id, JSON_SCHEMA_MINOR_AKTIV, payload);
+    }
+
+    fn p1_mit_minor(&self, link_id: &str, schema_minor: u8, payload: &[u8]) {
         let typ = serde_json::from_slice::<Value>(payload)
             .ok()
             .and_then(|wert| wert.get("type").and_then(Value::as_str).map(str::to_owned));
         match typ.as_deref() {
             Some("subscribe_session") => {
-                let _ = self.subscribe_json(link_id, payload);
+                let _ = self.subscribe_json_mit_minor(link_id, payload, schema_minor);
             }
             Some("state_report") => {
-                let _ = self.state_report_json(link_id, payload);
+                let _ = self.state_report_json_mit_minor(link_id, payload, schema_minor);
             }
             _ => {}
         }

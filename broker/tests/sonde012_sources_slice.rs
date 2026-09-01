@@ -112,6 +112,56 @@ fn heartbeat(c: &Coordinator, link: &str, adresse: &Adresse, sequence: u64) -> b
     )
 }
 
+#[test]
+fn json_minor_selects_runtime_contract_and_label_reaches_descriptor() {
+    let (c, _clock, _push) = coordinator();
+    let source = adresse(1, 2, 20, 200);
+    anmelden(&c, "probe", &source, "active_probe", Some(9001));
+    let mut runtime = runtime("insert", "active", None, None);
+    runtime["label"] = Value::String("Stored Piano".into());
+    let payload = serde_json::to_vec(&json!({
+        "type": "heartbeat",
+        "adresse": source,
+        "sequence": 1,
+        "state_revision": 0,
+        "capabilities": capabilities(),
+        "zaehler": {
+            "frames_dropped": 0,
+            "parse_errors": 0,
+            "queue_overflows": 0
+        },
+        "runtime": runtime
+    }))
+    .unwrap();
+
+    assert!(Senke::p0_mit_minor(&c, "probe", 0, &payload).is_none());
+    let minor_0 = c.session_snapshot_json(&hex(1), &hex(2));
+    let minor_0: Value = serde_json::from_slice(&minor_0).unwrap();
+    assert!(mitglied(&minor_0, &hex(20))
+        .get("probe_descriptor")
+        .is_none());
+
+    assert!(Senke::p0_mit_minor(&c, "probe", 1, &payload).is_some());
+    let minor_1 = c.session_snapshot_json(&hex(1), &hex(2));
+    let minor_1: Value = serde_json::from_slice(&minor_1).unwrap();
+    assert_eq!(
+        mitglied(&minor_1, &hex(20))["probe_descriptor"]["label"],
+        "Stored Piano"
+    );
+
+    let mut geaendert: Value = serde_json::from_slice(&payload).unwrap();
+    geaendert["sequence"] = Value::from(2);
+    geaendert["runtime"]["label"] = Value::String("Changed Piano".into());
+    let geaendert = serde_json::to_vec(&geaendert).unwrap();
+    assert!(Senke::p0_mit_minor(&c, "probe", 1, &geaendert).is_some());
+    let aktualisiert = c.session_snapshot_json(&hex(1), &hex(2));
+    let aktualisiert: Value = serde_json::from_slice(&aktualisiert).unwrap();
+    assert_eq!(
+        mitglied(&aktualisiert, &hex(20))["probe_descriptor"]["label"],
+        "Changed Piano"
+    );
+}
+
 fn mitglied<'a>(snapshot: &'a Value, instance_id: &str) -> &'a Value {
     snapshot["mitglieder"]
         .as_array()
@@ -903,9 +953,10 @@ fn unbind_removes_confirmed_membership_from_next_absolute_snapshot() {
     let source = adresse(1, 2, 20, 200);
     anmelden(&c, "main", &main, "main", Some(77));
     assert!(heartbeat(&c, "main", &main, 1));
-    quelle_anmelden(&c, "probe", &source);
+    anmelden(&c, "probe", &source, "active_probe", Some(77));
+    assert!(heartbeat(&c, "probe", &source, 1));
+    Senke::telemetrie_gekoppelt(&c, "probe");
     assert!(abonnieren(&c, "main", &main));
-    assert!(c.beitritt_bestaetigen(&hex(1), &hex(2), &hex(20)));
     assert!(c.beitritt_aufheben(&hex(1), &hex(2), &hex(20)));
 
     let source_sicht = c
@@ -918,6 +969,29 @@ fn unbind_removes_confirmed_membership_from_next_absolute_snapshot() {
     let snapshot = push.snapshots().last().unwrap().1.clone();
     assert_eq!(snapshot["type"], "session_snapshot");
     assert_eq!(snapshot["beitritt_bestaetigung_noetig"], true);
+    assert!(mitglied(&snapshot, &hex(20))
+        .get("probe_descriptor")
+        .is_none());
+
+    assert!(heartbeat(&c, "probe", &source, 2));
+    let nach_weiterem_heartbeat = c
+        .modell_sicht(&hex(1), &hex(2))
+        .clients
+        .into_iter()
+        .find(|client| client.adresse.instance_id == hex(20))
+        .unwrap();
+    assert!(!nach_weiterem_heartbeat.bestaetigt);
+    let snapshot = push.snapshots().last().unwrap().1.clone();
+    assert!(mitglied(&snapshot, &hex(20))
+        .get("probe_descriptor")
+        .is_none());
+
+    let ack = session_command(&c, "main", "confirm_join", 799, &source, &hex(2));
+    assert_eq!(ack["ergebnis"], "angewandt");
+    let snapshot = push.snapshots().last().unwrap().1.clone();
+    assert!(mitglied(&snapshot, &hex(20))
+        .get("probe_descriptor")
+        .is_some());
 }
 
 #[test]

@@ -99,8 +99,18 @@ pub const CAP_WRITER: usize = 256;
 /// Aktive additive Vertragsfassungen. Die Version lebt ausschliesslich im
 /// Wire-Envelope: Descriptor-Hostfelder und LUFS-I-Framefelder wurden in
 /// SONDE-012 B1 mit Minor 1 belegt.
+const P0_SCHEMA_MINOR: u8 = 1;
 const P1_SCHEMA_MINOR: u8 = 1;
 const P2_SCHEMA_MINOR: u8 = 1;
+
+fn schema_minor_bekannt(familie: Familie, schema_minor: u8) -> bool {
+    let hoechster = match familie {
+        Familie::P0 => P0_SCHEMA_MINOR,
+        Familie::P1 => P1_SCHEMA_MINOR,
+        Familie::P2 => P2_SCHEMA_MINOR,
+    };
+    schema_minor <= hoechster
+}
 
 /// Was der I/O-Worker nach oben gibt. Bewusst byteorientiert: die Bedeutung
 /// des Payloads kennt erst der Coordinator.
@@ -160,6 +170,18 @@ pub trait Senke: Send + Sync {
     fn p0(&self, link_id: &str, payload: &[u8]) -> Option<Vec<u8>>;
     fn p1(&self, link_id: &str, payload: &[u8]);
     fn p2(&self, link_id: &str, payload: &[u8]);
+    /// Versionierter Gegenpfad fuer produktiven Ingress. Die Defaults halten
+    /// bestehende byteorientierte Senken kompatibel; Vertragsleser wie der
+    /// Coordinator ueberschreiben sie und waehlen nach Familie plus Minor.
+    fn p0_mit_minor(&self, link_id: &str, _schema_minor: u8, payload: &[u8]) -> Option<Vec<u8>> {
+        self.p0(link_id, payload)
+    }
+    fn p1_mit_minor(&self, link_id: &str, _schema_minor: u8, payload: &[u8]) {
+        self.p1(link_id, payload)
+    }
+    fn p2_mit_minor(&self, link_id: &str, _schema_minor: u8, payload: &[u8]) {
+        self.p2(link_id, payload)
+    }
     /// Eine Verbindung wurde abgewiesen oder geschlossen; `grund` ist ein
     /// kurzer, maschinennaher Text fuer Diagnose und Manifest.
     fn abgewiesen(&self, grund: &str);
@@ -451,7 +473,7 @@ impl Drop for Verbindungsgriff {
 /// Ingress je Verbindung (Cap 256, §53.9). Der Leser reiht ein, der
 /// Verbraucher entnimmt — die Politik selbst liegt in `warteschlange.rs`.
 struct Eingang {
-    inhalt: Mutex<(IngressWarteschlange<(Familie, Vec<u8>)>, bool)>,
+    inhalt: Mutex<(IngressWarteschlange<(Familie, u8, Vec<u8>)>, bool)>,
     signal: Condvar,
 }
 
@@ -463,10 +485,10 @@ impl Eingang {
         }
     }
 
-    fn einreihen(&self, familie: Familie, payload: Vec<u8>) -> IngressErgebnis {
+    fn einreihen(&self, familie: Familie, schema_minor: u8, payload: Vec<u8>) -> IngressErgebnis {
         let e = {
             let mut g = self.inhalt.lock().unwrap_or_else(|x| x.into_inner());
-            g.0.einreihen(familie, (familie, payload))
+            g.0.einreihen(familie, (familie, schema_minor, payload))
         };
         // `notify_all`, weil ZWEI Verbraucher warten (P0 und der Rest). Ein
         // `notify_one` koennte den falschen wecken; der P0-Thread schliefe
@@ -486,16 +508,16 @@ impl Eingang {
     /// (Matrix `C-LS-07`): steht die Senke in `p1`, muss ein bereits
     /// eingereihter P0-Frame trotzdem beantwortet werden — sonst haengt der
     /// Antwortweg hinter fremdem Code, und genau das ist P0-Starvation.
-    fn entnehmen_p0(&self) -> Option<(Familie, Vec<u8>)> {
+    fn entnehmen_p0(&self) -> Option<(Familie, u8, Vec<u8>)> {
         self.entnehmen_nach(true)
     }
 
     /// Alles ausser P0. Gegenstueck zu `entnehmen_p0`.
-    fn entnehmen_ohne_p0(&self) -> Option<(Familie, Vec<u8>)> {
+    fn entnehmen_ohne_p0(&self) -> Option<(Familie, u8, Vec<u8>)> {
         self.entnehmen_nach(false)
     }
 
-    fn entnehmen_nach(&self, p0: bool) -> Option<(Familie, Vec<u8>)> {
+    fn entnehmen_nach(&self, p0: bool) -> Option<(Familie, u8, Vec<u8>)> {
         let mut g = self.inhalt.lock().unwrap_or_else(|x| x.into_inner());
         loop {
             if g.1 {
@@ -1714,7 +1736,7 @@ fn verbindung_bedienen(
                     "reason": grund.chars().take(500).collect::<String>()
                 });
                 if let Ok(payload) = serde_json::to_vec(&payload) {
-                    if let Ok(frame) = envelope_schreiben(Familie::P0, 0, &payload) {
+                    if let Ok(frame) = envelope_schreiben(Familie::P0, P0_SCHEMA_MINOR, &payload) {
                         let _ = ov_schreiben(griff.h, leseereignis.roh(), &frame);
                     }
                 }
@@ -1742,7 +1764,7 @@ fn verbindung_bedienen(
                 Ok(p) => p,
                 Err(_) => return,
             };
-            match envelope_schreiben(Familie::P0, 0, &payload) {
+            match envelope_schreiben(Familie::P0, P0_SCHEMA_MINOR, &payload) {
                 Ok(frame) => {
                     if !ov_schreiben(griff.h, leseereignis.roh(), &frame) {
                         senke.control_schliesst(&link);
@@ -1783,7 +1805,7 @@ fn verbindung_bedienen(
                 Ok(p) => p,
                 Err(_) => return,
             };
-            if let Ok(frame) = envelope_schreiben(Familie::P0, 0, &payload) {
+            if let Ok(frame) = envelope_schreiben(Familie::P0, P0_SCHEMA_MINOR, &payload) {
                 if !ov_schreiben(griff.h, leseereignis.roh(), &frame) {
                     let mut k = kopplungen.lock().unwrap_or_else(|e| e.into_inner());
                     k.telemetrie_entkoppeln(&h.link_id);
@@ -1908,9 +1930,11 @@ fn verbindung_bedienen(
         std::thread::Builder::new()
             .name("eqcop-v3-ingress-p0".into())
             .spawn(move || {
-                while let Some((_, payload)) = eingang.entnehmen_p0() {
-                    if let Some(antwort) = senke.p0(&link, &payload) {
-                        if let Ok(frame) = envelope_schreiben(Familie::P0, 0, &antwort) {
+                while let Some((_, schema_minor, payload)) = eingang.entnehmen_p0() {
+                    if let Some(antwort) = senke.p0_mit_minor(&link, schema_minor, &payload) {
+                        if let Ok(frame) =
+                            envelope_schreiben(Familie::P0, P0_SCHEMA_MINOR, &antwort)
+                        {
                             if !ausgang.einreihen(frame) {
                                 // Der Peer holt seine Antworten nicht ab.
                                 // Still weiterzaehlen waere eine Luege ueber
@@ -1935,10 +1959,10 @@ fn verbindung_bedienen(
         std::thread::Builder::new()
             .name("eqcop-v3-ingress-rest".into())
             .spawn(move || {
-                while let Some((familie, payload)) = eingang.entnehmen_ohne_p0() {
+                while let Some((familie, schema_minor, payload)) = eingang.entnehmen_ohne_p0() {
                     match familie {
-                        Familie::P1 => senke.p1(&link, &payload),
-                        Familie::P2 => senke.p2(&link, &payload),
+                        Familie::P1 => senke.p1_mit_minor(&link, schema_minor, &payload),
+                        Familie::P2 => senke.p2_mit_minor(&link, schema_minor, &payload),
                         // `entnehmen_ohne_p0` liefert per Konstruktion kein
                         // P0; der Arm ist der Riegel gegen eine spaetere
                         // Aenderung, nicht toter Code.
@@ -1975,6 +1999,17 @@ fn verbindung_bedienen(
                         break 'lesen;
                     }
                     let familie = r.kopf.familie;
+                    let schema_minor = r.kopf.schema_minor;
+
+                    if !schema_minor_bekannt(familie, schema_minor) {
+                        statistik
+                            .geschlossen_envelope
+                            .fetch_add(1, Ordering::SeqCst);
+                        senkenruf.abweisen(format!(
+                            "envelope: schema_minor {schema_minor} fuer {familie:?} unbekannt"
+                        ));
+                        break 'lesen;
+                    }
 
                     // Familienzuordnung des Vertrags: die Control-Verbindung
                     // traegt P0/P1, die Telemetrieverbindung traegt P2
@@ -2012,7 +2047,7 @@ fn verbindung_bedienen(
                         }
                     }
 
-                    match eingang.einreihen(familie, r.payload) {
+                    match eingang.einreihen(familie, schema_minor, r.payload) {
                         IngressErgebnis::Eingereiht => {}
                         IngressErgebnis::P2Verworfen => {
                             statistik
@@ -2702,13 +2737,13 @@ mod tests {
     }
 
     fn p0(json: &str) -> Vec<u8> {
-        envelope_schreiben(Familie::P0, 0, json.as_bytes()).unwrap()
+        envelope_schreiben(Familie::P0, P0_SCHEMA_MINOR, json.as_bytes()).unwrap()
     }
     fn p1(json: &str) -> Vec<u8> {
-        envelope_schreiben(Familie::P1, 0, json.as_bytes()).unwrap()
+        envelope_schreiben(Familie::P1, P1_SCHEMA_MINOR, json.as_bytes()).unwrap()
     }
     fn p2(bytes: &[u8]) -> Vec<u8> {
-        envelope_schreiben(Familie::P2, 0, bytes).unwrap()
+        envelope_schreiben(Familie::P2, P2_SCHEMA_MINOR, bytes).unwrap()
     }
 
     fn warte_auf(millis: u64, mut bedingung: impl FnMut() -> bool) -> bool {
@@ -2920,6 +2955,15 @@ mod tests {
             "ein P2 auf der Controlpipe muss die Verbindung schliessen"
         );
         assert_eq!(senke.p2.load(Ordering::SeqCst), 0);
+    }
+
+    #[test]
+    fn unbekannter_schema_minor_wird_vor_der_senke_abgewiesen() {
+        for familie in [Familie::P0, Familie::P1, Familie::P2] {
+            assert!(schema_minor_bekannt(familie, 0));
+            assert!(schema_minor_bekannt(familie, 1));
+            assert!(!schema_minor_bekannt(familie, 2));
+        }
     }
 
     /// T2-Befund 2: endet die Control-Verbindung, endet die Telemetrie mit —
@@ -3162,11 +3206,11 @@ mod tests {
     fn geschlossener_eingang_liefert_nichts_mehr() {
         let e = Eingang::neu();
         assert!(matches!(
-            e.einreihen(Familie::P0, b"a".to_vec()),
+            e.einreihen(Familie::P0, 0, b"a".to_vec()),
             IngressErgebnis::Eingereiht
         ));
         assert!(matches!(
-            e.einreihen(Familie::P1, b"b".to_vec()),
+            e.einreihen(Familie::P1, 0, b"b".to_vec()),
             IngressErgebnis::Eingereiht
         ));
         assert_eq!(
@@ -4139,7 +4183,19 @@ mod tests {
         };
         let main_control = Testclient::neu(&pipe).unwrap();
         assert!(main_control.schreiben(&control_hello_fach(&main_adresse, "main", Some(7711),)));
-        let (main_link, main_challenge) = welcome_lesen(&main_control).expect("Main-Welcome");
+        let main_welcome = frame_roh_lesen(&main_control).expect("Main-Welcome");
+        assert_eq!(main_welcome.kopf.familie, Familie::P0);
+        assert_eq!(main_welcome.kopf.schema_minor, 1);
+        let main_welcome_json: serde_json::Value =
+            serde_json::from_slice(&main_welcome.payload).expect("Welcome ist JSON");
+        let main_link = main_welcome_json["link_id"]
+            .as_str()
+            .expect("Welcome-Link")
+            .to_owned();
+        let main_challenge = main_welcome_json["challenge"]
+            .as_str()
+            .expect("Welcome-Challenge")
+            .to_owned();
         let main_telemetrie = Testclient::neu(&pipe).unwrap();
         assert!(main_telemetrie.schreiben(&telemetry_hello_adresse(
             &main_adresse,
@@ -4152,7 +4208,7 @@ mod tests {
         assert!(main_control.schreiben(&subscribe(&main_adresse)));
         let snapshot = frame_roh_lesen(&main_control).expect("absoluter Snapshot");
         assert_eq!(snapshot.kopf.familie, Familie::P1);
-        assert_eq!(snapshot.kopf.schema_minor, P1_SCHEMA_MINOR);
+        assert_eq!(snapshot.kopf.schema_minor, 1);
         assert_eq!(
             serde_json::from_slice::<serde_json::Value>(&snapshot.payload).unwrap()["type"],
             "session_snapshot"

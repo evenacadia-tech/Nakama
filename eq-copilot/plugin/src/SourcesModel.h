@@ -96,8 +96,16 @@ public:
         const nakama::ipc::ControlClient::Snapshot& transport);
 
     SnapshotErgebnis uebernehmeSessionSnapshot (const std::string& json,
+                                                 std::uint8_t schemaMinor,
                                                  Zeitpunkt empfangen,
                                                  juce::String& fehler);
+    SnapshotErgebnis uebernehmeSessionSnapshot (const std::string& json,
+                                                 Zeitpunkt empfangen,
+                                                 juce::String& fehler)
+    {
+        return uebernehmeSessionSnapshot (
+            json, nakama::ipc::kJsonSchemaMinor, empfangen, fehler);
+    }
     bool uebernehmeP2 (const std::uint8_t* daten, std::size_t laenge,
                        std::uint8_t schemaMinor, Zeitpunkt empfangen,
                        juce::String& fehler);

@@ -6,8 +6,8 @@
   "wurzel_skalar": "Markiert ein Fixture, dessen Wurzel weder Objekt noch Array ist. JUCEs JSON-Leser folgt RFC 4627 und lehnt es schon im PARSER ab; serde_json und Python folgen RFC 8259 und lehnen es erst am Schema ab. Beide Wege sind eine Ablehnung, nur an verschiedenen Stellen - die Verletzungsmenge gilt daher nur fuer die Beine mit RFC-8259-Parser.",
   "sortierung": "Verletzungen sind kanonisch nach (instanz, schema, schluessel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
   "textriegel_lehnt_ab": "Markiert ein Fixture, das der TEXTRIEGEL abweist, BEVOR ein Parser es sieht. Diese Fixtures tragen keine Verletzungsmenge, weil sie das Schema nie erreichen — eine erfundene waere eine Luege ueber den Ort der Ablehnung. Regeln und Begruendung: schemas/v3/README.md.",
-  "anzahl_gueltig": 59,
-  "anzahl_ungueltig": 188,
+  "anzahl_gueltig": 60,
+  "anzahl_ungueltig": 190,
   "fixtures": [
     {
       "datei": "gueltig/audible_intervention_begin.json",
@@ -133,6 +133,12 @@
       "datei": "gueltig/heartbeat-ohne-optionales-feld.json",
       "urteil": "gueltig",
       "warum": "intervention_state_unknown ist optional",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/heartbeat-runtime-label.json",
+      "urteil": "gueltig",
+      "warum": "E-D2: das gespeicherte User-Label reist mit exakt der probe_label-Codepointgrenze",
       "verletzungen": []
     },
     {
@@ -1225,6 +1231,30 @@
         {
           "instanz": "/runtime/host_bus_name",
           "schema": "#/$defs/host_bus_name/maxLength",
+          "schluessel": "maxLength"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/heartbeat-runtime-label-falscher-typ.json",
+      "urteil": "ungueltig",
+      "warum": "E-D2 transportiert Text und keine still normalisierte Fremdform",
+      "verletzungen": [
+        {
+          "instanz": "/runtime/label",
+          "schema": "#/$defs/probe_label/type",
+          "schluessel": "type"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/heartbeat-runtime-label-zu-lang.json",
+      "urteil": "ungueltig",
+      "warum": "E-D2 verwendet exakt die probe_label-Codepointgrenze",
+      "verletzungen": [
+        {
+          "instanz": "/runtime/label",
+          "schema": "#/$defs/probe_label/maxLength",
           "schluessel": "maxLength"
         }
       ]

@@ -746,6 +746,15 @@ def zusatz_gueltig() -> list[tuple[str, dict, str]]:
     faelle.append(("heartbeat-runtime-vollstaendig", hb,
                    "E-M01: ein vollstaendiger strikter Runtime-Block reist im Heartbeat"))
 
+    hb = copy.deepcopy(GRUND["heartbeat"])
+    hb["runtime"] = {
+        "messpunkt": "insert",
+        "betrieb": "active",
+        "label": "😀" * 120,
+    }
+    faelle.append(("heartbeat-runtime-label", hb,
+                   "E-D2: das gespeicherte User-Label reist mit exakt der probe_label-Codepointgrenze"))
+
     ss = copy.deepcopy(GRUND["session_snapshot"])
     ss["mitglieder"][0]["p2_reject"] = {
         "grund": "feature_batch_ungueltig", "zaehler": 1,
@@ -862,6 +871,18 @@ UNGUELTIG: list[tuple] = [
                         "host_bus_name": "😀" * 121})],
      [v("/runtime/host_bus_name", f"{S}/host_bus_name/maxLength", "maxLength")],
      "E-M01 verwendet exakt die B1-Codepointgrenze"),
+
+    ("heartbeat-runtime-label-zu-lang", "heartbeat",
+     [setze("runtime", {"messpunkt": "insert", "betrieb": "active",
+                        "label": "😀" * 121})],
+     [v("/runtime/label", f"{S}/probe_label/maxLength", "maxLength")],
+     "E-D2 verwendet exakt die probe_label-Codepointgrenze"),
+
+    ("heartbeat-runtime-label-falscher-typ", "heartbeat",
+     [setze("runtime", {"messpunkt": "insert", "betrieb": "active",
+                        "label": 7})],
+     [v("/runtime/label", f"{S}/probe_label/type", "type")],
+     "E-D2 transportiert Text und keine still normalisierte Fremdform"),
 
     ("session-p2-reject-freitext", "session_snapshot",
      [setze("mitglieder", 0, "p2_reject",

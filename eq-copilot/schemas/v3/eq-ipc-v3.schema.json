@@ -724,13 +724,14 @@
     },
 
     "heartbeat_runtime": {
-      "description": "Letzter vom Plugin gemeldeter Runtime-Stand (SONDE-012 E-M01). Der Block ist optional; wenn er reist, sind Messpunkt und Betrieb vollstaendig. Hostfelder verwenden exakt die seit Minor 1 belegten B1-Definitionen.",
+      "description": "Letzter vom Plugin gemeldeter Runtime-Stand (SONDE-012 E-M01/E-D2). Der Block ist optional; wenn er reist, sind Messpunkt und Betrieb vollstaendig. Das optionale Label verwendet exakt probe_label; Hostfelder verwenden exakt die seit Minor 1 belegten B1-Definitionen.",
       "type": "object",
       "required": ["messpunkt", "betrieb"],
       "additionalProperties": false,
       "properties": {
         "messpunkt": { "type": "string", "enum": ["insert", "pre", "post"] },
         "betrieb": { "$ref": "#/$defs/betrieb" },
+        "label": { "$ref": "#/$defs/probe_label" },
         "host_bus_name": { "$ref": "#/$defs/host_bus_name" },
         "host_mixer_index": { "$ref": "#/$defs/host_mixer_index" }
       }

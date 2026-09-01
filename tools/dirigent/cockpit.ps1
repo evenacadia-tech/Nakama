@@ -318,14 +318,21 @@ function Invoke-CodexRateLimits {
     $process = $null
     try {
         $codex = Get-Command codex -ErrorAction Stop
+        # `--disable plugins`: Der App-Server startet sonst bei jedem Start einen
+        # Marketplace-Auto-Upgrade-Thread, der pro Git-Marketplace ein Temp-Git-Verzeichnis
+        # `~/.codex/.tmp/git-XXXXXX` anlegt (ls-remote in vertrauenswuerdigem GIT_DIR). Weil das
+        # Cockpit den Prozess direkt nach der Rate-Limit-Antwort beendet, wurde dieses
+        # Verzeichnis nie aufgeraeumt: ein Leck pro Minute. Fuer account/rateLimits/read
+        # werden Plugins nicht gebraucht.
+        $appServerArguments = 'app-server --disable plugins --stdio'
         $start = New-Object System.Diagnostics.ProcessStartInfo
         if ($codex.Source -match '\.ps1$') {
             $start.FileName = (Get-Process -Id $PID).Path
-            $start.Arguments = "-NoProfile -File $(Quote-ProcessArgument $codex.Source) app-server --stdio"
+            $start.Arguments = "-NoProfile -File $(Quote-ProcessArgument $codex.Source) $appServerArguments"
         }
         else {
             $start.FileName = $codex.Source
-            $start.Arguments = 'app-server --stdio'
+            $start.Arguments = $appServerArguments
         }
         $start.WorkingDirectory = $script:RepoRoot
         $start.UseShellExecute = $false

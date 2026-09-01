@@ -845,8 +845,14 @@ struct BrokerLauf {
     _griff_v3: Mutex<Option<transport::server_v3::V3Griff>>,
     #[cfg(windows)]
     store: store::StoreWriter,
+    /// Nur Lebensdauerhalter. Seit NAK-123 liest die Idle-Entscheidung die
+    /// aktiven Worker am `V3Griff` (auch unvollstaendige Bootstraps zaehlen),
+    /// nicht mehr `Coordinator::client_anzahl`. Der Arc muss aber weiter im
+    /// Prozess leben, weil der `nakama-coordinator-tick`-Thread und die
+    /// v3-Senken auf Klonen davon arbeiten; deshalb dieselbe
+    /// Unterstrich-Konvention wie bei `_supervisor`/`_griff_v2`/`_griff_v3`.
     #[cfg(windows)]
-    coordinator: Arc<coordinator::Coordinator>,
+    _coordinator: Arc<coordinator::Coordinator>,
     register: Arc<Mutex<Register>>,
     session_token: String,
     gestartet_ms: u64,
@@ -928,7 +934,7 @@ pub fn broker_starten(bindungen_pfad: Option<PathBuf>) -> Result<(), String> {
                 _griff_v2: Mutex::new(Some(griff_v2)),
                 _griff_v3: Mutex::new(Some(griff_v3)),
                 store,
-                coordinator,
+                _coordinator: coordinator,
                 register,
                 session_token,
                 gestartet_ms: jetzt_ms(),

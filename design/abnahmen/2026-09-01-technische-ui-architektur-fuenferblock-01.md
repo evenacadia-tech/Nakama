@@ -2,7 +2,7 @@
 
 ## Status
 
-**3 von 5 Entscheidungen gesammelt.** Der gemeinsame Umbau, die vollständige
+**4 von 5 Entscheidungen gesammelt.** Der gemeinsame Umbau, die vollständige
 Sichtprüfung und die Integration in die Detailabnahmen sowie den Blueprint
 folgen nach Entscheidung 5.
 
@@ -75,3 +75,20 @@ Damit ist für Gen Fläche 2 gesammelt:
 - Der Tastaturfokus geht auf den weiterhin sichtbaren Einstieg `DYN · OFF`.
 - Die fünf gespeicherten Dynamic-Werte bleiben unverändert und werden erst
   nach einer erneuten Aktivierung wieder eingeblendet.
+
+## 4/5 — Pointer schließt nur über den eigenen Panel-Control
+
+Auf die Frage nach dem Schließen des Mini-Panels per Zeiger wählt der User:
+
+> „B“
+
+Damit ist für Gen Fläche 2 gesammelt:
+
+- Das Mini-Panel behält einen eigenen, sichtbaren Schließen-Control.
+- Ein einfacher Klick auf eine freie Stelle des EQ-Graphen lässt das Panel
+  geöffnet und verändert weder Auswahl noch Parameterzustand.
+- `Escape` bleibt der technisch festgelegte Tastaturweg: Eine laufende
+  Werteingabe wird zuerst abgebrochen; andernfalls schließt es das oberste
+  nichtmodale Panel.
+- Schließen verändert weder den Bandzustand noch `dynamic_enabled` und gibt
+  den Tastaturfokus an den zugehörigen Bandpunkt zurück.

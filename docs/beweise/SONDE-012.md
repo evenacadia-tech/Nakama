@@ -1,0 +1,426 @@
+# SONDE-012 — S18–19: Alle Quellen mit Messpunkt, Frische und Fehlerzustand zeigen
+
+| Merkmal | Wert |
+|---|---|
+| Ticket | S18–19, SONDE-012 |
+| Lieferumfang | Phase A — Verhaltensmatrix für den passiven Quellen-Slice bis Main; kein Produktcode |
+| Basis-SHA | 9abb66f |
+| Gate-Text (wörtlich aus docs/bauaufteilung-sonden.md) | T1+T2 |
+| Status | Phase A abgeschlossen: Verhaltensmatrix (47 Zeilen) **PASS** 2026-09-01 · Phase B (Bau) offen |
+
+**Prüfrunden Phase A** (Prüfer: je ein frischer lesender Codex-Thread, Sol max):
+
+| Runde | Gegenstand | Urteil |
+|---|---|---|
+| 1 | Matrix vollständig gegen Tickettext, Entwurf, Abnahmen, Verträge, Code | NEEDS_WORK — 8 Defektgruppen |
+| 2 | Nacharbeit des Bauthreads (D1–D8) | NEEDS_WORK — Rest D5 (Versionsort) |
+| 3 | Korrektur E-H02/H02 (Envelope-`schema_minor`) | **PASS** |
+
+Dieses Manifest ist weder Bau- noch Prüfurteil. Es friert die aus den
+verbindlichen Quellen belegbare Verhaltensgrenze ein und benennt Stellen, an
+denen der spätere Bau ohne weiteren Vertragsentscheid nicht ehrlich fortfahren
+kann. Die Ist-Prüfung lief auf Basis-SHA 9abb66f; seither liegt ausschließlich
+der Planstand-Commit 445da8a dazwischen, ohne Code- oder Vertragsdrift.
+
+## 1. Leseregel, Quellenkonflikte und heutiger Ist-Stand
+
+### 1.1 Belegklassen
+
+- **BELEGT**: Die Zusage folgt aus einer verbindlichen Quelle. Dass der heutige
+  Produktpfad sie noch nicht erfüllt, macht sie nicht offen.
+- **BAULÜCKE**: Die Zusage ist belegt, aber mindestens eine heute nötige
+  Implementierungs- oder Testkante fehlt.
+- **ENTSCHIEDEN**: Eine zuvor nicht aus den Quellen ableitbare Technikfrage ist
+  durch den Dirigentenentscheid in §7 geschlossen. Eine weiterhin fehlende
+  Implementierung bleibt zusätzlich als BAULÜCKE markiert.
+- **OFFEN**: Mindestens ein Teil der Zusage lässt sich aus keiner Quelle
+  ableiten. Diese Zeile ist kein stiller Produktentscheid.
+
+Jede Zeile nennt ein bestehendes oder ein ausdrücklich mit **NEU**
+gekennzeichnetes Prüfbein. Ein neuer Testname ist damit Teil der späteren
+Bauaufgabe, nicht die Behauptung, der Test existiere bereits.
+
+### 1.2 Aufgelöste Widersprüche
+
+1. Der Auftrag verweist für Anzeige-Pflichten auf Entwurf §0.4 und §1.4. Im
+   Entwurf existiert §0.4 (docs/FL-Nakama-Sonden-Design-Entwurf.md:421-459);
+   die bezeichnete §1.4 steht tatsächlich in
+   docs/bauaufteilung-sonden.md:148-155. Beide verlangen Frische/stale,
+   Unsicherheit/Konfidenz und Capability-Degradation. Der falsche Dateirouter
+   wird hier benannt und nicht als zweite Norm behandelt.
+2. Der ältere Entwurf nennt auf der Landkarte eine Sonde mit bestätigtem
+   Eingriff (Entwurf:648-676). Der vollständigere und jüngere Tickettext vom
+   30.08.2026 streicht den EQ-Zustand auf Gens Landkarte ausdrücklich
+   (docs/plan/plan.json:215-220; docs/bauaufteilung-sonden.md:349-354).
+   Der jüngere Entscheid gewinnt. In dieser Matrix gibt es deshalb keine
+   EQ-Zustandszeile.
+3. Der Entwurf sagt „nach zwei verpassten Heartbeats“ stale
+   (Entwurf:2085-2087). Der aktuelle Coordinator macht die Frist exakt:
+   Heartbeat 1.000 ms, zwei Intervalle plus 500 ms Jitter und Übergang nur bei
+   elapsed > 2.500 ms (broker/src/coordinator.rs:27-31,1134-1142). Aktueller
+   Code geht beschreibender Doku vor; exakt 2.500 ms ist noch nicht stale.
+4. U20 ordnet die Anzeige des späteren Sonden-Durchschalters S31b zu
+   (design/abnahmen/2026-08-30-fragenrunde-marktstandard.md:13-34). S18–19
+   besitzt trotzdem die Identitätswahrheit der Sources-Zeile auf Gen Fläche 1
+   und liefert das Datenmodell bis Main
+   (design/abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md:55-90).
+   Diese Matrix entscheidet keine Gestaltung und zieht den S31b-Durchschalter
+   nicht vor.
+
+### 1.3 Heutige, am Code bestätigte Baugrenzen
+
+- Main startet ControlClient mit leerem Antwort-Callback; im Produktcode gibt
+  es keinen Sender für subscribe_session und keinen Empfänger für
+  session_snapshot (eq-copilot/plugin/src/PluginProcessor.cpp:93-94;
+  eq-copilot/plugin/core/ipc/ControlClient.h:166-172).
+- Der Coordinator prüft einen P2-Frame und erhöht danach nur einen Zähler; er
+  hält und verteilt noch keinen aktuellen Frame je Quelle
+  (broker/src/coordinator.rs:2453-2463).
+- Probeeq startet Control- und TelemetryClient, analysiert in seinem
+  processBlock aber kein Audio und veröffentlicht keinen Featureframe
+  (eq-copilot/plugin/sonde/SondeProcessor.cpp:96-104).
+- JUCE 8.0.9 reicht aus VST3 setChannelContextInfos nur Name und Farbe als
+  AudioProcessor::TrackProperties weiter. TrackProperties besitzt keinen
+  Mixer-Index; der VST3-SDK-Schlüssel kChannelIndexKey wird vom JUCE-Wrapper
+  nicht gelesen. Der Callback läuft direkt auf dem Message-Thread oder wird
+  dorthin asynchron gestellt
+  (juce_audio_plugin_client_VST3.cpp:1157-1190;
+  juce_AudioProcessor.h:1313-1335).
+- Die aktiven probe_descriptor-Zweige enthalten label, capabilities und
+  frische, aber noch weder host_bus_name noch host_mixer_index. Reserviert sind
+  nur die beiden Namen; Typ, Bereich und Befüllung sind ausdrücklich noch
+  offen (eq-copilot/schemas/v3/reservierte-nachrichten-v1.json:34-44).
+- LoudnessAccumulator liefert einen gültigen integrierten Wert und separat
+  unsicherheitLu(). MessSnapshot übernimmt bisher nur Wert plus Gültigkeitsbit;
+  der FlatBuffers-Frame hat lufs_s, aber weder integrierte Lautheit noch deren
+  Unsicherheit (LoudnessAccumulator.h:285-350;
+  AnalyseEngine.cpp:692-708; nakama_telemetry_v1.fbs:210-231).
+
+## 2. Zustandsachsen und universelle Zusagen
+
+„Quelle frisch“ ist kein einzelnes Bool. Main hält mindestens diese getrennten
+Achsen:
+
+| Achse | Zustände dieser Matrix | Autorität |
+|---|---|---|
+| Mitgliedschaft | unbekannt · unclassified · bestätigt | MainProjectState; nicht der flüchtige Broker-Cache |
+| Control/Liveness | nie verbunden · connected · stale · disconnected · error | Broker aus gültigem Control-Kontakt |
+| Quellbetrieb | online · offline · suspended | expliziter Quell-/Hostzustand; nie aus fehlenden Frames geraten |
+| Messung | missing · no signal · measuring · fresh · partial · stale · invalid | gültiger Featureframe samt Zeit-/Fensterbezug |
+| Messposition | insert · pre · post | persistenter Probe-State, unverändert im Descriptor und Main-State |
+| Namensherkunft | host · user label · unavailable | Probe-State plus aktueller Host-Kanalkontext |
+| Capability-Evidenz | gemessen-ja · gemessen-nein · noch nicht gemessen | Capabilitydatei und zugehöriges Golden |
+
+Ein P2-Messframe setzt den Control-Liveness-Timer nicht zurück. Umgekehrt macht
+ein Heartbeat einen alten Messwert nicht frisch. Offline, stale, disconnected,
+suspended, unclassified, missing, no signal, measuring, fresh, partial und
+invalid bleiben unterscheidbar und werden nie als 0 oder „kein Problem“ gerendert
+(design/docs/funktions-und-bedien-blueprint.md:224-251).
+
+Auf Gen Fläche 1 zeigt jede Sources-Zeile dauerhaft Identität, Signalstatus,
+Messaktualität und Findings-Zahl; die beschlossene Lautheit mit Unsicherheit
+steht am selben Quellenobjekt. Jedes sichtbare Element meldet einen ehrlichen
+Zustand oder führt einen wirklichen Handgriff aus. Automatische Wiederverbindung
+ist kein dekorativer Retry-Button
+(CLAUDE.md:54-55;
+design/abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md:55-90).
+
+## 3. Verhaltensmatrix
+
+### 3.1 Quellen-Lebenszyklus bis Main
+
+| ID | Ausgangszustand × Ereignis | Zusage, Callback-Reihenfolge und Frist | Test, der genau diese Zeile misst | Quelle / Belegstatus |
+|---|---|---|---|---|
+| L01 | Nie verbunden; Gen öffnet beziehungsweise erhält einen leeren Snapshot | Ohne bestätigte Mitgliedschaft entsteht keine Phantomquelle. Ein bestätigtes Mitglied, das in diesem Brokerlauf noch nie verbunden war, bleibt dagegen als disconnected/missing mit gespeichertem User-Label sichtbar; alle Livewerte und Konfidenzen sind leer. | **NEU** eq-copilot/plugin/tests/Sonde012SourcesModelTest.cpp, Fall never_connected_unknown_vs_confirmed_member; zusätzlich EqCopShot-Ausgaben sonde012-0-sources.png und sonde012-confirmed-never-connected.png. | Entwurf:1906-1911,3923-3935; Blueprint:1099-1110. **BELEGT, BAULÜCKE** |
+| L02 | Main-Control ist verbunden; subscribe_session beziehungsweise Reconnect | Reihenfolge: Welcome/Kopplung → Main sendet subscribe_session mit eigener gebundener Adresse und session_epoch → Broker validiert und bindet die Subscription an genau diesen Control-Link → Broker sendet einen absoluten session_snapshot. Jedes Control-Ende löscht die Subscription; Reconnect verlangt neues Subscribe. Kein Audiothread-Callback. Eine zusätzliche Wallclock-Frist ist nicht festgelegt. | **NEU** broker/tests/sonde012_sources_slice.rs::main_subscribe_pushes_absolute_snapshot_and_reconnect_resubscribes; bestehend broker/tests/coordinator_model.rs::produktive_json_senken_verlangen_den_vollstaendigen_v3_vertrag. | Entwurf §33.3:1842-1888; Schema:845-865; SONDE-011-Verbindungsgegenpfad; ControlClient.h:166-172. **BELEGT, BAULÜCKE** |
+| L03 | Eindeutiges Main; Probe sendet gültiges Hello/State-Report/Heartbeat | Reihenfolge: Control-Link registrieren → Projekt/Session gegen das eindeutig führende Main auflösen → gültigen Descriptor bilden → Control-Liveness connected und nicht stale setzen → dirty Session als neuen absoluten Snapshot an Subscriber pushen. Die Messachse bleibt missing, bis L05 erfolgreich war. | Bestehend broker/tests/coordinator_model.rs::join_nur_bei_eindeutigem_main und ::probe_ohne_eigene_epoche_uebernimmt_eindeutige_main_sitzung; **NEU** sonde012_sources_slice.rs::join_is_connected_but_measurement_missing. | Entwurf:3923-3935; coordinator.rs:559-622,1215-1370,1668-1728. **BELEGT, BAULÜCKE im Main-Modell** |
+| L04 | Zwei mögliche Mains, doppelte Adresse oder widersprüchliche Bindung; Join | Keine zeitliche oder lexikalische Wahl. Join bleibt fail-closed; Gen zeigt confirmation required beziehungsweise conflict und bietet erst dann einen echten Auflösungshandgriff an. Ohne Userentscheidung keine falsche Mitgliedschaft und keine Messzuordnung. | Bestehend broker/tests/coordinator_model.rs::probe_join_bleibt_reihenfolgefest_und_bei_mehreren_mains_fail_closed, ::erstes_einziges_main_fuehrt_sonst_bestaetigung und ::zwei_projekte_bleiben_getrennt; **NEU** Sonde012SourcesModelTest.cpp, Fall ambiguous_join_has_real_resolution_action. | Entwurf:3923-3935; Blueprint:201-207. **BELEGT, BAULÜCKE in UI/Recovery** |
+| L05 | Connected, Messung missing/measuring; erster gültiger Messframe trifft ein | Reihenfolge: P2-Envelope/CRC/FlatBuffers und Endlichkeit prüfen → gekoppelte Quelladresse und Session prüfen → höchstens einen aktuellen Frame dieser Quelle übernehmen → Main-Batch/Callback → Main-Modellrevision → Sicht. Erst danach ist die Messachse fresh; Mitgliedschaft und Control-Frische werden vom P2-Frame nicht verändert. | **NEU** broker/tests/sonde012_sources_slice.rs::first_valid_p2_changes_only_measurement_axis; **NEU** Sonde012SourcesModelTest.cpp, Fall first_frame_missing_to_fresh. | Entwurf:1783-1795,2076-2087; FBS:233-248; coordinator.rs:2453-2463 zeigt die heutige Lücke. **BELEGT, BAULÜCKE** |
+| L06 | Fresh; weiterer gültiger Frame | Der neue Frame ersetzt nur den älteren Liveframe derselben Quelle; über Transportlücken werden keine Messwerte interpoliert. Framealter und die aus `Frame.transport.sample_count / sample_rate` abgeleitete intrinsische Fensterdauer bleiben sichtbar. Ab erstem Sample bis sichtbarem Main-State gelten p95 höchstens 300 ms für 2.048/4.096 Samples und 750 ms für 16.384 Samples bei 48 kHz; die Fensterdauer wird darin nicht versteckt. | **NEU** sonde012_sources_slice.rs::latest_per_source_no_cross_gap_interpolation; Lastbein ::visible_latency_16_and_32_sources; **NEU** Sonde012SourcesModelTest.cpp, Fall age_and_window_are_not_hidden. | Entwurf:2037-2043,2076-2100; FBS Transportstempel/Frame:150-164,208-221. **BELEGT, BAULÜCKE** |
+| L07 | Connected/fresh; kein gültiger Control-Kontakt mehr | Heartbeat-Kadenz ist 1.000 ms. Beim ersten Liveness-Tick mit elapsed > 2.500 ms wird Control sichtbar stale; bei exakt 2.500 ms noch nicht. Die Quelle bleibt zur Orientierung in der Liste. Messwerte dürfen ab dann nicht als current/fresh erscheinen. | Bestehend broker/tests/coordinator_model.rs::stale_konstanten_ableitung und ::stale_grenze_exklusiv_und_kontakt_setzt_zurueck; **NEU** Sonde012SourcesModelTest.cpp, Fall stale_keeps_row_and_downgrades_measurement. | coordinator.rs:27-31,1134-1142; Entwurf:2085-2087. **BELEGT, BAULÜCKE im Main-Modell** |
+| L08 | Stale, noch nicht evicted; P2 oder gültiger neuer Heartbeat trifft ein | Ein P2-Frame allein hebt stale nicht auf. Nur ein akzeptierter P0-Control-Kontakt setzt last_seen und stale zurück. Danach ist Control connected; ein alter Messframe bleibt mit seinem eigenen Alter stale/missing, bis wieder ein gültiger aktueller P2-Frame ankommt. | Bestehend coordinator_model.rs::stale_grenze_exklusiv_und_kontakt_setzt_zurueck; **NEU** sonde012_sources_slice.rs::p2_does_not_revive_control_and_heartbeat_does_not_refresh_measurement. | coordinator.rs:1134-1162,1215-1264,2453-2463; universelle Zwei-Achsen-Regel §2. **BELEGT, BAULÜCKE im Messmodell** |
+| L09 | Connected; Probe-Control endet durch EOF, Protokoll-/Writefehler, Timeout oder Stop | Unter demselben Coordinator-Lock werden Linkkopplung, `current_link`/stale/dirty, linkeigene Subscription, Telemetriekopplung und Interventionen als ein atomar sichtbarer Gegenpfad bereinigt. Die Matrix behauptet keine innere Reihenfolge; nach Lock-Freigabe darf kein Push den alten Link benutzen. Gespeicherte Mitgliedschaft und User-Label bleiben, Livewerte sind nicht fresh. | Bestehend broker/tests/coordinator_model.rs::trennen_bereinigt_vor_join und ::join_reconnect_disconnect_setzt_sticky_unknown_bis_resync; **NEU** sonde012_sources_slice.rs::control_end_is_atomic_and_no_push_uses_old_link_after_unlock. | Entwurf §33.3:1842-1888; coordinator.rs:681-721, insbesondere stale/dirty 701-711 und Subscription 713 unter demselben Lock. **BELEGT, BAULÜCKE in Main** |
+| L10 | Main ist Subscriber; sein Control-Link endet | Nur die diesem Link gehörende Subscription verschwindet atomar vor jedem späteren Push. Es gibt kein unsubscribe_session. Ein neues Main-Control muss erneut subscriben; bis zum frischen Snapshot gelten Broker-/Livezustände in Gen als disconnected, nicht als fortlaufend aktuell. | **NEU** broker/tests/sonde012_sources_slice.rs::main_link_end_cleans_subscription_before_push für EOF, Protokollfehler, Timeout, Writefehler und Serverstopp; strukturell tools/eq-copilot/pruefe_v3_vertrag.py::kein_unsubscribe_session_name. | Entwurf §33.3 und SONDE-011-Entscheid; Schema:845-865. **BELEGT, BAULÜCKE im Produktclient** |
+| L11 | Quelle stale/disconnected; Tombstone-Frist läuft | Ab stale_seit >= 10.000 ms entfernt Eviction die Quelle aus allen flüchtigen Brokerindizes. Eine bestätigte MainProject-Mitgliedschaft wird dadurch nicht erfunden gelöscht; sie kann weiter als disconnected erscheinen, bis der User sie sichtbar entfernt/unbindet. | Bestehend broker/tests/coordinator_model.rs::tombstone_grenze_entfernt_alle_fluechtigen_sichten_aber_keinen_dauerhaften_konfliktriegel; **NEU** Sonde012SourcesModelTest.cpp, Fall eviction_does_not_delete_confirmed_membership. | coordinator.rs:31,1152-1162; Entwurf:1906-1911,3937-3939. **BELEGT, BAULÜCKE im MainProjectState** |
+| L12 | Broker-Neustart | Alte broker_epoch, Führung, Live-Mitglieder, Subscriptions und Liveframes werden nie als aktueller Lauf ausgespielt. Main subscribt neu; Probes reporten neu. Lokale Probe-Identität, Projektbindung und gespeicherter User-Name bleiben erhalten. Bis zu neuen Reports/Frames steht disconnected/missing statt alter grüner Wahrheit. | Bestehend broker/tests/store_crash_matrix.rs::brokerneustart_sendet_keine_laufgebundenen_felder_der_alten_projektion und coordinator_model.rs::brokerneustart_behaelt_session_epoch; **NEU** sonde012_sources_slice.rs::restart_has_no_old_live_or_measurement_truth. | Entwurf:1906-1916,2085-2087,3929-3935; session_snapshot-Beschreibung Schema:856-865. **BELEGT, BAULÜCKE im Main** |
+| L13 | FL-Projekt wird gespeichert/neu geladen | Save/Load bewahrt instance_id, project binding und label; Frische, Subscriptions, Broker-Cache und Liveframes werden nicht persistiert. Reihenfolge: State laden → Control/Telemetry reconnect → neu reporten/subscriben → erst neue gültige Frames machen Messung fresh. | **NEU** eq-copilot/plugin/tests/Sonde012ProjectReloadTest.cpp::reload_preserves_identity_label_membership_but_not_live_truth; vorhandene State-Roundtrip-Beine bleiben Gegenprobe. | Statevertrag nakama-state-v2.md:16-32,96-114; Entwurf:1906-1916,3933-3935. **BELEGT, BAULÜCKE** |
+| L14 | Beliebiger Zustand; ungültiger, nichtendlicher, falsch adressierter oder verworfener Messframe | Ablehnung geschieht vor Mutation. Der Frame überschreibt weder den letzten gültigen Wert noch erzeugt er 0. Main zeigt measurement invalid beziehungsweise eine ausdrücklich alte letzte gültige Messung samt Alter; niemals current. Der nächste vollständig gültige Frame ist der Gegenpfad. Der heutige Broker hat noch keinen Fehlergrund-Push bis Main. | Bestehend coordinator_model.rs::p2_mutiert_erst_nach_flatbuffers_verifikation und ::unverarbeitete_bytes_aendern_den_sessiongraphen_nicht; **NEU** sonde012_sources_slice.rs::invalid_frame_keeps_last_valid_but_marks_measurement_invalid; **NEU** EqCopShot sonde012-invalid-frame.png. | FBS:210-215; Entwurf:2041-2043,2099-2100; Blueprint:238-251. **BELEGT, BAULÜCKE im Fehlerkanal** |
+| L15 | Broker unavailable, authenticating, Join-Bestätigung nötig, incompatible oder Store degraded | Der reale Zustand ist Diagnose, nicht Connected-Ersatz. Ein sichtbarer Handgriff erscheint nur, wenn er die konkrete Recovery ausführt; bei automatischem Reconnect genügt Status. Fehler blockieren nie Audio und löschen keine gespeicherte Identität. | **NEU** Sonde012SourcesModelTest.cpp::diagnostics_are_distinct_and_actions_are_live; **NEU** EqCopShot-Satz sonde012-broker-unavailable.png, -join-confirmation.png, -incompatible.png und -store-degraded.png. | Blueprint:201-207; Entwurf §0.4:421-459 und P3:3923-3935; CLAUDE.md:54-55. **BELEGT, BAULÜCKE** |
+| L16 | P0-Heartbeat bleibt frisch, aber es kommt kein weiterer gültiger P2-Messframe | Main verlässt `fresh` beim ersten Alters-Tick, an dem das Wallclock-Alter des jüngsten gültigen Frames **größer als** `max(2 × intrinsische Fensterdauer, 1.000 ms)` ist; bei Gleichheit bleibt es fresh. Bei mehreren Auflösungen zählt die größte enthaltene Fensterdauer. Reihenfolge: Alter aus letztem gültigem Frame berechnen → Messachse `measurement-stale` und Modellrevision setzen → alten Wert ausdrücklich mit Alter zeigen. Control bleibt connected. Verstummen bei stehendem Transport erzeugt kein Fehlerbanner. | **NEU** Sonde012SourcesModelTest.cpp::p0_fresh_but_p2_silent_crosses_measurement_deadline prüft Gleichheit, erstes Überschreiten, größte Auflösung und Stop ohne Banner; **NEU** sonde012_sources_slice.rs::telemetry_silence_does_not_change_control_liveness. | Entwurf:2037-2043,2076-2100; FBS Transportstempel/Frame:150-164,208-221; §7 E-L16. **ENTSCHIEDEN — §7 E-L16; BAULÜCKE** |
+| L17 | Fresh/measuring; Seek, Loop, Drop oder Kontinuitätsbruch | Der Bruch beendet die alte Zeitreihe. Analysezustand einschließlich LoudnessAccumulator wird ohne Allokation zurückgesetzt; Main interpoliert nicht über die Grenze. Bis zur neuen gültigen Baseline ist Lautheit leer/measuring, nicht der alte Wert und nicht 0. | Bestehend AnalyseEngine-Resetpfad PluginProcessor.cpp:663-681 und AnalyseEngine.cpp:277-326; **NEU** Sonde012LoudnessSourceTest.cpp::seek_loop_drop_start_new_empty_series. | Entwurf:2076-2087; Blueprint:1099-1110. **BELEGT, BAULÜCKE in Probeeq/IPC/Main** |
+| L18 | Bestätigtes Mitglied ist sichtbar; User führt **Remove/Unbind** aus | Das wirkliche Entfernen ist der Gegenpfad zu Join/Bind: MainProject-Mitgliedschaft und bestätigte Bindung werden persistent aufgehoben, Host-Dirty wird gemeldet, danach reisen State-Report/absoluter Snapshot. Gen führt die Quelle nicht länger als bestätigtes Mitglied; bleibt sie flüchtig entdeckt, ist sie ausdrücklich ungebunden/unclassified statt joined. Eviction aus L11 darf diesen Userakt nicht ersetzen. | **NEU** eq-copilot/plugin/tests/Sonde012ProjectStateTest.cpp::remove_unbind_clears_persistent_membership_marks_dirty_and_roundtrips; **NEU** broker/tests/sonde012_sources_slice.rs::unbind_removes_confirmed_membership_from_next_absolute_snapshot; EqCopShot sonde012-unbound-removed.png. | Entwurf:3931,3937-3939; Bauaufteilung T1 Bind↔Unbind:187-189; Statevertrag:150-152. **BELEGT, BAULÜCKE** |
+| L19 | Zwei bestätigte Mains; Führung wird von A an B übergeben | Unter demselben Coordinator-Lock wird A die Führung entzogen und genau B gesetzt; kein Leser sieht zwei schreibfähige Mains. Nach Rückkehr ist `main_darf_schreiben(A)` false und für B true; der anschließend gepushte Snapshot macht die Übergabe in Gen sichtbar. Eine verlorene oder abgelehnte Übergabe ändert die Führung nicht. | Bestehend broker/tests/coordinator_model.rs::fuehrung_exklusiv_und_uebergabe; **NEU** broker/tests/sonde012_sources_slice.rs::handover_snapshot_revokes_old_main_before_new_write und Sonde012SourcesModelTest.cpp::main_handover_is_visible. | Entwurf:3925,3937-3938; coordinator.rs:1522-1573; coordinator_model.rs:403-419. **BELEGT, BAULÜCKE nur in Übergabe bis Gen** |
+| L20 | User benennt eine Quelle, bestätigt Join/Bind oder führt Remove/Unbind aus | Nur bei echter persistenter Änderung gilt die Reihenfolge: State/MainProjectState ändern → `updateHostDisplay(ChangeDetails().withNonParameterStateChanged(true))` → bei Adressänderung neu reporten → Save/Load reproduziert Name und Mitgliedschaft. No-op, Laden und Migration melden kein Host-Dirty. Damit sind Benennen, Join/Bind und Unbind keine nur flüchtigen Brokerakte. | **NEU** eq-copilot/plugin/tests/Sonde012ProjectStateTest.cpp::name_join_unbind_each_marks_host_dirty_and_roundtrips; vorhandene Listener-/Statebeine für `setzeBindung` bleiben Gegenprobe für No-op und Load. | CLAUDE.md State-Invariante; Statevertrag:20-24,109-113,150-152; PluginProcessor.cpp:873-875,1008-1059; Entwurf:1648-1651. **BELEGT, BAULÜCKE für P3-Mitgliedschaft/Unbind** |
+| L21 | Verbundene Quelle meldet ausdrücklich **offline**; später meldet sie online | Main übernimmt offline nur aus einem akzeptierten expliziten Quell-/Hostzustand, hält Identität und Mitgliedschaft sichtbar und gibt keinen Livewert als fresh aus. Fehlende Frames, stale und Control-Disconnect werden nie zu offline geraten. Erst ein explizites Online-Signal plus neuer gültiger Frame hebt den Zustand auf. Der heutige Descriptor besitzt dafür noch kein Feld. | **NEU** broker/tests/sonde012_sources_slice.rs::explicit_offline_is_not_inferred_from_stale_or_disconnect; **NEU** Sonde012SourcesModelTest.cpp::offline_is_visible_and_requires_explicit_resume; EqCopShot sonde012-offline.png. | Entwurf:3929; Blueprint:223,247-249. **BELEGT, BAULÜCKE im Quellstatus-Vertrag** |
+| L22 | Verbundene Quelle meldet ausdrücklich **suspended**; später Resume | Suspended bleibt von offline, stale, disconnected, no signal und Transport-Stopp unterscheidbar. Gen hält die Zeile sichtbar und zeigt keinen Messwert als fresh. Nur ein akzeptiertes Resume beendet suspended; fresh wird die Messung erst mit einem danach gültigen Frame. Der heutige Descriptor besitzt dafür noch kein Feld. | **NEU** broker/tests/sonde012_sources_slice.rs::suspended_is_distinct_and_resume_needs_new_frame; **NEU** Sonde012SourcesModelTest.cpp::suspended_never_collapses_into_no_signal_or_disconnect; EqCopShot sonde012-suspended.png. | Entwurf:3929; Blueprint:223,247-249,1101-1105; §7 E-L16 grenzt Transport-Stopp ab. **BELEGT, BAULÜCKE im Quellstatus-Vertrag** |
+| L23 | Frische Instanz vor vollständigem State-Restore oder nicht lesbarer State; Main entdeckt den Eintrag | Der Zustand bleibt sichtbar `unclassified`, audio-neutral und ohne behauptete Produktrolle oder Schreibrecht. Weder Bundletyp noch Verbindungsreihenfolge klassifizieren ihn. Erst ein vollständig gültiger State-Report darf in die belegte Klasse wechseln; read-only/fremdes Major fällt wieder auf unclassified. | Bestehend eq-copilot/plugin/tests/LebenslaufTestMain.cpp::Automat-/Scanner-/read-only-Fälle; **NEU** broker/tests/sonde012_sources_slice.rs::unclassified_report_stays_role_neutral und Sonde012SourcesModelTest.cpp::unclassified_is_visible_not_error_or_role. | Entwurf:3628-3638,3929; NakamaLebenslauf.h:54-93; Blueprint:1033-1036. **BELEGT, BAULÜCKE im Broker/Main-Modell** |
+| L24 | Bestätigte Quelle erlebt Bridge-/PID-Wechsel und verbindet neu | `host_pid` ist nur Signal, nie Identität. `project_binding_id + session_epoch + instance_id` halten die Mitgliedschaft; der neue Prozess erhält einen neuen `runtime_nonce` und Link. Alter Link/Nonce verliert Liveness und darf nach dem Wechsel keine Steueradresse mehr sein; State-Report und bei Mehrdeutigkeit sichtbare Bestätigung führen zur neuen Adresse. Kein PID-Vergleich darf eine fremde Quelle binden. | **NEU** broker/tests/sonde012_sources_slice.rs::bridge_pid_change_preserves_membership_but_never_old_control_address mit neuem PID/runtime_nonce, altem Late-Push und Mehrdeutigkeitsfall; **NEU** Sonde012SourcesModelTest.cpp::bridge_pid_change_has_no_false_member_or_address. | Entwurf:1620-1630,1648-1651,3933-3935; Statevertrag:109-113,156. **BELEGT, BAULÜCKE** |
+
+### 3.2 Messpunkt-Wahrheit vom State bis zur Anzeige
+
+Der heutige `descriptor_aus_heartbeat` erzeugt in
+broker/src/coordinator.rs:1360-1367 jeden Descriptor mit
+`measurement_position: "insert"`. Damit ist selbst ein korrekter `pre`-/`post`-
+State heute vor dem Broker verloren; die folgenden drei Zeilen markieren diese
+Baugrenze ausdrücklich.
+
+| ID | State × Ereignis | Zusage, Callback-Reihenfolge und Frist | Test, der genau diese Zeile misst | Quelle / Belegstatus |
+|---|---|---|---|---|
+| M01 | Persistenter Probe-State trägt `measurement_position=insert`; State-Report/Join | Reihenfolge ohne Synthese: vollständiger State-Restore → State-Report übernimmt `insert` → Descriptor-Zweig `probe_descriptor_insert` → Broker validiert und erhält den Wert → absoluter Snapshot/Main-State → sichtbare Kennzeichnung **insert / association, beobachtend**. Die Anzeige darf daraus nie einen exakten Mastersummenbeitrag machen. Es gilt die Sichtfrist aus L06. | Bestehend State-Roundtrip-Gegenbein für `measurement_position`; **NEU** broker/tests/sonde012_sources_slice.rs::state_insert_reaches_descriptor_snapshot_unchanged und eq-copilot/plugin/tests/Sonde012MeasurementPositionTest.cpp::insert_reaches_main_and_display_as_observing. | Statevertrag:15-22,45-52; Schema:571-604; Entwurf:1944,2097-2100,3925-3928; coordinator.rs:1360-1367 zeigt die Synthese-Lücke. **BELEGT, BAULÜCKE** |
+| M02 | Persistenter Probe-State trägt `measurement_position=pre`; State-Report/Join | Reihenfolge ohne Umdeutung: State → Descriptor-Zweig `probe_descriptor_pre` mit Aussageklasse `beobachtend` → Broker → Snapshot/Main-State → sichtbare Kennzeichnung **pre**. Main hält sie von insert und post getrennt; ein fehlendes `pair_id` darf die Messposition nicht zu insert umschreiben. Es gilt die Sichtfrist aus L06. | **NEU** broker/tests/sonde012_sources_slice.rs::state_pre_reaches_descriptor_snapshot_unchanged (schlägt am heutigen insert-Hardcode fehl); **NEU** Sonde012MeasurementPositionTest.cpp::pre_reaches_main_and_display_distinctly. | Statevertrag:45-52; Schema:607-629; Entwurf:1944,2097-2100,3925-3928; coordinator.rs:1360-1367. **BELEGT, BAULÜCKE** |
+| M03 | Persistenter Probe-State trägt `measurement_position=post`; State-Report/Join | Reihenfolge ohne Umdeutung: State → Descriptor-Zweig `probe_descriptor_post` mit Aussageklasse `beobachtend` → Broker → Snapshot/Main-State → sichtbare Kennzeichnung **post**. Main hält post von pre, insert und dem heute im State verbotenen `post_fader_contribution` getrennt; es entsteht keine Beitragsbehauptung. Es gilt die Sichtfrist aus L06. | **NEU** broker/tests/sonde012_sources_slice.rs::state_post_reaches_descriptor_snapshot_unchanged (schlägt am heutigen insert-Hardcode fehl); **NEU** Sonde012MeasurementPositionTest.cpp::post_reaches_main_and_display_without_contribution_claim. | Statevertrag:45-55; Schema:632-653; Entwurf:1944,2097-2100,3925-3928; coordinator.rs:1360-1367. **BELEGT, BAULÜCKE** |
+
+### 3.3 Host-Kanalkontext, Name und Mixer-Reihenfolge
+
+| ID | Ausgangszustand × Ereignis | Zusage, Callback-Reihenfolge und Frist | Test, der genau diese Zeile misst | Quelle / Belegstatus |
+|---|---|---|---|---|
+| H01 | FL/VST3 liefert oder ändert ChannelContext | Reihenfolge im gepinnten JUCE: VST3 `setChannelContextInfos` → Name/Farbe auslesen → bei Bedarf `MessageManager::callAsync` → `AudioProcessor::updateTrackProperties` auf dem Message-Thread. Probeeq übernimmt dort den Runtime-Kontext und reportet einen neuen Descriptor; der Audiothread bleibt unberührt. Der Host bestimmt die Callback-Kadenz. Mixer-Index und `list == null` erreichen diesen JUCE-Callback heute nicht. | **NEU** eq-copilot/plugin/tests/Sonde012HostChannelContextTest.cpp::local_update_track_properties_reports_name_on_message_thread und ::local_clear_path_reports_absence. Diese C++-Tests rufen den lokalen JUCE-Callbackpfad kontrolliert auf; **nur** das FL-Golden aus C02/C03 beweist, dass FL ihn über VST3 tatsächlich beliefert. | Plan:218; JUCE-Wrapper:1157-1190; AudioProcessor.h:1313-1335. **BELEGT, BAULÜCKE in Probeeq und Wrapper-Gegenpfad; FL-Lieferung ungemessen** |
+| H02 | Host liefert Bus-Name und Mixer-Index | `host_bus_name` reist optional als UTF-8-String mit 1–120 Unicode-Codepoints. `host_mixer_index` reist optional als roher VST3-int64-Wert, beginnend bei 1 und begrenzt auf die JSON-sichere Ganzzahl **1..9007199254740991**; 0, negative und größere Werte gelten als nicht geliefert. Der Index reist nur ohne Namespace oder bei genau einem konsistenten Namespace; mehrere Namespaces machen ihn abwesend, ein drittes Vertragsfeld entsteht nicht. Beide Felder werden in allen aktiven strikten Descriptorzweigen optional ergänzt (`additionalProperties:false`); Versionierung nutzt das Wire-Envelope-`schema_minor`, das jeder v3-Frame trägt (Entwurf §33.1, WireEnvelope.h, broker/src/transport/v3.rs); der Empfänger wählt die Schemafassung danach. Reservierung, Codegen und C++-/Rust-Fixtures ändern sich gemeinsam. Main zeigt den Hostnamen und sortiert nach H07. | **NEU** tools/eq-copilot/pruefe_v3_vertrag.py::host_channel_context_fields_are_optional_strict_and_versioned; gemeinsame Fixtures prüfen Index 1/Maximum, 0/negativ/Maximum+1, keinen/einen/mehrere Namespaces und kein drittes Feld; **NEU** Sonde012SourcesModelTest.cpp::host_name_and_valid_index_drive_identity_and_order. | Interview Festlegungen 11/12:212-214; Reservierung:34-44; v3-README:327-349; §7 E-H02. **ENTSCHIEDEN — §7 E-H02; BAULÜCKE** |
+| H03 | Host liefert weder Bus-Name noch Mixer-Index | Mit nichtleerem State-`label` ist dieses User-Wort bis 120 Unicode-Zeichen der sichtbare, untrusted Rückfall; es wird nie Hostwahrheit, Pfad oder Markup. Ist auch `label` leer, zeigt Gen **`Unnamed ` plus die ersten 8 Hex-Zeichen der `instance_id`** als erkennbaren Platzhalter. Weder Mixer-Nummer noch Verbindungsreihenfolge dienen als Ersatzordnung. | **NEU** Sonde012SourcesModelTest.cpp::no_host_context_uses_persisted_untrusted_label_without_order_claim und ::empty_label_uses_unnamed_plus_instance_prefix; **NEU** EqCopShot sonde012-label-fallback.png und sonde012-unnamed-instance-prefix.png. | U20:13-34; Statevertrag:16-21; Schema probe_label:682-686; §7 E-H03. **ENTSCHIEDEN — §7 E-H03; BAULÜCKE** |
+| H04 | Bisher H03-Rückfall; zur Laufzeit trifft ein gültiger Host-Busname ein | Callback → Runtime-Kontext aktualisieren → Descriptor-Revision/report → Broker-Snapshot → Main-Modell. Mit der ersten akzeptierten neuen Wahrheit ersetzt der Hostname automatisch das sichtbare User-Label oder den `Unnamed`-Platzhalter. `label` wird weder überschrieben noch gelöscht und bleibt Save/Load-Wahrheit. | **NEU** Sonde012HostChannelContextTest.cpp::host_name_takes_precedence_without_overwriting_label; **NEU** Sonde012SourcesModelTest.cpp::runtime_fallback_to_host_switch_is_atomic. | U20:23-34; Plan:218; Statevertrag:20,110; §7 E-H03. **BELEGT, BAULÜCKE** |
+| H05 | Bisher Hostname; Hostwert fällt zur Laufzeit weg | Sobald das Fehlen beobachtbar gemeldet und akzeptiert ist, folgt Descriptor/Snapshot/Main in derselben Reihenfolge wie H04; das gespeicherte `label` oder bei leerem Label der H03-Platzhalter trägt wieder. Kein leerer Zwischenname und kein Umsortieren nach Verbindungszeit. Der heutige JUCE-Wrapper ruft bei `list == null` jedoch keinen Clear-Callback auf. | **NEU** Sonde012HostChannelContextTest.cpp::host_name_clear_restores_stored_fallback; **NEU** Sonde012SourcesModelTest.cpp::runtime_host_to_fallback_has_no_blank_or_connection_order. | U20:23-34; JUCE-Wrapper:1157-1190; §7 E-H03. **BELEGT, BAULÜCKE im Clear-Pfad** |
+| H06 | Hostname ist leer, nur Whitespace, über 120 Codepoints oder enthält C0-/C1-Steuerzeichen | Der Wert gilt als nicht geliefert und löst H03/H05 aus, ohne eigenen Fehlerzustand. Ein angenommener `host_bus_name` bleibt byte-/codepointgetreu: kein inneres Trimmen, keine Case-Änderung. Er ist untrusted, ausschließlich Text und nie Pfad, Markup oder Hostwahrheit über den Namen hinaus. | **NEU** Sonde012HostChannelContextTest.cpp::host_bus_name_acceptance_boundary prüft 1/120/121 Codepoints, leer, Whitespace und alle C0/C1-Grenzen; gemeinsame C++-/Rust-Fixtures prüfen keine Normalisierung; SourcesModel-Fall rejected_host_name_uses_fallback. | U20:23-34; Schema probe_label:682-686; §7 E-H06. **ENTSCHIEDEN — §7 E-H06; BAULÜCKE** |
+| H07 | Kein oder nur teilweise vorhandener gültiger Host-Mixerindex | Ohne Index sortiert Gen alphabetisch nach sichtbarem Namen (Unicode-casefold, danach Codepoint-Vergleich), Tiebreaker `instance_id` aufsteigend. Bei teilweiser Indexmenge stehen gültig indizierte Quellen zuerst in Host-Ordnung; alle übrigen folgen in dieser Ersatzordnung. Busname ohne Index darf H03 verdrängen, Index ohne Busname nicht das Label. Keine Quelle erhält Mixer-Nummer, Verbindungsreihenfolge oder erfundene FL-Position. | **NEU** Sonde012SourcesModelTest.cpp::no_index_sorts_casefold_codepoint_then_instance und ::partial_indices_sort_indexed_first_then_fallback; Gegenfälle prüfen gleichen Namen, ungültigen Index und Index ohne Busname. | U20:13-34; Interview:212-214; §7 E-H07. **ENTSCHIEDEN — §7 E-H07; BAULÜCKE** |
+
+### 3.4 Capability-Evidenz für Host-Kanalkontext (kein Wire-Bit)
+
+Das vorhandene Wire-Feld `host_context_presence` belegt den Process-/Playhead-
+Kontext aus SONDE-003/004, nicht VST3 ChannelContext mit Busname und
+Mixerindex. Es wird nicht umgedeutet. Der Tickettext fordert zwar das
+zugehörige Capabilitybit (docs/plan/plan.json:218); §7 E-C01 löst den
+Vertragskonflikt aber nach der jüngeren v3-Major-Regel: Der geschlossene Satz
+der zehn Wire-Capabilities bleibt unverändert, die Messwahrheit wird separat
+und nicht auf der Leitung dokumentiert.
+
+| ID | Evidenzzustand × Ereignis | Zusage für Anzeige und Vertrag | Test, der genau diese Zeile misst | Quelle / Belegstatus |
+|---|---|---|---|---|
+| C01 | Vor Vertragsbau; Kanalkontext-Fähigkeit wird verankert | Name und Semantik des separaten Nicht-Wire-Eintrags sind `host_channel_context`: „FL liefert über VST3 ChannelContext mindestens den Bus-Namen bis `AudioProcessor::updateTrackProperties`“. Er lebt als eigener Abschnitt in `host-capabilities-fl-v1.json` mit `beweis`, `termin`, `rohfeld`, `datei` und `fallback`; `pruefe_host_capabilities.py` validiert ihn. Der geschlossene Zehner-Satz im Wire-Objekt bleibt byte-/schemagleich: kein elftes Feld und kein `schema_minor`-Schritt; eine Wire-Erweiterung wäre NAK-27/Major. Descriptorfelder aus H02 bleiben unabhängig vom Eintragswert gültig und werden bei Anwesenheit angezeigt. | **NEU** tools/eq-copilot/pruefe_host_capabilities.py::host_channel_context_is_separate_non_wire_evidence; bestehende v3-Prüfung belegt weiter exakt zehn Pflichtfähigkeiten und unveränderten Major; **NEU** SourcesModel-Fall descriptor_value_wins_over_capability_expectation. | Plan:218; Entwurf:3642-3661; v3-README:327-349; host-capabilities-fl-v1.json:15-27; §7 E-C01. **ENTSCHIEDEN — §7 E-C01; BAULÜCKE** |
+| C02 | **gemessen-ja**; echtes FL-Golden belegt mindestens den Busnamen bis `updateTrackProperties` | Nur dieses Golden setzt den separaten Eintrag auf `supported` und nennt die konkrete positive Belegkette. Der Wert dokumentiert die gemessene FL-Fähigkeit, er erfindet keine Descriptorwerte: Ein vorhandener Hostname hat Vorrang, fehlende Name-/Indexwerte folgen H03/H07. | **USER-TERMIN / NEU Messbein:** `EqCopHostProbe` samt Wrapper-Messkante um rohe `VST3::ChannelContext::IInfoListener::setChannelContextInfos`- und `updateTrackProperties`-Ereignisse für Name, Index, Namespace, Clear, Laufzeitwechsel und Reload erweitern; Golden nach bestehendem Terminmuster als `docs/beweise/termin-c/host-channel-context-<zeitstempel>.json`. **NEU** tools/eq-copilot/pruefe_host_capabilities.py::channel_context_supported_requires_termin_c_golden und Sonde012SourcesModelTest.cpp::measured_yes_still_uses_only_descriptor_values. | Entwurf:3642-3661; bisherige Golden-Ablage/Prüfung pruefe_host_capabilities.py:73-75,205-206; U20; §7 E-C01. **ENTSCHIEDEN — §7 E-C01; BAULÜCKE, User-Termin steht aus** |
+| C03 | **gemessen-nein**; dasselbe FL-Messbein belegt keine nutzbare Busnamen-Lieferung | Der separate Eintrag bleibt `unsupported`, trägt aber Termin, Rohbeleg und Golden statt „nicht gemessen“. Ohne Descriptorwert zeigt Main Capability-Degradation und den U20-Rückfall; es behauptet keine FL-Reihenfolge. Ein wider Erwarten gültiger Descriptorwert bleibt nach C01 anzeigbar. Versionsnummern ändern den Messwert nie. | **USER-TERMIN / NEU Messbein:** dasselbe `EqCopHostProbe`-Protokoll und dieselbe Ablage `docs/beweise/termin-c/host-channel-context-<zeitstempel>.json`, mit allen erwarteten Aktionen und nachweislich fehlender Busnamen-Kette. **NEU** pruefe_host_capabilities.py::channel_context_measured_unsupported_requires_termin_c_golden und SourcesModel-Fall measured_no_uses_fallback_without_suppressing_real_descriptor. | Entwurf:3642-3661; bisherige Golden-Ablage/Prüfung pruefe_host_capabilities.py:73-75,205-206; U20; §7 E-C01. **ENTSCHIEDEN — §7 E-C01; BAULÜCKE, User-Termin steht aus** |
+| C04 | **noch nicht gemessen**; heutiger Stand | Der separate Eintrag startet `unsupported` mit Beleg „nicht gemessen“, `termin: keiner`, ohne Datei und mit U20-Fallback; das ist kein behauptetes Negativergebnis und kein dritter Wire-Wert. Fehlen Descriptorfelder, zeigt Main den ehrlichen Rückfall; ein gültiges Feld wird auch vor dem Termin angezeigt. Der Zehner-Satz auf der Leitung bleibt unverändert. | **NEU** tools/eq-copilot/pruefe_host_capabilities.py::channel_context_unmeasured_is_unsupported_with_no_termin_and_fallback; **NEU** Sonde012SourcesModelTest.cpp::unmeasured_uses_fallback_but_never_hides_real_descriptor. | host-capabilities-fl-v1.json:15-16,76-81; Entwurf §54:3840-3844; v3-README:327-349; §7 E-C01. **ENTSCHIEDEN — §7 E-C01; BAULÜCKE** |
+
+### 3.5 Lautheit je Quelle mit Konfidenz
+
+U17.5 lautet „Ja, auf der Übersicht“ — je Quelle ein Lautheitswert auf Gens
+erster Seite. Die ausdrücklich geforderte Konfidenz stammt aus
+LoudnessAccumulator::unsicherheitLu(). Diese Funktion begrenzt die
+Quantisierung des integrierten, gegateten Werts; das vorhandene lufs_s-Feld ist
+deshalb kein stiller Ersatz für die beschlossene Wertepaarung.
+
+| ID | Ausgangszustand × Ereignis | Zusage, Datenweg und Randverhalten | Test, der genau diese Zeile misst | Quelle / Belegstatus |
+|---|---|---|---|---|
+| A01 | Probeeq hat genügend endliche Zellen; neuer Auswertestand | Nur wenn `LoudnessAccumulator::integriert(wert)` true liefert und `unsicherheitLu()` endlich ist, entsteht das atomare Paar integrierte Lautheit in LUFS plus Unsicherheit in LU. Reihenfolge: Audioqueue → Analyseworker → Accumulator → `lufs_i` und `lufs_i_unsicherheit_lu` gemeinsam; `lufs_i_status` fehlt dann. Kein Audiothread-I/O und kein halber Wert. Probeeq besitzt diesen Analysepfad heute noch nicht. | Bestehend EqCopLoudnessGoldenTest, insbesondere Schrankenprüfung in LoudnessGoldenTestMain.cpp:219; **NEU** Sonde012LoudnessSourceTest.cpp::producer_emits_finite_pair_without_status_atomically. | U17.5:89-105; LoudnessAccumulator.h:285-350; AnalyseEngine.cpp:692-708; §7 E-A02. **BELEGT; Feldabbildung ENTSCHIEDEN — §7 E-A02; BAULÜCKE in Probeeq** |
+| A02 | Lautheitsauswertung soll Probeeq → Broker → Main reisen | Direkt im Featureframe entstehen `lufs_i: float = null`, `lufs_i_unsicherheit_lu: float = null` und `lufs_i_status: ubyte = null` mit 1=`collecting`, 2=`gated`. Ein Paar ist nur mit beiden präsenten, endlichen Floats gültig; der Producer schreibt beide oder keines und bei keinem den passenden Status. Status und gültiges Paar reisen nie zusammen. Halbe/nichtendliche Paare verwirft der Consumer, zählt sie je Quelle als `invalid`, lässt den übrigen Frame aber gültig. Die Feld-IDs werden erst im Bau als nächste freie Werte aus `FELD-IDS.json` vergeben; Codegen und beide Leser ändern sich gemeinsam. Der Broker hält höchstens das jüngste Paar je Quelle, `lufs_s` bleibt unverändert. | **NEU** Feld-ID-/Codegen-Driftwache aus `FELD-IDS.json`; gemeinsame C++-/Rust-Fixtures `loudness-i-pair`, `loudness-i-collecting`, `loudness-i-gated`, `loudness-i-half`, `loudness-i-nonfinite` und `loudness-i-pair-plus-status`; **NEU** broker/tests/sonde012_sources_slice.rs::loudness_fields_validate_count_and_reach_only_their_source. | FBS:208-225; FELD-IDS.json:74-87; §7 E-A02. **ENTSCHIEDEN — §7 E-A02; BAULÜCKE** |
+| A03 | Main erhält ein gültiges endliches Paar | Gens erste Seite zeigt je Quelle den Wert gemeinsam mit Einheit, Messstatus, Messaktualität und derselben Unsicherheit; nicht auf der EQ-Fläche. Exakte Typografie, Rundung, Farbe und Material sind keine Zusage dieser Phase. | **NEU** Sonde012SourcesModelTest.cpp::valid_loudness_pair_is_co_located_with_confidence; **NEU** EqCopShot sonde012-loudness-valid.png bei festem 760×430-Fenster. | U17.5:89-105; Blueprint:224-251,528-559,664-686. **BELEGT, BAULÜCKE** |
+| A04 | `lufs_i` oder Unsicherheit reist allein; alternativ liegt nur das unveränderte `lufs_s` vor | Zusage „kein Wert ohne Konfidenz“: Ein halbes Paar wird je Quelle gezählt, der Lautheitsstatus dieser Quelle wird ausdrücklich `invalid`, der übrige Frame bleibt verwendbar und es erscheint keine Zahl. Nur `lufs_s` ist kein integriertes Paar: Wenn noch nie ein gültiges Paar oder Status vorlag, bleibt LUFS-I `missing`; `lufs_s` wird nie als Ersatz angezeigt. Ein später vollständiges Paar ist der Gegenpfad. | **NEU** Sonde012LoudnessSourceTest.cpp::half_pair_is_counted_and_rest_of_frame_survives; **NEU** Sonde012SourcesModelTest.cpp::half_pair_maps_to_invalid_and_lufs_s_only_maps_to_missing; EqCopShot sonde012-loudness-invalid-half-pair.png. | Tickettext plan.json:218; U17.5:102-105; Blueprint:238-251; §7 E-A02. **BELEGT; Statusableitung ENTSCHIEDEN — §7 E-A02; BAULÜCKE** |
+| A05 | Main hat noch nie Lautheitsinformation erhalten; danach meldet der Producer `collecting` oder `gated` | Vor dem ersten Paar oder Status ist LUFS-I `missing`. `lufs_i_status=1` ergibt `measuring`; `lufs_i_status=2` ergibt `no signal`. In allen drei Fällen bleibt der Wert leer. Der Rückgabewert 0 von `unsicherheitLu()` bei `anzahlAbs == 0` ist keine Konfidenz; es gibt keine erfundene Baseline oder numerische Null. Sobald ein Frame kein Paar trägt, sendet der Producer einen der beiden Statuswerte; ein gültiges Paar trägt nie gleichzeitig Status. | Bestehend EqCopLoudnessGoldenTest-Fälle zur Gültigkeitsgleichheit und zum Gate; **NEU** Sonde012LoudnessSourceTest.cpp::no_pair_emits_collecting_or_gated_status; **NEU** Sonde012SourcesModelTest.cpp::missing_collecting_and_gated_map_to_missing_measuring_no_signal. | LoudnessAccumulator.h:285-330; AnalyseEngine.h:95-100; Entwurf:2041-2043; §7 E-A02. **BELEGT; Statusableitung ENTSCHIEDEN — §7 E-A02; BAULÜCKE im End-to-End-Pfad** |
+| A06 | `lufs_i`, Unsicherheit oder beide sind NaN, +Inf oder -Inf am Consumer-Rand | Das nichtendliche/halbe Paar wird verworfen und **je Quelle** gezählt; nur deren Lautheitsmessung wird `invalid`, der restliche Frame bleibt gültig. Main zeigt keine Zahl und sanitisiert nie zu 0. Ein zuvor gültiger Wert darf nur ausdrücklich als alt samt Alter stehen. Der nächste vollständig endliche Paarframe ist der Gegenpfad. | Bestehend EqCopLoudnessGoldenTest und coordinator_model.rs::p2_mutiert_erst_nach_flatbuffers_verifikation; **NEU** gemeinsame Fixtures für NaN/±Inf in jedem Paarfeld; **NEU** sonde012_sources_slice.rs::nonfinite_loudness_counts_per_source_but_keeps_rest_of_frame und Sonde012SourcesModelTest.cpp::nonfinite_pair_maps_to_invalid_without_number. | LoudnessAccumulator.h:208-270,321-350; FBS:208-225; Entwurf:2099-2100; §7 E-A02. **BELEGT; Statusableitung ENTSCHIEDEN — §7 E-A02; BAULÜCKE im Fehlerkanal** |
+
+### 3.6 Dauerhafte Sources-Eigenschaften und eindeutiges Hauptziel
+
+| ID | Ausgangszustand × Ereignis | Zusage und Callback-Reihenfolge | Test, der genau diese Zeile misst | Quelle / Belegstatus |
+|---|---|---|---|---|
+| U01 | Snapshot/Findings-Revision ändert offene Findings einer Quelle | Jede Sources-Zeile zeigt neben Identität, Signalstatus und Messaktualität dauerhaft die kompakte **Anzahl offener Findings genau dieser Quelle**. Reihenfolge: Findings-Revision der `instance_id` zuordnen → offene Einträge zählen → genau diese Zeile revidieren. Null ist eine echte Zahl, kein verschwundenes Feld; Detaildiagnostik wird nicht in jede Zeile gezogen. | **NEU** eq-copilot/plugin/tests/Sonde012SourcesModelTest.cpp::findings_count_tracks_only_open_findings_of_its_source; EqCopShot sonde012-findings-count-0-and-many.png. | UI-Abnahme:62-64; CLAUDE.md:54-55. **BELEGT, BAULÜCKE** |
+| U02 | Nichtleere Quellenliste; Auswahl, Snapshot oder Wegfall des bisherigen Hauptziels | Zu jedem sichtbaren Modellstand gibt es genau **ein Hauptziel** der Detailfläche; alle anderen Quellen sind klar als Referenzen benannt. Bei null Quellen gibt es kein erfundenes Ziel. Auswahl oder Wegfall wird als ein Modellwechsel sichtbar; die UI zeigt nie zwei Hauptziele oder eine Referenz als Besitzer. | **NEU** Sonde012SourcesModelTest.cpp::zero_sources_has_no_target_and_nonempty_model_has_exactly_one_main_target; EqCopShot sonde012-one-main-target-with-references.png. | UI-Abnahme:65-67; Blueprint:219-225. **BELEGT, BAULÜCKE** |
+| U03 | User löst eine quellenbezogene Aktion aus; vorher oder gleichzeitig wechselt das Hauptziel | Jede ausführbare Aktion adressiert ausschließlich die `instance_id` des beim Auslösen aktuellen Hauptziels. Reihenfolge: aktuelles Hauptziel lesen → vor Dispatch prüfen, dass es weiterhin Hauptziel ist → nur dorthin senden; andernfalls wird nicht an eine alte oder referenzierte Quelle geschrieben. Referenzen besitzen keinen scheinbar ausführbaren Handgriff. | **NEU** Sonde012SourcesModelTest.cpp::actions_address_only_current_main_target_across_target_change; UI-Integration ::references_expose_no_source_action. | UI-Abnahme:65-67; CLAUDE.md:54-55. **BELEGT, BAULÜCKE** |
+
+## 4. Geplante Prüfbeine und Abnahmegrenze
+
+Die Matrix verlangt später mindestens:
+
+1. Rust-Integration auf einem Probe-Pipenamen unter
+   broker/tests/sonde012_sources_slice.rs für Subscribe, Snapshot, P2,
+   Disconnect, Unbind, Main-Handover, Restart, Bridge-/PID-Wechsel,
+   Messpositionen und getrennte Frische-/Quellstatusachsen.
+2. C++-Tests Sonde012HostChannelContextTest,
+   Sonde012LoudnessSourceTest, Sonde012MeasurementPositionTest,
+   Sonde012ProjectStateTest und Sonde012SourcesModelTest für lokalen
+   Hostcallback, Producerpaar, State/Host-Dirty und designneutrales Main-Modell.
+3. Gemeinsame JSON-/FlatBuffers-Fixtures mit identischem C++-/Rust-Urteil für
+   die entschiedenen Hostfeldgrenzen, Lautheits-Präsenz-/Paarregeln und
+   Messpositionen; Feld-IDs werden erst aus dem Register im Bau vergeben.
+4. EqCopShot-Sichtprüfung des echten Editors bei festem 760×430-Fenster für
+   0, 1 und 16 sichtbare Quellen sowie fresh, partial, stale, disconnected,
+   offline, suspended, unclassified, invalid, Messpositionen, Namenswechsel,
+   `Unnamed`-Platzhalter, Findings-Zahl, Hauptziel/Referenzen und
+   Lautheitsleerzustände. EqCopShot beweist Darstellung, nicht Hostcallback,
+   Keyboard-/Screenreader-Verhalten oder FL.
+5. Getrennt davon das spätere FL-Messbein aus C02/C03 mit erweitertem
+   EqCopHostProbe und Golden unter
+   `docs/beweise/termin-c/host-channel-context-<zeitstempel>.json`; lokale
+   C++-Callbacks sind dafür kein Ersatz.
+6. T1-Selbstaudit mit NaN/±Inf, Gegenpfaden, UI-Wahrheit, Anzeige-Pflichten
+   und Audiothread; danach T2 durch einen frischen Prüfer. Diese Phase A trägt
+   noch keinen PASS.
+
+## 5. Bewusst außerhalb dieser Phase
+
+- Die Messung des Host-Kanalkontexts im echten FL ist ein späterer
+  **User-Termin und steht aus**. Dort werden mindestens FL-/JUCE-Version,
+  Rohcallbacks für Name, Index und Namespace, fehlende Werte, Laufzeitwechsel
+  in beide Richtungen sowie Save/Reload protokolliert. Phase A führt die
+  Messung nicht aus und ändert weder Capabilitydatei noch Wire-Vertrag.
+- Der **60-Minuten-Soak** gehört zum P3-Exit-Gate G3
+  (Entwurf:3933-3935), nicht zum Lieferumfang dieses Tickets. Er besitzt daher
+  bewusst keine Matrixzeile in SONDE-012.
+- Die visuelle Richtung der UI ist nicht Teil des Tickets. Der spätere Bau ist
+  designneutral-funktional; die sichtbare Prüfung erfolgt über EqCopShot.
+  Farben, Material, Raster und visuelle Feinheiten werden hier nicht
+  entschieden.
+- Der **EQ-Zustand auf Gens Landkarte ist gestrichen**. Das für S29–31
+  reservierte technische Feld begründet keine Anzeige und wird in dieser
+  Matrix nicht gebaut.
+- Keine eingefrorene Identität nach NAK-30 wird geändert. Phase A enthält
+  keinen Produktcode, keine Schemaänderung und keine Installation.
+
+## 6. Belegte Lücken und offene Punkte
+
+**Matrixumfang: 47 Zeilen.**
+
+Die früher nicht aus den Quellen ableitbaren Technikdetails sind in §7
+entschieden und nun in **L16, H02, H03, H06, H07, C01-C04 und A01-A06**
+eingearbeitet. Es verbleibt in der Matrix keine unbelegte Produktzusage; die
+Statusmarke ENTSCHIEDEN benennt jeweils den zusätzlichen Vertragsursprung.
+
+Offen für die Bauphase bleiben die als BAULÜCKE markierten Implementierungs-
+und Testkanten: Main-Subscribe/Snapshot und Quellenmodell, unverfälschte
+Messpositionen, persistentes Unbind samt Host-Dirty, offline/suspended bis
+Main, Probeeq-Analyse/P2, Hostcallback/Index-/Clear-Gegenpfad, die beschlossenen
+Schemafelder, Broker-Framehaltung und sichtbare P2-Ablehnungsgründe. Zusätzlich
+steht ausschließlich als externes Beweisbein der FL-User-Termin aus C02/C03
+aus; er ist kein offener Produktentscheid.
+
+## 7. Lückenentscheide des Dirigenten (2026-09-01)
+
+Regelbasis: §3.4 des Dirigenten-Skills — eine Lücke entscheidet der Dirigent
+in derselben Runde als Technik und trägt sie in Matrix und Manifest ein.
+Produktentscheide sind nicht darunter: U20 hat Mixer-Nummer und
+Verbindungsreihenfolge bereits ausdrücklich verworfen; die Restwahl ist
+implementierungsnah.
+
+**Korrigiert nach Matrixprüfung Runde 1 (2026-09-01):** E-H02, E-C01 und
+E-A02 sind neu gefasst (VST3-Indexsemantik, Capability-Major-Regel aus
+v3-README/NAK-27, FlatBuffers-Präsenzsemantik `= null`); E-L16 ist um die
+Fensterbasis präzisiert; E-H03 (leeres Label ohne Hostname) ist ergänzt.
+Die früheren Fassungen sind damit ersetzt, nicht Verlauf.
+
+### E-L16 — Messfrische-Frist bei frischem P0
+
+Die Messachse einer Quelle verlässt `fresh`, sobald das Wallclock-Alter des
+jüngsten gültigen P2-Frames **2 × intrinsische Fensterdauer dieses Frames,
+mindestens aber 1.000 ms** überschreitet; sie wird dann `measurement-stale`
+(Wert bleibt ausdrücklich als alt samt Alter sichtbar). Die Frist lebt in
+Mains Quellenmodell, nicht im Broker, und ist von der Control-Frist
+(2.500 ms, coordinator.rs) vollständig getrennt. Verstummen bei stehendem
+Transport ist kein Fehlerzustand: die Anzeige altert ehrlich, ein
+Fehlerbanner entsteht daraus nicht. Trägt ein Frame mehrere Auflösungen,
+zählt die **größte** enthaltene Fensterdauer (konservativste Frische).
+
+### E-H02 — Typ, Bereich und Version der Hostfelder (neu gefasst 2026-09-01)
+
+- `host_bus_name`: string, UTF-8, 1–120 Unicode-Codepoints (dieselbe Grenze
+  wie `probe_label`), optional; fehlendes Feld heißt „der Host liefert
+  nichts".
+- `host_mixer_index`: integer, Bereich **1..9007199254740991** (VST3
+  `kChannelIndexKey` ist int64 und beginnt bei 1; die Obergrenze ist die
+  größte JSON-sichere Ganzzahl), roher Hostwert ohne eigene Umdeutung und
+  ohne Master-Sonderwert, optional; ein Wert außerhalb des Bereichs gilt als
+  „nicht geliefert".
+- **Namespace-Regel:** VST3 definiert den Index innerhalb eines
+  Index-Namespace. Ein drittes Vertragsfeld gibt es nicht (reserviert sind
+  genau zwei Namen). Der Wrapper-/Probeeq-Pfad reicht den Index nur weiter,
+  wenn der Host keinen oder genau **einen** konsistenten Namespace meldet;
+  bei mehreren Namespaces gilt der Index als „nicht geliefert", und der
+  spätere FL-Termin protokolliert das Rohverhalten. Damit bleibt die
+  Host-Ordnung vergleichbar oder sie findet nicht statt.
+- Vertragsort: strikte Neufassung der aktiven `probe_descriptor`-Zweige
+  (`additionalProperties` bleibt false, beide Felder explizit optional).
+  Versioniert wird am **Wire-Envelope**: jeder v3-Frame trägt dort
+  `schema_minor` (Entwurf §33.1; `WireEnvelope.h`;
+  `broker/src/transport/v3.rs`) — die Descriptor-Erweiterung erhöht dieses
+  Envelope-`schema_minor` und der Empfänger wählt die Schemafassung danach;
+  der Bau weist die Verträglichkeit über die bestehenden Fixtures nach und
+  erfindet kein neues Versionsfeld (korrigiert nach Wiederprüfung Runde 2,
+  2026-09-01: eine lokale Schemadatei-Version übermittelt dem Empfänger
+  keine Vertragsversion). Gültig-/Ungültig-Fixtures mit identischem C++-/
+  Rust-Urteil und die Fortschreibung der Reservierungseinträge in
+  `reservierte-nachrichten-v1.json` gehören in denselben Änderungssatz.
+
+### E-H06 — Annahmegrenze und Normalisierung für host_bus_name
+
+Ein gelieferter Wert gilt als „nicht geliefert", wenn er leer ist, nur
+Whitespace enthält, 120 Unicode-Codepoints überschreitet oder C0-/
+C1-Steuerzeichen enthält; dann greift der U20-Rückfall ohne Fehlerzustand.
+Es gibt keine weitere Normalisierung (kein inneres Trimmen, keine
+Case-Änderung). Der Wert bleibt untrusted wie `label`: nie Pfad, nie Markup,
+nie Hostwahrheit über den Namen hinaus.
+
+### E-H07 — stabile Ersatzordnung ohne Host-Mixerindex
+
+Ohne Host-Index ordnet Gen die Quellen **alphabetisch nach dem sichtbaren
+Namen** (casefold, Codepoint-Vergleich), Tiebreaker aufsteigende
+`instance_id`. Liegt für einen Teil der Quellen ein Host-Index vor, stehen
+die indizierten Quellen zuerst in Host-Ordnung, danach die übrigen in der
+Ersatzordnung; keine Quelle erhält eine erfundene FL-Position. Mixer-Nummer
+und Verbindungsreihenfolge bleiben als Ordnung verboten (U20).
+
+### E-C01 — Capabilitybit für den Host-Kanalkontext (neu gefasst 2026-09-01)
+
+Name: **`host_channel_context`**. Semantik: „FL liefert über VST3
+ChannelContext mindestens den Bus-Namen bis
+`AudioProcessor::updateTrackProperties`".
+
+**Kein Wire-Bit.** Das v3-Capabilityobjekt ist der geschlossene Zehner-Satz;
+jede Änderung daran ist laut v3-README ein **Major-Schritt**, und genau der
+Fall einer elften Fähigkeit ist dort als NAK-27 festgehalten. Ein Major vor
+R0 wird für diese rein dokumentarische Wahrheit nicht ausgelöst. Die
+gemessene Fähigkeit lebt stattdessen als eigener, klar vom Wire-Objekt
+getrennter Abschnitt in `host-capabilities-fl-v1.json` (Belegform nach
+§53.6-Muster: beweis, termin, rohfeld, datei, fallback), den
+`pruefe_host_capabilities.py` im selben Änderungssatz mitprüft, ohne ihn in
+das strikte `capabilities`-Objekt zu mischen. Ob daraus je ein elftes
+Wire-Bit wird, entscheidet der NAK-27-Major-Fall — Registerverweis genügt.
+
+Startwert nach §54 (kein unknown): `unsupported` mit Beleg „nicht gemessen"
+nach dem Muster von `contribution_aux` (termin: keiner) und Fallback
+„U20-Rückfall: gespeichertes User-Label, keine FL-Reihenfolge-Behauptung".
+Nur ein FL-Golden eines späteren User-Termins setzt den Wert. Konsistenzregel
+Feld↔Fähigkeit: die Descriptorfelder sind unabhängig davon gültig — ein
+gefüllter Hostwert bei `unsupported` ist kein Vertragsbruch und wird
+angezeigt (Descriptor-Wahrheit vor Capability-Erwartung); der Eintrag
+dokumentiert allein die gemessene FL-Fähigkeit.
+
+### E-A02 — Vertragsort für integrierte Lautheit plus Unsicherheit (neu gefasst 2026-09-01)
+
+Drei neue optionale Felder direkt im Featureframe, alle mit
+FlatBuffers-Präsenzsemantik **`= null`** (nur so ist Anwesenheit von
+Abwesenheit unterscheidbar — Muster `lufs_s: float = null` im heutigen
+Vertrag; gewöhnliche Skalare mit Default sind dafür ungeeignet):
+
+- `lufs_i: float = null` — integrierte, gegatete Lautheit in LUFS;
+- `lufs_i_unsicherheit_lu: float = null` — Unsicherheit in LU;
+- `lufs_i_status: ubyte = null` — Producer-Grund, warum **kein** Paar reist:
+  1 = collecting (noch keine Baseline), 2 = gated (Signal unter dem Gate).
+
+Paarregel: gültig ist das Paar nur, wenn `lufs_i` UND
+`lufs_i_unsicherheit_lu` präsent und endlich sind; der Producer schreibt
+beide oder keines (bei keinem stattdessen `lufs_i_status`). Ein halbes oder
+nichtendliches Paar wird beim Konsumenten verworfen und je Quelle gezählt
+(Messachse `invalid`), der Frame bleibt im Übrigen gültig. `lufs_i_status`
+reist nie zusammen mit einem gültigen Paar; damit sind missing (nie ein
+Paar), measuring/collecting, no signal/gated und invalid für Main
+unterscheidbar (A04/A05). Feld-IDs sind die nächsten freien laut
+`FELD-IDS.json` (im Bau konkret vergeben, nie geraten) und werden im
+Drift-Test verankert; flatc-Codegen und **beide** handgeschriebenen Leser
+(C++ und Rust) gehören in denselben Änderungssatz. Der Broker validiert
+Endlichkeit und hält höchstens das jüngste Paar je Quelle; `lufs_s` bleibt
+unverändert und ist kein Ersatz.
+
+### E-H03 — sichtbare Identität ohne Hostname und ohne Label (ergänzt 2026-09-01)
+
+Der Statevertrag erlaubt ein leeres `label`. Fehlt der Hostname und ist das
+Label leer, zeigt Gen einen ehrlichen, als Zustand erkennbaren Platzhalter:
+das Wort „Unnamed" plus die ersten 8 Hex-Zeichen der `instance_id`. Das ist
+keine Hostwahrheit und kein erfundener Name; ein später vergebenes Label
+oder ein eintreffender Hostname ersetzt ihn nach den bestehenden
+Vorrangregeln (H04/H05).

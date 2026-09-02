@@ -989,6 +989,13 @@ pub struct V3Griff {
     sender: V3Sender,
     sicherheits_spur: Arc<SicherheitsSpur>,
     uebergabe_barriere: Option<Arc<V3UebergabeBarriere>>,
+    /// Die EINZIGE Wahrheit ueber die Zahl lebender Worker: derselbe Zaehler,
+    /// den `worker_reservieren` per `compare_exchange` besetzt und
+    /// `WorkerPlatz::drop` per `fetch_sub` freigibt. Eine zweite, aus
+    /// gelesenen Vorwerten fortgeschriebene Kopie gab es bis NAK-123 R1 in
+    /// `V3Statistik`; sie konnte bei verschraenkten Freigaben dauerhaft
+    /// auseinanderlaufen und `broker_soll_idle_enden` belogen.
+    worker_zaehler: Arc<AtomicUsize>,
     pub statistik: Arc<V3Statistik>,
 }
 
@@ -1083,8 +1090,6 @@ pub struct V3Statistik {
     /// warten musste. Ist die Zahl 0, WAR die Grenze nie erreicht — ein Test
     /// darueber spraeche dann ueber nichts.
     pub acceptor_wartet_auf_instanz: AtomicU64,
-    /// Aktuelle Workerzahl; Listenerreserven zaehlen bewusst nicht hinein.
-    pub aktive_worker: AtomicU64,
     /// Zwei nach erfolgreichem Start, null erst beim finalen Listener-Drop.
     pub bewaffnete_listener: AtomicU64,
     pub am_worker_cap_abgewiesen: AtomicU64,
@@ -1185,7 +1190,21 @@ impl V3Griff {
     /// Prozess darf einem gerade authentisierenden Client nicht unter dem
     /// Handle wegsterben, nur weil der Coordinator ihn noch nicht kennt.
     pub fn aktive_worker(&self) -> u64 {
-        self.statistik.aktive_worker.load(Ordering::SeqCst)
+        self.worker_zaehler.load(Ordering::SeqCst) as u64
+    }
+
+    /// Nur fuer Tests: belegt einen Workerplatz auf DEMSELBEN Zaehler, den der
+    /// Acceptor benutzt, ueber genau dieselbe `worker_reservieren`. Der
+    /// optionale Haltepunkt laeuft im `drop` nach der Zaehlerfreigabe; damit
+    /// verschraenkt ein Test zwei Freigaben ohne Sleep-Raten (NAK-123 R1, P1).
+    #[doc(hidden)]
+    pub fn worker_platz_probe(
+        &self,
+        freigabe_haltepunkt: Option<Arc<dyn Fn() + Send + Sync>>,
+    ) -> Option<WorkerPlatzProbe> {
+        let mut platz = worker_reservieren(&self.worker_zaehler)?;
+        platz.freigabe_haltepunkt = freigabe_haltepunkt;
+        Some(WorkerPlatzProbe(platz))
     }
 
     /// Ein Listener-/Ersatzfehler beendet den Acceptor fail-closed. Der
@@ -1465,8 +1484,18 @@ fn naechste_instanz(
 
 struct WorkerPlatz {
     zaehler: Arc<AtomicUsize>,
-    statistik: Arc<V3Statistik>,
+    /// Ausschliesslich `worker_platz_probe` setzt das: laeuft im `drop`
+    /// unmittelbar NACH der Zaehlerfreigabe und macht das Interleaving zweier
+    /// Freigaben bzw. Freigabe gegen Reserve deterministisch messbar. Im
+    /// Acceptor-Pfad ist der Wert immer `None`.
+    freigabe_haltepunkt: Option<Arc<dyn Fn() + Send + Sync>>,
 }
+
+/// Ein von `V3Griff::worker_platz_probe` belegter Workerplatz. Er haelt den
+/// ECHTEN `WorkerPlatz` und gibt ihn beim Fallenlassen ueber genau denselben
+/// `Drop` frei, den auch ein Verbindungsthread benutzt.
+#[doc(hidden)]
+pub struct WorkerPlatzProbe(#[allow(dead_code)] WorkerPlatz);
 
 struct TestHilfsthread {
     zaehler: Option<Arc<AtomicUsize>>,
@@ -1491,32 +1520,32 @@ impl Drop for TestHilfsthread {
 
 impl Drop for WorkerPlatz {
     fn drop(&mut self) {
+        // Die Freigabe IST dieses `fetch_sub` — danach folgt kein zweiter
+        // Schreibschritt mehr. Ein `store(vorher-1)` aus dem gelesenen Vorwert
+        // war bis NAK-123 R1 genau die Luecke, in der zwei verschraenkte
+        // Freigaben den sichtbaren Stand dauerhaft falsch stehen liessen (P1).
         let vorher = self.zaehler.fetch_sub(1, Ordering::SeqCst);
         debug_assert!(vorher > 0);
-        self.statistik
-            .aktive_worker
-            .store(vorher.saturating_sub(1) as u64, Ordering::SeqCst);
+        if let Some(haltepunkt) = &self.freigabe_haltepunkt {
+            haltepunkt();
+        }
     }
 }
 
-fn worker_reservieren(
-    zaehler: &Arc<AtomicUsize>,
-    statistik: &Arc<V3Statistik>,
-) -> Option<WorkerPlatz> {
+fn worker_reservieren(zaehler: &Arc<AtomicUsize>) -> Option<WorkerPlatz> {
     let mut stand = zaehler.load(Ordering::SeqCst);
     loop {
         if stand >= MAX_VERBINDUNGEN {
             return None;
         }
         match zaehler.compare_exchange_weak(stand, stand + 1, Ordering::SeqCst, Ordering::SeqCst) {
+            // Der geglueckte Tausch ist die Reservierung. Keine abgeleitete
+            // Kopie: `V3Griff::aktive_worker` liest genau diesen Zaehler.
             Ok(_) => {
-                statistik
-                    .aktive_worker
-                    .store((stand + 1) as u64, Ordering::SeqCst);
                 return Some(WorkerPlatz {
                     zaehler: zaehler.clone(),
-                    statistik: statistik.clone(),
-                });
+                    freigabe_haltepunkt: None,
+                })
             }
             Err(neu) => stand = neu,
         }
@@ -1794,7 +1823,7 @@ fn v3_server_starten_intern(
                 sicherheits_spur2.push("connect");
                 statistik2.angenommen.fetch_add(1, Ordering::SeqCst);
 
-                let Some(worker_platz) = worker_reservieren(&aktive_worker2, &statistik2) else {
+                let Some(worker_platz) = worker_reservieren(&aktive_worker2) else {
                     // A-05: der 97. Client wird geschlossen, solange der
                     // andere Listener den Namen besitzt. Erst danach entsteht
                     // seine neue Reserve; kein Worker sieht diesen Handle.
@@ -1990,6 +2019,7 @@ fn v3_server_starten_intern(
         sender,
         sicherheits_spur,
         uebergabe_barriere: security_optionen.uebergabe_barriere,
+        worker_zaehler: aktive_worker,
         statistik,
     })
 }
@@ -3729,8 +3759,7 @@ mod tests {
         // Grenze selbst durchsetzt, ohne seinen Besitzlistener zu verlieren.
         let stat = griff.statistik.clone();
         assert!(
-            warte_auf(8000, || stat.aktive_worker.load(Ordering::SeqCst)
-                == MAX_VERBINDUNGEN as u64),
+            warte_auf(8000, || griff.aktive_worker() == MAX_VERBINDUNGEN as u64),
             "der Worker-Cap wurde nicht vollstaendig hergestellt ({} Verbindungen offen)",
             offen.len()
         );
@@ -3742,18 +3771,12 @@ mod tests {
                 > 0),
             "der 97. Client wurde nicht sichtbar am Worker-Cap abgewiesen"
         );
-        assert_eq!(
-            stat.aktive_worker.load(Ordering::SeqCst),
-            MAX_VERBINDUNGEN as u64
-        );
+        assert_eq!(griff.aktive_worker(), MAX_VERBINDUNGEN as u64);
         assert_eq!(stat.bewaffnete_listener.load(Ordering::SeqCst), 2);
 
         // Alles wieder loslassen — danach MUSS wieder jemand horchen.
         offen.clear();
-        assert!(warte_auf(8000, || stat
-            .aktive_worker
-            .load(Ordering::SeqCst)
-            == 0));
+        assert!(warte_auf(8000, || griff.aktive_worker() == 0));
 
         let neu = Testclient::neu(&pipe);
         assert!(

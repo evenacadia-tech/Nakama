@@ -16,7 +16,7 @@ use std::fs::{File, OpenOptions};
 use std::io::{BufRead, BufReader, Read, Write};
 use std::process::{Child, Command, Stdio};
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Condvar, Mutex};
 use std::time::{Duration, Instant};
 use windows_sys::Win32::Foundation::{CloseHandle, HANDLE, INVALID_HANDLE_VALUE};
 use windows_sys::Win32::Storage::FileSystem::{FILE_FLAG_FIRST_PIPE_INSTANCE, PIPE_ACCESS_DUPLEX};
@@ -332,21 +332,14 @@ fn zwei_listener_plus_96_worker_erhalten_cap_und_namensbesitz() {
     for _ in 0..MAX_VERBINDUNGEN {
         clients.push(verbinden(&pipe));
     }
-    assert!(warten(4000, || griff
-        .statistik
-        .aktive_worker
-        .load(Ordering::SeqCst)
-        == MAX_VERBINDUNGEN as u64));
+    assert!(warten(4000, || griff.aktive_worker() == MAX_VERBINDUNGEN as u64));
     let ueber_cap = verbinden(&pipe);
     assert!(warten(3000, || griff
         .statistik
         .am_worker_cap_abgewiesen
         .load(Ordering::SeqCst)
         == 1));
-    assert_eq!(
-        griff.statistik.aktive_worker.load(Ordering::SeqCst),
-        MAX_VERBINDUNGEN as u64
-    );
+    assert_eq!(griff.aktive_worker(), MAX_VERBINDUNGEN as u64);
     assert_eq!(
         griff.statistik.worker_uebergaben.load(Ordering::SeqCst),
         MAX_VERBINDUNGEN as u64
@@ -358,11 +351,7 @@ fn zwei_listener_plus_96_worker_erhalten_cap_und_namensbesitz() {
     assert!(FirstInstance::nehmen(&pipe).is_none());
     drop(ueber_cap);
     drop(clients);
-    assert!(warten(8000, || griff
-        .statistik
-        .aktive_worker
-        .load(Ordering::SeqCst)
-        == 0));
+    assert!(warten(8000, || griff.aktive_worker() == 0));
     griff.stoppen();
 }
 
@@ -406,10 +395,10 @@ fn stoppen_schliesst_besitzlistener_zuletzt_und_neustart_ist_sofort_moeglich() {
         .control_verbindungen
         .load(Ordering::SeqCst)
         == 1));
-    assert_eq!(griff.statistik.aktive_worker.load(Ordering::SeqCst), 1);
+    assert_eq!(griff.aktive_worker(), 1);
     assert!(FirstInstance::nehmen(&pipe).is_none());
     griff.stoppen();
-    assert_eq!(griff.statistik.aktive_worker.load(Ordering::SeqCst), 0);
+    assert_eq!(griff.aktive_worker(), 0);
     assert_eq!(griff.gehaltene_handles(), 0);
     griff.stoppen();
     assert_eq!(
@@ -692,5 +681,134 @@ fn nach_revert_bleiben_envelope_und_trennpfade_im_self_kontext() {
     assert_eq!(spur.iter().filter(|s| **s == "impersonate").count(), 1);
     assert_eq!(spur.iter().filter(|s| **s == "revert").count(), 1);
     assert_reihenfolge(&spur, &["revert", "self", "hello_accept", "close"]);
+    griff.stoppen();
+}
+
+// ── A-06 Nebenlaeufigkeit: EINE Zaehlerwahrheit ────────────────────────────
+//
+// NAK-123 R1 / P1. Der Idle-Selbstende-Pfad (`broker_soll_idle_enden`) fragt
+// `V3Griff::aktive_worker`. Solange diese Zahl aus einem gelesenen Vorwert
+// fortgeschrieben wurde, konnten zwei verschraenkte Freigaben sie dauerhaft
+// falsch stehen lassen. Beide Tests hier verschraenken deterministisch ueber
+// eine Condvar-Barriere — kein Sleep, kein Raten.
+
+/// Haelt einen Thread an einer benannten Stelle an, bis ein anderer ihn
+/// ausdruecklich freigibt. Beide Richtungen haben eine Frist: ein Test darf
+/// hier nie unbegrenzt haengen.
+#[derive(Default)]
+struct Haltepunkt {
+    angekommen: (Mutex<bool>, Condvar),
+    frei: (Mutex<bool>, Condvar),
+}
+
+impl Haltepunkt {
+    const FRIST: Duration = Duration::from_secs(10);
+
+    /// Laeuft IM anzuhaltenden Thread.
+    fn halten(&self) {
+        {
+            let (sperre, signal) = &self.angekommen;
+            *sperre.lock().unwrap_or_else(|e| e.into_inner()) = true;
+            signal.notify_all();
+        }
+        let (sperre, signal) = &self.frei;
+        let mut frei = sperre.lock().unwrap_or_else(|e| e.into_inner());
+        while !*frei {
+            let (neu, ablauf) = signal
+                .wait_timeout(frei, Self::FRIST)
+                .unwrap_or_else(|e| e.into_inner());
+            frei = neu;
+            assert!(!ablauf.timed_out(), "Haltepunkt wurde nie freigegeben");
+        }
+    }
+
+    fn warte_bis_angekommen(&self) {
+        let (sperre, signal) = &self.angekommen;
+        let mut da = sperre.lock().unwrap_or_else(|e| e.into_inner());
+        while !*da {
+            let (neu, ablauf) = signal
+                .wait_timeout(da, Self::FRIST)
+                .unwrap_or_else(|e| e.into_inner());
+            da = neu;
+            assert!(!ablauf.timed_out(), "Haltepunkt wurde nie erreicht");
+        }
+    }
+
+    fn freigeben(&self) {
+        let (sperre, signal) = &self.frei;
+        *sperre.lock().unwrap_or_else(|e| e.into_inner()) = true;
+        signal.notify_all();
+    }
+}
+
+fn haltend(punkt: &Arc<Haltepunkt>) -> Option<Arc<dyn Fn() + Send + Sync>> {
+    let punkt = punkt.clone();
+    Some(Arc::new(move || punkt.halten()) as Arc<dyn Fn() + Send + Sync>)
+}
+
+#[test]
+fn zwei_verschraenkte_freigaben_lassen_aktive_worker_auf_null() {
+    let pipe = probe_pipe("a06-zwei-drops");
+    let (mut griff, _) = start(&pipe, V3SecurityTestOptionen::default());
+
+    let haltepunkt = Arc::new(Haltepunkt::default());
+    let a = griff
+        .worker_platz_probe(haltend(&haltepunkt))
+        .expect("erster Workerplatz");
+    let b = griff.worker_platz_probe(None).expect("zweiter Workerplatz");
+    assert_eq!(griff.aktive_worker(), 2, "zwei belegte Plaetze");
+
+    // A gibt frei und haelt NACH der Zaehlerfreigabe an (2 -> 1).
+    let langsam = std::thread::spawn(move || drop(a));
+    haltepunkt.warte_bis_angekommen();
+
+    // B laeuft in dieser Luecke vollstaendig durch (1 -> 0).
+    drop(b);
+
+    // Erst jetzt darf A zu Ende laufen. Ein nachlaufender Schreibschritt
+    // wuerde hier den veralteten Stand 1 zurueckbringen.
+    haltepunkt.freigeben();
+    langsam.join().expect("Freigabethread");
+
+    assert_eq!(
+        griff.aktive_worker(),
+        0,
+        "nach beiden Freigaben lebt kein Worker mehr; ein Reststand haelt den \
+         Broker dauerhaft von seinem Idle-Selbstende ab"
+    );
+    griff.stoppen();
+}
+
+#[test]
+fn freigabe_gegen_reserve_laesst_den_lebenden_worker_stehen() {
+    let pipe = probe_pipe("a06-drop-gegen-reserve");
+    let (mut griff, _) = start(&pipe, V3SecurityTestOptionen::default());
+
+    let haltepunkt = Arc::new(Haltepunkt::default());
+    let a = griff
+        .worker_platz_probe(haltend(&haltepunkt))
+        .expect("erster Workerplatz");
+    assert_eq!(griff.aktive_worker(), 1);
+
+    // A gibt frei (1 -> 0) und haelt an.
+    let langsam = std::thread::spawn(move || drop(a));
+    haltepunkt.warte_bis_angekommen();
+
+    // In dieser Luecke belegt eine neue Verbindung den Platz (0 -> 1).
+    let b = griff
+        .worker_platz_probe(None)
+        .expect("Reserve in der Freigabeluecke");
+
+    haltepunkt.freigeben();
+    langsam.join().expect("Freigabethread");
+
+    assert_eq!(
+        griff.aktive_worker(),
+        1,
+        "der frisch reservierte Worker lebt; eine 0 hier beendet den Broker \
+         nach der Idle-Frist unter einem laufenden Client"
+    );
+    drop(b);
+    assert_eq!(griff.aktive_worker(), 0);
     griff.stoppen();
 }

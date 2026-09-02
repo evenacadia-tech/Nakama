@@ -1,5 +1,40 @@
 # NEXT-SESSION — Einstieg für die nächste Runde
 
+> ## ✅ G3-SOAK PHASE 2 FERTIG — 02.09.2026, Bau-Worker
+>
+> **Das Werkzeug für das Phasengate G3 steht.** Neues Kanon-Bein **A24**
+> (`tools/eq-copilot/pruefe_session_soak.py` + `EqCopSessionSoak` aus
+> `eq-copilot/plugin/tests/SessionSoakMain.cpp`), registriert in
+> `tools/beweise.ps1` samt Bauziel. Der Probe-Broker blieb unverändert.
+> **Kanon GRUEN 40/40** (vorher 39/39), A24 in 146 s.
+>
+> Manifest: `docs/beweise/G3-SOAK.md` — Verhaltensmatrix S01–S16, Killmatrix
+> K-S1…K-S5, gefahrene Läufe (§13), sechs Rotmutationen (§14). **Ohne
+> Urteilsmarke**: die setzt der Dirigent nach der Codex-Prüfung.
+>
+> **Was als Nächstes fällig ist (§11 des Manifests):**
+> 1. Codex-Prüfung des Phase-2-Diffs (`a570367`…`a390d75`).
+> 2. Der **Gate-Lauf G3 selbst** — er ist nicht Teil dieses Werkzeugtickets:
+>    60 min mit 16 Sonden, 30 min mit 32, dazu je 2 min mit 1, 4 und 8 Sonden
+>    (Skalierungsreihe S16, Entwurf `:4523`). Aufruf:
+>    `py -3.13 tools/eq-copilot/pruefe_session_soak.py --sonden 16 --minuten 60
+>    --neustarts 3`. Der Beleg gehört ins G3-Gate-Manifest, nicht nach
+>    G3-SOAK.md.
+> 3. **XRun bleibt FL-Termin** (§2.2): `SondeProcessor::v3PipeName` ist `const`
+>    auf dem Produktionsnamen, deshalb misst A24 den Audiopfad unter
+>    `NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3` und die Kopplung „Drahtrückstau bremst
+>    den eigenen Analyseworker" wird nicht gefahren.
+>
+> **Betriebsnotiz für den nächsten Bauer:** Der echte Coordinator verlangt im
+> `heartbeat` ein `adresse`-Feld und prüft es gegen die Wire-Adresse des Links
+> (`broker/src/coordinator.rs:2944-2955`). Ein Testheartbeat ohne Adresse wird
+> **nie** beantwortet — A22 kommt damit nur durch, weil sein Probe-Broker die
+> zählende Standardsenke aus `broker/src/transport/server_v3.rs:297` nutzt.
+> Und: der produktive `ControlClient` sendet bei gesetztem `statusProvider`
+> eigene Heartbeats ab Sequenz 0 (`ControlClient.cpp:1386`); ein Testzähler im
+> selben Zahlenraum ordnet fremde ACKs zu.
+
+
 > ## ✅ NACHTRAG — 01.09.2026 spät, Fable-Sitzung e0375c12 (User-Gespräch, kein Dirigentenlauf): G2 NEEDS_WORK, Zwischenhalt PR2 eingeplant, Opus baut wieder
 >
 > **G2 steht auf T3 NEEDS_WORK 2026-09-01** (`docs/beweise/G2.md`): tragender

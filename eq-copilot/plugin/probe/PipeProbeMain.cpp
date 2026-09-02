@@ -6,7 +6,16 @@
 //      konflikt=true im ACK; nach dessen Ende fällt das Flag wieder.
 // Exit 0 nur, wenn alle drei Stufen bestanden sind.
 //
-//   eqcop-pipe-probe.exe [pipe-name] [sekunden]
+//   eqcop-pipe-probe.exe [pipe-name] [sekunden] [server-binary]
+//
+// Das dritte Argument nennt das Binary, dem der Server auf dieser Pipe
+// gehört — beim dokumentierten Ablauf `eqcop-broker-probe.exe [s] [pipe]`
+// also dessen Pfad. Der SHA-256 wird daraus zur Laufzeit gerechnet
+// (`serverErwartungFuerTestdatei`, derselbe Helfer wie im Produktcode).
+// Ohne das Argument bleibt der installierte Broker aus
+// `BrokerInstallBinding.h` die Erwartung. Die Serverauthentisierung wird in
+// keinem Fall abgeschaltet: ein falsch benanntes Binary scheitert vor dem
+// ersten gesendeten Byte mit `dateiidentitaetFalsch` bzw. `hashFalsch`.
 #include "PipeClient.h"
 #include "EqCopilotIds.h"
 #include "BrokerInstallBinding.h"
@@ -32,9 +41,29 @@ static eqcop::MessKompakt probeMessung()
     return m;
 }
 
+/// Erwartung für den Server, der auf DIESER Pipe lauscht. Ohne benanntes
+/// Binary ist es der installierte Broker; mit Argument die genannte Datei,
+/// deren SHA-256 der vorhandene Produkthelfer rechnet. Ein leerer Pfad im
+/// Ergebnis (Datei fehlt oder nicht lesbar) bleibt fail-closed — er ist kein
+/// permissiver Modus.
+static nakama::ipc::ServerErwartung serverErwartungFuer (const juce::String& serverBinary)
+{
+    if (serverBinary.isEmpty())
+        return nakama::ipc::ServerErwartung {
+            nakama::ipc::installbindung::brokerPfad,
+            nakama::ipc::installbindung::brokerSha256,
+            nakama::ipc::installbindung::authenticodeThumbprint };
+
+    const auto absolut = juce::File::getCurrentWorkingDirectory()
+                             .getChildFile (serverBinary).getFullPathName();
+    return nakama::ipc::serverErwartungFuerTestdatei (
+        std::wstring (absolut.toWideCharPointer()));
+}
+
 static std::unique_ptr<eqcop::PipeClient> baueClient (const juce::String& sensorId,
                                                       const juce::String& label,
-                                                      const juce::String& pipeName)
+                                                      const juce::String& pipeName,
+                                                      const nakama::ipc::ServerErwartung& erwartung)
 {
     eqcop::HelloInfo hello;
     hello.sensorId = sensorId;
@@ -52,11 +81,7 @@ static std::unique_ptr<eqcop::PipeClient> baueClient (const juce::String& sensor
             return s;
         },
         [] { return probeMessung(); },
-        pipeName, std::chrono::milliseconds { 5000 },
-        nakama::ipc::ServerErwartung {
-            nakama::ipc::installbindung::brokerPfad,
-            nakama::ipc::installbindung::brokerSha256,
-            nakama::ipc::installbindung::authenticodeThumbprint });
+        pipeName, std::chrono::milliseconds { 5000 }, erwartung);
 }
 
 template <typename Bedingung>
@@ -76,9 +101,24 @@ int main (int argc, char** argv)
     const juce::String pipeName = argc > 1 ? juce::String (argv[1])
                                            : juce::String (juce::CharPointer_UTF16 (eqcop::kPipeName));
     const int sekunden = argc > 2 ? juce::jlimit (1, 60, juce::String (argv[2]).getIntValue()) : 5;
+    const juce::String serverBinary = argc > 3 ? juce::String (argv[3]) : juce::String();
+
+    const auto erwartung = serverErwartungFuer (serverBinary);
+    if (erwartung.absoluterBrokerPfad.empty())
+    {
+        std::cout << "PROBE FEHLGESCHLAGEN (Servererwartung leer) · "
+                  << (serverBinary.isEmpty()
+                          ? "installierter Broker nicht lesbar"
+                          : ("Server-Binary nicht lesbar: " + serverBinary).toStdString())
+                  << std::endl;
+        return 2;
+    }
+    std::cout << "SERVERERWARTUNG · "
+              << juce::String (erwartung.absoluterBrokerPfad.c_str()).toStdString()
+              << " · sha256 " << erwartung.sha256.substr (0, 16) << "..." << std::endl;
 
     const auto sensorId = juce::Uuid().toString();
-    auto a = baueClient (sensorId, "pipe-probe A", pipeName);
+    auto a = baueClient (sensorId, "pipe-probe A", pipeName, erwartung);
     a->start();
 
     // Stufe 1+2: v2 verbunden, mindestens zwei streng passende ACKs. Der
@@ -108,7 +148,7 @@ int main (int argc, char** argv)
     }
 
     // Stufe 3: Duplikat — beide Verbindungen melden dieselbe Sensor-ID.
-    auto b = baueClient (sensorId, "pipe-probe B (Duplikat)", pipeName);
+    auto b = baueClient (sensorId, "pipe-probe B (Duplikat)", pipeName, erwartung);
     b->start();
     if (! warteAuf (100, [&] { return a->snapshot().konflikt && b->snapshot().konflikt; }))
     {

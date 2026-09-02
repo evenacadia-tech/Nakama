@@ -818,8 +818,13 @@ Quelle"-Zeitstempel über alle Quellorte gegen jedes Prüfbinary — ohne
 
 **Nicht im Kanon:** `EqCopAuxSpikeTest` (41, NAK-37) · `EqCopShot <ziel.png>
 [breite]` (echte Messung offscreen) · `EqCopPaintBench [breite] [frames]`
-· `EqCopPipeProbe [pipe] [s]` (braucht einen laufenden Broker, immer
-`…m2probe`) · `pluginval --strictness-level 8` (nur in `%TEMP%`, NAK-26).
+· `EqCopPipeProbe [pipe] [s] [server-binary]` (braucht einen laufenden
+Broker, immer `…m2probe`; das dritte Argument nennt das Binary, dem der Server
+auf dieser Pipe gehört — beim Ablauf gegen `eqcop-broker-probe.exe` also dessen
+Pfad, aus dem der SHA-256 zur Laufzeit gerechnet wird; ohne das Argument bleibt
+der installierte Broker aus `BrokerInstallBinding.h` die Erwartung, und die
+Serverauthentisierung wird in keinem Fall abgeschaltet)
+· `pluginval --strictness-level 8` (nur in `%TEMP%`, NAK-26).
 
 **Python-Werkzeuge (15, `tools/eq-copilot/`):** `pruefe_host_capabilities.py`
 Capabilityreport gegen Rohdaten + v3-Vertragsform · `erzeuge_state_fixtures.py`

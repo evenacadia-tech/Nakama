@@ -26,7 +26,7 @@
 |---|---|---|---|
 | Erstdurchgang | Gate-Text PR2 in fünf Teilen (§1 bis §11) | `16be249` | **NEEDS_WORK** — Codex `gpt-5.6-sol`, Effort max, lesend, Thread `01a060fd-b78e-7d90-aee6-591dab8dd943`, 14 bestätigte Defekte (§12.1) |
 | 1 (02.09.2026) | die 14 Defekte D1 bis D14, nichts sonst | `6b2539f` (siehe §12.3 und §12.7) | **NEEDS_WORK** — Codex `gpt-5.6-sol`, Effort max, lesend, Thread `01a06193-0eb9-7a42-b12d-4fe8a0bb9b38`: „D1–D7 und D9–D14 sind geschlossen; D8 bleibt für NAK-85 und NAK-92 offen“ (§13.1) |
-| 2 (02.09.2026) | der Rest von D8 an NAK-85 und NAK-92 samt seiner Ursache, nichts sonst | `dca7654` und der Manifestcommit dieser Runde (§13.4) | steht aus — Wiederprüfung 2 durch einen frischen Codex-Thread |
+| 2 (02.09.2026) | der Rest von D8 an NAK-85 und NAK-92 samt seiner Ursache, nichts sonst | `dca7654` bis zum Nachlauf (siehe §13.4 und §13.7) | steht aus — Wiederprüfung 2 durch einen frischen Codex-Thread |
 
 Diese Tabelle ist der lebende Kopf des Tickets: jede weitere Runde bekommt hier eine Zeile,
 bevor sie ihren eigenen Abschnitt bekommt.
@@ -1795,8 +1795,8 @@ Zwei Commits, jeder mit explizitem Pathspec, jeder sofort gepusht.
 | # | Commit | Pfade | Inhalt |
 |---|---|---|---|
 | 1 | `dca7654` | `docs/offene-punkte.md` | NAK-85 und NAK-92 unverändert in die Geschlossen-Tabelle umgezogen, je mit datiertem Nachtrag; Kopfzahlen und Klassentabelle neu gerechnet; der Absatz über die zwei nicht umgezogenen Zeilen ersetzt |
-| 2 | `3e56bd1` und die Berichtigung in diesem Commit | `docs/beweise/PR2.md` | Abschnitt §13, lebender Kopf (Prüfstufen-Zeile, Rundentabelle §1.0); der zweite Commit berichtigt §13.4 und §13.5 über das Verhalten der erzeugten Blätter, an der Quelle nachgemessen |
-| — | der Folgecommit mit demselben Betreffkopf | `docs/PLAN-STAND.md` | kein Arbeitscommit: das erzeugte Blatt, nach dem Manifestcommit einmal neu gerechnet und mit Pathspec committet (`CLAUDE.md`-Regel) |
+| 2 | `2956f2d`, berichtigt mit `1540a7a`, Nachlauf in diesem Commit | `docs/beweise/PR2.md` | Abschnitt §13, lebender Kopf (Prüfstufen-Zeile, Rundentabelle §1.0); `1540a7a` berichtigt §13.4 und §13.5 über das Verhalten der erzeugten Blätter, an der Quelle nachgemessen; dieser Commit trägt den Nachlauf §13.7 mit den SHAs nach den zwei Rebases |
+| — | `06e650f` und der Folgecommit mit demselben Betreffkopf | `docs/PLAN-STAND.md` | kein Arbeitscommit: das erzeugte Blatt, nach jedem Manifestcommit einmal neu gerechnet und mit Pathspec committet (`CLAUDE.md`-Regel) |
 
 **Am Register geändert wurde ausschließlich:** die Klassenzahlen **[Härtung/Struktur]** 18 → 17 und
 **[Werkzeug]** 20 → 19, die Gesamtrechnung **64 · 5 · 60** → **62 · 5 · 62** (Summe unverändert 129),
@@ -1901,3 +1901,31 @@ Gelesen wurde der Gesamtdiff `6b2539f..HEAD` mit den Fragen der Prüfliste E und
    maschinell gemessen, die Registerzahlen aus der Zählung der Tabellen.
 5. **Keine T3-Marke gesetzt.** Der Kopf trägt weiter nur `T1 PASS`; über Runde 2 urteilt ein frischer
    Prüfer.
+
+### 13.7 Nachlauf (lebender Kopf, Prüfliste E)
+
+Nach `06e650f` folgt genau dieser eine Commit an der Runde, und er bleibt in seiner Grenze
+(`docs/beweise/PR2.md`), gefolgt vom erzeugten Blatt.
+
+1. **Die Commits der Runde tragen jetzt ihre SHAs** in der Tabelle in §13.4 — vorher stand dort für
+   den Manifestcommit ein Stand, den der Rebase überholt hat. Es sind `dca7654` (Register),
+   `2956f2d` (Manifest §13), `1540a7a` (Berichtigung §13.4/§13.5) und dieser Commit (Nachlauf).
+   Daneben stehen die Commits des **erzeugten** Blattes `docs/PLAN-STAND.md`, beginnend mit
+   `06e650f`: es wird nach jedem Manifestcommit einmal neu gerechnet, weil sich sein Quellstand
+   dadurch verschiebt, und `CLAUDE.md` verlangt dafür einen eigenen Commit mit Pathspec. Diese
+   Commits enthalten keine Arbeit und keine Behauptung, nur die Ausgabe von
+   `tools/plan/planstand.py`. Der Text von `06e650f` nennt den Quellstand `bde9edf` — das ist der
+   Stand **vor** dem zweiten Rebase, also der Vorgänger von `1540a7a`; inhaltlich derselbe Commit,
+   nur mit der SHA vor dem Umschreiben.
+2. **Zwei Rebases auf `origin/master`.** Die parallele Design-Session hat auch während dieser Runde
+   gepusht: `ff82162` (visuelle Phase, Figma-Skizze), danach `1eb9012` und `b987fb4` (21 Zustands-
+   und Panelrahmen, Nachbesserung). Auf `ff82162` ist vor dem Registercommit **ff-only** gepullt
+   worden; die zwei anderen sind mit `git pull --rebase` bei sauberem Arbeitsbaum übernommen worden.
+   **Kein Konflikt** — die Design-Session und diese Runde teilen keinen Pfad. Kein fremder Pfad ist
+   angefasst, kein fremder Commit verändert.
+3. **Der Planstand rechnet ohne Warnung.** Der Endstand des Blattes trägt keine Zeile „Gerechnet aus
+   dem Arbeitsbaum" (`grep -c` = 0); die Zahlen sind unverändert (23 von 40 abgenommen, 1 gebaut,
+   16 offen).
+4. **Der Arbeitsbaum ist sauber** bis auf das fremde, untrackte
+   `.workflow/ultracode/20260831-084621-sonde011-phaseb-bau` — es ist während der ganzen Runde
+   unberührt geblieben und steht in keinem Commit dieser Runde.

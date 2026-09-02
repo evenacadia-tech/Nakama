@@ -151,3 +151,11 @@ Nebenbefunde der Prüfung, im selben Umbau behoben:
    sind alle Ziele gelistet und das aktuelle wird dynamisch ausgeblendet.
 4. `Escape` in der Kopie-Zielwahl griff nur bei Fokus in der Zielwahl;
    jetzt gilt es in der ganzen Zielleiste, solange die Wahl offen ist.
+
+## Sessionende 02.09.2026 (Laptop)
+
+Offen geblieben: die Produktnamen der beiden Gen-Flächen (Karte U23) und
+der Wechsel in die visuelle Phase in Figma, beides Entscheide des Users.
+Zwei abgeleitete Konsequenzen stehen zur Bestätigung: Probeeq-Zeile 2
+bleibt immer sichtbar (feste Fensterhöhe) und die Kachel ist 600 px breit.
+Alles ist committet und gepusht; PR2 R1 läuft parallel auf dem PC.

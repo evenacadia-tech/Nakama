@@ -2,12 +2,12 @@
 
 ## Status
 
-**4 von 5 Entscheidungen gesammelt.** Der Block beginnt mit Gen Fläche 1
-(Karte U21 aus `docs/plan/fragen.json`); danach folgen die offenen
-Bedienbereiche von Gen Fläche 2 (Blueprint Abschnitt 15, Punkte 17 und 18)
-und Probeeq (Punkt 19). Skizze, Detailabnahmen und Blueprint werden erst nach
-der fünften Antwort gemeinsam umgebaut (Arbeitsmodus vom 31.08.2026,
-Taktänderung vom 01.09.2026).
+**5 von 5 Entscheidungen gesammelt; gemeinsamer Umbau läuft.** Der Block
+begann mit Gen Fläche 1 (Karte U21 aus `docs/plan/fragen.json`); danach
+folgten Gen Fläche 2 (Blueprint Abschnitt 15, Punkte 17 und 18) und Probeeq
+(Punkt 19). Skizze, Detailabnahmen und Blueprint werden nach der fünften
+Antwort gemeinsam umgebaut (Arbeitsmodus vom 31.08.2026, Taktänderung vom
+01.09.2026); der Sichtbeleg steht am Ende dieser Datei.
 
 ## Leitsatz vor der ersten Frage — weniger zeigen
 
@@ -204,3 +204,37 @@ Bindende Konsequenz für den Arbeitsmodus:
   25.08.2026 bleiben Verlauf.
 - Die Größenklasse von Probeeq gehört zum Fundament (wie 950×538 bei Gen)
   und wird deshalb hier entschieden, nicht erst in Figma.
+
+## 5/5 — Probeeq ist eine flache Kachel mit ein bis zwei Zeilen
+
+Technische Vorbedingung, vor der Frage geprüft: Der Inhalt der
+Probeeq-Rückfallfläche ist seit dem 23.08.2026 entschieden
+([`2026-08-23-interview-struktur.md`](2026-08-23-interview-struktur.md),
+Frage 13: „EQ mit rotem oder Eq mit grünem punkt. Connected oder
+disconnected, bypass und bei eq on die werte + den mode der probe“), und
+Blueprint Abschnitt 4.3 führt ihn. Die Größe war nie entschieden: Die
+Formate vom 20.08.2026 ([`2026-08-20-groessen-alle-drei.md`](2026-08-20-groessen-alle-drei.md))
+galten drei Apps, darunter eine Passiv-Kachel von 260×84 mit der
+Begründung, dass diese Fläche vielfach gleichzeitig offen ist; die Skizze
+trug 760×430 nur als Werkzeugannahme.
+
+Auf die Frage nach der Größenklasse wählt der User am 02.09.2026:
+
+> „Flache Kachel, ein bis zwei Zeilen (Empfohlen)“
+
+Damit ist für Probeeq gesammelt:
+
+- Die Rückfallfläche ist eine flache Kachel. Zeile 1 trägt dauerhaft Name
+  und Bus, Verbindung, den EQ-Punkt (an/aus), Bypass und Mix. Zeile 2
+  erscheint nur bei zugeschaltetem EQ und trägt die laufende Änderung
+  (Band, Frequenz, Gain, Q) und den Modus der Sonde.
+- Ein kompaktes Feld halber Gen-Größe und die heutige 760×430-Bühne sind
+  verworfen. Die Begründung vom 20.08.2026 gilt weiter: Probeeq ist auf
+  vielen Bussen gleichzeitig offen, jeder Pixel Höhe zählt mal Instanzen.
+- Die konkreten Maße der Kachel in der Skizze sind eine Dichteprüfung des
+  Umbaus, kein Beschluss; sie werden unten gemessen genannt. Ob die zweite
+  Zeile die Fensterhöhe verändert oder in fester Höhe ein- und
+  ausgeblendet wird, ist eine technische Frage des Host-Fensters (JUCE
+  `setSize` unter FL) und bleibt als Vorgriff im Skizzen-Leseblatt benannt.
+- Blueprint Abschnitt 15 Punkt 19 ist damit für die Größenklasse
+  entschieden; Abschnitt 4.3 erhält beim Umbau die Kachelform als **[U]**.

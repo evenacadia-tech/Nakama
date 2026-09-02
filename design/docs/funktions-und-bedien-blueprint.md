@@ -1603,9 +1603,9 @@ Expertenweg, die feste Probeeq-Höhe mit Messwahrheit und Link-Verlust in
 Zeile 2, Filter und Scrollliste für viele Quellen sowie die gemeinsamen
 Regeln für Tastatur, Fokus, Rad und Fehlerzustände. Prüfung: 65 Prüfpunkte
 plus 42 Regressionspunkte aus Block 03, Konsole leer; Belege mit Präfix
-`2026-09-02-b0405-`. Offen sind danach nur noch technische Verträge
-(Abschnitt 15, Punkte 3, 5, 7, 10, 12, 14, 15, 16) und die Produktnamen der
-Flächen (Karte U23).
+`2026-09-02-b0405-`. Offen sind danach keine Bedienfragen mehr; die
+übrigen Punkte in Abschnitt 15 sind technische Verträge, FL-Messungen,
+Textpflege oder Produktfragen (Produktnamen der Flächen, Karte U23).
 
 Die Skizze liegt seit dem 02.09.2026 im Repo unter
 [design/skizze/nakama-ui-technical-sketch.html](../skizze/nakama-ui-technical-sketch.html);

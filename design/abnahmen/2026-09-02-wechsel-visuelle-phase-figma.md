@@ -151,3 +151,30 @@ Nächster sinnvoller Schritt: Der User sieht sich die Seite in Figma an
 (dort rendert die Wortmarke mit Verlauf) und gibt Abnahme oder Änderungen;
 danach Skalierungsstufen und gebackene Assets je Stufe oder ein dritter
 Schritt mit den flüchtigen Zuständen.
+
+## Poliersession 02.09.2026 (Laptop, Abend)
+
+User-Wortlaut zum Auftrag:
+
+> „die designs von letzter session brauchen noch eine ausführliche
+> poliersession. da fehlt der feinschliff an ganz vielen stellen, die den
+> unterscheid zwischen profi design und "netter versuch" machen."
+
+Nach der vorgelegten Lesart (echte Fehler zuerst: Log-Frequenzachse,
+unglaubwürdige Kurven, harte Kante der Weinfüllung, Durchstreich-Griff,
+unbündige dB-Skalen, Halbpixel, drei Zahlenstände für einen Draft; dann
+Feinschliff: Kantenraster 22/928, Aktionsblock Fläche 1 als drei Pillen à 30,
+Palette und Typo straffen, Befundzone beruhigen, Kurvenschlüssel auf beiden
+Flächen, Probeeq-Zeile 1 zentrieren, Filterfeld als Einlass; nicht angefasst:
+Materialrezept, Skizzenmaße und Tastenhöhen, MASTER-Ring, Wortmarke):
+
+> „ja mach das so erstmal"
+
+Der Stand nach der Poliersession bleibt ein Vorschlag von Claude; die
+Ergebnisse und die bewusst benannten Abweichungen stehen in
+`design/visuell/LIES-MICH.md` (Abschnitt „Poliersession").
+
+**Belege (nachgetragen):** alle 24 Rahmen derselben Seite sind in Figma
+poliert (Knoten unverändert, Inhalte neu gebaut); Bildschirmfotos
+`design/visuell/belege/2026-09-02-v03-*@2x.png` neben den Ständen `v01`
+und `v02` von vor der Poliersession.

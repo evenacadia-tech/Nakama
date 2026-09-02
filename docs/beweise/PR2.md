@@ -12,7 +12,7 @@
 | Gate-Text (Quelle) | `docs/plan/plan.json`, Schritt `PR2` — wörtlich in §1.1 |
 | Basis-SHA | `55cdb91599239aa99ec1322e23d109ab9424d7b2` (Branch `master`) |
 | Datum | 2026-09-02 |
-| Prüfstufen | T1 ☑ · **T3: Erstprüfung NEEDS_WORK 02.09.2026, Runde 1 nachgearbeitet, Wiederprüfung steht aus** — die geforderte Stufe ist **T3** (§12) |
+| Prüfstufen | T1 ☑ · **T3: Erstprüfung NEEDS_WORK 02.09.2026, Runde 1 nachgearbeitet, Wiederprüfung 1 NEEDS_WORK (D8: NAK-85, NAK-92), Runde 2 nachgearbeitet, Wiederprüfung 2 steht aus** — die geforderte Stufe ist **T3** (§12, §13) |
 | Kanon | **läuft nicht** — kein Produktcode, kein Test, kein Schema angefasst (Begründung §8) |
 | Änderungssatz | Erstdurchgang: 10 Dateien, +5 285 / −249 Zeilen (§8, Lauf D); davon 4 238 Zeilen die byteidentische Archivkopie. **Runde 1 kommt dazu — gemessen in §12.4, Lauf D.** |
 
@@ -25,7 +25,8 @@
 | Runde | Wofür | Stand am Ende | Urteil des frischen Prüfers |
 |---|---|---|---|
 | Erstdurchgang | Gate-Text PR2 in fünf Teilen (§1 bis §11) | `16be249` | **NEEDS_WORK** — Codex `gpt-5.6-sol`, Effort max, lesend, Thread `01a060fd-b78e-7d90-aee6-591dab8dd943`, 14 bestätigte Defekte (§12.1) |
-| 1 (02.09.2026) | die 14 Defekte D1 bis D14, nichts sonst | `…` (siehe §12.3) | steht aus — Wiederprüfung durch einen frischen Codex-Thread |
+| 1 (02.09.2026) | die 14 Defekte D1 bis D14, nichts sonst | `6b2539f` (siehe §12.3 und §12.7) | **NEEDS_WORK** — Codex `gpt-5.6-sol`, Effort max, lesend, Thread `01a06193-0eb9-7a42-b12d-4fe8a0bb9b38`: „D1–D7 und D9–D14 sind geschlossen; D8 bleibt für NAK-85 und NAK-92 offen“ (§13.1) |
+| 2 (02.09.2026) | der Rest von D8 an NAK-85 und NAK-92 samt seiner Ursache, nichts sonst | `dca7654` und der Manifestcommit dieser Runde (§13.4) | steht aus — Wiederprüfung 2 durch einen frischen Codex-Thread |
 
 Diese Tabelle ist der lebende Kopf des Tickets: jede weitere Runde bekommt hier eine Zeile,
 bevor sie ihren eigenen Abschnitt bekommt.
@@ -1692,3 +1693,208 @@ Auf `5f83a2b` folgt genau ein weiterer Commit an dieser Runde, und er bleibt in 
 4. **Der Arbeitsbaum ist sauber** bis auf das fremde, untrackte
    `.workflow/ultracode/20260831-084621-sonde011-phaseb-bau` — es ist während der ganzen Runde
    unberührt geblieben und steht in keinem der fünf Commits.
+
+## 13. Runde 2 — Ursachenrunde nach Konvergenzentscheid (02.09.2026)
+
+Diese Runde behebt genau einen Defekt und seine Ursache: den Rest von **D8** an den zwei Zeilen
+**NAK-85** und **NAK-92**. Kein anderer Befund, kein anderer Pfad.
+
+### 13.1 Die Wiederprüfung der Runde 1
+
+| Feld | Wert |
+|---|---|
+| Prüfer | Codex `gpt-5.6-sol`, Effort **max**, **lesend** (read-only), frischer Thread |
+| Thread | `01a06193-0eb9-7a42-b12d-4fe8a0bb9b38` |
+| Geprüfter Stand | `6b2539f219639f451b530d52755c3e1cb0128c1a` (Ende der Runde 1; Ticketbasis `55cdb91`) |
+| Prüfauftrag | die vierzehn Defekte D1 bis D14 aus §12.2 — hält jede Nacharbeit an der Quelle? |
+| **Urteil** | **NEEDS_WORK** — ein offener Rest, an zwei Zeilen |
+
+**Urteil, wörtlich:**
+
+> URTEIL: NEEDS_WORK — D1–D7 und D9–D14 sind geschlossen; D8 bleibt für NAK-85 und NAK-92 offen.
+
+Der Dirigent hat den Befund an der Quelle bestätigt. Beide Zeilen standen nach Runde 1 mit dem
+Nachtrag „**Nachtrag 02.09.2026 (PR2 Runde 1, Codex-Befund D8) — an der Quelle geprueft, bleibt
+offen.**“ in der Offen-Tabelle, obwohl das jüngste datierte Urteil ihres Ticketmanifests genau den
+dort benannten offenen Rest deckt.
+
+### 13.2 Konvergenzentscheid und Ursache
+
+**Die Ursache in einem Satz:** Runde 1 hat den offenen Rest aus dem **alten Wortlaut der
+Registerzeile** abgeleitet („Urteil offen“) statt aus dem **jüngsten datierten Urteil im
+Ticketmanifest**. Das ist kein Flüchtigkeitsfehler an zwei Stellen, sondern eine falsche
+Quellenrangfolge: die Zeile beschrieb ihren eigenen Stand vom 29.08.2026, das Manifest trug seit
+dem 30.08.2026 ein PASS.
+
+**Regel dieser Runde (Konvergenzentscheid des Dirigenten, Skill §3.4).** Für JEDE Zeile der
+Offen-Tabelle, die in Runde 1 diesen Nachtrag bekommen hat, wird das jüngste Urteil des
+zugehörigen Ticketmanifests an der Quelle gelesen — Urteilsmarken im Kopf, Dirigentenstand-
+Abschnitte, Prüferzitate. Deckt ein datiertes PASS oder ein ausdrücklicher Dirigentenstand den
+offenen Rest ab, wandert die Zeile **unverändert** (nie löschen) in die Geschlossen-Tabelle und
+bekommt einen datierten Nachtrag „Geschlossen 02.09.2026 (PR2 Runde 2): <Manifest>
+<Abschnitt/Zeilen>, <Marke>, <Thread>“ mit den SHAs, die die Zeile bereits nennt. Deckt kein Urteil
+den Rest ab, bleibt die Zeile offen, und der Nachtrag nennt den Manifestort, an dem das fehlende
+Urteil stehen müsste.
+
+**Warum das die Schließregel nicht aufweicht.** `CLAUDE.md`, Arbeitsregeln: „Code und laufende
+Beweise sind die Wahrheit … Doku, Memory und Audits sind Hinweise.“ Eine Registerzeile ist Doku;
+das datierte Urteil steht im Ticketmanifest. Der Gate-Text bleibt unangetastet — geschlossen wird
+weiter nur mit ID und SHA, gelöscht wird nichts, und die Zeile zieht mit ihrem vollen alten Text um.
+Was sich ändert, ist allein, **woraus** der offene Rest abgelesen wird.
+
+**Wie viele Zeilen die Regel trifft: genau zwei.** `grep -c "an der Quelle geprueft, bleibt offen"`
+über `docs/offene-punkte.md` ergab vor dieser Runde **2** — NAK-85 und NAK-92. Eine dritte Zeile mit
+diesem Nachtrag gibt es nicht, die Regel hat also keinen ungeprüften Rest.
+
+### 13.3 Die geprüften Zeilen — Manifestort, Urteil, Ergebnis
+
+| Zeile | Offener Rest laut Runde 1 | Manifestort (an der Quelle gelesen) | Urteil dort | Ergebnis |
+|---|---|---|---|---|
+| **NAK-85** | „das Urteil eines frischen Prüfers über genau diese A14-Voraussetzungsprüfung ist in dieser Zeile nicht nachgehalten“ | `docs/beweise/SONDE-007a.md` Zeilen 1227–1251 (Prüfer 20b) und 1486–1497 (NAK-100); Marke `T3 PASS 2026-08-30` im Kopf | **PASS**, zweimal, mit A14 ausdrücklich im Prüfumfang | **geschlossen** |
+| **NAK-92** | „der frische Prüfer über den Ticketbereich `git diff a7b0740...HEAD` hat diese Arbeit nicht beurteilt“ | `docs/beweise/SONDE-010.md` Zeilen 838–841 (Prüfer Runde 4, genau dieser Bereich) und 1561–1573 (Dirigentenstand); Marke `T2 PASS 2026-08-30` im Kopf | **PASS** für die sechs Befunde dieser Zeile; das NEEDS_WORK galt sieben NEUEN Befunden | **geschlossen** |
+
+**NAK-85 — was an der Quelle steht.** Der Abschnitt „Dirigentenstand — 2026-08-30 12:48 (Sitzung
+9f06075a): Prüfer 20b **PASS** — S8 abgenommen“ nennt Codex xhigh, Thread
+`01a0523e-12d7-7a61-afbb-10c5fc682e63`, lesend über `git diff dafa5a5...7a87b7d` **einschließlich**
+`tools/eq-copilot/pruefe_kern_identitaetsfrei.py` — also genau des Skripts, dessen
+Voraussetzungsprüfung NAK-85 betrifft. Wörtlich: „URTEIL: PASS — Geprüft: Scoped Diff, CMake-Genex-Selbsttest
+26/26, alle generierten Konfigurationen, Release-Tlog sowie **A14-Scan** mit 17 kernfreien Nadeln,
+erfolgreicher Bundle-Gegenprobe und erwarteten Archivmitgliedern; HEAD blieb unverändert.“ Ein
+zweites, späteres Urteil deckt denselben Gegenstand nach dem Rückbau: „Dirigentenstand — 2026-08-30
+(Sitzung 9f06075a): NAK-100 **PASS**“, Codex high, Thread `01a05263-507e-73d1-a0a9-523996fc1627`,
+lesend über `git diff 478e564...dc7ce7d`, wörtlich „Geprüft: … **A14-Messungen und Exit-Semantik** …“.
+
+**NAK-85 — der Fixweg überlebt den Rückbau, an der Quelle nachgemessen (02.09.2026).** NAK-100 hat
+`pruefe_kern_identitaetsfrei.py` von 4 197 auf heute 748 Zeilen zurückgebaut; entfernt wurden die
+Frischewachen, K1b, der Tlog-Ortsriegel und der JUCE-Baum-Riegel. Der **Weg**, mit dem NAK-85
+geschlossen wurde, ist davon nicht betroffen und steht heute im Skript: Schritt `[0] Neubau` löscht
+Objekte, Tlogs und Lib des Kernverzeichnisses vor jeder Messung und lässt neu übersetzen und linken
+(`tools/eq-copilot/pruefe_kern_identitaetsfrei.py:154` und folgende, Beleg `neubau_belegt` bei `:277`), und
+`voraussetzung_exit()` (`:133-144`) gibt ohne registrierten Befund **3**, mit Befund **2**, nie 0.
+Damit ist die im Befund verlangte Wirkung („Exit 3 statt grün, wenn die Voraussetzung fehlt“) heute
+am Skript messbar — der Rückbau hat sie nicht mitgenommen.
+
+**NAK-92 — was an der Quelle steht.** Die Zeile vermisste ein Urteil „über den Ticketbereich
+`git diff a7b0740...HEAD`“. Genau dieser Lauf steht im Manifest: „Prüfer Runde 4: Codex
+`gpt-5.6-sol`, Effort `xhigh`, **frischer Thread** `01a04d2b-7926-7da2-b061-1991cd6d3a4b`, lesend
+über den vollständigen Ticketbereich `git diff a7b0740...444e125`; HEAD vor und nach dem Lauf
+`444e125`“, wörtlich: „Die sechs in §9 genannten NAK-92-Fixes und ihre Bruchproben stimmen mit
+Quelle und Rohausgaben überein.“ Sein Gesamturteil war NEEDS_WORK, aber wegen **sieben neuer**
+Befunde — die sechs Befunde dieser Zeile hat er ausdrücklich bestätigt. Die sieben neuen sind über
+NAK-95, NAK-98 und NAK-104 weitergeführt und stehen selbst in der Geschlossen-Tabelle. Das
+abschließende Urteil des Tickets: „S14–15 `SONDE-010` **T2 PASS** — NAK-95, NAK-98 und NAK-104
+geschlossen“, darin wörtlich „Die Vorbedingung von `SONDE-011` (NAK-92 → NAK-95) ist damit erfüllt“.
+
+**Keine Zeile bleibt mit fehlendem Urteil zurück.** Beide geprüften Zeilen sind geschlossen; es gibt
+in dieser Runde keinen Fall „Urteil fehlt weiterhin, Manifestort benannt“.
+
+### 13.4 Änderungssatz der Runde
+
+Zwei Commits, jeder mit explizitem Pathspec, jeder sofort gepusht.
+
+| # | Commit | Pfade | Inhalt |
+|---|---|---|---|
+| 1 | `dca7654` | `docs/offene-punkte.md` | NAK-85 und NAK-92 unverändert in die Geschlossen-Tabelle umgezogen, je mit datiertem Nachtrag; Kopfzahlen und Klassentabelle neu gerechnet; der Absatz über die zwei nicht umgezogenen Zeilen ersetzt |
+| 2 | dieser Commit | `docs/beweise/PR2.md` | Abschnitt §13, lebender Kopf (Prüfstufen-Zeile, Rundentabelle §1.0) |
+
+**Am Register geändert wurde ausschließlich:** die Klassenzahlen **[Härtung/Struktur]** 18 → 17 und
+**[Werkzeug]** 20 → 19, die Gesamtrechnung **64 · 5 · 60** → **62 · 5 · 62** (Summe unverändert 129),
+die Überschrift der Offen-Tabelle, ein neuer Runde-2-Absatz in der Triage, der Kopfabsatz der
+Geschlossen-Tabelle und die Position der zwei Zeilen. **Der Text der zwei Zeilen selbst ist nicht
+angefasst** — maschinell geprüft: der alte Zeilentext von `6b2539f` ist Präfix des neuen, angehängt
+sind nur 2 126 (NAK-85) bzw. 1 439 (NAK-92) Zeichen Nachtrag.
+
+**Die zwei erzeugten Blätter sind inhaltlich unverändert.** Diese Runde hat keine Planquelle und
+keine Fragenkarte angefasst; `docs/ANTWORTEN-OFFEN.md` ist nach dem Lauf byteidentisch zu `HEAD`
+(24 020 Bytes, vorher wie nachher). `docs/PLAN-STAND.md` ebenfalls — mit einer Zwischenstufe, die
+`CLAUDE.md` so vorsieht: solange dieses Manifest **uncommittet** unter `docs/beweise/` liegt, setzt
+`planstand.py` seine ehrliche Warnung „Gerechnet aus dem Arbeitsbaum" ins Blatt (drei Zeilen, keine
+Zahl bewegt sich). Deshalb wird das Blatt **nach** dem Manifestcommit ein zweites Mal gerechnet; dann
+ist die Warnung weg und das Blatt wieder byteidentisch zu `HEAD`. Beide Blätter stehen daher in
+keinem Commit dieser Runde; das wären leere Commits. Das `M` von `git status --short` an
+`docs/ANTWORTEN-OFFEN.md` ist ein reines Zeilenende-Artefakt (`core.autocrlf=true`, das Werkzeug
+schreibt LF) ohne Inhaltsunterschied.
+
+**Nicht angefasst:** `.workflow/ultracode/20260831-084621-sonde011-phaseb-bau` (fremd, untrackt) und
+jeder Pfad außerhalb der Schreibfläche dieser Runde.
+
+### 13.5 Beweislauf
+
+Befehle, Reihenfolge und Exitcodes, gefahren am 2026-09-02 vom Workspace-Root
+`C:/Users/phili/Projekte/Nakama`, nach dem Registercommit `dca7654`. Rohausgabe ungekürzt. Lauf F
+misst den Arbeitsbaum und damit auch diesen Abschnitt §13, der erst mit Commit 2 committet wird.
+
+```text
+### A) py -3.13 tools/plan/planstand.py
+geschrieben: docs\PLAN-STAND.md (23 abgenommen, 1 gebaut, 40 gesamt, aus 054ed59)
+EXITCODE=0
+
+### B) py -3.13 tools/plan/antworten_blatt.py
+geschrieben: docs\ANTWORTEN-OFFEN.md (53 Antworten, 0 offen, 53 eingearbeitet, 24 mit eigenem Text)
+EXITCODE=0
+
+### F) py -3.13 tools/plan/dokuriegel.py <die sieben Ticketpfade>
+docs/plan/plan.json: sauber
+docs/bauaufteilung-sonden.md: sauber
+docs/FL-Nakama-Sonden-Design-Entwurf.md: sauber (1 benannt)
+design/docs/funktions-und-bedien-blueprint.md: sauber
+CLAUDE.md: sauber
+docs/offene-punkte.md: sauber (8 benannt)
+docs/beweise/PR2.md: sauber (1 benannt)
+docs/FL-Nakama-Sonden-Design-Entwurf.md:189 VERWEIS OHNE ZIEL, aber als historisch markiert („im Design-Repo“ im Umfeld): docs/sondenplan.md
+docs/offene-punkte.md:96 VERWEIS OHNE ZIEL, aber als noch nicht angelegter Zielpfad markiert („nicht ins Repo“ im Umfeld): tools/extern/
+docs/offene-punkte.md:99 VERWEIS OHNE ZIEL, aber als historisch markiert („im FL-Studio-Repo“ im Umfeld): tools/analyze-track.py
+docs/offene-punkte.md:114 VERWEIS OHNE ZIEL, aber als historisch markiert („abgeschafft“ im Umfeld): docs/hub/hub.json
+docs/offene-punkte.md:114 VERWEIS OHNE ZIEL, aber als historisch markiert („abgeschafft“ im Umfeld): tools/hub/hub_sync.py holen\|senden
+docs/offene-punkte.md:215 VERWEIS OHNE ZIEL, aber als historisch markiert („entfernt“ im Umfeld): eq-copilot/fixtures/installer/journale/
+docs/offene-punkte.md:215 VERWEIS OHNE ZIEL, aber als historisch markiert („entfernt“ im Umfeld): tools/eq-copilot/erzeuge_installer_journale.py
+docs/offene-punkte.md:219 VERWEIS OHNE ZIEL, aber als noch nicht angelegter Zielpfad markiert („noch nicht angelegt“ im Umfeld): tools/eq-copilot/kern_riegel/
+docs/offene-punkte.md:219 VERWEIS OHNE ZIEL, aber als noch nicht angelegter Zielpfad markiert („noch nicht angelegt“ im Umfeld): tools/eq-copilot/installer_pruefung/
+docs/beweise/PR2.md:942 VERWEIS OHNE ZIEL, aber als noch nicht angelegter Zielpfad markiert („noch nicht angelegt“ im Umfeld): docs/beweise/NAK-121.md
+Dokuriegel: 0 Befund(e), 10 benannt (historisch oder Zielpfad)
+EXITCODE=0
+
+### I) Registerzeilen: Mengenvergleich der IDs 55cdb91 gegen den Stand dieser Runde
+Basis 55cdb91: 126 IDs
+HEAD (Runde 2): 129 IDs
+ABGAENGE (muss leer sein): (leer)
+ZUGAENGE: NAK-128, NAK-129, NAK-130
+davon in Runde 2 verschoben: NAK-85, NAK-92 (Offen -> Geschlossen, kein Abgang)
+EXITCODE=0
+```
+
+**Was die Läufe zeigen.**
+
+1. **A — der Planstand rechnet ohne Warnung.** Quellstand `054ed59`, Zahlen unverändert gegen
+   Runde 1 (23 von 40 abgenommen, 1 gebaut, 16 offen). Diese Runde hat keine Planquelle angefasst,
+   also darf sich hier nichts bewegen — und es bewegt sich nichts. Der oben gezeigte Lauf ist der
+   **zweite**, nach dem Manifestcommit: der erste, mit noch uncommittetem `docs/beweise/PR2.md`,
+   setzte pflichtgemäß die Warnung „Gerechnet aus dem Arbeitsbaum" ins Blatt (§13.4). Nach dem
+   Commit ist sie weg und das Blatt byteidentisch zu `HEAD`.
+2. **B — das Antwortenblatt ist unverändert.** 53 Antworten, 0 offen; keine Fragenkarte angefasst.
+3. **F — der Dokuriegel ist über alle sieben Ticketpfade sauber.** 0 Befunde. Die benannten Zeilen
+   sind dieselben wie in Runde 1 (historische oder noch nicht angelegte Zielpfade); §13 hat keinen
+   neuen Verweis ins Leere gebracht.
+4. **I — keine ID ist abgegangen.** Gemessen über jede Zeile, die in einer der drei Tabellen mit
+   `| NAK-<n> |` oder `| ~~NAK-<n>~~ |` beginnt, `git show 55cdb91:docs/offene-punkte.md` gegen den
+   Arbeitsbaum. Die Mengendifferenz ist in der Abgangsrichtung leer; die drei Zugänge sind die in
+   Runde 1 angelegten NAK-128, NAK-129 und NAK-130. NAK-85 und NAK-92 sind in beiden Ständen
+   enthalten — verschoben, nicht entfernt.
+
+### 13.6 Selbstaudit dieser Runde
+
+Gelesen wurde der Gesamtdiff `6b2539f..HEAD` mit den Fragen der Prüfliste E und F.
+
+1. **Keine gelöschte Zeile.** Lauf I, Abgangsmenge leer; zusätzlich der Präfixtest aus §13.4 an den
+   zwei umgezogenen Zeilen.
+2. **Kein verändertes Zitat.** Die zwei Zeilen sind nur verlängert. Die in §13 zitierten Prüfersätze
+   sind aus `docs/beweise/SONDE-007a.md` und `docs/beweise/SONDE-010.md` übernommen, nicht
+   nacherzählt.
+3. **Kein fremder Pfad.** Beide Commits nennen ihre Pfade explizit; der Diff `6b2539f..HEAD` enthält
+   außerdem den fremden Commit `ff82162` der parallelen Design-Session (visuelle Phase, Figma) — er
+   ist nicht von dieser Runde und in keinem ihrer Commits.
+4. **Behauptung ≤ Messung.** Jede Zahl in §13 stammt aus einem Lauf oder einem Zitat: 748 Zeilen und
+   die zwei Fundstellen im Prüfskript sind an der Quelle gelesen, die Zeichenzahlen der Nachträge
+   maschinell gemessen, die Registerzahlen aus der Zählung der Tabellen.
+5. **Keine T3-Marke gesetzt.** Der Kopf trägt weiter nur `T1 PASS`; über Runde 2 urteilt ein frischer
+   Prüfer.

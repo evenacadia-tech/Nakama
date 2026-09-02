@@ -46,7 +46,12 @@ Stand 02.09.2026: Fünferblock 01
 ([abnahmen/2026-09-01-technische-ui-architektur-fuenferblock-01.md](abnahmen/2026-09-01-technische-ui-architektur-fuenferblock-01.md),
 Dynamic im Band-Panel) und Fünferblock 02
 ([abnahmen/2026-09-01-technische-ui-architektur-fuenferblock-02.md](abnahmen/2026-09-01-technische-ui-architektur-fuenferblock-02.md),
-Bandbesitz, Kanalmodus, Bypass, Remove) sind integriert. Der aktuelle
+Bandbesitz, Kanalmodus, Bypass, Remove) sind integriert; ebenso Fünferblock
+03 (Befund-Dichte, Global-Zeile, Kopf-Umschalter, Probeeq-Kachel) und die
+delegierten Blöcke 04 und 05
+([abnahmen/2026-09-02-technische-ui-architektur-fuenferblock-04.md](abnahmen/2026-09-02-technische-ui-architektur-fuenferblock-04.md),
+[abnahmen/2026-09-02-technische-ui-architektur-fuenferblock-05.md](abnahmen/2026-09-02-technische-ui-architektur-fuenferblock-05.md)),
+mit denen die offenen Bedienfragen erschöpft sind. Der aktuelle
 Größenvertrag für beide Gen-Flächen steht in
 [abnahmen/2026-09-01-gen-nur-standardgroesse.md](abnahmen/2026-09-01-gen-nur-standardgroesse.md):
 genau eine logische Größe von 950×538. Compact, Fenster-Resize und eine zweite

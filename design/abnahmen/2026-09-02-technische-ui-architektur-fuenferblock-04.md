@@ -133,7 +133,8 @@ settings“). Nielsen, Heuristik 1: Systemstatus sichtbar halten.
 
 **Entscheidung für Probeeq:**
 
-- Die Kachel hat **eine feste Höhe** (in der Skizze 580×92). Sie ändert
+- Die Kachel hat **eine feste Höhe** (in der Skizze 600×92, siehe Umbau in
+  Block 05). Sie ändert
   ihre Fenstergröße nie von selbst; das Tasten-Gesetz gilt sinngemäß für
   das Fenster.
 - Zeile 2 ist immer vorhanden. Bei zugeschaltetem EQ trägt sie die laufende

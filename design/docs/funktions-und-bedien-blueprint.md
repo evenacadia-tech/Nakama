@@ -612,10 +612,16 @@ Auswahlzustand: eine Quelle oder Beziehung.
 Fehlerzustand: betroffene Quelle bleibt an derselben Stelle und erklärt ihren
 Status; sie verschwindet nicht hinter einem globalen Toast.
 
-Bei 16 sichtbaren und 32 angeschlossenen Probes muss die festgelegte vertikale
-Sources-Spalte Überblick, Suche/Quick-Jump und eine stabile Auswahl erlauben.
-Zeilendichte, Scroll-/Suchmechanik und der ehrliche 32-Probes-Grenzfall bleiben
-**[O]** und werden am belasteten Funktionsblatt geprüft.
+**[U] Viele Quellen (delegierte Ableitung 02.09.2026, Fünferblock 04,
+5/5):** Die Sources-Spalte behält Mixer-Reihenfolge und Zeilenhöhe und wird
+bei vielen Quellen eine Scrollliste, keine dichtere Matrix. Oben sitzt ein
+Filterfeld (Tippen filtert sofort, `Enter` wählt den ersten Treffer, `Escape`
+leert); der Kopf nennt die Zahl der Quellen und beim Filtern die Treffer.
+Quellen ohne Signal oder mit veralteter Messung bleiben mit ihrem Zustand in
+der Liste. Die ausgewählte Quelle bleibt beim Filtern ausgewählt und wird
+beim Öffnen der Fläche in den sichtbaren Bereich gerollt. Pinnen und
+Minimap werden nicht übernommen. Vorbild: Pro-Q 4 Instance List (Filterfeld,
+Quick Jump, Spurreihenfolge des Hosts).
 
 ### 4.2 Gen Fläche 2 — EQ und Transaktion
 
@@ -640,9 +646,17 @@ Die Fläche braucht fünf funktionale Zonen:
    24.08.2026; der Output-Wert wandert sichtbar mit), Width, Mono-Bass,
    Bypass, Mix, A/B, Voreinstellungen und Verlauf. Der Einstieg `GLOBAL` ist
    ein Knopf fester Maße; die Nennungen stehen als Leseanzeige daneben
-   (Tasten-Gesetz 25.08.2026). **[O]** Wie Voreinstellungen und Verlauf
-   innerhalb der Sektion geöffnet werden, ist noch nicht gefragt; bis dahin
-   sind beide Einstiege ehrlich unavailable.
+   (Tasten-Gesetz 25.08.2026). **[U]** (delegierte Ableitung 02.09.2026,
+   Fünferblock 04, 1/5) `PRESET` trägt den Namen der Voreinstellung, ist bei
+   Abweichung sichtbar als geändert markiert und hat `‹`/`›` für die
+   Nachbarn; seine Aktivierung öffnet die Liste im selben Körper der
+   aufgeklappten Sektion (Filterfeld, Gruppen mitgeliefert/eigene, `SAVE`
+   nur für eigene mit Bestätigung, `SAVE AS`). Ein Verlauf als Liste wird
+   nicht gebaut: `UNDO` und `REDO` in der unteren Zeile, die bestätigte
+   Revision als Leseanzeige. Die Kurven-Kopie sitzt als `COPY →` an der
+   Zielleiste, nennt Quelle und Ziel und wirkt erst nach Bestätigung im
+   selben Körper. Über dem Graphen ist genau ein Panel offen: Global-Sektion
+   und Band-Panel schließen einander.
 5. **Transaktionslocus:** das Proposal/Draft des aktuellen Ziels mit Hold,
    10-s-Kandidat, Confirm, Reject/Revert und Blocking-Grund. Dieser Locus ist
    in jeder EQ-Zielansicht direkt erreichbar.
@@ -728,9 +742,15 @@ Mixerreihenfolge. Der Master besitzt einen getrennten stabilen Einstieg und ist
 kein weiterer Schritt in der Sondenfolge. Das Mausrad wechselt die Sonde nur,
 wenn nichts per Klick markiert ist.
 
-**[A] Radbesitz:** Ein fokussiertes oder markiertes Präzisionscontrol soll das
-Rad für seinen eigenen Wert beanspruchen. Diese Konkretisierung des
-„nichts-markiert“-Falls braucht im Prototyp einen Fehlbedienungstest.
+**[U] Radbesitz (delegierte Ableitung 02.09.2026, Fünferblock 05, 1/2):**
+Das Rad gehört dem Wert, über dem der Zeiger steht: über einem Wertefeld
+ändert es diesen Wert in Schritten, mit `Shift` fein; über dem Graphen mit
+ausgewähltem Band ändert es die Güte; über dem Graphen ohne Auswahl wechselt
+es die Sonde (23.08.2026); über der Sources-Liste scrollt es. `Ctrl`-Klick
+setzt ein Wertefeld auf den Standard, Doppelklick öffnet die Texteingabe.
+Vorbild: Pro-Q 4 (Rad über dem Regler, `Shift` fein, `Ctrl`-Klick Reset, Rad
+im Display = Q) und Kirchhoff-EQ. Tastatur- und Fokusregeln stehen in
+Abschnitt 7.1.
 
 ### 4.3 Probeeq kompakt
 
@@ -751,10 +771,17 @@ zugeschaltetem EQ und trägt die laufende Änderung (Band, Frequenz, Gain, Q)
 und den Modus der Sonde (Inhalt seit 23.08.2026). Ein Feld halber Gen-Größe
 und die frühere 760×430-Bühne sind verworfen: Probeeq ist auf vielen Bussen
 gleichzeitig offen, jeder Pixel Höhe zählt mal Instanzen (Begründung vom
-20.08.2026). Die Maße der Skizze (580×92 mit EQ, 580×52 ohne) sind
-Dichteprüfung, kein Beschluss. **[O]** Ob die zweite Zeile die Fensterhöhe
-ändert oder in fester Höhe ein- und ausgeblendet wird, ist eine Frage des
-Host-Fensters (JUCE `setSize` unter FL) und noch nicht entschieden.
+20.08.2026). **[U]** (delegierte Ableitung 02.09.2026, Fünferblock 04, 3/5
+und 4/5) Die Kachel hat eine feste Höhe und ändert ihre Fenstergröße nie von
+selbst (Pro-Q 4 und Kirchhoff-EQ ändern Größe nur auf Benutzeraktion; FL-
+Resize ist im JUCE-Forum als unzuverlässig belegt). Zeile 2 ist immer
+vorhanden: bei zugeschaltetem EQ die laufende Änderung und der Modus, bei
+ausgeschaltetem EQ die Messwahrheit (`PASSIVE MEASUREMENT`, Signal, Frische,
+Messpunkt). Link-Verlust ist ein stehender Indikator in Zeile 1 (Punkt und
+Wort, nie nur Farbe); Zeile 2 nennt dann lokale Wahrheit und nächsten
+Schritt (`LOCAL CONFIRMED · REV n · REMOTE LOCKED · EQ, BYPASS, MIX STAY
+LOCAL`); kein Dialog, kein Toast; EQ, Bypass und Mix bleiben bedienbar. Die
+Maße der Skizze (600×92) sind Dichteprüfung.
 
 Nicht enthalten:
 
@@ -847,6 +874,27 @@ Abbruch/Rückweg und native JUCE-Semantik.
   Proposal still zu verwerfen; diese Detailsemantik bleibt Teil des offenen
   P7-Vertrags. Nach Dialog, Deselect, Apply, Reject oder Fehler kehrt der Fokus
   zum auslösenden Objekt zurück.
+
+**[U] Tastatur und Fokus (delegierte Ableitung 02.09.2026, Fünferblock 05,
+1/2):** Der Kopf-Umschalter folgt dem W3C-Tabs-Muster mit manueller
+Aktivierung (`Left/Right`, `Home/End` bewegen den Fokus, `Enter`/`Space`
+wechseln die Fläche). Jede Disclosure trägt `aria-expanded` und
+`aria-controls`, öffnet mit `Enter`/`Space`; `Escape` schließt das oberste
+nichtmodale Panel und gibt den Fokus an seinen Einstieg zurück (Global →
+`GLOBAL`, Preset-Liste → `PRESET`, Band-Panel → Bandpunkt, Kopie → `COPY →`);
+eine laufende Texteingabe verwirft `Escape` zuerst. `Delete` auf einem
+fokussierten Bandpunkt entfernt das Band (Undo bleibt). Fokusordnung: Kopf,
+Zielleiste beziehungsweise Sources-Spalte, Arbeitsfläche, untere Zeile; ein
+geöffnetes Panel liegt direkt hinter seinem Einstieg.
+
+**[U] Fehler- und Degradationszustände (Fünferblock 05, 2/2):**
+Systemwahrheit steht dauerhaft und passiv im Kopf; ein degradiertes Objekt
+bleibt an seinem Ort und trägt seinen Zustand; Validierung sitzt am Feld
+(alter Wert bleibt, kurze Zeile sagt es); Ereignisse ohne Nutzerauslösung
+erscheinen als Hinweiszeile am betroffenen Ort und enden mit dem Zustand;
+modale Dialoge gibt es nicht, die einzige zweistufige Handlung ist die
+Bestätigung einer überschreibenden Aktion im selben Körper (NN/g:
+Indikatoren, Validierungen, Benachrichtigungen; Fehlermeldungsregeln).
 
 ### 7.2 Primäre Handlungen
 
@@ -1359,8 +1407,9 @@ Schema:
 
 ## 15. Offene Entscheidungen und technische Blocker
 
-1. **[O] Frische visuelle Struktur:** Liste, Matrix oder semantischer Zoom für
-   16/32 Quellen wird erst aus neuen designneutralen Wireframes entschieden.
+1. **[D] Struktur für viele Quellen:** entschieden am 02.09.2026 (Fünferblock
+   04, 5/5; Abschnitt 4.1): Scrollliste in Mixer-Reihenfolge mit Filterfeld,
+   keine Matrix, kein semantischer Zoom.
 2. **[O] Arbeitsnamen:** Die beiden Gen-Flächen haben Funktionsbeschreibungen,
    aber keine endgültigen Produktnamen.
 3. **[O] Hold-Accessibility:** Screenreader-/Switch-Control-Ersatz für echtes
@@ -1416,25 +1465,24 @@ Schema:
     Transaktion. Vor nativer Anzeige müssen Save/Load, Host-Automation,
     Migration und Wiederherstellung unter derselben festen Band-ID gemeinsam
     versioniert und getestet werden.
-17. **[D]/[O] Global-Sektion und Wortlaute:** Die Global-Sektion auf Gen
-    Fläche 2 ist am 02.09.2026 entschieden (Fünferblock 03, 2/5; Abschnitt
-    4.2 Zone 4): die eingeklappte Zeile nennt nur aktive Abweichungen beim
-    Namen, aufgeklappt liegen alle globalen Handgriffe samt Auto-Gain neben
-    Output. Offen bleiben die Disclosure von Voreinstellungen und Verlauf
-    innerhalb der Sektion, der Wortlaut der Halten-Aktion (Fläche 1 `HOLD TO
-    AUDITION`, Fläche 2 `AUDITION · HOLD`) und die sichtbare Kurzform `DEL`
-    für `Remove Band`, die nur eine Dichteprüfung der Skizze ist.
+17. **[D] Global-Sektion und Wortlaute:** Die Global-Sektion ist am
+    02.09.2026 entschieden (Fünferblock 03, 2/5; Abschnitt 4.2 Zone 4), die
+    Disclosure von Voreinstellungen, Verlauf und Kurven-Kopie am selben Tag
+    aus Handbüchern abgeleitet (Fünferblock 04, 1/5). Der Wortlaut der
+    Halten-Aktion ist auf beiden Flächen `HOLD TO AUDITION`, `DEL` bleibt
+    die sichtbare Kurzform mit `Remove Band` als Namen (Fünferblock 04,
+    2/5).
 18. **[D] Flächenwechsel Gen:** entschieden am 02.09.2026 (Fünferblock 03,
     3/5 und 4/5; Abschnitt 4.1 „Übergang“): Der Kopf schaltet beide Flächen
     in beide Richtungen, `SEND DRAFT` bleibt Handgriff am Befund, keine
     automatische Rückkehr, ein offener Draft bleibt offen. Der Entscheid vom
     31.08.2026 „nur SEND DRAFT“ ist überholt.
 19. **[D]/[O] Probeeq-Rückfallfläche:** Größenklasse entschieden am
-    02.09.2026 (Fünferblock 03, 5/5; Abschnitt 4.3): flache Kachel mit ein
-    bis zwei Zeilen, Zeile 2 nur bei zugeschaltetem EQ. Offen: ob die zweite
-    Zeile die Fensterhöhe ändert oder in fester Höhe ein- und ausgeblendet
-    wird (Host-Fenster unter FL), und die Detailfragen der Kachel (Verhalten
-    bei Link-Verlust, lokale Notfallaktionen) aus einem kommenden Block.
+    02.09.2026 (Fünferblock 03, 5/5), feste Höhe, Messwahrheit in Zeile 2
+    und Link-Verlust am selben Tag abgeleitet (Fünferblock 04, 3/5 und
+    4/5; Abschnitt 4.3). Offen bleibt nur, welche Notfallaktionen über EQ,
+    Bypass und Mix hinaus nötig sind; das entscheiden die
+    P6/P7-Recoverytests, keine Bedienfrage.
 
 Diese Punkte sind kein Freibrief für Platzhaltercontrols. Bis zur technischen
 oder User-Entscheidung bleibt die jeweilige Funktion ehrlich unavailable oder
@@ -1542,6 +1590,22 @@ Fundament in der Skizze entsteht und das visuelle Design danach in Figma.
 Die Prüfung lief mit Playwright und Chrome (42 Prüfpunkte, Konsole leer);
 die Belege liegen unter `design/skizze/belege/` mit Präfix
 `2026-09-02-b03-`.
+
+Fünferblock 04 und 05 (02.09.2026,
+[2026-09-02-technische-ui-architektur-fuenferblock-04.md](../abnahmen/2026-09-02-technische-ui-architektur-fuenferblock-04.md),
+[2026-09-02-technische-ui-architektur-fuenferblock-05.md](../abnahmen/2026-09-02-technische-ui-architektur-fuenferblock-05.md))
+sind eine delegierte Ableitung: Der User gab die restlichen offenen
+Bedienfragen ausdrücklich an Handbücher und Bedienmuster ab (FabFilter
+Pro-Q 4, Kirchhoff-EQ, TDR Nova, W3C-APG, NN/g). Integriert sind
+Voreinstellungen im Global-Körper, Undo/Redo statt Verlaufsliste, die
+Kurven-Kopie an der Zielleiste, ein Wortlaut für das Halten, `Delete` als
+Expertenweg, die feste Probeeq-Höhe mit Messwahrheit und Link-Verlust in
+Zeile 2, Filter und Scrollliste für viele Quellen sowie die gemeinsamen
+Regeln für Tastatur, Fokus, Rad und Fehlerzustände. Prüfung: 65 Prüfpunkte
+plus 42 Regressionspunkte aus Block 03, Konsole leer; Belege mit Präfix
+`2026-09-02-b0405-`. Offen sind danach nur noch technische Verträge
+(Abschnitt 15, Punkte 3, 5, 7, 10, 12, 14, 15, 16) und die Produktnamen der
+Flächen (Karte U23).
 
 Die Skizze liegt seit dem 02.09.2026 im Repo unter
 [design/skizze/nakama-ui-technical-sketch.html](../skizze/nakama-ui-technical-sketch.html);

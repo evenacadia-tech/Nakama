@@ -254,20 +254,41 @@ Zusammengefasst gilt zusätzlich:
 - **Prozess:** Fundament jetzt in der Skizze, das visuelle Design danach in
   Figma (Prozesswort oben).
 
-## Bewusst offen (Stand nach Fünferblock 03)
+## Delegierte Ableitung am 02.09.2026 — Fünferblock 04 und 05
 
-- Gen Fläche 1: kein offener Architekturpunkt; Karte U21 ist beantwortet.
-- Gen Fläche 2: Disclosure von Voreinstellungen und Verlauf innerhalb der
-  Global-Sektion; Wortlaut der Halten-Aktion; Kurzform `DEL`; technische
-  Vertragsarbeit für Remove/Undo und Live-Dynamic. Bereits entschiedene
-  Panelregeln werden nicht erneut geöffnet.
-- Probeeq: ob die zweite Zeile die Fensterhöhe ändert oder in fester Höhe
-  ein- und ausgeblendet wird (Host-Fenster unter FL); Verhalten bei
-  Link-Verlust und lokale Notfallaktionen.
-- Die gemeinsamen UI-Regeln wurden noch nicht befragt.
+Nach Block 03 gibt der User die restlichen offenen Bedienfragen an eine
+belegte Ableitung ab:
 
-Vor einer weiteren Architekturfrage wird ein neuer Block aus einem noch
-offenen Bedienbereich begonnen.
+> „ich habe gerade keine zeit, kannst du nicht die restlichen offenen UX
+> entscheidungen anhand von best practice beispielen lösen ? es gibt ja
+> manuals , handbücher mit denen du gute menschliche Bedienprinzipien super
+> nachvollziehen und anwenden kannst“
+
+Die sieben Ableitungen mit Quellenledger stehen in
+[`2026-09-02-technische-ui-architektur-fuenferblock-04.md`](2026-09-02-technische-ui-architektur-fuenferblock-04.md)
+und
+[`2026-09-02-technische-ui-architektur-fuenferblock-05.md`](2026-09-02-technische-ui-architektur-fuenferblock-05.md):
+Voreinstellungen im Global-Körper und Undo/Redo statt Verlaufsliste,
+Kurven-Kopie an der Zielleiste, ein Wortlaut für das Halten und `DEL` mit
+Namen, Probeeq mit fester Höhe und Messwahrheit in Zeile 2, Probeeq bei
+Link-Verlust, Sources-Spalte mit Filter und Scrollliste, Tastatur/Fokus/
+Rad, Fehler- und Degradationszustände. Beide Blöcke wurden mit einem
+gemeinsamen Umbau abgeschlossen; das ist der ausdrückliche Userauftrag für
+die Abweichung vom Fünfer-Takt.
+
+## Bewusst offen (Stand nach Fünferblock 05)
+
+- Bedienfragen: keine. Die Produktnamen der beiden Gen-Flächen liegen als
+  Karte U23 beim User.
+- Technische Verträge, keine Bedienfragen: Live-Dynamic-Telemetrie,
+  Remove/Undo-Vertrag, 10-s-Kandidatenvertrag, direkte Edit-Transaktion,
+  Hold-Accessibility in JUCE, Notfallaktionen von Probeeq aus den
+  P6/P7-Recoverytests (Blueprint Abschnitt 15).
+- Farben, Material, Typografie und visuelle Feinheiten: erst nach dem
+  ausdrücklichen Wechsel in die visuelle Phase, in Figma (Prozesswort oben).
+
+Eine weitere Architekturfrage entsteht erst, wenn ein neuer Entscheid des
+Users oder ein technischer Vertrag eine Bedienfrage aufwirft.
 
 ## Vorgezogener Größenentscheid vom 01.09.2026
 

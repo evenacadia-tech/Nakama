@@ -102,4 +102,52 @@ Notifications).
 
 ## Gemeinsamer Umbau und Sichtbeleg (Block 04 und 05)
 
-Wird nach dem Umbau der Skizze hier ergänzt.
+Die Skizze `design/skizze/nakama-ui-technical-sketch.html` setzt alle sieben
+Ableitungen um. Geprüft am 02.09.2026 mit Playwright und dem System-Chrome
+(headless, Viewport 1500×900): das Blockskript mit 65 Prüfpunkten und das
+Regressionsskript von Block 03 mit 42 Prüfpunkten, beide PASS, Konsole ohne
+Fehler oder Warnungen.
+
+| Punkt | Messung |
+|---|---|
+| Sources-Spalte | 180 px breit, 16 Quellen in Mixer-Reihenfolge, Liste scrollt in der Spalte; Filter `gui` → `2 MATCH · 16`, `Enter` wählt `GUITAR L`, `Escape` leert |
+| Quelle ohne Befund | Zustand `NO FINDING`, `SEND DRAFT` gesperrt |
+| Kopf-Tabs | `ArrowRight` bewegt den Fokus ohne Wechsel, `Home`/`End`, `Enter` wechselt; Fokus landet auf dem Reiter der neuen Fläche |
+| Halten | beide Flächen `HOLD TO AUDITION`, Knopf auf Fläche 2 128×30, Transaktionszeile ohne Überlauf |
+| `Delete` auf Bandpunkt | entfernt B4, Fokus auf `UNDO` (58×30); Undo stellt wieder her, Redo entfernt erneut |
+| Global-Sektion | `PRESET` zeigt `USER 04`, Marker bei Änderung; `REV 128 · DRAFT OPEN` als Leseanzeige; kein `HISTORY`-Knopf; Öffnen schließt das Band-Panel |
+| Validierung | `abc` in WIDTH → `WIDTH · NOT A NUMBER, KEPT 100 %`, gültige Eingabe löscht die Notiz; `Ctrl`-Klick setzt den Standard; Rad über MIX ändert um 5 |
+| Preset-Liste | ersetzt den Global-Körper, Fokus im Filter; `vocal` → ein Treffer, `Enter` lädt `VOCAL PRESENCE`; `SAVE` bei Factory gesperrt; `SAVE` bei `USER 01` fragt `OVERWRITE USER 01 WITH THE CURRENT STATE?`; `SAVE AS` bietet `USER 05` an und legt es an; `Escape` schließt Liste → `PRESET`, dann Global → `GLOBAL` |
+| Rad über dem Graphen | mit offenem Panel ändert es Q, ohne Auswahl wechselt es die Sonde |
+| Kurven-Kopie | `COPY →` ersetzt die Zielleiste, Quelle ist kein Ziel, gewähltes Ziel bleibt gedrückt sichtbar, `REPLACES THE PIANO CURVE`, `CONFIRM COPY` → Hinweis `COPIED BASS CURVE TO PIANO`; Undo/Redo; `Escape` zurück zu `COPY →` |
+| Probeeq | 600×92 mit EQ an und aus; Zeile 2 bei EQ aus `EQ OFF · PASSIVE MEASUREMENT · SIGNAL · FRESH 1.2 s`; Link-Verlust `BROKER OFFLINE` in Zeile 1, `LOCAL CONFIRMED · REV 128 · REMOTE LOCKED · EQ, BYPASS, MIX STAY LOCAL` in Zeile 2; EQ, Bypass, Mix bedienbar; Zeilen ohne Überlauf |
+
+Belege unter `design/skizze/belege/` mit Präfix `2026-09-02-b0405-`
+(Sources-Filter, Preset-Liste, Kopie-Bestätigung, Validierung, Probeeq bei
+EQ aus, Probeeq bei Link-Verlust).
+
+Technische Konsequenzen des Umbaus, keine neuen Entscheide:
+
+- **Ein Panel über dem Graphen.** Öffnen der Global-Sektion schließt das
+  Band-Panel, Öffnen eines Band-Panels schließt die Global-Sektion. Das
+  folgt aus der `Escape`-Regel „oberstes nichtmodales Panel“: Es gibt genau
+  eines.
+- Die Probeeq-Kachel wurde von 580 auf 600 px verbreitert, weil `BROKER
+  OFFLINE` in Zeile 1 sonst 28 px überlief; Abstände 7 px, Mix-Regler 76 px.
+  Maße bleiben Dichteprüfung.
+- Die Kopie wirkt in der Skizze nur als Hinweis und Undo-Eintrag; die
+  Ziele teilen sich dort denselben Demo-Bandsatz. Der Datenweg ist S29–31.
+- Der Demo-Preset-Bestand (drei mitgelieferte, vier eigene) und der
+  Wortlaut der Hinweise sind Dichteprüfung.
+
+Nebenbefunde der Prüfung, im selben Umbau behoben:
+
+1. `Ctrl`-Klick setzte den Wert zurück, das fokussierte Feld zeigte aber
+   den alten Text weiter; jetzt wird das Feld nach Rücksetzen und Rad
+   ausdrücklich nachgeführt.
+2. `SAVE AS` ließ die Preset-Liste offen und schickte den Fokus auf den
+   verdeckten `PRESET`-Knopf; die Liste schließt jetzt beim Sichern.
+3. Die Kopie-Zielwahl kannte das aktuelle Ziel nicht als Eintrag; jetzt
+   sind alle Ziele gelistet und das aktuelle wird dynamisch ausgeblendet.
+4. `Escape` in der Kopie-Zielwahl griff nur bei Fokus in der Zielwahl;
+   jetzt gilt es in der ganzen Zielleiste, solange die Wahl offen ist.

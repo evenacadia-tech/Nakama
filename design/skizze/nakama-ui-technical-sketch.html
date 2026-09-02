@@ -30,16 +30,28 @@
 
       <div class="nk-sources-layout">
         <section class="nk-source-column" aria-label="Sources">
-          <div class="nk-section-head"><span>SOURCES</span><span>6 / 16</span></div>
-          <button type="button" class="nk-source-row" data-source="Lead Vox"><span>LEAD VOX</span><span class="nk-fresh">FRESH</span><small><span>SIGNAL</span><span>1 FINDING</span></small></button>
-          <button type="button" class="nk-source-row" data-source="Drums"><span>DRUMS</span><span class="nk-fresh">FRESH</span><small><span>SIGNAL</span><span>0 FINDINGS</span></small></button>
-          <button type="button" class="nk-source-row is-selected" data-source="Bass" aria-pressed="true"><span>BASS</span><span class="nk-fresh">FRESH</span><small><span>SIGNAL</span><span>3 FINDINGS</span></small></button>
-          <button type="button" class="nk-source-row" data-source="Piano"><span>PIANO</span><span class="nk-fresh">FRESH</span><small><span>SIGNAL</span><span>2 FINDINGS</span></small></button>
-          <button type="button" class="nk-source-row" data-source="Synth Pad"><span>SYNTH PAD</span><span class="nk-stale">STALE</span><small><span>SIGNAL</span><span>1 FINDING</span></small></button>
-          <button type="button" class="nk-source-row" data-source="Room"><span>ROOM</span><span class="nk-partial">PARTIAL</span><small><span>LOW SIGNAL</span><span>1 FINDING</span></small></button>
-          <div class="nk-source-more">+ 10 CONNECTED · ON DEMAND</div>
+          <div class="nk-section-head"><span>SOURCES</span><span data-source-count>16</span></div>
+          <input type="search" class="nk-source-filter" data-source-filter placeholder="FILTER SOURCES" aria-label="Filter sources by name. Enter selects the first match, Escape clears." role="combobox" aria-expanded="true" aria-controls="nk-source-list" aria-autocomplete="list" autocomplete="off">
+          <div class="nk-source-list" id="nk-source-list" role="listbox" aria-label="Connected sources in mixer order" data-source-list>
+            <button type="button" class="nk-source-row" role="option" data-source="Lead Vox"><span>LEAD VOX</span><span class="nk-fresh">FRESH</span><small><span>SIGNAL</span><span>1 FINDING</span></small></button>
+            <button type="button" class="nk-source-row" role="option" data-source="Drums"><span>DRUMS</span><span class="nk-fresh">FRESH</span><small><span>SIGNAL</span><span>0 FINDINGS</span></small></button>
+            <button type="button" class="nk-source-row is-selected" role="option" data-source="Bass" aria-pressed="true"><span>BASS</span><span class="nk-fresh">FRESH</span><small><span>SIGNAL</span><span>3 FINDINGS</span></small></button>
+            <button type="button" class="nk-source-row" role="option" data-source="Piano"><span>PIANO</span><span class="nk-fresh">FRESH</span><small><span>SIGNAL</span><span>2 FINDINGS</span></small></button>
+            <button type="button" class="nk-source-row" role="option" data-source="Synth Pad"><span>SYNTH PAD</span><span class="nk-stale">STALE</span><small><span>SIGNAL</span><span>1 FINDING</span></small></button>
+            <button type="button" class="nk-source-row" role="option" data-source="Room"><span>ROOM</span><span class="nk-partial">PARTIAL</span><small><span>LOW SIGNAL</span><span>1 FINDING</span></small></button>
+            <button type="button" class="nk-source-row" role="option" data-source="Kick"><span>KICK</span><span class="nk-fresh">FRESH</span><small><span>SIGNAL</span><span>0 FINDINGS</span></small></button>
+            <button type="button" class="nk-source-row" role="option" data-source="Snare"><span>SNARE</span><span class="nk-fresh">FRESH</span><small><span>SIGNAL</span><span>1 FINDING</span></small></button>
+            <button type="button" class="nk-source-row" role="option" data-source="Hats"><span>HATS</span><span class="nk-fresh">FRESH</span><small><span>SIGNAL</span><span>0 FINDINGS</span></small></button>
+            <button type="button" class="nk-source-row" role="option" data-source="Guitar L"><span>GUITAR L</span><span class="nk-fresh">FRESH</span><small><span>SIGNAL</span><span>0 FINDINGS</span></small></button>
+            <button type="button" class="nk-source-row" role="option" data-source="Guitar R"><span>GUITAR R</span><span class="nk-stale">STALE</span><small><span>SIGNAL</span><span>0 FINDINGS</span></small></button>
+            <button type="button" class="nk-source-row" role="option" data-source="Keys"><span>KEYS</span><span class="nk-fresh">FRESH</span><small><span>SIGNAL</span><span>1 FINDING</span></small></button>
+            <button type="button" class="nk-source-row" role="option" data-source="Strings"><span>STRINGS</span><span class="nk-fresh">FRESH</span><small><span>LOW SIGNAL</span><span>0 FINDINGS</span></small></button>
+            <button type="button" class="nk-source-row" role="option" data-source="FX Return"><span>FX RETURN</span><span class="nk-partial">PARTIAL</span><small><span>LOW SIGNAL</span><span>0 FINDINGS</span></small></button>
+            <button type="button" class="nk-source-row" role="option" data-source="Vox Double"><span>VOX DOUBLE</span><span class="nk-fresh">FRESH</span><small><span>SIGNAL</span><span>0 FINDINGS</span></small></button>
+            <button type="button" class="nk-source-row" role="option" data-source="Perc"><span>PERC</span><span class="nk-fresh">FRESH</span><small><span>NO SIGNAL</span><span>0 FINDINGS</span></small></button>
+            <div class="nk-source-empty" data-source-empty hidden>NO SOURCE MATCHES</div>
+          </div>
         </section>
-
         <section class="nk-evidence-stage" aria-label="Evidence for selected source">
           <div class="nk-section-head"><span>TARGET · <b data-selected-source>BASS</b> <i>REFERENCE · <b data-reference-source>PIANO</b></i></span><span data-evidence-freshness>FRESH · 1.8 s · 92% SUPPORT</span></div>
           <svg class="nk-evidence-svg" viewBox="0 0 520 210" role="img" aria-label="Frequency evidence between Bass and Piano from 20 hertz to 20 kilohertz">
@@ -104,16 +116,33 @@
 
       <div class="nk-eq-page">
         <div class="nk-target-strip" aria-label="EQ targets">
-          <span class="nk-strip-label">TARGET</span>
-          <button type="button" class="nk-target nk-target-master" data-target="MASTER">MASTER</button>
-          <span class="nk-target-divider" aria-hidden="true"></span>
-          <button type="button" class="nk-target" data-target="KICK">KICK</button>
-          <button type="button" class="nk-target" data-target="VOCALS">VOCALS</button>
-          <button type="button" class="nk-target is-selected" data-target="BASS" aria-pressed="true">BASS</button>
-          <button type="button" class="nk-target" data-target="PIANO">PIANO</button>
-          <span class="nk-target-note">WHEEL: PROBES · MASTER: FIXED</span>
+          <div class="nk-target-group" data-target-group>
+            <span class="nk-strip-label">TARGET</span>
+            <button type="button" class="nk-target nk-target-master" data-target="MASTER">MASTER</button>
+            <span class="nk-target-divider" aria-hidden="true"></span>
+            <button type="button" class="nk-target" data-target="KICK">KICK</button>
+            <button type="button" class="nk-target" data-target="VOCALS">VOCALS</button>
+            <button type="button" class="nk-target is-selected" data-target="BASS" aria-pressed="true">BASS</button>
+            <button type="button" class="nk-target" data-target="PIANO">PIANO</button>
+            <span class="nk-target-note">WHEEL: PROBES · MASTER: FIXED</span>
+            <button type="button" class="nk-target-copy" data-copy-open aria-expanded="false" aria-controls="nk-copy-chooser" title="Copy this curve to another target">COPY →</button>
+          </div>
+          <div class="nk-copy-chooser" id="nk-copy-chooser" data-copy-chooser hidden aria-label="Copy curve to another target">
+            <span class="nk-strip-label">COPY <b data-copy-source>BASS</b> CURVE TO</span>
+            <span class="nk-copy-targets" data-copy-targets>
+              <button type="button" class="nk-target" data-copy-target="MASTER">MASTER</button>
+              <button type="button" class="nk-target" data-copy-target="KICK">KICK</button>
+              <button type="button" class="nk-target" data-copy-target="VOCALS">VOCALS</button>
+              <button type="button" class="nk-target" data-copy-target="BASS">BASS</button>
+              <button type="button" class="nk-target" data-copy-target="PIANO">PIANO</button>
+            </span>
+            <span class="nk-copy-confirm" data-copy-confirm hidden>
+              <span data-copy-confirm-text>REPLACES THE PIANO CURVE</span>
+              <button type="button" class="nk-target nk-target-confirm" data-copy-confirm-button>CONFIRM COPY</button>
+            </span>
+            <button type="button" class="nk-target" data-copy-cancel>CANCEL</button>
+          </div>
         </div>
-
         <div class="nk-eq-grid">
           <main class="nk-eq-main">
             <div class="nk-eq-context">
@@ -228,27 +257,56 @@
               <div class="nk-global-strip">
                 <button type="button" class="nk-global-toggle" aria-expanded="false" aria-controls="nk-global-details" data-global aria-label="Global sound state">GLOBAL <span aria-hidden="true">⌄</span></button>
                 <span class="nk-global-summary" data-global-summary aria-live="polite">MIX 92 % · AUTO</span>
-                <button type="button" class="nk-undo">UNDO · BASS</button>
+                <button type="button" class="nk-undo" data-undo>UNDO</button>
+                <button type="button" class="nk-undo nk-redo" data-redo disabled>REDO</button>
               </div>
               <div class="nk-transaction-rail" aria-label="Current draft transaction" data-transaction-rail>
                 <span class="nk-transaction-state"><b data-transaction-kind>DRAFT</b><span data-transaction-target>BASS · B3</span></span>
-                <button type="button" class="nk-action nk-action-hold" data-hold>AUDITION · HOLD</button>
+                <button type="button" class="nk-action nk-action-hold" data-hold>HOLD TO AUDITION</button>
                 <button type="button" class="nk-action nk-action-primary" data-apply>APPLY · 10 s</button>
                 <button type="button" class="nk-action nk-action-quiet" data-reject>REJECT</button>
                 <span class="nk-sr-only" aria-live="polite" data-live-status>Confirmed audio remains authoritative.</span>
               </div>
             </div>
             <div class="nk-global-details" id="nk-global-details" hidden data-global-details aria-label="Global sound state for Bass">
-              <label><span data-global-input-label>INPUT</span><input type="text" value="+0.0 dB" data-global-field="input" aria-label="Input trim"></label>
-              <label><span data-global-output-label>OUTPUT</span><input type="text" value="+0.0 dB" data-global-field="output" aria-label="Output trim"></label>
-              <button type="button" class="nk-global-switch" data-global-auto aria-pressed="true" title="Auto-Gain follows the curve; the output trim stays yours">AUTO · ON</button>
-              <label><span>WIDTH</span><input type="text" value="100 %" data-global-field="width" aria-label="Stereo width"></label>
-              <label><span>MONO BASS</span><input type="text" value="0 Hz" data-global-field="mono" aria-label="Mono bass below"></label>
-              <button type="button" class="nk-global-switch" data-global-bypass aria-pressed="false">BYPASS · OFF</button>
-              <label><span>MIX</span><input type="text" value="92 %" data-global-field="mix" aria-label="Mix for this target"></label>
-              <button type="button" class="nk-global-switch" data-global-ab aria-pressed="false" title="Compare curve A and B">A/B · A</button>
-              <button type="button" class="nk-global-switch" data-global-preset disabled title="Preset list — disclosure not yet decided (next block)">PRESET · USER 04</button>
-              <button type="button" class="nk-global-switch" data-global-history disabled title="Revision history — disclosure not yet decided (next block)">HISTORY · REV 128</button>
+              <div class="nk-global-grid" data-global-grid>
+                <label><span data-global-input-label>INPUT</span><input type="text" value="+0.0 dB" data-global-field="input" aria-label="Input trim"></label>
+                <label><span data-global-output-label>OUTPUT</span><input type="text" value="+0.0 dB" data-global-field="output" aria-label="Output trim"></label>
+                <button type="button" class="nk-global-switch" data-global-auto aria-pressed="true" title="Auto-Gain follows the curve; the output trim stays yours">AUTO · ON</button>
+                <label><span>WIDTH</span><input type="text" value="100 %" data-global-field="width" aria-label="Stereo width"></label>
+                <label><span>MONO BASS</span><input type="text" value="0 Hz" data-global-field="mono" aria-label="Mono bass below"></label>
+                <button type="button" class="nk-global-switch" data-global-bypass aria-pressed="false">BYPASS · OFF</button>
+                <label><span>MIX</span><input type="text" value="92 %" data-global-field="mix" aria-label="Mix for this target"></label>
+                <button type="button" class="nk-global-switch" data-global-ab aria-pressed="false" title="Compare curve A and B">A/B · A</button>
+                <div class="nk-preset-cell"><span>PRESET</span><div class="nk-preset-row"><button type="button" class="nk-preset-step" data-preset-prev aria-label="Previous preset">‹</button><button type="button" class="nk-preset-name" data-preset-open aria-expanded="false" aria-controls="nk-preset-list" title="Open the preset list"><span data-preset-name>USER 04</span></button><button type="button" class="nk-preset-step" data-preset-next aria-label="Next preset">›</button></div></div>
+                <div class="nk-global-readout"><span>REVISION</span><span class="nk-global-readout-value" data-global-rev>REV 128 · CONFIRMED</span></div>
+              </div>
+              <div class="nk-preset-list" id="nk-preset-list" data-preset-list hidden aria-label="Presets">
+                <div class="nk-preset-head">
+                  <input type="search" class="nk-preset-filter" data-preset-filter placeholder="FILTER PRESETS" aria-label="Filter presets. Enter loads the first match, Escape returns to the global section." role="combobox" aria-expanded="true" aria-controls="nk-preset-options" aria-autocomplete="list" autocomplete="off">
+                  <button type="button" class="nk-global-switch" data-preset-save>SAVE</button>
+                  <button type="button" class="nk-global-switch" data-preset-save-as>SAVE AS</button>
+                  <button type="button" class="nk-band-close nk-preset-close" data-preset-close aria-label="Close preset list">×</button>
+                </div>
+                <div class="nk-preset-options" id="nk-preset-options" role="listbox" aria-label="Presets, factory and user" data-preset-options>
+                  <span class="nk-preset-group">FACTORY</span>
+                  <button type="button" role="option" data-preset-load="Flat" data-preset-kind="factory">FLAT</button>
+                  <button type="button" role="option" data-preset-load="Low-mid cleanup" data-preset-kind="factory">LOW-MID CLEANUP</button>
+                  <button type="button" role="option" data-preset-load="Vocal presence" data-preset-kind="factory">VOCAL PRESENCE</button>
+                  <span class="nk-preset-group">USER</span>
+                  <button type="button" role="option" data-preset-load="User 01" data-preset-kind="user">USER 01</button>
+                  <button type="button" role="option" data-preset-load="User 02" data-preset-kind="user">USER 02</button>
+                  <button type="button" role="option" data-preset-load="User 03" data-preset-kind="user">USER 03</button>
+                  <button type="button" role="option" data-preset-load="User 04" data-preset-kind="user" aria-selected="true">USER 04</button>
+                </div>
+                <div class="nk-preset-confirm" data-preset-confirm hidden>
+                  <span data-preset-confirm-text>OVERWRITE USER 04 WITH THE CURRENT STATE?</span>
+                  <input type="text" class="nk-preset-newname" data-preset-newname value="USER 05" aria-label="Name for the new preset" hidden>
+                  <button type="button" class="nk-global-switch" data-preset-confirm-button>OVERWRITE</button>
+                  <button type="button" class="nk-global-switch" data-preset-confirm-cancel>CANCEL</button>
+                </div>
+              </div>
+              <div class="nk-global-note" data-global-note aria-live="polite" hidden></div>
             </div>
           </main>
 
@@ -260,21 +318,22 @@
       <div class="nk-probe-row" aria-label="Probeeq identity and local state">
         <span class="nk-probe-title">PROBEEQ</span>
         <strong data-probe-bus>BASS BUS</strong>
-        <span class="nk-probe-link"><i class="nk-status-dot" aria-hidden="true"></i><span data-probe-link>LINKED</span></span>
+        <span class="nk-probe-link" data-probe-link-wrap><i class="nk-status-dot" aria-hidden="true"></i><span data-probe-link>LINKED</span></span>
         <button type="button" class="nk-probe-eq" data-probe-eq aria-pressed="true" aria-label="EQ on this bus. On."><i class="nk-eq-dot" aria-hidden="true"></i>EQ · ON</button>
         <button type="button" class="nk-probe-bypass" data-probe-bypass aria-pressed="false">BYPASS · OFF</button>
         <label class="nk-probe-mix">MIX <input type="range" min="0" max="100" value="92" data-probe-mix aria-label="Probeeq mix"><output data-probe-mix-out>92 %</output></label>
       </div>
-      <div class="nk-probe-row nk-probe-row-2" data-probe-row2 aria-label="Current EQ change on this bus">
+      <div class="nk-probe-row nk-probe-row-2" data-probe-row2 aria-live="polite" aria-label="Current EQ change or measurement truth on this bus">
         <span class="nk-probe-authority" data-probe-authority>REMOTE PROPOSAL READY</span>
-        <span class="nk-probe-change"><strong data-probe-band>B3</strong><strong data-probe-freq>240 Hz</strong><strong data-probe-gain>−1.5 dB</strong><strong data-probe-q>Q 1.20</strong></span>
+        <span class="nk-probe-change" data-probe-change><strong data-probe-band>B3</strong><strong data-probe-freq>240 Hz</strong><strong data-probe-gain>−1.5 dB</strong><strong data-probe-q>Q 1.20</strong></span>
+        <span class="nk-probe-passive" data-probe-passive hidden>PASSIVE MEASUREMENT · SIGNAL · FRESH 1.2 s</span>
         <span class="nk-probe-mode" data-probe-mode>MODE · POST</span>
       </div>
     </div>
   </section>
   </div>
 
-  <div class="nk-sketch-legend"><span>TARGET BEHAVIOR · NOT CURRENT BUILD · VISUAL STYLE OPEN</span><span>GEN HEADER · OVERVIEW / EQ = PRODUCT SWITCH BOTH WAYS · TOP BAR = INSPECTION TOOL</span><span>FINDING · 3 LINES · CERTAINTY = STATE · EVIDENCE = GRAPH ZONE · ALTERNATIVES = LIST</span><span>GEN EQ · DOUBLE-CLICK POINT / EMPTY SPACE → EDIT / CREATE</span><span>CLICK BAND → OPEN PANEL FOLLOWS · OFF ≠ REMOVE</span><span>DYN · OUTER CONTOUR = SET VALUE · INNER POINT + CURVE = LIVE EXCURSION TARGET</span><span>GLOBAL ROW · NAMES ONLY ACTIVE DEVIATIONS · PRESET / HISTORY DISCLOSURE OPEN</span><span>GEN · ONE LOGICAL SIZE 950×538 · PROBEEQ · FLAT TILE, ROW 2 ONLY WITH EQ ON</span></div>
+  <div class="nk-sketch-legend"><span>TARGET BEHAVIOR · NOT CURRENT BUILD · VISUAL STYLE OPEN</span><span>GEN HEADER · OVERVIEW / EQ = PRODUCT SWITCH BOTH WAYS · TOP BAR = INSPECTION TOOL</span><span>FINDING · 3 LINES · CERTAINTY = STATE · EVIDENCE = GRAPH ZONE · ALTERNATIVES = LIST</span><span>GEN EQ · DOUBLE-CLICK POINT / EMPTY SPACE → EDIT / CREATE</span><span>CLICK BAND → OPEN PANEL FOLLOWS · OFF ≠ REMOVE</span><span>DYN · OUTER CONTOUR = SET VALUE · INNER POINT + CURVE = LIVE EXCURSION TARGET</span><span>GLOBAL ROW · NAMES ONLY ACTIVE DEVIATIONS · PRESET LIST IN SAME BODY · UNDO / REDO, NO HISTORY LIST</span><span>SOURCES · MIXER ORDER · FILTER + SCROLL · TARGETS · COPY → NEEDS CONFIRM</span><span>KEYS · TABS ← → ENTER · ESC CLOSES TOP PANEL TO ITS TRIGGER · WHEEL = HOVERED VALUE / Q / PROBE · DELETE = REMOVE BAND</span><span>GEN · ONE LOGICAL SIZE 950×538 · PROBEEQ · FLAT TILE, FIXED HEIGHT · ROW 2 = EQ CHANGE OR MEASUREMENT TRUTH</span></div>
 </div>
 
 <style>
@@ -329,8 +388,7 @@
     font: 500 11px/1.2 "Cascadia Mono", monospace;
   }
   #nakama-tech-sketch .nk-inspector-button[aria-pressed="true"] { background: var(--nk-text); color: var(--nk-shell); border-color: var(--nk-text); }
-  #nakama-tech-sketch[data-view="probe"] { --nk-stage-width: 580px; --nk-stage-height: 92px; }
-  #nakama-tech-sketch[data-view="probe"][data-probe-eq-state="off"] { --nk-stage-height: 52px; }
+  #nakama-tech-sketch[data-view="probe"] { --nk-stage-width: 600px; --nk-stage-height: 92px; }
 
   #nakama-tech-sketch .nk-stage-viewport {
     position: relative;
@@ -417,11 +475,19 @@
     border-radius: 8px;
     background: var(--nk-surface);
   }
-  #nakama-tech-sketch .nk-source-column { grid-column: 1; grid-row: 1 / 3; padding: 10px 8px 8px; }
+  #nakama-tech-sketch .nk-source-column { grid-column: 1; grid-row: 1 / 3; padding: 10px 8px 8px; display: grid; grid-template-rows: 18px 28px minmax(0, 1fr); gap: 6px; }
+  #nakama-tech-sketch .nk-source-filter,
+  #nakama-tech-sketch .nk-preset-filter { width: 100%; min-width: 0; height: 28px; padding: 3px 7px; border: 1px solid var(--nk-line); border-radius: 4px; background: var(--nk-surface); font: 500 11px/1 "Cascadia Mono", monospace; letter-spacing: .04em; }
+  #nakama-tech-sketch .nk-source-filter::placeholder,
+  #nakama-tech-sketch .nk-preset-filter::placeholder { color: var(--nk-muted); }
+  #nakama-tech-sketch .nk-source-list { min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; }
+  #nakama-tech-sketch .nk-source-row[hidden] { display: none; }
+  #nakama-tech-sketch .nk-source-empty { margin: 8px 3px 0; color: var(--nk-muted); font: 500 11px/1.2 "Cascadia Mono", monospace; }
   #nakama-tech-sketch .nk-source-row {
     width: 100%;
     min-height: 42px;
-    margin-top: 5px;
+    margin-top: 0;
+    margin-bottom: 5px;
     padding: 6px 7px;
     display: grid;
     grid-template-columns: 1fr auto;
@@ -514,7 +580,19 @@
   #nakama-tech-sketch button:disabled { cursor: not-allowed; opacity: .45; }
 
   #nakama-tech-sketch .nk-eq-page { height: calc(100% - 52px); display: grid; grid-template-rows: 38px minmax(0, 1fr); padding: 0 10px 10px; }
-  #nakama-tech-sketch .nk-target-strip { display: flex; align-items: center; gap: 5px; min-width: 0; }
+  #nakama-tech-sketch .nk-target-strip { min-width: 0; }
+  #nakama-tech-sketch .nk-target-group,
+  #nakama-tech-sketch .nk-copy-chooser { display: flex; align-items: center; gap: 5px; min-width: 0; height: 38px; }
+  #nakama-tech-sketch .nk-target-group[hidden],
+  #nakama-tech-sketch .nk-copy-chooser[hidden] { display: none; }
+  #nakama-tech-sketch .nk-target-copy { min-height: 26px; padding: 4px 8px; border: 1px solid var(--nk-line); border-radius: 5px; background: var(--nk-surface-2); cursor: pointer; font: 500 11px/1.2 "Cascadia Mono", monospace; white-space: nowrap; }
+  #nakama-tech-sketch .nk-copy-targets,
+  #nakama-tech-sketch .nk-copy-confirm { display: flex; align-items: center; gap: 5px; }
+  #nakama-tech-sketch .nk-copy-targets[hidden],
+  #nakama-tech-sketch .nk-copy-confirm[hidden] { display: none; }
+  #nakama-tech-sketch .nk-copy-confirm > span { color: var(--nk-edit); font: 500 11px/1 "Cascadia Mono", monospace; white-space: nowrap; }
+  #nakama-tech-sketch .nk-target-confirm { border-color: var(--nk-edit); background: var(--nk-edit-soft); }
+  #nakama-tech-sketch .nk-copy-chooser [data-copy-cancel] { margin-left: auto; border-color: var(--nk-line); }
   #nakama-tech-sketch .nk-strip-label,
   #nakama-tech-sketch .nk-target-note { color: var(--nk-muted); font: 500 11px/1 "Cascadia Mono", monospace; white-space: nowrap; }
   #nakama-tech-sketch .nk-target-note { margin-left: auto; }
@@ -619,21 +697,48 @@
   #nakama-tech-sketch .nk-global-toggle[aria-expanded="true"] { border-color: var(--nk-edit); background: var(--nk-edit-soft); }
   #nakama-tech-sketch .nk-global-summary { max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--nk-text); }
   #nakama-tech-sketch .nk-global-summary:empty { display: none; }
-  #nakama-tech-sketch .nk-transaction-rail { min-width: 0; display: grid; grid-template-columns: minmax(92px, 1fr) 112px 100px 62px; align-items: center; gap: 5px; padding-left: 8px; border-left: 1px solid var(--nk-line); }
+  #nakama-tech-sketch .nk-transaction-rail { min-width: 0; display: grid; grid-template-columns: minmax(84px, 1fr) 128px 100px 62px; align-items: center; gap: 5px; padding-left: 8px; border-left: 1px solid var(--nk-line); }
+  #nakama-tech-sketch .nk-undo { width: 58px; padding: 4px 6px; white-space: nowrap; }
   #nakama-tech-sketch .nk-transaction-state { min-width: 0; display: flex; flex-direction: column; gap: 2px; overflow: hidden; color: var(--nk-muted); font: 500 10px/1 "Cascadia Mono", monospace; }
   #nakama-tech-sketch .nk-transaction-state b { color: var(--nk-edit); font-weight: 500; }
   #nakama-tech-sketch .nk-transaction-state span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   #nakama-tech-sketch .nk-transaction-rail .nk-action { min-height: 30px; padding: 4px 7px; font-size: 10px; white-space: nowrap; }
   #nakama-tech-sketch .nk-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
   #nakama-tech-sketch .nk-global-details { position: absolute; left: 10px; right: 10px; bottom: 39px; z-index: 4; grid-template-columns: repeat(5,1fr); gap: 7px; padding: 8px; border: 1px solid var(--nk-line-strong); border-radius: 7px; background: var(--nk-surface); box-shadow: 0 12px 30px light-dark(rgba(30,35,32,.15), rgba(0,0,0,.45)); }
-  #nakama-tech-sketch .nk-global-details:not([hidden]) { display: grid; }
+  #nakama-tech-sketch .nk-global-details:not([hidden]) { display: block; }
+  #nakama-tech-sketch .nk-global-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; }
+  #nakama-tech-sketch .nk-global-grid[hidden] { display: none; }
+  #nakama-tech-sketch .nk-preset-cell,
+  #nakama-tech-sketch .nk-global-readout { display: grid; grid-template-rows: 11px 1fr; color: var(--nk-muted); font: 500 11px/1 "Cascadia Mono", monospace; }
+  #nakama-tech-sketch .nk-preset-row { display: grid; grid-template-columns: 22px minmax(0, 1fr) 22px; gap: 3px; }
+  #nakama-tech-sketch .nk-preset-step,
+  #nakama-tech-sketch .nk-preset-name { min-height: 27px; padding: 3px 4px; border: 1px solid var(--nk-line); border-radius: 4px; background: var(--nk-surface-2); cursor: pointer; font: 500 11px/1 "Cascadia Mono", monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--nk-text); }
+  #nakama-tech-sketch .nk-preset-name.is-modified { color: var(--nk-muted); }
+  #nakama-tech-sketch .nk-preset-name.is-modified span::after { content: " *"; color: var(--nk-edit); }
+  #nakama-tech-sketch .nk-preset-name[aria-expanded="true"] { border-color: var(--nk-edit); background: var(--nk-edit-soft); }
+  #nakama-tech-sketch .nk-global-readout-value { display: grid; align-items: center; min-height: 27px; padding: 3px 5px; border: 1px dashed var(--nk-line); border-radius: 4px; color: var(--nk-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #nakama-tech-sketch .nk-preset-list { display: grid; gap: 6px; }
+  #nakama-tech-sketch .nk-preset-list[hidden] { display: none; }
+  #nakama-tech-sketch .nk-preset-head { display: grid; grid-template-columns: minmax(0, 1fr) 62px 76px 26px; gap: 5px; align-items: center; }
+  #nakama-tech-sketch .nk-preset-close { min-height: 27px; }
+  #nakama-tech-sketch .nk-preset-options { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+  #nakama-tech-sketch .nk-preset-group { width: 100%; margin-top: 2px; color: var(--nk-muted); font: 500 10px/1 "Cascadia Mono", monospace; letter-spacing: .06em; }
+  #nakama-tech-sketch .nk-preset-options button { min-height: 26px; padding: 3px 8px; border: 1px solid var(--nk-line); border-radius: 4px; background: var(--nk-surface-2); cursor: pointer; font: 500 11px/1 "Cascadia Mono", monospace; white-space: nowrap; }
+  #nakama-tech-sketch .nk-preset-options button[hidden] { display: none; }
+  #nakama-tech-sketch .nk-preset-options button[aria-selected="true"] { border-color: var(--nk-edit); background: var(--nk-edit-soft); }
+  #nakama-tech-sketch .nk-preset-confirm { display: flex; align-items: center; gap: 6px; padding-top: 5px; border-top: 1px solid var(--nk-line); color: var(--nk-edit); font: 500 11px/1 "Cascadia Mono", monospace; }
+  #nakama-tech-sketch .nk-preset-confirm[hidden] { display: none; }
+  #nakama-tech-sketch .nk-preset-confirm > span { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #nakama-tech-sketch .nk-preset-newname { width: 140px; height: 27px; padding: 3px 5px; border: 1px solid var(--nk-line); border-radius: 4px; background: var(--nk-surface); font: 500 11px/1 "Cascadia Mono", monospace; }
+  #nakama-tech-sketch .nk-preset-newname[hidden] { display: none; }
+  #nakama-tech-sketch .nk-global-note { margin-top: 6px; color: var(--nk-danger); font: 500 10px/1.2 "Cascadia Mono", monospace; }
+  #nakama-tech-sketch .nk-global-note[hidden] { display: none; }
   #nakama-tech-sketch .nk-global-details label > span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
   #nakama-tech-sketch .nk-global-switch { align-self: end; min-height: 27px; padding: 3px 5px; border: 1px solid var(--nk-line); border-radius: 4px; background: var(--nk-surface-2); cursor: pointer; font: 500 11px/1 "Cascadia Mono", monospace; white-space: nowrap; }
   #nakama-tech-sketch .nk-global-switch[aria-pressed="true"] { border-color: var(--nk-edit); background: var(--nk-edit-soft); }
 
   #nakama-tech-sketch .nk-probe-page { height: 100%; display: grid; grid-template-rows: 36px 36px; gap: 4px; padding: 8px 10px; background: var(--nk-shell); }
-  #nakama-tech-sketch[data-probe-eq-state="off"] .nk-probe-page { grid-template-rows: 36px; }
-  #nakama-tech-sketch .nk-probe-row { min-width: 0; display: flex; align-items: center; gap: 8px; color: var(--nk-muted); font: 500 11px/1 "Cascadia Mono", monospace; white-space: nowrap; }
+  #nakama-tech-sketch .nk-probe-row { min-width: 0; display: flex; align-items: center; gap: 7px; color: var(--nk-muted); font: 500 11px/1 "Cascadia Mono", monospace; white-space: nowrap; }
   #nakama-tech-sketch .nk-probe-row[hidden] { display: none; }
   #nakama-tech-sketch .nk-probe-title { color: var(--nk-text); font-size: 13px; letter-spacing: .08em; }
   #nakama-tech-sketch .nk-probe-row strong { color: var(--nk-text); font-weight: 500; }
@@ -648,9 +753,13 @@
   #nakama-tech-sketch .nk-eq-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--nk-danger); }
   #nakama-tech-sketch .nk-probe-eq[aria-pressed="true"] .nk-eq-dot { background: var(--nk-ok); }
   #nakama-tech-sketch .nk-probe-mix { display: flex; align-items: center; gap: 6px; }
-  #nakama-tech-sketch .nk-probe-mix input { width: 84px; accent-color: var(--nk-edit); }
+  #nakama-tech-sketch .nk-probe-mix input { width: 76px; accent-color: var(--nk-edit); }
   #nakama-tech-sketch .nk-probe-mix output { width: 40px; color: var(--nk-text); }
   #nakama-tech-sketch .nk-probe-authority { color: var(--nk-edit); }
+  #nakama-tech-sketch .nk-probe-passive { color: var(--nk-muted); }
+  #nakama-tech-sketch .nk-probe-change[hidden],
+  #nakama-tech-sketch .nk-probe-passive[hidden] { display: none; }
+  #nakama-tech-sketch[data-state="offline"] .nk-probe-authority { color: var(--nk-text); }
   #nakama-tech-sketch .nk-probe-change { display: flex; gap: 12px; }
   #nakama-tech-sketch .nk-probe-mode { margin-left: auto; }
   #nakama-tech-sketch[data-state="offline"] .nk-probe-link { color: var(--nk-danger); }
@@ -697,6 +806,18 @@
     let probeMix = 92;
     const globals = { input: 0, output: 0, auto: true, width: 100, mono: 0, bypass: false, mix: 92, ab: 'A' };
     const autoGainDemoDb = -0.8;
+    const globalDefaults = { input: 0, output: 0, width: 100, mono: 0, mix: 100 };
+    const presetNames = { 'Flat': 'FLAT', 'Low-mid cleanup': 'LOW-MID CLEANUP', 'Vocal presence': 'VOCAL PRESENCE', 'User 01': 'USER 01', 'User 02': 'USER 02', 'User 03': 'USER 03', 'User 04': 'USER 04' };
+    let presetOrder = ['Flat', 'Low-mid cleanup', 'Vocal presence', 'User 01', 'User 02', 'User 03', 'User 04'];
+    let currentPreset = 'User 04';
+    let presetSnapshot = null;
+    let presetListOpen = false;
+    let presetConfirm = null;
+    let copyChooserOpen = false;
+    let copyTarget = null;
+    let globalNote = '';
+    let redoAction = null;
+    let sourceFilter = '';
     let state = 'proposal';
     let selectedTarget = 'BASS';
     let selectedSource = 'Bass';
@@ -712,6 +833,7 @@
     let bandNotice = '';
     let numericEdit = null;
     let lastRemovedBand = null;
+    let lastCopy = null;
 
     const bandValues = {
       1: { enabled: true, mode: 'stereo', type: 'low_cut', freq: '78 Hz', gain: '+1.0 dB', q: '0.72', dyn: false, dynRange: '+0.0 dB', threshold: '−20.0 dBFS', attack: '10 ms', hold: '0 ms', release: '100 ms', x: 116, y: 107, occupied: true },
@@ -789,8 +911,8 @@
     const qa = (selector) => Array.from(root.querySelectorAll(selector));
 
     const fitStagePreview = () => {
-      const logicalWidth = view === 'probe' ? 580 : 950;
-      const logicalHeight = view === 'probe' ? (probeEq ? 92 : 52) : 538;
+      const logicalWidth = view === 'probe' ? 600 : 950;
+      const logicalHeight = view === 'probe' ? 92 : 538;
       const availableWidth = Math.max(1, root.clientWidth);
       const scale = Math.min(1, availableWidth / logicalWidth);
       root.style.setProperty('--nk-preview-scale', String(scale));
@@ -822,6 +944,12 @@
     };
 
     const formatDb = (value) => `${value < 0 ? '−' : '+'}${Math.abs(value).toFixed(1)} dB`;
+    const soundSnapshot = () => JSON.stringify({ bandValues, globals: { ...globals, mix: globals.mix } });
+    const defaultEvidence = (name) => ({
+      reference: 'Master', freshness: 'FRESH · 2.0 s · NO FINDING', state: 'NO FINDING', canDraft: false,
+      cause: `No finding for ${name} yet.`, test: 'Keep measuring · no draft', listen: 'Nothing to test yet.'
+    });
+    const evidenceFor = (name) => sourceEvidence[name] || defaultEvidence(name);
 
     const stateText = {
       confirmed: 'Confirmed audio is authoritative.',
@@ -910,9 +1038,21 @@
       const proposal = state === 'proposal';
       const confirmed = state === 'confirmed';
       const liveText = holding ? 'Audition active; release returns to confirmed.' : stateText[state];
-      const sourceData = sourceEvidence[selectedSource];
+      const sourceData = evidenceFor(selectedSource);
       const referenceSource = sourceData.reference;
 
+      const filterText = sourceFilter.trim().toLowerCase();
+      let visibleSources = 0;
+      qa('[data-source]').forEach((row) => {
+        const match = !filterText || row.dataset.source.toLowerCase().includes(filterText);
+        row.hidden = !match;
+        if (match) visibleSources += 1;
+        row.setAttribute('aria-selected', String(row.dataset.source === selectedSource));
+      });
+      const sourceCount = q('[data-source-count]');
+      if (sourceCount) sourceCount.textContent = filterText ? `${visibleSources} MATCH · ${qa('[data-source]').length}` : String(qa('[data-source]').length);
+      const sourceEmpty = q('[data-source-empty]');
+      if (sourceEmpty) sourceEmpty.hidden = visibleSources > 0;
       qa('[data-selected-source]').forEach((el) => { el.textContent = selectedSource.toUpperCase(); });
       qa('[data-reference-source], [data-graph-reference]').forEach((el) => { el.textContent = referenceSource.toUpperCase(); });
       qa('[data-graph-target]').forEach((el) => { el.textContent = selectedSource.toUpperCase(); });
@@ -1109,13 +1249,70 @@
       if (probeGain) probeGain.textContent = band.gain;
       if (probeQ) probeQ.textContent = `Q ${band.q}`;
 
-      const undo = q('.nk-undo');
+      const undo = q('[data-undo]');
       if (undo) {
-        undo.textContent = lastRemovedBand ? `UNDO · REMOVE B${lastRemovedBand.id}` : 'UNDO · BASS';
-        undo.setAttribute('aria-label', lastRemovedBand ? `Undo removal of Band ${lastRemovedBand.id}` : 'Undo last confirmed change for Bass');
+        undo.setAttribute('aria-label', lastRemovedBand ? `Undo removal of Band ${lastRemovedBand.id}` : lastCopy ? `Undo copy to ${lastCopy.target}` : 'Undo last change for Bass');
+        undo.setAttribute('title', lastRemovedBand ? `Undo · remove B${lastRemovedBand.id}` : lastCopy ? `Undo · copy to ${lastCopy.target}` : 'Undo');
       }
+      const redo = q('[data-redo]');
+      if (redo) {
+        redo.disabled = offline || !redoAction;
+        redo.setAttribute('title', redoAction ? `Redo · ${redoAction.label}` : 'Nothing to redo');
+      }
+      const presetDirty = presetSnapshot !== null && soundSnapshot() !== presetSnapshot;
+      const presetName = q('[data-preset-name]');
+      const presetOpen = q('[data-preset-open]');
+      if (presetName) presetName.textContent = presetNames[currentPreset] || currentPreset.toUpperCase();
+      if (presetOpen) {
+        presetOpen.classList.toggle('is-modified', presetDirty);
+        presetOpen.setAttribute('aria-expanded', String(presetListOpen));
+        presetOpen.setAttribute('aria-label', `Preset ${presetNames[currentPreset] || currentPreset}${presetDirty ? ', modified' : ''}. Open the preset list.`);
+      }
+      const globalGrid = q('[data-global-grid]');
+      const presetList = q('[data-preset-list]');
+      if (globalGrid) globalGrid.hidden = presetListOpen;
+      if (presetList) presetList.hidden = !presetListOpen;
+      const presetFilterText = (q('[data-preset-filter]')?.value || '').trim().toLowerCase();
+      qa('[data-preset-load]').forEach((option) => {
+        option.hidden = Boolean(presetFilterText) && !option.dataset.presetLoad.toLowerCase().includes(presetFilterText);
+        option.setAttribute('aria-selected', String(option.dataset.presetLoad === currentPreset));
+      });
+      const presetSave = q('[data-preset-save]');
+      if (presetSave) {
+        const factory = qa('[data-preset-load]').find((o) => o.dataset.presetLoad === currentPreset)?.dataset.presetKind === 'factory';
+        presetSave.disabled = offline || factory || !presetDirty;
+        presetSave.setAttribute('title', factory ? 'Factory presets cannot be overwritten' : presetDirty ? `Overwrite ${presetNames[currentPreset] || currentPreset}` : 'Nothing changed since load');
+      }
+      const presetConfirmBox = q('[data-preset-confirm]');
+      const presetConfirmText = q('[data-preset-confirm-text]');
+      const presetNewName = q('[data-preset-newname]');
+      const presetConfirmButton = q('[data-preset-confirm-button]');
+      if (presetConfirmBox) presetConfirmBox.hidden = !presetConfirm;
+      if (presetConfirm && presetConfirmText && presetNewName && presetConfirmButton) {
+        presetConfirmText.textContent = presetConfirm === 'overwrite' ? `OVERWRITE ${presetNames[currentPreset] || currentPreset} WITH THE CURRENT STATE?` : 'SAVE THE CURRENT STATE AS';
+        presetNewName.hidden = presetConfirm !== 'saveas';
+        presetConfirmButton.textContent = presetConfirm === 'overwrite' ? 'OVERWRITE' : 'SAVE';
+      }
+      const rev = q('[data-global-rev]');
+      if (rev) rev.textContent = offline ? 'REV 128 · LOCAL' : candidate ? 'REV 128 · CANDIDATE' : proposal ? 'REV 128 · DRAFT OPEN' : 'REV 128 · CONFIRMED';
+      const note = q('[data-global-note]');
+      if (note) { note.hidden = !globalNote; note.textContent = globalNote; }
+      const copyOpen = q('[data-copy-open]');
+      const targetGroup = q('[data-target-group]');
+      const copyChooser = q('[data-copy-chooser]');
+      if (copyOpen) { copyOpen.setAttribute('aria-expanded', String(copyChooserOpen)); copyOpen.disabled = offline; }
+      if (targetGroup) targetGroup.hidden = copyChooserOpen;
+      if (copyChooser) copyChooser.hidden = !copyChooserOpen;
+      qa('[data-copy-source]').forEach((el) => { el.textContent = selectedTarget; });
+      qa('[data-copy-target]').forEach((button) => { button.hidden = button.dataset.copyTarget === selectedTarget; button.setAttribute('aria-pressed', String(button.dataset.copyTarget === copyTarget)); });
+      const copyTargets = q('[data-copy-targets]');
+      const copyConfirm = q('[data-copy-confirm]');
+      const copyConfirmText = q('[data-copy-confirm-text]');
+      if (copyTargets) copyTargets.hidden = false;
+      if (copyConfirm) copyConfirm.hidden = !copyTarget;
+      if (copyConfirmText && copyTarget) copyConfirmText.textContent = `REPLACES THE ${copyTarget} CURVE`;
 
-      qa('.nk-band-panel input, [data-band-enabled], [data-band-type], [data-filter-type], [data-band-mode], [data-channel-mode], [data-band-remove], [data-global], .nk-global-details input, [data-global-auto], [data-global-bypass], [data-global-ab], .nk-undo').forEach((control) => {
+      qa('.nk-band-panel input, [data-band-enabled], [data-band-type], [data-filter-type], [data-band-mode], [data-channel-mode], [data-band-remove], [data-global], .nk-global-grid input, [data-global-auto], [data-global-bypass], [data-global-ab], [data-preset-open], [data-preset-prev], [data-preset-next], [data-preset-load], [data-preset-save-as], [data-undo]').forEach((control) => {
         control.disabled = offline;
       });
       if (bandDyn) bandDyn.disabled = offline;
@@ -1126,7 +1323,7 @@
       qa('[data-hold]').forEach((button) => {
         const belongsToSources = Boolean(button.closest('[data-page="sources"]'));
         button.disabled = offline || candidate || confirmed || (belongsToSources && !sourceData.canDraft);
-        button.textContent = holding ? (belongsToSources ? 'AUDITION · RELEASE TO RETURN' : 'AUDITION · RELEASE') : (belongsToSources ? 'HOLD TO AUDITION' : 'AUDITION · HOLD');
+        button.textContent = holding ? 'RELEASE TO RETURN' : 'HOLD TO AUDITION';
       });
       qa('[data-send-draft]').forEach((button) => {
         button.disabled = offline || confirmed || !sourceData.canDraft;
@@ -1169,9 +1366,14 @@
       const probeLink = q('[data-probe-link]');
       const probeAuthority = q('[data-probe-authority]');
       if (probeLink) probeLink.textContent = offline ? 'BROKER OFFLINE' : 'LINKED';
-      if (probeAuthority) probeAuthority.textContent = offline ? 'LOCAL CONFIRMED · REV 128' : candidate ? `REMOTE CANDIDATE · ${candidateRemaining.toFixed(1)} s` : proposal ? 'REMOTE PROPOSAL READY' : 'CONFIRMED · REV 128';
-      const probeRow2 = q('[data-probe-row2]');
-      if (probeRow2) probeRow2.hidden = !probeEq;
+      if (probeAuthority) probeAuthority.textContent = offline ? 'LOCAL CONFIRMED · REV 128' : !probeEq ? 'EQ OFF' : candidate ? `REMOTE CANDIDATE · ${candidateRemaining.toFixed(1)} s` : proposal ? 'REMOTE PROPOSAL READY' : 'CONFIRMED · REV 128';
+      const probeChange = q('[data-probe-change]');
+      const probePassive = q('[data-probe-passive]');
+      if (probeChange) probeChange.hidden = !probeEq || offline;
+      if (probePassive) {
+        probePassive.hidden = probeEq && !offline;
+        probePassive.textContent = offline ? '· REMOTE LOCKED · EQ, BYPASS, MIX STAY LOCAL' : '· PASSIVE MEASUREMENT · SIGNAL · FRESH 1.2 s';
+      }
       const probeEqButton = q('[data-probe-eq]');
       if (probeEqButton) {
         probeEqButton.setAttribute('aria-pressed', String(probeEq));
@@ -1183,6 +1385,7 @@
         probeBypassButton.textContent = probeBypass ? 'BYPASS · ON' : 'BYPASS · OFF';
         probeBypassButton.setAttribute('aria-pressed', String(probeBypass));
         probeBypassButton.disabled = !probeEq;
+        probeBypassButton.setAttribute('title', probeEq ? 'Local bypass stays available, also without the broker' : 'Enable EQ first');
       }
       const probeMixInput = q('[data-probe-mix]');
       const probeMixOut = q('[data-probe-mix-out]');
@@ -1196,7 +1399,42 @@
       render();
       const twin = qa('[data-page-switch]').find((peer) => peer.dataset.pageSwitch === view && peer.closest('[data-page]')?.dataset.page === view);
       twin?.focus();
+      if (view === 'sources') q('[data-source].is-selected')?.scrollIntoView({ block: 'nearest' });
     }));
+    qa('[data-page-switch]').forEach((button) => button.addEventListener('keydown', (event) => {
+      const tabs = Array.from(button.parentElement.querySelectorAll('[data-page-switch]'));
+      const index = tabs.indexOf(button);
+      let next = null;
+      if (event.key === 'ArrowRight') next = tabs[(index + 1) % tabs.length];
+      if (event.key === 'ArrowLeft') next = tabs[(index - 1 + tabs.length) % tabs.length];
+      if (event.key === 'Home') next = tabs[0];
+      if (event.key === 'End') next = tabs[tabs.length - 1];
+      if (!next) return;
+      event.preventDefault();
+      next.focus();
+    }));
+
+    const sourceFilterInput = q('[data-source-filter]');
+    sourceFilterInput?.addEventListener('input', () => { sourceFilter = sourceFilterInput.value; render(); });
+    sourceFilterInput?.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        sourceFilterInput.value = '';
+        sourceFilter = '';
+        render();
+        return;
+      }
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        const first = qa('[data-source]').find((row) => !row.hidden);
+        if (first) { first.click(); first.focus(); }
+        return;
+      }
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        qa('[data-source]').find((row) => !row.hidden)?.focus();
+      }
+    });
     qa('[data-state]').forEach((button) => button.addEventListener('click', () => {
       stopCandidateTimer();
       holding = false;
@@ -1216,8 +1454,18 @@
       render();
     }));
 
+    const closeGlobalDetails = () => {
+      const button = q('[data-global]');
+      const details = q('[data-global-details]');
+      if (!button || !details || details.hidden) return;
+      button.setAttribute('aria-expanded', 'false');
+      details.hidden = true;
+      presetListOpen = false;
+      presetConfirm = null;
+    };
     const openBandPanel = (button, moveFocus) => {
       if (!bandValues[button.dataset.bandPoint].occupied) return;
+      closeGlobalDetails();
       selectedBand = button.dataset.bandPoint;
       bandPanelOpen = true;
       typeMenuOpen = false;
@@ -1428,6 +1676,7 @@
         y,
         occupied: true
       };
+      closeGlobalDetails();
       selectedBand = freeBand;
       bandPanelOpen = true;
       typeMenuOpen = false;
@@ -1438,11 +1687,12 @@
       render();
     });
 
-    q('[data-band-remove]')?.addEventListener('click', () => {
-      const removedId = selectedBand;
+    const removeBand = (removedId, moveFocusToUndo) => {
       const removedBand = bandValues[removedId];
-      if (!removedBand.occupied) return;
+      if (!removedBand.occupied || state === 'offline') return;
       lastRemovedBand = { id: removedId, values: { ...removedBand } };
+      lastCopy = null;
+      redoAction = null;
       removedBand.occupied = false;
       removedBand.enabled = false;
       bandPanelOpen = false;
@@ -1453,27 +1703,81 @@
       bandNotice = `BAND B${removedId} REMOVED · UNDO RESTORES SLOT B${removedId}`;
       selectedBand = Object.keys(bandValues).find((id) => bandValues[id].occupied) || removedId;
       render();
-      window.requestAnimationFrame(() => q('.nk-undo')?.focus());
-    });
+      if (moveFocusToUndo) window.requestAnimationFrame(() => q('[data-undo]')?.focus());
+    };
+    q('[data-band-remove]')?.addEventListener('click', () => removeBand(selectedBand, true));
+    qa('[data-band-point]').forEach((button) => button.addEventListener('keydown', (event) => {
+      if (event.key !== 'Delete') return;
+      event.preventDefault();
+      removeBand(button.dataset.bandPoint, true);
+    }));
 
-    q('.nk-undo')?.addEventListener('click', () => {
-      if (!lastRemovedBand) {
-        bandNotice = 'NO LOCAL BAND REMOVE TO UNDO · CONFIRMED REVISION UNCHANGED';
+    q('[data-undo]')?.addEventListener('click', () => {
+      if (lastRemovedBand) {
+        const restored = lastRemovedBand;
+        bandValues[restored.id] = { ...restored.values, occupied: true };
+        selectedBand = restored.id;
+        lastRemovedBand = null;
+        redoAction = { label: `remove B${restored.id}`, run: () => removeBand(restored.id, false) };
+        bandPanelOpen = true;
+        typeMenuOpen = false;
+        modeMenuOpen = false;
+        dynamicViewOpen = false;
+        numericEdit = null;
+        bandNotice = `BAND B${restored.id} RESTORED · SLOT AND VALUES RETAINED`;
+        render();
+        window.requestAnimationFrame(() => q('[data-band-enabled]')?.focus());
+        return;
+      }
+      if (lastCopy) {
+        const undone = lastCopy;
+        lastCopy = null;
+        redoAction = { label: `copy to ${undone.target}`, run: () => { lastCopy = undone; bandNotice = `COPIED ${undone.source} CURVE TO ${undone.target} AGAIN`; render(); } };
+        bandNotice = `COPY TO ${undone.target} UNDONE · ${undone.target} KEEPS ITS PREVIOUS CURVE`;
         render();
         return;
       }
-      const restored = lastRemovedBand;
-      bandValues[restored.id] = { ...restored.values, occupied: true };
-      selectedBand = restored.id;
-      lastRemovedBand = null;
-      bandPanelOpen = true;
-      typeMenuOpen = false;
-      modeMenuOpen = false;
-      dynamicViewOpen = false;
-      numericEdit = null;
-      bandNotice = `BAND B${restored.id} RESTORED · SLOT AND VALUES RETAINED`;
+      bandNotice = 'NOTHING LOCAL TO UNDO · CONFIRMED REVISION UNCHANGED';
       render();
-      window.requestAnimationFrame(() => q('[data-band-enabled]')?.focus());
+    });
+    q('[data-redo]')?.addEventListener('click', () => {
+      if (!redoAction) return;
+      const action = redoAction;
+      redoAction = null;
+      action.run();
+    });
+
+    // Kurven-Kopie an der Zielleiste (Block 04, 1/5): Quelle und Ziel stehen vor der Wirkung, Bestaetigung im selben Koerper
+    const closeCopyChooser = (moveFocus) => {
+      copyChooserOpen = false;
+      copyTarget = null;
+      render();
+      if (moveFocus) q('[data-copy-open]')?.focus();
+    };
+    q('[data-copy-open]')?.addEventListener('click', () => {
+      copyChooserOpen = !copyChooserOpen;
+      copyTarget = null;
+      render();
+      if (copyChooserOpen) window.requestAnimationFrame(() => qa('[data-copy-target]').find((b) => !b.hidden)?.focus());
+    });
+    qa('[data-copy-target]').forEach((button) => button.addEventListener('click', () => {
+      copyTarget = button.dataset.copyTarget;
+      render();
+      window.requestAnimationFrame(() => q('[data-copy-confirm-button]')?.focus());
+    }));
+    q('[data-copy-confirm-button]')?.addEventListener('click', () => {
+      if (!copyTarget) return;
+      lastCopy = { source: selectedTarget, target: copyTarget };
+      lastRemovedBand = null;
+      redoAction = null;
+      bandNotice = `COPIED ${selectedTarget} CURVE TO ${copyTarget} · IDENTITY UNCHANGED · UNDO AVAILABLE`;
+      closeCopyChooser(true);
+    });
+    q('[data-copy-cancel]')?.addEventListener('click', () => closeCopyChooser(true));
+    q('.nk-target-strip')?.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape' || !copyChooserOpen) return;
+      event.preventDefault();
+      closeCopyChooser(true);
     });
 
     qa('[data-source]').forEach((button) => button.addEventListener('click', () => {
@@ -1561,7 +1865,15 @@
         const expanded = globalButton.getAttribute('aria-expanded') === 'true';
         globalButton.setAttribute('aria-expanded', String(!expanded));
         globalDetails.hidden = expanded;
-        if (!expanded) window.requestAnimationFrame(() => q('[data-global-field="input"]')?.focus());
+        if (!expanded) {
+          bandPanelOpen = false;
+          typeMenuOpen = false;
+          modeMenuOpen = false;
+          dynamicViewOpen = false;
+          numericEdit = null;
+          render();
+          window.requestAnimationFrame(() => q('[data-global-field="input"]')?.focus());
+        }
       });
     }
     const parseNumber = (text) => Number.parseFloat(String(text).replace('−', '-').replace('+', '').trim());
@@ -1572,17 +1884,174 @@
       mono: { min: 0, max: 500, decimals: 0 },
       mix: { min: 0, max: 100, decimals: 0 }
     };
+    const globalFieldLabels = { input: 'INPUT', output: 'OUTPUT', width: 'WIDTH', mono: 'MONO BASS', mix: 'MIX' };
+    const globalFieldText = (key) => ({ input: formatDb(globals.input), output: formatDb(globals.output), width: `${globals.width} %`, mono: `${globals.mono} Hz`, mix: `${globals.mix} %` })[key];
+    const globalFieldSteps = { input: 0.5, output: 0.5, width: 5, mono: 10, mix: 5 };
+    const setGlobalField = (key, value) => {
+      const rule = globalFieldRules[key];
+      const clamped = Math.min(rule.max, Math.max(rule.min, value));
+      globals[key] = Number(clamped.toFixed(rule.decimals));
+    };
     qa('[data-global-field]').forEach((input) => {
       input.addEventListener('change', () => {
         const key = input.dataset.globalField;
-        const rule = globalFieldRules[key];
         const parsed = parseNumber(input.value);
         if (Number.isFinite(parsed)) {
-          const clamped = Math.min(rule.max, Math.max(rule.min, parsed));
-          globals[key] = Number(clamped.toFixed(rule.decimals));
+          setGlobalField(key, parsed);
+          globalNote = '';
+        } else {
+          globalNote = `${globalFieldLabels[key]} · NOT A NUMBER, KEPT ${globalFieldText(key)}`;
         }
         render();
       });
+      input.addEventListener('click', (event) => {
+        if (!event.ctrlKey && !event.metaKey) return;
+        event.preventDefault();
+        setGlobalField(input.dataset.globalField, globalDefaults[input.dataset.globalField]);
+        globalNote = '';
+        render();
+        input.value = globalFieldText(input.dataset.globalField);
+        if (numericEdit?.input === input) numericEdit = { input, originalValue: input.value, dirty: false };
+      });
+      input.addEventListener('wheel', (event) => {
+        if (input.disabled) return;
+        event.preventDefault();
+        const key = input.dataset.globalField;
+        const step = globalFieldSteps[key] * (event.shiftKey ? 0.2 : 1);
+        setGlobalField(key, globals[key] + (event.deltaY < 0 ? step : -step));
+        globalNote = '';
+        render();
+        input.value = globalFieldText(key);
+        if (numericEdit?.input === input) numericEdit = { input, originalValue: input.value, dirty: false };
+      }, { passive: false });
+    });
+    // Rad ueber Bandwerten und ueber dem Graphen (Block 05, 1/2)
+    const bandNumericSteppers = {
+      freq: (band, dir, fine) => {
+        const hz = parseNumber(band.freq.replace(/k(hz)?/i, '')) * (/k/i.test(band.freq) ? 1000 : 1);
+        if (!Number.isFinite(hz)) return;
+        const next = Math.min(20000, Math.max(20, hz * Math.pow(fine ? 1.01 : 1.05, dir)));
+        band.freq = next >= 1000 ? `${(next / 1000).toFixed(1)} kHz` : `${Math.round(next)} Hz`;
+      },
+      gain: (band, dir, fine) => {
+        const db = parseNumber(band.gain);
+        if (!Number.isFinite(db)) return;
+        const next = Math.min(12, Math.max(-12, db + dir * (fine ? 0.1 : 0.5)));
+        band.gain = `${next < 0 ? '−' : '+'}${Math.abs(next).toFixed(1)} dB`;
+      },
+      q: (band, dir, fine) => {
+        const qv = parseNumber(band.q);
+        if (!Number.isFinite(qv)) return;
+        band.q = Math.min(18, Math.max(0.1, qv + dir * (fine ? 0.01 : 0.05))).toFixed(2);
+      }
+    };
+    [['[data-band-freq]', 'freq'], ['[data-band-gain]', 'gain'], ['[data-band-q]', 'q']].forEach(([selector, key]) => {
+      q(selector)?.addEventListener('wheel', (event) => {
+        if (event.target.disabled) return;
+        event.preventDefault();
+        bandNumericSteppers[key](bandValues[selectedBand], event.deltaY < 0 ? 1 : -1, event.shiftKey);
+        render();
+      }, { passive: false });
+    });
+    q('.nk-graph-wrap')?.addEventListener('wheel', (event) => {
+      if (event.target.closest?.('.nk-band-panel')) return;
+      event.preventDefault();
+      if (bandPanelOpen) {
+        bandNumericSteppers.q(bandValues[selectedBand], event.deltaY < 0 ? 1 : -1, event.shiftKey);
+        render();
+        return;
+      }
+      const targets = qa('[data-target]').filter((b) => b.dataset.target !== 'MASTER');
+      const index = targets.findIndex((b) => b.dataset.target === selectedTarget);
+      const next = targets[(index + (event.deltaY > 0 ? 1 : -1) + targets.length) % targets.length];
+      next?.click();
+    }, { passive: false });
+    globalDetails?.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      if (numericEdit?.input === event.target && numericEdit.dirty) return;
+      event.preventDefault();
+      if (presetConfirm) { presetConfirm = null; render(); q('[data-preset-filter]')?.focus(); return; }
+      if (presetListOpen) { presetListOpen = false; render(); q('[data-preset-open]')?.focus(); return; }
+      globalButton.setAttribute('aria-expanded', 'false');
+      globalDetails.hidden = true;
+      globalButton.focus();
+    });
+    const loadPreset = (name) => {
+      currentPreset = name;
+      presetSnapshot = soundSnapshot();
+      presetConfirm = null;
+      bandNotice = `PRESET ${presetNames[name] || name.toUpperCase()} LOADED · SOUND ONLY, IDENTITY UNCHANGED`;
+      render();
+    };
+    q('[data-preset-open]')?.addEventListener('click', () => {
+      presetListOpen = !presetListOpen;
+      presetConfirm = null;
+      render();
+      if (presetListOpen) window.requestAnimationFrame(() => q('[data-preset-filter]')?.focus());
+    });
+    q('[data-preset-close]')?.addEventListener('click', () => { presetListOpen = false; presetConfirm = null; render(); q('[data-preset-open]')?.focus(); });
+    const stepPreset = (delta) => {
+      const index = presetOrder.indexOf(currentPreset);
+      loadPreset(presetOrder[(index + delta + presetOrder.length) % presetOrder.length]);
+    };
+    q('[data-preset-prev]')?.addEventListener('click', () => stepPreset(-1));
+    q('[data-preset-next]')?.addEventListener('click', () => stepPreset(1));
+    const presetFilterInput = q('[data-preset-filter]');
+    presetFilterInput?.addEventListener('input', () => render());
+    presetFilterInput?.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        const first = qa('[data-preset-load]').find((o) => !o.hidden);
+        if (first) loadPreset(first.dataset.presetLoad);
+      }
+      if (event.key === 'ArrowDown') { event.preventDefault(); qa('[data-preset-load]').find((o) => !o.hidden)?.focus(); }
+    });
+    qa('[data-preset-load]').forEach((option) => option.addEventListener('click', () => { loadPreset(option.dataset.presetLoad); q('[data-preset-open]')?.focus(); presetListOpen = false; render(); q('[data-preset-open]')?.focus(); }));
+    q('[data-preset-save]')?.addEventListener('click', () => { presetConfirm = 'overwrite'; render(); window.requestAnimationFrame(() => q('[data-preset-confirm-button]')?.focus()); });
+    q('[data-preset-save-as]')?.addEventListener('click', () => {
+      presetConfirm = 'saveas';
+      const userCount = presetOrder.filter((p) => p.startsWith('User')).length;
+      const newName = q('[data-preset-newname]');
+      if (newName) newName.value = `USER ${String(userCount + 1).padStart(2, '0')}`;
+      render();
+      window.requestAnimationFrame(() => { newName?.focus(); newName?.select(); });
+    });
+    q('[data-preset-confirm-cancel]')?.addEventListener('click', () => { presetConfirm = null; render(); q('[data-preset-filter]')?.focus(); });
+    q('[data-preset-confirm-button]')?.addEventListener('click', () => {
+      if (presetConfirm === 'overwrite') {
+        presetSnapshot = soundSnapshot();
+        bandNotice = `PRESET ${presetNames[currentPreset] || currentPreset} OVERWRITTEN`;
+        presetConfirm = null;
+        render();
+        q('[data-preset-filter]')?.focus();
+        return;
+      }
+      if (presetConfirm === 'saveas') {
+        const typed = (q('[data-preset-newname]')?.value || '').trim();
+        if (!typed) { globalNote = 'PRESET NAME · EMPTY, NOTHING SAVED'; render(); return; }
+        const key = typed.replace(/\s+/g, ' ');
+        presetNames[key] = typed.toUpperCase();
+        if (!presetOrder.includes(key)) presetOrder.push(key);
+        const options = q('[data-preset-options]');
+        if (options && !qa('[data-preset-load]').some((o) => o.dataset.presetLoad === key)) {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.setAttribute('role', 'option');
+          button.dataset.presetLoad = key;
+          button.dataset.presetKind = 'user';
+          button.textContent = typed.toUpperCase();
+          button.addEventListener('click', () => { loadPreset(key); presetListOpen = false; render(); q('[data-preset-open]')?.focus(); });
+          options.appendChild(button);
+        }
+        globalNote = '';
+        currentPreset = key;
+        presetSnapshot = soundSnapshot();
+        presetConfirm = null;
+        presetListOpen = false;
+        bandNotice = `PRESET ${typed.toUpperCase()} SAVED`;
+        render();
+        q('[data-preset-open]')?.focus();
+      }
     });
     q('[data-global-auto]')?.addEventListener('click', () => { globals.auto = !globals.auto; render(); });
     q('[data-global-bypass]')?.addEventListener('click', () => { globals.bypass = !globals.bypass; render(); });
@@ -1593,6 +2062,7 @@
     q('[data-probe-mix]')?.addEventListener('input', (event) => { probeMix = Number.parseInt(event.target.value, 10); render(); });
 
     window.addEventListener('resize', () => { fitStagePreview(); positionBandPanel(); });
+    presetSnapshot = soundSnapshot();
     render();
   })();
 </script>

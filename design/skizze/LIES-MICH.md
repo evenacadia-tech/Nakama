@@ -1,6 +1,6 @@
 # design/skizze — die laufende technische UI-Skizze
 
-**Stand: 02.09.2026 nach Fünferblock 03 · derzeitiger Stand, nicht der
+**Stand: 02.09.2026 nach Fünferblock 05 · derzeitiger Stand, nicht der
 finale.**
 
 User-Wort 02.09.2026:
@@ -13,7 +13,7 @@ Daraus folgt für diesen Ordner:
 
 1. `nakama-ui-technical-sketch.html` ist das sichtbare Protokoll der bisher
    entschiedenen UI-Architektur (Arbeitsmodus vom 31.08.2026, Fünferblöcke
-   01 bis 03, Größenentscheid 01.09.2026). Sie zeigt Zielverhalten, nicht den
+   01 bis 05, Größenentscheid 01.09.2026). Sie zeigt Zielverhalten, nicht den
    gebauten Editor, und keine visuelle Richtung; ihre eigene Legende sagt
    `TARGET BEHAVIOR · NOT CURRENT BUILD · VISUAL STYLE OPEN`.
 2. Sie wird mit jedem abgeschlossenen Fünferblock hier fortgeschrieben und
@@ -52,62 +52,65 @@ Daraus folgt für diesen Ordner:
 
 ## Sichtbelege
 
-`belege/` enthält Bildschirmfotos des Stands nach Fünferblock 03 vom
-02.09.2026, gerendert bei Viewport 1500×900 ohne Skalierung (Gen-Bühne
-950×538 logisch = 950×538 Pixel):
+`belege/` enthält Bildschirmfotos vom 02.09.2026, gerendert bei Viewport
+1500×900 ohne Skalierung (Gen-Bühne 950×538 logisch = 950×538 Pixel).
+Präfix `b03` = Stand nach Fünferblock 03, Präfix `b0405` = Stand nach den
+delegierten Blöcken 04 und 05 (aktuell):
 
 | Datei | Zustand |
 |---|---|
-| `2026-09-02-b03-gen-flaeche-1-kopf.png` | Gen Fläche 1: Kopf mit `OVERVIEW` aktiv und `EQ`, Sources-Spalte 180 px, Evidenz 738×312, Findings 738×142 mit drei Zeilen, `READY TO SEND`, `SEND DRAFT → EQ` |
-| `2026-09-02-b03-gen-flaeche-1-draft-open.png` | Gen Fläche 1 nach Rückweg über den Kopf: Befund `DRAFT OPEN · EQ`, Handgriff `OPEN IN EQ →` |
-| `2026-09-02-b03-gen-flaeche-2-global-zeile.png` | Gen Fläche 2: Kopf `EQ` aktiv, Band-Panel B3 Grundansicht, eingeklappte Global-Zeile `GLOBAL ⌄ MIX 92 % · AUTO`, Transaktionszeile |
-| `2026-09-02-b03-gen-flaeche-2-global-offen.png` | Global aufgeklappt: Input, Output mit `AUTO → −0.8 dB`, Auto-Schalter, Width, Mono-Bass, Bypass, Mix, A/B, `PRESET` und `HISTORY` unavailable |
-| `2026-09-02-b03-probeeq-kachel-eq-an.png` | Probeeq-Kachel 580×92: Zeile 1 Name, Bus, `LINKED`, `EQ · ON`, `BYPASS · OFF`, Mix; Zeile 2 `REMOTE PROPOSAL READY`, B3-Werte, `MODE · POST` |
-| `2026-09-02-b03-probeeq-kachel-eq-aus.png` | Probeeq-Kachel 580×52: nur Zeile 1, `EQ · OFF`, Bypass und Mix nicht bedienbar |
+| `2026-09-02-b0405-gen-flaeche-1-sources-filter.png` | Gen Fläche 1: Sources-Spalte mit Filterfeld `gui`, Kopf `2 MATCH · 16`, Scrollliste; Kopf-Umschalter `OVERVIEW` / `EQ` |
+| `2026-09-02-b0405-gen-flaeche-2-preset-liste.png` | Gen Fläche 2: Global aufgeklappt, Preset-Liste im selben Körper (Filter, FACTORY/USER, `SAVE`, `SAVE AS`), `UNDO`/`REDO` in der unteren Zeile, `COPY →` an der Zielleiste |
+| `2026-09-02-b0405-gen-flaeche-2-copy-bestaetigung.png` | Zielleiste als Kopie-Zielwahl: `COPY BASS CURVE TO`, Ziel `PIANO` gedrückt, `REPLACES THE PIANO CURVE`, `CONFIRM COPY`, `CANCEL` |
+| `2026-09-02-b0405-gen-flaeche-2-global-validierung.png` | Global aufgeklappt mit `PRESET USER 04 *` (geändert), `REVISION`, Validierungszeile `WIDTH · NOT A NUMBER, KEPT 100 %` |
+| `2026-09-02-b0405-probeeq-eq-aus-messwahrheit.png` | Probeeq-Kachel 600×92 bei EQ aus: Zeile 2 `EQ OFF · PASSIVE MEASUREMENT · SIGNAL · FRESH 1.2 s`, Bypass und Mix nicht bedienbar |
+| `2026-09-02-b0405-probeeq-link-verlust.png` | Probeeq bei Link-Verlust: `BROKER OFFLINE` in Zeile 1, `LOCAL CONFIRMED · REV 128 · REMOTE LOCKED · EQ, BYPASS, MIX STAY LOCAL` in Zeile 2, lokale Handgriffe bedienbar |
+| `2026-09-02-b03-gen-flaeche-1-kopf.png` | Block 03: Kopf mit `OVERVIEW` aktiv, Findings 738×142 mit drei Zeilen, `SEND DRAFT → EQ` |
+| `2026-09-02-b03-gen-flaeche-1-draft-open.png` | Block 03: nach Rückweg über den Kopf `DRAFT OPEN · EQ`, `OPEN IN EQ →` |
+| `2026-09-02-b03-gen-flaeche-2-global-zeile.png` | Block 03: eingeklappte Global-Zeile `GLOBAL ⌄ MIX 92 % · AUTO` |
+| `2026-09-02-b03-gen-flaeche-2-global-offen.png` | Block 03: Global aufgeklappt mit `AUTO → −0.8 dB` (noch mit `PRESET`/`HISTORY` unavailable, seit Block 04 ersetzt) |
+| `2026-09-02-b03-probeeq-kachel-eq-an.png` | Block 03: Probeeq-Kachel 580×92 mit EQ an (seit Block 04 600×92) |
+| `2026-09-02-b03-probeeq-kachel-eq-aus.png` | Block 03: Probeeq 580×52 bei EQ aus (seit Block 04 feste Höhe, Zeile 2 mit Messwahrheit) |
 
 Die Bilder des Vormittagsstands vor Block 03 liegen als Verlauf unter
 `belege/2026-09-02-vor-block-03/` (Inspektionsleiste noch mit
 Flächenumschalter, Global-Zeile `2 ON`, Probeeq auf 760×430).
 
-Gemessen am 02.09.2026 im Browser (42 Prüfpunkte, PASS, Konsole leer):
-Gen-Bühne 950×538; Kopf-Tabs 96×51, Hover ohne Maßänderung; Findings
-738×142; `GLOBAL`-Knopf 78×30 bei jeder Nennung gleich; Band-Panel 276×80
-(Grundansicht); Probeeq 580×92 beziehungsweise 580×52 ohne Zeilenüberlauf.
-Die vollständige Messtabelle steht in
-`../abnahmen/2026-09-02-technische-ui-architektur-fuenferblock-03.md`.
+Gemessen am 02.09.2026 im Browser (Block 04/05: 65 Prüfpunkte, Regression
+Block 03: 42 Prüfpunkte, alle PASS, Konsole leer): Gen-Bühne 950×538;
+Kopf-Tabs 96×51, Hover ohne Maßänderung; Findings 738×142; Sources-Spalte
+180 px mit Scrollliste; `GLOBAL`-Knopf 78×30, `UNDO`/`REDO` je 58×30,
+Halten-Knopf 128×30; Band-Panel 276×80 (Grundansicht); Probeeq 600×92 in
+jedem Zustand ohne Zeilenüberlauf. Die Messtabellen stehen in
+`../abnahmen/2026-09-02-technische-ui-architektur-fuenferblock-03.md` und
+`../abnahmen/2026-09-02-technische-ui-architektur-fuenferblock-05.md`.
 
 ## Bekannte Vorgriffe und Lücken gegenüber den Abnahmen
 
 Diese Punkte sind keine Fehler der Skizze, sondern noch nicht befragte oder
 noch nicht abgeleitete Bereiche. Sie gehören in die nächsten Fünferblöcke.
 
-- **Voreinstellungen und Verlauf** (Blueprint Abschnitt 15, Punkt 17): Die
-  Einstiege `PRESET` und `HISTORY` liegen in der aufgeklappten
-  Global-Sektion, sind aber bis zum Entscheid über ihre Disclosure ehrlich
-  unavailable; Preset-Liste und Kurven-Kopie (Antwort U18) haben noch keinen
-  Ort.
-- **Wortlaut der Halten-Aktion** (Punkt 17): Fläche 1 sagt `HOLD TO
-  AUDITION` (Abnahme 22.08.2026), Fläche 2 sagt `AUDITION · HOLD`. Ob beide
-  Flächen denselben Wortlaut tragen, ist nicht entschieden.
-- **Kurzlabel `DEL`** (Punkt 17): Die abgenommene Aktion heißt `Remove
-  Band`; die Skizze zeigt im Panelkopf die Kurzform `DEL` und trägt den
-  vollen Namen als zugängliche Bezeichnung. Dichteprüfung, kein Beschluss.
 - **Flächennamen** `OVERVIEW` und `EQ` im Kopf sind Arbeitsnamen; die
-  Produktnamen sind Karte U23 in `docs/plan/fragen.json`. Ebenso sind
-  `DRAFT OPEN · EQ` und `OPEN IN EQ →` Dichteprüfung des Wortlauts.
-- **Probeeq-Fensterhöhe** (Punkt 19): Die Kachel blendet mit der zweiten
-  Zeile die Bühnenhöhe mit (92 zu 52 Pixel). Ob das Host-Fenster unter FL
-  die Höhe ändern darf oder die zweite Zeile in fester Höhe ein- und
-  ausgeblendet wird, ist nicht entschieden. Verhalten bei Link-Verlust und
-  lokale Notfallaktionen der Kachel sind nicht befragt.
-- **Auto-Gain-Ausgleich:** Der Wert `−0.8 dB` neben `OUTPUT · AUTO` ist ein
-  Demo-Wert; der echte Ausgleich ist eine deterministische Funktion der
-  Kurve (Abnahme 24.08.2026) und entsteht in S26–28/S28b.
+  Produktnamen sind Karte U23 in `docs/plan/fragen.json`. Ebenso sind die
+  Hinweistexte (`DRAFT OPEN · EQ`, `OPEN IN EQ →`, `COPIED … TO …`,
+  `KEPT 100 %`) Dichteprüfung des Wortlauts.
+- **Demo-Bestände:** Der Auto-Gain-Ausgleich `−0.8 dB` ist ein Demo-Wert
+  (der echte ist eine deterministische Funktion der Kurve, Abnahme
+  24.08.2026, S26–28/S28b); die sieben Voreinstellungen, die 16 Quellen und
+  die Kopie, die in der Skizze nur Hinweis und Undo-Eintrag ist, sind
+  Demo-Daten. Die Ziele teilen sich in der Skizze denselben Bandsatz.
+- **Probeeq-Notfallaktionen:** EQ an/aus, Bypass und Mix sind die lokalen
+  Handgriffe, auch bei Link-Verlust. Ob weitere nötig sind (Neutralize-
+  Rückfall), entscheiden die P6/P7-Recoverytests, keine Bedienfrage.
 - **Fortlaufende Dynamic-Bewegung und native Remove-/Undo-Transaktion** sind
   technische Vertragslücken (Blueprint Abschnitt 15, Punkte 15 und 16); die
-  Skizze zeigt nur eine endliche Bewegungsprobe und das Zielverhalten.
-- **Gemeinsame UI-Regeln** (Fokus, Tastaturwege über beide Flächen, Fehler-
-  und Degradationszustände) wurden noch in keiner Fragenrunde befragt.
+  Skizze zeigt nur eine endliche Bewegungsprobe und das Zielverhalten. Auch
+  die Preset-, Kopie- und Kandidatentransaktionen warten auf ihre Verträge
+  (Punkte 12 und 14).
+- **Bedienfragen sind seit Block 05 keine offen.** Was die Skizze zeigt,
+  deckt eine datierte Abnahme oder die delegierte Ableitung vom 02.09.2026;
+  eine neue Frage entsteht erst aus einem neuen User-Entscheid oder einem
+  technischen Vertrag.
 
 ## Was hier nicht liegt
 

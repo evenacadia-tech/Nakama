@@ -220,3 +220,24 @@ ergänzt die zweite Gen-Fläche um die Global-Zeile und den Flächenwechsel:
 - Die Dominanz der Arbeitsfläche bleibt: Die Global-Sektion nimmt dem
   Graphen im Ruhezustand keine Zeile; aufgeklappt legt sie sich über den
   unteren Graphrand und schließt wieder über denselben Einstieg.
+
+## Delegierte Ableitung vom 02.09.2026 (Fünferblock 04 und 05)
+
+Aus
+[`2026-09-02-technische-ui-architektur-fuenferblock-04.md`](2026-09-02-technische-ui-architektur-fuenferblock-04.md)
+und
+[`2026-09-02-technische-ui-architektur-fuenferblock-05.md`](2026-09-02-technische-ui-architektur-fuenferblock-05.md)
+gilt für die zweite Gen-Fläche zusätzlich:
+
+- Voreinstellungen öffnen im selben Körper der aufgeklappten
+  Global-Sektion (Filterfeld, Gruppen, `SAVE` mit Bestätigung, `SAVE AS`);
+  `PRESET` zeigt Name und Änderungsmarker. Kein Verlauf als Liste: `UNDO`
+  und `REDO` in der unteren Zeile, Revision als Leseanzeige.
+- Die Kurven-Kopie sitzt als `COPY →` an der Zielleiste und wirkt erst nach
+  Bestätigung mit Quelle und Ziel im Wortlaut.
+- Über dem Graphen ist genau ein Panel offen; `Escape` schließt es zu
+  seinem Einstieg. Das Rad ändert den Wert unter dem Zeiger, im Graphen die
+  Güte des ausgewählten Bands, ohne Auswahl die Sonde. `Delete` entfernt
+  den fokussierten Bandpunkt (Undo bleibt).
+- Das Halten heißt auch hier `HOLD TO AUDITION`; `DEL` bleibt die sichtbare
+  Kurzform mit `Remove Band` als Namen.

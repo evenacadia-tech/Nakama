@@ -1,6 +1,7 @@
 # design/visuell — die visuelle Phase in Figma
 
-**Stand: 02.09.2026 · erster Vorschlag von Claude, nicht abgenommen.**
+**Stand: 02.09.2026 · Grundrahmen und 21 Zustandsrahmen, Vorschlag von
+Claude, nicht abgenommen.**
 
 Seit dem User-Entscheid vom 02.09.2026
 ([../abnahmen/2026-09-02-wechsel-visuelle-phase-figma.md](../abnahmen/2026-09-02-wechsel-visuelle-phase-figma.md))
@@ -88,16 +89,71 @@ vektorreichen Gen-Rahmen brach über die MCP-Verbindung ab):
 | `2026-09-02-v01-gen-flaeche-2-eq@2x.png` | Gen Fläche 2: Kopfband mit `EQ` aktiv, Zielleiste (`MASTER`, `KICK`, `VOCALS`, `BASS` gewählt, `PIANO`, Radhinweis, `COPY →`), Kontextzeile, Kurvenfeld mit Analyzer, Schutzzone, Basis/Draft/Referenz, sechs Griffen (B2 aus, B3 gewählt und dynamisch, B5 dynamisch), Skalen, Kurvenschlüssel; Kinn mit `GLOBAL ⌄`, `MIX 92 % · AUTO`, `UNDO`, `REDO`, `DRAFT BASS · B3`, Halten, `APPLY · 10 s`, `REJECT` |
 | `2026-09-02-v01-probeeq-kachel@2x.png` | Probeeq 600×92: Wortmarke, `BASS BUS`, Apertur `LINKED`, `EQ · ON` mit Punkt, `BYPASS · OFF`, Mix 92 %; Glaszeile `REMOTE PROPOSAL READY · B3 · 240 Hz · −1.5 dB · Q 1.20 · MODE · POST` |
 
+## Zustände und Panels (zweiter Schritt, 02.09.2026)
+
+Jeder Zustand ist ein eigener Klon des Grundrahmens auf derselben Seite:
+Zeile 2 (y 1000) Gen Fläche 1, Zeilen 3 und 4 (y 1750 und 2500) Gen Fläche 2,
+Zeile 5 (y 3250) Probeeq. Die Geometrie jedes Zustands wurde in der Skizze
+mit Playwright angesteuert, gemessen und gegen den Grundzustand verglichen;
+gebaut wurde nur der Unterschied.
+
+| Zustand | Ground | Beleg | Was er zeigt |
+|---|---|---|---|
+| Gen 1 · Befundliste | `6132:2` | `2026-09-02-v02-gen-flaeche-1-befundliste@2x.png` | `ALL FINDINGS` gedrückt, drei Befunde als Liste im selben Körper (`01 … SELECTED`, `02 … READY`, `03 … MORE DATA`) |
+| Gen 1 · Quelle ohne Befund | `6132:182` | `2026-09-02-v02-gen-flaeche-1-ohne-befund@2x.png` | `KICK` gewählt, Referenz `MASTER`, `FRESH · 2.0 s · NO FINDING`, keine Zone im Graph, `NO FINDING`, Halten und Draft nicht verfügbar |
+| Gen 1 · Filtertreffer | `6132:362` | `2026-09-02-v02-gen-flaeche-1-filter@2x.png` | Filter `gui` mit Leeren-Taste, Kopf `2 MATCH · 16`, nur `GUITAR L` und `GUITAR R` |
+| Gen 1 · Draft offen | `6132:542` | `2026-09-02-v02-gen-flaeche-1-draft-offen@2x.png` | `DRAFT OPEN · EQ`, Handgriff `OPEN IN EQ →` |
+| Gen 1 · Kandidat | `6132:722` | `2026-09-02-v02-gen-flaeche-1-kandidat@2x.png` | `EQ CANDIDATE · 8.3 s`, Halten nicht verfügbar, `CANDIDATE · OPEN IN EQ →`, `REVERT` |
+| Gen 1 · Link-Verlust | `6132:902` | `2026-09-02-v02-gen-flaeche-1-link-verlust@2x.png` | hohle Apertur, `SESSION LINK LOST`, `STALE · LINK LOST`, `BLOCKED · LINK`, `SEND BLOCKED` |
+| Gen 2 · Band-Panel Dynamic | `6132:1082` | `2026-09-02-v02-gen-flaeche-2-band-panel-dynamic@2x.png` | Karte 276×112 unter B3: `ON`, Typ, `ST`, `DYN · ON` (offen, wein), `DEL`, `×`; `DYNAMIC ON`, Range, Threshold, Attack, Hold, Release |
+| Gen 2 · Band-Panel Grundansicht | `6132:1277` | `2026-09-02-v02-gen-flaeche-2-band-panel-grundansicht@2x.png` | Panel atomar an B4 gebunden (Notch, `R`, `DYN · OFF`), Felder Freq, Gain, Q; B4 gewählt, B3 behält die Dynamic-Kontur; Transaktion `BASS · B4` |
+| Gen 2 · Typwahl | `6132:1472` | `2026-09-02-v02-gen-flaeche-2-band-panel-typwahl@2x.png` | 2×3 Filterkurven im selben Körper, Bell gewählt |
+| Gen 2 · Kanalmodus | `6132:1667` | `2026-09-02-v02-gen-flaeche-2-band-panel-kanalmodus@2x.png` | `ST` `L` `R` / `M` `S` im selben Körper, `ST` gewählt |
+| Gen 2 · Global offen | `6132:1862` | `2026-09-02-v02-gen-flaeche-2-global-offen@2x.png` | Karte über dem Graph: Input, Output mit `AUTO → −0.8 dB`, `AUTO · ON`, Width, Mono Bass, `BYPASS · OFF`, Mix, `A/B · A`, Preset `‹ USER 04 ›`, Revision `REV 128 · DRAFT OPEN`; `GLOBAL` im Kinn wein mit Pfeil nach oben |
+| Gen 2 · Preset-Liste | `6132:2057` | `2026-09-02-v02-gen-flaeche-2-preset-liste@2x.png` | Filter, `SAVE` (nicht verfügbar bei mitgelieferten), `SAVE AS`, `×`; `FACTORY` und `USER`, `USER 04` gewählt |
+| Gen 2 · Kopie-Zielwahl | `6132:2252` | `2026-09-02-v02-gen-flaeche-2-kopie-zielwahl@2x.png` | Zielleiste als `COPY BASS CURVE TO`, `PIANO` gedrückt, `REPLACES THE PIANO CURVE`, `CONFIRM COPY`, `CANCEL` |
+| Gen 2 · Halten | `6132:2447` | `2026-09-02-v02-gen-flaeche-2-halten@2x.png` | Einsatz gedrückt `RELEASE TO RETURN` (versenkt, Cyansaum); der Draft trägt Saum und Breite, die Basis tritt zurück; Maße unverändert |
+| Gen 2 · Kandidat | `6132:2642` | `2026-09-02-v02-gen-flaeche-2-kandidat@2x.png` | `CANDIDATE · 8.3 s` im Kopf, `CANDIDATE` in der Transaktion, `CONFIRM · 8.3 s`, `REVERT`, Halten nicht verfügbar |
+| Gen 2 · Bestätigt | `6132:2837` | `2026-09-02-v02-gen-flaeche-2-bestaetigt@2x.png` | `CONFIRMED · REV 128`; keine Draft-Kurve, Kurvenschlüssel ohne `DRAFT`, Transaktionszeile verschwunden |
+| Gen 2 · Link-Verlust | `6132:3032` | `2026-09-02-v02-gen-flaeche-2-link-verlust@2x.png` | `SESSION LINK LOST · LOCAL CONFIRMED · REV 128`, Kontext `LINK LOST`; `COPY →`, `GLOBAL`, `UNDO`, Halten, `APPLY`, `REJECT` nicht verfügbar; `BLOCKED` |
+| Probeeq · EQ aus | `6132:3227` | `2026-09-02-v02-probeeq-eq-aus@2x.png` | `EQ · OFF` mit hohlem Punkt, Bypass und Mix nicht bedienbar, Glaszeile `EQ OFF · PASSIVE MEASUREMENT · SIGNAL · FRESH 1.2 s` |
+| Probeeq · Link-Verlust | `6132:3260` | `2026-09-02-v02-probeeq-link-verlust@2x.png` | hohle Apertur `LINK LOST`, `LOCAL CONFIRMED · REV 128 · REMOTE LOCKED · EQ, BYPASS, MIX STAY LOCAL`; EQ, Bypass, Mix bedienbar |
+| Probeeq · Kandidat | `6132:3293` | `2026-09-02-v02-probeeq-kandidat@2x.png` | `REMOTE CANDIDATE · 8.2 s` mit der laufenden Änderung |
+| Probeeq · Bestätigt | `6132:3326` | `2026-09-02-v02-probeeq-bestaetigt@2x.png` | `CONFIRMED · REV 128` mit der bestätigten Änderung |
+
+Panels liegen als Karte über dem Glas (#131619 bei 97 %, Kontur weiß 8 %,
+Radius 7, Schatten), wie die Draft-Karte des alten Editors; Tasten darauf
+sind Kartenpillen mit Radius 6, Werte sind dunkle Einlässe (#0c0e10), und
+Spiegelung und Vignette des Glases bleiben über der Karte. Nicht verfügbar
+heißt überall Beschriftung und Fläche auf 45 %.
+
+Bewusste Abweichungen von der Skizze in diesem Schritt (Dichteprüfung des
+Wortlauts, keine neuen Entscheide):
+
+- `ALL FINDINGS` bleibt bei geöffneter Liste gedrückt statt in
+  `CURRENT FINDING` umbenannt zu werden; die Taste behält 84 px
+  (Tasten-Gesetz), die Skizze verbreitert sie.
+- Ohne Befund zeigt der Evidenzgraph keine Zone, keinen Marker und keinen
+  Punkt; die Skizze lässt sie stehen.
+- Probeeq bei Link-Verlust sagt `LINK LOST` statt `BROKER OFFLINE`: dasselbe
+  Wort wie Gen, und `BROKER OFFLINE` passt nicht zwischen Apertur und die
+  festen Einsätze, ohne dass die Skizze diese verschiebt und verkleinert.
+- Beim Halten wandern Saum und Breite von der Basis auf den Draft, weil der
+  Draft dann hörbar ist; die Skizze verbreitert nur die Draft-Kurve.
+- Positionen der Einsätze und Schlüssel bleiben in jedem Zustand gleich; die
+  Skizze lässt sie mit der Textbreite wandern (Session-Zeile, Probeeq-Zeile 1).
+
 Hinweis: Der Shader der Wortmarke (rot→blau) rendert nur in Figma selbst; in
 Exporten und MCP-Vorschauen erscheint die Wortmarke flach. Das ist seit dem
 22.08.2026 bekannt (`../abnahmen/2026-08-21-gen-auftrag-figma.md`, Nachtrag).
 
 ## Was noch nicht liegt
 
-- **Zustände und Panels** (zweiter Schritt): Band-Panel mit Dynamic-Ansicht,
-  Typ- und Kanalwahl, Global offen, Preset-Liste, Kopie-Zielwahl, Link-Verlust,
-  Kandidat (10 s), Probeeq mit EQ aus, Befundliste (`ALL FINDINGS`), Quelle
-  ohne Befund, Filtertreffer.
+- **Flüchtige Zustände** der Skizze, die noch keinen Rahmen haben: `SAVE`
+  mit `OVERWRITE USER 04 WITH THE CURRENT STATE?`, `SAVE AS` mit Namensfeld,
+  Validierungszeile am Feld (`WIDTH · NOT A NUMBER, KEPT 100 %`), Graph-Hinweise
+  (`BAND LIMIT · 8 OCCUPIED`, `CANDIDATE ACTIVE …`, `COPIED … TO …`) und
+  Hover-Zustände; sie folgen bei Bedarf demselben Weg.
 - **Silber-Schale** (neuere Fassung in der Datei): nur auf Zuruf.
 - **Produktnamen** der beiden Gen-Flächen (Karte U23): `OVERVIEW` und `EQ`
   sind Arbeitsnamen.

@@ -116,3 +116,12 @@ Die drei Rahmen liegen in `fable-dummy` auf der neuen Seite „01 — Nakama
 skalierten Bühne); Leseblatt mit Knoten,
 Übersetzungsregeln und offenen Punkten: `design/visuell/LIES-MICH.md`.
 Der Stand ist ein Vorschlag von Claude und nicht abgenommen.
+
+**Zweiter Schritt, 02.09.2026 (Auftrag „mach jetzt die zustände und panels
+als zweiten schritt"):** 21 Zustandsrahmen als Klone der Grundrahmen auf
+derselben Seite (Befundliste, Quelle ohne Befund, Filter, Draft offen,
+Kandidat und Link-Verlust für Fläche 1; Band-Panel in vier Ansichten, Global,
+Preset-Liste, Kopie, Halten, Kandidat, Bestätigt und Link-Verlust für
+Fläche 2; EQ aus, Link-Verlust, Kandidat und Bestätigt für Probeeq). Belege
+`2026-09-02-v02-*@2x.png` und die Tabelle mit Knoten und den bewusst
+benannten Abweichungen stehen in `design/visuell/LIES-MICH.md`.

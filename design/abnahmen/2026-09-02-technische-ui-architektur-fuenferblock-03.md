@@ -2,7 +2,7 @@
 
 ## Status
 
-**3 von 5 Entscheidungen gesammelt.** Der Block beginnt mit Gen Fläche 1
+**4 von 5 Entscheidungen gesammelt.** Der Block beginnt mit Gen Fläche 1
 (Karte U21 aus `docs/plan/fragen.json`); danach folgen die offenen
 Bedienbereiche von Gen Fläche 2 (Blueprint Abschnitt 15, Punkte 17 und 18)
 und Probeeq (Punkt 19). Skizze, Detailabnahmen und Blueprint werden erst nach
@@ -141,3 +141,44 @@ Damit ist für beide Gen-Flächen gesammelt:
   werden beim gemeinsamen Umbau nach 5/5 nachgezogen.
 - Wie der Rückweg im selben Kopf aussieht und ob Gen nach Abschluss einer
   Transaktion von selbst zurückkehrt, ist die nächste Frage dieses Blocks.
+
+Nachtrag zum Stand der Skizze im Repo: Der User sagt dazu „die funktiopn
+ist schon in der skizze, man kann über den header wo eq steht auf die 2.
+seite schalten“. In der committeten Skizze (`design/skizze/`, Stand
+02.09.2026) ist der klickbare Wechsel `GEN · SOURCES / GEN · EQ / PROBEEQ`
+die Inspektionsleiste **oberhalb** des Gen-Fensters; der Seitentitel `EQ
+CENTER` im Kopf des Fensters selbst ist dort nur Text. Mit diesem Entscheid
+wird der Flächenwechsel beim Umbau nach 5/5 in den Kopf des Gen-Fensters
+(950×538) übernommen; die Inspektionsleiste bleibt Werkzeug für `PROBEEQ`
+und `SCENARIO`. Liegt auf dem PC eine neuere Skizze aus einer
+Codex-Sitzung, die den Wechsel schon im Fensterkopf trägt, gilt sie erst,
+wenn sie in `design/skizze/` committet ist.
+
+## 4/5 — Rückweg über denselben Kopf, keine automatische Rückkehr
+
+Auf die Frage, ob der Kopf auch für den Weg zurück gilt und ob Gen nach
+einer abgeschlossenen Änderung (`APPLY` fest oder `REJECT`) von selbst
+zurückspringt, wählt der User am 02.09.2026:
+
+> „Nur der Kopf, nichts automatisch (Empfohlen)“
+
+Damit ist für beide Gen-Flächen gesammelt:
+
+- Der Kopf trägt beide Flächennamen als stabilen Umschalter; die aktive
+  Fläche ist dort erkennbar. Zurück geht es über den Namen der ersten
+  Fläche, hin über den Namen der EQ-Fläche.
+- Nach `APPLY` fest oder `REJECT` bleibt Gen auf der EQ-Fläche. Es gibt
+  keine automatische Rückkehr, auch nicht nach `SEND DRAFT`.
+- Ein offener Draft bleibt beim Flächenwechsel offen und verändert sich
+  nicht. Fläche 1 zeigt ihn am betroffenen Befund als Zustand (in der
+  Skizze `DRAFT OPEN · EQ`); der Handgriff am Befund führt zurück zur
+  EQ-Fläche. Ein laufender 10-Sekunden-Kandidat zählt auf Fläche 1 sichtbar
+  weiter und bietet dort keinen zweiten Draft an — das zeigt die Skizze
+  heute bereits (`EQ CANDIDATE · n s`, `SEND DRAFT` gesperrt).
+- Technische Grenze, unverändert: Der Flächenwechsel ist reine Anzeige. Er
+  berührt weder den Draft noch Kandidat, Bestätigung oder Revision; die
+  Transaktionslogik bleibt bei S29–31 und dem Kandidatenvertrag (Blueprint
+  Abschnitt 15, Punkt 12).
+- Blueprint Abschnitt 15 Punkt 18 (Rückweg) ist damit entschieden und wird
+  beim Umbau nach 5/5 auf **[U]** gesetzt; Abschnitt 4.1 „Übergang“ und die
+  Skizze folgen im selben Umbau.

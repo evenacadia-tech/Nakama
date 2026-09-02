@@ -106,7 +106,8 @@ Bindend wird ein Figma-Stand erst mit datiertem User-Wort in `../abnahmen/`.
    Sekundärtext, #9ea8b2 Schlüsselschrift, #8d939a Status, #80878f Köpfe,
    Schalenlabels und stille Schlüssel (`REJECT`, inaktiver Reiter), #6e757d
    Labels und Skalen auf Glas, #5c6269 nur Platzhalter; Einsatz-Beschriftung
-   #9a9296 in Ruhe und #e7e9ea aktiv oder primär. Einsätze tragen überall
+   #9a9296 in Ruhe und #e7e9ea aktiv oder primär, die Kartenpille auf Glas
+   #b8bdc2. Einsätze tragen überall
    Geist Mono, Schlüssel überall Geist. Cyan (#00bed2) nur als Saum, nie als
    Fläche. Die Wortmarke kommt als Klon aus der Datei: `NAKAMA` Geist SemiBold
    8 über `GEN` beziehungsweise `PROBEEQ` Geist Light 14, Shader rot→blau.
@@ -118,7 +119,9 @@ Schatten, als zweifach skalierter Klon gerendert (der direkte 2×-Export der
 vektorreichen Gen-Rahmen brach über die MCP-Verbindung ab). Die Dateien
 `v01` und `v02` zeigen den Stand vor der Poliersession, `v03` den Stand
 danach; sie liegen nebeneinander, damit der Unterschied sichtbar bleibt.
-Der Stand `v03` ist der aktuelle:
+Die `v03`-Dateien sind direkte 2×-Exporte der Bühne (seit die Schraffur ein
+einzelner Vektor ist, bricht der Export nicht mehr ab). Der Stand `v03` ist
+der aktuelle:
 
 | Datei | Inhalt |
 |---|---|
@@ -188,7 +191,7 @@ gebaut wurde nur der Unterschied.
 | Probeeq · Bestätigt | `6132:3326` | `2026-09-02-v02-probeeq-bestaetigt@2x.png` | `CONFIRMED · REV 128` mit der bestätigten Änderung |
 
 Panels liegen als Karte über dem Glas (#131619 bei 97 %, Kontur weiß 8 %,
-Radius 7, Schatten), wie die Draft-Karte des alten Editors; Tasten darauf
+Radius 6 seit der Poliersession, vorher 7; Schatten), wie die Draft-Karte des alten Editors; Tasten darauf
 sind Kartenpillen mit Radius 6, Werte sind dunkle Einlässe (#0c0e10), und
 Spiegelung und Vignette des Glases bleiben über der Karte. Nicht verfügbar
 heißt überall Beschriftung und Fläche auf 45 %.

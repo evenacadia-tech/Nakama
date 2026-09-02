@@ -20,16 +20,28 @@
 //   MAIN_SUBSCRIBE_GESENDET         Barriere K-S2
 //   LANGSAM_IN_VERZOEGERUNG         Barriere K-S4
 //   WARMUP_FERTIG                   Zeile S02
+//   TOTZEIT_ERFASST <i>             K-S1/K-S5 sind WAEHREND der Totzeit belegt
 //   NEUSTART_VOLLSTAENDIG <i> <ms>  Zeile S11
 //   {json}                          Schlussbericht
 // stdin (Pruefer -> dieses Programm):
-//   KILL_VORBEREITEN <i>   Vorzustand je Client festhalten -> KILL_BEREIT <i>
+//   KILL_VORBEREITEN <i> <art>  Vorbedingung K-S1 festhalten -> KILL_BEREIT <i>
 //   BARRIERE <art>         Rueckstau (K-S1) und lange Verzoegerung (K-S4) an
 //   BARRIERE_AUS           beide wieder aus
 //   MAIN_RECONNECT         erzwingt ein frisches subscribe_session (K-S2)
-//   KILL_GESCHEHEN <i>     der Brokerprozess ist tot, Neustartfenster laeuft
+//   KILL_ERFOLGT <i> <ms>  der Brokerprozess ist JETZT tot; erst hier werden
+//                          K-S2 und K-S4 gegen den Killzeitpunkt belegt
+//   TOTZEIT_ENDE <i>       letzter Augenblick VOR dem neuen Broker; hier
+//                          werden K-S1 und K-S5 erfasst -> TOTZEIT_ERFASST
 //   BEREIT <i> <totzeit>   der neue Broker horcht; ab hier laeuft die Frist
-//   ENDE                   Messzeit vorbei, Bericht drucken
+//   ENDE                   Messzeit vorbei; Nachlauffenster, dann Bericht
+//
+// WARUM DIESE REIHENFOLGE
+// -----------------------
+// Jede Zusage wird an IHREM Ereignis belegt, nicht an einer Abtastung daneben.
+// Die Vorfassung erfasste K-S2/K-S4 vor `KILL_BEREIT` (also vor dem Kill) und
+// K-S5 nach `BEREIT` (also gegen den NEUEN Broker); beide Belege sagten damit
+// etwas ueber einen anderen Zeitpunkt aus als das Urteil behauptete
+// (Codex-Abschlusspruefung 02.09.2026, Thread 01a0626a, Befunde 11 und 12).
 
 #include "ControlClient.h"
 #include "PipeToken.h"
@@ -88,10 +100,47 @@ constexpr std::uint64_t kTestSeqBasis = 1000000;
 /// Dasselbe im Barrierefenster von K-S4 — ein Fenster, in das der Pruefer
 /// zuverlaessig hineinkillt.
 constexpr int kLangsamBarriereMs = 3000;
+/// Nachlauffenster vor dem Abbau (Manifest S14).
+///
+/// HERGELEITET, nicht geraten: ein Heartbeat wird mit `kHeartbeatMs` Kadenz
+/// eingereiht und darf nach Z4 hoechstens `kP0SchrankeMs` auf sein ACK warten.
+/// Der letzte vor `ENDE` eingereihte Heartbeat braucht also im schlimmsten
+/// Fall eine volle Kadenz plus eine volle Schranke, bevor ein fehlendes ACK
+/// wirklich Verlust heisst. Ohne dieses Fenster machte ein unmittelbar zuvor
+/// erfolgreich eingereihter Heartbeat einen gesunden Lauf rot.
+constexpr int kNachlaufMs = kHeartbeatMs + static_cast<int> (kP0SchrankeMs);
+/// S06: Ueberproduktion der LANGSAMEN Sonden je Livetakt.
+///
+/// Ein langsamer Lesecallback bremst den Control-Lesepfad, nicht die
+/// Telemetrieschleuse. Ohne eigene Ueberproduktion blieb `ersetzt` bei den
+/// langsamen Sonden 0, und die frueher unter `langsam` berichteten Zahlen
+/// stammten in Wahrheit vom K-S1-Fluter (Codex-Befund 5). Die Schleuse fasst
+/// zwei Frames (§53.9); drei im selben Takt erzwingen mindestens eine
+/// Ersetzung. Die Drahtlast steigt dadurch NICHT — ein ersetzter Frame geht
+/// nie auf den Draht.
+constexpr int kLangsamBurst = 3;
 /// Audio: Blockgroesse und Samplerate des Sondenpfads.
 constexpr double kFs = 48000.0;
 constexpr int kBlock = 512;
 constexpr double kPi = 3.14159265358979323846;
+
+/// S10: das Ziel MUSS ohne die eigenen v3-Clients des `SondeProcessor` gebaut
+/// sein. Faellt das Define weg, oeffnen die konstruierten Sondeninstanzen die
+/// PRODUKTIONS-Pipe, und ein Zaehler, der nie gesetzt werden kann, merkt davon
+/// nichts (Codex-Befund 9). Deshalb ist es hier eine Laufzeitwache mit Exit 3
+/// statt eines stillen `#if`.
+#if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+constexpr bool kOhneProduktV3 = true;
+#else
+constexpr bool kOhneProduktV3 = false;
+#endif
+
+/// Monotone Zeit als Zahl — fuer atomare Ereignisstempel.
+long long jetztNs()
+{
+    return std::chrono::duration_cast<std::chrono::nanoseconds> (
+        Uhr::now().time_since_epoch()).count();
+}
 
 std::mutex ausgabeSchloss;
 
@@ -203,8 +252,17 @@ struct Sonde
     std::vector<std::pair<double, bool>> latenzen;   ///< Latenz + Stoerfenster
     std::atomic<std::uint64_t> p0Gesendet { 0 }, p0Beantwortet { 0 };
     std::atomic<std::uint64_t> sequence { 0 };
+    /// S06: JEDER Rueckgabewert von `veroeffentlichen()` wird gezaehlt. Erst
+    /// dadurch misst `abgelehnt == zuGross + beanspruchtVerworfen` wirklich
+    /// eine nicht zugeordnete Ablehnung statt einer Tautologie.
+    std::atomic<std::uint64_t> veroeffentlichungen { 0 };
+    std::atomic<std::uint64_t> veroeffentlichungAbgelehnt { 0 };
     std::atomic<bool> inVerzoegerung { false };   ///< K-S4-Barriere
-    std::atomic<bool> verzoegerungGemeldet { false };
+    /// K-S4: Beginn und Ende der kuenstlichen Verzoegerung als Ereignisstempel.
+    /// Ein blosses Flag sagt nur etwas ueber den Abfragezeitpunkt aus; mit den
+    /// beiden Stempeln laesst sich fragen, ob die Sonde ZUM KILLZEITPUNKT
+    /// darin steckte.
+    std::atomic<long long> verzoegerungBeginn { 0 }, verzoegerungEnde { 0 };
 
     // Vorzustand fuer K-S1, festgehalten bei KILL_VORBEREITEN.
     bool vorKillVerbunden = false;
@@ -224,6 +282,22 @@ struct Sonde
     std::atomic<std::uint64_t> segmentwechsel { 0 };
     std::uint64_t letztesSegment = 0;
     bool segmentGesehen = false;
+
+    /// S06: die beiden Ueberladungen von `veroeffentlichen()` gehen nur hier
+    /// durch, damit KEIN Rueckgabewert verlorengeht.
+    void publiziere (const nakama::analyse::FeatureFrame& f)
+    {
+        veroeffentlichungen.fetch_add (1);
+        if (! telemetrie->veroeffentlichen (f, adr))
+            veroeffentlichungAbgelehnt.fetch_add (1);
+    }
+
+    void publiziereRoh (const std::uint8_t* daten, std::size_t laenge)
+    {
+        veroeffentlichungen.fetch_add (1);
+        if (! telemetrie->veroeffentlichen (daten, laenge))
+            veroeffentlichungAbgelehnt.fetch_add (1);
+    }
 };
 
 struct Neustart
@@ -232,17 +306,28 @@ struct Neustart
     std::string epochAlt, epochNeu;
     long long bereitBisVollstaendigMs = -1;
     long long totzeitMs = 0;
-    std::vector<double> reconnectMs;         ///< je Clientpaar
+    long long killDauerMs = 0;
+    /// S11: eine Dauer JE CLIENTPAAR — Index 0 ist das Main-Paar, 1..N sind
+    /// die Sonden. Die Vorfassung trug N Kopien desselben Topologieendes ein;
+    /// `min`, `p95` und `max` waren dann keine Verteilung (Codex-Befund 10).
+    std::vector<double> reconnectMs;
     std::uint64_t alteEpocheGesehen = 0;
+    /// S09 je Neustartfenster: wie oft der Main OHNE aktive Subscription und
+    /// wie oft mindestens eine Quelle als `Control::getrennt` gesehen wurde.
+    /// Beides muss je Kill > 0 sein.
+    std::uint64_t s09SubscriptionWeg = 0;
+    std::uint64_t s09QuellenGetrennt = 0;
+    std::uint64_t s09Sichten = 0;
     // Killpunkt-Belege
-    std::uint64_t telemetrieHandleFehler = 0;    // K-S1
-    bool snapshotVorKill = false;                // K-S2
+    std::uint64_t telemetrieHandleFehler = 0;    // K-S1, in der Totzeit erfasst
+    bool snapshotVorKill = false;                // K-S2, am Killzeitpunkt
     bool ks2Barriere = false;
-    std::uint64_t p0OhneAckImFenster = 0;        // K-S3
-    std::uint64_t flagZumKillzeitpunkt = 0;      // K-S4
+    std::uint64_t flagZumKillzeitpunkt = 0;      // K-S4, am Killzeitpunkt
     bool ks4Barriere = false;
-    int backoffDeckelErreicht = 0;               // K-S5
+    int backoffDeckelErreicht = 0;               // K-S5, in der Totzeit erfasst
     bool ks5Totzeit = false;
+    bool killErfolgtGesehen = false;
+    bool totzeitErfasst = false;
 };
 
 // ── Der ganze Lauf ───────────────────────────────────────────────────────
@@ -273,18 +358,32 @@ struct Soak
     std::vector<std::unique_ptr<Sonde>> sonden;
     std::set<std::string> erwarteteIds;
 
-    // Zaehler S02/S03
+    /// S03 BINDEND: jede Snapshot-Uebernahme wird SOFORT geprueft — der
+    /// Rueckgabewert und die unmittelbar entstandene Sicht. Ein falscher
+    /// Snapshot, der vor dem naechsten 250-ms-Tick korrigiert wird, blieb in
+    /// der Vorfassung unsichtbar (Codex-Befund 6).
     std::atomic<std::uint64_t> snapshotPruefungen { 0 }, snapshotVollstaendig { 0 };
+    std::atomic<std::uint64_t> snapshotUebernahmen { 0 }, snapshotUngueltig { 0 };
+    /// Die 250-ms-Abtastung bleibt ZUSAETZLICH: sie sieht auch Drift, die ohne
+    /// neuen Snapshot entsteht (Liveness-Tick).
+    std::atomic<std::uint64_t> abtastPruefungen { 0 }, abtastVollstaendig { 0 };
     std::atomic<std::uint64_t> fremdeAdresse { 0 }, fuehrungFalsch { 0 };
     // Zaehler S13
     std::atomic<std::uint64_t> staleAusserhalb { 0 }, staleImFenster { 0 };
     std::atomic<std::uint64_t> evictedAusserhalb { 0 };
-    // Zaehler S10
+    /// S10: jeder Pipename, den dieses Programm einem Client uebergibt, laeuft
+    /// durch `clientPipe()` und wird dort gegen die Erlaubnisliste geprueft.
     std::atomic<std::uint64_t> fremderPipename { 0 };
-    /// S09: wie oft der Main im Neustartfenster OHNE aktive Subscription
-    /// gesehen wurde. Muss > 0 sein — sonst hat der Kill die Subscription
-    /// nicht sichtbar beendet und das Modell zeigte weiter die alte Sicht.
+    std::atomic<std::uint64_t> clientPipenamenGeprueft { 0 };
+    /// S09 gesamt: wie oft der Main im Neustartfenster OHNE aktive Subscription
+    /// gesehen wurde. Das JE-KILL-Urteil steht in `Neustart::s09*`.
     std::atomic<std::uint64_t> subscriptionWegImFenster { 0 };
+    /// K-S2: Zeitpunkt des letzten abgeschickten `subscribe_session` und der
+    /// letzten UEBERNOMMENEN Snapshot-Ankunft.
+    std::atomic<long long> subscribeNs { 0 }, letzterSnapshotNs { 0 };
+    /// S14: im Nachlauffenster werden keine neuen Heartbeats mehr eingereiht,
+    /// aber alle Clients lesen weiter.
+    std::atomic<bool> nachlauf { false };
 
     std::atomic<bool> laeuft { true };
     std::atomic<bool> warmupVorbei { false };
@@ -306,6 +405,19 @@ struct Soak
     long long topologieMs = -1;
     std::vector<std::thread> faeden;
 
+    /// S10: der EINZIGE Weg, auf dem ein Pipename in einen Client gelangt.
+    /// Jede Uebergabe wird gegen die Erlaubnisliste `istProbePipename` geprueft
+    /// (`core/ipc/PipeToken.h`) und gezaehlt. Ein Zaehler, den kein Aufruf
+    /// erreichen kann, ist keine Wache — deshalb liegt die Pruefung hier an
+    /// jeder der 2·(N+1) Konstruktionen und nicht einmalig in `main()`.
+    const std::string& clientPipe()
+    {
+        clientPipenamenGeprueft.fetch_add (1);
+        if (! istProbePipename (pipe))
+            fremderPipename.fetch_add (1);
+        return pipe;
+    }
+
     // ───────────────────────────────────────────────── Aufbau
     bool aufbauen()
     {
@@ -320,7 +432,7 @@ struct Soak
                 h.hostPid = 4242;
                 return h;
             },
-            pipe,
+            clientPipe(),
             [this] (const std::string& json) { mainText (json); },
             [] { return laufStatus(); },
             [this] (bool verbunden) { mainLinkStatus (verbunden); },
@@ -334,7 +446,7 @@ struct Soak
                 mainControl->kopplung (h.linkId, h.challenge);
                 return h;
             },
-            pipe,
+            clientPipe(),
             [this] (const std::uint8_t* daten, std::size_t laenge, std::uint8_t minor) {
                 juce::String grund;
                 model.uebernehmeP2 (daten, laenge, minor, Uhr::now(), grund);
@@ -362,7 +474,7 @@ struct Soak
                     h.hostPid = 4242;
                     return h;
                 },
-                pipe,
+                clientPipe(),
                 [this, roh] (const std::string& json) { sondeText (*roh, json); },
                 [] { return laufStatus(); },
                 std::function<void (bool)> {},
@@ -376,7 +488,7 @@ struct Soak
                     roh->control->kopplung (h.linkId, h.challenge);
                     return h;
                 },
-                pipe,
+                clientPipe(),
                 std::function<void (const std::uint8_t*, std::size_t, std::uint8_t)> {},
                 erwartung);
 
@@ -484,8 +596,42 @@ struct Soak
             return;
         }
         subscribeGesendet.store (true);
-        // Barriere K-S2: eingereiht, noch kein Snapshot da.
+        // Barriere K-S2: eingereiht, noch kein Snapshot da. Der Stempel ist der
+        // Bezugspunkt fuer `snapshot_vor_kill` — ein Snapshot zaehlt nur, wenn
+        // er NACH diesem Zeitpunkt und VOR dem Kill ankam.
+        subscribeNs.store (jetztNs());
         melde ("MAIN_SUBSCRIBE_GESENDET");
+    }
+
+    /// S02/S03 an EINER Sicht. Zaehlt in die uebergebenen Zaehler und liefert,
+    /// ob die Sicht vollstaendig und richtig war.
+    bool pruefeSicht (const eqcop::SourcesModel::Sicht& sicht,
+                      std::atomic<std::uint64_t>& pruefungen,
+                      std::atomic<std::uint64_t>& vollstaendigZaehler)
+    {
+        pruefungen.fetch_add (1);
+        bool vollstaendig = sicht.quellen.size() == static_cast<std::size_t> (anzahl);
+        std::set<std::string> gesehen;
+        for (const auto& q : sicht.quellen)
+        {
+            gesehen.insert (q.instanceId);
+            if (erwarteteIds.count (q.instanceId) == 0)
+            {
+                fremdeAdresse.fetch_add (1);
+                vollstaendig = false;
+            }
+        }
+        // Die MENGE der instanceId muss gleich der erwarteten Menge sein — eine
+        // blosse Zeilenzahl liesse ein Duplikat durch (Matrix S02).
+        if (gesehen != erwarteteIds)
+            vollstaendig = false;
+        if (sicht.fuehrendesMain != mainAdr.instanceId)
+        {
+            fuehrungFalsch.fetch_add (1);
+            vollstaendig = false;
+        }
+        if (vollstaendig) vollstaendigZaehler.fetch_add (1);
+        return vollstaendig;
     }
 
     void mainText (const std::string& json)
@@ -502,14 +648,30 @@ struct Soak
         //     Wache — eine 128-Bit-Hexfolge kollidiert nicht zufaellig.
         if (json.find ("session_snapshot") != std::string::npos)
         {
-            snapshotSeitSubscribe.store (true);
             std::lock_guard<std::mutex> l (epochSchloss);
             for (const auto& alt : alteEpochen)
                 if (! alt.empty() && json.find (alt) != std::string::npos)
                     alteEpocheGesehen.fetch_add (1);
         }
         juce::String grund;
-        model.uebernehmeSessionSnapshot (json, Uhr::now(), grund);
+        // S03: der RUECKGABEWERT wird ausgewertet, nicht verworfen. `ignoriert`
+        // ist der Normalfall fuer jede Nicht-Snapshot-Nachricht auf derselben
+        // Controlverbindung (`SourcesModel.cpp:459-464`); `ungueltig` ist ein
+        // Befund und wird gezaehlt.
+        const auto ergebnis = model.uebernehmeSessionSnapshot (json, Uhr::now(), grund);
+        if (ergebnis == eqcop::SourcesModel::SnapshotErgebnis::ungueltig)
+            snapshotUngueltig.fetch_add (1);
+        if (ergebnis != eqcop::SourcesModel::SnapshotErgebnis::uebernommen)
+            return;
+
+        snapshotUebernahmen.fetch_add (1);
+        letzterSnapshotNs.store (jetztNs());
+        snapshotSeitSubscribe.store (true);
+        // S03 bindend: die UNMITTELBAR entstandene Sicht, nicht die naechste
+        // Abtastung. Innerhalb eines Neustartfensters ist eine unvollstaendige
+        // Sicht erlaubt (Matrix S03), davor auch das Warmup.
+        if (warmupVorbei.load() && ! imNeustartfenster.load())
+            pruefeSicht (model.sicht(), snapshotPruefungen, snapshotVollstaendig);
     }
 
     /// Die Epoche des LAUFENDEN Brokers, aus dem Control-Welcome.
@@ -554,11 +716,16 @@ struct Soak
             // (Rauchtest 02.09.2026: einmalige Meldung + 120 ms Fenster ergab
             // flag_zum_killzeitpunkt = 0).
             const bool barriere = langsamBarriere.load();
+            // Beginn VOR dem Flag setzen und Ende NACH dem Loeschen: dann gilt
+            // "beginn <= t && ende < beginn" genau dann, wenn die Sonde zum
+            // Zeitpunkt t in der Verzoegerung steckte (K-S4).
+            s.verzoegerungBeginn.store (jetztNs());
             s.inVerzoegerung.store (true);
             if (barriere) melde ("LANGSAM_IN_VERZOEGERUNG");
             std::this_thread::sleep_for (std::chrono::milliseconds (
                 barriere ? kLangsamBarriereMs : gLangsamMs));
             s.inVerzoegerung.store (false);
+            s.verzoegerungEnde.store (jetztNs());
         }
     }
 
@@ -576,6 +743,14 @@ struct Soak
         auto naechster = Uhr::now();
         while (laeuft.load())
         {
+            // S14-Nachlauffenster: nichts Neues mehr einreihen, aber alle
+            // Clients lesen weiter, damit ausstehende ACKs noch ankommen.
+            if (nachlauf.load())
+            {
+                naechster += std::chrono::milliseconds (kHeartbeatMs);
+                std::this_thread::sleep_until (naechster);
+                continue;
+            }
             for (auto& s : sonden)
             {
                 std::size_t seq;
@@ -625,15 +800,22 @@ struct Soak
             const bool gross = (++takt % (kGrossTaktMs / kLiveTaktMs)) == 0;
             for (auto& s : sonden)
             {
-                const auto f = messframe (s->sequence.fetch_add (1) + 1,
-                                          gross ? kGrossSamples : kLiveSamples);
-                s->telemetrie->veroeffentlichen (f, s->adr);
+                s->publiziere (messframe (s->sequence.fetch_add (1) + 1,
+                                          gross ? kGrossSamples : kLiveSamples));
+                // S06: der langsame Leser haelt SEINE EIGENE Schleuse im
+                // Rueckstau. Zwei weitere Frames im selben Takt uebersteigen
+                // den Cap 2 sicher; ohne das gaebe es unter `langsam` nichts
+                // zu messen und die Zahlen kaemen vom Fluter (Befund 5).
+                if (s->langsam)
+                    for (int i = 1; i < kLangsamBurst; ++i)
+                        s->publiziere (messframe (s->sequence.fetch_add (1) + 1,
+                                                  kLiveSamples));
                 // K-S1: Sonde 0 haelt ihre Schleuse (Cap 2) im Rueckstau,
                 // damit der verbundene Lauf im Schreibzweig steht und nicht
                 // im Leerlauf-Lesezweig (Manifest §6, K-S1 Punkt 2).
                 if (s->fluter && flutAn.load())
                     for (int i = 0; i < 12; ++i)
-                        s->telemetrie->veroeffentlichen (flut.data(), flut.size());
+                        s->publiziereRoh (flut.data(), flut.size());
             }
             naechster += std::chrono::milliseconds (kLiveTaktMs);
             std::this_thread::sleep_until (naechster);
@@ -650,38 +832,47 @@ struct Soak
             {
                 model.tick (Uhr::now());
                 const auto sicht = model.sicht();
-                snapshotPruefungen.fetch_add (1);
-
-                bool vollstaendig = sicht.quellen.size() == static_cast<std::size_t> (anzahl);
+                pruefeSicht (sicht, abtastPruefungen, abtastVollstaendig);
                 for (const auto& q : sicht.quellen)
-                {
-                    if (erwarteteIds.count (q.instanceId) == 0)
-                    {
-                        fremdeAdresse.fetch_add (1);
-                        vollstaendig = false;
-                    }
                     if (q.control == eqcop::SourcesModel::Control::stale)
                         staleAusserhalb.fetch_add (1);
-                }
                 if (sicht.quellen.size() < static_cast<std::size_t> (anzahl))
                     evictedAusserhalb.fetch_add (1);
-                if (sicht.fuehrendesMain != mainAdr.instanceId)
-                {
-                    fuehrungFalsch.fetch_add (1);
-                    vollstaendig = false;
-                }
-                if (vollstaendig) snapshotVollstaendig.fetch_add (1);
             }
             else if (imNeustartfenster.load())
             {
                 const auto sicht = model.sicht();
-                if (! sicht.subscriptionAktiv)
-                    subscriptionWegImFenster.fetch_add (1);
+                const bool ohneSubscription = ! sicht.subscriptionAktiv;
+                bool quelleGetrennt = false;
                 for (const auto& q : sicht.quellen)
+                {
                     if (q.control == eqcop::SourcesModel::Control::stale)
                         staleImFenster.fetch_add (1);
+                    // S09: `controlEnde()` setzt fluechtige Zeilen auf
+                    // `getrennt` (`SourcesModel.cpp:381-387`). Eine bloss
+                    // inaktive Subscription belegt das noch nicht.
+                    if (q.control == eqcop::SourcesModel::Control::getrennt)
+                        quelleGetrennt = true;
+                }
+                if (ohneSubscription) subscriptionWegImFenster.fetch_add (1);
+                // S09 JE KILL: der Gesamtzaehler liesse einen Kill ohne
+                // sichtbares `disconnected` durchgehen, solange ein anderer
+                // Kill zaehlte (Befund 8).
+                std::lock_guard<std::mutex> l (neustartSchloss);
+                const int i = aktuellerNeustart.load();
+                if (i >= 0 && i < static_cast<int> (neustarts.size()))
+                {
+                    ++neustarts[static_cast<std::size_t> (i)].s09Sichten;
+                    if (ohneSubscription)
+                        ++neustarts[static_cast<std::size_t> (i)].s09SubscriptionWeg;
+                    if (quelleGetrennt)
+                        ++neustarts[static_cast<std::size_t> (i)].s09QuellenGetrennt;
+                }
             }
-            std::this_thread::sleep_for (std::chrono::milliseconds (250));
+            // 100 ms statt 250 ms: das Neustartfenster ist im Kanon rund 2,5 s
+            // lang; bei 250 ms blieben darin zu wenige Sichten, um `getrennt`
+            // je Kill sicher zu treffen.
+            std::this_thread::sleep_for (std::chrono::milliseconds (100));
         }
     }
 
@@ -750,6 +941,9 @@ struct Soak
     }
 
     // ─────────────────────────────────────────── Kill-Ablauf
+    /// VOR dem Kill: nur die VORBEDINGUNG von K-S1 (war die Sonde verbunden und
+    /// im Rueckstau?). Alles, was den ZUSTAND ZUM KILLZEITPUNKT behauptet,
+    /// gehoert nach `killErfolgt()` — hier lebt der Broker noch.
     void killVorbereiten (int index)
     {
         Neustart n;
@@ -766,9 +960,7 @@ struct Soak
             s->vorKillErsetzt = ts.ersetzt;
             s->vorKillRueckstau = ts.ersetzt > s->letzterErsetztStand;
             s->vorKillVersuche = ts.verbindungsVersuche;
-            if (s->inVerzoegerung.load()) ++n.flagZumKillzeitpunkt;
         }
-        n.snapshotVorKill = snapshotSeitSubscribe.load();
         {
             std::lock_guard<std::mutex> l (neustartSchloss);
             neustarts.push_back (n);
@@ -777,8 +969,16 @@ struct Soak
         melde ("KILL_BEREIT " + std::to_string (index));
     }
 
-    void killGeschehen (int)
+    /// Der Brokerprozess ist JETZT tot. Erst hier werden K-S2 und K-S4 belegt.
+    ///
+    /// Der Zeitpunkt wird beim Empfang dieser Zeile gestempelt. Zwischen dem
+    /// Ruecksprung aus `Popen.kill()` im Pruefer und diesem Stempel liegen ein
+    /// Pipe-Write und ein `getline` — Bruchteile einer Millisekunde gegen ein
+    /// 3.000-ms-Barrierefenster. Der Rest wirkt konservativ: ein zu spaeter
+    /// Stempel meldet hoechstens `nicht_getroffen`, nie einen falschen Treffer.
+    void killErfolgt (int, long long killDauerMs)
     {
+        const auto kz = jetztNs();
         imNeustartfenster.store (true);
         // Jeder zum Killzeitpunkt noch unbeantwortete Heartbeat verliert sein
         // ACK mit dem Brokerprozess. Er gehoert ins Neustartfenster, auch wenn
@@ -796,6 +996,49 @@ struct Soak
             if (! aktuelleEpoche.empty()) alteEpochen.insert (aktuelleEpoche);
         }
         alteEpocheGesehen.store (0);
+
+        std::lock_guard<std::mutex> l (neustartSchloss);
+        if (neustarts.empty()) return;
+        auto& n = neustarts.back();
+        n.killErfolgtGesehen = true;
+        n.killDauerMs = killDauerMs;
+        // K-S2: kam zwischen dem abgeschickten `subscribe_session` und dem Kill
+        // ein uebernommener Snapshot an? Dann war das Fenster nicht offen.
+        const auto sub = subscribeNs.load();
+        const auto snap = letzterSnapshotNs.load();
+        n.snapshotVorKill = sub > 0 && snap > sub && snap <= kz;
+        // K-S4: steckte die Sonde ZUM KILLZEITPUNKT in ihrer Verzoegerung?
+        for (auto& s : sonden)
+        {
+            if (! s->langsam) continue;
+            const auto beginn = s->verzoegerungBeginn.load();
+            const auto ende = s->verzoegerungEnde.load();
+            if (beginn > 0 && beginn <= kz && ende < beginn)
+                ++n.flagZumKillzeitpunkt;
+        }
+    }
+
+    /// Letzter Augenblick VOR dem neuen Broker. K-S1 und K-S5 werden hier
+    /// erfasst, weil beide Aussagen ueber die TOTZEIT sind: der Fehler auf dem
+    /// offenen P2-Handle des alten Brokers und der erreichte Backoff-Deckel.
+    /// Nach `BEREIT` gemessen, konnte schon ein erfolgreicher Versuch gegen den
+    /// NEUEN Broker den Deckelzaehler fuellen (Befund 12).
+    void totzeitEnde (int)
+    {
+        std::lock_guard<std::mutex> l (neustartSchloss);
+        if (neustarts.empty()) return;
+        auto& n = neustarts.back();
+        for (auto& s : sonden)
+        {
+            const auto ts = s->telemetrie->snapshot();
+            if (s->vorKillVerbunden && s->vorKillRueckstau
+                && ! ts.letzterFehler.empty() && ! istVertragstext (ts.letzterFehler)
+                && ts.verbindungsVersuche == s->vorKillVersuche)
+                ++n.telemetrieHandleFehler;
+        }
+        n.backoffDeckelErreicht = backoffDeckel();
+        n.totzeitErfasst = true;
+        melde ("TOTZEIT_ERFASST " + std::to_string (n.index));
     }
 
     /// Der neue Broker horcht. Ab hier laeuft die Frist aus §3.1.
@@ -813,52 +1056,60 @@ struct Soak
         // angehaengt wird.
         Neustart* n = &neustarts[pos];
         n->totzeitMs = totzeitMs;
-
-        // K-S1 und K-S5: Belege einsammeln, solange die Clients noch im
-        // Reconnect stehen.
-        for (auto& s : sonden)
-        {
-            const auto ts = s->telemetrie->snapshot();
-            if (s->vorKillVerbunden && s->vorKillRueckstau
-                && ! ts.letzterFehler.empty() && ! istVertragstext (ts.letzterFehler)
-                && ts.verbindungsVersuche == s->vorKillVersuche)
-                ++n->telemetrieHandleFehler;
-        }
-        n->backoffDeckelErreicht = backoffDeckel();
         n->ks5Totzeit = totzeitMs >= 20000;
 
-        // K-S3: P0, die im Fenster abgeschickt wurden und nie ein ACK bekamen.
-        std::uint64_t ohneAck = 0;
-        for (auto& s : sonden)
-        {
-            std::lock_guard<std::mutex> l (s->mutex);
-            for (std::size_t i = 0; i < s->gesendet.size(); ++i)
-                if (s->imFensterGesendet[i] && ! s->beantwortetFlag[i]) ++ohneAck;
-        }
-        n->p0OhneAckImFenster = ohneAck;
-
-        // Warten, bis der Snapshot wieder vollstaendig und richtig ist (S11).
+        // S11: die Dauer JE CLIENTPAAR — Index 0 ist das Main-Paar, 1..N sind
+        // die Sonden. Gemessen wird vom BEREIT bis zum EIGENEN Wieder-Mitglied-
+        // Zeitpunkt: beide Verbindungen des Paares stehen UND das Paar ist in
+        // der Sicht des Main wieder da. Die Vorfassung trug N Kopien desselben
+        // Topologieendes ein (Befund 10).
+        std::vector<double> proPaar (static_cast<std::size_t> (anzahl) + 1, -1.0);
         const auto frist = bereit + std::chrono::milliseconds (kFristMs);
-        while (Uhr::now() < frist && laeuft.load())
+        while (laeuft.load())
         {
-            if (topologieSteht() && fuehrungRichtig()) break;
+            const auto sicht = model.sicht();
+            std::set<std::string> mitglied;
+            for (const auto& q : sicht.quellen)
+                if (q.descriptorVorhanden) mitglied.insert (q.instanceId);
+            const auto ms = std::chrono::duration<double, std::milli> (
+                Uhr::now() - bereit).count();
+
+            if (proPaar[0] < 0.0
+                && mainControl->snapshot().status == ControlClient::Status::verbunden
+                && mainTelemetrie->snapshot().status == TelemetryClient::Status::verbunden
+                && sicht.subscriptionAktiv
+                && sicht.fuehrendesMain == mainAdr.instanceId)
+                proPaar[0] = ms;
+
+            for (int i = 0; i < anzahl; ++i)
+            {
+                auto& p = proPaar[static_cast<std::size_t> (i) + 1];
+                if (p >= 0.0) continue;
+                const auto& s = *sonden[static_cast<std::size_t> (i)];
+                if (s.control->snapshot().status == ControlClient::Status::verbunden
+                    && s.telemetrie->snapshot().status == TelemetryClient::Status::verbunden
+                    && mitglied.count (s.adr.instanceId) > 0)
+                    p = ms;
+            }
+
+            if (std::none_of (proPaar.begin(), proPaar.end(),
+                              [] (double v) { return v < 0.0; }))
+                break;
+            if (Uhr::now() >= frist) break;
             std::this_thread::sleep_for (std::chrono::milliseconds (25));
         }
-        const bool ok = topologieSteht() && fuehrungRichtig();
-        n->bereitBisVollstaendigMs = ok
-            ? std::chrono::duration_cast<std::chrono::milliseconds> (Uhr::now() - bereit).count()
+
+        // Ein Paar, das die Frist verfehlt hat, traegt Frist + 1 ms — es faellt
+        // damit in `max` auf und wird nie stillschweigend ausgelassen.
+        const bool alle = std::none_of (proPaar.begin(), proPaar.end(),
+                                        [] (double v) { return v < 0.0; });
+        for (auto& v : proPaar)
+            if (v < 0.0) v = static_cast<double> (kFristMs) + 1.0;
+        n->reconnectMs = proPaar;
+        n->bereitBisVollstaendigMs = alle
+            ? static_cast<long long> (
+                  *std::max_element (proPaar.begin(), proPaar.end()))
             : -1;
-        for (auto& s : sonden)
-        {
-            const auto cs = s->control->snapshot();
-            const auto ts = s->telemetrie->snapshot();
-            const bool paarSteht = cs.status == ControlClient::Status::verbunden
-                                && ts.status == TelemetryClient::Status::verbunden;
-            n->reconnectMs.push_back (paarSteht
-                ? static_cast<double> (n->bereitBisVollstaendigMs < 0 ? kFristMs
-                                                                      : n->bereitBisVollstaendigMs)
-                : static_cast<double> (kFristMs) + 1.0);
-        }
         {
             std::lock_guard<std::mutex> l (epochSchloss);
             aktuelleEpoche = epocheJetzt();
@@ -870,12 +1121,6 @@ struct Soak
             s->letzterErsetztStand = s->telemetrie->snapshot().ersetzt;
         melde ("NEUSTART_VOLLSTAENDIG " + std::to_string (index) + " "
                + std::to_string (n->bereitBisVollstaendigMs));
-    }
-
-    bool fuehrungRichtig() const
-    {
-        const auto sicht = model.sicht();
-        return sicht.fuehrendesMain == mainAdr.instanceId;
     }
 
     /// K-S5: `verbindungsVersuche` steigt bei JEDEM Versuch
@@ -920,9 +1165,16 @@ struct Soak
     {
         std::vector<double> alleLatenzen, schnelleLatenzen, fensterLatenzen;
         std::uint64_t p0Ges = 0, p0Ack = 0, verlorenAussen = 0, verlorenFenster = 0;
+        // S06: die Cap-Zaehler NUR ueber die langsamen Sonden. Der K-S1-Fluter
+        // wird getrennt gefuehrt und zaehlt nicht fuer S06 (Befund 5).
         std::uint64_t ersetzt = 0, neuesteVerworfen = 0, zuGross = 0, kollision = 0;
+        std::uint64_t veroeffentlicht = 0, abgelehnt = 0;
+        std::uint64_t flErsetzt = 0, flNeuesteVerworfen = 0, flZuGross = 0;
+        std::uint64_t flKollision = 0, flVeroeffentlicht = 0, flAbgelehnt = 0;
         std::uint64_t bloecke = 0, dropsUeberlauf = 0, dropsOversize = 0;
         std::uint64_t brueche = 0, publikationen = 0;
+        std::uint64_t publikationenMin = 0, bloeckeMin = 0;
+        bool ersteSonde = true;
         bool langsameImmerMitglied = true;
 
         const auto sicht = model.sicht();
@@ -934,14 +1186,39 @@ struct Soak
             p0Ges += s->p0Gesendet.load();
             p0Ack += s->p0Beantwortet.load();
             const auto ts = s->telemetrie->snapshot();
-            ersetzt += ts.ersetzt;
-            neuesteVerworfen += ts.beanspruchtVerworfen;
-            zuGross += ts.zuGross;
-            kollision += ts.kollisionsLoecher;
-            bloecke += s->bloecke.load();
+            if (s->langsam)
+            {
+                ersetzt += ts.ersetzt;
+                neuesteVerworfen += ts.beanspruchtVerworfen;
+                zuGross += ts.zuGross;
+                kollision += ts.kollisionsLoecher;
+                veroeffentlicht += s->veroeffentlichungen.load();
+                abgelehnt += s->veroeffentlichungAbgelehnt.load();
+            }
+            if (s->fluter)
+            {
+                flErsetzt += ts.ersetzt;
+                flNeuesteVerworfen += ts.beanspruchtVerworfen;
+                flZuGross += ts.zuGross;
+                flKollision += ts.kollisionsLoecher;
+                flVeroeffentlicht += s->veroeffentlichungen.load();
+                flAbgelehnt += s->veroeffentlichungAbgelehnt.load();
+            }
+            const auto sBloecke = s->bloecke.load();
+            const auto sPubl = s->prozessor->producerPublikationenFuerTest();
+            bloecke += sBloecke;
             dropsUeberlauf += s->prozessor->analyseDropsUeberlaufFuerTest();
             dropsOversize += s->prozessor->analyseDropsOversizeFuerTest();
-            publikationen += s->prozessor->producerPublikationenFuerTest();
+            publikationen += sPubl;
+            // S08: das MINIMUM je Sonde. Eine Summe verbirgt einen einzelnen
+            // stehengebliebenen Analyseworker hinter fuenfzehn laufenden
+            // (Befund 7).
+            if (ersteSonde) { publikationenMin = sPubl; bloeckeMin = sBloecke; ersteSonde = false; }
+            else
+            {
+                publikationenMin = std::min (publikationenMin, sPubl);
+                bloeckeMin = std::min (bloeckeMin, sBloecke);
+            }
             brueche += s->segmentwechsel.load();
             if (s->langsam && sichtbar.count (s->adr.instanceId) == 0)
                 langsameImmerMitglied = false;
@@ -967,6 +1244,10 @@ struct Soak
           << ",\"topologie_ms\":" << topologieMs
           << ",\"mitgliedschaft\":{\"snapshot_pruefungen\":" << snapshotPruefungen.load()
           << ",\"vollstaendig\":" << snapshotVollstaendig.load()
+          << ",\"uebernahmen\":" << snapshotUebernahmen.load()
+          << ",\"ungueltig\":" << snapshotUngueltig.load()
+          << ",\"abtast_pruefungen\":" << abtastPruefungen.load()
+          << ",\"abtast_vollstaendig\":" << abtastVollstaendig.load()
           << ",\"fremde_adresse\":" << fremdeAdresse.load()
           << ",\"fuehrendes_main_falsch\":" << fuehrungFalsch.load() << "}"
           << ",\"neustart\":[";
@@ -986,10 +1267,18 @@ struct Soak
               << ",\"reconnect_ms\":{\"min\":" << mn
               << ",\"p95\":" << perzentil (n.reconnectMs, 0.95)
               << ",\"max\":" << mx << "}"
+              << ",\"reconnect_paare\":" << n.reconnectMs.size()
               << ",\"bereit_bis_vollstaendig_ms\":" << n.bereitBisVollstaendigMs
               << ",\"ueber_schranke\":"
               << ((n.bereitBisVollstaendigMs > kSchrankeMs) ? "true" : "false")
               << ",\"alte_epoche_nach_neustart_gesehen\":" << n.alteEpocheGesehen
+              << ",\"s09_sichten\":" << n.s09Sichten
+              << ",\"s09_subscription_weg\":" << n.s09SubscriptionWeg
+              << ",\"s09_quellen_getrennt\":" << n.s09QuellenGetrennt
+              << ",\"kill_erfolgt_gesehen\":" << (n.killErfolgtGesehen ? "true" : "false")
+              << ",\"kill_dauer_ms\":" << n.killDauerMs
+              << ",\"totzeit_erfasst\":" << (n.totzeitErfasst ? "true" : "false")
+              << ",\"backoff_deckel_in_totzeit\":" << n.backoffDeckelErreicht
               << ",\"totzeit_ms\":" << n.totzeitMs << "}";
         }
         o << "]"
@@ -1006,7 +1295,8 @@ struct Soak
           << ",\"latenz_max_im_stoerfenster_ms\":"
           << (fensterLatenzen.empty() ? 0.0
               : *std::max_element (fensterLatenzen.begin(), fensterLatenzen.end()))
-          << ",\"schranke_ms\":" << kP0SchrankeMs << "}"
+          << ",\"schranke_ms\":" << kP0SchrankeMs
+          << ",\"nachlauf_ms\":" << kNachlaufMs << "}"
           << ",\"liveness\":{\"stale_ausserhalb_neustart\":" << staleAusserhalb.load()
           << ",\"evicted_ausserhalb_neustart\":" << evictedAusserhalb.load()
           << ",\"stale_im_neustartfenster\":" << staleImFenster.load() << "}"
@@ -1014,57 +1304,105 @@ struct Soak
           << ",\"immer_mitglied\":" << (langsameImmerMitglied ? "true" : "false")
           << ",\"ersetzte_liveframes\":" << ersetzt
           << ",\"neueste_verworfen\":" << neuesteVerworfen
-          << ",\"abgelehnt\":" << (zuGross + neuesteVerworfen)
+          // ABGELEHNT kommt aus den Rueckgabewerten von `veroeffentlichen()`,
+          // nicht aus `zuGross + beanspruchtVerworfen`. Erst dadurch kann die
+          // Pruefung `abgelehnt == zu_gross + neueste_verworfen` ueberhaupt
+          // eine nicht zugeordnete Ablehnung finden (Befund 4).
+          << ",\"abgelehnt\":" << abgelehnt
+          << ",\"veroeffentlichungen\":" << veroeffentlicht
           << ",\"zu_gross\":" << zuGross
           << ",\"kollisionsloecher\":" << kollision
           << ",\"schnelle_p95_ms\":" << perzentil (schnelleLatenzen, 0.95)
+          << ",\"fluter_ueberlappt\":"
+          << (sonden.empty() ? "false" : (sonden[0]->langsam ? "true" : "false"))
           << ",\"blockiert_andere_nicht\":"
           << (anzahl == langsam ? "\"nicht_anwendbar\""
               : (perzentil (schnelleLatenzen, 0.95) <= kP0SchrankeMs ? "true" : "false"))
           << "}"
+          // Der K-S1-Fluter (Sonde 0) getrennt. Seine Flut belegt K-S1, nie S06.
+          << ",\"fluter\":{\"ersetzte_liveframes\":" << flErsetzt
+          << ",\"neueste_verworfen\":" << flNeuesteVerworfen
+          << ",\"abgelehnt\":" << flAbgelehnt
+          << ",\"veroeffentlichungen\":" << flVeroeffentlicht
+          << ",\"zu_gross\":" << flZuGross
+          << ",\"kollisionsloecher\":" << flKollision << "}"
           << ",\"audio\":{\"bloecke\":" << bloecke
           << ",\"ganzblockdrops_ueberlauf\":" << dropsUeberlauf
           << ",\"ganzblockdrops_oversize\":" << dropsOversize
           << ",\"kontinuitaetsbrueche\":" << brueche
-          << ",\"publikationen\":" << publikationen << "}"
-          << ",\"pipe\":{\"fremder_name_versucht\":" << fremderPipename.load() << "}"
+          << ",\"publikationen\":" << publikationen
+          << ",\"publikationen_je_sonde_min\":" << publikationenMin
+          << ",\"bloecke_je_sonde_min\":" << bloeckeMin
+          << ",\"samplerate\":" << kFs
+          << ",\"blockgroesse\":" << kBlock << "}"
+          << ",\"pipe\":{\"fremder_name_versucht\":" << fremderPipename.load()
+          << ",\"clientnamen_geprueft\":" << clientPipenamenGeprueft.load()
+          << ",\"ohne_produkt_v3\":" << (kOhneProduktV3 ? "true" : "false") << "}"
           << ",\"subscription\":{\"weg_im_neustartfenster\":"
           << subscriptionWegImFenster.load() << "}"
-          << ",\"kill\":" << killBericht()
+          << ",\"kill\":" << killBericht (verlorenFenster)
           << "}";
         return o.str();
     }
 
-    std::string killBericht() const
+    /// Jedes Urteil folgt allein aus seinem Belegfeld (§7). `gefahren` steht
+    /// als eigenes Feld daneben, damit der Pruefer das Urteil NACHRECHNEN kann,
+    /// statt es zu uebernehmen (Befund 14).
+    ///
+    /// `verlorenFenster` kommt aus dem Schlussbericht, also NACH dem
+    /// Nachlauffenster: nur ein dort noch offener ACK ist endgueltig verloren.
+    /// Die Vorfassung zaehlte in `bereitWieder()` alles, was zu diesem fruehen
+    /// Zeitpunkt unbeantwortet war — spaeter eintreffende ACKs widerlegten den
+    /// Treffer (Befund 1).
+    std::string killBericht (std::uint64_t verlorenFenster) const
     {
         auto urteil = [] (bool gefahren, bool getroffen) {
             return ! gefahren ? "\"nicht_gefahren\""
                               : (getroffen ? "\"getroffen\"" : "\"nicht_getroffen\"");
         };
-        std::uint64_t ks1 = 0, ks3 = 0, ks4 = 0;
-        bool ks2Gefahren = false, ks2Getroffen = false;
+        std::uint64_t ks1 = 0, ks4 = 0;
+        bool ks2Gefahren = false, ks2SnapshotVorKill = false;
         bool ks5Gefahren = false; int ks5Deckel = 0;
         for (const auto& n : neustarts)
         {
             ks1 += n.telemetrieHandleFehler;
-            ks3 += n.p0OhneAckImFenster;
             ks4 += n.flagZumKillzeitpunkt;
-            if (n.ks2Barriere) { ks2Gefahren = true; ks2Getroffen = ! n.snapshotVorKill; }
-            if (n.ks5Totzeit)  { ks5Gefahren = true; ks5Deckel = n.backoffDeckelErreicht; }
+            if (n.ks2Barriere)
+            {
+                ks2Gefahren = true;
+                ks2SnapshotVorKill = n.snapshotVorKill;
+            }
+            if (n.ks5Totzeit)
+            {
+                ks5Gefahren = true;
+                ks5Deckel = n.backoffDeckelErreicht;
+            }
         }
         const bool ks4Gefahren = std::any_of (neustarts.begin(), neustarts.end(),
                                               [] (const Neustart& n) { return n.ks4Barriere; });
+        // K-S1 und K-S3 brauchen einen Kill, dessen Beleg auch erfasst wurde.
+        const bool killGefahren = std::any_of (
+            neustarts.begin(), neustarts.end(),
+            [] (const Neustart& n) { return n.killErfolgtGesehen; });
+        const bool totzeitGefahren = std::any_of (
+            neustarts.begin(), neustarts.end(),
+            [] (const Neustart& n) { return n.totzeitErfasst; });
         std::ostringstream o;
         o << "{"
-          << "\"k_s1\":{\"urteil\":" << urteil (! neustarts.empty(), ks1 > 0)
+          << "\"k_s1\":{\"urteil\":" << urteil (totzeitGefahren, ks1 > 0)
+          << ",\"gefahren\":" << (totzeitGefahren ? "true" : "false")
           << ",\"telemetrie_handle_fehler\":" << ks1 << "}"
-          << ",\"k_s2\":{\"urteil\":" << urteil (ks2Gefahren, ks2Getroffen)
-          << ",\"snapshot_vor_kill\":" << ((ks2Gefahren && ! ks2Getroffen) ? "true" : "false") << "}"
-          << ",\"k_s3\":{\"urteil\":" << urteil (! neustarts.empty(), ks3 > 0)
-          << ",\"p0_ohne_ack_im_fenster\":" << ks3 << "}"
+          << ",\"k_s2\":{\"urteil\":" << urteil (ks2Gefahren, ! ks2SnapshotVorKill)
+          << ",\"gefahren\":" << (ks2Gefahren ? "true" : "false")
+          << ",\"snapshot_vor_kill\":" << (ks2SnapshotVorKill ? "true" : "false") << "}"
+          << ",\"k_s3\":{\"urteil\":" << urteil (killGefahren, verlorenFenster > 0)
+          << ",\"gefahren\":" << (killGefahren ? "true" : "false")
+          << ",\"p0_ohne_ack_im_fenster\":" << verlorenFenster << "}"
           << ",\"k_s4\":{\"urteil\":" << urteil (ks4Gefahren, ks4 > 0)
+          << ",\"gefahren\":" << (ks4Gefahren ? "true" : "false")
           << ",\"flag_zum_killzeitpunkt\":" << ks4 << "}"
           << ",\"k_s5\":{\"urteil\":" << urteil (ks5Gefahren, ks5Deckel == anzahl + 1)
+          << ",\"gefahren\":" << (ks5Gefahren ? "true" : "false")
           << ",\"backoff_deckel_erreicht\":" << ks5Deckel
           << ",\"erwartet\":" << (anzahl + 1) << "}"
           << "}";
@@ -1075,6 +1413,19 @@ struct Soak
 
 int main (int argc, char** argv)
 {
+    // S10: OHNE dieses Define starten die konstruierten `SondeProcessor` ihre
+    // eigenen v3-Clients und oeffnen die PRODUKTIONS-Pipe
+    // (`sonde/SondeProcessor.cpp:100-105`). Der argv-Riegel sieht diesen
+    // internen Weg nicht — deshalb steht hier eine eigene Wache mit Exit 3
+    // statt eines Zaehlers, den nichts setzen kann (Befund 9).
+    if (! kOhneProduktV3)
+    {
+        std::cerr << "VORAUSSETZUNG FEHLT: EqCopSessionSoak ist ohne "
+                     "NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3 gebaut. Die "
+                     "SondeProcessor-Instanzen wuerden die PRODUKTIONS-Pipe "
+                     "oeffnen (CLAUDE.md: Probe-Pipe ist nie Produktions-Pipe).\n";
+        return 3;
+    }
     if (argc < 2 || ! istProbePipename (argv[1]))
     {
         std::cerr << "VERWEIGERT: Aufruf EqCopSessionSoak <probe-pipe> [sonden] "
@@ -1142,10 +1493,16 @@ int main (int argc, char** argv)
                 soak.neustarts.back().ks4Barriere = (art == "k_s4");
             }
         }
-        else if (befehl == "KILL_GESCHEHEN")
+        else if (befehl == "KILL_ERFOLGT")
+        {
+            int i = 0; long long dauer = 0;
+            z >> i >> dauer;
+            soak.killErfolgt (i, dauer);
+        }
+        else if (befehl == "TOTZEIT_ENDE")
         {
             int i = 0; z >> i;
-            soak.killGeschehen (i);
+            soak.totzeitEnde (i);
         }
         else if (befehl == "BARRIERE")
         {
@@ -1179,6 +1536,10 @@ int main (int argc, char** argv)
         }
     }
 
+    // S14-Nachlauffenster VOR dem Abbau: keine neuen Heartbeats mehr, aber
+    // alle Clients lesen weiter. Erst danach heisst ein offener ACK Verlust.
+    soak.nachlauf.store (true);
+    std::this_thread::sleep_for (std::chrono::milliseconds (kNachlaufMs));
     soak.abbauen();
     std::cout << soak.bericht (messS / 60, warmupS) << std::endl;
     return 0;

@@ -5,7 +5,7 @@
 | Merkmal | Wert |
 |---|---|
 | Ticket | G3-SOAK (Werkzeugticket zum Phasengate **G3**) |
-| Basis-Commit | Phase 1 `03e1e17` · Phase 1b `f7a5125` · Phase 2 `a570367` |
+| Basis-Commit | Phase 1 `03e1e17` · Phase 1b `f7a5125` · Phase 2 `a570367`. Die Phase-2-Commits wurden vor dem Push auf `8cd5903` rebased; §12 nennt zu jedem Schritt beide SHAs. |
 | Phase | **2 von 2 — gebaut und gefahren.** Phase 1/1b spezifizierten vor dem Code; zwei Codex-Runden schlossen fünf Befunde. Phase 2 hat das Bein **A24** gebaut, selbst gefahren (§13) und jede Wache einmal absichtlich gebrochen (§14). Die Urteilsmarke setzt der Dirigent nach der Codex-Prüfung, nicht dieses Manifest. |
 | Gate-Text (wörtlich, `docs/bauaufteilung-sonden.md:385`) | „**Gate:** `/rust-review` + Codex + 60-min-Soak. Falsifikation: Gate 7" · Prüfstufe T3 |
 | Auftrag | genau ein neues Kanon-Bein **A24**. In Phase 2 **angelegt**: der Prüfer `tools/eq-copilot/pruefe_session_soak.py` und das Konsolenprogramm `eq-copilot/plugin/tests/SessionSoakMain.cpp` (CMake-Ziel `EqCopSessionSoak`), dazu die Registrierung A24 in `tools/beweise.ps1` samt Bauziel in `$gemesseneZiele`. Der Probe-Broker `broker/src/bin/eqcop-broker-sonde012-probe.rs` blieb **unverändert** — er kann bereits beides, was A24 braucht: `BEREIT` melden und auf `STOP` enden. Sonst nichts. |
@@ -494,15 +494,15 @@ aus den Läufen in §13.
 | 2026-09-02 | Phase 1: Verhaltensmatrix, Killmatrix, Fristen aus dem Code abgeleitet; kein Code geschrieben | Basis-Commit `03e1e17`, Stand `d60ceaf` |
 | 2026-09-02 | Matrixprüfung Runde 1: Codex Thread `01a061ed-25ea-7242-a384-b936d10c62de` (gpt-5.6-sol, Effort high, read-only), **NEEDS_WORK**, vier Befunde, Nacharbeit Phase 1b | geprüft auf `f7a5125` |
 | 2026-09-02 | Matrixprüfung Runde 2: frischer Codex Thread `01a06203-877a-7fe1-aa47-41fe219de8a2` (high, read-only, Fixdiff `d60ceaf`…`a570367`): S16, Fristableitung, K-S2 und K-S5 **geschlossen**; ein Defekt bleibt — K-S1 wertete Control-Felder und belegte damit Controlverkehr statt eines P2-Frames | geprüft auf `a570367` |
-| 2026-09-02 | Phase 2, Schritt 1: K-S1 auf ein telemetriespezifisches Eintrittssignal umgestellt (`k_s1.telemetrie_handle_fehler`, vier Bedingungen, verbleibende Grenze benannt) | `edc01f0` |
-| 2026-09-02 | Phase 2, Bau: `SessionSoakMain.cpp` (Ziel `EqCopSessionSoak`), `pruefe_session_soak.py`, Registrierung A24 samt Bauziel. Vier Fehler im eigenen Werkzeug gefunden und behoben — Zugriffsverletzung im Bericht, `flachesJsonObjekt` am verschachtelten Snapshot, Heartbeats vor dem Kill falsch dem Aussenraum zugerechnet, und messende Heartbeats ohne `adresse`, die der echte Coordinator nie beantwortet hat | `edc01f0` → `5a7670b` |
-| 2026-09-02 | Phase 2, Beweis: beide Läufe grün (§13), alle fünf Killpunkte im Killpunkt-Lauf getroffen, sechs Rotmutationen liefern das erwartete Rot (§14) | `5a7670b` |
-| 2026-09-02 | Phase 2, Kanon: **GRUEN 40/40** auf `7386741`, abgekoppelt gefahren. Die Zahl der Beine wächst um genau eines — A24 (146,42 s, Exit 0); SONDE-012 schloss mit 39/39. Kopf und Übersicht hängt der Runner selbst an, Rohausgabe `docs/beweise/roh/G3-SOAK-7386741.md` | `7386741` |
+| 2026-09-02 | Phase 2, Schritt 1: K-S1 auf ein telemetriespezifisches Eintrittssignal umgestellt (`k_s1.telemetrie_handle_fehler`, vier Bedingungen, verbleibende Grenze benannt) | `edc01f0`, nach dem Rebase `850433a` |
+| 2026-09-02 | Phase 2, Bau: `SessionSoakMain.cpp` (Ziel `EqCopSessionSoak`), `pruefe_session_soak.py`, Registrierung A24 samt Bauziel. Vier Fehler im eigenen Werkzeug gefunden und behoben — Zugriffsverletzung im Bericht, `flachesJsonObjekt` am verschachtelten Snapshot, Heartbeats vor dem Kill falsch dem Aussenraum zugerechnet, und messende Heartbeats ohne `adresse`, die der echte Coordinator nie beantwortet hat | `edc01f0` → `5a7670b`, nach dem Rebase `850433a` → `0ca3080` |
+| 2026-09-02 | Phase 2, Beweis: beide Läufe grün (§13), alle fünf Killpunkte im Killpunkt-Lauf getroffen, sechs Rotmutationen liefern das erwartete Rot (§14) | `5a7670b`, nach dem Rebase `0ca3080` |
+| 2026-09-02 | Phase 2, Kanon: **GRUEN 40/40** auf `7386741`, abgekoppelt gefahren. Die Zahl der Beine wächst um genau eines — A24 (146,42 s, Exit 0); SONDE-012 schloss mit 39/39. Kopf und Übersicht hängt der Runner selbst an, Rohausgabe `docs/beweise/roh/G3-SOAK-7386741.md` | `7386741`, nach dem Rebase `ef25b1c` |
 | 2026-09-02 | Phase 1b: alle vier Befunde geschlossen — §3.1 rechnet jetzt Control- **und** Telemetrie-Runde und weist den Zuschlag zur 60-s-Frist aus (B2); §6 ersetzt „deterministisch" durch **Barriere** oder **wahrscheinlich** mit Belegfeld (B3, B4); S16 legt die Reihe 1/4/8/16/32 und die Regel `max(1, round(N · Anteil))` fest (B1). Kein Code geschrieben | Basis `f7a5125` |
 
 ## 13. Selbst gefahrene Laeufe (Phase 2, 02.09.2026)
 
-Beide Laeufe auf dem Baustand `5a7670b`, Windows 11, Release. Der Prueferbericht
+Beide Laeufe auf dem Baustand `5a7670b` (nach dem Rebase `0ca3080`), Windows 11, Release. Der Prueferbericht
 ist die einzige Quelle der Zahlen unten; er steht darunter roh.
 
 | Lauf | Aufruf | Exit | Kernzahlen |
@@ -566,7 +566,7 @@ Groesse und laesst alles andere unberuehrt. `--mutant-liste` druckt sie.
 | `s12` | gemessener Zaehler `alte_epoche_nach_neustart_gesehen` auf 1 | `ROT [S12] Neustart 1: die alte broker_epoch kam nie wieder [1]` | **2** |
 | `s15` | Produktions-Pipename statt Probe-Pipe | beide Programme melden `Exit 3`; der Pruefer endet mit Voraussetzung-fehlt | **3** |
 
-Alle sechs am 02.09.2026 auf `5a7670b` gefahren (`--sonden 4 --minuten 1
+Alle sechs am 02.09.2026 auf `5a7670b` (nach dem Rebase `0ca3080`) gefahren (`--sonden 4 --minuten 1
 --neustarts 1`, `s15` ohne Lauf). Ein Mutant, der gruen bliebe, waere ein
 Befund am Bein.
 

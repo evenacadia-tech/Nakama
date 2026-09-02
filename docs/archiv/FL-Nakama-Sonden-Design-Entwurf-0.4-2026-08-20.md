@@ -1,14 +1,10 @@
-# Nakama mit Instrumentenbus-Sonden — Produkt-, Technik- und Implementierungsentwurf 0.5
+# Nakama mit Instrumentenbus-Sonden — Produkt-, Technik- und Implementierungsentwurf 0.4
 
-- **Stand:** 2026-09-02 (Fassung 0.5; Fassung 0.4 vom 2026-08-20 liegt byteidentisch in
-  [`archiv/FL-Nakama-Sonden-Design-Entwurf-0.4-2026-08-20.md`](archiv/FL-Nakama-Sonden-Design-Entwurf-0.4-2026-08-20.md))
+- **Stand:** 2026-08-20
 - **Status:** Technische Spezifikation mit ausführbarem Implementierungsphasenplan
 - **Gegenstand:** Funktions-, Interaktions-, System- und Technikdesign; bewusst ohne visuelle Gestaltung
 - **Bauentscheidung:** erteilt am 20.08.2026 (User: „okay dann fangen wir damit nächste session an"; Errata (a))
-- **Errata 21.08.2026:** **in Fassung 0.5 eingearbeitet.** Der Block unter dieser Liste bleibt als
-  **Verlaufsabschnitt** stehen — er ist die Quelle jeder Einarbeitung und wird nicht gelöscht. Seine
-  Vorrangregel ist erfüllt, nicht aufgehoben: jedes Erratum (a) bis (q) steht ab 0.5 zusätzlich an
-  seiner eigenen Stelle im Text, mit Buchstabe, Datum und User-Wort-Quelle.
+- **Errata 21.08.2026:** der Block direkt unter dieser Liste hat Vorrang vor dem Rest des Dokuments
 - **Fassung 0.4 (20.08.2026):** Befunde des unabhängigen Prüfberichts
   ([`pruefbericht-sondenentwurf-2026-08-20.md`](pruefbericht-sondenentwurf-2026-08-20.md))
   eingearbeitet — Impersonation-Reihenfolge (§48.4/§66.2), CID-Ableitung
@@ -23,31 +19,11 @@
   Prüfbericht-Befund A auf — und das **Arbeitsmodell Technik-voraus /
   Design-parallel** in §0.4.
 
-## Wie Fassung 0.5 entstanden ist
-
-- Die **§-Nummerierung von 0.4 bleibt unverändert.** Kein Paragraph ist umnummeriert; §-Verweise
-  aus Manifesten, Tickets und `plan.json` bleiben gültig.
-- Ein **gestrichener** Abschnitt behält seine Überschrift und trägt eine Grabsteinzeile
-  (gestrichen in 0.5, Datum, Grund, Entscheidquelle); sein Text entfällt. Der volle 0.4-Wortlaut
-  steht im Archiv.
-- Eine **eingearbeitete** Stelle trägt einen Kasten `[0.5 · Erratum (x) · Datum]` mit der
-  User-Wort-Quelle. Was weder ein Erratum noch ein datierter Entscheid deckt, bleibt
-  0.4-Wortlaut oder ist eine Fragenkarte in [`plan/fragen.json`](plan/fragen.json).
-- **§-Verweise in `docs/beweise/`** zeigen auf die Fassung, die zum Zeitpunkt des jeweiligen
-  Manifests galt. Sie sind bewusst historisch und werden nicht nachgezogen: ein Beweismanifest ist
-  append-only Verlauf. Weil 0.5 nicht umnummeriert, treffen sie weiterhin denselben Paragraphen.
-
 ## Errata und Entscheide nach dem Kontext-Interview (21.08.2026)
 
-> **Verlaufsabschnitt seit Fassung 0.5 (02.09.2026).** Alle 17 Errata (a) bis (q) sind unten im
-> Text an ihrer Stelle eingearbeitet und dort mit Buchstabe, Datum und User-Wort belegt. Dieser
-> Block bleibt stehen, weil er die **Quelle** jeder Einarbeitung ist — er wird nicht gelöscht und
-> nicht umgeschrieben. Die Regel „Fassung 0.4 bleibt darunter unverändert stehen" galt für 0.4;
-> in 0.5 ist sie durch die Einarbeitung abgelöst.
-
-Dieser Block hat **Vorrang vor dem Rest des Dokuments**. In Fassung 0.4 blieb der Text
-darunter unverändert stehen (kein Umschreiben — die Stellen waren hier benannt,
-nicht ausgetauscht); wo ein Absatz unten einem Punkt hier widersprach, galt
+Dieser Block hat **Vorrang vor dem Rest des Dokuments**. Fassung 0.4 bleibt
+darunter unverändert stehen (kein Umschreiben — die Stellen sind hier benannt,
+nicht ausgetauscht); wo ein Absatz unten einem Punkt hier widerspricht, gilt
 dieser Block. Quelle der Entscheide ist das Register in
 [`CLAUDE.md`](../CLAUDE.md) (Datum + Wortlaut des Users) und das
 Kontext-Interview vom 21.08.2026. Kennzeichnung: **Entscheid** = User-Wort mit
@@ -374,23 +350,6 @@ Die übrigen Punkte **3, 6, 7, 8, 11, 15, 19 und 20** stehen gesammelt am Ende a
 
 ### 0.1 Verhältnis zum heutigen Nakama-Vertrag
 
-> **[0.5 · Erratum (d) · Entscheid 21.08.2026]** User-Wort: „die active Probe fester Name :
-> Nakama Probeeq ist ein vollwertiger hochwertiger EQ der mit Nakama kommuniziert. er kann von
-> nakama direkt anweisungen umsetzen aber auch ganz normal manuell vom user benutzt werden".
-> Die Liste unten beschreibt den **heutigen Code** (EQ-Copilot 0.3.0), nicht das Ziel: die
-> Grundregel „misst und berät" gilt weiter für Gen und für Probeeqs passiven Messbetrieb, nicht
-> mehr für Probeeqs zugeschalteten EQ. Der Satz „vor einer Umsetzung müssten der kanonische
-> Produktplan … erweitert werden" ist durch den Wahrheitskern in
-> [`../CLAUDE.md`](../CLAUDE.md) (21.08.2026) erledigt; Schemata, Audio-Sicherheitsregeln und
-> Nulltest-Verträge bleiben Arbeit der Tickets `SONDE-006`, `SONDE-015` bis `017` und der Gates
-> §49.2 Nr. 1 bis 5.
-> **[0.5 · Erratum (p) · Entscheid 27.08.2026]** Auf die Frage, ob Probeeq künftig auch ohne Gen
-> lokal als vollständiger EQ bedienbar sein soll, antwortet der User „nein"
-> (`../design/abnahmen/2026-08-27-arbeitsnamen-und-probeeq-doppelrolle.md`). Das überschreibt
-> den manuellen Bedienanteil aus Erratum (d), nicht Probeeqs Bus-DSP: Probeeq misst passiv und
-> führt bei zugeschaltetem EQ Gens Fernsteuerung lokal auf dem Bus aus. Die vollständige
-> Band-, Kurven- und Präzisionsbedienung liegt ausschließlich in Gens zweiter Oberfläche.
-
 Der aktuelle, kanonische Nakama-Vertrag bleibt vorerst unverändert:
 
 - Nakama misst und berät;
@@ -432,12 +391,6 @@ versionierten Schemata und der reale Quellcode.
 
 ### 0.2 Geltungsbereich dieser Fassung
 
-> **[0.5 · Erratum (m) · Befund 21.08.2026]** Der Satz „zwölf von zwanzig gewählten
-> Kernfunktionen" ist **nicht rekonstruierbar**: weder die Zwanziger-Liste noch die Auswahl
-> existiert in einer Datei des Repos. Er gilt als Annahme der Fassung 0.1; der
-> Kernfunktionen-Satz dieses Entwurfs ist damit ein Startwert wie die Zahlen in Erratum (f).
-> Offen als Fragenkarte, Register **NAK-39**.
-
 Teil I (Abschnitte 1–28) hält das gewählte Produktverhalten fest. Teil II (Abschnitte 29–52)
 entscheidet den bestgeeigneten technischen Ansatz für **alle zwölf Kern- und alle acht
 Roadmap-Funktionen** und verankert ihn im heutigen Nakama. Teil III schneidet daraus einen
@@ -467,30 +420,14 @@ Der User hat am 20.08.2026 die Produktarchitektur ausdrücklich festgelegt:
   Prüfbericht als Befund A beschriebene Konflikt zwischen Kernfunktion 1
   und dem Zielvertrag aufgelöst: Landkarte und Zielvertrag leben in zwei
   verschiedenen Oberflächen.
-- ~~Technisch bindet sich die Prisma-App … als read-only Spiegel an Broker und Sitzung an.~~
-  **Gestrichen in Fassung 0.5 am 02.09.2026.** Grund: die Prisma-App ist kein Bauziel mehr —
-  kein Ticket, kein Broker-Client, kein Vokabular in der Plugin-UI. Entscheidquelle:
-  **Erratum (c)**, User-Wort 21.08.2026 „Familie; Prisma nur Studie" (dazu Prisma-Herkunft
-  „Meine Idee", Hörkompass „Alles nur Studie", „Glas/Licht raus; Profil nur Studie"). Die
-  Studie liegt geparkt unter
-  [`../eq-copilot/design/prisma-studie/`](../eq-copilot/design/prisma-studie/). Die Trennung
-  „Master-Plugin konventionell" aus den Punkten darüber gilt weiter (Entscheid 21.08.2026 zur
-  Festlegung vom 20.08.: „Meine Entscheidung, so gesagt").
+- Technisch bindet sich die Prisma-App, wenn sie gebaut wird, wie eine
+  weitere Main-Instanz als **read-only Spiegel** an Broker und Sitzung an
+  (§30); sie erhält nie eine `control_capability` und steuert keine Sonde.
 
 ### 0.4 Arbeitsmodell 20.08.2026 — Technik voraus, visuelles Design als parallele Spur
 
-> **[0.5 · Erratum (l) · Befund 21.08.2026]** „Vom User festgelegt" ist für dieses Arbeitsmodell
-> **nicht belegt** — es existiert dafür kein Wortlaut. Belegt sind die Architektur vom
-> 20.08.2026 („Meine Entscheidung, so gesagt") und die Bauentscheidung aus Erratum (a). Das
-> Arbeitsmodell „Technik voraus" ist ein **Vorschlag**, den der Bau seit dem 20.08.2026 faktisch
-> lebt; es heißt ab 0.5 so und nicht mehr „vom User festgelegt".
-> **[0.5 · Erratum (j) · Entscheid 21.08.2026]** „Nie abgenommen – bleibt Provisorium": die
-> heutige Material-Kit-Front von EQ-Copilot 0.3.0 ist genau das Provisorium, das „schlichte,
-> ehrliche Bedien-UI" unten meint. An ihr findet keine Arbeit mehr statt. Die Anzeige-Pflichten
-> aus Punkt 1 und §50.2 gelten für jede Fassung weiter.
-
-Vorschlag des Entwurfs, seit dem 20.08.2026 gelebte Praxis: Der technische Unterbau wird nach
-diesem Phasenplan mit einer **schlichten, ehrlichen Bedien-UI** vorausgebaut; das visuelle
+Vom User festgelegt: Der technische Unterbau wird nach diesem Phasenplan
+mit einer **schlichten, ehrlichen Bedien-UI** vorausgebaut; das visuelle
 Design läuft **parallel und gesondert** und wird nach Abnahme je Ansicht
 als Update eingespielt. Der Plan trägt das ohne Änderung, denn er enthält
 bewusst kein visuelles Design (Kopfzeile, §0.2, §28) — alle Exit-Gates
@@ -508,44 +445,24 @@ bleiben dabei:
    Designarbeit ändern, WAS gezeigt wird (Ansichten, Informationsset),
    fließt das VOR dem betroffenen Phasen-Gate in diesen Plan zurück
    (§35.1/§46.2) — nie still im Nachhinein.
-3. ~~**Zwei getrennte Design-Spuren:** Prisma-App und konventionelle Plugin-UI mit drei
-   Oberflächen (Main, lokal voll bedienbarer Active-Probe-Editor, Passive-Probe-Kachel).~~
-   **Gestrichen in Fassung 0.5 am 02.09.2026.** Grund: keine der drei Aussagen trägt noch —
-   die Prisma-Spur ist Studie, die Dreispurigkeit ist auf zwei Apps zusammengefallen, und
-   Probeeq bekommt keinen lokalen Voll-Editor. Entscheidquellen: **Erratum (c)**, User-Wort
-   21.08.2026 „Familie; Prisma nur Studie" · **Erratum (n)**, Entscheid 23.08.2026
-   (`../design/abnahmen/2026-08-23-gen-eq-zentrale.md`): „Gen wird ein vollwertiges HUB oder
-   Studio … es ist ein vollwertiger eq für den master wie andere eq auf dem markt", Merge-Wahl
-   „eine Sonde" · **Erratum (p)**, Entscheid 27.08.2026 „nein" auf die Frage nach einem lokalen
-   Voll-Editor.
-   **Was ab 0.5 gilt:** zwei Apps mit einer Design-Identität. **Nakama Gen** hat zwei
-   Oberflächen — die erste zeigt Quellen, Befunde und Advisor, die zweite bedient die
-   Probeeq-Instanzen zentral und enthält den vollwertigen Master-EQ. **Nakama Probeeq** misst
-   passiv auf dem Bus, beliefert Gen und führt bei zugeschaltetem EQ Gens Fernsteuerung auf
-   ihrem Bus aus; lokal erhält sie nur eine kompakte Status- und Rückfallfläche. Die
-   Funktions- und Bedienarchitektur beider Oberflächen bindet
-   [`design/docs/funktions-und-bedien-blueprint.md`](../design/docs/funktions-und-bedien-blueprint.md),
-   nicht dieser Entwurf (Rangfolge im Kopf). Die Designarbeit läuft im Ordner `design/`
-   (bis 22.08.2026 ein eigenes Repo) mit bindendem Abnahmen-Protokoll.
-   **[0.5 · Erratum (h) · Entscheid 21.08.2026]** „Das ist ein Designprototyp keine
-   technikanleitung, design passt sich am ende der funktion an." Alle UI-Beschreibungen dieses
-   Entwurfs sind damit technische **Annahmen**, keine Oberflächenvorgabe.
+3. **Zwei getrennte Design-Spuren:** die Prisma-App (Hörkompass-
+   Zielvertrag, läuft bereits, vom Phasenplan entkoppelt) und die
+   konventionelle Plugin-UI (Maßstab Lesbarkeit). Letztere umfasst **drei
+   Oberflächen**: Main (die vollständige Arbeitsfläche, §31.1), den
+   Editor der Active Probe (lokal voll bedienbares EQ-Plugin — acht
+   Band-Slots, manuelle Bereiche ±12 dB, fernsteuerungsfrei bewiesen in
+   P6 — plus Draft-/Preview-/Pairing-Sichtbarkeit) und den Editor der
+   Passive Probe (minimale Status-/Identitätskachel: Name, Verbindung,
+   Frische; null Hostparameter nach §53.8, Bedienung läuft über Main).
+   Beide Spuren laufen durch den Kreativ-Prozess des Users. Die
+   konventionelle Plugin-UI-Spur arbeitet im eigenen, bewusst
+   Ordner `design/` (bis 22.08. eigenes, kontextreines Repo) (Assettruhe +
+   bindendes Abnahmen-Protokoll); Ergebnisse fließen nach User-Abnahme
+   als Design-Update ein.
 4. **Architektur hält den Tausch billig:** UI ist die oberste,
    austauschbare Schicht (§53.3); Engine und Zustandslogik kennen keine
    Optik. Erste designrelevante Sichtbarkeitspunkte sind R1/P3
    (Landkarte + Setup), R2/P5 (Assistent) und R3/P7 (Preview/Apply).
-5. **Größenvertrag (Entscheid 01.09.2026, gehört zu Erratum (h)).** Beide Gen-Oberflächen
-   verwenden genau **eine logische Layoutgröße: 950×538**. User-Wort: „compact und standard wird
-   zu kompliziert. es ist schon schwer genug ein gutes UI layout zu erstellen. es wird eine
-   größe nämlich standard geben. compact kann eventuell iwann wenn alles fertig ist angegangen
-   werden." Bindend:
-   [`../design/abnahmen/2026-09-01-gen-nur-standardgroesse.md`](../design/abnahmen/2026-09-01-gen-nur-standardgroesse.md).
-   Compact, Fenster-Resize und ein größenabhängiges Reflow sind vertagt; die UI-Skalierungsstufen
-   100/125/150/200 Prozent vergrößern dieselbe Geometrie und erzeugen kein zweites Layout.
-   Probeeq wird dadurch nicht neu dimensioniert. Der frühere Größensatz der Design-Abnahme vom
-   20.08.2026 (Gen 760×430 · Probeeq 700×420 · Suna-Kachel 260×84) dokumentiert den damaligen
-   Stand; der funktionale JUCE-Pfad läuft heute noch auf 760×430 und muss für die native
-   Übernahme auf 950×538 umgestellt und in FL geprüft werden.
 
 ---
 
@@ -597,18 +514,6 @@ Nach einer verwertbaren Passage soll Nakama sechs Fragen beantworten können:
 ---
 
 ## 3. Das System aus Usersicht
-
-> **[0.5 · Erratum (b) · Entscheid 21.08.2026]** Namen laut User: „Nakama Gen = Main app ·
-> aktive sonde = Nakama Probeeq · passive sonde = Nakama Suna · Bundle = Nakama Studio"
-> (Schreibweise „Probeeq" wie getippt). **Fortgeschrieben durch Erratum (n), Entscheid
-> 23.08.2026:** Suna entfällt als App-Name; passive und aktive Sondenrolle sind in
-> **Nakama Probeeq** zusammengefallen (Merge-Wahl „eine Sonde",
-> `../design/abnahmen/2026-08-23-gen-eq-zentrale.md`). Die Arbeitstitel „Nakama Main",
-> „Nakama Probe" und „Nakama Active Probe" in §3.1 bis §3.3 und im ganzen Dokument bleiben als
-> **alte Arbeitstitel** stehen: Main → **Gen**, Passive/Active Probe → **Probeeq**. Sie werden
-> nicht ersetzt, weil `bundle` und `produktname` eingefrorene Zeilen des Identitätsmanifests
-> sind — die Umbenennung ist eine Identitätsänderung und liegt bei **NAK-30**, nicht bei einem
-> Nebenbei-Refactor. Bis dahin bleiben Code, Bundle, Pipes und Schemas bei `EqCop*`/`Eqcp`.
 
 ### 3.1 Nakama Main
 
@@ -665,11 +570,9 @@ Ein lokaler Begleitdienst darf Discovery, Sitzungszuordnung, Speicherung und gr�
 Auswertungen übernehmen. Er bleibt aus Usersicht Infrastruktur. Die tägliche Arbeit findet
 weiterhin in Nakama Main innerhalb von FL Studio statt; kein Terminal ist nötig.
 
-~~Davon getrennt ist die Prisma-App (§0.3): eine eigenständige, optionale Begleit-App neben
-Hauptplugin und Sonden.~~ **Gestrichen in Fassung 0.5 am 02.09.2026.** Grund: die Prisma-App
-ist Studie, kein Bauziel. Entscheidquelle: **Erratum (c)**, User-Wort 21.08.2026 „Familie;
-Prisma nur Studie". Damit entfällt der Begriff **Master-Hub** aus dem Produktvokabular: es gibt
-keine Hub-App und keinen Hub-Client, sondern zwei Plugins und den unsichtbaren Broker.
+Davon getrennt ist die **Prisma-App** (§0.3): eine eigenständige, optionale
+Begleit-App neben Hauptplugin und Sonden. Sie ist Addition, nie Master-Hub —
+kein Sonden-Workflow hängt von ihr ab.
 
 ---
 
@@ -706,11 +609,6 @@ blockieren.
 ---
 
 ## 5. Vier Bedienebenen
-
-> **[0.5 · Erratum (g) · Entscheid 21.08.2026]** UI-Sprache: „Englisch – mein Wort". Die
-> deutschen Ebenennamen unten (Beobachten · Beraten · Vorhören · Anwenden) und alle übrigen
-> deutschen UI-Beschriftungen dieses Entwurfs sind **Übersetzungsvorlagen, kein Produkttext**.
-> Docs, Commits und Gespräch bleiben Deutsch.
 
 Das Produkt trennt vier Ebenen sichtbar. Dadurch ist jederzeit klar, ob Nakama nur beobachtet
 oder tatsächlich Klang verändert.
@@ -842,12 +740,6 @@ Eine Sonde kann eine einfache musikalische Rolle erhalten:
 
 Rollen bleiben optional. Ohne Rolle darf Nakama messen, muss Interpretationen aber vorsichtiger
 formulieren.
-
-> **[0.5 · Erratum (h) · Befund 21.08.2026]** Die Rollenliste ist **nicht entschieden**: dieser
-> Abschnitt führt **sieben** Rollen, `../design/docs/oberflaechen-spezifikation.md` führt
-> **fünf** (führt / trägt / begleitet / geschützt / bewusst verschmolzen). Welche Liste gilt,
-> ist offen — Register **NAK-38**, Fragenkarte. Bis zur Entscheidung ist keine der beiden
-> Listen Oberflächenvorgabe.
 
 ### Wichtigste Regel
 
@@ -1070,28 +962,6 @@ zwischen Projektständen gehört zu Roadmap-Punkt 15.
 
 ## 16. Kernfunktion 16 — Fernsteuerung des eigenen Sonden-DSPs
 
-> **[0.5 · Erratum (n) · Entscheid 23.08.2026]** Voller Wortlaut in
-> [`../design/abnahmen/2026-08-23-gen-eq-zentrale.md`](../design/abnahmen/2026-08-23-gen-eq-zentrale.md):
-> „STATT mehrere eq auf den instrumenten liegen zu haben, könnte man das EQ UI des Probeeq auf
-> eine neue 2. seite auf den Gen legen … Also im Prinzip liegt der EQ auf den Bussen wird aber
-> eingestellt auf dem Gen" · „Gen wird ein vollwertiges HUB oder Studio … es ist ein
-> vollwertiger eq für den master wie andere eq auf dem markt" · Merge-Wahl „eine Sonde" · Name
-> **Nakama Probeeq**. Vier Folgen für diesen Abschnitt:
-> 1. **Der Fernsteuerweg ist vom Nebenpfad zum Hauptbedienweg geworden.** Die
->    Sicherheitsmechanik (Pairing, HMAC, Revision, Lease, Revert) gilt unverändert; die eigene
->    Remote-Begrenzung ist gestrichen (§44.2, Erratum (q)).
-> 2. **Die EQ-Bedienoberfläche entsteht einmal**, als zweite Oberfläche von Gen. Vorgaben des
->    Users, wörtlich: Sonden-Durchschalter direkt auf dieser Fläche, nie über die erste; zwei
->    EQ-Spuren in einem Graph, farblich unterscheidbar.
-> 3. **Parameter- und Zustandshoheit bleibt in der Sonde** (Host-Automation ist
->    instanzgebunden); Gen ist Fernbedienung und Ansicht. Der eigene Revisions- und Undo-Ring
->    (§44.3) wird dadurch wichtiger, weil der Host Ferneingriffe nicht zuverlässig in sein Undo
->    nimmt. Für **Gens eigenen** Master-EQ gilt das ausdrücklich nicht — siehe §53.8,
->    Erratum (q).
-> 4. **§0.1 „Gen berät nur" gilt fortan als „nichts Ungefragtes":** Gen erhält einen
->    zuschaltbaren, minimalphasigen Master-EQ; aus = bitidentisch, nach demselben verriegelten
->    und bewiesenen Muster wie die Hör-Markierung.
-
 ### Ziel
 
 Eine Empfehlung kann direkt am richtigen Bus vorgehört und nach Bestätigung angewendet werden,
@@ -1220,11 +1090,10 @@ Dieselbe Refrainpassage erneut messen
 
 ### Deterministik und KI
 
-> **Gestrichen in Fassung 0.5 am 02.09.2026.** Grund: es gibt keine KI-Erklärschicht im Produkt;
-> der Advisor ist regelbasiert, und damit hat dieser Abschnitt keinen Gegenstand mehr.
-> Entscheidquelle: **Erratum (e)**, User-Wort 21.08.2026 „Nein – raus aus dem Produkt".
-> Was bleibt: Messung, Grenzwerte, Sicherheitslogik und DSP-Entwürfe entstehen lokal und
-> nachvollziehbar. Der 0.4-Wortlaut steht im Archiv.
+Messung, Grenzwerte, Sicherheitslogik und DSP-Entwürfe entstehen lokal und nachvollziehbar.
+Eine KI darf Befunde erklären, zusammenfassen und in eine passendere Sprache übersetzen. Sie ist
+nicht die alleinige Mess- oder Regelinstanz und darf keine Klangänderung ohne Bestätigung
+auslösen.
 
 ---
 
@@ -1339,10 +1208,6 @@ Diese Regeln sind für die aktive Variante nicht optional:
 ---
 
 ## 22. Lieferreihenfolge innerhalb des Kernumfangs
-
-> **[0.5 · Erratum (m) · Befund 21.08.2026]** „Zwölf von zwanzig gewählt" ist nicht
-> rekonstruierbar (siehe §0.2). Die zwölf Punkte sind ein **Startwert**, kein abgenommener
-> Auswahlentscheid. Register **NAK-39**.
 
 Die zwölf gewählten Punkte definieren gemeinsam das Kernprodukt, sind aber zu groß für einen
 einzigen Entwicklungsschritt. Eine sinnvolle Lieferreihenfolge ist:
@@ -1503,17 +1368,7 @@ Der Entwurf gilt funktional als eingelöst, wenn der User in einem echten FL-Pro
 
 ## 27. Für den Implementierungsplan entschiedene Produktfragen
 
-> **[0.5 · Erratum (f) · Entscheid 21.08.2026]** Auf die Frage nach den Produktzahlen antwortet
-> der User „Hingenommen, passen aber". Der Status aller Zahlen unten lautet damit **„Startwert
-> des Users, änderbar"** — nicht „verbindliche Entscheidung". Das ersetzt auch die Namen
-> „Entscheidung 0.3" (§30), „Design-Startwerte" (§33.2) und „verbindliches Startbudget"
-> beziehungsweise „Hypothesen mit Abnahmetest" (§49.3) für dieselben Zahlen. Eine Änderung
-> läuft versioniert mit Beleg. **Regelfall einstellig** (Entscheid 21.08.2026: „ich habe
-> schlicht 5 genommen weil 16 bedeutet 16 geladene proben auf instrumenten … 16 plugins nur
-> für eq kostet auch massig leistung"); 16 ist die Obergrenze, 32 die Vertragsgrenze — die
-> steht bereits im v3-Vertrag (§53.9) und ist dort Versionierung, kein Edit.
-
-| Frage | Startwert des Users, änderbar (Erratum (f), 21.08.2026) |
+| Frage | Verbindliche Entscheidung 0.3 |
 |---|---|
 | Plugin-Einträge | Main, passive Probe und Active Probe erhalten getrennte stabile Class-IDs aus einer gemeinsamen Kernbibliothek. |
 | erster aktiver Umfang | Trim, minimumphasiger statischer/dynamischer EQ, Band-M/S beziehungsweise L/R, begrenzte Breite und Mono-Bass; keine lineare Phase, Laufzeitkorrektur, Sättigung oder Limiting. |
@@ -1522,7 +1377,7 @@ Der Entwurf gilt funktional als eingelöst, wenn der User in einem echten FL-Pro
 | Priorität | direkt an Quelle und Passage über Prominence, Funktion, Schutz und gerichtete Beziehung; Userwert gewinnt. |
 | Delta-Hören | nur lokal, wenn eine Instanz beide Audiopfade innerhalb der qualifizierten Subsample-Goldentoleranz ausrichtet; sonst level-gematchtes A/B oder manueller Bypass. |
 | State/Undo/Recall | Probe-State ist DSP-Wahrheit; eigenes Revisions-/Undo-Log; Hostautomation wird synchronisiert, aber nicht als Sicherheitsgarantie verwendet. |
-| dynamische Tiefe | Standardmaximum 1,5 dB, engeres Userbudget gewinnt. ~~Remote-Hard-Cap 3 dB~~ — **gestrichen in Fassung 0.5 am 02.09.2026**, Entscheidquelle **Erratum (n)/(q)**, User-Wort 23.08.2026 (U14): „ja draft reicht, aber die limitangabe oder das limit selbst ist sinnlos geworden. das kann im eq dann ja angepasst werden von selbst". |
+| dynamische Tiefe | Standardmaximum 1,5 dB, Remote-Hard-Cap 3 dB, engeres Userbudget gewinnt. |
 
 Offen für Messung, nicht für freie Produktinterpretation, bleiben konkrete Kalibrierwerte wie
 Feature-Kadenz, Konfidenzschwelle, Crossfadezeit und CPU-Budget. Sie besitzen in Abschnitt 49
@@ -1597,26 +1452,21 @@ verbindet. Diese Evidenzkette ist daher der Produktkern und kein Zusatztext um e
 
 ## 30. Verbindliche Architekturentscheidungen für den Phasenplan
 
-> **[0.5 · Erratum (f) · Entscheid 21.08.2026]** „Hingenommen, passen aber": die Zahlen in
-> dieser Tabelle (1 Main + 16 sichtbare Sonden, Verträge bis 32) sind **Startwerte des Users,
-> änderbar** — nicht „Entscheidung 0.3". Regelfall einstellig, 16 Obergrenze, 32 Vertragsgrenze.
-> Siehe §27.
-
-| Thema | Startwert beziehungsweise Architekturentscheidung (Status siehe §27) | Begründung |
+| Thema | Entscheidung 0.3 | Begründung |
 |---|---|---|
-| Plugin-Aufteilung | gemeinsame C++-Kernbibliothek und ~~drei~~ **zwei** VST3-Ziele: **Nakama Gen** (Arbeitstitel „Nakama Main") und **Nakama Probeeq** (Arbeitstitel „Nakama Active Probe"). ~~Nakama Probe~~ ist **gestrichen in Fassung 0.5 am 02.09.2026** — die passive Sonde ist in Probeeq aufgegangen. Entscheidquellen: **Erratum (b)/(n)**, User-Wort 21.08.2026 (Namen) und 23.08.2026 (Merge-Wahl „eine Sonde"); ausgeführt in `SONDE-007c` (S9b), User-Entscheid 28.08.2026 `../design/abnahmen/2026-08-28-suna-stilllegung-vorgezogen.md` | klare Insert-Wahl; der passive Nullvertrag kann nicht durch einen Modusschalter verloren gehen — Probeeq trägt ihn als eigenen, beweisbar bitidentischen Aus-Zustand |
+| Plugin-Aufteilung | gemeinsame C++-Kernbibliothek, aber drei klare VST3-Ziele: **Nakama Main**, **Nakama Probe** und **Nakama Active Probe** | klare Insert-Wahl; der passive Nullvertrag kann nicht durch einen Modusschalter verloren gehen |
 | Feste Bus-Topologie | Passive Probe: Main-I/O; Active Probe: Main-I/O plus getrennte Stereo-Aux-Busse `priority_sidechain` und `compare_pre`; Main: Main-I/O plus eine im Spike festgelegte, kleine Zahl diskreter Contribution-Aux-Busse | Compare und Unmasking werden nie auf einem Aux multiplexed; exakte Beiträge existieren nur bei bewiesenem FL-Fan-in |
 | Kompatibilität | die bestehende Plugin-Class-ID bleibt Kompatibilitäts-/Main-Eintrag; gespeicherte Altrollen `sensor|pre|post` laufen darin passiv weiter; neue passive und aktive Probe erhalten je eine stabile Class-ID | alte Projekte laden ohne Klangänderung; keine stille Umdeutung bestehender Instanzen |
 | Zentrale Instanz | genau ein führendes Main pro aktiver Sitzung; weitere Main-Instanzen sind read-only Spiegel, bis der User die Führung übergibt | verhindert konkurrierende Befehle |
 | Normalgröße | 1 Main + bis zu 16 gleichzeitig sichtbare Sonden; Verträge und Broker werden bis 32 getestet | deckt reale Busprojekte ab, ohne die Kern-UX auf Extremfälle auszulegen |
 | Begleitdienst | der vorhandene eigenständige Rust-Broker bleibt unsichtbare Infrastruktur; keine Pflicht-Desktop-App | Entscheidungen und Capture bleiben in FL bei Main |
-| ~~Prisma-App~~ | **Gestrichen in Fassung 0.5 am 02.09.2026** — die Prisma-App ist Studie, kein Bauziel: kein Ticket, kein Broker-Client, keine `control_capability`. Entscheidquelle: **Erratum (c)**, User-Wort 21.08.2026 „Familie; Prisma nur Studie" | die konventionelle Master-Plugin-UI aus der Produktentscheidung 20.08.2026 bleibt; die Hub-Architektur war nie eine |
+| Prisma-App | eigenständige optionale Begleit-App neben Main und Sonden; bindet sich als read-only Spiegel an, nie als Master-Hub; der Hörkompass-Zielvertrag gilt dort | Produktentscheidung 20.08.2026 (§0.3): konventionelle Master-Plugin-UI, Zusatz-App statt Hub-Architektur |
 | Audio vs. IPC | Pipe überträgt Identität, Features, Evidenz und Transaktionen, **nie den Echtzeit-Steuerverlauf eines DSPs** | IPC ist nicht sample-synchron und darf den Audiopfad nicht takten |
 | Dynamisches Entmaskieren | priorisierte Quelle gelangt als echter FL-Sidechain/Aux in die aktive Zielsonde | nur der DAW-Audiograph kann den benötigten synchronen Pfad liefern; Freigabe erst nach FL-PDC-Golden |
 | PRE/POST-Delta | analytischer Vergleich über Zeitstempel; hörbares Delta nur bei gemeinsamem Audiopfad und bewiesenem Alignment | zwei unabhängige Telemetrieströme reichen nicht für verlässliche Subtraktion |
 | Persistenz | Plugin-State ist Wahrheit für den lokalen DSP; Broker speichert Experimente append-only in SQLite; Main rekonstruiert aus beiden | Projekt-Recall funktioniert auch ohne Brokerhistorie |
 | Undo | eigenes Transaktions- und Revisionsprotokoll; Host-/Plugin-Undo ist nur zusätzlicher Komfort | extern ausgelöste Änderungen erzeugen nicht in jedem Plugin/Host einen Undo-Schritt |
-| ~~KI~~ | **Gestrichen in Fassung 0.5 am 02.09.2026** — keine KI-Erklärschicht im Produkt, der Advisor ist regelbasiert. Entscheidquelle: **Erratum (e)**, User-Wort 21.08.2026 „Nein – raus aus dem Produkt" | DSP, Evidenz, Grenzen und Aktionsentwurf bleiben deterministisch |
+| KI | DSP, Evidenz, Grenzen und Aktionsentwurf sind deterministisch; KI darf nur erklären, verdichten und sprachlich anpassen | kein Modell erhält alleinige Klangautorität |
 | Roh-Audio | kein PCM-Dauerstream, kein Roh-Audio in der Datenbank oder an externe Modelle | Datenschutz, Last und klare Systemgrenze |
 
 ### 30.1 Aktiver Werkzeugumfang
@@ -1672,9 +1522,7 @@ flowchart TB
 - verarbeitet ausschließlich lokale Audio- und Sidechain-Puffer;
 - schreibt vorallokiert in SPSC-Strukturen;
 - übernimmt fertige DSP-Konfigurationen atomisch am Blockrand;
-- kennt weder Broker, Sessiongraph noch SQLite (~~noch KI~~ — **gestrichen in Fassung 0.5 am
-  02.09.2026**, es gibt keine KI im Produkt; **Erratum (e)**, User-Wort 21.08.2026 „Nein – raus
-  aus dem Produkt");
+- kennt weder Broker, Sessiongraph, SQLite noch KI;
 - wartet niemals auf eine Antwort.
 
 **Plugin-Worker**
@@ -1698,10 +1546,8 @@ flowchart TB
 - zeigt Quelle, Passage, Evidenz, Unsicherheit und nächsten Schritt;
 - besitzt den User-Intent und die sichtbare Workflow-Zustandsmaschine;
 - ist niemals alleinige Wahrheit über den Zustand einer aktiven Probe;
-- ~~bleibt das auch neben der Prisma-App: diese ist nur ein optionaler read-only Spiegel (§0.3),
-  nie Steuer-Hub.~~ **Gestrichen in Fassung 0.5 am 02.09.2026.** Grund: die Prisma-App ist
-  Studie, kein Bauziel; es gibt keinen zweiten Client und keinen Steuer-Hub. Entscheidquelle:
-  **Erratum (c)**, User-Wort 21.08.2026 „Familie; Prisma nur Studie".
+- bleibt das auch neben der Prisma-App: diese ist nur ein optionaler
+  read-only Spiegel (§0.3), nie Steuer-Hub.
 
 ### 31.2 Fit zum heutigen Code
 
@@ -1996,9 +1842,8 @@ Heartbeat-Verbindung und erhält keine v3-Steuerfähigkeit.
 | Evidenzsnapshot | 1–4 Hz | volle 221 Bänder, P10/P50/P95, Abdeckung, Konvergenz, Ereignisse | Kadenz reduzieren |
 | Fokus-Burst | auf Anfrage, höchstens zwei Beziehungen | 20–50-Hz-Band-/Onset-Features für Alignment und Ursachenprüfung | beenden und als unvollständig markieren |
 
-Diese Zahlen sind Startwerte, änderbar (**Erratum (f)**, Entscheid 21.08.2026 „Hingenommen,
-passen aber"; §27). Der Phasenplan muss sie gegen CPU, Pipe-Last und sichtbare Latenz messen und
-versioniert anpassen.
+Diese Zahlen sind Design-Startwerte. Der Phasenplan muss sie gegen CPU, Pipe-Last und sichtbare
+Latenz messen und versioniert anpassen.
 
 ### 33.3 Nachrichtenfamilien
 
@@ -2029,25 +1874,6 @@ Die Probe lehnt eine veraltete `base_revision` als Konflikt ab, statt einen neue
 überschreiben.
 
 ### 33.4 Preview-Lease und Apply
-
-> **[0.5 · Erratum (o) · Entscheid 23.08.2026]** Für den Gen-Hauptbedienweg gilt die
-> **Drei-Stufen-Geste** (Wortlaut `../design/abnahmen/2026-08-23-interview-struktur.md`, in
-> `plan/plan.json` S29–31 übernommen): **Halten** = hören und beim Loslassen zurück · **erster
-> Klick** = zehn Sekunden temporär angewendet · **zweiter Klick** = als neue Revision
-> bestätigt. Das überschreibt die direkte Kante `Draft --> Applied: apply_transaction` im
-> Diagramm unten:
-> - Hold-to-hear bleibt die kurze, regelmäßig erneuerte `preview_begin/renew/end`-Lease mit
->   lokalem Failsafe.
-> - Der erste Klick startet einen getrennten, flüchtigen Zehn-Sekunden-Kandidaten. Stop,
->   Transportepochenwechsel, Verbindungs- oder Prozessorfehler, Ablauf und Reject führen zum
->   bestätigten Stand zurück; weder Projektstate noch Undo-Ring erhalten einen Eintrag.
-> - Erst der zweite Klick erzeugt `apply_transaction`, eine bestätigte `state_revision`,
->   Host-/Plugin-State und den eigenen Undo-Eintrag. §33.5 (Draft/Preview flüchtig) und §44.3
->   (nur bestätigte Revisionen persistent) bleiben damit erhalten.
->
-> Kandidaten-ID, Timer, Nachricht, ACK, Reconnect, Kill und Ablauf des Zehn-Sekunden-Kandidaten
-> sind **noch nicht spezifiziert** (Blueprint §15 Punkt 12); `preview_begin` und persistentes
-> `apply_transaction` reichen dafür nicht. Der Vertrag entsteht in S29–31.
 
 ```mermaid
 stateDiagram-v2
@@ -2144,9 +1970,7 @@ Jede Evidenz besitzt:
 - Abhängigkeit von Userintent, Zielprofil oder Modell;
 - Ausschlussgrund, falls sie nicht mehr gültig ist.
 
-`Finding` und `Proposal` dürfen nur auf existierende Evidenz-IDs zeigen (~~und KI-Text~~ —
-**gestrichen in Fassung 0.5 am 02.09.2026**, es gibt keinen erzeugten Text im Produkt;
-**Erratum (e)**, User-Wort 21.08.2026 „Nein – raus aus dem Produkt"). Preview, Focus,
+`Finding`, `Proposal` und KI-Text dürfen nur auf existierende Evidenz-IDs zeigen. Preview, Focus,
 Delta und Hörmarker markieren nachgelagerte Messungen als beeinflusst; sie werden nicht still in
 eine unbeeinflusste Baseline aufgenommen. Ein **angewendeter** DSP-Zustand ist dagegen kein
 dauerhafter Taint: Sein Apply schließt die alte Baseline, segmentiert die Timeline nach
@@ -2224,18 +2048,11 @@ Aktivität kombiniert einen absoluten Floor mit dem lokalen Rauschboden, beispie
 `level > max(-70 LUFS-M, adaptive_floor + 10 dB)`. Das ist ein zu kalibrierender Startwert. Stille
 und nicht nutzbare Bänder erzeugen `null`/Validity-Bits, keine numerische Null.
 
-~~Main zeigt drei Informationsdichten: kompakte Quellenliste, vergleichende Heatmap und
-Detailansicht … der Hörkompass-Zielvertrag bindet die Prisma-App, nicht diese Ansicht.~~
-**Gestrichen in Fassung 0.5 am 02.09.2026.** Grund: die drei Informationsdichten sind eine
-UI-Annahme dieses Entwurfs, keine Oberflächenvorgabe, und die Prisma-App ist kein Bauziel.
-Entscheidquellen: **Erratum (h)**, User-Wort 21.08.2026 „Das ist ein Designprototyp keine
-technikanleitung, design passt sich am ende der funktion an." · **Erratum (c)**, User-Wort
-21.08.2026 „Familie; Prisma nur Studie". Was die Landkarte zeigt und wie sie bedient wird,
-bindet ab 0.5 der Blueprint
-([`design/docs/funktions-und-bedien-blueprint.md`](../design/docs/funktions-und-bedien-blueprint.md),
-Rangfolge im Kopf), nicht dieser Abschnitt.
-**Was technisch bleibt:** Suche, Pinning und Fokusgruppe begrenzen die kognitive Last bei 16 bis
-32 Sonden; ein Minimap-/Zoomprinzip ist sinnvoller als alle Details gleichzeitig zu zeichnen.
+Main zeigt drei Informationsdichten: kompakte Quellenliste, vergleichende Heatmap und
+Detailansicht. Das ist die konventionelle Master-Plugin-UI aus §0.3 und als Dauerarbeitsfläche
+legitim; der Hörkompass-Zielvertrag bindet die Prisma-App, nicht diese Ansicht. Suche, Pinning
+und Fokusgruppe begrenzen die kognitive Last bei 16 bis 32 Sonden.
+Ein Minimap-/Zoomprinzip ist sinnvoller als alle Details gleichzeitig zu zeichnen.
 
 ### 35.2 Routing- und Summenwahrheit
 
@@ -2739,10 +2556,8 @@ Hörziel und Stopbedingung. `Keine Änderung` ist ein gültiger Vorschlag.
 5. Nur exakt unterstützte eigene DSP-Aktionen werden `previewable`, fremde Werkzeuge bleiben
    `manual` mit neutralen Parameterbegriffen und optionalem Bedienprofil.
 
-~~KI darf daraus natürliche Sprache formulieren, aber keine Frequenz, Güte, Gain, Zielinstanz
-oder Grenze erfinden oder verändern.~~ **Gestrichen in Fassung 0.5 am 02.09.2026.** Grund: keine
-KI-Erklärschicht im Produkt; die Empfehlungssprache entsteht aus festen Bausteinen.
-Entscheidquelle: **Erratum (e)**, User-Wort 21.08.2026 „Nein – raus aus dem Produkt".
+KI darf daraus natürliche Sprache formulieren, aber keine Frequenz, Güte, Gain, Zielinstanz oder
+Grenze erfinden oder verändern.
 
 ### 42.3 Sicherheitsbudgets
 
@@ -2765,9 +2580,7 @@ eine neue Policy-/Metrikversion und Regressionstests.
 - Jeder angezeigte Zahlenwert lässt sich auf Proposal-Feld, Evidenz und Generatorversion
   zurückführen.
 - Ungültige, veraltete oder außerhalb der Capability liegende Vorschläge erreichen keine Probe.
-- Derselbe Eingang erzeugt denselben Entwurf. (~~Sprachmodell-Ausfall ändert keine Aktion~~ —
-  **gestrichen in Fassung 0.5 am 02.09.2026**: es gibt kein Sprachmodell, also auch keinen
-  Ausfallfall; **Erratum (e)**, User-Wort 21.08.2026 „Nein – raus aus dem Produkt".)
+- Derselbe Eingang erzeugt denselben Entwurf; Sprachmodell-Ausfall ändert keine Aktion.
 - Property-Tests beweisen, dass Hard Caps, Schutzbereiche und ein engeres Userbudget nie
   überschritten werden.
 
@@ -2856,26 +2669,12 @@ Es sagt nie allein aus einem Metrikdelta „objektiv besser“.
 
 ### 44.1 Getrennte aktive Produktklasse
 
-> **[0.5 · Erratum (b)/(n) · Entscheide 21.08. und 23.08.2026]** Aus drei Zielen sind **zwei**
-> geworden: `Nakama Probe` (Suna) ist in **Nakama Probeeq** aufgegangen (Merge-Wahl „eine
-> Sonde", `../design/abnahmen/2026-08-23-gen-eq-zentrale.md`); die Stilllegung des dritten
-> Ziels ist mit `SONDE-007c` (S9b) ausgeführt, User-Entscheid 28.08.2026
-> (`../design/abnahmen/2026-08-28-suna-stilllegung-vorgezogen.md`). Probeeq trägt beide
-> Betriebszustände in **einer** Klasse: passiv messend mit sampleidentischem Nullpfad und, bei
-> zugeschaltetem EQ, rechnend. Das ersetzt die Trennung in zwei Sondenklassen, **nicht** die
-> Regel darunter: kein Projekt darf durch einen Modusschalter unbemerkt vom passiven in den
-> rendernden Zustand wechseln — der Aus-Zustand bleibt beweisbar bitidentisch (NullTest).
-> **[0.5 · Erratum (p) · Entscheid 27.08.2026]** Probeeq erhält **keinen** lokalen Voll-Editor
-> („nein"); die vollständige Bedienung liegt in Gens zweiter Oberfläche.
+Der robusteste Vertrag sind drei stabile Plugin-Identitäten aus einer gemeinsamen C++-
+Kernbibliothek:
 
-Der Vertrag der Fassung 0.4 lautete auf drei stabile Plugin-Identitäten aus einer gemeinsamen
-C++-Kernbibliothek:
-
-- `Nakama Main` (heute **Nakama Gen**): bestehende Class-ID und Projektkompatibilität;
-- ~~`Nakama Probe`: neue passive Class-ID, dauerhaft sampleidentischer Nullpfad;~~
-  **Gestrichen in Fassung 0.5 am 02.09.2026** — Ziel stillgelegt, siehe Kasten;
-- `Nakama Active Probe` (heute **Nakama Probeeq**): neue Class-ID mit Sidechain und explizitem
-  DSP-Vertrag, dazu der passive Messbetrieb der stillgelegten Klasse.
+- `Nakama Main`: bestehende Class-ID und Projektkompatibilität;
+- `Nakama Probe`: neue passive Class-ID, dauerhaft sampleidentischer Nullpfad;
+- `Nakama Active Probe`: neue aktive Class-ID mit Sidechain und explizitem DSP-Vertrag.
 
 So kann kein Projekt durch einen Modusschalter unbemerkt vom passiven in den rendernden Zustand
 wechseln. Gemeinsame Analyse-, IPC-, UI-Komponenten und Schemas verhindern dennoch drei
@@ -2898,14 +2697,7 @@ Codes/Class-IDs; ein Scan-Golden prüft Altprojekt-Recall sowie Koexistenz aller
 Die aktive Probe besitzt acht feste Band-Slots mit stabilen Parameter-IDs und einen versionierten
 State-Tree. Unbenutzte Slots bleiben neutral; die Hostparameterliste ändert sich nie dynamisch.
 Manuelle Parameter dürfen beispielsweise 20 Hz bis `min(20 kHz, 0,45·fₛ)`, ±12 dB und Q
-0,15–24 nutzen. ~~Remote-Proposals bleiben auf ±3 dB und zunächst Q 0,4–2 begrenzt.~~
-**Gestrichen in Fassung 0.5 am 02.09.2026.** Grund: mit dem Umschnitt auf die zentrale
-EQ-Bedienung ist der Fernweg der **Hauptbedienweg**; eine eigene, engere Remote-Grenze ist
-gegenstandslos. Entscheidquelle: **Erratum (n)/(q)**, User-Wort 23.08.2026 (U14): „ja draft
-reicht, aber die limitangabe oder das limit selbst ist sinnlos geworden. das kann im eq dann ja
-angepasst werden von selbst". Advisor-Drafts nutzen die manuellen Bereiche (±12 dB, Q 0,15–24)
-und sind im EQ frei nachjustierbar. Register **NAK-108** — die in NAK-64 zugesagte, damals nicht
-ausgeführte Streichung ist mit dieser Fassung vollzogen. Der erste Kern
+0,15–24 nutzen. Remote-Proposals bleiben auf ±3 dB und zunächst Q 0,4–2 begrenzt. Der erste Kern
 nutzt:
 
 - minimumphasige RBJ-Biquads als Referenz für statische Bell-, Shelf-, Notch- und Cut-Filter;
@@ -3142,20 +2934,19 @@ Er zeigt gleichzeitig:
 
 ### 46.3 KI-Grenze
 
-> **Gestrichen in Fassung 0.5 am 02.09.2026 (ganzer Abschnitt).** Grund: es gibt keinen
-> Sprachadapter, kein Sprachmodell und keine erklärende KI im Produkt — damit gibt es auch
-> nichts einzuhegen. Entscheidquelle: **Erratum (e)**, User-Wort 21.08.2026 „Nein – raus aus
-> dem Produkt". Der 0.4-Satz „Ohne Modell bleibt der gesamte Workflow funktionsfähig" ist kein
-> Fallback mehr, sondern der einzige Zustand. Der 0.4-Wortlaut steht im Archiv.
+Ein optionaler Sprachadapter erhält nur ein minimiertes, strikt validiertes Schema mit bereits
+freigegebenen Finding-/Proposal-Feldern. Er darf erklären, kürzen, übersetzen und Rückfragen in
+deterministische Intentfelder überführen. Er erhält kein PCM, keine Pipeadresse und kein Tool zum
+Preview/Apply. Seine Ausgabe wird gegen erlaubte Evidenz-IDs und Zahlenfelder geprüft; unbekannte
+Behauptungen werden verworfen. Ohne Modell bleibt der gesamte Workflow funktionsfähig.
 
 ### 46.4 Abnahmekriterien
 
 - Für jede Zustandskante existieren Contracttests inklusive Stop, Seek, Stale, Reconnect,
   Konflikt und Userabbruch.
 - Nie sind zwei Preview-Leases oder zwei schreibende Schritte gleichzeitig aktiv.
-- ~~Ein Sprachmodell-Ausfall, Timeout oder abweichender Text verändert weder Proposal noch
-  DSP-Revision.~~ **Gestrichen in Fassung 0.5 am 02.09.2026** — kein Sprachmodell im Produkt.
-  Entscheidquelle: **Erratum (e)**, User-Wort 21.08.2026 „Nein – raus aus dem Produkt".
+- Ein Sprachmodell-Ausfall, Timeout oder abweichender Text verändert weder Proposal noch DSP-
+  Revision.
 - Jede Session kann als kompakte Ereignisfolge erklärt werden: Beobachtung → Evidenz → Userwahl →
   Transaktion → Ergebnis.
 
@@ -3236,11 +3027,9 @@ Experimente wie Oktavlage prüfen, Einsatz ausdünnen, Note verkürzen oder eine
 Problemfenster pausieren.
 
 Das System behauptet weder Notennamen noch Akkordfunktion, wenn Polyphonie, Effekte oder
-Transposition die Schätzung unsicher machen. ~~Ein Sprachmodell darf eine bereits erzeugte
-Hypothese verständlich formulieren, aber keine Kompositionsentscheidung hinzufügen.~~
-**Gestrichen in Fassung 0.5 am 02.09.2026** — kein Sprachmodell im Produkt; **Erratum (e)**,
-User-Wort 21.08.2026 „Nein – raus aus dem Produkt". Arrangement-Vorschläge sind nie direkt
-ausführbar und nie Teil des Autopiloten.
+Transposition die Schätzung unsicher machen. Ein Sprachmodell darf eine bereits erzeugte
+Hypothese verständlich formulieren, aber keine Kompositionsentscheidung hinzufügen. Arrangement-
+Vorschläge sind nie direkt ausführbar und nie Teil des Autopiloten.
 
 **Abnahme.** Jede Empfehlung zeigt den wiederholten Messbeleg, vorher versuchte technische
 Alternative und Unsicherheit der Tonhöhen-/Einsatzschätzung. Bei nicht stabiler Quelle oder nur
@@ -3319,9 +3108,7 @@ Hostfader.
 Jeder Schritt lautet Baseline → Preview → Messung → Policyentscheid → Apply oder Revert. Harte
 Stopps sind fehlende Vergleichbarkeit, schlechter Guardrail, Revisionkonflikt, Sidechainfehler,
 Recording, Userinteraktion und ausgeschöpftes Budget. Ein globaler Schalter neutralisiert alle
-Autopilotänderungen als neue Transaktion. (~~KI hat weder Policy- noch Toolautorität.~~ —
-**gestrichen in Fassung 0.5 am 02.09.2026**: es gibt keine KI, der die Autorität zu entziehen
-wäre; **Erratum (e)**, User-Wort 21.08.2026 „Nein – raus aus dem Produkt".)
+Autopilotänderungen als neue Transaktion. KI hat weder Policy- noch Toolautorität.
 
 **Abnahme.** Model-Checking beziehungsweise zustandsbasierte Property-Tests beweisen, dass kein
 Pfad Hard Caps, Schrittlimit oder User-Allowlist umgehen kann. Strom-/Broker-/Main-Ausfall lässt
@@ -3455,11 +3242,8 @@ Wallclock-Sprung macht keine aktive Probe plötzlich frisch oder tot.
   Projekttransfer verlangen erneutes Pairing;
 - Datenbank und Logs enthalten Features und IDs, kein Roh-Audio; Tracknamen können im Privacy-
   Modus lokal pseudonymisiert werden;
-- ~~externe KI ist opt-in, erhält nur minimierte strukturierte Fakten und nie Audio, Pfade,
-  Nutzernamen oder Pipe-Daten;~~ **Gestrichen in Fassung 0.5 am 02.09.2026** — es gibt keine
-  externe KI im Produkt, auch nicht als Opt-in. Entscheidquelle: **Erratum (e)**, User-Wort
-  21.08.2026 „Nein – raus aus dem Produkt". Das Verbot aus §30 („Roh-Audio nie an externe
-  Modelle") bleibt als Verbot bestehen;
+- externe KI ist opt-in, erhält nur minimierte strukturierte Fakten und nie Audio, Pfade,
+  Nutzernamen oder Pipe-Daten;
 - Export, Retention und vollständiges Löschen sind Teil des Datenmodells, nicht nachträgliche UI.
 
 Das schützt vor fremden Windows-Usern, Verwechslung und zufälligen lokalen Clients. Code, der
@@ -3501,9 +3285,7 @@ Ein Build ist nicht freigabefähig, wenn eines dieser Gates fällt:
 
 1. Passive Probe, neutrales Main oder neutraler Hard-Bypass der Active Probe verändert einen
    gültigen Audiopuffer außerhalb der bereits dokumentierten, useraktivierten Hörmarker-Ausnahme.
-2. Ein IPC-, Broker-, Datenbank- oder UI-Fehler blockiert den Audiothread. (~~oder KI~~ —
-   **gestrichen in Fassung 0.5 am 02.09.2026**; **Erratum (e)**, User-Wort 21.08.2026 „Nein –
-   raus aus dem Produkt".)
+2. Ein IPC-, Broker-, Datenbank-, UI- oder KI-Fehler blockiert den Audiothread.
 3. Eine Preview überlebt Lease, Stop, Offline-Render oder Project-Reload oder beginnt bei
    Recording beziehungsweise unbekanntem Record-State.
 4. Ein Remote-Apply kann Hard Cap, `base_revision`, Ziel-Nonce, User-Schutz oder das gültige
@@ -3511,20 +3293,11 @@ Ein Build ist nicht freigabefähig, wenn eines dieser Gates fällt:
 5. Telemetrie steuert samplegenauen Gain oder erzeugt hörbares PRE/POST-Delta.
 6. Ein nicht vergleichbares Experiment erhält ein starkes Siegerurteil.
 7. Eine Standard-Insertprobe wird als exakter Mastersummenbeitrag bezeichnet.
-8. ~~Eine KI-Ausgabe kann Zahlen, Ziel oder Aktion außerhalb des validierten Proposal ändern.~~
-   **Gegenstandslos seit Fassung 0.5, 02.09.2026** — es gibt keine KI-Ausgabe. Die Nummer bleibt
-   belegt, damit die Gate-Nummerierung 1 bis 8 in Manifesten und in
-   `bauaufteilung-sonden.md` §5 stabil bleibt. Entscheidquelle: **Erratum (e)**, User-Wort
-   21.08.2026 „Nein – raus aus dem Produkt".
+8. Eine KI-Ausgabe kann Zahlen, Ziel oder Aktion außerhalb des validierten Proposal ändern.
 
 ### 49.3 Messbare Startbudgets
 
-> **[0.5 · Erratum (f) · Entscheid 21.08.2026]** „Hingenommen, passen aber": die Budgets unten
-> sind **Startwerte des Users beziehungsweise des Entwurfs, änderbar** — nicht „verbindliches
-> Startbudget". Der Satz unter der Tabelle („Hypothesen mit Abnahmetest, versioniert ändern")
-> beschreibt schon den richtigen Umgang. Siehe §27.
-
-| Größe | Startbudget ab der zugehörigen Phase (änderbar, versioniert; Erratum (f)) |
+| Größe | verbindliches Startbudget ab der zugehörigen Phase |
 |---|---:|
 | Livekarte, 16 Sonden | < 300 ms p95 fertiger 2.048-/4.096-Frame → sichtbarer Main-State |
 | Bassframe 16.384 bei 48 kHz | < 750 ms p95 erstes Fenstersample → sichtbarer Main-State; Alter wird gezeigt; Bassbänder reisen dafür auf dem 10-Hz-Livepfad, nicht dem 1–4-Hz-Evidenzpfad |
@@ -3758,7 +3531,7 @@ einem kleineren Capabilitysatz, nicht zu einem verdeckten heuristischen Ersatz.
 
 | Grenze | frühestens nach | auslieferbarer Umfang | ausdrücklich noch gesperrt |
 |---|---|---|---|
-| `R0 · Contract/Internal` | P2 | ~~drei~~ **zwei** neutrale Pluginziele (Erratum (b)/(n), 23.08.2026; ausgeführt in `SONDE-007c`), migrierbarer State, v3-Transport und Messkern für interne Hostfixtures | öffentliche Mehrinstanz-UX, Remote-DSP |
+| `R0 · Contract/Internal` | P2 | drei neutrale Pluginziele, migrierbarer State, v3-Transport und Messkern für interne Hostfixtures | öffentliche Mehrinstanz-UX, Remote-DSP |
 | `R1 · Passive Alpha` | P3 | Sessionbeitritt, Frische, Messpunktwahrheit und Live-Landkarte für bis zu 16 Sonden | starke Ursache, aktiver DSP |
 | `R2 · Passive Beta` | P5 | Dynamik/Stereo/PRE-POST, Intent, Evidenz, Ursache, Proposal, manueller Versuch und Assistent | Remote-Apply, automatisches Entmaskieren |
 | `R3 · Active Beta` | P7 | lokaler Active-DSP, sichere Preview/Apply/Revert-Transaktion, Active-A/B und Recall | dynamische Sidechain-Aktuation ohne P8-Golden |
@@ -3803,18 +3576,6 @@ Analysis-Core             IPC-Codec/Client
 
 ### 53.4 Zielmodule im Repository
 
-> **[0.5 · Erratum (i) · Befund 21.08.2026, nachgemessen 02.09.2026]** Der Baum unten ist von
-> der Realität überholt; die **Verantwortungsgrenzen** bleiben, die **Namen** sind präzisiert,
-> wie der Satz darunter es ausdrücklich erlaubt. Real gilt:
-> `eq-copilot/identity/plugin-identities-v1.json` (nicht `plugin/identity/`) ·
-> `schemas/v3/eq-ipc-v3.schema.json` (nicht `eq-ipc-control`/`eq-domain`/`eq-experiment`) ·
-> `schemas/v3/flatbuffers/nakama_telemetry_v1.fbs` (nicht `feature-batch.fbs`) ·
-> `fixtures/v3/{gueltig,ungueltig}` (nicht `valid/invalid`) · generierter Code in
-> `plugin/vertrag/generiert/` und `broker/src/generiert/` (nicht `generated/{cpp,rust}`) ·
-> Hostbrücke in `plugin/hostbridge/`. `broker/src/transport/` und `coordinator.rs` sind seit
-> `SONDE-010`/`011` gebaut. `targets/{main,passive_probe,active_probe}` ist auf **zwei** Ziele
-> zusammengefallen (Erratum (b)/(n); `SONDE-007c`).
-
 Die Namen dürfen innerhalb eines Pakets präzisiert werden; die Verantwortungsgrenzen sind
 verbindlich.
 
@@ -3856,24 +3617,13 @@ ein realer Pfad migriert.
 **Static-Lib-Randbedingung (Prüfbericht Befund E):** Das heutige `plugin/CMakeLists.txt` teilt
 bewusst KEINE static-lib („kompilieren die geteilten Quellen erneut … bewusst simpel"), weil
 `juce_add_plugin` pro Target eigene `JucePlugin_*`-Moduldefinitionen erzeugt. Der Wechsel auf
-gemeinsame statische Bibliotheken ist für mehrere Ziele gerechtfertigt (0.4: „drei Ziele" — seit
-Erratum (b)/(n) und `SONDE-007c` sind es **zwei**), aber nur unter einer harten
+gemeinsame statische Bibliotheken ist für drei Ziele gerechtfertigt, aber nur unter einer harten
 Regel: Der gemeinsame Kern sieht **keine** `JucePlugin_*`-Konstanten; Identität kommt
 ausschließlich aus `plugin-identities-v1.json` über die dünnen Target-Schichten. Andernfalls
-erhält ein Bundle die Identitätskonstanten des anderen — genau die Werte, die §44.1
+erhalten zwei der drei Bundles die Identitätskonstanten des dritten — genau die Werte, die §44.1
 einfriert. `SONDE-007` enthält dafür einen expliziten Prüfschritt.
 
 ### 53.5 Gebaute Pluginidentitäten und Klassifikation
-
-> **[0.5 · Erratum (b) · Entscheid 21.08.2026]** Die Bundle- und Produktnamen unten
-> (`EQ-Copilot.vst3`, „Nakama Probe.vst3", „Nakama Active Probe.vst3") sind durch den
-> Namensentscheid überholt: „Nakama Gen = Main app · aktive sonde = Nakama Probeeq · passive
-> sonde = Nakama Suna · Bundle = Nakama Studio", fortgeschrieben am 23.08.2026 (Suna entfällt).
-> **Sie werden hier trotzdem nicht ersetzt:** `bundle` und `produktname` sind eingefrorene
-> Zeilen des Identitätsmanifests, die Umbenennung ist eine Identitätsänderung und liegt bei
-> **NAK-30**. Plugin-Codes und CIDs leiten sich aus Hersteller- und Plugin-Code ab, nicht aus
-> Namen; sie sind vom Entscheid nicht betroffen. Die Zeile „Passive Probe" ist mit
-> `SONDE-007c` (S9b) stillgelegt — Erratum (n), User-Entscheid 28.08.2026.
 
 | Ziel | Bundle/Browser-Kompatibilität | Plugin-Code | Class-ID-Regel |
 |---|---|---|---|
@@ -3896,18 +3646,6 @@ mit geöffnetem Editor darf den installierten Broker starten. Klassifikation, Sp
 liegen nie im Audiocallback.
 
 ### 53.6 Capabilityvertrag
-
-> **[0.5 · Erratum (k) · Entscheid 21.08.2026 „Termine bald; bis dahin S7", Messung 22.08.2026]**
-> Beide FL-Termine sind gelaufen (`beweise/termin-a/`, `beweise/termin-b/`), S4 ist gebaut
-> (`beweise/SONDE-004.md`, `../eq-copilot/identity/host-capabilities-fl-v1.json`). **Gemessener
-> Stand für FL Studio 2026 26.1.4.5589 / JUCE 8.0.9: 2 supported, 8 unsupported.**
-> `sample_accurate_automation` ist **unsupported** — FL legt nie mehr als einen Punkt je Block
-> in die Queue und zerteilt stattdessen die Puffer bis auf 1 Sample; die „Blockrampe" aus
-> §53.7/§53.8 ist damit FLs eigenes Verfahren. `presentation_latency` wird gemeldet, aber ohne
-> Impulsgolden ⇒ unsupported. `aux_priority_sidechain` und `aux_compare_pre` sind ohne PDC-Last
-> und ohne unterscheidbare Kanalreihenfolge gemessen ⇒ unsupported bis **Termin A2**
-> (Fragenkarte U11, Register **NAK-44**). `float64_processing` unsupported;
-> `contribution_aux` ungemessen ⇒ unsupported (§54).
 
 Capabilities sind maschinenlesbare Tatsachen aus Build **und** laufendem Host. Ein Capabilitybit
 wird nur nach seinem Golden gesetzt.
@@ -3981,18 +3719,6 @@ Die Startgrößen sind keine ABI. P2 misst High-Water-Marks und schreibt gewähl
 Capability-/QA-Matrix. Reduktion erfolgt über Kadenz und Ganzblockdrop, nie über Teilblockkopien.
 
 ### 53.8 Parameter- und Statevertrag
-
-> **[0.5 · Erratum (q) · nachgetragen mit PR1, 30.08.2026]** Die Kind-Matrix unten hat für
-> **Gens Master-EQ** keinen Ort: sie verbietet `plugin_kind = main` sowohl `Parameters` als auch
-> `Dsp`, und `nakama-parameter-v1.json` führt den Parameterbestand ausdrücklich nur für
-> `active_probe`. Erratum (n) sagt „Parameter- und Zustands-Hoheit bleibt in der Sonde
-> (…; §53.8-State unverändert)" — dieser Satz gilt der **Sonde**, nicht Gens eigenem Master-EQ.
-> Ohne eine versionierte Erweiterung hätte Gens EQ weder Hostautomation noch `state_hash`,
-> Recall oder Undo-Ring (§44.3). Die Erweiterung ist eine **Versionierung mit Beleg**, kein
-> Edit, und liegt bei **S28b** (`SONDE-015b`); die eingefrorenen Class-IDs bleiben unberührt
-> (NAK-30), weil Gen heute null Hostparameter führt. Register **NAK-105**, Vorläufer NAK-81 (c).
-> Entscheidquelle: Erratum (n), User-Wort 23.08.2026 „Gen wird ein vollwertiges HUB oder Studio
-> … es ist ein vollwertiger eq für den master wie andere eq auf dem markt".
 
 State-Schema 2 verwendet den Root `NakamaState` und unabhängig versionierte Kinder:
 
@@ -4138,25 +3864,24 @@ ohne den Audiopfad zu verändern.
   Codec;
 - gemeinsame Domain-IDs, Bandgitter und generierter C++-/Rust-Code;
 - `ProductKind`, Capabilitymodell, Parameterlayout und State-Schema 2 mit Schema-1-Migration;
-- ~~drei~~ **zwei** VST3-Ziele aus gemeinsamen statischen Bibliotheken; ihr erstes
-  `moduleinfo.json` und der FL-Scan müssen exakt dem in P0 eingefrorenen Identitätsmanifest
-  entsprechen;
+- drei VST3-Ziele aus gemeinsamen statischen Bibliotheken; ihr erstes `moduleinfo.json` und der
+  FL-Scan müssen exakt dem in P0 eingefrorenen Identitätsmanifest entsprechen;
 - klassifikationsabhängiger Lifecycle: connect-only für alle, Spawn nur für bestätigtes Main;
-- Installer-Manifest für ~~alle drei~~ **beide** Bundles plus Broker mit Hash-/Signaturprüfung,
+- Installer-Manifest für alle drei Bundles plus Broker mit Hash-/Signaturprüfung,
   Repair/Uninstall und v2-Kompatibilitätslistener;
 - Golden-Tests für State-Roundtrip, unbekanntes Major, Copy/Paste-Duplikat und Browser-Recall.
 
-**Nachtrag 28.08.2026 (User-Entscheid, `../design/abnahmen/2026-08-28-suna-stilllegung-vorgezogen.md`):**
+**Nachtrag 28.08.2026 (User-Entscheid, `design/abnahmen/2026-08-28-suna-stilllegung-vorgezogen.md`):**
 Seit dem 23.08.2026 gibt es zwei Ziele — Nakama Gen und Nakama Probeeq; Suna ist in Probeeq
-aufgegangen. Das dritte Ziel ist in `SONDE-007c` (S9b) stillgelegt. Klausel 1 des Exit-Gates gilt
+aufgegangen. Das dritte Ziel wird in `SONDE-007c` (S9b) stillgelegt. Klausel 1 des Exit-Gates gilt
 danach für **beide** verbleibenden Ziele. **Erweitert 30.08.2026 (PR1):** derselbe
-Entscheid gilt auch für den Lieferumfang oben. **Vollzogen in Fassung 0.5 am 02.09.2026 (PR2):**
-„drei VST3-Ziele", „Installer-Manifest für alle drei Bundles" und „Alle drei Ziele scannen und
-laden in FL" sind jetzt im Text selbst auf **zwei** berichtigt — die 0.4-Regel „kein Umschreiben
-unter dem Errata-Block" (`bauaufteilung-sonden.md` §6.4) ist mit der Einarbeitung der Errata
-abgelöst; die §-Nummerierung bleibt dabei unverändert.
+Entscheid gilt auch für den Lieferumfang oben — „drei VST3-Ziele" und „Installer-Manifest
+für alle drei Bundles" heißen ab S9b **zwei** Ziele und **zwei** Bundles plus Broker; im
+Exit-Gate unten heißt „Alle drei Ziele scannen und laden in FL" entsprechend **beide** Ziele.
+Der Text darunter bleibt stehen (§6.4 der Bauaufteilung: kein Umschreiben unter dem Block);
+dieser Nachtrag hat Vorrang.
 
-**Exit-Gate:** ~~Alle drei~~ **Beide** Ziele scannen und laden in FL; Passive und Active-Hard-Bypass nullen;
+**Exit-Gate:** Alle drei Ziele scannen und laden in FL; Passive und Active-Hard-Bypass nullen;
 Schema-1-Fixtures migrieren deterministisch und erzeugen keine Brokerstarts im Scanner oder
 Offline-Render. C++ und Rust klassifizieren jedes gültige und ungültige Fixture identisch. R0 ist
 noch nicht erreicht, weil Mess- und Transportkern fehlen.
@@ -4255,10 +3980,7 @@ Experimentende schließen alle Taintintervalle; der reguläre Pfad nullt danach 
 - persistenter `AssistantStep` mit Abbruch, Zurück, Überspringen und Resume;
 - manueller Busvorschlag und manueller Experimentabschluss;
 - Evaluationskorpus mit Precision/Recall, Kalibrierung, Brier Score, Coverage und Enthaltung;
-- ~~optionale KI nur als Renderer validierter Fakten, nie als Aktions- oder Zahlenquelle.~~
-  **Gestrichen in Fassung 0.5 am 02.09.2026** — der Advisor ist regelbasiert, es gibt keine
-  KI-Schicht im Lieferumfang. Entscheidquelle: **Erratum (e)**, User-Wort 21.08.2026 „Nein –
-  raus aus dem Produkt".
+- optionale KI nur als Renderer validierter Fakten, nie als Aktions- oder Zahlenquelle.
 
 **Exit-Gate:** Jede sichtbare Behauptung referenziert existente Evidenz-IDs, jedes Proposal nennt
 Ziel, Passage, Grenzen, Hörziel, Stopbedingung und Rückweg. Gegenbeispiele erzwingen nachweislich
@@ -4355,9 +4077,8 @@ Telemetrieaktuation und keine Behauptung von automatischem Entmaskieren.
 
 **Lieferumfang:**
 
-- Installer/Updater für ~~drei~~ **zwei** Bundles, Broker, Manifest, Signatur, atomaren
-  Austausch, Repair/Uninstall und per-User-Fallbackstart (**Erratum (b)/(n)**, Entscheide 21.08.
-  und 23.08.2026; ausgeführt in `SONDE-007c`, User-Entscheid 28.08.2026);
+- Installer/Updater für drei Bundles, Broker, Manifest, Signatur, atomaren Austausch,
+  Repair/Uninstall und per-User-Fallbackstart;
 - Migrationstests von jedem publizierten Plugin-, IPC- und DB-Schema;
 - FL-Matrix für unterstützte Versionen, Sampleraten, Blockgrößen, Mono/Stereo, Bridge,
   Smart Disable, Live/Render, Projektduplikat und zwei parallele Projekte;
@@ -4397,14 +4118,6 @@ Abschnitt 53.2 aus dem Versprechen genommen werden.
 
 ## 65. Erste Ticketfolge
 
-> **[0.5 · Erratum (i) · Befund 21.08.2026]** `SONDE-001` „laufen im CI": **es gibt keine CI.**
-> Der Kanon ist `../tools/beweise.ps1`; seine aktuelle Beinanzahl steht im Runner selbst und
-> wird hier bewusst nicht festgeschrieben. Wo unten „im CI" steht, ist der Kanon gemeint.
-> **[0.5 · Erratum (k) · Entscheid 21.08.2026, Messung 22.08.2026]** Der Schließungsvorbehalt
-> für `SONDE-005` gegen die FL-Messung ist eingelöst: Termin A und B sind gemessen, S4 ist
-> gebaut. `SONDE-007` unten ist auf **zwei** Ziele zusammengefallen (Erratum (b)/(n)); die
-> Stilllegung des dritten steht als eigene Zeile `SONDE-007c`.
-
 Die Tickets sind absichtlich in Integrationsreihenfolge und nicht nach Team oder Kalender
 sortiert. Ein Ticket darf intern kleiner geschnitten werden, aber sein Gate nicht verlieren.
 
@@ -4416,7 +4129,7 @@ sortiert. Ein Ticket darf intern kleiner geschnitten werden, aber sein Gate nich
 | `SONDE-004` | FL-Aux-/PDC-/Recall-Spike und Capabilityreport | jede Aux-Capability eindeutig supported/unsupported |
 | `SONDE-005` | v3-Domain-/JSON-/FlatBuffers-Schemas, Bandgitter und Cross-Language-Fixtures | C++/Rust validieren identisch; Codegen-Drift ist 0 |
 | `SONDE-006` | State-Schema 2, fester Parameterbestand und reine Schema-1-Migration | Roundtrip, unbekanntes Major, Duplicate und Host-Dirty grün |
-| `SONDE-007` | ~~drei~~ **zwei** Pluginziele und Lifecycle-Klassifikation (berichtigt in Fassung 0.5, 02.09.2026; Erratum (b)/(n)) | IDs eingefroren; Scanner/Probe/Render spawnen nie Broker |
+| `SONDE-007` | drei Pluginziele und Lifecycle-Klassifikation | IDs eingefroren; Scanner/Probe/Render spawnen nie Broker |
 | `SONDE-007c` | Stilllegung des Suna-Ziels (Nachtrag 28.08.2026, S9b) | Kanon grün ohne A15; Installer liefert zwei Bundles plus Broker; keine fremde CID; Kennungen von Gen und Probeeq unverändert |
 | `SONDE-008` | `StampedAudioQueue`, Quarantäne und fixed-memory Loudness | keine Teilblöcke/unbegrenzten Vektoren; RT-/EBU-Goldens grün |
 | `SONDE-009` | FeatureEngine v2 mit Zeit-, Validity-, Event- und Bandverträgen | Drop/Seek/Loop trennt jedes offene Fenster |
@@ -4443,11 +4156,6 @@ Kein Active-Ticket wird vor dem passiven R2-Slice vorgezogen.
 ## 66. Testziele und CI-Schnitt
 
 ### 66.1 C++-Ziele
-
-> **[0.5 · Erratum (i) · Befund 21.08.2026]** Die Liste unten ist ein **Zielbestand**, kein
-> Ist-Stand. Gebaut und im Kanon, hier aber nicht genannt: `EqCopSchemaTest`,
-> `EqCopHostProbeTest` (Wegwerfware `NkHp`) und `EqCopAuxSpikeTest` (Wegwerfware `NkSp`, nicht
-> im Kanon — Register **NAK-37**). Der aktuelle Bestand steht im Kanon-Runner, nicht hier.
 
 | Ziel | bindet ab |
 |---|---|
@@ -4516,12 +4224,6 @@ Zusätzlich gilt:
 ---
 
 ## 68. Entscheidung nach Fassung 0.4
-
-> **[0.5 · Erratum (a) · Entscheid 20.08.2026]** Die Bauentscheidung ist erteilt — User-Wort:
-> „okay dann fangen wir damit nächste session an". Der Bau läuft seit S0 (20.08.2026);
-> die Manifeste liegen in [`beweise/`](beweise/). Die Kopfzeile und dieser Abschnitt trugen bis
-> zum 21.08.2026 „noch nicht erteilt"; beide Stellen sind seit Fassung 0.4 berichtigt.
-> Die Überschrift behält ihre Nummer und ihren Wortlaut, damit §-Verweise stabil bleiben.
 
 Der technische Weg ist hinreichend bestimmt, um mit der ersten Welle zu
 beginnen — `SONDE-004` zuerst, dann `SONDE-001` bis `SONDE-003` (§65). Die erste

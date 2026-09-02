@@ -1539,7 +1539,7 @@ ohne automatische Rückkehr und die flache Probeeq-Kachel. Vor der ersten
 Frage stellte der User den Leitsatz auf, dass sechs Werte je Befund
 schlechtes Design sind; vor der fünften das Prozesswort, dass jetzt das
 Fundament in der Skizze entsteht und das visuelle Design danach in Figma.
-Die Prüfung lief mit Playwright und Chrome (41 Prüfpunkte, Konsole leer);
+Die Prüfung lief mit Playwright und Chrome (42 Prüfpunkte, Konsole leer);
 die Belege liegen unter `design/skizze/belege/` mit Präfix
 `2026-09-02-b03-`.
 

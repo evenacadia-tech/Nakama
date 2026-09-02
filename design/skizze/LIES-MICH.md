@@ -69,7 +69,7 @@ Die Bilder des Vormittagsstands vor Block 03 liegen als Verlauf unter
 `belege/2026-09-02-vor-block-03/` (Inspektionsleiste noch mit
 Flächenumschalter, Global-Zeile `2 ON`, Probeeq auf 760×430).
 
-Gemessen am 02.09.2026 im Browser (41 Prüfpunkte, PASS, Konsole leer):
+Gemessen am 02.09.2026 im Browser (42 Prüfpunkte, PASS, Konsole leer):
 Gen-Bühne 950×538; Kopf-Tabs 96×51, Hover ohne Maßänderung; Findings
 738×142; `GLOBAL`-Knopf 78×30 bei jeder Nennung gleich; Band-Panel 276×80
 (Grundansicht); Probeeq 580×92 beziehungsweise 580×52 ohne Zeilenüberlauf.

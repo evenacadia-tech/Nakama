@@ -1414,8 +1414,12 @@ Schema:
    aber keine endgültigen Produktnamen.
 3. **[O] Hold-Accessibility:** Screenreader-/Switch-Control-Ersatz für echtes
    Press-and-hold braucht native JUCE-Prüfung.
-4. **[O] P3-Diagnose:** Lautheit/Unsicherheit ist entschieden; die übrigen
-   NAK-57-Zähler besitzen noch keine Bedienarchitektur.
+4. **[D] P3-Diagnose:** entschieden am 02.09.2026 (Karte U27, Fünferblock 06,
+   1/5): Lautheit/Unsicherheit bleibt sichtbar (U17.5); die übrigen
+   NAK-57-Zähler bekommen in Gen keine Fläche und keine Diagnoseansicht als
+   Produktfläche — sie bleiben Entwicklerdiagnose in den Beweisläufen.
+   User-Wort: „WAS SOLL der user dann damit anfangen ? das nützt ihm garnichts, also muss er davon nichts sehen. das ist ein audio tool kein tool für den entwickler der app“
+   (`../abnahmen/2026-09-02-technische-ui-architektur-fuenferblock-06.md`).
 5. **[O] Main-Führung nach Brokerneustart:** Mehrdeutige Führung braucht einen
    bestätigbaren Main-State-Ingress.
 6. **[O] P6-Testzugriff:** Der technische EQ-Kern braucht Beweise, aber keinen

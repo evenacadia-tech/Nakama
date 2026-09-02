@@ -81,17 +81,6 @@
    "wo": "docs/offene-punkte.md NAK-122 und NAK-106; docs/plan/plan.json S18–19; eq-copilot/identity/host-capabilities-fl-v1.json",
    "seit": "02.09.",
    "status": "offen"
-  },
-  {
-   "id": "U27",
-   "dringlichkeit": "wenn du dazu kommst",
-   "art": "Produktentscheid (eine Antwort)",
-   "titel": "Welche Messlücken-Zähler bekommen auf Gens erster Fläche einen sichtbaren Platz?",
-   "was": "Nakama zählt intern mit, wann eine Messung nicht lückenlos war: Blöcke, die bei Überlast verworfen wurden; Blöcke, die zu groß waren; Zeitsprünge des Musikprogramms (Spulen, Loop); eigene Analyse-Lücken; Blöcke, die in der Quarantäne landeten; die größte Blockgröße, die das Programm je geliefert hat. Sichtbar ist heute davon nur „verworfene Frames“ und — seit deiner Antwort vom 30.08.2026 — die Lautheit mit ihrer Unsicherheit je Quelle. Frage: Sollen die übrigen Zähler auf Gens erster Fläche (Quellen und Befunde) erscheinen? Drei Wege: (a) je Quelle ein einziger Hinweis „Messung hatte Lücken“ neben Frische und Lautheit, die einzelnen Ursachen erst beim Öffnen der Quelle; (b) nichts davon auf der ersten Fläche, die Zahlen nur in einer getrennten Diagnoseansicht; (c) alle Zähler einzeln je Quelle sichtbar. Empfehlung: (a) — der Blueprint verlangt, dass Frische, Vertrauen und Einschränkungen einer Quelle sichtbar sind, verweigert aber ausdrücklich „vollständige Diagnose neben dem Hörhandgriff“.",
-   "warum": "Register NAK-57 und Blueprint §15 Punkt 4: Lautheit und Unsicherheit sind entschieden, die übrigen Zähler haben keine Bedienarchitektur. Der Plan (G3, Punkt 2) verlangt diese Entscheidung vor dem Gate, hält das Gate aber nicht damit auf. Für den FL-Kurztermin aus Karte U13 müssen die Ursachen getrennt ablesbar sein — ohne deine Antwort liest sie der Beweislauf, nicht Gen. Wenn du dich nicht entscheidest: die Zahlen bleiben nur in den Beweisläufen lesbar, auf der Oberfläche ändert sich nichts, und die Diagnoseansicht aus Weg (b) entsteht als reine Textausgabe ohne Bedienfläche.",
-   "wo": "docs/offene-punkte.md NAK-57; design/docs/funktions-und-bedien-blueprint.md §15 Punkt 4; docs/plan/plan.json G3",
-   "seit": "02.09.",
-   "status": "offen"
   }
  ],
  "beantwortet": {
@@ -476,6 +465,14 @@
    "datum": "2026-09-02 09:35",
    "status": "eingearbeitet",
    "ergebnis": "Sicherheit, Beleg und Alternativen werden auf Gen Fläche 1 nicht als eigene Angaben gezeigt; die Findings-Fläche bleibt bei drei Zeilen (LIKELY CAUSE, SMALLEST TEST, LISTEN FOR). Sicherheit ist der Zustand des Befunds: nur ein sicherer Befund ist READY TO SEND und bietet Audition und Draft an, ein unsicherer meldet MORE DATA, ein veralteter STALE, beide ohne Draft. Beleg ist die markierte Zone mit den zwei Kurven im Graphen. Alternativen sind weitere Befunde in der Liste (ALL FINDINGS). CONFIDENCE unter dem Graphen bleibt Messqualität, nicht Befundsicherheit. Leitsatz: keine sechs Werte je Befund. Datenweg S23–25 (Abbildung hoch/mittel/unklar auf die Zustände), Anzeige Gen Fläche 1. Entscheidung 1/5 in Fünferblock 03. [design/abnahmen/2026-09-02-technische-ui-architektur-fuenferblock-03.md]"
+  },
+  "U27": {
+   "frage": "Welche Messlücken-Zähler bekommen auf Gens erster Fläche einen sichtbaren Platz?",
+   "wahl": "Keiner — der User sieht davon nichts (Weg b in der klaren Form: auch keine Diagnoseansicht als Produktfläche)",
+   "text": "WAS SOLL der user dann damit anfangen ? das nützt ihm garnichts, also muss er davon nichts sehen. das ist ein audio tool kein tool für den entwickler der app",
+   "datum": "2026-09-02 13:41",
+   "status": "eingearbeitet",
+   "ergebnis": "Die übrigen Messlücken-Zähler aus NAK-57 (Ganzblockdrops nach Überlauf und Oversize, verworfene Frames, High-Water-Mark der Hostblockgröße, versiegelte und quarantänisierte Blöcke, Kontinuitätsbrüche, Fenster- und Epochenbuchhaltung, grenzenMitGrund) bekommen in Gen keine Fläche und keine Diagnoseansicht als Produktfläche; sie bleiben Entwicklerdiagnose in den Beweisläufen (Beine B4, B5, B9). Sichtbar bleiben Frische je Quelle, Lautheit mit Unsicherheit (U17.5) und Capability-Degradation am Zielumschalter. Register NAK-57 per User-Entscheid geschlossen; Blueprint Abschnitt 15 Punkt 4 auf [D]; für den FL-Kurztermin (U13) liest der Beweislauf die getrennten Ursachen, nicht Gen. Entscheidung 1/5 in Fünferblock 06. [design/abnahmen/2026-09-02-technische-ui-architektur-fuenferblock-06.md]"
   }
  }
 }

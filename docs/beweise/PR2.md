@@ -1385,7 +1385,8 @@ Vier Commits, jeder mit explizitem Pathspec, jeder sofort gepusht.
 | 1 | `2a04a27` | `docs/offene-punkte.md` | D1, D2 (Register), D5 (Register), D7 (Register), D8, D9, D10 |
 | 2 | `940406e` | `docs/plan/plan.json`, `docs/plan/fragen.json`, `docs/bauaufteilung-sonden.md`, `docs/offene-punkte.md` | D2 (G3-Text), D3, D5, D6, D7 (Plan), D11, D12, D13 + NAK-130 |
 | 3 | `008989c` | `docs/FL-Nakama-Sonden-Design-Entwurf.md` | D4 |
-| 4 | dieser Commit | `docs/beweise/PR2.md`, `docs/beweise/roh/PR2-rundenbilanz-008989c.md`, `docs/plan/plan.json`, `docs/PLAN-STAND.md`, `docs/ANTWORTEN-OFFEN.md` | D14, lebender Kopf, letzte D5-Zitatstelle |
+| 4 | `5f83a2b` | `docs/beweise/PR2.md`, `docs/beweise/roh/PR2-rundenbilanz-008989c.md`, `docs/plan/plan.json`, `docs/PLAN-STAND.md`, `docs/ANTWORTEN-OFFEN.md` | D14, lebender Kopf, letzte D5-Zitatstelle |
+| — | `3ad6e8f` und die Folgecommits mit demselben Betreffkopf | `docs/PLAN-STAND.md` | kein Arbeitscommit: das erzeugte Blatt, nach jedem Rebase und nach jedem Manifest-Commit einmal neu gerechnet und mit Pathspec committet (`CLAUDE.md`-Regel) |
 
 `docs/offene-punkte.md` steht in zwei Commits: die Registerarbeit der Befunde D1/D2/D8/D9/D10
 liegt in Commit 1, die eine Zeile NAK-130 in Commit 2, weil sie erst nach dem Rebase auf
@@ -1660,3 +1661,34 @@ EXITCODE=0
    Änderungssatz berührt keinen Produktcode, keinen Test und kein Schema.
 4. **`SONDE-003b` bleibt ohne Bilanzspanne** — nicht aus Nachlässigkeit, sondern weil kein
    Commit seinen Namen trägt (§12.2, D14, Punkt 4).
+
+### 12.7 Nachlauf (lebender Kopf, Prüfliste E)
+
+Auf `5f83a2b` folgt genau ein weiterer Commit an dieser Runde, und er bleibt in seiner Grenze
+(`docs/PLAN-STAND.md`).
+
+1. **Die vier Arbeitscommits der Runde tragen jetzt ihre SHAs** in der Tabelle in §12.3 —
+   vorher stand für den vierten „dieser Commit". Es sind `2a04a27` (Register), `940406e`
+   (Plan, Bauaufteilung, Fragen), `008989c` (Entwurf) und `5f83a2b` (Manifest und
+   Prozessbilanz) — genau die vier, die der Auftrag vorsah. Daneben stehen die Commits des
+   **erzeugten** Blattes `docs/PLAN-STAND.md`, beginnend mit `3ad6e8f`: es wird nach jedem
+   Rebase und nach jedem Manifest-Commit einmal neu gerechnet, weil sich sein Quellstand
+   dadurch verschiebt, und `CLAUDE.md` verlangt dafür ausdrücklich einen eigenen Commit mit
+   Pathspec. Diese Commits enthalten keine Arbeit und keine Behauptung, nur die Ausgabe von
+   `tools/plan/planstand.py`.
+2. **Zwei Rebases auf `origin/master`.** Die parallele Design-Session hat während dieser Runde
+   zweimal gepusht: zuerst 18 Commits (Fünferblöcke 03 bis 05), danach vier weitere (Umbau von
+   Block 04/05, zwei Planstandläufe, ein Selbstaudit). Beim zweiten Rebase kollidierte
+   `docs/plan/plan.json` in `S31b` — beide Seiten hatten denselben Schritttext geändert. Die
+   Auflösung ist **kein Verwerfen**: die fremde Fassung ist vollständig übernommen und die
+   eigene Zitatkorrektur aus Befund D5 darauf erneut angewandt worden; ein Riegel im
+   Auflösungsskript hat vorher geprüft, dass `S19b` in der fremden Fassung noch steht (40
+   Schritte). `docs/PLAN-STAND.md` ist ein erzeugtes Blatt und wurde nach dem Rebase neu
+   gerechnet statt zusammengeführt.
+3. **Der Planstand rechnet ohne Warnung.** Nach dem Rebase trug das Blatt die Warnung
+   „gerechnet aus dem Arbeitsbaum: unter `docs/plan/`, `docs/beweise/` oder `tools/plan/` liegen
+   Änderungen, die noch nicht in … sind". Sie ist mit `3ad6e8f` verschwunden; die Zahlen sind
+   unverändert (23 von 40 abgenommen, 1 gebaut, 16 offen, Quellstand `5f83a2b`).
+4. **Der Arbeitsbaum ist sauber** bis auf das fremde, untrackte
+   `.workflow/ultracode/20260831-084621-sonde011-phaseb-bau` — es ist während der ganzen Runde
+   unberührt geblieben und steht in keinem der fünf Commits.

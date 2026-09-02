@@ -125,3 +125,29 @@ Preset-Liste, Kopie, Halten, Kandidat, Bestätigt und Link-Verlust für
 Fläche 2; EQ aus, Link-Verlust, Kandidat und Bestätigt für Probeeq). Belege
 `2026-09-02-v02-*@2x.png` und die Tabelle mit Knoten und den bewusst
 benannten Abweichungen stehen in `design/visuell/LIES-MICH.md`.
+
+## Sessionende 02.09.2026 (Laptop, Nachmittag)
+
+Geliefert und gepusht: Seite „01 — Nakama 950×538 · Skizze in
+Materialsprache" in `fable-dummy` mit drei Grundrahmen (Commit `ff82162`)
+und 21 Zustandsrahmen (Commits `1eb9012`, `b987fb4`), Belege in
+`design/visuell/belege/`, Leseblatt `design/visuell/LIES-MICH.md`, Nachträge
+in CLAUDE.md, beiden Leseblättern und Blueprint 15.11.
+
+Offen geblieben, alles Entscheide des Users:
+
+- Die Abnahme des Figma-Stands (Grundrahmen und Zustände) oder
+  Änderungswünsche daran; bis dahin bleibt alles Vorschlag.
+- Graphit oder die neuere Silber-Schale; gebaut ist Graphit.
+- Die Produktnamen der beiden Gen-Flächen (Karte U23; `OVERVIEW` und `EQ`
+  sind Arbeitsnamen).
+- Aus Fünferblock 05 weiterhin zur Bestätigung: Probeeq-Zeile 2 immer
+  sichtbar bei fester Höhe und die Kachelbreite 600 px; beides ist in Figma
+  so gebaut.
+- Die flüchtigen Zustände der Skizze ohne Rahmen (Überschreiben-Bestätigung,
+  Namensfeld bei `SAVE AS`, Validierungszeile, Graph-Hinweise, Hover).
+
+Nächster sinnvoller Schritt: Der User sieht sich die Seite in Figma an
+(dort rendert die Wortmarke mit Verlauf) und gibt Abnahme oder Änderungen;
+danach Skalierungsstufen und gebackene Assets je Stufe oder ein dritter
+Schritt mit den flüchtigen Zuständen.

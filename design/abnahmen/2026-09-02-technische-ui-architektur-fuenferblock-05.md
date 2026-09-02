@@ -159,3 +159,8 @@ der Wechsel in die visuelle Phase in Figma, beides Entscheide des Users.
 Zwei abgeleitete Konsequenzen stehen zur Bestätigung: Probeeq-Zeile 2
 bleibt immer sichtbar (feste Fensterhöhe) und die Kachel ist 600 px breit.
 Alles ist committet und gepusht; PR2 R1 läuft parallel auf dem PC.
+
+Nachtrag am Nachmittag des 02.09.2026: Der Wechsel in die visuelle Phase ist
+erfolgt (`2026-09-02-wechsel-visuelle-phase-figma.md`); die beiden
+Konsequenzen (feste Höhe mit Zeile 2, 600 px) sind dort weiterhin als zur
+Bestätigung offen geführt, U23 ebenso.

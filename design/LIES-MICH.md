@@ -103,8 +103,10 @@ Design-Phasennummer.
    Anlaufstelle. `assets/` und die drei Bilder unter
    `assets/rework-basis-2026-08-25/` bleiben unverändert als Verlauf erhalten,
    liefern in dieser Phase aber weder Layout noch Stil. Erst nach einem
-   ausdrücklichen Wechsel in die visuelle Phase wird die dann vom User
-   benannte Assetquelle wieder verbindlich.
+   ausdrücklichen Wechsel in die visuelle Phase wird Figma als Werkzeug
+   dieser Phase wieder verbindlich (User-Wort 02.09.2026: „aktuell machen wir
+   ja das fundament danach kommt das visuelle design in figma“); welche
+   Figma-Datei dann gilt, benennt der User beim Wechsel.
 2. **Ein Schritt pro Runde, fünf pro Umbau.** Genau eine Frage öffnen und das
    User-Urteil im laufenden Fünferblock wörtlich sichern — dann die nächste.
    Nach der fünften Antwort werden lebendes Blatt, Detailabnahmen und Blueprint

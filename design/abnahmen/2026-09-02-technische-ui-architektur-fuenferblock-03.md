@@ -238,3 +238,56 @@ Damit ist für Probeeq gesammelt:
   `setSize` unter FL) und bleibt als Vorgriff im Skizzen-Leseblatt benannt.
 - Blueprint Abschnitt 15 Punkt 19 ist damit für die Größenklasse
   entschieden; Abschnitt 4.3 erhält beim Umbau die Kachelform als **[U]**.
+
+## Gemeinsamer Umbau und Sichtbeleg nach 5/5
+
+Die Skizze `design/skizze/nakama-ui-technical-sketch.html` setzt alle fünf
+Entscheide gemeinsam um. Geprüft am 02.09.2026 mit Playwright und dem
+System-Chrome (headless, Viewport 1500×900, Skript im Sessionordner, 41
+Prüfpunkte, Ergebnis PASS, Konsole ohne Fehler oder Warnungen):
+
+| Punkt | Messung |
+|---|---|
+| Gen-Bühne beider Flächen | 950×538 |
+| Kopf-Umschalter `OVERVIEW` / `EQ` | je 96×51, Hover ändert die Maße nicht |
+| Findings-Fläche | 738×142, genau drei Zeilen, `READY TO SEND` |
+| `SEND DRAFT → EQ` | wechselt zur EQ-Fläche; Kopf `EQ` aktiv |
+| Kopf `OVERVIEW` mit offenem Draft | zurück zu Fläche 1, Zustand `DRAFT OPEN · EQ`, Handgriff `OPEN IN EQ →`, Draft unverändert |
+| Kandidat | zählt auf Fläche 1 als `EQ CANDIDATE · n s` sichtbar weiter |
+| `APPLY` fest | Gen bleibt auf der EQ-Fläche; danach `NO OPEN DRAFT` |
+| Global-Zeile | `MIX 92 % · AUTO`; mit Bypass `BYPASS · MIX 92 % · AUTO`; alles Standard: leer, nur `GLOBAL` |
+| `GLOBAL`-Knopf | 78×30, Maße bleiben bei jeder Nennung gleich |
+| Global aufgeklappt | zehn Handgriffe; `PRESET` und `HISTORY` ehrlich unavailable; Auto-Gain an: `OUTPUT · AUTO → −0.8 dB` (Demo-Ausgleich) |
+| Unsinnige Zahleneingabe | fällt auf den alten Wert zurück, keine NaN-Anzeige |
+| Probeeq-Kachel | 580×92 mit EQ an, 580×52 mit EQ aus; Zeilen ohne Überlauf; Bypass und Mix ohne EQ nicht bedienbar |
+| Link-Verlust | `BROKER OFFLINE` in Zeile 1 |
+| Band-Panel (Regression) | 276×80 Grundansicht; Doppelklick öffnet, `Escape` schließt |
+
+Belege unter `design/skizze/belege/` mit Präfix `2026-09-02-b03-`; die
+Bilder vom Vormittag liegen als Verlauf unter
+`design/skizze/belege/2026-09-02-vor-block-03/`.
+
+Technische Konsequenzen des Umbaus, keine neuen Entscheide:
+
+- Der Einstieg `GLOBAL` ist ein Knopf fester Maße; die Nennungen stehen als
+  Leseanzeige daneben, weil ein Knopf nach dem Tasten-Gesetz vom 25.08.2026
+  nie die Breite ändert.
+- Die Inspektionsleiste heißt jetzt `WINDOW · GEN / PROBEEQ` und wählt nur
+  das Plugin-Fenster; der Flächenwechsel innerhalb von Gen ist Produkt-UI im
+  Fensterkopf.
+- Wortlaute `DRAFT OPEN · EQ`, `OPEN IN EQ →`, `OVERVIEW`, `EQ` und der
+  Demo-Ausgleich −0.8 dB sind Dichteprüfung; die Flächennamen sind Karte U23.
+- Die zweite Kachelzeile blendet in der Skizze die Bühnenhöhe mit; ob das
+  Host-Fenster das darf, ist die im Leseblatt benannte offene Frage.
+
+Nebenbefunde der Prüfung, im selben Umbau behoben:
+
+1. Das Wurzelelement trug zunächst dasselbe Attribut `data-probe-eq` wie der
+   EQ-Knopf; der Testklick traf das Wurzelelement. Der Zustand heißt jetzt
+   `data-probe-eq-state`.
+2. Zeile 1 der Kachel lief bei 560 px um 19 px über; Kachel auf 580 px,
+   Abstände auf 8 px, Mix-Regler auf 84 px.
+3. `Escape` schloss das Band-Panel nur bei Fokus im Panel, nicht bei Fokus
+   auf dem Bandpunkt nach Maus-Doppelklick (Fünferblock 01, 4/5 verlangt das
+   Schließen des obersten nichtmodalen Panels). Jetzt schließt `Escape` auch
+   aus dem Graphen heraus und fokussiert den Bandpunkt.

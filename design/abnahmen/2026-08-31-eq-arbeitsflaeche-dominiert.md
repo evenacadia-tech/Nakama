@@ -200,3 +200,23 @@ werden weder eine Compact-Fassung noch größenabhängiges Reflow parallel
 entworfen. Bandziele, Parameterfelder und Rails besitzen deshalb genau eine zu
 prüfende Geometrie. Das objektgebundene Panel bleibt am Bandpunkt verankert und
 muss an allen Graphkanten dieser Standardfläche vollständig erreichbar sein.
+
+## Integrierter Fünferblock 03 vom 02.09.2026
+
+Der abgeschlossene
+[`2026-09-02-technische-ui-architektur-fuenferblock-03.md`](2026-09-02-technische-ui-architektur-fuenferblock-03.md)
+ergänzt die zweite Gen-Fläche um die Global-Zeile und den Flächenwechsel:
+
+- Die eingeklappte Global-Zeile unter dem Graphen nennt nur aktive
+  Abweichungen vom Standard beim Namen (etwa `MIX 92 % · AUTO` oder
+  `BYPASS`); sind alle globalen Werte Standard, steht dort nur `GLOBAL`.
+  Aufgeklappt liegen Input, Output mit Auto-Gain daneben, Width, Mono-Bass,
+  Bypass, Mix, A/B, Voreinstellungen und Verlauf. Der Einstieg ist ein Knopf
+  fester Maße, die Nennungen sind eine Leseanzeige daneben (Tasten-Gesetz).
+- Der Kopf von Gen schaltet die Flächen in beide Richtungen; der Entscheid
+  vom 31.08.2026 „nur SEND DRAFT“ ist überholt. Nach `APPLY` fest oder
+  `REJECT` bleibt Gen auf der EQ-Fläche; ein offener Draft bleibt beim
+  Wechsel offen.
+- Die Dominanz der Arbeitsfläche bleibt: Die Global-Sektion nimmt dem
+  Graphen im Ruhezustand keine Zeile; aufgeklappt legt sie sich über den
+  unteren Graphrand und schließt wieder über denselben Einstieg.

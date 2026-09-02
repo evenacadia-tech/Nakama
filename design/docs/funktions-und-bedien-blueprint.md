@@ -577,9 +577,33 @@ Signalstatus, Messaktualität und Anzahl offener Findings. Genau eine Quelle ist
 Hauptziel; weitere Quellen sind nur benannte Referenzen und keine Mitbesitzer
 der Aktionen.
 
-**[U] Übergang:** Ausschließlich `SEND DRAFT` führt im Produkt von dieser
-Fläche zur EQ-Fläche. Der Umschalter einer externen Skizzen- oder
-Prüfoberfläche gehört nicht zum Produkt. Der Rückweg ist noch **[O]**.
+**[U] Befund-Dichte (Fünferblock 03, 02.09.2026):** Ein Befund zeigt genau
+drei Zeilen: wahrscheinliche Ursache, kleinster Test, worauf hören.
+Sicherheit ist der Zustand des Befunds, kein eigener Wert: nur ein sicherer
+Befund steht auf `READY TO SEND` und bietet Audition und Draft an; `MORE
+DATA` und `STALE` bieten keinen Draft. Der Beleg ist die markierte Zone mit
+Ziel- und Referenzkurve im Graphen; Alternativen sind weitere Befunde in der
+Liste. Die sechs Teile des Ursachenbefunds aus dem Entwurf (Abschnitt 8,
+„Ergebnisform“) bleiben Datenmodell; sechs Werte je Befund werden nicht
+angezeigt (User-Wort 02.09.2026: „wenn wir 6 werte für eine messung anzeigen,
+ist das schlichtweg schlechtes design“). `CONFIDENCE` unter dem Graphen ist
+die Messqualität der Passage, nicht die Befundsicherheit.
+
+**[U] Übergang (berichtigt 02.09.2026, Fünferblock 03):** Der Kopf von Gen
+trägt beide Flächennamen als stabilen Umschalter in beide Richtungen; die
+aktive Fläche ist dort erkennbar. `SEND DRAFT` bleibt der Handgriff am
+Befund, der den Draft übergibt und zur EQ-Fläche wechselt, ist aber nicht
+mehr der einzige Hinweg; der Entscheid vom 31.08.2026 „nur SEND DRAFT“ ist
+überholt (User-Wort 02.09.2026: „nein hin geht es nicht nur über send draft,
+sondern über den header wo EQ steht“). Zurück geht es über den Namen der
+ersten Fläche. Nach `APPLY` fest oder `REJECT` bleibt Gen auf der EQ-Fläche;
+es gibt keine automatische Rückkehr. Ein offener Draft bleibt beim Wechsel
+offen und erscheint am Befund als Zustand (`DRAFT OPEN · EQ`, der Handgriff
+dort führt zurück zur EQ-Fläche); ein laufender 10-s-Kandidat zählt auf
+Fläche 1 sichtbar weiter und bietet keinen zweiten Draft an. Der
+Flächenwechsel ist reine Anzeige und berührt die Transaktionslogik nicht.
+Die Inspektionsleiste der Skizze bleibt Werkzeug. Die Flächennamen sind
+Arbeitsnamen (Karte U23).
 
 Ruhezustand: Quellenorientierung.
 
@@ -607,8 +631,18 @@ Die Fläche braucht fünf funktionale Zonen:
    Bandauswahl beziehungsweise Relation.
 4. **Globaler Klangzustand:** Bypass, Mix, Auto-Gain/Output, A/B,
    Preset/Copy und Revision/History. Die Global-Sektion ist **[U]** im
-   Ruhezustand eingeklappt. **[A]** Aktive Abweichungen bleiben am Einstieg
-   sichtbar, damit das Einklappen keine Klangwahrheit versteckt.
+   Ruhezustand eingeklappt. **[U]** (Fünferblock 03, 02.09.2026) Die
+   eingeklappte Zeile nennt nur aktive Abweichungen vom Standard beim Namen
+   (etwa `MIX 92 % · AUTO` oder `BYPASS`); sind alle globalen Werte
+   Standard, steht dort nur der Einstieg `GLOBAL`. Ein Zähler wie `2 ON` und
+   eine dauerhafte Kurzzeile mit Bypass, Mix und A/B sind verworfen.
+   Aufgeklappt liegen Input, Output mit Auto-Gain daneben (Entscheid
+   24.08.2026; der Output-Wert wandert sichtbar mit), Width, Mono-Bass,
+   Bypass, Mix, A/B, Voreinstellungen und Verlauf. Der Einstieg `GLOBAL` ist
+   ein Knopf fester Maße; die Nennungen stehen als Leseanzeige daneben
+   (Tasten-Gesetz 25.08.2026). **[O]** Wie Voreinstellungen und Verlauf
+   innerhalb der Sektion geöffnet werden, ist noch nicht gefragt; bis dahin
+   sind beide Einstiege ehrlich unavailable.
 5. **Transaktionslocus:** das Proposal/Draft des aktuellen Ziels mit Hold,
    10-s-Kandidat, Confirm, Reject/Revert und Blocking-Grund. Dieser Locus ist
    in jeder EQ-Zielansicht direkt erreichbar.
@@ -709,6 +743,18 @@ Immer erreichbar:
 - klarer Hinweis, ob Automation oder Remote-Transaktion wirkt;
 - der eigene Instanz-Mix, sobald sein P6-Parametervertrag existiert;
 - sicherer lokaler Bypass beziehungsweise Neutralize-Rückfall.
+
+**[U] Form (Fünferblock 03, 02.09.2026):** Probeeq ist eine flache Kachel
+mit ein bis zwei Zeilen. Zeile 1 trägt dauerhaft Name und Bus, Verbindung,
+den EQ-Punkt (an/aus), Bypass und Mix; Zeile 2 erscheint nur bei
+zugeschaltetem EQ und trägt die laufende Änderung (Band, Frequenz, Gain, Q)
+und den Modus der Sonde (Inhalt seit 23.08.2026). Ein Feld halber Gen-Größe
+und die frühere 760×430-Bühne sind verworfen: Probeeq ist auf vielen Bussen
+gleichzeitig offen, jeder Pixel Höhe zählt mal Instanzen (Begründung vom
+20.08.2026). Die Maße der Skizze (580×92 mit EQ, 580×52 ohne) sind
+Dichteprüfung, kein Beschluss. **[O]** Ob die zweite Zeile die Fensterhöhe
+ändert oder in fester Höhe ein- und ausgeblendet wird, ist eine Frage des
+Host-Fensters (JUCE `setSize` unter FL) und noch nicht entschieden.
 
 Nicht enthalten:
 
@@ -1370,27 +1416,25 @@ Schema:
     Transaktion. Vor nativer Anzeige müssen Save/Load, Host-Automation,
     Migration und Wiederherstellung unter derselben festen Band-ID gemeinsam
     versioniert und getestet werden.
-17. **[O] Global-Sektion auf Gen Fläche 2:** Der eingeklappte Global-Bereich
-    der Skizze zeigt nur Input, Output, Width und A/B. Der am 24.08.2026
-    entschiedene Auto-Gain-Schalter neben Output sowie Bypass, Mix,
-    Preset/Copy und Revision/History aus Abschnitt 4.2 Zone 4 sind dort noch
-    nicht abgeleitet; ebenso wenig der Wortlaut der Halten-Aktion, der auf
-    Fläche 1 `HOLD TO AUDITION` und auf Fläche 2 `AUDITION · HOLD` lautet,
-    und die sichtbare Kurzform `DEL` für die abgenommene Aktion `Remove Band`
-    im Panelkopf, die nur eine Dichteprüfung der Skizze ist.
-    Kandidat für den nächsten Fünferblock (festgestellt 02.09.2026).
-18. **[O] Rückweg Gen Fläche 2 → Fläche 1:** Der einzige Vorwärtsweg im
-    Produkt ist `SEND DRAFT` (User-Entscheid 31.08.2026, Abschnitt 4.1). Wie
-    der User von der EQ-Fläche zur Quellen- und Evidenzfläche zurückkommt,
-    ist nicht entschieden; die technische Skizze bietet den Wechsel nur über
-    ihr Inspektionswerkzeug, das kein Produkt-UI ist. Kandidat für den
-    nächsten Fünferblock (festgestellt 02.09.2026).
-19. **[O] Probeeq-Rückfallfläche:** Abschnitt 4.3 nennt Inhalt und Grenzen,
-    aber die Fläche wurde in keiner Fragenrunde befragt und besitzt keine
-    entschiedene Größe. Die 760×430-Bühne der Skizze ist eine
-    Werkzeugannahme; der Ein-Größen-Vertrag vom 01.09.2026 gilt nur für die
-    beiden Gen-Flächen. Nach dem Arbeitsmodus vom 31.08.2026 folgt Probeeq
-    nach den beiden Gen-Flächen und vor den gemeinsamen Regeln.
+17. **[D]/[O] Global-Sektion und Wortlaute:** Die Global-Sektion auf Gen
+    Fläche 2 ist am 02.09.2026 entschieden (Fünferblock 03, 2/5; Abschnitt
+    4.2 Zone 4): die eingeklappte Zeile nennt nur aktive Abweichungen beim
+    Namen, aufgeklappt liegen alle globalen Handgriffe samt Auto-Gain neben
+    Output. Offen bleiben die Disclosure von Voreinstellungen und Verlauf
+    innerhalb der Sektion, der Wortlaut der Halten-Aktion (Fläche 1 `HOLD TO
+    AUDITION`, Fläche 2 `AUDITION · HOLD`) und die sichtbare Kurzform `DEL`
+    für `Remove Band`, die nur eine Dichteprüfung der Skizze ist.
+18. **[D] Flächenwechsel Gen:** entschieden am 02.09.2026 (Fünferblock 03,
+    3/5 und 4/5; Abschnitt 4.1 „Übergang“): Der Kopf schaltet beide Flächen
+    in beide Richtungen, `SEND DRAFT` bleibt Handgriff am Befund, keine
+    automatische Rückkehr, ein offener Draft bleibt offen. Der Entscheid vom
+    31.08.2026 „nur SEND DRAFT“ ist überholt.
+19. **[D]/[O] Probeeq-Rückfallfläche:** Größenklasse entschieden am
+    02.09.2026 (Fünferblock 03, 5/5; Abschnitt 4.3): flache Kachel mit ein
+    bis zwei Zeilen, Zeile 2 nur bei zugeschaltetem EQ. Offen: ob die zweite
+    Zeile die Fensterhöhe ändert oder in fester Höhe ein- und ausgeblendet
+    wird (Host-Fenster unter FL), und die Detailfragen der Kachel (Verhalten
+    bei Link-Verlust, lokale Notfallaktionen) aus einem kommenden Block.
 
 Diese Punkte sind kein Freibrief für Platzhaltercontrols. Bis zur technischen
 oder User-Entscheidung bleibt die jeweilige Funktion ehrlich unavailable oder
@@ -1485,6 +1529,19 @@ Fünferblock 02 integriert atomaren Panelbesitz beim Bandwechsel, den
 bandlokalen Kanalmodus, den stabilen Band-Bypass sowie die Trennung von
 Disable und wiederherstellbarem Remove. Beide Blöcke wurden in der laufenden
 Skizze und im internen Browser geprüft.
+
+Fünferblock 03 (02.09.2026,
+[2026-09-02-technische-ui-architektur-fuenferblock-03.md](../abnahmen/2026-09-02-technische-ui-architektur-fuenferblock-03.md))
+integriert die Befund-Dichte auf Fläche 1 (drei Zeilen; Sicherheit als
+Zustand, Beleg im Graphen, Alternativen als Liste), die Global-Zeile mit
+benannten Abweichungen, den Flächenwechsel über den Kopf in beide Richtungen
+ohne automatische Rückkehr und die flache Probeeq-Kachel. Vor der ersten
+Frage stellte der User den Leitsatz auf, dass sechs Werte je Befund
+schlechtes Design sind; vor der fünften das Prozesswort, dass jetzt das
+Fundament in der Skizze entsteht und das visuelle Design danach in Figma.
+Die Prüfung lief mit Playwright und Chrome (41 Prüfpunkte, Konsole leer);
+die Belege liegen unter `design/skizze/belege/` mit Präfix
+`2026-09-02-b03-`.
 
 Die Skizze liegt seit dem 02.09.2026 im Repo unter
 [design/skizze/nakama-ui-technical-sketch.html](../skizze/nakama-ui-technical-sketch.html);

@@ -231,23 +231,43 @@ Zusammengefasst gilt:
   native Remove-Weg bleibt bis zu einem versionierten Slot-/Undo-Vertrag
   technisch blockiert.
 
-## Bewusst offen
+## Abgenommener Stand — Fünferblock 03 (02.09.2026)
 
-- Gen Fläche 1: ob Finding-Belege und Alternativen durch Ansichtswechsel in
-  derselben Fläche oder mit einem anderen Mechanismus erscheinen. Die dazu
-  gestellte Frage wurde noch nicht beantwortet.
-- Gen Fläche 2: Die ersten zehn Detailfragen sind mit Fünferblock 01 und 02
-  integriert. Offen bleiben technische Vertragsarbeit für Remove/Undo und
-  weitere noch nicht abgeleitete Bedienbereiche; bereits entschiedene
+Wortlaut und Sichtbeleg in
+[`2026-09-02-technische-ui-architektur-fuenferblock-03.md`](2026-09-02-technische-ui-architektur-fuenferblock-03.md).
+Zusammengefasst gilt zusätzlich:
+
+- **Gen Fläche 1, Befund-Dichte:** genau drei Zeilen je Befund (Ursache,
+  kleinster Test, worauf hören). Sicherheit ist der Zustand des Befunds
+  (`READY TO SEND`, `MORE DATA`, `STALE`), der Beleg die markierte Zone im
+  Graphen, Alternativen sind weitere Befunde in der Liste. Leitsatz des
+  Users: keine sechs Werte je Befund.
+- **Beide Gen-Flächen, Flächenwechsel:** Der Kopf trägt beide Flächennamen
+  als Umschalter in beide Richtungen; `SEND DRAFT` bleibt Handgriff am
+  Befund. Keine automatische Rückkehr nach `APPLY` fest oder `REJECT`; ein
+  offener Draft bleibt offen und erscheint am Befund als `DRAFT OPEN · EQ`.
+- **Gen Fläche 2, Global-Zeile:** eingeklappt nennt sie nur aktive
+  Abweichungen beim Namen; aufgeklappt liegen Input, Output mit Auto-Gain,
+  Width, Mono-Bass, Bypass, Mix, A/B, Voreinstellungen und Verlauf.
+- **Probeeq:** flache Kachel mit ein bis zwei Zeilen; Zeile 2 nur bei
+  zugeschaltetem EQ (Inhalt seit 23.08.2026).
+- **Prozess:** Fundament jetzt in der Skizze, das visuelle Design danach in
+  Figma (Prozesswort oben).
+
+## Bewusst offen (Stand nach Fünferblock 03)
+
+- Gen Fläche 1: kein offener Architekturpunkt; Karte U21 ist beantwortet.
+- Gen Fläche 2: Disclosure von Voreinstellungen und Verlauf innerhalb der
+  Global-Sektion; Wortlaut der Halten-Aktion; Kurzform `DEL`; technische
+  Vertragsarbeit für Remove/Undo und Live-Dynamic. Bereits entschiedene
   Panelregeln werden nicht erneut geöffnet.
-- Der Produktrückweg von Gen Fläche 2 zu Gen Fläche 1 ist durch den Entscheid
-  zum einzigen **Vorwärtsweg** noch nicht festgelegt.
-- Probeeq und die gemeinsamen UI-Regeln wurden in dieser Runde noch nicht
-  befragt.
+- Probeeq: ob die zweite Zeile die Fensterhöhe ändert oder in fester Höhe
+  ein- und ausgeblendet wird (Host-Fenster unter FL); Verhalten bei
+  Link-Verlust und lokale Notfallaktionen.
+- Die gemeinsamen UI-Regeln wurden noch nicht befragt.
 
-Vor einer weiteren Architekturfrage wird zunächst ein neuer Block aus einem
-noch offenen Bedienbereich begonnen; durch die Delegation dieses Abschnitts
-ist keine weitere Userantwort für Fünferblock 02 erforderlich.
+Vor einer weiteren Architekturfrage wird ein neuer Block aus einem noch
+offenen Bedienbereich begonnen.
 
 ## Vorgezogener Größenentscheid vom 01.09.2026
 

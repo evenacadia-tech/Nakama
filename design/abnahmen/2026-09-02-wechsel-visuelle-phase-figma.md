@@ -178,3 +178,22 @@ Ergebnisse und die bewusst benannten Abweichungen stehen in
 poliert (Knoten unverändert, Inhalte neu gebaut); Bildschirmfotos
 `design/visuell/belege/2026-09-02-v03-*@2x.png` neben den Ständen `v01`
 und `v02` von vor der Poliersession.
+
+## Sessionende 02.09.2026 (Laptop, Abend)
+
+Geliefert und gepusht: Poliersession über alle 24 Rahmen der Seite „01"
+(Commits `487af40`, `8cd5903`), Belege `v03`, Leseblatt mit Achsenformeln,
+Bandparametern, Farbrollen und Abweichungen. Der User beendete die Session
+mit „ok machen wir hier schluss".
+
+Offen geblieben, alles Entscheide des Users:
+
+- Die Abnahme des polierten Figma-Stands oder Änderungswünsche daran; bis
+  dahin bleibt alles Vorschlag.
+- Graphit oder Silber-Schale, Produktnamen der Gen-Flächen (Karte U23),
+  Probeeq-Zeile 2 und Kachelbreite 600 aus Fünferblock 05, die flüchtigen
+  Zustände ohne Rahmen (unverändert seit dem Nachmittag).
+
+Nächster sinnvoller Schritt: Der User sieht sich die Seite in Figma an und
+gibt Abnahme oder Änderungen; danach Skalierungsstufen oder die flüchtigen
+Zustände.

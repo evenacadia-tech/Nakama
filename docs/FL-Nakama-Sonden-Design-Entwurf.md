@@ -23,6 +23,21 @@
   Prüfbericht-Befund A auf — und das **Arbeitsmodell Technik-voraus /
   Design-parallel** in §0.4.
 
+## Rangfolge der lebenden Spezifikationen (festgelegt mit der Planprüfung PR2, 02.09.2026)
+
+Nakama hat heute **zwei** lebende Spezifikationen. Was jede bindet, steht ab 0.5 in beiden Köpfen
+und in der Lesetabelle von [`../CLAUDE.md`](../CLAUDE.md):
+
+| Quelle | bindet | bindet nicht |
+|---|---|---|
+| **dieser Entwurf** | Technik, Verträge, Phasen, Falsifikation | Aufbau, Hierarchie und Bedienwege der Oberflächen |
+| [`design/docs/funktions-und-bedien-blueprint.md`](../design/docs/funktions-und-bedien-blueprint.md) | Funktions- und Bedienarchitektur beider Apps | Schemas, Phasenschnitt, Gates |
+
+**Über beiden steht der aktuelle Vertrag und der Code.** Widerspricht eine der beiden
+Spezifikationen dem gebauten Vertrag, gilt der Vertrag. Ein Widerspruch zwischen Entwurf und
+Blueprint wird als Zeile in [`offene-punkte.md`](offene-punkte.md) geführt und **nie kaschiert** —
+weder durch stilles Umschreiben noch durch eine Oberfläche, die den Konflikt verdeckt.
+
 ## Wie Fassung 0.5 entstanden ist
 
 - Die **§-Nummerierung von 0.4 bleibt unverändert.** Kein Paragraph ist umnummeriert; §-Verweise

@@ -75,8 +75,14 @@ Commits gehen ohne Rückfrage raus.
 - **Entscheide:** Nur Datum plus User-Zitat in `design/abnahmen/` oder einem
   ausdrücklich bezeichneten Register machen eine Entscheidung verbindlich.
   Alles andere heißt Vorschlag, Annahme oder Studie.
-- **Plan:** Der technische Entwurf ist
-  `docs/FL-Nakama-Sonden-Design-Entwurf.md`; der aktuelle, aus dem Repo
+- **Plan:** Es gibt **zwei** lebende Spezifikationen, seit PR2 (02.09.2026)
+  mit fester Rangfolge. `docs/FL-Nakama-Sonden-Design-Entwurf.md` (Fassung 0.5)
+  bindet **Technik, Verträge, Phasen und Falsifikation**;
+  `design/docs/funktions-und-bedien-blueprint.md` bindet die **Funktions- und
+  Bedienarchitektur beider Apps**. **Über beiden stehen der aktuelle Vertrag und
+  der Code** — widerspricht eine Spezifikation dem gebauten Vertrag, gilt der
+  Vertrag. Ein Widerspruch zwischen beiden wird als Zeile in
+  `docs/offene-punkte.md` geführt, nie kaschiert. Der aktuelle, aus dem Repo
   gerechnete Stand und die nächste Arbeit liegen in `docs/PLAN-STAND.md`.
   Danach werden nur Gate-Text, Fachquellen und Manifest des konkreten Tickets
   gelesen. Die frühere Briefing-Seite ist abgeschafft.
@@ -131,12 +137,13 @@ Commits gehen ohne Rückfrage raus.
 | Nächster Schritt | `docs/PLAN-STAND.md`, danach die konkrete Ticketquelle |
 | Planstand / offene Fragen | `docs/PLAN-STAND.md`, `docs/plan/plan.json`, `docs/plan/fragen.json`, `docs/plan/LIES-MICH.md` |
 | Plugin heute | `docs/plugin-wissen.md` |
-| Sondenfamilie / Phasen | `docs/FL-Nakama-Sonden-Design-Entwurf.md`, `docs/bauaufteilung-sonden.md` |
+| Sondenfamilie / Phasen | `docs/FL-Nakama-Sonden-Design-Entwurf.md` (Fassung 0.5 — bindet Technik, Verträge, Phasen, Falsifikation), `docs/bauaufteilung-sonden.md` |
 | Verträge v3 | `eq-copilot/schemas/v3/README.md`, `eq-copilot/schemas/v3/flatbuffers/README.md` |
 | State / Migration | `eq-copilot/schemas/state/`, `eq-copilot/plugin/state/`, `eq-copilot/fixtures/state/` |
 | Beweise | jüngstes passendes Manifest in `docs/beweise/` |
 | FL-Capabilities | `eq-copilot/identity/host-capabilities-fl-v1.json`, `docs/beweise/termin-a/`, `docs/beweise/termin-b/` |
-| App-Design | `design/LIES-MICH.md`, `design/docs/funktions-und-bedien-blueprint.md`, `design/skizze/LIES-MICH.md` (laufende technische Skizze) und die jüngste passende Datei in `design/abnahmen/` |
+| App-Design | `design/LIES-MICH.md`, `design/docs/funktions-und-bedien-blueprint.md` (bindet Funktions- und Bedienarchitektur beider Apps), `design/skizze/LIES-MICH.md` (laufende technische Skizze) und die jüngste passende Datei in `design/abnahmen/` |
+| Widerspruch Entwurf ↔ Blueprint | über beiden stehen aktueller Vertrag und Code; der Widerspruch wird als Zeile in `docs/offene-punkte.md` geführt, nie kaschiert (PR2, 02.09.2026) |
 | Externes Wissen | `wissen/INDEX.md`, danach der passende Wissensbereich |
 | Verlauf, nie Vorgabe | `docs/archiv/`, `eq-copilot/design/archive/`, `eq-copilot/design/prisma-studie/STATUS.md` |
 

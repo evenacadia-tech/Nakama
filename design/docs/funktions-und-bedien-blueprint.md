@@ -1,7 +1,7 @@
 # Nakama Funktions- und Bedien-Blueprint
 
 Stand: 02.09.2026 (Ursprung 31.08.2026; zuletzt fortgeschrieben in den
-Abschnitten 0, 4, 15, 16 und 17)
+Abschnitten 0, 4, 15, 16 und 17; Rangfolge und Planzuordnung mit PR2 am 02.09.2026)
 
 Status: lebende, designneutrale Produktspezifikation
 
@@ -31,7 +31,24 @@ fortgeschrieben ist; seine Verwendung ist kein Import des früheren Designs.
 Bindender User-Wortlaut für die Quellenabgrenzung:
 „ignoriere bisherige design die entworfen wurden.“
 
-Der Blueprint ersetzt nicht:
+### Rangfolge der lebenden Spezifikationen (festgelegt mit der Planprüfung PR2, 02.09.2026)
+
+Nakama hat heute **zwei** lebende Spezifikationen. Was jede bindet, steht seit dem 02.09.2026
+gleichlautend hier, im Kopf des Entwurfs und in der Lesetabelle von
+[CLAUDE.md](../../CLAUDE.md):
+
+| Quelle | bindet | bindet nicht |
+|---|---|---|
+| [FL-Nakama-Sonden-Design-Entwurf.md](../../docs/FL-Nakama-Sonden-Design-Entwurf.md) (Fassung 0.5) | Technik, Verträge, Phasen, Falsifikation | Aufbau, Hierarchie und Bedienwege der Oberflächen |
+| **dieser Blueprint** | Funktions- und Bedienarchitektur beider Apps | Schemas, Phasenschnitt, Gates |
+
+**Über beiden steht der aktuelle Vertrag und der Code.** Widerspricht eine der beiden
+Spezifikationen dem gebauten Vertrag, gilt der Vertrag. Ein Widerspruch zwischen Entwurf und
+Blueprint wird als Zeile in [docs/offene-punkte.md](../../docs/offene-punkte.md) geführt und
+**nie kaschiert** — weder durch stilles Umschreiben noch durch eine Oberfläche, die den Konflikt
+verdeckt.
+
+Der Blueprint ersetzt deshalb nicht:
 
 - den technischen Bauplan in
   [FL-Nakama-Sonden-Design-Entwurf.md](../../docs/FL-Nakama-Sonden-Design-Entwurf.md),

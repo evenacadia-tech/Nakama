@@ -281,6 +281,10 @@ struct Soak
     std::atomic<std::uint64_t> evictedAusserhalb { 0 };
     // Zaehler S10
     std::atomic<std::uint64_t> fremderPipename { 0 };
+    /// S09: wie oft der Main im Neustartfenster OHNE aktive Subscription
+    /// gesehen wurde. Muss > 0 sein — sonst hat der Kill die Subscription
+    /// nicht sichtbar beendet und das Modell zeigte weiter die alte Sicht.
+    std::atomic<std::uint64_t> subscriptionWegImFenster { 0 };
 
     std::atomic<bool> laeuft { true };
     std::atomic<bool> warmupVorbei { false };
@@ -671,6 +675,8 @@ struct Soak
             else if (imNeustartfenster.load())
             {
                 const auto sicht = model.sicht();
+                if (! sicht.subscriptionAktiv)
+                    subscriptionWegImFenster.fetch_add (1);
                 for (const auto& q : sicht.quellen)
                     if (q.control == eqcop::SourcesModel::Control::stale)
                         staleImFenster.fetch_add (1);
@@ -1022,6 +1028,8 @@ struct Soak
           << ",\"kontinuitaetsbrueche\":" << brueche
           << ",\"publikationen\":" << publikationen << "}"
           << ",\"pipe\":{\"fremder_name_versucht\":" << fremderPipename.load() << "}"
+          << ",\"subscription\":{\"weg_im_neustartfenster\":"
+          << subscriptionWegImFenster.load() << "}"
           << ",\"kill\":" << killBericht()
           << "}";
         return o.str();

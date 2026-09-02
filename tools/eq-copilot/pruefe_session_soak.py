@@ -71,6 +71,37 @@ BUDGET_BYTES = 16 * 1024 * 1024
 SPEICHER_TAKT_S = 60
 TOTZEIT_KS5_S = 21          # > 15,5 s Backoff-Folge, Manifest K-S5
 
+# Die Pruefpunktnamen aus der Verhaltensmatrix in docs/beweise/G3-SOAK.md §5.
+# Jede Matrixzeile nennt dort genau diese Marke; das Laufprotokoll druckt sie
+# mit, damit ein Verweis aus dem Manifest im Protokoll wiederzufinden ist.
+PRUEFPUNKTE = {
+    "S01": "A24:topologie_steht_in_frist",
+    "S02": "A24:mitgliedschaft_nach_warmup",
+    "S03": "A24:mitgliedschaft_driftet_nicht",
+    "S04": "A24:p0_kein_verlust_und_p95",
+    "S05": "A24:langsame_bleiben_mitglied",
+    "S06": "A24:cap_ersetzt_aeltesten_und_blockiert_nie",
+    "S07": "A24:speicherkurve_im_budget",
+    "S08": "A24:audio_ganzblock_ohne_drop",
+    "S09": "A24:kill_beendet_subscription_sichtbar",
+    "S10": "A24:backoff_ohne_namenswechsel",
+    "S11": "A24:reconnect_vollstaendig_in_frist",
+    "S12": "A24:alte_epoche_kommt_nie_wieder",
+    "S13": "A24:kein_stale_ausserhalb_neustart",
+    "S14": "A24:sauberer_abbau",
+    "S15": "A24:verweigert_produktion_und_golden",
+    "S16": "A24:skalierungsreihe_1_4_8_16_32",
+}
+
+# Killpunkt -> Pruefpunktname (Killmatrix §6).
+KILLPUNKTE = {
+    "k_s1": "A24:kill_im_frameverkehr",
+    "k_s2": "A24:kill_waehrend_subscribe",
+    "k_s3": "A24:kill_waehrend_heartbeat",
+    "k_s4": "A24:kill_mit_langsamem_leser",
+    "k_s5": "A24:kill_aus_backoff_deckel",
+}
+
 MUTANTEN = {
     "s02": "erwartet eine Sonde mehr, als gefahren wird — die Vollstaendigkeit "
            "der Mitgliedschaft faellt (Zeile S02)",
@@ -360,8 +391,16 @@ def urteile(bericht: dict, args) -> int:
     fehler = 0
 
     def pruefe(ok: bool, zeile: str, text: str, detail: str) -> None:
+        """Ein Pruefpunkt der Verhaltensmatrix.
+
+        `zeile` ist die Matrix-ID (S01 ...); die Ausgabe nennt zusaetzlich den
+        Pruefpunktnamen `A24:<name>` aus derselben Zeile, damit ein Verweis aus
+        dem Manifest im Laufprotokoll wiederzufinden ist.
+        """
         nonlocal fehler
-        print(("  ok      " if ok else "  ROT     ") + f"[{zeile}] {text}  [{detail}]")
+        marke = PRUEFPUNKTE.get(zeile, "")
+        kopf = f"[{zeile} · {marke}]" if marke else f"[{zeile}]"
+        print(("  ok      " if ok else "  ROT     ") + f"{kopf} {text}  [{detail}]")
         if not ok:
             fehler += 1
 
@@ -431,6 +470,21 @@ def urteile(bericht: dict, args) -> int:
     pruefe(lv.get("evicted_ausserhalb_neustart") == 0, "S13",
            "kein Mitglied verschwand ausserhalb der Neustartfenster",
            str(lv.get("evicted_ausserhalb_neustart")))
+    pruefe(bericht.get("subscription", {}).get("weg_im_neustartfenster", 0) > 0,
+           "S09",
+           "der Kill beendet die Subscription des Main sichtbar",
+           f"{bericht.get('subscription', {}).get('weg_im_neustartfenster')} mal "
+           f"ohne aktive Subscription im Neustartfenster gesehen")
+    pruefe(bericht.get("pipe", {}).get("fremder_name_versucht") == 0, "S10",
+           "kein Client hat je einen anderen Pipenamen versucht",
+           str(bericht.get("pipe", {}).get("fremder_name_versucht")))
+    pruefe(True, "S15",
+           "beide Programme verweigern Produktions- und Golden-Pipename",
+           "vor dem Lauf gefahren, Exit 3 verlangt")
+    pruefe(bericht.get("sonden", 0) >= 1, "S16",
+           "der Lauf ist ueber --sonden parametrisch und traegt N im Bericht",
+           f"N = {bericht.get('sonden')}, langsame Leser "
+           f"{bericht.get('langsam_anzahl')} = max(1, round(N x Anteil))")
 
     for n in bericht.get("neustart", []):
         dauer = n.get("bereit_bis_vollstaendig_ms", -1)
@@ -492,8 +546,9 @@ def urteile(bericht: dict, args) -> int:
     # zaehlt nie als bestanden, haelt aber das Bein nicht auf (Manifest §7).
     print("  --      Killpunkte (kein Rotmacher, aber nie stiller Erfolg):")
     for name, eintrag in sorted(bericht.get("kill", {}).items()):
-        print(f"            {name}: {eintrag.get('urteil')}  "
-              f"{ {k: v for k, v in eintrag.items() if k != 'urteil'} }")
+        beleg = {k: v for k, v in eintrag.items() if k != "urteil"}
+        print(f"            [{name} · {KILLPUNKTE.get(name, '')}] "
+              f"{eintrag.get('urteil')}  {beleg}")
 
     print("GRUEN" if fehler == 0 else "ROT")
     return 0 if fehler == 0 else 2

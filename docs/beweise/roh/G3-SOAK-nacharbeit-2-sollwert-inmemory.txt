@@ -1,0 +1,406 @@
+==============================================================================
+== VOR dem Fix (882b2aa) · Fall a: erwartet=0, backoff=0, gefahren=true, urteil=getroffen
+== erwarteter Exit: 2
+==============================================================================
+  ok      [S14 · A24:sauberer_abbau] das C++-Programm endet sauber  [Exit 0]
+  ok      [S01 · A24:topologie_steht_in_frist] die Topologie stand in der Frist (60000 ms)  [81 ms]
+  ok      [S02 · A24:mitgliedschaft_nach_warmup] der Lauf traegt genau 16 Sonden  [16]
+  ok      [S03 · A24:mitgliedschaft_driftet_nicht] jede Snapshot-Uebernahme war sofort vollstaendig und richtig  [9723/9723 bei 10508 Uebernahmen]
+  ok      [S03 · A24:mitgliedschaft_driftet_nicht] kein Snapshot wurde als ungueltig abgewiesen  [0]
+  ok      [S03 · A24:mitgliedschaft_driftet_nicht] auch die laufende Abtastung sah nie eine abweichende Sicht  [3033/3033]
+  ok      [S02 · A24:mitgliedschaft_nach_warmup] nie eine fremde Adresse im Snapshot  [0]
+  ok      [S02 · A24:mitgliedschaft_nach_warmup] fuehrendes_main war immer die Main-Adresse  [0]
+  ok      [S04 · A24:p0_kein_verlust_und_p95] kein P0 geht ausserhalb der Neustartfenster verloren  [5616/5616, 0 verloren (Nachlauffenster 2000 ms)]
+  ok      [S04 · A24:p0_kein_verlust_und_p95] P0-ACK p95 unter 1000 ms  [p95 21.6 ms, max 2196.7 ms]
+  ok      [S14 · A24:sauberer_abbau] vor dem Abbau lief ein Nachlauffenster fuer ausstehende ACKs  [2000 ms]
+  ok      [S05 · A24:langsame_bleiben_mitglied] die langsamen Leser blieben durchgehend Mitglied  [True]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] die Schleuse der langsamen Leser lag wirklich im Rueckstau  [16171 ersetzt bei 42276 Veroeffentlichungen (Fluter getrennt: 577)]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] und dabei fiel nie der neueste Frame (replace-oldest)  [0 neueste verworfen]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] jede abgelehnte Veroeffentlichung hat einen gezaehlten Grund  [0 abgelehnt (aus dem Rueckgabewert) = 0 + 0]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] kein langsamer Leser bremst die schnellen  [True (schnelle p95 21.1 ms)]
+  ok      [S08 · A24:audio_ganzblock_ohne_drop] 0 Ganzblockdrops auf dem echten Sondenpfad  [528432 Bloecke, 0 Ueberlauf, 0 Oversize]
+  ok      [S08 · A24:audio_ganzblock_ohne_drop] keine unerklaerten Kontinuitaetsbrueche  [0]
+  ok      [S08 · A24:audio_ganzblock_ohne_drop] jede Sonde hat je Analysefenster einen Producer-Frame veroeffentlicht  [52832 gesamt, kleinste Sonde 3302 >= 2642 (33027 Bloecke / 10 je Fenster, Toleranz 0.8)]
+  ok      [S13 · A24:kein_stale_ausserhalb_neustart] kein Mitglied wurde ausserhalb der Neustartfenster stale  [0]
+  ok      [S13 · A24:kein_stale_ausserhalb_neustart] kein Mitglied verschwand ausserhalb der Neustartfenster  [0]
+  ok      [S10 · A24:backoff_ohne_namenswechsel] kein Client bekam je einen anderen Pipenamen  [0 fremd bei 34 geprueften Uebergaben, ohne_produkt_v3 True]
+  ok      [S10 · A24:backoff_ohne_namenswechsel] im Pipe-Namensraum entstand kein Produktions- oder Goldenname  [eigene Probe sichtbar True, produktionsname_neu False, goldenname_neu False, 167 -> 168 Namen]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] der Kill beendet die Subscription des Main sichtbar  [249 mal ohne aktive Subscription im Neustartfenster gesehen]
+  ok      [S15 · A24:verweigert_produktion_und_golden] beide Programme verweigern Produktions- und Golden-Pipename  [{'golden_EqCopSessionSoak': 3, 'golden_eqcop-broker-sonde012-probe': 3, 'produktion_EqCopSessionSoak': 3, 'produktion_eqcop-broker-sonde012-probe': 3}]
+  ok      [S16 · A24:skalierungsreihe_1_4_8_16_32] langsam_anzahl folgt max(1, round(N x Anteil))  [N = 16, langsam_anzahl 4, erwartet 4]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] der Bericht traegt genau 2 Neustart(e)  [2 geliefert]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] Neustart 1: Snapshot wieder vollstaendig in der Frist  [2513 ms von 60000 ms (Schranke 45051 ms, reconnect max 2513.3 ms)]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] Neustart 1: Reconnect je Clientpaar gemessen  [17 Paare (erwartet 17), min 537.8 / p95 2513.3 / max 2513.3 ms]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] Neustart 1: Subscription weg UND Quellen getrennt  [15 ohne Subscription, 15 mit getrennter Quelle, 35 Sichten im Fenster]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] Neustart 1: Kill und Totzeit wurden belegt  [kill_erfolgt True, totzeit_erfasst True (Killdauer 3 ms)]
+  ok      [S12 · A24:alte_epoche_kommt_nie_wieder] Neustart 1: die alte broker_epoch kam nie wieder  [0]
+  ok      [S12 · A24:alte_epoche_kommt_nie_wieder] Neustart 1: neue broker_epoch  [1696b935… -> ab78f895…]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] Neustart 2: Snapshot wieder vollstaendig in der Frist  [2543 ms von 60000 ms (Schranke 45051 ms, reconnect max 2544.0 ms)]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] Neustart 2: Reconnect je Clientpaar gemessen  [17 Paare (erwartet 17), min 2544.0 / p95 2544.0 / max 2544.0 ms]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] Neustart 2: Subscription weg UND Quellen getrennt  [234 ohne Subscription, 234 mit getrennter Quelle, 234 Sichten im Fenster]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] Neustart 2: Kill und Totzeit wurden belegt  [kill_erfolgt True, totzeit_erfasst True (Killdauer 3 ms)]
+  ok      [S12 · A24:alte_epoche_kommt_nie_wieder] Neustart 2: die alte broker_epoch kam nie wieder  [0]
+  ok      [S12 · A24:alte_epoche_kommt_nie_wieder] Neustart 2: neue broker_epoch  [ab78f895… -> b3ffec84…]
+  ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [8 Punkte]
+  ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [300 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [110.7 -> 111.9 MB, +1.2 MB, Grenze 16.8 MB ueber 300 s]
+  ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 3 Brokergeneration(en)  [3 geliefert: [0, 1, 2]]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 0 bleibt im Budget  [13.0 -> 13.2 MB, +0.2 MB, Grenze 16.8 MB ueber 60 s]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [3 von 4 Punkten]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: die Kurve traegt echte Minutenabstaende  [80 s (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 1 bleibt im Budget  [12.7 -> 13.5 MB, +0.8 MB, Grenze 16.8 MB ueber 80 s]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 2: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [3 von 4 Punkten]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 2: die Kurve traegt echte Minutenabstaende  [100 s (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 2 bleibt im Budget  [13.0 -> 13.3 MB, +0.3 MB, Grenze 16.8 MB ueber 100 s]
+  --      Killpunkte (Urteil aus dem Beleg abgeleitet, nicht uebernommen):
+  ok      [k_s1 · A24:kill_im_frameverkehr] getroffen (abgeleitet: getroffen)  {'gefahren': True, 'telemetrie_handle_fehler': 6}
+  ok      [k_s2 · A24:kill_waehrend_subscribe] getroffen (abgeleitet: getroffen)  {'gefahren': True, 'snapshot_vor_kill': False}
+  ok      [k_s3 · A24:kill_waehrend_heartbeat] nicht_getroffen (abgeleitet: nicht_getroffen)  {'gefahren': True, 'p0_ohne_ack_im_fenster': 0}
+  ok      [k_s4 · A24:kill_mit_langsamem_leser] getroffen (abgeleitet: getroffen)  {'flag_zum_killzeitpunkt': 4, 'gefahren': True}
+  ok      [k_s5 · A24:kill_aus_backoff_deckel] getroffen (abgeleitet: getroffen)  {'backoff_deckel_erreicht': 0, 'erwartet': 0, 'gefahren': True}
+  ok      [S04 · A24:p0_kein_verlust_und_p95] K-S3 zaehlt genau die endgueltig im Fenster verlorenen ACKs  [0 vs. 0]
+GRUEN
+== Exit 0 (erwartet 2) -> ABWEICHUNG
+
+==============================================================================
+== VOR dem Fix (882b2aa) · Fall b: erwartet fehlt, backoff=0, urteil=nicht_getroffen
+== erwarteter Exit: 2
+==============================================================================
+  ok      [S14 · A24:sauberer_abbau] das C++-Programm endet sauber  [Exit 0]
+  ok      [S01 · A24:topologie_steht_in_frist] die Topologie stand in der Frist (60000 ms)  [81 ms]
+  ok      [S02 · A24:mitgliedschaft_nach_warmup] der Lauf traegt genau 16 Sonden  [16]
+  ok      [S03 · A24:mitgliedschaft_driftet_nicht] jede Snapshot-Uebernahme war sofort vollstaendig und richtig  [9723/9723 bei 10508 Uebernahmen]
+  ok      [S03 · A24:mitgliedschaft_driftet_nicht] kein Snapshot wurde als ungueltig abgewiesen  [0]
+  ok      [S03 · A24:mitgliedschaft_driftet_nicht] auch die laufende Abtastung sah nie eine abweichende Sicht  [3033/3033]
+  ok      [S02 · A24:mitgliedschaft_nach_warmup] nie eine fremde Adresse im Snapshot  [0]
+  ok      [S02 · A24:mitgliedschaft_nach_warmup] fuehrendes_main war immer die Main-Adresse  [0]
+  ok      [S04 · A24:p0_kein_verlust_und_p95] kein P0 geht ausserhalb der Neustartfenster verloren  [5616/5616, 0 verloren (Nachlauffenster 2000 ms)]
+  ok      [S04 · A24:p0_kein_verlust_und_p95] P0-ACK p95 unter 1000 ms  [p95 21.6 ms, max 2196.7 ms]
+  ok      [S14 · A24:sauberer_abbau] vor dem Abbau lief ein Nachlauffenster fuer ausstehende ACKs  [2000 ms]
+  ok      [S05 · A24:langsame_bleiben_mitglied] die langsamen Leser blieben durchgehend Mitglied  [True]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] die Schleuse der langsamen Leser lag wirklich im Rueckstau  [16171 ersetzt bei 42276 Veroeffentlichungen (Fluter getrennt: 577)]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] und dabei fiel nie der neueste Frame (replace-oldest)  [0 neueste verworfen]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] jede abgelehnte Veroeffentlichung hat einen gezaehlten Grund  [0 abgelehnt (aus dem Rueckgabewert) = 0 + 0]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] kein langsamer Leser bremst die schnellen  [True (schnelle p95 21.1 ms)]
+  ok      [S08 · A24:audio_ganzblock_ohne_drop] 0 Ganzblockdrops auf dem echten Sondenpfad  [528432 Bloecke, 0 Ueberlauf, 0 Oversize]
+  ok      [S08 · A24:audio_ganzblock_ohne_drop] keine unerklaerten Kontinuitaetsbrueche  [0]
+  ok      [S08 · A24:audio_ganzblock_ohne_drop] jede Sonde hat je Analysefenster einen Producer-Frame veroeffentlicht  [52832 gesamt, kleinste Sonde 3302 >= 2642 (33027 Bloecke / 10 je Fenster, Toleranz 0.8)]
+  ok      [S13 · A24:kein_stale_ausserhalb_neustart] kein Mitglied wurde ausserhalb der Neustartfenster stale  [0]
+  ok      [S13 · A24:kein_stale_ausserhalb_neustart] kein Mitglied verschwand ausserhalb der Neustartfenster  [0]
+  ok      [S10 · A24:backoff_ohne_namenswechsel] kein Client bekam je einen anderen Pipenamen  [0 fremd bei 34 geprueften Uebergaben, ohne_produkt_v3 True]
+  ok      [S10 · A24:backoff_ohne_namenswechsel] im Pipe-Namensraum entstand kein Produktions- oder Goldenname  [eigene Probe sichtbar True, produktionsname_neu False, goldenname_neu False, 167 -> 168 Namen]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] der Kill beendet die Subscription des Main sichtbar  [249 mal ohne aktive Subscription im Neustartfenster gesehen]
+  ok      [S15 · A24:verweigert_produktion_und_golden] beide Programme verweigern Produktions- und Golden-Pipename  [{'golden_EqCopSessionSoak': 3, 'golden_eqcop-broker-sonde012-probe': 3, 'produktion_EqCopSessionSoak': 3, 'produktion_eqcop-broker-sonde012-probe': 3}]
+  ok      [S16 · A24:skalierungsreihe_1_4_8_16_32] langsam_anzahl folgt max(1, round(N x Anteil))  [N = 16, langsam_anzahl 4, erwartet 4]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] der Bericht traegt genau 2 Neustart(e)  [2 geliefert]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] Neustart 1: Snapshot wieder vollstaendig in der Frist  [2513 ms von 60000 ms (Schranke 45051 ms, reconnect max 2513.3 ms)]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] Neustart 1: Reconnect je Clientpaar gemessen  [17 Paare (erwartet 17), min 537.8 / p95 2513.3 / max 2513.3 ms]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] Neustart 1: Subscription weg UND Quellen getrennt  [15 ohne Subscription, 15 mit getrennter Quelle, 35 Sichten im Fenster]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] Neustart 1: Kill und Totzeit wurden belegt  [kill_erfolgt True, totzeit_erfasst True (Killdauer 3 ms)]
+  ok      [S12 · A24:alte_epoche_kommt_nie_wieder] Neustart 1: die alte broker_epoch kam nie wieder  [0]
+  ok      [S12 · A24:alte_epoche_kommt_nie_wieder] Neustart 1: neue broker_epoch  [1696b935… -> ab78f895…]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] Neustart 2: Snapshot wieder vollstaendig in der Frist  [2543 ms von 60000 ms (Schranke 45051 ms, reconnect max 2544.0 ms)]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] Neustart 2: Reconnect je Clientpaar gemessen  [17 Paare (erwartet 17), min 2544.0 / p95 2544.0 / max 2544.0 ms]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] Neustart 2: Subscription weg UND Quellen getrennt  [234 ohne Subscription, 234 mit getrennter Quelle, 234 Sichten im Fenster]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] Neustart 2: Kill und Totzeit wurden belegt  [kill_erfolgt True, totzeit_erfasst True (Killdauer 3 ms)]
+  ok      [S12 · A24:alte_epoche_kommt_nie_wieder] Neustart 2: die alte broker_epoch kam nie wieder  [0]
+  ok      [S12 · A24:alte_epoche_kommt_nie_wieder] Neustart 2: neue broker_epoch  [ab78f895… -> b3ffec84…]
+  ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [8 Punkte]
+  ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [300 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [110.7 -> 111.9 MB, +1.2 MB, Grenze 16.8 MB ueber 300 s]
+  ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 3 Brokergeneration(en)  [3 geliefert: [0, 1, 2]]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 0 bleibt im Budget  [13.0 -> 13.2 MB, +0.2 MB, Grenze 16.8 MB ueber 60 s]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [3 von 4 Punkten]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: die Kurve traegt echte Minutenabstaende  [80 s (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 1 bleibt im Budget  [12.7 -> 13.5 MB, +0.8 MB, Grenze 16.8 MB ueber 80 s]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 2: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [3 von 4 Punkten]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 2: die Kurve traegt echte Minutenabstaende  [100 s (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 2 bleibt im Budget  [13.0 -> 13.3 MB, +0.3 MB, Grenze 16.8 MB ueber 100 s]
+  --      Killpunkte (Urteil aus dem Beleg abgeleitet, nicht uebernommen):
+  ok      [k_s1 · A24:kill_im_frameverkehr] getroffen (abgeleitet: getroffen)  {'gefahren': True, 'telemetrie_handle_fehler': 6}
+  ok      [k_s2 · A24:kill_waehrend_subscribe] getroffen (abgeleitet: getroffen)  {'gefahren': True, 'snapshot_vor_kill': False}
+  ok      [k_s3 · A24:kill_waehrend_heartbeat] nicht_getroffen (abgeleitet: nicht_getroffen)  {'gefahren': True, 'p0_ohne_ack_im_fenster': 0}
+  ok      [k_s4 · A24:kill_mit_langsamem_leser] getroffen (abgeleitet: getroffen)  {'flag_zum_killzeitpunkt': 4, 'gefahren': True}
+  ok      [k_s5 · A24:kill_aus_backoff_deckel] nicht_getroffen (abgeleitet: nicht_getroffen)  {'backoff_deckel_erreicht': 0, 'gefahren': True}
+  ok      [S04 · A24:p0_kein_verlust_und_p95] K-S3 zaehlt genau die endgueltig im Fenster verlorenen ACKs  [0 vs. 0]
+GRUEN
+== Exit 0 (erwartet 2) -> ABWEICHUNG
+
+==============================================================================
+== VOR dem Fix (882b2aa) · Fall c: unveraenderter gruener Bericht
+== erwarteter Exit: 0
+==============================================================================
+  ok      [S14 · A24:sauberer_abbau] das C++-Programm endet sauber  [Exit 0]
+  ok      [S01 · A24:topologie_steht_in_frist] die Topologie stand in der Frist (60000 ms)  [81 ms]
+  ok      [S02 · A24:mitgliedschaft_nach_warmup] der Lauf traegt genau 16 Sonden  [16]
+  ok      [S03 · A24:mitgliedschaft_driftet_nicht] jede Snapshot-Uebernahme war sofort vollstaendig und richtig  [9723/9723 bei 10508 Uebernahmen]
+  ok      [S03 · A24:mitgliedschaft_driftet_nicht] kein Snapshot wurde als ungueltig abgewiesen  [0]
+  ok      [S03 · A24:mitgliedschaft_driftet_nicht] auch die laufende Abtastung sah nie eine abweichende Sicht  [3033/3033]
+  ok      [S02 · A24:mitgliedschaft_nach_warmup] nie eine fremde Adresse im Snapshot  [0]
+  ok      [S02 · A24:mitgliedschaft_nach_warmup] fuehrendes_main war immer die Main-Adresse  [0]
+  ok      [S04 · A24:p0_kein_verlust_und_p95] kein P0 geht ausserhalb der Neustartfenster verloren  [5616/5616, 0 verloren (Nachlauffenster 2000 ms)]
+  ok      [S04 · A24:p0_kein_verlust_und_p95] P0-ACK p95 unter 1000 ms  [p95 21.6 ms, max 2196.7 ms]
+  ok      [S14 · A24:sauberer_abbau] vor dem Abbau lief ein Nachlauffenster fuer ausstehende ACKs  [2000 ms]
+  ok      [S05 · A24:langsame_bleiben_mitglied] die langsamen Leser blieben durchgehend Mitglied  [True]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] die Schleuse der langsamen Leser lag wirklich im Rueckstau  [16171 ersetzt bei 42276 Veroeffentlichungen (Fluter getrennt: 577)]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] und dabei fiel nie der neueste Frame (replace-oldest)  [0 neueste verworfen]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] jede abgelehnte Veroeffentlichung hat einen gezaehlten Grund  [0 abgelehnt (aus dem Rueckgabewert) = 0 + 0]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] kein langsamer Leser bremst die schnellen  [True (schnelle p95 21.1 ms)]
+  ok      [S08 · A24:audio_ganzblock_ohne_drop] 0 Ganzblockdrops auf dem echten Sondenpfad  [528432 Bloecke, 0 Ueberlauf, 0 Oversize]
+  ok      [S08 · A24:audio_ganzblock_ohne_drop] keine unerklaerten Kontinuitaetsbrueche  [0]
+  ok      [S08 · A24:audio_ganzblock_ohne_drop] jede Sonde hat je Analysefenster einen Producer-Frame veroeffentlicht  [52832 gesamt, kleinste Sonde 3302 >= 2642 (33027 Bloecke / 10 je Fenster, Toleranz 0.8)]
+  ok      [S13 · A24:kein_stale_ausserhalb_neustart] kein Mitglied wurde ausserhalb der Neustartfenster stale  [0]
+  ok      [S13 · A24:kein_stale_ausserhalb_neustart] kein Mitglied verschwand ausserhalb der Neustartfenster  [0]
+  ok      [S10 · A24:backoff_ohne_namenswechsel] kein Client bekam je einen anderen Pipenamen  [0 fremd bei 34 geprueften Uebergaben, ohne_produkt_v3 True]
+  ok      [S10 · A24:backoff_ohne_namenswechsel] im Pipe-Namensraum entstand kein Produktions- oder Goldenname  [eigene Probe sichtbar True, produktionsname_neu False, goldenname_neu False, 167 -> 168 Namen]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] der Kill beendet die Subscription des Main sichtbar  [249 mal ohne aktive Subscription im Neustartfenster gesehen]
+  ok      [S15 · A24:verweigert_produktion_und_golden] beide Programme verweigern Produktions- und Golden-Pipename  [{'golden_EqCopSessionSoak': 3, 'golden_eqcop-broker-sonde012-probe': 3, 'produktion_EqCopSessionSoak': 3, 'produktion_eqcop-broker-sonde012-probe': 3}]
+  ok      [S16 · A24:skalierungsreihe_1_4_8_16_32] langsam_anzahl folgt max(1, round(N x Anteil))  [N = 16, langsam_anzahl 4, erwartet 4]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] der Bericht traegt genau 2 Neustart(e)  [2 geliefert]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] Neustart 1: Snapshot wieder vollstaendig in der Frist  [2513 ms von 60000 ms (Schranke 45051 ms, reconnect max 2513.3 ms)]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] Neustart 1: Reconnect je Clientpaar gemessen  [17 Paare (erwartet 17), min 537.8 / p95 2513.3 / max 2513.3 ms]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] Neustart 1: Subscription weg UND Quellen getrennt  [15 ohne Subscription, 15 mit getrennter Quelle, 35 Sichten im Fenster]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] Neustart 1: Kill und Totzeit wurden belegt  [kill_erfolgt True, totzeit_erfasst True (Killdauer 3 ms)]
+  ok      [S12 · A24:alte_epoche_kommt_nie_wieder] Neustart 1: die alte broker_epoch kam nie wieder  [0]
+  ok      [S12 · A24:alte_epoche_kommt_nie_wieder] Neustart 1: neue broker_epoch  [1696b935… -> ab78f895…]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] Neustart 2: Snapshot wieder vollstaendig in der Frist  [2543 ms von 60000 ms (Schranke 45051 ms, reconnect max 2544.0 ms)]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] Neustart 2: Reconnect je Clientpaar gemessen  [17 Paare (erwartet 17), min 2544.0 / p95 2544.0 / max 2544.0 ms]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] Neustart 2: Subscription weg UND Quellen getrennt  [234 ohne Subscription, 234 mit getrennter Quelle, 234 Sichten im Fenster]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] Neustart 2: Kill und Totzeit wurden belegt  [kill_erfolgt True, totzeit_erfasst True (Killdauer 3 ms)]
+  ok      [S12 · A24:alte_epoche_kommt_nie_wieder] Neustart 2: die alte broker_epoch kam nie wieder  [0]
+  ok      [S12 · A24:alte_epoche_kommt_nie_wieder] Neustart 2: neue broker_epoch  [ab78f895… -> b3ffec84…]
+  ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [8 Punkte]
+  ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [300 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [110.7 -> 111.9 MB, +1.2 MB, Grenze 16.8 MB ueber 300 s]
+  ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 3 Brokergeneration(en)  [3 geliefert: [0, 1, 2]]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 0 bleibt im Budget  [13.0 -> 13.2 MB, +0.2 MB, Grenze 16.8 MB ueber 60 s]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [3 von 4 Punkten]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: die Kurve traegt echte Minutenabstaende  [80 s (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 1 bleibt im Budget  [12.7 -> 13.5 MB, +0.8 MB, Grenze 16.8 MB ueber 80 s]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 2: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [3 von 4 Punkten]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 2: die Kurve traegt echte Minutenabstaende  [100 s (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 2 bleibt im Budget  [13.0 -> 13.3 MB, +0.3 MB, Grenze 16.8 MB ueber 100 s]
+  --      Killpunkte (Urteil aus dem Beleg abgeleitet, nicht uebernommen):
+  ok      [k_s1 · A24:kill_im_frameverkehr] getroffen (abgeleitet: getroffen)  {'gefahren': True, 'telemetrie_handle_fehler': 6}
+  ok      [k_s2 · A24:kill_waehrend_subscribe] getroffen (abgeleitet: getroffen)  {'gefahren': True, 'snapshot_vor_kill': False}
+  ok      [k_s3 · A24:kill_waehrend_heartbeat] nicht_getroffen (abgeleitet: nicht_getroffen)  {'gefahren': True, 'p0_ohne_ack_im_fenster': 0}
+  ok      [k_s4 · A24:kill_mit_langsamem_leser] getroffen (abgeleitet: getroffen)  {'flag_zum_killzeitpunkt': 4, 'gefahren': True}
+  ok      [k_s5 · A24:kill_aus_backoff_deckel] getroffen (abgeleitet: getroffen)  {'backoff_deckel_erreicht': 17, 'erwartet': 17, 'gefahren': True}
+  ok      [S04 · A24:p0_kein_verlust_und_p95] K-S3 zaehlt genau die endgueltig im Fenster verlorenen ACKs  [0 vs. 0]
+GRUEN
+== Exit 0 (erwartet 0) -> PASSEND
+
+==============================================================================
+== NACH dem Fix (Runde 2) · Fall a: erwartet=0, backoff=0, gefahren=true, urteil=getroffen
+== erwarteter Exit: 2
+==============================================================================
+  ok      [S14 · A24:sauberer_abbau] das C++-Programm endet sauber  [Exit 0]
+  ok      [S01 · A24:topologie_steht_in_frist] die Topologie stand in der Frist (60000 ms)  [81 ms]
+  ok      [S02 · A24:mitgliedschaft_nach_warmup] der Lauf traegt genau 16 Sonden  [16]
+  ok      [S03 · A24:mitgliedschaft_driftet_nicht] jede Snapshot-Uebernahme war sofort vollstaendig und richtig  [9723/9723 bei 10508 Uebernahmen]
+  ok      [S03 · A24:mitgliedschaft_driftet_nicht] kein Snapshot wurde als ungueltig abgewiesen  [0]
+  ok      [S03 · A24:mitgliedschaft_driftet_nicht] auch die laufende Abtastung sah nie eine abweichende Sicht  [3033/3033]
+  ok      [S02 · A24:mitgliedschaft_nach_warmup] nie eine fremde Adresse im Snapshot  [0]
+  ok      [S02 · A24:mitgliedschaft_nach_warmup] fuehrendes_main war immer die Main-Adresse  [0]
+  ok      [S04 · A24:p0_kein_verlust_und_p95] kein P0 geht ausserhalb der Neustartfenster verloren  [5616/5616, 0 verloren (Nachlauffenster 2000 ms)]
+  ok      [S04 · A24:p0_kein_verlust_und_p95] P0-ACK p95 unter 1000 ms  [p95 21.6 ms, max 2196.7 ms]
+  ok      [S14 · A24:sauberer_abbau] vor dem Abbau lief ein Nachlauffenster fuer ausstehende ACKs  [2000 ms]
+  ok      [S05 · A24:langsame_bleiben_mitglied] die langsamen Leser blieben durchgehend Mitglied  [True]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] die Schleuse der langsamen Leser lag wirklich im Rueckstau  [16171 ersetzt bei 42276 Veroeffentlichungen (Fluter getrennt: 577)]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] und dabei fiel nie der neueste Frame (replace-oldest)  [0 neueste verworfen]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] jede abgelehnte Veroeffentlichung hat einen gezaehlten Grund  [0 abgelehnt (aus dem Rueckgabewert) = 0 + 0]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] kein langsamer Leser bremst die schnellen  [True (schnelle p95 21.1 ms)]
+  ok      [S08 · A24:audio_ganzblock_ohne_drop] 0 Ganzblockdrops auf dem echten Sondenpfad  [528432 Bloecke, 0 Ueberlauf, 0 Oversize]
+  ok      [S08 · A24:audio_ganzblock_ohne_drop] keine unerklaerten Kontinuitaetsbrueche  [0]
+  ok      [S08 · A24:audio_ganzblock_ohne_drop] jede Sonde hat je Analysefenster einen Producer-Frame veroeffentlicht  [52832 gesamt, kleinste Sonde 3302 >= 2642 (33027 Bloecke / 10 je Fenster, Toleranz 0.8)]
+  ok      [S13 · A24:kein_stale_ausserhalb_neustart] kein Mitglied wurde ausserhalb der Neustartfenster stale  [0]
+  ok      [S13 · A24:kein_stale_ausserhalb_neustart] kein Mitglied verschwand ausserhalb der Neustartfenster  [0]
+  ok      [S10 · A24:backoff_ohne_namenswechsel] kein Client bekam je einen anderen Pipenamen  [0 fremd bei 34 geprueften Uebergaben, ohne_produkt_v3 True]
+  ok      [S10 · A24:backoff_ohne_namenswechsel] im Pipe-Namensraum entstand kein Produktions- oder Goldenname  [eigene Probe sichtbar True, produktionsname_neu False, goldenname_neu False, 167 -> 168 Namen]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] der Kill beendet die Subscription des Main sichtbar  [249 mal ohne aktive Subscription im Neustartfenster gesehen]
+  ok      [S15 · A24:verweigert_produktion_und_golden] beide Programme verweigern Produktions- und Golden-Pipename  [{'golden_EqCopSessionSoak': 3, 'golden_eqcop-broker-sonde012-probe': 3, 'produktion_EqCopSessionSoak': 3, 'produktion_eqcop-broker-sonde012-probe': 3}]
+  ok      [S16 · A24:skalierungsreihe_1_4_8_16_32] langsam_anzahl folgt max(1, round(N x Anteil))  [N = 16, langsam_anzahl 4, erwartet 4]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] der Bericht traegt genau 2 Neustart(e)  [2 geliefert]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] Neustart 1: Snapshot wieder vollstaendig in der Frist  [2513 ms von 60000 ms (Schranke 45051 ms, reconnect max 2513.3 ms)]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] Neustart 1: Reconnect je Clientpaar gemessen  [17 Paare (erwartet 17), min 537.8 / p95 2513.3 / max 2513.3 ms]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] Neustart 1: Subscription weg UND Quellen getrennt  [15 ohne Subscription, 15 mit getrennter Quelle, 35 Sichten im Fenster]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] Neustart 1: Kill und Totzeit wurden belegt  [kill_erfolgt True, totzeit_erfasst True (Killdauer 3 ms)]
+  ok      [S12 · A24:alte_epoche_kommt_nie_wieder] Neustart 1: die alte broker_epoch kam nie wieder  [0]
+  ok      [S12 · A24:alte_epoche_kommt_nie_wieder] Neustart 1: neue broker_epoch  [1696b935… -> ab78f895…]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] Neustart 2: Snapshot wieder vollstaendig in der Frist  [2543 ms von 60000 ms (Schranke 45051 ms, reconnect max 2544.0 ms)]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] Neustart 2: Reconnect je Clientpaar gemessen  [17 Paare (erwartet 17), min 2544.0 / p95 2544.0 / max 2544.0 ms]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] Neustart 2: Subscription weg UND Quellen getrennt  [234 ohne Subscription, 234 mit getrennter Quelle, 234 Sichten im Fenster]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] Neustart 2: Kill und Totzeit wurden belegt  [kill_erfolgt True, totzeit_erfasst True (Killdauer 3 ms)]
+  ok      [S12 · A24:alte_epoche_kommt_nie_wieder] Neustart 2: die alte broker_epoch kam nie wieder  [0]
+  ok      [S12 · A24:alte_epoche_kommt_nie_wieder] Neustart 2: neue broker_epoch  [ab78f895… -> b3ffec84…]
+  ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [8 Punkte]
+  ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [300 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [110.7 -> 111.9 MB, +1.2 MB, Grenze 16.8 MB ueber 300 s]
+  ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 3 Brokergeneration(en)  [3 geliefert: [0, 1, 2]]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 0 bleibt im Budget  [13.0 -> 13.2 MB, +0.2 MB, Grenze 16.8 MB ueber 60 s]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [3 von 4 Punkten]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: die Kurve traegt echte Minutenabstaende  [80 s (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 1 bleibt im Budget  [12.7 -> 13.5 MB, +0.8 MB, Grenze 16.8 MB ueber 80 s]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 2: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [3 von 4 Punkten]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 2: die Kurve traegt echte Minutenabstaende  [100 s (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 2 bleibt im Budget  [13.0 -> 13.3 MB, +0.3 MB, Grenze 16.8 MB ueber 100 s]
+  --      Killpunkte (Urteil aus dem Beleg abgeleitet, nicht uebernommen):
+  ok      [k_s1 · A24:kill_im_frameverkehr] getroffen (abgeleitet: getroffen)  {'gefahren': True, 'telemetrie_handle_fehler': 6}
+  ok      [k_s2 · A24:kill_waehrend_subscribe] getroffen (abgeleitet: getroffen)  {'gefahren': True, 'snapshot_vor_kill': False}
+  ok      [k_s3 · A24:kill_waehrend_heartbeat] nicht_getroffen (abgeleitet: nicht_getroffen)  {'gefahren': True, 'p0_ohne_ack_im_fenster': 0}
+  ok      [k_s4 · A24:kill_mit_langsamem_leser] getroffen (abgeleitet: getroffen)  {'flag_zum_killzeitpunkt': 4, 'gefahren': True}
+  ROT     [k_s5 · A24:kill_aus_backoff_deckel] `erwartet` im Bericht ist 0, gerechnet 17 (N = 16, alle Control-Clients: Main plus N Sonden)
+  ROT     [k_s5 · A24:kill_aus_backoff_deckel] getroffen (abgeleitet: nicht_getroffen)  {'backoff_deckel_erreicht': 0, 'erwartet': 0, 'gefahren': True}
+  ok      [S04 · A24:p0_kein_verlust_und_p95] K-S3 zaehlt genau die endgueltig im Fenster verlorenen ACKs  [0 vs. 0]
+ROT
+== Exit 2 (erwartet 2) -> PASSEND
+
+==============================================================================
+== NACH dem Fix (Runde 2) · Fall b: erwartet fehlt, backoff=0, urteil=nicht_getroffen
+== erwarteter Exit: 2
+==============================================================================
+  ok      [S14 · A24:sauberer_abbau] das C++-Programm endet sauber  [Exit 0]
+  ok      [S01 · A24:topologie_steht_in_frist] die Topologie stand in der Frist (60000 ms)  [81 ms]
+  ok      [S02 · A24:mitgliedschaft_nach_warmup] der Lauf traegt genau 16 Sonden  [16]
+  ok      [S03 · A24:mitgliedschaft_driftet_nicht] jede Snapshot-Uebernahme war sofort vollstaendig und richtig  [9723/9723 bei 10508 Uebernahmen]
+  ok      [S03 · A24:mitgliedschaft_driftet_nicht] kein Snapshot wurde als ungueltig abgewiesen  [0]
+  ok      [S03 · A24:mitgliedschaft_driftet_nicht] auch die laufende Abtastung sah nie eine abweichende Sicht  [3033/3033]
+  ok      [S02 · A24:mitgliedschaft_nach_warmup] nie eine fremde Adresse im Snapshot  [0]
+  ok      [S02 · A24:mitgliedschaft_nach_warmup] fuehrendes_main war immer die Main-Adresse  [0]
+  ok      [S04 · A24:p0_kein_verlust_und_p95] kein P0 geht ausserhalb der Neustartfenster verloren  [5616/5616, 0 verloren (Nachlauffenster 2000 ms)]
+  ok      [S04 · A24:p0_kein_verlust_und_p95] P0-ACK p95 unter 1000 ms  [p95 21.6 ms, max 2196.7 ms]
+  ok      [S14 · A24:sauberer_abbau] vor dem Abbau lief ein Nachlauffenster fuer ausstehende ACKs  [2000 ms]
+  ok      [S05 · A24:langsame_bleiben_mitglied] die langsamen Leser blieben durchgehend Mitglied  [True]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] die Schleuse der langsamen Leser lag wirklich im Rueckstau  [16171 ersetzt bei 42276 Veroeffentlichungen (Fluter getrennt: 577)]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] und dabei fiel nie der neueste Frame (replace-oldest)  [0 neueste verworfen]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] jede abgelehnte Veroeffentlichung hat einen gezaehlten Grund  [0 abgelehnt (aus dem Rueckgabewert) = 0 + 0]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] kein langsamer Leser bremst die schnellen  [True (schnelle p95 21.1 ms)]
+  ok      [S08 · A24:audio_ganzblock_ohne_drop] 0 Ganzblockdrops auf dem echten Sondenpfad  [528432 Bloecke, 0 Ueberlauf, 0 Oversize]
+  ok      [S08 · A24:audio_ganzblock_ohne_drop] keine unerklaerten Kontinuitaetsbrueche  [0]
+  ok      [S08 · A24:audio_ganzblock_ohne_drop] jede Sonde hat je Analysefenster einen Producer-Frame veroeffentlicht  [52832 gesamt, kleinste Sonde 3302 >= 2642 (33027 Bloecke / 10 je Fenster, Toleranz 0.8)]
+  ok      [S13 · A24:kein_stale_ausserhalb_neustart] kein Mitglied wurde ausserhalb der Neustartfenster stale  [0]
+  ok      [S13 · A24:kein_stale_ausserhalb_neustart] kein Mitglied verschwand ausserhalb der Neustartfenster  [0]
+  ok      [S10 · A24:backoff_ohne_namenswechsel] kein Client bekam je einen anderen Pipenamen  [0 fremd bei 34 geprueften Uebergaben, ohne_produkt_v3 True]
+  ok      [S10 · A24:backoff_ohne_namenswechsel] im Pipe-Namensraum entstand kein Produktions- oder Goldenname  [eigene Probe sichtbar True, produktionsname_neu False, goldenname_neu False, 167 -> 168 Namen]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] der Kill beendet die Subscription des Main sichtbar  [249 mal ohne aktive Subscription im Neustartfenster gesehen]
+  ok      [S15 · A24:verweigert_produktion_und_golden] beide Programme verweigern Produktions- und Golden-Pipename  [{'golden_EqCopSessionSoak': 3, 'golden_eqcop-broker-sonde012-probe': 3, 'produktion_EqCopSessionSoak': 3, 'produktion_eqcop-broker-sonde012-probe': 3}]
+  ok      [S16 · A24:skalierungsreihe_1_4_8_16_32] langsam_anzahl folgt max(1, round(N x Anteil))  [N = 16, langsam_anzahl 4, erwartet 4]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] der Bericht traegt genau 2 Neustart(e)  [2 geliefert]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] Neustart 1: Snapshot wieder vollstaendig in der Frist  [2513 ms von 60000 ms (Schranke 45051 ms, reconnect max 2513.3 ms)]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] Neustart 1: Reconnect je Clientpaar gemessen  [17 Paare (erwartet 17), min 537.8 / p95 2513.3 / max 2513.3 ms]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] Neustart 1: Subscription weg UND Quellen getrennt  [15 ohne Subscription, 15 mit getrennter Quelle, 35 Sichten im Fenster]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] Neustart 1: Kill und Totzeit wurden belegt  [kill_erfolgt True, totzeit_erfasst True (Killdauer 3 ms)]
+  ok      [S12 · A24:alte_epoche_kommt_nie_wieder] Neustart 1: die alte broker_epoch kam nie wieder  [0]
+  ok      [S12 · A24:alte_epoche_kommt_nie_wieder] Neustart 1: neue broker_epoch  [1696b935… -> ab78f895…]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] Neustart 2: Snapshot wieder vollstaendig in der Frist  [2543 ms von 60000 ms (Schranke 45051 ms, reconnect max 2544.0 ms)]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] Neustart 2: Reconnect je Clientpaar gemessen  [17 Paare (erwartet 17), min 2544.0 / p95 2544.0 / max 2544.0 ms]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] Neustart 2: Subscription weg UND Quellen getrennt  [234 ohne Subscription, 234 mit getrennter Quelle, 234 Sichten im Fenster]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] Neustart 2: Kill und Totzeit wurden belegt  [kill_erfolgt True, totzeit_erfasst True (Killdauer 3 ms)]
+  ok      [S12 · A24:alte_epoche_kommt_nie_wieder] Neustart 2: die alte broker_epoch kam nie wieder  [0]
+  ok      [S12 · A24:alte_epoche_kommt_nie_wieder] Neustart 2: neue broker_epoch  [ab78f895… -> b3ffec84…]
+  ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [8 Punkte]
+  ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [300 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [110.7 -> 111.9 MB, +1.2 MB, Grenze 16.8 MB ueber 300 s]
+  ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 3 Brokergeneration(en)  [3 geliefert: [0, 1, 2]]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 0 bleibt im Budget  [13.0 -> 13.2 MB, +0.2 MB, Grenze 16.8 MB ueber 60 s]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [3 von 4 Punkten]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: die Kurve traegt echte Minutenabstaende  [80 s (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 1 bleibt im Budget  [12.7 -> 13.5 MB, +0.8 MB, Grenze 16.8 MB ueber 80 s]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 2: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [3 von 4 Punkten]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 2: die Kurve traegt echte Minutenabstaende  [100 s (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 2 bleibt im Budget  [13.0 -> 13.3 MB, +0.3 MB, Grenze 16.8 MB ueber 100 s]
+  --      Killpunkte (Urteil aus dem Beleg abgeleitet, nicht uebernommen):
+  ok      [k_s1 · A24:kill_im_frameverkehr] getroffen (abgeleitet: getroffen)  {'gefahren': True, 'telemetrie_handle_fehler': 6}
+  ok      [k_s2 · A24:kill_waehrend_subscribe] getroffen (abgeleitet: getroffen)  {'gefahren': True, 'snapshot_vor_kill': False}
+  ok      [k_s3 · A24:kill_waehrend_heartbeat] nicht_getroffen (abgeleitet: nicht_getroffen)  {'gefahren': True, 'p0_ohne_ack_im_fenster': 0}
+  ok      [k_s4 · A24:kill_mit_langsamem_leser] getroffen (abgeleitet: getroffen)  {'flag_zum_killzeitpunkt': 4, 'gefahren': True}
+  ROT     [k_s5 · A24:kill_aus_backoff_deckel] Pflichtfeld(er) fehlen: ['erwartet']
+  ok      [S04 · A24:p0_kein_verlust_und_p95] K-S3 zaehlt genau die endgueltig im Fenster verlorenen ACKs  [0 vs. 0]
+ROT
+== Exit 2 (erwartet 2) -> PASSEND
+
+==============================================================================
+== NACH dem Fix (Runde 2) · Fall c: unveraenderter gruener Bericht
+== erwarteter Exit: 0
+==============================================================================
+  ok      [S14 · A24:sauberer_abbau] das C++-Programm endet sauber  [Exit 0]
+  ok      [S01 · A24:topologie_steht_in_frist] die Topologie stand in der Frist (60000 ms)  [81 ms]
+  ok      [S02 · A24:mitgliedschaft_nach_warmup] der Lauf traegt genau 16 Sonden  [16]
+  ok      [S03 · A24:mitgliedschaft_driftet_nicht] jede Snapshot-Uebernahme war sofort vollstaendig und richtig  [9723/9723 bei 10508 Uebernahmen]
+  ok      [S03 · A24:mitgliedschaft_driftet_nicht] kein Snapshot wurde als ungueltig abgewiesen  [0]
+  ok      [S03 · A24:mitgliedschaft_driftet_nicht] auch die laufende Abtastung sah nie eine abweichende Sicht  [3033/3033]
+  ok      [S02 · A24:mitgliedschaft_nach_warmup] nie eine fremde Adresse im Snapshot  [0]
+  ok      [S02 · A24:mitgliedschaft_nach_warmup] fuehrendes_main war immer die Main-Adresse  [0]
+  ok      [S04 · A24:p0_kein_verlust_und_p95] kein P0 geht ausserhalb der Neustartfenster verloren  [5616/5616, 0 verloren (Nachlauffenster 2000 ms)]
+  ok      [S04 · A24:p0_kein_verlust_und_p95] P0-ACK p95 unter 1000 ms  [p95 21.6 ms, max 2196.7 ms]
+  ok      [S14 · A24:sauberer_abbau] vor dem Abbau lief ein Nachlauffenster fuer ausstehende ACKs  [2000 ms]
+  ok      [S05 · A24:langsame_bleiben_mitglied] die langsamen Leser blieben durchgehend Mitglied  [True]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] die Schleuse der langsamen Leser lag wirklich im Rueckstau  [16171 ersetzt bei 42276 Veroeffentlichungen (Fluter getrennt: 577)]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] und dabei fiel nie der neueste Frame (replace-oldest)  [0 neueste verworfen]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] jede abgelehnte Veroeffentlichung hat einen gezaehlten Grund  [0 abgelehnt (aus dem Rueckgabewert) = 0 + 0]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] kein langsamer Leser bremst die schnellen  [True (schnelle p95 21.1 ms)]
+  ok      [S08 · A24:audio_ganzblock_ohne_drop] 0 Ganzblockdrops auf dem echten Sondenpfad  [528432 Bloecke, 0 Ueberlauf, 0 Oversize]
+  ok      [S08 · A24:audio_ganzblock_ohne_drop] keine unerklaerten Kontinuitaetsbrueche  [0]
+  ok      [S08 · A24:audio_ganzblock_ohne_drop] jede Sonde hat je Analysefenster einen Producer-Frame veroeffentlicht  [52832 gesamt, kleinste Sonde 3302 >= 2642 (33027 Bloecke / 10 je Fenster, Toleranz 0.8)]
+  ok      [S13 · A24:kein_stale_ausserhalb_neustart] kein Mitglied wurde ausserhalb der Neustartfenster stale  [0]
+  ok      [S13 · A24:kein_stale_ausserhalb_neustart] kein Mitglied verschwand ausserhalb der Neustartfenster  [0]
+  ok      [S10 · A24:backoff_ohne_namenswechsel] kein Client bekam je einen anderen Pipenamen  [0 fremd bei 34 geprueften Uebergaben, ohne_produkt_v3 True]
+  ok      [S10 · A24:backoff_ohne_namenswechsel] im Pipe-Namensraum entstand kein Produktions- oder Goldenname  [eigene Probe sichtbar True, produktionsname_neu False, goldenname_neu False, 167 -> 168 Namen]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] der Kill beendet die Subscription des Main sichtbar  [249 mal ohne aktive Subscription im Neustartfenster gesehen]
+  ok      [S15 · A24:verweigert_produktion_und_golden] beide Programme verweigern Produktions- und Golden-Pipename  [{'golden_EqCopSessionSoak': 3, 'golden_eqcop-broker-sonde012-probe': 3, 'produktion_EqCopSessionSoak': 3, 'produktion_eqcop-broker-sonde012-probe': 3}]
+  ok      [S16 · A24:skalierungsreihe_1_4_8_16_32] langsam_anzahl folgt max(1, round(N x Anteil))  [N = 16, langsam_anzahl 4, erwartet 4]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] der Bericht traegt genau 2 Neustart(e)  [2 geliefert]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] Neustart 1: Snapshot wieder vollstaendig in der Frist  [2513 ms von 60000 ms (Schranke 45051 ms, reconnect max 2513.3 ms)]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] Neustart 1: Reconnect je Clientpaar gemessen  [17 Paare (erwartet 17), min 537.8 / p95 2513.3 / max 2513.3 ms]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] Neustart 1: Subscription weg UND Quellen getrennt  [15 ohne Subscription, 15 mit getrennter Quelle, 35 Sichten im Fenster]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] Neustart 1: Kill und Totzeit wurden belegt  [kill_erfolgt True, totzeit_erfasst True (Killdauer 3 ms)]
+  ok      [S12 · A24:alte_epoche_kommt_nie_wieder] Neustart 1: die alte broker_epoch kam nie wieder  [0]
+  ok      [S12 · A24:alte_epoche_kommt_nie_wieder] Neustart 1: neue broker_epoch  [1696b935… -> ab78f895…]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] Neustart 2: Snapshot wieder vollstaendig in der Frist  [2543 ms von 60000 ms (Schranke 45051 ms, reconnect max 2544.0 ms)]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] Neustart 2: Reconnect je Clientpaar gemessen  [17 Paare (erwartet 17), min 2544.0 / p95 2544.0 / max 2544.0 ms]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] Neustart 2: Subscription weg UND Quellen getrennt  [234 ohne Subscription, 234 mit getrennter Quelle, 234 Sichten im Fenster]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] Neustart 2: Kill und Totzeit wurden belegt  [kill_erfolgt True, totzeit_erfasst True (Killdauer 3 ms)]
+  ok      [S12 · A24:alte_epoche_kommt_nie_wieder] Neustart 2: die alte broker_epoch kam nie wieder  [0]
+  ok      [S12 · A24:alte_epoche_kommt_nie_wieder] Neustart 2: neue broker_epoch  [ab78f895… -> b3ffec84…]
+  ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [8 Punkte]
+  ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [300 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [110.7 -> 111.9 MB, +1.2 MB, Grenze 16.8 MB ueber 300 s]
+  ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 3 Brokergeneration(en)  [3 geliefert: [0, 1, 2]]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 0 bleibt im Budget  [13.0 -> 13.2 MB, +0.2 MB, Grenze 16.8 MB ueber 60 s]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [3 von 4 Punkten]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: die Kurve traegt echte Minutenabstaende  [80 s (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 1 bleibt im Budget  [12.7 -> 13.5 MB, +0.8 MB, Grenze 16.8 MB ueber 80 s]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 2: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [3 von 4 Punkten]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 2: die Kurve traegt echte Minutenabstaende  [100 s (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 2 bleibt im Budget  [13.0 -> 13.3 MB, +0.3 MB, Grenze 16.8 MB ueber 100 s]
+  --      Killpunkte (Urteil aus dem Beleg abgeleitet, nicht uebernommen):
+  ok      [k_s1 · A24:kill_im_frameverkehr] getroffen (abgeleitet: getroffen)  {'gefahren': True, 'telemetrie_handle_fehler': 6}
+  ok      [k_s2 · A24:kill_waehrend_subscribe] getroffen (abgeleitet: getroffen)  {'gefahren': True, 'snapshot_vor_kill': False}
+  ok      [k_s3 · A24:kill_waehrend_heartbeat] nicht_getroffen (abgeleitet: nicht_getroffen)  {'gefahren': True, 'p0_ohne_ack_im_fenster': 0}
+  ok      [k_s4 · A24:kill_mit_langsamem_leser] getroffen (abgeleitet: getroffen)  {'flag_zum_killzeitpunkt': 4, 'gefahren': True}
+  ok      [k_s5 · A24:kill_aus_backoff_deckel] getroffen (abgeleitet: getroffen)  {'backoff_deckel_erreicht': 17, 'erwartet': 17, 'gefahren': True}
+  ok      [S04 · A24:p0_kein_verlust_und_p95] K-S3 zaehlt genau die endgueltig im Fenster verlorenen ACKs  [0 vs. 0]
+GRUEN
+== Exit 0 (erwartet 0) -> PASSEND
+
+==============================================================================
+== BILANZ
+==============================================================================
+  VOR dem Fix (882b2aa)    Fall a: Exit 0 (Sollwert-Riegel verlangt 2 nach dem Fix)
+  VOR dem Fix (882b2aa)    Fall b: Exit 0 (Sollwert-Riegel verlangt 2 nach dem Fix)
+  VOR dem Fix (882b2aa)    Fall c: Exit 0 (Sollwert-Riegel verlangt 0 nach dem Fix)
+  NACH dem Fix (Runde 2)   Fall a: Exit 2 (Sollwert-Riegel verlangt 2 nach dem Fix)
+  NACH dem Fix (Runde 2)   Fall b: Exit 2 (Sollwert-Riegel verlangt 2 nach dem Fix)
+  NACH dem Fix (Runde 2)   Fall c: Exit 0 (Sollwert-Riegel verlangt 0 nach dem Fix)

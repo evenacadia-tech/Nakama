@@ -1,18 +1,19 @@
 # G3-SOAK — Werkzeugticket: das 60-Minuten-Dauerlaufbein A24
 
-<!-- NAKAMA-URTEIL: NACHARBEIT RUNDE 1 (17 Defekte der Abschlusspruefung geschlossen) 2026-09-02 — gebaut, zwei Laeufe gruen, 17 Rotmutationen -->
+<!-- NAKAMA-URTEIL: NACHARBEIT RUNDE 2 (der eine Rest der Wiederpruefung geschlossen) 2026-09-02 — K-S5-Sollwert aus N gerechnet, drei In-Memory-Faelle, 23 Rotmutationen, Kanon und N = 4 gruen -->
 
 | Merkmal | Wert |
 |---|---|
 | Ticket | G3-SOAK (Werkzeugticket zum Phasengate **G3**) |
-| Basis-Commit | Phase 1 `03e1e17` · Phase 1b `f7a5125` · Phase 2 `a570367` · **Nacharbeit Runde 1 `4ae3ee6`**. Die Phase-2-Commits wurden vor dem Push auf `8cd5903` rebased; §12 nennt zu jedem Schritt beide SHAs. |
-| Phase | **2 von 2, Nacharbeit Runde 1 abgeschlossen.** Phase 1/1b spezifizierten vor dem Code; zwei Codex-Runden schlossen fünf Befunde. Phase 2 hat das Bein **A24** gebaut, selbst gefahren (§13) und jede Wache einmal absichtlich gebrochen (§14). Die **Abschlussprüfung** (Codex-Thread `01a0626a`, max, read-only, auf `4ae3ee6`) endete mit **NEEDS_WORK** und 18 Befunden; 17 wurden als DEFEKT bestätigt und in **Runde 1 geschlossen** (§15), der 18. ging als Härtung ins Register. Die Urteilsmarke setzt der Dirigent nach der nächsten Codex-Prüfung, nicht dieses Manifest. |
+| Basis-Commit | Phase 1 `03e1e17` · Phase 1b `f7a5125` · Phase 2 `a570367` · Nacharbeit Runde 1 `4ae3ee6` · **Nacharbeit Runde 2 `882b2aa`**. Die Phase-2-Commits wurden vor dem Push auf `8cd5903` rebased; §12 nennt zu jedem Schritt beide SHAs. |
+| Phase | **2 von 2, Nacharbeit Runde 2 abgeschlossen.** Phase 1/1b spezifizierten vor dem Code; zwei Codex-Runden schlossen fünf Befunde. Phase 2 hat das Bein **A24** gebaut, selbst gefahren (§13) und jede Wache einmal absichtlich gebrochen (§14). Die **Abschlussprüfung** (Codex-Thread `01a0626a`, max, read-only, auf `4ae3ee6`) endete mit **NEEDS_WORK** und 18 Befunden; 17 wurden als DEFEKT bestätigt und in **Runde 1 geschlossen** (§15), der 18. ging als Härtung ins Register. Die **Wiederprüfung** (Thread `01a062b9`, max, read-only, auf `882b2aa`) bestätigte 16 der 17 als geschlossen und erhob **genau einen Rest** — er ist in **Runde 2 geschlossen** (§16). Die Urteilsmarke setzt der Dirigent nach der nächsten Codex-Prüfung, nicht dieses Manifest. |
 | Gate-Text (wörtlich, `docs/bauaufteilung-sonden.md:385`) | „**Gate:** `/rust-review` + Codex + 60-min-Soak. Falsifikation: Gate 7" · Prüfstufe T3 |
 | Auftrag | genau ein neues Kanon-Bein **A24**. In Phase 2 **angelegt**: der Prüfer `tools/eq-copilot/pruefe_session_soak.py` und das Konsolenprogramm `eq-copilot/plugin/tests/SessionSoakMain.cpp` (CMake-Ziel `EqCopSessionSoak`), dazu die Registrierung A24 in `tools/beweise.ps1` samt Bauziel in `$gemesseneZiele`. Der Probe-Broker `broker/src/bin/eqcop-broker-sonde012-probe.rs` blieb **unverändert** — er kann bereits beides, was A24 braucht: `BEREIT` melden und auf `STOP` enden. Sonst nichts. |
 | Bindende Quellen | Entwurf §49.3 Budget `docs/FL-Nakama-Sonden-Design-Entwurf.md:3586`; P3-Exit-Gate `:4262-4264`; Testfamilie `session_soak` `:4523`; Prüflistenabschnitt A `tools/dirigent/pruefliste.md` |
 | Vorbilder (Bau) | A22 `tools/eq-copilot/pruefe_ipc_last.py` + `eq-copilot/plugin/tests/IpcLastMain.cpp`; A23 `tools/eq-copilot/pruefe_sonde012_sources_latency.py` + `eq-copilot/plugin/tests/Sonde012SourcesLatencyTest.cpp`; B4 `tests/QueueStressTestMain.cpp`; B12 `tests/Sonde012LoudnessSourceTest.cpp` |
 | Ticketgrenze | kein Wire-, State- oder Testvertrag; keine Schemas, keine Fixtures, keine Broker-Produktmodule (alles unter `broker/src/` ausser dem Probe-Binary), kein Produktcode im Plugin. |
 | Geänderte Dateien Runde 1 | `eq-copilot/plugin/tests/SessionSoakMain.cpp`, `tools/eq-copilot/pruefe_session_soak.py`, dieses Manifest und der gespeicherte Bericht `roh/G3-SOAK-nacharbeit-1-kanon-bericht.json`. `eq-copilot/plugin/CMakeLists.txt` blieb **unverändert** — `NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3` stand dort bereits (`:423`); der Probe-Broker ebenfalls, weil kein neuer Handshake auf seiner Seite nötig war. |
+| Geänderte Dateien Runde 2 | nur `tools/eq-copilot/pruefe_session_soak.py`, dieses Manifest und die Rohbelege unter `docs/beweise/roh/`. **Kein C++**, kein Broker, kein Vertrag: der Rest lag allein in der Urteilslogik des Prüfers. `SessionSoakMain.cpp` liefert `k_s5.erwartet` bereits als `anzahl + 1` (`:1407`) — geändert hat sich, dass der Prüfer diesen Wert nicht mehr glaubt, sondern nachrechnet. |
 
 ## 1. Wofür diese Datei da ist
 
@@ -343,7 +344,7 @@ nie einen falschen Treffer.
 | K-S2 | Broker stirbt **während `subscribe_session`** — nach Verbindung des Main, bevor der absolute Snapshot beim Main ankommt | Der Main hält keinen halb offenen Subscription-Zustand: `controlEnde()` läuft, `subscriptionAktiv` ist false, das Modell zeigt `disconnected`. Der nächste erfolgreiche Reconnect subscribt erneut und bekommt einen **absoluten** Snapshot; es gibt kein `unsubscribe_session` und keinen Event-Replay. | **Barriere (gemessen), ab `--neustarts >= 2`.** Ein Kill nach der `BEREIT`-Zeile beobachtet dieses Fenster nicht — die Subscription entsteht erst im Verbunden-Callback (`eq-copilot/plugin/tests/Sonde012SourcesLatencyTest.cpp:131-140`). Das C++-Programm schreibt deshalb `MAIN_SUBSCRIBE_GESENDET`, sobald `sendeP1("subscribe_session", …)` eingereiht ist **und noch kein Snapshot angekommen ist**; der Prüfer killt unmittelbar nach dieser Zeile. Der Bericht trägt `k_s2.snapshot_vor_kill`: kam der Snapshot dennoch vor dem Kill an, ist K-S2 `nicht_getroffen` — nie bestanden. **Gemessen wird das am Killzeitpunkt** (§15, Defekt 11): das Programm vergleicht die Ankunftszeit der letzten *übernommenen* Snapshot-Nachricht gegen den Stempel aus `KILL_ERFOLGT`, statt wie vorher ein Flag vor `KILL_BEREIT` abzulesen. Bei `--neustarts 1` (Kanon-Kurzform) `nicht_gefahren`. | **NEU** `A24:kill_waehrend_subscribe` |
 | K-S3 | Broker stirbt **während eines Heartbeats** — P0 ist gesendet, das `heartbeat_ack` kommt nicht mehr | Der verlorene Heartbeat wird als `p0.verloren_im_neustartfenster` gezählt und **nicht** als Verletzung von Z4 gewertet; Z4 gilt ausserhalb der Fenster. Nach dem Reconnect laufen Heartbeats derselben Sonde weiter; die Sequenznummern springen nicht rückwärts und kein ACK wird doppelt verbucht. | **Wahrscheinlich (beobachtet).** N Sonden senden mit 1.000 ms Kadenz, aber ein Kill auf fester Wanduhr garantiert kein ausstehendes ACK. Berichtsfeld `k_s3.p0_ohne_ack_im_fenster`: **getroffen** genau dann, wenn `p0.verloren_im_neustartfenster > 0`. Ist der Zähler 0, ist K-S3 `nicht_getroffen` — nicht bestanden. **Der Beleg wird erst nach dem Nachlauffenster genommen** (§15, Defekt 1): ein zum Kill unbeantworteter Heartbeat ist noch kein verlorener ACK, solange er später beantwortet werden kann. Der Prüfer hält beide Zahlen gegeneinander; weichen sie ab, misst der Killbeleg etwas anderes als der Schlussbericht. | **NEU** `A24:kill_waehrend_heartbeat` |
 | K-S4 | Broker stirbt, **während ein langsamer Leser in seiner künstlichen Verzögerung steckt** | Der langsame Leser blockiert weder seinen eigenen Reconnect noch den der anderen. Er ist innerhalb derselben Frist aus §3.1 wieder Mitglied. Seine Schleuse verwirft dabei alte Liveframes (Cap), verliert aber nie den neuesten. | **Barriere (gemessen).** Ein dauerhaft eingeschalteter langsamer Modus beweist nicht, dass der Kill in einen blockierten Aufruf fällt. Jede langsame Sonde führt deshalb ein **atomares Flag** „steckt gerade in der künstlichen Verzögerung"; sobald es gesetzt ist, schreibt das Programm die Zeile `LANGSAM_IN_VERZOEGERUNG`, und der Prüfer killt unmittelbar danach. Der Bericht trägt `k_s4.flag_zum_killzeitpunkt`; war das Flag beim Kill nicht mehr gesetzt, ist K-S4 `nicht_getroffen`. Seit Runde 1 führt jede langsame Sonde **zwei Ereignisstempel** statt eines Flags (`verzoegerungBeginn`, `verzoegerungEnde`); bei `KILL_ERFOLGT` gilt sie genau dann als steckend, wenn `beginn <= killzeit && ende < beginn` — ein Flag hätte nur den Abfragezeitpunkt beantwortet (§15, Defekt 11). | **NEU** `A24:kill_mit_langsamem_leser` |
-| K-S5 | Broker bleibt nach dem Kill **mindestens 20 s tot**, sodass jeder Control-Client den Backoff-Deckel (8.000 ms) erreicht hat | Auch aus dem Deckel heraus verbinden alle Clientpaare innerhalb der Frist aus §3.1 ab der letzten `BEREIT`-Zeile — genau dafür trägt die Schranke in §3.1 den Deckel zweimal. Kein Client bleibt dauerhaft hängen. | **Barriere (gemessen) durch Totzeit, ab `--neustarts >= 2`.** Ein zweiter Kill nach `BEREIT` erzeugt keinen Deckel; der entsteht erst durch wiederholte Fehlversuche (`core/ipc/ControlClient.cpp:1014-1025`). Die Backoff-Folge eines Control-Clients ist 500 + 1.000 + 2.000 + 4.000 + 8.000 = 15.500 ms bis zum Deckel (`core/ipc/IpcVerbindung.h:34-35`); eine Totzeit von ≥ 20 s liegt darüber. Gemessen wird nicht die private Backoff-Variable, sondern ihr Beleg: `ControlClient::Snapshot::verbindungsVersuche` (`core/ipc/ControlClient.h:176`, erhöht bei **jedem** Versuch, `core/ipc/ControlClient.cpp:1048`) muss in der Totzeit je Control-Client um **≥ 5** steigen. `k_s5.backoff_deckel_erreicht` ist die Zahl der Control-Clients, die das erfüllen; sie muss **N + 1** sein (N Sonden + Main), sonst `nicht_getroffen`. **Der Zähler wird während der Totzeit gelesen** (§15, Defekt 12), bevor der Prüfer den neuen Broker startet — nach `BEREIT` gemessen, konnte schon ein erfolgreicher Versuch gegen den NEUEN Broker den Deckel scheinbar erreichen. Die Telemetriethreads werden **nicht** mitgezählt: ohne Kopplung nehmen sie den Warte-Zweig, der `backoffMs` nicht verdoppelt (`core/ipc/TelemetryClient.cpp:383-398`). | **NEU** `A24:kill_aus_backoff_deckel` |
+| K-S5 | Broker bleibt nach dem Kill **mindestens 20 s tot**, sodass jeder Control-Client den Backoff-Deckel (8.000 ms) erreicht hat | Auch aus dem Deckel heraus verbinden alle Clientpaare innerhalb der Frist aus §3.1 ab der letzten `BEREIT`-Zeile — genau dafür trägt die Schranke in §3.1 den Deckel zweimal. Kein Client bleibt dauerhaft hängen. | **Barriere (gemessen) durch Totzeit, ab `--neustarts >= 2`.** Ein zweiter Kill nach `BEREIT` erzeugt keinen Deckel; der entsteht erst durch wiederholte Fehlversuche (`core/ipc/ControlClient.cpp:1014-1025`). Die Backoff-Folge eines Control-Clients ist 500 + 1.000 + 2.000 + 4.000 + 8.000 = 15.500 ms bis zum Deckel (`core/ipc/IpcVerbindung.h:34-35`); eine Totzeit von ≥ 20 s liegt darüber. Gemessen wird nicht die private Backoff-Variable, sondern ihr Beleg: `ControlClient::Snapshot::verbindungsVersuche` (`core/ipc/ControlClient.h:176`, erhöht bei **jedem** Versuch, `core/ipc/ControlClient.cpp:1048`) muss in der Totzeit je Control-Client um **≥ 5** steigen. `k_s5.backoff_deckel_erreicht` ist die Zahl der Control-Clients, die das erfüllen; sie muss **N + 1** sein (N Sonden + Main), sonst `nicht_getroffen`. **Diesen Sollwert rechnet der Prüfer selbst** aus der geplanten Sondenzahl `--sonden`, seit Runde 2 (§16); das Berichtsfeld `k_s5.erwartet` bleibt Pflicht, wird aber gegen die eigene Rechnung gehalten statt sie zu ersetzen — sonst genügte ein Bericht mit `backoff_deckel_erreicht = erwartet = 0`, um K-S5 grün zu melden, ohne dass ein Client den Deckel je erreicht hat. **Der Zähler wird während der Totzeit gelesen** (§15, Defekt 12), bevor der Prüfer den neuen Broker startet — nach `BEREIT` gemessen, konnte schon ein erfolgreicher Versuch gegen den NEUEN Broker den Deckel scheinbar erreichen. Die Telemetriethreads werden **nicht** mitgezählt: ohne Kopplung nehmen sie den Warte-Zweig, der `backoffMs` nicht verdoppelt (`core/ipc/TelemetryClient.cpp:383-398`). | **NEU** `A24:kill_aus_backoff_deckel` |
 
 ## 7. Bericht und Zählerkarte
 
@@ -421,6 +422,15 @@ Seit der Nacharbeit Runde 1 (§15) **rechnet der Prüfer jedes `kill.*.urteil` a
 seinem Belegfeld nach** und hält es gegen das gelieferte Urteil; `gefahren` steht
 dafür als eigenes Feld daneben. Alle fünf Einträge sind Pflicht — ein fehlender
 Eintrag oder ein fehlendes Belegfeld ist ROT, nie ein übersprungener Punkt.
+
+Seit der Nacharbeit Runde 2 (§16) gilt dasselbe für den **Sollwert**: `k_s5.erwartet`
+ist Pflichtfeld, aber es liefert den Sollwert nicht. Der Prüfer rechnet ihn selbst
+als `--sonden + 1` (alle Control-Clients: Main plus N Sonden) und hält das
+Berichtsfeld dagegen; die Ableitung von `k_s5.urteil` benutzt ausschliesslich die
+eigene Rechnung. Ein Bericht, der `erwartet` an seinen eigenen Istwert anpasst,
+fällt damit zweimal — am Sollwertvergleich und am Urteilswiderspruch. Ein
+Sollwertfeld an einer Killzeile, für die der Prüfer keine eigene Rechnung kennt,
+ist ebenfalls ROT; K-S5 ist zurzeit die einzige Zeile mit einem Sollwert.
 
 Das Laufprotokoll nennt zu jeder Urteilszeile die Matrix-ID **und** den
 Prüfpunktnamen aus §5 beziehungsweise §6 — `[S01 · A24:topologie_steht_in_frist]`,
@@ -513,8 +523,8 @@ aus den Läufen in §13.
 | D — was der Kanon nicht baut, darf er nicht als frisch bezeugen | §9: `EqCopSessionSoak` steht in `$gemesseneZiele` |
 | E — Behauptung ≤ Messung | §2.2 (XRun-Grenze steht ausdrücklich drin), §5.1 (was die Matrix nicht sagt), §3.1 (Schranke 45,1 s und Frist 60 s sind getrennt benannt, der Zuschlag ist ausgewiesen statt in die Rechnung gemogelt), §6 (jede Killzeile trägt **Barriere** oder **wahrscheinlich**, nie „deterministisch" ohne Beleg), K-S1 bis K-S5 (`nicht_getroffen`/`nicht_gefahren` statt stiller Erfolg). **§15.6** nennt, was auch Runde 1 nicht hergibt: die Exit-3-Wache für das fehlende Define ist nicht gefahren, und die Vorbedingung von K-S1 unterscheidet seit der S06-Korrektur nicht mehr zwischen Fluter und langsamem Leser. **§15.5** korrigiert eine Behauptung aus Phase 2 nach unten: K-S3 wurde nie getroffen |
 | E — Zahlen im Manifest sind gemessen, nicht abgeschrieben | §3 (jede Konstante mit `Datei:Zeile`), §7 (jeder Zähler kommt aus dem Lauf); K-S5 misst den Backoff-Deckel nicht an der privaten Variablen, sondern an `verbindungsVersuche` — ein öffentlicher Zähler mit belegter Erhöhungsstelle — und seit Runde 1 **während der Totzeit**, nicht nach dem Neustart. Auch die S08-Erwartung wird gerechnet statt abgeschrieben: `bloecke_je_fenster = ceil(kLiveIntervallS · fs / block)` aus `core/analysis/FeatureEngine.h:445` und der Samplerate/Blockgrösse des Laufs |
-| E — jede neue Prüfung wurde einmal absichtlich gebrochen | **§14** (Phase 2, sechs Mutanten) und **§15.3** (Runde 1, siebzehn weitere — einer je geschlossenem Defekt). Jeder verfälscht genau eine Grösse; alle enden mit Exit 2, `s15` mit Exit 3. Der Rotbeweis läuft seit Runde 1 über `--bericht <datei> --mutant <name>` an einem gespeicherten Lauf, statt je Mutant einen weiteren Soak zu fahren |
-| E — eine Zeile, die nicht getroffen wurde, gilt nie als bestanden | §6 (Vorwort und alle fünf Killzeilen), §7 (`kill.*.urteil` folgt allein aus dem Belegfeld), S16 (`nicht_anwendbar` bei N = 1). Seit Runde 1 **rechnet der Prüfer jedes Killurteil aus dem Beleg nach** und verlangt alle fünf Pflichteinträge; ein fehlender Eintrag oder ein Widerspruch ist rot (§15, Defekt 14). K-S3 meldet seither ehrlich `nicht_getroffen`, statt früh abgetastete, später beantwortete ACKs als Treffer auszuweisen |
+| E — jede neue Prüfung wurde einmal absichtlich gebrochen | **§14** (Phase 2, sechs Mutanten), **§15.3** (Runde 1, siebzehn weitere — einer je geschlossenem Defekt) und **§16.2** (Runde 2, der 23. Mutant `k_s5_sollwert`). Jeder verfälscht genau eine Grösse; alle enden mit Exit 2, `s15` mit Exit 3. Der Rotbeweis läuft seit Runde 1 über `--bericht <datei> --mutant <name>` an einem gespeicherten Lauf, statt je Mutant einen weiteren Soak zu fahren |
+| E — eine Zeile, die nicht getroffen wurde, gilt nie als bestanden | §6 (Vorwort und alle fünf Killzeilen), §7 (`kill.*.urteil` folgt allein aus dem Belegfeld), S16 (`nicht_anwendbar` bei N = 1). Seit Runde 1 **rechnet der Prüfer jedes Killurteil aus dem Beleg nach** und verlangt alle fünf Pflichteinträge; ein fehlender Eintrag oder ein Widerspruch ist rot (§15, Defekt 14). Seit Runde 2 gilt dasselbe für den **Sollwert**: K-S5 fällt gegen `--sonden + 1` aus dem Aufruf, nicht gegen das gelieferte `erwartet` (§16). K-S3 meldet ehrlich `nicht_getroffen`, statt früh abgetastete, später beantwortete ACKs als Treffer auszuweisen |
 | F — verbinden↔trennen, starten↔stoppen im selben Änderungssatz | `aufbauen()`↔`abbauen()` und `killErfolgt()`↔`totzeitEnde()`↔`bereitWieder()` stehen in derselben Datei und kamen im selben Commit; der Prüfer startet und beendet den Broker im selben `try/finally`. Seit Runde 1 hat jede Kill-Halbzeile ihren eigenen Handshake (`KILL_ERFOLGT`, `TOTZEIT_ENDE`/`TOTZEIT_ERFASST`), damit Beleg und Ereignis nicht auseinanderfallen |
 
 ## 11. Offene und in Phase 1b geschlossene Punkte
@@ -561,6 +571,8 @@ aus den Läufen in §13.
 | 2026-09-02 | **Abschlussprüfung Runde 1:** frischer Codex-Thread `01a0626a-234c-7831-9e4b-d2a4ae6426ca` (gpt-5.6-sol, Effort max, read-only) auf `4ae3ee6`, **NEEDS_WORK**, 18 Befunde. Der Dirigent bestätigte 17 als DEFEKT an der Quelle; der 18. (Frischeprüfung des Soak-Binaries im Runner, `tools/beweise.ps1:683-688`) ging als **Härtung** ins Register und blieb ausserhalb dieser Runde. **Ursache über allen 17:** Belegfelder wurden abgetastet oder synthetisiert statt am Ereignis erfasst, und der Prüfer übernahm Urteile beziehungsweise übersprang fehlende Einträge, statt jedes Urteil aus seinem Beleg abzuleiten | geprüft auf `4ae3ee6` |
 | 2026-09-02 | **Nacharbeit Runde 1:** alle 17 Defekte geschlossen (§15). Jede Zusage wird an ihrem Ereignis erfasst — neue Handshakes `KILL_ERFOLGT` und `TOTZEIT_ENDE`/`TOTZEIT_ERFASST`, Snapshotprüfung bei jeder Übernahme, Reconnect je Clientpaar, Nachlauffenster vor dem Abbau; der Prüfer leitet jedes Urteil aus Belegen ab, verlangt Pflichtfelder und wird bei fehlenden Einträgen rot. Siebzehn neue Rotmutationen, eine je Defekt | Basis `4ae3ee6` |
 | 2026-09-02 | Phase 1b: alle vier Befunde geschlossen — §3.1 rechnet jetzt Control- **und** Telemetrie-Runde und weist den Zuschlag zur 60-s-Frist aus (B2); §6 ersetzt „deterministisch" durch **Barriere** oder **wahrscheinlich** mit Belegfeld (B3, B4); S16 legt die Reihe 1/4/8/16/32 und die Regel `max(1, round(N · Anteil))` fest (B1). Kein Code geschrieben | Basis `f7a5125` |
+| 2026-09-02 | **Wiederprüfung Runde 1:** frischer Codex-Thread `01a062b9-c5ec-7cb3-a2d5-4ac1012b8e22` (gpt-5.6-sol, Effort max, read-only) auf `882b2aa`. **16 der 17 Defekte als geschlossen bestätigt**, genau **ein Rest**: der K-S5-Sollwert wurde aus dem Bericht übernommen (`k_s5.erwartet`), statt unabhängig aus der geplanten Sondenzahl zu folgen — damit blieben sowohl `backoff_deckel_erreicht = erwartet = 0` mit `urteil = getroffen` als auch ein ganz fehlendes `erwartet` bei Exit 0 | geprüft auf `882b2aa` |
+| 2026-09-02 | **Nacharbeit Runde 2:** der eine Rest geschlossen (§16). Der Prüfer rechnet den K-S5-Sollwert selbst als `--sonden + 1`, verlangt `k_s5.erwartet` als Pflichtfeld und hält es gegen die eigene Rechnung; die vier übrigen Killzeilen tragen keinen Sollwert und bekommen einen Riegel gegen einen künftigen. Drei In-Memory-Fälle vor und nach dem Fix, die 23. Rotmutation `k_s5_sollwert` und ein Lauf mit **N = 4** (Sollwert 5 statt 17) | Basis `882b2aa` |
 
 ## 13. Selbst gefahrene Laeufe (Phase 2, 02.09.2026)
 
@@ -845,6 +857,153 @@ Killpunkt-Lauf, `--sonden 16 --minuten 5 --neustarts 2`, Exit 0 (auch als
 
 Die rohe Ausgabe aller 17 Rotmutationen liegt als
 [`roh/G3-SOAK-nacharbeit-1-rotmutationen.txt`](roh/G3-SOAK-nacharbeit-1-rotmutationen.txt).
+
+## 16. Nacharbeit Runde 2 — der eine Rest der Wiederprüfung
+
+Die **Wiederprüfung** von Runde 1 (frischer Codex-Thread
+`01a062b9-c5ec-7cb3-a2d5-4ac1012b8e22`, gpt-5.6-sol, Effort max, read-only, auf
+`882b2aa`) bestätigte **16 der 17 Defekte als geschlossen** und erhob **genau
+einen Rest**, wörtlich:
+
+> Leite den K-S5-Sollwert aus N ab — tools/eq-copilot/pruefe_session_soak.py:1020-1023.
+> Wenn der C++-Bericht k_s5.erwartet falsch setzt oder weglaesst, uebernimmt diese
+> Ableitung den gelieferten Wert statt unabhaengig args.sonden + 1 zu verlangen.
+> Auf dem gespeicherten gruenen Bericht liefern sowohl backoff_deckel_erreicht=0,
+> erwartet=0, gefahren=true, urteil=getroffen als auch ein fehlendes erwartet bei
+> konsistentem nicht_getroffen weiterhin Exit 0; damit kann K-S5 ohne einen
+> einzigen Client am Backoff-Deckel gruen erscheinen. Das widerspricht dem
+> Pflichtfeld- und N+1-Vertrag in docs/beweise/G3-SOAK.md:346,420-423; berechne
+> den Sollwert aus der geplanten Sondenzahl und pruefe das Berichtsfeld dagegen.
+
+Die beiden Zeilenangaben gelten zum Stand `882b2aa`: `:1020-1023` war die
+Ableitungszeile in `killurteile()`, `:346` die K-S5-Zeile der Killmatrix und
+`:420-423` der Absatz über die nachgerechneten Killurteile in §7.
+
+### 16.1 Der Rest und die Regel, die ihn schliesst
+
+Runde 1 hatte die richtige Regel — *jedes Urteil folgt aus seinem Beleg* — nur
+eine Ebene zu flach angewandt. Der **Beleg** (`backoff_deckel_erreicht`) wurde
+nicht mehr übernommen, der **Sollwert**, gegen den er fällt, sehr wohl:
+`erwartet_wert = eintrag.get("erwartet")` holte die Vergleichszahl aus derselben
+Datei, über die geurteilt wurde. Der Vergleich `v == e` ist dann kein Test mehr,
+sondern ein Zirkelschluss: `0 == 0` besteht ihn genauso wie `17 == 17`.
+
+| # | Rest | Regel, die ihn schliesst | Wo |
+|---|---|---|---|
+| 1 | der K-S5-Sollwert kam aus dem Bericht (`k_s5.erwartet`), nicht aus N | der Prüfer rechnet ihn selbst als `--sonden + 1` (alle Control-Clients: Main plus N Sonden); `k_s5.erwartet` bleibt **Pflichtfeld** und wird gegen die eigene Rechnung gehalten, statt sie zu ersetzen. Die Ableitung von `k_s5.urteil` benutzt ausschliesslich die gerechnete Zahl | `pruefe_session_soak.py`: neue Tabelle `SOLLWERTE`, ausgewertet in `killurteile()` |
+
+Der Riegel hat deshalb **zwei** Hälften, und beide werden gebraucht: die
+Nachrechnung allein liesse ein fehlendes `erwartet` durch, der Pflichtfeldtest
+allein einen falschen Wert. Ein Bericht, der `erwartet` an seinen eigenen Istwert
+anpasst, fällt jetzt zweimal — am Sollwertvergleich und am Urteilswiderspruch.
+
+**Die vier übrigen Killzeilen tragen keinen Sollwert.** K-S1, K-S3 und K-S4
+fallen gegen die feste Schwelle „> 0", K-S2 gegen `snapshot_vor_kill == false`;
+alle vier Schwellen stehen im Prüfer, keine im Bericht. Damit dieses Muster nicht
+still zurückkehrt, ist der Riegel generisch: ein Sollwertfeld an einer Killzeile,
+für die `SOLLWERTE` keine eigene Rechnung kennt, ist ROT — ein künftiges
+`k_s3.erwartet` müsste seine Rechnung mitbringen, statt sich selbst zu prüfen.
+
+### 16.2 Rotbeweis — dreimal, je einmal vor und nach dem Fix
+
+Der Beweis läuft in-memory über `urteile()`, gegen **denselben** gespeicherten
+grünen Bericht ([`roh/G3-SOAK-nacharbeit-1-killpunkt-bericht.json`](roh/G3-SOAK-nacharbeit-1-killpunkt-bericht.json),
+N = 16, Sollwert 17), einmal mit dem Prüfer von `882b2aa` und einmal mit dem
+Stand dieser Runde. Das Skript liegt als
+[`roh/G3-SOAK-nacharbeit-2-sollwert-inmemory.py`](roh/G3-SOAK-nacharbeit-2-sollwert-inmemory.py)
+im Repo, die rohe Ausgabe als
+[`roh/G3-SOAK-nacharbeit-2-sollwert-inmemory.txt`](roh/G3-SOAK-nacharbeit-2-sollwert-inmemory.txt).
+
+| Fall | Was am Bericht verändert wird | Prüfer `882b2aa` | Prüfer Runde 2 |
+|---|---|---|---|
+| a | `erwartet = 0`, `backoff_deckel_erreicht = 0`, `gefahren = true`, `urteil = getroffen` | **Exit 0** — grün ohne einen Client am Deckel | **Exit 2**, zwei rote Zeilen: `` `erwartet` im Bericht ist 0, gerechnet 17 (N = 16, alle Control-Clients: Main plus N Sonden) `` und `getroffen (abgeleitet: nicht_getroffen)` |
+| b | `erwartet` fehlt ganz, `backoff_deckel_erreicht = 0`, `urteil = nicht_getroffen` (in sich konsistent) | **Exit 0** | **Exit 2**: `Pflichtfeld(er) fehlen: ['erwartet']` |
+| c | nichts — der unveränderte grüne Bericht | Exit 0 | **Exit 0** |
+
+Fall a und b sind damit **Belege, keine Regressionswachen** (Prüfliste E): sie
+waren vor dem Fix grün. Fall c zeigt, dass der neue Riegel den echten Lauf nicht
+verschiebt.
+
+Dazu kommt der Mutant **`k_s5_sollwert`** als 23. Rotmutation über den
+gespeicherten Kanon-Bericht — er greift genau die *Herkunft* des Sollwerts an:
+
+```powershell
+py -3.13 tools/eq-copilot/pruefe_session_soak.py `
+    --bericht docs/beweise/roh/G3-SOAK-nacharbeit-1-kanon-bericht.json `
+    --sonden 16 --neustarts 1 --mutant k_s5_sollwert
+```
+
+```
+  ROT     [k_s5 · A24:kill_aus_backoff_deckel] `erwartet` im Bericht ist 0, gerechnet 17 (N = 16, alle Control-Clients: Main plus N Sonden)
+  ROT     [k_s5 · A24:kill_aus_backoff_deckel] getroffen (abgeleitet: nicht_getroffen)  {'backoff_deckel_erreicht': 0, 'erwartet': 0, 'gefahren': True}
+```
+
+Alle **23** berichtsbasierten Mutanten (die 17 aus Runde 1, die fünf aus Phase 2
+ausser `s15`, und der neue) enden weiterhin mit **Exit 2**, die Gegenprobe ohne
+Mutant mit **Exit 0**; rohe Ausgabe aller 24 Läufe in
+[`roh/G3-SOAK-nacharbeit-2-rotmutationen.txt`](roh/G3-SOAK-nacharbeit-2-rotmutationen.txt).
+
+### 16.3 Die drei Läufe dieser Runde — die Rechnung an einer anderen Sondenzahl
+
+Ein grüner Lauf mit N = 16 allein hätte den Fix nicht belegt: dort ist der
+gerechnete Sollwert 17 und der gelieferte auch. **Bei N = 4 ist er 5** — eine
+Zahl, die nirgends im Prüfer steht. Alle drei Läufe auf dem Baustand dieser
+Runde, Windows 11, Release:
+
+| Lauf | Aufruf | Exit | K-S5 | Kernzahlen |
+|---|---|---|---|---|
+| Kanon-Kurzform | `--sonden 16 --minuten 2 --neustarts 1` | **0 (GRUEN)** | `nicht_gefahren` (braucht `--neustarts >= 2`), Sollwert 17 gegen `erwartet` 17 geprüft | Topologie 79 ms · **3.914/3.914 Snapshot-Übernahmen sofort vollständig** bei 4.606 Übernahmen, 0 ungültig · 1.228/1.228 Abtastungen · 2.336/2.336 P0 beantwortet, p95 21,8 ms · 220.656 Ganzblöcke, 0 Drops, kleinste Sonde 1.379 Publikationen · Reconnect min 538,1 / max 2.512,3 ms über **17 Paare** |
+| Auftragsform | `--sonden 4 --minuten 1 --neustarts 2` | **2 (ROT)** — an S07, siehe §16.4 | **getroffen, 5/5** bei gerechnetem Sollwert 5 | Topologie 66 ms · 587/587 Snapshot-Übernahmen sofort vollständig · 444/444 P0 beantwortet, p95 20,4 ms · Reconnect über 5 Paare |
+| Beleglauf | `--sonden 4 --minuten 5 --neustarts 2` | **0 (GRUEN)** | **getroffen, 5/5**, in 21,0 s Totzeit erfasst | Topologie 67 ms · **2.735/2.735 Snapshot-Übernahmen sofort vollständig** bei 3.016 Übernahmen, 0 ungültig · 3.034/3.034 Abtastungen · 1.404/1.404 P0 beantwortet, p95 21,1 ms · 132.104 Ganzblöcke, 0 Drops, kleinste Sonde 3.302 Publikationen · zwei Neustarts in 2.509 und 2.551 ms über je **5 Paare** · 1 langsame Sonde (`max(1, round(4 · 0,25))`), 4.032 ersetzte Liveframes bei 10.569 Veröffentlichungen |
+
+Die Kanon-Kurzform ist mitgefahren, weil der Riegel dort die *andere* Hälfte
+zeigt: K-S5 ist `nicht_gefahren`, und trotzdem wird `erwartet` als Pflichtfeld
+gegen die Rechnung geprüft — ein Bericht könnte den Sollwert sonst genau dort
+verfälschen, wo niemand hinsieht.
+
+Rohe Protokolle: [`roh/G3-SOAK-nacharbeit-2-kanon.txt`](roh/G3-SOAK-nacharbeit-2-kanon.txt),
+[`roh/G3-SOAK-nacharbeit-2-n4.txt`](roh/G3-SOAK-nacharbeit-2-n4.txt)
+(grün, mit Bericht als [`roh/G3-SOAK-nacharbeit-2-n4-bericht.json`](roh/G3-SOAK-nacharbeit-2-n4-bericht.json))
+und [`roh/G3-SOAK-nacharbeit-2-n4-minuten1.txt`](roh/G3-SOAK-nacharbeit-2-n4-minuten1.txt) (rot).
+
+### 16.4 Warum `--minuten 1 --neustarts 2` nicht grün werden kann
+
+Die Auftragsform ist rot, aber **nicht an K-S5** — die drei roten Zeilen stehen
+alle an S07, der Speicherkurve:
+
+```
+  ROT     [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [1 von 1 Punkten — unzureichend ist nicht bestanden]
+  ROT     [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [1 von 2 Punkten — unzureichend ist nicht bestanden]
+  ROT     [S07 · A24:speicherkurve_im_budget] Broker Generation 2: die Kurve traegt echte Minutenabstaende  [20 s (mindestens 30 s)]
+```
+
+Der Grund ist Arithmetik, kein Defekt: Neustart *k* liegt bei *k/(neustarts+1)*
+des Messfensters (§9), also bei 20 s und 40 s einer Minute. Jede Brokergeneration
+lebt damit 20 s — weniger als der Speichertakt von 60 s und weniger als die
+30 s Mindestspanne, die Runde 1 gegen die Scheinkurve aus Defekt 2 und 3 gesetzt
+hat. **Diese Kombination ist strukturell nicht grün**, und zwar unabhängig von
+Runde 2: derselbe Bericht, durch den Prüfer von `882b2aa` gefahren, liefert
+dieselben drei S07-Zeilen und Exit 2
+([`roh/G3-SOAK-nacharbeit-2-n4-minuten1-alter-pruefer.txt`](roh/G3-SOAK-nacharbeit-2-n4-minuten1-alter-pruefer.txt)).
+
+S07 wurde **nicht** angefasst: die Zeile misst richtig, die Parameterwahl passt
+nicht zu ihr, und sie liegt ausserhalb des einen beauftragten Restes. Wer K-S2
+und K-S5 in einer kurzen Form sehen will, braucht je Generation mindestens einen
+Speichertakt — `--minuten 5 --neustarts 2` ist die kleinste belegte Form
+(Kills bei 100 s und 200 s), und genau die ist als Beleglauf gefahren.
+
+### 16.5 Was auch diese Runde nicht hergibt
+
+- **K-S3 bleibt `nicht_getroffen`.** Unverändert §15.5: ein während der Totzeit
+  eingereihter Heartbeat überlebt den Neustart in der P0-Queue und bekommt sein
+  ACK. Der Lauf mit N = 4 zeigt dasselbe Bild (`p0_ohne_ack_im_fenster` 0 bei
+  `verloren_im_neustartfenster` 0).
+- **Kein C++ geprüft oder geändert.** Der Rest lag allein in der Urteilslogik.
+  Dass `SessionSoakMain.cpp` den Sollwert korrekt als `anzahl + 1` schreibt
+  (`:1407`), ist jetzt eine *gemessene* Übereinstimmung mit der Rechnung des
+  Prüfers — vorher war es eine unbelegte Annahme.
+- **Die Laufzeiten sind 1, 2 und 5 Minuten, nicht 60.** Unverändert §13.2.
+- **Kein XRun.** Unverändert §2.2.
 
 ---
 

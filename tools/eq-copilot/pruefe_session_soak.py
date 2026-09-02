@@ -40,6 +40,16 @@ Regeln tragen das:
 Beides kam aus der Codex-Abschlusspruefung vom 02.09.2026 (Thread 01a0626a,
 Befunde 3, 7, 13, 14, 15, 17).
 
+Dazu kam aus der Wiederpruefung desselben Tages (Thread 01a062b9, ein Rest)
+die dritte Regel:
+
+  * ein SOLLWERT wird gerechnet, nie gelesen. `k_s5` faellt genau dann als
+    `getroffen`, wenn `backoff_deckel_erreicht` gleich `--sonden + 1` ist —
+    die Zahl steht in `SOLLWERTE` und kommt aus dem Aufruf, nicht aus dem
+    Bericht. Das Berichtsfeld `k_s5.erwartet` bleibt Pflicht und wird gegen
+    diese Rechnung gehalten; sonst genuegte `erwartet = backoff_deckel_erreicht
+    = 0`, um K-S5 gruen zu melden, ohne dass ein Client den Deckel erreicht hat.
+
 DIE PIPE
 --------
 Immer ein Probe-Name mit PID und Zeitstempel. Weder dieses Bein noch eines der
@@ -136,6 +146,24 @@ KILLPUNKTE = {
     "k_s5": "A24:kill_aus_backoff_deckel",
 }
 
+# Killzeile -> (Sollwertfeld im Bericht, Rechnung aus der GEPLANTEN Sondenzahl,
+# Klartext). Der Pruefer rechnet den Sollwert SELBST; das gleichnamige Feld im
+# Bericht ist Pflicht und wird gegen diese Rechnung gehalten — nie umgekehrt.
+# Uebernaehme er den gelieferten Wert, machte ein Bericht mit
+# `backoff_deckel_erreicht = erwartet = 0` die Ableitung `v == e` trivial wahr,
+# und K-S5 waere gruen, ohne dass ein einziger Client den Backoff-Deckel je
+# erreicht hat (Nacharbeit Runde 2, 02.09.2026).
+SOLLWERTE = {
+    # K-S5 zaehlt ALLE Control-Clients: Main plus N Sonden (Manifest §6, Zeile
+    # K-S5: "sie muss N + 1 sein (N Sonden + Main)").
+    "k_s5": ("erwartet", lambda args: args.sonden + 1,
+             "alle Control-Clients: Main plus N Sonden"),
+}
+# Jeder Feldname, der einen Sollwert traegt. Steht einer an einer Killzeile, zu
+# der SOLLWERTE keine eigene Rechnung kennt, ist das rot: dann kaeme der
+# Sollwert wieder aus dem Bericht.
+SOLLWERTFELDER = {feld for feld, _, _ in SOLLWERTE.values()}
+
 MUTANTEN = {
     "s02": "erwartet eine Sonde mehr, als gefahren wird — die Vollstaendigkeit "
            "der Mitgliedschaft faellt (Zeile S02)",
@@ -187,6 +215,12 @@ MUTANTEN = {
                     "muessen waehrend der Totzeit belegt sein (Defekt 12)",
     "s14_nachlauf": "setzt das Nachlauffenster auf 0 ms — ohne Nachlauf ist ein "
                     "offener ACK kein Verlust (Defekt 16)",
+    # Nacharbeit Runde 2 (02.09.2026): der EINE Rest der Wiederpruefung — der
+    # Sollwert von K-S5 kam aus dem Bericht statt aus N.
+    "k_s5_sollwert": "laesst K-S5 mit 0 Clients am Backoff-Deckel `getroffen` "
+                     "melden und zieht den Sollwert `erwartet` auf denselben "
+                     "Wert nach — der Pruefer muss N + 1 selbst rechnen "
+                     "(Runde 2)",
 }
 
 
@@ -636,6 +670,14 @@ def mutiere(bericht: dict, args) -> None:
             n["totzeit_erfasst"] = False
     elif args.mutant == "s14_nachlauf":
         bericht["p0"]["nachlauf_ms"] = 0
+    elif args.mutant == "k_s5_sollwert":
+        # Angegriffen wird die HERKUNFT des Sollwerts: `erwartet` folgt dem
+        # gelieferten Istwert, statt N + 1 zu sein. Genau diese Kombination
+        # blieb bis Runde 2 gruen.
+        bericht["kill"]["k_s5"]["backoff_deckel_erreicht"] = 0
+        bericht["kill"]["k_s5"]["erwartet"] = 0
+        bericht["kill"]["k_s5"]["gefahren"] = True
+        bericht["kill"]["k_s5"]["urteil"] = "getroffen"
 
 
 # ───────────────────────────────────────────────── Urteil
@@ -988,10 +1030,16 @@ def killurteile(bericht: dict, args, pruefe) -> int:
       k_s3  getroffen  <=>  p0_ohne_ack_im_fenster > 0
                             (und das ist p0.verloren_im_neustartfenster)
       k_s4  getroffen  <=>  flag_zum_killzeitpunkt > 0
-      k_s5  getroffen  <=>  backoff_deckel_erreicht == erwartet (N + 1)
+      k_s5  getroffen  <=>  backoff_deckel_erreicht == N + 1
 
-    Ein Punkt ohne `gefahren` ist `nicht_gefahren`. Fehlt ein Pflichteintrag
-    oder widerspricht das gelieferte Urteil der Ableitung, ist das rot.
+    Der Sollwert N + 1 wird aus `args.sonden` GERECHNET (`SOLLWERTE`), nie aus
+    dem Bericht gelesen: das Berichtsfeld `k_s5.erwartet` ist Pflicht und wird
+    seinerseits gegen diese Rechnung gehalten. Ein Bericht, der `erwartet` an
+    seinen eigenen Istwert anpasst, faellt damit zweimal.
+
+    Ein Punkt ohne `gefahren` ist `nicht_gefahren`. Fehlt ein Pflichteintrag,
+    weicht ein Sollwertfeld von der eigenen Rechnung ab oder widerspricht das
+    gelieferte Urteil der Ableitung, ist das rot.
     """
     fehler = 0
     kill = bericht.get("kill", {})
@@ -1006,20 +1054,36 @@ def killurteile(bericht: dict, args, pruefe) -> int:
     print("  --      Killpunkte (Urteil aus dem Beleg abgeleitet, nicht uebernommen):")
     for name, (belegfeld, treffer) in belege.items():
         marke = KILLPUNKTE.get(name, "")
+        sollfeld, sollrechnung, solltext = SOLLWERTE.get(name, (None, None, ""))
         eintrag = kill.get(name)
         if not isinstance(eintrag, dict):
             print(f"  ROT     [{name} · {marke}] Pflichteintrag fehlt im Bericht")
             fehler += 1
             continue
-        fehlend = [f for f in (belegfeld, "gefahren", "urteil") if f not in eintrag]
+        pflichtfelder = [belegfeld, "gefahren", "urteil"]
+        if sollfeld:
+            pflichtfelder.append(sollfeld)
+        fehlend = [f for f in pflichtfelder if f not in eintrag]
         if fehlend:
             print(f"  ROT     [{name} · {marke}] Pflichtfeld(er) fehlen: {fehlend}")
             fehler += 1
             continue
+        # Der Sollwert kommt aus der GEPLANTEN Sondenzahl, nicht aus dem
+        # Bericht; das gelieferte Feld wird dagegen gehalten.
+        soll = sollrechnung(args) if sollrechnung else None
+        if sollfeld and eintrag[sollfeld] != soll:
+            print(f"  ROT     [{name} · {marke}] `{sollfeld}` im Bericht ist "
+                  f"{eintrag[sollfeld]!r}, gerechnet {soll} "
+                  f"(N = {args.sonden}, {solltext})")
+            fehler += 1
+        fremd = sorted((set(eintrag) & SOLLWERTFELDER) - {sollfeld})
+        if fremd:
+            print(f"  ROT     [{name} · {marke}] Sollwertfeld(er) ohne eigene "
+                  f"Rechnung im Pruefer: {fremd}")
+            fehler += 1
         wert = eintrag[belegfeld]
-        erwartet_wert = eintrag.get("erwartet")
         abgeleitet = ("nicht_gefahren" if not eintrag["gefahren"]
-                      else ("getroffen" if treffer(wert, erwartet_wert)
+                      else ("getroffen" if treffer(wert, soll)
                             else "nicht_getroffen"))
         stimmt = abgeleitet == eintrag["urteil"]
         beleg = {k: v for k, v in eintrag.items() if k != "urteil"}

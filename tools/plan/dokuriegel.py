@@ -234,10 +234,22 @@ def verweise_sammeln(pfad: Path, text: str) -> list[tuple[str, int]]:
     return treffer
 
 
-def aufloesen(pfad: Path, ziel: str) -> Path:
+def aufloesen(pfad: Path, ziel: str) -> list[Path]:
+    """Beide Lesarten eines Verweises.
+
+    Zuerst relativ zum Ordner der Datei — das ist die Lesart eines
+    Markdown-Links und die erklaerte Konvention von `design/LIES-MICH.md`
+    (alle Pfade relativ zu `design/`, also meint `docs/DESIGN-GESETZE.md`
+    dort `design/docs/DESIGN-GESETZE.md`). Beginnt das Ziel mit einem
+    Wurzelordner, zaehlt zusaetzlich die Lesart vom Workspace-Root. Ein Pfad,
+    der in genau einer Lesart existiert, ist kein Befund. Bis 02.09.2026
+    entschied allein das Praefix, und jeder ordnerrelative `docs/…`-Link
+    unter `design/` wurde als Verweis ins Leere gezaehlt.
+    """
+    kandidaten = [pfad.parent / ziel]
     if ziel.startswith(WURZELORDNER):
-        return WURZEL / ziel
-    return (pfad.parent / ziel).resolve()
+        kandidaten.append(WURZEL / ziel)
+    return kandidaten
 
 
 def existiert(pfad: Path, ziel: str) -> bool:
@@ -247,10 +259,10 @@ def existiert(pfad: Path, ziel: str) -> bool:
     dem ersten Leerzeichen. So bleibt `design/Nakama Designausarbeitungen …`
     ein Pfad und `tools/beweise.ps1 -Bauen` ein Aufruf.
     """
-    if aufloesen(pfad, ziel).exists():
+    if any(k.exists() for k in aufloesen(pfad, ziel)):
         return True
     kopf = ziel.split(" ", 1)[0]
-    return kopf != ziel and aufloesen(pfad, kopf).exists()
+    return kopf != ziel and any(k.exists() for k in aufloesen(pfad, kopf))
 
 
 def verweise_pruefen(pfad: Path, text: str) -> tuple[list[str], list[str]]:

@@ -15,7 +15,7 @@ am Anfang ihres Textes. Die Klassen sind:
 
 | Klasse | Bedeutung | Zeilen |
 |---|---|---:|
-| **[Planarbeit · <Schritt>]** | einem offenen Planschritt zugeordnet; dort steht ein datierter Nachtrag | 19 |
+| **[Planarbeit · <Schritt>]** | einem offenen Planschritt zugeordnet; dort steht ein datierter Nachtrag | 20 |
 | **[Härtung/Struktur]** | bleibt offen, keine gebrochene Produktzusage; wird bei Gelegenheit im betroffenen Bereich geschlossen | 18 |
 | **[Werkzeug]** | Runner, Cockpit, Prüfskripte, Arbeitsreste — kein Produktverhalten | 20 |
 | **[Produktfrage · Karte U<n>]** | nur der User kann entscheiden; die Karte liegt in `docs/plan/fragen.json` | 6 |
@@ -24,12 +24,14 @@ am Anfang ihres Textes. Die Klassen sind:
 die Zeile wandert dann vollständig in die Tabelle *Geschlossen* und wird nie gelöscht.
 
 **Nachgearbeitet am 02.09.2026 (PR2 Runde 1, nach der Codex-Erstprüfung).** Die Zahlen oben sind neu
-gerechnet: **63 offen · 5 geparkt · 60 geschlossen = 128** (vorher 79 · 5 · 31 = 115). Drei Dinge
+gerechnet: **64 offen · 5 geparkt · 60 geschlossen = 129** (vorher 79 · 5 · 31 = 115). Drei Dinge
 sind passiert: 13 in der Triage versehentlich gelöschte Zeilen sind wortgleich aus `55cdb91`
 zurückgeholt (Befund D1), 16 Zeilen mit einer Schließung im eigenen Text sind unverändert in die
 Geschlossen-Tabelle umgezogen (Befunde D2 und D8), und NAK-121/NAK-124 tragen jetzt die Klasse
 **[Planarbeit · S19b]** statt **[Härtung/Struktur]**, weil sie seit dem 02.09.2026 einen Ort im Plan
-haben (Befund D7). Gemessen wird die Klassenzahl ausschließlich in der Offen-Tabelle.
+haben (Befund D7). Gemessen wird die Klassenzahl ausschließlich in der Offen-Tabelle. Dazu ist **eine** Zeile
+neu: **NAK-130**, ein am 02.09.2026 gemessener Widerspruch außerhalb der 14 Befunde — der
+Auftrag der Runde verlangt für solche Funde genau diese Form.
 
 ### Blocker je Phase
 
@@ -113,6 +115,7 @@ Was vor dem jeweiligen Abschnitt liegen bleibt, wenn es nicht geschlossen wird:
 | NAK-125 | 09-01, G2-Gate | **[Planarbeit · S29–31]** **Matrix-Frage gegen die SONDE-011-Verhaltensmatrix: `session_command` quittiert „angewandt" ohne Persistenz bei degradiertem Store.** `coordinator.rs:2884-2896` mutiert die Mitgliedschaft im Speicher; `flush_session` bricht bei Store-Append-Fehler ab (`:2254`) ohne Rollback und ohne Re-Dirty; Zeile **2929** gibt **unbedingt** `command_ack "angewandt"` zurück. Bei degradiertem/vollem Store erhält der Main „angewandt", obwohl nach Broker-Neustart nichts persistiert ist (die Idempotenz-Registrierung `session_commands` lebt ebenfalls nur im Speicher). Same-user-getriggert, also **kein §48.4-Sicherheitsbefund**, aber ein Korrektheits-/Dauerhaftigkeitsdefekt der Session-Schicht. Gegen die apply/ack-Zusage der SONDE-011-Matrix und Entwurf §33.4/§33.5 einzuordnen: entweder ack erst nach Persistenz (bzw. „store_degraded"-Ergebnis) oder die Matrix hält fest, dass „angewandt" nur In-Memory-Wirkung plus nachfolgende state_report-Rekonstruktion (§57) zusagt. Beleg: `docs/beweise/G2.md` §4.3. **Zurück in die Offen-Tabelle am 02.09.2026 (PR2):** diese Zeile stand in der Geschlossen-Tabelle, stellt aber eine noch zu entscheidende Matrix-Frage und nennt keinen schließenden Commit. |
 | NAK-126 | 09-01, G2-Gate | **[Planarbeit · S29–31]** **Matrix-Frage gegen die SONDE-011-Verhaltensmatrix: verdrängte Control-Pipe bleibt eingabefähig.** Wird Control A durch B mit gleichem `ClientKey` aber anderer `runtime_nonce` verdrängt, markiert `coordinator.rs:755` A als `verdraengt`/`trennen`, aber `server_v3.rs:2360` (`kopplung_loesen`) bricht nur das Telemetrie-Handle ab; die Kopplungsprüfung `server_v3.rs:2034` gilt nur für Telemetrie, `bootstrap.rs:294` hält kein Control-Handle. A kann weiter P0 liefern; `coordinator.rs:2346` (`audible_intervention_begin`) prüft `verdraengt`/`trennen` nicht und trägt die Intervention ein, die `coordinator.rs:2514` starke Evidenz sperrt. Same-user, kein §48.4-Sicherheitsbefund; gegen die Eviktions-/Kopplungssemantik der Matrix zu entscheiden. Beleg: `docs/beweise/G2.md` §4.3. **Zurück in die Offen-Tabelle am 02.09.2026 (PR2):** diese Zeile stand in der Geschlossen-Tabelle, stellt aber eine noch zu entscheidende Matrix-Frage und nennt keinen schließenden Commit. |
 | NAK-127 | 09-02, NAK-123-Abschluss | **[Planarbeit · S34–35]** **Installer-Hash des neu gelinkten Brokers.** NAK-123 hat `broker/src/**` geändert; `eqcop-broker.exe` trägt damit neue Bytes, und der SHA-256 in `eq-copilot/install/nakama-installer-v1.json` ist für dieses Binary kein Nachweis mehr. Das Kanonbein A17 vergleicht Artefakthashes im Kanon weich (grün) und erst mit `--release` hart. Vor der nächsten Installation (User-Admin-Schritt) müssen Broker-Release-Bau und Manifest-Hash gemeinsam nachgezogen werden; Eigentümer ist der Auslieferungsschritt (P8–P9 „Auslieferung, Migration, Datenschutz und Rückweg abschließen") beziehungsweise der nächste Installationsbeweis. `eq-copilot/install/**` lag ausdrücklich außerhalb der NAK-123-Ticketgrenze. **Zurück in die Offen-Tabelle am 02.09.2026 (PR2):** diese Zeile stand in der Geschlossen-Tabelle, beschreibt aber Arbeit, die vor der nächsten Installation noch zu tun ist, und nennt keinen schließenden Commit. |
+| NAK-130 | 09-02, PR2 Runde 1 (ausserhalb der 14 Defekte gefunden) | **[Planarbeit · S18–19]** **`plan.json` S18–19 nennt `SEND DRAFT` weiter als einzigen Weg von Gen Fläche 1 zu Fläche 2 — der Entscheid vom 31.08.2026 ist am 02.09.2026 überholt worden.** Gemessen am 02.09.2026 an zwei Quellen: `docs/plan/plan.json`, Schritt `S18–19`, Punkt (10) sagt „Im Produkt fuehrt ausschliesslich SEND DRAFT von Flaeche 1 zu Flaeche 2“; `design/abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md` markiert genau diesen Punkt seit dem 02.09.2026 als **Überholt** (Fünferblock 03, Entscheidung 3/5, User-Wort „nein hin geht es nicht nur über send draft, sondern über den header wo EQ steht“): der Kopf von Gen trägt den Flächenwechsel in beide Richtungen, `SEND DRAFT` bleibt Handgriff am Befund. Der Widerspruch ist am 02.09.2026 dadurch entstanden, dass PR2 und der Fünferblock 03 am selben Tag auf zwei Rechnern liefen; `S31b` trägt den neuen Entscheid bereits, `S18–19` nicht. **Bewusst nicht in PR2 Runde 1 behoben:** der Auftrag dieser Runde ist auf die 14 Befunde der Codex-Erstprüfung begrenzt und verlangt für alles Weitere genau diese Registerzeile. Wer es angeht: Punkt (10) in `S18–19` als überholt markieren (nicht löschen) und auf den Kopf-Umschalter umstellen, im selben Änderungssatz die Gegenrichtung in `docs/bauaufteilung-sonden.md` §3 und Blueprint §15 Punkt 18. |
 
 ## Geparkt mit der Prisma-Studie (User 21.08.2026: „Familie; Prisma nur Studie")
 

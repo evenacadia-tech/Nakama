@@ -28,17 +28,6 @@
    "blockiert_durch": "NAK-57 — der Zähler analyseKontinuitaetsbrueche() hat keine Anzeige; ohne sie ist der Kurztermin nicht ablesbar (Dirigent 29.08.)"
   },
   {
-   "id": "U21",
-   "dringlichkeit": "vor S31b",
-   "art": "Architekturfrage (eine Antwort)",
-   "titel": "Wo erscheinen Beleg und Alternativerklärung eines Findings auf Gens erster Fläche?",
-   "was": "Ein Finding zeigt heute links seinen Inhalt und die Höraufgabe, rechts die zulässigen Aktionen — beides an festem Ort, bei gleichbleibender Flächenhöhe. Offen ist, wo zwei weitere Angaben landen: der Beleg samt Sicherheit („wie sicher ist das?“) und die Alternativerklärung („was könnte es sonst sein?“). Möglich sind zum Beispiel: ein Ansichtswechsel innerhalb derselben Fläche, oder ein anderer Mechanismus, der die Fläche nicht wachsen lässt.",
-   "warum": "Folgekarte zu U2.6 vom 22.08.2026 („Entwurf verworfen — CERTAINTY nicht im Befundkopf rechts, OTHER CAUSE nicht als sechste Zeile. Offen: welcher andere Ort.“). Der damals verworfene Ort galt einer Oberfläche, die seit dem 31.08.2026 Verlauf ist; die Sache selbst ist offen geblieben und steht in design/abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md ausdrücklich unter „Bewusst offen“. Ohne diese Antwort kann Gen Fläche 1 einen Befund nicht vollständig ehrlich zeigen: Sicherheit und Alternative gehören nach Entwurf §0.4 und §34.3 in jede UI-Fassung.",
-   "wo": "design/abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md („Bewusst offen“); Blueprint §4.1; Planschritte S18–19 und S23–25",
-   "seit": "02.09.",
-   "status": "offen"
-  },
-  {
    "id": "U22",
    "dringlichkeit": "vor S23–25",
    "art": "Produktentscheid (eine Antwort)",
@@ -468,6 +457,14 @@
    "datum": "2026-08-30 23:51",
    "status": "eingearbeitet",
    "ergebnis": "Nakama bekommt beides: eine Liste gespeicherter Voreinstellungen (mitgelieferte und eigene) UND den Weg, eine fertige Kurve von einer Sonde auf eine andere zu uebertragen. Eine Voreinstellung ist nicht der Projektzustand und bekommt in Layout v2 einen eigenen Platz mit eigener Version (S26-28); sie traegt Klanginhalt, nie Identitaet. Bedienung S31b. Das Kopieren zwischen Instanzen hat keinen belegten Marktstandard - Luecke L-3, Nakama-eigener Handgriff. [design/abnahmen/2026-08-30-fragenrunde-marktstandard.md]"
+  },
+  "U21": {
+   "frage": "Wo erscheinen Beleg und Alternativerklärung eines Findings auf Gens erster Fläche?",
+   "wahl": "Nein, sie stecken schon drin (Empfohlen)",
+   "text": "Nein, sie stecken schon drin (Empfohlen) — Klarstellung des Users auf die erste Fassung der Frage, davor: „wenn wir 6 werte für eine messung anzeigen, ist das schlichtweg schlechtes design. das liest keiner, das ist zuviel und zeigt ,dass wir nicht v erstehen worauf es ankommt“",
+   "datum": "2026-09-02 09:35",
+   "status": "eingearbeitet",
+   "ergebnis": "Sicherheit, Beleg und Alternativen werden auf Gen Fläche 1 nicht als eigene Angaben gezeigt; die Findings-Fläche bleibt bei drei Zeilen (LIKELY CAUSE, SMALLEST TEST, LISTEN FOR). Sicherheit ist der Zustand des Befunds: nur ein sicherer Befund ist READY TO SEND und bietet Audition und Draft an, ein unsicherer meldet MORE DATA, ein veralteter STALE, beide ohne Draft. Beleg ist die markierte Zone mit den zwei Kurven im Graphen. Alternativen sind weitere Befunde in der Liste (ALL FINDINGS). CONFIDENCE unter dem Graphen bleibt Messqualität, nicht Befundsicherheit. Leitsatz: keine sechs Werte je Befund. Datenweg S23–25 (Abbildung hoch/mittel/unklar auf die Zustände), Anzeige Gen Fläche 1. Entscheidung 1/5 in Fünferblock 03. [design/abnahmen/2026-09-02-technische-ui-architektur-fuenferblock-03.md]"
   }
  }
 }

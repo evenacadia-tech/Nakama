@@ -3,7 +3,7 @@
 > **Erzeugt, nicht gepflegt.** Quelle ist `docs/plan/fragen.json`;
 > hier nur zum Lesen. Handarbeit geht beim naechsten Lauf verloren.
 
-**52 Antworten**, gegeben am 2026-08-22 bis 2026-08-30.
+**53 Antworten**, gegeben am 2026-08-22 bis 2026-09-02.
 
 Alle tragen Status `eingearbeitet` — jede ist mit Datum und Wortlaut uebernommen. Was daraus gilt, steht in der Spalte *Ergebnis*.
 
@@ -61,8 +61,9 @@ Alle tragen Status `eingearbeitet` — jede ist mit Datum und Wortlaut uebernomm
 | `U18` | Beides (Empfohlen) | Beides (Empfohlen) | 2026-08-30 23:51 | Nakama bekommt beides: eine Liste gespeicherter Voreinstellungen (mitgelieferte und eigene) UND den Weg, eine fertige Kurve von einer Sonde auf eine andere zu uebertragen. Eine Voreinstellung ist nicht der Projektzustand und bekommt in Layout v2 einen eigenen Platz mit eigener Version (S26-28); sie traegt Klanginhalt, nie Identitaet. Bedienung S31b. Das Kopieren zwischen Instanzen hat keinen belegten Marktstandard - Luecke L-3, Nakama-eigener Handgriff. [design/abnahmen/2026-08-30-fragenrunde-marktstandard.md] |
 | `U19` | Bleibt hinten (Empfohlen) | Bleibt hinten (Empfohlen) | 2026-08-30 23:02 | Referenz-Nachbilden (EQ-Match) bleibt Ausbau nach der vollen Fassung (Entwurf §47.5); die v3-Vertragsrunde von S16-17 reserviert nur den Familiennamen, Nutzlast erst mit dem Ausbau. |
 | `U20` | Eigener Name (Empfohlen) | Eigener Name (Empfohlen) — du vergibst je Sonde einen Namen (wie heute das Label); liefert FL den Bus-Namen doch, ersetzt er ihn automatisch. | 2026-08-30 23:02 | Gibt FL keinen Bus-Namen her, zeigt der Sonden-Durchschalter den vom User je Sonde vergebenen Namen (heutiges label-Feld, User-Wort, untrusted); ein vom Host gelieferter Bus-Name ersetzt ihn automatisch. Mixer-Nummer und Verbindungsreihenfolge werden nicht als Rueckfall gebaut. S18-19 (Messung, Capabilitybit, Vertragsort) und S31b (Anzeige). [design/abnahmen/2026-08-30-fragenrunde-marktstandard.md] |
+| `U21` | Nein, sie stecken schon drin (Empfohlen) | Nein, sie stecken schon drin (Empfohlen) — Klarstellung des Users auf die erste Fassung der Frage, davor: „wenn wir 6 werte für eine messung anzeigen, ist das schlichtweg schlechtes design. das liest keiner, das ist zuviel und zeigt ,dass wir nicht v erstehen worauf es ankommt“ | 2026-09-02 09:35 | Sicherheit, Beleg und Alternativen werden auf Gen Fläche 1 nicht als eigene Angaben gezeigt; die Findings-Fläche bleibt bei drei Zeilen (LIKELY CAUSE, SMALLEST TEST, LISTEN FOR). Sicherheit ist der Zustand des Befunds: nur ein sicherer Befund ist READY TO SEND und bietet Audition und Draft an, ein unsicherer meldet MORE DATA, ein veralteter STALE, beide ohne Draft. Beleg ist die markierte Zone mit den zwei Kurven im Graphen. Alternativen sind weitere Befunde in der Liste (ALL FINDINGS). CONFIDENCE unter dem Graphen bleibt Messqualität, nicht Befundsicherheit. Leitsatz: keine sechs Werte je Befund. Datenweg S23–25 (Abbildung hoch/mittel/unklar auf die Zustände), Anzeige Gen Fläche 1. Entscheidung 1/5 in Fünferblock 03. [design/abnahmen/2026-09-02-technische-ui-architektur-fuenferblock-03.md] |
 
-## Die 23 Antworten mit eigenem Text
+## Die 24 Antworten mit eigenem Text
 
 Diese tragen mehr als eine Auswahl — hier steckt die eigentliche Aussage:
 
@@ -89,3 +90,4 @@ Diese tragen mehr als eine Auswahl — hier steckt die eigentliche Aussage:
 - **`U18`** — Wahl *Beides (Empfohlen)*: „Beides (Empfohlen)"
 - **`U19`** — Wahl *Bleibt hinten (Empfohlen)*: „Bleibt hinten (Empfohlen)"
 - **`U20`** — Wahl *Eigener Name (Empfohlen)*: „Eigener Name (Empfohlen) — du vergibst je Sonde einen Namen (wie heute das Label); liefert FL den Bus-Namen doch, ersetzt er ihn automatisch."
+- **`U21`** — Wahl *Nein, sie stecken schon drin (Empfohlen)*: „Nein, sie stecken schon drin (Empfohlen) — Klarstellung des Users auf die erste Fassung der Frage, davor: „wenn wir 6 werte für eine messung anzeigen, ist das schlichtweg schlechtes design. das liest keiner, das ist zuviel und zeigt ,dass wir nicht v erstehen worauf es ankommt“"

@@ -1,5 +1,9 @@
 # NEXT-SESSION — Einstieg für die nächste Runde
 
+> ## ✅ G3-SOAK ABGENOMMEN — T2 PASS 02.09.2026 (Dirigent), Stand `d52fd15`
+>
+> Abschlussprüfung 17 Defekte → Nacharbeit Runde 1 (16 zu) → Runde 2 (K-S5-Sollwert) → Wiederprüfung 2 PASS; Kanon auf dem Endstand siehe `docs/beweise/G3-SOAK.md` Abschnitt 17. Als Nächstes: der Gate-Lauf G3 selbst (Planstand).
+>
 > ## ✅ G3-SOAK PHASE 2 FERTIG — 02.09.2026, Bau-Worker
 >
 > **Das Werkzeug für das Phasengate G3 steht.** Neues Kanon-Bein **A24**

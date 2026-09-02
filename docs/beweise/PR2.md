@@ -1795,7 +1795,8 @@ Zwei Commits, jeder mit explizitem Pathspec, jeder sofort gepusht.
 | # | Commit | Pfade | Inhalt |
 |---|---|---|---|
 | 1 | `dca7654` | `docs/offene-punkte.md` | NAK-85 und NAK-92 unverändert in die Geschlossen-Tabelle umgezogen, je mit datiertem Nachtrag; Kopfzahlen und Klassentabelle neu gerechnet; der Absatz über die zwei nicht umgezogenen Zeilen ersetzt |
-| 2 | dieser Commit | `docs/beweise/PR2.md` | Abschnitt §13, lebender Kopf (Prüfstufen-Zeile, Rundentabelle §1.0) |
+| 2 | `3e56bd1` und die Berichtigung in diesem Commit | `docs/beweise/PR2.md` | Abschnitt §13, lebender Kopf (Prüfstufen-Zeile, Rundentabelle §1.0); der zweite Commit berichtigt §13.4 und §13.5 über das Verhalten der erzeugten Blätter, an der Quelle nachgemessen |
+| — | der Folgecommit mit demselben Betreffkopf | `docs/PLAN-STAND.md` | kein Arbeitscommit: das erzeugte Blatt, nach dem Manifestcommit einmal neu gerechnet und mit Pathspec committet (`CLAUDE.md`-Regel) |
 
 **Am Register geändert wurde ausschließlich:** die Klassenzahlen **[Härtung/Struktur]** 18 → 17 und
 **[Werkzeug]** 20 → 19, die Gesamtrechnung **64 · 5 · 60** → **62 · 5 · 62** (Summe unverändert 129),
@@ -1804,16 +1805,18 @@ Geschlossen-Tabelle und die Position der zwei Zeilen. **Der Text der zwei Zeilen
 angefasst** — maschinell geprüft: der alte Zeilentext von `6b2539f` ist Präfix des neuen, angehängt
 sind nur 2 126 (NAK-85) bzw. 1 439 (NAK-92) Zeichen Nachtrag.
 
-**Die zwei erzeugten Blätter sind inhaltlich unverändert.** Diese Runde hat keine Planquelle und
-keine Fragenkarte angefasst; `docs/ANTWORTEN-OFFEN.md` ist nach dem Lauf byteidentisch zu `HEAD`
-(24 020 Bytes, vorher wie nachher). `docs/PLAN-STAND.md` ebenfalls — mit einer Zwischenstufe, die
-`CLAUDE.md` so vorsieht: solange dieses Manifest **uncommittet** unter `docs/beweise/` liegt, setzt
-`planstand.py` seine ehrliche Warnung „Gerechnet aus dem Arbeitsbaum" ins Blatt (drei Zeilen, keine
-Zahl bewegt sich). Deshalb wird das Blatt **nach** dem Manifestcommit ein zweites Mal gerechnet; dann
-ist die Warnung weg und das Blatt wieder byteidentisch zu `HEAD`. Beide Blätter stehen daher in
-keinem Commit dieser Runde; das wären leere Commits. Das `M` von `git status --short` an
-`docs/ANTWORTEN-OFFEN.md` ist ein reines Zeilenende-Artefakt (`core.autocrlf=true`, das Werkzeug
-schreibt LF) ohne Inhaltsunterschied.
+**Die zwei erzeugten Blätter tragen keine Arbeit dieser Runde.** Diese Runde hat keine Planquelle
+und keine Fragenkarte angefasst. `docs/ANTWORTEN-OFFEN.md` ist nach dem Lauf byteidentisch zu `HEAD`
+(24 020 Bytes, vorher wie nachher) und steht deshalb in keinem Commit; das `M` von
+`git status --short` daran ist ein reines Zeilenende-Artefakt (`core.autocrlf=true`, das Werkzeug
+schreibt LF) ohne Inhaltsunterschied. `docs/PLAN-STAND.md` bewegt **keine Zahl** (23 von 40
+abgenommen, 1 gebaut, 16 offen — wie in Runde 1), aber seinen **Quellstand-Zeiger**: er springt mit
+jedem Commit unter `docs/beweise/` mit, hier auf den Manifestcommit dieser Runde. Zwei Stufen
+gehören dazu, beide in `CLAUDE.md` so vorgesehen: solange das Manifest **uncommittet** liegt, setzt
+`planstand.py` pflichtgemäß die Warnung „Gerechnet aus dem Arbeitsbaum" ins Blatt (drei Zeilen);
+nach dem Manifestcommit wird ein zweites Mal gerechnet, die Warnung ist weg, und das Blatt geht als
+eigener Commit mit Pathspec raus — **kein Arbeitscommit**, nur die Ausgabe des Werkzeugs, genau wie
+`3ad6e8f` in Runde 1 (§12.3, letzte Zeile).
 
 **Nicht angefasst:** `.workflow/ultracode/20260831-084621-sonde011-phaseb-bau` (fremd, untrackt) und
 jeder Pfad außerhalb der Schreibfläche dieser Runde.
@@ -1865,12 +1868,12 @@ EXITCODE=0
 
 **Was die Läufe zeigen.**
 
-1. **A — der Planstand rechnet ohne Warnung.** Quellstand `054ed59`, Zahlen unverändert gegen
-   Runde 1 (23 von 40 abgenommen, 1 gebaut, 16 offen). Diese Runde hat keine Planquelle angefasst,
-   also darf sich hier nichts bewegen — und es bewegt sich nichts. Der oben gezeigte Lauf ist der
-   **zweite**, nach dem Manifestcommit: der erste, mit noch uncommittetem `docs/beweise/PR2.md`,
-   setzte pflichtgemäß die Warnung „Gerechnet aus dem Arbeitsbaum" ins Blatt (§13.4). Nach dem
-   Commit ist sie weg und das Blatt byteidentisch zu `HEAD`.
+1. **A — der Planstand rechnet ohne Warnung.** Zahlen unverändert gegen Runde 1: 23 von 40
+   abgenommen, 1 gebaut, 16 offen. Diese Runde hat keine Planquelle angefasst, also darf sich hier
+   keine Zahl bewegen — und es bewegt sich keine. Der oben gezeigte Lauf ist der erste dieser Runde
+   (Quellstand `054ed59`); nach dem Manifestcommit wird noch einmal gerechnet, dann steht der
+   Quellstand auf diesem Commit und das Blatt geht als eigener Commit mit Pathspec raus (§13.4).
+   Die Warnung „Gerechnet aus dem Arbeitsbaum" steht im Endstand des Blattes **nicht**.
 2. **B — das Antwortenblatt ist unverändert.** 53 Antworten, 0 offen; keine Fragenkarte angefasst.
 3. **F — der Dokuriegel ist über alle sieben Ticketpfade sauber.** 0 Befunde. Die benannten Zeilen
    sind dieselben wie in Runde 1 (historische oder noch nicht angelegte Zielpfade); §13 hat keinen

@@ -463,25 +463,58 @@ nicht ersetzen.
 
 ### 0.3 Produktentscheidung 20.08.2026 — Master-Plugin konventionell, Prisma-App als Zusatz
 
+**[0.5 · Erratum (c) · 21.08.2026]** **Die Überschrift und die Punkte unten bleiben im 0.4-Wortlaut stehen; ihre
+Prisma-Hälfte ist aber seit dem 21.08.2026 Studie, kein Bauziel.** Erratum (c): die Trennung
+„Master-Plugin konventionell / Prisma daneben“ gilt weiter (Entscheid 21.08.2026 zur Festlegung
+vom 20.08.: „Meine Entscheidung, so gesagt“) — **aber** alle Aussagen über die Prisma-App als
+Begleit-App, read-only-Spiegel oder Broker-Client sind Studie und kein Bauziel: kein Ticket, kein
+Client, kein Vokabular in der Plugin-UI. User-Wort 21.08.2026: „Familie; Prisma nur Studie“
+(dazu Prisma-Herkunft „Meine Idee“, Hörkompass „Alles nur Studie“, „Glas/Licht raus;
+Profil nur Studie“). Die Studie liegt geparkt unter
+[`../eq-copilot/design/prisma-studie/`](../eq-copilot/design/prisma-studie/).
+*Nachgetragen am 02.09.2026 in Runde 1 der Planprüfung PR2 (Codex-Befund D4): Fassung 0.5 hatte (c)
+nur am letzten Punkt dieses Abschnitts eingearbeitet, die Punkte davor definierten die Prisma-App
+weiter als eigenständige Begleit-App mit eigener Oberfläche.*
+
 Der User hat am 20.08.2026 die Produktarchitektur ausdrücklich festgelegt:
 
 - **Nakama Main (Master-Plugin) + Sonden sind das Kernprodukt** und erhalten
   eine bewusst **konventionellere Arbeits-UI** in FL Studio. Quellenliste,
   Heatmap und Detailansicht (§35.1) sind dort legitime Dauerarbeitsflächen;
-  ihr Maßstab ist die Lesbarkeit (`geschmacksprofil.md`), nicht der
-  Hörkompass-Zielvertrag.
-- **Die Prisma-App ist eine eigenständige Begleit-App**, die NEBEN
+  ~~ihr Maßstab ist die Lesbarkeit (`geschmacksprofil.md`), nicht der
+  Hörkompass-Zielvertrag.~~ **[0.5 · Erratum (c) · 21.08.2026]** **Der Maßstabsatz ist gestrichen:**
+  `geschmacksprofil.md` bindet nach Erratum (c) nur die Studie, nicht die Plugin-UI
+  (User-Wort 21.08.2026 „Familie; Prisma nur Studie“; die Datei liegt geparkt unter
+  [`../eq-copilot/design/prisma-studie/docs/`](../eq-copilot/design/prisma-studie/docs/)).
+  Der erste Halbsatz — Kernprodukt mit konventioneller Arbeits-UI — bleibt der Entscheid vom
+  20.08.2026 und gilt. Was die Arbeitsflächen zeigen und wie sie bedient werden, bindet seit
+  Fassung 0.5 der Blueprint
+  ([`design/docs/funktions-und-bedien-blueprint.md`](../design/docs/funktions-und-bedien-blueprint.md)).
+- ~~**Die Prisma-App ist eine eigenständige Begleit-App**, die NEBEN
   Hauptplugin und Sonden existiert — eine **Addition, nicht der Master-Hub**
   für die Sonden. Kein Teil des Sonden-Workflows setzt sie voraus; Main in
-  FL bleibt die einzige vollständige tägliche Arbeitsfläche (§31.1).
+  FL bleibt die einzige vollständige tägliche Arbeitsfläche (§31.1).~~
+  **[0.5 · Erratum (c) · 21.08.2026]** **Studie, kein Bauziel.** Es gibt keine Prisma-App als Produktteil:
+  kein Ticket, kein Broker-Client, keine `control_capability`, kein Vokabular in der
+  Plugin-UI. User-Wort 21.08.2026: „Familie; Prisma nur Studie“. Was von diesem Punkt
+  trägt, steht ohnehin an seiner eigenen Stelle: Main in FL ist die einzige vollständige
+  tägliche Arbeitsfläche (§31.1). Der Begriff **Master-Hub** ist seit Fassung 0.5
+  aus dem Produktvokabular — es gibt zwei Plugins und den unsichtbaren Broker
+  (§3.5). *Nachgetragen am 02.09.2026, PR2 Runde 1, Codex-Befund D4.*
 - Der **Hörkompass-Zielvertrag**
   ([`visuelles-zielbild-hoerkompass.md`](../eq-copilot/design/prisma-studie/docs/visuelles-zielbild-hoerkompass.md)
   — Studie, geparkt seit 21.08.2026, Errata (c); gesund = leeres Glas, Befund
-  statt Musik, kein Dauer-Visualizer) **gilt
+  statt Musik, kein Dauer-Visualizer) ~~**gilt
   der Prisma-App**, nicht der Master-Plugin-UI. Damit ist der im
   Prüfbericht als Befund A beschriebene Konflikt zwischen Kernfunktion 1
   und dem Zielvertrag aufgelöst: Landkarte und Zielvertrag leben in zwei
-  verschiedenen Oberflächen.
+  verschiedenen Oberflächen.~~ **[0.5 · Erratum (c) · 21.08.2026]** **bindet nichts im Produkt.**
+  Der Konflikt aus Befund A löst sich nicht dadurch auf, dass der Zielvertrag in einer
+  zweiten Oberfläche lebt — diese Oberfläche ist Studie und kein Bauziel. Er löst
+  sich dadurch, dass der Zielvertrag im Produkt **gar nichts** bindet: er ist Studie
+  (User-Wort 21.08.2026 „Alles nur Studie“, „Glas/Licht raus; Profil nur Studie“).
+  Die Trennung „Master-Plugin konventionell“ aus dem ersten Punkt bleibt davon
+  unberührt und gilt. *Nachgetragen am 02.09.2026, PR2 Runde 1, Codex-Befund D4.*
 - ~~Technisch bindet sich die Prisma-App … als read-only Spiegel an Broker und Sitzung an.~~
   **Gestrichen in Fassung 0.5 am 02.09.2026.** Grund: die Prisma-App ist kein Bauziel mehr —
   kein Ticket, kein Broker-Client, kein Vokabular in der Plugin-UI. Entscheidquelle:

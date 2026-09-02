@@ -2,7 +2,7 @@
 
 ## Status
 
-**1 von 5 Entscheidungen gesammelt.** Der Block beginnt mit Gen Fläche 1
+**2 von 5 Entscheidungen gesammelt.** Der Block beginnt mit Gen Fläche 1
 (Karte U21 aus `docs/plan/fragen.json`); danach folgen die offenen
 Bedienbereiche von Gen Fläche 2 (Blueprint Abschnitt 15, Punkte 17 und 18)
 und Probeeq (Punkt 19). Skizze, Detailabnahmen und Blueprint werden erst nach
@@ -72,3 +72,45 @@ Karte U21 ist damit beantwortet (`docs/plan/fragen.json`, 02.09.2026). Der
 Planschritt S23–25 trägt den Datenweg als datierten Nachtrag. Gen Fläche 1
 hat nach dem Arbeitsmodus vom 31.08.2026 keinen offenen Punkt mehr; die
 nächste Frage dieses Blocks gilt Gen Fläche 2.
+
+## 2/5 — Die eingeklappte Global-Zeile nennt nur, was gerade wirkt
+
+Technische Vorbedingung, vor der Frage geprüft: Der Parametervertrag
+(`eq-copilot/schemas/state/nakama-parameter-v1.json`, `global`) kennt heute
+Bypass, Input-Trim, Output-Trim, Width und Mono-Bass. Dazu kommen mit
+Layout v2 in S26–28 die entschiedenen Erweiterungen Auto-Gain neben Output
+(24.08.2026), Mix je Sonde (23.08.2026), das Preset-Objekt (U18, 30.08.2026)
+und A/B; Revision/History ist der Undo-Ring des Entwurfs. Blueprint
+Abschnitt 4.2 Zone 4 hält als **[U]** fest, dass die Global-Sektion im
+Ruhezustand eingeklappt ist, und als **[A]** die Hypothese, dass aktive
+Abweichungen am Einstieg sichtbar bleiben. Genau diese Hypothese war die
+Frage.
+
+Auf die Frage, was die eingeklappte Global-Zeile unter dem Graphen im
+Ruhezustand zeigt, wählt der User am 02.09.2026:
+
+> „Nur was gerade wirkt, beim Namen (Empfohlen)“
+
+Damit ist für Gen Fläche 2 gesammelt:
+
+- Die eingeklappte Zeile nennt die aktiven Abweichungen vom Standard beim
+  Namen, zum Beispiel `GLOBAL · MIX 92 % · AUTO · B` oder `GLOBAL · BYPASS`.
+  Sind alle globalen Werte Standard, steht dort nur `GLOBAL` mit dem
+  Aufklapp-Control.
+- Ein Zähler wie das heutige `GLOBAL · 2 ON` ist verworfen: er sagt nicht,
+  was wirkt.
+- Eine dauerhaft sichtbare Kurzzeile mit Bypass, Mix und A/B auch im
+  Standardzustand ist verworfen: neutrale Werte belegen keinen Platz unter
+  dem Graphen.
+- Was als Abweichung gilt, folgt dem Vertrag: Bypass an, Mix ungleich 100 %,
+  Auto-Gain an, Kurve B aktiv, Input- oder Output-Trim ungleich 0 dB, Width
+  ungleich 1, Mono-Bass ungleich 0 Hz. Die Reihenfolge und Kurzform der
+  Nennungen sind Dichteprüfung der Skizze, kein Beschluss.
+- Aufgeklappt liegen dort alle globalen Handgriffe: Input, Output mit
+  Auto-Gain daneben, Width, Mono-Bass, Bypass, Mix, A/B, Voreinstellungen
+  und der Verlauf. Wie Voreinstellungen und Verlauf innerhalb der
+  aufgeklappten Sektion geöffnet werden, ist noch nicht gefragt.
+- Damit ist die Blueprint-Hypothese **[A]** aus Abschnitt 4.2 Zone 4 zu
+  **[U]** geworden; Blueprint Abschnitt 15 Punkt 17 verliert den Teil
+  „Global-Sektion nicht abgeleitet“ beim gemeinsamen Umbau nach 5/5. Der
+  Wortlaut der Halten-Aktion und die Kurzform `DEL` bleiben dort offen.

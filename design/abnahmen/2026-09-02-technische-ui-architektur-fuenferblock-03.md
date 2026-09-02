@@ -243,7 +243,7 @@ Damit ist für Probeeq gesammelt:
 
 Die Skizze `design/skizze/nakama-ui-technical-sketch.html` setzt alle fünf
 Entscheide gemeinsam um. Geprüft am 02.09.2026 mit Playwright und dem
-System-Chrome (headless, Viewport 1500×900, Skript im Sessionordner, 41
+System-Chrome (headless, Viewport 1500×900, Skript im Sessionordner, 42
 Prüfpunkte, Ergebnis PASS, Konsole ohne Fehler oder Warnungen):
 
 | Punkt | Messung |

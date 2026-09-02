@@ -197,8 +197,10 @@ struct Sonde
     std::mutex mutex;
     std::vector<Uhr::time_point> gesendet;   ///< Index = Sequenz
     std::vector<bool> beantwortetFlag;
-    std::vector<bool> imFensterGesendet;     ///< im Neustartfenster abgeschickt
-    std::vector<double> latenzen;
+    /// Im STOERFENSTER abgeschickt: Barrierefenster (kuenstliche Bremse) oder
+    /// Neustartfenster. Z4 gilt ausserhalb davon.
+    std::vector<bool> imFensterGesendet;
+    std::vector<std::pair<double, bool>> latenzen;   ///< Latenz + Stoerfenster
     std::atomic<std::uint64_t> p0Gesendet { 0 }, p0Beantwortet { 0 };
     std::atomic<std::uint64_t> sequence { 0 };
     std::atomic<bool> inVerzoegerung { false };   ///< K-S4-Barriere
@@ -533,8 +535,9 @@ struct Soak
                 {
                     s.beantwortetFlag[seq] = true;
                     s.latenzen.push_back (
-                        std::chrono::duration<double, std::milli> (
-                            jetzt - s.gesendet[seq]).count());
+                        { std::chrono::duration<double, std::milli> (
+                              jetzt - s.gesendet[seq]).count(),
+                          s.imFensterGesendet[seq] });
                     s.p0Beantwortet.fetch_add (1);
                 }
             }
@@ -577,7 +580,11 @@ struct Soak
                     seq = s->gesendet.size();
                     s->gesendet.push_back (Uhr::now());
                     s->beantwortetFlag.push_back (false);
-                    s->imFensterGesendet.push_back (imNeustartfenster.load());
+                    // Das Stoerfenster umfasst Barriere UND Neustart: die
+                    // 3-s-Bremse aus K-S4 und die Totzeit aus K-S5 sind
+                    // Testeingriffe, keine Produktlatenz.
+                    s->imFensterGesendet.push_back (
+                        imNeustartfenster.load() || flutAn.load());
                 }
                 // VERTRAGSGEMAESS, nicht handgestrickt: der echte Coordinator
                 // verlangt im Heartbeat die `adresse` und prueft sie gegen die
@@ -905,7 +912,7 @@ struct Soak
     // ─────────────────────────────────────────── Bericht
     std::string bericht (int minuten, int warmupS) const
     {
-        std::vector<double> alleLatenzen, schnelleLatenzen;
+        std::vector<double> alleLatenzen, schnelleLatenzen, fensterLatenzen;
         std::uint64_t p0Ges = 0, p0Ack = 0, verlorenAussen = 0, verlorenFenster = 0;
         std::uint64_t ersetzt = 0, neuesteVerworfen = 0, zuGross = 0, kollision = 0;
         std::uint64_t bloecke = 0, dropsUeberlauf = 0, dropsOversize = 0;
@@ -936,8 +943,9 @@ struct Soak
             for (std::size_t i = 0; i < s->gesendet.size(); ++i)
                 if (! s->beantwortetFlag[i])
                     (s->imFensterGesendet[i] ? verlorenFenster : verlorenAussen) += 1;
-            for (double w : s->latenzen)
+            for (const auto& [w, imFenster] : s->latenzen)
             {
+                if (imFenster) { fensterLatenzen.push_back (w); continue; }
                 alleLatenzen.push_back (w);
                 if (! s->langsam) schnelleLatenzen.push_back (w);
             }
@@ -987,6 +995,11 @@ struct Soak
           << ",\"latenz_max_ms\":"
           << (alleLatenzen.empty() ? 0.0
               : *std::max_element (alleLatenzen.begin(), alleLatenzen.end()))
+          << ",\"gemessen_ausserhalb\":" << alleLatenzen.size()
+          << ",\"gemessen_im_stoerfenster\":" << fensterLatenzen.size()
+          << ",\"latenz_max_im_stoerfenster_ms\":"
+          << (fensterLatenzen.empty() ? 0.0
+              : *std::max_element (fensterLatenzen.begin(), fensterLatenzen.end()))
           << ",\"schranke_ms\":" << kP0SchrankeMs << "}"
           << ",\"liveness\":{\"stale_ausserhalb_neustart\":" << staleAusserhalb.load()
           << ",\"evicted_ausserhalb_neustart\":" << evictedAusserhalb.load()

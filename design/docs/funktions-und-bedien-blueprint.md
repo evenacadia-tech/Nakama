@@ -1437,7 +1437,10 @@ Schema:
     `docs/PLAN-STAND.md` sichtbar. Offen bleibt genau diese visuelle
     Spezifikation: Maße, Typografie und Renderabnahme existieren heute nicht;
     bis zu ihrer datierten Abnahme beginnt die sichtbare Umsetzung von S31b
-    nicht.
+    nicht. Die visuelle Phase hat am 02.09.2026 in Figma begonnen
+    (`../abnahmen/2026-09-02-wechsel-visuelle-phase-figma.md`; Stand,
+    Knoten und Übersetzungsregeln in `../visuell/LIES-MICH.md`); der erste
+    Vorschlag (drei Rahmen 1:1 im Szenario PROPOSAL) ist nicht abgenommen.
 12. **[O] 10-s-Kandidatenvertrag:** Kandidaten-ID, Timer, Message, ACK,
     Reconnect, Kill und Ablauf sind vor P7-UI zu spezifizieren; preview_begin
     und persistentes apply_transaction reichen dafür heute nicht.

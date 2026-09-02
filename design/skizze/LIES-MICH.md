@@ -29,7 +29,9 @@ Daraus folgt für diesen Ordner:
    entschieden.
 4. Die Skizze liefert das Fundament (Layout, Hierarchie, Handgriffe,
    Zustände). Das visuelle Design entsteht danach in Figma (User-Wort
-   02.09.2026, Prozesswort in Fünferblock 03).
+   02.09.2026, Prozesswort in Fünferblock 03). Seit dem 02.09.2026 läuft
+   diese Phase: `../visuell/LIES-MICH.md`; die Skizze bleibt dabei die
+   Layout-Wahrheit, aus der Figma 1:1 übersetzt.
 
 ## Öffnen
 
@@ -114,8 +116,9 @@ noch nicht abgeleitete Bereiche. Sie gehören in die nächsten Fünferblöcke.
 
 ## Was hier nicht liegt
 
-Farben, Material, Typografie und visuelle Feinheiten. Sie beginnen erst nach
-dem ausdrücklichen Wechsel in die visuelle Phase, die in Figma stattfindet
-(CLAUDE.md, Design-Arbeitsmodell Punkt 4; Prozesswort 02.09.2026). Die
-Farb- und Schriftwerte in der Skizze sind Werkzeugdefaults für Lesbarkeit,
-keine Vorgabe.
+Farben, Material, Typografie und visuelle Feinheiten. Sie entstehen seit dem
+ausdrücklichen Wechsel vom 02.09.2026 in Figma
+(`../abnahmen/2026-09-02-wechsel-visuelle-phase-figma.md`, Leseblatt
+`../visuell/LIES-MICH.md`). Die Farb- und Schriftwerte in der Skizze bleiben
+Werkzeugdefaults für Lesbarkeit, keine Vorgabe; die Maße der Skizze sind die
+Layout-Wahrheit, die Figma übernimmt.

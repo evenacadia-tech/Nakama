@@ -50,7 +50,16 @@ Commits gehen ohne Rückfrage raus.
   vom 25.08. sind dafür Verlauf und liefern weder Raster noch Farben, Material
   oder Positionen. Eine neue visuelle Richtung entsteht erst in einem eigenen
   User-Schritt; sie wird dann in Figma entwickelt, sobald das Fundament aus
-  Layout und Skizze steht (User-Wort 02.09.2026, Fünferblock 03). Produktsprache
+  Layout und Skizze steht (User-Wort 02.09.2026, Fünferblock 03). **Dieser
+  Schritt ist am 02.09.2026 erfolgt:** Die visuelle Phase läuft in der
+  Figma-Datei `fable-dummy` (Key `DvMbHg0MWCPwibDj8q6hI8`, Seite „01 — Nakama
+  950×538 · Skizze in Materialsprache"), in der Materialsprache der Entwürfe
+  vom 20. bis 22.08.2026 (Unibody, Glas, Kinn, Apertur, Geist, Wein, Cyan nur
+  als Saum) und mit der Wortmarke im rot-blauen Verlauf auf beiden Apps. Die
+  Skizze bleibt Layout-Wahrheit, Figma ist die visuelle Wahrheit; ein
+  Figma-Stand ist ein Vorschlag bis zur datierten Abnahme
+  (`design/abnahmen/2026-09-02-wechsel-visuelle-phase-figma.md`, Leseblatt
+  `design/visuell/LIES-MICH.md`). Produktsprache
   Englisch; Docs, Commits und Gespräch Deutsch.
 - **Aktueller UI-Arbeitsmodus:** Pro User-Schritt genau eine echte offene
   Architekturfrage. Technische Grenzen vorher selbst aus Code, Tests und
@@ -156,7 +165,7 @@ Commits gehen ohne Rückfrage raus.
 | State / Migration | `eq-copilot/schemas/state/`, `eq-copilot/plugin/state/`, `eq-copilot/fixtures/state/` |
 | Beweise | jüngstes passendes Manifest in `docs/beweise/` |
 | FL-Capabilities | `eq-copilot/identity/host-capabilities-fl-v1.json`, `docs/beweise/termin-a/`, `docs/beweise/termin-b/` |
-| App-Design | `design/LIES-MICH.md`, `design/docs/funktions-und-bedien-blueprint.md` (bindet Funktions- und Bedienarchitektur beider Apps), `design/skizze/LIES-MICH.md` (laufende technische Skizze) und die jüngste passende Datei in `design/abnahmen/` |
+| App-Design | `design/LIES-MICH.md`, `design/docs/funktions-und-bedien-blueprint.md` (bindet Funktions- und Bedienarchitektur beider Apps), `design/skizze/LIES-MICH.md` (laufende technische Skizze), `design/visuell/LIES-MICH.md` (visuelle Phase in Figma seit 02.09.2026) und die jüngste passende Datei in `design/abnahmen/` |
 | Widerspruch Entwurf ↔ Blueprint | über beiden stehen aktueller Vertrag und Code; der Widerspruch wird als Zeile in `docs/offene-punkte.md` geführt, nie kaschiert (PR2, 02.09.2026) |
 | Externes Wissen | `wissen/INDEX.md`, danach der passende Wissensbereich |
 | Verlauf, nie Vorgabe | `docs/archiv/`, `eq-copilot/design/archive/`, `eq-copilot/design/prisma-studie/STATUS.md` |
@@ -175,7 +184,8 @@ vor.
 - `broker/`: eigenständiger Rust-Broker `eqcop-broker.exe`.
 - `tools/beweise.ps1`: kanonischer lokaler Beweis-Runner.
 - `design/`: Übersetzung der aktuellen User-Vorgabe, laufende technische
-  Skizze (`skizze/`), Abnahmen, Designregeln und der historische Web-Prototyp
+  Skizze (`skizze/`), visuelle Phase in Figma (`visuell/`), Abnahmen,
+  Designregeln und der historische Web-Prototyp
   (`prototyp/`, Verlauf).
 - `wissen/`: eingeordnetes externes Wissen und visuelle Belege; keine
   parallelen Produktentscheide und keine Roh-PDFs.
@@ -248,9 +258,11 @@ State-Migrationsstand und den letzten Installationsbeweis prüfen.
    Blueprint gemeinsam aktualisieren, sichtbar prüfen (Screenshot nach
    `design/skizze/belege/`) und committen; bereits Geschlossenes nicht
    erneut öffnen.
-4. Farben, Material, Typografie und visuelle Feinheiten beginnen erst nach
-   ausdrücklichem Wechsel in die visuelle Phase. Erst eine dokumentierte
-   Abnahme erlaubt die Spiegelung in `eq-copilot/`.
+4. Farben, Material, Typografie und visuelle Feinheiten entstehen seit dem
+   ausdrücklichen Wechsel vom 02.09.2026 in Figma (`fable-dummy`, Leseblatt
+   `design/visuell/LIES-MICH.md`); jeder Figma-Stand wird per Export unter
+   `design/visuell/belege/` belegt und bleibt Vorschlag. Erst eine
+   dokumentierte Abnahme erlaubt die Spiegelung in `eq-copilot/`.
 5. `eq-copilot/design/`, frühere Figma-Stände und die drei Rework-Bilder sind
    Verlauf/Studie. Sie dürfen zur Spurensuche dienen, aber die neue
    Funktionsarchitektur nicht still ergänzen.

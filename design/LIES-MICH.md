@@ -69,6 +69,23 @@ Funktionsarchitektur, nicht der finale (User-Wort 02.09.2026: „die Sketch
 HTML ist der derzeitige Stand, nicht der finale"), und wird nach jedem
 Fünferblock dort fortgeschrieben und committet.
 
+## Visuelle Phase seit 02.09.2026
+
+Mit dem User-Auftrag vom 02.09.2026 („als ersten schritt könntest du unsere
+aktuellen skizzen im design der entwürfe in figma umzusetzen. das visuelle
+design ist ja ganz gut gelungen") hat die visuelle Phase begonnen. Ort ist die
+Figma-Datei `fable-dummy`, Seite „01 — Nakama 950×538 · Skizze in
+Materialsprache"; die Sprache ist die der Entwürfe vom 20. bis 22.08.2026
+(Unibody, Glas, Kinn, Apertur, Geist und Geist Mono, Wein, Cyan nur als Saum)
+mit der Wortmarke im rot-blauen Verlauf auf Gen und Probeeq. Was dort liegt,
+wie die Skizze übersetzt wurde und was noch fehlt, steht in
+[visuell/LIES-MICH.md](visuell/LIES-MICH.md); der Wortlaut und die
+Arbeitsannahmen in
+[abnahmen/2026-09-02-wechsel-visuelle-phase-figma.md](abnahmen/2026-09-02-wechsel-visuelle-phase-figma.md).
+Die Skizze bleibt die Layout-Wahrheit und wird nach jedem Fünferblock weiter
+fortgeschrieben; ein Figma-Stand ist ein Vorschlag, bis der User ihn datiert
+abnimmt.
+
 ## Aktuelle Quellen, in dieser Reihenfolge
 
 1. **Funktions- und Bedienarchitektur:**
@@ -84,11 +101,14 @@ Fünferblock dort fortgeschrieben und committet.
    `technische-ui-architektur-fuenferblock-*.md`.
 3. **Sichtbarer Stand:** `skizze/` mit Leseblatt und Belegen; die dort
    benannten Vorgriffe und Lücken sind die Kandidaten der nächsten Fragen.
-4. **Offene Fragen an den User:** Karten in `../docs/plan/fragen.json`,
+4. **Visueller Stand (Figma):** [visuell/LIES-MICH.md](visuell/LIES-MICH.md)
+   mit Seite, Knoten, Übersetzungsregeln und Belegen; die Figma-Datei ist
+   `fable-dummy`.
+5. **Offene Fragen an den User:** Karten in `../docs/plan/fragen.json`,
    gestellt mit dem Skill **`/fragen`** — er hält die Antwort wörtlich fest
    und arbeitet sie ein (`../docs/plan/LIES-MICH.md`). Karten mit
    Designbezug werden zusätzlich im laufenden Blockprotokoll gesichert.
-5. **Handwerk, keine Vorgabe:**
+6. **Handwerk, keine Vorgabe:**
    [docs/DESIGN-GESETZE.md](docs/DESIGN-GESETZE.md) (Progressive Disclosure,
    Shneiderman-Mantra, Overview+Detail / Focus+Context / Zoom,
    Aufmerksamkeitsgesetze; Prüfmaßstab für Zustände und Grenzfälle, die
@@ -111,7 +131,13 @@ Design-Phasennummer.
    ausdrücklichen Wechsel in die visuelle Phase wird Figma als Werkzeug
    dieser Phase wieder verbindlich (User-Wort 02.09.2026: „aktuell machen wir
    ja das fundament danach kommt das visuelle design in figma“); welche
-   Figma-Datei dann gilt, benennt der User beim Wechsel.
+   Figma-Datei dann gilt, benennt der User beim Wechsel. **Dieser Wechsel
+   ist am 02.09.2026 erfolgt:** Die visuelle Phase läuft in der Figma-Datei
+   `fable-dummy` (Key `DvMbHg0MWCPwibDj8q6hI8`), in der Materialsprache der
+   Entwürfe vom 20. bis 22.08.2026 und mit der rot-blauen Wortmarke auf beiden
+   Apps ([abnahmen/2026-09-02-wechsel-visuelle-phase-figma.md](abnahmen/2026-09-02-wechsel-visuelle-phase-figma.md)).
+   Die Skizze bleibt Layout-Wahrheit; der Figma-Stand ist ein Vorschlag bis
+   zur datierten Abnahme ([visuell/LIES-MICH.md](visuell/LIES-MICH.md)).
 2. **Ein Schritt pro Runde, fünf pro Umbau.** Genau eine Frage öffnen und das
    User-Urteil im laufenden Fünferblock wörtlich sichern — dann die nächste.
    Nach der fünften Antwort werden lebendes Blatt, Detailabnahmen und Blueprint

@@ -92,6 +92,14 @@ Commits gehen ohne Rückfrage raus.
 
 - Code und laufende Beweise sind die Wahrheit. Vor einer Änderung die
   betroffene Quelle lesen; Doku, Memory und Audits sind Hinweise.
+- Zu Sessionbeginn und nach jedem abgeschlossenen Ticket
+  `py -3.13 tools/plan/planstand.py` laufen lassen; kein Hook tut das
+  automatisch. Ändert sich `docs/PLAN-STAND.md` aus bereits committeten
+  Quellen, wird nur diese Datei mit Pathspec committet und gepusht
+  (`docs/plan/LIES-MICH.md`). Plandokumente — Register, Plan, Abnahmen,
+  Blueprint, Leseblätter, diese Datei — laufen vor dem Commit durch
+  `py -3.13 tools/plan/dokuriegel.py <datei>` (Tabellen- und Verweisriegel,
+  seit PR2 02.09.2026); ein Verweis ins Leere ist ein Befund, kein Stil.
 - Beziehungen mitprüfen: speichern↔laden, starten↔stoppen,
   öffnen↔schließen, verbinden↔trennen, aktivieren↔abklingen und
   installieren↔Rückweg gehören jeweils in denselben Änderungssatz.
@@ -128,7 +136,11 @@ Commits gehen ohne Rückfrage raus.
   auf dem anderen Rechner braucht, steht in dieser Datei, im Skill oder in
   einer Repo-Datei und ist gepusht. Ein Artefakt, das nur in einem
   Werkzeugordner liegt (`~/.codex/visualizations/`, `.playwright-mcp/`,
-  Scratchpad), gilt nicht als geliefert.
+  Scratchpad), gilt nicht als geliefert. Beide Rechner committen parallel
+  auf `master` (am 02.09.2026 lief PR2 auf dem PC, während der Laptop die
+  Design-Dokumente nachzog): Sessionstart mit `git pull --ff-only`, vor
+  jedem Push bei sauberem Worktree `git pull --rebase`; kein Hook pusht
+  automatisch, der Push ist ein eigener Schritt.
 
 ## Lesen vor der Arbeit
 
@@ -223,7 +235,12 @@ State-Migrationsstand und den letzten Installationsbeweis prüfen.
    Sichtbarkeit, Objektbesitz oder Disclosure stellen. Funktionsumfang und
    technische Grenzen vorher selbst aus aktuellen Quellen klären.
 3. Antworten in einem laufenden Fünferblock sammeln und den User-Wortlaut in
-   dessen Entscheidungsprotokoll sichern. Nach der fünften Antwort die
+   dessen Entscheidungsprotokoll sichern. Das Protokoll des nächsten Blocks
+   (`design/abnahmen/<datum>-technische-ui-architektur-fuenferblock-NN.md`)
+   entsteht mit der ersten beantworteten Frage, nie leer vorab. Liegt die
+   Frage bereits als Karte in `docs/plan/fragen.json`, wird sie mit
+   `/fragen` gestellt; der Wortlaut geht dann zusätzlich in das
+   Blockprotokoll. Nach der fünften Antwort die
    technische Skizze (`design/skizze/nakama-ui-technical-sketch.html`, im
    Repo, nie nur in einem Werkzeugordner), die betroffenen Abnahmen und den
    Blueprint gemeinsam aktualisieren, sichtbar prüfen (Screenshot nach

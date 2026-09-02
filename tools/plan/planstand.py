@@ -217,14 +217,24 @@ def kanon_lesen(pfad: pathlib.Path) -> str:
 def messen(schritt: dict, warnungen: list[str]) -> dict:
     """Der ganze Status eines Schrittes — gemessen, nichts uebernommen."""
     erg = dict(schritt)
-    erg.update(status="offen", urteil=None, kanon="", hinweis="")
+    erg.update(status="offen", urteil=None, kanon="", hinweis="", nichts_da=False)
 
+    # `nichts_da` heisst: an diesem Schritt liegt noch KEINE Arbeit. Zwei Faelle
+    # sind dasselbe — kein Beleg deklariert, oder ein deklarierter Beleg, den es
+    # nicht gibt. Der zweite trug bisher einen Hinweis und fiel damit aus der
+    # Auswahl fuer „Als Naechstes", die auf `not hinweis` filterte: ein Ticket,
+    # dessen Manifest noch nicht geschrieben ist, wurde uebersprungen und der
+    # Planstand nannte den Schritt DAHINTER (gemessen 02.09.2026: G3 statt PR2).
+    # Ein leeres Termin-Verzeichnis zaehlt bewusst NICHT dazu — dort liegt der
+    # Beleg, der Termin ist nur nicht gelaufen (PR2, 02.09.2026).
     beleg = (schritt.get("beleg") or "").strip()
     if not beleg:
+        erg["nichts_da"] = True
         return erg
     pfad = WURZEL / beleg
     if not pfad.exists():
         erg["hinweis"] = f"Beleg `{beleg}` fehlt"
+        erg["nichts_da"] = True
         return erg
 
     # User-Termin: es gibt keine Pruefstufe, die Rohdaten SIND das Ergebnis.
@@ -303,7 +313,7 @@ def main() -> int:
     # Was ist als Naechstes dran? Abgeleitet, nicht getippt: ein OFFENER Befund
     # ist Arbeit und geht vor; sonst der erste Schritt, an dem noch nichts liegt.
     nacharbeit = [s for s in alle if s["hinweis"] == "Befund offen"]
-    unbelegt = [s for s in alle if s["status"] == "offen" and not s["hinweis"]]
+    unbelegt = [s for s in alle if s["status"] == "offen" and s["nichts_da"]]
     if nacharbeit:
         s = nacharbeit[0]
         naechster = (f"**Nacharbeit an {s['id']}** — der Prüfer hat einen Befund "

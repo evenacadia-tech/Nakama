@@ -186,7 +186,7 @@ Figma → Design-Repo → dieser Block. Gemessene Abweichungen zum Design-Stand
 - **Suna-Kachel:** §0.4 „Name, Verbindung, Frische; Bedienung läuft über
   Main"; das Design-Werkzeug (`werkzeug/formfaktor.html`, 21.08.) zeigt Name ·
   Rolle · Messposition · Frische · Warnung; die Kachel ist im Design-Repo
-  „nicht begonnen" (`docs/sondenplan.md` im Design-Repo). Ob Name und Rolle an
+  „nicht begonnen" (`design/docs/sondenplan.md`, damals `docs/sondenplan.md` im eigenen Design-Repo; Pfad nachgezogen 02.09.2026). Ob Name und Rolle an
   der Kachel bedient werden, welche Rollenliste (5 im Design, 7 in §9), wie
   viele Messzustände (5 im Design, 2 hier) und Arbeitsschritte (3 / 5) gelten:
   offen als **NAK-38** (UI-Rückfluss-Liste).
@@ -1621,7 +1621,7 @@ verbindet. Diese Evidenzkette ist daher der Produktkern und kein Zusatztext um e
 |---|---|---|
 | Plugin-Aufteilung | gemeinsame C++-Kernbibliothek und ~~drei~~ **zwei** VST3-Ziele: **Nakama Gen** (Arbeitstitel „Nakama Main") und **Nakama Probeeq** (Arbeitstitel „Nakama Active Probe"). ~~Nakama Probe~~ ist **gestrichen in Fassung 0.5 am 02.09.2026** — die passive Sonde ist in Probeeq aufgegangen. Entscheidquellen: **Erratum (b)/(n)**, User-Wort 21.08.2026 (Namen) und 23.08.2026 (Merge-Wahl „eine Sonde"); ausgeführt in `SONDE-007c` (S9b), User-Entscheid 28.08.2026 `../design/abnahmen/2026-08-28-suna-stilllegung-vorgezogen.md` | klare Insert-Wahl; der passive Nullvertrag kann nicht durch einen Modusschalter verloren gehen — Probeeq trägt ihn als eigenen, beweisbar bitidentischen Aus-Zustand |
 | Feste Bus-Topologie | Passive Probe: Main-I/O; Active Probe: Main-I/O plus getrennte Stereo-Aux-Busse `priority_sidechain` und `compare_pre`; Main: Main-I/O plus eine im Spike festgelegte, kleine Zahl diskreter Contribution-Aux-Busse | Compare und Unmasking werden nie auf einem Aux multiplexed; exakte Beiträge existieren nur bei bewiesenem FL-Fan-in |
-| Kompatibilität | die bestehende Plugin-Class-ID bleibt Kompatibilitäts-/Main-Eintrag; gespeicherte Altrollen `sensor|pre|post` laufen darin passiv weiter; neue passive und aktive Probe erhalten je eine stabile Class-ID | alte Projekte laden ohne Klangänderung; keine stille Umdeutung bestehender Instanzen |
+| Kompatibilität | die bestehende Plugin-Class-ID bleibt Kompatibilitäts-/Main-Eintrag; gespeicherte Altrollen `sensor\|pre\|post` laufen darin passiv weiter; neue passive und aktive Probe erhalten je eine stabile Class-ID | alte Projekte laden ohne Klangänderung; keine stille Umdeutung bestehender Instanzen |
 | Zentrale Instanz | genau ein führendes Main pro aktiver Sitzung; weitere Main-Instanzen sind read-only Spiegel, bis der User die Führung übergibt | verhindert konkurrierende Befehle |
 | Normalgröße | 1 Main + bis zu 16 gleichzeitig sichtbare Sonden; Verträge und Broker werden bis 32 getestet | deckt reale Busprojekte ab, ohne die Kern-UX auf Extremfälle auszulegen |
 | Begleitdienst | der vorhandene eigenständige Rust-Broker bleibt unsichtbare Infrastruktur; keine Pflicht-Desktop-App | Entscheidungen und Capture bleiben in FL bei Main |
@@ -1810,8 +1810,8 @@ Vier bisher vermischte Achsen werden getrennt gespeichert:
 
 | Achse | Werte/Beispiel | Bedeutung |
 |---|---|---|
-| `plugin_kind` | `main|passive_probe|active_probe|legacy` | ladbare Produktklasse und Capability |
-| `measurement_position` | `insert|pre|post|post_fader_contribution` | Ort und Aussagekraft der Messung |
+| `plugin_kind` | `main\|passive_probe\|active_probe\|legacy` | ladbare Produktklasse und Capability |
+| `measurement_position` | `insert\|pre\|post\|post_fader_contribution` | Ort und Aussagekraft der Messung |
 | `pair_id` | optionale stabile ID | verbindet genau ein PRE-/POST-Paar |
 | `SourceIntent` | Front/Middle/Back, Funktion, Schutz, Beziehung | musikalische Absicht, nie Technikrolle |
 

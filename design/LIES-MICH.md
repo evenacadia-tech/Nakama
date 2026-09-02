@@ -8,13 +8,13 @@ dann nurnoch im nakama repo gearbeitet"). Vorher eigenes Repo
 zu `design/`**; ältere Texte, die `Nakama-Design/…` sagen, meinen denselben
 Ort.
 
-Hier entsteht das Design als **Web-Prototyp im Browser**, als Übersetzung der
-aktuellen visuellen User-Vorgabe. Es wird KEIN Plugin-Code geschrieben — der lebt in
-`eq-copilot/` und `broker/`. Die Produktwahrheit (was die Apps und Flächen sind und
-dürfen) und das Register der User-Entscheide stehen in `CLAUDE.md` an der
-Repo-Wurzel (Wahrheitskern); hier wird sie nicht abgeschrieben, nur verwiesen.
+Hier entsteht das Design der beiden Apps als lebende Blätter im Browser. Es
+wird KEIN Plugin-Code geschrieben — der lebt in `eq-copilot/` und `broker/`.
+Die Produktwahrheit (was die Apps und Flächen sind und dürfen) und das
+Register der User-Entscheide stehen in `CLAUDE.md` an der Repo-Wurzel
+(Wahrheitskern); hier wird sie nicht abgeschrieben, nur verwiesen.
 
-## Funktionsneustart vom 31.08.2026
+## Aktuelle Phase: Funktionsneustart vom 31.08.2026
 
 Für die neue funktionale Designableitung gilt der direkte User-Auftrag vom
 31.08.2026: Der aktuelle Implementierungsplan wird in einen erweiterbaren
@@ -22,20 +22,19 @@ Funktions- und Bedienvertrag übersetzt; bisher entworfene Designs werden dabei
 ignoriert. Der neue, designneutrale Einstieg ist
 [docs/funktions-und-bedien-blueprint.md](docs/funktions-und-bedien-blueprint.md).
 Er übernimmt keine Raster, Farben, Materialien, Icons oder Positionen aus den
-unten dokumentierten früheren visuellen Ständen. Diese bleiben Verlauf und
+unten unter **Verlauf** dokumentierten früheren visuellen Ständen. Diese
 dürfen den Blueprint nicht still ergänzen. Eine neue visuelle Vorgabe entsteht
-erst in einem eigenen Folgeschritt.
+erst in einem eigenen Folgeschritt. Seit der Planprüfung PR2 (02.09.2026)
+bindet der Blueprint die Funktions- und Bedienarchitektur beider Apps; der
+Entwurf `../docs/FL-Nakama-Sonden-Design-Entwurf.md` bindet Technik,
+Verträge, Phasen und Falsifikation; über beiden stehen aktueller Vertrag und
+Code (Rangfolge in beiden Köpfen und in `CLAUDE.md`).
 
-## Laufende technische UI-Architektur vom 31.08.2026
+## Laufende technische UI-Architektur
 
 Arbeitsmodus, bestätigter Strukturstand und die bewusst offenen nächsten
 Entscheide stehen in
-[`abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md`](abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md).
-Der aktuelle Größenvertrag für beide Gen-Flächen steht in
-[`abnahmen/2026-09-01-gen-nur-standardgroesse.md`](abnahmen/2026-09-01-gen-nur-standardgroesse.md):
-genau eine logische Größe von 950×538. Compact, Fenster-Resize und eine zweite
-Layoutfassung sind bis nach Fertigstellung der Standardoberfläche vertagt;
-UI-Skalierung vergrößert nur dieselbe Geometrie.
+[abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md](abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md).
 Für diese Phase gilt: genau eine echte UI-Architekturfrage nach der anderen
 und technische Grenzen vorher selbst aus aktuellen Quellen ableiten. Die
 Antworten werden in festen Fünferblöcken gesammelt; nach der fünften Antwort
@@ -43,118 +42,59 @@ werden sichtbare Skizze, Abnahmen und Blueprint gemeinsam aktualisiert und
 geprüft. Farben, Material und visuelle Feinheiten bleiben bis zum
 ausdrücklichen Wechsel der Phase außen vor.
 
+Stand 02.09.2026: Fünferblock 01
+([abnahmen/2026-09-01-technische-ui-architektur-fuenferblock-01.md](abnahmen/2026-09-01-technische-ui-architektur-fuenferblock-01.md),
+Dynamic im Band-Panel) und Fünferblock 02
+([abnahmen/2026-09-01-technische-ui-architektur-fuenferblock-02.md](abnahmen/2026-09-01-technische-ui-architektur-fuenferblock-02.md),
+Bandbesitz, Kanalmodus, Bypass, Remove) sind integriert. Der aktuelle
+Größenvertrag für beide Gen-Flächen steht in
+[abnahmen/2026-09-01-gen-nur-standardgroesse.md](abnahmen/2026-09-01-gen-nur-standardgroesse.md):
+genau eine logische Größe von 950×538. Compact, Fenster-Resize und eine zweite
+Layoutfassung sind bis nach Fertigstellung der Standardoberfläche vertagt;
+UI-Skalierung vergrößert nur dieselbe Geometrie. Die noch offenen
+Bedienbereiche für den nächsten Block stehen in Blueprint Abschnitt 15 und
+im Leseblatt der Skizze; das Protokoll eines neuen Blocks entsteht mit der
+ersten beantworteten Frage, nie leer vorab.
+
 Die laufende technische Skizze liegt seit dem 02.09.2026 im Repo:
-[`skizze/nakama-ui-technical-sketch.html`](skizze/nakama-ui-technical-sketch.html),
-Leseblatt [`skizze/LIES-MICH.md`](skizze/LIES-MICH.md), Sichtbelege unter
+[skizze/nakama-ui-technical-sketch.html](skizze/nakama-ui-technical-sketch.html),
+Leseblatt [skizze/LIES-MICH.md](skizze/LIES-MICH.md), Sichtbelege unter
 `skizze/belege/`. Sie ist der derzeitige Stand der entschiedenen
 Funktionsarchitektur, nicht der finale (User-Wort 02.09.2026: „die Sketch
 HTML ist der derzeitige Stand, nicht der finale"), und wird nach jedem
 Fünferblock dort fortgeschrieben und committet.
 
-## Dein Job
+## Aktuelle Quellen, in dieser Reihenfolge
 
-**Historischer visueller Arbeitsstand bis zum Funktionsneustart vom
-31.08.2026:** Seit dem damaligen User-Entscheid vom 25.08. waren genau drei
-gelieferte PNGs die **visuelle Wahrheit in progress** und die Grundlage des
-damals geplanten großen Reworks:
+1. **Funktions- und Bedienarchitektur:**
+   [docs/funktions-und-bedien-blueprint.md](docs/funktions-und-bedien-blueprint.md).
+   Mit **[U]** markierte Teile sind User-entschieden, **[A]** sind
+   Layout-Hypothesen, **[O]** offen; Abschnitt 15 führt die offenen
+   Entscheidungen und technischen Blocker, Abschnitt 17 den laufenden
+   Ableitungsstand.
+2. **Bindende Entscheide:** die datierten Dateien unter `abnahmen/`
+   ([abnahmen/LIES-MICH.md](abnahmen/LIES-MICH.md) erklärt Abnahme gegen
+   Arbeitsannahme). Für die laufende Phase zuerst die Arbeitsmodus-Abnahme
+   vom 31.08.2026 und die jüngste Datei
+   `technische-ui-architektur-fuenferblock-*.md`.
+3. **Sichtbarer Stand:** `skizze/` mit Leseblatt und Belegen; die dort
+   benannten Vorgriffe und Lücken sind die Kandidaten der nächsten Fragen.
+4. **Offene Fragen an den User:** Karten in `../docs/plan/fragen.json`,
+   gestellt mit dem Skill **`/fragen`** — er hält die Antwort wörtlich fest
+   und arbeitet sie ein (`../docs/plan/LIES-MICH.md`). Karten mit
+   Designbezug werden zusätzlich im laufenden Blockprotokoll gesichert.
+5. **Handwerk, keine Vorgabe:**
+   [docs/DESIGN-GESETZE.md](docs/DESIGN-GESETZE.md) (Progressive Disclosure,
+   Shneiderman-Mantra, Overview+Detail / Focus+Context / Zoom,
+   Aufmerksamkeitsgesetze; Prüfmaßstab für Zustände und Grenzfälle, die
+   kein Stand zeigt),
+   [docs/CLAUDE-UX-UI-ARBEITSKERN.md](docs/CLAUDE-UX-UI-ARBEITSKERN.md)
+   (UX vor UI, Stufen 1–7, Schlusscheck) und als Nachschlagewerk
+   [docs/UX-UI-WISSENSBASIS-FUER-CLAUDE.md](docs/UX-UI-WISSENSBASIS-FUER-CLAUDE.md).
+   Sie liefern Methode, nie Anordnung, Richtung oder Farbwelt.
 
-- `assets/rework-basis-2026-08-25/gen-page-1-overview.png`
-- `assets/rework-basis-2026-08-25/gen-page-2-eq-center.png`
-- `assets/rework-basis-2026-08-25/probeeq.png`
-
-Wortlaut, Hashes und Leseregel stehen in
-`abnahmen/2026-08-25-rework-referenz-drei-designs.md`. Die frühere Regel
-„immer ausschließlich der Live-Stand in Nakama-Design“ ist für die aktuelle
-visuelle Ausgangsbasis durch diesen neueren Entscheid abgelöst. Figma und
-`assets/figma/` sind bis zu einer späteren ausdrücklichen Aktualisierung
-Verlauf, nicht stiller Gegenspieler dieser drei Bilder. Dieser Ordner
-macht daraus **lebende Blätter** und prüft, was ein Bild nicht prüfen kann:
-**Zustände** (frisch / veraltet / getrennt, Messung, degradiert, Draft,
-Bypass …), **Größen** (bei 1:1 auf den abgenommenen Maßen) und
-**Grenzfälle** (16 Quellen, alles getrennt, acht aktive Bänder …). Wo der
-Stand etwas anderes zeigt als eine Abnahme, wird das benannt und dem User
-vorgelegt — nicht still entschieden.
-
-**Historische Quellenregel bis zum neueren Entscheid vom 25.08.: eine
-Figma-Datei `Nakama-Design`.**
-(https://www.figma.com/design/NPCQYSkoZEd4Av0NlKxBOd/Nakama-Design?node-id=0-1,
-Key `NPCQYSkoZEd4Av0NlKxBOd`). User-Wort 22.08.: „das ist das neue
-verbindliche und einzige Depot indem sich die aktuellsten Designs befinden";
-am 24.08. bekräftigt: „die sind IMMER in diesem figma, nirgends wo anders.
-hier ist immer das aktuellste". Helle und dunkle Varianten sind geplant,
-„stand jetzt aber erstmal nur dunkel"
-(`abnahmen/2026-08-24-figma-depot-immer-aktuell.md`). Verbindlich ist
-je App die **dunkle** Fassung; helle Varianten liegen dort in Arbeit und sind
-noch keine Vorgabe. Claude holt die Stände per Figma-MCP in die Truhe
-(`assets/figma/LIES-MICH.md`). (Der Figma-Dateiname `Nakama-Design` bleibt —
-er bezeichnet die Figma-Datei, nicht mehr ein Repo.)
-
-Die Oberflächen (**seit 23.08. zwei Apps, seit 25.08. drei aktuelle
-Referenzbilder** — Entscheide
-`abnahmen/2026-08-23-gen-eq-zentrale.md` und
-`abnahmen/2026-08-27-arbeitsnamen-und-probeeq-doppelrolle.md`):
-
-1. **Nakama Gen** — Hub/„Studio" mit zwei Oberflächen. „Overview" und
-   „EQ-Zentrale" beziehungsweise „EQ Center" sind nur Arbeits- und
-   Platzhalternamen. Die aktuelle Fläche 1 ist
-   `assets/rework-basis-2026-08-25/gen-page-1-overview.png`; die aktuelle
-   Fläche 2 ist `assets/rework-basis-2026-08-25/gen-page-2-eq-center.png`.
-   Beide sind die sichtbare Grundlage für den großen Rework. Frühere Depot-
-   Nodes (`25:444`, `28:994`) und Exporte bleiben Verlauf. Funktionale
-   Spielregeln, die ein Bild nicht beweisen kann, stehen weiterhin in
-   `docs/ui-spielregeln-eq-zentrale.md` und den neueren Abnahmen.
-2. **Nakama Probeeq** — DIE Bus-Sonde mit Doppelrolle. Sie misst passiv und
-   beliefert Gen; bei zugeschaltetem EQ führt dieselbe Instanz Gens
-   Fernsteuerung auf ihrem Bus aus. Suna ist als App-Name durch Probeeq
-   ersetzt. Die vollständige EQ-Bedienung liegt ausschließlich in Gen;
-   Probeeq besitzt keinen lokalen Voll-Editor. Die aktuelle kompakte Referenz ist
-   `assets/rework-basis-2026-08-25/probeeq.png`. Der Suna-Knoten `6:2864`,
-   die frühere große Probeeq-Vollfläche und alle Suna-Exporte sind nur noch
-   Verlauf und dürfen nicht als aktuelle visuelle Basis zitiert werden.
-
-Die Projektquellen — vollständig, nichts von außen dazuholen:
-
-- **FUNKTION UND BEDIENUNG NEU ABLEITEN:**
-  `docs/funktions-und-bedien-blueprint.md` — aktueller designneutraler Vertrag
-  aus Implementierungsplan, Wissensarchiv und geprüftem Marktvergleich.
-- **HISTORISCHE VISUELLE VORGABE** (nicht in den neuen Blueprint übernehmen):
-  die drei Bilder unter
-  `assets/rework-basis-2026-08-25/`, gemäß
-  `abnahmen/2026-08-25-rework-referenz-drei-designs.md`.
-- **WAS** jede Oberfläche zeigen muss: `docs/oberflaechen-spezifikation.md`
-- **WAS DIE TECHNIK VERLANGT** (Spielregeln der EQ-Zentrale, für die
-  Arbeit an Gen Seite 1+2): `docs/ui-spielregeln-eq-zentrale.md`
-- **WIE** gearbeitet wird (UX vor UI, Stufen 1–7, Schlusscheck):
-  `docs/CLAUDE-UX-UI-ARBEITSKERN.md` — bei jeder Designaufgabe befolgen
-- **WAS SICHTBAR SEIN DARF**: `docs/DESIGN-GESETZE.md` — Progressive
-  Disclosure, Shneiderman-Mantra, Overview+Detail / Focus+Context / Zoom,
-  Aufmerksamkeitsgesetze. Beim Übersetzen der Prüfmaßstab für Zustände und
-  Grenzfälle, die der Stand nicht zeigt.
-- **AKTUELLER DESIGN-ARBEITSWEG**: `docs/arbeitsplan.md` — die frühen
-  Discovery-, Wireframe- und Graybox-Phasen sind abgeschlossen. Den nächsten
-  Produktauftrag bestimmt `../docs/PLAN-STAND.md`, nicht eine alte
-  Design-Phasennummer.
-- **Nachschlagewerk** (Quellenkritik, Wahrnehmung, Licht/Material):
-  `docs/UX-UI-WISSENSBASIS-FUER-CLAUDE.md`
-- **Werkzeuge:** `docs/werkzeugplan.md`; lebende Blätter und Messbank in
-  `werkzeug/` (`werkzeug/LIES-MICH.md`, `werkzeug/PRUEFLISTE.md`). Der alte
-  `docs/sondenplan.md` vermisst den verworfenen lokalen Voll-Editor und dient
-  nur noch der Spurensuche, nicht als Arbeitsauftrag.
-
-Bis zum Funktionsneustart kam die Gestaltung aus den drei Rework-Bildern. Die
-grundlegende Struktur-, Skizzen- und Graybox-Phase war der erste Schritt am
-Projektanfang und ist abgeschlossen; sie ist kein wiederkehrendes Gate für
-die aktuelle Arbeit. Was die Bilder nicht zeigen, wird gezielt am konkreten
-Verhalten geklärt, ohne den Anfangsprozess neu zu starten
-(`abnahmen/2026-08-25-skizzen-vor-figma.md`, Nachtrag 26.08.).
-
-**Historischer Maßstab bis zum Funktionsneustart:** Die Umsetzung in FL Studio
-folgte der jeweils aktuellen User-Vorgabe und ihrer dokumentierten Abnahme.
-Seit dem 25.08.2026 waren dafür die drei Rework-Bilder maßgeblich; der frühere
-Figma-Stand und sein Pixelvergleich waren Verlauf
-(`abnahmen/2026-08-22-erfolgskriterium-exakt-wie-figma.md`). Beweisziel und
-Vergleichsgröße werden aus dem aktuellen Auftrag abgeleitet, nicht aus diesem
-historischen Kriterium.
+Den nächsten Produktauftrag bestimmt `../docs/PLAN-STAND.md`, nicht eine
+Design-Phasennummer.
 
 ## Harte Regeln (nicht verhandelbar)
 
@@ -180,11 +120,7 @@ historischen Kriterium.
    (Stilrichtung, Metapher, Farbwelt) ohne sein Wort festlegen oder wieder
    aufmachen. Eine konkrete fehlende oder unklare Vorstellung wird einzeln
    erfragt; der abgeschlossene Anfangsprozess wird dafür nicht neu gestartet.
-   Offene Fragen an den User stehen in
-   `../docs/plan/fragen.json` und werden mit dem Skill
-   **`/fragen`** gestellt — er hält die Antwort wörtlich fest und arbeitet
-   sie ein (`../docs/plan/LIES-MICH.md`). Die Briefing-Seite ist seit dem
-   23.08.2026 abgeschafft.
+   Die Briefing-Seite ist seit dem 23.08.2026 abgeschafft.
 4. **Abnahmen sind bindend.** Jedes User-Urteil sofort mit Wortlaut im
    laufenden Fünferblock unter `abnahmen/` festhalten (Format dort). Nach 5/5
    werden die betroffenen Detailabnahmen gemeinsam fortgeschrieben.
@@ -194,22 +130,26 @@ historischen Kriterium.
    User-Referenz kann den älteren Stand ersetzen. Produktweite Entscheide
    stehen zusätzlich mit Datum + Zitat an der dafür bezeichneten Stelle gemäß
    Wurzel-`CLAUDE.md`.
-5. **Editor-Funktionen für den User sind Pflicht.** Jedes Blatt bekommt
-   ein eingebautes Bedien-Panel: Look-Parameter live verstellbar (Farben,
-   Typo-Größen, Dichte, Radien, Abstände), alle Zustände durchschaltbar,
-   Varianten vergleichbar. Der User gestaltet MIT, nicht nur per Zuruf.
+5. **Der User gestaltet mit, nicht nur per Zuruf.** In der laufenden
+   Funktionsphase heißt das: die technische Skizze schaltet alle Flächen und
+   Szenarien über ihre Inspektionsleiste durch, und jede Antwort wird dort
+   sichtbar geprüft. Lebende Blätter der visuellen Phase (`werkzeug/`,
+   `prototyp/`) bekommen zusätzlich ein eingebautes Bedien-Panel mit live
+   verstellbaren Look-Parametern (Farben, Typo-Größen, Dichte, Radien,
+   Abstände) und vergleichbaren Varianten — erst nach dem ausdrücklichen
+   Wechsel in diese Phase.
 6. **Ehrliche Blätter.** In 2 Sekunden ablesbar ist der Maßstab. Nie
    einen Zustand zeigen, den die Spezifikation nicht kennt. Demo-Daten
    sind erlaubt, aber realistisch UND sichtbar als Demo gekennzeichnet.
 7. **Kein Kontext-Import aus dem Verlauf.** Für die aktuelle
    Funktionsarchitektur zählen der Blueprint und neuere ausdrückliche
    User-Entscheide. Die drei Rework-Bilder, frühere Figma-Stände sowie
-   `docs/archiv/`, `eq-copilot/design/archive/`, die geparkte Prisma-Studie
-   (`eq-copilot/design/prisma-studie/`) und das Material-Kit-Provisorium
-   (`eq-copilot/design/` Wurzel) sind Verlauf. Aus ihnen wird keine
-   Anordnung, Richtung, Metapher oder Farbwelt geholt. Der Wahrheitskern in
-   `CLAUDE.md` gilt der Produktwahrheit; die neue visuelle Richtung gehört
-   einem späteren ausdrücklichen User-Schritt.
+   `../docs/archiv/`, `../eq-copilot/design/archive/`, die geparkte
+   Prisma-Studie (`../eq-copilot/design/prisma-studie/`) und das
+   Material-Kit-Provisorium (`../eq-copilot/design/` Wurzel) sind Verlauf.
+   Aus ihnen wird keine Anordnung, Richtung, Metapher oder Farbwelt geholt.
+   Der Wahrheitskern in `CLAUDE.md` gilt der Produktwahrheit; die neue
+   visuelle Richtung gehört einem späteren ausdrücklichen User-Schritt.
 8. **Nur soviel sichtbar wie der aktuelle Handgriff braucht.** Alles
    andere ist einen Schritt entfernt — nicht weg, aber nicht da.
    Beim Übersetzen: jedes Element des Stands muss beantworten, welchen
@@ -217,14 +157,18 @@ historischen Kriterium.
    die Prüfliste. Varianten — wo es sie noch gibt — unterscheiden sich in
    der **Disclosure-Mechanik** (Schritt-für-Schritt, Focus+Context,
    Overview+Detail, semantischer Zoom, nur-auf-Abruf), nicht in der
-   Kastenanordnung. Begründung und Grenzen: `docs/DESIGN-GESETZE.md`.
+   Kastenanordnung. Begründung und Grenzen:
+   [docs/DESIGN-GESETZE.md](docs/DESIGN-GESETZE.md).
    Merksatz gegen die naheliegende Ausrede: **nach Häufigkeit der Aufgabe
    teilen, nicht nach Können des Nutzers.**
 
 ## Werkzeuge
 
 - **Playwright** (Browser-MCP): jedes gezeigte Ergebnis mit Screenshot
-  belegen — „ausgeführt und gesehen", nie „sollte so aussehen".
+  belegen — „ausgeführt und gesehen", nie „sollte so aussehen". Der MCP lädt
+  keine `file://`-Adressen: statischen Server im Ordner `design/` starten
+  (`skizze/LIES-MICH.md`), Bilder sofort in den Zielordner verschieben,
+  danach `git status --short` lesen.
 - **/design**, **/dataviz**: für jede Diagramm-/Meter-Gestaltung (Heatmap,
   EQ-Kurve, Pegel) VOR dem Bauen laden — als Handwerk für die Übersetzung,
   nicht als Quelle einer Richtung.
@@ -232,36 +176,102 @@ historischen Kriterium.
   offenlässt.
 - **/interview**: nur wenn der User ausdrücklich eine neue Konzeptphase
   öffnet oder eine neue Vorstellung von Grund auf erarbeiten will; nicht als
-  Pflichtschleife für den laufenden Rework.
+  Pflichtschleife für den laufenden Umbau.
+- **/fragen**: für jede Karte aus `../docs/plan/fragen.json`; nie von Hand
+  zusammenfassen.
 - **Hooks:** Es gibt keinen Design-Primer und kein Design-Gate beim normalen
   Sessionstart. `.claude/settings.json` injiziert den kompakten Nakama-Primer
   nur nach einer Kontextkomprimierung und schützt Git-Befehle mit dem
   `git-riegel.sh`. Designkontext kommt aus diesem Router, der aktuellen
   Abnahme und dem konkreten Auftrag.
-- Prototyp = statisches HTML/CSS/JS in `prototyp/`, ohne Build-Kette,
-  per Doppelklick lauffähig. Seine bestehende Grundstruktur wird nicht
-  erneut als offene Anfangsentscheidung behandelt.
 - Technische Skizze = eine einzelne HTML-Datei in `skizze/`, ohne externe
   Abhängigkeiten, per Doppelklick lauffähig; für Browser-Werkzeuge ohne
   Dateizugriff über einen statischen Server im Ordner `design/`
   (`skizze/LIES-MICH.md`). Ihre obere Leiste ist Inspektionswerkzeug, kein
   Produkt-UI.
+- Prototyp = statisches HTML/CSS/JS in `prototyp/`, ohne Build-Kette,
+  per Doppelklick lauffähig. Er ist der historische Web-Prototyp der
+  visuellen Stände bis zum 31.08.2026 und wird in der laufenden
+  Funktionsphase nicht fortgeschrieben; sein maschinenlesbarer UI-Vertrag
+  (`prototyp/tests/contract.test.mjs`) trägt seit dem 01.09.2026 die eine
+  Gen-Größe 950×538 (Blueprint Abschnitt 15, Punkt 13).
 
 ## Arbeitsweise
 
 - **Die App ist auf Englisch.** User-Wort vom 2026-08-21: „Englisch – mein
   Wort" (`abnahmen/2026-08-21-designvertrag.md`). Jeder Text, der im Produkt
   steht — Beschriftungen, Werte, Einheiten, Zustände, Meldungen — ist
-  englisch. Das gilt auch für die Spezimen in `werkzeug/`, weil sie das
-  Produkt zeigen. Das Werkzeug-Chrome darum herum (Fragen an den User)
-  bleibt deutsch.
+  englisch. Das gilt auch für die Spezimen in `werkzeug/` und für die
+  technische Skizze, weil sie das Produkt zeigen. Das Werkzeug-Chrome darum
+  herum (Fragen an den User, Inspektionsleiste) bleibt deutsch beziehungsweise
+  ist als Werkzeug gekennzeichnet.
 - Docs, Abnahmen, Commits und Gespräch auf Deutsch.
 - Die aktuellen Apps heißen Gen und Probeeq. Suna sowie Main /
   Active-Probe-Editor / Passive-Kachel sind Legacy- oder Verlaufsbegriffe.
   Overview und EQ-Zentrale/EQ Center benennen die zwei Gen-Flächen nur
-  vorläufig und werden nicht als abgenommene Produktnamen behandelt.
+  vorläufig und werden nicht als abgenommene Produktnamen behandelt (offene
+  Karte in `../docs/plan/fragen.json`).
 - Kleine, benannte Commits nach jedem abgenommenen Schritt — immer mit
-  explizitem Pathspec, nie `git add -A` (parallele Sessions).
+  explizitem Pathspec, nie `git add -A` (parallele Sessions, zwei Rechner).
+  Plandokumente vor dem Commit durch `../tools/plan/dokuriegel.py` ziehen.
 - Sessionende: eine Zeile in `abnahmen/` was offen blieb — kein
   Wissenstransfer über Gedächtnis. Am Planstand ist **nichts** nachzuziehen:
-  er wird gerechnet (`docs/plan/LIES-MICH.md`, seit 23.08.2026).
+  er wird gerechnet (`../docs/plan/LIES-MICH.md`, seit 23.08.2026).
+
+## Verlauf bis zum 31.08.2026 — Spurensuche, keine Vorgabe
+
+Alles in diesem Abschnitt ist Verlauf. Es bleibt unverändert liegen, darf zur
+Spurensuche gelesen werden und liefert der laufenden Funktionsarchitektur
+weder Raster noch Farben, Material oder Positionen (Regeln 1 und 7).
+
+- **Drei Rework-Bilder vom 25.08.2026.** Seit dem damaligen User-Entscheid
+  waren genau drei gelieferte PNGs die visuelle Wahrheit in progress und die
+  Grundlage des damals geplanten großen Reworks:
+  `assets/rework-basis-2026-08-25/gen-page-1-overview.png`,
+  `assets/rework-basis-2026-08-25/gen-page-2-eq-center.png` und
+  `assets/rework-basis-2026-08-25/probeeq.png`. Wortlaut, Hashes und
+  Leseregel: `abnahmen/2026-08-25-rework-referenz-drei-designs.md`. Der
+  Planschritt S31b hat diese Bilder am 02.09.2026 (PR2) als Quelle
+  verloren; er baut auf Blueprint plus einer noch abzunehmenden visuellen
+  Spezifikation.
+- **Figma-Depot `Nakama-Design` (22.08. bis 25.08.2026).**
+  (https://www.figma.com/design/NPCQYSkoZEd4Av0NlKxBOd/Nakama-Design?node-id=0-1,
+  Key `NPCQYSkoZEd4Av0NlKxBOd`). User-Wort 22.08.: „das ist das neue
+  verbindliche und einzige Depot indem sich die aktuellsten Designs
+  befinden"; am 24.08. bekräftigt: „die sind IMMER in diesem figma, nirgends
+  wo anders. hier ist immer das aktuellste". Helle und dunkle Varianten waren
+  geplant, „stand jetzt aber erstmal nur dunkel"
+  (`abnahmen/2026-08-24-figma-depot-immer-aktuell.md`). Die Stände liegen in
+  `assets/figma/` (`assets/figma/LIES-MICH.md`); die früheren Depot-Nodes
+  `25:444`, `28:994` (Gen) und `6:2864` (Suna) sowie alle Exporte sind
+  Verlauf. Das Erfolgskriterium „exakt wie Figma" vom 22.08.2026
+  (`abnahmen/2026-08-22-erfolgskriterium-exakt-wie-figma.md`) gilt nicht
+  mehr; Beweisziel und Vergleichsgröße kommen aus dem aktuellen Auftrag.
+- **Produktstruktur-Entscheide, die weiter gelten**, aber hier nur verlinkt
+  sind: zwei Apps seit 23.08.2026
+  (`abnahmen/2026-08-23-gen-eq-zentrale.md`), Arbeitsnamen und
+  Probeeq-Doppelrolle seit 27.08.2026
+  (`abnahmen/2026-08-27-arbeitsnamen-und-probeeq-doppelrolle.md`),
+  Auto-Gain-Schalter neben Output vom 24.08.2026
+  (`abnahmen/2026-08-24-auto-gain-schalter.md`), Tasten als Material vom
+  25.08.2026 (`CLAUDE.md`, Wahrheitskern). Sie sind Produkt- und
+  Funktionsentscheide, keine visuellen Stände, und bleiben bindend.
+- **Frühere Sachquellen der visuellen Stände:**
+  [docs/oberflaechen-spezifikation.md](docs/oberflaechen-spezifikation.md)
+  (was jede Ansicht zeigen musste, gestaltet aus den Rework-Bildern),
+  [docs/interaktions-und-motion-spezifikation.md](docs/interaktions-und-motion-spezifikation.md),
+  [docs/ui-spielregeln-eq-zentrale.md](docs/ui-spielregeln-eq-zentrale.md)
+  (seit PR2 am 02.09.2026 ausdrücklich kein Prüfmaßstab für S31b mehr),
+  [docs/arbeitsplan.md](docs/arbeitsplan.md) (Design-Arbeitsweg, Stand
+  26.08.2026), [docs/werkzeugplan.md](docs/werkzeugplan.md) (Vorschlag vom
+  21.08.2026), [docs/sondenplan.md](docs/sondenplan.md) (vermisst den
+  verworfenen lokalen Voll-Editor) und die lebenden Blätter samt Messbank in
+  `werkzeug/` (`werkzeug/LIES-MICH.md`, `werkzeug/PRUEFLISTE.md`). Wo einer
+  dieser Texte einem Blueprint-Satz oder einer neueren Abnahme widerspricht,
+  gilt der neuere Stand; ein echter Widerspruch zwischen Entwurf und
+  Blueprint wird als Zeile in `../docs/offene-punkte.md` geführt.
+- **Anfangsprozess.** Die grundlegende Struktur-, Skizzen- und Graybox-Phase
+  war der erste Schritt am Projektanfang und ist abgeschlossen; sie ist kein
+  wiederkehrendes Gate (`abnahmen/2026-08-25-skizzen-vor-figma.md`, Nachtrag
+  26.08.). Der Funktionsneustart vom 31.08.2026 hat die Bedienarchitektur
+  neu abgeleitet, nicht diesen Anfangsprozess wiederholt.

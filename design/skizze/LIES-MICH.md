@@ -61,23 +61,31 @@ jeweils vollständig innerhalb des Graphen; Konsole ohne Fehler der Skizze.
 Diese Punkte sind keine Fehler der Skizze, sondern noch nicht befragte oder
 noch nicht abgeleitete Bereiche. Sie gehören in die nächsten Fünferblöcke.
 
-- **Global-Sektion auf Fläche 2:** Der eingeklappte Bereich zeigt nur Input,
-  Output, Width und A/B. Der Auto-Gain-Schalter neben Output (Abnahme
+- **Global-Sektion auf Fläche 2** (Blueprint Abschnitt 15, Punkt 17): Der
+  eingeklappte Bereich zeigt nur Input, Output, Width, A/B und einen
+  Preset-Text ohne Handgriff. Der Auto-Gain-Schalter neben Output (Abnahme
   24.08.2026), Bypass, Mix, Preset/Copy und Revision/History aus Blueprint
   Abschnitt 4.2 Zone 4 sind dort noch nicht abgeleitet.
-- **Probeeq-Ansicht:** Die Fläche folgt Blueprint Abschnitt 4.3, wurde aber in
-  keiner Fragenrunde befragt. Ihre Bühne von 760×430 ist eine
-  Werkzeugannahme; die Größe der Probeeq-Rückfallfläche ist nicht entschieden
-  (Abnahme 01.09.2026 zur Standardgröße gilt nur für Gen).
-- **Rückweg von Fläche 2 zu Fläche 1:** im Produkt noch offen; die Skizze
-  bietet ihn nur über das Inspektionswerkzeug.
-- **Wortlaut der Halten-Aktion:** Fläche 1 sagt `HOLD TO AUDITION`
-  (Abnahme 22.08.2026), Fläche 2 sagt `AUDITION · HOLD`. Ob beide Flächen
-  denselben Wortlaut tragen, ist nicht entschieden.
-- **Kurzlabel `DEL`:** Die abgenommene Aktion heißt `Remove Band`; die Skizze
-  zeigt im Panelkopf die Kurzform `DEL` und trägt den vollen Namen als
-  zugängliche Bezeichnung. Die sichtbare Kurzform ist eine Dichteprüfung,
-  kein Beschluss.
+- **Probeeq-Ansicht** (Blueprint Abschnitt 15, Punkt 19): Die Fläche folgt
+  Blueprint Abschnitt 4.3, wurde aber in keiner Fragenrunde befragt. Ihre
+  Bühne von 760×430 ist eine Werkzeugannahme; die Größe der
+  Probeeq-Rückfallfläche ist nicht entschieden (Abnahme 01.09.2026 zur
+  Standardgröße gilt nur für Gen).
+- **Rückweg von Fläche 2 zu Fläche 1** (Blueprint Abschnitt 15, Punkt 18):
+  im Produkt noch offen; die Skizze bietet ihn nur über das
+  Inspektionswerkzeug.
+- **Wortlaut der Halten-Aktion** (Blueprint Abschnitt 15, Punkt 17):
+  Fläche 1 sagt `HOLD TO AUDITION` (Abnahme 22.08.2026), Fläche 2 sagt
+  `AUDITION · HOLD`. Ob beide Flächen denselben Wortlaut tragen, ist nicht
+  entschieden.
+- **Kurzlabel `DEL`** (Blueprint Abschnitt 15, Punkt 17): Die abgenommene
+  Aktion heißt `Remove Band`; die Skizze zeigt im Panelkopf die Kurzform
+  `DEL` und trägt den vollen Namen als zugängliche Bezeichnung. Die
+  sichtbare Kurzform ist eine Dichteprüfung, kein Beschluss.
+- **Gen Fläche 1, Beleg und Alternativerklärung eines Findings:** die Skizze
+  zeigt je Finding nur Ursache, kleinsten Test und Höraufgabe. Wo Sicherheit
+  und Alternativerklärung erscheinen, ist die offene Karte U21 in
+  `docs/plan/fragen.json` (Arbeitsmodus-Abnahme, „Bewusst offen“).
 - **Fortlaufende Dynamic-Bewegung und native Remove-/Undo-Transaktion** sind
   technische Vertragslücken (Blueprint Abschnitt 15, Punkte 15 und 16); die
   Skizze zeigt nur eine endliche Bewegungsprobe und das Zielverhalten.

@@ -1335,10 +1335,14 @@ Schema:
     command_ack.applied_dsp, EQ-Betriebszustand,
     probe_descriptor.host_bus_name/host_mixer_index und Contribution sind
     derzeit reserviert, nicht fertig nutzbar.
-11. **[O] S31b-Quellenkonflikt:** PLAN-STAND verweist für die sichtbare
-    Umsetzung noch auf frühere Figma-/PNG-Stände. Vor Beginn von S31b muss
-    dieser Verweis in einem eigenen Planänderungssatz auf den Blueprint plus
-    eine neu abgenommene visuelle Spezifikation umgestellt werden.
+11. **[D]/[O] S31b-Quellen:** Der Planschritt S31b ist am 02.09.2026 (PR2)
+    von den früheren Figma-, PNG- und Spielregel-Ständen auf diesen Blueprint
+    plus eine noch abzunehmende visuelle Spezifikation umgestellt; der
+    Planänderungssatz liegt in `docs/plan/plan.json` und ist im gerechneten
+    `docs/PLAN-STAND.md` sichtbar. Offen bleibt genau diese visuelle
+    Spezifikation: Maße, Typografie und Renderabnahme existieren heute nicht;
+    bis zu ihrer datierten Abnahme beginnt die sichtbare Umsetzung von S31b
+    nicht.
 12. **[O] 10-s-Kandidatenvertrag:** Kandidaten-ID, Timer, Message, ACK,
     Reconnect, Kill und Ablauf sind vor P7-UI zu spezifizieren; preview_begin
     und persistentes apply_transaction reichen dafür heute nicht.
@@ -1371,8 +1375,22 @@ Schema:
     entschiedene Auto-Gain-Schalter neben Output sowie Bypass, Mix,
     Preset/Copy und Revision/History aus Abschnitt 4.2 Zone 4 sind dort noch
     nicht abgeleitet; ebenso wenig der Wortlaut der Halten-Aktion, der auf
-    Fläche 1 `HOLD TO AUDITION` und auf Fläche 2 `AUDITION · HOLD` lautet.
+    Fläche 1 `HOLD TO AUDITION` und auf Fläche 2 `AUDITION · HOLD` lautet,
+    und die sichtbare Kurzform `DEL` für die abgenommene Aktion `Remove Band`
+    im Panelkopf, die nur eine Dichteprüfung der Skizze ist.
     Kandidat für den nächsten Fünferblock (festgestellt 02.09.2026).
+18. **[O] Rückweg Gen Fläche 2 → Fläche 1:** Der einzige Vorwärtsweg im
+    Produkt ist `SEND DRAFT` (User-Entscheid 31.08.2026, Abschnitt 4.1). Wie
+    der User von der EQ-Fläche zur Quellen- und Evidenzfläche zurückkommt,
+    ist nicht entschieden; die technische Skizze bietet den Wechsel nur über
+    ihr Inspektionswerkzeug, das kein Produkt-UI ist. Kandidat für den
+    nächsten Fünferblock (festgestellt 02.09.2026).
+19. **[O] Probeeq-Rückfallfläche:** Abschnitt 4.3 nennt Inhalt und Grenzen,
+    aber die Fläche wurde in keiner Fragenrunde befragt und besitzt keine
+    entschiedene Größe. Die 760×430-Bühne der Skizze ist eine
+    Werkzeugannahme; der Ein-Größen-Vertrag vom 01.09.2026 gilt nur für die
+    beiden Gen-Flächen. Nach dem Arbeitsmodus vom 31.08.2026 folgt Probeeq
+    nach den beiden Gen-Flächen und vor den gemeinsamen Regeln.
 
 Diese Punkte sind kein Freibrief für Platzhaltercontrols. Bis zur technischen
 oder User-Entscheidung bleibt die jeweilige Funktion ehrlich unavailable oder

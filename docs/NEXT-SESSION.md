@@ -1,5 +1,13 @@
 # NEXT-SESSION — Einstieg für die nächste Runde
 
+> ## ⛔ G3 GATE-LAUF — T3 NEEDS_WORK 03.09.2026 (Dirigent), Stand `ad5b2d1`
+>
+> Gate 7 hält (zwei Modelle, 21 + 11 Wege), Exit-Gate-Klauseln halten, Rust-Review ohne HIGH/CRITICAL (8 neue Härtungen, NAK-142). **Tragender Defekt D1 = NAK-134:** der Soak mit 32 Sonden (30 min, 3 Neustarte) ist ROT — nach jedem Brokerneustart bleibt ein Teil der Sonden endgültig getrennt, weil `IpcVerbindung.cpp:90-99` einen erschöpften `ERROR_PIPE_BUSY` als Sicherheitsfehler (`belegtAberUnverifiziert`) einstuft und `ControlClient.cpp:996-1012` / `TelemetryClient.cpp:407-424` den Thread daraufhin dauerhaft parken. Mit 1/4/8/16 Sonden grün. Manifest `docs/beweise/G3.md` (§1 Ursache, §12 Nacharbeit), Rohbelege `docs/beweise/roh/G3-*`.
+>
+> **Als Nächstes:** NAK-134 (Verhaltensmatrix vor Code in `docs/beweise/NAK-134.md`, Regeln R1–R3 in `G3.md` §12, Rotbeweis `--sonden 32 --minuten 4 --neustarts 2` vor dem Fix, Gate-Form `32/30/3` danach), dann Wiederprüfung (Vorlage B) und der PASS-Nachtrag in `G3.md` §13. Lücken/Härtungen NAK-135–NAK-142 gehen mit S19b (NAK-121/NAK-124).
+>
+> Landminen dieses Laufs: `claude --allowed-tools` ist variadisch (Auftrag als erstes Positionsargument, sonst startet der Worker idle); Codex' Sicherheitsklassifizierer bricht einen Auftrag mit Prozessstarts auf Pipes ab („flagged for possible cybersecurity risk") — Falsifikationsaufträge ohne Prozessstarts formulieren.
+
 > ## ✅ G3-SOAK ABGENOMMEN — T2 PASS 02.09.2026 (Dirigent), Stand `d52fd15`
 >
 > Abschlussprüfung 17 Defekte → Nacharbeit Runde 1 (16 zu) → Runde 2 (K-S5-Sollwert) → Wiederprüfung 2 PASS; Kanon auf dem Endstand siehe `docs/beweise/G3-SOAK.md` Abschnitt 17. Als Nächstes: der Gate-Lauf G3 selbst (Planstand).

@@ -142,7 +142,13 @@ claude --model opus --effort max --permission-mode auto `
 Der Auftrag nennt nur: Ticketgrenze, verbindliche Quellen, Manifestpfad,
 Beweislauf und die Git-Regeln (nie `git add -A`, nie `--amend`, fremde
 uncommittete Dateien nie anfassen). Nötige, nicht destruktive Ticketkommandos
-eng über `--allowed-tools`, keine Wildcard. `bypassPermissions` ist verboten;
+eng über `--allowed-tools`, keine Wildcard. **`--allowed-tools` ist
+variadisch** (Landmine 02.09.2026, G3): ein Auftrag, der danach steht, wird
+zum Werkzeugeintrag, und der Worker startet ohne Auftrag („idle — send a
+prompt to start"). Der Auftrag steht deshalb als **erstes Positionsargument**
+(`claude "<Auftrag>" --model opus … --allowed-tools <liste> --bg`); direkt nach
+dem Start belegt `claude agents --json` den Zustand `working`, `idle/blocked`
+heißt „kein Auftrag angekommen". `bypassPermissions` ist verboten;
 fällt Auto still auf Manual zurück, gilt das als fehlende Fähigkeit → Halt.
 Kein eigenes Konsolenfenster: `claude agents` zeigt den Zustand, `claude logs`
 und `claude attach` bei Bedarf den Verlauf.

@@ -1,0 +1,64 @@
+URTEIL: NEEDS_WORK — mindestens ein DEFEKT; je Defekt Datei:Zeile, Reproduktion, welcher Satz nicht hält.
+
+GATE 7: Pfad gefunden: `Coordinator::descriptor_setzen` übernimmt einen caller-gelieferten Insert-Deskriptor, prüft nur dessen Adresse und lässt `aussageklasse=beitrag` unverändert in `session_snapshot`, Storeprojektion und Push gelangen (`broker/src/coordinator.rs:1758-1785,2107-2146,2184-2277`; `broker/src/store.rs:988-1104`) — 11 Pfade durchgespielt.
+
+Save/Reload: kein Pfad gefunden — gemessen durch `eq-copilot/plugin/tests/Sonde012ProjectReloadTest.cpp`, Fälle `same_instance_reload_discards_transient_snapshot_and_measurement`, `reload_preserves_identity_label_membership_but_not_live_truth`, `project_reload_reconnect_path_builds_a_fresh_subscribe`, `main_client_subscribes_after_welcome_and_reconnect_resubscribes` — 4 Pfade.
+
+Duplicate: Pfad gefunden: zwei geladene Instanzen besitzen dieselbe `instance_id`, aber verschiedene `runtime_nonce`; der Broker behandelt die zweite als Runtime-Wechsel, übernimmt die bestätigte Mitgliedschaft, verdrängt die erste und routet anschließend auf die zweite statt einen Duplicate-Konflikt zu zeigen (`broker/src/coordinator.rs:251-267,755-821`; `broker/src/transport/server_v3.rs:2465-2468`) | ungemessen — G10 misst nur State und manuelle Neu-ID, nicht Broker→Snapshot→Main — 4 Pfade.
+
+Bridge-/PID-Wechsel: Pfad gefunden: das neue Hello ersetzt intern Link und Nonce und schließt den alten Link, markiert die Session aber weder dirty noch pusht es einen Snapshot. Das Main-Modell hält daher bis zum ersten State-Report/Heartbeat die alte `runtimeNonce` und baut daraus weiterhin Steuerbefehle (`broker/src/coordinator.rs:716-875,881-914,1551-1662`; `eq-copilot/plugin/src/SourcesModel.cpp:598-604`; `eq-copilot/plugin/src/PluginProcessor.cpp:1284-1302`) | Endzustand gemessen durch `sonde012_sources_slice.rs::bridge_pid_change_preserves_membership_but_never_old_control_address` und `Sonde012SourcesModelTest.cpp::bridge_pid_change_has_no_false_member_or_address`; das gefundene Vor-Heartbeat-Fenster ist ungemessen — 4 Pfade.
+
+Zwei offene Projekte: kein Pfad gefunden — gemessen durch `broker/tests/coordinator_model.rs::zwei_projekte_bleiben_getrennt` und `::probe_join_bleibt_reihenfolgefest_und_bei_mehreren_mains_fail_closed` — 4 Pfade.
+
+Brokerneustart: kein Pfad gefunden — gemessen durch `store_crash_matrix.rs::brokerneustart_sendet_keine_laufgebundenen_felder_der_alten_projektion`, `coordinator_model.rs::brokerneustart_behaelt_session_epoch`, `sonde012_sources_slice.rs::restart_has_no_old_live_or_measurement_truth` sowie A24 S09/S11/S12 — 4 Pfade.
+
+60-Minuten-Soak: kein zusätzlicher Pfad gefunden — Mitgliedschaft und Führung gemessen durch A24 S02/S03/S09/S11/S12; falsche `runtimeNonce`/Steueradresse ungemessen, weil `SessionSoakMain.cpp:608-633` nur die `instanceId`-Menge und `fuehrendesMain` vergleicht — 4 Pfade. Falsifikation 2 gesamt: 24 Pfade.
+
+§49.3:
+
+- Zeile 3577: A23, `tools/eq-copilot/pruefe_sonde012_sources_latency.py` mit `Sonde012SourcesLatencyTest.cpp:253-298,320-343`; misst 16/32 Quellen und 2.048/4.096 Samples vom ersten Sample bis Modell-/Anzeige-Revision.
+- Zeile 3578: A23 misst das 16.384-Sample-p95 inklusive Fensterzeit. Alter/Fenster liegen zusätzlich in B13 `age_and_window_are_not_hidden`; eine sichtbare Pixelprüfung des Alters misst A23/A24 nicht. Der zugesagte Bassbandweg über 10 Hz statt 1–4 Hz bleibt ungemessen; A24 erzeugt nur 10-Hz-Klein- und 1-Hz-Großframes, prüft aber keine Bandherkunft.
+- Zeile 3582: A24 S06 `cap_ersetzt_aeltesten_und_blockiert_nie`; misst Cap, Ersetzen des ältesten Liveframes, Ablehnungsgründe und Isolation langsamer Leser.
+- Zeile 3586: A24 S07 misst begrenztes Working-Set-Wachstum, S08 Ganzblockdrops/Producer-Fortschritt und S16 die Reihe 1/4/8/16/32. Die XRun-Hälfte bleibt vereinbarungsgemäß FL-Termin und ist keine Lücke.
+
+Geprüft
+
+- DEFEKT G7-1: `broker/src/coordinator.rs:1758-1785` validiert in `descriptor_setzen` ausschließlich die Adresse. `snapshot_locked` übernimmt den übrigen Deskriptor unverändert; `flush_session` persistiert und pusht ihn ohne erneute v3-Prüfung. Ein gültiger Insert-Deskriptor mit dem Wert aus `fixtures/v3/ungueltig/insert-mit-beitragsklasse.json:31` erreicht damit Store und Wire-Snapshot. Aktuelle Aufrufer liegen nur in `broker/tests/store_crash_matrix.rs`, die Methode ist jedoch öffentlich und nicht `cfg(test)`. Gebrochener Satz: „Eine Standard-Insertprobe wird als exakter Mastersummenbeitrag bezeichnet.“
+
+  ```powershell
+  rg -n -C 8 "pub fn descriptor_setzen|client\.descriptor = Some\(descriptor\)|let payload = self\.snapshot_locked|StoreEvent::session_snapshot|snapshot_schreiben\(&link_id, &payload\)" broker/src/coordinator.rs
+  rg -n -C 5 "payload_jcs|session_payload" broker/src/store.rs
+  ```
+
+- DEFEKT P3-1: `eq-copilot/plugin/tests/StateMigrationTestMain.cpp:1262-1267` belegt den Duplicate-Ausgangszustand. Weil `ClientKey` die Nonce auslässt und die Registrierung `bestaetigt` vom bisherigen Client erbt, wird der zweite Besitzer nicht als Duplicate festgehalten. Der Server schließt den ersten sofort; ein Konflikt entsteht nur, falls dessen verdrängter Link zuvor nochmals reportet. Gebrochener Satz: Die Duplicate-Klausel erhält keine richtige, eindeutig steuerbare Mitgliedschaft ohne falsche Steueradresse.
+
+  ```powershell
+  rg -n -C 14 "struct ClientKey|alt.current_nonce|bestaetigt: geerbt|ControlRegistrierung::angenommen" broker/src/coordinator.rs
+  rg -n -C 8 "G10|gleiche instance_id|verschiedene runtime_nonce" eq-copilot/plugin/tests/StateMigrationTestMain.cpp
+  ```
+
+- DEFEKT P3-2: `control_hello_registrieren` endet bei Zeile 875 ohne `dirty_sessions.insert` oder `flush_session`. Erst `heartbeat_kontakt` tut dies bei Zeilen 1654-1662. Der vorhandene Bridge-Test ruft den neuen Heartbeat bereits bei `sonde012_sources_slice.rs:1057` auf und prüft die Adresse erst danach. Gebrochener Satz: Die Bridge-/PID-Klausel hinterlässt bis dahin im Gen-Quellenmodell eine falsche alte Steueradresse.
+
+  ```powershell
+  rg -n -A 160 "pub fn control_hello_registrieren" broker/src/coordinator.rs
+  rg -n -A 50 "fn bridge_pid_change_preserves_membership_but_never_old_control_address" broker/tests/sonde012_sources_slice.rs
+  ```
+
+Der wiederholte Suchlauf fand darüber hinaus keinen neuen Gegenbeispielpfad. `EqCopSchemaTest.exe`: 72 bestanden, 0 fehlgeschlagen, 250 JSON- und 100 Binärfälle. `EqCopSonde012SourcesModelTest.exe`: 40 bestanden, 0 fehlgeschlagen. Bekannte G1-Riegel für Insert/Pre/Post, den unbewohnbaren Beitragszweig und `contribution_aux=supported` sind am HEAD vorhanden. Keine CLAUDE.md-Invariante außerhalb der drei Gate-Gegenbeispiele wurde gebrochen gefunden.
+
+Nicht geprüft
+
+Kein `/rust-review`, kein Cargo-Lauf, kein A23 und kein A24/Soak; A24 läuft laut Auftrag beim Dirigenten. `py -3.13 tools/eq-copilot/pruefe_v3_vertrag.py` konnte wegen des WindowsApps-Launchers nicht starten („Anmeldesitzung ist nicht vorhanden“), also kein Vertragsurteil daraus. `EqCopStateMigrationTest.exe` wurde nicht gestartet, weil sein Prozessor über `PluginProcessor.cpp:153` und `PipeClient.cpp:375` eine Produktions-Pipe zu öffnen versucht. `EqCopSonde012ProjectReloadTest.exe` wurde nicht gestartet, weil es bei `Sonde012ProjectReloadTest.cpp:152,227` ausdrücklich Named Pipes anlegt/öffnet. EqCopShot und FL/XRun wurden nicht gefahren.
+
+Lücken
+
+- Keine LÜCKE nach der vorgegebenen Definition. Die ungemessene Basspfad-Hälfte und die fehlende A24-Nonce-Wache werden in den Matrizen angesprochen; sie sind daher keine dort unbenannten Fälle.
+
+Härtungen
+
+- Keine ticketfremde Härtung erhoben; die drei Punkte verletzen ausdrückliche Gate-Zusagen und sind deshalb DEFEKTE.
+
+Der vorbestehende unversionierte Pfad `.claude/settings.local.json` blieb unangetastet; tracked und staged Diff sind leer.
+
+HEAD vor dem Lauf: `ad5b2d1b4729e09ea0cd58b6f22dba3f10624bed`  
+HEAD nach dem Lauf: `ad5b2d1b4729e09ea0cd58b6f22dba3f10624bed`

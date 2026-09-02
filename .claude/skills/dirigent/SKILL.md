@@ -407,7 +407,10 @@ jüngste Kanon-Abschnitt bleibt im Manifest, weil `planstand.py` seine
 Bilanz dort liest.
 Urteil, Modell, Effort, Basis- und End-SHA, die kumulierte Rundenbilanz
 (`rundenbilanz.py --runden …`) sowie die tatsächlich gelaufenen
-Beweise ins **vorhandene** Manifest; Planstand neu rechnen; nur diese
+Beweise ins **vorhandene** Manifest; Planstand neu rechnen; die geänderten
+Plandokumente durch `py -3.13 tools/plan/dokuriegel.py <dateien>` fahren
+(Tabellen- und Verweisriegel, seit PR2 02.09.2026; ein Befund wird vor dem
+Commit behoben); nur diese
 Abschlussdateien mit explizitem Pathspec committen und pushen. Dann: temporäre
 Codex-Dateien und alle exakt zur Dirigenten-Session gehörenden
 `$env:TEMP\nakama-dirigent-<session-id>-*.json`-Caches löschen,

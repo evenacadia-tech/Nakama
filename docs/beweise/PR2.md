@@ -1,9 +1,11 @@
 # Beweismanifest — PR2 «Planprüfung: Quellen zusammenführen, Design-Entscheide in den Bauplan holen, Register bereinigen»
 
 <!-- NAKAMA-URTEIL: T1 PASS 2026-09-02 -->
+<!-- NAKAMA-URTEIL: T3 PASS 2026-09-02 -->
 
-> **Selbstaudit T1 PASS, gesetzt vom Erbauer am 02.09.2026 (§9).** Die T3-Marke setzt der
-> Dirigent nach dem Urteil eines frischen Codex-Threads; sie fehlt hier bewusst.
+> **Urteil T3 PASS, gesetzt vom Dirigenten am 02.09.2026 (§14).** Drei frische Codex-Threads
+> (`gpt-5.6-sol`, Effort max, lesend); nach Runde 2 ist kein Defekt offen. Das Selbstaudit T1 PASS
+> des Erbauers (§9) bleibt als eigene Marke stehen.
 
 | Feld | Wert |
 |---|---|
@@ -12,7 +14,7 @@
 | Gate-Text (Quelle) | `docs/plan/plan.json`, Schritt `PR2` — wörtlich in §1.1 |
 | Basis-SHA | `55cdb91599239aa99ec1322e23d109ab9424d7b2` (Branch `master`) |
 | Datum | 2026-09-02 |
-| Prüfstufen | T1 ☑ · **T3: Erstprüfung NEEDS_WORK 02.09.2026, Runde 1 nachgearbeitet, Wiederprüfung 1 NEEDS_WORK (D8: NAK-85, NAK-92), Runde 2 nachgearbeitet, Wiederprüfung 2 steht aus** — die geforderte Stufe ist **T3** (§12, §13) |
+| Prüfstufen | T1 ☑ · **T3: Erstprüfung NEEDS_WORK 02.09.2026, Runde 1 nachgearbeitet, Wiederprüfung 1 NEEDS_WORK (D8: NAK-85, NAK-92), Runde 2 nachgearbeitet, Wiederprüfung 2 PASS 02.09.2026** — die geforderte Stufe **T3** ist erreicht (§12, §13, §14) |
 | Kanon | **läuft nicht** — kein Produktcode, kein Test, kein Schema angefasst (Begründung §8) |
 | Änderungssatz | Erstdurchgang: 10 Dateien, +5 285 / −249 Zeilen (§8, Lauf D); davon 4 238 Zeilen die byteidentische Archivkopie. **Runde 1 kommt dazu — gemessen in §12.4, Lauf D.** |
 
@@ -26,7 +28,7 @@
 |---|---|---|---|
 | Erstdurchgang | Gate-Text PR2 in fünf Teilen (§1 bis §11) | `16be249` | **NEEDS_WORK** — Codex `gpt-5.6-sol`, Effort max, lesend, Thread `01a060fd-b78e-7d90-aee6-591dab8dd943`, 14 bestätigte Defekte (§12.1) |
 | 1 (02.09.2026) | die 14 Defekte D1 bis D14, nichts sonst | `6b2539f` (siehe §12.3 und §12.7) | **NEEDS_WORK** — Codex `gpt-5.6-sol`, Effort max, lesend, Thread `01a06193-0eb9-7a42-b12d-4fe8a0bb9b38`: „D1–D7 und D9–D14 sind geschlossen; D8 bleibt für NAK-85 und NAK-92 offen“ (§13.1) |
-| 2 (02.09.2026) | der Rest von D8 an NAK-85 und NAK-92 samt seiner Ursache, nichts sonst | `dca7654` bis zum Nachlauf (siehe §13.4 und §13.7) | steht aus — Wiederprüfung 2 durch einen frischen Codex-Thread |
+| 2 (02.09.2026) | der Rest von D8 an NAK-85 und NAK-92 samt seiner Ursache, nichts sonst | `dca7654` bis zum Nachlauf (siehe §13.4 und §13.7) | **PASS** — Codex `gpt-5.6-sol`, Effort max, lesend, Thread `01a061b7-6c47-7201-834f-35c5444c3344`, Fixdiff `6b2539f...e51a7d3` (§14) |
 
 Diese Tabelle ist der lebende Kopf des Tickets: jede weitere Runde bekommt hier eine Zeile,
 bevor sie ihren eigenen Abschnitt bekommt.
@@ -1929,3 +1931,119 @@ Nach `06e650f` folgt genau dieser eine Commit an der Runde, und er bleibt in sei
 4. **Der Arbeitsbaum ist sauber** bis auf das fremde, untrackte
    `.workflow/ultracode/20260831-084621-sonde011-phaseb-bau` — es ist während der ganzen Runde
    unberührt geblieben und steht in keinem Commit dieser Runde.
+
+---
+
+## 14. Abschluss des Dirigenten (02.09.2026)
+
+**Urteil: T3 PASS.** Gesetzt vom Dirigenten (Fable 5.1, Effort xhigh, Session `19819d5c`) am
+02.09.2026 auf dem End-Stand `e51a7d3e309741102deeacc9db165bb6f1a44c36`; Ticketbasis
+`55cdb91599239aa99ec1322e23d109ab9424d7b2`. Zwei Nacharbeitsrunden von drei im Budget.
+
+### 14.1 Prüferkette
+
+| Lauf | Prüfbereich | Prüfer | Thread | Urteil |
+|---|---|---|---|---|
+| Erstprüfung | `55cdb91...16be249`, 13 Ticketpfade (Vorlage A) | Codex `gpt-5.6-sol`, max, lesend | `01a060fd-b78e-7d90-aee6-591dab8dd943` | NEEDS_WORK — 13 Prüferbefunde (1 P1, 12 P2) plus Dirigentenbefund D1, zusammen D1–D14 (§12.1) |
+| Wiederprüfung 1 | Fixdiff `16be249...6b2539f`, sieben Worker-Commits (Vorlage B) | Codex `gpt-5.6-sol`, max, lesend | `01a06193-0eb9-7a42-b12d-4fe8a0bb9b38` | NEEDS_WORK — D8 offen für NAK-85 und NAK-92 (§13.1) |
+| Wiederprüfung 2 | Fixdiff `6b2539f...e51a7d3`, sechs Worker-Commits (Vorlage B) | Codex `gpt-5.6-sol`, max, lesend | `01a061b7-6c47-7201-834f-35c5444c3344` | **PASS** |
+
+Urteil der Wiederprüfung 2, wörtlich:
+
+> URTEIL: PASS — alle Befunde geschlossen, nichts gebrochen. Geprüft: NAK-85 und NAK-92 stehen einmalig in der Geschlossen-Tabelle (docs/offene-punkte.md:221–222), mit bestätigten Manifestorten, PASS-Marken und Threads; ID-Menge, Zitate, Gate-Text, Planstand-Dry-run, sieben Dokuriegel, Worker-Pfadgrenze und unverändertes HEAD bestanden. Nicht geprüft wurden die ausgeschlossenen Produktcode-, Kanon- und Fremdcommit-Flächen; Python 3.13 war nicht startbar, daher lief derselbe planstand.py-Hauptpfad schreibfrei unter Python 3.14 byteidentisch und warnungsfrei.
+
+HEAD war vor und nach jedem der drei Läufe identisch (Logdateien `nakama-<sha>-review.log`).
+
+### 14.2 Konvergenz und Rundenbilanz
+
+`py -3.13 tools/dirigent/rundenbilanz.py --runden 55cdb91 16be249 6b2539f e51a7d3`:
+
+```text
+55cdb91..16be249: Pruefwerkzeug 2 Datei(en) +359/-3 | Doku 11 Datei(en) +5734/-273
+    -> OHNE PRODUKTFORTSCHRITT (Produkt+Tests = 0 Zeilen)
+16be249..6b2539f: Pruefwerkzeug 1 Datei(en) +17/-5 | Doku 36 Datei(en) +3606/-464
+    -> OHNE PRODUKTFORTSCHRITT (Produkt+Tests = 0 Zeilen)
+6b2539f..e51a7d3: Doku 33 Datei(en) +620/-27
+    -> OHNE PRODUKTFORTSCHRITT (Produkt+Tests = 0 Zeilen)
+
+KONVERGENZ-SIGNAL: 3 Runden in Folge ohne Produktfortschritt - Konvergenzentscheid nach Skill §3.4, keine weitere Punktkorrektur-Runde.
+EXITCODE=0
+```
+
+Das Konvergenzsignal ist bei einer Planprüfung erwartbar: der Gate-Text schließt Produktcode,
+Tests und Schemas ausdrücklich aus, Produkt + Tests sind deshalb in jeder Runde 0 Zeilen. Der
+Konvergenzentscheid nach §3.4 wurde nach der Wiederprüfung 1 gefällt (§13.2); Runde 2 war die
+Ursachenrunde, eine weitere Punktkorrektur-Runde gab es nicht. Die Rundenbilanz zählt in den
+Runden 1 und 2 auch die Fremdcommits mit (unten).
+
+### 14.3 Fremdcommits zwischen den Runden
+
+Zwischen `16be249` und `e51a7d3` liegen 26 Commits einer parallelen Design-Session (Autor
+„phil l", Fünferblöcke 03–05, Antwort U21, S31b-Punkte 18/19, visuelle Phase in Figma, CLAUDE.md,
+`tools/plan/dokuriegel.py`); die Worker haben ihre Commits zweimal darauf rebased (§12.7, §13.7).
+Die Prüfer hatten die Fremdcommits ausdrücklich ausgeschlossen und nur die Worker-Commits gelesen.
+Vom Dirigenten am 02.09.2026 nachgemessen: die PR2-Inhalte haben die Fremdcommits überlebt
+(Rangfolge in `CLAUDE.md` und Blueprint, S31b „QUELLE UMGESTELLT 02.09.2026", S19b, Entwurf 0.5).
+Kein Halt nach Skill §3.3, weil die Fremdcommits aus einer eigenen Arbeitskopie kamen, gepusht
+waren und keine PR2-Datei rückgängig gemacht haben.
+
+### 14.4 Beweise des Abschlusses (vom Dirigenten gefahren auf `e51a7d3`)
+
+Dokuriegel über die sieben Ticketpfade:
+
+```text
+docs/plan/plan.json: sauber
+docs/bauaufteilung-sonden.md: sauber
+docs/FL-Nakama-Sonden-Design-Entwurf.md: sauber (1 benannt)
+design/docs/funktions-und-bedien-blueprint.md: sauber
+CLAUDE.md: sauber
+docs/offene-punkte.md: sauber (8 benannt)
+docs/beweise/PR2.md: sauber (1 benannt)
+docs/FL-Nakama-Sonden-Design-Entwurf.md:189 VERWEIS OHNE ZIEL, aber als historisch markiert („im Design-Repo“ im Umfeld): docs/sondenplan.md
+docs/offene-punkte.md:96 VERWEIS OHNE ZIEL, aber als noch nicht angelegter Zielpfad markiert („nicht ins Repo“ im Umfeld): tools/extern/
+docs/offene-punkte.md:99 VERWEIS OHNE ZIEL, aber als historisch markiert („im FL-Studio-Repo“ im Umfeld): tools/analyze-track.py
+docs/offene-punkte.md:114 VERWEIS OHNE ZIEL, aber als historisch markiert („abgeschafft“ im Umfeld): docs/hub/hub.json
+docs/offene-punkte.md:114 VERWEIS OHNE ZIEL, aber als historisch markiert („abgeschafft“ im Umfeld): tools/hub/hub_sync.py holen\|senden
+docs/offene-punkte.md:215 VERWEIS OHNE ZIEL, aber als historisch markiert („entfernt“ im Umfeld): eq-copilot/fixtures/installer/journale/
+docs/offene-punkte.md:215 VERWEIS OHNE ZIEL, aber als historisch markiert („entfernt“ im Umfeld): tools/eq-copilot/erzeuge_installer_journale.py
+docs/offene-punkte.md:219 VERWEIS OHNE ZIEL, aber als noch nicht angelegter Zielpfad markiert („noch nicht angelegt“ im Umfeld): tools/eq-copilot/kern_riegel/
+docs/offene-punkte.md:219 VERWEIS OHNE ZIEL, aber als noch nicht angelegter Zielpfad markiert („noch nicht angelegt“ im Umfeld): tools/eq-copilot/installer_pruefung/
+docs/beweise/PR2.md:942 VERWEIS OHNE ZIEL, aber als noch nicht angelegter Zielpfad markiert („noch nicht angelegt“ im Umfeld): docs/beweise/NAK-121.md
+Dokuriegel: 0 Befund(e), 10 benannt (historisch oder Zielpfad)
+EXITCODE=0
+```
+
+Registerzeilen-IDs, Basis gegen End-Stand:
+
+```text
+Zeilen-IDs nur in 55cdb91 (Abgaenge):
+(Ende der Liste; leer = keine Abgaenge)
+Zeilen 55cdb91: 126 · Zeilen e51a7d3: 129
+```
+
+Planstand nach dem Setzen der Marke:
+
+```text
+geschrieben: docs\PLAN-STAND.md (24 abgenommen, 0 gebaut, 40 gesamt, aus 3a194b8)
+```
+
+### 14.5 Technische Folgen aus §6 — Entscheid des Dirigenten
+
+| Vorschlag | Entscheid | Ausführung |
+|---|---|---|
+| V-1 Rundenbudget an den Prüfwerkzeug-Anteil koppeln | angenommen als Werkzeugpunkt | Registerzeile NAK-131 (Klasse Werkzeug), Umsetzung mit dem nächsten Anfassen von `rundenbilanz.py` |
+| V-2 `.workflow/` in `.gitignore` | umgesetzt | `.gitignore` trägt `.workflow/`; der Ordner `.workflow/ultracode/20260831-084621-sonde011-phaseb-bau` (2 375 Dateien, 76 MB, nichts Einmaliges — §5.1) ist am 02.09.2026 gelöscht; NAK-128 geschlossen |
+| V-3 NAK-97 mit dem nächsten `planstand.py`-Anfassen schließen | bleibt Registerzeile NAK-97 | keine Änderung |
+| V-4 Dokuriegel in den Abschluss hängen | umgesetzt | `CLAUDE.md` Arbeitsregel (Commit `5cfc023`, parallele Session 02.09.2026) und Skill `dirigent` §3.5 (dieser Abschluss-Commit) |
+| V-5 Werkzeugticket für `stash@{0}` oder bewusst verwerfen | Stash bleibt liegen, kein Drop | NAK-129 bleibt offen (Klasse Werkzeug); der Stash trägt Arbeit, die nirgends sonst liegt (§5.2) |
+
+### 14.6 Worker und Aufsicht
+
+| Rolle | Worker | Modell | Aufsicht | Stand |
+|---|---|---|---|---|
+| Bau | `528b49d1` `nakama-pr2-55cdb91-bau` | Opus, max, Auto-Modus | NORMAL | `55cdb91` → `16be249`, 8 Commits |
+| Nacharbeit 1 | `b9042135` `nakama-pr2-16be249-nach1` | Opus, max, Auto-Modus | NORMAL | `16be249` → `6b2539f`, 7 Commits |
+| Nacharbeit 2 (Ursachenrunde) | `4217a904` `nakama-pr2-6b2539f-nach2` | Opus, max, Auto-Modus | LOCKER | `6b2539f` → `e51a7d3`, 6 Commits |
+
+Alle drei im sichtbaren Checkout, je mit Ereignisbeobachter (`cockpit.ps1 -WatchWorker`) und
+stündlichem Kontrollloop; nach dem Abschluss sind Worker, Beobachter und Loops abgeräumt.

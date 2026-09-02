@@ -100,7 +100,7 @@ gebaut wurde nur der Unterschied.
 | Zustand | Ground | Beleg | Was er zeigt |
 |---|---|---|---|
 | Gen 1 · Befundliste | `6132:2` | `2026-09-02-v02-gen-flaeche-1-befundliste@2x.png` | `ALL FINDINGS` gedrückt, drei Befunde als Liste im selben Körper (`01 … SELECTED`, `02 … READY`, `03 … MORE DATA`) |
-| Gen 1 · Quelle ohne Befund | `6132:182` | `2026-09-02-v02-gen-flaeche-1-ohne-befund@2x.png` | `KICK` gewählt, Referenz `MASTER`, `FRESH · 2.0 s · NO FINDING`, keine Zone im Graph, `NO FINDING`, Halten und Draft nicht verfügbar |
+| Gen 1 · Quelle ohne Befund | `6132:182` | `2026-09-02-v02-gen-flaeche-1-ohne-befund@2x.png` | `KICK` gewählt, Referenz `MASTER`, `FRESH · 2.0 s · NO FINDING`, keine Zone im Graph, Kopf `FINDINGS · 0`, `ALL FINDINGS` nicht verfügbar, `NO FINDING`, Halten und Draft nicht verfügbar |
 | Gen 1 · Filtertreffer | `6132:362` | `2026-09-02-v02-gen-flaeche-1-filter@2x.png` | Filter `gui` mit Leeren-Taste, Kopf `2 MATCH · 16`, nur `GUITAR L` und `GUITAR R` |
 | Gen 1 · Draft offen | `6132:542` | `2026-09-02-v02-gen-flaeche-1-draft-offen@2x.png` | `DRAFT OPEN · EQ`, Handgriff `OPEN IN EQ →` |
 | Gen 1 · Kandidat | `6132:722` | `2026-09-02-v02-gen-flaeche-1-kandidat@2x.png` | `EQ CANDIDATE · 8.3 s`, Halten nicht verfügbar, `CANDIDATE · OPEN IN EQ →`, `REVERT` |
@@ -118,7 +118,7 @@ gebaut wurde nur der Unterschied.
 | Gen 2 · Link-Verlust | `6132:3032` | `2026-09-02-v02-gen-flaeche-2-link-verlust@2x.png` | `SESSION LINK LOST · LOCAL CONFIRMED · REV 128`, Kontext `LINK LOST`; `COPY →`, `GLOBAL`, `UNDO`, Halten, `APPLY`, `REJECT` nicht verfügbar; `BLOCKED` |
 | Probeeq · EQ aus | `6132:3227` | `2026-09-02-v02-probeeq-eq-aus@2x.png` | `EQ · OFF` mit hohlem Punkt, Bypass und Mix nicht bedienbar, Glaszeile `EQ OFF · PASSIVE MEASUREMENT · SIGNAL · FRESH 1.2 s` |
 | Probeeq · Link-Verlust | `6132:3260` | `2026-09-02-v02-probeeq-link-verlust@2x.png` | hohle Apertur `LINK LOST`, `LOCAL CONFIRMED · REV 128 · REMOTE LOCKED · EQ, BYPASS, MIX STAY LOCAL`; EQ, Bypass, Mix bedienbar |
-| Probeeq · Kandidat | `6132:3293` | `2026-09-02-v02-probeeq-kandidat@2x.png` | `REMOTE CANDIDATE · 8.2 s` mit der laufenden Änderung |
+| Probeeq · Kandidat | `6132:3293` | `2026-09-02-v02-probeeq-kandidat@2x.png` | `REMOTE CANDIDATE · 8.3 s` mit der laufenden Änderung |
 | Probeeq · Bestätigt | `6132:3326` | `2026-09-02-v02-probeeq-bestaetigt@2x.png` | `CONFIRMED · REV 128` mit der bestätigten Änderung |
 
 Panels liegen als Karte über dem Glas (#131619 bei 97 %, Kontur weiß 8 %,
@@ -134,7 +134,8 @@ Wortlauts, keine neuen Entscheide):
   `CURRENT FINDING` umbenannt zu werden; die Taste behält 84 px
   (Tasten-Gesetz), die Skizze verbreitert sie.
 - Ohne Befund zeigt der Evidenzgraph keine Zone, keinen Marker und keinen
-  Punkt; die Skizze lässt sie stehen.
+  Punkt, der Befundkopf sagt `FINDINGS · 0` und `ALL FINDINGS` ist nicht
+  verfügbar; die Skizze lässt Zone und `FINDING 1 / 3` stehen.
 - Probeeq bei Link-Verlust sagt `LINK LOST` statt `BROKER OFFLINE`: dasselbe
   Wort wie Gen, und `BROKER OFFLINE` passt nicht zwischen Apertur und die
   festen Einsätze, ohne dass die Skizze diese verschiebt und verkleinert.

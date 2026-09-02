@@ -49,7 +49,9 @@ Commits gehen ohne Rückfrage raus.
   Abnahmen abgeleitet. Frühere Figma-Nodes, Exporte und die drei Rework-Bilder
   vom 25.08. sind dafür Verlauf und liefern weder Raster noch Farben, Material
   oder Positionen. Eine neue visuelle Richtung entsteht erst in einem eigenen
-  User-Schritt. Produktsprache Englisch; Docs, Commits und Gespräch Deutsch.
+  User-Schritt; sie wird dann in Figma entwickelt, sobald das Fundament aus
+  Layout und Skizze steht (User-Wort 02.09.2026, Fünferblock 03). Produktsprache
+  Englisch; Docs, Commits und Gespräch Deutsch.
 - **Aktueller UI-Arbeitsmodus:** Pro User-Schritt genau eine echte offene
   Architekturfrage. Technische Grenzen vorher selbst aus Code, Tests und
   Verträgen ableiten. Antworten werden in festen Fünferblöcken gesammelt;

@@ -182,3 +182,25 @@ Damit ist für beide Gen-Flächen gesammelt:
 - Blueprint Abschnitt 15 Punkt 18 (Rückweg) ist damit entschieden und wird
   beim Umbau nach 5/5 auf **[U]** gesetzt; Abschnitt 4.1 „Übergang“ und die
   Skizze folgen im selben Umbau.
+
+## Prozesswort vor 5/5 — Fundament jetzt, visuelles Design danach in Figma
+
+Auf die erste Fassung der Frage nach der Größenklasse von Probeeq antwortet
+der User ohne Auswahl mit einer Anmerkung:
+
+> „so dass wir später wenn layout /skizze steht daraus auch ein schönes
+> design in figma entwickeln können. (wie bei GEN) aktuell machen wir ja das
+> fundament danach kommt das visuelle design in figma.“
+
+Bindende Konsequenz für den Arbeitsmodus:
+
+- Die laufende Phase liefert das Fundament: Layout, Hierarchie, Handgriffe
+  und Zustände in der technischen Skizze, für beide Gen-Flächen und für
+  Probeeq.
+- Die visuelle Phase folgt danach und findet in Figma statt, wie beim
+  früheren Gen-Stand. Farben, Material, Typografie und Feinheiten werden
+  weiterhin nicht in der Skizze entschieden. Welche Figma-Datei dann gilt,
+  benennt der User beim Wechsel in diese Phase; die Figma-Stände bis zum
+  25.08.2026 bleiben Verlauf.
+- Die Größenklasse von Probeeq gehört zum Fundament (wie 950×538 bei Gen)
+  und wird deshalb hier entschieden, nicht erst in Figma.

@@ -271,3 +271,18 @@ Beide Gen-Flächen verwenden genau eine logische Größe von 950×538. Compact,
 Fenster-Resize und eine zweite Layoutfassung sind vertagt; UI-Skalierung
 vergrößert nur dieselbe Geometrie. Der nächste reguläre Entscheid beginnt
 wieder einen Fünferblock und öffnet diese Größenfrage nicht erneut.
+
+## Prozesswort vom 02.09.2026 — Fundament jetzt, visuelles Design in Figma
+
+Der User ordnet die Phasen in Fünferblock 03 ein:
+
+> „so dass wir später wenn layout /skizze steht daraus auch ein schönes
+> design in figma entwickeln können. (wie bei GEN) aktuell machen wir ja das
+> fundament danach kommt das visuelle design in figma.“
+
+Die laufende Skizzenphase liefert das Fundament (Layout, Hierarchie,
+Handgriffe, Zustände) für beide Gen-Flächen und Probeeq. Die visuelle Phase
+folgt danach in Figma; sie beginnt weiterhin erst mit dem ausdrücklichen
+Wechsel, und die Figma-Stände bis zum 25.08.2026 bleiben Verlauf. Wortlaut
+und Folge in
+[`2026-09-02-technische-ui-architektur-fuenferblock-03.md`](2026-09-02-technische-ui-architektur-fuenferblock-03.md).

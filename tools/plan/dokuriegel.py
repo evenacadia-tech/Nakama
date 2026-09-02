@@ -34,6 +34,11 @@ existierendes Verzeichnis. Erkannt werden zwei Formen:
     `.claude/`, `.agents/`) — aufgeloest relativ zum Workspace-Root. Die ganze
     Spanne zaehlt, damit Pfade mit Leerzeichen nicht mitten im Namen abreissen.
 
+Eingezaeunte Codebloecke (```) sind fuer BEIDE Riegel aussen vor: dort steht roh
+eingefuegte Werkzeugausgabe. Ein Pfad darin ist Zitat, kein lebender Verweis —
+ein Manifest, das den Rotlauf eines Riegels dokumentiert, wuerde sonst an seiner
+eigenen Beweisausgabe scheitern.
+
 Nicht geprueft werden URLs (`http:`, `https:`, `mailto:`), reine Anker (`#...`),
 Windows-Pfade mit Laufwerksbuchstaben und alles, was erkennbar ein **Muster**
 statt eines Verweises ist: ein Pfad mit `*`, `?`, `<`, `>`, `{`, `}` oder `…`
@@ -203,11 +208,20 @@ def umfeld_markiert(text: str, pos: int) -> tuple[str, str] | None:
     return None
 
 
+def codebloecke(text: str) -> list[tuple[int, int]]:
+    """Spannen eingezaeunter Codebloecke (```), als (start, ende)."""
+    grenzen = [m.start() for m in re.finditer(r"^```", text, re.M)]
+    return list(zip(grenzen[0::2], grenzen[1::2]))
+
+
 def verweise_sammeln(pfad: Path, text: str) -> list[tuple[str, int]]:
     """Alle Kandidaten als (Pfadangabe, Position im Text)."""
     treffer: list[tuple[str, int]] = []
-    in_backticks: list[tuple[int, int]] = []
+    in_backticks: list[tuple[int, int]] = codebloecke(text)
+    fenced = list(in_backticks)
     for m in BACKTICK.finditer(text):
+        if any(a <= m.start() < b for a, b in fenced):
+            continue            # roh eingefuegte Ausgabe, kein lebender Verweis
         in_backticks.append((m.start(), m.end()))
         spanne = m.group(1).strip()
         if spanne.startswith(WURZELORDNER):

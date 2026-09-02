@@ -108,7 +108,8 @@ Jede Zahl stammt aus einem Lauf in §8, nicht aus einer anderen Datei.
 | Errata mit Einarbeitung an ihrer Stelle | **17 / 17** (a–q) | §8, Lauf E |
 | Marken `[0.5 · Erratum (x) · Datum]` im Text | 25 | §8, Lauf E |
 | Grabsteinzeilen „gestrichen in Fassung 0.5" | 23 | §8, Lauf E |
-| nummerierte Überschriften 0.4 → 0.5 | 255 → 255 (unverändert; +2 unnummerierte im Kopf) | §8, Lauf E |
+| nummerierte Überschriften 0.4 → 0.5 | **190 → 190**, gleiche Reihenfolge, keine hinzu, keine weg | §8, Lauf E |
+| alle Überschriften Ebene 2–3 | 255 → 257; die zwei neuen sind **unnummeriert** (`## Rangfolge …`, `## Wie Fassung 0.5 …`) | §8, Lauf E |
 | Archivkopie byteidentisch zu 0.4 | SHA-256 `a8230e09…3e7c5`, 237 425 Bytes, beidseitig gleich | §8, Lauf G |
 | Blueprint-§15-Punkte mit Schritt-ID | **17 / 17** (der Gate-Text nannte 16; Punkt 17 kam am 02.09.2026 dazu) | §8, Lauf E |
 | Registerzeilen offen / geparkt / geschlossen | 79 / 5 / 31 = 115 | §8, Lauf E |
@@ -184,7 +185,8 @@ Sechs Commits, jeder sofort gepusht, jeder mit explizitem Pathspec.
 | 3 | `894dce7` | `docs/plan/plan.json`, `docs/bauaufteilung-sonden.md` |
 | 4 | `d4241fa` | `docs/offene-punkte.md`, `docs/plan/fragen.json`, `docs/plan/plan.json` |
 | 5 | `cf21476` | `tools/plan/dokuriegel.py`, `tools/plan/planstand.py`, `docs/offene-punkte.md`, `docs/FL-Nakama-Sonden-Design-Entwurf.md` |
-| 6 | siehe §10 | `docs/beweise/PR2.md`, `docs/PLAN-STAND.md`, `docs/ANTWORTEN-OFFEN.md`, `docs/plan/plan.json` |
+| 6 | `1184b25` | `docs/beweise/PR2.md`, `docs/PLAN-STAND.md`, `docs/ANTWORTEN-OFFEN.md`, `docs/plan/plan.json`, `tools/plan/dokuriegel.py` |
+| 7 | Nachlauf (§11) | `docs/beweise/PR2.md`, `docs/PLAN-STAND.md` — lebender Kopf nachgezogen |
 
 ### 3.1 Entwurf 0.5 (Commit 1)
 
@@ -193,8 +195,9 @@ verschoben: der lebende Pfad behält seine Blame-Historie, das Archiv ist eine M
 Ein `git mv` hätte die Historie auf den Archivpfad umgelenkt und den lebenden Pfad als neue Datei
 erscheinen lassen. Byteidentität in §8, Lauf G.
 
-**§-Nummerierung stabil.** 255 nummerierte Überschriften vorher wie nachher, keine umnummeriert
-(§8, Lauf E). Ein gestrichener Abschnitt behält Überschrift **und** Nummer und trägt eine
+**§-Nummerierung stabil.** 190 nummerierte Überschriften vorher wie nachher, **in identischer
+Reihenfolge**, keine hinzugekommen und keine weggefallen (§8, Lauf E). Die zwei neuen
+Überschriften im Kopf tragen bewusst keine Nummer. Ein gestrichener Abschnitt behält Überschrift **und** Nummer und trägt eine
 Grabsteinzeile mit Datum, Grund und Entscheidquelle. Das ist der neue stabile Bezug für die
 T2-Regel „Gate-Text aus dem Entwurf" — bisher hielt ihn die Regel „Text unter dem Errata-Block nie
 umschreiben" (`bauaufteilung-sonden.md` §6.4), die damit abgelöst ist.
@@ -559,7 +562,7 @@ keinen Test und kein Schema im Änderungssatz (Beleg: `git diff --stat` in §8, 
 
 ```text
 ### A) py -3.13 tools/plan/planstand.py
-geschrieben: docs\PLAN-STAND.md (23 abgenommen, 1 gebaut, 39 gesamt, aus cf21476)
+geschrieben: docs\PLAN-STAND.md (23 abgenommen, 1 gebaut, 39 gesamt, aus 1184b25)
 EXITCODE=0
 
 ### B) py -3.13 tools/plan/antworten_blatt.py
@@ -571,25 +574,29 @@ docs/plan/fragen.json -> gueltiges JSON, 34212 Bytes
 docs/plan/plan.json -> gueltiges JSON, 80454 Bytes
 EXITCODE=0
 
-### D) git diff --stat 55cdb91..HEAD   (Stand vor dem Manifest-Commit)
+### D) git diff --stat 55cdb91..HEAD
  CLAUDE.md                                          |   15 +-
  design/docs/funktions-und-bedien-blueprint.md      |   21 +-
+ docs/ANTWORTEN-OFFEN.md                            |   12 +-
  docs/FL-Nakama-Sonden-Design-Entwurf.md            |  507 ++-
+ docs/PLAN-STAND.md                                 |   41 +-
  ...-Nakama-Sonden-Design-Entwurf-0.4-2026-08-20.md | 4238 ++++++++++++++++++++
  docs/bauaufteilung-sonden.md                       |   81 +-
+ docs/beweise/PR2.md                                |  742 ++++
  docs/offene-punkte.md                              |  230 +-
  docs/plan/fragen.json                              |   78 +-
- docs/plan/plan.json                                |   16 +-
- tools/plan/dokuriegel.py                           |  332 ++
+ docs/plan/plan.json                                |   20 +-
+ tools/plan/dokuriegel.py                           |  346 ++
  tools/plan/planstand.py                            |   16 +-
- 10 files changed, 5285 insertions(+), 249 deletions(-)
+ 13 files changed, 6071 insertions(+), 276 deletions(-)
 EXITCODE=0
 
 ### E) Zaehlungen
 Errata mit Einarbeitung im Text: 17/17  abcdefghijklmnopq
   Marken '[0.5 - Erratum (x) ...]': 25
   Grabsteinzeilen 'gestrichen in Fassung 0.5': 23
-  nummerierte Ueberschriften 0.4 / 0.5: 255 / 257, nur in 0.5: ['Rangfolge', 'Wie']
+  NUMMERIERTE Ueberschriften 0.4 / 0.5: 190 / 190, gleiche Reihenfolge: True, nur in 0.5: [], nur in 0.4: []
+  ALLE Ueberschriften Ebene 2-3   0.4 / 0.5: 255 / 257, neu (unnummeriert): ['Rangfolge der lebenden Spezifikationen (', 'Wie Fassung 0.5 entstanden ist']
 Registerzeilen: offen 79, geparkt 5, geschlossen 31, Summe 115
   Klasse Härtung/Struktur   31
   Klasse Planarbeit         18
@@ -654,7 +661,7 @@ BYTEIDENTISCH
 EXITCODE=0
 
 ### H) py -3.13 tools/dirigent/rundenbilanz.py 55cdb91..HEAD
-55cdb91..HEAD: Pruefwerkzeug 2 Datei(en) +345/-3 | Doku 8 Datei(en) +4940/-246
+55cdb91..HEAD: Pruefwerkzeug 2 Datei(en) +359/-3 | Doku 11 Datei(en) +5712/-273
     -> OHNE PRODUKTFORTSCHRITT (Produkt+Tests = 0 Zeilen)
 EXITCODE=0
 ```
@@ -680,10 +687,8 @@ EXITCODE=0
   Die Edits ändern damit nur Text, keine Formatierung.
 - **D** Der Änderungssatz berührt `docs/**`, `design/docs/funktions-und-bedien-blueprint.md`,
   `CLAUDE.md` und `tools/plan/**`. **Kein Produktcode, kein Test, kein Schema, kein Fixture, kein
-  Runner.** Von den 5 285 hinzugefügten Zeilen sind 4 238 die byteidentische Archivkopie.
-  Der Lauf ist vor dem Manifest-Commit gefahren; er zeigt die Commits 1 bis 5. Commit 6 fügt
-  `docs/beweise/PR2.md`, die zwei gerechneten Blätter und drei Planschritt-Nachträge hinzu und
-  bleibt in derselben Grenze — kein Commit dieses Tickets berührt Produktcode, Test oder Schema.
+  Runner.** Von den hinzugefügten Zeilen sind 4 238 die byteidentische Archivkopie. `PLAN-STAND.md`
+  und `ANTWORTEN-OFFEN.md` sind erzeugt, nicht von Hand editiert.
 - **E** Die Zählungen aus §1.2 nach dem Änderungssatz.
 - **F** Der Dokuriegel läuft über die sieben Ticketpfade **sauber, Exit 0**: 0 Befunde,
   9 benannt (7 historisch markiert, 2 als noch nicht angelegte Zielpfade). Darunter der
@@ -713,7 +718,7 @@ worden:
 | Ein Verweis ins Leere? | Nein — `dokuriegel.py` misst es, Exit 0 (§8, Lauf F). |
 | Eine Zahl, die nicht gemessen wurde? | Nein. Drei Zahlen des Gate-Textes sind nachgemessen und zwei davon korrigiert (16 → 17 Blueprint-Punkte; „rund 2 800" → 3 539 Zeilen). |
 | Ein verändertes User-Zitat? | Nein. `wahl`, `text` und `datum` aller 52 beantworteten Karten sind unverändert (Riegel im Edit-Skript). Zitate im Entwurf und im Register sind aus den Abnahmedateien kopiert, nicht nacherzählt. |
-| Ein umnummerierter Paragraph? | Nein — 255 nummerierte Überschriften vorher wie nachher (§8, Lauf E). |
+| Ein umnummerierter Paragraph? | Nein — 190 nummerierte Überschriften vorher wie nachher, in identischer Reihenfolge, keine hinzu und keine weg (§8, Lauf E). |
 | Eine fremde Datei im Commit? | Nein. `.workflow/ultracode/…` ist in keinem der sechs Commits; jeder Commit nennt seine Pfade explizit (§3). |
 | Eine ungeprüfte Behauptung über gebauten Code? | Nein. Jede Aussage über `SONDE-011`, die Reservierungen und den Broker-Autostart ist an der Quelle gelesen (§2.2), nicht aus dem Manifest übernommen. |
 
@@ -740,3 +745,23 @@ worden:
 7. **Blueprint §15 ist nicht gekürzt.** Die 17 Punkte tragen jetzt je eine Schritt-ID im Plan,
    aber der Blueprint selbst führt sie unverändert als offen — sie sind zugeordnet, nicht
    geschlossen.
+
+---
+
+## 11. Nachlauf (lebender Kopf nachgezogen, Prüfliste E)
+
+Auf `1184b25` folgt genau ein weiterer Commit an diesem Ticket, und er bleibt in derselben
+Grenze (`docs/beweise/PR2.md`, `docs/PLAN-STAND.md`):
+
+1. **Commit 6 trägt jetzt seinen SHA** in der Tabelle in §3 — vorher stand dort ein Verweis auf
+   einen Abschnitt, den es so nicht gab.
+2. **Zwei Zahlen präzisiert.** Der erste Lauf zählte „255 nummerierte Überschriften"; gezählt
+   hatte er in Wahrheit **alle** Überschriften der Ebenen 2 und 3. Nachgemessen mit einem Muster,
+   das nur nummerierte Überschriften trifft: **190 → 190, identische Reihenfolge, keine hinzu,
+   keine weg**; die 255 → 257 gelten für alle Überschriften und sind jetzt als eigene Zeile
+   ausgewiesen. Der Zähler in Lauf E ist entsprechend berichtigt und trägt beide Zahlen getrennt.
+   Die Aussage „keine umnummerierten Paragraphen" hat sich dadurch nicht geändert — sie ist jetzt
+   nur mit der richtigen Zahl belegt.
+3. **Lauf D neu gefahren**, weil er im ersten Durchgang vor dem Manifest-Commit lag und deshalb
+   `PR2.md` und die zwei Blätter nicht zeigte. Die Grenze ist unverändert: kein Commit dieses
+   Tickets berührt Produktcode, Test oder Schema.

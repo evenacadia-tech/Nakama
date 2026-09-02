@@ -459,6 +459,20 @@ Der Broker beendet sich nach 60 s ohne v2- oder v3-Clients selbst. Konstruktor,
 Destruktor, Editor-/State-Ereignisse und Worker besitzen Start/Stop; in
 `processBlock` gibt es keinen Lifecycle-, Pipe-, Datei- oder Prozessaufruf.
 
+Seit NAK-123 (02.09.) authentisiert jeder der drei Client-Connectpfade (v3
+`ControlClient`, v3 `TelemetryClient`, v2 `PipeClient`) den Server am konkret
+per `CreateFileW` geöffneten Handle, bevor er veröffentlicht wird oder ein Byte
+fließt: `GetNamedPipeServerProcessId` → gehaltenes Prozesshandle →
+Prozess-Token-User-SID per `EqualSid` → `QueryFullProcessImageNameW` und
+Dateiidentität gegen den manifestgebundenen Brokerpfad → vorhandene
+SHA-256-/Signer-Kette (`namedPipeServerAuthentisieren`, `BrokerLifecycle.cpp`).
+`WaitNamedPipeW` ist nur Liveness. `BrokerLifecycle` kennt drei Ergebnisse
+(`nicht da`, `verifiziert`, `belegt aber unverifiziert`) und adoptiert nur einen
+verifizierten Handle; ein belegter, unverifizierter Name blockiert Spawn und
+Reconnect fail-closed. Ein Reconnect ist an eine Generation gebunden, kein
+Urteil überlebt den Handle. Referenz: Verhaltensmatrix C-01..C-11 in
+`docs/beweise/NAK-123.md`.
+
 ### 1.6 Editor — Material-Kit-Front (Provisorium)
 
 `PluginEditor.cpp` + `EqCopilotAssetKit.h` (`skin::`, Tokens aus
@@ -675,8 +689,19 @@ nebeneinander.** v3 hängt am produktiven Coordinator samt Store und
 Snapshot-Outbox. Tests starten denselben Listener ausschließlich über
 Probe-Namen; Sicherheitshelfer (`sicherheit_nur_user`, SDDL nur aktueller
 User, `PIPE_REJECT_REMOTE_CLIENTS`, `FILE_FLAG_FIRST_PIPE_INSTANCE`) bleiben
-mit dem v2-Server geteilt. Die weiter offene Impersonation-Kette aus §48.4
-steht als NAK-90 im Offen-Set.
+mit dem v2-Server geteilt. Seit NAK-123 (02.09.) hält der v3-Listener zwei
+gleichzeitig mit `ConnectNamedPipe` bewaffnete RAII-Listener (`nMaxInstances`
+98 = 96 Worker + 2 Reserven) und legt den Ersatzlistener an, bevor ein
+angenommener Handle an einen Worker geht; der Name hat kein besitzerloses
+Fenster, Stop schließt den letzten Besitzlistener zuletzt. Jede angenommene
+Control- und Telemetry-Verbindung durchläuft vor jeder Fachlogik die
+§48.4-Kette Hello lesen → `ImpersonateNamedPipeClient` → Token-User-SID per
+`EqualSid` gegen die DACL-SID → `RevertToSelf` in jedem Pfad; `FALSE` bei der
+Impersonation schließt, ein Revert-Fehler beendet den Prozess fail-fast. Die
+Idle-Entscheidung liest die aktiven Worker aus genau dem einen `AtomicUsize`
+des Acceptors (auch unvollständige Bootstraps zählen). Messung:
+`broker/tests/security_vectors.rs` (A-01..B-09); Matrix in
+`docs/beweise/NAK-123.md`. NAK-90 ist damit geschlossen.
 
 **Coordinator und Sessiongraph** (`coordinator.rs`): alleiniger Besitzer von
 Control-/Telemetry-Kopplung, Join-Kandidaten, internem Bestätigungsbedarf,

@@ -2,7 +2,7 @@
 
 ## Status
 
-**2 von 5 Entscheidungen gesammelt.** Der Block beginnt mit Gen Fläche 1
+**3 von 5 Entscheidungen gesammelt.** Der Block beginnt mit Gen Fläche 1
 (Karte U21 aus `docs/plan/fragen.json`); danach folgen die offenen
 Bedienbereiche von Gen Fläche 2 (Blueprint Abschnitt 15, Punkte 17 und 18)
 und Probeeq (Punkt 19). Skizze, Detailabnahmen und Blueprint werden erst nach
@@ -114,3 +114,30 @@ Damit ist für Gen Fläche 2 gesammelt:
   **[U]** geworden; Blueprint Abschnitt 15 Punkt 17 verliert den Teil
   „Global-Sektion nicht abgeleitet“ beim gemeinsamen Umbau nach 5/5. Der
   Wortlaut der Halten-Aktion und die Kurzform `DEL` bleiben dort offen.
+
+## 3/5 — Der Kopf schaltet die Flächen; SEND DRAFT ist nicht der einzige Hinweg
+
+Auf die Frage nach dem Rückweg von Gen Fläche 2 zu Fläche 1, die als
+Voraussetzung nannte, dass es nur über `SEND DRAFT` hin geht, korrigiert der
+User am 02.09.2026:
+
+> „nein hin geht es nicht nur über send draft, sondern über den header wo EQ
+> steht“
+
+Damit ist für beide Gen-Flächen gesammelt:
+
+- Der Kopf von Gen trägt den Flächenwechsel: Dort, wo der Name der zweiten
+  Fläche steht (in der Skizze der Seitentitel `EQ CENTER`; der Produktname
+  ist Karte U23), führt ein Handgriff von Fläche 1 zur EQ-Fläche. Der Kopf
+  ist damit Produkt-UI und kein Inspektionswerkzeug mehr.
+- `SEND DRAFT → EQ` bleibt als Handgriff am Befund erhalten: Er übergibt den
+  Draft und wechselt zur EQ-Fläche. Er ist aber nicht mehr der einzige
+  Hinweg; die EQ-Fläche ist auch ohne Befund und ohne Draft erreichbar, zum
+  Beispiel für Master-EQ und Sonden-Durchschaltung.
+- Der Entscheid vom 31.08.2026 „keine funktion um auf die 2. seite zu
+  wechseln abgesehen von send draft“ ist damit **überholt**. Er bleibt im
+  Arbeitsmodus-Protokoll stehen und ist dort mit Datum als überholt
+  markiert; Blueprint Abschnitt 4.1 („Übergang“) und das Skizzen-Leseblatt
+  werden beim gemeinsamen Umbau nach 5/5 nachgezogen.
+- Wie der Rückweg im selben Kopf aussieht und ob Gen nach Abschluss einer
+  Transaktion von selbst zurückkehrt, ist die nächste Frage dieses Blocks.

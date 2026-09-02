@@ -169,6 +169,14 @@ Die bisher einzeln bestätigten Strukturentscheide ergeben:
   Ein Oberflächenumschalter des externen Skizzenwerkzeugs ist kein Element der
   späteren Produktoberfläche.
 
+  **Überholt am 02.09.2026** (Fünferblock 03, Entscheidung 3/5): Der User
+  korrigiert „nein hin geht es nicht nur über send draft, sondern über den
+  header wo EQ steht“. Der Kopf von Gen trägt den Flächenwechsel; `SEND
+  DRAFT` bleibt als Handgriff am Befund, ist aber nicht mehr der einzige
+  Hinweg. Wortlaut und Konsequenz in
+  [`2026-09-02-technische-ui-architektur-fuenferblock-03.md`](2026-09-02-technische-ui-architektur-fuenferblock-03.md).
+  Die Inspektionsleiste der Skizze bleibt davon unberührt Werkzeug.
+
 ## Abgenommener Stand — Gen Fläche 2
 
 Die Details stehen in

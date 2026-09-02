@@ -401,6 +401,32 @@ nakama_sonde012_test(EqCopSonde012HostChannelContextTest
 nakama_sonde012_test(EqCopSonde012LoudnessSourceTest
                      tests/Sonde012LoudnessSourceTest.cpp)
 
+# ── G3-SOAK: die C++-Haelfte des Dauerlaufbeins A24 ───────────────────────
+# Kein Kanon-Bein fuer sich: tools/eq-copilot/pruefe_session_soak.py faehrt es
+# gegen den echten Rust-Coordinator auf einer Probe-Pipe und besitzt
+# Prozesslebenszyklus, Pipenamen-Riegel, Brokerneustart und Speicherkurve.
+# Es braucht BEIDE Welten: den echten SondeProcessor am Ganzblockpfad (wie B12)
+# und das echte Main-SourcesModel (wie A23). NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3
+# haelt die eigenen v3-Clients des SondeProcessor aus - sonst oeffnete eine
+# Testbinaerdatei die PRODUKTIONS-Pipe (Manifest G3-SOAK §2.2, §8).
+juce_add_console_app(EqCopSessionSoak PRODUCT_NAME "eqcop-sessionsoak")
+target_sources(EqCopSessionSoak PRIVATE
+    tests/SessionSoakMain.cpp
+    sonde/SondeProcessor.cpp
+    src/AnalyseEngine.cpp
+    src/SourcesModel.cpp
+    core/ipc/PipeToken.cpp)
+target_include_directories(EqCopSessionSoak PRIVATE sonde src core hostbridge vertrag
+    "${NAKAMA_BROKER_BINDING_DIR}")
+target_compile_definitions(EqCopSessionSoak PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0
+    NAKAMA_SONDE_AKTIV=1 NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3=1)
+target_link_libraries(EqCopSessionSoak PRIVATE
+    juce::juce_audio_utils juce::juce_dsp flatbuffers Advapi32
+    PUBLIC juce::juce_recommended_config_flags
+           juce::juce_recommended_warning_flags)
+nakama_kern_anbinden(EqCopSessionSoak)
+
 # ── SONDE-012 B3b: Main-Quellenmodell und Save/Load-Gegenpfad ─────────────
 juce_add_console_app(EqCopSonde012SourcesModelTest
                      PRODUCT_NAME "eqcop-sonde012-sourcesmodeltest")
@@ -939,7 +965,7 @@ foreach(ziel NakamaKern
              NakamaProbeeq EqCopProbeeqNullTest
              EqCopSonde012HostChannelContextTest EqCopSonde012LoudnessSourceTest
              EqCopSonde012SourcesModelTest EqCopSonde012ProjectReloadTest
-             EqCopSonde012SourcesLatencyTest)
+             EqCopSonde012SourcesLatencyTest EqCopSessionSoak)
     target_compile_options(${ziel} PRIVATE "$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 endforeach()
 

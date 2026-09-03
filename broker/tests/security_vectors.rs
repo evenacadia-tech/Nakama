@@ -946,3 +946,76 @@ fn verbindungsgriff_besitzt_handle_und_registereintrag() {
     drop(weiterer);
     griff.stoppen();
 }
+
+// ── NAK-121 H-22 ───────────────────────────────────────────────────────────
+
+/// Jede `unsafe`-Stelle im Broker traegt ihre Begruendung.
+///
+/// Diese Quellwache ist der eigentliche Nachweis von H-22, nicht die
+/// Lint-Tabelle in Cargo.toml: `undocumented_unsafe_blocks` ist ein reiner
+/// Clippy-Lint, und tools/beweise.ps1 faehrt in keinem seiner 40 Beine Clippy -
+/// er beweist im Kanon also nichts. Der Test dagegen laeuft im vorhandenen
+/// Bein A4 mit.
+///
+/// Fenster: ein mit `// SAFETY:` beginnender Kommentar in den DREI
+/// vorangehenden nicht-leeren Zeilen. Am Basisstand von NAK-121 waren es 100
+/// Stellen, 59 erfuellt und 41 offen.
+#[test]
+fn jeder_unsafe_block_traegt_einen_safety_kommentar() {
+    let wurzel = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+    let mut offen: Vec<String> = Vec::new();
+    let mut gesamt = 0usize;
+
+    fn sammeln(ordner: &std::path::Path, gesamt: &mut usize, offen: &mut Vec<String>) {
+        for eintrag in std::fs::read_dir(ordner).expect("Quellordner lesbar") {
+            let pfad = eintrag.expect("Verzeichniseintrag").path();
+            if pfad.is_dir() {
+                // `generiert/` ist Codegen aus dem .fbs; sein Inhalt wird von
+                // flatc erzeugt und von pruefe_flatc_drift.py bewacht.
+                if pfad.file_name().and_then(|n| n.to_str()) == Some("generiert") {
+                    continue;
+                }
+                sammeln(&pfad, gesamt, offen);
+                continue;
+            }
+            if pfad.extension().and_then(|e| e.to_str()) != Some("rs") {
+                continue;
+            }
+            let quelle = std::fs::read_to_string(&pfad).expect("Quelldatei lesbar");
+            let zeilen: Vec<&str> = quelle.lines().collect();
+            for (i, zeile) in zeilen.iter().enumerate() {
+                let ist_unsafe = zeile.contains("unsafe impl")
+                    || zeile
+                        .split("unsafe")
+                        .skip(1)
+                        .any(|rest| rest.trim_start().starts_with('{'));
+                if !ist_unsafe {
+                    continue;
+                }
+                *gesamt += 1;
+                let mut fenster: Vec<&str> = Vec::new();
+                let mut k = i;
+                while k > 0 && fenster.len() < 3 {
+                    k -= 1;
+                    if !zeilen[k].trim().is_empty() {
+                        fenster.push(zeilen[k].trim());
+                    }
+                }
+                if !fenster.iter().any(|f| f.starts_with("// SAFETY:")) {
+                    offen.push(format!("{}:{}", pfad.display(), i + 1));
+                }
+            }
+        }
+    }
+
+    sammeln(&wurzel, &mut gesamt, &mut offen);
+    assert!(
+        gesamt >= 100,
+        "die Wache findet nur {gesamt} unsafe-Stellen - sie misst offenbar nicht mehr, was sie soll"
+    );
+    assert!(
+        offen.is_empty(),
+        "{} von {gesamt} unsafe-Stellen ohne SAFETY-Kommentar: {offen:?}",
+        offen.len()
+    );
+}

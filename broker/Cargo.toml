@@ -12,6 +12,27 @@ edition = "2021"
 rust-version = "1.82"
 description = "EQ-Copilot-Broker (Nakama) — eigenständiger Named-Pipe-Server, aus der Plugin-Hub-App herausgelöst (18.08.2026)"
 
+# G2-CARGOLINT-001 / H-22, drei Teile mit unterschiedlicher Beweiskraft:
+#
+# (a) `unsafe_op_in_unsafe_fn` ist ein RUSTC-Lint und wirkt im Bau - damit im
+#     bestehenden Kanon-Bein A4, ohne ein neues. Er greift auf die einzige
+#     `unsafe fn` des Crates.
+# (b) Die eigentliche Zusage - jede unsafe-Stelle traegt ihren
+#     Sicherheitskommentar - misst der Test `jeder_unsafe_block_traegt_einen_safety_kommentar`
+#     in broker/tests/security_vectors.rs. Er ist der dauerhafte Nachweis.
+# (c) `undocumented_unsafe_blocks` ist ein reiner CLIPPY-Lint. Er steht hier,
+#     BEWEIST im Kanon aber nichts: tools/beweise.ps1 faehrt in keinem Bein
+#     Clippy. Die Clippy-Verdrahtung ist benannte Haertung ausserhalb dieses
+#     Tickets; `tools/` bleibt unangetastet und die Beinzahl bleibt 40.
+#
+# Die [lints]-Tabelle gilt ab Cargo 1.74; gemessen laeuft hier cargo 1.93.1,
+# und rust-version steht auf 1.82.
+[lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "deny"
+
 [lib]
 name = "eqcop_broker"
 path = "src/lib.rs"

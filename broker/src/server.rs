@@ -171,15 +171,24 @@ fn aktueller_user_sid_mit_binaer() -> Result<(String, Vec<u64>), String> {
     // Die TokenInformation-Pufferadresse darf nicht zur zweiten Wahrheit
     // werden. SID-Bytes einmal kopieren; genau diese Kopie bleibt zusammen mit
     // dem daraus gebauten DACL-Deskriptor im `Sicherheit`-Objekt am Leben.
+    // SAFETY: `sid_ptr` zeigt in den noch lebenden TokenInformation-Puffer;
+    // IsValidSid liest ihn nur und ist genau die Pruefung, die alle folgenden
+    // SID-Aufrufe voraussetzen.
     if unsafe { IsValidSid(sid_ptr) } == 0 {
         return Err("TokenUser enthielt keine gueltige SID".into());
     }
+    // SAFETY: die SID ist eine Zeile hoeher als gueltig bestaetigt; GetLengthSid
+    // liest nur ihre Laengenfelder.
     let sid_laenge = unsafe { GetLengthSid(sid_ptr) };
     if sid_laenge == 0 {
         return Err("GetLengthSid lieferte 0".into());
     }
     let mut sid_binaer = vec![0u64; (sid_laenge as usize).div_ceil(std::mem::size_of::<u64>())];
+    // SAFETY: das Ziel ist auf u64 ausgerichtet und mindestens `sid_laenge`
+    // Bytes gross - die Vec-Laenge ist genau darauf aufgerundet; die Quelle ist
+    // die geprueft gueltige SID.
     if unsafe { CopySid(sid_laenge, sid_binaer.as_mut_ptr().cast(), sid_ptr) } == 0 {
+        // SAFETY: reine Abfrage des threadlokalen Fehlercodes.
         return Err(format!("CopySid: Win32 {}", unsafe { GetLastError() }));
     }
     let sid_ptr = sid_binaer.as_mut_ptr().cast();
@@ -282,6 +291,8 @@ fn thread_abbrechen_und_join(join: JoinHandle<()>, register: &Arc<Mutex<Register
             // ERROR_NOT_FOUND ist der erwartete Übergang zwischen zwei I/Os:
             // Stop ist bereits gesetzt, daher geht der Thread entweder heraus
             // oder betritt eine neue I/O, die der nächste Durchlauf abbricht.
+            // SAFETY: reine Abfrage des threadlokalen Fehlercodes, unmittelbar
+            // nach dem fehlgeschlagenen Aufruf.
             let fehler = unsafe { GetLastError() };
             if fehler != ERROR_NOT_FOUND && unerwarteter_cancel_fehler.is_none() {
                 unerwarteter_cancel_fehler = Some(fehler);
@@ -896,6 +907,8 @@ fn verbindung_bedienen(
 
 fn pipe_schliessen(datei: &File) {
     // Disconnect beendet die Instanz; CloseHandle übernimmt der File-Drop.
+    // SAFETY: `datei` lebt ueber den ganzen Aufruf, ihr Rohhandle ist damit
+    // gueltig, und DisconnectNamedPipe schliesst es nicht.
     unsafe {
         let h = datei.as_raw_handle() as HANDLE;
         DisconnectNamedPipe(h);
@@ -916,6 +929,10 @@ fn pipe_nach_antwort_schliessen(datei: &File, register: &Arc<Mutex<Register>>) {
     };
     match std::thread::Builder::new()
         .name("eqcop-pipe-flush".into())
+        // Das Cancel-und-Join-Protokoll unten haelt die Soundness: der Thread
+        // wird abgebrochen, nie sein Handle unter ihm entzogen.
+        // SAFETY: `flush_datei` ist ein eigener geklonter Handle, den allein
+        // dieser Thread besitzt; er lebt bis zu seinem Ende.
         .spawn(move || unsafe {
             FlushFileBuffers(flush_datei.as_raw_handle() as HANDLE);
         }) {

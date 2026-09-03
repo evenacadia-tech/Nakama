@@ -1,0 +1,42 @@
+# Rotbeweis H-22 — NAK-121 Etappe 2
+
+Mutante(n):
+  broker/src/transport/server_v3/auth.rs
+    ALT: // SAFETY: beide SIDs sind geprueft gueltig und leben bis hierher - `sid` im
+    // Tokenpuffer, `erwartete_sid` im Sicherheitsobjekt oder im Testpuffer.
+    if unsafe { EqualSid(sid, erwartete_sid) }
+    NEU: // MUTANTE: der Sicherheitskommentar an der zentralen SID-Gleichheit
+    // fehlt — genau der Zustand, den G3-SAFETYDOC-001 beschreibt.
+    if unsafe { EqualSid(sid, erwartete_sid) } == 0 {
+
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never --test security_vectors -- jeder_unsafe_block
+Exitcode: 101
+
+Die Mutante ist nach diesem Lauf zurueckgenommen; der naechste
+Lauf derselben Tests ist wieder gruen.
+
+---
+
+
+running 1 test
+test jeder_unsafe_block_traegt_einen_safety_kommentar ... FAILED
+
+failures:
+
+---- jeder_unsafe_block_traegt_einen_safety_kommentar stdout ----
+
+thread 'jeder_unsafe_block_traegt_einen_safety_kommentar' (10836) panicked at tests\security_vectors.rs:1016:5:
+1 von 100 unsafe-Stellen ohne SAFETY-Kommentar: ["C:\\Users\\phili\\Projekte\\Nakama\\broker\\src\\transport\\server_v3\\auth.rs:165"]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    jeder_unsafe_block_traegt_einen_safety_kommentar
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 21 filtered out; finished in 0.02s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.04s
+     Running tests\security_vectors.rs (broker\target\debug\deps\security_vectors-4a68d58de2e43d5b.exe)
+error: test failed, to rerun pass `--test security_vectors`

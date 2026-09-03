@@ -78,10 +78,18 @@ impl ListenerInstanz {
             )
         };
         if h == INVALID_HANDLE_VALUE {
+            // SAFETY: reine Abfrage des Fehlercodes des eigenen Threads; sie
+            // fasst kein Handle an und muss unmittelbar nach dem
+            // fehlgeschlagenen Aufruf stehen, sonst ist der Code fremd.
             return Err(unsafe { GetLastError() });
         }
         let Some(ereignis) = Ereignis::neu() else {
+            // SAFETY: dieselbe reine Abfrage; sie laeuft VOR dem Schliessen,
+            // weil CloseHandle den Fehlercode ueberschreiben wuerde.
             let f = unsafe { GetLastError() };
+            // SAFETY: `h` ist das gerade erfolgreich erzeugte Pipe-Handle,
+            // gehoert noch niemandem sonst und wird hier genau einmal
+            // geschlossen - der Konstruktor gibt es nicht heraus.
             unsafe { CloseHandle(h) };
             return Err(f);
         };
@@ -158,6 +166,10 @@ impl Drop for ListenerInstanz {
         // verschwinden. Cancel + blockierendes Result wird erst beim finalen
         // Shutdown ausgefuehrt und kann nicht vom Peer offen gehalten werden.
         if self.ausstehend {
+            // Das blockierende GetOverlappedResult wartet die Completion ab,
+            // bevor Handle und OVERLAPPED fallen.
+            // SAFETY: `self.h` lebt bis zum Ende dieses Destruktors, und
+            // `self.ov` liegt in einer Box mit stabiler Adresse.
             unsafe {
                 CancelIoEx(self.h, self.ov.as_mut());
                 let mut verworfen = 0u32;
@@ -165,6 +177,8 @@ impl Drop for ListenerInstanz {
             }
             self.ausstehend = false;
         }
+        // SAFETY: exklusiver Besitz; nach dem Abschnitt darueber ist keine
+        // I/O mehr ausstehend, und `self.h` wird genau einmal geschlossen.
         unsafe {
             DisconnectNamedPipe(self.h);
             CloseHandle(self.h);
@@ -183,6 +197,9 @@ pub(super) struct EndeSignal(pub(super) HANDLE);
 // nebenlaeufig verwenden; `Drop` laeuft erst nach dem letzten `Arc`-Besitzer.
 unsafe impl Send for EndeSignal {}
 
+// SAFETY: dieselbe Begruendung wie fuer `Send` eine Zeile hoeher - ein
+// Eventhandle vertraegt nebenlaeufige `SetEvent`- und Wait-Aufrufe, und der Typ
+// bietet keinen inneren Zustand, der dabei zerfallen koennte.
 unsafe impl Sync for EndeSignal {}
 
 impl EndeSignal {
@@ -251,10 +268,10 @@ pub(super) fn io_fehler_deuten(f: u32) -> IoAusgang {
 /// wartet er auf I/O UND das dauerhafte Ende-Signal. Dadurch bleibt auch ein
 /// Ende dicht, das zwischen dem letzten Zustandscheck und `ReadFile` eintritt.
 pub(super) fn ov_lesen(h: HANDLE, e: HANDLE, ende: Option<&EndeSignal>, ziel: &mut [u8]) -> IoAusgang {
+    // `ov`, Handle-Array und `ziel` bleiben gueltig, bis
+    // GetOverlappedResult beziehungsweise der Wait zurueck ist.
     // SAFETY: `h` ist ein gueltiges, overlapped geoeffnetes Pipe-Handle, `e`
-    // gehoert allein diesem Thread, und ein vorhandenes `ende` samt Handle lebt
-    // ueber den ganzen Aufruf. `ov`, Handle-Array und `ziel` bleiben gueltig,
-    // bis GetOverlappedResult beziehungsweise der Wait zurueck ist.
+    // gehoert allein diesem Thread, und ein vorhandenes `ende` lebt ueber den Aufruf.
     unsafe {
         ResetEvent(e);
         let mut ov = leeres_overlapped(e);
@@ -432,10 +449,10 @@ pub(super) struct HandleRegister {
     pub(super) abgeloest: std::collections::HashSet<u64>,
 }
 
-// SAFETY: Win32-HANDLEs sind prozessweite Kernel-Referenzen ohne Thread-
-// Affinitaet. Das Register haelt sie nur, solange der besitzende Thread seinen
-// `Verbindungsgriff` noch nicht fallen gelassen hat; Eintragen und Austragen
-// laufen unter demselben Mutex wie das Abbrechen.
+// Das Register haelt ein Handle nur, solange der besitzende Thread seinen
+// `Verbindungsgriff` haelt; Eintragen, Austragen und Abbrechen laufen unter
+// demselben Mutex.
+// SAFETY: Win32-HANDLEs sind prozessweite Kernel-Referenzen ohne Thread-Affinitaet.
 unsafe impl Send for HandleRegister {}
 
 /// Bricht die I/O eines Handles ab und wertet den Rueckgabewert aus (H-01).
@@ -506,6 +523,9 @@ pub(super) struct TokenGriff(pub(super) HANDLE);
 impl Drop for TokenGriff {
     fn drop(&mut self) {
         if !self.0.is_null() {
+            // SAFETY: exklusiver Besitz des Tokenhandles; die Nullpruefung
+            // darueber schliesst den Fall aus, dass es nie erzeugt wurde, und
+            // der Destruktor laeuft genau einmal.
             unsafe { CloseHandle(self.0) };
         }
     }

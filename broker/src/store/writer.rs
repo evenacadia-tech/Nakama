@@ -729,6 +729,9 @@ mod tests {
         // `xSync` im dateieigenen Anhang abgelegt.
         let original = unsafe { (*anhang(datei)).original_sync };
         match original {
+            // SAFETY: `original` ist der von SQLite selbst gelieferte
+            // xSync-Zeiger derselben Datei; Argumente werden unveraendert
+            // durchgereicht.
             Some(sync) => unsafe { sync(datei, flags) },
             None => ffi::SQLITE_IOERR,
         }
@@ -750,7 +753,11 @@ mod tests {
         let Some(open) = (unsafe { (*basis).xOpen }) else {
             return ffi::SQLITE_CANTOPEN;
         };
+        // SAFETY: `open` ist der xOpen der Default-VFS, und alle Argumente
+        // stammen unveraendert von SQLite aus diesem Aufruf.
         let rc = unsafe { open(basis, name, datei, flags, aus_flags) };
+        // SAFETY: nach erfolgreichem xOpen zeigt `datei` auf ein initialisiertes
+        // sqlite3_file; bei Misserfolg wird der Zeiger gar nicht erst gelesen.
         if rc != ffi::SQLITE_OK || unsafe { (*datei).pMethods.is_null() } {
             return rc;
         }
@@ -758,7 +765,11 @@ mod tests {
         // ihr `sqlite3_io_methods` ist Copy und fuer die Dateilebenszeit
         // gueltig. Nur xSync wird im dateieigenen Abbild ersetzt.
         let original_methoden = unsafe { *(*datei).pMethods };
+        // SAFETY: `anhang` rechnet den Offset hinter dem von der Default-VFS
+        // gemeldeten szOsFile aus; der Wrapper hat genau dafuer Platz reserviert.
         let ziel = unsafe { anhang(datei) };
+        // SAFETY: `ziel` ist dieser reservierte, noch uninitialisierte Bereich;
+        // ptr::write initialisiert ihn genau einmal, danach ist er gueltig.
         unsafe {
             ptr::write(
                 ziel,
@@ -774,6 +785,9 @@ mod tests {
     }
 
     fn zaehl_vfs_registrieren() {
+        // SAFETY: laeuft genau einmal je Prozess. Der Wrapper wird bewusst
+        // geleakt - SQLite haelt seinen Zeiger fuer die Prozesslebenszeit, ein
+        // Freigeben waere ein Use-after-free im Bibliothekscode.
         VFS_REGISTRIEREN.call_once(|| unsafe {
             let basis = ffi::sqlite3_vfs_find(ptr::null());
             assert!(!basis.is_null(), "SQLite-Default-VFS fehlt");

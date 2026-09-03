@@ -22,7 +22,12 @@ use sha2::{Digest, Sha256};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex, OnceLock};
-use std::time::{Duration, Instant};
+use std::time::Duration;
+
+mod uhr;
+
+pub use uhr::{ManualClock, MonotonicClock};
+use uhr::InstantClock;
 
 const MAX_AKTIVE_INTERVENTIONEN: usize = 64;
 pub const HEARTBEAT_INTERVAL_MS: u64 = 1000;
@@ -149,53 +154,6 @@ fn projektion_mit_aktuellem_lauf(gespeichert: &[u8], live: &[u8]) -> Option<Vec<
         Value::Bool(beitritt_bestaetigung_noetig),
     );
     serde_json::to_vec(&persistiert).ok()
-}
-
-pub trait MonotonicClock: Send + Sync {
-    fn jetzt(&self) -> Duration;
-}
-
-#[derive(Debug)]
-struct InstantClock {
-    start: Instant,
-}
-
-impl Default for InstantClock {
-    fn default() -> Self {
-        Self {
-            start: Instant::now(),
-        }
-    }
-}
-
-impl MonotonicClock for InstantClock {
-    fn jetzt(&self) -> Duration {
-        self.start.elapsed()
-    }
-}
-
-/// Schlaflose Testuhr. Produktion konstruiert den Coordinator ausschliesslich
-/// mit `InstantClock`.
-#[doc(hidden)]
-#[derive(Debug, Default)]
-pub struct ManualClock {
-    millis: AtomicU64,
-}
-
-impl ManualClock {
-    pub fn setze_ms(&self, millis: u64) {
-        self.millis.store(millis, Ordering::SeqCst);
-    }
-
-    pub fn vor(&self, millis: u64) {
-        self.millis.fetch_add(millis, Ordering::SeqCst);
-    }
-}
-
-impl MonotonicClock for ManualClock {
-    fn jetzt(&self) -> Duration {
-        Duration::from_millis(self.millis.load(Ordering::SeqCst))
-    }
 }
 
 pub trait SessionPush: Send + Sync {

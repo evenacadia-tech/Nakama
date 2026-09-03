@@ -935,9 +935,26 @@ fn verbindungsgriff_besitzt_handle_und_registereintrag() {
     // faellt der letzte geteilte Griff und traegt aus. Vor NAK-121 blieb die
     // Pipeinstanz bis zum Serverstopp verbrannt, weil `BootstrapFrist` die ID
     // laengst ausgetragen hatte und der Wachhund nur faellige Bootstraps sah.
+    //
+    // R2-4 (Nacharbeit Runde 2, 03.09.2026): der mit D14 eingefuehrte Zaehler
+    // `abgeloest_abbrueche` bekam keinen Gegenweg. Erst wird deshalb gemessen,
+    // dass die D14-Naht ihren Abbruch WIRKLICH SIEHT - sonst haette das
+    // Abraeumen sie ausgehungert -, danach dass der Destruktor alle drei
+    // Registermengen raeumt.
+    assert!(
+        warten(20_000, || griff.abgeloest_abbrueche_gesamt() > 0),
+        "der Wachhund hat fuer die abgeloeste ID nie abgebrochen - die D14-Naht misst nichts"
+    );
     assert!(
         warten(10_000, || griff.gehaltene_handles() == 0),
         "abgeloester Schreiber gab sein Handle nicht zurueck"
+    );
+    // Verbinden gegen Trennen, vollstaendig: keine der drei Mengen fuehrt die
+    // ID noch. Vorher wuchs `abgeloest_abbrueche` unbegrenzt weiter.
+    assert_eq!(
+        griff.registermengen(),
+        (0, 0, 0),
+        "der Destruktor liess einen Registereintrag stehen (offen, abgeloest, abgeloest_abbrueche)"
     );
 
     // ... und der Listener nimmt weiterhin an.

@@ -460,12 +460,22 @@ impl Drop for Verbindungsgriff {
         // H-01, die Reihenfolge IST die Zusage: unter der Registersperre
         // austragen, danach schliessen. Umgekehrt saehe ein gleichzeitiges
         // `alle_io_abbrechen` ein Handle, das der Kernel schon wiederverwenden
-        // durfte. Der Austrag raeumt beide Mengen, damit der Wachhund aus H-02
-        // keine tote ID weiterverfolgt.
+        // durfte. Der Austrag raeumt ALLE DREI Mengen, damit der Wachhund aus
+        // H-02 keine tote ID weiterverfolgt.
+        //
+        // R2-4 (Nacharbeit Runde 2, 03.09.2026): `abgeloest_abbrueche` kam mit
+        // D14 hinzu, hatte aber keinen Gegenweg - bei wiederholten
+        // H-02-Abloesungen wuchs die Map ueber die gesamte Brokerlaufzeit, obwohl
+        // nur 96 Verbindungen gleichzeitig erlaubt sind. Verbinden und Trennen
+        // gehoeren in denselben Aenderungssatz; die D14-Naht bleibt trotzdem
+        // wirksam, weil sie den Zaehler liest, solange der abgeloeste Schreiber
+        // seinen geteilten Griff haelt - der letzte Griff faellt erst NACH dem
+        // Threadende.
         {
             let mut r = self.register.lock().unwrap_or_else(|e| e.into_inner());
             r.offen.retain(|(i, _)| *i != self.id);
             r.abgeloest.remove(&self.id);
+            r.abgeloest_abbrueche.remove(&self.id);
         }
         self.sicherheits_spur.push("register_austrag");
         if let Some(fenster) = &self.destruktor_fenster {

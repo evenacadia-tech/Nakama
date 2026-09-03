@@ -1,0 +1,5 @@
+URTEIL: PASS — der Befund ist geschlossen, nichts gebrochen.
+
+Geprüft: Punkt (1) ja — `welcome_geschrieben` folgt dem erfolgreichen Write (`verbindung.rs:381-401`), und der Test wartet darauf vor dem Abbau per Envelope-Verstoß (`security_vectors.rs:1144-1158`); Punkt (2) ja — `flush_beginn` steht unmittelbar vor `FlushFileBuffers` (`win_handles.rs:438-450`), der Leser wartet darauf ohne Sleep und prüft Welcome, EOF, Zähler und Reihenfolge (`security_vectors.rs:1166-1206`). Der Rotbeweis zeigt die benannte Mutante 8/8 rot und den unveränderten Stand 8/8 grün (`NAK-121-rot-R3-1-r3.txt:75-165`); der eingecheckte Kanon auf dem mit HEAD unter `broker/` identischen Stand ist 40/40 grün, einschließlich aller 23 `security_vectors`-Tests (`NAK-121-a627ebb.md:3,542-559`).
+
+Nicht geprüft: Ein eigener Cargo- oder Kanonlauf war wegen der schreibgeschützten Sandbox nicht möglich; HEAD blieb vor und nach der Prüfung `28fb0f1aa7e0737c7a5dff63b73b08b52caad288`, und die fremde unversionierte `.claude/settings.local.json` blieb unangetastet.

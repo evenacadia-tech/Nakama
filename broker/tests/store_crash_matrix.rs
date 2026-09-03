@@ -1569,6 +1569,68 @@ fn konfliktriegel_ueberlebt_neustart_mit_nur_einem_partner() {
     assert_eq!(writer.restaurierte_guards(), &[guard]);
 }
 
+/// D9 der Nacharbeit Runde 1 (Abschlusspruefung 1, 03.09.2026): H-21 faltet
+/// den Speicherindex ueber die Schreibweise der SID, das SQLite-Praedikat der
+/// Loeschung verglich aber binaer.
+///
+/// Codex an der Quelle: ein Riegel mit grossgeschriebener SID, ueber dieselbe
+/// SID in Kleinschreibung aufgeloest, loeschte keine Zeile - die betroffene
+/// Zeilenzahl wurde nicht geprueft, der gefaltete Speicherindex trotzdem
+/// geleert und Erfolg gemeldet. Beim naechsten Start war der vermeintlich
+/// geloeschte Riegel wieder da.
+#[test]
+fn guard_aufloesung_faltet_die_sid_schreibweise_wie_der_speicherindex() {
+    let ordner = TestOrdner::neu("guard-sid-faltung");
+    let gross = ConflictGuard {
+        effective_address: "S-1-5-21-1-2-3-1001|project|session|instance".into(),
+        derived_id: "instance:nonce-a".into(),
+        created_utc_ms: 1,
+    };
+    let klein = gross.effective_address.to_ascii_lowercase();
+    assert_ne!(klein, gross.effective_address, "der Test braucht zwei Schreibweisen");
+
+    let mut writer = starten(&ordner.db());
+    writer
+        .handle()
+        .konflikt_guard_persistieren(gross.clone())
+        .unwrap();
+    // Aufloesung ueber die ANDERE Schreibweise derselben SID.
+    writer
+        .handle()
+        .konflikt_guard_aufloesen(klein, gross.derived_id.clone())
+        .unwrap();
+    assert_eq!(
+        scalar_i64(&ordner.db(), "SELECT COUNT(*) FROM conflict_guards"),
+        0,
+        "die anders geschriebene Aufloesung hat keine Zeile geloescht"
+    );
+    writer.stoppen();
+
+    // Und der Riegel bleibt fort - vorher kam er beim naechsten Start zurueck.
+    let writer = starten(&ordner.db());
+    assert!(
+        writer.restaurierte_guards().is_empty(),
+        "der aufgeloeste Riegel ist beim Neustart wieder da: {:?}",
+        writer.restaurierte_guards()
+    );
+}
+
+/// Eine Aufloesung, die keine Zeile trifft, ist keine erfolgreiche Aufloesung.
+/// Sie still zu schlucken war der Weg, auf dem Speicherindex und Tabelle
+/// auseinanderliefen.
+#[test]
+fn guard_aufloesung_ohne_treffer_meldet_fehler() {
+    let ordner = TestOrdner::neu("guard-ohne-treffer");
+    let writer = starten(&ordner.db());
+    let ausgang = writer
+        .handle()
+        .konflikt_guard_aufloesen("gibt|es|gar|nicht".into(), "instance:nonce".into());
+    assert!(
+        ausgang.is_err(),
+        "eine Aufloesung ohne betroffene Zeile meldete Erfolg"
+    );
+}
+
 #[test]
 fn routing_bleibt_zu_bis_konfliktriegel_restauriert() {
     let ordner = TestOrdner::neu("guard-routing");

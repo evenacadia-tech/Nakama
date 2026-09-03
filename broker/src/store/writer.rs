@@ -661,11 +661,32 @@ pub(super) fn konflikt_guard_loeschen(
     derived_id: &str,
 ) -> Result<(), StoreFehler> {
     let tx = conn.transaction_with_behavior(TransactionBehavior::Immediate)?;
-    tx.execute(
-        "DELETE FROM conflict_guards WHERE effective_address=?1 AND derived_id=?2",
+    // D9 der Nacharbeit Runde 1 (Abschlusspruefung 1, 03.09.2026): H-21 faltet
+    // den SPEICHERINDEX des Coordinators ueber die Schreibweise der SID, dieses
+    // Praedikat verglich aber binaer - SQLite kollationiert TEXT
+    // voreingestellt als BINARY. Ein Riegel mit grossgeschriebener SID, ueber
+    // dieselbe SID in Kleinschreibung aufgeloest, loeschte KEINE Zeile; der
+    // gefaltete Speicherindex wurde trotzdem geleert und die Methode meldete
+    // Erfolg. Beim naechsten Start kam der vermeintlich geloeschte Riegel
+    // zurueck. Loeschen und Speicherindex gehen jetzt ueber dieselbe Faltung.
+    //
+    // `lower()` ist in SQLite ASCII-only - genau richtig: Windows-SIDs sind
+    // reines ASCII, und die uebrigen Bestandteile der effektiven Adresse sind
+    // hex32. Schema und gespeicherte Bytes bleiben unveraendert; die Faltung
+    // steht nur im Praedikat. Sie raeumt zugleich mehrere Schreibweisen
+    // desselben logischen Riegels in einem Zug ab.
+    let betroffen = tx.execute(
+        "DELETE FROM conflict_guards WHERE lower(effective_address)=lower(?1) AND derived_id=?2",
         params![effective_address, derived_id],
     )?;
     tx.commit()?;
+    // Eine Null ist keine erfolgreiche Aufloesung. Sie still zu schlucken war
+    // genau der Weg, auf dem Speicherindex und Tabelle auseinanderliefen.
+    if betroffen == 0 {
+        return Err(StoreFehler::Degradiert(format!(
+            "Konfliktriegel {derived_id} auf {effective_address} nicht gefunden"
+        )));
+    }
     Ok(())
 }
 

@@ -1,0 +1,55 @@
+# Rotbeweis D9 (H-21, Faltung der SID-Schreibweise beim Loeschen) — NAK-121 Nacharbeit Runde 1
+
+Das Loeschpraedikat vergleicht wieder binaer und die betroffene Zeilenzahl
+wird nicht geprueft - der Stand, an dem ein aufgeloester Riegel beim
+naechsten Start zurueckkam.
+
+Mutante(n):
+  broker/src/store/writer.rs
+    ALT:     let betroffen = tx.execute(
+    ALT:         "DELETE FROM conflict_guards WHERE lower(effective_address)=lower(?1) AND derived_id=?2",
+    ALT:         params![effective_address, derived_id],
+    ALT:     )?;
+    ALT:     tx.commit()?;
+    NEU:     // MUTANTE: binaeres Praedikat und keine Zeilenzahl, wie vor der Nacharbeit.
+    NEU:     let betroffen = tx.execute(
+    NEU:         "DELETE FROM conflict_guards WHERE effective_address=?1 AND derived_id=?2",
+    NEU:         params![effective_address, derived_id],
+    NEU:     )?;
+    NEU:     tx.commit()?;
+    NEU:     let betroffen = betroffen.max(1);
+
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never --test store_crash_matrix -- guard_aufloesung_faltet
+Exitcode: 101
+
+Die Mutante ist nach diesem Lauf zurueckgenommen; der naechste
+Lauf derselben Tests ist wieder gruen.
+
+---
+
+
+running 1 test
+test guard_aufloesung_faltet_die_sid_schreibweise_wie_der_speicherindex ... FAILED
+
+failures:
+
+---- guard_aufloesung_faltet_die_sid_schreibweise_wie_der_speicherindex stdout ----
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-guard-sid-faltung-3276-f5c1f033045c41988af6eed2d1f95df2\nakama-broker.sqlite3
+
+thread 'guard_aufloesung_faltet_die_sid_schreibweise_wie_der_speicherindex' (624) panicked at tests\store_crash_matrix.rs:1602:5:
+assertion `left == right` failed: die anders geschriebene Aufloesung hat keine Zeile geloescht
+  left: 1
+ right: 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    guard_aufloesung_faltet_die_sid_schreibweise_wie_der_speicherindex
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 81 filtered out; finished in 0.04s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.04s
+     Running tests\store_crash_matrix.rs (broker\target\debug\deps\store_crash_matrix-4ebee0ee77644d63.exe)
+error: test failed, to rerun pass `--test store_crash_matrix`

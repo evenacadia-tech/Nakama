@@ -626,7 +626,7 @@ int main()
                                             "OpenProcess", "OpenProcessToken" });
         const bool logFrei = freiVon ({ "juce::Logger", "std::cout", "printf (",
                                         "fprintf (", "OutputDebugString" });
-        const auto storeText = repo.getChildFile ("broker/src/store.rs").loadFileAsString();
+        const auto storeText = repo.getChildFile ("broker/src/store/mod.rs").loadFileAsString();
         const bool storeNull = storeText.contains (
             "pub const AUDIO_THREAD_STORE_WAIT_MS_MAX: u64 = 0;")
                             && freiVon ({ "StoreWriter", "StoreHandle", "store.append",

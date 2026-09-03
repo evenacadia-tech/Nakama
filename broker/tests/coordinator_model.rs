@@ -1,5 +1,5 @@
 use eqcop_broker::coordinator::{
-    Coordinator, ManualClock, MonotonicClock, FUEHRENDE_MAINS_PRO_SESSION, GLOBAL_CLIENT_CAP,
+    Coordinator, CoordinatorFlushTestHaken, ManualClock, MonotonicClock, FUEHRENDE_MAINS_PRO_SESSION, GLOBAL_CLIENT_CAP,
     GLOBAL_SESSION_CAP,
     HEARTBEAT_INTERVAL_MS, LAST_SONDEN, SESSION_CLIENT_CAP, SESSION_SUBSCRIPTION_EVENT_REPLAY_MAX,
     SICHTBARE_SONDEN_NORMAL, STALE_JITTER_MS, STALE_NACH_MS, STALE_VERPASSTE_INTERVALLE,
@@ -1316,16 +1316,33 @@ fn vergifteter_stand_beendet_den_prozess_nicht() {
     assert_eq!(vorher, 1);
 
     // Den Standlock absichtlich vergiften: ein Thread panisiert, waehrend er
-    // ihn haelt. Genau dieser Zustand liess den Broker vor NAK-121 an jedem
+    // ihn HAELT. Genau dieser Zustand liess den Broker vor NAK-121 an jedem
     // weiteren Zugriff sterben - 54 expect-Stellen gegen 14 tolerante.
+    //
+    // D12 der Nacharbeit Runde 1 (Abschlusspruefung 1, 03.09.2026): der Test
+    // panisierte bisher NACH `modell_sicht`. Das gibt nur Kopien zurueck und
+    // laesst seinen Guard vor der Rueckkehr fallen - der Lock blieb gesund,
+    // und alle folgenden Assertionen massen gewoehnliche Zugriffe statt der
+    // zugesagten Weiterarbeit. Die Panik faellt jetzt ueber die Naht des
+    // vorhandenen Flush-Testhakens im gesperrten Block selbst.
     let c2 = Arc::new(c);
+    let haken = CoordinatorFlushTestHaken::default();
+    // Vorab freigeben: wird der Haken nach der Panik von einem spaeteren Flush
+    // doch noch erreicht, laeuft er durch, statt den Test aufzuhaengen.
+    haken.freigeben();
+    haken.panik_unter_standlock_scharf();
+    c2.flush_test_haken_setzen(haken);
+
     let geliehen = c2.clone();
-    let panik = std::thread::spawn(move || {
-        // modell_sicht nimmt den Standlock; die Panik faellt darunter.
-        let _sicht = geliehen.modell_sicht(&hex(1), &hex(2));
-        panic!("absichtliche Panik unter dem Standlock");
-    });
+    let adresse = h.adresse.clone();
+    // Der Heartbeat flusht seine Session - und laeuft dabei durch den
+    // gesperrten Block, in dem die Naht sitzt.
+    let panik = std::thread::spawn(move || report(&geliehen, "a", &adresse));
     assert!(panik.join().is_err(), "die Panik ist nicht eingetreten");
+    assert!(
+        c2.standlock_vergiftet(),
+        "der Standlock ist NICHT vergiftet - der Test misst H-04 gar nicht"
+    );
 
     // Der Lock ist jetzt vergiftet. Fachlich sichtbare Zustaende bleiben, was
     // sie waren; nichts wird stillschweigend zurueckgesetzt.

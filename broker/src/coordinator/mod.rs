@@ -21,7 +21,7 @@ use crate::transport::bootstrap::{Adresse, AudioLage, HelloControl};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::collections::{HashMap, HashSet, VecDeque};
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex, OnceLock};
 use std::time::Duration;
 
@@ -93,6 +93,12 @@ pub trait SessionPush: Send + Sync {
 #[derive(Clone, Default)]
 pub struct CoordinatorFlushTestHaken {
     stand: Arc<(Mutex<(bool, bool)>, Condvar)>,
+    /// D12 der Nacharbeit Runde 1 (Abschlusspruefung 1, 03.09.2026): scharf
+    /// gestellt panisiert der naechste Flush EINMAL, waehrend er den
+    /// Standlock haelt. Ohne diese Naht laesst sich H-04 nicht messen:
+    /// `modell_sicht` gibt nur Kopien zurueck und laesst seinen Guard fallen,
+    /// bevor es zurueckkehrt - eine Panik danach vergiftet nichts.
+    panik_unter_standlock: Arc<AtomicBool>,
 }
 
 impl CoordinatorFlushTestHaken {
@@ -109,6 +115,11 @@ impl CoordinatorFlushTestHaken {
         let mut stand = schloss.lock().unwrap_or_else(|e| e.into_inner());
         stand.1 = true;
         signal.notify_all();
+    }
+
+    /// Stellt die Panik unter dem Standlock scharf. Sie faellt genau einmal.
+    pub fn panik_unter_standlock_scharf(&self) {
+        self.panik_unter_standlock.store(true, Ordering::SeqCst);
     }
 
     fn erreichen(&self) {
@@ -135,6 +146,11 @@ pub struct Coordinator {
     /// neueren Stand nie vor einem pausierten aelteren Flush committen.
     session_flush_schloesser: Vec<Mutex<()>>,
     flush_test_haken: Mutex<Option<CoordinatorFlushTestHaken>>,
+    /// D12: gespiegelte Scharfstellung aus `CoordinatorFlushTestHaken`. Sie
+    /// liegt als nacktes Atomic am Coordinator, damit der Flush sie UNTER dem
+    /// Standlock lesen kann, ohne dort einen zweiten Mutex zu nehmen - das
+    /// waere eine neue Sperrreihenfolge.
+    test_panik_unter_standlock: AtomicBool,
     /// G2-FLOATEDGE-001: wie oft ein abgeleitetes Analysefenster nicht
     /// gebildet werden konnte, weil die `sample_rate` keine normale positive
     /// Zahl war oder die Division nicht endlich blieb. NaN-Ehrlichkeit heisst
@@ -168,6 +184,7 @@ impl Coordinator {
                 .map(|_| Mutex::new(()))
                 .collect(),
             flush_test_haken: Mutex::new(None),
+            test_panik_unter_standlock: AtomicBool::new(false),
             fenster_nicht_endlich: AtomicU64::new(0),
         }
     }
@@ -196,6 +213,7 @@ impl Coordinator {
                 .map(|_| Mutex::new(()))
                 .collect(),
             flush_test_haken: Mutex::new(None),
+            test_panik_unter_standlock: AtomicBool::new(false),
             fenster_nicht_endlich: AtomicU64::new(0),
         }
     }
@@ -214,10 +232,21 @@ impl Coordinator {
 
     #[doc(hidden)]
     pub fn flush_test_haken_setzen(&self, haken: CoordinatorFlushTestHaken) {
+        self.test_panik_unter_standlock.store(
+            haken.panik_unter_standlock.load(Ordering::SeqCst),
+            Ordering::SeqCst,
+        );
         *self
             .flush_test_haken
             .lock()
             .unwrap_or_else(|e| e.into_inner()) = Some(haken);
+    }
+
+    /// H-04, D12: ist der Standlock vergiftet? Ohne diese Frage waere die
+    /// Vergiftung von aussen unbeobachtbar und der Test koennte nur behaupten,
+    /// sie herbeigefuehrt zu haben.
+    pub fn standlock_vergiftet(&self) -> bool {
+        self.stand.is_poisoned()
     }
 
 }

@@ -37,6 +37,16 @@ impl Coordinator {
 
         let (payload, ziele) = {
             let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+            // D12-Naht (H-04): scharf gestellt panisiert der Flush hier, UNTER
+            // dem Standlock - genau das vergiftet ihn. Einmalig, damit die
+            // Messung danach ungestoert laeuft.
+            if self
+                .test_panik_unter_standlock
+                .compare_exchange(true, false, Ordering::SeqCst, Ordering::SeqCst)
+                .is_ok()
+            {
+                panic!("D12-Testnaht: absichtliche Panik unter dem Standlock");
+            }
             if !stand.dirty_sessions.remove(session) {
                 return;
             }

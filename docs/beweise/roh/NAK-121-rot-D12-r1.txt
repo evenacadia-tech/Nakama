@@ -1,0 +1,51 @@
+# Rotbeweis D12 (H-04, echte Vergiftung des Standlocks) — NAK-121 Nacharbeit Runde 1
+
+Eine Sperrstelle nimmt den Standlock wieder mit `expect`. Der Test ist nur
+rot, wenn er den Lock WIRKLICH vergiftet hat.
+
+Mutante(n):
+  broker/src/coordinator/sicht.rs
+    ALT:     pub fn client_anzahl(&self) -> usize {
+    ALT:         self.stand
+    ALT:             .lock()
+    ALT:             .unwrap_or_else(|e| e.into_inner())
+    NEU:     pub fn client_anzahl(&self) -> usize {
+    NEU:         // MUTANTE: ein expect auf dem Standlock, wie vor H-04.
+    NEU:         self.stand
+    NEU:             .lock()
+    NEU:             .expect("Coordinator vergiftet")
+
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never --test coordinator_model -- vergifteter_stand
+Exitcode: 101
+
+Die Mutante ist nach diesem Lauf zurueckgenommen; der naechste
+Lauf derselben Tests ist wieder gruen.
+
+---
+
+
+running 1 test
+test vergifteter_stand_beendet_den_prozess_nicht ... FAILED
+
+failures:
+
+---- vergifteter_stand_beendet_den_prozess_nicht stdout ----
+
+thread '<unnamed>' (17628) panicked at src\coordinator\flush.rs:48:17:
+D12-Testnaht: absichtliche Panik unter dem Standlock
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread 'vergifteter_stand_beendet_den_prozess_nicht' (2236) panicked at src\coordinator\sicht.rs:245:14:
+Coordinator vergiftet: PoisonError { .. }
+
+
+failures:
+    vergifteter_stand_beendet_den_prozess_nicht
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 46 filtered out; finished in 0.00s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.90s
+     Running tests\coordinator_model.rs (broker\target\debug\deps\coordinator_model-c22cf73cd241058f.exe)
+error: test failed, to rerun pass `--test coordinator_model`

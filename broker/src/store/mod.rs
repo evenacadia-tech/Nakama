@@ -1712,7 +1712,7 @@ mod tests {
     #[test]
     fn rusqlite_version_0_40_2_ist_exakt_gepinnt() {
         assert_eq!(RUSQLITE_VERSION, "0.40.2");
-        let cargo = include_str!("../Cargo.toml");
+        let cargo = include_str!("../../Cargo.toml");
         let zeile = cargo
             .lines()
             .find(|zeile| zeile.trim_start().starts_with("rusqlite ="))

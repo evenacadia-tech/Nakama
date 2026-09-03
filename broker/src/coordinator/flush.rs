@@ -170,6 +170,28 @@ impl Coordinator {
                 stand.conflict_guards.remove(effective_address);
             }
         }
+        // H-14: die Aufloesung raeumt den passenden Aliaseintrag mit. Bis
+        // NAK-121 lief sie nur ueber Store und Coordinatorstand, waehrend die
+        // Quarantaene des Aliasregisters stehen blieb - der Riegel war fort,
+        // aber jede Registrierung derselben Instanz fiel weiter an ihr.
+        // C-07 bleibt unveraendert: die Aufloesung geschieht ausschliesslich
+        // ueber diese explizite Neu-ID, nie ueber Zeit.
+        //
+        // Die derived_id traegt die Form `<instance_id>:<runtime_nonce>`
+        // (vergeben in link.rs); die Quarantaene fuehrt denselben Wert als
+        // Besitzerschluessel. Die zugehoerigen Adressraeume stehen an den
+        // Links, deshalb wird ueber sie gesucht statt geraten.
+        let adressraeume: Vec<_> = stand
+            .links
+            .values()
+            .filter(|link| link.alias_besitzer == derived_id)
+            .map(|link| link.alias_adressraum.clone())
+            .collect();
+        drop(stand);
+        for adressraum in adressraeume {
+            self.alias_register
+                .quarantaene_aufloesen(&adressraum, derived_id);
+        }
         true
     }
 

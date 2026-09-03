@@ -85,6 +85,15 @@ impl Sitzungsadressraum {
     }
 }
 
+/// H-14: Obergrenze der Quarantaenemenge. Ohne sie wuchs sie unbegrenzt -
+/// eine Suche nach `quarantaene.remove`, `.retain` oder `.clear` traf im
+/// ganzen Crate nirgends, und C-07 verbietet ausdruecklich jede zeitbasierte
+/// Freigabe. Ist der Deckel erreicht, wird die Registrierung abgewiesen; das
+/// ist der fail-closed-Ausgang, den C-07 ohnehin fordert. Der Wert liegt eine
+/// Groessenordnung ueber der Zahl gleichzeitig moeglicher Clients
+/// (`GLOBAL_CLIENT_CAP` = 128), damit er im gesunden Betrieb nie greift.
+pub const MAX_QUARANTAENE: usize = 1024;
+
 type BesitzerSchluessel = (Sitzungsadressraum, String);
 type WireSchluessel = (Sitzungsadressraum, String);
 
@@ -145,6 +154,12 @@ impl AliasRegister {
             .is_some_and(|bekannt| bekannt == wire)
         {
             return Registrierung::BereitsEingetragen;
+        }
+        // H-14: bevor eine neue Kollision zwei weitere Eintraege erzeugen
+        // koennte, faellt die Registrierung am Deckel. Fail-closed, wie C-07
+        // es fordert - und ohne die zeitbasierte Freigabe, die C-07 verbietet.
+        if stand.quarantaene.len() >= MAX_QUARANTAENE {
+            return Registrierung::Ungueltig;
         }
 
         if let Some(erster) = stand.nach_wire.get(&wire_schluessel).cloned() {
@@ -247,6 +262,46 @@ impl AliasRegister {
         wire: &str,
     ) -> bool {
         self.dispatch_erlaubt(adressraum, original, wire)
+    }
+
+    /// H-14: Groesse der Quarantaenemenge. Ohne sie waere der Deckel von aussen
+    /// unbeobachtbar.
+    pub fn quarantaene_anzahl(&self) -> usize {
+        self.stand
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .quarantaene
+            .len()
+    }
+
+    /// H-14: raeumt den Aliaseintrag, der zu einem aufgeloesten Konfliktriegel
+    /// gehoert.
+    ///
+    /// Die Aufloesung eines Riegels lief bis NAK-121 nur ueber den Store und
+    /// den Coordinatorstand; die Quarantaene des Aliasregisters blieb stehen.
+    /// Riegel und Alias liefen damit auseinander: der Riegel war fort, aber
+    /// jede Registrierung derselben Instanz fiel weiter an der Quarantaene.
+    /// C-07 bleibt unveraendert - die Aufloesung geschieht ausschliesslich
+    /// ueber diese explizite Neu-ID, nie ueber Zeit.
+    pub fn quarantaene_aufloesen(&self, adressraum: &Sitzungsadressraum, original: &str) -> bool {
+        let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+        let besitzer = Self::besitzer_schluessel(adressraum, original);
+        let war_drin = stand.quarantaene.remove(&besitzer);
+        if war_drin {
+            // Der Indexeintrag desselben Besitzers faellt mit; ein
+            // zurueckgelassener Eintrag waere eine Zuordnung ohne Riegel.
+            if let Some(wire) = stand.nach_original.remove(&besitzer) {
+                let wire_schluessel = Self::wire_schluessel(adressraum, &wire);
+                if stand
+                    .nach_wire
+                    .get(&wire_schluessel)
+                    .is_some_and(|owner| owner == original)
+                {
+                    stand.nach_wire.remove(&wire_schluessel);
+                }
+            }
+        }
+        war_drin
     }
 
     pub fn ist_quarantaenisiert(&self, adressraum: &Sitzungsadressraum, original: &str) -> bool {

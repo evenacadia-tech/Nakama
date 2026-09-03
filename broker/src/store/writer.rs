@@ -622,6 +622,26 @@ pub(super) fn konflikt_guard_schreiben(
     guard: &ConflictGuard,
 ) -> Result<(), StoreFehler> {
     let tx = conn.transaction_with_behavior(TransactionBehavior::Immediate)?;
+    // H-14: der Deckel greift VOR dem Einfuegen und nur fuer NEUE Riegel - ein
+    // bereits vorhandener darf jederzeit erneut geschrieben werden, sonst
+    // scheiterte ein Reconnect an der eigenen Grenze.
+    let bereits_da: bool = tx
+        .query_row(
+            "SELECT 1 FROM conflict_guards WHERE effective_address=?1 AND derived_id=?2",
+            params![guard.effective_address, guard.derived_id],
+            |_| Ok(true),
+        )
+        .optional()?
+        .unwrap_or(false);
+    if !bereits_da {
+        let anzahl: i64 =
+            tx.query_row("SELECT COUNT(*) FROM conflict_guards", [], |row| row.get(0))?;
+        if anzahl as usize >= MAX_KONFLIKT_GUARDS {
+            return Err(StoreFehler::Degradiert(format!(
+                "Konfliktriegel-Grenze von {MAX_KONFLIKT_GUARDS} erreicht"
+            )));
+        }
+    }
     tx.execute(
         "INSERT OR IGNORE INTO conflict_guards(effective_address,derived_id,created_utc_ms)\
          VALUES(?1,?2,?3)",

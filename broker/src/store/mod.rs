@@ -47,6 +47,13 @@ pub const WAL_SCHWELLE_BYTES: u64 = 4 * 1024 * 1024;
 pub const STORE_IDLE_MS: u64 = 5000;
 pub const CHECKPOINT_BUSY_ERWARTET: i64 = 0;
 pub const AUDIO_THREAD_STORE_WAIT_MS_MAX: u64 = 0;
+/// H-14: Obergrenze der persistenten Konfliktriegel. Die Tabelle hatte bis
+/// NAK-121 keinen Deckel, und C-07 verbietet jede zeitbasierte Freigabe - ein
+/// Angreifer konnte sie mit Kollisionen unbegrenzt fuellen. Ist die Grenze
+/// erreicht, faellt das Schreiben fail-closed, statt die Datenbank wachsen zu
+/// lassen. Derselbe Wert wie MAX_QUARANTAENE: beide Speicher fuehren dieselben
+/// Kollisionen, der eine fluechtig, der andere dauerhaft.
+pub const MAX_KONFLIKT_GUARDS: usize = crate::instance_alias::MAX_QUARANTAENE;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum StoreFehler {

@@ -2615,3 +2615,91 @@ fn warten_auf(ms: u64, mut bedingung: impl FnMut() -> bool) -> bool {
     }
     bedingung()
 }
+
+// ── NAK-121 H-14 ───────────────────────────────────────────────────────────
+//
+// Quarantaene und persistente Riegeltabelle sind gedeckelt. Beide hatten bis
+// NAK-121 keine Obergrenze, und C-07 verbietet ausdruecklich jede zeitbasierte
+// Freigabe - ein Angreifer konnte sie mit Kollisionen unbegrenzt fuellen.
+
+#[test]
+fn quarantaene_deckel_weist_ab_statt_zu_wachsen() {
+    use eqcop_broker::instance_alias::{
+        AliasRegister, Registrierung, Sitzungsadressraum, MAX_QUARANTAENE,
+    };
+
+    let register = AliasRegister::default();
+    let raum = Sitzungsadressraum::neu("S-1-5-21-1-2-3-1001", &"1".repeat(32), &"2".repeat(32));
+
+    // Jede Kollision quarantinisiert BEIDE Originale, der Deckel wird also in
+    // Zweierschritten erreicht.
+    let mut paar = 0usize;
+    while register.quarantaene_anzahl() < MAX_QUARANTAENE {
+        let wire = format!("{paar:032x}");
+        let a = format!("a{paar}");
+        let b = format!("b{paar}");
+        assert_eq!(
+            register.registriere_wire_zuordnung(&raum, &a, &wire),
+            Registrierung::Eingetragen
+        );
+        assert_eq!(
+            register.registriere_wire_zuordnung(&raum, &b, &wire),
+            Registrierung::KollisionBeideQuarantaenisiert
+        );
+        paar += 1;
+        assert!(paar < MAX_QUARANTAENE, "Deckel nie erreicht");
+    }
+    assert_eq!(register.quarantaene_anzahl(), MAX_QUARANTAENE);
+
+    // Am Deckel faellt die naechste Registrierung fail-closed - und die
+    // Quarantaene waechst NICHT weiter.
+    let wire = format!("{:032x}", paar + 1);
+    assert_eq!(
+        register.registriere_wire_zuordnung(&raum, "ueber-den-deckel", &wire),
+        Registrierung::Ungueltig
+    );
+    assert_eq!(
+        register.quarantaene_anzahl(),
+        MAX_QUARANTAENE,
+        "die Abweisung hat den Speicher trotzdem wachsen lassen"
+    );
+}
+
+#[test]
+fn guard_aufloesung_raeumt_den_aliaseintrag() {
+    use eqcop_broker::instance_alias::{AliasRegister, Registrierung, Sitzungsadressraum};
+
+    let register = AliasRegister::default();
+    let raum = Sitzungsadressraum::neu("S-1-5-21-1-2-3-1001", &"1".repeat(32), &"2".repeat(32));
+    let wire = "3".repeat(32);
+    let erster = "instanz-a:nonce-a";
+    let zweiter = "instanz-b:nonce-b";
+
+    assert_eq!(
+        register.registriere_wire_zuordnung(&raum, erster, &wire),
+        Registrierung::Eingetragen
+    );
+    assert_eq!(
+        register.registriere_wire_zuordnung(&raum, zweiter, &wire),
+        Registrierung::KollisionBeideQuarantaenisiert
+    );
+    assert!(register.ist_quarantaenisiert(&raum, erster));
+    assert!(register.ist_quarantaenisiert(&raum, zweiter));
+
+    // Die Aufloesung EINES Riegels raeumt genau seinen Eintrag - und nur ihn.
+    assert!(register.quarantaene_aufloesen(&raum, erster));
+    assert!(!register.ist_quarantaenisiert(&raum, erster));
+    assert!(
+        register.ist_quarantaenisiert(&raum, zweiter),
+        "die Aufloesung hat den fremden Riegel mitgenommen"
+    );
+
+    // Danach darf dieselbe Instanz wieder registrieren; vorher fiel sie
+    // dauerhaft an einer Quarantaene, deren Riegel laengst fort war.
+    assert_eq!(
+        register.registriere_wire_zuordnung(&raum, erster, &"4".repeat(32)),
+        Registrierung::Eingetragen
+    );
+    // Eine Aufloesung ohne Riegel meldet ehrlich false.
+    assert!(!register.quarantaene_aufloesen(&raum, "nie-quarantaenisiert"));
+}

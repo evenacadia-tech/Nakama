@@ -26,8 +26,13 @@ use std::time::Duration;
 
 mod schema;
 mod uhr;
+mod zustand;
 
 pub use uhr::{ManualClock, MonotonicClock};
+use zustand::{
+    ClientKey, ClientStand, Intervention, LinkStand, LiveMessframe, P2RejectGrund,
+    SessionCommandWirkung, SessionKey, Stand, Subscription, JSON_SAFE_INTEGER_MAX,
+};
 use schema::{
     projektion_mit_aktuellem_lauf, v3_nachricht_lesen, v3_nachricht_lesen_beliebig_mit_minor,
     v3_nachricht_lesen_mit_minor, JSON_SCHEMA_MINOR_AKTIV,
@@ -94,216 +99,6 @@ impl CoordinatorFlushTestHaken {
         signal.notify_all();
         while !stand.1 {
             stand = signal.wait(stand).unwrap_or_else(|e| e.into_inner());
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-struct ClientKey {
-    logon_sid: String,
-    project_binding_id: String,
-    session_epoch: String,
-    instance_id: String,
-}
-
-impl ClientKey {
-    fn aus_adresse(adresse: &Adresse) -> Self {
-        Self {
-            logon_sid: adresse.logon_sid.clone(),
-            project_binding_id: adresse.project_binding_id.clone(),
-            session_epoch: adresse.session_epoch.clone(),
-            instance_id: adresse.instance_id.clone(),
-        }
-    }
-
-    fn session(&self) -> SessionKey {
-        SessionKey {
-            project_binding_id: self.project_binding_id.clone(),
-            session_epoch: self.session_epoch.clone(),
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-struct SessionKey {
-    project_binding_id: String,
-    session_epoch: String,
-}
-
-#[derive(Debug, Clone)]
-struct ClientStand {
-    adresse: Adresse,
-    plugin_kind: String,
-    host_pid: Option<u32>,
-    session_ungebunden: bool,
-    current_link: Option<String>,
-    current_nonce: String,
-    last_seen: Duration,
-    stale: bool,
-    stale_seit: Option<Duration>,
-    join_kandidat: bool,
-    bestaetigt: bool,
-    explizit_bestaetigt: bool,
-    ausdruecklich_ungebunden: bool,
-    descriptor: Option<Value>,
-    state_revision: Option<u64>,
-    state_hash: Option<String>,
-    record_state_valid: bool,
-    recording: bool,
-}
-
-#[derive(Debug, Clone, Default)]
-struct SessionStand {
-    fuehrendes_main: Option<String>,
-}
-
-#[derive(Debug, Clone)]
-struct LinkStand {
-    /// Adresse, die der Peer auf dem Draht sendet. Bei einer Probe vor dem
-    /// Join traegt sie den projektgebundenen Join-Marker.
-    wire_adresse: Adresse,
-    /// Effektive Adresse im Sessiongraphen. Nach eindeutigem Auto-Join traegt
-    /// sie die vom Main erzeugte Session-Epoche.
-    adresse: Adresse,
-    client_key: ClientKey,
-    alias_adressraum: Sitzungsadressraum,
-    alias_besitzer: String,
-    letzte_event_sequence: Option<u64>,
-    verdraengt: bool,
-    trennen: bool,
-    join_neuverbinden: bool,
-}
-
-#[derive(Debug, Clone)]
-struct Subscription {
-    adresse: Adresse,
-    session_epoch: String,
-}
-
-#[derive(Debug, Clone)]
-struct Intervention {
-    link_id: String,
-}
-
-#[derive(Debug, Clone)]
-struct LiveMessframe {
-    adresse: Adresse,
-    payload: Vec<u8>,
-    empfangen: Duration,
-    sequence: u64,
-    sample_count: u32,
-    sample_rate: f64,
-}
-
-#[derive(Debug, Clone, Default)]
-struct Messfehler {
-    anzahl: u64,
-    aktuell: bool,
-    letzter_grund: Option<P2RejectGrund>,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum P2RejectGrund {
-    FeatureBatchUngueltig,
-    QuellframeAnzahlUngueltig,
-    RoutingNichtFreigegeben,
-    QuelladresseAbweichend,
-    LautheitUngueltig,
-}
-
-impl P2RejectGrund {
-    const fn wire(self) -> &'static str {
-        match self {
-            Self::FeatureBatchUngueltig => "feature_batch_ungueltig",
-            Self::QuellframeAnzahlUngueltig => "quellframe_anzahl_ungueltig",
-            Self::RoutingNichtFreigegeben => "routing_nicht_freigegeben",
-            Self::QuelladresseAbweichend => "quelladresse_abweichend",
-            Self::LautheitUngueltig => "lautheit_ungueltig",
-        }
-    }
-}
-
-const JSON_SAFE_INTEGER_MAX: u64 = 9_007_199_254_740_991;
-#[cfg(test)]
-const P2_REJECT_KATALOG: [P2RejectGrund; 5] = [
-    P2RejectGrund::FeatureBatchUngueltig,
-    P2RejectGrund::QuellframeAnzahlUngueltig,
-    P2RejectGrund::RoutingNichtFreigegeben,
-    P2RejectGrund::QuelladresseAbweichend,
-    P2RejectGrund::LautheitUngueltig,
-];
-
-#[derive(Debug, Clone, Default)]
-struct Lautheitsstand {
-    zustand: Lautheitszustand,
-    letztes_gueltiges_paar: Option<(f32, f32, Duration)>,
-    ungueltig_anzahl: u64,
-}
-
-#[derive(Debug)]
-struct Stand {
-    links: HashMap<String, LinkStand>,
-    clients: HashMap<ClientKey, ClientStand>,
-    sessions: HashMap<SessionKey, SessionStand>,
-    subscriptions: HashMap<String, Subscription>,
-    interventionen: HashMap<String, Intervention>,
-    intervention_state_unknown: bool,
-    tail_samples_offen: u64,
-    subscription_cleanups: u64,
-    subscription_abweisungen: u64,
-    letzter_subscription_grund: String,
-    evidence_angenommen: u64,
-    evidence_gesperrt: u64,
-    cap_abweisungen: u64,
-    store_verweigerungen: u64,
-    p2_live_frames: u64,
-    messframes: HashMap<ClientKey, LiveMessframe>,
-    messfehler: HashMap<ClientKey, Messfehler>,
-    lautheit: HashMap<ClientKey, Lautheitsstand>,
-    telemetry_links: HashSet<String>,
-    telemetry_kopplungen: u64,
-    conflict_guards: HashMap<String, HashSet<String>>,
-    routing_bereit: bool,
-    dirty_sessions: HashSet<SessionKey>,
-    session_commands: HashMap<String, SessionCommandWirkung>,
-    session_command_reihenfolge: VecDeque<String>,
-}
-
-#[derive(Debug, Clone)]
-struct SessionCommandWirkung {
-    kanonischer_auftrag: Vec<u8>,
-    state_revision: u64,
-    state_hash: String,
-}
-
-impl Default for Stand {
-    fn default() -> Self {
-        Self {
-            links: HashMap::new(),
-            clients: HashMap::new(),
-            sessions: HashMap::new(),
-            subscriptions: HashMap::new(),
-            interventionen: HashMap::new(),
-            intervention_state_unknown: false,
-            tail_samples_offen: 0,
-            subscription_cleanups: 0,
-            subscription_abweisungen: 0,
-            letzter_subscription_grund: String::new(),
-            evidence_angenommen: 0,
-            evidence_gesperrt: 0,
-            cap_abweisungen: 0,
-            store_verweigerungen: 0,
-            p2_live_frames: 0,
-            messframes: HashMap::new(),
-            messfehler: HashMap::new(),
-            lautheit: HashMap::new(),
-            telemetry_links: HashSet::new(),
-            telemetry_kopplungen: 0,
-            conflict_guards: HashMap::new(),
-            routing_bereit: true,
-            dirty_sessions: HashSet::new(),
-            session_commands: HashMap::new(),
-            session_command_reihenfolge: VecDeque::new(),
         }
     }
 }
@@ -3067,6 +2862,7 @@ fn persistenz_utc_ms() -> i64 {
 
 #[cfg(test)]
 mod tests {
+    use super::zustand::P2_REJECT_KATALOG;
     use super::*;
 
     #[test]

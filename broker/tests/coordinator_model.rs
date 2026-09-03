@@ -777,15 +777,23 @@ fn p2_mutiert_erst_nach_flatbuffers_verifikation() {
     assert_eq!(c.p2_live_frames(), 1);
 }
 
-/// G2-FLOATEDGE-001, Nacharbeit Runde 1 (Abschlusspruefung 1, 03.09.2026):
+/// G2-FLOATEDGE-001, Nacharbeit Runde 2 (R2-1, 03.09.2026):
 /// Die Eingangspruefung in `telemetrie.rs` fragt `is_finite() && > 0.0`. Eine
 /// POSITIVE SUBNORMALE Samplerate besteht sie - und liess das abgeleitete
-/// Fenster zu `inf` ueberlaufen. Der Test misst alle sechs Kanten an der
-/// Stelle, an der sie tatsaechlich entschieden werden:
+/// Fenster zu `inf` ueberlaufen.
 ///
-/// * subnormal: passiert das Tor, das FENSTER wird verriegelt und gezaehlt;
-/// * 0, negativ, +inf, NaN: fallen schon am Tor, erreichen die Sicht nie;
-/// * ein normaler Wert liefert weiterhin ein endliches Fenster.
+/// Der Zaehler `fenster_nicht_endlich` misst das EREIGNIS, nicht das Lesen:
+/// die Fensterbildung laeuft genau einmal je angenommenem Frame (Aufnahme in
+/// den Stand, `senke.rs`), das Ergebnis liegt beim Frame, und `messsicht`
+/// liest es nur. Vorher rechnete jede Abfrage neu und erhoehte den Zaehler
+/// erneut - der Zaehler zaehlte damit Lesefrequenz.
+///
+/// * subnormal: passiert das Tor, das FENSTER wird verriegelt und gezaehlt -
+///   genau einmal je Frame, unabhaengig von der Zahl der Abfragen;
+/// * 0, negativ, +inf, NaN: fallen schon am Tor, erreichen den Stand nie und
+///   zaehlen deshalb hier nicht mit;
+/// * ein normaler Wert liefert weiterhin ein endliches Fenster und laesst den
+///   Zaehler unberuehrt.
 #[cfg(windows)]
 #[test]
 fn subnormale_samplerate_ergibt_kein_fenster() {
@@ -810,15 +818,29 @@ fn subnormale_samplerate_ergibt_kein_fenster() {
     assert_eq!(
         c.p2_live_frames(),
         frames_vorher + 1,
-        "der subnormale Frame passiert die Eingangspruefung - genau deshalb muss die Sicht ihn fangen"
+        "der subnormale Frame passiert die Eingangspruefung - genau deshalb muss die Aufnahme ihn fangen"
     );
     let sicht = c.messsicht(&hex(1), &hex(2), &hex(20)).unwrap();
     assert_eq!(sicht.sample_rate, Some(subnormal), "der Rohwert bleibt ehrlich sichtbar");
     assert_eq!(sicht.fenster_ms, None, "kein nicht-endlicher abgeleiteter Wert");
-    assert_eq!(c.fenster_nicht_endlich(), 1, "verriegelt UND gezaehlt");
+    assert_eq!(c.fenster_nicht_endlich(), 1, "verriegelt UND gezaehlt - EINMAL");
 
-    // 3. Die vier uebrigen Kanten fallen bereits am Tor und erreichen die
-    //    Sicht nie. Kein Weg fuehrt zu einem nicht-endlichen Fenster.
+    // 3. R2-1, der Kern: fuenf weitere Abfragen OHNE neuen Frame. Sie lesen
+    //    denselben gespeicherten Wert und duerfen nicht zaehlen. Vorher stand
+    //    der Zaehler hier bei 6.
+    for runde in 1..=5 {
+        let sicht = c.messsicht(&hex(1), &hex(2), &hex(20)).unwrap();
+        assert_eq!(sicht.fenster_ms, None, "Lesung {runde}: der Wert bleibt verriegelt");
+        assert_eq!(
+            c.fenster_nicht_endlich(),
+            1,
+            "Lesung {runde}: gezaehlt wird der Frame, nicht die Abfrage"
+        );
+    }
+
+    // 4. Die vier uebrigen Kanten fallen bereits am Tor und erreichen den
+    //    Stand nie. Kein Weg fuehrt zu einem nicht-endlichen Fenster, und
+    //    ein abgewiesener Frame zaehlt hier auch nicht mit.
     for (name, sr) in [
         ("null", 0.0f64),
         ("negativ", -48_000.0),
@@ -835,8 +857,23 @@ fn subnormale_samplerate_ergibt_kein_fenster() {
         let sicht = c.messsicht(&hex(1), &hex(2), &hex(20)).unwrap();
         assert_eq!(sicht.fenster_ms, None, "{name}");
         assert_eq!(sicht.sample_rate, Some(subnormal), "{name}: der abgewiesene Frame ersetzt nichts");
+        assert_eq!(
+            c.fenster_nicht_endlich(),
+            1,
+            "{name}: am Tor abgewiesen - die Aufnahme laeuft nie an"
+        );
     }
-    assert_eq!(c.fenster_nicht_endlich(), 5);
+
+    // 5. Ein ZWEITER subnormaler Frame ist ein zweites Ereignis.
+    Senke::p2(&c, "probe", &feature_batch_mit_samplerate(&a, 4096, subnormal));
+    assert_eq!(c.fenster_nicht_endlich(), 2, "je angenommener Grenzfall-Frame genau eins");
+
+    // 6. Ein normaler Frame laesst den Zaehler stehen und liefert wieder ein
+    //    endliches Fenster.
+    Senke::p2(&c, "probe", &feature_batch_mit_samplerate(&a, 2048, 44_100.0));
+    let sicht = c.messsicht(&hex(1), &hex(2), &hex(20)).unwrap();
+    assert_eq!(sicht.fenster_ms, Some(2048.0 / 44_100.0 * 1000.0));
+    assert_eq!(c.fenster_nicht_endlich(), 2, "ein tragfaehiger Frame zaehlt nicht");
 }
 
 #[test]

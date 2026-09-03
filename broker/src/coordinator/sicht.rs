@@ -155,14 +155,16 @@ impl Coordinator {
             sequence: frame.map(|frame| frame.sequence),
             sample_count: frame.map(|frame| frame.sample_count),
             sample_rate: frame.map(|frame| frame.sample_rate),
-            // G2-FLOATEDGE-001, Nacharbeit Runde 1 (03.09.2026): die
+            // G2-FLOATEDGE-001, Nacharbeit Runde 2 (R2-1, 03.09.2026): die
             // Eingangspruefung in telemetrie.rs laesst `sr.is_finite() && sr >
             // 0.0` durch - eine POSITIVE SUBNORMALE Samplerate besteht sie und
-            // liess diese Division bei einer von null verschiedenen
-            // Samplezahl zu `inf` ueberlaufen. Die Sicht lieferte damit einen
-            // nicht-endlichen abgeleiteten Wert. NaN-Ehrlichkeit: kein
-            // Fenster, und der Fall wird gezaehlt.
-            fenster_ms: frame.and_then(|frame| self.fenster_ms_bilden(frame.sample_count, frame.sample_rate)),
+            // liess die Division bei einer von null verschiedenen Samplezahl
+            // zu `inf` ueberlaufen. Verriegelt UND gezaehlt wird das jetzt
+            // dort, wo der Frame in den Stand kommt (`senke.rs`). Die Sicht
+            // LIEST nur den gespeicherten Wert und zaehlt nichts - sonst
+            // erhoehte jede Abfrage denselben Zaehler erneut und er misst
+            // Lesefrequenz statt Grenzfaelle.
+            fenster_ms: frame.and_then(|frame| frame.fenster_ms),
             alter_ms: frame.map(|frame| {
                 jetzt
                     .saturating_sub(frame.empfangen)
@@ -192,7 +194,11 @@ impl Coordinator {
     /// `is_normal()` ist hier die richtige Frage und nicht `is_finite()`:
     /// subnormale Zahlen sind endlich, taugen aber nicht als Divisor - genau
     /// an ihnen lief die Division ueber.
-    fn fenster_ms_bilden(&self, sample_count: u32, sample_rate: f64) -> Option<f64> {
+    ///
+    /// R2-1 (03.09.2026): Aufrufer ist ausschliesslich die Aufnahme eines
+    /// Frames in den Stand (`senke.rs`), damit je Frame genau einmal gezaehlt
+    /// wird. `pub(super)` und nicht `pub`: der Weg bleibt crate-intern.
+    pub(super) fn fenster_ms_bilden(&self, sample_count: u32, sample_rate: f64) -> Option<f64> {
         if !sample_rate.is_normal() || sample_rate <= 0.0 {
             self.fenster_nicht_endlich.fetch_add(1, Ordering::Relaxed);
             return None;

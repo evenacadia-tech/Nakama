@@ -101,6 +101,13 @@ pub(super) struct LiveMessframe {
     pub(super) sequence: u64,
     pub(super) sample_count: u32,
     pub(super) sample_rate: f64,
+    /// G2-FLOATEDGE-001, Nacharbeit Runde 2 (R2-1, 03.09.2026): das
+    /// abgeleitete Analysefenster wird EINMAL je angenommenem Frame gebildet
+    /// - dort, wo der Frame in den Stand kommt (`senke.rs`) - und hier
+    /// gespeichert. Vorher rechnete jede `messsicht`-Abfrage neu und erhoehte
+    /// `fenster_nicht_endlich` erneut; der Zaehler misst das EREIGNIS, nicht
+    /// die Lesefrequenz.
+    pub(super) fenster_ms: Option<f64>,
 }
 
 #[derive(Debug, Clone, Default)]

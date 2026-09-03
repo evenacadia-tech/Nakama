@@ -180,6 +180,13 @@ impl crate::transport::server_v3::Senke for Coordinator {
                 let session = key.session();
                 stand.dirty_sessions.insert(session);
             }
+            // G2-FLOATEDGE-001, Nacharbeit Runde 2 (R2-1): das abgeleitete
+            // Analysefenster entsteht GENAU HIER, einmal je angenommenem
+            // Frame, und `fenster_nicht_endlich` erhoeht sich hier genau
+            // einmal je Frame mit nicht-normaler/nicht-positiver Samplerate
+            // oder nicht-endlichem Ergebnis. Die Sicht liest nur noch den
+            // gespeicherten Wert - sonst zaehlte der Zaehler Lesefrequenz.
+            let fenster_ms = self.fenster_ms_bilden(frame.sample_count, frame.sample_rate);
             stand.messframes.insert(
                 key.clone(),
                 LiveMessframe {
@@ -189,6 +196,7 @@ impl crate::transport::server_v3::Senke for Coordinator {
                     sequence: frame.sequence,
                     sample_count: frame.sample_count,
                     sample_rate: frame.sample_rate,
+                    fenster_ms,
                 },
             );
             stand.p2_live_frames = stand.p2_live_frames.saturating_add(1);

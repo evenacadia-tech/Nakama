@@ -1,0 +1,60 @@
+NAK-121 / R2-1 - Rotbeweis (Nacharbeit Runde 2, 03.09.2026)
+Defekt D4 / G2-FLOATEDGE-001, broker/src/coordinator/sicht.rs
+
+MUTANTE (Regel des Dirigenten: "Fensterbildung zurueck in die Sicht -> rot
+(Zaehler waechst beim Lesen)"):
+  broker/src/coordinator/sicht.rs:167
+    fenster_ms: frame.and_then(|frame| frame.fenster_ms),
+  ->  fenster_ms: frame.and_then(|frame| self.fenster_ms_bilden(frame.sample_count, frame.sample_rate)),
+  broker/src/coordinator/senke.rs:189
+    let fenster_ms = self.fenster_ms_bilden(frame.sample_count, frame.sample_rate);
+    ->  let fenster_ms: Option<f64> = None;
+
+Das ist genau der Stand vor R2-1: die Sicht bildet (und zaehlt) je Abfrage,
+die Aufnahme in den Stand zaehlt nichts.
+
+TEST: broker/tests/coordinator_model.rs::subnormale_samplerate_ergibt_kein_fenster
+
+== ROT ==
+$ cargo test --manifest-path broker/Cargo.toml --test coordinator_model subnormale_samplerate_ergibt_kein_fenster
+ 97 | pub(super) struct LiveMessframe {
+...
+110 |     pub(super) fenster_ms: Option<f64>,
+
+warning: `eqcop-broker` (lib) generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.05s
+     Running tests\coordinator_model.rs (broker\target\debug\deps\coordinator_model-c22cf73cd241058f.exe)
+
+running 1 test
+test subnormale_samplerate_ergibt_kein_fenster ... FAILED
+
+failures:
+
+---- subnormale_samplerate_ergibt_kein_fenster stdout ----
+
+thread 'subnormale_samplerate_ergibt_kein_fenster' (22828) panicked at tests\coordinator_model.rs:834:9:
+assertion `left == right` failed: Lesung 1: gezaehlt wird der Frame, nicht die Abfrage
+  left: 2
+ right: 1
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+failures:
+    subnormale_samplerate_ergibt_kein_fenster
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 46 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test coordinator_model`
+EXIT=101
+
+== GRUEN (Mutante zurueckgenommen, Stand von R2-1) ==
+$ cargo test --manifest-path broker/Cargo.toml --test coordinator_model subnormale_samplerate_ergibt_kein_fenster
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.23s
+     Running tests\coordinator_model.rs (broker\target\debug\deps\coordinator_model-c22cf73cd241058f.exe)
+
+running 1 test
+test subnormale_samplerate_ergibt_kein_fenster ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 46 filtered out; finished in 0.00s
+
+EXIT=0

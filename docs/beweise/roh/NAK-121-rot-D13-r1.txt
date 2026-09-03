@@ -1,0 +1,62 @@
+# Rotbeweis D13 (H-10, Zielaufloesung ueber die Linkidentitaet) — NAK-121 Nacharbeit Runde 1
+
+Das Ziel wird wieder ueber die erste Adressuebereinstimmung in der Linkmap
+gesucht statt ueber die Linkidentitaet des Zielclients.
+
+Mutante(n):
+  broker/src/coordinator/befehl.rs
+    ALT:             } else if let Some((ziel_link_id, ziel_link)) = stand
+    ALT:                 .clients
+    ALT:                 .get(&ClientKey::aus_adresse(&ziel))
+    ALT:                 .and_then(|client| client.current_link.as_deref())
+    ALT:                 .and_then(|link_id| stand.links.get_key_value(link_id))
+    ALT:                 .filter(|(_, link)| {
+    ALT:                     link.adresse == ziel
+    ALT:                         && link.client_key.session() == sender_link.client_key.session()
+    ALT:                         && !link.trennen
+    ALT:                 })
+    NEU:             // MUTANTE: erste Adressuebereinstimmung in der Linkmap, wie vor
+    NEU:             // H-10 - hier deterministisch als lexikografisch erste Kennung.
+    NEU:             } else if let Some((ziel_link_id, ziel_link)) = stand
+    NEU:                 .links
+    NEU:                 .iter()
+    NEU:                 .filter(|(_, link)| {
+    NEU:                     link.adresse == ziel
+    NEU:                         && link.client_key.session() == sender_link.client_key.session()
+    NEU:                 })
+    NEU:                 .min_by_key(|(link_id, _)| (*link_id).clone())
+
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never --test store_crash_matrix -- --ignored persistenter_p0
+Exitcode: 101
+
+Die Mutante ist nach diesem Lauf zurueckgenommen; der naechste
+Lauf derselben Tests ist wieder gruen.
+
+---
+
+
+running 1 test
+test persistenter_p0_trifft_den_lebenden_link_derselben_adresse ... FAILED
+
+failures:
+
+---- persistenter_p0_trifft_den_lebenden_link_derselben_adresse stdout ----
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-h10-p0-aufsteigend-18144-36adcae5d2be497281df24b67a2a47bc\nakama-broker.sqlite3
+
+thread 'persistenter_p0_trifft_den_lebenden_link_derselben_adresse' (8028) panicked at tests\store_crash_matrix.rs:557:9:
+assertion `left == right` failed: der Befehl traf nicht den lebenden Link (probe-a vs probe-z): {"code":"unknown_target","command_id":"000000000000000000000000000001f4","ergebnis":"abgelehnt","state_revision":13,"type":"command_ack"}
+  left: String("abgelehnt")
+ right: "angewandt"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    persistenter_p0_trifft_den_lebenden_link_derselben_adresse
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 83 filtered out; finished in 0.21s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.73s
+     Running tests\store_crash_matrix.rs (broker\target\debug\deps\store_crash_matrix-4ebee0ee77644d63.exe)
+error: test failed, to rerun pass `--test store_crash_matrix`

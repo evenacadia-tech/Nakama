@@ -478,6 +478,107 @@ fn si_coordinator_mit_store(
     (ordner, writer, coordinator, clock, push)
 }
 
+/// D13 der Nacharbeit Runde 1 (Abschlusspruefung 1, 03.09.2026): H-10 loest
+/// das Ziel eines persistenten P0-Befehls ueber die LINKIDENTITAET des
+/// Zielclients auf und verifiziert die Adresse danach.
+///
+/// Codex an der Quelle: der als P0-Zieltest bezeichnete Lauf in
+/// `coordinator_model` gibt nur zwei Trennflags und die Subscriptionzahl
+/// zurueck - er sendet gar keinen P0-Befehl und vergleicht weder Zielwirkung
+/// noch persistierten Zustand. Eine Ruecknahme der Zielaufloesung in
+/// `befehl.rs` bliebe damit gruen.
+///
+/// Dieser Test sendet den Befehl wirklich, bei ZWEI Links derselben Adresse
+/// (der verdraengte bleibt bis zu seinem `control_ende` in der Linkmap), und
+/// misst Ziel, Wirkung und persistierten Zustand. Er faehrt BEIDE
+/// Einfuegereihenfolgen: einmal ist die Kennung des ueberlebenden Links
+/// lexikografisch groesser, einmal kleiner. Damit ist jede feste Ordnung ueber
+/// die Linkmap - „erste Adressuebereinstimmung" - in mindestens einem der
+/// beiden Laeufe rot.
+#[cfg(windows)]
+#[test]
+#[ignore = "A4-SI: Coordinator, Store und Snapshot-Senke als Server-Integration"]
+fn persistenter_p0_trifft_den_lebenden_link_derselben_adresse() {
+    fn lauf(name: &str, erster: &str, zweiter: &str) {
+        let (ordner, _writer, coordinator, _clock, _push) = si_coordinator_mit_store(name, true);
+        let main = si_hello(10, 100, "main");
+        let probe = si_hello(11, 101, "active_probe");
+        assert!(
+            coordinator
+                .control_hello_registrieren("main", &main)
+                .angenommen
+        );
+        assert!(si_report(&coordinator, "main", &main.adresse, 1));
+        assert!(si_subscribe(&coordinator, "main", &main.adresse));
+
+        // Zwei Links derselben Adresse mit IDENTISCHER Nonce: seit H-10
+        // verdraengt der zweite den ersten. Der verdraengte bleibt in der
+        // Linkmap stehen, bis sein `control_ende` kommt - genau der Zustand,
+        // in dem eine Adresssuche zwei Treffer haette.
+        assert!(
+            coordinator
+                .control_hello_registrieren(erster, &probe)
+                .angenommen
+        );
+        assert!(
+            coordinator
+                .control_hello_registrieren(zweiter, &probe)
+                .angenommen
+        );
+        assert!(coordinator.verbindung_soll_trennen(erster));
+        assert!(!coordinator.verbindung_soll_trennen(zweiter));
+
+        // Der lebende Link liefert den Zustand, gegen den der Befehl arbeitet.
+        assert!(si_state_report(&coordinator, zweiter, &probe.adresse, 13));
+
+        let befehl = json!({
+            "type": "preview_begin",
+            "kopf": {
+                "command_id": si_hex(500),
+                "ziel": probe.adresse,
+                "base_revision": 13,
+                "ttl_ms": 1000,
+                "schema_major": 3,
+                "schema_minor": 0
+            },
+            "lease_duration_ms": 200,
+            "renew_id": si_hex(600)
+        });
+        let ack = Senke::p0(
+            coordinator.as_ref(),
+            "main",
+            &serde_json::to_vec(&befehl).unwrap(),
+        )
+        .expect("produktiver command_ack");
+        let ack: Value = serde_json::from_slice(&ack).unwrap();
+
+        // 1. ZIEL: nur der lebende Link ist ein gueltiges Ziel. Traefe die
+        //    Aufloesung den verdraengten, waere die Antwort `unknown_target`.
+        assert_eq!(
+            ack["ergebnis"], "angewandt",
+            "der Befehl traf nicht den lebenden Link ({erster} vs {zweiter}): {ack}"
+        );
+        // 2. WIRKUNG: Revision und Hash stammen vom Zielclient.
+        assert_eq!(ack["state_revision"], 13);
+        assert_eq!(ack["state_hash"], "d".repeat(64));
+
+        // 3. PERSISTIERTER ZUSTAND: der Befehl liegt im append-only Log.
+        assert_eq!(
+            scalar_i64(
+                &ordner.db(),
+                "SELECT COUNT(*) FROM event_log WHERE payload_jcs LIKE '%internal_p0_command%'"
+            ),
+            1,
+            "die Wirkung des Befehls fehlt im Log"
+        );
+    }
+
+    // Einmal ist die Kennung des Ueberlebenden lexikografisch groesser ...
+    lauf("h10-p0-aufsteigend", "probe-a", "probe-z");
+    // ... und einmal kleiner.
+    lauf("h10-p0-absteigend", "probe-z", "probe-a");
+}
+
 #[cfg(windows)]
 #[test]
 fn produkt_coordinator_committet_alle_persistenten_p0_befehle_und_ackt_retries() {

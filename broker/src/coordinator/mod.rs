@@ -60,6 +60,11 @@ pub const STALE_NACH_MS: u64 = STALE_VERPASSTE_INTERVALLE * HEARTBEAT_INTERVAL_M
 pub const TOMBSTONE_MS: u64 = 10_000;
 pub const SESSION_CLIENT_CAP: usize = 64;
 pub const GLOBAL_CLIENT_CAP: usize = 128;
+/// H-12: Obergrenze der Sessionmap. Eine Session hat immer mindestens einen
+/// Client, es kann also nie mehr Sessions als Clients geben - die Grenze ist
+/// dieselbe Zahl. Sie ist die Schranke, die ein spaeteres Einfuegen ohne
+/// Entfernen ueberlebt, falls je ein Pfad die Aufraeumregel umgeht.
+pub const GLOBAL_SESSION_CAP: usize = GLOBAL_CLIENT_CAP;
 pub const FUEHRENDE_MAINS_PRO_SESSION: usize = 1;
 pub const SICHTBARE_SONDEN_NORMAL: usize = 16;
 pub const LAST_SONDEN: usize = 32;

@@ -1,5 +1,6 @@
 use eqcop_broker::coordinator::{
     Coordinator, ManualClock, MonotonicClock, FUEHRENDE_MAINS_PRO_SESSION, GLOBAL_CLIENT_CAP,
+    GLOBAL_SESSION_CAP,
     HEARTBEAT_INTERVAL_MS, LAST_SONDEN, SESSION_CLIENT_CAP, SESSION_SUBSCRIPTION_EVENT_REPLAY_MAX,
     SICHTBARE_SONDEN_NORMAL, STALE_JITTER_MS, STALE_NACH_MS, STALE_VERPASSTE_INTERVALLE,
     TOMBSTONE_MS,
@@ -1209,4 +1210,54 @@ fn kein_expect_mehr_auf_dem_standlock() {
         gefunden.is_empty(),
         "expect auf dem Standlock uebrig: {gefunden:?}"
     );
+}
+
+// ── NAK-121 H-12 ───────────────────────────────────────────────────────────
+//
+// verbinden gegen trennen gilt auch fuer die Sessionmap. Vor NAK-121 wuchs sie
+// unbegrenzt: eine Suche nach sessions.remove, .retain oder .clear traf im
+// ganzen Coordinator nirgends.
+
+#[test]
+fn session_faellt_mit_dem_letzten_client() {
+    let (c, clock) = coordinator();
+    let h = hello(1, 2, 10, 100, "main", Some(9));
+    anmelden(&c, "a", &h);
+    assert_eq!(c.modell_sicht(&hex(1), &hex(2)).clients.len(), 1);
+
+    // Der Tombstone-Weg entfernt den letzten Client der Session. Mit ihm muss
+    // die Session selbst fallen - sonst bliebe ein Eintrag ohne jeden Client
+    // fuer die Lebensdauer des Brokers stehen.
+    c.control_ende("a");
+    clock.setze_ms(TOMBSTONE_MS);
+    c.liveness_tick();
+    assert!(c.modell_sicht(&hex(1), &hex(2)).clients.is_empty());
+    assert_eq!(
+        c.session_anzahl(),
+        0,
+        "die Session ueberlebte ihren letzten Client"
+    );
+
+    // Gegenprobe: solange ein Client lebt, bleibt seine Session.
+    anmelden(&c, "b", &h);
+    assert_eq!(c.session_anzahl(), 1);
+}
+
+#[test]
+fn global_session_cap_weist_am_cap_plus_eins_ab() {
+    let (c, _) = coordinator();
+    // Bis zum Cap gehen alle durch - je Session ein eigener Client.
+    for i in 0..GLOBAL_SESSION_CAP {
+        let h = hello(1, 100 + i, 10 + i, 200 + i, "main", Some(9));
+        let ausgang = c.control_hello_registrieren(&format!("l{i}"), &h);
+        assert!(ausgang.angenommen, "am Cap abgewiesen bei {i}: {:?}", ausgang.grund);
+    }
+    assert_eq!(c.session_anzahl(), GLOBAL_SESSION_CAP);
+
+    // Cap plus eins faellt fail-closed. Die Grenze greift, weil alle Clients
+    // frisch sind: es gibt kein stales Opfer zum Verdraengen.
+    let ueber = hello(1, 999, 999, 999, "main", Some(9));
+    let ausgang = c.control_hello_registrieren("ueber", &ueber);
+    assert!(!ausgang.angenommen);
+    assert_eq!(c.session_anzahl(), GLOBAL_SESSION_CAP);
 }

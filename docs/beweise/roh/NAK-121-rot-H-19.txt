@@ -1,0 +1,45 @@
+# Rotbeweis H-19 — NAK-121 Etappe 2
+
+Mutante(n):
+  broker/src/transport/server_v3/griff.rs
+    ALT: if j.join().is_err() {
+    NEU: // MUTANTE: das Joinergebnis faellt wieder auf den Boden.
+        let _ = j.join();
+        if false {
+
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never --test transport_fuzz -- panik_im
+Exitcode: 101
+
+Die Mutante ist nach diesem Lauf zurueckgenommen; der naechste
+Lauf derselben Tests ist wieder gruen.
+
+---
+
+
+running 1 test
+test panik_im_verbindungsthread_wird_gezaehlt ... FAILED
+
+failures:
+
+---- panik_im_verbindungsthread_wird_gezaehlt stdout ----
+
+thread 'eqcop-v3-conn' (12092) panicked at src\transport\server_v3\listener.rs:588:29:
+H-19-Naht: absichtliche Panik im Verbindungsthread
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread 'panik_im_verbindungsthread_wird_gezaehlt' (8432) panicked at tests\transport_fuzz.rs:354:5:
+assertion `left == right` failed: die Panik im Verbindungsthread wurde beim Ernten nicht gezaehlt
+  left: 0
+ right: 1
+
+
+failures:
+    panik_im_verbindungsthread_wird_gezaehlt
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 9 filtered out; finished in 10.04s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.93s
+     Running tests\transport_fuzz.rs (broker\target\debug\deps\transport_fuzz-e68c0b23ba7390d0.exe)
+error: test failed, to rerun pass `--test transport_fuzz`

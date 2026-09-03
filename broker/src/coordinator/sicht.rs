@@ -182,6 +182,17 @@ impl Coordinator {
         (stand.telemetry_links.len(), stand.telemetry_kopplungen)
     }
 
+    /// H-12: Groesse der Sessionmap. Ohne sie waere die Zusage
+    /// „Session faellt mit dem letzten Client" von aussen unbeobachtbar - die
+    /// Modellsicht zeigt Clients, nicht die Map selbst.
+    pub fn session_anzahl(&self) -> usize {
+        self.stand
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .sessions
+            .len()
+    }
+
     pub fn client_anzahl(&self) -> usize {
         self.stand
             .lock()

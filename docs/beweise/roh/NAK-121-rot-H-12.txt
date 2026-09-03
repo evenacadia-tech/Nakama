@@ -1,0 +1,60 @@
+# Rotbeweis H-12 — NAK-121 Etappe 2
+
+Mutante(n):
+  broker/src/coordinator/liveness.rs
+    ALT: Self::session_ohne_clients_entfernen_locked(stand, &session);
+        schliessen
+    NEU: // MUTANTE: die Session ueberlebt ihren letzten Client.
+        schliessen
+  broker/src/coordinator/liveness.rs
+    ALT: for session in verwaist {
+                stand.sessions.remove(&session);
+            }
+    NEU: // MUTANTE: auch der Sweep raeumt nicht mehr auf.
+            let _ = verwaist;
+
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never --test coordinator_model -- session_faellt
+Exitcode: 101
+
+Die Mutante ist nach diesem Lauf zurueckgenommen; der naechste
+Lauf derselben Tests ist wieder gruen.
+
+---
+
+
+running 1 test
+test session_faellt_mit_dem_letzten_client ... FAILED
+
+failures:
+
+---- session_faellt_mit_dem_letzten_client stdout ----
+
+thread 'session_faellt_mit_dem_letzten_client' (5428) panicked at tests\coordinator_model.rs:1235:5:
+assertion `left == right` failed: die Session ueberlebte ihren letzten Client
+  left: 1
+ right: 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    session_faellt_mit_dem_letzten_client
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 39 filtered out; finished in 0.00s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: associated function `session_ohne_clients_entfernen_locked` is never used
+  --> src\coordinator\liveness.rs:53:19
+   |
+ 9 | impl Coordinator {
+   | ---------------- associated function in this implementation
+...
+53 |     pub(super) fn session_ohne_clients_entfernen_locked(stand: &mut Stand, session: &SessionKey) {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib) generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.62s
+     Running tests\coordinator_model.rs (broker\target\debug\deps\coordinator_model-c22cf73cd241058f.exe)
+error: test failed, to rerun pass `--test coordinator_model`

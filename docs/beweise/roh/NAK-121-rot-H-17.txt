@@ -1,0 +1,38 @@
+# Rotbeweis H-17 — NAK-121 Etappe 2
+
+Mutante:
+  broker/src/coordinator/liveness.rs
+    Die Vertragspruefung der Aussageklasse in descriptor_setzen entfaellt;
+    der Setter prueft wieder nur die Adresse.
+
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never --test store_crash_matrix -- --ignored --test-threads=1 descriptor_setzen_weist
+Exitcode: 101
+
+Die Mutante ist nach diesem Lauf zurueckgenommen.
+
+---
+
+
+running 1 test
+test descriptor_setzen_weist_beitragsklasse_ab ... FAILED
+
+failures:
+
+---- descriptor_setzen_weist_beitragsklasse_ab stdout ----
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-h17-beitragsklasse-10660-db82a26cfa1a4812993c97d399e758ed\nakama-broker.sqlite3
+
+thread 'descriptor_setzen_weist_beitragsklasse_ab' (20008) panicked at tests\store_crash_matrix.rs:2411:5:
+assertion failed: !coordinator.descriptor_setzen("main", beitrag)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    descriptor_setzen_weist_beitragsklasse_ab
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 70 filtered out; finished in 0.17s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 7.50s
+     Running tests\store_crash_matrix.rs (broker\target\debug\deps\store_crash_matrix-4ebee0ee77644d63.exe)
+error: test failed, to rerun pass `--test store_crash_matrix`

@@ -14,7 +14,7 @@ Mutante(n):
         }
         // MUTANTE: der Austrag s
 
-Befehl: cargo test --manifest-path broker/Cargo.toml --color never --test security_vectors -- registeraustrag_geht_dem_close_voraus
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never --test security_vectors -- verbindungsgriff_besitzt
 Exitcode: 101
 
 Die Mutante ist nach diesem Lauf zurueckgenommen; der naechste
@@ -24,13 +24,13 @@ Lauf derselben Tests ist wieder gruen.
 
 
 running 1 test
-test registeraustrag_geht_dem_close_voraus ... FAILED
+test verbindungsgriff_besitzt_handle_und_registereintrag ... FAILED
 
 failures:
 
----- registeraustrag_geht_dem_close_voraus stdout ----
+---- verbindungsgriff_besitzt_handle_und_registereintrag stdout ----
 
-thread 'registeraustrag_geht_dem_close_voraus' (20636) panicked at tests\security_vectors.rs:853:5:
+thread 'verbindungsgriff_besitzt_handle_und_registereintrag' (20676) panicked at tests\security_vectors.rs:865:5:
 assertion `left == right` failed: das Register fuehrte den Eintrag noch, als das Handle gleich geschlossen wurde
   left: 1
  right: 0
@@ -38,12 +38,12 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 
 failures:
-    registeraustrag_geht_dem_close_voraus
+    verbindungsgriff_besitzt_handle_und_registereintrag
 
-test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 23 filtered out; finished in 0.10s
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 20 filtered out; finished in 0.10s
 
 
    Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.35s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.35s
      Running tests\security_vectors.rs (broker\target\debug\deps\security_vectors-4a68d58de2e43d5b.exe)
 error: test failed, to rerun pass `--test security_vectors`

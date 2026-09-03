@@ -302,3 +302,63 @@ fn payload_an_der_paketgrenze_wird_angenommen_darueber_nicht() {
         Err(Verstoss::FrameLenUeberGrenze)
     );
 }
+
+// ── NAK-121 H-19 ───────────────────────────────────────────────────────────
+//
+// Das Joinergebnis eines v3-Verbindungsthreads wird ausgewertet. Ohne diesen
+// Zaehler entfiele das Erkennungssignal fuer genau die Fehlerklasse, die dieser
+// Endpunkt jagt - und zwar dort, wo angreiferkontrollierte Bytes geparst
+// werden. Das v2-Ende wertet sein Joinergebnis laengst aus.
+
+#[cfg(windows)]
+#[test]
+fn panik_im_verbindungsthread_wird_gezaehlt() {
+    use eqcop_broker::transport::pipetoken::PROBE_PRAEFIX;
+    use eqcop_broker::transport::server_v3::{
+        v3_server_starten_fuer_security_vectors, V3SecurityTestOptionen, ZaehlSenke,
+    };
+    use std::sync::atomic::Ordering;
+    use std::sync::Arc;
+    use std::time::{Duration, Instant};
+
+    let pipe = format!("{PROBE_PRAEFIX}fuzz-h19-{}", std::process::id());
+    let senke = Arc::new(ZaehlSenke::default());
+    let mut griff = v3_server_starten_fuer_security_vectors(
+        &pipe,
+        senke,
+        V3SecurityTestOptionen {
+            verbindungsthread_panik: true,
+            ..V3SecurityTestOptionen::default()
+        },
+    )
+    .expect("Probe-Listener starten");
+
+    // Der Panik-Hook wird bewusst NICHT ersetzt: die Meldung auf stderr gehoert
+    // zum Beweis, dass die Panik wirklich fiel und nicht wegoptimiert wurde.
+    let client = std::fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(&pipe)
+        .expect("Probe-Client verbindet");
+
+    let ende = Instant::now() + Duration::from_secs(10);
+    while Instant::now() < ende
+        && griff
+            .statistik
+            .verbindungsthread_panik
+            .load(Ordering::SeqCst)
+            == 0
+    {
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    assert_eq!(
+        griff
+            .statistik
+            .verbindungsthread_panik
+            .load(Ordering::SeqCst),
+        1,
+        "die Panik im Verbindungsthread wurde beim Ernten nicht gezaehlt"
+    );
+    drop(client);
+    griff.stoppen();
+}

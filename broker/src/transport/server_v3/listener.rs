@@ -94,6 +94,10 @@ pub struct V3SecurityTestOptionen {
     /// Registeraustrag und `CloseHandle` an, damit der Test genau dieses
     /// Fenster messen kann.
     pub destruktor_fenster: Option<Arc<V3UebergabeBarriere>>,
+    /// H-19-Naht: laesst den Verbindungsthread unmittelbar nach der Uebergabe
+    /// panisieren. Der Zaehler ist sonst unbeweisbar, weil eine Panik dort im
+    /// Normalbetrieb strukturell nicht vorkommt.
+    pub verbindungsthread_panik: bool,
 }
 
 /// Legt die naechste Pipe-Instanz an — und gibt NICHT auf, wenn gerade alle
@@ -146,7 +150,7 @@ pub(super) fn naechste_instanz(
         }
         // Ein beendeter Nachbar gibt seinen Platz erst frei, wenn sein Handle
         // wirklich zu ist — also hier ernten, nicht nur schlafen.
-        fertige_ernten(verbindungen);
+        fertige_ernten(verbindungen, statistik);
         std::thread::sleep(Duration::from_millis(25));
     }
 }
@@ -344,7 +348,7 @@ pub(super) fn v3_server_starten_intern(
             while !stop_w.load(Ordering::SeqCst) {
                 std::thread::sleep(WACHHUND_TAKT);
                 // Auch ohne neue Verbindung muessen fertige Threads fallen.
-                fertige_ernten(&verbindungen_w);
+                fertige_ernten(&verbindungen_w, &statistik_w);
                 let jetzt = Instant::now();
                 let faellig: Vec<u64> = {
                     let b = bootstraps_w.lock().unwrap_or_else(|e| e.into_inner());
@@ -568,6 +572,7 @@ pub(super) fn v3_server_starten_intern(
                 let auth_fehler = security_optionen2.auth_fehler;
                 let sicherheits_spur = sicherheits_spur2.clone();
                 let schreiber_haengt = security_optionen2.schreiber_haengt.clone();
+                let panik_naht = security_optionen2.verbindungsthread_panik;
                 match std::thread::Builder::new()
                     .name("eqcop-v3-conn".into())
                     .spawn(move || {
@@ -578,6 +583,9 @@ pub(super) fn v3_server_starten_intern(
                         let ms = verzoegerung.load(Ordering::SeqCst);
                         if ms > 0 {
                             std::thread::sleep(Duration::from_millis(ms));
+                        }
+                        if panik_naht {
+                            panic!("H-19-Naht: absichtliche Panik im Verbindungsthread");
                         }
                         verbindung_bedienen(
                             id,
@@ -616,7 +624,7 @@ pub(super) fn v3_server_starten_intern(
                     }
                 }
 
-                fertige_ernten(&verbindungen2);
+                fertige_ernten(&verbindungen2, &statistik2);
             }
 
             // A-09: Nicht hier schliessen. Der Griff joint erst Acceptor,

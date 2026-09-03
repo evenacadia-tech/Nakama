@@ -5,11 +5,10 @@ Mutante(n):
     ALT: if let Some(s) = statistik {
         s.cancel_auf_totem_handle.fetch_add(1, Ordering::SeqCst);
     }
-    NEU: // MUTANTE: der Fehlschlag wird verschluckt statt gezaehlt — genau das,
-    // was H-01 ausschliesst.
+    NEU: // MUTANTE: der Fehlschlag wird verschluckt statt gezaehlt.
     let _ = statistik;
 
-Befehl: cargo test --manifest-path broker/Cargo.toml --color never --test security_vectors -- cancel_
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never --test security_vectors -- verbindungsgriff_besitzt
 Exitcode: 101
 
 Die Mutante ist nach diesem Lauf zurueckgenommen; der naechste
@@ -18,27 +17,26 @@ Lauf derselben Tests ist wieder gruen.
 ---
 
 
-running 2 tests
-test cancel_zaehler_bleibt_im_normalbetrieb_null ... ok
-test cancel_auf_totes_handle_wird_gezaehlt ... FAILED
+running 1 test
+test verbindungsgriff_besitzt_handle_und_registereintrag ... FAILED
 
 failures:
 
----- cancel_auf_totes_handle_wird_gezaehlt stdout ----
+---- verbindungsgriff_besitzt_handle_und_registereintrag stdout ----
 
-thread 'cancel_auf_totes_handle_wird_gezaehlt' (23016) panicked at tests\security_vectors.rs:878:5:
+thread 'verbindungsgriff_besitzt_handle_und_registereintrag' (5456) panicked at tests\security_vectors.rs:895:5:
 assertion failed: warten(5000,
     || griff.statistik.cancel_auf_totem_handle.load(Ordering::SeqCst) > 0)
 note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 
 failures:
-    cancel_auf_totes_handle_wird_gezaehlt
+    verbindungsgriff_besitzt_handle_und_registereintrag
 
-test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 22 filtered out; finished in 5.01s
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 20 filtered out; finished in 5.12s
 
 
    Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.08s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.15s
      Running tests\security_vectors.rs (broker\target\debug\deps\security_vectors-4a68d58de2e43d5b.exe)
 error: test failed, to rerun pass `--test security_vectors`

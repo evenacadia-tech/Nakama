@@ -36,7 +36,29 @@ impl Coordinator {
             })?;
             schliessen.extend(self.client_eviktieren_locked(stand, &opfer));
         }
+        // H-12: die Sessionmap hat eine eigene Schranke. Sie greift erst, wenn
+        // die Aufraeumregel unten je umgangen wuerde - dann aber fail-closed
+        // statt unbegrenzt wachsend.
+        if !stand.sessions.contains_key(&neu.session()) && stand.sessions.len() >= GLOBAL_SESSION_CAP
+        {
+            return Err("Session-Globalcap erreicht; Neuzugang abgewiesen".to_string());
+        }
         Ok(())
+    }
+
+    /// H-12: verbinden gegen trennen gilt auch fuer die Sessionmap. Eine
+    /// Session ohne verbleibenden Client wird beim selben Vorgang entfernt, der
+    /// ihren letzten Client entfernt. Die dauerhaften Konfliktriegel liegen in
+    /// einer eigenen Map und bleiben unberuehrt - E-03 gilt unveraendert.
+    pub(super) fn session_ohne_clients_entfernen_locked(stand: &mut Stand, session: &SessionKey) {
+        if stand
+            .clients
+            .keys()
+            .any(|key| &key.session() == session)
+        {
+            return;
+        }
+        stand.sessions.remove(session);
     }
 
     fn stales_opfer(
@@ -104,7 +126,11 @@ impl Coordinator {
             }
         }
         Self::fuehrung_neu_bewerten_locked(stand, &session);
-        stand.dirty_sessions.insert(session);
+        stand.dirty_sessions.insert(session.clone());
+        // H-12: derselbe Vorgang, der den letzten Client entfernt, entfernt
+        // auch seine Session. Die dirty-Markierung steht bewusst DAVOR, damit
+        // der Flush den nun leeren Stand noch an seine Abonnenten meldet.
+        Self::session_ohne_clients_entfernen_locked(stand, &session);
         schliessen
     }
 
@@ -159,6 +185,17 @@ impl Coordinator {
                     }
                 }
                 schliessen.insert(pending);
+            }
+            // H-12: dasselbe im Sweep - auch eine Session, deren letzter Client
+            // ueber einen anderen Weg als die Eviction verschwand, faellt hier.
+            let verwaist: Vec<SessionKey> = stand
+                .sessions
+                .keys()
+                .filter(|session| !stand.clients.keys().any(|key| &key.session() == *session))
+                .cloned()
+                .collect();
+            for session in verwaist {
+                stand.sessions.remove(&session);
             }
             let dirty = stand.dirty_sessions.iter().cloned().collect::<Vec<_>>();
             let mut schliessen = schliessen.into_iter().collect::<Vec<_>>();
@@ -379,6 +416,17 @@ impl Coordinator {
     }
 
     pub fn descriptor_setzen(&self, link_id: &str, mut descriptor: Value) -> bool {
+        // H-17: der Setter prueft den Deskriptor gegen den v3-Vertrag, bevor er
+        // ihn uebernimmt - nicht nur die Adresse. Damit gilt fuer JEDEN Weg
+        // dieselbe Haertung, die descriptor_aus_heartbeat bisher allein trug,
+        // und kein spaeterer Aufrufer kann sie umgehen. Der Vertrag pinnt die
+        // Aussageklasse per Konstante auf `beobachtend`; ein Beitragsdeskriptor
+        // faellt hier ab, bevor er in den Snapshot geraet. Ein cfg(test)-Zaun
+        // schied aus: descriptor_setzen wird von einer Integrationstestdatei
+        // gerufen, die die Bibliothek ohne Testkonfiguration bindet.
+        if descriptor.get("aussageklasse").and_then(Value::as_str) != Some("beobachtend") {
+            return false;
+        }
         let session = {
             let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
             let Some(link) = stand.links.get(link_id).cloned() else {

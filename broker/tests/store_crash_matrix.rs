@@ -2379,3 +2379,46 @@ fn nonce_verdraengung_cleanup_vor_altem_report() {
     assert!(coordinator.verbindung_soll_trennen("alt"));
     assert_eq!(push.snapshots().len(), vorher);
 }
+
+// ── NAK-121 H-17 ───────────────────────────────────────────────────────────
+
+/// Der Setter prueft den Deskriptor gegen den v3-Vertrag, nicht nur die
+/// Adresse. Bis NAK-121 trug die Haertung allein `descriptor_aus_heartbeat`;
+/// jeder andere Weg in den Snapshot kam ungeprueft daran vorbei.
+#[test]
+#[ignore = "A4-SI: Coordinator, Store und Snapshot-Senke als Server-Integration"]
+fn descriptor_setzen_weist_beitragsklasse_ab() {
+    let (_ordner, _writer, coordinator, _uhr, push) =
+        si_coordinator_mit_store("h17-beitragsklasse", true);
+    let main = si_hello(10, 100, "main");
+    assert!(
+        coordinator
+            .control_hello_registrieren("main", &main)
+            .angenommen
+    );
+    assert!(si_report(&coordinator, "main", &main.adresse, 1));
+    assert!(si_subscribe(&coordinator, "main", &main.adresse));
+
+    let gueltig = push.snapshots().last().unwrap().1["mitglieder"][0]["probe_descriptor"].clone();
+    assert_eq!(gueltig["aussageklasse"], "beobachtend");
+
+    // Der Vertrag pinnt die Aussageklasse dieser Deskriptorform per Konstante
+    // auf "beobachtend" (eq-ipc-v3.schema.json). Ein Beitragsdeskriptor faellt
+    // ab, BEVOR er in Client, Snapshot, Store oder Push geraet.
+    let mut beitrag = gueltig.clone();
+    beitrag["aussageklasse"] = Value::String("beitrag".into());
+    let vorher = push.snapshots().len();
+    assert!(!coordinator.descriptor_setzen("main", beitrag));
+    assert_eq!(
+        push.snapshots().len(),
+        vorher,
+        "der abgewiesene Deskriptor hat trotzdem einen Push ausgeloest"
+    );
+    let stand = push.snapshots().last().unwrap().1["mitglieder"][0]["probe_descriptor"].clone();
+    assert_eq!(stand["aussageklasse"], "beobachtend");
+
+    // Gegenprobe: derselbe Weg mit gueltiger Klasse geht weiterhin durch.
+    let mut erlaubt = gueltig;
+    erlaubt["label"] = Value::String("h17".into());
+    assert!(coordinator.descriptor_setzen("main", erlaubt));
+}

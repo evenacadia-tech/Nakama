@@ -11,7 +11,7 @@ Mutante(n):
             // NAK-121, in dem der Wachhund einen abgeloesten etablierten
             // Schreiber nie erreichte.
 
-Befehl: cargo test --manifest-path broker/Cargo.toml --color never --test security_vectors -- abgeloester_schreiber
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never --test security_vectors -- verbindungsgriff_besitzt
 Exitcode: 101
 
 Die Mutante ist nach diesem Lauf zurueckgenommen; der naechste
@@ -21,24 +21,24 @@ Lauf derselben Tests ist wieder gruen.
 
 
 running 1 test
-test abgeloester_schreiber_gibt_instanz_und_handle_zurueck ... FAILED
+test verbindungsgriff_besitzt_handle_und_registereintrag ... FAILED
 
 failures:
 
----- abgeloester_schreiber_gibt_instanz_und_handle_zurueck stdout ----
+---- verbindungsgriff_besitzt_handle_und_registereintrag stdout ----
 
-thread 'abgeloester_schreiber_gibt_instanz_und_handle_zurueck' (11784) panicked at tests\security_vectors.rs:940:5:
+thread 'verbindungsgriff_besitzt_handle_und_registereintrag' (10348) panicked at tests\security_vectors.rs:938:5:
 abgeloester Schreiber gab sein Handle nicht zurueck
 note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 
 failures:
-    abgeloester_schreiber_gibt_instanz_und_handle_zurueck
+    verbindungsgriff_besitzt_handle_und_registereintrag
 
-test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 23 filtered out; finished in 12.13s
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 20 filtered out; finished in 12.35s
 
 
    Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.17s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.55s
      Running tests\security_vectors.rs (broker\target\debug\deps\security_vectors-4a68d58de2e43d5b.exe)
 error: test failed, to rerun pass `--test security_vectors`

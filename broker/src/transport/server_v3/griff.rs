@@ -157,6 +157,10 @@ pub struct V3Statistik {
     /// groesser null heisst, dass Austrag und Schliessen auseinandergelaufen
     /// sind, und wird deshalb gezaehlt statt verschluckt.
     pub cancel_auf_totem_handle: AtomicU64,
+    /// H-19: eine Panik in einem v3-Verbindungsthread, beim Ernten am
+    /// Joinergebnis erkannt. Im Normalbetrieb strukturell null - ein Wert
+    /// groesser null ist ein Befund, kein Betriebsrauschen.
+    pub verbindungsthread_panik: AtomicU64,
     /// Wie oft ein LEBENSZYKLUS-Aufruf der Senke (`control_verbunden`,
     /// `telemetrie_gekoppelt`, `*_getrennt`, `abgewiesen`) laenger als
     /// `SENKE_FRIST` stand und deshalb abgeloest wurde. Diese Aufrufe liefen
@@ -348,7 +352,10 @@ pub(super) fn join_mit_frist(j: JoinHandle<()>, frist: Duration, mut zwischendur
 /// Beendete Verbindungsthreads joinen und aus der Liste nehmen. Ohne das
 /// waechst der Vektor — und mit ihm die nativen Threadhandles — bei jedem
 /// Verbinden/Trennen unbegrenzt (T2-Befund 8 vom 2026-08-29).
-pub(super) fn fertige_ernten(verbindungen: &Arc<Mutex<Vec<JoinHandle<()>>>>) {
+pub(super) fn fertige_ernten(
+    verbindungen: &Arc<Mutex<Vec<JoinHandle<()>>>>,
+    statistik: &V3Statistik,
+) {
     let fertig: Vec<JoinHandle<()>> = {
         let mut v = verbindungen.lock().unwrap_or_else(|e| e.into_inner());
         let mut raus = Vec::new();
@@ -363,7 +370,14 @@ pub(super) fn fertige_ernten(verbindungen: &Arc<Mutex<Vec<JoinHandle<()>>>>) {
         raus
     };
     for j in fertig {
-        let _ = j.join();
+        if j.join().is_err() {
+            // H-19: eine Panik in einem Verbindungsthread wird GEZAEHLT. Ohne
+            // sie entfiele genau das Erkennungssignal fuer die Fehlerklasse,
+            // die dieser Endpunkt jagt - und zwar dort, wo angreiferkontrollierte
+            // Bytes geparst werden. Das v2-Ende wertet sein Joinergebnis
+            // laengst aus; hier fiel es bis NAK-121 auf den Boden.
+            statistik.verbindungsthread_panik.fetch_add(1, Ordering::SeqCst);
+        }
     }
 }
 

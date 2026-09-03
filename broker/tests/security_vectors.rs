@@ -819,9 +819,21 @@ fn freigabe_gegen_reserve_laesst_den_lebenden_worker_stehen() {
 // Registereintrag und Handle zusammen, und genau daraus folgt sowohl die
 // Reihenfolge Austrag-vor-Close (H-01) als auch der Abbruchweg fuer einen
 // abgeloesten Schreiber (H-02).
+//
+// Die vier Zusagen liegen in EINEM Test, nicht in vieren. Grund ist der
+// Nachbar `zwei_listener_plus_96_worker_erhalten_cap_und_namensbesitz`: er
+// oeffnet 96 Pipe-Clients seriell und wartet dann 4000 ms darauf, dass alle 96
+// Worker aktiv sind. Unter paralleler Last dauert jedes einzelne `open`
+// laenger, und 96 kleine Verzoegerungen summieren sich ueber die Frist.
+// Gemessen: mit 20 Tests in dieser Datei vier von vier Laeufen gruen, mit 21
+// ebenfalls vier von vier, mit 23 und 24 je einer von drei bzw. fuenf ROT. Der
+// Nachbar ist nach Paragraph 3.4 woertlich unveraenderlich, also weicht ihm der
+// neue Test aus, statt ihn zu entschaerfen - eine Fristverlaengerung dort waere
+// eine Aenderung an einem Test, den die Spezifikation ausdruecklich schuetzt.
 
 #[test]
-fn registeraustrag_geht_dem_close_voraus() {
+fn verbindungsgriff_besitzt_handle_und_registereintrag() {
+    // ── H-01, Teil 1: die Reihenfolge Austrag vor Close ────────────────────
     let pipe = probe_pipe("h01a");
     let fenster = Arc::new(V3UebergabeBarriere::default());
     let (mut griff, _) = start(
@@ -856,14 +868,19 @@ fn registeraustrag_geht_dem_close_voraus() {
     );
     assert!(!spur_im_fenster.contains(&"close"));
     assert!(spur_im_fenster.contains(&"register_austrag"));
+
     assert!(warten(3000, || griff.sicherheits_spur().contains(&"close")));
     assert_reihenfolge(&griff.sicherheits_spur(), &["register_austrag", "close"]);
     assert_eq!(griff.gehaltene_handles(), 0);
+    // Gegenprobe zum Zaehler unten: im Normalbetrieb ist er strukturell null,
+    // weil ein Registereintrag nur lebt, solange sein Besitzer lebt.
+    assert_eq!(
+        griff.statistik.cancel_auf_totem_handle.load(Ordering::SeqCst),
+        0
+    );
     griff.stoppen();
-}
 
-#[test]
-fn cancel_auf_totes_handle_wird_gezaehlt() {
+    // ── H-01, Teil 2: ein Abbruch auf ein totes Handle wird gezaehlt ───────
     let pipe = probe_pipe("h01b");
     let (mut griff, _) = start(
         &pipe,
@@ -881,27 +898,8 @@ fn cancel_auf_totes_handle_wird_gezaehlt() {
         .load(Ordering::SeqCst)
         > 0));
     griff.stoppen();
-}
 
-#[test]
-fn cancel_zaehler_bleibt_im_normalbetrieb_null() {
-    let pipe = probe_pipe("h01c");
-    let (mut griff, _) = start(&pipe, V3SecurityTestOptionen::default());
-    let client = verbinden(&pipe);
-    assert!(warten(3000, || griff.aktive_worker() == 1));
-    drop(client);
-    assert!(warten(3000, || griff.aktive_worker() == 0));
-    griff.stoppen();
-    // Die Gegenprobe zum Test darueber: ohne Naht ist der Zaehler strukturell
-    // null, weil ein Registereintrag nur lebt, solange sein Besitzer lebt.
-    assert_eq!(
-        griff.statistik.cancel_auf_totem_handle.load(Ordering::SeqCst),
-        0
-    );
-}
-
-#[test]
-fn abgeloester_schreiber_gibt_instanz_und_handle_zurueck() {
+    // ── H-02: der abgeloeste Schreiber gibt Instanz und Handle zurueck ─────
     let pipe = probe_pipe("h02");
     let haengt = Arc::new(std::sync::atomic::AtomicBool::new(true));
     let (mut griff, _) = start(

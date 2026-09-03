@@ -398,7 +398,15 @@ unsafe impl Sync for Verbindungsgriff {}
 /// Verbindung, also durch `MAX_VERBINDUNGEN` gedeckelt.
 ///
 /// Der Abfluss laeuft NICHT im Coordinator-Cleanup - C-06 verbietet dort I/O.
-fn abfliessen_mit_frist(h: HANDLE) -> bool {
+///
+/// R3-1 (Nacharbeit Runde 3, Wiederpruefung 2, 03.09.2026): der Abflussthread
+/// setzt UNMITTELBAR VOR `FlushFileBuffers` den Spurmarker `flush_beginn`.
+/// Damit ist der Beginn des Abflusses von aussen beobachtbar, statt ihn ueber
+/// eine Zeitannahme zu unterstellen: ein Test, der erst nach diesem Marker
+/// liest, belegt die Zustellung DURCH den Abfluss. Deshalb bekommt die
+/// Funktion die Spur des Griffs; sie ist privat, die Signatur bleibt
+/// crate-intern.
+fn abfliessen_mit_frist(h: HANDLE, spur: &Arc<SicherheitsSpur>) -> bool {
     // Ein eigener Handle-Klon fuer den Thread: sein Original faellt gleich, und
     // ein Thread, dem man das Handle unter den Fuessen wegzieht, waere genau
     // der Fehler, den H-01 an anderer Stelle behebt.
@@ -423,11 +431,18 @@ fn abfliessen_mit_frist(h: HANDLE) -> bool {
 
     let gesendet = Arc::new(AtomicBool::new(false));
     let gesendet_thread = gesendet.clone();
+    let spur_thread = spur.clone();
     let klon_wert = klon as isize;
     let join = std::thread::Builder::new()
         .name("eqcop-v3-flush".into())
         .spawn(move || {
             let h = klon_wert as HANDLE;
+            // R3-1: der Marker liegt VOR dem blockierenden Aufruf. Danach
+            // gesetzt waere er wertlos - `FlushFileBuffers` kehrt bei Named
+            // Pipes erst zurueck, wenn der Peer gelesen hat, und genau darauf
+            // wartet der Test. Die Spur gehoert dem Thread als eigener Klon:
+            // er ueberlebt den Griff, wenn die Frist ihn aufgibt.
+            spur_thread.push("flush_beginn");
             // SAFETY: dieser Thread ist alleiniger Besitzer des Klons; er
             // schliesst ihn genau einmal, nachdem der Flush zurueck ist.
             unsafe {
@@ -486,7 +501,7 @@ impl Drop for Verbindungsgriff {
         // Snapshot oder ein Ablehnungsgrund, der noch im Ausgabepuffer lag,
         // verschwand still. Verpasst der Abfluss seine Frist, wird das
         // gezaehlt - der Verlust ist sichtbar statt unsichtbar.
-        if !abfliessen_mit_frist(self.h) {
+        if !abfliessen_mit_frist(self.h, &self.sicherheits_spur) {
             self.statistik.flush_abgelaufen.fetch_add(1, Ordering::SeqCst);
         }
         self.sicherheits_spur.push("flush");

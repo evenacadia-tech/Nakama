@@ -1109,83 +1109,94 @@ fn abfluss_vor_dem_schliessen_erreicht_den_peer() {
     // beim Beginn des Abbaus noch UNGELESEN im Ausgabepuffer, und der Abbau
     // beginnt brokerseitig.
     //
-    // Synchronisiert wird ueber die vorhandene Destruktornaht, nicht ueber
-    // einen Sleep: `destruktor_fenster` haelt den Destruktor genau zwischen
-    // `register_austrag` (win_handles.rs:470) und dem Abfluss an. Erst dort
-    // liest der Peer.
+    // R3-1 der Nacharbeit Runde 3 (Wiederpruefung 2, 03.09.2026): BEIDE
+    // Ordnungen laufen jetzt ueber Spurmarker, keine ueber Zeit.
+    //   (1) Gewartet wird auf `welcome_geschrieben` statt auf `hello_accept`.
+    //       `hello_accept` steht VOR dem Welcome-Write; wurde der
+    //       Verbindungsworker unmittelbar danach descheduled, begann der Abbau,
+    //       ohne dass je etwas im Ausgabepuffer lag - gemessen wurde dann ein
+    //       vorzeitig abgebrochener Bootstrap, nicht die Zusage.
+    //   (2) Gelesen wird erst nach `flush_beginn`, dem Marker, den der
+    //       Abflussthread unmittelbar vor `FlushFileBuffers` setzt. Der feste
+    //       30-ms-Sleep der Runde 2 war die einzige Ordnung zwischen Freigabe
+    //       und Lesen: stand der Destruktorthread laenger, las der Peer zuerst,
+    //       und die Mutante `abfliessen_mit_frist -> true` blieb gruen.
+    //
+    // Der Abbau kommt brokerseitig, aber NICHT ueber `griff.stoppen()`: das
+    // blockiert bis zum Ende des Verbindungsthreads und damit durch den
+    // Abfluss hindurch. Der Test braucht seinen Hauptthread frei, denn nur er
+    // haelt den `V3Griff` und kann die Spur lesen. Ein Envelope-Verstoss
+    // (`frame_len == 0`) beendet die Leseschleife des Verbindungsthreads
+    // (`LeseErgebnis::Verstoesse`, verbindung.rs) - der Broker schreibt auf
+    // diesem Weg nichts zurueck, das Welcome bleibt der einzige ungelesene
+    // Inhalt, und der `Verbindungsgriff` faellt. Das ist genau der Ausloeser
+    // "Verbindungsende" aus der Matrixzeile H-07; den Serverstopp misst
+    // Haelfte (b) darunter. Die Naht `destruktor_fenster` entfaellt hier: sie
+    // war nur die Synchronisation der Runde 2 und ist keine mehr.
     let pipe = probe_pipe("h07");
-    let fenster = Arc::new(V3UebergabeBarriere::default());
-    let (mut griff, _) = start(
-        &pipe,
-        V3SecurityTestOptionen {
-            destruktor_fenster: Some(fenster.clone()),
-            ..V3SecurityTestOptionen::default()
-        },
-    );
+    let (mut griff, _) = start(&pipe, V3SecurityTestOptionen::default());
     let mut client = verbinden(&pipe);
     assert!(warten(3000, || griff.aktive_worker() == 1));
     // Ein gueltiges Hello: der Broker ANTWORTET mit einem Welcome - erst damit
     // liegt wirklich etwas im Ausgabepuffer. Der Peer liest es BEWUSST nicht.
     client.write_all(&control_hello()).expect("Hello schreiben");
     client.flush().ok();
-    assert!(warten(5000, || griff
-        .sicherheits_spur()
-        .contains(&"hello_accept")));
+    assert!(
+        warten(5000, || griff
+            .sicherheits_spur()
+            .contains(&"welcome_geschrieben")),
+        "das Welcome verliess den Broker nie - es gaebe nichts abzufliessen"
+    );
 
-    // Der Peer wartet auf den Destruktormarker und liest erst DANACH. Die
-    // Reihenfolge im Leser ist der Kern der Messung: erst freigeben, dann
-    // lesen. Setzte er sein Read schon vor der Freigabe ab, bediente der
-    // Kernel es unmittelbar aus dem Puffer - beim Abfluss waere dann nichts
-    // mehr ausstehend und der Lauf messe wieder nur sich selbst (genau der
-    // Defekt aus der Wiederpruefung 1).
-    let fenster_leser = fenster.clone();
-    let leser = std::thread::spawn(move || -> Result<(serde_json::Value, bool), String> {
-        if !warten(15_000, || fenster_leser.erreicht()) {
-            // Freigeben, sonst haengt der wartende Destruktorthread fuer immer
-            // und der ganze Lauf steht, statt rot zu werden.
-            fenster_leser.freigeben();
-            return Err("der Destruktor erreichte sein Fenster nicht".into());
-        }
-        // Ab hier laeuft der Destruktor in den Abfluss. Erst jetzt liest der
-        // Peer: `FlushFileBuffers` wartet innerhalb seiner Frist auf ihn.
-        fenster_leser.freigeben();
-        // Die Verzoegerung ist die MESSBEDINGUNG, keine Synchronisation - die
-        // laeuft ueber das Destruktorfenster darueber. Der Peer liest bewusst
-        // erst, wenn der Abfluss sicher angelaufen ist: 30 ms sind weit ueber
-        // dem Aufwecken des wartenden Destruktorthreads und weit unter
-        // FLUSH_FRIST (250 ms). Ohne sie kann der Kernel das Read schon aus dem
-        // Puffer bedienen, bevor der Abfluss ueberhaupt beginnt - dann misst
-        // der Lauf wieder nur sich selbst.
-        std::thread::sleep(Duration::from_millis(30));
-        let welcome = frame_lesen(&mut client);
-        // Danach ist die Verbindung abgebaut: kein weiteres Byte mehr. Ein
-        // Fehler ist hier ebenfalls Ende - eine getrennte Named Pipe meldet
-        // ERROR_BROKEN_PIPE statt eines sauberen Nullreads. Nur GELESENE Bytes
-        // waeren ein Befund.
-        let mut rest = [0u8; 64];
-        let eof = !matches!(client.read(&mut rest), Ok(n) if n > 0);
-        Ok((welcome, eof))
-    });
+    // Vier Nullbytes sind `frame_len == 0`, der erste Envelope-Verstoss der
+    // Stufe 1. Der Verbindungsthread bricht seine Leseschleife ab und laeuft
+    // in den Cleanup; das Welcome liegt zu diesem Zeitpunkt ungelesen im
+    // Ausgabepuffer.
+    client
+        .write_all(&0u32.to_le_bytes())
+        .expect("Verstossrahmen schreiben");
+    client.flush().ok();
 
-    // Der Abbau kommt brokerseitig.
-    griff.stoppen();
-    let (welcome, eof) = leser
-        .join()
-        .expect("Leserthread")
-        .expect("der ungelesene Broker-Write erreichte den Peer nicht");
+    // Erst wenn der Abflussthread unmittelbar vor `FlushFileBuffers` steht,
+    // liest der Peer. Frueher zu lesen hiesse: der Kernel bedient das Read aus
+    // dem Puffer, beim Abfluss ist nichts mehr ausstehend, und der Lauf misst
+    // wieder nur sich selbst. Die einzige Zeitgrenze hier ist die PRODUKTfrist
+    // FLUSH_FRIST (250 ms), innerhalb derer der wartende Leser aufwacht - der
+    // Marker selbst ist die Ordnung.
+    assert!(
+        warten(5000, || griff.sicherheits_spur().contains(&"flush_beginn")),
+        "der Abfluss begann nicht - lief `abfliessen_mit_frist` ueberhaupt?"
+    );
+
+    let welcome = frame_lesen(&mut client);
     assert_eq!(
         welcome["type"], "welcome",
         "der beim Abbaubeginn noch ungelesene Broker-Write kam nicht an"
     );
-    assert!(eof, "nach dem Welcome kam noch etwas - die Pipe wurde nicht geschlossen");
+    // Danach ist die Verbindung abgebaut: kein weiteres Byte mehr. Ein Fehler
+    // ist hier ebenfalls Ende - eine getrennte Named Pipe meldet
+    // ERROR_BROKEN_PIPE statt eines sauberen Nullreads. Nur GELESENE Bytes
+    // waeren ein Befund.
+    let mut rest = [0u8; 64];
+    let eof = !matches!(client.read(&mut rest), Ok(n) if n > 0);
+    assert!(
+        eof,
+        "nach dem Welcome kam noch etwas - die Pipe wurde nicht geschlossen"
+    );
 
     // Die Reihenfolge IST die Zusage: abfliessen, trennen, schliessen. Vorher
     // schloss der Destruktor bar, und was noch im Ausgabepuffer lag, verschwand
     // still.
-    assert!(griff.sicherheits_spur().contains(&"close"));
+    assert!(warten(3000, || griff.sicherheits_spur().contains(&"close")));
     assert_reihenfolge(
         &griff.sicherheits_spur(),
-        &["register_austrag", "flush", "close"],
+        &[
+            "welcome_geschrieben",
+            "register_austrag",
+            "flush_beginn",
+            "flush",
+            "close",
+        ],
     );
 
     // Ein Peer, der liest, kostet keine Frist - der Zaehler bleibt null.
@@ -1194,6 +1205,8 @@ fn abfluss_vor_dem_schliessen_erreicht_den_peer() {
         0,
         "der Abfluss lief in seine Frist, obwohl der Peer gelesen hat"
     );
+    drop(client);
+    griff.stoppen();
 
     // ── H-07 (b): der NICHT lesende Peer kostet genau die Frist ───────────
     let pipe = probe_pipe("h07b");

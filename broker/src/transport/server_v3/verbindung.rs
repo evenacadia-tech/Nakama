@@ -390,6 +390,15 @@ pub(super) fn verbindung_bedienen(
                             .remove(&link);
                         return;
                     }
+                    // R3-1 (Nacharbeit Runde 3, Wiederpruefung 2, 03.09.2026):
+                    // der Marker liegt NACH dem erfolgreichen Write, nicht
+                    // davor. `hello_accept` oben wird gesetzt, bevor der
+                    // Welcome-Rahmen ueberhaupt gebaut ist; ein Test, der den
+                    // Abbau nach `hello_accept` startet, kann den
+                    // Verbindungsworker im Descheduling erwischen und misst
+                    // dann einen vorzeitig abgebrochenen Bootstrap statt eines
+                    // ungelesenen Broker-Writes (H-07).
+                    sicherheits_cleanup.spur("welcome_geschrieben");
                 }
                 Err(_) => return,
             }

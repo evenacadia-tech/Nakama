@@ -1,0 +1,165 @@
+NAK-121 / R3-1 - Rotbeweis (Nacharbeit Runde 3, 03.09.2026)
+Defekt R2-6 / H-07-Test, broker/tests/security_vectors.rs, Haelfte (a) von
+abfluss_vor_dem_schliessen_erreicht_den_peer
+
+REGEL DES DIRIGENTEN: "Beide Ordnungen laufen ueber Spurmarker, keine ueber
+Zeit." (a) Marker welcome_geschrieben nach dem ERFOLGREICHEN Welcome-Write,
+(b) Marker flush_beginn im Abflussthread unmittelbar vor FlushFileBuffers;
+der 30-ms-Sleep entfaellt.
+
+UMSETZUNG (Produkt, genau die zwei Marker):
+  broker/src/transport/server_v3/verbindung.rs:401
+    sicherheits_cleanup.spur("welcome_geschrieben");   // im Ok-Zweig von
+    envelope_schreiben, NACHDEM ov_schreiben true geliefert hat
+  broker/src/transport/server_v3/win_handles.rs:445
+    spur_thread.push("flush_beginn");                  // im Abflussthread,
+    unmittelbar VOR FlushFileBuffers; abfliessen_mit_frist bekommt dafuer
+    die Spur des Griffs als zweiten Parameter (privat, crate-intern)
+
+NEUER ABLAUF (Haelfte a), ein Thread, kein Sleep, keine Barriere:
+  1. Hello schreiben, NICHT lesen.
+  2. Auf welcome_geschrieben warten (security_vectors.rs:1147) - erst damit
+     liegt nachweislich etwas im Ausgabepuffer. hello_accept liegt VOR dem
+     Write und garantiert das nicht.
+  3. Abbau brokerseitig ueber einen Envelope-Verstoss (frame_len == 0,
+     security_vectors.rs:1157): der Verbindungsthread verlaesst seine
+     Leseschleife (verbindung.rs, LeseErgebnis::Verstoesse) und der
+     Verbindungsgriff faellt. Der Broker schreibt auf diesem Weg NICHTS
+     zurueck; das Welcome bleibt der einzige ungelesene Inhalt.
+  4. Auf flush_beginn warten (security_vectors.rs:1167) - erst danach liest
+     der Peer. Vorher zu lesen hiesse: der Kernel bedient das Read aus dem
+     Puffer, beim Abfluss ist nichts mehr ausstehend.
+  5. Erwartet: Welcome vollstaendig, danach EOF, flush_abgelaufen == 0,
+     Reihenfolge welcome_geschrieben -> register_austrag -> flush_beginn ->
+     flush -> close.
+
+WARUM NICHT MEHR griff.stoppen(): stoppen() nimmt &mut self und blockiert bis
+zum Ende des Verbindungsthreads, also DURCH den Abfluss hindurch. Der Test
+braucht seinen griff-haltenden Thread frei, denn die Spur ist ausschliesslich
+ueber V3Griff::sicherheits_spur(&self) lesbar - ein zweiter Thread ohne Griff
+kann flush_beginn nicht sehen, und genau daraus entstand der 30-ms-Sleep der
+Runde 2. Der Envelope-Verstoss ist der Ausloeser "Verbindungsende" aus der
+Matrixzeile H-07; den Ausloeser "Serverstopp" misst Haelfte (b) unveraendert
+weiter ueber griff.stoppen(). Die Naht destruktor_fenster entfaellt in dieser
+Haelfte (Runde-3-Regel: sie darf entfallen oder bleiben, ist aber keine
+Synchronisation mehr); H-01 benutzt sie unveraendert weiter.
+
+ZEIT: die einzige verbliebene Zeitgrenze ist die PRODUKTfrist FLUSH_FRIST
+(250 ms), innerhalb derer der nach flush_beginn wartende Leser aufwacht.
+FlushFileBuffers blockiert bei Named Pipes, bis der Peer gelesen hat; liest
+der Peer nach dem Marker, ist die Zustellung durch den Abfluss belegt,
+unabhaengig davon, ob der Syscall vor oder nach dem Read eintritt.
+
+MUTANTE 1 (die vom Dirigenten benannte): abfliessen_mit_frist liefert sofort
+true - kein Thread, kein Marker, kein Flush.
+  win_handles.rs, abfliessen_mit_frist:
+  ->  let _ = (h, spur);
+      return true;
+Der Leser sieht flush_beginn nie, sein Warten schlaegt fehl -> ROT, ohne
+Zeitannahme (die Abbruchstelle ist der fehlende Marker, nicht eine Frist).
+
+MUTANTE 2 (Zusatz, fuer Teil (1) der Regel): der Marker welcome_geschrieben
+wird nicht gesetzt (verbindung.rs:401 entfernt). Der Test scheitert an
+security_vectors.rs:1144 - er haengt also wirklich an diesem Marker und
+nicht mehr an hello_accept. Die POSITION des Markers (nach ov_schreiben
+statt davor) ist durch keinen Test falsifizierbar, sondern an der Quelle
+belegt: hello_accept steht in verbindung.rs:301, der Welcome-Write in
+:381-383, der neue Marker in :401 im Erfolgszweig danach.
+
+FLACKERMESSUNG (beide Richtungen, je acht Laeufe, Mutante 1):
+  Mutante:      8 von 8 ROT, jeder Lauf an security_vectors.rs:1166
+                ("der Abfluss begann nicht - lief abfliessen_mit_frist
+                ueberhaupt?").
+  Ohne Mutante: 8 von 8 GRUEN.
+
+== ROT (Mutante 1, einzelner Lauf) ==
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: unreachable statement
+   --> src\transport\server_v3\win_handles.rs:418:5
+    |
+414 |     return true;
+    |     ----------- any code following this expression is unreachable
+...
+418 |     let mut klon: HANDLE = std::ptr::null_mut();
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unreachable statement
+    |
+    = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib) generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.64s
+     Running tests\security_vectors.rs (broker\target\debug\deps\security_vectors-4a68d58de2e43d5b.exe)
+
+running 1 test
+test abfluss_vor_dem_schliessen_erreicht_den_peer ... FAILED
+
+failures:
+
+---- abfluss_vor_dem_schliessen_erreicht_den_peer stdout ----
+
+thread 'abfluss_vor_dem_schliessen_erreicht_den_peer' (5052) panicked at tests\security_vectors.rs:1166:5:
+der Abfluss begann nicht - lief `abfliessen_mit_frist` ueberhaupt?
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    abfluss_vor_dem_schliessen_erreicht_den_peer
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 22 filtered out; finished in 5.12s
+
+error: test failed, to rerun pass `--test security_vectors`
+EXIT=101
+
+== FLACKERMESSUNG MUTANTE 1 (acht Laeufe) ==
+Lauf 1 : ROT (Exit 101) :: thread 'abfluss_vor_dem_schliessen_erreicht_den_peer' (6836) panicked at tests\security_vectors.rs:1166:5:
+ | test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 22 filtered out; finished in 5.12s
+Lauf 2 : ROT (Exit 101) :: thread 'abfluss_vor_dem_schliessen_erreicht_den_peer' (22036) panicked at tests\security_vectors.rs:1166:5:
+ | test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 22 filtered out; finished in 5.12s
+Lauf 3 : ROT (Exit 101) :: thread 'abfluss_vor_dem_schliessen_erreicht_den_peer' (3676) panicked at tests\security_vectors.rs:1166:5:
+ | test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 22 filtered out; finished in 5.12s
+Lauf 4 : ROT (Exit 101) :: thread 'abfluss_vor_dem_schliessen_erreicht_den_peer' (7788) panicked at tests\security_vectors.rs:1166:5:
+ | test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 22 filtered out; finished in 5.12s
+Lauf 5 : ROT (Exit 101) :: thread 'abfluss_vor_dem_schliessen_erreicht_den_peer' (16496) panicked at tests\security_vectors.rs:1166:5:
+ | test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 22 filtered out; finished in 5.12s
+Lauf 6 : ROT (Exit 101) :: thread 'abfluss_vor_dem_schliessen_erreicht_den_peer' (13588) panicked at tests\security_vectors.rs:1166:5:
+ | test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 22 filtered out; finished in 5.12s
+Lauf 7 : ROT (Exit 101) :: thread 'abfluss_vor_dem_schliessen_erreicht_den_peer' (16740) panicked at tests\security_vectors.rs:1166:5:
+ | test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 22 filtered out; finished in 5.11s
+Lauf 8 : ROT (Exit 101) :: thread 'abfluss_vor_dem_schliessen_erreicht_den_peer' (19732) panicked at tests\security_vectors.rs:1166:5:
+ | test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 22 filtered out; finished in 5.12s
+SUMME Mutante: ROT=8 GRUEN=0 von 8
+
+== ROT (Mutante 2: Marker welcome_geschrieben entfernt) ==
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.99s
+     Running tests\security_vectors.rs (broker\target\debug\deps\security_vectors-4a68d58de2e43d5b.exe)
+
+running 1 test
+test abfluss_vor_dem_schliessen_erreicht_den_peer ... FAILED
+
+failures:
+
+---- abfluss_vor_dem_schliessen_erreicht_den_peer stdout ----
+
+thread 'abfluss_vor_dem_schliessen_erreicht_den_peer' (22604) panicked at tests\security_vectors.rs:1144:5:
+das Welcome verliess den Broker nie - es gaebe nichts abzufliessen
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    abfluss_vor_dem_schliessen_erreicht_den_peer
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 22 filtered out; finished in 5.11s
+
+error: test failed, to rerun pass `--test security_vectors`
+EXIT=101
+
+== FLACKERMESSUNG OHNE MUTANTE (acht Laeufe, Stand von R3-1) ==
+Lauf 1 : GRUEN (Exit 0) :: test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 22 filtered out; finished in 0.48s
+Lauf 2 : GRUEN (Exit 0) :: test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 22 filtered out; finished in 0.48s
+Lauf 3 : GRUEN (Exit 0) :: test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 22 filtered out; finished in 0.48s
+Lauf 4 : GRUEN (Exit 0) :: test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 22 filtered out; finished in 0.48s
+Lauf 5 : GRUEN (Exit 0) :: test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 22 filtered out; finished in 0.48s
+Lauf 6 : GRUEN (Exit 0) :: test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 22 filtered out; finished in 0.48s
+Lauf 7 : GRUEN (Exit 0) :: test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 22 filtered out; finished in 0.48s
+Lauf 8 : GRUEN (Exit 0) :: test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 22 filtered out; finished in 0.48s
+SUMME ohne Mutante: GRUEN=8 ROT=0 von 8

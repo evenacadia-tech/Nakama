@@ -1,0 +1,35 @@
+URTEIL: NEEDS_WORK
+
+1. Nein. D bildet zwar 7 Öffnungsausgänge × 3 Transportpfade ohne doppelte Öffnungsklasse ab, kreuzt diese aber nicht mit Erstverbindung, automatischem Reconnect und Backoff-Deckel. D-19–D-21 belegen `stop()` und `reconnect()` doppelt, obwohl der eine Vorgang beendet und der andere sofort eine neue Generation anfordert (`ControlClient.cpp:681-753`, `TelemetryClient.cpp:262-332`, `PipeClient.cpp:249-279`). DEFEKT D-01–D-03: „Handle offen und verifiziert“ garantiert noch keine stehende Verbindung oder Backoff-Rücksetzung; Hello/Welcome kann danach scheitern (`ControlClient.cpp:1145-1240`, `TelemetryClient.cpp:593-697`, `PipeClient.cpp:451-622`). DEFEKT D-03/D-06/D-09/D-12/D-15/D-18/D-21: V2 erhöht bei jedem Eintritt `verbindungsVersuche` (`PipeClient.cpp:340-347`), während die Zählerspalte diesen Zuwachs auslässt. DEFEKT D-13/D-14/D-16/D-17: Die Matrix verspricht unveränderte `serverPruefungen`; der unveränderte heutige Code zählt jeden Status `belegtAberUnverifiziert` (`ControlClient.cpp:1101-1103`, `TelemetryClient.cpp:554-556`).
+
+2. Außerhalb des in §12 benannten Dateisatzes fand ich keinen Bruch von R1–R3, NAK-123-C oder den CLAUDE-Invarianten: Nur `nichtDa` öffnet weiterhin den Spawnzweig (`BrokerLifecycle.cpp:857-861`), der neue Status fällt ohne Spawn zurück, und Audio-, Pipe-Namens- sowie Identitätspfade bleiben unberührt. Innerhalb der benannten Clientdateien verlangen die genannten Zählerabweichungen jedoch zusätzliche Verhaltensänderungen, obwohl NAK-134:180 behauptet, D-13–D-18 änderten nichts. NAK-123-C bleibt hinsichtlich Authentisierung vor Hello und Parken fremder/unverifizierter Namen erhalten.
+
+3. Nein. DEFEKT D-03: Der angegebene Test ist ein absichtlicher `hashFalsch`-Fall und misst nicht den verifizierten Erfolgsfall (`PipeClientLifecycleTestMain.cpp:306-343`). DEFEKT D-05: `control_und_telemetry_authentisieren_jedes_handle` misst nur erfolgreiche Telemetrie-Authentisierung (`IpcTestMain.cpp:1078-1115`); DEFEKT D-06: `reconnectGeneration` misst zwei erfolgreiche V2-Verbindungen, nicht Authfehler plus Parken (`PipeClientLifecycleTestMain.cpp:242-296`). D-04–D-06 lassen außerdem `erwartungUngueltig` und `serverPidNichtErmittelbar` aus, obwohl beide zum Ausgang „offen + nicht verifiziert“ gehören (`IpcVerbindung.h:56-57`, `BrokerLifecycle.cpp:462-483`). D-01/D-02 messen weder einen vorher erreichten Backoff-Deckel noch dessen Rücksetzung.
+
+DEFEKT E-08 ist nur durch Scope-/Quellinspektion gestützt; unverändert grüne State-/Schema-Tests prüfen nicht, dass der neue Laufzeitstatus nirgends persistiert oder verdrahtet wurde. DEFEKT W-01/W-02: Die Mutanten verändern erst den fertigen Bericht (`pruefe_session_soak.py:663-665` beziehungsweise der geplante neue Mutant) und beweisen damit den Prüfer, nicht die C++-Erzeugung des Zählers. Ein versehentlich weiterhin aus `reconnectMs.size()` erzeugtes `reconnect_paare` könnte trotz rotem Gesamt-Soak unentdeckt bleiben. W-03 ist reine Dokumentationsfortschreibung ohne Test; wegen des ausdrücklichen `docs/**`-Ausschlusses werte ich sie nicht als zusätzlichen Defekt.
+
+Ein echter Vorher-rot/Nachher-grün-Beleg ist konstruktiv nur für D-10–D-12 und die A24-Wirkung von W-01/W-02 möglich. Die unveränderten D-/E-Zeilen sind Regressionswachen oder brauchen Mutanten nach dem Fix. Die D-Einzeltests sind ohne echten Broker mit lokalen Testpipes möglich; W benötigt den erlaubten Probe-Broker.
+
+4. Die Konstanten und wesentlichen Zeilen stimmen am HEAD: Backoff 500/8000 ms in `IpcVerbindung.h:34-35`, 20 Versuche und 200-ms-Wait in `IpcVerbindung.cpp:67-89`, Heartbeat 1.000 ms in `ControlClient.cpp:27` und `coordinator.rs:28`, A24-Schranke/Frist 45.051/60.000 ms in `SessionSoakMain.cpp:76-78`. DEFEKT Frist D-10–D-12: `20 × 200 ms` ist nur die Summe der angeforderten Wait-Zeitlimits, keine harte 4.000-ms-Wanduhr-Obergrenze; CreateFile-Aufwand und Scheduling kommen hinzu. DEFEKT D-19–D-21: „sofort“ stimmt ebenfalls nicht, weil `ioAbbrechen()` ein laufendes `WaitNamedPipeW(200)` nicht abbricht (`IpcVerbindung.cpp:69-88,149-154`; V2 `PipeClient.cpp:371-389`). Landet der Abbruch nach der Schleifenprüfung und öffnet `CreateFileW` noch einen Handle, kann außerdem die Authentisierung laufen; damit ist die pauschale Aussage „D-07 bis D-21 brechen vor `namedPipeServerAuthentisieren` ab“ falsch.
+
+5. W-01 hätte den beobachteten 32-Sonden-Defekt sichtbar gemacht, sofern der Zähler exakt am `sendeP0()==false`-Rückgabewert sitzt: Nach Ablauf der 60-s-Reconnectprüfung wird `imNeustartfenster` auch bei Unvollständigkeit wieder `false` (`SessionSoakMain.cpp:1067-1119`); dauerhaft geparkte Control-Queues laufen danach über (`ControlClient.cpp:798-816`). S04 würde dabei wegen `einreihung_abgelehnt_ausserhalb_neustart > 0` rot, nicht allein wegen der Pflichtsumme `p0.einreihung_abgelehnt`.
+
+Die Definition von W-02 zählt tatsächlich Paare, deren Control und Telemetrie am Fristende verbunden sind, statt die Vektorlänge; sie trennt damit Transport von Mitgliedschaft. Der heutige Code gibt dagegen zwingend `n.reconnectMs.size()` aus (`SessionSoakMain.cpp:1257-1270`). Für den bekannten Defekt wären geparkte Paare daher kleiner als 33 gezählt worden; der unter 3 genannte fehlende Erzeugertest bleibt.
+
+Lücken:
+
+- Fehler von `CreateEventW` nach erfolgreicher Serverauthentisierung, aber vor Handle-Veröffentlichung, ist in keiner D-Zelle geregelt (`IpcVerbindung.cpp:115-127`).
+- Der Abbruch-Zeitpunkt zwischen erfolgreichem `CreateFileW` und Authentisierung ist von D-19–D-21 nicht eindeutig getrennt.
+
+Härtungen:
+
+- W-01 mit einer deterministisch gefüllten 64er-P0-Queue und Prüfung beider Fensterzähler absichern.
+- W-02 mit einem Berichtstest absichern, bei dem genau ein Paar transportseitig getrennt, ein anderes verbunden aber noch nicht Mitglied ist.
+- Backoff zusätzlich über beobachtete Versuchsstempel prüfen, damit 500→1000→2000→4000→8000 und der Deckel getrennt belegt sind.
+
+Geprüft: vollständiger Diff `4789f2a...8e6a2ac`, NAK-134, Gate- und Entwurfsstellen, NAK-123-C, G3 §1/§12, G3-SOAK §3/§5/§7, die genannten IPC-/Lifecycle-/A24-Quellen, vorhandenen Testfunktionen und der gespeicherte 32-Sonden-Bericht. Keine Datei wurde verändert.
+
+Nicht geprüft: keine Builds, Tests, Preflights, Broker, Produktprozesse oder Pipes gestartet; keine externe Microsoft-Dokumentation erneut geöffnet. Ausgeschlossene Dokumentations-/Stilflächen wurden nicht auditiert.
+
+HEAD vor dem Lauf: `8e6a2acee873864d017c6bdfa504808bface4a1e`  
+HEAD nach dem Lauf: `8e6a2acee873864d017c6bdfa504808bface4a1e`

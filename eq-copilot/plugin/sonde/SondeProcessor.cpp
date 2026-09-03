@@ -1,8 +1,11 @@
 #include "SondeProcessor.h"
+
+#include "../vertrag/NakamaEvidenz.h"
 #include "BrokerInstallBinding.h"
 #include "PipeToken.h"
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cmath>
 #include <limits>
@@ -380,6 +383,13 @@ void SondeProcessor::workerLauf()
                     letzterProducerFrameVorhanden = true;
                     producerPublikationen.fetch_add (1);
                 }
+
+                // SONDE-013 M-05: der Evidenzsnapshot geht ueber P1 auf dem
+                // Controllink, nicht ueber P2. §33.2 trennt beide Kadenzen
+                // ausdruecklich — der Liveframe ist 10 Hz und binaer, die
+                // Evidenz 1 bis 4 Hz und JSON.
+                if (frame.evidenzFrisch)
+                    evidenzSnapshotSenden (frame);
             }
             queueHatRest = analyseQueue.spitze() != nullptr;
         }
@@ -393,6 +403,100 @@ void SondeProcessor::workerLauf()
         workerWarte.wait_for (l, std::chrono::milliseconds (20),
                               [this] { return ! workerLaeuft.load(); });
     }
+}
+
+/*  SONDE-013 M-05: einen Evidenzsnapshot bauen, senden und die Kadenz
+    nachfuehren.
+
+    Laeuft im Analyseworker unter `analyseSchloss` — nie im Audiothread. Der
+    Weg ist bewusst in dieser Reihenfolge:
+
+      1. Ereignisse dieses Fensters aus dem Ring holen und den Verlust seit
+         dem letzten Snapshot als DIFFERENZ bilden;
+      2. Snapshot bauen (der Bauer ist fail-closed und lehnt einen
+         widerspruechlichen Frame ab);
+      3. senden und aus dem Ergebnis die Kadenz nachfuehren;
+      4. den Ring leeren — ERST danach, denn ein nicht gebauter Snapshot
+         darf die Ereignisse nicht verschlucken.
+
+    Zur Kadenz: bei Rueckstau steigt der Abstand Richtung 1 Hz, sonst faellt
+    er Richtung 4 Hz. Reduziert wird die KADENZ, nie der Inhalt — ein
+    uebersprungener Snapshot wuerde sein Fenster trotzdem leeren und die
+    Messung wegwerfen.
+
+    Zur Konfidenzklasse: eine Sonde kann `stark` NICHT ehrlich behaupten.
+    §34.3 begrenzt die Gesamtklasse an harten Maengeln bei Session, Passage,
+    Coverage oder Alignment; von diesen vier kennt die Sonde nur die
+    Coverage. Sie meldet deshalb hoechstens `mittel` und ueberlaesst dem
+    Broker, weiter herabzustufen — nach oben korrigiert dort niemand.  */
+void SondeProcessor::evidenzSnapshotSenden (const nakama::analyse::FeatureFrame& frame)
+{
+    const auto verworfen = merkmale.ereignisseVerworfen();
+    const std::uint64_t verlorenSeitdem = verworfen >= letzteEreignisverluste
+                                        ? verworfen - letzteEreignisverluste : 0u;
+
+    // Der Ring liegt in der Engine; hier entsteht eine flache Kopie in
+    // Zeitfolge, damit der Bauer keine Engine kennt.
+    const int anzahl = merkmale.ereignisAnzahlJetzt();
+    std::array<nakama::analyse::Ereignis,
+               nakama::analyse::FeatureEngine::kEreignisPlaetze> puffer {};
+    for (int i = 0; i < anzahl; ++i)
+        puffer[(std::size_t) i] = merkmale.ereignis (i);
+
+    nakama::evidenz::Ereignisstrom strom;
+    strom.eintraege = puffer.data();
+    strom.anzahl    = anzahl;
+    strom.verloren  = verlorenSeitdem;
+
+    nakama::evidenz::Snapshotkopf kopf;
+    kopf.evidenceId = uuidHex32();
+    kopf.adresse    = v3Hello().adresse;
+    kopf.klasse     = ! frame.abdeckungGesetzt || frame.abdeckung <= 0.0f
+                        ? "unbrauchbar"
+                    : (frame.abdeckung < 0.5f || ! frame.konvergenzGesetzt
+                       || frame.konvergenz < 0.5f)
+                        ? "schwach"
+                        : "mittel";
+
+    std::string json;
+    if (nakama::evidenz::evidenceSnapshotAlsJson (frame, kopf, strom, json))
+    {
+        // Leerer Koaleszenzschluessel: zwei Snapshots derselben Quelle sind
+        // ZWEI Belege mit eigener evidence_id, nicht zweimal derselbe Blick
+        // auf ein Objekt. Sie zu koaleszieren hiesse, angenommene Evidenz zu
+        // loeschen — genau das, was die Prioritaetspolitik verbietet.
+        const auto ergebnis = controlV3.sendeP1 ({}, json);
+        const bool rueckstau =
+            ergebnis == nakama::ipc::P1Ergebnis::zurWiederholung
+         || ergebnis == nakama::ipc::P1Ergebnis::abgewiesen;
+        if (rueckstau)
+        {
+            const double alt = merkmale.evidenzIntervallJetzt();
+            merkmale.evidenzIntervallSetzen (alt * 2.0);
+            if (merkmale.evidenzIntervallJetzt() > alt)
+                evidenzKadenzReduktionen.fetch_add (1);
+            evidenzNichtGesendet.fetch_add (1);
+        }
+        else
+        {
+            // Zurueck Richtung 4 Hz, aber in Schritten: ein Sprung zurueck
+            // auf die schnellste Kadenz nach EINEM freien Platz erzeugte
+            // genau das Flattern, gegen das der Rueckstau schuetzt.
+            merkmale.evidenzIntervallSetzen (merkmale.evidenzIntervallJetzt() * 0.5);
+            evidenzSnapshots.fetch_add (1);
+        }
+    }
+    else
+    {
+        evidenzNichtGesendet.fetch_add (1);
+    }
+
+    // Der Ring ist mit diesem Fenster abgeschlossen — unabhaengig davon, ob
+    // der Snapshot zustande kam. Bliebe er stehen, traegen dieselben
+    // Ereignisse im naechsten Snapshot ein zweites Mal, und ein Empfaenger
+    // zaehlte einen Transienten doppelt.
+    merkmale.ereignisseEntnommen();
+    letzteEreignisverluste = verworfen;
 }
 
 #if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)

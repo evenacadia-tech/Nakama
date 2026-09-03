@@ -207,6 +207,23 @@ public:
     {
         return producerPublikationen.load();
     }
+    std::uint64_t evidenzSnapshotsFuerTest() const noexcept
+    {
+        return evidenzSnapshots.load();
+    }
+    std::uint64_t evidenzNichtGesendetFuerTest() const noexcept
+    {
+        return evidenzNichtGesendet.load();
+    }
+    std::uint64_t evidenzKadenzReduktionenFuerTest() const noexcept
+    {
+        return evidenzKadenzReduktionen.load();
+    }
+    double evidenzIntervallFuerTest() const
+    {
+        std::lock_guard<std::mutex> l (analyseSchloss);
+        return merkmale.evidenzIntervallJetzt();
+    }
     std::uint64_t analyseDropsUeberlaufFuerTest() const noexcept
     {
         return analyseQueue.dropsUeberlauf();
@@ -254,6 +271,20 @@ private:
     nakama::analyse::FeatureFrame letzterProducerFrame;
     bool letzterProducerFrameVorhanden = false;
     std::atomic<std::uint64_t> producerPublikationen { 0 };
+
+    // ── SONDE-013 M-05: Evidenzpfad ──────────────────────────────────────
+    //
+    // Alles hier gehoert dem WORKER und laeuft unter `analyseSchloss`; nur
+    // die drei Zaehler sind atomar, weil Tests sie von aussen lesen. Der
+    // Audiothread beruehrt nichts davon.
+    void evidenzSnapshotSenden (const nakama::analyse::FeatureFrame& frame);
+    /// Laufgebundener Verlustzaehler der Engine beim letzten Snapshot. Die
+    /// DIFFERENZ ist der Verlust dieses Fensters — der Engine-Zaehler bleibt
+    /// laufgebunden, weil B5 ihn so misst.
+    std::uint64_t letzteEreignisverluste { 0 };
+    std::atomic<std::uint64_t> evidenzSnapshots { 0 };
+    std::atomic<std::uint64_t> evidenzNichtGesendet { 0 };
+    std::atomic<std::uint64_t> evidenzKadenzReduktionen { 0 };
 
     // Der gepatchte Wrapper liefert diesen Stand unmittelbar vor demselben
     // Audioblock. Deshalb kein Atomic und kein Lock.

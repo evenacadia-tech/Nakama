@@ -1757,3 +1757,98 @@ fn schreiber_wartet_nicht_unbegrenzt_auf_den_peer() {
         "ov_schreiben wartet weiterhin unbegrenzt auf den Peer"
     );
 }
+
+// ── SONDE-013 M-05: der Evidenzpfad im Broker ────────────────────────────
+//
+// Die Nutzlast kommt aus dem COMMITTETEN Fixturekorpus, nicht aus der Hand:
+// ein 221-Band-Snapshot mit vier Bandsaetzen, Bitmaps und Ereignissen von
+// Hand zu schreiben hiesse, eine zweite Wire-Form neben dem Korpus zu
+// pflegen — und genau daran ist hier schon einmal eine Falltabelle in drei
+// Fassungen auseinandergelaufen (T2-Runde 2, BF-5). Der Test taetigt nur die
+// Adresse, weil sie zum Link gehoeren muss.
+
+fn evidenz_payload(adresse: &Adresse) -> Vec<u8> {
+    let pfad = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../eq-copilot/fixtures/v3/gueltig/evidence-snapshot-mit-ereignissen-und-stereo.json");
+    let mut wert: Value =
+        serde_json::from_slice(&std::fs::read(&pfad).expect("Evidenzfixture liegt im Korpus"))
+            .expect("Evidenzfixture ist JSON");
+    wert["adresse"] = serde_json::to_value(adresse).expect("Adresse ist serialisierbar");
+    serde_json::to_vec(&wert).unwrap()
+}
+
+#[test]
+fn evidenzsnapshot_wird_angenommen_und_zusammengefasst() {
+    let (c, _clock) = coordinator();
+    let h = hello(1, 2, 10, 100, "passive_probe", Some(9));
+    anmelden(&c, "a", &h);
+    report(&c, "a", &h.adresse);
+
+    assert!(c.evidenz_sicht(&hex(10)).is_none(), "vor dem ersten Snapshot gibt es nichts");
+    assert!(c.evidence_snapshot_json("a", &evidenz_payload(&h.adresse)));
+
+    let sicht = c.evidenz_sicht(&hex(10)).expect("angenommener Snapshot ist sichtbar");
+    // Genau die zwei Zahlen, die eine duenne Messung als duenn ausweisen.
+    assert_eq!(sicht.ereignisse, 2);
+    assert_eq!(sicht.ereignisse_verloren, 0);
+    assert_eq!(sicht.verteilung_fenster, 41);
+    assert_eq!(sicht.klasse, "mittel");
+    assert!(sicht.abdeckung > 0.0 && sicht.abdeckung <= 1.0);
+    assert!(!sicht.evidence_id.is_empty());
+}
+
+#[test]
+fn evidenzsnapshot_fremder_adresse_wird_verworfen() {
+    let (c, _clock) = coordinator();
+    let h = hello(1, 2, 10, 100, "passive_probe", Some(9));
+    anmelden(&c, "a", &h);
+    report(&c, "a", &h.adresse);
+
+    // Der Sender schreibt sich seine Quelle nicht selbst zu.
+    let fremd = adresse(1, 2, 11, 101);
+    assert!(!c.evidence_snapshot_json("a", &evidenz_payload(&fremd)));
+    assert!(c.evidenz_sicht(&hex(11)).is_none());
+    assert!(c.evidenz_sicht(&hex(10)).is_none());
+}
+
+#[test]
+fn evidenzsnapshot_wird_bei_offener_intervention_gesperrt() {
+    let (c, _clock) = coordinator();
+    let h = hello(1, 2, 10, 100, "passive_probe", Some(9));
+    anmelden(&c, "a", &h);
+    report(&c, "a", &h.adresse);
+
+    // Erst ein Beleg, dass der Weg ueberhaupt offen ist — sonst saehe ein
+    // kaputter Empfaenger wie ein wirksamer Riegel aus.
+    assert!(c.evidence_snapshot_json("a", &evidenz_payload(&h.adresse)));
+    let vorher = c.evidenz_sicht(&hex(10)).expect("erster Snapshot liegt");
+
+    assert!(c.intervention_begin("a", &h.adresse, &hex(0xabc), 1));
+    assert!(!c.interventionssicht().starke_evidenz_erlaubt);
+    // GESPERRT heisst verworfen, nicht abgeschwaecht gespeichert: die Sicht
+    // bleibt exakt die alte.
+    assert!(!c.evidence_snapshot_json("a", &evidenz_payload(&h.adresse)));
+    assert_eq!(c.evidenz_sicht(&hex(10)), Some(vorher));
+
+    // Und der inverse Pfad: nach Ende und abgelaufenem Nachlauf nimmt der
+    // Broker wieder an.
+    assert!(c.intervention_end("a", &h.adresse, &hex(0xabc), 2, 0));
+    assert!(c.interventionssicht().starke_evidenz_erlaubt);
+    assert!(c.evidence_snapshot_json("a", &evidenz_payload(&h.adresse)));
+}
+
+#[test]
+fn evidenzsnapshot_der_fassung_2_faellt_bei_einem_leser_der_fassung_1() {
+    let (c, _clock) = coordinator();
+    let h = hello(1, 2, 10, 100, "passive_probe", Some(9));
+    anmelden(&c, "a", &h);
+    report(&c, "a", &h.adresse);
+
+    // Derselbe Payload, nur mit dem Envelope-Minor 1 angekuendigt: die
+    // belegten Felder `ereignisse` und `stereo` gibt es dort nicht, also
+    // lehnt der Leser ab, statt sie zu ignorieren.
+    let payload = evidenz_payload(&h.adresse);
+    assert!(!c.evidence_snapshot_json_mit_minor_fuer_test("a", &payload, 1));
+    assert!(c.evidenz_sicht(&hex(10)).is_none());
+    assert!(c.evidence_snapshot_json_mit_minor_fuer_test("a", &payload, 2));
+}

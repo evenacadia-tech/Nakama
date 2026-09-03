@@ -1,0 +1,68 @@
+# Rotbeweis M-05-riegel — SONDE-013 Etappe 2
+# 2026-09-04
+#
+# Regel: eine neue Zusage ohne Rotbeweis ist eine Behauptung. Hier wird
+# der Fehler bewusst eingebaut, das Bein faellt, der Fehler wird
+# entfernt und dasselbe Bein ist wieder gruen.
+#
+# Eingebauter Fehler: der Interventionsriegel vor dem Evidence-Commit wird uebersprungen — eine offene Hoermarkierung liesse dann starke Evidenz durch
+
+# mutiert: broker/src/coordinator/evidenz.rs
+
+========================================================================
+ROT — mit eingebautem Fehler
+========================================================================
+
+$ cargo test --manifest-path broker/Cargo.toml --test coordinator_model --color never evidenz
+EXIT=101
+
+running 5 tests
+test alle_schemafesten_interventionsarten_sperren_dieselbe_evidenz ... ok
+test evidenzsnapshot_fremder_adresse_wird_verworfen ... ok
+test evidenzsnapshot_wird_angenommen_und_zusammengefasst ... ok
+test evidenzsnapshot_der_fassung_2_faellt_bei_einem_leser_der_fassung_1 ... ok
+test evidenzsnapshot_wird_bei_offener_intervention_gesperrt ... FAILED
+
+failures:
+
+---- evidenzsnapshot_wird_bei_offener_intervention_gesperrt stdout ----
+
+thread 'evidenzsnapshot_wird_bei_offener_intervention_gesperrt' (21712) panicked at tests\coordinator_model.rs:1830:5:
+assertion failed: !c.evidence_snapshot_json("a", &evidenz_payload(&h.adresse))
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    evidenzsnapshot_wird_bei_offener_intervention_gesperrt
+
+test result: FAILED. 4 passed; 1 failed; 0 ignored; 0 measured; 46 filtered out; finished in 0.03s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.01s
+     Running tests\coordinator_model.rs (broker\target\debug\deps\coordinator_model-c22cf73cd241058f.exe)
+error: test failed, to rerun pass `--test coordinator_model`
+
+========================================================================
+GRUEN — Fehler entfernt, derselbe Befehl
+========================================================================
+
+$ cargo test --manifest-path broker/Cargo.toml --test coordinator_model --color never evidenz
+EXIT=0
+
+running 5 tests
+test alle_schemafesten_interventionsarten_sperren_dieselbe_evidenz ... ok
+test evidenzsnapshot_fremder_adresse_wird_verworfen ... ok
+test evidenzsnapshot_wird_angenommen_und_zusammengefasst ... ok
+test evidenzsnapshot_der_fassung_2_faellt_bei_einem_leser_der_fassung_1 ... ok
+test evidenzsnapshot_wird_bei_offener_intervention_gesperrt ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 46 filtered out; finished in 0.04s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.02s
+     Running tests\coordinator_model.rs (broker\target\debug\deps\coordinator_model-c22cf73cd241058f.exe)
+
+
+========================================================================
+ROTBEWEIS BESTANDEN: rot=True gruen=True
+========================================================================

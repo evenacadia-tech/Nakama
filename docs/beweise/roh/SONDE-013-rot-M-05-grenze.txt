@@ -1,0 +1,696 @@
+# Rotbeweis M-05-grenze — SONDE-013 Etappe 2
+# 2026-09-04
+#
+# Regel: eine neue Zusage ohne Rotbeweis ist eine Behauptung. Hier wird
+# der Fehler bewusst eingebaut, das Bein faellt, der Fehler wird
+# entfernt und dasselbe Bein ist wieder gruen.
+#
+# Eingebauter Fehler: der Verteilungsring ueberlebt eine Transportgrenze — ein Perzentil mischte dann zwei Epochen zu einer Verteilung
+
+# mutiert: eq-copilot/plugin/core/analysis/FeatureEngine.h
+# mutiert: eq-copilot/plugin/core/analysis/FeatureEngine.h
+
+========================================================================
+ROT — mit eingebautem Fehler
+========================================================================
+
+$ C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopAnalysisGoldenTest_artefacts\Release\EqCopAnalysisGoldenTest.exe
+EXIT=1
+== Nakama SONDE-009 - FeatureEngine v2: Zeit, Validity, Events, Baender ==
+Gate: "Drop/Seek/Loop trennt jedes offene Fenster."
+Stufen: Bass 16384 (Hop 8192), Haupt 4096 (Hop 2048), Trennung bei 200 Hz.
+
+== A - Bandgitter: die einkompilierten Zahlen gegen die Fixtures ==
+[ok]   Evidenzgitter: band_anzahl == kEvidenzBaender  [221]
+[ok]   Livegitter: band_anzahl == kLiveBaender  [64]
+[ok]   Evidenz-Kanten BITGLEICH zur Fixture (222 Werte)  [0 Abweichungen]
+[ok]   Evidenz-Mitten BITGLEICH zur Fixture (221 Werte)  [0 Abweichungen]
+[ok]   Live-Kanten BITGLEICH zur Fixture (65 Werte)  [0 Abweichungen]
+[ok]   Live-Mitten BITGLEICH zur Fixture (64 Werte)  [0 Abweichungen]
+[ok]   Live-Gruppierung deckt die 221 Feinbaender lueckenlos und genau einmal  [0 Abweichungen, Ende bei 221]
+[ok]   Live-Kanten sind bitgleiche KOPIEN feiner Kanten, keine zweite Bank  [0 Abweichungen]
+
+== B - Quantisierung: alle Vektoren aus quantisierung-v1.json ==
+[ok]   q_db_0p1_i16: Skalierung stimmt mit der Fixture ueberein  [10]
+[ok]   q_db_0p1_i16: alle 23 Vektoren treffen
+[ok]   q_db_0p01_i16: Skalierung stimmt mit der Fixture ueberein  [100]
+[ok]   q_db_0p01_i16: alle 23 Vektoren treffen
+[ok]   float32: alle 15 Vektoren treffen bitgenau
+[ok]   Rundungsfalle: floor(|x|+0.5) waere hier 1, std::round ist 0
+[ok]   halbe Werte VON NULL WEG (0,05 -> 1), nicht zur geraden Zahl
+[ok]   und negativ genauso (-0,05 -> -1)
+
+== C - Gueltigkeitsbitmap: LSB-first, Fuellbits 0 ==
+[ok]   Band i sitzt in Byte i/8, Bit i%8 (LSB-first)  [Byte0=81 Byte1=1]
+[ok]   ein Bit loeschen laesst die Nachbarn stehen
+[ok]   Lesen und Schreiben sind dieselbe Adressierung
+[ok]   221 Baender brauchen 28 Bitmapbytes  [28]
+[ok]   die 3 Fuellbits des letzten Bytes bleiben 0 (sonst waere ein Bytevergleich sinnlos)  [letztes Byte = 1f]
+
+== D - FFT: gegen analytisch bekannte Ergebnisse ==
+[ok]   Sinus auf einer Binmitte legt >99,9 % der Leistung in genau diesen Bin  [100.0000 %]
+[ok]   Parseval haelt (Zeit- und Frequenzenergie gleich)  [rel. Fehler 0.0000000000000002]
+[ok]   Gleichanteil sitzt vollstaendig in Bin 0  [Bin0 = 1048576.0, Rest = 0.00000000000000000000]
+
+== E - K-Gewichtung: Frequenzgang gegen die BS.1770-Referenzkette ==
+[ok]   RBJ-Kette und BS.1770-Referenzkette liegen ueber 20 Hz..20 kHz unter 0,1 dB auseinander  [max 0.04312 dB bei 20000.0 Hz]
+       (gemessene Groesstabweichung, zur Ablesung: 0.043120 dB)
+[ok]   Hochpass sperrt den Gleichanteil vollstaendig  [|H(0)|Â² = 0.000000000000000000000000]
+
+== F - Zeitvertrag: Epoche, Segment, Sequenz, Zeitbasis ==
+[ok]   die Sequenz zaehlt ab 1 aufwaerts  [6]
+[ok]   mit gueltiger Projektzeit ist die Zeitbasis project_samples
+[ok]   und project_sample_start ist gesetzt
+[ok]   Gueltigkeitsbit project_time steht
+[ok]   der Frame traegt seine Metrikversion  [20260823]
+[ok]   und die Samplerate
+[ok]   Frame-Stempel spannt alle integrierten Hostbloecke auf  [0 + 5120]
+[ok]   Frame-Stempel umfasst den ueberlappenden FFT-Support  [2048 + 8192]
+[ok]   ein vorgezogener FFT-Start zieht die Continuous-Time gleich weit zurueck
+[ok]   Continuous-Time-Unterlauf laesst nur die optionale Uhr fallen
+[ok]   fehlende Continuous-Werte im FFT-Support werden nicht rueckwaerts erfunden
+[ok]   Evidenzframe vereinigt Haupt- und aelteren Basssupport  [0 + 30720, 196 Baender]
+[ok]   stille Evidenzluecke kann fehlende Continuous-Time nicht verbergen
+[ok]   stehende FL-Teilstuecke erfinden kein Projektintervall
+[ok]   ueberlaufende Host-Projektspanne wird konservativ lokal publiziert
+[ok]   Frame direkt nach Seek beschreibt nur den Nachgrenzen-Block  [104608 + 512]
+[ok]   ohne Zeitbeweis faellt die Zeitbasis auf local_monotonic (Â§32.3)
+[ok]   und dann steht WEDER das Bit NOCH ein Startwert da
+[ok]   alle SIEBEN Gueltigkeitsbits gesetzt, wenn der Host alle meldet  [0x7f]
+[ok]   eine GEMELDETE 0 ist etwas anderes als 'nie gesagt' (Â§32.3)
+[ok]   Schleifen-Samplegrenzen sind `unproven` - es gibt kein FL-Golden dafuer
+[ok]   continuous_time_samples kommt mit demselben Frameanker durch
+[ok]   unbrauchbare Cycle-Bounds werden nicht publiziert: NaN
+[ok]   unbrauchbare Cycle-Bounds werden nicht publiziert: Inf
+[ok]   unbrauchbare Cycle-Bounds werden nicht publiziert: Ende vor Start
+[ok]   ungueltiger Folge-Prepare deaktiviert; gueltiger Reprepare erholt sich
+
+== G - DAS GATE: Drop/Seek/Loop trennt JEDES offene Fenster ==
+[ok]   G1 Drop (kFlagLueckeDavor): vor der Grenze sind alle Fenster offen  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G1 Drop (kFlagLueckeDavor): und die Bandakkus tragen Inhalt - sonst prueft der Rest nichts  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ROT]  G1 Drop (kFlagLueckeDavor): NACH der Grenze traegt kein Fenster ein Sample von davor  [Bass=512 Haupt=512 Zelle=512 Kurz=0 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=0 (erwartet je 512)]
+[ok]   G1 Drop (kFlagLueckeDavor): und die Bandakkus wurden dabei WIRKLICH verworfen  [1035 Band-Fensterbeitraege gefallen]
+[ok]   G1 Drop (kFlagLueckeDavor): Ursache ist lokaleLuecke  [Zaehler 1]
+[ok]   G1 Drop (kFlagLueckeDavor): zaehlt als SEGMENT, nicht als Epoche (§32.3)  [Epochen 0 Segmente 1]
+[ok]   G2 Seek waehrend Wiedergabe: vor der Grenze sind alle Fenster offen  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G2 Seek waehrend Wiedergabe: und die Bandakkus tragen Inhalt - sonst prueft der Rest nichts  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ROT]  G2 Seek waehrend Wiedergabe: NACH der Grenze traegt kein Fenster ein Sample von davor  [Bass=512 Haupt=512 Zelle=512 Kurz=0 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=0 (erwartet je 512)]
+[ok]   G2 Seek waehrend Wiedergabe: und die Bandakkus wurden dabei WIRKLICH verworfen  [1035 Band-Fensterbeitraege gefallen]
+[ok]   G2 Seek waehrend Wiedergabe: Ursache ist zeitSprung  [Zaehler 1]
+[ok]   G2 Seek waehrend Wiedergabe: zaehlt als EPOCHE, nicht als Segment  [Epochen 1 Segmente 0]
+[ok]   G3: bei gestopptem Transport laufen die Fenster normal weiter  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G3: und die Bandakkus tragen Inhalt  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G3: eine STEHENDE Zeit bei Stopp ist keine Grenze (sonst stuerbe das Vorhoeren)  [0 Epochenwechsel]
+[ROT]  G3: eine SPRINGENDE Zeit bei Stopp trennt jedes Fenster  [Bass=512 Haupt=512 Zelle=512 Kurz=0 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=0]
+[ok]   G3: und die Bandakkus wurden dabei WIRKLICH verworfen  [1035 Band-Fensterbeitraege gefallen]
+[ok]   G3: und sie heisst zeitSprung, nicht lokaleLuecke
+[ok]   G4: aktive Schleife allein trennt nichts  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G4: und die Bandakkus tragen Inhalt  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ROT]  G4 Loop-Wrap: jedes Fenster getrennt  [Bass=512 Haupt=512 Zelle=512 Kurz=0 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=0]
+[ok]   G4: und die Bandakkus wurden dabei WIRKLICH verworfen  [1035 Band-Fensterbeitraege gefallen]
+[ok]   G4: und die Ursache heisst loopWrap, nicht zeitSprung
+[ok]   G5: Schleife ohne erreichbare Grenze trennt nichts  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G5: und die Bandakkus tragen Inhalt  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ROT]  G5 moeglicher Straddle: jedes Fenster getrennt - und WIRKLICH leer, weil der Straddle-Block auch kein neues beginnt  [Bass=0 Haupt=0 Zelle=0 Kurz=0 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=0]
+[ok]   G5: und die Bandakkus wurden dabei WIRKLICH verworfen  [1035 Band-Fensterbeitraege gefallen]
+[ok]   G5: der Straddle-Block selbst wird verworfen, nicht halb verwendet
+[ok]   G5: mit eigener Ursache moeglicherStraddle
+[ok]   G6 Transportkante (Play -> Stop): vor der Grenze sind alle Fenster offen  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G6 Transportkante (Play -> Stop): und die Bandakkus tragen Inhalt - sonst prueft der Rest nichts  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ROT]  G6 Transportkante (Play -> Stop): NACH der Grenze traegt kein Fenster ein Sample von davor  [Bass=512 Haupt=512 Zelle=512 Kurz=0 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=0 (erwartet je 512)]
+[ok]   G6 Transportkante (Play -> Stop): und die Bandakkus wurden dabei WIRKLICH verworfen  [1035 Band-Fensterbeitraege gefallen]
+[ok]   G6 Transportkante (Play -> Stop): Ursache ist transportKante  [Zaehler 1]
+[ok]   G6 Transportkante (Play -> Stop): zaehlt als EPOCHE, nicht als Segment  [Epochen 1 Segmente 0]
+[ok]   G7 Sampleratewechsel: vor der Grenze sind alle Fenster offen  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G7 Sampleratewechsel: und die Bandakkus tragen Inhalt - sonst prueft der Rest nichts  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ROT]  G7 Sampleratewechsel: NACH der Grenze traegt kein Fenster ein Sample von davor  [Bass=512 Haupt=512 Zelle=512 Kurz=0 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=0 (erwartet je 512)]
+[ok]   G7 Sampleratewechsel: und die Bandakkus wurden dabei WIRKLICH verworfen  [1035 Band-Fensterbeitraege gefallen]
+[ok]   G7 Sampleratewechsel: Ursache ist sampleratewechsel  [Zaehler 1]
+[ok]   G7 Sampleratewechsel: zaehlt als EPOCHE, nicht als Segment  [Epochen 1 Segmente 0]
+[ok]   G8 Neuanlauf (prepareToPlay): vor der Grenze sind alle Fenster offen  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G8 Neuanlauf (prepareToPlay): und die Bandakkus tragen Inhalt - sonst prueft der Rest nichts  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ROT]  G8 Neuanlauf (prepareToPlay): NACH der Grenze traegt kein Fenster ein Sample von davor  [Bass=512 Haupt=512 Zelle=512 Kurz=0 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=0 (erwartet je 512)]
+[ok]   G8 Neuanlauf (prepareToPlay): und die Bandakkus wurden dabei WIRKLICH verworfen  [1035 Band-Fensterbeitraege gefallen]
+[ok]   G8 Neuanlauf (prepareToPlay): Ursache ist neuanlauf  [Zaehler 1]
+[ok]   G8 Neuanlauf (prepareToPlay): zaehlt als EPOCHE, nicht als Segment  [Epochen 1 Segmente 0]
+[ok]   G9 Beweislagewechsel (Kontext faellt weg): vor der Grenze sind alle Fenster offen  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G9 Beweislagewechsel (Kontext faellt weg): und die Bandakkus tragen Inhalt - sonst prueft der Rest nichts  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ROT]  G9 Beweislagewechsel (Kontext faellt weg): NACH der Grenze traegt kein Fenster ein Sample von davor  [Bass=512 Haupt=512 Zelle=512 Kurz=0 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=0 (erwartet je 512)]
+[ok]   G9 Beweislagewechsel (Kontext faellt weg): und die Bandakkus wurden dabei WIRKLICH verworfen  [1035 Band-Fensterbeitraege gefallen]
+[ok]   G9 Beweislagewechsel (Kontext faellt weg): Ursache ist beweislageWechsel  [Zaehler 1]
+[ok]   G9 Beweislagewechsel (Kontext faellt weg): zaehlt als EPOCHE, nicht als Segment  [Epochen 1 Segmente 0]
+[ok]   G11: im Betrieb traegt die K-Kette einen Filterzustand  [1.392229]
+[ok]   G11: beide Laeufe brauchen gleich viele Bloecke bis zum ersten LUFS-Frame  [290 / 290]
+[ok]   G11: beide Laeufe liefern eine Kurzzeitlautheit
+[ok]   G11: LUFS-S nach der Grenze ist BITGLEICH zum frischen Lauf - der Filternachklang ueberbrueckt nicht  [A=-60.034744263 B=-60.034744263]
+[ok]   G10: FL-Teilstuecke mit stehender Projektzeit sind KEINE Grenze (NAK-56)  [0 Trennungen]
+[ok]   G10: die Fenster laufen dabei weiter  [Bass=9224 Haupt=3080 Zelle=264 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G12: vor der Grenze tragen BEIDE Bandakkus den Ton  [Live 149 / Evidenz 149 Baender]
+[ok]   G12: der Grenzblock macht den Frame faellig - die Uhr laeuft ueber die Grenze weiter (Entscheid Â§10.1)  [liveSamples=0]
+[ok]   G12: und der Frame traegt die NEUE Epoche  [1]
+[ok]   G12: der Evidenzsatz ist in genau diesem Frame faellig - er wird also wirklich geprueft
+[ok]   G12: KEIN Live-Band im Frame - der Ton von vor der Grenze ist weg (T2-1)  [0 gesetzte Baender]
+[ok]   G12: und KEIN Evidenzband - die langsamere Kadenz reicht nicht weiter  [0 gesetzte Baender]
+[ok]   G12: auch keine Aktivitaet auf Stille - die fertigen Zellen fielen mit  [nicht gesetzt]
+[ok]   G12: die Akkus wurden GELEERT, nicht bloss leer vorgefunden  [1606 Band-Fensterbeitraege]
+[ok]   G12: der Sweep hat genug Grenzzeitpunkte wirklich bis zum Frame gefahren  [120 von 120]
+[ok]   G12: ueber 120 Grenzzeitpunkte traegt KEIN Frame etwas von davor (Pruefer-Messung: 80 / 40 / 43)  [0 mit Live-Baendern, 0 mit Evidenz, 0 mit Aktivitaet]
+
+== G13 - ZWILLINGSPROBE: strukturelle Deckung statt Feldliste (T2R2-1) ==
+[ok]   G13.0: zwei frische Frames sind gleich - der Vergleich sagt nicht pauschal ungleich
+[ok]   G13.0: ein einziger geaenderter Skalar macht sie ungleich
+[ok]   G13.0: ein einziger geaenderter Bandwert ebenso
+[ok]   G13.0: und ein einziges Bitmapbit ebenso
+[ok]   G13.0: und ein Feld im verschachtelten Transportstempel - der Vergleich reicht bis dorthin
+[ok]   G13.0: nach dem Zuruecksetzen wieder gleich - beide Richtungen vorgefuehrt
+[ok]   G13a lokaleLuecke [Zwilling]: A traegt vor der Grenze auf JEDEM Traeger etwas  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=1 LiveAkku=149 EvidAkku=196 Breite=149B/4.162e-03 RZellen=1 kFilter=8.569e-01 RAktiv=1]
+[ok]   G13a lokaleLuecke [Zwilling]: B traegt auf keinem - die zwei sind wirklich verschieden  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=1 kFilter=0.000e+00 RAktiv=0]
+[ok]   G13a lokaleLuecke [Zwilling]: beide haben die Grenze lokaleLuecke gezogen  [A 1 / B 1]
+[ok]   G13a lokaleLuecke [Zwilling]: beide bauen ihre Frames im selben Block - die Uhr haengt nicht am Inhalt (Entscheid §10.1)  [0 Bloecke auseinander]
+[ok]   G13a lokaleLuecke [Zwilling]: es wurden ueberhaupt genug Frames verglichen  [14 Frames]
+[ok]   G13a lokaleLuecke [Zwilling]: und sie tragen Messwerte - verglichen wird nicht zweimal Stille  [13 von 14 mit Live-Baendern]
+[ROT]  G13a lokaleLuecke [Zwilling]: nach der Grenze ist A von B in JEDEM FELD nicht zu unterscheiden - kein Traeger hat ueberbrueckt (T2R2-1)  [1 von 14 ungleich, erster bei Block 11; der Unterschied liegt in einem Feld, das diese Diagnose nicht namentlich zeigt - `operator==` deckt mehr als sie]
+[ok]   G13a lokaleLuecke [Zwilling]: und keiner erfindet ein Ereignis in der neuen Epoche  [A 0 / B 0]
+[ok]   G13b zeitSprung [Zwilling]: A traegt vor der Grenze auf JEDEM Traeger etwas  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=1 LiveAkku=149 EvidAkku=196 Breite=149B/4.162e-03 RZellen=1 kFilter=8.569e-01 RAktiv=1]
+[ok]   G13b zeitSprung [Zwilling]: B traegt auf keinem - die zwei sind wirklich verschieden  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=1 kFilter=0.000e+00 RAktiv=0]
+[ok]   G13b zeitSprung [Zwilling]: beide haben die Grenze zeitSprung gezogen  [A 1 / B 1]
+[ok]   G13b zeitSprung [Zwilling]: beide bauen ihre Frames im selben Block - die Uhr haengt nicht am Inhalt (Entscheid §10.1)  [0 Bloecke auseinander]
+[ok]   G13b zeitSprung [Zwilling]: es wurden ueberhaupt genug Frames verglichen  [14 Frames]
+[ok]   G13b zeitSprung [Zwilling]: und sie tragen Messwerte - verglichen wird nicht zweimal Stille  [13 von 14 mit Live-Baendern]
+[ROT]  G13b zeitSprung [Zwilling]: nach der Grenze ist A von B in JEDEM FELD nicht zu unterscheiden - kein Traeger hat ueberbrueckt (T2R2-1)  [1 von 14 ungleich, erster bei Block 11; der Unterschied liegt in einem Feld, das diese Diagnose nicht namentlich zeigt - `operator==` deckt mehr als sie]
+[ok]   G13b zeitSprung [Zwilling]: und keiner erfindet ein Ereignis in der neuen Epoche  [A 0 / B 0]
+[ok]   G13c transportKante [Zwilling]: A traegt vor der Grenze auf JEDEM Traeger etwas  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=1 LiveAkku=149 EvidAkku=196 Breite=149B/4.162e-03 RZellen=1 kFilter=8.569e-01 RAktiv=1]
+[ok]   G13c transportKante [Zwilling]: B traegt auf keinem - die zwei sind wirklich verschieden  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=1 kFilter=0.000e+00 RAktiv=0]
+[ok]   G13c transportKante [Zwilling]: beide haben die Grenze transportKante gezogen  [A 1 / B 1]
+[ok]   G13c transportKante [Zwilling]: beide bauen ihre Frames im selben Block - die Uhr haengt nicht am Inhalt (Entscheid §10.1)  [0 Bloecke auseinander]
+[ok]   G13c transportKante [Zwilling]: es wurden ueberhaupt genug Frames verglichen  [14 Frames]
+[ok]   G13c transportKante [Zwilling]: und sie tragen Messwerte - verglichen wird nicht zweimal Stille  [13 von 14 mit Live-Baendern]
+[ROT]  G13c transportKante [Zwilling]: nach der Grenze ist A von B in JEDEM FELD nicht zu unterscheiden - kein Traeger hat ueberbrueckt (T2R2-1)  [1 von 14 ungleich, erster bei Block 11; der Unterschied liegt in einem Feld, das diese Diagnose nicht namentlich zeigt - `operator==` deckt mehr als sie]
+[ok]   G13c transportKante [Zwilling]: und keiner erfindet ein Ereignis in der neuen Epoche  [A 0 / B 0]
+[ok]   G13d sampleratewechsel [Zwilling]: A traegt vor der Grenze auf JEDEM Traeger etwas  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=1 LiveAkku=149 EvidAkku=196 Breite=149B/4.162e-03 RZellen=1 kFilter=8.569e-01 RAktiv=1]
+[ok]   G13d sampleratewechsel [Zwilling]: B traegt auf keinem - die zwei sind wirklich verschieden  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=1 kFilter=0.000e+00 RAktiv=0]
+[ok]   G13d sampleratewechsel [Zwilling]: beide haben die Grenze sampleratewechsel gezogen  [A 1 / B 1]
+[ok]   G13d sampleratewechsel [Zwilling]: beide bauen ihre Frames im selben Block - die Uhr haengt nicht am Inhalt (Entscheid §10.1)  [0 Bloecke auseinander]
+[ok]   G13d sampleratewechsel [Zwilling]: es wurden ueberhaupt genug Frames verglichen  [14 Frames]
+[ok]   G13d sampleratewechsel [Zwilling]: und sie tragen Messwerte - verglichen wird nicht zweimal Stille  [13 von 14 mit Live-Baendern]
+[ROT]  G13d sampleratewechsel [Zwilling]: nach der Grenze ist A von B in JEDEM FELD nicht zu unterscheiden - kein Traeger hat ueberbrueckt (T2R2-1)  [1 von 14 ungleich, erster bei Block 11; der Unterschied liegt in einem Feld, das diese Diagnose nicht namentlich zeigt - `operator==` deckt mehr als sie]
+[ok]   G13d sampleratewechsel [Zwilling]: und keiner erfindet ein Ereignis in der neuen Epoche  [A 0 / B 0]
+[ok]   G13e neuanlauf [Zwilling]: A traegt vor der Grenze auf JEDEM Traeger etwas  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=1 LiveAkku=149 EvidAkku=196 Breite=149B/4.162e-03 RZellen=1 kFilter=8.569e-01 RAktiv=1]
+[ok]   G13e neuanlauf [Zwilling]: B traegt auf keinem - die zwei sind wirklich verschieden  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=1 kFilter=0.000e+00 RAktiv=0]
+[ok]   G13e neuanlauf [Zwilling]: beide haben die Grenze neuanlauf gezogen  [A 1 / B 1]
+[ok]   G13e neuanlauf [Zwilling]: beide bauen ihre Frames im selben Block - die Uhr haengt nicht am Inhalt (Entscheid §10.1)  [0 Bloecke auseinander]
+[ok]   G13e neuanlauf [Zwilling]: es wurden ueberhaupt genug Frames verglichen  [14 Frames]
+[ok]   G13e neuanlauf [Zwilling]: und sie tragen Messwerte - verglichen wird nicht zweimal Stille  [13 von 14 mit Live-Baendern]
+[ROT]  G13e neuanlauf [Zwilling]: nach der Grenze ist A von B in JEDEM FELD nicht zu unterscheiden - kein Traeger hat ueberbrueckt (T2R2-1)  [1 von 14 ungleich, erster bei Block 11; der Unterschied liegt in einem Feld, das diese Diagnose nicht namentlich zeigt - `operator==` deckt mehr als sie]
+[ok]   G13e neuanlauf [Zwilling]: und keiner erfindet ein Ereignis in der neuen Epoche  [A 0 / B 0]
+[ok]   G13f beweislageWechsel [Zwilling]: A traegt vor der Grenze auf JEDEM Traeger etwas  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=1 LiveAkku=149 EvidAkku=196 Breite=149B/4.162e-03 RZellen=1 kFilter=8.569e-01 RAktiv=1]
+[ok]   G13f beweislageWechsel [Zwilling]: B traegt auf keinem - die zwei sind wirklich verschieden  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=1 kFilter=0.000e+00 RAktiv=0]
+[ok]   G13f beweislageWechsel [Zwilling]: beide haben die Grenze beweislageWechsel gezogen  [A 1 / B 1]
+[ok]   G13f beweislageWechsel [Zwilling]: beide bauen ihre Frames im selben Block - die Uhr haengt nicht am Inhalt (Entscheid §10.1)  [0 Bloecke auseinander]
+[ok]   G13f beweislageWechsel [Zwilling]: es wurden ueberhaupt genug Frames verglichen  [14 Frames]
+[ok]   G13f beweislageWechsel [Zwilling]: und sie tragen Messwerte - verglichen wird nicht zweimal Stille  [13 von 14 mit Live-Baendern]
+[ROT]  G13f beweislageWechsel [Zwilling]: nach der Grenze ist A von B in JEDEM FELD nicht zu unterscheiden - kein Traeger hat ueberbrueckt (T2R2-1)  [1 von 14 ungleich, erster bei Block 11; der Unterschied liegt in einem Feld, das diese Diagnose nicht namentlich zeigt - `operator==` deckt mehr als sie]
+[ok]   G13f beweislageWechsel [Zwilling]: und keiner erfindet ein Ereignis in der neuen Epoche  [A 0 / B 0]
+
+== H - NAK-29: bedingte Feldpflichten des Transportstempels ==
+[ok]   ein sauberer Stempel kommt durch
+[ok]   Fall 1: project_samples + Bit, aber KEIN project_sample_start
+[ok]   Fall 1: project_samples + project_sample_start, aber KEIN project_time-Bit
+[ok]   Fall 2: local_monotonic MIT project_time-Bit (Widerspruch zu Â§32.3)
+[ok]   Fall 2: local_monotonic MIT project_sample_start (Widerspruch zu Â§32.3)
+[ok]   Fall 3: bounds_valid ohne start_ppq/end_ppq
+[ok]   Fall 4: derivation=validated_block_mapping ohne bounds_valid
+[ok]   Fall 5: cycle_bounds-Bit ohne die PPQ-Werte, auf die es sich bezieht
+[ok]   Fall 6: continuous_time-Bit ohne continuous_time_samples
+[ok]   Fall 7: das Projektintervall laeuft nicht ueber int64 hinaus
+[ok]   Fall 7: sample_count bleibt unter der Vertragsobergrenze
+[ok]   Fall 7: der Feature-Erzeuger publiziert keinen Leerframe
+[ok]   der ERZEUGER loest den Riegel nicht aus - kein verletzter Stempel entsteht im normalen, gedeckelten Betrieb  [0]
+[ok]   abgelehnte faellige Evidenz wird konsumiert und der Erzeuger erholt sich  [1]
+
+== I - Ereignisse: kein Fluss ueber eine Grenze ==
+[ok]   der spektrale Fluss hat im Betrieb einen Vorgaenger
+[ok]   nach einem Seek ist der Vorgaenger WEG - sonst meldete der Fluss einen Onset, den es nie gab
+[ok]   jedes Ereignis traegt die Epoche, in der es gesehen wurde  [1 Ereignis(se)]
+[ok]   der Ereignisring laeuft WIRKLICH ueber - der Deckel ist gemessen, nicht behauptet  [64 im Ring, 1 verworfen, nach 1107 Bloecken]
+[ok]   und er waechst dabei NICHT ueber seine 64 Plaetze hinaus (Â§48.1: ein Strom, der bei Ueberlast waechst, waere ein unbegrenzter Vektor)  [64 / 64]
+[ok]   drop-oldest: beim Ueberlauf faellt das AELTESTE, nicht das neueste  [aeltestes vorher 38912, jetzt 47104]
+[ok]   und der Ring gibt sie weiter aeltestes-zuerst zurueck, auch nach dem Umlauf
+[ok]   Eventzeit ist der 4096er-Fensteranfang und unabhaengig vom 512er Hostblock
+[ok]   stehende Host-Zeit erzeugt keine extrapolierte FFT-Event-Projektzeit  [1 Ereignis(se) nach 84 Bloecken]
+
+== J - EBU: LUFS-S gegen die analytisch gerechnete Erwartung ==
+[ok]   LUFS-S ist nach 4 s gesetzt
+[ok]   LUFS-S trifft die analytische Erwartung auf besser als 0,1 LU (Â§39.3)  [gemessen -6.0620 erwartet -6.0620 d=0.00000]
+[ok]   Peak trifft die Amplitude  [-6.021 dBFS]
+[ok]   Crest eines Sinus ist 3,01 dB  [3.0091 dB]
+[ok]   L==R ergibt Korrelation 1  [1.000000]
+[ok]   und Breite 0 (kein Seitenanteil)  [0.000000000000]
+[ok]   das Live-Band um 997 Hz ist gueltig  [Band 35]
+[ok]   und das unterste Band (30 Hz) ist es NICHT - dort ist kein Signal
+
+== K - NAK-56 Werkbankhaelfte: nakamaBlockEmpfangen am echten Prozessor ==
+[ok]   die FeatureEngine hat Bloecke aus dem echten Prozessorweg gesehen  [40 Bloecke]
+[ok]   und mindestens einen Frame gebaut  [4 Frames]
+[ok]   process_context_present kommt aus der BRUECKE durch (Â§32.3)
+[ok]   recording: Bit gesetzt, Wert false - die Bruecke kann beides sagen
+[ok]   continuous_time_samples kommt durch
+[ok]   die Schleifengrenzen kommen durch, samt `active`
+[ok]   beide Presentation-Latencies kommen durch  [3924 / 4410]
+[ok]   ueber die Bruecke stehen ALLE SIEBEN Gueltigkeitsbits  [0x7f]
+[ok]   Gegenprobe: der Playhead-Rueckfallweg erreicht NICHT alle sieben Bits  [0x3]
+[ok]   insbesondere kennt JUCEs Playhead kein Gueltigkeitsbit fuer `recording`
+[ok]   Projektblock ueber INT64_MAX wird als ungueltiges Fenster verworfen
+[ok]   Abstand INT64_MIN zu INT64_MAX wird ohne Subtraktionsueberlauf als Sprung erkannt
+[ok]   nichtendliche Sampleraten initialisieren keine Analyseengine
+
+== L - Gegenproben: kann dieses Bein ueberhaupt rot werden? ==
+[ok]   L1: OHNE Grenze meldet die Messgroesse FALSE - sie reagiert also ueberhaupt  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ROT]  L1: MIT Grenze meldet sie TRUE - beide Richtungen vorgefuehrt
+[ok]   L2: der Gittervergleich meldet gegen die UNVERAENDERTE Zeile 0 Abweichungen  [0]
+[ok]   L2: und gegen eine um EIN Bit gekippte Zeile genau 1 - er reagiert also, und zwar nur dort  [1 Abweichung(en), Zeile 26]
+[ok]   L3: sieben Verletzungen ergeben sieben VERSCHIEDENE Nummern, nicht siebenmal 'nein'
+[ok]   L4: auf Stille ist KEIN Band gueltig - es steht nicht '0 dB' da, sondern nichts  [0 gesetzte Baender]
+[ok]   L5: drei Versuche verbrauchen drei Sequenznummern - auch der abgelehnte  [3]
+[ok]   L5: der Empfaenger sieht 1 und 3 - die LUECKE bei 2 ist die Meldung  [1, 3]
+[ok]   L5: und der Versuch nennt den FALL, nicht nur 'abgelehnt'
+[ok]   L6: ein echter Grund wird gezaehlt  [1]
+[ok]   L6: `anzahl` ist kein Grund und liefert 0, statt hinter das Array zu lesen  [gelesen: 0]
+[ok]   L6: und `keine` ebenso - getrennt wird nie ohne Grund
+
+== M - Auskunft ueber die Grenzen der Messung ==
+[ok]   die unteren Baender sind bei dieser Aufloesung NICHT messbar - und das steht da  [erstes messbares Band 2 (32.6 Hz)]
+[ok]   bei 48 kHz greift die Kappe nirgends - das oberste Band endet bei 17,96 kHz  [erstes Band ueber der Kappe 221]
+[ok]   bei 22,05 kHz greift die Nyquist-Kappe WIRKLICH und schneidet oben ab  [erstes Band ueber der Kappe 202 (10525.6 Hz)]
+[ok]   und sie sitzt genau am ersten Band, dessen Oberkante 0,95Â·Nyquist ueberschreitet  [10374.7 .. 10678.7 Hz gegen 10473.8 Hz]
+[ok]   kein Live-Band vollstaendig ueber der Kappe traegt einen Wert  [0 Baender]
+[ok]   Gegenpfad: neu vorbereiten setzt alles zurueck, auch die Zaehler
+
+Ergebnis: 221 bestanden, 16 Fehler.
+
+
+$ C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSonde013EventWireTest_artefacts\Release\EqCopSonde013EventWireTest.exe
+EXIT=1
+SONDE-013 M-05 | Evidenzpfad: Verteilung, Abdeckung, Konvergenz und der Ereignisstrom
+
+== A · Der erzeugte Snapshot haelt den v3-Vertrag ==
+[ok]   ein Evidenzframe wird faellig
+[ok]   Snapshot wird gebaut
+[ok]   Snapshot passiert den gemeinsamen Textriegel
+[ok]   v3-Schema laedt
+[ok]   der erzeugte Snapshot wird von derselben Engine wie B3c angenommen
+[ok]   Gegenprobe: eine Abdeckung ueber 1 faellt an derselben Engine
+
+== B · P10/P50/P95 unterscheiden, was ein Mittelwert gleichmacht ==
+[ok]   beide Evidenzframes sind da
+[ok]   beide Signale tragen im selben Band ein Bit  [120]
+[ok]   die Spanne P95-P10 trennt das springende vom ruhigen Signal  [ruhig 0.00 dB, springend 6.65 dB]
+[ok]   das ruhige Signal hat eine schmale Spanne  [0.00 dB]
+[ok]   in JEDEM Band mit Bit gilt P10 <= P50 <= P95  [56 Baender]
+[ok]   der Frame nennt, ueber wie viele Fenster die Verteilung geht  [4]
+
+== C · Abdeckung ist gemessenes Signal, Konvergenz ist Ruhe ==
+[ok]   beide Evidenzframes sind da
+[ok]   Dauerton deckt das Evidenzfenster fast vollstaendig ab  [1.000]
+[ok]   halbe Stille senkt die Abdeckung messbar  [0.667]
+[ok]   ein stehender Ton konvergiert  [1.000]
+[ok]   ein wandernder Pegel konvergiert schlechter als ein stehender  [0.557 < 1.000]
+
+== D · Ereignisse reisen mit beiden Qualitaetsbits und ihrem Verlust ==
+[ok]   events_travel_with_quality_and_loss_counter/alle_drei_reisen  [3]
+[ok]   events_travel_with_quality_and_loss_counter/beide_bits_getrennt  [Fluss-only, Peak-only und beide bleiben unterscheidbar]
+[ok]   events_travel_with_quality_and_loss_counter/verlustzaehler  [7]
+[ok]   fremde_epoche_reist_nicht_und_wird_gezaehlt  [1 getragen, 1 verloren]
+[ok]   leerer Strom ohne Verlust laesst `ereignisse` weg
+
+== E · Kein Snapshot ist besser als ein widerspruechlicher ==
+[ok]   kein Snapshot ohne faelliges Evidenzfenster
+[ok]   kein Snapshot ohne Abdeckungsbit â 0 waere eine andere Aussage
+[ok]   kein Snapshot ohne Konvergenzbit
+[ok]   kein Snapshot ohne gueltige evidence_id
+[ok]   kein Snapshot mit einer erfundenen Konfidenzklasse
+[ok]   kein Snapshot mit unmoeglicher Samplerate
+[ok]   ohne Anker reist kein Ereignis und der Verlust wird gemeldet
+
+== F · Die Evidenzkadenz bleibt zwischen 1 und 4 Hz ==
+[ok]   frisch vorbereitet laeuft die Evidenz mit 4 Hz
+[ok]   ein zu grosser Wunsch wird auf 1 Hz geklemmt, nicht abgelehnt
+[ok]   ein zu kleiner Wunsch wird auf 4 Hz geklemmt
+[ok]   ein NaN verstellt die Kadenz NICHT
+[ok]   auch mit 1 Hz entsteht ein vollstaendiger Snapshot
+[ok]   die reduzierte Kadenz braucht wirklich laenger, statt nur anders zu heissen  [30 gegen 100 Bloecke]
+
+== G · Eine Grenze trennt Verteilung, Abdeckung und Konvergenz ==
+[ok]   ein Evidenzfenster ist gelaufen
+[ok]   der Snapshot hat sein Fenster mitgenommen
+[ok]   das naechste Fenster fuellt die neuen Traeger  [112 Plaetze, 2 Fenster]
+[ROT]  der Verteilungsring ist leer  [112]
+[ok]   beide Fensterzaehler der Abdeckung sind leer
+
+-----------------------------------------
+39 bestanden, 1 gescheitert
+
+========================================================================
+GRUEN — Fehler entfernt, derselbe Befehl
+========================================================================
+
+$ C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopAnalysisGoldenTest_artefacts\Release\EqCopAnalysisGoldenTest.exe
+EXIT=0
+== Nakama SONDE-009 - FeatureEngine v2: Zeit, Validity, Events, Baender ==
+Gate: "Drop/Seek/Loop trennt jedes offene Fenster."
+Stufen: Bass 16384 (Hop 8192), Haupt 4096 (Hop 2048), Trennung bei 200 Hz.
+
+== A - Bandgitter: die einkompilierten Zahlen gegen die Fixtures ==
+[ok]   Evidenzgitter: band_anzahl == kEvidenzBaender  [221]
+[ok]   Livegitter: band_anzahl == kLiveBaender  [64]
+[ok]   Evidenz-Kanten BITGLEICH zur Fixture (222 Werte)  [0 Abweichungen]
+[ok]   Evidenz-Mitten BITGLEICH zur Fixture (221 Werte)  [0 Abweichungen]
+[ok]   Live-Kanten BITGLEICH zur Fixture (65 Werte)  [0 Abweichungen]
+[ok]   Live-Mitten BITGLEICH zur Fixture (64 Werte)  [0 Abweichungen]
+[ok]   Live-Gruppierung deckt die 221 Feinbaender lueckenlos und genau einmal  [0 Abweichungen, Ende bei 221]
+[ok]   Live-Kanten sind bitgleiche KOPIEN feiner Kanten, keine zweite Bank  [0 Abweichungen]
+
+== B - Quantisierung: alle Vektoren aus quantisierung-v1.json ==
+[ok]   q_db_0p1_i16: Skalierung stimmt mit der Fixture ueberein  [10]
+[ok]   q_db_0p1_i16: alle 23 Vektoren treffen
+[ok]   q_db_0p01_i16: Skalierung stimmt mit der Fixture ueberein  [100]
+[ok]   q_db_0p01_i16: alle 23 Vektoren treffen
+[ok]   float32: alle 15 Vektoren treffen bitgenau
+[ok]   Rundungsfalle: floor(|x|+0.5) waere hier 1, std::round ist 0
+[ok]   halbe Werte VON NULL WEG (0,05 -> 1), nicht zur geraden Zahl
+[ok]   und negativ genauso (-0,05 -> -1)
+
+== C - Gueltigkeitsbitmap: LSB-first, Fuellbits 0 ==
+[ok]   Band i sitzt in Byte i/8, Bit i%8 (LSB-first)  [Byte0=81 Byte1=1]
+[ok]   ein Bit loeschen laesst die Nachbarn stehen
+[ok]   Lesen und Schreiben sind dieselbe Adressierung
+[ok]   221 Baender brauchen 28 Bitmapbytes  [28]
+[ok]   die 3 Fuellbits des letzten Bytes bleiben 0 (sonst waere ein Bytevergleich sinnlos)  [letztes Byte = 1f]
+
+== D - FFT: gegen analytisch bekannte Ergebnisse ==
+[ok]   Sinus auf einer Binmitte legt >99,9 % der Leistung in genau diesen Bin  [100.0000 %]
+[ok]   Parseval haelt (Zeit- und Frequenzenergie gleich)  [rel. Fehler 0.0000000000000002]
+[ok]   Gleichanteil sitzt vollstaendig in Bin 0  [Bin0 = 1048576.0, Rest = 0.00000000000000000000]
+
+== E - K-Gewichtung: Frequenzgang gegen die BS.1770-Referenzkette ==
+[ok]   RBJ-Kette und BS.1770-Referenzkette liegen ueber 20 Hz..20 kHz unter 0,1 dB auseinander  [max 0.04312 dB bei 20000.0 Hz]
+       (gemessene Groesstabweichung, zur Ablesung: 0.043120 dB)
+[ok]   Hochpass sperrt den Gleichanteil vollstaendig  [|H(0)|Â² = 0.000000000000000000000000]
+
+== F - Zeitvertrag: Epoche, Segment, Sequenz, Zeitbasis ==
+[ok]   die Sequenz zaehlt ab 1 aufwaerts  [6]
+[ok]   mit gueltiger Projektzeit ist die Zeitbasis project_samples
+[ok]   und project_sample_start ist gesetzt
+[ok]   Gueltigkeitsbit project_time steht
+[ok]   der Frame traegt seine Metrikversion  [20260823]
+[ok]   und die Samplerate
+[ok]   Frame-Stempel spannt alle integrierten Hostbloecke auf  [0 + 5120]
+[ok]   Frame-Stempel umfasst den ueberlappenden FFT-Support  [2048 + 8192]
+[ok]   ein vorgezogener FFT-Start zieht die Continuous-Time gleich weit zurueck
+[ok]   Continuous-Time-Unterlauf laesst nur die optionale Uhr fallen
+[ok]   fehlende Continuous-Werte im FFT-Support werden nicht rueckwaerts erfunden
+[ok]   Evidenzframe vereinigt Haupt- und aelteren Basssupport  [0 + 30720, 196 Baender]
+[ok]   stille Evidenzluecke kann fehlende Continuous-Time nicht verbergen
+[ok]   stehende FL-Teilstuecke erfinden kein Projektintervall
+[ok]   ueberlaufende Host-Projektspanne wird konservativ lokal publiziert
+[ok]   Frame direkt nach Seek beschreibt nur den Nachgrenzen-Block  [104608 + 512]
+[ok]   ohne Zeitbeweis faellt die Zeitbasis auf local_monotonic (Â§32.3)
+[ok]   und dann steht WEDER das Bit NOCH ein Startwert da
+[ok]   alle SIEBEN Gueltigkeitsbits gesetzt, wenn der Host alle meldet  [0x7f]
+[ok]   eine GEMELDETE 0 ist etwas anderes als 'nie gesagt' (Â§32.3)
+[ok]   Schleifen-Samplegrenzen sind `unproven` - es gibt kein FL-Golden dafuer
+[ok]   continuous_time_samples kommt mit demselben Frameanker durch
+[ok]   unbrauchbare Cycle-Bounds werden nicht publiziert: NaN
+[ok]   unbrauchbare Cycle-Bounds werden nicht publiziert: Inf
+[ok]   unbrauchbare Cycle-Bounds werden nicht publiziert: Ende vor Start
+[ok]   ungueltiger Folge-Prepare deaktiviert; gueltiger Reprepare erholt sich
+
+== G - DAS GATE: Drop/Seek/Loop trennt JEDES offene Fenster ==
+[ok]   G1 Drop (kFlagLueckeDavor): vor der Grenze sind alle Fenster offen  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G1 Drop (kFlagLueckeDavor): und die Bandakkus tragen Inhalt - sonst prueft der Rest nichts  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G1 Drop (kFlagLueckeDavor): NACH der Grenze traegt kein Fenster ein Sample von davor  [Bass=512 Haupt=512 Zelle=512 Kurz=0 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=0 (erwartet je 512)]
+[ok]   G1 Drop (kFlagLueckeDavor): und die Bandakkus wurden dabei WIRKLICH verworfen  [1035 Band-Fensterbeitraege gefallen]
+[ok]   G1 Drop (kFlagLueckeDavor): Ursache ist lokaleLuecke  [Zaehler 1]
+[ok]   G1 Drop (kFlagLueckeDavor): zaehlt als SEGMENT, nicht als Epoche (§32.3)  [Epochen 0 Segmente 1]
+[ok]   G2 Seek waehrend Wiedergabe: vor der Grenze sind alle Fenster offen  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G2 Seek waehrend Wiedergabe: und die Bandakkus tragen Inhalt - sonst prueft der Rest nichts  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G2 Seek waehrend Wiedergabe: NACH der Grenze traegt kein Fenster ein Sample von davor  [Bass=512 Haupt=512 Zelle=512 Kurz=0 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=0 (erwartet je 512)]
+[ok]   G2 Seek waehrend Wiedergabe: und die Bandakkus wurden dabei WIRKLICH verworfen  [1035 Band-Fensterbeitraege gefallen]
+[ok]   G2 Seek waehrend Wiedergabe: Ursache ist zeitSprung  [Zaehler 1]
+[ok]   G2 Seek waehrend Wiedergabe: zaehlt als EPOCHE, nicht als Segment  [Epochen 1 Segmente 0]
+[ok]   G3: bei gestopptem Transport laufen die Fenster normal weiter  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G3: und die Bandakkus tragen Inhalt  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G3: eine STEHENDE Zeit bei Stopp ist keine Grenze (sonst stuerbe das Vorhoeren)  [0 Epochenwechsel]
+[ok]   G3: eine SPRINGENDE Zeit bei Stopp trennt jedes Fenster  [Bass=512 Haupt=512 Zelle=512 Kurz=0 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=0]
+[ok]   G3: und die Bandakkus wurden dabei WIRKLICH verworfen  [1035 Band-Fensterbeitraege gefallen]
+[ok]   G3: und sie heisst zeitSprung, nicht lokaleLuecke
+[ok]   G4: aktive Schleife allein trennt nichts  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G4: und die Bandakkus tragen Inhalt  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G4 Loop-Wrap: jedes Fenster getrennt  [Bass=512 Haupt=512 Zelle=512 Kurz=0 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=0]
+[ok]   G4: und die Bandakkus wurden dabei WIRKLICH verworfen  [1035 Band-Fensterbeitraege gefallen]
+[ok]   G4: und die Ursache heisst loopWrap, nicht zeitSprung
+[ok]   G5: Schleife ohne erreichbare Grenze trennt nichts  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G5: und die Bandakkus tragen Inhalt  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G5 moeglicher Straddle: jedes Fenster getrennt - und WIRKLICH leer, weil der Straddle-Block auch kein neues beginnt  [Bass=0 Haupt=0 Zelle=0 Kurz=0 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=0]
+[ok]   G5: und die Bandakkus wurden dabei WIRKLICH verworfen  [1035 Band-Fensterbeitraege gefallen]
+[ok]   G5: der Straddle-Block selbst wird verworfen, nicht halb verwendet
+[ok]   G5: mit eigener Ursache moeglicherStraddle
+[ok]   G6 Transportkante (Play -> Stop): vor der Grenze sind alle Fenster offen  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G6 Transportkante (Play -> Stop): und die Bandakkus tragen Inhalt - sonst prueft der Rest nichts  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G6 Transportkante (Play -> Stop): NACH der Grenze traegt kein Fenster ein Sample von davor  [Bass=512 Haupt=512 Zelle=512 Kurz=0 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=0 (erwartet je 512)]
+[ok]   G6 Transportkante (Play -> Stop): und die Bandakkus wurden dabei WIRKLICH verworfen  [1035 Band-Fensterbeitraege gefallen]
+[ok]   G6 Transportkante (Play -> Stop): Ursache ist transportKante  [Zaehler 1]
+[ok]   G6 Transportkante (Play -> Stop): zaehlt als EPOCHE, nicht als Segment  [Epochen 1 Segmente 0]
+[ok]   G7 Sampleratewechsel: vor der Grenze sind alle Fenster offen  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G7 Sampleratewechsel: und die Bandakkus tragen Inhalt - sonst prueft der Rest nichts  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G7 Sampleratewechsel: NACH der Grenze traegt kein Fenster ein Sample von davor  [Bass=512 Haupt=512 Zelle=512 Kurz=0 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=0 (erwartet je 512)]
+[ok]   G7 Sampleratewechsel: und die Bandakkus wurden dabei WIRKLICH verworfen  [1035 Band-Fensterbeitraege gefallen]
+[ok]   G7 Sampleratewechsel: Ursache ist sampleratewechsel  [Zaehler 1]
+[ok]   G7 Sampleratewechsel: zaehlt als EPOCHE, nicht als Segment  [Epochen 1 Segmente 0]
+[ok]   G8 Neuanlauf (prepareToPlay): vor der Grenze sind alle Fenster offen  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G8 Neuanlauf (prepareToPlay): und die Bandakkus tragen Inhalt - sonst prueft der Rest nichts  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G8 Neuanlauf (prepareToPlay): NACH der Grenze traegt kein Fenster ein Sample von davor  [Bass=512 Haupt=512 Zelle=512 Kurz=0 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=0 (erwartet je 512)]
+[ok]   G8 Neuanlauf (prepareToPlay): und die Bandakkus wurden dabei WIRKLICH verworfen  [1035 Band-Fensterbeitraege gefallen]
+[ok]   G8 Neuanlauf (prepareToPlay): Ursache ist neuanlauf  [Zaehler 1]
+[ok]   G8 Neuanlauf (prepareToPlay): zaehlt als EPOCHE, nicht als Segment  [Epochen 1 Segmente 0]
+[ok]   G9 Beweislagewechsel (Kontext faellt weg): vor der Grenze sind alle Fenster offen  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G9 Beweislagewechsel (Kontext faellt weg): und die Bandakkus tragen Inhalt - sonst prueft der Rest nichts  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G9 Beweislagewechsel (Kontext faellt weg): NACH der Grenze traegt kein Fenster ein Sample von davor  [Bass=512 Haupt=512 Zelle=512 Kurz=0 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=0 (erwartet je 512)]
+[ok]   G9 Beweislagewechsel (Kontext faellt weg): und die Bandakkus wurden dabei WIRKLICH verworfen  [1035 Band-Fensterbeitraege gefallen]
+[ok]   G9 Beweislagewechsel (Kontext faellt weg): Ursache ist beweislageWechsel  [Zaehler 1]
+[ok]   G9 Beweislagewechsel (Kontext faellt weg): zaehlt als EPOCHE, nicht als Segment  [Epochen 1 Segmente 0]
+[ok]   G11: im Betrieb traegt die K-Kette einen Filterzustand  [1.392229]
+[ok]   G11: beide Laeufe brauchen gleich viele Bloecke bis zum ersten LUFS-Frame  [290 / 290]
+[ok]   G11: beide Laeufe liefern eine Kurzzeitlautheit
+[ok]   G11: LUFS-S nach der Grenze ist BITGLEICH zum frischen Lauf - der Filternachklang ueberbrueckt nicht  [A=-60.034744263 B=-60.034744263]
+[ok]   G10: FL-Teilstuecke mit stehender Projektzeit sind KEINE Grenze (NAK-56)  [0 Trennungen]
+[ok]   G10: die Fenster laufen dabei weiter  [Bass=9224 Haupt=3080 Zelle=264 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G12: vor der Grenze tragen BEIDE Bandakkus den Ton  [Live 149 / Evidenz 149 Baender]
+[ok]   G12: der Grenzblock macht den Frame faellig - die Uhr laeuft ueber die Grenze weiter (Entscheid Â§10.1)  [liveSamples=0]
+[ok]   G12: und der Frame traegt die NEUE Epoche  [1]
+[ok]   G12: der Evidenzsatz ist in genau diesem Frame faellig - er wird also wirklich geprueft
+[ok]   G12: KEIN Live-Band im Frame - der Ton von vor der Grenze ist weg (T2-1)  [0 gesetzte Baender]
+[ok]   G12: und KEIN Evidenzband - die langsamere Kadenz reicht nicht weiter  [0 gesetzte Baender]
+[ok]   G12: auch keine Aktivitaet auf Stille - die fertigen Zellen fielen mit  [nicht gesetzt]
+[ok]   G12: die Akkus wurden GELEERT, nicht bloss leer vorgefunden  [1606 Band-Fensterbeitraege]
+[ok]   G12: der Sweep hat genug Grenzzeitpunkte wirklich bis zum Frame gefahren  [120 von 120]
+[ok]   G12: ueber 120 Grenzzeitpunkte traegt KEIN Frame etwas von davor (Pruefer-Messung: 80 / 40 / 43)  [0 mit Live-Baendern, 0 mit Evidenz, 0 mit Aktivitaet]
+
+== G13 - ZWILLINGSPROBE: strukturelle Deckung statt Feldliste (T2R2-1) ==
+[ok]   G13.0: zwei frische Frames sind gleich - der Vergleich sagt nicht pauschal ungleich
+[ok]   G13.0: ein einziger geaenderter Skalar macht sie ungleich
+[ok]   G13.0: ein einziger geaenderter Bandwert ebenso
+[ok]   G13.0: und ein einziges Bitmapbit ebenso
+[ok]   G13.0: und ein Feld im verschachtelten Transportstempel - der Vergleich reicht bis dorthin
+[ok]   G13.0: nach dem Zuruecksetzen wieder gleich - beide Richtungen vorgefuehrt
+[ok]   G13a lokaleLuecke [Zwilling]: A traegt vor der Grenze auf JEDEM Traeger etwas  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=1 LiveAkku=149 EvidAkku=196 Breite=149B/4.162e-03 RZellen=1 kFilter=8.569e-01 RAktiv=1]
+[ok]   G13a lokaleLuecke [Zwilling]: B traegt auf keinem - die zwei sind wirklich verschieden  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=1 kFilter=0.000e+00 RAktiv=0]
+[ok]   G13a lokaleLuecke [Zwilling]: beide haben die Grenze lokaleLuecke gezogen  [A 1 / B 1]
+[ok]   G13a lokaleLuecke [Zwilling]: beide bauen ihre Frames im selben Block - die Uhr haengt nicht am Inhalt (Entscheid §10.1)  [0 Bloecke auseinander]
+[ok]   G13a lokaleLuecke [Zwilling]: es wurden ueberhaupt genug Frames verglichen  [14 Frames]
+[ok]   G13a lokaleLuecke [Zwilling]: und sie tragen Messwerte - verglichen wird nicht zweimal Stille  [13 von 14 mit Live-Baendern]
+[ok]   G13a lokaleLuecke [Zwilling]: nach der Grenze ist A von B in JEDEM FELD nicht zu unterscheiden - kein Traeger hat ueberbrueckt (T2R2-1)  [14 Frames feldgleich]
+[ok]   G13a lokaleLuecke [Zwilling]: und keiner erfindet ein Ereignis in der neuen Epoche  [A 0 / B 0]
+[ok]   G13b zeitSprung [Zwilling]: A traegt vor der Grenze auf JEDEM Traeger etwas  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=1 LiveAkku=149 EvidAkku=196 Breite=149B/4.162e-03 RZellen=1 kFilter=8.569e-01 RAktiv=1]
+[ok]   G13b zeitSprung [Zwilling]: B traegt auf keinem - die zwei sind wirklich verschieden  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=1 kFilter=0.000e+00 RAktiv=0]
+[ok]   G13b zeitSprung [Zwilling]: beide haben die Grenze zeitSprung gezogen  [A 1 / B 1]
+[ok]   G13b zeitSprung [Zwilling]: beide bauen ihre Frames im selben Block - die Uhr haengt nicht am Inhalt (Entscheid §10.1)  [0 Bloecke auseinander]
+[ok]   G13b zeitSprung [Zwilling]: es wurden ueberhaupt genug Frames verglichen  [14 Frames]
+[ok]   G13b zeitSprung [Zwilling]: und sie tragen Messwerte - verglichen wird nicht zweimal Stille  [13 von 14 mit Live-Baendern]
+[ok]   G13b zeitSprung [Zwilling]: nach der Grenze ist A von B in JEDEM FELD nicht zu unterscheiden - kein Traeger hat ueberbrueckt (T2R2-1)  [14 Frames feldgleich]
+[ok]   G13b zeitSprung [Zwilling]: und keiner erfindet ein Ereignis in der neuen Epoche  [A 0 / B 0]
+[ok]   G13c transportKante [Zwilling]: A traegt vor der Grenze auf JEDEM Traeger etwas  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=1 LiveAkku=149 EvidAkku=196 Breite=149B/4.162e-03 RZellen=1 kFilter=8.569e-01 RAktiv=1]
+[ok]   G13c transportKante [Zwilling]: B traegt auf keinem - die zwei sind wirklich verschieden  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=1 kFilter=0.000e+00 RAktiv=0]
+[ok]   G13c transportKante [Zwilling]: beide haben die Grenze transportKante gezogen  [A 1 / B 1]
+[ok]   G13c transportKante [Zwilling]: beide bauen ihre Frames im selben Block - die Uhr haengt nicht am Inhalt (Entscheid §10.1)  [0 Bloecke auseinander]
+[ok]   G13c transportKante [Zwilling]: es wurden ueberhaupt genug Frames verglichen  [14 Frames]
+[ok]   G13c transportKante [Zwilling]: und sie tragen Messwerte - verglichen wird nicht zweimal Stille  [13 von 14 mit Live-Baendern]
+[ok]   G13c transportKante [Zwilling]: nach der Grenze ist A von B in JEDEM FELD nicht zu unterscheiden - kein Traeger hat ueberbrueckt (T2R2-1)  [14 Frames feldgleich]
+[ok]   G13c transportKante [Zwilling]: und keiner erfindet ein Ereignis in der neuen Epoche  [A 0 / B 0]
+[ok]   G13d sampleratewechsel [Zwilling]: A traegt vor der Grenze auf JEDEM Traeger etwas  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=1 LiveAkku=149 EvidAkku=196 Breite=149B/4.162e-03 RZellen=1 kFilter=8.569e-01 RAktiv=1]
+[ok]   G13d sampleratewechsel [Zwilling]: B traegt auf keinem - die zwei sind wirklich verschieden  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=1 kFilter=0.000e+00 RAktiv=0]
+[ok]   G13d sampleratewechsel [Zwilling]: beide haben die Grenze sampleratewechsel gezogen  [A 1 / B 1]
+[ok]   G13d sampleratewechsel [Zwilling]: beide bauen ihre Frames im selben Block - die Uhr haengt nicht am Inhalt (Entscheid §10.1)  [0 Bloecke auseinander]
+[ok]   G13d sampleratewechsel [Zwilling]: es wurden ueberhaupt genug Frames verglichen  [14 Frames]
+[ok]   G13d sampleratewechsel [Zwilling]: und sie tragen Messwerte - verglichen wird nicht zweimal Stille  [13 von 14 mit Live-Baendern]
+[ok]   G13d sampleratewechsel [Zwilling]: nach der Grenze ist A von B in JEDEM FELD nicht zu unterscheiden - kein Traeger hat ueberbrueckt (T2R2-1)  [14 Frames feldgleich]
+[ok]   G13d sampleratewechsel [Zwilling]: und keiner erfindet ein Ereignis in der neuen Epoche  [A 0 / B 0]
+[ok]   G13e neuanlauf [Zwilling]: A traegt vor der Grenze auf JEDEM Traeger etwas  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=1 LiveAkku=149 EvidAkku=196 Breite=149B/4.162e-03 RZellen=1 kFilter=8.569e-01 RAktiv=1]
+[ok]   G13e neuanlauf [Zwilling]: B traegt auf keinem - die zwei sind wirklich verschieden  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=1 kFilter=0.000e+00 RAktiv=0]
+[ok]   G13e neuanlauf [Zwilling]: beide haben die Grenze neuanlauf gezogen  [A 1 / B 1]
+[ok]   G13e neuanlauf [Zwilling]: beide bauen ihre Frames im selben Block - die Uhr haengt nicht am Inhalt (Entscheid §10.1)  [0 Bloecke auseinander]
+[ok]   G13e neuanlauf [Zwilling]: es wurden ueberhaupt genug Frames verglichen  [14 Frames]
+[ok]   G13e neuanlauf [Zwilling]: und sie tragen Messwerte - verglichen wird nicht zweimal Stille  [13 von 14 mit Live-Baendern]
+[ok]   G13e neuanlauf [Zwilling]: nach der Grenze ist A von B in JEDEM FELD nicht zu unterscheiden - kein Traeger hat ueberbrueckt (T2R2-1)  [14 Frames feldgleich]
+[ok]   G13e neuanlauf [Zwilling]: und keiner erfindet ein Ereignis in der neuen Epoche  [A 0 / B 0]
+[ok]   G13f beweislageWechsel [Zwilling]: A traegt vor der Grenze auf JEDEM Traeger etwas  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=1 LiveAkku=149 EvidAkku=196 Breite=149B/4.162e-03 RZellen=1 kFilter=8.569e-01 RAktiv=1]
+[ok]   G13f beweislageWechsel [Zwilling]: B traegt auf keinem - die zwei sind wirklich verschieden  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=1 kFilter=0.000e+00 RAktiv=0]
+[ok]   G13f beweislageWechsel [Zwilling]: beide haben die Grenze beweislageWechsel gezogen  [A 1 / B 1]
+[ok]   G13f beweislageWechsel [Zwilling]: beide bauen ihre Frames im selben Block - die Uhr haengt nicht am Inhalt (Entscheid §10.1)  [0 Bloecke auseinander]
+[ok]   G13f beweislageWechsel [Zwilling]: es wurden ueberhaupt genug Frames verglichen  [14 Frames]
+[ok]   G13f beweislageWechsel [Zwilling]: und sie tragen Messwerte - verglichen wird nicht zweimal Stille  [13 von 14 mit Live-Baendern]
+[ok]   G13f beweislageWechsel [Zwilling]: nach der Grenze ist A von B in JEDEM FELD nicht zu unterscheiden - kein Traeger hat ueberbrueckt (T2R2-1)  [14 Frames feldgleich]
+[ok]   G13f beweislageWechsel [Zwilling]: und keiner erfindet ein Ereignis in der neuen Epoche  [A 0 / B 0]
+
+== H - NAK-29: bedingte Feldpflichten des Transportstempels ==
+[ok]   ein sauberer Stempel kommt durch
+[ok]   Fall 1: project_samples + Bit, aber KEIN project_sample_start
+[ok]   Fall 1: project_samples + project_sample_start, aber KEIN project_time-Bit
+[ok]   Fall 2: local_monotonic MIT project_time-Bit (Widerspruch zu Â§32.3)
+[ok]   Fall 2: local_monotonic MIT project_sample_start (Widerspruch zu Â§32.3)
+[ok]   Fall 3: bounds_valid ohne start_ppq/end_ppq
+[ok]   Fall 4: derivation=validated_block_mapping ohne bounds_valid
+[ok]   Fall 5: cycle_bounds-Bit ohne die PPQ-Werte, auf die es sich bezieht
+[ok]   Fall 6: continuous_time-Bit ohne continuous_time_samples
+[ok]   Fall 7: das Projektintervall laeuft nicht ueber int64 hinaus
+[ok]   Fall 7: sample_count bleibt unter der Vertragsobergrenze
+[ok]   Fall 7: der Feature-Erzeuger publiziert keinen Leerframe
+[ok]   der ERZEUGER loest den Riegel nicht aus - kein verletzter Stempel entsteht im normalen, gedeckelten Betrieb  [0]
+[ok]   abgelehnte faellige Evidenz wird konsumiert und der Erzeuger erholt sich  [1]
+
+== I - Ereignisse: kein Fluss ueber eine Grenze ==
+[ok]   der spektrale Fluss hat im Betrieb einen Vorgaenger
+[ok]   nach einem Seek ist der Vorgaenger WEG - sonst meldete der Fluss einen Onset, den es nie gab
+[ok]   jedes Ereignis traegt die Epoche, in der es gesehen wurde  [1 Ereignis(se)]
+[ok]   der Ereignisring laeuft WIRKLICH ueber - der Deckel ist gemessen, nicht behauptet  [64 im Ring, 1 verworfen, nach 1107 Bloecken]
+[ok]   und er waechst dabei NICHT ueber seine 64 Plaetze hinaus (Â§48.1: ein Strom, der bei Ueberlast waechst, waere ein unbegrenzter Vektor)  [64 / 64]
+[ok]   drop-oldest: beim Ueberlauf faellt das AELTESTE, nicht das neueste  [aeltestes vorher 38912, jetzt 47104]
+[ok]   und der Ring gibt sie weiter aeltestes-zuerst zurueck, auch nach dem Umlauf
+[ok]   Eventzeit ist der 4096er-Fensteranfang und unabhaengig vom 512er Hostblock
+[ok]   stehende Host-Zeit erzeugt keine extrapolierte FFT-Event-Projektzeit  [1 Ereignis(se) nach 84 Bloecken]
+
+== J - EBU: LUFS-S gegen die analytisch gerechnete Erwartung ==
+[ok]   LUFS-S ist nach 4 s gesetzt
+[ok]   LUFS-S trifft die analytische Erwartung auf besser als 0,1 LU (Â§39.3)  [gemessen -6.0620 erwartet -6.0620 d=0.00000]
+[ok]   Peak trifft die Amplitude  [-6.021 dBFS]
+[ok]   Crest eines Sinus ist 3,01 dB  [3.0091 dB]
+[ok]   L==R ergibt Korrelation 1  [1.000000]
+[ok]   und Breite 0 (kein Seitenanteil)  [0.000000000000]
+[ok]   das Live-Band um 997 Hz ist gueltig  [Band 35]
+[ok]   und das unterste Band (30 Hz) ist es NICHT - dort ist kein Signal
+
+== K - NAK-56 Werkbankhaelfte: nakamaBlockEmpfangen am echten Prozessor ==
+[ok]   die FeatureEngine hat Bloecke aus dem echten Prozessorweg gesehen  [32 Bloecke]
+[ok]   und mindestens einen Frame gebaut  [3 Frames]
+[ok]   process_context_present kommt aus der BRUECKE durch (Â§32.3)
+[ok]   recording: Bit gesetzt, Wert false - die Bruecke kann beides sagen
+[ok]   continuous_time_samples kommt durch
+[ok]   die Schleifengrenzen kommen durch, samt `active`
+[ok]   beide Presentation-Latencies kommen durch  [3924 / 4410]
+[ok]   ueber die Bruecke stehen ALLE SIEBEN Gueltigkeitsbits  [0x7f]
+[ok]   Gegenprobe: der Playhead-Rueckfallweg erreicht NICHT alle sieben Bits  [0x3]
+[ok]   insbesondere kennt JUCEs Playhead kein Gueltigkeitsbit fuer `recording`
+[ok]   Projektblock ueber INT64_MAX wird als ungueltiges Fenster verworfen
+[ok]   Abstand INT64_MIN zu INT64_MAX wird ohne Subtraktionsueberlauf als Sprung erkannt
+[ok]   nichtendliche Sampleraten initialisieren keine Analyseengine
+
+== L - Gegenproben: kann dieses Bein ueberhaupt rot werden? ==
+[ok]   L1: OHNE Grenze meldet die Messgroesse FALSE - sie reagiert also ueberhaupt  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   L1: MIT Grenze meldet sie TRUE - beide Richtungen vorgefuehrt
+[ok]   L2: der Gittervergleich meldet gegen die UNVERAENDERTE Zeile 0 Abweichungen  [0]
+[ok]   L2: und gegen eine um EIN Bit gekippte Zeile genau 1 - er reagiert also, und zwar nur dort  [1 Abweichung(en), Zeile 26]
+[ok]   L3: sieben Verletzungen ergeben sieben VERSCHIEDENE Nummern, nicht siebenmal 'nein'
+[ok]   L4: auf Stille ist KEIN Band gueltig - es steht nicht '0 dB' da, sondern nichts  [0 gesetzte Baender]
+[ok]   L5: drei Versuche verbrauchen drei Sequenznummern - auch der abgelehnte  [3]
+[ok]   L5: der Empfaenger sieht 1 und 3 - die LUECKE bei 2 ist die Meldung  [1, 3]
+[ok]   L5: und der Versuch nennt den FALL, nicht nur 'abgelehnt'
+[ok]   L6: ein echter Grund wird gezaehlt  [1]
+[ok]   L6: `anzahl` ist kein Grund und liefert 0, statt hinter das Array zu lesen  [gelesen: 0]
+[ok]   L6: und `keine` ebenso - getrennt wird nie ohne Grund
+
+== M - Auskunft ueber die Grenzen der Messung ==
+[ok]   die unteren Baender sind bei dieser Aufloesung NICHT messbar - und das steht da  [erstes messbares Band 2 (32.6 Hz)]
+[ok]   bei 48 kHz greift die Kappe nirgends - das oberste Band endet bei 17,96 kHz  [erstes Band ueber der Kappe 221]
+[ok]   bei 22,05 kHz greift die Nyquist-Kappe WIRKLICH und schneidet oben ab  [erstes Band ueber der Kappe 202 (10525.6 Hz)]
+[ok]   und sie sitzt genau am ersten Band, dessen Oberkante 0,95Â·Nyquist ueberschreitet  [10374.7 .. 10678.7 Hz gegen 10473.8 Hz]
+[ok]   kein Live-Band vollstaendig ueber der Kappe traegt einen Wert  [0 Baender]
+[ok]   Gegenpfad: neu vorbereiten setzt alles zurueck, auch die Zaehler
+
+Ergebnis: 237 bestanden, 0 Fehler.
+
+
+$ C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSonde013EventWireTest_artefacts\Release\EqCopSonde013EventWireTest.exe
+EXIT=0
+SONDE-013 M-05 | Evidenzpfad: Verteilung, Abdeckung, Konvergenz und der Ereignisstrom
+
+== A · Der erzeugte Snapshot haelt den v3-Vertrag ==
+[ok]   ein Evidenzframe wird faellig
+[ok]   Snapshot wird gebaut
+[ok]   Snapshot passiert den gemeinsamen Textriegel
+[ok]   v3-Schema laedt
+[ok]   der erzeugte Snapshot wird von derselben Engine wie B3c angenommen
+[ok]   Gegenprobe: eine Abdeckung ueber 1 faellt an derselben Engine
+
+== B · P10/P50/P95 unterscheiden, was ein Mittelwert gleichmacht ==
+[ok]   beide Evidenzframes sind da
+[ok]   beide Signale tragen im selben Band ein Bit  [120]
+[ok]   die Spanne P95-P10 trennt das springende vom ruhigen Signal  [ruhig 0.00 dB, springend 6.65 dB]
+[ok]   das ruhige Signal hat eine schmale Spanne  [0.00 dB]
+[ok]   in JEDEM Band mit Bit gilt P10 <= P50 <= P95  [56 Baender]
+[ok]   der Frame nennt, ueber wie viele Fenster die Verteilung geht  [4]
+
+== C · Abdeckung ist gemessenes Signal, Konvergenz ist Ruhe ==
+[ok]   beide Evidenzframes sind da
+[ok]   Dauerton deckt das Evidenzfenster fast vollstaendig ab  [1.000]
+[ok]   halbe Stille senkt die Abdeckung messbar  [0.667]
+[ok]   ein stehender Ton konvergiert  [1.000]
+[ok]   ein wandernder Pegel konvergiert schlechter als ein stehender  [0.557 < 1.000]
+
+== D · Ereignisse reisen mit beiden Qualitaetsbits und ihrem Verlust ==
+[ok]   events_travel_with_quality_and_loss_counter/alle_drei_reisen  [3]
+[ok]   events_travel_with_quality_and_loss_counter/beide_bits_getrennt  [Fluss-only, Peak-only und beide bleiben unterscheidbar]
+[ok]   events_travel_with_quality_and_loss_counter/verlustzaehler  [7]
+[ok]   fremde_epoche_reist_nicht_und_wird_gezaehlt  [1 getragen, 1 verloren]
+[ok]   leerer Strom ohne Verlust laesst `ereignisse` weg
+
+== E · Kein Snapshot ist besser als ein widerspruechlicher ==
+[ok]   kein Snapshot ohne faelliges Evidenzfenster
+[ok]   kein Snapshot ohne Abdeckungsbit â 0 waere eine andere Aussage
+[ok]   kein Snapshot ohne Konvergenzbit
+[ok]   kein Snapshot ohne gueltige evidence_id
+[ok]   kein Snapshot mit einer erfundenen Konfidenzklasse
+[ok]   kein Snapshot mit unmoeglicher Samplerate
+[ok]   ohne Anker reist kein Ereignis und der Verlust wird gemeldet
+
+== F · Die Evidenzkadenz bleibt zwischen 1 und 4 Hz ==
+[ok]   frisch vorbereitet laeuft die Evidenz mit 4 Hz
+[ok]   ein zu grosser Wunsch wird auf 1 Hz geklemmt, nicht abgelehnt
+[ok]   ein zu kleiner Wunsch wird auf 4 Hz geklemmt
+[ok]   ein NaN verstellt die Kadenz NICHT
+[ok]   auch mit 1 Hz entsteht ein vollstaendiger Snapshot
+[ok]   die reduzierte Kadenz braucht wirklich laenger, statt nur anders zu heissen  [30 gegen 100 Bloecke]
+
+== G · Eine Grenze trennt Verteilung, Abdeckung und Konvergenz ==
+[ok]   ein Evidenzfenster ist gelaufen
+[ok]   der Snapshot hat sein Fenster mitgenommen
+[ok]   das naechste Fenster fuellt die neuen Traeger  [112 Plaetze, 2 Fenster]
+[ok]   der Verteilungsring ist leer  [0]
+[ok]   beide Fensterzaehler der Abdeckung sind leer
+
+-----------------------------------------
+40 bestanden, 0 gescheitert
+
+
+========================================================================
+ROTBEWEIS BESTANDEN: rot=True gruen=True
+========================================================================

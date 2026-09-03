@@ -167,6 +167,7 @@ set(NAKAMA_KERN_QUELLEN
     state/NakamaState.cpp
     vertrag/NakamaVertrag.cpp
     vertrag/NakamaTelemetrie.cpp
+    vertrag/NakamaEvidenz.cpp
     core/ipc/WireEnvelope.cpp
     core/ipc/IpcVerbindung.cpp
     core/ipc/BrokerLifecycle.cpp
@@ -744,6 +745,22 @@ target_compile_definitions(EqCopIpcLast PRIVATE
 target_link_libraries(EqCopIpcLast PRIVATE juce::juce_core Advapi32
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
 nakama_kern_anbinden(EqCopIpcLast)
+
+# ── S20-22/SONDE-013 M-05: der Evidenzpfad (Kanon B16) ────────────────────
+# §33.2 zaehlt den Inhalt des Evidenzsnapshots abschliessend auf; bis SONDE-013
+# hatte keiner dieser Punkte einen Weg. Dieses Bein misst den ERZEUGER: dass
+# P10/P50/P95 den Verlauf tragen und nicht den Mittelwert, dass die Abdeckung
+# gemessenes Signal ist und keine Wanduhr, dass der Ereignisstrom beide
+# Qualitaetsbits und seinen Verlust mitfuehrt, und dass ein widerspruechlicher
+# Frame GAR KEINEN Snapshot erzeugt. Braucht nur den Kern - keine JUCE-DSP,
+# kein Prozessor.
+juce_add_console_app(EqCopSonde013EventWireTest PRODUCT_NAME "eqcop-sonde013eventwiretest")
+target_sources(EqCopSonde013EventWireTest PRIVATE tests/Sonde013EventWireTest.cpp)
+target_compile_definitions(EqCopSonde013EventWireTest PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
+target_link_libraries(EqCopSonde013EventWireTest PRIVATE juce::juce_core Advapi32
+    PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+nakama_kern_anbinden(EqCopSonde013EventWireTest)
 
 # ── S10-11/SONDE-008: EBU-Golden der fixed-memory Loudness ─────────────────
 # Kanon B9. Misst den `LoudnessAccumulator` gegen die AUSGEBAUTE Rechnung:

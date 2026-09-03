@@ -1,0 +1,145 @@
+# Rotbeweis M-05-verlust — SONDE-013 Etappe 2
+# 2026-09-04
+#
+# Regel: eine neue Zusage ohne Rotbeweis ist eine Behauptung. Hier wird
+# der Fehler bewusst eingebaut, das Bein faellt, der Fehler wird
+# entfernt und dasselbe Bein ist wieder gruen.
+#
+# Eingebauter Fehler: der Verlustzaehler wird aus dem Snapshot entfernt — ein Empfaenger koennte 'nichts passiert' nicht mehr von 'verdraengt' unterscheiden
+
+# mutiert: eq-copilot/plugin/vertrag/NakamaEvidenz.cpp
+
+========================================================================
+ROT — mit eingebautem Fehler
+========================================================================
+
+$ C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSonde013EventWireTest_artefacts\Release\EqCopSonde013EventWireTest.exe
+EXIT=1
+SONDE-013 M-05 | Evidenzpfad: Verteilung, Abdeckung, Konvergenz und der Ereignisstrom
+
+== A · Der erzeugte Snapshot haelt den v3-Vertrag ==
+[ok]   ein Evidenzframe wird faellig
+[ok]   Snapshot wird gebaut
+[ok]   Snapshot passiert den gemeinsamen Textriegel
+[ok]   v3-Schema laedt
+[ok]   der erzeugte Snapshot wird von derselben Engine wie B3c angenommen
+[ok]   Gegenprobe: eine Abdeckung ueber 1 faellt an derselben Engine
+
+== B · P10/P50/P95 unterscheiden, was ein Mittelwert gleichmacht ==
+[ok]   beide Evidenzframes sind da
+[ok]   beide Signale tragen im selben Band ein Bit  [120]
+[ok]   die Spanne P95-P10 trennt das springende vom ruhigen Signal  [ruhig 0.00 dB, springend 6.65 dB]
+[ok]   das ruhige Signal hat eine schmale Spanne  [0.00 dB]
+[ok]   in JEDEM Band mit Bit gilt P10 <= P50 <= P95  [56 Baender]
+[ok]   der Frame nennt, ueber wie viele Fenster die Verteilung geht  [4]
+
+== C · Abdeckung ist gemessenes Signal, Konvergenz ist Ruhe ==
+[ok]   beide Evidenzframes sind da
+[ok]   Dauerton deckt das Evidenzfenster fast vollstaendig ab  [1.000]
+[ok]   halbe Stille senkt die Abdeckung messbar  [0.667]
+[ok]   ein stehender Ton konvergiert  [1.000]
+[ok]   ein wandernder Pegel konvergiert schlechter als ein stehender  [0.557 < 1.000]
+
+== D · Ereignisse reisen mit beiden Qualitaetsbits und ihrem Verlust ==
+[ok]   events_travel_with_quality_and_loss_counter/alle_drei_reisen  [3]
+[ok]   events_travel_with_quality_and_loss_counter/beide_bits_getrennt  [Fluss-only, Peak-only und beide bleiben unterscheidbar]
+[ROT]  events_travel_with_quality_and_loss_counter/verlustzaehler  [0]
+[ROT]  fremde_epoche_reist_nicht_und_wird_gezaehlt  [1 getragen, 0 verloren]
+[ok]   leerer Strom ohne Verlust laesst `ereignisse` weg
+
+== E · Kein Snapshot ist besser als ein widerspruechlicher ==
+[ok]   kein Snapshot ohne faelliges Evidenzfenster
+[ok]   kein Snapshot ohne Abdeckungsbit â 0 waere eine andere Aussage
+[ok]   kein Snapshot ohne Konvergenzbit
+[ok]   kein Snapshot ohne gueltige evidence_id
+[ok]   kein Snapshot mit einer erfundenen Konfidenzklasse
+[ok]   kein Snapshot mit unmoeglicher Samplerate
+[ROT]  ohne Anker reist kein Ereignis und der Verlust wird gemeldet
+
+== F · Die Evidenzkadenz bleibt zwischen 1 und 4 Hz ==
+[ok]   frisch vorbereitet laeuft die Evidenz mit 4 Hz
+[ok]   ein zu grosser Wunsch wird auf 1 Hz geklemmt, nicht abgelehnt
+[ok]   ein zu kleiner Wunsch wird auf 4 Hz geklemmt
+[ok]   ein NaN verstellt die Kadenz NICHT
+[ok]   auch mit 1 Hz entsteht ein vollstaendiger Snapshot
+[ok]   die reduzierte Kadenz braucht wirklich laenger, statt nur anders zu heissen  [30 gegen 100 Bloecke]
+
+== G · Eine Grenze trennt Verteilung, Abdeckung und Konvergenz ==
+[ok]   ein Evidenzfenster ist gelaufen
+[ok]   der Snapshot hat sein Fenster mitgenommen
+[ok]   das naechste Fenster fuellt die neuen Traeger  [112 Plaetze, 2 Fenster]
+[ok]   der Verteilungsring ist leer  [0]
+[ok]   beide Fensterzaehler der Abdeckung sind leer
+
+-----------------------------------------
+37 bestanden, 3 gescheitert
+
+========================================================================
+GRUEN — Fehler entfernt, derselbe Befehl
+========================================================================
+
+$ C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSonde013EventWireTest_artefacts\Release\EqCopSonde013EventWireTest.exe
+EXIT=0
+SONDE-013 M-05 | Evidenzpfad: Verteilung, Abdeckung, Konvergenz und der Ereignisstrom
+
+== A · Der erzeugte Snapshot haelt den v3-Vertrag ==
+[ok]   ein Evidenzframe wird faellig
+[ok]   Snapshot wird gebaut
+[ok]   Snapshot passiert den gemeinsamen Textriegel
+[ok]   v3-Schema laedt
+[ok]   der erzeugte Snapshot wird von derselben Engine wie B3c angenommen
+[ok]   Gegenprobe: eine Abdeckung ueber 1 faellt an derselben Engine
+
+== B · P10/P50/P95 unterscheiden, was ein Mittelwert gleichmacht ==
+[ok]   beide Evidenzframes sind da
+[ok]   beide Signale tragen im selben Band ein Bit  [120]
+[ok]   die Spanne P95-P10 trennt das springende vom ruhigen Signal  [ruhig 0.00 dB, springend 6.65 dB]
+[ok]   das ruhige Signal hat eine schmale Spanne  [0.00 dB]
+[ok]   in JEDEM Band mit Bit gilt P10 <= P50 <= P95  [56 Baender]
+[ok]   der Frame nennt, ueber wie viele Fenster die Verteilung geht  [4]
+
+== C · Abdeckung ist gemessenes Signal, Konvergenz ist Ruhe ==
+[ok]   beide Evidenzframes sind da
+[ok]   Dauerton deckt das Evidenzfenster fast vollstaendig ab  [1.000]
+[ok]   halbe Stille senkt die Abdeckung messbar  [0.667]
+[ok]   ein stehender Ton konvergiert  [1.000]
+[ok]   ein wandernder Pegel konvergiert schlechter als ein stehender  [0.557 < 1.000]
+
+== D · Ereignisse reisen mit beiden Qualitaetsbits und ihrem Verlust ==
+[ok]   events_travel_with_quality_and_loss_counter/alle_drei_reisen  [3]
+[ok]   events_travel_with_quality_and_loss_counter/beide_bits_getrennt  [Fluss-only, Peak-only und beide bleiben unterscheidbar]
+[ok]   events_travel_with_quality_and_loss_counter/verlustzaehler  [7]
+[ok]   fremde_epoche_reist_nicht_und_wird_gezaehlt  [1 getragen, 1 verloren]
+[ok]   leerer Strom ohne Verlust laesst `ereignisse` weg
+
+== E · Kein Snapshot ist besser als ein widerspruechlicher ==
+[ok]   kein Snapshot ohne faelliges Evidenzfenster
+[ok]   kein Snapshot ohne Abdeckungsbit â 0 waere eine andere Aussage
+[ok]   kein Snapshot ohne Konvergenzbit
+[ok]   kein Snapshot ohne gueltige evidence_id
+[ok]   kein Snapshot mit einer erfundenen Konfidenzklasse
+[ok]   kein Snapshot mit unmoeglicher Samplerate
+[ok]   ohne Anker reist kein Ereignis und der Verlust wird gemeldet
+
+== F · Die Evidenzkadenz bleibt zwischen 1 und 4 Hz ==
+[ok]   frisch vorbereitet laeuft die Evidenz mit 4 Hz
+[ok]   ein zu grosser Wunsch wird auf 1 Hz geklemmt, nicht abgelehnt
+[ok]   ein zu kleiner Wunsch wird auf 4 Hz geklemmt
+[ok]   ein NaN verstellt die Kadenz NICHT
+[ok]   auch mit 1 Hz entsteht ein vollstaendiger Snapshot
+[ok]   die reduzierte Kadenz braucht wirklich laenger, statt nur anders zu heissen  [30 gegen 100 Bloecke]
+
+== G · Eine Grenze trennt Verteilung, Abdeckung und Konvergenz ==
+[ok]   ein Evidenzfenster ist gelaufen
+[ok]   der Snapshot hat sein Fenster mitgenommen
+[ok]   das naechste Fenster fuellt die neuen Traeger  [112 Plaetze, 2 Fenster]
+[ok]   der Verteilungsring ist leer  [0]
+[ok]   beide Fensterzaehler der Abdeckung sind leer
+
+-----------------------------------------
+40 bestanden, 0 gescheitert
+
+
+========================================================================
+ROTBEWEIS BESTANDEN: rot=True gruen=True
+========================================================================

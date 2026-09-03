@@ -26,6 +26,7 @@ use std::sync::{Arc, Condvar, Mutex, OnceLock};
 use std::time::Duration;
 
 mod befehl;
+mod evidenz;
 mod flush;
 mod intervention;
 mod link;
@@ -42,6 +43,7 @@ pub use sicht::{
     ClientModellSicht, ControlRegistrierung, Interventionssicht, Lautheitszustand,
     MessframeSicht, SessionModellSicht,
 };
+pub use evidenz::Evidenzstand;
 pub use uhr::{ManualClock, MonotonicClock};
 use zustand::{
     kollisionsriegel_setzen_locked, ClientKey, ClientStand, Deckelausgang, Intervention, LinkStand,

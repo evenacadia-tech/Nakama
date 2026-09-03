@@ -3,7 +3,7 @@
 | Merkmal | Wert |
 |---|---|
 | Ticket | S20–22, `SONDE-013` (Phase P4–P5) |
-| Phase | **Etappe 2 — Bau, Etappe A läuft.** Etappe 1 (Verhaltensmatrix) ist am 2026-09-04 nach Matrixprüfung 1, Nacharbeit 1, Wiederprüfung 1, Nacharbeit 2 und Wiederprüfung 2 (PASS) abgenommen; die Matrix in §3 ist ab hier die Spezifikation. Bauauftrag: `docs/beweise/roh/SONDE-013-etappe-2-auftrag.txt`, Bau-Verlauf in §10 |
+| Phase | **Etappe 2 — Bau, Etappen A und B stehen; Etappe C ist die nächste.** Etappe 1 (Verhaltensmatrix) ist am 2026-09-04 nach Matrixprüfung 1, Nacharbeit 1, Wiederprüfung 1, Nacharbeit 2 und Wiederprüfung 2 (PASS) abgenommen; die Matrix in §3 ist ab hier die Spezifikation. Bauauftrag: `docs/beweise/roh/SONDE-013-etappe-2-auftrag.txt`, Bau-Verlauf in §10 |
 | Urteil | **offen** — T1 setzt der Erbauer nach der letzten Bauetappe, T2 der Dirigent nach der Codex-Abnahme |
 | Prüfstufe | T1+T2 gefordert (`docs/bauaufteilung-sonden.md`:392). T1 ist das Selbstaudit des Erbauers am Ende der letzten Bauetappe, T2 setzt der Dirigent nach der Codex-Abnahme |
 | Basis-SHA | Etappe 1 begann auf `ed9bbf7fec951a061749abf143cb2158c1c4ee52`; **Etappe 2 baut ab `0fdbb4a09c75e2c93ab9b76e7fcf5d92d0ef17e4`** (Abschluss der Matrixetappe), beide mit `git rev-parse HEAD` gemessen |
@@ -14,7 +14,7 @@
 | Rundenbilanz Etappe 1 | `py -3.13 tools/dirigent/rundenbilanz.py --runden ed9bbf7 4a2f50a 367a0ea ca20f3a 6e8bebb`: Matrix `ed9bbf7..4a2f50a` Doku 2 Dateien +1019/−0; Entscheide `4a2f50a..367a0ea` Doku +51/−0; Nacharbeit 1 `367a0ea..ca20f3a` Doku 4 Dateien +533/−63; Nacharbeit 2 `ca20f3a..6e8bebb` Doku 4 Dateien +286/−17. Produkt und Tests 0 Zeilen in allen vier Runden — erwartet, weil Etappe 1 nach der Regel „Spezifikation vor Code" ausschließlich das Manifest schreibt; das Konvergenzsignal des Werkzeugs greift erst ab Etappe 2. |
 | Änderungssatz dieser Etappe | Erster Commit `4a2f50a` und Entscheidcommit `367a0ea`: dieses Manifest und `docs/beweise/roh/SONDE-013-etappe-1-auftrag.txt`. Nacharbeit 1: dieses Manifest sowie die drei Rohdateien `docs/beweise/roh/SONDE-013-matrixpruefung-1-auftrag.txt`, `docs/beweise/roh/SONDE-013-matrixpruefung-1-367a0ea.txt` und `docs/beweise/roh/SONDE-013-nacharbeit-1-auftrag.txt` unverändert. Nacharbeit 2: dieses Manifest sowie die drei Rohdateien `docs/beweise/roh/SONDE-013-wiederpruefung-1-auftrag.txt`, `docs/beweise/roh/SONDE-013-wiederpruefung-1-ca20f3a.txt` und `docs/beweise/roh/SONDE-013-nacharbeit-2-auftrag.txt` unverändert. Kein Produkt-, Test-, Schema-, Fixture- oder Werkzeugcode. |
 | Kanon nachher | **GRUEN 40/40** auf `8d8fc96` (Etappe A), Rohausgabe `docs/beweise/roh/SONDE-013-8d8fc96-dirty.md`. Der Lauf stempelt `-dirty`, weil beim Baustand-Schnappschuss **eine** unbestätigte Datei im Baum lag — dieses Manifest, also Dokumentation; die Rohdatei nennt sie namentlich. Jede gemessene Prüfbinärdatei trägt „frisch (Bau bestätigt)" aus den Quellen von `8d8fc96`; kein Produkt-, Test-, Schema- oder Werkzeugcode war unbestätigt. Die Beinzahl bleibt 40 und ist um kein Bein gesunken. **Zweiter Lauf auf sauberem Baum** (`fcaa55c`, Rohausgabe `docs/beweise/roh/SONDE-013-fcaa55c.md`): **ROT 39/40** an einer zeitabhängigen Zusage in B10 (`parken_uebergeht_den_backoff/control/access_denied`, geparkt bei Versuch 3 statt 4). Dieselbe Binärdatei unmittelbar danach allein: 313/0 grün. Der Pfad liegt außerhalb der Ticketpfade und außerhalb des Änderungssatzes; Diagnose und Folge stehen in §10.1. |
-| Testanzahl | A5 461 Prüfungen · B3c 75 · B10 313 · Broker 198 Lib-Tests plus alle Integrationsbeine · JSON-Fixturekorpus 285 (75 gültig, 210 ungültig) · Binärkorpus 104 (20 gültig, 84 ungültig) · Envelope-Korpus 37. Alle Zahlen aus dem Lauf dieser Sitzung, nicht abgeschrieben. |
+| Testanzahl | A5 461 Prüfungen · B3c 75 · B10 313 · B16 40 (neu) · B5 237 · Broker 202 Lib-Tests plus alle Integrationsbeine · JSON-Fixturekorpus 285 (75 gültig, 210 ungültig) · Binärkorpus 104 (20 gültig, 84 ungültig) · Envelope-Korpus 37. Alle Zahlen aus dem Lauf dieser Sitzung, nicht abgeschrieben. |
 | Änderungssatz Etappe 2 | Fortlaufend in §10 je Bauetappe geführt: Commits, Beine, Rotbeweise, Abweichungen von §5 und Nebenbefunde. |
 | Grenze | Etappe 2 baut ausschließlich, was §3 zusagt. Prüfbereich sind die Ticketpfade aus §5.2; jede Datei außerhalb steht mit Begründung in §10. `docs/offene-punkte.md` und `docs/PLAN-STAND.md` bleiben unberührt — Nebenbefunde sammelt §10, der Dirigent zieht sie im Abschluss nach. |
 
@@ -459,7 +459,7 @@ Ein Testname mit **NEU** existiert noch nicht.
 | M-02 | Sonde misst; True Peak wird gebraucht | True Peak ist BS.1770-konform. Der vorhandene 8-fach-Pfad bleibt **nur**, wenn er das offizielle EBU-Testset bei 48 kHz und generierte Mehrsampleraten-Goldens besteht; sonst wird der BS.1770-Polyphase-Referenzpfad verwendet. Toleranz ±0,1 dB (§49.3). Kein Rateweg: `truePeakDb` in `AnalyseEngine.h`:102 ist heute Gen-lokal und ungegated über die ganze Passage. | **NEU** `EqCopSonde013TruePeakGoldenTest` mit dem EBU-Testset als Fixture und einem Sampleraten-Sweep; das Bein muss die Entscheidung 8-fach gegen Polyphase **messbar** treffen, nicht behaupten. | Entwurf §39.1:2578-2582,2588-2591; §49.3:3584. **BELEGT, BAULÜCKE** |
 | M-03 | Passage liegt vor; Headroomaussage wird gebildet | `PLR = Passage-True-Peak-Maximum minus LUFS-I`, `PSR(3 s) = True-Peak-Maximum desselben 3-s-Fensters minus LUFS-S`. Beide werden ausdrücklich als ergänzende Produktmetriken bezeichnet, nie als EBU-Qualitätsurteil. Headroom reist in dBTP und als Verteilung über die Passage, nicht als Einzelspitze. | **NEU** `EqCopSonde013DynamicsTest`, Fall `plr_psr_definitions_and_labels`; **NEU** `EqCopSonde013DynamicsTest`, Fall `headroom_is_distribution_not_single_peak`. | Entwurf §39.1:2583-2586; §39.2:2610-2612. **BELEGT, BAULÜCKE** (`psrDb` existiert im Frame :370, aber gegen LUFS-S desselben Rahmens, nicht gegen ein 3-s-True-Peak-Maximum) |
 | M-04 | Sonde misst; Dynamikaussage wird gebildet | Crest wird in **mehreren** Fenstern geführt, nicht nur als globales Maximum. LRA gilt erst nach mindestens rund 60 s geeignetem Material; davor ist der Wert ausdrücklich `nicht belastbar` und wird nicht numerisch vorgetäuscht. | **NEU** `EqCopSonde013DynamicsTest`, Fälle `crest_multiple_windows` und `lra_below_sixty_seconds_is_not_a_number`. | Entwurf §39.1:2580-2587; §39.3:2617. **BELEGT, BAULÜCKE** |
-| M-05 | Ereignisring hat Einträge; Evidenzsnapshot wird fällig | Diese Zeile ist **nur der Transport**. Der lokal **teilweise** gebaute `DynamicsEvent`-Strom reist als `evidence_snapshot.ereignisse`. Jedes Ereignis trägt Samplezeit, Stärke, Bandzentrum, Dauer und Qualität; die zwei Qualitätsbits trennen den SuperFlux-Flusspfad vom eigenständigen Peakpfad. Dass der Peakpfad heute überhaupt nicht auslöst, ist nicht diese Zeile, sondern **M-86**. Kadenz 1 bis 4 Hz; bei Überlast wird die Kadenz reduziert, nie der Ring stillschweigend geleert. Der Ring bleibt auf 64 Plätze gedeckelt und zählt seine Verluste. | Bestehend **B5** für die lokale Erzeugung; **NEU** **A5** `pruefe_v3_vertrag.py`-Fall `evidence_snapshot_ereignisse_belegt`; **NEU** `EqCopSonde013EventWireTest`, Fall `events_travel_with_quality_and_loss_counter`. | Entwurf §39.1:2593-2600; §33.2:2041; `reservierte-nachrichten-v1.json` (Feldname für SONDE-013 verbrannt); `FeatureEngine.h`:290-313,448,1607-1650. **BELEGT, BAULÜCKE** — Abgrenzung zu M-86 aus Nacharbeit 1 (§8, D6) |
+| M-05 | Ereignisring hat Einträge; Evidenzsnapshot wird fällig | Diese Zeile ist **nur der Transport**. Der lokal **teilweise** gebaute `DynamicsEvent`-Strom reist als `evidence_snapshot.ereignisse`. Jedes Ereignis trägt Samplezeit, Stärke, Bandzentrum, Dauer und Qualität; die zwei Qualitätsbits trennen den SuperFlux-Flusspfad vom eigenständigen Peakpfad. Dass der Peakpfad heute überhaupt nicht auslöst, ist nicht diese Zeile, sondern **M-86**. Kadenz 1 bis 4 Hz; bei Überlast wird die Kadenz reduziert, nie der Ring stillschweigend geleert. Der Ring bleibt auf 64 Plätze gedeckelt und zählt seine Verluste. | **gemessen** (2026-09-04, Etappe B): **A5**::`evidence_snapshot_ereignisse_belegt`, `ereignisring_bleibt_bei_64_und_zaehlt_verluste`; **B16** `EqCopSonde013EventWireTest`::`events_travel_with_quality_and_loss_counter/alle_drei_reisen`, `…/beide_bits_getrennt`, `…/verlustzaehler`, `fremde_epoche_reist_nicht_und_wird_gezaehlt` sowie die Kadenzfälle; **A4** `coordinator_model`::`evidenzsnapshot_wird_angenommen_und_zusammengefasst`, `…_fremder_adresse_wird_verworfen`, `…_wird_bei_offener_intervention_gesperrt`, `…_der_fassung_2_faellt_bei_einem_leser_der_fassung_1`. Rotbeweise `docs/beweise/roh/SONDE-013-rot-M-05-verlust.txt`, `-M-05-verteilung.txt`, `-M-05-grenze.txt`, `-M-05-riegel.txt`. | Entwurf §39.1:2593-2600; §33.2:2041; `reservierte-nachrichten-v1.json` (Feldname für SONDE-013 verbrannt); `FeatureEngine.h`:290-313,448,1607-1650. **BELEGT, gemessen** (Etappe B, 2026-09-04) — Abgrenzung zu M-86 aus Nacharbeit 1 (§8, D6); der Peakpfad selbst bleibt M-86 in Etappe C |
 | M-06 | Beliebige Metrik verlässt die Sonde | Jede Metrik trägt eine Qualitätsklasse mit. Eine Gesamtklasse wird nicht aus einem Mittelwert gerettet: ein harter Mangel bei Session, Passage, Coverage oder Alignment begrenzt die Gesamtaussage. Gewichte und Schwellen leben in einer versionierten `metrics_version`, die im Frame bereits mitreist. | **NEU** `EqCopSonde013QualityClassTest`, Fall `hard_deficiency_caps_overall_class`; **NEU** **A5**-Fall `metrics_version_bindet_schwellen`. | Entwurf §34.3:2224-2237; `.fbs`:218 (`metrics_version` ID 2). **BELEGT, BAULÜCKE** |
 | M-07 | Beliebige Metrik; ein nicht endlicher Zwischenwert entsteht | Nichtendliches wird beim **Erzeugen** in Wert 0 mit `gueltig=false` übersetzt und gezählt, nie sanitisiert auf die Leitung gelassen. Ein NaN oder Inf im Frame ist ein Senderfehler und wird von beiden Lesern abgelehnt. Bei den Rahmenskalaren fehlt statt dessen das Präsenzbit. Der Zähler wird ausgewertet, nicht ignoriert. | Bestehend **B3c** `EqCopSchemaTest` und **A10** `erzeuge_fb_fixtures.py` für die Ablehnung; bestehend **B9** für `bloeckeNichtEndlich()`; **NEU** `EqCopSonde013MetricsEdgeTest`, Fall `non_finite_never_reaches_wire_for_new_metrics`. | `.fbs`:208-215; `quantisierung-v1.json`; `LoudnessAccumulator.h`:383; CLAUDE.md NaN-Ehrlichkeit. **BELEGT** für den heutigen Bestand, **BAULÜCKE** für jede neue Metrik |
 | M-08 | Monomaterial oder ein stiller Kanal; Stereometrik wird gebildet | Bei echtem Mono ist Korrelation exakt 1 und Breite 0; bei einem stillen Kanal fällt das Präsenzbit weg, statt 0 oder NaN zu senden. Der Mono-Folddown wird am **wirklich gefalteten** Puffer gemessen, nicht aus einem Korrelationsskalar geschätzt, und stimmt innerhalb 0,25 dB. Physischer Mono-Check ist `mono=(L+R)/2`, energienormiertes M/S ist `M=(L+R)/√2`, `S=(L−R)/√2` — die beiden werden nicht vermischt. | Bestehend `FeatureEngine.h`:2008-2022 für die Präsenzbits; **NEU** `EqCopSonde013StereoGoldenTest`, Fälle `mono_identity`, `silent_channel_has_no_bit`, `folddown_matches_real_buffer_within_0p25db`. | Entwurf §40.1:2637-2652; §40.3:2666-2669; `FeatureEngine.h`:2008-2022. **BELEGT, BAULÜCKE** |
@@ -1803,6 +1803,200 @@ angefasst)
 **B — Evidenzpfad** (M-05: Sender in der Sonde, Empfänger im Broker, Kadenz
 1 bis 4 Hz mit Reduktion bei Überlast, P10/P50/P95, Abdeckung, Konvergenz).
 Der Vertrag dafür steht seit dieser Etappe vollständig.
+
+---
+
+### 10.2 Etappe B — Evidenzpfad (2026-09-04)
+
+**Gebaute Matrixzeile:** M-05. Sie ist laut §3 „nur der Transport" — der
+Detektor selbst (M-86) bleibt Etappe C. Gebaut wurde deshalb der ganze Weg,
+den es bis hierher **überhaupt nicht gab**: Erzeuger in der Sonde, Empfänger
+im Broker, und die drei Inhalte, die §33.2 dem Snapshot zuschreibt und die
+kein Liveframe trägt — Verteilungspunkte, Abdeckung, Konvergenz.
+
+**Was vorher fehlte, und wie weit.** An `ed9bbf7` nennt `evidence_snapshot`
+außer der Schemadatei **keine einzige** Zeile Produktcode, weder in
+`broker/src` noch in `eq-copilot/plugin`. Das Feld `verteilung` ist im Schema
+Pflicht, hatte aber keinen Erzeuger; die 221 Evidenzbänder wurden in der
+`FeatureEngine` gefüllt und liefen nirgendwohin.
+
+#### Ein Fund, der Etappe A betrifft
+
+Beim Bau des Empfängers fiel auf, dass die **Fassung 2 aus Etappe A gar nicht
+lesbar** war — und schlimmer, dass die Fassung 1 sie stillschweigend
+angenommen hätte:
+
+- `broker/src/coordinator/schema.rs` führte `JSON_SCHEMA_MINOR_AKTIV = 1`.
+  Eine Nachricht mit `schema_minor = 2` hätte keinen Leser gefunden.
+- Dieselbe Datei initialisierte `MINOR_1` aus `v3_schema_wurzel()` — dem
+  **committeten**, also seit Etappe A dem Fassung-2-Schema. Der „Leser der
+  Fassung 1" hätte damit `experiment_begin` und die zwei neuen
+  Invalidierungsgründe **angenommen**. Genau das Gegenteil von M-67.
+- `v3_schema_minor_0_wurzel()` setzte ebenfalls auf der committeten Fassung
+  auf und erbte den Fehler eine Ebene tiefer.
+- Auf der C++-Seite stand `kJsonSchemaMinor = 1`, und `SourcesModel.cpp`
+  benutzte **dieselbe** Konstante für zwei verschiedene Fragen: „ist das die
+  neueste Fassung?" und „trägt der Snapshot die Mitgliedshülle?". Ein Bump
+  hätte die zweite Frage still umgedeutet und Minor-1-Snapshots in keinen
+  Zweig fallen lassen.
+
+Warum A5 das nicht gefunden hat: `pruefe_v3_vertrag.py` baut sich seine
+Fassung 1 **selbst** zurück und misst die Regel an diesem Rückbau. Die Regel
+stimmte; der Leser, der sie durchsetzen soll, war ein anderer. Der Unterschied
+zwischen „die Regel testen" und „das Ding testen, das sie implementiert" ist
+genau dieser Fund.
+
+**Behoben** in diesem Änderungssatz, mit Rotbeweis:
+
+- `JSON_SCHEMA_MINOR_AKTIV = 2`, neuer `MINOR_2`-Zweig.
+- `v3_schema_minor_1_wurzel()` baut die Fassung 2 zurück; die Rückbauten sind
+  jetzt eine **Kette** (2 → 1 → 0), jede Fassung nimmt genau ihre eigenen
+  Zusätze zurück.
+- Die Rückbauliste steht als Daten (`FASSUNG_2_FAMILIEN` und Nachbarn) und
+  wird von `fassung_2_liste_deckt_sich_mit_dem_register` gegen den
+  `fassungen."2"`-Eintrag des Registers geprüft. Drei handgepflegte Kopien
+  derselben Liste sind hier schon einmal auseinandergelaufen (T2-Runde 2,
+  BF-5); die Abweichung fällt jetzt am Riegel.
+- C++: `kJsonSchemaMinor = 2` **plus** die neue, getrennte Konstante
+  `kJsonSchemaMinorSessionHuelle = 1`. Die Formfrage hängt an der Fassung, die
+  die Form eingeführt hat, nicht an der jeweils neuesten.
+
+#### Was der Evidenzpfad jetzt kann
+
+**Verteilung (P10/P50/P95).** Je Band ein fester Ring der jüngsten
+`kVerteilungPlaetze = 64` Fensterwerte; am Rahmenende wird eine Kopie sortiert
+und exakt interpoliert. Kein Histogramm: dessen Genauigkeit wäre eine
+Behauptung über die Binbreite, keine Messung. Der Frame trägt
+`evidenzFenster` — die Zahl der Fenster hinter dem **schwächsten** gezeigten
+Punkt, also das Minimum über die Bänder mit Bit. Dieselbe Ehrlichkeit wie
+`integration_samples` bei den Rahmenskalaren.
+
+**Abdeckung.** Aktive Analysefenster durch alle Analysefenster des
+Evidenzfensters — gemessenes Signal, nicht Wanddauer (§48.2). Beide Zähler
+stehen nebeneinander, weil einer allein „keine Fenster gesehen" nicht von
+„nur Stille gesehen" trennen könnte.
+
+**Konvergenz.** Je Band der Abstand zwischen dem Median der ersten und dem der
+zweiten Hälfte des behaltenen Fensters, gemittelt und über
+`kKonvergenzSpanneDb` auf [0, 1] abgebildet. Bänder mit weniger als vier
+Werten gehen nicht ein: zwei Mediane aus je einem Wert sind kein
+Konvergenzbeleg.
+
+**Kadenz 1 bis 4 Hz.** Der Evidenzabstand ist einstellbar und geklemmt. Die
+Reduktion liegt in der **Engine**, nicht beim Sender — wer einen fälligen
+Snapshot einfach nicht sendete, würde sein Fenster trotzdem leeren und die
+Messung wegwerfen. Bei Rückstau (`zurWiederholung`/`abgewiesen`) verdoppelt
+die Sonde den Abstand Richtung 1 Hz, sonst halbiert sie ihn Richtung 4 Hz.
+
+**Ereignisstrom.** Der Snapshot trägt die Ereignisse des Fensters mit beiden
+Qualitätsbits und einem Verlustzähler. Es reisen nur Ereignisse **dieser**
+Epoche und **dieses** Segments und nur mit gültigem Anker; alles andere zählt
+als verloren, statt an einer erfundenen Null zu hängen. Ein leerer Strom ohne
+Verlust lässt das Feld ganz weg — Abwesenheit heißt „diese Quelle liefert
+keine Ereignisse", ein leerer Strom **mit** Verlust reist.
+
+**Konfidenzklasse der Sonde.** Höchstens `mittel`. §34.3 begrenzt die
+Gesamtklasse an harten Mängeln bei Session, Passage, Coverage oder Alignment;
+von diesen vier kennt eine Sonde nur die Coverage. `stark` von einer Sonde
+wäre eine Aussage über drei Dinge, die sie nicht sieht.
+
+**Empfänger im Broker.** Vertrag, Adresse gegen den sendenden Link, dann der
+Interventionsriegel `evidence_dispatch()` — der VOR dem Commit liegt und sein
+Urteil unter demselben Lock zählt (M-63). Gesperrt heißt verworfen, nicht
+abgeschwächt gespeichert.
+
+**Belege aus dieser Sitzung**
+
+| Bein | Ergebnis |
+|---|---|
+| **B16** `EqCopSonde013EventWireTest` (NEU) | 40 Prüfungen, 0 gescheitert |
+| **A5** `pruefe_v3_vertrag.py --abdeckung` | 461 bestanden, 0 gescheitert |
+| **A4** `cargo test` (Broker) | 202 Lib-Tests (198 + 4 Fassungsleiter) plus alle Integrationsbeine grün; `coordinator_model` 50 Tests |
+| **B3c** `EqCopSchemaTest` | 75 bestanden, 0 gescheitert |
+| **B5** `EqCopAnalysisGoldenTest` | 237 bestanden, 0 Fehler — einschließlich der um drei Träger erweiterten Vollständigkeitsprobe |
+| **B12** `EqCopSonde012LoudnessSourceTest` | 4 bestanden, 0 gescheitert, 0 Audiothread-Allokationen |
+| **B13/B14/B11** (Fassungswechsel) | 41/41, 10/10, 9 bestanden |
+
+**Rotbeweise** (`docs/beweise/roh/`)
+
+| Datei | Eingebauter Fehler | Fallendes Bein |
+|---|---|---|
+| `SONDE-013-rot-M-05-verlust.txt` | Verlustzähler auf 0 festgenagelt | B16 |
+| `SONDE-013-rot-M-05-verteilung.txt` | P10 und P95 auf den Median gelegt | B16 |
+| `SONDE-013-rot-M-05-grenze.txt` | Verteilungsring überlebt die Transportgrenze | B5 und B16 |
+| `SONDE-013-rot-M-05-riegel.txt` | Interventionsriegel vor dem Evidence-Commit übersprungen | `coordinator_model` |
+| `SONDE-013-rot-M-67-leser.txt` | Leser der Fassung 1 lädt wieder das committete Schema | `fassungsleiter` |
+
+Der letzte ist der wichtigste: er ist genau der Fehler, den diese Etappe
+gefunden hat, und beweist, dass der neue Riegel ihn fängt.
+
+**Drei Befunde am eigenen Test, die erst der Lauf gezeigt hat**
+
+1. **Stack statt Heap.** Der Verteilungsring als Feld im Objekt (rund 58 KiB)
+   sprengte in B5 den 1-MiB-Stack — die Zwillingsprobe G13 hält zwei Engines
+   nebeneinander. `STATUS_STACK_OVERFLOW`, reproduzierbar. Er liegt jetzt im
+   Heap wie `kurzZellen`, `ereignisse` und `flussHistorie` daneben, angelegt
+   in `vorbereiten()`; der Audiothread alloziert weiterhin nie.
+2. **Ein FFT-Fenster über einer kurzen Stille ist kein stilles Fenster.** Der
+   erste Abdeckungsfall schaltete alle 50 ms zwischen Ton und Stille — bei
+   4096 Samples Fensterlänge (85 ms) nimmt jedes Fenster das Aktivgate, und
+   die Abdeckung blieb bei exakt 1,000. Der Fall läuft jetzt mit 1 Hz
+   Evidenzkadenz und 250-ms-Blöcken.
+3. **Nach dem Snapshot ist der Träger leer — das ist der Vertrag.** Der
+   Grenzfall prüfte den Ring unmittelbar nach der Veröffentlichung und fand
+   ihn erwartungsgemäß leer, hätte also nichts gemessen. Er füllt jetzt erst
+   ein Stück des nächsten Fensters.
+
+**Abweichungen von §5, mit Begründung**
+
+- **`konfidenz.verteilung_fenster` ist KEIN Fassungsschritt.** Die Zahl
+  hinter den Perzentilen musste irgendwo reisen. `evidence_snapshot` ist
+  strikt, ein Pflichtfeld dort wäre eine zweite Fassung gewesen — und §3.8
+  sagt, SONDE-013 hebt den Minor **genau einmal**. `konfidenz` ist dagegen im
+  Vertrag ausdrücklich additiv (§34.3: „die bestehenden Komponenten *werden
+  erweitert um*", `additionalProperties: true`). Ein weiteres Feld dort ist
+  das, wofür die Additivität da ist. `maxProperties` steigt entsprechend von
+  14 auf 15 (deklarierte + 8, die Regel prüft A5 selbst).
+- **Neue Datei außerhalb §5.2.** `eq-copilot/plugin/vertrag/NakamaEvidenz.*`
+  ist ein Vertragsserialisierer, dieselbe Rolle wie `NakamaTelemetrie` für
+  die FlatBuffers-Seite, und liegt deshalb neben ihr. Die Alternative wäre
+  die JSON-Form im Sondenprozessor **und** im Test gewesen — zwei Kopien
+  derselben Wire-Form, genau die Drift aus BF-5.
+- **Neues Kanonbein B16.** Die Beinzahl wächst von 40 auf 41. §5.1 nennt für
+  Etappe B nur bestehende Beine; ohne ein eigenes Bein hätte der Erzeuger
+  aber keinen Messpunkt — B3c misst den Vertrag, nicht die Frage, ob der
+  Snapshot mehr sagt als der Liveframe.
+
+**Dateien außerhalb der Ticketpfade aus §5.2, mit Begründung**
+
+| Datei | Warum |
+|---|---|
+| `broker/src/coordinator/{schema,senke,zustand,mod}.rs`, `evidenz.rs` (neu) | Empfänger und Fassungsleiter. §5.2 nennt vom Coordinator nur `intervention.rs`; ein `evidence_snapshot`-Empfänger kann nur dort liegen, wo P1 verteilt wird |
+| `eq-copilot/plugin/core/ipc/WireEnvelope.h` | die zwei Fassungskonstanten. Ohne sie reist die Fassung 2 nicht |
+| `eq-copilot/plugin/src/SourcesModel.cpp` | vier Vergleiche, die bisher „neueste Fassung" mit „trägt die Mitgliedshülle" verwechselten |
+| `eq-copilot/plugin/vertrag/NakamaEvidenz.*`, `eq-copilot/plugin/CMakeLists.txt` | der Serialisierer und seine Anbindung |
+| `eq-copilot/plugin/tests/Sonde013EventWireTest.cpp` | das neue Bein — `eq-copilot/plugin/tests/` steht in §5.2 |
+
+**Nebenbefunde für `docs/offene-punkte.md`**
+
+- **[SONDE-013 · P4]** Die Fassungsnummer der P1-Verträge steht jetzt an
+  **vier** Orten: `reservierte-nachrichten-v1.json` (`aktuell`),
+  `pruefe_v3_vertrag.py` (`fassung_1_schema`), `broker/src/coordinator/schema.rs`
+  (`JSON_SCHEMA_MINOR_AKTIV` und die Rückbaukette) und
+  `eq-copilot/plugin/core/ipc/WireEnvelope.h` (`kJsonSchemaMinor`). Drei davon
+  prüfen sich gegen das Register; die C++-Konstante nicht. Wer es angeht: ein
+  Bein, das `kJsonSchemaMinor` gegen `wire_envelope_schema_minor.aktuell`
+  hält — dieselbe Form wie `fassung_2_liste_deckt_sich_mit_dem_register`.
+- **[SONDE-013 · P4]** Der Evidenzsnapshot reist heute zum Broker und wird
+  dort zusammengefasst, aber **nicht** an Gen weitergereicht. Der
+  Outbox-/Snapshot-Pfad dafür gehört den Etappen F und G; bis dahin ist die
+  Sicht `evidenz_sicht()` nur über den Coordinator lesbar. Kein Produktcode
+  hängt heute daran.
+
+**Stand nach Etappe B:** Etappe B ist fertig. Nächste Etappe ist **C —
+Metriken in der Sonde** (M-01 bis M-04, M-06 bis M-12, M-74 bis M-77, M-86).
+Der Evidenzpfad, den C zum Transport seiner bandweisen Stereoevidenz braucht,
+steht seit dieser Etappe.
 
 ---
 

@@ -349,7 +349,14 @@ bool keineAkkusUeberleben (const FeatureEngine& e)
         && e.evidenzAkkuBelegteBaender() == 0
         && e.liveBreiteAkkuZustand() == 0.0
         && e.rahmenZellenJetzt() == 0
-        && e.rahmenAktivZellenJetzt() == 0;
+        && e.rahmenAktivZellenJetzt() == 0
+        // SONDE-013 M-05: der Verteilungsring und die zwei Fensterzaehler der
+        // Abdeckung sind drei WEITERE offene Fenster. Sie hier nicht zu
+        // fragen waere derselbe Fehler wie T2-1, nur eine Ticketgeneration
+        // spaeter: die Liste, an der ein neuer Traeger vorbeikommt.
+        && e.evidenzVerteilungPlaetze() == 0
+        && e.evidenzFensterGesamtJetzt() == 0
+        && e.evidenzFensterAktivJetzt() == 0;
 }
 
 bool alleFensterLeer (const FeatureEngine& e)

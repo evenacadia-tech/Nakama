@@ -170,6 +170,10 @@ pub(super) struct Stand {
     pub(super) letzter_subscription_grund: String,
     pub(super) evidence_angenommen: u64,
     pub(super) evidence_gesperrt: u64,
+    /// SONDE-013 M-05: der zuletzt ANGENOMMENE Evidenzsnapshot je
+    /// Quelle. Ein gesperrter hinterlaesst hier nichts — sein Urteil
+    /// steht im Zaehler daneben.
+    pub(super) evidenz: HashMap<ClientKey, super::evidenz::Evidenzstand>,
     pub(super) cap_abweisungen: u64,
     pub(super) store_verweigerungen: u64,
     pub(super) p2_live_frames: u64,
@@ -369,6 +373,7 @@ impl Default for Stand {
             letzter_subscription_grund: String::new(),
             evidence_angenommen: 0,
             evidence_gesperrt: 0,
+            evidenz: HashMap::new(),
             cap_abweisungen: 0,
             store_verweigerungen: 0,
             p2_live_frames: 0,

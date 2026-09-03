@@ -100,6 +100,12 @@ impl crate::transport::server_v3::Senke for Coordinator {
             Some("state_report") => {
                 let _ = self.state_report_json_mit_minor(link_id, payload, schema_minor);
             }
+            // SONDE-013 M-05: der Evidenzpfad. Das Ergebnis wird bewusst
+            // verworfen wie bei den beiden Nachbarn - ein abgelehnter P1
+            // schliesst die Verbindung nicht, er wird gezaehlt.
+            Some("evidence_snapshot") => {
+                let _ = self.evidence_snapshot_json_mit_minor(link_id, payload, schema_minor);
+            }
             _ => {}
         }
     }

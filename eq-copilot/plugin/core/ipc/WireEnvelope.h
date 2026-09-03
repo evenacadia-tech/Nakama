@@ -46,9 +46,29 @@ inline constexpr std::uint32_t kMaxPayloadBytes = kMaxFrameBytes - kKopfBytes;
 /// Die einzige heute unterstuetzte Major-Version.
 inline constexpr std::uint8_t kSchemaMajor = 3u;
 
-/// Aktive JSON-Vertragsfassung fuer P0/P1. Minor 0 bleibt lesbar, wird aber
-/// gegen seinen historischen Feldsatz validiert; hoehere Werte sind fremd.
-inline constexpr std::uint8_t kJsonSchemaMinor = 1u;
+/// Aktive JSON-Vertragsfassung fuer P0/P1. Aeltere Minors bleiben lesbar,
+/// werden aber gegen IHREN historischen Feldsatz validiert; hoehere Werte
+/// sind fremd und werden abgewiesen.
+///
+/// Seit SONDE-013 (04.09.2026) steht sie auf **2**: die Fassung 2 traegt die
+/// drei Experimentfamilien, die belegten Felder `evidence_snapshot.ereignisse`
+/// und `.stereo` sowie die zwei neuen Invalidierungsgruende. Ohne diesen
+/// Schritt koennte keine dieser Nachrichten reisen — das Register stuende auf
+/// 2 und der Draht auf 1.
+inline constexpr std::uint8_t kJsonSchemaMinor = 2u;
+
+/// Die Fassung, die die MITGLIEDSHUELLE des `session_snapshot` eingefuehrt hat
+/// (SONDE-012, Minor 1).
+///
+/// 🔑 Warum das eine EIGENE Zahl ist und nicht `kJsonSchemaMinor`: bis
+/// SONDE-013 waren beide dasselbe, und der Leser fragte `schemaMinor ==
+/// kJsonSchemaMinor`, um die neue Huelle von der historischen Descriptorliste
+/// zu unterscheiden. Beim naechsten Fassungsschritt haette genau dieser
+/// Vergleich still die Bedeutung gewechselt: aus „traegt die Huelle" waere
+/// „ist die allerneueste Fassung" geworden, und ein Minor-1-Snapshot waere in
+/// KEINEN der beiden Zweige gefallen. Die Formfrage haengt an der Fassung,
+/// die die Form eingefuehrt hat, nicht an der jeweils neuesten.
+inline constexpr std::uint8_t kJsonSchemaMinorSessionHuelle = 1u;
 
 /// Bootstrap-Hello: hoechstens 16 KiB, nur u32-laengenpraefigiertes JSON (§53.9).
 inline constexpr std::uint32_t kMaxBootstrapBytes = 16u * 1024u;

@@ -395,6 +395,50 @@ struct FeatureFrame
         abgelehnt (`integration_samples_null`). */
     bool  integrationGesetzt { false };  std::uint32_t integrationSamples { 0 };
 
+    /** SONDE-013 M-05: die Verteilungspunkte des Evidenzsnapshots (§33.2).
+
+        §33.2 zaehlt den Inhalt des Snapshots abschliessend auf — „volle 221
+        Baender, P10/P50/P95, Abdeckung, Konvergenz, Ereignisse". Die drei
+        Perzentile sind deshalb kein Zusatz, sondern Pflichtinhalt; ohne sie
+        traegt ein Snapshot nur seinen Mittelwert und sagt nichts darueber,
+        ob dieser Mittelwert einen ruhigen oder einen springenden Verlauf
+        zusammenfasst.
+
+        Sie sind nur gefuellt, wenn `evidenzFrisch` gilt — genau wie
+        `evidenz` selbst. Ein Band ohne Bit hat in ALLEN dreien kein Bit:
+        eine Verteilung ueber nichts ist keine Verteilung. */
+    EvidenzBaender evidenzP10 {}, evidenzP50 {}, evidenzP95 {};
+
+    /** Wie viele Analysefenster hinter den drei Perzentilen stehen.
+
+        Dieselbe Ehrlichkeit wie `integrationSamples` bei den Rahmenskalaren:
+        ein Perzentil ueber drei Fenster sieht aus wie eines ueber sechzig.
+        Der Wert ist die Zahl der WIRKLICH beruecksichtigten Fenster, also
+        hoechstens `kVerteilungPlaetze`. */
+    std::uint32_t evidenzFenster { 0 };
+
+    /** Abdeckung und Konvergenz des Evidenzfensters, beide in [0, 1].
+
+        `abdeckung` ist der Anteil der Analysefenster, die das Aktivgate
+        genommen haben — die tatsaechlich gemessene Signalabdeckung, nicht
+        die Wanddauer (§48.2). `konvergenz` misst, ob die Verteilung sich
+        noch bewegt: die Uebereinstimmung der Bandmediane zwischen erster
+        und zweiter Haelfte des behaltenen Fensters. Beide tragen ein
+        Praesenzbit, weil „kein Fenster gesehen" keine 0 ist. */
+    bool  abdeckungGesetzt  { false };  float abdeckung  { 0.0f };
+    bool  konvergenzGesetzt { false };  float konvergenz { 0.0f };
+
+    /** Fruehester lokaler Stromanfang des Evidenzfensters.
+
+        Der Anker, gegen den ein Ereignis seinen Versatz im Snapshot nennt.
+        Er steht hier und nicht im Transportstempel, weil der Stempel den
+        RAHMEN beschreibt (10 Hz) und das Evidenzfenster laenger ist. Ohne
+        Bit gibt es keinen Anker — dann traegt kein Ereignis einen ehrlichen
+        Versatz, und der Snapshot meldet sie als verloren statt sie an eine
+        erfundene Null zu haengen. */
+    bool  evidenzStromStartGesetzt { false };
+    std::uint64_t evidenzStromStart { 0 };
+
     /** ZWEI FRAMES SIND GLEICH, WENN JEDES FELD GLEICH IST — und welche Felder
         es gibt, weiss der Compiler, nicht eine Liste (T2R2-1, 24.08.).
 
@@ -432,6 +476,57 @@ struct FeatureFrame
     weil `table Frame` ein `uint` verlangt. */
 inline constexpr std::uint32_t kFeatureMetricsVersion = 20260823u;
 
+/** Wie viele Analysefenster hoechstens in P10/P50/P95 eines Bandes eingehen.
+
+    SONDE-013 M-05. Der Wert ist eine RESSOURCENGRENZE, keine Messaussage:
+    er deckelt den festen Speicher (221 Baender x 64 float = rund 57 KiB je
+    Instanz) und damit den Sortieraufwand am Rahmenende. Wie viele Fenster
+    wirklich eingegangen sind, sagt `FeatureFrame::evidenzFenster` — deshalb
+    kann diese Zahl steigen oder fallen, ohne dass ein Empfaenger sie kennen
+    muss.
+
+    Er gehoert bewusst NICHT zu `kFeatureMetricsVersion`: eine
+    Ressourcengrenze veraendert keine Schwelle und kein Gewicht. */
+inline constexpr int kVerteilungPlaetze = 64;
+
+/** Spanne, ueber die aus der Medianabweichung eine Konvergenz in [0, 1] wird.
+
+    12 dB ist ein Startwert und ausdruecklich am Korpus kalibrierbar (§5.3,
+    Risiko 5). Er lebt deshalb HIER neben `kFeatureMetricsVersion` und nicht
+    als Literal im Rechenpfad: eine Kalibrierung ist dann eine neue
+    Metrikversion, kein stiller Bruch. */
+inline constexpr double kKonvergenzSpanneDb = 12.0;
+
+/** Fester Ring der letzten Bandwerte EINES Bandes im Evidenzfenster.
+
+    Warum ein Ring und kein Histogramm: P10/P50/P95 sollen exakt sein,
+    nicht binquantisiert. Ein Histogramm braeuchte je Band Hunderte Bins,
+    um unter 0,1 dB zu bleiben, und selbst dann waere der Wert eine
+    Interpolation — eine Genauigkeit, die man behaupten, aber nicht
+    messen kann. Bei 0,25 s Evidenzfenster und 50 % Ueberlappung liegen
+    typisch deutlich weniger als `kVerteilungPlaetze` Fenster darin, also
+    ist der Ring in der Praxis vollstaendig und das Perzentil exakt.
+
+    Laeuft er doch ueber, behaelt er die JUENGSTEN Werte und `gefuellt`
+    bleibt bei `kVerteilungPlaetze` stehen. Der Frame traegt diese Zahl
+    als `evidenzFenster` mit — ein Empfaenger sieht damit, ueber wie
+    viele Fenster die Verteilung wirklich geht, statt es zu raten. */
+struct VerteilungsRing
+{
+    float werte[kVerteilungPlaetze] {};
+    int   stand { 0 };       ///< naechster Schreibplatz
+    int   gefuellt { 0 };    ///< belegte Plaetze, hoechstens kVerteilungPlaetze
+
+    void schiebe (float db) noexcept
+    {
+        werte[(std::size_t) stand] = db;
+        stand = (stand + 1) % kVerteilungPlaetze;
+        if (gefuellt < kVerteilungPlaetze) ++gefuellt;
+    }
+    void leeren() noexcept { stand = 0; gefuellt = 0; }
+};
+
+
 //==============================================================================
 class FeatureEngine
 {
@@ -457,9 +552,19 @@ public:
     static constexpr double kZelleSekunden = 0.1;
     /** LUFS-S ueber 3 s = 30 Zellen (§39.1). */
     static constexpr int kKurzZellen = 30;
-    /** Livekadenz 10 Hz, Evidenzkadenz 4 Hz (§33.2). */
+    /** Livekadenz 10 Hz, Evidenzkadenz 1 bis 4 Hz (§33.2). */
     static constexpr double kLiveIntervallS    = 0.1;
-    static constexpr double kEvidenzIntervallS = 0.25;
+    /** Schnellster und langsamster zulaessiger Evidenzabstand.
+
+        §33.2 nennt fuer den Evidenzsnapshot ausdruecklich eine SPANNE, keinen
+        Punkt: 1 bis 4 Hz. Der Grund steht in M-05 — bei Ueberlast wird die
+        KADENZ reduziert, nie der Inhalt verworfen. Genau deshalb liegt die
+        Reduktion hier in der Engine und nicht beim Sender: wer einen
+        faelligen Snapshot einfach nicht sendete, wuerde sein Fenster trotzdem
+        leeren und die Messung stillschweigend wegwerfen. Ein laengeres
+        Fenster liefert dagegen weniger, aber VOLLSTAENDIGE Snapshots. */
+    static constexpr double kEvidenzIntervallMinS = 0.25;   // 4 Hz
+    static constexpr double kEvidenzIntervallMaxS = 1.0;    // 1 Hz
     /** Feste Obergrenze des Ereignisstroms (§33 "feste Obergrenzen"). */
     static constexpr int kEreignisPlaetze = 64;
     /** Historie der adaptiven Flussschwelle (Median/MAD, §39.1). */
@@ -499,6 +604,8 @@ public:
         if (zellenSamples < 1) zellenSamples = 1;
         kurzZellen.assign ((std::size_t) kKurzZellen, 0.0);
 
+        evidenzVerteilung.assign ((std::size_t) Gitter::evidenzBaender,
+                                  VerteilungsRing {});
         ereignisse.assign ((std::size_t) kEreignisPlaetze, Ereignis {});
         flussHistorie.assign ((std::size_t) kFlussHistorie, 0.0);
         flussSortiert.assign ((std::size_t) kFlussHistorie, 0.0);
@@ -521,6 +628,9 @@ public:
         for (auto& v : liveAkku)    v = { 0.0, 0 };
         for (auto& v : evidenzAkku) v = { 0.0, 0 };
         for (auto& v : liveBreiteAkku)    v = { 0.0, 0.0 };
+        for (auto& r : evidenzVerteilung) r.leeren();   // SONDE-013 M-05
+        evidenzFensterGesamt = 0;
+        evidenzFensterAktiv = 0;
         liveSupport = {};
         evidenzSupport = {};
 
@@ -705,6 +815,53 @@ public:
         for (const auto& v : evidenzAkku) if (v.n > 0) ++n;
         return n;
     }
+    /** SONDE-013 M-05: derselbe Grund, ein Traeger weiter.
+
+        Der Verteilungsring traegt den VERLAUF der Bandwerte, nicht ihre
+        Summe — also ist er ein eigenes offenes Fenster und braucht seine
+        eigene Auskunft. Ohne sie waere `keineAkkusUeberleben()` in B5
+        wieder eine Liste, an der ein neuer Traeger vorbeikaeme; genau
+        daran ist T2-1 entstanden. Gezaehlt werden BELEGTE PLAETZE ueber
+        alle Baender, nicht Baender: ein einzelner ueberlebender Wert soll
+        sichtbar sein. */
+    std::uint64_t evidenzVerteilungPlaetze() const noexcept
+    {
+        std::uint64_t n = 0;
+        for (const auto& r : evidenzVerteilung) n += (std::uint64_t) r.gefuellt;
+        return n;
+    }
+    /** Fensterzaehler der Abdeckung: gesamt und aktiv. Beide muessen an einer
+        Grenze fallen, sonst waere die Abdeckung ein Anteil ueber zwei
+        Epochen. */
+    std::uint64_t evidenzFensterGesamtJetzt() const noexcept { return evidenzFensterGesamt; }
+    std::uint64_t evidenzFensterAktivJetzt()  const noexcept { return evidenzFensterAktiv; }
+
+    /** SONDE-013 M-05: Evidenzkadenz zwischen 1 und 4 Hz einstellen.
+
+        Der Wert wird auf `[kEvidenzIntervallMinS, kEvidenzIntervallMaxS]`
+        GEKLEMMT statt abgelehnt: der Aufrufer ist der Sender, der auf
+        Rueckstau reagiert, und ein abgelehnter Wunsch liesse ihn mit einer
+        Kadenz weiterlaufen, die er gerade nicht bedienen kann. Nichtendliches
+        aendert nichts — eine kaputte Zahl darf die Kadenz nicht verstellen.
+
+        Wirkt ab dem naechsten faelligen Snapshot; ein bereits offenes
+        Evidenzfenster wird NICHT abgeschnitten. */
+    void evidenzIntervallSetzen (double sekunden) noexcept
+    {
+        if (! std::isfinite (sekunden))
+            return;
+        evidenzIntervallS = std::clamp (sekunden, kEvidenzIntervallMinS,
+                                        kEvidenzIntervallMaxS);
+    }
+    double evidenzIntervallJetzt() const noexcept { return evidenzIntervallS; }
+
+    /** Der Evidenzsnapshot hat die Ereignisse UEBERNOMMEN.
+
+        Gegenpfad zu `ereignisAblegen`: ohne ihn traegt der naechste Snapshot
+        dieselben Ereignisse noch einmal, und ein Empfaenger zaehlte einen
+        Transienten mehrfach. Der Verlustzaehler bleibt stehen — er ist
+        laufgebunden und wird vom Sender als Differenz gelesen. */
+    void ereignisseEntnommen() noexcept { ereignisAnzahl = 0; }
     /** Betragssumme der Breiten-Akkus — sie tragen KEIN `n`, also braucht es
         die Summe selbst, sonst bliebe dieser dritte Akku ungemessen. */
     double liveBreiteAkkuZustand() const noexcept
@@ -1187,6 +1344,18 @@ private:
             v = { 0.0, 0 };
         }
         for (auto& v : liveBreiteAkku) v = { 0.0, 0.0 };
+        // SONDE-013 M-05: der Verteilungsring ist ein Fenster wie jedes andere
+        // — er traegt den VERLAUF der Bandwerte ueber das Evidenzfenster. Ein
+        // Perzentil, das eine Grenze ueberbrueckt, mischte zwei Epochen zu
+        // einer Verteilung; die zwei Fensterzaehler daneben ergaeben eine
+        // Abdeckung ueber zwei verschiedene Zeitraeume.
+        for (auto& r : evidenzVerteilung)
+        {
+            zVerworfeneBandfenster += (std::uint64_t) r.gefuellt;
+            r.leeren();
+        }
+        evidenzFensterGesamt = 0;
+        evidenzFensterAktiv = 0;
         liveSupport = {};
         evidenzSupport = {};
         evidenzContinuousHabe = false;
@@ -1504,6 +1673,28 @@ private:
         const bool aktiv = gesamt > 0.0
                         && 10.0 * std::log10 (gesamt) > kAktivGateDb;
 
+        // SONDE-013 M-05: die Abdeckung des Evidenzfensters ist der Anteil
+        // AKTIVER Fenster an ALLEN. Deshalb wird hier gezaehlt, VOR dem
+        // Ruecksprung — ein Zaehler hinter dem `return` saehe nie ein stilles
+        // Fenster und meldete jede Passage als vollstaendig abgedeckt.
+        //
+        // Gezaehlt wird nur die HAUPTstufe. Die Bassstufe hat ein anderes
+        // Fenster- und Hopmass; beide zusammen zu zaehlen ergaebe ein
+        // Verhaeltnis aus zwei verschiedenen Zeitachsen. Dieselbe Begruendung
+        // steht beim Ereignisdetektor weiter unten.
+        if (&s == &haupt)
+        {
+            // Saettigend statt umlaufend: ein Umlauf machte die Abdeckung
+            // schlagartig zu einer Zahl ueber 1 oder zu 0 — beides saehe wie
+            // eine Messung aus. Beide Zaehler werden bei jedem Evidenzframe
+            // geleert, der Fall ist also theoretisch; er wird trotzdem
+            // behandelt, weil eine stehengebliebene Grenze ehrlicher ist als
+            // ein Sprung (CLAUDE.md, Zahlenraender).
+            constexpr auto kMax = std::numeric_limits<std::uint64_t>::max();
+            if (evidenzFensterGesamt < kMax) ++evidenzFensterGesamt;
+            if (aktiv && evidenzFensterAktiv < kMax) ++evidenzFensterAktiv;
+        }
+
         // Nur AKTIVE Fenster gehen in die Bandakkus.  Stille wuerde den
         // Mittelwert zu einer Aussage ueber die Pausen machen.
         if (! aktiv)
@@ -1531,6 +1722,23 @@ private:
             ++liveAkku[(std::size_t) b].n;
             evidenzAkku[(std::size_t) b].summe += energie;
             ++evidenzAkku[(std::size_t) b].n;
+
+            // SONDE-013 M-05: fuer P10/P50/P95 zaehlt der VERLAUF, nicht die
+            // Summe. Der Ring nimmt den dB-Wert DIESES Fensters.
+            //
+            // Hier steht ABSICHTLICH keine Stufenbedingung, anders als beim
+            // Fensterzaehler oben: die beiden Stufen teilen sich die Baender
+            // ueberschneidungsfrei (`bandVon`/`bandBis`), jedes Band wird also
+            // von genau einer bedient. Ein `&s == &haupt` liesse die
+            // Bassbaender leer — eine Verteilung, die genau dort fehlt, wo die
+            // Bassstufe ueberhaupt existiert.
+            //
+            // Nichtendliches oder unplausibles kommt gar nicht erst hinein: ein
+            // Perzentil ueber einen NaN waere kein kleiner Fehler, sondern ein
+            // NaN im ganzen Band.
+            const double db = energieAlsDb (energie);
+            if (plausibel (db))
+                evidenzVerteilung[(std::size_t) b].schiebe ((float) db);
             liveBreiteAkku[(std::size_t) b].seite += seite;
             liveBreiteAkku[(std::size_t) b].gesamt += energie;
             hatBandBeitrag = true;
@@ -1714,7 +1922,7 @@ private:
         FeatureFrame f {};
         f.metricsVersion = kFeatureMetricsVersion;
         const double evidenzS = (double) evidenzSamples / sr;
-        f.evidenzFrisch = evidenzS >= kEvidenzIntervallS;
+        f.evidenzFrisch = evidenzS >= evidenzIntervallS;
         f.transport = baueStempel (rahmenStartBlock, f.evidenzFrisch);
 
         // NAK-29: ein Stempel, der die Feldpflichten verletzt, wird NICHT
@@ -1747,9 +1955,21 @@ private:
         f.evidenz.gitter   = GitterId::nakama_1_24_oct_30_18k_v1;
         f.evidenz.encoding = BandEncoding::q_db_0p01_i16;
         if (f.evidenzFrisch)
+        {
             fuelleEvidenz (f.evidenz);
+            // SONDE-013 M-05: Verteilung, Abdeckung und Konvergenz gehoeren zu
+            // DIESEM Evidenzfenster und werden zusammen mit ihm gefuellt und
+            // zusammen mit ihm geleert. Ein Snapshot mit Baendern, aber ohne
+            // Verteilung waere die halbe Aussage aus §33.2.
+            fuelleVerteilung (f);
+            fuelleAbdeckungUndKonvergenz (f);
+            f.evidenzStromStartGesetzt = evidenzSupport.gesetzt;
+            f.evidenzStromStart = evidenzSupport.stromStart;
+        }
         else
+        {
             f.evidenz.leeren();
+        }
 
         fuelleSkalare (f);
 
@@ -1765,6 +1985,13 @@ private:
     void evidenzLeeren() noexcept
     {
         for (auto& v : evidenzAkku) v = { 0.0, 0 };
+        // Verlauf, Abdeckung und Konvergenz gehoeren zu GENAU diesem
+        // Evidenzfenster. Sie stehenzulassen hiesse, den naechsten Snapshot
+        // aus fremdem Material zu rechnen — dieselbe Regel wie fuer den
+        // Bandakku daneben.
+        for (auto& r : evidenzVerteilung) r.leeren();
+        evidenzFensterGesamt = 0;
+        evidenzFensterAktiv = 0;
         evidenzSamples = 0;
         evidenzSupport = {};
         evidenzContinuousHabe = false;
@@ -1982,6 +2209,170 @@ private:
         }
     }
 
+    /** Ein Band des Verteilungsrings in ZEITLICHER Reihenfolge nach `aus`.
+
+        Der Ring speichert in Schreibreihenfolge; ist er voll, liegt der
+        aelteste Wert bei `stand`. Fuer Perzentile spielt die Reihenfolge
+        keine Rolle, fuer die Konvergenz (erste gegen zweite Haelfte) sehr
+        wohl — deshalb gibt es genau eine Stelle, die sie herstellt, statt
+        zweier Schleifen, die auseinanderlaufen koennen.
+
+        @returns Zahl der geschriebenen Werte. */
+    static int ringInZeitfolge (const VerteilungsRing& r, float* aus) noexcept
+    {
+        const int n = r.gefuellt;
+        const int erster = (n == kVerteilungPlaetze) ? r.stand : 0;
+        for (int i = 0; i < n; ++i)
+            aus[i] = r.werte[(std::size_t) ((erster + i) % kVerteilungPlaetze)];
+        return n;
+    }
+
+    /** Perzentil einer AUFSTEIGEND sortierten Folge, linear interpoliert.
+
+        Linear statt „naechster Rang", weil der naechste Rang bei kleinem `n`
+        springt: mit acht Werten laege P10 sonst immer exakt auf dem Minimum
+        und P95 immer exakt auf dem Maximum, und die drei Punkte trugen
+        weniger Information als die Bandwerte selbst. */
+    static double perzentil (const float* sortiert, int n, double p) noexcept
+    {
+        if (n <= 0) return 0.0;
+        if (n == 1) return sortiert[0];
+        const double pos = p * (double) (n - 1);
+        const int    lo  = (int) pos;
+        const int    hi  = lo + 1 < n ? lo + 1 : lo;
+        const double f   = pos - (double) lo;
+        return (double) sortiert[lo] + f * ((double) sortiert[hi] - (double) sortiert[lo]);
+    }
+
+    /** SONDE-013 M-05: P10/P50/P95 je Band plus die Zahl der Fenster dahinter.
+
+        `evidenzFenster` ist das MINIMUM ueber alle Baender mit Bit, nicht der
+        Mittelwert und nicht das Maximum: die Zahl soll sagen, worauf sich der
+        SCHWAECHSTE gezeigte Punkt stuetzt. Die zwei Analysestufen haben
+        verschiedene Hopmasse, also traegt die Bassstufe hier regelmaessig die
+        kleinere Zahl — genau das ist die ehrliche Auskunft. */
+    void fuelleVerteilung (FeatureFrame& f) const noexcept
+    {
+        for (auto* satz : { &f.evidenzP10, &f.evidenzP50, &f.evidenzP95 })
+        {
+            satz->gitter   = GitterId::nakama_1_24_oct_30_18k_v1;
+            satz->encoding = BandEncoding::q_db_0p01_i16;
+            satz->leeren();
+        }
+
+        int schwaechste = -1;
+        float folge[kVerteilungPlaetze];
+        // Vor `vorbereiten()` gibt es keinen Ring. Die drei Bandsaetze stehen
+        // dann leer da — richtig so: ohne Messung keine Verteilung.
+        if ((int) evidenzVerteilung.size() < Gitter::evidenzBaender)
+            return;
+        for (int b = 0; b < Gitter::evidenzBaender; ++b)
+        {
+            const auto& r = evidenzVerteilung[(std::size_t) b];
+            if (r.gefuellt == 0)
+                continue;                       // kein Bit: eine Verteilung ueber nichts
+
+            const int n = ringInZeitfolge (r, folge);
+            std::sort (folge, folge + n);
+
+            bool alleGueltig = true;
+            const double punkte[3] = { perzentil (folge, n, 0.10),
+                                       perzentil (folge, n, 0.50),
+                                       perzentil (folge, n, 0.95) };
+            Quant16 q[3] {};
+            for (int i = 0; i < 3; ++i)
+            {
+                if (! plausibel (punkte[i]))
+                {
+                    alleGueltig = false;
+                    break;
+                }
+                q[i] = quantisiere16 (punkte[i], BandEncoding::q_db_0p01_i16);
+                if (! q[i].gueltig)
+                {
+                    alleGueltig = false;
+                    break;
+                }
+            }
+            // Alle drei oder keiner. Ein Band, in dem nur P50 ein Bit haette,
+            // saehe aus wie eine Verteilung und waere keine.
+            if (! alleGueltig)
+                continue;
+
+            EvidenzBaender* saetze[3] = { &f.evidenzP10, &f.evidenzP50, &f.evidenzP95 };
+            for (int i = 0; i < 3; ++i)
+            {
+                saetze[i]->werte[(std::size_t) b] = q[i].wert;
+                bitmapSetze (saetze[i]->bitmap, b, true);
+                if (q[i].saturiert) saetze[i]->saturated = true;
+            }
+            if (schwaechste < 0 || n < schwaechste)
+                schwaechste = n;
+        }
+        f.evidenzFenster = schwaechste < 0 ? 0u : (std::uint32_t) schwaechste;
+    }
+
+    /** SONDE-013 M-05: Abdeckung und Konvergenz des Evidenzfensters.
+
+        **Abdeckung** ist die tatsaechlich gemessene Signalabdeckung (§48.2),
+        also aktive Fenster durch alle Fenster — nicht die Wanddauer. Ohne ein
+        einziges Fenster gibt es kein Praesenzbit; 0 hiesse „nur Stille" und
+        waere eine andere Aussage als „nichts gesehen".
+
+        **Konvergenz** misst, ob die Verteilung sich noch bewegt: je Band der
+        Betrag der Differenz zwischen dem Median der ERSTEN und dem der
+        ZWEITEN Haelfte des behaltenen Fensters, gemittelt ueber die Baender
+        mit genug Werten, dann ueber `kKonvergenzSpanneDb` auf [0, 1]
+        abgebildet. 1 heisst „die beiden Haelften sagen dasselbe", 0 heisst
+        „sie sagen Verschiedenes". Baender mit weniger als vier Werten gehen
+        NICHT ein: zwei Mediane aus je einem Wert sind kein Konvergenzbeleg. */
+    void fuelleAbdeckungUndKonvergenz (FeatureFrame& f) const noexcept
+    {
+        if (evidenzFensterGesamt > 0)
+        {
+            f.abdeckungGesetzt = true;
+            f.abdeckung = (float) ((double) evidenzFensterAktiv
+                                 / (double) evidenzFensterGesamt);
+        }
+
+        double summeAbstand = 0.0;
+        int    baenderMitBeleg = 0;
+        float  folge[kVerteilungPlaetze];
+        float  haelfte[kVerteilungPlaetze];
+        if ((int) evidenzVerteilung.size() < Gitter::evidenzBaender)
+            return;
+        for (int b = 0; b < Gitter::evidenzBaender; ++b)
+        {
+            const auto& r = evidenzVerteilung[(std::size_t) b];
+            if (r.gefuellt < 4)
+                continue;
+            const int n = ringInZeitfolge (r, folge);
+            const int h = n / 2;
+
+            for (int i = 0; i < h; ++i) haelfte[i] = folge[i];
+            std::sort (haelfte, haelfte + h);
+            const double medianFrueh = perzentil (haelfte, h, 0.50);
+
+            const int zweite = n - h;
+            for (int i = 0; i < zweite; ++i) haelfte[i] = folge[h + i];
+            std::sort (haelfte, haelfte + zweite);
+            const double medianSpaet = perzentil (haelfte, zweite, 0.50);
+
+            const double abstand = std::abs (medianSpaet - medianFrueh);
+            if (! std::isfinite (abstand))
+                continue;
+            summeAbstand += abstand;
+            ++baenderMitBeleg;
+        }
+        if (baenderMitBeleg > 0)
+        {
+            const double mittel = summeAbstand / (double) baenderMitBeleg;
+            f.konvergenzGesetzt = true;
+            f.konvergenz = (float) std::clamp (1.0 - mittel / kKonvergenzSpanneDb,
+                                               0.0, 1.0);
+        }
+    }
+
     void fuelleSkalare (FeatureFrame& f) const noexcept
     {
         if (rahmenZellen > 0)
@@ -2045,6 +2436,7 @@ private:
     struct Akku    { double summe { 0.0 }; std::uint64_t n { 0 }; };
     struct Breite  { double seite { 0.0 }; double gesamt { 0.0 }; };
 
+
     double sr { 0.0 };
     bool   vorbereitet { false };
 
@@ -2058,6 +2450,26 @@ private:
     Breite liveBreiteAkku[Gitter::evidenzBaender] {};
     Support liveSupport {};
     Support evidenzSupport {};
+
+    // SONDE-013 M-05: Verteilung, Abdeckung und Konvergenz des Evidenzfensters.
+    // Die zwei Zaehler stehen NEBENEINANDER, weil die Abdeckung genau ihr
+    // Verhaeltnis ist: `gesamt` waechst bei JEDEM Hauptstufen-Fenster, `aktiv`
+    // nur bei denen ueber dem Aktivgate. Ein einzelner Zaehler koennte
+    // "keine Fenster gesehen" nicht von "nur Stille gesehen" trennen.
+    /// Ein Ring je Band, rund 58 KiB. Er liegt im HEAP und nicht als Feld
+    /// im Objekt — genau wie `kurzZellen`, `ereignisse` und `flussHistorie`
+    /// daneben. Der Grund ist gemessen: als Feld sprengten zwei Engines
+    /// nebeneinander (die Zwillingsprobe G13 in B5) den 1-MiB-Stack mit
+    /// STATUS_STACK_OVERFLOW. Angelegt wird er in `vorbereiten()`, also auf
+    /// dem Nachrichtenthread; der Audiothread alloziert weiterhin nie.
+    std::vector<VerteilungsRing> evidenzVerteilung;
+    std::uint64_t   evidenzFensterGesamt { 0 };
+    std::uint64_t   evidenzFensterAktiv  { 0 };
+    /// Laufender Evidenzabstand, zwischen Min und Max. Er ueberlebt eine
+    /// Grenze und ein `zuruecksetzen()` ABSICHTLICH: der Rueckstau, der ihn
+    /// gesetzt hat, verschwindet nicht dadurch, dass die Messreihe neu
+    /// beginnt.
+    double          evidenzIntervallS { kEvidenzIntervallMinS };
 
     // Loudness
     KKette kL, kR;

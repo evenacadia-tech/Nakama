@@ -915,6 +915,7 @@ def zusatz_gueltig() -> list[tuple[str, dict, str]]:
     ev = copy.deepcopy(GRUND["evidence_snapshot"])
     ev["ereignisse"] = {"liste": [EREIGNIS, EREIGNIS_PEAK], "verloren": 0}
     ev["stereo"] = copy.deepcopy(STEREO)
+    ev["konfidenz"]["verteilung_fenster"] = 41
     faelle.append(("evidence-snapshot-mit-ereignissen-und-stereo", ev,
                    "M-05/M-11: der Ereignisstrom und die bandweise Stereoevidenz reisen auf dem Evidenzpfad, nicht im 10-Hz-Liveframe"))
 
@@ -1239,11 +1240,11 @@ UNGUELTIG: list[tuple] = [
      "additiv heisst begrenzt erweiterbar, nicht beliebig gross (§33.1)"),
 
     ("konfidenz-ueber-maxproperties", "evidence_snapshot",
-     [setze("konfidenz", f"zusatz_{i}", 0.5) for i in range(12)],
+     [setze("konfidenz", f"zusatz_{i}", 0.5) for i in range(13)],
      [v("/konfidenz", f"{S}/konfidenz/maxProperties", "maxProperties")],
-     "dieselbe Grenze am zweiten additiven Objekt - konfidenz deklariert sechs "
-     "Eigenschaften, also 6+8=14; drei stehen in der Grundform, zwoelf Zusaetze "
-     "sind 15 und damit einer zu viel"),
+     "dieselbe Grenze am zweiten additiven Objekt - konfidenz deklariert seit "
+     "SONDE-013 SIEBEN Eigenschaften, also 7+8=15; drei stehen in der "
+     "Grundform, dreizehn Zusaetze sind 16 und damit einer zu viel"),
 
     # --- Typen ------------------------------------------------------------
     ("sequence-als-string", "heartbeat", [setze("sequence", "91")],

@@ -383,14 +383,19 @@
       "type": "object",
       "required": ["metrics_version", "klasse"],
       "additionalProperties": true,
-      "maxProperties": 14,
+      "maxProperties": 15,
       "properties": {
         "metrics_version": { "type": "integer", "minimum": 1 },
         "klasse": { "enum": ["stark", "mittel", "schwach", "unbrauchbar"] },
         "timing_alignment": { "type": "number", "minimum": 0, "maximum": 1 },
         "messpunkt_routing": { "type": "number", "minimum": 0, "maximum": 1 },
         "alternativerklaerungen": { "type": "number", "minimum": 0, "maximum": 1 },
-        "bootstrap_stabilitaet": { "type": "number", "minimum": 0, "maximum": 1 }
+        "bootstrap_stabilitaet": { "type": "number", "minimum": 0, "maximum": 1 },
+        "verteilung_fenster": {
+          "$comment": "SONDE-013 M-05: auf wie viele Analysefenster sich der SCHWAECHSTE Punkt von `verteilung` stuetzt. Dieselbe Rolle wie `integration_samples` bei den Rahmenskalaren — ein Perzentil ueber drei Fenster sieht sonst aus wie eines ueber sechzig. Es steht hier und nicht im Snapshot selbst, weil `konfidenz` im Vertrag ausdruecklich ADDITIV ist (§34.3): das Objekt sagt selbst, dass es waechst, also ist ein weiteres Feld darin kein Fassungsschritt am strikten Snapshot.",
+          "type": "integer",
+          "minimum": 0
+        }
       }
     },
 

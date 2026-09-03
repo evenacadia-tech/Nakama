@@ -1,0 +1,66 @@
+# Rotbeweis M-67-leser — SONDE-013 Etappe 2
+# 2026-09-04
+#
+# Regel: eine neue Zusage ohne Rotbeweis ist eine Behauptung. Hier wird
+# der Fehler bewusst eingebaut, das Bein faellt, der Fehler wird
+# entfernt und dasselbe Bein ist wieder gruen.
+#
+# Eingebauter Fehler: der Leser der Fassung 1 laedt wieder das committete Schema statt seines eigenen Rueckbaus — genau der Fehler, den Etappe B gefunden hat
+
+# mutiert: broker/src/coordinator/schema.rs
+
+========================================================================
+ROT — mit eingebautem Fehler
+========================================================================
+
+$ cargo test --manifest-path broker/Cargo.toml --lib --color never fassungsleiter
+EXIT=101
+
+running 4 tests
+test coordinator::schema::fassungsleiter_tests::unbekannte_fassung_hat_keinen_leser ... ok
+test coordinator::schema::fassungsleiter_tests::fassung_2_liste_deckt_sich_mit_dem_register ... ok
+test coordinator::schema::fassungsleiter_tests::minor_0_erbt_den_rueckbau_der_fassung_1 ... ok
+test coordinator::schema::fassungsleiter_tests::minor_1_leser_lehnt_die_fassung_2_ab ... FAILED
+
+failures:
+
+---- coordinator::schema::fassungsleiter_tests::minor_1_leser_lehnt_die_fassung_2_ab stdout ----
+
+thread 'coordinator::schema::fassungsleiter_tests::minor_1_leser_lehnt_die_fassung_2_ab' (7996) panicked at src\coordinator\schema.rs:275:13:
+experiment_begin darf in Fassung 1 NICHT gelten
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    coordinator::schema::fassungsleiter_tests::minor_1_leser_lehnt_die_fassung_2_ab
+
+test result: FAILED. 3 passed; 1 failed; 0 ignored; 0 measured; 198 filtered out; finished in 0.01s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.25s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+error: test failed, to rerun pass `--lib`
+
+========================================================================
+GRUEN — Fehler entfernt, derselbe Befehl
+========================================================================
+
+$ cargo test --manifest-path broker/Cargo.toml --lib --color never fassungsleiter
+EXIT=0
+
+running 4 tests
+test coordinator::schema::fassungsleiter_tests::unbekannte_fassung_hat_keinen_leser ... ok
+test coordinator::schema::fassungsleiter_tests::fassung_2_liste_deckt_sich_mit_dem_register ... ok
+test coordinator::schema::fassungsleiter_tests::minor_0_erbt_den_rueckbau_der_fassung_1 ... ok
+test coordinator::schema::fassungsleiter_tests::minor_1_leser_lehnt_die_fassung_2_ab ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 198 filtered out; finished in 0.02s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.34s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+
+========================================================================
+ROTBEWEIS BESTANDEN: rot=True gruen=True
+========================================================================

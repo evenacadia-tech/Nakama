@@ -178,7 +178,7 @@ bool liesDescriptor (const juce::var& v, const std::string& memberBinding,
              { "adresse", "plugin_kind", "measurement_position", "aussageklasse",
                "label", "capabilities", "frische" },
              { "pair_id" })
-        : schemaMinor == nakama::ipc::kJsonSchemaMinor
+        : schemaMinor >= nakama::ipc::kJsonSchemaMinorSessionHuelle
             && o != nullptr && exakteFelder (*o,
                  { "adresse", "plugin_kind", "measurement_position", "aussageklasse",
                    "betrieb", "label", "capabilities", "frische" },
@@ -201,7 +201,7 @@ bool liesDescriptor (const juce::var& v, const std::string& memberBinding,
         || ! label.isString() || label.toString().length() > 120
         || ! capabilities (o->getProperty ("capabilities")))
         return false;
-    if (schemaMinor == nakama::ipc::kJsonSchemaMinor)
+    if (schemaMinor >= nakama::ipc::kJsonSchemaMinorSessionHuelle)
     {
         const auto betrieb = o->getProperty ("betrieb");
         if (! betrieb.isString()
@@ -527,7 +527,7 @@ SourcesModel::SnapshotErgebnis SourcesModel::uebernehmeSessionSnapshot (
             return SnapshotErgebnis::ungueltig;
         }
         const juce::DynamicObject* member = m;
-        if (schemaMinor == nakama::ipc::kJsonSchemaMinor
+        if (schemaMinor >= nakama::ipc::kJsonSchemaMinorSessionHuelle
             && ! exakteFelder (*m, { "adresse", "plugin_kind", "frische" },
                                    { "probe_descriptor", "p2_reject" }))
         {
@@ -564,7 +564,7 @@ SourcesModel::SnapshotErgebnis SourcesModel::uebernehmeSessionSnapshot (
             fehler = "probe_descriptor is invalid or disagrees with its member";
             return SnapshotErgebnis::ungueltig;
         }
-        if (schemaMinor == nakama::ipc::kJsonSchemaMinor
+        if (schemaMinor >= nakama::ipc::kJsonSchemaMinorSessionHuelle
             && m->hasProperty ("p2_reject")
             && ! liesReject (m->getProperty ("p2_reject"), gm))
         {

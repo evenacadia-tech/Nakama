@@ -1,15 +1,23 @@
 # Rotbeweis D6 (H-14, Ablehnung am Aliasdeckel) — NAK-121 Nacharbeit Runde 1
 
-Der Deckelfall faellt wieder durch: Client und Link entstehen, der Peer
+Beide Riegel fallen weg: die Vorpruefung vor der Verdraengung und die
+Ablehnung am Registerergebnis. Client und Link entstehen wieder, der Peer
 bekommt ein Welcome statt der zugesagten Ablehnung.
 
 Mutante(n):
+  broker/src/coordinator/link.rs
+    ALT:         if self.alias_register.deckel_wuerde_reissen() {
+    ALT:             stand.cap_abweisungen = stand.cap_abweisungen.saturating_add(1);
+    ALT:             return ControlRegistrierung::abgewiesen("alias_quarantaene_deckel");
+    ALT:         }
+    NEU:         // MUTANTE (Teil 1): keine Vorpruefung vor der Verdraengung.
   broker/src/coordinator/link.rs
     ALT:         if registrierung == Registrierung::DeckelErreicht {
     ALT:             stand.cap_abweisungen = stand.cap_abweisungen.saturating_add(1);
     ALT:             return ControlRegistrierung::abgewiesen("alias_quarantaene_deckel");
     ALT:         }
-    NEU:         // MUTANTE: der Deckel wird wieder verschluckt, wie vor der Nacharbeit.
+    NEU:         // MUTANTE (Teil 2): der Deckel wird wieder verschluckt, wie vor der
+    NEU:         // Nacharbeit - Client und Link entstehen, der Peer bekommt ein Welcome.
 
 Befehl: cargo test --manifest-path broker/Cargo.toml --color never --test store_crash_matrix -- alias_deckel
 Exitcode: 101
@@ -27,7 +35,7 @@ failures:
 
 ---- alias_deckel_weist_das_hello_ab_statt_ein_welcome_zu_senden stdout ----
 
-thread 'alias_deckel_weist_das_hello_ab_statt_ein_welcome_zu_senden' (7960) panicked at tests\store_crash_matrix.rs:2876:9:
+thread 'alias_deckel_weist_das_hello_ab_statt_ein_welcome_zu_senden' (5324) panicked at tests\store_crash_matrix.rs:3162:9:
 der Deckel wurde nie erreicht
 note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
@@ -35,10 +43,10 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 failures:
     alias_deckel_weist_das_hello_ab_statt_ein_welcome_zu_senden
 
-test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 79 filtered out; finished in 0.13s
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 84 filtered out; finished in 0.21s
 
 
    Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.27s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.07s
      Running tests\store_crash_matrix.rs (broker\target\debug\deps\store_crash_matrix-4ebee0ee77644d63.exe)
 error: test failed, to rerun pass `--test store_crash_matrix`

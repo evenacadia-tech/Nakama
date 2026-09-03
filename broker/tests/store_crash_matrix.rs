@@ -3147,68 +3147,71 @@ fn guard_aufloesung_raeumt_den_aliaseintrag() {
 /// bevor irgendetwas angelegt ist.
 #[test]
 fn alias_deckel_weist_das_hello_ab_statt_ein_welcome_zu_senden() {
-    let uhr = Arc::new(ManualClock::default());
-    let c = Coordinator::mit_uhr(uhr.clone(), si_hex(0xbeef));
+    let c = Coordinator::mit_uhr(Arc::new(ManualClock::default()), si_hex(0xbeef));
 
     // Jede Runde erzeugt genau eine Kollision und damit zwei
-    // Quarantaeneeintraege: zwei Nonces derselben Instanz, danach meldet die
-    // VERDRAENGTE Nonce erneut (C-10, fail-closed Duplikatkonflikt).
+    // Quarantaeneeintraege: zwei Nonces DERSELBEN Instanz, danach meldet die
+    // verdraengte Nonce erneut (C-10, fail-closed Duplikatkonflikt). Die
+    // Instanz bleibt dieselbe, damit nicht der Clientdeckel zuerst greift -
+    // gemessen wird der Aliasdeckel.
+    const INSTANZ: usize = 4242;
     let mut runde = 0usize;
     let mut zuletzt_angenommen = 0usize;
     let abweisung = loop {
         runde += 1;
-        assert!(runde < 1024, "der Deckel wurde nie erreicht");
-        let instanz = 1000 + runde;
-        let alt = si_hello(instanz, 100, "active_probe");
-        let neu = si_hello(instanz, 101, "active_probe");
+        assert!(runde < 2048, "der Deckel wurde nie erreicht");
+        let alt = si_hello(INSTANZ, 2 * runde, "active_probe");
+        let neu = si_hello(INSTANZ, 2 * runde + 1, "active_probe");
 
         let erste = c.control_hello_registrieren("alt", &alt);
         if !erste.angenommen {
-            break (instanz, erste);
+            break erste;
         }
         let zweite = c.control_hello_registrieren("neu", &neu);
         if !zweite.angenommen {
-            break (instanz, zweite);
+            break zweite;
         }
+        // Der verdraengte Link meldet erneut: Kollision, beide Besitzer in
+        // Quarantaene, dauerhafter Riegel.
         assert!(!si_report(&c, "alt", &alt.adresse, 1));
-        zuletzt_angenommen = instanz;
-
-        // Aufraeumen, damit nicht der Clientdeckel zuerst greift. Die
-        // Quarantaene bleibt davon unberuehrt - C-07 verbietet die
-        // zeitbasierte Freigabe.
         c.control_ende("alt");
-        c.control_ende("neu");
-        uhr.setze_ms((runde as u64 + 1) * (STALE_NACH_MS + TOMBSTONE_MS + 1));
-        c.liveness_tick();
+        zuletzt_angenommen = runde;
+        // "neu" bleibt BEWUSST am Leben - an ihm wird unten gemessen, dass ein
+        // abgewiesenes Hello keinen lebenden Link mitnimmt.
     };
 
-    let (instanz, ausgang) = abweisung;
     assert_eq!(
-        ausgang.grund.as_deref(),
+        abweisung.grund.as_deref(),
         Some("alias_quarantaene_deckel"),
         "am Deckel muss der Aliasdeckel der Grund sein, nicht ein anderer Cap"
     );
     assert!(zuletzt_angenommen > 0, "vor dem Deckel wurde nie etwas angenommen");
 
-    // Kein Client, kein Link, kein Welcome.
+    // Kein Client, kein Link, kein Welcome - und kein Kollateralschaden.
     assert!(
-        ausgang.zu_schliessende_links.is_empty(),
+        abweisung.zu_schliessende_links.is_empty(),
         "eine Abweisung schliesst keine fremden Links"
     );
-    assert!(!c.dispatch_fuer_link_erlaubt("alt"), "es entstand doch ein Link");
-    let abgewiesene = si_hex(instanz);
     assert!(
-        !c.modell_sicht(&si_hex(1), &si_hex(2))
-            .clients
-            .iter()
-            .any(|client| client.adresse.instance_id == abgewiesene),
-        "der abgewiesene Peer steht als Client im Stand"
+        !c.verbindung_soll_trennen("neu"),
+        "das abgewiesene Hello hat den lebenden Link trotzdem verdraengt"
     );
     assert!(c.cap_abweisungen() > 0, "die Abweisung wurde nicht gezaehlt");
 
-    // Deckel minus eins: die Runde davor lief vollstaendig durch - Hello,
-    // Verdraengung und Duplikatkonflikt inbegriffen.
-    assert_eq!(zuletzt_angenommen, instanz - 1);
+    // Der Deckel gilt auch fuer ein Hello, das denselben Client betrifft: es
+    // wird abgewiesen, BEVOR die Verdraengung den lebenden Link anfasst.
+    let reconnect = si_hello(INSTANZ, 2 * (runde + 1), "active_probe");
+    let ausgang = c.control_hello_registrieren("reconnect", &reconnect);
+    assert!(!ausgang.angenommen);
+    assert_eq!(ausgang.grund.as_deref(), Some("alias_quarantaene_deckel"));
+    assert!(
+        !c.verbindung_soll_trennen("neu"),
+        "der abgewiesene Reconnect hat den lebenden Link verdraengt"
+    );
+    assert!(
+        !c.dispatch_fuer_link_erlaubt("reconnect"),
+        "es entstand doch ein Link"
+    );
 }
 
 /// D8 der Nacharbeit Runde 1 (Abschlusspruefung 1, 03.09.2026): die

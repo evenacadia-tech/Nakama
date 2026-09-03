@@ -116,6 +116,18 @@ impl Coordinator {
             }
         }
 
+        // D6, Nachzug: der Aliasdeckel wird geprueft, BEVOR die Verdraengung
+        // unten einen lebenden Link auf Trennen setzt. Sonst haette ein Hello,
+        // das gleich abgewiesen wird, die bestehende Verbindung noch
+        // mitgenommen - fail-closed waere dann teurer als noetig. Die
+        // verbindliche Entscheidung faellt weiter unten unter dem Registerlock;
+        // diese Abfrage ist die guenstige Vorwegnahme, so wie der Clientdeckel
+        // darueber.
+        if self.alias_register.deckel_wuerde_reissen() {
+            stand.cap_abweisungen = stand.cap_abweisungen.saturating_add(1);
+            return ControlRegistrierung::abgewiesen("alias_quarantaene_deckel");
+        }
+
         let geerbt = stand.clients.get(&key).cloned();
         if let Some(alt) = &geerbt {
             if alt.current_nonce != adresse.runtime_nonce {

@@ -349,6 +349,18 @@ impl AliasRegister {
             .count()
     }
 
+    /// D6: reine Abfrage, ob eine weitere Kollision den Deckel sprengen wuerde.
+    ///
+    /// Sie erlaubt dem Coordinator, das Hello abzuweisen, BEVOR er einen alten
+    /// Link verdraengt - sonst haette eine ohnehin abzuweisende Registrierung
+    /// noch die lebende Verbindung mitgenommen. Dieselbe Reservierung wie in
+    /// `registriere_wire_zuordnung`; die verbindliche Entscheidung faellt dort,
+    /// unter dem Registerlock.
+    pub fn deckel_wuerde_reissen(&self) -> bool {
+        let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+        stand.quarantaene.len() + 2 > MAX_QUARANTAENE
+    }
+
     pub fn ist_quarantaenisiert(&self, adressraum: &Sitzungsadressraum, original: &str) -> bool {
         self.stand
             .lock()

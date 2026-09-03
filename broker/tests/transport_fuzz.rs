@@ -375,13 +375,16 @@ fn panik_im_verbindungsthread_wird_gezaehlt() {
 fn ingress_bytebudget_verwirft_p2_zuerst() {
     use eqcop_broker::transport::warteschlange::{
         IngressErgebnis, IngressWarteschlange, CAP_INGRESS, CAP_INGRESS_BYTES,
+        RUECKSTAU_RAHMEN_BYTES,
     };
 
-    // Das Produktionsbudget haengt an der groessten zulaessigen Payload; eine
-    // volle Slotqueue kann nie mehr halten.
-    assert_eq!(
-        CAP_INGRESS_BYTES,
-        CAP_INGRESS * eqcop_broker::transport::v3::MAX_PAYLOAD_BYTES as usize
+    // Nacharbeit Runde 1: das Budget haengt NICHT mehr an der Paketgrenze.
+    // `CAP_INGRESS * MAX_PAYLOAD_BYTES` ist genau die Schranke, die die
+    // Slotgrenze ohnehin erzwingt - es waere ein Limit, das nie greift.
+    assert_eq!(CAP_INGRESS_BYTES, CAP_INGRESS * RUECKSTAU_RAHMEN_BYTES);
+    assert!(
+        CAP_INGRESS_BYTES * 8 <= CAP_INGRESS * eqcop_broker::transport::v3::MAX_PAYLOAD_BYTES as usize,
+        "das Bytebudget muss deutlich unter dem Produkt aus Slots und Paketgrenze liegen"
     );
 
     let rahmen = |bytes: usize| (Familie::P2, 1u8, vec![0u8; bytes]);
@@ -445,5 +448,104 @@ fn ingress_bytebudget_verwirft_p2_zuerst() {
     assert_eq!(
         frei.einreihen(Familie::P2, rahmen(100)),
         IngressErgebnis::Eingereiht
+    );
+}
+
+// D2 der Nacharbeit Runde 1 (Abschlusspruefung 1, 03.09.2026): der Test
+// darueber misst an einer Naht mit kuenstlich kleinem Budget. Am
+// PRODUKTIONSKONSTRUKTOR konnte die Byteachse frueher nie zuerst greifen,
+// weil das Budget `CAP_INGRESS * MAX_PAYLOAD_BYTES` war - genau die Schranke,
+// die die Slotgrenze ohnehin erzwingt. Dieser Test misst deshalb an
+// `IngressWarteschlange::neu()`: am Budget, am Budget plus eins, und dass 256
+// reale Rahmen weiterhin erst an der SLOTGRENZE scheitern.
+#[test]
+fn ingress_bytebudget_greift_am_produktionskonstruktor_vor_der_slotgrenze() {
+    use eqcop_broker::transport::warteschlange::{
+        IngressErgebnis, IngressWarteschlange, CAP_INGRESS, CAP_INGRESS_BYTES,
+    };
+
+    let gross = MAX_PAYLOAD_BYTES as usize;
+    let voll_rahmen = |f: Familie| (f, 1u8, vec![0u8; gross]);
+    // Wie viele maximal grosse Rahmen ins Budget passen - deutlich weniger als
+    // die 256 Slots, sonst waere die Byteachse wieder wirkungslos.
+    let passende = CAP_INGRESS_BYTES / gross;
+    assert!(
+        passende < CAP_INGRESS,
+        "das Bytebudget muss vor der Slotgrenze greifen: {passende} von {CAP_INGRESS} Slots"
+    );
+
+    // ---- 1. Am Budget: der Rueckstau fuellt sich exakt auf. ----
+    let mut q: IngressWarteschlange<(Familie, u8, Vec<u8>)> = IngressWarteschlange::neu();
+    for _ in 0..passende {
+        assert_eq!(
+            q.einreihen(Familie::P2, voll_rahmen(Familie::P2)),
+            IngressErgebnis::Eingereiht
+        );
+    }
+    let rest = CAP_INGRESS_BYTES - q.belegte_bytes();
+    assert!(rest < gross);
+    assert_eq!(
+        q.einreihen(Familie::P2, (Familie::P2, 1, vec![0u8; rest])),
+        IngressErgebnis::Eingereiht
+    );
+    assert_eq!(q.belegte_bytes(), CAP_INGRESS_BYTES, "genau am Budget");
+    assert!(q.len() < CAP_INGRESS, "die Slotgrenze ist noch lange nicht erreicht");
+
+    // ---- 2. Budget plus eins: der aelteste P2 faellt, P2 zuerst. ----
+    assert_eq!(
+        q.einreihen(Familie::P2, (Familie::P2, 1, vec![0u8; 1])),
+        IngressErgebnis::P2Verworfen
+    );
+    assert_eq!(q.p2_verworfen(), 1);
+    assert!(q.belegte_bytes() <= CAP_INGRESS_BYTES);
+
+    // ---- 3. Budget plus eins ohne P2 im Rueckstau: P0 und P1 trennen. ----
+    let mut steuer: IngressWarteschlange<(Familie, u8, Vec<u8>)> = IngressWarteschlange::neu();
+    for _ in 0..passende {
+        assert_eq!(
+            steuer.einreihen(Familie::P0, voll_rahmen(Familie::P0)),
+            IngressErgebnis::Eingereiht
+        );
+    }
+    let rest = CAP_INGRESS_BYTES - steuer.belegte_bytes();
+    assert_eq!(
+        steuer.einreihen(Familie::P0, (Familie::P0, 1, vec![0u8; rest])),
+        IngressErgebnis::Eingereiht
+    );
+    assert_eq!(steuer.belegte_bytes(), CAP_INGRESS_BYTES);
+    assert!(steuer.len() < CAP_INGRESS);
+    assert_eq!(
+        steuer.einreihen(Familie::P0, (Familie::P0, 1, vec![0u8; 1])),
+        IngressErgebnis::ClientTrennen,
+        "P0 ueber dem Bytebudget trennt, obwohl noch Slots frei sind"
+    );
+    assert_eq!(
+        steuer.einreihen(Familie::P1, (Familie::P1, 1, vec![0u8; 1])),
+        IngressErgebnis::ClientTrennen,
+        "P1 faellt nie still"
+    );
+    assert_eq!(steuer.p1_ueberlauf_trennt(), 1);
+
+    // ---- 4. Die Slotpolitik aus C-09 bleibt unangetastet. ----
+    // 660 Bytes ist der groesste GEMESSENE reale Rahmen
+    // (eq-copilot/fixtures/v3/envelope/gueltig/p2-flatbuffers-echter-batch.bin).
+    const REALER_RAHMEN: usize = 660;
+    let mut klein: IngressWarteschlange<(Familie, u8, Vec<u8>)> = IngressWarteschlange::neu();
+    for _ in 0..CAP_INGRESS {
+        assert_eq!(
+            klein.einreihen(Familie::P0, (Familie::P0, 1, vec![0u8; REALER_RAHMEN])),
+            IngressErgebnis::Eingereiht
+        );
+    }
+    assert_eq!(klein.len(), CAP_INGRESS);
+    assert_eq!(klein.belegte_bytes(), CAP_INGRESS * REALER_RAHMEN);
+    assert!(
+        klein.belegte_bytes() + REALER_RAHMEN <= CAP_INGRESS_BYTES,
+        "256 reale Rahmen muessen weit unter dem Bytebudget bleiben"
+    );
+    assert_eq!(
+        klein.einreihen(Familie::P0, (Familie::P0, 1, vec![0u8; REALER_RAHMEN])),
+        IngressErgebnis::ClientTrennen,
+        "der 257. reale Rahmen scheitert an der SLOTGRENZE, nicht am Budget"
     );
 }

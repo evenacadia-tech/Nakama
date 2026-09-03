@@ -1,0 +1,50 @@
+# Rotbeweis D2 (H-11) — NAK-121 Nacharbeit Runde 1
+
+Das Bytebudget steht wieder auf `CAP_INGRESS * MAX_PAYLOAD_BYTES` - dem Stand,
+den die Abschlusspruefung als wirkungslos belegt hat.
+
+Mutante(n):
+  broker/src/transport/warteschlange.rs
+    ALT: pub const CAP_INGRESS_BYTES: usize = CAP_INGRESS * RUECKSTAU_RAHMEN_BYTES;
+    NEU: pub const CAP_INGRESS_BYTES: usize = CAP_INGRESS * crate::transport::v3::MAX_PAYLOAD_BYTES as usize;
+
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never --test transport_fuzz -- ingress_bytebudget
+Exitcode: 101
+
+Die Mutante ist nach diesem Lauf zurueckgenommen; der naechste
+Lauf derselben Tests ist wieder gruen.
+
+---
+
+
+running 2 tests
+test ingress_bytebudget_verwirft_p2_zuerst ... FAILED
+test ingress_bytebudget_greift_am_produktionskonstruktor_vor_der_slotgrenze ... FAILED
+
+failures:
+
+---- ingress_bytebudget_verwirft_p2_zuerst stdout ----
+
+thread 'ingress_bytebudget_verwirft_p2_zuerst' (4852) panicked at tests\transport_fuzz.rs:384:5:
+assertion `left == right` failed
+  left: 67104768
+ right: 4194304
+
+---- ingress_bytebudget_greift_am_produktionskonstruktor_vor_der_slotgrenze stdout ----
+
+thread 'ingress_bytebudget_greift_am_produktionskonstruktor_vor_der_slotgrenze' (22960) panicked at tests\transport_fuzz.rs:472:5:
+das Bytebudget muss vor der Slotgrenze greifen: 256 von 256 Slots
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    ingress_bytebudget_greift_am_produktionskonstruktor_vor_der_slotgrenze
+    ingress_bytebudget_verwirft_p2_zuerst
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 10 filtered out; finished in 0.00s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.89s
+     Running tests\transport_fuzz.rs (broker\target\debug\deps\transport_fuzz-e68c0b23ba7390d0.exe)
+error: test failed, to rerun pass `--test transport_fuzz`

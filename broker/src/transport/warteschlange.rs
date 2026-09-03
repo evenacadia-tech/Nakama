@@ -22,14 +22,34 @@ pub const CAP_P0: usize = 64;
 pub const CAP_P1: usize = 128;
 pub const CAP_P2_JE_SONDE: usize = 2;
 pub const CAP_INGRESS: usize = 256;
+/// H-11: das Byte-Budget rechnet nicht mit der Paketgrenze, sondern mit der
+/// Groesse REALER Rahmen.
+///
+/// Nacharbeit Runde 1 (Abschlusspruefung 1, 03.09.2026): der erste Anlauf
+/// setzte das Budget auf `CAP_INGRESS * MAX_PAYLOAD_BYTES`. Das ist exakt die
+/// obere Schranke, die die Slotgrenze ohnehin erzwingt - die Byteachse konnte
+/// im Produktionskonstruktor nie zuerst greifen und die rund 64 MiB je
+/// Verbindung blieben moeglich. Ein zweites Limit muss unter dem Produkt der
+/// ersten beiden liegen, sonst ist es toter Code.
+///
+/// Gemessen an den eingecheckten Envelope-Fixturen sind die realen Rahmen
+/// klein: `p2-flatbuffers-echter-batch.bin` 660 Bytes, `p0-json-welcome.bin`
+/// 218 Bytes, `p1-json-state-report.bin` 43 Bytes; die einzige bereits
+/// abgenommene Groessenschranke fuer eine peer-gelieferte Nachricht ist
+/// `MAX_BOOTSTRAP_BYTES = 16 KiB`. 16 KiB je Rahmen laesst dem groessten
+/// gemessenen realen Rahmen rund das Fuenfundzwanzigfache Luft und bleibt mit
+/// 4 MiB je Verbindung ein Sechzehntel des frueheren Produkts.
+pub const RUECKSTAU_RAHMEN_BYTES: usize = 16 * 1024;
 /// H-11: Rueckstau wird in Slots UND Bytes gemessen. 256 Slots sagen nichts
 /// ueber den belegten Speicher: ein Peer, der 256 grosse Frames einreiht,
-/// bleibt unter der Slotgrenze und belegt trotzdem beliebig viel. Das Budget
-/// ist `CAP_INGRESS` mal die groesste zulaessige Payload aus dem Envelope-
-/// Vertrag - mehr kann eine volle Slotqueue ohnehin nie halten, weniger waere
-/// eine zweite, strengere Politik als die abgenommene aus Entwurf Paragraph
-/// 53.9.
-pub const CAP_INGRESS_BYTES: usize = CAP_INGRESS * crate::transport::v3::MAX_PAYLOAD_BYTES as usize;
+/// bleibt unter der Slotgrenze und belegt trotzdem beliebig viel.
+///
+/// `CAP_INGRESS_BYTES` = 4 MiB je Verbindung. Die Slotpolitik aus C-09 bleibt
+/// unangetastet: 256 reale Rahmen (bis 16 KiB) passen weiterhin komplett in
+/// das Budget und scheitern erst an der Slotgrenze. Nur ein Peer, der die
+/// Byteachse ausreizt, faellt frueher - und zwar in derselben Reihenfolge aus
+/// Entwurf Paragraph 53.9: erst der aelteste P2, dann Trennen bei P0/P1.
+pub const CAP_INGRESS_BYTES: usize = CAP_INGRESS * RUECKSTAU_RAHMEN_BYTES;
 
 /// H-11: was ein eingereihter Wert an Rueckstaubytes kostet.
 ///

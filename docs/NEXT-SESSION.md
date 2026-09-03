@@ -1,5 +1,9 @@
 # NEXT-SESSION — Einstieg für die nächste Runde
 
+> ## ✅ NAK-121 / S19b ABGENOMMEN — T2 PASS 03.09.2026 (Dirigent), Stand `28fb0f1a`
+>
+> Broker-Modulaufteilung (27 Commits) plus 25 G2-Härtungen und die S19b-Registerregeln in einem Änderungssatz. Prüffolge: Abschlussprüfung 1 (16 Defekte) → drei Nacharbeitsrunden mit je frischer Codex-Wiederprüfung (Sol max) → Wiederprüfung 3 PASS; eine Härtung (öffentliche Prüf-APIs, Feature-Zaun) datiert im Register. Kanon 40/40 auf `a627ebb`, 407 Tests. Manifest `docs/beweise/NAK-121.md` (Kopf mit Urteilsmarke, §13–§15), Register nachgezogen in `df79b42`. Planstand 26 von 40 abgenommen, 0 gebaut. **Als Nächstes:** S20–22 `SONDE-013`.
+>
 > ## ✅ G3 ABGENOMMEN — T3 PASS 03.09.2026 (Dirigent), Stand `d3bf936`
 >
 > Gate-Lauf auf `ad5b2d1`: Gate 7 hält (zwei Modelle, 21 + 11 Wege), Exit-Gate-Klauseln an der Quelle gemessen, Rust-Review über `broker/` ohne HIGH/CRITICAL (8 neue Härtungen, NAK-142). Tragender Defekt D1 — der 32-Sonden-Soak blieb nach jedem Brokerneustart unvollständig — durch **NAK-134** geschlossen: `IpcVerbindung` stuft einen erschöpften `ERROR_PIPE_BUSY` als Liveness ein (Backoff statt dauerhaftem Parken), das Abbruchsignal gehört der Verbindungsgeneration, A24 zählt abgelehnte P0-Einreihungen und misst `reconnect_paare`. Matrix vor Code (zwei Codex-Matrixprüfungen), Abschlussprüfung, zwei Wiederprüfungen → PASS. Gate-Form `32/30/3` GRÜN (33/33 Paare, k_s5 33/33), Kanon 40/40. Manifeste `docs/beweise/G3.md` §13, `docs/beweise/NAK-134.md` §16.

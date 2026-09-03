@@ -5,7 +5,7 @@ use eqcop_broker::store::{
     busy_timeout_abgelaufen, checkpoint_ausloesen, commit_ausloesen, migration_1_checksum,
     projektionen_neu_bauen, recovery_testgrenze_bestanden, standard_store_pfad, store_pfad_unter,
     AppendAusgang, ConflictGuard, IdleCheckpointNaht, SnapshotZiel, StoreEvent, StoreFehler,
-    StoreKonfiguration,
+    StoreKonfiguration, MAX_KONFLIKT_GUARDS,
     StoreStartBarriere, StoreWriter, BUSY_TIMEOUT_MS, CHECKPOINT_BUSY_ERWARTET, COMMIT_BATCH_MAX,
     COMMIT_FENSTER_MS, RUSQLITE_VERSION, STORE_DATEINAME, STORE_IDLE_MS, STORE_KANAL_CAP,
     STORE_RECOVERY_TEST_MAX_MS, STORE_RELATIVPFAD, STORE_SCHEMA_MAJOR, WAL_SCHWELLE_BYTES,
@@ -3212,6 +3212,137 @@ fn alias_deckel_weist_das_hello_ab_statt_ein_welcome_zu_senden() {
         !c.dispatch_fuer_link_erlaubt("reconnect"),
         "es entstand doch ein Link"
     );
+}
+
+/// R2-2 der Nacharbeit Runde 2 (Wiederpruefung 1, 03.09.2026): H-14 gilt fuer
+/// JEDEN Kollisionspfad, nicht nur fuer das Hello.
+///
+/// Codex an der Quelle: startet der Coordinator mit 1023 oder 1024
+/// restaurierten persistenten Riegeln und leerem Aliasregister, werden alter
+/// und neuer Nonce-Link zunaechst angenommen; die Kollision entsteht erst beim
+/// erneuten Report des verdraengten Links in `heartbeat_kontakt` - und DORT
+/// wurden zwei Riegel ohne jede Deckelpruefung eingetragen. Das Ergebnis von
+/// `registriere_wire_zuordnung` fiel mit `let _ =` weg. Der Store scheiterte
+/// erst nach dem Welcome und schaltete lediglich Routing ab, statt
+/// fail-closed abzuweisen.
+///
+/// Gemessen wird deshalb genau der Reportpfad, an zwei Staenden derselben
+/// Datenbank: 1023 restaurierte Riegel (die Kollision braucht ZWEI, also
+/// 1025 > 1024 - Deckel) und 1022 als Gegenprobe (1024, genau voll - frei).
+#[test]
+#[ignore = "A4-SI: restaurierter Riegelindex, Coordinator und echter Store"]
+fn konfliktriegel_deckel_gilt_auch_im_reportpfad_des_verdraengten_links() {
+    const INSTANZ: usize = 4242;
+    let effective = format!(
+        "S-1-5-21-1-2-3-1001|{}|{}|{}",
+        si_hex(1),
+        si_hex(2),
+        si_hex(INSTANZ)
+    );
+
+    // (a) AM DECKEL. 1023 + 2 = 1025 > MAX_KONFLIKT_GUARDS.
+    let (ordner, writer) =
+        store_mit_restaurierten_riegeln("guard-deckel-report", MAX_KONFLIKT_GUARDS - 1);
+    let c = Coordinator::mit_store(
+        Arc::new(ManualClock::default()),
+        si_hex(0xbeef),
+        &writer,
+    );
+    let alt = si_hello(INSTANZ, 1, "active_probe");
+    let neu = si_hello(INSTANZ, 2, "active_probe");
+    // Beide Hellos gehen durch - die Kollision entsteht erst im Report.
+    assert!(c.control_hello_registrieren("alt", &alt).angenommen);
+    assert!(c.control_hello_registrieren("neu", &neu).angenommen);
+    assert!(
+        !c.konfliktriegel_gesetzt(&effective),
+        "vor dem Report darf auf dieser Adresse kein Riegel liegen"
+    );
+    let abweisungen_vorher = c.cap_abweisungen();
+
+    // Der verdraengte Link meldet erneut: C-10-Duplikatkonflikt, zwei Riegel -
+    // und genau hier lief der Deckel ueber.
+    assert!(
+        !si_report(&c, "alt", &alt.adresse, 1),
+        "der verdraengte Link ist nie ein aktiver Kontakt"
+    );
+    assert!(
+        !c.konfliktriegel_gesetzt(&effective),
+        "am Deckel darf in KEINEN der beiden Speicher eingetragen werden"
+    );
+    assert_eq!(
+        scalar_i64(&ordner.db(), "SELECT COUNT(*) FROM conflict_guards") as usize,
+        MAX_KONFLIKT_GUARDS - 1,
+        "am Deckel darf kein Riegel persistiert werden"
+    );
+    assert!(
+        c.cap_abweisungen() > abweisungen_vorher,
+        "die Abweisung wurde nicht gezaehlt"
+    );
+    assert!(
+        c.verbindung_soll_trennen("alt"),
+        "der meldende Link muss fail-closed getrennt bleiben"
+    );
+
+    // (b) GEGENPROBE, einen Riegel darunter: 1022 + 2 = 1024, genau voll.
+    let (ordner2, writer2) =
+        store_mit_restaurierten_riegeln("guard-deckel-report-frei", MAX_KONFLIKT_GUARDS - 2);
+    let c2 = Coordinator::mit_store(
+        Arc::new(ManualClock::default()),
+        si_hex(0xbeef),
+        &writer2,
+    );
+    assert!(c2.control_hello_registrieren("alt", &alt).angenommen);
+    assert!(c2.control_hello_registrieren("neu", &neu).angenommen);
+    let abweisungen_vorher2 = c2.cap_abweisungen();
+    assert!(!si_report(&c2, "alt", &alt.adresse, 1));
+    assert!(
+        c2.konfliktriegel_gesetzt(&effective),
+        "unter dem Deckel bleibt das heutige Verhalten: beide Riegel"
+    );
+    assert_eq!(
+        scalar_i64(&ordner2.db(), "SELECT COUNT(*) FROM conflict_guards") as usize,
+        MAX_KONFLIKT_GUARDS,
+        "unter dem Deckel werden beide Riegel persistiert"
+    );
+    assert_eq!(
+        c2.cap_abweisungen(),
+        abweisungen_vorher2,
+        "unter dem Deckel wird nichts abgewiesen"
+    );
+}
+
+/// Ein Store mit `anzahl` bereits persistierten Konfliktriegeln, neu geoeffnet,
+/// damit `restaurierte_guards()` sie traegt und `Coordinator::mit_store` den
+/// Speicherindex daraus fuellt - der Restore-Weg, den der Broker beim Start
+/// faehrt. Jeder Riegel liegt auf einer eigenen effektiven Adresse, damit die
+/// Zeilenzahl gleich der Riegelzahl ist.
+fn store_mit_restaurierten_riegeln(name: &str, anzahl: usize) -> (TestOrdner, StoreWriter) {
+    let ordner = TestOrdner::neu(name);
+    let mut writer = starten(&ordner.db());
+    for i in 0..anzahl {
+        let fremd = 0x10_000 + i;
+        writer
+            .handle()
+            .konflikt_guard_persistieren(ConflictGuard {
+                effective_address: format!(
+                    "S-1-5-21-1-2-3-1001|{}|{}|{}",
+                    si_hex(1),
+                    si_hex(2),
+                    si_hex(fremd)
+                ),
+                derived_id: format!("{}:{}", si_hex(fremd), si_hex(1)),
+                created_utc_ms: 1,
+            })
+            .unwrap();
+    }
+    writer.stoppen();
+    let writer = starten(&ordner.db());
+    assert_eq!(
+        writer.restaurierte_guards().len(),
+        anzahl,
+        "der Restore-Weg hat nicht alle Riegel zurueckgebracht"
+    );
+    (ordner, writer)
 }
 
 /// D8 der Nacharbeit Runde 1 (Abschlusspruefung 1, 03.09.2026): die

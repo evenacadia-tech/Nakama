@@ -44,8 +44,9 @@ pub use sicht::{
 };
 pub use uhr::{ManualClock, MonotonicClock};
 use zustand::{
-    ClientKey, ClientStand, Intervention, LinkStand, LiveMessframe, P2RejectGrund,
-    SessionCommandWirkung, SessionKey, Stand, Subscription, JSON_SAFE_INTEGER_MAX,
+    kollisionsriegel_setzen_locked, ClientKey, ClientStand, Deckelausgang, Intervention, LinkStand,
+    LiveMessframe, P2RejectGrund, SessionCommandWirkung, SessionKey, Stand, Subscription,
+    JSON_SAFE_INTEGER_MAX,
 };
 use schema::{
     projektion_mit_aktuellem_lauf, v3_nachricht_lesen, v3_nachricht_lesen_beliebig_mit_minor,

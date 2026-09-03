@@ -228,7 +228,16 @@ impl Coordinator {
                 let neuer_owner = stand.clients.get(&link.client_key).map(|client| {
                     format!("{}:{}", client.adresse.instance_id, client.current_nonce)
                 });
-                let _ = self.alias_register.registriere_wire_zuordnung(
+                // R2-2 (Nacharbeit Runde 2, 03.09.2026): H-14 gilt fuer JEDEN
+                // Kollisionspfad. Das Ergebnis der Registrierung wurde hier
+                // mit `let _ =` verworfen und anschliessend wurden ZWEI Riegel
+                // OHNE Deckelpruefung eingetragen - bei 1023 oder 1024
+                // restaurierten Riegeln entstand die Ueberschreitung genau
+                // hier, und der Store scheiterte erst nach dem Welcome mit
+                // einem bloßen Routing-Abschalten. Jetzt laeuft dieselbe
+                // Pruefung wie im Hello-Pfad, und am Deckel wird in KEINEN der
+                // beiden Speicher eingetragen.
+                let registrierung = self.alias_register.registriere_wire_zuordnung(
                     &link.alias_adressraum,
                     &link.alias_besitzer,
                     &link.adresse.instance_id,
@@ -237,15 +246,32 @@ impl Coordinator {
                 if let Some(owner) = neuer_owner {
                     ids.push(owner);
                 }
-                for derived_id in ids {
-                    if stand.guard_eintragen(&effective.clone(), &derived_id.clone())
-                    {
-                        guards.push(ConflictGuard {
-                            effective_address: effective.clone(),
-                            derived_id,
-                            created_utc_ms: persistenz_utc_ms(),
-                        });
+                let am_deckel = match kollisionsriegel_setzen_locked(
+                    &mut stand,
+                    registrierung,
+                    &effective,
+                    &ids,
+                    true,
+                ) {
+                    Deckelausgang::Frei(neue) => {
+                        guards.extend(neue);
+                        false
                     }
+                    // Fail-closed, der Ausgang, den H-14 „abgewiesen" nennt:
+                    // kein Riegel, keine Persistenz, kein Client- oder
+                    // Sessionumbau. Der meldende Link bleibt getrennt, und der
+                    // Heartbeat gilt nicht als aktiv.
+                    Deckelausgang::Deckel(_) => true,
+                };
+                if am_deckel {
+                    // Der meldende Link bleibt getrennt - fail-closed, wie
+                    // C-07 es fordert -, aber kein Client-, Session- oder
+                    // Store-Umbau folgt: keine Riegel, keine Persistenz, kein
+                    // Dirty-Marker und damit kein Flush.
+                    if let Some(link) = stand.links.get_mut(link_id) {
+                        link.trennen = true;
+                    }
+                    return false;
                 }
                 if let Some(client) = stand.clients.get_mut(&link.client_key) {
                     client.bestaetigt = false;

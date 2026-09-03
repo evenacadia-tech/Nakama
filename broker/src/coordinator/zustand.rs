@@ -209,6 +209,84 @@ pub(super) struct SessionCommandWirkung {
     pub(super) state_hash: String,
 }
 
+/// H-14, Nacharbeit Runde 2 (R2-2, 03.09.2026): der Ausgang der EINEN
+/// Deckelpruefung, die jeder Kollisionspfad ruft.
+#[derive(Debug)]
+pub(super) enum Deckelausgang {
+    /// Unter dem Deckel. Die Riegel sind eingetragen; die Liste will
+    /// persistiert werden (leer, wenn nichts neu war oder der Pfad gar keine
+    /// Riegel setzt).
+    Frei(Vec<ConflictGuard>),
+    /// Am Deckel - Alias-Quarantaene ODER persistenter Riegelindex. Weder
+    /// Aliasregister noch Riegeltabelle wurden veraendert, es gibt keinen
+    /// Store-Schreibauftrag, und `cap_abweisungen` ist bereits erhoeht. Der
+    /// Grund ist der Wire-Text der Abweisung.
+    Deckel(&'static str),
+}
+
+/// H-14, Nacharbeit Runde 2 (R2-2, 03.09.2026): der Deckel gilt fuer JEDEN
+/// Kollisionspfad, nicht nur fuer das Hello.
+///
+/// Bis hierher pruefte nur `control_hello_registrieren` (link.rs); der
+/// Reportpfad eines verdraengten Links (`heartbeat_kontakt`, liveness.rs) warf
+/// das Ergebnis von `registriere_wire_zuordnung` mit `let _ =` weg und trug
+/// anschliessend ZWEI Riegel ohne jede Deckelpruefung ein. Startete der
+/// Coordinator mit 1023 oder 1024 restaurierten Riegeln, entstand die
+/// Ueberschreitung genau dort - der Store scheiterte erst nach dem Welcome und
+/// schaltete lediglich Routing ab, statt fail-closed abzuweisen.
+///
+/// Beide Deckel liegen jetzt in dieser einen Funktion:
+/// * die Aliasreservierung (`len + 2 > MAX_QUARANTAENE`) faellt schon in
+///   `registriere_wire_zuordnung` und kommt hier als `DeckelErreicht` an;
+/// * der persistente Riegelindex (`guard_anzahl() + neue_riegel >
+///   MAX_KONFLIKT_GUARDS`) wird hier gerechnet, bevor irgendetwas eingetragen
+///   ist.
+///
+/// `riegel_eintragen` unterscheidet die beiden Aufrufer, ohne den Deckel zu
+/// unterscheiden: das Hello setzt Riegel nur bei
+/// `KollisionBeideQuarantaenisiert`, der Reportpfad eines verdraengten Links
+/// immer. Der Aliasdeckel gilt in beiden Faellen.
+pub(super) fn kollisionsriegel_setzen_locked(
+    stand: &mut Stand,
+    registrierung: Registrierung,
+    effective: &str,
+    ids: &[String],
+    riegel_eintragen: bool,
+) -> Deckelausgang {
+    if registrierung == Registrierung::DeckelErreicht {
+        stand.cap_abweisungen = stand.cap_abweisungen.saturating_add(1);
+        return Deckelausgang::Deckel("alias_quarantaene_deckel");
+    }
+    if !riegel_eintragen {
+        return Deckelausgang::Frei(Vec::new());
+    }
+    let gefaltet = effective.to_ascii_lowercase();
+    let neue_riegel = ids
+        .iter()
+        .filter(|derived_id| {
+            !stand
+                .conflict_guards_gefaltet
+                .get(&gefaltet)
+                .is_some_and(|vorhandene| vorhandene.contains(*derived_id))
+        })
+        .count();
+    if stand.guard_anzahl() + neue_riegel > MAX_KONFLIKT_GUARDS {
+        stand.cap_abweisungen = stand.cap_abweisungen.saturating_add(1);
+        return Deckelausgang::Deckel("konfliktriegel_deckel");
+    }
+    let mut guards = Vec::new();
+    for derived_id in ids {
+        if stand.guard_eintragen(effective, derived_id) {
+            guards.push(ConflictGuard {
+                effective_address: effective.to_owned(),
+                derived_id: derived_id.clone(),
+                created_utc_ms: persistenz_utc_ms(),
+            });
+        }
+    }
+    Deckelausgang::Frei(guards)
+}
+
 impl Stand {
     /// H-21: die eine Abfrage, ueber die alle elf Lesestellen gehen.
     /// D6 der Nacharbeit Runde 1 (Abschlusspruefung 1, 03.09.2026): wie viele

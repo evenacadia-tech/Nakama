@@ -202,43 +202,33 @@ impl Coordinator {
         // und Link entstanden und der Peer bekam ein Welcome statt der
         // zugesagten Ablehnung. Jetzt endet die Registrierung hier, bevor
         // irgendetwas angelegt ist.
-        if registrierung == Registrierung::DeckelErreicht {
-            stand.cap_abweisungen = stand.cap_abweisungen.saturating_add(1);
-            return ControlRegistrierung::abgewiesen("alias_quarantaene_deckel");
-        }
+        //
+        // R2-2 (Nacharbeit Runde 2, 03.09.2026): BEIDE Deckel - die
+        // Aliasreservierung und der persistente Riegelindex - liegen jetzt in
+        // `kollisionsriegel_setzen_locked`, weil der Reportpfad eines
+        // verdraengten Links (liveness.rs) dieselbe Pruefung braucht. H-14
+        // gilt fuer jeden Kollisionspfad, nicht nur fuer das Hello. Der Store
+        // wuerde den Schreibversuch ohnehin mit einem Fehler beantworten, aber
+        // erst NACH dem Anlegen von Client und Link, und die Antwort waere nur
+        // ein Routing-Abschalten statt einer Abweisung.
+        let mut ids = vec![alias_besitzer.clone()];
         if registrierung == Registrierung::KollisionBeideQuarantaenisiert {
-            let mut ids = vec![alias_besitzer.clone()];
             if let Some(alt) = &geerbt {
                 ids.push(format!("{}:{}", alt.adresse.instance_id, alt.current_nonce));
             }
-            // Derselbe Deckel auf der persistenten Riegeltabelle. Der Store
-            // wuerde den Schreibversuch mit einem Fehler beantworten, aber
-            // erst NACH dem Anlegen von Client und Link - und die Antwort war
-            // bis hierher nur ein Routing-Abschalten, kein Abweisen. Der
-            // Coordinator fuehrt denselben Index und kann den Deckel deshalb
-            // hier pruefen, ohne den Store unter dem Standlock anzufassen.
-            let neue_riegel = ids
-                .iter()
-                .filter(|derived_id| {
-                    !stand
-                        .conflict_guards_gefaltet
-                        .get(&effective.to_ascii_lowercase())
-                        .is_some_and(|vorhandene| vorhandene.contains(*derived_id))
-                })
-                .count();
-            if stand.guard_anzahl() + neue_riegel > MAX_KONFLIKT_GUARDS {
-                stand.cap_abweisungen = stand.cap_abweisungen.saturating_add(1);
-                return ControlRegistrierung::abgewiesen("konfliktriegel_deckel");
+        }
+        match kollisionsriegel_setzen_locked(
+            &mut stand,
+            registrierung,
+            &effective,
+            &ids,
+            registrierung == Registrierung::KollisionBeideQuarantaenisiert,
+        ) {
+            Deckelausgang::Deckel(grund) => {
+                return ControlRegistrierung::abgewiesen(grund);
             }
-            for derived_id in ids {
-                if stand.guard_eintragen(&effective.clone(), &derived_id.clone())
-                {
-                    guards_zu_persistieren.push(ConflictGuard {
-                        effective_address: effective.clone(),
-                        derived_id,
-                        created_utc_ms: persistenz_utc_ms(),
-                    });
-                }
+            Deckelausgang::Frei(guards) => {
+                guards_zu_persistieren.extend(guards);
             }
         }
 

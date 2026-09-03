@@ -1,0 +1,53 @@
+NAK-121 / R2-2 - Rotbeweis (Nacharbeit Runde 2, 03.09.2026)
+Defekt D6 / H-14, broker/src/coordinator/liveness.rs:227-247
+
+MUTANTE (Regel des Dirigenten: "Deckelpruefung im Reportpfad entfernen -> rot"):
+  broker/src/coordinator/liveness.rs, Reportpfad des verdraengten Links:
+    let am_deckel = match kollisionsriegel_setzen_locked(
+        &mut stand, registrierung, &effective, &ids, true) { ... };
+  ->  let _ = registrierung;   // Ergebnis wieder verworfen wie vor R2-2
+      beide Riegel bedingungslos ueber stand.guard_eintragen(..) eintragen,
+      kein Aliasdeckel, kein guard_anzahl()-Vergleich.
+
+Das ist genau der Stand der Wiederpruefung 1: die Kollision entsteht im
+Report, und dort deckelt nichts.
+
+TEST: broker/tests/store_crash_matrix.rs::
+      konfliktriegel_deckel_gilt_auch_im_reportpfad_des_verdraengten_links
+      (A4-SI, echter Store, 1023 restaurierte Riegel + Gegenprobe mit 1022)
+
+== ROT ==
+$ cargo test --manifest-path broker/Cargo.toml --test store_crash_matrix konfliktriegel_deckel_gilt_auch_im_reportpfad -- --ignored
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.05s
+     Running tests\store_crash_matrix.rs (broker\target\debug\deps\store_crash_matrix-4ebee0ee77644d63.exe)
+
+running 1 test
+test konfliktriegel_deckel_gilt_auch_im_reportpfad_des_verdraengten_links ... FAILED
+
+failures:
+
+---- konfliktriegel_deckel_gilt_auch_im_reportpfad_des_verdraengten_links stdout ----
+
+thread 'konfliktriegel_deckel_gilt_auch_im_reportpfad_des_verdraengten_links' (22072) panicked at tests\store_crash_matrix.rs:3268:5:
+am Deckel darf in KEINEN der beiden Speicher eingetragen werden
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+failures:
+    konfliktriegel_deckel_gilt_auch_im_reportpfad_des_verdraengten_links
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 85 filtered out; finished in 2.24s
+
+error: test failed, to rerun pass `--test store_crash_matrix`
+EXIT=101
+
+== GRUEN (Mutante zurueckgenommen, Stand von R2-2) ==
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.41s
+     Running tests\store_crash_matrix.rs (broker\target\debug\deps\store_crash_matrix-4ebee0ee77644d63.exe)
+
+running 1 test
+test konfliktriegel_deckel_gilt_auch_im_reportpfad_des_verdraengten_links ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 85 filtered out; finished in 4.62s
+
+EXIT=0

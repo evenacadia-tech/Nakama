@@ -1,0 +1,44 @@
+# Rotbeweis D3 (H-10, Aliasbesitz) — NAK-121 Nacharbeit Runde 1
+
+Die Besitzerpruefung faellt weg - `control_ende` entfernt den Alias wieder
+bedingungslos, so wie vor der Nacharbeit.
+
+Mutante(n):
+  broker/src/coordinator/link.rs
+    ALT:             let alias_wird_geteilt = stand.links.values().any(|anderer| {
+    ALT:                 anderer.alias_adressraum == link.alias_adressraum
+    ALT:                     && anderer.alias_besitzer == link.alias_besitzer
+    ALT:             });
+    NEU:             let alias_wird_geteilt = false; // MUTANTE: keine Besitzerpruefung
+
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never --test coordinator_model -- abbau_des_verdraengten
+Exitcode: 101
+
+Die Mutante ist nach diesem Lauf zurueckgenommen; der naechste
+Lauf derselben Tests ist wieder gruen.
+
+---
+
+
+running 1 test
+test abbau_des_verdraengten_links_laesst_den_geteilten_alias_stehen ... FAILED
+
+failures:
+
+---- abbau_des_verdraengten_links_laesst_den_geteilten_alias_stehen stdout ----
+
+thread 'abbau_des_verdraengten_links_laesst_den_geteilten_alias_stehen' (21640) panicked at tests\coordinator_model.rs:1496:5:
+der Abbau des verdraengten Links hat dem Ueberlebenden den geteilten Alias gezogen
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    abbau_des_verdraengten_links_laesst_den_geteilten_alias_stehen
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 46 filtered out; finished in 0.00s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.15s
+     Running tests\coordinator_model.rs (broker\target\debug\deps\coordinator_model-c22cf73cd241058f.exe)
+error: test failed, to rerun pass `--test coordinator_model`

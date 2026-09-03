@@ -104,6 +104,28 @@ fn state_report(c: &Coordinator, link: &str, adresse: &Adresse) -> bool {
     c.state_report_json(link, &state_report_payload(adresse))
 }
 
+/// Ein nicht persistenter P0-Session-Befehl ueber die produktive P0-Senke.
+#[cfg(windows)]
+fn session_command(
+    c: &Coordinator,
+    link: &str,
+    command: &str,
+    command_id: usize,
+    ziel: &Adresse,
+    session_epoch: &str,
+) -> Value {
+    let payload = serde_json::to_vec(&json!({
+        "type": "session_command",
+        "command": command,
+        "command_id": hex(command_id),
+        "ziel": ziel,
+        "session_epoch": session_epoch
+    }))
+    .unwrap();
+    let ack = Senke::p0(c, link, &payload).expect("session_command antwortet mit command_ack");
+    serde_json::from_slice(&ack).expect("command_ack ist JSON")
+}
+
 /// G2-FLOATEDGE-001: ein echter P2-Batch mit frei waehlbarer `sample_rate`.
 /// Nur ueber den produktiven P2-Weg laesst sich messen, welche Werte die
 /// Eingangspruefung ueberhaupt passieren und was die Sicht daraus ableitet.
@@ -1440,6 +1462,61 @@ fn hello_mit_identischer_nonce_verdraengt_den_alten_link_ohne_den_alias_zu_ziehe
         "die Verdraengung hat dem ueberlebenden Link seine Wireadresse weggezogen"
     );
     assert!(abonnieren(&c, "neu", &h.adresse));
+}
+
+/// D3 der Nacharbeit Runde 1 (Abschlusspruefung 1, 03.09.2026): der Test
+/// darueber prueft den Alias nur VOR dem Abbau des alten Links.
+///
+/// Genau danach lag der Defekt: `control_ende` entfernte den Aliaseintrag
+/// bedingungslos. Bei identischer Nonce teilen alter und neuer Link denselben
+/// Aliasbesitzer - der Abbau des alten riss dem ueberlebenden die Wireadresse
+/// weg und jeder Dispatch fiel danach fail-closed aus. Dieser Test fuehrt den
+/// Abbau deshalb wirklich aus und misst DANACH.
+#[cfg(windows)]
+#[test]
+fn abbau_des_verdraengten_links_laesst_den_geteilten_alias_stehen() {
+    let (c, _) = coordinator();
+    let main = hello(1, 2, 10, 100, "main", Some(9));
+    anmelden(&c, "main", &main);
+    assert!(report(&c, "main", &main.adresse));
+
+    let sonde = hello(1, 2, 11, 200, "active_probe", Some(9));
+    anmelden(&c, "alt", &sonde);
+    assert!(report(&c, "alt", &sonde.adresse));
+
+    // Reconnect mit IDENTISCHER Nonce: seit H-10 verdraengt auch er.
+    anmelden(&c, "neu", &sonde);
+    assert!(c.verbindung_soll_trennen("alt"));
+    assert!(!c.verbindung_soll_trennen("neu"));
+
+    // Und jetzt das, was der alte Test ausliess: der Transport baut den
+    // verdraengten Link wirklich ab.
+    Senke::control_schliesst(&c, "alt");
+
+    assert!(
+        c.dispatch_fuer_link_erlaubt("neu"),
+        "der Abbau des verdraengten Links hat dem Ueberlebenden den geteilten Alias gezogen"
+    );
+    assert!(abonnieren(&c, "neu", &sonde.adresse));
+
+    // Ein P0-Befehl an genau diese Adresse muss ankommen - fail-closed waere
+    // hier ein `abgelehnt` mit `unauthorized`, nicht `angewandt`.
+    let ack = session_command(&c, "main", "confirm_join", 1, &sonde.adresse, &hex(2));
+    assert_eq!(
+        ack["ergebnis"], "angewandt",
+        "P0 an den ueberlebenden Link faellt fail-closed aus: {ack}"
+    );
+    assert!(
+        c.modell_sicht(&hex(1), &hex(2))
+            .clients
+            .iter()
+            .any(|x| x.adresse == sonde.adresse && x.bestaetigt),
+        "die Wirkung des Befehls fehlt im Stand"
+    );
+
+    // Faellt danach auch der letzte Link, geht der Alias regulaer.
+    Senke::control_schliesst(&c, "neu");
+    assert!(!c.dispatch_fuer_link_erlaubt("neu"));
 }
 
 /// Das Ziel eines P0-Befehls wird ueber die Linkidentitaet aufgeloest, nicht

@@ -278,11 +278,28 @@ impl Coordinator {
         let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         let mut dirty = None;
         if let Some(link) = stand.links.remove(link_id) {
-            self.alias_register.entferne(
-                &link.alias_adressraum,
-                &link.alias_besitzer,
-                &link.adresse.instance_id,
-            );
+            // D3 der Nacharbeit Runde 1 (Abschlusspruefung 1, 03.09.2026):
+            // Diese Entfernung war bedingungslos. Seit H-10 verdraengt auch ein
+            // Hello mit IDENTISCHER Nonce den aelteren Link - und beide Links
+            // teilen dann denselben Aliasbesitzer im selben Adressraum. Die
+            // Registrierung laesst den Aliaseintrag in diesem Zweig deshalb
+            // absichtlich stehen; erreichte der alte Link danach `control_ende`,
+            // riss diese Zeile genau die GEMEINSAME Zuordnung weg und der
+            // ueberlebende Link fiel fail-closed aus. Der Alias faellt jetzt
+            // nur, wenn kein anderer lebender Link denselben Besitzer im selben
+            // Adressraum traegt. `stand.links` enthaelt den sterbenden Link an
+            // dieser Stelle nicht mehr, die Schleife sieht also nur Ueberlebende.
+            let alias_wird_geteilt = stand.links.values().any(|anderer| {
+                anderer.alias_adressraum == link.alias_adressraum
+                    && anderer.alias_besitzer == link.alias_besitzer
+            });
+            if !alias_wird_geteilt {
+                self.alias_register.entferne(
+                    &link.alias_adressraum,
+                    &link.alias_besitzer,
+                    &link.adresse.instance_id,
+                );
+            }
             let join_reconnect_ohne_tombstone = link.join_neuverbinden
                 && link.letzte_event_sequence.is_none()
                 && !stand

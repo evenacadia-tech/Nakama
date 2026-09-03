@@ -1,0 +1,9 @@
+Befund 6 ist geschlossen, aber die Nachweise für Befund 1 und Befund 3 bleiben unvollständig beziehungsweise verletzen weiterhin C-06. Die vorhandenen rustdoc-Artefakte bestätigen zwar Seitenzahl und Hashes; `cargo doc` konnte wegen der schreibgeschützten Sandbox nicht erneut ausgeführt werden.
+
+Full review comments:
+
+- [P1] Include associated-item signatures in the API hash — C:\Users\phili\Projekte\Nakama\docs\beweise\NAK-121.md:486-486
+  The extraction records only the first `<pre class="rust item-decl">` per page. Public inherent methods such as `Coordinator::control_hello_registrieren` (`broker/src/coordinator.rs:716`) have no separate item page and their signatures are not in that matched declaration; changing or removing such a method leaves both documented hashes unchanged. The procedure therefore still does not prove preservation of the reachable public API required by finding 1.
+
+- [P1] Prevent heartbeat pushes before control_getrennt — C:\Users\phili\Projekte\Nakama\docs\beweise\NAK-121.md:215-215
+  If the new nonce sends a heartbeat while the displaced link is still completing its joins, `heartbeat_kontakt` collects and flushes the dirty session at `broker/src/coordinator.rs:1654-1661`, while the old link reaches `control_getrennt` only after the joins and telemetry wait at `broker/src/transport/server_v3.rs:2902-2928`. Thus the retained heartbeat fallback can start a push before the complete C-06 cleanup required by `docs/beweise/SONDE-011.md:512`; the proposed three-point test does not exercise this interleaving, so finding 3 remains open.

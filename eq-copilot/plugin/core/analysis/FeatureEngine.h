@@ -379,6 +379,22 @@ struct FeatureFrame
     bool  lufsIUnsicherheitGesetzt { false };  float lufsIUnsicherheit { 0.0f };
     bool  lufsIStatusGesetzt       { false };  std::uint8_t lufsIStatus { 0 };
 
+    /** NAK-68 (SONDE-013): ueber wie viel Audio DIESER Rahmen integriert wurde,
+        in Samples je Kanal — nicht die Wanddauer und nicht die Fensterlaenge.
+
+        An den Baendern ist eine duenne Messung schon ueber die Bitmap ehrlich;
+        an den Rahmenskalaren (`peakDb`, `crestDb`, `breite`, `korrelation`)
+        war sie es nicht. Ohne dieses Feld kann ein Empfaenger „leise" nicht
+        von „kurz gemessen" unterscheiden — der Rahmen nach einer
+        Epochengrenze traegt weniger integrierte Fenster und sieht trotzdem
+        aus wie jeder andere.
+
+        Das Praesenzbit bildet FlatBuffers `= null` ab: fehlt es, sagt der
+        Erzeuger nichts, und ein Leser darf daraus KEINE 0 machen. Ein
+        gesetztes 0 ist dagegen ein Senderfehler und wird von beiden Lesern
+        abgelehnt (`integration_samples_null`). */
+    bool  integrationGesetzt { false };  std::uint32_t integrationSamples { 0 };
+
     /** ZWEI FRAMES SIND GLEICH, WENN JEDES FELD GLEICH IST — und welche Felder
         es gibt, weiss der Compiler, nicht eine Liste (T2R2-1, 24.08.).
 

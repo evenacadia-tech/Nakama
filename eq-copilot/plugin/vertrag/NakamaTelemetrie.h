@@ -101,6 +101,16 @@ struct Empfangsframe
     bool lufsPaar = false;
     float lufsI = 0.0f, lufsIUnsicherheitLu = 0.0f;
     int lufsIStatus = 0;  ///< 0=fehlt, 1=collecting, 2=gated
+
+    /** NAK-68: ueber wie viel Audio dieser Rahmen integriert wurde.
+
+        Das Praesenzbit steht ABSICHTLICH neben dem Wert, statt 0 als
+        "fehlt" zu lesen: 0 ist auf der Leitung ein Senderfehler, Abwesenheit
+        dagegen erlaubt. Ein Empfaenger, der beides zusammenzoege, koennte
+        "leise" weiterhin nicht von "kurz gemessen" unterscheiden - genau der
+        Zustand, den NAK-68 beschreibt. */
+    bool integrationGesetzt = false;
+    std::uint32_t integrationSamples = 0;
 };
 
 /** Prueft und kopiert einen FeatureBatch in einem Zug.

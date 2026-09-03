@@ -1849,8 +1849,11 @@ mod tests {
         .unwrap();
         let definiert = schema["oneOf"].as_array().unwrap().len();
         let spaeter = reserviert["reserviert"].as_array().unwrap().len();
-        assert_eq!(definiert, 18);
-        assert_eq!(spaeter, 9);
+        // SONDE-013 E-02 (03.09.2026): `experiment_begin` und
+        // `experiment_abort` sind aus der Reserve nach `definiert` gewandert,
+        // `experiment_manual_result` ist neu dazugekommen. 18/9 -> 21/7.
+        assert_eq!(definiert, 21);
+        assert_eq!(spaeter, 7);
         assert_eq!(
             definiert + spaeter,
             reserviert["gesamt_erwartet"].as_u64().unwrap() as usize

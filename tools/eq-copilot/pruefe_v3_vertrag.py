@@ -11,6 +11,14 @@ Drei Aufgaben, die keine der beiden eigenen Engines uebernehmen kann:
    von drei Seiten.
 3. **Das Urteil unabhaengig nachrechnen** — mit `jsonschema`, einer fremden
    Implementierung, gegen dasselbe MANIFEST wie C++ und Rust.
+4. **Den Fassungsschritt beweisen** (seit SONDE-013/P4) — der Vertrag ist an
+   Discriminator, Zieladresse, Revision und Capability NICHT additiv
+   erweiterbar. `fassung_1_schema()` baut aus der committeten Fassung 2 die
+   Fassung 1 zurueck (die Liste dafuer ist der `fassungen`-Eintrag im
+   Register, keine zweite Kopie) und `pruefe_sonde013_fassung_2` misst, dass
+   der alte Leser jede Neuerung ABLEHNT statt sie still auf einen bekannten
+   Zweig abzubilden. Ohne diesen Nachweis waere „nicht additiv erweiterbar"
+   eine Behauptung ohne Messung.
 
 Die VERLETZUNGSMENGE prueft dieses Bein bewusst nicht: eine echte
 JSON-Schema-Implementierung meldet bei `oneOf` die Fehler aller Zweige,
@@ -677,8 +685,8 @@ def pruefe_probe_descriptor(lauf: Lauf, schema: dict, reserviert: dict) -> None:
     fassungen = version.get("fassungen", {})
     lauf.wahr("host_channel_context_fields_are_optional_strict_and_versioned",
               version.get("familie") == "P1"
-              and version.get("vorher") == 0
-              and version.get("aktuell") == 1
+              and version.get("vorher") == 1
+              and version.get("aktuell") == 2
               and fassungen.get("0", {}).get("probe_descriptor_hostfelder") == []
               and set(fassungen.get("1", {}).get("probe_descriptor_hostfelder", []))
                   == HOST_DESCRIPTOR_FELDER
@@ -793,6 +801,98 @@ def pruefe_probe_descriptor(lauf: Lauf, schema: dict, reserviert: dict) -> None:
     beitragsriegel_gelockert.pop("maxLength", None)
     lauf.wahr("beitragsriegel_gelockert_faellt",
               beitragsriegel_gelockert != PLUGIN_KIND_MATRIX["probe_descriptor_beitrag"])
+
+
+def fassung_1_schema(schema: dict) -> dict:
+    """Baut die Fassung 1 des P1-Vertrags aus der committeten Fassung 2 zurueck.
+
+    Warum zurueckbauen statt eine zweite Datei zu pflegen: zwei Kopien
+    driften. Der Rueckbau ist genau die Liste aus
+    `wire_envelope_schema_minor.fassungen."2"` - stimmt sie nicht mit dem
+    Schema ueberein, faellt schon der Rueckbau und nicht erst ein Fixture.
+    """
+    alt = copy.deepcopy(schema)
+    neue_familien = {"experiment_begin", "experiment_abort", "experiment_manual_result"}
+    alt["oneOf"] = [r for r in alt["oneOf"]
+                    if r.get("$ref", "").removeprefix("#/$defs/") not in neue_familien]
+    for name in (neue_familien | {"experiment_referenz", "alignment_klasse", "fingerprint",
+                                  "evidence_ereignisse", "dynamics_ereignis",
+                                  "stereo_evidenz", "stereo_bandwerte",
+                                  "stereo_bandwerte_normiert", "stereo_bandwerte_phase"}):
+        alt["$defs"].pop(name, None)
+    for feld in ("ereignisse", "stereo"):
+        alt["$defs"]["evidence_snapshot"]["properties"].pop(feld, None)
+    grund = alt["$defs"]["evidence_invalidate"]["properties"]["grund"]
+    grund["enum"] = [g for g in grund["enum"]
+                     if g not in ("material_wechsel", "messpunkt_wechsel")]
+    return alt
+
+
+def pruefe_sonde013_fassung_2(lauf: Lauf, schema: dict, reserviert: dict) -> None:
+    """SONDE-013 M-66/M-67 und §7.1 E-02/E-04.
+
+    Der Riegel dieses Tickets: EIN Fassungsschritt traegt alle
+    P1-Vertragsaenderungen, und ein Leser der Fassung 1 LEHNT jede von ihnen
+    AB, statt sie still auf einen bekannten Zweig abzubilden. Ohne diesen
+    Nachweis waere `nicht additiv erweiterbar` eine Behauptung ohne Messung.
+    """
+    fassung = reserviert.get("wire_envelope_schema_minor", {}).get("fassungen", {}).get("2", {})
+    lauf.wahr("fassung_2_nennt_jede_neuerung_dieses_tickets",
+              fassung.get("experiment_begin") is True
+              and fassung.get("experiment_abort") is True
+              and fassung.get("experiment_manual_result") is True
+              and fassung.get("evidence_snapshot_ereignisse") is True
+              and fassung.get("evidence_snapshot_stereo") is True
+              and fassung.get("evidence_invalidate_grund_erweitert")
+                  == ["material_wechsel", "messpunkt_wechsel"])
+
+    gruende = schema["$defs"]["evidence_invalidate"]["properties"]["grund"]["enum"]
+    lauf.wahr("grund_material_wechsel", "material_wechsel" in gruende)
+    lauf.wahr("grund_messpunkt_wechsel", "messpunkt_wechsel" in gruende)
+    lauf.wahr("evidence_invalidate_hat_keinen_steuerkopf",
+              set(schema["$defs"]["evidence_invalidate"]["required"])
+                  == {"type", "grund", "umfang"}
+              and set(schema["$defs"]["evidence_invalidate"]["properties"])
+                  == {"type", "grund", "umfang"})
+
+    pruefer_2 = jsonschema.Draft202012Validator(schema)
+    pruefer_1 = jsonschema.Draft202012Validator(fassung_1_schema(schema))
+
+    def lade(name: str) -> dict:
+        return json_laden_strikt((FIXTURES / f"gueltig/{name}.json").read_text(encoding="utf-8"))
+
+    invalid_material = lade("evidence_invalidate")
+    invalid_material["grund"] = "material_wechsel"
+    invalid_messpunkt = lade("evidence_invalidate")
+    invalid_messpunkt["grund"] = "messpunkt_wechsel"
+    invalid_unbekannt = lade("evidence_invalidate")
+    invalid_unbekannt["grund"] = "gibt_es_nicht"
+
+    lauf.wahr("unbekannter_grund_wird_abgelehnt",
+              not pruefer_2.is_valid(invalid_unbekannt)
+              and not pruefer_1.is_valid(invalid_unbekannt))
+    lauf.wahr("fassung_1_leser_lehnt_neue_gruende_ab",
+              pruefer_2.is_valid(invalid_material)
+              and pruefer_2.is_valid(invalid_messpunkt)
+              and not pruefer_1.is_valid(invalid_material)
+              and not pruefer_1.is_valid(invalid_messpunkt))
+
+    neu = {name: lade(name) for name in
+           ("experiment_begin", "experiment_abort", "experiment_manual_result")}
+    lauf.wahr("fassung_1_leser_lehnt_die_drei_experimentfamilien_ab",
+              all(pruefer_2.is_valid(d) for d in neu.values())
+              and not any(pruefer_1.is_valid(d) for d in neu.values()))
+
+    mit_ereignissen = lade("evidence-snapshot-mit-ereignissen-und-stereo")
+    lauf.wahr("fassung_1_leser_lehnt_ereignisse_und_stereo_ab",
+              pruefer_2.is_valid(mit_ereignissen)
+              and not pruefer_1.is_valid(mit_ereignissen))
+
+    # Gegenprobe zum Rueckbau selbst: er muss ueberhaupt etwas entfernen. Ein
+    # Rueckbau, der nichts aendert, macht jede Zeile darueber wertlos.
+    lauf.wahr("Gegenprobe: der Rueckbau auf Fassung 1 aendert das Schema wirklich",
+              fassung_1_schema(schema) != schema
+              and pruefer_1.is_valid(lade("evidence_snapshot")))
 
 
 def pruefe_runtime_und_p2_reject(lauf: Lauf, schema: dict) -> None:
@@ -1082,9 +1182,46 @@ def pruefe_namen(lauf: Lauf, schema: dict, reserviert: dict) -> None:
     lauf.wahr("belegte Nachricht folgt der Regelform und ist aktiv definiert",
               all(set(n) == {"name", "eigentuemer", "grund"}
                   for n in belegt_nachrichten)
-              and {n.get("name") for n in belegt_nachrichten} == {"session_command"}
+              and {n.get("name") for n in belegt_nachrichten}
+                  == {"session_command", "experiment_begin", "experiment_abort",
+                      "experiment_manual_result"}
               and all(n.get("name") in definiert and n.get("name") not in reserv
                       for n in belegt_nachrichten))
+
+    # SONDE-013 E-02: die drei Experimentfamilien. `experiment_begin` und
+    # `experiment_abort` wandern aus `reserviert` nach `definiert`,
+    # `experiment_manual_result` entsteht neu und direkt in `definiert`.
+    lauf.wahr("zwei_familien_wandern_von_reserviert_nach_definiert",
+              "experiment_begin" in definiert and "experiment_abort" in definiert
+              and "experiment_begin" not in reserv and "experiment_abort" not in reserv
+              and "experiment_begin" in schema["$defs"]
+              and "experiment_abort" in schema["$defs"])
+    lauf.wahr("experiment_manual_result_definiert",
+              "experiment_manual_result" in definiert
+              and "experiment_manual_result" in schema["$defs"]
+              and "#/$defs/experiment_manual_result" in {r["$ref"] for r in schema["oneOf"]}
+              and next(n["eigentuemer"] for n in belegt_nachrichten
+                       if n["name"] == "experiment_manual_result").startswith("SONDE-013"))
+    lauf.wahr("summe_ist_28",
+              reserviert["gesamt_erwartet"] == 28
+              and len(definiert) == 21 and len(reserv) == 7)
+
+    # M-73: kein Ticket belegt einen Namen, dessen Eigentuemer ein anderes
+    # Ticket ist - und der Vertrag kennt nur GANZE Familien, keine
+    # teilreservierten Discriminator-Zweige.
+    eigentuemer = {r["name"]: r.get("eigentuemer", "") for r in reserviert["reserviert"]}
+    lauf.wahr("experiment_result_bleibt_reserviert_fuer_sonde017",
+              "experiment_result" in reserv
+              and eigentuemer.get("experiment_result", "").startswith("SONDE-017")
+              and "experiment_result" not in definiert
+              and "experiment_result" not in schema["$defs"])
+    lauf.wahr("fremde_eigentuemer_bleiben_unberuehrt",
+              eigentuemer.get("user_verdict", "").startswith("SONDE-014")
+              and "user_verdict" not in definiert
+              and "user_verdict" not in schema["$defs"]
+              and not any(n.startswith("experiment_result")
+                          or n.startswith("user_verdict")
+                          for n in schema["$defs"]))
     lauf.wahr("reservierter_name_reference_match_wird_nicht_umgewidmet",
               "reference_match" in reserv and "reference_match" not in zweige
               and "reference_match" not in schema["$defs"])
@@ -1100,7 +1237,6 @@ def pruefe_namen(lauf: Lauf, schema: dict, reserviert: dict) -> None:
               all(set(f) == {"name", "eigentuemer", "grund"} for f in belegt))
     erwartete_felder = {
         "Frame.band_dynamic_gain_db",
-        "evidence_snapshot.ereignisse",
         "session_snapshot.contribution_inputs",
         "state_report.dsp",
         "command_ack.applied_dsp",
@@ -1115,17 +1251,67 @@ def pruefe_namen(lauf: Lauf, schema: dict, reserviert: dict) -> None:
         "session_snapshot.mitglieder[].probe_descriptor",
         "session_snapshot.mitglieder[].p2_reject",
         "session_snapshot.store_degraded",
+        "evidence_snapshot.ereignisse",
+        "evidence_snapshot.stereo",
+        "evidence_snapshot.stereo.phase_rad",
+        "evidence_snapshot.stereo.fenster_dauer_ms",
+        "evidence_snapshot.stereo.freiheitsgrade",
     }
     lauf.wahr("SONDE-012-Minor-1-Felder sind als belegt fortgeschrieben",
               {f.get("name") for f in belegt} == erwartete_belegte
               and not ({f.get("name") for f in felder} & erwartete_belegte))
 
+    # SONDE-013 M-65: das Belegen von `evidence_snapshot.ereignisse` ist KEIN
+    # additiver Schritt. Das Objekt ist additionalProperties:false, also muss
+    # das Feld im aktiven Vertrag WIRKLICH stehen - und der Feldname darf
+    # nicht mehr in der Reserve liegen.
+    ereignisse = schema["$defs"]["evidence_snapshot"].get("properties", {}).get("ereignisse")
+    stereo = schema["$defs"]["evidence_snapshot"].get("properties", {}).get("stereo")
+    lauf.wahr("evidence_snapshot_ereignisse_belegt",
+              ereignisse == {"$ref": "#/$defs/evidence_ereignisse"}
+              and stereo == {"$ref": "#/$defs/stereo_evidenz"}
+              and schema["$defs"]["evidence_snapshot"]["additionalProperties"] is False
+              and "ereignisse" not in schema["$defs"]["evidence_snapshot"]["required"]
+              and "stereo" not in schema["$defs"]["evidence_snapshot"]["required"])
+    ring = schema["$defs"]["evidence_ereignisse"]["properties"]
+    lauf.wahr("ereignisring_bleibt_bei_64_und_zaehlt_verluste",
+              ring["liste"]["maxItems"] == 64
+              and ring["liste"]["minItems"] == 0
+              and ring["verloren"] == {
+                  "$comment": ring["verloren"]["$comment"],
+                  "type": "integer", "minimum": 0})
+    ereignis = schema["$defs"]["dynamics_ereignis"]
+    lauf.wahr("dynamics_ereignis_traegt_beide_qualitaetsbits",
+              set(ereignis["required"]) == {
+                  "sample_offset", "staerke_mad", "band_zentrum_hz",
+                  "dauer_samples", "qualitaet_fluss", "qualitaet_peak"}
+              and ereignis["properties"]["qualitaet_fluss"] == {"type": "boolean"}
+              and ereignis["properties"]["qualitaet_peak"] == {"type": "boolean"})
+
+    # M-11: Kohaerenz traegt Fensterdauer und Freiheitsgrade je Band mit,
+    # und die Phase liegt in einer EIGENEN Definition mit eigenem Bereich -
+    # sie ist keine Umdeutung eines normierten Bandsatzes.
+    stereo_defs = schema["$defs"]["stereo_evidenz"]["properties"]
+    lauf.wahr("kohaerenz_traegt_fenster_und_freiheitsgrade",
+              stereo_defs["fenster_dauer_ms"]["minItems"] == 221
+              and stereo_defs["freiheitsgrade"]["minItems"] == 221
+              and stereo_defs["freiheitsgrade"]["items"]["type"] == "integer"
+              and stereo_defs["kohaerenz"]["$ref"] == "#/$defs/stereo_bandwerte_normiert"
+              and stereo_defs["phase_rad"] == {"$ref": "#/$defs/stereo_bandwerte_phase"})
+
+    # M-06: Gewichte und Schwellen leben in einer versionierten
+    # metrics_version, nicht als Literal im Produktpfad. Der Vertrag traegt
+    # das Feld an JEDEM Traeger einer Metrik dieses Tickets.
+    lauf.wahr("metrics_version_bindet_schwellen",
+              schema["$defs"]["evidence_snapshot"]["properties"]["metrics_version"]
+                  == {"type": "integer", "minimum": 1}
+              and "metrics_version" in schema["$defs"]["evidence_snapshot"]["required"])
+
     def feld_fehlt(definition: str, feld: str) -> bool:
         return feld not in schema["$defs"][definition].get("properties", {})
 
     aktive_felder_fehlen = (
-        feld_fehlt("evidence_snapshot", "ereignisse")
-        and feld_fehlt("session_snapshot", "contribution_inputs")
+        feld_fehlt("session_snapshot", "contribution_inputs")
         and feld_fehlt("state_report", "dsp")
         and feld_fehlt("state_report", "eq_enabled")
         and all("applied_dsp" not in z.get("properties", {})
@@ -1334,6 +1520,7 @@ def main(argv: list[str]) -> int:
     pruefe_schema(lauf, schema)
     pruefe_discriminator_enginekante(lauf)
     pruefe_namen(lauf, schema, reserviert)
+    pruefe_sonde013_fassung_2(lauf, schema, reserviert)
     pruefe_probe_descriptor(lauf, schema, reserviert)
     pruefe_runtime_und_p2_reject(lauf, schema)
     pruefe_session_command_und_store(lauf, schema)

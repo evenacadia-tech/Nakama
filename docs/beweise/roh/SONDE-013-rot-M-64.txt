@@ -1,0 +1,52 @@
+# Rotbeweis M-64 — SONDE-013 Etappe 2
+# 2026-09-04
+#
+# Regel: eine neue Zusage ohne Rotbeweis ist eine Behauptung. Hier wird
+# der Fehler bewusst eingebaut, das Bein faellt, der Fehler wird
+# entfernt und dasselbe Bein ist wieder gruen.
+#
+# Eingebauter Fehler: die Feld-ID von integration_samples steht im Register auf 15 statt 14 — genau die stille Drift, gegen die A9 existiert
+
+# mutiert: eq-copilot/schemas/v3/flatbuffers/FELD-IDS.json
+
+========================================================================
+ROT — mit eingebautem Fehler
+========================================================================
+
+$ py -3.13 tools/eq-copilot/pruefe_flatc_drift.py
+EXIT=2
+Gepinnt: flatbuffers 25.12.19 @ 7e163021e59c
+  flatc: 25.12.19  (C:\Users\phili\Projekte\Nakama\eq-copilot\build\_deps\flatbuffers-build\Release\flatc.exe)
+  flatc-Beleg: Commit 7e163021e59cca4f8e1e35a7c828b5c6b7915953, sha256=7393d08f318a1aa599c10a12851f377db1b764ba1387501678f72b6f792bab2a  (C:\Users\phili\Projekte\Nakama\eq-copilot\build\nakama-flatc-commit-Release.txt)
+  Rust-Crate: 25.12.19 (Cargo.lock; Anforderung 25.12.19)
+  ROT: der Feld-ID-Riegel ist rot:
+    Schema:   eq-copilot\schemas\v3\flatbuffers\nakama_telemetry_v1.fbs
+    Tabellen: 8
+    Felder:   52
+    Felder ohne id: 0
+    Offsetfelder (string/Vektor/Tabelle) im Strukturriegel: 16
+      ROT: Frame: Schema und FELD-IDS.json weichen ab â€” im Schema {'integration_samples': 14}, eingefroren {'integration_samples': 15}
+    Pruefungen: 1 rot
+
+========================================================================
+GRUEN — Fehler entfernt, derselbe Befehl
+========================================================================
+
+$ py -3.13 tools/eq-copilot/pruefe_flatc_drift.py
+EXIT=0
+Gepinnt: flatbuffers 25.12.19 @ 7e163021e59c
+  flatc: 25.12.19  (C:\Users\phili\Projekte\Nakama\eq-copilot\build\_deps\flatbuffers-build\Release\flatc.exe)
+  flatc-Beleg: Commit 7e163021e59cca4f8e1e35a7c828b5c6b7915953, sha256=7393d08f318a1aa599c10a12851f377db1b764ba1387501678f72b6f792bab2a  (C:\Users\phili\Projekte\Nakama\eq-copilot\build\nakama-flatc-commit-Release.txt)
+  Rust-Crate: 25.12.19 (Cargo.lock; Anforderung 25.12.19)
+  Feld-IDs: 0 rot
+
+Codegen-Drift:
+  ok:  eq-copilot/plugin/vertrag/generiert/nakama_telemetry_v1_generated.h  1260 Zeilen  sha256=3864a1069be1b965...
+  ok:  broker/src/generiert/nakama_telemetry_v1_generated.rs  2128 Zeilen  sha256=71b9c45e02aea954...
+
+Drift: 0 Dateien
+
+
+========================================================================
+ROTBEWEIS BESTANDEN: rot=True gruen=True
+========================================================================

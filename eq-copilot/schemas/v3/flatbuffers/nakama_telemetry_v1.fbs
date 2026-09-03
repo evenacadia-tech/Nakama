@@ -236,6 +236,20 @@ table Frame {
   /// Producergrund bei fehlendem Paar: 1=collecting, 2=gated. Status und ein
   /// gueltiges Paar schliessen einander aus; Abwesenheit ist null, nicht 0.
   lufs_i_status:ubyte = null (id: 13);
+  /// Ueber wie viel Audio dieser Frame integriert wurde (NAK-68, SONDE-013).
+  ///
+  /// An den BAENDERN ist eine duenne Messung schon heute ehrlich: ein Band
+  /// ohne Bit hat keinen Wert. An den RAHMENSKALAREN (peak_db, crest_db,
+  /// breite, korrelation) war sie es nicht - sie werden ueber einen
+  /// kuerzeren Rahmen gerechnet und sehen aus wie jeder andere. Ein
+  /// Empfaenger konnte "leise" nicht von "kurz gemessen" unterscheiden.
+  ///
+  /// Der Wert ist die Zahl der Samples je Kanal, die in DIESEN Rahmen
+  /// eingegangen sind - nicht die Wanddauer und nicht die Fensterlaenge des
+  /// Erzeugers. Er ist optional wie jede andere Kennzahl: Abwesenheit heisst
+  /// "der Erzeuger sagt es nicht", nicht 0. Ein neuer Leser darf ihn bei
+  /// Abwesenheit deshalb NICHT als 0 lesen.
+  integration_samples:uint = null (id: 14);
 }
 
 /// Ein Eintrag des Batches: genau eine Quelle mit genau ihrem aktuellen Frame.

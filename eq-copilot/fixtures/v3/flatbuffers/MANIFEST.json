@@ -6,8 +6,8 @@
   "erzeugung": "Die .bin-Dateien entstehen mit dem GEPINNTEN flatc aus einer JSON-Beschreibung (flatc -b). Ein eigener Encoder waere eine dritte Implementierung des Formats, die niemand prueft.",
   "byte_mutation_von": "Markiert einen Puffer, den flatc nicht erzeugen KANN (falsche Dateikennung, abgeschnitten, zerstoerter Wurzeloffset). Er entsteht als Byte-Mutation des genannten gueltigen Puffers.",
   "regeln": "Die geschlossene Liste der Regelnamen steht in eq-copilot/schemas/v3/flatbuffers/README.md. Ein Verstoss ist (pfad, regel); die Menge wird kanonisch nach (pfad, regel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
-  "anzahl_gueltig": 17,
-  "anzahl_ungueltig": 83,
+  "anzahl_gueltig": 20,
+  "anzahl_ungueltig": 84,
   "fixtures": [
     {
       "datei": "gueltig/alle-validity-bits.bin",
@@ -61,6 +61,24 @@
       "datei": "gueltig/grenze-32-eintraege.bin",
       "urteil": "gueltig",
       "warum": "genau 32 Sonden (§53.9) - die Grenze selbst ist noch gueltig",
+      "verstoesse": []
+    },
+    {
+      "datei": "gueltig/integration-samples-duenner-rahmen.bin",
+      "urteil": "gueltig",
+      "warum": "duenner Rahmen kurz nach einer Epochengrenze: derselbe Frame, aber ueber deutlich weniger Audio gerechnet. Genau diesen Unterschied konnte ein Empfaenger vor NAK-68 nicht sehen",
+      "verstoesse": []
+    },
+    {
+      "datei": "gueltig/integration-samples-evidenzrahmen.bin",
+      "urteil": "gueltig",
+      "warum": "dasselbe Feld auf dem 221er-Evidenzrahmen: die Kennzahl haengt am Rahmen, nicht am Gitter",
+      "verstoesse": []
+    },
+    {
+      "datei": "gueltig/integration-samples-id14.bin",
+      "urteil": "gueltig",
+      "warum": "voller Rahmen: 4800 Samples je Kanal sind in diesen Frame eingegangen",
       "verstoesse": []
     },
     {
@@ -462,6 +480,17 @@
         {
           "pfad": "/eintraege/0/quelle/project_binding_id",
           "regel": "hex32"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/integration-samples-null.bin",
+      "urteil": "ungueltig",
+      "warum": "NAK-68: ein ANWESENDES integration_samples von 0 behauptet einen Rahmen ohne Audio. Abwesenheit heisst 'nicht gesagt' und bleibt erlaubt - genau diese zwei Faelle trennt die Regel",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/integration_samples",
+          "regel": "integration_samples_null"
         }
       ]
     },

@@ -1484,6 +1484,7 @@ impl<'a> Frame<'a> {
   pub const VT_LUFS_I: ::flatbuffers::VOffsetT = 26;
   pub const VT_LUFS_I_UNSICHERHEIT_LU: ::flatbuffers::VOffsetT = 28;
   pub const VT_LUFS_I_STATUS: ::flatbuffers::VOffsetT = 30;
+  pub const VT_INTEGRATION_SAMPLES: ::flatbuffers::VOffsetT = 32;
 
   #[inline]
   pub unsafe fn init_from_table(table: ::flatbuffers::Table<'a>) -> Self {
@@ -1495,6 +1496,7 @@ impl<'a> Frame<'a> {
     args: &'args FrameArgs<'args>
   ) -> ::flatbuffers::WIPOffset<Frame<'bldr>> {
     let mut builder = FrameBuilder::new(_fbb);
+    if let Some(x) = args.integration_samples { builder.add_integration_samples(x); }
     if let Some(x) = args.lufs_i_unsicherheit_lu { builder.add_lufs_i_unsicherheit_lu(x); }
     if let Some(x) = args.lufs_i { builder.add_lufs_i(x); }
     if let Some(x) = args.band_stereo { builder.add_band_stereo(x); }
@@ -1619,6 +1621,26 @@ impl<'a> Frame<'a> {
     // which contains a valid value in this slot
     unsafe { self._tab.get::<u8>(Frame::VT_LUFS_I_STATUS, None)}
   }
+  /// Ueber wie viel Audio dieser Frame integriert wurde (NAK-68, SONDE-013).
+  ///
+  /// An den BAENDERN ist eine duenne Messung schon heute ehrlich: ein Band
+  /// ohne Bit hat keinen Wert. An den RAHMENSKALAREN (peak_db, crest_db,
+  /// breite, korrelation) war sie es nicht - sie werden ueber einen
+  /// kuerzeren Rahmen gerechnet und sehen aus wie jeder andere. Ein
+  /// Empfaenger konnte "leise" nicht von "kurz gemessen" unterscheiden.
+  ///
+  /// Der Wert ist die Zahl der Samples je Kanal, die in DIESEN Rahmen
+  /// eingegangen sind - nicht die Wanddauer und nicht die Fensterlaenge des
+  /// Erzeugers. Er ist optional wie jede andere Kennzahl: Abwesenheit heisst
+  /// "der Erzeuger sagt es nicht", nicht 0. Ein neuer Leser darf ihn bei
+  /// Abwesenheit deshalb NICHT als 0 lesen.
+  #[inline]
+  pub fn integration_samples(&self) -> Option<u32> {
+    // Safety:
+    // Created from valid Table for this object
+    // which contains a valid value in this slot
+    unsafe { self._tab.get::<u32>(Frame::VT_INTEGRATION_SAMPLES, None)}
+  }
 }
 
 impl ::flatbuffers::Verifiable for Frame<'_> {
@@ -1641,6 +1663,7 @@ impl ::flatbuffers::Verifiable for Frame<'_> {
      .visit_field::<f32>("lufs_i", Self::VT_LUFS_I, false)?
      .visit_field::<f32>("lufs_i_unsicherheit_lu", Self::VT_LUFS_I_UNSICHERHEIT_LU, false)?
      .visit_field::<u8>("lufs_i_status", Self::VT_LUFS_I_STATUS, false)?
+     .visit_field::<u32>("integration_samples", Self::VT_INTEGRATION_SAMPLES, false)?
      .finish();
     Ok(())
   }
@@ -1660,6 +1683,7 @@ pub struct FrameArgs<'a> {
     pub lufs_i: Option<f32>,
     pub lufs_i_unsicherheit_lu: Option<f32>,
     pub lufs_i_status: Option<u8>,
+    pub integration_samples: Option<u32>,
 }
 impl<'a> Default for FrameArgs<'a> {
   #[inline]
@@ -1679,6 +1703,7 @@ impl<'a> Default for FrameArgs<'a> {
       lufs_i: None,
       lufs_i_unsicherheit_lu: None,
       lufs_i_status: None,
+      integration_samples: None,
     }
   }
 }
@@ -1745,6 +1770,10 @@ impl<'a: 'b, 'b, A: ::flatbuffers::Allocator + 'a> FrameBuilder<'a, 'b, A> {
     self.fbb_.push_slot_always::<u8>(Frame::VT_LUFS_I_STATUS, lufs_i_status);
   }
   #[inline]
+  pub fn add_integration_samples(&mut self, integration_samples: u32) {
+    self.fbb_.push_slot_always::<u32>(Frame::VT_INTEGRATION_SAMPLES, integration_samples);
+  }
+  #[inline]
   pub fn new(_fbb: &'b mut ::flatbuffers::FlatBufferBuilder<'a, A>) -> FrameBuilder<'a, 'b, A> {
     let start = _fbb.start_table();
     FrameBuilder {
@@ -1778,6 +1807,7 @@ impl ::core::fmt::Debug for Frame<'_> {
       ds.field("lufs_i", &self.lufs_i());
       ds.field("lufs_i_unsicherheit_lu", &self.lufs_i_unsicherheit_lu());
       ds.field("lufs_i_status", &self.lufs_i_status());
+      ds.field("integration_samples", &self.integration_samples());
       ds.finish()
   }
 }

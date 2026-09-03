@@ -481,6 +481,15 @@ void pruefeFrame (const fb::Frame& f, const juce::String& p, juce::Array<Verstos
         if (lufsIPaar)
             hinzu (out, p + "/lufs_i_status", "lufs_i_status_mit_paar");
     }
+
+    // NAK-68 (SONDE-013): ein ANWESENDES integration_samples von 0 behauptet
+    // einen Rahmen ohne Audio - das ist ein Senderfehler, kein duenner Frame.
+    // ABWESENHEIT ist dagegen erlaubt und heisst "der Erzeuger sagt es nicht";
+    // sie darf vom Leser nicht als 0 gelesen werden. Genau diese zwei Faelle
+    // trennt die Regel, und nur so ist der neue Frame besser als der alte.
+    if (const auto integration = f.integration_samples();
+        integration.has_value() && *integration == 0u)
+        hinzu (out, p + "/integration_samples", "integration_samples_null");
 }
 
 juce::Array<Verstoss> kanonisch (const juce::Array<Verstoss>& roh)
@@ -624,6 +633,12 @@ bool lese (const uint8_t* puffer, size_t laenge,
         }
         if (const auto status = frame->lufs_i_status(); status.has_value())
             kopie.lufsIStatus = static_cast<int> (*status);
+        if (const auto integration = frame->integration_samples();
+            integration.has_value())
+        {
+            kopie.integrationGesetzt = true;
+            kopie.integrationSamples = *integration;
+        }
         aus.push_back (std::move (kopie));
     }
     return true;

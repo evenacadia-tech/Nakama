@@ -484,7 +484,7 @@ $kanon = @(
     # Bytegleichheits-Riegel. Ausgerechnet die Bytegleichheit ist der Riegel,
     # der gegen `core.autocrlf` auf dem Zweitrechner errichtet wurde; ein
     # Riegel, den niemand faehrt, ist keiner.
-    [pscustomobject]@{ Kuerzel='A5'; Name='pruefe_v3_vertrag.py';   Art='python'; Argumente=@('--abdeckung'); AbPhase='jetzt'; Behauptung='Referenzbein (jsonschema, draft 2020-12): Schema haelt die Engine-Teilmenge ein, Textriegel deckt jede gemessene Kante, jedes Fixture wird wie im Manifest klassifiziert, jede Definition hat ein Negativfixture.' }
+    [pscustomobject]@{ Kuerzel='A5'; Name='pruefe_v3_vertrag.py';   Art='python'; Argumente=@('--abdeckung'); AbPhase='jetzt'; Behauptung='Referenzbein (jsonschema, draft 2020-12): Schema haelt die Engine-Teilmenge ein, Textriegel deckt jede gemessene Kante, jedes Fixture wird wie im Manifest klassifiziert, jede Definition hat ein Negativfixture. Seit SONDE-013 zusaetzlich der Fassungsschritt: der aus dem Register zurueckgebaute Leser der Fassung 1 LEHNT jede Neuerung der Fassung 2 ab (drei Experimentfamilien, evidence_snapshot.ereignisse/.stereo, zwei neue Invalidierungsgruende), und die Summe der registrierten Familien stimmt mit dem oneOf ueberein.' }
     [pscustomobject]@{ Kuerzel='A6'; Name='erzeuge_bandgitter.py';  Art='python'; Argumente=@('--pruefen');   AbPhase='jetzt'; Behauptung='Beide Bandgitter sind bytegleich zur Neuerzeugung; 221 Baender, 64 Gruppen als exakte Partition.' }
     [pscustomobject]@{ Kuerzel='A7'; Name='erzeuge_quantisierung.py'; Art='python'; Argumente=@('--pruefen'); AbPhase='jetzt'; Behauptung='Quantisierungsvertrag bytegleich zur Neuerzeugung; Rundung, Saettigung und Nichtendliches als Testvektoren.' }
     [pscustomobject]@{ Kuerzel='A8'; Name='erzeuge_v3_fixtures.py'; Art='python'; Argumente=@('--pruefen');   AbPhase='jetzt'; Behauptung='Fixture-Korpus und MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei.' }
@@ -495,7 +495,7 @@ $kanon = @(
     # A9 prueft zusaetzlich, dass flatc, C++-Header und Rust-Crate dieselbe
     # Version tragen - der erzeugte Code ruft in diese Laufzeit.
     [pscustomobject]@{ Kuerzel='A9';  Name='pruefe_flatc_drift.py';  Art='python'; Argumente=@();            AbPhase='jetzt'; Behauptung='Codegen-Drift ist 0: die Neugenerierung aus dem .fbs ist bytegleich zum committeten C++- und Rust-Code; flatc, C++-Header und Rust-Crate tragen dieselbe gepinnte Version; jedes Tabellenfeld traegt eine explizite Feld-ID.' }
-    [pscustomobject]@{ Kuerzel='A10'; Name='erzeuge_fb_fixtures.py'; Art='python'; Argumente=@('--pruefen'); AbPhase='jetzt'; Behauptung='Binaerer Fixture-Korpus und sein MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei; sechs NAK-29-Transportrelationen und band_stereo ID 10 samt saturated-/Grenzfaellen sind in beiden Lesern gedeckt.' }
+    [pscustomobject]@{ Kuerzel='A10'; Name='erzeuge_fb_fixtures.py'; Art='python'; Argumente=@('--pruefen'); AbPhase='jetzt'; Behauptung='Binaerer Fixture-Korpus und sein MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei; sechs NAK-29-Transportrelationen, band_stereo ID 10 samt saturated-/Grenzfaellen und integration_samples ID 14 (voller Rahmen, duenner Rahmen, gesendete 0 als Senderfehler) sind in beiden Lesern gedeckt.' }
 
     # --- v2-Vertraege (Kontext-Inventur 21.08.) --------------------------------
     #
@@ -603,7 +603,7 @@ $kanon = @(
     [pscustomobject]@{ Kuerzel='B3b'; Name='EqCopHostProbeTest';     Art='plugin'; Argumente=@(); AbPhase='P0'; Behauptung='Termin-B-Messgeraet: Passthrough bitgleich, Sprung-/Automations-/Latenzmessung inkl. Fehlalarm-Riegel, Bericht-Rueckweg, 0 Allokationen.' }
     # SONDE-005a: der v3-Vertrag. Das C++-Bein misst gegen dasselbe
     # handgeschriebene MANIFEST wie contract_cross_language auf der Rust-Seite.
-    [pscustomobject]@{ Kuerzel='B3c'; Name='EqCopSchemaTest';         Art='plugin'; Argumente=@(); AbPhase='P1'; Behauptung='v3-Vertrag: C++ klassifiziert JSON- und FlatBuffers-Korpus wie das Manifest (Urteil UND Verletzungsmenge), einschliesslich Boolean/RFC-6901-Discriminatoren, NAK-29 in beiden Darstellungen und band_stereo ID 10; Bandgitter und Quantisierung bitgleich.' }
+    [pscustomobject]@{ Kuerzel='B3c'; Name='EqCopSchemaTest';         Art='plugin'; Argumente=@(); AbPhase='P1'; Behauptung='v3-Vertrag: C++ klassifiziert JSON- und FlatBuffers-Korpus wie das Manifest (Urteil UND Verletzungsmenge), einschliesslich Boolean/RFC-6901-Discriminatoren, NAK-29 in beiden Darstellungen und band_stereo ID 10; Bandgitter und Quantisierung bitgleich. Seit SONDE-013 misst dasselbe Bein integration_samples ID 14 ueber Encoder und Leser: gesetzt kommt Bit UND Wert zurueck, Abwesenheit bleibt gueltig und ist KEINE 0, und eine gesendete 0 faellt als Senderfehler.' }
     # S10-11/SONDE-008: B4 wird Pflicht. Zwei Ebenen in einem Bein - Queue und
     # Quarantaene pur (dort sind Ueberlauf, Wrap und Oversize deterministisch
     # herbeifuehrbar) UND derselbe Weg verdrahtet im echten Prozessor, dort an
@@ -632,7 +632,7 @@ $kanon = @(
     # ECHTEN Clients gegen einen selbst gehosteten v3-Server auf einer
     # Testpipe. Ohne die zweite Ebene waere es ein huebscher Parser, der im
     # Produkt nichts verbindet.
-    [pscustomobject]@{ Kuerzel='B10'; Name='EqCopIpcTest'; Art='plugin'; Argumente=@(); AbPhase='P2'; Behauptung='C++-v3-Vertrag und SONDE-011 Phase B: Envelope/CRC/Pipetoken und begrenzte P0/P1/P2-Politiken bleiben gruen; das In-Flight-Register gibt persistente Befehle erst bei angewandt, idempotent_wiederholt oder endgueltigem Fehler frei und reiht vor ACK dieselbe command_id wieder ein; Autostart verbindet zuerst, prueft Manifest-SHA-256 und bei gesetztem Thumbprint WinVerifyTrust plus Signer, spawnt verborgen und mutex-idempotent, haelt Backoff/Timeout/Cooldown-Grenzen und beendet keinen Brokerprozess.' }
+    [pscustomobject]@{ Kuerzel='B10'; Name='EqCopIpcTest'; Art='plugin'; Argumente=@(); AbPhase='P2'; Behauptung='C++-v3-Vertrag und SONDE-011 Phase B: Envelope/CRC/Pipetoken und begrenzte P0/P1/P2-Politiken bleiben gruen; das In-Flight-Register gibt persistente Befehle erst bei angewandt, idempotent_wiederholt oder endgueltigem Fehler frei und reiht vor ACK dieselbe command_id wieder ein; Autostart verbindet zuerst, prueft Manifest-SHA-256 und bei gesetztem Thumbprint WinVerifyTrust plus Signer, spawnt verborgen und mutex-idempotent, haelt Backoff/Timeout/Cooldown-Grenzen und beendet keinen Brokerprozess. Seit SONDE-013 nimmt die C++-Vertragsengine die drei Experimentfamilien aus den committeten Fixtures an, lehnt einen fremden execution_mode an derselben Engine ab, und ein experiment_manual_result laeuft als persistenzpflichtiger P0-Befehl durch das In-Flight-Register wie jede andere steuernde Nachricht.' }
     # SONDE-012 B3a: zwei getrennte Beine fuer die Message-/Control-Seite und
     # den Audioqueue-/Analyseworker. Beide uebersetzen den echten Probeeq-
     # Prozessor, starten im Test aber niemals die Produktions-v3-Pipe.

@@ -1,13 +1,13 @@
 {
   "$id": "evenacadia.nakama.ipc.v3.reserviert",
   "titel": "Reservierte v3-Nachrichtenfamilien",
-  "zweck": "Entwurf §33.3 zaehlt nach dem SONDE-011-Entscheid 26 Nachrichtenfamilien auf. Der bindende SONDE-012-Entscheid E-L18/L04 vom 01.09.2026 belegt zusaetzlich `session_command`; damit umfasst das Register heute 27 Namen. Die uebrigen 9 reservierten Familien tragen weiterhin Nutzlasten aus spaeteren Phasen — sie jetzt zu erfinden waere ein Vorgriff, den eine spaetere Phase teuer zuruecknehmen muesste (Bauaufteilung §6.2 'Kein Vorgriff').",
+  "zweck": "Entwurf §33.3 zaehlt nach dem SONDE-011-Entscheid 26 Nachrichtenfamilien auf. Der bindende SONDE-012-Entscheid E-L18/L04 vom 01.09.2026 belegt zusaetzlich `session_command`; der bindende SONDE-013-Entscheid E-02 vom 03.09.2026 definiert zusaetzlich `experiment_manual_result` und holt `experiment_begin` und `experiment_abort` aus der Reserve. Damit umfasst das Register 28 Namen. Die uebrigen 7 reservierten Familien tragen weiterhin Nutzlasten aus spaeteren Phasen — sie jetzt zu erfinden waere ein Vorgriff, den eine spaetere Phase teuer zuruecknehmen muesste (Bauaufteilung §6.2 'Kein Vorgriff').",
   "regel": "Ihre NAMEN sind trotzdem jetzt vergeben. Ein reservierter Discriminator wird vom v3-Parser ABGELEHNT (er steht nicht im oneOf des Schemas) und darf von keinem spaeteren Ticket fuer etwas anderes verwendet werden. Genau das ist der Vertragsanteil, der spaeter bricht, wenn man ihn heute offen laesst.",
-  "pruefung": "pruefe_v3_vertrag.py prueft, dass sich reservierte, belegte und definierte Namen konsistent verhalten, dass alle reservierten Namen ohne Nutzlast bleiben und dass die Summe 27 ergibt.",
+  "pruefung": "pruefe_v3_vertrag.py prueft, dass sich reservierte, belegte und definierte Namen konsistent verhalten, dass alle reservierten Namen ohne Nutzlast bleiben und dass die Summe 28 ergibt.",
   "wire_envelope_schema_minor": {
     "familie": "P1",
-    "vorher": 0,
-    "aktuell": 1,
+    "vorher": 1,
+    "aktuell": 2,
     "auswahlregel": "Der Empfaenger waehlt die JSON-Schemafassung anhand von message_family und schema_minor im Wire-Envelope; im Payload entsteht kein weiteres Versionsfeld.",
     "fassungen": {
       "0": {
@@ -24,6 +24,18 @@
         "session_mitglied_p2_reject": true,
         "session_command": true,
         "session_snapshot_store_degraded": true
+      },
+      "2": {
+        "hinweis": "SONDE-013 (P4) hebt den Minor GENAU EINMAL. Jede P1-Vertragsaenderung dieses Tickets liegt in dieser einen Fassung; ein Leser der Fassung 1 lehnt sie ab, statt sie still auf einen bekannten Zweig abzubilden. NICHT Teil dieser Fassung ist `integration_samples` (Feld-ID 14): das ist die FlatBuffers-Flaeche P2, deren schema_major/schema_minor im 16-Byte-Envelope leben und hier nicht gefuehrt werden.",
+        "experiment_begin": true,
+        "experiment_abort": true,
+        "experiment_manual_result": true,
+        "evidence_snapshot_ereignisse": true,
+        "evidence_snapshot_stereo": true,
+        "evidence_invalidate_grund_erweitert": [
+          "material_wechsel",
+          "messpunkt_wechsel"
+        ]
       }
     }
   },
@@ -32,6 +44,21 @@
       "name": "session_command",
       "eigentuemer": "SONDE-012 (S18-19)",
       "grund": "Seit Wire-Envelope-schema_minor 1 belegt: geschlossener Sessiongraph-Befehl confirm_join oder unbind_probe; die Autorisierung stammt ausschliesslich vom fuehrenden gebundenen Main-Link derselben Session."
+    },
+    {
+      "name": "experiment_begin",
+      "eigentuemer": "SONDE-013 (P4)",
+      "grund": "Seit Wire-Envelope-schema_minor 2 belegt: Beginn eines manuellen Versuchs mit verriegelter Baseline und unveraenderlichen Referenzen. `execution_mode` ist auf `manual_external` festgelegt; der Active-Compare-Zweig gehoert SONDE-017 und waere hier ein Vorgriff."
+    },
+    {
+      "name": "experiment_abort",
+      "eigentuemer": "SONDE-013 (P4)",
+      "grund": "Seit Wire-Envelope-schema_minor 2 belegt: Gegenpfad zu experiment_begin mit genau zwei Ausloesern - Userabbruch und Verdraengung durch einen Bestandsdeckel. Sitzungsende und Neustart brechen nicht ab."
+    },
+    {
+      "name": "experiment_manual_result",
+      "eigentuemer": "SONDE-013 (P4)",
+      "grund": "Seit Wire-Envelope-schema_minor 2 definiert (SONDE-013 E-02): Ergebnisweg des manuellen Versuchs. EIGENE Familie, weil `experiment_result` vollstaendig SONDE-017 gehoert und der Vertrag nur ganze reservierte Familien kennt, keine teilreservierten Discriminator-Zweige. Traegt nur Hoerurteil, aufgedeckte Blindreihenfolge, Usernotiz und optionalen Werkzeugnamen; keine State-Hashes, keine Candidate-Revision, keinen Match-Gain."
     }
   ],
   "belegte_felder": [
@@ -64,6 +91,31 @@
       "name": "session_snapshot.store_degraded",
       "eigentuemer": "SONDE-012 (S18-19)",
       "grund": "Seit Wire-Envelope-schema_minor 1 optional belegt: nur true reist als positiver Store-Diagnosebefund; Abwesenheit behauptet keinen gesunden Store."
+    },
+    {
+      "name": "evidence_snapshot.ereignisse",
+      "eigentuemer": "SONDE-013 (P4)",
+      "grund": "Seit Wire-Envelope-schema_minor 2 optional belegt: der DynamicsEvent-Strom samt Verlustzaehler des auf 64 Plaetze gedeckelten Rings. Abwesenheit heisst 'diese Quelle liefert keine Ereignisse', nicht 'keine gemessen'."
+    },
+    {
+      "name": "evidence_snapshot.stereo",
+      "eigentuemer": "SONDE-013 (P4)",
+      "grund": "Seit Wire-Envelope-schema_minor 2 optional belegt: bandweise Stereoevidenz aus komplexen L/R-STFTs (§40.1). Die zwei globalen Skalare `breite` und `korrelation` bleiben der 10-Hz-Livepfad und wandern nicht hierher."
+    },
+    {
+      "name": "evidence_snapshot.stereo.phase_rad",
+      "eigentuemer": "SONDE-013 (P4)",
+      "grund": "Seit Wire-Envelope-schema_minor 2 belegt: bandweise Interchannel-Phase. Sie traegt ihr Gueltigkeitsbit NUR in Baendern, deren Kohaerenz die benannte Schwelle ueberschreitet - sonst fehlt sie, statt geschaetzt zu werden (§40.1)."
+    },
+    {
+      "name": "evidence_snapshot.stereo.fenster_dauer_ms",
+      "eigentuemer": "SONDE-013 (P4)",
+      "grund": "Seit Wire-Envelope-schema_minor 2 belegt: Fensterdauer je Band. §40.1 woertlich: 'Fensterdauer und Freiheitsgrade werden Teil der Evidenz'."
+    },
+    {
+      "name": "evidence_snapshot.stereo.freiheitsgrade",
+      "eigentuemer": "SONDE-013 (P4)",
+      "grund": "Seit Wire-Envelope-schema_minor 2 belegt: Zahl der gemittelten gueltigen Welch-Frames je Band. Unter acht ist die Kohaerenz null; der Empfaenger sieht hier, warum."
     }
   ],
   "reservierte_felder": [
@@ -71,11 +123,6 @@
       "name": "Frame.band_dynamic_gain_db",
       "eigentuemer": "S26-28 (SONDE-015)",
       "grund": "Momentane dynamische Verstaerkungsaenderung je Band fuer das sichtbare Mitschwingen des dynamischen EQ; nur der Name ist reserviert, Feld-ID und Nutzlast entstehen erst mit SONDE-015 (S26-28)."
-    },
-    {
-      "name": "evidence_snapshot.ereignisse",
-      "eigentuemer": "SONDE-013 (P4)",
-      "grund": "Entwurf §33.2 zaehlt 'Ereignisse' als Inhalt des Evidenzsnapshots auf, aber der DynamicsEvent-Strom entsteht erst in §39.1 mit dem Dynamik- und Experimentkern. Ihn hier zu erfinden waere ein Vorgriff (Bauaufteilung §6.2). Der NAME ist trotzdem vergeben: `evidence_snapshot` ist strikt, ein Feld dieses Namens wird heute abgelehnt, und kein spaeteres Ticket darf ihn fuer etwas anderes verwenden."
     },
     {
       "name": "session_snapshot.contribution_inputs",
@@ -100,7 +147,7 @@
   ],
   "hinweis_felder": "Dieselbe Regel wie fuer die Nachrichtennamen, eine Ebene tiefer: der Vertragsanteil, der spaeter bricht, wenn man ihn heute offen laesst, ist der NAME - nicht die Nutzlast.",
 
-  "gesamt_erwartet": 27,
+  "gesamt_erwartet": 28,
   "definiert": [
     "hello",
     "welcome",
@@ -114,6 +161,9 @@
     "audible_intervention_begin",
     "audible_intervention_end",
     "evidence_invalidate",
+    "experiment_begin",
+    "experiment_abort",
+    "experiment_manual_result",
     "preview_begin",
     "preview_renew",
     "preview_end",
@@ -141,16 +191,6 @@
       "name": "revert_transaction",
       "eigentuemer": "SONDE-016 (P7)",
       "grund": "Gegenpfad zu apply_transaction — gehoert in denselben Aenderungssatz wie dieses (Bauaufteilung §6.3)."
-    },
-    {
-      "name": "experiment_begin",
-      "eigentuemer": "SONDE-013 (P4)",
-      "grund": "Baseline/Kandidat/Vergleichbarkeit entstehen mit dem manuellen Experimentkern."
-    },
-    {
-      "name": "experiment_abort",
-      "eigentuemer": "SONDE-013 (P4)",
-      "grund": "Gegenpfad zu experiment_begin."
     },
     {
       "name": "experiment_result",

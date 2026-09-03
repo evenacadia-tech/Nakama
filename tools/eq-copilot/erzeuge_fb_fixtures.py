@@ -234,6 +234,28 @@ def gueltige() -> list[tuple[str, dict, str]]:
     faelle.append(("loudness-i-gated", batch(e),
                    "Status 2 bedeutet gated und traegt bewusst kein Zahlenpaar"))
 
+    # NAK-68 (SONDE-013): Feld-ID 14. Drei Faelle, die zusammen den Nutzen des
+    # Feldes belegen - ein voller Rahmen, ein DUENNER kurz nach einer
+    # Epochengrenze und ein Frame ohne das Feld. Ohne den dritten waere nicht
+    # gezeigt, dass Abwesenheit weiter erlaubt ist und nicht als 0 gilt.
+    e = eintrag()
+    e["frame"]["integration_samples"] = 4800
+    faelle.append(("integration-samples-id14", batch(e),
+                   "voller Rahmen: 4800 Samples je Kanal sind in diesen Frame eingegangen"))
+
+    e = eintrag()
+    e["frame"]["integration_samples"] = 512
+    faelle.append(("integration-samples-duenner-rahmen", batch(e),
+                   "duenner Rahmen kurz nach einer Epochengrenze: derselbe Frame, "
+                   "aber ueber deutlich weniger Audio gerechnet. Genau diesen "
+                   "Unterschied konnte ein Empfaenger vor NAK-68 nicht sehen"))
+
+    e = eintrag(n=221, gitter="nakama_1_24_oct_30_18k_v1", encoding="q_db_0p01_i16")
+    e["frame"]["integration_samples"] = 144000
+    faelle.append(("integration-samples-evidenzrahmen", batch(e),
+                   "dasselbe Feld auf dem 221er-Evidenzrahmen: die Kennzahl haengt "
+                   "am Rahmen, nicht am Gitter"))
+
     lokal = eintrag()
     lokal["frame"]["transport"]["zeitbasis"] = "local_monotonic"
     del lokal["frame"]["transport"]["project_sample_start"]
@@ -704,6 +726,15 @@ def ungueltige() -> list[tuple[str, dict, list[dict], str]]:
             f"loudness-i-status-{status}", b,
             [v(f"{P}/lufs_i_status", "lufs_i_status")],
             "nur 1=collecting und 2=gated sind belegte Statuswerte"))
+
+    b = batch(eintrag())
+    b["eintraege"][0]["frame"]["integration_samples"] = 0
+    faelle.append((
+        "integration-samples-null", b,
+        [v(f"{P}/integration_samples", "integration_samples_null")],
+        "NAK-68: ein ANWESENDES integration_samples von 0 behauptet einen "
+        "Rahmen ohne Audio. Abwesenheit heisst 'nicht gesagt' und bleibt "
+        "erlaubt - genau diese zwei Faelle trennt die Regel"))
 
     # Jede optionale Frame-Kennzahl hat ein EIGENES Nichtendlich-Fixture. Ein
     # Sammelfall wuerde nur beweisen, dass irgendein Feld aus der Leserschleife

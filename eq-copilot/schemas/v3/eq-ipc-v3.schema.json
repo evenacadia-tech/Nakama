@@ -19,6 +19,9 @@
     { "$ref": "#/$defs/audible_intervention_begin" },
     { "$ref": "#/$defs/audible_intervention_end" },
     { "$ref": "#/$defs/evidence_invalidate" },
+    { "$ref": "#/$defs/experiment_begin" },
+    { "$ref": "#/$defs/experiment_abort" },
+    { "$ref": "#/$defs/experiment_manual_result" },
     { "$ref": "#/$defs/preview_begin" },
     { "$ref": "#/$defs/preview_renew" },
     { "$ref": "#/$defs/preview_end" },
@@ -1000,7 +1003,7 @@
     },
 
     "evidence_snapshot": {
-      "description": "1-4 Hz: voller Bandsatz, Verteilungspunkte, Abdeckung, Konvergenz (§33.2). Traegt seinen Transportstempel und seine Konfidenz mit; ohne beides ist er kein Beleg. §33.2 zaehlt den Inhalt abschliessend auf — 'volle 221 Baender, P10/P50/P95, Abdeckung, Konvergenz, Ereignisse' —, deshalb ist `verteilung` PFLICHT und keine Zugabe. `ereignisse` fehlt hier bewusst: der DynamicsEvent-Strom entsteht in §39.1/P4; sein Feldname ist in reservierte-nachrichten-v1.json verbrannt, damit ihn kein anderes Ticket belegt.",
+      "description": "1-4 Hz: voller Bandsatz, Verteilungspunkte, Abdeckung, Konvergenz (§33.2). Traegt seinen Transportstempel und seine Konfidenz mit; ohne beides ist er kein Beleg. §33.2 zaehlt den Inhalt abschliessend auf — 'volle 221 Baender, P10/P50/P95, Abdeckung, Konvergenz, Ereignisse' —, deshalb ist `verteilung` PFLICHT und keine Zugabe. Seit Wire-Envelope-schema_minor 2 (SONDE-013/P4) ist der zuvor reservierte Feldname `ereignisse` BELEGT; `stereo` traegt die bandweise Stereoevidenz aus §40.1. Beide sind OPTIONAL: ihre Abwesenheit heisst 'diese Quelle liefert dazu nichts', nicht 'null'.",
       "type": "object",
       "required": [
         "type",
@@ -1041,7 +1044,9 @@
           "type": "boolean"
         },
         "ausschlussgrund": { "type": ["string", "null"], "maxLength": 200 },
-        "konfidenz": { "$ref": "#/$defs/konfidenz" }
+        "konfidenz": { "$ref": "#/$defs/konfidenz" },
+        "ereignisse": { "$ref": "#/$defs/evidence_ereignisse" },
+        "stereo": { "$ref": "#/$defs/stereo_evidenz" }
       }
     },
 
@@ -1089,7 +1094,10 @@
       "additionalProperties": false,
       "properties": {
         "type": { "const": "evidence_invalidate" },
-        "grund": { "enum": ["intervention", "routing_unbekannt", "sequenzluecke", "epochwechsel", "state_revision"] },
+        "grund": {
+          "$comment": "Seit Wire-Envelope-schema_minor 2 (SONDE-013/P4) zwei Gruende mehr: `material_wechsel` fuer geaendertes musikalisches Material (ueber den Fingerprintvergleich erkannt, nicht ueber eine Zeitheuristik) und `messpunkt_wechsel` fuer eine geaenderte Messposition oder Messpunktklasse (Gate 7, §49.2). Ein Leser der Fassung 1 lehnt beide ab, statt sie still auf einen bekannten Grund abzubilden; die Fassungswahl laeuft ausschliesslich ueber message_family und schema_minor des Wire-Envelopes.",
+          "enum": ["intervention", "routing_unbekannt", "sequenzluecke", "epochwechsel", "state_revision", "material_wechsel", "messpunkt_wechsel"]
+        },
         "umfang": { "$ref": "#/$defs/invalidate_umfang" }
       }
     },
@@ -1137,6 +1145,308 @@
       "additionalProperties": false,
       "properties": {
         "art": { "const": "ganze_sitzung" }
+      }
+    },
+
+    "dynamics_ereignis": {
+      "description": "Ein Eintrag des DynamicsEvent-Stroms (§39.1). Der Detektor hat ZWEI unabhaengige Ausloeser: spektraler Fluss und - eigenstaendig - Peaksteigung mit Crest. Welcher gefeuert hat, sagen die zwei Qualitaetsbits; loesen beide im selben Rahmen aus, entsteht GENAU EIN Ereignis mit beiden Bits. Dass mindestens eines der beiden Bits gesetzt sein muss, kann dieses Schema nicht ausdruecken - JSON Schema hat keinen Feldvergleich; die Regel gehoert dem Erzeuger und wird von EqCopAnalysisGoldenTest gemessen, nicht hier behauptet.",
+      "type": "object",
+      "required": ["sample_offset", "staerke_mad", "band_zentrum_hz", "dauer_samples", "qualitaet_fluss", "qualitaet_peak"],
+      "additionalProperties": false,
+      "properties": {
+        "sample_offset": {
+          "$comment": "Samplezeit RELATIV zum Beginn des Transportstempels dieses Snapshots. Absolute Projektzeit steht im Stempel; sie hier zu wiederholen waere eine zweite Wahrheit ueber denselben Zeitpunkt.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "staerke_mad": { "type": "number", "minimum": 0, "maximum": 1000 },
+        "band_zentrum_hz": { "type": "number", "exclusiveMinimum": 0, "maximum": 384000 },
+        "dauer_samples": { "type": "integer", "minimum": 0 },
+        "qualitaet_fluss": { "type": "boolean" },
+        "qualitaet_peak": { "type": "boolean" }
+      }
+    },
+
+    "evidence_ereignisse": {
+      "description": "Der Ereignisstrom samt seinem Verlustzaehler. Der Ring im Audiothread ist fest auf 64 Plaetze gedeckelt (§48.1); was er verdraengt hat, steht in `verloren` statt still zu verschwinden. Bei Ueberlast sinkt die Kadenz, der Ring wird nie stillschweigend geleert.",
+      "type": "object",
+      "required": ["liste", "verloren"],
+      "additionalProperties": false,
+      "properties": {
+        "liste": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 64,
+          "items": { "$ref": "#/$defs/dynamics_ereignis" }
+        },
+        "verloren": {
+          "$comment": "Laufgebundener Verdraengungszaehler des Rings. 0 heisst nachweislich kein Verlust, nicht 'nicht gemessen'.",
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+
+    "stereo_bandwerte": {
+      "description": "221 Bandwerte in dB als float32 auf dem Evidenzgitter, mit demselben Gueltigkeitsbitmap wie `bandwerte`: ein Band ohne Bit hat KEINEN Wert - es entsteht keine numerische Null. Nichtendliche JSON-Zahlen fallen am gemeinsamen Textriegel.",
+      "type": "object",
+      "required": ["gitter_id", "encoding", "werte", "gueltig_bitmap"],
+      "additionalProperties": false,
+      "properties": {
+        "gitter_id": { "const": "nakama_1_24_oct_30_18k_v1" },
+        "encoding": { "const": "float32" },
+        "werte": {
+          "type": "array",
+          "minItems": 221,
+          "maxItems": 221,
+          "items": { "type": "number", "minimum": -400, "maximum": 400 }
+        },
+        "gueltig_bitmap": {
+          "$comment": "Wie bei `bandwerte`: 28 Byte = 40 Base64-Zeichen, die Klasse [AQgw] erzwingt die vier BASE64-Fuellbits null. Die BAND-Fuellbits des 28. Bytes (Baender 222-224) bleiben Erzeugerdisziplin.",
+          "type": "string",
+          "minLength": 40,
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9+/]{37}[AQgw]==$"
+        }
+      }
+    },
+
+    "stereo_bandwerte_normiert": {
+      "description": "Wie `stereo_bandwerte`, aber fuer normierte Groessen: der Wertebereich ist [-1, 1]. Korrelation nutzt ihn ganz; Kohaerenz und Persistenz nutzen nur [0, 1] - dass eine negative Kohaerenz unmoeglich ist, steht am Feld und nicht hier, damit die drei Groessen sich eine Definition teilen statt drei fast gleiche zu erzeugen.",
+      "type": "object",
+      "required": ["gitter_id", "encoding", "werte", "gueltig_bitmap"],
+      "additionalProperties": false,
+      "properties": {
+        "gitter_id": { "const": "nakama_1_24_oct_30_18k_v1" },
+        "encoding": { "const": "float32" },
+        "werte": {
+          "type": "array",
+          "minItems": 221,
+          "maxItems": 221,
+          "items": { "type": "number", "minimum": -1, "maximum": 1 }
+        },
+        "gueltig_bitmap": {
+          "type": "string",
+          "minLength": 40,
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9+/]{37}[AQgw]==$"
+        }
+      }
+    },
+
+    "stereo_bandwerte_phase": {
+      "description": "Bandweise Interchannel-Phase in Radiant. Die mathematische Grenze ist +/-pi; das Schema traegt eine minimal weitere Schranke, weil pi in JSON nicht exakt darstellbar ist und ein Erzeuger sonst an seinem eigenen Rundungsfehler fiele. Die Wicklung selbst gehoert dem Erzeuger und wird von EqCopSonde013StereoGoldenTest gemessen, nicht hier behauptet.",
+      "type": "object",
+      "required": ["gitter_id", "encoding", "werte", "gueltig_bitmap"],
+      "additionalProperties": false,
+      "properties": {
+        "gitter_id": { "const": "nakama_1_24_oct_30_18k_v1" },
+        "encoding": { "const": "float32" },
+        "werte": {
+          "type": "array",
+          "minItems": 221,
+          "maxItems": 221,
+          "items": { "type": "number", "minimum": -3.15, "maximum": 3.15 }
+        },
+        "gueltig_bitmap": {
+          "type": "string",
+          "minLength": 40,
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9+/]{37}[AQgw]==$"
+        }
+      }
+    },
+
+    "stereo_evidenz": {
+      "description": "Bandweise Stereoevidenz aus komplexen L/R-STFTs (§40.1). Zwei globale Skalare reichen dafuer nicht: `breite` und `korrelation` bleiben der 10-Hz-Livepfad (§33.2), diese Felder reisen ausschliesslich hier. Fail-closed in zwei Stufen: Kohaerenz traegt KEIN Gueltigkeitsbit bei zu wenig Energie oder weniger als acht gemittelten Welch-Frames, und die Phase traegt eines NUR in Baendern, deren Kohaerenz die benannte Schwelle ueberschreitet - sonst fehlt sie, statt geschaetzt zu werden. Dass Phasenbits eine Teilmenge der Kohaerenzbits sind, kann dieses Schema nicht ausdruecken; die Regel gehoert dem Erzeuger und wird von EqCopSonde013StereoGoldenTest gemessen.",
+      "type": "object",
+      "required": [
+        "fenster_dauer_ms",
+        "freiheitsgrade",
+        "mid_db",
+        "side_db",
+        "seitenanteil_db",
+        "korrelation_kurz",
+        "korrelation_mittel",
+        "kohaerenz",
+        "phase_rad",
+        "persistenz",
+        "zeitperzentile",
+        "mono_folddown_db",
+        "lr_balance_db"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "fenster_dauer_ms": {
+          "$comment": "§40.1 woertlich: 'Fensterdauer und Freiheitsgrade werden Teil der Evidenz'. Je Band, weil die Fensterlaenge ueber die Baender nicht gleich sein muss. Kein Gueltigkeitsbitmap: eine Fensterdauer 0 IST die ehrliche Aussage 'in diesem Band wurde nichts integriert'.",
+          "type": "array",
+          "minItems": 221,
+          "maxItems": 221,
+          "items": { "type": "number", "minimum": 0, "maximum": 3600000 }
+        },
+        "freiheitsgrade": {
+          "$comment": "Zahl der gemittelten GUELTIGEN Welch-Frames je Band. Unter acht ist die Kohaerenz `null` (kein Bit); der Empfaenger sieht hier, warum.",
+          "type": "array",
+          "minItems": 221,
+          "maxItems": 221,
+          "items": { "type": "integer", "minimum": 0, "maximum": 1048576 }
+        },
+        "mid_db": { "$ref": "#/$defs/stereo_bandwerte" },
+        "side_db": { "$ref": "#/$defs/stereo_bandwerte" },
+        "seitenanteil_db": { "$ref": "#/$defs/stereo_bandwerte" },
+        "korrelation_kurz": { "$ref": "#/$defs/stereo_bandwerte_normiert" },
+        "korrelation_mittel": { "$ref": "#/$defs/stereo_bandwerte_normiert" },
+        "kohaerenz": {
+          "$comment": "Magnitude-Squared Coherence, mathematisch in [0, 1]. Die gemeinsame Definition traegt [-1, 1]; ein negativer Wert waere ein Erzeugerfehler und faellt am Golden, nicht hier.",
+          "$ref": "#/$defs/stereo_bandwerte_normiert"
+        },
+        "phase_rad": { "$ref": "#/$defs/stereo_bandwerte_phase" },
+        "persistenz": {
+          "$comment": "Zeitliche Persistenz des Bandbefundes, mathematisch in [0, 1].",
+          "$ref": "#/$defs/stereo_bandwerte_normiert"
+        },
+        "zeitperzentile": {
+          "$comment": "P10/P50/P95 des Seitenanteils UEBER DIE ZEIT des Evidenzfensters - nicht ueber die Baender. Das Gegenstueck zu `verteilung` am Snapshot, das dieselben drei Punkte fuer die Bandpegel fuehrt.",
+          "type": "object",
+          "required": ["p10", "p50", "p95"],
+          "additionalProperties": false,
+          "properties": {
+            "p10": { "$ref": "#/$defs/stereo_bandwerte" },
+            "p50": { "$ref": "#/$defs/stereo_bandwerte" },
+            "p95": { "$ref": "#/$defs/stereo_bandwerte" }
+          }
+        },
+        "mono_folddown_db": {
+          "$comment": "Am WIRKLICH gefalteten Puffer gemessener Verlust (§40.3), nicht aus einem Korrelationsskalar geschaetzt. Physischer Mono-Check ist mono=(L+R)/2; das energienormierte M/S der Bandfelder ist eine andere Rechnung und wird damit nie vermischt.",
+          "type": "number",
+          "minimum": -400,
+          "maximum": 400
+        },
+        "lr_balance_db": { "type": "number", "minimum": -400, "maximum": 400 }
+      }
+    },
+
+    "fingerprint": {
+      "description": "Grober Content-Fingerprint einer Passage (§32.4): quantisierte Bandenergie-, Chroma- und Onset-Verlaeufe. Er enthaelt KEIN rekonstruierbares PCM und dient nur dazu, grob anderes musikalisches Material zu erkennen. Deshalb sind die drei Verlaeufe auf je ein Byte je Stuetzstelle quantisiert - eine Aufloesung, aus der sich kein Signal zurueckrechnen laesst.",
+      "type": "object",
+      "required": ["version", "band_energie", "chroma", "onset"],
+      "additionalProperties": false,
+      "properties": {
+        "version": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "band_energie": {
+          "type": "array",
+          "minItems": 32,
+          "maxItems": 32,
+          "items": { "type": "integer", "minimum": 0, "maximum": 255 }
+        },
+        "chroma": {
+          "type": "array",
+          "minItems": 12,
+          "maxItems": 12,
+          "items": { "type": "integer", "minimum": 0, "maximum": 255 }
+        },
+        "onset": {
+          "type": "array",
+          "minItems": 32,
+          "maxItems": 32,
+          "items": { "type": "integer", "minimum": 0, "maximum": 255 }
+        }
+      }
+    },
+
+    "alignment_klasse": {
+      "description": "GENAU vier Klassen (§38.2/§38.5). Die Menge ist beim ersten Bau abschliessend gewaehlt: sie zu erweitern ist ein ausdruecklicher Fassungsschritt, den ein Leser der alten Fassung ablehnt, nie eine stille Ergaenzung. Rauschen oder anderes Material ergibt `unclear` - es gibt keinen fuenften, weicheren Wert.",
+      "enum": ["feature_aligned", "audio_aligned", "probable", "unclear"]
+    },
+
+    "experiment_referenz": {
+      "description": "Die UNVERAENDERLICHEN Referenzen eines Versuchs (§43.1). Sie werden vor `experiment_begin` gemessen und danach nicht mehr angefasst; nur so ist der Vergleich nach Reconnect und UI-Neustart rekonstruierbar. Der Match-Gain steht hier und NICHT im Ergebnis: er wird vorab gemessen und fuer die Dauer des Versuchs eingefroren, eine laufende Nachregelung waere selbst ein hoerbarer Prozessor (§38.3).",
+      "type": "object",
+      "required": ["passage_fingerprint", "upstream_fingerprint", "aktive_quellen", "messpunktklassen", "match_gain_db", "alignment"],
+      "additionalProperties": false,
+      "properties": {
+        "passage_fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "upstream_fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "aktive_quellen": {
+          "$comment": "Eingefrorenes aktives Quellenset als instance_id-Liste. Es geht in den Aktivquellen-Jaccard der Vergleichbarkeit ein (§43.2).",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": { "$ref": "#/$defs/hex32" }
+        },
+        "messpunktklassen": {
+          "$comment": "Je Quelle ihre Messposition zum Zeitpunkt der Baseline. Aendert sie sich, invalidiert das die abhaengige Evidenz (Gate 7, §49.2) - deshalb wird sie mit eingefroren statt spaeter nachgeschlagen.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": { "enum": ["insert", "pre", "post", "post_fader_contribution"] }
+        },
+        "match_gain_db": { "type": "number", "minimum": -60, "maximum": 60 },
+        "alignment": { "$ref": "#/$defs/alignment_klasse" }
+      }
+    },
+
+    "experiment_begin": {
+      "description": "Beginn eines manuellen Versuchs (§43.1, SONDE-013/P4). Reihenfolge: Passage bestimmen, Baseline messen, Baseline VERRIEGELN, dann diese Nachricht mit den unveraenderlichen Referenzen in den append-only Store, dann den User um die Aenderung bitten. `execution_mode` ist heute auf `manual_external` FESTGELEGT statt eine offene Menge zu sein: der Active-Compare-Pfad gehoert SONDE-017, und ihn hier als Zweig vorzusehen waere ein Vorgriff (Bauaufteilung §6.2). Ihn spaeter zu ergaenzen ist ein ausdruecklicher Fassungsschritt.",
+      "type": "object",
+      "required": ["type", "kopf", "experiment_id", "execution_mode", "reproduzierbarkeit", "passage_id", "referenz"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "experiment_begin" },
+        "kopf": { "$ref": "#/$defs/steuerkopf" },
+        "experiment_id": { "$ref": "#/$defs/hex32" },
+        "execution_mode": { "const": "manual_external" },
+        "reproduzierbarkeit": {
+          "$comment": "Steht trotz Ableitbarkeit ausdruecklich im Vertrag - dieselbe Begruendung wie bei `probe_descriptor.aussageklasse`: ein Verbraucher, der Text und Angebot erzeugt, liest die Klasse und nicht die Modustabelle. `manual_external` ist ausdruecklich nicht automatisch wiederherstellbar: es gibt keinen State-Hash, keinen Nakama-Revert und eine niedrigere Reproduzierbarkeitsklasse (§43.1).",
+          "const": "manuell_nicht_wiederherstellbar"
+        },
+        "passage_id": { "$ref": "#/$defs/hex32" },
+        "referenz": { "$ref": "#/$defs/experiment_referenz" }
+      }
+    },
+
+    "experiment_abort": {
+      "description": "Gegenpfad zu experiment_begin: schliesst den Versuch mit einem terminalen Ereignis im append-only Store (§43.1). Das ist ausdruecklich der HAEUFIGSTE Realfall und Teil des Vertrags, kein Fehlerpfad. Genau ZWEI Ausloeser: der ausdrueckliche Userabbruch und die Verdraengung durch einen Bestandsdeckel des Stores. Sitzungsende, Projektwechsel, Reconnect, UI-Neustart und Brokerneustart brechen NICHT ab - ein offener Versuch ueberdauert sie und bleibt danach rekonstruierbar.",
+      "type": "object",
+      "required": ["type", "kopf", "experiment_id", "grund"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "experiment_abort" },
+        "kopf": { "$ref": "#/$defs/steuerkopf" },
+        "experiment_id": { "$ref": "#/$defs/hex32" },
+        "grund": { "enum": ["user_abbruch", "verdraengt"] }
+      }
+    },
+
+    "experiment_manual_result": {
+      "description": "Ergebnis eines `manual_external`-Versuchs von Gen zum Broker (SONDE-013 E-02). EIGENE Familie, weil `experiment_result` vollstaendig SONDE-017 gehoert und der Vertrag nur GANZE reservierte Familien kennt, keine teilreservierten Discriminator-Zweige. Sie traegt ausschliesslich, was nur der User weiss: Hoerurteil, die nach dem Urteil aufgedeckte Blindreihenfolge, die Usernotiz und optional den Werkzeugnamen. KEINE State-Hashes, KEINE Candidate-Revision, KEIN Match-Gain - Zielmetrik, Guardrail-Deltas und Effektstabilitaet rechnet der Broker aus Baseline- und Resultatevidenz im Store, und der Rueckweg zu Gen laeuft ueber den bestehenden Outbox-/Snapshot-Pfad statt ueber eine weitere Familie.",
+      "type": "object",
+      "required": ["type", "kopf", "experiment_id", "hoerurteil", "blindreihenfolge", "notiz", "werkzeug"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "experiment_manual_result" },
+        "kopf": { "$ref": "#/$defs/steuerkopf" },
+        "experiment_id": { "$ref": "#/$defs/hex32" },
+        "hoerurteil": {
+          "$comment": "Ausdruecklich USERDATEN, keine Messung (§43.2). `enthaltung` ist ein vollwertiges Urteil und kein fehlender Wert: ein konservatives 'unsicher' ist besser als eine ueberzeugende falsche Ursache (§49.4).",
+          "enum": ["baseline", "kandidat", "kein_unterschied", "enthaltung"]
+        },
+        "blindreihenfolge": {
+          "$comment": "Die im append-only Ereignis GEBUNDENE Reihenfolge, aufgedeckt erst nach dem Urteil (§43.2). Sie reist mit dem Ergebnis, damit sich die Reihenfolge nicht nachtraeglich zum Urteil passend erzaehlen laesst.",
+          "enum": ["baseline_zuerst", "kandidat_zuerst"]
+        },
+        "notiz": {
+          "$comment": "Freie Usernotiz zur Fremdaenderung. `null` heisst: der User hat keine hinterlassen - eine leere Zeichenkette ist deshalb keine zweite Schreibweise dafuer.",
+          "type": ["string", "null"],
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "werkzeug": {
+          "$comment": "Optionaler Name des fremden Werkzeugs. `null` heisst: nicht angegeben.",
+          "type": ["string", "null"],
+          "minLength": 1,
+          "maxLength": 120
+        }
       }
     },
 

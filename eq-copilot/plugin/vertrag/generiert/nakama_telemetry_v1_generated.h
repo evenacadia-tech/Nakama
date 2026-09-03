@@ -870,7 +870,8 @@ struct Frame FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
     VT_BAND_STEREO = 24,
     VT_LUFS_I = 26,
     VT_LUFS_I_UNSICHERHEIT_LU = 28,
-    VT_LUFS_I_STATUS = 30
+    VT_LUFS_I_STATUS = 30,
+    VT_INTEGRATION_SAMPLES = 32
   };
   const nakama::v3::Transportstempel *transport() const {
     return GetPointer<const nakama::v3::Transportstempel *>(VT_TRANSPORT);
@@ -922,6 +923,22 @@ struct Frame FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   ::flatbuffers::Optional<uint8_t> lufs_i_status() const {
     return GetOptional<uint8_t, uint8_t>(VT_LUFS_I_STATUS);
   }
+  /// Ueber wie viel Audio dieser Frame integriert wurde (NAK-68, SONDE-013).
+  ///
+  /// An den BAENDERN ist eine duenne Messung schon heute ehrlich: ein Band
+  /// ohne Bit hat keinen Wert. An den RAHMENSKALAREN (peak_db, crest_db,
+  /// breite, korrelation) war sie es nicht - sie werden ueber einen
+  /// kuerzeren Rahmen gerechnet und sehen aus wie jeder andere. Ein
+  /// Empfaenger konnte "leise" nicht von "kurz gemessen" unterscheiden.
+  ///
+  /// Der Wert ist die Zahl der Samples je Kanal, die in DIESEN Rahmen
+  /// eingegangen sind - nicht die Wanddauer und nicht die Fensterlaenge des
+  /// Erzeugers. Er ist optional wie jede andere Kennzahl: Abwesenheit heisst
+  /// "der Erzeuger sagt es nicht", nicht 0. Ein neuer Leser darf ihn bei
+  /// Abwesenheit deshalb NICHT als 0 lesen.
+  ::flatbuffers::Optional<uint32_t> integration_samples() const {
+    return GetOptional<uint32_t, uint32_t>(VT_INTEGRATION_SAMPLES);
+  }
   template <bool B = false>
   bool Verify(::flatbuffers::VerifierTemplate<B> &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -942,6 +959,7 @@ struct Frame FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
            VerifyField<float>(verifier, VT_LUFS_I, 4) &&
            VerifyField<float>(verifier, VT_LUFS_I_UNSICHERHEIT_LU, 4) &&
            VerifyField<uint8_t>(verifier, VT_LUFS_I_STATUS, 1) &&
+           VerifyField<uint32_t>(verifier, VT_INTEGRATION_SAMPLES, 4) &&
            verifier.EndTable();
   }
 };
@@ -992,6 +1010,9 @@ struct FrameBuilder {
   void add_lufs_i_status(uint8_t lufs_i_status) {
     fbb_.AddElement<uint8_t>(Frame::VT_LUFS_I_STATUS, lufs_i_status);
   }
+  void add_integration_samples(uint32_t integration_samples) {
+    fbb_.AddElement<uint32_t>(Frame::VT_INTEGRATION_SAMPLES, integration_samples);
+  }
   explicit FrameBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -1020,8 +1041,10 @@ inline ::flatbuffers::Offset<Frame> CreateFrame(
     ::flatbuffers::Offset<nakama::v3::Bandwerte> band_stereo = 0,
     ::flatbuffers::Optional<float> lufs_i = ::flatbuffers::nullopt,
     ::flatbuffers::Optional<float> lufs_i_unsicherheit_lu = ::flatbuffers::nullopt,
-    ::flatbuffers::Optional<uint8_t> lufs_i_status = ::flatbuffers::nullopt) {
+    ::flatbuffers::Optional<uint8_t> lufs_i_status = ::flatbuffers::nullopt,
+    ::flatbuffers::Optional<uint32_t> integration_samples = ::flatbuffers::nullopt) {
   FrameBuilder builder_(_fbb);
+  if(integration_samples) { builder_.add_integration_samples(*integration_samples); }
   if(lufs_i_unsicherheit_lu) { builder_.add_lufs_i_unsicherheit_lu(*lufs_i_unsicherheit_lu); }
   if(lufs_i) { builder_.add_lufs_i(*lufs_i); }
   builder_.add_band_stereo(band_stereo);

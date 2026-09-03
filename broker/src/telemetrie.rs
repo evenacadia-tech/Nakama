@@ -49,6 +49,12 @@ pub struct Quellframe {
     pub sample_rate: f64,
     pub lufs_i_paar: Option<(f32, f32)>,
     pub lufs_i_status: Option<u8>,
+    /// NAK-68: ueber wie viel Audio DIESER Rahmen integriert wurde, in
+    /// Samples je Kanal. `None` heisst "der Erzeuger sagt es nicht" und darf
+    /// NICHT als 0 gelesen werden; ein gesendetes 0 ist ein Senderfehler und
+    /// faellt vorher an `integration_samples_null`. Ohne dieses Feld kann ein
+    /// Empfaenger "leise" nicht von "kurz gemessen" unterscheiden.
+    pub integration_samples: Option<u32>,
 }
 
 /// Ergebnis der Broker-Eingangspruefung. Ein ausschliesslich kaputtes
@@ -473,6 +479,7 @@ fn quellframes_lesen(puffer: &[u8]) -> Option<Vec<Quellframe>> {
             sample_rate: transport.sample_rate(),
             lufs_i_paar,
             lufs_i_status: frame.lufs_i_status(),
+            integration_samples: frame.integration_samples(),
         });
     }
     Some(frames)
@@ -574,6 +581,18 @@ fn pruefe_frame(f: &fb::Frame, p: &str, out: &mut Vec<Verstoss>) {
                 "lufs_i_status_mit_paar",
             ));
         }
+    }
+
+    // NAK-68 (SONDE-013): ein ANWESENDES integration_samples von 0 behauptet
+    // einen Rahmen ohne Audio - das ist ein Senderfehler, kein duenner Frame.
+    // ABWESENHEIT ist dagegen erlaubt und heisst "der Erzeuger sagt es nicht";
+    // sie darf vom Leser nicht als 0 gelesen werden. Dieselbe Regel steht in
+    // NakamaTelemetrie.cpp; ein Fixture misst sie in beiden Sprachen.
+    if let Some(0) = f.integration_samples() {
+        out.push(Verstoss::neu(
+            &format!("{p}/integration_samples"),
+            "integration_samples_null",
+        ));
     }
 }
 

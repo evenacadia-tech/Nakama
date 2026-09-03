@@ -1,0 +1,43 @@
+{
+  "type": "experiment_begin",
+  "kopf": {
+    "command_id": "55555555555555555555555555555555",
+    "ziel": {
+      "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+      "project_binding_id": "11111111111111111111111111111111",
+      "session_epoch": "22222222222222222222222222222222",
+      "instance_id": "33333333333333333333333333333333",
+      "runtime_nonce": "44444444444444444444444444444444"
+    },
+    "base_revision": 12,
+    "ttl_ms": 2000,
+    "schema_major": 3,
+    "schema_minor": 0
+  },
+  "experiment_id": "abababababababababababababababab",
+  "execution_mode": "manual_external",
+  "reproduzierbarkeit": "manuell_nicht_wiederherstellbar",
+  "passage_id": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+  "referenz": {
+    "passage_fingerprint": {
+      "version": 1,
+      "band_energie": [0, 7, 14, 21, 28, 35, 42, 49, 56, 63, 70, 77, 84, 91, 98, 105, 112, 119, 126, 133, 140, 147, 154, 161, 168, 175, 182, 189, 196, 203, 210, 217],
+      "chroma": [0, 21, 42, 63, 84, 105, 126, 147, 168, 189, 210, 231],
+      "onset": [0, 13, 26, 39, 52, 65, 78, 91, 104, 117, 130, 143, 156, 169, 182, 195, 208, 221, 234, 247, 4, 17, 30, 43, 56, 69, 82, 95, 108, 121, 134, 147]
+    },
+    "upstream_fingerprint": {
+      "version": 1,
+      "band_energie": [0, 11, 22, 33, 44, 55, 66, 77, 88, 99, 110, 121, 132, 143, 154, 165, 176, 187, 198, 209, 220, 231, 242, 253, 8, 19, 30, 41, 52, 63, 74, 85],
+      "chroma": [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55],
+      "onset": [0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 60, 63, 66, 69, 72, 75, 78, 81, 84, 87, 90, 93]
+    },
+    "aktive_quellen": [
+      "33333333333333333333333333333333"
+    ],
+    "messpunktklassen": [
+      "post_fader_contribution"
+    ],
+    "match_gain_db": -1.5,
+    "alignment": "unclear"
+  }
+}

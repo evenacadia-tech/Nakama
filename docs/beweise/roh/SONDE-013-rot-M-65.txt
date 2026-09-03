@@ -1,0 +1,90 @@
+# Rotbeweis M-65 — SONDE-013 Etappe 2
+# 2026-09-04
+#
+# Regel: eine neue Zusage ohne Rotbeweis ist eine Behauptung. Hier wird
+# der Fehler bewusst eingebaut, das Bein faellt, der Fehler wird
+# entfernt und dasselbe Bein ist wieder gruen.
+#
+# Eingebauter Fehler: das belegte Feld `ereignisse` ist wieder aus `evidence_snapshot` entfernt — der Ereignisstrom haette dann keinen Weg auf die Leitung
+
+# mutiert: eq-copilot/schemas/v3/eq-ipc-v3.schema.json
+
+========================================================================
+ROT — mit eingebautem Fehler
+========================================================================
+
+$ py -3.13 tools/eq-copilot/pruefe_v3_vertrag.py --abdeckung
+EXIT=2
+jsonschema 4.26.0 (draft 2020-12)
+72 Definitionen, 21 Nachrichtenfamilien, 285 Fixtures
+Pruefungen: 456 bestanden, 5 gescheitert
+  ROT: evidence_snapshot_ereignisse_belegt
+  ROT: fassung_1_leser_lehnt_ereignisse_und_stereo_ab
+  ROT: gueltig/evidence-ereignisse-leer-mit-verlust.json: jsonschema sagt ungueltig: {'type': 'evidence_snapshot', 'evidence_id': '99999999999999999999999999999999', 'adresse': {'logon_sid': 'S-1-5-21-1111
+  ROT: gueltig/evidence-ereignisse-voller-ring.json: jsonschema sagt ungueltig: {'type': 'evidence_snapshot', 'evidence_id': '99999999999999999999999999999999', 'adresse': {'logon_sid': 'S-1-5-21-1111
+  ROT: gueltig/evidence-snapshot-mit-ereignissen-und-stereo.json: jsonschema sagt ungueltig: {'type': 'evidence_snapshot', 'evidence_id': '99999999999999999999999999999999', 'adresse': {'logon_sid': 'S-1-5-21-1111
+
+Abdeckung je Schluesselwort (mit Negativfixture / vorhanden).
+HART sind nur enum und const: dort ist ein falscher Wert ein echtes
+Produktrisiko. Die uebrigen Quoten stehen hier VOLLSTAENDIG, damit
+Unterabdeckung sichtbar bleibt statt still zu sein.
+  additionalProperties     13 / 67  
+  const                    15 / 15   HART
+  enum                     22 / 22   HART
+  exclusiveMinimum          3 / 3   
+  items                     7 / 19  
+  maxItems                  4 / 19  
+  maxLength                 6 / 27  
+  maxProperties             2 / 3   
+  maximum                   9 / 33  
+  minItems                  3 / 19  
+  minLength                 7 / 20  
+  minimum                  10 / 66  
+  oneOf                    11 / 17  
+  pattern                   5 / 13  
+  required                 52 / 337 
+  type                     12 / 232 
+
+$defs ohne Negativfixture: keine
+C:\Users\phili\Projekte\Nakama\tools\eq-copilot\pruefe_v3_vertrag.py:1523: DeprecationWarning: Accessing jsonschema.__version__ is deprecated and will be removed in a future release. Use importlib.metadata directly to query for jsonschema's version.
+  print(f"jsonschema {jsonschema.__version__} (draft 2020-12)")
+
+========================================================================
+GRUEN — Fehler entfernt, derselbe Befehl
+========================================================================
+
+$ py -3.13 tools/eq-copilot/pruefe_v3_vertrag.py --abdeckung
+EXIT=0
+jsonschema 4.26.0 (draft 2020-12)
+72 Definitionen, 21 Nachrichtenfamilien, 285 Fixtures
+Pruefungen: 461 bestanden, 0 gescheitert
+
+Abdeckung je Schluesselwort (mit Negativfixture / vorhanden).
+HART sind nur enum und const: dort ist ein falscher Wert ein echtes
+Produktrisiko. Die uebrigen Quoten stehen hier VOLLSTAENDIG, damit
+Unterabdeckung sichtbar bleibt statt still zu sein.
+  additionalProperties     13 / 67  
+  const                    15 / 15   HART
+  enum                     22 / 22   HART
+  exclusiveMinimum          3 / 3   
+  items                     7 / 19  
+  maxItems                  4 / 19  
+  maxLength                 6 / 27  
+  maxProperties             2 / 3   
+  maximum                   9 / 33  
+  minItems                  3 / 19  
+  minLength                 7 / 20  
+  minimum                  10 / 66  
+  oneOf                    11 / 17  
+  pattern                   5 / 13  
+  required                 52 / 337 
+  type                     12 / 232 
+
+$defs ohne Negativfixture: keine
+C:\Users\phili\Projekte\Nakama\tools\eq-copilot\pruefe_v3_vertrag.py:1523: DeprecationWarning: Accessing jsonschema.__version__ is deprecated and will be removed in a future release. Use importlib.metadata directly to query for jsonschema's version.
+  print(f"jsonschema {jsonschema.__version__} (draft 2020-12)")
+
+
+========================================================================
+ROTBEWEIS BESTANDEN: rot=True gruen=True
+========================================================================

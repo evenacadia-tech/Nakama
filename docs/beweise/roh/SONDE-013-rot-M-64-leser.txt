@@ -1,0 +1,77 @@
+# Rotbeweis M-64-leser — SONDE-013 Etappe 2
+# 2026-09-04
+#
+# Regel: eine neue Zusage ohne Rotbeweis ist eine Behauptung. Hier wird
+# der Fehler bewusst eingebaut, das Bein faellt, der Fehler wird
+# entfernt und dasselbe Bein ist wieder gruen.
+#
+# Eingebauter Fehler: die Regel `integration_samples_null` ist aus dem Rust-Leser entfernt — eine gesendete 0 kaeme dann als gueltig durch und waere von 'nicht gesagt' nicht mehr zu unterscheiden
+
+# mutiert: broker/src/telemetrie.rs
+
+========================================================================
+ROT — mit eingebautem Fehler
+========================================================================
+
+$ cargo test --manifest-path broker/Cargo.toml --test contract_cross_language --color never
+EXIT=101
+
+running 9 tests
+test quantisierung_stimmt_mit_den_testvektoren ... ok
+test bandgitter_ist_lesbar_und_in_sich_stimmig ... ok
+test textriegel_deckt_die_gemeinsame_falltabelle ... ok
+test bandwertgrenzen_stimmen_mit_dem_vertrag ... ok
+test jcs_fixtures_stimmen_mit_manifest ... ok
+test dto_korpus_klassifiziert_wie_das_manifest ... ok
+test fb_korpus_klassifiziert_wie_das_manifest ... FAILED
+test envelope_korpus_klassifiziert_wie_das_manifest ... ok
+test korpus_klassifiziert_wie_das_manifest ... ok
+
+failures:
+
+---- fb_korpus_klassifiziert_wie_das_manifest stdout ----
+
+thread 'fb_korpus_klassifiziert_wie_das_manifest' (7044) panicked at tests\contract_cross_language.rs:221:5:
+1 von 104 Fixtures weichen ab:
+ungueltig/integration-samples-null.bin: Urteil ungueltig erwartet, Leser sagt gueltig ([])
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    fb_korpus_klassifiziert_wie_das_manifest
+
+test result: FAILED. 8 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.24s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.97s
+     Running tests\contract_cross_language.rs (broker\target\debug\deps\contract_cross_language-c8ce76809755fc6f.exe)
+error: test failed, to rerun pass `--test contract_cross_language`
+
+========================================================================
+GRUEN — Fehler entfernt, derselbe Befehl
+========================================================================
+
+$ cargo test --manifest-path broker/Cargo.toml --test contract_cross_language --color never
+EXIT=0
+
+running 9 tests
+test quantisierung_stimmt_mit_den_testvektoren ... ok
+test bandgitter_ist_lesbar_und_in_sich_stimmig ... ok
+test textriegel_deckt_die_gemeinsame_falltabelle ... ok
+test bandwertgrenzen_stimmen_mit_dem_vertrag ... ok
+test jcs_fixtures_stimmen_mit_manifest ... ok
+test dto_korpus_klassifiziert_wie_das_manifest ... ok
+test fb_korpus_klassifiziert_wie_das_manifest ... ok
+test envelope_korpus_klassifiziert_wie_das_manifest ... ok
+test korpus_klassifiziert_wie_das_manifest ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.24s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.84s
+     Running tests\contract_cross_language.rs (broker\target\debug\deps\contract_cross_language-c8ce76809755fc6f.exe)
+
+
+========================================================================
+ROTBEWEIS BESTANDEN: rot=True gruen=True
+========================================================================

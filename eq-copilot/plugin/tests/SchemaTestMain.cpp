@@ -88,6 +88,53 @@ void fahreBandStereoRoundtrip()
     pruefe (nakama::analyse::nak29Verstoss (lokalMitProjektstart.transport) == 2
                 && ! nakama::ipc::featureFrameAlsFlatbuffer (lokalMitProjektstart, a, puffer),
             "nak29_encoder_local_monotonic_mit_project_sample_start");
+
+    // ── NAK-68 / SONDE-013: Feld-ID 14 ueber Encoder UND Leser ────────────
+    //
+    // Der Nutzen des Feldes haengt an EINER Unterscheidung: Abwesenheit ist
+    // erlaubt und heisst "der Erzeuger sagt es nicht"; eine gesendete 0 ist
+    // ein Senderfehler. Wer beides zusammenzieht, hat NAK-68 nicht geloest,
+    // sondern nur ein Feld hinzugefuegt. Deshalb drei Zweige, nicht einer.
+    auto mitIntegration = f;
+    mitIntegration.integrationGesetzt = true;
+    mitIntegration.integrationSamples = 4800;
+    const bool gebautMit = nakama::ipc::featureFrameAlsFlatbuffer (mitIntegration, a, puffer);
+    std::vector<nakama::telemetrie::Empfangsframe> gelesen;
+    juce::Array<nakama::telemetrie::Verstoss> leseVerstoesse;
+    const bool gelesenOk = gebautMit
+        && nakama::telemetrie::lese (puffer.data(), puffer.size(), gelesen, leseVerstoesse);
+    pruefe (gelesenOk && gelesen.size() == 1
+                && gelesen[0].integrationGesetzt
+                && gelesen[0].integrationSamples == 4800u,
+            "integration_samples_wird_von_beiden_lesern_klassifiziert",
+            "gesetzt: der Leser gibt Bit UND Wert zurueck");
+
+    gelesen.clear();
+    leseVerstoesse.clearQuick();
+    const bool gebautOhne = nakama::ipc::featureFrameAlsFlatbuffer (f, a, puffer);
+    const bool ohneOk = gebautOhne
+        && nakama::telemetrie::lese (puffer.data(), puffer.size(), gelesen, leseVerstoesse);
+    pruefe (ohneOk && gelesen.size() == 1 && ! gelesen[0].integrationGesetzt
+                && gelesen[0].integrationSamples == 0u,
+            "integration_samples_abwesend_bleibt_gueltig_und_ist_keine_null",
+            "abwesend: gueltig, aber ohne Bit — der Wert 0 ist hier NICHT die Aussage");
+
+    // Die 0 kommt nicht durch den Encoder (er sendet nur gesetzte Felder),
+    // also wird sie am rohen Puffer geprueft: genau so, wie sie von einem
+    // fremden Sender kaeme. Ohne diesen Zweig waere die Regel nur behauptet.
+    auto nullFrame = f;
+    nullFrame.integrationGesetzt = true;
+    nullFrame.integrationSamples = 0;
+    const bool gebautNull = nakama::ipc::featureFrameAlsFlatbuffer (nullFrame, a, puffer);
+    const auto nullVerstoesse = gebautNull
+        ? nakama::telemetrie::pruefe (puffer.data(), puffer.size())
+        : juce::Array<nakama::telemetrie::Verstoss> {};
+    bool nullGemeldet = false;
+    for (const auto& v : nullVerstoesse)
+        nullGemeldet = nullGemeldet || v.regel == "integration_samples_null";
+    pruefe (gebautNull && nullGemeldet,
+            "integration_samples_null_ist_ein_senderfehler",
+            "gesetzt auf 0: abgelehnt, nicht als 'fehlt' umgedeutet");
 }
 
 void pruefe (bool ok, const juce::String& was, const juce::String& zusatz)

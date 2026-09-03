@@ -86,7 +86,8 @@
         "band_stereo": 10,
         "lufs_i": 11,
         "lufs_i_unsicherheit_lu": 12,
-        "lufs_i_status": 13
+        "lufs_i_status": 13,
+        "integration_samples": 14
       },
       "verbrannt": []
     },
@@ -107,6 +108,6 @@
 
   "erwartet_gesamt": {
     "tabellen": 8,
-    "felder": 51
+    "felder": 52
   }
 }

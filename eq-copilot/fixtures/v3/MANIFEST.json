@@ -6,8 +6,8 @@
   "wurzel_skalar": "Markiert ein Fixture, dessen Wurzel weder Objekt noch Array ist. JUCEs JSON-Leser folgt RFC 4627 und lehnt es schon im PARSER ab; serde_json und Python folgen RFC 8259 und lehnen es erst am Schema ab. Beide Wege sind eine Ablehnung, nur an verschiedenen Stellen - die Verletzungsmenge gilt daher nur fuer die Beine mit RFC-8259-Parser.",
   "sortierung": "Verletzungen sind kanonisch nach (instanz, schema, schluessel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
   "textriegel_lehnt_ab": "Markiert ein Fixture, das der TEXTRIEGEL abweist, BEVOR ein Parser es sieht. Diese Fixtures tragen keine Verletzungsmenge, weil sie das Schema nie erreichen — eine erfundene waere eine Luege ueber den Ort der Ablehnung. Regeln und Begruendung: schemas/v3/README.md.",
-  "anzahl_gueltig": 60,
-  "anzahl_ungueltig": 190,
+  "anzahl_gueltig": 75,
+  "anzahl_ungueltig": 210,
   "fixtures": [
     {
       "datei": "gueltig/audible_intervention_begin.json",
@@ -82,6 +82,18 @@
       "verletzungen": []
     },
     {
+      "datei": "gueltig/evidence-ereignisse-leer-mit-verlust.json",
+      "urteil": "gueltig",
+      "warum": "M-05: ein leerer Ring mit Verlustzaehler ist gueltig — der Ring wird bei Ueberlast nie stillschweigend geleert",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/evidence-ereignisse-voller-ring.json",
+      "urteil": "gueltig",
+      "warum": "M-05: 64 Plaetze sind der Deckel und noch gueltig (Grenztest an N)",
+      "verletzungen": []
+    },
+    {
       "datei": "gueltig/evidence-grobes-gitter.json",
       "urteil": "gueltig",
       "warum": "beide Gitter sind zulaessig",
@@ -97,6 +109,18 @@
       "datei": "gueltig/evidence-ohne-projektzeit.json",
       "urteil": "gueltig",
       "warum": "ohne gueltige Projektzeit traegt local_monotonic nur lokale Analyse (§32.3)",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/evidence-snapshot-mit-ereignissen-und-stereo.json",
+      "urteil": "gueltig",
+      "warum": "M-05/M-11: der Ereignisstrom und die bandweise Stereoevidenz reisen auf dem Evidenzpfad, nicht im 10-Hz-Liveframe",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/evidence-stereo-ohne-kohaerenz.json",
+      "urteil": "gueltig",
+      "warum": "M-11 fail-closed: unter acht Welch-Frames traegt weder Kohaerenz noch Phase ein Bit — es entsteht keine geschaetzte Zahl",
       "verletzungen": []
     },
     {
@@ -119,6 +143,60 @@
     },
     {
       "datei": "gueltig/evidence_snapshot.json",
+      "urteil": "gueltig",
+      "warum": "Grundform der Familie",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/experiment-abort-verdraengt.json",
+      "urteil": "gueltig",
+      "warum": "M-47/E-03: die Verdraengung durch einen Bestandsdeckel ist der zweite und letzte Ausloeser eines terminalen aborted",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/experiment-begin-unclear-alignment.json",
+      "urteil": "gueltig",
+      "warum": "M-16: `unclear` ist eine vollwertige der vier Alignmentklassen und sperrt keine Nachricht",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/experiment-manual-result-baseline.json",
+      "urteil": "gueltig",
+      "warum": "M-46: das Hoerurteil ist Userdatum; enthaltung ist ein vollwertiger Wert und kein fehlender",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/experiment-manual-result-enthaltung.json",
+      "urteil": "gueltig",
+      "warum": "M-46: das Hoerurteil ist Userdatum; enthaltung ist ein vollwertiger Wert und kein fehlender",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/experiment-manual-result-kein-unterschied.json",
+      "urteil": "gueltig",
+      "warum": "M-46: das Hoerurteil ist Userdatum; enthaltung ist ein vollwertiger Wert und kein fehlender",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/experiment-manual-result-ohne-notiz.json",
+      "urteil": "gueltig",
+      "warum": "M-42/M-44: beide Reihenfolgen sind gueltig; null heisst ausdruecklich 'nichts angegeben' und ist keine leere Zeichenkette",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/experiment_abort.json",
+      "urteil": "gueltig",
+      "warum": "Grundform der Familie",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/experiment_begin.json",
+      "urteil": "gueltig",
+      "warum": "Grundform der Familie",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/experiment_manual_result.json",
       "urteil": "gueltig",
       "warum": "Grundform der Familie",
       "verletzungen": []
@@ -199,6 +277,18 @@
       "datei": "gueltig/invalidate-ganze-sitzung.json",
       "urteil": "gueltig",
       "warum": "bei unbekanntem Routing quarantaenisiert der Broker die ganze Sitzung (§34.2)",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/invalidate-material-wechsel.json",
+      "urteil": "gueltig",
+      "warum": "M-54/M-55: neuer Grund der Fassung 2; ein Leser der Fassung 1 lehnt ihn ab, statt ihn still abzubilden",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/invalidate-messpunkt-wechsel.json",
+      "urteil": "gueltig",
+      "warum": "M-54/M-55: neuer Grund der Fassung 2; ein Leser der Fassung 1 lehnt ihn ab, statt ihn still abzubilden",
       "verletzungen": []
     },
     {
@@ -1106,6 +1196,54 @@
       ]
     },
     {
+      "datei": "ungueltig/evidence-ereignis-bandzentrum-null.json",
+      "urteil": "ungueltig",
+      "warum": "0 Hz ist kein Bandzentrum; die Grenze ist ausschliessend, nicht einschliessend",
+      "verletzungen": [
+        {
+          "instanz": "/ereignisse/liste/0/band_zentrum_hz",
+          "schema": "#/$defs/dynamics_ereignis/properties/band_zentrum_hz/exclusiveMinimum",
+          "schluessel": "exclusiveMinimum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/evidence-ereignis-ohne-peakbit.json",
+      "urteil": "ungueltig",
+      "warum": "M-86: die zwei Qualitaetsbits trennen den Flusspfad vom eigenstaendigen Peakpfad. Ein Ereignis ohne beide Bits sagt nicht, welcher Ausloeser feuerte",
+      "verletzungen": [
+        {
+          "instanz": "/ereignisse/liste/0",
+          "schema": "#/$defs/dynamics_ereignis/required/qualitaet_peak",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/evidence-ereignisse-ohne-verlustzaehler.json",
+      "urteil": "ungueltig",
+      "warum": "M-05: der Ring zaehlt seine Verluste. Ohne den Zaehler kann ein Empfaenger 'nichts passiert' nicht von 'verdraengt' unterscheiden",
+      "verletzungen": [
+        {
+          "instanz": "/ereignisse",
+          "schema": "#/$defs/evidence_ereignisse/required/verloren",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/evidence-ereignisse-ueber-64.json",
+      "urteil": "ungueltig",
+      "warum": "M-05/§48.1: der Ereignisring ist fest auf 64 Plaetze gedeckelt; ein 65. Eintrag ist ein Senderfehler (Grenztest an N+1)",
+      "verletzungen": [
+        {
+          "instanz": "/ereignisse/liste",
+          "schema": "#/$defs/evidence_ereignisse/properties/liste/maxItems",
+          "schluessel": "maxItems"
+        }
+      ]
+    },
+    {
       "datei": "ungueltig/evidence-ids-leer.json",
       "urteil": "ungueltig",
       "warum": "eine Ruecknahme ohne Ziel",
@@ -1125,6 +1263,218 @@
         {
           "instanz": "",
           "schema": "#/$defs/evidence_snapshot/required/verteilung",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/evidence-stereo-falsche-gitter.json",
+      "urteil": "ungueltig",
+      "warum": "Die Stereoevidenz liegt auf dem 221er-Evidenzgitter. Das 64er-Livegitter hier zuzulassen waere ein zweites Gitter fuer dieselbe Aussage",
+      "verletzungen": [
+        {
+          "instanz": "/stereo/korrelation_kurz/gitter_id",
+          "schema": "#/$defs/stereo_bandwerte_normiert/properties/gitter_id/const",
+          "schluessel": "const"
+        },
+        {
+          "instanz": "/stereo/mid_db/gitter_id",
+          "schema": "#/$defs/stereo_bandwerte/properties/gitter_id/const",
+          "schluessel": "const"
+        },
+        {
+          "instanz": "/stereo/phase_rad/gitter_id",
+          "schema": "#/$defs/stereo_bandwerte_phase/properties/gitter_id/const",
+          "schluessel": "const"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/evidence-stereo-ohne-freiheitsgrade.json",
+      "urteil": "ungueltig",
+      "warum": "§40.1 woertlich: 'Fensterdauer und Freiheitsgrade werden Teil der Evidenz'. Ohne sie kann ein Empfaenger eine null-Kohaerenz nicht begruenden",
+      "verletzungen": [
+        {
+          "instanz": "/stereo",
+          "schema": "#/$defs/stereo_evidenz/required/freiheitsgrade",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/evidence-stereo-werte-ausserhalb.json",
+      "urteil": "ungueltig",
+      "warum": "M-11: eine Korrelation ueber 1 und eine Phase ausserhalb +/-pi sind Erzeugerfehler und faellen auf der Leitung, nicht erst in der Anzeige",
+      "verletzungen": [
+        {
+          "instanz": "/stereo/korrelation_kurz/werte/0",
+          "schema": "#/$defs/stereo_bandwerte_normiert/properties/werte/items/maximum",
+          "schluessel": "maximum"
+        },
+        {
+          "instanz": "/stereo/mid_db/werte/0",
+          "schema": "#/$defs/stereo_bandwerte/properties/werte/items/maximum",
+          "schluessel": "maximum"
+        },
+        {
+          "instanz": "/stereo/phase_rad/werte/0",
+          "schema": "#/$defs/stereo_bandwerte_phase/properties/werte/items/maximum",
+          "schluessel": "maximum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/evidence-stereo-zusatzfeld.json",
+      "urteil": "ungueltig",
+      "warum": "V-03: `breite` und `korrelation` bleiben der 10-Hz-Livepfad (§33.2). Sie hier zusaetzlich zu fuehren erzeugte eine zweite Wahrheit ueber dieselbe Groesse",
+      "verletzungen": [
+        {
+          "instanz": "/stereo/breite",
+          "schema": "#/$defs/stereo_evidenz/additionalProperties",
+          "schluessel": "additionalProperties"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/experiment-abort-fremder-grund.json",
+      "urteil": "ungueltig",
+      "warum": "M-47/E-03: genau ZWEI Ausloeser. Sitzungsende, Reconnect und Neustart brechen ausdruecklich NICHT ab - ein offener Versuch ueberdauert sie",
+      "verletzungen": [
+        {
+          "instanz": "/grund",
+          "schema": "#/$defs/experiment_abort/properties/grund/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/experiment-begin-behauptet-wiederherstellbarkeit.json",
+      "urteil": "ungueltig",
+      "warum": "M-42: ein manueller Versuch erlaubt KEIN Nakama-Revert. Eine hoehere Reproduzierbarkeitsklasse zu behaupten waere eine Luege ueber den Rueckweg",
+      "verletzungen": [
+        {
+          "instanz": "/reproduzierbarkeit",
+          "schema": "#/$defs/experiment_begin/properties/reproduzierbarkeit/const",
+          "schluessel": "const"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/experiment-begin-fremder-execution-mode.json",
+      "urteil": "ungueltig",
+      "warum": "Der Active-Compare-Pfad gehoert SONDE-017. Ihn hier als Zweig vorzusehen waere ein Vorgriff (Bauaufteilung §6.2); ihn spaeter zu ergaenzen ist ein ausdruecklicher Fassungsschritt, den ein Leser der alten Fassung ablehnt",
+      "verletzungen": [
+        {
+          "instanz": "/execution_mode",
+          "schema": "#/$defs/experiment_begin/properties/execution_mode/const",
+          "schluessel": "const"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/experiment-begin-ohne-referenz.json",
+      "urteil": "ungueltig",
+      "warum": "M-40: Baseline und Referenzen werden VOR dem Begin verriegelt. Ein Begin ohne sie waere ein Versuch ohne rekonstruierbaren Ausgangspunkt",
+      "verletzungen": [
+        {
+          "instanz": "",
+          "schema": "#/$defs/experiment_begin/required/referenz",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/experiment-manual-result-fremde-blindreihenfolge.json",
+      "urteil": "ungueltig",
+      "warum": "M-44: die Reihenfolge wird VOR dem Urteil gebunden und danach aufgedeckt. 'unbekannt' erlaubte, sie nachtraeglich zum Urteil passend zu erzaehlen",
+      "verletzungen": [
+        {
+          "instanz": "/blindreihenfolge",
+          "schema": "#/$defs/experiment_manual_result/properties/blindreihenfolge/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/experiment-manual-result-fremdes-urteil.json",
+      "urteil": "ungueltig",
+      "warum": "M-46: nie 'objektiv besser' allein aus einem Metrikdelta. Das Hoerurteil ist Userdatum und traegt genau die vier zulaessigen Werte",
+      "verletzungen": [
+        {
+          "instanz": "/hoerurteil",
+          "schema": "#/$defs/experiment_manual_result/properties/hoerurteil/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/experiment-manual-result-mit-state-hash.json",
+      "urteil": "ungueltig",
+      "warum": "E-02: die Familie traegt KEINE State-Hashes, keine Candidate-Revision und keinen Match-Gain. Im manuellen Modus existiert kein lesbarer Fremdzustand",
+      "verletzungen": [
+        {
+          "instanz": "/state_hash",
+          "schema": "#/$defs/experiment_manual_result/additionalProperties",
+          "schluessel": "additionalProperties"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/experiment-manual-result-notiz-leer.json",
+      "urteil": "ungueltig",
+      "warum": "`null` heisst 'keine Notiz'. Eine leere Zeichenkette waere eine zweite Schreibweise dafuer - dieselbe Regel wie bei pair_id",
+      "verletzungen": [
+        {
+          "instanz": "/notiz",
+          "schema": "#/$defs/experiment_manual_result/properties/notiz/minLength",
+          "schluessel": "minLength"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/experiment-referenz-fingerprint-zu-kurz.json",
+      "urteil": "ungueltig",
+      "warum": "M-26: der Fingerprint hat eine feste Stuetzstellenzahl. Ein kuerzerer Verlauf waere ein anderer Fingerprint mit demselben Namen",
+      "verletzungen": [
+        {
+          "instanz": "/referenz/passage_fingerprint/chroma",
+          "schema": "#/$defs/fingerprint/properties/chroma/minItems",
+          "schluessel": "minItems"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/experiment-referenz-fremde-alignmentklasse.json",
+      "urteil": "ungueltig",
+      "warum": "M-16: genau vier Klassen. `sample_aligned` behauptete eine Samplegenauigkeit, die §38.2 ausdruecklich NICHT zusagt",
+      "verletzungen": [
+        {
+          "instanz": "/referenz/alignment",
+          "schema": "#/$defs/alignment_klasse/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/experiment-referenz-fremde-messpunktklasse.json",
+      "urteil": "ungueltig",
+      "warum": "§32.2 kennt genau vier Messpositionen; eine fuenfte waere eine Aussageklasse ohne Gate-7-Kopplung",
+      "verletzungen": [
+        {
+          "instanz": "/referenz/messpunktklassen/0",
+          "schema": "#/$defs/experiment_referenz/properties/messpunktklassen/items/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/experiment-referenz-ohne-match-gain.json",
+      "urteil": "ungueltig",
+      "warum": "M-43: eine Klangwertung ohne vorherigen Lautheitsabgleich ist unzulaessig; der Match-Gain gehoert zu den unveraenderlichen Referenzen",
+      "verletzungen": [
+        {
+          "instanz": "/referenz",
+          "schema": "#/$defs/experiment_referenz/required/match_gain_db",
           "schluessel": "required"
         }
       ]

@@ -19,6 +19,7 @@
 #include "TelemetryClient.h"
 #include "WireEnvelope.h"
 #include "../core/analysis/FeatureEngine.h"
+#include "../vertrag/NakamaVertrag.h"
 
 #include <juce_core/juce_core.h>
 
@@ -116,6 +117,31 @@ std::string commandIdAusJson (const std::string& text)
         return {};
     const auto id = text.substr (wert, 32);
     return istHex32 (id) ? id : std::string {};
+}
+
+/*  SONDE-013 E-02: das Ergebnis eines `manual_external`-Versuchs als
+    steuernde P0-Nachricht.
+
+    Sie traegt denselben `steuerkopf` wie jede andere - genau darum braucht
+    der C++-Client fuer die drei neuen Familien KEINE Zeile Sonderbehandlung:
+    das In-Flight-Register haengt an der `command_id`, nicht am Familiennamen.
+    Der Test unten misst das, statt es anzunehmen.  */
+std::string experimentErgebnisBefehl (const std::string& commandId)
+{
+    return "{\"type\":\"experiment_manual_result\",\"kopf\":{\"command_id\":\""
+         + commandId
+         + "\",\"ziel\":{\"logon_sid\":\"S-1-5-21-1-2-3-1001\","
+           "\"project_binding_id\":\"00000000000000000000000000000000\","
+           "\"session_epoch\":\"11111111111111111111111111111111\","
+           "\"instance_id\":\"22222222222222222222222222222222\","
+           "\"runtime_nonce\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"},"
+           "\"base_revision\":0,\"ttl_ms\":10000,\"schema_major\":3,"
+           "\"schema_minor\":2},"
+           "\"experiment_id\":\"abababababababababababababababab\","
+           "\"hoerurteil\":\"kandidat\","
+           "\"blindreihenfolge\":\"baseline_zuerst\","
+           "\"notiz\":\"Saettigung leicht erhoeht\","
+           "\"werkzeug\":null}";
 }
 
 std::string persistenzBefehl (const std::string& commandId)
@@ -5949,6 +5975,82 @@ int main (int argc, char** argv)
                         && rueckwegGebunden,
                     "installer_boot_autostartinventar_ist_null_und_rueckweg_haengt_an_a17_a18");
         }
+    }
+
+    // ── SONDE-013 · die drei Experimentfamilien auf der C++-Haelfte ────────
+    //
+    // Zwei Ebenen, weil eine allein nichts sagt:
+    //
+    //   1. der C++-Vertragsleser nimmt die committeten Fixtures der drei
+    //      Familien an - dieselben Dateien, die Rust und das Referenzbein
+    //      lesen. Ein Fixture, das nur eine Sprache annimmt, ist ein Befund;
+    //   2. eine dieser Nachrichten laeuft als PERSISTENZAUFTRAG durch den
+    //      echten ControlClient. Sie traegt denselben `steuerkopf` wie jede
+    //      andere steuernde Nachricht, also darf das In-Flight-Register keine
+    //      Sonderbehandlung brauchen. Genau das wird hier gemessen und nicht
+    //      angenommen.
+    abschnitt ("SONDE-013 · experiment_begin/_abort/_manual_result (C++-Haelfte)");
+    {
+        const auto schemaDatei = wurzel()
+            .getChildFile ("eq-copilot/schemas/v3/eq-ipc-v3.schema.json");
+        nakama::vertrag::Schema schema;
+        juce::String ladefehler;
+        const bool geladen = nakama::vertrag::Schema::laden (
+            juce::JSON::parse (schemaDatei), schema, ladefehler);
+        pruefe (geladen, "v3-Schema laedt in die C++-Engine", ladefehler.toStdString());
+
+        const auto basis = wurzel().getChildFile ("eq-copilot/fixtures/v3/gueltig");
+        bool alleAngenommen = geladen;
+        std::string erstesAbweichende;
+        for (const char* name : { "experiment_begin", "experiment_abort",
+                                  "experiment_manual_result" })
+        {
+            const auto datei = basis.getChildFile (juce::String (name) + ".json");
+            const auto daten = juce::JSON::parse (datei);
+            const auto verletzungen = geladen ? schema.pruefe (daten)
+                                              : juce::Array<nakama::vertrag::Verletzung> {};
+            if (! datei.existsAsFile() || ! verletzungen.isEmpty())
+            {
+                alleAngenommen = false;
+                if (erstesAbweichende.empty())
+                    erstesAbweichende = name;
+            }
+        }
+        pruefe (alleAngenommen,
+                "experiment_familien_werden_von_der_cpp_engine_angenommen",
+                erstesAbweichende);
+
+        // Gegenprobe: der neue Discriminator ist WIRKLICH geschlossen. Ohne
+        // sie sagt die Zeile darueber nur, dass die Engine ueberhaupt etwas
+        // annimmt.
+        auto fremd = juce::JSON::parse (basis.getChildFile ("experiment_begin.json"));
+        if (auto* obj = fremd.getDynamicObject())
+            obj->setProperty ("execution_mode", "active_probe");
+        pruefe (geladen && ! schema.pruefe (fremd).isEmpty(),
+                "fremder_execution_mode_faellt_an_derselben_engine");
+
+        TestServer server (testPipeName ("sonde013-experiment"));
+        server.commandAckArt.store (1);
+        server.starten();
+        ControlClient control ([&] {
+            ControlHello h;
+            h.adresse = testAdresse (hex32 ('e'));
+            return h;
+        }, server.pipeName());
+        control.start();
+        const bool verbunden = warteAuf (5000, [&] {
+            return control.snapshot().status == ControlClient::Status::verbunden;
+        });
+        const bool angenommen = verbunden && control.sendePersistenzP0 (
+            experimentErgebnisBefehl (hex32 ('7')));
+        const bool frei = angenommen && warteAuf (3000, [&] {
+            const auto s = control.snapshot();
+            return s.inFlight == 0 && s.inFlightErfolg == 1;
+        });
+        pruefe (frei,
+                "experiment_manual_result_ist_ein_persistenzpflichtiger_p0_befehl");
+        control.stop();
+        server.stoppen();
     }
 
     std::cout << "\n" << (fehler == 0 ? "ALLE PRUEFUNGEN GRUEN" : "FEHLER")

@@ -126,6 +126,93 @@ def baender(n: int, gitter: str, encoding: str = "q_db_0p1_i16") -> dict:
     }
 
 
+FEIN = "nakama_1_24_oct_30_18k_v1"
+
+
+def stereo_band(wert: float) -> dict:
+    """Ein 221er-Bandsatz der SONDE-013-Stereoevidenz.
+
+    Ohne `saturated`: die Saettigungsmarke gehoert zur Quantisierung, und
+    diese Bandsaetze sind float32. Eine Marke mitzufuehren, die nie true
+    werden kann, waere ein totes Feld auf der Leitung.
+    """
+    return {
+        "gitter_id": FEIN,
+        "encoding": "float32",
+        "werte": [wert] * 221,
+        "gueltig_bitmap": bitmap(221),
+    }
+
+
+STEREO = {
+    "fenster_dauer_ms": [400.0] * 221,
+    "freiheitsgrade": [12] * 221,
+    "mid_db": stereo_band(-18.5),
+    "side_db": stereo_band(-27.25),
+    "seitenanteil_db": stereo_band(-8.75),
+    "korrelation_kurz": stereo_band(0.82),
+    "korrelation_mittel": stereo_band(0.79),
+    "kohaerenz": stereo_band(0.91),
+    "phase_rad": stereo_band(0.05),
+    "persistenz": stereo_band(0.66),
+    "zeitperzentile": {
+        "p10": stereo_band(-12.5),
+        "p50": stereo_band(-8.75),
+        "p95": stereo_band(-4.25),
+    },
+    "mono_folddown_db": -1.75,
+    "lr_balance_db": 0.25,
+}
+
+EREIGNIS = {
+    "sample_offset": 12288,
+    "staerke_mad": 3.5,
+    "band_zentrum_hz": 1250.0,
+    "dauer_samples": 480,
+    "qualitaet_fluss": True,
+    "qualitaet_peak": False,
+}
+
+# Zweites Ereignis aus dem EIGENSTAENDIGEN Peakpfad (M-86): ein sehr kurzer
+# Impuls, den der spektrale Fluss nicht erreicht. Es traegt genau das
+# umgekehrte Bitpaar - waeren beide Faelle im Korpus gleich, koennte kein
+# Bein die Trennung der zwei Ausloeser messen.
+EREIGNIS_PEAK = {
+    "sample_offset": 20480,
+    "staerke_mad": 1.25,
+    "band_zentrum_hz": 6300.0,
+    "dauer_samples": 64,
+    "qualitaet_fluss": False,
+    "qualitaet_peak": True,
+}
+
+FINGERPRINT = {
+    "version": 1,
+    "band_energie": [(7 * i) % 256 for i in range(32)],
+    "chroma": [(21 * i) % 256 for i in range(12)],
+    "onset": [(13 * i) % 256 for i in range(32)],
+}
+
+FINGERPRINT_UPSTREAM = {
+    "version": 1,
+    "band_energie": [(11 * i) % 256 for i in range(32)],
+    "chroma": [(5 * i) % 256 for i in range(12)],
+    "onset": [(3 * i) % 256 for i in range(32)],
+}
+
+EXPERIMENT_REFERENZ = {
+    "passage_fingerprint": FINGERPRINT,
+    "upstream_fingerprint": FINGERPRINT_UPSTREAM,
+    "aktive_quellen": [
+        "33333333333333333333333333333333",
+        "44444444444444444444444444444444",
+    ],
+    "messpunktklassen": ["insert", "post"],
+    "match_gain_db": -1.5,
+    "alignment": "feature_aligned",
+}
+
+
 PROBE = {
     "adresse": ADRESSE,
     "plugin_kind": "passive_probe",
@@ -460,6 +547,30 @@ GRUND: dict[str, dict] = {
         "type": "evidence_invalidate",
         "grund": "intervention",
         "umfang": {"art": "evidence_ids", "evidence_ids": ["99999999999999999999999999999999"]},
+    },
+    "experiment_begin": {
+        "type": "experiment_begin",
+        "kopf": STEUERKOPF,
+        "experiment_id": "abababababababababababababababab",
+        "execution_mode": "manual_external",
+        "reproduzierbarkeit": "manuell_nicht_wiederherstellbar",
+        "passage_id": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+        "referenz": EXPERIMENT_REFERENZ,
+    },
+    "experiment_abort": {
+        "type": "experiment_abort",
+        "kopf": STEUERKOPF,
+        "experiment_id": "abababababababababababababababab",
+        "grund": "user_abbruch",
+    },
+    "experiment_manual_result": {
+        "type": "experiment_manual_result",
+        "kopf": STEUERKOPF,
+        "experiment_id": "abababababababababababababababab",
+        "hoerurteil": "kandidat",
+        "blindreihenfolge": "baseline_zuerst",
+        "notiz": "Saettigung im fremden Werkzeug leicht erhoeht",
+        "werkzeug": "Fremd-Saturator 2.1",
     },
     "preview_begin": {
         "type": "preview_begin",
@@ -798,6 +909,66 @@ def zusatz_gueltig() -> list[tuple[str, dict, str]]:
     ei["umfang"] = {"art": "ganze_sitzung"}
     faelle.append(("invalidate-ganze-sitzung", ei,
                    "bei unbekanntem Routing quarantaenisiert der Broker die ganze Sitzung (§34.2)"))
+
+    # --- SONDE-013, Wire-Envelope-schema_minor 2 -------------------------
+
+    ev = copy.deepcopy(GRUND["evidence_snapshot"])
+    ev["ereignisse"] = {"liste": [EREIGNIS, EREIGNIS_PEAK], "verloren": 0}
+    ev["stereo"] = copy.deepcopy(STEREO)
+    faelle.append(("evidence-snapshot-mit-ereignissen-und-stereo", ev,
+                   "M-05/M-11: der Ereignisstrom und die bandweise Stereoevidenz reisen auf dem Evidenzpfad, nicht im 10-Hz-Liveframe"))
+
+    ev = copy.deepcopy(GRUND["evidence_snapshot"])
+    ev["ereignisse"] = {"liste": [], "verloren": 7}
+    faelle.append(("evidence-ereignisse-leer-mit-verlust", ev,
+                   "M-05: ein leerer Ring mit Verlustzaehler ist gueltig — der Ring wird bei Ueberlast nie stillschweigend geleert"))
+
+    ev = copy.deepcopy(GRUND["evidence_snapshot"])
+    ev["ereignisse"] = {"liste": [copy.deepcopy(EREIGNIS) for _ in range(64)],
+                        "verloren": 0}
+    faelle.append(("evidence-ereignisse-voller-ring", ev,
+                   "M-05: 64 Plaetze sind der Deckel und noch gueltig (Grenztest an N)"))
+
+    ev = copy.deepcopy(GRUND["evidence_snapshot"])
+    ev["stereo"] = copy.deepcopy(STEREO)
+    ev["stereo"]["freiheitsgrade"] = [0] * 221
+    ev["stereo"]["kohaerenz"]["gueltig_bitmap"] = base64.b64encode(
+        bytes(28)).decode("ascii")
+    ev["stereo"]["phase_rad"]["gueltig_bitmap"] = base64.b64encode(
+        bytes(28)).decode("ascii")
+    faelle.append(("evidence-stereo-ohne-kohaerenz", ev,
+                   "M-11 fail-closed: unter acht Welch-Frames traegt weder Kohaerenz noch Phase ein Bit — es entsteht keine geschaetzte Zahl"))
+
+    for grund in ("material_wechsel", "messpunkt_wechsel"):
+        ei = copy.deepcopy(GRUND["evidence_invalidate"])
+        ei["grund"] = grund
+        faelle.append((f"invalidate-{grund.replace('_', '-')}", ei,
+                       "M-54/M-55: neuer Grund der Fassung 2; ein Leser der Fassung 1 lehnt ihn ab, statt ihn still abzubilden"))
+
+    ea = copy.deepcopy(GRUND["experiment_abort"])
+    ea["grund"] = "verdraengt"
+    faelle.append(("experiment-abort-verdraengt", ea,
+                   "M-47/E-03: die Verdraengung durch einen Bestandsdeckel ist der zweite und letzte Ausloeser eines terminalen aborted"))
+
+    for urteil in ("baseline", "kein_unterschied", "enthaltung"):
+        r = copy.deepcopy(GRUND["experiment_manual_result"])
+        r["hoerurteil"] = urteil
+        faelle.append((f"experiment-manual-result-{urteil.replace('_', '-')}", r,
+                       "M-46: das Hoerurteil ist Userdatum; enthaltung ist ein vollwertiger Wert und kein fehlender"))
+
+    r = copy.deepcopy(GRUND["experiment_manual_result"])
+    r["blindreihenfolge"] = "kandidat_zuerst"
+    r["notiz"] = None
+    r["werkzeug"] = None
+    faelle.append(("experiment-manual-result-ohne-notiz", r,
+                   "M-42/M-44: beide Reihenfolgen sind gueltig; null heisst ausdruecklich 'nichts angegeben' und ist keine leere Zeichenkette"))
+
+    eb = copy.deepcopy(GRUND["experiment_begin"])
+    eb["referenz"]["alignment"] = "unclear"
+    eb["referenz"]["aktive_quellen"] = ["33333333333333333333333333333333"]
+    eb["referenz"]["messpunktklassen"] = ["post_fader_contribution"]
+    faelle.append(("experiment-begin-unclear-alignment", eb,
+                   "M-16: `unclear` ist eine vollwertige der vier Alignmentklassen und sperrt keine Nachricht"))
 
     return faelle
 
@@ -1879,6 +2050,164 @@ UNGUELTIG: list[tuple] = [
      "lokales Audio-Delta' / 'keine dynamische Aktuation' / 'nur Assoziation "
      "statt exakter Attribution'). Ein zusammengelegtes Bit loescht genau die "
      "Unterscheidung, fuer die sie getrennt sind"),
+
+    # --- SONDE-013: Ereignisstrom -----------------------------------------
+    ("evidence-ereignisse-ohne-verlustzaehler", "evidence_snapshot",
+     [setze("ereignisse", {"liste": [copy.deepcopy(EREIGNIS)]})],
+     [v("/ereignisse", f"{S}/evidence_ereignisse/required/verloren", "required")],
+     "M-05: der Ring zaehlt seine Verluste. Ohne den Zaehler kann ein Empfaenger "
+     "'nichts passiert' nicht von 'verdraengt' unterscheiden"),
+
+    ("evidence-ereignisse-ueber-64", "evidence_snapshot",
+     [setze("ereignisse", {"liste": [copy.deepcopy(EREIGNIS) for _ in range(65)],
+                           "verloren": 0})],
+     [v("/ereignisse/liste",
+        f"{S}/evidence_ereignisse/properties/liste/maxItems", "maxItems")],
+     "M-05/§48.1: der Ereignisring ist fest auf 64 Plaetze gedeckelt; ein 65. "
+     "Eintrag ist ein Senderfehler (Grenztest an N+1)"),
+
+    ("evidence-ereignis-ohne-peakbit", "evidence_snapshot",
+     [setze("ereignisse", {"liste": [{k: val for k, val in EREIGNIS.items()
+                                      if k != "qualitaet_peak"}],
+                           "verloren": 0})],
+     [v("/ereignisse/liste/0",
+        f"{S}/dynamics_ereignis/required/qualitaet_peak", "required")],
+     "M-86: die zwei Qualitaetsbits trennen den Flusspfad vom eigenstaendigen "
+     "Peakpfad. Ein Ereignis ohne beide Bits sagt nicht, welcher Ausloeser feuerte"),
+
+    ("evidence-ereignis-bandzentrum-null", "evidence_snapshot",
+     [setze("ereignisse", {"liste": [dict(EREIGNIS, band_zentrum_hz=0)],
+                           "verloren": 0})],
+     [v("/ereignisse/liste/0/band_zentrum_hz",
+        f"{S}/dynamics_ereignis/properties/band_zentrum_hz/exclusiveMinimum",
+        "exclusiveMinimum")],
+     "0 Hz ist kein Bandzentrum; die Grenze ist ausschliessend, nicht einschliessend"),
+
+    # --- SONDE-013: bandweise Stereoevidenz -------------------------------
+    ("evidence-stereo-ohne-freiheitsgrade", "evidence_snapshot",
+     [setze("stereo", copy.deepcopy(STEREO)),
+      loesche("stereo", "freiheitsgrade")],
+     [v("/stereo", f"{S}/stereo_evidenz/required/freiheitsgrade", "required")],
+     "§40.1 woertlich: 'Fensterdauer und Freiheitsgrade werden Teil der Evidenz'. "
+     "Ohne sie kann ein Empfaenger eine null-Kohaerenz nicht begruenden"),
+
+    ("evidence-stereo-falsche-gitter", "evidence_snapshot",
+     [setze("stereo", copy.deepcopy(STEREO)),
+      setze("stereo", "mid_db", "gitter_id", "nakama_log64_v1"),
+      setze("stereo", "korrelation_kurz", "gitter_id", "nakama_log64_v1"),
+      setze("stereo", "phase_rad", "gitter_id", "nakama_log64_v1")],
+     [v("/stereo/mid_db/gitter_id",
+        f"{S}/stereo_bandwerte/properties/gitter_id/const", "const"),
+      v("/stereo/korrelation_kurz/gitter_id",
+        f"{S}/stereo_bandwerte_normiert/properties/gitter_id/const", "const"),
+      v("/stereo/phase_rad/gitter_id",
+        f"{S}/stereo_bandwerte_phase/properties/gitter_id/const", "const")],
+     "Die Stereoevidenz liegt auf dem 221er-Evidenzgitter. Das 64er-Livegitter "
+     "hier zuzulassen waere ein zweites Gitter fuer dieselbe Aussage"),
+
+    ("evidence-stereo-werte-ausserhalb", "evidence_snapshot",
+     [setze("stereo", copy.deepcopy(STEREO)),
+      setze("stereo", "mid_db", "werte", 0, 500.0),
+      setze("stereo", "korrelation_kurz", "werte", 0, 1.5),
+      setze("stereo", "phase_rad", "werte", 0, 4.0)],
+     [v("/stereo/mid_db/werte/0",
+        f"{S}/stereo_bandwerte/properties/werte/items/maximum", "maximum"),
+      v("/stereo/korrelation_kurz/werte/0",
+        f"{S}/stereo_bandwerte_normiert/properties/werte/items/maximum", "maximum"),
+      v("/stereo/phase_rad/werte/0",
+        f"{S}/stereo_bandwerte_phase/properties/werte/items/maximum", "maximum")],
+     "M-11: eine Korrelation ueber 1 und eine Phase ausserhalb +/-pi sind "
+     "Erzeugerfehler und faellen auf der Leitung, nicht erst in der Anzeige"),
+
+    ("evidence-stereo-zusatzfeld", "evidence_snapshot",
+     [setze("stereo", copy.deepcopy(STEREO)),
+      setze("stereo", "breite", 0.5)],
+     [v("/stereo/breite", f"{S}/stereo_evidenz/additionalProperties",
+        "additionalProperties")],
+     "V-03: `breite` und `korrelation` bleiben der 10-Hz-Livepfad (§33.2). Sie "
+     "hier zusaetzlich zu fuehren erzeugte eine zweite Wahrheit ueber dieselbe Groesse"),
+
+    # --- SONDE-013: Experimentfamilien ------------------------------------
+    ("experiment-begin-fremder-execution-mode", "experiment_begin",
+     [setze("execution_mode", "active_probe")],
+     [v("/execution_mode",
+        f"{S}/experiment_begin/properties/execution_mode/const", "const")],
+     "Der Active-Compare-Pfad gehoert SONDE-017. Ihn hier als Zweig vorzusehen "
+     "waere ein Vorgriff (Bauaufteilung §6.2); ihn spaeter zu ergaenzen ist ein "
+     "ausdruecklicher Fassungsschritt, den ein Leser der alten Fassung ablehnt"),
+
+    ("experiment-begin-behauptet-wiederherstellbarkeit", "experiment_begin",
+     [setze("reproduzierbarkeit", "automatisch_wiederherstellbar")],
+     [v("/reproduzierbarkeit",
+        f"{S}/experiment_begin/properties/reproduzierbarkeit/const", "const")],
+     "M-42: ein manueller Versuch erlaubt KEIN Nakama-Revert. Eine hoehere "
+     "Reproduzierbarkeitsklasse zu behaupten waere eine Luege ueber den Rueckweg"),
+
+    ("experiment-begin-ohne-referenz", "experiment_begin",
+     [loesche("referenz")],
+     [v("", f"{S}/experiment_begin/required/referenz", "required")],
+     "M-40: Baseline und Referenzen werden VOR dem Begin verriegelt. Ein Begin "
+     "ohne sie waere ein Versuch ohne rekonstruierbaren Ausgangspunkt"),
+
+    ("experiment-referenz-ohne-match-gain", "experiment_begin",
+     [loesche("referenz", "match_gain_db")],
+     [v("/referenz", f"{S}/experiment_referenz/required/match_gain_db", "required")],
+     "M-43: eine Klangwertung ohne vorherigen Lautheitsabgleich ist unzulaessig; "
+     "der Match-Gain gehoert zu den unveraenderlichen Referenzen"),
+
+    ("experiment-referenz-fremde-messpunktklasse", "experiment_begin",
+     [setze("referenz", "messpunktklassen", 0, "sidechain")],
+     [v("/referenz/messpunktklassen/0",
+        f"{S}/experiment_referenz/properties/messpunktklassen/items/enum", "enum")],
+     "§32.2 kennt genau vier Messpositionen; eine fuenfte waere eine "
+     "Aussageklasse ohne Gate-7-Kopplung"),
+
+    ("experiment-referenz-fremde-alignmentklasse", "experiment_begin",
+     [setze("referenz", "alignment", "sample_aligned")],
+     [v("/referenz/alignment", f"{S}/alignment_klasse/enum", "enum")],
+     "M-16: genau vier Klassen. `sample_aligned` behauptete eine "
+     "Samplegenauigkeit, die §38.2 ausdruecklich NICHT zusagt"),
+
+    ("experiment-referenz-fingerprint-zu-kurz", "experiment_begin",
+     [setze("referenz", "passage_fingerprint", "chroma", [0] * 11)],
+     [v("/referenz/passage_fingerprint/chroma",
+        f"{S}/fingerprint/properties/chroma/minItems", "minItems")],
+     "M-26: der Fingerprint hat eine feste Stuetzstellenzahl. Ein kuerzerer "
+     "Verlauf waere ein anderer Fingerprint mit demselben Namen"),
+
+    ("experiment-abort-fremder-grund", "experiment_abort",
+     [setze("grund", "sitzungsende")],
+     [v("/grund", f"{S}/experiment_abort/properties/grund/enum", "enum")],
+     "M-47/E-03: genau ZWEI Ausloeser. Sitzungsende, Reconnect und Neustart "
+     "brechen ausdruecklich NICHT ab - ein offener Versuch ueberdauert sie"),
+
+    ("experiment-manual-result-fremdes-urteil", "experiment_manual_result",
+     [setze("hoerurteil", "objektiv_besser")],
+     [v("/hoerurteil",
+        f"{S}/experiment_manual_result/properties/hoerurteil/enum", "enum")],
+     "M-46: nie 'objektiv besser' allein aus einem Metrikdelta. Das Hoerurteil "
+     "ist Userdatum und traegt genau die vier zulaessigen Werte"),
+
+    ("experiment-manual-result-fremde-blindreihenfolge", "experiment_manual_result",
+     [setze("blindreihenfolge", "unbekannt")],
+     [v("/blindreihenfolge",
+        f"{S}/experiment_manual_result/properties/blindreihenfolge/enum", "enum")],
+     "M-44: die Reihenfolge wird VOR dem Urteil gebunden und danach aufgedeckt. "
+     "'unbekannt' erlaubte, sie nachtraeglich zum Urteil passend zu erzaehlen"),
+
+    ("experiment-manual-result-mit-state-hash", "experiment_manual_result",
+     [setze("state_hash", "d" * 64)],
+     [v("/state_hash", f"{S}/experiment_manual_result/additionalProperties",
+        "additionalProperties")],
+     "E-02: die Familie traegt KEINE State-Hashes, keine Candidate-Revision und "
+     "keinen Match-Gain. Im manuellen Modus existiert kein lesbarer Fremdzustand"),
+
+    ("experiment-manual-result-notiz-leer", "experiment_manual_result",
+     [setze("notiz", "")],
+     [v("/notiz", f"{S}/experiment_manual_result/properties/notiz/minLength",
+        "minLength")],
+     "`null` heisst 'keine Notiz'. Eine leere Zeichenkette waere eine zweite "
+     "Schreibweise dafuer - dieselbe Regel wie bei pair_id"),
 ]
 
 

@@ -136,6 +136,12 @@ bool featureFrameAlsFlatbuffer (const analyse::FeatureFrame& frame,
     const auto lufsIStatus = frame.lufsIStatusGesetzt
         ? flatbuffers::Optional<std::uint8_t> (frame.lufsIStatus)
         : flatbuffers::nullopt;
+    // NAK-68: nur ein GESETZTES Feld reist. Ein ungesetzter Rahmen laesst es
+    // weg, statt 0 zu senden - 0 hiesse "ueber nichts integriert" und faellt
+    // bei beiden Lesern.
+    const auto integration = frame.integrationGesetzt
+        ? flatbuffers::Optional<std::uint32_t> (frame.integrationSamples)
+        : flatbuffers::nullopt;
     const auto frameFb = fb::CreateFrame (
         b, transport, live, frame.metricsVersion,
         optional (frame.aktivitaetGesetzt, frame.aktivitaet),
@@ -147,7 +153,7 @@ bool featureFrameAlsFlatbuffer (const analyse::FeatureFrame& frame,
         optional (frame.korrelationGesetzt, frame.korrelation), stereo,
         optional (frame.lufsIGesetzt, frame.lufsI),
         optional (frame.lufsIUnsicherheitGesetzt, frame.lufsIUnsicherheit),
-        lufsIStatus);
+        lufsIStatus, integration);
     const auto eintrag = fb::CreateQuellenEintrag (b, adresse, frameFb);
     const auto eintraege = b.CreateVector (&eintrag, 1);
     const auto batch = fb::CreateFeatureBatch (b, eintraege);

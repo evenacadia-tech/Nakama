@@ -2424,6 +2424,114 @@ fn descriptor_setzen_weist_beitragsklasse_ab() {
     assert!(coordinator.descriptor_setzen("main", erlaubt));
 }
 
+/// D5 der Nacharbeit Runde 1 (Abschlusspruefung 1, 03.09.2026): der Test
+/// darueber misst nur die Aussageklasse.
+///
+/// Codex an der Quelle: ein direkter Aufrufer konnte einen Deskriptor mit
+/// gueltiger `adresse` und `aussageklasse` uebergeben, dem `plugin_kind`,
+/// `measurement_position`, `betrieb`, `capabilities` oder `frische` fehlten -
+/// er wurde gespeichert und der Setter meldete `true`. H-17 verlangt die
+/// VOLLSTAENDIGE v3-Vertragspruefung. Seither teilen Setter und Heartbeat-Weg
+/// dieselbe Funktion; dieser Test misst jedes Pflichtfeld einzeln und belegt,
+/// dass ein abgewiesener Deskriptor weder in den Snapshot noch in den Store
+/// gelangt.
+#[test]
+#[ignore = "A4-SI: Coordinator, Store und Snapshot-Senke als Server-Integration"]
+fn descriptor_setzen_verlangt_jedes_pflichtfeld() {
+    let (_ordner, _writer, coordinator, _uhr, push) =
+        si_coordinator_mit_store("h17-pflichtfelder", true);
+    let main = si_hello(10, 100, "main");
+    assert!(
+        coordinator
+            .control_hello_registrieren("main", &main)
+            .angenommen
+    );
+    assert!(si_report(&coordinator, "main", &main.adresse, 1));
+    assert!(si_subscribe(&coordinator, "main", &main.adresse));
+
+    let gueltig = push.snapshots().last().unwrap().1["mitglieder"][0]["probe_descriptor"].clone();
+    // Der Ausgangsdeskriptor traegt alle acht Pflichtfelder des v3-Vertrags.
+    for feld in [
+        "adresse",
+        "plugin_kind",
+        "measurement_position",
+        "aussageklasse",
+        "betrieb",
+        "label",
+        "capabilities",
+        "frische",
+    ] {
+        assert!(gueltig.get(feld).is_some(), "{feld} fehlt schon im Ausgang");
+    }
+
+    // 1. Je FEHLENDEM Pflichtfeld: `false`, kein Push, kein Eintrag.
+    for feld in [
+        "adresse",
+        "plugin_kind",
+        "measurement_position",
+        "aussageklasse",
+        "betrieb",
+        "label",
+        "capabilities",
+        "frische",
+    ] {
+        let mut ohne = gueltig.clone();
+        ohne.as_object_mut().unwrap().remove(feld);
+        let vorher = push.snapshots().len();
+        assert!(
+            !coordinator.descriptor_setzen("main", ohne),
+            "ein Deskriptor ohne `{feld}` wurde uebernommen"
+        );
+        assert_eq!(
+            push.snapshots().len(),
+            vorher,
+            "der abgewiesene Deskriptor ohne `{feld}` hat einen Push ausgeloest"
+        );
+        let stand = push.snapshots().last().unwrap().1["mitglieder"][0]["probe_descriptor"].clone();
+        assert_eq!(stand, gueltig, "der abgewiesene Deskriptor ohne `{feld}` steht im Snapshot");
+    }
+
+    // 2. Je VERTRAGSWIDRIGEM Wert dasselbe. `measurement_position` ist der
+    //    Diskriminator der Aussageklasse; ein Main misst nur am Insert.
+    for (feld, wert) in [
+        ("plugin_kind", json!("gast")),
+        ("measurement_position", json!("post_fader_contribution")),
+        ("measurement_position", json!("pre")),
+        ("aussageklasse", json!("beitrag")),
+        ("betrieb", json!("halb")),
+        ("betrieb", json!(3)),
+        ("label", json!(7)),
+        ("capabilities", json!("alle")),
+        ("frische", json!({"stale": true})),
+        ("frische", json!({"stale": "ja", "letzter_kontakt_ms": 0})),
+        ("frische", json!({"stale": true, "letzter_kontakt_ms": -1})),
+        ("adresse", json!({"logon_sid": "S-1-5-21-1-2-3-1001"})),
+    ] {
+        let mut falsch = gueltig.clone();
+        falsch[feld] = wert.clone();
+        let vorher = push.snapshots().len();
+        assert!(
+            !coordinator.descriptor_setzen("main", falsch),
+            "`{feld}` = {wert} wurde uebernommen"
+        );
+        assert_eq!(push.snapshots().len(), vorher, "`{feld}` = {wert} hat gepusht");
+    }
+
+    // 3. Der Store hat davon nichts gesehen: die Sitzung traegt genau den
+    //    Deskriptor aus dem Heartbeat-Weg.
+    let stand: Value = serde_json::from_slice(&coordinator.session_snapshot_json(
+        &main.adresse.project_binding_id,
+        &main.adresse.session_epoch,
+    ))
+    .unwrap();
+    assert_eq!(stand["mitglieder"][0]["probe_descriptor"], gueltig);
+
+    // 4. Gegenprobe: der vollstaendige Deskriptor geht weiterhin durch.
+    let mut erlaubt = gueltig;
+    erlaubt["label"] = Value::String("h17-pflichtfelder".into());
+    assert!(coordinator.descriptor_setzen("main", erlaubt));
+}
+
 // ── NAK-121: G2-TOCTOU-001, G2-TOCTOU-002, G2-LOSSYSTR-001 und H-18 ────────
 
 /// G2-TOCTOU-001: der Pruefsummenvergleich steht VOR der Migration. Bis

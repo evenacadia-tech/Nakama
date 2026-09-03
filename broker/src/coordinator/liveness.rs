@@ -6,6 +6,11 @@
 
 use super::*;
 
+/// Der v3-Vertrag pinnt die Aussageklasse dieser Deskriptorform per `const` auf
+/// `beobachtend` (`eq-ipc-v3.schema.json`, `$defs/probe_descriptor_insert|pre|post`).
+/// Ein Beitragsdeskriptor gehoert in eine andere Form und faellt am Riegel ab.
+pub(super) const AUSSAGEKLASSE_BEOBACHTEND: &str = "beobachtend";
+
 impl Coordinator {
     pub(super) fn platz_schaffen_locked(
         &self,
@@ -365,6 +370,87 @@ impl Coordinator {
         self.heartbeat_kontakt(link_id, None)
     }
 
+    /// H-17, Nacharbeit Runde 1 (Abschlusspruefung 1, 03.09.2026): DIE eine
+    /// Vertragspruefung, durch die jeder Weg in den Deskriptor laeuft.
+    ///
+    /// Der Setter pruefte bis hierher nur Aussageklasse und Adresse. Fehlende
+    /// Pflichtfelder - `plugin_kind`, `measurement_position`, `betrieb`,
+    /// `capabilities`, `frische` - passierten ihn, und der Deskriptor wurde
+    /// gespeichert. Jetzt teilen `descriptor_setzen` und
+    /// `descriptor_aus_heartbeat` diese Funktion: was der Heartbeat-Weg
+    /// ablehnt, lehnt auch der Setter ab.
+    ///
+    /// Gemessen an `eq-copilot/schemas/v3/eq-ipc-v3.schema.json`,
+    /// `$defs/probe_descriptor_*`: acht Pflichtfelder, `measurement_position`
+    /// diskriminiert die Aussageklasse, `frische` traegt `stale` und
+    /// `letzter_kontakt_ms`, `label` hoechstens 120 Zeichen.
+    ///
+    /// GRENZE: der INHALT von `capabilities` (die zehn Faehigkeiten aus
+    /// Entwurf Paragraph 53.6) wird hier nicht geprueft. Der Heartbeat-Weg
+    /// prueft ihn ebenfalls nicht; eine Pruefung an dieser Stelle wuerde
+    /// Heartbeats ablehnen, die heute durchgehen - das waere eine andere
+    /// Zusage als H-17.
+    pub(super) fn descriptor_vertrag_erfuellt(descriptor: &Value) -> bool {
+        let Some(objekt) = descriptor.as_object() else {
+            return false;
+        };
+        for feld in [
+            "adresse",
+            "plugin_kind",
+            "measurement_position",
+            "aussageklasse",
+            "betrieb",
+            "label",
+            "capabilities",
+            "frische",
+        ] {
+            if !objekt.contains_key(feld) {
+                return false;
+            }
+        }
+        if serde_json::from_value::<Adresse>(objekt["adresse"].clone()).is_err() {
+            return false;
+        }
+        let (Some(plugin_kind), Some(messpunkt), Some(betrieb)) = (
+            objekt["plugin_kind"].as_str(),
+            objekt["measurement_position"].as_str(),
+            objekt["betrieb"].as_str(),
+        ) else {
+            return false;
+        };
+        if objekt["aussageklasse"].as_str() != Some(AUSSAGEKLASSE_BEOBACHTEND) {
+            return false;
+        }
+        if !matches!(
+            plugin_kind,
+            "main" | "active_probe" | "passive_probe" | "legacy"
+        ) {
+            return false;
+        }
+        // Die Aussageklasse FOLGT aus der Position: nur `insert`, `pre` und
+        // `post` sind beobachtend. Ein Main misst ausschliesslich am Insert.
+        if !matches!(messpunkt, "insert" | "pre" | "post")
+            || (plugin_kind == "main" && messpunkt != "insert")
+        {
+            return false;
+        }
+        if !matches!(betrieb, "active" | "suspended" | "offline") {
+            return false;
+        }
+        if !objekt["label"].as_str().is_some_and(|l| l.chars().count() <= 120) {
+            return false;
+        }
+        if !objekt["capabilities"].is_object() {
+            return false;
+        }
+        let frische = &objekt["frische"];
+        frische.get("stale").is_some_and(Value::is_boolean)
+            && frische
+                .get("letzter_kontakt_ms")
+                .and_then(Value::as_u64)
+                .is_some()
+    }
+
     fn descriptor_aus_heartbeat(
         link: &LinkStand,
         plugin_kind: &str,
@@ -396,7 +482,7 @@ impl Coordinator {
             "adresse": link.adresse,
             "plugin_kind": plugin_kind,
             "measurement_position": messpunkt,
-            "aussageklasse": "beobachtend",
+            "aussageklasse": AUSSAGEKLASSE_BEOBACHTEND,
             "betrieb": betrieb,
             "label": label,
             "capabilities": capabilities,
@@ -407,6 +493,12 @@ impl Coordinator {
             if let Some(wert) = runtime.get(feld) {
                 objekt.insert(feld.into(), wert.clone());
             }
+        }
+        // Derselbe Riegel wie im Setter. Er kann hier nur fallen, wenn die
+        // Bauvorschrift darueber und der Vertrag auseinanderlaufen - genau
+        // dann soll er fallen.
+        if !Self::descriptor_vertrag_erfuellt(&descriptor) {
+            return None;
         }
         Some(descriptor)
     }
@@ -420,7 +512,7 @@ impl Coordinator {
         // faellt hier ab, bevor er in den Snapshot geraet. Ein cfg(test)-Zaun
         // schied aus: descriptor_setzen wird von einer Integrationstestdatei
         // gerufen, die die Bibliothek ohne Testkonfiguration bindet.
-        if descriptor.get("aussageklasse").and_then(Value::as_str) != Some("beobachtend") {
+        if !Self::descriptor_vertrag_erfuellt(&descriptor) {
             return false;
         }
         let session = {

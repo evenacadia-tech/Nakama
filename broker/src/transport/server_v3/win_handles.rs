@@ -540,6 +540,17 @@ pub(super) struct HandleRegister {
     /// hat seine ID laengst ausgetragen, und der Wachhund sah nur faellige
     /// Bootstrap-IDs.
     pub(super) abgeloest: std::collections::HashSet<u64>,
+    /// D14 der Nacharbeit Runde 1 (Abschlusspruefung 1, 03.09.2026): wie oft
+    /// der Wachhund fuer eine abgeloeste ID TATSAECHLICH `CancelIoEx`
+    /// ausgefuehrt hat.
+    ///
+    /// Die H-02-Testnaht beendete ihren Schreiber, sobald die ID in
+    /// `abgeloest` erschien. Dieser Marker wird VOR dem naechsten Wachhundtick
+    /// gesetzt - der Thread gab sein Handle also selbst frei, ohne dass der
+    /// Wachhund je abgebrochen haben musste, und selbst ein Entfernen des
+    /// zugesagten wiederholten Wachhundabbruchs liess den Test bestehen.
+    /// Gemessen wird jetzt die Tat, nicht die Markierung.
+    pub(super) abgeloest_abbrueche: std::collections::HashMap<u64, u64>,
 }
 
 // Das Register haelt ein Handle nur, solange der besitzende Thread seinen

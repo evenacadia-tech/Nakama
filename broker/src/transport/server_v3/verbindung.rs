@@ -505,13 +505,27 @@ pub(super) fn verbindung_bedienen(
                 // muesste die Pipe offen halten und nicht lesen, und jeder Weg,
                 // die Verbindung dann abzubauen, loest das Write ohnehin mit.
                 if let Some(haengt) = &schreiber_haengt {
+                    // D14 der Nacharbeit Runde 1 (Abschlusspruefung 1,
+                    // 03.09.2026): gewartet wird auf den TATSAECHLICHEN
+                    // Wachhundabbruch, nicht auf die Markierung in
+                    // `abgeloest`. Der Marker wird vor dem naechsten
+                    // Wachhundtick gesetzt; wer auf ihn wartet, misst nur sich
+                    // selbst und liesse ein Entfernen des zugesagten
+                    // wiederholten Abbruchs unbemerkt durchgehen.
+                    //
+                    // Die Notbremse liegt weit hinter der Frist des H-02-Tests
+                    // (10 s): sie haelt einen Regressionslauf am Leben, statt
+                    // ihn haengen zu lassen, ohne die Messung zu retten.
+                    let notbremse = Instant::now() + Duration::from_secs(30);
                     while haengt.load(Ordering::SeqCst) {
-                        let erreicht = handles
+                        let abgebrochen = handles
                             .lock()
                             .unwrap_or_else(|e| e.into_inner())
-                            .abgeloest
-                            .contains(&id);
-                        if erreicht {
+                            .abgeloest_abbrueche
+                            .get(&id)
+                            .copied()
+                            .unwrap_or(0);
+                        if abgebrochen > 0 || Instant::now() >= notbremse {
                             break;
                         }
                         std::thread::sleep(Duration::from_millis(10));

@@ -365,14 +365,24 @@ pub(super) fn v3_server_starten_intern(
                 // Schreiber bis zum Serverstopp haengen: `BootstrapFrist` hat
                 // seine ID laengst ausgetragen, und der Wachhund sah nur
                 // faellige Bootstrap-IDs.
-                if let Ok(reg) = handles_w.lock() {
+                if let Ok(mut reg) = handles_w.lock() {
                     if faellig.is_empty() && reg.abgeloest.is_empty() {
                         continue;
                     }
+                    // D14: der tatsaechlich ausgefuehrte Abbruch wird je
+                    // abgeloester ID gezaehlt. Die H-02-Naht wartet darauf -
+                    // auf die TAT, nicht auf die Markierung.
+                    let mut abgebrochen: Vec<u64> = Vec::new();
                     for (id, h) in reg.offen.iter() {
                         if faellig.contains(id) || reg.abgeloest.contains(id) {
                             abbrechen_und_zaehlen_extern(*h as HANDLE, &statistik_w);
+                            if reg.abgeloest.contains(id) {
+                                abgebrochen.push(*id);
+                            }
                         }
+                    }
+                    for id in abgebrochen {
+                        *reg.abgeloest_abbrueche.entry(id).or_insert(0) += 1;
                     }
                 }
             }

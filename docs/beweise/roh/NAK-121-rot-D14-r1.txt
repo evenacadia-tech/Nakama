@@ -1,0 +1,76 @@
+# Rotbeweis D14 (H-02, Naht wartet auf den tatsaechlichen Wachhundabbruch) — NAK-121 Nacharbeit Runde 1
+
+Der zugesagte wiederholte Wachhundabbruch fuer abgeloeste IDs faellt weg.
+Die alte Naht (Markierung) haette das nicht bemerkt.
+
+Mutante(n):
+  broker/src/transport/server_v3/listener.rs
+    ALT:                     for (id, h) in reg.offen.iter() {
+    ALT:                         if faellig.contains(id) || reg.abgeloest.contains(id) {
+    ALT:                             abbrechen_und_zaehlen_extern(*h as HANDLE, &statistik_w);
+    ALT:                             if reg.abgeloest.contains(id) {
+    ALT:                                 abgebrochen.push(*id);
+    ALT:                             }
+    ALT:                         }
+    ALT:                     }
+    NEU:                     // MUTANTE: der Wachhund bricht abgeloeste IDs nicht mehr ab -
+    NEU:                     // die Markierung bleibt, die Tat faellt weg.
+    NEU:                     for (id, h) in reg.offen.iter() {
+    NEU:                         if faellig.contains(id) {
+    NEU:                             abbrechen_und_zaehlen_extern(*h as HANDLE, &statistik_w);
+    NEU:                         }
+    NEU:                     }
+
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never --test security_vectors -- verbindungsgriff_besitzt
+Exitcode: 101
+
+Die Mutante ist nach diesem Lauf zurueckgenommen; der naechste
+Lauf derselben Tests ist wieder gruen.
+
+HINWEIS zur Lesart: die Mutante trifft die Assertion des H-01-Teils zuerst.
+Die H-01-Naht traegt ihr Phantom-Handle unter `u64::MAX` ebenfalls in
+`HandleRegister::abgeloest` ein - faellt der Abbruch abgeloester IDs weg,
+faellt damit auch der H-01-Zaehler. Beide Zusagen haengen an demselben
+Wachhundzweig; der Lauf ist deshalb rot, sobald er fehlt. Die Aussage von
+D14 ist die Naht selbst: sie beendet den Schreiber nur noch nach einem
+gezaehlten Wachhundabbruch (`abgeloest_abbrueche`), nicht mehr bei der
+blossen Markierung, und ihre Notbremse liegt mit 30 s weit hinter der
+10-s-Frist des Tests.
+
+---
+
+
+running 1 test
+test verbindungsgriff_besitzt_handle_und_registereintrag ... FAILED
+
+failures:
+
+---- verbindungsgriff_besitzt_handle_und_registereintrag stdout ----
+
+thread 'verbindungsgriff_besitzt_handle_und_registereintrag' (19984) panicked at tests\security_vectors.rs:895:5:
+assertion failed: warten(5000,
+    || griff.statistik.cancel_auf_totem_handle.load(Ordering::SeqCst) > 0)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    verbindungsgriff_besitzt_handle_und_registereintrag
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 22 filtered out; finished in 5.12s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: variable does not need to be mutable
+   --> src\transport\server_v3\listener.rs:375:25
+    |
+375 |                     let mut abgebrochen: Vec<u64> = Vec::new();
+    |                         ----^^^^^^^^^^^
+    |                         |
+    |                         help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib) generated 1 warning (run `cargo fix --lib -p eqcop-broker` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.09s
+     Running tests\security_vectors.rs (broker\target\debug\deps\security_vectors-4a68d58de2e43d5b.exe)
+error: test failed, to rerun pass `--test security_vectors`

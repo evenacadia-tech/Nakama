@@ -1,0 +1,24 @@
+Die statische Prüfung stützt D1–D3, D5, D7–D9, D12–D14 und D16, lässt aber D4, D6, D10, D11 und D15 offen; zusätzlich brechen öffentliche Prüf-APIs und der Wachhund-Map-Leak Gate beziehungsweise Lifecycle. Der eingecheckte Endkanon meldet 40/40 grün, Cargo konnte in der read-only Sandbox jedoch nicht erneut ausgeführt werden.
+
+Full review comments:
+
+- [P1] Halte die neuen Prüf-APIs aus der öffentlichen Oberfläche — C:\Users\phili\Projekte\Nakama\broker\src\coordinator\mod.rs:121-121
+  `CoordinatorFlushTestHaken` wird auch in normalen Builds ausgeliefert, und diese uneingeschränkte Methode erlaubt jedem Downstream-Aufrufer eine Panik unter dem Coordinator-Lock; `broker/tests/coordinator_model.rs` nutzt sie bereits als externer Crate-Verbraucher. Der Fixdiff exportiert außerdem weitere neue Methoden, Pfadhelfer, Konstanten und `Registrierung::DeckelErreicht`; `#[doc(hidden)]` begrenzt die Sichtbarkeit nicht, sodass die Gate-Grenze gegen neue öffentliche Verbrauchersignaturen gebrochen ist.
+
+- [P2] Zähle ungültige Fenster beim Frame statt beim Lesen — C:\Users\phili\Projekte\Nakama\broker\src\coordinator\sicht.rs:165-165
+  Nach einem einzigen subnormalen Frame ruft jede weitere `messsicht`-Abfrage erneut `fenster_ms_bilden` auf und erhöht den Zähler. Im neuen Test werden 0, negativ, inf und NaN am Eingang abgewiesen; die vier anschließenden Abfragen zählen lediglich denselben alten subnormalen Frame erneut. Damit misst der Zähler Lesefrequenz statt die geforderten Grenzfälle und verletzt die NaN-Zählzusage aus `CLAUDE.md:207-209`; ein zweiter Aufruf ohne neuen Frame reproduziert die Fehlzählung.
+
+- [P2] Prüfe den Guarddeckel im verdrängten Reportpfad — C:\Users\phili\Projekte\Nakama\broker\src\coordinator\link.rs:229-231
+  Startet der Coordinator mit 1023 oder 1024 restaurierten persistenten Guards und leerem Aliasregister, werden alter und neuer Nonce-Link zunächst angenommen; die Kollision entsteht erst beim erneuten Report des verdrängten alten Links in `heartbeat_kontakt`, wo zwei Guards ohne Deckelprüfung eingetragen werden. Dieser Check läuft nur bei einer Kollision während des Hello, sodass der Store erst nach dem Welcome scheitert und lediglich Routing abschaltet; D6/H-14 sowie der geforderte Test am unabhängigen persistenten Deckel bleiben offen.
+
+- [P2] Klassifiziere das von SQLite gehaltene Dateihandle — C:\Users\phili\Projekte\Nakama\broker\src\store\migration.rs:205-206
+  `Connection::open_with_flags` öffnet zuerst die eigentliche Datenbank, anschließend öffnet `geoeffnete_db_volume(&db_pfad)` denselben Namen über ein zweites `CreateFileW`. Wird der Pfad oder eine Junction zwischen diesen Opens umgehängt, hält SQLite Objekt A, während die Volumenentscheidung Objekt B klassifiziert; der ursprüngliche TOCTOU bleibt bestehen. Test und Rotbeweis prüfen ebenfalls nur den separaten Helferhandle und belegen daher keine Entscheidung am Handle der SQLite-Datenbank.
+
+- [P2] Räume Wachhundzähler beim Verbindungsende ab — C:\Users\phili\Projekte\Nakama\broker\src\transport\server_v3\listener.rs:384-385
+  Sobald ein Writer abgelöst wurde, legt der Wachhund einen Eintrag in `abgeloest_abbrueche` an; `Verbindungsgriff::drop` entfernt später nur `offen` und `abgeloest`, nie diesen neuen HashMap-Eintrag. Bei wiederholten H-02-Ablösungen wächst die Map über die gesamte Broker-Laufzeit unbegrenzt, obwohl nur 96 Verbindungen gleichzeitig erlaubt sind; damit bleibt der gekoppelte Verbinden/Trennen-Lebenszyklus aus `AGENTS.md:48-50` unvollständig.
+
+- [P2] Führe den D11-Rotbeweis durch V3Griff::stoppen — C:\Users\phili\Projekte\Nakama\broker\src\transport\server_v3\win_handles.rs:671-671
+  Der neue Test bezeichnet diesen Block als Serverstopp, ruft aber `alle_io_abbrechen` direkt auf; auch die Mutante ändert nur den gemeinsamen Zählhelfer. Entfernt oder entkoppelt man den Aufruf aus `V3Griff::stoppen`, bleiben dieser Test und `NAK-121-rot-D11-r1.txt` grün, obwohl der geforderte Stopp-Pfad wieder ungeprüft ist; D11 verlangt ausdrücklich einen Rotbeweis über diesen Pfad.
+
+- [P2] Lies das Welcome erst während des Abbaus — C:\Users\phili\Projekte\Nakama\broker\tests\security_vectors.rs:1058-1058
+  Im lesenden H-07-Lauf ist `frame_lesen` vollständig abgeschlossen, bevor `drop(client)` den Verbindungsabbau auslöst; beim Flush ist somit kein Broker-Write mehr ausstehend. Diese Hälfte bleibt ohne `abfliessen_mit_frist` grün, während der vorhandene Rotbeweis ausschließlich wegen des Timeoutzählers im nicht lesenden Lauf scheitert; die geforderte Aussage, dass ein ausstehender Write den lesenden Peer vor dem Close erreicht, bleibt unbelegt.

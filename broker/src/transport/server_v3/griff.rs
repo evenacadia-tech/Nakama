@@ -161,6 +161,11 @@ pub struct V3Statistik {
     /// Joinergebnis erkannt. Im Normalbetrieb strukturell null - ein Wert
     /// groesser null ist ein Befund, kein Betriebsrauschen.
     pub verbindungsthread_panik: AtomicU64,
+    /// H-07: wie oft der beschraenkte Abfluss vor dem Schliessen seine Frist
+    /// verpasst hat. Der Wert macht sichtbar, was sonst still verschwaende -
+    /// ein Snapshot oder ein Ablehnungsgrund im Ausgabepuffer eines Peers, der
+    /// nicht liest.
+    pub flush_abgelaufen: AtomicU64,
     /// Wie oft ein LEBENSZYKLUS-Aufruf der Senke (`control_verbunden`,
     /// `telemetrie_gekoppelt`, `*_getrennt`, `abgewiesen`) laenger als
     /// `SENKE_FRIST` stand und deshalb abgeloest wurde. Diese Aufrufe liefen

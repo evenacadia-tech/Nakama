@@ -1019,3 +1019,68 @@ fn jeder_unsafe_block_traegt_einen_safety_kommentar() {
         offen.len()
     );
 }
+
+// ── NAK-121 H-07 und H-08 ──────────────────────────────────────────────────
+//
+// Ein Peer, dem der Broker etwas geschrieben hat, bekommt es auch: vor dem
+// Schliessen laeuft ein beschraenkter Abfluss mit harter Frist, danach wird
+// getrennt, danach geschlossen. Verpasst der Abfluss seine Frist, ist der
+// Verlust GEZAEHLT statt unsichtbar.
+//
+// Was ausdruecklich NICHT geaendert wird: die Bedeutung eines erfolgreichen
+// Writes und die Reaktion des Coordinators darauf. O-03 erlaubt woertlich, die
+// Snapshotschuld nach vollstaendigem Write zu kompaktieren, "ohne
+// Empfaengerwirkung zu behaupten"; O-02 sagt, ein Pipe-Write sei keine
+// Zustellwahrheit. Eine Wiederzustellpflicht geht also nicht verloren.
+
+/// Beide Zusagen in EINEM Test, aus demselben Grund wie bei H-01/H-02: der
+/// Nachbar `zwei_listener_plus_96_worker_erhalten_cap_und_namensbesitz` wird
+/// ab 23 Tests in dieser Datei flaky, weil er 96 Pipe-Clients seriell oeffnet
+/// und danach nur 4000 ms auf 96 aktive Worker wartet.
+#[test]
+fn abfluss_vor_dem_schliessen_erreicht_den_peer() {
+    let pipe = probe_pipe("h07");
+    let (mut griff, _) = start(&pipe, V3SecurityTestOptionen::default());
+    let client = verbinden(&pipe);
+    assert!(warten(3000, || griff.aktive_worker() == 1));
+    drop(client);
+
+    // Die Reihenfolge IST die Zusage: abfliessen, trennen, schliessen. Vorher
+    // schloss der Destruktor bar, und was noch im Ausgabepuffer lag, verschwand
+    // still.
+    assert!(warten(3000, || griff.sicherheits_spur().contains(&"close")));
+    assert_reihenfolge(
+        &griff.sicherheits_spur(),
+        &["register_austrag", "flush", "close"],
+    );
+
+    // Ein Peer, der liest, kostet keine Frist - der Zaehler bleibt null.
+    assert_eq!(
+        griff.statistik.flush_abgelaufen.load(Ordering::SeqCst),
+        0,
+        "der Abfluss lief in seine Frist, obwohl der Peer nichts offen hielt"
+    );
+    griff.stoppen();
+
+    // ── H-08: der Ablehnungsgrund erreicht den Peer ───────────────────────
+    let pipe = probe_pipe("h08");
+    let (mut griff, senke) = start(&pipe, V3SecurityTestOptionen::default());
+    let mut client = verbinden(&pipe);
+
+    // Ein Hello mit falscher Protokollversion: der Broker schreibt einen
+    // Ablehnungsrahmen und schliesst danach.
+    client
+        .write_all(&bootstrap(&control_hello_json("hello", "control", 2)))
+        .expect("Bootstrap schreiben");
+
+    // Der Grund erreicht den Peer - vorher lag er im Ausgabepuffer und der
+    // Client sah nur eine abgerissene Pipe.
+    let reject = bootstrap_reject_lesen(&mut client);
+    assert_eq!(reject["type"], "reject");
+    assert!(reject["reason"].is_string());
+
+    assert!(warten(3000, || griff.sicherheits_spur().contains(&"close")));
+    assert_reihenfolge(&griff.sicherheits_spur(), &["reject", "flush", "close"]);
+    assert_keine_fachlogik(&senke);
+    griff.stoppen();
+}

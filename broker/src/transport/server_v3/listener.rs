@@ -552,6 +552,7 @@ pub(super) fn v3_server_starten_intern(
                     id,
                     register: handles2.clone(),
                     destruktor_fenster: security_optionen2.destruktor_fenster.clone(),
+                    statistik: statistik2.clone(),
                 });
                 let verzoegerung = probe_verzoegerung_ms.clone();
                 let writer_fehler = writer_fehler_erzwungen.clone();

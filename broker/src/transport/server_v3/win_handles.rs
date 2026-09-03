@@ -363,6 +363,10 @@ pub(super) struct Verbindungsgriff {
     /// bereits geschlossenes Handle veroeffentlichen.
     pub(super) id: u64,
     pub(super) register: Arc<Mutex<HandleRegister>>,
+    /// H-07: der Destruktor zaehlt einen verpassten Abfluss hier hinein. Er
+    /// laeuft in jedem Thread, der den letzten Arc fallen laesst, und traegt
+    /// die Statistik deshalb selbst mit.
+    pub(super) statistik: Arc<V3Statistik>,
     /// Testnaht, die den Destruktor im Fenster zwischen Austrag und Schliessen
     /// anhaelt. Im Produktbetrieb ist sie `None` und kostet einen Vergleich.
     pub(super) destruktor_fenster: Option<Arc<V3UebergabeBarriere>>,
@@ -373,6 +377,76 @@ pub(super) struct Verbindungsgriff {
 unsafe impl Send for Verbindungsgriff {}
 
 unsafe impl Sync for Verbindungsgriff {}
+
+/// H-07: laesst den Pipe-Ausgabepuffer mit HARTER FRIST abfliessen.
+///
+/// `FlushFileBuffers` ist bei Named Pipes synchron und wartet auf den Peer -
+/// ein nicht lesender Client haelt den Aufruf also beliebig lange. Deshalb
+/// laeuft er in einem eigenen Thread, genau wie im v2-Gegenstueck
+/// (`pipe_nach_antwort_schliessen`), und wird nach `FLUSH_FRIST` aufgegeben.
+///
+/// Der Rueckgabewert sagt, ob der Abfluss innerhalb der Frist fertig wurde.
+/// Ein aufgegebener Thread haelt seinen eigenen Handle-Klon und stirbt, sobald
+/// der Kernel die Pipe abbaut; hoechstens einer je nicht lesendem Peer und
+/// Verbindung, also durch `MAX_VERBINDUNGEN` gedeckelt.
+///
+/// Der Abfluss laeuft NICHT im Coordinator-Cleanup - C-06 verbietet dort I/O.
+fn abfliessen_mit_frist(h: HANDLE) -> bool {
+    // Ein eigener Handle-Klon fuer den Thread: sein Original faellt gleich, und
+    // ein Thread, dem man das Handle unter den Fuessen wegzieht, waere genau
+    // der Fehler, den H-01 an anderer Stelle behebt.
+    let mut klon: HANDLE = std::ptr::null_mut();
+    // SAFETY: `h` ist das noch lebende Verbindungshandle; die API schreibt bei
+    // Erfolg einen neuen Handle nach `klon`, den allein der Thread unten
+    // besitzt und genau einmal schliesst.
+    let ok = unsafe {
+        DuplicateHandle(
+            GetCurrentProcess(),
+            h,
+            GetCurrentProcess(),
+            &mut klon,
+            0,
+            0,
+            DUPLICATE_SAME_ACCESS,
+        )
+    };
+    if ok == 0 || klon.is_null() {
+        return false;
+    }
+
+    let gesendet = Arc::new(AtomicBool::new(false));
+    let gesendet_thread = gesendet.clone();
+    let klon_wert = klon as isize;
+    let join = std::thread::Builder::new()
+        .name("eqcop-v3-flush".into())
+        .spawn(move || {
+            let h = klon_wert as HANDLE;
+            // SAFETY: dieser Thread ist alleiniger Besitzer des Klons; er
+            // schliesst ihn genau einmal, nachdem der Flush zurueck ist.
+            unsafe {
+                FlushFileBuffers(h);
+                CloseHandle(h);
+            }
+            gesendet_thread.store(true, Ordering::SeqCst);
+        });
+    let Ok(join) = join else {
+        // SAFETY: der Thread kam nicht zustande, der Klon gehoert noch uns.
+        unsafe { CloseHandle(klon) };
+        return false;
+    };
+
+    let ende = Instant::now() + FLUSH_FRIST;
+    while !join.is_finished() && Instant::now() < ende {
+        std::thread::sleep(Duration::from_millis(1));
+    }
+    if join.is_finished() {
+        let _ = join.join();
+        return gesendet.load(Ordering::SeqCst);
+    }
+    // Frist abgelaufen: der Thread wird aufgegeben. Er haelt seinen eigenen
+    // Klon und raeumt ihn selbst auf, sobald der Kernel die Pipe abbaut.
+    false
+}
 
 impl Drop for Verbindungsgriff {
     fn drop(&mut self) {
@@ -390,6 +464,18 @@ impl Drop for Verbindungsgriff {
         if let Some(fenster) = &self.destruktor_fenster {
             fenster.im_destruktorfenster_warten();
         }
+        // H-07, und die Reihenfolge IST die Zusage: abfliessen lassen, DANN
+        // trennen, DANN schliessen. Vorher schloss der Destruktor bar, und ein
+        // Snapshot oder ein Ablehnungsgrund, der noch im Ausgabepuffer lag,
+        // verschwand still. Verpasst der Abfluss seine Frist, wird das
+        // gezaehlt - der Verlust ist sichtbar statt unsichtbar.
+        if !abfliessen_mit_frist(self.h) {
+            self.statistik.flush_abgelaufen.fetch_add(1, Ordering::SeqCst);
+        }
+        self.sicherheits_spur.push("flush");
+        // SAFETY: `self.h` lebt noch; DisconnectNamedPipe schliesst es nicht,
+        // sondern beendet nur die Instanz - das ist der v2-Weg.
+        unsafe { DisconnectNamedPipe(self.h) };
         // SAFETY: exklusiver Besitz ueber den Arc, genau einmal geschlossen;
         // der Registereintrag ist eine Zeile hoeher gefallen.
         unsafe { CloseHandle(self.h) };

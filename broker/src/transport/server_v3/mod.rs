@@ -60,7 +60,8 @@ use windows_sys::Win32::Security::{
     SECURITY_ATTRIBUTES, TOKEN_QUERY, TOKEN_USER,
 };
 use windows_sys::Win32::Storage::FileSystem::{
-    ReadFile, WriteFile, FILE_FLAG_FIRST_PIPE_INSTANCE, FILE_FLAG_OVERLAPPED, PIPE_ACCESS_DUPLEX,
+    FlushFileBuffers, ReadFile, WriteFile, FILE_FLAG_FIRST_PIPE_INSTANCE, FILE_FLAG_OVERLAPPED,
+    PIPE_ACCESS_DUPLEX,
 };
 use windows_sys::Win32::System::Pipes::{
     ConnectNamedPipe, CreateNamedPipeW, DisconnectNamedPipe, ImpersonateNamedPipeClient,
@@ -71,6 +72,8 @@ use windows_sys::Win32::System::Threading::{
     WaitForSingleObject, INFINITE,
 };
 use windows_sys::Win32::System::IO::{CancelIoEx, GetOverlappedResult, OVERLAPPED};
+use windows_sys::Win32::Foundation::{DuplicateHandle, DUPLICATE_SAME_ACCESS};
+use windows_sys::Win32::System::Threading::GetCurrentProcess;
 
 use crate::transport::bootstrap::{
     bootstrap_lesen, neue_kennung, Bootstrap, HelloControl, Kopplungen, Welcome,
@@ -167,6 +170,11 @@ pub const SENKE_FRIST: Duration = Duration::from_millis(2000);
 /// `Duration::from_millis(100)` in der Schleife; H-02 misst gegen diese Frist,
 /// also bekommt sie einen Namen. Modulintern, keine oeffentliche Signatur.
 pub(super) const WACHHUND_TAKT: Duration = Duration::from_millis(100);
+
+/// H-07: harte Frist des beschraenkten Abflusses vor dem Schliessen. Derselbe
+/// Wert wie `ANTWORT_FLUSH_TIMEOUT` auf der v2-Seite, weil es dieselbe Frage
+/// ist: wie lange darf ein nicht lesender Peer den Abbau aufhalten.
+pub(super) const FLUSH_FRIST: Duration = Duration::from_millis(250);
 
 //==============================================================================
 

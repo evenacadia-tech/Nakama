@@ -1,0 +1,67 @@
+# Rotbeweis H-07 — NAK-121 Etappe 2
+
+Mutante(n):
+  broker/src/transport/server_v3/win_handles.rs
+    ALT: if !abfliessen_mit_frist(self.h) {
+            self.statistik.flush_abgelaufen.fetch_add(1, Ordering::SeqCst);
+        }
+        self.sicherheits_spur.push("flush");
+        // SAFETY: `self.h` lebt n
+    NEU: // MUTANTE: kein Abfluss vor dem Schliessen — der Zustand vor
+        // NAK-121, in dem ein Snapshot im Ausgabepuffer still verschwand.
+
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never --test security_vectors -- abfluss_vor_dem
+Exitcode: 101
+
+Die Mutante ist nach diesem Lauf zurueckgenommen; der naechste
+Lauf derselben Tests ist wieder gruen.
+
+---
+
+
+running 1 test
+test abfluss_vor_dem_schliessen_erreicht_den_peer ... FAILED
+
+failures:
+
+---- abfluss_vor_dem_schliessen_erreicht_den_peer stdout ----
+
+thread 'abfluss_vor_dem_schliessen_erreicht_den_peer' (18920) panicked at tests\security_vectors.rs:163:28:
+Schritt "flush" fehlt in ["connect", "revert", "register_austrag", "close"]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    abfluss_vor_dem_schliessen_erreicht_den_peer
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 22 filtered out; finished in 0.10s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: constant `FLUSH_FRIST` is never used
+   --> src\transport\server_v3\mod.rs:177:18
+    |
+177 | pub(super) const FLUSH_FRIST: Duration = Duration::from_millis(250);
+    |                  ^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `statistik` is never read
+   --> src\transport\server_v3\win_handles.rs:369:16
+    |
+357 | pub(super) struct Verbindungsgriff {
+    |                   ---------------- field in this struct
+...
+369 |     pub(super) statistik: Arc<V3Statistik>,
+    |                ^^^^^^^^^
+
+warning: function `abfliessen_mit_frist` is never used
+   --> src\transport\server_v3\win_handles.rs:394:4
+    |
+394 | fn abfliessen_mit_frist(h: HANDLE) -> bool {
+    |    ^^^^^^^^^^^^^^^^^^^^
+
+warning: `eqcop-broker` (lib) generated 3 warnings
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.79s
+     Running tests\security_vectors.rs (broker\target\debug\deps\security_vectors-4a68d58de2e43d5b.exe)
+error: test failed, to rerun pass `--test security_vectors`

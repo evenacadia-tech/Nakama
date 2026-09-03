@@ -902,7 +902,12 @@ fn verbindung_bedienen(
     }
 
     drop(registrierung);
-    pipe_schliessen(&datei);
+    // H-08: der v2-Abbau geht denselben Weg wie die Reject-Pfade dieser Datei -
+    // beschraenkter Flush mit harter Frist, dann trennen, dann schliessen.
+    // Vorher schloss er bar, und eine letzte Antwort, die noch im
+    // Ausgabepuffer lag, verschwand still. `pipe_nach_antwort_schliessen`
+    // enthaelt genau dieses Muster und schliesst danach selbst.
+    pipe_nach_antwort_schliessen(&datei, &register);
 }
 
 fn pipe_schliessen(datei: &File) {
@@ -1000,6 +1005,45 @@ mod tests {
         );
         // Und der Registerteil des Destruktors lief davor wie immer.
         assert!(register.lock().unwrap().sensoren.is_empty());
+    }
+
+    /// NAK-121 H-08, v2-Haelfte: der Abbau einer etablierten Verbindung geht
+    /// ueber `pipe_nach_antwort_schliessen` - beschraenkter Flush mit harter
+    /// Frist, dann trennen, dann schliessen -, nicht ueber das bare
+    /// `pipe_schliessen`. Vorher verschwand eine letzte Antwort, die noch im
+    /// Ausgabepuffer lag, still.
+    ///
+    /// Gemessen am Quelltext, weil ein Verhaltenstest dafuer einen Peer
+    /// braeuchte, der nachweislich nicht liest, und die Frist von 250 ms in
+    /// jedem Lauf abwarten muesste. Die Zusage IST hier die Wahl der
+    /// Schliessfunktion am Ende von `verbindung_bedienen`.
+    #[test]
+    fn v2_abbau_flusht_die_letzte_antwort() {
+        let quelle = include_str!("server.rs");
+        // Die Marke wird zusammengesetzt, sonst faende rfind das Literal in
+        // DIESEM Test statt der echten Codestelle - genau daran fiel die erste
+        // Fassung im Rotbeweis auf.
+        let marke = ["drop(registri", "erung);"].concat();
+        let stelle = quelle
+            .rfind(&marke)
+            .expect("Abbau am Ende der Verbindung");
+        // Nur bis zum Ende DIESER Funktion schauen, und nach dem AUFRUF suchen:
+        // der blosse Name traefe auch die Definition, die gleich darunter
+        // steht, und die Wache waere wertlos. Genau daran fiel ihre erste
+        // Fassung im Rotbeweis auf.
+        let rest = &quelle[stelle..];
+        let ende = rest.find("
+fn ").unwrap_or(rest.len());
+        let rumpf = &rest[..ende];
+        let flush = rumpf
+            .find(&["pipe_nach_antwort_schl", "iessen(&datei"].concat())
+            .expect("der v2-Abbau schliesst ohne beschraenkten Flush");
+        if let Some(bar) = rumpf.find(&["pipe_schli", "essen(&datei)"].concat()) {
+            assert!(
+                flush < bar,
+                "der v2-Abbau schliesst bar, bevor er abfliessen laesst"
+            );
+        }
     }
 
     fn test_pipe_name(zusatz: &str) -> String {

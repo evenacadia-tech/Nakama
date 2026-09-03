@@ -28,7 +28,7 @@ pub use handle::{
 };
 pub use migration::{migration_1_checksum, projektionen_neu_bauen};
 use handle::{degradiere, utc_ms_i64};
-pub use pfad::{standard_store_pfad, store_pfad_ist_remote, store_pfad_unter};
+pub use pfad::{geoeffnete_db_volume, standard_store_pfad, store_pfad_ist_remote, store_pfad_unter};
 pub use writer::StoreWriter;
 use writer::{projektionen_anwenden, WriterBefehl};
 use pfad::{wal_groesse, wal_pfad};

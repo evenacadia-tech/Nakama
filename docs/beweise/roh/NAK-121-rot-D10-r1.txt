@@ -1,0 +1,54 @@
+# Rotbeweis D10 (G2-TOCTOU-002, Entscheidung am geoeffneten Objekt) — NAK-121 Nacharbeit Runde 1
+
+Die Handle-Klassifikation faellt weg; geurteilt wird wieder ueber den NAMEN
+und den naechsten vorhandenen Vorfahren.
+
+Mutante(n):
+  broker/src/store/pfad.rs
+    ALT:     let mut wide: Vec<u16> = pfad.as_os_str().encode_wide().collect();
+    ALT:     wide.push(0);
+    ALT:     // Zugriffsmaske 0: es wird nichts gelesen und nichts geschrieben, nur die
+    ALT:     // Identitaet des Objekts abgefragt.
+    NEU:     // MUTANTE: keine Handle-Klassifikation mehr - es wird wieder ueber den
+    NEU:     // NAMEN geurteilt, wie vor der Nacharbeit.
+    NEU:     return store_pfad_ist_remote(pfad).map(|remote| (pfad.to_path_buf(), remote));
+    NEU:     #[allow(unreachable_code)]
+    NEU:     let mut wide: Vec<u16> = pfad.as_os_str().encode_wide().collect();
+    NEU:     wide.push(0);
+    NEU:     // Zugriffsmaske 0: es wird nichts gelesen und nichts geschrieben, nur die
+    NEU:     // Identitaet des Objekts abgefragt.
+
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never --test store_crash_matrix -- volumenklassifikation
+Exitcode: 101
+
+Die Mutante ist nach diesem Lauf zurueckgenommen; der naechste
+Lauf derselben Tests ist wieder gruen.
+
+---
+
+
+running 1 test
+test volumenklassifikation_faellt_am_geoeffneten_objekt ... FAILED
+
+failures:
+
+---- volumenklassifikation_faellt_am_geoeffneten_objekt stdout ----
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-toctou002-handle-18348-37fac363a81743f3937d05688f2f2c3f\nakama-broker.sqlite3
+
+thread 'volumenklassifikation_faellt_am_geoeffneten_objekt' (20544) panicked at tests\store_crash_matrix.rs:2756:9:
+assertion `left == right` failed: der endgueltige Pfad haengt an der Schreibweise statt am Objekt
+  left: "C:\\USERS\\PHILI\\APPDATA\\LOCAL\\TEMP\\NAKAMA-SONDE011-TOCTOU002-HANDLE-18348-37FAC363A81743F3937D05688F2F2C3F\\NAKAMA-BROKER.SQLITE3"
+ right: "C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-sonde011-toctou002-handle-18348-37fac363a81743f3937d05688f2f2c3f\\nakama-broker.sqlite3"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    volumenklassifikation_faellt_am_geoeffneten_objekt
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 82 filtered out; finished in 0.03s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.66s
+     Running tests\store_crash_matrix.rs (broker\target\debug\deps\store_crash_matrix-4ebee0ee77644d63.exe)
+error: test failed, to rerun pass `--test store_crash_matrix`

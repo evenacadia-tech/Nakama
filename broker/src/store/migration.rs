@@ -5,7 +5,8 @@
 //! Schema meinen.
 
 use super::{
-    projektionen_anwenden, store_pfad_ist_remote, utc_ms_i64, ConflictGuard, StoreEvent,
+    geoeffnete_db_volume, projektionen_anwenden, store_pfad_ist_remote, utc_ms_i64, ConflictGuard,
+    StoreEvent,
     StoreFehler, StoreKonfiguration, StorePragmas, StoreTestHaken, BUSY_TIMEOUT_MS,
     STORE_SCHEMA_MAJOR,
 };
@@ -192,6 +193,24 @@ pub(super) fn store_vorbereiten(
             | OpenFlags::SQLITE_OPEN_CREATE
             | OpenFlags::SQLITE_OPEN_NO_MUTEX,
     )?;
+    // D10 der Nacharbeit Runde 1 (Abschlusspruefung 1, 03.09.2026): DIE
+    // Volumenentscheidung faellt hier, am geoeffneten Datenbankobjekt.
+    //
+    // Die Vorpruefung oben klassifiziert einen Pfadnamen und sucht dafuer den
+    // naechsten vorhandenen Vorfahren. Beim ersten Start mit fehlenden
+    // Komponenten - oder bei einem Austausch zwischen Pruefung und
+    // `create_dir_all` beziehungsweise diesem Open - wird damit ein anderes
+    // Objekt geoeffnet als geprueft. Jetzt wird das GEOEFFNETE Objekt
+    // klassifiziert, bevor der Store es benutzt.
+    if konfiguration.remote_volume_override.is_none() {
+        let (endgueltig, remote_am_objekt) = geoeffnete_db_volume(&konfiguration.db_pfad)?;
+        if remote_am_objekt {
+            return Err(StoreFehler::Pfad(format!(
+                "Remote-Volume am geoeffneten Objekt ({}): DB und WAL werden dort nicht benutzt",
+                endgueltig.display()
+            )));
+        }
+    }
     pragmas_setzen(&conn)?;
     migration_1(&mut conn, konfiguration.test_haken.as_ref())?;
     let guards = konflikt_guards_lesen(&conn)?;

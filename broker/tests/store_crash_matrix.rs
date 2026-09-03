@@ -2712,6 +2712,70 @@ fn store_weist_reparse_punkt_im_pfad_ab() {
     let _ = std::fs::remove_dir(&verweis);
 }
 
+/// D10 der Nacharbeit Runde 1 (Abschlusspruefung 1, 03.09.2026): die
+/// Volumenentscheidung faellt am GEOEFFNETEN OBJEKT, nicht an einem Namen.
+///
+/// Codex an der Quelle: `store_pfad_ist_remote` sucht per `exists()` den
+/// naechsten vorhandenen VORFAHREN und klassifiziert dessen Pfadnamen. Beim
+/// ersten Start mit fehlenden Komponenten - oder bei einem Austausch zwischen
+/// Pruefung und spaeterem `create_dir_all` beziehungsweise SQLite-Open - wird
+/// ein anderes Objekt geoeffnet als geprueft.
+///
+/// Der Test misst den Unterschied an genau der Stelle, an der die beiden Wege
+/// auseinanderlaufen: fuer einen Pfad, dessen Datei es NICHT gibt, liefert die
+/// Namensklassifikation weiterhin brav ein Urteil ueber einen Vorfahren, die
+/// Objektklassifikation dagegen verweigert es - sie hat kein Objekt.
+#[cfg(windows)]
+#[test]
+fn volumenklassifikation_faellt_am_geoeffneten_objekt() {
+    use eqcop_broker::store::{geoeffnete_db_volume, store_pfad_ist_remote};
+
+    let ordner = TestOrdner::neu("toctou002-handle");
+    let db = ordner.db();
+    let writer = starten(&db);
+    assert!(db.exists(), "der Store hat seine Datei angelegt");
+
+    // 1. Am geoeffneten Objekt: lokal, und der Kernel nennt denselben Ort.
+    let (endgueltig, remote) = geoeffnete_db_volume(&db).expect("Objekt klassifizierbar");
+    assert!(!remote, "das Tempvolume ist kein Netzwerkvolume");
+    assert_eq!(
+        endgueltig.file_name(),
+        db.file_name(),
+        "der endgueltige Pfad zeigt auf eine andere Datei: {}",
+        endgueltig.display()
+    );
+
+    // 2. Der Kernel loest den Namen AUF, statt ihn zu uebernehmen: dieselbe
+    //    Datei ueber eine andere Schreibweise geoeffnet ergibt denselben
+    //    endgueltigen Pfad. Eine Namensklassifikation kann das nicht.
+    let anders_geschrieben =
+        PathBuf::from(db.to_string_lossy().to_uppercase());
+    if anders_geschrieben != db {
+        let (endgueltig_gross, _) =
+            geoeffnete_db_volume(&anders_geschrieben).expect("dieselbe Datei, andere Schreibweise");
+        assert_eq!(
+            endgueltig_gross, endgueltig,
+            "der endgueltige Pfad haengt an der Schreibweise statt am Objekt"
+        );
+    }
+
+    // 3. Der Unterschied zur Vorpruefung: ohne Objekt gibt es kein Urteil.
+    //    `store_pfad_ist_remote` klassifiziert hier einen VORFAHREN und
+    //    antwortet trotzdem.
+    let gibt_es_nicht = ordner.0.join("kein-ordner").join(STORE_DATEINAME);
+    assert!(!gibt_es_nicht.exists());
+    assert!(
+        store_pfad_ist_remote(&gibt_es_nicht).is_ok(),
+        "die Vorpruefung urteilt weiterhin ueber einen Vorfahren"
+    );
+    assert!(
+        geoeffnete_db_volume(&gibt_es_nicht).is_err(),
+        "die Objektklassifikation hat ueber ein Objekt geurteilt, das es nicht gibt"
+    );
+
+    drop(writer);
+}
+
 /// G2-LOSSYSTR-001: der Standardpfad wird verlustfrei aus UTF-16 gewandelt.
 /// `from_utf16_lossy` haette ungepaarte Surrogate durch U+FFFD ersetzt - der
 /// geprueft Pfad waere dann ein anderer als der geoeffnete.

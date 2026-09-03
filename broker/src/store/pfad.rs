@@ -154,3 +154,126 @@ pub fn store_pfad_ist_remote(pfad: &Path) -> Result<bool, StoreFehler> {
 pub fn store_pfad_ist_remote(_pfad: &Path) -> Result<bool, StoreFehler> {
     Ok(false)
 }
+
+/// G2-TOCTOU-002, Nacharbeit Runde 1 (Abschlusspruefung 1, 03.09.2026): die
+/// Volumenentscheidung faellt am GEOEFFNETEN OBJEKT, nicht an einem Namen.
+///
+/// `store_pfad_ist_remote` sucht per `exists()` den naechsten vorhandenen
+/// VORFAHREN und klassifiziert dessen Pfadnamen. Beim ersten Start mit
+/// fehlenden Komponenten - oder bei einem Austausch zwischen Pruefung und
+/// spaeterem `create_dir_all` beziehungsweise SQLite-Open - wird damit ein
+/// anderes Objekt geoeffnet als geprueft. Die A-Zusage verlangt die
+/// Volumenpruefung am geoeffneten Datenbankobjekt.
+///
+/// Diese Funktion oeffnet die Datei selbst, laesst sich vom Kernel ihren
+/// endgueltigen Pfad geben (`GetFinalPathNameByHandleW`) und klassifiziert
+/// diesen. Zwischen Oeffnen und Klassifizieren kann kein Name mehr umgelenkt
+/// werden: das Handle haelt genau das Objekt fest, das der Store benutzt.
+/// Die Vorfahrenklassifikation bleibt als Vorpruefung, ist aber nicht mehr
+/// die Entscheidung.
+///
+/// Rueckgabe: der aufgeloeste Pfad des geoeffneten Objekts und ob er auf einem
+/// Netzwerkvolume liegt.
+#[cfg(windows)]
+pub fn geoeffnete_db_volume(pfad: &Path) -> Result<(PathBuf, bool), StoreFehler> {
+    use std::os::windows::ffi::{OsStrExt, OsStringExt};
+    use windows_sys::Win32::Foundation::{CloseHandle, INVALID_HANDLE_VALUE};
+    use windows_sys::Win32::Storage::FileSystem::{
+        CreateFileW, GetDriveTypeW, GetFinalPathNameByHandleW, GetVolumePathNameW,
+        FILE_ATTRIBUTE_NORMAL, FILE_NAME_NORMALIZED, FILE_SHARE_DELETE, FILE_SHARE_READ,
+        FILE_SHARE_WRITE, OPEN_EXISTING, VOLUME_NAME_DOS,
+    };
+    use windows_sys::Win32::System::WindowsProgramming::DRIVE_REMOTE;
+
+    let mut wide: Vec<u16> = pfad.as_os_str().encode_wide().collect();
+    wide.push(0);
+    // Zugriffsmaske 0: es wird nichts gelesen und nichts geschrieben, nur die
+    // Identitaet des Objekts abgefragt. Alle drei Share-Modi, damit SQLite
+    // parallel damit arbeiten kann.
+    // SAFETY: der Puffer ist nullterminiert; alle Zeiger sind gueltig oder null.
+    let griff = unsafe {
+        CreateFileW(
+            wide.as_ptr(),
+            0,
+            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+            std::ptr::null(),
+            OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL,
+            std::ptr::null_mut(),
+        )
+    };
+    if griff == INVALID_HANDLE_VALUE {
+        return Err(StoreFehler::Pfad(format!(
+            "{} konnte zur Volumenpruefung nicht geoeffnet werden",
+            pfad.display()
+        )));
+    }
+    let mut endgueltig = vec![0u16; 32768];
+    // SAFETY: `griff` ist gueltig bis `CloseHandle`; der Puffer ist gross genug
+    // und seine Laenge wird korrekt uebergeben.
+    let laenge = unsafe {
+        GetFinalPathNameByHandleW(
+            griff,
+            endgueltig.as_mut_ptr(),
+            endgueltig.len() as u32,
+            FILE_NAME_NORMALIZED | VOLUME_NAME_DOS,
+        )
+    };
+    // SAFETY: das Handle stammt aus dem erfolgreichen CreateFileW darueber und
+    // wird genau einmal geschlossen.
+    unsafe { CloseHandle(griff) };
+    if laenge == 0 || laenge as usize >= endgueltig.len() {
+        return Err(StoreFehler::Pfad(format!(
+            "endgueltiger Pfad von {} nicht bestimmbar",
+            pfad.display()
+        )));
+    }
+    endgueltig.truncate(laenge as usize);
+    let endgueltig_pfad = PathBuf::from(std::ffi::OsString::from_wide(&endgueltig));
+
+    // `GetDriveTypeW` will einen Wurzelpfad ohne erweiterte Praefixe. Der
+    // UNC-Fall wird auf die gewohnte Form zurueckgefaltet, damit er als
+    // DRIVE_REMOTE erkannt wird.
+    //
+    // G2-LOSSYSTR-001 gilt auch hier: die Faltung laeuft auf den
+    // UTF-16-Einheiten, nicht ueber einen `to_string_lossy`-Umweg. Ein
+    // ungepaartes Surrogat im endgueltigen Pfad wuerde sonst zu U+FFFD und der
+    // klassifizierte Pfad waere ein anderer als der geoeffnete.
+    let unc: Vec<u16> = r"\\?\UNC\".encode_utf16().collect();
+    let erweitert: Vec<u16> = r"\\?\".encode_utf16().collect();
+    let mut wide_final: Vec<u16> = if endgueltig.starts_with(&unc) {
+        let mut gefaltet: Vec<u16> = r"\\".encode_utf16().collect();
+        gefaltet.extend_from_slice(&endgueltig[unc.len()..]);
+        gefaltet
+    } else if endgueltig.starts_with(&erweitert) {
+        endgueltig[erweitert.len()..].to_vec()
+    } else {
+        endgueltig.clone()
+    };
+    wide_final.push(0);
+    let mut volume = vec![0u16; 32768];
+    // SAFETY: beide Puffer sind nullterminiert bzw. ausreichend gross.
+    let ok = unsafe {
+        GetVolumePathNameW(wide_final.as_ptr(), volume.as_mut_ptr(), volume.len() as u32)
+    };
+    if ok == 0 {
+        return Err(StoreFehler::Pfad(format!(
+            "Volume des geoeffneten Objekts {} nicht bestimmbar",
+            endgueltig_pfad.display()
+        )));
+    }
+    // SAFETY: `volume` enthaelt nach Erfolg einen nullterminierten Rootpfad.
+    let remote = unsafe { GetDriveTypeW(volume.as_ptr()) } == DRIVE_REMOTE;
+    Ok((endgueltig_pfad, remote))
+}
+
+#[cfg(not(windows))]
+pub fn geoeffnete_db_volume(pfad: &Path) -> Result<(PathBuf, bool), StoreFehler> {
+    if !pfad.exists() {
+        return Err(StoreFehler::Pfad(format!(
+            "{} existiert nicht",
+            pfad.display()
+        )));
+    }
+    Ok((pfad.to_path_buf(), false))
+}

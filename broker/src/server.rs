@@ -705,11 +705,25 @@ fn verbindung_bedienen(
     // reconnecten; neue IDs werden ab der festen Registergrenze abgelehnt.
     let ablehnung = match register.lock() {
         Ok(mut r) => {
+            // H-13: der Sweep laeuft IM Gate, unter demselben Lock wie die
+            // Grenzpruefung und VOR ihr. Einen periodischen v2-Tick gibt es
+            // nicht; ohne diesen Weg hatte der Pool ueberhaupt keine Rueckgabe.
+            r.getrennte_ids_freigeben_zu(crate::jetzt_ms());
             if r.verbindung_ist_lebend(&sensor_id, &nonce) {
                 Some(format!(
                     "Instanz {nonce} für Sensor {sensor_id} ist bereits verbunden"
                 ))
             } else if !r.sensoren.contains_key(&sensor_id) && r.sensoren.len() >= max_sensor_ids {
+                // Der harte Reject bleibt, wenn die Frist keinen Platz frei
+                // gemacht hat. Paragraph 4 sieht hier zusaetzlich eine
+                // FRISTLOSE Verdraengung des am laengsten Getrennten vor; sie
+                // ist nicht umgesetzt, weil sie die Aussage des bestehenden
+                // Tests sensor_register_hat_harte_grenze_aber_bekannte_id_darf_reconnecten
+                // umkehren wuerde - dort sind beide Sensoren gerade erst
+                // getrennt, und der Test sagt „die Grenze ist hart". Der
+                // Gate-Text steht ueber der Matrixzeile: bestehende Tests
+                // behalten ihre Aussage. Begruendung im Bau-Verlauf des
+                // Manifests.
                 Some(format!("Sensor-ID-Grenze von {max_sensor_ids} erreicht"))
             } else {
                 r.sensor_verbinden(&hello, &nonce);

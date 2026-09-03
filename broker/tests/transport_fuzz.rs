@@ -362,3 +362,88 @@ fn panik_im_verbindungsthread_wird_gezaehlt() {
     drop(client);
     griff.stoppen();
 }
+
+// ── NAK-121 H-11 ───────────────────────────────────────────────────────────
+//
+// Rueckstau wird in Slots UND Bytes gemessen. 256 Slots sagen nichts ueber den
+// belegten Speicher: ein Peer, der grosse Frames einreiht, bleibt unter der
+// Slotgrenze und belegt trotzdem beliebig viel. Ueberschreitet das Bytebudget,
+// gilt dieselbe Politik wie bei Slot-voll (Entwurf Paragraph 53.9): erst den
+// aeltesten P2 verwerfen, dann bei P0 oder P1 den Client trennen.
+
+#[test]
+fn ingress_bytebudget_verwirft_p2_zuerst() {
+    use eqcop_broker::transport::warteschlange::{
+        IngressErgebnis, IngressWarteschlange, CAP_INGRESS, CAP_INGRESS_BYTES,
+    };
+
+    // Das Produktionsbudget haengt an der groessten zulaessigen Payload; eine
+    // volle Slotqueue kann nie mehr halten.
+    assert_eq!(
+        CAP_INGRESS_BYTES,
+        CAP_INGRESS * eqcop_broker::transport::v3::MAX_PAYLOAD_BYTES as usize
+    );
+
+    let rahmen = |bytes: usize| (Familie::P2, 1u8, vec![0u8; bytes]);
+    // Reichlich Slots, knappes Bytebudget: so misst der Test die BYTE-Achse
+    // und nicht versehentlich die Slotachse.
+    let mut q: IngressWarteschlange<(Familie, u8, Vec<u8>)> =
+        IngressWarteschlange::mit_kapazitaet_und_bytebudget(64, 1000);
+
+    // Am Budget geht es noch.
+    assert_eq!(
+        q.einreihen(Familie::P2, rahmen(600)),
+        IngressErgebnis::Eingereiht
+    );
+    assert_eq!(q.belegte_bytes(), 600);
+    assert_eq!(
+        q.einreihen(Familie::P2, rahmen(400)),
+        IngressErgebnis::Eingereiht
+    );
+    assert_eq!(q.belegte_bytes(), 1000, "genau am Budget");
+
+    // Budget plus eins: der aelteste P2 faellt, der Neuzugang kommt rein.
+    assert_eq!(q.len(), 2);
+    assert_eq!(
+        q.einreihen(Familie::P2, rahmen(1)),
+        IngressErgebnis::P2Verworfen
+    );
+    assert_eq!(q.p2_verworfen(), 1);
+    assert!(q.belegte_bytes() <= 1000);
+
+    // P0 im vollen Bytebudget trennt, statt still zu verwerfen - und P1
+    // ebenso, weil sein Wiederholweg ueber Reconnect/Outbox laeuft.
+    let mut voll: IngressWarteschlange<(Familie, u8, Vec<u8>)> =
+        IngressWarteschlange::mit_kapazitaet_und_bytebudget(64, 100);
+    assert_eq!(
+        voll.einreihen(Familie::P0, (Familie::P0, 1, vec![0u8; 100])),
+        IngressErgebnis::Eingereiht
+    );
+    assert_eq!(
+        voll.einreihen(Familie::P0, (Familie::P0, 1, vec![0u8; 1])),
+        IngressErgebnis::ClientTrennen,
+        "P0 ueber dem Bytebudget muss trennen"
+    );
+    assert_eq!(
+        voll.einreihen(Familie::P1, (Familie::P1, 1, vec![0u8; 1])),
+        IngressErgebnis::ClientTrennen,
+        "P1 faellt nie still"
+    );
+    assert_eq!(voll.p1_ueberlauf_trennt(), 1);
+
+    // Entnehmen gibt die Bytes wieder frei - sonst waere das Budget eine
+    // Einbahnstrasse und die Verbindung nach einem Rueckstau tot.
+    let mut frei: IngressWarteschlange<(Familie, u8, Vec<u8>)> =
+        IngressWarteschlange::mit_kapazitaet_und_bytebudget(64, 100);
+    assert_eq!(
+        frei.einreihen(Familie::P2, rahmen(100)),
+        IngressErgebnis::Eingereiht
+    );
+    assert_eq!(frei.belegte_bytes(), 100);
+    assert!(frei.entnehmen().is_some());
+    assert_eq!(frei.belegte_bytes(), 0);
+    assert_eq!(
+        frei.einreihen(Familie::P2, rahmen(100)),
+        IngressErgebnis::Eingereiht
+    );
+}

@@ -38,6 +38,12 @@ pub const PIPE_NAME: &str = r"\\.\pipe\evenacadia.eq-copilot.v1";
 pub const BROKER_PRO_USER_MAX: usize = 1;
 pub const BROKER_IDLE_ENDE_MS: u64 = 60_000;
 
+/// H-13: Frist, nach der eine getrennte v2-Sensor-ID ihren Registerplatz
+/// zurueckgibt. Gleich dem Leerlaufhorizont, den der Broker fuer sich selbst
+/// fuehrt - wer laenger fort ist, als der Broker ohne jeden Sensor
+/// weiterlaeuft, hat keinen Anspruch mehr auf einen Platz.
+pub const SENSOR_ID_RUECKGABE_MS: u64 = BROKER_IDLE_ENDE_MS;
+
 /// Verbunden, aber länger als das hier ohne Heartbeat ⇒ stale. Sichtbar
 /// markiert, nie still entfernt (Plan §11 M2-Abnahme).
 pub const STALE_MS: u64 = 5000;
@@ -495,6 +501,36 @@ impl Register {
     /// sortiert: verbundene zuerst, dann nach Label.
     pub fn sensoren_snapshot(&self, _jetzt_utc_ms: u64) -> Vec<SensorEintrag> {
         self.sensoren_snapshot_zu(monoton_ms())
+    }
+
+    /// H-13: gibt Sensor-IDs frei, deren Trennung die Rueckgabefrist erreicht
+    /// hat, und liefert die Zahl der freigewordenen Plaetze.
+    ///
+    /// Der v2-Pool hatte bis NAK-121 keinen Rueckgabeweg: eine Suche nach
+    /// `sensoren.remove`, `.retain` oder `.clear` traf im ganzen Crate
+    /// nirgends. Einen periodischen v2-Tick gibt es auch nicht - die Schleifen
+    /// in `server.rs` sind Accept- und Flushwartezeiten. Der Sweep laeuft
+    /// deshalb im Gate selbst, unter demselben Lock wie die Grenzpruefung und
+    /// VOR ihr.
+    ///
+    /// Die Grenze ist INKLUSIV: frei wird, wessen `getrennt_seit_ms`
+    /// `jetzt - getrennt_seit_ms >= SENSOR_ID_RUECKGABE_MS` erfuellt. Der Wert
+    /// ist nicht frei gewaehlt, sondern der Leerlaufhorizont, den der Broker
+    /// fuer sich selbst fuehrt (`BROKER_IDLE_ENDE_MS`): wer laenger fort ist,
+    /// als der Broker ohne jeden Sensor weiterlaeuft, hat keinen Anspruch mehr
+    /// auf einen Platz. Verbundene Eintraege bleiben unberuehrt.
+    pub fn getrennte_ids_freigeben_zu(&mut self, jetzt_utc_ms: u64) -> usize {
+        let vorher = self.sensoren.len();
+        self.sensoren.retain(|_, e| {
+            if e.verbunden || e.lebende > 0 {
+                return true;
+            }
+            match e.getrennt_seit_ms {
+                Some(seit) => jetzt_utc_ms.saturating_sub(seit) < SENSOR_ID_RUECKGABE_MS,
+                None => true,
+            }
+        });
+        vorher - self.sensoren.len()
     }
 
     fn sensoren_snapshot_zu(&self, jetzt_monoton_ms: u64) -> Vec<SensorEintrag> {
@@ -1912,5 +1948,51 @@ mod register_tests {
         let paare = paare_auswerten(&r.sensoren_snapshot(jetzt_ms()));
         assert_eq!(paare[0].timing, "wahrscheinlich");
         assert!(paare[0].grund.contains("Prozessen"));
+    }
+/// NAK-121 H-13: der v2-Sensor-ID-Pool hat einen Rueckgabeweg mit benannter
+    /// Frist. Bis dahin gab es gar keinen - eine Suche nach `sensoren.remove`,
+    /// `.retain` oder `.clear` traf im ganzen Crate nirgends, und ein Client
+    /// konnte den Pool seriell mit Tombstones fuellen.
+    ///
+    /// Gemessen ueber das `_zu`-Zeitseam, an den drei Kanten aus Paragraph 3.1:
+    /// Frist minus eins, exakt Frist, und alles verbunden.
+    #[test]
+    fn v2_sensorpool_gibt_getrennte_ids_zurueck() {
+        let basis: u64 = 1_700_000_000_000;
+
+        // Kante 1: eine Millisekunde vor der Frist bleibt der Eintrag.
+        let mut r = Register::default();
+        r.sensor_verbinden(&hello("s-1", "sensor", "A", None, 11), "n-1");
+        r.sensor_trennen_zu("s-1", "n-1", basis);
+        assert_eq!(r.sensoren.len(), 1);
+        assert_eq!(
+            r.getrennte_ids_freigeben_zu(basis + SENSOR_ID_RUECKGABE_MS - 1),
+            0
+        );
+        assert_eq!(r.sensoren.len(), 1, "vor der Frist bleibt der Platz belegt");
+
+        // Kante 2: exakt auf der Frist faellt er - die Grenze ist INKLUSIV.
+        assert_eq!(r.getrennte_ids_freigeben_zu(basis + SENSOR_ID_RUECKGABE_MS), 1);
+        assert!(r.sensoren.is_empty(), "auf der Frist wird der Platz frei");
+
+        // Kante 3: verbundene Eintraege sind unantastbar, egal wie alt. Der
+        // harte Reject bleibt genau dann, wenn alle Plaetze wirklich verbunden
+        // sind.
+        let mut voll = Register::default();
+        for i in 0..8 {
+            let id = format!("s-v{i}");
+            voll.sensor_verbinden(&hello(&id, "sensor", "V", None, 20 + i as u32), "n-v");
+        }
+        assert_eq!(voll.sensoren.len(), 8);
+        assert_eq!(
+            voll.getrennte_ids_freigeben_zu(basis + SENSOR_ID_RUECKGABE_MS * 10),
+            0,
+            "verbundene Sensoren geben ihren Platz nie zurueck"
+        );
+        assert_eq!(voll.sensoren.len(), 8);
+
+        // Und die Frist ist der Leerlaufhorizont des Brokers selbst, nicht eine
+        // frei gewaehlte Zahl.
+        assert_eq!(SENSOR_ID_RUECKGABE_MS, BROKER_IDLE_ENDE_MS);
     }
 }

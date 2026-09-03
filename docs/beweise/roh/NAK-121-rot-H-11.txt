@@ -1,0 +1,41 @@
+# Rotbeweis H-11 — NAK-121 Etappe 2
+
+Mutante(n):
+  broker/src/transport/warteschlange.rs
+    ALT: let platz_in_bytes = self.belegte_bytes.saturating_add(kosten) <= self.bytebudget;
+    NEU: // MUTANTE: nur die Slotachse zaehlt — der Zustand vor NAK-121.
+        let platz_in_bytes = true;
+
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never --test transport_fuzz -- ingress_bytebudget
+Exitcode: 101
+
+Die Mutante ist nach diesem Lauf zurueckgenommen; der naechste
+Lauf derselben Tests ist wieder gruen.
+
+---
+
+
+running 1 test
+test ingress_bytebudget_verwirft_p2_zuerst ... FAILED
+
+failures:
+
+---- ingress_bytebudget_verwirft_p2_zuerst stdout ----
+
+thread 'ingress_bytebudget_verwirft_p2_zuerst' (9416) panicked at tests\transport_fuzz.rs:407:5:
+assertion `left == right` failed
+  left: Eingereiht
+ right: P2Verworfen
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    ingress_bytebudget_verwirft_p2_zuerst
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 10 filtered out; finished in 0.00s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.60s
+     Running tests\transport_fuzz.rs (broker\target\debug\deps\transport_fuzz-e68c0b23ba7390d0.exe)
+error: test failed, to rerun pass `--test transport_fuzz`

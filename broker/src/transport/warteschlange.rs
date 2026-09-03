@@ -22,6 +22,37 @@ pub const CAP_P0: usize = 64;
 pub const CAP_P1: usize = 128;
 pub const CAP_P2_JE_SONDE: usize = 2;
 pub const CAP_INGRESS: usize = 256;
+/// H-11: Rueckstau wird in Slots UND Bytes gemessen. 256 Slots sagen nichts
+/// ueber den belegten Speicher: ein Peer, der 256 grosse Frames einreiht,
+/// bleibt unter der Slotgrenze und belegt trotzdem beliebig viel. Das Budget
+/// ist `CAP_INGRESS` mal die groesste zulaessige Payload aus dem Envelope-
+/// Vertrag - mehr kann eine volle Slotqueue ohnehin nie halten, weniger waere
+/// eine zweite, strengere Politik als die abgenommene aus Entwurf Paragraph
+/// 53.9.
+pub const CAP_INGRESS_BYTES: usize = CAP_INGRESS * crate::transport::v3::MAX_PAYLOAD_BYTES as usize;
+
+/// H-11: was ein eingereihter Wert an Rueckstaubytes kostet.
+///
+/// Ohne diesen Trait muesste `einreihen` eine Bytezahl als dritten Parameter
+/// nehmen - eine geaenderte oeffentliche Signatur, die Paragraph 4 nicht
+/// vorsieht. So bleibt die Signatur, und die Queue misst selbst.
+pub trait Rahmengroesse {
+    fn rueckstau_bytes(&self) -> usize;
+}
+
+impl Rahmengroesse for (Familie, u8, Vec<u8>) {
+    fn rueckstau_bytes(&self) -> usize {
+        self.2.len()
+    }
+}
+
+impl Rahmengroesse for u32 {
+    /// Nur fuer die Inline-Tests der Slotpolitik: dort zaehlt die Slotachse,
+    /// und ein Wert kostet ein Byte, damit das Bytebudget nie zuerst greift.
+    fn rueckstau_bytes(&self) -> usize {
+        1
+    }
+}
 
 /// P0 laeuft ueber ⇒ die Verbindung ist zu schliessen. Es gibt keinen
 /// stillen Verlust einer Steuernachricht.
@@ -304,23 +335,44 @@ pub enum IngressErgebnis {
 #[derive(Debug)]
 pub struct IngressWarteschlange<T> {
     kapazitaet: usize,
+    /// H-11: die zweite Achse. `usize::MAX` heisst „kein Bytebudget" und ist
+    /// die Voreinstellung fuer Queues, die ausdruecklich nur Slots messen.
+    bytebudget: usize,
+    belegte_bytes: usize,
     inhalt: VecDeque<(Familie, T)>,
     p2_verworfen: u64,
     p1_ueberlauf_trennt: u64,
 }
 
-impl<T> IngressWarteschlange<T> {
+impl<T: Rahmengroesse> IngressWarteschlange<T> {
     pub fn neu() -> Self {
-        Self::mit_kapazitaet(CAP_INGRESS)
+        let mut q = Self::mit_kapazitaet(CAP_INGRESS);
+        q.bytebudget = CAP_INGRESS_BYTES;
+        q
     }
 
     pub fn mit_kapazitaet(kapazitaet: usize) -> Self {
         Self {
             kapazitaet,
+            bytebudget: usize::MAX,
+            belegte_bytes: 0,
             inhalt: VecDeque::with_capacity(kapazitaet),
             p2_verworfen: 0,
             p1_ueberlauf_trennt: 0,
         }
+    }
+
+    /// H-11-Naht und Produktionsweg zugleich: eine Queue mit ausdruecklichem
+    /// Bytebudget. Der Test misst am Budget und am Budget plus eins.
+    pub fn mit_kapazitaet_und_bytebudget(kapazitaet: usize, bytebudget: usize) -> Self {
+        let mut q = Self::mit_kapazitaet(kapazitaet);
+        q.bytebudget = bytebudget;
+        q
+    }
+
+    /// Wie viele Bytes der Rueckstau gerade belegt.
+    pub fn belegte_bytes(&self) -> usize {
+        self.belegte_bytes
     }
 
     pub fn len(&self) -> usize {
@@ -344,7 +396,9 @@ impl<T> IngressWarteschlange<T> {
 
     fn aeltesten_p2_verwerfen(&mut self) -> bool {
         if let Some(pos) = self.inhalt.iter().position(|(f, _)| *f == Familie::P2) {
-            self.inhalt.remove(pos);
+            if let Some((_, wert)) = self.inhalt.remove(pos) {
+                self.belegte_bytes = self.belegte_bytes.saturating_sub(wert.rueckstau_bytes());
+            }
             self.p2_verworfen += 1;
             return true;
         }
@@ -352,13 +406,35 @@ impl<T> IngressWarteschlange<T> {
     }
 
     pub fn einreihen(&mut self, familie: Familie, wert: T) -> IngressErgebnis {
-        if self.inhalt.len() < self.kapazitaet {
+        // H-11: Rueckstau hat ZWEI Achsen. Ueberschreitet das Bytebudget, wirkt
+        // das genau wie Slot-voll und in derselben Reihenfolge aus Entwurf
+        // Paragraph 53.9: erst den aeltesten P2 verwerfen, dann bei P0 oder P1
+        // den Client trennen. P1 faellt nie still.
+        let kosten = wert.rueckstau_bytes();
+        let platz_in_slots = self.inhalt.len() < self.kapazitaet;
+        let platz_in_bytes = self.belegte_bytes.saturating_add(kosten) <= self.bytebudget;
+        if platz_in_slots && platz_in_bytes {
+            self.belegte_bytes = self.belegte_bytes.saturating_add(kosten);
             self.inhalt.push_back((familie, wert));
             return IngressErgebnis::Eingereiht;
         }
-        if self.aeltesten_p2_verwerfen() {
-            self.inhalt.push_back((familie, wert));
-            return IngressErgebnis::P2Verworfen;
+        // Ein einzelner Frame, der allein schon groesser als das ganze Budget
+        // ist, kann durch kein Verwerfen Platz bekommen; er faellt sofort in
+        // die Politik unten.
+        if kosten <= self.bytebudget && self.aeltesten_p2_verwerfen() {
+            // Ein einziges Verwerfen genuegt nicht immer: das Bytebudget kann
+            // mehrere aeltere P2 kosten. Solange P2 da ist und der Platz nicht
+            // reicht, wird weiter verworfen.
+            while self.belegte_bytes.saturating_add(kosten) > self.bytebudget
+                && self.aeltesten_p2_verwerfen()
+            {}
+            if self.inhalt.len() < self.kapazitaet
+                && self.belegte_bytes.saturating_add(kosten) <= self.bytebudget
+            {
+                self.belegte_bytes = self.belegte_bytes.saturating_add(kosten);
+                self.inhalt.push_back((familie, wert));
+                return IngressErgebnis::P2Verworfen;
+            }
         }
         match familie {
             Familie::P0 => IngressErgebnis::ClientTrennen,
@@ -379,7 +455,11 @@ impl<T> IngressWarteschlange<T> {
     }
 
     pub fn entnehmen(&mut self) -> Option<(Familie, T)> {
-        self.inhalt.pop_front()
+        let raus = self.inhalt.pop_front();
+        if let Some((_, wert)) = &raus {
+            self.belegte_bytes = self.belegte_bytes.saturating_sub(wert.rueckstau_bytes());
+        }
+        raus
     }
 
     /// Nur P0, aelteste zuerst. Der Listener bedient P0 auf einem EIGENEN
@@ -388,13 +468,21 @@ impl<T> IngressWarteschlange<T> {
     /// aufhalten — genau das ist die Rust-Haelfte von „ohne P0-Starvation".
     pub fn entnehmen_p0(&mut self) -> Option<(Familie, T)> {
         let pos = self.inhalt.iter().position(|(f, _)| *f == Familie::P0)?;
-        self.inhalt.remove(pos)
+        let raus = self.inhalt.remove(pos);
+        if let Some((_, wert)) = &raus {
+            self.belegte_bytes = self.belegte_bytes.saturating_sub(wert.rueckstau_bytes());
+        }
+        raus
     }
 
     /// Alles ausser P0, aelteste zuerst. Gegenstueck zu `entnehmen_p0`.
     pub fn entnehmen_ohne_p0(&mut self) -> Option<(Familie, T)> {
         let pos = self.inhalt.iter().position(|(f, _)| *f != Familie::P0)?;
-        self.inhalt.remove(pos)
+        let raus = self.inhalt.remove(pos);
+        if let Some((_, wert)) = &raus {
+            self.belegte_bytes = self.belegte_bytes.saturating_sub(wert.rueckstau_bytes());
+        }
+        raus
     }
 }
 

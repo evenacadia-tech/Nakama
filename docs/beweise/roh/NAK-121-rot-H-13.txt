@@ -1,0 +1,47 @@
+# Rotbeweis H-13 — NAK-121 Etappe 2
+
+Mutante:
+  broker/src/lib.rs
+    getrennte_ids_freigeben_zu gibt keinen Eintrag mehr frei.
+
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never --lib -- v2_sensorpool
+Exitcode: 101
+
+Die Mutante ist nach diesem Lauf zurueckgenommen.
+
+---
+
+
+running 1 test
+test register_tests::v2_sensorpool_gibt_getrennte_ids_zurueck ... FAILED
+
+failures:
+
+---- register_tests::v2_sensorpool_gibt_getrennte_ids_zurueck stdout ----
+
+thread 'register_tests::v2_sensorpool_gibt_getrennte_ids_zurueck' (21764) panicked at src\lib.rs:1976:9:
+assertion `left == right` failed
+  left: 0
+ right: 1
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    register_tests::v2_sensorpool_gibt_getrennte_ids_zurueck
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 193 filtered out; finished in 0.00s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: unused variable: `jetzt_utc_ms`
+   --> src\lib.rs:522:50
+    |
+522 |     pub fn getrennte_ids_freigeben_zu(&mut self, jetzt_utc_ms: u64) -> usize {
+    |                                                  ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_jetzt_utc_ms`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib test) generated 1 warning (run `cargo fix --lib -p eqcop-broker --tests` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.41s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+error: test failed, to rerun pass `--lib`

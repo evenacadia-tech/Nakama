@@ -2877,6 +2877,63 @@ fn volumenklassifikation_faellt_am_geoeffneten_objekt() {
     drop(writer);
 }
 
+/// D16 der Nacharbeit Runde 1 (Abschlusspruefung 1, 03.09.2026): die
+/// verlustfreie Wandlung wird an der KANTE gemessen, nicht an einem
+/// wohlgeformten Pfad.
+///
+/// Codex an der Quelle: auf einem gewoehnlichen LocalAppData-Pfad besteht der
+/// Test darunter auch nach einer Regression zu `String::from_utf16_lossy`.
+/// Enthielte der Pfad tatsaechlich ein ungepaartes Surrogat, wuerde zudem
+/// selbst die korrekte `OsString`-Variante beim anschliessenden
+/// `to_string_lossy` als U+FFFD dargestellt - der Test speist die relevante
+/// UTF-16-Kante also gar nicht ein und kann die Wandlung nicht unterscheiden.
+///
+/// Dieser Test speist sie ein und vergleicht BYTEWEISE ueber
+/// `OsStrExt::encode_wide`, nicht ueber eine Textdarstellung.
+#[cfg(windows)]
+#[test]
+fn pfadwandlung_haelt_ein_ungepaartes_surrogat() {
+    use eqcop_broker::store::{pfad_aus_utf16, store_pfad_unter};
+    use std::os::windows::ffi::OsStrExt;
+
+    // Ein hohes Surrogat ohne Partner: gueltige UTF-16-Einheit, kein gueltiger
+    // Unicode-Skalarwert. Genau daran unterscheiden sich die beiden Wandlungen.
+    const EINSAMES_SURROGAT: u16 = 0xD800;
+    let roh: Vec<u16> = "C:\\Nakama\\"
+        .encode_utf16()
+        .chain(std::iter::once(EINSAMES_SURROGAT))
+        .chain("ordner".encode_utf16())
+        .collect();
+
+    let wurzel = pfad_aus_utf16(&roh);
+    let zurueck: Vec<u16> = wurzel.as_os_str().encode_wide().collect();
+    assert_eq!(
+        zurueck, roh,
+        "die Wandlung hat UTF-16-Einheiten veraendert"
+    );
+    assert!(
+        zurueck.contains(&EINSAMES_SURROGAT),
+        "das ungepaarte Surrogat ist fort"
+    );
+
+    // Der daraus gebildete Storepfad traegt es weiterhin - bis zum Oeffnen
+    // bleibt der Pfad ein PathBuf, es wird nichts durch einen String gereicht.
+    let db = store_pfad_unter(&wurzel);
+    let db_wide: Vec<u16> = db.as_os_str().encode_wide().collect();
+    assert!(
+        db_wide.windows(roh.len()).any(|f| f == roh.as_slice()),
+        "der Storepfad hat die Wurzel nicht byteweise uebernommen"
+    );
+
+    // Gegenprobe, die den Unterschied benennt: die lossy Wandlung waere hier
+    // bereits ein anderer Pfad.
+    let lossy: Vec<u16> = String::from_utf16_lossy(&roh).encode_utf16().collect();
+    assert_ne!(
+        lossy, roh,
+        "der Test misst nichts: an dieser Eingabe unterscheiden sich die beiden Wandlungen gar nicht"
+    );
+}
+
 /// G2-LOSSYSTR-001: der Standardpfad wird verlustfrei aus UTF-16 gewandelt.
 /// `from_utf16_lossy` haette ungepaarte Surrogate durch U+FFFD ersetzt - der
 /// geprueft Pfad waere dann ein anderer als der geoeffnete.

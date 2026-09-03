@@ -16,13 +16,30 @@ pub(super) fn wal_groesse(wal_pfad: &Path) -> u64 {
     std::fs::metadata(wal_pfad).map(|m| m.len()).unwrap_or(0)
 }
 
+/// G2-LOSSYSTR-001, Nacharbeit Runde 1 (Abschlusspruefung 1, 03.09.2026): die
+/// EINE Stelle, an der UTF-16 aus einer Win32-API zu einem Pfad wird.
+///
+/// `String::from_utf16_lossy` ersetzt ungepaarte Surrogate durch U+FFFD - der
+/// geprueft Pfad waere dann ein anderer als der geoeffnete. `OsString::from_wide`
+/// behaelt die UTF-16-Einheiten unveraendert. Der Pfad bleibt von hier bis zum
+/// Oeffnen ein `PathBuf`; lossy gewandelt wird nur fuer die ANZEIGE in
+/// Fehlertexten (`Path::display`).
+///
+/// Der Test speist ein ungepaartes Surrogat ein und vergleicht byteweise ueber
+/// `OsStrExt::encode_wide`; ohne diese Funktion waere die Wandlung nur ueber
+/// einen echten LocalAppData-Pfad beobachtbar, und der ist wohlgeformt.
+#[cfg(windows)]
+pub fn pfad_aus_utf16(einheiten: &[u16]) -> PathBuf {
+    use std::os::windows::ffi::OsStringExt;
+    PathBuf::from(std::ffi::OsString::from_wide(einheiten))
+}
+
 pub fn store_pfad_unter(local_app_data: &Path) -> PathBuf {
     local_app_data.join(STORE_RELATIVPFAD).join(STORE_DATEINAME)
 }
 
 #[cfg(windows)]
 pub fn standard_store_pfad() -> Result<PathBuf, StoreFehler> {
-    use std::os::windows::ffi::OsStringExt;
     use windows_sys::Win32::Foundation::HANDLE;
     use windows_sys::Win32::System::Com::CoTaskMemFree;
     use windows_sys::Win32::UI::Shell::{
@@ -52,14 +69,9 @@ pub fn standard_store_pfad() -> Result<PathBuf, StoreFehler> {
         while *roh.add(len) != 0 {
             len += 1;
         }
-        // G2-LOSSYSTR-001: verlustfrei wandeln. `from_utf16_lossy` ersetzt
-        // ungepaarte Surrogate durch U+FFFD - der geprueft Pfad waere dann ein
-        // anderer als der geoeffnete. `OsString::from_wide` behaelt die
-        // UTF-16-Einheiten unveraendert, wie das Crate es an anderer Stelle
-        // ohnehin tut.
-        let pfad = PathBuf::from(std::ffi::OsString::from_wide(
-            std::slice::from_raw_parts(roh, len),
-        ));
+        // G2-LOSSYSTR-001: verlustfrei wandeln, ueber die EINE gemeinsame
+        // Stelle (`pfad_aus_utf16`).
+        let pfad = pfad_aus_utf16(std::slice::from_raw_parts(roh, len));
         CoTaskMemFree(roh.cast());
         pfad
     };

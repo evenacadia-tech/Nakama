@@ -1,0 +1,50 @@
+# Rotbeweis D16 (G2-LOSSYSTR-001, Wandlung an der UTF-16-Kante gemessen) — NAK-121 Nacharbeit Runde 1
+
+Die Wandlung ist wieder `String::from_utf16_lossy`. Der alte Test blieb dabei
+gruen, weil er nur einen wohlgeformten LocalAppData-Pfad prueft.
+
+Mutante(n):
+  broker/src/store/pfad.rs
+    ALT: pub fn pfad_aus_utf16(einheiten: &[u16]) -> PathBuf {
+    ALT:     use std::os::windows::ffi::OsStringExt;
+    ALT:     PathBuf::from(std::ffi::OsString::from_wide(einheiten))
+    ALT: }
+    NEU: pub fn pfad_aus_utf16(einheiten: &[u16]) -> PathBuf {
+    NEU:     // MUTANTE: lossy wandeln, wie vor G2-LOSSYSTR-001.
+    NEU:     PathBuf::from(String::from_utf16_lossy(einheiten))
+    NEU: }
+
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never --test store_crash_matrix -- pfadwandlung store_pfad_bleibt
+Exitcode: 101
+
+Die Mutante ist nach diesem Lauf zurueckgenommen; der naechste
+Lauf derselben Tests ist wieder gruen.
+
+---
+
+
+running 2 tests
+test pfadwandlung_haelt_ein_ungepaartes_surrogat ... FAILED
+test store_pfad_bleibt_bei_nicht_utf8_zeichen_unveraendert ... ok
+
+failures:
+
+---- pfadwandlung_haelt_ein_ungepaartes_surrogat stdout ----
+
+thread 'pfadwandlung_haelt_ein_ungepaartes_surrogat' (18960) panicked at tests\store_crash_matrix.rs:2910:5:
+assertion `left == right` failed: die Wandlung hat UTF-16-Einheiten veraendert
+  left: [67, 58, 92, 78, 97, 107, 97, 109, 97, 92, 65533, 111, 114, 100, 110, 101, 114]
+ right: [67, 58, 92, 78, 97, 107, 97, 109, 97, 92, 55296, 111, 114, 100, 110, 101, 114]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    pfadwandlung_haelt_ein_ungepaartes_surrogat
+
+test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 83 filtered out; finished in 0.00s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.05s
+     Running tests\store_crash_matrix.rs (broker\target\debug\deps\store_crash_matrix-4ebee0ee77644d63.exe)
+error: test failed, to rerun pass `--test store_crash_matrix`

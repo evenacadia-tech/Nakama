@@ -151,6 +151,12 @@ pub struct V3Statistik {
     /// Dasselbe fuer den Schreiberthread, dessen `ov_schreiben` trotz
     /// wiederholtem `CancelIoEx` nicht zurueckkam.
     pub schreiber_abgeloest: AtomicU64,
+    /// H-01: `CancelIoEx` scheiterte mit etwas anderem als `ERROR_NOT_FOUND` —
+    /// im Regelfall `ERROR_INVALID_HANDLE`. Im Normalbetrieb strukturell null:
+    /// das Register fuehrt ein Handle nur, solange sein Besitzer lebt. Ein Wert
+    /// groesser null heisst, dass Austrag und Schliessen auseinandergelaufen
+    /// sind, und wird deshalb gezaehlt statt verschluckt.
+    pub cancel_auf_totem_handle: AtomicU64,
     /// Wie oft ein LEBENSZYKLUS-Aufruf der Senke (`control_verbunden`,
     /// `telemetrie_gekoppelt`, `*_getrennt`, `abgewiesen`) laenger als
     /// `SENKE_FRIST` stand und deshalb abgeloest wurde. Diese Aufrufe liefen

@@ -164,11 +164,10 @@ pub(super) fn verbindung_bedienen(
     erwartete_sicherheit: Arc<crate::server::Sicherheit>,
     auth_fehler: V3AuthTestFehler,
     sicherheits_spur: Arc<SicherheitsSpur>,
-    handle_eintrag: HandleEintrag,
+    schreiber_haengt: Option<Arc<AtomicBool>>,
 ) {
     // Der Acceptor hat das Handle schon registriert; der Eintrag traegt es
     // beim Verlassen dieser Funktion wieder aus.
-    let _handle_eintrag = handle_eintrag;
     let mut sicherheits_cleanup = VerbindungsSicherheitsCleanup {
         revertiert: false,
         auth_fehler,
@@ -477,6 +476,7 @@ pub(super) fn verbindung_bedienen(
     }
 
     let schreiber = {
+        let schreiber_haengt = schreiber_haengt.clone();
         let griff = griff.clone();
         let ausgang = ausgang.clone();
         let ende = ende.clone();
@@ -495,6 +495,28 @@ pub(super) fn verbindung_bedienen(
                         return;
                     }
                 };
+                // H-02-Naht: der Schreiber bleibt ab Threadstart stehen und
+                // laesst `join_mit_frist` seine SENKE_FRIST verpassen; die
+                // Ablosung ist damit erzwingbar statt von einem langsamen Peer
+                // abhaengig. Er endet NUR ueber den Weg, den H-02 zusagt: die
+                // eigene ID steht in `HandleRegister::abgeloest`, der Wachhund
+                // hat sie also erreicht. Ein echtes `ov_schreiben`, das nur
+                // `CancelIoEx` loest, ist im Test nicht herstellbar - der Peer
+                // muesste die Pipe offen halten und nicht lesen, und jeder Weg,
+                // die Verbindung dann abzubauen, loest das Write ohnehin mit.
+                if let Some(haengt) = &schreiber_haengt {
+                    while haengt.load(Ordering::SeqCst) {
+                        let erreicht = handles
+                            .lock()
+                            .unwrap_or_else(|e| e.into_inner())
+                            .abgeloest
+                            .contains(&id);
+                        if erreicht {
+                            break;
+                        }
+                        std::thread::sleep(Duration::from_millis(10));
+                    }
+                }
                 while let Some(eintrag) = ausgang.entnehmen() {
                     let erzwungen = writer_fehler_erzwungen.swap(false, Ordering::SeqCst);
                     if erzwungen
@@ -803,6 +825,18 @@ pub(super) fn verbindung_bedienen(
     if let Some(j) = schreiber {
         if !join_mit_frist(j, SENKE_FRIST, || io_abbrechen(&handles, id)) {
             statistik.schreiber_abgeloest.fetch_add(1, Ordering::SeqCst);
+            // H-02, und die Reihenfolge ist die Zusage: erst zaehlen, dann die
+            // ID in `abgeloest` eintragen. Der Wachhund bricht sie danach bei
+            // JEDEM Tick erneut ab, bis der Thread endet; sein geteilter
+            // `Verbindungsgriff` faellt dann als letzter und traegt die ID aus
+            // beiden Mengen aus, bevor er schliesst. Ohne diesen Eintrag
+            // verbrannte eine abgeloeste Verbindung ihre Pipeinstanz bis zum
+            // Serverstopp: `BootstrapFrist` hat ihre ID laengst ausgetragen.
+            handles
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .abgeloest
+                .insert(id);
         }
     }
 

@@ -812,3 +812,139 @@ fn freigabe_gegen_reserve_laesst_den_lebenden_worker_stehen() {
     assert_eq!(griff.aktive_worker(), 0);
     griff.stoppen();
 }
+
+// ── NAK-121 H-01 und H-02 ──────────────────────────────────────────────────
+//
+// Beide Zeilen sind EIN Arbeitsstueck: der `Verbindungsgriff` besitzt seither
+// Registereintrag und Handle zusammen, und genau daraus folgt sowohl die
+// Reihenfolge Austrag-vor-Close (H-01) als auch der Abbruchweg fuer einen
+// abgeloesten Schreiber (H-02).
+
+#[test]
+fn registeraustrag_geht_dem_close_voraus() {
+    let pipe = probe_pipe("h01a");
+    let fenster = Arc::new(V3UebergabeBarriere::default());
+    let (mut griff, _) = start(
+        &pipe,
+        V3SecurityTestOptionen {
+            destruktor_fenster: Some(fenster.clone()),
+            ..V3SecurityTestOptionen::default()
+        },
+    );
+    let client = verbinden(&pipe);
+    assert!(warten(3000, || griff.aktive_worker() == 1));
+    assert_eq!(griff.gehaltene_handles(), 1);
+    drop(client);
+
+    // Der Destruktor haelt GENAU zwischen Registeraustrag und CloseHandle. Die
+    // Zusage von H-01 ist beobachtbar, weil in diesem Fenster beides zugleich
+    // gilt: das Handle ist noch offen, und das Register fuehrt es nicht mehr.
+    // Eine reine Spur-Assertion koennte das nicht messen - sie sieht nur, wo
+    // zwei push-Aufrufe stehen, nicht wo CloseHandle steht.
+    let fenster_erreicht = warten(5000, || fenster.erreicht());
+    // Erst MESSEN, dann FREIGEBEN, dann werten: eine Assertion vor der
+    // Freigabe liesse den wartenden Destruktorthread fuer immer stehen und
+    // haengte den ganzen Testlauf auf, statt ihn rot zu machen.
+    let im_fenster_gehalten = griff.gehaltene_handles();
+    let spur_im_fenster = griff.sicherheits_spur();
+    fenster.freigeben();
+
+    assert!(fenster_erreicht, "Destruktor erreichte sein Fenster nicht");
+    assert_eq!(
+        im_fenster_gehalten, 0,
+        "das Register fuehrte den Eintrag noch, als das Handle gleich geschlossen wurde"
+    );
+    assert!(!spur_im_fenster.contains(&"close"));
+    assert!(spur_im_fenster.contains(&"register_austrag"));
+    assert!(warten(3000, || griff.sicherheits_spur().contains(&"close")));
+    assert_reihenfolge(&griff.sicherheits_spur(), &["register_austrag", "close"]);
+    assert_eq!(griff.gehaltene_handles(), 0);
+    griff.stoppen();
+}
+
+#[test]
+fn cancel_auf_totes_handle_wird_gezaehlt() {
+    let pipe = probe_pipe("h01b");
+    let (mut griff, _) = start(
+        &pipe,
+        V3SecurityTestOptionen {
+            totes_handle_ins_register: true,
+            ..V3SecurityTestOptionen::default()
+        },
+    );
+    // Der Wachhund feuert bei jedem Tick auf die Phantom-ID. Ein unerwarteter
+    // Fehlschlag - im Regelfall ERROR_INVALID_HANDLE - wird gezaehlt statt
+    // verschluckt; genau dieses Signal verlangt H-01.
+    assert!(warten(5000, || griff
+        .statistik
+        .cancel_auf_totem_handle
+        .load(Ordering::SeqCst)
+        > 0));
+    griff.stoppen();
+}
+
+#[test]
+fn cancel_zaehler_bleibt_im_normalbetrieb_null() {
+    let pipe = probe_pipe("h01c");
+    let (mut griff, _) = start(&pipe, V3SecurityTestOptionen::default());
+    let client = verbinden(&pipe);
+    assert!(warten(3000, || griff.aktive_worker() == 1));
+    drop(client);
+    assert!(warten(3000, || griff.aktive_worker() == 0));
+    griff.stoppen();
+    // Die Gegenprobe zum Test darueber: ohne Naht ist der Zaehler strukturell
+    // null, weil ein Registereintrag nur lebt, solange sein Besitzer lebt.
+    assert_eq!(
+        griff.statistik.cancel_auf_totem_handle.load(Ordering::SeqCst),
+        0
+    );
+}
+
+#[test]
+fn abgeloester_schreiber_gibt_instanz_und_handle_zurueck() {
+    let pipe = probe_pipe("h02");
+    let haengt = Arc::new(std::sync::atomic::AtomicBool::new(true));
+    let (mut griff, _) = start(
+        &pipe,
+        V3SecurityTestOptionen {
+            schreiber_haengt: Some(haengt.clone()),
+            ..V3SecurityTestOptionen::default()
+        },
+    );
+    let mut client = verbinden(&pipe);
+    assert!(warten(3000, || griff.aktive_worker() == 1));
+
+    // Erst ein GUELTIGER Bootstrap: der Schreiberthread entsteht ueberhaupt
+    // erst danach. Er bleibt sofort an der Naht stehen.
+    client.write_all(&control_hello()).expect("Hello schreiben");
+    client.flush().ok();
+    assert!(warten(5000, || griff
+        .sicherheits_spur()
+        .contains(&"hello_accept")));
+    drop(client);
+
+    // Der Join verpasst seine SENKE_FRIST, die Verbindung wird abgeloest.
+    assert!(warten(20_000, || griff
+        .statistik
+        .schreiber_abgeloest
+        .load(Ordering::SeqCst)
+        > 0));
+
+    // H-02: der Registereintrag ueberlebt den abgeloesten Schreiber, UND der
+    // Wachhund erreicht ihn ueber `HandleRegister::abgeloest`. Das Testflag
+    // wird BEWUSST nicht zurueckgesetzt - der Schreiber endet ausschliesslich
+    // ueber diesen Weg, sonst misst der Test nur sich selbst. Sobald er endet,
+    // faellt der letzte geteilte Griff und traegt aus. Vor NAK-121 blieb die
+    // Pipeinstanz bis zum Serverstopp verbrannt, weil `BootstrapFrist` die ID
+    // laengst ausgetragen hatte und der Wachhund nur faellige Bootstraps sah.
+    assert!(
+        warten(10_000, || griff.gehaltene_handles() == 0),
+        "abgeloester Schreiber gab sein Handle nicht zurueck"
+    );
+
+    // ... und der Listener nimmt weiterhin an.
+    let weiterer = verbinden(&pipe);
+    assert!(warten(3000, || griff.aktive_worker() == 1));
+    drop(weiterer);
+    griff.stoppen();
+}

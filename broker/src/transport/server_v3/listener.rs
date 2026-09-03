@@ -52,6 +52,15 @@ impl V3UebergabeBarriere {
         }
     }
 
+    /// H-01-Naht: haelt den Destruktor des `Verbindungsgriff` GENAU zwischen
+    /// Registeraustrag und `CloseHandle` an. In diesem Fenster darf das
+    /// Register den Eintrag nicht mehr fuehren — anders als bei einer
+    /// Spur-Assertion misst das die Reihenfolge selbst und nicht nur, wo zwei
+    /// `push`-Aufrufe stehen.
+    pub(super) fn im_destruktorfenster_warten(&self) {
+        self.vor_worker_uebergabe_warten()
+    }
+
     pub(super) fn vor_worker_uebergabe_warten(&self) {
         self.erreicht.store(true, Ordering::SeqCst);
         let mut frei = self.freigegeben.lock().unwrap_or_else(|e| e.into_inner());
@@ -71,6 +80,20 @@ pub struct V3SecurityTestOptionen {
     /// Rueckgabefehler keinen bereits gestarteten Wachhund-/Acceptor-Thread
     /// hinterlaesst; Produktaufrufe setzen ihn nicht.
     pub hilfsthread_zaehler: Option<Arc<AtomicUsize>>,
+    /// H-01-Naht: traegt beim Start ein bereits geschlossenes Handle unter
+    /// einer Phantom-ID ins Abbruchregister ein. Nur so laesst sich messen,
+    /// dass ein `CancelIoEx` auf ein totes Handle GEZAEHLT und nicht
+    /// verschluckt wird — im Produktbetrieb ist dieser Zustand strukturell
+    /// unerreichbar, weil der Eintrag nur lebt, solange sein Besitzer lebt.
+    pub totes_handle_ins_register: bool,
+    /// H-02-Naht: laesst den Schreiberthread nach dem ersten Frame so lange
+    /// stehen, dass `join_mit_frist` seine `SENKE_FRIST` verpasst. Damit ist
+    /// die Ablosung erzwingbar, statt auf einen langsamen Peer zu hoffen.
+    pub schreiber_haengt: Option<Arc<AtomicBool>>,
+    /// H-01-Naht: haelt den Destruktor des Verbindungsgriffs zwischen
+    /// Registeraustrag und `CloseHandle` an, damit der Test genau dieses
+    /// Fenster messen kann.
+    pub destruktor_fenster: Option<Arc<V3UebergabeBarriere>>,
 }
 
 /// Legt die naechste Pipe-Instanz an — und gibt NICHT auf, wenn gerade alle
@@ -286,6 +309,24 @@ pub(super) fn v3_server_starten_intern(
     }
     statistik.bewaffnete_listener.store(2, Ordering::SeqCst);
 
+    if security_optionen.totes_handle_ins_register {
+        // H-01-Naht: ein Event-Handle, sofort geschlossen, danach unter einer
+        // Phantom-ID ins Abbruchregister. Der naechste Wachhundtick feuert
+        // `CancelIoEx` darauf und muss den Fehlschlag ZAEHLEN. Ohne diese Naht
+        // waere der Zaehler unbeweisbar: im Produktbetrieb lebt ein
+        // Registereintrag nur, solange sein Besitzer lebt (H-01).
+        if let Some(e) = Ereignis::neu() {
+            let roh = e.roh();
+            drop(e);
+            let mut r = handles.lock().unwrap_or_else(|x| x.into_inner());
+            r.offen.push((u64::MAX, roh as isize));
+            // Ohne den Eintrag in `abgeloest` liefe der Wachhund an der
+            // Phantom-ID vorbei: er bricht nur faellige Bootstraps und
+            // abgeloeste Verbindungen ab.
+            r.abgeloest.insert(u64::MAX);
+        }
+    }
+
     if security_optionen.start_fehler == V3StartTestFehler::WachhundSpawn {
         return Err("Wachhund-Spawnfehler injiziert".into());
     }
@@ -295,12 +336,13 @@ pub(super) fn v3_server_starten_intern(
     let bootstraps_w = bootstraps.clone();
     let verbindungen_w = verbindungen.clone();
     let wachhund_testzaehler = security_optionen.hilfsthread_zaehler.clone();
+    let statistik_w = statistik.clone();
     let wachhund = std::thread::Builder::new()
         .name("eqcop-v3-wachhund".into())
         .spawn(move || {
             let _lebend = TestHilfsthread::neu(wachhund_testzaehler);
             while !stop_w.load(Ordering::SeqCst) {
-                std::thread::sleep(Duration::from_millis(100));
+                std::thread::sleep(WACHHUND_TAKT);
                 // Auch ohne neue Verbindung muessen fertige Threads fallen.
                 fertige_ernten(&verbindungen_w);
                 let jetzt = Instant::now();
@@ -311,16 +353,20 @@ pub(super) fn v3_server_starten_intern(
                         .map(|(id, _)| *id)
                         .collect()
                 };
-                if faellig.is_empty() {
-                    continue;
-                }
+                // H-02: neben den faelligen Bootstraps bricht derselbe Tick
+                // jede ABGELOESTE Verbindung ab, und zwar bei JEDEM Tick
+                // erneut, bis ihr Thread endet und der letzte geteilte Griff
+                // faellt. Ohne diesen Weg blieb ein abgeloester etablierter
+                // Schreiber bis zum Serverstopp haengen: `BootstrapFrist` hat
+                // seine ID laengst ausgetragen, und der Wachhund sah nur
+                // faellige Bootstrap-IDs.
                 if let Ok(reg) = handles_w.lock() {
+                    if faellig.is_empty() && reg.abgeloest.is_empty() {
+                        continue;
+                    }
                     for (id, h) in reg.offen.iter() {
-                        if faellig.contains(id) {
-                            // SAFETY: siehe alle_io_abbrechen.
-                            unsafe {
-                                CancelIoEx(*h as HANDLE, std::ptr::null_mut());
-                            }
+                        if faellig.contains(id) || reg.abgeloest.contains(id) {
+                            abbrechen_und_zaehlen_extern(*h as HANDLE, &statistik_w);
                         }
                     }
                 }
@@ -477,10 +523,6 @@ pub(super) fn v3_server_starten_intern(
                 folge += 1;
                 let id = folge;
                 let verbundenes_handle = angenommen.handle_uebernehmen();
-                let griff = Arc::new(Verbindungsgriff {
-                    h: verbundenes_handle,
-                    sicherheits_spur: sicherheits_spur2.clone(),
-                });
 
                 // Das Handle geht ins Abbruchregister, BEVOR der Thread
                 // existiert. Lief `stoppen()` frueher zwischen Spawn und
@@ -494,12 +536,19 @@ pub(super) fn v3_server_starten_intern(
                     let mut r = handles2.lock().unwrap_or_else(|e| e.into_inner());
                     r.offen.push((id, verbundenes_handle as isize));
                 }
-                // Der Eintrag gehoert ab hier dem Thread; scheitert `spawn`,
-                // faellt die Closure samt Eintrag und traegt ihn wieder aus.
-                let handle_eintrag = HandleEintrag {
+                // H-01: der Griff wird ERST NACH dem Registereintrag gebaut und
+                // besitzt ihn ab hier mit. Scheitert `spawn`, faellt die
+                // Closure, faellt der letzte Griff, und sein Destruktor traegt
+                // unter der Registersperre aus, bevor er schliesst. Bis NAK-121
+                // trug ein getrennter `HandleEintrag` den Austrag; seine
+                // Fallreihenfolge gegen den Griff war unbestimmt.
+                let griff = Arc::new(Verbindungsgriff {
+                    h: verbundenes_handle,
+                    sicherheits_spur: sicherheits_spur2.clone(),
                     id,
                     register: handles2.clone(),
-                };
+                    destruktor_fenster: security_optionen2.destruktor_fenster.clone(),
+                });
                 let verzoegerung = probe_verzoegerung_ms.clone();
                 let writer_fehler = writer_fehler_erzwungen.clone();
                 let cancel_vor_read = cancel_vor_read_phase.clone();
@@ -518,6 +567,7 @@ pub(super) fn v3_server_starten_intern(
                 let erwartete_sicherheit = sicherheit2.clone();
                 let auth_fehler = security_optionen2.auth_fehler;
                 let sicherheits_spur = sicherheits_spur2.clone();
+                let schreiber_haengt = security_optionen2.schreiber_haengt.clone();
                 match std::thread::Builder::new()
                     .name("eqcop-v3-conn".into())
                     .spawn(move || {
@@ -548,7 +598,7 @@ pub(super) fn v3_server_starten_intern(
                             erwartete_sicherheit,
                             auth_fehler,
                             sicherheits_spur,
-                            handle_eintrag,
+                            schreiber_haengt,
                         );
                     }) {
                     Ok(j) => {
@@ -559,8 +609,10 @@ pub(super) fn v3_server_starten_intern(
                             .push(j)
                     }
                     Err(_) => {
-                        // Closure-Drop gibt Workerplatz, Handle und Register
-                        // frei. Beide Listener sind bereits wieder bewaffnet.
+                        // Closure-Drop gibt Workerplatz und Griff frei; dessen
+                        // Destruktor traegt den Registereintrag aus und
+                        // schliesst danach (H-01). Beide Listener sind bereits
+                        // wieder bewaffnet.
                     }
                 }
 

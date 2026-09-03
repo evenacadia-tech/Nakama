@@ -52,8 +52,8 @@ use std::time::{Duration, Instant};
 
 use windows_sys::Win32::Foundation::{
     CloseHandle, GetLastError, ERROR_BROKEN_PIPE, ERROR_INSUFFICIENT_BUFFER, ERROR_IO_PENDING,
-    ERROR_NO_DATA, ERROR_NO_TOKEN, ERROR_OPERATION_ABORTED, ERROR_PIPE_BUSY, ERROR_PIPE_CONNECTED,
-    ERROR_PIPE_NOT_CONNECTED, HANDLE, INVALID_HANDLE_VALUE, WAIT_OBJECT_0,
+    ERROR_NOT_FOUND, ERROR_NO_DATA, ERROR_NO_TOKEN, ERROR_OPERATION_ABORTED, ERROR_PIPE_BUSY,
+    ERROR_PIPE_CONNECTED, ERROR_PIPE_NOT_CONNECTED, HANDLE, INVALID_HANDLE_VALUE, WAIT_OBJECT_0,
 };
 use windows_sys::Win32::Security::{
     CopySid, EqualSid, GetLengthSid, GetTokenInformation, IsValidSid, RevertToSelf, TokenUser,
@@ -108,8 +108,9 @@ use trennung::{
     trennmelder_telemetrie_erwartet, TrennRegister,
 };
 use win_handles::{
-    alle_io_abbrechen, io_abbrechen, ov_lesen, ov_schreiben, EndeSignal, Ereignis, HandleEintrag,
-    HandleRegister, IoAusgang, ListenerInstanz, SicherheitsSpur, TokenGriff, Verbindungsgriff,
+    abbrechen_und_zaehlen_extern, alle_io_abbrechen, io_abbrechen, ov_lesen, ov_schreiben,
+    EndeSignal, Ereignis, HandleRegister, IoAusgang, ListenerInstanz, SicherheitsSpur, TokenGriff,
+    Verbindungsgriff,
 };
 
 pub use senke::{ControlAnmeldung, Senke, ZaehlSenke};
@@ -161,6 +162,11 @@ fn schema_minor_bekannt(familie: Familie, schema_minor: u8) -> bool {
 /// Frist, die der Verbindungsschluss einem LAUFENDEN Senkenaufruf noch
 /// laesst. Danach wird der Verbraucherthread abgeloest statt gejoint.
 pub const SENKE_FRIST: Duration = Duration::from_millis(2000);
+
+/// Takt des Wachhunds. Bis NAK-121 stand hier ein nacktes
+/// `Duration::from_millis(100)` in der Schleife; H-02 misst gegen diese Frist,
+/// also bekommt sie einen Namen. Modulintern, keine oeffentliche Signatur.
+pub(super) const WACHHUND_TAKT: Duration = Duration::from_millis(100);
 
 //==============================================================================
 

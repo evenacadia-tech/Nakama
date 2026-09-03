@@ -1,0 +1,49 @@
+# Rotbeweis H-01 — NAK-121 Etappe 2
+
+Mutante(n):
+  broker/src/transport/server_v3/win_handles.rs
+    ALT: {
+            let mut r = self.register.lock().unwrap_or_else(|e| e.into_inner());
+            r.offen.retain(|(i, _)| *i != self.id);
+            r.abgeloest.remove(&self.id);
+        }
+        self.
+    NEU: self.sicherheits_spur.push("register_austrag");
+        if let Some(fenster) = &self.destruktor_fenster {
+            fenster.im_destruktorfenster_warten();
+        }
+        // MUTANTE: der Austrag s
+
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never --test security_vectors -- registeraustrag_geht_dem_close_voraus
+Exitcode: 101
+
+Die Mutante ist nach diesem Lauf zurueckgenommen; der naechste
+Lauf derselben Tests ist wieder gruen.
+
+---
+
+
+running 1 test
+test registeraustrag_geht_dem_close_voraus ... FAILED
+
+failures:
+
+---- registeraustrag_geht_dem_close_voraus stdout ----
+
+thread 'registeraustrag_geht_dem_close_voraus' (20636) panicked at tests\security_vectors.rs:853:5:
+assertion `left == right` failed: das Register fuehrte den Eintrag noch, als das Handle gleich geschlossen wurde
+  left: 1
+ right: 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    registeraustrag_geht_dem_close_voraus
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 23 filtered out; finished in 0.10s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.35s
+     Running tests\security_vectors.rs (broker\target\debug\deps\security_vectors-4a68d58de2e43d5b.exe)
+error: test failed, to rerun pass `--test security_vectors`

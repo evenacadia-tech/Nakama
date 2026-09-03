@@ -340,6 +340,15 @@ pub(super) fn ov_schreiben(h: HANDLE, e: HANDLE, daten: &[u8]) -> bool {
 pub(super) struct Verbindungsgriff {
     pub(super) h: HANDLE,
     pub(super) sicherheits_spur: Arc<SicherheitsSpur>,
+    /// H-01: Registereintrag und Handle haben EINEN Besitzer. Vorher trug ein
+    /// eigener `HandleEintrag` den Austrag; fielen beide in einer Closure, war
+    /// ihre Reihenfolge unbestimmt, und das Register konnte kurzzeitig ein
+    /// bereits geschlossenes Handle veroeffentlichen.
+    pub(super) id: u64,
+    pub(super) register: Arc<Mutex<HandleRegister>>,
+    /// Testnaht, die den Destruktor im Fenster zwischen Austrag und Schliessen
+    /// anhaelt. Im Produktbetrieb ist sie `None` und kostet einen Vergleich.
+    pub(super) destruktor_fenster: Option<Arc<V3UebergabeBarriere>>,
 }
 
 // SAFETY: Win32-HANDLEs sind prozessweite Kernel-Referenzen ohne
@@ -350,7 +359,22 @@ unsafe impl Sync for Verbindungsgriff {}
 
 impl Drop for Verbindungsgriff {
     fn drop(&mut self) {
-        // SAFETY: exklusiver Besitz ueber den Arc, genau einmal geschlossen.
+        // H-01, die Reihenfolge IST die Zusage: unter der Registersperre
+        // austragen, danach schliessen. Umgekehrt saehe ein gleichzeitiges
+        // `alle_io_abbrechen` ein Handle, das der Kernel schon wiederverwenden
+        // durfte. Der Austrag raeumt beide Mengen, damit der Wachhund aus H-02
+        // keine tote ID weiterverfolgt.
+        {
+            let mut r = self.register.lock().unwrap_or_else(|e| e.into_inner());
+            r.offen.retain(|(i, _)| *i != self.id);
+            r.abgeloest.remove(&self.id);
+        }
+        self.sicherheits_spur.push("register_austrag");
+        if let Some(fenster) = &self.destruktor_fenster {
+            fenster.im_destruktorfenster_warten();
+        }
+        // SAFETY: exklusiver Besitz ueber den Arc, genau einmal geschlossen;
+        // der Registereintrag ist eine Zeile hoeher gefallen.
         unsafe { CloseHandle(self.h) };
         self.sicherheits_spur.push("close");
     }
@@ -399,6 +423,13 @@ impl SicherheitsSpur {
 #[derive(Default)]
 pub(super) struct HandleRegister {
     pub(super) offen: Vec<(u64, isize)>,
+    /// H-02: Verbindungen, deren Schreiberthread abgeloest wurde. Der Wachhund
+    /// bricht sie bei JEDEM Tick erneut ab, bis der Thread endet und sein
+    /// geteilter `Verbindungsgriff` faellt. Ohne diesen Weg erreichte ein
+    /// abgeloester etablierter Schreiber keinen Abbruch mehr: `BootstrapFrist`
+    /// hat seine ID laengst ausgetragen, und der Wachhund sah nur faellige
+    /// Bootstrap-IDs.
+    pub(super) abgeloest: std::collections::HashSet<u64>,
 }
 
 // SAFETY: Win32-HANDLEs sind prozessweite Kernel-Referenzen ohne Thread-
@@ -407,26 +438,64 @@ pub(super) struct HandleRegister {
 // laufen unter demselben Mutex wie das Abbrechen.
 unsafe impl Send for HandleRegister {}
 
+/// Bricht die I/O eines Handles ab und wertet den Rueckgabewert aus (H-01).
+///
+/// `ERROR_NOT_FOUND` ist der Normalfall und heisst nur „da war gerade nichts
+/// ausstehendes". Alles andere — allen voran `ERROR_INVALID_HANDLE` — bedeutet,
+/// dass das Register ein Handle fuehrte, das es nicht mehr geben durfte; genau
+/// das darf nicht verschluckt werden, sonst faellt die Ein-Besitzer-Invariante
+/// unbemerkt.
+fn abbrechen_und_zaehlen(h: HANDLE, statistik: Option<&V3Statistik>) {
+    // SAFETY: der Eintrag lebt nur, solange der besitzende Thread sein Handle
+    // haelt; Austragen und Abbrechen laufen unter derselben Registersperre.
+    let ok = unsafe { CancelIoEx(h, std::ptr::null_mut()) };
+    if ok != 0 {
+        return;
+    }
+    // SAFETY: reine Abfrage des Fehlercodes des eigenen Threads.
+    let fehler = unsafe { GetLastError() };
+    if fehler == ERROR_NOT_FOUND {
+        return;
+    }
+    if let Some(s) = statistik {
+        s.cancel_auf_totem_handle.fetch_add(1, Ordering::SeqCst);
+    }
+}
+
+/// Derselbe Abbruch fuer einen Aufrufer, der das Handle schon in der Hand hat
+/// (der Wachhund haelt die Registersperre bereits).
+pub(super) fn abbrechen_und_zaehlen_extern(h: HANDLE, statistik: &V3Statistik) {
+    abbrechen_und_zaehlen(h, Some(statistik))
+}
+
 pub(super) fn alle_io_abbrechen(handles: &Arc<Mutex<HandleRegister>>) {
+    alle_io_abbrechen_gezaehlt(handles, None)
+}
+
+pub(super) fn alle_io_abbrechen_gezaehlt(
+    handles: &Arc<Mutex<HandleRegister>>,
+    statistik: Option<&V3Statistik>,
+) {
     if let Ok(reg) = handles.lock() {
         for (_, h) in reg.offen.iter() {
-            // SAFETY: der Eintrag lebt nur, solange der besitzende Thread sein
-            // Handle haelt; Austragen und Abbrechen laufen unter diesem Mutex.
-            unsafe {
-                CancelIoEx(*h as HANDLE, std::ptr::null_mut());
-            }
+            abbrechen_und_zaehlen(*h as HANDLE, statistik);
         }
     }
 }
 
 pub(super) fn io_abbrechen(handles: &Arc<Mutex<HandleRegister>>, id: u64) {
+    io_abbrechen_gezaehlt(handles, id, None)
+}
+
+pub(super) fn io_abbrechen_gezaehlt(
+    handles: &Arc<Mutex<HandleRegister>>,
+    id: u64,
+    statistik: Option<&V3Statistik>,
+) {
     if let Ok(reg) = handles.lock() {
         for (i, h) in reg.offen.iter() {
             if *i == id {
-                // SAFETY: siehe alle_io_abbrechen.
-                unsafe {
-                    CancelIoEx(*h as HANDLE, std::ptr::null_mut());
-                }
+                abbrechen_und_zaehlen(*h as HANDLE, statistik);
             }
         }
     }
@@ -438,19 +507,6 @@ impl Drop for TokenGriff {
     fn drop(&mut self) {
         if !self.0.is_null() {
             unsafe { CloseHandle(self.0) };
-        }
-    }
-}
-
-pub(super) struct HandleEintrag {
-    pub(super) id: u64,
-    pub(super) register: Arc<Mutex<HandleRegister>>,
-}
-
-impl Drop for HandleEintrag {
-    fn drop(&mut self) {
-        if let Ok(mut r) = self.register.lock() {
-            r.offen.retain(|(i, _)| *i != self.id);
         }
     }
 }

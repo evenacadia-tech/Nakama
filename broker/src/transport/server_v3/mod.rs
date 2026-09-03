@@ -3143,7 +3143,7 @@ mod tests {
             assert!(basis + frist >= deadline);
         }
 
-        let source = include_str!("server_v3.rs");
+        let source = include_str!("mod.rs");
         let testmodul_marker = ["\n#[cfg(test)]\n", "mod tests {"].concat();
         let tests_beginn = source
             .rfind(&testmodul_marker)
@@ -4835,11 +4835,11 @@ mod tests {
         assert!(join_snapshot.get("join_candidate").is_none());
 
         let schema: serde_json::Value = serde_json::from_str(include_str!(
-            "../../../eq-copilot/schemas/v3/eq-ipc-v3.schema.json"
+            "../../../../eq-copilot/schemas/v3/eq-ipc-v3.schema.json"
         ))
         .unwrap();
         let reserviert: serde_json::Value = serde_json::from_str(include_str!(
-            "../../../eq-copilot/schemas/v3/reservierte-nachrichten-v1.json"
+            "../../../../eq-copilot/schemas/v3/reservierte-nachrichten-v1.json"
         ))
         .unwrap();
         let definiert = schema["oneOf"].as_array().unwrap().len();
@@ -4973,7 +4973,7 @@ mod tests {
         );
 
         let payload =
-            include_bytes!("../../../eq-copilot/fixtures/v3/flatbuffers/gueltig/live-64-band.bin");
+            include_bytes!("../../../../eq-copilot/fixtures/v3/flatbuffers/gueltig/live-64-band.bin");
         assert!(source_telemetrie
             .schreiben(&envelope_schreiben(Familie::P2, P2_SCHEMA_MINOR, payload).unwrap()));
         let weiter = frame_roh_lesen(&main_telemetrie).expect("P2-Push an Main");

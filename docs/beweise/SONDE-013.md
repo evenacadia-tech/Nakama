@@ -3,13 +3,14 @@
 | Merkmal | Wert |
 |---|---|
 | Ticket | S20–22, `SONDE-013` (Phase P4–P5) |
-| Phase | **Etappe 1 — Verhaltensmatrix, Nacharbeit 1 abgeschlossen, Wiederprüfung 1 offen** (Spezifikation vor Code) |
+| Phase | **Etappe 1 — Verhaltensmatrix, Nacharbeit 2 abgeschlossen, Wiederprüfung 2 offen** (Spezifikation vor Code) |
 | Urteil | **offen** — dieses Manifest ist weder Bau- noch Prüfurteil |
 | Prüfstufe | T1+T2 gefordert (`docs/bauaufteilung-sonden.md`:392); in dieser Etappe wird keine Stufe gefahren |
 | Basis-SHA | `ed9bbf7fec951a061749abf143cb2158c1c4ee52` (gemessen mit `git rev-parse HEAD`) |
 | Kanon vorher | GRUEN 40/40 auf `a627ebb`, Rohausgabe `docs/beweise/roh/NAK-121-a627ebb.md`. `git diff --stat a627ebb..ed9bbf7 -- broker eq-copilot tools` ist **leer**: der Codestand von `ed9bbf7` ist mit dem beglaubigten Kanonstand identisch, die acht Commits dazwischen ändern ausschließlich Dateien unter `docs/` (`git diff --name-only a627ebb..ed9bbf7` liefert 8 Pfade, alle mit diesem Präfix). |
 | Matrixprüfung 1 | Codex `gpt-5.6-sol`, Effort **high**, lesend, Thread `01a06922-fd1d-7222-b180-fcddb1fdfc2d`; `HEAD` vor und nach der Prüfung `367a0ea732c9e883df12f2bfc5abb2f67df6da5d`. Urteil **NEEDS_WORK**, sieben Defekte. Rohausgabe `docs/beweise/roh/SONDE-013-matrixpruefung-1-367a0ea.txt`, Auftrag `docs/beweise/roh/SONDE-013-matrixpruefung-1-auftrag.txt`. Alle sieben Befunde sind an der Quelle als Defekt bestätigt; Wortlaut, Regel und geänderte Zeilen stehen in §8. |
-| Änderungssatz dieser Etappe | Erster Commit `4a2f50a` und Entscheidcommit `367a0ea`: dieses Manifest und `docs/beweise/roh/SONDE-013-etappe-1-auftrag.txt`. Nacharbeit 1: dieses Manifest sowie die drei Rohdateien `docs/beweise/roh/SONDE-013-matrixpruefung-1-auftrag.txt`, `docs/beweise/roh/SONDE-013-matrixpruefung-1-367a0ea.txt` und `docs/beweise/roh/SONDE-013-nacharbeit-1-auftrag.txt` unverändert. Kein Produkt-, Test-, Schema-, Fixture- oder Werkzeugcode. |
+| Wiederprüfung 1 | Codex `gpt-5.6-sol`, Effort **high**, lesend, Thread `01a06942-e2a8-70b3-8bde-45ca621e859d`; `HEAD` `ca20f3ab9c757540b6b7da36576e43d6755bc3e0`. Der Lauf gibt **keine URTEIL-Zeile** aus; der Dirigent wertet ihn als **NEEDS_WORK**: alle sieben Befunde der Matrixprüfung 1 sind als geschlossen bestätigt, dafür stehen **zwei Defekte** (Versionswiderspruch M-66 gegen M-67, uneindeutiger Drop-Grund in M-53) und **eine Lücke** (M-86 ohne Bauetappe). Rohausgabe `docs/beweise/roh/SONDE-013-wiederpruefung-1-ca20f3a.txt`, Auftrag `docs/beweise/roh/SONDE-013-wiederpruefung-1-auftrag.txt`. Der Dokuriegel lief in diesem Codex-Lauf wegen eines lokalen Python-Startfehlers nicht; er wird lokal gefahren. Wortlaut, Regel und geänderte Zeilen stehen in §9. |
+| Änderungssatz dieser Etappe | Erster Commit `4a2f50a` und Entscheidcommit `367a0ea`: dieses Manifest und `docs/beweise/roh/SONDE-013-etappe-1-auftrag.txt`. Nacharbeit 1: dieses Manifest sowie die drei Rohdateien `docs/beweise/roh/SONDE-013-matrixpruefung-1-auftrag.txt`, `docs/beweise/roh/SONDE-013-matrixpruefung-1-367a0ea.txt` und `docs/beweise/roh/SONDE-013-nacharbeit-1-auftrag.txt` unverändert. Nacharbeit 2: dieses Manifest sowie die drei Rohdateien `docs/beweise/roh/SONDE-013-wiederpruefung-1-auftrag.txt`, `docs/beweise/roh/SONDE-013-wiederpruefung-1-ca20f3a.txt` und `docs/beweise/roh/SONDE-013-nacharbeit-2-auftrag.txt` unverändert. Kein Produkt-, Test-, Schema-, Fixture- oder Werkzeugcode. |
 | Grenze | Kein Produkt-, Test-, Schema-, Fixture- oder Werkzeugcode. Keine Änderung an `docs/plan/`, `docs/offene-punkte.md`, `docs/PLAN-STAND.md` oder anderen Manifesten. |
 
 > **Keine Urteilsmarke, kein Belegfeld.** Dieses Manifest trägt bewusst weder
@@ -475,7 +476,7 @@ Ein Testname mit **NEU** existiert noch nicht.
 | M-20 | Paar; Vergleichspegel wird gebraucht | Der Vergleichspegel wird für die gewählte Passage **vorab** gemessen und während des A/B eingefroren. Eine kontinuierliche automatische Nachregelung während des Umschaltens ist ausgeschlossen: sie bewertet Transienten und Stille falsch und wird selbst zum hörbaren Prozessor. | **NEU** `EqCopSonde013PrePostGoldenTest`, Fall `match_gain_is_frozen_before_ab_not_tracked`. | Entwurf §38.3:2523-2526; §43.1:2833. **BELEGT, BAULÜCKE** |
 | M-21 | Zeitpfad zwischen zwei Instanzen ist nicht validiert; Cross-Probe- oder PRE/POST-Aussage wird angefragt | Solange FLs PDC-/Presentation-Abbildung nicht bewiesen ist, lautet der Schlüssel `raw_project_frame_key = (instance_id, transport_epoch, sample_rate, resolution, frame_start)` und behauptet **keine** Inhaltsgleichheit zwischen Instanzen. Erst eine validierte Presentation-Abbildung **plus** Alignmentqualität erzeugt `aligned_frame_key = (session_epoch, timeline_epoch, sample_rate, resolution, aligned_start)` für starke Cross-Probe-Evidenz. Exit-Gate wörtlich: **„Kein unbekannter Zeitpfad erzeugt eine starke Cross-Probe- oder PRE/POST-Aussage."** | **NEU** `sonde013_prepost.rs`, Fall `unknown_time_path_can_never_reach_strong` als Gate-Bein — es muss über **alle** Wege scheitern, nicht nur über den erwarteten; **NEU** Mutationsprobe: ein künstlich auf `aligned` gehobener Schlüssel bringt das Bein zum Fallen. | Entwurf §35.1:2255-2266; §58 Exit-Gate:4288-4289. **BELEGT, BAULÜCKE** |
 | M-22 | Eine Hälfte ist getrennt, stale, sammelt noch oder lief ohne Transport | Harte Ausschlüsse führen zu `unclear` mit benanntem Grund, nicht zu einer schwachen Zahl: fehlende Hälfte, getrennte Hälfte, stale Hälfte, Zustand nicht messbereit, fehlende Projektzeit, Fensterlänge ≤ 0. Der v2-Vorläufer führt genau diese Fälle bereits; der v3-Pfad erbt sie samt Wortlautklasse. | **NEU** `sonde013_prepost.rs`, Fall `hard_exclusions_each_name_their_reason`; Formvorläufer bestehend `broker/src/lib.rs`:700-806, gedeckt von **A4**. | `broker/src/lib.rs`:700-806; Entwurf §58 („ehrliche Herabstufung"). **BELEGT, BAULÜCKE im v3-Pfad** |
-| M-23 | Paar ist vollständig, aber die Überdeckung ist gering, die aktive Messzeit klafft auseinander oder die Hälften laufen in verschiedenen Prozessen | Herabstufung auf `probable` mit benanntem Grund statt Ausschluss. Im v3-Pfad sind es **genau drei** Gründe: Überlappung unter 80 % des kürzeren Fensters; aktive Messzeit um mehr als 10 % verschieden (Smart Disable oder Stille auf einem Punkt); verschiedene Host-PIDs. Der vierte Grund des v2-Vorläufers, „Loop-/Seek-Sprünge im Messfenster", **entfällt im v3-Pfad** und bleibt nur als Vorläufer benannt: eine Passage bindet an genau eine Transportepoche (§32.4), also **invalidiert** ein Sprung die Messung, statt sie herabzustufen — Regel und Abgrenzung stehen in M-53. Keine Herabstufung ist ein stiller Ausschluss. | **NEU** `sonde013_prepost.rs`, Fall `each_downgrade_reason_falls_alone` mit einem Fall je Grund, also **drei**; **NEU** `sonde013_taint.rs`, Fälle `seek_inside_passage_invalidates_instead_of_downgrading` und `loop_wrap_at_passage_edge_starts_next_pass`; Formvorläufer bestehend `broker/src/lib.rs`:809-826 (dort vier Gründe — v2-Erbe, Verlauf). | `broker/src/lib.rs`:809-826 (v2-Vorläufer, Plan §5.7); Entwurf §58:4285 („Invalidierung bei Marker, Preview, Seek, Drop, geändertem Material oder Messpunkt"); §32.4:1969; §15 Vergleichbarkeitsregeln:1093-1098. **BELEGT, BAULÜCKE im v3-Pfad** — Sprunggrund gestrichen in Nacharbeit 1 (§8, D3) |
+| M-23 | Paar ist vollständig, aber die Überdeckung ist gering, die aktive Messzeit klafft auseinander oder die Hälften laufen in verschiedenen Prozessen | Herabstufung auf `probable` mit benanntem Grund statt Ausschluss. Im v3-Pfad sind es **genau drei** Gründe: Überlappung unter 80 % des kürzeren Fensters; aktive Messzeit um mehr als 10 % verschieden (Smart Disable oder Stille auf einem Punkt); verschiedene Host-PIDs. Der vierte Grund des v2-Vorläufers, „Loop-/Seek-Sprünge im Messfenster", **entfällt im v3-Pfad** und bleibt nur als Vorläufer benannt: eine Passage bindet an genau eine Transportepoche (§32.4), also **invalidiert** ein Sprung die Messung, statt sie herabzustufen; der Grund auf dem Draht ist dabei je Auslöser eindeutig — Seek und Loop-Wrap innerhalb der Passage `epochwechsel`, Drop `sequenzluecke` (M-53). Regel und Abgrenzung stehen in M-53. Keine Herabstufung ist ein stiller Ausschluss. | **NEU** `sonde013_prepost.rs`, Fall `each_downgrade_reason_falls_alone` mit einem Fall je Grund, also **drei**; **NEU** `sonde013_taint.rs`, Fälle `seek_inside_passage_invalidates_instead_of_downgrading` und `loop_wrap_at_passage_edge_starts_next_pass`; Formvorläufer bestehend `broker/src/lib.rs`:809-826 (dort vier Gründe — v2-Erbe, Verlauf). | `broker/src/lib.rs`:809-826 (v2-Vorläufer, Plan §5.7); Entwurf §58:4285 („Invalidierung bei Marker, Preview, Seek, Drop, geändertem Material oder Messpunkt"); §32.4:1969; §15 Vergleichbarkeitsregeln:1093-1098. **BELEGT, BAULÜCKE im v3-Pfad** — Sprunggrund gestrichen in Nacharbeit 1 (§8, D3) |
 | M-24 | Paar; hörbares Delta wird angefragt | Feature-Telemetrie kann `POST − PRE` niemals als Audio erzeugen. Ohne nachgewiesenes Compare-Routing bietet Gen nur Messvergleich plus angeleiteten manuellen Bypass. Hörbares Delta wird ohne Routingnachweis **nicht** freigeschaltet. | **NEU** `EqCopSonde013PrePostGoldenTest`, Fall `audible_delta_locked_without_compare_routing`. | Entwurf §38.4:2528-2549; §38.5:2562. **BELEGT**; **BAULÜCKE nur im Bein** — die Freischaltung gehört zu P8, hier gilt nur die Sperre |
 
 ### 3.3 Manuell markierte Passage, Fingerprint und Comparability-Score
@@ -525,7 +526,7 @@ Ein Testname mit **NEU** existiert noch nicht.
 | ID | Ausgangszustand × Ereignis | Zusage samt Reihenfolge und Frist | Test | Quelle / Belegstatus |
 |---|---|---|---|---|
 | M-52 | Evidenz ist eingegangen; ein Hörmarker oder eine Preview überlappt sie | Der Broker quarantänisiert den überlappenden Routing- und Timelinebereich; bei **unbekanntem Routing die ganze Sitzung**. Bereits eingegangene Evidenz wird per ID oder Bereich invalidiert. Reihenfolge: Interventionsereignis annehmen → Bereich bestimmen → `evidence_invalidate` mit Grund `intervention` und passendem `invalidate_umfang` senden → Evidenz als ausgeschlossen führen. Das per Frame übertragene Flag bleibt ein **zusätzlicher lokaler Beleg, nie die alleinige Garantie**. | **NEU** `sonde013_taint.rs`, Fall `marker_invalidates_overlapping_range_and_unknown_routing_takes_the_session`; bestehend Schemaform über **A5**. | Entwurf §34.2:2196-2211; `eq-ipc-v3.schema.json`:1085-1097. **BELEGT im Schema, BAULÜCKE im Sender** |
-| M-53 | Evidenzfenster läuft; Seek, Loop-Wrap, Drop oder Kontinuitätsbruch tritt ein | Der Bruch beendet die alte Zeitreihe. Kein Fenster wird über die Grenze interpoliert; ein Drop erzeugt Zähler, sichtbare Lücke und eine neue Kontinuitätsgrenze. Grund auf dem Draht ist `epochwechsel`. Bis zur neuen gültigen Baseline gibt es keinen alten Wert und keine 0. **Passagenbindung (Nacharbeit 1):** Eine Passage bindet an genau eine Transportepoche (§32.4). Ein Seek, ein Loop-Wrap **innerhalb** der Passage (Loop kürzer als die Passage) oder ein Drop während der laufenden Passagenmessung invalidiert diese Messung — Grund `epochwechsel` beziehungsweise `sequenzluecke` — und die Messung beginnt mit der nächsten gültigen Epoche neu; kein Frame, der eine Grenze überspannt, geht in eine Paarauswertung ein (B5-Garantie aus SONDE-009). Ein Loop-Wrap **an** der Passagengrenze (Loop deckt die Passage vollständig) beendet einen Durchlauf und beginnt den nächsten — das ist **keine** Invalidierung und **keine** Herabstufung (Abgrenzung zu M-23). | Bestehend **B5** für die lokale Fenstertrennung und **B4** für den Drop-Pfad; **NEU** `sonde013_taint.rs`, Fall `epoch_change_invalidates_open_evidence`, dazu die zwei Passagenfälle aus M-23. | Entwurf §48.1:3413-3417; §34.2; §32.4:1969; §58:4285; `docs/beweise/SONDE-009.md`. **BELEGT, BAULÜCKE in der Invalidierungsnachricht** — Passagenbindung aus Nacharbeit 1 (§8, D3) |
+| M-53 | Evidenzfenster läuft; Seek, Loop-Wrap, Drop oder Kontinuitätsbruch tritt ein | Der Bruch beendet die alte Zeitreihe. Kein Fenster wird über die Grenze interpoliert; ein Drop erzeugt Zähler, sichtbare Lücke und eine neue Kontinuitätsgrenze. **Der Grund auf dem Draht ist je Auslöser eindeutig** und folgt der Zeitvertragsregel aus SONDE-009 („Drop zaehlt als Segment, alles andere als Epoche", B5 §F/G1-G2): ein **Seek** trägt `epochwechsel`; ein **Loop-Wrap innerhalb** der Passage trägt `epochwechsel`; jeder **andere Kontinuitätsbruch** trägt `epochwechsel`; ein **Drop** trägt `sequenzluecke`. Kein Auslöser trägt zwei Gründe, und keiner bleibt der Implementierung überlassen. Bis zur neuen gültigen Baseline gibt es keinen alten Wert und keine 0. **Passagenbindung (Nacharbeit 1):** Eine Passage bindet an genau eine Transportepoche (§32.4). Ein Seek, ein Loop-Wrap **innerhalb** der Passage (Loop kürzer als die Passage) oder ein Drop während der laufenden Passagenmessung invalidiert diese Messung — jeweils mit dem oben je Auslöser festgelegten Grund — und die Messung beginnt mit der nächsten gültigen Epoche neu; kein Frame, der eine Grenze überspannt, geht in eine Paarauswertung ein (B5-Garantie aus SONDE-009). Ein Loop-Wrap **an** der Passagengrenze (Loop deckt die Passage vollständig) beendet einen Durchlauf und beginnt den nächsten — das ist **keine** Invalidierung und **keine** Herabstufung (Abgrenzung zu M-23). | Bestehend **B5** für die lokale Fenstertrennung und **B4** für den Drop-Pfad; **NEU** `sonde013_taint.rs`, Fall `epoch_change_invalidates_open_evidence`; er misst den **Grundwert je Auslöser** — Seek → `epochwechsel`, Loop-Wrap innerhalb → `epochwechsel`, Drop → `sequenzluecke` —, sodass ein vertauschter Grund fällt statt grün zu werden. Dazu die zwei Passagenfälle aus M-23. | Entwurf §48.1:3413-3417; §34.2; §32.4:1969; §58:4285; `docs/beweise/SONDE-009.md`:4544,1954,1958 (B5-Zeitvertrag). **BELEGT, BAULÜCKE in der Invalidierungsnachricht** — Passagenbindung aus Nacharbeit 1 (§8, D3), Grundzuordnung je Auslöser aus Nacharbeit 2 (§9, R2-2) |
 | M-54 | Passage ist gebunden; das musikalische Material ändert sich | Geändertes Material invalidiert die abhängige Evidenz. Erkannt wird es über den Fingerprintvergleich (M-31), nicht über eine Zeitheuristik. Die heutige Gründemenge kennt den Fall nicht; sie wird um `material_wechsel` und `messpunkt_wechsel` (M-55) erweitert. **Kein Steuerkopf und kein zweites Versionsfeld im Payload:** `evidence_invalidate` trägt nur `type`, `grund` und `umfang` (`eq-ipc-v3.schema.json`:1085-1094), und die Fassungswahl läuft über `message_family` und `schema_minor` des Wire-Envelopes. Beide Gründe kommen deshalb mit **Fassung 2** des `wire_envelope_schema_minor` (§3.8, §7.1 E-04). Ein Leser der Fassung 1 lehnt sie ab, statt sie still auf einen bekannten Grund abzubilden. | **NEU** `sonde013_taint.rs`, Fall `material_change_invalidates_dependent_evidence`. | Entwurf §58 Lieferumfang („geändertem Material"); `eq-ipc-v3.schema.json`:1085-1094 (kein Steuerkopf); `reservierte-nachrichten-v1.json`:7-11 (`auswahlregel`). **BELEGT, ENTSCHIEDEN** — §7.1 E-04, ersetzt in Nacharbeit 1 (§8, D2) |
 | M-55 | Evidenz hängt an einem Messpunkt; der Messpunkt ändert sich | Ein geänderter Messpunkt oder eine geänderte Messpunktklasse invalidiert die abhängige Evidenz. Das ist die Kante zu Gate 7 (§49.2): eine Standard-Insertprobe wird nie als exakter Mastersummenbeitrag bezeichnet — folglich darf Evidenz von `insert` nach einem Wechsel auf `post_fader_contribution` nicht mitwandern. | Bestehend **A16** `EqCopProbeeqNullTest` und **B2** für die Klassenmatrix; **NEU** `sonde013_taint.rs`, Fall `measurement_position_change_invalidates_dependent_evidence`. | Entwurf §58; §49.2 Gate 7:3561; `eq-ipc-v3.schema.json`:573-576. **BELEGT, BAULÜCKE** |
 | M-56 | Ein `apply_transaction` bestätigt einen neuen DSP-Zustand | Ein **angewendeter** DSP-Zustand ist ausdrücklich **kein dauerhafter Taint**. Sein Apply schließt die alte Baseline, segmentiert die Timeline nach `state_revision`, macht abhängige Findings stale und erlaubt nach definierter Warm-up-Zeit eine neue gültige `post_committed`-Baseline dieser Revision. Grund auf dem Draht ist `state_revision`. | **NEU** `sonde013_taint.rs`, Fall `applied_state_segments_instead_of_tainting`. | Entwurf §34.2:2199-2205; `eq-ipc-v3.schema.json`:1091-1093. **BELEGT**; **BAULÜCKE nur im Bein** — der Apply-Pfad selbst gehört zu P6/P7, hier gilt nur die Klassifikationsregel |
@@ -549,7 +550,7 @@ Ein Testname mit **NEU** existiert noch nicht.
 | M-64 | `table Frame` soll `integration_samples` tragen | Neues Feld an der nächsten freien Feld-ID **14**, mit expliziter ID im `.fbs`. Reihenfolge im **einen** Änderungssatz: `.fbs` ändern → `flatc` neu generieren für C++ und Rust → `FELD-IDS.json` nachziehen → Binärfixtures neu erzeugen → beide Leser klassifizieren identisch → `schema_minor` des Wire-Envelopes anheben. Ein alter Leser darf am neuen Feld nicht brechen; ein neuer Leser darf es bei Abwesenheit nicht als 0 lesen. | Bestehend **A9** `pruefe_flatc_drift.py` (Drift 0, jedes Tabellenfeld mit expliziter ID), **A10** `erzeuge_fb_fixtures.py`, **B3c** `EqCopSchemaTest`; alle drei brauchen **NEU** je einen Fall für ID 14. | `.fbs`:216-239; `FELD-IDS.json`; `reservierte-nachrichten-v1.json` (`wire_envelope_schema_minor`). **BELEGT, BAULÜCKE** |
 | M-65 | `evidence_snapshot` soll `ereignisse` tragen | Das Objekt ist `additionalProperties: false` und sein Feldname für SONDE-013 reserviert. Das Belegen ist deshalb **kein additiver Schritt**: es braucht einen `schema_minor`-Bump der Familie P1, einen Eintrag in `belegte_felder` von `reservierte-nachrichten-v1.json`, ein Negativfixture und beidseitige Leser. Ein alter Empfänger, der das Feld nicht kennt, lehnt es nach heutigem Schema ab — die Fassungswahl über `message_family` und `schema_minor` im Envelope ist der einzige zulässige Weg. | Bestehend **A5** `pruefe_v3_vertrag.py` (Summe der Familien, reservierte Namen ohne Nutzlast, Negativfixture je Definition), **A8** `erzeuge_v3_fixtures.py`, **B3c**; alle drei **NEU** um den Fall erweitert. | `eq-ipc-v3.schema.json`:1002-1019; `reservierte-nachrichten-v1.json`. **BELEGT, BAULÜCKE** |
 | M-66 | Die Experimentfamilien dieses Tickets sollen definiert werden | **Drei** Familien: `experiment_begin` und `experiment_abort` wandern aus `reserviert` nach `definiert`; `experiment_manual_result` entsteht **neu und direkt in `definiert`** mit Eigentümer SONDE-013 (§7.1 E-02). Damit steigt `gesamt_erwartet` von **27 auf 28**, die Aufteilung geht von 18/9 auf **21/7**. `pruefe_v3_vertrag.py`:1073-1074 prüft `len(definiert) + len(reserviert) == gesamt_erwartet` gegen die Zahl im Register selbst — das Bein fällt, wenn eine der beiden Seiten nicht mitzieht. Alle drei Familien tragen wie jede steuernde Nachricht die Steuerfelder (`command_id` beziehungsweise `experiment_id`, Zieladresse, `base_revision`, begrenzte `ttl_ms`, Schema-/Capability-Version); die Deadline leitet der Empfänger aus seiner **eigenen** monotonen Uhr ab. Der Versionsschritt ist **Fassung 2** des `wire_envelope_schema_minor`, deren Eintrag alle drei Familien nennt. | Bestehend **A5**; **NEU** **A5**-Fälle `zwei_familien_wandern_von_reserviert_nach_definiert`, `experiment_manual_result_definiert` und `summe_ist_28`; **NEU** **B10** `EqCopIpcTest`-Fall für die C++-Hälfte. | `reservierte-nachrichten-v1.json`; `tools/eq-copilot/pruefe_v3_vertrag.py`:1063-1079; Entwurf §33.3:2051-2090. **BELEGT, BAULÜCKE** — dritte Familie, Summe 28 und Aufteilung 21/7 aus Nacharbeit 1 (§8, D1) |
-| M-67 | Ein neuer Vertragsteil trägt Discriminator, Zieladresse, Revision oder Capability | **Nicht additiv erweiterbar.** Ein neuer Discriminatorzweig ist ein Major-Schritt, kein Minor. Konkret betroffen in diesem Ticket: der Vergleichbarkeits-Umfang, der Alignment-Score (vier Klassen, M-16), die Verdikt-Menge (fünf Aussagen, M-46), der `execution_mode` und die `invalidate_umfang`-Arten. Jede dieser Mengen ist beim ersten Bau **abschließend** zu wählen. | Bestehend **A5** und **B3c** für die heutige Diskriminatorprüfung; **NEU** je ein Negativfixture pro neuem Discriminator. | `eq-copilot/schemas/v3/README.md`; CLAUDE.md („Für v3 sind Discriminator, Zieladresse, Revision und Capability nicht additiv erweiterbar"); SONDE-012 E-C01. **BELEGT, BAULÜCKE** |
+| M-67 | Ein neuer Vertragsteil trägt Discriminator, Zieladresse, Revision oder Capability | **Nicht additiv erweiterbar.** Das heißt: jede Erweiterung eines Discriminators, einer Zieladresse, einer Revision oder einer Capability ist ein **ausdrücklicher Versionsschritt mit Fassungswahl**, den ein Leser der alten Fassung **ablehnt** — nie eine stille Ergänzung. Welche Achse den Schritt trägt, hängt an der erweiterten Menge und ist keine Ermessensfrage: ein neuer oberster Discriminatorzweig kommt mit der **nächsten Fassung des `wire_envelope_schema_minor`** (in diesem Ticket Fassung 2, M-66); eine Änderung am **geschlossenen Capabilitysatz** ist `schema_major`. Beleg für die zweite Achse: `eq-copilot/schemas/v3/README.md` „Capabilities — und warum sie keine eigene Version tragen" — der Satz ist `additionalProperties: false` und alle zehn sind Pflicht, „damit ist jede Aenderung an ihm ein Major-Schritt, und `schema_major` IST seine Version"; SONDE-012 E-C01 meint mit „eine Wire-Erweiterung wäre NAK-27/Major" genau diesen Zehner-Satz, nicht die Familienliste. Beleg für die erste Achse: SONDE-012 hat die neue definierte Familie `session_command` — einen neuen obersten `oneOf`-Zweig (`eq-ipc-v3.schema.json`:16) — als **Fassung 1** des `wire_envelope_schema_minor` ausgeliefert (`reservierte-nachrichten-v1.json`:16-27, `session_command: true` in `fassungen` Eintrag `1`), nicht als Major-Schritt. Konkret betroffen in diesem Ticket: der Vergleichbarkeits-Umfang, der Alignment-Score (vier Klassen, M-16), die Verdikt-Menge (fünf Aussagen, M-46), der `execution_mode` und die `invalidate_umfang`-Arten. Jede dieser Mengen ist beim ersten Bau **abschließend** zu wählen. | Bestehend **A5** und **B3c** für die heutige Diskriminatorprüfung; **NEU** je ein Negativfixture pro neuem Discriminator; **NEU** der Fassungsnachweis selbst: ein Leser der **Fassung 1** lehnt die **Fassung 2** ab (Negativfixture in **A5** und **A8**, **B3c**-Zwilling), statt sie still auf einen bekannten Zweig abzubilden. | `eq-copilot/schemas/v3/README.md`:328-350; `reservierte-nachrichten-v1.json`:7-29; `eq-ipc-v3.schema.json`:16; CLAUDE.md („Für v3 sind Discriminator, Zieladresse, Revision und Capability nicht additiv erweiterbar"); SONDE-012 E-C01. **BELEGT, BAULÜCKE** — Versionsregel korrigiert in Nacharbeit 2 (§9, R2-1) |
 | M-68 | Passagen und Experimente sollen persistent werden | Die Tabellen existieren bereits aus Migration 1 (`passages`, `experiments`, `experiment_events`, `user_verdicts`). Braucht dieses Ticket eine Spalte oder einen Index mehr, ist das **Migration 2** mit Vor- **und** Rückweg im selben Änderungssatz; `migration_1_checksum()` verriegelt den Text der ersten Migration, ein nachträglicher Eingriff dort fällt auf. Ein alter Datenbankeintrag darf nie einen neueren Plugin-State zurücksetzen. | Bestehend **A4** und **A4-SI** für Migration 1 und die Killmatrix; **NEU** `sonde013_store.rs`, Fall `migration_2_has_forward_and_backward_path`, falls Migration 2 nötig wird. | `broker/src/store/migration.rs`:68-135,150-155; Entwurf §33.5:2155-2160. **BELEGT**; **BAULÜCKE nur im Bein**, falls Migration 2 nötig wird — das entscheidet der Bau in Etappe 2 |
 | M-69 | Eine manuelle Passage soll mit dem FL-Projekt reisen | `MainProjectState` ist autoritativ für manuelle Passagen (§33.5). Damit gilt die State-Invariante: neues persistentes Feld zuerst versionieren, Altstände laden, unbekannte Felder zerstören keinen alten Consumer, Save und Load **gemeinsam** testen, und jede persistente Änderung meldet dem Host Dirty-State. Unabhängige Teilversionen für Main-Project-State und Probe-DSP bleiben getrennt. | Bestehend **B2** `EqCopStateMigrationTest` und **A12** `erzeuge_state_fixtures.py`; **NEU** `EqCopSonde013PassageStateTest`, Fälle `save_load_roundtrip_is_byte_identical` und `unknown_newer_field_stays_read_only_with_original_bytes`. | Entwurf §33.5:2135-2142,2155-2160; CLAUDE.md State-Invariante. **BELEGT, BAULÜCKE** |
 | M-70 | Ein Vertrag ändert sich in einer Sprache | Writer, Reader, Migration, Fixtures und **beide** Cross-Language-Verbraucher liegen im selben Änderungssatz. Die vier Beine, die das messen: **A5** (JSON-Vertrag samt Abdeckung), **A8** (JSON-Fixturekorpus bytegleich), **A10** (Binärfixturekorpus bytegleich), **B3c** (C++ klassifiziert wie das Manifest, Urteil **und** Verletzungsmenge). Ein Fixture ohne Verbraucher in beiden Sprachen ist ein Befund. | Bestehend **A5**, **A8**, **A10**, **B3c**; sie sind der Riegel selbst, nicht nur der Test. | Prüfliste §F; Entwurf §33.1; SONDE-005-Gate. **BELEGT** — heute erfüllt, muss erfüllt bleiben |
@@ -730,7 +731,10 @@ deterministisch prüfbar und passt zu den festen Obergrenzen aus §48.1.
 
 > **Ersetzt durch §7.1 nach Nacharbeit 1.** Der Vorschlag unten ist Verlauf.
 > Bindend ist der Wortlaut in §7.1, E-04, in der Fassung aus §8, D2: kein
-> Steuerkopf, Fassung 2 des `wire_envelope_schema_minor`.
+> Steuerkopf, Fassung 2 des `wire_envelope_schema_minor`. Überholt ist damit
+> auch die Einordnung „Major-Schritt" im Vorschlag unten: der Schritt läuft
+> über die Fassung des `wire_envelope_schema_minor`, nicht über `schema_major`
+> (§9, R2-1).
 
 **Frage:** `evidence_invalidate.grund` ist eine geschlossene Menge aus fünf
 Werten (`intervention`, `routing_unbekannt`, `sequenzluecke`, `epochwechsel`,
@@ -883,10 +887,10 @@ der die jeweilige Etappe bindet (5.4).
 
 | Etappe | Inhalt | Kanonbeine, die am Ende dieser Etappe grün sein müssen | Bindender Entscheid |
 |---|---|---|---|
-| **A — Vertragsrunde** | `experiment_begin` und `experiment_abort` definieren, die neue Familie `experiment_manual_result` definieren und im Register verbrennen (§7.1 E-02), `evidence_snapshot.ereignisse` belegen (samt Kohärenzfeldern aus M-11), `grund`-Enum um `material_wechsel` und `messpunkt_wechsel` erweitern, `gesamt_erwartet` auf 28, **Fassung 2** des `wire_envelope_schema_minor` als **einen** Schritt, `integration_samples` als Feld-ID 14 auf der P2-Fläche, alle Fixtures und beide Leser. Matrix M-64 bis M-67, M-73. | A5, A8, A9, A10, A20, B3c, B10, A4 | — (E-02 und E-04 sind in §7.1 entschieden) |
-| **B — Evidenzpfad** | `evidence_snapshot` bekommt Sender in der Sonde und Empfänger im Broker; Kadenz 1 bis 4 Hz mit Reduktion bei Überlast; P10/P50/P95, Abdeckung, Konvergenz. Matrix M-05 als Träger, Voraussetzung für M-11 und M-19. | A4, A5, A22, B3c, B10 | §7.1 E-05 |
-| **C — Metriken in der Sonde** | Momentary 400 ms, True Peak nach M-02, PLR und PSR nach M-03, mehrfenstriger Crest, LRA mit 60-s-Regel, bandweise M/S und Kohärenz, `integration_samples` füllen. Matrix M-01 bis M-12, M-74 bis M-77. | A1, A16, B4, B5, B9, B12, neu `EqCopSonde013DynamicsTest`, `EqCopSonde013StereoGoldenTest`, `EqCopSonde013TruePeakGoldenTest` | §7.1 E-06 (Metriken entstehen in der Sonde) |
-| **D — Interventions-Producer und NAK-47** | Vorallokierter RT→Control-Ring, `audible_intervention_begin/end` aus dem Plugin, erzwungener Ausfade statt `hartAus()`, `recording=false` im `erlaubt`-Term. Matrix M-33 bis M-39, M-58. | A1, A3, A4, A16, B10, neu `EqCopSonde013InterventionRingTest` | §7.1 E-01 (nur der Oversize-Zweig) |
+| **A — Vertragsrunde** | `experiment_begin` und `experiment_abort` definieren, die neue Familie `experiment_manual_result` definieren und im Register verbrennen (§7.1 E-02), `evidence_snapshot.ereignisse` belegen (samt Kohärenzfeldern aus M-11), `grund`-Enum um `material_wechsel` und `messpunkt_wechsel` erweitern, `gesamt_erwartet` auf 28, **Fassung 2** des `wire_envelope_schema_minor` als **einen** Schritt, `integration_samples` als Feld-ID 14 auf der P2-Fläche, alle Fixtures und beide Leser. Matrix M-64 bis M-67, M-70 bis M-73. | A5, A8, A9, A10, A20, B3c, B10, A4 | — (E-02 und E-04 sind in §7.1 entschieden) |
+| **B — Evidenzpfad** | `evidence_snapshot` bekommt Sender in der Sonde und Empfänger im Broker; Kadenz 1 bis 4 Hz mit Reduktion bei Überlast; P10/P50/P95, Abdeckung, Konvergenz. Matrix M-05. Diese Etappe ist Voraussetzung für M-11 (Etappe C) und M-19 (Etappe F), übernimmt sie aber nicht. | A4, A5, A22, B3c, B10 | §7.1 E-05 |
+| **C — Metriken in der Sonde** | Momentary 400 ms, True Peak nach M-02, PLR und PSR nach M-03, mehrfenstriger Crest, LRA mit 60-s-Regel, bandweise M/S und Kohärenz, `integration_samples` füllen, **eigenständiger Peakpfad** im Detektor (Peaksteigung und Crest lösen auch ohne Flussüberschreitung aus, M-86). Matrix M-01 bis M-04, M-06 bis M-12, M-74 bis M-77, M-86. M-05 ist der Transport desselben Ereignisstroms und liegt bei Etappe B. | A1, A16, B4, B5, B9, B12, neu `EqCopSonde013DynamicsTest`, `EqCopSonde013StereoGoldenTest`, `EqCopSonde013TruePeakGoldenTest`, dazu die drei **B5**-Fälle des Peakpfads `short_impulse_triggers_peak_path_only`, `flux_event_carries_flux_quality` und `both_paths_yield_one_event` (M-86) | §7.1 E-06 (Metriken entstehen in der Sonde) |
+| **D — Interventions-Producer und NAK-47** | Vorallokierter RT→Control-Ring, `audible_intervention_begin/end` aus dem Plugin, erzwungener Ausfade statt `hartAus()`, `recording=false` im `erlaubt`-Term. Matrix M-33 bis M-39, M-58, M-78. | A1, A3, A4, A16, B10, neu `EqCopSonde013InterventionRingTest`, A22 und A24 mit aktivem Ring (M-78) | §7.1 E-01 (nur der Oversize-Zweig) |
 | **E — Passage und Fingerprint** | Passageobjekt, Fingerprint, Store-Anbindung, `MainProjectState`-Persistenz mit Save/Load-Symmetrie und Host-Dirty. Matrix M-25 bis M-32, M-68, M-69. | A4, A4-SI, A12, B2, B4, neu `EqCopSonde013PassageStateTest`, `EqCopSonde013FingerprintGoldenTest` | — |
 | **F — PRE/POST-Join** | v3-Paarbildung, Alignment mit vier Klassen, Coverage, Herabstufungen, `raw_project_frame_key` gegen `aligned_frame_key`. Matrix M-13 bis M-24. | A4, A22, A24, anzulegen `broker/tests/sonde013_prepost.rs`, `EqCopSonde013PrePostGoldenTest` | — |
 | **G — Experiment `manual_external`** | Begin, Abort, Ergebnisweg über `experiment_manual_result` (§7.1 E-02), Match-Gain, Blindbindung, vier Auswertungsachsen, fünf Verdikte, zwei Bestandsdeckel statt Wanduhr (§7.1 E-03), Rekonstruktion über Sitzungsende und Neustart hinweg. Matrix M-40 bis M-51, M-59. | A4, A4-SI, A5, anzulegen `broker/tests/sonde013_experiment.rs`, `EqCopSonde013ExperimentUiTest`, `EqCopSonde013ExperimentGoldenTest` | — (E-02 und E-03 sind in §7.1 entschieden) |
@@ -894,6 +898,13 @@ der die jeweilige Etappe bindet (5.4).
 
 Etappen C, E und F sind untereinander unabhängig und können in beliebiger
 Reihenfolge laufen; H setzt alle voraus.
+
+**Jede der 86 Matrixzeilen liegt in genau einer Etappe** (geprüft in
+Nacharbeit 2, §9, R2-3). Vier davon sind Regressionswachen, die schon heute
+erfüllt sind: M-70, M-71 und M-72 stehen bei **A**, weil dort der Vertrag,
+der `.fbs` und die Werkzeugköpfe zuerst angefasst werden, M-76 bei **C**;
+alle vier müssen am Ende **jeder** folgenden Etappe grün bleiben. Das ist
+keine zweite Zuordnung, sondern die Zusage der Zeilen selbst.
 
 ### 5.2 Ticketpfade — der spätere Prüfbereich
 
@@ -938,8 +949,11 @@ ein Vertragsfehler zuerst auffällt (§8, D1 und D2):
   erfundener Steuerkopf wäre ein Befund, kein Fortschritt.
 
 `eq-copilot/plugin/core/analysis/FeatureEngine.h` steht doppelt im
-Prüfbereich: für den Transport des Ereignisstroms (M-05) **und** für den
-eigenständigen Peakpfad, der heute fehlt (M-86, §8, D6).
+Prüfbereich: für den Transport des Ereignisstroms (M-05, Etappe B) **und** für
+den eigenständigen Peakpfad, der heute fehlt (M-86, Etappe C; §8, D6 und §9,
+R2-3). Den Peakpfad messen die drei **B5**-Fälle
+`short_impulse_triggers_peak_path_only`, `flux_event_carries_flux_quality` und
+`both_paths_yield_one_event`; ohne sie ist Etappe C nicht abgeschlossen.
 
 ### 5.3 Risiken
 
@@ -1125,7 +1139,9 @@ Defekten; alle sieben sind an der Quelle bestätigt und in dieser Nacharbeit
 geschlossen (§8). Nächster Schritt ist die **Wiederprüfung 1** durch einen
 erneut frischen, lesenden Codex-Thread über §3, §4, §5, §7 und §8 gegen
 Gate-Text, Entwurf, Verträge und Code am neuen `HEAD`. Erst nach PASS oder
-Konvergenzentscheid beginnt Etappe 2 mit einem frischen Opus-Worker.
+Konvergenzentscheid beginnt Etappe 2 mit einem frischen Opus-Worker. Die
+Wiederprüfung 1 ist inzwischen gefahren; ihr Ergebnis und der daraus folgende
+nächste Schritt stehen in §9.
 
 ---
 
@@ -1241,9 +1257,8 @@ Messfenster" entfällt im v3-Pfad; er ist v2-Erbe (`broker/src/lib.rs`:809-826,
 Plan §5.7) und bleibt als Vorläufer nur benannt. Im v3-Pfad gilt: Eine Passage
 bindet an genau eine Transportepoche (§32.4). Ein Seek, ein Loop-Wrap innerhalb
 der Passage (Loop kürzer als die Passage) oder ein Drop während der laufenden
-Passagenmessung invalidiert diese Messung (M-53, Grund `epochwechsel`
-beziehungsweise `sequenzluecke`); die Messung beginnt mit der nächsten gültigen
-Epoche neu, und kein Frame, der eine Grenze überspannt, geht in eine
+Passagenmessung invalidiert diese Messung (M-53); die Messung beginnt mit der
+nächsten gültigen Epoche neu, und kein Frame, der eine Grenze überspannt, geht in eine
 Paarauswertung ein (B5-Garantie aus SONDE-009). Ein Loop-Wrap an der
 Passagengrenze (Loop deckt die Passage vollständig) beendet einen Durchlauf und
 beginnt den nächsten; das ist keine Herabstufung. Die drei übrigen
@@ -1252,6 +1267,12 @@ Fensters, aktive Messzeit um mehr als 10 % verschieden, verschiedene Host-PIDs.
 
 **Geändert:** M-23 (drei Gründe statt vier, Ausgangszustand entsprechend),
 M-53 (Passagenbindung und die Abgrenzung des Loop-Wraps an der Grenze).
+
+**Nachgeschärft in Nacharbeit 2 (§9, R2-2):** Welchen Grund welcher Auslöser
+trägt, stand hier zunächst als „`epochwechsel` beziehungsweise
+`sequenzluecke`" und war damit nicht entscheidbar. Die eindeutige Zuordnung —
+Seek und Loop-Wrap innerhalb der Passage `epochwechsel`, Drop `sequenzluecke` —
+steht jetzt in M-53 und wird dort auch gemessen.
 
 **Tests:** `each_downgrade_reason_falls_alone` auf drei Fälle; neu in
 `sonde013_taint.rs` `seek_inside_passage_invalidates_instead_of_downgrading`
@@ -1395,4 +1416,185 @@ keine Zeile entfallen.
 
 Keine Urteilsmarke und kein Belegfeld: diese Runde ist Nacharbeit an der
 Spezifikation, kein Bau- und kein Prüfurteil. Das Urteil über die Matrix fällt
-die Wiederprüfung 1 (§7.3).
+die Wiederprüfung 1 (§7.3) — gefahren, Ergebnis in §9.
+
+---
+
+## 9. Nacharbeit 2 nach Wiederprüfung 1 (2026-09-03)
+
+Wiederprüfung 1: Codex `gpt-5.6-sol`, Effort high, lesend, Thread
+`01a06942-e2a8-70b3-8bde-45ca621e859d`, `HEAD` vor und nach der Prüfung
+`ca20f3ab9c757540b6b7da36576e43d6755bc3e0`. Der Lauf gibt **keine
+URTEIL-Zeile** aus; der Dirigent wertet ihn als **NEEDS_WORK**. Er bestätigt
+alle sieben Befunde der Matrixprüfung 1 als geschlossen und erhebt **zwei
+Defekte** und **eine Lücke**. Rohausgabe
+`docs/beweise/roh/SONDE-013-wiederpruefung-1-ca20f3a.txt`, Auftrag
+`docs/beweise/roh/SONDE-013-wiederpruefung-1-auftrag.txt`, Auftrag dieser Runde
+`docs/beweise/roh/SONDE-013-nacharbeit-2-auftrag.txt`. Der Dokuriegel konnte im
+Codex-Lauf wegen eines lokalen Python-Startfehlers des Prüfers nicht laufen; er
+ist für diese Runde lokal gefahren.
+
+Alle drei Punkte sind vom Dirigenten an der Quelle geprüft; je Punkt stehen
+unten der Wortlaut, die Regel und die geänderte Stelle.
+
+### 9.1 R2-1 — Versionsschritt eines neuen Discriminatorzweigs (M-66 gegen M-67)
+
+**Befund, wörtlich (Codex, P1, Manifestzeile 551):**
+
+> DEFEKT: Sobald `experiment_manual_result` in `definiert` aufgenommen wird,
+> erzwingt `pruefe_namen` (Zeilen 1064–1069) dafür einen neuen obersten
+> `oneOf`-/`type`-Discriminatorzweig. M-66 versioniert diesen hier mit
+> `schema_minor = 2`, während M-67 unmittelbar danach für jeden neuen
+> Discriminatorzweig ausdrücklich einen Major-Schritt und keinen Minor
+> verlangt; Etappe A kann daher beide Matrixzeilen nicht gleichzeitig erfüllen.
+> Das widerspricht zudem der strikten v3-Vertragsinvariante in CLAUDE.md
+> [im Rohtext als Verweis auf `CLAUDE.md`:196-199].
+
+Der Mechanismus ist an der Quelle bestätigt: `pruefe_v3_vertrag.py`:1064-1069
+liest die `oneOf`-Zweige des Schemas und vergleicht sie mit `definiert` — jeder
+neu definierte Name zieht also genau einen neuen obersten Zweig nach sich.
+
+**Regel (03.09.2026): M-66 ist richtig, M-67 wird korrigiert.** Der Vertrag
+kennt **zwei** Versionsachsen, und M-67 hatte sie zusammengeworfen.
+
+- `eq-copilot/schemas/v3/README.md`:328-350 („Capabilities — und warum sie
+  keine eigene Version tragen") schreibt den Major-Schritt ausschließlich für
+  Änderungen am **geschlossenen Capabilitysatz** vor: er ist
+  `additionalProperties: false`, alle zehn Namen sind Pflicht, „damit ist jede
+  Aenderung an ihm ein Major-Schritt, und `schema_major` IST seine Version".
+  SONDE-012 E-C01 meint mit „eine Wire-Erweiterung wäre NAK-27/Major" genau
+  diesen Zehner-Satz.
+- Für einen neuen **Discriminatorzweig** gilt statt dessen der Präzedenzfall
+  aus SONDE-012: die neue definierte Familie `session_command` ist ein neuer
+  oberster `oneOf`-Zweig (`eq-ipc-v3.schema.json`:16) und wurde als **Fassung
+  1** des `wire_envelope_schema_minor` ausgeliefert
+  (`reservierte-nachrichten-v1.json`:16-27), nicht als Major-Schritt.
+- „Nicht additiv erweiterbar" (`CLAUDE.md`:198-199) heißt deshalb **nicht**
+  „immer Major", sondern: jede Erweiterung eines Discriminators, einer
+  Zieladresse, einer Revision oder einer Capability ist ein ausdrücklicher
+  Versionsschritt mit Fassungswahl, den ein Leser der alten Fassung **ablehnt**
+  — nie eine stille Ergänzung. Welche Achse den Schritt trägt, entscheidet die
+  erweiterte Menge: Discriminator ergibt die nächste Fassung des
+  `wire_envelope_schema_minor` (hier Fassung 2), der Capabilitysatz ergibt
+  `schema_major`.
+
+**Verlauf — der ersetzte Wortlaut von M-67:**
+
+> **Nicht additiv erweiterbar.** Ein neuer Discriminatorzweig ist ein
+> Major-Schritt, kein Minor.
+
+Unverändert bleiben in M-67 die Aufzählung der betroffenen Mengen
+(Vergleichbarkeits-Umfang, Alignment-Score, Verdikt-Menge, `execution_mode`,
+`invalidate_umfang`-Arten) und die Zusage, sie beim ersten Bau abschließend zu
+wählen.
+
+**Geändert:** M-67 (Zusage, Test- und Quellenspalte). M-66 bleibt unverändert.
+
+**Tests:** die Negativfixtures je neuem Discriminator bleiben; neu kommt der
+Fassungsnachweis selbst hinzu — ein Leser der **Fassung 1** lehnt die **Fassung
+2** ab (Negativfixture in **A5** und **A8**, **B3c**-Zwilling), statt sie still
+auf einen bekannten Zweig abzubilden. In M-66 war dieser Fall nicht genannt;
+der Fließtext von §3.8 verlangte ihn bereits.
+
+### 9.2 R2-2 — Drop trägt genau einen Invalidierungsgrund (M-53)
+
+**Befund, wörtlich (Codex, P2, Manifestzeile 528):**
+
+> DEFEKT: Für einen Drop während der Passagenmessung verlangt M-53 zunächst
+> pauschal `epochwechsel`, weil Drop in der Auslöserliste der ersten Aussage
+> steht, nennt später aber `epochwechsel` beziehungsweise `sequenzluecke`. Da
+> beide Werte laut `eq-ipc-v3.schema.json:1092` gültig sind und die geplanten
+> Tests den konkreten Grund nicht prüfen, kann eine widersprüchliche
+> Implementierung trotzdem grün werden; die Zuordnung für Drop muss innerhalb
+> der Zeile eindeutig sein.
+
+An der Quelle bestätigt: `eq-copilot/schemas/v3/eq-ipc-v3.schema.json`:1092
+führt `sequenzluecke` und `epochwechsel` beide in derselben geschlossenen
+`grund`-Enum — die Zeile konnte also beides meinen.
+
+**Regel (03.09.2026):** Die Zuordnung folgt dem bereits bewiesenen Zeitvertrag
+aus SONDE-009 — „Drop zaehlt als Segment, alles andere als Epoche"
+(`docs/beweise/SONDE-009.md`:4544, gemessen in **B5** §F als G1 „Drop
+(kFlagLueckeDavor): zaehlt als SEGMENT, nicht als Epoche" und G2 „Seek waehrend
+Wiedergabe: zaehlt als EPOCHE, nicht als Segment"). Daraus folgt eindeutig:
+
+| Auslöser | Grund auf dem Draht |
+|---|---|
+| Drop | `sequenzluecke` |
+| Seek | `epochwechsel` |
+| Loop-Wrap **innerhalb** der Passage | `epochwechsel` |
+| jeder andere Kontinuitätsbruch | `epochwechsel` |
+
+M-53 nennt die Zuordnung jetzt in einem Satz je Auslöser, ohne
+„beziehungsweise". Dieselbe Zuordnung steht in M-23 und in §8.3.
+
+**Geändert:** M-53 (Zusage und Testspalte), M-23 (Grund je Auslöser benannt),
+§8.3 (das mehrdeutige „beziehungsweise" entfernt und die Stelle als
+nachgeschärft gekennzeichnet).
+
+**Tests:** `epoch_change_invalidates_open_evidence` misst den **Grundwert je
+Auslöser** — Seek zu `epochwechsel`, Loop-Wrap innerhalb zu `epochwechsel`,
+Drop zu `sequenzluecke`. Ein vertauschter Grund fällt, statt grün zu werden.
+
+### 9.3 R2-3 — M-86 und vier weitere Zeilen ohne Bauetappe (§5.1)
+
+**Befund, wörtlich (Codex, P2, Manifestzeile 462):**
+
+> LÜCKE: Die neue Zeile M-86 schließt D6 in der Matrix, wird aber von keiner
+> Bauetappe in §5.1 erfasst: Etappe C nennt weiterhin nur M-01 bis M-12 und
+> M-74 bis M-77, und die späteren Etappen überspringen M-86 ebenfalls. Dadurch
+> kann der Etappenplan abgeschlossen werden, ohne den eigenständigen Peakpfad
+> und seine drei B5-Fälle zu bauen; M-86 muss samt Tests der
+> Metrik-/FeatureEngine-Etappe zugeordnet werden.
+
+**Regel (03.09.2026, Lücke vom Dirigenten entschieden):** M-86 gehört zu
+**Etappe C** („Metriken in der Sonde"); die Etappenzeile nennt M-86 und die
+drei B5-Fälle `short_impulse_triggers_peak_path_only`,
+`flux_event_carries_flux_quality` und `both_paths_yield_one_event`. §5.2 führt
+dieselben drei Fälle an der Stelle, an der `FeatureEngine.h` doppelt im
+Prüfbereich steht.
+
+Die zugleich verlangte Vollständigkeitsprüfung „jede Matrixzeile M-01 bis M-86
+in genau einer Etappe" hat neben M-86 **vier weitere unzugeordnete Zeilen** und
+**eine Doppelzuordnung** gefunden:
+
+| Zeile | Vorher | Jetzt | Warum dort |
+|---|---|---|---|
+| M-70 | keine Etappe | **A** | Writer, Reader, Migration, Fixtures und beide Cross-Language-Verbraucher liegen im selben Änderungssatz — der entsteht in der Vertragsrunde |
+| M-71 | keine Etappe | **A** | Codegen-Drift 0 (**A9**); der einzige `.fbs`-Eingriff dieses Tickets, `integration_samples` als Feld-ID 14, liegt in A |
+| M-72 | keine Etappe | **A** | Runnerkopf, Skriptkopf und Manifestkopf werden zuerst in A angefasst |
+| M-78 | keine Etappe | **D** | der Zweig, der neu gemessen wird, ist **A22** und **A24** mit **aktivem Interventionsring** — der Ring entsteht in D |
+| M-86 | keine Etappe | **C** | eigenständiger Peakpfad im Detektor der Sonde |
+| M-05 | **B und C** | **B** | M-05 ist ausdrücklich „nur der Transport"; der Bereichsausdruck „M-01 bis M-12" bei C hatte ihn stillschweigend mitgenommen |
+
+Damit liegen alle 86 Zeilen in genau einer Etappe, ohne Lücke und ohne
+Doppelung. M-70, M-71, M-72 und M-76 sind Regressionswachen: sie stehen an der
+Etappe ihres ersten Eingriffs und müssen am Ende **jeder** folgenden Etappe
+grün bleiben — das ist die Zusage der Zeilen selbst, keine zweite Zuordnung.
+Eine neue Zusage ist nicht entstanden; geändert wurde ausschließlich die
+Zuordnung.
+
+**Geändert:** §5.1 (Etappen A, B, C und D sowie der Satz unter der Tabelle),
+§5.2 (die drei B5-Fälle des Peakpfads benannt).
+
+### 9.4 Bilanz der Runde
+
+| Punkt | Klasse | Regel greift in | Stand danach |
+|---|---|---|---|
+| R2-1 | P1 Vertrag | M-67 | M-67 nennt beide Versionsachsen und deckt sich mit M-66 |
+| R2-2 | P1 Invalidierung | M-53, M-23, §8.3 | Grund je Auslöser eindeutig und gemessen |
+| R2-3 | P2 Bauplan | §5.1, §5.2 | 86 von 86 Zeilen in genau einer Etappe |
+
+Die **Zählung in §3.11 ändert sich nicht**: es ist keine Matrixzeile
+hinzugekommen, entfallen oder in eine andere Belegklasse gewandert — R2-1 und
+R2-2 schärfen den Wortlaut zweier Zusagen, R2-3 ordnet bestehende Zeilen
+Bauetappen zu. Weiterhin 86 Zeilen, 4 vollständig gedeckt, 7 mit BAULÜCKE nur
+im Bein, 71 mit BAULÜCKE in Implementierung und Messung, 4 ENTSCHIEDEN, 0
+ENTSCHEIDEN-VORSCHLAG, 0 OFFEN.
+
+Keine Urteilsmarke und kein Belegfeld: auch diese Runde ist Nacharbeit an der
+Spezifikation, kein Bau- und kein Prüfurteil. Nächster Schritt ist die
+**Wiederprüfung 2** durch einen erneut frischen, lesenden Codex-Thread über §3,
+§4, §5, §7, §8 und §9 gegen Gate-Text, Entwurf, Verträge und Code am neuen
+`HEAD`. Erst nach PASS oder Konvergenzentscheid beginnt Etappe 2 mit einem
+frischen Opus-Worker.

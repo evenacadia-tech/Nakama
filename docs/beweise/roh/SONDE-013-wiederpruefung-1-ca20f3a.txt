@@ -1,0 +1,12 @@
+Die sieben ursprünglichen Befunde wurden in den vorgesehenen Manifeststellen nachgezogen, der Fixdiff erzeugt jedoch einen Versionswiderspruch, eine uneindeutige Drop-Klassifikation und eine unzugeordnete Matrixzeile. Geprüft wurden ausschließlich der gebundene Diff und die genannten Quellen; `git diff --check` war sauber. Der Dokuriegel konnte wegen eines lokalen Python-Startfehlers nicht ausgeführt werden.
+
+Full review comments:
+
+- [P1] Versioniere die neue Familie widerspruchsfrei — C:\Users\phili\Projekte\Nakama\docs\beweise\SONDE-013.md:551-551
+  DEFEKT: Sobald `experiment_manual_result` in `definiert` aufgenommen wird, erzwingt `pruefe_namen` (Zeilen 1064–1069) dafür einen neuen obersten `oneOf`-/`type`-Discriminatorzweig. M-66 versioniert diesen hier mit `schema_minor = 2`, während M-67 unmittelbar danach für jeden neuen Discriminatorzweig ausdrücklich einen Major-Schritt und keinen Minor verlangt; Etappe A kann daher beide Matrixzeilen nicht gleichzeitig erfüllen. Das widerspricht zudem der strikten v3-Vertragsinvariante in [CLAUDE.md](C:/Users/phili/Projekte/Nakama/CLAUDE.md#L196-L199).
+
+- [P2] Ordne Drop genau einem Invalidierungsgrund zu — C:\Users\phili\Projekte\Nakama\docs\beweise\SONDE-013.md:528-528
+  DEFEKT: Für einen Drop während der Passagenmessung verlangt M-53 zunächst pauschal `epochwechsel`, weil Drop in der Auslöserliste der ersten Aussage steht, nennt später aber `epochwechsel` beziehungsweise `sequenzluecke`. Da beide Werte laut `eq-ipc-v3.schema.json:1092` gültig sind und die geplanten Tests den konkreten Grund nicht prüfen, kann eine widersprüchliche Implementierung trotzdem grün werden; die Zuordnung für Drop muss innerhalb der Zeile eindeutig sein.
+
+- [P2] Ordne M-86 einer Bauetappe zu — C:\Users\phili\Projekte\Nakama\docs\beweise\SONDE-013.md:462-462
+  LÜCKE: Die neue Zeile M-86 schließt D6 in der Matrix, wird aber von keiner Bauetappe in §5.1 erfasst: Etappe C nennt weiterhin nur M-01 bis M-12 und M-74 bis M-77, und die späteren Etappen überspringen M-86 ebenfalls. Dadurch kann der Etappenplan abgeschlossen werden, ohne den eigenständigen Peakpfad und seine drei B5-Fälle zu bauen; M-86 muss samt Tests der Metrik-/FeatureEngine-Etappe zugeordnet werden.

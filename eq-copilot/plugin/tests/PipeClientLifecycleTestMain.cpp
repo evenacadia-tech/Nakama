@@ -780,6 +780,170 @@ void pipeclient_zaehlervertrag()
     }
 }
 
+/// Obere Schranke der R5-Zusage: Restzeit einer laufenden
+/// `WaitNamedPipeW(200 ms)` plus hoechstens eine Runde. Nominal rund 400 ms;
+/// 1.500 ms lassen Scheduling zu und liegen weit unter den >= 4.000 ms der
+/// vollen Warteschleife — die Schranke TRENNT also "Abbruch hat gegriffen" von
+/// "Schleife lief zu Ende".
+constexpr int kR5FristMs = 1500;
+
+/// Ein v2-Peer, der annimmt, das Hello liest und — je nach Schalter — ein
+/// welcome schickt oder eben nicht. Er nimmt WIEDERHOLT an, damit sich auch
+/// eine Backoff-Folge ueber mehrere Runden messen laesst.
+///
+/// `welcome == false` ist die Lage D-K06/D-P02 auf dem v2-Pfad: die
+/// Serverpruefung ist bestanden und das Hello gelesen, aber es kommt keine
+/// Antwort. Die Verbindung bleibt offen, damit der Client wirklich in seine
+/// Lesefrist laeuft statt ein Ende zu sehen.
+struct V2Peer
+{
+    HANDLE server = INVALID_HANDLE_VALUE;
+    std::thread thread;
+    std::atomic<bool> laeuft { true };
+    std::atomic<bool> angenommen { false }, helloGelesen { false };
+    std::atomic<int>  welcomes { 0 }, verbindungen { 0 };
+    juce::String name;
+
+    bool starten (const juce::String& pipeName, bool welcome)
+    {
+        name = pipeName;
+        server = pipeAnlegen (pipeName);
+        if (server == INVALID_HANDLE_VALUE)
+            return false;
+        thread = std::thread ([this, welcome]
+        {
+            std::string frame;
+            while (laeuft.load())
+            {
+                if (! verbinden (server))
+                    break;
+                angenommen.store (true);
+                ++verbindungen;
+                if (liesFrame (server, frame))
+                {
+                    helloGelesen.store (true);
+                    if (welcome)
+                    {
+                        if (schreibeFrame (server,
+                                R"({"type":"welcome","protocol_version":2,"broker_version":"test","session_token":"tok"})"))
+                            ++welcomes;
+                        while (laeuft.load() && liesFrame (server, frame))
+                            schreibeFrame (server,
+                                R"({"type":"heartbeat_ack","seq":0,"konflikt":false})");
+                    }
+                    else
+                    {
+                        // NICHTS antworten. Der Client laeuft in seine
+                        // Lesefrist und schliesst; erst dann faellt `liesFrame`.
+                        while (laeuft.load() && liesFrame (server, frame)) {}
+                    }
+                }
+                DisconnectNamedPipe (server);
+            }
+            pipeSchliessen (server);
+        });
+        return true;
+    }
+
+    /// Beendet den Peer und damit eine stehende Verbindung. Idempotent.
+    void stoppen()
+    {
+        if (! laeuft.exchange (false))
+        {
+            if (thread.joinable()) thread.join();
+            return;
+        }
+        if (thread.joinable())
+        {
+            wecken (name);   // loest ein wartendes `ConnectNamedPipe`
+            thread.join();
+        }
+    }
+    ~V2Peer() { stoppen(); }
+};
+
+/// D-K06, D-K10, D-K11 auf dem v2-Pfad.
+///
+/// **Nacharbeit Runde 1, Defekt 3.** Die drei Zeilen waren als „gemessen"
+/// gefuehrt, ohne dass der v2-Test sie je angefahren haette:
+/// `welcome_bleibt_aus` fehlte ganz, und die beiden Authausgaenge
+/// `erwartung_ungueltig` und `server_pid_nicht_ermittelbar` gab es nur auf dem
+/// Control-Pfad.
+void pipeclient_authausgaenge_und_welcome_ausbleiben()
+{
+    // ── D-K06: verifiziert, Hello gelesen — aber kein welcome ────────────
+    {
+        const auto name = testName ("v2-welcome-aus");
+        V2Peer peer;
+        const bool aufbau = peer.starten (name, false);
+        auto c = client (name, [] { return hello ("99999999999999999999999999999999"); });
+        c->start();
+        const bool gelesen = warteAuf (8000, [&] { return peer.helloGelesen.load(); });
+        // Das ENDE der Runde abwarten: `status == getrennt` bei bereits
+        // gezaehlter Serverpruefung. Erst dort steht der Aufraeumzustand aus
+        // `PipeClient.cpp:625-635`, und die naechste Runde hat noch nichts
+        // ueberschrieben.
+        const bool rundeEnde = warteAuf (12000, [&] {
+            const auto z = c->snapshot();
+            return z.serverPruefungen >= 1
+                && z.status == eqcop::PipeClient::Status::getrennt;
+        });
+        const auto s = c->snapshot();
+        c->stop();
+        peer.stoppen();
+        pruefe (aufbau && gelesen && rundeEnde && s.protokollVersion == 0
+                    && s.serverPruefungen == 1
+                    && s.serverPruefstatus == nakama::ipc::ServerPruefStatus::nichtGeprueft
+                    && s.serverPrueffehler == nakama::ipc::ServerPruefFehler::keiner,
+                "pipeclient_authausgaenge_und_welcome_ausbleiben",
+                "welcome_bleibt_aus: Hello gelesen " + juce::String ((int) gelesen)
+                    + ", Pruefungen " + juce::String ((juce::int64) s.serverPruefungen)
+                    + ", Protokoll " + juce::String (s.protokollVersion)
+                    + " (erwartet 0), Status " + juce::String ((int) s.serverPruefstatus)
+                    + " (erwartet nichtGeprueft)");
+    }
+
+    // ── D-K10, D-K11: beide bleiben Sicherheitsfaelle und parken ──────────
+    struct Fall { const char* name; nakama::ipc::ServerPruefFehler fehler; bool ueberErwartung; };
+    for (const auto& f : std::vector<Fall> {
+             { "erwartung_ungueltig", nakama::ipc::ServerPruefFehler::erwartungUngueltig, true },
+             { "server_pid_nicht_ermittelbar",
+               nakama::ipc::ServerPruefFehler::serverPidNichtErmittelbar, false } })
+    {
+        const auto name = testName (f.name);
+        V2Peer peer;
+        const bool aufbau = peer.starten (name, false);
+        // Eine LEERE Erwartung ist der Fall `erwartungUngueltig` selbst; der
+        // zweite Ausgang laeuft ueber die vorhandene Injektion.
+        auto erwartung = f.ueberErwartung
+            ? nakama::ipc::ServerErwartung {}
+            : nakama::ipc::serverErwartungFuerEigenprozessTest();
+        if (! f.ueberErwartung)
+            erwartung.testFehler = f.fehler;
+        auto c = client (name, [] { return hello ("aaaaaaaabbbbbbbbccccccccdddddddd"); },
+                         std::chrono::milliseconds { 5000 }, erwartung);
+        c->start();
+        const bool fiel = warteAuf (5000, [&] {
+            const auto z = c->snapshot();
+            return z.serverPruefstatus
+                       == nakama::ipc::ServerPruefStatus::belegtAberUnverifiziert
+                && z.serverPrueffehler == f.fehler;
+        });
+        const int weitere = weitereVersucheIn (*c, 1500);
+        const auto s = c->snapshot();
+        c->stop();
+        peer.stoppen();
+        pruefe (aufbau && fiel && weitere == 0 && ! peer.helloGelesen.load()
+                    && s.serverPruefungen == 1,
+                "pipeclient_authausgaenge_und_welcome_ausbleiben",
+                juce::String (f.name) + ": fiel " + juce::String ((int) fiel)
+                    + ", weitere Versuche " + juce::String (weitere)
+                    + ", Hello gelesen " + juce::String ((int) peer.helloGelesen.load())
+                    + " (erwartet 0), Pruefungen "
+                    + juce::String ((juce::int64) s.serverPruefungen));
+    }
+}
+
 /// D-P01, D-P02, D-P05, D-P06 auf dem v2-Pfad, ueber Versuchsstempel (W-H3).
 /// Die volle Folge bis zum Deckel kostet 23,5 s reine Wartezeit und wird auf
 /// dem v3-Zwilling gefahren; hier werden die ersten Verdopplungen gemessen.
@@ -829,6 +993,95 @@ void pipeclient_backoff_folge_und_deckel_sind_beobachtbar()
                         + juce::String ((juce::int64) s[2])
                     : juce::String ("unvollstaendig"))
                     + " ms — vor R1 parkt der Thread nach dem ersten");
+    }
+    // `verifiziert_ohne_welcome` (D-P02): der Server authentisiert und liest
+    // das Hello, antwortet aber nie. `eineVerbindung` gibt `false`
+    // (`PipeClient.cpp:637` liefert `welcomeKam`), der Backoff faellt also
+    // NICHT zurueck, sondern verdoppelt weiter.
+    {
+        const auto name = testName ("v2-backoff-welcome");
+        V2Peer peer;
+        const bool aufbau = peer.starten (name, false);
+        auto c = client (name, [] { return hello ("77777777777777777777777777777777"); });
+        c->start();
+        const auto s = versuchsStempel (*c, 3, 40000);
+        const auto letzter = c->snapshot();
+        c->stop();
+        peer.stoppen();
+        bool alleDa = true;
+        for (auto v : s) alleDa = alleDa && v >= 0;
+        // Waere die Ruecksetzung an den Auth-Erfolg gebunden statt an die
+        // Rueckgabe, blieben die Abstaende gleich.
+        const bool waechst = alleDa && (s[2] - s[1]) > (s[1] - s[0]);
+        pruefe (aufbau && waechst && letzter.serverPruefungen >= 2,
+                "pipeclient_backoff_folge_und_deckel_sind_beobachtbar",
+                "verifiziert_ohne_welcome Stempel " + (alleDa
+                    ? juce::String ((juce::int64) s[0]) + " "
+                        + juce::String ((juce::int64) s[1]) + " "
+                        + juce::String ((juce::int64) s[2])
+                    : juce::String ("unvollstaendig"))
+                    + " ms, Pruefungen "
+                    + juce::String ((juce::int64) letzter.serverPruefungen));
+    }
+    // `stehende_verbindung_setzt_zurueck` (D-P01): eine Verbindung STAND und
+    // endete regulaer ⇒ der Backoff faellt aus einer ERHOEHTEN Stufe auf
+    // 500 ms zurueck.
+    //
+    // Nacharbeit Runde 1, Defekt 3: diese Zeile war als „gemessen" gefuehrt,
+    // ohne dass ein v2-Fall je eine stehende Verbindung hergestellt haette.
+    // Der Aufstieg VOR der Verbindung ist der Kern: bei 500 ms Ausgangswert
+    // sind „zurueckgesetzt" und „nicht zurueckgesetzt" nicht unterscheidbar.
+    {
+        const auto name = testName ("v2-backoff-reset");
+        auto c = client (name, [] { return hello ("88888888888888888888888888888888"); });
+        c->start();
+        // 1) Aufstieg ohne Peer: Abstaende 500 und 1.000 ⇒ `backoffMs` steht
+        //    danach auf 2.000.
+        const auto aufstieg = versuchsStempel (*c, 3, 12000);
+        bool alleDa = true;
+        for (auto v : aufstieg) alleDa = alleDa && v >= 0;
+        const bool gestiegen = alleDa && (aufstieg[2] - aufstieg[1]) >= 900;
+
+        // 2) Peer an — die naechste Runde verbindet wirklich.
+        V2Peer peer;
+        const bool aufbau = peer.starten (name, true);
+        const bool stand = warteAuf (20000, [&] {
+            return c->snapshot().status == eqcop::PipeClient::Status::verbunden;
+        });
+
+        // 3) Verbindung regulaer beenden und messen, WANN die naechste Runde
+        //    beginnt. 500 ms nominal; ein stehengebliebener Backoff koennte
+        //    1.200 ms nicht unterbieten.
+        //
+        //    Der Anker ist der Moment, in dem der Client das Ende SIEHT, nicht
+        //    der, in dem der Peer schliesst: der v2-Client merkt einen
+        //    Abbruch erst an seinem naechsten Heartbeat-Takt
+        //    (`kHeartbeatMs` = 1.000 ms, `EqCopilotIds.h:23`). Ab
+        //    `peer.stoppen()` gemessen ergaeben sich 1.500 ms — das waere die
+        //    Erkennungslatenz PLUS Backoff und nicht die Groesse, die D-P01
+        //    behauptet.
+        const int vorEnde = c->snapshot().verbindungsVersuche;
+        peer.stoppen();
+        const bool endeGesehen = warteAuf (5000, [&] {
+            return c->snapshot().status != eqcop::PipeClient::Status::verbunden;
+        });
+        const auto t0 = std::chrono::steady_clock::now();
+        const bool neueRunde = endeGesehen && warteAuf (2500, [&] {
+            return c->snapshot().verbindungsVersuche > vorEnde;
+        });
+        const auto verzug = std::chrono::duration_cast<std::chrono::milliseconds> (
+            std::chrono::steady_clock::now() - t0).count();
+        c->stop();
+        pruefe (aufbau && gestiegen && stand && endeGesehen && neueRunde
+                    && verzug >= 350 && verzug <= 1200,
+                "pipeclient_backoff_folge_und_deckel_sind_beobachtbar",
+                "stehende_verbindung_setzt_zurueck: Aufstieg " + (alleDa
+                    ? juce::String ((juce::int64) (aufstieg[1] - aufstieg[0])) + " "
+                        + juce::String ((juce::int64) (aufstieg[2] - aufstieg[1]))
+                    : juce::String ("unvollstaendig"))
+                    + " ms, Verbindung stand " + juce::String ((int) stand)
+                    + ", naechste Runde nach " + juce::String ((juce::int64) verzug)
+                    + " ms (erwartet 350..1200, ohne Reset >= 2000)");
     }
 }
 
@@ -895,42 +1148,72 @@ void pipeclient_parken_uebergeht_den_backoff()
 }
 
 /// D-A03, D-A06, D-A09, D-A12 — Abbruch vor und nach einem erfolgreichen
-/// `CreateFileW`. R5 ist eine Spaetestens-Zusage: gemessen wird der AUSGANG,
-/// keine Mindestdauer.
+/// `CreateFileW`. R5 ist eine Spaetestens-Zusage: gemessen wird der AUSGANG und
+/// die OBERE Schranke `kR5FristMs`, ausdruecklich keine Mindestdauer.
+///
+/// **Nacharbeit Runde 1, Defekt 2.** Die Vor-Open-Faelle liefen gegen einen
+/// nicht existierenden Namen — `CreateFileW` kehrte in Runde 1 mit
+/// `FILE_NOT_FOUND` zurueck, die Wartephase wurde nie beruehrt — und der
+/// `stop()`-Fall mass `dauer < 9000 ms`, also gar nicht die R5-Frist, sondern
+/// nur „nicht ewig". Beides ist hier nachgezogen: belegte Pipe, Abbruch mitten
+/// in der 20 x 200 ms-Warteschleife, Schranke `kR5FristMs`.
 void pipeclient_abbruch_vor_und_nach_createfile()
 {
-    // ── vor dem Oeffnungserfolg ──────────────────────────────────────────
+    // ── vor dem Oeffnungserfolg: BELEGTE Pipe, Abbruch in der Wartephase ──
     for (const bool ueberStop : { true, false })
     {
         const auto name = testName (ueberStop ? "v2-abbruch-vor-stop"
                                               : "v2-abbruch-vor-reconnect");
+        BelegtePipe belegt;
+        const bool aufbau = belegt.anlegen (name);
         auto c = client (name, [] { return hello ("77777777777777777777777777777777"); });
         c->start();
-        warteAuf (2000, [&] { return c->snapshot().verbindungsVersuche >= 1; });
+        // Erst wirklich in die Warteschleife laufen lassen; die 300 ms danach
+        // setzen den Abbruch mitten in die 4-s-Schleife.
+        const bool inSchleife = warteAuf (3000, [&] {
+            return c->snapshot().verbindungsVersuche >= 1;
+        });
+        std::this_thread::sleep_for (std::chrono::milliseconds (300));
         bool ok = false;
+        long long dauer = 0;
+        juce::String zustand;
         if (ueberStop)
         {
             const auto t0 = std::chrono::steady_clock::now();
             c->stop();
-            const auto dauer = std::chrono::duration_cast<std::chrono::milliseconds> (
+            dauer = std::chrono::duration_cast<std::chrono::milliseconds> (
                 std::chrono::steady_clock::now() - t0).count();
+            const auto s = c->snapshot();
             // D-A03: `stop()` joint OHNE Frist und setzt KEINE Zustandsfelder
             // zurueck — der Snapshot bleibt auf `verbindet` stehen. Das ist
-            // ein offener Punkt ausserhalb von R1 und wird hier als
+            // ein offener Punkt ausserhalb von R1 (NAK-144) und wird hier als
             // heutiger Stand gemessen, nicht geaendert.
-            ok = dauer < 9000 && c->snapshot().serverPruefungen == 0;
+            ok = s.serverPruefungen == 0
+              && s.status == eqcop::PipeClient::Status::verbindet;
+            zustand = "Status " + juce::String ((int) s.status) + " (v2 setzt nicht zurueck)";
         }
         else
         {
             const int vorher = c->snapshot().verbindungsVersuche;
+            const auto t0 = std::chrono::steady_clock::now();
             c->reconnect();
-            ok = warteAuf (400, [&] {
+            const bool neu = warteAuf (kR5FristMs, [&] {
                 return c->snapshot().verbindungsVersuche > vorher;
             });
+            dauer = std::chrono::duration_cast<std::chrono::milliseconds> (
+                std::chrono::steady_clock::now() - t0).count();
+            ok = neu && c->snapshot().serverPruefungen == 0;
+            zustand = "Versuche +"
+                    + juce::String (c->snapshot().verbindungsVersuche - vorher);
             c->stop();
         }
-        pruefe (ok, "pipeclient_abbruch_vor_und_nach_createfile",
-                ueberStop ? "stop_vor_open" : "reconnect_vor_open");
+        pruefe (aufbau && inSchleife && ok && dauer < kR5FristMs,
+                "pipeclient_abbruch_vor_und_nach_createfile",
+                juce::String (ueberStop ? "stop_vor_open" : "reconnect_vor_open")
+                    + ": " + juce::String ((juce::int64) dauer) + " ms (R5-Frist "
+                    + juce::String (kR5FristMs)
+                    + " ms; die belegte Warteschleife allein kostet >= 4000 ms), "
+                    + zustand);
     }
 
     // ── nach dem Oeffnungserfolg: der Abbruch trifft waehrend der
@@ -1031,6 +1314,7 @@ int main()
     // NAK-134 — PIPE_BUSY ist Liveness, auch auf dem v2-Pfad (Matrix C-06).
     pipeclient_oeffnungsausgaenge_sind_liveness_oder_sicherheit();
     pipeclient_zaehlervertrag();
+    pipeclient_authausgaenge_und_welcome_ausbleiben();
     pipeclient_parken_uebergeht_den_backoff();
     pipeclient_abbruch_vor_und_nach_createfile();
     pipeclient_backoff_folge_und_deckel_sind_beobachtbar();

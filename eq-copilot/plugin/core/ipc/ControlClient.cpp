@@ -1090,6 +1090,18 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
 
     std::string fehler;
     ServerPruefBericht serverBericht;
+    // NAK-134 Nacharbeit Runde 1, R5: Das Abbruchsignal gehoert der
+    // Verbindungsgeneration, nicht dem Oeffnungsaufruf. Es wird HIER geloest —
+    // und die Generation unmittelbar danach ERNEUT gelesen. `stop()` und
+    // `reconnect()` erhoehen sie VOR `ioAbbrechen()`; ein Abbruch, den das
+    // Loesen verschlucken koennte, hat die Generation also vorher schon
+    // erhoeht und faellt in genau diese zweite Pruefung. Beides gehoert
+    // zusammen: ohne das Loesen bliebe das Signal der vorigen Runde stehen und
+    // keine Verbindung kaeme je zustande, ohne die zweite Pruefung liefe der
+    // Fall aus Defekt 1 weiter (4.009 ms statt der R5-Frist).
+    verbindung.neueGenerationBeginnen();
+    if (sollAbbrechen (generation))
+        return false;
     const bool serverGeoeffnet = verbindung.oeffnen (
         pipeName, serverErwartung, serverBericht, fehler);
     bool veralteteGeneration = false;

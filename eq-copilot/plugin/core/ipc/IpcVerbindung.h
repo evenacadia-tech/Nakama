@@ -177,6 +177,27 @@ public:
     /// Schliesst und bricht laufende I/O ab. Idempotent.
     void schliessen();
 
+    /// Beginnt eine neue Verbindungsgeneration: schliesst eine noch offene
+    /// Verbindung UND loest das Abbruchsignal. Vor JEDEM `oeffnen()` zu rufen.
+    ///
+    /// NAK-134 Nacharbeit Runde 1, Defekt 1. Diese beiden Zeilen standen bis
+    /// dahin am Anfang von `oeffnen()`. Damit gehoerte das Abbruchsignal dem
+    /// OEFFNUNGSAUFRUF statt der Generation: ein `ioAbbrechen()`, das nach der
+    /// aeusseren Generationspruefung des Clients und vor dem Eintritt in
+    /// `oeffnen()` eintraf, wurde geloescht. Auf einer belegten Pipe liefen
+    /// danach alle 20 `WaitNamedPipeW(200 ms)`-Runden — gemessen 4.009 ms
+    /// statt der R5-Frist (`roh/NAK-134-nacharbeit-1-abbruch-vor-fix.txt`).
+    ///
+    /// Warum das Loesen beim AUFRUFER richtig liegt und in `oeffnen()` nicht:
+    /// `stop()` und `reconnect()` erhoehen die Verbindungsgeneration VOR
+    /// `ioAbbrechen()`. Der Aufrufer loest das Signal deshalb hier und liest
+    /// die Generation unmittelbar danach ERNEUT — jeder Abbruch, den dieses
+    /// Loesen verschlucken koennte, hat die Generation vorher schon erhoeht
+    /// und faellt in genau diese zweite Pruefung. Ein Loesen INNERHALB von
+    /// `oeffnen()` hat diese zweite Pruefung nicht und kann sie auch nicht
+    /// haben: `IpcVerbindung` kennt die Generation des Aufrufers nicht.
+    void neueGenerationBeginnen();
+
     bool offen() const noexcept;
 
     /// Schreibt ALLE Bytes oder scheitert. `frist` ist absolut.

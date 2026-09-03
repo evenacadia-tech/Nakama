@@ -46,8 +46,16 @@ bool IpcVerbindung::oeffnen (const std::string& pipeName,
                              ServerPruefBericht& bericht,
                              std::string& fehler)
 {
-    schliessen();
-    abbruch.store (false);
+    // NAK-134 Nacharbeit Runde 1, Defekt 1: hier standen das Schliessen der
+    // alten Verbindung und das Zuruecksetzen des Abbruchsignals. Beide sind
+    // nach `neueGenerationBeginnen()` gewandert — das Signal gehoert der
+    // VERBINDUNGSGENERATION, nicht diesem Aufruf. Diese Funktion liest es ab
+    // jetzt nur noch und setzt es nie zurueck: ein Signal, das vor dem
+    // Eintritt stand, ueberlebt und greift an der ersten Kopfpruefung der
+    // Schleife. Ein Test haelt das als Codeeigenschaft fest
+    // (`abbruchsignal_gehoert_der_generation/oeffnen_loescht_nie`) — auch
+    // dieser Kommentar darf die beiden Aufrufe deshalb nicht woertlich
+    // enthalten.
     bericht = {};
 
     // Pipenamen sind reines ASCII (Praefix plus Base32-Token bzw. Probename).
@@ -184,6 +192,14 @@ void IpcVerbindung::schliessen()
         CloseHandle (h);
     if (e != nullptr)
         CloseHandle (e);
+}
+
+void IpcVerbindung::neueGenerationBeginnen()
+{
+    // Reihenfolge ist bindend: `schliessen()` SETZT das Abbruchsignal (es
+    // beendet die alte Generation), also muss das Loesen danach kommen.
+    schliessen();
+    abbruch.store (false);
 }
 
 void IpcVerbindung::ioAbbrechen()

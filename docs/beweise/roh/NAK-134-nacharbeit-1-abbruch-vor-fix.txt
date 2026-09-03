@@ -1,0 +1,366 @@
+SONDE-010 | v3-Envelope, Pipetoken, Backpressure und die zwei Clients
+
+== A · Envelope-Fixture-Korpus (dieselbe dritte Partei wie Rust) ==
+  ok      MANIFEST.json gefunden  [C:\Users\phili\Projekte\Nakama\eq-copilot\fixtures\v3\envelope\MANIFEST.json]
+  ok      Regelmenge und ihre Reihenfolge stimmen mit dem Manifest  [14 Regeln]
+  ok      die SAMMELNDE Stufe 3 ist in Deklarationsreihenfolge namenssortiert
+  ok      alle Fixtures klassifiziert wie das Manifest (Urteil UND Verstossmenge)  [8 gueltig / 29 ungueltig]
+  ok      Korpus ist substanziell  [37 Fixtures]
+  ok      jede der 14 Regeln hat mindestens ein Negativfixture  [14/14]
+
+== B · CRC32C und Envelope-Rundlauf ==
+  ok      CRC32C("") == 0
+  ok      CRC32C("123456789") == 0xE3069283 (RFC 3720)
+  ok      CRC32C(32x 0x00) == 0x8A9136AA
+  ok      CRC32C(32x 0xFF) == 0x62A8AB43
+  ok      P0-Frame geschrieben
+  ok      P0 ist JSON und traegt CRC exakt 0
+  ok      P2 traegt die Pflicht-CRC ueber genau die Payloadbytes
+  ok      ein gekipptes Payloadbit faellt an der CRC
+  ok      Payload an der Paketgrenze wird angenommen
+  ok      ein Byte darueber wird nicht einmal geschrieben
+
+== C · Fuzz (deterministisch): Invarianten des angenommenen Frames ==
+  ok      kein angenommener Zufallsframe verletzt eine Kopfregel  [0 angenommen / 40000 abgelehnt]
+  ok      ein gekipptes Bit in einem GUELTIGEN Frame: was durchkommt, haelt jede Kopfregel  [7671 angenommen / 12329 abgelehnt]
+  ok      3000 gekippte P2-Payloadbits: jedes einzelne faellt an der CRC
+  ok      byteweise Zustellung liefert exakt dieselben 40 Frames  [40 Frames, Rest 0]
+  ok      ein kaputter Frame im Strom wird gemeldet, nicht uebersprungen
+
+== D · v3-Pipename als reine Funktion ==
+  ok      Golden aus Entwurf §48.3
+  ok      vollstaendiger Pipename
+  ok      Schreibweise der SID ist egal (Grossschreibung vor dem Hashen)
+  ok      verschiedene SIDs, verschiedene Token
+  ok      der Golden-Pipename wird als Probe-Name VERWEIGERT
+  ok      die v1-Produktions-Pipe ebenso
+  ok      und ein v3-Name ausserhalb des Probe-Namensraums
+  ok      `probe.` allein ist keine Pipe, sondern nur der Namensraum
+  ok      der eigene Testname liegt im Probe-Namensraum
+  ok      SHA-256("abc") wie FIPS 180-4
+  ok      SHA-256 des 56-Byte-Vektors (Zweiblockfall)
+  ok      Base32 gegen die Testvektoren aus RFC 4648 §10
+  ok      eigene Logon-SID ist wohlgeformt  [S-1-5-21-369263037-1611576211-2081231688-1001]
+
+== E · Backpressure: P0 · P1 · P2 ==
+  ok      P0 nimmt 64 Nachrichten
+  ok      die 65. meldet Ueberlauf (nichts verwerfen ⇒ Verbindung schliessen)
+  ok      alle 64 kommen unveraendert und in Reihenfolge zurueck
+  ok      der Sender entnimmt den ersten Befehl und reserviert seinen Platz
+  ok      64 neue Befehle waehrend des Writes finden KEINEN Platz — ehrlich gezaehlt  [0 angenommen, 64 Ueberlaeufe]
+  ok      der gescheiterte Write legt ihn zurueck; die Queue traegt wieder genau 64  [64 Eintraege]
+  ok      und zwar VORN — kein P0-Befehl ist verlorengegangen
+  ok      P1 nimmt Snapshot a
+  ok      P1 nimmt Ereignis
+  ok      P1 nimmt Snapshot b
+  ok      ein zweiter Snapshot desselben Objekts koalesziert, ohne zu wachsen
+  ok      Koaleszieren behaelt die Position, tauscht nur den Inhalt
+  ok      nicht koaleszierbare Ereignisse gehen in den Wiederholpuffer
+  ok      ein voller Wiederholpuffer weist das NEUE Ereignis ab, gezaehlt, nie still  [2 vorgehalten, 1 abgewiesen]
+  ok      ein einziges Senden zieht eine Wiederholung nach — ohne Reconnect  [1 noch vorgehalten]
+  ok      beim Reconnect ist nichts mehr nachzuholen — es floss schon ab
+  ok      und zwar JEDES angenommene Ereignis, in der urspruenglichen Reihenfolge  [3,4]
+  ok      ein Neuzugang findet keinen Platz, solange eine Wiederholung wartet
+  ok      und er ueberholt sie nicht — Annahmereihenfolge ueber beide Puffer  [2,3]
+  ok      ein Snapshot im Wiederholpuffer behaelt seinen Schluessel und koalesziert dort  [1 vorgehalten, 0 abgewiesen]
+  ok      und der NEUERE geht raus, nicht der aeltere  [fremd,neu]
+  ok      entnehmen liefert Objektschluessel UND Nachricht
+  ok      ein gescheiterter Write legt das Ereignis an seinen Platz zurueck
+  ok      und es steht wieder VORN, nicht hinten
+  ok      ein zurueckgelegter Snapshot weicht dem neueren, statt ihn zu verdraengen
+  ok      und der neuere geht raus
+  ok      der entnommene P1-Eintrag zaehlt weiter gegen die Kapazitaet
+  ok      ein neues Ereignis findet deshalb keinen Platz und wartet auf den Reconnect
+  ok      und der unterwegs gewesene Eintrag kommt an SEINEN Platz zurueck
+  ok      ein nicht geschriebener P0-Befehl geht ebenfalls zurueck
+  ok      und behaelt seine Reihenfolge
+
+== E2 · P2-Schleuse: vorallokiert, ohne Allokation, replace-oldest ==
+  ok      der dritte Frame ersetzt den aeltesten ungesendeten (Cap 2)
+  ok      abgeholt wird der zweite, nicht der erste  [2]
+  ok      danach der dritte
+  ok      danach ist die Schleuse leer
+  ok      ein Frame ueber der Slotgroesse wird gezaehlt verworfen, nie halb geschrieben
+  ok      100 000 Uebergaben mit 0 Allokationen  [0]
+  ok      Gegenprobe: derselbe Zaehler sieht eine echte Allokation  [1]
+  ok      2 000 000 kleine Frames unter Flut: kein zerrissener Frame  [221230 geholt, 0 zerrissen, 1996718 ersetzt]
+  ok      300 000 grosse Frames (8000 B) ebenso: kein zerrissener Frame  [18030 geholt, 0 zerrissen]
+  ok      und keine ruecklaeufige oder doppelte Folgenummer — die Loecher der Kollision brechen die Reihenfolge nicht  [0 ruecklaeufig]
+  ok      der Erzeuger traf den beanspruchten Slot WIRKLICH — und hat ihn nicht beschrieben  [10416 uebersprungene Positionen]
+  ok      der NEUESTE Frame faellt dabei NIE — es weicht der aelteste wartende (replace-oldest, §53.9)  [0 neueste wegen fremden Anspruchs verworfen]
+  ok      Testhaken: die zwei naechsten Plaetze sind beansprucht
+  ok      erzwungene Slot-Kollision: der neueste Frame findet immer einen Platz  [0 verworfen, 2 Loecher]
+  ok      und die beiden beanspruchten Positionen sind LOECHER, nicht Verluste  [2]
+  ok      der Verbraucher ueberspringt die Loecher und bekommt genau diesen Frame  [64 Bytes]
+  ok      Kollisionsloecher lassen den Verbraucher wirklich zurueckfallen (schreib - boden waechst)  [6 Positionen Rueckstand nach 5 Runden]
+  ok      der Verbraucher ist zwischen JEDEM Versuch weitergerueckt — kein statisch freier dritter Platz  [6 Spruenge]
+  ok      und der Erzeuger bekommt TROTZDEM einen Platz — garantiert, nicht begrenzt versucht  [0 verworfen, 6 Loecher in dieser Veroeffentlichung]
+  ok      der neueste Frame liegt danach wirklich da, hinter allen Loechern  [64 Bytes]
+
+== F · Ratengrenze ==
+  ok      5000 Nachrichten in derselben Millisekunde: 1000 gehen durch  [1000]
+  ok      ein volles Fenster spaeter wieder 1000
+  ok      gleitend: 1 Nachricht je 10 ms laeuft unbegrenzt
+
+== G · ControlClient und TelemetryClient auf einer Testpipe ==
+  ok      Control verbindet und bekommt ein v3-gerahmtes welcome
+  ok      welcome liefert link_id und challenge
+  ok      Telemetry koppelt mit link_id + challenge + derselben runtime_nonce
+  ok      nak29_sender_project_samples_ohne_project_time_bit
+  ok      nak29_sender_local_monotonic_mit_project_sample_start
+  ok      band_stereo_sender_emittiert_erhoehten_schema_minor
+  ok      P0 kommt beim Server als P0-Familie an
+  ok      und die Antwort erreicht den Client
+  ok      P1 kommt als P1-Familie an
+  ok      ControlClient sendet P0 und P1 mit aktivem JSON-Minor
+  ok      P2 fliesst ueber die zweite Verbindung  [21 Frames]
+  ok      beide Bootstrap-Hellos tragen dieselbe runtime_nonce
+  ok      instance_address_alias_is_on_actual_wire
+  ok      das Bootstrap-Hello ist v3 und nicht v2
+  ok      stop() trennt beide Verbindungen und kehrt zurueck
+
+== G1a · JSON-Minor wird bis zum C++-Empfaenger getragen ==
+  ok      ControlClient reicht den empfangenen Minor 1 an den Vertragsleser weiter
+  ok      ein hoeherer unbekannter JSON-Minor schliesst wie ein Envelopeverstoss
+
+== G1b · Produktstatus sendet Heartbeat und State-Report ==
+  ok      produkt_client_sendet_vollen_heartbeat_und_state_report
+  ok      heartbeat_laeuft_1hz_state_report_bleibt_koalesziert
+  ok      geaenderter_produktzustand_sendet_neuen_state_report
+
+== G2 · ungekoppelter Telemetry-Connect wird geschlossen ==
+  ok      der Server weist die ungekoppelte Telemetrieverbindung ab
+  ok      der Client gilt nicht als verbunden
+
+== G3 · Reconnect nach Serverneustart ==
+  ok      erste Verbindung steht
+  ok      nach dem Serverende faellt der Client auf getrennt
+  ok      der Client verbindet von selbst wieder (Backoff 500..8000 ms)
+  ok      und zaehlt die Versuche ehrlich mit  [2]
+
+== G4 · ein kaputter Envelope vom Server schliesst die Verbindung ==
+  ok      der Client weist den Frame ab und verbindet nicht
+  ok      Status bleibt ungleich 'verbunden'
+
+== G5 · P0-Ueberlauf schliesst die Verbindung, statt zu verwerfen ==
+  ok      64 P0-Nachrichten passen
+  ok      die 65. meldet Ueberlauf an den Aufrufer
+  ok      der Ueberlauf ist gezaehlt
+  ok      Verbindung steht (der Server liest nur nicht mehr)
+  ok      ein 200-KiB-Befehl wird eingereiht
+  ok      die Queue laeuft ueber, weil der Peer nicht liest
+  ok      die Verbindung wird deswegen geschlossen, nicht stillschweigend gekuerzt  [P0-Ueberlauf: Verbindung wird geschlossen]
+
+== G6 · ein P1-Ereignis ueberlebt einen gescheiterten Write ==
+  ok      Verbindung steht (der Server liest nur nicht mehr)
+  ok      der Write bricht, sobald der Server weg ist
+  ok      einige Ereignisse gingen raus, eines blieb im Sender haengen  [p1Gesendet = 77]
+  ok      das Ereignis, dessen Write scheiterte, kommt nach dem Reconnect an  [gesucht "id":77, · 2 P1 nach dem Reconnect empfangen]
+
+== G7 · der TelemetryClient prueft sein welcome vollstaendig ==
+  ok      ein welcome in der P2-Familie gilt NICHT als Kopplung  [welcome kam nicht als P0]
+  ok      ein welcome mit fremder link_id gilt nicht als Kopplung  [unerwartete Antwort auf das Telemetry-Hello]
+  ok      ein welcome ohne `protocol` gilt nicht als Kopplung  [unerwartete Antwort auf das Telemetry-Hello]
+  ok      Gegenprobe: mit vollstaendigem welcome koppelt derselbe Client
+
+== G8 · nicht endliche Audiofelder werden VOR der Wandlung verriegelt ==
+  ok      48 kHz / 512 / 2 halten den Vertrag
+  ok      NaN, ±Inf, 1e300 und Grenzverstoesse fallen
+  ok      mit NaN/±Inf/1e300 verbindet der Client gar nicht erst  [Audiolage haelt den v3-Vertrag nicht (samplerate/block_size/channels)]
+  ok      und nennt den Grund ehrlich beim Namen  [Audiolage haelt den v3-Vertrag nicht (samplerate/block_size/channels)]
+  ok      kein Hello mit einer Nicht-Zahl hat den Server je erreicht
+
+== G9 · ein P0-Befehl ueberlebt einen gescheiterten Write bei voller Queue ==
+  ok      Verbindung steht (der Server liest nur nicht mehr)
+  ok      der erste, grosse Befehl wird eingereiht
+  ok      genau 64 passen — der unterwegs befindliche belegt seinen Platz weiter  [64 angenommen]
+  ok      und der Ueberlauf ist oeffentlich gezaehlt  [1]
+  ok      die Verbindung wird deswegen geschlossen  [P0-Ueberlauf: Verbindung wird geschlossen]
+  ok      nach dem Reconnect kommt JEDER angenommene Befehl an — auch der, dessen Write scheiterte
+
+== G10 · beide Clients pruefen das welcome gegen den VOLLSTAENDIGEN Vertrag ==
+  ok      Telemetry: `broker_version` als `null` ist kein gueltiges welcome  [unerwartete Antwort auf das Telemetry-Hello]
+  ok      Telemetry: ein Zusatzfeld verletzt additionalProperties:false  [unerwartete Antwort auf das Telemetry-Hello]
+  ok      Telemetry: `broker_version` ueber 64 Zeichen faellt an der Laenge  [unerwartete Antwort auf das Telemetry-Hello]
+  ok      Control: dieselbe Strenge — `null` statt String verbindet nicht  [unerwartete Antwort auf hello]
+  ok      Control: ein Zusatzfeld verbindet nicht  [unerwartete Antwort auf hello]
+  ok      Control: eine zu lange `broker_version` verbindet nicht  [unerwartete Antwort auf hello]
+
+== G11 · ein P2-Frame auf der Control-Verbindung wird abgewiesen ==
+  ok      der Client weist den P2-Frame ab und schliesst die Verbindung
+  ok      und er hat die Binaerpayload NIE an den Aufrufer weitergereicht  [0 Rueckrufe]
+
+== G12 · die Nachrichtenratengrenze gilt auch im Client ==
+  ok      ein Peer, der schneller pipelined als die Rate erlaubt, wird getrennt
+  ok      und hoechstens die erlaubte Zahl Frames hat den Aufrufer erreicht  [4000 von 8000]
+
+== G13 · die Telemetrie merkt im Leerlauf, dass ihre Kopplung fort ist ==
+  ok      Control steht
+  ok      Telemetry koppelt
+  ok      ohne eine einzige Veroeffentlichung bemerkt der Client den Pipe-Abschluss
+  ok      und koppelt binnen Frist wieder
+  ok      Control koppelt neu und traegt eine frische link_id
+  ok      die Telemetrie bemerkt die neuen Kopplungswerte im Leerlauf  [Kopplung gewechselt — Telemetrie koppelt neu]
+  ok      und koppelt sich mit ihnen neu — ohne dass je ein P2-Frame floss  [Kopplung gewechselt — Telemetrie koppelt neu]
+  ok      Gegenprobe: es wurde in diesem Abschnitt wirklich nichts veroeffentlicht  [0 gesendet]
+
+== G14 · was der TelemetryClient auf SEINER Verbindung annimmt ==
+  ok      ein P0-Frame auf der Telemetrieverbindung schliesst sie
+  ok      auch hier gilt die Nachrichtenratengrenze
+  ok      die vertragsgemaessen P2-Frames sind gezaehlt, nicht still verworfen  [4000 von 8000 gezaehlt]
+
+== G15 · zu grosse Nachrichten werden an der TUER abgewiesen ==
+  ok      ein P0 ueber der Paketgrenze wird gar nicht erst eingereiht  [0]
+  ok      und ein P1 ebenso — der Aufrufer erfaehrt es sofort
+  ok      genau auf der Grenze wird eingereiht, nicht abgewiesen
+
+== G16 · ein P0-ACK kommt an, waehrend P1 rueckstaut ==
+  ok      Verbindung steht
+  ok      der Heartbeat wird eingereiht
+  ok      der ACK erreicht beiAntwort, obwohl P1 rueckstaut  [1 ACKs, 1 P1 gesendet, ]
+
+== G16b · der ACK trifft ein, WAEHREND der Write in seine Frist laeuft ==
+  ok      Verbindung steht, und der Peer liest kein einziges Byte
+  ok      ein vor dem Verbindungsende empfangener ACK geht nicht verloren — auch nach einem Write-Zeitlimit  [1 ACKs, empfangen=1, Pipe-Schreiben: Zeitlimit ueberschritten]
+
+== G17 · stop() kehrt in JEDEM Zustand zurueck ==
+  ok      Verbindung steht
+  ok      stop() aus beiAntwort kehrt zurueck — kein Self-Join, kein terminate
+  ok      und danach ist der Client getrennt
+  ok      Verbindung steht
+  ok      der Callback blockiert wirklich
+  ok      stop() kehrt trotz blockierendem Callback binnen Frist zurueck  [2001 ms]
+  ok      und die Fristueberschreitung ist sichtbar gezaehlt  [1]
+  ok      Verbindung steht
+  ok      der Callback blockiert wirklich
+  ok      nach dem Abloesen verbindet ein neuer start() wieder  [2 Versuche]
+  ok      und zwar GENAU EIN neuer Lauf — der abgeloeste Vorgaenger faehrt nicht daneben weiter  [2 Versuche, 1 Fristueberschreitungen]
+  ok      Verbindung steht
+  ok      der Callback blockiert wirklich
+  ok      der neue Lauf steht NACHGEWIESEN — welcome geprueft, nicht nur ein Versuch gezaehlt
+  ok      der zurueckkehrende alte Lauf trennt die neue Verbindung NICHT  [2 Versuche (vorher 2), 2 Serververbindungen (vorher 2), Status verbunden]
+  ok      und der neue Lauf beantwortet danach weiter P0  [1 ACKs]
+  ok      die Telemetrie steht
+  ok      der helloProvider blockiert wirklich
+  ok      der neue Telemetrielauf steht nachgewiesen
+  ok      dieselbe Zusage gilt fuer den TelemetryClient  [2 Versuche (vorher 2), 2 Serververbindungen (vorher 2), Status verbunden]
+  ok      die Telemetrie wartet auf ihre Kopplung
+  ok      stop() im Zustand wartetAufKopplung kehrt zurueck  [1 ms]
+  ok      die Telemetrie steht
+  ok      stop() waehrend eines blockierenden P2-Writes kehrt binnen Frist zurueck, nicht erst nach kIoFristMs  [1 ms]
+
+== G18 · die Telemetrie verliert die Verbindung mitten im Write ==
+  ok      die Telemetrie steht
+  ok      der Verbindungsverlust im Write wird bemerkt  [18 ms]
+  ok      und der Client zaehlt einen neuen Versuch — er koppelt von selbst neu  [1 Versuche]
+  ok      die Schleuse nimmt weiter an — der Erzeuger merkt vom Abbruch nichts
+
+== H · Bootstrapgrenze und JSON-Riegel ==
+  ok      16 KiB sind noch ein Bootstrap-Hello
+  ok      ein Byte darueber nicht mehr
+  ok      flaches Objekt wird gelesen
+  ok      Zahlen kommen als Text zurueck
+  ok      ein String kommt als String
+  ok      eine Zahl ist KEIN String
+  ok      und ein String ist kein Literal
+  ok      `null` ist ein Literal und wird nie als Text `null` durchgereicht
+  ok      der STRING "null" dagegen ist einer — beide sind unterscheidbar
+  ok      die exakte Feldmenge wird erkannt
+  ok      ein Zusatzfeld faellt auf (additionalProperties:false)
+  ok      und ein fehlendes Pflichtfeld ebenso
+  ok      Verschachtelung wird ABGELEHNT, nicht geraten
+  ok      Arrays ebenso
+  ok      ein Escape wird abgelehnt statt interpretiert
+  ok      doppelter Schluessel ist eine Ablehnung, keine 'letzter gewinnt'-Regel
+  ok      Text hinter dem Objekt wird abgelehnt
+  ok      das leere Objekt ist gueltig
+
+== I · Phase B: semantisches command_ack und In-Flight-Register ==
+  ok      command_ack_angewandt_und_idempotent_wiederholt_geben_inflight_als_erfolg_frei  [angewandt]
+  ok      command_ack_angewandt_und_idempotent_wiederholt_geben_inflight_als_erfolg_frei  [idempotent_wiederholt]
+  ok      command_ack_endgueltige_fehler_geben_ohne_erfolg_frei
+  ok      alle_command_ack_ergebnisse_beenden_inflight_korrekt
+  ok      queueplatz_frei_aber_semantischer_auftrag_bleibt_inflight
+  ok      brokerkill_vor_ack_reiht_dieselbe_command_id_wieder_ein
+  ok      command_ack_traegt_keine_event_uuid
+  ok      nur_schemafestes_command_ack_gibt_inflight_frei
+
+== J · Phase B: Broker-Autostart und Signaturkette ==
+  ok      fehlender_broker_ist_einzige_startbedingung_auch_mit_serverauth
+  ok      serverauth_gueltiger_pid_sid_datei_hash_und_signer_vor_hello
+  ok      serverauth_fremde_sid_und_tokenabfragefehler_senden_null_bytes
+  ok      serverauth_bild_dateiid_hash_signatur_und_signer_fail_closed
+  ok      waitnamedpipe_toctou_wird_am_verbundenen_handle_erkannt
+  ok      control_und_telemetry_authentisieren_jedes_handle
+  ok      vorhandene_pipe_wird_nur_mit_dem_authentisierten_handle_uebernommen
+  ok      unverifizierte_belegte_pipe_spawnt_und_reconnectet_nicht
+  ok      vorhandene_fremdpipe_wird_nicht_adoptiert
+  ok      spawn_pid_ersetzt_serverauth_nicht_und_fremdpipe_im_bereitfenster_faellt
+  ok      reconnect_prueft_pid_sid_und_bild_ohne_altfreigabe
+  ok      reconnect_sendet_erst_nach_neuer_serverauth
+  ok      serverauth_nach_brokercrash_verweigert_pidwechsel_und_fremdbild
+  ok      serverauth_nach_idle_exit_verweigert_fremde_pipe
+  ok      spawn_retry_bereit_timeout_und_cooldown_grenzen
+  ok      normaler_reconnect_backoff_start_und_max
+  ok      letzter_client_idle_stop_an_grenze
+  ok      aktiver_fremdclient_verhindert_stop
+  ok      client_resetet_idlefrist
+  ok      fehlender_broker_ist_notwendige_startbedingung
+  ok      connect_without_spawn_kommt_zuerst
+  ok      autostart_hash_vor_signatur_vor_spawn
+  ok      lifecycle_gate_wird_unmittelbar_vor_spawn_neu_geprueft
+  ok      spawn_retry_bereit_timeout_und_cooldown_grenzen_zustandsmaschine
+  ok      autostart_parallel_startet_genau_einen_prozess  [haelt=1 pipe=1 spawns=1 mutexVerloren=1 reconnect=1 pruefungen=0 spawnVersuche=0]
+  ok      autostart_mehrere_mains_ein_broker
+  ok      autostart_mutex_verlierer_prueft_reale_pipe_trotz_stalem_cache
+  ok      thumbprint_null_erlaubt_nur_passenden_hash
+  ok      thumbprint_gesetzt_verlangt_winverifytrust_und_exakten_signer_fehlend
+  ok      thumbprint_gesetzt_verlangt_winverifytrust_und_exakten_signer_falsch
+  ok      thumbprint_gesetzt_verlangt_winverifytrust_und_exakten_signer_gueltig
+  ok      thumbprint_gesetzt_verlangt_winverifytrust_und_exakten_signer
+  ok      spawn_per_createprocessw_nur_absolut_und_verborgen
+  ok      stop_waehrend_spawn
+BEREIT \\.\pipe\evenacadia.nakama.v3.probe.test.17580.79.foreign-broker-owner
+{"abweisungen":0,"acceptor_wartet_auf_instanz":0,"angenommen":1,"besitzlistener_nach_stopp":0,"besitzlistener_vor_stopp":2,"control_getrennt":1,"control_verbindungen":1,"ende_grund":"stdin","geschlossen_bootstrap":0,"geschlossen_envelope":0,"geschlossen_familie":0,"geschlossen_kopplung":0,"geschlossen_p0_ueberlauf":0,"geschlossen_rate":0,"geschlossen_writer":0,"ingress_hoechststand":0,"ingress_p1_ueberlauf_trennt":0,"ingress_p2_verworfen":0,"letzter_grund":"","p0":0,"p0_beantwortet":0,"p1":0,"p2":0,"pipe":"\\\\.\\pipe\\evenacadia.nakama.v3.probe.test.17580.79.foreign-broker-owner","telemetrie_getrennt":0,"telemetrie_verbindungen":0}
+  ok      plugin_stoppt_keinen_fremden_brokerprozess
+  ok      kein_installer_oder_boot_autostartartefakt
+
+== K · NAK-134: ERROR_PIPE_BUSY ist Liveness, kein Sicherheitsurteil ==
+  ok      oeffnungsausgaenge_sind_liveness_oder_sicherheit/control/pipe_busy  [klass 1, 4007 ms, weitere Versuche 1 (erwartet >=1), pruefungen 0 (erwartet 0)]
+  ok      oeffnungsausgaenge_sind_liveness_oder_sicherheit/telemetrie/pipe_busy  [klass 1, weitere Versuche 1 (erwartet >=1), pruefungen 0]
+  ok      oeffnungsausgaenge_sind_liveness_oder_sicherheit/control/file_not_found  [klass 1, 5 ms, weitere Versuche 2 (erwartet >=1), pruefungen 0 (erwartet 0)]
+  ok      oeffnungsausgaenge_sind_liveness_oder_sicherheit/telemetrie/file_not_found  [klass 1, weitere Versuche 2 (erwartet >=1), pruefungen 0]
+  ok      oeffnungsausgaenge_sind_liveness_oder_sicherheit/control/access_denied  [klass 1, 5 ms, weitere Versuche 0 (erwartet 0), pruefungen 1 (erwartet 1)]
+  ok      oeffnungsausgaenge_sind_liveness_oder_sicherheit/telemetrie/access_denied  [klass 1, weitere Versuche 0 (erwartet 0), pruefungen 1]
+  ok      oeffnungsausgaenge_sind_liveness_oder_sicherheit/control/sonstiger_fehler  [klass 1, 5 ms, weitere Versuche 0 (erwartet 0), pruefungen 1 (erwartet 1)]
+  ok      oeffnungsausgaenge_sind_liveness_oder_sicherheit/telemetrie/sonstiger_fehler  [klass 1, weitere Versuche 0 (erwartet 0), pruefungen 1]
+  ok      authausgaenge_erwartung_und_serverpid_bleiben_sicherheit/erwartung_ungueltig  [fiel 1, weitere Versuche 0]
+  ok      authausgaenge_erwartung_und_serverpid_bleiben_sicherheit/server_pid_nicht_ermittelbar  [fiel 1, weitere Versuche 0]
+  ok      telemetrie_authfehler_parkt_wie_control  [fiel 1, weitere Versuche 0]
+  ok      ressourcenfehler_nach_authbeweis_ist_liveness  [Codepruefung an IpcVerbindung.cpp — CreateEventW ist ohne Testhaken im Oeffnungspfad nicht injizierbar (Regressionswache durch Lesen)]
+  ok      zaehlervertrag_verbindungsversuche_und_serverpruefungen/pipe_busy  [2 Versuche, 0 Serverpruefungen (erwartet 0)]
+  ok      zaehlervertrag_verbindungsversuche_und_serverpruefungen/access_denied  [1 Versuche, 1 Serverpruefungen]
+  ok      zaehlervertrag_verbindungsversuche_und_serverpruefungen/telemetrie_pipe_busy  [2 Versuche, 0 Serverpruefungen]
+  ok      kopplungswarte_faelscht_den_backoff_nicht  [0 Versuche, Status 1]
+  ok      parken_uebergeht_den_backoff/authfehler  [geparkt 1, weitere Versuche 0, Neustart nach 5 ms]
+  ok      parken_uebergeht_den_backoff/access_denied  [geparkt 1, weitere Versuche 0, Neustart nach 6 ms]
+  ok      parken_loest_ueber_reconnect_und_stop/reconnect  [geparkt 1, geloest nach 5 ms]
+  ok      parken_loest_ueber_reconnect_und_stop/stop  [geparkt 1, geloest nach 1 ms]
+  ok      belegt_nicht_erreicht_spawnt_nicht_und_blockiert_nicht/aus_connect  [0 Spawns, serverNichtVerifiziert 0, cooldowns 0]
+  ok      belegt_nicht_erreicht_spawnt_nicht_und_blockiert_nicht/aus_serverpruefung  [0 Spawns, serverNichtVerifiziert 0, cooldowns 0]
+  FEHLER  abbruchsignal_gehoert_der_generation/ipcverbindung  [4009 ms (R5-Frist 1500 ms; volle Warteschleife >= 4000 ms), Bericht 3]
+  FEHLER  abbruchsignal_gehoert_der_generation/oeffnen_loescht_nie  [Codepruefung an IpcVerbindung.cpp]
+  FEHLER  abbruchsignal_gehoert_der_generation/control  [Regressionswache durch Lesen: loesen, Generation erneut pruefen, dann oeffnen]
+  FEHLER  abbruchsignal_gehoert_der_generation/telemetrie  [Regressionswache durch Lesen: loesen, Generation erneut pruefen, dann oeffnen]
+  ok      abbruch_vor_und_nach_createfile/control/stop_vor_open
+  ok      abbruch_vor_und_nach_createfile/control/reconnect_vor_open
+  ok      abbruch_vor_und_nach_createfile/control/stop_nach_open  [an der Barriere 1, kein Hello 1]
+  ok      abbruch_vor_und_nach_createfile/control/reconnect_nach_open  [an der Barriere 1, kein Hello 1]
+  ok      abbruch_vor_und_nach_createfile/telemetrie/stop_vor_open
+  ok      backoff_folge_und_deckel_sind_beobachtbar/file_not_found  [Abstaende 496 1005 2004 3994 8006 7991 ms (erwartet 500 1000 2000 4000 8000 8000)]
+  ok      backoff_folge_und_deckel_sind_beobachtbar/pipe_busy  [Stempel 10 4512 9528 ms — vor R1 parkt der Thread nach dem ersten]
+  ok      verifiziert_ohne_welcome_setzt_backoff_nicht_zurueck  [Stempel 11 5509 11510 ms, pruefungen 3]
+  ok      installer_boot_autostartinventar_ist_null_und_rueckweg_haengt_an_a17_a18
+
+FEHLER — 296 Pruefungen, 4 Fehler
+EXIT=1

@@ -543,6 +543,14 @@ bool TelemetryClient::Laufzeit::eineVerbindung (std::uint64_t generation,
 
     std::string fehler;
     ServerPruefBericht serverBericht;
+    // NAK-134 Nacharbeit Runde 1, R5 — dieselbe Reihenfolge wie in
+    // `ControlClient.cpp`: Abbruchsignal loesen, Generation ERNEUT lesen, dann
+    // oeffnen. Begruendung dort; sie gilt hier unveraendert, weil beide
+    // v3-Clients denselben `IpcVerbindung::oeffnen` fahren und `stop()` wie
+    // `reconnect()` auch hier die Generation vor `ioAbbrechen()` erhoehen.
+    verbindung.neueGenerationBeginnen();
+    if (sollAbbrechen (generation))
+        return false;
     const bool serverGeoeffnet = verbindung.oeffnen (
         pipeName, serverErwartung, serverBericht, fehler);
     bool veralteteGeneration = false;

@@ -1,0 +1,41 @@
+# Rotbeweis H-10 — NAK-121 Etappe 2
+
+Mutante(n):
+  broker/src/coordinator/link.rs
+    ALT: if alter_link != link_id {
+                    let gleiche_nonce = alt.current_nonce == adresse.runtime_nonce;
+    NEU: // MUTANTE: die Verdraengung greift wieder nur bei
+                // abweichender Nonce — die Luecke aus C-10.
+                if alter_link != link_id && alt.current_nonce != adresse.runtime_nonce {
+
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never --test coordinator_model -- hello_mit_identischer
+Exitcode: 101
+
+Die Mutante ist nach diesem Lauf zurueckgenommen; der naechste
+Lauf derselben Tests ist wieder gruen.
+
+---
+
+
+running 1 test
+test hello_mit_identischer_nonce_verdraengt_den_alten_link_ohne_den_alias_zu_ziehen ... FAILED
+
+failures:
+
+---- hello_mit_identischer_nonce_verdraengt_den_alten_link_ohne_den_alias_zu_ziehen stdout ----
+
+thread 'hello_mit_identischer_nonce_verdraengt_den_alten_link_ohne_den_alias_zu_ziehen' (10184) panicked at tests\coordinator_model.rs:1289:5:
+assertion failed: c.verbindung_soll_trennen("alt")
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    hello_mit_identischer_nonce_verdraengt_den_alten_link_ohne_den_alias_zu_ziehen
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 41 filtered out; finished in 0.00s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.13s
+     Running tests\coordinator_model.rs (broker\target\debug\deps\coordinator_model-c22cf73cd241058f.exe)
+error: test failed, to rerun pass `--test coordinator_model`

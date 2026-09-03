@@ -119,11 +119,24 @@ impl Coordinator {
                 });
             if !sender_erlaubt {
                 Err((base_revision, None, "abgelehnt", "unauthorized"))
-            } else if let Some((ziel_link_id, ziel_link)) = stand.links.iter().find(|(_, link)| {
-                link.adresse == ziel
-                    && link.client_key.session() == sender_link.client_key.session()
-                    && !link.trennen
-            }) {
+            // H-10: das Ziel wird ueber die LINKIDENTITAET des Zielclients
+            // aufgeloest, die Adresse danach verifiziert. Bis NAK-121 durchsuchte
+            // diese Stelle die Linkmap und nahm die ERSTE Adressuebereinstimmung -
+            // bei zwei lebenden Links derselben Adresse haengt das an der
+            // HashMap-Reihenfolge, und damit erzeugte gleiches Clientverhalten
+            // verschiedenen persistierten Zustand. Genau daran haengt die
+            // Reproduzierbarkeit des append-only Logs.
+            } else if let Some((ziel_link_id, ziel_link)) = stand
+                .clients
+                .get(&ClientKey::aus_adresse(&ziel))
+                .and_then(|client| client.current_link.as_deref())
+                .and_then(|link_id| stand.links.get_key_value(link_id))
+                .filter(|(_, link)| {
+                    link.adresse == ziel
+                        && link.client_key.session() == sender_link.client_key.session()
+                        && !link.trennen
+                })
+            {
                 let Some(client) = stand.clients.get(&ziel_link.client_key) else {
                     return Self::command_ack(
                         command_id,

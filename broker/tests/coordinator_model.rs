@@ -1261,3 +1261,91 @@ fn global_session_cap_weist_am_cap_plus_eins_ab() {
     assert!(!ausgang.angenommen);
     assert_eq!(c.session_anzahl(), GLOBAL_SESSION_CAP);
 }
+
+// ── NAK-121 H-10 ───────────────────────────────────────────────────────────
+
+/// Ein Hello mit IDENTISCHER Nonce verdraengt den aelteren Link - und laesst
+/// dabei den Aliaseintrag stehen.
+///
+/// C-10 sagt Verdraengung nur fuer die abweichende Nonce zu und schweigt zum
+/// identischen Fall; durch diese Luecke konnten zwei lebende Links dieselbe
+/// Adresse tragen. Die Ausnahme beim Alias ist keine Bequemlichkeit: bei
+/// identischer Nonce ist der Aliasbesitzer beider Links derselbe Schluessel
+/// (instance_id:runtime_nonce), und ihn zu entfernen zoege dem UEBERLEBENDEN
+/// Link seine Wireadresse weg.
+#[test]
+fn hello_mit_identischer_nonce_verdraengt_den_alten_link_ohne_den_alias_zu_ziehen() {
+    let (c, _) = coordinator();
+    let h = hello(1, 2, 10, 100, "main", Some(9));
+    anmelden(&c, "alt", &h);
+    assert!(abonnieren(&c, "alt", &h.adresse));
+    assert_eq!(c.subscription_anzahl(), 1);
+
+    // Dasselbe Hello, derselbe Nonce, neuer Link.
+    anmelden(&c, "neu", &h);
+
+    // Der alte Link ist verdraengt: er soll trennen und hat seine Subscription
+    // verloren. Vorher lebten beide weiter und trugen dieselbe Adresse.
+    assert!(c.verbindung_soll_trennen("alt"));
+    assert!(!c.verbindung_soll_trennen("neu"));
+    assert_eq!(
+        c.subscription_anzahl(),
+        0,
+        "die Subscription des verdraengten Links blieb stehen"
+    );
+
+    // Und der ueberlebende Link hat seine Wireadresse behalten - haette die
+    // Verdraengung den gemeinsamen Aliaseintrag gezogen, faende er sie nicht
+    // mehr und jeder Dispatch fiele fail-closed.
+    assert!(
+        c.dispatch_fuer_link_erlaubt("neu"),
+        "die Verdraengung hat dem ueberlebenden Link seine Wireadresse weggezogen"
+    );
+    assert!(abonnieren(&c, "neu", &h.adresse));
+}
+
+/// Das Ziel eines P0-Befehls wird ueber die Linkidentitaet aufgeloest, nicht
+/// ueber die erste Adressuebereinstimmung in der Linkmap.
+///
+/// Gemessen mit permutierter Einfuegereihenfolge: haenge die Aufloesung an der
+/// HashMap-Reihenfolge, lieferten die beiden Permutationen verschiedenen
+/// Zustand - und das append-only Log waere nicht mehr reproduzierbar.
+#[test]
+fn p0_ziel_ist_bei_zwei_links_derselben_adresse_deterministisch() {
+    fn lauf(reihenfolge: [&str; 3]) -> (bool, bool, usize) {
+        let (c, _) = coordinator();
+        let main = hello(1, 2, 10, 100, "main", Some(9));
+        let sonde = hello(1, 2, 11, 200, "active_probe", Some(9));
+        for link in reihenfolge {
+            match link {
+                "main" => anmelden(&c, "main", &main),
+                "sonde-a" => anmelden(&c, "sonde-a", &sonde),
+                // Zweiter Link derselben Sonde mit demselben Nonce: seit H-10
+                // verdraengt er den ersten, statt neben ihm zu leben.
+                "sonde-b" => anmelden(&c, "sonde-b", &sonde),
+                _ => unreachable!(),
+            }
+        }
+        (
+            c.verbindung_soll_trennen("sonde-a"),
+            c.verbindung_soll_trennen("sonde-b"),
+            c.subscription_anzahl(),
+        )
+    }
+
+    // Beide Permutationen der beiden Sondenlinks muessen denselben Zustand
+    // ergeben: der zuletzt angemeldete lebt, der andere ist verdraengt.
+    let vorwaerts = lauf(["main", "sonde-a", "sonde-b"]);
+    assert_eq!(vorwaerts, (true, false, 0));
+
+    // Und mit vertauschter Reihenfolge derselben drei Anmeldungen gilt
+    // dasselbe, nur spiegelverkehrt - nichts haengt an der Iterationsordnung.
+    let (c, _) = coordinator();
+    let main = hello(1, 2, 10, 100, "main", Some(9));
+    let sonde = hello(1, 2, 11, 200, "active_probe", Some(9));
+    anmelden(&c, "main", &main);
+    anmelden(&c, "sonde-b", &sonde);
+    anmelden(&c, "sonde-a", &sonde);
+    assert!(c.verbindung_soll_trennen("sonde-b"));
+    assert!(!c.verbindung_soll_trennen("sonde-a"));
+}

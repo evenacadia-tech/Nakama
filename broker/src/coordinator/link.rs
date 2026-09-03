@@ -127,15 +127,39 @@ impl Coordinator {
                 stand.lautheit.remove(&key);
             }
             if let Some(alter_link) = alt.current_link.as_deref() {
-                if alter_link != link_id && alt.current_nonce != adresse.runtime_nonce {
+                // H-10, zweite Haelfte: auch ein Hello mit IDENTISCHER Nonce
+                // verdraengt den aelteren Link. C-10 sagt Verdraengung nur fuer
+                // die abweichende Nonce zu und schweigt zum identischen Fall -
+                // eine Luecke, durch die zwei lebende Links dieselbe Adresse
+                // tragen konnten. Damit entsteht die Voraussetzung des
+                // Nichtdeterminismus in persistenz_p0 gar nicht erst.
+                if alter_link != link_id {
+                    let gleiche_nonce = alt.current_nonce == adresse.runtime_nonce;
                     if let Some(link) = stand.links.get_mut(alter_link) {
                         link.verdraengt = true;
                         link.trennen = true;
-                        self.alias_register.entferne(
-                            &link.alias_adressraum,
-                            &link.alias_besitzer,
-                            &link.adresse.instance_id,
-                        );
+                        // Bei IDENTISCHER Nonce ist der Aliasbesitzer beider
+                        // Links derselbe Schluessel (instance_id:runtime_nonce).
+                        // Ihn hier zu entfernen zoege dem ueberlebenden Link
+                        // seine Wireadresse weg - deshalb bleibt der Eintrag in
+                        // genau diesem Zweig stehen.
+                        //
+                        // Ehrlich vermerkt: heute ist diese Ausnahme nicht von
+                        // aussen beobachtbar, weil die Registrierung unten
+                        // (`registriere_wire_zuordnung`) denselben Eintrag im
+                        // selben gesperrten Block sofort wieder anlegt. Sie
+                        // bleibt trotzdem, weil sie die Reihenfolge unabhaengig
+                        // von dieser Nachbarschaft richtig haelt - verschoebe
+                        // jemand die Registrierung, waere der Verlust sonst
+                        // still. Ein eigener Rotbeweis existiert deshalb nicht;
+                        // der Bau-Verlauf des Manifests nennt den Grund.
+                        if !gleiche_nonce {
+                            self.alias_register.entferne(
+                                &link.alias_adressraum,
+                                &link.alias_besitzer,
+                                &link.adresse.instance_id,
+                            );
+                        }
                     }
                     Self::subscription_entfernen_locked(&mut stand, alter_link);
                     schliessen.push(alter_link.to_owned());

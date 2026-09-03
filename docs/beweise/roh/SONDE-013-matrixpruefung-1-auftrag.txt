@@ -1,0 +1,43 @@
+Matrixprüfung 1 S20–22 / Ticket SONDE-013 — gebundener Prüfauftrag des Dirigenten (2026-09-03)
+
+Du bist der frische, lesende Prüfer. Prüfgegenstand ist ausschließlich die Verhaltensmatrix der Etappe 1 dieses Tickets:
+`git diff ed9bbf7fec951a061749abf143cb2158c1c4ee52...{{ZIEL}} -- docs/beweise/SONDE-013.md`
+mit BASIS = ed9bbf7fec951a061749abf143cb2158c1c4ee52 und ZIEL = {{ZIEL}} (HEAD; er muss vor und nach deinem Lauf identisch sein).
+In dieser Etappe gibt es keinen Produktcode: das Ticket berührt Verträge, Lebenszyklen und Nebenläufigkeit, deshalb entstand zuerst die Matrix (docs/beweise/SONDE-013.md §3), die Ist-Messung (§2), die offenen Punkte (§4), der Bauplan (§5) und die Dirigentenentscheide (§7; sie gehen den vier ENTSCHEIDEN-VORSCHLAG-Zeilen M-36, M-48, M-49, M-54 und dem Wortlaut von §4.1 vor). Prüfstufe T1+T2, verlangt vom Plan für S20–22; diese Prüfung ist die Matrixprüfung vor dem Bau, nicht die T2-Abnahme.
+
+GATE-TEXT, wörtlich und vollständig (docs/FL-Nakama-Sonden-Design-Entwurf.md §58, Zeilen 4272–4290; Tickettabelle Zeile 4474; docs/bauaufteilung-sonden.md Zeile 392):
+„## 58. P4 — Vergleichsevidenz und manueller Versuch
+Zweck: Die Landkarte wird von Pegelanzeigen zu belastbarer, passagengebundener Evidenz.
+Lieferumfang:
+- Dynamik-, Headroom-, Stereo-, Korrelations- und Ereignismetriken mit Qualitätsklasse;
+- PRE/POST-Paare, Restlag/Alignment, Coverage und ehrliche Herabstufung bei Modulation oder unbekannter Zeit;
+- manuell markierte Passage, Fingerprint und Comparability-Score;
+- lokaler Hörmarker mit fail-closed playing=true, recording=false, Realtime und Editor offen;
+- Experiment für immutable Baseline/Kandidat, zunächst manual_external, Lautheitsabgleich, Blindurteil und Guardrail-Deltas;
+- Invalidierung bei Marker, Preview, Seek, Drop, geändertem Material oder Messpunkt.
+Exit-Gate: Referenzkorpus, Loop-/Seek-/PDC-Goldens und adversariale Vergleichsfixtures bestehen. Kein unbekannter Zeitpfad erzeugt eine starke Cross-Probe- oder PRE/POST-Aussage. Hörmarker- und Experimentende schließen alle Taintintervalle; der reguläre Pfad nullt danach wieder."
+Tickettabelle: „SONDE-013 | Dynamik/Stereo/PRE-POST/Passage und manueller Experimentkern | P4-Korpus und inverse Taintpfade grün". Bauaufteilung: „S20–22 | SONDE-013 | Dynamik/Stereo/PRE-POST/Passage + manueller Experimentkern | T1+T2". Dazu die Registerzeilen NAK-47 und NAK-68 (docs/offene-punkte.md, Klasse „Planarbeit · S20–22"), wörtlich in §1.5 des Manifests.
+
+Mehr verlangt das Gate nicht. Die Verhaltensmatrix steht in docs/beweise/SONDE-013.md, Abschnitt 3 (M-01 bis M-85) mit den Entscheiden in Abschnitt 7; sie wird hier geprüft, nicht angewendet.
+Die Riegel/Tests, die sie später messen: die in §3 je Zeile genannten Kanonbeine aus tools/beweise.ps1 (bestehend) und die mit NEU markierten Tests. Jüngster Kanon: GRUEN 40/40 auf a627ebb (docs/beweise/roh/NAK-121-a627ebb.md); der Codestand von ed9bbf7 ist damit identisch (Manifestkopf, gemessen).
+
+BEFUNDKLASSEN — du ordnest jeden Befund ein, der Dirigent prüft die Einordnung an der Quelle:
+- DEFEKT: eine Matrixzeile oder ein Entscheid in §7 widerspricht einem Satz des Gate-Textes oben, dem Entwurf (Fassung 0.5), einem bestehenden Vertrag (eq-copilot/schemas/v3/**, eq-copilot/schemas/state/**, eq-copilot/schemas/v3/reservierte-nachrichten-v1.json), dem gemessenen Code an ZIEL oder einer Invariante aus CLAUDE.md (Identität eingefroren, Audio echtzeitfest, Nulltest bitidentisch, State verlustfrei, Discriminator/Zieladresse/Revision/Capability nicht additiv erweiterbar, nichts Ungefragtes); oder eine Zusage des Lieferumfangs oder des Exit-Gates hat keine Matrixzeile; oder eine Zeile nennt keinen messenden Test; oder die Ist-Messung in §2 ist an der Quelle falsch (Datei:Zeile nachprüfen). Je Defekt: Zeilen-ID oder Manifestzeile, die Quelle mit Datei:Zeile, der Satz, der bricht.
+- LÜCKE: Gate, Matrix und Entwurf sagen zu dem Fall nichts — benennen, keine Nacharbeit.
+- HÄRTUNG: wünschenswert, von keiner Zusage verlangt — benennen, keine Nacharbeit.
+
+AUSDRÜCKLICH AUSGESCHLOSSEN (kein Befund, keine Erwähnung als NEEDS_WORK-Grund):
+1. Prosa, Zeilenverweise, Trefferzahlen, Abschnittsstände und Kommentar-Wortlaute im Manifest und in anderen docs/**-Dateien; der Manifestkopf; docs/beweise/roh/SONDE-013-etappe-1-auftrag.txt. Nur §2 (Ist-Messung), §3 (Matrix), §4 (offene Punkte), §5 (Bauplan) und §7 (Entscheide) sind Prüfgegenstand.
+2. Im Register datierte Härtungen: NAK-146 bis NAK-154 (NAK-121-Abschluss), NAK-103 (K1b eingefroren). Ein Befund gegen ein Prüfskript, einen Riegel oder den Runner, der absichtliche Sabotage in repo-eigenen Quellen voraussetzt, ist HÄRTUNG — das Bedrohungsmodell der Riegel ist die versehentliche Regression, nicht der Angreifer mit Schreibrecht.
+3. tools/dirigent/pruefliste.md ist eine Arbeitsliste des Workers, keine Anforderungsquelle. §2.4 des Codex-Skills sondenplan-audit („Wiederholung bis lückenlos") gilt für Gate-Audits, nicht für diesen Ticketreview. Kosmetik, Stil, optionale Härtung, theoretische Randfälle, Ticketfremdes (Intent/CauseHypothesis/Proposal/AssistantStep = SONDE-014; Active-DSP = SONDE-015; Pairing/Lease/Active-Compare = SONDE-016/017; Sidechain-Unmasking = SONDE-018): nein. Die Produktfragen P-01 bis P-06 gehören dem User; sie sind kein Befund.
+
+WAS DU TUST:
+1. Lies das Manifest in den genannten Paragraphen und den Gate-Text.
+2. Prüfe die Matrix gegen die Quellen: (a) Deckt M-01 bis M-85 jeden Satz des Lieferumfangs und des Exit-Gates von §58 samt NAK-47 und NAK-68, und trägt jede Zeile einen messenden Test (bestehend oder NEU)? (b) Sind die Vertragsfolgen in §3.8 und die Entscheide E-02 und E-04 mit den Regeln der v3-Verträge (eq-copilot/schemas/v3/README.md „Additiv oder strikt" und „oneOf und der Discriminator", reservierte-nachrichten-v1.json, tools/eq-copilot/pruefe_v3_vertrag.py) vereinbar, und ist die Zuständigkeit der Familien experiment_begin, experiment_abort, experiment_result und user_verdict nach §7 korrekt und ohne Vorgriff auf ein anderes Ticket? (c) Halten die Zeilen zu Hörmarker, Taint und Invalidierung (§3.4, §3.6, §3.7, E-01, E-03) die Audio-Thread-Invarianten und §49.3 („A/B-Zustandswechsel: kein Klick") ein, und schließen Hörmarker- und Experimentende beweisbar alle Taintintervalle, sodass der reguläre Pfad danach wieder nullt? (d) Stimmt die Ist-Messung in §2 an der Quelle (Stichproben: eq-copilot/plugin/core/analysis/FeatureEngine.h, eq-copilot/plugin/src/HoerMarkierung.h, broker/src/store/migration.rs, eq-copilot/schemas/v3/eq-ipc-v3.schema.json, reservierte-nachrichten-v1.json)? Du darfst lesen und lesende Kommandos fahren; du schreibst nichts.
+3. Prüfe, ob der Bauplan in §5 eine Etappe enthält, die ohne einen noch offenen Entscheid nicht ehrlich fortfahren kann, nachdem §7 gilt.
+
+URTEIL — genau eine der drei Formen, als erste Zeile:
+URTEIL: PASS — kein DEFEKT (Lücken und Härtungen dürfen benannt sein).
+URTEIL: NEEDS_WORK — mindestens ein DEFEKT; je Defekt: Zeilen-ID oder Manifestzeile, Quelle Datei:Zeile, welcher Satz von Gate, Entwurf, Vertrag oder Invariante bricht.
+URTEIL: BLOCKED — du konntest den Prüfbereich nicht lesen.
+Danach: geprüft / nicht geprüft, je ein Absatz.

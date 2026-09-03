@@ -1,0 +1,24 @@
+URTEIL: NEEDS_WORK — die Matrix enthält mehrere Vertrags-, Invalidierungs- und Lebenszykluswidersprüche sowie ungedeckte Entwurfszusagen. Geprüft wurden §2–§5 und §7 gegen Gate, Entwurf, v3-Verträge und die genannten Codequellen; HEAD blieb vor und nach der Prüfung bei 367a0ea732c9e883df12f2bfc5abb2f67df6da5d. Nicht geprüft wurden Bau- oder T2-Läufe, da diese Etappe ausschließlich die Vorabmatrix enthält.
+
+Full review comments:
+
+- [P1] Respektiere den Eigentümer von `experiment_result` — C:\Users\phili\Projekte\Nakama\docs\beweise\SONDE-013.md:1004-1004
+  DEFEKT: E-02 belegt `experiment_result` für SONDE-013, obwohl die bestehende Reservierung die gesamte Familie SONDE-017 zuweist (`eq-copilot/schemas/v3/reservierte-nachrichten-v1.json:156-158`). Der Vertrag kennt nur reservierte Familien, keine teilreservierten Discriminator-Zweige (`tools/eq-copilot/pruefe_v3_vertrag.py:1063-1079`): Ein `active_probe`-Zweig im `oneOf` wäre bereits definiert, ein fehlender Zweig lediglich unbekannt. Damit greift E-02 einem fremden Ticket vor und widerspricht zugleich M-73.
+
+- [P1] Versioniere E-04 im Wire-Envelope — C:\Users\phili\Projekte\Nakama\docs\beweise\SONDE-013.md:1006-1006
+  DEFEKT: E-04 verlangt den Versionsschritt im `steuerkopf`, aber `evidence_invalidate` besitzt keinen solchen Kopf, sondern nur `type`, `grund` und `umfang` (`eq-copilot/schemas/v3/eq-ipc-v3.schema.json:1085-1094`). Die geltende Fassungswahl erfolgt über `message_family` und `schema_minor` des Wire-Envelopes (`reservierte-nachrichten-v1.json:7-11`); die aktuelle Regel würde daher entweder einen unbegründeten Steuerkopf erfinden oder die strikte Enum ohne wirksame Fassungswahl ändern.
+
+- [P1] Invalidiere Seek-Fenster statt sie herabzustufen — C:\Users\phili\Projekte\Nakama\docs\beweise\SONDE-013.md:465-465
+  DEFEKT: Für ein Messfenster mit Seek ordnet M-23 nur `probable` an. §58 verlangt dagegen ausdrücklich Invalidierung bei Seek (`docs/FL-Nakama-Sonden-Design-Entwurf.md:4285`), und M-53 selbst sagt, dass der Bruch die alte Zeitreihe beendet und kein Fenster über die Grenze fortgeführt wird. Der geplante Test würde somit genau das Weiterverwenden von Evidenz festschreiben, das das Gate ausschließt.
+
+- [P1] Vereinheitliche den Sitzungsende-Gegenpfad — C:\Users\phili\Projekte\Nakama\docs\beweise\SONDE-013.md:504-504
+  DEFEKT: M-47 verlangt samt Test, dass ein Sitzungsende jedes offene Experiment abbricht, während der bindende Entscheid E-03 ausdrücklich festlegt, dass Sitzungsende, Reconnect und UI-Neustart nicht abbrechen und `restart_keeps_open_experiment` bestehen muss. Beide Anforderungen landen in Etappe G und können nicht gleichzeitig erfüllt werden; zudem verlangt §43.1 die Rekonstruierbarkeit nach Reconnect und UI-Neustart (`docs/FL-Nakama-Sonden-Design-Entwurf.md:2839-2845`).
+
+- [P2] Begrenze offene Experimente auch projektübergreifend — C:\Users\phili\Projekte\Nakama\docs\beweise\SONDE-013.md:1005-1005
+  DEFEKT: Der Deckel E-03 gilt nur je Projektbindung. Werden in fortlaufend neuen Projekten jeweils bis zu `N` Experimente geöffnet, wächst der globale Bestand offener Zeilen weiterhin unbegrenzt, weil weder Wanduhr noch Sitzungsende schließen. Das verletzt die verbindliche Zusage „offene Zeilen sammeln sich nicht unbegrenzt an“ (`docs/FL-Nakama-Sonden-Design-Entwurf.md:2842-2845`); erforderlich ist zusätzlich eine projektübergreifende Grenze oder ein anderer terminaler Retentionspfad.
+
+- [P1] Ergänze den eigenständigen Peak-Ereignispfad — C:\Users\phili\Projekte\Nakama\docs\beweise\SONDE-013.md:442-442
+  DEFEKT: M-05 behandelt den lokalen `DynamicsEvent`-Strom als bereits vollständig und plant nur dessen Transport. Tatsächlich erzeugt `FeatureEngine` ein Ereignis ausschließlich bei `fluss > schwelle`, setzt dabei `qualitaetFluss` immer auf `true` und führt den Peakpfad nur als Zusatzbit (`FeatureEngine.h:1605-1621`); Peaksteigung wird gar nicht verwendet. Damit fehlen der eigenständige Gegenbeleg für sehr kurze Impulse und ein Test dafür, obwohl §39.1 den Detektor aus spektralem Fluss, Peaksteigung und Crest ausdrücklich verlangt (`docs/FL-Nakama-Sonden-Design-Entwurf.md:2592-2599`).
+
+- [P2] Ergänze Phase und Kohärenzmetadaten in M-11 — C:\Users\phili\Projekte\Nakama\docs\beweise\SONDE-013.md:448-448
+  DEFEKT: M-11 lässt die im Entwurf vorgeschriebene Interchannel-Phase vollständig aus und bindet auch Fensterdauer und Freiheitsgrade nicht an die Evidenz. §40.1 verlangt beides ausdrücklich und erlaubt die Phaseninterpretation nur in ausreichend kohärenten Bändern (`docs/FL-Nakama-Sonden-Design-Entwurf.md:2632-2645`); keiner der genannten Tests misst diese Felder oder deren fail-closed Auswertung.

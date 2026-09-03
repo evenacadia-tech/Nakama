@@ -1,0 +1,9 @@
+SESSIONSOAK-SELBSTTEST-ZAEHLER
+  ok      selbsttest_p0_ablehnung_faellt_genau_an_der_kapazitaet  [64 von 64 angenommen]
+  FEHLER  selbsttest_p0_ablehnung_wird_gezaehlt_statt_still_verworfen  [summe 0]
+  FEHLER  selbsttest_p0_ablehnung_folgt_der_fensterzuordnung  [ausserhalb 0 von 0]
+  ok      selbsttest_p0_ablehnung_nimmt_alle_drei_spuren_zurueck  [64/64/64]
+  FEHLER  selbsttest_reconnect_paare_zaehlt_transport_nicht_vektorlaenge  [3 (Vektorlaenge 3)]
+  FEHLER  selbsttest_reconnect_paare_ist_bei_null_transport_null  [4]
+SELBSTTEST-ZAEHLER FEHLGESCHLAGEN - 4 Fehler
+EXIT=1

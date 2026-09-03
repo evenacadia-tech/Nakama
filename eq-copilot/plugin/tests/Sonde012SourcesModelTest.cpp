@@ -413,6 +413,36 @@ int main()
                 "diagnostics_are_distinct_and_actions_are_live");
     }
     {
+        // NAK-134/E-V03: der neue Livenessstatus darf NICHT als
+        // Sicherheitswarnung erscheinen. `Server not verified` behauptet, der
+        // Name gehoere jemand Fremdem — bei einer bloss belegten Pipe ist das
+        // schlicht falsch, und der User bekaeme eine Warnung ohne Handgriff.
+        // Richtig ist `Broker unavailable` MIT Handgriff: der Broker ist
+        // gerade nicht erreichbar, und der User kann etwas tun.
+        Model m;
+        nakama::ipc::ControlClient::Snapshot s;
+        s.status = nakama::ipc::ControlClient::Status::getrennt;
+        s.serverPruefstatus = nakama::ipc::ServerPruefStatus::belegtNichtErreicht;
+        s.serverPrueffehler = nakama::ipc::ServerPruefFehler::pipeBelegt;
+        m.setzeControlTransport (s);
+        const auto belegt = m.sicht();
+        // Gegenprobe in derselben Zeile: der SICHERHEITSstatus bleibt, wo er
+        // war. Ohne sie waere der Test auch gruen, wenn beide Werte auf
+        // `brokerUnavailable` faenden.
+        Model m2;
+        nakama::ipc::ControlClient::Snapshot s2;
+        s2.status = nakama::ipc::ControlClient::Status::getrennt;
+        s2.serverPruefstatus = nakama::ipc::ServerPruefStatus::belegtAberUnverifiziert;
+        s2.serverPrueffehler = nakama::ipc::ServerPruefFehler::pipeOeffnen;
+        m2.setzeControlTransport (s2);
+        const auto unverifiziert = m2.sicht();
+        pruefe (belegt.diagnose == Model::Diagnose::brokerUnavailable
+                    && belegt.diagnoseHatHandgriff
+                    && unverifiziert.diagnose == Model::Diagnose::serverUnverified
+                    && ! unverifiziert.diagnoseHatHandgriff,
+                "belegt_nicht_erreicht_zeigt_broker_unavailable_mit_handgriff");
+    }
+    {
         Model m;
         Model::Sicht f;
         f.quellen = { sichtZeile (hex (20), "A"), sichtZeile (hex (21), "B") };

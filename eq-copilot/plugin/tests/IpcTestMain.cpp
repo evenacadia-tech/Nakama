@@ -188,6 +188,11 @@ public:
     /// nie wieder. So laeuft der Sendeweg des Clients garantiert voll — ohne
     /// diesen Gegenspieler waere ein P0-Ueberlauf im Betrieb ein Rennen.
     std::atomic<bool> nichtLesen { false };
+    /// NAK-134/D-K04, D-K05: nach bestandener Serverpruefung und gelesenem
+    /// Hello GAR KEIN welcome schicken. `eineVerbindung` laeuft in seine
+    /// Lesefrist und gibt `false` — der Auth-Erfolg allein setzt den Backoff
+    /// also nicht zurueck (D-P02).
+    std::atomic<bool> welcomeAusbleiben { false };
     /// Welcome-Varianten fuer die Strenge des TelemetryClient (T2-Befund 10):
     /// als P2-Familie statt P0, mit fremder link_id, ohne `protocol`.
     std::atomic<bool> welcomeAlsP2 { false };
@@ -488,6 +493,18 @@ private:
                 schliessen (h);
                 return;
             }
+        }
+
+        // NAK-134/D-K04, D-K05: die Serverpruefung des Clients ist an dieser
+        // Stelle bestanden und sein Hello gelesen — aber es kommt KEIN
+        // welcome. Die Verbindung bleibt offen, damit der Client wirklich in
+        // seine Lesefrist laeuft statt ein Ende zu sehen.
+        if (welcomeAusbleiben.load())
+        {
+            while (laeuft.load() && welcomeAusbleiben.load())
+                std::this_thread::sleep_for (std::chrono::milliseconds (20));
+            schliessen (h);
+            return;
         }
 
         // ── welcome, bereits v3-gerahmt ───────────────────────────────────
@@ -1511,6 +1528,807 @@ const char* brokerPruefFehlerName (BrokerPruefFehler zustand) noexcept
         case BrokerPruefFehler::signerFalsch: return "signerFalsch";
     }
     return "unbekannt";
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-134 — `ERROR_PIPE_BUSY` ist Liveness, kein Sicherheitsurteil
+//
+// Die drei Werkzeuge dieses Abschnitts stellen die Oeffnungsausgaenge
+// DETERMINISTISCH her, ohne Fehlerinjektion im Produktpfad. Welchen Win32-Code
+// jede Lage liefert, ist an dieser Maschine gemessen und nicht geraten:
+//
+//   * genau eine Instanz, von uns selbst besetzt  ⇒ 231 ERROR_PIPE_BUSY
+//   * `PIPE_ACCESS_INBOUND`, Client will RW       ⇒   5 ERROR_ACCESS_DENIED
+//   * Name existiert nicht                        ⇒   2 ERROR_FILE_NOT_FOUND
+//   * `<name>\..\..`                              ⇒ 123 ERROR_INVALID_NAME
+//
+// Der letzte Fall ist der einzige an `CreateFileW` erreichbare "sonstige"
+// Fehler; Sternchen, Fragezeichen, ueberlange und geschachtelte Namen liefern
+// alle wieder 2 (gemessen, Phase 2).
+
+/// Haelt genau EINE Pipeinstanz und besetzt sie selbst. Jeder weitere
+/// `CreateFileW` bekommt `ERROR_PIPE_BUSY`, und `WaitNamedPipeW` laeuft in
+/// sein Zeitlimit, weil nie eine Instanz frei wird — die Lage aus dem
+/// Gate-Lauf G3, nur ohne 32 Sonden.
+struct BelegtePipe
+{
+    HANDLE server = INVALID_HANDLE_VALUE;
+    HANDLE besetzer = INVALID_HANDLE_VALUE;
+
+    bool anlegen (const std::string& name)
+    {
+        const std::wstring breit (name.begin(), name.end());
+        server = CreateNamedPipeW (
+            breit.c_str(), PIPE_ACCESS_DUPLEX | FILE_FLAG_FIRST_PIPE_INSTANCE,
+            PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT | PIPE_REJECT_REMOTE_CLIENTS,
+            1, 4096, 4096, 0, nullptr);
+        if (server == INVALID_HANDLE_VALUE)
+            return false;
+        besetzer = CreateFileW (breit.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr,
+                                OPEN_EXISTING,
+                                SECURITY_SQOS_PRESENT | SECURITY_IDENTIFICATION, nullptr);
+        return besetzer != INVALID_HANDLE_VALUE;
+    }
+    ~BelegtePipe()
+    {
+        if (besetzer != INVALID_HANDLE_VALUE) CloseHandle (besetzer);
+        if (server != INVALID_HANDLE_VALUE)
+        {
+            DisconnectNamedPipe (server);
+            CloseHandle (server);
+        }
+    }
+};
+
+/// Eine nur EINGEHENDE Pipe. Der Client oeffnet mit GENERIC_READ|GENERIC_WRITE
+/// und bekommt `ERROR_ACCESS_DENIED` — der Fall "der Name gehoert jemand
+/// anderem" ohne einen zweiten Benutzer im Test.
+struct FremdePipe
+{
+    HANDLE server = INVALID_HANDLE_VALUE;
+
+    bool anlegen (const std::string& name)
+    {
+        const std::wstring breit (name.begin(), name.end());
+        server = CreateNamedPipeW (
+            breit.c_str(), PIPE_ACCESS_INBOUND | FILE_FLAG_FIRST_PIPE_INSTANCE,
+            PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT | PIPE_REJECT_REMOTE_CLIENTS,
+            1, 4096, 4096, 0, nullptr);
+        return server != INVALID_HANDLE_VALUE;
+    }
+    ~FremdePipe() { if (server != INVALID_HANDLE_VALUE) CloseHandle (server); }
+};
+
+/// Ein Name, den Win32 als ungueltig zurueckweist (123) — der einzige an
+/// `CreateFileW` erreichbare "sonstige" Fehler. Er bleibt im Probe-Namensraum.
+std::string ungueltigerName (const char* fall)
+{
+    return testPipeName (fall) + "\\..\\..";
+}
+
+/// W-H3: `backoffMs` ist eine lokale Variable in `threadLauf` und von aussen
+/// nicht lesbar. Belegbar ist nur, WANN ein neuer Oeffnungsversuch beginnt —
+/// `verbindungsVersuche` steigt in der Eintrittssperre von `eineVerbindung`.
+int weitereVersucheIn (const std::function<int()>& versuche, int fensterMs)
+{
+    const int vorher = versuche();
+    std::this_thread::sleep_for (std::chrono::milliseconds (fensterMs));
+    return versuche() - vorher;
+}
+
+/// Die Zeitpunkte der naechsten `anzahl` Oeffnungsversuche, relativ zum
+/// Aufruf. Ein Wert < 0 heisst: der Versuch kam innerhalb `deckelMs` nicht.
+std::vector<long long> versuchsStempel (const std::function<int()>& versuche,
+                                        int anzahl, int deckelMs)
+{
+    std::vector<long long> stempel;
+    const auto start = std::chrono::steady_clock::now();
+    int stand = versuche();
+    while (static_cast<int> (stempel.size()) < anzahl)
+    {
+        const auto jetzt = std::chrono::steady_clock::now();
+        const auto ms = std::chrono::duration_cast<std::chrono::milliseconds> (
+            jetzt - start).count();
+        if (ms > deckelMs)
+        {
+            while (static_cast<int> (stempel.size()) < anzahl) stempel.push_back (-1);
+            break;
+        }
+        const int neu = versuche();
+        if (neu > stand)
+        {
+            for (int i = 0; i < neu - stand && static_cast<int> (stempel.size()) < anzahl; ++i)
+                stempel.push_back (ms);
+            stand = neu;
+            continue;
+        }
+        std::this_thread::sleep_for (std::chrono::milliseconds (10));
+    }
+    return stempel;
+}
+
+TelemetryHello nak134TelemetryHello()
+{
+    TelemetryHello h;
+    h.adresse = testAdresse (hex32 ('a'));
+    h.linkId = hex32 ('c');
+    h.challenge = hex32 ('d');
+    return h;
+}
+
+/// D-K10 bis D-K26 auf den beiden v3-Pfaden, je Ausgang ein eigener
+/// Pruefpunkt. Gemessen werden Status, Fehler, `brokerPipeFehlt`,
+/// `serverPruefungen` UND die Phasenwirkung: laeuft der Backoff weiter oder
+/// parkt der Thread?
+void oeffnungsausgaenge_sind_liveness_oder_sicherheit()
+{
+    struct Fall
+    {
+        const char* name;
+        ServerPruefStatus status;
+        ServerPruefFehler fehler;
+        bool brokerFehlt;
+        std::uint64_t pruefungenErsterVersuch;
+        bool parkt;
+    };
+    const std::vector<Fall> faelle {
+        // D-K18/D-K19 — der Defekt. Vor R1: belegtAberUnverifiziert + Parken.
+        { "pipe_busy", ServerPruefStatus::belegtNichtErreicht,
+          ServerPruefFehler::pipeBelegt, false, 0, false },
+        // D-K16 — unveraendert.
+        { "file_not_found", ServerPruefStatus::nichtDa,
+          ServerPruefFehler::pipeFehlt, true, 0, false },
+        // D-K21/D-K22 — die NAK-123-Zusage bleibt.
+        { "access_denied", ServerPruefStatus::belegtAberUnverifiziert,
+          ServerPruefFehler::pipeOeffnen, false, 1, true },
+        // D-K24/D-K25 — jeder UNBEKANNTE Fehler bleibt fail-closed.
+        { "sonstiger_fehler", ServerPruefStatus::belegtAberUnverifiziert,
+          ServerPruefFehler::pipeOeffnen, false, 1, true },
+    };
+
+    for (const auto& f : faelle)
+    {
+        const std::string fall (f.name);
+        // ── Control ──────────────────────────────────────────────────────
+        {
+            BelegtePipe belegt;
+            FremdePipe fremd;
+            std::string pipe;
+            bool aufbau = true;
+            if (fall == "pipe_busy")       { pipe = testPipeName ("k-busy-c");  aufbau = belegt.anlegen (pipe); }
+            else if (fall == "access_denied") { pipe = testPipeName ("k-denied-c"); aufbau = fremd.anlegen (pipe); }
+            else if (fall == "sonstiger_fehler") pipe = ungueltigerName ("k-invalid-c");
+            else                              pipe = testPipeName ("k-fehlt-c");
+
+            const auto t0 = std::chrono::steady_clock::now();
+            ControlClient client ([] { return nak123ControlHello(); }, pipe);
+            client.start();
+            const bool klassifiziert = warteAuf (9000, [&] {
+                const auto s = client.snapshot();
+                return s.status == ControlClient::Status::getrennt
+                    && s.serverPruefstatus == f.status
+                    && s.serverPrueffehler == f.fehler;
+            });
+            const auto dauerMs = std::chrono::duration_cast<std::chrono::milliseconds> (
+                std::chrono::steady_clock::now() - t0).count();
+            const auto nachFehler = client.snapshot();
+            // Der Backoff beginnt bei 500 ms. Ein Fenster von 1.500 ms trennt
+            // "parkt" (0 weitere Versuche) von "Backoff laeuft" (mindestens
+            // einer) — ohne eine Obergrenze zu behaupten.
+            const int weitere = weitereVersucheIn (
+                [&] { return client.snapshot().verbindungsVersuche; }, 1500);
+            client.stop();
+
+            const bool phase = f.parkt ? weitere == 0 : weitere >= 1;
+            // Nur `pipe_busy` faehrt die volle Warteschleife; die untere
+            // Schranke aus §7 gilt deshalb nur dort.
+            const bool frist = fall != "pipe_busy" || dauerMs >= 4000;
+            pruefe (aufbau && klassifiziert && phase && frist
+                        && nachFehler.brokerPipeFehlt == f.brokerFehlt
+                        && nachFehler.serverPruefungen == f.pruefungenErsterVersuch,
+                    ("oeffnungsausgaenge_sind_liveness_oder_sicherheit/control/" + fall).c_str(),
+                    "klass " + std::to_string (klassifiziert) + ", " + std::to_string (dauerMs)
+                        + " ms, weitere Versuche " + std::to_string (weitere)
+                        + " (erwartet " + (f.parkt ? "0" : ">=1") + "), pruefungen "
+                        + std::to_string (nachFehler.serverPruefungen) + " (erwartet "
+                        + std::to_string (f.pruefungenErsterVersuch) + ")");
+        }
+        // ── Telemetrie ───────────────────────────────────────────────────
+        {
+            BelegtePipe belegt;
+            FremdePipe fremd;
+            std::string pipe;
+            bool aufbau = true;
+            if (fall == "pipe_busy")       { pipe = testPipeName ("k-busy-t");  aufbau = belegt.anlegen (pipe); }
+            else if (fall == "access_denied") { pipe = testPipeName ("k-denied-t"); aufbau = fremd.anlegen (pipe); }
+            else if (fall == "sonstiger_fehler") pipe = ungueltigerName ("k-invalid-t");
+            else                              pipe = testPipeName ("k-fehlt-t");
+
+            TelemetryClient client ([] { return nak134TelemetryHello(); }, pipe);
+            client.start();
+            const bool klassifiziert = warteAuf (9000, [&] {
+                const auto s = client.snapshot();
+                return s.status == TelemetryClient::Status::getrennt
+                    && s.serverPruefstatus == f.status
+                    && s.serverPrueffehler == f.fehler;
+            });
+            const auto nachFehler = client.snapshot();
+            const int weitere = weitereVersucheIn (
+                [&] { return client.snapshot().verbindungsVersuche; }, 1500);
+            client.stop();
+
+            const bool phase = f.parkt ? weitere == 0 : weitere >= 1;
+            pruefe (aufbau && klassifiziert && phase
+                        && nachFehler.serverPruefungen == f.pruefungenErsterVersuch,
+                    ("oeffnungsausgaenge_sind_liveness_oder_sicherheit/telemetrie/" + fall).c_str(),
+                    "klass " + std::to_string (klassifiziert)
+                        + ", weitere Versuche " + std::to_string (weitere)
+                        + " (erwartet " + (f.parkt ? "0" : ">=1") + "), pruefungen "
+                        + std::to_string (nachFehler.serverPruefungen));
+        }
+    }
+}
+
+/// D-K10, D-K11 — die zwei Ausgaenge, die in Phase 1 der Matrix ganz fehlten.
+/// Beide entstehen in `namedPipeServerAuthentisieren` und bleiben
+/// Sicherheitsfaelle: `authFehler` setzt IMMER `belegtAberUnverifiziert`.
+void authausgaenge_erwartung_und_serverpid_bleiben_sicherheit()
+{
+    struct Fall { const char* name; ServerPruefFehler fehler; bool ueberErwartung; };
+    const std::vector<Fall> faelle {
+        { "erwartung_ungueltig", ServerPruefFehler::erwartungUngueltig, true },
+        { "server_pid_nicht_ermittelbar", ServerPruefFehler::serverPidNichtErmittelbar, false },
+    };
+    for (const auto& f : faelle)
+    {
+        const auto pipe = testPipeName (f.name);
+        TestServer server (pipe);
+        const bool steht = server.starten();
+        ServerErwartung erwartung;
+        if (f.ueberErwartung)
+        {
+            // Kein `testFehler`-Weg noetig: eine leere Erwartung IST der Fall.
+            erwartung = ServerErwartung {};
+        }
+        else
+        {
+            erwartung = testExeErwartung (GetCurrentProcessId());
+            erwartung.testFehler = f.fehler;
+        }
+        ControlClient client ([] { return nak123ControlHello(); }, pipe,
+                              {}, {}, {}, {}, erwartung);
+        client.start();
+        const bool fiel = warteAuf (4000, [&] {
+            const auto s = client.snapshot();
+            return s.serverPruefstatus == ServerPruefStatus::belegtAberUnverifiziert
+                && s.serverPrueffehler == f.fehler
+                && s.serverPruefungen == 1;
+        });
+        const int weitere = weitereVersucheIn (
+            [&] { return client.snapshot().verbindungsVersuche; }, 1500);
+        client.stop();
+        server.stoppen();
+        pruefe (steht && fiel && weitere == 0 && serverHatKeinHello (server),
+                ("authausgaenge_erwartung_und_serverpid_bleiben_sicherheit/"
+                 + std::string (f.name)).c_str(),
+                "fiel " + std::to_string (fiel) + ", weitere Versuche "
+                    + std::to_string (weitere));
+    }
+}
+
+/// D-K08 — die Telemetrie parkt bei einem Authfehler genauso wie Control.
+/// Der bisher zitierte `control_und_telemetry_authentisieren_jedes_handle`
+/// misst nur den ERFOLGSfall.
+void telemetrie_authfehler_parkt_wie_control()
+{
+    const auto pipe = testPipeName ("k-tele-auth");
+    TestServer server (pipe);
+    const bool steht = server.starten();
+    auto erwartung = testExeErwartung (GetCurrentProcessId());
+    erwartung.testFehler = ServerPruefFehler::hashFalsch;
+    TelemetryClient client ([] { return nak134TelemetryHello(); }, pipe, {}, erwartung);
+    client.start();
+    const bool fiel = warteAuf (4000, [&] {
+        const auto s = client.snapshot();
+        return s.status == TelemetryClient::Status::getrennt
+            && s.serverPruefstatus == ServerPruefStatus::belegtAberUnverifiziert
+            && s.serverPrueffehler == ServerPruefFehler::hashFalsch
+            && s.serverPruefungen == 1;
+    });
+    const int weitere = weitereVersucheIn (
+        [&] { return client.snapshot().verbindungsVersuche; }, 1500);
+    client.stop();
+    server.stoppen();
+    pruefe (steht && fiel && weitere == 0,
+            "telemetrie_authfehler_parkt_wie_control",
+            "fiel " + std::to_string (fiel) + ", weitere Versuche "
+                + std::to_string (weitere));
+}
+
+/// D-P01, D-P02, D-P05, D-P06 und W-H3: die beobachtbare Wartefolge
+/// 500 → 1.000 → 2.000 → 4.000 → 8.000 → 8.000. Gemessen werden die ABSTAENDE
+/// zwischen Oeffnungsversuchen, nicht eine interne Variable (E9).
+///
+/// Die volle Folge bis zum Deckel kostet 23,5 s reine Wartezeit. Sie wird
+/// deshalb EINMAL gefahren, auf dem Control-Pfad mit `file_not_found`; die
+/// uebrigen Faelle messen die Verdopplung ueber die ersten drei Abstaende.
+void backoff_folge_und_deckel_sind_beobachtbar()
+{
+    // ── Fall `file_not_found`: volle Folge inklusive Deckel ──────────────
+    {
+        const auto pipe = testPipeName ("k-backoff-voll");
+        ControlClient client ([] { return nak123ControlHello(); }, pipe);
+        client.start();
+        auto versuche = [&] { return client.snapshot().verbindungsVersuche; };
+        warteAuf (2000, [&] { return versuche() >= 1; });
+        const auto s = versuchsStempel (versuche, 6, 30000);
+        client.stop();
+        bool alleDa = true;
+        for (auto v : s) alleDa = alleDa && v >= 0;
+        // Toleranz 40 %: Scheduling und der Oeffnungsversuch selbst kommen
+        // hinzu. Eine engere Schranke waere eine Behauptung ueber die
+        // Maschine, keine ueber den Code.
+        auto imFenster = [] (long long ist, long long soll) {
+            return ist >= soll * 3 / 5 && ist <= soll * 7 / 5 + 200;
+        };
+        const bool folge = alleDa
+            && imFenster (s[0], 500) && imFenster (s[1] - s[0], 1000)
+            && imFenster (s[2] - s[1], 2000) && imFenster (s[3] - s[2], 4000)
+            && imFenster (s[4] - s[3], 8000) && imFenster (s[5] - s[4], 8000);
+        std::string detail;
+        for (std::size_t i = 0; i < s.size(); ++i)
+            detail += (i ? " " : "") + std::to_string (i ? s[i] - s[i - 1] : s[i]);
+        pruefe (folge, "backoff_folge_und_deckel_sind_beobachtbar/file_not_found",
+                "Abstaende " + detail + " ms (erwartet 500 1000 2000 4000 8000 8000)");
+    }
+
+    // ── Fall `pipe_busy`: der BELEG. Vor R1 gibt es hier gar keine Folge ──
+    {
+        const auto pipe = testPipeName ("k-backoff-busy");
+        BelegtePipe belegt;
+        const bool aufbau = belegt.anlegen (pipe);
+        ControlClient client ([] { return nak123ControlHello(); }, pipe);
+        client.start();
+        auto versuche = [&] { return client.snapshot().verbindungsVersuche; };
+        // Jeder Versuch kostet hier zusaetzlich die 4-s-Warteschleife.
+        const auto s = versuchsStempel (versuche, 3, 30000);
+        client.stop();
+        bool alleDa = true;
+        for (auto v : s) alleDa = alleDa && v >= 0;
+        // Zwei aufeinanderfolgende Versuche muessen mindestens die
+        // Warteschleife plus den wachsenden Backoff auseinanderliegen —
+        // gemessen wird die untere Schranke, nie eine Obergrenze.
+        const bool folge = alleDa && (s[1] - s[0]) >= 4000 && (s[2] - s[1]) >= 4000
+                        && (s[2] - s[1]) > (s[1] - s[0]);
+        std::string detail;
+        for (std::size_t i = 0; i < s.size(); ++i)
+            detail += (i ? " " : "") + std::to_string (s[i]);
+        pruefe (aufbau && folge, "backoff_folge_und_deckel_sind_beobachtbar/pipe_busy",
+                "Stempel " + detail + " ms — vor R1 parkt der Thread nach dem ersten");
+    }
+
+    // ── D-P02: verifiziert, aber Welcome bleibt aus ⇒ KEINE Ruecksetzung ──
+    {
+        const auto pipe = testPipeName ("k-backoff-welcome");
+        // Ein Server, der annimmt und das Hello liest, aber nie ein welcome
+        // schickt: `eineVerbindung` gibt `false`, der Backoff verdoppelt.
+        TestServer stumm (pipe);
+        stumm.welcomeAusbleiben.store (true);
+        const bool aufbau = stumm.starten();
+        ControlClient client ([] { return nak123ControlHello(); }, pipe,
+                              {}, {}, {}, {}, testExeErwartung (GetCurrentProcessId()));
+        client.start();
+        auto versuche = [&] { return client.snapshot().verbindungsVersuche; };
+        const auto s = versuchsStempel (versuche, 3, 40000);
+        const auto letzter = client.snapshot();
+        client.stop();
+        stumm.stoppen();
+        bool alleDa = true;
+        for (auto v : s) alleDa = alleDa && v >= 0;
+        // Waere die Ruecksetzung an den Auth-Erfolg gebunden statt an die
+        // Rueckgabe, blieben die Abstaende bei 500 ms stehen.
+        const bool waechst = alleDa && (s[2] - s[1]) > (s[1] - s[0]);
+        pruefe (aufbau && waechst
+                    && letzter.serverPruefungen >= 2,
+                "verifiziert_ohne_welcome_setzt_backoff_nicht_zurueck",
+                "Stempel " + (alleDa ? std::to_string (s[0]) + " " + std::to_string (s[1])
+                                       + " " + std::to_string (s[2])
+                                     : std::string ("unvollstaendig"))
+                    + " ms, pruefungen " + std::to_string (letzter.serverPruefungen));
+    }
+}
+
+/// D-P03, D-P07 — die Phasenaussage des Parkens. Sie kann kein Backoff-Test
+/// messen: geparkt gibt es GAR KEINE Folge. Belegt werden zwei Dinge:
+///   1. nach dem Ausgang folgt kein Versuch mehr (Backoff uebergangen);
+///   2. nach `reconnect()` folgt der naechste Versuch SOFORT, ohne Wartezeit.
+/// Punkt 2 ist zugleich der Beleg fuer die Ruecksetzung von `backoffMs`
+/// (`ControlClient.cpp:1010`): ein stehengebliebener Backoff wuerde die
+/// naechste Runde um mindestens 500 ms verzoegern.
+void parken_uebergeht_den_backoff()
+{
+    struct Fall { const char* name; bool ueberAuth; };
+    for (const auto& f : std::vector<Fall> { { "authfehler", true },
+                                             { "access_denied", false } })
+    {
+        const std::string fall (f.name);
+        const auto pipe = testPipeName (("k-parken-" + fall).c_str());
+        TestServer server (pipe);
+        FremdePipe fremd;
+        bool aufbau = true;
+        ServerErwartung erwartung;
+        if (f.ueberAuth)
+        {
+            aufbau = server.starten();
+            erwartung = testExeErwartung (GetCurrentProcessId());
+            erwartung.testFehler = ServerPruefFehler::signerFalsch;
+        }
+        else
+        {
+            aufbau = fremd.anlegen (pipe);
+        }
+        ControlClient client ([] { return nak123ControlHello(); }, pipe,
+                              {}, {}, {}, {}, erwartung);
+        client.start();
+        const bool geparkt = warteAuf (5000, [&] {
+            return client.snapshot().serverPruefstatus
+                == ServerPruefStatus::belegtAberUnverifiziert;
+        });
+        auto versuche = [&] { return client.snapshot().verbindungsVersuche; };
+        // 1. kein weiterer Versuch — deutlich laenger als der Startbackoff.
+        const int weitere = weitereVersucheIn (versuche, 1500);
+        // 2. reconnect() loest die Sperre; der naechste Versuch kommt OHNE
+        //    Wartezeit. 250 ms sind die halbe Startwartezeit — ein
+        //    stehengebliebener Backoff koennte sie nicht unterbieten.
+        const int vorReconnect = versuche();
+        const auto t0 = std::chrono::steady_clock::now();
+        client.reconnect();
+        const bool sofort = warteAuf (250, [&] { return versuche() > vorReconnect; });
+        const auto verzug = std::chrono::duration_cast<std::chrono::milliseconds> (
+            std::chrono::steady_clock::now() - t0).count();
+        client.stop();
+        server.stoppen();
+        pruefe (aufbau && geparkt && weitere == 0 && sofort,
+                ("parken_uebergeht_den_backoff/" + fall).c_str(),
+                "geparkt " + std::to_string (geparkt) + ", weitere Versuche "
+                    + std::to_string (weitere) + ", Neustart nach "
+                    + std::to_string (verzug) + " ms");
+    }
+}
+
+/// E-Z01, E-Z02, E-Z04 — die zwei Zaehlervertraege der v3-Clients.
+/// `verbindungsVersuche` steigt bei JEDEM Eintritt; `serverPruefungen` nur,
+/// wenn der Status in der Positivliste `{verifiziert, belegtAberUnverifiziert}`
+/// liegt. R1 aendert keine der beiden Regeln — es faellt nur `PIPE_BUSY` aus
+/// der Positivliste, weil sein Status ein anderer wird.
+void zaehlervertrag_verbindungsversuche_und_serverpruefungen()
+{
+    // Fall `pipe_busy`: der Wert SINKT gegenueber heute — das ist der Beleg.
+    {
+        const auto pipe = testPipeName ("k-zaehler-busy");
+        BelegtePipe belegt;
+        const bool aufbau = belegt.anlegen (pipe);
+        ControlClient client ([] { return nak123ControlHello(); }, pipe);
+        client.start();
+        auto versuche = [&] { return client.snapshot().verbindungsVersuche; };
+        const bool zweiVersuche = warteAuf (20000, [&] { return versuche() >= 2; });
+        const auto s = client.snapshot();
+        client.stop();
+        pruefe (aufbau && zweiVersuche && s.serverPruefungen == 0,
+                "zaehlervertrag_verbindungsversuche_und_serverpruefungen/pipe_busy",
+                std::to_string (s.verbindungsVersuche) + " Versuche, "
+                    + std::to_string (s.serverPruefungen)
+                    + " Serverpruefungen (erwartet 0)");
+    }
+    // Fall `access_denied`: der Wert BLEIBT — ein Oeffnungsfehler ohne Handle
+    // zaehlt auf dem v3-Pfad weiterhin als Serverpruefung (offener Punkt,
+    // ausserhalb von R1).
+    {
+        const auto pipe = testPipeName ("k-zaehler-denied");
+        FremdePipe fremd;
+        const bool aufbau = fremd.anlegen (pipe);
+        ControlClient client ([] { return nak123ControlHello(); }, pipe);
+        client.start();
+        const bool gefallen = warteAuf (4000, [&] {
+            return client.snapshot().serverPruefstatus
+                == ServerPruefStatus::belegtAberUnverifiziert;
+        });
+        const auto s = client.snapshot();
+        client.stop();
+        pruefe (aufbau && gefallen && s.serverPruefungen == 1
+                    && s.verbindungsVersuche == 1,
+                "zaehlervertrag_verbindungsversuche_und_serverpruefungen/access_denied",
+                std::to_string (s.verbindungsVersuche) + " Versuche, "
+                    + std::to_string (s.serverPruefungen) + " Serverpruefungen");
+    }
+    // Telemetrie, Fall `pipe_busy`: derselbe Vertrag.
+    {
+        const auto pipe = testPipeName ("k-zaehler-busy-t");
+        BelegtePipe belegt;
+        const bool aufbau = belegt.anlegen (pipe);
+        TelemetryClient client ([] { return nak134TelemetryHello(); }, pipe);
+        client.start();
+        auto versuche = [&] { return client.snapshot().verbindungsVersuche; };
+        const bool zweiVersuche = warteAuf (20000, [&] { return versuche() >= 2; });
+        const auto s = client.snapshot();
+        client.stop();
+        pruefe (aufbau && zweiVersuche && s.serverPruefungen == 0,
+                "zaehlervertrag_verbindungsversuche_und_serverpruefungen/telemetrie_pipe_busy",
+                std::to_string (s.verbindungsVersuche) + " Versuche, "
+                    + std::to_string (s.serverPruefungen) + " Serverpruefungen");
+    }
+}
+
+/// D-P08 — die Kopplungswarte der Telemetrie laeuft VOR `eineVerbindung` und
+/// faelscht `backoffMs` nicht. Ohne gueltige Kopplung wird gar nicht
+/// geoeffnet: `verbindungsVersuche` bleibt 0 und der Status ist
+/// `wartetAufKopplung`.
+void kopplungswarte_faelscht_den_backoff_nicht()
+{
+    const auto pipe = testPipeName ("k-kopplung");
+    TelemetryClient client ([] {
+        TelemetryHello h;
+        h.adresse = testAdresse (hex32 ('a'));
+        h.linkId = "keinhex";          // absichtlich kein hex32
+        h.challenge = "auchnichthex";
+        return h;
+    }, pipe);
+    client.start();
+    const bool wartet = warteAuf (2000, [&] {
+        return client.snapshot().status == TelemetryClient::Status::wartetAufKopplung;
+    });
+    std::this_thread::sleep_for (std::chrono::milliseconds (800));
+    const auto s = client.snapshot();
+    client.stop();
+    pruefe (wartet && s.verbindungsVersuche == 0 && s.serverPruefungen == 0
+                && s.serverPruefstatus == ServerPruefStatus::nichtGeprueft,
+            "kopplungswarte_faelscht_den_backoff_nicht",
+            std::to_string (s.verbindungsVersuche) + " Versuche, Status "
+                + std::to_string (static_cast<int> (s.status)));
+}
+
+/// E-V01, E-V02 — `BrokerLifecycle` sieht den neuen Status und tut NICHTS:
+/// kein Spawn (den darf nur `nichtDa` oeffnen) und keine Sperre (die verlangt
+/// `belegtAberUnverifiziert`). Der Wert faellt in beiden Zweigen durch.
+void belegt_nicht_erreicht_spawnt_nicht_und_blockiert_nicht()
+{
+    for (const bool ausServerpruefung : { false, true })
+    {
+        std::atomic<int> spawns { 0 }, reconnects { 0 };
+        std::atomic<ServerPruefStatus> status {
+            ausServerpruefung ? ServerPruefStatus::nichtGeprueft
+                              : ServerPruefStatus::belegtNichtErreicht };
+        BrokerLifecycleHooks h;
+        h.serverPruefstatus = [&] { return status.load(); };
+        h.darfStarten = [] { return true; };
+        h.spawn = [&] { ++spawns; return true; };
+        h.reconnect = [&] { ++reconnects; };
+        BrokerLifecycle lifecycle (std::move (h));
+        lifecycle.start();
+        if (ausServerpruefung)
+        {
+            // Erst in `wartetAufServerpruefung` fahren, dann den neuen Wert
+            // liefern — der zweite Zweig aus E-V02.
+            std::this_thread::sleep_for (std::chrono::milliseconds (60));
+            status.store (ServerPruefStatus::belegtNichtErreicht);
+        }
+        std::this_thread::sleep_for (std::chrono::milliseconds (300));
+        const auto z = lifecycle.snapshot();
+        lifecycle.stop();
+        pruefe (spawns.load() == 0 && ! z.serverNichtVerifiziert && ! z.imCooldown
+                    && z.cooldowns == 0 && z.mutexVerloren == 0
+                    && z.letzterServerPruefstatus != ServerPruefStatus::nichtDa,
+                ausServerpruefung
+                    ? "belegt_nicht_erreicht_spawnt_nicht_und_blockiert_nicht/aus_serverpruefung"
+                    : "belegt_nicht_erreicht_spawnt_nicht_und_blockiert_nicht/aus_connect",
+                std::to_string (spawns.load()) + " Spawns, serverNichtVerifiziert "
+                    + std::to_string (z.serverNichtVerifiziert) + ", cooldowns "
+                    + std::to_string (z.cooldowns));
+    }
+}
+
+/// E-V04, E-V05, E-V06 — der Gegenpfad parken↔loesen AM CLIENT. Bisher hat
+/// ihn kein Test beruehrt: der frueher zitierte
+/// `unverifizierte_belegte_pipe_spawnt_und_reconnectet_nicht` misst den
+/// `BrokerLifecycle`-Hook, nie die Condition-Variable des Clients.
+void parken_loest_ueber_reconnect_und_stop()
+{
+    for (const bool ueberStop : { false, true })
+    {
+        const auto pipe = testPipeName (ueberStop ? "k-loesen-stop" : "k-loesen-reconnect");
+        FremdePipe fremd;
+        const bool aufbau = fremd.anlegen (pipe);
+        ControlClient client ([] { return nak123ControlHello(); }, pipe);
+        client.start();
+        const bool geparkt = warteAuf (4000, [&] {
+            return client.snapshot().serverPruefstatus
+                == ServerPruefStatus::belegtAberUnverifiziert;
+        });
+        auto versuche = [&] { return client.snapshot().verbindungsVersuche; };
+        const int vorher = versuche();
+        bool geloest = false;
+        long long dauerMs = 0;
+        const auto t0 = std::chrono::steady_clock::now();
+        if (ueberStop)
+        {
+            client.stop();
+            dauerMs = std::chrono::duration_cast<std::chrono::milliseconds> (
+                std::chrono::steady_clock::now() - t0).count();
+            // Geloest heisst hier: `stop()` kehrt zurueck, ohne die
+            // Stopfrist zu reissen. Ein Thread, der auf der Sperre haengen
+            // bliebe, wuerde abgeloest und der Zaehler stiege.
+            geloest = client.snapshot().stopFristUeberschritten == 0;
+        }
+        else
+        {
+            client.reconnect();
+            geloest = warteAuf (250, [&] { return versuche() > vorher; });
+            dauerMs = std::chrono::duration_cast<std::chrono::milliseconds> (
+                std::chrono::steady_clock::now() - t0).count();
+            client.stop();
+        }
+        pruefe (aufbau && geparkt && geloest,
+                ueberStop ? "parken_loest_ueber_reconnect_und_stop/stop"
+                          : "parken_loest_ueber_reconnect_und_stop/reconnect",
+                "geparkt " + std::to_string (geparkt) + ", geloest nach "
+                    + std::to_string (dauerMs) + " ms");
+    }
+}
+
+/// D-A01 bis D-A11 — Abbruch vor und nach einem erfolgreichen `CreateFileW`.
+/// R5 ist eine SPAETESTENS-Zusage: gemessen wird der AUSGANG (kein Hello, kein
+/// Byte, kein veroeffentlichtes Urteil), ausdruecklich keine Mindestdauer.
+void abbruch_vor_und_nach_createfile()
+{
+    // ── vor dem Oeffnungserfolg: kein Server, die Schleife laeuft leer ────
+    for (const bool ueberStop : { true, false })
+    {
+        const auto pipe = testPipeName (ueberStop ? "k-abbruch-vor-stop"
+                                                  : "k-abbruch-vor-reconnect");
+        ControlClient client ([] { return nak123ControlHello(); }, pipe);
+        client.start();
+        warteAuf (2000, [&] { return client.snapshot().verbindungsVersuche >= 1; });
+        bool ok = false;
+        if (ueberStop)
+        {
+            client.stop();
+            const auto s = client.snapshot();
+            // D-A01: `stop()` setzt nach dem Join getrennt/nichtGeprueft/keiner.
+            ok = s.status == ControlClient::Status::getrennt
+              && s.serverPruefstatus == ServerPruefStatus::nichtGeprueft
+              && s.serverPrueffehler == ServerPruefFehler::keiner
+              && s.serverPid == 0 && s.serverPruefungen == 0;
+        }
+        else
+        {
+            const int vorher = client.snapshot().verbindungsVersuche;
+            client.reconnect();
+            // D-A04: neue Generation, Reset, neue Runde OHNE Wartezeit.
+            ok = warteAuf (400, [&] {
+                     return client.snapshot().verbindungsVersuche > vorher;
+                 })
+              && client.snapshot().serverPruefungen == 0;
+            client.stop();
+        }
+        pruefe (ok, ueberStop ? "abbruch_vor_und_nach_createfile/control/stop_vor_open"
+                              : "abbruch_vor_und_nach_createfile/control/reconnect_vor_open",
+                "");
+    }
+
+    // ── nach dem Oeffnungserfolg: der Server nimmt an, der Abbruch trifft
+    //    waehrend der Authentisierung ein. Kein Hello darf fliessen.
+    for (const bool ueberStop : { true, false })
+    {
+        const auto pipe = testPipeName (ueberStop ? "k-abbruch-nach-stop"
+                                                  : "k-abbruch-nach-reconnect");
+        TestServer server (pipe);
+        const bool steht = server.starten();
+        std::atomic<bool> vorHash { false }, freigeben { false };
+        auto erwartung = testExeErwartung (GetCurrentProcessId());
+        erwartung.testVorFehlerErreicht = &vorHash;
+        erwartung.testFehlerFreigeben = &freigeben;
+        ControlClient client ([] { return nak123ControlHello(); }, pipe,
+                              {}, {}, {}, {}, erwartung);
+        client.start();
+        // Jetzt steht das Handle offen und die Authentisierung haelt an der
+        // Testbarriere — genau der Zeitpunkt "nach `CreateFileW`-Erfolg".
+        const bool ander = warteAuf (5000, [&] { return vorHash.load(); });
+        const auto vorAbbruch = client.snapshot();
+        bool ok = false;
+        if (ueberStop)
+        {
+            std::thread abbrecher ([&] { client.stop(); });
+            std::this_thread::sleep_for (std::chrono::milliseconds (50));
+            freigeben.store (true);
+            abbrecher.join();
+            const auto s = client.snapshot();
+            // Das Urteil der veralteten Generation wird verworfen: der
+            // Zaehler steht still und kein Hello ist geflossen.
+            ok = s.serverPruefungen == vorAbbruch.serverPruefungen;
+        }
+        else
+        {
+            client.reconnect();
+            std::this_thread::sleep_for (std::chrono::milliseconds (50));
+            // Den Server VOR der Freigabe schliessen. Sonst faenge die neue
+            // Runde eine zweite Verbindung an und ihr — voellig regulaeres —
+            // Hello wuerde die Aussage ueber die ABGEBROCHENE Runde
+            // faelschen. Genau daran fiel die erste Fassung dieses Tests.
+            server.stoppen();
+            freigeben.store (true);
+            // Nach dem Verwerfen laeuft sofort eine neue Runde: der Zaehler
+            // steigt, das verworfene Urteil wird aber nicht veroeffentlicht.
+            ok = warteAuf (4000, [&] {
+                     return client.snapshot().verbindungsVersuche
+                          > vorAbbruch.verbindungsVersuche;
+                 })
+              && client.snapshot().serverPruefungen == vorAbbruch.serverPruefungen;
+            client.stop();
+        }
+        const bool keinHello = serverHatKeinHello (server);
+        server.stoppen();
+        pruefe (steht && ander && ok && keinHello,
+                ueberStop ? "abbruch_vor_und_nach_createfile/control/stop_nach_open"
+                          : "abbruch_vor_und_nach_createfile/control/reconnect_nach_open",
+                "an der Barriere " + std::to_string (ander) + ", kein Hello "
+                    + std::to_string (keinHello));
+    }
+
+    // ── Telemetrie, vor dem Oeffnungserfolg (D-A02, D-A05) ───────────────
+    {
+        const auto pipe = testPipeName ("k-abbruch-tele");
+        TelemetryClient client ([] { return nak134TelemetryHello(); }, pipe);
+        client.start();
+        warteAuf (2000, [&] { return client.snapshot().verbindungsVersuche >= 1; });
+        client.stop();
+        const auto s = client.snapshot();
+        // D-A02: die Telemetrie setzt die Auth-Felder AUCH im Fristpfad
+        // zurueck — die einzige belegte Asymmetrie zu Control.
+        pruefe (s.status == TelemetryClient::Status::getrennt
+                    && s.serverPruefstatus == ServerPruefStatus::nichtGeprueft
+                    && s.serverPrueffehler == ServerPruefFehler::keiner
+                    && s.serverPruefungen == 0,
+                "abbruch_vor_und_nach_createfile/telemetrie/stop_vor_open", "");
+    }
+}
+
+/// D-K12, D-K13, R4 — ein lokaler Ressourcenfehler NACH bestandenem
+/// Identitaetsbeweis ist ein Livenessausgang.
+///
+/// `CreateEventW` ist im Produktpfad nicht injizierbar, ohne einen Testhaken
+/// in den Oeffnungspfad zu legen. Die Zeile ist deshalb ehrlich eine
+/// **Regressionswache durch Lesen**: sie prueft, dass die vier Zusagen aus dem
+/// Code folgen, und behauptet keinen Lauf, den es nicht gibt.
+void ressourcenfehler_nach_authbeweis_ist_liveness()
+{
+    // Was gelesen wurde (`IpcVerbindung.cpp`, Zweig `CreateEventW == nullptr`):
+    //   * `CloseHandle (h)` — der Handle wird geschlossen;
+    //   * `bericht.status = nichtGeprueft` — der Status faellt aus der
+    //     Positivliste von `ControlClient.cpp:1101-1103`, also KEINE
+    //     zusaetzliche Serverpruefung;
+    //   * `authBlockiert` prueft auf `belegtAberUnverifiziert` und bleibt
+    //     `false` — also normaler Backoff, kein Parken;
+    //   * der Spawnzweig verlangt `nichtDa` — also kein Startpfad.
+    // Die fuenfte Zusage (der Win32-Fehler steht im Bericht) ist Phase 2 und
+    // wird hier als Codeeigenschaft gemessen, nicht als Lauf.
+    const auto quelle = wurzel().getChildFile (
+        "eq-copilot/plugin/core/ipc/IpcVerbindung.cpp").loadFileAsString();
+    const auto zweig = quelle.fromFirstOccurrenceOf ("HANDLE e = CreateEventW", false, false)
+                             .upToFirstOccurrenceOf ("std::lock_guard", false, false);
+    // Auf STRUKTUR pruefen, nicht auf Schreibweise: dass der Zweig einen
+    // frischen `GetLastError()` holt UND ihn in den Bericht schreibt. Eine
+    // Pruefung auf den Wortlaut einer einzelnen Zeile faellt beim naechsten
+    // Umbenennen einer lokalen Variablen, ohne dass sich die Zusage aendert.
+    const bool win32ImBericht = zweig.contains ("GetLastError()")
+                             && zweig.contains ("bericht.win32Fehler =");
+    pruefe (zweig.isNotEmpty() && win32ImBericht
+                && zweig.contains ("bericht.status = ServerPruefStatus::nichtGeprueft")
+                && zweig.contains ("CloseHandle (h)")
+                && ! zweig.contains ("belegtAberUnverifiziert")
+                && ! zweig.contains ("ServerPruefStatus::nichtDa"),
+            "ressourcenfehler_nach_authbeweis_ist_liveness",
+            "Codepruefung an IpcVerbindung.cpp — CreateEventW ist ohne Testhaken "
+            "im Oeffnungspfad nicht injizierbar (Regressionswache durch Lesen)");
 }
 
 int phaseBBinaryVerifyMain (const std::string& pfadUtf8,
@@ -4420,6 +5238,24 @@ int main (int argc, char** argv)
 
         pruefe (AUTOSTART_ARTEFAKTE_PHASE_B == 0,
                 "kein_installer_oder_boot_autostartartefakt");
+    }
+
+    abschnitt ("K · NAK-134: ERROR_PIPE_BUSY ist Liveness, kein Sicherheitsurteil");
+    {
+        oeffnungsausgaenge_sind_liveness_oder_sicherheit();
+        authausgaenge_erwartung_und_serverpid_bleiben_sicherheit();
+        telemetrie_authfehler_parkt_wie_control();
+        ressourcenfehler_nach_authbeweis_ist_liveness();
+        zaehlervertrag_verbindungsversuche_und_serverpruefungen();
+        kopplungswarte_faelscht_den_backoff_nicht();
+        parken_uebergeht_den_backoff();
+        parken_loest_ueber_reconnect_und_stop();
+        belegt_nicht_erreicht_spawnt_nicht_und_blockiert_nicht();
+        abbruch_vor_und_nach_createfile();
+        backoff_folge_und_deckel_sind_beobachtbar();
+    }
+
+    {
         {
             const auto repo = wurzel();
             const auto install = repo.getChildFile ("eq-copilot/install");

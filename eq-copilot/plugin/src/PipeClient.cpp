@@ -395,12 +395,26 @@ bool PipeClient::eineVerbindung (std::uint64_t generation)
         if (sollAbbrechen (generation))
             return false;
         zustand.status = Status::getrennt;
-        zustand.serverPruefstatus = fehler == ERROR_FILE_NOT_FOUND
-            ? nakama::ipc::ServerPruefStatus::nichtDa
-            : nakama::ipc::ServerPruefStatus::belegtAberUnverifiziert;
-        zustand.serverPrueffehler = fehler == ERROR_FILE_NOT_FOUND
-            ? nakama::ipc::ServerPruefFehler::pipeFehlt
-            : nakama::ipc::ServerPruefFehler::pipeOeffnen;
+        // NAK-134/R1, Entscheid E4: dieselbe dreiwertige Klassifikation wie in
+        // `IpcVerbindung::oeffnen`. Matrix C-06 verlangt fuer ALLE DREI
+        // Connectpfade dieselbe Regel — ohne diese Zeile parkte der v2-Client
+        // nach einem erschoepften `ERROR_PIPE_BUSY` weiter dauerhaft, waehrend
+        // die beiden v3-Clients den Backoff nehmen.
+        if (fehler == ERROR_FILE_NOT_FOUND)
+        {
+            zustand.serverPruefstatus = nakama::ipc::ServerPruefStatus::nichtDa;
+            zustand.serverPrueffehler = nakama::ipc::ServerPruefFehler::pipeFehlt;
+        }
+        else if (fehler == ERROR_PIPE_BUSY)
+        {
+            zustand.serverPruefstatus = nakama::ipc::ServerPruefStatus::belegtNichtErreicht;
+            zustand.serverPrueffehler = nakama::ipc::ServerPruefFehler::pipeBelegt;
+        }
+        else
+        {
+            zustand.serverPruefstatus = nakama::ipc::ServerPruefStatus::belegtAberUnverifiziert;
+            zustand.serverPrueffehler = nakama::ipc::ServerPruefFehler::pipeOeffnen;
+        }
         zustand.letzterFehler = "Broker nicht erreichbar (Win32 "
                               + juce::String ((int) fehler) + ")";
         return false;

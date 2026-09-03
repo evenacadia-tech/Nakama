@@ -1254,3 +1254,46 @@ ein Artefakt der Phase „Spezifikation vor Code“, kein Stillstand: die Baupha
 **Nicht Teil dieses Tickets, im Gate-Manifest G3 zu belegen:** der 60-Minuten-Lauf mit 16 Sonden, der
 30-Minuten-Lauf mit 32 Sonden und die Skalierungsreihe 1/4/8 (S16); die XRun-Hälfte bleibt FL-Termin
 (Abschnitt 2.2). Register: NAK-132 (A22-Heartbeat gegen Zählsenke), NAK-133 (Runner-Frische).
+
+## 16. Nachtrag 2026-09-03 (NAK-134) — zwei Zähler, damit A24 den Defekt sieht
+
+**Append-only.** Nichts oben wird umgeschrieben; die Matrixzeilen S04 und S11
+bekommen je einen zusätzlichen Beleg, der Rest bleibt Verlauf.
+
+**Der Anlass.** Der Gate-Lauf G3 (32 Sonden, 30 min, 3 Neustarts) war rot, und
+A24 hat den eigentlichen Ausfall **nicht gesehen**. Nach jedem Brokerneustart
+blieb ein Teil der Sonden dauerhaft getrennt (NAK-134). Zwei Zähler haben das
+verdeckt:
+
+* `SessionSoakMain.cpp` nahm eine abgewiesene P0-Einreihung **still** zurück
+  (`gesendet.pop_back()`). Ein Client, der gar nichts mehr einreiht, erzeugt
+  damit keinen einzigen sichtbaren Verlust — „nie eingereiht" heißt „nie
+  erwartet", und `p0.verloren_ausserhalb_neustart` blieb bei 0. Der Ausfall war
+  nur an einer Kopfrechnung über `p0.gesendet` erkennbar.
+* `reconnect_paare` war `n.reconnectMs.size()`, also strukturell `anzahl + 1`,
+  und der Prüfer verglich diesen Wert gegen `args.sonden + 1`. Ist und Soll
+  kamen aus derselben Konstante — dieselbe Klasse von Tautologie wie der
+  `k_s5.erwartet`-Defekt aus §15.
+
+**Was sich ändert.**
+
+| Zeile | Neuer Beleg | Bedeutung |
+|---|---|---|
+| S04 | `p0.einreihung_abgelehnt` (Summe, Pflichtfeld) und `p0.einreihung_abgelehnt_ausserhalb_neustart` | Die Rücknahme bleibt richtig — nie eingereiht heißt nie erwartet —, sie ist aber nicht mehr still. Ausserhalb der Neustartfenster muss der zweite Wert **0** sein. Die Fensterzuordnung folgt dem Stand, der beim Eintrag gesetzt wurde, nicht einer erneuten Abfrage. |
+| S11 | `reconnect_paare` (Feldname gleich, **Bedeutung geändert**) | Ab hier die **gemessene** Zahl der Paare, deren Control **und** Telemetrie am Ende des Fristfensters wieder `verbunden` waren — bewusst **ohne** die Mitgliedschaftsbedingung, die `proPaar` zusätzlich verlangt. Der Bericht trennt damit „Transport steht wieder" von „Mitglied ist wieder in der Sicht". Die Prüfzeile bleibt wortgleich `== args.sonden + 1` und hört auf, tautologisch zu sein. |
+
+Die Zählerkarte in §7 gilt mit diesen zwei Ergänzungen; `reconnect_paare`
+trägt dort ab sofort die neue Bedeutung.
+
+**Beide Zähler haben je zwei Proben** (NAK-134 §9): einen deterministischen
+C++-Erzeugertest im neuen `EqCopSessionSoak`-Modus `selbsttest-zaehler` und
+eine Berichtsmutante. Eine Mutante am fertigen Bericht beweist nur den
+Python-Prüfer, nie die C++-Erzeugung.
+
+**Neue Rotmutante:** `--mutant p0_einreihung` setzt
+`einreihung_abgelehnt_ausserhalb_neustart` auf 1 — S04 muss fallen. Die
+bestehende `--mutant s11_paare` trifft weiterhin genau das umgestellte Feld und
+wurde nach der Umstellung erneut gefahren.
+
+Belege, Exitcodes und die gemessenen Werte stehen in `docs/beweise/NAK-134.md`
+(§13, §14 Phase 2).

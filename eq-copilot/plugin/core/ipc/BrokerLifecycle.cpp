@@ -435,6 +435,7 @@ const char* serverPruefFehlerName (ServerPruefFehler fehler) noexcept
     {
         case ServerPruefFehler::keiner: return "keiner";
         case ServerPruefFehler::pipeFehlt: return "pipeFehlt";
+        case ServerPruefFehler::pipeBelegt: return "pipeBelegt";
         case ServerPruefFehler::pipeOeffnen: return "pipeOeffnen";
         case ServerPruefFehler::erwartungUngueltig: return "erwartungUngueltig";
         case ServerPruefFehler::serverPidNichtErmittelbar: return "serverPidNichtErmittelbar";

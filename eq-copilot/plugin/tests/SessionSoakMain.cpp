@@ -44,6 +44,7 @@
 // (Codex-Abschlusspruefung 02.09.2026, Thread 01a0626a, Befunde 11 und 12).
 
 #include "ControlClient.h"
+#include "IpcQueues.h"   // kCapP0 fuer den Erzeugertest W-01 (NAK-134 §9)
 #include "PipeToken.h"
 #include "SondeProcessor.h"
 #include "SourcesModel.h"
@@ -233,6 +234,64 @@ double perzentil (std::vector<double> werte, double p)
     return werte[std::min (rang, werte.size() - 1)];
 }
 
+// ── NAK-134/W-01 und W-02: die zwei Zaehler als REINE Funktionen ─────────
+//
+// Beide Groessen entstehen ab NAK-134 in je einer Funktion ohne Uhr, Broker
+// und Pipe. Nur so laesst sich die ERZEUGUNG pruefen; eine Mutante am
+// fertigen Bericht beweist immer nur den Python-Pruefer (Manifest §9).
+
+/// W-01: eine abgelehnte P0-Einreihung. Die Ruecknahme bleibt richtig — nie
+/// eingereiht heisst nie erwartet —, sie war bis NAK-134 aber STILL
+/// (`gesendet.pop_back()`), und genau deshalb sah A24 den Ausfall des
+/// Gate-Laufs G3 nicht.
+struct P0Ablehnungen
+{
+    std::uint64_t summe = 0;
+    std::uint64_t ausserhalb = 0;   ///< ausserhalb der Neustart-/Barrierefenster
+};
+
+/// Nimmt die drei parallelen Spuren der Einreihung zurueck UND zaehlt sie.
+/// Die Fensterzuordnung kommt aus dem SOEBEN eingetragenen Stand, nicht aus
+/// einer erneuten Abfrage: zwischen Eintrag und Ruecknahme kann das Fenster
+/// gewechselt haben, und der Heartbeat gehoert zu dem Fenster, in dem er
+/// abgeschickt wurde.
+void p0EinreihungZuruecknehmen (std::vector<Uhr::time_point>& gesendet,
+                                std::vector<bool>& beantwortet,
+                                std::vector<bool>& imFenster,
+                                P0Ablehnungen& zaehler)
+{
+    const bool warImFenster = ! imFenster.empty() && imFenster.back();
+    if (! gesendet.empty())    gesendet.pop_back();
+    if (! beantwortet.empty()) beantwortet.pop_back();
+    if (! imFenster.empty())   imFenster.pop_back();
+    ++zaehler.summe;
+    if (! warImFenster)
+        ++zaehler.ausserhalb;
+}
+
+/// W-02: der Transportstand EINES Clientpaares am Ende des Fristfensters.
+struct PaarStand
+{
+    bool controlVerbunden = false;
+    bool telemetrieVerbunden = false;
+    bool mitglied = false;   ///< in der Sicht des Main wieder sichtbar
+};
+
+/// Wie viele Paare standen transportseitig wieder? Bewusst OHNE die
+/// Mitgliedschaftsbedingung, die `proPaar` zusaetzlich verlangt: der Bericht
+/// trennt damit „Transport steht wieder" von „Mitglied ist wieder in der
+/// Sicht" (Manifest §8). Bis NAK-134 war dieser Wert die Vektorlaenge
+/// `anzahl + 1` und der Pruefer verglich ihn gegen `args.sonden + 1` — Ist
+/// und Soll kamen aus derselben Konstante, die Zeile konnte nie rot werden.
+int reconnectPaareZaehlen (const std::vector<PaarStand>& staende)
+{
+    int n = 0;
+    for (const auto& p : staende)
+        if (p.controlVerbunden && p.telemetrieVerbunden)
+            ++n;
+    return n;
+}
+
 // ── Eine Sonde: Control + Telemetrie + echter Audiopfad ──────────────────
 struct Sonde
 {
@@ -251,6 +310,10 @@ struct Sonde
     std::vector<bool> imFensterGesendet;
     std::vector<std::pair<double, bool>> latenzen;   ///< Latenz + Stoerfenster
     std::atomic<std::uint64_t> p0Gesendet { 0 }, p0Beantwortet { 0 };
+    /// W-01: abgelehnte P0-Einreihungen. Sie stehen unter `mutex` wie die drei
+    /// Spuren, die sie zuruecknehmen — ein eigener Atomarzaehler koennte
+    /// gegenueber `gesendet` verrutschen.
+    P0Ablehnungen p0Ablehnungen;
     std::atomic<std::uint64_t> sequence { 0 };
     /// S06: JEDER Rueckgabewert von `veroeffentlichen()` wird gezaehlt. Erst
     /// dadurch misst `abgelehnt == zuGross + beanspruchtVerworfen` wirklich
@@ -311,6 +374,11 @@ struct Neustart
     /// die Sonden. Die Vorfassung trug N Kopien desselben Topologieendes ein;
     /// `min`, `p95` und `max` waren dann keine Verteilung (Codex-Befund 10).
     std::vector<double> reconnectMs;
+    /// W-02: die GEMESSENE Zahl der Paare, deren Control UND Telemetrie am
+    /// Ende des Fristfensters wieder verbunden waren. Bis NAK-134 stand hier
+    /// `reconnectMs.size()`, also die Vektorlaenge `anzahl + 1` — der Pruefer
+    /// verglich sie gegen `sonden + 1` und pruefte damit nichts.
+    int reconnectPaare = 0;
     std::uint64_t alteEpocheGesehen = 0;
     /// S09 je Neustartfenster: wie oft der Main OHNE aktive Subscription und
     /// wie oft mindestens eine Quelle als `Control::getrennt` gesehen wurde.
@@ -779,10 +847,13 @@ struct Soak
                 else
                 {
                     // Nie eingereiht ⇒ nie erwartet (`IpcLastMain.cpp:229-235`).
+                    // NAK-134/W-01: die Ruecknahme bleibt, ist aber nicht mehr
+                    // still — sonst verschwindet der Heartbeat eines geparkten
+                    // Clients spurlos aus jeder Statistik (Gate-Lauf G3).
                     std::lock_guard<std::mutex> l (s->mutex);
-                    s->gesendet.pop_back();
-                    s->beantwortetFlag.pop_back();
-                    s->imFensterGesendet.pop_back();
+                    p0EinreihungZuruecknehmen (s->gesendet, s->beantwortetFlag,
+                                               s->imFensterGesendet,
+                                               s->p0Ablehnungen);
                 }
             }
             naechster += std::chrono::milliseconds (kHeartbeatMs);
@@ -1099,6 +1170,35 @@ struct Soak
             std::this_thread::sleep_for (std::chrono::milliseconds (25));
         }
 
+        // W-02: der Transportstand JETZT, am Ende des Fristfensters. Er wird
+        // getrennt von `proPaar` erhoben, weil `proPaar` zusaetzlich die
+        // Mitgliedschaft verlangt: ein Paar, dessen Transport wieder steht,
+        // das aber noch nicht in der Sicht des Main ist, faellt dort durch —
+        // hier soll es zaehlen (Manifest §8).
+        std::vector<PaarStand> staende (static_cast<std::size_t> (anzahl) + 1);
+        {
+            const auto sicht = model.sicht();
+            std::set<std::string> mitglied;
+            for (const auto& q : sicht.quellen)
+                if (q.descriptorVorhanden) mitglied.insert (q.instanceId);
+            staende[0].controlVerbunden =
+                mainControl->snapshot().status == ControlClient::Status::verbunden;
+            staende[0].telemetrieVerbunden =
+                mainTelemetrie->snapshot().status == TelemetryClient::Status::verbunden;
+            staende[0].mitglied = sicht.fuehrendesMain == mainAdr.instanceId;
+            for (int i = 0; i < anzahl; ++i)
+            {
+                const auto& s = *sonden[static_cast<std::size_t> (i)];
+                auto& st = staende[static_cast<std::size_t> (i) + 1];
+                st.controlVerbunden =
+                    s.control->snapshot().status == ControlClient::Status::verbunden;
+                st.telemetrieVerbunden =
+                    s.telemetrie->snapshot().status == TelemetryClient::Status::verbunden;
+                st.mitglied = mitglied.count (s.adr.instanceId) > 0;
+            }
+        }
+        n->reconnectPaare = reconnectPaareZaehlen (staende);
+
         // Ein Paar, das die Frist verfehlt hat, traegt Frist + 1 ms — es faellt
         // damit in `max` auf und wird nie stillschweigend ausgelassen.
         const bool alle = std::none_of (proPaar.begin(), proPaar.end(),
@@ -1165,6 +1265,8 @@ struct Soak
     {
         std::vector<double> alleLatenzen, schnelleLatenzen, fensterLatenzen;
         std::uint64_t p0Ges = 0, p0Ack = 0, verlorenAussen = 0, verlorenFenster = 0;
+        // W-01: die abgelehnten Einreihungen, getrennt nach Fenster.
+        std::uint64_t abgelehntSumme = 0, abgelehntAussen = 0;
         // S06: die Cap-Zaehler NUR ueber die langsamen Sonden. Der K-S1-Fluter
         // wird getrennt gefuehrt und zaehlt nicht fuer S06 (Befund 5).
         std::uint64_t ersetzt = 0, neuesteVerworfen = 0, zuGross = 0, kollision = 0;
@@ -1185,6 +1287,10 @@ struct Soak
         {
             p0Ges += s->p0Gesendet.load();
             p0Ack += s->p0Beantwortet.load();
+            // Ohne Sperre wie die uebrigen Spuren: `abbauen()` hat alle
+            // Faeden gejoint, bevor `bericht()` laeuft.
+            abgelehntSumme += s->p0Ablehnungen.summe;
+            abgelehntAussen += s->p0Ablehnungen.ausserhalb;
             const auto ts = s->telemetrie->snapshot();
             if (s->langsam)
             {
@@ -1267,7 +1373,7 @@ struct Soak
               << ",\"reconnect_ms\":{\"min\":" << mn
               << ",\"p95\":" << perzentil (n.reconnectMs, 0.95)
               << ",\"max\":" << mx << "}"
-              << ",\"reconnect_paare\":" << n.reconnectMs.size()
+              << ",\"reconnect_paare\":" << n.reconnectPaare
               << ",\"bereit_bis_vollstaendig_ms\":" << n.bereitBisVollstaendigMs
               << ",\"ueber_schranke\":"
               << ((n.bereitBisVollstaendigMs > kSchrankeMs) ? "true" : "false")
@@ -1284,6 +1390,8 @@ struct Soak
         o << "]"
           << ",\"p0\":{\"gesendet\":" << p0Ges
           << ",\"beantwortet\":" << p0Ack
+          << ",\"einreihung_abgelehnt\":" << abgelehntSumme
+          << ",\"einreihung_abgelehnt_ausserhalb_neustart\":" << abgelehntAussen
           << ",\"verloren_ausserhalb_neustart\":" << verlorenAussen
           << ",\"verloren_im_neustartfenster\":" << verlorenFenster
           << ",\"latenz_p95_ms\":" << perzentil (alleLatenzen, 0.95)
@@ -1409,6 +1517,119 @@ struct Soak
         return o.str();
     }
 };
+// ── NAK-134 §9: Modus `selbsttest-zaehler` ───────────────────────────────
+//
+// Er prueft die ERZEUGUNG der zwei neuen Zaehler gegen deterministische
+// Eingaben — ohne Broker, ohne Sonden, ohne Uhr. Der Probenamen-Riegel aus
+// `main` bleibt davor stehen; dieser Modus oeffnet keine Pipe.
+int selbsttestZaehler (const std::string& pipe)
+{
+    int fehler = 0;
+    auto pruefe = [&fehler] (bool ok, const char* was, const std::string& detail)
+    {
+        std::cout << (ok ? "  ok      " : "  FEHLER  ") << was
+                  << "  [" << detail << "]" << std::endl;
+        if (! ok) ++fehler;
+    };
+    std::cout << "SESSIONSOAK-SELBSTTEST-ZAEHLER" << std::endl;
+
+    // ── W-01 / W-H1: p0_ablehnung ────────────────────────────────────────
+    // Der Client wird bewusst NICHT gestartet: ohne Verbindungsthread ruehrt
+    // niemand die Queue an, und die Kapazitaetsgrenze wird deterministisch
+    // erreicht statt zufaellig. `kCapP0` kommt aus `IpcQueues.h`, nicht aus
+    // einer abgeschriebenen 64 (Pruefliste E, „Zahlen sind gemessen").
+    {
+        const auto adr = adresse (77, 78);
+        ControlClient client ([&adr] {
+            ControlHello h;
+            h.adresse = adr;
+            h.pluginKind = "active_probe";
+            return h;
+        }, pipe);
+
+        std::vector<Uhr::time_point> gesendet;
+        std::vector<bool> beantwortet, imFenster;
+        P0Ablehnungen zaehler;
+        bool alleAngenommen = true;
+        std::size_t angenommen = 0;
+        std::size_t laengeVorVersuch = 0;
+
+        // Zwei Durchgaenge: erst ausserhalb des Fensters, dann darin. Nur so
+        // ist die Fensterzuordnung belegt und nicht bloss die Summe (W-H1).
+        for (int durchgang = 0; durchgang < 2; ++durchgang)
+        {
+            const bool fenster = durchgang == 1;
+            const std::size_t bisAblehnung = durchgang == 0 ? kCapP0 : 0;
+            for (std::size_t i = 0; i <= bisAblehnung; ++i)
+            {
+                gesendet.push_back (Uhr::now());
+                beantwortet.push_back (false);
+                imFenster.push_back (fenster);
+                laengeVorVersuch = gesendet.size() - 1;
+                const bool ok = client.sendeP0 (
+                    heartbeatAlsJson (adr, kTestSeqBasis + angenommen, laufStatus()));
+                if (ok)
+                {
+                    ++angenommen;
+                    if (i == bisAblehnung)
+                        alleAngenommen = false;   // die letzte MUSS fallen
+                }
+                else
+                {
+                    if (i != bisAblehnung)
+                        alleAngenommen = false;   // zu frueh gefallen
+                    p0EinreihungZuruecknehmen (gesendet, beantwortet, imFenster,
+                                               zaehler);
+                }
+            }
+        }
+        client.stop();
+
+        pruefe (alleAngenommen && angenommen == kCapP0,
+                "selbsttest_p0_ablehnung_faellt_genau_an_der_kapazitaet",
+                std::to_string (angenommen) + " von " + std::to_string (kCapP0)
+                    + " angenommen");
+        pruefe (zaehler.summe == 2,
+                "selbsttest_p0_ablehnung_wird_gezaehlt_statt_still_verworfen",
+                "summe " + std::to_string (zaehler.summe));
+        pruefe (zaehler.ausserhalb == 1,
+                "selbsttest_p0_ablehnung_folgt_der_fensterzuordnung",
+                "ausserhalb " + std::to_string (zaehler.ausserhalb)
+                    + " von " + std::to_string (zaehler.summe));
+        pruefe (gesendet.size() == laengeVorVersuch
+                    && beantwortet.size() == gesendet.size()
+                    && imFenster.size() == gesendet.size(),
+                "selbsttest_p0_ablehnung_nimmt_alle_drei_spuren_zurueck",
+                std::to_string (gesendet.size()) + "/"
+                    + std::to_string (beantwortet.size()) + "/"
+                    + std::to_string (imFenster.size()));
+    }
+
+    // ── W-02 / W-H2: reconnect_paare ─────────────────────────────────────
+    // Drei Paarstaende, die die drei Definitionen auseinanderhalten:
+    // Vektorlaenge (3), `proPaar` mit Mitgliedschaft (1) und der neue
+    // Transportzaehler (2).
+    {
+        std::vector<PaarStand> staende (3);
+        staende[0] = { true,  true,  true  };   // Main: Transport und Mitglied
+        staende[1] = { true,  false, false };   // Telemetrie fehlt ⇒ zaehlt nicht
+        staende[2] = { true,  true,  false };   // Transport steht, noch kein Mitglied
+        const int gezaehlt = reconnectPaareZaehlen (staende);
+        pruefe (gezaehlt == 2,
+                "selbsttest_reconnect_paare_zaehlt_transport_nicht_vektorlaenge",
+                std::to_string (gezaehlt) + " (Vektorlaenge "
+                    + std::to_string (staende.size()) + ")");
+
+        std::vector<PaarStand> keines (4);
+        pruefe (reconnectPaareZaehlen (keines) == 0,
+                "selbsttest_reconnect_paare_ist_bei_null_transport_null",
+                std::to_string (reconnectPaareZaehlen (keines)));
+    }
+
+    std::cout << (fehler == 0 ? "SELBSTTEST-ZAEHLER OK - " : "SELBSTTEST-ZAEHLER FEHLGESCHLAGEN - ")
+              << fehler << " Fehler" << std::endl;
+    return fehler == 0 ? 0 : 1;
+}
 } // namespace
 
 int main (int argc, char** argv)
@@ -1434,6 +1655,12 @@ int main (int argc, char** argv)
         return 3;
     }
     const std::string pipe = argv[1];
+    // NAK-134 §9: der Erzeugertest der zwei neuen Zaehler. Er steht VOR der
+    // Zahlenauswertung, weil `selbsttest-zaehler` als `sonden` gelesen 0
+    // ergaebe und am Parameterriegel scheiterte. Der Probenamen-Riegel oben
+    // bleibt davor; dieser Modus oeffnet keine Pipe und braucht keinen Broker.
+    if (argc > 2 && std::string (argv[2]) == "selbsttest-zaehler")
+        return selbsttestZaehler (pipe);
     const int sonden   = argc > 2 ? std::atoi (argv[2]) : 16;
     const int messS    = argc > 3 ? std::atoi (argv[3]) : 120;
     const int warmupS  = argc > 4 ? std::atoi (argv[4]) : 20;

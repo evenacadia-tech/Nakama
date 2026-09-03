@@ -1,0 +1,296 @@
+{
+ "abbau_haenger": "",
+ "audio": {
+  "blockgroesse": 512,
+  "bloecke": 900960,
+  "bloecke_je_sonde_min": 28155,
+  "ganzblockdrops_oversize": 0,
+  "ganzblockdrops_ueberlauf": 0,
+  "kontinuitaetsbrueche": 0,
+  "publikationen": 90080,
+  "publikationen_je_sonde_min": 2815,
+  "samplerate": 48000.0
+ },
+ "client_exit": 0,
+ "clientpaare": 33,
+ "fluter": {
+  "abgelehnt": 0,
+  "ersetzte_liveframes": 658,
+  "kollisionsloecher": 0,
+  "neueste_verworfen": 0,
+  "veroeffentlichungen": 3364,
+  "zu_gross": 0
+ },
+ "kill": {
+  "k_s1": {
+   "gefahren": true,
+   "telemetrie_handle_fehler": 10,
+   "urteil": "getroffen"
+  },
+  "k_s2": {
+   "gefahren": true,
+   "snapshot_vor_kill": false,
+   "urteil": "getroffen"
+  },
+  "k_s3": {
+   "gefahren": true,
+   "p0_ohne_ack_im_fenster": 0,
+   "urteil": "nicht_getroffen"
+  },
+  "k_s4": {
+   "flag_zum_killzeitpunkt": 8,
+   "gefahren": true,
+   "urteil": "getroffen"
+  },
+  "k_s5": {
+   "backoff_deckel_erreicht": 33,
+   "erwartet": 33,
+   "gefahren": true,
+   "urteil": "getroffen"
+  }
+ },
+ "langsam": {
+  "abgelehnt": 0,
+  "blockiert_andere_nicht": true,
+  "ersetzte_liveframes": 28303,
+  "fluter_ueberlappt": false,
+  "immer_mitglied": true,
+  "kollisionsloecher": 0,
+  "neueste_verworfen": 0,
+  "schnelle_p95_ms": 25.9,
+  "sonden": 8,
+  "veroeffentlichungen": 72096,
+  "zu_gross": 0
+ },
+ "langsam_anzahl": 8,
+ "liveness": {
+  "evicted_ausserhalb_neustart": 0,
+  "stale_ausserhalb_neustart": 0,
+  "stale_im_neustartfenster": 0
+ },
+ "minuten": 4,
+ "mitgliedschaft": {
+  "abtast_pruefungen": 2432,
+  "abtast_vollstaendig": 2432,
+  "fremde_adresse": 0,
+  "fuehrendes_main_falsch": 0,
+  "snapshot_pruefungen": 12402,
+  "uebernahmen": 14183,
+  "ungueltig": 0,
+  "vollstaendig": 12402
+ },
+ "neustart": [
+  {
+   "alte_epoche_nach_neustart_gesehen": 0,
+   "backoff_deckel_in_totzeit": 0,
+   "bereit_bis_vollstaendig_ms": 2510,
+   "epoch_alt": "a04d38ab7e36417e92c12fcbb685faaa",
+   "epoch_neu": "3d8cf6aa41964729a0df45d5b2fa65ab",
+   "frist_ms": 60000,
+   "index": 1,
+   "kill_dauer_ms": 6,
+   "kill_erfolgt_gesehen": true,
+   "reconnect_ms": {
+    "max": 2510.4,
+    "min": 545.4,
+    "p95": 2510.4
+   },
+   "reconnect_paare": 33,
+   "s09_quellen_getrennt": 15,
+   "s09_sichten": 35,
+   "s09_subscription_weg": 15,
+   "schranke_ms": 45051,
+   "totzeit_erfasst": true,
+   "totzeit_ms": 1012,
+   "ueber_schranke": false
+  },
+  {
+   "alte_epoche_nach_neustart_gesehen": 0,
+   "backoff_deckel_in_totzeit": 33,
+   "bereit_bis_vollstaendig_ms": 10556,
+   "epoch_alt": "3d8cf6aa41964729a0df45d5b2fa65ab",
+   "epoch_neu": "0069595a930b48fcb7ae6ffaba13af27",
+   "frist_ms": 60000,
+   "index": 2,
+   "kill_dauer_ms": 5,
+   "kill_erfolgt_gesehen": true,
+   "reconnect_ms": {
+    "max": 10556.8,
+    "min": 2553.6,
+    "p95": 10556.8
+   },
+   "reconnect_paare": 33,
+   "s09_quellen_getrennt": 234,
+   "s09_sichten": 314,
+   "s09_subscription_weg": 234,
+   "schranke_ms": 45051,
+   "totzeit_erfasst": true,
+   "totzeit_ms": 21007,
+   "ueber_schranke": false
+  }
+ ],
+ "p0": {
+  "beantwortet": 9568,
+  "einreihung_abgelehnt": 0,
+  "einreihung_abgelehnt_ausserhalb_neustart": 0,
+  "gemessen_ausserhalb": 8352,
+  "gemessen_im_stoerfenster": 1216,
+  "gesendet": 9568,
+  "latenz_max_im_stoerfenster_ms": 31195.6,
+  "latenz_max_ms": 123.0,
+  "latenz_p95_ms": 26.9,
+  "nachlauf_ms": 2000,
+  "schranke_ms": 1000,
+  "verloren_ausserhalb_neustart": 0,
+  "verloren_im_neustartfenster": 0
+ },
+ "pipe": {
+  "clientnamen_geprueft": 66,
+  "eigene_probe_sichtbar": true,
+  "fremder_name_versucht": 0,
+  "goldenname_neu": false,
+  "namen_nach": 200,
+  "namen_vor": 199,
+  "namensraum_lesbar": true,
+  "ohne_produkt_v3": true,
+  "produktionsname_neu": false
+ },
+ "riegel": {
+  "golden_EqCopSessionSoak": 3,
+  "golden_eqcop-broker-sonde012-probe": 3,
+  "produktion_EqCopSessionSoak": 3,
+  "produktion_eqcop-broker-sonde012-probe": 3
+ },
+ "sonden": 32,
+ "speicher": {
+  "broker": [
+   {
+    "generation": 0,
+    "im_neustartfenster": false,
+    "minute": 0,
+    "rss_bytes": 19046400,
+    "sekunden": 0.0
+   },
+   {
+    "generation": 0,
+    "im_neustartfenster": false,
+    "minute": 1,
+    "rss_bytes": 19898368,
+    "sekunden": 60.1
+   },
+   {
+    "generation": 1,
+    "im_neustartfenster": true,
+    "minute": 1,
+    "rss_bytes": 6172672,
+    "sekunden": 80.1
+   },
+   {
+    "generation": 1,
+    "im_neustartfenster": false,
+    "minute": 1,
+    "rss_bytes": 18350080,
+    "sekunden": 80.1
+   },
+   {
+    "generation": 1,
+    "im_neustartfenster": false,
+    "minute": 2,
+    "rss_bytes": 19120128,
+    "sekunden": 120.1
+   },
+   {
+    "generation": 2,
+    "im_neustartfenster": true,
+    "minute": 2,
+    "rss_bytes": 6201344,
+    "sekunden": 160.1
+   },
+   {
+    "generation": 2,
+    "im_neustartfenster": false,
+    "minute": 2,
+    "rss_bytes": 18821120,
+    "sekunden": 160.1
+   },
+   {
+    "generation": 2,
+    "im_neustartfenster": false,
+    "minute": 3,
+    "rss_bytes": 19640320,
+    "sekunden": 180.2
+   },
+   {
+    "generation": 2,
+    "im_neustartfenster": false,
+    "minute": 4,
+    "rss_bytes": 19869696,
+    "sekunden": 240.2
+   }
+  ],
+  "budget_bytes": 16777216,
+  "budget_prozent": 10,
+  "client": [
+   {
+    "im_neustartfenster": false,
+    "minute": 0,
+    "rss_bytes": 207618048,
+    "sekunden": 0.0
+   },
+   {
+    "im_neustartfenster": false,
+    "minute": 1,
+    "rss_bytes": 208228352,
+    "sekunden": 60.1
+   },
+   {
+    "im_neustartfenster": true,
+    "minute": 1,
+    "rss_bytes": 208257024,
+    "sekunden": 80.1
+   },
+   {
+    "im_neustartfenster": false,
+    "minute": 1,
+    "rss_bytes": 208601088,
+    "sekunden": 80.1
+   },
+   {
+    "im_neustartfenster": false,
+    "minute": 2,
+    "rss_bytes": 208605184,
+    "sekunden": 120.1
+   },
+   {
+    "im_neustartfenster": true,
+    "minute": 2,
+    "rss_bytes": 208605184,
+    "sekunden": 160.1
+   },
+   {
+    "im_neustartfenster": false,
+    "minute": 2,
+    "rss_bytes": 209416192,
+    "sekunden": 160.1
+   },
+   {
+    "im_neustartfenster": false,
+    "minute": 3,
+    "rss_bytes": 209416192,
+    "sekunden": 180.2
+   },
+   {
+    "im_neustartfenster": false,
+    "minute": 4,
+    "rss_bytes": 209416192,
+    "sekunden": 240.2
+   }
+  ],
+  "takt_s": 60
+ },
+ "subscription": {
+  "weg_im_neustartfenster": 249
+ },
+ "topologie_ms": 122,
+ "warmup_s": 20
+}

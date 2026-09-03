@@ -1,0 +1,43 @@
+  ok      flatbuffer_fixtures_are_read_by_product_reader
+  ok      never_connected_unknown_vs_confirmed_member
+  ok      absolute_snapshot_replaces_the_transient_model
+  ok      control_end_invalidates_and_reconnect_requires_subscribe
+  ok      snapshot_reader_enforces_the_strict_descriptor_branch
+  ok      json_minor_selects_historical_or_current_session_contract
+  ok      first_frame_missing_to_fresh
+  ok      age_and_window_are_not_hidden
+  ok      stale_keeps_row_and_downgrades_measurement
+  ok      eviction_does_not_delete_confirmed_membership
+  ok      ambiguous_join_exposes_the_real_leading_main_resolution_action
+  ok      store_degraded_is_strict_true_only_and_absence_clears_the_diagnosis
+  ok      actions_address_only_current_main_target_across_target_change
+  ok      references_expose_no_source_action
+  ok      bridge_pid_change_has_no_false_member_or_address
+  ok      diagnostics_are_distinct_and_actions_are_live
+  ok      belegt_nicht_erreicht_zeigt_broker_unavailable_mit_handgriff
+  ok      findings_count_tracks_only_open_findings_of_its_source
+  ok      runtime_host_to_fallback_has_no_blank_or_connection_order
+  ok      runtime_fallback_to_host_switch_is_atomic
+  ok      partial_indices_sort_indexed_first_then_fallback
+  ok      no_index_sorts_casefold_codepoint_then_instance
+  ok      main_handover_is_visible
+  ok      measured_yes_still_uses_only_descriptor_values
+  ok      unmeasured_uses_fallback_but_never_hides_real_descriptor
+  ok      missing_collecting_and_gated_map_to_missing_measuring_no_signal
+  ok      valid_loudness_pair_is_co_located_with_confidence
+  ok      half_or_nonfinite_pair_invalidates_only_loudness_without_number
+  ok      loudness_reject_is_deterministic_for_p1_p2_both_orders
+  ok      empty_label_uses_unnamed_plus_instance_prefix
+  ok      no_host_context_uses_persisted_untrusted_label_without_order_claim
+  ok      measurement_point_insert_reaches_main
+  ok      measurement_point_pre_reaches_main
+  ok      measurement_point_post_reaches_main
+  ok      unclassified_is_visible_not_error_or_role
+  ok      offline_is_visible_and_requires_explicit_resume
+  ok      suspended_never_collapses_into_no_signal_or_disconnect
+  ok      control_stale_boundary_is_exclusive
+  ok      p2_does_not_revive_control_and_heartbeat_does_not_refresh_measurement
+  ok      zero_sources_has_no_target_and_nonempty_model_has_exactly_one_main_target
+  ok      visible_latency_16_and_32_sources  [0.90 / 1.51 ms p95]
+SONDE-012 SourcesModel: 41/41 gruen
+EXIT=0

@@ -50,6 +50,19 @@ die dritte Regel:
     diese Rechnung gehalten; sonst genuegte `erwartet = backoff_deckel_erreicht
     = 0`, um K-S5 gruen zu melden, ohne dass ein Client den Deckel erreicht hat.
 
+Aus NAK-134 (03.09.2026) kam die vierte Regel, weil der Gate-Lauf G3 mit 32
+Sonden rot war, ohne dass A24 es sah:
+
+  * eine STILL zurueckgenommene Einreihung ist kein Nullzaehler, sondern ein
+    blinder Fleck. Ein Client, der nach einem Brokerneustart dauerhaft parkte,
+    reihte gar nichts mehr ein — und weil nie eingereiht auch nie erwartet
+    heisst, blieb `p0.verloren_ausserhalb_neustart` bei 0. Ab hier traegt der
+    Bericht `p0.einreihung_abgelehnt` und
+    `p0.einreihung_abgelehnt_ausserhalb_neustart` (Zeile S04), und
+    `reconnect_paare` ist die GEMESSENE Zahl wieder verbundener Clientpaare
+    statt der Vektorlaenge (Zeile S11) — bis dahin kamen dort Ist und Soll aus
+    derselben Konstante.
+
 DIE PIPE
 --------
 Immer ein Probe-Name mit PID und Zeitstempel. Weder dieses Bein noch eines der
@@ -209,6 +222,9 @@ MUTANTEN = {
                   "einen neuen Produktionsnamen im Namensraum (Defekt 9)",
     "s11_paare": "meldet nur ein Clientpaar in der Reconnect-Verteilung — die "
                  "Verteilung muss Main plus alle Sonden tragen (Defekt 10)",
+    "p0_einreihung": "meldet eine ausserhalb der Neustartfenster abgelehnte "
+                     "P0-Einreihung — ein geparkter Client reiht nichts mehr "
+                     "ein und faellt sonst aus jeder Statistik (NAK-134/W-01)",
     "k_s4_widerspruch": "laesst K-S4 `getroffen` melden, obwohl das Flag zum "
                         "Killzeitpunkt 0 war (Defekt 11)",
     "k_s5_totzeit": "meldet den Neustart ohne Totzeiterfassung — K-S1/K-S5 "
@@ -663,6 +679,9 @@ def mutiere(bericht: dict, args) -> None:
     elif args.mutant == "s11_paare":
         for n in bericht.get("neustart", []):
             n["reconnect_paare"] = 1
+    elif args.mutant == "p0_einreihung":
+        bericht["p0"]["einreihung_abgelehnt"] = 1
+        bericht["p0"]["einreihung_abgelehnt_ausserhalb_neustart"] = 1
     elif args.mutant == "k_s4_widerspruch":
         bericht["kill"]["k_s4"]["flag_zum_killzeitpunkt"] = 0
     elif args.mutant == "k_s5_totzeit":
@@ -786,6 +805,21 @@ def urteile(bericht: dict, args) -> int:
     pruefe(0 < p0.get("latenz_p95_ms", -1) <= p0_schranke, "S04",
            f"P0-ACK p95 unter {p0_schranke} ms",
            f"p95 {p0.get('latenz_p95_ms')} ms, max {p0.get('latenz_max_ms')} ms")
+    # NAK-134/W-01: eine abgewiesene P0-Einreihung wurde bis dahin STILL
+    # zurueckgenommen (`SessionSoakMain.cpp` `gesendet.pop_back()`). Ein
+    # geparkter Client reihte dann gar nichts mehr ein, und weil nie eingereiht
+    # auch nie erwartet heisst, blieb `verloren_ausserhalb_neustart` bei 0 —
+    # der Ausfall des Gate-Laufs G3 war nur an einer Kopfrechnung ueber
+    # `p0.gesendet` sichtbar. Ausserhalb der Neustartfenster darf keine
+    # Einreihung abgelehnt werden; die Summe steht als Pflichtfeld daneben.
+    if pflicht(bericht, "p0.einreihung_abgelehnt", "S04",
+               "p0", "einreihung_abgelehnt") \
+       and pflicht(bericht, "p0.einreihung_abgelehnt_ausserhalb_neustart", "S04",
+                   "p0", "einreihung_abgelehnt_ausserhalb_neustart"):
+        pruefe(p0.get("einreihung_abgelehnt_ausserhalb_neustart") == 0, "S04",
+               "keine P0-Einreihung wurde ausserhalb der Neustartfenster abgelehnt",
+               f"{p0.get('einreihung_abgelehnt_ausserhalb_neustart')} abgelehnt "
+               f"(Summe ueber den ganzen Lauf {p0.get('einreihung_abgelehnt')})")
     # S14-Gegenpfad: ohne Nachlauffenster koennte ein gesunder Lauf an einem
     # zuletzt eingereihten Heartbeat scheitern.
     pruefe(p0.get("nachlauf_ms", 0) >= 2000, "S14",
@@ -917,6 +951,11 @@ def urteile(bericht: dict, args) -> int:
                f"{dauer} ms von {frist} ms (Schranke {SCHRANKE_MS} ms, "
                f"reconnect max {rec.get('max')} ms)")
         # Die Verteilung muss ueber ALLE Clientpaare gehen — Main plus N Sonden.
+        # NAK-134/W-02: `reconnect_paare` ist ab hier die GEMESSENE Zahl der
+        # Paare, deren Control UND Telemetrie am Ende des Fristfensters wieder
+        # verbunden waren — nicht mehr die Vektorlaenge. Die Zeile blieb
+        # wortgleich und hoert damit auf, tautologisch zu sein: bis NAK-134
+        # kamen Ist und Soll aus derselben Konstante.
         pruefe(n.get("reconnect_paare") == args.sonden + 1
                and rec.get("min") is not None
                and rec.get("max", 0) <= frist, "S11",

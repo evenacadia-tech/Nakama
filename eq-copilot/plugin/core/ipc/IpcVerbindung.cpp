@@ -89,11 +89,38 @@ bool IpcVerbindung::oeffnen (const std::string& pipeName,
     }
     if (h == INVALID_HANDLE_VALUE)
     {
-        bericht.status = letzterFehler == ERROR_FILE_NOT_FOUND
-            ? ServerPruefStatus::nichtDa
-            : ServerPruefStatus::belegtAberUnverifiziert;
-        bericht.fehler = letzterFehler == ERROR_FILE_NOT_FOUND
-            ? ServerPruefFehler::pipeFehlt : ServerPruefFehler::pipeOeffnen;
+        // NAK-134/R1 — DREI Ausgaenge, nicht zwei. Bis hierher wurde nie ein
+        // Handle geoeffnet, also kann keiner davon ein Identitaetsurteil sein:
+        //
+        //   * FILE_NOT_FOUND  — der Name existiert nicht. Nur dieser Wert darf
+        //     den Broker-Startpfad oeffnen.
+        //   * PIPE_BUSY nach 20 erschoepften Warterunden — der Name existiert,
+        //     alle Instanzen sind belegt, der Server wurde NIE erreicht. Das
+        //     ist LIVENESS: normaler Backoff, kein Parken. Vorher fiel dieser
+        //     Fall in den Sicherheitszweig und parkte den Clientthread
+        //     dauerhaft; nach einem Brokerneustart mit vielen Sonden blieb ein
+        //     Teil davon bis zum Neuladen der Instanz getrennt (Gate-Lauf G3).
+        //   * alles Uebrige (ACCESS_DENIED und jeder UNBEKANNTE Fehler) —
+        //     deutet auf einen fremden Besitzer des Namens und bleibt
+        //     fail-closed auf der Sicherheitsseite (NAK-123).
+        //
+        // Die Verengung geschieht ueber ZWEI namentlich genannte Codes; alles
+        // Unbekannte bleibt, wo es war (Pruefliste D).
+        if (letzterFehler == ERROR_FILE_NOT_FOUND)
+        {
+            bericht.status = ServerPruefStatus::nichtDa;
+            bericht.fehler = ServerPruefFehler::pipeFehlt;
+        }
+        else if (letzterFehler == ERROR_PIPE_BUSY)
+        {
+            bericht.status = ServerPruefStatus::belegtNichtErreicht;
+            bericht.fehler = ServerPruefFehler::pipeBelegt;
+        }
+        else
+        {
+            bericht.status = ServerPruefStatus::belegtAberUnverifiziert;
+            bericht.fehler = ServerPruefFehler::pipeOeffnen;
+        }
         bericht.win32Fehler = letzterFehler;
         fehler = "Broker nicht erreichbar (Win32 " + std::to_string ((int) letzterFehler) + ")";
         return false;
@@ -115,9 +142,22 @@ bool IpcVerbindung::oeffnen (const std::string& pipeName,
     HANDLE e = CreateEventW (nullptr, TRUE, FALSE, nullptr);
     if (e == nullptr)
     {
-        fehler = "CreateEvent Win32 " + std::to_string ((int) GetLastError());
+        // NAK-134/R4 — ein LOKALER Ressourcenfehler NACH bestandenem
+        // Identitaetsbeweis ist ein Livenessausgang: Handle schliessen,
+        // normaler Backoff, kein Parken, kein Startpfad, keine zusaetzliche
+        // Serverpruefung. `nichtGeprueft` faellt aus der Positivliste von
+        // `ControlClient.cpp` und `TelemetryClient.cpp` und ist nicht
+        // `nichtDa`, oeffnet also auch keinen Spawn.
+        //
+        // Neu ist nur die letzte der fuenf Zusagen: der Win32-Fehler steht ab
+        // hier IM BERICHT und nicht bloss in der Fehlerzeichenkette. Vorher
+        // trug `bericht.win32Fehler` noch den Wert der bestandenen
+        // Authentisierung — eine Zahl, die zu diesem Ausgang nichts sagt.
+        const auto ereignisFehler = GetLastError();
+        fehler = "CreateEvent Win32 " + std::to_string ((int) ereignisFehler);
         CloseHandle (h);
         bericht.status = ServerPruefStatus::nichtGeprueft;
+        bericht.win32Fehler = ereignisFehler;
         return false;
     }
 

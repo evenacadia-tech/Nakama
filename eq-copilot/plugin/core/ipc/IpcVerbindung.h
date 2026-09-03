@@ -38,13 +38,35 @@ inline constexpr int kBackoffMaxMs   = 8000;
 inline constexpr int kIoFristMs = 5000;
 
 /// Ergebnis der Serverpruefung am KONKRETEN, noch unveroeffentlichten
-/// `CreateFileW`-Handle. Nur `nichtDa` darf den Broker-Startpfad oeffnen;
-/// `belegtAberUnverifiziert` ist ein Sicherheitsfehler und kein Livenessfehler.
+/// `CreateFileW`-Handle.
+///
+/// Drei Ausgaenge, drei Bedeutungen (NAK-134/R1) — sie duerfen nie wieder
+/// zusammenfallen:
+///
+///   * `nichtDa` — der Name existiert nicht. NUR dieser Wert darf den
+///     Broker-Startpfad oeffnen.
+///   * `belegtNichtErreicht` — der Name existiert, alle Instanzen sind belegt
+///     und der Server wurde NIE erreicht (`ERROR_PIPE_BUSY` nach der
+///     erschoepften Warteschleife). Das ist ein LIVENESSfehler: normaler
+///     Backoff, kein Parken, kein Startpfad, keine Serverpruefung.
+///   * `belegtAberUnverifiziert` — ein SICHERHEITSfehler. Entweder wurde ein
+///     Handle geoeffnet und der Identitaetsbeweis nicht bestanden, oder der
+///     Oeffnungsfehler deutet auf einen fremden Besitzer des Namens
+///     (`ERROR_ACCESS_DENIED` und jeder unbekannte Fehler). Hier gilt die
+///     NAK-123-Zusage unveraendert: kein wiederholtes Anklopfen.
+///
+/// Warum das eigene Werte sein muessen: bis NAK-134 trug
+/// `belegtAberUnverifiziert` beide letzten Bedeutungen. Nach einem
+/// Brokerneustart mit vielen Sonden verlor ein Teil der Clients das Rennen um
+/// die freien Pipeinstanzen, bekam `ERROR_PIPE_BUSY` — und wurde als
+/// Sicherheitsfall dauerhaft geparkt. Sie kamen bis zum Neuladen der Instanz
+/// nie zurueck (Gate-Lauf G3, `docs/beweise/NAK-134.md`).
 enum class ServerPruefStatus
 {
     nichtGeprueft,
     nichtDa,
     verifiziert,
+    belegtNichtErreicht,
     belegtAberUnverifiziert,
 };
 
@@ -52,6 +74,9 @@ enum class ServerPruefFehler
 {
     keiner,
     pipeFehlt,
+    /// NAK-134/R1: alle Instanzen belegt, Server nie erreicht. Gehoert immer
+    /// zu `ServerPruefStatus::belegtNichtErreicht`.
+    pipeBelegt,
     pipeOeffnen,
     erwartungUngueltig,
     serverPidNichtErmittelbar,

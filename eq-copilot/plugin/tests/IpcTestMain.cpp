@@ -1861,15 +1861,26 @@ void backoff_folge_und_deckel_sind_beobachtbar()
         client.start();
         auto versuche = [&] { return client.snapshot().verbindungsVersuche; };
         warteAuf (2000, [&] { return versuche() >= 1; });
-        const auto s = versuchsStempel (versuche, 6, 30000);
+        // Deckel 45 s, nicht 30 s: die Folge braucht nominal
+        // 500+1.000+2.000+4.000+8.000+8.000 = 23,5 s, und die Toleranz unten
+        // laesst je Abstand bis zu 40 % mehr zu. Ein Deckel von 30 s koennte
+        // damit einen voellig gesunden Lauf abschneiden und den Kanon auf
+        // einer ausgelasteten Maschine flackern lassen.
+        const auto s = versuchsStempel (versuche, 6, 45000);
         client.stop();
         bool alleDa = true;
         for (auto v : s) alleDa = alleDa && v >= 0;
         // Toleranz 40 %: Scheduling und der Oeffnungsversuch selbst kommen
         // hinzu. Eine engere Schranke waere eine Behauptung ueber die
         // Maschine, keine ueber den Code.
+        // Die Toleranz gehoert NACH OBEN: `wait_for` kehrt nicht frueher als
+        // die Wartezeit zurueck, Scheduling und der Oeffnungsversuch kommen
+        // oben drauf. Nach unten genuegen 10 % fuer die 10-ms-Granularitaet
+        // der Beobachtung (gemessen 994 ms bei 1.000, 7.991 bei 8.000).
+        // Eine untere Schranke von 3/5, wie in der ersten Fassung, liesse
+        // einen auf 5.000 ms verkuerzten Deckel als 8.000 durchgehen.
         auto imFenster = [] (long long ist, long long soll) {
-            return ist >= soll * 3 / 5 && ist <= soll * 7 / 5 + 200;
+            return ist >= soll * 9 / 10 && ist <= soll * 7 / 5 + 200;
         };
         const bool folge = alleDa
             && imFenster (s[0], 500) && imFenster (s[1] - s[0], 1000)

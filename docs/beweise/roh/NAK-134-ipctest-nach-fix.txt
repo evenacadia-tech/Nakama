@@ -83,10 +83,10 @@ SONDE-010 | v3-Envelope, Pipetoken, Backpressure und die zwei Clients
   ok      ein Frame ueber der Slotgroesse wird gezaehlt verworfen, nie halb geschrieben
   ok      100 000 Uebergaben mit 0 Allokationen  [0]
   ok      Gegenprobe: derselbe Zaehler sieht eine echte Allokation  [1]
-  ok      2 000 000 kleine Frames unter Flut: kein zerrissener Frame  [327548 geholt, 0 zerrissen, 1996611 ersetzt]
-  ok      300 000 grosse Frames (8000 B) ebenso: kein zerrissener Frame  [21291 geholt, 0 zerrissen]
+  ok      2 000 000 kleine Frames unter Flut: kein zerrissener Frame  [333561 geholt, 0 zerrissen, 1987776 ersetzt]
+  ok      300 000 grosse Frames (8000 B) ebenso: kein zerrissener Frame  [17229 geholt, 0 zerrissen]
   ok      und keine ruecklaeufige oder doppelte Folgenummer — die Loecher der Kollision brechen die Reihenfolge nicht  [0 ruecklaeufig]
-  ok      der Erzeuger traf den beanspruchten Slot WIRKLICH — und hat ihn nicht beschrieben  [12026 uebersprungene Positionen]
+  ok      der Erzeuger traf den beanspruchten Slot WIRKLICH — und hat ihn nicht beschrieben  [9605 uebersprungene Positionen]
   ok      der NEUESTE Frame faellt dabei NIE — es weicht der aelteste wartende (replace-oldest, §53.9)  [0 neueste wegen fremden Anspruchs verworfen]
   ok      Testhaken: die zwei naechsten Plaetze sind beansprucht
   ok      erzwungene Slot-Kollision: der neueste Frame findet immer einen Platz  [0 verworfen, 2 Loecher]
@@ -155,7 +155,7 @@ SONDE-010 | v3-Envelope, Pipetoken, Backpressure und die zwei Clients
   ok      Verbindung steht (der Server liest nur nicht mehr)
   ok      der Write bricht, sobald der Server weg ist
   ok      einige Ereignisse gingen raus, eines blieb im Sender haengen  [p1Gesendet = 77]
-  ok      das Ereignis, dessen Write scheiterte, kommt nach dem Reconnect an  [gesucht "id":77, · 1 P1 nach dem Reconnect empfangen]
+  ok      das Ereignis, dessen Write scheiterte, kommt nach dem Reconnect an  [gesucht "id":77, · 4 P1 nach dem Reconnect empfangen]
 
 == G7 · der TelemetryClient prueft sein welcome vollstaendig ==
   ok      ein welcome in der P2-Familie gilt NICHT als Kopplung  [welcome kam nicht als P0]
@@ -229,7 +229,7 @@ SONDE-010 | v3-Envelope, Pipetoken, Backpressure und die zwei Clients
   ok      und danach ist der Client getrennt
   ok      Verbindung steht
   ok      der Callback blockiert wirklich
-  ok      stop() kehrt trotz blockierendem Callback binnen Frist zurueck  [2001 ms]
+  ok      stop() kehrt trotz blockierendem Callback binnen Frist zurueck  [2000 ms]
   ok      und die Fristueberschreitung ist sichtbar gezaehlt  [1]
   ok      Verbindung steht
   ok      der Callback blockiert wirklich
@@ -245,13 +245,13 @@ SONDE-010 | v3-Envelope, Pipetoken, Backpressure und die zwei Clients
   ok      der neue Telemetrielauf steht nachgewiesen
   ok      dieselbe Zusage gilt fuer den TelemetryClient  [2 Versuche (vorher 2), 2 Serververbindungen (vorher 2), Status verbunden]
   ok      die Telemetrie wartet auf ihre Kopplung
-  ok      stop() im Zustand wartetAufKopplung kehrt zurueck  [2 ms]
+  ok      stop() im Zustand wartetAufKopplung kehrt zurueck  [0 ms]
   ok      die Telemetrie steht
-  ok      stop() waehrend eines blockierenden P2-Writes kehrt binnen Frist zurueck, nicht erst nach kIoFristMs  [1 ms]
+  ok      stop() waehrend eines blockierenden P2-Writes kehrt binnen Frist zurueck, nicht erst nach kIoFristMs  [2 ms]
 
 == G18 · die Telemetrie verliert die Verbindung mitten im Write ==
   ok      die Telemetrie steht
-  ok      der Verbindungsverlust im Write wird bemerkt  [0 ms]
+  ok      der Verbindungsverlust im Write wird bemerkt  [1 ms]
   ok      und der Client zaehlt einen neuen Versuch — er koppelt von selbst neu  [1 Versuche]
   ok      die Schleuse nimmt weiter an — der Erzeuger merkt vom Abbruch nichts
 
@@ -320,19 +320,19 @@ SONDE-010 | v3-Envelope, Pipetoken, Backpressure und die zwei Clients
   ok      thumbprint_gesetzt_verlangt_winverifytrust_und_exakten_signer
   ok      spawn_per_createprocessw_nur_absolut_und_verborgen
   ok      stop_waehrend_spawn
-BEREIT \\.\pipe\evenacadia.nakama.v3.probe.test.22308.79.foreign-broker-owner
-{"abweisungen":0,"acceptor_wartet_auf_instanz":0,"angenommen":1,"besitzlistener_nach_stopp":0,"besitzlistener_vor_stopp":2,"control_getrennt":1,"control_verbindungen":1,"ende_grund":"stdin","geschlossen_bootstrap":0,"geschlossen_envelope":0,"geschlossen_familie":0,"geschlossen_kopplung":0,"geschlossen_p0_ueberlauf":0,"geschlossen_rate":0,"geschlossen_writer":0,"ingress_hoechststand":0,"ingress_p1_ueberlauf_trennt":0,"ingress_p2_verworfen":0,"letzter_grund":"","p0":0,"p0_beantwortet":0,"p1":0,"p2":0,"pipe":"\\\\.\\pipe\\evenacadia.nakama.v3.probe.test.22308.79.foreign-broker-owner","telemetrie_getrennt":0,"telemetrie_verbindungen":0}
+BEREIT \\.\pipe\evenacadia.nakama.v3.probe.test.6728.79.foreign-broker-owner
+{"abweisungen":0,"acceptor_wartet_auf_instanz":0,"angenommen":1,"besitzlistener_nach_stopp":0,"besitzlistener_vor_stopp":2,"control_getrennt":1,"control_verbindungen":1,"ende_grund":"stdin","geschlossen_bootstrap":0,"geschlossen_envelope":0,"geschlossen_familie":0,"geschlossen_kopplung":0,"geschlossen_p0_ueberlauf":0,"geschlossen_rate":0,"geschlossen_writer":0,"ingress_hoechststand":0,"ingress_p1_ueberlauf_trennt":0,"ingress_p2_verworfen":0,"letzter_grund":"","p0":0,"p0_beantwortet":0,"p1":0,"p2":0,"pipe":"\\\\.\\pipe\\evenacadia.nakama.v3.probe.test.6728.79.foreign-broker-owner","telemetrie_getrennt":0,"telemetrie_verbindungen":0}
   ok      plugin_stoppt_keinen_fremden_brokerprozess
   ok      kein_installer_oder_boot_autostartartefakt
 
 == K · NAK-134: ERROR_PIPE_BUSY ist Liveness, kein Sicherheitsurteil ==
-  ok      oeffnungsausgaenge_sind_liveness_oder_sicherheit/control/pipe_busy  [klass 1, 4011 ms, weitere Versuche 1 (erwartet >=1), pruefungen 0 (erwartet 0)]
+  ok      oeffnungsausgaenge_sind_liveness_oder_sicherheit/control/pipe_busy  [klass 1, 4013 ms, weitere Versuche 1 (erwartet >=1), pruefungen 0 (erwartet 0)]
   ok      oeffnungsausgaenge_sind_liveness_oder_sicherheit/telemetrie/pipe_busy  [klass 1, weitere Versuche 1 (erwartet >=1), pruefungen 0]
   ok      oeffnungsausgaenge_sind_liveness_oder_sicherheit/control/file_not_found  [klass 1, 5 ms, weitere Versuche 2 (erwartet >=1), pruefungen 0 (erwartet 0)]
   ok      oeffnungsausgaenge_sind_liveness_oder_sicherheit/telemetrie/file_not_found  [klass 1, weitere Versuche 2 (erwartet >=1), pruefungen 0]
   ok      oeffnungsausgaenge_sind_liveness_oder_sicherheit/control/access_denied  [klass 1, 5 ms, weitere Versuche 0 (erwartet 0), pruefungen 1 (erwartet 1)]
   ok      oeffnungsausgaenge_sind_liveness_oder_sicherheit/telemetrie/access_denied  [klass 1, weitere Versuche 0 (erwartet 0), pruefungen 1]
-  ok      oeffnungsausgaenge_sind_liveness_oder_sicherheit/control/sonstiger_fehler  [klass 1, 6 ms, weitere Versuche 0 (erwartet 0), pruefungen 1 (erwartet 1)]
+  ok      oeffnungsausgaenge_sind_liveness_oder_sicherheit/control/sonstiger_fehler  [klass 1, 5 ms, weitere Versuche 0 (erwartet 0), pruefungen 1 (erwartet 1)]
   ok      oeffnungsausgaenge_sind_liveness_oder_sicherheit/telemetrie/sonstiger_fehler  [klass 1, weitere Versuche 0 (erwartet 0), pruefungen 1]
   ok      authausgaenge_erwartung_und_serverpid_bleiben_sicherheit/erwartung_ungueltig  [fiel 1, weitere Versuche 0]
   ok      authausgaenge_erwartung_und_serverpid_bleiben_sicherheit/server_pid_nicht_ermittelbar  [fiel 1, weitere Versuche 0]
@@ -353,9 +353,9 @@ BEREIT \\.\pipe\evenacadia.nakama.v3.probe.test.22308.79.foreign-broker-owner
   ok      abbruch_vor_und_nach_createfile/control/stop_nach_open  [an der Barriere 1, kein Hello 1]
   ok      abbruch_vor_und_nach_createfile/control/reconnect_nach_open  [an der Barriere 1, kein Hello 1]
   ok      abbruch_vor_und_nach_createfile/telemetrie/stop_vor_open
-  ok      backoff_folge_und_deckel_sind_beobachtbar/file_not_found  [Abstaende 505 994 2003 4004 7991 8009 ms (erwartet 500 1000 2000 4000 8000 8000)]
-  ok      backoff_folge_und_deckel_sind_beobachtbar/pipe_busy  [Stempel 11 4517 9528 ms — vor R1 parkt der Thread nach dem ersten]
-  ok      verifiziert_ohne_welcome_setzt_backoff_nicht_zurueck  [Stempel 10 5502 11508 ms, pruefungen 3]
+  ok      backoff_folge_und_deckel_sind_beobachtbar/file_not_found  [Abstaende 498 1006 1991 4011 7991 8009 ms (erwartet 500 1000 2000 4000 8000 8000)]
+  ok      backoff_folge_und_deckel_sind_beobachtbar/pipe_busy  [Stempel 10 4517 9529 ms — vor R1 parkt der Thread nach dem ersten]
+  ok      verifiziert_ohne_welcome_setzt_backoff_nicht_zurueck  [Stempel 10 5509 11511 ms, pruefungen 3]
   ok      installer_boot_autostartinventar_ist_null_und_rueckweg_haengt_an_a17_a18
 
 ALLE PRUEFUNGEN GRUEN — 292 Pruefungen, 0 Fehler

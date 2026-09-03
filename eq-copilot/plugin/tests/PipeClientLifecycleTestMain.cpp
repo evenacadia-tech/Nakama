@@ -795,8 +795,10 @@ void pipeclient_backoff_folge_und_deckel_sind_beobachtbar()
         c->stop();
         bool alleDa = true;
         for (auto v : s) alleDa = alleDa && v >= 0;
+        // Toleranz nach oben, nicht nach unten — Begruendung wie im
+        // v3-Zwilling: `wait_for` kehrt nie frueher zurueck.
         auto imFenster = [] (long long ist, long long soll) {
-            return ist >= soll * 3 / 5 && ist <= soll * 7 / 5 + 200;
+            return ist >= soll * 9 / 10 && ist <= soll * 7 / 5 + 200;
         };
         const bool folge = alleDa && imFenster (s[0], 500)
                         && imFenster (s[1] - s[0], 1000) && imFenster (s[2] - s[1], 2000);

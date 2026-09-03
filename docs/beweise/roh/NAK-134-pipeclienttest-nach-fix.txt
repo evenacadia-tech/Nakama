@@ -13,22 +13,22 @@ PIPECLIENT-LIFECYCLE-TEST
   ok      ACK mit falscher Sequenz wird nicht als Bestaetigung gezaehlt
   ok      Welcome mit schemafremdem Zusatzfeld wird abgelehnt
   ok      ACK mit schemafremdem Zusatzfeld wird abgelehnt
-  ok      ein absolutes Zeitbudget gilt fuer Kopf, Body und Teiltransfers  [324 ms]
+  ok      ein absolutes Zeitbudget gilt fuer Kopf, Body und Teiltransfers  [329 ms]
   ok      u64-Dropzaehler saettigt auf die gemeinsame i64-Wire-Grenze
   ok      200 konkurrierende start/stop-Paare ohne joinable-Leak
-  ok      pipeclient_oeffnungsausgaenge_sind_liveness_oder_sicherheit  [pipe_busy: klass 1, 4015 ms, weitere Versuche 1 (erwartet >=1)]
+  ok      pipeclient_oeffnungsausgaenge_sind_liveness_oder_sicherheit  [pipe_busy: klass 1, 4019 ms, weitere Versuche 1 (erwartet >=1)]
   ok      pipeclient_oeffnungsausgaenge_sind_liveness_oder_sicherheit  [file_not_found: klass 1, 10 ms, weitere Versuche 2 (erwartet >=1)]
   ok      pipeclient_oeffnungsausgaenge_sind_liveness_oder_sicherheit  [access_denied: klass 1, 10 ms, weitere Versuche 0 (erwartet 0)]
   ok      pipeclient_oeffnungsausgaenge_sind_liveness_oder_sicherheit  [sonstiger_fehler: klass 1, 10 ms, weitere Versuche 0 (erwartet 0)]
   ok      pipeclient_zaehlervertrag  [pipe_busy: 2 Versuche, 0 Serverpruefungen (erwartet 0)]
   ok      pipeclient_zaehlervertrag  [access_denied: 1 Versuche, 0 Serverpruefungen (erwartet 0 — positionsgesteuert)]
-  ok      pipeclient_parken_uebergeht_den_backoff  [authfehler: geparkt 1, weitere Versuche 0, Neustart nach 11 ms]
-  ok      pipeclient_parken_uebergeht_den_backoff  [access_denied: geparkt 1, weitere Versuche 0, Neustart nach 10 ms]
+  ok      pipeclient_parken_uebergeht_den_backoff  [authfehler: geparkt 1, weitere Versuche 0, Neustart nach 10 ms]
+  ok      pipeclient_parken_uebergeht_den_backoff  [access_denied: geparkt 1, weitere Versuche 0, Neustart nach 11 ms]
   ok      pipeclient_abbruch_vor_und_nach_createfile  [stop_vor_open]
   ok      pipeclient_abbruch_vor_und_nach_createfile  [reconnect_vor_open]
   ok      pipeclient_abbruch_vor_und_nach_createfile  [stop_nach_open: an der Barriere 1, kein Hello 1]
   ok      pipeclient_abbruch_vor_und_nach_createfile  [reconnect_nach_open: an der Barriere 1, kein Hello 1]
-  ok      pipeclient_backoff_folge_und_deckel_sind_beobachtbar  [file_not_found Abstaende 493 1007 1993 ms (erwartet 500 1000 2000)]
-  ok      pipeclient_backoff_folge_und_deckel_sind_beobachtbar  [pipe_busy Stempel 10 4509 9525 ms — vor R1 parkt der Thread nach dem ersten]
+  ok      pipeclient_backoff_folge_und_deckel_sind_beobachtbar  [file_not_found Abstaende 493 1003 1997 ms (erwartet 500 1000 2000)]
+  ok      pipeclient_backoff_folge_und_deckel_sind_beobachtbar  [pipe_busy Stempel 10 4518 9533 ms — vor R1 parkt der Thread nach dem ersten]
 PIPECLIENT-LIFECYCLE-TEST OK - 0 Fehler
 EXIT=0

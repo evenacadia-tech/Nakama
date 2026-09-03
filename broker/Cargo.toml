@@ -3,13 +3,23 @@ name = "eqcop-broker"
 version = "0.1.0"
 edition = "2021"
 # G2-MSRV-001: der tatsaechlich noetige Compilerboden, nicht eine runde Zahl.
-# Er folgt aus der juengsten benutzten Standardmethode: `Option::is_none_or`
-# ist seit 1.82.0 stabil und steht in aggregat.rs, coordinator/liveness.rs und
-# protokoll.rs. Darunter liegen `usize::div_ceil` (1.73, transport/pipetoken.rs)
-# und `OnceLock` (1.70). Der Inlinetest `rust_version_boden_ist_exakt_gepinnt`
-# in store/mod.rs haelt den Wert an dieser Begruendung fest, so wie sein
-# Zwilling es fuer die SQLite-Version tut.
-rust-version = "1.82"
+# Er ist das MAXIMUM aus zwei Quellen, nicht nur aus dem eigenen Code:
+#
+# (a) Eigener Code: die juengste benutzte Standardmethode ist
+#     `Option::is_none_or`, stabil seit 1.82.0 (aggregat.rs,
+#     coordinator/liveness.rs, protokoll.rs). Darunter liegen
+#     `usize::div_ceil` (1.73, transport/pipetoken.rs) und `OnceLock` (1.70).
+# (b) Die im eingecheckten Cargo.lock GESPERRTEN Abhaengigkeiten. Ihr hoechster
+#     Boden liegt bei 1.85.0 (`uuid 1.24.1` und `getrandom 0.4.3`); mit 1.82
+#     brach `cargo +1.82 check --locked` vor dem Kompilieren ab, die Zusage war
+#     also falsch (Abschlusspruefung 1, Befund G2-MSRV-001, 03.09.2026).
+#
+# Der Boden ist damit 1.85. Der Inlinetest `rust_version_boden_ist_exakt_gepinnt`
+# in store/mod.rs haelt (a) an dieser Begruendung fest; sein Zwilling
+# `rust_version_deckt_alle_gesperrten_abhaengigkeiten` misst (b) ueber
+# `cargo metadata --locked` und faellt, sobald eine gesperrte Kiste mehr
+# verlangt als hier deklariert ist.
+rust-version = "1.85"
 description = "EQ-Copilot-Broker (Nakama) — eigenständiger Named-Pipe-Server, aus der Plugin-Hub-App herausgelöst (18.08.2026)"
 
 # G2-CARGOLINT-001 / H-22, drei Teile mit unterschiedlicher Beweiskraft:

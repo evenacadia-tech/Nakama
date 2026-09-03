@@ -1,0 +1,38 @@
+# Rotbeweis D1 (G2-MSRV-001) — NAK-121 Nacharbeit Runde 1
+
+Mutante(n):
+  broker/Cargo.toml
+    ALT: rust-version = "1.85"
+    NEU: rust-version = "1.82"   (der Stand, den die Abschlusspruefung als falsch belegt hat)
+
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never --lib -- rust_version_deckt_alle_gesperrten_abhaengigkeiten
+Exitcode: 101
+
+Die Mutante ist nach diesem Lauf zurueckgenommen; der naechste
+Lauf derselben Tests ist wieder gruen.
+
+---
+
+
+running 1 test
+test store::tests::rust_version_deckt_alle_gesperrten_abhaengigkeiten ... FAILED
+
+failures:
+
+---- store::tests::rust_version_deckt_alle_gesperrten_abhaengigkeiten stdout ----
+
+thread 'store::tests::rust_version_deckt_alle_gesperrten_abhaengigkeiten' (17696) panicked at src\store\mod.rs:390:9:
+rust-version = "1.82" ist zu niedrig: getrandom 0.4.3 (1.85) verlangt mehr.              Der Compilerboden ist das Maximum ueber den gesperrten Baum
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    store::tests::rust_version_deckt_alle_gesperrten_abhaengigkeiten
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 196 filtered out; finished in 0.06s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.34s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+error: test failed, to rerun pass `--lib`

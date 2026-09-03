@@ -298,13 +298,17 @@ mod tests {
     }
 
     /// G2-MSRV-001, der Zwilling des Tests darueber: der Compilerboden ist eine
-    /// pruefbare Zusage, keine Absichtserklaerung. `MSRV_BODEN` nennt die
-    /// juengste benutzte Standardmethode - `Option::is_none_or`, stabil seit
-    /// 1.82.0 - und der Test haelt Cargo.toml daran fest. Wer die Zeile
-    /// entfernt oder senkt, faellt hier auf.
+    /// pruefbare Zusage, keine Absichtserklaerung. `MSRV_BODEN` haelt den
+    /// deklarierten Wert fest, und der zweite Zwilling
+    /// `rust_version_deckt_alle_gesperrten_abhaengigkeiten` misst, dass er
+    /// nicht unter dem Boden des gesperrten Baumes liegt. Zusaetzlich muss die
+    /// Begruendung im Manifest die juengste benutzte Standardmethode nennen -
+    /// `Option::is_none_or`, stabil seit 1.82.0 -, damit die Zahl beim
+    /// naechsten Aufraeumen nicht wieder zur runden Behauptung wird. Wer die
+    /// Zeile entfernt oder senkt, faellt hier auf.
     #[test]
     fn rust_version_boden_ist_exakt_gepinnt() {
-        const MSRV_BODEN: &str = "1.82";
+        const MSRV_BODEN: &str = "1.85";
         let cargo = include_str!("../../Cargo.toml");
         let zeile = cargo
             .lines()
@@ -323,4 +327,82 @@ mod tests {
         );
     }
 
+    /// G2-MSRV-001, Nacharbeit Runde 1 (Abschlusspruefung 1, 03.09.2026):
+    /// Der Test darueber vergleicht nur den Manifestwert mit dem eigenen Code
+    /// und konnte deshalb nicht sehen, dass die im Lockfile GESPERRTEN
+    /// Abhaengigkeiten einen hoeheren Boden verlangen - `cargo +1.82 check
+    /// --locked` brach vor dem Kompilieren ab. Dieser Zwilling misst den
+    /// tatsaechlichen Boden: er liest die `rust-version` jedes gesperrten
+    /// Pakets aus `cargo metadata --locked` und verlangt, dass keines mehr
+    /// fordert als das eigene Manifest deklariert.
+    #[test]
+    fn rust_version_deckt_alle_gesperrten_abhaengigkeiten() {
+        let manifest = concat!(env!("CARGO_MANIFEST_DIR"), "/Cargo.toml");
+        // Cargo setzt `CARGO` fuer jeden Testlauf; ohne die Variable liefe der
+        // Test blind und duerfte nicht still durchgehen.
+        let cargo = std::env::var("CARGO").expect("CARGO ist im Testlauf gesetzt");
+        let ausgabe = std::process::Command::new(&cargo)
+            .args([
+                "metadata",
+                "--format-version",
+                "1",
+                "--locked",
+                "--manifest-path",
+                manifest,
+            ])
+            .output()
+            .expect("cargo metadata laesst sich starten");
+        assert!(
+            ausgabe.status.success(),
+            "cargo metadata --locked scheitert: {}",
+            String::from_utf8_lossy(&ausgabe.stderr)
+        );
+        let baum: serde_json::Value =
+            serde_json::from_slice(&ausgabe.stdout).expect("cargo metadata liefert JSON");
+        let pakete = baum["packages"]
+            .as_array()
+            .expect("cargo metadata nennt packages");
+
+        let eigen = pakete
+            .iter()
+            .find(|p| p["name"].as_str() == Some("eqcop-broker"))
+            .and_then(|p| p["rust_version"].as_str())
+            .expect("eqcop-broker deklariert rust-version");
+        let eigen_stufen = version_stufen(eigen);
+
+        let mut hoechste = eigen_stufen;
+        let mut fordernde = String::from("eqcop-broker");
+        for paket in pakete {
+            let Some(boden) = paket["rust_version"].as_str() else {
+                continue;
+            };
+            let stufen = version_stufen(boden);
+            if stufen > hoechste {
+                hoechste = stufen;
+                fordernde = format!(
+                    "{} {} ({boden})",
+                    paket["name"].as_str().unwrap_or("?"),
+                    paket["version"].as_str().unwrap_or("?")
+                );
+            }
+        }
+
+        assert!(
+            hoechste <= eigen_stufen,
+            "rust-version = \"{eigen}\" ist zu niedrig: {fordernde} verlangt mehr.              Der Compilerboden ist das Maximum ueber den gesperrten Baum"
+        );
+    }
+
+    /// `1.85.0`, `1.85` und `1.85.0-beta` sollen vergleichbar sein, ohne eine
+    /// Semver-Kiste in die Abhaengigkeiten zu ziehen. Fehlende Stellen zaehlen
+    /// als 0, ein Vorabteil wird abgeschnitten.
+    fn version_stufen(text: &str) -> (u64, u64, u64) {
+        let kern = text.split(['-', '+']).next().unwrap_or(text);
+        let mut teile = kern.split('.').map(|t| t.trim().parse::<u64>().unwrap_or(0));
+        (
+            teile.next().unwrap_or(0),
+            teile.next().unwrap_or(0),
+            teile.next().unwrap_or(0),
+        )
+    }
 }

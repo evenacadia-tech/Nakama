@@ -121,7 +121,7 @@ pub use griff::{V3Closer, V3Griff, V3Sender, V3Statistik, WorkerPlatzProbe};
 pub use listener::{
     v3_server_starten, v3_server_starten_fuer_security_vectors, v3_server_starten_mit_epoch,
     v3_server_starten_mit_epoch_und_sender, V3AuthTestFehler, V3SecurityTestOptionen,
-    V3StartTestFehler, V3UebergabeBarriere,
+    V3StartTestFehler, V3TotesHandleNaht, V3UebergabeBarriere,
 };
 
 pub const MAX_VERBINDUNGEN: usize = 96;

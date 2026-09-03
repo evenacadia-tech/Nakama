@@ -1,0 +1,69 @@
+NAK-121 / R2-5 - Rotbeweis (Nacharbeit Runde 2, 03.09.2026)
+Defekt D11 / H-01, broker/src/transport/server_v3/win_handles.rs:671
+
+MUTANTE (Regel des Dirigenten: "beide alle_io_abbrechen-Aufrufe im
+Stopp-Pfad (griff.rs:291 und :309) durch eine nicht zaehlende Variante
+ersetzen bzw. die Statistik dort nicht durchreichen -> rot"):
+  broker/src/transport/server_v3/griff.rs, V3Griff::stoppen:
+    alle_io_abbrechen(&self.handles, &self.statistik);
+  ->  alle_io_abbrechen(&self.handles, &V3Statistik::default());
+  (beide Stellen: der Abbruch vor den Joins und der im Joinwarten)
+
+TEST: broker/tests/security_vectors.rs::
+      verbindungsgriff_besitzt_handle_und_registereintrag, H-01 Teil 3
+      Phantom-ID NUR in `offen` (V3TotesHandleNaht::NurOffen): der Wachhund
+      erreicht sie nicht (Gegenprobe: 500 ms = 5 Wachhundtakte, Zaehler 0),
+      der Stopp-Pfad ueber alle_io_abbrechen schon.
+
+== ROT ==
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.27s
+     Running tests\security_vectors.rs (broker\target\debug\deps\security_vectors-4a68d58de2e43d5b.exe)
+
+running 1 test
+test verbindungsgriff_besitzt_handle_und_registereintrag ... FAILED
+
+failures:
+
+---- verbindungsgriff_besitzt_handle_und_registereintrag stdout ----
+
+thread 'verbindungsgriff_besitzt_handle_und_registereintrag' (15188) panicked at tests\security_vectors.rs:933:5:
+der Stopp-Pfad hat den unerwarteten CancelIoEx-Fehler verschluckt
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+failures:
+    verbindungsgriff_besitzt_handle_und_registereintrag
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 22 filtered out; finished in 0.80s
+
+error: test failed, to rerun pass `--test security_vectors`
+EXIT=101
+
+== WARUM DER NEUE TEST NOETIG WAR ==
+Codex' Befund woertlich: der Inline-Test in win_handles.rs ruft
+`alle_io_abbrechen` selbst auf. Unter DERSELBEN Mutante bleibt er GRUEN -
+der zugesagte Stopp-Pfad war damit ungeprueft:
+
+$ cargo test --manifest-path broker/Cargo.toml --lib stopp_und_verbindungsende_zaehlen
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.18s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+running 1 test
+test transport::server_v3::win_handles::d11_tests::stopp_und_verbindungsende_zaehlen_unerwartete_cancel_fehler ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 197 filtered out; finished in 0.00s
+
+EXIT=0
+
+== GRUEN (Mutante zurueckgenommen, Stand von R2-5) ==
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.47s
+     Running tests\security_vectors.rs (broker\target\debug\deps\security_vectors-4a68d58de2e43d5b.exe)
+
+running 1 test
+test verbindungsgriff_besitzt_handle_und_registereintrag ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 22 filtered out; finished in 3.01s
+
+EXIT=0

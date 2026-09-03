@@ -7,7 +7,8 @@
 use eqcop_broker::transport::pipetoken::PROBE_PRAEFIX;
 use eqcop_broker::transport::server_v3::{
     v3_server_starten_fuer_security_vectors, V3AuthTestFehler, V3Griff, V3SecurityTestOptionen,
-    V3StartTestFehler, V3UebergabeBarriere, ZaehlSenke, MAX_VERBINDUNGEN, PIPE_INSTANZEN,
+    V3StartTestFehler, V3TotesHandleNaht, V3UebergabeBarriere, ZaehlSenke, MAX_VERBINDUNGEN,
+    PIPE_INSTANZEN,
 };
 use eqcop_broker::transport::v3::{
     envelope_pruefen, envelope_schreiben, Familie, MAX_BOOTSTRAP_BYTES,
@@ -885,7 +886,7 @@ fn verbindungsgriff_besitzt_handle_und_registereintrag() {
     let (mut griff, _) = start(
         &pipe,
         V3SecurityTestOptionen {
-            totes_handle_ins_register: true,
+            totes_handle_ins_register: V3TotesHandleNaht::OffenUndAbgeloest,
             ..V3SecurityTestOptionen::default()
         },
     );
@@ -898,6 +899,41 @@ fn verbindungsgriff_besitzt_handle_und_registereintrag() {
         .load(Ordering::SeqCst)
         > 0));
     griff.stoppen();
+
+    // ── H-01, Teil 3 (R2-5): derselbe Zaehler DURCH `V3Griff::stoppen` ─────
+    //
+    // D11 der Runde 1 belegte den Stopp-Pfad mit einem Inline-Test, der
+    // `alle_io_abbrechen` selbst aufrief. Entkoppelte man den Aufruf aus
+    // `V3Griff::stoppen`, blieb dieser Test gruen und der zugesagte Pfad war
+    // wieder ungeprueft. Jetzt geht der Beweis durch `stoppen()`.
+    //
+    // Die Phantom-ID liegt NUR in `offen`: der Wachhund erreicht sie damit
+    // nicht (er bricht nur faellige Bootstraps und abgeloeste IDs ab), der
+    // Stopp-Pfad ueber `alle_io_abbrechen` schon. Nur so ist der Stopp
+    // isolierbar.
+    let pipe = probe_pipe("h01c");
+    let (mut griff, _) = start(
+        &pipe,
+        V3SecurityTestOptionen {
+            totes_handle_ins_register: V3TotesHandleNaht::NurOffen,
+            ..V3SecurityTestOptionen::default()
+        },
+    );
+    // Gegenprobe: mehrere Wachhundtakte (WACHHUND_TAKT = 100 ms) lang bleibt
+    // der Zaehler 0. Waere die ID auch in `abgeloest`, haette der Wachhund
+    // hier schon gezaehlt und der Stopp bewiese nichts mehr.
+    std::thread::sleep(Duration::from_millis(500));
+    assert_eq!(
+        griff.statistik.cancel_auf_totem_handle.load(Ordering::SeqCst),
+        0,
+        "der Wachhund hat die Phantom-ID erreicht - der Stopp-Pfad ist nicht isoliert"
+    );
+
+    griff.stoppen();
+    assert!(
+        griff.statistik.cancel_auf_totem_handle.load(Ordering::SeqCst) >= 1,
+        "der Stopp-Pfad hat den unerwarteten CancelIoEx-Fehler verschluckt"
+    );
 
     // ── H-02: der abgeloeste Schreiber gibt Instanz und Handle zurueck ─────
     let pipe = probe_pipe("h02");

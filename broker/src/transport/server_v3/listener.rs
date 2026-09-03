@@ -20,6 +20,25 @@ pub enum V3StartTestFehler {
     AcceptorSpawn,
 }
 
+/// R2-5 (Nacharbeit Runde 2, 03.09.2026): WO die H-01-Phantom-ID liegt.
+///
+/// Der Wachhund erreicht nur faellige Bootstraps und ABGELOESTE IDs; der
+/// Stopp-Pfad (`V3Griff::stoppen` -> `alle_io_abbrechen`) laeuft dagegen ueber
+/// `offen`. Liegt die Phantom-ID in beiden Mengen, hat der Wachhund laengst
+/// gezaehlt, bevor der Stopp ueberhaupt anlaeuft - der Stopp-Pfad ist dann
+/// nicht isolierbar. `NurOffen` legt sie ausschliesslich dorthin, wo der Stopp
+/// sie findet und der Wachhund nicht.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum V3TotesHandleNaht {
+    #[default]
+    Aus,
+    /// Wachhundpfad: die Phantom-ID steht in `offen` UND `abgeloest`.
+    OffenUndAbgeloest,
+    /// Stopp-Pfad: die Phantom-ID steht NUR in `offen`. Der Wachhund laesst sie
+    /// in Ruhe, `alle_io_abbrechen` findet sie.
+    NurOffen,
+}
+
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum V3AuthTestFehler {
     #[default]
@@ -85,7 +104,7 @@ pub struct V3SecurityTestOptionen {
     /// dass ein `CancelIoEx` auf ein totes Handle GEZAEHLT und nicht
     /// verschluckt wird — im Produktbetrieb ist dieser Zustand strukturell
     /// unerreichbar, weil der Eintrag nur lebt, solange sein Besitzer lebt.
-    pub totes_handle_ins_register: bool,
+    pub totes_handle_ins_register: V3TotesHandleNaht,
     /// H-02-Naht: laesst den Schreiberthread nach dem ersten Frame so lange
     /// stehen, dass `join_mit_frist` seine `SENKE_FRIST` verpasst. Damit ist
     /// die Ablosung erzwingbar, statt auf einen langsamen Peer zu hoffen.
@@ -314,21 +333,26 @@ pub(super) fn v3_server_starten_intern(
     }
     statistik.bewaffnete_listener.store(2, Ordering::SeqCst);
 
-    if security_optionen.totes_handle_ins_register {
+    if security_optionen.totes_handle_ins_register != V3TotesHandleNaht::Aus {
         // H-01-Naht: ein Event-Handle, sofort geschlossen, danach unter einer
-        // Phantom-ID ins Abbruchregister. Der naechste Wachhundtick feuert
-        // `CancelIoEx` darauf und muss den Fehlschlag ZAEHLEN. Ohne diese Naht
-        // waere der Zaehler unbeweisbar: im Produktbetrieb lebt ein
-        // Registereintrag nur, solange sein Besitzer lebt (H-01).
+        // Phantom-ID ins Abbruchregister. Der Abbruchpfad feuert `CancelIoEx`
+        // darauf und muss den Fehlschlag ZAEHLEN. Ohne diese Naht waere der
+        // Zaehler unbeweisbar: im Produktbetrieb lebt ein Registereintrag nur,
+        // solange sein Besitzer lebt (H-01).
         if let Some(e) = Ereignis::neu() {
             let roh = e.roh();
             drop(e);
             let mut r = handles.lock().unwrap_or_else(|x| x.into_inner());
             r.offen.push((u64::MAX, roh as isize));
-            // Ohne den Eintrag in `abgeloest` liefe der Wachhund an der
-            // Phantom-ID vorbei: er bricht nur faellige Bootstraps und
-            // abgeloeste Verbindungen ab.
-            r.abgeloest.insert(u64::MAX);
+            // R2-5: WELCHER Pfad gemessen wird, entscheidet dieser Eintrag.
+            // Ohne `abgeloest` laeuft der Wachhund an der Phantom-ID vorbei -
+            // er bricht nur faellige Bootstraps und abgeloeste Verbindungen ab.
+            // Genau das isoliert den Stopp-Pfad, der ueber `offen` laeuft.
+            if security_optionen.totes_handle_ins_register
+                == V3TotesHandleNaht::OffenUndAbgeloest
+            {
+                r.abgeloest.insert(u64::MAX);
+            }
         }
     }
 

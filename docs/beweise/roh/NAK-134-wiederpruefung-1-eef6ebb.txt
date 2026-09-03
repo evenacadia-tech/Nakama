@@ -1,0 +1,33 @@
+URTEIL: NEEDS_WORK — Befunde 1, 2 und 4 sind geschlossen. Befund 3 bleibt für den Park-Reset D‑P03/D‑P07 teilweise offen. Einen neuen Produktbruch habe ich nicht festgestellt.
+
+### 1. Ist jeder der vier Befunde geschlossen?
+
+- **Befund 1: Ja.** `oeffnen()` löscht das Abbruchsignal nicht mehr und prüft es am Schleifenkopf ([IpcVerbindung.cpp:44](/C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/core/ipc/IpcVerbindung.cpp:44), [IpcVerbindung.cpp:75](/C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/core/ipc/IpcVerbindung.cpp:75)). Das Zurücksetzen liegt in `neueGenerationBeginnen()` ([IpcVerbindung.cpp:197](/C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/core/ipc/IpcVerbindung.cpp:197)); Control und Telemetrie prüfen danach erneut die Generation ([ControlClient.cpp:1102](/C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/core/ipc/ControlClient.cpp:1102), [TelemetryClient.cpp:551](/C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/core/ipc/TelemetryClient.cpp:551)). Der Test liegt in [IpcTestMain.cpp:2592](/C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/tests/IpcTestMain.cpp:2592) und maß frisch `0 ms`, Default-Bericht. Der geforderte Rotbeweis zeigt vor dem Fix `4009 ms`, Bericht 3 und Exit 1 ([NAK-134-nacharbeit-1-abbruch-vor-fix.txt:351](/C:/Users/phili/Projekte/Nakama/docs/beweise/roh/NAK-134-nacharbeit-1-abbruch-vor-fix.txt:351)).
+
+- **Befund 2: Ja.** Die acht V3-Fälle entstehen als vollständiges Kreuzprodukt aus Stop/Reconnect, vor/nach Open und Control/Telemetrie ([IpcTestMain.cpp:2695](/C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/tests/IpcTestMain.cpp:2695)). Die Vor-Open-Fälle verwenden belegte Pipes und prüfen `<1500 ms`; frisch gemessen wurden `95/96/100/97 ms`. Die vier Nach-Open-Fälle verwarfen Urteil und Hello. V2 misst dieselbe belegte Wartephase und Frist in [PipeClientLifecycleTestMain.cpp:1160](/C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/tests/PipeClientLifecycleTestMain.cpp:1160); frisch `89/99 ms`, beide Nach-Open-Fälle ohne Hello. Beide Testprogramme endeten mit Exit 0.
+
+- **Befund 3: Nein.** D‑P01 ist inzwischen diskriminierend aus einer erhöhten Stufe gebaut ([IpcTestMain.cpp:2087](/C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/tests/IpcTestMain.cpp:2087), [PipeClientLifecycleTestMain.cpp:1026](/C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/tests/PipeClientLifecycleTestMain.cpp:1026)); frisch `506/501/505 ms` statt mindestens 2000 ms ohne Reset. Auch D‑K05/D‑P02, D‑P05/06, D‑K06/10/11 und D‑P08 haben eigene Fälle; D‑P08 maß frisch `4003 ms` aus der erhöhten Stufe ([IpcTestMain.cpp:2324](/C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/tests/IpcTestMain.cpp:2324)).
+
+  Offen bleibt jedoch der ausdrücklich genannte Telemetrie-Park-Reset D‑P03/D‑P07: [IpcTestMain.cpp:2166](/C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/tests/IpcTestMain.cpp:2166) parkt bereits beim ersten Versuch, also bei `backoffMs == 500`, und prüft anschließend nur den ersten sofortigen Versuch nach `reconnect()` ([IpcTestMain.cpp:2218](/C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/tests/IpcTestMain.cpp:2218)). Dieser Versuch folgt wegen des bedingungslosen `continue` ohnehin sofort ([TelemetryClient.cpp:413](/C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/core/ipc/TelemetryClient.cpp:413)). Entfernt oder verfälscht man den eigentlichen Reset in Zeile 420, bleiben `weitere == 0` und der `<250-ms`-Versuch grün; der Test stoppt, bevor der stale Backoff erneut benutzt wird. Damit wird die D‑P03/D‑P07-Zusage „erhöhter Backoff fällt beim Lösen auf 500“ nicht falsifiziert. Das verletzt Dirigentenregel 3.
+
+- **Befund 4: Ja.** E‑V02 richtet eine erreichbare Pipe ein, erreicht nachweislich `wartetAufServerpruefung`, setzt dann `belegtNichtErreicht` und prüft den konkreten Phasenwechsel ohne Spawn/Sperre ([IpcTestMain.cpp:2452](/C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/tests/IpcTestMain.cpp:2452)). Frisch: `Phase erreicht 1`, danach `0`, Status `3`, `0 Spawns`.
+
+### 2. Hat der Fixdiff etwas gebrochen?
+
+**Nein, kein zusätzlicher Produkt-, Test- oder Vertragsbruch festgestellt.** `git diff --check` war sauber. Frisch liefen:
+
+- `EqCopIpcTest`: 309 Prüfungen, 0 Fehler; einschließlich der bindenden NAK‑123-C-Pfade und Authentisierung vor Hello.
+- `EqCopPipeClientTest`: Exit 0, 0 Fehler.
+- `EqCopNullTest`: OK, Ausgang bitidentisch und 0 Samples Latenz.
+- `EqCopIdentityTest`: 116 Prüfungen, 0 Fehler.
+- `EqCopStateMigrationTest`: 176 Prüfungen, 0 Fehler.
+
+Der Produktdiff betrifft ausschließlich die Hintergrund-IPC-Verbindung; `PipeClient.cpp`, Audioverarbeitung, Identität, State, Schemas, Broker und W/A24-Werkzeuge sind unverändert. Die offene Stelle aus Frage 1 ist eine nicht geschlossene Messzusage, kein beobachteter neuer Produktdefekt.
+
+Geprüft: exakter gebundener Diff, relevante D-/E-/W-/§7-/R1–R5- und NAK‑123-C-Verträge, Rotbeweis, Aufrufer/Gegenpfade, fünf aktuelle Testprogramme sowie `git diff --check`; Prüfrahmen [nakama-plugin-quality](/C:/Users/phili/Projekte/Nakama/.agents/skills/nakama-plugin-quality/SKILL.md).
+
+Nicht geprüft: A24 gemäß Auftrag, neuer 60‑Minuten-Soak, FL/XRun, `/rust-review`, vollständiger 40/40-Neulauf und Neubau. Der vorhandene Kanonlauf 06:06 war Kontext, kein frischer Lauf dieser Prüfung.
+
+HEAD vor dem Lauf: `eef6ebb71d3803f5ff7f35b2453f0e0cd3fb1e55`  
+HEAD nach dem Lauf: `eef6ebb71d3803f5ff7f35b2453f0e0cd3fb1e55`  
+Der gebundene Prüfbereich blieb unverändert; `.claude/settings.local.json` war vorher und nachher fremd/unverfolgt.

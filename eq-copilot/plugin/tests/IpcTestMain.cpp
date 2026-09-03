@@ -1596,7 +1596,17 @@ struct FremdePipe
             1, 4096, 4096, 0, nullptr);
         return server != INVALID_HANDLE_VALUE;
     }
-    ~FremdePipe() { if (server != INVALID_HANDLE_VALUE) CloseHandle (server); }
+    /// Gibt den Namen WIEDER FREI. Gebraucht wird das vom Park-Reset-Test:
+    /// nach dem Loesen der Sperre muss der naechste Versuch schlicht
+    /// scheitern duerfen — bliebe der Name belegt, parkte der Thread sofort
+    /// erneut und der Backoff, um den es geht, kaeme gar nicht zum Einsatz.
+    void schliessen()
+    {
+        if (server != INVALID_HANDLE_VALUE)
+            CloseHandle (server);
+        server = INVALID_HANDLE_VALUE;
+    }
+    ~FremdePipe() { schliessen(); }
 };
 
 /// Ein Name, den Win32 als ungueltig zurueckweist (123) — der einzige an
@@ -2154,15 +2164,39 @@ void backoff_folge_und_deckel_sind_beobachtbar()
 }
 
 /// D-P03, D-P07 — die Phasenaussage des Parkens. Sie kann kein Backoff-Test
-/// messen: geparkt gibt es GAR KEINE Folge. Belegt werden zwei Dinge:
+/// messen: geparkt gibt es GAR KEINE Folge. Belegt werden drei Dinge:
 ///   1. nach dem Ausgang folgt kein Versuch mehr (Backoff uebergangen);
-///   2. nach `reconnect()` folgt der naechste Versuch SOFORT, ohne Wartezeit.
-/// Punkt 2 ist zugleich der Beleg fuer die Ruecksetzung von `backoffMs`
-/// (`ControlClient.cpp:1010`, `TelemetryClient.cpp:420`): ein stehengebliebener
-/// Backoff wuerde die naechste Runde um mindestens 500 ms verzoegern.
+///   2. nach `reconnect()` folgt der naechste Versuch SOFORT, ohne Wartezeit;
+///   3. der DARAUF FOLGENDE Versuch kommt nach 500 ms — NICHT nach der
+///      erhoehten Stufe, aus der heraus geparkt wurde.
+///
+/// Punkt 3 ist der eigentliche Beleg fuer die Ruecksetzung von `backoffMs`
+/// (`ControlClient.cpp:1010`, `TelemetryClient.cpp:420`). Punkt 2 ist es
+/// NICHT: das `continue` im `authBlockiert`-Zweig ist bedingungslos
+/// (`ControlClient.cpp:1011`, `TelemetryClient.cpp:421`), der erste Versuch
+/// nach dem Loesen folgt also ohne Wartezeit, welchen Wert `backoffMs` auch
+/// traegt. Erst die Runde DANACH benutzt ihn, im `wait_for (backoffMs)`
+/// unterhalb des Zweigs.
+///
+/// Daraus folgt der Aufbau, und er ist der Kern der Zeile:
+///   a) OHNE Sperrursache aufsteigen — drei Versuche mit Abstaenden 500 und
+///      1.000 ms, danach steht `backoffMs` auf 4.000. Ohne diese Vorstufe
+///      sind „zurueckgesetzt" und „stehengeblieben" beide 500 ms und damit
+///      nicht unterscheidbar; genau daran ist die Zeile in Runde 1
+///      durchgefallen;
+///   b) Sperrursache anlegen ⇒ der naechste Versuch parkt aus der erhoehten
+///      Stufe;
+///   c) Sperrursache WIEDER ENTFERNEN — bliebe sie stehen, parkte der Thread
+///      nach dem Loesen sofort erneut und erreichte das `wait_for` nie;
+///   d) `reconnect()`, dann den Abstand vom ersten zum ZWEITEN Versuch messen.
 ///
 /// **Nacharbeit Runde 1, Defekt 3:** D-P03 und D-P07 nennen `V3C, V3T, V2`,
 /// gemessen war nur Control. Der Telemetriepfad laeuft jetzt mit.
+/// **Nacharbeit Runde 2:** der Test parkte aus `backoffMs == 500` und mass nur
+/// den sofortigen Versuch. Ein entfernter Reset blieb dabei gruen — die Zusage
+/// „erhoehter Backoff faellt beim Loesen auf 500" war nicht falsifizierbar.
+/// Punkt 3 und die Schritte a bis c schliessen das, auf BEIDEN Pfaden: der
+/// `authBlockiert`-Zweig ist in Control und Telemetrie derselbe Ausdruck.
 void parken_uebergeht_den_backoff()
 {
     struct Fall { const char* name; bool ueberAuth; };
@@ -2175,17 +2209,13 @@ void parken_uebergeht_den_backoff()
         const auto pipe = testPipeName (("k-parken-" + fall + "-" + pfad).c_str());
         TestServer server (pipe);
         FremdePipe fremd;
-        bool aufbau = true;
         ServerErwartung erwartung;
+        // Die Erwartung geht in den Konstruktor und muss deshalb JETZT stehen.
+        // Die Sperrursache selbst entsteht erst nach dem Aufstieg (Schritt b).
         if (f.ueberAuth)
         {
-            aufbau = server.starten();
             erwartung = testExeErwartung (GetCurrentProcessId());
             erwartung.testFehler = ServerPruefFehler::signerFalsch;
-        }
-        else
-        {
-            aufbau = fremd.anlegen (pipe);
         }
 
         std::unique_ptr<ControlClient> control;
@@ -2212,27 +2242,72 @@ void parken_uebergeht_den_backoff()
                                    : control->snapshot().serverPruefstatus;
         };
         if (ueberTelemetrie) telemetrie->start(); else control->start();
-        const bool geparkt = warteAuf (5000, [&] {
+
+        // a) Aufstieg gegen den noch NICHT belegten Namen. Drei Versuche,
+        //    Abstaende 500 und 1.000 ms ⇒ `backoffMs` steht danach auf 4.000.
+        const auto aufstieg = versuchsStempel (versuche, 3, 12000);
+        bool alleDa = true;
+        for (auto v : aufstieg) alleDa = alleDa && v >= 0;
+        const bool gestiegen = alleDa && (aufstieg[2] - aufstieg[1]) >= 900;
+
+        // b) Erst JETZT die Sperrursache. Das Fenster bis zum naechsten
+        //    Versuch ist 2.000 ms breit; verpasst der Aufbau es doch, parkt
+        //    der Pfad eine Stufe spaeter — auch das bleibt >= 2.000 ms und
+        //    damit diskriminierend, deshalb wartet die Parkprobe grosszuegig.
+        const bool aufbau = f.ueberAuth ? server.starten() : fremd.anlegen (pipe);
+        const bool geparkt = warteAuf (20000, [&] {
             return pruefstatus() == ServerPruefStatus::belegtAberUnverifiziert;
         });
+        // Bei welchem Versuch wurde geparkt? Nach k gescheiterten Versuchen
+        // steht `backoffMs` auf `500 * 2^k`; der Parkversuch selbst aendert
+        // ihn nicht (das `continue` ueberspringt die Verdopplung). Ab dem
+        // vierten Versuch ist der stale Wert also >= 4.000 ms — genau das
+        // macht Punkt 3 unten ueberhaupt erst zu einer Aussage.
+        const int versucheBeimParken = versuche();
         // 1. kein weiterer Versuch — deutlich laenger als der Startbackoff.
         const int weitere = weitereVersucheIn (versuche, 1500);
+
+        // c) Sperrursache loesen. Der naechste Versuch soll schlicht
+        //    scheitern (`nichtDa`), nicht erneut in den Parkzweig laufen —
+        //    sonst bliebe `backoffMs` ungenutzt und unbeobachtbar.
+        if (f.ueberAuth) server.stoppen(); else fremd.schliessen();
+
         // 2. reconnect() loest die Sperre; der naechste Versuch kommt OHNE
-        //    Wartezeit. 250 ms sind die halbe Startwartezeit — ein
-        //    stehengebliebener Backoff koennte sie nicht unterbieten.
+        //    Wartezeit. 250 ms sind die halbe Startwartezeit.
         const int vorReconnect = versuche();
         const auto t0 = std::chrono::steady_clock::now();
         if (ueberTelemetrie) telemetrie->reconnect(); else control->reconnect();
         const bool sofort = warteAuf (250, [&] { return versuche() > vorReconnect; });
         const auto verzug = std::chrono::duration_cast<std::chrono::milliseconds> (
             std::chrono::steady_clock::now() - t0).count();
+
+        // 3. d) DER Reset-Beweis: der Versuch DANACH ist der erste, der
+        //    `backoffMs` wirklich benutzt. 500 ms nominal, Fenster wie in
+        //    D-P01. Ein stehengebliebener Backoff braeuchte >= 4.000 ms, ein
+        //    faelschlich genullter kaeme unter 350 ms. Das Wartefenster ist
+        //    absichtlich breiter als der Deckel, damit der Rotlauf den
+        //    stalen Wert MISST statt nur ein Ausbleiben zu melden.
+        const int nachSofort = versuche();
+        const auto t1 = std::chrono::steady_clock::now();
+        const bool zweiter = warteAuf (9000, [&] { return versuche() > nachSofort; });
+        const auto abstand = std::chrono::duration_cast<std::chrono::milliseconds> (
+            std::chrono::steady_clock::now() - t1).count();
+
         if (ueberTelemetrie) telemetrie->stop(); else control->stop();
         server.stoppen();
-        pruefe (aufbau && geparkt && weitere == 0 && sofort,
+        pruefe (aufbau && gestiegen && geparkt && versucheBeimParken >= 4
+                    && weitere == 0 && sofort && zweiter
+                    && abstand >= 350 && abstand <= 1200,
                 ("parken_uebergeht_den_backoff/" + pfad + "/" + fall).c_str(),
-                "geparkt " + std::to_string (geparkt) + ", weitere Versuche "
+                "Aufstieg " + (alleDa ? std::to_string (aufstieg[1] - aufstieg[0]) + " "
+                                            + std::to_string (aufstieg[2] - aufstieg[1])
+                                      : std::string ("unvollstaendig"))
+                    + " ms, geparkt " + std::to_string (geparkt) + " bei Versuch "
+                    + std::to_string (versucheBeimParken) + ", weitere Versuche "
                     + std::to_string (weitere) + ", Neustart nach "
-                    + std::to_string (verzug) + " ms");
+                    + std::to_string (verzug) + " ms, Versuch DANACH nach "
+                    + std::to_string (abstand)
+                    + " ms (erwartet 350..1200, ohne Reset >= 4000)");
     }
 }
 

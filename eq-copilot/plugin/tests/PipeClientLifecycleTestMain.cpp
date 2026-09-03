@@ -643,7 +643,17 @@ struct FremdePipe
             1, 4096, 4096, 0, nullptr);
         return server != INVALID_HANDLE_VALUE;
     }
-    ~FremdePipe() { if (server != INVALID_HANDLE_VALUE) CloseHandle (server); }
+    /// Gibt den Namen WIEDER FREI. Gebraucht wird das vom Park-Reset-Test:
+    /// nach dem Loesen der Sperre muss der naechste Versuch schlicht
+    /// scheitern duerfen — bliebe der Name belegt, parkte der Thread sofort
+    /// erneut und der Backoff, um den es geht, kaeme gar nicht zum Einsatz.
+    void schliessen()
+    {
+        if (server != INVALID_HANDLE_VALUE)
+            CloseHandle (server);
+        server = INVALID_HANDLE_VALUE;
+    }
+    ~FremdePipe() { schliessen(); }
 };
 
 int weitereVersucheIn (eqcop::PipeClient& c, int fensterMs)
@@ -1086,7 +1096,17 @@ void pipeclient_backoff_folge_und_deckel_sind_beobachtbar()
 }
 
 /// D-P03, D-P07 auf dem v2-Pfad: Parken uebergeht den Backoff, und das Loesen
-/// startet die naechste Runde OHNE Wartezeit (`PipeClient.cpp:305-318`).
+/// setzt einen ERHOEHTEN Backoff auf 500 ms zurueck (`PipeClient.cpp:305-318`).
+///
+/// **Nacharbeit Runde 2:** wie der v3-Zwilling parkte dieser Fall aus
+/// `backoffMs == 500` und mass nur den sofortigen Versuch nach `reconnect()`.
+/// Der folgt wegen des bedingungslosen `continue` (`PipeClient.cpp:319`)
+/// ohnehin, welchen Wert `backoffMs` auch traegt — ein entfernter Reset in
+/// Zeile 318 blieb dabei gruen. Gemessen wird jetzt der Abstand zum ZWEITEN
+/// Versuch: erst der benutzt `backoffMs`, im `wait_for` unterhalb des Zweigs.
+/// Der Aufbau ist derselbe wie beim v3-Zwilling und aus denselben Gruenden:
+/// erst aus einer erhoehten Stufe parken, dann die Sperrursache loesen, damit
+/// der Pfad nach dem `reconnect()` nicht sofort wieder parkt.
 void pipeclient_parken_uebergeht_den_backoff()
 {
     for (const bool ueberAuth : { true, false })
@@ -1097,12 +1117,30 @@ void pipeclient_parken_uebergeht_den_backoff()
         std::atomic<bool> laeuftPeer { true };
         std::thread peer;
         bool aufbau = true;
+        // Die Erwartung geht in den Konstruktor und muss deshalb JETZT stehen.
+        // Die Sperrursache selbst entsteht erst nach dem Aufstieg (Schritt b).
         auto erwartung = nakama::ipc::serverErwartungFuerEigenprozessTest();
+        if (ueberAuth)
+            erwartung.testFehler = nakama::ipc::ServerPruefFehler::signerFalsch;
+
+        auto c = client (name, [] { return hello ("66666666666666666666666666666666"); },
+                         std::chrono::milliseconds { 5000 }, erwartung);
+        c->start();
+
+        // a) Aufstieg gegen den noch NICHT belegten Namen. Drei Versuche,
+        //    Abstaende 500 und 1.000 ms ⇒ `backoffMs` steht danach auf 4.000.
+        const auto aufstieg = versuchsStempel (*c, 3, 12000);
+        bool alleDa = true;
+        for (auto v : aufstieg) alleDa = alleDa && v >= 0;
+        const bool gestiegen = alleDa && (aufstieg[2] - aufstieg[1]) >= 900;
+
+        // b) Erst JETZT die Sperrursache. Verpasst der Aufbau das 2.000-ms-
+        //    Fenster, parkt der Pfad eine Stufe spaeter — auch das bleibt
+        //    >= 2.000 ms und damit diskriminierend.
         if (ueberAuth)
         {
             server = pipeAnlegen (name);
             aufbau = server != INVALID_HANDLE_VALUE;
-            erwartung.testFehler = nakama::ipc::ServerPruefFehler::signerFalsch;
             if (aufbau)
                 peer = std::thread ([&]
                 {
@@ -1118,15 +1156,30 @@ void pipeclient_parken_uebergeht_den_backoff()
         {
             aufbau = fremd.anlegen (name);
         }
-
-        auto c = client (name, [] { return hello ("66666666666666666666666666666666"); },
-                         std::chrono::milliseconds { 5000 }, erwartung);
-        c->start();
-        const bool geparkt = warteAuf (5000, [&] {
+        const bool geparkt = warteAuf (20000, [&] {
             return c->snapshot().serverPruefstatus
                 == nakama::ipc::ServerPruefStatus::belegtAberUnverifiziert;
         });
+        // Nach k gescheiterten Versuchen steht `backoffMs` auf `500 * 2^k`;
+        // der Parkversuch selbst aendert ihn nicht. Ab dem vierten Versuch
+        // ist der stale Wert also >= 4.000 ms.
+        const int versucheBeimParken = c->snapshot().verbindungsVersuche;
         const int weitere = weitereVersucheIn (*c, 1500);
+
+        // c) Sperrursache loesen. Der naechste Versuch soll schlicht
+        //    scheitern, nicht erneut in den Parkzweig laufen.
+        if (ueberAuth)
+        {
+            laeuftPeer.store (false);
+            if (peer.joinable()) { wecken (name); peer.join(); }
+        }
+        else
+        {
+            fremd.schliessen();
+        }
+
+        // 2. reconnect() loest die Sperre; der naechste Versuch kommt OHNE
+        //    Wartezeit.
         const int vorReconnect = c->snapshot().verbindungsVersuche;
         const auto t0 = std::chrono::steady_clock::now();
         c->reconnect();
@@ -1135,15 +1188,39 @@ void pipeclient_parken_uebergeht_den_backoff()
         });
         const auto verzug = std::chrono::duration_cast<std::chrono::milliseconds> (
             std::chrono::steady_clock::now() - t0).count();
+
+        // 3. d) DER Reset-Beweis: der Versuch DANACH ist der erste, der
+        //    `backoffMs` wirklich benutzt. 500 ms nominal, Fenster wie in
+        //    D-P01. Ein stehengebliebener Backoff braeuchte >= 4.000 ms, ein
+        //    faelschlich genullter kaeme unter 350 ms. Das Wartefenster ist
+        //    absichtlich breiter als der Deckel, damit der Rotlauf den stalen
+        //    Wert MISST statt nur ein Ausbleiben zu melden.
+        const int nachSofort = c->snapshot().verbindungsVersuche;
+        const auto t1 = std::chrono::steady_clock::now();
+        const bool zweiter = warteAuf (9000, [&] {
+            return c->snapshot().verbindungsVersuche > nachSofort;
+        });
+        const auto abstand = std::chrono::duration_cast<std::chrono::milliseconds> (
+            std::chrono::steady_clock::now() - t1).count();
+
         c->stop();
         laeuftPeer.store (false);
         if (peer.joinable()) { wecken (name); peer.join(); }
-        pruefe (aufbau && geparkt && weitere == 0 && sofort,
+        pruefe (aufbau && gestiegen && geparkt && versucheBeimParken >= 4
+                    && weitere == 0 && sofort && zweiter
+                    && abstand >= 350 && abstand <= 1200,
                 "pipeclient_parken_uebergeht_den_backoff",
                 juce::String (ueberAuth ? "authfehler" : "access_denied")
-                    + ": geparkt " + juce::String ((int) geparkt)
+                    + ": Aufstieg " + (alleDa
+                        ? juce::String ((juce::int64) (aufstieg[1] - aufstieg[0])) + " "
+                            + juce::String ((juce::int64) (aufstieg[2] - aufstieg[1]))
+                        : juce::String ("unvollstaendig"))
+                    + " ms, geparkt " + juce::String ((int) geparkt)
+                    + " bei Versuch " + juce::String (versucheBeimParken)
                     + ", weitere Versuche " + juce::String (weitere)
-                    + ", Neustart nach " + juce::String ((juce::int64) verzug) + " ms");
+                    + ", Neustart nach " + juce::String ((juce::int64) verzug)
+                    + " ms, Versuch DANACH nach " + juce::String ((juce::int64) abstand)
+                    + " ms (erwartet 350..1200, ohne Reset >= 4000)");
     }
 }
 

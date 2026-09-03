@@ -1,0 +1,46 @@
+NAK-134 Nacharbeit Runde 2 - Bein A4b (EqCopPipeClientTest) auf dem Endstand
+Mutant zurueckgenommen, Produktcode byteidentisch zu eef6ebb (git diff leer),
+Zeitstempel erzwungen aufgefrischt, PipeClient.cpp neu uebersetzt.
+Zeitpunkt: 
+2026-09-03 07:04:35 +02:00
+
+PIPECLIENT-LIFECYCLE-TEST
+  ok      Fake-Pipe fuer Welcome-Stopp angelegt
+  ok      stop() bricht blockiertes Welcome-Lesen begrenzt ab  [0 ms]
+  ok      SQOS begrenzt den Peer auf SecurityIdentification  [1]
+  ok      Fake-Pipe fuer ACK-Stopp angelegt
+  ok      stop() bricht blockiertes ACK-Lesen begrenzt ab  [0 ms]
+  ok      Reconnect-Fake-Pipe angelegt
+  ok      Reconnect waehrend Welcome verliert keine Konfigurationsgeneration
+  ok      pipeclient_reconnect_verwirft_serverfreigabe
+  ok      pipeclient_sendet_vor_serverauth_keine_bytes
+  ok      ungueltiges UTF-8 wird vor der JUCE-Stringkonstruktion abgelehnt
+  ok      rohes NUL wird vor der JUCE-Stringkonstruktion abgelehnt
+  ok      ACK mit falscher Sequenz wird nicht als Bestaetigung gezaehlt
+  ok      Welcome mit schemafremdem Zusatzfeld wird abgelehnt
+  ok      ACK mit schemafremdem Zusatzfeld wird abgelehnt
+  ok      ein absolutes Zeitbudget gilt fuer Kopf, Body und Teiltransfers  [327 ms]
+  ok      u64-Dropzaehler saettigt auf die gemeinsame i64-Wire-Grenze
+  ok      200 konkurrierende start/stop-Paare ohne joinable-Leak
+  ok      pipeclient_oeffnungsausgaenge_sind_liveness_oder_sicherheit  [pipe_busy: klass 1, 4016 ms, weitere Versuche 1 (erwartet >=1)]
+  ok      pipeclient_oeffnungsausgaenge_sind_liveness_oder_sicherheit  [file_not_found: klass 1, 10 ms, weitere Versuche 2 (erwartet >=1)]
+  ok      pipeclient_oeffnungsausgaenge_sind_liveness_oder_sicherheit  [access_denied: klass 1, 10 ms, weitere Versuche 0 (erwartet 0)]
+  ok      pipeclient_oeffnungsausgaenge_sind_liveness_oder_sicherheit  [sonstiger_fehler: klass 1, 10 ms, weitere Versuche 0 (erwartet 0)]
+  ok      pipeclient_zaehlervertrag  [pipe_busy: 2 Versuche, 0 Serverpruefungen (erwartet 0)]
+  ok      pipeclient_zaehlervertrag  [access_denied: 1 Versuche, 0 Serverpruefungen (erwartet 0 — positionsgesteuert)]
+  ok      pipeclient_authausgaenge_und_welcome_ausbleiben  [welcome_bleibt_aus: Hello gelesen 1, Pruefungen 1, Protokoll 0 (erwartet 0), Status 0 (erwartet nichtGeprueft)]
+  ok      pipeclient_authausgaenge_und_welcome_ausbleiben  [erwartung_ungueltig: fiel 1, weitere Versuche 0, Hello gelesen 0 (erwartet 0), Pruefungen 1]
+  ok      pipeclient_authausgaenge_und_welcome_ausbleiben  [server_pid_nicht_ermittelbar: fiel 1, weitere Versuche 0, Hello gelesen 0 (erwartet 0), Pruefungen 1]
+  ok      pipeclient_parken_uebergeht_den_backoff  [authfehler: Aufstieg 498 996 ms, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 10 ms, Versuch DANACH nach 495 ms (erwartet 350..1200, ohne Reset >= 4000)]
+  ok      pipeclient_parken_uebergeht_den_backoff  [access_denied: Aufstieg 494 1002 ms, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 10 ms, Versuch DANACH nach 493 ms (erwartet 350..1200, ohne Reset >= 4000)]
+  ok      pipeclient_abbruch_vor_und_nach_createfile  [stop_vor_open: 91 ms (R5-Frist 1500 ms; die belegte Warteschleife allein kostet >= 4000 ms), Status 1 (v2 setzt nicht zurueck)]
+  ok      pipeclient_abbruch_vor_und_nach_createfile  [reconnect_vor_open: 95 ms (R5-Frist 1500 ms; die belegte Warteschleife allein kostet >= 4000 ms), Versuche +1]
+  ok      pipeclient_abbruch_vor_und_nach_createfile  [stop_nach_open: an der Barriere 1, kein Hello 1]
+  ok      pipeclient_abbruch_vor_und_nach_createfile  [reconnect_nach_open: an der Barriere 1, kein Hello 1]
+  ok      pipeclient_backoff_folge_und_deckel_sind_beobachtbar  [file_not_found Abstaende 494 1008 2001 ms (erwartet 500 1000 2000)]
+  ok      pipeclient_backoff_folge_und_deckel_sind_beobachtbar  [pipe_busy Stempel 11 4511 9529 ms — vor R1 parkt der Thread nach dem ersten]
+  ok      pipeclient_backoff_folge_und_deckel_sind_beobachtbar  [verifiziert_ohne_welcome Stempel 10 5505 11509 ms, Pruefungen 3]
+  ok      pipeclient_backoff_folge_und_deckel_sind_beobachtbar  [stehende_verbindung_setzt_zurueck: Aufstieg 495 1006 ms, Verbindung stand 1, naechste Runde nach 507 ms (erwartet 350..1200, ohne Reset >= 2000)]
+PIPECLIENT-LIFECYCLE-TEST OK - 0 Fehler
+
+EXITCODE EqCopPipeClientTest: 0

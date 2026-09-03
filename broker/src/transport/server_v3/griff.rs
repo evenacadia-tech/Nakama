@@ -245,18 +245,6 @@ impl V3Griff {
         (r.offen.len(), r.abgeloest.len(), r.abgeloest_abbrueche.len())
     }
 
-    /// R2-4: wie oft der Wachhund fuer eine ID TATSAECHLICH abgebrochen hat,
-    /// 0 wenn nichts (mehr) gefuehrt wird. Nur so ist messbar, dass die
-    /// D14-Naht ihren Abbruch noch SIEHT, bevor der Destruktor abraeumt.
-    pub fn abgeloest_abbrueche_gesamt(&self) -> u64 {
-        self.handles
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .abgeloest_abbrueche
-            .values()
-            .sum()
-    }
-
     pub fn sender(&self) -> V3Sender {
         self.sender.clone()
     }

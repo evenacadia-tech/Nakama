@@ -1,0 +1,72 @@
+NAK-121 / R2-6 - Rotbeweis (Nacharbeit Runde 2, 03.09.2026)
+Defekt D15 / H-07-Test, broker/tests/security_vectors.rs:1058 (Haelfte a)
+
+MUTANTE (Regel des Dirigenten: "abfliessen_mit_frist ohne Warten (sofort
+true) -> DisconnectNamedPipe verwirft den ungelesenen Puffer, der Peer liest
+kein Welcome -> rot"):
+  broker/src/transport/server_v3/win_handles.rs, abfliessen_mit_frist:
+    let mut klon: HANDLE = std::ptr::null_mut();  ... FlushFileBuffers ...
+  ->  return true;   // sofort, ohne auf den Peer zu warten
+
+TEST: broker/tests/security_vectors.rs::
+      abfluss_vor_dem_schliessen_erreicht_den_peer, Haelfte (a)
+
+NEUER ABLAUF (Haelfte a):
+  1. Hello schreiben, NICHT lesen; auf hello_accept in der Spur warten.
+  2. Abbau brokerseitig: griff.stoppen().
+  3. Die vorhandene Destruktornaht (destruktor_fenster) haelt den Destruktor
+     genau zwischen register_austrag (win_handles.rs:470) und dem Abfluss an.
+  4. Der Peer gibt frei und liest DANACH - erst jetzt ist der Abfluss der
+     einzige Weg, auf dem das Welcome noch ankommt.
+  5. Erwartet: Welcome vollstaendig, danach EOF/Pipe geschlossen,
+     flush_abgelaufen == 0, Reihenfolge register_austrag -> flush -> close.
+
+Vorher las die Haelfte ihr Welcome VOLLSTAENDIG vor drop(client): beim Flush
+war kein Broker-Write mehr ausstehend, und der Lauf blieb auch ohne
+abfliessen_mit_frist gruen. Der Rotbeweis aus Runde 1 scheiterte
+ausschliesslich am Timeoutzaehler der Haelfte (b).
+
+FLACKERMESSUNG (beide Richtungen, je acht Laeufe):
+  Mutante: 8 von 8 ROT, und zwar in Haelfte (a) - Abbruchstelle
+           security_vectors.rs:1173 (.expect am Leserthread), davor die
+           Panik des Lesers in security_vectors.rs:133 (frame_lesen:
+           "Kein Prozess ist am anderen Ende der Pipe").
+  Ohne Mutante: 8 von 8 GRUEN.
+
+== ROT ==
+$ cargo test --manifest-path broker/Cargo.toml --test security_vectors abfluss_vor_dem_schliessen
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.05s
+     Running tests\security_vectors.rs (broker\target\debug\deps\security_vectors-4a68d58de2e43d5b.exe)
+
+running 1 test
+test abfluss_vor_dem_schliessen_erreicht_den_peer ... FAILED
+
+failures:
+
+---- abfluss_vor_dem_schliessen_erreicht_den_peer stdout ----
+
+thread '<unnamed>' (22180) panicked at tests\security_vectors.rs:133:33:
+Framepraefix lesen: Os { code: 233, kind: Uncategorized, message: "Kein Prozess ist am anderen Ende der Pipe." }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread 'abfluss_vor_dem_schliessen_erreicht_den_peer' (21896) panicked at tests\security_vectors.rs:1173:10:
+Leserthread: Any { .. }
+
+failures:
+    abfluss_vor_dem_schliessen_erreicht_den_peer
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 22 filtered out; finished in 0.10s
+
+error: test failed, to rerun pass `--test security_vectors`
+EXIT=101
+
+== GRUEN (Mutante zurueckgenommen, Stand von R2-6) ==
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.05s
+     Running tests\security_vectors.rs (broker\target\debug\deps\security_vectors-4a68d58de2e43d5b.exe)
+
+running 1 test
+test abfluss_vor_dem_schliessen_erreicht_den_peer ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 22 filtered out; finished in 0.48s
+
+EXIT=0

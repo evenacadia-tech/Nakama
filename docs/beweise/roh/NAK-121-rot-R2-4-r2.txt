@@ -8,14 +8,19 @@ MUTANTE (Regel des Dirigenten: "Abraeumen entfernen -> rot"):
   ->  // MUTANTE R2-4: Abraeumen entfernt.
 
 Das ist der Stand nach D14 (Runde 1): der Eintrag entsteht im Wachhund,
-hat aber keinen Gegenweg - die Map waechst ueber die ganze Brokerlaufzeit.
+hat aber keinen Gegenweg - die Map waechst ueber die ganze Brokerlaufzeit,
+obwohl nur 96 Verbindungen gleichzeitig erlaubt sind.
 
 TEST: broker/tests/security_vectors.rs::
       verbindungsgriff_besitzt_handle_und_registereintrag (H-02-Haelfte)
+      Neue lesende Beobachtung V3Griff::registermengen() -> (offen,
+      abgeloest, abgeloest_abbrueche), neben dem vorhandenen
+      gehaltene_handles(), das nur die erste Menge misst.
 
 == ROT ==
+$ cargo test --manifest-path broker/Cargo.toml --test security_vectors verbindungsgriff_besitzt
    Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.57s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.45s
      Running tests\security_vectors.rs (broker\target\debug\deps\security_vectors-4a68d58de2e43d5b.exe)
 
 running 1 test
@@ -25,7 +30,7 @@ failures:
 
 ---- verbindungsgriff_besitzt_handle_und_registereintrag stdout ----
 
-thread 'verbindungsgriff_besitzt_handle_und_registereintrag' (9860) panicked at tests\security_vectors.rs:954:5:
+thread 'verbindungsgriff_besitzt_handle_und_registereintrag' (8620) panicked at tests\security_vectors.rs:991:5:
 assertion `left == right` failed: der Destruktor liess einen Registereintrag stehen (offen, abgeloest, abgeloest_abbrueche)
   left: (0, 0, 1)
  right: (0, 0, 0)
@@ -34,7 +39,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 failures:
     verbindungsgriff_besitzt_handle_und_registereintrag
 
-test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 22 filtered out; finished in 2.51s
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 22 filtered out; finished in 3.01s
 
 error: test failed, to rerun pass `--test security_vectors`
 EXIT=101
@@ -47,25 +52,32 @@ EXIT=101
 running 1 test
 test verbindungsgriff_besitzt_handle_und_registereintrag ... ok
 
-test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 22 filtered out; finished in 2.51s
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 22 filtered out; finished in 3.01s
 
 EXIT=0
 
-== GEGENPROBE: die D14-Naht bleibt wirksam ==
-Das Abraeumen darf die D14-Naht nicht aushungern. Der letzte geteilte Griff
-faellt erst NACH dem Threadende (H-02-Reihenfolge), der abgeloeste Schreiber
-liest den Zaehler also noch. Gemessen wird das im Test selbst
-(abgeloest_abbrueche_gesamt() > 0 VOR dem Abraeumen) und hier: die
-D14-Mutante aus NAK-121-rot-D14-r1.txt bleibt gegen den R2-4-Stand ROT.
+== GEGENPROBE: das Abraeumen hungert die D14-Naht nicht aus ==
+Der abgeloeste Schreiber endet nur, wenn er seinen Wachhundabbruch am
+Zaehler SIEHT; seine Notbremse liegt bei 30 s (verbindung.rs:519). Der Test
+gibt dem Handle 10 s - kommt es zurueck, hat die Naht gelesen. Der letzte
+geteilte Griff faellt erst NACH dem Threadende (H-02-Reihenfolge), das
+Abraeumen kann die Naht also nicht ueberholen. Der Zaehler selbst wird
+bewusst nicht gepollt: er ist ein transienter Zustand, den derselbe
+Destruktor gleich wieder raeumt - ein Polling darauf waere ein Rennen
+gegen den Fix (im vollen Parallellauf gemessen: flaky).
+
+Und die D14-Mutante aus NAK-121-rot-D14-r1.txt bleibt gegen den R2-4-Stand
+ROT - faellt der Wachhundabbruch fuer abgeloeste IDs weg, endet der
+Schreiber nicht mehr ueber diesen Weg:
 
 MUTANTE (D14, unveraendert aus Runde 1):
   broker/src/transport/server_v3/listener.rs, Wachhundtick:
     Abbruch und Zaehlung fuer abgeloeste IDs entfernt, nur faellige bleiben.
 
    Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
-368 |                 if let Ok(mut reg) = handles_w.lock() {
+392 |                 if let Ok(mut reg) = handles_w.lock() {
 
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.67s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.59s
      Running tests\security_vectors.rs (broker\target\debug\deps\security_vectors-4a68d58de2e43d5b.exe)
 
 running 1 test
@@ -75,7 +87,7 @@ failures:
 
 ---- verbindungsgriff_besitzt_handle_und_registereintrag stdout ----
 
-thread 'verbindungsgriff_besitzt_handle_und_registereintrag' (20952) panicked at tests\security_vectors.rs:895:5:
+thread 'verbindungsgriff_besitzt_handle_und_registereintrag' (12088) panicked at tests\security_vectors.rs:896:5:
 assertion failed: warten(5000,
 note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 

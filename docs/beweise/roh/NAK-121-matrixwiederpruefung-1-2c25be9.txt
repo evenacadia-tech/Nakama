@@ -1,0 +1,12 @@
+Befunde 1, 3 und 6 bleiben offen; Befunde 2, 4, 5, 7 und 8 sind anhand von Manifest und Code geschlossen. Der Fixdiff verletzt außerdem weiterhin C-06 und die öffentliche Vertragsgrenze. `cargo test -- --list` war wegen der schreibgeschützten Cargo-Target-Sperre nicht ausführbar; HEAD blieb unverändert.
+
+Full review comments:
+
+- [P1] Miss die aus lib.rs erreichbare pub-Fläche — C:\Users\phili\Projekte\Nakama\docs\beweise\NAK-121.md:480-480
+  DEFEKT: Der Nachweis zählt Deklarationen, nicht erreichbare Exportpfade. Nach der Aufteilung bleibt etwa eine `pub fn` in einem privaten Kindmodul in dieser Liste erhalten, selbst wenn ihr `pub use` vergessen wurde und sie aus `lib.rs` nicht mehr erreichbar ist; auch Signaturen werden nicht verglichen. Damit erfüllt §5.8 die Schließregel für Befund 1 nicht und benötigt einen reichweitenbewussten Vorher-Nachher-Vergleich der öffentlichen API.
+
+- [P1] Verschiebe den H-16-Push hinter den gesamten Cleanup — C:\Users\phili\Projekte\Nakama\docs\beweise\NAK-121.md:209-209
+  DEFEKT: Bei einer Nonce-Verdrängung ruft der Transport `control_ende` über `control_schliesst` bereits in `server_v3.rs:2880` auf; Kopplungslösung (`:2895`), Joins (`:2902-2911`) und Trenncallbacks (`:2925-2930`) folgen erst danach. Ein am Ende von `control_ende` ausgelöster Push läuft daher weiterhin vor dem vollständigen C-06-Cleanup und verletzt sowohl die vorgegebene Schließregel als auch `docs/beweise/SONDE-011.md:512`; dass diese späteren Schritte keine Snapshot-Felder ändern, hebt die vorgeschriebene Reihenfolge nicht auf.
+
+- [P1] Erhalte die öffentlich sichtbare Verstoßliste — C:\Users\phili\Projekte\Nakama\docs\beweise\NAK-121.md:118-118
+  DEFEKT: Bei einem Batch mit mehr als 32 und zugleich fehlerhaften Einträgen ändert die frühe Rückkehr die vollständige Verstoßliste gegenüber dem heutigen Rust- und C++-Leser. Diese Liste ist entgegen der Aussage öffentlich sichtbar, weil `broker/src/lib.rs:21` das Modul exportiert und `broker/src/telemetrie.rs:264` `pruefe` als `pub fn` mit `Vec<Verstoss>` zurückgibt; das bestehende Korpus enthält lediglich einen übergroßen Batch ohne zusätzliche Eintragsverstöße und kann diese Änderung nicht erkennen. Damit bleiben Sichtbarkeit und Wert nicht unverändert, sodass H-20 nach der vorgegebenen Regel nicht als A geschlossen werden kann.

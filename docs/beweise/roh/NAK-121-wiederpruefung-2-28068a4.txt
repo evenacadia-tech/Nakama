@@ -1,0 +1,9 @@
+R2-1 bis R2-5 sind anhand von Code, Zieltests und Rotbeweisen geschlossen; außerhalb der beiden H-07-Testlücken wurde kein Gate-, Matrix- oder Invariantenbruch gefunden. R2-6 bleibt wegen der nicht deterministisch hergestellten Voraussetzungen offen. Der eingecheckte 40/40-Kanon wurde geprüft, im schreibgeschützten Lauf aber nicht erneut ausgeführt.
+
+Full review comments:
+
+- [P2] Warte auf den tatsächlichen Welcome-Write — C:\Users\phili\Projekte\Nakama\broker\tests\security_vectors.rs:1131-1133
+  Wenn der Verbindungsworker unmittelbar nach `hello_accept` descheduled wird, startet der Test bereits `griff.stoppen()`, obwohl der Marker in `verbindung.rs:301` vor dem Welcome-Write bei `:383` gesetzt wird. Damit ist beim Abbaubeginn entgegen R2-6 kein ungelesener Broker-Write garantiert; der Lauf kann stattdessen einen vorzeitig abgebrochenen Bootstrap messen. Warte auf einen Marker nach dem erfolgreichen Welcome-Write.
+
+- [P2] Ersetze den Timing-Sleep durch einen Flush-Handshake — C:\Users\phili\Projekte\Nakama\broker\tests\security_vectors.rs:1159-1159
+  Nach `freigeben()` gibt es keinen Handshake, dass der Destruktor `abfliessen_mit_frist` bereits betreten hat; der feste 30-ms-Sleep ist daher entgegen der R2-6-Regel die einzige Synchronisation. Wird der Destruktorthread länger descheduled, liest der Peer das gepufferte Welcome zuerst und die Mutante `abfliessen_mit_frist -> true` kann Welcome plus EOF liefern und grün bleiben. Verwende einen Flush-Eintrittsmarker statt einer Zeitannahme.

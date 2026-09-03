@@ -12,7 +12,7 @@ use rusqlite::{
 use std::collections::VecDeque;
 use std::fmt;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::mpsc::{self, Receiver, RecvTimeoutError, SyncSender, TrySendError};
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread::JoinHandle;
@@ -23,7 +23,9 @@ mod migration;
 mod pfad;
 mod writer;
 
-pub use handle::{StoreHandle, StoreKonfiguration, StoreStartBarriere, StoreTestHaken};
+pub use handle::{
+    IdleCheckpointNaht, StoreHandle, StoreKonfiguration, StoreStartBarriere, StoreTestHaken,
+};
 pub use migration::{migration_1_checksum, projektionen_neu_bauen};
 use handle::{degradiere, utc_ms_i64};
 pub use pfad::{standard_store_pfad, store_pfad_ist_remote, store_pfad_unter};
@@ -188,6 +190,12 @@ pub struct StoreSicht {
     /// Transaktion committed wurde. Der Wert macht die harte S-05-Grenze
     /// auch im produktiven Lauf messbar.
     pub groesster_commit: usize,
+    /// H-18: gescheiterte Leerlauf-Checkpoints. Bis NAK-121 wurde das Ergebnis
+    /// verworfen UND der Erfolg trotzdem gemerkt - ein gescheiterter Checkpoint
+    /// wurde deshalb nie wiederholt, waehrend die Storesicht weiter gesund
+    /// meldete. Der Zaehler macht den Fehlschlag sichtbar; im Normalbetrieb
+    /// bleibt er null.
+    pub checkpoints_gescheitert: u64,
     pub sqlite_version: String,
     pub rusqlite_version: String,
     pub pragmas: Option<StorePragmas>,
@@ -202,6 +210,7 @@ impl Default for StoreSicht {
             eingereiht: 0,
             commits: 0,
             groesster_commit: 0,
+            checkpoints_gescheitert: 0,
             sqlite_version: String::new(),
             rusqlite_version: RUSQLITE_VERSION.into(),
             pragmas: None,
@@ -279,6 +288,32 @@ mod tests {
             .expect("rusqlite-Abhaengigkeit fehlt");
         assert!(zeile.contains("version = \"=0.40.2\""));
         assert!(zeile.contains("features = [\"bundled\"]"));
+    }
+
+    /// G2-MSRV-001, der Zwilling des Tests darueber: der Compilerboden ist eine
+    /// pruefbare Zusage, keine Absichtserklaerung. `MSRV_BODEN` nennt die
+    /// juengste benutzte Standardmethode - `Option::is_none_or`, stabil seit
+    /// 1.82.0 - und der Test haelt Cargo.toml daran fest. Wer die Zeile
+    /// entfernt oder senkt, faellt hier auf.
+    #[test]
+    fn rust_version_boden_ist_exakt_gepinnt() {
+        const MSRV_BODEN: &str = "1.82";
+        let cargo = include_str!("../../Cargo.toml");
+        let zeile = cargo
+            .lines()
+            .find(|zeile| zeile.trim_start().starts_with("rust-version"))
+            .expect("rust-version fehlt in Cargo.toml");
+        assert!(
+            zeile.contains(&format!("\"{MSRV_BODEN}\"")),
+            "rust-version steht nicht auf {MSRV_BODEN}: {zeile}"
+        );
+        // Die Begruendung steht im Kommentar darueber und muss die Methode
+        // nennen, aus der der Boden folgt - sonst ist die Zahl beim naechsten
+        // Aufraeumen wieder eine runde Behauptung.
+        assert!(
+            cargo.contains("is_none_or"),
+            "die Begruendung des Compilerbodens fehlt in Cargo.toml"
+        );
     }
 
 }

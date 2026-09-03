@@ -22,6 +22,7 @@ pub fn store_pfad_unter(local_app_data: &Path) -> PathBuf {
 
 #[cfg(windows)]
 pub fn standard_store_pfad() -> Result<PathBuf, StoreFehler> {
+    use std::os::windows::ffi::OsStringExt;
     use windows_sys::Win32::Foundation::HANDLE;
     use windows_sys::Win32::System::Com::CoTaskMemFree;
     use windows_sys::Win32::UI::Shell::{
@@ -51,9 +52,14 @@ pub fn standard_store_pfad() -> Result<PathBuf, StoreFehler> {
         while *roh.add(len) != 0 {
             len += 1;
         }
-        let pfad = PathBuf::from(String::from_utf16_lossy(std::slice::from_raw_parts(
-            roh, len,
-        )));
+        // G2-LOSSYSTR-001: verlustfrei wandeln. `from_utf16_lossy` ersetzt
+        // ungepaarte Surrogate durch U+FFFD - der geprueft Pfad waere dann ein
+        // anderer als der geoeffnete. `OsString::from_wide` behaelt die
+        // UTF-16-Einheiten unveraendert, wie das Crate es an anderer Stelle
+        // ohnehin tut.
+        let pfad = PathBuf::from(std::ffi::OsString::from_wide(
+            std::slice::from_raw_parts(roh, len),
+        ));
         CoTaskMemFree(roh.cast());
         pfad
     };
@@ -70,6 +76,33 @@ pub fn standard_store_pfad() -> Result<PathBuf, StoreFehler> {
     Ok(store_pfad_unter(&root))
 }
 
+/// G2-TOCTOU-002: Traegt eine existierende Komponente das Reparse-Attribut?
+///
+/// Ein Reparse-Punkt (Junction, Symlink, Mount Point) laesst denselben Namen
+/// auf ein anderes Objekt zeigen, als der Aufrufer meint - und zwar zwischen
+/// Pruefung und Oeffnen umlenkbar. Der Store weist ihn deshalb ab, statt ihn
+/// zu klassifizieren. Gemessen wird mit `GetFileAttributesW`, das dem Reparse-
+/// Punkt selbst folgt und nicht seinem Ziel.
+#[cfg(windows)]
+fn traegt_reparse_punkt(pfad: &Path) -> Result<bool, StoreFehler> {
+    use std::os::windows::ffi::OsStrExt;
+    use windows_sys::Win32::Storage::FileSystem::{
+        GetFileAttributesW, FILE_ATTRIBUTE_REPARSE_POINT, INVALID_FILE_ATTRIBUTES,
+    };
+
+    let mut wide: Vec<u16> = pfad.as_os_str().encode_wide().collect();
+    wide.push(0);
+    // SAFETY: der Puffer ist nullterminiert; die API liest nur.
+    let attribute = unsafe { GetFileAttributesW(wide.as_ptr()) };
+    if attribute == INVALID_FILE_ATTRIBUTES {
+        return Err(StoreFehler::Pfad(format!(
+            "Attribute von {} nicht lesbar",
+            pfad.display()
+        )));
+    }
+    Ok(attribute & FILE_ATTRIBUTE_REPARSE_POINT != 0)
+}
+
 #[cfg(windows)]
 pub fn store_pfad_ist_remote(pfad: &Path) -> Result<bool, StoreFehler> {
     use std::os::windows::ffi::OsStrExt;
@@ -84,6 +117,22 @@ pub fn store_pfad_ist_remote(pfad: &Path) -> Result<bool, StoreFehler> {
                 pfad.display()
             ))
         })?;
+    }
+
+    // G2-TOCTOU-002: JEDE existierende Komponente vom Kandidaten aufwaerts wird
+    // auf das Reparse-Attribut geprueft, bevor irgendetwas klassifiziert wird.
+    // Vorher klassifizierte die Funktion einen VORFAHREN und oeffnete danach
+    // ein anderes Objekt - genau die Luecke, durch die eine untergeschobene
+    // Junction die Remote-Abweisung umging.
+    let mut pruefling = Some(kandidat);
+    while let Some(teil) = pruefling {
+        if traegt_reparse_punkt(teil)? {
+            return Err(StoreFehler::Pfad(format!(
+                "Reparse-Punkt im Storepfad: {}",
+                teil.display()
+            )));
+        }
+        pruefling = teil.parent().filter(|eltern| !eltern.as_os_str().is_empty());
     }
     let mut wide: Vec<u16> = kandidat.as_os_str().encode_wide().collect();
     wide.push(0);

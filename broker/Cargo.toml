@@ -2,6 +2,14 @@
 name = "eqcop-broker"
 version = "0.1.0"
 edition = "2021"
+# G2-MSRV-001: der tatsaechlich noetige Compilerboden, nicht eine runde Zahl.
+# Er folgt aus der juengsten benutzten Standardmethode: `Option::is_none_or`
+# ist seit 1.82.0 stabil und steht in aggregat.rs, coordinator/liveness.rs und
+# protokoll.rs. Darunter liegen `usize::div_ceil` (1.73, transport/pipetoken.rs)
+# und `OnceLock` (1.70). Der Inlinetest `rust_version_boden_ist_exakt_gepinnt`
+# in store/mod.rs haelt den Wert an dieser Begruendung fest, so wie sein
+# Zwilling es fuer die SQLite-Version tut.
+rust-version = "1.82"
 description = "EQ-Copilot-Broker (Nakama) — eigenständiger Named-Pipe-Server, aus der Plugin-Hub-App herausgelöst (18.08.2026)"
 
 [lib]

@@ -38,6 +38,26 @@ impl StoreStartBarriere {
     }
 }
 
+/// H-18-Naht: macht den Leerlauf-Checkpoint in Millisekunden statt in
+/// `STORE_IDLE_MS` messbar und laesst ihn auf Wunsch scheitern.
+///
+/// Ohne sie waere die eigentliche Zusage - ein gescheiterter Checkpoint merkt
+/// sich keinen Erfolg und wird beim naechsten Leerlauf ERNEUT versucht - nur
+/// ueber einen echten SQLite-Fehler beobachtbar, den ein Test nicht
+/// verlaesslich herstellt.
+#[doc(hidden)]
+#[derive(Default)]
+pub struct IdleCheckpointNaht {
+    /// Loest den Leerlauf-Checkpoint ohne Ruecksicht auf WAL-Groesse und
+    /// Leerlaufdauer aus.
+    pub sofort_ausloesen: AtomicBool,
+    /// Laesst ihn scheitern, als haette SQLite den Dienst verweigert.
+    pub fehler_erzwingen: AtomicBool,
+    /// Wie oft er versucht wurde. Der zweite Anstieg IST der Beweis der
+    /// Wiederholung.
+    pub versuche: AtomicU64,
+}
+
 #[derive(Clone)]
 pub struct StoreKonfiguration {
     pub db_pfad: PathBuf,
@@ -48,6 +68,8 @@ pub struct StoreKonfiguration {
     pub start_barriere: Option<StoreStartBarriere>,
     #[doc(hidden)]
     pub test_haken: Option<StoreTestHaken>,
+    #[doc(hidden)]
+    pub idle_checkpoint_naht: Option<Arc<IdleCheckpointNaht>>,
 }
 
 impl StoreKonfiguration {
@@ -57,6 +79,7 @@ impl StoreKonfiguration {
             remote_volume_override: None,
             start_barriere: None,
             test_haken: None,
+            idle_checkpoint_naht: None,
         }
     }
 

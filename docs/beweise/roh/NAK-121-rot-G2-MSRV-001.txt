@@ -1,0 +1,38 @@
+# Rotbeweis G2-MSRV-001 — NAK-121 Etappe 2
+
+Mutante(n):
+  broker/Cargo.toml
+    ALT: rust-version = "1.82"
+    NEU: # MUTANTE: der Compilerboden fehlt wieder.
+
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never -- rust_version_boden
+Exitcode: 101
+
+Die Mutante ist nach diesem Lauf zurueckgenommen; der naechste
+Lauf derselben Tests ist wieder gruen.
+
+---
+
+
+running 1 test
+test store::tests::rust_version_boden_ist_exakt_gepinnt ... FAILED
+
+failures:
+
+---- store::tests::rust_version_boden_ist_exakt_gepinnt stdout ----
+
+thread 'store::tests::rust_version_boden_ist_exakt_gepinnt' (1840) panicked at src\store\mod.rs:305:14:
+rust-version fehlt in Cargo.toml
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    store::tests::rust_version_boden_ist_exakt_gepinnt
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 191 filtered out; finished in 0.00s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.99s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+error: test failed, to rerun pass `--lib`

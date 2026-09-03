@@ -4,7 +4,8 @@ use eqcop_broker::coordinator::{
 use eqcop_broker::store::{
     busy_timeout_abgelaufen, checkpoint_ausloesen, commit_ausloesen, migration_1_checksum,
     projektionen_neu_bauen, recovery_testgrenze_bestanden, standard_store_pfad, store_pfad_unter,
-    AppendAusgang, ConflictGuard, SnapshotZiel, StoreEvent, StoreFehler, StoreKonfiguration,
+    AppendAusgang, ConflictGuard, IdleCheckpointNaht, SnapshotZiel, StoreEvent, StoreFehler,
+    StoreKonfiguration,
     StoreStartBarriere, StoreWriter, BUSY_TIMEOUT_MS, CHECKPOINT_BUSY_ERWARTET, COMMIT_BATCH_MAX,
     COMMIT_FENSTER_MS, RUSQLITE_VERSION, STORE_DATEINAME, STORE_IDLE_MS, STORE_KANAL_CAP,
     STORE_RECOVERY_TEST_MAX_MS, STORE_RELATIVPFAD, STORE_SCHEMA_MAJOR, WAL_SCHWELLE_BYTES,
@@ -2421,4 +2422,196 @@ fn descriptor_setzen_weist_beitragsklasse_ab() {
     let mut erlaubt = gueltig;
     erlaubt["label"] = Value::String("h17".into());
     assert!(coordinator.descriptor_setzen("main", erlaubt));
+}
+
+// ── NAK-121: G2-TOCTOU-001, G2-TOCTOU-002, G2-LOSSYSTR-001 und H-18 ────────
+
+/// G2-TOCTOU-001: der Pruefsummenvergleich steht VOR der Migration. Bis
+/// NAK-121 lief `execute_batch` zuerst - ein fremdes Schema wurde also erst
+/// angefasst und dann beurteilt. Der Rollback rettete das Ergebnis, aber die
+/// Reihenfolge selbst ist die Zusage.
+#[test]
+fn pruefsumme_entscheidet_vor_der_migration() {
+    let ordner = TestOrdner::neu("toctou001");
+    let db = ordner.db();
+
+    // Ein fremder Stand: die Migrationstabelle traegt eine andere Pruefsumme,
+    // aber KEINE der Tabellen, die MIGRATION_1_SQL anlegen wuerde.
+    {
+        let conn = Connection::open(&db).unwrap();
+        conn.execute_batch(
+            "CREATE TABLE schema_migrations(major INTEGER PRIMARY KEY,\
+             checksum_sha256 TEXT NOT NULL, applied_utc_ms INTEGER NOT NULL);",
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO schema_migrations(major,checksum_sha256,applied_utc_ms) VALUES(?1,?2,?3)",
+            rusqlite::params![STORE_SCHEMA_MAJOR, "fremd", 0i64],
+        )
+        .unwrap();
+    }
+
+    let mut k = StoreKonfiguration::fuer_pfad(&db);
+    k.remote_volume_override = Some(false);
+    let writer = StoreWriter::starten(k);
+    assert!(
+        writer.ist_degradiert(),
+        "der fremde Checksum-Stand wurde nicht erkannt"
+    );
+
+    // Das Ergebnis allein beweist die REIHENFOLGE nicht: die Migration laeuft
+    // in einer Transaktion, und deren Rollback raeumt ihre Tabellen auch dann
+    // weg, wenn sie vor dem Vergleich gelaufen ist. Gemessen wurde das - unter
+    // einer Mutante, die execute_batch wieder nach vorn zieht, blieb dieser
+    // Teil gruen. Die Reihenfolge braucht deshalb eine eigene Wache.
+    let conn = Connection::open_with_flags(&db, OpenFlags::SQLITE_OPEN_READ_ONLY).unwrap();
+    let events_da: i64 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='events'",
+            [],
+            |row| row.get(0),
+        )
+        .unwrap();
+    assert_eq!(events_da, 0, "das fremde Schema traegt jetzt fremde Tabellen");
+
+    // Die Wache auf die Reihenfolge selbst: im Quelltext von migration_1 steht
+    // der Pruefsummenvergleich VOR dem execute_batch. Textuell, weil die
+    // Transaktion jede Beobachtung von aussen wegraeumt - und praezise, weil
+    // genau diese zwei Positionen die Zusage sind.
+    let quelle = include_str!("../src/store/migration.rs");
+    let rumpf_anfang = quelle
+        .find("pub(super) fn migration_1(")
+        .expect("migration_1 im Quelltext");
+    let rumpf = &quelle[rumpf_anfang..];
+    let rumpf_ende = rumpf.find("
+pub(super) fn ").unwrap_or(rumpf.len());
+    let rumpf = &rumpf[..rumpf_ende];
+    let vergleich = rumpf
+        .find("fremden Checksum-Stand")
+        .expect("Pruefsummenvergleich in migration_1");
+    let batch = rumpf
+        .find("execute_batch(MIGRATION_1_SQL)")
+        .expect("Migrationsbatch in migration_1");
+    assert!(
+        vergleich < batch,
+        "die Migration faellt vor ihrem Pruefsummenvergleich:          Vergleich bei {vergleich}, Batch bei {batch}"
+    );
+}
+
+/// G2-TOCTOU-002: ein Reparse-Punkt im Storepfad wird abgewiesen, statt
+/// klassifiziert zu werden. Vorher klassifizierte die Funktion einen VORFAHREN
+/// und oeffnete danach ein anderes Objekt.
+#[cfg(windows)]
+#[test]
+fn store_weist_reparse_punkt_im_pfad_ab() {
+    use eqcop_broker::store::store_pfad_ist_remote;
+
+    let ordner = TestOrdner::neu("toctou002");
+    let echt = ordner.0.join("echt");
+    std::fs::create_dir_all(&echt).unwrap();
+
+    // Eine Junction ist der praxisnahe Fall: sie braucht keine Adminrechte.
+    let verweis = ordner.0.join("verweis");
+    let status = Command::new("cmd")
+        .args([
+            "/c",
+            "mklink",
+            "/J",
+            verweis.to_str().unwrap(),
+            echt.to_str().unwrap(),
+        ])
+        .status();
+    let junction_da = status.map(|s| s.success()).unwrap_or(false) && verweis.exists();
+    if !junction_da {
+        // Ohne Junction misst der Test nichts - dann sagt er das, statt gruen
+        // zu schweigen.
+        eprintln!("mklink /J nicht verfuegbar; Reparse-Fall uebersprungen");
+        return;
+    }
+
+    let ueber_junction = verweis.join(STORE_DATEINAME);
+    let fehler = store_pfad_ist_remote(&ueber_junction)
+        .expect_err("ein Reparse-Punkt im Pfad muss abgewiesen werden");
+    assert!(
+        format!("{fehler:?}").contains("Reparse-Punkt"),
+        "abgewiesen, aber mit anderem Grund: {fehler:?}"
+    );
+
+    // Gegenprobe: derselbe Ort ohne Junction geht durch.
+    assert!(!store_pfad_ist_remote(&echt.join(STORE_DATEINAME)).unwrap());
+    let _ = std::fs::remove_dir(&verweis);
+}
+
+/// G2-LOSSYSTR-001: der Standardpfad wird verlustfrei aus UTF-16 gewandelt.
+/// `from_utf16_lossy` haette ungepaarte Surrogate durch U+FFFD ersetzt - der
+/// geprueft Pfad waere dann ein anderer als der geoeffnete.
+#[cfg(windows)]
+#[test]
+fn store_pfad_bleibt_bei_nicht_utf8_zeichen_unveraendert() {
+    let pfad = standard_store_pfad().expect("LocalAppData aufloesbar");
+    let text = pfad.to_string_lossy();
+    assert!(
+        !text.contains('\u{FFFD}'),
+        "der Standardpfad traegt ein Ersatzzeichen: {text}"
+    );
+    // Und er endet weiterhin auf dem vereinbarten Ort.
+    assert!(pfad.ends_with(STORE_DATEINAME));
+    assert!(text.contains(STORE_RELATIVPFAD));
+}
+
+/// H-18: ein gescheiterter Leerlauf-Checkpoint merkt sich keinen Erfolg und
+/// wird sichtbar. Bis NAK-121 wurde das Ergebnis verworfen UND das Merkflag
+/// trotzdem gesetzt - der Checkpoint wurde deshalb nie wiederholt, waehrend
+/// die Storesicht weiter gesund meldete.
+#[test]
+fn gescheiterter_leerlauf_checkpoint_wird_wiederholt() {
+    let ordner = TestOrdner::neu("h18");
+    let naht = Arc::new(IdleCheckpointNaht::default());
+    let mut k = StoreKonfiguration::fuer_pfad(ordner.db());
+    k.remote_volume_override = Some(false);
+    k.idle_checkpoint_naht = Some(naht.clone());
+    let writer = StoreWriter::starten(k);
+    assert!(!writer.ist_degradiert());
+
+    // Der Checkpoint scheitert. Die Zusage hat ZWEI Haelften: er merkt sich
+    // keinen Erfolg, und er wird beim naechsten Leerlauf erneut versucht.
+    naht.fehler_erzwingen.store(true, Ordering::SeqCst);
+    naht.sofort_ausloesen.store(true, Ordering::SeqCst);
+    assert!(
+        warten_auf(5000, || naht.versuche.load(Ordering::SeqCst) >= 3),
+        "der gescheiterte Checkpoint wurde nicht wiederholt: {} Versuche",
+        naht.versuche.load(Ordering::SeqCst)
+    );
+    let gescheitert = writer.handle().sicht().checkpoints_gescheitert;
+    assert!(
+        gescheitert >= 3,
+        "die Fehlschlaege blieben unsichtbar: {gescheitert}"
+    );
+
+    // Sobald er gelingt, merkt er sich den Erfolg und hoert auf - das ist die
+    // Gegenprobe, ohne die der Test auch eine Endlosschleife gutheissen wuerde.
+    naht.fehler_erzwingen.store(false, Ordering::SeqCst);
+    assert!(warten_auf(5000, || {
+        let a = naht.versuche.load(Ordering::SeqCst);
+        std::thread::sleep(std::time::Duration::from_millis(200));
+        a == naht.versuche.load(Ordering::SeqCst)
+    }));
+    let stand = writer.handle().sicht().checkpoints_gescheitert;
+    std::thread::sleep(std::time::Duration::from_millis(300));
+    assert_eq!(
+        writer.handle().sicht().checkpoints_gescheitert,
+        stand,
+        "nach dem erfolgreichen Checkpoint zaehlt weiter etwas"
+    );
+}
+
+fn warten_auf(ms: u64, mut bedingung: impl FnMut() -> bool) -> bool {
+    let ende = std::time::Instant::now() + std::time::Duration::from_millis(ms);
+    while std::time::Instant::now() < ende {
+        if bedingung() {
+            return true;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(20));
+    }
+    bedingung()
 }

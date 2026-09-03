@@ -55,6 +55,7 @@ impl StoreWriter {
                 let wal_pfad = wal_pfad(&db_pfad);
                 let start_barriere = konfiguration.start_barriere.clone();
                 let test_haken = konfiguration.test_haken.clone();
+                let idle_checkpoint_naht = konfiguration.idle_checkpoint_naht.clone();
                 let join = std::thread::Builder::new()
                     .name("nakama-store-writer".into())
                     .spawn(move || {
@@ -68,6 +69,7 @@ impl StoreWriter {
                             capture_thread,
                             wal_pfad,
                             test_haken,
+                            idle_checkpoint_naht,
                         );
                     })
                     .ok();
@@ -175,6 +177,7 @@ pub(super) fn writer_lauf(
     capture_aktiv: Arc<AtomicBool>,
     wal_pfad: PathBuf,
     test_haken: Option<StoreTestHaken>,
+    idle_checkpoint_naht: Option<Arc<IdleCheckpointNaht>>,
 ) {
     let mut vorgemerkt = VecDeque::new();
     let mut letztes_event = Instant::now();
@@ -189,14 +192,42 @@ pub(super) fn writer_lauf(
             Ok(v) => v,
             Err(RecvTimeoutError::Disconnected) => break,
             Err(RecvTimeoutError::Timeout) => {
-                if checkpoint_ausloesen(
-                    wal_groesse(&wal_pfad),
-                    letztes_event.elapsed(),
-                    capture_aktiv.load(Ordering::SeqCst),
-                ) && !idle_checkpoint_gelaufen
+                let naht_loest_aus = idle_checkpoint_naht
+                    .as_ref()
+                    .is_some_and(|n| n.sofort_ausloesen.load(Ordering::SeqCst));
+                if (naht_loest_aus
+                    || checkpoint_ausloesen(
+                        wal_groesse(&wal_pfad),
+                        letztes_event.elapsed(),
+                        capture_aktiv.load(Ordering::SeqCst),
+                    ))
+                    && !idle_checkpoint_gelaufen
                 {
-                    let _ = checkpoint(&conn, false);
-                    idle_checkpoint_gelaufen = true;
+                    // H-18: NUR ein erfolgreicher Checkpoint merkt sich den
+                    // Erfolg. Bis NAK-121 wurde das Ergebnis verworfen und das
+                    // Merkflag trotzdem gesetzt - ein gescheiterter Checkpoint
+                    // wurde deshalb bis zum naechsten Event nie wiederholt,
+                    // waehrend die Storesicht weiter gesund meldete.
+                    let ergebnis = match &idle_checkpoint_naht {
+                        Some(naht) => {
+                            naht.versuche.fetch_add(1, Ordering::SeqCst);
+                            if naht.fehler_erzwingen.load(Ordering::SeqCst) {
+                                Err(StoreFehler::Degradiert("H-18-Naht".into()))
+                            } else {
+                                checkpoint(&conn, false)
+                            }
+                        }
+                        None => checkpoint(&conn, false),
+                    };
+                    match ergebnis {
+                        Ok(_) => idle_checkpoint_gelaufen = true,
+                        Err(_) => {
+                            if let Ok(mut s) = sicht.lock() {
+                                s.checkpoints_gescheitert =
+                                    s.checkpoints_gescheitert.saturating_add(1);
+                            }
+                        }
+                    }
                 }
                 continue;
             }

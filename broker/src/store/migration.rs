@@ -228,21 +228,39 @@ pub(super) fn migration_1(
 ) -> Result<(), StoreFehler> {
     let checksum = migration_1_checksum();
     let tx = conn.transaction_with_behavior(TransactionBehavior::Immediate)?;
-    tx.execute_batch(MIGRATION_1_SQL)?;
-    if let Some(vorhanden) = tx
+
+    // G2-TOCTOU-001: BEURTEILEN, DANN ANFASSEN. Bis NAK-121 lief
+    // `execute_batch` zuerst und der Pruefsummenvergleich danach - ein fremdes
+    // Schema wurde also erst angefasst und erst dann abgelehnt. Der Rollback
+    // rettete das Ergebnis, aber die Reihenfolge selbst ist die Zusage.
+    let tabelle_vorhanden: bool = tx
         .query_row(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='schema_migrations'",
+            [],
+            |_| Ok(true),
+        )
+        .optional()?
+        .unwrap_or(false);
+    let vorhanden: Option<String> = if tabelle_vorhanden {
+        tx.query_row(
             "SELECT checksum_sha256 FROM schema_migrations WHERE major=?1",
             [STORE_SCHEMA_MAJOR],
             |row| row.get::<_, String>(0),
         )
         .optional()?
-    {
-        if vorhanden != checksum {
+    } else {
+        None
+    };
+    if let Some(gespeichert) = &vorhanden {
+        if gespeichert != &checksum {
             return Err(StoreFehler::Degradiert(
                 "Migration 1 hat einen fremden Checksum-Stand".into(),
             ));
         }
-    } else {
+    }
+
+    tx.execute_batch(MIGRATION_1_SQL)?;
+    if vorhanden.is_none() {
         tx.execute(
             "INSERT INTO schema_migrations(major,checksum_sha256,applied_utc_ms)\
              VALUES(?1,?2,?3)",

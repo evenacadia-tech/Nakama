@@ -1,0 +1,46 @@
+# Rotbeweis H-18 — NAK-121 Etappe 2
+
+Mutante(n):
+  broker/src/store/writer.rs
+    ALT: match ergebnis {
+                        Ok(_) => idle_checkpoint_gelaufen = true,
+                        Err(_) => {
+                            if let Ok(mut s) = sicht.lock() {
+                   
+    NEU: // MUTANTE: das Ergebnis wird verworfen und der Erfolg
+                    // trotzdem gemerkt — der Zustand vor NAK-121.
+                    let _ = ergebnis;
+                    idle_checkpoint_gela
+
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never --test store_crash_matrix -- gescheiterter_leerlauf
+Exitcode: 101
+
+Die Mutante ist nach diesem Lauf zurueckgenommen; der naechste
+Lauf derselben Tests ist wieder gruen.
+
+---
+
+
+running 1 test
+test gescheiterter_leerlauf_checkpoint_wird_wiederholt ... FAILED
+
+failures:
+
+---- gescheiterter_leerlauf_checkpoint_wird_wiederholt stdout ----
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-h18-21224-2b5f09c9f91c4e149096daabe696fecf\nakama-broker.sqlite3
+
+thread 'gescheiterter_leerlauf_checkpoint_wird_wiederholt' (3280) panicked at tests\store_crash_matrix.rs:2558:5:
+der gescheiterte Checkpoint wurde nicht wiederholt: 1 Versuche
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    gescheiterter_leerlauf_checkpoint_wird_wiederholt
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 74 filtered out; finished in 5.05s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.85s
+     Running tests\store_crash_matrix.rs (broker\target\debug\deps\store_crash_matrix-4ebee0ee77644d63.exe)
+error: test failed, to rerun pass `--test store_crash_matrix`

@@ -1,0 +1,51 @@
+# Rotbeweis G2-LOSSYSTR-001 — NAK-121 Etappe 2
+
+Mutante(n):
+  broker/src/store/pfad.rs
+    ALT: let pfad = PathBuf::from(std::ffi::OsString::from_wide(
+            std::slice::from_raw_parts(roh, len),
+        ));
+    NEU: // MUTANTE: verlustbehaftete Wandlung — ungepaarte Surrogate werden
+        // zu U+FFFD, der geprueft Pfad ist ein anderer als der geoeffnete.
+        let mut roh_kopie: Vec<u16> = std::slice::from_r
+
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never --test store_crash_matrix -- store_pfad_bleibt
+Exitcode: 101
+
+Die Mutante ist nach diesem Lauf zurueckgenommen; der naechste
+Lauf derselben Tests ist wieder gruen.
+
+---
+
+
+running 1 test
+test store_pfad_bleibt_bei_nicht_utf8_zeichen_unveraendert ... FAILED
+
+failures:
+
+---- store_pfad_bleibt_bei_nicht_utf8_zeichen_unveraendert stdout ----
+
+thread 'store_pfad_bleibt_bei_nicht_utf8_zeichen_unveraendert' (14572) panicked at tests\store_crash_matrix.rs:2553:5:
+der Standardpfad traegt ein Ersatzzeichen: C:\Users\phili\AppData\Local�\evenacadia\nakama-broker\nakama-broker.sqlite3
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    store_pfad_bleibt_bei_nicht_utf8_zeichen_unveraendert
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 74 filtered out; finished in 0.00s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: unused import: `std::os::windows::ffi::OsStringExt`
+  --> src\store\pfad.rs:25:9
+   |
+25 |     use std::os::windows::ffi::OsStringExt;
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib) generated 1 warning (run `cargo fix --lib -p eqcop-broker` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.11s
+     Running tests\store_crash_matrix.rs (broker\target\debug\deps\store_crash_matrix-4ebee0ee77644d63.exe)
+error: test failed, to rerun pass `--test store_crash_matrix`

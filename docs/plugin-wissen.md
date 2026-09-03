@@ -395,6 +395,14 @@ JUCE-frei wie der übrige `core/`-Baum, fünf Dateien:
   C++-Hälfte von `additionalProperties:false`. Vorher kam jeder Wert als roher
   Text zurück — `"broker_version":null` bestand damit die Prüfung „nicht leer",
   und ein Zusatzfeld fiel gar nicht auf.
+  **Das Abbruchsignal gehört der Verbindungsgeneration, nicht dem
+  Öffnungsaufruf** (NAK-134 Nacharbeit 1, 03.09.2026): `oeffnen()` liest es nur
+  und löscht es nie; gelöst wird es in `neueGenerationBeginnen()`, das der
+  Aufrufer unmittelbar davor ruft — und danach die Generation **erneut** liest.
+  Weil `stop()`/`reconnect()` die Generation VOR `ioAbbrechen()` erhöhen, kann
+  kein Abbruch mehr verloren gehen. Vorher löschte `oeffnen()` ein bereits
+  gesetztes Signal, und auf einer belegten Pipe liefen danach alle 20
+  Warterunden — gemessen 4.009 ms statt der R5-Frist.
 - `ControlClient` (P0/P1) und `TelemetryClient` (P2) — eigene Threads, Backoff
   500 → 8000 ms. Ablauf: Control sendet ein `u32`-längenpräfigiertes
   Bootstrap-Hello (≤ 16 KiB, `protocol: 3`), bekommt ein **v3-gerahmtes**
@@ -466,12 +474,19 @@ fließt: `GetNamedPipeServerProcessId` → gehaltenes Prozesshandle →
 Prozess-Token-User-SID per `EqualSid` → `QueryFullProcessImageNameW` und
 Dateiidentität gegen den manifestgebundenen Brokerpfad → vorhandene
 SHA-256-/Signer-Kette (`namedPipeServerAuthentisieren`, `BrokerLifecycle.cpp`).
-`WaitNamedPipeW` ist nur Liveness. `BrokerLifecycle` kennt drei Ergebnisse
-(`nicht da`, `verifiziert`, `belegt aber unverifiziert`) und adoptiert nur einen
-verifizierten Handle; ein belegter, unverifizierter Name blockiert Spawn und
-Reconnect fail-closed. Ein Reconnect ist an eine Generation gebunden, kein
-Urteil überlebt den Handle. Referenz: Verhaltensmatrix C-01..C-11 in
-`docs/beweise/NAK-123.md`.
+`WaitNamedPipeW` ist nur Liveness. Seit NAK-134 (03.09.2026) gibt es **vier**
+Ergebnisse, nicht drei: `nicht da`, `verifiziert`, `belegt aber unverifiziert`
+und `belegt, nicht erreicht`. Der letzte ist ein **Liveness**-Ausgang — ein
+erschöpfter `ERROR_PIPE_BUSY`, bei dem der Server nie erreicht wurde. Er löst
+den normalen Backoff aus, öffnet nie den Startpfad und zählt nicht als
+Serverprüfung. `belegt aber unverifiziert` bleibt der **Sicherheits**fall und
+blockiert Spawn und Reconnect weiterhin fail-closed. Vorher trug dieser eine
+Wert beide Bedeutungen, und ein Client, der nach einem Brokerneustart das
+Rennen um die freien Pipeinstanzen verlor, wurde als Sicherheitsfall dauerhaft
+geparkt. `BrokerLifecycle` adoptiert nur einen verifizierten Handle. Ein
+Reconnect ist an eine Generation gebunden, kein Urteil überlebt den Handle.
+Referenz: Verhaltensmatrix C-01..C-11 in `docs/beweise/NAK-123.md`, Matrix
+D-K/D-P/D-A in `docs/beweise/NAK-134.md`.
 
 ### 1.6 Editor — Material-Kit-Front (Provisorium)
 

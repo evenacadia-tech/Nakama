@@ -470,7 +470,7 @@ fn brokerneustart_behaelt_session_epoch() {
 
 #[test]
 fn liveness_nur_instant() {
-    let quelle = include_str!("../src/coordinator.rs");
+    let quelle = include_str!("../src/coordinator/mod.rs");
     let liveness_anfang = quelle
         .find("    fn stale_aktualisieren_locked")
         .expect("Liveness-Quellschnitt beginnt");

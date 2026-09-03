@@ -42,7 +42,7 @@ const JSON_SCHEMA_MINOR_AKTIV: u8 = 1;
 
 fn v3_schema_wurzel() -> Value {
     serde_json::from_str(include_str!(
-        "../../eq-copilot/schemas/v3/eq-ipc-v3.schema.json"
+        "../../../eq-copilot/schemas/v3/eq-ipc-v3.schema.json"
     ))
     .expect("eingefrorenes v3-Schema ist JSON")
 }
@@ -3222,7 +3222,7 @@ mod tests {
     #[test]
     fn p2_reject_katalog_stimmt_mit_dem_strikten_wire_schema() {
         let schema: Value = serde_json::from_str(include_str!(
-            "../../eq-copilot/schemas/v3/eq-ipc-v3.schema.json"
+            "../../../eq-copilot/schemas/v3/eq-ipc-v3.schema.json"
         ))
         .unwrap();
         let wire = schema["$defs"]["p2_reject"]["properties"]["grund"]["enum"]

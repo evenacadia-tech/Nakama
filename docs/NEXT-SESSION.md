@@ -43,9 +43,9 @@
 >
 > **Betriebsnotiz für den nächsten Bauer:** Der echte Coordinator verlangt im
 > `heartbeat` ein `adresse`-Feld und prüft es gegen die Wire-Adresse des Links
-> (`broker/src/coordinator.rs:2944-2955`). Ein Testheartbeat ohne Adresse wird
+> (`broker/src/coordinator.rs:2944-2955`, historischer Pfad — die Datei ist seit NAK-121 entfernt und in `broker/src/coordinator/` aufgeteilt). Ein Testheartbeat ohne Adresse wird
 > **nie** beantwortet — A22 kommt damit nur durch, weil sein Probe-Broker die
-> zählende Standardsenke aus `broker/src/transport/server_v3.rs:297` nutzt.
+> zählende Standardsenke aus `broker/src/transport/server_v3.rs:297` nutzt (historischer Pfad — seit NAK-121 entfernt, heute `broker/src/transport/server_v3/`).
 > Und: der produktive `ControlClient` sendet bei gesetztem `statusProvider`
 > eigene Heartbeats ab Sequenz 0 (`ControlClient.cpp:1386`); ein Testzähler im
 > selben Zahlenraum ordnet fremde ACKs zu.

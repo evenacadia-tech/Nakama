@@ -125,7 +125,7 @@ impl Coordinator {
     pub fn liveness_tick(&self) -> Vec<String> {
         let jetzt = self.clock.jetzt();
         let (schliessen, dirty) = {
-            let mut stand = self.stand.lock().expect("Coordinator vergiftet");
+            let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
             Self::stale_aktualisieren_locked(&mut stand, jetzt);
             let opfer: Vec<ClientKey> = stand
                 .clients
@@ -175,7 +175,7 @@ impl Coordinator {
         let jetzt = self.clock.jetzt();
         let mut guards = Vec::new();
         let (aktiv, dirty_sessions) = {
-            let mut stand = self.stand.lock().expect("Coordinator vergiftet");
+            let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
             let Some(link) = stand.links.get(link_id).cloned() else {
                 return false;
             };
@@ -311,7 +311,7 @@ impl Coordinator {
             .pointer("/record_state/recording")
             .and_then(Value::as_bool);
         {
-            let mut stand = self.stand.lock().expect("Coordinator vergiftet");
+            let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
             let Some(link) = stand.links.get(link_id).cloned() else {
                 return false;
             };
@@ -380,7 +380,7 @@ impl Coordinator {
 
     pub fn descriptor_setzen(&self, link_id: &str, mut descriptor: Value) -> bool {
         let session = {
-            let mut stand = self.stand.lock().expect("Coordinator vergiftet");
+            let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
             let Some(link) = stand.links.get(link_id).cloned() else {
                 return false;
             };

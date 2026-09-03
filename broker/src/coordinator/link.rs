@@ -87,7 +87,7 @@ impl Coordinator {
         let host_pid = hello.host.as_ref().map(|h| h.pid);
         let mut adresse = wire_adresse.clone();
         let mut session_ungebunden = Self::ist_ungebundene_probe(hello);
-        let mut stand = self.stand.lock().expect("Coordinator vergiftet");
+        let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         if session_ungebunden {
             if let Some(main_session) =
                 Self::eindeutige_main_session_locked(&stand, &wire_adresse, host_pid)
@@ -244,7 +244,7 @@ impl Coordinator {
     /// Ein Push teilt diesen Lock und kann den Zwischenzustand nicht sehen.
     pub fn control_ende(&self, link_id: &str) {
         let jetzt = self.clock.jetzt();
-        let mut stand = self.stand.lock().expect("Coordinator vergiftet");
+        let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         let mut dirty = None;
         if let Some(link) = stand.links.remove(link_id) {
             self.alias_register.entferne(
@@ -290,7 +290,7 @@ impl Coordinator {
     pub fn verbindung_soll_trennen(&self, link_id: &str) -> bool {
         self.stand
             .lock()
-            .expect("Coordinator vergiftet")
+            .unwrap_or_else(|e| e.into_inner())
             .links
             .get(link_id)
             .is_some_and(|link| link.trennen)

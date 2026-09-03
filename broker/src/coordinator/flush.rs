@@ -16,12 +16,12 @@ impl Coordinator {
     pub fn routing_bereit(&self) -> bool {
         self.stand
             .lock()
-            .expect("Coordinator vergiftet")
+            .unwrap_or_else(|e| e.into_inner())
             .routing_bereit
     }
 
     pub(super) fn routing_fail_closed(&self, _grund: &str) {
-        let mut stand = self.stand.lock().expect("Coordinator vergiftet");
+        let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         stand.routing_bereit = false;
         for link in stand.links.values_mut() {
             link.trennen = true;
@@ -36,7 +36,7 @@ impl Coordinator {
         .unwrap_or_else(|e| e.into_inner());
 
         let (payload, ziele) = {
-            let mut stand = self.stand.lock().expect("Coordinator vergiftet");
+            let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
             if !stand.dirty_sessions.remove(session) {
                 return;
             }
@@ -99,7 +99,7 @@ impl Coordinator {
             match store.append(vec![event]) {
                 Ok(ausgaenge) => event_ord = ausgaenge.first().map(|a| a.event_ord()),
                 Err(_) => {
-                    let mut stand = self.stand.lock().expect("Coordinator vergiftet");
+                    let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
                     stand.store_verweigerungen = stand.store_verweigerungen.saturating_add(1);
                     if let Some(link_id) = verursacher_link {
                         if let Some(link) = stand.links.get_mut(link_id) {
@@ -163,7 +163,7 @@ impl Coordinator {
                 return false;
             }
         }
-        let mut stand = self.stand.lock().expect("Coordinator vergiftet");
+        let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         if let Some(ids) = stand.conflict_guards.get_mut(effective_address) {
             ids.remove(derived_id);
             if ids.is_empty() {
@@ -174,7 +174,7 @@ impl Coordinator {
     }
 
     pub fn dispatch_fuer_link_erlaubt(&self, link_id: &str) -> bool {
-        let stand = self.stand.lock().expect("Coordinator vergiftet");
+        let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         stand
             .links
             .get(link_id)
@@ -195,7 +195,7 @@ impl Coordinator {
     }
 
     pub(super) fn alias_quarantaenisiert(&self, link_id: &str) -> bool {
-        let stand = self.stand.lock().expect("Coordinator vergiftet");
+        let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         stand.links.get(link_id).is_some_and(|link| {
             !stand.routing_bereit
                 || stand
@@ -208,7 +208,7 @@ impl Coordinator {
     }
 
     pub(super) fn store_verweigert_fuer_link(&self, link_id: &str) {
-        let mut stand = self.stand.lock().expect("Coordinator vergiftet");
+        let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         stand.store_verweigerungen = stand.store_verweigerungen.saturating_add(1);
         if let Some(link) = stand.links.get_mut(link_id) {
             link.trennen = true;

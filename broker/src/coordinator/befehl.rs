@@ -100,7 +100,7 @@ impl Coordinator {
             (u64, String, Value, Vec<SnapshotZiel>),
             (u64, Option<String>, &'static str, &'static str),
         > = {
-            let stand = self.stand.lock().expect("Coordinator vergiftet");
+            let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
             let Some(sender_link) = stand.links.get(link_id) else {
                 return None;
             };
@@ -275,7 +275,7 @@ impl Coordinator {
         let kanonischer_auftrag = serde_json_canonicalizer::to_vec(wert).ok()?;
 
         let (session, revision, hash) = {
-            let mut stand = self.stand.lock().expect("Coordinator vergiftet");
+            let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
             let Some(sender_link) = stand.links.get(link_id) else {
                 return None;
             };
@@ -420,7 +420,7 @@ impl Coordinator {
                 if !self
                     .stand
                     .lock()
-                    .expect("Coordinator vergiftet")
+                    .unwrap_or_else(|e| e.into_inner())
                     .links
                     .get(link_id)
                     .is_some_and(|link| link.wire_adresse == adresse)

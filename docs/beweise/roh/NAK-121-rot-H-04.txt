@@ -1,0 +1,41 @@
+# Rotbeweis H-04 — NAK-121 Etappe 2
+
+Mutante(n):
+  broker/src/coordinator/sicht.rs
+    ALT: pub(super) fn snapshot_locked(&self, stand: &Stand, session: &SessionKey) -> Vec<u8> {
+        let jetzt = self.clock.jetzt();
+    NEU: pub(super) fn snapshot_locked(&self, stand: &Stand, session: &SessionKey) -> Vec<u8> {
+        // MUTANTE: eine expect-Stelle auf dem Standlock kehrt zurueck.
+        let _mutante = self.stand.lock().
+
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never --test coordinator_model -- kein_expect_mehr
+Exitcode: 101
+
+Die Mutante ist nach diesem Lauf zurueckgenommen; der naechste
+Lauf derselben Tests ist wieder gruen.
+
+---
+
+
+running 1 test
+test kein_expect_mehr_auf_dem_standlock ... FAILED
+
+failures:
+
+---- kein_expect_mehr_auf_dem_standlock stdout ----
+
+thread 'kein_expect_mehr_auf_dem_standlock' (20552) panicked at tests\coordinator_model.rs:1208:5:
+expect auf dem Standlock uebrig: ["C:\\Users\\phili\\Projekte\\Nakama\\broker\\src/coordinator\\sicht.rs:277"]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    kein_expect_mehr_auf_dem_standlock
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 37 filtered out; finished in 0.00s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.09s
+     Running tests\coordinator_model.rs (broker\target\debug\deps\coordinator_model-c22cf73cd241058f.exe)
+error: test failed, to rerun pass `--test coordinator_model`

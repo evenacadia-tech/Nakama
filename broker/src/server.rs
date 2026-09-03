@@ -17,7 +17,7 @@ use super::protokoll::{
 use super::Register;
 use std::fs::File;
 use std::os::windows::io::{AsRawHandle, FromRawHandle};
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 
@@ -344,10 +344,26 @@ impl Drop for RegistrierteVerbindung {
             r.sensor_trennen(&self.sensor_id, &self.nonce);
         }
         if let Some(senke) = &self.interventionssenke {
-            senke.getrennt(&self.interventions_link_id);
+            // H-05: der Senkenaufruf ist fremder Code und laeuft hier im
+            // Abwickeln. Panisiert er, waere das eine zweite Panik im Drop und
+            // damit ein sofortiger Prozessabbruch, der den geordneten Stopp
+            // uebergeht. Zusammen mit H-04 - vergiftungstolerante Sperrgriffe
+            // im Coordinator - kann eine einzelne Panik den Broker damit nicht
+            // mehr dauerhaft ausfallen lassen.
+            let ergebnis = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                senke.getrennt(&self.interventions_link_id);
+            }));
+            if ergebnis.is_err() {
+                SENKE_PANIK_IM_DESTRUKTOR.fetch_add(1, Ordering::SeqCst);
+            }
         }
     }
 }
+
+/// Wie oft eine panische Interventionssenke im Destruktor gefasst wurde. Im
+/// Normalbetrieb strukturell null; ein Wert groesser null ist der sichtbare
+/// Beleg, dass H-05 gegriffen hat, statt den Prozess mitzureissen.
+pub static SENKE_PANIK_IM_DESTRUKTOR: AtomicU64 = AtomicU64::new(0);
 
 /// Schmale Bruecke vom bestehenden v2-Server in den produktiven
 /// Coordinator. Das Register bleibt v2-Sichtmodell; allein diese Senke macht
@@ -913,6 +929,47 @@ mod tests {
     use super::super::protokoll::PROTOKOLL_VERSION;
     use super::*;
     use std::io::Write;
+
+    /// NAK-121 H-05: eine panische Interventionssenke verlaesst den Destruktor
+    /// von `RegistrierteVerbindung` nicht. Ohne die Fassung waere das eine
+    /// zweite Panik im Abwickeln und damit ein sofortiger Prozessabbruch, der
+    /// den geordneten Stopp uebergeht - und zwar an einer Stelle, die im
+    /// Normalbetrieb bei jedem v2-Verbindungsende laeuft.
+    struct PanischeSenke;
+
+    impl V2Interventionssenke for PanischeSenke {
+        fn getrennt(&self, _link_id: &str) {
+            panic!("absichtliche Panik in der Interventionssenke");
+        }
+        fn hoermarkierung(&self, _link_id: &str, _aktiv: bool) {}
+    }
+
+    #[test]
+    fn panische_senke_verlaesst_den_v2_destruktor_nicht() {
+        let vorher = SENKE_PANIK_IM_DESTRUKTOR.load(Ordering::SeqCst);
+        let register = Arc::new(Mutex::new(Register::default()));
+        // Die Panik faellt IM Destruktor. Sie darf den Test nicht abbrechen -
+        // genau das ist die Zusage.
+        let voriger_haken = std::panic::take_hook();
+        std::panic::set_hook(Box::new(|_| {}));
+        {
+            let _verbindung = RegistrierteVerbindung {
+                register: register.clone(),
+                sensor_id: "s-h05".into(),
+                nonce: "n-h05".into(),
+                interventionssenke: Some(Arc::new(PanischeSenke)),
+                interventions_link_id: "v2:h05".into(),
+            };
+        }
+        std::panic::set_hook(voriger_haken);
+        assert_eq!(
+            SENKE_PANIK_IM_DESTRUKTOR.load(Ordering::SeqCst),
+            vorher + 1,
+            "die Panik der Senke wurde nicht gefasst und gezaehlt"
+        );
+        // Und der Registerteil des Destruktors lief davor wie immer.
+        assert!(register.lock().unwrap().sensoren.is_empty());
+    }
 
     fn test_pipe_name(zusatz: &str) -> String {
         format!(

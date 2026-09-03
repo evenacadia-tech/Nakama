@@ -21,17 +21,17 @@ impl Coordinator {
             return false;
         };
         let Ok(adresse) = serde_json::from_value::<Adresse>(wert["adresse"].clone()) else {
-            let mut stand = self.stand.lock().expect("Coordinator vergiftet");
+            let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
             Self::subscription_abweisen(&mut stand, "subscribe: Adresse ungueltig");
             return false;
         };
         let Some(session_epoch) = wert.get("session_epoch").and_then(Value::as_str) else {
-            let mut stand = self.stand.lock().expect("Coordinator vergiftet");
+            let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
             Self::subscription_abweisen(&mut stand, "subscribe: session_epoch fehlt");
             return false;
         };
 
-        let mut stand = self.stand.lock().expect("Coordinator vergiftet");
+        let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         let Some(link) = stand.links.get(link_id) else {
             Self::subscription_abweisen(&mut stand, "subscribe: Control-Link unbekannt");
             return false;
@@ -73,7 +73,7 @@ impl Coordinator {
 
     pub(super) fn resubscribe_snapshot_push(&self, session: &SessionKey, link_id: &str) {
         let (live_payload, ziel) = {
-            let stand = self.stand.lock().expect("Coordinator vergiftet");
+            let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
             let Some(sub) = stand.subscriptions.get(link_id) else {
                 return;
             };
@@ -218,7 +218,7 @@ impl Coordinator {
     /// erste Ermittlung ist nur ein Kandidat: Eviction, Disconnect,
     /// Nonce-Verdraengung oder Aliasquarantaene koennen ihn danach entziehen.
     pub(super) fn push_ziel_noch_gueltig(&self, link_id: &str, ziel: &SnapshotZiel) -> bool {
-        let stand = self.stand.lock().expect("Coordinator vergiftet");
+        let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         let Some(link) = stand.links.get(link_id) else {
             return false;
         };
@@ -249,7 +249,7 @@ impl Coordinator {
     /// Cleanup. Nach `control_ende` kann deshalb kein alter Link mehr in einem
     /// spaeter gestarteten Push auftauchen.
     pub fn session_push_ziele(&self, session_epoch: &str, adresse: &Adresse) -> Vec<String> {
-        let stand = self.stand.lock().expect("Coordinator vergiftet");
+        let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         stand
             .subscriptions
             .iter()
@@ -287,7 +287,7 @@ impl Coordinator {
     }
 
     pub(super) fn messframe_abweisen(&self, link_id: &str, grund: P2RejectGrund) {
-        let mut stand = self.stand.lock().expect("Coordinator vergiftet");
+        let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         let _ = Self::messframe_abweisen_locked(&mut stand, link_id, grund);
     }
 

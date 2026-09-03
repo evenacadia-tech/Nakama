@@ -1,0 +1,46 @@
+# Rotbeweis H-05 — NAK-121 Etappe 2
+
+Mutante(n):
+  broker/src/server.rs
+    ALT: let ergebnis = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                senke.getrennt(&self.interventions_link_id);
+            }));
+            if ergebnis.is_err() {
+             
+    NEU: // MUTANTE: der Senkenaufruf ist wieder ungefasst — eine Panik
+            // verlaesst damit den Destruktor.
+            senke.getrennt(&self.interventions_link_id);
+
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never -- panische_senke
+Exitcode: 101
+
+Die Mutante ist nach diesem Lauf zurueckgenommen; der naechste
+Lauf derselben Tests ist wieder gruen.
+
+---
+
+
+running 1 test
+test server::tests::panische_senke_verlaesst_den_v2_destruktor_nicht ... FAILED
+
+failures:
+
+failures:
+    server::tests::panische_senke_verlaesst_den_v2_destruktor_nicht
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 190 filtered out; finished in 0.00s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: static `SENKE_PANIK_IM_DESTRUKTOR` is never used
+   --> src\server.rs:363:12
+    |
+363 | pub static SENKE_PANIK_IM_DESTRUKTOR: AtomicU64 = AtomicU64::new(0);
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib) generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.22s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+error: test failed, to rerun pass `--lib`

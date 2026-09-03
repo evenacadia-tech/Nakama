@@ -1139,3 +1139,74 @@ fn p2_push_haelt_den_standlock_nicht() {
         "der P2-Push lief unter dem Standlock"
     );
 }
+
+// ── NAK-121 H-04 und H-05 ──────────────────────────────────────────────────
+//
+// Eine einzelne Panik macht keinen dauerhaften Brokerausfall: jeder Sperrgriff
+// auf den Coordinatorstand ist vergiftungstolerant, und ein panischer
+// Senkenaufruf verlaesst den v2-Destruktor nicht.
+
+#[test]
+fn vergifteter_stand_beendet_den_prozess_nicht() {
+    let (c, _) = coordinator();
+    let h = hello(1, 2, 10, 100, "main", Some(9));
+    anmelden(&c, "a", &h);
+    let vorher = c.client_anzahl();
+    assert_eq!(vorher, 1);
+
+    // Den Standlock absichtlich vergiften: ein Thread panisiert, waehrend er
+    // ihn haelt. Genau dieser Zustand liess den Broker vor NAK-121 an jedem
+    // weiteren Zugriff sterben - 54 expect-Stellen gegen 14 tolerante.
+    let c2 = Arc::new(c);
+    let geliehen = c2.clone();
+    let panik = std::thread::spawn(move || {
+        // modell_sicht nimmt den Standlock; die Panik faellt darunter.
+        let _sicht = geliehen.modell_sicht(&hex(1), &hex(2));
+        panic!("absichtliche Panik unter dem Standlock");
+    });
+    assert!(panik.join().is_err(), "die Panik ist nicht eingetreten");
+
+    // Der Lock ist jetzt vergiftet. Fachlich sichtbare Zustaende bleiben, was
+    // sie waren; nichts wird stillschweigend zurueckgesetzt.
+    assert_eq!(c2.client_anzahl(), vorher);
+    assert_eq!(c2.modell_sicht(&hex(1), &hex(2)).clients.len(), 1);
+
+    // Trennung und Hoermarkierung laufen weiter - die beiden Wege, die der
+    // v2-Destruktor aus H-05 benutzt. Gemessen wird an ihrer Wirkung, nicht
+    // daran, dass der Aufruf zurueckkehrt.
+    c2.hoermarkierung_v2("a", true);
+    assert_eq!(c2.interventionssicht().aktive, 1);
+    c2.hoermarkierung_v2_getrennt("a");
+    assert_eq!(c2.interventionssicht().aktive, 0);
+    c2.control_ende("a");
+    assert!(
+        c2.modell_sicht(&hex(1), &hex(2)).clients[0].stale
+            || c2.modell_sicht(&hex(1), &hex(2)).clients.is_empty(),
+        "control_ende blieb auf dem vergifteten Lock wirkungslos"
+    );
+}
+
+/// Quellwache zu H-04: nach der Umstellung ist auf dem Standlock des
+/// Coordinators kein `expect` mehr uebrig. Sie misst die Zusage dauerhaft, auch
+/// fuer Wege, die kein Test anfaehrt.
+#[test]
+fn kein_expect_mehr_auf_dem_standlock() {
+    let mut gefunden: Vec<String> = Vec::new();
+    let wurzel = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/coordinator");
+    for eintrag in std::fs::read_dir(&wurzel).expect("coordinator-Modulordner") {
+        let pfad = eintrag.expect("Verzeichniseintrag").path();
+        if pfad.extension().and_then(|e| e.to_str()) != Some("rs") {
+            continue;
+        }
+        let quelle = std::fs::read_to_string(&pfad).expect("Modulquelle lesbar");
+        for (nr, zeile) in quelle.lines().enumerate() {
+            if zeile.contains(".expect(\"Coordinator vergiftet\")") {
+                gefunden.push(format!("{}:{}", pfad.display(), nr + 1));
+            }
+        }
+    }
+    assert!(
+        gefunden.is_empty(),
+        "expect auf dem Standlock uebrig: {gefunden:?}"
+    );
+}

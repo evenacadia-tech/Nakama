@@ -41,7 +41,7 @@ impl Coordinator {
         intervention_id: &str,
         event_sequence: u64,
     ) -> bool {
-        let mut stand = self.stand.lock().expect("Coordinator vergiftet");
+        let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         if !Self::adresse_des_links_passt(&stand, link_id, adresse)
             || !Self::sequenz_annehmen(&mut stand, link_id, event_sequence)
         {
@@ -71,7 +71,7 @@ impl Coordinator {
         event_sequence: u64,
         tail_samples: u64,
     ) -> bool {
-        let mut stand = self.stand.lock().expect("Coordinator vergiftet");
+        let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         if !Self::adresse_des_links_passt(&stand, link_id, adresse)
             || !Self::sequenz_annehmen(&mut stand, link_id, event_sequence)
         {
@@ -99,7 +99,7 @@ impl Coordinator {
     /// kollidieren. `false` entfernt nur den sauber bekannten v2-Eintrag und
     /// loescht niemals Unknown.
     pub fn hoermarkierung_v2(&self, link_id: &str, aktiv: bool) {
-        let mut stand = self.stand.lock().expect("Coordinator vergiftet");
+        let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         let id = format!("v2:{link_id}");
         if aktiv {
             if stand.interventionen.len() >= MAX_AKTIVE_INTERVENTIONEN {
@@ -118,7 +118,7 @@ impl Coordinator {
     }
 
     pub fn hoermarkierung_v2_getrennt(&self, link_id: &str) {
-        let mut stand = self.stand.lock().expect("Coordinator vergiftet");
+        let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         stand
             .interventionen
             .retain(|_, intervention| intervention.link_id != link_id);
@@ -128,12 +128,12 @@ impl Coordinator {
     pub fn intervention_overflow(&self) {
         self.stand
             .lock()
-            .expect("Coordinator vergiftet")
+            .unwrap_or_else(|e| e.into_inner())
             .intervention_state_unknown = true;
     }
 
     pub fn tail_fortschritt(&self, samples: u64) {
-        let mut stand = self.stand.lock().expect("Coordinator vergiftet");
+        let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         stand.tail_samples_offen = stand.tail_samples_offen.saturating_sub(samples);
     }
 
@@ -142,7 +142,7 @@ impl Coordinator {
     /// Wirefamilie. Die bestaetigte Basis wird fuer den Link gesetzt; der
     /// neutrale Zustand leert aktive IDs und Nachlauf gemeinsam.
     pub fn neutral_resync(&self, link_id: &str, bestaetigte_sequence_basis: u64) -> bool {
-        let mut stand = self.stand.lock().expect("Coordinator vergiftet");
+        let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         let Some(link) = stand.links.get_mut(link_id) else {
             return false;
         };
@@ -154,7 +154,7 @@ impl Coordinator {
     }
 
     pub fn interventionssicht(&self) -> Interventionssicht {
-        let stand = self.stand.lock().expect("Coordinator vergiftet");
+        let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         let erlaubt = !stand.intervention_state_unknown
             && stand.interventionen.is_empty()
             && stand.tail_samples_offen == 0;
@@ -169,7 +169,7 @@ impl Coordinator {
     /// Der Riegel liegt VOR dem Evidence-Commit und zaehlt das Urteil unter
     /// demselben Lock. So kann ein Begin nicht erst nach dem Dispatch wirken.
     pub fn evidence_dispatch(&self) -> bool {
-        let mut stand = self.stand.lock().expect("Coordinator vergiftet");
+        let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         let erlaubt = !stand.intervention_state_unknown
             && stand.interventionen.is_empty()
             && stand.tail_samples_offen == 0;

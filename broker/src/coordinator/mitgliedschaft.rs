@@ -107,7 +107,7 @@ impl Coordinator {
             session_epoch: session_epoch.into(),
         };
         let geaendert = {
-            let mut stand = self.stand.lock().expect("Coordinator vergiftet");
+            let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
             let key = stand
                 .clients
                 .keys()
@@ -151,7 +151,7 @@ impl Coordinator {
             session_epoch: session_epoch.into(),
         };
         let geaendert = {
-            let mut stand = self.stand.lock().expect("Coordinator vergiftet");
+            let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
             let key = stand
                 .clients
                 .keys()
@@ -192,7 +192,7 @@ impl Coordinator {
             session_epoch: session_epoch.into(),
         };
         {
-            let mut stand = self.stand.lock().expect("Coordinator vergiftet");
+            let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
             let erlaubt = stand.clients.iter().any(|(key, client)| {
                 &key.session() == &session
                     && key.instance_id == neue_instance_id
@@ -217,7 +217,7 @@ impl Coordinator {
     }
 
     pub fn main_darf_schreiben(&self, link_id: &str) -> bool {
-        let stand = self.stand.lock().expect("Coordinator vergiftet");
+        let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         let Some(link) = stand.links.get(link_id) else {
             return false;
         };

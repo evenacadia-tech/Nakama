@@ -94,21 +94,21 @@ impl Coordinator {
     pub fn cap_abweisungen(&self) -> u64 {
         self.stand
             .lock()
-            .expect("Coordinator vergiftet")
+            .unwrap_or_else(|e| e.into_inner())
             .cap_abweisungen
     }
 
     pub fn store_verweigerungen(&self) -> u64 {
         self.stand
             .lock()
-            .expect("Coordinator vergiftet")
+            .unwrap_or_else(|e| e.into_inner())
             .store_verweigerungen
     }
 
     pub fn p2_live_frames(&self) -> u64 {
         self.stand
             .lock()
-            .expect("Coordinator vergiftet")
+            .unwrap_or_else(|e| e.into_inner())
             .p2_live_frames
     }
 
@@ -119,7 +119,7 @@ impl Coordinator {
         instance_id: &str,
     ) -> Option<MessframeSicht> {
         let jetzt = self.clock.jetzt();
-        let stand = self.stand.lock().expect("Coordinator vergiftet");
+        let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         let (key, client) = stand.clients.iter().find(|(key, _)| {
             key.project_binding_id == project_binding_id
                 && key.session_epoch == session_epoch
@@ -178,14 +178,14 @@ impl Coordinator {
     }
 
     pub fn telemetrie_kopplungen(&self) -> (usize, u64) {
-        let stand = self.stand.lock().expect("Coordinator vergiftet");
+        let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         (stand.telemetry_links.len(), stand.telemetry_kopplungen)
     }
 
     pub fn client_anzahl(&self) -> usize {
         self.stand
             .lock()
-            .expect("Coordinator vergiftet")
+            .unwrap_or_else(|e| e.into_inner())
             .clients
             .values()
             .filter(|client| client.current_link.is_some())
@@ -195,7 +195,7 @@ impl Coordinator {
     pub fn subscription_anzahl(&self) -> usize {
         self.stand
             .lock()
-            .expect("Coordinator vergiftet")
+            .unwrap_or_else(|e| e.into_inner())
             .subscriptions
             .len()
     }
@@ -203,21 +203,21 @@ impl Coordinator {
     pub fn subscription_cleanups(&self) -> u64 {
         self.stand
             .lock()
-            .expect("Coordinator vergiftet")
+            .unwrap_or_else(|e| e.into_inner())
             .subscription_cleanups
     }
 
     pub fn subscription_abweisungen(&self) -> u64 {
         self.stand
             .lock()
-            .expect("Coordinator vergiftet")
+            .unwrap_or_else(|e| e.into_inner())
             .subscription_abweisungen
     }
 
     pub fn letzter_subscription_grund(&self) -> String {
         self.stand
             .lock()
-            .expect("Coordinator vergiftet")
+            .unwrap_or_else(|e| e.into_inner())
             .letzter_subscription_grund
             .clone()
     }
@@ -232,7 +232,7 @@ impl Coordinator {
             project_binding_id: project_binding_id.into(),
             session_epoch: session_epoch.into(),
         };
-        let stand = self.stand.lock().expect("Coordinator vergiftet");
+        let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         let mut clients: Vec<ClientModellSicht> = stand
             .clients
             .iter()
@@ -268,7 +268,7 @@ impl Coordinator {
             project_binding_id: project_binding_id.into(),
             session_epoch: session_epoch.into(),
         };
-        let stand = self.stand.lock().expect("Coordinator vergiftet");
+        let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         self.snapshot_locked(&stand, &session)
     }
 

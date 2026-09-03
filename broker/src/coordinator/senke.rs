@@ -27,7 +27,7 @@ impl crate::transport::server_v3::Senke for Coordinator {
     fn control_getrennt(&self, _link_id: &str) {}
     fn telemetrie_gekoppelt(&self, link_id: &str) {
         let neu = {
-            let mut stand = self.stand.lock().expect("Coordinator vergiftet");
+            let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
             let neu =
                 stand.links.contains_key(link_id) && stand.telemetry_links.insert(link_id.into());
             if neu {
@@ -42,7 +42,7 @@ impl crate::transport::server_v3::Senke for Coordinator {
     fn telemetrie_getrennt(&self, link_id: &str) {
         self.stand
             .lock()
-            .expect("Coordinator vergiftet")
+            .unwrap_or_else(|e| e.into_inner())
             .telemetry_links
             .remove(link_id);
     }
@@ -91,7 +91,7 @@ impl crate::transport::server_v3::Senke for Coordinator {
         let mut ziele: Vec<String> = Vec::new();
         let mut instance_id = String::new();
         {
-            let mut stand = self.stand.lock().expect("Coordinator vergiftet");
+            let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
             let Some(key) = Self::aktueller_telemetrie_client_locked(&stand, link_id) else {
                 return;
             };

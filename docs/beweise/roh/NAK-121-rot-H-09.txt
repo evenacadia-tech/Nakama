@@ -1,0 +1,36 @@
+# Rotbeweis H-09 — NAK-121 Etappe 2
+
+Mutante:
+  broker/src/lib.rs
+    Die Entnahme des Store aus dem geordneten Stopp entfaellt.
+
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never --test broker_idle -- geordneter_stopp
+Exitcode: 101
+
+Die Mutante ist nach diesem Lauf zurueckgenommen.
+
+---
+
+
+running 1 test
+test geordneter_stopp_schliesst_den_store ... FAILED
+
+failures:
+
+---- geordneter_stopp_schliesst_den_store stdout ----
+
+thread 'geordneter_stopp_schliesst_den_store' (10720) panicked at tests\broker_idle.rs:202:32:
+".store" fehlt im geordneten Stopp
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    geordneter_stopp_schliesst_den_store
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.00s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.85s
+     Running tests\broker_idle.rs (broker\target\debug\deps\broker_idle-335b469e8f1e1607.exe)
+error: test failed, to rerun pass `--test broker_idle`

@@ -172,3 +172,64 @@ fn echter_brokerprozess_beendet_sich_nach_letztem_client_selbst() {
     let _name_frei = FirstInstance::nehmen(&pipe)
         .expect("idle_exit_schliesst_besitzlistener_zuletzt: Name nach Prozessende frei");
 }
+
+// ── NAK-121 H-09 ───────────────────────────────────────────────────────────
+
+/// Der geordnete Stopp beendet den Storeschreiber, BEVOR der Prozess endet -
+/// und zwar als letztes Glied, damit kein Weg mehr Auftraege einreicht, wenn
+/// der Store zumacht.
+///
+/// Gemessen wird am Quelltext von `broker_stoppen`, weil der Brokerlauf in
+/// einer statischen Zelle je Prozess genau einmal existiert: ein
+/// Integrationstest kann ihn nicht starten, stoppen und danach erneut starten,
+/// ohne den Prozess zu wechseln. Die Zusage ist eine REIHENFOLGE von vier
+/// Entnahmen, und genau die ist im Quelltext eindeutig ablesbar.
+#[test]
+fn geordneter_stopp_schliesst_den_store() {
+    let quelle = include_str!("../src/lib.rs");
+    let anfang = quelle
+        .find("pub fn broker_geordnet_stoppen")
+        .expect("broker_geordnet_stoppen im Quelltext");
+    let rumpf = &quelle[anfang..];
+    let ende = rumpf
+        .find("\npub fn broker_idle_ende_erreicht")
+        .expect("Ende von broker_geordnet_stoppen");
+    let rumpf = &rumpf[..ende];
+
+    let pos = |nadel: &str| {
+        rumpf
+            .find(nadel)
+            .unwrap_or_else(|| panic!("{nadel:?} fehlt im geordneten Stopp"))
+    };
+    let supervisor = pos("._supervisor");
+    let v2 = pos("._griff_v2");
+    let v3 = pos("._griff_v3");
+    let store = pos(".store");
+
+    assert!(
+        supervisor < v2 && v2 < v3 && v3 < store,
+        "Stoppreihenfolge verletzt: Supervisor {supervisor}, v2 {v2}, v3 {v3}, Store {store}"
+    );
+    // Und der Store wird ENTNOMMEN, nicht nur gelesen - nur dann laeuft sein
+    // Destruktor und mit ihm StoreWriter::stoppen (Shutdown senden, joinen).
+    let store_block = &rumpf[store..];
+    assert!(
+        store_block[..store_block.len().min(200)].contains(".take()"),
+        "der Store wird beim geordneten Stopp nicht entnommen"
+    );
+
+    // Die Storesicht meldet den entnommenen Zustand ehrlich, statt auf einem
+    // leeren Option zu panisieren.
+    let sicht_anfang = quelle
+        .find("pub fn broker_store_sicht")
+        .expect("broker_store_sicht im Quelltext");
+    let sicht = &quelle[sicht_anfang..sicht_anfang + 800];
+    assert!(
+        sicht.contains(".as_ref()") && sicht.contains(".map("),
+        "broker_store_sicht liest den Store nicht optional"
+    );
+    assert!(
+        !sicht.contains(".unwrap()") && !sicht.contains(".expect("),
+        "broker_store_sicht panisiert auf dem entnommenen Store"
+    );
+}

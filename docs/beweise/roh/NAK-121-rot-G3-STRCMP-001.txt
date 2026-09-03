@@ -1,0 +1,49 @@
+# Rotbeweis G3-STRCMP-001 — NAK-121 Etappe 2
+
+Mutante(n):
+  broker/src/transport/pipetoken.rs
+    ALT: match normalisierter_pipename(name).strip_prefix(&PROBE_PRAEFIX.to_ascii_lowercase()) {
+    NEU: // MUTANTE: roher Praefixvergleich auf dem nicht normalisierten Namen.
+    match name.strip_prefix(PROBE_PRAEFIX) {
+
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never -- probe_riegel_ist_unempfindlich
+Exitcode: 101
+
+Die Mutante ist nach diesem Lauf zurueckgenommen; der naechste
+Lauf derselben Tests ist wieder gruen.
+
+---
+
+
+running 1 test
+test transport::pipetoken::tests::probe_riegel_ist_unempfindlich_gegen_schreibweise_und_praefixform ... FAILED
+
+failures:
+
+---- transport::pipetoken::tests::probe_riegel_ist_unempfindlich_gegen_schreibweise_und_praefixform stdout ----
+
+thread 'transport::pipetoken::tests::probe_riegel_ist_unempfindlich_gegen_schreibweise_und_praefixform' (17396) panicked at src\transport\pipetoken.rs:143:9:
+assertion failed: ist_probe_pipename(r"\\.\PIPE\EVENACADIA.NAKAMA.V3.PROBE.last.4711")
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    transport::pipetoken::tests::probe_riegel_ist_unempfindlich_gegen_schreibweise_und_praefixform
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 192 filtered out; finished in 0.00s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: function `normalisierter_pipename` is never used
+  --> src\transport\pipetoken.rs:56:4
+   |
+56 | fn normalisierter_pipename(name: &str) -> String {
+   |    ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib) generated 1 warning
+warning: `eqcop-broker` (lib test) generated 1 warning (1 duplicate)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.02s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+error: test failed, to rerun pass `--lib`

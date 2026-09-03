@@ -843,8 +843,15 @@ struct BrokerLauf {
     _griff_v2: Mutex<Option<server::ServerGriff>>,
     #[cfg(windows)]
     _griff_v3: Mutex<Option<transport::server_v3::V3Griff>>,
+    /// H-09: dieselbe `Mutex<Option<…>>`-Huelle wie bei den drei Geschwistern
+    /// darueber. Bis NAK-121 lag der Storeschreiber hier blank, und der
+    /// geordnete Stopp nahm nur die Serverhandles - der Schreiberthread starb
+    /// am Prozessende ohne geordnetes Schliessen. Die Huelle erlaubt das
+    /// Entnehmen; der vorhandene Destruktor von `StoreWriter` fuehrt den Stopp
+    /// dann selbst aus, weil `stoppen` eine exklusive Referenz verlangt und der
+    /// Brokerlauf nur geteilt aus einer statischen Zelle erreichbar ist.
     #[cfg(windows)]
-    store: store::StoreWriter,
+    store: Mutex<Option<store::StoreWriter>>,
     /// Nur Lebensdauerhalter. Seit NAK-123 liest die Idle-Entscheidung die
     /// aktiven Worker am `V3Griff` (auch unvollstaendige Bootstraps zaehlen),
     /// nicht mehr `Coordinator::client_anzahl`. Der Arc muss aber weiter im
@@ -933,7 +940,7 @@ pub fn broker_starten(bindungen_pfad: Option<PathBuf>) -> Result<(), String> {
                 })),
                 _griff_v2: Mutex::new(Some(griff_v2)),
                 _griff_v3: Mutex::new(Some(griff_v3)),
-                store,
+                store: Mutex::new(Some(store)),
                 _coordinator: coordinator,
                 register,
                 session_token,
@@ -995,6 +1002,16 @@ pub fn broker_geordnet_stoppen() {
             .unwrap_or_else(|e| e.into_inner())
             .take();
         drop(griff_v3);
+        // H-09: erst Supervisor, dann v2-Handle, dann v3-Handle, DANN Store -
+        // damit kein Weg mehr Auftraege einreicht, wenn der Store zumacht. Der
+        // Destruktor des entnommenen StoreWriter fuehrt seinen Stopp selbst
+        // aus: Shutdown senden, Schreiberthread joinen.
+        let store = lauf
+            .store
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .take();
+        drop(store);
     }
 }
 
@@ -1078,7 +1095,15 @@ pub fn broker_store_sicht() -> Option<store::StoreSicht> {
     }
     #[cfg(windows)]
     {
-        return Some(lauf.store.handle().sicht());
+        // H-09: nach dem geordneten Stopp ist der Store entnommen. Die Sicht
+        // meldet das ehrlich mit None, statt auf einem leeren Option zu
+        // panisieren.
+        return lauf
+            .store
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .as_ref()
+            .map(|writer| writer.handle().sicht());
     }
     #[cfg(not(windows))]
     {

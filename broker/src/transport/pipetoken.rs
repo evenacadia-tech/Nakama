@@ -36,9 +36,27 @@ pub const PROBE_PRAEFIX: &str = r"\\.\pipe\evenacadia.nakama.v3.probe.";
 /// hinter dem Praefix darf nicht leer sein, damit `probe.` allein keine
 /// Sammelpipe wird.
 pub fn ist_probe_pipename(name: &str) -> bool {
-    match name.strip_prefix(PROBE_PRAEFIX) {
+    match normalisierter_pipename(name).strip_prefix(&PROBE_PRAEFIX.to_ascii_lowercase()) {
         Some(rest) => !rest.is_empty(),
         None => false,
+    }
+}
+
+/// G3-STRCMP-001: bringt einen Pipenamen in die Form, in der ueber ihn
+/// entschieden werden darf.
+///
+/// Windows behandelt Pipenamen ohne Ruecksicht auf Gross- und Kleinschreibung
+/// und akzeptiert die Praefixform `\\?\pipe\` als gleichwertig zu `\\.\pipe\`.
+/// Ein roher Praefixvergleich auf dem nicht normalisierten Namen entscheidet
+/// deshalb ueber eine andere Zeichenkette, als das Betriebssystem spaeter
+/// oeffnet: `\\.\PIPE\evenacadia.nakama.v3.PROBE.x` waere fuer den Riegel kein
+/// Probename und fuer den Kernel dieselbe Pipe. Die Erlaubnisform bleibt, was
+/// der Kommentar oben zusagt - eine Erlaubnis, keine Sperrliste.
+fn normalisierter_pipename(name: &str) -> String {
+    let klein = name.to_ascii_lowercase();
+    match klein.strip_prefix(r"\\?\pipe\") {
+        Some(rest) => format!(r"\\.\pipe\{rest}"),
+        None => klein,
     }
 }
 
@@ -112,6 +130,34 @@ mod tests {
         assert!(ist_probe_pipename(
             r"\\.\pipe\evenacadia.nakama.v3.probe.last.4711.1756400000"
         ));
+    }
+
+    /// G3-STRCMP-001: der Riegel entscheidet ueber den Namen, den Windows
+    /// spaeter oeffnet - nicht ueber die rohe Zeichenkette. Beide Richtungen
+    /// zaehlen: ein anders geschriebener Probename wurde vorher abgewiesen,
+    /// obwohl es dieselbe Pipe ist, und ein gross geschriebener
+    /// PRODUKTIONSname darf die Erlaubnis auch normalisiert nicht passieren.
+    #[test]
+    fn probe_riegel_ist_unempfindlich_gegen_schreibweise_und_praefixform() {
+        assert!(ist_probe_pipename(
+            r"\\.\PIPE\EVENACADIA.NAKAMA.V3.PROBE.last.4711"
+        ));
+        assert!(ist_probe_pipename(
+            r"\\?\pipe\evenacadia.nakama.v3.probe.last.4711"
+        ));
+        assert!(ist_probe_pipename(r"\\?\PIPE\Evenacadia.Nakama.V3.Probe.x"));
+
+        // Die Erlaubnis bleibt eine Erlaubnis: der Produktionsnamensraum faellt
+        // in JEDER Schreibweise und Praefixform.
+        assert!(!ist_probe_pipename(
+            r"\\.\PIPE\EVENACADIA.NAKAMA.V3.BNSM62JZZCCXIDV3PJZAEHMZPA"
+        ));
+        assert!(!ist_probe_pipename(
+            r"\\?\pipe\evenacadia.nakama.v3.bnsm62jzzccxidv3pjzaehmzpa"
+        ));
+        assert!(!ist_probe_pipename(r"\\?\PIPE\EVENACADIA.EQ-COPILOT.V1"));
+        // `probe.` allein bleibt keine Pipe, auch normalisiert nicht.
+        assert!(!ist_probe_pipename(r"\\?\PIPE\EVENACADIA.NAKAMA.V3.PROBE."));
     }
 
     /// Die SID wird VOR dem Hashen grossgeschrieben — sonst haetten zwei

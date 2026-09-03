@@ -555,7 +555,14 @@ unsafe impl Send for HandleRegister {}
 /// dass das Register ein Handle fuehrte, das es nicht mehr geben durfte; genau
 /// das darf nicht verschluckt werden, sonst faellt die Ein-Besitzer-Invariante
 /// unbemerkt.
-fn abbrechen_und_zaehlen(h: HANDLE, statistik: Option<&V3Statistik>) {
+///
+/// D11 der Nacharbeit Runde 1 (Abschlusspruefung 1, 03.09.2026): der Zaehler
+/// war ein `Option` und wurde von Verbindungsende und Serverstopp als `None`
+/// weitergereicht. Ein unerwarteter `CancelIoEx`-Fehler wurde dort weiterhin
+/// verschluckt; gezaehlt wurde ausschliesslich im Wachhundpfad, obwohl H-01
+/// den Zaehler auch fuer Ende und Stopp zusagt. Die `None`-Variante gibt es
+/// nicht mehr - JEDER Abbruchpfad reicht seine Statistik durch.
+fn abbrechen_und_zaehlen(h: HANDLE, statistik: &V3Statistik) {
     // SAFETY: der Eintrag lebt nur, solange der besitzende Thread sein Handle
     // haelt; Austragen und Abbrechen laufen unter derselben Registersperre.
     let ok = unsafe { CancelIoEx(h, std::ptr::null_mut()) };
@@ -567,25 +574,18 @@ fn abbrechen_und_zaehlen(h: HANDLE, statistik: Option<&V3Statistik>) {
     if fehler == ERROR_NOT_FOUND {
         return;
     }
-    if let Some(s) = statistik {
-        s.cancel_auf_totem_handle.fetch_add(1, Ordering::SeqCst);
-    }
+    statistik
+        .cancel_auf_totem_handle
+        .fetch_add(1, Ordering::SeqCst);
 }
 
 /// Derselbe Abbruch fuer einen Aufrufer, der das Handle schon in der Hand hat
 /// (der Wachhund haelt die Registersperre bereits).
 pub(super) fn abbrechen_und_zaehlen_extern(h: HANDLE, statistik: &V3Statistik) {
-    abbrechen_und_zaehlen(h, Some(statistik))
+    abbrechen_und_zaehlen(h, statistik)
 }
 
-pub(super) fn alle_io_abbrechen(handles: &Arc<Mutex<HandleRegister>>) {
-    alle_io_abbrechen_gezaehlt(handles, None)
-}
-
-pub(super) fn alle_io_abbrechen_gezaehlt(
-    handles: &Arc<Mutex<HandleRegister>>,
-    statistik: Option<&V3Statistik>,
-) {
+pub(super) fn alle_io_abbrechen(handles: &Arc<Mutex<HandleRegister>>, statistik: &V3Statistik) {
     if let Ok(reg) = handles.lock() {
         for (_, h) in reg.offen.iter() {
             abbrechen_und_zaehlen(*h as HANDLE, statistik);
@@ -593,14 +593,10 @@ pub(super) fn alle_io_abbrechen_gezaehlt(
     }
 }
 
-pub(super) fn io_abbrechen(handles: &Arc<Mutex<HandleRegister>>, id: u64) {
-    io_abbrechen_gezaehlt(handles, id, None)
-}
-
-pub(super) fn io_abbrechen_gezaehlt(
+pub(super) fn io_abbrechen(
     handles: &Arc<Mutex<HandleRegister>>,
     id: u64,
-    statistik: Option<&V3Statistik>,
+    statistik: &V3Statistik,
 ) {
     if let Ok(reg) = handles.lock() {
         for (i, h) in reg.offen.iter() {
@@ -621,5 +617,66 @@ impl Drop for TokenGriff {
             // der Destruktor laeuft genau einmal.
             unsafe { CloseHandle(self.0) };
         }
+    }
+}
+
+#[cfg(test)]
+mod d11_tests {
+    use super::*;
+
+    /// D11 der Nacharbeit Runde 1 (Abschlusspruefung 1, 03.09.2026): H-01 sagt
+    /// den Zaehler fuer JEDEN Abbruchpfad zu - Wachhund, Verbindungsende UND
+    /// Serverstopp.
+    ///
+    /// Codex an der Quelle: `alle_io_abbrechen` und `io_abbrechen` reichten die
+    /// Statistik als `None` weiter. Ein unerwarteter `CancelIoEx`-Fehler wurde
+    /// dort weiterhin verschluckt; gezaehlt wurde ausschliesslich im
+    /// Wachhundpfad. Genau diese beiden Funktionen ruft `V3Griff::stoppen`
+    /// (ueber `alle_io_abbrechen`) und der Verbindungsabbau (ueber
+    /// `io_abbrechen`); der Test misst sie deshalb direkt mit einem toten
+    /// Handle - im Produktbetrieb ist dieser Zustand strukturell unerreichbar,
+    /// weil ein Registereintrag nur lebt, solange sein Besitzer lebt.
+    #[test]
+    fn stopp_und_verbindungsende_zaehlen_unerwartete_cancel_fehler() {
+        let statistik = V3Statistik::default();
+        assert_eq!(statistik.cancel_auf_totem_handle.load(Ordering::SeqCst), 0);
+
+        // Ein Handle, das es nicht mehr gibt: `CancelIoEx` scheitert darauf mit
+        // ERROR_INVALID_HANDLE, also NICHT mit ERROR_NOT_FOUND.
+        let totes = {
+            let e = Ereignis::neu().expect("Ereignis anlegbar");
+            let roh = e.roh() as isize;
+            drop(e);
+            roh
+        };
+
+        // ---- Serverstopp: `V3Griff::stoppen` ruft genau diese Funktion. ----
+        let register: Arc<Mutex<HandleRegister>> = Arc::new(Mutex::new(HandleRegister::default()));
+        register
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .offen
+            .push((u64::MAX, totes));
+        alle_io_abbrechen(&register, &statistik);
+        let nach_stopp = statistik.cancel_auf_totem_handle.load(Ordering::SeqCst);
+        assert_eq!(
+            nach_stopp, 1,
+            "der Stopp-Pfad hat den unerwarteten CancelIoEx-Fehler verschluckt"
+        );
+
+        // ---- Verbindungsende: derselbe Weg je Verbindungs-ID. ----
+        io_abbrechen(&register, u64::MAX, &statistik);
+        assert_eq!(
+            statistik.cancel_auf_totem_handle.load(Ordering::SeqCst),
+            nach_stopp + 1,
+            "der Verbindungsende-Pfad hat den unerwarteten CancelIoEx-Fehler verschluckt"
+        );
+
+        // Gegenprobe: eine fremde ID trifft nichts und zaehlt nichts.
+        io_abbrechen(&register, 7, &statistik);
+        assert_eq!(
+            statistik.cancel_auf_totem_handle.load(Ordering::SeqCst),
+            nach_stopp + 1
+        );
     }
 }

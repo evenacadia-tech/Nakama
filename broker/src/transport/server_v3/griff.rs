@@ -43,11 +43,15 @@ pub struct V3Griff {
 pub struct V3Closer {
     pub(super) kopplungen: Arc<Mutex<Kopplungen>>,
     pub(super) handles: Arc<Mutex<HandleRegister>>,
+    /// D11: auch dieser Abbruchweg zaehlt unerwartete `CancelIoEx`-Fehler.
+    /// Ohne die Statistik am Closer bliebe genau der Pfad ungezaehlt, den
+    /// H-01 fuer das Verbindungsende zusagt.
+    pub(super) statistik: Arc<V3Statistik>,
 }
 
 impl V3Closer {
     pub fn link_schliessen(&self, link_id: &str) {
-        kopplung_loesen(&self.kopplungen, &self.handles, link_id, true);
+        kopplung_loesen(&self.kopplungen, &self.handles, link_id, true, &self.statistik);
     }
 }
 
@@ -284,7 +288,7 @@ impl V3Griff {
         if let Some(barriere) = &self.uebergabe_barriere {
             barriere.freigeben();
         }
-        alle_io_abbrechen(&self.handles);
+        alle_io_abbrechen(&self.handles, &self.statistik);
         if let Some(j) = self.acceptor.take() {
             let _ = j.join();
         }
@@ -302,7 +306,7 @@ impl V3Griff {
                     // `CancelIoEx` verpufft, wenn der Thread seinen Read erst
                     // danach absetzt — und `join` waere dann ein Hang.
                     while !j.is_finished() {
-                        alle_io_abbrechen(&self.handles);
+                        alle_io_abbrechen(&self.handles, &self.statistik);
                         std::thread::sleep(Duration::from_millis(5));
                     }
                     let _ = j.join();

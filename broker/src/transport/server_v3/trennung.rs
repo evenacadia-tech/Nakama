@@ -151,6 +151,7 @@ pub(super) fn kopplung_loesen(
     handles: &Arc<Mutex<HandleRegister>>,
     link_id: &str,
     ist_control: bool,
+    statistik: &V3Statistik,
 ) {
     if ist_control {
         // Die Control-Verbindung besitzt die Kopplung: geht sie, geht auch
@@ -164,7 +165,7 @@ pub(super) fn kopplung_loesen(
             k.control_abmelden(link_id)
         };
         if let Some(v) = ab.telemetrie_verbindung {
-            io_abbrechen(handles, v);
+            io_abbrechen(handles, v, statistik);
         }
     } else {
         let mut k = kopplungen.lock().unwrap_or_else(|e| e.into_inner());

@@ -272,6 +272,7 @@ pub(super) fn v3_server_starten_intern(
     let closer = V3Closer {
         kopplungen: kopplungen.clone(),
         handles: handles.clone(),
+        statistik: statistik.clone(),
     };
     // Wartepunkte der Trennreihenfolge, einer je lebender Kopplung (`C-LS-06`).
     let trennmelder: TrennRegister = Arc::new(Mutex::new(HashMap::new()));
@@ -449,7 +450,7 @@ pub(super) fn v3_server_starten_intern(
                     statistik2.listener_fehler.fetch_add(1, Ordering::SeqCst);
                     stop2.store(true, Ordering::SeqCst);
                     acceptor_stop2.setzen();
-                    alle_io_abbrechen(&handles2);
+                    alle_io_abbrechen(&handles2, &statistik2);
                     break;
                 }
                 sicherheits_spur2.push("connect");
@@ -481,7 +482,7 @@ pub(super) fn v3_server_starten_intern(
                             statistik2.listener_fehler.fetch_add(1, Ordering::SeqCst);
                             stop2.store(true, Ordering::SeqCst);
                             acceptor_stop2.setzen();
-                            alle_io_abbrechen(&handles2);
+                            alle_io_abbrechen(&handles2, &statistik2);
                             break;
                         }
                     }
@@ -511,7 +512,7 @@ pub(super) fn v3_server_starten_intern(
                         statistik2.listener_fehler.fetch_add(1, Ordering::SeqCst);
                         stop2.store(true, Ordering::SeqCst);
                         acceptor_stop2.setzen();
-                        alle_io_abbrechen(&handles2);
+                        alle_io_abbrechen(&handles2, &statistik2);
                         break;
                     }
                 }

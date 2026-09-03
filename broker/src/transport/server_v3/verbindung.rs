@@ -337,7 +337,7 @@ pub(super) fn verbindung_bedienen(
             let Some(anmeldung) = senkenruf.rufen_mit_ergebnis(move |s| {
                 s.control_verbunden(&link_fuer_senke, &hello_fuer_senke)
             }) else {
-                kopplung_loesen(&kopplungen, &handles, &link, true);
+                kopplung_loesen(&kopplungen, &handles, &link, true, &statistik);
                 return;
             };
             if !anmeldung.angenommen {
@@ -354,12 +354,12 @@ pub(super) fn verbindung_bedienen(
                         let _ = ov_schreiben(griff.h, leseereignis.roh(), &frame);
                     }
                 }
-                kopplung_loesen(&kopplungen, &handles, &link, true);
+                kopplung_loesen(&kopplungen, &handles, &link, true, &statistik);
                 return;
             }
             for alter_link in anmeldung.zu_schliessende_links {
                 if alter_link != link {
-                    kopplung_loesen(&kopplungen, &handles, &alter_link, true);
+                    kopplung_loesen(&kopplungen, &handles, &alter_link, true, &statistik);
                 }
             }
             // Ab jetzt kann eine Telemetrieverbindung koppeln; ihr
@@ -382,7 +382,7 @@ pub(super) fn verbindung_bedienen(
                 Ok(frame) => {
                     if !ov_schreiben(griff.h, leseereignis.roh(), &frame) {
                         senke.control_schliesst(&link);
-                        kopplung_loesen(&kopplungen, &handles, &link, true);
+                        kopplung_loesen(&kopplungen, &handles, &link, true, &statistik);
                         melden_getrennt(&mut senkenruf, &link, true);
                         trennmelder
                             .lock()
@@ -453,7 +453,7 @@ pub(super) fn verbindung_bedienen(
                     .unwrap_or_else(|e| e.into_inner())
                     .remove(&h.link_id);
                 trennmelder_telemetrie_abgesagt(&trennmelder, &h.link_id);
-                kopplung_loesen(&kopplungen, &handles, &h.link_id, false);
+                kopplung_loesen(&kopplungen, &handles, &h.link_id, false, &statistik);
                 return;
             }
             (h.link_id.clone(), false)
@@ -491,7 +491,7 @@ pub(super) fn verbindung_bedienen(
                     None => {
                         statistik.geschlossen_writer.fetch_add(1, Ordering::SeqCst);
                         ende.setzen();
-                        io_abbrechen(&handles, id);
+                        io_abbrechen(&handles, id, &statistik);
                         return;
                     }
                 };
@@ -540,7 +540,7 @@ pub(super) fn verbindung_bedienen(
                     if !geschrieben {
                         statistik.geschlossen_writer.fetch_add(1, Ordering::SeqCst);
                         ende.setzen();
-                        io_abbrechen(&handles, id);
+                        io_abbrechen(&handles, id, &statistik);
                         if cancel_vor_read_phase.load(Ordering::SeqCst) == CANCEL_VOR_READ_READER {
                             cancel_vor_read_phase.store(CANCEL_VOR_READ_WRITER, Ordering::SeqCst);
                         }
@@ -580,7 +580,7 @@ pub(super) fn verbindung_bedienen(
                                 statistik.geschlossen_writer.fetch_add(1, Ordering::SeqCst);
                                 senke.abgewiesen("writer: Antwortqueue laeuft ueber");
                                 ende.setzen();
-                                io_abbrechen(&handles, id);
+                                io_abbrechen(&handles, id, &statistik);
                                 break;
                             }
                         }
@@ -810,9 +810,9 @@ pub(super) fn verbindung_bedienen(
     // (T2-Befund 3 Runde 3 vom 2026-08-29). Der Registereintrag und der
     // Abbruch der Telemetrie-I/O gehoeren dabei zusammen: ohne den Abbruch
     // stuende der Telemetriearbeiter noch in seinem Read.
-    kopplung_loesen(&kopplungen, &handles, &link_id, ist_control);
+    kopplung_loesen(&kopplungen, &handles, &link_id, ist_control, &statistik);
     ausgang.schliessen();
-    io_abbrechen(&handles, id);
+    io_abbrechen(&handles, id, &statistik);
     // Alle Joins haben eine FRIST. Steht ein Verbraucher in einem
     // Senkenaufruf oder der Schreiber in einem Write, den `CancelIoEx` nicht
     // loest, wird der Thread abgeloest statt gejoint — sonst waere `stoppen()`
@@ -823,7 +823,7 @@ pub(super) fn verbindung_bedienen(
         }
     }
     if let Some(j) = schreiber {
-        if !join_mit_frist(j, SENKE_FRIST, || io_abbrechen(&handles, id)) {
+        if !join_mit_frist(j, SENKE_FRIST, || io_abbrechen(&handles, id, &statistik)) {
             statistik.schreiber_abgeloest.fetch_add(1, Ordering::SeqCst);
             // H-02, und die Reihenfolge ist die Zusage: erst zaehlen, dann die
             // ID in `abgeloest` eintragen. Der Wachhund bricht sie danach bei

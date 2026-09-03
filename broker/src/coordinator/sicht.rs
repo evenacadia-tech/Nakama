@@ -155,7 +155,14 @@ impl Coordinator {
             sequence: frame.map(|frame| frame.sequence),
             sample_count: frame.map(|frame| frame.sample_count),
             sample_rate: frame.map(|frame| frame.sample_rate),
-            fenster_ms: frame.map(|frame| (frame.sample_count as f64 / frame.sample_rate) * 1000.0),
+            // G2-FLOATEDGE-001, Nacharbeit Runde 1 (03.09.2026): die
+            // Eingangspruefung in telemetrie.rs laesst `sr.is_finite() && sr >
+            // 0.0` durch - eine POSITIVE SUBNORMALE Samplerate besteht sie und
+            // liess diese Division bei einer von null verschiedenen
+            // Samplezahl zu `inf` ueberlaufen. Die Sicht lieferte damit einen
+            // nicht-endlichen abgeleiteten Wert. NaN-Ehrlichkeit: kein
+            // Fenster, und der Fall wird gezaehlt.
+            fenster_ms: frame.and_then(|frame| self.fenster_ms_bilden(frame.sample_count, frame.sample_rate)),
             alter_ms: frame.map(|frame| {
                 jetzt
                     .saturating_sub(frame.empfangen)
@@ -175,6 +182,33 @@ impl Coordinator {
             letztes_gueltiges_lufs_i_alter_ms: letztes_alter,
             ungueltige_lautheitspaare: lautheit.ungueltig_anzahl,
         })
+    }
+
+    /// G2-FLOATEDGE-001: das abgeleitete Analysefenster entsteht nur aus einer
+    /// NORMALEN positiven Samplerate, und nur wenn das Ergebnis endlich
+    /// bleibt. Subnormale, Null, negative Werte, `inf` und `NaN` liefern
+    /// `None` und erhoehen `fenster_nicht_endlich`.
+    ///
+    /// `is_normal()` ist hier die richtige Frage und nicht `is_finite()`:
+    /// subnormale Zahlen sind endlich, taugen aber nicht als Divisor - genau
+    /// an ihnen lief die Division ueber.
+    fn fenster_ms_bilden(&self, sample_count: u32, sample_rate: f64) -> Option<f64> {
+        if !sample_rate.is_normal() || sample_rate <= 0.0 {
+            self.fenster_nicht_endlich.fetch_add(1, Ordering::Relaxed);
+            return None;
+        }
+        let fenster = (sample_count as f64 / sample_rate) * 1000.0;
+        if !fenster.is_finite() {
+            self.fenster_nicht_endlich.fetch_add(1, Ordering::Relaxed);
+            return None;
+        }
+        Some(fenster)
+    }
+
+    /// Wie oft ein abgeleitetes Analysefenster verriegelt wurde, weil die
+    /// Samplerate oder das Ergebnis nicht tragfaehig war.
+    pub fn fenster_nicht_endlich(&self) -> u64 {
+        self.fenster_nicht_endlich.load(Ordering::Relaxed)
     }
 
     pub fn telemetrie_kopplungen(&self) -> (usize, u64) {

@@ -1,0 +1,55 @@
+# Rotbeweis D4 (G2-FLOATEDGE-001) — NAK-121 Nacharbeit Runde 1
+
+Das abgeleitete Fenster wird wieder ungeprueft dividiert - der Stand, an dem
+eine positive subnormale Samplerate zu `inf` ueberlief.
+
+Mutante(n):
+  broker/src/coordinator/sicht.rs
+    ALT: fenster_ms: frame.and_then(|frame| self.fenster_ms_bilden(frame.sample_count, frame.sample_rate)),
+    NEU: fenster_ms: frame.map(|frame| (frame.sample_count as f64 / frame.sample_rate) * 1000.0),
+
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never --test coordinator_model -- subnormale
+Exitcode: 101
+
+Die Mutante ist nach diesem Lauf zurueckgenommen; der naechste
+Lauf derselben Tests ist wieder gruen.
+
+---
+
+
+running 1 test
+test subnormale_samplerate_ergibt_kein_fenster ... FAILED
+
+failures:
+
+---- subnormale_samplerate_ergibt_kein_fenster stdout ----
+
+thread 'subnormale_samplerate_ergibt_kein_fenster' (21864) panicked at tests\coordinator_model.rs:795:5:
+assertion `left == right` failed: kein nicht-endlicher abgeleiteter Wert
+  left: Some(inf)
+ right: None
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    subnormale_samplerate_ergibt_kein_fenster
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 45 filtered out; finished in 0.00s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: method `fenster_ms_bilden` is never used
+   --> src\coordinator\sicht.rs:195:8
+    |
+ 93 | impl Coordinator {
+    | ---------------- method in this implementation
+...
+195 |     fn fenster_ms_bilden(&self, sample_count: u32, sample_rate: f64) -> Option<f64> {
+    |        ^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib) generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.44s
+     Running tests\coordinator_model.rs (broker\target\debug\deps\coordinator_model-c22cf73cd241058f.exe)
+error: test failed, to rerun pass `--test coordinator_model`

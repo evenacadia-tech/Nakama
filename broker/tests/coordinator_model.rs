@@ -5,7 +5,9 @@ use eqcop_broker::coordinator::{
     SICHTBARE_SONDEN_NORMAL, STALE_JITTER_MS, STALE_NACH_MS, STALE_VERPASSTE_INTERVALLE,
     TOMBSTONE_MS,
 };
+use eqcop_broker::generiert::nakama_telemetry_v1_generated::nakama::v_3 as fb;
 use eqcop_broker::transport::bootstrap::{Adresse, AudioLage, HelloControl, HostAngabe};
+use flatbuffers::FlatBufferBuilder;
 #[cfg(windows)]
 use eqcop_broker::transport::server_v3::Senke;
 use serde_json::{json, Value};
@@ -100,6 +102,80 @@ fn state_report_payload(adresse: &Adresse) -> Vec<u8> {
 
 fn state_report(c: &Coordinator, link: &str, adresse: &Adresse) -> bool {
     c.state_report_json(link, &state_report_payload(adresse))
+}
+
+/// G2-FLOATEDGE-001: ein echter P2-Batch mit frei waehlbarer `sample_rate`.
+/// Nur ueber den produktiven P2-Weg laesst sich messen, welche Werte die
+/// Eingangspruefung ueberhaupt passieren und was die Sicht daraus ableitet.
+fn feature_batch_mit_samplerate(adresse: &Adresse, sample_count: u32, sample_rate: f64) -> Vec<u8> {
+    let mut fbb = FlatBufferBuilder::new();
+    let sid = fbb.create_string(&adresse.logon_sid);
+    let projekt = fbb.create_string(&adresse.project_binding_id);
+    let sitzung = fbb.create_string(&adresse.session_epoch);
+    let instanz = fbb.create_string(&adresse.instance_id);
+    let nonce = fbb.create_string(&adresse.runtime_nonce);
+    let quelle = fb::Adresse::create(
+        &mut fbb,
+        &fb::AdresseArgs {
+            logon_sid: Some(sid),
+            project_binding_id: Some(projekt),
+            session_epoch: Some(sitzung),
+            instance_id: Some(instanz),
+            runtime_nonce: Some(nonce),
+        },
+    );
+    let werte = fbb.create_vector(&[0i16; 64]);
+    let bitmap = fbb.create_vector(&[0xffu8; 8]);
+    let baender = fb::Bandwerte::create(
+        &mut fbb,
+        &fb::BandwerteArgs {
+            gitter: fb::Bandgitter::nakama_log64_v1,
+            encoding: fb::BandEncoding::q_db_0p1_i16,
+            werte_i16: Some(werte),
+            gueltig_bitmap: Some(bitmap),
+            ..Default::default()
+        },
+    );
+    let transport = fb::Transportstempel::create(
+        &mut fbb,
+        &fb::TransportstempelArgs {
+            transport_epoch: 1,
+            continuity_segment: 1,
+            sequence: 1,
+            zeitbasis: fb::Zeitbasis::local_monotonic,
+            sample_count,
+            sample_rate,
+            process_context_present: Some(false),
+            ..Default::default()
+        },
+    );
+    let frame = fb::Frame::create(
+        &mut fbb,
+        &fb::FrameArgs {
+            transport: Some(transport),
+            baender: Some(baender),
+            metrics_version: 1,
+            aktivitaet: Some(1.0),
+            lufs_s: Some(-18.0),
+            ..Default::default()
+        },
+    );
+    let eintrag = fb::QuellenEintrag::create(
+        &mut fbb,
+        &fb::QuellenEintragArgs {
+            quelle: Some(quelle),
+            frame: Some(frame),
+        },
+    );
+    let eintraege = fbb.create_vector(&[eintrag]);
+    let batch = fb::FeatureBatch::create(
+        &mut fbb,
+        &fb::FeatureBatchArgs {
+            eintraege: Some(eintraege),
+        },
+    );
+    fb::finish_feature_batch_buffer(&mut fbb, batch);
+    fbb.finished_data().to_vec()
 }
 
 fn coordinator() -> (Coordinator, Arc<ManualClock>) {
@@ -677,6 +753,68 @@ fn p2_mutiert_erst_nach_flatbuffers_verifikation() {
         include_bytes!("../../eq-copilot/fixtures/v3/flatbuffers/gueltig/live-64-band.bin");
     Senke::p2(&c, "probe", gueltig);
     assert_eq!(c.p2_live_frames(), 1);
+}
+
+/// G2-FLOATEDGE-001, Nacharbeit Runde 1 (Abschlusspruefung 1, 03.09.2026):
+/// Die Eingangspruefung in `telemetrie.rs` fragt `is_finite() && > 0.0`. Eine
+/// POSITIVE SUBNORMALE Samplerate besteht sie - und liess das abgeleitete
+/// Fenster zu `inf` ueberlaufen. Der Test misst alle sechs Kanten an der
+/// Stelle, an der sie tatsaechlich entschieden werden:
+///
+/// * subnormal: passiert das Tor, das FENSTER wird verriegelt und gezaehlt;
+/// * 0, negativ, +inf, NaN: fallen schon am Tor, erreichen die Sicht nie;
+/// * ein normaler Wert liefert weiterhin ein endliches Fenster.
+#[cfg(windows)]
+#[test]
+fn subnormale_samplerate_ergibt_kein_fenster() {
+    let (c, _) = coordinator();
+    let a = adresse(1, 2, 20, 200);
+    anmelden(&c, "probe", &hello(1, 2, 20, 200, "active_probe", Some(9001)));
+    assert!(report(&c, "probe", &a));
+    Senke::telemetrie_gekoppelt(&c, "probe");
+
+    // 1. Ein normaler Wert liefert ein endliches Fenster.
+    Senke::p2(&c, "probe", &feature_batch_mit_samplerate(&a, 4096, 48_000.0));
+    let sicht = c.messsicht(&hex(1), &hex(2), &hex(20)).unwrap();
+    assert_eq!(sicht.fenster_ms, Some(4096.0 / 48_000.0 * 1000.0));
+    assert_eq!(c.fenster_nicht_endlich(), 0);
+
+    // 2. Subnormal: kleinster positiver f64. `is_finite()` ist wahr, `> 0.0`
+    //    ist wahr - der Frame kommt durch und stand vorher fuer `inf`.
+    let subnormal = f64::from_bits(1);
+    assert!(subnormal.is_finite() && subnormal > 0.0 && !subnormal.is_normal());
+    let frames_vorher = c.p2_live_frames();
+    Senke::p2(&c, "probe", &feature_batch_mit_samplerate(&a, 4096, subnormal));
+    assert_eq!(
+        c.p2_live_frames(),
+        frames_vorher + 1,
+        "der subnormale Frame passiert die Eingangspruefung - genau deshalb muss die Sicht ihn fangen"
+    );
+    let sicht = c.messsicht(&hex(1), &hex(2), &hex(20)).unwrap();
+    assert_eq!(sicht.sample_rate, Some(subnormal), "der Rohwert bleibt ehrlich sichtbar");
+    assert_eq!(sicht.fenster_ms, None, "kein nicht-endlicher abgeleiteter Wert");
+    assert_eq!(c.fenster_nicht_endlich(), 1, "verriegelt UND gezaehlt");
+
+    // 3. Die vier uebrigen Kanten fallen bereits am Tor und erreichen die
+    //    Sicht nie. Kein Weg fuehrt zu einem nicht-endlichen Fenster.
+    for (name, sr) in [
+        ("null", 0.0f64),
+        ("negativ", -48_000.0),
+        ("plus_inf", f64::INFINITY),
+        ("nan", f64::NAN),
+    ] {
+        let vorher = c.p2_live_frames();
+        Senke::p2(&c, "probe", &feature_batch_mit_samplerate(&a, 4096, sr));
+        assert_eq!(
+            c.p2_live_frames(),
+            vorher,
+            "{name}: die Eingangspruefung muss den Frame abweisen"
+        );
+        let sicht = c.messsicht(&hex(1), &hex(2), &hex(20)).unwrap();
+        assert_eq!(sicht.fenster_ms, None, "{name}");
+        assert_eq!(sicht.sample_rate, Some(subnormal), "{name}: der abgewiesene Frame ersetzt nichts");
+    }
+    assert_eq!(c.fenster_nicht_endlich(), 5);
 }
 
 #[test]

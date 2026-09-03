@@ -134,6 +134,11 @@ pub struct Coordinator {
     /// neueren Stand nie vor einem pausierten aelteren Flush committen.
     session_flush_schloesser: Vec<Mutex<()>>,
     flush_test_haken: Mutex<Option<CoordinatorFlushTestHaken>>,
+    /// G2-FLOATEDGE-001: wie oft ein abgeleitetes Analysefenster nicht
+    /// gebildet werden konnte, weil die `sample_rate` keine normale positive
+    /// Zahl war oder die Division nicht endlich blieb. NaN-Ehrlichkeit heisst
+    /// verriegeln UND zaehlen, nicht still `inf` ausliefern.
+    fenster_nicht_endlich: AtomicU64,
 }
 
 const SESSION_FLUSH_SCHLOSS_ANZAHL: usize = 64;
@@ -162,6 +167,7 @@ impl Coordinator {
                 .map(|_| Mutex::new(()))
                 .collect(),
             flush_test_haken: Mutex::new(None),
+            fenster_nicht_endlich: AtomicU64::new(0),
         }
     }
 
@@ -189,6 +195,7 @@ impl Coordinator {
                 .map(|_| Mutex::new(()))
                 .collect(),
             flush_test_haken: Mutex::new(None),
+            fenster_nicht_endlich: AtomicU64::new(0),
         }
     }
 

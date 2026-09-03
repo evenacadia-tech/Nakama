@@ -14,7 +14,7 @@ impl Coordinator {
             return;
         };
         let effective = effektive_adresse(&client.adresse);
-        if stand.conflict_guards.contains_key(&effective) || !stand.routing_bereit {
+        if stand.guard_gesetzt(&effective) || !stand.routing_bereit {
             return;
         }
         let main_sessions: HashSet<SessionKey> = stand
@@ -65,9 +65,7 @@ impl Coordinator {
                     && &key.instance_id == instance_id
                     && client.plugin_kind == "main"
                     && client.bestaetigt
-                    && !stand
-                        .conflict_guards
-                        .contains_key(&effektive_adresse(&client.adresse))
+                    && !stand.guard_gesetzt(&effektive_adresse(&client.adresse))
             })
         });
         if bisher_gueltig {
@@ -80,9 +78,7 @@ impl Coordinator {
                 &key.session() == session
                     && client.plugin_kind == "main"
                     && client.bestaetigt
-                    && !stand
-                        .conflict_guards
-                        .contains_key(&effektive_adresse(&client.adresse))
+                    && !stand.guard_gesetzt(&effektive_adresse(&client.adresse))
             })
             .map(|(key, _)| key.instance_id.clone())
             .collect();
@@ -198,9 +194,7 @@ impl Coordinator {
                     && key.instance_id == neue_instance_id
                     && client.plugin_kind == "main"
                     && client.bestaetigt
-                    && !stand
-                        .conflict_guards
-                        .contains_key(&effektive_adresse(&client.adresse))
+                    && !stand.guard_gesetzt(&effektive_adresse(&client.adresse))
             });
             if !erlaubt {
                 return false;
@@ -243,9 +237,7 @@ impl Coordinator {
             .collect();
         if clients.iter().any(|client| {
             (client.join_kandidat && !client.bestaetigt)
-                || stand
-                    .conflict_guards
-                    .contains_key(&effektive_adresse(&client.adresse))
+                || stand.guard_gesetzt(&effektive_adresse(&client.adresse))
         }) {
             return true;
         }

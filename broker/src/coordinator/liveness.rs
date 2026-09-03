@@ -233,11 +233,7 @@ impl Coordinator {
                     ids.push(owner);
                 }
                 for derived_id in ids {
-                    if stand
-                        .conflict_guards
-                        .entry(effective.clone())
-                        .or_default()
-                        .insert(derived_id.clone())
+                    if stand.guard_eintragen(&effective.clone(), &derived_id.clone())
                     {
                         guards.push(ConflictGuard {
                             effective_address: effective.clone(),

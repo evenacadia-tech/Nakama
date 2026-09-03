@@ -182,6 +182,17 @@ impl Coordinator {
         (stand.telemetry_links.len(), stand.telemetry_kopplungen)
     }
 
+    /// H-21: steht auf dieser effektiven Adresse ein dauerhafter
+    /// Konfliktriegel? Genau diese Frage stellen die elf Guard-Stellen intern;
+    /// ohne sie waere die Unempfindlichkeit gegen die Schreibweise der SID von
+    /// aussen unbeobachtbar.
+    pub fn konfliktriegel_gesetzt(&self, effective_address: &str) -> bool {
+        self.stand
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .guard_gesetzt(effective_address)
+    }
+
     /// H-12: Groesse der Sessionmap. Ohne sie waere die Zusage
     /// „Session faellt mit dem letzten Client" von aussen unbeobachtbar - die
     /// Modellsicht zeigt Clients, nicht die Map selbst.

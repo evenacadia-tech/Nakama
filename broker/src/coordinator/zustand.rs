@@ -171,7 +171,18 @@ pub(super) struct Stand {
     pub(super) lautheit: HashMap<ClientKey, Lautheitsstand>,
     pub(super) telemetry_links: HashSet<String>,
     pub(super) telemetry_kopplungen: u64,
+    /// Die GESPEICHERTE Form der dauerhaften Konfliktriegel. Ihre Bytes
+    /// bleiben exakt wie bisher, damit Altstaende ihre eigenen Riegel
+    /// wiederfinden - H-21 aendert nur, wie gesucht wird, nicht was steht.
     pub(super) conflict_guards: HashMap<String, HashSet<String>>,
+    /// H-21: der gefaltete Index ueber dieselben Riegel. Ein Peer, der seine
+    /// SID anders schreibt, erzeugt eine andere effektive Adresse und
+    /// schuettelte damit den dauerhaften fail-closed-Riegel ab. Alle elf
+    /// Abfragestellen gehen ueber diesen Index; die drei schreibenden und die
+    /// zwei loeschenden pflegen ihn mit, sonst liefen Lesen und Schreiben
+    /// auseinander. Der Schluessel ist die ASCII-kleingeschriebene effektive
+    /// Adresse; Windows-SIDs sind reines ASCII.
+    pub(super) conflict_guards_gefaltet: HashMap<String, HashSet<String>>,
     pub(super) routing_bereit: bool,
     pub(super) dirty_sessions: HashSet<SessionKey>,
     pub(super) session_commands: HashMap<String, SessionCommandWirkung>,
@@ -183,6 +194,54 @@ pub(super) struct SessionCommandWirkung {
     pub(super) kanonischer_auftrag: Vec<u8>,
     pub(super) state_revision: u64,
     pub(super) state_hash: String,
+}
+
+impl Stand {
+    /// H-21: die eine Abfrage, ueber die alle elf Lesestellen gehen.
+    pub(super) fn guard_gesetzt(&self, effective_address: &str) -> bool {
+        self.conflict_guards_gefaltet
+            .contains_key(&effective_address.to_ascii_lowercase())
+    }
+
+    /// H-21: traegt einen Riegel in BEIDE Formen ein. Rueckgabe wie
+    /// `HashSet::insert`: true, wenn er neu war.
+    pub(super) fn guard_eintragen(&mut self, effective_address: &str, derived_id: &str) -> bool {
+        self.conflict_guards_gefaltet
+            .entry(effective_address.to_ascii_lowercase())
+            .or_default()
+            .insert(derived_id.to_owned());
+        self.conflict_guards
+            .entry(effective_address.to_owned())
+            .or_default()
+            .insert(derived_id.to_owned())
+    }
+
+    /// H-21: entfernt ihn aus beiden Formen. Die gespeicherte Form wird ueber
+    /// den gefalteten Schluessel gesucht, damit auch eine anders geschriebene
+    /// Aufloesung ihren eigenen Riegel findet.
+    pub(super) fn guard_entfernen(&mut self, effective_address: &str, derived_id: &str) {
+        let gefaltet = effective_address.to_ascii_lowercase();
+        if let Some(ids) = self.conflict_guards_gefaltet.get_mut(&gefaltet) {
+            ids.remove(derived_id);
+            if ids.is_empty() {
+                self.conflict_guards_gefaltet.remove(&gefaltet);
+            }
+        }
+        let schluessel: Vec<String> = self
+            .conflict_guards
+            .keys()
+            .filter(|k| k.to_ascii_lowercase() == gefaltet)
+            .cloned()
+            .collect();
+        for k in schluessel {
+            if let Some(ids) = self.conflict_guards.get_mut(&k) {
+                ids.remove(derived_id);
+                if ids.is_empty() {
+                    self.conflict_guards.remove(&k);
+                }
+            }
+        }
+    }
 }
 
 impl Default for Stand {
@@ -208,11 +267,67 @@ impl Default for Stand {
             lautheit: HashMap::new(),
             telemetry_links: HashSet::new(),
             telemetry_kopplungen: 0,
+            conflict_guards_gefaltet: HashMap::new(),
             conflict_guards: HashMap::new(),
             routing_bereit: true,
             dirty_sessions: HashSet::new(),
             session_commands: HashMap::new(),
             session_command_reihenfolge: VecDeque::new(),
         }
+    }
+}
+
+#[cfg(test)]
+mod h21_tests {
+    use super::*;
+
+    /// NAK-121 H-21: die Riegelabfrage ist unempfindlich gegen die Schreibweise
+    /// der SID, und die GESPEICHERTE Form bleibt bytegleich.
+    ///
+    /// Gemessen wird an `Stand` selbst, weil die effektive Adresse dort ihre
+    /// endgueltige Form hat: sie entsteht aus der bereits umgeschriebenen
+    /// Linkadresse, nicht aus dem, was ein Client im Hello schickt. Ein Test
+    /// eine Ebene hoeher muesste diese Form raten und wuerde die Zusage
+    /// verfehlen statt sie zu messen.
+    #[test]
+    fn konfliktriegel_greift_auch_bei_anderer_sid_schreibweise() {
+        let mut stand = Stand::default();
+        let gross = "S-1-5-21-1-2-3-1001|aa|bb|cc";
+        let klein = gross.to_ascii_lowercase();
+        assert_ne!(gross, klein);
+
+        assert!(stand.guard_eintragen(gross, "instanz:nonce"));
+        assert!(stand.guard_gesetzt(gross));
+        assert!(
+            stand.guard_gesetzt(&klein),
+            "die anders geschriebene SID schuettelt den dauerhaften Riegel ab"
+        );
+        // Auch gemischt geschrieben, wie ein Peer sie nun einmal schicken darf.
+        assert!(stand.guard_gesetzt("s-1-5-21-1-2-3-1001|AA|bb|Cc"));
+
+        // Was ausdruecklich UNVERAENDERT bleibt: die gespeicherten Bytes. Nur
+        // so finden Altstaende ihre eigenen Riegel wieder, und weder Wire- noch
+        // State-Vertrag wird beruehrt.
+        assert!(stand.conflict_guards.contains_key(gross));
+        assert!(!stand.conflict_guards.contains_key(&klein));
+
+        // Ein zweiter Riegel derselben Adresse in anderer Schreibweise landet
+        // im selben gefalteten Eintrag - sonst waeren es zwei Riegel fuer eine
+        // Adresse, und die Aufloesung des einen liesse den anderen stehen.
+        assert!(stand.guard_eintragen(&klein, "zweite:nonce"));
+        assert_eq!(stand.conflict_guards_gefaltet[&klein].len(), 2);
+
+        // Die Aufloesung findet den Riegel ueber JEDE Schreibweise und raeumt
+        // beide Formen.
+        stand.guard_entfernen(&klein, "instanz:nonce");
+        assert!(stand.guard_gesetzt(gross), "der zweite Riegel fiel mit");
+        stand.guard_entfernen("s-1-5-21-1-2-3-1001|Aa|Bb|Cc", "zweite:nonce");
+        assert!(!stand.guard_gesetzt(gross));
+        assert!(!stand.guard_gesetzt(&klein));
+        assert!(
+            stand.conflict_guards.is_empty(),
+            "die gespeicherte Form behielt einen verwaisten Eintrag: {:?}",
+            stand.conflict_guards
+        );
     }
 }

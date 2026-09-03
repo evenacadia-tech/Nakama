@@ -174,11 +174,7 @@ impl Coordinator {
         stand.routing_bereit = !store_writer.ist_degradiert();
         if stand.routing_bereit {
             for guard in store_writer.restaurierte_guards() {
-                stand
-                    .conflict_guards
-                    .entry(guard.effective_address.clone())
-                    .or_default()
-                    .insert(guard.derived_id.clone());
+                stand.guard_eintragen(&guard.effective_address.clone(), &guard.derived_id.clone());
             }
         }
         Self {

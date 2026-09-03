@@ -154,11 +154,7 @@ impl Coordinator {
                 ids.push(format!("{}:{}", alt.adresse.instance_id, alt.current_nonce));
             }
             for derived_id in ids {
-                if stand
-                    .conflict_guards
-                    .entry(effective.clone())
-                    .or_default()
-                    .insert(derived_id.clone())
+                if stand.guard_eintragen(&effective.clone(), &derived_id.clone())
                 {
                     guards_zu_persistieren.push(ConflictGuard {
                         effective_address: effective.clone(),

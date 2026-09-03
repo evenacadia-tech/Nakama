@@ -177,9 +177,7 @@ impl Coordinator {
                                     && stand.links.get(*abo_link_id).is_some_and(|link| {
                                         !link.trennen
                                             && stand.routing_bereit
-                                            && !stand
-                                                .conflict_guards
-                                                .contains_key(&effektive_adresse(&link.adresse))
+                                            && !stand.guard_gesetzt(&effektive_adresse(&link.adresse))
                                             && self.alias_register.session_push_erlaubt(
                                                 &link.alias_adressraum,
                                                 &link.alias_besitzer,

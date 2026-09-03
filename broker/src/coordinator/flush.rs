@@ -50,9 +50,7 @@ impl Coordinator {
                         && stand.links.get(*link_id).is_some_and(|link| {
                             !link.trennen
                                 && stand.routing_bereit
-                                && !stand
-                                    .conflict_guards
-                                    .contains_key(&effektive_adresse(&link.adresse))
+                                && !stand.guard_gesetzt(&effektive_adresse(&link.adresse))
                                 && self.alias_register.session_push_erlaubt(
                                     &link.alias_adressraum,
                                     &link.alias_besitzer,
@@ -164,12 +162,7 @@ impl Coordinator {
             }
         }
         let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
-        if let Some(ids) = stand.conflict_guards.get_mut(effective_address) {
-            ids.remove(derived_id);
-            if ids.is_empty() {
-                stand.conflict_guards.remove(effective_address);
-            }
-        }
+        stand.guard_entfernen(effective_address, derived_id);
         // H-14: die Aufloesung raeumt den passenden Aliaseintrag mit. Bis
         // NAK-121 lief sie nur ueber Store und Coordinatorstand, waehrend die
         // Quarantaene des Aliasregisters stehen blieb - der Riegel war fort,
@@ -206,9 +199,7 @@ impl Coordinator {
     pub(super) fn dispatch_fuer_link_erlaubt_locked(&self, stand: &Stand, link: &LinkStand) -> bool {
         stand.routing_bereit
             && !link.trennen
-            && !stand
-                .conflict_guards
-                .contains_key(&effektive_adresse(&link.adresse))
+            && !stand.guard_gesetzt(&effektive_adresse(&link.adresse))
             && self.alias_register.dispatch_erlaubt(
                 &link.alias_adressraum,
                 &link.alias_besitzer,
@@ -220,9 +211,7 @@ impl Coordinator {
         let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         stand.links.get(link_id).is_some_and(|link| {
             !stand.routing_bereit
-                || stand
-                    .conflict_guards
-                    .contains_key(&effektive_adresse(&link.adresse))
+                || stand.guard_gesetzt(&effektive_adresse(&link.adresse))
                 || self
                     .alias_register
                     .ist_quarantaenisiert(&link.alias_adressraum, &link.alias_besitzer)

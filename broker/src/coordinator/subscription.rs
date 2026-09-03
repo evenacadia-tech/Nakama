@@ -82,9 +82,7 @@ impl Coordinator {
             };
             if link.trennen
                 || (!stand.routing_bereit && !self.store_degradiert())
-                || stand
-                    .conflict_guards
-                    .contains_key(&effektive_adresse(&link.adresse))
+                || stand.guard_gesetzt(&effektive_adresse(&link.adresse))
                 || !self.alias_register.session_push_erlaubt(
                     &link.alias_adressraum,
                     &link.alias_besitzer,
@@ -235,9 +233,7 @@ impl Coordinator {
                 .clients
                 .get(&link.client_key)
                 .is_some_and(|client| client.current_link.as_deref() == Some(link_id))
-            && !stand
-                .conflict_guards
-                .contains_key(&effektive_adresse(&link.adresse))
+            && !stand.guard_gesetzt(&effektive_adresse(&link.adresse))
             && self.alias_register.session_push_erlaubt(
                 &link.alias_adressraum,
                 &link.alias_besitzer,

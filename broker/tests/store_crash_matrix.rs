@@ -2703,3 +2703,4 @@ fn guard_aufloesung_raeumt_den_aliaseintrag() {
     // Eine Aufloesung ohne Riegel meldet ehrlich false.
     assert!(!register.quarantaene_aufloesen(&raum, "nie-quarantaenisiert"));
 }
+

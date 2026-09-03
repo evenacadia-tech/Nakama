@@ -1456,3 +1456,35 @@ fn heartbeat_zwischen_schliessen_und_getrennt_adressiert_den_alten_link_nicht() 
     );
     assert!(ziele.iter().any(|z| z == "neu"));
 }
+
+// ── NAK-121 H-06, Teilumsetzung ────────────────────────────────────────────
+
+/// Der Schreiber wartet nicht mehr unbegrenzt auf einen Peer.
+///
+/// Gemessen als Quellwache: `ov_schreiben` ist der Ort, an dem die Wartezeit
+/// wirklich entsteht, und ein Verhaltenstest muesste dort einen Peer stellen,
+/// der seine Pipe nachweislich nicht liest, und die volle SENKE_FRIST abwarten.
+/// Die Zusage IST hier die Wahl der Wartefrist - und die ist im Quelltext
+/// eindeutig ablesbar.
+///
+/// Was H-06 darueber hinaus verlangt - EIN Zustellpfad, also das ersatzlose
+/// Entfallen des synchronen recv_timeout im Coordinator -, ist NICHT umgesetzt;
+/// der Bau-Verlauf des Manifests nennt den Grund.
+#[test]
+fn schreiber_wartet_nicht_unbegrenzt_auf_den_peer() {
+    let quelle = include_str!("../src/transport/server_v3/win_handles.rs");
+    let marke = ["fn ov_schrei", "ben("].concat();
+    let stelle = quelle.find(&marke).expect("ov_schreiben im Quelltext");
+    let rest = &quelle[stelle..];
+    let ende = rest[1..].find("\npub(super) fn ").map(|i| i + 1).unwrap_or(rest.len());
+    let rumpf = &rest[..ende];
+
+    assert!(
+        rumpf.contains("SENKE_FRIST"),
+        "ov_schreiben fuehrt keine Senkenfrist"
+    );
+    assert!(
+        !rumpf.contains("WaitForSingleObject(e, INFINITE)"),
+        "ov_schreiben wartet weiterhin unbegrenzt auf den Peer"
+    );
+}

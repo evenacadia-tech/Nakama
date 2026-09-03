@@ -337,7 +337,14 @@ pub(super) fn ov_schreiben(h: HANDLE, e: HANDLE, daten: &[u8]) -> bool {
                 if f != ERROR_IO_PENDING {
                     return false;
                 }
-                if WaitForSingleObject(e, INFINITE) != WAIT_OBJECT_0 {
+                // H-06: der Schreiber wartet NICHT mehr unbegrenzt. Ein Peer,
+                // der seine Pipe nicht liest, hielt den Thread hier sonst
+                // beliebig lange - und mit ihm die Pipeinstanz und das
+                // Handle. Die Frist ist SENKE_FRIST: derselbe Wert, den der
+                // Coordinator auf der anderen Seite fuehrt, nur an dem Ort,
+                // wo die Wartezeit wirklich entsteht.
+                let wartete = WaitForSingleObject(e, SENKE_FRIST.as_millis() as u32);
+                if wartete != WAIT_OBJECT_0 {
                     CancelIoEx(h, &ov);
                     let _ = GetOverlappedResult(h, &ov, &mut n, 1);
                     return false;

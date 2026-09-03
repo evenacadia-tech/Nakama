@@ -1,0 +1,40 @@
+# Rotbeweis H-06-teil — NAK-121 Etappe 2
+
+Mutante(n):
+  broker/src/transport/server_v3/win_handles.rs
+    ALT: let wartete = WaitForSingleObject(e, SENKE_FRIST.as_millis() as u32);
+                if wartete != WAIT_OBJECT_0 {
+    NEU: // MUTANTE: der Schreiber wartet wieder unbegrenzt.
+                if WaitForSingleObject(e, INFINITE) != WAIT_OBJECT_0 {
+
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never --test coordinator_model -- schreiber_wartet
+Exitcode: 101
+
+Die Mutante ist nach diesem Lauf zurueckgenommen; der naechste
+Lauf derselben Tests ist wieder gruen.
+
+---
+
+
+running 1 test
+test schreiber_wartet_nicht_unbegrenzt_auf_den_peer ... FAILED
+
+failures:
+
+---- schreiber_wartet_nicht_unbegrenzt_auf_den_peer stdout ----
+
+thread 'schreiber_wartet_nicht_unbegrenzt_auf_den_peer' (21884) panicked at tests\coordinator_model.rs:1486:5:
+ov_schreiben wartet weiterhin unbegrenzt auf den Peer
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    schreiber_wartet_nicht_unbegrenzt_auf_den_peer
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 44 filtered out; finished in 0.00s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.08s
+     Running tests\coordinator_model.rs (broker\target\debug\deps\coordinator_model-c22cf73cd241058f.exe)
+error: test failed, to rerun pass `--test coordinator_model`

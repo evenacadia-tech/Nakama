@@ -30,7 +30,10 @@ pub use migration::{migration_1_checksum, projektionen_neu_bauen};
 use handle::{degradiere, utc_ms_i64};
 #[cfg(windows)]
 pub use pfad::pfad_aus_utf16;
-pub use pfad::{geoeffnete_db_volume, standard_store_pfad, store_pfad_ist_remote, store_pfad_unter};
+pub use pfad::{
+    geoeffnete_db_volume, standard_store_pfad, store_pfad_ist_remote, store_pfad_unter,
+    volume_am_sqlite_handle,
+};
 pub use writer::StoreWriter;
 use writer::{projektionen_anwenden, WriterBefehl};
 use pfad::{wal_groesse, wal_pfad};

@@ -5,7 +5,8 @@
 //! Schema meinen.
 
 use super::{
-    geoeffnete_db_volume, projektionen_anwenden, store_pfad_ist_remote, utc_ms_i64, ConflictGuard,
+    projektionen_anwenden, store_pfad_ist_remote, utc_ms_i64, volume_am_sqlite_handle,
+    ConflictGuard,
     StoreEvent,
     StoreFehler, StoreKonfiguration, StorePragmas, StoreTestHaken, BUSY_TIMEOUT_MS,
     STORE_SCHEMA_MAJOR,
@@ -200,10 +201,17 @@ pub(super) fn store_vorbereiten(
     // naechsten vorhandenen Vorfahren. Beim ersten Start mit fehlenden
     // Komponenten - oder bei einem Austausch zwischen Pruefung und
     // `create_dir_all` beziehungsweise diesem Open - wird damit ein anderes
-    // Objekt geoeffnet als geprueft. Jetzt wird das GEOEFFNETE Objekt
-    // klassifiziert, bevor der Store es benutzt.
+    // Objekt geoeffnet als geprueft.
+    //
+    // R2-3 (Nacharbeit Runde 2, 03.09.2026): die Entscheidung faellt auf dem
+    // Handle, das SQLITE SELBST haelt. Vorher lief hier ein ZWEITES
+    // `CreateFileW` auf denselben Namen (`geoeffnete_db_volume`); wird der Pfad
+    // oder eine Junction zwischen den beiden Opens umgehaengt, haelt SQLite
+    // Objekt A und die Volumenentscheidung klassifiziert Objekt B. Jetzt gibt
+    // es kein zweites Oeffnen mehr - und die Abweisung steht vor
+    // `pragmas_setzen`, also bevor der Store die Datenbank benutzt.
     if konfiguration.remote_volume_override.is_none() {
-        let (endgueltig, remote_am_objekt) = geoeffnete_db_volume(&konfiguration.db_pfad)?;
+        let (endgueltig, remote_am_objekt) = volume_am_sqlite_handle(&conn)?;
         if remote_am_objekt {
             return Err(StoreFehler::Pfad(format!(
                 "Remote-Volume am geoeffneten Objekt ({}): DB und WAL werden dort nicht benutzt",

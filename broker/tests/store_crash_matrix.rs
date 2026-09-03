@@ -2877,6 +2877,135 @@ fn volumenklassifikation_faellt_am_geoeffneten_objekt() {
     drop(writer);
 }
 
+/// R2-3 der Nacharbeit Runde 2 (Wiederpruefung 1, 03.09.2026): die
+/// Volumenentscheidung faellt auf dem Handle, das SQLITE SELBST haelt.
+///
+/// Codex an der Quelle: `Connection::open_with_flags` oeffnet zuerst die
+/// eigentliche Datenbank, anschliessend oeffnete `geoeffnete_db_volume(&pfad)`
+/// denselben NAMEN ueber ein zweites `CreateFileW`. Wird der Pfad oder eine
+/// Junction zwischen diesen beiden Opens umgehaengt, haelt SQLite Objekt A,
+/// waehrend die Volumenentscheidung Objekt B klassifiziert - der
+/// urspruengliche TOCTOU blieb bestehen, und Test wie Rotbeweis prueften nur
+/// den separaten Helferhandle.
+///
+/// Dieser Test zieht Name und Objekt auseinander: die Datenbank wird ueber eine
+/// Verzeichnis-Junction geoeffnet, danach zeigt die Junction auf ein ZWEITES
+/// Verzeichnis mit einer zweiten Datei desselben Namens. Die Klassifikation
+/// ueber das SQLite-Handle nennt den endgueltigen Pfad des URSPRUENGLICHEN
+/// Objekts; die Klassifikation nach Namen faellt auf das neue Ziel herein.
+///
+/// Nicht ueber `store_vorbereiten`: dessen Reparse-Riegel wiese den
+/// Junction-Pfad schon vorher ab (`store_weist_reparse_punkt_im_pfad_ab`).
+/// Gemessen wird deshalb genau die Entscheidungsfunktion.
+#[cfg(windows)]
+#[test]
+#[ignore = "A4-SI: Junction-Umhaengen unter einer offenen SQLite-Datenbank"]
+fn volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen() {
+    use eqcop_broker::store::{geoeffnete_db_volume, volume_am_sqlite_handle};
+
+    let ordner = TestOrdner::neu("toctou002-sqlite-handle");
+    let ziel_a = ordner.0.join("ziel-a");
+    let ziel_b = ordner.0.join("ziel-b");
+    std::fs::create_dir_all(&ziel_a).unwrap();
+    std::fs::create_dir_all(&ziel_b).unwrap();
+
+    // Zwei verschiedene Objekte mit demselben Dateinamen.
+    for ziel in [&ziel_a, &ziel_b] {
+        Connection::open(ziel.join(STORE_DATEINAME))
+            .unwrap()
+            .execute_batch("CREATE TABLE marke(x)")
+            .unwrap();
+    }
+
+    let verweis = ordner.0.join("verweis");
+    if !junction_legen(&verweis, &ziel_a) {
+        eprintln!("mklink /J nicht verfuegbar; TOCTOU-Fall uebersprungen");
+        return;
+    }
+
+    // SQLite oeffnet das Objekt in ziel-a - ueber den Namen der Junction.
+    let ueber_junction = verweis.join(STORE_DATEINAME);
+    let conn = Connection::open_with_flags(
+        &ueber_junction,
+        OpenFlags::SQLITE_OPEN_READ_WRITE | OpenFlags::SQLITE_OPEN_NO_MUTEX,
+    )
+    .expect("die Datenbank hinter der Junction ist offen");
+
+    // Jetzt zeigt derselbe NAME auf ein anderes Objekt. SQLite haelt weiter A.
+    std::fs::remove_dir(&verweis).expect("die Junction laesst sich abhaengen");
+    assert!(
+        junction_legen(&verweis, &ziel_b),
+        "die Junction liess sich nicht auf das zweite Ziel legen"
+    );
+
+    // DIE Entscheidung: das Handle, das SQLite haelt.
+    let (am_handle, remote) =
+        volume_am_sqlite_handle(&conn).expect("das SQLite-Handle ist klassifizierbar");
+    assert!(!remote, "das Tempvolume ist kein Netzwerkvolume");
+    let am_handle_text = am_handle.to_string_lossy().to_ascii_lowercase();
+    assert!(
+        am_handle_text.contains("ziel-a"),
+        "die Entscheidung folgte dem Namen statt dem Objekt: {}",
+        am_handle.display()
+    );
+    assert!(
+        !am_handle_text.contains("ziel-b"),
+        "die Entscheidung landete beim untergeschobenen Objekt: {}",
+        am_handle.display()
+    );
+
+    // Gegenprobe, und zugleich der Grund fuer R2-3: derselbe Name, ueber ein
+    // ZWEITES CreateFileW geoeffnet, liefert jetzt das NEUE Ziel. Genau so
+    // klassifizierte der Store vor dieser Nacharbeit.
+    let (nach_namen, _) =
+        geoeffnete_db_volume(&ueber_junction).expect("der Name zeigt auf ein Objekt");
+    assert!(
+        nach_namen.to_string_lossy().to_ascii_lowercase().contains("ziel-b"),
+        "der Test misst nichts: der Name zeigt gar nicht auf das neue Ziel ({})",
+        nach_namen.display()
+    );
+    assert_ne!(
+        nach_namen, am_handle,
+        "Name und Objekt sind nicht auseinandergezogen - der Test misst nichts"
+    );
+
+    drop(conn);
+    let _ = std::fs::remove_dir(&verweis);
+
+    // Und der Weg, den der Store wirklich faehrt: OHNE
+    // `remote_volume_override` faellt die Entscheidung in `store_vorbereiten`
+    // auf dem SQLite-Handle. Kein anderer Test fuhr diesen Zweig - ohne diese
+    // Haelfte waere der Fix unbelegt und ein Fehlschlag von
+    // `sqlite3_file_control` erst im Produktivbetrieb sichtbar.
+    let echt = TestOrdner::neu("toctou002-produktivpfad");
+    let writer = StoreWriter::starten(StoreKonfiguration::fuer_pfad(&echt.db()));
+    assert!(
+        !writer.ist_degradiert(),
+        "der Store kam ueber die Handle-Entscheidung nicht hoch: {:?}",
+        writer.handle().sicht()
+    );
+    assert!(echt.db().exists(), "die Datenbank wurde nicht angelegt");
+    drop(writer);
+}
+
+/// Eine Verzeichnis-Junction legen. Sie braucht keine Adminrechte; fehlt
+/// `mklink`, meldet der Aufrufer das, statt gruen zu schweigen.
+#[cfg(windows)]
+fn junction_legen(verweis: &Path, ziel: &Path) -> bool {
+    Command::new("cmd")
+        .args([
+            "/c",
+            "mklink",
+            "/J",
+            verweis.to_str().unwrap(),
+            ziel.to_str().unwrap(),
+        ])
+        .status()
+        .map(|s| s.success())
+        .unwrap_or(false)
+        && verweis.exists()
+}
+
 /// D16 der Nacharbeit Runde 1 (Abschlusspruefung 1, 03.09.2026): die
 /// verlustfreie Wandlung wird an der KANTE gemessen, nicht an einem
 /// wohlgeformten Pfad.

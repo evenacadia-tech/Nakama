@@ -167,62 +167,30 @@ pub fn store_pfad_ist_remote(_pfad: &Path) -> Result<bool, StoreFehler> {
     Ok(false)
 }
 
-/// G2-TOCTOU-002, Nacharbeit Runde 1 (Abschlusspruefung 1, 03.09.2026): die
-/// Volumenentscheidung faellt am GEOEFFNETEN OBJEKT, nicht an einem Namen.
+/// G2-TOCTOU-002: die Klassifikation ueber ein HANDLE, das der Aufrufer haelt.
 ///
-/// `store_pfad_ist_remote` sucht per `exists()` den naechsten vorhandenen
-/// VORFAHREN und klassifiziert dessen Pfadnamen. Beim ersten Start mit
-/// fehlenden Komponenten - oder bei einem Austausch zwischen Pruefung und
-/// spaeterem `create_dir_all` beziehungsweise SQLite-Open - wird damit ein
-/// anderes Objekt geoeffnet als geprueft. Die A-Zusage verlangt die
-/// Volumenpruefung am geoeffneten Datenbankobjekt.
+/// Der Kernel nennt den endgueltigen Pfad des Objekts hinter dem Handle
+/// (`GetFinalPathNameByHandleW`); erst dieser Pfad wird zum Volume gefaltet und
+/// klassifiziert. Zwischen dem Oeffnen des Objekts und dieser Frage kann kein
+/// Name mehr umgelenkt werden - das Handle haelt genau das Objekt fest.
 ///
-/// Diese Funktion oeffnet die Datei selbst, laesst sich vom Kernel ihren
-/// endgueltigen Pfad geben (`GetFinalPathNameByHandleW`) und klassifiziert
-/// diesen. Zwischen Oeffnen und Klassifizieren kann kein Name mehr umgelenkt
-/// werden: das Handle haelt genau das Objekt fest, das der Store benutzt.
-/// Die Vorfahrenklassifikation bleibt als Vorpruefung, ist aber nicht mehr
-/// die Entscheidung.
-///
-/// Rueckgabe: der aufgeloeste Pfad des geoeffneten Objekts und ob er auf einem
-/// Netzwerkvolume liegt.
+/// Das Handle bleibt dem Aufrufer: diese Funktion schliesst es NICHT. Beim
+/// SQLite-Weg gehoert es der Datenbankverbindung.
 #[cfg(windows)]
-pub fn geoeffnete_db_volume(pfad: &Path) -> Result<(PathBuf, bool), StoreFehler> {
-    use std::os::windows::ffi::{OsStrExt, OsStringExt};
-    use windows_sys::Win32::Foundation::{CloseHandle, INVALID_HANDLE_VALUE};
+pub(crate) fn volume_am_handle(
+    griff: windows_sys::Win32::Foundation::HANDLE,
+    wofuer: &str,
+) -> Result<(PathBuf, bool), StoreFehler> {
+    use std::os::windows::ffi::OsStringExt;
     use windows_sys::Win32::Storage::FileSystem::{
-        CreateFileW, GetDriveTypeW, GetFinalPathNameByHandleW, GetVolumePathNameW,
-        FILE_ATTRIBUTE_NORMAL, FILE_NAME_NORMALIZED, FILE_SHARE_DELETE, FILE_SHARE_READ,
-        FILE_SHARE_WRITE, OPEN_EXISTING, VOLUME_NAME_DOS,
+        GetDriveTypeW, GetFinalPathNameByHandleW, GetVolumePathNameW, FILE_NAME_NORMALIZED,
+        VOLUME_NAME_DOS,
     };
     use windows_sys::Win32::System::WindowsProgramming::DRIVE_REMOTE;
 
-    let mut wide: Vec<u16> = pfad.as_os_str().encode_wide().collect();
-    wide.push(0);
-    // Zugriffsmaske 0: es wird nichts gelesen und nichts geschrieben, nur die
-    // Identitaet des Objekts abgefragt. Alle drei Share-Modi, damit SQLite
-    // parallel damit arbeiten kann.
-    // SAFETY: der Puffer ist nullterminiert; alle Zeiger sind gueltig oder null.
-    let griff = unsafe {
-        CreateFileW(
-            wide.as_ptr(),
-            0,
-            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-            std::ptr::null(),
-            OPEN_EXISTING,
-            FILE_ATTRIBUTE_NORMAL,
-            std::ptr::null_mut(),
-        )
-    };
-    if griff == INVALID_HANDLE_VALUE {
-        return Err(StoreFehler::Pfad(format!(
-            "{} konnte zur Volumenpruefung nicht geoeffnet werden",
-            pfad.display()
-        )));
-    }
     let mut endgueltig = vec![0u16; 32768];
-    // SAFETY: `griff` ist gueltig bis `CloseHandle`; der Puffer ist gross genug
-    // und seine Laenge wird korrekt uebergeben.
+    // SAFETY: `griff` ist ein gueltiges, vom Aufrufer gehaltenes Dateihandle;
+    // der Puffer ist gross genug und seine Laenge wird korrekt uebergeben.
     let laenge = unsafe {
         GetFinalPathNameByHandleW(
             griff,
@@ -231,13 +199,9 @@ pub fn geoeffnete_db_volume(pfad: &Path) -> Result<(PathBuf, bool), StoreFehler>
             FILE_NAME_NORMALIZED | VOLUME_NAME_DOS,
         )
     };
-    // SAFETY: das Handle stammt aus dem erfolgreichen CreateFileW darueber und
-    // wird genau einmal geschlossen.
-    unsafe { CloseHandle(griff) };
     if laenge == 0 || laenge as usize >= endgueltig.len() {
         return Err(StoreFehler::Pfad(format!(
-            "endgueltiger Pfad von {} nicht bestimmbar",
-            pfad.display()
+            "endgueltiger Pfad von {wofuer} nicht bestimmbar"
         )));
     }
     endgueltig.truncate(laenge as usize);
@@ -277,6 +241,119 @@ pub fn geoeffnete_db_volume(pfad: &Path) -> Result<(PathBuf, bool), StoreFehler>
     // SAFETY: `volume` enthaelt nach Erfolg einen nullterminierten Rootpfad.
     let remote = unsafe { GetDriveTypeW(volume.as_ptr()) } == DRIVE_REMOTE;
     Ok((endgueltig_pfad, remote))
+}
+
+/// G2-TOCTOU-002, Nacharbeit Runde 2 (R2-3, 03.09.2026): DIE
+/// Volumenentscheidung faellt auf dem Handle, das SQLITE SELBST haelt.
+///
+/// Nacharbeit Runde 1 hatte die Entscheidung zwar auf ein geoeffnetes Objekt
+/// verlegt - aber auf ein ZWEITES, das `geoeffnete_db_volume` per Namen
+/// oeffnete. `Connection::open_with_flags` oeffnet zuerst die eigentliche
+/// Datenbank, das zweite `CreateFileW` denselben Namen; wird der Pfad oder eine
+/// Junction dazwischen umgehaengt, haelt SQLite Objekt A, waehrend die
+/// Volumenentscheidung Objekt B klassifiziert. Der urspruengliche TOCTOU blieb
+/// damit bestehen.
+///
+/// SQLite gibt das Handle seiner Hauptdatenbank ueber
+/// `SQLITE_FCNTL_WIN32_GET_HANDLE` heraus. Darauf laufen dieselben Schritte wie
+/// bisher - es gibt kein zweites Oeffnen und damit kein Fenster mehr.
+/// `geoeffnete_db_volume` bleibt Vorpruefung und Testhelfer, ist aber nicht
+/// mehr die Entscheidung.
+#[cfg(windows)]
+pub fn volume_am_sqlite_handle(
+    conn: &rusqlite::Connection,
+) -> Result<(PathBuf, bool), StoreFehler> {
+    use windows_sys::Win32::Foundation::{HANDLE, INVALID_HANDLE_VALUE};
+
+    let mut griff: HANDLE = std::ptr::null_mut();
+    // `SQLITE_FCNTL_WIN32_GET_HANDLE` deutet sein Argument als `HANDLE*` -
+    // genau der Typ, dessen Adresse hier uebergeben wird. Geschrieben wird nur
+    // in `griff`; das Handle bleibt Eigentum von SQLite und wird hier NICHT
+    // geschlossen.
+    //
+    // SAFETY: `conn` lebt fuer die Dauer des Aufrufs, `handle()` liefert daher
+    // einen gueltigen `sqlite3*`; der Name "main" ist nullterminiert und der
+    // Ausgabezeiger zeigt auf ein lebendes `HANDLE` auf dem Stack.
+    let rc = unsafe {
+        rusqlite::ffi::sqlite3_file_control(
+            conn.handle(),
+            c"main".as_ptr(),
+            rusqlite::ffi::SQLITE_FCNTL_WIN32_GET_HANDLE,
+            &mut griff as *mut HANDLE as *mut std::ffi::c_void,
+        )
+    };
+    if rc != rusqlite::ffi::SQLITE_OK {
+        return Err(StoreFehler::Pfad(format!(
+            "SQLite gab das Handle seiner Hauptdatenbank nicht heraus (rc={rc})"
+        )));
+    }
+    if griff.is_null() || griff == INVALID_HANDLE_VALUE {
+        return Err(StoreFehler::Pfad(
+            "SQLite meldete kein gueltiges Handle fuer die Hauptdatenbank".into(),
+        ));
+    }
+    volume_am_handle(griff, "der geoeffneten SQLite-Hauptdatenbank")
+}
+
+#[cfg(not(windows))]
+pub fn volume_am_sqlite_handle(
+    conn: &rusqlite::Connection,
+) -> Result<(PathBuf, bool), StoreFehler> {
+    Ok((PathBuf::from(conn.path().unwrap_or_default()), false))
+}
+
+/// G2-TOCTOU-002, Nacharbeit Runde 1 (Abschlusspruefung 1, 03.09.2026): die
+/// Klassifikation eines Namens ueber ein eigens geoeffnetes Objekt.
+///
+/// `store_pfad_ist_remote` sucht per `exists()` den naechsten vorhandenen
+/// VORFAHREN und klassifiziert dessen Pfadnamen; beim ersten Start mit
+/// fehlenden Komponenten urteilt sie damit ueber ein anderes Objekt. Diese
+/// Funktion oeffnet die Datei selbst und klassifiziert IHR Objekt.
+///
+/// Seit R2-3 (Nacharbeit Runde 2, 03.09.2026) ist sie NICHT mehr die
+/// Entscheidung des Stores: dafuer gilt `volume_am_sqlite_handle` auf dem
+/// Handle, das SQLite haelt. Ein zweites `CreateFileW` nach demselben Namen
+/// kann ein anderes Objekt treffen als das, in dem die Datenbank liegt.
+///
+/// Rueckgabe: der aufgeloeste Pfad des geoeffneten Objekts und ob er auf einem
+/// Netzwerkvolume liegt.
+#[cfg(windows)]
+pub fn geoeffnete_db_volume(pfad: &Path) -> Result<(PathBuf, bool), StoreFehler> {
+    use std::os::windows::ffi::OsStrExt;
+    use windows_sys::Win32::Foundation::{CloseHandle, INVALID_HANDLE_VALUE};
+    use windows_sys::Win32::Storage::FileSystem::{
+        CreateFileW, FILE_ATTRIBUTE_NORMAL, FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE,
+        OPEN_EXISTING,
+    };
+
+    let mut wide: Vec<u16> = pfad.as_os_str().encode_wide().collect();
+    wide.push(0);
+    // Zugriffsmaske 0: es wird nichts gelesen und nichts geschrieben, nur die
+    // Identitaet des Objekts abgefragt. Alle drei Share-Modi, damit SQLite
+    // parallel damit arbeiten kann.
+    // SAFETY: der Puffer ist nullterminiert; alle Zeiger sind gueltig oder null.
+    let griff = unsafe {
+        CreateFileW(
+            wide.as_ptr(),
+            0,
+            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+            std::ptr::null(),
+            OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL,
+            std::ptr::null_mut(),
+        )
+    };
+    if griff == INVALID_HANDLE_VALUE {
+        return Err(StoreFehler::Pfad(format!(
+            "{} konnte zur Volumenpruefung nicht geoeffnet werden",
+            pfad.display()
+        )));
+    }
+    let ausgang = volume_am_handle(griff, &pfad.display().to_string());
+    // SAFETY: das Handle stammt aus dem erfolgreichen CreateFileW darueber und
+    // wird genau einmal geschlossen.
+    unsafe { CloseHandle(griff) };
+    ausgang
 }
 
 #[cfg(not(windows))]

@@ -1,0 +1,53 @@
+NAK-121 / R2-3 - Rotbeweis (Nacharbeit Runde 2, 03.09.2026)
+Defekt D10 / G2-TOCTOU-002, broker/src/store/migration.rs:205-206
+
+MUTANTE (Regel des Dirigenten: "zweites CreateFileW nach Namen -> liefert
+das neue Ziel -> rot"):
+  broker/src/store/pfad.rs, volume_am_sqlite_handle:
+    volume_am_handle(griff, "der geoeffneten SQLite-Hauptdatenbank")
+  ->  geoeffnete_db_volume(Path::new(conn.path().unwrap_or_default()))
+
+Das ist genau der Stand vor R2-3: die Entscheidung faellt auf einem ZWEITEN,
+per NAMEN geoeffneten Objekt statt auf dem Handle, das SQLite haelt.
+
+TEST: broker/tests/store_crash_matrix.rs::
+      volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen
+      (A4-SI; Junction auf ziel-a, SQLite oeffnet dahinter, Junction wird auf
+      ziel-b umgehaengt - zweite Datei desselben Namens)
+
+== ROT ==
+$ cargo test --manifest-path broker/Cargo.toml --test store_crash_matrix volumenentscheidung_haengt_am_sqlite_handle -- --ignored
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.04s
+     Running tests\store_crash_matrix.rs (broker\target\debug\deps\store_crash_matrix-4ebee0ee77644d63.exe)
+
+running 1 test
+test volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen ... FAILED
+
+failures:
+
+---- volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen stdout ----
+
+thread 'volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen' (10528) panicked at tests\store_crash_matrix.rs:2946:5:
+die Entscheidung folgte dem Namen statt dem Objekt: \\?\C:\Users\phili\AppData\Local\Temp\nakama-sonde011-toctou002-sqlite-handle-5700-f0af5b61ebfe4a8ba80e83a1f6af7f0d\ziel-b\nakama-broker.sqlite3
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+failures:
+    volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 86 filtered out; finished in 0.06s
+
+error: test failed, to rerun pass `--test store_crash_matrix`
+EXIT=101
+
+== GRUEN (Mutante zurueckgenommen, Stand von R2-3) ==
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.12s
+     Running tests\store_crash_matrix.rs (broker\target\debug\deps\store_crash_matrix-4ebee0ee77644d63.exe)
+
+running 1 test
+test volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 86 filtered out; finished in 0.09s
+
+EXIT=0

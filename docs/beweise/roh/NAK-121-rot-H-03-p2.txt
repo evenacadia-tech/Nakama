@@ -1,0 +1,47 @@
+# Rotbeweis H-03-p2 — NAK-121 Etappe 2
+
+Mutante(n):
+  broker/src/coordinator/senke.rs
+    ALT: if let Some(push) = push.as_ref() {
+            for ziel_link_id in ziele {
+                let _ = push.messframe_schreiben(&ziel_link_id, &instance_id, &batch.payload);
+            }
+        }
+    NEU: // MUTANTE: der P2-Push laeuft wieder unter dem Standlock.
+        if let Some(push) = push.as_ref() {
+            let _sperre = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+            for z
+
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never --test coordinator_model -- p2_push_haelt
+Exitcode: 101
+
+Die Mutante ist nach diesem Lauf zurueckgenommen; der naechste
+Lauf derselben Tests ist wieder gruen.
+
+---
+
+
+running 1 test
+test p2_push_haelt_den_standlock_nicht ... FAILED
+
+failures:
+
+---- p2_push_haelt_den_standlock_nicht stdout ----
+
+thread 'p2_push_haelt_den_standlock_nicht' (14672) panicked at tests\coordinator_model.rs:1136:5:
+assertion `left == right` failed: der P2-Push lief unter dem Standlock
+  left: 1
+ right: 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    p2_push_haelt_den_standlock_nicht
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 35 filtered out; finished in 3.01s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.73s
+     Running tests\coordinator_model.rs (broker\target\debug\deps\coordinator_model-c22cf73cd241058f.exe)
+error: test failed, to rerun pass `--test coordinator_model`

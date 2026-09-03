@@ -88,6 +88,8 @@ impl crate::transport::server_v3::Senke for Coordinator {
         }
         let frame = &batch.frames[0];
         let push = self.push.lock().unwrap_or_else(|e| e.into_inner()).clone();
+        let mut ziele: Vec<String> = Vec::new();
+        let mut instance_id = String::new();
         {
             let mut stand = self.stand.lock().expect("Coordinator vergiftet");
             let Some(key) = Self::aktueller_telemetrie_client_locked(&stand, link_id) else {
@@ -161,9 +163,12 @@ impl crate::transport::server_v3::Senke for Coordinator {
             );
             stand.p2_live_frames = stand.p2_live_frames.saturating_add(1);
 
-            if let Some(push) = push.as_ref() {
+            // H-03: unter dem Lock wird nur GESAMMELT. Der Push selbst laeuft
+            // unten, nachdem der Standlock gefallen ist - dieselbe Invariante,
+            // die `flush_session` seit SONDE-011 in ihrem Kommentar fuehrt.
+            if push.is_some() {
                 let session = key.session();
-                let mut ziele = stand
+                ziele = stand
                     .subscriptions
                     .iter()
                     .filter(|(ziel_link_id, sub)| {
@@ -182,10 +187,15 @@ impl crate::transport::server_v3::Senke for Coordinator {
                     .map(|(ziel_link_id, _)| ziel_link_id.clone())
                     .collect::<Vec<_>>();
                 ziele.sort();
-                for ziel_link_id in ziele {
-                    let _ =
-                        push.messframe_schreiben(&ziel_link_id, &key.instance_id, &batch.payload);
-                }
+                instance_id = key.instance_id.clone();
+            }
+        }
+        // Lock ist gefallen. Erst JETZT fremde Senkenarbeit: eine reentrante
+        // Senke kann den Broker damit nicht mehr auf dem globalen Standlock
+        // verklemmen.
+        if let Some(push) = push.as_ref() {
+            for ziel_link_id in ziele {
+                let _ = push.messframe_schreiben(&ziel_link_id, &instance_id, &batch.payload);
             }
         }
         if self.dispatch_fuer_link_erlaubt(link_id) {

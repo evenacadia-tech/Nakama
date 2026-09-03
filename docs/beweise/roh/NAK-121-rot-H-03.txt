@@ -1,0 +1,46 @@
+# Rotbeweis H-03 — NAK-121 Etappe 2
+
+Mutante(n):
+  broker/src/coordinator/subscription.rs
+    ALT: for (instance_id, payload) in frames {
+            let _ = push.messframe_schreiben(link_id, &instance_id, &payload);
+        }
+    }
+    NEU: // MUTANTE: der Push laeuft wieder unter dem Standlock.
+        let _sperre = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+        for (instance_id, payload) in frames {
+            let _ = p
+
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never --test coordinator_model -- senke_haelt
+Exitcode: 101
+
+Die Mutante ist nach diesem Lauf zurueckgenommen; der naechste
+Lauf derselben Tests ist wieder gruen.
+
+---
+
+
+running 1 test
+test senke_haelt_den_standlock_nicht_ueber_den_push ... FAILED
+
+failures:
+
+---- senke_haelt_den_standlock_nicht_ueber_den_push stdout ----
+
+thread 'senke_haelt_den_standlock_nicht_ueber_den_push' (16712) panicked at tests\coordinator_model.rs:1092:5:
+assertion `left == right` failed: die Senke lief unter dem Standlock: ein reentranter Zugriff kam nicht durch
+  left: 1
+ right: 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    senke_haelt_den_standlock_nicht_ueber_den_push
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 35 filtered out; finished in 3.02s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.71s
+     Running tests\coordinator_model.rs (broker\target\debug\deps\coordinator_model-c22cf73cd241058f.exe)
+error: test failed, to rerun pass `--test coordinator_model`

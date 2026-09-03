@@ -177,32 +177,38 @@ impl Coordinator {
     pub(super) fn messframes_an_subscriber_push(&self, link_id: &str) {
         let push = self.push.lock().unwrap_or_else(|e| e.into_inner()).clone();
         let Some(push) = push else { return };
-        let stand = self.stand.lock().expect("Coordinator vergiftet");
-        let Some(sub) = stand.subscriptions.get(link_id) else {
-            return;
+        // H-03: sammeln unter dem Lock, pushen ohne. Die Frameliste war schon
+        // vorher eine Kopie; der Lock stand nur noch waehrend der fremden
+        // Senkenarbeit, ohne dafuer gebraucht zu werden.
+        let frames = {
+            let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+            let Some(sub) = stand.subscriptions.get(link_id) else {
+                return;
+            };
+            let Some(ziel_link) = stand.links.get(link_id) else {
+                return;
+            };
+            if ziel_link.trennen
+                || !stand.routing_bereit
+                || ziel_link.adresse != sub.adresse
+                || !self.alias_register.session_push_erlaubt(
+                    &ziel_link.alias_adressraum,
+                    &ziel_link.alias_besitzer,
+                    &ziel_link.adresse.instance_id,
+                )
+            {
+                return;
+            }
+            let session = ziel_link.client_key.session();
+            let mut frames = stand
+                .messframes
+                .iter()
+                .filter(|(key, _)| key.session() == session)
+                .map(|(key, frame)| (key.instance_id.clone(), frame.payload.clone()))
+                .collect::<Vec<_>>();
+            frames.sort_by(|a, b| a.0.cmp(&b.0));
+            frames
         };
-        let Some(ziel_link) = stand.links.get(link_id) else {
-            return;
-        };
-        if ziel_link.trennen
-            || !stand.routing_bereit
-            || ziel_link.adresse != sub.adresse
-            || !self.alias_register.session_push_erlaubt(
-                &ziel_link.alias_adressraum,
-                &ziel_link.alias_besitzer,
-                &ziel_link.adresse.instance_id,
-            )
-        {
-            return;
-        }
-        let session = ziel_link.client_key.session();
-        let mut frames = stand
-            .messframes
-            .iter()
-            .filter(|(key, _)| key.session() == session)
-            .map(|(key, frame)| (key.instance_id.clone(), frame.payload.clone()))
-            .collect::<Vec<_>>();
-        frames.sort_by(|a, b| a.0.cmp(&b.0));
         for (instance_id, payload) in frames {
             let _ = push.messframe_schreiben(link_id, &instance_id, &payload);
         }

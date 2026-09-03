@@ -986,3 +986,156 @@ fn sichtgrenzen_und_wire_replay_null() {
     assert_eq!(vor_snapshot["mitglieder"], nach_snapshot["mitglieder"]);
     assert_ne!(vor_snapshot["broker_epoch"], nach_snapshot["broker_epoch"]);
 }
+
+// ── NAK-121 H-03 ───────────────────────────────────────────────────────────
+//
+// Fremde Senkenarbeit laeuft nie unter dem globalen Standlock. Die Senke greift
+// im Push reentrant in den Coordinator zurueck; steht der Lock noch, kommt sie
+// nicht durch. Der Rueckgriff laeuft in einem eigenen Thread MIT FRIST, damit
+// ein gehaltener Lock den Test ROT macht statt den Lauf aufzuhaengen.
+
+#[derive(Default)]
+struct ReentranteSenke {
+    ziel: std::sync::Mutex<Option<std::sync::Weak<Coordinator>>>,
+    pushes: AtomicU64,
+    reentrant_durchgekommen: AtomicU64,
+    reentrant_blockiert: AtomicU64,
+}
+
+impl ReentranteSenke {
+    fn binden(&self, c: &Arc<Coordinator>) {
+        *self.ziel.lock().unwrap_or_else(|e| e.into_inner()) = Some(Arc::downgrade(c));
+    }
+
+    fn reentrant_versuchen(&self) {
+        self.pushes.fetch_add(1, Ordering::SeqCst);
+        let Some(schwach) = self
+            .ziel
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .clone()
+        else {
+            return;
+        };
+        let Some(stark) = schwach.upgrade() else {
+            return;
+        };
+        let (sender, empfang) = std::sync::mpsc::channel::<()>();
+        std::thread::spawn(move || {
+            // client_anzahl nimmt den Standlock. Haelt der Push ihn noch,
+            // steht dieser Thread hier bis zum Prozessende.
+            let _ = stark.client_anzahl();
+            let _ = sender.send(());
+        });
+        if empfang
+            .recv_timeout(std::time::Duration::from_secs(3))
+            .is_ok()
+        {
+            self.reentrant_durchgekommen.fetch_add(1, Ordering::SeqCst);
+        } else {
+            self.reentrant_blockiert.fetch_add(1, Ordering::SeqCst);
+        }
+    }
+}
+
+impl eqcop_broker::coordinator::SessionPush for ReentranteSenke {
+    fn snapshot_schreiben(&self, _link_id: &str, _payload: &[u8]) -> bool {
+        self.reentrant_versuchen();
+        true
+    }
+
+    fn messframe_schreiben(&self, _link_id: &str, _instance_id: &str, _payload: &[u8]) -> bool {
+        self.reentrant_versuchen();
+        true
+    }
+}
+
+#[cfg(windows)]
+#[test]
+fn senke_haelt_den_standlock_nicht_ueber_den_push() {
+    let clock = Arc::new(ManualClock::default());
+    let c = Arc::new(Coordinator::mit_uhr(clock.clone(), hex(0xbeef)));
+    let senke = Arc::new(ReentranteSenke::default());
+    senke.binden(&c);
+    c.session_push_setzen(senke.clone());
+
+    // Erst eine Sonde mit einem echten Messframe: ohne ihn liefe die
+    // Push-Schleife von messframes_an_subscriber_push leer, und der Test
+    // wuerde seine Zusage gar nicht beruehren.
+    let sonde = Adresse {
+        logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001".into(),
+        project_binding_id: "1".repeat(32),
+        session_epoch: "2".repeat(32),
+        instance_id: format!("{:032x}", 3),
+        runtime_nonce: "4".repeat(32),
+    };
+    c.control_registrieren("probe", sonde.clone());
+    Senke::telemetrie_gekoppelt(c.as_ref(), "probe");
+    let gueltig =
+        include_bytes!("../../eq-copilot/fixtures/v3/flatbuffers/gueltig/live-64-band.bin");
+    Senke::p2(c.as_ref(), "probe", gueltig);
+    assert_eq!(c.p2_live_frames(), 1);
+
+    // Jetzt abonniert ein zweiter Link dieselbe Session. Sein Subscribe loest
+    // den Snapshot-Push UND den Messframe-Push mit nicht leerer Liste aus.
+    let mut zweiter = sonde.clone();
+    zweiter.instance_id = format!("{:032x}", 4);
+    zweiter.runtime_nonce = "5".repeat(32);
+    c.control_registrieren("b", zweiter.clone());
+    let vor_subscribe = senke.pushes.load(Ordering::SeqCst);
+    assert!(abonnieren(&c, "b", &zweiter));
+
+    assert!(
+        senke.pushes.load(Ordering::SeqCst) > vor_subscribe + 1,
+        "es lief nur der Snapshot-Push; messframes_an_subscriber_push blieb leer"
+    );
+    assert_eq!(
+        senke.reentrant_blockiert.load(Ordering::SeqCst),
+        0,
+        "die Senke lief unter dem Standlock: ein reentranter Zugriff kam nicht durch"
+    );
+    assert_eq!(
+        senke.reentrant_durchgekommen.load(Ordering::SeqCst),
+        senke.pushes.load(Ordering::SeqCst)
+    );
+}
+
+/// Zweite H-03-Stelle: der P2-Pfad der Senke selbst. Er sammelte seine
+/// Zielliste unter dem Standlock UND pushte darunter; die Zielliste ist
+/// unveraendert eine Kopie, nur der Push liegt jetzt hinter dem Lock.
+#[cfg(windows)]
+#[test]
+fn p2_push_haelt_den_standlock_nicht() {
+    let clock = Arc::new(ManualClock::default());
+    let c = Arc::new(Coordinator::mit_uhr(clock.clone(), hex(0xbeef)));
+    let senke = Arc::new(ReentranteSenke::default());
+    senke.binden(&c);
+    c.session_push_setzen(senke.clone());
+
+    let adresse = Adresse {
+        logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001".into(),
+        project_binding_id: "1".repeat(32),
+        session_epoch: "2".repeat(32),
+        instance_id: format!("{:032x}", 3),
+        runtime_nonce: "4".repeat(32),
+    };
+    c.control_registrieren("probe", adresse.clone());
+    Senke::telemetrie_gekoppelt(c.as_ref(), "probe");
+    assert!(abonnieren(&c, "probe", &adresse));
+    let vorher = senke.pushes.load(Ordering::SeqCst);
+
+    let gueltig =
+        include_bytes!("../../eq-copilot/fixtures/v3/flatbuffers/gueltig/live-64-band.bin");
+    Senke::p2(c.as_ref(), "probe", gueltig);
+    assert_eq!(c.p2_live_frames(), 1);
+
+    assert!(
+        senke.pushes.load(Ordering::SeqCst) > vorher,
+        "der P2-Pfad hat gar nicht gepusht - der Test misst sonst nichts"
+    );
+    assert_eq!(
+        senke.reentrant_blockiert.load(Ordering::SeqCst),
+        0,
+        "der P2-Push lief unter dem Standlock"
+    );
+}

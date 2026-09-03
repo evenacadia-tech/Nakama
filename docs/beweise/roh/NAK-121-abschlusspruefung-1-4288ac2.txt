@@ -1,0 +1,54 @@
+Geprüft wurden der gebundene Diff, die relevanten Aufrufketten, die `--follow`-Historie und die vorhandenen 40/40-Belege; HEAD blieb auf 4288ac2379984af288734791543ad8e26faa026e. Cargo-Tests und Kanon wurden wegen der schreibgeschützten Sandbox nicht erneut ausgeführt. Mehrere A-/H-Zusagen sind im Zielcode verletzt oder werden durch die benannten Tests nicht tatsächlich gemessen.
+
+Full review comments:
+
+- [P1] Stimme die MSRV mit den gesperrten Abhängigkeiten ab — C:\Users\phili\Projekte\Nakama\broker\Cargo.toml:12-12
+  **DEFEKT (G2-MSRV-001):** Mit der deklarierten Toolchain und dem eingecheckten Lockfile bricht `cargo +1.82 check --manifest-path broker/Cargo.toml --locked` vor dem Kompilieren ab, weil `uuid 1.24.1` und `getrandom 0.4.3` Rust 1.85 verlangen. Damit ist 1.82 nicht der zugesagte tatsächlich nötige Compilerboden; der neue Test vergleicht nur den Manifestwert und erkennt diesen Widerspruch nicht.
+
+- [P1] Validiere P2-Ziele nach der Lockfreigabe erneut — C:\Users\phili\Projekte\Nakama\broker\src\coordinator\senke.rs:226-228
+  **DEFEKT (H-03/C-06):** Wenn nach dem Sammeln eine Nonce-Verdrängung oder ein reentranter Callback eine Subscription entfernt, ruft diese Schleife den alten Link trotzdem später auf, während dessen Transportausgang noch existieren kann. Dasselbe ungeprüfte Muster steht in `messframes_an_subscriber_push`; damit liegt ein später gestarteter Push hinter dem Cleanup, obwohl C-06 genau das ausschließt.
+
+- [P1] Setze ein wirksames Produktions-Bytebudget — C:\Users\phili\Projekte\Nakama\broker\src\transport\warteschlange.rs:32-32
+  **DEFEKT (H-11):** Jeder zugelassene Frame ist bereits höchstens `MAX_PAYLOAD_BYTES` groß und die Queue hat höchstens 256 Slots. Bei 255 Maximalframes bleibt sie unter diesem Budget, der 256. erreicht es exakt und wird angenommen, danach greift stets zuerst die Slotgrenze; die Bytegrenze kann im Produktionskonstruktor daher nie unabhängig auslösen und die ursprünglichen rund 64 MiB pro Verbindung bleiben möglich.
+
+- [P1] Bewahre den Alias beim Abbau des verdrängten Links — C:\Users\phili\Projekte\Nakama\broker\src\coordinator\link.rs:281-285
+  **DEFEKT (H-10):** Bei einem Reconnect mit identischer Nonce teilen alter und neuer Link denselben Aliasbesitzer, weshalb die Registrierung den Alias zunächst absichtlich stehen lässt. Sobald der alte Link anschließend `control_ende` erreicht, entfernt dieser bedingungslose Aufruf jedoch genau die gemeinsame Zuordnung; danach fällt Dispatch für den überlebenden Link fail-closed aus. Der neue Test prüft den Alias nur vor diesem alten Cleanup.
+
+- [P2] Verwirf subnormale Sampleraten vor der Fensterrechnung — C:\Users\phili\Projekte\Nakama\broker\src\coordinator\sicht.rs:158-158
+  **DEFEKT (G2-FLOATEDGE-001):** Eine positive subnormale `sample_rate` passiert die vorhandene Eingangsprüfung; bei einer von null verschiedenen Samplezahl überläuft diese Division zu `inf`. Statt des zugesagten `None` samt Zählung liefert die Sicht damit weiterhin einen nicht-endlichen abgeleiteten Wert, und der benannte Grenzwerttest fehlt.
+
+- [P2] Validiere den vollständigen v3-Deskriptor — C:\Users\phili\Projekte\Nakama\broker\src\coordinator\liveness.rs:423-425
+  **DEFEKT (H-17):** Ein direkter Aufrufer kann einen Wert nur mit gültiger `adresse` und `aussageklasse = beobachtend` übergeben; fehlende Pflichtfelder wie `plugin_kind`, `measurement_position`, `betrieb`, `capabilities` und `frische` werden nicht geprüft, dennoch wird der Deskriptor gespeichert und `true` geliefert. H-17 verlangt hier die vollständige v3-Vertragsprüfung, nicht nur Klasse und Adresse.
+
+- [P2] Weise Verbindungen bei erreichtem Quarantänedeckel ab — C:\Users\phili\Projekte\Nakama\broker\src\coordinator\link.rs:270-270
+  **DEFEKT (H-14):** Erreicht das Aliasregister seinen Deckel, liefert es `Registrierung::Ungueltig`; behandelt wird hier jedoch nur die Kollisionsvariante, danach werden Client und Link angelegt und bedingungslos als angenommen zurückgegeben. Auch ein Fehler am persistenten Guarddeckel schaltet nur Routing ab. Der Peer erhält somit ein Welcome statt der von H-14 zugesagten Ablehnung.
+
+- [P2] Reserviere beide Quarantäneplätze vor einer Kollision — C:\Users\phili\Projekte\Nakama\broker\src\instance_alias.rs:161-162
+  **DEFEKT (H-14):** Nach Erreichen von 1024 Einträgen kann eine explizite Auflösung die Menge auf 1023 reduzieren. Die nächste Kollision passiert diese Prüfung und fügt anschließend zwei Besitzer ein, sodass die zugesagte Obergrenze mit 1025 Einträgen überschritten wird; der Test erreicht den Deckel nur in Zweierschritten und deckt diesen Zustand nicht ab.
+
+- [P2] Löse Quarantäne auch nach Linkabbau auf — C:\Users\phili\Projekte\Nakama\broker\src\coordinator\flush.rs:177-182
+  **DEFEKT (H-14):** Trennen sich beide kollidierenden Links vor der expliziten Auflösung, enthält `stand.links` keinen passenden Besitzer mehr und diese Liste bleibt leer. Store- und Coordinator-Guard werden dennoch entfernt und die Methode meldet Erfolg, während der Aliasbesitzer quarantänisiert bleibt und seine erneute Registrierung weiter scheitert.
+
+- [P2] Lösche persistente Guards unabhängig von SID-Schreibweise — C:\Users\phili\Projekte\Nakama\broker\src\store\writer.rs:665-666
+  **DEFEKT (H-21):** Bei einem persistenten Guard mit großgeschriebener SID und einer Auflösung über dieselbe SID in Kleinschreibung löscht dieses SQLite-Prädikat wegen der standardmäßig binären Kollation keine Zeile und prüft die betroffene Zeilenzahl nicht. Der gefaltete Speicherindex wird trotzdem geleert und die Methode meldet Erfolg; beim nächsten Start wird der vermeintlich gelöschte Guard erneut geladen.
+
+- [P2] Prüfe das tatsächlich geöffnete Storeobjekt — C:\Users\phili\Projekte\Nakama\broker\src\store\pfad.rs:112-113
+  **DEFEKT (G2-TOCTOU-002):** Die Funktion sucht weiterhin per `exists()` den nächsten vorhandenen Vorfahren und klassifiziert anschließend dessen Pfadnamen. Beim ersten Start mit fehlenden Komponenten oder bei einem Austausch zwischen Prüfung und späterem `create_dir_all` beziehungsweise SQLite-Open wird daher ein anderes Objekt geöffnet als geprüft; die A-Zusage verlangt stattdessen komponentenweise Handles und die Volumenprüfung am geöffneten Datenbankobjekt.
+
+- [P2] Zähle CancelIoEx-Fehler in allen Abbruchpfaden — C:\Users\phili\Projekte\Nakama\broker\src\transport\server_v3\win_handles.rs:581-582
+  **DEFEKT (H-01):** Serverstopp und regulärer Verbindungsabbau verwenden `alle_io_abbrechen` beziehungsweise `io_abbrechen`, die den Zähler hier als `None` weiterreichen. Liefert `CancelIoEx` dort einen unerwarteten Fehler statt `ERROR_NOT_FOUND`, wird er weiterhin verschluckt; gezählt wird ausschließlich im Wachhundpfad, obwohl H-01 dies auch für Ende und Stopp zusagt.
+
+- [P2] Vergifte im H-04-Test tatsächlich den Standlock — C:\Users\phili\Projekte\Nakama\broker\tests\coordinator_model.rs:1165-1166
+  **DEFEKT (H-04-Test):** `modell_sicht` gibt ausschließlich kopierte Werte zurück und lässt seinen internen Mutex-Guard vor der Rückkehr fallen; die Panik in der nächsten Anweisung läuft deshalb nicht unter dem Lock. Der Mutex bleibt gesund und alle nachfolgenden Assertions prüfen lediglich normale Zugriffe, nicht die zugesagte Weiterarbeit nach einer tatsächlichen Vergiftung.
+
+- [P2] Führe im H-10-Test wirklich einen P0-Befehl aus — C:\Users\phili\Projekte\Nakama\broker\tests\coordinator_model.rs:1329-1333
+  **DEFEKT (H-10-Test):** Der als P0-Zieltest bezeichnete Lauf gibt nur zwei Trennflags und die Subscriptionzahl zurück; er sendet keinen P0-Befehl und vergleicht weder Zielwirkung noch persistierten Zustand. Eine Rücknahme der neuen Zielauflösung in `befehl.rs` bliebe daher grün, solange die separate Identisch-Nonce-Verdrängung erhalten bleibt.
+
+- [P2] Warte im H-02-Test auf den Wachhundabbruch — C:\Users\phili\Projekte\Nakama\broker\src\transport\server_v3\verbindung.rs:512-515
+  **DEFEKT (H-02-Test):** Die Testnaht beendet den Schreiber bereits, sobald dessen ID in `abgeloest` erscheint. Dieser Marker wird vor dem nächsten Wachhundtick gesetzt, sodass der Thread sein Handle selbst freigibt, ohne dass der Wachhund `CancelIoEx` ausgeführt haben muss; selbst ein Entfernen des zugesagten wiederholten Wachhundabbruchs ließe den Test bestehen.
+
+- [P2] Erzeuge im H-07-Test einen ausstehenden Flush — C:\Users\phili\Projekte\Nakama\broker\tests\security_vectors.rs:1044-1046
+  **DEFEKT (H-07-Test):** Der Test verbindet nur einen Client und schließt ihn sofort, ohne Hello, Snapshot oder sonstigen Broker-Write. Damit ist kein Ausgabepuffer abzufließen; geprüft werden lediglich der Spurmarker und ein weiterhin nuller Timeoutzähler. Weder die Zustellung gepufferter Daten noch die zugesagte positive Zählung bei einem nicht lesenden Peer wird so gemessen.
+
+- [P2] Teste die UTF-16-Wandlung mit einem ungepaarten Surrogat — C:\Users\phili\Projekte\Nakama\broker\tests\store_crash_matrix.rs:2551-2555
+  **DEFEKT (G2-LOSSYSTR-001-Test):** Auf einem gewöhnlichen, wohlgeformten LocalAppData-Pfad besteht diese Prüfung auch nach einer Regression zu `String::from_utf16_lossy`. Enthielte der Pfad tatsächlich ein ungepaartes Surrogat, würde zudem selbst die korrekte `OsString`-Variante beim anschließenden `to_string_lossy` als U+FFFD dargestellt. Der Test speist die relevante UTF-16-Kante somit nicht ein und kann die zugesagte verlustfreie Wandlung nicht unterscheiden.

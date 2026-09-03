@@ -1,0 +1,43 @@
+# Rotbeweis D7 (H-14, Reservierung am Quarantaenedeckel) — NAK-121 Nacharbeit Runde 1
+
+Die Pruefung reserviert wieder nichts (`len() >= MAX`) - der Stand, aus dem
+heraus eine Kollision aus 1023 zwei Besitzer einfuegte und auf 1025 wuchs.
+
+Mutante(n):
+  broker/src/instance_alias.rs
+    ALT: if stand.quarantaene.len() + 2 > MAX_QUARANTAENE {
+    NEU: if stand.quarantaene.len() >= MAX_QUARANTAENE { // MUTANTE: keine Reservierung
+
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never --test store_crash_matrix -- quarantaene_deckel
+Exitcode: 101
+
+Die Mutante ist nach diesem Lauf zurueckgenommen; der naechste
+Lauf derselben Tests ist wieder gruen.
+
+---
+
+
+running 1 test
+test quarantaene_deckel_weist_ab_statt_zu_wachsen ... FAILED
+
+failures:
+
+---- quarantaene_deckel_weist_ab_statt_zu_wachsen stdout ----
+
+thread 'quarantaene_deckel_weist_ab_statt_zu_wachsen' (22524) panicked at tests\store_crash_matrix.rs:2784:5:
+assertion `left == right` failed: aus dem ungeraden Stand darf keine Kollision mehr entstehen koennen
+  left: Eingetragen
+ right: DeckelErreicht
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    quarantaene_deckel_weist_ab_statt_zu_wachsen
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 77 filtered out; finished in 0.01s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.08s
+     Running tests\store_crash_matrix.rs (broker\target\debug\deps\store_crash_matrix-4ebee0ee77644d63.exe)
+error: test failed, to rerun pass `--test store_crash_matrix`

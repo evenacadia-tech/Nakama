@@ -204,6 +204,18 @@ pub(super) struct SessionCommandWirkung {
 
 impl Stand {
     /// H-21: die eine Abfrage, ueber die alle elf Lesestellen gehen.
+    /// D6 der Nacharbeit Runde 1 (Abschlusspruefung 1, 03.09.2026): wie viele
+    /// ZEILEN die Riegeltabelle traegt - Paare aus effektiver Adresse und
+    /// derived_id, genau die Einheit, die `MAX_KONFLIKT_GUARDS` im Store
+    /// deckelt. Der Coordinator kann seinen Deckel damit vor dem Anlegen von
+    /// Client und Link pruefen, ohne den Store unter dem Standlock anzufassen.
+    pub(super) fn guard_anzahl(&self) -> usize {
+        self.conflict_guards_gefaltet
+            .values()
+            .map(HashSet::len)
+            .sum()
+    }
+
     pub(super) fn guard_gesetzt(&self, effective_address: &str) -> bool {
         self.conflict_guards_gefaltet
             .contains_key(&effective_address.to_ascii_lowercase())

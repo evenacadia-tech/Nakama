@@ -14,7 +14,8 @@
 
 use crate::instance_alias::{AliasRegister, Registrierung, Sitzungsadressraum};
 use crate::store::{
-    ConflictGuard, SnapshotZiel, StoreEvent, StoreHandle, StoreWriter, STORE_SCHEMA_MAJOR,
+    ConflictGuard, SnapshotZiel, StoreEvent, StoreHandle, StoreWriter, MAX_KONFLIKT_GUARDS,
+    STORE_SCHEMA_MAJOR,
 };
 use crate::transport::bootstrap::{Adresse, AudioLage, HelloControl};
 use serde_json::Value;

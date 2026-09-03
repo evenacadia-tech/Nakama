@@ -183,10 +183,40 @@ impl Coordinator {
             &alias_besitzer,
             &adresse.instance_id,
         );
+        // D6 der Nacharbeit Runde 1 (Abschlusspruefung 1, 03.09.2026): H-14
+        // sagt zu, dass am Deckel die VERBINDUNG abgewiesen wird - der
+        // fail-closed-Ausgang, den C-07 ohnehin fordert. Behandelt wurde hier
+        // aber nur die Kollisionsvariante; `DeckelErreicht` fiel durch, Client
+        // und Link entstanden und der Peer bekam ein Welcome statt der
+        // zugesagten Ablehnung. Jetzt endet die Registrierung hier, bevor
+        // irgendetwas angelegt ist.
+        if registrierung == Registrierung::DeckelErreicht {
+            stand.cap_abweisungen = stand.cap_abweisungen.saturating_add(1);
+            return ControlRegistrierung::abgewiesen("alias_quarantaene_deckel");
+        }
         if registrierung == Registrierung::KollisionBeideQuarantaenisiert {
             let mut ids = vec![alias_besitzer.clone()];
             if let Some(alt) = &geerbt {
                 ids.push(format!("{}:{}", alt.adresse.instance_id, alt.current_nonce));
+            }
+            // Derselbe Deckel auf der persistenten Riegeltabelle. Der Store
+            // wuerde den Schreibversuch mit einem Fehler beantworten, aber
+            // erst NACH dem Anlegen von Client und Link - und die Antwort war
+            // bis hierher nur ein Routing-Abschalten, kein Abweisen. Der
+            // Coordinator fuehrt denselben Index und kann den Deckel deshalb
+            // hier pruefen, ohne den Store unter dem Standlock anzufassen.
+            let neue_riegel = ids
+                .iter()
+                .filter(|derived_id| {
+                    !stand
+                        .conflict_guards_gefaltet
+                        .get(&effective.to_ascii_lowercase())
+                        .is_some_and(|vorhandene| vorhandene.contains(*derived_id))
+                })
+                .count();
+            if stand.guard_anzahl() + neue_riegel > MAX_KONFLIKT_GUARDS {
+                stand.cap_abweisungen = stand.cap_abweisungen.saturating_add(1);
+                return ControlRegistrierung::abgewiesen("konfliktriegel_deckel");
             }
             for derived_id in ids {
                 if stand.guard_eintragen(&effective.clone(), &derived_id.clone())

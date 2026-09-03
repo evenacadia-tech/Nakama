@@ -172,19 +172,17 @@ impl Coordinator {
         //
         // Die derived_id traegt die Form `<instance_id>:<runtime_nonce>`
         // (vergeben in link.rs); die Quarantaene fuehrt denselben Wert als
-        // Besitzerschluessel. Die zugehoerigen Adressraeume stehen an den
-        // Links, deshalb wird ueber sie gesucht statt geraten.
-        let adressraeume: Vec<_> = stand
-            .links
-            .values()
-            .filter(|link| link.alias_besitzer == derived_id)
-            .map(|link| link.alias_adressraum.clone())
-            .collect();
+        // Besitzerschluessel.
+        //
+        // D8 der Nacharbeit Runde 1 (Abschlusspruefung 1, 03.09.2026): der
+        // Adressraum wurde ueber die LEBENDEN Links gesucht. Trennten sich
+        // beide kollidierenden Links vor der Aufloesung, blieb die Liste leer -
+        // Store- und Coordinator-Guard fielen, die Methode meldete Erfolg, und
+        // der Aliasbesitzer blieb quarantaenisiert. Riegel und Alias liefen
+        // auseinander. Das Quarantaeneregister kennt seinen Besitzer selbst;
+        // ueber es wird jetzt gesucht, damit beide nie mehr auseinanderlaufen.
         drop(stand);
-        for adressraum in adressraeume {
-            self.alias_register
-                .quarantaene_aufloesen(&adressraum, derived_id);
-        }
+        self.alias_register.quarantaene_aufloesen_ueberall(derived_id);
         true
     }
 

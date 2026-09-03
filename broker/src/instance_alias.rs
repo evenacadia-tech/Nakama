@@ -62,6 +62,14 @@ pub enum Registrierung {
     Eingetragen,
     BereitsEingetragen,
     KollisionBeideQuarantaenisiert,
+    /// Der Quarantaenedeckel ist erreicht. D6 der Nacharbeit Runde 1
+    /// (Abschlusspruefung 1, 03.09.2026): dieser Fall braucht eine eigene
+    /// Variante, weil er anders beantwortet wird als die uebrigen
+    /// Ungueltigkeiten. `Ungueltig` heisst „diese Zuordnung geht nicht" und
+    /// laesst den Link fail-closed weiterleben; `DeckelErreicht` heisst „der
+    /// Speicher ist voll" und weist das Hello ab, bevor Client, Link oder
+    /// Welcome entstehen.
+    DeckelErreicht,
     Ungueltig,
 }
 
@@ -158,8 +166,16 @@ impl AliasRegister {
         // H-14: bevor eine neue Kollision zwei weitere Eintraege erzeugen
         // koennte, faellt die Registrierung am Deckel. Fail-closed, wie C-07
         // es fordert - und ohne die zeitbasierte Freigabe, die C-07 verbietet.
-        if stand.quarantaene.len() >= MAX_QUARANTAENE {
-            return Registrierung::Ungueltig;
+        //
+        // D7 der Nacharbeit Runde 1 (Abschlusspruefung 1, 03.09.2026): die
+        // Pruefung lautete `len() >= MAX_QUARANTAENE` und RESERVIERTE damit
+        // nichts. Aus einem ungeraden Stand - eine explizite Aufloesung senkt
+        // die Menge von 1024 auf 1023 - passierte die naechste Kollision die
+        // Pruefung und fuegte anschliessend ZWEI Besitzer ein: 1025 Eintraege,
+        // die zugesagte Obergrenze ueberschritten. Die Pruefung reserviert
+        // jetzt so viele Plaetze, wie die Kollision einfuegt.
+        if stand.quarantaene.len() + 2 > MAX_QUARANTAENE {
+            return Registrierung::DeckelErreicht;
         }
 
         if let Some(erster) = stand.nach_wire.get(&wire_schluessel).cloned() {
@@ -302,6 +318,35 @@ impl AliasRegister {
             }
         }
         war_drin
+    }
+
+    /// D8 der Nacharbeit Runde 1 (Abschlusspruefung 1, 03.09.2026): loest die
+    /// Quarantaene dieses Besitzers in JEDEM Adressraum auf, in dem sie steht.
+    ///
+    /// Bis hierher suchte die Riegelaufloesung den Adressraum ueber die
+    /// LEBENDEN Links. Trennten sich beide kollidierenden Links vor der
+    /// expliziten Aufloesung, war die Liste leer: Store- und Coordinator-Guard
+    /// fielen, die Methode meldete Erfolg - und der Aliasbesitzer blieb
+    /// quarantaenisiert, seine erneute Registrierung scheiterte weiter. Riegel
+    /// und Alias liefen auseinander. Das Quarantaeneregister kennt seinen
+    /// Besitzer selbst; es ist die richtige Quelle, nicht die Linkmap.
+    ///
+    /// C-07 bleibt unveraendert: Aufloesung ausschliesslich ueber die
+    /// explizite Neu-ID, nie ueber Zeit.
+    pub fn quarantaene_aufloesen_ueberall(&self, original: &str) -> usize {
+        let adressraeume: Vec<Sitzungsadressraum> = {
+            let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+            stand
+                .quarantaene
+                .iter()
+                .filter(|(_, besitzer)| besitzer == original)
+                .map(|(adressraum, _)| adressraum.clone())
+                .collect()
+        };
+        adressraeume
+            .iter()
+            .filter(|adressraum| self.quarantaene_aufloesen(adressraum, original))
+            .count()
     }
 
     pub fn ist_quarantaenisiert(&self, adressraum: &Sitzungsadressraum, original: &str) -> bool {

@@ -2764,12 +2764,51 @@ fn quarantaene_deckel_weist_ab_statt_zu_wachsen() {
     let wire = format!("{:032x}", paar + 1);
     assert_eq!(
         register.registriere_wire_zuordnung(&raum, "ueber-den-deckel", &wire),
-        Registrierung::Ungueltig
+        Registrierung::DeckelErreicht
     );
     assert_eq!(
         register.quarantaene_anzahl(),
         MAX_QUARANTAENE,
         "die Abweisung hat den Speicher trotzdem wachsen lassen"
+    );
+
+    // D7 der Nacharbeit Runde 1 (Abschlusspruefung 1, 03.09.2026): der Test
+    // erreichte den Deckel nur in ZWEIERSCHRITTEN und sah den UNGERADEN Stand
+    // nie. Eine explizite Aufloesung senkt die Menge auf 1023; die alte
+    // Pruefung `len() >= MAX` liess die naechste Kollision dann passieren und
+    // fuegte anschliessend ZWEI Besitzer ein - 1025 Eintraege, die zugesagte
+    // Obergrenze ueberschritten.
+    assert!(register.quarantaene_aufloesen(&raum, "a0"));
+    assert_eq!(register.quarantaene_anzahl(), MAX_QUARANTAENE - 1);
+    let wire_ungerade = format!("{:032x}", paar + 2);
+    assert_eq!(
+        register.registriere_wire_zuordnung(&raum, "ungerader-stand", &wire_ungerade),
+        Registrierung::DeckelErreicht,
+        "aus dem ungeraden Stand darf keine Kollision mehr entstehen koennen"
+    );
+    assert_eq!(
+        register.quarantaene_anzahl(),
+        MAX_QUARANTAENE - 1,
+        "die Menge ist ueber den Deckel gewachsen"
+    );
+
+    // Und mit zwei freien Plaetzen geht es wieder: die Pruefung RESERVIERT so
+    // viele Plaetze, wie die Kollision einfuegt - nicht mehr und nicht weniger.
+    assert!(register.quarantaene_aufloesen(&raum, "b0"));
+    assert_eq!(register.quarantaene_anzahl(), MAX_QUARANTAENE - 2);
+    let wire_paar = format!("{:032x}", paar + 3);
+    assert_eq!(
+        register.registriere_wire_zuordnung(&raum, "paar-a", &wire_paar),
+        Registrierung::Eingetragen
+    );
+    assert_eq!(
+        register.registriere_wire_zuordnung(&raum, "paar-b", &wire_paar),
+        Registrierung::KollisionBeideQuarantaenisiert
+    );
+    assert_eq!(
+        register.quarantaene_anzahl(),
+        MAX_QUARANTAENE,
+        "die Kollision muss den Deckel exakt treffen"
     );
 }
 
@@ -2811,4 +2850,142 @@ fn guard_aufloesung_raeumt_den_aliaseintrag() {
     // Eine Aufloesung ohne Riegel meldet ehrlich false.
     assert!(!register.quarantaene_aufloesen(&raum, "nie-quarantaenisiert"));
 }
+
+/// D6 der Nacharbeit Runde 1 (Abschlusspruefung 1, 03.09.2026): am Deckel des
+/// Aliasregisters bekam der Peer ein WELCOME statt der von H-14 zugesagten
+/// Ablehnung.
+///
+/// Codex an der Quelle: `registriere_wire_zuordnung` liefert am Deckel
+/// `Ungueltig`, behandelt wurde in `control_hello_registrieren` aber nur die
+/// Kollisionsvariante - danach entstanden Client und Link und die
+/// Registrierung meldete bedingungslos „angenommen". Der Deckel hat seither
+/// eine eigene Variante (`DeckelErreicht`), und sie endet die Registrierung,
+/// bevor irgendetwas angelegt ist.
+#[test]
+fn alias_deckel_weist_das_hello_ab_statt_ein_welcome_zu_senden() {
+    let uhr = Arc::new(ManualClock::default());
+    let c = Coordinator::mit_uhr(uhr.clone(), si_hex(0xbeef));
+
+    // Jede Runde erzeugt genau eine Kollision und damit zwei
+    // Quarantaeneeintraege: zwei Nonces derselben Instanz, danach meldet die
+    // VERDRAENGTE Nonce erneut (C-10, fail-closed Duplikatkonflikt).
+    let mut runde = 0usize;
+    let mut zuletzt_angenommen = 0usize;
+    let abweisung = loop {
+        runde += 1;
+        assert!(runde < 1024, "der Deckel wurde nie erreicht");
+        let instanz = 1000 + runde;
+        let alt = si_hello(instanz, 100, "active_probe");
+        let neu = si_hello(instanz, 101, "active_probe");
+
+        let erste = c.control_hello_registrieren("alt", &alt);
+        if !erste.angenommen {
+            break (instanz, erste);
+        }
+        let zweite = c.control_hello_registrieren("neu", &neu);
+        if !zweite.angenommen {
+            break (instanz, zweite);
+        }
+        assert!(!si_report(&c, "alt", &alt.adresse, 1));
+        zuletzt_angenommen = instanz;
+
+        // Aufraeumen, damit nicht der Clientdeckel zuerst greift. Die
+        // Quarantaene bleibt davon unberuehrt - C-07 verbietet die
+        // zeitbasierte Freigabe.
+        c.control_ende("alt");
+        c.control_ende("neu");
+        uhr.setze_ms((runde as u64 + 1) * (STALE_NACH_MS + TOMBSTONE_MS + 1));
+        c.liveness_tick();
+    };
+
+    let (instanz, ausgang) = abweisung;
+    assert_eq!(
+        ausgang.grund.as_deref(),
+        Some("alias_quarantaene_deckel"),
+        "am Deckel muss der Aliasdeckel der Grund sein, nicht ein anderer Cap"
+    );
+    assert!(zuletzt_angenommen > 0, "vor dem Deckel wurde nie etwas angenommen");
+
+    // Kein Client, kein Link, kein Welcome.
+    assert!(
+        ausgang.zu_schliessende_links.is_empty(),
+        "eine Abweisung schliesst keine fremden Links"
+    );
+    assert!(!c.dispatch_fuer_link_erlaubt("alt"), "es entstand doch ein Link");
+    let abgewiesene = si_hex(instanz);
+    assert!(
+        !c.modell_sicht(&si_hex(1), &si_hex(2))
+            .clients
+            .iter()
+            .any(|client| client.adresse.instance_id == abgewiesene),
+        "der abgewiesene Peer steht als Client im Stand"
+    );
+    assert!(c.cap_abweisungen() > 0, "die Abweisung wurde nicht gezaehlt");
+
+    // Deckel minus eins: die Runde davor lief vollstaendig durch - Hello,
+    // Verdraengung und Duplikatkonflikt inbegriffen.
+    assert_eq!(zuletzt_angenommen, instanz - 1);
+}
+
+/// D8 der Nacharbeit Runde 1 (Abschlusspruefung 1, 03.09.2026): die
+/// Riegelaufloesung suchte ihren Adressraum ueber die LEBENDEN Links.
+///
+/// Trennten sich beide kollidierenden Links vor der Aufloesung, war die Liste
+/// leer: Store- und Coordinator-Guard fielen, die Methode meldete Erfolg - und
+/// der Aliasbesitzer blieb quarantaenisiert. Der Riegel war fort, die
+/// Registrierung derselben Instanz scheiterte trotzdem weiter. Riegel und
+/// Alias liefen auseinander. Seither sucht die Aufloesung ueber das
+/// Quarantaeneregister selbst, das seinen Besitzer kennt.
+#[test]
+fn guard_aufloesung_wirkt_auch_ohne_lebende_links() {
+    let c = Coordinator::mit_uhr(Arc::new(ManualClock::default()), si_hex(0xbeef));
+    let alt = si_hello(10, 100, "active_probe");
+    let neu = si_hello(10, 101, "active_probe");
+    assert!(c.control_hello_registrieren("alt", &alt).angenommen);
+    assert!(c.control_hello_registrieren("neu", &neu).angenommen);
+    // C-10: meldet die VERDRAENGTE Nonce erneut, ist das der fail-closed
+    // Duplikatkonflikt - er quarantinisiert beide Besitzer und setzt den
+    // dauerhaften Riegel.
+    assert!(!si_report(&c, "alt", &alt.adresse, 1));
+
+    let effective = format!(
+        "{}|{}|{}|{}",
+        alt.adresse.logon_sid,
+        alt.adresse.project_binding_id,
+        alt.adresse.session_epoch,
+        alt.adresse.instance_id
+    );
+    assert!(
+        c.konfliktriegel_gesetzt(&effective),
+        "die Nonce-Kollision hat keinen dauerhaften Riegel erzeugt"
+    );
+    assert!(!c.dispatch_fuer_link_erlaubt("neu"), "fail-closed nach Kollision");
+
+    // Der Fall, den der alte Weg nicht sah: BEIDE Links trennen sich, BEVOR
+    // der Riegel explizit aufgeloest wird.
+    c.control_ende("alt");
+    c.control_ende("neu");
+
+    for nonce in [100usize, 101] {
+        let derived = format!("{}:{}", alt.adresse.instance_id, si_hex(nonce));
+        assert!(
+            c.konflikt_guard_aufloesen(&effective, &derived),
+            "die Aufloesung von {derived} meldet Misserfolg"
+        );
+    }
+    assert!(
+        !c.konfliktriegel_gesetzt(&effective),
+        "der Riegel steht nach der Aufloesung noch"
+    );
+
+    // Und jetzt die Probe aufs Exempel: dieselbe Instanz darf sich wieder
+    // anmelden UND wieder routen. Vorher fiel sie dauerhaft an einer
+    // Quarantaene, deren Riegel laengst fort war.
+    assert!(c.control_hello_registrieren("wieder", &neu).angenommen);
+    assert!(
+        c.dispatch_fuer_link_erlaubt("wieder"),
+        "der Alias blieb quarantaenisiert, obwohl der Riegel aufgeloest ist"
+    );
+}
+
 

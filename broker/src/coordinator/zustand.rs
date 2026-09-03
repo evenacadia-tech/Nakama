@@ -217,10 +217,17 @@ pub(super) enum Deckelausgang {
     /// persistiert werden (leer, wenn nichts neu war oder der Pfad gar keine
     /// Riegel setzt).
     Frei(Vec<ConflictGuard>),
-    /// Am Deckel - Alias-Quarantaene ODER persistenter Riegelindex. Weder
-    /// Aliasregister noch Riegeltabelle wurden veraendert, es gibt keinen
-    /// Store-Schreibauftrag, und `cap_abweisungen` ist bereits erhoeht. Der
-    /// Grund ist der Wire-Text der Abweisung.
+    /// Am Deckel - Alias-Quarantaene ODER persistenter Riegelindex. Es
+    /// entsteht kein Riegel, kein Store-Schreibauftrag und keine gewaehlte
+    /// Wire-Zuordnung; `cap_abweisungen` ist bereits erhoeht. Der Grund ist
+    /// der Wire-Text der Abweisung.
+    ///
+    /// Ehrlich benannte Grenze: hat eine echte Kollision stattgefunden, so hat
+    /// `registriere_wire_zuordnung` beide Besitzer bereits QUARANTAENISIERT,
+    /// bevor der Riegeldeckel hier greift. Das ist gewollt - den Konflikt bei
+    /// voller Riegeltabelle zu unterdruecken hiesse, ihn zu waschen, und der
+    /// Besitzer koennte danach wieder registrieren. Die Quarantaene hat ihren
+    /// eigenen Deckel (`MAX_QUARANTAENE`) und waechst nicht unbegrenzt.
     Deckel(&'static str),
 }
 

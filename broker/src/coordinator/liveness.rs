@@ -234,9 +234,9 @@ impl Coordinator {
                 // OHNE Deckelpruefung eingetragen - bei 1023 oder 1024
                 // restaurierten Riegeln entstand die Ueberschreitung genau
                 // hier, und der Store scheiterte erst nach dem Welcome mit
-                // einem bloßen Routing-Abschalten. Jetzt laeuft dieselbe
-                // Pruefung wie im Hello-Pfad, und am Deckel wird in KEINEN der
-                // beiden Speicher eingetragen.
+                // einem blossen Routing-Abschalten. Jetzt laeuft dieselbe
+                // Pruefung wie im Hello-Pfad, und am Deckel entsteht weder ein
+                // Riegel noch eine gewaehlte Wire-Zuordnung.
                 let registrierung = self.alias_register.registriere_wire_zuordnung(
                     &link.alias_adressraum,
                     &link.alias_besitzer,

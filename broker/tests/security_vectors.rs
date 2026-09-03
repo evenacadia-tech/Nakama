@@ -1039,10 +1039,27 @@ fn jeder_unsafe_block_traegt_einen_safety_kommentar() {
 /// und danach nur 4000 ms auf 96 aktive Worker wartet.
 #[test]
 fn abfluss_vor_dem_schliessen_erreicht_den_peer() {
+    // D15 der Nacharbeit Runde 1 (Abschlusspruefung 1, 03.09.2026): der Test
+    // verband hier nur einen Client und schloss ihn sofort - ohne Hello, ohne
+    // Snapshot, ohne irgendeinen Broker-Write. Es gab also gar keinen
+    // Ausgabepuffer abzufliessen; gemessen wurden nur der Spurmarker und ein
+    // weiterhin nuller Zaehler. Beide Haelften der Zusage stehen jetzt in
+    // ihrem eigenen Lauf, jede mit einem ECHTEN ausstehenden Broker-Write.
+
+    // ── H-07 (a): der lesende Peer bekommt den gepufferten Inhalt ─────────
     let pipe = probe_pipe("h07");
     let (mut griff, _) = start(&pipe, V3SecurityTestOptionen::default());
-    let client = verbinden(&pipe);
+    let mut client = verbinden(&pipe);
     assert!(warten(3000, || griff.aktive_worker() == 1));
+    // Ein gueltiges Hello: der Broker ANTWORTET mit einem Welcome - erst
+    // damit liegt wirklich etwas im Ausgabepuffer.
+    client.write_all(&control_hello()).expect("Hello schreiben");
+    client.flush().ok();
+    let welcome = frame_lesen(&mut client);
+    assert_eq!(
+        welcome["type"], "welcome",
+        "der gepufferte Broker-Write erreichte den lesenden Peer nicht"
+    );
     drop(client);
 
     // Die Reihenfolge IST die Zusage: abfliessen, trennen, schliessen. Vorher
@@ -1061,6 +1078,33 @@ fn abfluss_vor_dem_schliessen_erreicht_den_peer() {
         "der Abfluss lief in seine Frist, obwohl der Peer nichts offen hielt"
     );
     griff.stoppen();
+
+    // ── H-07 (b): der NICHT lesende Peer kostet genau die Frist ───────────
+    let pipe = probe_pipe("h07b");
+    let (mut griff, _) = start(&pipe, V3SecurityTestOptionen::default());
+    let mut client = verbinden(&pipe);
+    assert!(warten(3000, || griff.aktive_worker() == 1));
+    client.write_all(&control_hello()).expect("Hello schreiben");
+    client.flush().ok();
+    assert!(warten(5000, || griff
+        .sicherheits_spur()
+        .contains(&"hello_accept")));
+
+    // Der Peer laesst das Welcome im Puffer stehen und liest NIE. Bei Named
+    // Pipes wartet `FlushFileBuffers` auf genau diesen Peer - ohne harte Frist
+    // haenge der Abbau hier unbegrenzt.
+    let vor_dem_stopp = Instant::now();
+    griff.stoppen();
+    let dauer = vor_dem_stopp.elapsed();
+    assert!(
+        griff.statistik.flush_abgelaufen.load(Ordering::SeqCst) > 0,
+        "der nicht lesende Peer wurde nicht gezaehlt - lief ueberhaupt ein Abfluss?"
+    );
+    assert!(
+        dauer < Duration::from_secs(5),
+        "das Schliessen dauerte {dauer:?}; die Frist je Verbindung sind 250 ms"
+    );
+    drop(client);
 
     // ── H-08: der Ablehnungsgrund erreicht den Peer ───────────────────────
     let pipe = probe_pipe("h08");

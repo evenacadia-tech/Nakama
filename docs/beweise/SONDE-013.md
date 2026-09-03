@@ -3,8 +3,8 @@
 | Merkmal | Wert |
 |---|---|
 | Ticket | S20–22, `SONDE-013` (Phase P4–P5) |
-| Phase | **Etappe 1 abgeschlossen (2026-09-04): Verhaltensmatrix nach Matrixprüfung 1, Nacharbeit 1, Wiederprüfung 1, Nacharbeit 2 und Wiederprüfung 2 (PASS) abgenommen — Etappe 2 (Bau) beginnt auf diesem Stand.** Bauauftrag: `docs/beweise/roh/SONDE-013-etappe-2-auftrag.txt` |
-| Urteil | **offen** — dieses Manifest ist weder Bau- noch Prüfurteil |
+| Phase | **Etappe 2 — Bau, Etappe A läuft.** Etappe 1 (Verhaltensmatrix) ist am 2026-09-04 nach Matrixprüfung 1, Nacharbeit 1, Wiederprüfung 1, Nacharbeit 2 und Wiederprüfung 2 (PASS) abgenommen; die Matrix in §3 ist ab hier die Spezifikation. Bauauftrag: `docs/beweise/roh/SONDE-013-etappe-2-auftrag.txt`, Bau-Verlauf in §10 |
+| Urteil | **offen** — T1 setzt der Erbauer nach der letzten Bauetappe, T2 der Dirigent nach der Codex-Abnahme |
 | Prüfstufe | T1+T2 gefordert (`docs/bauaufteilung-sonden.md`:392); in dieser Etappe wird keine Stufe gefahren |
 | Basis-SHA | `ed9bbf7fec951a061749abf143cb2158c1c4ee52` (gemessen mit `git rev-parse HEAD`) |
 | Kanon vorher | GRUEN 40/40 auf `a627ebb`, Rohausgabe `docs/beweise/roh/NAK-121-a627ebb.md`. `git diff --stat a627ebb..ed9bbf7 -- broker eq-copilot tools` ist **leer**: der Codestand von `ed9bbf7` ist mit dem beglaubigten Kanonstand identisch, die acht Commits dazwischen ändern ausschließlich Dateien unter `docs/` (`git diff --name-only a627ebb..ed9bbf7` liefert 8 Pfade, alle mit diesem Präfix). |

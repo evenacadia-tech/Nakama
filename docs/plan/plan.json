@@ -255,7 +255,7 @@
      "leitungsname": "Vergleiche, Passagen und manuelle Hörversuche auswertbar machen",
      "ticket": "SONDE-013",
      "text": "Dynamik, Stereo, vor/nach der Kette, Passagen — und der manuelle Experimentkern.",
-     "beleg": "",
+     "beleg": "docs/beweise/SONDE-013.md",
      "stufe": "T2"
     },
     {

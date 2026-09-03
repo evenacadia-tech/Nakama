@@ -1,0 +1,38 @@
+URTEIL: NEEDS_WORK
+
+## 1. Befunde 1–9, L1 und L2
+
+1. **Nein — DEFEKT, D-P01 bis D-P07.** Die Faktorisierung in D-K, D-P und D-A ist inhaltlich nachvollziehbar, aber nicht vollständig messbar hinterlegt. D-P01–D-P07 gelten laut Matrix für V3C, V3T und V2 ([NAK-134.md:242](C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-134.md:242)); §12 ordnet jedoch sämtliche D-P-Zeilen ausschließlich `IpcTestMain.cpp` zu, während `PipeClientLifecycleTestMain.cpp` keine D-P-Zeile erhält ([NAK-134.md:485](C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-134.md:485)). `IpcTestMain.cpp:14,19` bindet nur Control und Telemetry ein; der V2-Client liegt ausschließlich in `PipeClientLifecycleTestMain.cpp:3`. Zusätzlich fehlt der in D-P03 angekündigte Test `parken_uebergeht_den_backoff` in der Testkarte, und D-P07 wird vom dortigen Backoff-Test nicht aufgeführt (`NAK-134.md:424-447`). Die drei Backoff-Schleifen existieren zwar in `ControlClient.cpp:984-1025`, `TelemetryClient.cpp:370-436` und `PipeClient.cpp:290-334`; für V2 fehlt aber der versprochene Messpfad.
+
+2. **Ja.** D-K04–D-K06 trennen bestandene Serverauthentisierung von ausgebliebenem Welcome und geben jeweils `false` zurück; D-P02 hält ausdrücklich fest, dass dadurch keine Backoff-Rücksetzung erfolgt (`NAK-134.md:196-198,243`). Das entspricht `ControlClient.cpp:1232-1240`, `TelemetryClient.cpp:689-697`, `PipeClient.cpp:604-622`; zurückgesetzt wird nur bei Rückgabe `true` in `ControlClient.cpp:988-992`, `TelemetryClient.cpp:401-405` und `PipeClient.cpp:294-303`.
+
+3. **Ja.** Sämtliche V2-Ausgänge tragen jetzt `verbindungsVersuche +1`; E-Z03 formuliert den Zählervertrag und nennt `pipeclient_zaehlervertrag` (`NAK-134.md:195-218,295`). Das entspricht `PipeClient.cpp:342-347`.
+
+4. **Ja.** D-K21/D-K22 und D-K24/D-K25 sagen nun ausdrücklich „heute +1, nach R1 weiterhin +1“; D-K23/D-K26 grenzen die positionsgesteuerte V2-Semantik ab. E-Z04/E-Z05 sichern beide Bedeutungen (`NAK-134.md:213-218,296-297`). Das entspricht `ControlClient.cpp:1101-1103`, `TelemetryClient.cpp:554-556` und `PipeClient.cpp:418`.
+
+5. **Ja.** Die drei falschen Testverweise wurden ersetzt: D-K03, D-K08 und D-A12 benennen jetzt passende neue Fälle und begrenzen die Aussage der vorhandenen Tests. D-K10/D-K11 ergänzen `erwartungUngueltig` und `serverPidNichtErmittelbar`; D-P01/D-P02 sowie W-H3 verlangen Versuchsstempel, Rücksetzung und Deckel (`NAK-134.md:195,200,202-203,242-244,281,414`). Der verbleibende V2-Phasenbeleg ist bereits unter Befund 1 erfasst.
+
+6. **Ja.** W-01 und W-02 verlangen nun jeweils einen deterministischen C++-Erzeugertest im Modus `selbsttest-zaehler` und zusätzlich eine Berichtsmutante (`NAK-134.md:385-402,444-447`). Damit werden sowohl C++-Erzeugung als auch Python-Prüfer getrennt belegt.
+
+7. **Ja.** D-K18–D-K20 und §7 versprechen keine 4.000-ms-Obergrenze mehr, sondern prüfen `dauer >= 4.000 ms` zusammen mit `ERROR_PIPE_BUSY` (`NAK-134.md:210-212,338-347`). Das entspricht den 20 tatsächlich ausgeführten Wait-Runden in `IpcVerbindung.cpp:67-89` und `PipeClient.cpp:371-390`.
+
+8. **Nein — DEFEKT, Fristzeile D-A01 bis D-A06.** Die Trennung vor/nach `CreateFileW` und stop/reconnect ist mit D-A01–D-A12 richtig eingeführt. Die neue Fristzeile behauptet jedoch eine **untere Schranke** von „Restzeit der Wartezeit plus eine `CreateFileW`-Runde“ ([NAK-134.md:350](C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-134.md:350)). Das widerspricht `IpcVerbindung.cpp:69-88` und `PipeClient.cpp:373-389`: Nach einer laufenden Wait-Runde kann der Abbruch bereits am nächsten Schleifenkopf greifen, ohne weitere `CreateFileW`-Runde. Trifft er erst nach der Kopfprüfung ein, kann genau eine CreateFile-Runde folgen. Das ist R5s Spätestens-Zusage, keine positive untere Schranke.
+
+9. **Ja.** E-V08 nennt ausschließlich die Dateiliste des Phase-2-Änderungssatzes als Beleg und führt `git diff --stat` als eigenen Lauf (§13), nicht mehr grüne State-/Schema-Tests (`NAK-134.md:311,508`). Der geprüfte Phase-1b-Diff enthält ausschließlich die beiden gebundenen Dokumentpfade.
+
+**L1/R4: Ja.** R4 ist aufgenommen; D-K12/D-K13 und D-P04 beschreiben Handle-Schluss, `nichtGeprueft`, Backoff, keinen Startpfad und keine Zählung. Der fehlende Win32-Berichtswert ist ausdrücklich als Phase-2-Änderung benannt; bei fehlender Injektionsmöglichkeit wird die Probe ehrlich zur „Regressionswache durch Lesen“ herabgestuft (`NAK-134.md:113-131,204-205,245,431`). Das entspricht `IpcVerbindung.cpp:106-121` und der Positivliste in `ControlClient.cpp:1101-1103` beziehungsweise `TelemetryClient.cpp:554-556`.
+
+**L2/R5: Nein — DEFEKT, D-A01 bis D-A12/§7.** Zeitpunkt, Vorgang und Pfad sind vollständig getrennt und die zwölf Tests benannt (`NAK-134.md:270-281,432,441`). Die in §7 eingetragene falsche untere Schranke widerspricht jedoch R5 und dem Schleifencode; deshalb ist L2 insgesamt noch nicht geschlossen.
+
+## 2. Hat die Nacharbeit etwas gebrochen?
+
+**Ja.** Die neue Fristzeile `NAK-134.md:350` widerspricht sowohl R5 als auch den Abbruchprüfungen in `IpcVerbindung.cpp:69-88` und `PipeClient.cpp:373-389`. Sie muss als Spätestens-/Fallunterscheidung formuliert werden: laufender Wait darf auslaufen; liegt der Abbruch nach der Schleifenkopfprüfung, darf noch eine CreateFile-Runde folgen. Eine Mindestdauer gibt es nicht.
+
+Kein zuvor tatsächlich messender Test wurde einer alten, weiterhin bestehenden Zeile entzogen. Die nicht gedeckte V2-D-P-Zuordnung ist ein offener Teil von Befund 1, kein Verlust eines zuvor passenden Tests. R1–R4, NAK-123-C und die geprüften CLAUDE.md-Invarianten werden durch die übrigen Nacharbeiten nicht gebrochen.
+
+**Geprüft:** vollständiger gebundener Diff `8e6a2ac...aaaa1a3`, Manifest und gespeichertes Vorurteil, die genannten IPC-/Lifecycle-/A24-Quellen, relevante vorhandene Testbeine, NAK-123-Matrix C, CLAUDE.md sowie die Dateiliste des Änderungssatzes. Keine Datei wurde verändert. Der bereits vorhandene unversionierte Pfad `.claude/settings.local.json` blieb unberührt.
+
+**Nicht geprüft:** keine Builds, Tests, Preflights, Broker, Produktprozesse oder Pipes gestartet; keine ausgeschlossenen Dokumentations-, Stil- oder sonstigen neuen Befundflächen untersucht.
+
+HEAD vor dem Lauf: `aaaa1a3fda465215ba5b6120cf653d13abd76acd`  
+HEAD nach dem Lauf: `aaaa1a3fda465215ba5b6120cf653d13abd76acd`

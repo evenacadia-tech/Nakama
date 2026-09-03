@@ -183,6 +183,12 @@ pub(super) struct Stand {
     /// auseinander. Der Schluessel ist die ASCII-kleingeschriebene effektive
     /// Adresse; Windows-SIDs sind reines ASCII.
     pub(super) conflict_guards_gefaltet: HashMap<String, HashSet<String>>,
+    /// H-16: Links, die eine Nonce-Verdraengung ausgeloest hat und deren
+    /// Snapshot-Push noch aussteht. `control_ende` raeumt den Link selbst
+    /// bereits ab, bevor `control_getrennt` kommt - der Marker kann deshalb
+    /// nicht am Link haengen. Er wird in control_getrennt entnommen und
+    /// ausgeloest.
+    pub(super) verdraengt_wartet_auf_push: HashSet<String>,
     pub(super) routing_bereit: bool,
     pub(super) dirty_sessions: HashSet<SessionKey>,
     pub(super) session_commands: HashMap<String, SessionCommandWirkung>,
@@ -268,6 +274,7 @@ impl Default for Stand {
             telemetry_links: HashSet::new(),
             telemetry_kopplungen: 0,
             conflict_guards_gefaltet: HashMap::new(),
+            verdraengt_wartet_auf_push: HashSet::new(),
             conflict_guards: HashMap::new(),
             routing_bereit: true,
             dirty_sessions: HashSet::new(),

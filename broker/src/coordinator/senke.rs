@@ -24,7 +24,37 @@ impl crate::transport::server_v3::Senke for Coordinator {
         self.control_ende(link_id);
     }
 
-    fn control_getrennt(&self, _link_id: &str) {}
+    /// H-16, Schritt 3: der Push der bei einer Nonce-Verdraengung dirty
+    /// markierten Session.
+    ///
+    /// Hier und nicht frueher, weil erst hier das C-06-Cleanup des verdraengten
+    /// Links vollstaendig ist: der Transport meldet `control_getrennt` NACH den
+    /// fristbegrenzten Joins und nach dem Warten auf das `telemetrie_getrennt`
+    /// der mitfallenden Telemetrieverbindung. `control_ende` waere zu frueh -
+    /// es laeuft ueber `control_schliesst` noch vor Kopplungsloesung, Joins und
+    /// Trenncallbacks.
+    ///
+    /// Bis NAK-121 war das ein Leerrumpf, und der Push kam erst mit dem
+    /// naechsten Heartbeat - bis zu HEARTBEAT_INTERVAL_MS spaeter. Der
+    /// Heartbeat bleibt der Rueckfall, falls kein Transportcallback kommt; die
+    /// Session ist dirty markiert und geht nicht verloren.
+    fn control_getrennt(&self, link_id: &str) {
+        let dirty: Vec<SessionKey> = {
+            let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+            // Nur fuer einen Link, den eine Verdraengung markiert hat - ein
+            // gewoehnliches Verbindungsende hat seinen Flush laengst. Der
+            // Marker liegt in einer eigenen Menge, weil `control_ende` den Link
+            // selbst schon abgeraeumt hat, bevor dieser Callback kommt.
+            if !stand.verdraengt_wartet_auf_push.remove(link_id) {
+                return;
+            }
+            stand.dirty_sessions.iter().cloned().collect()
+        };
+        // Ohne Lock, wie C-09 es verlangt.
+        for session in dirty {
+            self.flush_session(&session, None);
+        }
+    }
     fn telemetrie_gekoppelt(&self, link_id: &str) {
         let neu = {
             let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());

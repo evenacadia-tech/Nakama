@@ -163,6 +163,17 @@ impl Coordinator {
                     }
                     Self::subscription_entfernen_locked(&mut stand, alter_link);
                     schliessen.push(alter_link.to_owned());
+                    // H-16, Schritt 1: die verdraengte Session wird unter dem
+                    // Lock nur DIRTY markiert, nicht gepusht. Ein Push vor der
+                    // Rueckkehr liefe vor dem Abbau, den der Transport erst
+                    // danach beginnt (server_v3.rs, Rueckgabe der zu
+                    // schliessenden Links) - und damit vor Ingress-Schluss,
+                    // Kopplungsloesung, Joins und Trenncallbacks. Das verletzte
+                    // C-06. Den Push loest Schritt 3 in control_getrennt aus.
+                    stand.dirty_sessions.insert(key.session());
+                    stand
+                        .verdraengt_wartet_auf_push
+                        .insert(alter_link.to_owned());
                 }
             }
         }

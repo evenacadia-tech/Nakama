@@ -1349,3 +1349,110 @@ fn p0_ziel_ist_bei_zwei_links_derselben_adresse_deterministisch() {
     assert!(c.verbindung_soll_trennen("sonde-b"));
     assert!(!c.verbindung_soll_trennen("sonde-a"));
 }
+
+// ── NAK-121 H-16 ───────────────────────────────────────────────────────────
+//
+// Ergaenzung zu C-10: die Verdraengung bekommt eine FRIST fuer den
+// Snapshot-Push - und zwar hinter dem vollstaendigen C-06-Cleanup. Bis NAK-121
+// nannte C-10 keine, und der Push kam erst mit dem naechsten Heartbeat, also
+// bis zu HEARTBEAT_INTERVAL_MS spaeter.
+
+/// Zaehlt nur, ohne selbst etwas zu tun - so sind die drei Messpunkte exakt.
+#[derive(Default)]
+struct ZaehlPush {
+    snapshots: AtomicU64,
+    ziele: std::sync::Mutex<Vec<String>>,
+}
+
+impl eqcop_broker::coordinator::SessionPush for ZaehlPush {
+    fn snapshot_schreiben(&self, link_id: &str, _payload: &[u8]) -> bool {
+        self.snapshots.fetch_add(1, Ordering::SeqCst);
+        self.ziele
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .push(link_id.to_owned());
+        true
+    }
+}
+
+#[cfg(windows)]
+#[test]
+fn verdraengung_flusht_den_snapshot_im_trennzyklus() {
+    let clock = Arc::new(ManualClock::default());
+    let c = Arc::new(Coordinator::mit_uhr(clock.clone(), hex(0xbeef)));
+    let push = Arc::new(ZaehlPush::default());
+    c.session_push_setzen(push.clone());
+
+    let alt = hello(1, 2, 10, 100, "main", Some(9));
+    anmelden(&c, "alt", &alt);
+    assert!(abonnieren(&c, "alt", &alt.adresse));
+
+    // Drei Messpunkte, alle OHNE Uhrenschritt - der Push haengt an der
+    // Trennreihenfolge, nicht am Heartbeat-Takt.
+    let neu = hello(1, 2, 10, 101, "main", Some(9));
+    anmelden(&c, "neu", &neu);
+    // Der neue Link abonniert - sonst haette der Flush spaeter kein Ziel und
+    // der Test koennte einen ausbleibenden Push nicht von einem leeren
+    // unterscheiden.
+    assert!(abonnieren(&c, "neu", &neu.adresse));
+    let vor_verdraengung = push.snapshots.load(Ordering::SeqCst);
+    assert!(
+        vor_verdraengung > 0,
+        "der Subscribe hat gar nicht gepusht - der Test misst sonst nichts"
+    );
+
+    Senke::control_schliesst(c.as_ref(), "alt");
+    assert_eq!(
+        push.snapshots.load(Ordering::SeqCst),
+        vor_verdraengung,
+        "control_ende hat gepusht - das laeuft noch vor Joins und Trenncallbacks"
+    );
+
+    Senke::control_getrennt(c.as_ref(), "alt");
+    assert!(
+        push.snapshots.load(Ordering::SeqCst) > vor_verdraengung,
+        "control_getrennt hat nicht geflusht - der Push haengt weiter am Heartbeat"
+    );
+}
+
+/// Vierte Assertion aus dem Konvergenzentscheid Paragraph 11.2: der behaltene
+/// Heartbeat-Rueckfall ist C-06-konform, weil die Subscription des verdraengten
+/// Links zu diesem Zeitpunkt bereits unter dem Lock entfernt ist. Ein Heartbeat
+/// zwischen control_schliesst und control_getrennt darf den alten Link deshalb
+/// nicht adressieren.
+#[cfg(windows)]
+#[test]
+fn heartbeat_zwischen_schliessen_und_getrennt_adressiert_den_alten_link_nicht() {
+    let clock = Arc::new(ManualClock::default());
+    let c = Arc::new(Coordinator::mit_uhr(clock.clone(), hex(0xbeef)));
+    let push = Arc::new(ZaehlPush::default());
+    c.session_push_setzen(push.clone());
+
+    let alt = hello(1, 2, 10, 100, "main", Some(9));
+    anmelden(&c, "alt", &alt);
+    assert!(abonnieren(&c, "alt", &alt.adresse));
+
+    let neu = hello(1, 2, 10, 101, "main", Some(9));
+    anmelden(&c, "neu", &neu);
+    assert!(abonnieren(&c, "neu", &neu.adresse));
+    Senke::control_schliesst(c.as_ref(), "alt");
+
+    // Genau im Fenster: der Heartbeat der NEUEN Nonce flusht die dirty
+    // markierte Session, waehrend der alte Link seine Joins noch laufen hat.
+    push.ziele.lock().unwrap().clear();
+    let vorher = push.snapshots.load(Ordering::SeqCst);
+    clock.setze_ms(HEARTBEAT_INTERVAL_MS);
+    assert!(report(&c, "neu", &neu.adresse));
+    c.liveness_tick();
+    assert!(
+        push.snapshots.load(Ordering::SeqCst) > vorher,
+        "der Heartbeat-Rueckfall hat gar nicht gepusht - der Test misst sonst nichts"
+    );
+
+    let ziele = push.ziele.lock().unwrap().clone();
+    assert!(
+        !ziele.iter().any(|z| z == "alt"),
+        "der Heartbeat-Push adressierte den verdraengten Link: {ziele:?}"
+    );
+    assert!(ziele.iter().any(|z| z == "neu"));
+}

@@ -2600,3 +2600,359 @@ fn prepost_filtert_ausschluss_und_rechnet_in_einer_konvention() {
          {nachher:?}"
     );
 }
+
+// ═════════════════════════════════════════════════════════════════════════
+// R14/R28/R32 · Outbox und Zustellung (Nacharbeit 2)
+//
+// Die Regel dieser Klasse: Nachricht rein → Outbox-Eintrag → Push → im
+// Plugin-Modell angekommen. Eine Outbox-Schuld ohne Leser ist ein Defekt.
+// Die drei Tests hier messen die ersten drei Glieder im Broker; das vierte
+// misst B10 auf der C++-Seite gegen DASSELBE Fixture des Korpus.
+// ═════════════════════════════════════════════════════════════════════════
+
+/// Was der Broker an den abonnierten Main geschrieben hat, nur die Payloads.
+#[cfg(windows)]
+fn gepusht(h: &HarnischMitStore) -> Vec<Value> {
+    h.push.payloads().into_iter().map(|(_, w)| w).collect()
+}
+
+/// R14 — das Versuchsergebnis ERREICHT Gen.
+///
+/// 🔑 Die Runde 1 rechnete das Resultat und legte es in den Store. Der
+/// Terminal-Event bekam aber gar keine `snapshot_ziele`, und der
+/// Sessionsnapshot trug ueberhaupt kein Experimentfeld: es gab keine
+/// Outbox-Schuld, keinen Push und im Plugin-Modell nichts anzukommen. Ein
+/// Test, der `experiment_sicht()` fragt, sieht davon nichts — er fragt das
+/// Modul, nicht den Weg.
+#[cfg(windows)]
+#[test]
+fn versuchsergebnis_erreicht_gen_ueber_outbox_und_push() {
+    let h = HarnischMitStore::neu("r14-rueckweg");
+    h.abonniert();
+    let versuch = 0xd00;
+    let vorlage = experiment_begin_wert(&h.main.adresse, 0x9b0, versuch);
+    let sonde = sonde_in_der_passage(&h, &vorlage);
+    let epoche = vorlage["passage"]["transport_epoch"].as_u64().unwrap();
+    let von = vorlage["passage"]["projekt_von"].as_i64().unwrap();
+
+    // Baseline VOR dem Begin, dann Begin und Kandidat.
+    for nr in 0..8 {
+        assert!(h
+            .c
+            .evidence_snapshot_json("sonde", &evidenz_in_passage(&sonde.adresse, &vorlage, nr)));
+    }
+    assert_eq!(
+        h.p0(&experiment_begin_wert(&h.main.adresse, 0x9b1, versuch))["ergebnis"],
+        "angewandt"
+    );
+    assert_eq!(
+        h.p0(&json!({
+            "type": "experiment_candidate",
+            "kopf": {
+                "command_id": hex(0x9b2), "ziel": h.main.adresse, "base_revision": 0,
+                "ttl_ms": 1000, "schema_major": 3, "schema_minor": 0
+            },
+            "experiment_id": hex(versuch),
+            "referenz": vorlage["referenz"],
+            "blindreihenfolge": "kandidat_zuerst"
+        }))["ergebnis"],
+        "angewandt"
+    );
+    // Resultatmessung NACH dem Kandidaten.
+    for nr in 12..18 {
+        assert!(h.c.evidence_snapshot_json(
+            "sonde",
+            &evidenz_payload(&sonde.adresse, nr, |w| {
+                w["transport"]["transport_epoch"] = json!(epoche);
+                w["transport"]["project_sample_start"] = json!(von + (nr as i64) * 512);
+            })
+        ));
+    }
+
+    // Der OFFENE Versuch reist bereits mit — Gen soll sehen, dass einer
+    // laeuft. Was es vor dem Terminal NICHT gibt, ist eine Aussage: kein
+    // Hoerurteil, keine aufgedeckte Reihenfolge, kein Urteil. Genau das
+    // trennt „ein Versuch laeuft" von „ein Versuch hat ein Ergebnis".
+    for w in gepusht(&h) {
+        let Some(liste) = w["experimente"].as_array() else {
+            continue;
+        };
+        for e in liste {
+            assert_eq!(e["offen"], json!(true), "vor dem Terminal ist er offen: {e}");
+            assert!(
+                e["hoerurteil"].is_null()
+                    && e["blindreihenfolge"].is_null()
+                    && e["urteil"].is_null(),
+                "vor dem Terminal reist KEINE Aussage — die Blindreihenfolge \
+                 waere sonst vor dem Urteil aufgedeckt (M-44): {e}"
+            );
+        }
+    }
+
+    let ack = h.p0(&json!({
+        "type": "experiment_manual_result",
+        "kopf": {
+            "command_id": hex(0x9b3), "ziel": h.main.adresse, "base_revision": 0,
+            "ttl_ms": 1000, "schema_major": 3, "schema_minor": 0
+        },
+        "experiment_id": hex(versuch),
+        "hoerurteil": "kandidat",
+        "blindreihenfolge": "kandidat_zuerst",
+        "notiz": null,
+        "werkzeug": null
+    }));
+    assert_eq!(ack["ergebnis"], "angewandt", "das Terminal wird angewandt: {ack}");
+
+    // 🔑 DAS ist die Zusage: der Snapshot mit dem Versuch ist WIRKLICH
+    // geschrieben worden — nicht nur gerechnet, nicht nur geschuldet.
+    let mit_versuch: Vec<Value> = gepusht(&h)
+        .into_iter()
+        .filter(|w| w["experimente"].is_array())
+        .collect();
+    let letzter = mit_versuch
+        .last()
+        .unwrap_or_else(|| panic!("R14: ein Push traegt den Versuch: {:?}", gepusht(&h)));
+    let e = &letzter["experimente"][0];
+    assert_eq!(e["experiment_id"], json!(hex(versuch)));
+    assert_eq!(e["ereignis"], "ergebnis", "die Transition reist mit: {e}");
+    assert_eq!(e["offen"], json!(false), "und der Versuch ist zu: {e}");
+    assert_eq!(
+        e["hoerurteil"], "kandidat",
+        "das Userurteil reist mit, nicht nur das Metrikdelta: {e}"
+    );
+    assert_eq!(
+        e["blindreihenfolge"], "kandidat_zuerst",
+        "die Reihenfolge wird MIT dem Terminal aufgedeckt (M-44): {e}"
+    );
+    assert!(
+        e["urteil"].is_string(),
+        "und genau eine der fuenf zulaessigen Aussagen (M-46): {e}"
+    );
+
+    // Die Zustellschuld ist danach abgetragen. Eine Schuld, die niemand
+    // abtraegt, waechst — und ein Wiederanlauf sendet sie erneut.
+    assert_eq!(
+        h.zeilen("SELECT COUNT(*) FROM outbox WHERE object_key='session_snapshot'"),
+        0,
+        "R14: der zugestellte Snapshot ist kompaktiert"
+    );
+}
+
+/// R32 — das PRE/POST-Paarurteil ERREICHT Gen.
+///
+/// 🔑 Die Runde 1 legte es in eine fluechtige Map im Coordinator: kein
+/// `StoreEvent`, kein Dirty-Snapshot, kein Outboxziel. PRE/POST-Nachrichten
+/// erreichten den Coordinator, aber keinen fuer Gen sichtbaren Ausgang. Der
+/// bestehende Test fragte `paarurteil()` — die Map selbst.
+#[cfg(windows)]
+#[test]
+fn paarurteil_erreicht_gen_ueber_outbox_und_push() {
+    let h = HarnischMitStore::neu("r32-rueckweg");
+    h.abonniert();
+    let paar = hex(0x77);
+    let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+        let mut s = h.main.clone();
+        s.plugin_kind = "passive_probe".into();
+        s.adresse.instance_id = hex(instanz);
+        s.adresse.runtime_nonce = hex(nonce);
+        anmelden(&h.c, kuerzel, &s);
+        assert!(
+            h.c.descriptor_setzen(kuerzel, descriptor(&s.adresse, position, &paar)),
+            "der {position}-Deskriptor wird angenommen"
+        );
+        s
+    };
+    let pre = haelfte("pre", 0x30, 0x31, "pre");
+    let post = haelfte("post", 0x32, 0x33, "post");
+
+    assert!(
+        gepusht(&h).iter().all(|w| w["paare"].is_null()),
+        "vor dem ersten Snapshot reist kein Paar: {:?}",
+        gepusht(&h)
+    );
+
+    for nr in 0..8 {
+        assert!(h
+            .c
+            .evidence_snapshot_json("pre", &evidenz_payload(&pre.adresse, nr, |_| {})));
+        assert!(h
+            .c
+            .evidence_snapshot_json("post", &evidenz_payload(&post.adresse, nr, |_| {})));
+    }
+
+    // 🔑 Das Urteil steht nicht nur in der Map, es ist GESCHRIEBEN.
+    let mit_paar: Vec<Value> = gepusht(&h)
+        .into_iter()
+        .filter(|w| w["paare"].is_array())
+        .collect();
+    let letzter = mit_paar
+        .last()
+        .unwrap_or_else(|| panic!("R32: ein Push traegt das Paarurteil: {:?}", gepusht(&h)));
+    let p = &letzter["paare"][0];
+    assert_eq!(p["pair_id"], json!(paar));
+    assert!(
+        p["klasse"].is_string() && p["kettenbefund"].is_string(),
+        "Klasse und Kettenbefund reisen mit (M-13/M-22): {p}"
+    );
+    // Und die Zusage aus M-21 haelt auch auf dem Draht: ohne validierte
+    // Presentation-Abbildung keine starke Klasse.
+    assert_ne!(
+        p["klasse"], "feature_aligned",
+        "ohne validierte Presentation-Abbildung keine starke Aussage: {p}"
+    );
+    assert_eq!(
+        h.zeilen("SELECT COUNT(*) FROM outbox WHERE object_key='session_snapshot'"),
+        0,
+        "R32: der zugestellte Snapshot ist kompaktiert"
+    );
+}
+
+/// R28 — die Evidenzruecknahme wird dem Abonnenten WIRKLICH zugestellt.
+///
+/// 🔑 Die Runde 1 legte nur eine Outbox-Schuld an. Kein Produktcode las sie
+/// aus, `SessionPush::snapshot_schreiben` wurde fuer die Invalidierung nie
+/// gerufen, und die Schuld blieb ewig stehen. Ein aktiver Subscriber erhielt
+/// die Ruecknahme nie — er zeigte weiter Zahlen, deren Grundlage zurueck-
+/// gezogen war.
+#[cfg(windows)]
+#[test]
+fn invalidierung_wird_dem_abonnenten_wirklich_zugestellt() {
+    let h = HarnischMitStore::neu("r28-zustellung");
+    h.abonniert();
+    let sonde = {
+        let mut s = h.main.clone();
+        s.plugin_kind = "passive_probe".into();
+        s.adresse.instance_id = hex(0x20);
+        s.adresse.runtime_nonce = hex(0x21);
+        s
+    };
+    anmelden(&h.c, "sonde", &sonde);
+    report(&h.c, "sonde", &sonde.adresse);
+    for nr in 0..3 {
+        assert!(h
+            .c
+            .evidence_snapshot_json("sonde", &evidenz_payload(&sonde.adresse, nr, |_| {})));
+    }
+    assert!(
+        gepusht(&h)
+            .iter()
+            .all(|w| w["type"] != "evidence_invalidate"),
+        "vor der Ruecknahme reist keine"
+    );
+
+    let betroffen = h.c.invalidierung_wegen_material_fuer_link("sonde", None, None);
+    assert!(betroffen > 0, "die Ruecknahme trifft gespeicherte Evidenz");
+
+    // 🔑 Sie ist WIRKLICH geschrieben worden, als eigene Familie mit eigenem
+    // Leser — nicht als Sessionschnitt und nicht als blosse Schuld.
+    let ruecknahmen: Vec<Value> = gepusht(&h)
+        .into_iter()
+        .filter(|w| w["type"] == "evidence_invalidate")
+        .collect();
+    let n = ruecknahmen
+        .first()
+        .unwrap_or_else(|| panic!("R28: die Ruecknahme wird zugestellt: {:?}", gepusht(&h)));
+    assert_eq!(
+        n["grund"], "material_wechsel",
+        "mit ihrem Grund, nicht auf einen bekannten abgebildet: {n}"
+    );
+    // Geaendertes Material nimmt die GANZE Sitzung (M-54): der Fingerprint
+    // sagt, dass sich das Material geaendert hat, nicht wo.
+    assert_eq!(
+        n["umfang"], json!({"art": "ganze_sitzung"}),
+        "und mit ihrem diskriminierten Umfang, ohne Bereich (M-57): {n}"
+    );
+
+    // Der zweite Umfang reist ebenso — ein Weg, der nur eine der drei Arten
+    // zustellt, waere fuer die anderen zwei tot.
+    for nr in 3..6 {
+        assert!(h
+            .c
+            .evidence_snapshot_json("sonde", &evidenz_payload(&sonde.adresse, nr, |_| {})));
+    }
+    assert!(h
+        .c
+        .invalidierung_wegen_intervention_fuer_link("sonde", 0, i64::MAX / 2) > 0);
+    let bereich = gepusht(&h)
+        .into_iter()
+        .filter(|w| w["type"] == "evidence_invalidate")
+        .last()
+        .expect("R28: auch die zweite Ruecknahme wird zugestellt");
+    assert_eq!(bereich["grund"], "intervention", "{bereich}");
+    assert_eq!(
+        bereich["umfang"]["art"], "sample_range",
+        "der Bereichsumfang reist als Bereich, nicht als Sitzung: {bereich}"
+    );
+
+    // Und die Schuld ist abgetragen. Sie stehenzulassen hiesse, sie bei
+    // jedem Wiederanlauf erneut zuzustellen.
+    assert_eq!(
+        h.zeilen("SELECT COUNT(*) FROM outbox WHERE object_key='evidence_invalidate'"),
+        0,
+        "R28: die zugestellte Ruecknahme ist kompaktiert"
+    );
+}
+
+/// Selbstaudit dieser Runde: der Rueckweg haelt seinen eigenen Vertragsdeckel.
+///
+/// 🔑 `session_snapshot.experimente` erlaubt hoechstens 32 Eintraege, und der
+/// Bestandsdeckel M-48 deckelt nur die OFFENEN — abgeschlossene sammeln sich
+/// in derselben Ablage. Eine ungedeckelte Liste haette in einer langen
+/// Sitzung einen vertragswidrigen Snapshot erzeugt, den der Leser GANZ
+/// verwirft: der Rueckweg waere genau dann gerissen, wenn er am meisten
+/// traegt.
+#[cfg(windows)]
+#[test]
+fn der_snapshot_haelt_den_versuchsdeckel_des_vertrages() {
+    use eqcop_broker::coordinator::experiment::N_GLOBAL;
+    let h = HarnischMitStore::neu("r14-deckel");
+    h.abonniert();
+    let runden = N_GLOBAL + 8;
+    for i in 0..runden {
+        let versuch = 0xe000 + i;
+        assert_eq!(
+            h.p0(&experiment_begin_wert(&h.main.adresse, 0xa000 + 2 * i, versuch))["ergebnis"],
+            "angewandt",
+            "Versuch {i} beginnt"
+        );
+        assert_eq!(
+            h.p0(&json!({
+                "type": "experiment_abort",
+                "kopf": {
+                    "command_id": hex(0xa001 + 2 * i), "ziel": h.main.adresse,
+                    "base_revision": 0, "ttl_ms": 1000,
+                    "schema_major": 3, "schema_minor": 0
+                },
+                "experiment_id": hex(versuch),
+                "grund": "user_abbruch"
+            }))["ergebnis"],
+            "angewandt",
+            "Versuch {i} endet"
+        );
+    }
+
+    let letzter = gepusht(&h)
+        .into_iter()
+        .filter(|w| w["experimente"].is_array())
+        .last()
+        .expect("der Snapshot traegt Versuche");
+    let liste = letzter["experimente"].as_array().expect("eine Liste");
+    assert_eq!(
+        liste.len(),
+        N_GLOBAL,
+        "die Liste haelt den Vertragsdeckel: {}",
+        liste.len()
+    );
+    // Gekappt wird am ALTEN Ende, und die Anlegereihenfolge bleibt stehen.
+    assert_eq!(
+        liste.first().map(|e| &e["experiment_id"]),
+        Some(&json!(hex(0xe000 + runden - N_GLOBAL))),
+        "der aelteste noch getragene Versuch ist der {}-te: {liste:?}",
+        runden - N_GLOBAL
+    );
+    assert_eq!(
+        liste.last().map(|e| &e["experiment_id"]),
+        Some(&json!(hex(0xe000 + runden - 1))),
+        "und der juengste steht am Ende: {liste:?}"
+    );
+}

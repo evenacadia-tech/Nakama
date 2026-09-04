@@ -39,6 +39,7 @@
       "experiment_begin_passage": "SONDE-013 Nacharbeit 1 (Befund B23): `experiment_begin` traegt seit dieser Runde die VOLLSTAENDIGE Passage (`passage`) statt nur ihrer `passage_id`. Ohne die Grenzen, die Transportepoche, die Quellen mit Messpunktklasse, die Abdeckung und den Fingerprint konnte kein gueltiger Wire-Aufruf das von M-25 verlangte Storeobjekt erzeugen. Der Schritt liegt INNERHALB der Fassung 2 und ist kein zweiter Fassungsschritt.",
         "audible_intervention_begin_experiment_id": "SONDE-013 Nacharbeit 2 (Befund R22, M-59): `audible_intervention_begin` traegt seit dieser Runde ein optionales `experiment_id`. `art=experiment` stand schon in Fassung 2 im Schema, ohne dass ein Feld die Zuordnung zum Versuch tragen konnte - ein schema-gueltiges Experimentintervall liess sich deshalb von keinem Terminal schliessen. Dass das Feld bei `art=experiment` Pflicht ist, gehoert dem Consumer (geschlossene Schluesselwortmenge, kein Feldvergleich); der Broker lehnt den Fall ab und setzt sticky Unknown. Der Schritt liegt INNERHALB der Fassung 2.",
       "experiment_candidate": true,
+      "session_snapshot_experimente_und_paare": "SONDE-013 Nacharbeit 2 (Befunde R14/R32): der `session_snapshot` traegt seit dieser Runde die Versuche und die PRE/POST-Paarurteile der Sitzung. Der Rueckweg zu Gen laeuft damit ueber den bestehenden Outbox-/Snapshot-Pfad statt ueber eine weitere Familie - genau so, wie es die Beschreibung von `experiment_manual_result` zusagt. Vorher bekam das Terminal gar keine snapshot_ziele und das Paarurteil endete in einer fluechtigen Map: beide erreichten Gen nie.",
       "experiment_abort": true,
         "experiment_manual_result": true,
         "evidence_snapshot_ereignisse": true,
@@ -112,6 +113,16 @@
       "name": "audible_intervention_begin.experiment_id",
       "eigentuemer": "SONDE-013 (P4)",
       "grund": "Seit Wire-Envelope-schema_minor 2 optional belegt (Nacharbeit 2, Befund R22): der Versuch, zu dem ein hoerbares Intervall gehoert. Abwesenheit heisst 'dieses Intervall gehoert keinem Versuch'. Bei art=experiment ist das Feld Pflicht; diese Kante gehoert dem Consumer, weil die geschlossene Schluesselwortmenge keinen Feldvergleich kennt."
+    },
+    {
+      "name": "session_snapshot.experimente",
+      "eigentuemer": "SONDE-013 (P4)",
+      "grund": "Seit Wire-Envelope-schema_minor 2 optional belegt (Nacharbeit 2, Befund R14): die Versuche der Sitzung auf dem Rueckweg zu Gen. Abwesenheit heisst 'diese Sitzung fuehrt keine', nie 'alle abgeschlossen'."
+    },
+    {
+      "name": "session_snapshot.paare",
+      "eigentuemer": "SONDE-013 (P4)",
+      "grund": "Seit Wire-Envelope-schema_minor 2 optional belegt (Nacharbeit 2, Befund R32): die PRE/POST-Paarurteile der Sitzung. Vorher endeten sie in einer fluechtigen Map ohne Store und ohne Outboxziel."
     },
     {
       "name": "evidence_snapshot.ereignisse",

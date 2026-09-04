@@ -45,6 +45,25 @@ std::string hex (unsigned long long wert)
     return s.str();
 }
 
+/// Der Repowurzelordner - der Korpus ist die dritte Partei zwischen den
+/// Sprachen, und dieses Bein liest DIESELBEN Dateien wie Rust und A5.
+juce::File wurzel()
+{
+    auto d = juce::File::getSpecialLocation (juce::File::currentExecutableFile);
+    while (d.exists() && ! d.getChildFile ("eq-copilot").isDirectory())
+        d = d.getParentDirectory();
+    return d;
+}
+
+std::string fixture (const char* name)
+{
+    return wurzel()
+        .getChildFile ("eq-copilot/fixtures/v3")
+        .getChildFile (name)
+        .loadFileAsString()
+        .toStdString();
+}
+
 std::string jsonText (const juce::String& s)
 {
     return juce::JSON::toString (juce::var (s), true).toStdString();
@@ -684,6 +703,120 @@ int main()
         pruefe (p16 <= 300.0 && p32 <= 300.0,
                 "visible_latency_16_and_32_sources",
                 juce::String (p16, 2) + " / " + juce::String (p32, 2) + " ms p95");
+    }
+
+    // ── SONDE-013 Nacharbeit 2 · der Rueckweg kommt WIRKLICH an ────────
+    //
+    // Die Klassenregel von V3 lautet: Nachricht rein -> Outbox-Eintrag ->
+    // Push -> im Plugin-Modell angekommen. Die ersten drei Glieder misst
+    // A4-verdrahtung im Broker. Das VIERTE steht hier, und es misst gegen
+    // dasselbe Korpusfixture, das der Broker erzeugt - nicht gegen einen im
+    // Test erfundenen Text.
+    {
+        Model m;
+        // Die Adressen des Korpusfixtures, nicht die des Tests.
+        m.beginneSubscription ("11111111111111111111111111111111",
+                               "22222222222222222222222222222222",
+                               "33333333333333333333333333333333");
+        const auto payload = fixture ("gueltig/session-snapshot-mit-experimenten-und-paaren.json");
+        juce::String grund;
+
+        // Ein Leser der Fassung 1 kennt `experimente` und `paare` nicht und
+        // lehnt sie ab, statt sie still zu verwerfen. Genau so ist die
+        // Fassungswahl gebaut (Paragraph 7.1, E-04).
+        const bool fassung1Lehnt = m.uebernehmeSessionSnapshot (payload, 1, t0, grund)
+                                    == Model::SnapshotErgebnis::ungueltig;
+
+        const bool angenommen = m.uebernehmeSessionSnapshot (payload, 2, t0, grund)
+                                 == Model::SnapshotErgebnis::uebernommen;
+        const auto s = m.sicht();
+        const bool versuchDa = s.experimente.size() == 1
+            && s.experimente[0].experimentId == "abababababababababababababababab"
+            && s.experimente[0].ereignis == "ergebnis"
+            && ! s.experimente[0].offen
+            && s.experimente[0].hoerurteil == "kandidat"
+            && s.experimente[0].blindreihenfolge == "kandidat_zuerst"
+            && s.experimente[0].vergleichbarkeit == "stark"
+            && s.experimente[0].urteil == "ziel_verbessert_guardrails_stabil";
+        const bool paareDa = s.paare.size() == 2
+            && s.paare[0].pairId == "paar-bus-a"
+            && s.paare[0].ausschluss.empty()
+            && s.paare[1].pairId == "paar-bus-b"
+            && s.paare[1].ausschluss == "haelfte_fehlt";
+        pruefe (fassung1Lehnt && angenommen && versuchDa && paareDa,
+                "R14_R32_experiment_and_pair_verdict_arrive_in_the_model",
+                grund);
+
+        // Der Modelleser prueft die geschlossenen Wortmengen nicht selbst -
+        // das tut die Vertragsengine (A5/B3c) am Korpus, in beiden Sprachen.
+        // Was er prueft, ist die FELDMENGE: ein zusaetzliches Wort faellt.
+        auto verdorben = juce::JSON::parse (juce::String (payload));
+        if (auto* o = verdorben.getDynamicObject())
+            if (auto* liste = o->getProperty ("experimente").getArray())
+                if (auto* e = liste->getFirst().getDynamicObject())
+                    e->setProperty ("bewertung", "gut");
+        pruefe (m.uebernehmeSessionSnapshot (
+                    juce::JSON::toString (verdorben, true).toStdString(), 2, t0, grund)
+                    == Model::SnapshotErgebnis::ungueltig,
+                "unknown_experiment_field_falls_instead_of_travelling_along");
+    }
+    {
+        // R28 - die Evidenzruecknahme hat einen LESER und eine WIRKUNG.
+        Model m;
+        initialisiereFuer (m, pair, t0);
+        const bool frisch = p2InModell (m, pair, t0)
+                         && m.sicht().quellen.front().messung == Model::Messung::fresh;
+        juce::String grund;
+        const auto ruecknahme = fixture ("gueltig/invalidate-ganze-sitzung.json");
+        const bool angenommen = m.uebernehmeEvidenzruecknahme (ruecknahme, 2, grund)
+                                 == Model::RuecknahmeErgebnis::uebernommen;
+        const auto s = m.sicht();
+        pruefe (frisch && angenommen
+                    && s.quellen.front().messung == Model::Messung::invalid
+                    && s.evidenzRuecknahmen == 1
+                    && s.ruecknahmeGrund == "routing_unbekannt"
+                    && s.ruecknahmeUmfang == "ganze_sitzung",
+                "R28_evidence_invalidate_has_a_reader_and_an_effect", grund);
+
+        // Die zwei Gruende der Fassung 2 gehoeren der Fassung 2. Ein Leser
+        // der Fassung 1 lehnt sie ab, statt sie still auf `intervention`
+        // abzubilden - das waere eine erfundene Begruendung fuer eine echte
+        // Ruecknahme.
+        const auto material = fixture ("gueltig/invalidate-material-wechsel.json");
+        const bool fassung1Lehnt = m.uebernehmeEvidenzruecknahme (material, 1, grund)
+                                    == Model::RuecknahmeErgebnis::ungueltig;
+        const bool fassung2Nimmt = m.uebernehmeEvidenzruecknahme (material, 2, grund)
+                                    == Model::RuecknahmeErgebnis::uebernommen;
+        pruefe (fassung1Lehnt && fassung2Nimmt
+                    && m.sicht().evidenzRuecknahmen == 2
+                    && m.sicht().ruecknahmeGrund == "material_wechsel",
+                "invalidate_reason_version_is_chosen_by_the_wire_envelope", grund);
+
+        // Der Discriminator ist kein Etikett: `ganze_sitzung` MIT Bereich und
+        // ein verdrehter Bereich fallen beide.
+        auto mitBereich = juce::JSON::parse (juce::String (ruecknahme));
+        if (auto* o = mitBereich.getDynamicObject())
+            if (auto* u = o->getProperty ("umfang").getDynamicObject())
+                u->setProperty ("sample_start", 0);
+        const bool sitzungMitBereichFaellt = m.uebernehmeEvidenzruecknahme (
+            juce::JSON::toString (mitBereich, true).toStdString(), 2, grund)
+                == Model::RuecknahmeErgebnis::ungueltig;
+
+        auto verdreht = juce::JSON::parse (juce::String (ruecknahme));
+        if (auto* o = verdreht.getDynamicObject())
+        {
+            auto* u = new juce::DynamicObject();
+            u->setProperty ("art", "sample_range");
+            u->setProperty ("sample_start", 900);
+            u->setProperty ("sample_end", 100);
+            o->setProperty ("umfang", juce::var (u));
+        }
+        const bool verdrehterBereichFaellt = m.uebernehmeEvidenzruecknahme (
+            juce::JSON::toString (verdreht, true).toStdString(), 2, grund)
+                == Model::RuecknahmeErgebnis::ungueltig;
+        pruefe (sitzungMitBereichFaellt && verdrehterBereichFaellt
+                    && m.sicht().evidenzRuecknahmen == 2,
+                "invalidate_scope_discriminator_is_not_a_label", grund);
     }
 
     std::cout << "SONDE-012 SourcesModel: " << bestanden << "/"

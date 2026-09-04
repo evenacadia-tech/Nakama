@@ -28,7 +28,13 @@ const FASSUNG_2_FAMILIEN: [&str; 4] = [
 /// Sie tragen keinen eigenen `oneOf`-Zweig und stehen deshalb nicht im
 /// Register; ohne ihre Familien sind sie aber unerreichbar, und ein `$ref`
 /// ins Leere bricht den Ladelauf.
-const FASSUNG_2_HILFSDEFS: [&str; 10] = [
+const FASSUNG_2_HILFSDEFS: [&str; 12] = [
+    // Nacharbeit 2 (Befunde R14/R32): der `session_snapshot` traegt die
+    // Versuche und die Paarurteile der Sitzung. Beide Teildefinitionen
+    // gehoeren zur Fassung 2 und fallen mit ihr - sonst haetten sie im
+    // zurueckgebauten Schema haengende Referenzen auf `alignment_klasse`.
+    "session_experiment",
+    "session_paar",
     // Nacharbeit 1 (Befund B23): `experiment_begin` traegt die VOLLSTAENDIGE
     // Passage. Sie gehoert damit zur Fassung 2 und muss beim Rueckbau auf die
     // Fassung 1 mit verschwinden - sonst laese ein Leser der alten Fassung
@@ -52,6 +58,8 @@ const FASSUNG_2_HILFSDEFS: [&str; 10] = [
 ];
 
 const FASSUNG_2_EVIDENZFELDER: [&str; 2] = ["ereignisse", "stereo"];
+/// Felder des `session_snapshot`, die zur Fassung 2 gehoeren (R14/R32).
+const FASSUNG_2_SNAPSHOTFELDER: [&str; 2] = ["experimente", "paare"];
 const FASSUNG_2_GRUENDE: [&str; 2] = ["material_wechsel", "messpunkt_wechsel"];
 /// Die Fehlercodes der Fassung 2 (SONDE-013 Nacharbeit 1). Sie benennen die
 /// Produktregeln der Experimentfamilien; ein Leser der Fassung 1 kennt sie
@@ -89,6 +97,12 @@ pub(super) fn v3_schema_minor_1_wurzel() -> Value {
             .expect("evidence_snapshot-properties ist ein Objekt");
         for feld in FASSUNG_2_EVIDENZFELDER {
             evidenz.remove(feld);
+        }
+        let sitzung = defs["session_snapshot"]["properties"]
+            .as_object_mut()
+            .expect("session_snapshot-properties ist ein Objekt");
+        for feld in FASSUNG_2_SNAPSHOTFELDER {
+            sitzung.remove(feld);
         }
         defs["evidence_invalidate"]["properties"]["grund"]["enum"]
             .as_array_mut()

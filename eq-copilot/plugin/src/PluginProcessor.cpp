@@ -1133,6 +1133,22 @@ void EqCopilotProcessor::v3Antwort (const std::string& json,
         return;
     }
     juce::String fehler;
+    // SONDE-013 Nacharbeit 2 (Befund R28): der LESER der Evidenzruecknahme.
+    //
+    // Bis hierher kannte diese Stelle genau zwei Nachrichten - Command-ACK und
+    // Sessionsnapshot. Der Broker legte fuer `evidence_invalidate` eine
+    // Outbox-Schuld an, die niemand abtrug: ein aktiver Subscriber erhielt die
+    // Ruecknahme nie, und Gen zeigte weiter Zahlen, deren Grundlage
+    // zurueckgezogen war. Eine Zustellschuld ohne Leser ist ein Defekt.
+    const auto ruecknahme = sourcesModel.uebernehmeEvidenzruecknahme (
+        json, schemaMinor, fehler);
+    if (ruecknahme != SourcesModel::RuecknahmeErgebnis::ignoriert)
+    {
+        if (ruecknahme == SourcesModel::RuecknahmeErgebnis::ungueltig)
+            sourcesModel.setzeDiagnoseFuerSichtbeweis (
+                SourcesModel::Diagnose::incompatible, false);
+        return;
+    }
     const auto ergebnis = sourcesModel.uebernehmeSessionSnapshot (
         json, schemaMinor, SourcesModel::Uhr::now(), fehler);
     if (ergebnis == SourcesModel::SnapshotErgebnis::ungueltig)

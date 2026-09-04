@@ -794,6 +794,17 @@ impl Experimentstore {
         self.offene().filter(move |e| e.projektbindung == bindung)
     }
 
+    /// ALLE Versuche einer Projektbindung, offene wie abgeschlossene.
+    ///
+    /// 🔑 Nacharbeit 2 (Befund R14): der Sessionsnapshot traegt sie zu Gen.
+    /// Ein abgeschlossener gehoert ausdruecklich dazu — sein Resultat ist der
+    /// Grund, warum es den Versuch ueberhaupt gab.
+    pub fn alle_im_projekt<'a>(&'a self, bindung: &'a str) -> impl Iterator<Item = &'a Experiment> {
+        self.experimente
+            .values()
+            .filter(move |e| e.projektbindung == bindung)
+    }
+
     /// `experiment_begin` (M-40, und damit auch M-25).
     ///
     /// Die Reihenfolge ist die aus M-40 und jeder Schritt hat seinen Grund:

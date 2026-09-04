@@ -237,6 +237,32 @@ PASSAGE = {
 }
 
 
+# SONDE-013 Nacharbeit 2 (Befunde R14/R32): der Rueckweg zu Gen. Beide Listen
+# reisen im `session_snapshot` — eine eigene Familie fuer das Ergebnis waere
+# ein zweiter Weg fuer dieselbe Aussage gewesen (§53.9).
+SESSION_VERSUCH = {
+    "experiment_id": "abababababababababababababababab",
+    "ereignis": "ergebnis",
+    "offen": False,
+    "hoerurteil": "kandidat",
+    "blindreihenfolge": "kandidat_zuerst",
+    "vergleichbarkeit": "stark",
+    "urteil": "ziel_verbessert_guardrails_stabil",
+}
+
+SESSION_PAARE = [
+    {"pair_id": "paar-bus-a", "klasse": "probable", "kettenbefund": "stationaer"},
+    # Ein ausgeschlossenes Paar traegt seinen Grund. Ohne ihn waere es
+    # unsichtbar verschwunden — ein stiller Ausschluss (M-23).
+    {
+        "pair_id": "paar-bus-b",
+        "klasse": "unclear",
+        "kettenbefund": "nicht_beurteilbar",
+        "ausschluss": "haelfte_fehlt",
+    },
+]
+
+
 PROBE = {
     "adresse": ADRESSE,
     "plugin_kind": "passive_probe",
@@ -581,6 +607,16 @@ GRUND: dict[str, dict] = {
         "reproduzierbarkeit": "manuell_nicht_wiederherstellbar",
         "passage": PASSAGE,
         "referenz": EXPERIMENT_REFERENZ,
+    },
+    # SONDE-013 Nacharbeit 2 (Befunde R16/R21): der Schritt VOR dem Urteil.
+    # Er erfasst den Kandidaten und bindet die Blindreihenfolge, bevor jemand
+    # hoert — danach ist sie nicht mehr frei waehlbar (M-41/M-44).
+    "experiment_candidate": {
+        "type": "experiment_candidate",
+        "kopf": {**STEUERKOPF, "command_id": "66666666666666666666666666666666"},
+        "experiment_id": "abababababababababababababababab",
+        "referenz": EXPERIMENT_REFERENZ,
+        "blindreihenfolge": "kandidat_zuerst",
     },
     "experiment_abort": {
         "type": "experiment_abort",
@@ -1022,6 +1058,26 @@ def zusatz_gueltig() -> list[tuple[str, dict, str]]:
     faelle.append(("experiment-begin-passage-ohne-label", eb,
                    "M-25: das Userwort ist das EINZIGE optionale Feld der Passage; "
                    "null heisst 'die Passage hat keines' und ist keine leere Zeichenkette"))
+
+    # Nacharbeit 2 (Befund R22): `art=experiment` traegt seinen Bezug. Ohne ihn
+    # gaebe es eine Intervention, die zu einem Versuch gehoert, ohne zu sagen,
+    # zu welchem — die Zuordnung waere geraten.
+    ib = copy.deepcopy(GRUND["audible_intervention_begin"])
+    ib["intervention_id"] = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab"
+    ib["event_sequence"] = 5
+    ib["art"] = "experiment"
+    ib["experiment_id"] = "abababababababababababababababab"
+    ib["project_sample_start"] = 44108200
+    faelle.append(("audible-intervention-begin-experiment", ib,
+                   "M-59, Nacharbeit 2 (R22): art=experiment traegt seine experiment_id"))
+
+    # Nacharbeit 2 (Befunde R14/R32): der Rueckweg zu Gen.
+    ss = copy.deepcopy(GRUND["session_snapshot"])
+    ss["experimente"] = [copy.deepcopy(SESSION_VERSUCH)]
+    ss["paare"] = copy.deepcopy(SESSION_PAARE)
+    faelle.append(("session-snapshot-mit-experimenten-und-paaren", ss,
+                   "M-49/M-13, Nacharbeit 2 (R14/R32): der Rueckweg zu Gen laeuft "
+                   "ueber den bestehenden Snapshot-Pfad"))
 
     eb = copy.deepcopy(GRUND["experiment_begin"])
     eb["referenz"]["alignment"] = "unclear"
@@ -2320,6 +2376,90 @@ UNGUELTIG: list[tuple] = [
         "minLength")],
      "`null` heisst 'keine Notiz'. Eine leere Zeichenkette waere eine zweite "
      "Schreibweise dafuer - dieselbe Regel wie bei pair_id"),
+
+    # --- SONDE-013 Nacharbeit 2: Bezug, Kandidat und Rueckweg ------------
+
+    ("audible-intervention-begin-experiment-id-kein-hex32", "audible_intervention_begin",
+     [setze("intervention_id", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab"),
+      setze("event_sequence", 5),
+      setze("art", "experiment"),
+      # Der GROSSGESCHRIEBENE Zwilling der echten ID - derselbe Wert, nur
+      # eine zweite Schreibweise. Genau die soll es nicht geben.
+      setze("experiment_id", "AB" * 16),
+      setze("project_sample_start", 44108200)],
+     [v("/experiment_id", f"{S}/hex32/pattern", "pattern")],
+     "Kleinbuchstaben, damit ein Vergleich nie normalisieren muss"),
+
+    ("experiment-candidate-blindreihenfolge-erfunden", "experiment_candidate",
+     [setze("blindreihenfolge", "zufaellig")],
+     [v("/blindreihenfolge",
+        f"{S}/experiment_candidate/properties/blindreihenfolge/enum", "enum")],
+     "genau zwei Reihenfolgen; eine dritte waere ein Etikett ohne Bedeutung"),
+
+    ("experiment-candidate-ohne-blindreihenfolge", "experiment_candidate",
+     [loesche("blindreihenfolge")],
+     [v("", f"{S}/experiment_candidate/required/blindreihenfolge", "required")],
+     "ohne gebundene Blindreihenfolge ist der Schritt keiner - die Reihenfolge "
+     "waere danach frei waehlbar (M-44)"),
+
+    ("session-experiment-ereignis-erfunden", "session_snapshot",
+     [setze("experimente", [dict(SESSION_VERSUCH, ereignis="vielleicht")]),
+      setze("paare", copy.deepcopy(SESSION_PAARE))],
+     [v("/experimente/0/ereignis",
+        f"{S}/session_experiment/properties/ereignis/enum", "enum")],
+     "die Transitionen sind eine geschlossene Menge; eine erfundene waere ein "
+     "Etikett ohne Wirkung"),
+
+    ("session-experiment-hoerurteil-erfunden", "session_snapshot",
+     [setze("experimente", [dict(SESSION_VERSUCH, hoerurteil="ziemlich_gut")]),
+      setze("paare", copy.deepcopy(SESSION_PAARE))],
+     [v("/experimente/0/hoerurteil",
+        f"{S}/session_experiment/properties/hoerurteil/enum", "enum")],
+     "M-45: vier Urteile, und `enthaltung` ist ein vollwertiges - ein fuenftes "
+     "gibt es nicht"),
+
+    ("session-experiment-blindreihenfolge-erfunden", "session_snapshot",
+     [setze("experimente", [dict(SESSION_VERSUCH, blindreihenfolge="zufaellig")]),
+      setze("paare", copy.deepcopy(SESSION_PAARE))],
+     [v("/experimente/0/blindreihenfolge",
+        f"{S}/session_experiment/properties/blindreihenfolge/enum", "enum")],
+     "genau zwei Reihenfolgen; eine dritte waere keine Blindprobe mehr"),
+
+    ("session-experiment-vergleichbarkeit-erfunden", "session_snapshot",
+     [setze("experimente", [dict(SESSION_VERSUCH, vergleichbarkeit="sehr_stark")]),
+      setze("paare", copy.deepcopy(SESSION_PAARE))],
+     [v("/experimente/0/vergleichbarkeit",
+        f"{S}/session_experiment/properties/vergleichbarkeit/enum", "enum")],
+     "M-30: drei Stufen. Eine vierte waere eine Steigerung, die kein Gate kennt"),
+
+    ("session-experiment-urteil-erfunden", "session_snapshot",
+     [setze("experimente", [dict(SESSION_VERSUCH, urteil="objektiv_besser")])],
+     [v("/experimente/0/urteil",
+        f"{S}/session_experiment/properties/urteil/enum", "enum")],
+     "M-46: genau fuenf zulaessige Aussagen, und 'objektiv besser' ist keine "
+     "davon - auch nicht auf dem Rueckweg"),
+
+    ("session-experiment-ohne-offen", "session_snapshot",
+     [setze("experimente", [{k: v_ for k, v_ in SESSION_VERSUCH.items()
+                             if k != "offen"}])],
+     [v("/experimente/0", f"{S}/session_experiment/required/offen", "required")],
+     "ohne das Offenbit weiss Gen nicht, ob es ein Ergebnis oder einen Zwischen"
+     "stand sieht - Abwesenheit ist hier keine Aussage"),
+
+    ("session-paar-kettenbefund-erfunden", "session_snapshot",
+     [setze("paare", [dict(SESSION_PAARE[0], kettenbefund="klingt_gut")])],
+     [v("/paare/0/kettenbefund",
+        f"{S}/session_paar/properties/kettenbefund/enum", "enum")],
+     "M-22: fuenf Kettenbefunde. Ein sechster waere eine Aussage ohne Regel"),
+
+    ("session-paar-ausschluss-erfunden", "session_snapshot",
+     [setze("experimente", [copy.deepcopy(SESSION_VERSUCH)]),
+      setze("paare", [copy.deepcopy(SESSION_PAARE[0]),
+                      dict(SESSION_PAARE[1], ausschluss="keine_lust")])],
+     [v("/paare/1/ausschluss",
+        f"{S}/session_paar/properties/ausschluss/enum", "enum")],
+     "der Ausschlussgrund ist geschlossen; ein freier Text waere ein stiller "
+     "Ausschluss mit Deckmantel"),
 ]
 
 

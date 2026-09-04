@@ -151,6 +151,19 @@ impl Coordinator {
             };
             stand.paarurteile.remove(&weg);
         }
+        // 🔑 Nacharbeit 2 (Befund R32, M-13): das Urteil ERREICHT Gen.
+        //
+        // Der angebliche Produktpfad endete in dieser fluechtigen Map: weder
+        // `StoreEvent` noch Dirty-Snapshot noch Outboxziel. PRE/POST-Nachrichten
+        // erreichten den Coordinator, aber keinen fuer Gen sichtbaren Ausgang.
+        // Der Rueckweg laeuft ueber den bestehenden Snapshot-Pfad: seit dieser
+        // Runde traegt der Sessionsnapshot `paare` (`sicht.rs`).
+        //
+        // HIER steht bewusst KEIN eigener Flush. Der einzige Aufrufer ist der
+        // Evidenzempfaenger, und der ruft unmittelbar danach
+        // `heartbeat_kontakt` — mitsamt Flush derselben Sitzung. Ein zweiter
+        // Flush waere ein zweites Lock je Evidenzsnapshot auf dem heissen
+        // Empfangspfad, den kein Test von diesem hier unterscheiden koennte.
     }
 
     /// Die Historie einer Quelle als `Paarhaelfte`.

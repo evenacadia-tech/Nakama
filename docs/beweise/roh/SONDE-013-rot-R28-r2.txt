@@ -1,0 +1,123 @@
+Rotbeweis R28 - die Evidenzruecknahme wird dem Abonnenten wirklich zugestellt
+Datum: 2026-09-04
+Datei: broker/src/coordinator/invalidierung_verdrahtung.rs
+Test:  sonde013_verdrahtung::invalidierung_wird_dem_abonnenten_wirklich_zugestellt
+
+== 1. Fehler eingebaut ==
+ALT: let Ok(payload) = serde_json::to_vec(&nachricht) else {
+            return;
+        };
+        let push = self.push.lock().unwrap_or_else(|e| e.into_inner()).clone();
+        for ziel in ziele {
+            let Some(link_id) = self.link_des_abonnenten(&ziel) else {
+                continue;
+            };
+            let geschrieben = self.push_ziel_noch_gueltig(&link_id, &ziel)
+                && push
+                    .as_ref()
+                    .is_some_and(|push| push.snapshot_schreiben(&link_id, &payload));
+            if geschrieben {
+                let _ = store.snapshot_schuld_kompaktieren(ziel, event_ord);
+            }
+        }
+NEU: // Rotbeweis: die Runde 1 legte NUR die Outbox-Schuld an. Kein
+        // Produktcode las sie, kein Push ging raus, kein Subscriber erfuhr
+        // von der Ruecknahme.
+        let _ = (&nachricht, event_ord);
+
+== 2. Der Test FAELLT ==
+exit=101
+0000000000000000000000000000002")}, "frische": Object {"letzter_kontakt_ms": Number(0), "stale": Bool(false)}, "plugin_kind": String("main")}, Object {"adresse": Object {"instance_id": String("00000000000000000000000000000020"), "logon_sid": String("S-1-5-21-1-2-3-1001"), "project_binding_id": String("00000000000000000000000000000001"), "runtime_nonce": String("00000000000000000000000000000021"), "session_epoch": String("00000000000000000000000000000002")}, "frische": Object {"letzter_kontakt_ms": Number(0), "stale": Bool(false)}, "plugin_kind": String("passive_probe"), "probe_descriptor": Object {"adresse": Object {"instance_id": String("00000000000000000000000000000020"), "logon_sid": String("S-1-5-21-1-2-3-1001"), "project_binding_id": String("00000000000000000000000000000001"), "runtime_nonce": String("00000000000000000000000000000021"), "session_epoch": String("00000000000000000000000000000002")}, "aussageklasse": String("beobachtend"), "betrieb": String("active"), "capabilities": Object {"aux_compare_pre": String("unsupported"), "aux_priority_sidechain": String("unsupported"), "binary_telemetry": String("supported"), "contribution_aux": String("unsupported"), "float64_processing": String("supported"), "host_context_presence": String("supported"), "presentation_latency": String("supported"), "project_time_samples": String("supported"), "remote_control": String("unsupported"), "sample_accurate_automation": String("supported")}, "frische": Object {"letzter_kontakt_ms": Number(0), "stale": Bool(false)}, "label": String(""), "measurement_position": String("insert"), "plugin_kind": String("passive_probe")}}], "session_epoch": String("00000000000000000000000000000002"), "type": String("session_snapshot")}, Object {"beitritt_bestaetigung_noetig": Bool(false), "broker_epoch": String("0000000000000000000000000000beef"), "fuehrendes_main": String("0000000000000000000000000000000a"), "mitglieder": Array [Object {"adresse": Object {"instance_id": String("0000000000000000000000000000000a"), "logon_sid": String("S-1-5-21-1-2-3-1001"), "project_binding_id": String("00000000000000000000000000000001"), "runtime_nonce": String("00000000000000000000000000000064"), "session_epoch": String("00000000000000000000000000000002")}, "frische": Object {"letzter_kontakt_ms": Number(0), "stale": Bool(false)}, "plugin_kind": String("main")}, Object {"adresse": Object {"instance_id": String("00000000000000000000000000000020"), "logon_sid": String("S-1-5-21-1-2-3-1001"), "project_binding_id": String("00000000000000000000000000000001"), "runtime_nonce": String("00000000000000000000000000000021"), "session_epoch": String("00000000000000000000000000000002")}, "frische": Object {"letzter_kontakt_ms": Number(0), "stale": Bool(false)}, "plugin_kind": String("passive_probe"), "probe_descriptor": Object {"adresse": Object {"instance_id": String("00000000000000000000000000000020"), "logon_sid": String("S-1-5-21-1-2-3-1001"), "project_binding_id": String("00000000000000000000000000000001"), "runtime_nonce": String("00000000000000000000000000000021"), "session_epoch": String("00000000000000000000000000000002")}, "aussageklasse": String("beobachtend"), "betrieb": String("active"), "capabilities": Object {"aux_compare_pre": String("unsupported"), "aux_priority_sidechain": String("unsupported"), "binary_telemetry": String("supported"), "contribution_aux": String("unsupported"), "float64_processing": String("supported"), "host_context_presence": String("supported"), "presentation_latency": String("supported"), "project_time_samples": String("supported"), "remote_control": String("unsupported"), "sample_accurate_automation": String("supported")}, "frische": Object {"letzter_kontakt_ms": Number(0), "stale": Bool(false)}, "label": String(""), "measurement_position": String("insert"), "plugin_kind": String("passive_probe")}}], "session_epoch": String("00000000000000000000000000000002"), "type": String("session_snapshot")}]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    invalidierung_wird_dem_abonnenten_wirklich_zugestellt
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 40 filtered out; finished in 0.72s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: method `link_des_abonnenten` is never used
+   --> src\coordinator\invalidierung_verdrahtung.rs:220:8
+    |
+ 30 | impl Coordinator {
+    | ---------------- method in this implementation
+...
+220 |     fn link_des_abonnenten(&self, ziel: &SnapshotZiel) -> Option<String> {
+    |        ^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib) generated 1 warning
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:2753:9
+     |
+2753 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+     |
+     = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `clock` is never read
+   --> tests\sonde013_verdrahtung.rs:250:5
+    |
+247 | struct HarnischMitStore {
+    |        ---------------- field in this struct
+...
+250 |     clock: Arc<ManualClock>,
+    |     ^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `sonde_mit_evidenz` is never used
+    --> tests\sonde013_verdrahtung.rs:1756:4
+     |
+1756 | fn sonde_mit_evidenz(h: &HarnischMitStore, anzahl: usize) -> HelloControl {
+     |    ^^^^^^^^^^^^^^^^^
+
+warning: `eqcop-broker` (test "sonde013_verdrahtung") generated 3 warnings (run `cargo fix --test "sonde013_verdrahtung" -p eqcop-broker` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.14s
+     Running tests\sonde013_verdrahtung.rs (target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)
+error: test failed, to rerun pass `--test sonde013_verdrahtung`
+
+
+== 3. Fehler entfernt, der Test ist GRUEN ==
+exit=0
+
+running 1 test
+test invalidierung_wird_dem_abonnenten_wirklich_zugestellt ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 40 filtered out; finished in 1.24s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:2753:9
+     |
+2753 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+     |
+     = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `clock` is never read
+   --> tests\sonde013_verdrahtung.rs:250:5
+    |
+247 | struct HarnischMitStore {
+    |        ---------------- field in this struct
+...
+250 |     clock: Arc<ManualClock>,
+    |     ^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `sonde_mit_evidenz` is never used
+    --> tests\sonde013_verdrahtung.rs:1756:4
+     |
+1756 | fn sonde_mit_evidenz(h: &HarnischMitStore, anzahl: usize) -> HelloControl {
+     |    ^^^^^^^^^^^^^^^^^
+
+warning: `eqcop-broker` (test "sonde013_verdrahtung") generated 3 warnings (run `cargo fix --test "sonde013_verdrahtung" -p eqcop-broker` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.88s
+     Running tests\sonde013_verdrahtung.rs (target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)

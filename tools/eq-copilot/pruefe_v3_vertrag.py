@@ -818,7 +818,10 @@ def fassung_1_schema(schema: dict) -> dict:
                      "experiment_candidate"}
     alt["oneOf"] = [r for r in alt["oneOf"]
                     if r.get("$ref", "").removeprefix("#/$defs/") not in neue_familien]
-    for name in (neue_familien | {"experiment_referenz", "alignment_klasse", "fingerprint",
+    for feld in ("experimente", "paare"):
+        alt["$defs"]["session_snapshot"]["properties"].pop(feld, None)
+    for name in (neue_familien | {"session_experiment", "session_paar",
+                                  "experiment_referenz", "alignment_klasse", "fingerprint",
                                   "evidence_ereignisse", "dynamics_ereignis",
                                   "stereo_evidenz", "stereo_bandwerte",
                                   "stereo_bandwerte_normiert", "stereo_bandwerte_phase"}):
@@ -853,7 +856,9 @@ def pruefe_sonde013_fassung_2(lauf: Lauf, schema: dict, reserviert: dict) -> Non
               and fassung.get("evidence_snapshot_stereo") is True
               and fassung.get("evidence_invalidate_grund_erweitert")
                   == ["material_wechsel", "messpunkt_wechsel"]
-              and isinstance(fassung.get("audible_intervention_begin_experiment_id"), str))
+              and isinstance(fassung.get("audible_intervention_begin_experiment_id"), str)
+              and isinstance(
+                  fassung.get("session_snapshot_experimente_und_paare"), str))
 
     gruende = schema["$defs"]["evidence_invalidate"]["properties"]["grund"]["enum"]
     lauf.wahr("grund_material_wechsel", "material_wechsel" in gruende)
@@ -1276,6 +1281,8 @@ def pruefe_namen(lauf: Lauf, schema: dict, reserviert: dict) -> None:
         "evidence_snapshot.stereo.phase_rad",
         "evidence_snapshot.stereo.fenster_dauer_ms",
         "evidence_snapshot.stereo.freiheitsgrade",
+        "session_snapshot.experimente",
+        "session_snapshot.paare",
     }
     lauf.wahr("SONDE-012-Minor-1-Felder sind als belegt fortgeschrieben",
               {f.get("name") for f in belegt} == erwartete_belegte

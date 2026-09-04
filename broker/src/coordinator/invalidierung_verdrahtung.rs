@@ -101,6 +101,13 @@ impl Coordinator {
         // 2. und 3.: Ablage und Outbox in EINEM Store-Append. Der Writer legt
         // die Outboxzeilen im selben Commit an wie das Ereignis — Eventwahrheit
         // und Zustellschuld koennen so nicht auseinanderlaufen.
+        //
+        // 🔑 Nacharbeit 2 (Befund R28, G1(d)): und danach wird sie WIRKLICH
+        // ZUGESTELLT. Die Runde 1 legte nur eine Outbox-Schuld an; kein
+        // Produktcode las sie je aus, und `SessionPush::snapshot_schreiben`
+        // wurde fuer die Invalidierung nie gerufen. Ein aktiver Subscriber
+        // erhielt die Ruecknahme damit nie — eine Zustellschuld ohne Leser ist
+        // ein Defekt, kein Zustand.
         self.invalidierung_persistieren(session, invalidierung, betroffen, ziele);
         betroffen
     }
@@ -187,11 +194,52 @@ impl Coordinator {
         // betroffenen `evidence`-Zeilen ein — dieselbe Wirkung wie im
         // fluechtigen Bestand, nur haltbar.
         event.event_type = "evidence_invalidate".into();
-        event.snapshot_ziele = ziele;
-        if store.append(vec![event]).is_err() {
+        event.snapshot_ziele = ziele.clone();
+        let Ok(ausgaenge) = store.append(vec![event]) else {
             let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
             stand.store_verweigerungen = stand.store_verweigerungen.saturating_add(1);
+            return;
+        };
+        let Some(event_ord) = ausgaenge.first().map(|a| a.event_ord()) else {
+            return;
+        };
+
+        // ── 3. Die ZUSTELLUNG (Befund R28) ──────────────────────────────
+        //
+        // Die WIRE-Nachricht ist die Invalidierung selbst — sie ist eine
+        // eigene v3-Familie mit eigenem Leser im Plugin, kein Sessionschnitt.
+        // Was zugestellt wurde, wird kompaktiert: eine Schuld, die niemand
+        // abtraegt, waechst.
+        let Ok(payload) = serde_json::to_vec(&nachricht) else {
+            return;
+        };
+        let push = self.push.lock().unwrap_or_else(|e| e.into_inner()).clone();
+        for ziel in ziele {
+            let Some(link_id) = self.link_des_abonnenten(&ziel) else {
+                continue;
+            };
+            let geschrieben = self.push_ziel_noch_gueltig(&link_id, &ziel)
+                && push
+                    .as_ref()
+                    .is_some_and(|push| push.snapshot_schreiben(&link_id, &payload));
+            if geschrieben {
+                let _ = store.snapshot_schuld_kompaktieren(ziel, event_ord);
+            }
         }
+    }
+
+    /// Der Link, ueber den ein Abonnent dieses Ziels erreichbar ist.
+    fn link_des_abonnenten(&self, ziel: &SnapshotZiel) -> Option<String> {
+        let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+        stand
+            .subscriptions
+            .iter()
+            .find(|(_, sub)| {
+                sub.adresse.instance_id == ziel.instance_id
+                    && sub.session_epoch == ziel.session_epoch
+                    && sub.adresse.project_binding_id == ziel.project_binding_id
+            })
+            .map(|(link_id, _)| link_id.clone())
     }
 
     /// Der Auslöser „Hoermarker oder Preview" (M-52).

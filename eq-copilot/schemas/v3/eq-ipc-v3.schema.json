@@ -991,6 +991,78 @@
       ]
     },
 
+    "session_experiment": {
+      "$comment": "SONDE-013 Nacharbeit 2 (Befund R14, M-49): der Stand EINES Versuchs, wie er Gen erreicht. Der Rueckweg laeuft ueber den bestehenden Outbox-/Snapshot-Pfad statt ueber eine weitere Familie — genau so, wie es die Beschreibung von `experiment_manual_result` zusagt. Bis zu dieser Runde bekam das Terminal gar keine `snapshot_ziele`: ein gerechnetes Resultat erreichte Gen NIE. Es traegt hier NUR, was Gen anzeigt; die Rohdeltas und die Evidence-IDs bleiben im Store.",
+      "type": "object",
+      "required": ["experiment_id", "ereignis", "offen"],
+      "additionalProperties": false,
+      "properties": {
+        "experiment_id": { "$ref": "#/$defs/hex32" },
+        "ereignis": {
+          "enum": ["begonnen", "kandidat", "ergebnis", "abgebrochen", "verdraengt"]
+        },
+        "offen": { "type": "boolean" },
+        "hoerurteil": {
+          "$comment": "Ausdruecklich USERDATEN, keine Messung. Abwesenheit heisst: der User hat (noch) nicht geurteilt.",
+          "enum": ["baseline", "kandidat", "kein_unterschied", "enthaltung"]
+        },
+        "blindreihenfolge": {
+          "$comment": "Die AUFGEDECKTE Reihenfolge — sie reist erst mit dem Terminal, nie davor (Paragraph 43.2).",
+          "enum": ["baseline_zuerst", "kandidat_zuerst"]
+        },
+        "vergleichbarkeit": {
+          "$comment": "Gate 6 (Paragraph 49.2): ein nicht vergleichbares Experiment erhaelt kein starkes Siegerurteil. Abwesenheit heisst `nicht gerechnet`, nie `stark`.",
+          "enum": ["stark", "schwach", "unvergleichbar"]
+        },
+        "urteil": {
+          "$comment": "Die FUENF zulaessigen Aussagen aus M-46. Mehr gibt es nicht, und `objektiv besser` ist keine davon.",
+          "enum": [
+            "ziel_verbessert_guardrails_stabil",
+            "messbar_anders_urteil_offen",
+            "keine_belastbare_aenderung",
+            "ziel_verbessert_geschuetztes_schlechter",
+            "vergleich_nicht_gueltig"
+          ]
+        }
+      }
+    },
+
+    "session_paar": {
+      "$comment": "SONDE-013 Nacharbeit 2 (Befund R32, M-13/M-22): das PRE/POST-Paarurteil auf dem Rueckweg zu Gen. Es endete bis zu dieser Runde in einer fluechtigen Map — weder StoreEvent noch Outboxziel; PRE/POST-Nachrichten erreichten den Coordinator, aber keinen fuer Gen sichtbaren Ausgang.",
+      "type": "object",
+      "required": ["pair_id", "klasse", "kettenbefund"],
+      "additionalProperties": false,
+      "properties": {
+        "pair_id": { "$ref": "#/$defs/pair_id" },
+        "klasse": { "$ref": "#/$defs/alignment_klasse" },
+        "kettenbefund": {
+          "$comment": "`nicht_beurteilbar` ist ausdruecklich NICHT `stationaer`: eine Kette, ueber die niemand etwas sagen kann, darf keinen festen Uebertragungsgang tragen (M-18).",
+          "enum": [
+            "stationaer",
+            "zeitvariabel_markiert",
+            "pegelabhaengig_markiert",
+            "latenz_wechselt_markiert",
+            "nicht_beurteilbar"
+          ]
+        },
+        "ausschluss": {
+          "$comment": "Warum das Paar keine Aussage traegt. Abwesenheit heisst: es traegt eine.",
+          "enum": [
+            "haelfte_fehlt",
+            "paarkonflikt",
+            "haelfte_getrennt",
+            "haelfte_stale",
+            "nicht_messbereit",
+            "keine_projektzeit",
+            "fenster_leer",
+            "samplerate_verschieden",
+            "keine_ueberlappung",
+            "sprung_im_fenster"
+          ]
+        }
+      }
+    },
+
     "session_snapshot": {
       "description": "Der Sessiongraph, wie der Broker ihn sieht. Fluechtiger Brokerzustand — aus Plugin-Reports, Main-State und Store rekonstruierbar (§33.5).",
       "type": "object",
@@ -1004,6 +1076,20 @@
         "beitritt_bestaetigung_noetig": {
           "$comment": "Pflicht bei Bridge, zwei offenen Projekten oder duplizierten IDs (§32.1). Eine fremde Sonde wird NIE durch heuristische Aehnlichkeit steuerbar.",
           "type": "boolean"
+        },
+        "experimente": {
+          "$comment": "SONDE-013 Nacharbeit 2 (Befund R14): die Versuche dieser Sitzung, die eine Aussage tragen. Abwesenheit heisst `diese Sitzung fuehrt keine`, nie `alle abgeschlossen`.",
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/session_experiment" }
+        },
+        "paare": {
+          "$comment": "SONDE-013 Nacharbeit 2 (Befund R32): die PRE/POST-Paarurteile dieser Sitzung.",
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 64,
+          "items": { "$ref": "#/$defs/session_paar" }
         },
         "store_degraded": {
           "$comment": "SONDE-012 E-L15-Store: nur der positive Diagnosebefund reist. Abwesenheit ist keine Gesundheitsaussage und bleibt mit aelteren Brokern kompatibel.",

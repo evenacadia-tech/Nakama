@@ -288,6 +288,23 @@ impl Coordinator {
         if art != "experiment_begin" {
             self.taint_von_experiment_schliessen(&session, experiment_id);
         }
+        // 🔑 Nacharbeit 2 (Befund R14, M-49): das Ergebnis ERREICHT Gen.
+        //
+        // Das Terminal rief bis dahin nur `domaene_persistieren`; dieser Event
+        // bekam keine `snapshot_ziele`, und die einzige Outbox-Schuld stammte
+        // vom vorher committeten Befehl, dessen Sessionsnapshot VOR der Wirkung
+        // erstellt wurde und ohnehin keine Experimentfelder besass. Ein
+        // gerechnetes Resultat erreichte Gen deshalb NIE.
+        //
+        // Der Rueckweg laeuft ueber den bestehenden Outbox-/Snapshot-Pfad
+        // statt ueber eine weitere Familie — genau das sagt die Beschreibung
+        // von `experiment_manual_result` im Vertrag zu (§53.9). Der Snapshot
+        // traegt seit dieser Runde `experimente`; hier wird er FAELLIG.
+        {
+            let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+            stand.dirty_sessions.insert(session.clone());
+        }
+        self.flush_session(&session, Some(link_id));
         // 🔑 Nacharbeit 2 (Befund R24, M-54/M-31): DER Produktaufrufer der
         // MATERIALinvalidierung.
         //

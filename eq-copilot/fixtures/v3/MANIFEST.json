@@ -6,8 +6,8 @@
   "wurzel_skalar": "Markiert ein Fixture, dessen Wurzel weder Objekt noch Array ist. JUCEs JSON-Leser folgt RFC 4627 und lehnt es schon im PARSER ab; serde_json und Python folgen RFC 8259 und lehnen es erst am Schema ab. Beide Wege sind eine Ablehnung, nur an verschiedenen Stellen - die Verletzungsmenge gilt daher nur fuer die Beine mit RFC-8259-Parser.",
   "sortierung": "Verletzungen sind kanonisch nach (instanz, schema, schluessel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
   "textriegel_lehnt_ab": "Markiert ein Fixture, das der TEXTRIEGEL abweist, BEVOR ein Parser es sieht. Diese Fixtures tragen keine Verletzungsmenge, weil sie das Schema nie erreichen — eine erfundene waere eine Luege ueber den Ort der Ablehnung. Regeln und Begruendung: schemas/v3/README.md.",
-  "anzahl_gueltig": 84,
-  "anzahl_ungueltig": 220,
+  "anzahl_gueltig": 85,
+  "anzahl_ungueltig": 228,
   "fixtures": [
     {
       "datei": "gueltig/audible-intervention-begin-experiment.json",
@@ -232,12 +232,6 @@
       "verletzungen": []
     },
     {
-      "datei": "gueltig/experiment_candidate.json",
-      "urteil": "gueltig",
-      "warum": "M-41/M-44, Nacharbeit 2 (R16/R21): Kandidat erfassen und Blindreihenfolge binden - der Schritt vor dem Urteil",
-      "verletzungen": []
-    },
-    {
       "datei": "gueltig/experiment_abort.json",
       "urteil": "gueltig",
       "warum": "Grundform der Familie",
@@ -245,6 +239,12 @@
     },
     {
       "datei": "gueltig/experiment_begin.json",
+      "urteil": "gueltig",
+      "warum": "Grundform der Familie",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/experiment_candidate.json",
       "urteil": "gueltig",
       "warum": "Grundform der Familie",
       "verletzungen": []
@@ -451,6 +451,12 @@
       "datei": "gueltig/session-p2-reject.json",
       "urteil": "gueltig",
       "warum": "E-L14: geschlossener Ablehnungsgrund und Zaehler ab 1 reisen je Quelle",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/session-snapshot-mit-experimenten-und-paaren.json",
+      "urteil": "gueltig",
+      "warum": "M-49/M-13, Nacharbeit 2 (R14/R32): der Rueckweg zu Gen laeuft ueber den bestehenden Snapshot-Pfad",
       "verletzungen": []
     },
     {
@@ -2651,6 +2657,78 @@
       ]
     },
     {
+      "datei": "ungueltig/session-experiment-blindreihenfolge-erfunden.json",
+      "urteil": "ungueltig",
+      "warum": "genau zwei Reihenfolgen; eine dritte waere keine Blindprobe mehr",
+      "verletzungen": [
+        {
+          "instanz": "/experimente/0/blindreihenfolge",
+          "schema": "#/$defs/session_experiment/properties/blindreihenfolge/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/session-experiment-ereignis-erfunden.json",
+      "urteil": "ungueltig",
+      "warum": "die Transitionen sind eine geschlossene Menge; eine erfundene waere ein Etikett ohne Wirkung",
+      "verletzungen": [
+        {
+          "instanz": "/experimente/0/ereignis",
+          "schema": "#/$defs/session_experiment/properties/ereignis/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/session-experiment-hoerurteil-erfunden.json",
+      "urteil": "ungueltig",
+      "warum": "M-45: vier Urteile, und `enthaltung` ist ein vollwertiges - ein fuenftes gibt es nicht",
+      "verletzungen": [
+        {
+          "instanz": "/experimente/0/hoerurteil",
+          "schema": "#/$defs/session_experiment/properties/hoerurteil/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/session-experiment-ohne-offen.json",
+      "urteil": "ungueltig",
+      "warum": "ohne das Offenbit weiss Gen nicht, ob es ein Ergebnis oder einen Zwischenstand sieht - Abwesenheit ist hier keine Aussage",
+      "verletzungen": [
+        {
+          "instanz": "/experimente/0",
+          "schema": "#/$defs/session_experiment/required/offen",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/session-experiment-urteil-erfunden.json",
+      "urteil": "ungueltig",
+      "warum": "M-46: genau fuenf zulaessige Aussagen, und 'objektiv besser' ist keine davon - auch nicht auf dem Rueckweg",
+      "verletzungen": [
+        {
+          "instanz": "/experimente/0/urteil",
+          "schema": "#/$defs/session_experiment/properties/urteil/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/session-experiment-vergleichbarkeit-erfunden.json",
+      "urteil": "ungueltig",
+      "warum": "M-30: drei Stufen. Eine vierte waere eine Steigerung, die kein Gate kennt",
+      "verletzungen": [
+        {
+          "instanz": "/experimente/0/vergleichbarkeit",
+          "schema": "#/$defs/session_experiment/properties/vergleichbarkeit/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
       "datei": "ungueltig/session-p2-reject-freitext.json",
       "urteil": "ungueltig",
       "warum": "E-L14 verbietet Freitextgruende auf dem Wire",
@@ -2671,6 +2749,30 @@
           "instanz": "/mitglieder/0/p2_reject/zaehler",
           "schema": "#/$defs/p2_reject/properties/zaehler/minimum",
           "schluessel": "minimum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/session-paar-ausschluss-erfunden.json",
+      "urteil": "ungueltig",
+      "warum": "der Ausschlussgrund ist geschlossen; ein freier Text waere ein stiller Ausschluss mit Deckmantel",
+      "verletzungen": [
+        {
+          "instanz": "/paare/1/ausschluss",
+          "schema": "#/$defs/session_paar/properties/ausschluss/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/session-paar-kettenbefund-erfunden.json",
+      "urteil": "ungueltig",
+      "warum": "M-22: fuenf Kettenbefunde. Ein sechster waere eine Aussage ohne Regel",
+      "verletzungen": [
+        {
+          "instanz": "/paare/0/kettenbefund",
+          "schema": "#/$defs/session_paar/properties/kettenbefund/enum",
+          "schluessel": "enum"
         }
       ]
     },

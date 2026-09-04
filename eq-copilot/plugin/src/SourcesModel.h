@@ -72,6 +72,38 @@ public:
         int findingsOffen = 0;
     };
 
+    /// Ein Versuch, wie der Sessionsnapshot ihn traegt (M-49, Befund R14).
+    ///
+    /// 🔑 SONDE-013 Nacharbeit 2: das Terminal bekam bis dahin gar keine
+    /// `snapshot_ziele` — ein gerechnetes Resultat erreichte Gen NIE. Es
+    /// kommt jetzt ueber den bestehenden Snapshot-Pfad an, und dies ist seine
+    /// Modellform. KEINE Pixel: die Bedienfragen P-01 bis P-06 gehoeren dem
+    /// User (Paragraph 4.2).
+    struct Versuch
+    {
+        std::string experimentId;
+        std::string ereignis;
+        bool        offen = true;
+        /// Leer heisst „der User hat (noch) nicht geurteilt", nie „enthaltung".
+        std::string hoerurteil;
+        /// Die AUFGEDECKTE Reihenfolge - sie kommt erst mit dem Terminal.
+        std::string blindreihenfolge;
+        /// Leer heisst „nicht gerechnet", nie „stark".
+        std::string vergleichbarkeit;
+        /// Eine der fuenf zulaessigen Aussagen aus M-46, oder leer.
+        std::string urteil;
+    };
+
+    /// Ein PRE/POST-Paarurteil aus dem Sessionsnapshot (M-13, Befund R32).
+    struct Paar
+    {
+        std::string pairId;
+        std::string klasse;
+        std::string kettenbefund;
+        /// Leer heisst „das Paar traegt eine Aussage".
+        std::string ausschluss;
+    };
+
     struct Sicht
     {
         std::uint64_t revision = 0;
@@ -81,9 +113,20 @@ public:
         bool mainDarfSchreiben = false;
         std::string fuehrendesMain;
         std::vector<Zeile> quellen;
+        /// SONDE-013 Nacharbeit 2 (Befunde R14/R32): der Rueckweg der
+        /// Experimente und Paarurteile. Leer heisst „diese Sitzung fuehrt
+        /// keine", nie „alle abgeschlossen".
+        std::vector<Versuch> experimente;
+        std::vector<Paar>    paare;
+        /// SONDE-013 Nacharbeit 2 (Befund R28): wie oft in dieser Sitzung
+        /// bereits eingegangene Evidenz zurueckgenommen wurde, und warum.
+        /// Leere Zeichenketten heissen "keine Ruecknahme", nie "unbekannt".
+        std::uint64_t evidenzRuecknahmen = 0;
+        std::string ruecknahmeGrund, ruecknahmeUmfang;
     };
 
     enum class SnapshotErgebnis { ignoriert, uebernommen, ungueltig };
+    enum class RuecknahmeErgebnis { ignoriert, uebernommen, ungueltig };
 
     void setzePersistenteMitglieder (
         const std::vector<nakama::state::MainProjectMitglied>& mitglieder);
@@ -107,6 +150,22 @@ public:
         return uebernehmeSessionSnapshot (
             json, nakama::ipc::kJsonSchemaMinor, empfangen, fehler);
     }
+    /// Nimmt eine `evidence_invalidate`-Nachricht des Brokers an (M-52/M-57).
+    ///
+    /// SONDE-013 Nacharbeit 2 (Befund R28): diesen Leser gab es NICHT. Der
+    /// Broker legte eine Outbox-Schuld an, `v3Antwort` kannte nur Command-ACK
+    /// und Sessionsnapshot, und ein aktiver Subscriber erhielt die Ruecknahme
+    /// nie. Eine Zustellschuld ohne Leser ist ein Defekt, kein Zustand.
+    RuecknahmeErgebnis uebernehmeEvidenzruecknahme (const std::string& json,
+                                                    std::uint8_t schemaMinor,
+                                                    juce::String& fehler);
+    RuecknahmeErgebnis uebernehmeEvidenzruecknahme (const std::string& json,
+                                                    juce::String& fehler)
+    {
+        return uebernehmeEvidenzruecknahme (
+            json, nakama::ipc::kJsonSchemaMinor, fehler);
+    }
+
     bool uebernehmeP2 (const std::uint8_t* daten, std::size_t laenge,
                        std::uint8_t schemaMinor, Zeitpunkt empfangen,
                        juce::String& fehler);
@@ -130,6 +189,15 @@ public:
     static std::uint64_t messStaleFristMs (double fensterDauerMs) noexcept;
 
 private:
+    /// SONDE-013 Nacharbeit 2 (Befunde R14/R32): der zuletzt empfangene Stand
+    /// der Versuche und Paarurteile dieser Sitzung.
+    std::vector<Versuch> experimente;
+    std::vector<Paar>    paare;
+    /// SONDE-013 Nacharbeit 2 (Befund R28): Zaehler und letzter Anlass der
+    /// Evidenzruecknahme.
+    std::uint64_t evidenzRuecknahmen = 0;
+    std::string ruecknahmeGrund, ruecknahmeUmfang;
+
     struct Eintrag
     {
         Zeile zeile;

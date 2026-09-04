@@ -5,6 +5,14 @@
 
 use super::*;
 
+/// Wie viele Versuche ein `session_snapshot` traegt.
+///
+/// SONDE-013 Nacharbeit 2 (Befund R14): der Wert steht im Vertrag
+/// (`session_snapshot.experimente.maxItems`) und ist hier benannt statt als
+/// Literal im Pfad. Er ist bewusst gleich `N_GLOBAL` — mehr OFFENE kann es
+/// nach M-48 nie geben; gekappt wird also ausschliesslich Historie.
+const SNAPSHOT_VERSUCHE_MAX: usize = crate::coordinator::experiment::N_GLOBAL;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Interventionssicht {
     pub aktive: usize,
@@ -334,6 +342,159 @@ impl Coordinator {
         self.snapshot_locked(&stand, &session)
     }
 
+    /// Ein Versuch in der Form, die Gen anzeigt (M-46/M-49, Befund R14).
+    ///
+    /// Wie viele davon der Snapshot traegt, steht in `SNAPSHOT_VERSUCHE_MAX`.
+    ///
+    /// Er traegt NUR, was Gen zeigt: welche Transition zuletzt geschah, ob er
+    /// noch offen ist, das Userurteil, die aufgedeckte Reihenfolge, die
+    /// Comparability und die eine der fuenf zulaessigen Aussagen. Die
+    /// Rohdeltas und die Evidence-IDs bleiben im Store — ein Snapshot ist eine
+    /// Sicht, kein Export.
+    fn session_experiment_json(e: &crate::coordinator::experiment::Experiment) -> Value {
+        use crate::coordinator::experiment::{Abbruchgrund, Terminal};
+        let mut objekt = serde_json::Map::new();
+        objekt.insert("experiment_id".into(), Value::String(e.experiment_id.clone()));
+        objekt.insert("offen".into(), Value::Bool(e.offen()));
+        let ereignis = match &e.terminal {
+            Some(Terminal::Ergebnis { .. }) => "ergebnis",
+            Some(Terminal::Abgebrochen {
+                grund: Abbruchgrund::Verdraengt,
+            }) => "verdraengt",
+            Some(Terminal::Abgebrochen { .. }) => "abgebrochen",
+            None if !e.kandidaten.is_empty() => "kandidat",
+            None => "begonnen",
+        };
+        objekt.insert("ereignis".into(), Value::String(ereignis.into()));
+        if let Some(Terminal::Ergebnis {
+            hoerurteil,
+            achsen,
+            ..
+        }) = &e.terminal
+        {
+            objekt.insert(
+                "hoerurteil".into(),
+                Value::String(
+                    match hoerurteil {
+                        crate::coordinator::experiment::Hoerurteil::Baseline => "baseline",
+                        crate::coordinator::experiment::Hoerurteil::Kandidat => "kandidat",
+                        crate::coordinator::experiment::Hoerurteil::KeinUnterschied => {
+                            "kein_unterschied"
+                        }
+                        crate::coordinator::experiment::Hoerurteil::Enthaltung => "enthaltung",
+                    }
+                    .into(),
+                ),
+            );
+            // Die AUFGEDECKTE Reihenfolge — sie kommt ausschliesslich ueber
+            // `aufgedeckte_reihenfolge()`, und das gibt sie erst nach dem
+            // Urteil heraus (M-44).
+            if let Some(r) = e.aufgedeckte_reihenfolge() {
+                objekt.insert(
+                    "blindreihenfolge".into(),
+                    Value::String(
+                        match r {
+                            crate::coordinator::experiment::Blindreihenfolge::KandidatZuerst => {
+                                "kandidat_zuerst"
+                            }
+                            crate::coordinator::experiment::Blindreihenfolge::BaselineZuerst => {
+                                "baseline_zuerst"
+                            }
+                        }
+                        .into(),
+                    ),
+                );
+            }
+            if let Some(v) = &achsen.vergleichbarkeit {
+                objekt.insert("vergleichbarkeit".into(), Value::String(v.clone()));
+            }
+            // Gate 6 (§49.2): ein nicht vergleichbares Experiment erhaelt kein
+            // starkes Siegerurteil — und `urteile` setzt genau das durch.
+            let vergleichbar = achsen.vergleichbarkeit.as_deref() == Some("stark");
+            let urteil = crate::coordinator::experiment::urteile(
+                &achsen.befunde(Some(*hoerurteil)),
+                vergleichbar,
+            );
+            objekt.insert(
+                "urteil".into(),
+                Value::String(
+                    match urteil {
+                        crate::coordinator::experiment::Urteil::ZielVerbessertGuardrailsStabil => {
+                            "ziel_verbessert_guardrails_stabil"
+                        }
+                        crate::coordinator::experiment::Urteil::MessbarAndersUrteilOffen => {
+                            "messbar_anders_urteil_offen"
+                        }
+                        crate::coordinator::experiment::Urteil::KeineBelastbareAenderung => {
+                            "keine_belastbare_aenderung"
+                        }
+                        crate::coordinator::experiment::Urteil::ZielVerbessertGeschuetztesSchlechter => {
+                            "ziel_verbessert_geschuetztes_schlechter"
+                        }
+                        crate::coordinator::experiment::Urteil::VergleichNichtGueltig => {
+                            "vergleich_nicht_gueltig"
+                        }
+                    }
+                    .into(),
+                ),
+            );
+        }
+        Value::Object(objekt)
+    }
+
+    /// Ein Paarurteil in der Form, die Gen anzeigt (M-13/M-22, Befund R32).
+    fn session_paar_json(u: &crate::coordinator::prepost::Paarurteil) -> Value {
+        use crate::coordinator::prepost::{Alignmentklasse, Ausschlussgrund, Kettenbefund};
+        let mut objekt = serde_json::Map::new();
+        objekt.insert("pair_id".into(), Value::String(u.pair_id.clone()));
+        objekt.insert(
+            "klasse".into(),
+            Value::String(
+                match u.klasse {
+                    Alignmentklasse::FeatureAligned => "feature_aligned",
+                    Alignmentklasse::AudioAligned => "audio_aligned",
+                    Alignmentklasse::Probable => "probable",
+                    Alignmentklasse::Unclear => "unclear",
+                }
+                .into(),
+            ),
+        );
+        objekt.insert(
+            "kettenbefund".into(),
+            Value::String(
+                match u.kettenbefund {
+                    Kettenbefund::Stationaer => "stationaer",
+                    Kettenbefund::ZeitvariabelMarkiert => "zeitvariabel_markiert",
+                    Kettenbefund::PegelabhaengigMarkiert => "pegelabhaengig_markiert",
+                    Kettenbefund::LatenzWechseltMarkiert => "latenz_wechselt_markiert",
+                    Kettenbefund::NichtBeurteilbar => "nicht_beurteilbar",
+                }
+                .into(),
+            ),
+        );
+        if let Some(a) = u.ausschluss {
+            objekt.insert(
+                "ausschluss".into(),
+                Value::String(
+                    match a {
+                        Ausschlussgrund::HaelfteFehlt => "haelfte_fehlt",
+                        Ausschlussgrund::Paarkonflikt => "paarkonflikt",
+                        Ausschlussgrund::HaelfteGetrennt => "haelfte_getrennt",
+                        Ausschlussgrund::HaelfteStale => "haelfte_stale",
+                        Ausschlussgrund::NichtMessbereit => "nicht_messbereit",
+                        Ausschlussgrund::KeineProjektzeit => "keine_projektzeit",
+                        Ausschlussgrund::FensterLeer => "fenster_leer",
+                        Ausschlussgrund::SamplerateVerschieden => "samplerate_verschieden",
+                        Ausschlussgrund::KeineUeberlappung => "keine_ueberlappung",
+                        Ausschlussgrund::SprungImFenster => "sprung_im_fenster",
+                    }
+                    .into(),
+                ),
+            );
+        }
+        Value::Object(objekt)
+    }
+
     pub(super) fn snapshot_locked(&self, stand: &Stand, session: &SessionKey) -> Vec<u8> {
         let jetzt = self.clock.jetzt();
         let mut mitglieder: Vec<(String, Value)> = stand
@@ -402,11 +563,58 @@ impl Coordinator {
             "beitritt_bestaetigung_noetig": Self::beitritt_noetig_locked(stand, session),
             "mitglieder": mitglieder.into_iter().map(|(_, wert)| wert).collect::<Vec<_>>()
         });
+        // 🔑 SONDE-013 Nacharbeit 2 (Befunde R14/R32): die Versuche und die
+        // PRE/POST-Paarurteile der Sitzung reisen MIT.
+        //
+        // Das Terminal bekam bis dahin gar keine `snapshot_ziele`, und das
+        // Paarurteil endete in einer fluechtigen Map — beide erreichten Gen
+        // NIE. Der Rueckweg laeuft ueber den bestehenden Outbox-/Snapshot-Pfad
+        // statt ueber eine weitere Familie; genau das sagt die Beschreibung von
+        // `experiment_manual_result` im Vertrag zu (§53.9).
+        let objekt = payload
+            .as_object_mut()
+            .expect("session_snapshot ist ein Objekt");
+        // Der Deckel des Vertrages ist 32 (`session_snapshot.experimente`),
+        // und der Bestandsdeckel M-48 deckelt nur die OFFENEN. Abgeschlossene
+        // sammeln sich in derselben Ablage: eine lange Sitzung uebersteigt 32
+        // ohne Weiteres. Ein Snapshot mit 33 Versuchen waere vertragswidrig,
+        // und der Leser wuerde ihn GANZ verwerfen - eine ungedeckelte Liste
+        // haette den Rueckweg genau dann gekappt, wenn er am meisten traegt.
+        //
+        // Gekappt wird am ALTEN Ende: die juengsten Versuche sind die, an
+        // denen der User arbeitet. Die Ordnung im Snapshot bleibt die
+        // Anlegereihenfolge — ein Schnitt, der auch die Reihenfolge dreht,
+        // waere zweimal Wahrheitsverlust.
+        let mut versuche: Vec<&crate::coordinator::experiment::Experiment> = stand
+            .experimente
+            .alle_im_projekt(&session.project_binding_id)
+            .collect();
+        versuche.sort_by_key(|e| e.folge);
+        let ueberzaehlig = versuche.len().saturating_sub(SNAPSHOT_VERSUCHE_MAX);
+        let experimente: Vec<Value> = versuche[ueberzaehlig..]
+            .iter()
+            .map(|e| Self::session_experiment_json(e))
+            .collect();
+        if !experimente.is_empty() {
+            objekt.insert("experimente".into(), Value::Array(experimente));
+        }
+        let mut paare: Vec<(String, Value)> = stand
+            .paarurteile
+            .iter()
+            .filter(|((s, _), _)| s == session)
+            .map(|((_, id), urteil)| (id.clone(), Self::session_paar_json(urteil)))
+            .collect();
+        // Feste Ordnung: eine `HashMap` hat keine, und ein Snapshot, dessen
+        // Reihenfolge sich von Lauf zu Lauf dreht, waere nicht reproduzierbar.
+        paare.sort_by(|a, b| a.0.cmp(&b.0));
+        if !paare.is_empty() {
+            objekt.insert(
+                "paare".into(),
+                Value::Array(paare.into_iter().map(|(_, w)| w).collect()),
+            );
+        }
         if self.store_degradiert() {
-            payload
-                .as_object_mut()
-                .expect("session_snapshot ist ein Objekt")
-                .insert("store_degraded".into(), Value::Bool(true));
+            objekt.insert("store_degraded".into(), Value::Bool(true));
         }
         serde_json::to_vec(&payload).unwrap_or_else(|_| b"{}".to_vec())
     }

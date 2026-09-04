@@ -369,6 +369,14 @@ void SourcesModel::beginneSubscription (std::string binding, std::string session
     erwarteteSession = std::move (session);
     eigeneMainId = std::move (eigeneMainInstanceId);
     subscriptionAktiv = false;
+    // Eine neue Sitzung erbt die Versuche der alten NICHT. Sie stehen unter
+    // der Sitzungsepoche, und ein stehengebliebener Versuch waere eine
+    // Falschaussage ueber die neue.
+    experimente.clear();
+    paare.clear();
+    evidenzRuecknahmen = 0;
+    ruecknahmeGrund.clear();
+    ruecknahmeUmfang.clear();
     diagnose = Diagnose::authenticating;
     diagnoseHatHandgriff = false;
     revidiere();
@@ -462,13 +470,21 @@ SourcesModel::SnapshotErgebnis SourcesModel::uebernehmeSessionSnapshot (
     const auto typ = o->getProperty ("type");
     if (! typ.isString() || typ.toString() != "session_snapshot")
         return SnapshotErgebnis::ignoriert;
+    // 🔑 SONDE-013 Nacharbeit 2 (Befunde R14/R32): die Fassung 2 traegt
+    // `experimente` und `paare`. Ohne diese Zeile laege der Riegel darauf, und
+    // Gen wiese JEDEN Snapshot ab, der ein Experimentresultat mitbringt - der
+    // Rueckweg waere gebaut und trotzdem tot.
     const bool wurzelFelderGueltig = schemaMinor == 0
         ? exakteFelder (*o,
               { "type", "session_epoch", "broker_epoch", "fuehrendes_main", "mitglieder" },
               { "beitritt_bestaetigung_noetig" })
+        : schemaMinor == 1
+        ? exakteFelder (*o,
+              { "type", "session_epoch", "broker_epoch", "fuehrendes_main", "mitglieder" },
+              { "beitritt_bestaetigung_noetig", "store_degraded" })
         : exakteFelder (*o,
               { "type", "session_epoch", "broker_epoch", "fuehrendes_main", "mitglieder" },
-              { "beitritt_bestaetigung_noetig", "store_degraded" });
+              { "beitritt_bestaetigung_noetig", "store_degraded", "experimente", "paare" });
     if (! wurzelFelderGueltig)
     {
         fehler = "session_snapshot has an unexpected or missing field";
@@ -506,6 +522,95 @@ SourcesModel::SnapshotErgebnis SourcesModel::uebernehmeSessionSnapshot (
         }
         storeDegradiert = true;
     }
+    // 🔑 SONDE-013 Nacharbeit 2 (Befunde R14/R32): die Versuche und die
+    // Paarurteile der Sitzung. Sie sind der Rueckweg, auf dem ein gerechnetes
+    // Experimentresultat und ein PRE/POST-Urteil Gen ueberhaupt erreichen -
+    // vorher gab es keinen. Was hier nicht gelesen wird, ist im Produkt nicht
+    // angekommen, egal wie sauber der Broker es gerechnet hat.
+    std::vector<Versuch> geleseneVersuche;
+    if (o->hasProperty ("experimente"))
+    {
+        const auto* liste = o->getProperty ("experimente").getArray();
+        if (liste == nullptr || liste->size() > 32)
+        {
+            fehler = "session_snapshot experiments are not an array of at most 32";
+            return SnapshotErgebnis::ungueltig;
+        }
+        for (const auto& wert : *liste)
+        {
+            const auto* e = objekt (wert);
+            if (e == nullptr
+                || ! exakteFelder (*e, { "experiment_id", "ereignis", "offen" },
+                                       { "hoerurteil", "blindreihenfolge",
+                                         "vergleichbarkeit", "urteil" }))
+            {
+                fehler = "session experiment has an unexpected or missing field";
+                return SnapshotErgebnis::ungueltig;
+            }
+            const auto id = e->getProperty ("experiment_id");
+            const auto ereignis = e->getProperty ("ereignis");
+            const auto offen = e->getProperty ("offen");
+            if (! id.isString() || ! hex32 (id.toString())
+                || ! ereignis.isString() || ! offen.isBool())
+            {
+                fehler = "session experiment id, transition or open flag is invalid";
+                return SnapshotErgebnis::ungueltig;
+            }
+            Versuch v;
+            v.experimentId = id.toString().toStdString();
+            v.ereignis = ereignis.toString().toStdString();
+            v.offen = static_cast<bool> (offen);
+            auto wort = [&e] (const char* name)
+            {
+                const auto w = e->getProperty (name);
+                return w.isString() ? w.toString().toStdString() : std::string {};
+            };
+            v.hoerurteil = wort ("hoerurteil");
+            v.blindreihenfolge = wort ("blindreihenfolge");
+            v.vergleichbarkeit = wort ("vergleichbarkeit");
+            v.urteil = wort ("urteil");
+            geleseneVersuche.push_back (std::move (v));
+        }
+    }
+    std::vector<Paar> gelesenePaare;
+    if (o->hasProperty ("paare"))
+    {
+        const auto* liste = o->getProperty ("paare").getArray();
+        if (liste == nullptr || liste->size() > 64)
+        {
+            fehler = "session_snapshot pairs are not an array of at most 64";
+            return SnapshotErgebnis::ungueltig;
+        }
+        for (const auto& wert : *liste)
+        {
+            const auto* pz = objekt (wert);
+            if (pz == nullptr
+                || ! exakteFelder (*pz, { "pair_id", "klasse", "kettenbefund" },
+                                        { "ausschluss" }))
+            {
+                fehler = "session pair has an unexpected or missing field";
+                return SnapshotErgebnis::ungueltig;
+            }
+            const auto id = pz->getProperty ("pair_id");
+            const auto klasse = pz->getProperty ("klasse");
+            const auto kette = pz->getProperty ("kettenbefund");
+            if (! id.isString() || id.toString().isEmpty()
+                || ! klasse.isString() || ! kette.isString())
+            {
+                fehler = "session pair id, class or chain finding is invalid";
+                return SnapshotErgebnis::ungueltig;
+            }
+            Paar pp;
+            pp.pairId = id.toString().toStdString();
+            pp.klasse = klasse.toString().toStdString();
+            pp.kettenbefund = kette.toString().toStdString();
+            const auto aus = pz->getProperty ("ausschluss");
+            if (aus.isString())
+                pp.ausschluss = aus.toString().toStdString();
+            gelesenePaare.push_back (std::move (pp));
+        }
+    }
+
     const auto mitgliederVar = o->getProperty ("mitglieder");
     const auto* mitglieder = mitgliederVar.getArray();
     if (mitglieder == nullptr
@@ -677,6 +782,8 @@ SourcesModel::SnapshotErgebnis SourcesModel::uebernehmeSessionSnapshot (
         neu.emplace (id, std::move (e));
     }
     eintraege = std::move (neu);
+    experimente = std::move (geleseneVersuche);
+    paare = std::move (gelesenePaare);
     subscriptionAktiv = true;
     diagnose = storeDegradiert ? Diagnose::storeDegraded
              : (bestaetigung || doppelteId) ? Diagnose::confirmationRequired
@@ -686,6 +793,155 @@ SourcesModel::SnapshotErgebnis SourcesModel::uebernehmeSessionSnapshot (
     stelleZielSicher();
     revidiere();
     return SnapshotErgebnis::uebernommen;
+}
+
+SourcesModel::RuecknahmeErgebnis SourcesModel::uebernehmeEvidenzruecknahme (
+    const std::string& json, std::uint8_t schemaMinor, juce::String& fehler)
+{
+    fehler.clear();
+    if (schemaMinor > nakama::ipc::kJsonSchemaMinor)
+    {
+        fehler = "evidence_invalidate schema_minor is newer than this Main reader";
+        return RuecknahmeErgebnis::ungueltig;
+    }
+    {
+        std::lock_guard<std::mutex> l (mutex);
+        if (erwarteteBindung.empty() || erwarteteSession.empty())
+            return RuecknahmeErgebnis::ignoriert;
+    }
+    juce::String riegel;
+    if (! nakama::vertrag::textriegelBytes (json.data(), json.size(), riegel))
+    {
+        fehler = "evidence_invalidate text boundary: " + riegel;
+        return RuecknahmeErgebnis::ungueltig;
+    }
+    juce::var root;
+    const auto parse = juce::JSON::parse (juce::String::fromUTF8 (json.data(),
+                                                                  static_cast<int> (json.size())), root);
+    const auto* o = objekt (root);
+    if (parse.failed() || o == nullptr)
+        return RuecknahmeErgebnis::ignoriert;
+    const auto typ = o->getProperty ("type");
+    if (! typ.isString() || typ.toString() != "evidence_invalidate")
+        return RuecknahmeErgebnis::ignoriert;
+    if (! exakteFelder (*o, { "type", "grund", "umfang" }))
+    {
+        fehler = "evidence_invalidate carries an unexpected or missing field";
+        return RuecknahmeErgebnis::ungueltig;
+    }
+
+    // Die Gruende sind eine GESCHLOSSENE Menge, und ihre Fassung entscheidet
+    // ausschliesslich der Wire-Envelope (Paragraph 7.1, E-04). Ein Leser der
+    // Fassung 1 lehnt `material_wechsel` und `messpunkt_wechsel` ab, statt sie
+    // still auf `intervention` abzubilden - eine solche Abbildung waere eine
+    // erfundene Begruendung fuer eine echte Ruecknahme.
+    const auto grundVar = o->getProperty ("grund");
+    if (! grundVar.isString())
+    {
+        fehler = "evidence_invalidate reason is not a word";
+        return RuecknahmeErgebnis::ungueltig;
+    }
+    const auto grund = grundVar.toString().toStdString();
+    static const std::set<std::string> grundFassung1 {
+        "intervention", "routing_unbekannt", "sequenzluecke",
+        "epochwechsel", "state_revision" };
+    static const std::set<std::string> grundFassung2 {
+        "material_wechsel", "messpunkt_wechsel" };
+    const bool grundBekannt = grundFassung1.count (grund) != 0
+                           || (schemaMinor >= 2 && grundFassung2.count (grund) != 0);
+    if (! grundBekannt)
+    {
+        fehler = "evidence_invalidate reason is unknown to this reader version";
+        return RuecknahmeErgebnis::ungueltig;
+    }
+
+    // Der Umfang diskriminiert ueber `art`; jeder Zweig traegt genau seine
+    // Felder. `art=sample_range` ohne Bereich und `art=ganze_sitzung` MIT
+    // Bereich sind ungueltig - der Discriminator ist kein Etikett ohne
+    // Wirkung (M-57).
+    const auto* u = objekt (o->getProperty ("umfang"));
+    if (u == nullptr)
+    {
+        fehler = "evidence_invalidate scope is not an object";
+        return RuecknahmeErgebnis::ungueltig;
+    }
+    const auto artVar = u->getProperty ("art");
+    if (! artVar.isString())
+    {
+        fehler = "evidence_invalidate scope has no discriminator";
+        return RuecknahmeErgebnis::ungueltig;
+    }
+    const auto art = artVar.toString().toStdString();
+    std::string umfang;
+    if (art == "evidence_ids")
+    {
+        const auto* ids = exakteFelder (*u, { "art", "evidence_ids" })
+                            ? u->getProperty ("evidence_ids").getArray()
+                            : nullptr;
+        if (ids == nullptr || ids->isEmpty() || ids->size() > 4096)
+        {
+            fehler = "evidence_invalidate id scope is not 1..4096 ids";
+            return RuecknahmeErgebnis::ungueltig;
+        }
+        for (const auto& id : *ids)
+            if (! id.isString() || ! hex32 (id.toString()))
+            {
+                fehler = "evidence_invalidate id is not hex32";
+                return RuecknahmeErgebnis::ungueltig;
+            }
+        umfang = "evidence_ids";
+    }
+    else if (art == "sample_range")
+    {
+        std::uint64_t von = 0, bis = 0;
+        if (! exakteFelder (*u, { "art", "sample_start", "sample_end" })
+            || ! nichtnegativeGanzzahl (u->getProperty ("sample_start"), von)
+            || ! nichtnegativeGanzzahl (u->getProperty ("sample_end"), bis)
+            // Die Ordnung des Bereichs gehoert AUSDRUECKLICH dem Consumer: das
+            // Schema kann keine Feldvergleiche (schemas/v3/README.md). Wer sie
+            // hier nicht prueft, nimmt einen verdrehten Bereich als Ruecknahme
+            // an, die nichts zuruecknimmt.
+            || von > bis)
+        {
+            fehler = "evidence_invalidate sample range is not ordered";
+            return RuecknahmeErgebnis::ungueltig;
+        }
+        umfang = "sample_range";
+    }
+    else if (art == "ganze_sitzung")
+    {
+        if (! exakteFelder (*u, { "art" }))
+        {
+            fehler = "evidence_invalidate session scope carries a range";
+            return RuecknahmeErgebnis::ungueltig;
+        }
+        umfang = "ganze_sitzung";
+    }
+    else
+    {
+        fehler = "evidence_invalidate scope kind is not in the closed set";
+        return RuecknahmeErgebnis::ungueltig;
+    }
+
+    // Die WIRKUNG. Gen fuehrt keine Evidenz-IDs - es fuehrt Zeilen mit einem
+    // Messzustand. Es kann daher nicht sagen, WELCHE Zeile die
+    // zurueckgenommene Evidenz getragen hat. Fail-closed heisst hier
+    // invalidieren: jede Zeile, die eine Messaussage traegt, verliert sie.
+    // Eine engere Auswahl waere geraten, und eine stehengebliebene Zahl auf
+    // dem Schirm waere eine Aussage ohne Deckung.
+    //
+    // Nur die MESSACHSE wird angefasst. Die fuenf Achsen bleiben getrennt;
+    // die Lautheitsachse traegt ihren eigenen Zustand und ihre eigene
+    // Ungueltigkeit.
+    std::lock_guard<std::mutex> l (mutex);
+    for (auto& [_, e] : eintraege)
+        if (e.zeile.messung != Messung::missing)
+            e.zeile.messung = Messung::invalid;
+    evidenzRuecknahmen = evidenzRuecknahmen + 1;
+    ruecknahmeGrund = grund;
+    ruecknahmeUmfang = umfang;
+    revidiere();
+    return RuecknahmeErgebnis::uebernommen;
 }
 
 bool SourcesModel::uebernehmeP2 (const std::uint8_t* daten, std::size_t laenge,
@@ -802,6 +1058,14 @@ SourcesModel::Sicht SourcesModel::sicht() const
     s.mainDarfSchreiben = subscriptionAktiv
                        && ! eigeneMainId.empty()
                        && fuehrendesMain == eigeneMainId;
+    // SONDE-013 Nacharbeit 2 (Befunde R14/R32): der Rueckweg reist mit in die
+    // Sicht. Was das Modell empfangen hat, muss die Oberflaeche auch sehen
+    // koennen - sonst waere der Pfad bis hierher gebaut und trotzdem tot.
+    s.experimente = experimente;
+    s.paare = paare;
+    s.evidenzRuecknahmen = evidenzRuecknahmen;
+    s.ruecknahmeGrund = ruecknahmeGrund;
+    s.ruecknahmeUmfang = ruecknahmeUmfang;
     for (const auto& [_, e] : eintraege)
         s.quellen.push_back (e.zeile);
     std::sort (s.quellen.begin(), s.quellen.end(), [] (const Zeile& a, const Zeile& b)

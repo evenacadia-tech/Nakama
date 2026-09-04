@@ -459,11 +459,33 @@ impl Coordinator {
             }
             "audible_intervention_begin" => {
                 let adresse: Adresse = serde_json::from_value(wert["adresse"].clone()).ok()?;
-                self.intervention_begin(
+                // 🔑 Nacharbeit 2 (Befund R22, M-59): `art` und
+                // `experiment_id` reisen DURCH.
+                //
+                // Der echte Dispatch rief bis hierher `intervention_begin`,
+                // und der schrieb JEDE Intervention als `hoermarkierung` ohne
+                // Experimentbezug fest. Ein schema-gueltiges
+                // `art=experiment`-Intervall konnte damit nie seinem Versuch
+                // zugeordnet und von dessen Terminal geschlossen werden — die
+                // Sperre auf starker Evidenz blieb nach jedem Resultat offen.
+                let art = wert.get("art").and_then(Value::as_str).unwrap_or("hoermarkierung");
+                let experiment_id = wert.get("experiment_id").and_then(Value::as_str);
+                // Die Kante, die das Schema nicht ausdruecken kann (geschlossene
+                // Schluesselwortmenge, kein Feldvergleich): `art=experiment`
+                // OHNE `experiment_id` ist ein Intervall, das kein Terminal je
+                // schliessen koennte. Es als Hoermarkierung zu fuehren waere die
+                // stille Umdeutung, die §34.2 ausschliesst — fail-closed.
+                if art == "experiment" && experiment_id.is_none() {
+                    self.intervention_overflow_fuer_link(link_id);
+                    return None;
+                }
+                self.intervention_begin_mit_art(
                     link_id,
                     &adresse,
                     wert.get("intervention_id")?.as_str()?,
                     wert.get("event_sequence")?.as_u64()?,
+                    art,
+                    experiment_id,
                 );
                 None
             }

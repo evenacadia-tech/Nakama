@@ -126,6 +126,17 @@ pub struct Passage {
     pub transport_epoch: u64,
     /// Aktives Quellenset als `instance_id`-Liste, eingefroren.
     pub aktive_quellen: Vec<String>,
+    /// Je Quelle ihre Messposition, in DERSELBEN Reihenfolge wie
+    /// `aktive_quellen` (M-28/M-55).
+    ///
+    /// 🔑 Nacharbeit 2 (Befund R23): das Schema verlangte `messpunktklassen`
+    /// parallel zu `aktive_quellen` schon in Fassung 2, aber `Passage` hatte
+    /// keinen Platz dafuer und `passage_aus_wert` las das Feld nicht. Die
+    /// Zuordnung Quelle→Messpunkt ging damit bereits beim Wire-Lesen verloren
+    /// — und mit ihr Gate 7: ein Messpunktwechsel ist ein Herabstufungsgrund,
+    /// und wer die Ausgangsklasse nie gespeichert hat, kann keinen Wechsel
+    /// erkennen.
+    pub messpunktklassen: Vec<String>,
     /// GEMESSENE Signalabdeckung in [0, 1], nicht die Wanddauer (M-30).
     pub abdeckung: f32,
     /// Das User-Wort, nie interpretiert. `None` = die Passage hat keines.

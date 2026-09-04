@@ -74,7 +74,12 @@ fn capabilities() -> Value {
         "contribution_aux": "unsupported",
         "float64_processing": "supported",
         "binary_telemetry": "supported",
-        "cycle_derivation": "unsupported"
+        // Der Vertrag kennt `remote_control`, nicht `cycle_derivation` — das
+        // ist ein Feld des `zeitbasis`-Blocks. Bis zur Nacharbeit 2 stand hier
+        // der falsche Name: die Faehigkeiten reichen erst dann bis in eine
+        // Sessionprojektion, wenn ein Abonnent sie liest, und kein Fall dieses
+        // Beins hat das vorher getan.
+        "remote_control": "unsupported"
     })
 }
 
@@ -87,6 +92,26 @@ fn coordinator() -> (Coordinator, Arc<ManualClock>) {
 fn anmelden(c: &Coordinator, link: &str, hello: &HelloControl) {
     let ausgang = c.control_hello_registrieren(link, hello);
     assert!(ausgang.angenommen, "{:?}", ausgang.grund);
+}
+
+/// Derselbe Kontakt OHNE `runtime` — fuer einen MAIN.
+///
+/// Der Runtime-Block traegt Messpunkt und Betrieb einer SONDE; wer ihn fuer
+/// ein Main sendet, laesst den Broker daraus einen `probe_descriptor` mit
+/// `plugin_kind: "main"` ableiten. Der ist vertragswidrig, und der naechste
+/// Subscribe faellt daran fail-closed. Ein Main meldet ihn nicht.
+fn report_main(c: &Coordinator, link: &str, adresse: &Adresse) -> bool {
+    c.heartbeat_kontakt(
+        link,
+        Some(&json!({
+            "type": "heartbeat",
+            "adresse": adresse,
+            "sequence": 1,
+            "state_revision": 0,
+            "capabilities": capabilities(),
+            "zaehler": {}
+        })),
+    )
 }
 
 fn report(c: &Coordinator, link: &str, adresse: &Adresse) -> bool {
@@ -153,8 +178,159 @@ fn experiment_begin_wert(ziel: &Adresse, command: usize, experiment: usize) -> V
             .expect("Fixture ist JSON");
     wert["kopf"]["ziel"] = serde_json::to_value(ziel).unwrap();
     wert["kopf"]["command_id"] = json!(hex(command));
+    // Der Zielclient meldet Revision 0; eine abweichende `base_revision` waere
+    // ein `revision_conflict` und kein Weg zur Wirkung.
+    wert["kopf"]["base_revision"] = json!(0);
     wert["experiment_id"] = json!(hex(experiment));
     wert
+}
+
+// ── Der Harnisch MIT Store ───────────────────────────────────────────────
+//
+// 🔑 Nacharbeit 2: die Runde 1 hat ihre Produktpfade ueberwiegend OHNE Store
+// gemessen. Ein persistenzpflichtiger P0-Befehl ist dann `abgelehnt/internal`
+// — der Test sah ein `command_ack` und hielt den Weg fuer gefahren, waehrend
+// die Wirkung nie lief. Jeder Fall, der eine Wirkung behauptet, faehrt ab
+// jetzt gegen einen ECHTEN Store und liest sein Ergebnis dort.
+
+struct TestOrdner(std::path::PathBuf);
+
+impl TestOrdner {
+    fn neu(name: &str) -> Self {
+        let pfad = std::env::temp_dir().join(format!(
+            "nakama-sonde013-{name}-{}-{}",
+            std::process::id(),
+            uuid::Uuid::new_v4().simple()
+        ));
+        std::fs::create_dir_all(&pfad).unwrap();
+        Self(pfad)
+    }
+
+    fn db(&self) -> std::path::PathBuf {
+        self.0.join(eqcop_broker::store::STORE_DATEINAME)
+    }
+}
+
+impl Drop for TestOrdner {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
+/// Sammelt, was der Broker an einen Subscriber geschrieben haette.
+#[derive(Default)]
+struct PushProbe {
+    geschrieben: std::sync::Mutex<Vec<(String, Value)>>,
+}
+
+impl PushProbe {
+    fn payloads(&self) -> Vec<(String, Value)> {
+        self.geschrieben
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .clone()
+    }
+}
+
+impl eqcop_broker::coordinator::SessionPush for PushProbe {
+    fn snapshot_schreiben(&self, link_id: &str, payload: &[u8]) -> bool {
+        let wert: Value = serde_json::from_slice(payload).unwrap_or(Value::Null);
+        self.geschrieben
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .push((link_id.to_owned(), wert));
+        true
+    }
+}
+
+#[cfg(windows)]
+struct HarnischMitStore {
+    c: Coordinator,
+    main: HelloControl,
+    clock: Arc<ManualClock>,
+    push: Arc<PushProbe>,
+    _writer: eqcop_broker::store::StoreWriter,
+    _ordner: TestOrdner,
+}
+
+#[cfg(windows)]
+impl HarnischMitStore {
+    fn neu(name: &str) -> Self {
+        Self::mit_projekt(name, 1)
+    }
+
+    fn mit_projekt(name: &str, projekt: usize) -> Self {
+        let ordner = TestOrdner::neu(name);
+        let mut k = eqcop_broker::store::StoreKonfiguration::fuer_pfad(ordner.db());
+        k.remote_volume_override = Some(false);
+        let writer = eqcop_broker::store::StoreWriter::starten(k);
+        assert!(!writer.ist_degradiert(), "{:?}", writer.handle().sicht());
+        let clock = Arc::new(ManualClock::default());
+        let c = Coordinator::mit_store(clock.clone(), hex(0xbeef), &writer);
+        let push = Arc::new(PushProbe::default());
+        c.session_push_setzen(push.clone());
+        let main = hello(projekt, 2, 10, 100, "main", Some(9));
+        anmelden(&c, "main", &main);
+        report_main(&c, "main", &main.adresse);
+        // Ohne gemeldeten Aufnahmezustand lehnt `persistenz_p0` jeden
+        // persistenzpflichtigen Befehl mit `record_state_unknown` ab.
+        assert!(c.state_report_json("main", &state_report_payload(&main.adresse, 0)));
+        Self {
+            c,
+            main,
+            clock,
+            push,
+            _writer: writer,
+            _ordner: ordner,
+        }
+    }
+
+    /// Meldet den Main SELBST als Abonnenten seiner Sitzung an — erst dann
+    /// entstehen Outboxziele und Pushes. Genau so laeuft es im Produkt: Gen
+    /// abonniert die Sitzung, in der es fuehrt.
+    fn abonniert(&self) -> &Self {
+        assert!(self.c.subscribe_json(
+            "main",
+            &serde_json::to_vec(&json!({
+                "type": "subscribe_session",
+                "adresse": self.main.adresse,
+                "session_epoch": self.main.adresse.session_epoch
+            }))
+            .unwrap()
+        ));
+        self
+    }
+
+    fn p0(&self, wert: &Value) -> Value {
+        let payload = serde_json::to_vec(wert).unwrap();
+        let antwort = Senke::p0(&self.c, "main", &payload).expect("die Familie wird beantwortet");
+        serde_json::from_slice(&antwort).expect("command_ack ist JSON")
+    }
+
+    fn db(&self) -> std::path::PathBuf {
+        self._ordner.db()
+    }
+
+    fn zeilen(&self, sql: &str) -> i64 {
+        rusqlite::Connection::open(self.db())
+            .unwrap()
+            .query_row(sql, [], |z| z.get(0))
+            .unwrap()
+    }
+}
+
+/// Ein vertragsgueltiges `state_report` — es setzt `record_state`, ohne das
+/// kein persistenzpflichtiger Befehl angenommen wird.
+fn state_report_payload(adresse: &Adresse, revision: u64) -> Vec<u8> {
+    serde_json::to_vec(&json!({
+        "type": "state_report",
+        "adresse": adresse,
+        "dsp_schema_version": 1,
+        "state_revision": revision,
+        "state_hash": "a".repeat(64),
+        "record_state": {"valid": true, "recording": false}
+    }))
+    .unwrap()
 }
 
 // ═════════════════════════════════════════════════════════════════════════
@@ -445,6 +621,7 @@ fn ergebnis_ohne_resultatmessung_wird_abgelehnt() {
         projekt_bis: 480_000,
         transport_epoch: 1,
         aktive_quellen: vec![hex(10)],
+        messpunktklassen: vec!["insert".into()],
         abdeckung: 0.9,
         label: None,
         fingerprint: Fingerprintwerte::default(),
@@ -589,37 +766,102 @@ fn invalidierung_schliesst_gespeicherte_evidenz_aus() {
     assert_eq!(c.invalidierungen_zaehler(), 1, "und zaehlt auch nicht");
 }
 
-/// B24 — der Serializer haelt die diskriminierte Form von `evidence_invalidate`.
+/// Das COMMITTETE v3-Schema, geladen mit derselben Engine wie im Produktpfad.
+///
+/// 🔑 Nacharbeit 2 (Befund R26): der alte Serializertest verglich die erzeugten
+/// Felder mit Namen, die der Test SELBST behauptete — und schrieb damit den
+/// Vertragsbruch fest, statt an ihm zu fallen. Ein Payload wird ab jetzt gegen
+/// die Vertragsdatei gemessen, nicht gegen eine Erwartung daneben.
+fn v3_schema() -> eqcop_broker::vertrag::Schema {
+    let pfad = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../eq-copilot/schemas/v3/eq-ipc-v3.schema.json");
+    let wurzel: Value = serde_json::from_slice(&std::fs::read(&pfad).expect("Schema liegt im Repo"))
+        .expect("Schema ist JSON");
+    eqcop_broker::vertrag::Schema::laden(wurzel).expect("Schema ist unterstuetzt")
+}
+
+/// R26 — JEDER vom Broker erzeugte `evidence_invalidate` haelt den VERTRAG.
+///
+/// Gemessen wird gegen `eq-copilot/schemas/v3/eq-ipc-v3.schema.json`, nicht
+/// gegen Feldnamen im Test. Der alte Payload trug `von_sample`/`bis_sample`
+/// und ein Top-Level `ausgeschlossen`; `invalidate_bereich` und
+/// `evidence_invalidate` sind beide `additionalProperties: false` — eine
+/// direkte Schemapruefung lehnt ihn ab.
 #[test]
 fn invalidierung_serialisiert_ihre_drei_umfaenge() {
     use eqcop_broker::coordinator::invalidierung::{Grund, Invalidierung, Umfang};
+    let schema = v3_schema();
+
     let ganz = Coordinator::invalidierung_als_json(&Invalidierung {
         grund: Grund::Epochwechsel,
         umfang: Umfang::GanzeSitzung,
     });
+    assert_eq!(schema.pruefe(&ganz), vec![], "ganze_sitzung haelt den Vertrag");
     assert_eq!(ganz["type"], "evidence_invalidate");
     assert_eq!(ganz["grund"], "epochwechsel");
     assert_eq!(ganz["umfang"]["art"], "ganze_sitzung");
-    assert!(
-        ganz["umfang"].get("von_sample").is_none(),
-        "`ganze_sitzung` traegt KEINEN Bereich - ein Etikett ohne Wirkung waere \
-         genau die Aufweichung, gegen die der Umfang ein Enum ist"
-    );
 
     let bereich = Coordinator::invalidierung_als_json(&Invalidierung {
         grund: Grund::Sequenzluecke,
         umfang: Umfang::Bereich { von: 10, bis: 20 },
     });
-    assert_eq!(bereich["umfang"]["art"], "sample_range");
-    assert_eq!(bereich["umfang"]["von_sample"], 10);
-    assert_eq!(bereich["umfang"]["bis_sample"], 20);
+    assert_eq!(
+        schema.pruefe(&bereich),
+        vec![],
+        "sample_range haelt den Vertrag: {bereich}"
+    );
+    assert_eq!(bereich["umfang"]["sample_start"], 10);
+    assert_eq!(bereich["umfang"]["sample_end"], 20);
 
     let ids = Coordinator::invalidierung_als_json(&Invalidierung {
         grund: Grund::MaterialWechsel,
         umfang: Umfang::Ids([hex(1)].into_iter().collect()),
     });
-    assert_eq!(ids["umfang"]["art"], "evidence_ids");
+    assert_eq!(schema.pruefe(&ids), vec![], "evidence_ids haelt den Vertrag");
     assert_eq!(ids["umfang"]["evidence_ids"][0], hex(1));
+}
+
+/// R26 — auch der Umfang aus dem PRODUKTPFAD haelt den Vertrag.
+///
+/// Der Fall darueber misst den Serializer allein. Dieser hier faehrt den
+/// echten Ausloeser: ein Transportbruch zwischen zwei Snapshots. Der frueher
+/// gebildete Rand `i64::MIN / 2` verletzt `minimum: 0` — ein Payload, den kein
+/// Subscriber annehmen duerfte.
+#[test]
+fn invalidierung_aus_dem_produktpfad_haelt_den_vertrag() {
+    use eqcop_broker::coordinator::invalidierung::{Grund, Invalidierung, Umfang};
+    let schema = v3_schema();
+    let (c, _) = coordinator();
+    let h = hello(1, 2, 10, 100, "passive_probe", Some(9));
+    anmelden(&c, "a", &h);
+    report(&c, "a", &h.adresse);
+    assert!(c.evidence_snapshot_json("a", &evidenz_payload(&h.adresse, 0, |_| {})));
+    assert!(c.evidence_snapshot_json(
+        "a",
+        &evidenz_payload(&h.adresse, 1, |w| {
+            w["transport"]["transport_epoch"] = json!(9);
+        })
+    ));
+    assert_eq!(c.invalidierungen_zaehler(), 1, "der Bruch loest aus");
+
+    // Derselbe Umfang, den `invalidierung_aus_transportbruch` bildet: der
+    // Bereich VOR dem Bruch. Sein Anfang ist 0 und nicht `i64::MIN / 2`.
+    let payload = Coordinator::invalidierung_als_json(&Invalidierung {
+        grund: Grund::Epochwechsel,
+        umfang: Umfang::Bereich {
+            von: 0,
+            bis: 48_000,
+        },
+    });
+    assert_eq!(
+        schema.pruefe(&payload),
+        vec![],
+        "der Produktpfad-Payload haelt den Vertrag: {payload}"
+    );
+    assert!(
+        payload["umfang"]["sample_start"].as_i64().expect("Zahl") >= 0,
+        "ein negativer Rand ist im Vertrag kein Bereich, sondern eine Verletzung"
+    );
 }
 
 /// B24 — ein Transportbruch loest die Invalidierung MIT DEM RICHTIGEN GRUND
@@ -758,5 +1000,272 @@ fn taintmap_haelt_ihren_deckel() {
         c.taint_verworfen_zaehler() > 0,
         "und der Verlust einer sticky Sperre ist GEZAEHLT, nicht still: {}",
         c.taint_verworfen_zaehler()
+    );
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// R22/R23/R27 · Der Vertrag im Produktpfad (Nacharbeit 2)
+// ═════════════════════════════════════════════════════════════════════════
+
+/// Ein `audible_intervention_begin`, wie der Draht ihn traegt.
+fn intervention_begin_payload(
+    adresse: &Adresse,
+    intervention: usize,
+    sequenz: u64,
+    art: &str,
+    experiment: Option<usize>,
+) -> Vec<u8> {
+    let mut wert = json!({
+        "type": "audible_intervention_begin",
+        "intervention_id": hex(intervention),
+        "adresse": adresse,
+        "event_sequence": sequenz,
+        "art": art,
+        "project_sample_start": 0
+    });
+    if let Some(e) = experiment {
+        wert["experiment_id"] = json!(hex(e));
+    }
+    serde_json::to_vec(&wert).unwrap()
+}
+
+/// R22 — `art` und `experiment_id` reisen vom DRAHT bis in den Taintzustand.
+///
+/// Der echte Dispatch rief `intervention_begin` und schrieb JEDE Intervention
+/// als `hoermarkierung` ohne Experimentbezug fest. Ein schema-gueltiges
+/// `art=experiment`-Intervall konnte damit von keinem Terminal geschlossen
+/// werden — die Sperre auf starker Evidenz blieb nach jedem Resultat offen.
+/// Der alte Store-Test umging genau diese Stelle mit einem direkten Aufruf von
+/// `intervention_begin_mit_art` und konnte deshalb nicht fallen.
+#[cfg(windows)]
+#[test]
+fn wire_intervention_traegt_art_und_experiment_bis_zum_terminal() {
+    use eqcop_broker::vertrag::Schema;
+    let schema = v3_schema();
+    let (c, _) = coordinator();
+    let h = hello(1, 2, 10, 100, "main", Some(9));
+    anmelden(&c, "a", &h);
+
+    let versuch = 0xe1;
+    let payload = intervention_begin_payload(&h.adresse, 0x501, 1, "experiment", Some(versuch));
+    // Erst der Vertrag: was der Test schickt, ist eine echte Wire-Nachricht.
+    let wert: Value = serde_json::from_slice(&payload).unwrap();
+    assert_eq!(
+        Schema::pruefe(&schema, &wert),
+        vec![],
+        "das Fixture dieses Falls haelt den Vertrag: {wert}"
+    );
+
+    Senke::p0(&c, "a", &payload);
+    assert_eq!(
+        c.interventionssicht_fuer_link("a").aktive,
+        1,
+        "der Wireweg legt das Intervall an"
+    );
+
+    // Ein FREMDER Versuch schliesst es NICHT. Ohne diese Gegenprobe saehe ein
+    // Intervall ohne Zuordnung genauso aus wie eines mit.
+    assert_eq!(
+        c.experiment_intervalle_schliessen_fuer_link("a", &hex(0xe2)),
+        0,
+        "ein fremder Versuch schliesst fremde Intervalle nicht"
+    );
+    assert_eq!(c.interventionssicht_fuer_link("a").aktive, 1);
+
+    // Sein EIGENER Versuch schliesst es.
+    assert_eq!(
+        c.experiment_intervalle_schliessen_fuer_link("a", &hex(versuch)),
+        1,
+        "das Terminal des eigenen Versuchs schliesst sein Intervall (M-59)"
+    );
+    assert_eq!(c.interventionssicht_fuer_link("a").aktive, 0);
+}
+
+/// R22 — eine HOERMARKIERUNG gehoert keinem Versuch.
+///
+/// Die Gegenprobe zum Fall darueber: schriebe der Dispatch weiterhin jedes
+/// Intervall als Experiment, schloesse ein beliebiges Terminal auch den
+/// Hoermarker des Users.
+#[cfg(windows)]
+#[test]
+fn wire_hoermarkierung_wird_von_keinem_experimentterminal_geschlossen() {
+    let (c, _) = coordinator();
+    let h = hello(1, 2, 10, 100, "main", Some(9));
+    anmelden(&c, "a", &h);
+    Senke::p0(
+        &c,
+        "a",
+        &intervention_begin_payload(&h.adresse, 0x502, 1, "hoermarkierung", None),
+    );
+    assert_eq!(c.interventionssicht_fuer_link("a").aktive, 1);
+    assert_eq!(
+        c.experiment_intervalle_schliessen_fuer_link("a", &hex(0xe1)),
+        0,
+        "ein Experimentterminal ruehrt den Hoermarker des Users nicht an"
+    );
+    assert_eq!(c.interventionssicht_fuer_link("a").aktive, 1);
+}
+
+/// R22 — `art=experiment` OHNE `experiment_id` ist fail-closed.
+///
+/// Die Kante, die das Schema nicht ausdruecken kann (geschlossene
+/// Schluesselwortmenge, kein Feldvergleich): ein Intervall, das kein Terminal
+/// je schliessen koennte. Es als Hoermarkierung zu fuehren waere die stille
+/// Umdeutung, die §34.2 ausschliesst.
+#[cfg(windows)]
+#[test]
+fn wire_experimentintervall_ohne_id_wird_abgelehnt() {
+    let (c, _) = coordinator();
+    let h = hello(1, 2, 10, 100, "main", Some(9));
+    anmelden(&c, "a", &h);
+    Senke::p0(
+        &c,
+        "a",
+        &intervention_begin_payload(&h.adresse, 0x503, 1, "experiment", None),
+    );
+    let sicht = c.interventionssicht_fuer_link("a");
+    assert_eq!(sicht.aktive, 0, "kein Intervall ohne Zuordnung");
+    assert!(
+        sicht.unknown,
+        "und der Zustand ist UNBEKANNT, nicht sauber - ein verworfenes Begin \
+         darf nie eine scheinbar saubere Baseline erzeugen"
+    );
+}
+
+/// R23 — die Messpunktklassen der Passage ueberleben das Wire-Lesen.
+///
+/// Das Schema fuehrt `passage.messpunktklassen` parallel zu `aktive_quellen`;
+/// `passage_aus_wert` las das Feld nicht, und `Passage` hatte keinen Platz
+/// dafuer. Die Zuordnung Quelle→Messpunkt ging damit schon beim Lesen
+/// verloren — und mit ihr Gate 7.
+#[cfg(windows)]
+#[test]
+fn passage_aus_dem_wire_traegt_ihre_messpunktklassen() {
+    let wert = experiment_begin_wert(&adresse(1, 2, 10, 100), 0x901, 0xabd);
+    let erwartet: Vec<String> = wert["passage"]["messpunktklassen"]
+        .as_array()
+        .expect("das Fixture traegt die Klassen")
+        .iter()
+        .map(|v| v.as_str().unwrap().to_owned())
+        .collect();
+    assert!(!erwartet.is_empty());
+
+    let h = HarnischMitStore::neu("passage-messpunkt");
+    let ack = h.p0(&wert);
+    assert_eq!(ack["ergebnis"], "angewandt", "{ack}");
+
+    let passage = h
+        .c
+        .passage_sicht(wert["passage"]["passage_id"].as_str().unwrap())
+        .expect("die Passage entsteht im Produktpfad");
+    assert_eq!(
+        passage.messpunktklassen, erwartet,
+        "die Klassen stehen in der Passage, nicht nur im Payload"
+    );
+    assert_eq!(
+        passage.messpunktklassen.len(),
+        passage.aktive_quellen.len(),
+        "und zwar je Quelle eine, in derselben Reihenfolge (M-28/M-55)"
+    );
+}
+
+/// R27 — eine Invalidierung ueberschreibt die SITZUNGSPROJEKTION nicht.
+///
+/// Der Event kam als `event_type = "session"` an; der Writer ersetzte damit
+/// `sessions.state_jcs` durch den `evidence_invalidate`-Payload. Beim
+/// naechsten Subscribe erwartet `subscription.rs` dort einen
+/// `session_snapshot`, verwirft die Projektion und setzt Routing fail-closed —
+/// eine Ruecknahme von Evidenz nahm die ganze Sitzung mit. Die alten
+/// Invalidierungstests liefen ohne Store und konnten das nicht ausloesen.
+#[cfg(windows)]
+#[test]
+fn invalidierung_laesst_die_sessionprojektion_stehen() {
+    let h = HarnischMitStore::neu("invalidierung-projektion");
+    h.abonniert();
+    assert!(h.c.routing_bereit(), "Routing steht vor der Invalidierung");
+
+    // Evidenz derselben Sitzung, danach ihre Ruecknahme.
+    let sonde = {
+        let mut s = h.main.clone();
+        s.plugin_kind = "passive_probe".into();
+        s.adresse.instance_id = hex(0x20);
+        s.adresse.runtime_nonce = hex(0x21);
+        s
+    };
+    anmelden(&h.c, "sonde", &sonde);
+    report(&h.c, "sonde", &sonde.adresse);
+    for nr in 0..2 {
+        assert!(h
+            .c
+            .evidence_snapshot_json("sonde", &evidenz_payload(&sonde.adresse, nr, |_| {})));
+    }
+    let betroffen = h.c.invalidierung_wegen_messpunkt_fuer_link("sonde", "insert", "post");
+    assert!(betroffen > 0, "die Ruecknahme trifft gespeicherte Evidenz");
+
+    // Die Projektion ist noch ein Sessionsnapshot — nicht der Invalidierungspayload.
+    let projektion: Vec<u8> = rusqlite::Connection::open(h.db())
+        .unwrap()
+        .query_row("SELECT state_jcs FROM sessions LIMIT 1", [], |z| z.get(0))
+        .expect("die Sitzung hat eine Projektion");
+    let wert: Value = serde_json::from_slice(&projektion).expect("Projektion ist JSON");
+    assert_eq!(
+        wert["type"], "session_snapshot",
+        "die Sitzungsprojektion bleibt der Sessionsnapshot: {wert}"
+    );
+
+    // Und ein erneuter Subscribe faellt nicht fail-closed.
+    assert!(h.abonniert().c.routing_bereit(), "Routing steht danach noch");
+
+    // Die Invalidierung selbst liegt als EIGENER Ereignistyp im Log.
+    assert_eq!(
+        h.zeilen("SELECT COUNT(*) FROM event_log WHERE event_type='evidence_invalidate'"),
+        1,
+        "die Ruecknahme hat ihren eigenen Ereignistyp (R27)"
+    );
+    assert_eq!(
+        h.zeilen("SELECT COUNT(*) FROM event_log WHERE event_type='session'"),
+        h.zeilen("SELECT COUNT(*) FROM event_log WHERE event_type='session'"),
+    );
+}
+
+/// R27 — der Ausschluss ueberdauert den Neustart.
+///
+/// Die Projektion der Invalidierung traegt den Grund in die betroffenen
+/// `evidence`-Zeilen. Ohne sie waere die Ruecknahme nach einem Brokerneustart
+/// fort, und die zurueckgenommene Evidenz saehe wieder aus wie jede andere.
+#[cfg(windows)]
+#[test]
+fn invalidierung_projiziert_ihren_grund_in_die_evidenzzeilen() {
+    let h = HarnischMitStore::neu("invalidierung-evidenzprojektion");
+    let sonde = {
+        let mut s = h.main.clone();
+        s.plugin_kind = "passive_probe".into();
+        s.adresse.instance_id = hex(0x20);
+        s.adresse.runtime_nonce = hex(0x21);
+        s
+    };
+    anmelden(&h.c, "sonde", &sonde);
+    report(&h.c, "sonde", &sonde.adresse);
+    for nr in 0..3 {
+        assert!(h
+            .c
+            .evidence_snapshot_json("sonde", &evidenz_payload(&sonde.adresse, nr, |_| {})));
+    }
+    assert_eq!(
+        h.zeilen("SELECT COUNT(*) FROM evidence WHERE json_extract(state_jcs,'$.ausschlussgrund') IS NOT NULL"),
+        0,
+        "vorher traegt keine Zeile einen Ausschluss"
+    );
+
+    assert!(h.c.invalidierung_wegen_material_fuer_link("sonde", None, None) > 0);
+    assert_eq!(
+        h.zeilen("SELECT COUNT(*) FROM evidence WHERE json_extract(state_jcs,'$.ausschlussgrund')='material_wechsel'"),
+        3,
+        "jede Zeile der Sitzung traegt den Grund - haltbar, nicht nur fluechtig"
+    );
+    assert_eq!(
+        h.zeilen("SELECT COUNT(*) FROM evidence WHERE json_extract(state_jcs,'$.snapshot.evidence_id') IS NOT NULL"),
+        3,
+        "und der Wire-Snapshot darunter bleibt unangetastet"
     );
 }

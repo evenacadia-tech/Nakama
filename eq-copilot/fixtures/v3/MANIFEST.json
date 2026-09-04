@@ -6,9 +6,15 @@
   "wurzel_skalar": "Markiert ein Fixture, dessen Wurzel weder Objekt noch Array ist. JUCEs JSON-Leser folgt RFC 4627 und lehnt es schon im PARSER ab; serde_json und Python folgen RFC 8259 und lehnen es erst am Schema ab. Beide Wege sind eine Ablehnung, nur an verschiedenen Stellen - die Verletzungsmenge gilt daher nur fuer die Beine mit RFC-8259-Parser.",
   "sortierung": "Verletzungen sind kanonisch nach (instanz, schema, schluessel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
   "textriegel_lehnt_ab": "Markiert ein Fixture, das der TEXTRIEGEL abweist, BEVOR ein Parser es sieht. Diese Fixtures tragen keine Verletzungsmenge, weil sie das Schema nie erreichen — eine erfundene waere eine Luege ueber den Ort der Ablehnung. Regeln und Begruendung: schemas/v3/README.md.",
-  "anzahl_gueltig": 82,
-  "anzahl_ungueltig": 217,
+  "anzahl_gueltig": 83,
+  "anzahl_ungueltig": 218,
   "fixtures": [
+    {
+      "datei": "gueltig/audible-intervention-begin-experiment.json",
+      "urteil": "gueltig",
+      "warum": "M-59, Nacharbeit 2 (R22): art=experiment traegt seine experiment_id",
+      "verletzungen": []
+    },
     {
       "datei": "gueltig/audible_intervention_begin.json",
       "urteil": "gueltig",
@@ -558,6 +564,18 @@
           "instanz": "/adresse/host_pid",
           "schema": "#/$defs/adresse/additionalProperties",
           "schluessel": "additionalProperties"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/audible-intervention-begin-experiment-id-kein-hex32.json",
+      "urteil": "ungueltig",
+      "warum": "Kleinbuchstaben, damit ein Vergleich nie normalisieren muss",
+      "verletzungen": [
+        {
+          "instanz": "/experiment_id",
+          "schema": "#/$defs/hex32/pattern",
+          "schluessel": "pattern"
         }
       ]
     },

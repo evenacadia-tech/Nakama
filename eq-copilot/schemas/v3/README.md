@@ -325,6 +325,23 @@ gleich viel. T2-Runde 1 hat gemessen, dass `konfidenz` sich nicht daran hielt
 nachgezogen, und `pruefe_v3_vertrag.py` rechnet die Regel jetzt nach, statt
 sie nur hier zu behaupten.
 
+## Regeln, die dem Consumer gehoeren
+
+Die Schluesselwortmenge dieses Vertrags ist **geschlossen** (siehe „Die
+Engine-Teilmenge"). Sie kennt keinen Feldvergleich und keine Bedingung — was
+sich nur als Beziehung ZWISCHEN zwei Feldern ausdruecken laesst, kann das
+Schema deshalb nicht behaupten. Diese Regeln stehen hier und werden vom
+Empfaenger durchgesetzt, statt sie im Schema anzudeuten:
+
+| Regel | Ort | Durchsetzung |
+|---|---|---|
+| `invalidate_bereich.sample_start <= sample_end` | `$defs/invalidate_bereich` | Consumer (SONDE-011). |
+| `audible_intervention_begin.experiment_id` ist bei `art = "experiment"` PFLICHT | `$defs/audible_intervention_begin` | Consumer: der Broker lehnt das Intervall ab und setzt sticky `intervention_state_unknown`, statt es still als Hoermarkierung zu fuehren. Ein Intervall ohne Versuch koennte von keinem Terminal geschlossen werden (SONDE-013 M-59, Nacharbeit 2 / Befund R22; gemessen von `wire_experimentintervall_ohne_id_wird_abgelehnt` in `broker/tests/sonde013_verdrahtung.rs`). |
+
+Eine Regel in dieser Tabelle ist **keine** Abschwaechung: sie ist genauso
+bindend wie eine Schemazeile, nur an einer anderen Stelle gemessen. Was hier
+nicht steht und auch nicht im Schema, gilt nicht.
+
 ## Capabilities — und warum sie keine eigene Version tragen
 
 `capabilities` ist seit T2-Runde 1 der Satz aus Entwurf §53.6, **woertlich und

@@ -71,6 +71,7 @@ fn passage(n: u32) -> Passage {
         projekt_bis: 960_000,
         transport_epoch: 7,
         aktive_quellen: vec![hex32(11), hex32(12)],
+        messpunktklassen: vec!["pre".into(), "post".into()],
         abdeckung: 0.9,
         label: Some("Refrain".into()),
         fingerprint: fp(5),

@@ -306,6 +306,27 @@ impl Coordinator {
         vorher - taint.interventionen.len()
     }
 
+    /// Schliesst die `art=experiment`-Intervalle EINES Versuchs, ueber einen
+    /// Link adressiert (M-59).
+    ///
+    /// Dieselbe Huellenform wie `invalidierung_wegen_*_fuer_link`: `SessionKey`
+    /// ist modulintern, die oeffentliche Flaeche des Coordinators adressiert
+    /// ueber `link_id`. Der Experimentpfad ruft die interne Form; dies ist der
+    /// Zugang fuer Aufrufer ausserhalb des Coordinators und fuer Beine, die
+    /// messen wollen, dass ein Intervall wirklich SEINEM Versuch zugeordnet
+    /// wurde.
+    pub fn experiment_intervalle_schliessen_fuer_link(
+        &self,
+        link_id: &str,
+        experiment_id: &str,
+    ) -> usize {
+        let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+        let Some(session) = Self::session_des_links(&stand, link_id) else {
+            return 0;
+        };
+        Self::taint_intervalle_schliessen(&mut stand, &session, "experiment", Some(experiment_id))
+    }
+
     /// Haelt die Taintmap in ihren Grenzen (M-74).
     ///
     /// Die Map waechst mit jeder Sitzung, die je einen Eingriff gesehen hat —

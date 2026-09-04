@@ -116,10 +116,20 @@ impl Coordinator {
                 "art": "evidence_ids",
                 "evidence_ids": ids.iter().cloned().collect::<Vec<String>>(),
             }),
+            // 🔑 Nacharbeit 2 (Befund R26): die Feldnamen sind `sample_start`
+            // und `sample_end`, nicht `von_sample`/`bis_sample`. `invalidate_bereich`
+            // ist `additionalProperties: false` — der alte Payload war damit
+            // nicht etwa nur anders benannt, sondern SCHEMAUNGUELTIG, und der
+            // Test schrieb den Vertragsbruch fest, statt an ihm zu fallen.
+            //
+            // Beide Grenzen haben `minimum: 0`. Ein negativer Rand — etwa der
+            // frueher benutzte `i64::MIN / 2` als „von Anfang an" — ist im
+            // Vertrag kein Bereich, sondern eine Verletzung; die Projektzeit
+            // beginnt bei 0, und genau das ist der Anfang.
             Umfang::Bereich { von, bis } => serde_json::json!({
                 "art": "sample_range",
-                "von_sample": von,
-                "bis_sample": bis,
+                "sample_start": (*von).max(0),
+                "sample_end": (*bis).max(0),
             }),
             Umfang::GanzeSitzung => serde_json::json!({ "art": "ganze_sitzung" }),
         };
@@ -140,13 +150,17 @@ impl Coordinator {
         let Some(store) = self.store.as_ref() else {
             return;
         };
-        let mut payload = Self::invalidierung_als_json(invalidierung);
-        if let Some(objekt) = payload.as_object_mut() {
-            // Die Zahl der wirklich ausgeschlossenen Belege reist MIT: ein
-            // Empfaenger soll „nichts getroffen" von „alles getroffen"
-            // unterscheiden koennen, ohne selbst nachzuzaehlen.
-            objekt.insert("ausgeschlossen".into(), serde_json::json!(betroffen));
-        }
+        // 🔑 Nacharbeit 2 (Befund R26): der WIRE-Payload bleibt genau die
+        // Nachricht. `evidence_invalidate` ist `additionalProperties: false`;
+        // ein Top-Level `ausgeschlossen` machte den Payload ungueltig, und der
+        // Subscriber haette ihn abweisen muessen. Die Zahl der getroffenen
+        // Belege ist eine Aussage UEBER die Ruecknahme, kein Feld IN ihr — sie
+        // steht deshalb im Store-Ereignis NEBEN der Nachricht.
+        let nachricht = Self::invalidierung_als_json(invalidierung);
+        let payload = serde_json::json!({
+            "nachricht": nachricht,
+            "ausgeschlossen": betroffen,
+        });
         let Ok(payload_jcs) = serde_json_canonicalizer::to_vec(&payload) else {
             return;
         };
@@ -158,10 +172,21 @@ impl Coordinator {
             sequence.min(i64::MAX as u64) as i64,
             payload_jcs,
         );
-        // `event_type = "session"` heisst: die Projektion schreibt den
-        // Sessionsnapshot fort. Eine eigene Domaenentabelle bekaeme die
-        // Invalidierung nur, wenn sie ein eigenes Objekt WAERE — sie ist aber
-        // eine Aussage UEBER Evidenz, kein zweites Evidenzobjekt.
+        // 🔑 Nacharbeit 2 (Befund R27): EIGENER Ereignistyp.
+        //
+        // `StoreEvent::session_snapshot` legt `event_type = "session"` an, und
+        // dieser Pfad hat ihn nie ueberschrieben. Der Writer ersetzte damit
+        // `sessions.state_jcs` durch den Invalidierungspayload; beim naechsten
+        // Subscribe erwartet `subscription.rs` dort einen `session_snapshot`,
+        // verwirft die Projektion und setzt Routing fail-closed. Eine
+        // Ruecknahme von Evidenz nahm so die ganze Sitzungsprojektion mit.
+        //
+        // `sessions.state_jcs` ist ausschliesslich die
+        // `session_snapshot`-Projektion. Die Invalidierung hat ihre eigene:
+        // `projektionen_anwenden` traegt ihren Ausschlussgrund in die
+        // betroffenen `evidence`-Zeilen ein — dieselbe Wirkung wie im
+        // fluechtigen Bestand, nur haltbar.
+        event.event_type = "evidence_invalidate".into();
         event.snapshot_ziele = ziele;
         if store.append(vec![event]).is_err() {
             let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
@@ -228,8 +253,14 @@ impl Coordinator {
         };
         let session = key.session();
         let umfang = match start {
+            // Nacharbeit 2 (Befund R26): der Anfang ist 0 und nicht
+            // `i64::MIN / 2`. Beide erfassen dieselbe Menge — Evidenz ohne
+            // Projektzeit traegt `i64::MIN` und faellt bei BEIDEN Raendern aus
+            // dem Fenster —, aber nur 0 ist eine Zahl, die der Vertrag als
+            // `sample_start` kennt (`minimum: 0`). Der frueher gesendete
+            // negative Rand machte den Payload schemaungueltig.
             Some(von) => Umfang::Bereich {
-                von: i64::MIN / 2,
+                von: 0,
                 bis: von.saturating_add(anzahl as i64),
             },
             // Ohne Projektzeit laesst sich kein Bereich benennen. Fail-closed

@@ -468,6 +468,21 @@ impl Coordinator {
         if quellen.is_empty() {
             return None;
         }
+        // 🔑 Nacharbeit 2 (Befund R23): die Messpunktklassen werden GELESEN.
+        //
+        // Das Schema fuehrt sie parallel zu `aktive_quellen` und in DERSELBEN
+        // Reihenfolge — die Zuordnung Quelle→Messpunkt ist Teil des Belegs
+        // (M-28/M-55). Eine Liste anderer Laenge ist deshalb keine
+        // Zuordnung, sondern zwei unabhaengige Listen: fail-closed.
+        let klassen: Vec<String> = p
+            .get("messpunktklassen")?
+            .as_array()?
+            .iter()
+            .filter_map(|v| v.as_str().map(str::to_owned))
+            .collect();
+        if klassen.len() != quellen.len() {
+            return None;
+        }
         let von = p.get("projekt_von")?.as_i64()?;
         let bis = p.get("projekt_bis")?.as_i64()?;
         if bis <= von {
@@ -479,6 +494,7 @@ impl Coordinator {
             projekt_bis: bis,
             transport_epoch: p.get("transport_epoch")?.as_u64()?,
             aktive_quellen: quellen,
+            messpunktklassen: klassen,
             abdeckung: p.get("abdeckung")?.as_f64()? as f32,
             label: p.get("label").and_then(Value::as_str).map(str::to_owned),
             fingerprint: Self::fingerprint_aus_wert(p.get("fingerprint"))?,

@@ -549,6 +549,20 @@ pub(super) fn projektionen_anwenden(
         )?;
     }
 
+    // 🔑 SONDE-013 Nacharbeit 2 (Befund R27): die Invalidierung hat ihre
+    // EIGENE Projektion.
+    //
+    // Sie kam vorher als `event_type = "session"` an und ersetzte damit
+    // `sessions.state_jcs` — die Rekonstruktionsquelle des Subscribers. Sie
+    // ist aber kein Sitzungsschnitt, sondern eine Aussage UEBER Evidenz, und
+    // genau so wird sie projiziert: der Ausschlussgrund geht in die
+    // betroffenen `evidence`-Zeilen, damit ein Neustart ihn wiederfindet.
+    // Ohne diese Projektion waere die Ruecknahme nach einem Neustart fort,
+    // und die zurueckgenommene Evidenz saehe wieder aus wie jede andere.
+    if event.event_type == "evidence_invalidate" {
+        evidence_ausschluss_projizieren(tx, event)?;
+    }
+
     let domain = match event.event_type.as_str() {
         "passage" => Some(("passages", "passage_id")),
         "evidence" => Some(("evidence", "evidence_id")),
@@ -584,6 +598,97 @@ pub(super) fn projektionen_anwenden(
                 event_ord,
                 event.payload_jcs,
             ],
+        )?;
+    }
+    Ok(())
+}
+
+/// Traegt den Ausschlussgrund einer Invalidierung in die betroffenen
+/// `evidence`-Zeilen ein (SONDE-013 M-52 bis M-57, Befund R27).
+///
+/// Der Grund steht NEBEN dem gespeicherten Snapshot, nicht darin: der
+/// Snapshot ist die bytegleiche Wire-Wahrheit und wird nicht umgeschrieben.
+/// Der ERSTE Grund bleibt stehen — ihn zu ueberschreiben hiesse, die
+/// Geschichte des Ausschlusses umzuschreiben; dieselbe Regel wie im
+/// fluechtigen Bestand des Coordinators.
+fn evidence_ausschluss_projizieren(
+    tx: &Transaction<'_>,
+    event: &StoreEvent,
+) -> Result<(), StoreFehler> {
+    let payload: serde_json::Value = serde_json::from_slice(&event.payload_jcs)
+        .map_err(|e| StoreFehler::Sqlite(format!("Invalidierungspayload: {e}")))?;
+    let nachricht = payload.get("nachricht").unwrap_or(&serde_json::Value::Null);
+    let Some(grund) = nachricht.get("grund").and_then(serde_json::Value::as_str) else {
+        return Ok(());
+    };
+    let umfang = nachricht.get("umfang").unwrap_or(&serde_json::Value::Null);
+    let art = umfang.get("art").and_then(serde_json::Value::as_str).unwrap_or("");
+
+    // Die Kandidatenzeilen dieser SITZUNG. Eine Invalidierung reicht nie ueber
+    // ihre Sitzung hinaus (M-62).
+    let mut abfrage = tx.prepare(
+        "SELECT evidence_id, state_jcs FROM evidence \
+         WHERE project_binding_id=?1 AND session_epoch=?2",
+    )?;
+    let zeilen: Vec<(String, Vec<u8>)> = abfrage
+        .query_map(
+            params![event.project_binding_id, event.session_epoch],
+            |zeile| Ok((zeile.get::<_, String>(0)?, zeile.get::<_, Vec<u8>>(1)?)),
+        )?
+        .collect::<Result<_, _>>()?;
+    drop(abfrage);
+
+    let ids: std::collections::HashSet<&str> = umfang
+        .get("evidence_ids")
+        .and_then(serde_json::Value::as_array)
+        .map(|a| a.iter().filter_map(serde_json::Value::as_str).collect())
+        .unwrap_or_default();
+    let von = umfang.get("sample_start").and_then(serde_json::Value::as_i64);
+    let bis = umfang.get("sample_end").and_then(serde_json::Value::as_i64);
+
+    for (evidence_id, bytes) in zeilen {
+        let Ok(mut zeile) = serde_json::from_slice::<serde_json::Value>(&bytes) else {
+            continue;
+        };
+        if zeile.get("ausschlussgrund").is_some() {
+            continue;
+        }
+        let betroffen = match art {
+            "evidence_ids" => ids.contains(evidence_id.as_str()),
+            "ganze_sitzung" => true,
+            "sample_range" => match (von, bis) {
+                (Some(a), Some(b)) => {
+                    let start = zeile
+                        .pointer("/snapshot/transport/project_sample_start")
+                        .and_then(serde_json::Value::as_i64);
+                    let anzahl = zeile
+                        .pointer("/snapshot/transport/sample_count")
+                        .and_then(serde_json::Value::as_i64)
+                        .unwrap_or(0);
+                    // Ohne Projektzeit gibt es kein Fenster, das sich
+                    // schneiden liesse — und ein geratenes waere schlimmer als
+                    // keines (§32.3). Der Bereichsfall laesst die Zeile stehen;
+                    // wer sie treffen will, nimmt `ganze_sitzung`.
+                    match start {
+                        Some(s) => s.max(a) < s.saturating_add(anzahl).min(b),
+                        None => false,
+                    }
+                }
+                _ => false,
+            },
+            _ => false,
+        };
+        if !betroffen {
+            continue;
+        }
+        if let Some(objekt) = zeile.as_object_mut() {
+            objekt.insert("ausschlussgrund".into(), serde_json::json!(grund));
+        }
+        let neu = serde_json_canonicalizer::to_vec(&zeile)
+            .map_err(|e| StoreFehler::Sqlite(format!("Invalidierungsprojektion: {e}")))?;
+        tx.execute(
+            "UPDATE evidence SET state_jcs=?1 WHERE evidence_id=?2",
+            params![neu, evidence_id],
         )?;
     }
     Ok(())

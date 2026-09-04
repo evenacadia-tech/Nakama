@@ -824,6 +824,10 @@ def fassung_1_schema(schema: dict) -> dict:
         alt["$defs"].pop(name, None)
     for feld in ("ereignisse", "stereo"):
         alt["$defs"]["evidence_snapshot"]["properties"].pop(feld, None)
+    # Nacharbeit 2 (Befund R22): das Zuordnungsfeld des Experimentintervalls
+    # gehoert zur Fassung 2. Ein Leser der Fassung 1 lehnt es ab, statt es
+    # still zu ignorieren - `audible_intervention_begin` ist strikt.
+    alt["$defs"]["audible_intervention_begin"]["properties"].pop("experiment_id", None)
     grund = alt["$defs"]["evidence_invalidate"]["properties"]["grund"]
     grund["enum"] = [g for g in grund["enum"]
                      if g not in ("material_wechsel", "messpunkt_wechsel")]
@@ -846,7 +850,8 @@ def pruefe_sonde013_fassung_2(lauf: Lauf, schema: dict, reserviert: dict) -> Non
               and fassung.get("evidence_snapshot_ereignisse") is True
               and fassung.get("evidence_snapshot_stereo") is True
               and fassung.get("evidence_invalidate_grund_erweitert")
-                  == ["material_wechsel", "messpunkt_wechsel"])
+                  == ["material_wechsel", "messpunkt_wechsel"]
+              and isinstance(fassung.get("audible_intervention_begin_experiment_id"), str))
 
     gruende = schema["$defs"]["evidence_invalidate"]["properties"]["grund"]["enum"]
     lauf.wahr("grund_material_wechsel", "material_wechsel" in gruende)
@@ -1247,6 +1252,7 @@ def pruefe_namen(lauf: Lauf, schema: dict, reserviert: dict) -> None:
     lauf.wahr("reservierte Feldnamen sind exakt und kollisionsfrei",
               {f.get("name") for f in felder} == erwartete_felder)
     erwartete_belegte = {
+        "audible_intervention_begin.experiment_id",
         "probe_descriptor.host_bus_name",
         "probe_descriptor.host_mixer_index",
         "heartbeat.runtime",

@@ -1,0 +1,93 @@
+Rotbeweis R23 - passage.messpunktklassen wird gelesen und gespeichert
+Datum: 2026-09-04
+Datei: broker/src/coordinator/experiment_verdrahtung.rs
+Test:  sonde013_verdrahtung::passage_aus_dem_wire_traegt_ihre_messpunktklassen
+
+== 1. Fehler eingebaut ==
+ALT: messpunktklassen: klassen,
+NEU: messpunktklassen: Vec::new(),
+
+== 2. Der Test FAELLT ==
+exit=101
+
+running 1 test
+test passage_aus_dem_wire_traegt_ihre_messpunktklassen ... FAILED
+
+failures:
+
+---- passage_aus_dem_wire_traegt_ihre_messpunktklassen stdout ----
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde013-passage-messpunkt-22136-0501c8d8d5644430be81d814adc3fe84\nakama-broker.sqlite3
+
+thread 'passage_aus_dem_wire_traegt_ihre_messpunktklassen' (23448) panicked at tests\sonde013_verdrahtung.rs:1161:5:
+assertion `left == right` failed: die Klassen stehen in der Passage, nicht nur im Payload
+  left: []
+ right: ["insert", "post"]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    passage_aus_dem_wire_traegt_ihre_messpunktklassen
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 20 filtered out; finished in 0.36s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: method `payloads` is never used
+   --> tests\sonde013_verdrahtung.rs:227:8
+    |
+226 | impl PushProbe {
+    | -------------- method in this implementation
+227 |     fn payloads(&self) -> Vec<(String, Value)> {
+    |        ^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `clock` and `push` are never read
+   --> tests\sonde013_verdrahtung.rs:250:5
+    |
+247 | struct HarnischMitStore {
+    |        ---------------- fields in this struct
+...
+250 |     clock: Arc<ManualClock>,
+    |     ^^^^^
+251 |     push: Arc<PushProbe>,
+    |     ^^^^
+
+warning: `eqcop-broker` (test "sonde013_verdrahtung") generated 2 warnings
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.52s
+     Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)
+error: test failed, to rerun pass `--test sonde013_verdrahtung`
+
+
+== 3. Fehler entfernt, der Test ist GRUEN ==
+exit=0
+
+running 1 test
+test passage_aus_dem_wire_traegt_ihre_messpunktklassen ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 20 filtered out; finished in 0.36s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: method `payloads` is never used
+   --> tests\sonde013_verdrahtung.rs:227:8
+    |
+226 | impl PushProbe {
+    | -------------- method in this implementation
+227 |     fn payloads(&self) -> Vec<(String, Value)> {
+    |        ^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `clock` and `push` are never read
+   --> tests\sonde013_verdrahtung.rs:250:5
+    |
+247 | struct HarnischMitStore {
+    |        ---------------- fields in this struct
+...
+250 |     clock: Arc<ManualClock>,
+    |     ^^^^^
+251 |     push: Arc<PushProbe>,
+    |     ^^^^
+
+warning: `eqcop-broker` (test "sonde013_verdrahtung") generated 2 warnings
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.57s
+     Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)

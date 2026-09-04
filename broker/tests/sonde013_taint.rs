@@ -295,6 +295,7 @@ fn passage(n: u32) -> Passage {
         projekt_bis: 480_000,
         transport_epoch: 3,
         aktive_quellen: vec![hex32(11)],
+        messpunktklassen: vec!["insert".into()],
         abdeckung: 0.9,
         label: None,
         fingerprint: fp(5),

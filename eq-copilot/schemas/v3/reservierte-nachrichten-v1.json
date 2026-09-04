@@ -36,7 +36,8 @@
         "blindreihenfolge_widerspruch"
       ],
       "experiment_begin_passage": "SONDE-013 Nacharbeit 1 (Befund B23): `experiment_begin` traegt seit dieser Runde die VOLLSTAENDIGE Passage (`passage`) statt nur ihrer `passage_id`. Ohne die Grenzen, die Transportepoche, die Quellen mit Messpunktklasse, die Abdeckung und den Fingerprint konnte kein gueltiger Wire-Aufruf das von M-25 verlangte Storeobjekt erzeugen. Der Schritt liegt INNERHALB der Fassung 2 und ist kein zweiter Fassungsschritt.",
-        "experiment_abort": true,
+        "audible_intervention_begin_experiment_id": "SONDE-013 Nacharbeit 2 (Befund R22, M-59): `audible_intervention_begin` traegt seit dieser Runde ein optionales `experiment_id`. `art=experiment` stand schon in Fassung 2 im Schema, ohne dass ein Feld die Zuordnung zum Versuch tragen konnte - ein schema-gueltiges Experimentintervall liess sich deshalb von keinem Terminal schliessen. Dass das Feld bei `art=experiment` Pflicht ist, gehoert dem Consumer (geschlossene Schluesselwortmenge, kein Feldvergleich); der Broker lehnt den Fall ab und setzt sticky Unknown. Der Schritt liegt INNERHALB der Fassung 2.",
+      "experiment_abort": true,
         "experiment_manual_result": true,
         "evidence_snapshot_ereignisse": true,
         "evidence_snapshot_stereo": true,
@@ -99,6 +100,11 @@
       "name": "session_snapshot.store_degraded",
       "eigentuemer": "SONDE-012 (S18-19)",
       "grund": "Seit Wire-Envelope-schema_minor 1 optional belegt: nur true reist als positiver Store-Diagnosebefund; Abwesenheit behauptet keinen gesunden Store."
+    },
+    {
+      "name": "audible_intervention_begin.experiment_id",
+      "eigentuemer": "SONDE-013 (P4)",
+      "grund": "Seit Wire-Envelope-schema_minor 2 optional belegt (Nacharbeit 2, Befund R22): der Versuch, zu dem ein hoerbares Intervall gehoert. Abwesenheit heisst 'dieses Intervall gehoert keinem Versuch'. Bei art=experiment ist das Feld Pflicht; diese Kante gehoert dem Consumer, weil die geschlossene Schluesselwortmenge keinen Feldvergleich kennt."
     },
     {
       "name": "evidence_snapshot.ereignisse",

@@ -1080,6 +1080,10 @@
           "minimum": 0
         },
         "art": { "enum": ["hoermarkierung", "preview", "focus_burst", "experiment"] },
+        "experiment_id": {
+          "$comment": "SONDE-013 Nacharbeit 2 (Befund R22, M-59): der Versuch, zu dem dieses Intervall gehoert. Die Familie trug `art=experiment` schon in Fassung 2, aber KEIN Feld fuer die Zuordnung — ein schema-gueltiges Experimentintervall konnte deshalb nie einem Versuch zugeordnet und von seinem Resultat oder Abbruch geschlossen werden. Der Diskriminator existierte, die diskriminierte Nutzlast nicht. Das Feld ist optional, weil ein Hoermarker keinen Versuch hat. Dass es bei `art=experiment` PFLICHT ist, kann dieses Schema nicht ausdruecken: die Schluesselwortmenge ist geschlossen (schemas/v3/README.md) und kennt keinen Feldvergleich — dieselbe Lage wie bei `sample_start <= sample_end` in `invalidate_bereich`. Die Regel gehoert deshalb ausdruecklich dem CONSUMER: der Broker lehnt ein `art=experiment` ohne `experiment_id` ab und setzt sticky Unknown, statt es als Hoermarkierung zu fuehren. Der Schritt liegt INNERHALB der Fassung 2 und ist kein zweiter Fassungsschritt.",
+          "$ref": "#/$defs/hex32"
+        },
         "project_sample_start": { "type": ["integer", "null"] }
       }
     },

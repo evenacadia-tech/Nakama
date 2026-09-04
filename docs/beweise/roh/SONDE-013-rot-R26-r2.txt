@@ -1,0 +1,94 @@
+Rotbeweis R26 - evidence_invalidate benutzt sample_start/sample_end
+Datum: 2026-09-04
+Datei: broker/src/coordinator/invalidierung_verdrahtung.rs
+Test:  sonde013_verdrahtung::invalidierung_serialisiert_ihre_drei_umfaenge
+
+== 1. Fehler eingebaut ==
+ALT: "sample_start": (*von).max(0),
+                "sample_end": (*bis).max(0),
+NEU: "von_sample": *von,
+                "bis_sample": *bis,
+
+== 2. Der Test FAELLT ==
+exit=101
+
+running 1 test
+test invalidierung_serialisiert_ihre_drei_umfaenge ... FAILED
+
+failures:
+
+---- invalidierung_serialisiert_ihre_drei_umfaenge stdout ----
+
+thread 'invalidierung_serialisiert_ihre_drei_umfaenge' (16944) panicked at tests\sonde013_verdrahtung.rs:808:5:
+assertion `left == right` failed: sample_range haelt den Vertrag: {"grund":"sequenzluecke","type":"evidence_invalidate","umfang":{"art":"sample_range","bis_sample":20,"von_sample":10}}
+  left: [Verletzung { instanz: "/umfang", schema: "#/$defs/invalidate_bereich/required/sample_end", schluessel: "required" }, Verletzung { instanz: "/umfang", schema: "#/$defs/invalidate_bereich/required/sample_start", schluessel: "required" }, Verletzung { instanz: "/umfang/bis_sample", schema: "#/$defs/invalidate_bereich/additionalProperties", schluessel: "additionalProperties" }, Verletzung { instanz: "/umfang/von_sample", schema: "#/$defs/invalidate_bereich/additionalProperties", schluessel: "additionalProperties" }]
+ right: []
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    invalidierung_serialisiert_ihre_drei_umfaenge
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 20 filtered out; finished in 0.00s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: method `payloads` is never used
+   --> tests\sonde013_verdrahtung.rs:227:8
+    |
+226 | impl PushProbe {
+    | -------------- method in this implementation
+227 |     fn payloads(&self) -> Vec<(String, Value)> {
+    |        ^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `clock` and `push` are never read
+   --> tests\sonde013_verdrahtung.rs:250:5
+    |
+247 | struct HarnischMitStore {
+    |        ---------------- fields in this struct
+...
+250 |     clock: Arc<ManualClock>,
+    |     ^^^^^
+251 |     push: Arc<PushProbe>,
+    |     ^^^^
+
+warning: `eqcop-broker` (test "sonde013_verdrahtung") generated 2 warnings
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.49s
+     Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)
+error: test failed, to rerun pass `--test sonde013_verdrahtung`
+
+
+== 3. Fehler entfernt, der Test ist GRUEN ==
+exit=0
+
+running 1 test
+test invalidierung_serialisiert_ihre_drei_umfaenge ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 20 filtered out; finished in 0.00s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: method `payloads` is never used
+   --> tests\sonde013_verdrahtung.rs:227:8
+    |
+226 | impl PushProbe {
+    | -------------- method in this implementation
+227 |     fn payloads(&self) -> Vec<(String, Value)> {
+    |        ^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `clock` and `push` are never read
+   --> tests\sonde013_verdrahtung.rs:250:5
+    |
+247 | struct HarnischMitStore {
+    |        ---------------- fields in this struct
+...
+250 |     clock: Arc<ManualClock>,
+    |     ^^^^^
+251 |     push: Arc<PushProbe>,
+    |     ^^^^
+
+warning: `eqcop-broker` (test "sonde013_verdrahtung") generated 2 warnings
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.51s
+     Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)

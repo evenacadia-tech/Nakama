@@ -726,15 +726,22 @@ fn alle_schemafesten_interventionsarten_sperren_dieselbe_evidenz() {
         .enumerate()
     {
         let id = hex(500 + index);
-        let begin = serde_json::to_vec(&json!({
+        let mut begin_wert = json!({
             "type": "audible_intervention_begin",
             "intervention_id": id,
             "adresse": h.adresse,
             "event_sequence": sequence,
             "art": art,
             "project_sample_start": null
-        }))
-        .unwrap();
+        });
+        // SONDE-013 Nacharbeit 2 (Befund R22, M-59): `art=experiment` traegt
+        // seinen Versuch. Ohne `experiment_id` koennte kein Terminal das
+        // Intervall je schliessen; der Broker lehnt es fail-closed ab (gemessen
+        // in `sonde013_verdrahtung::wire_experimentintervall_ohne_id_wird_abgelehnt`).
+        if art == "experiment" {
+            begin_wert["experiment_id"] = json!(hex(700 + index));
+        }
+        let begin = serde_json::to_vec(&begin_wert).unwrap();
         assert!(Senke::p0(&c, "probe", &begin).is_none());
         assert_eq!(c.interventionssicht().aktive, 1, "{art}");
         assert!(!c.evidence_dispatch_fuer_link("probe"), "{art}");

@@ -817,6 +817,8 @@ fn produkt_coordinator_legt_passage_und_experiment_aus_dem_wire_an() {
         1,
         "experiment",
         Some(&experiment_id),
+        // Nacharbeit 2 (Befund R25): der Beginn traegt seinen Projektstempel.
+        Some(0),
     ));
     assert!(
         !coordinator

@@ -102,7 +102,15 @@ impl Coordinator {
         intervention_id: &str,
         event_sequence: u64,
     ) -> bool {
-        self.intervention_begin_mit_art(link_id, adresse, intervention_id, event_sequence, "hoermarkierung", None)
+        self.intervention_begin_mit_art(
+            link_id,
+            adresse,
+            intervention_id,
+            event_sequence,
+            "hoermarkierung",
+            None,
+            None,
+        )
     }
 
     /// Derselbe Weg mit ausdruecklicher Art und Experimentbezug (M-59).
@@ -114,6 +122,7 @@ impl Coordinator {
         event_sequence: u64,
         art: &str,
         experiment_id: Option<&str>,
+        beginn_projektsample: Option<i64>,
     ) -> bool {
         let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         let Some(session) = Self::session_des_links(&stand, link_id) else {
@@ -140,6 +149,7 @@ impl Coordinator {
                     link_id: link_id.to_owned(),
                     art: art.to_owned(),
                     experiment_id: experiment_id.map(str::to_owned),
+                    beginn_projektsample,
                 },
             );
         }
@@ -154,28 +164,56 @@ impl Coordinator {
         event_sequence: u64,
         tail_samples: u64,
     ) -> bool {
+        self.intervention_end_mit_beginn(
+            link_id,
+            adresse,
+            intervention_id,
+            event_sequence,
+            tail_samples,
+        )
+        .0
+    }
+
+    /// Derselbe Weg, aber MIT dem Projektzeitstempel des Beginns (M-52, R25).
+    ///
+    /// Rueckgabe: ob das Ende angenommen wurde, und der Beginn des Bereichs.
+    /// `None` beim zweiten Wert heisst „der Beginn trug keine Projektzeit" —
+    /// dann gibt es keinen Bereich, und der Aufrufer invalidiert fail-closed
+    /// die ganze Sitzung.
+    pub fn intervention_end_mit_beginn(
+        &self,
+        link_id: &str,
+        adresse: &Adresse,
+        intervention_id: &str,
+        event_sequence: u64,
+        tail_samples: u64,
+    ) -> (bool, Option<i64>) {
         let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         let Some(session) = Self::session_des_links(&stand, link_id) else {
             Self::alle_sitzungen_unbekannt(&mut stand);
-            return false;
+            return (false, None);
         };
         if !Self::adresse_des_links_passt(&stand, link_id, adresse)
             || !Self::sequenz_annehmen(&mut stand, link_id, event_sequence)
         {
             Self::taint_mut(&mut stand, &session).unknown = true;
-            return false;
+            return (false, None);
         }
         let taint = Self::taint_mut(&mut stand, &session);
         let passt = taint
             .interventionen
             .get(intervention_id)
             .is_some_and(|i| i.link_id == link_id);
+        let beginn = taint
+            .interventionen
+            .get(intervention_id)
+            .and_then(|i| i.beginn_projektsample);
         if !passt {
             // Ein End ohne bekanntes Begin ist gerade KEIN sauberer
             // Neutralzustand: das Begin kann vor Reconnect/Overflow verloren
             // gegangen sein. Nur `neutral_resync` darf dieses Urteil loesen.
             taint.unknown = true;
-            return false;
+            return (false, None);
         }
         taint.interventionen.remove(intervention_id);
         taint.tail_samples_offen = taint.tail_samples_offen.max(tail_samples);
@@ -190,7 +228,7 @@ impl Coordinator {
             .filter(|r| r.is_finite() && *r > 0.0)
             .unwrap_or(48_000.0);
         Self::taint_mut(&mut stand, &session).abtastrate = rate;
-        true
+        (true, beginn)
     }
 
     /// Legacy-v2 und v3 teilen denselben `interventionen`-Bestand. Das
@@ -212,6 +250,9 @@ impl Coordinator {
                         link_id: link_id.to_owned(),
                         art: "hoermarkierung".to_owned(),
                         experiment_id: None,
+                        // Der v2-Legacypfad kennt keine Projektzeit; fail-closed
+                        // heisst dann „die ganze Sitzung" (M-52, R25).
+                        beginn_projektsample: None,
                     },
                 );
             }

@@ -214,6 +214,24 @@ impl Coordinator {
         )
     }
 
+    /// Derselbe Ausloeser OHNE bekannten Bereich (M-52, Befund R25).
+    ///
+    /// Ein Hoermarker, dessen Beginn oder Ende keine Projektzeit trug, hat
+    /// gefaerbt — nur weiss niemand wo. Fail-closed heisst dann die ganze
+    /// Sitzung, nicht „nichts" (§32.3).
+    pub(super) fn invalidierung_wegen_intervention_ganze_sitzung(
+        &self,
+        session: &SessionKey,
+    ) -> usize {
+        self.invalidierung_anwenden(
+            session,
+            &Invalidierung {
+                grund: Grund::Intervention,
+                umfang: Umfang::GanzeSitzung,
+            },
+        )
+    }
+
     /// Der Ausloeser „Preview" (M-52, Befund R24).
     ///
     /// Er wird aus dem P0-Pfad der drei `preview_*`-Familien gerufen: eine

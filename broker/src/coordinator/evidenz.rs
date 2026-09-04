@@ -47,6 +47,16 @@ pub const EVIDENZ_RETENTION: usize = 32;
 pub struct Evidenzstand {
     pub evidence_id: String,
     pub sequence: u64,
+    /// Die ANKUNFTSREIHENFOLGE im Broker, monoton ueber alle Quellen.
+    ///
+    /// 🔑 Nacharbeit 2 (Befund R17, M-49): `resultatmessung` teilte die
+    /// Historie einer beliebigen Quelle stumpf in zwei Haelften. Vier bereits
+    /// VOR dem `experiment_begin` eingegangene Snapshots genuegten damit fuer
+    /// ein sofortiges Resultat. Baseline und Resultat brauchen eine Grenze,
+    /// und die einzige, die der Broker selbst kennt und die ueber Quellen
+    /// hinweg vergleichbar ist, ist seine eigene Ankunftsreihenfolge. Die
+    /// `sequence` daneben ist die des SENDERS und je Quelle eigen.
+    pub empfangsfolge: u64,
     pub abdeckung: f64,
     pub konvergenz: f64,
     pub klasse: String,
@@ -81,6 +91,13 @@ pub struct Evidenzstand {
     /// 0 mit `false` in `p50_gueltig` (M-07).
     pub p50_db: Vec<f32>,
     pub p50_gueltig: Vec<bool>,
+    /// Dasselbe fuer P95 — der PEAK-Guardrail (M-45, Befund R19). Ohne ihn
+    /// koennte eine Aenderung die Spitzen anheben, waehrend der Median steht.
+    pub p95_db: Vec<f32>,
+    pub p95_gueltig: Vec<bool>,
+    /// `stereo.seitenanteil_db` — der BREITE-Guardrail (M-45, Befund R19).
+    /// `None` heisst „diese Quelle liefert keine Stereoauskunft", nie 0.
+    pub seitenanteil_db: Option<f64>,
     /// Onsetstaerke dieses Fensters: die Summe der Ereignisstaerken. Sie ist
     /// die zweite, unabhaengige Spur aus §38.2.
     pub onset: f32,
@@ -160,7 +177,12 @@ impl Coordinator {
                 return false;
             }
             let historie = stand.evidenz.entry(key.clone()).or_default();
-            historie.push_back(stand_neu);
+            let mut eintrag = stand_neu;
+            // Die Ankunftsreihenfolge wird UNTER DEM LOCK vergeben — sie ist
+            // die Grenze, an der `resultatmessung` Baseline und Resultat
+            // trennt (M-49, Befund R17).
+            eintrag.empfangsfolge = self.evidenz_folge.fetch_add(1, Ordering::SeqCst);
+            historie.push_back(eintrag);
             while historie.len() > EVIDENZ_RETENTION {
                 historie.pop_front();
             }
@@ -206,13 +228,17 @@ impl Coordinator {
     /// Die Zusammenfassung aus dem Wire-Wert. Sie steht als eigene Funktion,
     /// damit der Lockabschnitt oben nichts rechnet.
     pub(super) fn evidenzstand_aus_wert(wert: &Value) -> Evidenzstand {
-        let p50 = Self::p50_dekodieren(wert);
+        let p50 = Self::perzentil_dekodieren(wert, "p50");
+        let p95 = Self::perzentil_dekodieren(wert, "p95");
         let ereignisse = wert
             .pointer("/ereignisse/liste")
             .and_then(Value::as_array)
             .map_or(0, Vec::len);
         Evidenzstand {
             evidence_id: wert["evidence_id"].as_str().unwrap_or_default().to_owned(),
+            // Die Ankunftsreihenfolge vergibt der EMPFAENGER, nicht der
+            // Payload; sie wird unter dem Lock gesetzt.
+            empfangsfolge: 0,
             sequence: wert
                 .pointer("/transport/sequence")
                 .and_then(Value::as_u64)
@@ -247,6 +273,12 @@ impl Coordinator {
                 .map(str::to_owned),
             p50_db: p50.0,
             p50_gueltig: p50.1,
+            p95_db: p95.0,
+            p95_gueltig: p95.1,
+            seitenanteil_db: wert
+                .pointer("/stereo/seitenanteil_db")
+                .and_then(Value::as_f64)
+                .filter(|v| v.is_finite()),
             onset: wert
                 .pointer("/ereignisse/liste")
                 .and_then(Value::as_array)
@@ -291,8 +323,8 @@ impl Coordinator {
     /// Faktor zehn, und wer den falschen waehlt, bekommt eine plausible
     /// Kurve, die um 20 dB danebenliegt. Ein Band ohne Gueltigkeitsbit
     /// traegt 0 mit `false` — nie den Wert des Vorgaengers (M-07).
-    fn p50_dekodieren(wert: &Value) -> (Vec<f32>, Vec<bool>) {
-        let Some(satz) = wert.pointer("/verteilung/p50") else {
+    fn perzentil_dekodieren(wert: &Value, name: &str) -> (Vec<f32>, Vec<bool>) {
+        let Some(satz) = wert.pointer(&format!("/verteilung/{name}")) else {
             return (Vec::new(), Vec::new());
         };
         let Some(werte) = satz.get("werte").and_then(Value::as_array) else {

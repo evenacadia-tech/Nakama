@@ -1,0 +1,127 @@
+Rotbeweis R17 - die Resultatmessung ist an Versuch, Passage und Grenze gebunden
+Datum: 2026-09-04
+Datei: broker/src/coordinator/experiment_verdrahtung.rs
+Test:  sonde013_verdrahtung::resultatmessung_ist_an_versuch_passage_und_grenze_gebunden
+
+== 1. Fehler eingebaut ==
+ALT: if eintrag.empfangsfolge < begin_folge {
+                    baseline.push(eintrag);
+                } else if eintrag.empfangsfolge > kandidat_folge {
+                    resultat.push(eintrag);
+                }
+NEU: // Rotbeweis: die stumpfe Haelftenteilung der Runde 1.
+                if baseline.len() < historie.len() / 2 {
+                    baseline.push(eintrag);
+                } else {
+                    resultat.push(eintrag);
+                }
+
+== 2. Der Test FAELLT ==
+exit=101
+tmessung_ist_an_versuch_passage_und_grenze_gebunden ... FAILED
+
+failures:
+
+---- resultatmessung_ist_an_versuch_passage_und_grenze_gebunden stdout ----
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde013-resultatmessung-bindung-11280-0ed29b658ed44918b10cd6307613afd6\nakama-broker.sqlite3
+
+thread 'resultatmessung_ist_an_versuch_passage_und_grenze_gebunden' (10236) panicked at tests\sonde013_verdrahtung.rs:2211:5:
+assertion `left == right` failed: R17: Evidenz VOR dem Begin ist Baseline, nie Resultat: {"command_id":"000000000000000000000000000009a3","ergebnis":"angewandt","state_hash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","state_revision":0,"type":"command_ack"}
+  left: Null
+ right: "ohne_resultatmessung"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    resultatmessung_ist_an_versuch_passage_und_grenze_gebunden
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 37 filtered out; finished in 1.62s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: unused variable: `begin_folge`
+   --> src\coordinator\experiment_verdrahtung.rs:702:13
+    |
+702 |         let begin_folge = e.begin_evidenzfolge;
+    |             ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_begin_folge`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `kandidat_folge`
+   --> src\coordinator\experiment_verdrahtung.rs:703:13
+    |
+703 |         let kandidat_folge = kandidat.evidenzfolge;
+    |             ^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_kandidat_folge`
+
+warning: `eqcop-broker` (lib) generated 2 warnings (run `cargo fix --lib -p eqcop-broker` to apply 2 suggestions)
+warning: method `payloads` is never used
+   --> tests\sonde013_verdrahtung.rs:227:8
+    |
+226 | impl PushProbe {
+    | -------------- method in this implementation
+227 |     fn payloads(&self) -> Vec<(String, Value)> {
+    |        ^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `clock` and `push` are never read
+   --> tests\sonde013_verdrahtung.rs:250:5
+    |
+247 | struct HarnischMitStore {
+    |        ---------------- fields in this struct
+...
+250 |     clock: Arc<ManualClock>,
+    |     ^^^^^
+251 |     push: Arc<PushProbe>,
+    |     ^^^^
+
+warning: function `sonde_mit_evidenz` is never used
+    --> tests\sonde013_verdrahtung.rs:1756:4
+     |
+1756 | fn sonde_mit_evidenz(h: &HarnischMitStore, anzahl: usize) -> HelloControl {
+     |    ^^^^^^^^^^^^^^^^^
+
+warning: `eqcop-broker` (test "sonde013_verdrahtung") generated 3 warnings
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.88s
+     Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)
+error: test failed, to rerun pass `--test sonde013_verdrahtung`
+
+
+== 3. Fehler entfernt, der Test ist GRUEN ==
+exit=0
+
+running 1 test
+test resultatmessung_ist_an_versuch_passage_und_grenze_gebunden ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 37 filtered out; finished in 3.03s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: method `payloads` is never used
+   --> tests\sonde013_verdrahtung.rs:227:8
+    |
+226 | impl PushProbe {
+    | -------------- method in this implementation
+227 |     fn payloads(&self) -> Vec<(String, Value)> {
+    |        ^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `clock` and `push` are never read
+   --> tests\sonde013_verdrahtung.rs:250:5
+    |
+247 | struct HarnischMitStore {
+    |        ---------------- fields in this struct
+...
+250 |     clock: Arc<ManualClock>,
+    |     ^^^^^
+251 |     push: Arc<PushProbe>,
+    |     ^^^^
+
+warning: function `sonde_mit_evidenz` is never used
+    --> tests\sonde013_verdrahtung.rs:1756:4
+     |
+1756 | fn sonde_mit_evidenz(h: &HarnischMitStore, anzahl: usize) -> HelloControl {
+     |    ^^^^^^^^^^^^^^^^^
+
+warning: `eqcop-broker` (test "sonde013_verdrahtung") generated 3 warnings
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.91s
+     Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)

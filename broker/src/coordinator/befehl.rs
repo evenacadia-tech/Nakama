@@ -595,13 +595,18 @@ impl Coordinator {
                     wert.get("event_sequence")?.as_u64()?,
                     art,
                     experiment_id,
+                    // 🔑 Nacharbeit 2 (Befund R25, M-52): der Beginn wird
+                    // GESPEICHERT. Ohne ihn invalidierte das Ende pauschal ab
+                    // `i64::MIN / 2` und schloss auch saemtliche aeltere,
+                    // nicht ueberlappende Evidenz aus.
+                    wert.get("project_sample_start").and_then(Value::as_i64),
                 );
                 None
             }
             "audible_intervention_end" => {
                 let adresse: Adresse = serde_json::from_value(wert["adresse"].clone()).ok()?;
                 let tail = wert.get("tail_samples")?.as_u64()?;
-                let angenommen = self.intervention_end(
+                let (angenommen, beginn) = self.intervention_end_mit_beginn(
                     link_id,
                     &adresse,
                     wert.get("intervention_id")?.as_str()?,
@@ -616,13 +621,28 @@ impl Coordinator {
                 // Der Bereich endet erst NACH dem Nachlauf: der Filterhall des
                 // Markers laeuft in die folgende Messung hinein (§34.2).
                 if angenommen {
-                    if let Some(ende) = wert.get("project_sample_end").and_then(Value::as_i64) {
-                        let session = ClientKey::aus_adresse(&adresse).session();
-                        self.invalidierung_wegen_intervention(
-                            &session,
-                            i64::MIN / 2,
-                            ende.saturating_add(tail.min(i64::MAX as u64) as i64),
-                        );
+                    let session = ClientKey::aus_adresse(&adresse).session();
+                    let ende = wert.get("project_sample_end").and_then(Value::as_i64);
+                    match (beginn, ende) {
+                        // 🔑 Nacharbeit 2 (Befund R25, M-52): der Bereich ist
+                        // EXAKT Begin bis Ende plus Nachlauf. Die Runde 1
+                        // begann bei `i64::MIN / 2` und nahm damit auch
+                        // Evidenz zurueck, die der Marker nie beruehrt hat.
+                        (Some(von), Some(bis)) => {
+                            self.invalidierung_wegen_intervention(
+                                &session,
+                                von,
+                                bis.saturating_add(tail.min(i64::MAX as u64) as i64),
+                            );
+                        }
+                        // Fehlt eine der beiden Grenzen, gibt es keinen
+                        // Bereich. Die Runde 1 invalidierte dann GAR NICHTS —
+                        // fail-OPEN, obwohl §32.3 an dieser Stelle die ganze
+                        // Sitzung verlangt: der Marker hat gefaerbt, und
+                        // niemand weiss wo.
+                        _ => {
+                            self.invalidierung_wegen_intervention_ganze_sitzung(&session);
+                        }
                     }
                 }
                 None

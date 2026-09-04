@@ -674,12 +674,53 @@ fn ergebnis_ohne_resultatmessung_wird_abgelehnt() {
         alignment: Alignmentwert::FeatureAligned,
     };
     let id = hex(0xabc);
-    s.beginne(&id, &hex(1), passage, referenz).unwrap();
+    s.beginne(&id, &hex(1), passage, referenz.clone(), 100).unwrap();
     s.binde_reihenfolge(&id, Blindreihenfolge::BaselineZuerst)
         .unwrap();
 
-    // Die LEERE Messung: genau der Fall, mit dem `ergebnis()` vorher
-    // erfolgreich terminierte.
+    // 🔑 Nacharbeit 2 (Befund R16, M-41): OHNE erfassten Kandidaten gibt es
+    // kein Ergebnis - und zwar auch dann nicht, wenn eine vollstaendige
+    // Messung vorliegt. Der Fall der Runde 1 FUHR genau diesen Ablauf und
+    // ERWARTETE Erfolg; er schrieb die Verletzung fest, statt an ihr zu
+    // fallen. Eine Messung ohne Kandidat misst zweimal denselben Zustand.
+    let messung = Resultatmessung {
+        band_delta_db: (0..32).map(|i| (i as f64) * 0.2 - 3.0).collect(),
+        band_gueltig: vec![true; 32],
+        fenster_delta_db: (0..8)
+            .map(|f| {
+                (0..32)
+                    .map(|i| (i as f64) * 0.2 - 3.0 + (f as f64) * 0.01)
+                    .collect()
+            })
+            .collect(),
+        erste_haelfte: vec![1.0; 32],
+        zweite_haelfte: vec![1.0; 32],
+        abdeckung_baseline: 0.9,
+        abdeckung_resultat: 0.9,
+        klasse_baseline: "mittel".into(),
+        klasse_resultat: "mittel".into(),
+        vergleichbarkeit: Some("stark".into()),
+        vergleichbarkeit_gruende: Vec::new(),
+        baseline_evidence_ids: vec![hex(0x11)],
+        resultat_evidence_ids: vec![hex(0x22)],
+        guardrail_loudness_db: Some(0.0),
+        guardrail_peak_db: Some(0.0),
+        guardrail_transient: Some(0.0),
+        guardrail_breite_db: Some(0.0),
+        guardrail_geschuetzt_db: Some(0.0),
+    };
+    assert_eq!(
+        s.ergebnis(&id, Hoerurteil::Kandidat, None, None, &messung),
+        Err(Abschlussfehler::OhneKandidat),
+        "R16: ohne Kandidat gibt es kein Terminalereignis (M-41)"
+    );
+    assert!(
+        s.experiment(&id).unwrap().offen(),
+        "und der Versuch bleibt OFFEN"
+    );
+
+    // Mit Kandidat, aber OHNE Messung: der zweite Riegel (M-45).
+    s.neuer_kandidat(&id, referenz, 200).unwrap();
     assert_eq!(
         s.ergebnis(
             &id,
@@ -691,26 +732,9 @@ fn ergebnis_ohne_resultatmessung_wird_abgelehnt() {
         Err(Abschlussfehler::OhneResultatmessung),
         "ohne Resultatmessung gibt es kein Terminalereignis (M-45)"
     );
-    assert!(
-        s.experiment(&id).unwrap().offen(),
-        "und der Versuch bleibt OFFEN"
-    );
+    assert!(s.experiment(&id).unwrap().offen());
 
-    // Mit Messung: die vier Achsen entstehen und reisen mit.
-    let messung = Resultatmessung {
-        band_delta_db: (0..32).map(|i| (i as f64) * 0.2 - 3.0).collect(),
-        band_gueltig: vec![true; 32],
-        erste_haelfte: vec![1.0; 32],
-        zweite_haelfte: vec![1.0; 32],
-        abdeckung_baseline: 0.9,
-        abdeckung_resultat: 0.9,
-        klasse_baseline: "mittel".into(),
-        klasse_resultat: "mittel".into(),
-        vergleichbarkeit: Some("stark".into()),
-        vergleichbarkeit_gruende: Vec::new(),
-        baseline_evidence_ids: vec![hex(0x11)],
-        resultat_evidence_ids: vec![hex(0x22)],
-    };
+    // Mit BEIDEM: die vier Achsen entstehen und reisen mit.
     let achsen = s
         .ergebnis(&id, Hoerurteil::Kandidat, None, None, &messung)
         .expect("mit Messung schliesst der Versuch ab");
@@ -1744,6 +1768,50 @@ fn sonde_mit_evidenz(h: &HarnischMitStore, anzahl: usize) -> HelloControl {
     s
 }
 
+/// Eine Sonde, deren Evidenz WIRKLICH in der Passage des Fixtures liegt.
+///
+/// 🔑 Nacharbeit 2 (Befund R17): `resultatmessung` nimmt seither nur noch
+/// Belege IM Fenster der Passage, in IHRER Transportepoche, von den
+/// eingefrorenen Quellen und mit passender Messpunktklasse. Ein Helfer, der
+/// irgendwelche Evidenz liefert, wuerde ab jetzt nichts mehr messen — und
+/// genau das ist die Zusage.
+///
+/// Die IDs kommen aus dem `experiment_begin`-Fixture: die erste aktive Quelle
+/// und die zu ihr gehoerende Messpunktklasse.
+#[cfg(windows)]
+fn sonde_in_der_passage(h: &HarnischMitStore, vorlage: &Value) -> HelloControl {
+    let quelle = vorlage["passage"]["aktive_quellen"][0]
+        .as_str()
+        .expect("das Fixture nennt eine Quelle")
+        .to_owned();
+    let klasse = vorlage["passage"]["messpunktklassen"][0]
+        .as_str()
+        .expect("und ihre Messpunktklasse")
+        .to_owned();
+    let mut s = h.main.clone();
+    s.plugin_kind = "passive_probe".into();
+    s.adresse.instance_id = quelle;
+    s.adresse.runtime_nonce = hex(0x21);
+    anmelden(&h.c, "sonde", &s);
+    report(&h.c, "sonde", &s.adresse);
+    assert!(h.c.descriptor_setzen(
+        "sonde",
+        descriptor(&s.adresse, &klasse, &hex(0x77))
+    ));
+    s
+}
+
+/// Ein Evidenzsnapshot IN der Passage des Fixtures.
+#[cfg(windows)]
+fn evidenz_in_passage(sonde: &Adresse, vorlage: &Value, nr: usize) -> Vec<u8> {
+    let von = vorlage["passage"]["projekt_von"].as_i64().expect("von");
+    let epoche = vorlage["passage"]["transport_epoch"].as_u64().expect("epoche");
+    evidenz_payload(sonde, nr, |w| {
+        w["transport"]["transport_epoch"] = json!(epoche);
+        w["transport"]["project_sample_start"] = json!(von + (nr as i64) * 512);
+    })
+}
+
 /// R13/R11 — jede Experimenttransition steht im EREIGNISINDEX, und der
 /// Zustand traegt die vollstaendigen Referenzen aus §43.1.
 ///
@@ -1836,12 +1904,19 @@ fn experimenttransitionen_stehen_im_ereignisindex_mit_vollen_referenzen() {
 fn terminal_traegt_die_nutzerdaten_und_ueberdauert_den_neustart() {
     let h = HarnischMitStore::neu("terminal-replay");
     let versuch = 0xb10;
-    let _sonde = sonde_mit_evidenz(&h, 8);
+    let vorlage = experiment_begin_wert(&h.main.adresse, 0x961, versuch);
+    let sonde = sonde_in_der_passage(&h, &vorlage);
+
+    // BASELINE: Evidenz VOR dem Begin, in der Passage.
+    for nr in 0..4 {
+        assert!(h
+            .c
+            .evidence_snapshot_json("sonde", &evidenz_in_passage(&sonde.adresse, &vorlage, nr)));
+    }
     assert_eq!(
         h.p0(&experiment_begin_wert(&h.main.adresse, 0x960, versuch))["ergebnis"],
         "angewandt"
     );
-    let vorlage = experiment_begin_wert(&h.main.adresse, 0x961, versuch);
     assert_eq!(
         h.p0(&json!({
             "type": "experiment_candidate",
@@ -1859,6 +1934,13 @@ fn terminal_traegt_die_nutzerdaten_und_ueberdauert_den_neustart() {
         }))["ergebnis"],
         "angewandt"
     );
+    // RESULTAT: Evidenz NACH dem erfassten Kandidaten. Dazwischen liegt die
+    // Fremdaenderung, und Belege von dort gehoeren keiner Seite (R17).
+    for nr in 4..8 {
+        assert!(h
+            .c
+            .evidence_snapshot_json("sonde", &evidenz_in_passage(&sonde.adresse, &vorlage, nr)));
+    }
     let ack = h.p0(&json!({
         "type": "experiment_manual_result",
         "kopf": {
@@ -2055,5 +2137,466 @@ fn evidenz_ohne_erfolgreiche_ablage_ist_nicht_angenommen() {
     assert!(
         c.evidenz_sicht(&hex(10)).is_none(),
         "und keine Sicht behauptet ihn"
+    );
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// R17/R18/R19/R25/R29/R30 · Die fachlichen Rechenwege (Nacharbeit 2)
+// ═════════════════════════════════════════════════════════════════════════
+
+/// R17/R18/R19 — die Resultatmessung ist an Versuch, Passage und Grenze
+/// gebunden, rechnet die Comparability im Produktpfad und traegt ALLE
+/// Guardrails.
+///
+/// Die Runde 1 nahm die Quelle mit der laengsten Historie irgendeiner Quelle
+/// der Sitzung und teilte die Retention stumpf in zwei Haelften: vier bereits
+/// VOR dem Begin eingegangene Snapshots genuegten fuer ein sofortiges
+/// Resultat. `vergleichbarkeit` blieb `Default::default()`, und die
+/// Guardrail-Achse kannte nur Coverage und Klasse.
+#[cfg(windows)]
+#[test]
+fn resultatmessung_ist_an_versuch_passage_und_grenze_gebunden() {
+    let h = HarnischMitStore::neu("resultatmessung-bindung");
+    let versuch = 0xc00;
+    let vorlage = experiment_begin_wert(&h.main.adresse, 0x9a0, versuch);
+    let sonde = sonde_in_der_passage(&h, &vorlage);
+
+    // Nur Evidenz VOR dem Begin - kein Resultat, egal wie viel davon kommt.
+    for nr in 0..8 {
+        assert!(h
+            .c
+            .evidence_snapshot_json("sonde", &evidenz_in_passage(&sonde.adresse, &vorlage, nr)));
+    }
+    assert_eq!(
+        h.p0(&experiment_begin_wert(&h.main.adresse, 0x9a1, versuch))["ergebnis"],
+        "angewandt"
+    );
+    let kandidat = |command: usize| {
+        json!({
+            "type": "experiment_candidate",
+            "kopf": {
+                "command_id": hex(command),
+                "ziel": h.main.adresse,
+                "base_revision": 0,
+                "ttl_ms": 1000,
+                "schema_major": 3,
+                "schema_minor": 0
+            },
+            "experiment_id": hex(versuch),
+            "referenz": vorlage["referenz"],
+            "blindreihenfolge": "kandidat_zuerst"
+        })
+    };
+    assert_eq!(h.p0(&kandidat(0x9a2))["ergebnis"], "angewandt");
+
+    let ergebnis = |command: usize| {
+        json!({
+            "type": "experiment_manual_result",
+            "kopf": {
+                "command_id": hex(command),
+                "ziel": h.main.adresse,
+                "base_revision": 0,
+                "ttl_ms": 1000,
+                "schema_major": 3,
+                "schema_minor": 0
+            },
+            "experiment_id": hex(versuch),
+            "hoerurteil": "kandidat",
+            "blindreihenfolge": "kandidat_zuerst",
+            "notiz": null,
+            "werkzeug": null
+        })
+    };
+    let ack = h.p0(&ergebnis(0x9a3));
+    assert_eq!(
+        ack["code"], "ohne_resultatmessung",
+        "R17: Evidenz VOR dem Begin ist Baseline, nie Resultat: {ack}"
+    );
+
+    // Evidenz AUSSERHALB der Passage zaehlt ebenfalls nicht.
+    let ausserhalb = vorlage["passage"]["projekt_bis"].as_i64().unwrap() + 100_000;
+    let epoche = vorlage["passage"]["transport_epoch"].as_u64().unwrap();
+    for nr in 8..12 {
+        assert!(h.c.evidence_snapshot_json(
+            "sonde",
+            &evidenz_payload(&sonde.adresse, nr, |w| {
+                w["transport"]["transport_epoch"] = json!(epoche);
+                w["transport"]["project_sample_start"] = json!(ausserhalb + (nr as i64) * 512);
+            })
+        ));
+    }
+    let ack = h.p0(&ergebnis(0x9a4));
+    assert_eq!(
+        ack["code"], "ohne_resultatmessung",
+        "R17: Evidenz ausserhalb des Passagenfensters ist kein Resultat: {ack}"
+    );
+
+    // Und Evidenz in der Passage NACH dem Kandidaten - jetzt schliesst er ab.
+    // Das Resultat liegt deutlich lauter als die Baseline: der
+    // Loudness-Guardrail muss das sehen (R19).
+    for nr in 12..18 {
+        assert!(h.c.evidence_snapshot_json(
+            "sonde",
+            &evidenz_payload(&sonde.adresse, nr, |w| {
+                w["transport"]["transport_epoch"] = json!(epoche);
+                w["transport"]["project_sample_start"] =
+                    json!(vorlage["passage"]["projekt_von"].as_i64().unwrap() + (nr as i64) * 512);
+                // Alle Bandwerte um 6 dB anheben. Das Fixture kodiert
+                // `q_db_0p1_i16`: ein Schritt sind 0,1 dB, also 60 Schritte.
+                if let Some(werte) = w["verteilung"]["p50"]["werte"].as_array_mut() {
+                    for v in werte.iter_mut() {
+                        if let Some(x) = v.as_i64() {
+                            *v = json!(x + 60);
+                        }
+                    }
+                }
+            })
+        ));
+    }
+    let ack = h.p0(&ergebnis(0x9a5));
+    assert_eq!(ack["ergebnis"], "angewandt", "R17: jetzt schliesst er ab: {ack}");
+
+    let e = h.c.experiment_sicht(&hex(versuch)).expect("steht");
+    use eqcop_broker::coordinator::experiment::Terminal;
+    let Some(Terminal::Ergebnis { achsen, .. }) = &e.terminal else {
+        panic!("das Terminal ist ein Ergebnis: {:?}", e.terminal);
+    };
+    // R18: die Comparability ist GERECHNET, nicht `Default::default()`.
+    assert!(
+        achsen.vergleichbarkeit.is_some(),
+        "R18: vergleichbarkeit::beurteile laeuft im Produktpfad: {achsen:?}"
+    );
+    // R19: die Guardrails aus M-45 sind gemessen, nicht nur Coverage/Klasse.
+    assert!(
+        achsen.guardrail_loudness_db.is_some(),
+        "R19: der Loudness-Guardrail ist gemessen: {achsen:?}"
+    );
+    assert!(
+        achsen.guardrail_loudness_db.unwrap_or(0.0) > 3.0,
+        "R19: und er sieht die 6 dB, die das Resultat lauter ist: {:?}",
+        achsen.guardrail_loudness_db
+    );
+    assert!(
+        achsen.guardrail_peak_db.is_some(),
+        "R19: der Peak-Guardrail ebenfalls"
+    );
+    assert!(
+        achsen.guardrail_transient.is_some(),
+        "R19: der Transient-Guardrail ebenfalls"
+    );
+    use eqcop_broker::coordinator::experiment::Achsenbefund;
+    assert_eq!(
+        achsen.befunde(None).guardrails,
+        Achsenbefund::Verschlechtert,
+        "R19: und die Achse FAELLT - bei unveraenderter Coverage sah sie \
+         vorher stabil aus: {achsen:?}"
+    );
+}
+
+/// R20 — der Block-Bootstrap zieht ZEITFENSTER, und die p-Werte kommen aus
+/// seiner Verteilung.
+///
+/// Die Runde 1 gab ihm einen ueber alle Fenster gemittelten Wert je Band: er
+/// zog Bloecke von BAENDERN, und die Effektgroesse allein machte ein Band
+/// signifikant (`p = exp(-|delta|)`). Eine Reihe, deren Mittel je nach Ziehung
+/// das Vorzeichen wechselt, ist keine Aussage — so gross ihr Mittelwert auch
+/// sein mag.
+#[test]
+fn bootstrap_zieht_zeitfenster_und_rechnet_echte_p_werte() {
+    use eqcop_broker::coordinator::experiment::{bootstrap_p, Resultatmessung, KLASSENORDNUNG};
+
+    // Eine STABILE, aber KLEINE Reihe: jedes Fenster sagt dasselbe, und der
+    // Betrag ist gering. Genau hier trennen sich die beiden Rechenwege:
+    // `exp(-|0,4|)` ist 0,67 und damit nie signifikant, waehrend eine Reihe,
+    // die in jeder Ziehung dasselbe Vorzeichen traegt, sehr wohl eine Aussage
+    // ist. Die Runde 1 hat kleine, sichere Effekte damit VERSCHWIEGEN und
+    // grosse, unsichere BEHAUPTET.
+    let stabil: Vec<f64> = vec![0.4; 24];
+    let p_stabil = bootstrap_p(&stabil, 4, 400, 7);
+    // Eine WECHSELNDE Reihe mit demselben Betrag, aber ohne Richtung.
+    let wechselnd: Vec<f64> = (0..24)
+        .map(|i| if i % 2 == 0 { 30.0 } else { -30.0 })
+        .collect();
+    let p_wechselnd = bootstrap_p(&wechselnd, 4, 400, 7);
+    assert!(
+        p_stabil < 0.05,
+        "eine stabile Reihe ist signifikant: {p_stabil}"
+    );
+    assert!(
+        p_wechselnd > p_stabil,
+        "R20: eine Reihe ohne Richtung ist es NICHT - und ihr Betrag ist \
+         zehnmal groesser. Mit `exp(-|delta|)` waere sie die staerkere \
+         Aussage gewesen: stabil {p_stabil}, wechselnd {p_wechselnd}"
+    );
+
+    // Dieselbe Aussage ueber die ganze Achsenrechnung.
+    let reihe = |f: &dyn Fn(usize) -> f64| -> Resultatmessung {
+        Resultatmessung {
+            band_delta_db: vec![3.0; 8],
+            band_gueltig: vec![true; 8],
+            fenster_delta_db: (0..24).map(|t| vec![f(t); 8]).collect(),
+            erste_haelfte: vec![3.0; 8],
+            zweite_haelfte: vec![3.0; 8],
+            abdeckung_baseline: 0.9,
+            abdeckung_resultat: 0.9,
+            klasse_baseline: "mittel".into(),
+            klasse_resultat: "mittel".into(),
+            vergleichbarkeit: Some("stark".into()),
+            baseline_evidence_ids: vec!["a".repeat(32)],
+            resultat_evidence_ids: vec!["b".repeat(32)],
+            ..Default::default()
+        }
+    };
+    let stabil = reihe(&|_| 0.4).achsen(&KLASSENORDNUNG);
+    let wechselnd = reihe(&|t| if t % 2 == 0 { 30.0 } else { -30.0 }).achsen(&KLASSENORDNUNG);
+    assert!(
+        stabil.signifikante_baender > 0,
+        "R20: die kleine, aber STABILE Reihe traegt signifikante Baender - mit          `exp(-|0,4|) = 0,67` haette sie nie eine getragen: {stabil:?}"
+    );
+    assert_eq!(
+        wechselnd.signifikante_baender, 0,
+        "R20: die wechselnde nicht - trotz zehnmal groesserem Betrag: {wechselnd:?}"
+    );
+    assert!(
+        stabil.intervall.is_some_and(|(u, _)| u > 0.0),
+        "und das Intervall der stabilen Reihe enthaelt die Null nicht: {stabil:?}"
+    );
+    assert!(
+        p_stabil < (-0.4f64).abs().exp().recip(),
+        "R20: und der gerechnete p-Wert ist KLEINER als der erfundene          `exp(-|delta|)` es je waere: {p_stabil}"
+    );
+}
+
+/// R25 — der Hoermarker invalidiert GENAU seinen Bereich.
+///
+/// Bei vorhandenem Endstempel begann die Invalidierung mangels gespeichertem
+/// Begin pauschal bei `i64::MIN / 2` und schloss damit auch saemtliche
+/// aeltere, nicht ueberlappende Evidenz aus; bei schema-gueltigem
+/// `project_sample_end = null` wurde umgekehrt GAR NICHTS invalidiert, statt
+/// fail-closed die Sitzung zu waehlen. Kein Test der Runde 1 fuhr den
+/// Marker-Wirepfad mit frueherer Kontroll-Evidenz.
+#[cfg(windows)]
+#[test]
+fn markerinvalidierung_trifft_genau_ihren_bereich() {
+    let (c, _) = coordinator();
+    let h = hello(1, 2, 10, 100, "main", Some(9));
+    anmelden(&c, "a", &h);
+    let sonde = hello(1, 2, 0x20, 0x21, "passive_probe", Some(9));
+    anmelden(&c, "sonde", &sonde);
+    report(&c, "sonde", &sonde.adresse);
+
+    // Drei Belege: einer WEIT VOR dem Marker, zwei in seinem Bereich.
+    let setze = |w: &mut Value, start: i64| {
+        w["transport"]["project_sample_start"] = json!(start);
+    };
+    assert!(c.evidence_snapshot_json(
+        "sonde",
+        &evidenz_payload(&sonde.adresse, 0, |w| setze(w, 1_000))
+    ));
+    assert!(c.evidence_snapshot_json(
+        "sonde",
+        &evidenz_payload(&sonde.adresse, 1, |w| setze(w, 500_000))
+    ));
+    assert!(c.evidence_snapshot_json(
+        "sonde",
+        &evidenz_payload(&sonde.adresse, 2, |w| setze(w, 501_000))
+    ));
+
+    let id = hex(0xd50);
+    let begin = serde_json::to_vec(&json!({
+        "type": "audible_intervention_begin",
+        "intervention_id": id,
+        "adresse": h.adresse,
+        "event_sequence": 1,
+        "art": "hoermarkierung",
+        "project_sample_start": 499_000
+    }))
+    .unwrap();
+    Senke::p0(&c, "a", &begin);
+    let ende = serde_json::to_vec(&json!({
+        "type": "audible_intervention_end",
+        "intervention_id": id,
+        "adresse": h.adresse,
+        "event_sequence": 2,
+        "project_sample_end": 502_000,
+        "tail_samples": 0
+    }))
+    .unwrap();
+    Senke::p0(&c, "a", &ende);
+
+    let historie = c.evidenz_historie(&hex(0x20));
+    assert_eq!(historie.len(), 3);
+    assert!(
+        historie[0].ausschlussgrund.is_none(),
+        "R25: der Beleg WEIT VOR dem Marker bleibt gueltig - die Runde 1 nahm \
+         ihn mit, weil sie bei `i64::MIN / 2` begann: {:?}",
+        historie[0].ausschlussgrund
+    );
+    assert!(
+        historie[1].ausschlussgrund.as_deref() == Some("intervention")
+            && historie[2].ausschlussgrund.as_deref() == Some("intervention"),
+        "und die beiden IM Bereich sind zurueckgenommen"
+    );
+}
+
+/// R25 — ohne Projektzeit invalidiert der Marker die GANZE Sitzung.
+///
+/// Bei schema-gueltigem `project_sample_end = null` nahm die Runde 1 gar
+/// nichts zurueck — fail-OPEN, obwohl der Marker gefaerbt hat und niemand
+/// weiss wo.
+#[cfg(windows)]
+#[test]
+fn markerinvalidierung_ohne_projektzeit_ist_fail_closed() {
+    let (c, _) = coordinator();
+    let h = hello(1, 2, 10, 100, "main", Some(9));
+    anmelden(&c, "a", &h);
+    let sonde = hello(1, 2, 0x20, 0x21, "passive_probe", Some(9));
+    anmelden(&c, "sonde", &sonde);
+    report(&c, "sonde", &sonde.adresse);
+    for nr in 0..3 {
+        assert!(c.evidence_snapshot_json("sonde", &evidenz_payload(&sonde.adresse, nr, |_| {})));
+    }
+
+    let id = hex(0xd60);
+    Senke::p0(
+        &c,
+        "a",
+        &serde_json::to_vec(&json!({
+            "type": "audible_intervention_begin",
+            "intervention_id": id,
+            "adresse": h.adresse,
+            "event_sequence": 1,
+            "art": "hoermarkierung",
+            "project_sample_start": null
+        }))
+        .unwrap(),
+    );
+    Senke::p0(
+        &c,
+        "a",
+        &serde_json::to_vec(&json!({
+            "type": "audible_intervention_end",
+            "intervention_id": id,
+            "adresse": h.adresse,
+            "event_sequence": 2,
+            "project_sample_end": null,
+            "tail_samples": 0
+        }))
+        .unwrap(),
+    );
+
+    assert_eq!(
+        c.invalidierungen_zaehler(),
+        1,
+        "R25: ohne Projektzeit gibt es keinen Bereich - fail-closed heisst \
+         die ganze Sitzung, nicht `nichts`"
+    );
+    assert!(c
+        .evidenz_historie(&hex(0x20))
+        .iter()
+        .all(|e| e.ausschlussgrund.as_deref() == Some("intervention")));
+}
+
+/// R29/R30 — der PRE/POST-Join filtert zurueckgenommene Evidenz und rechnet in
+/// EINER Konvention.
+///
+/// `haelfte_aus_historie` iterierte ueber jeden Eintrag ohne den
+/// `ausschlussgrund` zu pruefen und gab die dB-Werte unveraendert als
+/// Huellkurven weiter — `relation_db` erwartet aber positive lineare
+/// Amplituden und verwarf normale negative dB-Werte alle. Der alte Test
+/// pruefte nur, dass IRGENDEIN Urteil mit schwacher Klasse existiert, nicht
+/// dessen Ergebnis.
+#[test]
+fn prepost_filtert_ausschluss_und_rechnet_in_einer_konvention() {
+    let (c, _) = coordinator();
+    let paar = hex(0x79);
+    let pre = hello(1, 2, 10, 100, "passive_probe", Some(9));
+    let post = hello(1, 2, 11, 101, "passive_probe", Some(9));
+    anmelden(&c, "pre", &pre);
+    anmelden(&c, "post", &post);
+    assert!(c.descriptor_setzen("pre", descriptor(&pre.adresse, "pre", &paar)));
+    assert!(c.descriptor_setzen("post", descriptor(&post.adresse, "post", &paar)));
+    // Die Huellkurven brauchen STRUKTUR, sonst findet der Restlag-Schaetzer
+    // keinen Bezug: eine konstante Reihe korreliert mit allem gleich gut.
+    // POST liegt durchgehend 3 dB ueber PRE - das ist der reale dB-Wert,
+    // gegen den dieser Fall misst.
+    // Das Fixture kodiert `q_db_0p1_i16`: ein Schritt sind 0,1 dB. Die Zahlen
+    // hier stehen deshalb in ZEHNTEL-Dezibel, und der Test rechnet die
+    // Erwartung daraus - er schreibt sie nicht ab.
+    let schritte_je_db = 10i64;
+    let pegeln = |w: &mut Value, offset_zehnteldb: i64, nr: usize| {
+        // Die Snapshots liegen eine halbe Sekunde auseinander - so kommt der
+        // Evidenzstrom bei 1 bis 4 Hz wirklich an, und erst damit hat der
+        // Restlag-Schaetzer einen Suchraum (Befund R30).
+        w["transport"]["project_sample_start"] = json!(nr as i64 * 24_000);
+        if let Some(werte) = w["verteilung"]["p50"]["werte"].as_array_mut() {
+            // Eine RAMPE ueber die Zeit gibt der Kurve ihre Struktur - und
+            // zwar eine ohne Periode: eine periodische Welle haette mehrere
+            // gleich gute Korrelationsmaxima, und der Restlag waere geraten.
+            let welle = (nr as i64 - 6) * 10;
+            for v in werte.iter_mut() {
+                if let Some(x) = v.as_i64() {
+                    *v = json!((x + offset_zehnteldb + welle).clamp(-32768, 32767));
+                }
+            }
+        }
+    };
+    for nr in 0..12 {
+        c.evidence_snapshot_json(
+            "pre",
+            &evidenz_payload(&pre.adresse, nr, |w| pegeln(w, 0, nr)),
+        );
+        c.evidence_snapshot_json(
+            "post",
+            &evidenz_payload(&post.adresse, nr, |w| pegeln(w, 3 * schritte_je_db, nr)),
+        );
+    }
+
+    // R30: das Urteil traegt ein ERGEBNIS, nicht nur eine Klasse - und die
+    // rohen Banddeltas sind ECHTE dB. Mit dB-Werten als lineare Amplituden
+    // verwarf `relation_db` jeden Frame (`x <= 1e-9`).
+    let urteil = c.paarurteil(&paar).expect("ein Urteil entsteht");
+    let ergebnis = urteil.ergebnis.as_ref().unwrap_or_else(|| {
+        panic!(
+            "R30: eine Konvention - die Huellkurve ist linear, und `relation_db` \
+             rechnet daraus echte Banddeltas: {urteil:?}"
+        )
+    });
+    let gemessen: Vec<f64> = ergebnis
+        .roh_db
+        .iter()
+        .zip(ergebnis.roh_gueltig.iter())
+        .filter(|(_, ok)| **ok)
+        .map(|(d, _)| *d)
+        .collect();
+    assert!(
+        !gemessen.is_empty(),
+        "R30: mindestens ein Band traegt eine Messung: {ergebnis:?}"
+    );
+    let mittel = gemessen.iter().sum::<f64>() / gemessen.len() as f64;
+    assert!(
+        (mittel - 3.0).abs() < 0.5,
+        "R30: und der reale dB-Wert kommt heraus - POST liegt 3 dB ueber PRE, \
+         gemessen {mittel:.3} dB ueber {} Baender",
+        gemessen.len()
+    );
+
+    // R29: eine Invalidierung nimmt die Evidenz zurueck, und der Join
+    // benutzt sie danach NICHT mehr.
+    assert!(c.invalidierung_wegen_messpunkt_fuer_link("pre", "pre", "post") > 0);
+    assert!(c
+        .evidenz_historie(&hex(10))
+        .iter()
+        .all(|e| e.ausschlussgrund.is_some()));
+    // Ein weiterer Snapshot der POST-Haelfte stoesst die Neubildung an.
+    c.evidence_snapshot_json(
+        "post",
+        &evidenz_payload(&post.adresse, 20, |w| pegeln(w, 3 * schritte_je_db, 20)),
+    );
+    let nachher = c.paarurteil(&paar).expect("das Paar bleibt sichtbar");
+    assert!(
+        nachher.ergebnis.is_none(),
+        "R29: aus zurueckgenommener Evidenz entsteht KEIN Kettenbefund mehr: \
+         {nachher:?}"
     );
 }

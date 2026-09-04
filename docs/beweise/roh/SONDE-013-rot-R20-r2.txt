@@ -1,0 +1,109 @@
+Rotbeweis R20 - der Bootstrap zieht Zeitfenster und rechnet echte p-Werte
+Datum: 2026-09-04
+Datei: broker/src/coordinator/experiment.rs
+Test:  sonde013_verdrahtung::bootstrap_zieht_zeitfenster_und_rechnet_echte_p_werte
+
+== 1. Fehler eingebaut ==
+ALT: p_werte.push(bootstrap_p(
+                &reihe,
+                BOOTSTRAP_BLOCK,
+                BOOTSTRAP_ZIEHUNGEN,
+                42 + band as u64,
+            ));
+NEU: // Rotbeweis: der erfundene p-Wert der Runde 1.
+            let d = reihe.iter().sum::<f64>() / reihe.len() as f64;
+            p_werte.push((-d.abs()).exp().clamp(1e-12, 1.0));
+
+== 2. Der Test FAELLT ==
+exit=101
+
+running 1 test
+test bootstrap_zieht_zeitfenster_und_rechnet_echte_p_werte ... FAILED
+
+failures:
+
+---- bootstrap_zieht_zeitfenster_und_rechnet_echte_p_werte stdout ----
+
+thread 'bootstrap_zieht_zeitfenster_und_rechnet_echte_p_werte' (16748) panicked at tests\sonde013_verdrahtung.rs:2352:5:
+R20: die kleine, aber STABILE Reihe traegt signifikante Baender - mit          `exp(-|0,4|) = 0,67` haette sie nie eine getragen: Achsenrechnung { intervall: Some((0.40000000000000013, 0.40000000000000013)), signifikante_baender: 0, gescannte_baender: 8, vergleichbarkeit: Some("stark"), vergleichbarkeit_gruende: [], guardrail_abdeckung_delta: Some(0.0), guardrail_klasse_gefallen: false, guardrail_loudness_db: None, guardrail_peak_db: None, guardrail_transient: None, guardrail_breite_db: None, guardrail_geschuetzt_db: None, effekt_stabil: Some(true) }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    bootstrap_zieht_zeitfenster_und_rechnet_echte_p_werte
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 37 filtered out; finished in 0.00s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: method `payloads` is never used
+   --> tests\sonde013_verdrahtung.rs:227:8
+    |
+226 | impl PushProbe {
+    | -------------- method in this implementation
+227 |     fn payloads(&self) -> Vec<(String, Value)> {
+    |        ^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `clock` and `push` are never read
+   --> tests\sonde013_verdrahtung.rs:250:5
+    |
+247 | struct HarnischMitStore {
+    |        ---------------- fields in this struct
+...
+250 |     clock: Arc<ManualClock>,
+    |     ^^^^^
+251 |     push: Arc<PushProbe>,
+    |     ^^^^
+
+warning: function `sonde_mit_evidenz` is never used
+    --> tests\sonde013_verdrahtung.rs:1756:4
+     |
+1756 | fn sonde_mit_evidenz(h: &HarnischMitStore, anzahl: usize) -> HelloControl {
+     |    ^^^^^^^^^^^^^^^^^
+
+warning: `eqcop-broker` (test "sonde013_verdrahtung") generated 3 warnings
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.95s
+     Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)
+error: test failed, to rerun pass `--test sonde013_verdrahtung`
+
+
+== 3. Fehler entfernt, der Test ist GRUEN ==
+exit=0
+
+running 1 test
+test bootstrap_zieht_zeitfenster_und_rechnet_echte_p_werte ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 37 filtered out; finished in 0.00s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: method `payloads` is never used
+   --> tests\sonde013_verdrahtung.rs:227:8
+    |
+226 | impl PushProbe {
+    | -------------- method in this implementation
+227 |     fn payloads(&self) -> Vec<(String, Value)> {
+    |        ^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `clock` and `push` are never read
+   --> tests\sonde013_verdrahtung.rs:250:5
+    |
+247 | struct HarnischMitStore {
+    |        ---------------- fields in this struct
+...
+250 |     clock: Arc<ManualClock>,
+    |     ^^^^^
+251 |     push: Arc<PushProbe>,
+    |     ^^^^
+
+warning: function `sonde_mit_evidenz` is never used
+    --> tests\sonde013_verdrahtung.rs:1756:4
+     |
+1756 | fn sonde_mit_evidenz(h: &HarnischMitStore, anzahl: usize) -> HelloControl {
+     |    ^^^^^^^^^^^^^^^^^
+
+warning: `eqcop-broker` (test "sonde013_verdrahtung") generated 3 warnings
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.75s
+     Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)

@@ -193,6 +193,13 @@ pub struct Coordinator {
     /// eine feste Schrittzahl je Tick haengt am Tickintervall — genau daran
     /// lief der Nachlauf fuenfmal zu schnell ab.
     letzter_tail_tick: Mutex<Option<Duration>>,
+    /// Monotone ANKUNFTSREIHENFOLGE angenommener Evidenzsnapshots.
+    ///
+    /// 🔑 SONDE-013 Nacharbeit 2 (Befund R17): sie ist die einzige Groesse, an
+    /// der `resultatmessung` Baseline und Resultat ueber Quellen hinweg
+    /// trennen kann. Die `sequence` im Payload gehoert dem SENDER und ist je
+    /// Quelle eigen; die Historienlaenge sagt gar nichts ueber die Zeit.
+    evidenz_folge: AtomicU64,
 }
 
 const SESSION_FLUSH_SCHLOSS_ANZAHL: usize = 64;
@@ -224,6 +231,7 @@ impl Coordinator {
             test_panik_unter_standlock: AtomicBool::new(false),
             fenster_nicht_endlich: AtomicU64::new(0),
             letzter_tail_tick: Mutex::new(None),
+            evidenz_folge: AtomicU64::new(0),
         }
     }
 
@@ -265,6 +273,7 @@ impl Coordinator {
             test_panik_unter_standlock: AtomicBool::new(false),
             fenster_nicht_endlich: AtomicU64::new(0),
             letzter_tail_tick: Mutex::new(None),
+            evidenz_folge: AtomicU64::new(0),
         }
     }
 

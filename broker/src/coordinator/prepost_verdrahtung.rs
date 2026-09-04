@@ -173,6 +173,13 @@ impl Coordinator {
         let mut vorige_epoche: Option<u64> = None;
         let mut voriges_segment: Option<u64> = None;
         for stand in historie.iter() {
+            // 🔑 Nacharbeit 2 (Befund R29, M-52): ZURUECKGENOMMENE Evidenz
+            // zaehlt nicht mehr. Die Invalidierung setzte den Grund, und
+            // niemand filterte danach — bereits zurueckgenommene Marker-,
+            // Seek- oder Materialevidenz bestimmte weiter das Paarurteil.
+            if stand.ausschlussgrund.is_some() {
+                continue;
+            }
             if stand.p50_db.len() != baender {
                 // Ein Snapshot mit anderem Gitter gehoert nicht in dieselbe
                 // Kurve. Ihn einzupassen hiesse, zwei Aufloesungen zu mischen.
@@ -180,9 +187,25 @@ impl Coordinator {
             }
             for (band, wert) in stand.p50_db.iter().enumerate() {
                 let gueltig = stand.p50_gueltig.get(band).copied().unwrap_or(false);
-                // Ein Band ohne Bit traegt 0 — der Korrelationspfad rechnet
-                // ueber Differenzen, und 0 ist dort das neutrale Element.
-                huellkurven[band].push(if gueltig { *wert } else { 0.0 });
+                // 🔑 Nacharbeit 2 (Befund R30, M-14): die Huellkurve traegt
+                // LINEARE Amplituden, nicht dB.
+                //
+                // `p50_dekodieren` liefert ausdruecklich dB; die Runde 1 gab
+                // sie unveraendert weiter. `relation_db` erwartet aber positive
+                // lineare Amplituden, verwirft normale NEGATIVE dB-Werte mit
+                // `x <= 1e-9` und logarithmiert den Quotienten erneut — uebliche
+                // Audiodaten ergaben damit ausschliesslich ungueltige rohe
+                // Banddeltas. EINE Konvention: `Paarhaelfte::huellkurven` ist
+                // linear, und die Umrechnung steht hier, wo die dB entstehen.
+                //
+                // Ein Band ohne Bit traegt 0 — in linearer Darstellung ist das
+                // Stille, und `relation_db` laesst es fallen, statt es als
+                // „0 dB, also unveraendert" zu lesen.
+                huellkurven[band].push(if gueltig {
+                    10f32.powf(*wert / 20.0)
+                } else {
+                    0.0
+                });
             }
             onsets.push(stand.onset);
             if let Some(vorher) = vorige_epoche {
@@ -215,6 +238,16 @@ impl Coordinator {
             verbunden,
             stale: !messbereit,
             messbereit,
+            // 🔑 Nacharbeit 2 (Befund R30): die gemessene Zeit ist die
+            // PROJEKTSPANNE, nicht die Summe der Analysefensterlaengen. Ein
+            // Evidenzsnapshot kommt bei 1 bis 4 Hz und traegt ein Fenster von
+            // wenigen hundert Samples: die Summe unterschaetzt die
+            // Aufnahmedauer um Groessenordnungen, und `suchraum_frames`
+            // bekaeme daraus einen Suchraum von null.
+            aktiv_s: match (von, bis, letzter.sample_rate) {
+                (Some(a), Some(b), r) if b > a && r > 0.0 => (b - a) as f64 / r,
+                _ => aktiv_s,
+            },
             projekt_fenster: match (von, bis) {
                 (Some(a), Some(b)) if b > a => Some((a, b)),
                 // Ohne gueltige Projektzeit gibt es kein Fenster — und das
@@ -222,7 +255,6 @@ impl Coordinator {
                 _ => None,
             },
             spruenge,
-            aktiv_s,
             huellkurven,
             onsets,
             // M-21: heute validiert kein Host die Presentation-Abbildung.

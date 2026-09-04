@@ -977,8 +977,19 @@ pub fn beurteile_paar(pair_id: &str, pre: &Paarhaelfte, post: &Paarhaelfte) -> P
     }
 
     // 3. Restlag auf dem gemeinsamen Material.
-    let kuerzer = len_p.min(len_q) as f64;
-    let capture_s = kuerzer / pre.sample_rate;
+    //
+    // 🔑 SONDE-013 Nacharbeit 2 (Befund R30, „eine Konvention"): die
+    // Aufnahmedauer ist `aktiv_s`, die GEMESSENE Zeit — nicht die Zahl der
+    // Huellkurvenrahmen geteilt durch die AUDIO-Abtastrate.
+    //
+    // Ein Huellkurvenindex ist ein ANALYSERAHMEN, kein Sample. Die alte
+    // Rechnung ergab bei zwoelf Rahmen und 48 kHz 0,00025 s; `suchraum_frames`
+    // machte daraus einen Suchraum von NULL, und `schaetze_restlag` gab
+    // grundsaetzlich `None` zurueck. Der Produktpfad konnte damit nie einen
+    // Zeitbezug finden — jedes Paar blieb `Unclear`, egal wie sauber das
+    // Material war. Dieselbe Sorte Fehler wie die dB-als-Amplitude daneben:
+    // zwei Einheiten, eine Rechnung.
+    let capture_s = pre.aktiv_s.min(post.aktiv_s);
     let restlag = schaetze_restlag(pre, post, capture_s);
 
     // Ohne benennbaren Lag gibt es keinen Zeitbezug — Rauschen oder anderes

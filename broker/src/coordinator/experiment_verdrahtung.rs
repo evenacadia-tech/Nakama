@@ -25,6 +25,7 @@ use crate::coordinator::experiment::{
     Abbruchgrund, Achsenrechnung, Alignmentwert, Blindreihenfolge, Experimentreferenz, Hoerurteil,
     Passage, Resultatmessung, Terminal,
 };
+use crate::coordinator::vergleichbarkeit::Passagenbeleg;
 use crate::telemetrie::Fingerprintwerte;
 
 impl Coordinator {
@@ -163,7 +164,7 @@ impl Coordinator {
                             drop(stand);
                             let messung = session_vorab
                                 .as_ref()
-                                .map(|s| self.resultatmessung(s))
+                                .map(|s| self.resultatmessung(&experiment_id, s))
                                 .unwrap_or_default();
                             return if messung.hat_resultat() {
                                 self.experiment_p0_weiter(link_id, wert, art, &experiment_id)
@@ -219,10 +220,14 @@ impl Coordinator {
         // Die Resultatmessung nimmt ihr eigenes Lock — deshalb VOR dem Block
         // unten, nicht darin.
         let messung = if art == "experiment_manual_result" {
-            self.resultatmessung(&session)
+            self.resultatmessung(experiment_id, &session)
         } else {
             Resultatmessung::default()
         };
+
+        // Die Grenze, an der Baseline und Resultat auseinandergehen: die
+        // Ankunftsreihenfolge der Evidenz IN DIESEM Moment (M-49, Befund R17).
+        let evidenzfolge = self.evidenz_folge.load(Ordering::SeqCst);
 
         // ── 1. Die Wirkung, vorlaeufig ─────────────────────────────────
         let (rueckfall, ereignisse) = {
@@ -230,10 +235,16 @@ impl Coordinator {
             let rueckfall = stand.experimente.clone();
             let ereignisse = match art {
                 "experiment_begin" => {
-                    Self::begin_anwenden_locked(&mut stand, wert, experiment_id, &session)
+                    Self::begin_anwenden_locked(
+                        &mut stand,
+                        wert,
+                        experiment_id,
+                        &session,
+                        evidenzfolge,
+                    )
                 }
                 "experiment_candidate" => {
-                    Self::kandidat_anwenden_locked(&mut stand, wert, experiment_id)
+                    Self::kandidat_anwenden_locked(&mut stand, wert, experiment_id, evidenzfolge)
                 }
                 "experiment_abort" => {
                     let grund = match wert.get("grund").and_then(Value::as_str) {
@@ -331,6 +342,7 @@ impl Coordinator {
         wert: &Value,
         experiment_id: &str,
         session: &SessionKey,
+        evidenzfolge: u64,
     ) -> Option<Vec<Domaenenereignis>> {
         let passage = Self::passage_aus_wert(wert)?;
         let baseline = Self::referenz_aus_wert(wert.get("referenz"))?;
@@ -344,6 +356,7 @@ impl Coordinator {
                 &session.project_binding_id,
                 passage,
                 baseline,
+                evidenzfolge,
             )
             .ok()?;
 
@@ -397,11 +410,12 @@ impl Coordinator {
         stand: &mut Stand,
         wert: &Value,
         experiment_id: &str,
+        evidenzfolge: u64,
     ) -> Option<Vec<Domaenenereignis>> {
         let referenz = Self::referenz_aus_wert(wert.get("referenz"))?;
         stand
             .experimente
-            .neuer_kandidat(experiment_id, referenz)
+            .neuer_kandidat(experiment_id, referenz, evidenzfolge)
             .ok()?;
         let reihenfolge = match wert.get("blindreihenfolge").and_then(Value::as_str) {
             Some("kandidat_zuerst") => Blindreihenfolge::KandidatZuerst,
@@ -569,6 +583,13 @@ impl Coordinator {
             "vergleichbarkeit_gruende": a.vergleichbarkeit_gruende,
             "guardrail_abdeckung_delta": a.guardrail_abdeckung_delta,
             "guardrail_klasse_gefallen": a.guardrail_klasse_gefallen,
+            // Befund R19: die fuenf Guardrails aus M-45 reisen MIT dem
+            // Terminalereignis. Ohne sie waere „stabil" eine Behauptung.
+            "guardrail_loudness_db": a.guardrail_loudness_db,
+            "guardrail_peak_db": a.guardrail_peak_db,
+            "guardrail_transient": a.guardrail_transient,
+            "guardrail_breite_db": a.guardrail_breite_db,
+            "guardrail_geschuetzt_db": a.guardrail_geschuetzt_db,
             "effekt_stabil": a.effekt_stabil,
         })
     }
@@ -615,6 +636,10 @@ impl Coordinator {
             "execution_mode": "manual_external",
             "reproduzierbarkeit": "manuell_nicht_wiederherstellbar",
             "folge": e.folge,
+            // Die Evidenzgrenzen aus Befund R17: ohne sie koennte ein
+            // wiederhergestellter Versuch Baseline und Resultat nicht mehr
+            // trennen.
+            "begin_evidenzfolge": e.begin_evidenzfolge,
             "passage": passage.map(Self::passage_json),
             "baseline": Self::referenz_json(&e.baseline),
             "kandidaten": e
@@ -622,6 +647,7 @@ impl Coordinator {
                 .iter()
                 .map(|k| serde_json::json!({
                     "nummer": k.nummer,
+                    "evidenzfolge": k.evidenzfolge,
                     "referenz": Self::referenz_json(&k.referenz),
                 }))
                 .collect::<Vec<Value>>(),
@@ -635,85 +661,317 @@ impl Coordinator {
     }
 
 
-    /// Die Resultatmessung aus dem laufenden Evidenzbestand (M-45/M-49).
+    /// Die Resultatmessung EINES Versuchs aus dem Evidenzbestand (M-45/M-49).
     ///
-    /// Baseline ist die AELTERE Haelfte der behaltenen Historie, Resultat die
-    /// juengere. Das ist die ehrliche Zuordnung ohne zusaetzliche Wirefelder:
-    /// die Baseline wurde vor der Fremdaenderung gemessen, das Resultat
-    /// danach, und dazwischen liegt kein weiterer Beleg.
-    pub(super) fn resultatmessung(&self, session: &SessionKey) -> Resultatmessung {
+    /// 🔑 Nacharbeit 2 (Befund R17): die Runde 1 nahm die Quelle mit der
+    /// laengsten Historie IRGENDEINER Quelle der Sitzung und teilte die
+    /// gesamte Retention stumpf in zwei Haelften. Vier bereits VOR dem
+    /// `experiment_begin` eingegangene Snapshots genuegten damit fuer ein
+    /// sofortiges Resultat; Passage, Begin-Grenze, Quellenset, Messpunktklasse
+    /// und Kandidat wurden nicht geprueft.
+    ///
+    /// Die Bindung steht jetzt in fuenf Riegeln, und jeder faellt fuer sich:
+    ///
+    /// 1. **Passage** — nur Evidenz IM Fenster der Passage und in IHRER
+    ///    Transportepoche (§32.4). Ein Beleg von anderswo misst anderes.
+    /// 2. **Quellen** — nur die im `experiment_begin` eingefrorenen.
+    /// 3. **Messpunktklasse** — je Quelle die, die zur Passage gehoert
+    ///    (M-28/M-55). Ein Wechsel macht den Beleg unbrauchbar, nicht schwach.
+    /// 4. **Grenzen** — Baseline ist, was VOR dem Begin ankam; Resultat, was
+    ///    NACH dem erfassten Kandidaten ankam. Dazwischen liegt die
+    ///    Fremdaenderung, und Belege von dort gehoeren keiner Seite.
+    /// 5. **Ausschluss** — was eine Invalidierung zurueckgenommen hat, zaehlt
+    ///    nicht mehr (M-52, Befund R29).
+    pub(super) fn resultatmessung(
+        &self,
+        experiment_id: &str,
+        session: &SessionKey,
+    ) -> Resultatmessung {
         let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         let mut messung = Resultatmessung::default();
-        // Die Quelle mit der laengsten Historie in dieser Sitzung traegt die
-        // Messung. Mehrere zu mitteln waere eine Aussage ueber ein Gemisch.
-        let Some((_, historie)) = stand
-            .evidenz
-            .iter()
-            .filter(|(key, _)| key.session() == *session)
-            .max_by_key(|(_, h)| h.len())
-        else {
+        let Some(e) = stand.experimente.experiment(experiment_id) else {
             return messung;
         };
-        if historie.len() < 4 {
-            // Weniger als vier Fenster sind keine zwei Haelften.
+        let Some(passage) = stand.experimente.passage(&e.passage_id) else {
+            return messung;
+        };
+        // Befund R16: ohne erfassten Kandidaten gibt es keine Resultatgrenze.
+        let Some(kandidat) = e.kandidaten.last() else {
+            return messung;
+        };
+        let begin_folge = e.begin_evidenzfolge;
+        let kandidat_folge = kandidat.evidenzfolge;
+
+        // Die Messpunktklasse JE QUELLE, wie die Passage sie eingefroren hat.
+        let klasse_der_quelle = |instanz: &str| -> Option<&String> {
+            let i = passage.aktive_quellen.iter().position(|q| q == instanz)?;
+            passage.messpunktklassen.get(i)
+        };
+
+        let mut baseline: Vec<&super::evidenz::Evidenzstand> = Vec::new();
+        let mut resultat: Vec<&super::evidenz::Evidenzstand> = Vec::new();
+        for (key, historie) in stand.evidenz.iter() {
+            if key.session() != *session {
+                continue;
+            }
+            let Some(soll) = klasse_der_quelle(&key.instance_id) else {
+                continue;                 // Quelle gehoert nicht zur Passage.
+            };
+            // Die HEUTIGE Klasse dieser Quelle. Weicht sie ab, ist der Beleg
+            // nicht vergleichbar — Gate 7 (§49.2).
+            let ist = stand
+                .clients
+                .get(key)
+                .and_then(|c| c.descriptor.as_ref())
+                .and_then(|d| d.get("measurement_position"))
+                .and_then(Value::as_str);
+            if ist != Some(soll.as_str()) {
+                continue;
+            }
+            for eintrag in historie.iter() {
+                if eintrag.ausschlussgrund.is_some() {
+                    continue;             // R29: zurueckgenommen zaehlt nicht.
+                }
+                if eintrag.transport_epoch != passage.transport_epoch {
+                    continue;
+                }
+                let Some(von) = eintrag.project_sample_start else {
+                    // Ohne Projektzeit laesst sich der Beleg der Passage nicht
+                    // zuordnen. Ihn trotzdem zu nehmen waere geraten (§32.3).
+                    continue;
+                };
+                let bis = von.saturating_add(eintrag.sample_count as i64);
+                if von < passage.projekt_von || bis > passage.projekt_bis {
+                    continue;
+                }
+                if eintrag.empfangsfolge < begin_folge {
+                    baseline.push(eintrag);
+                } else if eintrag.empfangsfolge > kandidat_folge {
+                    resultat.push(eintrag);
+                }
+            }
+        }
+        if baseline.is_empty() || resultat.is_empty() {
             return messung;
         }
-        let mitte = historie.len() / 2;
-        let alt: Vec<&super::evidenz::Evidenzstand> = historie.iter().take(mitte).collect();
-        let neu: Vec<&super::evidenz::Evidenzstand> = historie.iter().skip(mitte).collect();
-        let baender = neu[0].p50_db.len();
-        let mittel_je_band = |satz: &[&super::evidenz::Evidenzstand]| -> (Vec<f64>, Vec<bool>) {
+        baseline.sort_by_key(|e| e.empfangsfolge);
+        resultat.sort_by_key(|e| e.empfangsfolge);
+
+        let baender = resultat
+            .iter()
+            .map(|e| e.p50_db.len())
+            .min()
+            .unwrap_or(0)
+            .min(baseline.iter().map(|e| e.p50_db.len()).min().unwrap_or(0));
+        if baender == 0 {
+            return messung;
+        }
+
+        let mittel_je_band = |satz: &[&super::evidenz::Evidenzstand],
+                              p95: bool|
+         -> (Vec<f64>, Vec<bool>) {
             let mut summe = vec![0.0f64; baender];
             let mut anzahl = vec![0usize; baender];
             for s in satz {
-                if s.p50_db.len() != baender {
-                    continue;
-                }
+                let (werte, gueltig) = if p95 {
+                    (&s.p95_db, &s.p95_gueltig)
+                } else {
+                    (&s.p50_db, &s.p50_gueltig)
+                };
                 for band in 0..baender {
-                    if s.p50_gueltig.get(band).copied().unwrap_or(false) {
-                        summe[band] += s.p50_db[band] as f64;
-                        anzahl[band] += 1;
+                    if gueltig.get(band).copied().unwrap_or(false) {
+                        if let Some(v) = werte.get(band) {
+                            summe[band] += *v as f64;
+                            anzahl[band] += 1;
+                        }
                     }
                 }
             }
-            let mut werte = Vec::with_capacity(baender);
-            let mut gueltig = Vec::with_capacity(baender);
+            let mut w = Vec::with_capacity(baender);
+            let mut g = Vec::with_capacity(baender);
             for band in 0..baender {
                 if anzahl[band] > 0 {
-                    werte.push(summe[band] / anzahl[band] as f64);
-                    gueltig.push(true);
+                    w.push(summe[band] / anzahl[band] as f64);
+                    g.push(true);
                 } else {
-                    // M-07: kein Beleg heisst Wert 0 mit `gueltig=false`.
-                    werte.push(0.0);
-                    gueltig.push(false);
+                    // M-07: kein Beleg heisst Wert 0 mit `gueltig = false`.
+                    w.push(0.0);
+                    g.push(false);
                 }
             }
-            (werte, gueltig)
+            (w, g)
         };
-        let (alt_werte, alt_gueltig) = mittel_je_band(&alt);
-        let (neu_werte, neu_gueltig) = mittel_je_band(&neu);
+
+        let (basis_p50, basis_gueltig) = mittel_je_band(&baseline, false);
+        let (res_p50, res_gueltig) = mittel_je_band(&resultat, false);
         for band in 0..baender {
-            let ok = alt_gueltig[band] && neu_gueltig[band];
+            let ok = basis_gueltig[band] && res_gueltig[band];
             messung
                 .band_delta_db
-                .push(if ok { neu_werte[band] - alt_werte[band] } else { 0.0 });
+                .push(if ok { res_p50[band] - basis_p50[band] } else { 0.0 });
             messung.band_gueltig.push(ok);
         }
-        // Die zwei Haelften des RESULTATfensters — daraus entsteht die
-        // Effektstabilitaet.
-        let viertel = neu.len() / 2;
-        let (a, _) = mittel_je_band(&neu[..viertel.max(1)]);
-        let (b, _) = mittel_je_band(&neu[viertel.max(1)..]);
-        messung.erste_haelfte = a;
-        messung.zweite_haelfte = b;
+
+        // 🔑 Befund R20: die ZEITREIHE je Fenster. Der Block-Bootstrap zieht
+        // Bloecke benachbarter Analysefenster; ohne diese Reihe blieb ihm nur
+        // die Bandachse, und die ist keine Zeit.
+        for s in &resultat {
+            let mut zeile = Vec::with_capacity(baender);
+            for band in 0..baender {
+                let gueltig = s.p50_gueltig.get(band).copied().unwrap_or(false)
+                    && basis_gueltig[band];
+                zeile.push(if gueltig {
+                    s.p50_db[band] as f64 - basis_p50[band]
+                } else {
+                    f64::NAN
+                });
+            }
+            messung.fenster_delta_db.push(zeile);
+        }
+
         messung.abdeckung_baseline =
-            alt.iter().map(|s| s.abdeckung).sum::<f64>() / alt.len().max(1) as f64;
+            baseline.iter().map(|s| s.abdeckung).sum::<f64>() / baseline.len() as f64;
         messung.abdeckung_resultat =
-            neu.iter().map(|s| s.abdeckung).sum::<f64>() / neu.len().max(1) as f64;
-        messung.klasse_baseline = alt.last().map(|s| s.klasse.clone()).unwrap_or_default();
-        messung.klasse_resultat = neu.last().map(|s| s.klasse.clone()).unwrap_or_default();
-        messung.baseline_evidence_ids = alt.iter().map(|s| s.evidence_id.clone()).collect();
-        messung.resultat_evidence_ids = neu.iter().map(|s| s.evidence_id.clone()).collect();
+            resultat.iter().map(|s| s.abdeckung).sum::<f64>() / resultat.len() as f64;
+        messung.klasse_baseline = baseline.last().map(|s| s.klasse.clone()).unwrap_or_default();
+        messung.klasse_resultat = resultat.last().map(|s| s.klasse.clone()).unwrap_or_default();
+        messung.baseline_evidence_ids =
+            baseline.iter().map(|s| s.evidence_id.clone()).collect();
+        messung.resultat_evidence_ids =
+            resultat.iter().map(|s| s.evidence_id.clone()).collect();
+
+        // ── Die Guardrails (M-45, Befund R19) ───────────────────────────
+        //
+        // Die Runde 1 modellierte ausschliesslich Abdeckung und
+        // Konfidenzklasse; Verschlechterungen von Loudness, Peak, Transient,
+        // Breite und geschuetzten Bereichen konnten weder eingelesen noch
+        // gespeichert werden und erschienen bei unveraenderter Coverage als
+        // STABIL. Jede Groesse ist `Option`: „nicht gemessen" ist etwas
+        // anderes als „unveraendert".
+        let mittel = |v: &[f64]| -> Option<f64> {
+            let e: Vec<f64> = v.iter().copied().filter(|x| x.is_finite()).collect();
+            (!e.is_empty()).then(|| e.iter().sum::<f64>() / e.len() as f64)
+        };
+        // LOUDNESS: das mittlere Bandniveau in dB.
+        let basis_laut = mittel(
+            &basis_p50
+                .iter()
+                .zip(basis_gueltig.iter())
+                .filter(|(_, g)| **g)
+                .map(|(v, _)| *v)
+                .collect::<Vec<f64>>(),
+        );
+        let res_laut = mittel(
+            &res_p50
+                .iter()
+                .zip(res_gueltig.iter())
+                .filter(|(_, g)| **g)
+                .map(|(v, _)| *v)
+                .collect::<Vec<f64>>(),
+        );
+        messung.guardrail_loudness_db = match (basis_laut, res_laut) {
+            (Some(a), Some(b)) => Some(b - a),
+            _ => None,
+        };
+        // PEAK: das hoechste P95 ueber alle Baender - der Spitzenwert des
+        // Fensters. Er kann steigen, waehrend der Median steht.
+        let (basis_p95, basis_p95_g) = mittel_je_band(&baseline, true);
+        let (res_p95, res_p95_g) = mittel_je_band(&resultat, true);
+        let hoechstes = |w: &[f64], g: &[bool]| -> Option<f64> {
+            w.iter()
+                .zip(g.iter())
+                .filter(|(_, ok)| **ok)
+                .map(|(v, _)| *v)
+                .filter(|v| v.is_finite())
+                .fold(None, |m: Option<f64>, v| Some(m.map_or(v, |x| x.max(v))))
+        };
+        messung.guardrail_peak_db = match (
+            hoechstes(&basis_p95, &basis_p95_g),
+            hoechstes(&res_p95, &res_p95_g),
+        ) {
+            (Some(a), Some(b)) => Some(b - a),
+            _ => None,
+        };
+        // TRANSIENT: die Onsetstaerke - die zweite, unabhaengige Spur (§38.2).
+        let onset = |satz: &[&super::evidenz::Evidenzstand]| -> Option<f64> {
+            mittel(&satz.iter().map(|s| s.onset as f64).collect::<Vec<f64>>())
+        };
+        messung.guardrail_transient = match (onset(&baseline), onset(&resultat)) {
+            (Some(a), Some(b)) => Some(b - a),
+            _ => None,
+        };
+        // BREITE: der Seitenanteil in dB. `None` heisst „diese Quellen liefern
+        // keine Stereoauskunft", nie „unveraendert".
+        let breite = |satz: &[&super::evidenz::Evidenzstand]| -> Option<f64> {
+            mittel(
+                &satz
+                    .iter()
+                    .filter_map(|s| s.seitenanteil_db)
+                    .collect::<Vec<f64>>(),
+            )
+        };
+        messung.guardrail_breite_db = match (breite(&baseline), breite(&resultat)) {
+            (Some(a), Some(b)) => Some(b - a),
+            _ => None,
+        };
+        // GESCHUETZTE BEREICHE: die groesste Bewegung AUSSERHALB der staerksten
+        // Zielbewegung. Das Ziel ist das Band mit dem groessten Betrag; alles
+        // andere soll stehen bleiben, und was sich dort am weitesten bewegt,
+        // ist die Zahl, die niemand ignorieren darf.
+        let mut sortiert: Vec<(usize, f64)> = messung
+            .band_delta_db
+            .iter()
+            .enumerate()
+            .filter(|(b, _)| messung.band_gueltig.get(*b).copied().unwrap_or(false))
+            .map(|(b, d)| (b, d.abs()))
+            .collect();
+        if sortiert.len() >= 2 {
+            sortiert.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+            let ziel = sortiert[0].0;
+            messung.guardrail_geschuetzt_db = sortiert
+                .iter()
+                .filter(|(b, _)| *b != ziel)
+                .map(|(_, d)| *d)
+                .fold(None, |m: Option<f64>, v| Some(m.map_or(v, |x| x.max(v))));
+        }
+
+        // ── Comparability im PRODUKTPFAD (M-46, Befund R18) ─────────────
+        //
+        // `vergleichbarkeit::beurteile` hatte ausserhalb seiner eigenen Tests
+        // keinen Aufrufer; `Achsenrechnung::vergleichbarkeit` blieb
+        // `Default::default()`, und weil `hat_resultat()` sie nicht verlangte,
+        // konnte ein Terminal mit `vergleichbarkeit = None` entstehen — Gate 6
+        // wirkte damit gar nicht.
+        let beleg = |satz: &[&super::evidenz::Evidenzstand], abdeckung: f64| Passagenbeleg {
+            projekt_start: satz
+                .iter()
+                .filter_map(|s| s.project_sample_start)
+                .min()
+                .unwrap_or(passage.projekt_von),
+            projekt_ende: satz
+                .iter()
+                .filter_map(|s| {
+                    s.project_sample_start
+                        .map(|v| v.saturating_add(s.sample_count as i64))
+                })
+                .max()
+                .unwrap_or(passage.projekt_bis),
+            fingerprint: Some(passage.fingerprint.clone()),
+            aktive_quellen: passage.aktive_quellen.clone(),
+            samplerate: satz.last().map(|s| s.sample_rate).unwrap_or(0.0),
+            messpunktklassen: passage.messpunktklassen.clone(),
+            abdeckung: abdeckung as f32,
+        };
+        let urteil = crate::coordinator::vergleichbarkeit::beurteile(
+            &beleg(&baseline, messung.abdeckung_baseline),
+            &beleg(&resultat, messung.abdeckung_resultat),
+        );
+        messung.vergleichbarkeit = Some(urteil.klasse.name().to_owned());
+        messung.vergleichbarkeit_gruende = urteil
+            .gruende
+            .iter()
+            .map(|g| format!("{g:?}"))
+            .collect();
         messung
     }
 
@@ -992,6 +1250,10 @@ impl Coordinator {
                         Some(crate::coordinator::experiment::Kandidat {
                             nummer: k.get("nummer")?.as_u64()? as u32,
                             referenz: Self::referenz_aus_gespeichertem(k.get("referenz"))?,
+                            evidenzfolge: k
+                                .get("evidenzfolge")
+                                .and_then(Value::as_u64)
+                                .unwrap_or(0),
                         })
                     })
                     .collect::<Vec<_>>()
@@ -1018,6 +1280,9 @@ impl Coordinator {
             Self::reihenfolge_aus_wort(
                 w.get("blindreihenfolge_gebunden").and_then(Value::as_str),
             ),
+            w.get("begin_evidenzfolge")
+                .and_then(Value::as_u64)
+                .unwrap_or(0),
             ids("baseline_evidence_ids"),
             ids("resultat_evidence_ids"),
         ))
@@ -1061,6 +1326,11 @@ impl Coordinator {
                 .get("guardrail_klasse_gefallen")
                 .and_then(Value::as_bool)
                 .unwrap_or(true),
+            guardrail_loudness_db: a.get("guardrail_loudness_db").and_then(Value::as_f64),
+            guardrail_peak_db: a.get("guardrail_peak_db").and_then(Value::as_f64),
+            guardrail_transient: a.get("guardrail_transient").and_then(Value::as_f64),
+            guardrail_breite_db: a.get("guardrail_breite_db").and_then(Value::as_f64),
+            guardrail_geschuetzt_db: a.get("guardrail_geschuetzt_db").and_then(Value::as_f64),
             effekt_stabil: a.get("effekt_stabil").and_then(Value::as_bool),
         }
     }

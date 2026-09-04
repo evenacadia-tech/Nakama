@@ -121,6 +121,14 @@ pub(super) struct Intervention {
     pub(super) art: String,
     /// Der Versuch, zu dem der Eingriff gehoert. `None` = keiner.
     pub(super) experiment_id: Option<String>,
+    /// Der Projektzeitstempel des BEGINNS (M-52, Befund R25).
+    ///
+    /// 🔑 Nacharbeit 2: das Markerende invalidierte mangels gespeichertem
+    /// Begin pauschal ab `i64::MIN / 2` und schloss damit auch saemtliche
+    /// aeltere, NICHT ueberlappende Evidenz aus. M-52 sagt den EXAKTEN
+    /// Bereich zu. `None` heisst „der Beginn trug keine Projektzeit"; dann
+    /// gibt es keinen Bereich, und fail-closed ist die ganze Sitzung.
+    pub(super) beginn_projektsample: Option<i64>,
 }
 
 /// Der Taintzustand EINER Sitzung (SONDE-013 M-62).

@@ -28,6 +28,15 @@ fn messung() -> Resultatmessung {
     Resultatmessung {
         band_delta_db: (0..32).map(|i| (i as f64) * 0.1 - 1.6).collect(),
         band_gueltig: vec![true; 32],
+        // Nacharbeit 2 (Befund R20): acht Resultatfenster als ZEITREIHE - der
+        // Block-Bootstrap zieht Bloecke benachbarter Fenster, nicht Baender.
+        fenster_delta_db: (0..8)
+            .map(|f| {
+                (0..32)
+                    .map(|i| (i as f64) * 0.1 - 1.6 + (f as f64) * 0.01)
+                    .collect()
+            })
+            .collect(),
         erste_haelfte: vec![0.5; 32],
         zweite_haelfte: vec![0.5; 32],
         abdeckung_baseline: 0.9,
@@ -38,6 +47,11 @@ fn messung() -> Resultatmessung {
         vergleichbarkeit_gruende: Vec::new(),
         baseline_evidence_ids: vec!["a".repeat(32)],
         resultat_evidence_ids: vec!["b".repeat(32)],
+        guardrail_loudness_db: Some(0.0),
+        guardrail_peak_db: Some(0.0),
+        guardrail_transient: Some(0.0),
+        guardrail_breite_db: Some(0.0),
+        guardrail_geschuetzt_db: Some(0.0),
     }
 }
 
@@ -93,8 +107,22 @@ fn referenz(gain: f64) -> Experimentreferenz {
 fn store_mit_einem() -> (Experimentstore, String) {
     let mut s = Experimentstore::neu();
     let id = hex32(1);
-    s.beginne(&id, "projekt-a", passage(1), referenz(-2.5))
+    s.beginne(&id, "projekt-a", passage(1), referenz(-2.5), 0)
         .expect("beginne");
+    (s, id)
+}
+
+/// Derselbe Store, aber mit einem ERFASSTEN Kandidaten.
+///
+/// 🔑 Nacharbeit 2 (Befund R16, M-41): `ergebnis()` verlangt seit dieser Runde
+/// mindestens einen nach dem Begin erfassten Kandidaten. Ein Versuch ohne ihn
+/// misst zweimal denselben Zustand, und genau darauf konnte die Runde 1
+/// terminieren. Jeder Fall, der ein URTEIL faehrt, braucht deshalb diesen
+/// Aufbau; wer nur den Lebenszyklus misst, nimmt `store_mit_einem` weiter.
+fn store_mit_kandidat() -> (Experimentstore, String) {
+    let (mut s, id) = store_mit_einem();
+    s.neuer_kandidat(&id, referenz(-2.5), 100)
+        .expect("Kandidat");
     (s, id)
 }
 
@@ -126,7 +154,7 @@ fn passage_carries_all_six_fields() {
     // Ein zweiter Versuch auf DERSELBEN Passage legt sie nicht noch einmal
     // an - sonst haette dasselbe Stueck Musik zwei Evidenzobjekte.
     let mut s2 = s;
-    s2.beginne(&hex32(2), "projekt-a", passage(1), referenz(-2.5))
+    s2.beginne(&hex32(2), "projekt-a", passage(1), referenz(-2.5), 0)
         .expect("zweiter Versuch");
     assert_eq!(
         s2.log()
@@ -142,7 +170,7 @@ fn passage_carries_all_six_fields() {
     duenn.abdeckung = 0.2;
     let mut s3 = Experimentstore::neu();
     assert_eq!(
-        s3.beginne(&hex32(3), "projekt-a", duenn, referenz(-2.5)),
+        s3.beginne(&hex32(3), "projekt-a", duenn, referenz(-2.5), 0),
         Err(Anlegefehler::AbdeckungZuGering)
     );
     assert!(s3.log().is_empty(), "und hinterlaesst keine halbe Zeile");
@@ -174,14 +202,14 @@ fn manual_external_begin_locks_baseline() {
     // heisst auch, dass eine Wiederholung keine Umdeutung ist.
     let mut s2 = s;
     assert_eq!(
-        s2.beginne(&id, "projekt-a", passage(1), referenz(-99.0)),
+        s2.beginne(&id, "projekt-a", passage(1), referenz(-99.0), 0),
         Err(Anlegefehler::IdVergeben)
     );
     assert_eq!(s2.experiment(&id).unwrap().baseline.match_gain_db, -2.5);
 
     // Und eine ID, die keine hex32 ist, legt gar nichts an.
     assert_eq!(
-        s2.beginne("kurz", "projekt-a", passage(2), referenz(0.0)),
+        s2.beginne("kurz", "projekt-a", passage(2), referenz(0.0), 0),
         Err(Anlegefehler::IdUngueltig)
     );
 }
@@ -194,8 +222,8 @@ fn second_change_creates_new_candidate_not_a_new_baseline() {
     let (mut s, id) = store_mit_einem();
     let baseline_vorher = s.experiment(&id).unwrap().baseline.clone();
 
-    assert_eq!(s.neuer_kandidat(&id, referenz(-1.0)), Ok(1));
-    assert_eq!(s.neuer_kandidat(&id, referenz(-0.5)), Ok(2));
+    assert_eq!(s.neuer_kandidat(&id, referenz(-1.0), 0), Ok(1));
+    assert_eq!(s.neuer_kandidat(&id, referenz(-0.5), 0), Ok(2));
 
     let e = s.experiment(&id).unwrap();
     assert_eq!(e.baseline, baseline_vorher, "die Baseline bleibt unberuehrt");
@@ -210,7 +238,7 @@ fn second_change_creates_new_candidate_not_a_new_baseline() {
     s.binde_reihenfolge(&id, Blindreihenfolge::BaselineZuerst).unwrap();
     s.ergebnis(&id, Hoerurteil::Kandidat, None, None, &messung()).unwrap();
     assert_eq!(
-        s.neuer_kandidat(&id, referenz(0.0)),
+        s.neuer_kandidat(&id, referenz(0.0), 0),
         Err(Abschlussfehler::SchonTerminal)
     );
 }
@@ -221,7 +249,7 @@ fn second_change_creates_new_candidate_not_a_new_baseline() {
 // ═════════════════════════════════════════════════════════════════════════
 #[test]
 fn manual_external_has_no_state_hash_and_no_revert() {
-    let (mut s, id) = store_mit_einem();
+    let (mut s, id) = store_mit_kandidat();
     s.binde_reihenfolge(&id, Blindreihenfolge::KandidatZuerst).unwrap();
     s.ergebnis(
         &id,
@@ -245,7 +273,7 @@ fn manual_external_has_no_state_hash_and_no_revert() {
 
     // Beide sind OPTIONAL - ein Versuch ohne Notiz ist gueltig, und ihn zu
     // erzwingen hiesse, den User zu einer Erfindung zu draengen.
-    let (mut s2, id2) = store_mit_einem();
+    let (mut s2, id2) = store_mit_kandidat();
     s2.binde_reihenfolge(&id2, Blindreihenfolge::BaselineZuerst).unwrap();
     assert!(s2.ergebnis(&id2, Hoerurteil::Enthaltung, None, None, &messung()).is_ok());
 }
@@ -277,7 +305,7 @@ fn match_gain_is_frozen_in_the_immutable_reference() {
 
     // Ein Kandidat traegt seinen EIGENEN eingefrorenen Wert; er ersetzt den
     // der Baseline nicht.
-    s.neuer_kandidat(&id, referenz(-1.75)).unwrap();
+    s.neuer_kandidat(&id, referenz(-1.75), 0).unwrap();
     let e = s.experiment(&id).unwrap();
     assert_eq!(e.baseline.match_gain_db, -2.5);
     assert_eq!(e.kandidaten[0].referenz.match_gain_db, -1.75);
@@ -286,7 +314,7 @@ fn match_gain_is_frozen_in_the_immutable_reference() {
     // ist hier genau die Form von "nie gemessen": keine Zahl, kein Urteil.
     let mut s2 = Experimentstore::neu();
     let id2 = hex32(77);
-    s2.beginne(&id2, "projekt-a", passage(2), referenz(f64::NAN))
+    s2.beginne(&id2, "projekt-a", passage(2), referenz(f64::NAN), 0)
         .unwrap();
     s2.binde_reihenfolge(&id2, Blindreihenfolge::BaselineZuerst).unwrap();
     assert_eq!(
@@ -302,7 +330,7 @@ fn match_gain_is_frozen_in_the_immutable_reference() {
 // ═════════════════════════════════════════════════════════════════════════
 #[test]
 fn blind_order_is_bound_before_the_verdict_and_revealed_after() {
-    let (mut s, id) = store_mit_einem();
+    let (mut s, id) = store_mit_kandidat();
 
     // Vor der Bindung: nichts zu sehen und nichts gebunden.
     assert!(!s.experiment(&id).unwrap().reihenfolge_gebunden());
@@ -587,7 +615,7 @@ fn abort_writes_terminal_event_for_each_trigger() {
     }
 
     // Und der andere Weg: `manual_result` ist ebenfalls terminal.
-    let (mut s, id) = store_mit_einem();
+    let (mut s, id) = store_mit_kandidat();
     s.binde_reihenfolge(&id, Blindreihenfolge::BaselineZuerst).unwrap();
     s.ergebnis(&id, Hoerurteil::KeinUnterschied, None, None, &messung()).unwrap();
     assert!(!s.experiment(&id).unwrap().offen());
@@ -605,7 +633,7 @@ fn abort_writes_terminal_event_for_each_trigger() {
 fn open_cap_per_project_at_n_and_n_plus_one() {
     let mut s = Experimentstore::neu();
     for i in 0..N_PROJEKT {
-        s.beginne(&hex32(i as u32), "projekt-a", passage(i as u32), referenz(-1.0))
+        s.beginne(&hex32(i as u32), "projekt-a", passage(i as u32), referenz(-1.0), 0)
             .expect("beginne");
     }
     assert_eq!(s.offene_im_projekt("projekt-a").count(), N_PROJEKT, "genau N");
@@ -618,6 +646,7 @@ fn open_cap_per_project_at_n_and_n_plus_one() {
         "projekt-a",
         passage(99),
         referenz(-1.0),
+        0,
     )
     .expect("N+1");
     assert_eq!(s.offene_im_projekt("projekt-a").count(), N_PROJEKT);
@@ -632,7 +661,7 @@ fn open_cap_per_project_at_n_and_n_plus_one() {
 
     // Ein anderes Projekt hat seinen EIGENEN Deckel - ein volles Projekt
     // verdraengt keine fremden Zeilen.
-    s.beginne(&hex32(500), "projekt-b", passage(500), referenz(-1.0))
+    s.beginne(&hex32(500), "projekt-b", passage(500), referenz(-1.0), 0)
         .expect("anderes Projekt");
     assert_eq!(s.offene_im_projekt("projekt-b").count(), 1);
     assert_eq!(s.offene_im_projekt("projekt-a").count(), N_PROJEKT);
@@ -654,6 +683,7 @@ fn open_cap_global_at_n_and_n_plus_one() {
                 &format!("projekt-{p}"),
                 passage(angelegt),
                 referenz(-1.0),
+                0,
             )
             .expect("beginne");
             angelegt += 1;
@@ -662,7 +692,7 @@ fn open_cap_global_at_n_and_n_plus_one() {
     assert_eq!(s.offene().count(), N_GLOBAL, "genau N global");
     assert!(s.experiment(&hex32(0)).unwrap().offen());
 
-    s.beginne(&hex32(9000), "projekt-neu", passage(9000), referenz(-1.0))
+    s.beginne(&hex32(9000), "projekt-neu", passage(9000), referenz(-1.0), 0)
         .expect("N+1 global");
     assert_eq!(s.offene().count(), N_GLOBAL);
     assert_eq!(
@@ -678,7 +708,7 @@ fn open_cap_global_at_n_and_n_plus_one() {
 // ═════════════════════════════════════════════════════════════════════════
 #[test]
 fn manual_result_writes_terminal_event_and_deltas() {
-    let (mut s, id) = store_mit_einem();
+    let (mut s, id) = store_mit_kandidat();
     s.binde_reihenfolge(&id, Blindreihenfolge::KandidatZuerst).unwrap();
     s.ergebnis(&id, Hoerurteil::Kandidat, Some("lauter".into()), None, &messung())
         .unwrap();
@@ -723,7 +753,7 @@ fn manual_result_writes_terminal_event_and_deltas() {
 #[test]
 fn experiment_survives_restart_without_silent_continuation() {
     let (mut s, id) = store_mit_einem();
-    s.neuer_kandidat(&id, referenz(-1.0)).unwrap();
+    s.neuer_kandidat(&id, referenz(-1.0), 0).unwrap();
     s.binde_reihenfolge(&id, Blindreihenfolge::BaselineZuerst).unwrap();
 
     // Der "Neustart": ein neuer Store, aus dem Ereignislog und den Referenzen
@@ -771,7 +801,7 @@ fn passage_survives_restart_and_missing_db_degrades_gracefully() {
     // vergebenen ID wird abgelehnt, statt zu ueberschreiben.
     let mut s2 = s;
     assert_eq!(
-        s2.beginne(&id, "projekt-a", passage(1), referenz(-99.0)),
+        s2.beginne(&id, "projekt-a", passage(1), referenz(-99.0), 0),
         Err(Anlegefehler::IdVergeben)
     );
 }
@@ -782,7 +812,7 @@ fn passage_survives_restart_and_missing_db_degrades_gracefully() {
 #[test]
 fn export_is_complete_and_delete_leaves_no_pcm() {
     let (mut s, id) = store_mit_einem();
-    s.neuer_kandidat(&id, referenz(-1.0)).unwrap();
+    s.neuer_kandidat(&id, referenz(-1.0), 0).unwrap();
     s.binde_reihenfolge(&id, Blindreihenfolge::BaselineZuerst).unwrap();
     s.ergebnis(&id, Hoerurteil::Baseline, Some("dumpfer".into()), None, &messung())
         .unwrap();
@@ -794,7 +824,7 @@ fn export_is_complete_and_delete_leaves_no_pcm() {
     assert!(!export.ereignisse.is_empty());
     // Und nur die Ereignisse DIESES Experiments.
     let (mut s2, id2) = (Experimentstore::neu(), hex32(2));
-    s2.beginne(&id2, "projekt-b", passage(2), referenz(0.0)).unwrap();
+    s2.beginne(&id2, "projekt-b", passage(2), referenz(0.0), 0).unwrap();
     let fremd = s2.exportiere(&id2).unwrap();
     assert_eq!(fremd.ereignisse.len(), 1);
 

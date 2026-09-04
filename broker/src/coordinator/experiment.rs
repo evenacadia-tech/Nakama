@@ -170,6 +170,10 @@ pub struct Kandidat {
     /// überschreiben.
     pub nummer: u32,
     pub referenz: Experimentreferenz,
+    /// Die Evidenz-Ankunftsreihenfolge, bei der dieser Kandidat erfasst wurde
+    /// (M-49, Befund R17). Alles, was DANACH ankommt, ist Resultatevidenz;
+    /// alles davor gehoert noch zum alten Stand.
+    pub evidenzfolge: u64,
 }
 
 /// Die VIER Achsen, die der Broker vor dem Terminalereignis rechnet (M-45).
@@ -194,9 +198,17 @@ pub struct Achsenrechnung {
     pub vergleichbarkeit: Option<String>,
     pub vergleichbarkeit_gruende: Vec<String>,
     /// 3. Guardrails: die Deltas, die NICHT das Ziel sind und trotzdem
-    ///    ueberwacht werden — Abdeckung und Konfidenzklasse.
+    ///    ueberwacht werden. M-45 zaehlt sie ausdruecklich auf: Loudness,
+    ///    Peak, Transient, Breite und geschuetzte Bereiche — zusaetzlich zu
+    ///    Abdeckung und Konfidenzklasse (Befund R19). Jede ist `Option`, weil
+    ///    „nicht gemessen" etwas anderes ist als „unveraendert".
     pub guardrail_abdeckung_delta: Option<f64>,
     pub guardrail_klasse_gefallen: bool,
+    pub guardrail_loudness_db: Option<f64>,
+    pub guardrail_peak_db: Option<f64>,
+    pub guardrail_transient: Option<f64>,
+    pub guardrail_breite_db: Option<f64>,
+    pub guardrail_geschuetzt_db: Option<f64>,
     /// 4. Effektstabilitaet: streut das Delta ueber die Teilfenster?
     ///    `None` heisst „nicht beurteilbar", nicht „stabil".
     pub effekt_stabil: Option<bool>,
@@ -212,9 +224,36 @@ pub struct Resultatmessung {
     /// Banddeltas Resultat minus Baseline in dB, je Band mit Praesenzbit.
     pub band_delta_db: Vec<f64>,
     pub band_gueltig: Vec<bool>,
+    /// 🔑 Nacharbeit 2 (Befund R20): die ZEITREIHE, `fenster_delta_db[fenster][band]`.
+    ///
+    /// Der Block-Bootstrap zieht laut eigener Definition Bloecke benachbarter,
+    /// zeitlich korrelierter Analysefenster. Die Runde 1 uebergab ihm statt
+    /// dessen EINEN ueber alle Fenster gemittelten Wert je Band — er zog also
+    /// Bloecke von Baendern, und die zufaellige Bandreihenfolge konnte ein
+    /// Konfidenzintervall erzeugen. `NaN` heisst „dieses Band hat in diesem
+    /// Fenster nichts gesagt"; der Bootstrap laesst es fallen.
+    pub fenster_delta_db: Vec<Vec<f64>>,
     /// Die zwei Haelften des Deltas — daraus entsteht die Effektstabilitaet.
     pub erste_haelfte: Vec<f64>,
     pub zweite_haelfte: Vec<f64>,
+    // ── Die Guardrails aus M-45 (Befund R19) ────────────────────────────
+    //
+    // 🔑 Die Runde 1 modellierte ausschliesslich Abdeckung und
+    // Konfidenzklasse. Verschlechterungen von Loudness, Peak, Transient,
+    // Breite und geschuetzten Bereichen konnten weder eingelesen noch
+    // gespeichert werden und erschienen bei unveraenderter Coverage als
+    // STABIL. Jede ist `Option`: „nicht gemessen" ist etwas anderes als
+    // „unveraendert".
+    /// Mittleres Bandniveau, Resultat minus Baseline, in dB.
+    pub guardrail_loudness_db: Option<f64>,
+    /// Hoechstes P95 ueber alle Baender, Resultat minus Baseline, in dB.
+    pub guardrail_peak_db: Option<f64>,
+    /// Onsetstaerke, Resultat minus Baseline — die zweite, unabhaengige Spur.
+    pub guardrail_transient: Option<f64>,
+    /// Seitenanteil in dB, Resultat minus Baseline.
+    pub guardrail_breite_db: Option<f64>,
+    /// Groesste Bewegung AUSSERHALB des staerksten Zielbandes, in dB.
+    pub guardrail_geschuetzt_db: Option<f64>,
     /// Abdeckung beider Fenster.
     pub abdeckung_baseline: f64,
     pub abdeckung_resultat: f64,
@@ -249,15 +288,58 @@ impl Resultatmessung {
             .filter(|(_, g)| **g)
             .map(|(v, _)| *v)
             .collect();
-        // 1. Zielmetrik.
-        let intervall = block_bootstrap(&endliche, 8, 400, 0.05, 42);
-        // p-Werte je Band aus dem Betrag des Deltas: je groesser, desto
-        // kleiner. Die Abbildung ist bewusst grob — sie soll die FDR-Stufe
-        // fahren, nicht eine Teststatistik ersetzen, die es hier nicht gibt.
-        let p_werte: Vec<f64> = endliche
+        // 1. Zielmetrik — aus der ZEITREIHE, nicht aus der Bandachse.
+        //
+        // 🔑 Nacharbeit 2 (Befund R20): die Runde 1 gab dem Block-Bootstrap
+        // EINEN ueber alle Fenster gemittelten Wert je Band. Er zog damit
+        // Bloecke von BAENDERN, obwohl seine Definition zeitlich benachbarte
+        // Analysefenster verlangt — und die zufaellige Bandreihenfolge konnte
+        // ein Intervall erzeugen. Die p-Werte waren zusaetzlich als
+        // `exp(-|delta|)` ERFUNDEN, ohne Streuung und ohne Stichprobenzahl:
+        // die Effektgroesse allein machte ein Band „signifikant".
+        //
+        // Jetzt traegt jedes Resultatfenster seine eigene Zeile. Die
+        // Zielmetrik bootstrappt die Reihe der FENSTERMITTEL, und jedes Band
+        // bekommt seinen p-Wert aus SEINER eigenen Bootstrapverteilung.
+        let fenstermittel: Vec<f64> = self
+            .fenster_delta_db
             .iter()
-            .map(|d| (-d.abs()).exp().clamp(1e-12, 1.0))
+            .filter_map(|zeile| {
+                let e: Vec<f64> = zeile.iter().copied().filter(|x| x.is_finite()).collect();
+                (!e.is_empty()).then(|| e.iter().sum::<f64>() / e.len() as f64)
+            })
             .collect();
+        let intervall = block_bootstrap(
+            &fenstermittel,
+            BOOTSTRAP_BLOCK,
+            BOOTSTRAP_ZIEHUNGEN,
+            0.05,
+            42,
+        );
+        // Je Band die eigene Zeitreihe — und daraus der p-Wert.
+        let mut p_werte = Vec::new();
+        let mut baender_mit_reihe = 0usize;
+        for band in 0..self.band_gueltig.len() {
+            if !self.band_gueltig[band] {
+                continue;
+            }
+            let reihe: Vec<f64> = self
+                .fenster_delta_db
+                .iter()
+                .filter_map(|z| z.get(band).copied())
+                .filter(|x| x.is_finite())
+                .collect();
+            if reihe.is_empty() {
+                continue;
+            }
+            baender_mit_reihe += 1;
+            p_werte.push(bootstrap_p(
+                &reihe,
+                BOOTSTRAP_BLOCK,
+                BOOTSTRAP_ZIEHUNGEN,
+                42 + band as u64,
+            ));
+        }
         let signifikant = fdr_signifikant(&p_werte, 0.05);
         // 3. Guardrails.
         let guardrail_abdeckung_delta = if self.abdeckung_baseline.is_finite()
@@ -293,11 +375,16 @@ impl Resultatmessung {
         Achsenrechnung {
             intervall,
             signifikante_baender: signifikant.iter().filter(|s| **s).count(),
-            gescannte_baender: endliche.len(),
+            gescannte_baender: baender_mit_reihe.max(endliche.len()),
             vergleichbarkeit: self.vergleichbarkeit.clone(),
             vergleichbarkeit_gruende: self.vergleichbarkeit_gruende.clone(),
             guardrail_abdeckung_delta,
             guardrail_klasse_gefallen,
+            guardrail_loudness_db: self.guardrail_loudness_db,
+            guardrail_peak_db: self.guardrail_peak_db,
+            guardrail_transient: self.guardrail_transient,
+            guardrail_breite_db: self.guardrail_breite_db,
+            guardrail_geschuetzt_db: self.guardrail_geschuetzt_db,
             effekt_stabil,
         }
     }
@@ -328,13 +415,45 @@ impl Achsenrechnung {
             Some(_) => Achsenbefund::Unveraendert,
             None => Achsenbefund::NichtBeurteilbar,
         };
+        // 🔑 Befund R19: ALLE Guardrails aus M-45, nicht nur Coverage und
+        // Klasse. Die Achse faellt, sobald EINE messbare Groesse ihre Schwelle
+        // reisst; sie ist nur dann `NichtBeurteilbar`, wenn KEINE messbar war.
+        // Ein „unveraendert", das auf einer nie gemessenen Groesse beruht,
+        // waere genau die stille Beschoenigung, die M-07 ausschliesst.
         let guardrails = if self.guardrail_klasse_gefallen {
             Achsenbefund::Verschlechtert
         } else {
-            match self.guardrail_abdeckung_delta {
-                Some(d) if d < -0.1 => Achsenbefund::Verschlechtert,
-                Some(_) => Achsenbefund::Unveraendert,
-                None => Achsenbefund::NichtBeurteilbar,
+            let kandidaten: [(Option<f64>, f64); 6] = [
+                (self.guardrail_abdeckung_delta, -GUARDRAIL_ABDECKUNG),
+                // Lauter, spitzer, breiter oder unruhiger: jede Richtung, in
+                // der eine NICHT adressierte Groesse davonlaeuft, zaehlt.
+                (self.guardrail_loudness_db.map(f64::abs), GUARDRAIL_LOUDNESS_DB),
+                (self.guardrail_peak_db.map(f64::abs), GUARDRAIL_PEAK_DB),
+                (self.guardrail_transient.map(f64::abs), GUARDRAIL_TRANSIENT),
+                (self.guardrail_breite_db.map(f64::abs), GUARDRAIL_BREITE_DB),
+                (self.guardrail_geschuetzt_db, GUARDRAIL_GESCHUETZT_DB),
+            ];
+            let mut messbar = false;
+            let mut gerissen = false;
+            for (wert, schwelle) in kandidaten {
+                let Some(w) = wert.filter(|x| x.is_finite()) else {
+                    continue;
+                };
+                messbar = true;
+                // Die Abdeckung ist die einzige mit VORZEICHEN: weniger
+                // Abdeckung ist schlechter, mehr ist nie schlechter.
+                if schwelle < 0.0 {
+                    if w < schwelle {
+                        gerissen = true;
+                    }
+                } else if w > schwelle {
+                    gerissen = true;
+                }
+            }
+            match (messbar, gerissen) {
+                (_, true) => Achsenbefund::Verschlechtert,
+                (true, false) => Achsenbefund::Unveraendert,
+                (false, false) => Achsenbefund::NichtBeurteilbar,
             }
         };
         let effektstabilitaet = match self.effekt_stabil {
@@ -350,6 +469,34 @@ impl Achsenrechnung {
         }
     }
 }
+
+// ── Die Guardrail-Schwellen (M-45, Befund R19) ──────────────────────────
+//
+// Startwerte, am Korpus zu kalibrieren — dieselbe Klasse wie die
+// Comparability-Gates. Sie stehen als benannte Konstanten hier und nicht als
+// Literale im Pfad: eine Kalibrierung hebt sonst die eine Stelle und laesst
+// den stillen Zwilling entscheiden.
+
+/// Abdeckung darf um hoechstens so viel FALLEN. Mehr Abdeckung ist nie
+/// schlechter, deshalb wirkt diese Schwelle nur nach unten.
+pub const GUARDRAIL_ABDECKUNG: f64 = 0.1;
+/// Mittleres Bandniveau. Ein Zehntel Dezibel hoert niemand; ein ganzes schon.
+pub const GUARDRAIL_LOUDNESS_DB: f64 = 1.0;
+/// Spitzenwert. Enger als die Loudness: eine angehobene Spitze bei gleichem
+/// Median ist genau der Fall, den ein Guardrail fangen soll.
+pub const GUARDRAIL_PEAK_DB: f64 = 0.5;
+/// Onsetstaerke. Die Groesse ist eine Summe von MAD-Vielfachen, keine dB.
+pub const GUARDRAIL_TRANSIENT: f64 = 2.0;
+/// Seitenanteil in dB — die Stereobreite.
+pub const GUARDRAIL_BREITE_DB: f64 = 1.5;
+/// Bewegung ausserhalb des Zielbandes. Sie ist die eigentliche Zusage von
+/// „geschuetzte Bereiche": das Ziel darf sich bewegen, der Rest nicht.
+pub const GUARDRAIL_GESCHUETZT_DB: f64 = 1.0;
+
+/// Blocklaenge des Bootstraps in Analysefenstern.
+pub const BOOTSTRAP_BLOCK: usize = 4;
+/// Ziehungen je Bootstrap.
+pub const BOOTSTRAP_ZIEHUNGEN: usize = 400;
 
 /// Die Ordnung der Konfidenzklassen, schwaechste zuerst (§34.3).
 pub const KLASSENORDNUNG: [&str; 4] = ["unbrauchbar", "schwach", "mittel", "stark"];
@@ -395,6 +542,9 @@ pub struct Experiment {
     /// hier und nicht in `Terminal`, weil sie schon existiert, bevor ein
     /// Urteil vorliegt — und genau das ist die Zusage.
     gebundene_reihenfolge: Option<Blindreihenfolge>,
+    /// Die Evidenz-Ankunftsreihenfolge beim `experiment_begin` (M-49, R17).
+    /// Alles, was DAVOR ankam, ist Baselineevidenz.
+    pub begin_evidenzfolge: u64,
     /// Die Evidence-IDs, aus denen Baseline und Resultat entstanden (M-51).
     ///
     /// 🔑 Nacharbeit 1 (Befund B21): weder `Experiment` noch `Passage`,
@@ -476,6 +626,15 @@ pub enum Abschlussfehler {
     /// Ein Abschluss ohne Resultatmessung (M-45, Befund B20). Ein Urteil ohne
     /// Gegenprobe ist kein Ergebnis, sondern eine Meinung.
     OhneResultatmessung,
+    /// Ein Abschluss ohne einen einzigen nach dem Begin erfassten KANDIDATEN
+    /// (M-41, Befund R16).
+    ///
+    /// 🔑 Nacharbeit 2: die Abschlusswache der Runde 1 verlangte nur
+    /// irgendeine nichtleere `Resultatmessung`. Ein Experiment konnte damit
+    /// direkt nach Begin und Reihenfolgebindung mit synthetischer Messung
+    /// terminieren — und der Test dazu FUHR genau diesen Ablauf und ERWARTETE
+    /// Erfolg. Ohne Kandidat gibt es nichts, wogegen die Baseline stuende.
+    OhneKandidat,
 }
 
 // ── Der Store ───────────────────────────────────────────────────────────
@@ -564,6 +723,7 @@ impl Experiment {
         terminal: Option<Terminal>,
         folge: u64,
         gebundene_reihenfolge: Option<Blindreihenfolge>,
+        begin_evidenzfolge: u64,
         baseline_evidence_ids: Vec<String>,
         resultat_evidence_ids: Vec<String>,
     ) -> Self {
@@ -578,6 +738,7 @@ impl Experiment {
             terminal,
             folge,
             gebundene_reihenfolge,
+            begin_evidenzfolge,
             baseline_evidence_ids,
             resultat_evidence_ids,
         }
@@ -663,6 +824,7 @@ impl Experimentstore {
         projektbindung: &str,
         passage: Passage,
         baseline: Experimentreferenz,
+        begin_evidenzfolge: u64,
     ) -> Result<Vec<String>, Anlegefehler> {
         if !ist_hex32(experiment_id) {
             return Err(Anlegefehler::IdUngueltig);
@@ -704,6 +866,7 @@ impl Experimentstore {
                 terminal: None,
                 folge,
                 gebundene_reihenfolge: None,
+                begin_evidenzfolge,
                 baseline_evidence_ids: Vec::new(),
                 resultat_evidence_ids: Vec::new(),
             },
@@ -765,6 +928,7 @@ impl Experimentstore {
         &mut self,
         experiment_id: &str,
         referenz: Experimentreferenz,
+        evidenzfolge: u64,
     ) -> Result<u32, Abschlussfehler> {
         let Some(e) = self.experimente.get_mut(experiment_id) else {
             return Err(Abschlussfehler::Unbekannt);
@@ -774,7 +938,11 @@ impl Experimentstore {
         }
         let nummer = e.kandidaten.len() as u32 + 1;
         let referenz_kopie = referenz.clone();
-        e.kandidaten.push(Kandidat { nummer, referenz });
+        e.kandidaten.push(Kandidat {
+            nummer,
+            referenz,
+            evidenzfolge,
+        });
         self.log.push(Ereignis::KandidatAngelegt {
             experiment_id: experiment_id.to_string(),
             nummer,
@@ -843,6 +1011,13 @@ impl Experimentstore {
         // ohne eine einzige gerechnete Zahl. Das Terminalereignis trug dann
         // ausschliesslich Userfelder, und §43.2 („Zielmetrik, Guardrail-Deltas
         // und Effektstabilitaet rechnet der Broker") war ein Satz ohne Code.
+        // 🔑 Befund R16 (M-41): OHNE einen erfassten Kandidaten gibt es kein
+        // Ergebnis. Er steht VOR der Resultatmessung, weil er die staerkere
+        // Aussage ist: eine Messung ohne Kandidat misst zweimal denselben
+        // Zustand.
+        if e.kandidaten.is_empty() {
+            return Err(Abschlussfehler::OhneKandidat);
+        }
         if !messung.hat_resultat() {
             return Err(Abschlussfehler::OhneResultatmessung);
         }
@@ -1124,6 +1299,54 @@ pub fn block_bootstrap(
         return None;
     }
     Some((unten, oben))
+}
+
+/// Der zweiseitige p-Wert einer Zeitreihe aus IHRER Bootstrapverteilung (M-45).
+///
+/// 🔑 Nacharbeit 2 (Befund R20): die Runde 1 erfand p-Werte als
+/// `exp(-|delta|)` — ohne Streuung, ohne Stichprobenzahl. Die Effektgroesse
+/// allein machte ein Band damit „signifikant", und drei Messfenster mit
+/// grossem Ausschlag zaehlten wie dreissig mit demselben. Der p-Wert kommt
+/// jetzt aus dem Anteil der Bootstrapmittel auf der ANDEREN Seite der Null:
+/// eine Reihe, deren Mittel je nach Ziehung das Vorzeichen wechselt, ist
+/// keine Aussage, so gross ihr Mittelwert auch sein mag.
+///
+/// `1.0` heisst „kein Beleg" — nie 0.
+pub fn bootstrap_p(reihe: &[f64], blocklaenge: usize, ziehungen: usize, saat: u64) -> f64 {
+    let n = reihe.len();
+    if n == 0 || blocklaenge == 0 || ziehungen == 0 || reihe.iter().any(|x| !x.is_finite()) {
+        return 1.0;
+    }
+    let bl = blocklaenge.min(n);
+    let bloecke = n - bl + 1;
+    let mut w = Wuerfel::neu(saat);
+    let mut nicht_positiv = 0usize;
+    let mut nicht_negativ = 0usize;
+    for _ in 0..ziehungen {
+        let mut summe = 0.0;
+        let mut gezogen = 0usize;
+        while gezogen < n {
+            let start = w.naechste(bloecke);
+            for k in 0..bl {
+                if gezogen >= n {
+                    break;
+                }
+                summe += reihe[start + k];
+                gezogen += 1;
+            }
+        }
+        let mittel = summe / n as f64;
+        if !(mittel > 0.0) {
+            nicht_positiv += 1;
+        }
+        if !(mittel < 0.0) {
+            nicht_negativ += 1;
+        }
+    }
+    let kleiner = nicht_positiv.min(nicht_negativ) as f64;
+    // Zweiseitig, und mit dem ueblichen +1/+1 gegen einen p-Wert von exakt 0:
+    // eine endliche Zahl Ziehungen kann „nie" nicht belegen.
+    (2.0 * (kleiner + 1.0) / (ziehungen as f64 + 1.0)).min(1.0)
 }
 
 /// Benjamini-Hochberg-Korrektur für viele gleichzeitige Tests (M-45).

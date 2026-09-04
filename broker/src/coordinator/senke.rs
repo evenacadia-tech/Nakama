@@ -243,7 +243,8 @@ impl crate::transport::server_v3::Senke for Coordinator {
             }
         }
         if self.dispatch_fuer_link_erlaubt(link_id) {
-            let _ = self.evidence_dispatch();
+            // M-62: die Entscheidung gilt der SITZUNG dieses Links.
+            let _ = self.evidence_dispatch_fuer_link(link_id);
         }
     }
 

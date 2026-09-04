@@ -691,6 +691,183 @@ fn produkt_coordinator_committet_alle_persistenten_p0_befehle_und_ackt_retries()
     assert!(snapshot_schema().gueltig(&session_payload));
 }
 
+// ═════════════════════════════════════════════════════════════════════════
+// Nacharbeit 1 nach der Erstpruefung 1 (2026-09-04) — B18 bis B23
+//
+// Die Experimentfamilien fielen bis zu dieser Runde in `_ => None`: der
+// Coordinator besass keinen Experimentstore, und `p0_json_mit_minor` hatte
+// keinen Match-Zweig fuer sie. Schema-gueltige Produktnachrichten bewirkten
+// damit NICHTS, und M-40/M-47/M-49 existierten nur in den Tests ihres eigenen
+// Moduls.
+//
+// Dieser Fall faehrt den ECHTEN Weg: Wire → Coordinator → Store. Er braucht
+// einen Store, weil ein persistenter P0-Befehl ohne ihn `abgelehnt/internal`
+// ist — dieselbe Regel wie fuer `preview_*` darueber.
+#[cfg(windows)]
+#[test]
+fn produkt_coordinator_legt_passage_und_experiment_aus_dem_wire_an() {
+    let (_ordner, writer, coordinator, _clock, _push) =
+        si_coordinator_mit_store("produkt-experiment", true);
+    let main = si_hello(10, 100, "main");
+    let probe = si_hello(11, 101, "active_probe");
+    assert!(
+        coordinator
+            .control_hello_registrieren("main", &main)
+            .angenommen
+    );
+    assert!(si_report(&coordinator, "main", &main.adresse, 1));
+    assert!(
+        coordinator
+            .control_hello_registrieren("probe", &probe)
+            .angenommen
+    );
+    assert!(si_state_report(&coordinator, "probe", &probe.adresse, 13));
+    assert!(si_subscribe(&coordinator, "probe", &probe.adresse));
+
+    // Die Nutzlast kommt aus dem COMMITTETEN Korpus - nur Ziel, Befehls- und
+    // Versuchskennung werden gesetzt.
+    let pfad = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../eq-copilot/fixtures/v3/gueltig/experiment_begin.json");
+    let mut begin: Value =
+        serde_json::from_slice(&std::fs::read(&pfad).expect("experiment_begin im Korpus"))
+            .expect("Fixture ist JSON");
+    begin["kopf"]["ziel"] = serde_json::to_value(&probe.adresse).unwrap();
+    begin["kopf"]["command_id"] = json!(si_hex(900));
+    begin["kopf"]["base_revision"] = json!(13);
+    let experiment_id = begin["experiment_id"].as_str().unwrap().to_string();
+    let passage_id = begin["passage"]["passage_id"].as_str().unwrap().to_string();
+
+    let ack = Senke::p0(
+        coordinator.as_ref(),
+        "main",
+        &serde_json::to_vec(&begin).unwrap(),
+    )
+    .expect("experiment_begin bekommt einen command_ack");
+    let ack: Value = serde_json::from_slice(&ack).unwrap();
+    assert_eq!(
+        ack["ergebnis"], "angewandt",
+        "B18: die Familie wird beantwortet UND angewandt, statt in `_ => None` zu fallen"
+    );
+
+    // ── Die Wirkung am STORE, nicht an der Antwort ──────────────────────
+    let passage = coordinator
+        .passage_sicht(&passage_id)
+        .expect("B23: die vollstaendige Passage entsteht aus dem Wire (M-25)");
+    assert!(
+        passage.projekt_bis > passage.projekt_von,
+        "die Grenzen reisen mit"
+    );
+    assert!(passage.transport_epoch > 0, "die Transportepoche auch");
+    assert_eq!(passage.aktive_quellen.len(), 2, "und die Quellen");
+    assert!(passage.abdeckung > 0.0, "und die Abdeckung");
+    assert_eq!(passage.label.as_deref(), Some("Refrain 2"));
+
+    let experiment = coordinator
+        .experiment_sicht(&experiment_id)
+        .expect("B18: der Versuch steht im Store");
+    assert!(experiment.offen(), "und er ist offen (M-47)");
+    assert_eq!(
+        experiment.baseline.match_gain_db, -1.5,
+        "die Baseline traegt den eingefrorenen Match-Gain (M-43/§43.1)"
+    );
+
+    // ── Und in der SQLite-Ablage (M-47/M-50) ────────────────────────────
+    assert_eq!(
+        scalar_i64(
+            writer.handle().db_pfad(),
+            "SELECT COUNT(*) FROM passages"
+        ),
+        1,
+        "B19: die Passage ist persistiert - ein Neustart findet sie wieder"
+    );
+    assert_eq!(
+        scalar_i64(
+            writer.handle().db_pfad(),
+            "SELECT COUNT(*) FROM experiments"
+        ),
+        1,
+        "B19: und der Versuch ebenso"
+    );
+    assert!(
+        scalar_i64(
+            writer.handle().db_pfad(),
+            "SELECT COUNT(*) FROM event_log WHERE event_type='experiment'"
+        ) >= 1,
+        "das append-only Log traegt das Experimentereignis"
+    );
+
+    // ── B22: ein art=experiment-Intervall haengt am Versuch (M-59) ──────
+    //
+    // Vorher mutierten Resultat, Abbruch und Verdraengung ausschliesslich den
+    // isolierten Experimentstore, und Interventionen trugen gar keine
+    // Experimentzuordnung. Zugehoerige Intervalle blieben nach JEDEM Terminal
+    // offen - und mit ihnen die Sperre auf starker Evidenz.
+    assert!(coordinator.intervention_begin_mit_art(
+        "main",
+        &main.adresse,
+        &si_hex(0x5150),
+        1,
+        "experiment",
+        Some(&experiment_id),
+    ));
+    assert!(
+        !coordinator
+            .interventionssicht_fuer_link("main")
+            .starke_evidenz_erlaubt,
+        "das offene Experimentintervall sperrt die Evidenz"
+    );
+
+    // ── Der Abbruch ist der HAEUFIGSTE Realfall (M-47) ──────────────────
+    let abort = json!({
+        "type": "experiment_abort",
+        "kopf": {
+            "command_id": si_hex(901),
+            "ziel": probe.adresse,
+            "base_revision": 13,
+            "ttl_ms": 1000,
+            "schema_major": 3,
+            "schema_minor": 0
+        },
+        "experiment_id": experiment_id,
+        "grund": "user_abbruch"
+    });
+    let ack = Senke::p0(
+        coordinator.as_ref(),
+        "main",
+        &serde_json::to_vec(&abort).unwrap(),
+    )
+    .expect("experiment_abort bekommt einen command_ack");
+    let ack: Value = serde_json::from_slice(&ack).unwrap();
+    assert_eq!(ack["ergebnis"], "angewandt");
+    let experiment = coordinator.experiment_sicht(&experiment_id).unwrap();
+    assert!(
+        !experiment.offen(),
+        "B18: der Abbruch schliesst den Versuch wirklich"
+    );
+    assert_eq!(
+        coordinator.interventionssicht_fuer_link("main").aktive,
+        0,
+        "B22: und er schliesst das zugehoerige art=experiment-Intervall MIT (M-59)"
+    );
+    assert!(
+        coordinator
+            .interventionssicht_fuer_link("main")
+            .starke_evidenz_erlaubt,
+        "danach ist starke Evidenz wieder moeglich - sonst bliebe sie fuer immer gesperrt"
+    );
+
+    // B21: der Export traegt Passage und Belege - er zeigt nicht auf einen
+    // Store, den der Empfaenger nicht hat.
+    let export = coordinator
+        .experiment_export(&experiment_id)
+        .expect("B21: der Export entsteht");
+    assert_eq!(export.passage.passage_id, passage_id);
+    assert!(
+        !export.ereignisse.is_empty(),
+        "und traegt die Ereigniskette des Versuchs"
+    );
+}
+
 #[test]
 fn brokerneustart_sendet_keine_laufgebundenen_felder_der_alten_projektion() {
     let ordner = TestOrdner::neu("projektion-neuer-brokerlauf");

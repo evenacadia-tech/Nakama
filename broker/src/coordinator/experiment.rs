@@ -161,6 +161,188 @@ pub struct Kandidat {
     pub referenz: Experimentreferenz,
 }
 
+/// Die VIER Achsen, die der Broker vor dem Terminalereignis rechnet (M-45).
+///
+/// 🔑 Nacharbeit 1 (Befund B20): `ergebnis()` konnte vorher unmittelbar nach
+/// Begin und Reihenfolgebindung terminieren — ohne einen einzigen Kandidaten,
+/// ohne Bootstrap, ohne Comparability, ohne Guardrails. `Terminal::Ergebnis`
+/// trug nur die Userfelder. §43.2 und M-49 verlangen dagegen ausdruecklich
+/// den BROKERSEITIGEN Rechenweg: Zielmetrik, Guardrail-Deltas und
+/// Effektstabilitaet entstehen aus Baseline- und Resultatevidenz im Store.
+///
+/// Jede Achse traegt ihre eigene Gueltigkeit. Eine Achse, die nicht gerechnet
+/// werden konnte, ist `None` — nie eine 0, die wie ein Messergebnis aussieht.
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct Achsenrechnung {
+    /// 1. Zielmetrik: das Konfidenzintervall des mittleren Banddeltas aus dem
+    ///    Block-Bootstrap, und wie viele Baender nach FDR signifikant bleiben.
+    pub intervall: Option<(f64, f64)>,
+    pub signifikante_baender: usize,
+    pub gescannte_baender: usize,
+    /// 2. Comparability: das Urteil ueber Baseline- und Resultatpassage.
+    pub vergleichbarkeit: Option<String>,
+    pub vergleichbarkeit_gruende: Vec<String>,
+    /// 3. Guardrails: die Deltas, die NICHT das Ziel sind und trotzdem
+    ///    ueberwacht werden — Abdeckung und Konfidenzklasse.
+    pub guardrail_abdeckung_delta: Option<f64>,
+    pub guardrail_klasse_gefallen: bool,
+    /// 4. Effektstabilitaet: streut das Delta ueber die Teilfenster?
+    ///    `None` heisst „nicht beurteilbar", nicht „stabil".
+    pub effekt_stabil: Option<bool>,
+}
+
+/// Die Messung, gegen die ein Ergebnis abgeschlossen wird (M-45/M-49).
+///
+/// Sie kommt aus dem Evidenzbestand des Coordinators — Baseline- und
+/// Resultatfenster derselben Passage. Ohne sie gibt es KEIN Ergebnis: ein
+/// Terminal ohne Resultatmessung waere ein Urteil ohne Gegenprobe.
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct Resultatmessung {
+    /// Banddeltas Resultat minus Baseline in dB, je Band mit Praesenzbit.
+    pub band_delta_db: Vec<f64>,
+    pub band_gueltig: Vec<bool>,
+    /// Die zwei Haelften des Deltas — daraus entsteht die Effektstabilitaet.
+    pub erste_haelfte: Vec<f64>,
+    pub zweite_haelfte: Vec<f64>,
+    /// Abdeckung beider Fenster.
+    pub abdeckung_baseline: f64,
+    pub abdeckung_resultat: f64,
+    /// Konfidenzklassen beider Fenster, wie sie auf der Leitung standen.
+    pub klasse_baseline: String,
+    pub klasse_resultat: String,
+    /// Das Comparability-Urteil, falls der Broker eines rechnen konnte.
+    pub vergleichbarkeit: Option<String>,
+    pub vergleichbarkeit_gruende: Vec<String>,
+    /// Die Evidence-IDs, aus denen die Messung entstand (M-51).
+    pub baseline_evidence_ids: Vec<String>,
+    pub resultat_evidence_ids: Vec<String>,
+}
+
+impl Resultatmessung {
+    /// Traegt die Messung ueberhaupt ein Resultat?
+    ///
+    /// Ohne gueltiges Band gibt es nichts zu rechnen, und ein Abschluss darauf
+    /// waere genau der Fall, den B20 gefunden hat.
+    pub fn hat_resultat(&self) -> bool {
+        self.band_gueltig.iter().any(|g| *g)
+            && !self.resultat_evidence_ids.is_empty()
+            && !self.baseline_evidence_ids.is_empty()
+    }
+
+    /// Rechnet die vier Achsen. Reine Funktion, kein Zustand.
+    pub fn achsen(&self, klassenordnung: &[&str]) -> Achsenrechnung {
+        let endliche: Vec<f64> = self
+            .band_delta_db
+            .iter()
+            .zip(self.band_gueltig.iter())
+            .filter(|(_, g)| **g)
+            .map(|(v, _)| *v)
+            .collect();
+        // 1. Zielmetrik.
+        let intervall = block_bootstrap(&endliche, 8, 400, 0.05, 42);
+        // p-Werte je Band aus dem Betrag des Deltas: je groesser, desto
+        // kleiner. Die Abbildung ist bewusst grob — sie soll die FDR-Stufe
+        // fahren, nicht eine Teststatistik ersetzen, die es hier nicht gibt.
+        let p_werte: Vec<f64> = endliche
+            .iter()
+            .map(|d| (-d.abs()).exp().clamp(1e-12, 1.0))
+            .collect();
+        let signifikant = fdr_signifikant(&p_werte, 0.05);
+        // 3. Guardrails.
+        let guardrail_abdeckung_delta = if self.abdeckung_baseline.is_finite()
+            && self.abdeckung_resultat.is_finite()
+        {
+            Some(self.abdeckung_resultat - self.abdeckung_baseline)
+        } else {
+            None
+        };
+        let rang = |k: &str| klassenordnung.iter().position(|x| *x == k);
+        let guardrail_klasse_gefallen = match (
+            rang(&self.klasse_baseline),
+            rang(&self.klasse_resultat),
+        ) {
+            (Some(a), Some(b)) => b < a,
+            // Eine unbekannte Klasse ist kein „nicht gefallen": sie ist
+            // unbekannt, und fail-closed heisst hier gefallen.
+            _ => true,
+        };
+        // 4. Effektstabilitaet.
+        let mittel = |v: &[f64]| {
+            let e: Vec<f64> = v.iter().copied().filter(|x| x.is_finite()).collect();
+            if e.is_empty() {
+                None
+            } else {
+                Some(e.iter().sum::<f64>() / e.len() as f64)
+            }
+        };
+        let effekt_stabil = match (mittel(&self.erste_haelfte), mittel(&self.zweite_haelfte)) {
+            (Some(a), Some(b)) => Some((a - b).abs() <= 1.0),
+            _ => None,
+        };
+        Achsenrechnung {
+            intervall,
+            signifikante_baender: signifikant.iter().filter(|s| **s).count(),
+            gescannte_baender: endliche.len(),
+            vergleichbarkeit: self.vergleichbarkeit.clone(),
+            vergleichbarkeit_gruende: self.vergleichbarkeit_gruende.clone(),
+            guardrail_abdeckung_delta,
+            guardrail_klasse_gefallen,
+            effekt_stabil,
+        }
+    }
+}
+
+impl Achsenrechnung {
+    /// Die QUALITATIVEN vier Achsen aus M-45/M-46 — die Form, aus der
+    /// `urteile()` die fuenf zulaessigen Aussagen bildet.
+    ///
+    /// Die Umrechnung steht hier und nicht beim Aufrufer: es gibt genau EINEN
+    /// Weg von den gerechneten Zahlen zur Achsenaussage, und zwei waeren zwei
+    /// Wahrheiten ueber dasselbe Ergebnis. Jede Achse faellt fuer sich auf
+    /// `NichtBeurteilbar`, wenn ihre Grundlage fehlt — nie auf `Unveraendert`:
+    /// „ich weiss es nicht" ist nicht „es hat sich nichts geaendert".
+    pub fn befunde(&self, hoerurteil: Option<Hoerurteil>) -> Achsen {
+        let zielmetrik = match self.intervall {
+            // Ein Intervall, das die Null NICHT enthaelt, ist eine Aenderung.
+            // Seine Richtung ist das Vorzeichen; die Bedeutung „besser" gehoert
+            // dem User, nicht der Zahl — deshalb steht hier `Verbessert` fuer
+            // ein Delta nach oben und nichts darueber hinaus.
+            Some((unten, oben)) if self.signifikante_baender > 0 && unten > 0.0 => {
+                Achsenbefund::Verbessert
+            }
+            Some((unten, oben)) if self.signifikante_baender > 0 && oben < 0.0 => {
+                let _ = unten;
+                Achsenbefund::Verschlechtert
+            }
+            Some(_) => Achsenbefund::Unveraendert,
+            None => Achsenbefund::NichtBeurteilbar,
+        };
+        let guardrails = if self.guardrail_klasse_gefallen {
+            Achsenbefund::Verschlechtert
+        } else {
+            match self.guardrail_abdeckung_delta {
+                Some(d) if d < -0.1 => Achsenbefund::Verschlechtert,
+                Some(_) => Achsenbefund::Unveraendert,
+                None => Achsenbefund::NichtBeurteilbar,
+            }
+        };
+        let effektstabilitaet = match self.effekt_stabil {
+            Some(true) => Achsenbefund::Unveraendert,
+            Some(false) => Achsenbefund::Verschlechtert,
+            None => Achsenbefund::NichtBeurteilbar,
+        };
+        Achsen {
+            zielmetrik,
+            guardrails,
+            effektstabilitaet,
+            hoerurteil,
+        }
+    }
+}
+
+/// Die Ordnung der Konfidenzklassen, schwaechste zuerst (§34.3).
+pub const KLASSENORDNUNG: [&str; 4] = ["unbrauchbar", "schwach", "mittel", "stark"];
+
 /// Wie ein Experiment endet. `None` heisst offen (M-48).
 #[derive(Debug, Clone, PartialEq)]
 pub enum Terminal {
@@ -172,6 +354,11 @@ pub enum Terminal {
         blindreihenfolge: Blindreihenfolge,
         notiz: Option<String>,
         werkzeug: Option<String>,
+        /// Die vom BROKER gerechneten vier Achsen (M-45/M-49). Sie stehen im
+        /// Terminalereignis, nicht daneben: ein Ergebnis ohne seine Deltas
+        /// waere ein Urteil, dessen Grundlage niemand mehr nachvollziehen
+        /// kann. `Achsenrechnung::befunde` macht daraus die qualitative Form.
+        achsen: Achsenrechnung,
     },
     Abgebrochen {
         grund: Abbruchgrund,
@@ -197,6 +384,15 @@ pub struct Experiment {
     /// hier und nicht in `Terminal`, weil sie schon existiert, bevor ein
     /// Urteil vorliegt — und genau das ist die Zusage.
     gebundene_reihenfolge: Option<Blindreihenfolge>,
+    /// Die Evidence-IDs, aus denen Baseline und Resultat entstanden (M-51).
+    ///
+    /// 🔑 Nacharbeit 1 (Befund B21): weder `Experiment` noch `Passage`,
+    /// `Experimentreferenz` oder `Export` trugen sie. Der Export konnte sie
+    /// deshalb unabhaengig vom Aufrufer gar nicht liefern — und ein Export
+    /// ohne die Belege, auf denen er beruht, ist kein Export, sondern ein
+    /// Verweis auf einen Store, den der Empfaenger nicht hat.
+    pub baseline_evidence_ids: Vec<String>,
+    pub resultat_evidence_ids: Vec<String>,
 }
 
 impl Experiment {
@@ -250,6 +446,9 @@ pub enum Abschlussfehler {
     OhneLautheitsabgleich,
     /// Ein Ergebnis ohne gebundene Blindreihenfolge (M-44).
     ReihenfolgeNichtGebunden,
+    /// Ein Abschluss ohne Resultatmessung (M-45, Befund B20). Ein Urteil ohne
+    /// Gegenprobe ist kein Ergebnis, sondern eine Meinung.
+    OhneResultatmessung,
 }
 
 // ── Der Store ───────────────────────────────────────────────────────────
@@ -259,11 +458,43 @@ pub enum Abschlussfehler {
 /// Zusammenfassung (§33.5).
 #[derive(Debug, Clone, PartialEq)]
 pub enum Ereignis {
-    PassageAngelegt { passage_id: String },
-    Begonnen { experiment_id: String, passage_id: String },
-    KandidatAngelegt { experiment_id: String, nummer: u32 },
-    ReihenfolgeGebunden { experiment_id: String },
-    Ergebnis { experiment_id: String },
+    /// 🔑 Nacharbeit 1 (Befund B19): jedes Ereignis traegt die
+    /// UNVERAENDERLICHEN Referenzen aus §43.1 und nicht nur IDs.
+    ///
+    /// Vorher stand im Log ausschliesslich, DASS etwas geschah. Selbst ein
+    /// persistiertes Log haette den Zustand damit nicht rekonstruieren
+    /// koennen: nach einem Brokerneustart fehlten Passage, Baseline,
+    /// Kandidat, Match-Gain und Blindreihenfolge. M-47 und M-50 verlangen
+    /// aber ausdruecklich, dass ein offener Versuch den Neustart ueberdauert
+    /// und danach REKONSTRUIERBAR ist — und rekonstruierbar heisst: aus dem
+    /// Log allein.
+    PassageAngelegt {
+        passage_id: String,
+        passage: Box<Passage>,
+    },
+    Begonnen {
+        experiment_id: String,
+        passage_id: String,
+        projektbindung: String,
+        baseline: Box<Experimentreferenz>,
+    },
+    KandidatAngelegt {
+        experiment_id: String,
+        nummer: u32,
+        referenz: Box<Experimentreferenz>,
+    },
+    ReihenfolgeGebunden {
+        experiment_id: String,
+        reihenfolge: Blindreihenfolge,
+    },
+    Ergebnis {
+        experiment_id: String,
+        hoerurteil: Hoerurteil,
+        blindreihenfolge: Blindreihenfolge,
+        achsen: Box<Achsenrechnung>,
+        baseline_evidence_ids: Vec<String>,
+        resultat_evidence_ids: Vec<String>,
+    },
     Abgebrochen { experiment_id: String, grund: Abbruchgrund },
 }
 
@@ -341,16 +572,19 @@ impl Experimentstore {
 
         let passage_id = passage.passage_id.clone();
         if !self.passagen.contains_key(&passage_id) {
-            self.passagen.insert(passage_id.clone(), passage);
             self.log.push(Ereignis::PassageAngelegt {
                 passage_id: passage_id.clone(),
+                passage: Box::new(passage.clone()),
             });
+            self.passagen.insert(passage_id.clone(), passage);
         }
 
         self.verdraenge_fuer(projektbindung);
 
         let folge = self.naechste_folge;
         self.naechste_folge += 1;
+        // Die Baseline reist ins Log, nicht nur in den gerechneten Zustand.
+        let baseline_kopie = baseline.clone();
         self.experimente.insert(
             experiment_id.to_string(),
             Experiment {
@@ -364,11 +598,15 @@ impl Experimentstore {
                 terminal: None,
                 folge,
                 gebundene_reihenfolge: None,
+                baseline_evidence_ids: Vec::new(),
+                resultat_evidence_ids: Vec::new(),
             },
         );
         self.log.push(Ereignis::Begonnen {
             experiment_id: experiment_id.to_string(),
             passage_id,
+            projektbindung: projektbindung.to_string(),
+            baseline: Box::new(baseline_kopie),
         });
         Ok(())
     }
@@ -416,10 +654,12 @@ impl Experimentstore {
             return Err(Abschlussfehler::SchonTerminal);
         }
         let nummer = e.kandidaten.len() as u32 + 1;
+        let referenz_kopie = referenz.clone();
         e.kandidaten.push(Kandidat { nummer, referenz });
         self.log.push(Ereignis::KandidatAngelegt {
             experiment_id: experiment_id.to_string(),
             nummer,
+            referenz: Box::new(referenz_kopie),
         });
         Ok(nummer)
     }
@@ -446,6 +686,7 @@ impl Experimentstore {
         e.gebundene_reihenfolge = Some(reihenfolge);
         self.log.push(Ereignis::ReihenfolgeGebunden {
             experiment_id: experiment_id.to_string(),
+            reihenfolge,
         });
         Ok(true)
     }
@@ -462,7 +703,8 @@ impl Experimentstore {
         hoerurteil: Hoerurteil,
         notiz: Option<String>,
         werkzeug: Option<String>,
-    ) -> Result<(), Abschlussfehler> {
+        messung: &Resultatmessung,
+    ) -> Result<Achsenrechnung, Abschlussfehler> {
         let Some(e) = self.experimente.get_mut(experiment_id) else {
             return Err(Abschlussfehler::Unbekannt);
         };
@@ -475,16 +717,37 @@ impl Experimentstore {
         let Some(reihenfolge) = e.gebundene_reihenfolge else {
             return Err(Abschlussfehler::ReihenfolgeNichtGebunden);
         };
+        // 🔑 Nacharbeit 1 (Befund B20): OHNE Resultatmessung kein Abschluss.
+        //
+        // Vorher konnte `ergebnis()` unmittelbar nach Begin und
+        // Reihenfolgebindung terminieren — ohne einen einzigen Kandidaten und
+        // ohne eine einzige gerechnete Zahl. Das Terminalereignis trug dann
+        // ausschliesslich Userfelder, und §43.2 („Zielmetrik, Guardrail-Deltas
+        // und Effektstabilitaet rechnet der Broker") war ein Satz ohne Code.
+        if !messung.hat_resultat() {
+            return Err(Abschlussfehler::OhneResultatmessung);
+        }
+        // Die vier Achsen entstehen VOR dem Terminalereignis und reisen MIT
+        // ihm (M-45/M-49).
+        let achsen = messung.achsen(&KLASSENORDNUNG);
+        e.baseline_evidence_ids = messung.baseline_evidence_ids.clone();
+        e.resultat_evidence_ids = messung.resultat_evidence_ids.clone();
         e.terminal = Some(Terminal::Ergebnis {
             hoerurteil,
             blindreihenfolge: reihenfolge,
             notiz,
             werkzeug,
+            achsen: achsen.clone(),
         });
         self.log.push(Ereignis::Ergebnis {
             experiment_id: experiment_id.to_string(),
+            hoerurteil,
+            blindreihenfolge: reihenfolge,
+            achsen: Box::new(achsen.clone()),
+            baseline_evidence_ids: messung.baseline_evidence_ids.clone(),
+            resultat_evidence_ids: messung.resultat_evidence_ids.clone(),
         });
-        Ok(())
+        Ok(achsen)
     }
 
     /// `experiment_abort` (M-47).
@@ -518,6 +781,10 @@ impl Experimentstore {
         Some(Export {
             experiment: e.clone(),
             passage: p.clone(),
+            // M-51: die Evidence-IDs reisen MIT. Der Export kann sie jetzt
+            // unabhaengig vom Aufrufer liefern, weil das Experiment sie fuehrt.
+            baseline_evidence_ids: e.baseline_evidence_ids.clone(),
+            resultat_evidence_ids: e.resultat_evidence_ids.clone(),
             ereignisse: self
                 .log
                 .iter()
@@ -544,8 +811,8 @@ impl Ereignis {
             Ereignis::PassageAngelegt { .. } => false,
             Ereignis::Begonnen { experiment_id, .. }
             | Ereignis::KandidatAngelegt { experiment_id, .. }
-            | Ereignis::ReihenfolgeGebunden { experiment_id }
-            | Ereignis::Ergebnis { experiment_id }
+            | Ereignis::ReihenfolgeGebunden { experiment_id, .. }
+            | Ereignis::Ergebnis { experiment_id, .. }
             | Ereignis::Abgebrochen { experiment_id, .. } => experiment_id == id,
         }
     }
@@ -556,6 +823,9 @@ impl Ereignis {
 pub struct Export {
     pub experiment: Experiment,
     pub passage: Passage,
+    /// Die Belege, auf denen das Urteil beruht (M-51).
+    pub baseline_evidence_ids: Vec<String>,
+    pub resultat_evidence_ids: Vec<String>,
     pub ereignisse: Vec<Ereignis>,
 }
 

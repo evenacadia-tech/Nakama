@@ -38,8 +38,11 @@ mod sicht;
 mod subscription;
 mod uhr;
 pub mod experiment;
+mod experiment_verdrahtung;
 pub mod invalidierung;
+mod invalidierung_verdrahtung;
 pub mod prepost;
+mod prepost_verdrahtung;
 pub mod vergleichbarkeit;
 mod zustand;
 
@@ -47,7 +50,8 @@ pub use sicht::{
     ClientModellSicht, ControlRegistrierung, Interventionssicht, Lautheitszustand,
     MessframeSicht, SessionModellSicht,
 };
-pub use evidenz::Evidenzstand;
+pub use evidenz::{Evidenzstand, EVIDENZ_RETENTION};
+pub use prepost_verdrahtung::PAARURTEIL_DECKEL;
 /// Die aktive JSON-Vertragsfassung, nur fuer Beine sichtbar.
 ///
 /// Der Transport (`server_v3`) und der JSON-Leser muessen dieselbe
@@ -58,6 +62,7 @@ pub const JSON_SCHEMA_MINOR_AKTIV_FUER_TEST: u8 = schema::JSON_SCHEMA_MINOR_AKTI
 pub use uhr::{ManualClock, MonotonicClock};
 use zustand::{
     kollisionsriegel_setzen_locked, ClientKey, ClientStand, Deckelausgang, Intervention, LinkStand,
+    Taintstand,
     LiveMessframe, P2RejectGrund, SessionCommandWirkung, SessionKey, Stand, Subscription,
     JSON_SAFE_INTEGER_MAX,
 };
@@ -73,6 +78,13 @@ pub const STALE_VERPASSTE_INTERVALLE: u64 = 2;
 pub const STALE_JITTER_MS: u64 = 500;
 pub const STALE_NACH_MS: u64 = STALE_VERPASSTE_INTERVALLE * HEARTBEAT_INTERVAL_MS + STALE_JITTER_MS;
 pub const TOMBSTONE_MS: u64 = 10_000;
+/// Wie viele Samples ein Liveness-Tick vom offenen Nachlauf abzieht (M-58).
+///
+/// Der Tick laeuft im Heartbeatintervall (1 s). Bei 48 kHz waeren das 48000
+/// Samples; die Haelfte davon ist die konservative Wahl — sie gibt die Sperre
+/// eher zu spaet als zu frueh frei, und genau das ist bei einem Taint die
+/// richtige Richtung (§34.2).
+pub const TAIL_SCHRITT_JE_TICK: u64 = 24_000;
 pub const SESSION_CLIENT_CAP: usize = 64;
 pub const GLOBAL_CLIENT_CAP: usize = 128;
 /// H-12: Obergrenze der Sessionmap. Eine Session hat immer mindestens einen
@@ -404,13 +416,13 @@ mod tests {
         let (c, a) = verbunden();
         c.hoermarkierung_v2("link-a", true);
         assert_eq!(c.interventionssicht().aktive, 1);
-        assert!(!c.evidence_dispatch());
+        assert!(!c.evidence_dispatch_fuer_link("link-a"));
         c.hoermarkierung_v2("link-a", false);
         assert!(c.interventionssicht().starke_evidenz_erlaubt);
 
         assert!(c.intervention_begin("link-a", &a, &"1".repeat(32), 4));
         assert_eq!(c.interventionssicht().aktive, 1);
-        assert!(!c.evidence_dispatch());
+        assert!(!c.evidence_dispatch_fuer_link("link-a"));
         assert!(c.intervention_end("link-a", &a, &"1".repeat(32), 5, 0));
         assert!(c.interventionssicht().starke_evidenz_erlaubt);
     }
@@ -419,7 +431,7 @@ mod tests {
     fn hoermarkierung_vor_evidence_dispatch() {
         let (c, a) = verbunden();
         assert!(c.intervention_begin("link-a", &a, &"1".repeat(32), 1));
-        assert!(!c.evidence_dispatch());
+        assert!(!c.evidence_dispatch_fuer_link("link-a"));
         assert_eq!(c.interventionssicht().aktive, 1);
     }
 
@@ -430,7 +442,7 @@ mod tests {
         c.intervention_overflow();
         c.hoermarkierung_v2("link-a", false);
         assert!(c.interventionssicht().unknown);
-        assert!(!c.evidence_dispatch());
+        assert!(!c.evidence_dispatch_fuer_link("link-a"));
     }
 
     #[test]
@@ -440,7 +452,7 @@ mod tests {
         c.control_ende("link-a");
         c.hoermarkierung_v2("link-a", false);
         assert!(c.interventionssicht().unknown);
-        assert!(!c.evidence_dispatch());
+        assert!(!c.evidence_dispatch_fuer_link("link-a"));
     }
 
     #[test]
@@ -453,7 +465,7 @@ mod tests {
         assert!(c.intervention_end("link-a", &a, &"1".repeat(32), 11, 0));
         c.hoermarkierung_v2("link-a", false);
         assert!(c.interventionssicht().unknown);
-        assert!(!c.evidence_dispatch());
+        assert!(!c.evidence_dispatch_fuer_link("link-a"));
     }
 
     #[test]
@@ -461,10 +473,10 @@ mod tests {
         let (c, a) = verbunden();
         assert!(c.intervention_begin("link-a", &a, &"1".repeat(32), 1));
         assert!(!c.intervention_end("link-a", &a, &"1".repeat(32), 3, 0));
-        assert!(!c.evidence_dispatch());
+        assert!(!c.evidence_dispatch_fuer_link("link-a"));
         assert!(c.neutral_resync("link-a", 100));
         assert!(c.interventionssicht().starke_evidenz_erlaubt);
-        assert!(c.evidence_dispatch());
+        assert!(c.evidence_dispatch_fuer_link("link-a"));
     }
 
     #[test]
@@ -474,7 +486,7 @@ mod tests {
         assert!(c.intervention_begin("link-a", &a, &"2".repeat(32), 2));
         assert!(c.intervention_end("link-a", &a, &"1".repeat(32), 3, 0));
         assert_eq!(c.interventionssicht().aktive, 1);
-        assert!(!c.evidence_dispatch());
+        assert!(!c.evidence_dispatch_fuer_link("link-a"));
         assert!(c.intervention_end("link-a", &a, &"2".repeat(32), 4, 0));
         assert!(c.interventionssicht().starke_evidenz_erlaubt);
     }
@@ -485,7 +497,7 @@ mod tests {
         assert!(c.intervention_begin("link-a", &a, &"1".repeat(32), 1));
         assert!(!c.intervention_end("link-a", &a, &"2".repeat(32), 2, 0));
         assert_eq!(c.interventionssicht().aktive, 1);
-        assert!(!c.evidence_dispatch());
+        assert!(!c.evidence_dispatch_fuer_link("link-a"));
     }
 
     #[test]
@@ -494,7 +506,7 @@ mod tests {
         assert!(!c.intervention_end("link-a", &a, &"2".repeat(32), 1, 0));
         assert_eq!(c.interventionssicht().aktive, 0);
         assert!(c.interventionssicht().unknown);
-        assert!(!c.evidence_dispatch());
+        assert!(!c.evidence_dispatch_fuer_link("link-a"));
         c.hoermarkierung_v2("link-a", false);
         assert!(c.interventionssicht().unknown);
     }
@@ -505,11 +517,11 @@ mod tests {
         assert!(c.intervention_begin("link-a", &a, &"1".repeat(32), 1));
         assert!(c.intervention_end("link-a", &a, &"1".repeat(32), 2, 96_000));
         assert_eq!(c.interventionssicht().tail_samples_offen, 96_000);
-        assert!(!c.evidence_dispatch());
+        assert!(!c.evidence_dispatch_fuer_link("link-a"));
         c.tail_fortschritt(95_999);
-        assert!(!c.evidence_dispatch());
+        assert!(!c.evidence_dispatch_fuer_link("link-a"));
         c.tail_fortschritt(1);
-        assert!(c.evidence_dispatch());
+        assert!(c.evidence_dispatch_fuer_link("link-a"));
     }
 
     #[test]

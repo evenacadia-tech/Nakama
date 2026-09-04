@@ -1,0 +1,31 @@
+SONDE-013 Etappe 2 Nacharbeit 1 - Rotbeweis B19
+============================================================
+
+Datei:     broker/src/coordinator/experiment_verdrahtung.rs
+Bein:      cargo test --test store_crash_matrix produkt_coordinator_legt
+Warum:     Die Passage wird nicht mehr persistiert. Ein Brokerneustart findet sie nicht wieder, und ein offener Versuch ist damit nicht rekonstruierbar (M-47/M-50).
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+        // Die Passage zuerst: sie ist das Objekt, auf das der Versuch zeigt.
+        self.domaene_persistieren(
+            session,
+            "passage",
+--- NEU ---
+        // Die Passage zuerst: sie ist das Objekt, auf das der Versuch zeigt.
+        self.domaene_persistieren(
+            session,
+            "passage_ohne_projektion",
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+test produkt_coordinator_legt_passage_und_experiment_aus_dem_wire_an ... FAILED
+---- produkt_coordinator_legt_passage_und_experiment_aus_dem_wire_an stdout ----
+thread 'produkt_coordinator_legt_passage_und_experiment_aus_dem_wire_an' (5548) panicked at tests\store_crash_matrix.rs:775:5:
+    produkt_coordinator_legt_passage_und_experiment_aus_dem_wire_an
+EXIT=101
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+test produkt_coordinator_legt_passage_und_experiment_aus_dem_wire_an ... ok
+EXIT=0
+
+URTEIL: BEWIESEN - der Test faellt am eingebauten Fehler und steht ohne ihn.

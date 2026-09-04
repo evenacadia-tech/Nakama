@@ -1372,7 +1372,7 @@ fn ").unwrap_or(rest.len());
             std::thread::sleep(std::time::Duration::from_millis(10));
         }
         assert_eq!(coordinator.interventionssicht().aktive, 1);
-        assert!(!coordinator.evidence_dispatch());
+        assert!(!coordinator.evidence_dispatch_brokerweit());
 
         frame_schreiben(
             &mut client,
@@ -1398,7 +1398,7 @@ fn ").unwrap_or(rest.len());
             std::thread::sleep(std::time::Duration::from_millis(10));
         }
         assert!(coordinator.interventionssicht().unknown);
-        assert!(!coordinator.evidence_dispatch());
+        assert!(!coordinator.evidence_dispatch_brokerweit());
         griff.stoppen();
     }
 

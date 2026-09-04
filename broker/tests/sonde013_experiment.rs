@@ -14,9 +14,32 @@ use eqcop_broker::coordinator::experiment::{
     behalten_erlaubt, block_bootstrap, cluster, fdr_signifikant, urteile, Abbruchgrund,
     Abschlussfehler, Achsen, Achsenbefund, Alignmentwert, Anlegefehler, Ausfuehrungsart,
     Blindreihenfolge, Ereignis, Experimentreferenz, Experimentstore, Hoerurteil, Passage,
-    Reproduzierbarkeit, Terminal, Urteil, N_GLOBAL, N_PROJEKT,
+    Reproduzierbarkeit, Resultatmessung, Terminal, Urteil, N_GLOBAL, N_PROJEKT,
 };
 use eqcop_broker::telemetrie::Fingerprintwerte;
+
+/// Eine Resultatmessung, die ein Ergebnis TRAEGT (M-45, Nacharbeit 1 B20).
+///
+/// Sie steht als Helfer da, weil `ergebnis()` seit dieser Runde ohne
+/// Resultatmessung ablehnt: ein Abschluss ohne Gegenprobe ist kein Ergebnis.
+/// Die Zahlen sind bewusst schlicht - die Faelle unten messen den
+/// LEBENSZYKLUS, nicht die Statistik; die misst `achsen_*`.
+fn messung() -> Resultatmessung {
+    Resultatmessung {
+        band_delta_db: (0..32).map(|i| (i as f64) * 0.1 - 1.6).collect(),
+        band_gueltig: vec![true; 32],
+        erste_haelfte: vec![0.5; 32],
+        zweite_haelfte: vec![0.5; 32],
+        abdeckung_baseline: 0.9,
+        abdeckung_resultat: 0.9,
+        klasse_baseline: "mittel".into(),
+        klasse_resultat: "mittel".into(),
+        vergleichbarkeit: Some("stark".into()),
+        vergleichbarkeit_gruende: Vec::new(),
+        baseline_evidence_ids: vec!["a".repeat(32)],
+        resultat_evidence_ids: vec!["b".repeat(32)],
+    }
+}
 
 fn hex32(n: u32) -> String {
     format!("{n:032x}")
@@ -184,7 +207,7 @@ fn second_change_creates_new_candidate_not_a_new_baseline() {
 
     // Nach dem Terminalereignis gibt es keinen neuen Kandidaten mehr.
     s.binde_reihenfolge(&id, Blindreihenfolge::BaselineZuerst).unwrap();
-    s.ergebnis(&id, Hoerurteil::Kandidat, None, None).unwrap();
+    s.ergebnis(&id, Hoerurteil::Kandidat, None, None, &messung()).unwrap();
     assert_eq!(
         s.neuer_kandidat(&id, referenz(0.0)),
         Err(Abschlussfehler::SchonTerminal)
@@ -204,6 +227,7 @@ fn manual_external_has_no_state_hash_and_no_revert() {
         Hoerurteil::Kandidat,
         Some("Kompressor haerter gefahren".into()),
         Some("FabFilter Pro-C".into()),
+        &messung(),
     )
     .unwrap();
 
@@ -222,7 +246,7 @@ fn manual_external_has_no_state_hash_and_no_revert() {
     // erzwingen hiesse, den User zu einer Erfindung zu draengen.
     let (mut s2, id2) = store_mit_einem();
     s2.binde_reihenfolge(&id2, Blindreihenfolge::BaselineZuerst).unwrap();
-    assert!(s2.ergebnis(&id2, Hoerurteil::Enthaltung, None, None).is_ok());
+    assert!(s2.ergebnis(&id2, Hoerurteil::Enthaltung, None, None, &messung()).is_ok());
 }
 
 #[test]
@@ -265,7 +289,7 @@ fn match_gain_is_frozen_in_the_immutable_reference() {
         .unwrap();
     s2.binde_reihenfolge(&id2, Blindreihenfolge::BaselineZuerst).unwrap();
     assert_eq!(
-        s2.ergebnis(&id2, Hoerurteil::Kandidat, None, None),
+        s2.ergebnis(&id2, Hoerurteil::Kandidat, None, None, &messung()),
         Err(Abschlussfehler::OhneLautheitsabgleich)
     );
     // Abbrechen geht trotzdem - sonst haenge so ein Versuch fuer immer offen.
@@ -303,7 +327,7 @@ fn blind_order_is_bound_before_the_verdict_and_revealed_after() {
     );
 
     // Nach dem Urteil: aufgedeckt, und zwar genau die gebundene.
-    s.ergebnis(&id, Hoerurteil::Baseline, None, None).unwrap();
+    s.ergebnis(&id, Hoerurteil::Baseline, None, None, &messung()).unwrap();
     assert_eq!(
         s.experiment(&id).unwrap().aufgedeckte_reihenfolge(),
         Some(Blindreihenfolge::KandidatZuerst)
@@ -312,7 +336,7 @@ fn blind_order_is_bound_before_the_verdict_and_revealed_after() {
     // Ohne Bindung gibt es kein Ergebnis.
     let (mut s2, id2) = store_mit_einem();
     assert_eq!(
-        s2.ergebnis(&id2, Hoerurteil::Kandidat, None, None),
+        s2.ergebnis(&id2, Hoerurteil::Kandidat, None, None, &messung()),
         Err(Abschlussfehler::ReihenfolgeNichtGebunden)
     );
 
@@ -564,7 +588,7 @@ fn abort_writes_terminal_event_for_each_trigger() {
     // Und der andere Weg: `manual_result` ist ebenfalls terminal.
     let (mut s, id) = store_mit_einem();
     s.binde_reihenfolge(&id, Blindreihenfolge::BaselineZuerst).unwrap();
-    s.ergebnis(&id, Hoerurteil::KeinUnterschied, None, None).unwrap();
+    s.ergebnis(&id, Hoerurteil::KeinUnterschied, None, None, &messung()).unwrap();
     assert!(!s.experiment(&id).unwrap().offen());
     assert_eq!(
         s.schliesse(&id, Abbruchgrund::UserAbbruch),
@@ -655,7 +679,7 @@ fn open_cap_global_at_n_and_n_plus_one() {
 fn manual_result_writes_terminal_event_and_deltas() {
     let (mut s, id) = store_mit_einem();
     s.binde_reihenfolge(&id, Blindreihenfolge::KandidatZuerst).unwrap();
-    s.ergebnis(&id, Hoerurteil::Kandidat, Some("lauter".into()), None)
+    s.ergebnis(&id, Hoerurteil::Kandidat, Some("lauter".into()), None, &messung())
         .unwrap();
 
     // Das Ergebnis traegt NUR, was das Schema erlaubt: Hoerurteil,
@@ -667,6 +691,9 @@ fn manual_result_writes_terminal_event_and_deltas() {
         blindreihenfolge,
         notiz,
         werkzeug,
+        // Nacharbeit 1 (B20): die vom Broker gerechneten Achsen stehen IM
+        // Terminalereignis. Dass sie da sind, ist die halbe Zusage von M-49.
+        achsen,
     }) = &e.terminal
     else {
         panic!("Ergebnis erwartet");
@@ -674,6 +701,10 @@ fn manual_result_writes_terminal_event_and_deltas() {
     assert_eq!(*hoerurteil, Hoerurteil::Kandidat);
     assert_eq!(*blindreihenfolge, Blindreihenfolge::KandidatZuerst);
     assert_eq!(notiz.as_deref(), Some("lauter"));
+    assert!(
+        achsen.gescannte_baender > 0,
+        "das Terminalereignis traegt die gerechneten Achsen (M-45/M-49): {achsen:?}"
+    );
     assert_eq!(*werkzeug, None);
 
     // Der Match-Gain steht in der REFERENZ, nicht im Ergebnis - der Broker
@@ -752,7 +783,7 @@ fn export_is_complete_and_delete_leaves_no_pcm() {
     let (mut s, id) = store_mit_einem();
     s.neuer_kandidat(&id, referenz(-1.0)).unwrap();
     s.binde_reihenfolge(&id, Blindreihenfolge::BaselineZuerst).unwrap();
-    s.ergebnis(&id, Hoerurteil::Baseline, Some("dumpfer".into()), None)
+    s.ergebnis(&id, Hoerurteil::Baseline, Some("dumpfer".into()), None, &messung())
         .unwrap();
 
     let export = s.exportiere(&id).expect("Export");

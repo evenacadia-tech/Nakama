@@ -1,0 +1,27 @@
+SONDE-013 Etappe 2 Nacharbeit 1 - Rotbeweis B18
+============================================================
+
+Datei:     broker/src/coordinator/befehl.rs
+Bein:      cargo test --test store_crash_matrix produkt_coordinator_legt
+Warum:     Die drei Experimentfamilien fallen wieder in `_ => None`. Schema-gueltige Produktnachrichten bewirken damit NICHTS, und M-40/M-47/M-49 existieren nicht im Produktpfad.
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+            "experiment_begin" | "experiment_abort" | "experiment_manual_result" => {
+                self.experiment_p0(link_id, &wert)
+            }
+--- NEU ---
+
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+test produkt_coordinator_legt_passage_und_experiment_aus_dem_wire_an ... FAILED
+---- produkt_coordinator_legt_passage_und_experiment_aus_dem_wire_an stdout ----
+thread 'produkt_coordinator_legt_passage_und_experiment_aus_dem_wire_an' (10776) panicked at tests\store_crash_matrix.rs:745:6:
+    produkt_coordinator_legt_passage_und_experiment_aus_dem_wire_an
+EXIT=101
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+test produkt_coordinator_legt_passage_und_experiment_aus_dem_wire_an ... ok
+EXIT=0
+
+URTEIL: BEWIESEN - der Test faellt am eingebauten Fehler und steht ohne ihn.

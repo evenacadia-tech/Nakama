@@ -38,6 +38,21 @@ pub(super) struct SessionKey {
     pub(super) session_epoch: String,
 }
 
+impl SessionKey {
+    /// Der Platzhalter fuer Ereignisse OHNE zuordenbare Sitzung.
+    ///
+    /// Er traegt Zeichen, die keine hex32 sein koennen, und kann deshalb nie
+    /// mit einer echten Sitzung kollidieren. Sein Taintzustand sperrt jede
+    /// Evidenz: „wir wissen nicht, wen es trifft" ist fail-CLOSED, nicht
+    /// „also niemanden" (§34.2).
+    pub(super) fn unbekannt() -> Self {
+        Self {
+            project_binding_id: "-".into(),
+            session_epoch: "-".into(),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub(super) struct ClientStand {
     pub(super) adresse: Adresse,
@@ -91,6 +106,34 @@ pub(super) struct Subscription {
 #[derive(Debug, Clone)]
 pub(super) struct Intervention {
     pub(super) link_id: String,
+    /// SONDE-013 M-59, Nacharbeit 1 (Befund B22): WELCHE Art von Eingriff.
+    /// Ohne sie liess sich ein `art=experiment`-Intervall bei einem
+    /// Experimentterminal nicht gezielt schliessen - es blieb offen, und
+    /// starke Evidenz blieb es mit ihm.
+    pub(super) art: String,
+    /// Der Versuch, zu dem der Eingriff gehoert. `None` = keiner.
+    pub(super) experiment_id: Option<String>,
+}
+
+/// Der Taintzustand EINER Sitzung (SONDE-013 M-62).
+///
+/// 🔑 Nacharbeit 1 (Befund B17): vorher lagen `interventionen`,
+/// `intervention_state_unknown` und `tail_samples_offen` BROKERWEIT im
+/// `Stand`. Ein Marker in Sitzung A sperrte damit auch Sitzung B - und, weit
+/// gefaehrlicher, ein `neutral_resync` aus B loeschte die aktiven IDs von A
+/// und liess dort kontaminierte Evidenz durch. M-62 verlangt ausdruecklich
+/// sitzungsweiten Zustand.
+#[derive(Debug, Default, Clone)]
+pub(super) struct Taintstand {
+    pub(super) interventionen: HashMap<String, Intervention>,
+    pub(super) unknown: bool,
+    pub(super) tail_samples_offen: u64,
+}
+
+impl Taintstand {
+    pub(super) fn erlaubt(&self) -> bool {
+        !self.unknown && self.interventionen.is_empty() && self.tail_samples_offen == 0
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -162,9 +205,9 @@ pub(super) struct Stand {
     pub(super) clients: HashMap<ClientKey, ClientStand>,
     pub(super) sessions: HashMap<SessionKey, SessionStand>,
     pub(super) subscriptions: HashMap<String, Subscription>,
-    pub(super) interventionen: HashMap<String, Intervention>,
-    pub(super) intervention_state_unknown: bool,
-    pub(super) tail_samples_offen: u64,
+    /// SONDE-013 M-62: der Taintzustand JE SITZUNG. Eine Sitzung ohne Eintrag
+    /// ist sauber; der Eintrag entsteht mit dem ersten Eingriff.
+    pub(super) taint: HashMap<SessionKey, Taintstand>,
     pub(super) subscription_cleanups: u64,
     pub(super) subscription_abweisungen: u64,
     pub(super) letzter_subscription_grund: String,
@@ -173,7 +216,30 @@ pub(super) struct Stand {
     /// SONDE-013 M-05: der zuletzt ANGENOMMENE Evidenzsnapshot je
     /// Quelle. Ein gesperrter hinterlaesst hier nichts — sein Urteil
     /// steht im Zaehler daneben.
-    pub(super) evidenz: HashMap<ClientKey, super::evidenz::Evidenzstand>,
+    /// Nacharbeit 1 (Befund B13): eine BEGRENZTE Historie je Quelle, nicht
+    /// nur der letzte. Ein Insert, der den vorigen Snapshot ersetzte,
+    /// loeschte angenommene Evidenz - und aus einem einzigen Punkt lassen
+    /// sich weder Resultat- noch Guardrail-Deltas rechnen (M-49/M-51).
+    /// Die Retention ist fest (`EVIDENZ_RETENTION`) und damit gedeckelt
+    /// (M-74); die vollstaendigen Bytes liegen im Store.
+    pub(super) evidenz: HashMap<ClientKey, std::collections::VecDeque<super::evidenz::Evidenzstand>>,
+    /// Wie viele Snapshots wegen des Frame-Flags `beeinflusst` ausgeschlossen
+    /// wurden (M-52, Luecke B14). Sie sind GEZAEHLT, nicht still verworfen.
+    pub(super) evidence_beeinflusst: u64,
+    /// Die Urteile des PRE/POST-Joins, je `pair_id` (M-13/M-14, Befund B25).
+    /// Gedeckelt wie jede andere Map hier (M-74).
+    pub(super) paarurteile: HashMap<String, super::prepost::Paarurteil>,
+    /// Der Experimentteil des Stores (M-40 bis M-51, Befund B18).
+    ///
+    /// Er liegt IM `Stand` und nicht daneben: die Terminalereignisse muessen
+    /// die Taintintervalle derselben Sitzung schliessen (M-59), und zwei
+    /// Locks fuer eine Wirkung waeren genau der Fehler, den M-63 an der
+    /// Evidenz aufgedeckt hat.
+    pub(super) experimente: super::experiment::Experimentstore,
+    /// Wie viele Invalidierungen der Broker gesendet hat (M-52 bis M-57).
+    pub(super) invalidierungen: u64,
+    /// Wie viele gespeicherte Evidenzstaende sie ausgeschlossen haben.
+    pub(super) evidenz_ausgeschlossen: u64,
     pub(super) cap_abweisungen: u64,
     pub(super) store_verweigerungen: u64,
     pub(super) p2_live_frames: u64,
@@ -365,14 +431,17 @@ impl Default for Stand {
             clients: HashMap::new(),
             sessions: HashMap::new(),
             subscriptions: HashMap::new(),
-            interventionen: HashMap::new(),
-            intervention_state_unknown: false,
-            tail_samples_offen: 0,
+            taint: HashMap::new(),
             subscription_cleanups: 0,
             subscription_abweisungen: 0,
             letzter_subscription_grund: String::new(),
             evidence_angenommen: 0,
             evidence_gesperrt: 0,
+            evidence_beeinflusst: 0,
+            paarurteile: HashMap::new(),
+            experimente: super::experiment::Experimentstore::neu(),
+            invalidierungen: 0,
+            evidenz_ausgeschlossen: 0,
             evidenz: HashMap::new(),
             cap_abweisungen: 0,
             store_verweigerungen: 0,

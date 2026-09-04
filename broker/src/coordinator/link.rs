@@ -137,6 +137,9 @@ impl Coordinator {
                 stand.messframes.remove(&key);
                 stand.messfehler.remove(&key);
                 stand.lautheit.remove(&key);
+                // B15: dieselbe Regel fuer die Evidenzhistorie - ein neuer
+                // Prozess erbt die Messwahrheit des alten nicht.
+                stand.evidenz.remove(&key);
             }
             if let Some(alter_link) = alt.current_link.as_deref() {
                 // H-10, zweite Haelfte: auch ein Hello mit IDENTISCHER Nonce
@@ -302,6 +305,34 @@ impl Coordinator {
         ControlRegistrierung::angenommen(schliessen)
     }
 
+    /// Der bestaetigte Resync nach einem Reconnect (M-61, Befund B16).
+    ///
+    /// 🔑 `neutral_resync` hatte ausserhalb der Tests keinen Aufrufer. Nach
+    /// dem ersten Control-Disconnect blieb das sticky Unknown deshalb fuer
+    /// immer stehen — und mit ihm die Sperre auf starker Evidenz. §34.2 nennt
+    /// den Resync ausdruecklich als den EINEN Entsperrweg; ohne Aufrufer war
+    /// er keiner.
+    ///
+    /// Er laeuft NICHT automatisch beim Verbindungsaufbau: ein Reconnect
+    /// allein sagt nichts ueber den Interventionszustand. Bestaetigt heisst,
+    /// dass der Peer seine Sequenzbasis MITBRINGT — erst damit weiss der
+    /// Broker, ab welcher Nummer er wieder lueckenlos zaehlen darf.
+    pub fn resync_bestaetigen(&self, link_id: &str, bestaetigte_sequence_basis: u64) -> bool {
+        // Nur ein Link, der wirklich steht, darf entsperren. Ein Resync von
+        // einem sterbenden Link waere eine Freigabe ohne Gegenueber.
+        let steht = {
+            let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+            stand
+                .links
+                .get(link_id)
+                .is_some_and(|link| !link.trennen && !link.verdraengt)
+        };
+        if !steht {
+            return false;
+        }
+        self.neutral_resync(link_id, bestaetigte_sequence_basis)
+    }
+
     /// Der synchrone Server-Hook. Subscription, Link und aktive Ereignisse
     /// werden unter EINEM Lock entfernt; gleichzeitig wird Unknown sticky.
     /// Ein Push teilt diesen Lock und kann den Zwischenzustand nicht sehen.
@@ -309,6 +340,16 @@ impl Coordinator {
         let jetzt = self.clock.jetzt();
         let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         let mut dirty = None;
+        // M-62: die Sitzung des STERBENDEN Links, bevor er aus der Map faellt.
+        // Danach ist sie nicht mehr nachschlagbar, und ein `None` an dieser
+        // Stelle wuerde jeden Disconnect brokerweit taint setzen — genau die
+        // Vermischung, die B17 aufgeraeumt hat.
+        let sterbende_session = Self::session_des_links(&stand, link_id);
+        let war_ungebunden = stand
+            .links
+            .get(link_id)
+            .and_then(|l| stand.clients.get(&l.client_key))
+            .is_some_and(|c| c.session_ungebunden);
         if let Some(link) = stand.links.remove(link_id) {
             // D3 der Nacharbeit Runde 1 (Abschlusspruefung 1, 03.09.2026):
             // Diese Entfernung war bedingungslos. Seit H-10 verdraengt auch ein
@@ -334,10 +375,12 @@ impl Coordinator {
             }
             let join_reconnect_ohne_tombstone = link.join_neuverbinden
                 && link.letzte_event_sequence.is_none()
-                && !stand
-                    .interventionen
-                    .values()
-                    .any(|intervention| intervention.link_id == link_id);
+                && !stand.taint.values().any(|taint| {
+                    taint
+                        .interventionen
+                        .values()
+                        .any(|intervention| intervention.link_id == link_id)
+                });
             if join_reconnect_ohne_tombstone {
                 // Der Marker ist keine Sessionidentitaet und darf nach dem
                 // kontrollierten Reconnect keinen Phantom-Tombstone erzeugen.
@@ -345,6 +388,12 @@ impl Coordinator {
                 stand.messframes.remove(&link.client_key);
                 stand.messfehler.remove(&link.client_key);
                 stand.lautheit.remove(&link.client_key);
+                // 🔑 Nacharbeit 1 (Befund B15): die Evidenzhistorie gehoert in
+                // DENSELBEN Remove-Block wie ihre drei Nachbarmaps. Ohne diese
+                // Zeile wuchs sie ueber wiederholte Sessionepochen hinweg
+                // unbegrenzt weiter und hielt stale Evidenz - trotz aller
+                // Client-Deckel (M-74, verbinden↔trennen).
+                stand.evidenz.remove(&link.client_key);
             } else if let Some(client) = stand.clients.get_mut(&link.client_key) {
                 if client.current_link.as_deref() == Some(link_id) {
                     client.current_link = None;
@@ -359,12 +408,45 @@ impl Coordinator {
         }
         Self::subscription_entfernen_locked(&mut stand, link_id);
         stand.telemetry_links.remove(link_id);
-        stand
-            .interventionen
-            .retain(|_, intervention| intervention.link_id != link_id);
         // C-08 gilt fuer jeden Control-Disconnect, auch wenn der interne
         // Joinpfad den Reconnect angefordert hat. Nur neutral_resync loest.
-        stand.intervention_state_unknown = true;
+        //
+        // M-62: das trifft die SITZUNG dieses Links, nicht den ganzen Broker.
+        match sterbende_session {
+            Some(session) => {
+                // ⚠️ Hat die Sitzung ueberhaupt noch einen Client? Der
+                // Joinreconnect-Zweig oben entfernt ihn ausdruecklich, "damit
+                // der Marker keinen Phantom-Tombstone erzeugt". Ein sticky
+                // Unknown auf einer Sitzung, die es nicht mehr gibt, WAERE ein
+                // solcher Phantom: niemand koennte ihn je wieder loesen, und
+                // die Map waechst mit jeder Epoche weiter (M-74). Sie faellt
+                // deshalb ganz — es gibt nichts mehr zu schuetzen.
+                let hat_clients = stand
+                    .clients
+                    .keys()
+                    .any(|key| key.session() == session);
+                if hat_clients {
+                    let taint = Self::taint_mut(&mut stand, &session);
+                    taint
+                        .interventionen
+                        .retain(|_, intervention| intervention.link_id != link_id);
+                    taint.unknown = true;
+                } else {
+                    stand.taint.remove(&session);
+                }
+            }
+            // Ein Link ohne auffindbare Sitzung: fail-closed ueber alle.
+            None => Self::alle_sitzungen_unbekannt(&mut stand),
+        }
+        // ⚠️ Eine UNGEBUNDENE Probe hat noch gar keine echte Sitzung - ihr
+        // `session_epoch` ist der projektgebundene Joinmarker. Ihr Disconnect
+        // taintet deshalb zusaetzlich den Platzhalter: die Frage „welche
+        // Sitzung war betroffen" ist hier ehrlich unbeantwortbar, und
+        // fail-closed heisst dann ALLE, nicht KEINE (§34.2). Der Platzhalter
+        // ist genau der Ort dafuer, und `neutral_resync` loest ihn mit.
+        if war_ungebunden {
+            Self::taint_mut(&mut stand, &SessionKey::unbekannt()).unknown = true;
+        }
     }
 
     pub fn verbindung_soll_trennen(&self, link_id: &str) -> bool {

@@ -1,0 +1,25 @@
+SONDE-013 Etappe 2 Nacharbeit 1 - Rotbeweis B16
+============================================================
+
+Datei:     broker/src/coordinator/liveness.rs
+Bein:      cargo test --test sonde013_verdrahtung
+Warum:     `tail_fortschritt` hat wieder keinen Aufrufer. Nach einem Endereignis mit positivem Nachlauf bleibt der Evidenzpfad dauerhaft gesperrt, statt nach dem Nachlauf zu nullen (M-58/M-60).
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+        self.tail_fortschritt(TAIL_SCHRITT_JE_TICK);
+--- NEU ---
+
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+test nachlauf_laeuft_am_tick_ab ... FAILED
+---- nachlauf_laeuft_am_tick_ab stdout ----
+thread 'nachlauf_laeuft_am_tick_ab' (8444) panicked at tests\sonde013_verdrahtung.rs:344:5:
+    nachlauf_laeuft_am_tick_ab
+EXIT=101
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+test nachlauf_laeuft_am_tick_ab ... ok
+EXIT=0
+
+URTEIL: BEWIESEN - der Test faellt am eingebauten Fehler und steht ohne ihn.

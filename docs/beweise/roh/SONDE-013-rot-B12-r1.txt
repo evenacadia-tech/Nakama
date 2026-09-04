@@ -1,0 +1,31 @@
+SONDE-013 Etappe 2 Nacharbeit 1 - Rotbeweis B12
+============================================================
+
+Datei:     broker/src/coordinator/evidenz.rs
+Bein:      cargo test --test coordinator_model
+Warum:     Der Riegel entscheidet wieder, ohne den Insert zu verhindern: die Taintpruefung laeuft, ihr Urteil wird aber nicht ausgewertet. Ein Snapshot bei offener Intervention wird damit trotzdem committet - genau der Fall, den M-63 mit 'Pruefung, Zaehlung und Commit unter DEMSELBEN Lock' ausschliesst.
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+            if !Self::evidence_dispatch_locked(&mut stand, &session) {
+                return false;
+            }
+--- NEU ---
+            let _ = Self::evidence_dispatch_locked(&mut stand, &session);
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+test alle_schemafesten_interventionsarten_sperren_dieselbe_evidenz ... ok
+test eviction_loescht_intervention_unknown_nicht ... ok
+test evidenzsnapshot_wird_bei_offener_intervention_gesperrt ... FAILED
+---- evidenzsnapshot_wird_bei_offener_intervention_gesperrt stdout ----
+thread 'evidenzsnapshot_wird_bei_offener_intervention_gesperrt' (14100) panicked at tests\coordinator_model.rs:1830:5:
+    evidenzsnapshot_wird_bei_offener_intervention_gesperrt
+EXIT=101
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+test eviction_loescht_intervention_unknown_nicht ... ok
+test alle_schemafesten_interventionsarten_sperren_dieselbe_evidenz ... ok
+test evidenzsnapshot_wird_bei_offener_intervention_gesperrt ... ok
+EXIT=0
+
+URTEIL: BEWIESEN - der Test faellt am eingebauten Fehler und steht ohne ihn.

@@ -1,0 +1,25 @@
+SONDE-013 Etappe 2 Nacharbeit 1 - Rotbeweis B22
+============================================================
+
+Datei:     broker/src/coordinator/experiment_verdrahtung.rs
+Bein:      cargo test --test store_crash_matrix produkt_coordinator_legt
+Warum:     Ein Terminal schliesst die zugehoerigen art=experiment-Taintintervalle nicht mehr. Sie bleiben nach jedem Resultat, Abbruch und jeder Verdraengung offen - und mit ihnen die Sperre auf starker Evidenz (M-59).
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+        Self::taint_intervalle_schliessen(&mut stand, session, "experiment", Some(experiment_id));
+--- NEU ---
+        let _ = (&mut stand, session, experiment_id);
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+test produkt_coordinator_legt_passage_und_experiment_aus_dem_wire_an ... FAILED
+---- produkt_coordinator_legt_passage_und_experiment_aus_dem_wire_an stdout ----
+thread 'produkt_coordinator_legt_passage_und_experiment_aus_dem_wire_an' (23176) panicked at tests\store_crash_matrix.rs:847:5:
+    produkt_coordinator_legt_passage_und_experiment_aus_dem_wire_an
+EXIT=101
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+test produkt_coordinator_legt_passage_und_experiment_aus_dem_wire_an ... ok
+EXIT=0
+
+URTEIL: BEWIESEN - der Test faellt am eingebauten Fehler und steht ohne ihn.

@@ -1,0 +1,27 @@
+SONDE-013 Etappe 2 Nacharbeit 1 - Rotbeweis B15
+============================================================
+
+Datei:     broker/src/coordinator/link.rs
+Bein:      cargo test --test sonde013_verdrahtung
+Warum:     Die Evidenzhistorie faellt beim Nonce-Wechsel nicht mehr mit ihrem Client. Wiederholte Session-Epochen lassen sie trotz aller Client-Deckel unbegrenzt wachsen und halten stale Evidenz (M-74, verbinden↔trennen).
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+                // B15: dieselbe Regel fuer die Evidenzhistorie - ein neuer
+                // Prozess erbt die Messwahrheit des alten nicht.
+                stand.evidenz.remove(&key);
+--- NEU ---
+
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+test evidenz_faellt_mit_dem_client ... FAILED
+---- evidenz_faellt_mit_dem_client stdout ----
+thread 'evidenz_faellt_mit_dem_client' (15552) panicked at tests\sonde013_verdrahtung.rs:278:5:
+    evidenz_faellt_mit_dem_client
+EXIT=101
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+test evidenz_faellt_mit_dem_client ... ok
+EXIT=0
+
+URTEIL: BEWIESEN - der Test faellt am eingebauten Fehler und steht ohne ihn.

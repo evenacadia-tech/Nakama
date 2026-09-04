@@ -737,7 +737,7 @@ fn alle_schemafesten_interventionsarten_sperren_dieselbe_evidenz() {
         .unwrap();
         assert!(Senke::p0(&c, "probe", &begin).is_none());
         assert_eq!(c.interventionssicht().aktive, 1, "{art}");
-        assert!(!c.evidence_dispatch(), "{art}");
+        assert!(!c.evidence_dispatch_fuer_link("probe"), "{art}");
         sequence += 1;
         let ende = serde_json::to_vec(&json!({
             "type": "audible_intervention_end",

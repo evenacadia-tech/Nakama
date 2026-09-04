@@ -14,7 +14,7 @@ use std::collections::BTreeSet;
 
 use eqcop_broker::coordinator::experiment::{
     Abbruchgrund, Alignmentwert, Blindreihenfolge, Experimentreferenz, Experimentstore,
-    Hoerurteil, Passage,
+    Hoerurteil, Passage, Resultatmessung,
 };
 use eqcop_broker::coordinator::invalidierung::{
     apply_transaction, grund_fuer_bruch, material_wechsel, messpunkt_wechsel,
@@ -325,7 +325,7 @@ fn both_experiment_terminals_close_all_intervals() {
 
         if terminal_ist_ergebnis {
             s.binde_reihenfolge(&id, Blindreihenfolge::BaselineZuerst).unwrap();
-            s.ergebnis(&id, Hoerurteil::Kandidat, None, None).unwrap();
+            s.ergebnis(&id, Hoerurteil::Kandidat, None, None, &Resultatmessung { band_delta_db: vec![1.0; 8], band_gueltig: vec![true; 8], baseline_evidence_ids: vec!["a".repeat(32)], resultat_evidence_ids: vec!["b".repeat(32)], ..Default::default() }).unwrap();
         } else {
             s.schliesse(&id, Abbruchgrund::UserAbbruch).unwrap();
         }
@@ -439,9 +439,9 @@ fn marker_end_closes_its_interval_only_after_the_tail() {
     let (c, h) = coordinator_mit_link("probe", "active_probe");
     let id = hex32(500);
 
-    assert!(c.evidence_dispatch(), "vorher ist Evidenz erlaubt");
+    assert!(c.evidence_dispatch_fuer_link("probe"), "vorher ist Evidenz erlaubt");
     assert!(c.intervention_begin("probe", &h.adresse, &id, 1));
-    assert!(!c.evidence_dispatch(), "waehrend der Intervention nicht");
+    assert!(!c.evidence_dispatch_fuer_link("probe"), "waehrend der Intervention nicht");
 
     // Das End meldet einen Nachlauf. Das Intervall ist damit NICHT sofort
     // geschlossen: der Hall einer Vorschau klingt in die Messung hinein, und
@@ -451,16 +451,16 @@ fn marker_end_closes_its_interval_only_after_the_tail() {
     assert_eq!(sicht.aktive, 0, "die aktive Intervention ist weg");
     assert_eq!(sicht.tail_samples_offen, 24_000, "aber der Nachlauf steht");
     assert!(!sicht.starke_evidenz_erlaubt);
-    assert!(!c.evidence_dispatch(), "und Evidenz bleibt gesperrt");
+    assert!(!c.evidence_dispatch_fuer_link("probe"), "und Evidenz bleibt gesperrt");
 
     // Erst der abgelaufene Nachlauf gibt frei - und zwar VOLLSTAENDIG
     // abgelaufen, nicht teilweise.
     c.tail_fortschritt(12_000);
-    assert!(!c.evidence_dispatch(), "der halbe Nachlauf genuegt nicht");
+    assert!(!c.evidence_dispatch_fuer_link("probe"), "der halbe Nachlauf genuegt nicht");
     assert_eq!(c.interventionssicht().tail_samples_offen, 12_000);
     c.tail_fortschritt(12_000);
     assert!(c.interventionssicht().starke_evidenz_erlaubt);
-    assert!(c.evidence_dispatch(), "jetzt wieder");
+    assert!(c.evidence_dispatch_fuer_link("probe"), "jetzt wieder");
 
     // Ein Nachlauf von 0 schliesst sofort - der Normalfall ohne Hall.
     let (c2, h2) = coordinator_mit_link("probe", "active_probe");
@@ -490,7 +490,7 @@ fn inverse_path_returns_to_zero_after_every_intervention_kind() {
         assert!(c.intervention_begin("probe", &h.adresse, &id, sequenz), "begin {nr}");
         sequenz += 1;
         assert_eq!(c.interventionssicht().aktive, 1, "{nr}");
-        assert!(!c.evidence_dispatch(), "{nr}: gesperrt");
+        assert!(!c.evidence_dispatch_fuer_link("probe"), "{nr}: gesperrt");
 
         assert!(c.intervention_end("probe", &h.adresse, &id, sequenz, tail), "end {nr}");
         sequenz += 1;
@@ -503,7 +503,7 @@ fn inverse_path_returns_to_zero_after_every_intervention_kind() {
         assert_eq!(sicht.tail_samples_offen, 0, "{nr}: kein Nachlauf");
         assert!(!sicht.unknown, "{nr}: kein Unknown");
         assert!(sicht.starke_evidenz_erlaubt, "{nr}: wieder erlaubt");
-        assert!(c.evidence_dispatch(), "{nr}: und der naechste Dispatch geht durch");
+        assert!(c.evidence_dispatch_fuer_link("probe"), "{nr}: und der naechste Dispatch geht durch");
     }
 }
 
@@ -586,11 +586,11 @@ fn dispatch_lock_ordering_holds_under_concurrent_begin() {
     // existieren, und DANN unter Last, dass kein Urteil verlorengeht.
     let (c, h) = coordinator_mit_link("probe", "active_probe");
     let id = hex32(800);
-    assert!(c.evidence_dispatch(), "ohne Intervention angenommen");
+    assert!(c.evidence_dispatch_fuer_link("probe"), "ohne Intervention angenommen");
     assert!(c.intervention_begin("probe", &h.adresse, &id, 1));
-    assert!(!c.evidence_dispatch(), "mit offener Intervention gesperrt");
+    assert!(!c.evidence_dispatch_fuer_link("probe"), "mit offener Intervention gesperrt");
     assert!(c.intervention_end("probe", &h.adresse, &id, 2, 0));
-    assert!(c.evidence_dispatch(), "und danach wieder angenommen");
+    assert!(c.evidence_dispatch_fuer_link("probe"), "und danach wieder angenommen");
 
     // ── Jetzt unter Last ──────────────────────────────────────────────────
     let c = Arc::new(c);
@@ -626,7 +626,7 @@ fn dispatch_lock_ordering_holds_under_concurrent_begin() {
             // feste Rundenzahl. Sonst haengt die Ueberlappung an der
             // Ausfuehrungsgeschwindigkeit.
             while laeuft.load(AtomicOrdering::Acquire) {
-                if c.evidence_dispatch() {
+                if c.evidence_dispatch_fuer_link("probe") {
                     a.fetch_add(1, AtomicOrdering::Relaxed);
                 } else {
                     g.fetch_add(1, AtomicOrdering::Relaxed);

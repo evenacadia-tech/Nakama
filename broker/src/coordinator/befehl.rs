@@ -443,7 +443,9 @@ impl Coordinator {
                     .and_then(Value::as_bool)
                     == Some(true)
                 {
-                    self.intervention_overflow();
+                    // M-39/M-62: der gemeldete Ueberlauf trifft die Sitzung
+                    // dieses Links, nicht den ganzen Broker.
+                    self.intervention_overflow_fuer_link(link_id);
                 }
                 let sequence = wert.get("sequence")?.as_u64()?;
                 let _ = self.heartbeat_kontakt(link_id, Some(&wert));
@@ -467,17 +469,42 @@ impl Coordinator {
             }
             "audible_intervention_end" => {
                 let adresse: Adresse = serde_json::from_value(wert["adresse"].clone()).ok()?;
-                self.intervention_end(
+                let tail = wert.get("tail_samples")?.as_u64()?;
+                let angenommen = self.intervention_end(
                     link_id,
                     &adresse,
                     wert.get("intervention_id")?.as_str()?,
                     wert.get("event_sequence")?.as_u64()?,
-                    wert.get("tail_samples")?.as_u64()?,
+                    tail,
                 );
+                // 🔑 M-52, Befund B24: ein hoerbarer Eingriff NIMMT die Evidenz
+                // seines Bereichs ZURUECK. Ihn nur fuer die Zukunft zu sperren
+                // liesse die waehrend des Eingriffs angenommenen Belege stehen
+                // — und die sehen aus wie jede andere Messung.
+                //
+                // Der Bereich endet erst NACH dem Nachlauf: der Filterhall des
+                // Markers laeuft in die folgende Messung hinein (§34.2).
+                if angenommen {
+                    if let Some(ende) = wert.get("project_sample_end").and_then(Value::as_i64) {
+                        let session = ClientKey::aus_adresse(&adresse).session();
+                        self.invalidierung_wegen_intervention(
+                            &session,
+                            i64::MIN / 2,
+                            ende.saturating_add(tail.min(i64::MAX as u64) as i64),
+                        );
+                    }
+                }
                 None
             }
             "session_command" => self.session_command(link_id, &wert),
             "preview_begin" | "preview_renew" | "preview_end" => self.persistenz_p0(link_id, &wert),
+            // 🔑 Nacharbeit 1 (Befund B18): die drei Experimentfamilien fielen
+            // vorher in `_ => None`. Schema-gueltige Produktnachrichten
+            // bewirkten damit NICHTS, und M-40/M-47/M-49 existierten nur in
+            // ihren eigenen Tests.
+            "experiment_begin" | "experiment_abort" | "experiment_manual_result" => {
+                self.experiment_p0(link_id, &wert)
+            }
             _ => None,
         }
     }

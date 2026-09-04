@@ -95,6 +95,10 @@ impl Coordinator {
         stand.messframes.remove(key);
         stand.messfehler.remove(key);
         stand.lautheit.remove(key);
+        // B15: die Evidenzhistorie faellt mit dem Client, wie ihre drei
+        // Nachbarmaps. Eine Eviction, die sie stehen liesse, hielte die
+        // Messwahrheit eines Clients, den es nicht mehr gibt (M-74).
+        stand.evidenz.remove(key);
         let link_ids: Vec<String> = stand
             .links
             .iter()
@@ -111,10 +115,13 @@ impl Coordinator {
                 );
                 Self::subscription_entfernen_locked(stand, &link_id);
                 stand.telemetry_links.remove(&link_id);
-                let vorher = stand.interventionen.len();
-                stand.interventionen.retain(|_, i| i.link_id != link_id);
-                if vorher != stand.interventionen.len() {
-                    stand.intervention_state_unknown = true;
+                // M-62: der Taint der SITZUNG dieses Links.
+                let session = key.session();
+                let taint = Self::taint_mut(stand, &session);
+                let vorher = taint.interventionen.len();
+                taint.interventionen.retain(|_, i| i.link_id != link_id);
+                if vorher != taint.interventionen.len() {
+                    taint.unknown = true;
                 }
                 schliessen.push(link_id);
             }
@@ -155,6 +162,21 @@ impl Coordinator {
 
     pub fn liveness_tick(&self) -> Vec<String> {
         let jetzt = self.clock.jetzt();
+        // 🔑 Befund B16: DER Aufrufer von `tail_fortschritt`.
+        //
+        // Die Funktion hatte ausserhalb der Tests keinen. Nach einem
+        // Endereignis mit positivem Nachlauf blieb der Evidenzpfad deshalb
+        // DAUERHAFT gesperrt — M-58 verlangt aber, dass der Nachlauf ABLAEUFT
+        // und die Sperre danach von selbst faellt.
+        //
+        // Der Tick ist die richtige Stelle: der Nachlauf ist eine Zeitgroesse,
+        // und dies ist die einzige monotone Uhr des Coordinators. Der Schritt
+        // ist das Tickintervall in Samples bei der Standardrate — mehr
+        // Genauigkeit gaebe es nur mit einer zweiten Zeitquelle, und zwei
+        // Uhren fuer dieselbe Frist waeren zwei Wahrheiten. Er ist bewusst
+        // KONSERVATIV klein gewaehlt: ein zu grosser Schritt gaebe die Sperre
+        // zu frueh frei, ein zu kleiner nur spaeter.
+        self.tail_fortschritt(TAIL_SCHRITT_JE_TICK);
         let (schliessen, dirty) = {
             let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
             Self::stale_aktualisieren_locked(&mut stand, jetzt);

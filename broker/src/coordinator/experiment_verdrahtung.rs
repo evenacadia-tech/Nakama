@@ -839,9 +839,22 @@ impl Coordinator {
                 if von < passage.projekt_von || bis > passage.projekt_bis {
                     continue;
                 }
+                // 🔑 Nacharbeit 3 (Befund B9, M-49/R17): DIE KONVENTION.
+                //
+                // Beide Grenzen sind der Wert, den der NAECHSTE angenommene
+                // Snapshot tragen wird (`evidenz_folge.load()` liefert genau
+                // ihn, weil `fetch_add` den alten Wert zurueckgibt). Daraus
+                // folgt: alles UNTER der Begingrenze ist Baseline, alles AB
+                // der Kandidatengrenze ist Resultat.
+                //
+                // Die Runde 2 verglich `> kandidat_folge` und verwarf damit
+                // GENAU den ersten Snapshot nach jedem Kandidaten — den
+                // wichtigsten, denn er ist der erste Beleg der Aenderung. Mit
+                // mehreren Resultatsnapshots faellt das nicht auf; mit genau
+                // einem lieferte die Resultatmessung gar nichts.
                 if eintrag.empfangsfolge < begin_folge {
                     baseline.push(eintrag);
-                } else if eintrag.empfangsfolge > kandidat_folge {
+                } else if eintrag.empfangsfolge >= kandidat_folge {
                     resultat.push(eintrag);
                 }
             }
@@ -1185,7 +1198,10 @@ impl Coordinator {
     // laesst, wird UEBERGANGEN und nicht halb wiederhergestellt. Ein halber
     // Versuch waere schlimmer als keiner: er saehe aus wie ein ganzer.
 
-    pub(super) fn stand_aus_store_wiederherstellen(stand: &mut Stand, store: &StoreHandle) {
+    /// Rueckgabe: der Wert, mit dem `evidenz_folge` nach dem Restore
+    /// weiterzaehlen muss (Befund B6).
+    pub(super) fn stand_aus_store_wiederherstellen(stand: &mut Stand, store: &StoreHandle) -> u64 {
+        let mut hoechste_folge = 0u64;
         let passagen: Vec<Passage> = store
             .domaene_lesen(Domaenentabelle::Passages)
             .unwrap_or_default()
@@ -1204,6 +1220,34 @@ impl Coordinator {
             passagen,
             experimente,
         );
+
+        // 🔑 Nacharbeit 3 (Befund B5, M-51): die TRANSITIONSHISTORIE kommt
+        // MIT zurueck.
+        //
+        // `wiederherstellen` liess das Log ausdruecklich leer, und
+        // `mit_store` las `experiment_events` nie. Nach einem Neustart lieferte
+        // `experiment_export(id)` deshalb eine LEERE Transitionshistorie,
+        // obwohl die Indexzeilen da standen — waehrend M-51 „vollstaendig
+        // exportiert" zusagt. Der Index ist die haltbare Kette; sie hier zu
+        // erfinden waere eine zweite, aermere Kopie, sie zu ignorieren ein
+        // stiller Verlust.
+        let mut log = Vec::new();
+        let mut passage_gesehen: std::collections::BTreeSet<String> =
+            std::collections::BTreeSet::new();
+        let mut reihenfolge_gesehen: std::collections::BTreeSet<String> =
+            std::collections::BTreeSet::new();
+        for bytes in store.experiment_ereignisse_lesen().unwrap_or_default() {
+            let Ok(wert) = serde_json::from_slice::<Value>(&bytes) else {
+                continue;
+            };
+            Self::transition_aus_gespeichertem(
+                &wert,
+                &mut passage_gesehen,
+                &mut reihenfolge_gesehen,
+                &mut log,
+            );
+        }
+        stand.experimente.log_setzen(log);
 
         // Die Evidenzhistorie derselben Ablage. Sie traegt die Belege, aus
         // denen `resultatmessung` Baseline und Resultat bildet — ohne sie
@@ -1228,6 +1272,15 @@ impl Coordinator {
             if let Some(grund) = zeile.get("ausschlussgrund").and_then(Value::as_str) {
                 eintrag.ausschlussgrund = Some(grund.to_owned());
             }
+            // 🔑 Befund B6: die Ankunftsreihenfolge kommt MIT zurueck. Fehlt
+            // sie (Zeilen aus einer Fassung vor dieser Runde), bleibt sie 0 —
+            // das ist der aelteste denkbare Platz und damit die fail-closed
+            // Antwort: solche Evidenz zaehlt als Baseline, nie als Resultat.
+            eintrag.empfangsfolge = zeile
+                .get("empfangsfolge")
+                .and_then(Value::as_u64)
+                .unwrap_or(0);
+            hoechste_folge = hoechste_folge.max(eintrag.empfangsfolge);
             let key = ClientKey::aus_adresse(&adresse);
             let historie = stand.evidenz.entry(key).or_default();
             historie.push_back(eintrag);
@@ -1235,6 +1288,142 @@ impl Coordinator {
                 historie.pop_front();
             }
         }
+
+        // 🔑 Befund B6: der Zaehler setzt HINTER allem fort, was es schon gab
+        // — restaurierte Evidenz UND die persistierten Begin- und
+        // Kandidatengrenzen. Startete er wieder bei 0, waere die naechste
+        // Resultatevidenz aelter als die Grenze, an der sie gemessen wird.
+        for e in stand.experimente.alle() {
+            hoechste_folge = hoechste_folge.max(e.begin_evidenzfolge);
+            for k in &e.kandidaten {
+                hoechste_folge = hoechste_folge.max(k.evidenzfolge);
+            }
+        }
+        hoechste_folge.saturating_add(1)
+    }
+
+    /// Baut die Transitionen EINER gespeicherten Experimentzeile nach
+    /// (Befund B5).
+    ///
+    /// Der Payload traegt den VOLLSTAENDIGEN Zustand nach der Transition und
+    /// daneben, WELCHE sie war (`ereignis`). Aus beidem folgt die Zeile im
+    /// Log eindeutig: der Kandidat ist der zuletzt angelegte, das Terminal
+    /// steht im Zustand, und die Passage wird beim ERSTEN Versuch angelegt,
+    /// der sie nennt.
+    fn transition_aus_gespeichertem(
+        wert: &Value,
+        passage_gesehen: &mut std::collections::BTreeSet<String>,
+        reihenfolge_gesehen: &mut std::collections::BTreeSet<String>,
+        log: &mut Vec<crate::coordinator::experiment::Ereignis>,
+    ) {
+        use crate::coordinator::experiment::Ereignis;
+        let Some(experiment_id) = wert.get("experiment_id").and_then(Value::as_str) else {
+            return;
+        };
+        let ereignis = wert.get("ereignis").and_then(Value::as_str).unwrap_or("");
+        match ereignis {
+            "begonnen" => {
+                if let Some(p) = wert
+                    .get("passage")
+                    .filter(|p| !p.is_null())
+                    .and_then(Self::passage_aus_gespeichertem)
+                {
+                    if passage_gesehen.insert(p.passage_id.clone()) {
+                        log.push(Ereignis::PassageAngelegt {
+                            passage_id: p.passage_id.clone(),
+                            passage: Box::new(p),
+                        });
+                    }
+                }
+                let (Some(passage_id), Some(projektbindung), Some(baseline)) = (
+                    wert.get("passage_id").and_then(Value::as_str),
+                    wert.get("projektbindung").and_then(Value::as_str),
+                    Self::referenz_aus_gespeichertem(wert.get("baseline")),
+                ) else {
+                    return;
+                };
+                log.push(Ereignis::Begonnen {
+                    experiment_id: experiment_id.to_owned(),
+                    passage_id: passage_id.to_owned(),
+                    projektbindung: projektbindung.to_owned(),
+                    baseline: Box::new(baseline),
+                });
+            }
+            "kandidat" => {
+                if let Some(k) = wert
+                    .get("kandidaten")
+                    .and_then(Value::as_array)
+                    .and_then(|a| a.last())
+                {
+                    if let (Some(nummer), Some(referenz)) = (
+                        k.get("nummer").and_then(Value::as_u64),
+                        Self::referenz_aus_gespeichertem(k.get("referenz")),
+                    ) {
+                        log.push(Ereignis::KandidatAngelegt {
+                            experiment_id: experiment_id.to_owned(),
+                            nummer: nummer as u32,
+                            referenz: Box::new(referenz),
+                        });
+                    }
+                }
+                // Die Bindung der Blindreihenfolge ist eine EIGENE Transition
+                // (V2(c), R13/B7). Sie faellt mit dem ersten Kandidaten, der
+                // sie traegt — ein zweiter dreht sie nicht.
+                if let Some(reihenfolge) = Self::reihenfolge_aus_wort(
+                    wert.get("blindreihenfolge_gebunden").and_then(Value::as_str),
+                ) {
+                    if reihenfolge_gesehen.insert(experiment_id.to_owned()) {
+                        log.push(Ereignis::ReihenfolgeGebunden {
+                            experiment_id: experiment_id.to_owned(),
+                            reihenfolge,
+                        });
+                    }
+                }
+            }
+            "ergebnis" => {
+                let leer = Value::Null;
+                let terminal = wert.get("terminal").unwrap_or(&leer);
+                let achsen = Self::achsen_aus_gespeichertem(terminal.get("achsen"));
+                log.push(Ereignis::Ergebnis {
+                    experiment_id: experiment_id.to_owned(),
+                    hoerurteil: Self::hoerurteil_aus_wort(
+                        terminal.get("hoerurteil").and_then(Value::as_str),
+                    ),
+                    blindreihenfolge: Self::reihenfolge_aus_wort(
+                        terminal.get("blindreihenfolge").and_then(Value::as_str),
+                    )
+                    .unwrap_or(Blindreihenfolge::BaselineZuerst),
+                    achsen: Box::new(achsen),
+                    baseline_evidence_ids: Self::idliste(wert.get("baseline_evidence_ids")),
+                    resultat_evidence_ids: Self::idliste(wert.get("resultat_evidence_ids")),
+                });
+            }
+            "abgebrochen" | "verdraengt" => {
+                let grund = match wert
+                    .pointer("/terminal/grund")
+                    .and_then(Value::as_str)
+                    .unwrap_or("")
+                {
+                    "verdraengt" => Abbruchgrund::Verdraengt,
+                    _ => Abbruchgrund::UserAbbruch,
+                };
+                log.push(Ereignis::Abgebrochen {
+                    experiment_id: experiment_id.to_owned(),
+                    grund,
+                });
+            }
+            _ => {}
+        }
+    }
+
+    fn idliste(wert: Option<&Value>) -> Vec<String> {
+        wert.and_then(Value::as_array)
+            .map(|a| {
+                a.iter()
+                    .filter_map(|v| v.as_str().map(str::to_owned))
+                    .collect()
+            })
+            .unwrap_or_default()
     }
 
     fn fingerprint_aus_gespeichertem(wert: Option<&Value>) -> Option<Fingerprintwerte> {
@@ -1299,6 +1488,17 @@ impl Coordinator {
                 _ => Alignmentwert::Unclear,
             },
         })
+    }
+
+    /// Das Hoerurteil aus seinem Wort (Befund B5). `enthaltung` ist der
+    /// fail-closed-Ausgang: sie behauptet keinen Unterschied und keine Seite.
+    fn hoerurteil_aus_wort(wort: Option<&str>) -> Hoerurteil {
+        match wort {
+            Some("baseline") => Hoerurteil::Baseline,
+            Some("kandidat") => Hoerurteil::Kandidat,
+            Some("kein_unterschied") => Hoerurteil::KeinUnterschied,
+            _ => Hoerurteil::Enthaltung,
+        }
     }
 
     fn reihenfolge_aus_wort(wort: Option<&str>) -> Option<Blindreihenfolge> {

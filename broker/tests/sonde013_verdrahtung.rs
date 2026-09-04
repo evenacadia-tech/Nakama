@@ -3379,3 +3379,289 @@ fn verdraengter_taint_faellt_in_der_opfersitzung() {
          zu bleiben"
     );
 }
+
+// ═════════════════════════════════════════════════════════════════════════
+// NACHARBEIT 3 · W4 — Replay und Reihenfolge
+// ═════════════════════════════════════════════════════════════════════════
+
+/// B9 — der ERSTE Snapshot nach dem Kandidaten zaehlt als Resultat.
+///
+/// 🔑 Wiederpruefung 2: Beim Kandidaten wurde der aktuelle NAECHSTE
+/// Evidenzzaehler N gespeichert, und der erste danach angenommene Snapshot
+/// bekam durch `fetch_add` ebenfalls N. Weil nur `empfangsfolge >
+/// kandidat_folge` als Resultat galt, wurde genau dieser eindeutig NACH dem
+/// Kandidaten eingegangene Beleg verworfen — der erste Beleg der Aenderung.
+/// Die Tests der Runde 2 sendeten mehrere Resultatsnapshots und konnten den
+/// Ein-Snapshot-Fall nicht sehen.
+#[cfg(windows)]
+#[test]
+fn genau_ein_snapshot_nach_dem_kandidaten_ist_ein_resultat() {
+    let h = HarnischMitStore::neu("b9-erster-resultatsnapshot");
+    let versuch = 0xc90;
+    let vorlage = experiment_begin_wert(&h.main.adresse, 0x9b0, versuch);
+    let sonde = sonde_in_der_passage(&h, &vorlage);
+
+    // Baseline: Evidenz VOR dem Begin.
+    for nr in 0..4 {
+        assert!(h
+            .c
+            .evidence_snapshot_json("sonde", &evidenz_in_passage(&sonde.adresse, &vorlage, nr)));
+    }
+    assert_eq!(
+        h.p0(&experiment_begin_wert(&h.main.adresse, 0x9b1, versuch))["ergebnis"],
+        "angewandt"
+    );
+    assert_eq!(
+        h.p0(&json!({
+            "type": "experiment_candidate",
+            "kopf": {
+                "command_id": hex(0x9b2),
+                "ziel": h.main.adresse,
+                "base_revision": 0,
+                "ttl_ms": 1000,
+                "schema_major": 3,
+                "schema_minor": 0
+            },
+            "experiment_id": hex(versuch),
+            "referenz": vorlage["referenz"],
+            "blindreihenfolge": "kandidat_zuerst"
+        }))["ergebnis"],
+        "angewandt"
+    );
+
+    // GENAU EIN Snapshot nach dem Kandidaten — der Fall, in dem der
+    // Off-by-one alles verwirft.
+    let von = vorlage["passage"]["projekt_von"].as_i64().unwrap();
+    let epoche = vorlage["passage"]["transport_epoch"].as_u64().unwrap();
+    assert!(h.c.evidence_snapshot_json(
+        "sonde",
+        &evidenz_payload(&sonde.adresse, 9, |w| {
+            w["transport"]["transport_epoch"] = json!(epoche);
+            w["transport"]["project_sample_start"] = json!(von + 9 * 512);
+            if let Some(werte) = w["verteilung"]["p50"]["werte"].as_array_mut() {
+                for v in werte.iter_mut() {
+                    if let Some(x) = v.as_i64() {
+                        *v = json!(x + 60);
+                    }
+                }
+            }
+        })
+    ));
+
+    let ack = h.p0(&json!({
+        "type": "experiment_manual_result",
+        "kopf": {
+            "command_id": hex(0x9b3),
+            "ziel": h.main.adresse,
+            "base_revision": 0,
+            "ttl_ms": 1000,
+            "schema_major": 3,
+            "schema_minor": 0
+        },
+        "experiment_id": hex(versuch),
+        "hoerurteil": "kandidat",
+        "blindreihenfolge": "kandidat_zuerst",
+        "notiz": null,
+        "werkzeug": null
+    }));
+    assert_eq!(
+        ack["ergebnis"], "angewandt",
+        "genau_ein_snapshot_nach_dem_kandidaten_ist_ein_resultat - EIN Beleg \
+         nach dem Kandidaten reicht fuer eine Resultatmessung: {ack}"
+    );
+    let e = h.c.experiment_sicht(&hex(versuch)).expect("der Versuch steht");
+    assert_eq!(
+        e.resultat_evidence_ids.len(),
+        1,
+        "und genau dieser eine Beleg ist als Resultat gefuehrt"
+    );
+}
+
+/// B5 — die Transitionshistorie ueberdauert den Neustart (M-51).
+///
+/// 🔑 Wiederpruefung 2: `wiederherstellen` liess das In-Memory-Log
+/// ausdruecklich leer, und `Coordinator::mit_store` las `experiment_events`
+/// nie. Nach einem Neustart lieferte `experiment_export(id)` deshalb eine
+/// LEERE Transitionshistorie trotz vorhandener Indexzeilen; der Restart-Test
+/// der Runde 2 pruefte nur `experiment_sicht`.
+#[cfg(windows)]
+#[test]
+fn export_traegt_seine_transitionen_auch_nach_dem_neustart() {
+    let h = HarnischMitStore::neu("b5-export-nach-neustart");
+    let versuch = 0xca0;
+    let vorlage = experiment_begin_wert(&h.main.adresse, 0x9c0, versuch);
+    let sonde = sonde_in_der_passage(&h, &vorlage);
+    for nr in 0..4 {
+        assert!(h
+            .c
+            .evidence_snapshot_json("sonde", &evidenz_in_passage(&sonde.adresse, &vorlage, nr)));
+    }
+    assert_eq!(
+        h.p0(&experiment_begin_wert(&h.main.adresse, 0x9c1, versuch))["ergebnis"],
+        "angewandt"
+    );
+    assert_eq!(
+        h.p0(&json!({
+            "type": "experiment_candidate",
+            "kopf": {
+                "command_id": hex(0x9c2),
+                "ziel": h.main.adresse,
+                "base_revision": 0,
+                "ttl_ms": 1000,
+                "schema_major": 3,
+                "schema_minor": 0
+            },
+            "experiment_id": hex(versuch),
+            "referenz": vorlage["referenz"],
+            "blindreihenfolge": "baseline_zuerst"
+        }))["ergebnis"],
+        "angewandt"
+    );
+
+    let vor_neustart = h
+        .c
+        .experiment_export(&hex(versuch))
+        .expect("der Export steht vor dem Neustart");
+    assert!(
+        vor_neustart.ereignisse.len() >= 3,
+        "vor dem Neustart traegt er Passage, Begin, Kandidat und Reihenfolge: {}",
+        vor_neustart.ereignisse.len()
+    );
+
+    // DER Neustart: ein zweiter Coordinator auf DEMSELBEN Store.
+    let neu = h.neuer_coordinator();
+    let nach_neustart = neu
+        .experiment_export(&hex(versuch))
+        .expect("der Versuch ueberdauert den Neustart");
+    assert_eq!(
+        nach_neustart.ereignisse.len(),
+        vor_neustart.ereignisse.len(),
+        "export_traegt_seine_transitionen_auch_nach_dem_neustart - die Kette ist \
+         VOLLSTAENDIG, nicht leer (M-51)"
+    );
+    assert_eq!(
+        nach_neustart.ereignisse, vor_neustart.ereignisse,
+        "und Zeile fuer Zeile dieselbe - der Index ist die haltbare Kette, keine \
+         aermere Kopie"
+    );
+    assert_eq!(
+        nach_neustart.passage.passage_id, vor_neustart.passage.passage_id,
+        "die Passage reist wie zuvor mit"
+    );
+}
+
+/// B6 — die Evidenzreihenfolge ueberdauert den Neustart.
+///
+/// 🔑 Wiederpruefung 2: Restaurierte Evidenz erhielt `empfangsfolge = 0`, und
+/// der globale Zaehler startete ebenfalls bei 0, waehrend die persistierten
+/// Begin- und Kandidatengrenzen ihre hohen Werte behielten. Neue
+/// Resultatevidenz wurde dadurch als Baseline eingeordnet oder verworfen; der
+/// Restart-Test der Runde 2 startete nur einen bereits TERMINALEN Versuch neu
+/// und konnte diesen Rechenpfad nicht pruefen.
+#[cfg(windows)]
+#[test]
+fn evidenzreihenfolge_ueberdauert_den_neustart() {
+    let h = HarnischMitStore::neu("b6-evidenzreihenfolge");
+    let versuch = 0xcb0;
+    let vorlage = experiment_begin_wert(&h.main.adresse, 0x9d0, versuch);
+    let sonde = sonde_in_der_passage(&h, &vorlage);
+    for nr in 0..4 {
+        assert!(h
+            .c
+            .evidence_snapshot_json("sonde", &evidenz_in_passage(&sonde.adresse, &vorlage, nr)));
+    }
+    assert_eq!(
+        h.p0(&experiment_begin_wert(&h.main.adresse, 0x9d1, versuch))["ergebnis"],
+        "angewandt"
+    );
+    assert_eq!(
+        h.p0(&json!({
+            "type": "experiment_candidate",
+            "kopf": {
+                "command_id": hex(0x9d2),
+                "ziel": h.main.adresse,
+                "base_revision": 0,
+                "ttl_ms": 1000,
+                "schema_major": 3,
+                "schema_minor": 0
+            },
+            "experiment_id": hex(versuch),
+            "referenz": vorlage["referenz"],
+            "blindreihenfolge": "kandidat_zuerst"
+        }))["ergebnis"],
+        "angewandt"
+    );
+
+    // DER Neustart mit OFFENEM Versuch und erfasstem Kandidaten.
+    let neu = h.neuer_coordinator();
+    let push = Arc::new(PushProbe::default());
+    neu.session_push_setzen(push);
+    anmelden(&neu, "main2", &h.main);
+    assert!(report_main(&neu, "main2", &h.main.adresse));
+    assert!(neu.state_report_json("main2", &state_report_payload(&h.main.adresse, 0)));
+    anmelden(&neu, "sonde2", &sonde);
+    report(&neu, "sonde2", &sonde.adresse);
+    let klasse = vorlage["passage"]["messpunktklassen"][0].as_str().unwrap();
+    assert!(neu.descriptor_setzen("sonde2", descriptor(&sonde.adresse, klasse, &hex(0x77))));
+
+    assert!(
+        neu.experiment_sicht(&hex(versuch)).is_some_and(|e| e.offen()),
+        "der Versuch ist nach dem Neustart OFFEN"
+    );
+    let restauriert = neu.evidenz_historie(&sonde.adresse.instance_id);
+    assert!(
+        restauriert.iter().any(|e| e.empfangsfolge > 0),
+        "die restaurierte Evidenz behaelt ihre Ankunftsreihenfolge, statt bei 0 \
+         zu beginnen"
+    );
+
+    // Ein NEUER Resultatsnapshot nach dem Neustart.
+    let von = vorlage["passage"]["projekt_von"].as_i64().unwrap();
+    let epoche = vorlage["passage"]["transport_epoch"].as_u64().unwrap();
+    for nr in 20..22 {
+        assert!(neu.evidence_snapshot_json(
+            "sonde2",
+            &evidenz_payload(&sonde.adresse, nr, |w| {
+                w["transport"]["transport_epoch"] = json!(epoche);
+                w["transport"]["project_sample_start"] = json!(von + (nr as i64) * 512);
+                if let Some(werte) = w["verteilung"]["p50"]["werte"].as_array_mut() {
+                    for v in werte.iter_mut() {
+                        if let Some(x) = v.as_i64() {
+                            *v = json!(x + 60);
+                        }
+                    }
+                }
+            })
+        ));
+    }
+
+    let payload = serde_json::to_vec(&json!({
+        "type": "experiment_manual_result",
+        "kopf": {
+            "command_id": hex(0x9d3),
+            "ziel": h.main.adresse,
+            "base_revision": 0,
+            "ttl_ms": 1000,
+            "schema_major": 3,
+            "schema_minor": 0
+        },
+        "experiment_id": hex(versuch),
+        "hoerurteil": "kandidat",
+        "blindreihenfolge": "kandidat_zuerst",
+        "notiz": null,
+        "werkzeug": null
+    }))
+    .unwrap();
+    let antwort = Senke::p0(&neu, "main2", &payload).expect("die Familie wird beantwortet");
+    let ack: Value = serde_json::from_slice(&antwort).unwrap();
+    assert_eq!(
+        ack["ergebnis"], "angewandt",
+        "evidenzreihenfolge_ueberdauert_den_neustart - der NEUE Beleg zaehlt als \
+         Resultat, nicht als Baseline: {ack}"
+    );
+    let e = neu.experiment_sicht(&hex(versuch)).expect("der Versuch steht");
+    assert!(
+        !e.resultat_evidence_ids.is_empty(),
+        "und er ist als Resultat gefuehrt"
+    );
+}

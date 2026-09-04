@@ -318,6 +318,25 @@ impl StoreHandle {
         })
     }
 
+    /// Die Payloads ALLER Experimenttransitionen in Ereignisreihenfolge
+    /// (Befund B5, M-51).
+    ///
+    /// `experiment_events` indiziert jede Transition ueber ihre `event_uuid`;
+    /// der Payload steht im `event_log`. Der Index allein sagt nur, DASS es
+    /// eine Transition gab — erst der Payload macht sie exportierbar.
+    pub fn experiment_ereignisse_lesen(&self) -> Result<Vec<Vec<u8>>, StoreFehler> {
+        kurze_leseconnection(&self.db_pfad, |conn| {
+            let mut stmt = conn.prepare(
+                "SELECT l.payload_jcs FROM experiment_events e \
+                 JOIN event_log l ON l.event_uuid = e.event_uuid \
+                 ORDER BY l.event_ord",
+            )?;
+            let rows = stmt.query_map([], |row| row.get::<_, Vec<u8>>(0))?;
+            rows.collect::<Result<Vec<_>, _>>()
+                .map_err(StoreFehler::from)
+        })
+    }
+
     pub fn outbox_lesen(&self) -> Result<Vec<(SnapshotZiel, i64, i64)>, StoreFehler> {
         kurze_leseconnection(&self.db_pfad, |conn| {
             let mut stmt = conn.prepare(

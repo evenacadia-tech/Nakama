@@ -811,12 +811,28 @@ impl Experimentstore {
         &self.log
     }
 
+    /// Setzt die aus dem Store restaurierte Transitionshistorie (Befund B5).
+    ///
+    /// Sie wird NICHT erfunden: jede Zeile kommt aus `experiment_events` und
+    /// dem daran haengenden Domaenenereignis. Ohne sie liefert
+    /// `exportiere` nach einem Neustart eine leere Kette, obwohl M-51
+    /// „vollstaendig exportiert" zusagt.
+    pub fn log_setzen(&mut self, log: Vec<Ereignis>) {
+        self.log = log;
+    }
+
     pub fn passage(&self, id: &str) -> Option<&Passage> {
         self.passagen.get(id)
     }
 
     pub fn experiment(&self, id: &str) -> Option<&Experiment> {
         self.experimente.get(id)
+    }
+
+    /// Alle Versuche, offen wie terminal (Befund B6): auch ein abgeschlossener
+    /// haelt Grenzen, hinter die der Evidenzzaehler zurueckfallen koennte.
+    pub fn alle(&self) -> impl Iterator<Item = &Experiment> {
+        self.experimente.values()
     }
 
     pub fn offene(&self) -> impl Iterator<Item = &Experiment> {

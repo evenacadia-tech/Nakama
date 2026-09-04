@@ -137,7 +137,7 @@ impl Coordinator {
         let beeinflusst = stand_neu.beeinflusst;
 
         // ── DER EINE LOCKABSCHNITT (M-63) ───────────────────────────────
-        let client_key = {
+        let (client_key, empfangsfolge) = {
             let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
             let Some(link) = stand.links.get(link_id).cloned() else {
                 return false;
@@ -182,11 +182,12 @@ impl Coordinator {
             // die Grenze, an der `resultatmessung` Baseline und Resultat
             // trennt (M-49, Befund R17).
             eintrag.empfangsfolge = self.evidenz_folge.fetch_add(1, Ordering::SeqCst);
+            let folge = eintrag.empfangsfolge;
             historie.push_back(eintrag);
             while historie.len() > EVIDENZ_RETENTION {
                 historie.pop_front();
             }
-            key
+            (key, folge)
         };
 
         // 🔑 Befund B24: die AUSLOESER der Invalidierung sitzen hier, weil
@@ -207,7 +208,7 @@ impl Coordinator {
         //
         // Die Ablage liegt weiter AUSSERHALB des Locks: sie geht ueber den
         // StoreHandle und darf den Sessiongraphen nicht anhalten.
-        if !self.evidenz_persistieren(&client_key, &wert) {
+        if !self.evidenz_persistieren(&client_key, &wert, empfangsfolge) {
             let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
             let evidence_id = wert["evidence_id"].as_str().unwrap_or_default().to_owned();
             if let Some(historie) = stand.evidenz.get_mut(&client_key) {
@@ -406,15 +407,27 @@ impl Coordinator {
     /// Datenverlust an einer Zusage (§53.9). Ein VORHANDENER Store, der den
     /// Append verweigert, ist dagegen genau das — und dann ist der Snapshot
     /// nicht angenommen.
-    fn evidenz_persistieren(&self, key: &ClientKey, wert: &Value) -> bool {
+    fn evidenz_persistieren(&self, key: &ClientKey, wert: &Value, empfangsfolge: u64) -> bool {
         let Some(store) = self.store.as_ref() else {
             return true;
         };
         let Some(evidence_id) = wert.get("evidence_id").and_then(Value::as_str) else {
             return false;
         };
+        // 🔑 Nacharbeit 3 (Befund B6, M-49/M-50): die ANKUNFTSREIHENFOLGE
+        // reist MIT.
+        //
+        // Sie stand bis dahin nur im fluechtigen Bestand. Nach einem Neustart
+        // trug jede restaurierte Evidenz `empfangsfolge = 0`, waehrend die
+        // persistierten Begin- und Kandidatengrenzen ihre hohen Werte
+        // behielten: die alte Evidenz sah aus, als waere sie VOR jedem Begin
+        // eingegangen, und neue Resultatevidenz begann wieder bei 0 und wurde
+        // als Baseline eingeordnet oder verworfen. Sie steht NEBEN dem
+        // Snapshot, nicht darin — der Snapshot ist die bytegleiche
+        // Wire-Wahrheit, und die Reihenfolge ist eine Aussage des Empfaengers.
         let payload = serde_json::json!({
             "evidence_id": evidence_id,
+            "empfangsfolge": empfangsfolge,
             "snapshot": wert,
         });
         let Ok(payload_jcs) = serde_json_canonicalizer::to_vec(&payload) else {

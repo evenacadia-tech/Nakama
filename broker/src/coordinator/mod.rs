@@ -241,6 +241,7 @@ impl Coordinator {
         store_writer: &StoreWriter,
     ) -> Self {
         let mut stand = Stand::default();
+        let mut evidenz_folge_start = 0u64;
         stand.routing_bereit = !store_writer.ist_degradiert();
         if stand.routing_bereit {
             for guard in store_writer.restaurierte_guards() {
@@ -256,7 +257,8 @@ impl Coordinator {
             // obwohl die Zeile existierte — waehrend M-47 ausdruecklich sagt,
             // dass Sitzungsende, Reconnect und Brokerneustart einen offenen
             // Versuch NICHT abbrechen.
-            Self::stand_aus_store_wiederherstellen(&mut stand, &store_writer.handle());
+            evidenz_folge_start =
+                Self::stand_aus_store_wiederherstellen(&mut stand, &store_writer.handle());
         }
         Self {
             stand: Mutex::new(stand),
@@ -273,7 +275,7 @@ impl Coordinator {
             test_panik_unter_standlock: AtomicBool::new(false),
             fenster_nicht_endlich: AtomicU64::new(0),
             letzter_tail_tick: Mutex::new(None),
-            evidenz_folge: AtomicU64::new(0),
+            evidenz_folge: AtomicU64::new(evidenz_folge_start),
         }
     }
 

@@ -1,0 +1,146 @@
+SONDE-013 Etappe 2 C - Rotbeweis M-33
+=========================================
+
+Datei:     eq-copilot\plugin\src\PluginProcessor.cpp
+Ziel:      EqCopMarkierungTest
+Warum:     Der vierte fail-closed-Term faellt weg. §58 verlangt playing=true, recording=false, Realtime und Editor offen; ohne den dritten faerbt die Markierung in eine laufende Aufnahme hinein, und die Faerbung steht danach in der Datei.
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+                      && aufnahmeAus
+--- NEU ---
+                      && (aufnahmeAus || true)
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+  ok      T7: NaN-Feld verhindert Engage
+  ok      T7: fVon>fBis verhindert Engage
+  ok      T7: fBis wird an der Nyquist-Kappe gefangen (Zone baut)
+  ok      T7: 1/12-Okt-Resonanz-Puls baut (engste Karte)
+  ok      T7: Puls-Stufe 0 ist exakte Identitaet (b == a)
+  ok      T2: als Main klassifiziert (Â§53.5)
+  ok      T2: Zonen-Solo-Auftrag (Mulm 120-300) baut
+  ok      T2: Solo greift (Ausgang weicht ab)
+  ok      T2: markierungHoerbar meldet aktiv
+  ok      T2: Fade-out endet im erwarteten Fenster
+  ok      T2: nach dem Fade wieder bitgleich transparent
+  ok      T2: markierungHoerbar meldet aus
+  ok      T5: Ausgang bleibt endlich
+  ok      T5: kein Klick an Engage-/Disengage-Kanten
+  ok      M-33: Auftrag baut
+  ok      M-33: bei nachgewiesenem recording=false faerbt die Markierung (die Gegenprobe, ohne die der Rest nichts sagt)
+  FEHLER  M-33: recording_true blockiert - eine Faerbung, die in eine Aufnahme laeuft, steht danach in der Datei
+  ok      M-33: recording_unknown blockiert EBENSO - fail-closed, nicht fail-open. Ohne Hostbruecke weiss niemand, ob gerade aufgenommen wird
+  ok      M-34: als Main klassifiziert
+  ok      M-34: die Markierung klingt vor dem Entzug
+  ok      M-34: permission_loss_fades_instead_of_cutting - nach dem Entzug wird der Puffer noch fuer die Rampe angefasst, statt sofort zu springen  [8 Bloecke mit Rampe]
+  ok      M-34: und die groesste Sampledifferenz bleibt unter der Klickschwelle (dieselbe wie in T5)  [0.01051]
+  ok      M-34: danach meldet sie sich als still
+  ok      M-35: after_fade_the_neutral_path_is_bit_identical - ueber fuenf Blockgroessen, mit Zufallsaudio und BITvergleich
+  ok      M-36: als Main klassifiziert
+  ok      M-36: die Markierung klingt vor dem Oversizeblock
+  ok      M-36: der Teil des Oversizeblocks jenseits der Kapazitaet ist woertlich der Eingang - kein halber Wet-Pfad, keine Extrapolation
+  ok      M-36: oversize_block_fades_within_capacity_then_latches - danach blendet sie NICHT wieder ein, auch nicht nach 60 gueltigen Bloecken
+  ok      M-36: und meldet sich als still
+  ok      M-36: nach prepareToPlay ist sie wieder moeglich - der Riegel ist eine Verriegelung, keine Abschaltung
+  ok      T9: als Main klassifiziert (Â§53.5)
+  ok      T9: Puls-Auftrag 689 Hz baut
+  ok      T9: Schwellphase ist deutlich hoerbar
+  ok      T9: Ruhephase <= -120 dBFS Rest (Identitaet)
+  ok      T6: als Main klassifiziert (Â§53.5)
+  ok      T6: der geladene Main-Stand klassifiziert die neue Instanz (Â§53.5)
+  ok      T6: Save/Load laedt IMMER neutral (kein Markierungszustand)
+  ok      T7: als Main klassifiziert (Â§53.5)
+  ok      T7: Mono-Solo laeuft und bleibt endlich
+  ok      T3: als Main klassifiziert (Â§53.5)
+  ok      T3: Freilauf mit gesetztem Latch â JEDES Sample bitgleich (Render sauber)
+  ok      T3: Freilauf meldet den Latch-Fall an den Editor
+  ok      T3: Echtzeit-Beweis dauert mindestens ~2 Fenster (kein Fruehstart)
+  ok      T3: Echtzeit-Taktung schaltet die Markierung frei
+  ok      T3/M-34: isNonRealtime BLENDET AUS statt zu schneiden - und die Rampe ist nach spaetestens zehn Bloecken zu Ende  [0]
+  ok      T3/M-35: und danach ist der Pfad wieder bitgleich neutral
+  ok      T10: Markierung nach Offline-Ende wieder beweisbar
+  ok      T10/M-34: Transport-Stopp BLENDET AUS statt zu schneiden - und die Rampe ist endlich (der Pulsbetrieb traegt ein laengeres Fadefenster als der Solobetrieb)  [0]
+  ok      T10/M-35: und danach ist der Pfad wieder bitgleich neutral
+  ok      T4: beide Instanzen als Main klassifiziert (Â§53.5)
+  ok      T4: Markierung war waehrend der Messung hoerbar
+  ok      T4: keine Analyse-Drops (Vergleich belastbar)
+  ok      T4: beide Messungen messbereit
+  ok      T4: genug Baender fuer den Vergleich
+  ok      T4: LTAS mit/ohne Markierung gleich (Abgriff vor Faerbung)
+  ok      T11: als Main klassifiziert (Â§53.5)
+  ok      T11: Auftrag gebaut
+  ok      T11: OHNE Playhead faerbt kein einziges Sample (U10, 22.08.)
+  ok      T11: und die Markierung meldet sich nicht hoerbar
+  ok      T11: mit gestopptem Transport ebenfalls kein Sample
+  ok      T11: Gegenprobe - mit laufendem Transport faerbt genau dieser Aufbau
+MARKIERUNGSTEST FEHLGESCHLAGEN
+
+EXITCODE=1
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+  ok      T7: NaN-Feld verhindert Engage
+  ok      T7: fVon>fBis verhindert Engage
+  ok      T7: fBis wird an der Nyquist-Kappe gefangen (Zone baut)
+  ok      T7: 1/12-Okt-Resonanz-Puls baut (engste Karte)
+  ok      T7: Puls-Stufe 0 ist exakte Identitaet (b == a)
+  ok      T2: als Main klassifiziert (Â§53.5)
+  ok      T2: Zonen-Solo-Auftrag (Mulm 120-300) baut
+  ok      T2: Solo greift (Ausgang weicht ab)
+  ok      T2: markierungHoerbar meldet aktiv
+  ok      T2: Fade-out endet im erwarteten Fenster
+  ok      T2: nach dem Fade wieder bitgleich transparent
+  ok      T2: markierungHoerbar meldet aus
+  ok      T5: Ausgang bleibt endlich
+  ok      T5: kein Klick an Engage-/Disengage-Kanten
+  ok      M-33: Auftrag baut
+  ok      M-33: bei nachgewiesenem recording=false faerbt die Markierung (die Gegenprobe, ohne die der Rest nichts sagt)
+  ok      M-33: recording_true blockiert - eine Faerbung, die in eine Aufnahme laeuft, steht danach in der Datei
+  ok      M-33: recording_unknown blockiert EBENSO - fail-closed, nicht fail-open. Ohne Hostbruecke weiss niemand, ob gerade aufgenommen wird
+  ok      M-34: als Main klassifiziert
+  ok      M-34: die Markierung klingt vor dem Entzug
+  ok      M-34: permission_loss_fades_instead_of_cutting - nach dem Entzug wird der Puffer noch fuer die Rampe angefasst, statt sofort zu springen  [8 Bloecke mit Rampe]
+  ok      M-34: und die groesste Sampledifferenz bleibt unter der Klickschwelle (dieselbe wie in T5)  [0.01051]
+  ok      M-34: danach meldet sie sich als still
+  ok      M-35: after_fade_the_neutral_path_is_bit_identical - ueber fuenf Blockgroessen, mit Zufallsaudio und BITvergleich
+  ok      M-36: als Main klassifiziert
+  ok      M-36: die Markierung klingt vor dem Oversizeblock
+  ok      M-36: der Teil des Oversizeblocks jenseits der Kapazitaet ist woertlich der Eingang - kein halber Wet-Pfad, keine Extrapolation
+  ok      M-36: oversize_block_fades_within_capacity_then_latches - danach blendet sie NICHT wieder ein, auch nicht nach 60 gueltigen Bloecken
+  ok      M-36: und meldet sich als still
+  ok      M-36: nach prepareToPlay ist sie wieder moeglich - der Riegel ist eine Verriegelung, keine Abschaltung
+  ok      T9: als Main klassifiziert (Â§53.5)
+  ok      T9: Puls-Auftrag 689 Hz baut
+  ok      T9: Schwellphase ist deutlich hoerbar
+  ok      T9: Ruhephase <= -120 dBFS Rest (Identitaet)
+  ok      T6: als Main klassifiziert (Â§53.5)
+  ok      T6: der geladene Main-Stand klassifiziert die neue Instanz (Â§53.5)
+  ok      T6: Save/Load laedt IMMER neutral (kein Markierungszustand)
+  ok      T7: als Main klassifiziert (Â§53.5)
+  ok      T7: Mono-Solo laeuft und bleibt endlich
+  ok      T3: als Main klassifiziert (Â§53.5)
+  ok      T3: Freilauf mit gesetztem Latch â JEDES Sample bitgleich (Render sauber)
+  ok      T3: Freilauf meldet den Latch-Fall an den Editor
+  ok      T3: Echtzeit-Beweis dauert mindestens ~2 Fenster (kein Fruehstart)
+  ok      T3: Echtzeit-Taktung schaltet die Markierung frei
+  ok      T3/M-34: isNonRealtime BLENDET AUS statt zu schneiden - und die Rampe ist nach spaetestens zehn Bloecken zu Ende  [0]
+  ok      T3/M-35: und danach ist der Pfad wieder bitgleich neutral
+  ok      T10: Markierung nach Offline-Ende wieder beweisbar
+  ok      T10/M-34: Transport-Stopp BLENDET AUS statt zu schneiden - und die Rampe ist endlich (der Pulsbetrieb traegt ein laengeres Fadefenster als der Solobetrieb)  [0]
+  ok      T10/M-35: und danach ist der Pfad wieder bitgleich neutral
+  ok      T4: beide Instanzen als Main klassifiziert (Â§53.5)
+  ok      T4: Markierung war waehrend der Messung hoerbar
+  ok      T4: keine Analyse-Drops (Vergleich belastbar)
+  ok      T4: beide Messungen messbereit
+  ok      T4: genug Baender fuer den Vergleich
+  ok      T4: LTAS mit/ohne Markierung gleich (Abgriff vor Faerbung)
+  ok      T11: als Main klassifiziert (Â§53.5)
+  ok      T11: Auftrag gebaut
+  ok      T11: OHNE Playhead faerbt kein einziges Sample (U10, 22.08.)
+  ok      T11: und die Markierung meldet sich nicht hoerbar
+  ok      T11: mit gestopptem Transport ebenfalls kein Sample
+  ok      T11: Gegenprobe - mit laufendem Transport faerbt genau dieser Aufbau
+MARKIERUNGSTEST OK
+
+EXITCODE=0
+
+URTEIL: BELEGT (rot=1, gruen=0)

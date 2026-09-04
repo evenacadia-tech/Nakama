@@ -11,13 +11,18 @@
 //    nach ~1 s frei, Transport-Stopp und setNonRealtime schneiden hart.
 #include "PluginProcessor.h"
 #include "HoerMarkierung.h"
+
+#include <pluginterfaces/vst/ivstprocesscontext.h>
 #include <chrono>
 #include <cmath>
 #include <cstring>
+#include <functional>
 #include <iostream>
+#include <memory>
 #include <thread>
 
 using namespace eqcop;
+using VstKontext = Steinberg::Vst::ProcessContext;
 
 static juce::uint32 lcg = 0x2545f491u;
 static float zufall()
@@ -56,18 +61,78 @@ struct TestPlayHead : juce::AudioPlayHead
 // `pos` wandert je Block mit: eine stehende Projektzeit ist zwar kein
 // Kontinuitaetsbruch (FL zerteilt Puffer bis 1 Sample), aber ein laufender
 // Transport bewegt sie, und der Test soll den Normalfall fahren.
+// ⚠️ S20-22/SONDE-013 M-33 — WARUM ab hier JEDER Abschnitt die HOSTBRUECKE
+// braucht und nicht mehr nur einen Playhead.
+//
+// §58 verlangt fuer den Hoermarker vier fail-closed-Terme: `playing=true`,
+// `recording=false`, Realtime und Editor offen. Der dritte fehlte bis
+// SONDE-013 im `erlaubt`-Term, obwohl der Prozessor ihn kennt.
+//
+// Der Aufnahmezustand kommt AUSSCHLIESSLICH ueber die Hostbruecke: JUCEs
+// oeffentlicher Playhead-Rueckfallweg traegt ihn nicht (und soll ihn auch
+// nicht tragen — B5 misst ausdruecklich, dass ueber ihn nur zwei
+// Gueltigkeitsbits durchkommen). Ohne Bruecke ist der Zustand also
+// UNBEKANNT, und ein unbekannter blockiert wie ein aktiver.
+//
+// Das ist keine Testkosmetik, sondern die Produktwirkung: in einem Host ohne
+// gepatchten Wrapper faerbt die Markierung seit M-33 nicht mehr. Diese
+// Klasse faehrt deshalb denselben Weg wie das Produkt.
 struct LaufenderTransport
 {
     TestPlayHead kopf;
-    explicit LaufenderTransport (EqCopilotProcessor& p) : prozessor (p)
+    eqcop::hostbruecke::Bruecke bruecke;
+
+    explicit LaufenderTransport (EqCopilotProcessor& p, bool nimmtAuf = false)
+        : prozessor (p), aufnahme (nimmtAuf)
     {
         kopf.spielt = true;
         prozessor.setPlayHead (&kopf);
+        bruecke.verbinde (&prozessor);
     }
-    ~LaufenderTransport() { prozessor.setPlayHead (nullptr); }
+    ~LaufenderTransport()
+    {
+        bruecke.verbinde (nullptr);
+        prozessor.setPlayHead (nullptr);
+    }
+
+    /** Ein Blockvorlauf ueber die Bruecke, genau wie der gepatchte Wrapper:
+        `beginneBlock` → `kontextAus` → `uebergib`, unmittelbar vor
+        `processBlock`. */
+    void vorBlock (int samples)
+    {
+        VstKontext c {};
+        // ⚠️ Der Prozessor bevorzugt den Brueckenstand VOR dem oeffentlichen
+        // Playhead. Der Transportzustand muss deshalb HIER stehen und nicht
+        // nur im `kopf` — sonst zeigt ein Test, der den Playhead stoppt,
+        // trotzdem einen laufenden Transport.
+        c.state = VstKontext::kContTimeValid;
+        if (kopf.spielt)
+            c.state |= VstKontext::kPlaying;
+        if (aufnahme)
+            c.state |= VstKontext::kRecording;
+        c.projectTimeSamples = kopf.pos;
+        c.continousTimeSamples = kopf.pos;
+        c.sampleRate = 48000.0;
+        bruecke.beginneBlock ((std::uint32_t) samples);
+        bruecke.kontextAus (c);
+        bruecke.uebergib();
+    }
+
+    /** Wie `vorBlock`, aber OHNE Aufnahmebit im Kontext — der Fall
+        "Aufnahmezustand unbekannt". Er blockiert wie eine laufende Aufnahme
+        (M-33, fail-closed). */
+    void vorBlockOhneKontext (int samples)
+    {
+        bruecke.beginneBlock ((std::uint32_t) samples);
+        bruecke.kontextFehlt();
+        bruecke.uebergib();
+    }
+
     void weiter (int samples) { kopf.pos += samples; }
+
 private:
     EqCopilotProcessor& prozessor;
+    bool aufnahme;
 };
 
 // S9/SONDE-007b Abschnitt 3: Seit der Lifecycle-Klassifikation (§53.5) faerbt
@@ -93,15 +158,374 @@ static bool blockBitgleich (const juce::AudioBuffer<float>& a, const juce::Audio
     return true;
 }
 
+//==============================================================================
+// ⚠️ S20-22/SONDE-013 — WARUM DIESE DREI ABSCHNITTE FUNKTIONEN SIND UND KEINE
+// BLOECKE IN `main`.
+//
+// MSVC reserviert den Stackframe einer Funktion beim Eintritt und addiert
+// dabei die Locals ALLER Bloecke. `main` haelt hier schon ein Dutzend
+// `EqCopilotProcessor` (jeder traegt FeatureEngine, AnalyseEngine und mehrere
+// Ringe), und die drei neuen Abschnitte haben den 1-MiB-Stack gesprengt,
+// BEVOR die erste Zeile Ausgabe kam — der Frame passte nicht mehr in den
+// Prolog. Als eigene Funktionen bekommt jeder seinen Frame und gibt ihn
+// wieder her.
+//
+// Derselbe Befund steht fuer `AnalysisGoldenTestMain.cpp` im Manifest §10.3
+// als Nebenbefund; hier ist er einmal mehr aufgetreten und lokal geloest.
+
+/** Traegt das `pruefe`-Lambda aus `main` in die drei Funktionen — mit dem
+    DEFAULT fuer den Zusatz, den `std::function` allein nicht kann. */
+struct Pruefer
+{
+    std::function<void (bool, const juce::String&, const juce::String&)> fn;
+    void operator() (bool ok, const juce::String& name,
+                     const juce::String& zusatz = {}) const
+    { fn (ok, name, zusatz); }
+};
+
+static void sonde013M33 (const Pruefer& pruefe, double fs, int bs)
+{
+    // ── M-33: der vierte fail-closed-Term ────────────────────────────
+    //
+    // §58 verlangt fuer den Hoermarker `playing=true`, `recording=false`,
+    // Realtime und Editor offen. Der dritte fehlte bis SONDE-013 im
+    // `erlaubt`-Term, obwohl der Prozessor den Aufnahmezustand kennt und ihn
+    // im `state_report` bereits mitschickt.
+    //
+    // Der Fall hat DREI Zweige, und der dritte ist der wichtige: eine
+    // laufende Aufnahme blockiert, ein UNBEKANNTER Zustand blockiert
+    // ebenfalls, und nur ein nachgewiesenes `recording=false` faerbt. Ein
+    // unbekannter Zustand, der durchliesse, waere fail-open — und eine
+    // Faerbung, die in eine Aufnahme laeuft, steht danach in der Datei.
+    {
+        MarkierungsWunsch w;
+        w.modus = MarkierungsModus::solo;
+        w.istResonanz = false;
+        w.fVon = 120.0; w.fBis = 300.0; w.fSchwerpunkt = 200.0;
+        w.fs = fs;
+        MarkierungsAuftrag auftrag;
+        const bool gebaut = baueMarkierungsAuftrag (auftrag, w);
+        pruefe (gebaut, "M-33: Auftrag baut", {});
+
+        juce::MidiBuffer midi;
+        juce::AudioBuffer<float> puffer (2, bs), kopie (2, bs);
+        auto fuelleSinus = [&puffer, bs]
+        {
+            for (int k = 0; k < 2; ++k)
+                for (int i = 0; i < bs; ++i)
+                    puffer.setSample (k, i, 0.4f * std::sin (2.0f * 3.14159265f
+                                                             * 200.0f * (float) i / 48000.0f));
+        };
+
+        // Ein Lauf, der `anzahlBloecke` Bloecke faehrt und sagt, ob der
+        // Ausgang je vom Eingang abwich. `nimmtAuf` und `ohneKontext`
+        // stellen die drei Zweige her.
+        auto faerbt = [&, fs, bs] (bool nimmtAuf, bool ohneKontext, int anzahlBloecke = 40)
+        {
+            // ⚠️ HEAP, nicht Stack. `EqCopilotProcessor` traegt FeatureEngine,
+            // AnalyseEngine und mehrere Ringe; diese Funktion haelt schon ein
+            // Dutzend davon, und die vier neuen Abschnitte haben den 1-MiB-Stack
+            // sofort gesprengt (gemessen beim Bau der Etappe D).
+            auto halter = std::make_unique<EqCopilotProcessor>();
+            auto& p = *halter;
+            p.setPlayConfigDetails (2, 2, fs, bs);
+            p.prepareToPlay (fs, bs);
+            p.testForciereEchtzeit (true);
+            LaufenderTransport transport (p, nimmtAuf);
+            if (! alsMainKlassifizieren (p))
+                return false;
+            p.markierungEinreichen (auftrag);
+            bool abweichung = false;
+            for (int block = 0; block < anzahlBloecke; ++block)
+            {
+                fuelleSinus();
+                kopie.makeCopyOf (puffer);
+                if (ohneKontext) transport.vorBlockOhneKontext (bs);
+                else             transport.vorBlock (bs);
+                p.processBlock (puffer, midi);
+                transport.weiter (bs);
+                if (! blockBitgleich (puffer, kopie))
+                    abweichung = true;
+            }
+            return abweichung;
+        };
+
+        pruefe (faerbt (false, false),
+                "M-33: bei nachgewiesenem recording=false faerbt die Markierung "
+                "(die Gegenprobe, ohne die der Rest nichts sagt)", {});
+        pruefe (! faerbt (true, false),
+                "M-33: recording_true blockiert - eine Faerbung, die in eine Aufnahme "
+                "laeuft, steht danach in der Datei");
+        pruefe (! faerbt (false, true),
+                "M-33: recording_unknown blockiert EBENSO - fail-closed, nicht "
+                "fail-open. Ohne Hostbruecke weiss niemand, ob gerade aufgenommen wird");
+    }
+
+}
+
+static void sonde013M34 (const Pruefer& pruefe, double fs, int bs)
+{
+    // ── M-34/M-35: NAK-47, Ausfade statt Schnitt ─────────────────────
+    //
+    // NAK-47 woertlich: "`hartAus()` setzt `fade = 0.0` sofort. Faellt
+    // `erlaubt` weg, waehrend die Markierung hoerbar ist, springt das Signal
+    // im naechsten Block abrupt vom gefilterten auf den Originalpfad —
+    // hoerbarer Klick." Kein Bruch von Gate 1 (das Audio wird ja gerade NICHT
+    // mehr veraendert), aber ein Bruch des Startbudgets §49.3.
+    //
+    // Der Fall misst die KANTE: die groesste Sampledifferenz zwischen dem
+    // letzten Sample vor und dem ersten nach dem Erlaubnisverlust, gegen
+    // dieselbe Klickschwelle, die T5 daneben benutzt.
+    {
+        MarkierungsWunsch w;
+        w.modus = MarkierungsModus::solo;
+        w.istResonanz = false;
+        w.fVon = 120.0; w.fBis = 300.0; w.fSchwerpunkt = 200.0;
+        w.fs = fs;
+        MarkierungsAuftrag auftrag;
+        baueMarkierungsAuftrag (auftrag, w);
+
+        auto halter = std::make_unique<EqCopilotProcessor>();   // Heap, s. o.
+        auto& p = *halter;
+        p.setPlayConfigDetails (2, 2, fs, bs);
+        p.prepareToPlay (fs, bs);
+        p.testForciereEchtzeit (true);
+        LaufenderTransport transport (p);
+        pruefe (alsMainKlassifizieren (p), "M-34: als Main klassifiziert", {});
+        p.markierungEinreichen (auftrag);
+
+        juce::MidiBuffer midi;
+        juce::AudioBuffer<float> puffer (2, bs), kopie (2, bs);
+        // ⚠️ Der Sinus laeuft ueber die Bloecke FORT. Ein Signal, das in jedem
+        // Block bei Phase 0 neu beginnt, springt an jeder Blockgrenze — und
+        // der Kantentest unten maesse dann die Sprungstelle des TESTSIGNALS
+        // statt die der Markierung (gemessen beim Bau: 0,29 statt 0,01).
+        std::int64_t phasePos = 0;
+        auto fuelleSinus = [&puffer, &phasePos, bs]
+        {
+            for (int i = 0; i < bs; ++i)
+            {
+                const float v = 0.4f * std::sin (2.0f * 3.14159265f * 200.0f
+                                                 * (float) (phasePos + i) / 48000.0f);
+                for (int k = 0; k < 2; ++k)
+                    puffer.setSample (k, i, v);
+            }
+            phasePos += bs;
+        };
+
+        // Einschwingen, bis die Markierung wirklich klingt.
+        for (int block = 0; block < 40; ++block)
+        {
+            fuelleSinus();
+            transport.vorBlock (bs);
+            p.processBlock (puffer, midi);
+            transport.weiter (bs);
+        }
+        pruefe (p.markierungHoerbar(), "M-34: die Markierung klingt vor dem Entzug", {});
+
+        // Der Entzug: der Editor schliesst. `testForciereEchtzeit` bleibt an,
+        // damit GENAU dieser Term faellt und nicht drei auf einmal.
+        p.testForciereEchtzeit (false);
+        p.setzeEditorOffen (false);
+
+        // ⚠️ Der Bezugswert kommt aus dem letzten GEFILTERTEN Block der
+        // Einschwingphase. Ein ungefilterter Vorlaufblock erzeugte hier eine
+        // Kante zwischen trocken und gefiltert — also den Filter, nicht den
+        // Klick (gemessen beim Bau: 0,28 statt 0,01).
+        float groessteKante = 0.0f;
+        float letztesVorher = puffer.getSample (0, bs - 1);
+        int bloeckeMitAenderung = 0;
+        for (int block = 0; block < 40; ++block)
+        {
+            fuelleSinus();
+            kopie.makeCopyOf (puffer);
+            transport.vorBlock (bs);
+            p.processBlock (puffer, midi);
+            transport.weiter (bs);
+            if (! blockBitgleich (puffer, kopie))
+                ++bloeckeMitAenderung;
+            groessteKante = std::max (groessteKante,
+                                      std::abs (puffer.getSample (0, 0) - letztesVorher));
+            for (int i = 1; i < bs; ++i)
+                groessteKante = std::max (groessteKante,
+                                          std::abs (puffer.getSample (0, i)
+                                                    - puffer.getSample (0, i - 1)));
+            letztesVorher = puffer.getSample (0, bs - 1);
+        }
+        pruefe (bloeckeMitAenderung > 0,
+                "M-34: permission_loss_fades_instead_of_cutting - nach dem Entzug wird "
+                "der Puffer noch fuer die Rampe angefasst, statt sofort zu springen",
+                juce::String (bloeckeMitAenderung) + " Bloecke mit Rampe");
+        pruefe (groessteKante < 0.04f,
+                "M-34: und die groesste Sampledifferenz bleibt unter der Klickschwelle "
+                "(dieselbe wie in T5)",
+                juce::String (groessteKante, 5));
+        pruefe (! p.markierungHoerbar(),
+                "M-34: danach meldet sie sich als still", {});
+
+        // M-35: der Neutralpfad ist danach BIT-identisch, ueber mehrere
+        // Blockgroessen. §44.2: "ein rechnerischer Identity-Filter reicht
+        // nicht als Nullvertrag."
+        bool alleBitgleich = true;
+        for (const int groesse : { 32, 64, 128, 512, 1024 })
+        {
+            p.prepareToPlay (fs, groesse);
+            juce::AudioBuffer<float> b1 (2, groesse), b2 (2, groesse);
+            for (int block = 0; block < 8; ++block)
+            {
+                for (int k = 0; k < 2; ++k)
+                    for (int i = 0; i < groesse; ++i)
+                        b1.setSample (k, i, zufall() * 0.5f);
+                b2.makeCopyOf (b1);
+                transport.vorBlock (groesse);
+                p.processBlock (b1, midi);
+                transport.weiter (groesse);
+                if (! blockBitgleich (b1, b2))
+                    alleBitgleich = false;
+            }
+        }
+        pruefe (alleBitgleich,
+                "M-35: after_fade_the_neutral_path_is_bit_identical - ueber fuenf "
+                "Blockgroessen, mit Zufallsaudio und BITvergleich");
+        p.prepareToPlay (fs, bs);
+    }
+
+}
+
+static void sonde013M36 (const Pruefer& pruefe, double fs, int bs)
+{
+    // ── M-36 (§7.1 E-01): der Oversize-Pfad ──────────────────────────
+    //
+    // Ein Hostblock ueber `wetKapazitaet` konnte der Wet-Pfad noch nie
+    // vollstaendig rechnen; frueher hiess das `hartAus()` — derselbe Klick
+    // wie bei M-34, nur an einer zweiten Stelle. E-01 entscheidet:
+    // erzwungener Ausfade INNERHALB der Kapazitaet, danach Riegel bis
+    // `prepareToPlay`.
+    //
+    // Der Riegel ist der Teil, den man leicht vergisst: ohne ihn blendete die
+    // Markierung nach jedem Oversizeblock wieder ein und beim naechsten
+    // wieder aus — ein Flattern, das schlimmer ist als der Schnitt.
+    {
+        MarkierungsWunsch w;
+        w.modus = MarkierungsModus::solo;
+        w.istResonanz = false;
+        w.fVon = 120.0; w.fBis = 300.0; w.fSchwerpunkt = 200.0;
+        w.fs = fs;
+        MarkierungsAuftrag auftrag;
+        baueMarkierungsAuftrag (auftrag, w);
+
+        auto halter = std::make_unique<EqCopilotProcessor>();   // Heap, s. o.
+        auto& p = *halter;
+        p.setPlayConfigDetails (2, 2, fs, bs);
+        p.prepareToPlay (fs, bs);
+        p.testForciereEchtzeit (true);
+        LaufenderTransport transport (p);
+        pruefe (alsMainKlassifizieren (p), "M-36: als Main klassifiziert", {});
+        p.markierungEinreichen (auftrag);
+
+        juce::MidiBuffer midi;
+        juce::AudioBuffer<float> puffer (2, bs), kopie (2, bs);
+        auto fuelleSinus = [] (juce::AudioBuffer<float>& b)
+        {
+            for (int k = 0; k < b.getNumChannels(); ++k)
+                for (int i = 0; i < b.getNumSamples(); ++i)
+                    b.setSample (k, i, 0.4f * std::sin (2.0f * 3.14159265f
+                                                        * 200.0f * (float) i / 48000.0f));
+        };
+
+        for (int block = 0; block < 40; ++block)
+        {
+            fuelleSinus (puffer);
+            transport.vorBlock (bs);
+            p.processBlock (puffer, midi);
+            transport.weiter (bs);
+        }
+        pruefe (p.markierungHoerbar(), "M-36: die Markierung klingt vor dem Oversizeblock", {});
+
+        // Der Oversizeblock: doppelte Kapazitaet. Der Host darf das (JUCE:
+        // `maximumExpectedSamplesPerBlock` ist ein Hinweis, keine Zusage).
+        const int gross = bs * 2;
+        juce::AudioBuffer<float> grossPuffer (2, gross), grossKopie (2, gross);
+        fuelleSinus (grossPuffer);
+        grossKopie.makeCopyOf (grossPuffer);
+        transport.vorBlock (gross);
+        p.processBlock (grossPuffer, midi);
+        transport.weiter (gross);
+
+        // Der HINTERE Teil des Blocks - ab `wetKapazitaet` - ist woertlich
+        // der Eingang. Das ist die Zusage aus E-01.
+        bool hintenBitgleich = true;
+        for (int k = 0; k < 2; ++k)
+            for (int i = bs; i < gross; ++i)
+                if (grossPuffer.getSample (k, i) != grossKopie.getSample (k, i))
+                    hintenBitgleich = false;
+        pruefe (hintenBitgleich,
+                "M-36: der Teil des Oversizeblocks jenseits der Kapazitaet ist "
+                "woertlich der Eingang - kein halber Wet-Pfad, keine Extrapolation");
+
+        // Und danach: der RIEGEL. Ein erneutes `erlaubt` blendet in dieser
+        // Laufzeit NICHT wieder ein.
+        //
+        // ⚠️ Erst die RAMPE auslaufen lassen. Der Oversizeblock setzt das Ziel
+        // auf 0, aber die Rampe braucht ihre 80 ms — und wer sofort danach
+        // misst, sieht sie und haelt sie fuer ein Wiedereinblenden.
+        for (int block = 0; block < 20; ++block)
+        {
+            fuelleSinus (puffer);
+            transport.vorBlock (bs);
+            p.processBlock (puffer, midi);
+            transport.weiter (bs);
+        }
+        bool wiederGefaerbt = false;
+        for (int block = 0; block < 60; ++block)
+        {
+            fuelleSinus (puffer);
+            kopie.makeCopyOf (puffer);
+            transport.vorBlock (bs);
+            p.processBlock (puffer, midi);
+            transport.weiter (bs);
+            if (! blockBitgleich (puffer, kopie))
+                wiederGefaerbt = true;
+        }
+        pruefe (! wiederGefaerbt,
+                "M-36: oversize_block_fades_within_capacity_then_latches - danach "
+                "blendet sie NICHT wieder ein, auch nicht nach 60 gueltigen Bloecken");
+        pruefe (! p.markierungHoerbar(), "M-36: und meldet sich als still", {});
+
+        // Erst `prepareToPlay` loest den Riegel - die Blockgroesse ist neu
+        // ausgehandelt, also ist der Grund fuer die Verriegelung entfallen.
+        p.prepareToPlay (fs, bs);
+        p.markierungEinreichen (auftrag);
+        bool wiederMoeglich = false;
+        for (int block = 0; block < 60; ++block)
+        {
+            fuelleSinus (puffer);
+            kopie.makeCopyOf (puffer);
+            transport.vorBlock (bs);
+            p.processBlock (puffer, midi);
+            transport.weiter (bs);
+            if (! blockBitgleich (puffer, kopie))
+                wiederMoeglich = true;
+        }
+        pruefe (wiederMoeglich,
+                "M-36: nach prepareToPlay ist sie wieder moeglich - der Riegel ist "
+                "eine Verriegelung, keine Abschaltung");
+    }
+}
+
 int main()
 {
     juce::ScopedJuceInitialiser_GUI juceInit;
     constexpr double fs = 48000.0;
     constexpr int bs = 512;
     int fehler = 0;
-    auto pruefe = [&fehler] (bool ok, const char* name)
+    auto pruefe = [&fehler] (bool ok, const juce::String& name,
+                             const juce::String& zusatz = {})
     {
-        std::cout << (ok ? "  ok      " : "  FEHLER  ") << name << std::endl;
+        std::cout << (ok ? "  ok      " : "  FEHLER  ") << name.toRawUTF8();
+        if (zusatz.isNotEmpty())
+            std::cout << "  [" << zusatz.toRawUTF8() << "]";
+        std::cout << std::endl;
         if (! ok) ++fehler;
     };
 
@@ -198,6 +622,7 @@ int main()
         {
             fuelleSinus();
             kopie.makeCopyOf (puffer);
+            transport.vorBlock (bs);
             p.processBlock (puffer, midi);
             transport.weiter (bs);
             beobachte (block);
@@ -211,6 +636,7 @@ int main()
         {
             fuelleSinus();
             kopie.makeCopyOf (puffer);
+            transport.vorBlock (bs);
             p.processBlock (puffer, midi);
             transport.weiter (bs);
             beobachte (100 + block);
@@ -225,6 +651,7 @@ int main()
         {
             fuelleSinus();
             kopie.makeCopyOf (puffer);
+            transport.vorBlock (bs);
             p.processBlock (puffer, midi);
             transport.weiter (bs);
             if (! blockBitgleich (puffer, kopie))
@@ -236,6 +663,12 @@ int main()
         pruefe (alleEndlich, "T5: Ausgang bleibt endlich");
         pruefe (maxSprung < 0.04f, "T5: kein Klick an Engage-/Disengage-Kanten");
     }
+
+    // ── S20-22/SONDE-013 M-33 bis M-36: eigene Funktionen, s. Kopf ────────
+    const Pruefer pruefer { pruefe };
+    sonde013M33 (pruefer, fs, bs);
+    sonde013M34 (pruefer, fs, bs);
+    sonde013M36 (pruefer, fs, bs);
 
     // ── T9: Puls — Ruhephase praktisch identisch, Schwellphase hörbar ──────
     {
@@ -278,6 +711,7 @@ int main()
                 puffer.setSample (1, i, v);
             }
             kopie.makeCopyOf (puffer);
+            transport.vorBlock (bs);
             p.processBlock (puffer, midi);
             transport.weiter (bs);
             for (int i = 0; i < bs; ++i, ++sampleIndex)
@@ -339,6 +773,7 @@ int main()
                 for (int i = 0; i < bs; ++i) d[i] = zufall();
             }
             kopie.makeCopyOf (puffer);
+            transportQ.vorBlock (bs);
             q.processBlock (puffer, midi);
             bitgleich = blockBitgleich (puffer, kopie);
         }
@@ -372,6 +807,7 @@ int main()
                 phase += 2.0 * juce::MathConstants<double>::pi * 200.0 / fs;
             }
             kopie.makeCopyOf (puffer);
+            transport.vorBlock (bs);
             p.processBlock (puffer, midi);
             transport.weiter (bs);
             if (! blockBitgleich (puffer, kopie)) differenz = true;
@@ -388,9 +824,9 @@ int main()
         p.prepareToPlay (fs, bs);
         p.setzeEditorOffen (true);          // Editor-Pflicht erfüllt, KEIN Echtzeit-Zwang
         pruefe (alsMainKlassifizieren (p), "T3: als Main klassifiziert (§53.5)");
-        TestPlayHead kopf;
-        kopf.spielt = true;
-        p.setPlayHead (&kopf);
+        // SONDE-013 M-33: auch dieser Abschnitt braucht die Hostbruecke — ohne
+        // sie ist der Aufnahmezustand unbekannt, und ein unbekannter blockiert.
+        LaufenderTransport transport (p);
 
         MarkierungsWunsch w;
         w.modus = MarkierungsModus::puls;
@@ -418,8 +854,9 @@ int main()
         {
             fuelle();
             kopie.makeCopyOf (puffer);
+            transport.vorBlock (bs);
             p.processBlock (puffer, midi);
-            kopf.pos += bs;
+            transport.weiter (bs);
             if (! blockBitgleich (puffer, kopie))
                 freilaufBitgleich = false;
         }
@@ -435,8 +872,9 @@ int main()
         {
             fuelle();
             kopie.makeCopyOf (puffer);
+            transport.vorBlock (bs);
             p.processBlock (puffer, midi);
-            kopf.pos += bs;
+            transport.weiter (bs);
             if (ersteDifferenz < 0 && ! blockBitgleich (puffer, kopie))
             {
                 ersteDifferenz = block;
@@ -450,18 +888,42 @@ int main()
                 "T3: Echtzeit-Taktung schaltet die Markierung frei");
 
         // (c) setNonRealtime: sofortiger harter Schnitt im selben Block.
+        // ⚠️ SONDE-013 M-34 hat diese Zusage GEAENDERT, und zwar bewusst.
+        // Bis hierher hiess sie "schneidet sofort auf neutral" — genau der
+        // Sofortschnitt aus NAK-47, der einen hoerbaren Klick erzeugt. Jetzt
+        // laeuft eine Rampe; neutral wird der Pfad NACH ihr, nicht im selben
+        // Block. Gemessen wird deshalb beides: dass die Rampe endlich ist,
+        // und dass danach jeder Block bitgleich bleibt.
         p.setNonRealtime (true);
-        bool offlineBitgleich = true;
-        for (int block = 0; block < 5; ++block)
+        int letzterMitAenderung = -1;
+        for (int block = 0; block < 40; ++block)
         {
             fuelle();
             kopie.makeCopyOf (puffer);
+            transport.vorBlock (bs);
             p.processBlock (puffer, midi);
-            kopf.pos += bs;
+            transport.weiter (bs);
+            if (! blockBitgleich (puffer, kopie))
+                letzterMitAenderung = block;
+        }
+        // 80-ms-Fade = 3840 Samples = 7,5 Bloecke bei 512.
+        pruefe (letzterMitAenderung <= 9,
+                "T3/M-34: isNonRealtime BLENDET AUS statt zu schneiden - und die "
+                "Rampe ist nach spaetestens zehn Bloecken zu Ende",
+                juce::String (letzterMitAenderung));
+        bool offlineBitgleich = true;
+        for (int block = 0; block < 10; ++block)
+        {
+            fuelle();
+            kopie.makeCopyOf (puffer);
+            transport.vorBlock (bs);
+            p.processBlock (puffer, midi);
+            transport.weiter (bs);
             if (! blockBitgleich (puffer, kopie))
                 offlineBitgleich = false;
         }
-        pruefe (offlineBitgleich, "T3: isNonRealtime schneidet sofort auf neutral");
+        pruefe (offlineBitgleich,
+                "T3/M-35: und danach ist der Pfad wieder bitgleich neutral");
         p.setNonRealtime (false);
 
         // (d = T10) Transport-Stopp: harter Schnitt im selben Block.
@@ -470,8 +932,9 @@ int main()
         {
             fuelle();
             kopie.makeCopyOf (puffer);
+            transport.vorBlock (bs);
             p.processBlock (puffer, midi);
-            kopf.pos += bs;
+            transport.weiter (bs);
             if (! blockBitgleich (puffer, kopie))
             {
                 wiederAktiv = block;
@@ -480,17 +943,35 @@ int main()
             std::this_thread::sleep_for (std::chrono::milliseconds (10));
         }
         pruefe (wiederAktiv >= 0, "T10: Markierung nach Offline-Ende wieder beweisbar");
-        kopf.spielt = false;
-        bool stoppBitgleich = true;
-        for (int block = 0; block < 5; ++block)
+        // Dieselbe Aenderung wie oben, aus demselben Grund (M-34).
+        transport.kopf.spielt = false;
+        int letzterStopp = -1;
+        for (int block = 0; block < 40; ++block)
         {
             fuelle();
             kopie.makeCopyOf (puffer);
+            transport.vorBlock (bs);
+            p.processBlock (puffer, midi);
+            if (! blockBitgleich (puffer, kopie))
+                letzterStopp = block;
+        }
+        pruefe (letzterStopp >= 0 && letzterStopp <= 30,
+                "T10/M-34: Transport-Stopp BLENDET AUS statt zu schneiden - und die "
+                "Rampe ist endlich (der Pulsbetrieb traegt ein laengeres Fadefenster "
+                "als der Solobetrieb)",
+                juce::String (letzterStopp));
+        bool stoppBitgleich = true;
+        for (int block = 0; block < 10; ++block)
+        {
+            fuelle();
+            kopie.makeCopyOf (puffer);
+            transport.vorBlock (bs);
             p.processBlock (puffer, midi);
             if (! blockBitgleich (puffer, kopie))
                 stoppBitgleich = false;
         }
-        pruefe (stoppBitgleich, "T10: Transport-Stopp schneidet sofort auf neutral");
+        pruefe (stoppBitgleich,
+                "T10/M-35: und danach ist der Pfad wieder bitgleich neutral");
         p.setPlayHead (nullptr);
     }
 
@@ -530,7 +1011,9 @@ int main()
                 for (int i = 0; i < bs; ++i) da[i] = 0.5f * zufall();
                 std::memcpy (b.getWritePointer (k), da, (size_t) bs * sizeof (float));
             }
+            transportM.vorBlock (bs);
             markiert.processBlock (a, midi);
+            transportS.vorBlock (bs);
             sauber.processBlock (b, midi);
             transportM.weiter (bs);
             transportS.weiter (bs);
@@ -611,6 +1094,17 @@ int main()
 
         juce::AudioBuffer<float> puffer (2, bs), kopie (2, bs);
         juce::MidiBuffer midi;
+        // SONDE-013 M-33: mit Hostbruecke, sonst ist der Aufnahmezustand
+        // unbekannt und blockiert. Sie steht VOR `fahre`, weil das Lambda sie
+        // braucht.
+        //
+        // ⚠️ Fuer Fall (a) wird der Playhead gleich wieder ABGEZOGEN: „OHNE
+        // Playhead" ist genau die Bedingung dieses Falls, und ein Transport,
+        // der ihn setzt, machte ihn wertlos. Die Bruecke bleibt — sie liefert
+        // den Aufnahmezustand, nicht den Transport.
+        LaufenderTransport transport (p);
+        transport.kopf.spielt = false;
+        p.setPlayHead (nullptr);
         auto fahre = [&] (int bloecke)
         {
             bool gefaerbt = false;
@@ -622,6 +1116,7 @@ int main()
                     for (int i = 0; i < bs; ++i) d[i] = 0.5f * zufall();
                 }
                 kopie.makeCopyOf (puffer);
+                transport.vorBlock (bs);
                 p.processBlock (puffer, midi);
                 if (! blockBitgleich (puffer, kopie))
                     gefaerbt = true;
@@ -643,9 +1138,10 @@ int main()
 
         // (b) Der bekannt GESTOPPTE Transport ist derselbe Fall aus der anderen
         //     Richtung: „spielt" ist gueltig und sagt nein.
-        TestPlayHead kopf;
-        kopf.spielt = false;
-        p.setPlayHead (&kopf);
+        // (b) braucht den Playhead wieder — „bekannt gestoppt" ist etwas
+        // anderes als „gar kein Transport".
+        p.setPlayHead (&transport.kopf);
+        transport.kopf.spielt = false;
         p.markierungEinreichen (auftrag);
         pruefe (! fahre (120), "T11: mit gestopptem Transport ebenfalls kein Sample");
 
@@ -653,13 +1149,13 @@ int main()
         //     laufendem Playhead MUSS faerben. Sonst koennte T11 gruen sein,
         //     weil die Markierung generell stumm ist - der Fehler, vor dem der
         //     Kopf von `LaufenderTransport` warnt.
-        kopf.spielt = true;
+        transport.kopf.spielt = true;
         p.markierungEinreichen (auftrag);
         bool gefaerbt = false;
         for (int block = 0; block < 200 && ! gefaerbt; ++block)
         {
             gefaerbt = fahre (1);
-            kopf.pos += bs;
+            transport.weiter (bs);
         }
         pruefe (gefaerbt,
                 "T11: Gegenprobe - mit laufendem Transport faerbt genau dieser Aufbau");

@@ -1,0 +1,94 @@
+SONDE-013 Etappe 2 C - Rotbeweis M-39
+=========================================
+
+Datei:     eq-copilot\plugin\core\ipc\InterventionsRing.h
+Ziel:      EqCopSonde013InterventionRingTest
+Warum:     Die Ueberlaufpruefung faellt weg - der Ring ueberschreibt dann das aelteste Ereignis stillschweigend, also drop-oldest wie P2. Ein verlorenes Begin erzeugt eine scheinbar saubere Baseline (§34.2), und alles, was darauf gebaut wird, ist falsch, ohne dass es jemand sieht. Genau diese Asymmetrie ist der Grund fuer M-39.
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+        if (k - s >= (std::uint64_t) kPlaetze)
+--- NEU ---
+        if (false && k - s >= (std::uint64_t) kPlaetze)
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+== Nakama SONDE-013 - Interventionsring und NAK-47-Ausfade ==
+
+== M-37  begin_is_immediate_not_heartbeat_bound ==
+[ok]   der frische Ring ist leer
+[ok]   ein Begin wird aufgenommen
+[ok]   und steht SOFORT zur Abholung bereit - kein Kadenzfenster dazwischen  [1]
+[ok]   der Worker holt es ab
+[ok]   vollstaendig und unveraendert - Sequenz, Art und Projektzeit
+[ok]   danach ist der Ring wieder leer
+[ok]   ein Marker von 380 Samples erzeugt BEIDE Ereignisse
+[ok]   und beide kommen in der richtigen Reihenfolge an - ein Heartbeat haette hier gar nichts gesehen
+
+== M-38  end_carries_conservative_tail_and_follows_the_fade ==
+[ok]   ein Ende wird aufgenommen
+[ok]   der Nachlauf ist mindestens so lang wie der Eingriff selbst - Â§34.2: 'der Bereich wird laenger quarantaenisiert als die Intervention selbst dauerte'  [24000 gegen 12000 Samples]
+[ok]   und die Dauer reist MIT - ein Empfaenger kann die Konservativitaet damit pruefen statt sie zu glauben
+
+== M-39  ring_overflow_reports_instead_of_dropping_oldest ==
+[ROT]  der Ring nimmt genau seine Kapazitaet auf und keinen mehr  [40 von 40 Versuchen]
+[ROT]  der Ueberlauf ist GEMELDET - sticky, nicht verschwiegen
+[ROT]  und gezaehlt  [0 verworfen]
+[ROT]  das AELTESTE Ereignis steht unveraendert an erster Stelle - dieser Ring verwirft es NICHT, im Gegensatz zu P2  [Sequenz 0]
+[ROT]  und der ganze Rest kommt lueckenlos aufsteigend heraus  [40 Ereignisse]
+[ROT]  nach dem Leeren steht das Sticky-Bit WEITER - Â§34.2: starke Evidenz bleibt bis zu einem expliziten Resync gesperrt. Ein Bit, das sich selbst heilt, sobald wieder Platz ist, verloere genau die Information, um derentwillen es existiert
+[ok]   erst `resync()` loescht es - der einzige Weg
+
+== M-74  audio_thread_allocates_zero_and_touches_no_pipe ==
+[ok]   200 Runden Schreiben, Lesen und Abfragen erzeugen NULL Allokationen - gezaehlt, nicht behauptet (M-74)  [0 Allokationen]
+
+== Raender: Sequenzueberlauf, Rueckgabewerte, Neuaufbau ==
+[ok]   eine Sequenz am u64-Rand wird aufgenommen
+[ok]   und kommt unveraendert zurueck - der Ring rechnet nicht mit den Werten
+[ok]   `zuruecksetzen()` leert Ring, Sticky-Bit und Zaehler gemeinsam - ein halber Neuaufbau waere ein Zustand, den niemand deuten kann
+
+-----------------------------------------
+16 bestanden, 6 gescheitert
+
+EXITCODE=1
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+== Nakama SONDE-013 - Interventionsring und NAK-47-Ausfade ==
+
+== M-37  begin_is_immediate_not_heartbeat_bound ==
+[ok]   der frische Ring ist leer
+[ok]   ein Begin wird aufgenommen
+[ok]   und steht SOFORT zur Abholung bereit - kein Kadenzfenster dazwischen  [1]
+[ok]   der Worker holt es ab
+[ok]   vollstaendig und unveraendert - Sequenz, Art und Projektzeit
+[ok]   danach ist der Ring wieder leer
+[ok]   ein Marker von 380 Samples erzeugt BEIDE Ereignisse
+[ok]   und beide kommen in der richtigen Reihenfolge an - ein Heartbeat haette hier gar nichts gesehen
+
+== M-38  end_carries_conservative_tail_and_follows_the_fade ==
+[ok]   ein Ende wird aufgenommen
+[ok]   der Nachlauf ist mindestens so lang wie der Eingriff selbst - Â§34.2: 'der Bereich wird laenger quarantaenisiert als die Intervention selbst dauerte'  [24000 gegen 12000 Samples]
+[ok]   und die Dauer reist MIT - ein Empfaenger kann die Konservativitaet damit pruefen statt sie zu glauben
+
+== M-39  ring_overflow_reports_instead_of_dropping_oldest ==
+[ok]   der Ring nimmt genau seine Kapazitaet auf und keinen mehr  [32 von 40 Versuchen]
+[ok]   der Ueberlauf ist GEMELDET - sticky, nicht verschwiegen
+[ok]   und gezaehlt  [8 verworfen]
+[ok]   das AELTESTE Ereignis steht unveraendert an erster Stelle - dieser Ring verwirft es NICHT, im Gegensatz zu P2  [Sequenz 0]
+[ok]   und der ganze Rest kommt lueckenlos aufsteigend heraus  [32 Ereignisse]
+[ok]   nach dem Leeren steht das Sticky-Bit WEITER - Â§34.2: starke Evidenz bleibt bis zu einem expliziten Resync gesperrt. Ein Bit, das sich selbst heilt, sobald wieder Platz ist, verloere genau die Information, um derentwillen es existiert
+[ok]   erst `resync()` loescht es - der einzige Weg
+
+== M-74  audio_thread_allocates_zero_and_touches_no_pipe ==
+[ok]   200 Runden Schreiben, Lesen und Abfragen erzeugen NULL Allokationen - gezaehlt, nicht behauptet (M-74)  [0 Allokationen]
+
+== Raender: Sequenzueberlauf, Rueckgabewerte, Neuaufbau ==
+[ok]   eine Sequenz am u64-Rand wird aufgenommen
+[ok]   und kommt unveraendert zurueck - der Ring rechnet nicht mit den Werten
+[ok]   `zuruecksetzen()` leert Ring, Sticky-Bit und Zaehler gemeinsam - ein halber Neuaufbau waere ein Zustand, den niemand deuten kann
+
+-----------------------------------------
+22 bestanden, 0 gescheitert
+
+EXITCODE=0
+
+URTEIL: BELEGT (rot=1, gruen=0)

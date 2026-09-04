@@ -19,6 +19,7 @@
 #include "PipeClient.h"
 #include "AnalyseEngine.h"
 #include "HoerMarkierung.h"
+#include "../core/ipc/InterventionsRing.h"
 #include "NakamaState.h"
 #include "NakamaLebenslauf.h"
 #include "NakamaHostBridge.h"
@@ -253,6 +254,9 @@ public:
 private:
     void workerLauf();
     nakama::ipc::ControlHello v3Hello() const;
+    /// SONDE-013 M-37/M-38: leert den Interventionsring und sendet jedes
+    /// Ereignis als P0. Laeuft im Worker, nie im Audiothread.
+    void interventionenSenden();
     nakama::ipc::ControlStatus v3Status() const;
     nakama::ipc::TelemetryHello v3TelemetryHello() const;
     std::string v3SubscribeJson() const;
@@ -408,6 +412,24 @@ private:
 
     // ── Hör-Markierung: DSP + Erlaubnis-Zustand ──
     HoerMarkierungDsp markierung;
+
+    /** SONDE-013 M-37 bis M-39: der RT→Control-Ring fuer hoerbare Eingriffe.
+
+        Er ist ein FELD und kein Zeiger — der Audiothread darf ihn nicht erst
+        anlegen muessen. Die Sequenz vergibt der Audiothread, damit eine
+        Luecke im Ring am Empfaenger als Luecke ankommt: ein Ereignis, das den
+        Ring nie erreicht hat, hat seine Nummer trotzdem verbraucht (§34.2). */
+    nakama::ipc::InterventionsRing interventionsRing;
+    std::atomic<std::uint64_t> interventionsSequenz { 0 };
+    /// Laufende Nummer des EINGRIFFS (nicht des Ereignisses). Begin und End
+    /// teilen sie sich; daraus entsteht die `intervention_id`.
+    std::atomic<std::uint64_t> interventionsNummer { 0 };
+    /// Gespiegelt aus dem Ring, damit der Worker den Ueberlauf auch dann
+    /// sieht, wenn er den Ring gerade geleert hat.
+    std::atomic<bool> interventionsRingUeberlauf { false };
+    /// Wie viele Begin/End-Paare der Worker wirklich gesendet hat — die
+    /// Gegenzahl zu `verworfeneEreignisse()` des Rings.
+    std::atomic<std::uint64_t> interventionenGesendet { 0 };
     std::atomic<bool> editorOffen { false };
     std::atomic<bool> testEchtzeit { false };     // nur Tests, s. testForciereEchtzeit
     // §53.5 Satz 1 ("unclassified und audio-neutral") als Atomic fuer den

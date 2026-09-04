@@ -443,14 +443,70 @@ void EqCopilotProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::M
     // umgeht, was an der Wanduhr hängt (Lebenszeichen, Editor). Transport hängt
     // an nichts dergleichen; ein Test, der ihn mit umginge, prüfte einen Pfad,
     // den das Produkt nicht hat (dieselbe Begründung wie beim §53.5-Term).
+    // SONDE-013 M-33: der vierte Term. §58 verlangt fail-closed
+    // `playing=true`, `recording=false`, Realtime und Editor offen — der
+    // Aufnahmezustand FEHLTE hier, obwohl er im Prozessor vorliegt und im
+    // `state_report` bereits reist.
+    //
+    // ⚠️ Ein UNBEKANNTER Aufnahmezustand blockiert wie ein aktiver. Das ist
+    // der Unterschied zwischen fail-closed und fail-open: ohne
+    // `aufnahmeGueltig` weiss niemand, ob gerade aufgenommen wird, und eine
+    // Faerbung, die in eine Aufnahme laeuft, steht danach in der Datei.
+    //
+    // ⚠️ `testForciereEchtzeit` umgeht diesen Term ABSICHTLICH NICHT —
+    // dieselbe Begruendung wie beim Transportterm daneben: der Schalter
+    // umgeht, was an der Wanduhr haengt (Lebenszeichen, Editor). Der
+    // Aufnahmezustand haengt an nichts dergleichen, er kommt aus der
+    // Hostbruecke. Waere er mit umgangen, pruefte der Test einen Pfad, den
+    // das Produkt nicht hat.
+    const bool aufnahmeAus = aufnahmeGueltig.load (std::memory_order_relaxed)
+                          && ! aufnahmeAktiv.load (std::memory_order_relaxed);
     const bool erlaubt = istMainKlassifiziert.load (std::memory_order_relaxed)
                       && (echtzeitOk.load (std::memory_order_relaxed)
                           || testEchtzeit.load (std::memory_order_relaxed))
                       && spielt
+                      && aufnahmeAus
                       && ! isNonRealtime()
                       && (editorOffen.load (std::memory_order_relaxed)
                           || testEchtzeit.load (std::memory_order_relaxed));
-    markierung.verarbeite (buffer, kanaele, erlaubt);
+    const auto schritt = markierung.verarbeite (buffer, kanaele, erlaubt);
+
+    // SONDE-013 M-37/M-38: die zwei Uebergaenge gehen SOFORT in den
+    // vorallokierten RT→Control-Ring. Der Audiothread beruehrt die Pipe nie —
+    // er reiht nur ein; der Worker sendet.
+    //
+    // Der Rueckgabewert von `schreibe()` wird ausgewertet und NICHT
+    // verworfen: bei Ueberlauf steht das Sticky-Bit, und der Worker meldet
+    // es als `intervention_state_unknown`. Ein verlorenes Begin darf niemals
+    // eine scheinbar saubere Baseline erzeugen (§34.2).
+    if (schritt.begann || schritt.endete)
+    {
+        nakama::ipc::Interventionsereignis e;
+        e.beginn = schritt.begann;
+        e.sequenz = interventionsSequenz.fetch_add (1, std::memory_order_relaxed);
+        // Beim Beginn eine neue Eingriffsnummer ziehen, beim Ende die des
+        // laufenden Eingriffs behalten.
+        if (schritt.begann)
+            e.nummer = interventionsNummer.fetch_add (1, std::memory_order_relaxed);
+        else
+            e.nummer = interventionsNummer.load (std::memory_order_relaxed) - 1;
+        e.projektzeitGesetzt = projektZeitGueltig.load (std::memory_order_relaxed);
+        e.projektSample = (std::int64_t) projektZeitSamples.load (std::memory_order_relaxed);
+        if (schritt.endete)
+        {
+            e.dauerSamples = schritt.dauerSamples;
+            // Konservativ (§34.2): der Bereich wird LAENGER quarantaenisiert
+            // als der Eingriff dauerte. Der Faktor ist doppelt plus ein
+            // festes Polster — der Filternachklang der Markierung ist
+            // biquadratisch und damit theoretisch unendlich, praktisch nach
+            // wenigen Millisekunden unter dem Rauschen. Zu kurz waere hier
+            // der teure Fehler, zu lang nur eine verzoegerte Freigabe.
+            e.tailSamples = schritt.dauerSamples * 2u
+                          + (std::uint64_t) std::max (1, (int) getSampleRate() / 10);
+        }
+        if (! interventionsRing.schreibe (e))
+            interventionsRingUeberlauf.store (true, std::memory_order_relaxed);
+    }
 }
 
 //==============================================================================
@@ -749,6 +805,13 @@ void EqCopilotProcessor::workerLauf()
             }
         }
 
+        // SONDE-013 M-37/M-38: den Interventionsring leeren und senden.
+        //
+        // Er wird in JEDEM Workerzug geleert, nicht an einer Kadenz — die
+        // Kadenz ist der Grund, warum das Heartbeat-Bit nicht reichte. Der
+        // Zug laeuft spaetestens alle 50 ms, bei Rueckstau sofort.
+        interventionenSenden();
+
         if (queueHatRest)
         {
             std::this_thread::yield();
@@ -758,6 +821,85 @@ void EqCopilotProcessor::workerLauf()
         std::unique_lock<std::mutex> l (workerWarteMutex);
         workerWarte.wait_for (l, std::chrono::milliseconds (50),
                               [this] { return ! workerLaeuft.load(); });
+    }
+}
+
+/*  Leert den RT→Control-Ring und schickt jedes Ereignis als P0
+    (SONDE-013 M-37, M-38, M-39).
+
+    ⚠️ Der Ueberlauf wird NICHT stillschweigend geschluckt. §34.2 verlangt
+    sticky `intervention_state_unknown`; der Empfaenger leitet ihn heute aus
+    der SEQUENZLUECKE ab, und genau deshalb vergibt der Audiothread die
+    Nummer und nicht dieser Sender: ein Ereignis, das den Ring nie erreicht
+    hat, hat seine Nummer trotzdem verbraucht, und die Luecke kommt beim
+    Coordinator an, ohne dass ein zusaetzliches Feld noetig waere. Der
+    Zaehler hier ist die lokale Gegenprobe dazu.
+*/
+void EqCopilotProcessor::interventionenSenden()
+{
+    if (interventionsRing.fuellstand() == 0)
+        return;
+    const auto h = v3Hello();
+    if (h.pluginKind != "main" || ! nakama::ipc::adresseGueltig (h.adresse))
+    {
+        // Ohne gueltige Adresse kann kein Ereignis reisen. Es wird trotzdem
+        // ENTNOMMEN: ein Ring, der sich bei fehlender Adresse fuellt, liefe
+        // ueber und meldete einen Ueberlauf, der keiner ist.
+        nakama::ipc::Interventionsereignis weg;
+        while (interventionsRing.lies (weg)) {}
+        return;
+    }
+
+    const auto adresseJson = [&h]
+    {
+        std::string a = "{\"logon_sid\":\"" + h.adresse.logonSid
+                      + "\",\"project_binding_id\":\"" + h.adresse.projectBindingId
+                      + "\",\"session_epoch\":\"" + h.adresse.sessionEpoch
+                      + "\",\"instance_id\":\"" + h.adresse.instanceId
+                      + "\",\"runtime_nonce\":\"" + h.adresse.runtimeNonce + "\"}";
+        return a;
+    }();
+
+    nakama::ipc::Interventionsereignis e;
+    while (interventionsRing.lies (e))
+    {
+        std::string json = "{\"type\":\"";
+        json += e.beginn ? "audible_intervention_begin" : "audible_intervention_end";
+        json += "\",\"intervention_id\":\"";
+        json += nakama::ipc::instanceAdresseAusState (
+                    "intervention:" + h.adresse.instanceId + ":"
+                    + std::to_string (e.nummer));
+        json += "\",\"adresse\":";
+        json += adresseJson;
+        json += ",\"event_sequence\":";
+        json += std::to_string (e.sequenz);
+        if (e.beginn)
+        {
+            // SONDE-013 §7.1 E-08: der Hoermarker bleibt in Gen/Main, und
+            // dieses Ticket baut nur ihn. Die drei uebrigen Arten aus dem
+            // Schema bekommen ihre Erzeuger in P6 und P7.
+            json += ",\"art\":\"hoermarkierung\"";
+            json += ",\"project_sample_start\":";
+            json += e.projektzeitGesetzt ? std::to_string (e.projektSample)
+                                         : std::string ("null");
+        }
+        else
+        {
+            json += ",\"project_sample_end\":";
+            json += e.projektzeitGesetzt ? std::to_string (e.projektSample)
+                                         : std::string ("null");
+            json += ",\"tail_samples\":";
+            json += std::to_string (e.tailSamples);
+        }
+        json += "}";
+
+        if (controlV3.sendeP0 (json))
+            interventionenGesendet.fetch_add (1, std::memory_order_relaxed);
+        else
+            // Der P0-Ueberlauf ist derselbe Fall wie der Ringueberlauf: die
+            // Sequenzluecke kommt beim Coordinator an. Er wird trotzdem
+            // gespiegelt, damit ein Test ihn lokal sieht.
+            interventionsRingUeberlauf.store (true, std::memory_order_relaxed);
     }
 }
 

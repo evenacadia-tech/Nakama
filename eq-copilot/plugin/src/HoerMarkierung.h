@@ -254,6 +254,13 @@ public:
         wetKapazitaet = std::max (maxBlock, 16);
         wet.calloc ((size_t) wetKapazitaet * 2);
         hartAus();
+        // §7.1 E-01: der Oversize-Riegel gilt "bis zum naechsten
+        // prepareToPlay". Der ruft beide Vorbereiter, also loesen ihn auch
+        // beide — sonst haengte die Verriegelung daran, welchen von zweien
+        // der Prozessor zuerst ruft.
+        oversizeRiegel = false;
+        warHoerbar = false;
+        hoerbareSamples = 0;
     }
 
     // Message-Thread: neuen Auftrag publizieren (Ring aus 4, s. Kopfkommentar).
@@ -270,17 +277,72 @@ public:
         reicheEin (MarkierungsAuftrag {});
     }
 
-    // Audiothread. erlaubt = Echtzeit bewiesen ∧ Transport spielt (falls
-    // vorhanden) ∧ kein Offline-Render ∧ Editor offen. Bei !erlaubt bleibt der
-    // Puffer GARANTIERT unangetastet (harter Schnitt statt Fade-Rest, B6).
-    void verarbeite (juce::AudioBuffer<float>& puffer, int kanaele, bool erlaubt)
+    /** Was ein Block an der Hoerbarkeit geaendert hat (SONDE-013 M-37/M-38).
+
+        Die Markierung kennt den Interventionsring nicht — sie MELDET nur,
+        wann sie zu klingen begann und wann sie still wurde, und der
+        Prozessor macht daraus die zwei P0-Ereignisse. Eine Markierung, die
+        selbst sendete, waere im Audiothread nicht mehr pruefbar (§48.1). */
+    struct Schritt
     {
+        bool begann { false };   ///< in diesem Block wurde sie hoerbar
+        bool endete { false };   ///< in diesem Block wurde sie still
+        /// Wie viele Samples sie im laufenden Eingriff insgesamt klang.
+        /// Nur bei `endete` gefuellt; die Grundlage des konservativen
+        /// `tail_samples` (§34.2).
+        std::uint64_t dauerSamples { 0 };
+    };
+
+    // Audiothread. erlaubt = Echtzeit bewiesen ∧ Transport spielt (falls
+    // vorhanden) ∧ Aufnahme nachweislich AUS ∧ kein Offline-Render ∧ Editor
+    // offen.
+    //
+    // 🔑 NAK-47 (SONDE-013 M-34): bei `!erlaubt` wird NICHT mehr geschnitten.
+    // `hartAus()` setzte `fade = 0` sofort, und das Signal sprang im naechsten
+    // Block abrupt vom gefilterten auf den Originalpfad — ein hoerbarer Klick
+    // und ein Bruch des Startbudgets §49.3 ("A/B-Zustandswechsel: kein
+    // Klick"). Statt dessen laeuft die vorhandene Rampe zu Ende; ERST danach
+    // ist der Pfad wieder bit-transparent (M-35).
+    //
+    // ⚠️ Das ist kein Aufweichen von Gate 1. Gate 1 sagt: AUSGESCHALTET ist
+    // der Pfad bitidentisch. Waehrend des Ausfades ist er nicht
+    // ausgeschaltet, sondern wird es gerade — und danach faesst ihn niemand
+    // mehr an (`return` vor jedem Schreibzugriff, wie vorher).
+    Schritt verarbeite (juce::AudioBuffer<float>& puffer, int kanaele, bool erlaubt)
+    {
+        Schritt uebergang;
         const int n = puffer.getNumSamples();
-        if (n <= 0 || kanaele <= 0 || n > wetKapazitaet)
+        if (n <= 0 || kanaele <= 0)
+            return uebergang;
+
+        // ── Oversize (§7.1, E-01) ────────────────────────────────────────
+        //
+        // Ein Hostblock ueber `wetKapazitaet` kann der Wet-Pfad nicht
+        // vollstaendig rechnen. Frueher hiess das `hartAus()` — derselbe
+        // Klick wie oben, nur an einer zweiten Stelle. Der Entscheid E-01
+        // lautet: erzwungener Ausfade INNERHALB der Kapazitaet, danach
+        // Riegel bis `prepareToPlay`.
+        //
+        // Der Riegel ist der Teil, der leicht zu vergessen waere: ohne ihn
+        // blendete die Markierung nach jedem Oversizeblock wieder ein und
+        // beim naechsten wieder aus — ein Flattern, das schlimmer ist als
+        // der Schnitt.
+        const bool oversize = n > wetKapazitaet;
+        if (oversize)
         {
-            if (n > wetKapazitaet) hartAus();     // Host größer als prepareToPlay: neutral
-            return;
+            oversizeRiegel = true;
+            if (fade <= 0.0)
+            {
+                // Nichts klingt: der Block bleibt vollstaendig unangetastet.
+                hoerbarAtomic.store (false, std::memory_order_relaxed);
+                phaseAtomic.store (0.0f, std::memory_order_relaxed);
+                return uebergang;
+            }
         }
+        // Ab hier ist `nutzbar` die Zahl der Samples, die der Wet-Pfad
+        // wirklich rechnen kann. Bei einem Oversizeblock sind das die ersten
+        // `wetKapazitaet`; der Rest bleibt woertlich der Eingang.
+        const int nutzbar = oversize ? wetKapazitaet : n;
         const auto nr = veroeffentlicht.load (std::memory_order_acquire);
         if (nr != gelesenNr)
         {
@@ -299,37 +361,46 @@ public:
         }
         const bool zielAn = ! ausGewuenscht
                          && gelesenNr != 0
+                         && ! oversizeRiegel        // E-01: Ziel 0 und kein Wiedereinblenden
+                         && erlaubt                 // NAK-47: Erlaubnisverlust = Ziel 0
                          && lokal.modus != MarkierungsModus::aus
                          && lokal.sektionen > 0
                          && lokal.fs == fsAktuell;
 
-        if (! erlaubt)
-        {
-            if (fade > 0.0 || pulsPos != 0)
-                hartAus();
-            hoerbarAtomic.store (false, std::memory_order_relaxed);
-            phaseAtomic.store (0.0f, std::memory_order_relaxed);
-            return;                               // Puffer unangetastet ⇒ bit-transparent
-        }
         if (! zielAn && fade <= 0.0)
         {
+            // Wirklich still. Der Puffer bleibt unangetastet ⇒
+            // bit-transparent (Gate 1, M-35). Das gilt fuer beide Wege
+            // hierher: nie eingeschaltet ODER Ausfade abgeschlossen.
+            if (pulsPos != 0)
+                hartAus();
+            // Auch hier kann ein Ende faellig sein: der letzte Block hat den
+            // Fade auf 0 gebracht, und DIESER stellt fest, dass nichts mehr
+            // klingt. Ohne die zwei Zeilen bliebe das Taintintervall offen.
+            if (warHoerbar)
+            {
+                uebergang.endete = true;
+                uebergang.dauerSamples = hoerbareSamples;
+                hoerbareSamples = 0;
+                warHoerbar = false;
+            }
             hoerbarAtomic.store (false, std::memory_order_relaxed);
             phaseAtomic.store (0.0f, std::memory_order_relaxed);
-            return;                               // Ruhe = echter Originalpfad
+            return uebergang;
         }
 
         // Wet rechnen (Kopie des Eingangs; Abgriff/Messung liegen davor).
         const int ch = std::min (kanaele, 2);
         float* wetK[2] = { wet.getData(), wet.getData() + wetKapazitaet };
         for (int k = 0; k < ch; ++k)
-            std::memcpy (wetK[k], puffer.getReadPointer (k), (size_t) n * sizeof (float));
+            std::memcpy (wetK[k], puffer.getReadPointer (k), (size_t) nutzbar * sizeof (float));
 
         float huell = 1.0f;
         if (lokal.modus == MarkierungsModus::solo)
         {
             for (int k = 0; k < ch; ++k)
                 for (int s = 0; s < lokal.sektionen; ++s)
-                    tdf2Lauf (wetK[k], n, lokal.statisch[(size_t) s], zust[k][s]);
+                    tdf2Lauf (wetK[k], nutzbar, lokal.statisch[(size_t) s], zust[k][s]);
         }
         else
         {
@@ -337,10 +408,10 @@ public:
             // keine Transzendente, Zustände laufen über Stufenwechsel weiter.
             const int periode = lokal.pulsAnstiegSamples + lokal.pulsRuheSamples;
             int i = 0;
-            while (i < n)
+            while (i < nutzbar)
             {
                 const int bisRaster = kPulsChunk - (pulsPos % kPulsChunk);
-                const int stueck = std::min (n - i, bisRaster);
+                const int stueck = std::min (nutzbar - i, bisRaster);
                 int stufe = 0;
                 if (periode > 0 && pulsPos < lokal.pulsAnstiegSamples)
                     stufe = lokal.stufenFolge[(size_t) std::min (pulsPos / kPulsChunk,
@@ -364,7 +435,7 @@ public:
             float* aus = puffer.getWritePointer (k);
             const float* w = wetK[k];
             double f = fade;
-            for (int i = 0; i < n; ++i)
+            for (int i = 0; i < nutzbar; ++i)
             {
                 if (f < zielWert)      f = std::min (zielWert, f + schritt);
                 else if (f > zielWert) f = std::max (zielWert, f - schritt);
@@ -375,18 +446,55 @@ public:
             fEnde = f;
         }
         fade = fEnde;
+
+        // ── SONDE-013 M-37/M-38: die zwei Uebergaenge ────────────────────
+        //
+        // Hoerbar heisst hier: der Wet-Anteil ist von null verschieden. Die
+        // Schwelle 0,001 ist dieselbe wie beim `hoerbar()`-Bit daneben, damit
+        // Ereignis und Anzeige nicht auseinanderlaufen koennen.
+        const bool istHoerbar = fade > 0.001;
+        if (istHoerbar && ! warHoerbar)
+        {
+            uebergang.begann = true;
+            hoerbareSamples = 0;
+        }
+        if (istHoerbar)
+            hoerbareSamples += (std::uint64_t) nutzbar;
+        if (! istHoerbar && warHoerbar)
+        {
+            // ⚠️ Das Ende faellt HIER und nicht beim Erlaubnisverlust: M-38
+            // verlangt "der Marker endet erst nach abgeschlossenem Ausfade
+            // (M-34), nicht bei Verlust der Erlaubnis". Ein Ende zu frueh
+            // gemeldet, hiesse einen Bereich freizugeben, in dem noch
+            // gefaerbtes Audio lief.
+            uebergang.endete = true;
+            uebergang.dauerSamples = hoerbareSamples;
+            hoerbareSamples = 0;
+        }
+        warHoerbar = istHoerbar;
+
         if (fade <= 0.0 && ! zielAn)
         {
             resetZustaende();
             pulsPos = 0;
         }
-        hoerbarAtomic.store (fade > 0.001, std::memory_order_relaxed);
+        hoerbarAtomic.store (istHoerbar, std::memory_order_relaxed);
         phaseAtomic.store (lokal.modus == MarkierungsModus::puls ? huell * (float) fade
                                                                  : (float) fade,
                            std::memory_order_relaxed);
+        return uebergang;
     }
 
-    void setzeSamplerate (double fs) { fsAktuell = fs; }   // prepareToPlay-Kontext
+    /** prepareToPlay-Kontext. Loest zugleich den Oversize-Riegel (§7.1 E-01):
+        eine neue Blockgroesse ist genau der Moment, in dem der Grund fuer die
+        Verriegelung entfaellt. */
+    void setzeSamplerate (double fs)
+    {
+        fsAktuell = fs;
+        oversizeRiegel = false;
+        warHoerbar = false;
+        hoerbareSamples = 0;
+    }
 
     bool  hoerbar() const     { return hoerbarAtomic.load (std::memory_order_relaxed); }
     float phase() const       { return phaseAtomic.load (std::memory_order_relaxed); }
@@ -437,6 +545,15 @@ private:
     double fade = 0.0;
     int pulsPos = 0;
     double fsAktuell = 0.0;
+    /// SONDE-013 M-37/M-38: der Zustand, aus dem die zwei Uebergaenge
+    /// entstehen, und die Dauer des laufenden Eingriffs in Samples.
+    bool          warHoerbar = false;
+    std::uint64_t hoerbareSamples = 0;
+    /// §7.1 E-01: nach einem Oversizeblock bleibt die Markierung bis zum
+    /// naechsten `prepareToPlay` verriegelt. Ein erneutes `erlaubt` blendet
+    /// in dieser Laufzeit nicht wieder ein — sonst flatterte sie bei
+    /// wiederholten Oversizebloecken.
+    bool oversizeRiegel = false;
 
     juce::HeapBlock<float> wet;
     int wetKapazitaet = 0;

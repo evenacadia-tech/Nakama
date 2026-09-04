@@ -545,6 +545,9 @@ target_sources(EqCopMarkierungTest PRIVATE
     src/Diagnose.cpp
 )
 target_include_directories(EqCopMarkierungTest PRIVATE src)
+target_include_directories(EqCopMarkierungTest PRIVATE
+    hostbridge
+    "${juce_SOURCE_DIR}/modules/juce_audio_processors/format_types/VST3_SDK")
 target_compile_definitions(EqCopMarkierungTest PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
 target_link_libraries(EqCopMarkierungTest PRIVATE juce::juce_audio_utils juce::juce_dsp
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
@@ -775,6 +778,20 @@ target_compile_definitions(EqCopSonde013DynamicsTest PRIVATE
 target_link_libraries(EqCopSonde013DynamicsTest PRIVATE juce::juce_core Advapi32
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
 nakama_kern_anbinden(EqCopSonde013DynamicsTest)
+
+# ── S20-22/SONDE-013: der Interventionsring (Kanon B21) ───────────────────
+# Misst den RT→Control-Ring als Datenstruktur: FIFO-Ordnung, Sequenzen und vor
+# allem, dass er bei Ueberlauf MELDET statt das aelteste zu verwerfen. Das ist
+# die Asymmetrie aus M-39 - ein verlorener Liveframe kostet eine Anzeige, ein
+# verlorenes Begin kostet die Wahrheit. Der Allokationszaehler ist Pflicht aus
+# M-74. Braucht nur den Header.
+juce_add_console_app(EqCopSonde013InterventionRingTest PRODUCT_NAME "eqcop-sonde013interventionringtest")
+target_sources(EqCopSonde013InterventionRingTest PRIVATE tests/Sonde013InterventionRingTest.cpp)
+target_compile_definitions(EqCopSonde013InterventionRingTest PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
+target_link_libraries(EqCopSonde013InterventionRingTest PRIVATE juce::juce_core juce::juce_audio_basics Advapi32
+    PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+nakama_kern_anbinden(EqCopSonde013InterventionRingTest)
 
 # ── S20-22/SONDE-013 M-06: die Gesamtklasse nach §34.3 (Kanon B20) ────────
 # Misst die Regel, nicht ein Beispiel: `gesamtklasse` ist constexpr mit acht

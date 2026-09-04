@@ -1,0 +1,17 @@
+SONDE-013 / Planschritt S20–22 — ETAPPE 2, FORTSETZUNG 1: Bauetappen C bis H nach der geprüften Verhaltensmatrix. Prüfstufe T1+T2.
+
+STAND
+Der erste Bauworker hat die Etappen A (Vertragsrunde) und B (Evidenzpfad) gebaut und an der Etappengrenze planmäßig angehalten: HEAD {{BASIS}} liegt auf origin/master, Worktree sauber, Kanon GRUEN 41/41 auf 5397680 (Rohausgabe docs/beweise/roh/SONDE-013-5397680.md; die Beinzahl wuchs von 40 auf 41 durch B16). Der Verlauf steht in docs/beweise/SONDE-013.md §10.1 (Etappe A) und §10.2 (Etappe B). Etappe C ist die nächste.
+
+ROLLE UND AUFTRAG
+Du bist der Fortsetzungs-Bauworker (Opus) im sichtbaren Checkout C:/Users/phili/Projekte/Nakama, Branch master. Es gilt unverändert und vollständig der Bauauftrag docs/beweise/roh/SONDE-013-etappe-2-auftrag.txt (Rolle, Quellen, WAS DU BAUST, TECHNISCHE GRENZEN, MANIFEST, GIT, SELBSTAUDIT, ABSCHLUSS) — lies ihn zuerst, dann CLAUDE.md, dann docs/beweise/SONDE-013.md vollständig (die Matrix §3 ist die Spezifikation; §7 die Entscheide; §10 der bisherige Bau-Verlauf). Du beginnst bei Etappe C und baust C, D, E, F (untereinander unabhängig; §5.1), dann G, dann H. Etappe A und B rührst du nicht mehr an, außer ein Test einer späteren Etappe deckt dort einen Defekt auf — dann behebst du ihn mit Begründung in §10 und Rotbeweis.
+
+ABWEICHUNGEN ZUM ERSTAUFTRAG
+- Das Belegfeld in docs/plan/plan.json ist bereits gesetzt; nicht erneut anfassen.
+- Der volle Kanon ist Pflicht am Ende von H (Endstand) und zusätzlich nach Etappe G, weil G den Store, die Migration und die Wirefamilien zusammenführt; nach C, D, E und F genügen die in §5.1 genannten Beine, sofern die Etappe keine Schema-, Fixture- oder Runner-Datei berührt — sonst voller Kanon auch dort.
+- §10 wird append-only fortgeschrieben (§10.3 Etappe C, §10.4 Etappe D, … §10.8 Etappe H). Kopfzeile „Phase" führt die laufende Etappe; „Kanon nachher" und „Testanzahl" den jüngsten Lauf.
+- Dieser Auftrag docs/beweise/roh/SONDE-013-etappe-2-fort-1-auftrag.txt ist bereits committet; der Worktree ist zu Beginn sauber.
+- Betreff der Commits: „SONDE-013 Etappe 2 <C..H>: <was>".
+
+ABSCHLUSS
+Wie im Erstauftrag: alle Etappen bis H gebaut, voller Kanon GRUEN auf dem End-Stand mit Rohdatei, T1-Marke <!-- NAKAMA-URTEIL: T1 PASS <YYYY-MM-DD> offen --> im Kopf, dokuriegel sauber, HEAD auf origin/master, Worktree sauber. Musst du erneut an einer Etappengrenze anhalten: alles committen und pushen, in §10 den exakten Stand eintragen; der Dirigent setzt den nächsten Fortsetzungsworker auf.

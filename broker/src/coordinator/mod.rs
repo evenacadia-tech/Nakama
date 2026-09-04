@@ -186,13 +186,6 @@ pub struct Coordinator {
     /// Zahl war oder die Division nicht endlich blieb. NaN-Ehrlichkeit heisst
     /// verriegeln UND zaehlen, nicht still `inf` ausliefern.
     fenster_nicht_endlich: AtomicU64,
-    /// Wann `liveness_tick` zuletzt lief (SONDE-013 M-58, Befund R02).
-    ///
-    /// Der offene Nachlauf schrumpft mit der VERSTRICHENEN Zeit, nicht mit der
-    /// Zahl der Ticks. Ohne diesen Stempel gaebe es keinen Bezugspunkt, und
-    /// eine feste Schrittzahl je Tick haengt am Tickintervall — genau daran
-    /// lief der Nachlauf fuenfmal zu schnell ab.
-    letzter_tail_tick: Mutex<Option<Duration>>,
     /// Monotone ANKUNFTSREIHENFOLGE angenommener Evidenzsnapshots.
     ///
     /// 🔑 SONDE-013 Nacharbeit 2 (Befund R17): sie ist die einzige Groesse, an
@@ -230,7 +223,6 @@ impl Coordinator {
             flush_test_haken: Mutex::new(None),
             test_panik_unter_standlock: AtomicBool::new(false),
             fenster_nicht_endlich: AtomicU64::new(0),
-            letzter_tail_tick: Mutex::new(None),
             evidenz_folge: AtomicU64::new(0),
         }
     }
@@ -260,7 +252,7 @@ impl Coordinator {
             evidenz_folge_start =
                 Self::stand_aus_store_wiederherstellen(&mut stand, &store_writer.handle());
         }
-        Self {
+        let coordinator = Self {
             stand: Mutex::new(stand),
             alias_register: AliasRegister::default(),
             clock,
@@ -274,9 +266,19 @@ impl Coordinator {
             flush_test_haken: Mutex::new(None),
             test_panik_unter_standlock: AtomicBool::new(false),
             fenster_nicht_endlich: AtomicU64::new(0),
-            letzter_tail_tick: Mutex::new(None),
             evidenz_folge: AtomicU64::new(evidenz_folge_start),
-        }
+        };
+        // 🔑 Nacharbeit 3 (Befund B19, M-13/M-22): die Paarurteile ENTSTEHEN
+        // aus der restaurierten Evidenz.
+        //
+        // Sie lebten bis dahin nur in der fluechtigen Map und reisten beilaeufig
+        // im Sessionsnapshot mit; nach einem Neustart fehlten sie bis zur
+        // naechsten Evidenz. Ein eigener StoreEvent ist dafuer NICHT noetig —
+        // das Urteil folgt deterministisch aus der Evidenz, und die ist
+        // persistiert. Es hier zu rechnen ist deshalb keine zweite Wahrheit,
+        // sondern dieselbe.
+        coordinator.evidenz_paare_bilden();
+        coordinator
     }
 
     pub fn instant_mit_store(broker_epoch: String, store_writer: &StoreWriter) -> Self {

@@ -55,6 +55,22 @@ impl Coordinator {
     /// Der Aufruf steht im Evidenzempfaenger, nach jeder ANGENOMMENEN
     /// Annahme: ein Paar ist erst dann neu zu beurteilen, wenn eine seiner
     /// Haelften gewachsen ist.
+    /// Loest den Merker aus Befund B18 ein: wurde der Evidenzbestand
+    /// geaendert, werden die Paarurteile NEU gebildet.
+    ///
+    /// Er steht als eigener Aufruf da, damit jeder Pfad, der Evidenz entfernt
+    /// oder entwertet, dieselbe Zeile bekommt — und nicht jeder seine eigene
+    /// Bedingung erfindet.
+    pub(super) fn paare_bei_bedarf_bilden(&self) {
+        let faellig = {
+            let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+            std::mem::replace(&mut stand.paare_neu_bilden, false)
+        };
+        if faellig {
+            self.evidenz_paare_bilden();
+        }
+    }
+
     pub(super) fn evidenz_paare_bilden(&self) {
         let halbzeuge = {
             let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());

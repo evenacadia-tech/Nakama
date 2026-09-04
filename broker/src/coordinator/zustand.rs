@@ -150,6 +150,18 @@ pub(super) struct Taintstand {
     /// Nachlauf ist IHRE Groesse. `0.0` heisst „noch kein Nachlauf gemeldet";
     /// der Tick zieht dann nichts ab, weil es nichts abzuziehen gibt.
     pub(super) abtastrate: f64,
+    /// 🔑 Nacharbeit 3 (Befund B1, M-58): WANN dieser Nachlauf begonnen hat.
+    ///
+    /// Die Runde 2 fuehrte EIN globales `letzter_tail_tick` und zog je Tick
+    /// die Zeit seit dem vorigen Tick ab. Ein Nachlauf, der ZWISCHEN zwei
+    /// Ticks beginnt, erbte damit das volle Vorintervall als verstrichen — ein
+    /// kurzer Tail war fast sofort frei, und genau in diesem Fenster laeuft der
+    /// Filterhall des Markers noch in die Messung. Der Bezugspunkt gehoert
+    /// deshalb zum INTERVALL, nicht zum Tick.
+    pub(super) tail_seit: Option<Duration>,
+    /// Wie lang der Nachlauf beim Start war. Aus ihm und `tail_seit` folgt der
+    /// Rest — unabhaengig davon, wann und wie oft der Tick laeuft.
+    pub(super) tail_samples_gesamt: u64,
 }
 
 impl Taintstand {
@@ -230,6 +242,15 @@ pub(super) struct Stand {
     /// SONDE-013 M-62: der Taintzustand JE SITZUNG. Eine Sitzung ohne Eintrag
     /// ist sauber; der Eintrag entsteht mit dem ersten Eingriff.
     pub(super) taint: HashMap<SessionKey, Taintstand>,
+    /// 🔑 Nacharbeit 3 (Befund B18, M-22): der Evidenzbestand hat sich
+    /// geaendert, und die Paarurteile stehen noch auf dem alten Stand.
+    ///
+    /// Er wird UNTER dem Standlock gesetzt und ausserhalb eingeloest:
+    /// `evidenz_paare_bilden` nimmt sich sein eigenes Lock. Ohne diesen Merker
+    /// haetten Kapazitaets-Eviction und Invalidierung das Urteil zwar entfernt
+    /// oder entwertet, aber nie neu gebildet — und ein altes volles Urteil
+    /// blieb stehen, wo M-22 einen benannten unvollstaendigen Zustand verlangt.
+    pub(super) paare_neu_bilden: bool,
     pub(super) subscription_cleanups: u64,
     pub(super) subscription_abweisungen: u64,
     pub(super) letzter_subscription_grund: String,
@@ -464,6 +485,7 @@ impl Default for Stand {
             sessions: HashMap::new(),
             subscriptions: HashMap::new(),
             taint: HashMap::new(),
+            paare_neu_bilden: false,
             subscription_cleanups: 0,
             subscription_abweisungen: 0,
             letzter_subscription_grund: String::new(),

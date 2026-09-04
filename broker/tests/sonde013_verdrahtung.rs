@@ -821,6 +821,7 @@ fn ergebnis_ohne_resultatmessung_wird_abgelehnt() {
         guardrail_transient: Some(0.0),
         guardrail_breite_db: Some(0.0),
         guardrail_geschuetzt_db: Some(0.0),
+        guardrail_nicht_gemessen: Vec::new(),
     };
     assert_eq!(
         s.ergebnis(&id, Hoerurteil::Kandidat, None, None, &messung),
@@ -2379,19 +2380,23 @@ fn resultatmessung_ist_an_versuch_passage_und_grenze_gebunden() {
         achsen.vergleichbarkeit.is_some(),
         "R18: vergleichbarkeit::beurteile laeuft im Produktpfad: {achsen:?}"
     );
-    // R19: die Guardrails aus M-45 sind gemessen, nicht nur Coverage/Klasse.
+    // R19/B11: die Guardrails aus M-45 sind gemessen, nicht nur
+    // Coverage/Klasse — und die, die diese Evidenz NICHT traegt, sagen das mit
+    // Grund, statt eine Ersatzgroesse unter ihrem Namen zu liefern.
+    //
+    // 🔑 Nacharbeit 3 (Befund B11): die Runde 2 pruefte hier, dass der
+    // "Loudness-Guardrail" die 6 dB sieht. Er sah sie — aber er war das Mittel
+    // spektraler P50-dB-Werte und nicht integrierte Lautheit; der Test schrieb
+    // damit eine Ersatzgroesse unter dem echten Namen fest.
     assert!(
-        achsen.guardrail_loudness_db.is_some(),
-        "R19: der Loudness-Guardrail ist gemessen: {achsen:?}"
+        achsen.guardrail_loudness_db.is_none() && achsen.guardrail_peak_db.is_none(),
+        "B11: Loudness und True Peak werden NICHT ersetzt: {achsen:?}"
     );
-    assert!(
-        achsen.guardrail_loudness_db.unwrap_or(0.0) > 3.0,
-        "R19: und er sieht die 6 dB, die das Resultat lauter ist: {:?}",
-        achsen.guardrail_loudness_db
-    );
-    assert!(
-        achsen.guardrail_peak_db.is_some(),
-        "R19: der Peak-Guardrail ebenfalls"
+    assert_eq!(
+        achsen.guardrail_nicht_gemessen.len(),
+        2,
+        "B11: und beide nennen ihren Grund: {:?}",
+        achsen.guardrail_nicht_gemessen
     );
     assert!(
         achsen.guardrail_transient.is_some(),
@@ -3771,5 +3776,289 @@ fn liegengebliebene_ruecknahme_wird_beim_subscribe_nachgespielt() {
             .any(|(schluessel, _)| schluessel == "evidence_invalidate"),
         "und die Schuld ist danach getilgt - eine Schuld, die niemand abtraegt, \
          waechst"
+    );
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// NACHARBEIT 3 · W6 — Rechenwege und Paarbildung
+// ═════════════════════════════════════════════════════════════════════════
+
+/// B1 — der Nachlauf rechnet ab seinem START, nicht ab dem vorigen Tick.
+///
+/// 🔑 Wiederpruefung 2: EIN globales `letzter_tail_tick` wurde bei jedem Tick
+/// ersetzt, und der naechste Tick zog das GESAMTE Intervall seit dem
+/// vorherigen ab — auch wenn der Tail erst spaeter entstand. Ein kurzer Tail
+/// konnte dadurch nahezu sofort freigegeben werden; genau in diesem Fenster
+/// laeuft der Filterhall des Markers noch in die Messung. Der Fall der Runde 2
+/// startete den Tail VOR dem ersten Referenztick und konnte die normale
+/// Phasenlage nicht sehen.
+#[test]
+fn nachlauf_rechnet_ab_seinem_start() {
+    let (c, uhr) = coordinator();
+    let h = hello(1, 2, 10, 100, "main", Some(9));
+    anmelden(&c, "a", &h);
+    report_main(&c, "a", &h.adresse);
+
+    // Ein erster Tick setzt den Bezugspunkt der ALTEN Rechnung.
+    uhr.vor(100);
+    c.liveness_tick();
+
+    // Und JETZT laeuft eine Sekunde, BEVOR der Nachlauf ueberhaupt beginnt.
+    // Die alte Rechnung schriebe sie dem Tail gut.
+    uhr.vor(1000);
+    let id = hex(0x7200);
+    assert!(c.intervention_begin("a", &h.adresse, &id, 1));
+    // 24.000 Samples bei 48 kHz sind eine halbe Sekunde Nachlauf.
+    assert!(c.intervention_end("a", &h.adresse, &id, 2, 24_000));
+    assert!(
+        !c.interventionssicht_fuer_link("a").starke_evidenz_erlaubt,
+        "der Nachlauf laeuft"
+    );
+
+    // Ein Tick unmittelbar danach zieht NICHTS ab: seit dem Tail-Start ist
+    // keine Zeit vergangen. Die alte Rechnung zoege hier 1,1 Sekunden ab und
+    // gaebe den halbsekuendigen Nachlauf sofort frei.
+    c.liveness_tick();
+    assert!(
+        !c.interventionssicht_fuer_link("a").starke_evidenz_erlaubt,
+        "nachlauf_rechnet_ab_seinem_start - ein Tick unmittelbar nach dem \
+         Tail-Start gibt ihn NICHT frei"
+    );
+
+    // Nach 400 ms ist er immer noch nicht durch.
+    uhr.vor(400);
+    c.liveness_tick();
+    assert!(
+        !c.interventionssicht_fuer_link("a").starke_evidenz_erlaubt,
+        "und nach 400 von 500 ms ebenfalls nicht"
+    );
+
+    // Nach der vollen halben Sekunde faellt er - die Gegenprobe.
+    uhr.vor(150);
+    c.liveness_tick();
+    assert!(
+        c.interventionssicht_fuer_link("a").starke_evidenz_erlaubt,
+        "und nach 550 ms ist er abgelaufen - der Riegel sperrt die richtige \
+         Haelfte, nicht alles"
+    );
+}
+
+/// B18 — eine Invalidierung bildet die Paarurteile NEU.
+///
+/// 🔑 Wiederpruefung 2: `invalidierung_anwenden` stiess keine Neubildung an und
+/// liess das alte, volle Urteil stehen — ein Urteil ueber Belege, die es
+/// gerade zurueckgenommen hatte. Der Fall der Runde 2 speiste danach einen
+/// weiteren Snapshot ein und maskierte die Luecke damit.
+#[test]
+fn invalidierung_bildet_das_paarurteil_neu() {
+    let (c, _) = coordinator();
+    let paar = hex(0x88);
+    let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+        let s = hello(1, 2, instanz, nonce, "passive_probe", Some(9));
+        anmelden(&c, kuerzel, &s);
+        assert!(c.descriptor_setzen(kuerzel, descriptor(&s.adresse, position, &paar)));
+        for nr in 0..3 {
+            assert!(c.evidence_snapshot_json(kuerzel, &evidenz_payload(&s.adresse, nr, |_| {})));
+        }
+        s
+    };
+    let pre = haelfte("pre", 0x30, 0x31, "pre");
+    let _post = haelfte("post", 0x40, 0x41, "post");
+
+    let urteil = c.paarurteil(&paar).expect("das Paar traegt ein Urteil");
+    assert!(
+        urteil.ausschluss.is_none(),
+        "vor der Ruecknahme ist es vollstaendig: {urteil:?}"
+    );
+
+    // DIE Ruecknahme — ohne dass danach ein weiterer Snapshot kommt.
+    assert!(
+        c.invalidierung_wegen_messpunkt_fuer_link("pre", "pre", "post") > 0,
+        "der Messpunktwechsel nimmt die Evidenz der PRE-Haelfte zurueck"
+    );
+    let _ = pre;
+
+    let urteil = c.paarurteil(&paar).expect("das Paar traegt weiter ein Urteil");
+    assert!(
+        urteil.ausschluss.is_some(),
+        "invalidierung_bildet_das_paarurteil_neu - das Urteil nennt seinen \
+         unvollstaendigen Zustand, statt das alte volle stehen zu lassen: \
+         {urteil:?}"
+    );
+}
+
+/// B19 — die Paarurteile ueberdauern den Neustart, ohne eigenes Ereignis.
+///
+/// 🔑 Wiederpruefung 2: das Urteil lebte in der fluechtigen Map und reiste
+/// beilaeufig im Sessionsnapshot mit; nach einem Neustart fehlte es bis zur
+/// naechsten Evidenz. Der Dirigent hat die V3/V4-Regel der Runde 2 dafuer
+/// ANGEPASST: ein eigener StoreEvent ist nicht noetig, weil das Urteil
+/// deterministisch aus der persistierten Evidenz folgt — es wird beim Restore
+/// GERECHNET, nicht gelesen.
+#[cfg(windows)]
+#[test]
+fn paarurteil_entsteht_beim_neustart_aus_der_evidenz() {
+    let h = HarnischMitStore::neu("b19-paarurteil-neustart");
+    let paar = hex(0x89);
+    let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+        let mut s = h.main.clone();
+        s.plugin_kind = "passive_probe".into();
+        s.adresse.instance_id = hex(instanz);
+        s.adresse.runtime_nonce = hex(nonce);
+        anmelden(&h.c, kuerzel, &s);
+        assert!(h
+            .c
+            .descriptor_setzen(kuerzel, descriptor(&s.adresse, position, &paar)));
+        for nr in 0..3 {
+            assert!(h
+                .c
+                .evidence_snapshot_json(kuerzel, &evidenz_payload(&s.adresse, nr, |_| {})));
+        }
+        s
+    };
+    let pre = haelfte("pre", 0x50, 0x51, "pre");
+    let post = haelfte("post", 0x60, 0x61, "post");
+    let vorher = h
+        .c
+        .paarurteil(&paar)
+        .expect("vor dem Neustart steht ein Urteil");
+
+    // DER Neustart: ein zweiter Coordinator auf DEMSELBEN Store. Die Sonden
+    // melden sich wieder an — ihre Deskriptoren gehoeren dem Lauf —, aber
+    // KEINE neue Evidenz kommt.
+    let neu = h.neuer_coordinator();
+    anmelden(&neu, "pre2", &pre);
+    assert!(neu.descriptor_setzen("pre2", descriptor(&pre.adresse, "pre", &paar)));
+    anmelden(&neu, "post2", &post);
+    assert!(neu.descriptor_setzen("post2", descriptor(&post.adresse, "post", &paar)));
+
+    let nachher = neu
+        .paarurteil(&paar)
+        .expect("paarurteil_entsteht_beim_neustart_aus_der_evidenz - das Urteil \
+                 ist nach dem Neustart da, OHNE dass neue Evidenz kam");
+    assert_eq!(
+        nachher.klasse, vorher.klasse,
+        "und es ist dieselbe Klasse - das Urteil folgt aus der Evidenz, und die \
+         ist persistiert"
+    );
+}
+
+/// B10 — die Passagenbelege beider Haelften kommen aus den TATSAECHLICH
+/// vertretenen Instanzen (M-31/M-46).
+///
+/// 🔑 Wiederpruefung 2: Die Runde 2 setzte fingerprint, aktive_quellen und
+/// messpunktklassen fuer BEIDE Haelften identisch aus der statischen Passage;
+/// `kandidat.referenz` und die je Haelfte wirklich vertretenen Quellen wurden
+/// nicht gelesen. `MaterialVerschieden` und `QuellenVerschieden` konnten fuer
+/// diesen Aufrufer NIE ausloesen — eine Baseline nur von Quelle A und ein
+/// Resultat nur von Quelle B erschienen als stark vergleichbar. Der
+/// Produkttest der Runde 2 verwendete dieselbe Referenz und eine Quelle.
+#[cfg(windows)]
+#[test]
+fn passagenbelege_kommen_aus_den_vertretenen_quellen() {
+    let h = HarnischMitStore::neu("b10-quellen-je-haelfte");
+    let versuch = 0xcc0;
+    let vorlage = experiment_begin_wert(&h.main.adresse, 0x9e0, versuch);
+    let von = vorlage["passage"]["projekt_von"].as_i64().unwrap();
+    let epoche = vorlage["passage"]["transport_epoch"].as_u64().unwrap();
+
+    // BEIDE Quellen der Passage melden sich an — sonst gaebe es nichts zu
+    // unterscheiden.
+    let anmelden_quelle = |kuerzel: &str, index: usize, nonce: usize| {
+        let quelle = vorlage["passage"]["aktive_quellen"][index]
+            .as_str()
+            .unwrap()
+            .to_owned();
+        let klasse = vorlage["passage"]["messpunktklassen"][index]
+            .as_str()
+            .unwrap()
+            .to_owned();
+        let mut s = h.main.clone();
+        s.plugin_kind = "passive_probe".into();
+        s.adresse.instance_id = quelle;
+        s.adresse.runtime_nonce = hex(nonce);
+        anmelden(&h.c, kuerzel, &s);
+        report(&h.c, kuerzel, &s.adresse);
+        assert!(h
+            .c
+            .descriptor_setzen(kuerzel, descriptor(&s.adresse, &klasse, &hex(0x77))));
+        s
+    };
+    let a = anmelden_quelle("a", 0, 0x31);
+    let b = anmelden_quelle("b", 1, 0x41);
+
+    let beleg = |adresse: &Adresse, nr: usize| {
+        evidenz_payload(adresse, nr, |w| {
+            w["transport"]["transport_epoch"] = json!(epoche);
+            w["transport"]["project_sample_start"] = json!(von + (nr as i64) * 512);
+        })
+    };
+
+    // Baseline NUR von Quelle A.
+    for nr in 0..4 {
+        assert!(h.c.evidence_snapshot_json("a", &beleg(&a.adresse, nr)));
+    }
+    assert_eq!(
+        h.p0(&experiment_begin_wert(&h.main.adresse, 0x9e1, versuch))["ergebnis"],
+        "angewandt"
+    );
+    assert_eq!(
+        h.p0(&json!({
+            "type": "experiment_candidate",
+            "kopf": {
+                "command_id": hex(0x9e2),
+                "ziel": h.main.adresse,
+                "base_revision": 0,
+                "ttl_ms": 1000,
+                "schema_major": 3,
+                "schema_minor": 0
+            },
+            "experiment_id": hex(versuch),
+            "referenz": vorlage["referenz"],
+            "blindreihenfolge": "kandidat_zuerst"
+        }))["ergebnis"],
+        "angewandt"
+    );
+    // Resultat NUR von Quelle B.
+    for nr in 10..14 {
+        assert!(h.c.evidence_snapshot_json("b", &beleg(&b.adresse, nr)));
+    }
+
+    let ack = h.p0(&json!({
+        "type": "experiment_manual_result",
+        "kopf": {
+            "command_id": hex(0x9e3),
+            "ziel": h.main.adresse,
+            "base_revision": 0,
+            "ttl_ms": 1000,
+            "schema_major": 3,
+            "schema_minor": 0
+        },
+        "experiment_id": hex(versuch),
+        "hoerurteil": "kandidat",
+        "blindreihenfolge": "kandidat_zuerst",
+        "notiz": null,
+        "werkzeug": null
+    }));
+    assert_eq!(ack["ergebnis"], "angewandt", "{ack}");
+
+    let e = h.c.experiment_sicht(&hex(versuch)).expect("der Versuch steht");
+    use eqcop_broker::coordinator::experiment::Terminal;
+    let Some(Terminal::Ergebnis { achsen, .. }) = &e.terminal else {
+        panic!("das Terminal ist ein Ergebnis: {:?}", e.terminal);
+    };
+    assert!(
+        achsen
+            .vergleichbarkeit_gruende
+            .iter()
+            .any(|g| g.contains("QuellenVerschieden")),
+        "passagenbelege_kommen_aus_den_vertretenen_quellen - Baseline von A und \
+         Resultat von B ist NICHT vergleichbar: {achsen:?}"
+    );
+    // B13 im selben Lauf: die Effektstabilitaet ist gerechnet, nicht `None`.
+    assert!(
+        achsen.effekt_stabil.is_some(),
+        "B13: der Produktpfad befuellt beide Haelften, und `achsen()` liefert \
+         eine Effektstabilitaet: {achsen:?}"
     );
 }

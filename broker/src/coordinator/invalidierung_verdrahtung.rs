@@ -64,9 +64,13 @@ impl Coordinator {
             // Ein Broker OHNE Store haelt seinen Bestand ausschliesslich
             // fluechtig; dort gibt es nichts, wovon der Speicher abweichen
             // koennte. Der Ausschluss steht, und es gibt keine Zustellschuld.
-            Ok(None) => Ok(betroffen),
+            Ok(None) => {
+                self.paare_bei_bedarf_bilden();
+                Ok(betroffen)
+            }
             Ok(Some(event_ord)) => {
                 self.invalidierung_zustellen(&wirkung, event_ord);
+                self.paare_bei_bedarf_bilden();
                 Ok(betroffen)
             }
             Err(()) => {
@@ -121,6 +125,13 @@ impl Coordinator {
             }
         }
         let betroffen = zurueck.len();
+        // 🔑 Nacharbeit 3 (Befund B18, M-22): eine Ruecknahme ist eine
+        // Evidenzaenderung. Die Runde 2 stiess KEINE Neubildung an und liess
+        // das alte volle Paarurteil stehen — ein Urteil ueber Belege, die es
+        // gerade zurueckgenommen hatte.
+        if betroffen > 0 {
+            stand.paare_neu_bilden = true;
+        }
         stand.invalidierungen = stand.invalidierungen.saturating_add(1);
         stand.evidenz_ausgeschlossen =
             stand.evidenz_ausgeschlossen.saturating_add(betroffen as u64);
@@ -161,6 +172,9 @@ impl Coordinator {
                 }
             }
         }
+        // Der Merker faellt mit: die Aenderung, die ihn setzte, gibt es nicht
+        // mehr. Ein stehengebliebener Merker triebe eine Neubildung ohne Anlass.
+        stand.paare_neu_bilden = false;
         stand.invalidierungen = stand.invalidierungen.saturating_sub(1);
         stand.evidenz_ausgeschlossen = stand
             .evidenz_ausgeschlossen

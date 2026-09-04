@@ -188,6 +188,9 @@ impl Coordinator {
         event_sequence: u64,
         tail_samples: u64,
     ) -> (bool, Option<i64>) {
+        // Befund B1: der Nachlauf braucht seinen Startzeitpunkt. Die Uhr wird
+        // VOR dem Lock gelesen — sie ist nicht Teil des Standes.
+        let jetzt = self.clock.jetzt();
         let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         let Some(session) = Self::session_des_links(&stand, link_id) else {
             Self::alle_sitzungen_unbekannt(&mut stand);
@@ -217,6 +220,11 @@ impl Coordinator {
         }
         taint.interventionen.remove(intervention_id);
         taint.tail_samples_offen = taint.tail_samples_offen.max(tail_samples);
+        // 🔑 Nacharbeit 3 (Befund B1): der Nachlauf startet HIER, und der Tick
+        // rechnet ab hier. `max` gilt weiter: ein laengerer Nachlauf verdraengt
+        // einen kuerzeren, und die Uhr beginnt mit ihm von vorn.
+        taint.tail_samples_gesamt = taint.tail_samples_offen;
+        taint.tail_seit = (taint.tail_samples_offen > 0).then_some(jetzt);
         // 🔑 Nacharbeit 2 (Befund R02, M-58): der Nachlauf steht in SAMPLES,
         // der Tick laeuft in ZEIT. Die Umrechnung braucht die Rate DERSELBEN
         // Instanz, die den Nachlauf gemeldet hat — er ist ihre Groesse.
@@ -297,6 +305,13 @@ impl Coordinator {
         let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         for taint in stand.taint.values_mut() {
             taint.tail_samples_offen = taint.tail_samples_offen.saturating_sub(samples);
+            // Befund B1: der Bezugspunkt wandert mit. Wer den Rest von Hand
+            // kuerzt, hat damit auch die verstrichene Zeit verbraucht — sonst
+            // zoege der naechste Zeittick sie ein zweites Mal ab.
+            taint.tail_samples_gesamt = taint.tail_samples_offen;
+            if taint.tail_samples_offen == 0 {
+                taint.tail_seit = None;
+            }
         }
     }
 
@@ -313,16 +328,23 @@ impl Coordinator {
     ///
     /// Jede Sitzung rechnet mit IHRER Rate: der Nachlauf gehoert der Instanz,
     /// die ihn gemeldet hat.
-    pub(super) fn tail_fortschritt_zeit(&self, verstrichen: Duration) {
-        let sekunden = verstrichen.as_secs_f64();
-        if !(sekunden > 0.0) {
-            return;
-        }
+    /// 🔑 Nacharbeit 3 (Befund B1): gerechnet wird ab dem TAIL-START, nicht
+    /// ab dem vorigen Tick.
+    ///
+    /// Der Aufrufer gibt die aktuelle Uhrzeit, nicht ein Intervall. Damit ist
+    /// das Ergebnis unabhaengig von der Phasenlage der Ticks: ein Nachlauf, der
+    /// unmittelbar nach einem Tick beginnt, verliert beim naechsten genau die
+    /// seither vergangene Zeit — nicht das volle Tickintervall.
+    pub(super) fn tail_fortschritt_zeit(&self, jetzt: Duration) {
         let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         for taint in stand.taint.values_mut() {
             if taint.tail_samples_offen == 0 || !(taint.abtastrate > 0.0) {
                 continue;
             }
+            let Some(seit) = taint.tail_seit else {
+                continue;             // Ohne Bezugspunkt wird nichts abgezogen.
+            };
+            let sekunden = jetzt.saturating_sub(seit).as_secs_f64();
             let samples = (sekunden * taint.abtastrate).floor();
             // NaN-Ehrlichkeit: eine nicht endliche Rechnung zieht NICHTS ab.
             // Eine Sperre zu frueh zu loesen ist der teure Fehler, sie zu
@@ -332,7 +354,11 @@ impl Coordinator {
             } else {
                 0
             };
-            taint.tail_samples_offen = taint.tail_samples_offen.saturating_sub(samples);
+            taint.tail_samples_offen = taint.tail_samples_gesamt.saturating_sub(samples);
+            if taint.tail_samples_offen == 0 {
+                taint.tail_seit = None;
+                taint.tail_samples_gesamt = 0;
+            }
         }
     }
 

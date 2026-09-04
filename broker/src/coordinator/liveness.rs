@@ -120,6 +120,14 @@ impl Coordinator {
                 .paarurteile
                 .remove(&(key.session(), pair_id.to_owned()));
         }
+        // 🔑 Nacharbeit 3 (Befund B18): JEDE Eviction fordert die Neubildung.
+        //
+        // Die Runde 2 bildete nur nach der TOMBSTONE-Eviction im Tick neu; die
+        // Kapazitaets-Evictions aus `platz_schaffen_locked` entfernten das
+        // Urteil und liessen die verbliebene Haelfte ohne benannten Zustand
+        // zurueck. Der Merker steht hier, weil hier die Evidenz faellt — nicht
+        // beim Aufrufer, der es vergessen koennte.
+        stand.paare_neu_bilden = true;
         let link_ids: Vec<String> = stand
             .links
             .iter()
@@ -225,18 +233,7 @@ impl Coordinator {
         // (`lib.rs`). Der Nachlauf lief damit fuenfmal zu schnell ab. Jetzt
         // zaehlt die tatsaechlich verstrichene Zeit mal der Abtastrate der
         // Instanz, die den Nachlauf gemeldet hat.
-        let verstrichen = {
-            let mut letzter = self
-                .letzter_tail_tick
-                .lock()
-                .unwrap_or_else(|e| e.into_inner());
-            let vorher = letzter.replace(jetzt);
-            // Der ERSTE Tick hat keinen Vorgaenger und zieht deshalb nichts ab.
-            // Ihm die ganze Laufzeit seit Brokerstart zuzuschreiben waere eine
-            // erfundene Frist.
-            vorher.map(|v| jetzt.saturating_sub(v)).unwrap_or_default()
-        };
-        self.tail_fortschritt_zeit(verstrichen);
+        self.tail_fortschritt_zeit(jetzt);
         self.taint_deckel_halten();
         let (schliessen, dirty, eviktiert) = {
             let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
@@ -297,9 +294,11 @@ impl Coordinator {
         // BENANNTEN unvollstaendigen Zustand („getrennte Haelfte"), und den
         // erzeugt `bilde_paare` aus dem verbliebenen Bestand. Der Aufruf steht
         // ausserhalb des Standlocks, weil er sich sein eigenes nimmt.
-        if eviktiert {
-            self.evidenz_paare_bilden();
-        }
+        //
+        // Nacharbeit 3 (Befund B18): gemessen wird der MERKER, nicht ein
+        // lokales `eviktiert`. Der Tombstone-Fall ist nur einer von mehreren.
+        let _ = eviktiert;
+        self.paare_bei_bedarf_bilden();
         for session in dirty {
             self.flush_session(&session, None);
         }
@@ -730,6 +729,12 @@ impl Coordinator {
                 self.store_verweigert_fuer_link(link_id);
             }
         }
+        // 🔑 Nacharbeit 3 (Befund B19, M-13/M-22): der Deskriptor ist das,
+        // was aus Evidenz eine PAARHAELFTE macht. Kommt er nach einem
+        // Brokerneustart zurueck, entsteht das Urteil damit sofort aus der
+        // RESTAURIERTEN Evidenz — ohne dass ein neuer Snapshot kommen muss.
+        // Ohne diesen Aufruf fehlte es bis zur naechsten Messung.
+        self.evidenz_paare_bilden();
         self.flush_session(&session, Some(link_id));
         true
     }

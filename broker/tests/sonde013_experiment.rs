@@ -52,6 +52,7 @@ fn messung() -> Resultatmessung {
         guardrail_transient: Some(0.0),
         guardrail_breite_db: Some(0.0),
         guardrail_geschuetzt_db: Some(0.0),
+        guardrail_nicht_gemessen: Vec::new(),
     }
 }
 

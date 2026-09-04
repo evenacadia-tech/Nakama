@@ -1,0 +1,149 @@
+Rotbeweis B11 - Loudness und True Peak werden nicht durch Ersatzgroessen vertreten
+Datum: 2026-09-04
+Datei: broker/src/coordinator/experiment_verdrahtung.rs
+Test:  cargo test --test sonde013_verdrahtung resultatmessung_ist_an_versuch_passage_und_grenze_gebunden
+
+== 1. Fehler eingebaut ==
+ALT:         messung.guardrail_loudness_db = None;
+        messung.guardrail_peak_db = None;
+NEU:         // Rotbeweis: das Mittel der P50-dB-Werte reist wieder als LOUDNESS,
+        // wie in Runde 2.
+        let ersatz = |w: &[f64], g: &[bool]| -> Option<f64> {
+            let e: Vec<f64> = w.iter().zip(g.iter()).filter(|(_, k)| **k).map(|(v, _)| *v).collect();
+            (!e.is_empty()).then(|| e.iter().sum::<f64>() / e.len() as f64)
+        };
+        messung.guardrail_loudness_db = match (
+            ersatz(&basis_p50, &basis_gueltig),
+            ersatz(&res_p50, &res_gueltig),
+        ) {
+            (Some(a), Some(b)) => Some(b - a),
+            _ => None,
+        };
+        messung.guardrail_peak_db = messung.guardrail_loudness_db;
+
+== 2. Der Test FAELLT ==
+exit=101
+
+running 1 test
+test resultatmessung_ist_an_versuch_passage_und_grenze_gebunden ... FAILED
+
+failures:
+
+---- resultatmessung_ist_an_versuch_passage_und_grenze_gebunden stdout ----
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde013-resultatmessung-bindung-19632-b50e9f7c3ee644cea0cc36960dfa7bfc\nakama-broker.sqlite3
+
+thread 'resultatmessung_ist_an_versuch_passage_und_grenze_gebunden' (23224) panicked at tests\sonde013_verdrahtung.rs:2391:5:
+B11: Loudness und True Peak werden NICHT ersetzt: Achsenrechnung { intervall: Some((6.0, 6.0)), signifikante_baender: 221, gescannte_baender: 221, vergleichbarkeit: Some("unvergleichbar"), vergleichbarkeit_gruende: ["ProjektbereichVerschieden"], guardrail_abdeckung_delta: Some(0.0), guardrail_klasse_gefallen: false, guardrail_loudness_db: Some(6.0), guardrail_peak_db: Some(6.0), guardrail_transient: Some(0.0), guardrail_breite_db: None, guardrail_geschuetzt_db: Some(6.0), guardrail_nicht_gemessen: ["loudness: evidence_snapshot traegt keine integrierte Lautheit", "peak: evidence_snapshot traegt keinen True Peak"], effekt_stabil: Some(true) }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    resultatmessung_ist_an_versuch_passage_und_grenze_gebunden
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 54 filtered out; finished in 3.25s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:2871:9
+     |
+2871 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+     |
+     = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:3856:9
+     |
+3856 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:3903:9
+     |
+3903 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: field `clock` is never read
+   --> tests\sonde013_verdrahtung.rs:264:5
+    |
+261 | struct HarnischMitStore {
+    |        ---------------- field in this struct
+...
+264 |     clock: Arc<ManualClock>,
+    |     ^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `sonde_mit_evidenz` is never used
+    --> tests\sonde013_verdrahtung.rs:1870:4
+     |
+1870 | fn sonde_mit_evidenz(h: &HarnischMitStore, anzahl: usize) -> HelloControl {
+     |    ^^^^^^^^^^^^^^^^^
+
+warning: `eqcop-broker` (test "sonde013_verdrahtung") generated 5 warnings (run `cargo fix --test "sonde013_verdrahtung" -p eqcop-broker` to apply 3 suggestions)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.70s
+     Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)
+error: test failed, to rerun pass `--test sonde013_verdrahtung`
+
+
+== 3. Fehler entfernt, der Test ist GRUEN ==
+exit=0
+
+running 1 test
+test resultatmessung_ist_an_versuch_passage_und_grenze_gebunden ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 54 filtered out; finished in 3.24s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:2871:9
+     |
+2871 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+     |
+     = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:3856:9
+     |
+3856 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:3903:9
+     |
+3903 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: field `clock` is never read
+   --> tests\sonde013_verdrahtung.rs:264:5
+    |
+261 | struct HarnischMitStore {
+    |        ---------------- field in this struct
+...
+264 |     clock: Arc<ManualClock>,
+    |     ^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `sonde_mit_evidenz` is never used
+    --> tests\sonde013_verdrahtung.rs:1870:4
+     |
+1870 | fn sonde_mit_evidenz(h: &HarnischMitStore, anzahl: usize) -> HelloControl {
+     |    ^^^^^^^^^^^^^^^^^
+
+warning: `eqcop-broker` (test "sonde013_verdrahtung") generated 5 warnings (run `cargo fix --test "sonde013_verdrahtung" -p eqcop-broker` to apply 3 suggestions)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.90s
+     Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)

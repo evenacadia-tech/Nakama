@@ -217,6 +217,8 @@ pub struct Achsenrechnung {
     pub guardrail_transient: Option<f64>,
     pub guardrail_breite_db: Option<f64>,
     pub guardrail_geschuetzt_db: Option<f64>,
+    /// Befund B11: die Namen der Guardrails, die diese Evidenz nicht traegt.
+    pub guardrail_nicht_gemessen: Vec<String>,
     /// 4. Effektstabilitaet: streut das Delta ueber die Teilfenster?
     ///    `None` heisst „nicht beurteilbar", nicht „stabil".
     pub effekt_stabil: Option<bool>,
@@ -262,6 +264,19 @@ pub struct Resultatmessung {
     pub guardrail_breite_db: Option<f64>,
     /// Groesste Bewegung AUSSERHALB des staerksten Zielbandes, in dB.
     pub guardrail_geschuetzt_db: Option<f64>,
+    /// 🔑 Nacharbeit 3 (Befund B11, M-45/M-07): welche Guardrails NICHT
+    /// gemessen werden konnten — mit Grund.
+    ///
+    /// M-45 nennt Loudness und True Peak ausdruecklich. Die Runde 2 lieferte
+    /// unter diesen Namen Ersatzgroessen: das Mittel spektraler P50-dB-Werte
+    /// und das hoechste gemittelte Band-P95. Weder ist integrierte Lautheit
+    /// noch True Peak; eine spektrale Umverteilung oder ein
+    /// Intersample-Ueberschwinger blieb damit unentdeckt, waehrend die Zahl
+    /// unter dem echten Namen reiste. `evidence_snapshot` traegt beide
+    /// Groessen heute nicht — also steht hier ihr Grund, und die Achse faellt
+    /// auf „nicht beurteilbar". Eine Ersatzrechnung unter fremdem Namen waere
+    /// schlimmer als eine fehlende Zahl.
+    pub guardrail_nicht_gemessen: Vec<String>,
     /// Abdeckung beider Fenster.
     pub abdeckung_baseline: f64,
     pub abdeckung_resultat: f64,
@@ -393,6 +408,7 @@ impl Resultatmessung {
             guardrail_transient: self.guardrail_transient,
             guardrail_breite_db: self.guardrail_breite_db,
             guardrail_geschuetzt_db: self.guardrail_geschuetzt_db,
+            guardrail_nicht_gemessen: self.guardrail_nicht_gemessen.clone(),
             effekt_stabil,
         }
     }
@@ -460,6 +476,14 @@ impl Achsenrechnung {
             }
             match (messbar, gerissen) {
                 (_, true) => Achsenbefund::Verschlechtert,
+                // 🔑 Nacharbeit 3 (Befund B11): fehlt eine der von M-45
+                // VERLANGTEN Groessen, ist die Achse nicht beurteilbar — auch
+                // wenn andere messbar waren und stillhielten. „Die zwei, auf
+                // die es ankommt, habe ich nie gesehen" ist kein
+                // „unveraendert".
+                (true, false) if !self.guardrail_nicht_gemessen.is_empty() => {
+                    Achsenbefund::NichtBeurteilbar
+                }
                 (true, false) => Achsenbefund::Unveraendert,
                 (false, false) => Achsenbefund::NichtBeurteilbar,
             }

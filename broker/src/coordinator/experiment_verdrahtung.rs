@@ -685,6 +685,9 @@ impl Coordinator {
             "guardrail_transient": a.guardrail_transient,
             "guardrail_breite_db": a.guardrail_breite_db,
             "guardrail_geschuetzt_db": a.guardrail_geschuetzt_db,
+            // Befund B11: WARUM eine Guardrail-Groesse fehlt, reist mit. Ein
+            // fehlender Wert ohne Grund saehe aus wie ein vergessener.
+            "guardrail_nicht_gemessen": a.guardrail_nicht_gemessen,
             "effekt_stabil": a.effekt_stabil,
         })
     }
@@ -805,6 +808,18 @@ impl Coordinator {
 
         let mut baseline: Vec<&super::evidenz::Evidenzstand> = Vec::new();
         let mut resultat: Vec<&super::evidenz::Evidenzstand> = Vec::new();
+        // 🔑 Nacharbeit 3 (Befund B10, M-31/M-46): die tatsaechlich
+        // VERTRETENEN Quellen je Haelfte.
+        //
+        // Die Runde 2 setzte beide Passagenbelege identisch aus der statischen
+        // Passage: derselbe Fingerprint, dasselbe eingefrorene Quellenset.
+        // `MaterialVerschieden` und `QuellenVerschieden` konnten damit fuer
+        // diesen Aufrufer NIE ausloesen — eine Baseline nur von Quelle A und
+        // ein Resultat nur von Quelle B erschienen als stark vergleichbar.
+        let mut baseline_quellen: std::collections::BTreeMap<String, String> =
+            std::collections::BTreeMap::new();
+        let mut resultat_quellen: std::collections::BTreeMap<String, String> =
+            std::collections::BTreeMap::new();
         for (key, historie) in stand.evidenz.iter() {
             if key.session() != *session {
                 continue;
@@ -854,8 +869,12 @@ impl Coordinator {
                 // einem lieferte die Resultatmessung gar nichts.
                 if eintrag.empfangsfolge < begin_folge {
                     baseline.push(eintrag);
+                    baseline_quellen
+                        .insert(key.instance_id.clone(), soll.clone());
                 } else if eintrag.empfangsfolge >= kandidat_folge {
                     resultat.push(eintrag);
+                    resultat_quellen
+                        .insert(key.instance_id.clone(), soll.clone());
                 }
             }
         }
@@ -937,6 +956,41 @@ impl Coordinator {
             messung.fenster_delta_db.push(zeile);
         }
 
+        // 🔑 Nacharbeit 3 (Befund B13, M-45): die EFFEKTSTABILITAET bekommt
+        // ihre zwei Haelften.
+        //
+        // Der Produktpfad der Runde 2 befuellte nur `fenster_delta_db` und nie
+        // `erste_haelfte`/`zweite_haelfte`; `achsen()` lieferte fuer JEDES
+        // reale Experiment `effekt_stabil = None`. Die Unit-Tests setzten die
+        // Haelften von Hand, und der Integrationstest prueft das Feld nicht —
+        // die Achse war im Produkt tot, obwohl sie in der Runde davor lebte.
+        //
+        // Halbiert wird die ZEITREIHE: die erste Haelfte der Resultatfenster
+        // gegen die zweite. Bei nur EINEM Fenster gibt es keine zwei Haelften;
+        // dann bleiben beide leer und die Achse sagt ehrlich „nicht
+        // beurteilbar".
+        if messung.fenster_delta_db.len() >= 2 {
+            let mitte = messung.fenster_delta_db.len() / 2;
+            let mittel_der_zeilen = |zeilen: &[Vec<f64>]| -> Vec<f64> {
+                let mut aus = Vec::with_capacity(baender);
+                for band in 0..baender {
+                    let werte: Vec<f64> = zeilen
+                        .iter()
+                        .filter_map(|z| z.get(band).copied())
+                        .filter(|x| x.is_finite())
+                        .collect();
+                    aus.push(if werte.is_empty() {
+                        f64::NAN
+                    } else {
+                        werte.iter().sum::<f64>() / werte.len() as f64
+                    });
+                }
+                aus
+            };
+            messung.erste_haelfte = mittel_der_zeilen(&messung.fenster_delta_db[..mitte]);
+            messung.zweite_haelfte = mittel_der_zeilen(&messung.fenster_delta_db[mitte..]);
+        }
+
         messung.abdeckung_baseline =
             baseline.iter().map(|s| s.abdeckung).sum::<f64>() / baseline.len() as f64;
         messung.abdeckung_resultat =
@@ -960,46 +1014,32 @@ impl Coordinator {
             let e: Vec<f64> = v.iter().copied().filter(|x| x.is_finite()).collect();
             (!e.is_empty()).then(|| e.iter().sum::<f64>() / e.len() as f64)
         };
-        // LOUDNESS: das mittlere Bandniveau in dB.
-        let basis_laut = mittel(
-            &basis_p50
-                .iter()
-                .zip(basis_gueltig.iter())
-                .filter(|(_, g)| **g)
-                .map(|(v, _)| *v)
-                .collect::<Vec<f64>>(),
+        // 🔑 Nacharbeit 3 (Befund B11, M-45/M-07): LOUDNESS und TRUE PEAK
+        // werden NICHT ERSETZT.
+        //
+        // Die Runde 2 lieferte unter `guardrail_loudness_db` das Mittel
+        // spektraler P50-dB-Werte und unter `guardrail_peak_db` das hoechste
+        // gemittelte Band-P95. Beide sind plausible Zahlen und beide sind
+        // etwas ANDERES als das, was ihr Name sagt: integrierte Lautheit misst
+        // gegatet ueber Zeit, True Peak misst zwischen den Samples. Eine
+        // spektrale Umverteilung ohne Lautheitsaenderung und ein
+        // Intersample-Ueberschwinger blieben damit unentdeckt, waehrend die
+        // Ersatzgroesse unter dem echten Namen reiste.
+        //
+        // `evidence_snapshot` traegt heute weder integrierte Lautheit noch
+        // True Peak (geprueft an `eq-copilot/schemas/v3/eq-ipc-v3.schema.json`,
+        // `$defs/evidence_snapshot`: baender, verteilung, ereignisse, stereo,
+        // konfidenz, transport — keine der beiden Groessen). Also gibt es sie
+        // hier nicht, und die Achse sagt das mit Grund. Der fehlende
+        // Vertragsteil steht als Nebenbefund im Manifest.
+        messung.guardrail_loudness_db = None;
+        messung.guardrail_peak_db = None;
+        messung.guardrail_nicht_gemessen.push(
+            "loudness: evidence_snapshot traegt keine integrierte Lautheit".into(),
         );
-        let res_laut = mittel(
-            &res_p50
-                .iter()
-                .zip(res_gueltig.iter())
-                .filter(|(_, g)| **g)
-                .map(|(v, _)| *v)
-                .collect::<Vec<f64>>(),
-        );
-        messung.guardrail_loudness_db = match (basis_laut, res_laut) {
-            (Some(a), Some(b)) => Some(b - a),
-            _ => None,
-        };
-        // PEAK: das hoechste P95 ueber alle Baender - der Spitzenwert des
-        // Fensters. Er kann steigen, waehrend der Median steht.
-        let (basis_p95, basis_p95_g) = mittel_je_band(&baseline, true);
-        let (res_p95, res_p95_g) = mittel_je_band(&resultat, true);
-        let hoechstes = |w: &[f64], g: &[bool]| -> Option<f64> {
-            w.iter()
-                .zip(g.iter())
-                .filter(|(_, ok)| **ok)
-                .map(|(v, _)| *v)
-                .filter(|v| v.is_finite())
-                .fold(None, |m: Option<f64>, v| Some(m.map_or(v, |x| x.max(v))))
-        };
-        messung.guardrail_peak_db = match (
-            hoechstes(&basis_p95, &basis_p95_g),
-            hoechstes(&res_p95, &res_p95_g),
-        ) {
-            (Some(a), Some(b)) => Some(b - a),
-            _ => None,
-        };
+        messung
+            .guardrail_nicht_gemessen
+            .push("peak: evidence_snapshot traegt keinen True Peak".into());
         // TRANSIENT: die Onsetstaerke - die zweite, unabhaengige Spur (§38.2).
         let onset = |satz: &[&super::evidenz::Evidenzstand]| -> Option<f64> {
             mittel(&satz.iter().map(|s| s.onset as f64).collect::<Vec<f64>>())
@@ -1050,29 +1090,56 @@ impl Coordinator {
         // `Default::default()`, und weil `hat_resultat()` sie nicht verlangte,
         // konnte ein Terminal mit `vergleichbarkeit = None` entstehen — Gate 6
         // wirkte damit gar nicht.
-        let beleg = |satz: &[&super::evidenz::Evidenzstand], abdeckung: f64| Passagenbeleg {
-            projekt_start: satz
-                .iter()
-                .filter_map(|s| s.project_sample_start)
-                .min()
-                .unwrap_or(passage.projekt_von),
-            projekt_ende: satz
-                .iter()
-                .filter_map(|s| {
-                    s.project_sample_start
-                        .map(|v| v.saturating_add(s.sample_count as i64))
-                })
-                .max()
-                .unwrap_or(passage.projekt_bis),
-            fingerprint: Some(passage.fingerprint.clone()),
-            aktive_quellen: passage.aktive_quellen.clone(),
-            samplerate: satz.last().map(|s| s.sample_rate).unwrap_or(0.0),
-            messpunktklassen: passage.messpunktklassen.clone(),
-            abdeckung: abdeckung as f32,
+        let beleg = |satz: &[&super::evidenz::Evidenzstand],
+                     abdeckung: f64,
+                     quellen: &std::collections::BTreeMap<String, String>,
+                     fingerprint: &Fingerprintwerte|
+         -> Passagenbeleg {
+            Passagenbeleg {
+                projekt_start: satz
+                    .iter()
+                    .filter_map(|s| s.project_sample_start)
+                    .min()
+                    .unwrap_or(passage.projekt_von),
+                projekt_ende: satz
+                    .iter()
+                    .filter_map(|s| {
+                        s.project_sample_start
+                            .map(|v| v.saturating_add(s.sample_count as i64))
+                    })
+                    .max()
+                    .unwrap_or(passage.projekt_bis),
+                // Befund B10: der Fingerprint DIESER Haelfte — die
+                // Begin-Referenz fuer die Baseline, die Kandidatenreferenz
+                // fuer das Resultat. Beide gleichzusetzen hiess, den
+                // Materialvergleich abzuschalten.
+                fingerprint: Some(fingerprint.clone()),
+                // Und die Quellen, die in DIESER Haelfte wirklich Belege
+                // geliefert haben — nicht das eingefrorene Set der Passage.
+                aktive_quellen: quellen.keys().cloned().collect(),
+                samplerate: satz.last().map(|s| s.sample_rate).unwrap_or(0.0),
+                messpunktklassen: quellen.values().cloned().collect(),
+                abdeckung: abdeckung as f32,
+            }
         };
+        let kandidat_referenz = e
+            .kandidaten
+            .last()
+            .map(|k| &k.referenz)
+            .unwrap_or(&e.baseline);
         let urteil = crate::coordinator::vergleichbarkeit::beurteile(
-            &beleg(&baseline, messung.abdeckung_baseline),
-            &beleg(&resultat, messung.abdeckung_resultat),
+            &beleg(
+                &baseline,
+                messung.abdeckung_baseline,
+                &baseline_quellen,
+                &e.baseline.passage_fingerprint,
+            ),
+            &beleg(
+                &resultat,
+                messung.abdeckung_resultat,
+                &resultat_quellen,
+                &kandidat_referenz.passage_fingerprint,
+            ),
         );
         messung.vergleichbarkeit = Some(urteil.klasse.name().to_owned());
         messung.vergleichbarkeit_gruende = urteil
@@ -1620,6 +1687,10 @@ impl Coordinator {
                 .and_then(Value::as_str)
                 .map(str::to_owned),
             vergleichbarkeit_gruende: liste("vergleichbarkeit_gruende"),
+            // Befund B11: die Gruende kommen MIT zurueck. Ohne sie saehe ein
+            // restauriertes Terminal so aus, als waere jede Groesse gemessen
+            // und stillgehalten.
+            guardrail_nicht_gemessen: liste("guardrail_nicht_gemessen"),
             guardrail_abdeckung_delta: a
                 .get("guardrail_abdeckung_delta")
                 .and_then(Value::as_f64),

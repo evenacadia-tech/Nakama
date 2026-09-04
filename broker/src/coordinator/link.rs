@@ -303,6 +303,11 @@ impl Coordinator {
                 self.routing_fail_closed("Konfliktriegel konnte nicht persistiert werden");
             }
         }
+        // Befund B18: hat `platz_schaffen_locked` Platz durch eine
+        // Kapazitaets-Eviction geschaffen, faellt damit auch Evidenz — und die
+        // verbliebene Haelfte eines Paares braucht sofort ihren benannten
+        // Zustand (M-22).
+        self.paare_bei_bedarf_bilden();
         ControlRegistrierung::angenommen(schliessen)
     }
 

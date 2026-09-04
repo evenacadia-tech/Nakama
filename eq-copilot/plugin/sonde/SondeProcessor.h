@@ -277,6 +277,15 @@ private:
     // Alles hier gehoert dem WORKER und laeuft unter `analyseSchloss`; nur
     // die drei Zaehler sind atomar, weil Tests sie von aussen lesen. Der
     // Audiothread beruehrt nichts davon.
+    /// Ab welcher P1-Tiefe (Hauptqueue plus Wiederholpuffer) gar kein
+    /// Evidenzsnapshot mehr entsteht.
+    ///
+    /// Klein mit Absicht: ein Snapshot ist rund 10 KiB, und die Queue ist in
+    /// EINTRAEGEN gedeckelt. Vier ausstehende sind 40 KiB je Sonde — bei 16
+    /// Sonden 640 KiB statt 40 MiB. Die Zahl ist eine Ressourcengrenze, keine
+    /// Messaussage; sie steht deshalb nicht in `kFeatureMetricsVersion`.
+    static constexpr std::size_t kEvidenzP1Schwelle = 4;
+
     void evidenzSnapshotSenden (const nakama::analyse::FeatureFrame& frame);
     /// Laufgebundener Verlustzaehler der Engine beim letzten Snapshot. Die
     /// DIFFERENZ ist der Verlust dieses Fensters — der Engine-Zaehler bleibt

@@ -88,6 +88,9 @@ ERWARTETE_OBJEKTE = {
     "NakamaState.obj",
     "NakamaVertrag.obj",
     "NakamaTelemetrie.obj",
+    # SONDE-013 M-05: der Erzeuger des evidence_snapshot. Er gehoert in den
+    # Kern, weil Sonde, Gen und die Beine dieselbe Wire-Form brauchen.
+    "NakamaEvidenz.obj",
     "WireEnvelope.obj",
     "IpcVerbindung.obj",
     "BrokerLifecycle.obj",

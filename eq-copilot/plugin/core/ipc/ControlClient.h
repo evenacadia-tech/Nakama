@@ -179,6 +179,19 @@ public:
         std::uint64_t empfangen = 0;
         std::uint64_t p0Ueberlaeufe = 0;
         std::uint64_t p1Wiederholungen = 0;
+        /// Aktuelle Fuellstaende der P1-Wege: Hauptqueue und Wiederholpuffer.
+        ///
+        /// 🔑 Sie stehen hier, seit SONDE-013 den `evidence_snapshot` sendet.
+        /// Die P1-Queue ist in EINTRAEGEN gedeckelt (128 + 128), nicht in
+        /// Bytes — bei `state_report`-Nachrichten von rund 300 Byte ist das
+        /// ein Puffer von 80 KiB, bei einem Evidenzsnapshot von rund 10 KiB
+        /// sind es 2,5 MiB JE SONDE. Gemessen am 04.09.2026: 16 Sonden liessen
+        /// den Working Set des Clients im G3-Soak um 23,4 MiB wachsen, Budget
+        /// 16,8 MiB. Ein Sender, der seine eigene Last kennen soll, braucht
+        /// den Fuellstand — und nicht erst das Urteil, wenn die Nachricht
+        /// schon eingereiht ist.
+        std::size_t p1Tiefe = 0;
+        std::size_t p1WiederholTiefe = 0;
         /// Persistenzpflichtige logische Auftraege oberhalb der P0-Queue.
         /// Ein erfolgreicher Draht-Write veraendert diese Zahl nicht.
         std::uint64_t inFlight = 0;

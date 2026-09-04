@@ -948,6 +948,8 @@ P1Ergebnis ControlClient::Laufzeit::sendeP1 (const std::string& schluessel,
     const auto e = p1.einreihen (schluessel, json);
     std::lock_guard<std::mutex> z (zustandMutex);
     zustand.p1Wiederholungen = p1.wiederholungen();
+    zustand.p1Tiefe = p1.groesse();
+    zustand.p1WiederholTiefe = p1.wiederholungen();
     return e;
 }
 
@@ -1439,6 +1441,8 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
                         p1.zuruecklegen (schluessel, std::move (nachricht));
                     std::lock_guard<std::mutex> z (zustandMutex);
                     zustand.p1Wiederholungen = p1.wiederholungen();
+                    zustand.p1Tiefe = p1.groesse();
+                    zustand.p1WiederholTiefe = p1.wiederholungen();
                 }
                 // `B-CC-07`: was schon vollstaendig empfangen wurde, wird
                 // noch GEMELDET, bevor die Verbindung endet. Sonst ginge genau
@@ -1484,6 +1488,11 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
                 ++zustand.p0Gesendet;
             else
                 ++zustand.p1Gesendet;
+            // Der Fuellstand faellt auch dann, wenn eine Nachricht den Draht
+            // VERLAESST — sonst saehe ein Sender, der ihn als Rueckstausignal
+            // liest, eine Queue, die nie wieder leer wird.
+            zustand.p1Tiefe = p1.groesse();
+            zustand.p1WiederholTiefe = p1.wiederholungen();
             // KEIN `continue` mehr. Die alte Fassung sprang hier zurueck an
             // den Anfang und uebersprang den Lesepfad, solange irgendetwas
             // wartete: ein bereits vorliegender P0-ACK wurde nicht verarbeitet,

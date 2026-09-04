@@ -3975,9 +3975,13 @@ int main (int argc, char** argv)
             std::lock_guard<std::mutex> l (server.textMutex);
             pruefe (! server.p0Minors.empty() && ! server.p1Minors.empty()
                         && std::all_of (server.p0Minors.begin(), server.p0Minors.end(),
-                                       [] (auto m) { return m == 1u; })
+                                       [] (auto m) { return m == nakama::ipc::kJsonSchemaMinor; })
                         && std::all_of (server.p1Minors.begin(), server.p1Minors.end(),
-                                       [] (auto m) { return m == 1u; }),
+                                       [] (auto m) { return m == nakama::ipc::kJsonSchemaMinor; }),
+                    // Gegen die KONSTANTE, nicht gegen eine 1: genau dieses
+                    // Literal wurde beim Fassungsschritt der SONDE-013 still
+                    // falsch, waehrend der Test weiter "aktiver JSON-Minor"
+                    // hiess (04.09.2026).
                     "ControlClient sendet P0 und P1 mit aktivem JSON-Minor");
         }
 
@@ -4019,7 +4023,7 @@ int main (int argc, char** argv)
     abschnitt ("G1a · JSON-Minor wird bis zum C++-Empfaenger getragen");
     {
         TestServer server (testPipeName ("jsonminor"));
-        server.controlAntwortMinor.store (1);
+        server.controlAntwortMinor.store (nakama::ipc::kJsonSchemaMinor);
         server.starten();
         std::atomic<int> empfangenerMinor { -1 };
         ControlClient control (
@@ -4038,10 +4042,16 @@ int main (int argc, char** argv)
             return control.snapshot().status == ControlClient::Status::verbunden;
         });
         control.sendeP0 ("{\"type\":\"heartbeat\",\"sequence\":1}");
-        pruefe (verbunden && warteAuf (3000, [&] { return empfangenerMinor.load() == 1; }),
-                "ControlClient reicht den empfangenen Minor 1 an den Vertragsleser weiter");
+        pruefe (verbunden && warteAuf (3000, [&] {
+                    return empfangenerMinor.load() == nakama::ipc::kJsonSchemaMinor;
+                }),
+                "ControlClient reicht den empfangenen aktiven Minor an den Vertragsleser weiter");
 
-        server.controlAntwortMinor.store (2);
+        // Einen ueber dem aktiven: was es NICHT gibt, wird abgewiesen. Auch
+        // hier stand eine 2 als Literal und meinte "unbekannt" - seit
+        // SONDE-013 ist 2 die aktive Fassung.
+        server.controlAntwortMinor.store (
+            static_cast<std::uint8_t> (nakama::ipc::kJsonSchemaMinor + 1));
         control.sendeP0 ("{\"type\":\"heartbeat\",\"sequence\":2}");
         pruefe (warteAuf (3000, [&] {
                     return control.snapshot().envelopeAbweisungen >= 1;

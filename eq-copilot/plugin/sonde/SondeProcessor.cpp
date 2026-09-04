@@ -431,6 +431,40 @@ void SondeProcessor::workerLauf()
     Broker, weiter herabzustufen — nach oben korrigiert dort niemand.  */
 void SondeProcessor::evidenzSnapshotSenden (const nakama::analyse::FeatureFrame& frame)
 {
+    // ── Rueckstau VOR dem Bauen, nicht danach ────────────────────────────
+    //
+    // 🔑 Gemessen am 04.09.2026 im G3-Soak: die P1-Queue ist in EINTRAEGEN
+    // gedeckelt (128 + 128 Wiederholpuffer), nicht in Bytes. Bei einem
+    // `state_report` von rund 300 Byte ist das ein Puffer von 80 KiB, bei
+    // einem Evidenzsnapshot von rund 10 KiB sind es 2,5 MiB je Sonde — mit
+    // 16 Sonden wuchs der Working Set des Clients um 23,4 MiB gegen ein
+    // Budget von 16,8 MiB.
+    //
+    // Das Urteil von `sendeP1` kommt zu spaet: da liegt die Nachricht schon
+    // im Puffer. Der Fuellstand ist das Signal, das VOR dem Einreihen zur
+    // Verfuegung steht. Ueber der Schwelle entsteht gar kein Snapshot: ein
+    // verworfener ANALYSEframe ist ausdruecklich erlaubt (§48.1, "Ueberlast
+    // verwirft Analyseframes, nie Audio"), solange er GEZAEHLT wird — und
+    // die Kadenz sinkt, damit das naechste Fenster laenger und seltener ist
+    // statt nur spaeter.
+    //
+    // Warum nicht die Queue-Politik aendern: der P1-Wiederholpuffer wirft
+    // ausdruecklich NICHTS weg ("Was einmal angenommen wurde, bleibt
+    // angenommen", SONDE-010). Diese Zusage bleibt; wer sie nicht tragen
+    // kann, reicht erst gar nicht ein.
+    const auto stand = controlV3.snapshot();
+    if (stand.p1Tiefe + stand.p1WiederholTiefe > kEvidenzP1Schwelle)
+    {
+        const double alt = merkmale.evidenzIntervallJetzt();
+        merkmale.evidenzIntervallSetzen (alt * 2.0);
+        if (merkmale.evidenzIntervallJetzt() > alt)
+            evidenzKadenzReduktionen.fetch_add (1);
+        evidenzNichtGesendet.fetch_add (1);
+        merkmale.ereignisseEntnommen();
+        letzteEreignisverluste = merkmale.ereignisseVerworfen();
+        return;
+    }
+
     const auto verworfen = merkmale.ereignisseVerworfen();
     const std::uint64_t verlorenSeitdem = verworfen >= letzteEreignisverluste
                                         ? verworfen - letzteEreignisverluste : 0u;

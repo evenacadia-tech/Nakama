@@ -1,0 +1,143 @@
+# Rotbeweis M-05-rueckstau — SONDE-013 Etappe 2
+# 2026-09-04
+#
+# Regel: eine neue Zusage ohne Rotbeweis ist eine Behauptung. Hier wird
+# der Fehler bewusst eingebaut, das Bein faellt, der Fehler wird
+# entfernt und dasselbe Bein ist wieder gruen.
+#
+# Eingebauter Fehler: die Rueckstauschwelle vor dem Einreihen wird praktisch aufgehoben — 16 Sonden fuellen dann die in EINTRAEGEN gedeckelte P1-Queue mit je rund 10 KiB grossen Snapshots, und der Working Set des Clients sprengt das Soak-Budget
+
+# mutiert: eq-copilot/plugin/sonde/SondeProcessor.h
+
+========================================================================
+ROT — mit eingebautem Fehler
+========================================================================
+
+$ py -3.13 tools/eq-copilot/pruefe_session_soak.py --sonden 16 --minuten 2 --neustarts 1
+EXIT=2
+  ok      beide Programme verweigern Produktions- und Golden-Pipename
+Probe-Pipe: \\.\pipe\evenacadia.nakama.v3.probe.soak.23500.1788482211
+  ok      Topologie steht, Warmup 20 s vorbei
+  ..      Neustart 1 (k_s4, Totzeit 1007 ms): NEUSTART_VOLLSTAENDIG 1 2525
+Bericht: {"abbau_haenger": "", "audio": {"blockgroesse": 512, "bloecke": 220688, "bloecke_je_sonde_min": 13793, "ganzblockdrops_oversize": 0, "ganzblockdrops_ueberlauf": 0, "kontinuitaetsbrueche": 0, "publikationen": 22064, "publikationen_je_sonde_min": 1379, "samplerate": 48000.0}, "client_exit": 0, "clientpaare": 17, "fluter": {"abgelehnt": 0, "ersetzte_liveframes": 178, "kollisionsloecher": 0, "neueste_verworfen": 0, "veroeffentlichungen": 1652, "zu_gross": 0}, "kill": {"k_s1": {"gefahren": true, "telemetrie_handle_fehler": 1, "urteil": "getroffen"}, "k_s2": {"gefahren": false, "snapshot_vor_kill": false, "urteil": "nicht_gefahren"}, "k_s3": {"gefahren": true, "p0_ohne_ack_im_fenster": 0, "urteil": "nicht_getroffen"}, "k_s4": {"flag_zum_killzeitpunkt": 4, "gefahren": true, "urteil": "getroffen"}, "k_s5": {"backoff_deckel_erreicht": 0, "erwartet": 17, "gefahren": false, "urteil": "nicht_gefahren"}}, "langsam": {"abgelehnt": 0, "blockiert_andere_nicht": true, "ersetzte_liveframes": 6150, "fluter_ueberlappt": false, "immer_mitglied": true, "kollisionsloecher": 0, "neueste_verworfen": 0, "schnelle_p95_ms": 20.9, "sonden": 4, "veroeffentlichungen": 17664, "zu_gross": 0}, "langsam_anzahl": 4, "liveness": {"evicted_ausserhalb_neustart": 0, "stale_ausserhalb_neustart": 0, "stale_im_neustartfenster": 0}, "minuten": 2, "mitgliedschaft": {"abtast_pruefungen": 1229, "abtast_vollstaendig": 1229, "fremde_adresse": 0, "fuehrendes_main_falsch": 0, "snapshot_pruefungen": 3845, "uebernahmen": 4599, "ungueltig": 0, "vollstaendig": 3845}, "neustart": [{"alte_epoche_nach_neustart_gesehen": 0, "backoff_deckel_in_totzeit": 0, "bereit_bis_vollstaendig_ms": 2525, "epoch_alt": "b042b0a8c0714b54b842ca0d8fc48002", "epoch_neu": "bfe333d920e64e10b5ce86f7a51b2ac5", "frist_ms": 60000, "index": 1, "kill_dauer_ms": 4, "kill_erfolgt_gesehen": true, "reconnect_ms": {"max": 2525.7, "min": 543.5, "p95": 2525.7}, "reconnect_paare": 17, "s09_quellen_getrennt": 15, "s09_sichten": 35, "s09_subscription_weg": 15, "schranke_ms": 45051, "totzeit_erfasst": true, "totzeit_ms": 1007, "ueber_schranke": false}], "p0": {"beantwortet": 2336, "einreihung_abgelehnt": 0, "einreihung_abgelehnt_ausserhalb_neustart": 0, "gemessen_ausserhalb": 2256, "gemessen_im_stoerfenster": 80, "gesendet": 2336, "latenz_max_im_stoerfenster_ms": 2882.1, "latenz_max_ms": 116.9, "latenz_p95_ms": 21.8, "nachlauf_ms": 2000, "schranke_ms": 1000, "verloren_ausserhalb_neustart": 0, "verloren_im_neustartfenster": 0}, "pipe": {"clientnamen_geprueft": 34, "eigene_probe_sichtbar": true, "fremder_name_versucht": 0, "goldenname_neu": false, "namen_nach": 206, "namen_vor": 205, "namensraum_lesbar": true, "ohne_produkt_v3": true, "produktionsname_neu": false}, "riegel": {"golden_EqCopSessionSoak": 3, "golden_eqcop-broker-sonde012-probe": 3, "produktion_EqCopSessionSoak": 3, "produktion_eqcop-broker-sonde012-probe": 3}, "sonden": 16, "speicher": {"broker": [{"generation": 0, "im_neustartfenster": false, "minute": 0, "rss_bytes": 13983744, "sekunden": 0.0}, {"generation": 0, "im_neustartfenster": false, "minute": 1, "rss_bytes": 14168064, "sekunden": 60.0}, {"generation": 1, "im_neustartfenster": true, "minute": 1, "rss_bytes": 6197248, "sekunden": 60.0}, {"generation": 1, "im_neustartfenster": false, "minute": 1, "rss_bytes": 14012416, "sekunden": 60.0}, {"generation": 1, "im_neustartfenster": false, "minute": 2, "rss_bytes": 14675968, "sekunden": 120.1}], "budget_bytes": 16777216, "budget_prozent": 10, "client": [{"im_neustartfenster": false, "minute": 0, "rss_bytes": 119279616, "sekunden": 0.0}, {"im_neustartfenster": false, "minute": 1, "rss_bytes": 133439488, "sekunden": 60.0}, {"im_neustartfenster": true, "minute": 1, "rss_bytes": 133709824, "sekunden": 60.0}, {"im_neustartfenster": false, "minute": 1, "rss_bytes": 134688768, "sekunden": 60.0}, {"im_neustartfenster": false, "minute": 2, "rss_bytes": 141848576, "sekunden": 120.1}], "takt_s": 60}, "subscription": {"weg_im_neustartfenster": 15}, "topologie_ms": 84, "warmup_s": 20}
+  ok      [S14 · A24:sauberer_abbau] das C++-Programm endet sauber  [Exit 0]
+  ok      [S01 · A24:topologie_steht_in_frist] die Topologie stand in der Frist (60000 ms)  [84 ms]
+  ok      [S02 · A24:mitgliedschaft_nach_warmup] der Lauf traegt genau 16 Sonden  [16]
+  ok      [S03 · A24:mitgliedschaft_driftet_nicht] jede Snapshot-Uebernahme war sofort vollstaendig und richtig  [3845/3845 bei 4599 Uebernahmen]
+  ok      [S03 · A24:mitgliedschaft_driftet_nicht] kein Snapshot wurde als ungueltig abgewiesen  [0]
+  ok      [S03 · A24:mitgliedschaft_driftet_nicht] auch die laufende Abtastung sah nie eine abweichende Sicht  [1229/1229]
+  ok      [S02 · A24:mitgliedschaft_nach_warmup] nie eine fremde Adresse im Snapshot  [0]
+  ok      [S02 · A24:mitgliedschaft_nach_warmup] fuehrendes_main war immer die Main-Adresse  [0]
+  ok      [S04 · A24:p0_kein_verlust_und_p95] kein P0 geht ausserhalb der Neustartfenster verloren  [2336/2336, 0 verloren (Nachlauffenster 2000 ms)]
+  ok      [S04 · A24:p0_kein_verlust_und_p95] P0-ACK p95 unter 1000 ms  [p95 21.8 ms, max 116.9 ms]
+  ok      [S04 · A24:p0_kein_verlust_und_p95] keine P0-Einreihung wurde ausserhalb der Neustartfenster abgelehnt  [0 abgelehnt (Summe ueber den ganzen Lauf 0)]
+  ok      [S14 · A24:sauberer_abbau] vor dem Abbau lief ein Nachlauffenster fuer ausstehende ACKs  [2000 ms]
+  ok      [S05 · A24:langsame_bleiben_mitglied] die langsamen Leser blieben durchgehend Mitglied  [True]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] die Schleuse der langsamen Leser lag wirklich im Rueckstau  [6150 ersetzt bei 17664 Veroeffentlichungen (Fluter getrennt: 178)]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] und dabei fiel nie der neueste Frame (replace-oldest)  [0 neueste verworfen]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] jede abgelehnte Veroeffentlichung hat einen gezaehlten Grund  [0 abgelehnt (aus dem Rueckgabewert) = 0 + 0]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] kein langsamer Leser bremst die schnellen  [True (schnelle p95 20.9 ms)]
+  ok      [S08 · A24:audio_ganzblock_ohne_drop] 0 Ganzblockdrops auf dem echten Sondenpfad  [220688 Bloecke, 0 Ueberlauf, 0 Oversize]
+  ok      [S08 · A24:audio_ganzblock_ohne_drop] keine unerklaerten Kontinuitaetsbrueche  [0]
+  ok      [S08 · A24:audio_ganzblock_ohne_drop] jede Sonde hat je Analysefenster einen Producer-Frame veroeffentlicht  [22064 gesamt, kleinste Sonde 1379 >= 1103 (13793 Bloecke / 10 je Fenster, Toleranz 0.8)]
+  ok      [S13 · A24:kein_stale_ausserhalb_neustart] kein Mitglied wurde ausserhalb der Neustartfenster stale  [0]
+  ok      [S13 · A24:kein_stale_ausserhalb_neustart] kein Mitglied verschwand ausserhalb der Neustartfenster  [0]
+  ok      [S10 · A24:backoff_ohne_namenswechsel] kein Client bekam je einen anderen Pipenamen  [0 fremd bei 34 geprueften Uebergaben, ohne_produkt_v3 True]
+  ok      [S10 · A24:backoff_ohne_namenswechsel] im Pipe-Namensraum entstand kein Produktions- oder Goldenname  [eigene Probe sichtbar True, produktionsname_neu False, goldenname_neu False, 205 -> 206 Namen]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] der Kill beendet die Subscription des Main sichtbar  [15 mal ohne aktive Subscription im Neustartfenster gesehen]
+  ok      [S15 · A24:verweigert_produktion_und_golden] beide Programme verweigern Produktions- und Golden-Pipename  [{'golden_eqcop-broker-sonde012-probe': 3, 'golden_EqCopSessionSoak': 3, 'produktion_eqcop-broker-sonde012-probe': 3, 'produktion_EqCopSessionSoak': 3}]
+  ok      [S16 · A24:skalierungsreihe_1_4_8_16_32] langsam_anzahl folgt max(1, round(N x Anteil))  [N = 16, langsam_anzahl 4, erwartet 4]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] der Bericht traegt genau 1 Neustart(e)  [1 geliefert]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] Neustart 1: Snapshot wieder vollstaendig in der Frist  [2525 ms von 60000 ms (Schranke 45051 ms, reconnect max 2525.7 ms)]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] Neustart 1: Reconnect je Clientpaar gemessen  [17 Paare (erwartet 17), min 543.5 / p95 2525.7 / max 2525.7 ms]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] Neustart 1: Subscription weg UND Quellen getrennt  [15 ohne Subscription, 15 mit getrennter Quelle, 35 Sichten im Fenster]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] Neustart 1: Kill und Totzeit wurden belegt  [kill_erfolgt True, totzeit_erfasst True (Killdauer 4 ms)]
+  ok      [S12 · A24:alte_epoche_kommt_nie_wieder] Neustart 1: die alte broker_epoch kam nie wieder  [0]
+  ok      [S12 · A24:alte_epoche_kommt_nie_wieder] Neustart 1: neue broker_epoch  [b042b0a8… -> bfe333d9…]
+  ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+  ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [120 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+  ROT     [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [119.3 -> 141.8 MB, +22.6 MB, Grenze 16.8 MB ueber 120 s]
+  ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 0 bleibt im Budget  [14.0 -> 14.2 MB, +0.2 MB, Grenze 16.8 MB ueber 60 s]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 1 bleibt im Budget  [14.0 -> 14.7 MB, +0.7 MB, Grenze 16.8 MB ueber 60 s]
+  --      Killpunkte (Urteil aus dem Beleg abgeleitet, nicht uebernommen):
+  ok      [k_s1 · A24:kill_im_frameverkehr] getroffen (abgeleitet: getroffen)  {'gefahren': True, 'telemetrie_handle_fehler': 1}
+  ok      [k_s2 · A24:kill_waehrend_subscribe] nicht_gefahren (abgeleitet: nicht_gefahren)  {'gefahren': False, 'snapshot_vor_kill': False}
+  ok      [k_s3 · A24:kill_waehrend_heartbeat] nicht_getroffen (abgeleitet: nicht_getroffen)  {'gefahren': True, 'p0_ohne_ack_im_fenster': 0}
+  ok      [k_s4 · A24:kill_mit_langsamem_leser] getroffen (abgeleitet: getroffen)  {'gefahren': True, 'flag_zum_killzeitpunkt': 4}
+  ok      [k_s5 · A24:kill_aus_backoff_deckel] nicht_gefahren (abgeleitet: nicht_gefahren)  {'gefahren': False, 'backoff_deckel_erreicht': 0, 'erwartet': 17}
+  ok      [S04 · A24:p0_kein_verlust_und_p95] K-S3 zaehlt genau die endgueltig im Fenster verlorenen ACKs  [0 vs. 0]
+ROT
+
+========================================================================
+GRUEN — Fehler entfernt, derselbe Befehl
+========================================================================
+
+$ py -3.13 tools/eq-copilot/pruefe_session_soak.py --sonden 16 --minuten 2 --neustarts 1
+EXIT=0
+  ok      beide Programme verweigern Produktions- und Golden-Pipename
+Probe-Pipe: \\.\pipe\evenacadia.nakama.v3.probe.soak.23280.1788482365
+  ok      Topologie steht, Warmup 20 s vorbei
+  ..      Neustart 1 (k_s4, Totzeit 1007 ms): NEUSTART_VOLLSTAENDIG 1 2519
+Bericht: {"abbau_haenger": "", "audio": {"blockgroesse": 512, "bloecke": 220672, "bloecke_je_sonde_min": 13792, "ganzblockdrops_oversize": 0, "ganzblockdrops_ueberlauf": 0, "kontinuitaetsbrueche": 0, "publikationen": 22064, "publikationen_je_sonde_min": 1379, "samplerate": 48000.0}, "client_exit": 0, "clientpaare": 17, "fluter": {"abgelehnt": 0, "ersetzte_liveframes": 178, "kollisionsloecher": 0, "neueste_verworfen": 0, "veroeffentlichungen": 1652, "zu_gross": 0}, "kill": {"k_s1": {"gefahren": true, "telemetrie_handle_fehler": 1, "urteil": "getroffen"}, "k_s2": {"gefahren": false, "snapshot_vor_kill": false, "urteil": "nicht_gefahren"}, "k_s3": {"gefahren": true, "p0_ohne_ack_im_fenster": 0, "urteil": "nicht_getroffen"}, "k_s4": {"flag_zum_killzeitpunkt": 4, "gefahren": true, "urteil": "getroffen"}, "k_s5": {"backoff_deckel_erreicht": 0, "erwartet": 17, "gefahren": false, "urteil": "nicht_gefahren"}}, "langsam": {"abgelehnt": 0, "blockiert_andere_nicht": true, "ersetzte_liveframes": 6139, "fluter_ueberlappt": false, "immer_mitglied": true, "kollisionsloecher": 0, "neueste_verworfen": 0, "schnelle_p95_ms": 21.3, "sonden": 4, "veroeffentlichungen": 17664, "zu_gross": 0}, "langsam_anzahl": 4, "liveness": {"evicted_ausserhalb_neustart": 0, "stale_ausserhalb_neustart": 0, "stale_im_neustartfenster": 0}, "minuten": 2, "mitgliedschaft": {"abtast_pruefungen": 1227, "abtast_vollstaendig": 1227, "fremde_adresse": 0, "fuehrendes_main_falsch": 0, "snapshot_pruefungen": 3867, "uebernahmen": 4577, "ungueltig": 0, "vollstaendig": 3867}, "neustart": [{"alte_epoche_nach_neustart_gesehen": 0, "backoff_deckel_in_totzeit": 0, "bereit_bis_vollstaendig_ms": 2519, "epoch_alt": "38a8a6568fde4b768dd555a85e89af2b", "epoch_neu": "1336424fae89461eaf3f5754962cf4f3", "frist_ms": 60000, "index": 1, "kill_dauer_ms": 3, "kill_erfolgt_gesehen": true, "reconnect_ms": {"max": 2519.2, "min": 540.5, "p95": 2519.2}, "reconnect_paare": 17, "s09_quellen_getrennt": 15, "s09_sichten": 36, "s09_subscription_weg": 15, "schranke_ms": 45051, "totzeit_erfasst": true, "totzeit_ms": 1007, "ueber_schranke": false}], "p0": {"beantwortet": 2336, "einreihung_abgelehnt": 0, "einreihung_abgelehnt_ausserhalb_neustart": 0, "gemessen_ausserhalb": 2256, "gemessen_im_stoerfenster": 80, "gesendet": 2336, "latenz_max_im_stoerfenster_ms": 2839.7, "latenz_max_ms": 119.0, "latenz_p95_ms": 22.6, "nachlauf_ms": 2000, "schranke_ms": 1000, "verloren_ausserhalb_neustart": 0, "verloren_im_neustartfenster": 0}, "pipe": {"clientnamen_geprueft": 34, "eigene_probe_sichtbar": true, "fremder_name_versucht": 0, "goldenname_neu": false, "namen_nach": 201, "namen_vor": 200, "namensraum_lesbar": true, "ohne_produkt_v3": true, "produktionsname_neu": false}, "riegel": {"golden_EqCopSessionSoak": 3, "golden_eqcop-broker-sonde012-probe": 3, "produktion_EqCopSessionSoak": 3, "produktion_eqcop-broker-sonde012-probe": 3}, "sonden": 16, "speicher": {"broker": [{"generation": 0, "im_neustartfenster": false, "minute": 0, "rss_bytes": 14086144, "sekunden": 0.0}, {"generation": 0, "im_neustartfenster": false, "minute": 1, "rss_bytes": 14315520, "sekunden": 60.0}, {"generation": 1, "im_neustartfenster": true, "minute": 1, "rss_bytes": 6197248, "sekunden": 60.0}, {"generation": 1, "im_neustartfenster": false, "minute": 1, "rss_bytes": 14036992, "sekunden": 60.0}, {"generation": 1, "im_neustartfenster": false, "minute": 2, "rss_bytes": 14757888, "sekunden": 120.1}], "budget_bytes": 16777216, "budget_prozent": 10, "client": [{"im_neustartfenster": false, "minute": 0, "rss_bytes": 112607232, "sekunden": 0.0}, {"im_neustartfenster": false, "minute": 1, "rss_bytes": 112824320, "sekunden": 60.0}, {"im_neustartfenster": true, "minute": 1, "rss_bytes": 112848896, "sekunden": 60.0}, {"im_neustartfenster": false, "minute": 1, "rss_bytes": 113270784, "sekunden": 60.0}, {"im_neustartfenster": false, "minute": 2, "rss_bytes": 113274880, "sekunden": 120.1}], "takt_s": 60}, "subscription": {"weg_im_neustartfenster": 15}, "topologie_ms": 81, "warmup_s": 20}
+  ok      [S14 · A24:sauberer_abbau] das C++-Programm endet sauber  [Exit 0]
+  ok      [S01 · A24:topologie_steht_in_frist] die Topologie stand in der Frist (60000 ms)  [81 ms]
+  ok      [S02 · A24:mitgliedschaft_nach_warmup] der Lauf traegt genau 16 Sonden  [16]
+  ok      [S03 · A24:mitgliedschaft_driftet_nicht] jede Snapshot-Uebernahme war sofort vollstaendig und richtig  [3867/3867 bei 4577 Uebernahmen]
+  ok      [S03 · A24:mitgliedschaft_driftet_nicht] kein Snapshot wurde als ungueltig abgewiesen  [0]
+  ok      [S03 · A24:mitgliedschaft_driftet_nicht] auch die laufende Abtastung sah nie eine abweichende Sicht  [1227/1227]
+  ok      [S02 · A24:mitgliedschaft_nach_warmup] nie eine fremde Adresse im Snapshot  [0]
+  ok      [S02 · A24:mitgliedschaft_nach_warmup] fuehrendes_main war immer die Main-Adresse  [0]
+  ok      [S04 · A24:p0_kein_verlust_und_p95] kein P0 geht ausserhalb der Neustartfenster verloren  [2336/2336, 0 verloren (Nachlauffenster 2000 ms)]
+  ok      [S04 · A24:p0_kein_verlust_und_p95] P0-ACK p95 unter 1000 ms  [p95 22.6 ms, max 119.0 ms]
+  ok      [S04 · A24:p0_kein_verlust_und_p95] keine P0-Einreihung wurde ausserhalb der Neustartfenster abgelehnt  [0 abgelehnt (Summe ueber den ganzen Lauf 0)]
+  ok      [S14 · A24:sauberer_abbau] vor dem Abbau lief ein Nachlauffenster fuer ausstehende ACKs  [2000 ms]
+  ok      [S05 · A24:langsame_bleiben_mitglied] die langsamen Leser blieben durchgehend Mitglied  [True]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] die Schleuse der langsamen Leser lag wirklich im Rueckstau  [6139 ersetzt bei 17664 Veroeffentlichungen (Fluter getrennt: 178)]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] und dabei fiel nie der neueste Frame (replace-oldest)  [0 neueste verworfen]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] jede abgelehnte Veroeffentlichung hat einen gezaehlten Grund  [0 abgelehnt (aus dem Rueckgabewert) = 0 + 0]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] kein langsamer Leser bremst die schnellen  [True (schnelle p95 21.3 ms)]
+  ok      [S08 · A24:audio_ganzblock_ohne_drop] 0 Ganzblockdrops auf dem echten Sondenpfad  [220672 Bloecke, 0 Ueberlauf, 0 Oversize]
+  ok      [S08 · A24:audio_ganzblock_ohne_drop] keine unerklaerten Kontinuitaetsbrueche  [0]
+  ok      [S08 · A24:audio_ganzblock_ohne_drop] jede Sonde hat je Analysefenster einen Producer-Frame veroeffentlicht  [22064 gesamt, kleinste Sonde 1379 >= 1103 (13792 Bloecke / 10 je Fenster, Toleranz 0.8)]
+  ok      [S13 · A24:kein_stale_ausserhalb_neustart] kein Mitglied wurde ausserhalb der Neustartfenster stale  [0]
+  ok      [S13 · A24:kein_stale_ausserhalb_neustart] kein Mitglied verschwand ausserhalb der Neustartfenster  [0]
+  ok      [S10 · A24:backoff_ohne_namenswechsel] kein Client bekam je einen anderen Pipenamen  [0 fremd bei 34 geprueften Uebergaben, ohne_produkt_v3 True]
+  ok      [S10 · A24:backoff_ohne_namenswechsel] im Pipe-Namensraum entstand kein Produktions- oder Goldenname  [eigene Probe sichtbar True, produktionsname_neu False, goldenname_neu False, 200 -> 201 Namen]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] der Kill beendet die Subscription des Main sichtbar  [15 mal ohne aktive Subscription im Neustartfenster gesehen]
+  ok      [S15 · A24:verweigert_produktion_und_golden] beide Programme verweigern Produktions- und Golden-Pipename  [{'golden_eqcop-broker-sonde012-probe': 3, 'golden_EqCopSessionSoak': 3, 'produktion_eqcop-broker-sonde012-probe': 3, 'produktion_EqCopSessionSoak': 3}]
+  ok      [S16 · A24:skalierungsreihe_1_4_8_16_32] langsam_anzahl folgt max(1, round(N x Anteil))  [N = 16, langsam_anzahl 4, erwartet 4]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] der Bericht traegt genau 1 Neustart(e)  [1 geliefert]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] Neustart 1: Snapshot wieder vollstaendig in der Frist  [2519 ms von 60000 ms (Schranke 45051 ms, reconnect max 2519.2 ms)]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] Neustart 1: Reconnect je Clientpaar gemessen  [17 Paare (erwartet 17), min 540.5 / p95 2519.2 / max 2519.2 ms]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] Neustart 1: Subscription weg UND Quellen getrennt  [15 ohne Subscription, 15 mit getrennter Quelle, 36 Sichten im Fenster]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] Neustart 1: Kill und Totzeit wurden belegt  [kill_erfolgt True, totzeit_erfasst True (Killdauer 3 ms)]
+  ok      [S12 · A24:alte_epoche_kommt_nie_wieder] Neustart 1: die alte broker_epoch kam nie wieder  [0]
+  ok      [S12 · A24:alte_epoche_kommt_nie_wieder] Neustart 1: neue broker_epoch  [38a8a656… -> 1336424f…]
+  ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+  ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [120 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [112.6 -> 113.3 MB, +0.7 MB, Grenze 16.8 MB ueber 120 s]
+  ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 0 bleibt im Budget  [14.1 -> 14.3 MB, +0.2 MB, Grenze 16.8 MB ueber 60 s]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 1 bleibt im Budget  [14.0 -> 14.8 MB, +0.7 MB, Grenze 16.8 MB ueber 60 s]
+  --      Killpunkte (Urteil aus dem Beleg abgeleitet, nicht uebernommen):
+  ok      [k_s1 · A24:kill_im_frameverkehr] getroffen (abgeleitet: getroffen)  {'gefahren': True, 'telemetrie_handle_fehler': 1}
+  ok      [k_s2 · A24:kill_waehrend_subscribe] nicht_gefahren (abgeleitet: nicht_gefahren)  {'gefahren': False, 'snapshot_vor_kill': False}
+  ok      [k_s3 · A24:kill_waehrend_heartbeat] nicht_getroffen (abgeleitet: nicht_getroffen)  {'gefahren': True, 'p0_ohne_ack_im_fenster': 0}
+  ok      [k_s4 · A24:kill_mit_langsamem_leser] getroffen (abgeleitet: getroffen)  {'gefahren': True, 'flag_zum_killzeitpunkt': 4}
+  ok      [k_s5 · A24:kill_aus_backoff_deckel] nicht_gefahren (abgeleitet: nicht_gefahren)  {'gefahren': False, 'backoff_deckel_erreicht': 0, 'erwartet': 17}
+  ok      [S04 · A24:p0_kein_verlust_und_p95] K-S3 zaehlt genau die endgueltig im Fenster verlorenen ACKs  [0 vs. 0]
+GRUEN
+
+
+========================================================================
+ROTBEWEIS BESTANDEN: rot=True gruen=True
+========================================================================

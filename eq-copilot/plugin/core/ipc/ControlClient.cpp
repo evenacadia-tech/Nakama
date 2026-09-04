@@ -946,10 +946,12 @@ P1Ergebnis ControlClient::Laufzeit::sendeP1 (const std::string& schluessel,
 
     std::lock_guard<std::mutex> l (sendeMutex);
     const auto e = p1.einreihen (schluessel, json);
+    const auto tiefe = p1.groesse();
+    const auto wiederholungen = p1.wiederholungen();
     std::lock_guard<std::mutex> z (zustandMutex);
-    zustand.p1Wiederholungen = p1.wiederholungen();
-    zustand.p1Tiefe = p1.groesse();
-    zustand.p1WiederholTiefe = p1.wiederholungen();
+    zustand.p1Wiederholungen = wiederholungen;
+    zustand.p1Tiefe = tiefe;
+    zustand.p1WiederholTiefe = wiederholungen;
     return e;
 }
 
@@ -1414,10 +1416,17 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
         bool etwasGesendet = false;
         std::string nachricht, schluessel;
         bool istP0 = false;
+        std::size_t p1TiefeJetzt = 0, p1WiederholJetzt = 0;
         {
             std::lock_guard<std::mutex> l (sendeMutex);
             istP0 = p0.entnehmen (nachricht);
             etwasGesendet = istP0 || p1.entnehmen (schluessel, nachricht);
+            // 🔑 Die Fuellstaende werden HIER gelesen, unter `sendeMutex`.
+            // `zustandMutex` schuetzt den Snapshot, nicht die Queues; ein
+            // `p1.groesse()` dort waere ein Datenrennen auf der Deque, auch
+            // wenn das Ergebnis "nur eine Zahl" ist.
+            p1TiefeJetzt = p1.groesse();
+            p1WiederholJetzt = p1.wiederholungen();
         }
         if (etwasGesendet)
         {
@@ -1439,10 +1448,14 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
                         p0.zuruecklegen (std::move (nachricht));
                     else
                         p1.zuruecklegen (schluessel, std::move (nachricht));
+                    // Hier ist `sendeMutex` bereits gehalten (Zeile darueber),
+                    // die Abfrage der Queues ist also gedeckt.
+                    const auto tiefe = p1.groesse();
+                    const auto wiederholungen = p1.wiederholungen();
                     std::lock_guard<std::mutex> z (zustandMutex);
-                    zustand.p1Wiederholungen = p1.wiederholungen();
-                    zustand.p1Tiefe = p1.groesse();
-                    zustand.p1WiederholTiefe = p1.wiederholungen();
+                    zustand.p1Wiederholungen = wiederholungen;
+                    zustand.p1Tiefe = tiefe;
+                    zustand.p1WiederholTiefe = wiederholungen;
                 }
                 // `B-CC-07`: was schon vollstaendig empfangen wurde, wird
                 // noch GEMELDET, bevor die Verbindung endet. Sonst ginge genau
@@ -1490,9 +1503,10 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
                 ++zustand.p1Gesendet;
             // Der Fuellstand faellt auch dann, wenn eine Nachricht den Draht
             // VERLAESST — sonst saehe ein Sender, der ihn als Rueckstausignal
-            // liest, eine Queue, die nie wieder leer wird.
-            zustand.p1Tiefe = p1.groesse();
-            zustand.p1WiederholTiefe = p1.wiederholungen();
+            // liest, eine Queue, die nie wieder leer wird. Gelesen wurde er
+            // oben unter `sendeMutex`; hier wird er nur GEMELDET.
+            zustand.p1Tiefe = p1TiefeJetzt;
+            zustand.p1WiederholTiefe = p1WiederholJetzt;
             // KEIN `continue` mehr. Die alte Fassung sprang hier zurueck an
             // den Anfang und uebersprang den Lesepfad, solange irgendetwas
             // wartete: ein bereits vorliegender P0-ACK wurde nicht verarbeitet,

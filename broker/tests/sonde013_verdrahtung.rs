@@ -597,6 +597,74 @@ fn bestaetigter_resync_loest_das_sticky_unknown() {
     );
 }
 
+/// C1 — der Sequenzhandschlag nach einem bestaetigten Resync.
+///
+/// 🔑 Wiederpruefung 2 (Befund C1, M-61): der Fehler lag ZWISCHEN den
+/// Sprachen. `resync_bestaetigen(link, 0)` setzt die Basis auf 0, und der
+/// Broker liest das als „die naechste ist 1"; das Plugin sendete seine erste
+/// Intervention mit 0 und setzte den Zaehler bei Reconnect nicht zurueck. Der
+/// Broker verwarf damit die erste Intervention JEDER Verbindung als Luecke und
+/// setzte `taint.unknown` sofort wieder — der R01-Fix hob sich selbst auf.
+///
+/// Beide Seiten waren fuer sich gruen. Deshalb misst dieser Fall gegen eine
+/// DRITTE Instanz: `eq-copilot/fixtures/v3/handschlag-v1.json` ist von Hand
+/// geschrieben und die Ausgabe keiner der beiden Implementierungen — dieselbe
+/// Bauform wie `MANIFEST.json` fuer den Fixturekorpus. Das C++-Gegenstueck in
+/// `EqCopSonde013PassageStateTest` (C1) liest dieselbe Datei und prueft, dass
+/// die Zahl auf der Leitung ihr entspricht. Stimmen beide mit der Datei
+/// ueberein, stimmen sie transitiv miteinander ueberein.
+#[test]
+fn erste_intervention_nach_resync_wird_angenommen() {
+    let pfad = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .unwrap()
+        .join("eq-copilot/fixtures/v3/handschlag-v1.json");
+    let vertrag: Value =
+        serde_json::from_str(&std::fs::read_to_string(&pfad).expect("Handschlagdatei fehlt"))
+            .expect("Handschlagdatei ist kein JSON");
+    let basis = vertrag["resync_sequenzbasis"].as_u64().expect("Basis fehlt");
+    let erste = vertrag["erste_intervention_nach_resync"]
+        .as_u64()
+        .expect("erste Sequenz fehlt");
+    assert_eq!(
+        erste,
+        basis + 1,
+        "der Handschlag muss in sich stimmen: die erste Sequenz folgt auf die Basis"
+    );
+
+    // Der Weg, den ein frischer Link geht: anmelden, Resync bestaetigen, und
+    // dann die ERSTE Intervention.
+    let (c, _) = coordinator();
+    let h = hello(1, 2, 10, 100, "main", Some(9));
+    anmelden(&c, "a", &h);
+    assert!(c.resync_bestaetigen("a", basis), "der Resync wird bestaetigt");
+    assert!(
+        c.intervention_begin("a", &h.adresse, &hex(0x7101), erste),
+        "die erste Intervention nach dem Resync wird ANGENOMMEN"
+    );
+    assert!(
+        !c.interventionssicht_fuer_link("a").unknown,
+        "und der Interventionszustand bleibt BEKANNT - genau das hob der alte \
+         Widerspruch sofort wieder auf. Gemessen wird `unknown`, nicht \
+         `starke_evidenz_erlaubt`: ein OFFENER Eingriff sperrt starke Evidenz zu \
+         Recht, und das ist eine andere Aussage."
+    );
+
+    // Die Gegenprobe: die Zahl DAVOR ist eine Wiederholung der Basis und wird
+    // abgelehnt. Ohne sie bewiese der Fall nur, dass irgendeine Zahl geht.
+    let (c2, _) = coordinator();
+    anmelden(&c2, "b", &h);
+    assert!(c2.resync_bestaetigen("b", basis));
+    assert!(
+        !c2.intervention_begin("b", &h.adresse, &hex(0x7102), basis),
+        "die Basis selbst ist bereits verbraucht und wird abgelehnt"
+    );
+    assert!(
+        c2.interventionssicht_fuer_link("b").unknown,
+        "und der Zustand ist danach unbekannt"
+    );
+}
+
 // ═════════════════════════════════════════════════════════════════════════
 // B18/B19/B20/B21/B22 · Die Experimentfamilien im Produktpfad
 // ═════════════════════════════════════════════════════════════════════════
@@ -671,6 +739,7 @@ fn ergebnis_ohne_resultatmessung_wird_abgelehnt() {
         aktive_quellen: vec![hex(10)],
         messpunktklassen: vec!["insert".into()],
         match_gain_db: -1.5,
+        nicht_endliche_samples: Some(0),
         alignment: Alignmentwert::FeatureAligned,
     };
     let id = hex(0xabc);

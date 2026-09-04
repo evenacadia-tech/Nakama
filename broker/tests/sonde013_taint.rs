@@ -309,6 +309,7 @@ fn referenz() -> Experimentreferenz {
         aktive_quellen: vec![hex32(11)],
         messpunktklassen: vec!["insert".into()],
         match_gain_db: -1.0,
+        nicht_endliche_samples: Some(0),
         alignment: Alignmentwert::FeatureAligned,
     }
 }

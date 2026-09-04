@@ -1567,6 +1567,10 @@
           "items": { "enum": ["insert", "pre", "post", "post_fader_contribution"] }
         },
         "match_gain_db": { "type": "number", "minimum": -60, "maximum": 60 },
+        "nicht_endliche_samples": {
+          "$comment": "SONDE-013 Nacharbeit 3 (Befund C5, M-07): wie viele nicht-endliche Samples der Vergleichspegel dieser Passage gesehen hat. 0 heisst NACHWEISLICH keines, nicht 'nicht gemessen'; das Feld ist optional, weil ein Sender aelterer Fassung es nicht kennt - fehlt es, ist die Zahl unbekannt und keine 0. Ein Wert > 0 verriegelt den Match-Gain beim Erzeuger, und die Zahl reist mit, statt nur lokal zu sperren.",
+          "type": "integer", "minimum": 0, "maximum": 281474976710656
+        },
         "alignment": { "$ref": "#/$defs/alignment_klasse" }
       }
     },

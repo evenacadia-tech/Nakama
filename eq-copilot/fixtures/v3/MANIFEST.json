@@ -6,8 +6,8 @@
   "wurzel_skalar": "Markiert ein Fixture, dessen Wurzel weder Objekt noch Array ist. JUCEs JSON-Leser folgt RFC 4627 und lehnt es schon im PARSER ab; serde_json und Python folgen RFC 8259 und lehnen es erst am Schema ab. Beide Wege sind eine Ablehnung, nur an verschiedenen Stellen - die Verletzungsmenge gilt daher nur fuer die Beine mit RFC-8259-Parser.",
   "sortierung": "Verletzungen sind kanonisch nach (instanz, schema, schluessel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
   "textriegel_lehnt_ab": "Markiert ein Fixture, das der TEXTRIEGEL abweist, BEVOR ein Parser es sieht. Diese Fixtures tragen keine Verletzungsmenge, weil sie das Schema nie erreichen — eine erfundene waere eine Luege ueber den Ort der Ablehnung. Regeln und Begruendung: schemas/v3/README.md.",
-  "anzahl_gueltig": 85,
-  "anzahl_ungueltig": 228,
+  "anzahl_gueltig": 87,
+  "anzahl_ungueltig": 230,
   "fixtures": [
     {
       "datei": "gueltig/audible-intervention-begin-experiment.json",
@@ -193,6 +193,18 @@
       "datei": "gueltig/experiment-abort-verdraengt.json",
       "urteil": "gueltig",
       "warum": "M-47/E-03: die Verdraengung durch einen Bestandsdeckel ist der zweite und letzte Ausloeser eines terminalen aborted",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/experiment-begin-nicht-endliche-samples-gezaehlt.json",
+      "urteil": "gueltig",
+      "warum": "M-07, Nacharbeit 3 (C5): der Zaehler des Vergleichspegels reist im Wirezustand mit, statt nur lokal zu verriegeln",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/experiment-begin-nicht-endliche-samples-null.json",
+      "urteil": "gueltig",
+      "warum": "M-07, Nacharbeit 3 (C5): 0 heisst NACHWEISLICH kein nichtendliches Sample - nicht 'nicht gemessen'",
       "verletzungen": []
     },
     {
@@ -1612,6 +1624,18 @@
       ]
     },
     {
+      "datei": "ungueltig/experiment-referenz-bruchzahl-nicht-endliche-samples.json",
+      "urteil": "ungueltig",
+      "warum": "M-07, Nacharbeit 3 (C5): 2,5 Samples gibt es nicht - eine stille Rundung waere eine erfundene Zahl",
+      "verletzungen": [
+        {
+          "instanz": "/referenz/nicht_endliche_samples",
+          "schema": "#/$defs/experiment_referenz/properties/nicht_endliche_samples/type",
+          "schluessel": "type"
+        }
+      ]
+    },
+    {
       "datei": "ungueltig/experiment-referenz-fingerprint-zu-kurz.json",
       "urteil": "ungueltig",
       "warum": "M-26: der Fingerprint hat eine feste Stuetzstellenzahl. Ein kuerzerer Verlauf waere ein anderer Fingerprint mit demselben Namen",
@@ -1644,6 +1668,18 @@
           "instanz": "/referenz/messpunktklassen/0",
           "schema": "#/$defs/experiment_referenz/properties/messpunktklassen/items/enum",
           "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/experiment-referenz-negative-nicht-endliche-samples.json",
+      "urteil": "ungueltig",
+      "warum": "M-07, Nacharbeit 3 (C5): eine negative Anzahl gibt es nicht - sie waere die stille Umdeutung von 'nicht gemessen' in eine Zahl",
+      "verletzungen": [
+        {
+          "instanz": "/referenz/nicht_endliche_samples",
+          "schema": "#/$defs/experiment_referenz/properties/nicht_endliche_samples/minimum",
+          "schluessel": "minimum"
         }
       ]
     },

@@ -159,6 +159,14 @@ pub struct Experimentreferenz {
     /// Der VORAB gemessene und eingefrorene Match-Gain (M-43). Er ist Teil
     /// der unveränderlichen Referenz und keine laufende Größe.
     pub match_gain_db: f64,
+    /// 🔑 Nacharbeit 3 (Befund C5, M-07): wie viele nicht-endliche Samples der
+    /// Vergleichspegel dieser Passage gesehen hat.
+    ///
+    /// `None` heisst „der Sender kennt das Feld nicht" — ausdruecklich NICHT
+    /// `Some(0)`. Der Unterschied ist die ganze Zusage: 0 ist ein Messwert,
+    /// „unbekannt" ist keiner, und beides gleichzusetzen waere genau die
+    /// stille Beschoenigung, gegen die M-07 steht.
+    pub nicht_endliche_samples: Option<u64>,
     pub alignment: Alignmentwert,
 }
 

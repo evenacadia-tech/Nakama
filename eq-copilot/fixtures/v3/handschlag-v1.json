@@ -1,0 +1,23 @@
+{
+  "_kommentar": [
+    "SONDE-013 Nacharbeit 3 (Befund C1, M-61) — der Sequenzhandschlag nach einem",
+    "bestaetigten neutral_resync, VON HAND geschrieben.",
+    "",
+    "Der Fehler war ein Widerspruch zwischen zwei Konstanten in zwei Sprachen: der",
+    "Broker setzt nach `resync_bestaetigen` die Basis auf 0 und erwartet als",
+    "naechste Ereignissequenz 1, das Plugin sendete seine erste Intervention mit 0",
+    "und setzte den Zaehler bei Reconnect nicht zurueck. JEDE Seite war fuer sich",
+    "gruen; nur ihr VERHAELTNIS war falsch, und genau deshalb konnte kein Bein",
+    "einer Seite fallen.",
+    "",
+    "Diese Datei ist die dritte Instanz, gegen die BEIDE Seiten messen — dieselbe",
+    "Bauform wie MANIFEST.json fuer den Fixturekorpus: sie ist von Hand",
+    "geschrieben und damit die Ausgabe keiner der beiden Implementierungen.",
+    "Stimmen beide mit ihr ueberein, stimmen sie transitiv miteinander ueberein.",
+    "",
+    "C++-Leser: EqCopSonde013PassageStateTest (C1).",
+    "Rust-Leser: broker/tests/sonde013_verdrahtung.rs (C1)."
+  ],
+  "resync_sequenzbasis": 0,
+  "erste_intervention_nach_resync": 1
+}

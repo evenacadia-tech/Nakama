@@ -99,6 +99,7 @@ fn referenz(gain: f64) -> Experimentreferenz {
         aktive_quellen: vec![hex32(11), hex32(12)],
         messpunktklassen: vec!["pre".into(), "post".into()],
         match_gain_db: gain,
+        nicht_endliche_samples: Some(0),
         alignment: Alignmentwert::FeatureAligned,
     }
 }

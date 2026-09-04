@@ -562,6 +562,7 @@ impl Coordinator {
             "aktive_quellen": r.aktive_quellen,
             "messpunktklassen": r.messpunktklassen,
             "match_gain_db": r.match_gain_db,
+            "nicht_endliche_samples": r.nicht_endliche_samples,
             "alignment": Self::alignment_wort(r.alignment),
         })
     }
@@ -1057,6 +1058,9 @@ impl Coordinator {
                 .filter_map(|v| v.as_str().map(str::to_owned))
                 .collect(),
             match_gain_db: r.get("match_gain_db")?.as_f64()?,
+            // Befund C5: fehlt das Feld, bleibt die Zahl UNBEKANNT. Ein
+            // Vorgabewert 0 behauptete „nachweislich keines".
+            nicht_endliche_samples: r.get("nicht_endliche_samples").and_then(Value::as_u64),
             alignment: match r.get("alignment").and_then(Value::as_str) {
                 Some("feature_aligned") => Alignmentwert::FeatureAligned,
                 Some("audio_aligned") => Alignmentwert::AudioAligned,
@@ -1208,6 +1212,9 @@ impl Coordinator {
                 .filter_map(|v| v.as_str().map(str::to_owned))
                 .collect(),
             match_gain_db: r.get("match_gain_db")?.as_f64()?,
+            // Befund C5: der restaurierte Stand traegt die Zahl mit; fehlt sie,
+            // bleibt sie UNBEKANNT statt still 0 zu werden.
+            nicht_endliche_samples: r.get("nicht_endliche_samples").and_then(Value::as_u64),
             alignment: match r.get("alignment").and_then(Value::as_str) {
                 Some("feature_aligned") => Alignmentwert::FeatureAligned,
                 Some("audio_aligned") => Alignmentwert::AudioAligned,

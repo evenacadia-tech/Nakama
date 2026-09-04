@@ -1079,6 +1079,19 @@ def zusatz_gueltig() -> list[tuple[str, dict, str]]:
                    "M-49/M-13, Nacharbeit 2 (R14/R32): der Rueckweg zu Gen laeuft "
                    "ueber den bestehenden Snapshot-Pfad"))
 
+    # Nacharbeit 3 (Befund C5, M-07): der Nichtendlich-Zaehler REIST.
+    eb = copy.deepcopy(GRUND["experiment_begin"])
+    eb["referenz"]["nicht_endliche_samples"] = 0
+    faelle.append(("experiment-begin-nicht-endliche-samples-null", eb,
+                   "M-07, Nacharbeit 3 (C5): 0 heisst NACHWEISLICH kein "
+                   "nichtendliches Sample - nicht 'nicht gemessen'"))
+
+    eb = copy.deepcopy(GRUND["experiment_begin"])
+    eb["referenz"]["nicht_endliche_samples"] = 7
+    faelle.append(("experiment-begin-nicht-endliche-samples-gezaehlt", eb,
+                   "M-07, Nacharbeit 3 (C5): der Zaehler des Vergleichspegels "
+                   "reist im Wirezustand mit, statt nur lokal zu verriegeln"))
+
     eb = copy.deepcopy(GRUND["experiment_begin"])
     eb["referenz"]["alignment"] = "unclear"
     eb["referenz"]["aktive_quellen"] = ["33333333333333333333333333333333"]
@@ -2330,6 +2343,19 @@ UNGUELTIG: list[tuple] = [
      "§32.2 kennt genau vier Messpositionen; eine fuenfte waere eine "
      "Aussageklasse ohne Gate-7-Kopplung"),
 
+    # Nacharbeit 3 (Befund C5): die zwei Kanten des neuen Feldes.
+    ("experiment-referenz-negative-nicht-endliche-samples", "experiment_begin",
+     [setze("referenz", "nicht_endliche_samples", -1)],
+     [v("/referenz/nicht_endliche_samples",
+        f"{S}/experiment_referenz/properties/nicht_endliche_samples/minimum", "minimum")],
+     "M-07, Nacharbeit 3 (C5): eine negative Anzahl gibt es nicht - sie waere "
+     "die stille Umdeutung von 'nicht gemessen' in eine Zahl"),
+    ("experiment-referenz-bruchzahl-nicht-endliche-samples", "experiment_begin",
+     [setze("referenz", "nicht_endliche_samples", 2.5)],
+     [v("/referenz/nicht_endliche_samples",
+        f"{S}/experiment_referenz/properties/nicht_endliche_samples/type", "type")],
+     "M-07, Nacharbeit 3 (C5): 2,5 Samples gibt es nicht - eine stille Rundung "
+     "waere eine erfundene Zahl"),
     ("experiment-referenz-fremde-alignmentklasse", "experiment_begin",
      [setze("referenz", "alignment", "sample_aligned")],
      [v("/referenz/alignment", f"{S}/alignment_klasse/enum", "enum")],

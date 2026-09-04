@@ -160,6 +160,10 @@ public:
     // GoldenTest` liest sie, sonst niemand.
     juce::uint64 merkmaleGetrennteFenster() const   { auto l = externerAnalyseSteuerZug(); return merkmale.getrennteFenster(); }
     juce::uint64 merkmaleEpochenwechsel() const     { auto l = externerAnalyseSteuerZug(); return merkmale.epochenwechsel(); }
+    /// Nacharbeit 3 (Befund C2): die Transportepoche, unter der die Engine
+    /// GERADE misst. Ein Bein braucht sie, um eine Markierung VOR und eine
+    /// NACH einem Seek auseinanderzuhalten.
+    juce::uint64 merkmaleTransportEpoche() const    { auto l = externerAnalyseSteuerZug(); return merkmale.transportEpocheJetzt(); }
     juce::uint64 merkmaleSegmentwechsel() const     { auto l = externerAnalyseSteuerZug(); return merkmale.segmentwechsel(); }
     juce::uint64 merkmaleStraddleVerworfen() const  { auto l = externerAnalyseSteuerZug(); return merkmale.straddleVerworfen(); }
     juce::uint64 merkmaleNak29Abgelehnt() const     { auto l = externerAnalyseSteuerZug(); return merkmale.nak29Abgelehnt(); }
@@ -222,6 +226,45 @@ public:
         Passage". Ein Bein misst damit, dass `merkeManuellePassage` die
         Grenzen wirklich bis zur Engine bringt. */
     bool passagenfensterInEngine (std::int64_t& start, std::int64_t& ende) const;
+
+    /** Fuehrt die Engine gerade das Fenster GENAU dieser Passage?
+
+        Nacharbeit 3 (Befund C3): `passagenfensterInEngine` sagt nur, DASS ein
+        Fenster laeuft. Seit der State bis zu 64 Passagen haelt und Begin per
+        ID adressiert, ist die zweite Frage die wichtigere — sonst liesse sich
+        „A ist gebunden" nicht von „B ist gebunden" unterscheiden, und genau
+        daran hing der Fehler. */
+    bool passagenfensterFuehrt (const juce::String& passageId) const;
+
+    /** Wie viele Bloecke der Vergleichspegel wirklich aufgenommen hat.
+
+        Befund C4: die Zahl unterscheidet „ausserhalb der Passage gespielt,
+        also nichts aufgenommen" von „aufgenommen und zufaellig gleich laut".
+        Ohne sie ist ein leerer Pegel nicht von einem gemessenen zu trennen. */
+    juce::uint64 versuchAufgenommeneBloecke() const;
+
+    /** Wie oft ein EXTERNER Leser den Analyse-Steuerzug genommen hat.
+
+        Befund C7: der Experimentpfad las Fingerprint, Frame und Passagenepoche
+        ohne diesen Zug, waehrend der Analyseworker dieselbe Engine mutierte.
+        Ein Bein misst an dieser Zahl, dass `beginneVersuch` und
+        `erfasseKandidat` den Zug WIRKLICH nehmen — eine Behauptung ueber
+        Threadsicherheit, die kein Kommentar tragen kann. */
+    juce::uint64 analyseSteuerZuege() const { return analyseSteuerZuegeGesamt.load(); }
+
+    /** Der Fensterwunsch mit AUSDRUECKLICH mitgegebener Transportepoche.
+
+        Das ist der Produktweg von `merkeManuellePassage`, nur mit der einen
+        Eingabe, die das Rennen variiert: der Epoche, die beim MARKIEREN galt.
+        Vergeht zwischen Markierung und Workerlauf ein Seek, ist sie aelter als
+        die der Engine — und genau dann muss das Fenster ausbleiben (Befund
+        C2). Ein Bein kann diesen Verlauf sonst nicht deterministisch fahren:
+        Epochenlesung und Wunschablage liegen im Produkt unmittelbar
+        nebeneinander. */
+    bool passagenfensterWunschFuerTest (const juce::String& passageId,
+                                        std::int64_t projektStart,
+                                        std::int64_t projektEnde,
+                                        std::uint64_t transportEpoche);
 
     /** Beginnt einen `manual_external`-Versuch ueber der markierten Passage.
 
@@ -307,6 +350,34 @@ public:
 
     std::uint64_t v3StateRevisionFuerTest() const noexcept
     { return v3StateRevision.load(); }
+
+    /** Der zuletzt GESENDETE Versuchsbefehl, roh (Befund C5). */
+    std::string letzterVersuchP0FuerTest() const
+    {
+        std::lock_guard<std::mutex> l (versuchWireMutex);
+        return letzterVersuchP0;
+    }
+
+    /** Der Wiretext, den der naechste Eingriff im Ring WIRKLICH bekaeme.
+
+        Befund C1: er entnimmt wie der Sender und baut wie der Sender — ein
+        Bein misst damit die Zahl, die auf die Leitung geht, statt ein lokales
+        Flag. Leer heisst „der Ring ist leer". */
+    std::string naechstesInterventionsJsonFuerTest()
+    {
+        nakama::ipc::Interventionsereignis e;
+        if (! interventionsRing.lies (e))
+            return {};
+        auto h = v3Hello();
+        h.adresse = nakama::ipc::wireAdresseAusState (h.adresse);
+        const std::string adresseJson =
+            std::string ("{\"logon_sid\":\"") + h.adresse.logonSid
+            + "\",\"project_binding_id\":\"" + h.adresse.projectBindingId
+            + "\",\"session_epoch\":\"" + h.adresse.sessionEpoch
+            + "\",\"instance_id\":\"" + h.adresse.instanceId
+            + "\",\"runtime_nonce\":\"" + h.adresse.runtimeNonce + "\"}";
+        return interventionsWireJson (e, adresseJson);
+    }
 #endif
     double holeSamplerate() const                          { return samplerateAtomic.load(); }
     int    holeBlockSize() const                           { return blockSizeAtomic.load(); }
@@ -357,6 +428,10 @@ private:
     /// SONDE-013 M-37/M-38: leert den Interventionsring und sendet jedes
     /// Ereignis als P0. Laeuft im Worker, nie im Audiothread.
     void interventionenSenden();
+    /// Der Wiretext EINES Eingriffs (Befund C1) — getrennt vom Senden, damit
+    /// die Zahl auf der Leitung messbar ist.
+    std::string interventionsWireJson (const nakama::ipc::Interventionsereignis& e,
+                                       const std::string& adresseJson) const;
     nakama::ipc::ControlStatus v3Status() const;
     nakama::ipc::TelemetryHello v3TelemetryHello() const;
     std::string v3SubscribeJson() const;
@@ -479,8 +554,11 @@ private:
     // 8er-Zug, solange jemand wartet. Nach Lock-Erwerb wird die Anmeldung
     // geloescht - der Mutex selbst schuetzt dann bis zum Zugende.
     mutable std::atomic<unsigned> analyseSteuerWartende { 0 };
+    /// Befund C7: gezaehlte externe Zuege. Monoton, nur Diagnose.
+    mutable std::atomic<std::uint64_t> analyseSteuerZuegeGesamt { 0 };
     std::unique_lock<std::mutex> externerAnalyseSteuerZug() const
     {
+        analyseSteuerZuegeGesamt.fetch_add (1, std::memory_order_relaxed);
         struct WarteMarke
         {
             explicit WarteMarke (std::atomic<unsigned>& z) : zaehler (z)
@@ -512,10 +590,59 @@ private:
     // Wunsch als Atomic, den der Analyseworker unter `analyseSteuerMutex`
     // einloest. Der Nachrichtenthread fasst die Engine nie an, und der
     // Audiothread erst recht nicht.
+    //
+    // 🔑 Nacharbeit 3 (Befund C2/C3, M-25/G4): der Wunsch traegt seit dieser
+    // Runde ID, Grenzen UND die beim MARKIEREN gelesene Transportepoche.
+    //
+    // Bis dahin las der Worker die Epoche beim Abarbeiten aus der Engine —
+    // also aus derselben Quelle, gegen die `setzePassagenfenster` sie
+    // vergleicht. Der Vergleich war damit tautologisch erfuellt, und ein Seek
+    // ZWISCHEN Markierung und Workerlauf liess die alten Grenzen unter der
+    // neuen Epoche durch. Die Epoche muss aus dem Moment der Markierung
+    // stammen, sonst sagt sie nichts.
     std::atomic<bool>          passagenfensterWunsch    { false };
     std::atomic<bool>          passagenfensterLoeschen  { false };
     std::atomic<std::int64_t>  passagenfensterStart     { 0 };
     std::atomic<std::int64_t>  passagenfensterEnde      { 0 };
+    std::atomic<std::uint64_t> passagenfensterEpocheWunsch { 0 };
+    /// Zaehlt JEDE Bindung und JEDES Loesen. Der Worker veroeffentlicht das
+    /// Fenster fuer den Audiothread nur unter der Generation, die er wirklich
+    /// eingeloest hat; eine spaetere Bindung entwertet damit sofort, was er
+    /// gerade sagen wollte. Ohne diesen Zaehler koennte er zwischen
+    /// Wunschannahme und Veroeffentlichung ueberholt werden und das Fenster
+    /// der VORIGEN Passage als aktiv melden.
+    std::atomic<std::uint64_t> passagenfensterGeneration { 0 };
+
+    /// Welche Passage das Fenster gerade BINDET. Nur der Nachrichtenthread
+    /// fasst sie an; der Audiothread braucht die ID nicht, sondern die
+    /// Grenzen daneben (Befund C3).
+    mutable std::mutex passagenBindungMutex;
+    juce::String       gebundenePassageId;
+    std::int64_t       gebundenerStart { 0 };
+    std::int64_t       gebundenesEnde  { 0 };
+    std::uint64_t      gebundeneEpoche { 0 };
+
+    /// Setzt den Wunsch fuer `id` und bindet sie. `false`, wenn die Engine
+    /// gerade keine Epoche liefern kann.
+    bool bindePassagenfenster (const juce::String& passageId,
+                               std::int64_t projektStart, std::int64_t projektEnde);
+    bool bindePassagenfensterMitEpoche (const juce::String& passageId,
+                                        std::int64_t projektStart,
+                                        std::int64_t projektEnde,
+                                        std::uint64_t transportEpoche);
+    /// Loest die Bindung — nur, wenn `passageId` die gebundene ist.
+    bool loesePassagenfenster (const juce::String& passageId);
+
+    // ── Was der AUDIOTHREAD ueber das Fenster wissen muss (Befund C4) ──────
+    //
+    // Der Audiothread darf die Engine nicht anfassen und kennt die
+    // Transportepoche nicht. Der Analyseworker veroeffentlicht deshalb, was
+    // er gerade FUEHRT: die Grenzen und ob das Fenster gesetzt UND unversehrt
+    // ist. `pegelFensterAktiv` ist das Publikationsbit — Grenzen zuerst,
+    // Bit danach, wie beim Messfenster daneben.
+    std::atomic<bool>          pegelFensterAktiv { false };
+    std::atomic<std::int64_t>  pegelFensterStart { 0 };
+    std::atomic<std::int64_t>  pegelFensterEnde  { 0 };
 
     // ── SONDE-013 Nacharbeit 2 (Befund R06): der Experimentpfad ────────────
     //
@@ -528,10 +655,39 @@ private:
     // die Markierung daneben — und NUR, solange ein Versuch vorbereitet wird.
     // Ausserhalb kostet er nichts: `versuchspegelSpeist` ist dann falsch, und
     // die Trockenkopie unterbleibt.
+    /** Alles, was der Experimentpfad aus der FeatureEngine braucht — in EINEM
+        Zug gelesen (Befund C7).
+
+        `versuchReferenzJson` und `beginneVersuch` lasen Fingerprint, Frame und
+        Passagenepoche bis zur Runde 2 OHNE `externerAnalyseSteuerZug`,
+        waehrend der Analyseworker dieselbe Engine unter `analyseSteuerMutex`
+        mutierte. Das ist ein C++-Datenrennen; ausserdem konnten die drei Werte
+        aus drei verschiedenen Engine-Staenden stammen und damit eine Referenz
+        beschreiben, die es nie gab. Ein Zug, ein Stand. */
+    struct Engineabzug
+    {
+        nakama::analyse::Fingerprint fingerprint {};
+        std::uint64_t passagenEpoche { 0 };
+        bool          fensterGesetzt { false };
+        double        abdeckung { 0.0 };
+        bool          abdeckungGesetzt { false };
+    };
+    Engineabzug engineabzugLesen() const;
+
     /// Baut die unveraenderlichen Referenzen eines Versuchs (Paragraph 43.1).
-    std::string versuchReferenzJson() const;
+    std::string versuchReferenzJson (const Engineabzug& abzug) const;
     /// Baut den Steuerkopf eines persistenzpflichtigen P0-Befehls.
     std::string versuchKopfJson (const juce::String& commandId) const;
+
+    /** Reicht einen Versuchsbefehl weiter und MERKT sich, was gesendet wurde.
+
+        Befund C5: der Nichtendlich-Zaehler soll „im Wirezustand reisen". Bis
+        zur Runde 2 war das eine Behauptung ueber eine Zeile, die es nicht gab
+        — und der Test las statt der Leitung einen lokalen Getter. Ein Bein
+        braucht deshalb Zugriff auf den TEXT, der wirklich gesendet wurde. */
+    bool sendeVersuchP0 (const std::string& json);
+    mutable std::mutex versuchWireMutex;
+    std::string        letzterVersuchP0;
 
     nakama::analyse::Vergleichspegel vergleichspegel;
     nakama::analyse::Blindvergleich  blindvergleich;

@@ -1,0 +1,154 @@
+Rotbeweis C6 - die Uebergabe des Vergleichspegels haelt an der Blockgrenze (kein Datenrennen)
+Datum: 2026-09-04
+Datei: eq-copilot/plugin/core/analysis/Vergleichspegel.h
+Test:  EqCopSonde013ExperimentUiTest C6 vergleichspegel_uebergibt_an_der_blockgrenze
+
+== 1. Fehler eingebaut ==
+ALT:             for (;;)
+            {
+                int erwartet = torFrei;
+                if (tor.compare_exchange_weak (erwartet, torSteuerung,
+                                               std::memory_order_acquire,
+                                               std::memory_order_relaxed))
+                    return;
+                std::this_thread::yield();
+            }
+NEU:             // Rotbeweis: kein Ausschluss - der Nachrichtenthread geht rein,
+            // waehrend der Audiothread schreibt (Stand der Runde 2).
+
+== 2. Der Test FAELLT ==
+exit=1
+== Nakama SONDE-013 - die zwei Kanten des Blindvergleichs (§43.1) ==
+
+== M-43  no_sound_verdict_before_loudness_match ==
+[ok]   frisch: kein Abgleich, kein Urteil
+[ok]   und die Sperre nennt genau diesen Grund  [ohne Lautheitsabgleich]
+[ok]   die Reihenfolge laesst sich schon vorher binden
+[ok]   die Sperre bleibt trotzdem der fehlende Abgleich  [ohne Lautheitsabgleich]
+[ok]   und ein Urteil wird NICHT angenommen - lauter klingt besser, und ein A/B ohne Pegelabgleich misst genau das
+[ok]   es steht also auch keines da
+[ok]   ein noch nicht eingefrorener Pegel wird abgelehnt
+[ok]   und aendert nichts
+[ok]   ein eingefrorener Pegel wird uebernommen
+[ok]   der Abgleich steht
+[ok]   und die Sperre ist frei  [frei]
+[ok]   jetzt wird das Urteil angenommen
+[ok]   und steht unveraendert da
+[ok]   ein zweites Urteil wird abgelehnt
+[ok]   das erste bleibt stehen
+[ok]   mit benanntem Grund  [schon geurteilt]
+[ok]   und ein neuer Pegel wird nach dem Urteil nicht mehr uebernommen
+[ok]   der Passagenwechsel raeumt Urteil, Abgleich und Bindung ab
+[ok]   und der Automat steht wieder am Anfang
+
+== M-44  ui_cannot_read_the_order_before_the_verdict ==
+[ok]   ungebunden: es gibt nichts zu lesen
+[ok]   gebunden
+[ok]   die UI darf WISSEN, dass ein Blindvergleich laeuft
+[ok]   sie darf aber NICHT wissen, welche Seite welche ist - das ist die Kante aus M-44
+[ok]   und der Ausgabeparameter bleibt unberuehrt, statt still einen Wert zu tragen, den jemand liest
+[ok]   ein zweites Binden wird abgelehnt - sonst liesse sie sich nach dem Hoeren noch zum Urteil passend drehen
+[ok]   das Urteil faellt
+[ok]   jetzt ist sie aufgedeckt - und es ist die gebundene, keine andere
+[ok]   die andere Reihenfolge kommt ebenso zurueck - der Wert ist gebunden, nicht geraten
+[ok]   ohne Bindung nennt die Sperre genau das  [Reihenfolge nicht gebunden]
+[ok]   und das Urteil wird abgelehnt
+[ok]   es gibt nichts aufzudecken
+[ok]   die UI kann zwei Seiten unterscheiden, ohne zu wissen, welche welche ist
+[ok]   die Sperre traegt ein Wort: ohne Lautheitsabgleich
+[ok]   die Sperre traegt ein Wort: Reihenfolge nicht gebunden
+[ok]   die Sperre traegt ein Wort: schon geurteilt
+[ok]   die Sperre traegt ein Wort: frei
+
+== N1  B11  match_gain_wird_genau_einmal_eingefroren ==
+[ok]   B11: die zwei Pegel sind wirklich verschieden  [6.02 gegen 12.04]
+[ok]   B11: der erste Pegel wird uebernommen
+[ok]   B11: der Abgleich steht
+[ok]   B11: match_gain_wird_genau_einmal_eingefroren - ein ZWEITER Pegel wird abgelehnt, auch VOR dem Urteil (M-43)
+[ok]   B11: die Reihenfolge wird gebunden
+[ok]   B11: und das Urteil wird angenommen
+[ok]   B11: `loeschen()` loest die Bindung - der legitime Weg zu einem neuen Pegel, statt ihn heimlich zu ueberschreiben
+[ok]   B11: danach wird der zweite Pegel angenommen
+
+== N1  B10  nicht_endliche_samples_verriegeln_den_pegel ==
+[ok]   B10: beide nicht-endlichen Samples sind GEZAEHLT  [2]
+[ok]   B10: und der Pegel ist nicht mehr messbereit - ein einziges NaN sperrt
+[ok]   B10: nicht_endliche_samples_verriegeln_den_pegel - er liefert KEINEN Wert (M-07)
+[ok]   B10: er ist eingefroren OHNE Wert - 'Wert 0 mit gueltig=false', kein Zustand, der ewig weiterprobiert
+[ok]   B10: der Blindvergleich nimmt ihn nicht an - eine Klangwertung ohne belastbaren Lautheitsabgleich bleibt unzulaessig (M-43)
+[ok]   B10: die Gegenprobe ohne NaN liefert den Gain wie zuvor  [6.02]
+
+== C6  vergleichspegel_uebergibt_an_der_blockgrenze ==
+[ok]   C6: der Audiothread hat wirklich gespeist - ohne das bewiese der Fall nichts  [207677]
+[ROT]  C6: vergleichspegel_uebergibt_an_der_blockgrenze - in keiner Probe sieht der Leser einen halb aufgenommenen Block  [12901928 von 14947592]
+
+51 bestanden, 1 gescheitert
+
+
+== 3. Fehler entfernt, der Test ist GRUEN ==
+exit=0
+== Nakama SONDE-013 - die zwei Kanten des Blindvergleichs (§43.1) ==
+
+== M-43  no_sound_verdict_before_loudness_match ==
+[ok]   frisch: kein Abgleich, kein Urteil
+[ok]   und die Sperre nennt genau diesen Grund  [ohne Lautheitsabgleich]
+[ok]   die Reihenfolge laesst sich schon vorher binden
+[ok]   die Sperre bleibt trotzdem der fehlende Abgleich  [ohne Lautheitsabgleich]
+[ok]   und ein Urteil wird NICHT angenommen - lauter klingt besser, und ein A/B ohne Pegelabgleich misst genau das
+[ok]   es steht also auch keines da
+[ok]   ein noch nicht eingefrorener Pegel wird abgelehnt
+[ok]   und aendert nichts
+[ok]   ein eingefrorener Pegel wird uebernommen
+[ok]   der Abgleich steht
+[ok]   und die Sperre ist frei  [frei]
+[ok]   jetzt wird das Urteil angenommen
+[ok]   und steht unveraendert da
+[ok]   ein zweites Urteil wird abgelehnt
+[ok]   das erste bleibt stehen
+[ok]   mit benanntem Grund  [schon geurteilt]
+[ok]   und ein neuer Pegel wird nach dem Urteil nicht mehr uebernommen
+[ok]   der Passagenwechsel raeumt Urteil, Abgleich und Bindung ab
+[ok]   und der Automat steht wieder am Anfang
+
+== M-44  ui_cannot_read_the_order_before_the_verdict ==
+[ok]   ungebunden: es gibt nichts zu lesen
+[ok]   gebunden
+[ok]   die UI darf WISSEN, dass ein Blindvergleich laeuft
+[ok]   sie darf aber NICHT wissen, welche Seite welche ist - das ist die Kante aus M-44
+[ok]   und der Ausgabeparameter bleibt unberuehrt, statt still einen Wert zu tragen, den jemand liest
+[ok]   ein zweites Binden wird abgelehnt - sonst liesse sie sich nach dem Hoeren noch zum Urteil passend drehen
+[ok]   das Urteil faellt
+[ok]   jetzt ist sie aufgedeckt - und es ist die gebundene, keine andere
+[ok]   die andere Reihenfolge kommt ebenso zurueck - der Wert ist gebunden, nicht geraten
+[ok]   ohne Bindung nennt die Sperre genau das  [Reihenfolge nicht gebunden]
+[ok]   und das Urteil wird abgelehnt
+[ok]   es gibt nichts aufzudecken
+[ok]   die UI kann zwei Seiten unterscheiden, ohne zu wissen, welche welche ist
+[ok]   die Sperre traegt ein Wort: ohne Lautheitsabgleich
+[ok]   die Sperre traegt ein Wort: Reihenfolge nicht gebunden
+[ok]   die Sperre traegt ein Wort: schon geurteilt
+[ok]   die Sperre traegt ein Wort: frei
+
+== N1  B11  match_gain_wird_genau_einmal_eingefroren ==
+[ok]   B11: die zwei Pegel sind wirklich verschieden  [6.02 gegen 12.04]
+[ok]   B11: der erste Pegel wird uebernommen
+[ok]   B11: der Abgleich steht
+[ok]   B11: match_gain_wird_genau_einmal_eingefroren - ein ZWEITER Pegel wird abgelehnt, auch VOR dem Urteil (M-43)
+[ok]   B11: die Reihenfolge wird gebunden
+[ok]   B11: und das Urteil wird angenommen
+[ok]   B11: `loeschen()` loest die Bindung - der legitime Weg zu einem neuen Pegel, statt ihn heimlich zu ueberschreiben
+[ok]   B11: danach wird der zweite Pegel angenommen
+
+== N1  B10  nicht_endliche_samples_verriegeln_den_pegel ==
+[ok]   B10: beide nicht-endlichen Samples sind GEZAEHLT  [2]
+[ok]   B10: und der Pegel ist nicht mehr messbereit - ein einziges NaN sperrt
+[ok]   B10: nicht_endliche_samples_verriegeln_den_pegel - er liefert KEINEN Wert (M-07)
+[ok]   B10: er ist eingefroren OHNE Wert - 'Wert 0 mit gueltig=false', kein Zustand, der ewig weiterprobiert
+[ok]   B10: der Blindvergleich nimmt ihn nicht an - eine Klangwertung ohne belastbaren Lautheitsabgleich bleibt unzulaessig (M-43)
+[ok]   B10: die Gegenprobe ohne NaN liefert den Gain wie zuvor  [6.02]
+
+== C6  vergleichspegel_uebergibt_an_der_blockgrenze ==
+[ok]   C6: der Audiothread hat wirklich gespeist - ohne das bewiese der Fall nichts  [438662]
+[ok]   C6: vergleichspegel_uebergibt_an_der_blockgrenze - in keiner Probe sieht der Leser einen halb aufgenommenen Block  [0 von 11472]
+
+52 bestanden, 0 gescheitert

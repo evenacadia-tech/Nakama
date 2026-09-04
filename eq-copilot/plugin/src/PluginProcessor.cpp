@@ -485,10 +485,43 @@ void EqCopilotProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::M
     // Er laeuft NUR, solange ein Versuch vorbereitet wird; ausserhalb kostet
     // die Zeile nichts. Die Trockenkopie ist in `prepareToPlay` vorallokiert —
     // im Audiothread wird nie vergroessert, nie gesperrt und nie geloggt.
-    const bool pegelSpeist = versuchspegelSpeist.load (std::memory_order_relaxed)
-                          && kanaele > 0
-                          && (std::size_t) (buffer.getNumSamples() * kanaele)
-                                 <= versuchTrocken.size();
+    //
+    // 🔑 Nacharbeit 3 (Befund C4, M-20/Paragraph 38.3 woertlich: „fuer die
+    // GEWAEHLTE PASSAGE vorab gemessen"): der Pegel nimmt nur Material aus dem
+    // Fenster der gebundenen Passage.
+    //
+    // Bis zur Runde 2 war `versuchspegelSpeist` das einzige Tor. Wer nach dem
+    // Markieren des Refrains an anderer Stelle abspielte, fuellte damit die
+    // 400-ms-Schwelle mit FREMDEM Material, und dessen Verhaeltnis reiste als
+    // `match_gain_db` des Refrains. Der Ausschnitt wird deshalb aus der
+    // Projektzeit des Blocks und den vom Analyseworker VEROEFFENTLICHTEN
+    // Grenzen gerechnet — samplegenau, damit auch die Passagengrenze mitten im
+    // Block richtig faellt.
+    //
+    // `pegelFensterAktiv` traegt die Epochenbindung mit: der Worker setzt es
+    // nur, solange `passagenfensterIntakt()` gilt, und eine Transportgrenze im
+    // Fenster loescht es. Der Audiothread muss die Epoche damit nicht kennen —
+    // er koennte sie auch nicht lesen, ohne die Engine anzufassen.
+    int pegelVon = 0, pegelBis = 0;
+    if (versuchspegelSpeist.load (std::memory_order_relaxed)
+        && pegelFensterAktiv.load (std::memory_order_acquire)
+        && spielt
+        && stempel.zeitGueltig
+        && kanaele > 0
+        && (std::size_t) (buffer.getNumSamples() * kanaele) <= versuchTrocken.size())
+    {
+        const std::int64_t blockAnfang = stempel.projectSampleStart;
+        std::int64_t von = pegelFensterStart.load (std::memory_order_relaxed) - blockAnfang;
+        std::int64_t bis = pegelFensterEnde.load (std::memory_order_relaxed) - blockAnfang;
+        if (von < 0) von = 0;
+        if (bis > (std::int64_t) buffer.getNumSamples()) bis = buffer.getNumSamples();
+        if (von < bis)
+        {
+            pegelVon = (int) von;
+            pegelBis = (int) bis;
+        }
+    }
+    const bool pegelSpeist = pegelBis > pegelVon;
     if (pegelSpeist)
         for (int c = 0; c < kanaele; ++c)
             std::memcpy (versuchTrocken.data() + (std::size_t) c * (std::size_t) buffer.getNumSamples(),
@@ -500,9 +533,10 @@ void EqCopilotProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::M
     if (pegelSpeist)
         for (int c = 0; c < kanaele; ++c)
             vergleichspegel.speise (
-                versuchTrocken.data() + (std::size_t) c * (std::size_t) buffer.getNumSamples(),
-                buffer.getReadPointer (c),
-                buffer.getNumSamples());
+                versuchTrocken.data() + (std::size_t) c * (std::size_t) buffer.getNumSamples()
+                    + (std::size_t) pegelVon,
+                buffer.getReadPointer (c) + pegelVon,
+                pegelBis - pegelVon);
 
     // SONDE-013 M-37/M-38: die zwei Uebergaenge gehen SOFORT in den
     // vorallokierten RT→Control-Ring. Der Audiothread beruehrt die Pipe nie —
@@ -516,7 +550,17 @@ void EqCopilotProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::M
     {
         nakama::ipc::Interventionsereignis e;
         e.beginn = schritt.begann;
-        e.sequenz = interventionsSequenz.fetch_add (1, std::memory_order_relaxed);
+        // 🔑 Nacharbeit 3 (Befund C1, M-61): die erste Sequenz nach einem
+        // bestaetigten Resync ist EINS, nicht null.
+        //
+        // Der Broker setzt mit `resync_bestaetigen(link, 0)` seine Basis auf 0
+        // und liest das als „die naechste ist 1". Das Plugin vergab bis dahin
+        // `fetch_add` OHNE Inkrement, sendete also 0 — der Broker verwarf die
+        // erste Intervention jeder Verbindung als Luecke und setzte
+        // `taint.unknown` sofort wieder. Der R01-Fix hob sich damit selbst auf.
+        // Das Inkrement steht VOR dem Senden; die Zahl auf der Leitung ist
+        // damit die des Ereignisses und nicht die davor.
+        e.sequenz = interventionsSequenz.fetch_add (1, std::memory_order_relaxed) + 1;
         // Beim Beginn eine neue Eingriffsnummer ziehen, beim Ende die des
         // laufenden Eingriffs behalten.
         if (schritt.begann)
@@ -769,17 +813,51 @@ void EqCopilotProcessor::workerLauf()
             // `messResetWunsch` — auf DIESEM Thread, unter DIESER Sperre, nie
             // aus dem Nachrichten- oder Audiothread.
             //
-            // Die Transportepoche kommt aus der Engine SELBST: sie ist die
-            // einzige Stelle, die sie fuehrt, und eine vom Nachrichtenthread
-            // mitgegebene waere eine zweite, aeltere Wahrheit. Genau deshalb
-            // steht der Aufruf hier und nicht dort.
+            // 🔑 Nacharbeit 3 (Befund C2, Paragraph 32.4): die Epoche kommt aus
+            // dem WUNSCH, nicht aus der Engine.
+            //
+            // Die Runde 2 las sie hier mit `merkmale.transportEpocheJetzt()` —
+            // also aus genau der Quelle, gegen die `setzePassagenfenster` sie
+            // vergleicht. Der Riegel war damit tautologisch erfuellt und
+            // konnte nie greifen. Ein Seek zwischen Markierung und diesem Lauf
+            // liess die alten Grenzen unter der NEUEN Epoche durch, und die
+            // Passagenmetriken beschrieben danach eine andere Stelle der Musik
+            // als die markierte. Die Epoche muss die des MARKIERENS sein.
+            const auto fensterGeneration = passagenfensterGeneration.load();
             if (passagenfensterLoeschen.exchange (false))
                 merkmale.loeschePassagenfenster();
             if (passagenfensterWunsch.exchange (false))
             {
-                merkmale.setzePassagenfenster (passagenfensterStart.load(),
-                                               passagenfensterEnde.load(),
-                                               merkmale.transportEpocheJetzt());
+                // Lehnt die Engine ab — der Epochenvergleich ist der einzige
+                // Grund —, bleibt KEIN Fenster stehen. Das alte gehoerte einer
+                // Passage, die seit der neuen Bindung niemand mehr fuehrt;
+                // es weiterlaufen zu lassen waere die stille Verwechslung, die
+                // Befund C3 beschreibt.
+                if (! merkmale.setzePassagenfenster (passagenfensterStart.load(),
+                                                     passagenfensterEnde.load(),
+                                                     passagenfensterEpocheWunsch.load()))
+                    merkmale.loeschePassagenfenster();
+            }
+            // Befund C4: was der Audiothread ueber das Fenster wissen muss.
+            // Grenzen zuerst, Publikationsbit danach — ein Leser, der das Bit
+            // schon sieht, sieht dann nie alte Grenzen. Umgekehrt beim
+            // Loeschen: erst das Bit weg, dann duerfen die Grenzen veralten.
+            //
+            // Die Generation entscheidet, ob diese Aussage ueberhaupt noch
+            // gilt: hat der Nachrichtenthread waehrenddessen neu gebunden,
+            // schweigt der Worker und sagt es im naechsten Zug.
+            if (passagenfensterGeneration.load() == fensterGeneration
+                && merkmale.passagenfensterIntakt())
+            {
+                pegelFensterStart.store (merkmale.passagenfensterStart(),
+                                         std::memory_order_relaxed);
+                pegelFensterEnde.store (merkmale.passagenfensterEnde(),
+                                        std::memory_order_relaxed);
+                pegelFensterAktiv.store (true, std::memory_order_release);
+            }
+            else
+            {
+                pegelFensterAktiv.store (false, std::memory_order_release);
             }
 
             // SONDE-008: Block für Block durch die Ein-Block-Quarantäne.
@@ -906,6 +984,50 @@ void EqCopilotProcessor::workerLauf()
     Coordinator an, ohne dass ein zusaetzliches Feld noetig waere. Der
     Zaehler hier ist die lokale Gegenprobe dazu.
 */
+std::string EqCopilotProcessor::interventionsWireJson (
+    const nakama::ipc::Interventionsereignis& e, const std::string& adresseJson) const
+{
+    // 🔑 Nacharbeit 3 (Befund C1): der Wiretext entsteht getrennt vom Senden.
+    //
+    // Bis dahin lag beides in einer Schleife, und die Zahl, die WIRKLICH auf
+    // die Leitung geht, war ausserhalb des Prozessors nicht messbar. Ein Bein
+    // konnte den Handschlag deshalb nur an lokalen Flags pruefen — genau die
+    // Sorte Test, die an einem Vertragsbruch zwischen zwei Sprachen nicht
+    // fallen kann.
+    auto h = v3Hello();
+    h.adresse = nakama::ipc::wireAdresseAusState (h.adresse);
+    std::string json = "{\"type\":\"";
+    json += e.beginn ? "audible_intervention_begin" : "audible_intervention_end";
+    json += "\",\"intervention_id\":\"";
+    json += nakama::ipc::instanceAdresseAusState (
+                "intervention:" + h.adresse.instanceId + ":"
+                + std::to_string (e.nummer));
+    json += "\",\"adresse\":";
+    json += adresseJson;
+    json += ",\"event_sequence\":";
+    json += std::to_string (e.sequenz);
+    if (e.beginn)
+    {
+        // SONDE-013 §7.1 E-08: der Hoermarker bleibt in Gen/Main, und
+        // dieses Ticket baut nur ihn. Die drei uebrigen Arten aus dem
+        // Schema bekommen ihre Erzeuger in P6 und P7.
+        json += ",\"art\":\"hoermarkierung\"";
+        json += ",\"project_sample_start\":";
+        json += e.projektzeitGesetzt ? std::to_string (e.projektSample)
+                                     : std::string ("null");
+    }
+    else
+    {
+        json += ",\"project_sample_end\":";
+        json += e.projektzeitGesetzt ? std::to_string (e.projektSample)
+                                     : std::string ("null");
+        json += ",\"tail_samples\":";
+        json += std::to_string (e.tailSamples);
+    }
+    json += "}";
+    return json;
+}
+
 void EqCopilotProcessor::interventionenSenden()
 {
     if (interventionsRing.fuellstand() == 0)
@@ -941,36 +1063,7 @@ void EqCopilotProcessor::interventionenSenden()
     nakama::ipc::Interventionsereignis e;
     while (interventionsRing.lies (e))
     {
-        std::string json = "{\"type\":\"";
-        json += e.beginn ? "audible_intervention_begin" : "audible_intervention_end";
-        json += "\",\"intervention_id\":\"";
-        json += nakama::ipc::instanceAdresseAusState (
-                    "intervention:" + h.adresse.instanceId + ":"
-                    + std::to_string (e.nummer));
-        json += "\",\"adresse\":";
-        json += adresseJson;
-        json += ",\"event_sequence\":";
-        json += std::to_string (e.sequenz);
-        if (e.beginn)
-        {
-            // SONDE-013 §7.1 E-08: der Hoermarker bleibt in Gen/Main, und
-            // dieses Ticket baut nur ihn. Die drei uebrigen Arten aus dem
-            // Schema bekommen ihre Erzeuger in P6 und P7.
-            json += ",\"art\":\"hoermarkierung\"";
-            json += ",\"project_sample_start\":";
-            json += e.projektzeitGesetzt ? std::to_string (e.projektSample)
-                                         : std::string ("null");
-        }
-        else
-        {
-            json += ",\"project_sample_end\":";
-            json += e.projektzeitGesetzt ? std::to_string (e.projektSample)
-                                         : std::string ("null");
-            json += ",\"tail_samples\":";
-            json += std::to_string (e.tailSamples);
-        }
-        json += "}";
-
+        const std::string json = interventionsWireJson (e, adresseJson);
         if (controlV3.sendeP0 (json))
             interventionenGesendet.fetch_add (1, std::memory_order_relaxed);
         else
@@ -1093,6 +1186,13 @@ void EqCopilotProcessor::v3ControlLink (bool verbunden)
     {
         interventionsRing.resync();
         interventionsRingUeberlauf.store (false, std::memory_order_relaxed);
+        // 🔑 Befund C1: der Zaehler faellt MIT auf null zurueck.
+        //
+        // Der Broker fuehrt fuer diesen Link ab hier die Basis 0. Liefe das
+        // Plugin mit seiner alten, hohen Nummer weiter, waere der Abstand eine
+        // Luecke — und der Resync haette den Zustand nicht geklaert, sondern
+        // gerade erst wieder unbekannt gemacht.
+        interventionsSequenz.store (0, std::memory_order_relaxed);
     }
 
     auto h = v3Hello();
@@ -1563,17 +1663,7 @@ bool EqCopilotProcessor::merkeManuellePassage (const juce::String& passageId,
     //
     // Der Nachrichtenthread fasst die Engine nicht an; er hinterlegt den Wunsch
     // und der Analyseworker loest ihn unter seiner Steuersperre ein.
-    passagenfensterStart.store (projektStart);
-    passagenfensterEnde.store (projektEnde);
-    passagenfensterLoeschen.store (false);
-    passagenfensterWunsch.store (true);
-    // Befund R06/M-43: mit der markierten Passage beginnt die VORABmessung des
-    // Vergleichspegels. `beginneVersuch` friert ihn spaeter ein; bis dahin
-    // sammelt er. Ein frueher gemessener Pegel derselben Passage waere ein
-    // anderer Bezugspunkt — deshalb faengt er hier von vorn an.
-    vergleichspegel.vorbereiten (getSampleRate());
-    versuchNichtEndlich.store (0, std::memory_order_relaxed);
-    versuchspegelSpeist.store (true, std::memory_order_release);
+    bindePassagenfenster (passageId, projektStart, projektEnde);
     meldeHostDirty();
     v3StateRevision.fetch_add (1);
     return true;
@@ -1595,9 +1685,13 @@ bool EqCopilotProcessor::vergissManuellePassage (const juce::String& passageId)
     // Der Gegenpfad zu `merkeManuellePassage`: die Engine loest die Bindung
     // wieder — danach gilt wieder die Transportepoche als Fenster, also der
     // Fall „der User hat keine Passage markiert" (Befund R03).
-    passagenfensterWunsch.store (false);
-    passagenfensterLoeschen.store (true);
-    versuchspegelSpeist.store (false, std::memory_order_release);
+    //
+    // 🔑 Nacharbeit 3 (Befund C3): NUR, wenn diese Passage die gebundene ist.
+    // Bis dahin loeschte jedes Vergessen bedingungslos das globale Fenster und
+    // stoppte den Pegel — auch den einer ganz anderen, gerade laufenden
+    // Passage. Der State haelt bis zu 64 Passagen; ein globaler Slot ohne
+    // Zuordnung war die eigentliche Ursache.
+    loesePassagenfenster (passageId);
     // Das Vergessen meldet Dirty wie das Merken. Ein Loeschen, das der Host
     // nicht mitbekommt, kaeme beim naechsten Oeffnen zurueck.
     meldeHostDirty();
@@ -1657,6 +1751,126 @@ std::string jsonText (const juce::String& s)
 }
 } // namespace
 
+bool EqCopilotProcessor::bindePassagenfenster (const juce::String& passageId,
+                                               std::int64_t projektStart,
+                                               std::int64_t projektEnde)
+{
+    // 🔑 Nacharbeit 3 (Befund C2/C3): DIE Bindung. Sie friert die
+    // Transportepoche des Markierens ein und merkt sich, WELCHE Passage das
+    // Fenster fuehrt.
+    //
+    // Die Epoche wird HIER gelesen, im Nachrichtenthread, unter derselben
+    // Steuersperre wie jeder andere externe Engine-Leser — nicht spaeter im
+    // Worker. Genau der Unterschied zwischen „vor dem Seek markiert" und
+    // „nach dem Seek gesetzt" ist der Fehler, den der Vergleich in
+    // `setzePassagenfenster` finden soll.
+    std::uint64_t epoche = 0;
+    {
+        auto l = externerAnalyseSteuerZug();
+        epoche = merkmale.transportEpocheJetzt();
+    }
+    return bindePassagenfensterMitEpoche (passageId, projektStart, projektEnde, epoche);
+}
+
+bool EqCopilotProcessor::bindePassagenfensterMitEpoche (const juce::String& passageId,
+                                                        std::int64_t projektStart,
+                                                        std::int64_t projektEnde,
+                                                        std::uint64_t epoche)
+{
+    {
+        std::lock_guard<std::mutex> l (passagenBindungMutex);
+        gebundenePassageId = passageId;
+        gebundenerStart = projektStart;
+        gebundenesEnde  = projektEnde;
+        gebundeneEpoche = epoche;
+    }
+    passagenfensterGeneration.fetch_add (1);
+    passagenfensterStart.store (projektStart);
+    passagenfensterEnde.store (projektEnde);
+    passagenfensterEpocheWunsch.store (epoche);
+    passagenfensterLoeschen.store (false);
+    passagenfensterWunsch.store (true);
+    // Befund R06/M-43: mit der markierten Passage beginnt die VORABmessung des
+    // Vergleichspegels. `beginneVersuch` friert ihn spaeter ein; bis dahin
+    // sammelt er. Ein frueher gemessener Pegel derselben Passage waere ein
+    // anderer Bezugspunkt — deshalb faengt er hier von vorn an.
+    //
+    // Der Audiothread speist erst, wenn der Worker das Fenster WIRKLICH
+    // gesetzt hat (`pegelFensterAktiv`); bis dahin bleibt der Pegel leer.
+    // Lehnt die Engine das Fenster wegen Epochenwechsel ab, wird er nie
+    // gefuellt — und ohne Material entsteht kein Versuch. Fail-closed.
+    pegelFensterAktiv.store (false, std::memory_order_release);
+    vergleichspegel.vorbereiten (getSampleRate());
+    versuchNichtEndlich.store (0, std::memory_order_relaxed);
+    versuchspegelSpeist.store (true, std::memory_order_release);
+    v3StateRevision.fetch_add (1);
+    return true;
+}
+
+bool EqCopilotProcessor::passagenfensterWunschFuerTest (const juce::String& passageId,
+                                                        std::int64_t projektStart,
+                                                        std::int64_t projektEnde,
+                                                        std::uint64_t transportEpoche)
+{
+    return bindePassagenfensterMitEpoche (passageId, projektStart, projektEnde,
+                                          transportEpoche);
+}
+
+bool EqCopilotProcessor::passagenfensterFuehrt (const juce::String& passageId) const
+{
+    {
+        std::lock_guard<std::mutex> l (passagenBindungMutex);
+        if (gebundenePassageId != passageId)
+            return false;
+    }
+    // Die Bindung allein reicht nicht: die Engine kann den Wunsch abgelehnt
+    // haben (Epochenwechsel) oder eine Transportgrenze kann durch das Fenster
+    // gelaufen sein. Gefragt ist, was die Engine WIRKLICH fuehrt.
+    auto l = externerAnalyseSteuerZug();
+    return merkmale.passagenfensterIntakt();
+}
+
+juce::uint64 EqCopilotProcessor::versuchAufgenommeneBloecke() const
+{
+    return (juce::uint64) vergleichspegel.aufgenommeneBloecke();
+}
+
+bool EqCopilotProcessor::loesePassagenfenster (const juce::String& passageId)
+{
+    {
+        std::lock_guard<std::mutex> l (passagenBindungMutex);
+        if (gebundenePassageId != passageId)
+            return false;              // Eine FREMDE Passage loest nichts.
+        gebundenePassageId = {};
+        gebundenerStart = gebundenesEnde = 0;
+        gebundeneEpoche = 0;
+    }
+    passagenfensterGeneration.fetch_add (1);
+    passagenfensterWunsch.store (false);
+    passagenfensterLoeschen.store (true);
+    pegelFensterAktiv.store (false, std::memory_order_release);
+    versuchspegelSpeist.store (false, std::memory_order_release);
+    v3StateRevision.fetch_add (1);
+    return true;
+}
+
+EqCopilotProcessor::Engineabzug EqCopilotProcessor::engineabzugLesen() const
+{
+    // 🔑 Nacharbeit 3 (Befund C7): EIN Zug fuer alles, was der Experimentpfad
+    // aus der Engine braucht. Ohne ihn las er Fingerprint, Frame und
+    // Passagenepoche ungesperrt, waehrend der Analyseworker dieselbe Engine
+    // mutierte — ein Datenrennen, und drei Werte aus drei Staenden.
+    auto l = externerAnalyseSteuerZug();
+    Engineabzug a;
+    a.fingerprint = merkmale.fingerprint();
+    a.passagenEpoche = merkmale.passagenfensterEpoche();
+    a.fensterGesetzt = merkmale.passagenfensterGesetzt();
+    const auto& f = merkmale.frame();
+    a.abdeckungGesetzt = f.abdeckungGesetzt;
+    a.abdeckung = f.abdeckungGesetzt ? (double) f.abdeckung : 0.0;
+    return a;
+}
+
 bool EqCopilotProcessor::passagenfensterInEngine (std::int64_t& start,
                                                   std::int64_t& ende) const
 {
@@ -1670,9 +1884,9 @@ bool EqCopilotProcessor::passagenfensterInEngine (std::int64_t& start,
     return true;
 }
 
-std::string EqCopilotProcessor::versuchReferenzJson() const
+std::string EqCopilotProcessor::versuchReferenzJson (const Engineabzug& abzug) const
 {
-    const auto fp = merkmale.fingerprint();
+    const auto& fp = abzug.fingerprint;
     const auto sicht = sourcesModel.sicht();
     std::string quellen = "[";
     std::string klassen = "[";
@@ -1707,6 +1921,15 @@ std::string EqCopilotProcessor::versuchReferenzJson() const
     s += ",\"aktive_quellen\":" + quellen;
     s += ",\"messpunktklassen\":" + klassen;
     s += ",\"match_gain_db\":" + zahl (vergleichspegel.gainDb());
+    // 🔑 Nacharbeit 3 (Befund C5, M-07/R06): der Nichtendlich-Zaehler REIST.
+    //
+    // Die Runde 2 machte ihn nur ueber einen Test-Getter sichtbar; im
+    // Wirezustand stand er nicht, und der R06-Fall rief genau diesen Getter
+    // auf. Damit war „reist in den Wirezustand" eine Behauptung ueber eine
+    // Zeile, die es nicht gab. Das Feld ist optional in der Fassung 2 und
+    // traegt 0 als „nachweislich keines", nicht als „nicht gemessen".
+    s += ",\"nicht_endliche_samples\":"
+       + std::to_string ((unsigned long long) vergleichspegel.nichtEndlicheSamples());
     // M-21: kein Host validiert heute die Presentation-Abbildung. `probable`
     // ist die staerkste Klasse, die dieser Pfad tragen darf.
     s += ",\"alignment\":\"probable\"}";
@@ -1724,6 +1947,15 @@ std::string EqCopilotProcessor::versuchKopfJson (const juce::String& commandId) 
     s += ",\"base_revision\":" + std::to_string (v3StateRevision.load());
     s += ",\"ttl_ms\":2000,\"schema_major\":3,\"schema_minor\":0}";
     return s;
+}
+
+bool EqCopilotProcessor::sendeVersuchP0 (const std::string& json)
+{
+    if (! controlV3.sendePersistenzP0 (json))
+        return false;
+    std::lock_guard<std::mutex> l (versuchWireMutex);
+    letzterVersuchP0 = json;
+    return true;
 }
 
 bool EqCopilotProcessor::beginneVersuch (const juce::String& passageId)
@@ -1748,6 +1980,27 @@ bool EqCopilotProcessor::beginneVersuch (const juce::String& passageId)
             return false;                // Ein Versuch nach dem anderen.
     }
 
+    // 🔑 Nacharbeit 3 (Befund C3, M-25): der Versuch gilt GENAU der Passage,
+    // die das Fenster gerade fuehrt.
+    //
+    // Bis dahin adressierte `beginneVersuch` per ID, fror aber den zuletzt
+    // gesetzten GLOBALEN Stand ein. Wer A und danach B markierte und dann A
+    // begann, bekam den Vergleichspegel von B unter der ID von A — eine
+    // Lautheitszahl, die zu anderem Material gehoert. Ist eine andere Passage
+    // gebunden, wird das Fenster auf DIESE umgehaengt und der Versuch
+    // abgelehnt: der Pegel dieser Passage ist dann noch gar nicht gemessen,
+    // und Paragraph 15 laesst keine Klangwertung ohne Lautheitsabgleich zu.
+    bool istGebunden = false;
+    {
+        std::lock_guard<std::mutex> l (passagenBindungMutex);
+        istGebunden = (gebundenePassageId == passageId);
+    }
+    if (! istGebunden)
+    {
+        bindePassagenfenster (passageId, passage.projektStart, passage.projektEnde);
+        return false;
+    }
+
     // 🔑 M-43/§15: der Vergleichspegel wird EINGEFROREN, bevor irgendetwas
     // gesendet wird. Gelingt das nicht — zu wenig Material oder nichtendliche
     // Samples —, entsteht kein Versuch. Eine Klangwertung ohne vorherigen
@@ -1761,7 +2014,15 @@ bool EqCopilotProcessor::beginneVersuch (const juce::String& passageId)
     if (! blindvergleich.uebernimmVergleichspegel (vergleichspegel))
         return false;
 
-    const auto referenz = versuchReferenzJson();
+    // Befund C7: EIN Zug fuer Fingerprint, Passagenepoche und Abdeckung.
+    const auto abzug = engineabzugLesen();
+    // Ohne gebundenes Fenster in der Engine gibt es keine Passagenmessung —
+    // und ohne die traegt der Versuch weder Fingerprint noch Abdeckung dieser
+    // Passage. Das ist der Fall, in dem die Engine das Fenster wegen eines
+    // Epochenwechsels ABGELEHNT hat (Befund C2).
+    if (! abzug.fensterGesetzt)
+        return false;
+    const auto referenz = versuchReferenzJson (abzug);
     if (referenz.empty())
         return false;
     const juce::String versuchId { uuidHex32() };
@@ -1770,7 +2031,7 @@ bool EqCopilotProcessor::beginneVersuch (const juce::String& passageId)
     if (kopf.empty())
         return false;
 
-    const auto fp = merkmale.fingerprint();
+    const auto& fp = abzug.fingerprint;
     std::string quellenTeil = referenz.substr (referenz.find ("\"aktive_quellen\""));
     quellenTeil = quellenTeil.substr (0, quellenTeil.find (",\"match_gain_db\""));
 
@@ -1781,16 +2042,15 @@ bool EqCopilotProcessor::beginneVersuch (const juce::String& passageId)
     json += ",\"passage\":{\"passage_id\":\"" + passageId.toStdString() + "\"";
     json += ",\"projekt_von\":" + std::to_string (passage.projektStart);
     json += ",\"projekt_bis\":" + std::to_string (passage.projektEnde);
-    json += ",\"transport_epoch\":" + std::to_string (merkmale.passagenfensterEpoche());
+    json += ",\"transport_epoch\":" + std::to_string (abzug.passagenEpoche);
     json += "," + quellenTeil;
-    json += ",\"abdeckung\":" + zahl (merkmale.frame().abdeckungGesetzt
-                                        ? (double) merkmale.frame().abdeckung : 0.0);
+    json += ",\"abdeckung\":" + zahl (abzug.abdeckung);
     json += ",\"label\":" + (passage.label.isEmpty() ? std::string ("null")
                                                      : jsonText (passage.label));
     json += ",\"fingerprint\":" + fingerprintJson (fp) + "}";
     json += ",\"referenz\":" + referenz + "}";
 
-    if (! controlV3.sendePersistenzP0 (json))
+    if (! sendeVersuchP0 (json))
         return false;
     std::lock_guard<std::mutex> l (versuchMutex);
     versuchIdAktiv = versuchId;
@@ -1813,7 +2073,7 @@ bool EqCopilotProcessor::erfasseKandidat (bool kandidatZuerst)
     blindvergleich.bindeReihenfolge (kandidatZuerst
                                        ? nakama::analyse::Blindreihenfolge::kandidatZuerst
                                        : nakama::analyse::Blindreihenfolge::baselineZuerst);
-    const auto referenz = versuchReferenzJson();
+    const auto referenz = versuchReferenzJson (engineabzugLesen());
     if (referenz.empty())
         return false;
     const juce::String commandId { uuidHex32() };
@@ -1826,7 +2086,7 @@ bool EqCopilotProcessor::erfasseKandidat (bool kandidatZuerst)
     json += ",\"blindreihenfolge\":\"";
     json += kandidatZuerst ? "kandidat_zuerst" : "baseline_zuerst";
     json += "\"}";
-    return controlV3.sendePersistenzP0 (json);
+    return sendeVersuchP0 (json);
 }
 
 bool EqCopilotProcessor::urteileVersuch (const juce::String& hoerurteil,
@@ -1870,11 +2130,20 @@ bool EqCopilotProcessor::urteileVersuch (const juce::String& hoerurteil,
     json += ",\"werkzeug\":" + (werkzeug.isEmpty() ? std::string ("null")
                                                    : jsonText (werkzeug));
     json += "}";
-    if (! controlV3.sendePersistenzP0 (json))
+    if (! sendeVersuchP0 (json))
         return false;
     std::lock_guard<std::mutex> l (versuchMutex);
     versuchIdAktiv = {};
     versuchPassageId = {};
+    // 🔑 Nacharbeit 3 (Befund C8, Arbeitsregel „aktivieren↔abklingen"): der
+    // Blindvergleich wird geleert wie im Abbruchpfad.
+    //
+    // Ohne diese Zeile behielt er Urteil und `gainGesetzt` ueber das Ergebnis
+    // hinaus; der ZWEITE Versuch scheiterte danach dauerhaft an
+    // `uebernimmVergleichspegel`, weil ein Pegel genau einmal je Vergleich
+    // uebernommen werden darf. Ein Handgriff, der beim zweiten Mal stumm
+    // nicht mehr geht, ist derselbe Fehler wie ein totes Element.
+    blindvergleich.loeschen();
     return true;
 }
 
@@ -1894,7 +2163,7 @@ bool EqCopilotProcessor::brichVersuchAb()
     std::string json = "{\"type\":\"experiment_abort\",\"kopf\":" + kopf;
     json += ",\"experiment_id\":\"" + versuchId.toStdString() + "\"";
     json += ",\"grund\":\"user_abbruch\"}";
-    if (! controlV3.sendePersistenzP0 (json))
+    if (! sendeVersuchP0 (json))
         return false;
     std::lock_guard<std::mutex> l (versuchMutex);
     versuchIdAktiv = {};

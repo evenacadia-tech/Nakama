@@ -3,8 +3,10 @@
 // `Konfidenz.h` und `TruePeak.h`.
 #pragma once
 
+#include <atomic>
 #include <cmath>
 #include <cstdint>
+#include <thread>
 
 namespace nakama::analyse
 {
@@ -34,66 +36,157 @@ public:
         ist: 400 ms. Kürzer misst man einen Transienten und nennt ihn Pegel. */
     static constexpr double kMindestSekunden = 0.4;
 
+    /** Der Typ bleibt kopierbar, OBWOHL er seit Befund C6 ein Atomic haelt.
+
+        Das Tor gehoert zur INSTANZ, nicht zum Messwert: eine Kopie ist ein
+        Abzug der Zahlen, und der entsteht unter dem Zug der Quelle — nie
+        halb. Die Kopie startet mit freiem Tor. Ohne diese beiden Zeilen waere
+        der Typ still unbeweglich geworden, und jede Funktion, die einen Pegel
+        ZURUECKGIBT, haette aufgehoert zu uebersetzen. */
+    Vergleichspegel() = default;
+    Vergleichspegel (const Vergleichspegel& andere) noexcept
+    {
+        const Abzug a = andere.abzug();
+        uebernehmen (a);
+    }
+    Vergleichspegel& operator= (const Vergleichspegel& andere) noexcept
+    {
+        if (this != &andere)
+        {
+            // Erst den Abzug der Quelle, dann den eigenen Zug: zwei Zuege
+            // gleichzeitig zu halten waere die einzige Stelle, an der zwei
+            // Steuerthreads einander blockieren koennten.
+            const Abzug a = andere.abzug();
+            Steuerzug zug (tor);
+            uebernehmenIntern (a);
+        }
+        return *this;
+    }
+
     void vorbereiten (double abtastrate) noexcept
     {
+        Steuerzug zug (tor);
         fs = abtastrate > 0.0 ? abtastrate : 48000.0;
         mindestSamples = (std::uint64_t) (kMindestSekunden * fs);
-        summeA = summeB = 0.0;
-        gesehen = 0;
-        nichtEndlich = 0;
-        istEingefroren = false;
-        gehalten = 0.0;
-        gehaltenGesetzt = false;
+        leerenIntern();
     }
 
     /** Nimmt Material auf. Nach dem Einfrieren ohne Wirkung — das IST die
-        Zusage, nicht eine Bequemlichkeit. */
+        Zusage, nicht eine Bequemlichkeit.
+
+        🔑 SONDE-013 Nacharbeit 3 (Befund C6, CLAUDE.md „Audio bleibt
+        echtzeitfest"): Diese Methode laeuft im AUDIOthread, `vorbereiten`,
+        `friereEin` und `loeschen` im Nachrichtenthread — auf denselben
+        nichtatomaren Feldern. Bis zur Runde 2 trennte sie nur ein Flag
+        AUSSERHALB dieses Typs; ein Callback, der das Flag bereits gelesen
+        hatte, schrieb `summeA`, waehrend der Nachrichtenthread dieselben
+        Felder las. Das ist ein Datenrennen und damit undefiniertes Verhalten,
+        kein Genauigkeitsproblem.
+
+        Der Ausschluss liegt jetzt IM Typ und heisst `tor`. Der Audiothread
+        VERSUCHT ihn zu nehmen und laesst den Block aus, wenn gerade der
+        Nachrichtenthread darin steht — er wartet NIE, allokiert nicht und
+        loggt nicht. Ein ausgelassener Block ist ein nicht gezaehltes Sample,
+        keine falsche Zahl; die 400-ms-Schwelle wird dadurch spaeter, nie
+        falsch erreicht. */
     void speise (const float* a, const float* b, int n) noexcept
     {
-        if (istEingefroren || a == nullptr || b == nullptr || n <= 0)
+        if (a == nullptr || b == nullptr || n <= 0)
             return;
-        for (int i = 0; i < n; ++i)
+        if (! audioZugNehmen())
+            return;                    // Der Steuerthread ist drin: Block auslassen.
+        if (! istEingefroren)
         {
-            const double x = (double) a[i];
-            const double y = (double) b[i];
-            // 🔑 SONDE-013 M-07: nicht-endliche Werte werden GEZAEHLT und
-            // VERRIEGELN den Pegel.
-            //
-            // Vorher wurden sie nur uebersprungen. Eine Passage mit
-            // beschaedigten Samples lieferte danach denselben gueltigen
-            // eingefrorenen Gain wie eine kuerzere saubere — der Fehler war
-            // hinterher unsichtbar, obwohl CLAUDE.md ausdruecklich
-            // „verriegelt und gezaehlt" verlangt. Jetzt merkt der Typ sich den
-            // Fall: `friereEin()` liefert danach KEINEN Wert, und
-            // `nichtEndlicheSamples()` sagt, wie viele es waren.
-            if (! std::isfinite (x) || ! std::isfinite (y))
+            for (int i = 0; i < n; ++i)
             {
-                ++nichtEndlich;
-                continue;
+                const double x = (double) a[i];
+                const double y = (double) b[i];
+                // 🔑 SONDE-013 M-07: nicht-endliche Werte werden GEZAEHLT und
+                // VERRIEGELN den Pegel.
+                //
+                // Vorher wurden sie nur uebersprungen. Eine Passage mit
+                // beschaedigten Samples lieferte danach denselben gueltigen
+                // eingefrorenen Gain wie eine kuerzere saubere — der Fehler war
+                // hinterher unsichtbar, obwohl CLAUDE.md ausdruecklich
+                // „verriegelt und gezaehlt" verlangt. Jetzt merkt der Typ sich
+                // den Fall: `friereEin()` liefert danach KEINEN Wert, und
+                // `nichtEndlicheSamples()` sagt, wie viele es waren.
+                if (! std::isfinite (x) || ! std::isfinite (y))
+                {
+                    ++nichtEndlich;
+                    continue;
+                }
+                summeA += x * x;
+                summeB += y * y;
+                ++gesehen;
             }
-            summeA += x * x;
-            summeB += y * y;
-            ++gesehen;
+            ++bloeckeAufgenommen;
         }
+        audioZugGeben();
     }
 
     bool bereit() const noexcept
     {
-        // Ein einziges nicht-endliches Sample sperrt: der Pegel dieser Passage
-        // ist nicht mehr messbar, und eine Zahl ohne diesen Vorbehalt waere
-        // genau die unsichtbare Beschoenigung, gegen die M-07 steht.
-        return nichtEndlich == 0
-            && gesehen >= mindestSamples && summeA > 0.0 && summeB > 0.0;
+        Steuerzug zug (tor);
+        return bereitIntern();
     }
 
     /** Wie viele nicht-endliche Samples der Pegel gesehen hat. 0 heisst
         nachweislich keines, nicht „nicht gemessen". */
-    std::uint64_t nichtEndlicheSamples() const noexcept { return nichtEndlich; }
+    std::uint64_t nichtEndlicheSamples() const noexcept
+    {
+        Steuerzug zug (tor);
+        return nichtEndlich;
+    }
+
+    /** Wie viele Bloecke der Pegel wirklich AUFGENOMMEN hat.
+
+        Die Gegenzahl zu „gespeist": ein Block, den das Passagenfenster oder
+        das Tor aussortiert, erscheint hier nicht. Ein Bein misst damit, dass
+        Material AUSSERHALB der markierten Passage den Pegel nicht erreicht
+        (Befund C4) — ohne diese Zahl liesse sich „nicht aufgenommen" nicht von
+        „aufgenommen und zufaellig gleich laut" unterscheiden. */
+    std::uint64_t aufgenommeneBloecke() const noexcept
+    {
+        Steuerzug zug (tor);
+        return bloeckeAufgenommen;
+    }
+
+    /** Wie viele ENDLICHE Samples in die Summen eingegangen sind.
+
+        Die Gegenprobe zu `aufgenommeneBloecke()`: beide Zahlen entstehen im
+        selben Zug, also muss ihr Verhaeltnis fuer gleich grosse Bloecke exakt
+        aufgehen. Ein Leser, der einen halb aufgenommenen Block sieht, sieht
+        genau hier einen Rest (Befund C6). */
+    std::uint64_t gezaehlteSamples() const noexcept
+    {
+        Steuerzug zug (tor);
+        return gesehen;
+    }
+
+    /** Alle drei Zaehler in EINEM Zug — die Form, in der ihre Konsistenz
+        ueberhaupt pruefbar ist. Drei Einzelaufrufe koennten drei Staende
+        sehen und faenden den Riss nie. */
+    void zaehlerstand (std::uint64_t& bloecke, std::uint64_t& endliche,
+                       std::uint64_t& nichtEndliche) const noexcept
+    {
+        Steuerzug zug (tor);
+        bloecke = bloeckeAufgenommen;
+        endliche = gesehen;
+        nichtEndliche = nichtEndlich;
+    }
 
     /** Friert den Pegel ein. `false`, wenn zu wenig Material da ist — dann
-        bleibt er ungesetzt, statt eine Zahl zu erfinden. */
+        bleibt er ungesetzt, statt eine Zahl zu erfinden.
+
+        Nacharbeit 3 (Befund C6): das Einfrieren nimmt das Tor. Ein
+        Audiocallback, der gerade schreibt, haelt es; dieser Aufruf wartet
+        darauf und sieht danach einen VOLLSTAENDIGEN Block, nie einen halb
+        aufgenommenen. Gewartet wird ausschliesslich HIER, im
+        Nachrichtenthread. */
     bool friereEin() noexcept
     {
+        Steuerzug zug (tor);
         if (istEingefroren)
             return gehaltenGesetzt;
         if (nichtEndlich > 0)
@@ -107,7 +200,7 @@ public:
             gehaltenGesetzt = false;
             return false;
         }
-        if (! bereit())
+        if (! bereitIntern())
         {
             // Ausdrücklich KEIN Einfrieren: ein gesperrter Zustand ohne Wert
             // ist ehrlich, ein eingefrorener ohne Messung wäre eine Lüge.
@@ -121,32 +214,132 @@ public:
         return gehaltenGesetzt;
     }
 
-    bool eingefroren() const noexcept { return istEingefroren; }
-    bool gainGesetzt() const noexcept { return gehaltenGesetzt; }
+    bool eingefroren() const noexcept { Steuerzug zug (tor); return istEingefroren; }
+    bool gainGesetzt() const noexcept { Steuerzug zug (tor); return gehaltenGesetzt; }
 
     /** Der eingefrorene Ausgleich in dB (B relativ zu A). Nur gültig, wenn
         `gainGesetzt()`. */
-    double gainDb() const noexcept { return gehalten; }
+    double gainDb() const noexcept { Steuerzug zug (tor); return gehalten; }
 
     /** Verwirft den Pegel — beim Wechsel der Passage. Danach beginnt die
         Messung von vorn, denn ein Pegel gehört zu GENAU einer Passage. */
     void loeschen() noexcept
     {
+        Steuerzug zug (tor);
+        leerenIntern();
+    }
+
+private:
+    //== Das Tor (Befund C6) =================================================
+    //
+    // Drei Zustaende, ein Atomic. Der Audiothread nimmt `frei → audio` mit
+    // einem CAS und gibt bei Misserfolg AUF; der Nachrichtenthread nimmt
+    // `frei → steuerung` und wartet dabei. Das ist kein Mutex: der
+    // Audiothread blockiert nie, es gibt keine Prioritaetsinversion, kein
+    // Betriebssystemobjekt und keine Allokation.
+    enum : int { torFrei = 0, torAudio = 1, torSteuerung = 2 };
+
+    bool audioZugNehmen() const noexcept
+    {
+        int erwartet = torFrei;
+        return tor.compare_exchange_strong (erwartet, torAudio,
+                                            std::memory_order_acquire,
+                                            std::memory_order_relaxed);
+    }
+    void audioZugGeben() const noexcept
+    {
+        tor.store (torFrei, std::memory_order_release);
+    }
+
+    /** RAII-Zug des Nachrichtenthreads. Er wartet — und nur er darf das. */
+    struct Steuerzug
+    {
+        explicit Steuerzug (std::atomic<int>& t) noexcept : tor (t)
+        {
+            for (;;)
+            {
+                int erwartet = torFrei;
+                if (tor.compare_exchange_weak (erwartet, torSteuerung,
+                                               std::memory_order_acquire,
+                                               std::memory_order_relaxed))
+                    return;
+                std::this_thread::yield();
+            }
+        }
+        ~Steuerzug() { tor.store (torFrei, std::memory_order_release); }
+        Steuerzug (const Steuerzug&) = delete;
+        Steuerzug& operator= (const Steuerzug&) = delete;
+        std::atomic<int>& tor;
+    };
+
+    /** Der reine Messstand ohne Tor — die Form, in der eine Kopie entsteht. */
+    struct Abzug
+    {
+        double fs { 48000.0 };
+        std::uint64_t mindestSamples { 19200 };
+        double summeA { 0.0 }, summeB { 0.0 };
+        std::uint64_t gesehen { 0 };
+        std::uint64_t nichtEndlich { 0 };
+        std::uint64_t bloeckeAufgenommen { 0 };
+        bool istEingefroren { false };
+        double gehalten { 0.0 };
+        bool gehaltenGesetzt { false };
+    };
+
+    Abzug abzug() const noexcept
+    {
+        Steuerzug zug (tor);
+        return Abzug { fs, mindestSamples, summeA, summeB, gesehen, nichtEndlich,
+                       bloeckeAufgenommen, istEingefroren, gehalten, gehaltenGesetzt };
+    }
+
+    void uebernehmenIntern (const Abzug& a) noexcept
+    {
+        fs = a.fs;
+        mindestSamples = a.mindestSamples;
+        summeA = a.summeA;
+        summeB = a.summeB;
+        gesehen = a.gesehen;
+        nichtEndlich = a.nichtEndlich;
+        bloeckeAufgenommen = a.bloeckeAufgenommen;
+        istEingefroren = a.istEingefroren;
+        gehalten = a.gehalten;
+        gehaltenGesetzt = a.gehaltenGesetzt;
+    }
+
+    /** Nur aus dem Kopierkonstruktor: `this` ist dort noch niemandem bekannt,
+        also braucht es keinen eigenen Zug. */
+    void uebernehmen (const Abzug& a) noexcept { uebernehmenIntern (a); }
+
+    bool bereitIntern() const noexcept
+    {
+        // Ein einziges nicht-endliches Sample sperrt: der Pegel dieser Passage
+        // ist nicht mehr messbar, und eine Zahl ohne diesen Vorbehalt waere
+        // genau die unsichtbare Beschoenigung, gegen die M-07 steht.
+        return nichtEndlich == 0
+            && gesehen >= mindestSamples && summeA > 0.0 && summeB > 0.0;
+    }
+
+    void leerenIntern() noexcept
+    {
         summeA = summeB = 0.0;
         gesehen = 0;
         nichtEndlich = 0;
+        bloeckeAufgenommen = 0;
         istEingefroren = false;
         gehalten = 0.0;
         gehaltenGesetzt = false;
     }
 
-private:
+    mutable std::atomic<int> tor { torFrei };
     double fs { 48000.0 };
     std::uint64_t mindestSamples { 19200 };
     double summeA { 0.0 }, summeB { 0.0 };
     std::uint64_t gesehen { 0 };
     /// M-07: gezaehlte nicht-endliche Eingangssamples. Sie verriegeln.
     std::uint64_t nichtEndlich { 0 };
+    /// Befund C4: wie viele Bloecke wirklich in die Summen eingegangen sind.
+    std::uint64_t bloeckeAufgenommen { 0 };
     bool istEingefroren { false };
     double gehalten { 0.0 };
     bool gehaltenGesetzt { false };

@@ -727,6 +727,13 @@ target_sources(EqCopSonde013PassageStateTest PRIVATE
     src/Diagnose.cpp
 )
 target_include_directories(EqCopSonde013PassageStateTest PRIVATE src)
+# SONDE-013 Nacharbeit 3 (Befund C1): das Bein misst den Sequenzhandschlag nach
+# einem bestaetigten Resync. Dafuer muss ein ECHTER Eingriff entstehen, und der
+# verlangt einen bewiesen nicht aufnehmenden Host (M-33) - also die Hostbruecke
+# und den VST3-Prozesskontext, genau wie EqCopLebenslaufTest.
+target_include_directories(EqCopSonde013PassageStateTest PRIVATE
+    hostbridge
+    "${juce_SOURCE_DIR}/modules/juce_audio_processors/format_types/VST3_SDK")
 # SONDE-013 Nacharbeit 2 (Befunde R01/R03/R06): das Bein misst jetzt zusaetzlich
 # den Weg von der gespeicherten Passage zur Engine, den Loeschpfad des
 # Ueberlauf-Stickys und den Vergleichspegel im Produktpfad. Dafuer braucht es

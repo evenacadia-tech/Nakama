@@ -1,0 +1,245 @@
+Rotbeweis C7 - der Experimentpfad liest die FeatureEngine unter dem Analyse-Steuerzug
+Datum: 2026-09-04
+Datei: eq-copilot/plugin/src/PluginProcessor.cpp
+Test:  EqCopSonde013PassageStateTest C7 experimentpfad_liest_die_engine_unter_dem_steuerzug
+
+== 1. Fehler eingebaut ==
+ALT:     auto l = externerAnalyseSteuerZug();
+    Engineabzug a;
+    a.fingerprint = merkmale.fingerprint();
+NEU:     // Rotbeweis: ohne Zug gelesen, wie in Runde 2.
+    Engineabzug a;
+    a.fingerprint = merkmale.fingerprint();
+
+== 2. Der Test FAELLT ==
+exit=1
+== Nakama SONDE-013 - manuelle Passage als Projektintent (§33.5) ==
+
+== M-25  manual_passage_persists_in_main_project_state_and_marks_host_dirty ==
+[ok]   ein frisches Main-Projekt haelt keine Passage - kein erfundener Vorgabewert
+[ok]   eine markierte Passage wird gemerkt
+[ok]   und meldet GENAU einmal Host-Dirty  [1]
+[ok]   alle vier Intentfelder stehen unveraendert im State
+[ok]   eine unbekannte passage_id zu vergessen aendert nichts
+[ok]   und meldet folglich auch kein Dirty  [1]
+[ok]   die gemerkte Passage laesst sich vergessen
+[ok]   das Vergessen meldet Dirty wie das Merken  [2]
+[ok]   und die Liste ist wieder leer
+[ok]   eine Nicht-main-Instanz haelt keine Passagen - Â§33.5 gibt sie dem MainProject
+
+== M-69  save_load_roundtrip_is_byte_identical ==
+[ok]   Passage 3 gemerkt
+[ok]   Passage 1 gemerkt
+[ok]   Passage 2 mit 120-Zeichen-Label gemerkt
+[ok]   der geschriebene Stand ist fuer den eigenen Leser gueltig
+[ok]   drei Passagen kommen zurueck  [3]
+[ok]   und zwar nach Projektposition sortiert - die Reihenfolge ist deterministisch
+[ok]   das 120-Zeichen-Label ueberlebt vollstaendig
+[ok]   SaveâLoadâSave ist bytegleich  [543 vs 543]
+[ok]   ein Altstand OHNE das Feld laedt normal und haelt keine Passagen
+[ok]   auch der Altstand ist ueber zwei Runden bytegleich
+[ok]   die leere Liste laesst die Eigenschaft weg statt sie als leeres Array zu schreiben
+
+== M-69  unknown_newer_field_stays_read_only_with_original_bytes ==
+[ok]   ein unbekanntes ZUSATZfeld macht den Stand nicht ungueltig - additive Erweiterung
+[ok]   die bekannte Passage wird trotzdem gelesen
+[ok]   und das unbekannte Feld steht unveraendert im naechsten Save
+[ok]   unbekanntes Major: read-only
+[ok]   und KEINE Passage wird interpretiert - ein fremder Stand wird nicht halb gelesen
+[ok]   read-only verweigert auch das Merken
+[ok]   und ebenso das Vergessen
+[ok]   die Originalbytes gehen unveraendert zurueck
+[ok]   und nichts davon meldet Host-Dirty  [0]
+
+== Die Raender, Seite 1: was die API ablehnt ==
+[ok]   API: keine passage_id ausserhalb hex32
+[ok]   API: kein Label ueber 120 Codepoints
+[ok]   API: kein negativer Start - Projektsamples zaehlen ab Projektbeginn
+[ok]   API: kein leeres Fenster - `[start, ende)` ist halboffen
+[ok]   API: kein rueckwaerts laufendes Fenster
+[ok]   API: der Gutfall geht
+[ok]   API: keine zweite Passage mit derselben id
+[ok]   API: die feste Obergrenze aus Â§48.1 haelt  [64]
+[ok]   nach einem Vergessen ist wieder Platz fuer genau eine
+
+== Die Raender, Seite 2: was der Leser ablehnt ==
+[ok]   Leser: keine passage_id ausserhalb hex32 → read-only, Originalbytes zurueck
+[ok]   Leser: kein Label ueber 120 Codepoints → read-only, Originalbytes zurueck
+[ok]   Leser: kein negativer Start → read-only, Originalbytes zurueck
+[ok]   Leser: kein leeres Fenster → read-only, Originalbytes zurueck
+[ok]   Leser: kein rueckwaerts laufendes Fenster → read-only, Originalbytes zurueck
+[ok]   Leser: keine Bruchzahl als Projektsample - 44100.5 gibt es nicht → read-only,
+[...]
+ie Engine fuehrt A
+[ok]   C3: Passage B gemerkt
+[ok]   C3: die zweite Markierung haengt das Fenster auf B um
+[ok]   C3: und A fuehrt es nicht mehr
+[ok]   C3: A wird vergessen
+[ok]   C3: vergessen_trifft_nur_die_eigene_passage - B laeuft weiter
+[ok]   C3: A wird neu gemerkt
+[ok]   C3: und danach eine dritte Passage
+[ok]   C3: C fuehrt das Fenster
+[ok]   C3: beginnen_bindet_die_eigene_passage - `beginneVersuch(A)` haengt das Fenster auf A um, statt den Stand von C einzufrieren
+
+== C4  vergleichspegel_nimmt_nur_material_aus_der_passage ==
+[ok]   C4: Passage gemerkt
+[ok]   C4: die Engine fuehrt das Fenster
+[ok]   C4: kein einziger Block ausserhalb der Passage geht in den Pegel  [0]
+[ok]   C4: vergleichspegel_nimmt_nur_material_aus_der_passage - fremdes Material erreicht die 400-ms-Schwelle nicht
+[ok]   C4: zweite Passage gemerkt
+[ok]   C4: die Engine fuehrt das zweite Fenster
+[ok]   C4: und der Pegel nimmt darin auf
+[ok]   C4: Material IN der Passage wird aufgenommen  [60]
+[ok]   C4: und der Pegel friert ein - der Riegel sperrt die richtige Haelfte, nicht alles
+
+== C7  experimentpfad_liest_die_engine_unter_dem_steuerzug ==
+[ok]   C7: Passage gemerkt
+[ok]   C7: die Engine fuehrt das Fenster
+[ok]   C7: der Pegel hat genug Material
+[ok]   C7: der Versuch beginnt
+[ROT]  C7: experimentpfad_liest_die_engine_unter_dem_steuerzug - `beginneVersuch` nimmt den Zug, statt Fingerprint, Frame und Passagenepoche neben dem Analyseworker zu lesen  [0]
+[ok]   C7: der Kandidat wird erfasst
+[ROT]  C7: und `erfasseKandidat` nimmt ihn ebenso
+
+== C8  zwei_versuche_nacheinander_werden_beurteilt ==
+[ok]   C8: der ERSTE Versuch laeuft bis zum Urteil durch
+[ok]   C8: und ist danach geschlossen
+[ok]   C8: zwei_versuche_nacheinander_werden_beurteilt - der ZWEITE laeuft genauso durch, statt stumm am uebernommenen Pegel des ersten zu scheitern
+
+== C5  nicht_endliche_samples_reisen_im_wirezustand ==
+[ok]   C5: Passage gemerkt
+[ok]   C5: die Engine fuehrt das Fenster
+[ok]   C5: der Pegel hat genug Material
+[ok]   C5: der Versuch beginnt
+[ok]   C5: der Befehl steht auf der Leitung
+[ok]   C5: nicht_endliche_samples_reisen_im_wirezustand - das Feld steht im GESENDETEN Referenzobjekt, nicht nur in einem Getter
+[ok]   C5: und traegt bei sauberem Material die 0 - NACHWEISLICH keines, nicht 'nicht gemessen'  [0]
+[ok]   C5: der Kandidat wird erfasst
+[ok]   C5: und der Kandidat traegt sie auch
+
+== C1  erste_intervention_nach_resync_traegt_sequenz_eins ==
+[ok]   C1: der gemeinsame Handschlag steht in fixtures/v3/handschlag-v1.json  [Basis 0, erste 1]
+[ok]   C1: vor dem Resync sind Begin und Ende wirklich entstanden  [2]
+[ok]   C1: der Marker ist vor dem Resync still
+[ok]   C1: der erste Eingriff nach dem Resync steht auf der Leitung
+[ok]   C1: erste_intervention_nach_resync_traegt_sequenz_eins - genau die Zahl, die der Broker nach `resync_bestaetigen(link, 0)` erwartet  [gesendet 1, erwartet 1]
+[ok]   C1: und es ist wirklich ein Begin, nicht irgendeine Nachricht
+
+125 bestanden, 2 gescheitert
+
+
+== 3. Fehler entfernt, der Test ist GRUEN ==
+exit=0
+== Nakama SONDE-013 - manuelle Passage als Projektintent (§33.5) ==
+
+== M-25  manual_passage_persists_in_main_project_state_and_marks_host_dirty ==
+[ok]   ein frisches Main-Projekt haelt keine Passage - kein erfundener Vorgabewert
+[ok]   eine markierte Passage wird gemerkt
+[ok]   und meldet GENAU einmal Host-Dirty  [1]
+[ok]   alle vier Intentfelder stehen unveraendert im State
+[ok]   eine unbekannte passage_id zu vergessen aendert nichts
+[ok]   und meldet folglich auch kein Dirty  [1]
+[ok]   die gemerkte Passage laesst sich vergessen
+[ok]   das Vergessen meldet Dirty wie das Merken  [2]
+[ok]   und die Liste ist wieder leer
+[ok]   eine Nicht-main-Instanz haelt keine Passagen - Â§33.5 gibt sie dem MainProject
+
+== M-69  save_load_roundtrip_is_byte_identical ==
+[ok]   Passage 3 gemerkt
+[ok]   Passage 1 gemerkt
+[ok]   Passage 2 mit 120-Zeichen-Label gemerkt
+[ok]   der geschriebene Stand ist fuer den eigenen Leser gueltig
+[ok]   drei Passagen kommen zurueck  [3]
+[ok]   und zwar nach Projektposition sortiert - die Reihenfolge ist deterministisch
+[ok]   das 120-Zeichen-Label ueberlebt vollstaendig
+[ok]   SaveâLoadâSave ist bytegleich  [543 vs 543]
+[ok]   ein Altstand OHNE das Feld laedt normal und haelt keine Passagen
+[ok]   auch der Altstand ist ueber zwei Runden bytegleich
+[ok]   die leere Liste laesst die Eigenschaft weg statt sie als leeres Array zu schreiben
+
+== M-69  unknown_newer_field_stays_read_only_with_original_bytes ==
+[ok]   ein unbekanntes ZUSATZfeld macht den Stand nicht ungueltig - additive Erweiterung
+[ok]   die bekannte Passage wird trotzdem gelesen
+[ok]   und das unbekannte Feld steht unveraendert im naechsten Save
+[ok]   unbekanntes Major: read-only
+[ok]   und KEINE Passage wird interpretiert - ein fremder Stand wird nicht halb gelesen
+[ok]   read-only verweigert auch das Merken
+[ok]   und ebenso das Vergessen
+[ok]   die Originalbytes gehen unveraendert zurueck
+[ok]   und nichts davon meldet Host-Dirty  [0]
+
+== Die Raender, Seite 1: was die API ablehnt ==
+[ok]   API: keine passage_id ausserhalb hex32
+[ok]   API: kein Label ueber 120 Codepoints
+[ok]   API: kein negativer Start - Projektsamples zaehlen ab Projektbeginn
+[ok]   API: kein leeres Fenster - `[start, ende)` ist halboffen
+[ok]   API: kein rueckwaerts laufendes Fenster
+[ok]   API: der Gutfall geht
+[ok]   API: keine zweite Passage mit derselben id
+[ok]   API: die feste Obergrenze aus Â§48.1 haelt  [64]
+[ok]   nach einem Vergessen ist wieder Platz fuer genau eine
+
+== Die Raender, Seite 2: was der Leser ablehnt ==
+[ok]   Leser: keine passage_id ausserhalb hex32 → read-only, Originalbytes zurueck
+[ok]   Leser: kein Label ueber 120 Codepoints → read-only, Originalbytes zurueck
+[ok]   Leser: kein negativer Start → read-only, Originalbytes zurueck
+[ok]   Leser: kein leeres Fenster → read-only, Originalbytes zurueck
+[ok]   Leser: kein rueckwaerts laufendes Fenster → read-only, Originalbytes zurueck
+[ok]   Leser: keine Bruchzahl als Projektsample - 44100.5 gibt es nicht → read-only,
+[...]
+ie Engine fuehrt A
+[ok]   C3: Passage B gemerkt
+[ok]   C3: die zweite Markierung haengt das Fenster auf B um
+[ok]   C3: und A fuehrt es nicht mehr
+[ok]   C3: A wird vergessen
+[ok]   C3: vergessen_trifft_nur_die_eigene_passage - B laeuft weiter
+[ok]   C3: A wird neu gemerkt
+[ok]   C3: und danach eine dritte Passage
+[ok]   C3: C fuehrt das Fenster
+[ok]   C3: beginnen_bindet_die_eigene_passage - `beginneVersuch(A)` haengt das Fenster auf A um, statt den Stand von C einzufrieren
+
+== C4  vergleichspegel_nimmt_nur_material_aus_der_passage ==
+[ok]   C4: Passage gemerkt
+[ok]   C4: die Engine fuehrt das Fenster
+[ok]   C4: kein einziger Block ausserhalb der Passage geht in den Pegel  [0]
+[ok]   C4: vergleichspegel_nimmt_nur_material_aus_der_passage - fremdes Material erreicht die 400-ms-Schwelle nicht
+[ok]   C4: zweite Passage gemerkt
+[ok]   C4: die Engine fuehrt das zweite Fenster
+[ok]   C4: und der Pegel nimmt darin auf
+[ok]   C4: Material IN der Passage wird aufgenommen  [60]
+[ok]   C4: und der Pegel friert ein - der Riegel sperrt die richtige Haelfte, nicht alles
+
+== C7  experimentpfad_liest_die_engine_unter_dem_steuerzug ==
+[ok]   C7: Passage gemerkt
+[ok]   C7: die Engine fuehrt das Fenster
+[ok]   C7: der Pegel hat genug Material
+[ok]   C7: der Versuch beginnt
+[ok]   C7: experimentpfad_liest_die_engine_unter_dem_steuerzug - `beginneVersuch` nimmt den Zug, statt Fingerprint, Frame und Passagenepoche neben dem Analyseworker zu lesen  [1]
+[ok]   C7: der Kandidat wird erfasst
+[ok]   C7: und `erfasseKandidat` nimmt ihn ebenso
+
+== C8  zwei_versuche_nacheinander_werden_beurteilt ==
+[ok]   C8: der ERSTE Versuch laeuft bis zum Urteil durch
+[ok]   C8: und ist danach geschlossen
+[ok]   C8: zwei_versuche_nacheinander_werden_beurteilt - der ZWEITE laeuft genauso durch, statt stumm am uebernommenen Pegel des ersten zu scheitern
+
+== C5  nicht_endliche_samples_reisen_im_wirezustand ==
+[ok]   C5: Passage gemerkt
+[ok]   C5: die Engine fuehrt das Fenster
+[ok]   C5: der Pegel hat genug Material
+[ok]   C5: der Versuch beginnt
+[ok]   C5: der Befehl steht auf der Leitung
+[ok]   C5: nicht_endliche_samples_reisen_im_wirezustand - das Feld steht im GESENDETEN Referenzobjekt, nicht nur in einem Getter
+[ok]   C5: und traegt bei sauberem Material die 0 - NACHWEISLICH keines, nicht 'nicht gemessen'  [0]
+[ok]   C5: der Kandidat wird erfasst
+[ok]   C5: und der Kandidat traegt sie auch
+
+== C1  erste_intervention_nach_resync_traegt_sequenz_eins ==
+[ok]   C1: der gemeinsame Handschlag steht in fixtures/v3/handschlag-v1.json  [Basis 0, erste 1]
+[ok]   C1: vor dem Resync sind Begin und Ende wirklich entstanden  [2]
+[ok]   C1: der Marker ist vor dem Resync still
+[ok]   C1: der erste Eingriff nach dem Resync steht auf der Leitung
+[ok]   C1: erste_intervention_nach_resync_traegt_sequenz_eins - genau die Zahl, die der Broker nach `resync_bestaetigen(link, 0)` erwartet  [gesendet 1, erwartet 1]
+[ok]   C1: und es ist wirklich ein Begin, nicht irgendeine Nachricht
+
+127 bestanden, 0 gescheitert

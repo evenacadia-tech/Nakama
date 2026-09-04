@@ -35,8 +35,11 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_data_structures/juce_data_structures.h>
 
+#include "HoerMarkierung.h"
 #include "NakamaState.h"
 #include "PluginProcessor.h"
+
+#include <pluginterfaces/vst/ivstprocesscontext.h>
 
 #include <chrono>
 #include <cstring>
@@ -48,6 +51,12 @@
 
 using namespace eqcop;
 namespace state = nakama::state;
+
+// SONDE-013 Nacharbeit 3 (Befund C1): der Hoermarker verlangt einen BEWIESEN
+// nicht aufnehmenden Host, und der Aufnahmezustand kommt ausschliesslich ueber
+// die Hostbruecke (M-33). Ohne sie koennte dieses Bein keinen Eingriff
+// erzeugen und damit auch keine Sequenz messen.
+using VstKontext = Steinberg::Vst::ProcessContext;
 
 namespace
 {
@@ -135,6 +144,141 @@ std::unique_ptr<EqCopilotProcessor> mainProzessor()
     const auto saat = alsBlock (mainBaum());
     p->setStateInformation (saat.getData(), (int) saat.getSize());
     return p;
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// NACHARBEIT 3 · die Passage bindet, und sie bindet GENAU EINE
+// ═════════════════════════════════════════════════════════════════════════
+//
+// 🔑 Wiederpruefung 2 (Befunde C2, C3, C4, C7): die Runde 2 hat den Weg von
+// der markierten Passage zur Engine gebaut, aber als EINEN globalen Slot ohne
+// Passagen-, Zeit- und Epochenbindung. Die Beine dieser Runde fahren genau
+// die Konstellationen, in denen ein globaler Slot faellt: zwei Passagen, ein
+// Seek zwischen Markierung und Workerlauf, und Wiedergabe AUSSERHALB des
+// markierten Fensters.
+
+/** Ein Transport, den der Test bewegt. Ohne ihn misst dieses Bein einen Pfad,
+    den das Produkt seit SONDE-008 nicht mehr hat: der Vergleichspegel
+    verlangt gueltige Projektzeit UND „spielt". */
+struct TestPlayHead : juce::AudioPlayHead
+{
+    bool spielt = true;
+    juce::int64 pos = 0;
+    juce::Optional<PositionInfo> getPosition() const override
+    {
+        PositionInfo p;
+        p.setIsPlaying (spielt);
+        p.setTimeInSamples (pos);
+        return p;
+    }
+};
+
+constexpr int kBlock = 512;
+constexpr double kFs = 48000.0;
+
+/** Ein Main mit GUELTIGER v3-Adresse — sonst baut `versuchKopfJson` keinen
+    Kopf und kein Versuch entsteht, egal wie gut der Pegel ist. */
+juce::MemoryBlock mainBaumMitBindung()
+{
+    juce::ValueTree v ("NakamaState");
+    v.setProperty ("schema", 2, nullptr);
+    juce::ValueTree c ("Common");
+    c.setProperty ("schema", 1, nullptr);
+    c.setProperty ("instance_id", hex32 (0x1234), nullptr);
+    c.setProperty ("project_binding_id", hex32 (0x55), nullptr);
+    c.setProperty ("plugin_kind", "main", nullptr);
+    c.setProperty ("measurement_position", "insert", nullptr);
+    c.setProperty ("label", "Leitstand", nullptr);
+    v.appendChild (c, nullptr);
+    juce::ValueTree m ("MainProject");
+    m.setProperty ("schema", 1, nullptr);
+    v.appendChild (m, nullptr);
+    juce::MemoryBlock b;
+    juce::MemoryOutputStream s (b, false);
+    v.writeToStream (s);
+    s.flush();
+    return b;
+}
+
+std::unique_ptr<EqCopilotProcessor> mainProzessorMitBindung()
+{
+    auto p = std::make_unique<EqCopilotProcessor>();
+    const auto saat = mainBaumMitBindung();
+    p->setStateInformation (saat.getData(), (int) saat.getSize());
+    return p;
+}
+
+/** Eine klassifizierte Quelle mit bekanntem Messpunkt — ohne sie liefert
+    `versuchReferenzJson` einen leeren Text und der Versuch entsteht nicht. */
+eqcop::SourcesModel::Sicht eineQuelle()
+{
+    eqcop::SourcesModel::Sicht s;
+    s.subscriptionAktiv = true;
+    s.mainDarfSchreiben = true;
+    s.fuehrendesMain = hex32 (0x1234).toStdString();
+    eqcop::SourcesModel::Zeile q;
+    q.instanceId = hex32 (0xA1).toStdString();
+    q.runtimeNonce = hex32 (0xB1).toStdString();
+    q.pluginKind = "active_probe";
+    q.mitgliedschaft = eqcop::SourcesModel::Mitgliedschaft::bestaetigt;
+    q.control = eqcop::SourcesModel::Control::verbunden;
+    q.messung = eqcop::SourcesModel::Messung::fresh;
+    q.betrieb = eqcop::SourcesModel::Betrieb::active;
+    q.lautheit = eqcop::SourcesModel::Lautheit::gueltig;
+    q.messpunkt = eqcop::SourcesModel::Messpunkt::insert;
+    q.descriptorVorhanden = true;
+    q.hauptziel = true;
+    s.quellen.push_back (q);
+    return s;
+}
+
+/** Faehrt `anzahl` Bloecke und bewegt den Transport dabei wie ein Host. */
+void fahre (EqCopilotProcessor& p, TestPlayHead& kopf,
+            juce::AudioBuffer<float>& puffer, int anzahl, float wert = 0.5f)
+{
+    juce::MidiBuffer midi;
+    for (int i = 0; i < anzahl; ++i)
+    {
+        for (int c = 0; c < puffer.getNumChannels(); ++c)
+            for (int s = 0; s < puffer.getNumSamples(); ++s)
+                puffer.setSample (c, s, wert);
+        p.processBlock (puffer, midi);
+        kopf.pos += puffer.getNumSamples();
+    }
+}
+
+/** Wartet, bis eine Bedingung gilt — und faehrt dabei Audio, damit der
+    Analyseworker ueberhaupt etwas zu tun bekommt. */
+template <typename Pruefung>
+bool warte (EqCopilotProcessor& p, TestPlayHead& kopf,
+            juce::AudioBuffer<float>& puffer, Pruefung pruefung)
+{
+    for (int i = 0; i < 400; ++i)
+    {
+        fahre (p, kopf, puffer, 1);
+        if (pruefung())
+            return true;
+        std::this_thread::sleep_for (std::chrono::milliseconds (2));
+    }
+    return false;
+}
+
+/** Faehrt so lange, bis der Vergleichspegel genug Bloecke AUFGENOMMEN hat.
+
+    Eine feste Blockzahl waere eine Zeitannahme: der Analyseworker setzt das
+    Fenster asynchron, und bis dahin nimmt der Audiothread nichts auf. Gemessen
+    wird deshalb die Zahl, um die es geht — 400 ms bei 512 Samples sind
+    37,5 Bloecke, und 60 lassen Luft, ohne eine Uhr zu befragen. */
+bool fahreBisPegel (EqCopilotProcessor& p, TestPlayHead& kopf,
+                    juce::AudioBuffer<float>& puffer, juce::uint64 mindestens = 60)
+{
+    for (int i = 0; i < 1200; ++i)
+    {
+        fahre (p, kopf, puffer, 1);
+        if (p.versuchAufgenommeneBloecke() >= mindestens)
+            return true;
+    }
+    return false;
 }
 
 juce::Array<juce::var> vier (juce::var a, juce::var b, juce::var c, juce::var d)
@@ -560,19 +704,10 @@ void r06Vergleichspegel()
 {
     abschnitt ("R06  vergleichspegel_und_blindvergleich_im_produktpfad");
     auto p = mainProzessor();
-    p->prepareToPlay (48000.0, 512);
-
-    juce::AudioBuffer<float> puffer (2, 512);
-    juce::MidiBuffer midi;
-    auto sende = [&] (float wert, bool nichtEndlich)
-    {
-        for (int c = 0; c < 2; ++c)
-            for (int i = 0; i < puffer.getNumSamples(); ++i)
-                puffer.setSample (c, i, nichtEndlich && i == 0
-                                          ? std::numeric_limits<float>::quiet_NaN()
-                                          : wert);
-        p->processBlock (puffer, midi);
-    };
+    p->prepareToPlay (kFs, kBlock);
+    TestPlayHead kopf;
+    p->setPlayHead (&kopf);
+    juce::AudioBuffer<float> puffer (2, kBlock);
 
     pruefe (! p->versuchLautheitAbgeglichen(),
             "R06: ohne markierte Passage misst der Vergleichspegel nicht");
@@ -580,13 +715,17 @@ void r06Vergleichspegel()
             "R06: und zaehlt nichts");
 
     // Die markierte Passage schaltet die Vorabmessung ein (Paragraph 38.3).
-    pruefe (p->merkeManuellePassage (hex32 (8), "Refrain", 0, 960000),
+    //
+    // 🔑 Nacharbeit 3 (Befund C4): dieses Bein faehrt seither einen ECHTEN
+    // Transport. Der Pegel nimmt nur Material aus dem Fenster der gebundenen
+    // Passage, und ohne gueltige Projektzeit gaebe es davon keines.
+    fahre (*p, kopf, puffer, 20);
+    pruefe (p->merkeManuellePassage (hex32 (8), "Refrain", 0, 4800000),
             "R06: die Passage wird gemerkt");
-    // Reichlich Material: der Pegel braucht mindestens 400 ms.
-    for (int i = 0; i < 200; ++i)
-        sende (0.5f, false);
-    pruefe (p->beginneVersuch (hex32 (8)) || ! p->laufenderVersuch().isNotEmpty(),
-            "R06: `beginneVersuch` friert den Pegel ein, bevor irgendetwas reist");
+    pruefe (warte (*p, kopf, puffer, [&] { return p->passagenfensterFuehrt (hex32 (8)); }),
+            "R06: und die Engine fuehrt ihr Fenster");
+    pruefe (fahreBisPegel (*p, kopf, puffer), "R06: der Pegel hat genug Material");
+    (void) p->beginneVersuch (hex32 (8));
     pruefe (p->versuchLautheitAbgeglichen(),
             "R06: vergleichspegel_ist_im_produktpfad_eingefroren - der Pegel ist "
             "gesetzt, nicht nur messbar",
@@ -597,30 +736,471 @@ void r06Vergleichspegel()
 
     // Und derselbe Weg mit beschaedigtem Material: der Zaehler REIST.
     auto q = mainProzessor();
-    q->prepareToPlay (48000.0, 512);
-    pruefe (q->merkeManuellePassage (hex32 (9), "Refrain", 0, 960000),
+    q->prepareToPlay (kFs, kBlock);
+    TestPlayHead kopf2;
+    q->setPlayHead (&kopf2);
+    juce::AudioBuffer<float> puffer2 (2, kBlock);
+    fahre (*q, kopf2, puffer2, 20);
+    pruefe (q->merkeManuellePassage (hex32 (9), "Refrain", 0, 4800000),
             "R06: zweite Passage gemerkt");
-    juce::AudioBuffer<float> puffer2 (2, 512);
+    pruefe (warte (*q, kopf2, puffer2, [&] { return q->passagenfensterFuehrt (hex32 (9)); }),
+            "R06: und auch hier fuehrt die Engine das Fenster");
+    juce::MidiBuffer midi2;
     for (int i = 0; i < 200; ++i)
     {
         for (int c = 0; c < 2; ++c)
-            for (int s = 0; s < puffer2.getNumSamples(); ++s)
-                puffer2.setSample (c, s, s == 0 ? std::numeric_limits<float>::quiet_NaN()
-                                                : 0.5f);
-        q->processBlock (puffer2, midi);
+            for (int sp = 0; sp < puffer2.getNumSamples(); ++sp)
+                puffer2.setSample (c, sp, sp == 0 ? std::numeric_limits<float>::quiet_NaN()
+                                                  : 0.5f);
+        q->processBlock (puffer2, midi2);
+        kopf2.pos += puffer2.getNumSamples();
     }
     pruefe (! q->beginneVersuch (hex32 (9)),
             "R06: mit nichtendlichem Material entsteht KEIN Versuch - eine "
             "Klangwertung ohne Lautheitsabgleich ist unzulaessig (Paragraph 15)");
     pruefe (q->versuchNichtEndlicheSamples() > 0,
-            "R06: nichtendliche_samples_reisen_in_den_wirezustand - der Zaehler "
-            "hat einen PRODUKTLESER, statt nur lokal zu verriegeln",
+            "R06: der Zaehler hat einen PRODUKTLESER, statt nur lokal zu "
+            "verriegeln",
             juce::String ((juce::int64) q->versuchNichtEndlicheSamples()));
     pruefe (! q->versuchLautheitAbgeglichen(),
             "R06: und der Pegel bleibt ungesetzt");
 
+    p->setPlayHead (nullptr);
+    q->setPlayHead (nullptr);
     p->releaseResources();
     q->releaseResources();
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// C2 · die beim MARKIEREN erfasste Epoche entscheidet
+// ─────────────────────────────────────────────────────────────────────────
+void c2Markierungsepoche()
+{
+    abschnitt ("C2  seek_zwischen_markierung_und_worker_verwirft_das_fenster");
+    auto p = mainProzessorMitBindung();
+    p->prepareToPlay (kFs, kBlock);
+    TestPlayHead kopf;
+    p->setPlayHead (&kopf);
+    juce::AudioBuffer<float> puffer (2, kBlock);
+
+    fahre (*p, kopf, puffer, 40);
+    const auto e0 = p->merkmaleTransportEpoche();
+
+    // Ein Seek IST eine Transportgrenze (Paragraph 32.3). Danach zeigen
+    // dieselben Samplegrenzen auf anderes Material.
+    kopf.pos = 4000000;
+    const bool gewechselt = warte (*p, kopf, puffer,
+        [&] { return p->merkmaleTransportEpoche() > e0; });
+    pruefe (gewechselt, "C2: der Seek erzeugt eine neue Transportepoche",
+            juce::String ((juce::int64) p->merkmaleTransportEpoche()));
+    const auto e1 = p->merkmaleTransportEpoche();
+
+    // Der Fall des Befunds: die Markierung erfasste `e0`, der Worker laeuft
+    // erst nach dem Seek. Bis zur Runde 2 las er die Epoche aus der Engine —
+    // also `e1` gegen `e1` — und der Riegel konnte nie greifen.
+    pruefe (p->passagenfensterWunschFuerTest (hex32 (0x21), 4000000, 4960000, e0),
+            "C2: der Wunsch mit der ALTEN Epoche wird abgelegt");
+    bool spaeterGesetzt = false;
+    for (int i = 0; i < 120; ++i)
+    {
+        fahre (*p, kopf, puffer, 1);
+        std::this_thread::sleep_for (std::chrono::milliseconds (2));
+        if (p->passagenfensterFuehrt (hex32 (0x21)))
+            spaeterGesetzt = true;
+    }
+    pruefe (! spaeterGesetzt,
+            "C2: seek_zwischen_markierung_und_worker_verwirft_das_fenster - die "
+            "Engine nimmt Grenzen einer FREMDEN Epoche nicht an");
+
+    // Die Gegenprobe: derselbe Weg mit der Epoche, die jetzt gilt.
+    pruefe (p->passagenfensterWunschFuerTest (hex32 (0x22), 4000000, 4960000, e1),
+            "C2: derselbe Wunsch mit der aktuellen Epoche wird abgelegt");
+    pruefe (warte (*p, kopf, puffer, [&] { return p->passagenfensterFuehrt (hex32 (0x22)); }),
+            "C2: und DIESES Fenster fuehrt die Engine - der Riegel sperrt die "
+            "richtige Haelfte, nicht alles");
+
+    p->setPlayHead (nullptr);
+    p->releaseResources();
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// C3 · das Fenster gehoert GENAU EINER Passage
+// ─────────────────────────────────────────────────────────────────────────
+void c3ZweiPassagen()
+{
+    abschnitt ("C3  vergessen_und_beginnen_treffen_nur_die_eigene_passage");
+    auto p = mainProzessorMitBindung();
+    p->prepareToPlay (kFs, kBlock);
+    TestPlayHead kopf;
+    p->setPlayHead (&kopf);
+    juce::AudioBuffer<float> puffer (2, kBlock);
+    fahre (*p, kopf, puffer, 20);
+
+    const auto a = hex32 (0x31), b = hex32 (0x32);
+    pruefe (p->merkeManuellePassage (a, "A", 0, 960000), "C3: Passage A gemerkt");
+    pruefe (warte (*p, kopf, puffer, [&] { return p->passagenfensterFuehrt (a); }),
+            "C3: und die Engine fuehrt A");
+
+    pruefe (p->merkeManuellePassage (b, "B", 960000, 1920000), "C3: Passage B gemerkt");
+    pruefe (warte (*p, kopf, puffer, [&] { return p->passagenfensterFuehrt (b); }),
+            "C3: die zweite Markierung haengt das Fenster auf B um");
+    pruefe (! p->passagenfensterFuehrt (a), "C3: und A fuehrt es nicht mehr");
+
+    // DER Befund: `vergiss(A)` loeschte bis zur Runde 2 bedingungslos das
+    // globale Fenster und stoppte damit die Messung von B.
+    pruefe (p->vergissManuellePassage (a), "C3: A wird vergessen");
+    fahre (*p, kopf, puffer, 20);
+    pruefe (p->passagenfensterFuehrt (b),
+            "C3: vergessen_trifft_nur_die_eigene_passage - B laeuft weiter");
+
+    // Und die zweite Haelfte: `beginne(A)` haengt das Fenster auf A um,
+    // statt den zuletzt gesetzten globalen Stand einzufrieren.
+    pruefe (p->merkeManuellePassage (a, "A", 0, 960000), "C3: A wird neu gemerkt");
+    pruefe (p->merkeManuellePassage (hex32 (0x33), "C", 1920000, 2880000),
+            "C3: und danach eine dritte Passage");
+    pruefe (warte (*p, kopf, puffer, [&] { return p->passagenfensterFuehrt (hex32 (0x33)); }),
+            "C3: C fuehrt das Fenster");
+    (void) p->beginneVersuch (a);
+    pruefe (warte (*p, kopf, puffer, [&] { return p->passagenfensterFuehrt (a); }),
+            "C3: beginnen_bindet_die_eigene_passage - `beginneVersuch(A)` haengt "
+            "das Fenster auf A um, statt den Stand von C einzufrieren");
+
+    p->setPlayHead (nullptr);
+    p->releaseResources();
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// C4 · der Vergleichspegel nimmt nur Material AUS der Passage
+// ─────────────────────────────────────────────────────────────────────────
+void c4PegelNurImFenster()
+{
+    abschnitt ("C4  vergleichspegel_nimmt_nur_material_aus_der_passage");
+    auto p = mainProzessorMitBindung();
+    p->prepareToPlay (kFs, kBlock);
+    TestPlayHead kopf;
+    kopf.pos = 480000;                       // WEIT ausserhalb des Fensters
+    p->setPlayHead (&kopf);
+    juce::AudioBuffer<float> puffer (2, kBlock);
+    fahre (*p, kopf, puffer, 20);
+
+    const auto a = hex32 (0x41);
+    pruefe (p->merkeManuellePassage (a, "Refrain", 0, 96000), "C4: Passage gemerkt");
+    pruefe (warte (*p, kopf, puffer, [&] { return p->passagenfensterFuehrt (a); }),
+            "C4: die Engine fuehrt das Fenster");
+
+    // 250 Bloecke = rund 2,7 Sekunden — weit ueber der 400-ms-Schwelle, und
+    // KEIN Sample davon liegt in der Passage.
+    fahre (*p, kopf, puffer, 250);
+    pruefe (p->versuchAufgenommeneBloecke() == 0,
+            "C4: kein einziger Block ausserhalb der Passage geht in den Pegel",
+            juce::String ((juce::int64) p->versuchAufgenommeneBloecke()));
+    (void) p->beginneVersuch (a);
+    pruefe (! p->versuchLautheitAbgeglichen(),
+            "C4: vergleichspegel_nimmt_nur_material_aus_der_passage - fremdes "
+            "Material erreicht die 400-ms-Schwelle nicht");
+
+    // Die Gegenprobe im selben Lauf: eine Passage, durch die wirklich
+    // gespielt wird. Der Seek dorthin ist eine Epochengrenze, also wird sie
+    // DANACH markiert — genau wie der User es taete.
+    kopf.pos = 0;
+    fahre (*p, kopf, puffer, 20);
+    const auto b = hex32 (0x42);
+    pruefe (p->merkeManuellePassage (b, "Strophe", 0, 960000), "C4: zweite Passage gemerkt");
+    pruefe (warte (*p, kopf, puffer, [&] { return p->passagenfensterFuehrt (b); }),
+            "C4: die Engine fuehrt das zweite Fenster");
+    pruefe (fahreBisPegel (*p, kopf, puffer),
+            "C4: und der Pegel nimmt darin auf");
+    pruefe (p->versuchAufgenommeneBloecke() > 0,
+            "C4: Material IN der Passage wird aufgenommen",
+            juce::String ((juce::int64) p->versuchAufgenommeneBloecke()));
+    (void) p->beginneVersuch (b);
+    pruefe (p->versuchLautheitAbgeglichen(),
+            "C4: und der Pegel friert ein - der Riegel sperrt die richtige "
+            "Haelfte, nicht alles");
+
+    p->setPlayHead (nullptr);
+    p->releaseResources();
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// C7 · der Experimentpfad nimmt den Analyse-Steuerzug
+// ─────────────────────────────────────────────────────────────────────────
+void c7EngineZug()
+{
+    abschnitt ("C7  experimentpfad_liest_die_engine_unter_dem_steuerzug");
+    auto p = mainProzessorMitBindung();
+    p->setzeSourcesFixtureFuerTest (eineQuelle());
+    p->prepareToPlay (kFs, kBlock);
+    TestPlayHead kopf;
+    p->setPlayHead (&kopf);
+    juce::AudioBuffer<float> puffer (2, kBlock);
+    fahre (*p, kopf, puffer, 20);
+
+    const auto a = hex32 (0x51);
+    pruefe (p->merkeManuellePassage (a, "Refrain", 0, 960000), "C7: Passage gemerkt");
+    pruefe (warte (*p, kopf, puffer, [&] { return p->passagenfensterFuehrt (a); }),
+            "C7: die Engine fuehrt das Fenster");
+    pruefe (fahreBisPegel (*p, kopf, puffer), "C7: der Pegel hat genug Material");
+
+    const auto vorher = p->analyseSteuerZuege();
+    const bool begonnen = p->beginneVersuch (a);
+    const auto nachher = p->analyseSteuerZuege();
+    pruefe (begonnen, "C7: der Versuch beginnt");
+    pruefe (nachher > vorher,
+            "C7: experimentpfad_liest_die_engine_unter_dem_steuerzug - "
+            "`beginneVersuch` nimmt den Zug, statt Fingerprint, Frame und "
+            "Passagenepoche neben dem Analyseworker zu lesen",
+            juce::String ((juce::int64) (nachher - vorher)));
+
+    const auto vorKandidat = p->analyseSteuerZuege();
+    pruefe (p->erfasseKandidat (true), "C7: der Kandidat wird erfasst");
+    pruefe (p->analyseSteuerZuege() > vorKandidat,
+            "C7: und `erfasseKandidat` nimmt ihn ebenso");
+
+    p->setPlayHead (nullptr);
+    p->releaseResources();
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// C8 · nach einem Ergebnis ist der naechste Versuch wieder moeglich
+// ─────────────────────────────────────────────────────────────────────────
+void c8ZweiVersucheNacheinander()
+{
+    abschnitt ("C8  zwei_versuche_nacheinander_werden_beurteilt");
+    auto p = mainProzessorMitBindung();
+    p->setzeSourcesFixtureFuerTest (eineQuelle());
+    p->prepareToPlay (kFs, kBlock);
+    TestPlayHead kopf;
+    p->setPlayHead (&kopf);
+    juce::AudioBuffer<float> puffer (2, kBlock);
+    fahre (*p, kopf, puffer, 20);
+
+    auto versuchFahren = [&] (const juce::String& id, const juce::String& label,
+                              int nummer) -> bool
+    {
+        if (! p->merkeManuellePassage (id, label, 0, 4800000))
+            return false;
+        if (! warte (*p, kopf, puffer, [&] { return p->passagenfensterFuehrt (id); }))
+            return false;
+        if (! fahreBisPegel (*p, kopf, puffer))
+            return false;
+        if (! p->beginneVersuch (id))
+            return false;
+        if (! p->erfasseKandidat (nummer % 2 == 0))
+            return false;
+        return p->urteileVersuch ("kandidat", {}, {});
+    };
+
+    pruefe (versuchFahren (hex32 (0x61), "Erster", 0),
+            "C8: der ERSTE Versuch laeuft bis zum Urteil durch");
+    pruefe (p->laufenderVersuch().isEmpty(),
+            "C8: und ist danach geschlossen");
+    // DER Befund: `urteileVersuch` leerte den `Blindvergleich` nicht. Er
+    // behielt Urteil und `gainGesetzt`, und `uebernimmVergleichspegel` lehnte
+    // jeden weiteren Pegel dauerhaft ab.
+    pruefe (versuchFahren (hex32 (0x62), "Zweiter", 1),
+            "C8: zwei_versuche_nacheinander_werden_beurteilt - der ZWEITE laeuft "
+            "genauso durch, statt stumm am uebernommenen Pegel des ersten zu "
+            "scheitern");
+
+    p->setPlayHead (nullptr);
+    p->releaseResources();
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// C5 · der Nichtendlich-Zaehler reist im WIREZUSTAND
+// ─────────────────────────────────────────────────────────────────────────
+//
+// 🔑 Wiederpruefung 2 (Befund C5, M-07/R06): die Runde 2 machte den Zaehler
+// nur ueber einen lokalen Getter sichtbar, und der R06-Fall rief genau diesen
+// Getter auf. „Reist in den Wirezustand" war damit eine Behauptung ueber eine
+// Zeile, die es nicht gab — und der Test konnte an ihrem Fehlen nicht fallen.
+// Dieser Fall liest den TEXT, der wirklich gesendet wurde.
+void c5ZaehlerImWirezustand()
+{
+    abschnitt ("C5  nicht_endliche_samples_reisen_im_wirezustand");
+    auto p = mainProzessorMitBindung();
+    p->setzeSourcesFixtureFuerTest (eineQuelle());
+    p->prepareToPlay (kFs, kBlock);
+    TestPlayHead kopf;
+    p->setPlayHead (&kopf);
+    juce::AudioBuffer<float> puffer (2, kBlock);
+    fahre (*p, kopf, puffer, 20);
+
+    const auto a = hex32 (0x71);
+    pruefe (p->merkeManuellePassage (a, "Refrain", 0, 4800000), "C5: Passage gemerkt");
+    pruefe (warte (*p, kopf, puffer, [&] { return p->passagenfensterFuehrt (a); }),
+            "C5: die Engine fuehrt das Fenster");
+    pruefe (fahreBisPegel (*p, kopf, puffer), "C5: der Pegel hat genug Material");
+    pruefe (p->beginneVersuch (a), "C5: der Versuch beginnt");
+
+    const auto gesendet = juce::String (p->letzterVersuchP0FuerTest());
+    pruefe (gesendet.isNotEmpty(), "C5: der Befehl steht auf der Leitung");
+    const auto nachricht = juce::JSON::parse (gesendet);
+    const auto referenz = nachricht.getProperty ("referenz", {});
+    pruefe (referenz.hasProperty ("nicht_endliche_samples"),
+            "C5: nicht_endliche_samples_reisen_im_wirezustand - das Feld steht "
+            "im GESENDETEN Referenzobjekt, nicht nur in einem Getter");
+    pruefe ((juce::int64) referenz.getProperty ("nicht_endliche_samples", -1) == 0,
+            "C5: und traegt bei sauberem Material die 0 - NACHWEISLICH keines, "
+            "nicht 'nicht gemessen'",
+            juce::String ((juce::int64) referenz.getProperty ("nicht_endliche_samples", -1)));
+
+    // Der Kandidat traegt sie ebenso: die Referenz ist dieselbe Bauform.
+    pruefe (p->erfasseKandidat (true), "C5: der Kandidat wird erfasst");
+    const auto kandidat = juce::JSON::parse (juce::String (p->letzterVersuchP0FuerTest()));
+    pruefe (kandidat.getProperty ("referenz", {}).hasProperty ("nicht_endliche_samples"),
+            "C5: und der Kandidat traegt sie auch");
+
+    p->setPlayHead (nullptr);
+    p->releaseResources();
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// C1 · der Sequenzhandschlag nach einem bestaetigten Resync
+// ─────────────────────────────────────────────────────────────────────────
+//
+// 🔑 Wiederpruefung 2 (Befund C1, M-61): der Fehler lag zwischen zwei
+// Sprachen. Der Broker setzt mit `resync_bestaetigen(link, 0)` seine Basis auf
+// 0 und liest das als „die naechste ist 1"; das Plugin vergab seine erste
+// Sequenz als 0 und setzte den Zaehler bei Reconnect nicht zurueck. Der Broker
+// verwarf damit die erste Intervention JEDER Verbindung als Luecke und setzte
+// `taint.unknown` sofort wieder — der R01-Fix hob sich selbst auf.
+//
+// Beide Seiten waren fuer sich gruen. Nur ihr VERHAELTNIS war falsch, und
+// deshalb misst dieses Bein gegen eine DRITTE Instanz:
+// `eq-copilot/fixtures/v3/handschlag-v1.json` ist von Hand geschrieben und
+// die Ausgabe keiner der beiden Implementierungen. Das Rust-Gegenstueck in
+// `broker/tests/sonde013_verdrahtung.rs` liest dieselbe Datei.
+
+juce::File findeDatei (const juce::String& relativ)
+{
+    auto ausCwd = juce::File::getCurrentWorkingDirectory().getChildFile (relativ);
+    if (ausCwd.existsAsFile())
+        return ausCwd;
+    auto ordner = juce::File::getSpecialLocation (juce::File::currentExecutableFile)
+                      .getParentDirectory();
+    for (int i = 0; i < 10 && ordner.exists(); ++i)
+    {
+        auto kandidat = ordner.getChildFile (relativ);
+        if (kandidat.existsAsFile())
+            return kandidat;
+        ordner = ordner.getParentDirectory();
+    }
+    return ausCwd;
+}
+
+/** Ein Blockvorlauf ueber die Hostbruecke, genau wie der gepatchte Wrapper.
+
+    Ohne ihn ist der Aufnahmezustand UNBEKANNT, und ein unbekannter blockiert
+    den Hoermarker wie ein aktiver (M-33). Ein Bein ohne Bruecke koennte keinen
+    einzigen Eingriff erzeugen. */
+void bruecheBlock (eqcop::hostbruecke::Bruecke& bruecke, const TestPlayHead& kopf,
+                   int samples)
+{
+    VstKontext c {};
+    c.state = VstKontext::kContTimeValid;
+    if (kopf.spielt)
+        c.state |= VstKontext::kPlaying;      // kein kRecording: nachweislich aus
+    c.projectTimeSamples = kopf.pos;
+    c.continousTimeSamples = kopf.pos;
+    c.sampleRate = kFs;
+    bruecke.beginneBlock ((std::uint32_t) samples);
+    bruecke.kontextAus (c);
+    bruecke.uebergib();
+}
+
+void c1Sequenzhandschlag()
+{
+    abschnitt ("C1  erste_intervention_nach_resync_traegt_sequenz_eins");
+
+    const auto datei = findeDatei ("eq-copilot/fixtures/v3/handschlag-v1.json");
+    const auto vertrag = juce::JSON::parse (datei.loadFileAsString());
+    const auto basis = (juce::int64) vertrag.getProperty ("resync_sequenzbasis", -1);
+    const auto erste = (juce::int64) vertrag.getProperty ("erste_intervention_nach_resync", -1);
+    pruefe (basis == 0 && erste == 1,
+            "C1: der gemeinsame Handschlag steht in fixtures/v3/handschlag-v1.json",
+            "Basis " + juce::String (basis) + ", erste " + juce::String (erste));
+
+    auto p = mainProzessorMitBindung();
+    p->setPlayConfigDetails (2, 2, kFs, kBlock);
+    p->prepareToPlay (kFs, kBlock);
+    p->testForciereEchtzeit (true);
+    p->setzeEditorOffen (true);
+    TestPlayHead kopf;
+    p->setPlayHead (&kopf);
+    eqcop::hostbruecke::Bruecke bruecke;
+    bruecke.verbinde (p.get());
+
+    juce::AudioBuffer<float> puffer (2, kBlock);
+    juce::MidiBuffer midi;
+    auto block = [&] (double phase0) -> double
+    {
+        double phase = phase0;
+        const double d = 2.0 * juce::MathConstants<double>::pi * 200.0 / kFs;
+        for (int i = 0; i < kBlock; ++i)
+        {
+            const float v = 0.5f * (float) std::sin (phase);
+            phase += d;
+            puffer.setSample (0, i, v);
+            puffer.setSample (1, i, v);
+        }
+        bruecheBlock (bruecke, kopf, kBlock);
+        p->processBlock (puffer, midi);
+        kopf.pos += kBlock;
+        return phase;
+    };
+
+    // 1. Ein erster Eingriff VOR dem Resync treibt den Zaehler hoch. Ohne ihn
+    //    waere die 1 danach zufaellig richtig.
+    double ph = 0.0;
+    MarkierungsWunsch w;
+    w.modus = MarkierungsModus::solo;
+    w.istResonanz = false;
+    w.fVon = 120.0; w.fBis = 300.0; w.fSchwerpunkt = 200.0;
+    w.fs = kFs;
+    MarkierungsAuftrag auftrag;
+    baueMarkierungsAuftrag (auftrag, w);
+
+    p->markierungEinreichen (auftrag);
+    for (int i = 0; i < 40; ++i) ph = block (ph);
+    p->markierungAus();
+    for (int i = 0; i < 80; ++i) ph = block (ph);
+    const int vorher = p->interventionsRingLeerenFuerTest();
+    pruefe (vorher >= 2,
+            "C1: vor dem Resync sind Begin und Ende wirklich entstanden",
+            juce::String (vorher));
+
+    // 2. Der bestaetigte Resync. `v3ControlLink` ist der Rueckruf, den der
+    //    ECHTE `ControlClient` beim Verbindungsaufbau ausloest — nicht ein
+    //    Testpfad daneben.
+    pruefe (! p->markierungHoerbar(), "C1: der Marker ist vor dem Resync still");
+    p->v3LinkFuerTest (true);
+
+    // 3. Der ERSTE Eingriff danach. Gemessen wird die Zahl, die WIRKLICH auf
+    //    die Leitung geht — der gebaute Wiretext, nicht ein lokales Flag.
+    p->markierungEinreichen (auftrag);
+    juce::String wire;
+    for (int i = 0; i < 60 && wire.isEmpty(); ++i)
+    {
+        ph = block (ph);
+        wire = p->naechstesInterventionsJsonFuerTest();
+    }
+    pruefe (wire.isNotEmpty(), "C1: der erste Eingriff nach dem Resync steht auf der Leitung");
+    const auto nachricht = juce::JSON::parse (wire);
+    const auto sequenz = (juce::int64) nachricht.getProperty ("event_sequence", -1);
+    pruefe (sequenz == erste,
+            "C1: erste_intervention_nach_resync_traegt_sequenz_eins - genau die "
+            "Zahl, die der Broker nach `resync_bestaetigen(link, 0)` erwartet",
+            "gesendet " + juce::String (sequenz) + ", erwartet " + juce::String (erste));
+    pruefe (nachricht.getProperty ("type", {}).toString() == "audible_intervention_begin",
+            "C1: und es ist wirklich ein Begin, nicht irgendeine Nachricht");
+
+    p->markierungAus();
+    for (int i = 0; i < 80; ++i) ph = block (ph);
+    bruecke.verbinde (nullptr);
+    p->setPlayHead (nullptr);
+    p->releaseResources();
 }
 
 } // namespace
@@ -638,6 +1218,14 @@ int main()
     r03Passagenfenster();
     r01Resync();
     r06Vergleichspegel();
+    // Nacharbeit 3 nach Wiederpruefung 2 (2026-09-04).
+    c2Markierungsepoche();
+    c3ZweiPassagen();
+    c4PegelNurImFenster();
+    c7EngineZug();
+    c8ZweiVersucheNacheinander();
+    c5ZaehlerImWirezustand();
+    c1Sequenzhandschlag();
     std::cout << std::endl << bestanden << " bestanden, " << fehler << " gescheitert"
               << std::endl;
     return fehler == 0 ? 0 : 1;

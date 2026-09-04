@@ -26,8 +26,12 @@
 
 #include "../core/analysis/Blindvergleich.h"
 
+#include <atomic>
+#include <chrono>
 #include <cmath>
+#include <cstdint>
 #include <limits>
+#include <thread>
 
 #include <iostream>
 #include <vector>
@@ -319,6 +323,85 @@ void nacharbeit1B10B11()
     }
 }
 
+// ═════════════════════════════════════════════════════════════════════════
+// C6 · die Uebergabe des Vergleichspegels haelt an der BLOCKGRENZE
+// ═════════════════════════════════════════════════════════════════════════
+//
+// 🔑 Wiederpruefung 2 (Befund C6, CLAUDE.md „Audio bleibt echtzeitfest"):
+// `speise()` laeuft im Audiothread, `vorbereiten()`/`friereEin()` im
+// Nachrichtenthread — auf denselben nichtatomaren Feldern. Bis zur Runde 2
+// trennte sie nur ein Flag AUSSERHALB des Typs, und das haelt keinen laufenden
+// Callback an. Ein Datenrennen ist kein Genauigkeitsproblem, sondern
+// undefiniertes Verhalten.
+//
+// Ein Bein kann undefiniertes Verhalten nicht direkt sehen. Es kann aber die
+// INVARIANTE messen, die eine saubere Uebergabe erzwingt: der Leser sieht
+// immer einen GANZEN Block. Jeder gespeiste Block traegt genau ein
+// nichtendliches und `n-1` endliche Samples; wer beide Zaehler zusammen liest,
+// muss deshalb immer
+//
+//     endliche == bloecke * (n - 1)   und   nichtEndliche == bloecke
+//
+// sehen. Zerreisst die Uebergabe, stimmt das Verhaeltnis nicht mehr — und
+// genau das misst dieser Fall, waehrend der Nachrichtenthread nebenher
+// dauernd `vorbereiten()` ruft, so wie es `merkeManuellePassage` bei jeder
+// neuen Markierung tut.
+void c6UebergabeAnDerBlockgrenze()
+{
+    abschnitt ("C6  vergleichspegel_uebergibt_an_der_blockgrenze");
+
+    constexpr int n = 256;
+    Vergleichspegel p;
+    p.vorbereiten (48000.0);
+
+    std::vector<float> a ((std::size_t) n, 0.5f), b ((std::size_t) n, 1.0f);
+    a[0] = std::numeric_limits<float>::quiet_NaN();   // genau EIN Riss je Block
+
+    std::atomic<bool> laeuft { true };
+    std::atomic<std::uint64_t> gespeist { 0 };
+    std::thread audio ([&]
+    {
+        while (laeuft.load (std::memory_order_relaxed))
+        {
+            p.speise (a.data(), b.data(), n);
+            gespeist.fetch_add (1, std::memory_order_relaxed);
+        }
+    });
+
+    // Erst messen, wenn der Audiothread wirklich laeuft — sonst pruefte der
+    // Fall eine Uebergabe, die nie stattgefunden hat.
+    while (gespeist.load (std::memory_order_relaxed) == 0)
+        std::this_thread::yield();
+
+    std::uint64_t risse = 0, proben = 0;
+    const auto bis = std::chrono::steady_clock::now() + std::chrono::milliseconds (400);
+    int runde = 0;
+    while (std::chrono::steady_clock::now() < bis)
+    {
+        std::uint64_t bloecke = 0, endliche = 0, nichtEndliche = 0;
+        p.zaehlerstand (bloecke, endliche, nichtEndliche);
+        ++proben;
+        if (endliche != bloecke * (std::uint64_t) (n - 1) || nichtEndliche != bloecke)
+            ++risse;
+        // Der Nachrichtenthread tut, was `merkeManuellePassage` tut: er setzt
+        // den Pegel fuer eine neue Passage zurueck — waehrend Audio laeuft.
+        if (++runde % 8 == 0)
+            p.vorbereiten (48000.0);
+    }
+    laeuft.store (false, std::memory_order_relaxed);
+    audio.join();
+
+    pruefe (gespeist.load() > 0,
+            "C6: der Audiothread hat wirklich gespeist - ohne das bewiese der "
+            "Fall nichts",
+            juce::String ((juce::int64) gespeist.load()));
+    pruefe (risse == 0,
+            "C6: vergleichspegel_uebergibt_an_der_blockgrenze - in keiner Probe "
+            "sieht der Leser einen halb aufgenommenen Block",
+            juce::String ((juce::int64) risse) + " von "
+                + juce::String ((juce::int64) proben));
+}
+
 int main()
 {
     std::cout << "== Nakama SONDE-013 - die zwei Kanten des Blindvergleichs (§43.1) =="
@@ -326,6 +409,7 @@ int main()
     noSoundVerdictBeforeLoudnessMatch();
     uiCannotReadTheOrderBeforeTheVerdict();
     nacharbeit1B10B11();
+    c6UebergabeAnDerBlockgrenze();
     std::cout << std::endl << bestanden << " bestanden, " << fehler << " gescheitert"
               << std::endl;
     return fehler == 0 ? 0 : 1;

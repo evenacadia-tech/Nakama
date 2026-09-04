@@ -36,6 +36,7 @@
 #include <cstring>
 #include <functional>
 #include <iostream>
+#include <memory>
 #include <vector>
 
 using namespace nakama::analyse;
@@ -2074,6 +2075,194 @@ int main()
                 "stehende Host-Zeit erzeugt keine extrapolierte FFT-Event-Projektzeit",
                 juce::String (e6.ereignisAnzahlJetzt()) + " Ereignis(se) nach "
                 + juce::String (stehendBloecke) + " Bloecken");
+    }
+
+    //==========================================================================
+    // ── SONDE-013 M-86: der EIGENE Peakpfad des Ereignisdetektors ──────────
+    //
+    // §39.1 verlangt den Detektor aus spektralem Fluss, Peaksteigung UND
+    // Crest und nennt den Peakpfad ausdruecklich "einen einfachen Peakpfad
+    // als Gegenbeleg fuer sehr kurze Impulse". Bis SONDE-013 loeste
+    // ausschliesslich der Fluss aus: `qualitaetFluss` war konstant `true`,
+    // `qualitaetPeak` trug nur das Crest-Zusatzbit eines Flussereignisses,
+    // und die Peaksteigung wurde nirgends gerechnet. Ein Impuls, der zu kurz
+    // fuer eine Flussueberschreitung ist, erzeugte GAR KEIN Ereignis.
+    //
+    // Die vier Faelle hier sind die Messstelle aus M-86.
+    std::cout << std::endl
+              << "== I2 - SONDE-013 M-86: zwei unabhaengige Ausloeser im Detektor =="
+              << std::endl;
+    {
+        constexpr double kZweiPiL = 6.283185307179586476925286766559;
+
+        // ⚠️ Die vier Engines dieses Abschnitts liegen im HEAP, nicht auf dem
+        // Stack. Diese Funktion haelt schon ein Dutzend davon, und jede ist
+        // rund 16 KiB; die ersten vier weiteren als Feld haben den 1-MiB-Stack
+        // sofort gesprengt (`STATUS_STACK_OVERFLOW`, gemessen beim Bau der
+        // Etappe C). Der Nebenbefund dazu steht im Manifest §10.3 — er gilt
+        // fuer die uebrigen Engines dieser Datei weiter, und diese vier
+        // machen ihn nicht kleiner, sondern nur diesen Abschnitt lauffaehig.
+        auto epHalter = std::make_unique<FeatureEngine>();
+        auto efHalter = std::make_unique<FeatureEngine>();
+        auto ebHalter = std::make_unique<FeatureEngine>();
+        auto erHalter = std::make_unique<FeatureEngine>();
+        FeatureEngine& ep = *epHalter;
+        FeatureEngine& ef = *efHalter;
+        FeatureEngine& eb = *ebHalter;
+        FeatureEngine& er = *erHalter;
+
+        // ── short_impulse_triggers_peak_path_only ─────────────────────────
+        //
+        // Ein sehr kurzer Impuls auf einem breitbandigen Rauschboden.
+        //
+        // Beide Zahlen sind gerechnet, nicht geraten. Der Rauschboden ist die
+        // Bedingung, unter der der Fall ueberhaupt etwas sagt: bei einem
+        // stehenden Sinus waere der Fluss nahe null, seine MAD ebenfalls, und
+        // der Detektor loeste gar nicht erst aus - die Zusage "OHNE
+        // qualitaetFluss" waere dann trivial erfuellt.
+        //
+        // Beide Pegel sind gerechnet, und beide waren beim Bau schon einmal
+        // falsch:
+        //
+        // - Der Boden muss LAUT genug sein. Bei ±0,005 lag er unter dem
+        //   Aktivgate (-60 dB), der Detektor lief gar nicht erst, und der
+        //   Fall war gruen, ohne etwas zu messen (gemessen: 0 Ereignisse
+        //   ueberhaupt). ±0,15 liegt bei rund -21 dB.
+        // - Der Impuls muss KURZ genug sein. Ein 32-Sample-Klick traegt in
+        //   einem 4096-Punkt-Fenster so viel Energie, dass auch der Fluss
+        //   ausloest — dann tragen alle Ereignisse beide Bits und der Fall
+        //   misst den Unterschied nicht (gemessen: 0 reine Peakereignisse
+        //   von 11). Vier Samples bei 0,95 sind 3,6 Energieeinheiten gegen
+        //   rund 31 des Bodens im selben Fenster, heben den Fluss also um
+        //   weniger als 0,05 Zehnerpotenzen je Band.
+        //
+        // Der RAHMENPEAK springt dagegen von 0,15 auf 0,95 — 16 dB, weit
+        // ueber `kPeakSteigungSchwelleDb`. Genau diese Luecke soll der
+        // Peakpfad schliessen.
+        //
+        // ⚠️ DIE PHASENFALLE, dritter Fehlversuch. Der Impulsabstand war
+        // zuerst 60 Bloecke — und ein Rahmen faellt bei 512er-Bloecken alle
+        // ZEHN. 60 ist durch 10 teilbar, also lag JEDER Impuls exakt auf
+        // einer Rahmengrenze: die Engine sah ihn, schloss den Rahmen sofort
+        // danach und trug 0,95 als `vorigerRahmenPeak` weiter, bevor ein
+        // FFT-Fenster ihn bewerten konnte. Die Steigung war beim naechsten
+        // Fensterschluss NEGATIV. Der Abstand ist deshalb 37 — teilerfremd
+        // zur Kadenz —, und der Impuls sitzt mitten im Block statt an seinem
+        // Anfang. Dieselbe Falle steht bei `bisBandakkuGefuellt` und in der
+        // Zwillingsprobe schon einmal beschrieben.
+        ep.vorbereiten (48000.0);
+        Speiser sp { ep };
+        int mitPeakOhneFluss = 0;
+        for (int blk = 0; blk < 900; ++blk)
+        {
+            const bool impuls = (blk > 200) && (blk % 37 == 0);
+            sp.sendenMit (sp.bauen(), [&] (std::uint32_t i)
+            {
+                if (impuls && i >= 200u && i < 204u)
+                    return 0.95f;
+                return sp.rausch() * 0.6f;
+            });
+        }
+        for (int i = 0; i < ep.ereignisAnzahlJetzt(); ++i)
+        {
+            const auto& ev = ep.ereignis (i);
+            if (ev.qualitaetPeak && ! ev.qualitaetFluss) ++mitPeakOhneFluss;
+        }
+        pruefe (mitPeakOhneFluss > 0,
+                "short_impulse_triggers_peak_path_only: ein sehr kurzer Impuls erzeugt "
+                "ein Ereignis mit qualitaetPeak und OHNE qualitaetFluss - vor M-86 "
+                "erzeugte er gar keines",
+                juce::String (mitPeakOhneFluss) + " reine Peakereignisse von "
+                + juce::String (ep.ereignisAnzahlJetzt()) + " im Ring");
+
+        // ── flux_event_carries_flux_quality ───────────────────────────────
+        //
+        // Der Gegenpfad: ein breitbandiger Ausschlag auf einem ruhigen
+        // Sinusboden hebt den Fluss weit ueber die Schwelle. Sein Ereignis
+        // MUSS `qualitaetFluss` tragen - sonst waere das Bit eine Konstante
+        // mit anderem Namen.
+        ef.vorbereiten (48000.0);
+        Speiser sf { ef };
+        for (int blk = 0; blk < 900; ++blk)
+        {
+            const bool ausschlag = (blk % 16) == 0;
+            sf.sendenMit (sf.bauen(), [&] (std::uint32_t i)
+            {
+                if (ausschlag)
+                    return sf.rausch() * 3.2f;
+                return (float) (0.05 * std::sin (kZweiPiL * 1000.0
+                                * (double) (sf.strom + i) / 48000.0));
+            });
+        }
+        int flussEreignisse = 0;
+        for (int i = 0; i < ef.ereignisAnzahlJetzt(); ++i)
+            if (ef.ereignis (i).qualitaetFluss)
+                ++flussEreignisse;
+        pruefe (ef.ereignisAnzahlJetzt() > 0 && flussEreignisse > 0,
+                "flux_event_carries_flux_quality: ein Flussereignis traegt weiterhin "
+                "qualitaetFluss",
+                juce::String (flussEreignisse) + " von "
+                + juce::String (ef.ereignisAnzahlJetzt()));
+
+        // ── both_paths_yield_one_event ────────────────────────────────────
+        //
+        // Beide Pfade im selben Schritt: ein breitbandiger Ausschlag ist
+        // zugleich ein Flussereignis UND ein Pegelsprung mit hohem Crest.
+        // Die Zusage ist GENAU EIN Ereignis mit beiden Bits - zwei waeren
+        // zwei Zeitpunkte, wo einer war.
+        eb.vorbereiten (48000.0);
+        Speiser sb { eb };
+        int ausschlaege = 0;
+        for (int blk = 0; blk < 600; ++blk)
+        {
+            const bool ausschlag = (blk > 200) && (blk % 40 == 0);
+            if (ausschlag) ++ausschlaege;
+            sb.sendenMit (sb.bauen(), [&] (std::uint32_t i)
+            {
+                if (ausschlag && i < 96u)
+                    return sb.rausch() * 3.2f;
+                return (float) (0.02 * std::sin (kZweiPiL * 1000.0
+                                * (double) (sb.strom + i) / 48000.0));
+            });
+        }
+        int beideBits = 0;
+        bool doppelterZeitpunkt = false;
+        for (int i = 0; i < eb.ereignisAnzahlJetzt(); ++i)
+        {
+            const auto& ev = eb.ereignis (i);
+            if (ev.qualitaetFluss && ev.qualitaetPeak)
+                ++beideBits;
+            if (i > 0 && ev.stromSample == eb.ereignis (i - 1).stromSample)
+                doppelterZeitpunkt = true;
+        }
+        pruefe (beideBits > 0,
+                "both_paths_yield_one_event: es gibt Ereignisse, die BEIDE Bits tragen",
+                juce::String (beideBits) + " von "
+                + juce::String (eb.ereignisAnzahlJetzt()) + " bei "
+                + juce::String (ausschlaege) + " Ausschlaegen");
+        pruefe (! doppelterZeitpunkt,
+                "und kein Zeitpunkt traegt ZWEI Ereignisse - die zwei Pfade erzeugen "
+                "eines mit beiden Bits, nicht zwei nebeneinander");
+
+        // Gegenprobe zur Schwelle: ein Signal ohne jeden Pegelsprung erzeugt
+        // KEIN reines Peakereignis. Ohne sie waere oben nur gezeigt, dass der
+        // Pfad irgendwann feuert - nicht, dass er auf die STEIGUNG reagiert.
+        er.vorbereiten (48000.0);
+        Speiser sr2 { er };
+        for (int blk = 0; blk < 600; ++blk)
+            sr2.sendenMit (sr2.bauen(), [&] (std::uint32_t i)
+            {
+                return (float) (0.3 * std::sin (kZweiPiL * 1000.0
+                                * (double) (sr2.strom + i) / 48000.0));
+            });
+        int reinePeaks = 0;
+        for (int i = 0; i < er.ereignisAnzahlJetzt(); ++i)
+            if (er.ereignis (i).qualitaetPeak && ! er.ereignis (i).qualitaetFluss)
+                ++reinePeaks;
+        pruefe (reinePeaks == 0,
+                "Gegenprobe: ein stehender Sinus ohne Pegelsprung erzeugt KEIN reines "
+                "Peakereignis - der Pfad reagiert auf die Steigung, nicht auf den Pegel",
+                juce::String (reinePeaks) + " reine Peakereignisse");
     }
 
     //==========================================================================

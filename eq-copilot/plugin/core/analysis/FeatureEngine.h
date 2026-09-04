@@ -548,6 +548,28 @@ inline constexpr int kVerteilungPlaetze = 64;
     Metrikversion, kein stiller Bruch. */
 inline constexpr double kKonvergenzSpanneDb = 12.0;
 
+/** Ab welchem Anstieg des Rahmenpeaks gegenueber dem Vorrahmen der EIGENE
+    Peakpfad des Ereignisdetektors ausloest (SONDE-013 M-86, §39.1: Detektor
+    aus spektralem Fluss, Peaksteigung UND Crest).
+
+    12 dB ist ein Faktor 4 im Pegel. Die Wahl ist begruendet, nicht geraten:
+    unter 6 dB liegt die normale Pegelschwankung zwischen zwei
+    100-ms-Rahmen eines durchlaufenden Arrangements, und ein Detektor, der
+    dort ausloest, feuert dauernd. 12 dB trennt einen wirklichen Einsatz von
+    einer Lautstaerkebewegung.
+
+    Startwert, am Korpus kalibrierbar (§5.3, Risiko 5) — deshalb steht er
+    HIER neben `kFeatureMetricsVersion` und nicht als Literal im Rechenpfad. */
+inline constexpr double kPeakSteigungSchwelleDb = 12.0;
+
+/** Ab welchem Crest im Rahmen das Peak-Qualitaetsbit gilt.
+
+    Dieselbe 12 dB, aber eine ANDERE Groesse: hier Peak gegen RMS INNERHALB
+    eines Rahmens, oben Peak gegen Peak ZWISCHEN zwei Rahmen. Der Wert stand
+    bis SONDE-013 als nacktes Literal im Detektor; er ist damit dieselbe
+    Kalibrierungsfalle gewesen, die §5.3 Risiko 5 beschreibt. */
+inline constexpr double kPeakCrestSchwelleDb = 12.0;
+
 /** Fester Ring der letzten Bandwerte EINES Bandes im Evidenzfenster.
 
     Warum ein Ring und kein Histogramm: P10/P50/P95 sollen exakt sein,
@@ -772,6 +794,8 @@ public:
         vorigesSpektrumGueltig = false;
         flussStand = 0;
         flussGefuellt = 0;
+        vorigerRahmenPeak = 0.0;
+        peakEreignisImRahmen = false;
 
         ereignisStand = 0;
         ereignisAnzahl = 0;
@@ -1562,6 +1586,10 @@ private:
         vorigesSpektrumGueltig = false; // Fluss: kein Vorgaenger ueber die Grenze
         flussStand = 0;                 // und keine Schwelle aus der alten Epoche
         flussGefuellt = 0;
+        // SONDE-013 M-86: derselbe Grund fuer den Peakpfad. Eine Steigung
+        // gegen den Rahmen VOR der Grenze vergliche zwei Stellen der Musik.
+        vorigerRahmenPeak = 0.0;
+        peakEreignisImRahmen = false;
 
         if (grund == Grenzgrund::lokaleLuecke)
         {
@@ -2008,9 +2036,43 @@ private:
             const double rms = rahmenSamples > 0
                 ? std::sqrt (rahmenSummeQuadrat / (double) rahmenSamples) : 0.0;
             const double rmsDb = rms > 0.0 ? 20.0 * std::log10 (rms) : -200.0;
-            const bool peakPfad = (peakDb - rmsDb) > 12.0;   // Crest im Rahmen
+            const double crestDb = peakDb - rmsDb;
 
-            if (fluss > schwelle && mad > 0.0)
+            // ── SONDE-013 M-86: der EIGENE Peakpfad ──────────────────────
+            //
+            // §39.1 verlangt den Detektor aus spektralem Fluss, Peaksteigung
+            // UND Crest, und ausdruecklich "einen einfachen Peakpfad als
+            // Gegenbeleg fuer sehr kurze Impulse". Bis SONDE-013 loeste
+            // ausschliesslich der Fluss aus; `qualitaetPeak` trug nur das
+            // Crest-Zusatzbit eines Flussereignisses, und `qualitaetFluss`
+            // war konstant `true`. Ein Impuls, der zu kurz fuer eine
+            // Flussueberschreitung ist, erzeugte damit GAR KEIN Ereignis —
+            // genau der Fall, fuer den der Gegenbeleg gedacht ist.
+            //
+            // Der zweite Ausloeser ist der Anstieg des Rahmenpeaks gegenueber
+            // dem zuletzt ABGESCHLOSSENEN Rahmen, zusammen mit einem hohen
+            // Crest. Beide Bedingungen muessen gelten: ein Anstieg ohne Crest
+            // ist eine Lautstaerkebewegung, ein Crest ohne Anstieg ist ein
+            // dauerhaft spitzes Signal.
+            //
+            // ⚠️ `rahmenPeak` waechst INNERHALB eines Rahmens monoton, also
+            // bliebe die Bedingung nach dem ersten Ueberschreiten bis zum
+            // Rahmenende wahr und feuerte bei jedem FFT-Fenster erneut.
+            // `peakEreignisImRahmen` laesst sie genau einmal je Rahmen
+            // ausloesen.
+            bool peakAus = false;
+            if (! peakEreignisImRahmen && vorigerRahmenPeak > 0.0 && rahmenPeak > 0.0)
+            {
+                const double steigungDb = peakDb - 20.0 * std::log10 (vorigerRahmenPeak);
+                peakAus = steigungDb > kPeakSteigungSchwelleDb
+                       && crestDb > kPeakCrestSchwelleDb;
+            }
+            const bool flussAus = fluss > schwelle && mad > 0.0;
+
+            // Loesen beide im selben Schritt aus, entsteht GENAU EIN Ereignis
+            // mit beiden Bits (M-86). Zwei Ereignisse waeren zwei Zeitpunkte,
+            // wo einer war.
+            if (flussAus || peakAus)
             {
                 Ereignis e;
                 e.stromSample = s.fensterStromStart;
@@ -2018,13 +2080,22 @@ private:
                 e.projektSample = s.fensterProjektStart;
                 e.epoche  = transportEpoche;
                 e.segment = segmentInEpoche;
-                e.staerke = (float) ((fluss - med) / mad);
+                // Die Staerke bleibt die Flussstaerke, WENN es eine gibt.
+                // Ein reines Peakereignis hat keine Flussueberschreitung —
+                // es traegt statt dessen seinen Crest ueber der Schwelle,
+                // in derselben Einheit wie es gemessen wurde (dB). Eine
+                // erfundene MAD-Zahl waere eine Staerke ohne Messung.
+                e.staerke = flussAus
+                    ? (float) ((fluss - med) / mad)
+                    : (float) (crestDb - kPeakCrestSchwelleDb);
                 e.bandZentrumHz = zentrumNenner > 0.0
                     ? (float) (zentrumZaehler / zentrumNenner) : 0.0f;
                 e.dauerMs = (float) (1000.0 * (double) s.hop / s.fs);
-                e.qualitaetFluss = true;
-                e.qualitaetPeak = peakPfad;
+                e.qualitaetFluss = flussAus;
+                e.qualitaetPeak = peakAus || (flussAus && crestDb > kPeakCrestSchwelleDb);
                 ereignisAblegen (e);
+                if (peakAus)
+                    peakEreignisImRahmen = true;
             }
         }
 
@@ -2369,6 +2440,13 @@ private:
         for (auto& v : liveBreiteAkku) v = { 0.0, 0.0 };
         liveSupport = {};
         liveSamples = 0;
+        // SONDE-013 M-86: der abgeschlossene Rahmenpeak wird zum Bezugswert
+        // des naechsten. Nur ein Rahmen MIT Inhalt zaehlt — ein leerer waere
+        // sonst ein Bezugspunkt von 0, gegen den jede Steigung unendlich
+        // waere.
+        if (rahmenPeak > 0.0)
+            vorigerRahmenPeak = rahmenPeak;
+        peakEreignisImRahmen = false;
         rahmenPeak = 0.0;
         // SONDE-013 M-02: das RAHMEN-Maximum faellt mit dem Rahmen, das
         // PASSAGEN-Maximum nicht — sonst waere PLR eine Aussage ueber 100 ms
@@ -2962,6 +3040,12 @@ private:
     std::int64_t evidenzContinuousErwartet { 0 };
 
     // Ereignisse
+    /// SONDE-013 M-86: Peak des zuletzt ABGESCHLOSSENEN Rahmens und das Flag,
+    /// das den Peakpfad genau einmal je Rahmen ausloesen laesst.
+    /// `vorigerRahmenPeak` faellt an einer Grenze mit — eine Peaksteigung
+    /// ueber eine Grenze hinweg vergliche zwei Stellen der Musik.
+    double vorigerRahmenPeak { 0.0 };
+    bool   peakEreignisImRahmen { false };
     std::vector<Ereignis> ereignisse;
     int ereignisStand { 0 }, ereignisAnzahl { 0 };
     std::vector<double> vorigesSpektrum, flussHistorie, flussSortiert;

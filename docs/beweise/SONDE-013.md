@@ -3,7 +3,7 @@
 | Merkmal | Wert |
 |---|---|
 | Ticket | S20–22, `SONDE-013` (Phase P4–P5) |
-| Phase | **Etappe 2 — Bau, Etappe C läuft.** Etappen A und B stehen und sind mit einem sauberen Kanonlauf beglaubigt; von Etappe C ist der erste Änderungssatz gebaut (Loudnessfenster, True Peak, Headroom, `integration_samples`), der zweite (Stereo, Qualitätsklasse, Peakpfad) steht aus. Etappe 1 (Verhaltensmatrix) ist am 2026-09-04 nach Matrixprüfung 1, Nacharbeit 1, Wiederprüfung 1, Nacharbeit 2 und Wiederprüfung 2 (PASS) abgenommen; die Matrix in §3 ist ab hier die Spezifikation. Bauauftrag: `docs/beweise/roh/SONDE-013-etappe-2-auftrag.txt`, Bau-Verlauf in §10 |
+| Phase | **Etappe 2 — Bau, Etappe C läuft.** Etappen A und B stehen und sind mit einem sauberen Kanonlauf beglaubigt. Von Etappe C sind der erste Änderungssatz (Loudnessfenster, True Peak, Headroom, `integration_samples`) und aus dem zweiten der Peakpfad (M-86) gebaut; Qualitätsklasse (M-06) und Stereo (M-08, M-10, M-11, M-12) stehen aus. Etappe 1 (Verhaltensmatrix) ist am 2026-09-04 nach Matrixprüfung 1, Nacharbeit 1, Wiederprüfung 1, Nacharbeit 2 und Wiederprüfung 2 (PASS) abgenommen; die Matrix in §3 ist ab hier die Spezifikation. Bauauftrag: `docs/beweise/roh/SONDE-013-etappe-2-auftrag.txt`, Bau-Verlauf in §10 |
 | Urteil | **offen** — T1 setzt der Erbauer nach der letzten Bauetappe, T2 der Dirigent nach der Codex-Abnahme |
 | Prüfstufe | T1+T2 gefordert (`docs/bauaufteilung-sonden.md`:392). T1 ist das Selbstaudit des Erbauers am Ende der letzten Bauetappe, T2 setzt der Dirigent nach der Codex-Abnahme |
 | Basis-SHA | Etappe 1 begann auf `ed9bbf7fec951a061749abf143cb2158c1c4ee52`; **Etappe 2 baut ab `0fdbb4a09c75e2c93ab9b76e7fcf5d92d0ef17e4`** (Abschluss der Matrixetappe), beide mit `git rev-parse HEAD` gemessen |
@@ -467,7 +467,7 @@ Ein Testname mit **NEU** existiert noch nicht.
 | M-10 | Samplerate wechselt; Bandmetrik wird gebildet | Die Nyquist-Kappe bleibt `min(18 kHz, 0,95 · Nyquist)`. Bänder darüber bekommen kein Gültigkeitsbit. Jede neue bandweise Metrik dieses Tickets erbt dieselbe Kappe; keine zweite Kappenregel entsteht. | Bestehend **B5** (Kappe greift bei 22,05 kHz wirklich); **NEU** `EqCopSonde013StereoGoldenTest`, Fall `band_stereo_metrics_share_the_nyquist_cap`. | `FeatureEngine.h`:433-437,944,975; Entwurf §35.1:2222-2226. **BELEGT, BAULÜCKE für neue Bandmetriken** |
 | M-11 | Stereoanalyse; zwei globale Skalare reichen nicht | Der Worker liefert aus komplexen L/R-STFTs bandweise Mid-/Side-Energie und Side-Anteil in dB, bandweise Pearson-Korrelation in kurzen und mittleren Fenstern, Magnitude-Squared Coherence, **bandweise Interchannel-Phase**, gemessenen Mono-Folddown-Verlust sowie L/R-Balance, Zeitperzentile und Persistenz. Kohärenz ist keine Einzel-FFT-Metrik: Auto- und Cross-Spektren werden über mindestens **acht** gültige überlappende Welch-Frames gemittelt. Jedes Band führt zwei Metadatenfelder der Evidenz mit: **Fensterdauer in ms** und **Freiheitsgrade**, also die Zahl der gemittelten gültigen Welch-Frames. Fail-closed in zwei Stufen: Kohärenz ist `null` bei zu wenig Energie oder weniger als acht Frames, und die **Phase wird nur** in Bändern ausgewertet, deren Kohärenz eine benannte Schwelle überschreitet — sonst ist auch sie `null`, nie ein geschätzter Wert. Alle drei Felder reisen auf dem Evidenzpfad (E-05) und stehen in §3.8 als von SONDE-013 belegte Felder des `evidence_snapshot`. | **NEU** `EqCopSonde013StereoGoldenTest`, Fälle `bandwise_ms_and_correlation`, `phase_only_in_coherent_bands`, `coherence_carries_window_and_dof`, `coherence_is_null_below_eight_frames` (ersetzt `coherence_needs_eight_welch_frames`), `persistence_is_reported`. | Entwurf §40.1:2628-2660, wörtlich :2642-2645 („Fensterdauer und Freiheitsgrade werden Teil der Evidenz", „Bei zu wenig Energie oder Frames ist Kohärenz `null`", „Interchannel-Phase wird nur in ausreichend kohärenten Bändern interpretiert"). **BELEGT, BAULÜCKE** — Phase, Fensterdauer und Freiheitsgrade aus Nacharbeit 1 (§8, D7) |
 | M-12 | Auffälliger Stereozustand erkannt | Breite ist kein Qualitätswert. Es entsteht **kein** Vorschlag zu Laufzeit- oder Polaritätskorrektur ohne kohärentes Paar, stabilen Lag und nachweislich bessere Mono-Summe; bei niedriger Kohärenz gibt es keine Lag- oder Polaritätsempfehlung. Statische Breitenänderung und bandbegrenzte M/S-Korrektur sind verschiedene Vorschlagstypen. Musikalisch unabhängige Busse werden nie automatisch gegeneinander verschoben. | **NEU** `EqCopSonde013StereoGoldenTest`, Fälle `low_coherence_yields_no_recommendation` und `width_alone_is_never_a_defect`. | Entwurf §40.2:2661-2665; §40.3:2668. **BELEGT, BAULÜCKE** |
-| M-86 | Sehr kurzer Impuls; der spektrale Fluss überschreitet die adaptive Schwelle **nicht** | Der Detektor hat **zwei unabhängige Auslöser**. Peaksteigung — der Anstieg des Rahmenpeaks gegenüber dem Vorrahmen in dB je Rahmen — und Crest erzeugen ein Ereignis auch ohne Flussüberschreitung; es trägt `qualitaetFluss = false` und `qualitaetPeak = true`. Ein Flussereignis trägt `qualitaetFluss = true`. Lösen beide Pfade im selben Rahmen aus, entsteht **genau ein** Ereignis mit beiden Bits. Ring-Deckel 64 und Verlustzähler gelten unverändert. Die Schwellen der Peaksteigung wählt der Bau begründet und misst sie am Golden; sie sind Startwerte, kein Literal ohne Beleg (§5.3, Risiko 5). | **NEU** **B5** `EqCopAnalysisGoldenTest`-Fälle `short_impulse_triggers_peak_path_only`, `flux_event_carries_flux_quality` und `both_paths_yield_one_event`. | Entwurf §39.1:2592-2599 (Detektor aus spektralem Fluss, Peaksteigung und Crest); Ist-Stand §2.1 (`FeatureEngine.h`:1605-1621 — heute nur Flussauslöser, `qualitaetFluss` konstant `true`, Peaksteigung unbenutzt). **BELEGT, BAULÜCKE** — neue Zeile aus Nacharbeit 1 (§8, D6) |
+| M-86 | Sehr kurzer Impuls; der spektrale Fluss überschreitet die adaptive Schwelle **nicht** | Der Detektor hat **zwei unabhängige Auslöser**. Peaksteigung — der Anstieg des Rahmenpeaks gegenüber dem Vorrahmen in dB je Rahmen — und Crest erzeugen ein Ereignis auch ohne Flussüberschreitung; es trägt `qualitaetFluss = false` und `qualitaetPeak = true`. Ein Flussereignis trägt `qualitaetFluss = true`. Lösen beide Pfade im selben Rahmen aus, entsteht **genau ein** Ereignis mit beiden Bits. Ring-Deckel 64 und Verlustzähler gelten unverändert. Die Schwellen der Peaksteigung wählt der Bau begründet und misst sie am Golden; sie sind Startwerte, kein Literal ohne Beleg (§5.3, Risiko 5). | **gemessen** (2026-09-04, Etappe C): **B5** Abschnitt I2 mit den drei Fällen `short_impulse_triggers_peak_path_only` (11 reine Peakereignisse von 24 im Ring), `flux_event_carries_flux_quality` und `both_paths_yield_one_event` samt der Zusage, dass kein Zeitpunkt zwei Ereignisse trägt, plus einer Gegenprobe (ein stehender Sinus ohne Pegelsprung erzeugt kein reines Peakereignis). Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-86.txt`. | Entwurf §39.1:2592-2599 (Detektor aus spektralem Fluss, Peaksteigung und Crest); Ist-Stand §2.1 (`FeatureEngine.h`:1605-1621 — vor diesem Ticket nur Flussauslöser, `qualitaetFluss` konstant `true`, Peaksteigung unbenutzt). **BELEGT, gemessen** (Etappe C, 2026-09-04) — neue Zeile aus Nacharbeit 1 (§8, D6); die zwei Schwellen sind als `kPeakSteigungSchwelleDb` und `kPeakCrestSchwelleDb` benannt, nicht literal |
 
 ### 3.2 PRE/POST-Paare, Alignment und ehrliche Herabstufung
 
@@ -2309,7 +2309,7 @@ zwischen richtiger und falscher Rechnung liegen 33 dB.
 |---|---|
 | **B18** `EqCopSonde013DynamicsTest` (NEU) | 44 bestanden, 0 gescheitert |
 | **B17** `EqCopSonde013TruePeakGoldenTest` (NEU) | 23 bestanden, 0 gescheitert |
-| **B5** `EqCopAnalysisGoldenTest` | 237 bestanden, 0 Fehler — G13 grün an allen sechs Grenzarten |
+| **B5** `EqCopAnalysisGoldenTest` | 237 bestanden, 0 Fehler — G13 grün an allen sechs Grenzarten (im zweiten Änderungssatz auf 242 gewachsen, §10.4) |
 | **B3c** `EqCopSchemaTest` | 75 bestanden, 0 gescheitert; Binärkorpus 119 Fixtures klassifiziert wie das Manifest |
 | **A9** `pruefe_flatc_drift.py` | Drift 0 über beide erzeugten Dateien; 9 Tabellen, 63 Felder, keines ohne explizite ID |
 | **A10** `erzeuge_fb_fixtures.py --pruefen` | 120 Dateien bytegleich (23 gültig, 96 ungültig) |
@@ -2384,6 +2384,82 @@ zwischen richtiger und falscher Rechnung liegen 33 dB.
   dafür heute kein Mittel — `kFeatureMetricsVersion` steigt in diesem Ticket
   noch nicht. Wer es angeht: sie mit dem Abschluss von SONDE-013 anheben,
   gemeinsam mit den in M-06 und M-29 an sie gebundenen Schwellen.
+
+---
+
+### 10.4 Etappe C — Metriken in der Sonde, zweiter Satz (2026-09-04)
+
+**Gebaute Matrixzeile bisher:** M-86 (eigenständiger Peakpfad im
+Ereignisdetektor). M-06, M-08, M-10, M-11 und M-12 stehen noch aus.
+
+#### M-86: der Detektor hatte nur einen Auslöser
+
+§39.1 verlangt den Detektor aus spektralem Fluss, **Peaksteigung und Crest**
+und nennt den Peakpfad ausdrücklich „einen einfachen Peakpfad als Gegenbeleg
+für sehr kurze Impulse". Bis hierher löste ausschließlich der Fluss aus:
+`qualitaetFluss` war konstant `true`, `qualitaetPeak` trug nur das
+Crest-Zusatzbit eines Flussereignisses, und die Peaksteigung wurde nirgends
+gerechnet. Ein Impuls, der zu kurz für eine Flussüberschreitung ist, erzeugte
+damit **gar kein** Ereignis — genau der Fall, für den der Gegenbeleg gedacht
+ist.
+
+Der zweite Auslöser ist der Anstieg des Rahmenpeaks gegenüber dem zuletzt
+**abgeschlossenen** Rahmen, zusammen mit einem hohen Crest. Beide Bedingungen
+müssen gelten: ein Anstieg ohne Crest ist eine Lautstärkebewegung, ein Crest
+ohne Anstieg ein dauerhaft spitzes Signal. Lösen beide Pfade im selben Schritt
+aus, entsteht **genau ein** Ereignis mit beiden Bits — zwei wären zwei
+Zeitpunkte, wo einer war.
+
+Zwei Schwellen sind neu und benannt statt literal (§5.3, Risiko 5):
+`kPeakSteigungSchwelleDb = 12,0` (ein Faktor 4 im Pegel; unter 6 dB läge die
+normale Pegelschwankung zwischen zwei 100-ms-Rahmen, und ein Detektor, der
+dort auslöst, feuert dauernd) und `kPeakCrestSchwelleDb = 12,0` — dieselbe
+Zahl, aber eine andere Größe, und bis hierher ein nacktes Literal im Detektor.
+
+`vorigerRahmenPeak` und das Flag `peakEreignisImRahmen` fallen an jeder Grenze
+mit: eine Peaksteigung über eine Grenze hinweg verglich zwei Stellen der Musik.
+
+#### Was dieser Testfall drei Anläufe gekostet hat
+
+Der Fall `short_impulse_triggers_peak_path_only` war dreimal grün, ohne etwas
+zu messen. Alle drei Gründe stehen jetzt im Testkommentar, weil sie
+wiederkommen:
+
+1. **Der Boden lag unter dem Aktivgate.** Bei ±0,005 läuft der Detektor gar
+   nicht erst (`if (! aktiv) return;` vor dem Flussschritt), und „kein
+   Ereignis mit `qualitaetFluss`" war trivial erfüllt. Gemessen: 0 Ereignisse
+   überhaupt.
+2. **Der Impuls war zu lang.** Ein 32-Sample-Klick trägt in einem
+   4096-Punkt-Fenster so viel Energie, dass auch der Fluss auslöst — dann
+   tragen alle Ereignisse beide Bits. Gemessen: 0 reine Peakereignisse von 11.
+3. **Die Phasenfalle.** Der Impulsabstand war 60 Blöcke, und ein Rahmen fällt
+   bei 512er-Blöcken alle **zehn**. 60 ist durch 10 teilbar, also lag jeder
+   Impuls exakt auf einer Rahmengrenze: die Engine sah ihn, schloss den Rahmen
+   sofort danach und trug 0,95 als `vorigerRahmenPeak` weiter, bevor ein
+   FFT-Fenster ihn bewerten konnte. Die Steigung war beim nächsten
+   Fensterschluss **negativ**. Derselbe Fehler steht in dieser Datei schon
+   zweimal beschrieben (`bisBandakkuGefuellt`, Zwillingsprobe).
+
+Danach: **11 reine Peakereignisse von 24 im Ring.**
+
+#### Der Stack, zum dritten Mal
+
+Die vier neuen Engines des Abschnitts sprengten den 1-MiB-Stack von
+`AnalysisGoldenTestMain.cpp` sofort. Sie liegen jetzt im Heap. Der Nebenbefund
+aus §10.3 gilt unverändert für die übrigen Engines dieser Datei — diese vier
+machen ihn nicht kleiner, sondern nur den Abschnitt lauffähig.
+
+#### Belege
+
+| Bein | Ergebnis |
+|---|---|
+| **B5** `EqCopAnalysisGoldenTest` | 242 bestanden, 0 Fehler (vier neue Fälle im Abschnitt I2) |
+| **B16** `EqCopSonde013EventWireTest` | 41 bestanden, 0 gescheitert — der Transport beider Qualitätsbits misst jetzt einen Detektor, der sie wirklich getrennt setzt |
+| **B18** `EqCopSonde013DynamicsTest` | 44 bestanden, 0 gescheitert |
+
+| Rotbeweis | Eingebauter Fehler | Fallendes Bein |
+|---|---|---|
+| `SONDE-013-rot-M-86.txt` | der Peakpfad löst nicht mehr aus — der Detektor fällt auf den Zustand vor M-86 zurück | B5 |
 
 ---
 

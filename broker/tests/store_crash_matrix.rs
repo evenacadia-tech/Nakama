@@ -670,15 +670,23 @@ fn produkt_coordinator_committet_alle_persistenten_p0_befehle_und_ackt_retries()
         letzter_command_ord,
         "angewandt muss die Sessionprojektion im selben Commit fortschreiben"
     );
+    // SONDE-013 Nacharbeit 2 (Befund R24): die drei `preview_*`-Familien loesen
+    // seither eine Invalidierung aus (M-52 zaehlt die Preview ausdruecklich als
+    // Ausloeser auf). Die traegt ihre EIGENE Zustellschuld unter dem
+    // `object_key` `evidence_invalidate`. Die Zusage dieses Falls betrifft die
+    // Sessionsnapshot-Schuld: von der bleibt genau EINE koaleszierte uebrig.
     assert_eq!(
-        scalar_i64(writer.handle().db_pfad(), "SELECT COUNT(*) FROM outbox"),
+        scalar_i64(
+            writer.handle().db_pfad(),
+            "SELECT COUNT(*) FROM outbox WHERE object_key='session_snapshot'"
+        ),
         1,
         "angewandt muss im selben Commit genau eine koaleszierte Snapshot-Schuld schreiben"
     );
     assert_eq!(
         scalar_i64(
             writer.handle().db_pfad(),
-            "SELECT snapshot_event_ord FROM outbox",
+            "SELECT snapshot_event_ord FROM outbox WHERE object_key='session_snapshot'",
         ),
         letzter_command_ord,
         "Projektion und Snapshot-Schuld muessen denselben Befehls-Commit decken"
@@ -946,7 +954,43 @@ fn produkt_coordinator_ackt_keine_wirkung_die_nicht_stattfindet() {
         "notiz": null,
         "werkzeug": null
     });
+    // SONDE-013 Nacharbeit 2 (Befund R21, M-44): OHNE gebundene
+    // Blindreihenfolge kommt das Ergebnis gar nicht bis zur Resultatmessung —
+    // und der Sender erfaehrt genau das, statt ein generisches `internal`.
+    // Gebunden wird sie im eigenen Befehlszweig `experiment_candidate`, VOR
+    // dem Hoeren; die Runde 1 band die zusammen mit dem Hoerurteil gemeldete
+    // Reihenfolge unmittelbar vor dem Terminal.
     let a = ack(&ergebnis);
+    assert_eq!(a["ergebnis"], "abgelehnt");
+    assert_eq!(a["code"], "reihenfolge_nicht_gebunden");
+
+    // Der eigene Befehlszweig: Kandidat erfassen UND Reihenfolge binden.
+    let kandidat = |command: usize, reihenfolge: &str| {
+        json!({
+            "type": "experiment_candidate",
+            "kopf": {
+                "command_id": si_hex(command),
+                "ziel": probe.adresse,
+                "base_revision": 13,
+                "ttl_ms": 1000,
+                "schema_major": 3,
+                "schema_minor": 0
+            },
+            "experiment_id": si_hex(0xd10),
+            "referenz": vorlage["referenz"],
+            "blindreihenfolge": reihenfolge
+        })
+    };
+    assert_eq!(
+        ack(&kandidat(914, "kandidat_zuerst"))["ergebnis"],
+        "angewandt",
+        "der Kandidat wird erfasst und die Reihenfolge gebunden (M-41/M-44)"
+    );
+
+    let mut nach_bindung = ergebnis.clone();
+    nach_bindung["kopf"]["command_id"] = json!(si_hex(915));
+    nach_bindung["blindreihenfolge"] = json!("kandidat_zuerst");
+    let a = ack(&nach_bindung);
     assert_eq!(a["ergebnis"], "abgelehnt");
     assert_eq!(a["code"], "ohne_resultatmessung");
     assert!(
@@ -956,10 +1000,6 @@ fn produkt_coordinator_ackt_keine_wirkung_die_nicht_stattfindet() {
 
     // 3. M-44: eine gemeldete Blindreihenfolge, die der gebundenen
     //    widerspricht, wird abgelehnt.
-    assert!(coordinator.binde_blindreihenfolge_fuer_test(
-        &si_hex(0xd10),
-        "kandidat_zuerst"
-    ));
     let mut widerspruch = ergebnis.clone();
     widerspruch["kopf"]["command_id"] = json!(si_hex(913));
     let a = ack(&widerspruch);

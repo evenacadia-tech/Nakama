@@ -6026,8 +6026,11 @@ int main (int argc, char** argv)
         const auto basis = wurzel().getChildFile ("eq-copilot/fixtures/v3/gueltig");
         bool alleAngenommen = geladen;
         std::string erstesAbweichende;
-        for (const char* name : { "experiment_begin", "experiment_abort",
-                                  "experiment_manual_result" })
+        // Nacharbeit 2 (Befunde R16/R21): `experiment_candidate` ist die
+        // vierte Familie dieses Tickets - der Schritt zwischen Begin und
+        // Ergebnis, der den Kandidaten erfasst und die Blindreihenfolge bindet.
+        for (const char* name : { "experiment_begin", "experiment_candidate",
+                                  "experiment_abort", "experiment_manual_result" })
         {
             const auto datei = basis.getChildFile (juce::String (name) + ".json");
             const auto daten = juce::JSON::parse (datei);

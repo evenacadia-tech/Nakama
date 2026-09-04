@@ -14,8 +14,8 @@
 
 use crate::instance_alias::{AliasRegister, Registrierung, Sitzungsadressraum};
 use crate::store::{
-    ConflictGuard, SnapshotZiel, StoreEvent, StoreHandle, StoreWriter, MAX_KONFLIKT_GUARDS,
-    STORE_SCHEMA_MAJOR,
+    ConflictGuard, Domaenentabelle, SnapshotZiel, StoreEvent, StoreHandle, StoreWriter,
+    MAX_KONFLIKT_GUARDS, STORE_SCHEMA_MAJOR,
 };
 use crate::transport::bootstrap::{Adresse, AudioLage, HelloControl};
 use serde_json::Value;
@@ -66,6 +66,7 @@ use zustand::{
     LiveMessframe, P2RejectGrund, SessionCommandWirkung, SessionKey, Stand, Subscription,
     JSON_SAFE_INTEGER_MAX,
 };
+use befehl::Domaenenereignis;
 use schema::{
     projektion_mit_aktuellem_lauf, v3_nachricht_lesen, v3_nachricht_lesen_beliebig_mit_minor,
     v3_nachricht_lesen_mit_minor, JSON_SCHEMA_MINOR_AKTIV,
@@ -237,6 +238,17 @@ impl Coordinator {
             for guard in store_writer.restaurierte_guards() {
                 stand.guard_eintragen(&guard.effective_address.clone(), &guard.derived_id.clone());
             }
+            // 🔑 SONDE-013 Nacharbeit 2 (Befund R12, M-47/M-50): Passagen,
+            // Experimente und Evidenz kommen ZURUECK.
+            //
+            // Bis hierher restaurierte diese Stelle ausschliesslich die
+            // Konfliktriegel, und es gab im ganzen Produkt keinen Leser der
+            // Tabellen `passages`, `experiments` und `evidence`. Nach einem
+            // Brokerneustart lieferte `experiment_sicht(id)` deshalb `None`,
+            // obwohl die Zeile existierte — waehrend M-47 ausdruecklich sagt,
+            // dass Sitzungsende, Reconnect und Brokerneustart einen offenen
+            // Versuch NICHT abbrechen.
+            Self::stand_aus_store_wiederherstellen(&mut stand, &store_writer.handle());
         }
         Self {
             stand: Mutex::new(stand),

@@ -25,6 +25,8 @@
 #include "NakamaHostBridge.h"
 #include "StampedAudioQueue.h"
 #include "analysis/FeatureEngine.h"
+#include "../core/analysis/Vergleichspegel.h"
+#include "../core/analysis/Blindvergleich.h"
 #include "BrokerLifecycle.h"
 #include "ControlClient.h"
 #include "TelemetryClient.h"
@@ -199,6 +201,64 @@ public:
                                juce::int64 projektStart, juce::int64 projektEnde);
     bool vergissManuellePassage (const juce::String& passageId);
     std::vector<nakama::state::ManuellePassage> manuellePassagen() const;
+
+    // ── SONDE-013 M-40 bis M-51: der Experimentpfad des Plugins ────────────
+    //
+    // 🔑 Nacharbeit 2 (Befund R06): `Vergleichspegel` und `Blindvergleich`
+    // waren uebersetzt und im Produkt UNBENUTZT; `nichtEndlicheSamples()`
+    // hatte ausserhalb der C++-Tests keinen Leser. Ein nichtendliches Sample
+    // im Vergleichsmaterial verriegelte damit zwar lokal den Gain, blieb im
+    // Produkt aber ungezaehlt — genau die stille Beschoenigung, die M-07 und
+    // CLAUDE.md („verriegelt UND gezaehlt") ausschliessen.
+    //
+    // Der Pfad ist ausdruecklich MODELLSCHICHT: er sendet Nachrichten und
+    // haelt Zustand, er baut kein sichtbares Element (§4.2, P-01 bis P-06
+    // gehoeren dem User).
+
+    /** Fuehrt die Engine gerade das Fenster der markierten Passage (M-03/M-25)?
+
+        Der ehrliche Statusbericht des Weges aus Befund R03: `false` heisst
+        „die Engine misst ueber die Transportepoche", nicht „es gibt keine
+        Passage". Ein Bein misst damit, dass `merkeManuellePassage` die
+        Grenzen wirklich bis zur Engine bringt. */
+    bool passagenfensterInEngine (std::int64_t& start, std::int64_t& ende) const;
+
+    /** Beginnt einen `manual_external`-Versuch ueber der markierten Passage.
+
+        Reihenfolge aus M-40: Passage bestimmen, Vergleichspegel EINFRIEREN,
+        dann die Nachricht mit den unveraenderlichen Referenzen senden. Ohne
+        eingefrorenen Pegel entsteht kein Versuch — §15: „Eine Klangwertung
+        ohne vorherigen Lautheitsabgleich ist unzulaessig." */
+    bool beginneVersuch (const juce::String& passageId);
+
+    /** Erfasst den Kandidaten und bindet die Blindreihenfolge (M-41/M-44).
+
+        Beides in einem Schritt, weil es ein Moment ist: der User hat die
+        Fremdaenderung vorgenommen, und die Reihenfolge steht fest, BEVOR er
+        hoert. */
+    bool erfasseKandidat (bool kandidatZuerst);
+
+    /** Meldet das Hoerurteil (M-49). `hoerurteil` ist eines der vier Worte
+        des Vertrags. */
+    bool urteileVersuch (const juce::String& hoerurteil,
+                         const juce::String& notiz,
+                         const juce::String& werkzeug);
+
+    /** Bricht den laufenden Versuch ab (M-47 — der haeufigste Realfall). */
+    bool brichVersuchAb();
+
+    /** Die ID des laufenden Versuchs, oder leer. */
+    juce::String laufenderVersuch() const;
+    /** Ob der Vergleichspegel eingefroren UND gesetzt ist (M-43). */
+    bool versuchLautheitAbgeglichen() const;
+    /** Der eingefrorene Match-Gain in dB. Nur mit `versuchLautheitAbgeglichen`. */
+    double versuchMatchGainDb() const;
+    /** 🔑 DER Produktleser von `Vergleichspegel::nichtEndlicheSamples()`
+        (Befund R06/M-07). `> 0` heisst: im Vergleichsmaterial standen
+        nichtendliche Samples, der Pegel ist verriegelt, und die Zahl reist im
+        Wirezustand mit. */
+    juce::uint64 versuchNichtEndlicheSamples() const;
+
 #if defined(NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
     nakama::ipc::ControlHello v3HelloFuerTest() const { return v3Hello(); }
     nakama::ipc::ControlStatus v3StatusFuerTest() const { return v3Status(); }
@@ -226,6 +286,21 @@ public:
         nakama::ipc::Interventionsereignis e;
         int n = 0;
         while (interventionsRing.schreibe (e))
+            ++n;
+        return n;
+    }
+
+    /** Leert den Ring, ohne das Sticky anzufassen.
+
+        Das Gegenstueck zu `interventionsRingFuellenFuerTest`: ein Bein misst
+        damit die Kante aus Befund R01 — bei GEFUELLTEM Ring behauptet der
+        Neuaufbau keine Neutralitaet, bei leerem schon. Es leert wie der
+        Sender, nicht wie `zuruecksetzen()`; das Sticky bleibt also stehen. */
+    int interventionsRingLeerenFuerTest()
+    {
+        nakama::ipc::Interventionsereignis weg;
+        int n = 0;
+        while (interventionsRing.lies (weg))
             ++n;
         return n;
     }
@@ -423,6 +498,51 @@ private:
     // M1: der Worker besitzt die Engine exklusiv; UI/Host stellen nur Wünsche.
     AnalyseEngine engine;
     std::atomic<bool> messResetWunsch { false };
+
+    // ── SONDE-013 Nacharbeit 2 (Befund R03): der Weg von der GESPEICHERTEN
+    //    Passage zur Engine ────────────────────────────────────────────────
+    //
+    // 🔑 `FeatureEngine::setzePassagenfenster` hatte ausserhalb der Tests
+    // keinen Aufrufer: `merkeManuellePassage` schrieb nur Plugin-State, und
+    // weder Main noch Sonde uebertrugen die Grenzen an eine Engine. Die
+    // Passagenmetriken liefen deshalb weiter seit der letzten Transportgrenze
+    // — M-03/M-25 verlangen aber genau die Bindung an das markierte Fenster.
+    //
+    // Die Uebergabe laeuft ueber DENSELBEN Weg wie `messResetWunsch`: ein
+    // Wunsch als Atomic, den der Analyseworker unter `analyseSteuerMutex`
+    // einloest. Der Nachrichtenthread fasst die Engine nie an, und der
+    // Audiothread erst recht nicht.
+    std::atomic<bool>          passagenfensterWunsch    { false };
+    std::atomic<bool>          passagenfensterLoeschen  { false };
+    std::atomic<std::int64_t>  passagenfensterStart     { 0 };
+    std::atomic<std::int64_t>  passagenfensterEnde      { 0 };
+
+    // ── SONDE-013 Nacharbeit 2 (Befund R06): der Experimentpfad ────────────
+    //
+    // Der Vergleichspegel misst das Verhaeltnis der beiden Signale, die der
+    // User im A/B WIRKLICH gegeneinander hoert: das ungefaerbte Monitorsignal
+    // und dasselbe Signal nach der Hoermarkierung. §38.3 verlangt genau diese
+    // Groesse vorab gemessen und fuer die Dauer des Versuchs eingefroren.
+    //
+    // Gespeist wird er im Audiothread — allokationsfrei und ohne Sperre, wie
+    // die Markierung daneben — und NUR, solange ein Versuch vorbereitet wird.
+    // Ausserhalb kostet er nichts: `versuchspegelSpeist` ist dann falsch, und
+    // die Trockenkopie unterbleibt.
+    /// Baut die unveraenderlichen Referenzen eines Versuchs (Paragraph 43.1).
+    std::string versuchReferenzJson() const;
+    /// Baut den Steuerkopf eines persistenzpflichtigen P0-Befehls.
+    std::string versuchKopfJson (const juce::String& commandId) const;
+
+    nakama::analyse::Vergleichspegel vergleichspegel;
+    nakama::analyse::Blindvergleich  blindvergleich;
+    std::atomic<bool>          versuchspegelSpeist { false };
+    std::atomic<std::uint64_t> versuchNichtEndlich { 0 };
+    /// Vorallokierte Trockenkopie des Blocks; nie im Audiothread vergroessert.
+    std::vector<float>         versuchTrocken;
+    mutable std::mutex         versuchMutex;
+    juce::String               versuchIdAktiv;
+    juce::String               versuchPassageId;
+    juce::String               versuchCommandBasis;
 
     // ── SONDE-009: FeatureEngine v2, neben M1 statt an ihrer Stelle ─────────
     // Beide bekommen denselben versiegelten Blockstrom, und das ist Absicht:

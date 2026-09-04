@@ -307,6 +307,14 @@ impl HarnischMitStore {
         serde_json::from_slice(&antwort).expect("command_ack ist JSON")
     }
 
+    /// Ein ZWEITER Coordinator auf DEMSELBEN Store — der Brokerneustart.
+    ///
+    /// 🔑 Befund R12: der behauptete Restart-Test der Runde 1 erzeugte gar
+    /// keinen zweiten Coordinator und konnte deshalb nicht fallen.
+    fn neuer_coordinator(&self) -> Coordinator {
+        Coordinator::mit_store(Arc::new(ManualClock::default()), hex(0xbeee), &self._writer)
+    }
+
     fn db(&self) -> std::path::PathBuf {
         self._ordner.db()
     }
@@ -1476,5 +1484,576 @@ fn eviction_raeumt_das_paarurteil_und_bildet_neu() {
         Some(Ausschlussgrund::HaelfteFehlt),
         "die verbliebene Haelfte wird als getrennte Haelfte GEFUEHRT, nicht als \
          vollstaendiges Paar von gestern: {nachher:?}"
+    );
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// R21/R24 · Die fehlenden Produktaufrufer (Nacharbeit 2)
+// ═════════════════════════════════════════════════════════════════════════
+
+/// R21 — die Blindreihenfolge wird VOR dem Urteil gebunden (M-44).
+///
+/// Die Runde 1 uebernahm die vom Sender ZUSAMMEN MIT dem Hoerurteil gemeldete
+/// Reihenfolge und band sie unmittelbar vor dem Terminal: der Sender konnte sie
+/// also nach dem Hoeren waehlen. Der Produkttest band sie ueber die Naht
+/// `binde_blindreihenfolge_fuer_test` vorab — einen frueheren Produktaufrufer
+/// gab es nicht, und deshalb konnte er an der Luecke nicht fallen. Die Naht ist
+/// entfallen; gebunden wird im eigenen Befehlszweig.
+#[cfg(windows)]
+#[test]
+fn blindreihenfolge_wird_im_eigenen_befehlszweig_gebunden() {
+    let h = HarnischMitStore::neu("blindreihenfolge");
+    let versuch = 0xac0;
+    assert_eq!(
+        h.p0(&experiment_begin_wert(&h.main.adresse, 0x920, versuch))["ergebnis"],
+        "angewandt"
+    );
+    let e = h.c.experiment_sicht(&hex(versuch)).expect("der Versuch steht");
+    assert!(
+        !e.reihenfolge_gebunden(),
+        "nach dem Begin ist noch nichts gebunden"
+    );
+
+    // Das Ergebnis OHNE Bindung wird benannt abgelehnt - nicht generisch.
+    let ergebnis = |command: usize, reihenfolge: &str| {
+        json!({
+            "type": "experiment_manual_result",
+            "kopf": {
+                "command_id": hex(command),
+                "ziel": h.main.adresse,
+                "base_revision": 0,
+                "ttl_ms": 1000,
+                "schema_major": 3,
+                "schema_minor": 0
+            },
+            "experiment_id": hex(versuch),
+            "hoerurteil": "kandidat",
+            "blindreihenfolge": reihenfolge,
+            "notiz": null,
+            "werkzeug": null
+        })
+    };
+    let ack = h.p0(&ergebnis(0x921, "baseline_zuerst"));
+    assert_eq!(ack["ergebnis"], "abgelehnt");
+    assert_eq!(
+        ack["code"], "reihenfolge_nicht_gebunden",
+        "ein Urteil ohne vorher gebundene Reihenfolge ist keines (M-44): {ack}"
+    );
+
+    // Der eigene Befehlszweig bindet sie - VOR dem Hoeren.
+    let vorlage = experiment_begin_wert(&h.main.adresse, 0x922, versuch);
+    let kandidat = |command: usize, reihenfolge: &str| {
+        json!({
+            "type": "experiment_candidate",
+            "kopf": {
+                "command_id": hex(command),
+                "ziel": h.main.adresse,
+                "base_revision": 0,
+                "ttl_ms": 1000,
+                "schema_major": 3,
+                "schema_minor": 0
+            },
+            "experiment_id": hex(versuch),
+            "referenz": vorlage["referenz"],
+            "blindreihenfolge": reihenfolge
+        })
+    };
+    assert_eq!(
+        h.p0(&kandidat(0x923, "kandidat_zuerst"))["ergebnis"],
+        "angewandt"
+    );
+    let e = h.c.experiment_sicht(&hex(versuch)).expect("der Versuch steht");
+    assert!(e.reihenfolge_gebunden(), "jetzt IST sie gebunden");
+    assert_eq!(e.kandidaten.len(), 1, "und der Kandidat ist erfasst (M-41)");
+    assert!(
+        e.aufgedeckte_reihenfolge().is_none(),
+        "vor dem Urteil verraet sie niemand - sonst waere der Blindvergleich keiner"
+    );
+
+    // Ein zweiter Kandidat aendert die Bindung NICHT.
+    assert_eq!(
+        h.p0(&kandidat(0x924, "baseline_zuerst"))["ergebnis"],
+        "angewandt"
+    );
+    let ack = h.p0(&ergebnis(0x925, "baseline_zuerst"));
+    assert_eq!(ack["ergebnis"], "abgelehnt");
+    assert_eq!(
+        ack["code"], "blindreihenfolge_widerspruch",
+        "die ZUERST gebundene gilt; ein zweiter Kandidat dreht sie nicht: {ack}"
+    );
+}
+
+/// R24 — eine PREVIEW nimmt die Evidenz ihrer Sitzung zurueck (M-52).
+///
+/// Die drei `preview_*`-Familien liefen nur durch `persistenz_p0`; der
+/// Invalidierungszaehler blieb unveraendert, und die waehrend der Vorschau
+/// gemessene Evidenz sah aus wie jede andere.
+#[cfg(windows)]
+#[test]
+fn preview_nimmt_die_evidenz_ihrer_sitzung_zurueck() {
+    let h = HarnischMitStore::neu("preview-invalidierung");
+    let sonde = {
+        let mut s = h.main.clone();
+        s.plugin_kind = "passive_probe".into();
+        s.adresse.instance_id = hex(0x20);
+        s.adresse.runtime_nonce = hex(0x21);
+        s
+    };
+    anmelden(&h.c, "sonde", &sonde);
+    report(&h.c, "sonde", &sonde.adresse);
+    for nr in 0..3 {
+        assert!(h
+            .c
+            .evidence_snapshot_json("sonde", &evidenz_payload(&sonde.adresse, nr, |_| {})));
+    }
+    assert_eq!(h.c.invalidierungen_zaehler(), 0, "noch keine Ruecknahme");
+
+    let preview = json!({
+        "type": "preview_begin",
+        "kopf": {
+            "command_id": hex(0x930),
+            "ziel": h.main.adresse,
+            "base_revision": 0,
+            "ttl_ms": 1000,
+            "schema_major": 3,
+            "schema_minor": 0
+        },
+        "lease_duration_ms": 400,
+        "renew_id": hex(0x931)
+    });
+    let ack = h.p0(&preview);
+    assert_eq!(ack["ergebnis"], "angewandt", "{ack}");
+    assert_eq!(
+        h.c.invalidierungen_zaehler(),
+        1,
+        "die Preview NIMMT ZURUECK - M-52 zaehlt sie ausdruecklich als Ausloeser"
+    );
+    assert!(
+        h.c.evidenz_historie(&hex(0x20))
+            .iter()
+            .all(|e| e.ausschlussgrund.as_deref() == Some("intervention")),
+        "und jeder Beleg traegt den Grund, nie einen stillen Ausschluss"
+    );
+}
+
+/// R24 — ein MESSPUNKTWECHSEL invalidiert aus dem Deskriptorvergleich (M-55).
+///
+/// `invalidierung_wegen_messpunkt` hatte ausserhalb seiner Huelle keinen
+/// Aufrufer: ein Descriptorwechsel liess den Zaehler unveraendert, und die
+/// Evidenz der ALTEN Messposition blieb gueltig. Gate 7 sagt das Gegenteil zu.
+#[test]
+fn messpunktwechsel_invalidiert_aus_dem_deskriptorvergleich() {
+    let (c, _) = coordinator();
+    let sonde = hello(1, 2, 0x20, 0x21, "passive_probe", Some(9));
+    anmelden(&c, "sonde", &sonde);
+    assert!(c.descriptor_setzen("sonde", descriptor(&sonde.adresse, "pre", &hex(0x77))));
+    for nr in 0..3 {
+        assert!(c.evidence_snapshot_json("sonde", &evidenz_payload(&sonde.adresse, nr, |_| {})));
+    }
+    assert_eq!(c.invalidierungen_zaehler(), 0);
+
+    // Derselbe Messpunkt: nichts wird zurueckgenommen (die Gegenprobe).
+    assert!(c.descriptor_setzen("sonde", descriptor(&sonde.adresse, "pre", &hex(0x77))));
+    assert_eq!(
+        c.invalidierungen_zaehler(),
+        0,
+        "gleicher Messpunkt, keine Ruecknahme"
+    );
+
+    // Der WECHSEL nimmt zurueck - ohne dass ein Test die Invalidierung ruft.
+    assert!(c.descriptor_setzen("sonde", descriptor(&sonde.adresse, "post", &hex(0x77))));
+    assert_eq!(
+        c.invalidierungen_zaehler(),
+        1,
+        "messpunktwechsel_invalidiert_aus_dem_deskriptorvergleich (M-55)"
+    );
+    assert!(c
+        .evidenz_historie(&hex(0x20))
+        .iter()
+        .all(|e| e.ausschlussgrund.as_deref() == Some("messpunkt_wechsel")));
+}
+
+/// R24 — ein MATERIALWECHSEL invalidiert aus dem Fingerprintvergleich (M-54).
+///
+/// M-31 sagt ausdruecklich, dass der Wechsel aus dem Fingerprintvergleich kommt
+/// und nicht aus einer Zeitheuristik. `invalidierung_wegen_material` hatte
+/// ausserhalb seiner Huelle keinen Aufrufer.
+#[cfg(windows)]
+#[test]
+fn materialwechsel_invalidiert_aus_dem_fingerprintvergleich() {
+    let h = HarnischMitStore::neu("materialwechsel");
+    let sonde = {
+        let mut s = h.main.clone();
+        s.plugin_kind = "passive_probe".into();
+        s.adresse.instance_id = hex(0x20);
+        s.adresse.runtime_nonce = hex(0x21);
+        s
+    };
+    anmelden(&h.c, "sonde", &sonde);
+    report(&h.c, "sonde", &sonde.adresse);
+    for nr in 0..3 {
+        assert!(h
+            .c
+            .evidence_snapshot_json("sonde", &evidenz_payload(&sonde.adresse, nr, |_| {})));
+    }
+
+    let erster = experiment_begin_wert(&h.main.adresse, 0x940, 0xad0);
+    assert_eq!(h.p0(&erster)["ergebnis"], "angewandt");
+    assert_eq!(
+        h.c.invalidierungen_zaehler(),
+        0,
+        "gleiches Material, keine Ruecknahme"
+    );
+
+    // Ein ZWEITER Versuch auf DERSELBEN Passage mit ANDEREM Fingerprint: das
+    // Material hat sich geaendert, und die Evidenz davor gilt nicht mehr.
+    let mut zweiter = experiment_begin_wert(&h.main.adresse, 0x941, 0xad1);
+    zweiter["passage"]["passage_id"] = erster["passage"]["passage_id"].clone();
+    zweiter["passage"]["fingerprint"]["chroma"] = json!([9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9]);
+    assert_eq!(h.p0(&zweiter)["ergebnis"], "angewandt");
+    assert_eq!(
+        h.c.invalidierungen_zaehler(),
+        1,
+        "materialwechsel_invalidiert_aus_dem_fingerprintvergleich (M-54/M-31)"
+    );
+    assert!(h
+        .c
+        .evidenz_historie(&hex(0x20))
+        .iter()
+        .all(|e| e.ausschlussgrund.as_deref() == Some("material_wechsel")));
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// R07/R08/R10/R11/R12/R13/R15 · Persistenz und Replay (Nacharbeit 2)
+// ═════════════════════════════════════════════════════════════════════════
+
+/// Eine Sonde in der Sitzung des Harnischs, die Evidenz liefert.
+#[cfg(windows)]
+fn sonde_mit_evidenz(h: &HarnischMitStore, anzahl: usize) -> HelloControl {
+    let mut s = h.main.clone();
+    s.plugin_kind = "passive_probe".into();
+    s.adresse.instance_id = hex(0x20);
+    s.adresse.runtime_nonce = hex(0x21);
+    anmelden(&h.c, "sonde", &s);
+    report(&h.c, "sonde", &s.adresse);
+    for nr in 0..anzahl {
+        assert!(h
+            .c
+            .evidence_snapshot_json("sonde", &evidenz_payload(&s.adresse, nr, |_| {})));
+    }
+    s
+}
+
+/// R13/R11 — jede Experimenttransition steht im EREIGNISINDEX, und der
+/// Zustand traegt die vollstaendigen Referenzen aus §43.1.
+///
+/// Migration 1 fuehrt `experiment_events` seit jeher, und im ganzen Produkt gab
+/// es KEIN Insert dorthin: Begin, Kandidat, Resultat und Abbruch liessen die
+/// vertraglich verlangte Tabelle leer. Der Produkttest zaehlte nur
+/// `event_log WHERE event_type='experiment'` und konnte das nicht sehen. Der
+/// Begin-Payload trug ausserdem nur Passage-ID, Match-Gain, Quellen und
+/// Klassen — Fingerprints, Alignment und Reproduzierbarkeit fehlten.
+#[cfg(windows)]
+#[test]
+fn experimenttransitionen_stehen_im_ereignisindex_mit_vollen_referenzen() {
+    let h = HarnischMitStore::neu("experiment-events");
+    let versuch = 0xb00;
+    assert_eq!(
+        h.p0(&experiment_begin_wert(&h.main.adresse, 0x950, versuch))["ergebnis"],
+        "angewandt"
+    );
+    assert_eq!(
+        h.zeilen("SELECT COUNT(*) FROM experiment_events"),
+        1,
+        "der Begin steht im Ereignisindex (R13)"
+    );
+
+    let vorlage = experiment_begin_wert(&h.main.adresse, 0x951, versuch);
+    let kandidat = json!({
+        "type": "experiment_candidate",
+        "kopf": {
+            "command_id": hex(0x952),
+            "ziel": h.main.adresse,
+            "base_revision": 0,
+            "ttl_ms": 1000,
+            "schema_major": 3,
+            "schema_minor": 0
+        },
+        "experiment_id": hex(versuch),
+        "referenz": vorlage["referenz"],
+        "blindreihenfolge": "kandidat_zuerst"
+    });
+    assert_eq!(h.p0(&kandidat)["ergebnis"], "angewandt");
+    assert_eq!(
+        h.zeilen("SELECT COUNT(*) FROM experiment_events"),
+        2,
+        "und der Kandidat ebenso - JEDE Transition, nicht nur die erste"
+    );
+
+    // R11: der gespeicherte Zustand traegt die vollen §43.1-Referenzen.
+    let zeile: Vec<u8> = rusqlite::Connection::open(h.db())
+        .unwrap()
+        .query_row(
+            "SELECT state_jcs FROM experiments WHERE experiment_id=?1",
+            rusqlite::params![hex(versuch)],
+            |z| z.get(0),
+        )
+        .expect("die Experimentzeile steht");
+    let w: Value = serde_json::from_slice(&zeile).expect("Zeile ist JSON");
+    for feld in [
+        "/baseline/passage_fingerprint/version",
+        "/baseline/upstream_fingerprint/version",
+        "/baseline/alignment",
+        "/baseline/match_gain_db",
+        "/passage/fingerprint/version",
+        "/passage/messpunktklassen/0",
+        "/execution_mode",
+        "/reproduzierbarkeit",
+    ] {
+        assert!(
+            w.pointer(feld).is_some(),
+            "R11: `{feld}` fehlt im gespeicherten Zustand: {w}"
+        );
+    }
+    assert!(
+        w.pointer("/blindreihenfolge_gebunden").and_then(Value::as_str).is_some(),
+        "und die gebundene Reihenfolge steht darin (M-44)"
+    );
+    assert_eq!(w["kandidaten"].as_array().map(Vec::len), Some(1));
+}
+
+/// R15/R12 — das Terminal traegt die NUTZERDATEN, und ein neuer Coordinator
+/// holt den Versuch aus dem Store zurueck.
+///
+/// Der terminale Payload enthielt weder Hoerurteil noch Blindreihenfolge,
+/// Notiz oder Werkzeug, und er ERSETZTE den Begin-Zustand in `experiments`.
+/// `Coordinator::mit_store` restaurierte ausschliesslich Konflikt-Guards; nach
+/// Drop und Neuerzeugung lieferte `experiment_sicht(id)` `None`, obwohl die
+/// Zeile existierte. Der behauptete Restart-Test erzeugte gar keinen zweiten
+/// Coordinator.
+#[cfg(windows)]
+#[test]
+fn terminal_traegt_die_nutzerdaten_und_ueberdauert_den_neustart() {
+    let h = HarnischMitStore::neu("terminal-replay");
+    let versuch = 0xb10;
+    let _sonde = sonde_mit_evidenz(&h, 8);
+    assert_eq!(
+        h.p0(&experiment_begin_wert(&h.main.adresse, 0x960, versuch))["ergebnis"],
+        "angewandt"
+    );
+    let vorlage = experiment_begin_wert(&h.main.adresse, 0x961, versuch);
+    assert_eq!(
+        h.p0(&json!({
+            "type": "experiment_candidate",
+            "kopf": {
+                "command_id": hex(0x962),
+                "ziel": h.main.adresse,
+                "base_revision": 0,
+                "ttl_ms": 1000,
+                "schema_major": 3,
+                "schema_minor": 0
+            },
+            "experiment_id": hex(versuch),
+            "referenz": vorlage["referenz"],
+            "blindreihenfolge": "kandidat_zuerst"
+        }))["ergebnis"],
+        "angewandt"
+    );
+    let ack = h.p0(&json!({
+        "type": "experiment_manual_result",
+        "kopf": {
+            "command_id": hex(0x963),
+            "ziel": h.main.adresse,
+            "base_revision": 0,
+            "ttl_ms": 1000,
+            "schema_major": 3,
+            "schema_minor": 0
+        },
+        "experiment_id": hex(versuch),
+        "hoerurteil": "kandidat",
+        "blindreihenfolge": "kandidat_zuerst",
+        "notiz": "haerter, aber schmaler",
+        "werkzeug": "FabFilter Pro-Q"
+    }));
+    assert_eq!(ack["ergebnis"], "angewandt", "{ack}");
+
+    // R15: die Nutzerdaten stehen im gespeicherten Zustand — UND die Baseline
+    // steht weiter darin. Der Terminal-Payload ersetzt den Begin-Zustand nicht.
+    let zeile: Vec<u8> = rusqlite::Connection::open(h.db())
+        .unwrap()
+        .query_row(
+            "SELECT state_jcs FROM experiments WHERE experiment_id=?1",
+            rusqlite::params![hex(versuch)],
+            |z| z.get(0),
+        )
+        .expect("die Experimentzeile steht");
+    let w: Value = serde_json::from_slice(&zeile).unwrap();
+    assert_eq!(w.pointer("/terminal/hoerurteil"), Some(&json!("kandidat")));
+    assert_eq!(
+        w.pointer("/terminal/blindreihenfolge"),
+        Some(&json!("kandidat_zuerst"))
+    );
+    assert_eq!(
+        w.pointer("/terminal/notiz"),
+        Some(&json!("haerter, aber schmaler"))
+    );
+    assert_eq!(
+        w.pointer("/terminal/werkzeug"),
+        Some(&json!("FabFilter Pro-Q"))
+    );
+    assert!(
+        w.pointer("/baseline/match_gain_db").is_some(),
+        "R15: der Begin-Zustand wird NICHT ueberschrieben - der neue enthaelt ihn"
+    );
+
+    // R12: ein NEUER Coordinator auf demselben Store holt ihn zurueck.
+    let neu = h.neuer_coordinator();
+    let e = neu
+        .experiment_sicht(&hex(versuch))
+        .expect("R12: der Versuch ueberdauert den Brokerneustart (M-47/M-50)");
+    assert!(!e.offen(), "und zwar mit seinem Terminal");
+    assert_eq!(e.baseline.match_gain_db, -1.5, "samt eingefrorenem Match-Gain");
+    assert_eq!(e.kandidaten.len(), 1, "samt Kandidat (M-41)");
+    assert!(
+        e.reihenfolge_gebunden(),
+        "samt gebundener Blindreihenfolge (M-44)"
+    );
+    assert!(
+        neu.passage_sicht(&e.passage_id).is_some(),
+        "und die Passage, auf die er zeigt, ist auch wieder da (M-25)"
+    );
+}
+
+/// R08 — ein Retry nach vollstaendiger Ausfuehrung ist IDEMPOTENT, nicht
+/// `revision_conflict`, und wiederholt die Wirkung nicht.
+///
+/// `persistenz_p0` committete den Befehl VOR der Wirkung; ein Absturz
+/// dazwischen liess den Riegel ohne Wirkung stehen, und der Retry uebersprang
+/// sie dauerhaft. Nach einer erfolgreichen Ausfuehrung lehnte umgekehrt die
+/// fachliche Vorpruefung den Retry als Konflikt ab. Die Retry- und Killtests
+/// verwendeten nur die generischen Preview-Befehle.
+#[cfg(windows)]
+#[test]
+fn experimentbefehl_und_wirkung_sind_ein_append() {
+    let h = HarnischMitStore::neu("experiment-atomar");
+    let versuch = 0xb20;
+    let begin = experiment_begin_wert(&h.main.adresse, 0x970, versuch);
+    assert_eq!(h.p0(&begin)["ergebnis"], "angewandt");
+    let experimente = h.zeilen("SELECT COUNT(*) FROM experiments");
+    let ereignisse = h.zeilen("SELECT COUNT(*) FROM experiment_events");
+    let befehle = h.zeilen("SELECT COUNT(*) FROM event_log WHERE event_type='command'");
+
+    // Derselbe Befehl noch einmal - der Sender hat seine Antwort nicht bekommen.
+    let ack = h.p0(&begin);
+    assert_eq!(
+        ack["ergebnis"], "idempotent_wiederholt",
+        "R08: ein bereits committeter Befehl ist dieselbe Absicht, kein Konflikt: {ack}"
+    );
+    assert_eq!(
+        h.zeilen("SELECT COUNT(*) FROM experiments"),
+        experimente,
+        "und er legt nichts zweites an"
+    );
+    assert_eq!(
+        h.zeilen("SELECT COUNT(*) FROM experiment_events"),
+        ereignisse,
+        "auch keinen zweiten Ereignisindexeintrag"
+    );
+    assert_eq!(
+        h.zeilen("SELECT COUNT(*) FROM event_log WHERE event_type='command'"),
+        befehle,
+        "und keinen zweiten Befehlsriegel"
+    );
+
+    // Befehl UND Wirkung liegen im Log - beide, oder keiner.
+    assert!(
+        h.zeilen("SELECT COUNT(*) FROM event_log WHERE event_type='experiment'") >= 1
+            && befehle >= 1,
+        "Befehlsriegel und Domaenenereignis stehen beide im Log"
+    );
+}
+
+/// R10 — eine VERDRAENGUNG bekommt ihr eigenes Terminal.
+///
+/// `beginne` schloss das aelteste offene Experiment intern mit `verdraengt`
+/// und gab davon nichts zurueck; der Wrapper persistierte ausschliesslich die
+/// neue Anlage. Der verdraengte Versuch blieb im Store OFFEN.
+/// `retention_abort_also_closes_intervals` erzeugte weder eine Intervention
+/// noch einen Store und konnte die Luecke trotz seines Namens nicht erkennen.
+#[cfg(windows)]
+#[test]
+fn verdraengung_bekommt_ihr_eigenes_terminal() {
+    use eqcop_broker::coordinator::experiment::N_PROJEKT;
+    let h = HarnischMitStore::neu("verdraengung");
+    for nr in 0..N_PROJEKT {
+        let mut w = experiment_begin_wert(&h.main.adresse, 0x980 + nr, 0xb30 + nr);
+        w["passage"]["passage_id"] = json!(hex(0xb60 + nr));
+        assert_eq!(h.p0(&w)["ergebnis"], "angewandt", "Versuch {nr}");
+    }
+    let erster = hex(0xb30);
+    assert!(
+        h.c.experiment_sicht(&erster).expect("steht").offen(),
+        "der aelteste ist noch offen"
+    );
+
+    // Der N+1-te verdraengt den aeltesten.
+    let mut w = experiment_begin_wert(&h.main.adresse, 0x990, 0xb30 + N_PROJEKT);
+    w["passage"]["passage_id"] = json!(hex(0xb60 + N_PROJEKT));
+    assert_eq!(h.p0(&w)["ergebnis"], "angewandt");
+    assert!(
+        !h.c.experiment_sicht(&erster).expect("steht").offen(),
+        "der aelteste ist verdraengt"
+    );
+
+    // Und das steht im STORE, nicht nur im fluechtigen Stand.
+    let zeile: Vec<u8> = rusqlite::Connection::open(h.db())
+        .unwrap()
+        .query_row(
+            "SELECT state_jcs FROM experiments WHERE experiment_id=?1",
+            rusqlite::params![erster],
+            |z| z.get(0),
+        )
+        .expect("die Zeile des Verdraengten steht");
+    let v: Value = serde_json::from_slice(&zeile).unwrap();
+    assert_eq!(
+        v.pointer("/terminal/grund"),
+        Some(&json!("verdraengt")),
+        "R10: die Verdraengung ist persistiert, nicht nur intern geschehen: {v}"
+    );
+    assert_eq!(v["ereignis"], "verdraengt");
+}
+
+/// R07 — ein Snapshot, dessen ABLAGE scheitert, ist NICHT angenommen.
+///
+/// Die Runde 1 trug den Snapshot unter dem Lock als angenommen ein und legte
+/// ihn danach ab; scheiterte der Append, erhoehte der Pfad nur einen Zaehler
+/// und `evidence_snapshot_json` meldete weiter Erfolg. Es existierte damit
+/// angenommene Evidenz ohne den zugesagten Store-Event — und genau darauf
+/// rechnet `resultatmessung` ihre Baseline. Die Historientests nutzten keinen
+/// fehlschlagenden Store und konnten daran nicht fallen.
+#[test]
+fn evidenz_ohne_erfolgreiche_ablage_ist_nicht_angenommen() {
+    // Ein DEGRADIERTER Store: vorhanden, aber jeder Append scheitert.
+    let writer = eqcop_broker::store::StoreWriter::degradiert_ohne_pfad(
+        "Rotprobe: der Store verweigert den Dienst",
+    );
+    assert!(writer.ist_degradiert());
+    let c = Coordinator::mit_store(Arc::new(ManualClock::default()), hex(0xbeef), &writer);
+    let h = hello(1, 2, 10, 100, "passive_probe", Some(9));
+    anmelden(&c, "a", &h);
+    report(&c, "a", &h.adresse);
+
+    assert!(
+        !c.evidence_snapshot_json("a", &evidenz_payload(&h.adresse, 0, |_| {})),
+        "R07: ohne erfolgreiche Ablage ist der Snapshot nicht angenommen"
+    );
+    assert!(
+        c.evidenz_historie(&hex(10)).is_empty(),
+        "und er steht auch nicht im fluechtigen Bestand - sonst rechnete \
+         `resultatmessung` auf Evidenz ohne Store-Event"
+    );
+    assert!(
+        c.evidenz_sicht(&hex(10)).is_none(),
+        "und keine Sicht behauptet ihn"
     );
 }

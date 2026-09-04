@@ -599,6 +599,30 @@ pub(super) fn projektionen_anwenden(
                 event.payload_jcs,
             ],
         )?;
+        // 🔑 SONDE-013 Nacharbeit 2 (Befund R13, M-47/M-50): jede
+        // Experimenttransition bekommt ihre Zeile im EREIGNISINDEX.
+        //
+        // Migration 1 fuehrt `experiment_events(experiment_id, event_uuid)`
+        // seit jeher, und im ganzen Produkt gab es KEIN Insert dorthin: Begin,
+        // Kandidat, Reihenfolge, Resultat und Abbruch liessen die vertraglich
+        // verlangte Tabelle leer. Der Produkttest zaehlte nur
+        // `event_log WHERE event_type='experiment'` und konnte den fehlenden
+        // Index nicht feststellen.
+        //
+        // Die Reihenfolge ist tragend: der Upsert oben legt die `experiments`-
+        // Zeile im SELBEN Commit an, auf die der Fremdschluessel hier zeigt.
+        if tabelle == "experiments" {
+            let event_uuid: String = tx.query_row(
+                "SELECT event_uuid FROM event_log WHERE event_ord=?1",
+                params![event_ord],
+                |zeile| zeile.get(0),
+            )?;
+            tx.execute(
+                "INSERT OR IGNORE INTO experiment_events(experiment_id, event_uuid) \
+                 VALUES(?1,?2)",
+                params![objekt_id, event_uuid],
+            )?;
+        }
     }
     Ok(())
 }

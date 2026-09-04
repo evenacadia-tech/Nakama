@@ -526,7 +526,15 @@ pub enum Ereignis {
 }
 
 /// Der Experimentteil des Stores.
-#[derive(Debug, Default)]
+///
+/// `Clone` ist kein Komfort, sondern der RUECKFALL aus Befund R08: die Wirkung
+/// eines Experimentbefehls wird VORLAEUFIG angewandt, damit ihre Ereignisse
+/// aus dem entstandenen Zustand entstehen und mit dem Befehl in EINE
+/// Transaktion gehen. Scheitert der Append, wird der Stand zurueckgenommen —
+/// ein Speicher, der dem Log voraus ist, waere genau die zweite Wahrheit, die
+/// §33.5 ausschliesst. Der Bestand ist auf `N_GLOBAL` gedeckelt; die Kopie ist
+/// deshalb klein und beschraenkt.
+#[derive(Debug, Default, Clone)]
 pub struct Experimentstore {
     passagen: BTreeMap<String, Passage>,
     experimente: BTreeMap<String, Experiment>,
@@ -538,9 +546,71 @@ fn ist_hex32(s: &str) -> bool {
     s.len() == 32 && s.bytes().all(|b| b.is_ascii_hexdigit())
 }
 
+impl Experiment {
+    /// Baut ein Experiment aus einer GESPEICHERTEN Zeile (M-50, Befund R12).
+    ///
+    /// Der einzige Weg an `gebundene_reihenfolge` vorbei am Riegel von M-44 —
+    /// und er ist zulaessig, weil hier nichts gebunden, sondern etwas bereits
+    /// Gebundenes WIEDERHERGESTELLT wird. Ohne ihn koennte ein Neustart einen
+    /// offenen Versuch nur ohne seine Blindreihenfolge zurueckbringen, und der
+    /// naechste Abschluss faende sie nicht gebunden vor.
+    #[allow(clippy::too_many_arguments)]
+    pub fn aus_store(
+        experiment_id: String,
+        projektbindung: String,
+        passage_id: String,
+        baseline: Experimentreferenz,
+        kandidaten: Vec<Kandidat>,
+        terminal: Option<Terminal>,
+        folge: u64,
+        gebundene_reihenfolge: Option<Blindreihenfolge>,
+        baseline_evidence_ids: Vec<String>,
+        resultat_evidence_ids: Vec<String>,
+    ) -> Self {
+        Self {
+            experiment_id,
+            projektbindung,
+            passage_id,
+            art: Ausfuehrungsart::ManualExternal,
+            reproduzierbarkeit: Reproduzierbarkeit::ManuellNichtWiederherstellbar,
+            baseline,
+            kandidaten,
+            terminal,
+            folge,
+            gebundene_reihenfolge,
+            baseline_evidence_ids,
+            resultat_evidence_ids,
+        }
+    }
+}
+
 impl Experimentstore {
     pub fn neu() -> Self {
         Self::default()
+    }
+
+    /// Der Store aus GESPEICHERTEN Zeilen (M-47/M-50, Befund R12).
+    ///
+    /// 🔑 Nacharbeit 2: `Coordinator::mit_store` restaurierte ausschliesslich
+    /// die Konfliktriegel; Experimentstore und Passagen starteten immer leer.
+    /// Nach Drop und Neuerzeugung lieferte `experiment_sicht(id)` deshalb
+    /// `None`, obwohl die SQLite-Zeile existierte — waehrend M-47 ausdruecklich
+    /// zusagt, dass ein Brokerneustart einen offenen Versuch NICHT abbricht.
+    ///
+    /// Das Ereignislog wird NICHT rekonstruiert: es ist die Kette dieses
+    /// Laufs. Die haltbare Kette liegt im `event_log` und im Index
+    /// `experiment_events`; sie hier zu erfinden waere eine zweite, aermere
+    /// Kopie derselben Wahrheit.
+    pub fn wiederherstellen(passagen: Vec<Passage>, experimente: Vec<Experiment>) -> Self {
+        let mut store = Self::default();
+        for p in passagen {
+            store.passagen.insert(p.passage_id.clone(), p);
+        }
+        for e in experimente {
+            store.naechste_folge = store.naechste_folge.max(e.folge.saturating_add(1));
+            store.experimente.insert(e.experiment_id.clone(), e);
+        }
+        store
     }
 
     pub fn log(&self) -> &[Ereignis] {
@@ -578,13 +648,22 @@ impl Experimentstore {
     /// eigenen Deckel für die Dauer eines Aufrufs — und ein Absturz genau
     /// dort liesse ihn überschritten zurück.
     #[allow(clippy::too_many_arguments)]
+    /// Rueckgabe: die IDs der VERDRAENGTEN Versuche (M-48, Befund R10).
+    ///
+    /// 🔑 Nacharbeit 2: `beginne` gab `Result<(), _>` zurueck und schloss die
+    /// verdraengten Versuche NUR intern. Der Wrapper im Coordinator
+    /// persistierte danach ausschliesslich die neue Anlage — weder ein
+    /// terminales Store-Ereignis noch die Schliessung der Taintintervalle des
+    /// Verdraengten. Ein verdraengter Versuch blieb damit auf der Leitung und
+    /// im Store OFFEN, und seine `art=experiment`-Intervalle sperrten weiter
+    /// starke Evidenz. Wer sie schliessen soll, muss ihre IDs kennen.
     pub fn beginne(
         &mut self,
         experiment_id: &str,
         projektbindung: &str,
         passage: Passage,
         baseline: Experimentreferenz,
-    ) -> Result<(), Anlegefehler> {
+    ) -> Result<Vec<String>, Anlegefehler> {
         if !ist_hex32(experiment_id) {
             return Err(Anlegefehler::IdUngueltig);
         }
@@ -606,7 +685,7 @@ impl Experimentstore {
             self.passagen.insert(passage_id.clone(), passage);
         }
 
-        self.verdraenge_fuer(projektbindung);
+        let verdraengt = self.verdraenge_fuer(projektbindung);
 
         let folge = self.naechste_folge;
         self.naechste_folge += 1;
@@ -635,12 +714,16 @@ impl Experimentstore {
             projektbindung: projektbindung.to_string(),
             baseline: Box::new(baseline_kopie),
         });
-        Ok(())
+        Ok(verdraengt)
     }
 
     /// Schliesst so viele älteste offene Experimente, dass nach dem Anlegen
     /// beide Deckel eingehalten sind (M-48).
-    fn verdraenge_fuer(&mut self, bindung: &str) {
+    ///
+    /// Rueckgabe: welche Versuche dabei verdraengt wurden — der Aufrufer muss
+    /// ihr Terminal persistieren und ihre Taintintervalle schliessen (R10).
+    fn verdraenge_fuer(&mut self, bindung: &str) -> Vec<String> {
+        let mut verdraengt = Vec::new();
         // Erst der Bereichsdeckel, dann der globale: ein Projekt, das seinen
         // eigenen Deckel sprengt, soll nicht die Zeilen anderer Projekte
         // verdrängen.
@@ -652,7 +735,11 @@ impl Experimentstore {
             else {
                 break;
             };
-            let _ = self.schliesse(&id, Abbruchgrund::Verdraengt);
+            if self.schliesse(&id, Abbruchgrund::Verdraengt).is_ok() {
+                verdraengt.push(id);
+            } else {
+                break;
+            }
         }
         while self.offene().count() >= N_GLOBAL {
             let Some(id) = self
@@ -662,8 +749,13 @@ impl Experimentstore {
             else {
                 break;
             };
-            let _ = self.schliesse(&id, Abbruchgrund::Verdraengt);
+            if self.schliesse(&id, Abbruchgrund::Verdraengt).is_ok() {
+                verdraengt.push(id);
+            } else {
+                break;
+            }
         }
+        verdraengt
     }
 
     /// Ein zweiter Durchgang derselben Passage (M-41).

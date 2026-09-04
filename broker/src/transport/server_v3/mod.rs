@@ -1901,7 +1901,10 @@ mod tests {
         // SONDE-013 E-02 (03.09.2026): `experiment_begin` und
         // `experiment_abort` sind aus der Reserve nach `definiert` gewandert,
         // `experiment_manual_result` ist neu dazugekommen. 18/9 -> 21/7.
-        assert_eq!(definiert, 21);
+        // Nacharbeit 2 (04.09.2026, Befunde R16/R21): `experiment_candidate`
+        // kommt als vierte Familie dieses Tickets dazu — der Schritt zwischen
+        // Begin und Ergebnis. 21/7 -> 22/7.
+        assert_eq!(definiert, 22);
         assert_eq!(spaeter, 7);
         assert_eq!(
             definiert + spaeter,

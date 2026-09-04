@@ -309,6 +309,11 @@ impl Coordinator {
     pub fn heartbeat_kontakt(&self, link_id: &str, wert: Option<&Value>) -> bool {
         let jetzt = self.clock.jetzt();
         let mut guards = Vec::new();
+        // 🔑 Nacharbeit 2 (Befund R24, M-55): der zweite Produktaufrufer der
+        // Messpunktinvalidierung. Der Heartbeat ist der Weg, auf dem eine
+        // laufende Sonde ihre Messposition meldet — ein Wechsel dort ist
+        // derselbe Gate-7-Fall wie ueber `descriptor_setzen`.
+        let mut messpunktwechsel: Option<(SessionKey, String, String)> = None;
         let (aktiv, dirty_sessions) = {
             let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
             let Some(link) = stand.links.get(link_id).cloned() else {
@@ -389,6 +394,23 @@ impl Coordinator {
                 let descriptor =
                     wert.and_then(|v| Self::descriptor_aus_heartbeat(&link, &plugin_kind, v));
                 let capabilities = wert.and_then(|v| v.get("capabilities")).cloned();
+                if runtime_gemeldet {
+                    let alt = stand
+                        .clients
+                        .get(&link.client_key)
+                        .and_then(|c| c.descriptor.as_ref())
+                        .and_then(|d| d.get("measurement_position"))
+                        .and_then(Value::as_str)
+                        .map(str::to_owned);
+                    let neu = descriptor
+                        .as_ref()
+                        .and_then(|d| d.get("measurement_position"))
+                        .and_then(Value::as_str)
+                        .map(str::to_owned);
+                    if let (Some(a), Some(n)) = (alt, neu) {
+                        messpunktwechsel = Some((session.clone(), a, n));
+                    }
+                }
                 if let Some(client) = stand.clients.get_mut(&link.client_key) {
                     if client.current_link.as_deref() != Some(link_id) {
                         return false;
@@ -437,6 +459,11 @@ impl Coordinator {
             }
         };
         self.guards_persistieren(guards);
+        if let Some((session, alt, neu)) = messpunktwechsel {
+            // `invalidierung_wegen_messpunkt` entscheidet selbst, ob der
+            // Wechsel einer ist; ein gleicher Messpunkt nimmt nichts zurueck.
+            self.invalidierung_wegen_messpunkt(&session, &alt, &neu);
+        }
         for session in dirty_sessions {
             self.flush_session(&session, Some(link_id));
         }
@@ -650,6 +677,26 @@ impl Coordinator {
                 return false;
             };
             descriptor["adresse"] = effektive_adresse;
+            // 🔑 SONDE-013 Nacharbeit 2 (Befund R24, M-55): DER Produktaufrufer
+            // der Messpunktinvalidierung.
+            //
+            // `invalidierung_wegen_messpunkt` hatte ausserhalb seiner Huelle
+            // keinen: ein Descriptorwechsel liess den Invalidierungszaehler
+            // unveraendert, und die Evidenz der ALTEN Messposition blieb
+            // gueltig. Gate 7 (§49.2) sagt genau das Gegenteil zu. Die Kante
+            // liegt hier, weil hier beide Seiten des Wechsels nebeneinander
+            // stehen — nirgends sonst.
+            let alte_klasse = stand
+                .clients
+                .get(&link.client_key)
+                .and_then(|c| c.descriptor.as_ref())
+                .and_then(|d| d.get("measurement_position"))
+                .and_then(Value::as_str)
+                .map(str::to_owned);
+            let neue_klasse = descriptor
+                .get("measurement_position")
+                .and_then(Value::as_str)
+                .map(str::to_owned);
             if let Some(client) = stand.clients.get_mut(&link.client_key) {
                 client.descriptor = Some(descriptor);
                 client.join_kandidat = true;
@@ -657,8 +704,14 @@ impl Coordinator {
             Self::auto_join_locked(&mut stand, &link.client_key);
             let session = link.client_key.session();
             stand.dirty_sessions.insert(session.clone());
-            session
+            (session, alte_klasse, neue_klasse)
         };
+        let (session, alte_klasse, neue_klasse) = session;
+        if let (Some(alt), Some(neu)) = (alte_klasse, neue_klasse) {
+            // `invalidierung_wegen_messpunkt` entscheidet selbst, ob der
+            // Wechsel einer ist; ein gleicher Messpunkt nimmt nichts zurueck.
+            self.invalidierung_wegen_messpunkt(&session, &alt, &neu);
+        }
         self.flush_session(&session, Some(link_id));
         true
     }

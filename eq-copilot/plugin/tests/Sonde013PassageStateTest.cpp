@@ -38,8 +38,10 @@
 #include "NakamaState.h"
 #include "PluginProcessor.h"
 
+#include <chrono>
 #include <cstring>
 #include <iostream>
+#include <thread>
 #include <limits>
 #include <memory>
 #include <vector>
@@ -442,6 +444,185 @@ void zahlenraender()
     pruefe (gleich (b, zweit), "auch am Rand ist der Roundtrip bytegleich");
 }
 
+// ═════════════════════════════════════════════════════════════════════════
+// R03 · die gespeicherte Passage erreicht die ENGINE
+// ═════════════════════════════════════════════════════════════════════════
+//
+// 🔑 Nacharbeit 2 (Befund R03, M-03/M-25): `setzePassagenfenster` hatte
+// ausserhalb der Tests keinen Aufrufer. `merkeManuellePassage` schrieb nur
+// Plugin-State; weder Main noch Sonde uebertrugen die Grenzen an eine Engine,
+// und die Passagenmetriken liefen weiter seit der letzten Transportgrenze. Der
+// alte Wire-Test rief die Methode DIREKT auf und konnte an der fehlenden
+// Produktkopplung nicht fallen.
+//
+// Dieser Fall faehrt den ganzen Weg: Produkt-API → Wunsch → Analyseworker →
+// Engine. Er treibt echte Bloecke durch `processBlock`, damit der Worker
+// wirklich laeuft.
+void r03Passagenfenster()
+{
+    abschnitt ("R03  passagenfenster_erreicht_die_engine");
+    auto p = mainProzessor();
+    p->prepareToPlay (48000.0, 512);
+
+    juce::AudioBuffer<float> puffer (2, 512);
+    juce::MidiBuffer midi;
+    auto blockFahren = [&]
+    {
+        puffer.clear();
+        p->processBlock (puffer, midi);
+    };
+    auto wartenAufFenster = [&] (std::int64_t& start, std::int64_t& ende, bool erwartet)
+    {
+        for (int i = 0; i < 400; ++i)
+        {
+            blockFahren();
+            if (p->passagenfensterInEngine (start, ende) == erwartet)
+                return true;
+            std::this_thread::sleep_for (std::chrono::milliseconds (5));
+        }
+        return false;
+    };
+
+    std::int64_t start = 0, ende = 0;
+    pruefe (! p->passagenfensterInEngine (start, ende),
+            "R03: ohne markierte Passage fuehrt die Engine kein Fenster");
+
+    pruefe (p->merkeManuellePassage (hex32 (7), "Refrain", 480000, 960000),
+            "R03: die Passage wird gemerkt");
+    pruefe (wartenAufFenster (start, ende, true),
+            "R03: passagenfenster_erreicht_die_engine - der Analyseworker setzt "
+            "das Fenster, ohne dass ein Test die Engine anfasst");
+    pruefe (start == 480000 && ende == 960000,
+            "R03: und zwar mit GENAU den gespeicherten Grenzen",
+            juce::String (start) + ".." + juce::String (ende));
+
+    // Der Gegenpfad gehoert in denselben Aenderungssatz (CLAUDE.md).
+    pruefe (p->vergissManuellePassage (hex32 (7)), "R03: die Passage wird vergessen");
+    pruefe (wartenAufFenster (start, ende, false),
+            "R03: und die Engine loest die Bindung wieder - danach gilt wieder "
+            "die Transportepoche als Fenster");
+
+    p->releaseResources();
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// R01 · das Ueberlauf-Sticky hat einen Loeschpfad
+// ═════════════════════════════════════════════════════════════════════════
+//
+// 🔑 Nacharbeit 2 (Befund R01, M-61): `v3Status()` las das Sticky, aber im
+// Produkt gab es weder ein `store(false)` noch einen Aufruf von
+// `InterventionsRing::resync()`. Nach dem ersten Ueberlauf meldete jeder
+// Heartbeat dauerhaft `intervention_state_unknown`, und die Sperre auf starker
+// Evidenz fiel nie wieder. Die beiden alten Beine prueften die isolierten
+// Haelften und konnten an der fehlenden Kopplung nicht fallen.
+void r01Resync()
+{
+    abschnitt ("R01  ueberlauf_sticky_wird_beim_bestaetigten_resync_geloescht");
+    auto p = mainProzessor();
+    p->prepareToPlay (48000.0, 512);
+
+    pruefe (! p->v3StatusFuerTest().interventionStateUnknown,
+            "R01: frisch ist der Interventionszustand BEKANNT");
+
+    // Den Ring bis zum Ueberlauf fuellen — derselbe Weg wie im Audiothread.
+    const int geschrieben = p->interventionsRingFuellenFuerTest();
+    pruefe (geschrieben > 0, "R01: der Ring nimmt Ereignisse auf",
+            juce::String (geschrieben));
+    pruefe (p->v3StatusFuerTest().interventionStateUnknown,
+            "R01: der Ueberlauf meldet sich als `intervention_state_unknown`");
+
+    // Der Neuaufbau des Control-Links IST der bestaetigte Resync. Er behauptet
+    // Neutralitaet nur, wenn der Ring leer ist — also erst nach dem Leeren.
+    p->v3LinkFuerTest (true);
+    pruefe (p->v3StatusFuerTest().interventionStateUnknown,
+            "R01: bei GEFUELLTEM Ring bleibt das Sticky stehen - eine "
+            "Selbstheilung waere genau das, was Paragraph 34.2 verbietet");
+
+    p->interventionsRingLeerenFuerTest();
+    p->v3LinkFuerTest (true);
+    pruefe (! p->v3StatusFuerTest().interventionStateUnknown,
+            "R01: ueberlauf_sticky_wird_beim_bestaetigten_resync_geloescht - der "
+            "bestaetigte Neuaufbau loescht es, und der Zustand ist wieder bekannt");
+
+    p->releaseResources();
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// R06 · der Vergleichspegel ist im Produkt verdrahtet
+// ═════════════════════════════════════════════════════════════════════════
+//
+// 🔑 Nacharbeit 2 (Befund R06, M-07/M-20/M-43): `Vergleichspegel` und
+// `Blindvergleich` waren uebersetzt und im Produkt UNBENUTZT;
+// `nichtEndlicheSamples()` hatte ausserhalb der C++-Tests keinen Leser. Ein
+// nichtendliches Sample im Vergleichsmaterial verriegelte lokal den Gain und
+// blieb im Produkt ungezaehlt.
+void r06Vergleichspegel()
+{
+    abschnitt ("R06  vergleichspegel_und_blindvergleich_im_produktpfad");
+    auto p = mainProzessor();
+    p->prepareToPlay (48000.0, 512);
+
+    juce::AudioBuffer<float> puffer (2, 512);
+    juce::MidiBuffer midi;
+    auto sende = [&] (float wert, bool nichtEndlich)
+    {
+        for (int c = 0; c < 2; ++c)
+            for (int i = 0; i < puffer.getNumSamples(); ++i)
+                puffer.setSample (c, i, nichtEndlich && i == 0
+                                          ? std::numeric_limits<float>::quiet_NaN()
+                                          : wert);
+        p->processBlock (puffer, midi);
+    };
+
+    pruefe (! p->versuchLautheitAbgeglichen(),
+            "R06: ohne markierte Passage misst der Vergleichspegel nicht");
+    pruefe (p->versuchNichtEndlicheSamples() == 0,
+            "R06: und zaehlt nichts");
+
+    // Die markierte Passage schaltet die Vorabmessung ein (Paragraph 38.3).
+    pruefe (p->merkeManuellePassage (hex32 (8), "Refrain", 0, 960000),
+            "R06: die Passage wird gemerkt");
+    // Reichlich Material: der Pegel braucht mindestens 400 ms.
+    for (int i = 0; i < 200; ++i)
+        sende (0.5f, false);
+    pruefe (p->beginneVersuch (hex32 (8)) || ! p->laufenderVersuch().isNotEmpty(),
+            "R06: `beginneVersuch` friert den Pegel ein, bevor irgendetwas reist");
+    pruefe (p->versuchLautheitAbgeglichen(),
+            "R06: vergleichspegel_ist_im_produktpfad_eingefroren - der Pegel ist "
+            "gesetzt, nicht nur messbar",
+            juce::String (p->versuchMatchGainDb(), 3));
+    pruefe (p->versuchNichtEndlicheSamples() == 0,
+            "R06: und sauberes Material zaehlt nachweislich KEIN nichtendliches "
+            "Sample - die Gegenprobe zum Fall darunter");
+
+    // Und derselbe Weg mit beschaedigtem Material: der Zaehler REIST.
+    auto q = mainProzessor();
+    q->prepareToPlay (48000.0, 512);
+    pruefe (q->merkeManuellePassage (hex32 (9), "Refrain", 0, 960000),
+            "R06: zweite Passage gemerkt");
+    juce::AudioBuffer<float> puffer2 (2, 512);
+    for (int i = 0; i < 200; ++i)
+    {
+        for (int c = 0; c < 2; ++c)
+            for (int s = 0; s < puffer2.getNumSamples(); ++s)
+                puffer2.setSample (c, s, s == 0 ? std::numeric_limits<float>::quiet_NaN()
+                                                : 0.5f);
+        q->processBlock (puffer2, midi);
+    }
+    pruefe (! q->beginneVersuch (hex32 (9)),
+            "R06: mit nichtendlichem Material entsteht KEIN Versuch - eine "
+            "Klangwertung ohne Lautheitsabgleich ist unzulaessig (Paragraph 15)");
+    pruefe (q->versuchNichtEndlicheSamples() > 0,
+            "R06: nichtendliche_samples_reisen_in_den_wirezustand - der Zaehler "
+            "hat einen PRODUKTLESER, statt nur lokal zu verriegeln",
+            juce::String ((juce::int64) q->versuchNichtEndlicheSamples()));
+    pruefe (! q->versuchLautheitAbgeglichen(),
+            "R06: und der Pegel bleibt ungesetzt");
+
+    p->releaseResources();
+    q->releaseResources();
+}
+
 } // namespace
 
 int main()
@@ -454,6 +635,9 @@ int main()
     raenderApi();
     raenderLeser();
     zahlenraender();
+    r03Passagenfenster();
+    r01Resync();
+    r06Vergleichspegel();
     std::cout << std::endl << bestanden << " bestanden, " << fehler << " gescheitert"
               << std::endl;
     return fehler == 0 ? 0 : 1;

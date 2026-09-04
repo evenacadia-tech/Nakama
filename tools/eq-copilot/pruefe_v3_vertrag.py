@@ -814,7 +814,8 @@ def fassung_1_schema(schema: dict) -> dict:
     Schema ueberein, faellt schon der Rueckbau und nicht erst ein Fixture.
     """
     alt = copy.deepcopy(schema)
-    neue_familien = {"experiment_begin", "experiment_abort", "experiment_manual_result"}
+    neue_familien = {"experiment_begin", "experiment_abort", "experiment_manual_result",
+                     "experiment_candidate"}
     alt["oneOf"] = [r for r in alt["oneOf"]
                     if r.get("$ref", "").removeprefix("#/$defs/") not in neue_familien]
     for name in (neue_familien | {"experiment_referenz", "alignment_klasse", "fingerprint",
@@ -847,6 +848,7 @@ def pruefe_sonde013_fassung_2(lauf: Lauf, schema: dict, reserviert: dict) -> Non
               fassung.get("experiment_begin") is True
               and fassung.get("experiment_abort") is True
               and fassung.get("experiment_manual_result") is True
+              and fassung.get("experiment_candidate") is True
               and fassung.get("evidence_snapshot_ereignisse") is True
               and fassung.get("evidence_snapshot_stereo") is True
               and fassung.get("evidence_invalidate_grund_erweitert")
@@ -885,7 +887,8 @@ def pruefe_sonde013_fassung_2(lauf: Lauf, schema: dict, reserviert: dict) -> Non
               and not pruefer_1.is_valid(invalid_messpunkt))
 
     neu = {name: lade(name) for name in
-           ("experiment_begin", "experiment_abort", "experiment_manual_result")}
+           ("experiment_begin", "experiment_abort", "experiment_manual_result",
+            "experiment_candidate")}
     lauf.wahr("fassung_1_leser_lehnt_die_drei_experimentfamilien_ab",
               all(pruefer_2.is_valid(d) for d in neu.values())
               and not any(pruefer_1.is_valid(d) for d in neu.values()))
@@ -1191,7 +1194,7 @@ def pruefe_namen(lauf: Lauf, schema: dict, reserviert: dict) -> None:
                   for n in belegt_nachrichten)
               and {n.get("name") for n in belegt_nachrichten}
                   == {"session_command", "experiment_begin", "experiment_abort",
-                      "experiment_manual_result"}
+                      "experiment_manual_result", "experiment_candidate"}
               and all(n.get("name") in definiert and n.get("name") not in reserv
                       for n in belegt_nachrichten))
 
@@ -1209,9 +1212,18 @@ def pruefe_namen(lauf: Lauf, schema: dict, reserviert: dict) -> None:
               and "#/$defs/experiment_manual_result" in {r["$ref"] for r in schema["oneOf"]}
               and next(n["eigentuemer"] for n in belegt_nachrichten
                        if n["name"] == "experiment_manual_result").startswith("SONDE-013"))
-    lauf.wahr("summe_ist_28",
-              reserviert["gesamt_erwartet"] == 28
-              and len(definiert) == 21 and len(reserv) == 7)
+    # SONDE-013 Nacharbeit 2 (Befunde R16/R21): `experiment_candidate` kommt
+    # als VIERTE Familie dieses Tickets dazu - der Schritt zwischen Begin und
+    # Ergebnis, der den Kandidaten erfasst und die Blindreihenfolge bindet.
+    lauf.wahr("experiment_candidate_definiert",
+              "experiment_candidate" in definiert
+              and "experiment_candidate" in schema["$defs"]
+              and "#/$defs/experiment_candidate" in {r["$ref"] for r in schema["oneOf"]}
+              and next(n["eigentuemer"] for n in belegt_nachrichten
+                       if n["name"] == "experiment_candidate").startswith("SONDE-013"))
+    lauf.wahr("summe_ist_29",
+              reserviert["gesamt_erwartet"] == 29
+              and len(definiert) == 22 and len(reserv) == 7)
 
     # M-73: kein Ticket belegt einen Namen, dessen Eigentuemer ein anderes
     # Ticket ist - und der Vertrag kennt nur GANZE Familien, keine

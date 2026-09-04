@@ -1,0 +1,107 @@
+Rotbeweis R08 - Experimentbefehl und Wirkung sind ein Append
+Datum: 2026-09-04
+Datei: broker/src/coordinator/experiment_verdrahtung.rs
+Test:  sonde013_verdrahtung::experimentbefehl_und_wirkung_sind_ein_append
+
+== 1. Fehler eingebaut ==
+ALT: if let Some(ack) = self.bekannter_befehl(wert) {
+            return Some(ack);
+        }
+NEU: // Rotbeweis: die Idempotenz steht nicht vor der Vorpruefung.
+
+== 2. Der Test FAELLT ==
+exit=101
+
+running 1 test
+test experimentbefehl_und_wirkung_sind_ein_append ... FAILED
+
+failures:
+
+---- experimentbefehl_und_wirkung_sind_ein_append stdout ----
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde013-experiment-atomar-19376-390811545c9848058f92ba5722ddb094\nakama-broker.sqlite3
+
+thread 'experimentbefehl_und_wirkung_sind_ein_append' (3884) panicked at tests\sonde013_verdrahtung.rs:1948:5:
+assertion `left == right` failed: R08: ein bereits committeter Befehl ist dieselbe Absicht, kein Konflikt: {"code":"revision_conflict","command_id":"00000000000000000000000000000970","ergebnis":"abgelehnt","state_revision":0,"type":"command_ack"}
+  left: String("abgelehnt")
+ right: "idempotent_wiederholt"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    experimentbefehl_und_wirkung_sind_ein_append
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 32 filtered out; finished in 0.23s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: method `bekannter_befehl` is never used
+  --> src\coordinator\befehl.rs:66:19
+   |
+21 | impl Coordinator {
+   | ---------------- method in this implementation
+...
+66 |     pub(super) fn bekannter_befehl(&self, wert: &Value) -> Option<Vec<u8>> {
+   |                   ^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib) generated 1 warning
+warning: method `payloads` is never used
+   --> tests\sonde013_verdrahtung.rs:227:8
+    |
+226 | impl PushProbe {
+    | -------------- method in this implementation
+227 |     fn payloads(&self) -> Vec<(String, Value)> {
+    |        ^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `clock` and `push` are never read
+   --> tests\sonde013_verdrahtung.rs:250:5
+    |
+247 | struct HarnischMitStore {
+    |        ---------------- fields in this struct
+...
+250 |     clock: Arc<ManualClock>,
+    |     ^^^^^
+251 |     push: Arc<PushProbe>,
+    |     ^^^^
+
+warning: `eqcop-broker` (test "sonde013_verdrahtung") generated 2 warnings
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.69s
+     Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)
+error: test failed, to rerun pass `--test sonde013_verdrahtung`
+
+
+== 3. Fehler entfernt, der Test ist GRUEN ==
+exit=0
+
+running 1 test
+test experimentbefehl_und_wirkung_sind_ein_append ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 32 filtered out; finished in 0.24s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: method `payloads` is never used
+   --> tests\sonde013_verdrahtung.rs:227:8
+    |
+226 | impl PushProbe {
+    | -------------- method in this implementation
+227 |     fn payloads(&self) -> Vec<(String, Value)> {
+    |        ^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `clock` and `push` are never read
+   --> tests\sonde013_verdrahtung.rs:250:5
+    |
+247 | struct HarnischMitStore {
+    |        ---------------- fields in this struct
+...
+250 |     clock: Arc<ManualClock>,
+    |     ^^^^^
+251 |     push: Arc<PushProbe>,
+    |     ^^^^
+
+warning: `eqcop-broker` (test "sonde013_verdrahtung") generated 2 warnings
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.89s
+     Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)

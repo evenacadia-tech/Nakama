@@ -5,6 +5,19 @@
 
 use super::*;
 
+/// Ein Domaenenereignis, das im SELBEN Append landet wie sein Befehl.
+///
+/// 🔑 Nacharbeit 2 (Befund R08): `persistenz_p0` committete den Befehl, und die
+/// Wirkung schrieb danach ihre eigenen Ereignisse. Starb der Broker dazwischen,
+/// lag der Befehlsriegel im Log und die Wirkung nicht — der Retry bekam
+/// `idempotent_wiederholt` und uebersprang sie DAUERHAFT. Befehlsriegel und
+/// Domaenenereignis gehoeren in EINE Transaktion.
+pub(super) struct Domaenenereignis {
+    pub(super) event_type: String,
+    pub(super) payload: Value,
+    pub(super) ziele: Vec<SnapshotZiel>,
+}
+
 impl Coordinator {
     pub(super) fn command_ack(
         command_id: &str,
@@ -43,7 +56,60 @@ impl Coordinator {
         ))
     }
 
+    /// Der bereits committete Befehl derselben `command_id`, falls es einen
+    /// gibt (M-47, Befund R08).
+    ///
+    /// Sie steht VOR jeder fachlichen Vorpruefung: nach einer vollstaendig
+    /// erfolgreichen Ausfuehrung wuerde die Fachlogik einen Retry sonst als
+    /// `revision_conflict` beziehungsweise `schon_terminal` ablehnen — obwohl
+    /// der Sender nur seine Antwort nicht bekommen hat.
+    pub(super) fn bekannter_befehl(&self, wert: &Value) -> Option<Vec<u8>> {
+        let kopf = wert.get("kopf")?;
+        let command_id = kopf.get("command_id")?.as_str()?;
+        let store = self.store.as_ref()?;
+        let payload = store.command_event_lesen(command_id).ok()??;
+        let (alt, revision, hash) = Self::persistierte_command_wirkung(&payload)?;
+        if alt == *wert {
+            Self::command_ack(
+                command_id,
+                "idempotent_wiederholt",
+                revision,
+                Some(&hash),
+                None,
+            )
+        } else {
+            Self::command_ack(
+                command_id,
+                "konflikt",
+                revision,
+                Some(&hash),
+                Some("revision_conflict"),
+            )
+        }
+    }
+
+    /// Steht in diesem `command_ack` „angewandt"?
+    pub(super) fn ack_ist_angewandt_p0(ack: &[u8]) -> bool {
+        serde_json::from_slice::<Value>(ack)
+            .ok()
+            .and_then(|v| {
+                v.get("ergebnis")
+                    .and_then(Value::as_str)
+                    .map(|e| e == "angewandt")
+            })
+            .unwrap_or(false)
+    }
+
     pub(super) fn persistenz_p0(&self, link_id: &str, wert: &Value) -> Option<Vec<u8>> {
+        self.persistenz_p0_mit_domaene(link_id, wert, Vec::new())
+    }
+
+    pub(super) fn persistenz_p0_mit_domaene(
+        &self,
+        link_id: &str,
+        wert: &Value,
+        domaene: Vec<Domaenenereignis>,
+    ) -> Option<Vec<u8>> {
         let kopf = wert.get("kopf")?;
         let command_id = kopf.get("command_id")?.as_str()?;
         let base_revision = kopf.get("base_revision")?.as_u64()?;
@@ -244,7 +310,32 @@ impl Coordinator {
         event.command_id = Some(command_id.to_owned());
         event.event_type = "command".into();
         event.snapshot_ziele = snapshot_ziele;
-        match store.append(vec![event]) {
+        // 🔑 Nacharbeit 2 (Befund R08): Befehl UND Wirkung in EINEM Append.
+        //
+        // Der Writer zieht bis zu `COMMIT_BATCH_MAX` Ereignisse in EINE
+        // Transaktion; ein Befehl mit seinen Domaenenereignissen liegt weit
+        // darunter und wird deshalb als Ganzes committet oder gar nicht. Ein
+        // Absturz kann damit nicht mehr den Befehlsriegel ohne seine Wirkung
+        // hinterlassen — genau der Zustand, in dem der Retry
+        // `idempotent_wiederholt` bekam und die Wirkung fuer immer ausblieb.
+        let mut ereignisse = vec![event];
+        for d in domaene {
+            let Ok(payload_jcs) = serde_json_canonicalizer::to_vec(&d.payload) else {
+                return None;
+            };
+            let sequence = self.event_sequence.fetch_add(1, Ordering::SeqCst);
+            let mut e = StoreEvent::session_snapshot(
+                &ziel.project_binding_id,
+                &ziel.session_epoch,
+                &self.broker_epoch,
+                sequence.min(i64::MAX as u64) as i64,
+                payload_jcs,
+            );
+            e.event_type = d.event_type;
+            e.snapshot_ziele = d.ziele;
+            ereignisse.push(e);
+        }
+        match store.append(ereignisse) {
             Ok(ausgaenge) => match ausgaenge.first()? {
                 crate::store::AppendAusgang::Angewandt { .. } => {
                     Self::command_ack(command_id, "angewandt", revision, Some(&hash), None)
@@ -438,14 +529,32 @@ impl Coordinator {
                 {
                     return None;
                 }
-                if wert
+                match wert
                     .get("intervention_state_unknown")
                     .and_then(Value::as_bool)
-                    == Some(true)
                 {
-                    // M-39/M-62: der gemeldete Ueberlauf trifft die Sitzung
-                    // dieses Links, nicht den ganzen Broker.
-                    self.intervention_overflow_fuer_link(link_id);
+                    Some(true) => {
+                        // M-39/M-62: der gemeldete Ueberlauf trifft die Sitzung
+                        // dieses Links, nicht den ganzen Broker.
+                        self.intervention_overflow_fuer_link(link_id);
+                    }
+                    // 🔑 Nacharbeit 2 (Befund R01, M-61): DER Produktaufrufer
+                    // von `resync_bestaetigen`.
+                    //
+                    // Er hatte ausserhalb der Tests keinen: das sticky Unknown
+                    // wurde gesetzt und nie wieder geloest. Der Riegel ist eng —
+                    // NUR der ERSTE Heartbeat eines Links, der noch keine
+                    // Ereignissequenz gemeldet hat, gilt als bestaetigter
+                    // Neuaufbau. Ein spaeterer Heartbeat mit `false` ist die
+                    // normale Meldung, und die loescht Unknown NIE (§34.2).
+                    //
+                    // Die Gegenseite ist `EqCopilotProcessor::v3ControlLink`:
+                    // sie erklaert Neutralitaet nur, wenn der Ring leer und
+                    // kein Marker hoerbar ist.
+                    Some(false) if self.link_ohne_ereignissequenz(link_id) => {
+                        let _ = self.resync_bestaetigen(link_id, 0);
+                    }
+                    _ => {}
                 }
                 let sequence = wert.get("sequence")?.as_u64()?;
                 let _ = self.heartbeat_kontakt(link_id, Some(&wert));
@@ -519,14 +628,47 @@ impl Coordinator {
                 None
             }
             "session_command" => self.session_command(link_id, &wert),
-            "preview_begin" | "preview_renew" | "preview_end" => self.persistenz_p0(link_id, &wert),
+            "preview_begin" | "preview_renew" | "preview_end" => {
+                let ack = self.persistenz_p0(link_id, &wert)?;
+                // 🔑 Nacharbeit 2 (Befund R24, M-52): eine PREVIEW nimmt die
+                // Evidenz ihrer Sitzung zurueck.
+                //
+                // Die drei Familien liefen bis hierher NUR durch
+                // `persistenz_p0`; der Invalidierungszaehler blieb unveraendert,
+                // und die waehrend der Vorschau gemessene Evidenz sah aus wie
+                // jede andere. M-52 zaehlt die Preview ausdruecklich als
+                // Ausloeser auf.
+                //
+                // Der Umfang ist die GANZE Sitzung, und das ist keine
+                // Bequemlichkeit: die drei Nachrichten tragen keinen Bereich in
+                // Projektzeit, und ein geratenes Fenster waere schlimmer als ein
+                // zu grosses (§32.3). Der Grund ist `intervention` — eine
+                // Vorschau IST ein hoerbarer Eingriff.
+                if Self::ack_ist_angewandt_p0(&ack) {
+                    if let Ok(ziel) = serde_json::from_value::<Adresse>(
+                        wert.pointer("/kopf/ziel").cloned().unwrap_or(Value::Null),
+                    ) {
+                        let session = ClientKey::aus_adresse(&ziel).session();
+                        self.invalidierung_wegen_preview(&session);
+                    }
+                }
+                Some(ack)
+            }
             // 🔑 Nacharbeit 1 (Befund B18): die drei Experimentfamilien fielen
             // vorher in `_ => None`. Schema-gueltige Produktnachrichten
             // bewirkten damit NICHTS, und M-40/M-47/M-49 existierten nur in
             // ihren eigenen Tests.
-            "experiment_begin" | "experiment_abort" | "experiment_manual_result" => {
-                self.experiment_p0(link_id, &wert)
-            }
+            // 🔑 Nacharbeit 2 (Befunde R16/R21): `experiment_candidate` ist der
+            // Schritt ZWISCHEN Begin und Ergebnis. Er erfasst den Kandidaten
+            // und bindet die Blindreihenfolge append-only, BEVOR der User
+            // hoert. Ohne ihn konnte ein Ergebnis ohne einen einzigen
+            // Kandidaten terminieren, und die Reihenfolge wurde erst zusammen
+            // mit dem Hoerurteil gebunden — der Sender konnte sie also nach
+            // dem Hoeren waehlen.
+            "experiment_begin"
+            | "experiment_candidate"
+            | "experiment_abort"
+            | "experiment_manual_result" => self.experiment_p0(link_id, &wert),
             _ => None,
         }
     }

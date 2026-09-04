@@ -727,8 +727,13 @@ target_sources(EqCopSonde013PassageStateTest PRIVATE
     src/Diagnose.cpp
 )
 target_include_directories(EqCopSonde013PassageStateTest PRIVATE src)
+# SONDE-013 Nacharbeit 2 (Befunde R01/R03/R06): das Bein misst jetzt zusaetzlich
+# den Weg von der gespeicherten Passage zur Engine, den Loeschpfad des
+# Ueberlauf-Stickys und den Vergleichspegel im Produktpfad. Dafuer braucht es
+# dieselben Testnaehte wie die uebrigen Prozessorbeine.
 target_compile_definitions(EqCopSonde013PassageStateTest PRIVATE
-    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0
+    NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3=1)
 target_link_libraries(EqCopSonde013PassageStateTest PRIVATE juce::juce_audio_utils juce::juce_dsp
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
 nakama_kern_anbinden(EqCopSonde013PassageStateTest)

@@ -16,8 +16,10 @@ pub(super) const JSON_SCHEMA_MINOR_AKTIV: u8 = 2;
 /// Liste sind in diesem Projekt schon einmal auseinandergelaufen
 /// (T2-Runde 2, BF-5) — hier faellt die Abweichung am Riegel statt an einem
 /// Fixture, das zufaellig darauf zielt.
-const FASSUNG_2_FAMILIEN: [&str; 3] = [
+const FASSUNG_2_FAMILIEN: [&str; 4] = [
     "experiment_begin",
+    // Nacharbeit 2 (R16/R21): der Schritt zwischen Begin und Ergebnis.
+    "experiment_candidate",
     "experiment_abort",
     "experiment_manual_result",
 ];
@@ -54,12 +56,15 @@ const FASSUNG_2_GRUENDE: [&str; 2] = ["material_wechsel", "messpunkt_wechsel"];
 /// Die Fehlercodes der Fassung 2 (SONDE-013 Nacharbeit 1). Sie benennen die
 /// Produktregeln der Experimentfamilien; ein Leser der Fassung 1 kennt sie
 /// nicht und muss sie ABLEHNEN, statt sie still auf `internal` abzubilden.
-const FASSUNG_2_FEHLERCODES: [&str; 5] = [
+const FASSUNG_2_FEHLERCODES: [&str; 6] = [
     "abdeckung_zu_gering",
     "schon_terminal",
     "ohne_lautheitsabgleich",
     "ohne_resultatmessung",
     "blindreihenfolge_widerspruch",
+    // Nacharbeit 2 (Befund R21): die Bindung hat einen eigenen Befehlszweig,
+    // also hat ihr Fehlen einen eigenen Namen.
+    "reihenfolge_nicht_gebunden",
 ];
 
 /// Baut aus der committeten **Fassung 2** die **Fassung 1** zurueck.

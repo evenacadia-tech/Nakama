@@ -1,0 +1,89 @@
+Rotbeweis R06 - Vergleichspegel und Blindvergleich im Produktpfad
+Datum: 2026-09-04
+Datei: eq-copilot/plugin/src/PluginProcessor.cpp
+Test:  EqCopSonde013PassageStateTest R06
+
+== 1. Fehler eingebaut ==
+ALT: if (pegelSpeist)
+        for (int c = 0; c < kanaele; ++c)
+            vergleichspegel.speise (
+                versuchTrocken.data() + (std::size_t) c * (std::size_t) buffer.getNumSamples(),
+                buffer.getReadPointer (c),
+                buffer.getNumSamples());
+NEU: // Rotbeweis: der Vergleichspegel bekommt kein Material.
+
+== 2. Der Test FAELLT ==
+exit=1
+b hex32 → read-only, Originalbytes zurueck
+[ok]   Leser: kein Label ueber 120 Codepoints → read-only, Originalbytes zurueck
+[ok]   Leser: kein negativer Start → read-only, Originalbytes zurueck
+[ok]   Leser: kein leeres Fenster → read-only, Originalbytes zurueck
+[ok]   Leser: kein rueckwaerts laufendes Fenster → read-only, Originalbytes zurueck
+[ok]   Leser: keine Bruchzahl als Projektsample - 44100.5 gibt es nicht → read-only, Originalbytes zurueck
+[ok]   Leser: keine Zahl als Text - stille Umwandlung waere eine erfundene Grenze → read-only, Originalbytes zurueck
+[ok]   Leser: keine doppelte passage_id → read-only, Originalbytes zurueck
+[ok]   Leser: keine unvollstaendige Vierergruppe → read-only, Originalbytes zurueck
+[ok]   Leser: genau die Obergrenze ist gueltig  [64]
+[ok]   Leser: eine ueber der Obergrenze ist read-only
+[ok]   Leser: ein blanker Wert statt eines Arrays ist read-only
+
+== Zahlenraender: `int64` an seinen Enden ==
+[ok]   eine Passage am oberen int64-Rand wird gemerkt
+[ok]   und kommt exakt zurueck - kein Umweg ueber `double` unterwegs
+[ok]   auch am Rand ist der Roundtrip bytegleich
+
+== R03  passagenfenster_erreicht_die_engine ==
+[ok]   R03: ohne markierte Passage fuehrt die Engine kein Fenster
+[ok]   R03: die Passage wird gemerkt
+[ok]   R03: passagenfenster_erreicht_die_engine - der Analyseworker setzt das Fenster, ohne dass ein Test die Engine anfasst
+[ok]   R03: und zwar mit GENAU den gespeicherten Grenzen  [480000..960000]
+[ok]   R03: die Passage wird vergessen
+[ok]   R03: und die Engine loest die Bindung wieder - danach gilt wieder die Transportepoche als Fenster
+
+== R01  ueberlauf_sticky_wird_beim_bestaetigten_resync_geloescht ==
+[ok]   R01: frisch ist der Interventionszustand BEKANNT
+[ok]   R01: der Ring nimmt Ereignisse auf  [32]
+[ok]   R01: der Ueberlauf meldet sich als `intervention_state_unknown`
+[ok]   R01: bei GEFUELLTEM Ring bleibt das Sticky stehen - eine Selbstheilung waere genau das, was Paragraph 34.2 verbietet
+[ok]   R01: ueberlauf_sticky_wird_beim_bestaetigten_resync_geloescht - der bestaetigte Neuaufbau loescht es, und der Zustand ist wieder bekannt
+
+== R06  vergleichspegel_und_blindvergleich_im_produktpfad ==
+[ok]   R06: ohne markierte Passage misst der Vergleichspegel nicht
+[ok]   R06: und zaehlt nichts
+[ok]   R06: die Passage wird gemerkt
+[ok]   R06: `beginneVersuch` friert den Pegel ein, bevor irgendetwas reist
+[ROT]  R06: vergleichspegel_ist_im_produktpfad_eingefroren - der Pegel ist gesetzt, nicht nur messbar  [0.000]
+[ok]   R06: und sauberes Material zaehlt nachweislich KEIN nichtendliches Sample - die Gegenprobe zum Fall darunter
+[ok]   R06: zweite Passage gemerkt
+[ok]   R06: mit nichtendlichem Material entsteht KEIN Versuch - eine Klangwertung ohne Lautheitsabgleich ist unzulaessig (Paragraph 15)
+[ROT]  R06: nichtendliche_samples_reisen_in_den_wirezustand - der Zaehler hat einen PRODUKTLESER, statt nur lokal zu verriegeln  [0]
+[ok]   R06: und der Pegel bleibt ungesetzt
+
+73 bestanden, 2 gescheitert
+
+
+== 3. Fehler entfernt, der Test ist GRUEN ==
+exit=0
+gessen
+[ok]   R03: und die Engine loest die Bindung wieder - danach gilt wieder die Transportepoche als Fenster
+
+== R01  ueberlauf_sticky_wird_beim_bestaetigten_resync_geloescht ==
+[ok]   R01: frisch ist der Interventionszustand BEKANNT
+[ok]   R01: der Ring nimmt Ereignisse auf  [32]
+[ok]   R01: der Ueberlauf meldet sich als `intervention_state_unknown`
+[ok]   R01: bei GEFUELLTEM Ring bleibt das Sticky stehen - eine Selbstheilung waere genau das, was Paragraph 34.2 verbietet
+[ok]   R01: ueberlauf_sticky_wird_beim_bestaetigten_resync_geloescht - der bestaetigte Neuaufbau loescht es, und der Zustand ist wieder bekannt
+
+== R06  vergleichspegel_und_blindvergleich_im_produktpfad ==
+[ok]   R06: ohne markierte Passage misst der Vergleichspegel nicht
+[ok]   R06: und zaehlt nichts
+[ok]   R06: die Passage wird gemerkt
+[ok]   R06: `beginneVersuch` friert den Pegel ein, bevor irgendetwas reist
+[ok]   R06: vergleichspegel_ist_im_produktpfad_eingefroren - der Pegel ist gesetzt, nicht nur messbar  [0.000]
+[ok]   R06: und sauberes Material zaehlt nachweislich KEIN nichtendliches Sample - die Gegenprobe zum Fall darunter
+[ok]   R06: zweite Passage gemerkt
+[ok]   R06: mit nichtendlichem Material entsteht KEIN Versuch - eine Klangwertung ohne Lautheitsabgleich ist unzulaessig (Paragraph 15)
+[ok]   R06: nichtendliche_samples_reisen_in_den_wirezustand - der Zaehler hat einen PRODUKTLESER, statt nur lokal zu verriegeln  [400]
+[ok]   R06: und der Pegel bleibt ungesetzt
+
+75 bestanden, 0 gescheitert

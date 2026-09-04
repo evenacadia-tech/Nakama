@@ -318,6 +318,20 @@ impl Coordinator {
     /// allein sagt nichts ueber den Interventionszustand. Bestaetigt heisst,
     /// dass der Peer seine Sequenzbasis MITBRINGT — erst damit weiss der
     /// Broker, ab welcher Nummer er wieder lueckenlos zaehlen darf.
+    /// Hat dieser Link noch KEINE Ereignissequenz gemeldet (M-61, Befund R01)?
+    ///
+    /// Genau das unterscheidet den ersten Heartbeat eines neu aufgebauten
+    /// Links von jedem spaeteren: der erste ist der bestaetigte Neuaufbau, jeder
+    /// spaetere ist die normale Meldung — und die loescht sticky Unknown nie.
+    pub(super) fn link_ohne_ereignissequenz(&self, link_id: &str) -> bool {
+        self.stand
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .links
+            .get(link_id)
+            .is_some_and(|link| link.letzte_event_sequence.is_none())
+    }
+
     pub fn resync_bestaetigen(&self, link_id: &str, bestaetigte_sequence_basis: u64) -> bool {
         // Nur ein Link, der wirklich steht, darf entsperren. Ein Resync von
         // einem sterbenden Link waere eine Freigabe ohne Gegenueber.

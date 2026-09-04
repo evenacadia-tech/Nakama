@@ -172,9 +172,32 @@ impl Coordinator {
         // genau zwischen zwei Snapshots derselben Quelle auf — nirgends
         // sonst hat der Broker beide Seiten der Grenze nebeneinander.
         self.invalidierung_aus_transportbruch(&client_key);
-        // Die VOLLSTAENDIGE Ablage liegt ausserhalb des Locks: sie geht ueber
-        // den StoreHandle und darf den Sessiongraphen nicht anhalten.
-        self.evidenz_persistieren(&client_key, &wert);
+        // 🔑 Nacharbeit 2 (Befund R07, G1(c)): ANNAHME UND ABLAGE SIND EINE
+        // EINHEIT.
+        //
+        // Die Runde 1 trug den Snapshot unter dem Lock als angenommen ein und
+        // legte ihn danach ab; scheiterte der Append — I/O-Fehler, degradierter
+        // Store, voller Kanal —, erhoehte dieser Pfad nur einen Zaehler und
+        // meldete weiter ERFOLG. Es existierte damit angenommene Evidenz ohne
+        // den zugesagten Store-Event, und genau darauf rechnet `resultatmessung`
+        // ihre Baseline. Die Annahme ist deshalb VORLAEUFIG, bis der Append
+        // sie festschreibt; scheitert er, wird sie zurueckgenommen und gezaehlt.
+        //
+        // Die Ablage liegt weiter AUSSERHALB des Locks: sie geht ueber den
+        // StoreHandle und darf den Sessiongraphen nicht anhalten.
+        if !self.evidenz_persistieren(&client_key, &wert) {
+            let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+            let evidence_id = wert["evidence_id"].as_str().unwrap_or_default().to_owned();
+            if let Some(historie) = stand.evidenz.get_mut(&client_key) {
+                // Ueber die `evidence_id` und nicht ueber `pop_back`: zwischen
+                // Insert und Ruecknahme kann ein anderer Snapshot derselben
+                // Quelle angekommen sein, und der gehoert nicht uns.
+                historie.retain(|e| e.evidence_id != evidence_id);
+            }
+            stand.evidence_angenommen = stand.evidence_angenommen.saturating_sub(1);
+            stand.evidence_gesperrt = stand.evidence_gesperrt.saturating_add(1);
+            return false;
+        }
         // Und der PRE/POST-Join sieht den neuen Beleg (M-13/M-14, Befund B25).
         self.evidenz_paare_bilden();
         self.heartbeat_kontakt(link_id, None)
@@ -182,7 +205,7 @@ impl Coordinator {
 
     /// Die Zusammenfassung aus dem Wire-Wert. Sie steht als eigene Funktion,
     /// damit der Lockabschnitt oben nichts rechnet.
-    fn evidenzstand_aus_wert(wert: &Value) -> Evidenzstand {
+    pub(super) fn evidenzstand_aus_wert(wert: &Value) -> Evidenzstand {
         let p50 = Self::p50_dekodieren(wert);
         let ereignisse = wert
             .pointer("/ereignisse/liste")
@@ -344,19 +367,26 @@ impl Coordinator {
     /// Ohne Store laeuft der Broker weiter: der fluechtige Stand oben traegt
     /// die Zusammenfassung, und ein fehlender Store ist ein degradierter
     /// Betrieb, kein Datenverlust an einer Zusage (§53.9).
-    fn evidenz_persistieren(&self, key: &ClientKey, wert: &Value) {
+    /// Rueckgabe: ob die Ablage GELUNGEN ist (Befund R07).
+    ///
+    /// `true` ohne Store heisst nicht „abgelegt", sondern „ohne Store gibt es
+    /// nichts abzulegen": ein fehlender Store ist degradierter Betrieb, kein
+    /// Datenverlust an einer Zusage (§53.9). Ein VORHANDENER Store, der den
+    /// Append verweigert, ist dagegen genau das — und dann ist der Snapshot
+    /// nicht angenommen.
+    fn evidenz_persistieren(&self, key: &ClientKey, wert: &Value) -> bool {
         let Some(store) = self.store.as_ref() else {
-            return;
+            return true;
         };
         let Some(evidence_id) = wert.get("evidence_id").and_then(Value::as_str) else {
-            return;
+            return false;
         };
         let payload = serde_json::json!({
             "evidence_id": evidence_id,
             "snapshot": wert,
         });
         let Ok(payload_jcs) = serde_json_canonicalizer::to_vec(&payload) else {
-            return;
+            return false;
         };
         let sequence = self.event_sequence.fetch_add(1, Ordering::SeqCst);
         let mut event = StoreEvent::session_snapshot(
@@ -370,7 +400,9 @@ impl Coordinator {
         if store.append(vec![event]).is_err() {
             let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
             stand.store_verweigerungen = stand.store_verweigerungen.saturating_add(1);
+            return false;
         }
+        true
     }
 
     /// Derselbe Weg mit der aktiven Fassung — das oeffentliche Gegenstueck

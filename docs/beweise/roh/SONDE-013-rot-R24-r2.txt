@@ -1,0 +1,105 @@
+Rotbeweis R24 - Preview, Messpunkt- und Materialwechsel invalidieren
+Datum: 2026-09-04
+Datei: broker/src/coordinator/befehl.rs
+Test:  sonde013_verdrahtung::preview_nimmt_die_evidenz_ihrer_sitzung_zurueck
+
+== 1. Fehler eingebaut ==
+ALT: self.invalidierung_wegen_preview(&session);
+NEU: let _ = &session;
+
+== 2. Der Test FAELLT ==
+exit=101
+
+running 1 test
+test preview_nimmt_die_evidenz_ihrer_sitzung_zurueck ... FAILED
+
+failures:
+
+---- preview_nimmt_die_evidenz_ihrer_sitzung_zurueck stdout ----
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde013-preview-invalidierung-18832-5bb3f10c3f9d4e1bbe0a4392c0999e8b\nakama-broker.sqlite3
+
+thread 'preview_nimmt_die_evidenz_ihrer_sitzung_zurueck' (15712) panicked at tests\sonde013_verdrahtung.rs:1618:5:
+assertion `left == right` failed: die Preview NIMMT ZURUECK - M-52 zaehlt sie ausdruecklich als Ausloeser
+  left: 0
+ right: 1
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    preview_nimmt_die_evidenz_ihrer_sitzung_zurueck
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 27 filtered out; finished in 0.71s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: method `invalidierung_wegen_preview` is never used
+   --> src\coordinator\invalidierung_verdrahtung.rs:224:19
+    |
+ 30 | impl Coordinator {
+    | ---------------- method in this implementation
+...
+224 |     pub(super) fn invalidierung_wegen_preview(&self, session: &SessionKey) -> usize {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib) generated 1 warning
+warning: method `payloads` is never used
+   --> tests\sonde013_verdrahtung.rs:227:8
+    |
+226 | impl PushProbe {
+    | -------------- method in this implementation
+227 |     fn payloads(&self) -> Vec<(String, Value)> {
+    |        ^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `clock` and `push` are never read
+   --> tests\sonde013_verdrahtung.rs:250:5
+    |
+247 | struct HarnischMitStore {
+    |        ---------------- fields in this struct
+...
+250 |     clock: Arc<ManualClock>,
+    |     ^^^^^
+251 |     push: Arc<PushProbe>,
+    |     ^^^^
+
+warning: `eqcop-broker` (test "sonde013_verdrahtung") generated 2 warnings
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.66s
+     Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)
+error: test failed, to rerun pass `--test sonde013_verdrahtung`
+
+
+== 3. Fehler entfernt, der Test ist GRUEN ==
+exit=0
+
+running 1 test
+test preview_nimmt_die_evidenz_ihrer_sitzung_zurueck ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 27 filtered out; finished in 0.79s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: method `payloads` is never used
+   --> tests\sonde013_verdrahtung.rs:227:8
+    |
+226 | impl PushProbe {
+    | -------------- method in this implementation
+227 |     fn payloads(&self) -> Vec<(String, Value)> {
+    |        ^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `clock` and `push` are never read
+   --> tests\sonde013_verdrahtung.rs:250:5
+    |
+247 | struct HarnischMitStore {
+    |        ---------------- fields in this struct
+...
+250 |     clock: Arc<ManualClock>,
+    |     ^^^^^
+251 |     push: Arc<PushProbe>,
+    |     ^^^^
+
+warning: `eqcop-broker` (test "sonde013_verdrahtung") generated 2 warnings
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.62s
+     Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)

@@ -1246,13 +1246,22 @@ public:
         `false`, wenn das Fenster leer oder verdreht ist — dann bleibt der
         vorige Zustand unangetastet, statt eine Passage der Laenge 0 zu
         fuehren. */
-    bool setzePassagenfenster (std::int64_t startSample, std::int64_t endeSample) noexcept
+    bool setzePassagenfenster (std::int64_t startSample, std::int64_t endeSample,
+                               std::uint64_t transportEpocheDerPassage) noexcept
     {
         if (endeSample <= startSample)
+            return false;
+        // 🔑 Nacharbeit 2 (Befund R03, Paragraph 32.4): eine Passage bindet an
+        // GENAU EINE Transportepoche. Wurde sie unter einer anderen markiert,
+        // ist sie hier keine Aussage mehr — der Seek dazwischen hat die
+        // Projektzeit umgehaengt, und dieselben Samplegrenzen zeigen jetzt auf
+        // anderes Material. Fail-closed: das Fenster entsteht gar nicht erst.
+        if (transportEpocheDerPassage != transportEpoche)
             return false;
         passagenfenster.gesetzt = true;
         passagenfenster.startSample = startSample;
         passagenfenster.endeSample = endeSample;
+        passagenfenster.epoche = transportEpocheDerPassage;
         passagenfensterGebrochen = false;
         hatSampleAusserhalb = true;                 // alles VOR dem Fenster zaehlt nicht
         letztesSampleAusserhalb = verarbeiteteSamples;
@@ -1323,6 +1332,8 @@ public:
     { return passagenfenster.gesetzt && ! passagenfensterGebrochen; }
     std::int64_t passagenfensterStart() const noexcept { return passagenfenster.startSample; }
     std::int64_t passagenfensterEnde() const noexcept  { return passagenfenster.endeSample; }
+    /** Die Transportepoche, an die das Fenster gebunden ist (Paragraph 32.4). */
+    std::uint64_t passagenfensterEpoche() const noexcept { return passagenfenster.epoche; }
 
     /** SONDE-013 M-07: nicht-endliche Eingangssamples seit `zuruecksetzen()`.
         0 heisst nachweislich keines, nicht "nicht gemessen". */
@@ -4204,9 +4215,15 @@ private:
     /// SONDE-013 M-25: das Fenster der markierten Passage in PROJEKTzeit.
     struct Passagenfenster
     {
-        bool         gesetzt     { false };
-        std::int64_t startSample { 0 };
-        std::int64_t endeSample  { 0 };   ///< exklusiv
+        bool          gesetzt     { false };
+        std::int64_t  startSample { 0 };
+        std::int64_t  endeSample  { 0 };   ///< exklusiv
+        /// 🔑 SONDE-013 Nacharbeit 2 (Befund R03, Paragraph 32.4): die
+        /// Transportepoche, an die das Fenster GEBUNDEN ist. Die Signatur
+        /// konnte sie bis dahin gar nicht tragen — eine Passage ohne Epoche
+        /// ist ein Zeitfenster, das ueber einen Seek hinweg dieselbe Zahl
+        /// traegt wie eines darin.
+        std::uint64_t epoche      { 0 };
     };
     Passagenfenster passagenfenster {};
     /// Eine Transportgrenze im Fenster macht es unbrauchbar (§32.4).

@@ -23,7 +23,7 @@
 use super::*;
 use crate::coordinator::experiment::{
     Abbruchgrund, Achsenrechnung, Alignmentwert, Blindreihenfolge, Experimentreferenz, Hoerurteil,
-    Passage, Resultatmessung,
+    Passage, Resultatmessung, Terminal,
 };
 use crate::telemetrie::Fingerprintwerte;
 
@@ -40,6 +40,18 @@ impl Coordinator {
         let command_id = kopf.get("command_id")?.as_str()?;
         let base_revision = kopf.get("base_revision")?.as_u64()?;
         let experiment_id = wert.get("experiment_id")?.as_str()?.to_owned();
+
+        // 🔑 Nacharbeit 2 (Befund R08): die IDEMPOTENZ steht VOR der
+        // fachlichen Vorpruefung.
+        //
+        // Nach einer vollstaendig erfolgreichen Ausfuehrung lehnte die
+        // Fachlogik einen Retry als `revision_conflict` beziehungsweise
+        // `schon_terminal` ab — obwohl der Sender nur seine Antwort nicht
+        // bekommen hat. Ein bereits committeter Befehl ist keine neue
+        // Absicht, sondern dieselbe: er bekommt dieselbe Antwort.
+        if let Some(ack) = self.bekannter_befehl(wert) {
+            return Some(ack);
+        }
 
         // ── Vorpruefung, ohne etwas zu aendern ──────────────────────────
         //
@@ -96,6 +108,20 @@ impl Coordinator {
                         }
                     }
                 }
+                // 🔑 Nacharbeit 2 (R16/R21): der Kandidat und die Bindung der
+                // Blindreihenfolge. Ein zweiter Kandidat ist zulaessig (M-41:
+                // „ein zweiter Versuch erzeugt einen neuen Kandidaten"); die
+                // Reihenfolge bleibt dabei die ZUERST gebundene — sie zu
+                // aendern waere genau die nachtraegliche Wahl, die M-44
+                // ausschliesst.
+                "experiment_candidate" => match stand.experimente.experiment(&experiment_id) {
+                    None => Some("unknown_target"),
+                    Some(e) if !e.offen() => Some("schon_terminal"),
+                    Some(_) if Self::referenz_aus_wert(wert.get("referenz")).is_none() => {
+                        Some("schema_violation")
+                    }
+                    Some(_) => None,
+                },
                 "experiment_abort" => match stand.experimente.experiment(&experiment_id) {
                     None => Some("unknown_target"),
                     Some(e) if !e.offen() => Some("schon_terminal"),
@@ -114,9 +140,18 @@ impl Coordinator {
                             Some("kandidat_zuerst") => Blindreihenfolge::KandidatZuerst,
                             _ => Blindreihenfolge::BaselineZuerst,
                         };
-                        if e.reihenfolge_gebunden()
-                            && e.gebundene_reihenfolge_fuer_pruefung() != Some(gemeldet)
-                        {
+                        if !e.reihenfolge_gebunden() {
+                            // 🔑 Nacharbeit 2 (Befund R21, M-44): die Bindung
+                            // hat seit dieser Runde einen EIGENEN Befehlszweig
+                            // (`experiment_candidate`), der VOR dem Hoeren
+                            // laeuft. Die Runde 1 band die vom Sender ZUSAMMEN
+                            // MIT dem Hoerurteil gemeldete Reihenfolge
+                            // unmittelbar vor dem Terminal — der Sender konnte
+                            // sie also nach dem Hoeren waehlen. Fehlt sie
+                            // jetzt, ist das ein eigener, benennbarer Fall und
+                            // kein generisches `internal`.
+                            Some("reihenfolge_nicht_gebunden")
+                        } else if e.gebundene_reihenfolge_fuer_pruefung() != Some(gemeldet) {
                             Some("blindreihenfolge_widerspruch")
                         } else if !e.baseline.match_gain_db.is_finite() {
                             Some("ohne_lautheitsabgleich")
@@ -153,7 +188,19 @@ impl Coordinator {
         self.experiment_p0_weiter(link_id, wert, art, &experiment_id)
     }
 
-    /// Persistenz und Wirkung — der Teil nach der Vorpruefung.
+    /// Persistenz und Wirkung — EIN Append, und die Wirkung ist bis dahin
+    /// vorlaeufig (Befund R08).
+    ///
+    /// Die Reihenfolge ist die Korrektur der Runde 1:
+    ///
+    /// 1. Die Wirkung wird VORLAEUFIG auf den fluechtigen Stand angewandt.
+    ///    Nur so entstehen die Domaenenereignisse aus dem TATSAECHLICHEN
+    ///    Zustand danach und nicht aus einer zweiten, nachgebauten Rechnung.
+    /// 2. Befehl und Domaenenereignisse gehen in EINEN `store.append` — der
+    ///    Writer zieht sie in eine Transaktion.
+    /// 3. Scheitert der Append oder ist der Befehl nicht `angewandt`, wird der
+    ///    Stand ZURUECKGENOMMEN. Ein Speicher, der dem Log voraus ist, waere
+    ///    die zweite Wahrheit aus §33.5.
     fn experiment_p0_weiter(
         &self,
         link_id: &str,
@@ -162,36 +209,108 @@ impl Coordinator {
         experiment_id: &str,
     ) -> Option<Vec<u8>> {
         let kopf = wert.get("kopf")?;
-        // ── Persistenz des Befehls (Idempotenz, Autorisierung, Outbox) ──
-        let ack = self.persistenz_p0(link_id, wert)?;
-        if !Self::ack_ist_angewandt(&ack) {
-            // `idempotent_wiederholt`, `konflikt` oder `abgelehnt`: die
-            // Wirkung wurde bereits angewandt oder darf es nicht werden.
-            return Some(ack);
-        }
-
-        // ── Die Wirkung ─────────────────────────────────────────────────
         let session = ClientKey::aus_adresse(
             &serde_json::from_value::<Adresse>(kopf.get("ziel")?.clone()).ok()?,
         )
         .session();
-        match art {
-            "experiment_begin" => self.experiment_begin_anwenden(wert, experiment_id, &session),
-            "experiment_abort" => {
-                let grund = match wert.get("grund").and_then(Value::as_str) {
-                    Some("verdraengt") => Abbruchgrund::Verdraengt,
-                    _ => Abbruchgrund::UserAbbruch,
-                };
-                self.experiment_terminal_anwenden(experiment_id, &session, |stand| {
-                    stand.experimente.schliesse(experiment_id, grund).is_ok()
-                });
+        let command_id = kopf.get("command_id")?.as_str()?;
+        let base_revision = kopf.get("base_revision")?.as_u64()?;
+
+        // Die Resultatmessung nimmt ihr eigenes Lock — deshalb VOR dem Block
+        // unten, nicht darin.
+        let messung = if art == "experiment_manual_result" {
+            self.resultatmessung(&session)
+        } else {
+            Resultatmessung::default()
+        };
+
+        // ── 1. Die Wirkung, vorlaeufig ─────────────────────────────────
+        let (rueckfall, ereignisse) = {
+            let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+            let rueckfall = stand.experimente.clone();
+            let ereignisse = match art {
+                "experiment_begin" => {
+                    Self::begin_anwenden_locked(&mut stand, wert, experiment_id, &session)
+                }
+                "experiment_candidate" => {
+                    Self::kandidat_anwenden_locked(&mut stand, wert, experiment_id)
+                }
+                "experiment_abort" => {
+                    let grund = match wert.get("grund").and_then(Value::as_str) {
+                        Some("verdraengt") => Abbruchgrund::Verdraengt,
+                        _ => Abbruchgrund::UserAbbruch,
+                    };
+                    Self::abbruch_anwenden_locked(&mut stand, experiment_id, grund)
+                }
+                "experiment_manual_result" => {
+                    Self::ergebnis_anwenden_locked(&mut stand, wert, experiment_id, &messung)
+                }
+                _ => None,
+            };
+            match ereignisse {
+                Some(e) => (rueckfall, e),
+                None => {
+                    stand.experimente = rueckfall;
+                    return Self::command_ack(
+                        command_id,
+                        "abgelehnt",
+                        base_revision,
+                        None,
+                        Some("internal"),
+                    );
+                }
             }
-            "experiment_manual_result" => {
-                self.experiment_ergebnis_anwenden(wert, experiment_id, &session);
-            }
-            _ => {}
+        };
+
+        // ── 2. Befehl UND Wirkung in EINEM Append ──────────────────────
+        let ack = self.persistenz_p0_mit_domaene(link_id, wert, ereignisse);
+        let angewandt = ack.as_deref().is_some_and(Self::ack_ist_angewandt);
+        if !angewandt {
+            // ── 3. Ruecknahme ──────────────────────────────────────────
+            let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+            stand.experimente = rueckfall;
+            return ack;
         }
-        Some(ack)
+
+        // Der Taint gehoert zur Wirkung, aber nicht in den Rueckfall: er
+        // schliesst Intervalle, die es ohne die Wirkung gar nicht gaebe.
+        if art != "experiment_begin" {
+            self.taint_von_experiment_schliessen(&session, experiment_id);
+        }
+        // 🔑 Nacharbeit 2 (Befund R24, M-54/M-31): DER Produktaufrufer der
+        // MATERIALinvalidierung.
+        //
+        // `invalidierung_wegen_material` hatte ausserhalb seiner Huelle keinen.
+        // Der Vergleich gehoert hierher, weil hier zwei ueber DASSELBE Fenster
+        // gerechnete Fingerprints nebeneinander stehen: der gespeicherte der
+        // Passage und der, den dieses `experiment_begin` fuer dieselbe
+        // `passage_id` mitbringt. M-31 sagt ausdruecklich, dass der Wechsel aus
+        // dem Fingerprintvergleich kommt und nicht aus einer Zeitheuristik.
+        //
+        // `beginne` legt eine bereits bekannte Passage NICHT neu an — der neue
+        // Fingerprint faellt also weg. Genau deshalb darf die Abweichung nicht
+        // still bleiben: fail-closed heisst hier invalidieren.
+        if art == "experiment_begin" {
+            if let Some(neu) = Self::passage_aus_wert(wert) {
+                let alt = self
+                    .stand
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .experimente
+                    .passage(&neu.passage_id)
+                    .map(|p| p.fingerprint.clone());
+                if let Some(alt) = alt {
+                    if alt != neu.fingerprint {
+                        self.invalidierung_wegen_material(
+                            &session,
+                            Some(&alt),
+                            Some(&neu.fingerprint),
+                        );
+                    }
+                }
+            }
+        }
+        ack
     }
 
     /// Steht in diesem `command_ack` „angewandt"?
@@ -206,196 +325,315 @@ impl Coordinator {
             .unwrap_or(false)
     }
 
-    fn experiment_begin_anwenden(&self, wert: &Value, experiment_id: &str, session: &SessionKey) {
-        let Some(passage) = Self::passage_aus_wert(wert) else {
-            return;
-        };
-        let Some(baseline) = Self::referenz_aus_wert(wert.get("referenz")) else {
-            return;
-        };
+    /// `experiment_begin` auf dem gehaltenen Lock (M-25/M-40, R10/R11).
+    fn begin_anwenden_locked(
+        stand: &mut Stand,
+        wert: &Value,
+        experiment_id: &str,
+        session: &SessionKey,
+    ) -> Option<Vec<Domaenenereignis>> {
+        let passage = Self::passage_aus_wert(wert)?;
+        let baseline = Self::referenz_aus_wert(wert.get("referenz"))?;
         let passage_id = passage.passage_id.clone();
+        let passage_neu = stand.experimente.passage(&passage_id).is_none();
         let passage_kopie = passage.clone();
-        let angelegt = {
-            let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
-            stand
-                .experimente
-                .beginne(
-                    experiment_id,
-                    &session.project_binding_id,
-                    passage,
-                    baseline.clone(),
-                )
-                .is_ok()
-        };
-        if !angelegt {
-            return;
-        }
+        let verdraengt = stand
+            .experimente
+            .beginne(
+                experiment_id,
+                &session.project_binding_id,
+                passage,
+                baseline,
+            )
+            .ok()?;
+
+        let mut aus = Vec::new();
         // Die Passage zuerst: sie ist das Objekt, auf das der Versuch zeigt.
-        self.domaene_persistieren(
-            session,
-            "passage",
-            serde_json::json!({
-                "passage_id": passage_id,
-                "projekt_von": passage_kopie.projekt_von,
-                "projekt_bis": passage_kopie.projekt_bis,
-                "transport_epoch": passage_kopie.transport_epoch,
-                "aktive_quellen": passage_kopie.aktive_quellen,
-                "abdeckung": passage_kopie.abdeckung,
-                "label": passage_kopie.label,
-            }),
-        );
-        self.domaene_persistieren(
-            session,
-            "experiment",
-            serde_json::json!({
-                "experiment_id": experiment_id,
-                "ereignis": "begonnen",
-                "passage_id": passage_id,
-                "match_gain_db": baseline.match_gain_db,
-                "aktive_quellen": baseline.aktive_quellen,
-                "messpunktklassen": baseline.messpunktklassen,
-            }),
-        );
+        // Sie wird nur beim ERSTEN Versuch angelegt, der sie nennt; ein
+        // zweiter Versuch derselben Passage schreibt sie nicht um.
+        if passage_neu {
+            aus.push(Domaenenereignis {
+                event_type: "passage".into(),
+                payload: Self::passage_json(&passage_kopie),
+                ziele: Vec::new(),
+            });
+        }
+        // 🔑 Befund R10: JEDE Verdraengung bekommt ihr eigenes Terminal.
+        //
+        // `beginne` schloss das aelteste offene Experiment intern mit
+        // `verdraengt` und gab davon nichts zurueck. Der Wrapper persistierte
+        // ausschliesslich die neue Anlage — der verdraengte Versuch blieb im
+        // Store OFFEN, und seine Taintintervalle blieben es mit ihm.
+        for weg in &verdraengt {
+            if let Some(e) = stand.experimente.experiment(weg) {
+                let payload =
+                    Self::experiment_json(e, stand.experimente.passage(&e.passage_id), "verdraengt");
+                aus.push(Domaenenereignis {
+                    event_type: "experiment".into(),
+                    payload,
+                    ziele: Vec::new(),
+                });
+            }
+            Self::taint_intervalle_schliessen(stand, session, "experiment", Some(weg));
+        }
+        let e = stand.experimente.experiment(experiment_id)?;
+        let payload =
+            Self::experiment_json(e, stand.experimente.passage(&e.passage_id), "begonnen");
+        aus.push(Domaenenereignis {
+            event_type: "experiment".into(),
+            payload,
+            ziele: Vec::new(),
+        });
+        Some(aus)
     }
 
-    fn experiment_ergebnis_anwenden(&self, wert: &Value, experiment_id: &str, session: &SessionKey) {
+    /// `experiment_candidate` auf dem gehaltenen Lock (M-41/M-44, R16/R21).
+    ///
+    /// Der Kandidat wird ERFASST und die Blindreihenfolge GEBUNDEN — in
+    /// dieser Reihenfolge und in einem Schritt. Die Bindung ist append-only:
+    /// ein zweiter Kandidat aendert sie nicht, sonst liesse sie sich nach dem
+    /// Hoeren noch drehen.
+    fn kandidat_anwenden_locked(
+        stand: &mut Stand,
+        wert: &Value,
+        experiment_id: &str,
+    ) -> Option<Vec<Domaenenereignis>> {
+        let referenz = Self::referenz_aus_wert(wert.get("referenz"))?;
+        stand
+            .experimente
+            .neuer_kandidat(experiment_id, referenz)
+            .ok()?;
+        let reihenfolge = match wert.get("blindreihenfolge").and_then(Value::as_str) {
+            Some("kandidat_zuerst") => Blindreihenfolge::KandidatZuerst,
+            _ => Blindreihenfolge::BaselineZuerst,
+        };
+        // `Ok(false)` heisst „war schon gebunden" und ist kein Fehler: die
+        // ERSTE Bindung gilt.
+        stand
+            .experimente
+            .binde_reihenfolge(experiment_id, reihenfolge)
+            .ok()?;
+        let e = stand.experimente.experiment(experiment_id)?;
+        let payload = Self::experiment_json(e, stand.experimente.passage(&e.passage_id), "kandidat");
+        Some(vec![Domaenenereignis {
+            event_type: "experiment".into(),
+            payload,
+            ziele: Vec::new(),
+        }])
+    }
+
+    /// `experiment_abort` auf dem gehaltenen Lock (M-47).
+    fn abbruch_anwenden_locked(
+        stand: &mut Stand,
+        experiment_id: &str,
+        grund: Abbruchgrund,
+    ) -> Option<Vec<Domaenenereignis>> {
+        stand.experimente.schliesse(experiment_id, grund).ok()?;
+        let e = stand.experimente.experiment(experiment_id)?;
+        let payload =
+            Self::experiment_json(e, stand.experimente.passage(&e.passage_id), "abgebrochen");
+        Some(vec![Domaenenereignis {
+            event_type: "experiment".into(),
+            payload,
+            ziele: Vec::new(),
+        }])
+    }
+
+    /// `experiment_manual_result` auf dem gehaltenen Lock (M-44/M-45/M-49).
+    fn ergebnis_anwenden_locked(
+        stand: &mut Stand,
+        wert: &Value,
+        experiment_id: &str,
+        messung: &Resultatmessung,
+    ) -> Option<Vec<Domaenenereignis>> {
         let hoerurteil = match wert.get("hoerurteil").and_then(Value::as_str) {
             Some("baseline") => Hoerurteil::Baseline,
             Some("kandidat") => Hoerurteil::Kandidat,
             Some("kein_unterschied") => Hoerurteil::KeinUnterschied,
             _ => Hoerurteil::Enthaltung,
         };
-        let reihenfolge = match wert.get("blindreihenfolge").and_then(Value::as_str) {
-            Some("kandidat_zuerst") => Blindreihenfolge::KandidatZuerst,
-            _ => Blindreihenfolge::BaselineZuerst,
-        };
-        let notiz = wert
-            .get("notiz")
-            .and_then(Value::as_str)
-            .map(str::to_owned);
+        let notiz = wert.get("notiz").and_then(Value::as_str).map(str::to_owned);
         let werkzeug = wert
             .get("werkzeug")
             .and_then(Value::as_str)
             .map(str::to_owned);
-
-        let messung = self.resultatmessung(session);
-        let achsen = {
-            let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
-            // Die Blindreihenfolge, die auf der Leitung steht, ist die
-            // AUFGEDECKTE. Sie wurde vor dem Urteil gebunden; ist sie das
-            // hier noch nicht, bindet dieser Aufruf sie — sonst koennte ein
-            // Ergebnis nie abschliessen (M-44).
-            let _ = stand
-                .experimente
-                .binde_reihenfolge(experiment_id, reihenfolge);
-            stand
-                .experimente
-                .ergebnis(experiment_id, hoerurteil, notiz, werkzeug, &messung)
-                .ok()
-        };
-        let Some(achsen) = achsen else {
-            // Ohne Resultatmessung gibt es kein Terminal (M-45, Befund B20).
-            // Der Befehl ist persistiert, die Wirkung bleibt aus — und genau
-            // das ist die ehrliche Antwort: der Versuch bleibt OFFEN.
-            return;
-        };
-        self.taint_von_experiment_schliessen(session, experiment_id);
-        self.experiment_terminal_persistieren(session, experiment_id, "ergebnis", Some(&achsen));
-    }
-
-    fn experiment_terminal_anwenden(
-        &self,
-        experiment_id: &str,
-        session: &SessionKey,
-        wirkung: impl FnOnce(&mut Stand) -> bool,
-    ) {
-        let ok = {
-            let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
-            wirkung(&mut stand)
-        };
-        if !ok {
-            return;
-        }
-        self.taint_von_experiment_schliessen(session, experiment_id);
-        self.experiment_terminal_persistieren(session, experiment_id, "abgebrochen", None);
+        // 🔑 Befund R21/M-44: die Reihenfolge wird hier NICHT mehr gebunden.
+        //
+        // Die Runde 1 uebernahm die vom Sender ZUSAMMEN MIT dem Hoerurteil
+        // gemeldete Reihenfolge und band sie unmittelbar vor dem Terminal —
+        // der Sender konnte sie damit erst nach dem Hoeren waehlen. Gebunden
+        // wird sie im eigenen Befehlszweig, VOR dem Urteil; hier wird nur noch
+        // abgeschlossen. Die Vorpruefung haelt daneben fest, dass die GEMELDETE
+        // Reihenfolge zur gebundenen passt.
+        stand
+            .experimente
+            .ergebnis(experiment_id, hoerurteil, notiz, werkzeug, messung)
+            .ok()?;
+        let e = stand.experimente.experiment(experiment_id)?;
+        let payload =
+            Self::experiment_json(e, stand.experimente.passage(&e.passage_id), "ergebnis");
+        Some(vec![Domaenenereignis {
+            event_type: "experiment".into(),
+            payload,
+            ziele: Vec::new(),
+        }])
     }
 
     /// M-59, Befund B22: JEDES Terminal schliesst die zugehoerigen
     /// `art=experiment`-Taintintervalle.
-    ///
-    /// Vorher mutierten Resultat, Abbruch und Verdraengung ausschliesslich den
-    /// isolierten Store, und Interventionen trugen gar keine
-    /// Experimentzuordnung. Die Intervalle blieben nach jedem Terminal offen —
-    /// und mit ihnen die Sperre auf starker Evidenz.
     fn taint_von_experiment_schliessen(&self, session: &SessionKey, experiment_id: &str) {
         let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         Self::taint_intervalle_schliessen(&mut stand, session, "experiment", Some(experiment_id));
     }
 
-    fn experiment_terminal_persistieren(
-        &self,
-        session: &SessionKey,
-        experiment_id: &str,
-        ereignis: &str,
-        achsen: Option<&Achsenrechnung>,
-    ) {
-        let (baseline_ids, resultat_ids) = {
-            let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
-            stand
-                .experimente
-                .experiment(experiment_id)
-                .map(|e| {
-                    (
-                        e.baseline_evidence_ids.clone(),
-                        e.resultat_evidence_ids.clone(),
-                    )
-                })
-                .unwrap_or_default()
-        };
-        self.domaene_persistieren(
-            session,
-            "experiment",
-            serde_json::json!({
-                "experiment_id": experiment_id,
-                "ereignis": ereignis,
-                // M-51: die Belege reisen MIT dem Terminalereignis.
-                "baseline_evidence_ids": baseline_ids,
-                "resultat_evidence_ids": resultat_ids,
-                "achsen": achsen.map(|a| serde_json::json!({
-                    "intervall": a.intervall.map(|(u, o)| vec![u, o]),
-                    "signifikante_baender": a.signifikante_baender,
-                    "gescannte_baender": a.gescannte_baender,
-                    "vergleichbarkeit": a.vergleichbarkeit,
-                    "guardrail_abdeckung_delta": a.guardrail_abdeckung_delta,
-                    "guardrail_klasse_gefallen": a.guardrail_klasse_gefallen,
-                    "effekt_stabil": a.effekt_stabil,
-                })),
-            }),
-        );
+    // ── Die Domaenenform: der VOLLSTAENDIGE Zustand, nicht die Transition ──
+    //
+    // 🔑 Befund R11/R15: der Begin-Payload trug nur Passage-ID, Match-Gain,
+    // Quellen und Klassen; Fingerprints, Alignment und Reproduzierbarkeit
+    // fehlten, und der Terminal-Payload ERSETZTE ihn in `experiments`, ohne
+    // Hoerurteil, Blindreihenfolge, Notiz, Werkzeug und Ausfuehrungsart zu
+    // tragen. Aus diesen Zeilen war weder ein offener Versuch noch ein
+    // abgeschlossener rekonstruierbar.
+    //
+    // Die Projektion `experiments.state_jcs` traegt deshalb den VOLLSTAENDIGEN
+    // Zustand nach der Transition; `ereignis` benennt daneben, WELCHE
+    // Transition ihn erzeugt hat, und `experiment_events` indiziert jede
+    // einzelne. Ein Ueberschreiben des Begin-Zustands kann es damit nicht
+    // geben: der neue Zustand ENTHAELT ihn.
+
+    pub(super) fn fingerprint_json(f: &Fingerprintwerte) -> Value {
+        serde_json::json!({
+            "version": f.version,
+            "band_energie": f.band_energie.to_vec(),
+            "chroma": f.chroma.to_vec(),
+            "onset": f.onset.to_vec(),
+        })
     }
 
-    /// Ein Domaenenereignis in den Store (M-47/M-50).
-    fn domaene_persistieren(&self, session: &SessionKey, event_type: &str, payload: Value) {
-        let Some(store) = self.store.as_ref() else {
-            return;
-        };
-        let Ok(payload_jcs) = serde_json_canonicalizer::to_vec(&payload) else {
-            return;
-        };
-        let sequence = self.event_sequence.fetch_add(1, Ordering::SeqCst);
-        let mut event = StoreEvent::session_snapshot(
-            &session.project_binding_id,
-            &session.session_epoch,
-            &self.broker_epoch,
-            sequence.min(i64::MAX as u64) as i64,
-            payload_jcs,
-        );
-        event.event_type = event_type.to_owned();
-        if store.append(vec![event]).is_err() {
-            let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
-            stand.store_verweigerungen = stand.store_verweigerungen.saturating_add(1);
+    pub(super) fn passage_json(p: &Passage) -> Value {
+        serde_json::json!({
+            "passage_id": p.passage_id,
+            "projekt_von": p.projekt_von,
+            "projekt_bis": p.projekt_bis,
+            "transport_epoch": p.transport_epoch,
+            "aktive_quellen": p.aktive_quellen,
+            "messpunktklassen": p.messpunktklassen,
+            "abdeckung": p.abdeckung,
+            "label": p.label,
+            "fingerprint": Self::fingerprint_json(&p.fingerprint),
+        })
+    }
+
+    fn referenz_json(r: &Experimentreferenz) -> Value {
+        serde_json::json!({
+            "passage_fingerprint": Self::fingerprint_json(&r.passage_fingerprint),
+            "upstream_fingerprint": Self::fingerprint_json(&r.upstream_fingerprint),
+            "aktive_quellen": r.aktive_quellen,
+            "messpunktklassen": r.messpunktklassen,
+            "match_gain_db": r.match_gain_db,
+            "alignment": Self::alignment_wort(r.alignment),
+        })
+    }
+
+    fn alignment_wort(a: Alignmentwert) -> &'static str {
+        match a {
+            Alignmentwert::FeatureAligned => "feature_aligned",
+            Alignmentwert::AudioAligned => "audio_aligned",
+            Alignmentwert::Probable => "probable",
+            Alignmentwert::Unclear => "unclear",
         }
     }
+
+    fn hoerurteil_wort(h: Hoerurteil) -> &'static str {
+        match h {
+            Hoerurteil::Baseline => "baseline",
+            Hoerurteil::Kandidat => "kandidat",
+            Hoerurteil::KeinUnterschied => "kein_unterschied",
+            Hoerurteil::Enthaltung => "enthaltung",
+        }
+    }
+
+    fn reihenfolge_wort(r: Blindreihenfolge) -> &'static str {
+        match r {
+            Blindreihenfolge::KandidatZuerst => "kandidat_zuerst",
+            Blindreihenfolge::BaselineZuerst => "baseline_zuerst",
+        }
+    }
+
+    fn achsen_json(a: &Achsenrechnung) -> Value {
+        serde_json::json!({
+            "intervall": a.intervall.map(|(u, o)| vec![u, o]),
+            "signifikante_baender": a.signifikante_baender,
+            "gescannte_baender": a.gescannte_baender,
+            "vergleichbarkeit": a.vergleichbarkeit,
+            "vergleichbarkeit_gruende": a.vergleichbarkeit_gruende,
+            "guardrail_abdeckung_delta": a.guardrail_abdeckung_delta,
+            "guardrail_klasse_gefallen": a.guardrail_klasse_gefallen,
+            "effekt_stabil": a.effekt_stabil,
+        })
+    }
+
+    /// Der vollstaendige Zustand eines Versuchs nach §43.1 (M-40/M-49/M-50).
+    pub(super) fn experiment_json(
+        e: &crate::coordinator::experiment::Experiment,
+        passage: Option<&Passage>,
+        ereignis: &str,
+    ) -> Value {
+        let terminal = match &e.terminal {
+            Some(Terminal::Ergebnis {
+                hoerurteil,
+                blindreihenfolge,
+                notiz,
+                werkzeug,
+                achsen,
+            }) => serde_json::json!({
+                "art": "ergebnis",
+                // 🔑 Befund R15: die NUTZERDATEN reisen mit. Ohne sie kann ein
+                // Replay das Urteil nicht verlustfrei wiederherstellen.
+                "hoerurteil": Self::hoerurteil_wort(*hoerurteil),
+                "blindreihenfolge": Self::reihenfolge_wort(*blindreihenfolge),
+                "notiz": notiz,
+                "werkzeug": werkzeug,
+                "achsen": Self::achsen_json(achsen),
+            }),
+            Some(Terminal::Abgebrochen { grund }) => serde_json::json!({
+                "art": "abgebrochen",
+                "grund": match grund {
+                    Abbruchgrund::Verdraengt => "verdraengt",
+                    Abbruchgrund::UserAbbruch => "user_abbruch",
+                },
+            }),
+            None => Value::Null,
+        };
+        serde_json::json!({
+            "experiment_id": e.experiment_id,
+            "ereignis": ereignis,
+            "projektbindung": e.projektbindung,
+            "passage_id": e.passage_id,
+            // §43.1 nennt beide ausdruecklich; sie sind ableitbar und stehen
+            // trotzdem da — derselbe Grund wie bei `probe_descriptor.aussageklasse`.
+            "execution_mode": "manual_external",
+            "reproduzierbarkeit": "manuell_nicht_wiederherstellbar",
+            "folge": e.folge,
+            "passage": passage.map(Self::passage_json),
+            "baseline": Self::referenz_json(&e.baseline),
+            "kandidaten": e
+                .kandidaten
+                .iter()
+                .map(|k| serde_json::json!({
+                    "nummer": k.nummer,
+                    "referenz": Self::referenz_json(&k.referenz),
+                }))
+                .collect::<Vec<Value>>(),
+            "blindreihenfolge_gebunden": e
+                .gebundene_reihenfolge_fuer_pruefung()
+                .map(Self::reihenfolge_wort),
+            "baseline_evidence_ids": e.baseline_evidence_ids,
+            "resultat_evidence_ids": e.resultat_evidence_ids,
+            "terminal": terminal,
+        })
+    }
+
 
     /// Die Resultatmessung aus dem laufenden Evidenzbestand (M-45/M-49).
     ///
@@ -577,6 +815,256 @@ impl Coordinator {
         Some(werte)
     }
 
+    // ── Wiederherstellung aus dem Store (M-47/M-50, Befund R12) ──────────
+    //
+    // 🔑 Nacharbeit 2: `Coordinator::mit_store` restaurierte ausschliesslich
+    // die Konfliktriegel. Experimentstore, Passagen und Evidenzhistorie
+    // starteten IMMER leer, und es gab keinen einzigen Leser der Tabellen
+    // `passages`, `experiments` und `evidence`. Nach Drop und Neuerzeugung
+    // lieferte `experiment_sicht(id)` deshalb `None`, obwohl die SQLite-Zeile
+    // existierte — waehrend M-47 ausdruecklich zusagt, dass ein Brokerneustart
+    // einen offenen Versuch NICHT abbricht.
+    //
+    // Fail-closed heisst hier: eine Zeile, die sich nicht vollstaendig lesen
+    // laesst, wird UEBERGANGEN und nicht halb wiederhergestellt. Ein halber
+    // Versuch waere schlimmer als keiner: er saehe aus wie ein ganzer.
+
+    pub(super) fn stand_aus_store_wiederherstellen(stand: &mut Stand, store: &StoreHandle) {
+        let passagen: Vec<Passage> = store
+            .domaene_lesen(Domaenentabelle::Passages)
+            .unwrap_or_default()
+            .iter()
+            .filter_map(|bytes| serde_json::from_slice::<Value>(bytes).ok())
+            .filter_map(|w| Self::passage_aus_gespeichertem(&w))
+            .collect();
+        let experimente: Vec<crate::coordinator::experiment::Experiment> = store
+            .domaene_lesen(Domaenentabelle::Experiments)
+            .unwrap_or_default()
+            .iter()
+            .filter_map(|bytes| serde_json::from_slice::<Value>(bytes).ok())
+            .filter_map(|w| Self::experiment_aus_gespeichertem(&w))
+            .collect();
+        stand.experimente = crate::coordinator::experiment::Experimentstore::wiederherstellen(
+            passagen,
+            experimente,
+        );
+
+        // Die Evidenzhistorie derselben Ablage. Sie traegt die Belege, aus
+        // denen `resultatmessung` Baseline und Resultat bildet — ohne sie
+        // koennte ein wiederhergestellter offener Versuch nach dem Neustart
+        // nicht abgeschlossen werden.
+        for bytes in store
+            .domaene_lesen(Domaenentabelle::Evidence)
+            .unwrap_or_default()
+        {
+            let Ok(zeile) = serde_json::from_slice::<Value>(&bytes) else {
+                continue;
+            };
+            let Some(snapshot) = zeile.get("snapshot") else {
+                continue;
+            };
+            let Ok(adresse) = serde_json::from_value::<Adresse>(snapshot["adresse"].clone()) else {
+                continue;
+            };
+            let mut eintrag = Self::evidenzstand_aus_wert(snapshot);
+            // Der Ausschlussgrund steht NEBEN dem Snapshot: er ist eine
+            // Aussage ueber den Beleg, nicht Teil der Wire-Wahrheit.
+            if let Some(grund) = zeile.get("ausschlussgrund").and_then(Value::as_str) {
+                eintrag.ausschlussgrund = Some(grund.to_owned());
+            }
+            let key = ClientKey::aus_adresse(&adresse);
+            let historie = stand.evidenz.entry(key).or_default();
+            historie.push_back(eintrag);
+            while historie.len() > EVIDENZ_RETENTION {
+                historie.pop_front();
+            }
+        }
+    }
+
+    fn fingerprint_aus_gespeichertem(wert: Option<&Value>) -> Option<Fingerprintwerte> {
+        Self::fingerprint_aus_wert(wert)
+    }
+
+    fn passage_aus_gespeichertem(w: &Value) -> Option<Passage> {
+        let quellen: Vec<String> = w
+            .get("aktive_quellen")?
+            .as_array()?
+            .iter()
+            .filter_map(|v| v.as_str().map(str::to_owned))
+            .collect();
+        let klassen: Vec<String> = w
+            .get("messpunktklassen")?
+            .as_array()?
+            .iter()
+            .filter_map(|v| v.as_str().map(str::to_owned))
+            .collect();
+        Some(Passage {
+            passage_id: w.get("passage_id")?.as_str()?.to_owned(),
+            projekt_von: w.get("projekt_von")?.as_i64()?,
+            projekt_bis: w.get("projekt_bis")?.as_i64()?,
+            transport_epoch: w.get("transport_epoch")?.as_u64()?,
+            aktive_quellen: quellen,
+            messpunktklassen: klassen,
+            abdeckung: w.get("abdeckung")?.as_f64()? as f32,
+            label: w.get("label").and_then(Value::as_str).map(str::to_owned),
+            fingerprint: Self::fingerprint_aus_gespeichertem(w.get("fingerprint"))?,
+        })
+    }
+
+    fn referenz_aus_gespeichertem(w: Option<&Value>) -> Option<Experimentreferenz> {
+        let r = w?;
+        Some(Experimentreferenz {
+            passage_fingerprint: Self::fingerprint_aus_gespeichertem(
+                r.get("passage_fingerprint"),
+            )?,
+            upstream_fingerprint: Self::fingerprint_aus_gespeichertem(
+                r.get("upstream_fingerprint"),
+            )?,
+            aktive_quellen: r
+                .get("aktive_quellen")?
+                .as_array()?
+                .iter()
+                .filter_map(|v| v.as_str().map(str::to_owned))
+                .collect(),
+            messpunktklassen: r
+                .get("messpunktklassen")?
+                .as_array()?
+                .iter()
+                .filter_map(|v| v.as_str().map(str::to_owned))
+                .collect(),
+            match_gain_db: r.get("match_gain_db")?.as_f64()?,
+            alignment: match r.get("alignment").and_then(Value::as_str) {
+                Some("feature_aligned") => Alignmentwert::FeatureAligned,
+                Some("audio_aligned") => Alignmentwert::AudioAligned,
+                Some("probable") => Alignmentwert::Probable,
+                _ => Alignmentwert::Unclear,
+            },
+        })
+    }
+
+    fn reihenfolge_aus_wort(wort: Option<&str>) -> Option<Blindreihenfolge> {
+        match wort {
+            Some("kandidat_zuerst") => Some(Blindreihenfolge::KandidatZuerst),
+            Some("baseline_zuerst") => Some(Blindreihenfolge::BaselineZuerst),
+            _ => None,
+        }
+    }
+
+    fn experiment_aus_gespeichertem(
+        w: &Value,
+    ) -> Option<crate::coordinator::experiment::Experiment> {
+        let terminal = match w.pointer("/terminal/art").and_then(Value::as_str) {
+            Some("ergebnis") => Some(Terminal::Ergebnis {
+                hoerurteil: match w.pointer("/terminal/hoerurteil").and_then(Value::as_str) {
+                    Some("baseline") => Hoerurteil::Baseline,
+                    Some("kandidat") => Hoerurteil::Kandidat,
+                    Some("kein_unterschied") => Hoerurteil::KeinUnterschied,
+                    _ => Hoerurteil::Enthaltung,
+                },
+                blindreihenfolge: Self::reihenfolge_aus_wort(
+                    w.pointer("/terminal/blindreihenfolge").and_then(Value::as_str),
+                )
+                .unwrap_or(Blindreihenfolge::BaselineZuerst),
+                notiz: w
+                    .pointer("/terminal/notiz")
+                    .and_then(Value::as_str)
+                    .map(str::to_owned),
+                werkzeug: w
+                    .pointer("/terminal/werkzeug")
+                    .and_then(Value::as_str)
+                    .map(str::to_owned),
+                achsen: Self::achsen_aus_gespeichertem(w.pointer("/terminal/achsen")),
+            }),
+            Some("abgebrochen") => Some(Terminal::Abgebrochen {
+                grund: match w.pointer("/terminal/grund").and_then(Value::as_str) {
+                    Some("verdraengt") => Abbruchgrund::Verdraengt,
+                    _ => Abbruchgrund::UserAbbruch,
+                },
+            }),
+            _ => None,
+        };
+        let kandidaten = w
+            .get("kandidaten")
+            .and_then(Value::as_array)
+            .map(|a| {
+                a.iter()
+                    .filter_map(|k| {
+                        Some(crate::coordinator::experiment::Kandidat {
+                            nummer: k.get("nummer")?.as_u64()? as u32,
+                            referenz: Self::referenz_aus_gespeichertem(k.get("referenz"))?,
+                        })
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default();
+        let ids = |feld: &str| -> Vec<String> {
+            w.get(feld)
+                .and_then(Value::as_array)
+                .map(|a| {
+                    a.iter()
+                        .filter_map(|v| v.as_str().map(str::to_owned))
+                        .collect()
+                })
+                .unwrap_or_default()
+        };
+        Some(crate::coordinator::experiment::Experiment::aus_store(
+            w.get("experiment_id")?.as_str()?.to_owned(),
+            w.get("projektbindung")?.as_str()?.to_owned(),
+            w.get("passage_id")?.as_str()?.to_owned(),
+            Self::referenz_aus_gespeichertem(w.get("baseline"))?,
+            kandidaten,
+            terminal,
+            w.get("folge").and_then(Value::as_u64).unwrap_or(0),
+            Self::reihenfolge_aus_wort(
+                w.get("blindreihenfolge_gebunden").and_then(Value::as_str),
+            ),
+            ids("baseline_evidence_ids"),
+            ids("resultat_evidence_ids"),
+        ))
+    }
+
+    fn achsen_aus_gespeichertem(w: Option<&Value>) -> Achsenrechnung {
+        let Some(a) = w else {
+            return Achsenrechnung::default();
+        };
+        let liste = |feld: &str| -> Vec<String> {
+            a.get(feld)
+                .and_then(Value::as_array)
+                .map(|x| {
+                    x.iter()
+                        .filter_map(|v| v.as_str().map(str::to_owned))
+                        .collect()
+                })
+                .unwrap_or_default()
+        };
+        Achsenrechnung {
+            intervall: a.get("intervall").and_then(Value::as_array).and_then(|v| {
+                Some((v.first()?.as_f64()?, v.get(1)?.as_f64()?))
+            }),
+            signifikante_baender: a
+                .get("signifikante_baender")
+                .and_then(Value::as_u64)
+                .unwrap_or(0) as usize,
+            gescannte_baender: a
+                .get("gescannte_baender")
+                .and_then(Value::as_u64)
+                .unwrap_or(0) as usize,
+            vergleichbarkeit: a
+                .get("vergleichbarkeit")
+                .and_then(Value::as_str)
+                .map(str::to_owned),
+            vergleichbarkeit_gruende: liste("vergleichbarkeit_gruende"),
+            guardrail_abdeckung_delta: a
+                .get("guardrail_abdeckung_delta")
+                .and_then(Value::as_f64),
+            guardrail_klasse_gefallen: a
+                .get("guardrail_klasse_gefallen")
+                .and_then(Value::as_bool)
+                .unwrap_or(true),
+            effekt_stabil: a.get("effekt_stabil").and_then(Value::as_bool),
+        }
+    }
+
     /// Der Experimentstand fuer Beine und Sichten.
     pub fn experiment_sicht(
         &self,
@@ -600,24 +1088,11 @@ impl Coordinator {
             .cloned()
     }
 
-    /// Nur Beine: bindet die Blindreihenfolge direkt am Store.
-    ///
-    /// Sie hat keinen eigenen Wireweg — gebunden wird sie in Gen, bevor der
-    /// User hoert (M-44), und das Ergebnis meldet danach die AUFGEDECKTE.
-    /// Ein Bein, das den Widerspruchsfall messen will, braucht deshalb diesen
-    /// Zugang; ein Produktpfad braucht ihn nicht.
-    #[doc(hidden)]
-    pub fn binde_blindreihenfolge_fuer_test(&self, experiment_id: &str, wort: &str) -> bool {
-        let reihenfolge = match wort {
-            "kandidat_zuerst" => Blindreihenfolge::KandidatZuerst,
-            _ => Blindreihenfolge::BaselineZuerst,
-        };
-        let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
-        stand
-            .experimente
-            .binde_reihenfolge(experiment_id, reihenfolge)
-            .unwrap_or(false)
-    }
+    // 🔑 Nacharbeit 2 (Befund R21): `binde_blindreihenfolge_fuer_test` ist
+    // ENTFALLEN. Die Naht existierte, weil die Bindung keinen Wireweg hatte —
+    // ein Bein musste sie am Store vorbei setzen, und genau deshalb konnte
+    // kein Bein an der fehlenden Bindung fallen. Sie hat jetzt ihren eigenen
+    // Befehlszweig (`experiment_candidate`), und der ist der einzige Weg.
 
     /// Der vollstaendige Export eines Versuchs (M-51).
     pub fn experiment_export(

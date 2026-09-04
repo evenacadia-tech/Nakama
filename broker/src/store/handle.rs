@@ -266,6 +266,38 @@ impl StoreHandle {
         })
     }
 
+    /// Die gespeicherten Passagen, Experimente und Evidenzbelege einer
+    /// Domaenentabelle (SONDE-013 M-50, Befund R12).
+    ///
+    /// 🔑 Nacharbeit 2: der Store schrieb diese drei Tabellen, und NIEMAND las
+    /// sie. `Coordinator::mit_store` restaurierte ausschliesslich die
+    /// Konfliktriegel; Experimentstore und Evidenzhistorie starteten immer
+    /// leer. Nach einem Brokerneustart lieferte `experiment_sicht(id)` deshalb
+    /// `None`, obwohl die SQLite-Zeile existierte — M-47 und M-50 sagen aber
+    /// ausdruecklich zu, dass ein offener Versuch den Neustart ueberdauert.
+    ///
+    /// Der Tabellenname kommt aus einer GESCHLOSSENEN Menge, nie aus Store-
+    /// oder Wiredaten: derselbe Riegel wie in `projektionen_anwenden`.
+    pub fn domaene_lesen(&self, tabelle: Domaenentabelle) -> Result<Vec<Vec<u8>>, StoreFehler> {
+        let sql = match tabelle {
+            Domaenentabelle::Passages => {
+                "SELECT state_jcs FROM passages ORDER BY last_event_ord"
+            }
+            Domaenentabelle::Experiments => {
+                "SELECT state_jcs FROM experiments ORDER BY last_event_ord"
+            }
+            Domaenentabelle::Evidence => {
+                "SELECT state_jcs FROM evidence ORDER BY last_event_ord"
+            }
+        };
+        kurze_leseconnection(&self.db_pfad, |conn| {
+            let mut stmt = conn.prepare(sql)?;
+            let rows = stmt.query_map([], |row| row.get::<_, Vec<u8>>(0))?;
+            rows.collect::<Result<Vec<_>, _>>()
+                .map_err(StoreFehler::from)
+        })
+    }
+
     pub fn outbox_lesen(&self) -> Result<Vec<(SnapshotZiel, i64, i64)>, StoreFehler> {
         kurze_leseconnection(&self.db_pfad, |conn| {
             let mut stmt = conn.prepare(
@@ -290,6 +322,17 @@ impl StoreHandle {
                 .map_err(StoreFehler::from)
         })
     }
+}
+
+/// Die Domaenentabellen, aus denen der Coordinator seinen Stand rekonstruiert.
+///
+/// Eine geschlossene Aufzaehlung statt eines Strings: ein Tabellenname aus
+/// Store- oder Wiredaten waere derselbe Fehler wie ein SQL-Fragment daraus.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Domaenentabelle {
+    Passages,
+    Experiments,
+    Evidence,
 }
 
 pub(super) fn kurze_leseconnection<T>(

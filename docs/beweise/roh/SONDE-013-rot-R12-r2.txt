@@ -1,0 +1,119 @@
+Rotbeweis R12 - der Coordinator rekonstruiert seinen Stand aus dem Store
+Datum: 2026-09-04
+Datei: broker/src/coordinator/mod.rs
+Test:  sonde013_verdrahtung::terminal_traegt_die_nutzerdaten_und_ueberdauert_den_neustart
+
+== 1. Fehler eingebaut ==
+ALT: Self::stand_aus_store_wiederherstellen(&mut stand, &store_writer.handle());
+NEU: // Rotbeweis: nichts wird wiederhergestellt.
+
+== 2. Der Test FAELLT ==
+exit=101
+aten_und_ueberdauert_den_neustart ... FAILED
+
+failures:
+
+---- terminal_traegt_die_nutzerdaten_und_ueberdauert_den_neustart stdout ----
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde013-terminal-replay-13660-03444a123e084bfeb7a69ade3ed0188f\nakama-broker.sqlite3
+
+thread 'terminal_traegt_die_nutzerdaten_und_ueberdauert_den_neustart' (6784) panicked at tests\sonde013_verdrahtung.rs:1913:10:
+R12: der Versuch ueberdauert den Brokerneustart (M-47/M-50)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    terminal_traegt_die_nutzerdaten_und_ueberdauert_den_neustart
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 32 filtered out; finished in 1.76s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: multiple associated functions are never used
+    --> src\coordinator\experiment_verdrahtung.rs:832:19
+     |
+  30 | impl Coordinator {
+     | ---------------- associated functions in this implementation
+...
+ 832 |     pub(super) fn stand_aus_store_wiederherstellen(stand: &mut Stand, store: &StoreHandle) {
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+ 884 |     fn fingerprint_aus_gespeichertem(wert: Option<&Value>) -> Option<Fingerprintwerte> {
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+ 888 |     fn passage_aus_gespeichertem(w: &Value) -> Option<Passage> {
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+ 914 |     fn referenz_aus_gespeichertem(w: Option<&Value>) -> Option<Experimentreferenz> {
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+ 945 |     fn reihenfolge_aus_wort(wort: Option<&str>) -> Option<Blindreihenfolge> {
+     |        ^^^^^^^^^^^^^^^^^^^^
+...
+ 953 |     fn experiment_aus_gespeichertem(
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+1026 |     fn achsen_aus_gespeichertem(w: Option<&Value>) -> Achsenrechnung {
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib) generated 1 warning
+warning: method `payloads` is never used
+   --> tests\sonde013_verdrahtung.rs:227:8
+    |
+226 | impl PushProbe {
+    | -------------- method in this implementation
+227 |     fn payloads(&self) -> Vec<(String, Value)> {
+    |        ^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `clock` and `push` are never read
+   --> tests\sonde013_verdrahtung.rs:250:5
+    |
+247 | struct HarnischMitStore {
+    |        ---------------- fields in this struct
+...
+250 |     clock: Arc<ManualClock>,
+    |     ^^^^^
+251 |     push: Arc<PushProbe>,
+    |     ^^^^
+
+warning: `eqcop-broker` (test "sonde013_verdrahtung") generated 2 warnings
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.04s
+     Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)
+error: test failed, to rerun pass `--test sonde013_verdrahtung`
+
+
+== 3. Fehler entfernt, der Test ist GRUEN ==
+exit=0
+
+running 1 test
+test terminal_traegt_die_nutzerdaten_und_ueberdauert_den_neustart ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 32 filtered out; finished in 2.26s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: method `payloads` is never used
+   --> tests\sonde013_verdrahtung.rs:227:8
+    |
+226 | impl PushProbe {
+    | -------------- method in this implementation
+227 |     fn payloads(&self) -> Vec<(String, Value)> {
+    |        ^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `clock` and `push` are never read
+   --> tests\sonde013_verdrahtung.rs:250:5
+    |
+247 | struct HarnischMitStore {
+    |        ---------------- fields in this struct
+...
+250 |     clock: Arc<ManualClock>,
+    |     ^^^^^
+251 |     push: Arc<PushProbe>,
+    |     ^^^^
+
+warning: `eqcop-broker` (test "sonde013_verdrahtung") generated 2 warnings
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.74s
+     Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)

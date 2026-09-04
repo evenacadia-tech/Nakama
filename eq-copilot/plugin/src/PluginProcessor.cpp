@@ -8,7 +8,11 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <cstring>
+#include <iomanip>
 #include <limits>
+#include <locale>
+#include <sstream>
 #include <process.h>
 
 namespace eqcop
@@ -201,6 +205,10 @@ void EqCopilotProcessor::prepareToPlay (double samplerate, int maxBlock)
     // Echtzeit bewiesen" (Konzept v2 §4).
     markierung.setzeSamplerate (sichereSamplerate);
     markierung.vorbereiten (maxBlock);
+    // Befund R06: die Trockenkopie des Vergleichspegels wird HIER allokiert —
+    // im Audiothread nie. Zwei Kanaele reichen dem Vertrag dieses Plugins.
+    versuchTrocken.assign ((std::size_t) std::max (1, maxBlock) * 2u, 0.0f);
+    vergleichspegel.vorbereiten (sichereSamplerate);
     echtzeitOk.store (false);
     lzBestanden = 0;
     lzLetzterNs = 0;
@@ -469,7 +477,32 @@ void EqCopilotProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::M
                       && ! isNonRealtime()
                       && (editorOffen.load (std::memory_order_relaxed)
                           || testEchtzeit.load (std::memory_order_relaxed));
+    // 🔑 SONDE-013 Nacharbeit 2 (Befund R06, M-20/Paragraph 38.3): der
+    // VERGLEICHSPEGEL wird gespeist — mit den beiden Signalen, die der User im
+    // A/B wirklich gegeneinander hoert: dem ungefaerbten Monitorsignal und
+    // demselben Signal nach der Hoermarkierung.
+    //
+    // Er laeuft NUR, solange ein Versuch vorbereitet wird; ausserhalb kostet
+    // die Zeile nichts. Die Trockenkopie ist in `prepareToPlay` vorallokiert —
+    // im Audiothread wird nie vergroessert, nie gesperrt und nie geloggt.
+    const bool pegelSpeist = versuchspegelSpeist.load (std::memory_order_relaxed)
+                          && kanaele > 0
+                          && (std::size_t) (buffer.getNumSamples() * kanaele)
+                                 <= versuchTrocken.size();
+    if (pegelSpeist)
+        for (int c = 0; c < kanaele; ++c)
+            std::memcpy (versuchTrocken.data() + (std::size_t) c * (std::size_t) buffer.getNumSamples(),
+                         buffer.getReadPointer (c),
+                         (std::size_t) buffer.getNumSamples() * sizeof (float));
+
     const auto schritt = markierung.verarbeite (buffer, kanaele, erlaubt);
+
+    if (pegelSpeist)
+        for (int c = 0; c < kanaele; ++c)
+            vergleichspegel.speise (
+                versuchTrocken.data() + (std::size_t) c * (std::size_t) buffer.getNumSamples(),
+                buffer.getReadPointer (c),
+                buffer.getNumSamples());
 
     // SONDE-013 M-37/M-38: die zwei Uebergaenge gehen SOFORT in den
     // vorallokierten RT→Control-Ring. Der Audiothread beruehrt die Pipe nie —
@@ -724,6 +757,29 @@ void EqCopilotProcessor::workerLauf()
                 quarantaene.zuruecksetzen();
                 unverarbeitet = 0;
                 kadenz.zuruecksetzen (detail::WorkerKadenz::Uhr::now());
+            }
+
+            // 🔑 SONDE-013 Nacharbeit 2 (Befund R03, M-03/M-25): DER
+            // Produktaufrufer von `setzePassagenfenster`.
+            //
+            // `merkeManuellePassage` schrieb bis hierher nur Plugin-State; die
+            // Engine erfuhr von der markierten Passage NIE, und ihre
+            // Passagenmetriken liefen weiter seit der letzten Transportgrenze.
+            // Die Uebergabe laeuft ueber denselben Wunsch-Weg wie
+            // `messResetWunsch` — auf DIESEM Thread, unter DIESER Sperre, nie
+            // aus dem Nachrichten- oder Audiothread.
+            //
+            // Die Transportepoche kommt aus der Engine SELBST: sie ist die
+            // einzige Stelle, die sie fuehrt, und eine vom Nachrichtenthread
+            // mitgegebene waere eine zweite, aeltere Wahrheit. Genau deshalb
+            // steht der Aufruf hier und nicht dort.
+            if (passagenfensterLoeschen.exchange (false))
+                merkmale.loeschePassagenfenster();
+            if (passagenfensterWunsch.exchange (false))
+            {
+                merkmale.setzePassagenfenster (passagenfensterStart.load(),
+                                               passagenfensterEnde.load(),
+                                               merkmale.transportEpocheJetzt());
             }
 
             // SONDE-008: Block für Block durch die Ein-Block-Quarantäne.
@@ -1013,6 +1069,30 @@ void EqCopilotProcessor::v3ControlLink (bool verbunden)
         sourcesModel.controlEnde();
         telemetryV3.reconnect();
         return;
+    }
+
+    // 🔑 SONDE-013 Nacharbeit 2 (Befund R01, M-61): DER Produktaufrufer von
+    // `InterventionsRing::resync()`.
+    //
+    // Das Sticky-Bit des Ueberlaufs hatte bis hierher KEINEN Loeschpfad im
+    // Produkt: `v3Status()` las es, `resync()` und `interventionsRingUeberlauf
+    // .store(false)` rief niemand. Nach dem ersten Ueberlauf meldete jeder
+    // Heartbeat dauerhaft `intervention_state_unknown`, und die Sperre auf
+    // starker Evidenz fiel nie wieder — ein sticky Bit ohne Gegenpfad ist
+    // dieselbe Sorte Fehler wie ein fehlendes.
+    //
+    // Der bestaetigte Neuaufbau des Control-Links IST der Resync (§34.2: eine
+    // AUSDRUECKLICHE, bestaetigte Lebenszyklusoperation): die Bruecke ist neu,
+    // der Broker fuehrt fuer diesen Link noch keine Sequenzbasis, und die
+    // naechste Nummer wird darum vorbehaltlos angenommen.
+    //
+    // ⚠️ Er behauptet Neutralitaet nur, wenn sie WIRKLICH gilt: kein Ereignis
+    // wartet mehr im Ring, und es ist gerade kein Marker hoerbar. Sonst bleibt
+    // das Bit stehen — eine Selbstheilung waere genau das, was §34.2 verbietet.
+    if (interventionsRing.fuellstand() == 0 && ! markierung.hoerbar())
+    {
+        interventionsRing.resync();
+        interventionsRingUeberlauf.store (false, std::memory_order_relaxed);
     }
 
     auto h = v3Hello();
@@ -1460,6 +1540,24 @@ bool EqCopilotProcessor::merkeManuellePassage (const juce::String& passageId,
             return false;
         zustand.manuellePassagen.push_back ({ passageId, label, projektStart, projektEnde });
     }
+    // 🔑 SONDE-013 Nacharbeit 2 (Befund R03, M-03/M-25): die gespeicherte
+    // Passage erreicht die ENGINE. Bis hierher blieb sie Plugin-State, und die
+    // Passagenmetriken liefen weiter seit der letzten Transportgrenze — eine
+    // leise Passage nach einem lauten Abschnitt erbte dessen Spitze.
+    //
+    // Der Nachrichtenthread fasst die Engine nicht an; er hinterlegt den Wunsch
+    // und der Analyseworker loest ihn unter seiner Steuersperre ein.
+    passagenfensterStart.store (projektStart);
+    passagenfensterEnde.store (projektEnde);
+    passagenfensterLoeschen.store (false);
+    passagenfensterWunsch.store (true);
+    // Befund R06/M-43: mit der markierten Passage beginnt die VORABmessung des
+    // Vergleichspegels. `beginneVersuch` friert ihn spaeter ein; bis dahin
+    // sammelt er. Ein frueher gemessener Pegel derselben Passage waere ein
+    // anderer Bezugspunkt — deshalb faengt er hier von vorn an.
+    vergleichspegel.vorbereiten (getSampleRate());
+    versuchNichtEndlich.store (0, std::memory_order_relaxed);
+    versuchspegelSpeist.store (true, std::memory_order_release);
     meldeHostDirty();
     v3StateRevision.fetch_add (1);
     return true;
@@ -1478,11 +1576,336 @@ bool EqCopilotProcessor::vergissManuellePassage (const juce::String& passageId)
             return false;
         zustand.manuellePassagen.erase (gefunden);
     }
+    // Der Gegenpfad zu `merkeManuellePassage`: die Engine loest die Bindung
+    // wieder — danach gilt wieder die Transportepoche als Fenster, also der
+    // Fall „der User hat keine Passage markiert" (Befund R03).
+    passagenfensterWunsch.store (false);
+    passagenfensterLoeschen.store (true);
+    versuchspegelSpeist.store (false, std::memory_order_release);
     // Das Vergessen meldet Dirty wie das Merken. Ein Loeschen, das der Host
     // nicht mitbekommt, kaeme beim naechsten Oeffnen zurueck.
     meldeHostDirty();
     v3StateRevision.fetch_add (1);
     return true;
+}
+
+//==============================================================================
+// SONDE-013 M-40 bis M-51, Nacharbeit 2 (Befund R06): der Experimentpfad.
+//
+// 🔑 `Vergleichspegel` und `Blindvergleich` waren uebersetzt und im Produkt
+// UNBENUTZT. `nichtEndlicheSamples()` hatte ausserhalb der C++-Tests keinen
+// Leser: ein nichtendliches Sample im Vergleichsmaterial verriegelte lokal den
+// Gain und blieb im Produkt ungezaehlt — genau die stille Beschoenigung, die
+// M-07 und CLAUDE.md ausschliessen.
+//
+// Diese Schicht ist MODELL und Nachrichtenweg, kein sichtbares Element: die
+// Bedienfragen P-01 bis P-06 gehoeren dem User (§4.2).
+
+namespace
+{
+/** Ein Fingerprint als JSON-Objekt des v3-Vertrags. */
+std::string fingerprintJson (const nakama::analyse::Fingerprint& f)
+{
+    auto liste = [] (const std::uint8_t* werte, int n)
+    {
+        std::string s = "[";
+        for (int i = 0; i < n; ++i)
+        {
+            if (i > 0) s += ",";
+            s += std::to_string ((int) werte[(std::size_t) i]);
+        }
+        return s + "]";
+    };
+    std::string s = "{\"version\":";
+    s += std::to_string (f.version);
+    s += ",\"band_energie\":" + liste (f.bandEnergie, nakama::analyse::Fingerprint::kBaender);
+    s += ",\"chroma\":"       + liste (f.chroma,      nakama::analyse::Fingerprint::kChroma);
+    s += ",\"onset\":"        + liste (f.onset,       nakama::analyse::Fingerprint::kOnsets);
+    return s + "}";
+}
+
+/** Eine Zahl in der Form, die der Textriegel und beide Leser annehmen. */
+std::string zahl (double x)
+{
+    if (! std::isfinite (x))
+        return "0";
+    std::ostringstream aus;
+    aus.imbue (std::locale::classic());
+    aus << std::setprecision (10) << x;
+    return aus.str();
+}
+
+std::string jsonText (const juce::String& s)
+{
+    return juce::JSON::toString (juce::var (s), true).toStdString();
+}
+} // namespace
+
+bool EqCopilotProcessor::passagenfensterInEngine (std::int64_t& start,
+                                                  std::int64_t& ende) const
+{
+    // Die Engine gehoert dem Analyseworker; gelesen wird unter derselben
+    // Steuersperre wie beim Snapshot daneben.
+    auto l = externerAnalyseSteuerZug();
+    if (! merkmale.passagenfensterGesetzt())
+        return false;
+    start = merkmale.passagenfensterStart();
+    ende  = merkmale.passagenfensterEnde();
+    return true;
+}
+
+std::string EqCopilotProcessor::versuchReferenzJson() const
+{
+    const auto fp = merkmale.fingerprint();
+    const auto sicht = sourcesModel.sicht();
+    std::string quellen = "[";
+    std::string klassen = "[";
+    int gezaehlt = 0;
+    for (const auto& q : sicht.quellen)
+    {
+        // Nur klassifizierte Quellen mit gueltiger ID und BEKANNTEM Messpunkt:
+        // eine Quelle ohne Messpunkt traegt keine Zuordnung, und eine geratene
+        // waere schlimmer als keine (M-28/M-55).
+        if (! nakama::ipc::istHex32 (q.instanceId)
+            || q.messpunkt == SourcesModel::Messpunkt::unbekannt)
+            continue;
+        if (gezaehlt > 0) { quellen += ","; klassen += ","; }
+        quellen += "\"" + q.instanceId + "\"";
+        klassen += "\"";
+        klassen += q.messpunkt == SourcesModel::Messpunkt::insert ? "insert"
+                 : q.messpunkt == SourcesModel::Messpunkt::pre    ? "pre" : "post";
+        klassen += "\"";
+        ++gezaehlt;
+    }
+    if (gezaehlt == 0)
+        return {};                       // Ohne aktives Quellenset kein Versuch.
+    quellen += "]";
+    klassen += "]";
+
+    std::string s = "{\"passage_fingerprint\":" + fingerprintJson (fp);
+    // Der Upstream-Fingerprint ist heute derselbe Traeger: das Plugin misst
+    // genau EINEN Punkt der Kette. Ihn zu erfinden waere schlimmer als ihn
+    // gleich zu setzen — und M-31 vergleicht ihn ohnehin nur mit sich selbst
+    // ueber die Zeit.
+    s += ",\"upstream_fingerprint\":" + fingerprintJson (fp);
+    s += ",\"aktive_quellen\":" + quellen;
+    s += ",\"messpunktklassen\":" + klassen;
+    s += ",\"match_gain_db\":" + zahl (vergleichspegel.gainDb());
+    // M-21: kein Host validiert heute die Presentation-Abbildung. `probable`
+    // ist die staerkste Klasse, die dieser Pfad tragen darf.
+    s += ",\"alignment\":\"probable\"}";
+    return s;
+}
+
+std::string EqCopilotProcessor::versuchKopfJson (const juce::String& commandId) const
+{
+    auto h = v3Hello();
+    h.adresse = nakama::ipc::wireAdresseAusState (h.adresse);
+    if (! nakama::ipc::adresseGueltig (h.adresse))
+        return {};
+    std::string s = "{\"command_id\":\"" + commandId.toStdString() + "\"";
+    s += ",\"ziel\":" + nakama::ipc::adresseAlsJson (h.adresse);
+    s += ",\"base_revision\":" + std::to_string (v3StateRevision.load());
+    s += ",\"ttl_ms\":2000,\"schema_major\":3,\"schema_minor\":0}";
+    return s;
+}
+
+bool EqCopilotProcessor::beginneVersuch (const juce::String& passageId)
+{
+    if (! nakama::ipc::istHex32 (passageId.toStdString()))
+        return false;
+    nakama::state::ManuellePassage passage;
+    bool gefunden = false;
+    {
+        std::lock_guard<std::mutex> l (bindungMutex);
+        if (zustand.nurLesen || zustand.common.klasse != nakama::state::Klasse::main)
+            return false;
+        for (const auto& p : zustand.manuellePassagen)
+            if (p.passageId == passageId) { passage = p; gefunden = true; break; }
+    }
+    if (! gefunden)
+        return false;
+
+    {
+        std::lock_guard<std::mutex> l (versuchMutex);
+        if (versuchIdAktiv.isNotEmpty())
+            return false;                // Ein Versuch nach dem anderen.
+    }
+
+    // 🔑 M-43/§15: der Vergleichspegel wird EINGEFROREN, bevor irgendetwas
+    // gesendet wird. Gelingt das nicht — zu wenig Material oder nichtendliche
+    // Samples —, entsteht kein Versuch. Eine Klangwertung ohne vorherigen
+    // Lautheitsabgleich ist unzulaessig.
+    versuchspegelSpeist.store (false, std::memory_order_release);
+    const bool eingefroren = vergleichspegel.friereEin();
+    versuchNichtEndlich.store (vergleichspegel.nichtEndlicheSamples(),
+                               std::memory_order_relaxed);
+    if (! eingefroren || ! vergleichspegel.gainGesetzt())
+        return false;
+    if (! blindvergleich.uebernimmVergleichspegel (vergleichspegel))
+        return false;
+
+    const auto referenz = versuchReferenzJson();
+    if (referenz.empty())
+        return false;
+    const juce::String versuchId { uuidHex32() };
+    const juce::String commandId { uuidHex32() };
+    const auto kopf = versuchKopfJson (commandId);
+    if (kopf.empty())
+        return false;
+
+    const auto fp = merkmale.fingerprint();
+    std::string quellenTeil = referenz.substr (referenz.find ("\"aktive_quellen\""));
+    quellenTeil = quellenTeil.substr (0, quellenTeil.find (",\"match_gain_db\""));
+
+    std::string json = "{\"type\":\"experiment_begin\",\"kopf\":" + kopf;
+    json += ",\"experiment_id\":\"" + versuchId.toStdString() + "\"";
+    json += ",\"execution_mode\":\"manual_external\"";
+    json += ",\"reproduzierbarkeit\":\"manuell_nicht_wiederherstellbar\"";
+    json += ",\"passage\":{\"passage_id\":\"" + passageId.toStdString() + "\"";
+    json += ",\"projekt_von\":" + std::to_string (passage.projektStart);
+    json += ",\"projekt_bis\":" + std::to_string (passage.projektEnde);
+    json += ",\"transport_epoch\":" + std::to_string (merkmale.passagenfensterEpoche());
+    json += "," + quellenTeil;
+    json += ",\"abdeckung\":" + zahl (merkmale.frame().abdeckungGesetzt
+                                        ? (double) merkmale.frame().abdeckung : 0.0);
+    json += ",\"label\":" + (passage.label.isEmpty() ? std::string ("null")
+                                                     : jsonText (passage.label));
+    json += ",\"fingerprint\":" + fingerprintJson (fp) + "}";
+    json += ",\"referenz\":" + referenz + "}";
+
+    if (! controlV3.sendePersistenzP0 (json))
+        return false;
+    std::lock_guard<std::mutex> l (versuchMutex);
+    versuchIdAktiv = versuchId;
+    versuchPassageId = passageId;
+    return true;
+}
+
+bool EqCopilotProcessor::erfasseKandidat (bool kandidatZuerst)
+{
+    juce::String versuchId;
+    {
+        std::lock_guard<std::mutex> l (versuchMutex);
+        versuchId = versuchIdAktiv;
+    }
+    if (versuchId.isEmpty())
+        return false;
+    // M-44: die Reihenfolge wird HIER gebunden — vor dem Hoeren. Ein zweiter
+    // Aufruf aendert sie nicht; `bindeReihenfolge` meldet das mit `false`, und
+    // das ist kein Fehler, sondern die Zusage.
+    blindvergleich.bindeReihenfolge (kandidatZuerst
+                                       ? nakama::analyse::Blindreihenfolge::kandidatZuerst
+                                       : nakama::analyse::Blindreihenfolge::baselineZuerst);
+    const auto referenz = versuchReferenzJson();
+    if (referenz.empty())
+        return false;
+    const juce::String commandId { uuidHex32() };
+    const auto kopf = versuchKopfJson (commandId);
+    if (kopf.empty())
+        return false;
+    std::string json = "{\"type\":\"experiment_candidate\",\"kopf\":" + kopf;
+    json += ",\"experiment_id\":\"" + versuchId.toStdString() + "\"";
+    json += ",\"referenz\":" + referenz;
+    json += ",\"blindreihenfolge\":\"";
+    json += kandidatZuerst ? "kandidat_zuerst" : "baseline_zuerst";
+    json += "\"}";
+    return controlV3.sendePersistenzP0 (json);
+}
+
+bool EqCopilotProcessor::urteileVersuch (const juce::String& hoerurteil,
+                                         const juce::String& notiz,
+                                         const juce::String& werkzeug)
+{
+    if (hoerurteil != "baseline" && hoerurteil != "kandidat"
+        && hoerurteil != "kein_unterschied" && hoerurteil != "enthaltung")
+        return false;
+    juce::String versuchId;
+    {
+        std::lock_guard<std::mutex> l (versuchMutex);
+        versuchId = versuchIdAktiv;
+    }
+    if (versuchId.isEmpty())
+        return false;
+    // Der Riegel liegt IM Typ: ohne Lautheitsabgleich und ohne gebundene
+    // Reihenfolge nimmt `Blindvergleich` kein Urteil an (M-43/M-44).
+    const auto urteil = hoerurteil == "baseline"   ? nakama::analyse::Hoerurteil::baseline
+                      : hoerurteil == "kandidat"   ? nakama::analyse::Hoerurteil::kandidat
+                      : hoerurteil == "kein_unterschied"
+                            ? nakama::analyse::Hoerurteil::keinUnterschied
+                            : nakama::analyse::Hoerurteil::enthaltung;
+    if (! blindvergleich.urteile (urteil))
+        return false;
+    nakama::analyse::Blindreihenfolge aufgedeckt {};
+    if (! blindvergleich.aufgedeckteReihenfolge (aufgedeckt))
+        return false;
+    const juce::String commandId { uuidHex32() };
+    const auto kopf = versuchKopfJson (commandId);
+    if (kopf.empty())
+        return false;
+    std::string json = "{\"type\":\"experiment_manual_result\",\"kopf\":" + kopf;
+    json += ",\"experiment_id\":\"" + versuchId.toStdString() + "\"";
+    json += ",\"hoerurteil\":\"" + hoerurteil.toStdString() + "\"";
+    json += ",\"blindreihenfolge\":\"";
+    json += aufgedeckt == nakama::analyse::Blindreihenfolge::kandidatZuerst
+              ? "kandidat_zuerst" : "baseline_zuerst";
+    json += "\"";
+    json += ",\"notiz\":" + (notiz.isEmpty() ? std::string ("null") : jsonText (notiz));
+    json += ",\"werkzeug\":" + (werkzeug.isEmpty() ? std::string ("null")
+                                                   : jsonText (werkzeug));
+    json += "}";
+    if (! controlV3.sendePersistenzP0 (json))
+        return false;
+    std::lock_guard<std::mutex> l (versuchMutex);
+    versuchIdAktiv = {};
+    versuchPassageId = {};
+    return true;
+}
+
+bool EqCopilotProcessor::brichVersuchAb()
+{
+    juce::String versuchId;
+    {
+        std::lock_guard<std::mutex> l (versuchMutex);
+        versuchId = versuchIdAktiv;
+    }
+    if (versuchId.isEmpty())
+        return false;
+    const juce::String commandId { uuidHex32() };
+    const auto kopf = versuchKopfJson (commandId);
+    if (kopf.empty())
+        return false;
+    std::string json = "{\"type\":\"experiment_abort\",\"kopf\":" + kopf;
+    json += ",\"experiment_id\":\"" + versuchId.toStdString() + "\"";
+    json += ",\"grund\":\"user_abbruch\"}";
+    if (! controlV3.sendePersistenzP0 (json))
+        return false;
+    std::lock_guard<std::mutex> l (versuchMutex);
+    versuchIdAktiv = {};
+    versuchPassageId = {};
+    blindvergleich.loeschen();
+    return true;
+}
+
+juce::String EqCopilotProcessor::laufenderVersuch() const
+{
+    std::lock_guard<std::mutex> l (versuchMutex);
+    return versuchIdAktiv;
+}
+
+bool EqCopilotProcessor::versuchLautheitAbgeglichen() const
+{
+    return vergleichspegel.eingefroren() && vergleichspegel.gainGesetzt();
+}
+
+double EqCopilotProcessor::versuchMatchGainDb() const
+{
+    return vergleichspegel.gainDb();
+}
+
+juce::uint64 EqCopilotProcessor::versuchNichtEndlicheSamples() const
+{
+    return (juce::uint64) versuchNichtEndlich.load (std::memory_order_relaxed);
 }
 
 std::vector<nakama::state::ManuellePassage> EqCopilotProcessor::manuellePassagen() const

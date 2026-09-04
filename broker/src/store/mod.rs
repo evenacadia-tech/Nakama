@@ -24,7 +24,8 @@ mod pfad;
 mod writer;
 
 pub use handle::{
-    IdleCheckpointNaht, StoreHandle, StoreKonfiguration, StoreStartBarriere, StoreTestHaken,
+    Domaenentabelle, IdleCheckpointNaht, StoreHandle, StoreKonfiguration, StoreStartBarriere,
+    StoreTestHaken,
 };
 pub use migration::{migration_1_checksum, projektionen_neu_bauen};
 use handle::{degradiere, utc_ms_i64};

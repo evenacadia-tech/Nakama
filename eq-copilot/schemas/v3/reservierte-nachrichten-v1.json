@@ -33,10 +33,12 @@
         "schon_terminal",
         "ohne_lautheitsabgleich",
         "ohne_resultatmessung",
-        "blindreihenfolge_widerspruch"
+        "blindreihenfolge_widerspruch",
+        "reihenfolge_nicht_gebunden"
       ],
       "experiment_begin_passage": "SONDE-013 Nacharbeit 1 (Befund B23): `experiment_begin` traegt seit dieser Runde die VOLLSTAENDIGE Passage (`passage`) statt nur ihrer `passage_id`. Ohne die Grenzen, die Transportepoche, die Quellen mit Messpunktklasse, die Abdeckung und den Fingerprint konnte kein gueltiger Wire-Aufruf das von M-25 verlangte Storeobjekt erzeugen. Der Schritt liegt INNERHALB der Fassung 2 und ist kein zweiter Fassungsschritt.",
         "audible_intervention_begin_experiment_id": "SONDE-013 Nacharbeit 2 (Befund R22, M-59): `audible_intervention_begin` traegt seit dieser Runde ein optionales `experiment_id`. `art=experiment` stand schon in Fassung 2 im Schema, ohne dass ein Feld die Zuordnung zum Versuch tragen konnte - ein schema-gueltiges Experimentintervall liess sich deshalb von keinem Terminal schliessen. Dass das Feld bei `art=experiment` Pflicht ist, gehoert dem Consumer (geschlossene Schluesselwortmenge, kein Feldvergleich); der Broker lehnt den Fall ab und setzt sticky Unknown. Der Schritt liegt INNERHALB der Fassung 2.",
+      "experiment_candidate": true,
       "experiment_abort": true,
         "experiment_manual_result": true,
         "evidence_snapshot_ereignisse": true,
@@ -58,6 +60,11 @@
       "name": "experiment_begin",
       "eigentuemer": "SONDE-013 (P4)",
       "grund": "Seit Wire-Envelope-schema_minor 2 belegt: Beginn eines manuellen Versuchs mit verriegelter Baseline und unveraenderlichen Referenzen. `execution_mode` ist auf `manual_external` festgelegt; der Active-Compare-Zweig gehoert SONDE-017 und waere hier ein Vorgriff."
+    },
+    {
+      "name": "experiment_candidate",
+      "eigentuemer": "SONDE-013 (P4)",
+      "grund": "Seit Wire-Envelope-schema_minor 2 belegt (Nacharbeit 2, Befunde R16/R21): der Schritt zwischen Begin und Ergebnis. Er erfasst den Kandidaten und bindet die Blindreihenfolge append-only, BEVOR der User hoert. Ohne ihn konnte ein Ergebnis ohne einen einzigen Kandidaten terminieren und die Reihenfolge wurde erst zusammen mit dem Hoerurteil gebunden."
     },
     {
       "name": "experiment_abort",
@@ -161,7 +168,7 @@
   ],
   "hinweis_felder": "Dieselbe Regel wie fuer die Nachrichtennamen, eine Ebene tiefer: der Vertragsanteil, der spaeter bricht, wenn man ihn heute offen laesst, ist der NAME - nicht die Nutzlast.",
 
-  "gesamt_erwartet": 28,
+  "gesamt_erwartet": 29,
   "definiert": [
     "hello",
     "welcome",
@@ -176,6 +183,7 @@
     "audible_intervention_end",
     "evidence_invalidate",
     "experiment_begin",
+    "experiment_candidate",
     "experiment_abort",
     "experiment_manual_result",
     "preview_begin",

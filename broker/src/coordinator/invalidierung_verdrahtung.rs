@@ -214,6 +214,23 @@ impl Coordinator {
         )
     }
 
+    /// Der Ausloeser „Preview" (M-52, Befund R24).
+    ///
+    /// Er wird aus dem P0-Pfad der drei `preview_*`-Familien gerufen: eine
+    /// Vorschau ist ein hoerbarer Eingriff, und die waehrend ihr gemessene
+    /// Evidenz gehoert nicht in einen Vergleich. Der Umfang ist die ganze
+    /// Sitzung, weil die Nachrichten keinen Bereich in Projektzeit tragen —
+    /// ein geratenes Fenster waere schlimmer als ein zu grosses (§32.3).
+    pub(super) fn invalidierung_wegen_preview(&self, session: &SessionKey) -> usize {
+        self.invalidierung_anwenden(
+            session,
+            &Invalidierung {
+                grund: Grund::Intervention,
+                umfang: Umfang::GanzeSitzung,
+            },
+        )
+    }
+
     /// Erkennt einen Transportbruch zwischen den zwei juengsten Snapshots
     /// einer Quelle und invalidiert mit dem RICHTIGEN Grund (M-53).
     ///

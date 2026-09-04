@@ -6,8 +6,8 @@
   "wurzel_skalar": "Markiert ein Fixture, dessen Wurzel weder Objekt noch Array ist. JUCEs JSON-Leser folgt RFC 4627 und lehnt es schon im PARSER ab; serde_json und Python folgen RFC 8259 und lehnen es erst am Schema ab. Beide Wege sind eine Ablehnung, nur an verschiedenen Stellen - die Verletzungsmenge gilt daher nur fuer die Beine mit RFC-8259-Parser.",
   "sortierung": "Verletzungen sind kanonisch nach (instanz, schema, schluessel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
   "textriegel_lehnt_ab": "Markiert ein Fixture, das der TEXTRIEGEL abweist, BEVOR ein Parser es sieht. Diese Fixtures tragen keine Verletzungsmenge, weil sie das Schema nie erreichen — eine erfundene waere eine Luege ueber den Ort der Ablehnung. Regeln und Begruendung: schemas/v3/README.md.",
-  "anzahl_gueltig": 83,
-  "anzahl_ungueltig": 218,
+  "anzahl_gueltig": 84,
+  "anzahl_ungueltig": 220,
   "fixtures": [
     {
       "datei": "gueltig/audible-intervention-begin-experiment.json",
@@ -229,6 +229,12 @@
       "datei": "gueltig/experiment-manual-result-ohne-notiz.json",
       "urteil": "gueltig",
       "warum": "M-42/M-44: beide Reihenfolgen sind gueltig; null heisst ausdruecklich 'nichts angegeben' und ist keine leere Zeichenkette",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/experiment_candidate.json",
+      "urteil": "gueltig",
+      "warum": "M-41/M-44, Nacharbeit 2 (R16/R21): Kandidat erfassen und Blindreihenfolge binden - der Schritt vor dem Urteil",
       "verletzungen": []
     },
     {
@@ -1523,6 +1529,30 @@
         {
           "instanz": "/passage",
           "schema": "#/$defs/passage/required/transport_epoch",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/experiment-candidate-blindreihenfolge-erfunden.json",
+      "urteil": "ungueltig",
+      "warum": "genau zwei Reihenfolgen; eine dritte waere ein Etikett ohne Bedeutung",
+      "verletzungen": [
+        {
+          "instanz": "/blindreihenfolge",
+          "schema": "#/$defs/experiment_candidate/properties/blindreihenfolge/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/experiment-candidate-ohne-blindreihenfolge.json",
+      "urteil": "ungueltig",
+      "warum": "ohne gebundene Blindreihenfolge ist der Schritt keiner - die Reihenfolge waere danach frei waehlbar (M-44)",
+      "verletzungen": [
+        {
+          "instanz": "",
+          "schema": "#/$defs/experiment_candidate/required/blindreihenfolge",
           "schluessel": "required"
         }
       ]

@@ -945,7 +945,7 @@ int main()
 
         // Jetzt markiert der User eine LEISE Passage - ohne Seek.
         const std::int64_t start = s.projekt;
-        pruefe (engine.setzePassagenfenster (start, start + 48000 * 4),
+        pruefe (engine.setzePassagenfenster (start, start + 48000 * 4, engine.transportEpocheJetzt()),
                 "B08: das Passagenfenster wird gesetzt");
         pruefe (engine.passagenfensterIntakt(),
                 "B08: und ist intakt");
@@ -1006,7 +1006,7 @@ int main()
 
         // Jetzt markiert der User eine Passage - ohne Seek.
         const std::int64_t start = s.projekt;
-        pruefe (engine.setzePassagenfenster (start, start + 48000 * 8),
+        pruefe (engine.setzePassagenfenster (start, start + 48000 * 8, engine.transportEpocheJetzt()),
                 "R04: das Passagenfenster wird gesetzt");
 
         // Bis zum naechsten Frame leises Material - rund 100 ms. Das 3-s-Fenster
@@ -1084,7 +1084,7 @@ int main()
             s.sende ([] (std::uint64_t) { return 0.0f; });      // ein Block Ruhe
             const std::int64_t start = s.projekt;
             const std::int64_t ende  = start + 512 * 2 + endeImBlock;
-            engine.setzePassagenfenster (start, ende);
+            engine.setzePassagenfenster (start, ende, engine.transportEpocheJetzt());
             // Zwei volle Bloecke Stille, dann der Block mit dem Ton am
             // Fensterende und Stille danach.
             s.sende ([] (std::uint64_t) { return 0.0f; });

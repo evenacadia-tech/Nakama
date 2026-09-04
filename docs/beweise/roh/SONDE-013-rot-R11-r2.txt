@@ -1,0 +1,81 @@
+Rotbeweis R11 - der gespeicherte Zustand traegt die vollen Paragraph-43.1-Referenzen
+Datum: 2026-09-04
+Datei: broker/src/coordinator/experiment_verdrahtung.rs
+Test:  sonde013_verdrahtung::experimenttransitionen_stehen_im_ereignisindex_mit_vollen_referenzen
+
+== 1. Fehler eingebaut ==
+ALT: "baseline": Self::referenz_json(&e.baseline),
+NEU: "baseline": serde_json::json!({"match_gain_db": e.baseline.match_gain_db}),
+
+== 2. Der Test FAELLT ==
+exit=101
+000000000000000000000000b00","folge":0,"kandidaten":[{"nummer":1,"referenz":{"aktive_quellen":["33333333333333333333333333333333","44444444444444444444444444444444"],"alignment":"feature_aligned","match_gain_db":-1.5,"messpunktklassen":["insert","post"],"passage_fingerprint":{"band_energie":[0,7,14,21,28,35,42,49,56,63,70,77,84,91,98,105,112,119,126,133,140,147,154,161,168,175,182,189,196,203,210,217],"chroma":[0,21,42,63,84,105,126,147,168,189,210,231],"onset":[0,13,26,39,52,65,78,91,104,117,130,143,156,169,182,195,208,221,234,247,4,17,30,43,56,69,82,95,108,121,134,147],"version":1},"upstream_fingerprint":{"band_energie":[0,11,22,33,44,55,66,77,88,99,110,121,132,143,154,165,176,187,198,209,220,231,242,253,8,19,30,41,52,63,74,85],"chroma":[0,5,10,15,20,25,30,35,40,45,50,55],"onset":[0,3,6,9,12,15,18,21,24,27,30,33,36,39,42,45,48,51,54,57,60,63,66,69,72,75,78,81,84,87,90,93],"version":1}}}],"passage":{"abdeckung":0.9100000262260437,"aktive_quellen":["33333333333333333333333333333333","44444444444444444444444444444444"],"fingerprint":{"band_energie":[0,7,14,21,28,35,42,49,56,63,70,77,84,91,98,105,112,119,126,133,140,147,154,161,168,175,182,189,196,203,210,217],"chroma":[0,21,42,63,84,105,126,147,168,189,210,231],"onset":[0,13,26,39,52,65,78,91,104,117,130,143,156,169,182,195,208,221,234,247,4,17,30,43,56,69,82,95,108,121,134,147],"version":1},"label":"Refrain 2","messpunktklassen":["insert","post"],"passage_id":"cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd","projekt_bis":960000,"projekt_von":480000,"transport_epoch":3},"passage_id":"cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd","projektbindung":"00000000000000000000000000000001","reproduzierbarkeit":"manuell_nicht_wiederherstellbar","resultat_evidence_ids":[],"terminal":null}
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    experimenttransitionen_stehen_im_ereignisindex_mit_vollen_referenzen
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 32 filtered out; finished in 0.31s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: method `payloads` is never used
+   --> tests\sonde013_verdrahtung.rs:227:8
+    |
+226 | impl PushProbe {
+    | -------------- method in this implementation
+227 |     fn payloads(&self) -> Vec<(String, Value)> {
+    |        ^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `clock` and `push` are never read
+   --> tests\sonde013_verdrahtung.rs:250:5
+    |
+247 | struct HarnischMitStore {
+    |        ---------------- fields in this struct
+...
+250 |     clock: Arc<ManualClock>,
+    |     ^^^^^
+251 |     push: Arc<PushProbe>,
+    |     ^^^^
+
+warning: `eqcop-broker` (test "sonde013_verdrahtung") generated 2 warnings
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.74s
+     Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)
+error: test failed, to rerun pass `--test sonde013_verdrahtung`
+
+
+== 3. Fehler entfernt, der Test ist GRUEN ==
+exit=0
+
+running 1 test
+test experimenttransitionen_stehen_im_ereignisindex_mit_vollen_referenzen ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 32 filtered out; finished in 0.31s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: method `payloads` is never used
+   --> tests\sonde013_verdrahtung.rs:227:8
+    |
+226 | impl PushProbe {
+    | -------------- method in this implementation
+227 |     fn payloads(&self) -> Vec<(String, Value)> {
+    |        ^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `clock` and `push` are never read
+   --> tests\sonde013_verdrahtung.rs:250:5
+    |
+247 | struct HarnischMitStore {
+    |        ---------------- fields in this struct
+...
+250 |     clock: Arc<ManualClock>,
+    |     ^^^^^
+251 |     push: Arc<PushProbe>,
+    |     ^^^^
+
+warning: `eqcop-broker` (test "sonde013_verdrahtung") generated 2 warnings
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.78s
+     Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)

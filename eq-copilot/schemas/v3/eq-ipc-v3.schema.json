@@ -20,6 +20,7 @@
     { "$ref": "#/$defs/audible_intervention_end" },
     { "$ref": "#/$defs/evidence_invalidate" },
     { "$ref": "#/$defs/experiment_begin" },
+    { "$ref": "#/$defs/experiment_candidate" },
     { "$ref": "#/$defs/experiment_abort" },
     { "$ref": "#/$defs/experiment_manual_result" },
     { "$ref": "#/$defs/preview_begin" },
@@ -807,7 +808,7 @@
     },
 
     "fehlercode": {
-      "description": "Maschinenlesbar (§33.3). Ein neuer Code ist eine Minor-Aenderung; ein unbekannter Code wird als generischer Fehler behandelt, nie als Erfolg. SONDE-013 Nacharbeit 1: die fuenf letzten Codes gehoeren zur Fassung 2 und benennen die PRODUKTREGELN der Experimentfamilien - `abdeckung_zu_gering` (M-30), `schon_terminal` (M-47, append-only), `ohne_lautheitsabgleich` (M-43), `ohne_resultatmessung` (M-45) und `blindreihenfolge_widerspruch` (M-44). Sie stehen hier, weil keiner der generischen Codes sie ausdruecken kann und ein `abgelehnt` OHNE Grund den Sender raten liesse; ein Leser der Fassung 1 lehnt sie ab, statt sie still auf `internal` abzubilden.",
+      "description": "Maschinenlesbar (§33.3). Ein neuer Code ist eine Minor-Aenderung; ein unbekannter Code wird als generischer Fehler behandelt, nie als Erfolg. SONDE-013 Nacharbeit 1: die fuenf letzten Codes gehoeren zur Fassung 2 und benennen die PRODUKTREGELN der Experimentfamilien - `abdeckung_zu_gering` (M-30), `schon_terminal` (M-47, append-only), `ohne_lautheitsabgleich` (M-43), `ohne_resultatmessung` (M-45) und `blindreihenfolge_widerspruch` (M-44). Nacharbeit 2 (Befund R21) ergaenzt `reihenfolge_nicht_gebunden` (M-44): die Blindreihenfolge wird seither im eigenen Befehlszweig `experiment_candidate` gebunden, VOR dem Hoeren - ein Ergebnis ohne diese Bindung ist ein eigener, benennbarer Fall und kein generisches `internal`. Sie stehen hier, weil keiner der generischen Codes sie ausdruecken kann und ein `abgelehnt` OHNE Grund den Sender raten liesse; ein Leser der Fassung 1 lehnt sie ab, statt sie still auf `internal` abzubilden.",
       "enum": [
         "protocol_mismatch",
         "unknown_message",
@@ -825,7 +826,8 @@
         "schon_terminal",
         "ohne_lautheitsabgleich",
         "ohne_resultatmessung",
-        "blindreihenfolge_widerspruch"
+        "blindreihenfolge_widerspruch",
+        "reihenfolge_nicht_gebunden"
       ]
     },
 
@@ -1499,6 +1501,26 @@
         },
         "passage": { "$ref": "#/$defs/passage" },
         "referenz": { "$ref": "#/$defs/experiment_referenz" }
+      }
+    },
+
+    "experiment_candidate": {
+      "description": "SONDE-013 Nacharbeit 2 (Befunde R16/R21, M-41/M-44): der Schritt ZWISCHEN `experiment_begin` und `experiment_manual_result`. Gen erfasst den Kandidaten, nachdem der User die Fremdaenderung vorgenommen hat, und bindet im selben Moment die Blindreihenfolge — bevor er hoert. Beides gehoert in EINE Nachricht, weil es ein Moment ist: die Reihenfolge nachtraeglich zu waehlen ist genau das, was §43.2 ausschliesst. Bis zu dieser Runde hatte keiner der beiden Schritte einen Wire-Weg: der Kandidat wurde nie erfasst (ein Ergebnis konnte ohne ihn terminieren) und die Reihenfolge wurde erst ZUSAMMEN mit dem Hoerurteil gebunden. Der Schritt liegt INNERHALB der Fassung 2.",
+      "type": "object",
+      "required": ["type", "kopf", "experiment_id", "referenz", "blindreihenfolge"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "experiment_candidate" },
+        "kopf": { "$ref": "#/$defs/steuerkopf" },
+        "experiment_id": { "$ref": "#/$defs/hex32" },
+        "referenz": {
+          "$comment": "Die UNVERAENDERLICHEN Referenzen des Kandidaten, in derselben Form wie die Baseline (§43.1). Sie ruehren die Baseline nicht an: ein zweiter Durchgang erzeugt einen NEUEN Kandidaten (M-41).",
+          "$ref": "#/$defs/experiment_referenz"
+        },
+        "blindreihenfolge": {
+          "$comment": "Append-only gebunden, BEVOR der User hoert (M-44). Ein zweiter Aufruf aendert sie nicht; `experiment_manual_result` meldet spaeter die AUFGEDECKTE, und ein Widerspruch dazu ist fail-closed.",
+          "enum": ["baseline_zuerst", "kandidat_zuerst"]
+        }
       }
     },
 

@@ -1,0 +1,100 @@
+SONDE-013 Etappe 2 C - Rotbeweis M-02
+=========================================
+
+Datei:     eq-copilot\plugin\core\analysis\TruePeak.h
+Ziel:      EqCopSonde013TruePeakGoldenTest
+Warum:     Nur noch die Stuetzstelle der Phase 0 zaehlt - der Detektor faellt damit auf den Sample-Peak zurueck. Das sind genau die drei Dezibel, um die er bei EBU-Testfall 16 zu optimistisch waere.
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+            groesster = std::max (groesster, std::max (std::abs (accL), std::abs (accR)));
+--- NEU ---
+            if (phase == 0) groesster = std::max (groesster, std::max (std::abs (accL), std::abs (accR)));
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+== Nakama SONDE-013 M-02 - True Peak nach ITU-R BS.1770-5 ==
+
+== EBU Tech 3341, Testfaelle 15 bis 19 (Toleranz aus §49.3: +/-0,1 dB) ==
+[ok]   Testfall 15  fs/4, 0,50 FFS, 0 Grad: True Peak trifft die Amplitude  [gemessen -6.021 dBTP, erwartet -6.021, Abweichung 0.0000 dB]
+[ROT]  Testfall 16  fs/4, 0,50 FFS, 45 Grad: True Peak trifft die Amplitude  [gemessen -9.031 dBTP, erwartet -6.021, Abweichung 3.0103 dB]
+[ROT]  Testfall 17  fs/6, 0,50 FFS, 60 Grad: True Peak trifft die Amplitude  [gemessen -7.270 dBTP, erwartet -6.021, Abweichung 1.2494 dB]
+[ROT]  Testfall 18  fs/8, 0,50 FFS, 67,5 Grad: True Peak trifft die Amplitude  [gemessen -6.708 dBTP, erwartet -6.021, Abweichung 0.6877 dB]
+[ROT]  Testfall 19  fs/4, 1,41 FFS, 45 Grad: True Peak trifft die Amplitude  [gemessen -0.026 dBTP, erwartet 2.984, Abweichung 3.0103 dB]
+
+== Gegenbeleg: der Sample-Peak liegt bei Testfall 16 um 3 dB darunter ==
+[ok]   Sample-Peak von Testfall 16 liegt bei -9,03 dBFS  [-9.031 dBFS]
+[ROT]  der True Peak findet die drei Dezibel, die zwischen den Samples liegen  [Unterschied 0.000 dB]
+
+== Sampleraten-Sweep: dieselbe Zusage bei 44,1 / 48 / 88,2 / 96 / 192 kHz ==
+[ROT]  bei 44.1 kHz halten fs/4, fs/6 und fs/8 die Toleranz  [groesste Abweichung 2.3286 dB]
+[ROT]  bei 48.0 kHz halten fs/4, fs/6 und fs/8 die Toleranz  [groesste Abweichung 2.3286 dB]
+[ROT]  bei 88.2 kHz halten fs/4, fs/6 und fs/8 die Toleranz  [groesste Abweichung 2.3286 dB]
+[ROT]  bei 96.0 kHz halten fs/4, fs/6 und fs/8 die Toleranz  [groesste Abweichung 2.3286 dB]
+[ROT]  bei 192.0 kHz halten fs/4, fs/6 und fs/8 die Toleranz  [groesste Abweichung 2.3286 dB]
+
+== Die 8-fach-Entscheidung: die Schranke, die 4-fach reissen wuerde ==
+[ok]   8-fach: die ausgerechnete Schranke bei fs/4 haelt die Toleranz aus Â§49.3  [-0.0419 dB]
+[ok]   4-fach wuerde sie bei derselben Frequenz REISSEN - deshalb 8-fach  [-0.1685 dB]
+[ROT]  die WIRKLICHE Abweichung bleibt innerhalb der ausgerechneten Schranke  [gemessen -3.0103 dB, Schranke -0.0419 dB]
+
+== Raender: Stille, NaN, Gleichanteil und der ungeruestete Detektor ==
+[ok]   Stille ergibt exakt 0, nicht einen Filterrest  [0.000000000000]
+[ok]   ein NaN im Eingang erzeugt keinen NaN im Ausgang  [0.500000]
+[ok]   und er bleibt nicht im Filterzustand haengen - danach misst er wieder  [0.500000]
+[ok]   ein Gleichanteil bleibt exakt er selbst - jede Phase hat DC-Verstaerkung 1  [gemessen 0.500000000000, Abweichung 0.000000000000]
+[ok]   ohne vorbereiten() misst er nicht, statt zu raten oder zu stuerzen
+
+== Der Interpolator: Faktor, Taps und die Zusage ueber den Nulldurchgang ==
+[ok]   Ueberabtastfaktor ist 8 (BS.1770-4 Annex 2 verlangt mindestens 4)
+[ok]   die Filterlaenge ist ungerade und zerlegt sich glatt in die Phasen  [193 Taps, 24 je Phase]
+[ok]   JEDE der acht Phasen summiert sich auf 1 - nicht nur die Gesamtsumme auf 8  [groesste Abweichung 0.000000000000000]
+
+-----------------------------------------
+12 bestanden, 11 gescheitert
+
+EXITCODE=1
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+== Nakama SONDE-013 M-02 - True Peak nach ITU-R BS.1770-5 ==
+
+== EBU Tech 3341, Testfaelle 15 bis 19 (Toleranz aus §49.3: +/-0,1 dB) ==
+[ok]   Testfall 15  fs/4, 0,50 FFS, 0 Grad: True Peak trifft die Amplitude  [gemessen -6.021 dBTP, erwartet -6.021, Abweichung 0.0000 dB]
+[ok]   Testfall 16  fs/4, 0,50 FFS, 45 Grad: True Peak trifft die Amplitude  [gemessen -6.020 dBTP, erwartet -6.021, Abweichung 0.0004 dB]
+[ok]   Testfall 17  fs/6, 0,50 FFS, 60 Grad: True Peak trifft die Amplitude  [gemessen -6.020 dBTP, erwartet -6.021, Abweichung 0.0001 dB]
+[ok]   Testfall 18  fs/8, 0,50 FFS, 67,5 Grad: True Peak trifft die Amplitude  [gemessen -6.020 dBTP, erwartet -6.021, Abweichung 0.0005 dB]
+[ok]   Testfall 19  fs/4, 1,41 FFS, 45 Grad: True Peak trifft die Amplitude  [gemessen 2.985 dBTP, erwartet 2.984, Abweichung 0.0004 dB]
+
+== Gegenbeleg: der Sample-Peak liegt bei Testfall 16 um 3 dB darunter ==
+[ok]   Sample-Peak von Testfall 16 liegt bei -9,03 dBFS  [-9.031 dBFS]
+[ok]   der True Peak findet die drei Dezibel, die zwischen den Samples liegen  [Unterschied 3.011 dB]
+
+== Sampleraten-Sweep: dieselbe Zusage bei 44,1 / 48 / 88,2 / 96 / 192 kHz ==
+[ok]   bei 44.1 kHz halten fs/4, fs/6 und fs/8 die Toleranz  [groesste Abweichung 0.0313 dB]
+[ok]   bei 48.0 kHz halten fs/4, fs/6 und fs/8 die Toleranz  [groesste Abweichung 0.0313 dB]
+[ok]   bei 88.2 kHz halten fs/4, fs/6 und fs/8 die Toleranz  [groesste Abweichung 0.0313 dB]
+[ok]   bei 96.0 kHz halten fs/4, fs/6 und fs/8 die Toleranz  [groesste Abweichung 0.0313 dB]
+[ok]   bei 192.0 kHz halten fs/4, fs/6 und fs/8 die Toleranz  [groesste Abweichung 0.0313 dB]
+
+== Die 8-fach-Entscheidung: die Schranke, die 4-fach reissen wuerde ==
+[ok]   8-fach: die ausgerechnete Schranke bei fs/4 haelt die Toleranz aus Â§49.3  [-0.0419 dB]
+[ok]   4-fach wuerde sie bei derselben Frequenz REISSEN - deshalb 8-fach  [-0.1685 dB]
+[ok]   die WIRKLICHE Abweichung bleibt innerhalb der ausgerechneten Schranke  [gemessen 0.0004 dB, Schranke -0.0419 dB]
+
+== Raender: Stille, NaN, Gleichanteil und der ungeruestete Detektor ==
+[ok]   Stille ergibt exakt 0, nicht einen Filterrest  [0.000000000000]
+[ok]   ein NaN im Eingang erzeugt keinen NaN im Ausgang  [0.500103]
+[ok]   und er bleibt nicht im Filterzustand haengen - danach misst er wieder  [0.601801]
+[ok]   ein Gleichanteil bleibt exakt er selbst - jede Phase hat DC-Verstaerkung 1  [gemessen 0.500000000000, Abweichung 0.000000000000]
+[ok]   ohne vorbereiten() misst er nicht, statt zu raten oder zu stuerzen
+
+== Der Interpolator: Faktor, Taps und die Zusage ueber den Nulldurchgang ==
+[ok]   Ueberabtastfaktor ist 8 (BS.1770-4 Annex 2 verlangt mindestens 4)
+[ok]   die Filterlaenge ist ungerade und zerlegt sich glatt in die Phasen  [193 Taps, 24 je Phase]
+[ok]   JEDE der acht Phasen summiert sich auf 1 - nicht nur die Gesamtsumme auf 8  [groesste Abweichung 0.000000000000000]
+
+-----------------------------------------
+23 bestanden, 0 gescheitert
+
+EXITCODE=0
+
+URTEIL: BELEGT (rot=1, gruen=0)

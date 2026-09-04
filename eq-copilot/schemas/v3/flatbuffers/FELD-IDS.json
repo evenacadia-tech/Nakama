@@ -71,6 +71,15 @@
       },
       "verbrannt": []
     },
+    "Headroomverteilung": {
+      "felder": {
+        "p10_db": 0,
+        "p50_db": 1,
+        "p95_db": 2,
+        "fenster": 3
+      },
+      "verbrannt": []
+    },
     "Frame": {
       "felder": {
         "transport": 0,
@@ -87,7 +96,14 @@
         "lufs_i": 11,
         "lufs_i_unsicherheit_lu": 12,
         "lufs_i_status": 13,
-        "integration_samples": 14
+        "integration_samples": 14,
+        "lufs_m": 15,
+        "true_peak_db": 16,
+        "true_peak_passage_db": 17,
+        "plr_db": 18,
+        "lra_lu": 19,
+        "crest_kurz_db": 20,
+        "headroom": 21
       },
       "verbrannt": []
     },
@@ -107,7 +123,7 @@
   },
 
   "erwartet_gesamt": {
-    "tabellen": 8,
-    "felder": 52
+    "tabellen": 9,
+    "felder": 63
   }
 }

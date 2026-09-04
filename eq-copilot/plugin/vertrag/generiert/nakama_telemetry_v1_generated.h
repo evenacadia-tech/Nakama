@@ -31,6 +31,9 @@ struct TransportstempelBuilder;
 struct Bandwerte;
 struct BandwerteBuilder;
 
+struct Headroomverteilung;
+struct HeadroomverteilungBuilder;
+
 struct Frame;
 struct FrameBuilder;
 
@@ -845,6 +848,100 @@ inline ::flatbuffers::Offset<Bandwerte> CreateBandwerteDirect(
       saturated);
 }
 
+/// Headroom als Verteilung ueber die Rahmen der Passage (SONDE-013 M-03).
+///
+/// §39.2 woertlich: "Headroom wird in dBTP und als Verteilung ueber die
+/// Passage dargestellt. Ein Peak darf nicht als Problem gelten, nur weil er
+/// hoch ist." Ein einzelner Maximalwert kann diesen Satz nicht ausdruecken —
+/// er sagt nicht, ob die Spitze einmal oder in jedem zweiten Rahmen vorkam.
+/// Drei Punkte koennen es: eine einzelne Spitze hebt p95 und laesst p50
+/// stehen, ein durchgehend heisser Master hebt beide.
+///
+/// `fenster` ist die Zahl der WIRKLICH eingegangenen Rahmen. Dieselbe
+/// Ehrlichkeit wie `integration_samples` bei den Skalaren: ein Perzentil
+/// ueber vier Rahmen sieht aus wie eines ueber vierundsechzig.
+///
+/// Alle vier Felder sind Pflicht, weil die Tabelle als GANZES optional ist:
+/// entweder es gibt eine Verteilung, oder es gibt sie nicht. Eine halbe
+/// waere ein Zustand, den kein Empfaenger deuten kann.
+struct Headroomverteilung FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef HeadroomverteilungBuilder Builder;
+  struct Traits;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_P10_DB = 4,
+    VT_P50_DB = 6,
+    VT_P95_DB = 8,
+    VT_FENSTER = 10
+  };
+  float p10_db() const {
+    return GetField<float>(VT_P10_DB, 0.0f);
+  }
+  float p50_db() const {
+    return GetField<float>(VT_P50_DB, 0.0f);
+  }
+  float p95_db() const {
+    return GetField<float>(VT_P95_DB, 0.0f);
+  }
+  uint32_t fenster() const {
+    return GetField<uint32_t>(VT_FENSTER, 0);
+  }
+  template <bool B = false>
+  bool Verify(::flatbuffers::VerifierTemplate<B> &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<float>(verifier, VT_P10_DB, 4) &&
+           VerifyField<float>(verifier, VT_P50_DB, 4) &&
+           VerifyField<float>(verifier, VT_P95_DB, 4) &&
+           VerifyField<uint32_t>(verifier, VT_FENSTER, 4) &&
+           verifier.EndTable();
+  }
+};
+
+struct HeadroomverteilungBuilder {
+  typedef Headroomverteilung Table;
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_p10_db(float p10_db) {
+    fbb_.AddElement<float>(Headroomverteilung::VT_P10_DB, p10_db, 0.0f);
+  }
+  void add_p50_db(float p50_db) {
+    fbb_.AddElement<float>(Headroomverteilung::VT_P50_DB, p50_db, 0.0f);
+  }
+  void add_p95_db(float p95_db) {
+    fbb_.AddElement<float>(Headroomverteilung::VT_P95_DB, p95_db, 0.0f);
+  }
+  void add_fenster(uint32_t fenster) {
+    fbb_.AddElement<uint32_t>(Headroomverteilung::VT_FENSTER, fenster, 0);
+  }
+  explicit HeadroomverteilungBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  ::flatbuffers::Offset<Headroomverteilung> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = ::flatbuffers::Offset<Headroomverteilung>(end);
+    return o;
+  }
+};
+
+inline ::flatbuffers::Offset<Headroomverteilung> CreateHeadroomverteilung(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    float p10_db = 0.0f,
+    float p50_db = 0.0f,
+    float p95_db = 0.0f,
+    uint32_t fenster = 0) {
+  HeadroomverteilungBuilder builder_(_fbb);
+  builder_.add_fenster(fenster);
+  builder_.add_p95_db(p95_db);
+  builder_.add_p50_db(p50_db);
+  builder_.add_p10_db(p10_db);
+  return builder_.Finish();
+}
+
+struct Headroomverteilung::Traits {
+  using type = Headroomverteilung;
+  static auto constexpr Create = CreateHeadroomverteilung;
+};
+
 /// Ein Messframe EINER Quelle (§33.2, Live-Telemetrie 10 Hz).
 ///
 /// Alle Kennzahlen sind Optionals. Das ist die NaN-Ehrlichkeit dieses Projekts
@@ -871,7 +968,14 @@ struct Frame FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
     VT_LUFS_I = 26,
     VT_LUFS_I_UNSICHERHEIT_LU = 28,
     VT_LUFS_I_STATUS = 30,
-    VT_INTEGRATION_SAMPLES = 32
+    VT_INTEGRATION_SAMPLES = 32,
+    VT_LUFS_M = 34,
+    VT_TRUE_PEAK_DB = 36,
+    VT_TRUE_PEAK_PASSAGE_DB = 38,
+    VT_PLR_DB = 40,
+    VT_LRA_LU = 42,
+    VT_CREST_KURZ_DB = 44,
+    VT_HEADROOM = 46
   };
   const nakama::v3::Transportstempel *transport() const {
     return GetPointer<const nakama::v3::Transportstempel *>(VT_TRANSPORT);
@@ -939,6 +1043,63 @@ struct Frame FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   ::flatbuffers::Optional<uint32_t> integration_samples() const {
     return GetOptional<uint32_t, uint32_t>(VT_INTEGRATION_SAMPLES);
   }
+  /// Momentary Loudness ueber 400 ms (SONDE-013 M-01, §39.1, BS.1770-5).
+  ///
+  /// Er steht NEBEN `lufs_s` (3 s) und `lufs_i`, nicht statt eines von
+  /// beiden: die drei Fenster beantworten drei verschiedene Fragen, und
+  /// keiner der drei Werte laesst sich aus den anderen rechnen.
+  ::flatbuffers::Optional<float> lufs_m() const {
+    return GetOptional<float, float>(VT_LUFS_M);
+  }
+  /// True Peak dieses Rahmens in dBTP (SONDE-013 M-02, §39.1).
+  ///
+  /// NICHT dasselbe wie `peak_db`: der Sample-Peak ist der groesste
+  /// Abtastwert, der True Peak der groesste Wert der Wellenform DAZWISCHEN.
+  /// Bei einem Sinus mit fs/4 und 45 Grad Phase liegen 3,01 dB zwischen den
+  /// beiden (EBU Tech 3341, Testfall 16). Beide reisen, weil ein Host den
+  /// einen anzeigt und ein Encoder am anderen clippt.
+  ::flatbuffers::Optional<float> true_peak_db() const {
+    return GetOptional<float, float>(VT_TRUE_PEAK_DB);
+  }
+  /// Groesster True Peak seit dem Beginn der laufenden Passage, in dBTP.
+  ///
+  /// Die Zutat von `plr_db` und fuer sich schon die Headroomfrage aus §39.2
+  /// ("wie nah war die lauteste Stelle an Vollaussteuerung"). Sie reist
+  /// getrennt, weil `lufs_i` fehlen darf — ohne sie waere mit dem Paar auch
+  /// die Headroomaussage weg.
+  ::flatbuffers::Optional<float> true_peak_passage_db() const {
+    return GetOptional<float, float>(VT_TRUE_PEAK_PASSAGE_DB);
+  }
+  /// PLR = Passage-True-Peak-Maximum minus LUFS-I (SONDE-013 M-03, §39.1).
+  ///
+  /// Ergaenzende Produktmetrik, ausdruecklich KEIN EBU-Qualitaetsurteil
+  /// (§39.1 woertlich). Praesent nur, wenn das integrierte Lautheitspaar
+  /// praesent ist — sonst fehlte der Bezugspunkt, und eine Zahl gegen einen
+  /// unbekannten Bezug ist keine Messung.
+  ::flatbuffers::Optional<float> plr_db() const {
+    return GetOptional<float, float>(VT_PLR_DB);
+  }
+  /// Loudness Range in LU nach EBU Tech 3342 (SONDE-013 M-04).
+  ///
+  /// Abwesenheit heisst hier ausdruecklich `nicht belastbar`: LRA gilt erst
+  /// nach rund 60 s GEEIGNETEM, also gegatetem Material (§39.1). Eine 0 vor
+  /// dieser Schwelle waere eine Dynamikaussage, die niemand gemessen hat.
+  ::flatbuffers::Optional<float> lra_lu() const {
+    return GetOptional<float, float>(VT_LRA_LU);
+  }
+  /// Crest-Faktor ueber das 3-s-Fenster in dB (SONDE-013 M-04).
+  ///
+  /// Das zweite Fenster neben `crest_db` (100-ms-Rahmen). §39.1 verlangt den
+  /// Crest "in mehreren Fenstern statt nur als globales Maximum" — dichte
+  /// kleine Spitzen und eine einzelne grosse sehen im Rahmen gleich aus und
+  /// ueber drei Sekunden verschieden.
+  ::flatbuffers::Optional<float> crest_kurz_db() const {
+    return GetOptional<float, float>(VT_CREST_KURZ_DB);
+  }
+  /// Headroom als VERTEILUNG ueber die Rahmen der Passage (SONDE-013 M-03).
+  const nakama::v3::Headroomverteilung *headroom() const {
+    return GetPointer<const nakama::v3::Headroomverteilung *>(VT_HEADROOM);
+  }
   template <bool B = false>
   bool Verify(::flatbuffers::VerifierTemplate<B> &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -960,6 +1121,14 @@ struct Frame FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
            VerifyField<float>(verifier, VT_LUFS_I_UNSICHERHEIT_LU, 4) &&
            VerifyField<uint8_t>(verifier, VT_LUFS_I_STATUS, 1) &&
            VerifyField<uint32_t>(verifier, VT_INTEGRATION_SAMPLES, 4) &&
+           VerifyField<float>(verifier, VT_LUFS_M, 4) &&
+           VerifyField<float>(verifier, VT_TRUE_PEAK_DB, 4) &&
+           VerifyField<float>(verifier, VT_TRUE_PEAK_PASSAGE_DB, 4) &&
+           VerifyField<float>(verifier, VT_PLR_DB, 4) &&
+           VerifyField<float>(verifier, VT_LRA_LU, 4) &&
+           VerifyField<float>(verifier, VT_CREST_KURZ_DB, 4) &&
+           VerifyOffset(verifier, VT_HEADROOM) &&
+           verifier.VerifyTable(headroom()) &&
            verifier.EndTable();
   }
 };
@@ -1013,6 +1182,27 @@ struct FrameBuilder {
   void add_integration_samples(uint32_t integration_samples) {
     fbb_.AddElement<uint32_t>(Frame::VT_INTEGRATION_SAMPLES, integration_samples);
   }
+  void add_lufs_m(float lufs_m) {
+    fbb_.AddElement<float>(Frame::VT_LUFS_M, lufs_m);
+  }
+  void add_true_peak_db(float true_peak_db) {
+    fbb_.AddElement<float>(Frame::VT_TRUE_PEAK_DB, true_peak_db);
+  }
+  void add_true_peak_passage_db(float true_peak_passage_db) {
+    fbb_.AddElement<float>(Frame::VT_TRUE_PEAK_PASSAGE_DB, true_peak_passage_db);
+  }
+  void add_plr_db(float plr_db) {
+    fbb_.AddElement<float>(Frame::VT_PLR_DB, plr_db);
+  }
+  void add_lra_lu(float lra_lu) {
+    fbb_.AddElement<float>(Frame::VT_LRA_LU, lra_lu);
+  }
+  void add_crest_kurz_db(float crest_kurz_db) {
+    fbb_.AddElement<float>(Frame::VT_CREST_KURZ_DB, crest_kurz_db);
+  }
+  void add_headroom(::flatbuffers::Offset<nakama::v3::Headroomverteilung> headroom) {
+    fbb_.AddOffset(Frame::VT_HEADROOM, headroom);
+  }
   explicit FrameBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -1042,8 +1232,22 @@ inline ::flatbuffers::Offset<Frame> CreateFrame(
     ::flatbuffers::Optional<float> lufs_i = ::flatbuffers::nullopt,
     ::flatbuffers::Optional<float> lufs_i_unsicherheit_lu = ::flatbuffers::nullopt,
     ::flatbuffers::Optional<uint8_t> lufs_i_status = ::flatbuffers::nullopt,
-    ::flatbuffers::Optional<uint32_t> integration_samples = ::flatbuffers::nullopt) {
+    ::flatbuffers::Optional<uint32_t> integration_samples = ::flatbuffers::nullopt,
+    ::flatbuffers::Optional<float> lufs_m = ::flatbuffers::nullopt,
+    ::flatbuffers::Optional<float> true_peak_db = ::flatbuffers::nullopt,
+    ::flatbuffers::Optional<float> true_peak_passage_db = ::flatbuffers::nullopt,
+    ::flatbuffers::Optional<float> plr_db = ::flatbuffers::nullopt,
+    ::flatbuffers::Optional<float> lra_lu = ::flatbuffers::nullopt,
+    ::flatbuffers::Optional<float> crest_kurz_db = ::flatbuffers::nullopt,
+    ::flatbuffers::Offset<nakama::v3::Headroomverteilung> headroom = 0) {
   FrameBuilder builder_(_fbb);
+  builder_.add_headroom(headroom);
+  if(crest_kurz_db) { builder_.add_crest_kurz_db(*crest_kurz_db); }
+  if(lra_lu) { builder_.add_lra_lu(*lra_lu); }
+  if(plr_db) { builder_.add_plr_db(*plr_db); }
+  if(true_peak_passage_db) { builder_.add_true_peak_passage_db(*true_peak_passage_db); }
+  if(true_peak_db) { builder_.add_true_peak_db(*true_peak_db); }
+  if(lufs_m) { builder_.add_lufs_m(*lufs_m); }
   if(integration_samples) { builder_.add_integration_samples(*integration_samples); }
   if(lufs_i_unsicherheit_lu) { builder_.add_lufs_i_unsicherheit_lu(*lufs_i_unsicherheit_lu); }
   if(lufs_i) { builder_.add_lufs_i(*lufs_i); }

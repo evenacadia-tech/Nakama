@@ -6,8 +6,8 @@
   "erzeugung": "Die .bin-Dateien entstehen mit dem GEPINNTEN flatc aus einer JSON-Beschreibung (flatc -b). Ein eigener Encoder waere eine dritte Implementierung des Formats, die niemand prueft.",
   "byte_mutation_von": "Markiert einen Puffer, den flatc nicht erzeugen KANN (falsche Dateikennung, abgeschnitten, zerstoerter Wurzeloffset). Er entsteht als Byte-Mutation des genannten gueltigen Puffers.",
   "regeln": "Die geschlossene Liste der Regelnamen steht in eq-copilot/schemas/v3/flatbuffers/README.md. Ein Verstoss ist (pfad, regel); die Menge wird kanonisch nach (pfad, regel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
-  "anzahl_gueltig": 20,
-  "anzahl_ungueltig": 84,
+  "anzahl_gueltig": 23,
+  "anzahl_ungueltig": 96,
   "fixtures": [
     {
       "datei": "gueltig/alle-validity-bits.bin",
@@ -43,6 +43,18 @@
       "datei": "gueltig/broker-buendel-5.bin",
       "urteil": "gueltig",
       "warum": "nur Broker->Main buendelt - typisch vier bis fuenf Sonden (§33.1); fuenf VERSCHIEDENE Quellen sind erlaubt, fuenf gleiche nicht",
+      "verstoesse": []
+    },
+    {
+      "datei": "gueltig/dynamik-nur-momentary.bin",
+      "urteil": "gueltig",
+      "warum": "kurz nach einer Grenze steht nur das 400-ms-Fenster: Short-term braucht 3 s, LRA rund 60 s, und keines der beiden wird vorgetaeuscht. Abwesenheit ist hier die Aussage",
+      "verstoesse": []
+    },
+    {
+      "datei": "gueltig/dynamik-vollstaendig.bin",
+      "urteil": "gueltig",
+      "warum": "SONDE-013: alle drei Loudnessfenster, beide Peakarten, beide Crestfenster, LRA, PLR und die Headroomverteilung in EINEM Frame. True Peak liegt ueber dem Sample-Peak, PLR haengt am vorhandenen LUFS-I-Paar, die drei Perzentile sind geordnet",
       "verstoesse": []
     },
     {
@@ -127,6 +139,12 @@
       "datei": "gueltig/transport-local-monotonic.bin",
       "urteil": "gueltig",
       "warum": "lokale Zeit traegt weder Projektbit noch Projektposition",
+      "verstoesse": []
+    },
+    {
+      "datei": "gueltig/true-peak-gleich-sample-peak.bin",
+      "urteil": "gueltig",
+      "warum": "der Grenzfall der Regel `true_peak_unter_sample_peak`: bei einem Sinus, dessen Abtastpunkte den Scheitel treffen, sind die zwei Zahlen gleich. Gleich ist erlaubt, kleiner nicht",
       "verstoesse": []
     },
     {
@@ -351,6 +369,17 @@
       ]
     },
     {
+      "datei": "ungueltig/crest-kurz-db-nicht-endlich.bin",
+      "urteil": "ungueltig",
+      "warum": "Plus unendlich ist kein Crest-Faktor",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/crest_kurz_db",
+          "regel": "nicht_endlich"
+        }
+      ]
+    },
+    {
       "datei": "ungueltig/dateikennung-falsch.bin",
       "urteil": "ungueltig",
       "warum": "vier Bytes an Offset 4. Das Erste, was ein Leser sehen kann - ein fremder Puffer faellt hier, VOR jedem Feldzugriff",
@@ -447,6 +476,39 @@
         {
           "pfad": "/eintraege/0/frame/transport/schleife/abgeleitete_grenzen",
           "regel": "grenzen_verdreht"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/headroom-fenster-null.bin",
+      "urteil": "ungueltig",
+      "warum": "Eine Verteilung ueber null Rahmen ist keine Verteilung. Das Feld sagt, wie viele Rahmen wirklich eingegangen sind - 0 waere die Behauptung, drei Perzentile ohne einen einzigen Messwert gebildet zu haben",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/headroom/fenster",
+          "regel": "headroom_fenster_null"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/headroom-p50-nicht-endlich.bin",
+      "urteil": "ungueltig",
+      "warum": "Der NaN-Riegel gilt auch INNERHALB der Headroomtabelle. Ohne diese Zeile waere die Tabelle die eine Stelle des Frames, an der ein NaN durchkaeme",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/headroom/p50_db",
+          "regel": "nicht_endlich"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/headroom-unsortiert.bin",
+      "urteil": "ungueltig",
+      "warum": "P10 <= P50 <= P95 ist die Definition von Perzentilen, nicht eine Konvention. Drei Zahlen in der falschen Ordnung sind keine Verteilung",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/headroom",
+          "regel": "headroom_unsortiert"
         }
       ]
     },
@@ -684,6 +746,39 @@
       ]
     },
     {
+      "datei": "ungueltig/lra-lu-nicht-endlich.bin",
+      "urteil": "ungueltig",
+      "warum": "NaN ist keine Loudness Range",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/lra_lu",
+          "regel": "nicht_endlich"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/lra-negativ.bin",
+      "urteil": "ungueltig",
+      "warum": "LRA ist P95 minus P10 ueber derselben Verteilung (EBU Tech 3342) und damit nie kleiner als null. Ein negativer Wert ist ein Erzeugerfehler",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/lra_lu",
+          "regel": "lra_negativ"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/lufs-m-nicht-endlich.bin",
+      "urteil": "ungueltig",
+      "warum": "Minus unendlich ist keine Momentanlautheit",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/lufs_m",
+          "regel": "nicht_endlich"
+        }
+      ]
+    },
+    {
       "datei": "ungueltig/metrics-version-null.bin",
       "urteil": "ungueltig",
       "warum": "eine Kennzahl ohne Version laesst sich spaeter nicht vergleichen",
@@ -714,6 +809,28 @@
         {
           "pfad": "/eintraege/0/frame/peak_db",
           "regel": "nicht_endlich"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/plr-db-nicht-endlich.bin",
+      "urteil": "ungueltig",
+      "warum": "NaN ist kein PLR. Das Lautheitspaar ist hier vorhanden, damit genau die Nichtendlichkeit faellt und nicht zusaetzlich `plr_ohne_lufs_i`",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/plr_db",
+          "regel": "nicht_endlich"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/plr-ohne-lufs-i.bin",
+      "urteil": "ungueltig",
+      "warum": "PLR ist Passagen-True-Peak MINUS LUFS-I. Ohne das integrierte Lautheitspaar fehlt der Bezugspunkt, und die Zahl waere gegen etwas gerechnet, das der Frame nicht mitschickt (§39.1, E-A02)",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/plr_db",
+          "regel": "plr_ohne_lufs_i"
         }
       ]
     },
@@ -1022,6 +1139,39 @@
         {
           "pfad": "/eintraege/0/frame/transport/gueltigkeit",
           "regel": "project_time_bit_fehlt"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/true-peak-db-nicht-endlich.bin",
+      "urteil": "ungueltig",
+      "warum": "NaN ist kein True Peak",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/true_peak_db",
+          "regel": "nicht_endlich"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/true-peak-passage-db-nicht-endlich.bin",
+      "urteil": "ungueltig",
+      "warum": "Plus unendlich ist kein Passagenmaximum",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/true_peak_passage_db",
+          "regel": "nicht_endlich"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/true-peak-unter-sample-peak.bin",
+      "urteil": "ungueltig",
+      "warum": "Der True Peak liegt ZWISCHEN den Samples und ist deshalb nie kleiner als der Sample-Peak desselben Rahmens. Wer hier einen kleineren Wert sendet, hat die beiden vertauscht - genau die Verwechslung, gegen die M-02 schuetzt",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/true_peak_db",
+          "regel": "true_peak_unter_sample_peak"
         }
       ]
     },

@@ -454,6 +454,16 @@ void pruefeFrame (const fb::Frame& f, const juce::String& p, juce::Array<Verstos
         { "korrelation", f.korrelation() },
         { "lufs_i",      f.lufs_i() },
         { "lufs_i_unsicherheit_lu", f.lufs_i_unsicherheit_lu() },
+        // SONDE-013 M-07: jede NEUE Metrik erbt denselben NaN-Riegel, in
+        // DIESER Liste und nicht in einer zweiten daneben — eine zweite
+        // Liste waere der Ort, an dem ein spaeteres Feld vergessen wird.
+        // Wortgleich mit `broker/src/telemetrie.rs`.
+        { "lufs_m",               f.lufs_m() },
+        { "true_peak_db",         f.true_peak_db() },
+        { "true_peak_passage_db", f.true_peak_passage_db() },
+        { "plr_db",               f.plr_db() },
+        { "lra_lu",               f.lra_lu() },
+        { "crest_kurz_db",        f.crest_kurz_db() },
     };
     for (const auto& w : werte)
         if (w.wert.has_value() && ! std::isfinite (*w.wert))
@@ -490,6 +500,50 @@ void pruefeFrame (const fb::Frame& f, const juce::String& p, juce::Array<Verstos
     if (const auto integration = f.integration_samples();
         integration.has_value() && *integration == 0u)
         hinzu (out, p + "/integration_samples", "integration_samples_null");
+
+    // ── SONDE-013 M-02 bis M-04: die Grenzen der neuen Metriken ───────────
+    //
+    // Vier Regeln, wortgleich mit `broker/src/telemetrie.rs`. Jede beschreibt
+    // einen Zustand, den ein richtiger Erzeuger nie herstellt; sie stehen im
+    // Leser und nicht in der Anzeige, weil ein erst beim Zeichnen erkannter
+    // unmoeglicher Wert vorher schon gespeichert wurde.
+
+    // Eine negative Loudness Range gibt es nicht: LRA ist P95 minus P10 ueber
+    // derselben Verteilung (EBU Tech 3342).
+    if (const auto lra = f.lra_lu();
+        lra.has_value() && std::isfinite (*lra) && *lra < 0.0f)
+        hinzu (out, p + "/lra_lu", "lra_negativ");
+
+    // PLR ist Passagen-True-Peak MINUS LUFS-I. Ohne das integrierte
+    // Lautheitspaar fehlt der Bezugspunkt (§39.1, E-A02).
+    if (f.plr_db().has_value() && ! lufsIPaar)
+        hinzu (out, p + "/plr_db", "plr_ohne_lufs_i");
+
+    // Der True Peak liegt ZWISCHEN den Samples und ist nie KLEINER als der
+    // Sample-Peak desselben Rahmens; 0,01 dB Spielraum fuer die
+    // float32-Rundung der zwei Wege.
+    if (const auto tp = f.true_peak_db(), sp = f.peak_db();
+        tp.has_value() && sp.has_value()
+        && std::isfinite (*tp) && std::isfinite (*sp) && *tp < *sp - 0.01f)
+        hinzu (out, p + "/true_peak_db", "true_peak_unter_sample_peak");
+
+    // Die Headroomverteilung ist als GANZES optional; ist sie da, muss sie
+    // geordnet und belegt sein.
+    if (const auto* h = f.headroom())
+    {
+        const struct { const char* name; float wert; } punkte[] = {
+            { "p10_db", h->p10_db() }, { "p50_db", h->p50_db() }, { "p95_db", h->p95_db() },
+        };
+        for (const auto& punkt : punkte)
+            if (! std::isfinite (punkt.wert))
+                hinzu (out, p + "/headroom/" + punkt.name, "nicht_endlich");
+        if (h->fenster() == 0u)
+            hinzu (out, p + "/headroom/fenster", "headroom_fenster_null");
+        if (std::isfinite (h->p10_db()) && std::isfinite (h->p50_db())
+            && std::isfinite (h->p95_db())
+            && ! (h->p10_db() <= h->p50_db() && h->p50_db() <= h->p95_db()))
+            hinzu (out, p + "/headroom", "headroom_unsortiert");
+    }
 }
 
 juce::Array<Verstoss> kanonisch (const juce::Array<Verstoss>& roh)
@@ -638,6 +692,30 @@ bool lese (const uint8_t* puffer, size_t laenge,
         {
             kopie.integrationGesetzt = true;
             kopie.integrationSamples = *integration;
+        }
+        // SONDE-013 M-01 bis M-04. Jedes Feld kommt mit seinem Bit an oder gar
+        // nicht; der Leser erfindet KEINE 0 aus einer Abwesenheit.
+        const struct { flatbuffers::Optional<float> quelle; bool& bit; float& wert; } neue[] = {
+            { frame->lufs_m(),               kopie.lufsMGesetzt,           kopie.lufsM },
+            { frame->true_peak_db(),         kopie.truePeakGesetzt,        kopie.truePeakDb },
+            { frame->true_peak_passage_db(), kopie.truePeakPassageGesetzt, kopie.truePeakPassageDb },
+            { frame->plr_db(),               kopie.plrGesetzt,             kopie.plrDb },
+            { frame->lra_lu(),               kopie.lraGesetzt,             kopie.lraLu },
+            { frame->crest_kurz_db(),        kopie.crestKurzGesetzt,       kopie.crestKurzDb },
+        };
+        for (const auto& n : neue)
+            if (n.quelle.has_value())
+            {
+                n.bit = true;
+                n.wert = *n.quelle;
+            }
+        if (const auto* headroom = frame->headroom())
+        {
+            kopie.headroomGesetzt = true;
+            kopie.headroomP10Db = headroom->p10_db();
+            kopie.headroomP50Db = headroom->p50_db();
+            kopie.headroomP95Db = headroom->p95_db();
+            kopie.headroomFenster = headroom->fenster();
         }
         aus.push_back (std::move (kopie));
     }

@@ -762,6 +762,36 @@ target_link_libraries(EqCopSonde013EventWireTest PRIVATE juce::juce_core Advapi3
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
 nakama_kern_anbinden(EqCopSonde013EventWireTest)
 
+# ── S20-22/SONDE-013: Loudnessfenster, Headroom, Dynamik (Kanon B18) ──────
+# Misst den ERZEUGER der drei Loudnessfenster, beider Crestfenster, der
+# Headroomverteilung und der LRA-Schwelle. Kein Fall prueft blosse Anwesenheit:
+# jeder stellt zwei Signale gegenueber, die sich in genau einer Eigenschaft
+# unterscheiden, und misst, dass das betroffene Fenster mitgeht und die
+# anderen nicht. Braucht nur den Kern.
+juce_add_console_app(EqCopSonde013DynamicsTest PRODUCT_NAME "eqcop-sonde013dynamicstest")
+target_sources(EqCopSonde013DynamicsTest PRIVATE tests/Sonde013DynamicsTest.cpp)
+target_compile_definitions(EqCopSonde013DynamicsTest PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
+target_link_libraries(EqCopSonde013DynamicsTest PRIVATE juce::juce_core Advapi32
+    PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+nakama_kern_anbinden(EqCopSonde013DynamicsTest)
+
+# ── S20-22/SONDE-013 M-02: der True-Peak-Pfad (Kanon B17) ─────────────────
+# Misst den 8-fach-Interpolator gegen die ANALYTISCHE Referenz der
+# EBU-Tech-3341-Testfaelle: deren Signale sind Sinus mit definierter Frequenz,
+# Amplitude und Phase, und der wahre Scheitel eines Sinus IST seine Amplitude.
+# Damit braucht das Bein kein heruntergeladenes Testset, kann den
+# Sampleraten-Sweep aus M-02 ueberhaupt erst stellen (die Frequenzen sind an fs
+# gebunden) und rechnet die 8-fach-Entscheidung nach, statt sie zu glauben.
+# Braucht nur den Header - keine JUCE-DSP, keinen Prozessor.
+juce_add_console_app(EqCopSonde013TruePeakGoldenTest PRODUCT_NAME "eqcop-sonde013truepeakgoldentest")
+target_sources(EqCopSonde013TruePeakGoldenTest PRIVATE tests/Sonde013TruePeakGoldenTest.cpp)
+target_compile_definitions(EqCopSonde013TruePeakGoldenTest PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
+target_link_libraries(EqCopSonde013TruePeakGoldenTest PRIVATE juce::juce_core Advapi32
+    PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+nakama_kern_anbinden(EqCopSonde013TruePeakGoldenTest)
+
 # ── S10-11/SONDE-008: EBU-Golden der fixed-memory Loudness ─────────────────
 # Kanon B9. Misst den `LoudnessAccumulator` gegen die AUSGEBAUTE Rechnung:
 # den unbegrenzten Vektor mit Zweitdurchgang, den dieses Ticket ersetzt. Das

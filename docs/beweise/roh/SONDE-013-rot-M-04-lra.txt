@@ -1,0 +1,158 @@
+SONDE-013 Etappe 2 C - Rotbeweis M-04-lra
+=========================================
+
+Datei:     eq-copilot\plugin\core\analysis\FeatureEngine.h
+Ziel:      EqCopSonde013DynamicsTest
+Warum:     Die 60-s-Schwelle faellt weg - LRA wuerde ab dem ersten gegateten Wert eine Zahl liefern. Genau das schliesst §39.1 mit 'vorher nicht belastbar' aus.
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+    static constexpr double kLraMindestSekunden = 60.0;
+--- NEU ---
+    static constexpr double kLraMindestSekunden = 0.0;
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+== Nakama SONDE-013 - Loudnessfenster, Headroom, Dynamik ==
+
+== M-01  momentary_short_integrated_are_separate_windows ==
+[ok]   nach zwoelf Sekunden stehen beide Fenster  [M -34.01 LUFS, S -34.01 LUFS]
+[ok]   bei stehendem Pegel sind sie fast gleich - der Unterschied ist der VERLAUF, nicht die Rechnung  [Abstand 0.000 LU]
+[ok]   0,8 s nach dem Sprung tragen beide weiterhin einen Wert
+[ok]   Momentary ist dem Sprung gefolgt, Short-term noch nicht - die zwei Fenster sind wirklich verschieden lang  [M -6.06 gegen S -11.78 LUFS, Abstand 5.72 LU]
+[ok]   fuenf Sekunden spaeter sind sie wieder beieinander - der Abstand oben war der Sprung, kein Versatz  [Abstand 0.000 LU]
+
+== M-01  jedes Fenster braucht seine eigene Fuellung ==
+[ok]   nach 0,6 s traegt der Frame Momentary, aber KEIN Short-term - eine Kurzzeitlautheit ueber 0,6 s waere eine andere Zahl mit demselben Namen  [M ja, S nein]
+[ok]   nach weiteren drei Sekunden steht auch Short-term
+
+== M-09  thin_frame_after_boundary_is_recognisable ==
+[ok]   ein Rahmen im Dauerbetrieb sagt, ueber wie viel Audio er gerechnet wurde  [5120 Samples je Kanal]
+[ok]   und die Zahl passt zur Livekadenz von 10 Hz plus hoechstens einem Block  [5120 gegen 4800..5312]
+[ok]   auch der erste Rahmen nach einer Grenze traegt das Feld
+[ok]   und er sagt ehrlich, dass er ueber WENIGER Audio gerechnet wurde  [2560 gegen 5120 Samples]
+
+== M-03  plr_psr_definitions_and_labels ==
+[ok]   der Frame traegt True Peak des Rahmens UND der Passage  [Rahmen -6.021 dBTP, Passage -6.021 dBTP]
+[ok]   der True Peak liegt nie unter dem Sample-Peak desselben Rahmens  [TP -6.021 gegen SP -6.021 dB]
+[ok]   und das Passagenmaximum liegt nie unter dem Rahmenmaximum
+[ok]   PSR steht, sobald das 3-s-Fenster steht
+[ok]   im Rahmen NACH dem Impuls stehen PSR und der Rahmen-True-Peak
+[ok]   der aktuelle Rahmen ist leise - sein True Peak liegt tief  [-33.98 dBTP]
+[ok]   PSR rechnet trotzdem gegen das True-Peak-Maximum DESSELBEN 3-s-Fensters - der Impuls ist darin noch enthalten  [PSR 12.73 dB; gegen den Rahmen waeren es -20.34 dB]
+[ok]   und die Zahl passt zum Impulspegel: 20*log10(0,9) minus LUFS-S  [gemessen 12.73 dB, erwartet 12.72 dB]
+[ok]   die Engine selbst setzt KEIN PLR - LUFS-I kommt aus dem Loudness-Akkumulator und wird erst im Sondenprozessor zugemischt
+
+== M-03  headroom_is_distribution_not_single_peak ==
+[ok]   beide tragen eine Headroomverteilung  [Fenster 46 / 47 Rahmen]
+[ok]   die drei Punkte sind geordnet - P10 <= P50 <= P95
+[ok]   beide haben nahezu dasselbe P95 - die laute Stelle ist in beiden drin  [durchgehend -6.02 dBTP, Spitze -6.02 dBTP]
+[ok]   aber ihr P50 liegt weit auseinander - GENAU das kann ein einzelner Maximalwert nicht ausdruecken  [durchgehend -6.02 dBTP, Spitze -33.98 dBTP]
+[ok]   und die Spanne der Spitzenvariante ist gross - der Headroom SCHWANKT  [Spanne 27.96 dB]
+
+== M-04  crest_multiple_windows ==
+[ok]   es gibt Rahmen ohne Impuls, in denen BEIDE Crestfenster stehen
+[ok]   und dort liegt der 3-s-Crest weit ueber dem des 100-ms-Rahmens - das ist der Unterschied, den ein einzelnes Fenster nicht sehen kann  [Rahmen 3.00 dB, 3 s 29.35 dB]
+
+== M-04  lra_below_sixty_seconds_is_not_a_number ==
+[ROT]  nach 30 s gibt es KEINEN LRA-Wert - `nicht belastbar` heisst hier Abwesenheit, nicht eine Null
+[ok]   nach insgesamt 75 s steht er
+[ok]   und traegt eine Dynamikspanne, die zum wandernden Pegel passt  [18.90 LU]
+[ok]   ein Signal ohne Dynamik ergibt eine LRA nahe null - der Wert misst wirklich die Spanne und nicht die Laufzeit  [0.000 LU]
+
+== M-04  die 60-s-Schwelle zaehlt gegatetes Material, keine Wanduhr ==
+[ok]   90 s Stille ergeben KEIN LRA - eine Minute Stille ist keine Minute Material (Â§39.1: 'rund 60 s GEEIGNETEN Materials')
+
+== M-07  non_finite_never_reaches_wire_for_new_metrics ==
+[ok]   NaN und Inf im Eingang erzeugen in KEINER neuen Metrik einen nichtendlichen Wert - der Riegel liegt beim Erzeugen, nicht auf der Leitung  [alle 9 Traeger endlich]
+[ok]   und die Metriken entstehen ueberhaupt - der Riegel ersetzt sie nicht durch Schweigen
+
+== M-75/M-77  der verworfene Analyseblock schliesst auch die neuen Fenster ==
+[ok]   vor dem verworfenen Block stehen die neuen Fenster
+[ok]   die Luecke zieht eine Segmentgrenze - der Verlust ist sichtbar, nicht interpoliert  [Segmentwechsel 1]
+[ok]   danach tragen die 3-s-Fenster KEINEN Wert mehr - sie sind geschlossen, nicht fortgeschrieben
+[ok]   und das Passagenmaximum hat die Grenze nicht ueberbrueckt - es ist das der neuen, leisen Passage  [vorher -7.96 dBTP, danach -47.84 dBTP]
+
+== M-84  jede Grenze trennt auch die neuen Fenster, namentlich ==
+[ok]   vor der Grenze stehen Passagenmaximum und Headroomverteilung  [Passage -4.44 dBTP]
+[ok]   nach der Grenze ist das Passagenmaximum das der NEUEN Passage - der laute Peak von vorher ist weg  [vorher -4.44 dBTP, nachher -40.00 dBTP]
+[ok]   und die Headroomverteilung ist entweder leer oder ganz aus dem neuen Material - sie mischt die zwei Passagen nicht
+[ok]   die 3-s-Fenster sind nach zwei Sekunden noch nicht wieder voll - sie wurden wirklich geleert, nicht fortgeschrieben
+
+-----------------------------------------
+41 bestanden, 1 gescheitert
+
+EXITCODE=1
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+== Nakama SONDE-013 - Loudnessfenster, Headroom, Dynamik ==
+
+== M-01  momentary_short_integrated_are_separate_windows ==
+[ok]   nach zwoelf Sekunden stehen beide Fenster  [M -34.01 LUFS, S -34.01 LUFS]
+[ok]   bei stehendem Pegel sind sie fast gleich - der Unterschied ist der VERLAUF, nicht die Rechnung  [Abstand 0.000 LU]
+[ok]   0,8 s nach dem Sprung tragen beide weiterhin einen Wert
+[ok]   Momentary ist dem Sprung gefolgt, Short-term noch nicht - die zwei Fenster sind wirklich verschieden lang  [M -6.06 gegen S -11.78 LUFS, Abstand 5.72 LU]
+[ok]   fuenf Sekunden spaeter sind sie wieder beieinander - der Abstand oben war der Sprung, kein Versatz  [Abstand 0.000 LU]
+
+== M-01  jedes Fenster braucht seine eigene Fuellung ==
+[ok]   nach 0,6 s traegt der Frame Momentary, aber KEIN Short-term - eine Kurzzeitlautheit ueber 0,6 s waere eine andere Zahl mit demselben Namen  [M ja, S nein]
+[ok]   nach weiteren drei Sekunden steht auch Short-term
+
+== M-09  thin_frame_after_boundary_is_recognisable ==
+[ok]   ein Rahmen im Dauerbetrieb sagt, ueber wie viel Audio er gerechnet wurde  [5120 Samples je Kanal]
+[ok]   und die Zahl passt zur Livekadenz von 10 Hz plus hoechstens einem Block  [5120 gegen 4800..5312]
+[ok]   auch der erste Rahmen nach einer Grenze traegt das Feld
+[ok]   und er sagt ehrlich, dass er ueber WENIGER Audio gerechnet wurde  [2560 gegen 5120 Samples]
+
+== M-03  plr_psr_definitions_and_labels ==
+[ok]   der Frame traegt True Peak des Rahmens UND der Passage  [Rahmen -6.021 dBTP, Passage -6.021 dBTP]
+[ok]   der True Peak liegt nie unter dem Sample-Peak desselben Rahmens  [TP -6.021 gegen SP -6.021 dB]
+[ok]   und das Passagenmaximum liegt nie unter dem Rahmenmaximum
+[ok]   PSR steht, sobald das 3-s-Fenster steht
+[ok]   im Rahmen NACH dem Impuls stehen PSR und der Rahmen-True-Peak
+[ok]   der aktuelle Rahmen ist leise - sein True Peak liegt tief  [-33.98 dBTP]
+[ok]   PSR rechnet trotzdem gegen das True-Peak-Maximum DESSELBEN 3-s-Fensters - der Impuls ist darin noch enthalten  [PSR 12.73 dB; gegen den Rahmen waeren es -20.34 dB]
+[ok]   und die Zahl passt zum Impulspegel: 20*log10(0,9) minus LUFS-S  [gemessen 12.73 dB, erwartet 12.72 dB]
+[ok]   die Engine selbst setzt KEIN PLR - LUFS-I kommt aus dem Loudness-Akkumulator und wird erst im Sondenprozessor zugemischt
+
+== M-03  headroom_is_distribution_not_single_peak ==
+[ok]   beide tragen eine Headroomverteilung  [Fenster 46 / 47 Rahmen]
+[ok]   die drei Punkte sind geordnet - P10 <= P50 <= P95
+[ok]   beide haben nahezu dasselbe P95 - die laute Stelle ist in beiden drin  [durchgehend -6.02 dBTP, Spitze -6.02 dBTP]
+[ok]   aber ihr P50 liegt weit auseinander - GENAU das kann ein einzelner Maximalwert nicht ausdruecken  [durchgehend -6.02 dBTP, Spitze -33.98 dBTP]
+[ok]   und die Spanne der Spitzenvariante ist gross - der Headroom SCHWANKT  [Spanne 27.96 dB]
+
+== M-04  crest_multiple_windows ==
+[ok]   es gibt Rahmen ohne Impuls, in denen BEIDE Crestfenster stehen
+[ok]   und dort liegt der 3-s-Crest weit ueber dem des 100-ms-Rahmens - das ist der Unterschied, den ein einzelnes Fenster nicht sehen kann  [Rahmen 3.00 dB, 3 s 29.35 dB]
+
+== M-04  lra_below_sixty_seconds_is_not_a_number ==
+[ok]   nach 30 s gibt es KEINEN LRA-Wert - `nicht belastbar` heisst hier Abwesenheit, nicht eine Null
+[ok]   nach insgesamt 75 s steht er
+[ok]   und traegt eine Dynamikspanne, die zum wandernden Pegel passt  [18.90 LU]
+[ok]   ein Signal ohne Dynamik ergibt eine LRA nahe null - der Wert misst wirklich die Spanne und nicht die Laufzeit  [0.000 LU]
+
+== M-04  die 60-s-Schwelle zaehlt gegatetes Material, keine Wanduhr ==
+[ok]   90 s Stille ergeben KEIN LRA - eine Minute Stille ist keine Minute Material (Â§39.1: 'rund 60 s GEEIGNETEN Materials')
+
+== M-07  non_finite_never_reaches_wire_for_new_metrics ==
+[ok]   NaN und Inf im Eingang erzeugen in KEINER neuen Metrik einen nichtendlichen Wert - der Riegel liegt beim Erzeugen, nicht auf der Leitung  [alle 9 Traeger endlich]
+[ok]   und die Metriken entstehen ueberhaupt - der Riegel ersetzt sie nicht durch Schweigen
+
+== M-75/M-77  der verworfene Analyseblock schliesst auch die neuen Fenster ==
+[ok]   vor dem verworfenen Block stehen die neuen Fenster
+[ok]   die Luecke zieht eine Segmentgrenze - der Verlust ist sichtbar, nicht interpoliert  [Segmentwechsel 1]
+[ok]   danach tragen die 3-s-Fenster KEINEN Wert mehr - sie sind geschlossen, nicht fortgeschrieben
+[ok]   und das Passagenmaximum hat die Grenze nicht ueberbrueckt - es ist das der neuen, leisen Passage  [vorher -7.96 dBTP, danach -47.84 dBTP]
+
+== M-84  jede Grenze trennt auch die neuen Fenster, namentlich ==
+[ok]   vor der Grenze stehen Passagenmaximum und Headroomverteilung  [Passage -4.44 dBTP]
+[ok]   nach der Grenze ist das Passagenmaximum das der NEUEN Passage - der laute Peak von vorher ist weg  [vorher -4.44 dBTP, nachher -40.00 dBTP]
+[ok]   und die Headroomverteilung ist entweder leer oder ganz aus dem neuen Material - sie mischt die zwei Passagen nicht
+[ok]   die 3-s-Fenster sind nach zwei Sekunden noch nicht wieder voll - sie wurden wirklich geleert, nicht fortgeschrieben
+
+-----------------------------------------
+42 bestanden, 0 gescheitert
+
+EXITCODE=0
+
+URTEIL: BELEGT (rot=1, gruen=0)

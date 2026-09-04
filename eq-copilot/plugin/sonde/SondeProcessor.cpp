@@ -370,6 +370,22 @@ void SondeProcessor::workerLauf()
                     frame.lufsI = lautheit.lufsI;
                     frame.lufsIUnsicherheitGesetzt = true;
                     frame.lufsIUnsicherheit = lautheit.unsicherheitLu;
+
+                    // SONDE-013 M-03: PLR = Passage-True-Peak-Maximum minus
+                    // LUFS-I (§39.1). Die zwei Haelften entstehen an zwei
+                    // Orten — der True Peak in der `FeatureEngine`, die
+                    // integrierte Lautheit im `LoudnessAccumulator` —, und
+                    // GENAU HIER treffen sie sich, an derselben Stelle, an
+                    // der auch das Lautheitspaar zugemischt wird. PLR ohne
+                    // das Paar gibt es nicht: beide Leser lehnen es als
+                    // `plr_ohne_lufs_i` ab, weil die Zahl sonst gegen einen
+                    // Bezugspunkt gerechnet waere, den der Frame nicht
+                    // mitschickt.
+                    if (frame.truePeakPassageGesetzt)
+                    {
+                        frame.plrGesetzt = true;
+                        frame.plrDb = frame.truePeakPassageDb - lautheit.lufsI;
+                    }
                 }
                 else
                 {

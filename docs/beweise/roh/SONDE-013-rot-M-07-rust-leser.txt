@@ -1,0 +1,70 @@
+SONDE-013 Etappe 2 C - Rotbeweis M-07-rust-leser
+=========================================
+
+Datei:     broker\src\telemetrie.rs
+Test:      cargo test --release --test contract_cross_language
+Warum:     Die Regel headroom_fenster_null faellt aus dem Rust-Leser. Beide Leser muessen den Binaerkorpus IDENTISCH klassifizieren (M-70); b_korpus_klassifiziert_wie_das_manifest ist der Riegel dafuer.
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+        if h.fenster() == 0 {
+--- NEU ---
+        if false {
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `release` profile [optimized] target(s) in 9.66s
+     Running tests\contract_cross_language.rs (target\release\deps\contract_cross_language-44368cc6922a2a6a.exe)
+
+running 9 tests
+test quantisierung_stimmt_mit_den_testvektoren ... ok
+test bandgitter_ist_lesbar_und_in_sich_stimmig ... ok
+test textriegel_deckt_die_gemeinsame_falltabelle ... ok
+test bandwertgrenzen_stimmen_mit_dem_vertrag ... ok
+test jcs_fixtures_stimmen_mit_manifest ... ok
+test dto_korpus_klassifiziert_wie_das_manifest ... ok
+test envelope_korpus_klassifiziert_wie_das_manifest ... ok
+test fb_korpus_klassifiziert_wie_das_manifest ... FAILED
+test korpus_klassifiziert_wie_das_manifest ... ok
+
+failures:
+
+---- fb_korpus_klassifiziert_wie_das_manifest stdout ----
+
+thread 'fb_korpus_klassifiziert_wie_das_manifest' (13772) panicked at tests\contract_cross_language.rs:221:5:
+1 von 119 Fixtures weichen ab:
+ungueltig/headroom-fenster-null.bin: Urteil ungueltig erwartet, Leser sagt gueltig ([])
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    fb_korpus_klassifiziert_wie_das_manifest
+
+test result: FAILED. 8 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+error: test failed, to rerun pass `--test contract_cross_language`
+
+EXITCODE=101
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `release` profile [optimized] target(s) in 9.74s
+     Running tests\contract_cross_language.rs (target\release\deps\contract_cross_language-44368cc6922a2a6a.exe)
+
+running 9 tests
+test quantisierung_stimmt_mit_den_testvektoren ... ok
+test textriegel_deckt_die_gemeinsame_falltabelle ... ok
+test bandgitter_ist_lesbar_und_in_sich_stimmig ... ok
+test bandwertgrenzen_stimmen_mit_dem_vertrag ... ok
+test jcs_fixtures_stimmen_mit_manifest ... ok
+test envelope_korpus_klassifiziert_wie_das_manifest ... ok
+test dto_korpus_klassifiziert_wie_das_manifest ... ok
+test fb_korpus_klassifiziert_wie_das_manifest ... ok
+test korpus_klassifiziert_wie_das_manifest ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+
+EXITCODE=0
+
+URTEIL: BELEGT (rot=101, gruen=0)

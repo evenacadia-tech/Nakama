@@ -3,7 +3,7 @@
 | Merkmal | Wert |
 |---|---|
 | Ticket | S20–22, `SONDE-013` (Phase P4–P5) |
-| Phase | **Etappe 2 — Bau. Etappen A und B stehen und sind mit einem sauberen Kanonlauf beglaubigt; Etappe C ist die nächste.** Etappe 1 (Verhaltensmatrix) ist am 2026-09-04 nach Matrixprüfung 1, Nacharbeit 1, Wiederprüfung 1, Nacharbeit 2 und Wiederprüfung 2 (PASS) abgenommen; die Matrix in §3 ist ab hier die Spezifikation. Bauauftrag: `docs/beweise/roh/SONDE-013-etappe-2-auftrag.txt`, Bau-Verlauf in §10 |
+| Phase | **Etappe 2 — Bau, Etappe C läuft.** Etappen A und B stehen und sind mit einem sauberen Kanonlauf beglaubigt; von Etappe C ist der erste Änderungssatz gebaut (Loudnessfenster, True Peak, Headroom, `integration_samples`), der zweite (Stereo, Qualitätsklasse, Peakpfad) steht aus. Etappe 1 (Verhaltensmatrix) ist am 2026-09-04 nach Matrixprüfung 1, Nacharbeit 1, Wiederprüfung 1, Nacharbeit 2 und Wiederprüfung 2 (PASS) abgenommen; die Matrix in §3 ist ab hier die Spezifikation. Bauauftrag: `docs/beweise/roh/SONDE-013-etappe-2-auftrag.txt`, Bau-Verlauf in §10 |
 | Urteil | **offen** — T1 setzt der Erbauer nach der letzten Bauetappe, T2 der Dirigent nach der Codex-Abnahme |
 | Prüfstufe | T1+T2 gefordert (`docs/bauaufteilung-sonden.md`:392). T1 ist das Selbstaudit des Erbauers am Ende der letzten Bauetappe, T2 setzt der Dirigent nach der Codex-Abnahme |
 | Basis-SHA | Etappe 1 begann auf `ed9bbf7fec951a061749abf143cb2158c1c4ee52`; **Etappe 2 baut ab `0fdbb4a09c75e2c93ab9b76e7fcf5d92d0ef17e4`** (Abschluss der Matrixetappe), beide mit `git rev-parse HEAD` gemessen |
@@ -14,8 +14,8 @@
 | Rundenbilanz Etappe 1 | `py -3.13 tools/dirigent/rundenbilanz.py --runden ed9bbf7 4a2f50a 367a0ea ca20f3a 6e8bebb`: Matrix `ed9bbf7..4a2f50a` Doku 2 Dateien +1019/−0; Entscheide `4a2f50a..367a0ea` Doku +51/−0; Nacharbeit 1 `367a0ea..ca20f3a` Doku 4 Dateien +533/−63; Nacharbeit 2 `ca20f3a..6e8bebb` Doku 4 Dateien +286/−17. Produkt und Tests 0 Zeilen in allen vier Runden — erwartet, weil Etappe 1 nach der Regel „Spezifikation vor Code" ausschließlich das Manifest schreibt; das Konvergenzsignal des Werkzeugs greift erst ab Etappe 2. |
 | Änderungssatz dieser Etappe | Erster Commit `4a2f50a` und Entscheidcommit `367a0ea`: dieses Manifest und `docs/beweise/roh/SONDE-013-etappe-1-auftrag.txt`. Nacharbeit 1: dieses Manifest sowie die drei Rohdateien `docs/beweise/roh/SONDE-013-matrixpruefung-1-auftrag.txt`, `docs/beweise/roh/SONDE-013-matrixpruefung-1-367a0ea.txt` und `docs/beweise/roh/SONDE-013-nacharbeit-1-auftrag.txt` unverändert. Nacharbeit 2: dieses Manifest sowie die drei Rohdateien `docs/beweise/roh/SONDE-013-wiederpruefung-1-auftrag.txt`, `docs/beweise/roh/SONDE-013-wiederpruefung-1-ca20f3a.txt` und `docs/beweise/roh/SONDE-013-nacharbeit-2-auftrag.txt` unverändert. Kein Produkt-, Test-, Schema-, Fixture- oder Werkzeugcode. |
 | Kanon nachher | **GRUEN 41/41 auf `5397680`, Arbeitsbaum sauber** — die Beglaubigung des Endstands der Etappen A und B. Rohausgabe `docs/beweise/roh/SONDE-013-5397680.md`; der Lauf davor auf `6334dc1` war ebenfalls GRUEN 41/41 und deckt alles ausser dem Selbstauditfix; 2 geplante Beine noch nicht gebaut (B6, B7 ab P6), 1 stillgelegtes (A15). Die Beinzahl wächst von 40 auf **41** (neu: **B16** `EqCopSonde013EventWireTest`) und sinkt um kein Bein. Der Weg dahin steht vollständig in §10: der erste Lauf auf `8d8fc96` war GRUEN 40/40, aber `-dirty` gestempelt; der zweite auf `fcaa55c` fiel an einer zeitabhängigen Zusage in B10; der dritte auf `8645529` fand drei echte Befunde dieser Etappe (Soak-Speicher, Kernobjektliste, Minor-Literale); der vierte auf `f701388` fand ein Datenrennen in der eigenen Nacharbeit. Alle vier sind behoben und einzeln belegt. |
-| Testanzahl | A5 461 Prüfungen · B3c 75 · B10 313 · B16 40 (neu) · B5 237 · Broker 203 Lib-Tests plus alle Integrationsbeine · JSON-Fixturekorpus 285 (75 gültig, 210 ungültig) · Binärkorpus 104 (20 gültig, 84 ungültig) · Envelope-Korpus 37. Alle Zahlen aus dem Lauf dieser Sitzung, nicht abgeschrieben. |
-| Änderungssatz Etappe 2 | Fortlaufend in §10 je Bauetappe geführt: Commits, Beine, Rotbeweise, Abweichungen von §5 und Nebenbefunde. |
+| Testanzahl | A5 461 Prüfungen · B3c 75 · B10 313 · B16 41 · B17 23 (neu) · B18 44 (neu) · B5 237 · Broker 203 Lib-Tests plus alle Integrationsbeine · JSON-Fixturekorpus 285 (75 gültig, 210 ungültig) · Binärkorpus 104 (20 gültig, 84 ungültig) · Envelope-Korpus 37. Alle Zahlen aus dem Lauf dieser Sitzung, nicht abgeschrieben. |
+| Änderungssatz Etappe 2 | Fortlaufend in §10 je Bauetappe geführt: Commits, Beine, Rotbeweise, Abweichungen von §5 und Nebenbefunde. Die Beinzahl wächst mit Etappe C von 41 auf **43** (neu: **B17** `EqCopSonde013TruePeakGoldenTest`, **B18** `EqCopSonde013DynamicsTest`) und sinkt um kein Bein; der volle Kanon auf diesem Stand steht aus, weil Etappe C Schema-, Fixture- und Runnerdateien berührt (§5.1) und deshalb erst am Ende der ganzen Etappe beglaubigt wird. |
 | Grenze | Etappe 2 baut ausschließlich, was §3 zusagt. Prüfbereich sind die Ticketpfade aus §5.2; jede Datei außerhalb steht mit Begründung in §10. `docs/offene-punkte.md` und `docs/PLAN-STAND.md` bleiben unberührt — Nebenbefunde sammelt §10, der Dirigent zieht sie im Abschluss nach. |
 
 > **Belegfeld gesetzt, Urteilsmarke noch nicht.** Seit dem ersten Commit der
@@ -455,15 +455,15 @@ Ein Testname mit **NEU** existiert noch nicht.
 
 | ID | Ausgangszustand × Ereignis | Zusage samt Reihenfolge und Frist | Test | Quelle / Belegstatus |
 |---|---|---|---|---|
-| M-01 | Sonde misst; Rahmen wird fällig | Der Frame trägt Momentary (400 ms), Short-term (3 s) und Integrated nach BS.1770-5 mit EBU-R128-Gating. Reihenfolge unverändert: Ganzblock aus der `StampedAudioQueue` → Analyseworker → `merkmale.frame()` → Serialisierung. Kadenz Live 10 Hz (§33.2). Integrated reist weiter nur atomar mit `unsicherheitLu` (E-A02). | Bestehend **B9** `EqCopLoudnessGoldenTest` für den Akkumulator, **B5** `EqCopAnalysisGoldenTest` für LUFS-S; **NEU** `EqCopSonde013DynamicsTest`, Fall `momentary_short_integrated_are_separate_windows`. | Entwurf §39.1:2572-2580; §33.2:2038-2043; `LoudnessAccumulator.h`:283,321,354. **BELEGT, BAULÜCKE** (Momentary 400 ms existiert heute nicht als eigenes Fenster) |
-| M-02 | Sonde misst; True Peak wird gebraucht | True Peak ist BS.1770-konform. Der vorhandene 8-fach-Pfad bleibt **nur**, wenn er das offizielle EBU-Testset bei 48 kHz und generierte Mehrsampleraten-Goldens besteht; sonst wird der BS.1770-Polyphase-Referenzpfad verwendet. Toleranz ±0,1 dB (§49.3). Kein Rateweg: `truePeakDb` in `AnalyseEngine.h`:102 ist heute Gen-lokal und ungegated über die ganze Passage. | **NEU** `EqCopSonde013TruePeakGoldenTest` mit dem EBU-Testset als Fixture und einem Sampleraten-Sweep; das Bein muss die Entscheidung 8-fach gegen Polyphase **messbar** treffen, nicht behaupten. | Entwurf §39.1:2578-2582,2588-2591; §49.3:3584. **BELEGT, BAULÜCKE** |
-| M-03 | Passage liegt vor; Headroomaussage wird gebildet | `PLR = Passage-True-Peak-Maximum minus LUFS-I`, `PSR(3 s) = True-Peak-Maximum desselben 3-s-Fensters minus LUFS-S`. Beide werden ausdrücklich als ergänzende Produktmetriken bezeichnet, nie als EBU-Qualitätsurteil. Headroom reist in dBTP und als Verteilung über die Passage, nicht als Einzelspitze. | **NEU** `EqCopSonde013DynamicsTest`, Fall `plr_psr_definitions_and_labels`; **NEU** `EqCopSonde013DynamicsTest`, Fall `headroom_is_distribution_not_single_peak`. | Entwurf §39.1:2583-2586; §39.2:2610-2612. **BELEGT, BAULÜCKE** (`psrDb` existiert im Frame :370, aber gegen LUFS-S desselben Rahmens, nicht gegen ein 3-s-True-Peak-Maximum) |
-| M-04 | Sonde misst; Dynamikaussage wird gebildet | Crest wird in **mehreren** Fenstern geführt, nicht nur als globales Maximum. LRA gilt erst nach mindestens rund 60 s geeignetem Material; davor ist der Wert ausdrücklich `nicht belastbar` und wird nicht numerisch vorgetäuscht. | **NEU** `EqCopSonde013DynamicsTest`, Fälle `crest_multiple_windows` und `lra_below_sixty_seconds_is_not_a_number`. | Entwurf §39.1:2580-2587; §39.3:2617. **BELEGT, BAULÜCKE** |
+| M-01 | Sonde misst; Rahmen wird fällig | Der Frame trägt Momentary (400 ms), Short-term (3 s) und Integrated nach BS.1770-5 mit EBU-R128-Gating. Reihenfolge unverändert: Ganzblock aus der `StampedAudioQueue` → Analyseworker → `merkmale.frame()` → Serialisierung. Kadenz Live 10 Hz (§33.2). Integrated reist weiter nur atomar mit `unsicherheitLu` (E-A02). | **gemessen** (2026-09-04, Etappe C): bestehend **B9** und **B5**; **B18** `EqCopSonde013DynamicsTest`::`momentary_short_integrated_are_separate_windows` (vier Fälle: gleicher Pegel, 0,8 s nach dem Sprung mehr als 5 LU Abstand, fünf Sekunden später wieder beieinander) und `jedes Fenster braucht seine eigene Fuellung` (nach 0,6 s Momentary ja, Short-term nein). Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-01.txt`. | Entwurf §39.1:2572-2580; §33.2:2038-2043; `LoudnessAccumulator.h`:283,321,354. **BELEGT, gemessen** (Etappe C, 2026-09-04) — Momentary ist als eigenes 4-Zellen-Fenster gebaut |
+| M-02 | Sonde misst; True Peak wird gebraucht | True Peak ist BS.1770-konform. Der vorhandene 8-fach-Pfad bleibt **nur**, wenn er das offizielle EBU-Testset bei 48 kHz und generierte Mehrsampleraten-Goldens besteht; sonst wird der BS.1770-Polyphase-Referenzpfad verwendet. Toleranz ±0,1 dB (§49.3). Kein Rateweg: `truePeakDb` in `AnalyseEngine.h`:102 ist heute Gen-lokal und ungegated über die ganze Passage. | **gemessen** (2026-09-04, Etappe C): **B17** `EqCopSonde013TruePeakGoldenTest` — die fünf True-Peak-Fälle 15 bis 19 aus EBU Tech 3341 gegen ihre ANALYTISCHE Referenz (die Signale sind definierte Sinus, der wahre Scheitel ist die Amplitude), größte Abweichung 0,0005 dB; Sampleraten-Sweep 44,1/48/88,2/96/192 kHz, größte Abweichung 0,0313 dB; die Entscheidung als Zahl: Schranke 8-fach −0,042 dB hält, 4-fach −0,169 dB reißt; Gegenbeleg, dass ein Sample-Peak-Detektor bei Fall 16 um 3,01 dB zu optimistisch wäre. Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-02.txt`. | Entwurf §39.1:2578-2582,2588-2591; §49.3:3584. **BELEGT, gemessen** (Etappe C, 2026-09-04) — der 8-fach-Pfad besteht die Prüfung und bleibt |
+| M-03 | Passage liegt vor; Headroomaussage wird gebildet | `PLR = Passage-True-Peak-Maximum minus LUFS-I`, `PSR(3 s) = True-Peak-Maximum desselben 3-s-Fensters minus LUFS-S`. Beide werden ausdrücklich als ergänzende Produktmetriken bezeichnet, nie als EBU-Qualitätsurteil. Headroom reist in dBTP und als Verteilung über die Passage, nicht als Einzelspitze. | **gemessen** (2026-09-04, Etappe C): **B18**::`plr_psr_definitions_and_labels` — PSR rechnet gegen das True-Peak-Maximum DESSELBEN 3-s-Fensters, gemessen an einem lauten Impuls mit zwei Sekunden Stille danach (33 dB Unterschied zur falschen Rechnung); **B18**::`headroom_is_distribution_not_single_peak` — zwei Signale mit gleichem P95 trennen sich um mehr als 10 dB im P50. Rotbeweise `docs/beweise/roh/SONDE-013-rot-M-03-psr.txt` und `-M-03-headroom.txt`. | Entwurf §39.1:2583-2586; §39.2:2610-2612. **BELEGT, gemessen** (Etappe C, 2026-09-04) — `psrDb` rechnet jetzt gegen das 3-s-True-Peak-Maximum; PLR entsteht im Sondenprozessor, weil LUFS-I dort zugemischt wird |
+| M-04 | Sonde misst; Dynamikaussage wird gebildet | Crest wird in **mehreren** Fenstern geführt, nicht nur als globales Maximum. LRA gilt erst nach mindestens rund 60 s geeignetem Material; davor ist der Wert ausdrücklich `nicht belastbar` und wird nicht numerisch vorgetäuscht. | **gemessen** (2026-09-04, Etappe C): **B18**::`crest_multiple_windows` (in impulsfreien Rahmen liegt der 3-s-Crest mehr als 10 dB über dem des 100-ms-Rahmens) und `lra_below_sixty_seconds_is_not_a_number` (nach 30 s kein Wert, nach 75 s 18,9 LU, ohne Dynamik 0,000 LU, nach 90 s Stille kein Wert). Rotbeweise `docs/beweise/roh/SONDE-013-rot-M-04-crest.txt` und `-M-04-lra.txt`. | Entwurf §39.1:2580-2587; §39.3:2617. **BELEGT, gemessen** (Etappe C, 2026-09-04) |
 | M-05 | Ereignisring hat Einträge; Evidenzsnapshot wird fällig | Diese Zeile ist **nur der Transport**. Der lokal **teilweise** gebaute `DynamicsEvent`-Strom reist als `evidence_snapshot.ereignisse`. Jedes Ereignis trägt Samplezeit, Stärke, Bandzentrum, Dauer und Qualität; die zwei Qualitätsbits trennen den SuperFlux-Flusspfad vom eigenständigen Peakpfad. Dass der Peakpfad heute überhaupt nicht auslöst, ist nicht diese Zeile, sondern **M-86**. Kadenz 1 bis 4 Hz; bei Überlast wird die Kadenz reduziert, nie der Ring stillschweigend geleert. Der Ring bleibt auf 64 Plätze gedeckelt und zählt seine Verluste. | **gemessen** (2026-09-04, Etappe B): **A5**::`evidence_snapshot_ereignisse_belegt`, `ereignisring_bleibt_bei_64_und_zaehlt_verluste`; **B16** `EqCopSonde013EventWireTest`::`events_travel_with_quality_and_loss_counter/alle_drei_reisen`, `…/beide_bits_getrennt`, `…/verlustzaehler`, `fremde_epoche_reist_nicht_und_wird_gezaehlt` sowie die Kadenzfälle; **A4** `coordinator_model`::`evidenzsnapshot_wird_angenommen_und_zusammengefasst`, `…_fremder_adresse_wird_verworfen`, `…_wird_bei_offener_intervention_gesperrt`, `…_der_fassung_2_faellt_bei_einem_leser_der_fassung_1`. Rotbeweise `docs/beweise/roh/SONDE-013-rot-M-05-verlust.txt`, `-M-05-verteilung.txt`, `-M-05-grenze.txt`, `-M-05-riegel.txt`. | Entwurf §39.1:2593-2600; §33.2:2041; `reservierte-nachrichten-v1.json` (Feldname für SONDE-013 verbrannt); `FeatureEngine.h`:290-313,448,1607-1650. **BELEGT, gemessen** (Etappe B, 2026-09-04) — Abgrenzung zu M-86 aus Nacharbeit 1 (§8, D6); der Peakpfad selbst bleibt M-86 in Etappe C |
 | M-06 | Beliebige Metrik verlässt die Sonde | Jede Metrik trägt eine Qualitätsklasse mit. Eine Gesamtklasse wird nicht aus einem Mittelwert gerettet: ein harter Mangel bei Session, Passage, Coverage oder Alignment begrenzt die Gesamtaussage. Gewichte und Schwellen leben in einer versionierten `metrics_version`, die im Frame bereits mitreist. | **NEU** `EqCopSonde013QualityClassTest`, Fall `hard_deficiency_caps_overall_class`; **NEU** **A5**-Fall `metrics_version_bindet_schwellen`. | Entwurf §34.3:2224-2237; `.fbs`:218 (`metrics_version` ID 2). **BELEGT, BAULÜCKE** |
-| M-07 | Beliebige Metrik; ein nicht endlicher Zwischenwert entsteht | Nichtendliches wird beim **Erzeugen** in Wert 0 mit `gueltig=false` übersetzt und gezählt, nie sanitisiert auf die Leitung gelassen. Ein NaN oder Inf im Frame ist ein Senderfehler und wird von beiden Lesern abgelehnt. Bei den Rahmenskalaren fehlt statt dessen das Präsenzbit. Der Zähler wird ausgewertet, nicht ignoriert. | Bestehend **B3c** `EqCopSchemaTest` und **A10** `erzeuge_fb_fixtures.py` für die Ablehnung; bestehend **B9** für `bloeckeNichtEndlich()`; **NEU** `EqCopSonde013MetricsEdgeTest`, Fall `non_finite_never_reaches_wire_for_new_metrics`. | `.fbs`:208-215; `quantisierung-v1.json`; `LoudnessAccumulator.h`:383; CLAUDE.md NaN-Ehrlichkeit. **BELEGT** für den heutigen Bestand, **BAULÜCKE** für jede neue Metrik |
+| M-07 | Beliebige Metrik; ein nicht endlicher Zwischenwert entsteht | Nichtendliches wird beim **Erzeugen** in Wert 0 mit `gueltig=false` übersetzt und gezählt, nie sanitisiert auf die Leitung gelassen. Ein NaN oder Inf im Frame ist ein Senderfehler und wird von beiden Lesern abgelehnt. Bei den Rahmenskalaren fehlt statt dessen das Präsenzbit. Der Zähler wird ausgewertet, nicht ignoriert. | **teilweise gemessen** (2026-09-04, Etappe C): bestehend **B3c** und **A10** für die Ablehnung, **B9** für `bloeckeNichtEndlich()`; **B18**::`non_finite_never_reaches_wire_for_new_metrics` misst die Erzeugerseite über alle neun Träger der Loudness-, Peak- und Headroomgruppe, und je ein A10-Negativfixture die Leiterseite (`lufs-m-`, `true-peak-db-`, `true-peak-passage-db-`, `plr-db-`, `lra-lu-`, `crest-kurz-db-nicht-endlich`, `headroom-p50-nicht-endlich`). Die STEREO-Metriken sind noch offen — sie kommen im zweiten Änderungssatz der Etappe C. Rotbeweise `docs/beweise/roh/SONDE-013-rot-M-07-cpp-leser.txt` und `-M-07-rust-leser.txt`. | `.fbs`:208-215; `quantisierung-v1.json`; `LoudnessAccumulator.h`:383; CLAUDE.md NaN-Ehrlichkeit. **BELEGT** für den heutigen Bestand, **BAULÜCKE** für jede neue Metrik |
 | M-08 | Monomaterial oder ein stiller Kanal; Stereometrik wird gebildet | Bei echtem Mono ist Korrelation exakt 1 und Breite 0; bei einem stillen Kanal fällt das Präsenzbit weg, statt 0 oder NaN zu senden. Der Mono-Folddown wird am **wirklich gefalteten** Puffer gemessen, nicht aus einem Korrelationsskalar geschätzt, und stimmt innerhalb 0,25 dB. Physischer Mono-Check ist `mono=(L+R)/2`, energienormiertes M/S ist `M=(L+R)/√2`, `S=(L−R)/√2` — die beiden werden nicht vermischt. | Bestehend `FeatureEngine.h`:2008-2022 für die Präsenzbits; **NEU** `EqCopSonde013StereoGoldenTest`, Fälle `mono_identity`, `silent_channel_has_no_bit`, `folddown_matches_real_buffer_within_0p25db`. | Entwurf §40.1:2637-2652; §40.3:2666-2669; `FeatureEngine.h`:2008-2022. **BELEGT, BAULÜCKE** |
-| M-09 | Epochengrenze liegt kurz zurück; nächster Rahmen wird fällig | Der Frame nennt, über wie viel Audio er integriert wurde. Ein Feld `integration_samples` im `FeatureFrame` **und** in `table Frame` (nächste freie Feld-ID 14) macht einen dünnen Frame erkennbar; der Empfänger entscheidet selbst, ob er ihn anzeigt. Ohne das Feld kann er heute „leise" nicht von „kurz gemessen" unterscheiden. Save/Load ist nicht betroffen, der Wire-Vertrag schon: neues Feld ⇒ `schema_minor`-Bump plus beidseitige Fixtures. | **NEU** **A10** `erzeuge_fb_fixtures.py`-Fall `integration_samples_id14`; **NEU** **A9** `pruefe_flatc_drift.py` bleibt Drift-0-Wache; **NEU** **B3c**-Fall `integration_samples_wird_von_beiden_lesern_klassifiziert`; **NEU** `EqCopSonde013MetricsEdgeTest`, Fall `thin_frame_after_boundary_is_recognisable`. | NAK-47/NAK-68-Zitat §1.5; `docs/beweise/SONDE-009.md` §10.1; `.fbs`:216-239; `FELD-IDS.json`. **BELEGT, BAULÜCKE** |
+| M-09 | Epochengrenze liegt kurz zurück; nächster Rahmen wird fällig | Der Frame nennt, über wie viel Audio er integriert wurde. Ein Feld `integration_samples` im `FeatureFrame` **und** in `table Frame` (nächste freie Feld-ID 14) macht einen dünnen Frame erkennbar; der Empfänger entscheidet selbst, ob er ihn anzeigt. Ohne das Feld kann er heute „leise" nicht von „kurz gemessen" unterscheiden. Save/Load ist nicht betroffen, der Wire-Vertrag schon: neues Feld ⇒ `schema_minor`-Bump plus beidseitige Fixtures. | **gemessen**: Vertragsseite in Etappe A (**A10**::`integration-samples-id14`, **A9** Drift 0, **B3c**::`integration_samples_wird_von_beiden_lesern_klassifiziert`); Erzeugerseite in Etappe C (2026-09-04) durch **B18**::`thin_frame_after_boundary_is_recognisable` — der Rahmen im Dauerbetrieb trägt 5120 Samples, der erste nach einer Grenze mitten im Rahmen messbar weniger. Der Fall aus M-09 liegt in **B18** statt im dort genannten `EqCopSonde013MetricsEdgeTest`: er misst dieselbe Engine mit demselben Speiser wie die Nachbarfälle, und ein eigenes Bein für einen Fall wäre ein zusätzliches Kanonbein ohne zusätzliche Messung. Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-09.txt`. | NAK-47/NAK-68-Zitat §1.5; `docs/beweise/SONDE-009.md` §10.1; `.fbs`:216-239; `FELD-IDS.json`. **BELEGT, gemessen** (Vertrag Etappe A, Erzeuger Etappe C, 2026-09-04) |
 | M-10 | Samplerate wechselt; Bandmetrik wird gebildet | Die Nyquist-Kappe bleibt `min(18 kHz, 0,95 · Nyquist)`. Bänder darüber bekommen kein Gültigkeitsbit. Jede neue bandweise Metrik dieses Tickets erbt dieselbe Kappe; keine zweite Kappenregel entsteht. | Bestehend **B5** (Kappe greift bei 22,05 kHz wirklich); **NEU** `EqCopSonde013StereoGoldenTest`, Fall `band_stereo_metrics_share_the_nyquist_cap`. | `FeatureEngine.h`:433-437,944,975; Entwurf §35.1:2222-2226. **BELEGT, BAULÜCKE für neue Bandmetriken** |
 | M-11 | Stereoanalyse; zwei globale Skalare reichen nicht | Der Worker liefert aus komplexen L/R-STFTs bandweise Mid-/Side-Energie und Side-Anteil in dB, bandweise Pearson-Korrelation in kurzen und mittleren Fenstern, Magnitude-Squared Coherence, **bandweise Interchannel-Phase**, gemessenen Mono-Folddown-Verlust sowie L/R-Balance, Zeitperzentile und Persistenz. Kohärenz ist keine Einzel-FFT-Metrik: Auto- und Cross-Spektren werden über mindestens **acht** gültige überlappende Welch-Frames gemittelt. Jedes Band führt zwei Metadatenfelder der Evidenz mit: **Fensterdauer in ms** und **Freiheitsgrade**, also die Zahl der gemittelten gültigen Welch-Frames. Fail-closed in zwei Stufen: Kohärenz ist `null` bei zu wenig Energie oder weniger als acht Frames, und die **Phase wird nur** in Bändern ausgewertet, deren Kohärenz eine benannte Schwelle überschreitet — sonst ist auch sie `null`, nie ein geschätzter Wert. Alle drei Felder reisen auf dem Evidenzpfad (E-05) und stehen in §3.8 als von SONDE-013 belegte Felder des `evidence_snapshot`. | **NEU** `EqCopSonde013StereoGoldenTest`, Fälle `bandwise_ms_and_correlation`, `phase_only_in_coherent_bands`, `coherence_carries_window_and_dof`, `coherence_is_null_below_eight_frames` (ersetzt `coherence_needs_eight_welch_frames`), `persistence_is_reported`. | Entwurf §40.1:2628-2660, wörtlich :2642-2645 („Fensterdauer und Freiheitsgrade werden Teil der Evidenz", „Bei zu wenig Energie oder Frames ist Kohärenz `null`", „Interchannel-Phase wird nur in ausreichend kohärenten Bändern interpretiert"). **BELEGT, BAULÜCKE** — Phase, Fensterdauer und Freiheitsgrade aus Nacharbeit 1 (§8, D7) |
 | M-12 | Auffälliger Stereozustand erkannt | Breite ist kein Qualitätswert. Es entsteht **kein** Vorschlag zu Laufzeit- oder Polaritätskorrektur ohne kohärentes Paar, stabilen Lag und nachweislich bessere Mono-Summe; bei niedriger Kohärenz gibt es keine Lag- oder Polaritätsempfehlung. Statische Breitenänderung und bandbegrenzte M/S-Korrektur sind verschiedene Vorschlagstypen. Musikalisch unabhängige Busse werden nie automatisch gegeneinander verschoben. | **NEU** `EqCopSonde013StereoGoldenTest`, Fälle `low_coherence_yields_no_recommendation` und `width_alone_is_never_a_defect`. | Entwurf §40.2:2661-2665; §40.3:2668. **BELEGT, BAULÜCKE** |
@@ -597,9 +597,9 @@ werden. A9 (Codegen-Drift 0) ist von der Fassung 2 nur berührt, wenn ein
 | ID | Ausgangszustand × Ereignis | Zusage samt Reihenfolge und Frist | Test | Quelle / Belegstatus |
 |---|---|---|---|---|
 | M-74 | Beliebige neue Metrik oder Ereignisquelle dieses Tickets läuft im Audiocallback | Keine Heapallokation, kein Mutex, keine Datei-, Pipe-, Log-, UI- oder Modellarbeit. Audio zu Worker ausschließlich über vorallokierte SPSC-Strukturen und atomare Generationen. Feste Obergrenzen für Sonden, Bänder, Ereignisse, Queue-Tiefe, JSON-Größe und Historie — der Ereignisring bleibt bei 64 Plätzen. Denormal-Schutz, NaN-/Inf-Sanitisierung und definierter Mono-/Stereo-/Sidechain-Fallback. | Bestehend **B4** `EqCopQueueStressTest` (0 Allokationen über 4000 Blöcke wechselnder Größe mit Transportkanten) und **B12**; **NEU** derselbe Allokationszähler über die neuen Metrik- und Ringpfade. | Entwurf §48.1:3401-3412; CLAUDE.md Grundgesetz; `FeatureEngine.h`:448. **BELEGT, BAULÜCKE für neue Pfade** |
-| M-75 | Analysestau tritt ein | Der ganze **Analyse**block wird verworfen, der Audioblock immer weiterverarbeitet. Degradationsreihenfolge: Fokus-Burst → 221-Band-Snapshot → 64-Band-Liveframe; P0-Steuerung und Audio bleiben erhalten. Ein Drop erzeugt Zähler, sichtbare Lücke und neue Kontinuitätsgrenze und wird **nie** interpoliert. | Bestehend **B4** (Überlauf verwirft den ganzen Block, nie eine Teilmenge; Oversize fällt für die Analyse und lässt Audio unberührt) und **B12**; **NEU** `EqCopSonde013DynamicsTest`, Fall `overload_drops_analysis_never_audio`. | Entwurf §48.1:3403-3412,3424-3428. **BELEGT, BAULÜCKE für neue Pfade** |
+| M-75 | Analysestau tritt ein | Der ganze **Analyse**block wird verworfen, der Audioblock immer weiterverarbeitet. Degradationsreihenfolge: Fokus-Burst → 221-Band-Snapshot → 64-Band-Liveframe; P0-Steuerung und Audio bleiben erhalten. Ein Drop erzeugt Zähler, sichtbare Lücke und neue Kontinuitätsgrenze und wird **nie** interpoliert. | **gemessen** (2026-09-04, Etappe C): bestehend **B4** und **B12**; **B18**::`der verworfene Analyseblock schliesst auch die neuen Fenster` — die Lücke zieht eine Segmentgrenze, die 3-s-Fenster tragen danach keinen Wert mehr, und das Passagenmaximum ist das der neuen, leisen Passage. Die Slotkapazität selbst gehört der `StampedAudioQueue` und bleibt bei **B4**: der Engine einen Block mit `sampleCount` jenseits des übergebenen Puffers zu reichen wäre ein Lesefehler im Test, kein Vertragsfall (gemessen: er stürzt, und zwar zu Recht). | Entwurf §48.1:3403-3412,3424-3428. **BELEGT, BAULÜCKE für neue Pfade** |
 | M-76 | Passiver Zustand; Nulltest läuft | Passthrough bleibt **bitidentisch**, 0 Samples Latenz, kein Tail, kein Hostparameter — für Gen und für Probeeq. Kein Teil dieses Tickets ändert daran etwas: Metriken sind Abgriffe, keine Prozessoren. NaN und Inf werden gezählt, aber nicht verändert. | Bestehend **A1** `EqCopNullTest` und **A16** `EqCopProbeeqNullTest`; sie sind die Regressionswache dieses Tickets. | Entwurf §49.2 Gate 1:3550-3552; CLAUDE.md Grundgesetz; `tools/beweise.ps1`:433-440,592. **BELEGT** — heute erfüllt, muss erfüllt bleiben |
-| M-77 | Hostblock übersteigt die vorallokierte Slotkapazität | Er wird **vollständig nur für die Analyse** verworfen, erhöht `oversize_drop`, schließt alle offenen Analysefenster und startet ein neues `continuity_segment`. Audio läuft weiter. `maximumExpectedSamplesPerBlock` ist bei JUCE nur ein Hinweis; das gilt auch für jedes neue Fenster dieses Tickets. | Bestehend **B4**; **NEU** `EqCopSonde013DynamicsTest`, Fall `oversize_closes_new_windows_too`. | Entwurf §48.1:3419-3428. **BELEGT, BAULÜCKE für neue Fenster** |
+| M-77 | Hostblock übersteigt die vorallokierte Slotkapazität | Er wird **vollständig nur für die Analyse** verworfen, erhöht `oversize_drop`, schließt alle offenen Analysefenster und startet ein neues `continuity_segment`. Audio läuft weiter. `maximumExpectedSamplesPerBlock` ist bei JUCE nur ein Hinweis; das gilt auch für jedes neue Fenster dieses Tickets. | **gemessen** (2026-09-04, Etappe C): bestehend **B4** für den Oversizepfad selbst; **B18** misst die Folge in der Engine — was die Engine von einem verworfenen Block SIEHT, ist eine Stromlücke, und daraus wird ein neues `continuity_segment`, das auch die neuen Fenster schließt. | Entwurf §48.1:3419-3428. **BELEGT, BAULÜCKE für neue Fenster** |
 | M-78 | Telemetriepfad staut zurück | P2 darf `drop-oldest` verwenden; sein Ausfall degradiert Analyse, nicht Control. Höchstens ein aktueller Liveframe je Probe; alte Frames werden verworfen. **P0 wartet nie hinter alten Spektren.** Der P0-Interventionsring (M-39) ist davon ausdrücklich ausgenommen und verwendet kein `drop-oldest`. | Bestehend **A22** `pruefe_ipc_last.py` (32 Sondenpaare fluten P2, kein P0-Frame geht verloren) und **A24** `pruefe_session_soak.py`; **NEU** derselbe Lasttest mit aktivem Interventionsring. | Entwurf §33.1:2030-2036; §49.3:3581; `intervention.rs`. **BELEGT, BAULÜCKE für den Ring unter Last** |
 
 ### 3.10 P4-Referenzkorpus und Exit-Gate
@@ -2177,6 +2177,213 @@ Etappe; der Vertrag dafür seit Etappe A.
    Nebenbefund unten nennt den vierten.
 4. `docs/offene-punkte.md` ist auftragsgemäß **nicht** angefasst; alle
    Nebenbefunde stehen als Zeilen in §10.1 und §10.2.
+
+---
+
+### 10.3 Etappe C — Metriken in der Sonde, erster Satz (2026-09-04)
+
+Etappe C ist in zwei Änderungssätzen gebaut. Dieser Abschnitt beschreibt den
+**ersten**: die Loudnessfenster, den True Peak, Headroom und die
+Vertragsfolgen. Der zweite trägt Stereo (M-08, M-10, M-11, M-12), die
+Qualitätsklasse (M-06) und den eigenständigen Peakpfad (M-86).
+
+**Gebaute Matrixzeilen:** M-01, M-02, M-03, M-04, M-07 (Erzeugerseite der
+neuen Metriken), M-09, M-75, M-77.
+
+#### Was der Frame vorher trug — und was davon die schwächere Zahl war
+
+An `ed9bbf7` führte der `FeatureFrame` von den sechs Punkten aus §39.1 genau
+drei: `lufsS` (3 s), `peakDb` (**Sample**-Peak des 100-ms-Rahmens) und ein
+`psrDb`, das diesen Sample-Peak gegen LUFS-S rechnete. Momentary, True Peak,
+PLR, LRA und ein zweites Crestfenster gab es nicht, und `integrationSamples`
+war zwar seit Etappe A im Vertrag, hatte aber **keinen Erzeuger** — das Feld
+reiste, gefüllt hat es niemand.
+
+`psrDb` war dabei nicht nur unvollständig, sondern zwei Fehler auf einmal:
+falsches Fenster (100 ms statt 3 s) und falsche Peakart (Sample statt True).
+Beide sind behoben; das Feld behält Platz und Namen, weil es nie etwas anderes
+zugesagt hat als PSR.
+
+#### True Peak: warum acht und nicht vier
+
+`eq-copilot/plugin/core/analysis/TruePeak.h` ist neu. Der Detektor ist ein
+8-fach-Polyphaseninterpolator mit Kaiser-gefenstertem Sinc, 193 Taps, 24 je
+Phase. Zwei Entscheidungen darin sind gemessen, nicht behauptet:
+
+- **Der Faktor.** Der Restfehler der Überabtastung hat eine geschlossene Form:
+  der wahre Scheitel liegt höchstens eine halbe Stützstelle neben der
+  nächsten, also `20·log10(cos(2π·f/fs·1/(2·Faktor)))`. Bei fs/4 sind das mit
+  Faktor 8 **−0,042 dB** und mit Faktor 4 **−0,169 dB**. Die erste Zahl hält
+  die ±0,1 dB aus §49.3, die zweite reißt sie. Die Formel steht als
+  `constexpr` im Produktpfad, und B17 rechnet beide Fälle nach — das ist die
+  Entscheidung „8-fach gegen Polyphase", die M-02 als messbar verlangt.
+- **Die Normierung.** Jede der acht Phasen wird **einzeln** auf Summe 1
+  gebracht, nicht die Gesamtsumme auf 8. Sonst verstärkte jede Phase leicht
+  anders, aus einem Gleichanteil würde eine mit 8·fs modulierte Welle, und ihr
+  Maximum wäre ein Artefakt des Filters. Gemessen: der Gleichanteil bleibt
+  bitgenau er selbst.
+
+**Das EBU-Testset ist nicht heruntergeladen, sondern gerechnet.** Die
+True-Peak-Fälle 15 bis 19 aus EBU Tech 3341 sind analytisch definierte Sinus —
+eine Frequenz als Bruchteil von fs, eine Amplitude in FFS, eine Phase. Der
+wahre Scheitel eines Sinus **ist** seine Amplitude, also ist die Referenz
+exakt statt selbst eine Messung. Daraus folgt der Sampleraten-Sweep aus M-02
+von selbst: die Frequenzen sind an fs gebunden, die normierte Frequenz ist bei
+jeder Rate dieselbe. Gemessen über 44,1 / 48 / 88,2 / 96 / 192 kHz, größte
+Abweichung **0,0313 dB**. Nakama misst dabei gegen die schärfere Toleranz aus
+§49.3 (±0,1 dB), nicht gegen die +0,2/−0,4 der Norm.
+
+#### Zwei Befunde am eigenen Bau, beide vom Kanon gefunden
+
+**1. Der Stack, zum zweiten Mal.** B5 fiel mit `STATUS_STACK_OVERFLOW`, bevor
+ein einziger Testfall lief. Ursache ist dieselbe wie in Etappe B (§10.2,
+Befund 1): der Kern hält in diesem Bein zwanzig `FeatureEngine`-Objekte
+gleichzeitig auf dem Stack, also ist **jedes Instanzfeld dort zwanzigfach**.
+193 `double` Filterkoeffizienten sind 1,5 KiB je Instanz, der Verlauf weitere
+512 Byte, der Headroomring 264 — einzeln nichts, zusammen der Tropfen.
+Behoben: die Koeffizienten sind eine prozessweite Tabelle (sie hängen an
+nichts Instanzabhängigem, insbesondere **nicht** an der Samplerate), Verlauf
+und Headroomring liegen im Heap. Die Lehre steht jetzt an drei Stellen im
+Code, damit die nächste Etappe sie nicht ein drittes Mal lernt.
+
+**2. Die Zwillingsprobe hat einen Entwurfsfehler widerlegt.** Der erste Bau
+ließ `passageTruePeak`, den Headroomring und das LRA-Histogramm eine Grenze
+**überleben** — mit der Begründung, sie seien Passagenstatistiken wie die
+integrierte Lautheit, nicht offene Fenster. G13 fiel daraufhin an **allen
+sechs** Grenzarten: A (vorher lautes Audio) und B (vorher Stille) waren nach
+der Grenze in 14 von 14 Frames unterscheidbar.
+
+Die Begründung war aus zwei Gründen falsch. Erstens reist die integrierte
+Lautheit gar nicht durch diese Engine — sie kommt aus dem
+`LoudnessAccumulator` und wird erst im Sondenprozessor zugemischt. Zweitens,
+und das ist der tragende Grund: **was im `FeatureFrame` reist, unterliegt
+§32.3.** Der Frame trägt seit dieser Etappe `truePeakPassageDb` und die
+Headroomperzentile, also sind sie Träger wie jeder andere. Fachlich stimmt das
+mit §32.4 überein — eine Passage bindet an genau eine Transportepoche.
+
+Der Preis ist benannt und richtig: LRA braucht seine rund 60 s **ohne** Grenze.
+Genau das heißt „60 s geeignetes Material".
+
+Dass der Fehler überhaupt auffiel, hängt an einer Entscheidung von SONDE-009:
+`FeatureFrame::operator== = default` zieht **jedes neue Feld** automatisch in
+den Vergleich. Eine handgepflegte Feldliste hätte drei neue Träger nicht
+bemerkt.
+
+**3. Selbstauditfund: der Interpolator hat Gruppenlaufzeit.** Beim
+adversarialen Lesen des Diffs fiel auf, dass der neue True-Peak-Wert an einer
+konkreten Stelle **unter** seinen eigenen Sample-Peak fallen kann. Der
+Interpolatorkern ist um seine halbe Länge zentriert und sieht ein Sample
+deshalb erst zwölf Samples später. Ist die einzige Spitze eines Rahmens dessen
+letztes Ereignis, hat `rahmenTruePeak` sie noch nicht — und genau diesen Frame
+lehnen **beide** Leser als `true_peak_unter_sample_peak` ab. Gemessen: 33,5 dB
+Lücke.
+
+Behoben, indem der Abtastpunkt selbst in den True Peak eingeht. Das ist keine
+Beschönigung, sondern die Definition: der True Peak ist das Maximum der
+**rekonstruierten** Wellenform, und die Abtastpunkte gehören zu ihr. Die
+Korrektur steht an genau einer Stelle — ihrer einzigen Schreibstelle im
+Audiopfad; sie an den drei Verbrauchsstellen zu wiederholen wäre eine zweite
+Wahrheit über dieselbe Zahl.
+
+Der zugehörige Rotbeweis kam **zweimal grün** zurück, bevor er griff, und
+beide Fehlversuche stehen als Warnung im Testkommentar: der Interpolatorverlauf
+überlebt Blockgrenzen (ein Impuls in jedem Block wird im nächsten gesehen, also
+trägt der Rahmen den Peak trotzdem), und wo ein Rahmen endet, hängt an der
+Kadenzarithmetik. Der Fall **misst** jetzt zuerst, nach wie vielen Blöcken ein
+Rahmen fällt, und legt die Spitze dann gezielt in dessen letzte vier Samples.
+
+#### Und ein Rotbeweis, der eine zu schwache Prüfung aufgedeckt hat
+
+Der Rotbeweis zu M-03 (PSR gegen den Sample-Peak des Rahmens statt gegen das
+True-Peak-Maximum des 3-s-Fensters) kam beim ersten Versuch **grün** zurück —
+der Test konnte nicht fallen. Grund: bei einem stationären Sinus sind
+Rahmen-Sample-Peak, Rahmen-True-Peak und 3-s-Maximum praktisch dieselbe Zahl.
+Der Fall läuft jetzt mit einem lauten Impuls, danach zwei Sekunden leise: der
+aktuelle Rahmen liegt bei −20 dB, das 3-s-Fenster trägt den Impuls noch, und
+zwischen richtiger und falscher Rechnung liegen 33 dB.
+`SONDE-013-rot-M-03-psr.txt` enthält den Lauf **nach** der Schärfung.
+
+#### Belege aus dieser Sitzung
+
+| Bein | Ergebnis |
+|---|---|
+| **B18** `EqCopSonde013DynamicsTest` (NEU) | 44 bestanden, 0 gescheitert |
+| **B17** `EqCopSonde013TruePeakGoldenTest` (NEU) | 23 bestanden, 0 gescheitert |
+| **B5** `EqCopAnalysisGoldenTest` | 237 bestanden, 0 Fehler — G13 grün an allen sechs Grenzarten |
+| **B3c** `EqCopSchemaTest` | 75 bestanden, 0 gescheitert; Binärkorpus 119 Fixtures klassifiziert wie das Manifest |
+| **A9** `pruefe_flatc_drift.py` | Drift 0 über beide erzeugten Dateien; 9 Tabellen, 63 Felder, keines ohne explizite ID |
+| **A10** `erzeuge_fb_fixtures.py --pruefen` | 120 Dateien bytegleich (23 gültig, 96 ungültig) |
+| **A4** `cargo test --release` (Broker) | 203 Lib-Tests plus alle Integrationsbeine grün; `contract_cross_language` 9/9 |
+
+#### Rotbeweise (`docs/beweise/roh/`)
+
+| Datei | Eingebauter Fehler | Fallendes Bein |
+|---|---|---|
+| `SONDE-013-rot-M-01.txt` | `kMomentZellen = kKurzZellen` — Momentary wird zum zweiten Namen für Short-term | B18 |
+| `SONDE-013-rot-M-02.txt` | nur Phase 0 des Interpolators zählt — der Detektor fällt auf den Sample-Peak zurück | B17 |
+| `SONDE-013-rot-M-02-rahmenende.txt` | der Abtastpunkt geht nicht mehr in den True Peak ein — die Gruppenlaufzeit lässt die Spitze eines Rahmens in den nächsten rutschen (33,5 dB Lücke) | B18 |
+| `SONDE-013-rot-M-03-psr.txt` | PSR rechnet gegen den Sample-Peak des 100-ms-Rahmens statt gegen das 3-s-True-Peak-Maximum | B18 |
+| `SONDE-013-rot-M-03-headroom.txt` | P50 wird zur Spitze — die Verteilung ist wieder ein Einzelwert mit drei Namen | B18 |
+| `SONDE-013-rot-M-04-crest.txt` | der 3-s-Crest verliert seine RMS-Hälfte und wird konstant 0 | B18 |
+| `SONDE-013-rot-M-04-lra.txt` | `kLraMindestSekunden = 0` — LRA liefert ab dem ersten gegateten Wert eine Zahl | B18 |
+| `SONDE-013-rot-M-09.txt` | `integration_samples` fest auf die Nennkadenz statt gemessen | B18 |
+| `SONDE-013-rot-M-07-cpp-leser.txt` | Regel `true_peak_unter_sample_peak` aus dem C++-Leser entfernt | B3c |
+| `SONDE-013-rot-M-07-rust-leser.txt` | Regel `headroom_fenster_null` aus dem Rust-Leser entfernt | `contract_cross_language` |
+
+#### Abweichungen von §5, mit Begründung
+
+- **Sieben neue `.fbs`-Felder und eine neue Tabelle, ohne P2-Fassungsschritt.**
+  §5.1 nennt für Etappe C keine Vertragsarbeit; M-01 bis M-04 verlangen aber
+  wörtlich, dass **der Frame** die Werte trägt. Optionale FlatBuffers-Felder
+  sind genau der additive Fall, den das Format trägt — dieselbe Begründung,
+  mit der Etappe B `P2_SCHEMA_MINOR` bei 1 gelassen hat (§10.2). Der
+  P1-Fassungsschritt bleibt bei **einem** (§3.8). Die Feld-IDs 15 bis 21 und
+  die Tabelle `Headroomverteilung` stehen in `FELD-IDS.json`; A9 misst
+  Drift 0 und dass kein Feld ohne explizite ID ist.
+- **`true_peak_passage_db` neben `plr_db`.** PLR ist die Aussage, das
+  Passagenmaximum die Zutat — aber `lufs_i` darf fehlen (E-A02), und dann wäre
+  mit dem Paar auch die Headroomfrage aus §39.2 weg. Beide reisen deshalb; der
+  Leser lehnt ein PLR ohne Lautheitspaar ab (`plr_ohne_lufs_i`).
+- **Neue Datei außerhalb §5.2.** `eq-copilot/plugin/core/analysis/TruePeak.h`
+  liegt neben `KGewichtung.h` und ist wie diese header-only, erzeugt also kein
+  Objekt und berührt A14 nicht. Die Alternative wäre der Detektor **in**
+  `FeatureEngine.h` gewesen — dann könnte B17 ihn nicht ohne die ganze Engine
+  messen, und die Zwillingsprobe hätte einen zweiten Grund, am Stack zu
+  scheitern.
+- **Zwei neue Kanonbeine B17 und B18.** Die Beinzahl wächst von 41 auf 43 und
+  sinkt um kein Bein.
+
+#### Dateien außerhalb der Ticketpfade aus §5.2, mit Begründung
+
+| Datei | Warum |
+|---|---|
+| `eq-copilot/plugin/vertrag/NakamaTelemetrie.h`, `.cpp` | der C++-Leser und seine Empfangsstruktur. M-70 verlangt beide Leser im selben Änderungssatz |
+| `broker/src/telemetrie.rs` | derselbe Leser auf der Rust-Seite, mit wortgleichen Regeln, plus die Riegelzeile für das neue Offsetfeld `headroom` |
+| `eq-copilot/plugin/core/ipc/TelemetryClient.cpp` | der Encoder. Ein Feld ohne Schreiber wäre ein Vertragsteil ohne Erzeuger |
+| `eq-copilot/plugin/vertrag/generiert/…_generated.h`, `broker/src/generiert/…_generated.rs` | Codegen aus dem gepinnten `flatc`; M-71 verlangt Drift 0 |
+| `eq-copilot/plugin/CMakeLists.txt` | die zwei neuen Beine |
+| `eq-copilot/fixtures/v3/flatbuffers/**` | 15 neue Fixtures samt MANIFEST, von A10 bytegleich geprüft |
+
+`docs/offene-punkte.md` und `docs/PLAN-STAND.md` bleiben unberührt.
+
+#### Nebenbefunde für `docs/offene-punkte.md`
+
+- **[SONDE-013 · P4]** Der Kern legt in B5 zwanzig `FeatureEngine`-Objekte
+  gleichzeitig auf den Stack, und jedes Instanzfeld ist dort zwanzigfach. Der
+  1-MiB-Stack ist damit binnen zweier Etappen zweimal gerissen — beide Male an
+  einem Feld unter 2 KiB. Wer es angeht: entweder die Engines in B5 auf den
+  Heap (`std::unique_ptr`), oder eine `static_assert` auf
+  `sizeof(FeatureEngine)` mit einer benannten Obergrenze, damit das nächste
+  Feld am Riegel fällt statt am Testlauf. Kein Produktcode hängt daran — im
+  Plugin lebt genau eine Engine je Instanz.
+- **[SONDE-013 · P4]** `psrDb` hat mit dieser Etappe seine **Bedeutung**
+  geändert (3-s-True-Peak statt 100-ms-Sample-Peak), ohne die Feld-ID zu
+  wechseln. Das ist zulässig, weil das Feld nie etwas anderes zugesagt hat als
+  PSR und der alte Wert im Kommentar ausdrücklich als schwächere Näherung
+  markiert war. Ein Empfänger, der beide Fassungen unterscheiden müsste, hätte
+  dafür heute kein Mittel — `kFeatureMetricsVersion` steigt in diesem Ticket
+  noch nicht. Wer es angeht: sie mit dem Abschluss von SONDE-013 anheben,
+  gemeinsam mit den in M-06 und M-29 an sie gebundenen Schwellen.
 
 ---
 

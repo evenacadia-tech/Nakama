@@ -142,6 +142,15 @@ bool featureFrameAlsFlatbuffer (const analyse::FeatureFrame& frame,
     const auto integration = frame.integrationGesetzt
         ? flatbuffers::Optional<std::uint32_t> (frame.integrationSamples)
         : flatbuffers::nullopt;
+    // SONDE-013 M-03: die Headroomverteilung reist als GANZE Tabelle oder gar
+    // nicht. Ein halber Satz Perzentile waere ein Zustand, den kein Empfaenger
+    // deuten kann - deshalb haengt sie an EINEM Bit.
+    flatbuffers::Offset<fb::Headroomverteilung> headroom;
+    if (frame.headroomGesetzt)
+        headroom = fb::CreateHeadroomverteilung (b, frame.headroomP10Db,
+                                                 frame.headroomP50Db,
+                                                 frame.headroomP95Db,
+                                                 frame.headroomFenster);
     const auto frameFb = fb::CreateFrame (
         b, transport, live, frame.metricsVersion,
         optional (frame.aktivitaetGesetzt, frame.aktivitaet),
@@ -153,7 +162,15 @@ bool featureFrameAlsFlatbuffer (const analyse::FeatureFrame& frame,
         optional (frame.korrelationGesetzt, frame.korrelation), stereo,
         optional (frame.lufsIGesetzt, frame.lufsI),
         optional (frame.lufsIUnsicherheitGesetzt, frame.lufsIUnsicherheit),
-        lufsIStatus, integration);
+        lufsIStatus, integration,
+        // SONDE-013 M-01 bis M-04: die sechs neuen Skalare in Feld-ID-Folge.
+        optional (frame.lufsMGesetzt, frame.lufsM),
+        optional (frame.truePeakGesetzt, frame.truePeakDb),
+        optional (frame.truePeakPassageGesetzt, frame.truePeakPassageDb),
+        optional (frame.plrGesetzt, frame.plrDb),
+        optional (frame.lraGesetzt, frame.lraLu),
+        optional (frame.crestKurzGesetzt, frame.crestKurzDb),
+        headroom);
     const auto eintrag = fb::CreateQuellenEintrag (b, adresse, frameFb);
     const auto eintraege = b.CreateVector (&eintrag, 1);
     const auto batch = fb::CreateFeatureBatch (b, eintraege);

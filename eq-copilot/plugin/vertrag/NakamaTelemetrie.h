@@ -111,6 +111,24 @@ struct Empfangsframe
         Zustand, den NAK-68 beschreibt. */
     bool integrationGesetzt = false;
     std::uint32_t integrationSamples = 0;
+
+    /** SONDE-013 M-01 bis M-04: die sechs neuen Skalare und die
+        Headroomverteilung, jeder mit eigenem Praesenzbit.
+
+        Dieselbe Regel wie oben und aus demselben Grund: ein numerischer
+        Vorgabewert ohne sein Bit ist keine Messung. Bei `lraLu` ist das
+        besonders scharf — Abwesenheit heisst dort ausdruecklich `nicht
+        belastbar` (§39.1), und eine 0 waere die Behauptung, das Material
+        habe keine Dynamik. */
+    bool lufsMGesetzt = false;            float lufsM = 0.0f;
+    bool truePeakGesetzt = false;         float truePeakDb = 0.0f;
+    bool truePeakPassageGesetzt = false;  float truePeakPassageDb = 0.0f;
+    bool plrGesetzt = false;              float plrDb = 0.0f;
+    bool lraGesetzt = false;              float lraLu = 0.0f;
+    bool crestKurzGesetzt = false;        float crestKurzDb = 0.0f;
+    bool headroomGesetzt = false;
+    float headroomP10Db = 0.0f, headroomP50Db = 0.0f, headroomP95Db = 0.0f;
+    std::uint32_t headroomFenster = 0;
 };
 
 /** Prueft und kopiert einen FeatureBatch in einem Zug.

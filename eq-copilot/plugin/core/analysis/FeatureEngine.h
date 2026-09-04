@@ -61,6 +61,7 @@
 #include "BandGrid.h"
 #include "Fft.h"
 #include "KGewichtung.h"
+#include "TruePeak.h"
 #include "../StampedAudioQueue.h"
 
 #include <algorithm>
@@ -395,6 +396,56 @@ struct FeatureFrame
         abgelehnt (`integration_samples_null`). */
     bool  integrationGesetzt { false };  std::uint32_t integrationSamples { 0 };
 
+    /** SONDE-013 M-01 bis M-04: die drei Loudnessfenster, der True Peak und
+        die zwei Headroomgroessen.
+
+        §39.1 zaehlt die Basis abschliessend auf — Momentary (400 ms),
+        Short-term (3 s), Integrated, BS.1770-konformer True Peak, LRA erst ab
+        rund 60 s, PLR/PSR und Crest in MEHREREN Fenstern.  Bis SONDE-013 trug
+        der Frame davon `lufsS` (3 s), `peakDb` (Sample-Peak des Rahmens) und
+        ein `psrDb`, das den Sample-Peak gegen LUFS-S rechnete.  Drei der
+        sechs Punkte fehlten ganz, und der vierte war die schwaechere Zahl.
+
+        Jedes Feld traegt sein Praesenzbit, weil jedes von ihnen eine eigene
+        Bedingung hat, unter der es NICHT belastbar ist:
+
+        - `lufsM` braucht 4 volle Zellen (400 ms), `lufsS` 30 (3 s);
+        - `truePeakDb` braucht mindestens ein Sample im Rahmen;
+        - `lraLu` braucht `kLraMindestSekunden` GEEIGNETEN, also ueber dem
+          absoluten Gate liegenden Stoffs — §39.1 woertlich: "vorher `nicht
+          belastbar`".  Ein Wert ohne Bit ist genau diese Aussage; eine 0
+          waere eine Behauptung ueber Dynamik, die niemand gemessen hat;
+        - `plrDb` braucht die integrierte Lautheit, die der SONDENPROZESSOR
+          zumischt (E-A02, dieselbe Stelle wie `lufsI`) — die Engine kennt
+          sie nicht und traegt deshalb `truePeakPassageDb` als Zutat;
+        - `crestKurzDb` braucht das volle 3-s-Fenster wie `lufsS`.
+
+        ⚠️ `psrDb` (oben) bleibt am selben Platz, rechnet aber seit diesem
+        Ticket gegen den TRUE-PEAK-Maximalwert desselben 3-s-Fensters statt
+        gegen den Sample-Peak des 100-ms-Rahmens.  Das ist die Definition aus
+        §39.1 und keine Erweiterung: der alte Wert hiess schon `psrDb` und
+        trug im Kommentar den Vorbehalt, dass er die schwaechere Zahl ist. */
+    bool  lufsMGesetzt        { false };  float lufsM        { 0.0f };
+    bool  truePeakGesetzt     { false };  float truePeakDb   { 0.0f };
+    bool  truePeakPassageGesetzt { false };  float truePeakPassageDb { 0.0f };
+    bool  plrGesetzt          { false };  float plrDb        { 0.0f };
+    bool  lraGesetzt          { false };  float lraLu        { 0.0f };
+    bool  crestKurzGesetzt    { false };  float crestKurzDb  { 0.0f };
+
+    /** Headroom als VERTEILUNG, nicht als Einzelspitze (§39.2 woertlich:
+        "Headroom wird in dBTP und als Verteilung ueber die Passage
+        dargestellt.  Ein Peak darf nicht als Problem gelten, nur weil er hoch
+        ist").
+
+        Die drei Punkte sind P10/P50/P95 der RAHMEN-True-Peaks im laufenden
+        Evidenzfenster; `headroomFenster` sagt, ueber wie viele Rahmen sie
+        gehen — dieselbe Ehrlichkeit wie `evidenzFenster` bei den Bandpegeln.
+        Eine einzelne Spitze hebt P95, laesst P50 aber stehen: genau der
+        Unterschied, den ein Einzelwert nicht ausdruecken kann. */
+    bool  headroomGesetzt { false };
+    float headroomP10Db { 0.0f }, headroomP50Db { 0.0f }, headroomP95Db { 0.0f };
+    std::uint32_t headroomFenster { 0 };
+
     /** SONDE-013 M-05: die Verteilungspunkte des Evidenzsnapshots (§33.2).
 
         §33.2 zaehlt den Inhalt des Snapshots abschliessend auf — „volle 221
@@ -552,6 +603,38 @@ public:
     static constexpr double kZelleSekunden = 0.1;
     /** LUFS-S ueber 3 s = 30 Zellen (§39.1). */
     static constexpr int kKurzZellen = 30;
+    /** Momentary ueber 400 ms = 4 Zellen (§39.1, BS.1770-5 Blocklaenge).
+
+        Er ist KEIN kuerzeres Short-term und keine Glaettung von `lufsS`: die
+        zwei Fenster beantworten verschiedene Fragen (was ist gerade laut,
+        gegen was traegt die Passage), und ein Empfaenger, der nur eines
+        bekommt, kann das andere nicht daraus rechnen — deshalb reisen sie
+        nebeneinander (M-01). */
+    static constexpr int kMomentZellen = 4;
+    /** LRA gilt erst ab rund 60 s GEEIGNETEN Materials (§39.1, EBU Tech 3342).
+
+        "Geeignet" heisst: ueber dem absoluten Gate.  Eine Minute Stille ist
+        keine Minute Material — deshalb zaehlt `lraGezaehlt` nur gegatete
+        Kurzzeitwerte, nicht die Wanduhr (dieselbe Regel wie bei der
+        Abdeckung, §48.2). */
+    static constexpr double kLraMindestSekunden = 60.0;
+    /** Hop der LRA-Kurzzeitfolge: 1 s = 10 Zellen (EBU Tech 3342 §2.2). */
+    static constexpr int kLraHopZellen = 10;
+    /** Absolutes Gate der LRA-Verteilung in LUFS (EBU Tech 3342: -70). */
+    static constexpr double kLraAbsGateLufs = -70.0;
+    /** Relatives Gate der LRA-Verteilung, LU unter dem gegateten Mittel
+        (EBU Tech 3342: -20; das ist NICHT die -10 LU der integrierten
+        Lautheit, und die zwei nicht zu vermischen ist der ganze Punkt). */
+    static constexpr double kLraRelGateLu = -20.0;
+    /** Histogramm der LRA-Kurzzeitwerte: 0,1 LU von -70 bis +30 LUFS.
+
+        Fester Speicher wie beim `LoudnessAccumulator` — ein wachsender Vektor
+        von Kurzzeitwerten waere bei einer langen Sitzung genau der unbegrenzte
+        Bestand, den §48.1 ausschliesst.  0,1 LU Binbreite ist zehnmal feiner
+        als die 1 LU, in der LRA berichtet wird. */
+    static constexpr double kLraBinUnten  = -70.0;
+    static constexpr double kLraBinBreite = 0.1;
+    static constexpr int    kLraBins      = 1001;
     /** Livekadenz 10 Hz, Evidenzkadenz 1 bis 4 Hz (§33.2). */
     static constexpr double kLiveIntervallS    = 0.1;
     /** Schnellster und langsamster zulaessiger Evidenzabstand.
@@ -603,6 +686,16 @@ public:
         zellenSamples = (int) std::llround (kZelleSekunden * sr);
         if (zellenSamples < 1) zellenSamples = 1;
         kurzZellen.assign ((std::size_t) kKurzZellen, 0.0);
+        // SONDE-013 M-03/M-04: zwei weitere Zellenringe derselben Laenge.
+        // `kurzTpZellen` traegt das True-Peak-Maximum je Zelle (PSR rechnet
+        // gegen das Maximum DESSELBEN 3-s-Fensters, §39.1), `kurzRmsZellen`
+        // die UNGEWICHTETE Energie (Crest ist ein Pegelverhaeltnis, keine
+        // Lautheit — die K-Gewichtung gehoert nicht hinein).
+        kurzTpZellen.assign ((std::size_t) kKurzZellen, 0.0);
+        kurzRmsZellen.assign ((std::size_t) kKurzZellen, 0.0);
+        lraHistogramm.assign ((std::size_t) kLraBins, 0u);
+        headroomRing.assign (1u, VerteilungsRing {});
+        tp.vorbereiten (sr);
 
         evidenzVerteilung.assign ((std::size_t) Gitter::evidenzBaender,
                                   VerteilungsRing {});
@@ -642,6 +735,22 @@ public:
         for (auto& z : kurzZellen) z = 0.0;
         kL.zustandNullen();
         kR.zustandNullen();
+
+        // SONDE-013 M-02 bis M-04. Hier faellt AUCH, was eine Grenze
+        // ueberlebt: `zuruecksetzen()` ist der Neuanfang der PASSAGE, und die
+        // Passagengroessen — Passagen-True-Peak, Headroomverteilung und das
+        // LRA-Histogramm — gehoeren genau dorthin.
+        for (auto& z : kurzTpZellen)  z = 0.0;
+        for (auto& z : kurzRmsZellen) z = 0.0;
+        zelleTruePeak = 0.0;
+        zelleRmsEnergie = 0.0;
+        tp.zuruecksetzen();
+        rahmenTruePeak = 0.0;
+        passageTruePeak = 0.0;
+        for (auto& r : headroomRing) r.leeren();
+        for (auto& b : lraHistogramm) b = 0u;
+        lraGezaehlt = 0;
+        lraZellenSeitHop = 0;
 
         rahmenPeak = 0.0;
         rahmenSummeQuadrat = 0.0;
@@ -1388,14 +1497,60 @@ private:
         kurzStand = 0;                  // LUFS-S ueber 3 s — die ganze Historie
         kurzGefuellt = 0;
         for (auto& z : kurzZellen) z = 0.0;
+        // SONDE-013 M-03/M-04: die zwei Nachbarringe des 3-s-Fensters fallen
+        // MIT ihm. Sie stehenzulassen hiesse, den True-Peak-Maximalwert oder
+        // die RMS aus der alten Epoche gegen eine neue Kurzzeitlautheit zu
+        // rechnen — genau die Ueberbrueckung, die §32.3 ausschliesst, nur
+        // eine Zeile neben der, an der sie 23.08. schon einmal stand.
+        for (auto& z : kurzTpZellen)  z = 0.0;
+        for (auto& z : kurzRmsZellen) z = 0.0;
+        zelleTruePeak = 0.0;
+        zelleRmsEnergie = 0.0;
+        lraZellenSeitHop = 0;
+        // 🔑 UND DIE DREI PASSAGENGROESSEN FALLEN MIT. Das ist die Korrektur
+        // eines Entwurfsfehlers dieser Etappe, den G13 gefunden hat.
+        //
+        // Der erste Bau liess `passageTruePeak`, den Headroomring und das
+        // LRA-Histogramm eine Grenze UEBERLEBEN — mit der Begruendung, sie
+        // seien Passagenstatistiken wie die integrierte Lautheit, nicht
+        // offene Fenster. Die Zwillingsprobe G13 hat das an allen sechs
+        // Grenzarten widerlegt: A (vorher lautes Audio) und B (vorher
+        // Stille) waren danach in 14 von 14 Frames unterscheidbar.
+        //
+        // Die Begruendung war falsch, und zwar aus zwei Gruenden. Erstens
+        // reist die integrierte Lautheit gar nicht durch diese Engine — sie
+        // kommt aus dem `LoudnessAccumulator` und wird erst im
+        // Sondenprozessor zugemischt. Zweitens, und das ist der tragende
+        // Grund: WAS IM `FeatureFrame` REIST, UNTERLIEGT §32.3. Der Frame
+        // traegt seit dieser Etappe `truePeakPassageDb` und die
+        // Headroomperzentile, also sind sie Traeger wie jeder andere.
+        //
+        // Fachlich stimmt das ueberdies mit §32.4 ueberein: eine Passage
+        // bindet an GENAU EINE Transportepoche. Nach einer Epochengrenze ist
+        // die Passage zu Ende, und ein Maximum ueber sie hinweg waere ueber
+        // zwei Passagen gerechnet. Auch bei einem Drop (Segment, keine
+        // Epoche) fehlt Audio, und ein Maximum ueber die Luecke behauptete
+        // etwas ueber Material, das die Engine nie gesehen hat.
+        //
+        // Der Preis ist benannt und richtig: LRA braucht seine rund 60 s
+        // OHNE Grenze. Genau das heisst "60 s geeignetes Material" (§39.1).
+        passageTruePeak = 0.0;
+        for (auto& r : headroomRing) r.leeren();
+        for (auto& b : lraHistogramm) b = 0u;
+        lraGezaehlt = 0;
         // Die K-Filter behalten ihren Zustand NICHT: ihr Nachklang traegt Audio
         // von VOR der Grenze, und genau das ist Ueberbrueckung — nur eben
         // ueber den Filterzustand statt ueber einen Puffer.  Das ist die
         // subtilste Form des Fehlers, gegen den dieses Ticket schuetzt.
         kL.zustandNullen();
         kR.zustandNullen();
+        // Derselbe Grund fuer den True-Peak-Interpolator: seine 24 Taps je
+        // Phase reichen ueber die Grenze zurueck, und ein daraus gerechneter
+        // Zwischenwert gehoert zu keiner der beiden Epochen.
+        tp.zuruecksetzen();
 
         rahmenPeak = 0.0;               // Korrelations-/Peakfenster
+        rahmenTruePeak = 0.0;
         rahmenSummeQuadrat = 0.0;
         rahmenSamples = 0;
         rahmenStartBlock = {};
@@ -1547,6 +1702,31 @@ private:
             // Peak/Crest/Stereo im laufenden Rahmen.
             const double absL = std::abs (l), absR = std::abs (r);
             rahmenPeak = std::max (rahmenPeak, std::max (absL, absR));
+            // SONDE-013 M-02: der True Peak liegt ZWISCHEN den Samples, also
+            // wird hier ueberabgetastet und dort maximiert.  `tick` ist
+            // O(kTaps) mit fester Schleife, ohne Allokation und ohne Sperre —
+            // dieselbe Klasse Aufwand wie die zwei K-Filter darueber.
+            //
+            // ⚠️ Der Abtastpunkt SELBST geht mit ein, und das ist keine
+            // Beschoenigung, sondern die Definition: der True Peak ist das
+            // Maximum der rekonstruierten Wellenform, und die Abtastpunkte
+            // gehoeren zu ihr.  Ohne diese Zeile faellt der Wert an einer
+            // konkreten Stelle unter den Sample-Peak — der Interpolatorkern
+            // ist um seine halbe Laenge zentriert, sieht ein Sample also erst
+            // `kTapsJePhase / 2` Samples spaeter, und ein Spitzenwert in den
+            // letzten zwoelf Samples eines Rahmens erreicht `rahmenTruePeak`
+            // erst im naechsten.  Der Frame truege dann einen True Peak unter
+            // seinem eigenen Sample-Peak, und BEIDE Leser lehnten ihn als
+            // `true_peak_unter_sample_peak` ab — zu Recht.
+            //
+            // Die Korrektur steht bewusst NUR hier.  Sie an den drei
+            // Verbrauchsstellen zu wiederholen waere eine zweite Wahrheit
+            // ueber dieselbe Zahl.  (Fund aus dem Selbstaudit dieser Etappe,
+            // gemessen von B18::`impuls_am_rahmenende`.)
+            const double tpJetzt = std::max (tp.tick (l, r), std::max (absL, absR));
+            rahmenTruePeak = std::max (rahmenTruePeak, tpJetzt);
+            zelleTruePeak  = std::max (zelleTruePeak, tpJetzt);
+            zelleRmsEnergie += 0.5 * (l * l + r * r);
             rahmenSummeQuadrat += 0.5 * (l * l + r * r);
             ++rahmenSamples;
             rahmenMid2 += m * m;
@@ -1560,6 +1740,8 @@ private:
                 zelleStand = 0;
                 zelleKEnergie = 0.0;
                 zelleAktivEnergie = 0.0;
+                zelleTruePeak = 0.0;
+                zelleRmsEnergie = 0.0;
             }
         }
 
@@ -1882,13 +2064,50 @@ private:
         // durch die Samplezahl, damit aus Σ y² das mean(y²) der Norm wird.
         const double mittel = zelleKEnergie / (double) zellenSamples;
         kurzZellen[(std::size_t) kurzStand] = mittel;
+        // SONDE-013 M-03/M-04: die zwei Nachbarringe wandern MIT demselben
+        // Stand, damit ein Kurzzeitfenster ueber alle drei dieselben Zellen
+        // sieht.  Zwei Ringe mit eigenem Stand waeren zwei Fenster mit
+        // demselben Namen — genau die Vermischung, die §39.1 bei PSR und
+        // Crest ausschliesst.
+        kurzTpZellen[(std::size_t) kurzStand]  = zelleTruePeak;
+        kurzRmsZellen[(std::size_t) kurzStand] = zelleRmsEnergie / (double) zellenSamples;
         kurzStand = (kurzStand + 1) % kKurzZellen;
         if (kurzGefuellt < kKurzZellen) ++kurzGefuellt;
+
+        // LRA (M-04, EBU Tech 3342): alle 10 Zellen — also 1 s Hop — geht der
+        // aktuelle Kurzzeitwert ins Histogramm, sofern das VOLLE 3-s-Fenster
+        // steht und der Wert das absolute Gate nimmt.  Nur diese gezaehlten
+        // Werte tragen die 60-s-Regel; Stille laesst den Zaehler stehen.
+        if (++lraZellenSeitHop >= kLraHopZellen)
+        {
+            lraZellenSeitHop = 0;
+            double kurzJetzt = 0.0;
+            if (kurzLufs (kurzJetzt) && kurzJetzt >= kLraAbsGateLufs)
+            {
+                const int bin = lraBin (kurzJetzt);
+                if (bin >= 0)
+                {
+                    ++lraHistogramm[(std::size_t) bin];
+                    ++lraGezaehlt;
+                }
+            }
+        }
 
         const double aktivMittel = zelleAktivEnergie / (double) zellenSamples;
         if (aktivMittel > 0.0 && 10.0 * std::log10 (aktivMittel) > kAktivGateDb)
             ++rahmenAktivZellen;
         ++rahmenZellen;
+    }
+
+    /** Binindex eines Kurzzeitwertes im LRA-Histogramm, oder -1, wenn er
+        ausserhalb des Rasters liegt.  Ein Wert ueber +30 LUFS ist jenseits
+        jeder Musik und faellt lieber heraus, als das Raster zu sprengen. */
+    static int lraBin (double lufs) noexcept
+    {
+        if (! std::isfinite (lufs))
+            return -1;
+        const int b = (int) std::floor ((lufs - kLraBinUnten) / kLraBinBreite);
+        return (b >= 0 && b < kLraBins) ? b : -1;
     }
 
     /** LUFS-S = −0,691 + 10·log10(Σ Zellenergie / n) ueber die letzten 3 s.
@@ -1906,6 +2125,141 @@ private:
             return false;
         heraus = -0.691 + 10.0 * std::log10 (mittel);
         return std::isfinite (heraus);
+    }
+
+    /** LUFS-M = dieselbe Formel ueber die letzten 400 ms (M-01, §39.1).
+
+        Nur bei mindestens `kMomentZellen` gefuellten Zellen — aus demselben
+        Grund wie bei `kurzLufs`: eine Momentanlautheit ueber 200 ms ist keine
+        Momentanlautheit, sie ist eine andere Zahl mit demselben Namen. */
+    bool momentanLufs (double& heraus) const noexcept
+    {
+        if (kurzGefuellt < kMomentZellen)
+            return false;
+        double summe = 0.0;
+        for (int i = 0; i < kMomentZellen; ++i)
+        {
+            const int idx = (kurzStand - 1 - i + kKurzZellen * 2) % kKurzZellen;
+            summe += kurzZellen[(std::size_t) idx];
+        }
+        const double mittel = summe / (double) kMomentZellen;
+        if (! (mittel > 0.0))
+            return false;
+        heraus = -0.691 + 10.0 * std::log10 (mittel);
+        return std::isfinite (heraus);
+    }
+
+    /** True-Peak-Maximum DESSELBEN 3-s-Fensters, gegen das `kurzLufs` rechnet
+        (M-03).  Linear, wie der Detektor selbst liefert. */
+    bool kurzTruePeak (double& heraus) const noexcept
+    {
+        if (kurzGefuellt < kKurzZellen)
+            return false;
+        double groesster = 0.0;
+        for (int i = 0; i < kKurzZellen; ++i)
+            groesster = std::max (groesster, kurzTpZellen[(std::size_t) i]);
+        heraus = groesster;
+        return groesster > 0.0;
+    }
+
+    /** Crest ueber das 3-s-Fenster: True-Peak-Maximum gegen die ungewichtete
+        RMS desselben Fensters (M-04, "Crest-Faktor in MEHREREN Fenstern
+        statt nur als globales Maximum").
+
+        Das zweite Fenster neben dem 100-ms-Rahmen in `fuelleSkalare`.  Beide
+        reisen, weil ein Signal mit dichten kleinen Spitzen im Rahmen einen
+        hohen und ueber 3 s einen niedrigen Crest hat — und umgekehrt eine
+        einzelne Spitze in ruhigem Material genau andersherum. */
+    bool crestKurz (double& heraus) const noexcept
+    {
+        double tpMax = 0.0;
+        if (! kurzTruePeak (tpMax) || tpMax <= 0.0)
+            return false;
+        double summe = 0.0;
+        for (int i = 0; i < kKurzZellen; ++i)
+            summe += kurzRmsZellen[(std::size_t) i];
+        const double rms = std::sqrt (summe / (double) kKurzZellen);
+        if (! (rms > 0.0))
+            return false;
+        heraus = 20.0 * std::log10 (tpMax) - 20.0 * std::log10 (rms);
+        return std::isfinite (heraus);
+    }
+
+    /** LRA nach EBU Tech 3342 (M-04).
+
+        Reihenfolge, und jeder Schritt ist eine eigene Bedingung, die allein
+        fallen kann:
+        1. mindestens `kLraMindestSekunden` GEGATETE Kurzzeitwerte — sonst
+           `false`, also KEIN Wert.  §39.1 woertlich: "vorher `nicht
+           belastbar`".  Eine 0 waere hier eine Dynamikaussage, die niemand
+           gemessen hat;
+        2. gegatetes Mittel ueber die absolut gegatete Verteilung bilden;
+        3. relatives Gate bei -20 LU darunter anlegen;
+        4. LRA = P95 - P10 der so gegateten Restverteilung.
+
+        ⚠️ Das relative Gate ist -20 LU, NICHT die -10 LU der integrierten
+        Lautheit.  Die zwei Zahlen gehoeren zu zwei verschiedenen Normen
+        (BS.1770 gegen Tech 3342); sie zu vertauschen ergibt eine Zahl, die
+        plausibel aussieht und um mehrere LU falsch ist. */
+    bool lraLu (double& heraus) const noexcept
+    {
+        // Ein gegateter Kurzzeitwert je `kLraHopZellen` Zellen, also je
+        // `kLraHopZellen * kZelleSekunden` Sekunden.
+        const double sekundenJeWert = kZelleSekunden * (double) kLraHopZellen;
+        if ((double) lraGezaehlt * sekundenJeWert < kLraMindestSekunden)
+            return false;
+        if (lraHistogramm.size() != (std::size_t) kLraBins)
+            return false;
+
+        // Schritt 2: energetisches Mittel ueber die absolut gegateten Werte.
+        double summeZ = 0.0;
+        std::uint64_t n = 0;
+        for (int b = 0; b < kLraBins; ++b)
+        {
+            const auto c = lraHistogramm[(std::size_t) b];
+            if (c == 0u) continue;
+            summeZ += (double) c * std::pow (10.0, (lraBinMitte (b) + 0.691) / 10.0);
+            n += c;
+        }
+        if (n == 0u || ! (summeZ > 0.0))
+            return false;
+        const double mittelLufs = -0.691 + 10.0 * std::log10 (summeZ / (double) n);
+        const double relGate = mittelLufs + kLraRelGateLu;
+
+        // Schritt 3 und 4: Restverteilung und ihre zwei Perzentile.
+        std::uint64_t gesamt = 0;
+        for (int b = 0; b < kLraBins; ++b)
+            if (lraBinMitte (b) >= relGate)
+                gesamt += lraHistogramm[(std::size_t) b];
+        if (gesamt == 0u)
+            return false;
+
+        const double p10 = lraPerzentil (relGate, gesamt, 0.10);
+        const double p95 = lraPerzentil (relGate, gesamt, 0.95);
+        heraus = p95 - p10;
+        return std::isfinite (heraus) && heraus >= 0.0;
+    }
+
+    static constexpr double lraBinMitte (int b) noexcept
+    {
+        return kLraBinUnten + ((double) b + 0.5) * kLraBinBreite;
+    }
+
+    /** Perzentil der relativ gegateten LRA-Verteilung.  Kumulativ ueber die
+        Bins von unten; der erste Bin, der den Anteil erreicht, gewinnt. */
+    double lraPerzentil (double relGate, std::uint64_t gesamt, double anteil) const noexcept
+    {
+        const double ziel = anteil * (double) gesamt;
+        double lauf = 0.0;
+        for (int b = 0; b < kLraBins; ++b)
+        {
+            const double mitte = lraBinMitte (b);
+            if (mitte < relGate) continue;
+            lauf += (double) lraHistogramm[(std::size_t) b];
+            if (lauf >= ziel)
+                return mitte;
+        }
+        return lraBinMitte (kLraBins - 1);
     }
 
     //== Frame bauen ==========================================================
@@ -1971,6 +2325,16 @@ private:
             f.evidenz.leeren();
         }
 
+        // SONDE-013 M-02/M-03: das Passagenmaximum und die Headroomverteilung
+        // wachsen um GENAU DIESEN Rahmen, bevor die Skalare sie lesen — sonst
+        // fehlte dem Frame sein eigener Beitrag und die Verteilung liefe dem
+        // Wert daneben um einen Rahmen hinterher.
+        if (rahmenTruePeak > 0.0 && ! headroomRing.empty())
+        {
+            passageTruePeak = std::max (passageTruePeak, rahmenTruePeak);
+            headroomRing[0].schiebe ((float) (20.0 * std::log10 (rahmenTruePeak)));
+        }
+
         fuelleSkalare (f);
 
         f.transport.sequence = versuch.sequence;
@@ -2006,6 +2370,10 @@ private:
         liveSupport = {};
         liveSamples = 0;
         rahmenPeak = 0.0;
+        // SONDE-013 M-02: das RAHMEN-Maximum faellt mit dem Rahmen, das
+        // PASSAGEN-Maximum nicht — sonst waere PLR eine Aussage ueber 100 ms
+        // und nicht ueber die Passage (§39.1).
+        rahmenTruePeak = 0.0;
         rahmenSummeQuadrat = 0.0;
         rahmenSamples = 0;
         rahmenStartBlock = {};
@@ -2386,6 +2754,24 @@ private:
             f.lufsSGesetzt = true;
             f.lufsS = (float) lufs;
         }
+        // SONDE-013 M-01: Momentary NEBEN Short-term, nicht statt seiner.
+        double lufsMoment = 0.0;
+        if (momentanLufs (lufsMoment))
+        {
+            f.lufsMGesetzt = true;
+            f.lufsM = (float) lufsMoment;
+        }
+        // SONDE-013 M-09 (NAK-68): ueber wie viel Audio DIESER Rahmen
+        // integriert wurde.  Das Feld ist die ganze Antwort auf "leise oder
+        // kurz gemessen?" — ohne es sehen die Skalare darunter nach einer
+        // Grenze aus wie im Dauerbetrieb.  0 waere ein Senderfehler (beide
+        // Leser lehnen ihn ab), also traegt ein Rahmen ohne Samples KEIN Bit.
+        if (rahmenSamples > 0)
+        {
+            f.integrationGesetzt = true;
+            f.integrationSamples = (std::uint32_t) std::min<std::uint64_t> (
+                rahmenSamples, (std::uint64_t) std::numeric_limits<std::uint32_t>::max());
+        }
         if (rahmenSamples > 0 && rahmenPeak > 0.0)
         {
             const double peakDb = 20.0 * std::log10 (rahmenPeak);
@@ -2398,17 +2784,63 @@ private:
                 f.crestGesetzt = true;
                 f.crestDb = (float) (peakDb - 20.0 * std::log10 (rms));
             }
-            if (f.lufsSGesetzt)
-            {
-                // PSR(3 s) = True-Peak-Maximum desselben 3-s-Fensters minus
-                // LUFS-S (§39.1).  Hier steht der SAMPLE-Peak des Rahmens, nicht
-                // der True Peak — das ist eine schwaechere Zahl, und sie heisst
-                // deshalb im Frame `psrDb` mit demselben Vorbehalt, den §39.1
-                // fuer PLR/PSR ohnehin macht: ergaenzende Produktmetrik, kein
-                // EBU-Qualitaetsurteil.
-                f.psrGesetzt = true;
-                f.psrDb = (float) (peakDb - (double) f.lufsS);
-            }
+        }
+        // SONDE-013 M-02: der True Peak des Rahmens.  Er steht NEBEN `peakDb`
+        // und ersetzt ihn nicht: der Sample-Peak ist die Zahl, die ein Host
+        // anzeigt, der True Peak die, an der ein Encoder clippt.  Wer sie
+        // zusammenlegte, verloere genau die Differenz, um die es geht.
+        // `rahmenTruePeak` schliesst den Abtastpunkt bereits ein — siehe die
+        // Begruendung an seiner einzigen Schreibstelle in
+        // `verarbeiteSamples`.
+        if (rahmenTruePeak > 0.0)
+        {
+            f.truePeakGesetzt = true;
+            f.truePeakDb = (float) (20.0 * std::log10 (rahmenTruePeak));
+        }
+        if (passageTruePeak > 0.0)
+        {
+            f.truePeakPassageGesetzt = true;
+            f.truePeakPassageDb = (float) (20.0 * std::log10 (passageTruePeak));
+        }
+        // SONDE-013 M-03: PSR(3 s) = True-Peak-Maximum DESSELBEN 3-s-Fensters
+        // minus LUFS-S (§39.1).  Bis zu diesem Ticket rechnete das Feld gegen
+        // den Sample-Peak des 100-ms-Rahmens — zwei verschiedene Fenster und
+        // die schwaechere der zwei Peakzahlen.  Beides ist jetzt behoben; das
+        // Bit faellt weg, solange das 3-s-Fenster nicht steht, statt eine
+        // kuerzere Rechnung unter demselben Namen zu liefern.
+        double tpKurz = 0.0;
+        if (f.lufsSGesetzt && kurzTruePeak (tpKurz) && tpKurz > 0.0)
+        {
+            f.psrGesetzt = true;
+            f.psrDb = (float) (20.0 * std::log10 (tpKurz) - (double) f.lufsS);
+        }
+        // SONDE-013 M-04: das zweite Crestfenster.
+        double crest3s = 0.0;
+        if (crestKurz (crest3s))
+        {
+            f.crestKurzGesetzt = true;
+            f.crestKurzDb = (float) crest3s;
+        }
+        // SONDE-013 M-04: LRA erst ab rund 60 s geeignetem Material.
+        double lra = 0.0;
+        if (lraLu (lra))
+        {
+            f.lraGesetzt = true;
+            f.lraLu = (float) lra;
+        }
+        // SONDE-013 M-03: Headroom als Verteilung.  Vier Rahmen sind die
+        // Untergrenze, unter der P10 und P95 derselbe Wert waeren — dieselbe
+        // Schwelle wie bei der Bandkonvergenz nebenan.
+        if (! headroomRing.empty() && headroomRing[0].gefuellt >= 4)
+        {
+            float sortiert[kVerteilungPlaetze];
+            const int n = ringInZeitfolge (headroomRing[0], sortiert);
+            std::sort (sortiert, sortiert + n);
+            f.headroomGesetzt = true;
+            f.headroomP10Db = (float) perzentil (sortiert, n, 0.10);
+            f.headroomP50Db = (float) perzentil (sortiert, n, 0.50);
+            f.headroomP95Db = (float) perzentil (sortiert, n, 0.95);
+            f.headroomFenster = (std::uint32_t) n;
         }
         if (rahmenSamples > 0)
         {
@@ -2477,6 +2909,43 @@ private:
     double zelleKEnergie { 0.0 }, zelleAktivEnergie { 0.0 };
     std::vector<double> kurzZellen;
     int    kurzStand { 0 }, kurzGefuellt { 0 };
+
+    // SONDE-013 M-02 bis M-04: True Peak, das zweite und dritte Loudnessfenster
+    // und die zwei Headroomgroessen.
+    TruePeakDetektor tp;
+    /// True-Peak-Maximum je Zelle, Ring wie `kurzZellen`; daraus wird das
+    /// Maximum des 3-s-Fensters fuer PSR.
+    std::vector<double> kurzTpZellen;
+    /// Ungewichtete mittlere Energie je Zelle — die RMS-Haelfte des
+    /// Crest-Faktors ueber 3 s.
+    std::vector<double> kurzRmsZellen;
+    double zelleTruePeak { 0.0 }, zelleRmsEnergie { 0.0 };
+    /// Maximum ueber den laufenden 100-ms-Rahmen und ueber die Passage.
+    ///
+    /// Die "Passage" ist hier der Abschnitt seit der letzten GRENZE, nicht
+    /// seit dem letzten `zuruecksetzen()`: §32.4 bindet eine Passage an
+    /// genau eine Transportepoche, und G13 misst, dass kein Traeger des
+    /// Frames eine Grenze ueberbrueckt. Ein Passageobjekt gibt es in P4 noch
+    /// nicht (das ist Etappe E); bis dahin ist die Epochengrenze die
+    /// einzige belegbare Passagengrenze.
+    double rahmenTruePeak { 0.0 }, passageTruePeak { 0.0 };
+    /// LRA: Histogramm der gegateten Kurzzeitwerte plus der Zaehler, der die
+    /// 60-s-Regel traegt. `lraZellenSeitHop` erzeugt den 1-s-Hop. Beide
+    /// fallen an jeder Grenze — siehe `grenzeZiehen()`.
+    std::vector<std::uint32_t> lraHistogramm;
+    std::uint64_t lraGezaehlt { 0 };
+    int           lraZellenSeitHop { 0 };
+    /// Headroomverteilung: ein Ring der Rahmen-True-Peaks in dB.  Er teilt
+    /// die Laenge `kVerteilungPlaetze` mit den Bandringen — dieselbe
+    /// Ressourcengrenze, deshalb bewusst KEINE zweite Konstante, die davon
+    /// abdriften koennte.
+    ///
+    /// Er liegt im HEAP, mit genau einem Element, aus demselben gemessenen
+    /// Grund wie `evidenzVerteilung` daneben: B5 haelt zwanzig Engines
+    /// gleichzeitig auf dem Stack, und dort summieren sich auch 264 Byte je
+    /// Instanz zu einem `STATUS_STACK_OVERFLOW` (Manifest §10.2, Befund 1 —
+    /// und ein zweites Mal beim Bau der Etappe C).
+    std::vector<VerteilungsRing> headroomRing;
 
     // Rahmen (zwischen zwei Live-Frames)
     double rahmenPeak { 0.0 }, rahmenSummeQuadrat { 0.0 };

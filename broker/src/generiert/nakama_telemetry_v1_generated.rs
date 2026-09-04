@@ -1446,6 +1446,169 @@ impl ::core::fmt::Debug for Bandwerte<'_> {
       ds.finish()
   }
 }
+pub enum HeadroomverteilungOffset {}
+#[derive(Copy, Clone, PartialEq)]
+
+/// Headroom als Verteilung ueber die Rahmen der Passage (SONDE-013 M-03).
+///
+/// §39.2 woertlich: "Headroom wird in dBTP und als Verteilung ueber die
+/// Passage dargestellt. Ein Peak darf nicht als Problem gelten, nur weil er
+/// hoch ist." Ein einzelner Maximalwert kann diesen Satz nicht ausdruecken —
+/// er sagt nicht, ob die Spitze einmal oder in jedem zweiten Rahmen vorkam.
+/// Drei Punkte koennen es: eine einzelne Spitze hebt p95 und laesst p50
+/// stehen, ein durchgehend heisser Master hebt beide.
+///
+/// `fenster` ist die Zahl der WIRKLICH eingegangenen Rahmen. Dieselbe
+/// Ehrlichkeit wie `integration_samples` bei den Skalaren: ein Perzentil
+/// ueber vier Rahmen sieht aus wie eines ueber vierundsechzig.
+///
+/// Alle vier Felder sind Pflicht, weil die Tabelle als GANZES optional ist:
+/// entweder es gibt eine Verteilung, oder es gibt sie nicht. Eine halbe
+/// waere ein Zustand, den kein Empfaenger deuten kann.
+pub struct Headroomverteilung<'a> {
+  pub _tab: ::flatbuffers::Table<'a>,
+}
+
+impl<'a> ::flatbuffers::Follow<'a> for Headroomverteilung<'a> {
+  type Inner = Headroomverteilung<'a>;
+  #[inline]
+  unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
+    Self { _tab: unsafe { ::flatbuffers::Table::new(buf, loc) } }
+  }
+}
+
+impl<'a> Headroomverteilung<'a> {
+  pub const VT_P10_DB: ::flatbuffers::VOffsetT = 4;
+  pub const VT_P50_DB: ::flatbuffers::VOffsetT = 6;
+  pub const VT_P95_DB: ::flatbuffers::VOffsetT = 8;
+  pub const VT_FENSTER: ::flatbuffers::VOffsetT = 10;
+
+  #[inline]
+  pub unsafe fn init_from_table(table: ::flatbuffers::Table<'a>) -> Self {
+    Headroomverteilung { _tab: table }
+  }
+  #[allow(unused_mut)]
+  pub fn create<'bldr: 'args, 'args: 'mut_bldr, 'mut_bldr, A: ::flatbuffers::Allocator + 'bldr>(
+    _fbb: &'mut_bldr mut ::flatbuffers::FlatBufferBuilder<'bldr, A>,
+    args: &'args HeadroomverteilungArgs
+  ) -> ::flatbuffers::WIPOffset<Headroomverteilung<'bldr>> {
+    let mut builder = HeadroomverteilungBuilder::new(_fbb);
+    builder.add_fenster(args.fenster);
+    builder.add_p95_db(args.p95_db);
+    builder.add_p50_db(args.p50_db);
+    builder.add_p10_db(args.p10_db);
+    builder.finish()
+  }
+
+
+  #[inline]
+  pub fn p10_db(&self) -> f32 {
+    // Safety:
+    // Created from valid Table for this object
+    // which contains a valid value in this slot
+    unsafe { self._tab.get::<f32>(Headroomverteilung::VT_P10_DB, Some(0.0)).unwrap()}
+  }
+  #[inline]
+  pub fn p50_db(&self) -> f32 {
+    // Safety:
+    // Created from valid Table for this object
+    // which contains a valid value in this slot
+    unsafe { self._tab.get::<f32>(Headroomverteilung::VT_P50_DB, Some(0.0)).unwrap()}
+  }
+  #[inline]
+  pub fn p95_db(&self) -> f32 {
+    // Safety:
+    // Created from valid Table for this object
+    // which contains a valid value in this slot
+    unsafe { self._tab.get::<f32>(Headroomverteilung::VT_P95_DB, Some(0.0)).unwrap()}
+  }
+  #[inline]
+  pub fn fenster(&self) -> u32 {
+    // Safety:
+    // Created from valid Table for this object
+    // which contains a valid value in this slot
+    unsafe { self._tab.get::<u32>(Headroomverteilung::VT_FENSTER, Some(0)).unwrap()}
+  }
+}
+
+impl ::flatbuffers::Verifiable for Headroomverteilung<'_> {
+  #[inline]
+  fn run_verifier(
+    v: &mut ::flatbuffers::Verifier, pos: usize
+  ) -> Result<(), ::flatbuffers::InvalidFlatbuffer> {
+    v.visit_table(pos)?
+     .visit_field::<f32>("p10_db", Self::VT_P10_DB, false)?
+     .visit_field::<f32>("p50_db", Self::VT_P50_DB, false)?
+     .visit_field::<f32>("p95_db", Self::VT_P95_DB, false)?
+     .visit_field::<u32>("fenster", Self::VT_FENSTER, false)?
+     .finish();
+    Ok(())
+  }
+}
+pub struct HeadroomverteilungArgs {
+    pub p10_db: f32,
+    pub p50_db: f32,
+    pub p95_db: f32,
+    pub fenster: u32,
+}
+impl<'a> Default for HeadroomverteilungArgs {
+  #[inline]
+  fn default() -> Self {
+    HeadroomverteilungArgs {
+      p10_db: 0.0,
+      p50_db: 0.0,
+      p95_db: 0.0,
+      fenster: 0,
+    }
+  }
+}
+
+pub struct HeadroomverteilungBuilder<'a: 'b, 'b, A: ::flatbuffers::Allocator + 'a> {
+  fbb_: &'b mut ::flatbuffers::FlatBufferBuilder<'a, A>,
+  start_: ::flatbuffers::WIPOffset<::flatbuffers::TableUnfinishedWIPOffset>,
+}
+impl<'a: 'b, 'b, A: ::flatbuffers::Allocator + 'a> HeadroomverteilungBuilder<'a, 'b, A> {
+  #[inline]
+  pub fn add_p10_db(&mut self, p10_db: f32) {
+    self.fbb_.push_slot::<f32>(Headroomverteilung::VT_P10_DB, p10_db, 0.0);
+  }
+  #[inline]
+  pub fn add_p50_db(&mut self, p50_db: f32) {
+    self.fbb_.push_slot::<f32>(Headroomverteilung::VT_P50_DB, p50_db, 0.0);
+  }
+  #[inline]
+  pub fn add_p95_db(&mut self, p95_db: f32) {
+    self.fbb_.push_slot::<f32>(Headroomverteilung::VT_P95_DB, p95_db, 0.0);
+  }
+  #[inline]
+  pub fn add_fenster(&mut self, fenster: u32) {
+    self.fbb_.push_slot::<u32>(Headroomverteilung::VT_FENSTER, fenster, 0);
+  }
+  #[inline]
+  pub fn new(_fbb: &'b mut ::flatbuffers::FlatBufferBuilder<'a, A>) -> HeadroomverteilungBuilder<'a, 'b, A> {
+    let start = _fbb.start_table();
+    HeadroomverteilungBuilder {
+      fbb_: _fbb,
+      start_: start,
+    }
+  }
+  #[inline]
+  pub fn finish(self) -> ::flatbuffers::WIPOffset<Headroomverteilung<'a>> {
+    let o = self.fbb_.end_table(self.start_);
+    ::flatbuffers::WIPOffset::new(o.value())
+  }
+}
+
+impl ::core::fmt::Debug for Headroomverteilung<'_> {
+  fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+    let mut ds = f.debug_struct("Headroomverteilung");
+      ds.field("p10_db", &self.p10_db());
+      ds.field("p50_db", &self.p50_db());
+      ds.field("p95_db", &self.p95_db());
+      ds.field("fenster", &self.fenster());
+      ds.finish()
+  }
+}
 pub enum FrameOffset {}
 #[derive(Copy, Clone, PartialEq)]
 
@@ -1485,6 +1648,13 @@ impl<'a> Frame<'a> {
   pub const VT_LUFS_I_UNSICHERHEIT_LU: ::flatbuffers::VOffsetT = 28;
   pub const VT_LUFS_I_STATUS: ::flatbuffers::VOffsetT = 30;
   pub const VT_INTEGRATION_SAMPLES: ::flatbuffers::VOffsetT = 32;
+  pub const VT_LUFS_M: ::flatbuffers::VOffsetT = 34;
+  pub const VT_TRUE_PEAK_DB: ::flatbuffers::VOffsetT = 36;
+  pub const VT_TRUE_PEAK_PASSAGE_DB: ::flatbuffers::VOffsetT = 38;
+  pub const VT_PLR_DB: ::flatbuffers::VOffsetT = 40;
+  pub const VT_LRA_LU: ::flatbuffers::VOffsetT = 42;
+  pub const VT_CREST_KURZ_DB: ::flatbuffers::VOffsetT = 44;
+  pub const VT_HEADROOM: ::flatbuffers::VOffsetT = 46;
 
   #[inline]
   pub unsafe fn init_from_table(table: ::flatbuffers::Table<'a>) -> Self {
@@ -1496,6 +1666,13 @@ impl<'a> Frame<'a> {
     args: &'args FrameArgs<'args>
   ) -> ::flatbuffers::WIPOffset<Frame<'bldr>> {
     let mut builder = FrameBuilder::new(_fbb);
+    if let Some(x) = args.headroom { builder.add_headroom(x); }
+    if let Some(x) = args.crest_kurz_db { builder.add_crest_kurz_db(x); }
+    if let Some(x) = args.lra_lu { builder.add_lra_lu(x); }
+    if let Some(x) = args.plr_db { builder.add_plr_db(x); }
+    if let Some(x) = args.true_peak_passage_db { builder.add_true_peak_passage_db(x); }
+    if let Some(x) = args.true_peak_db { builder.add_true_peak_db(x); }
+    if let Some(x) = args.lufs_m { builder.add_lufs_m(x); }
     if let Some(x) = args.integration_samples { builder.add_integration_samples(x); }
     if let Some(x) = args.lufs_i_unsicherheit_lu { builder.add_lufs_i_unsicherheit_lu(x); }
     if let Some(x) = args.lufs_i { builder.add_lufs_i(x); }
@@ -1641,6 +1818,91 @@ impl<'a> Frame<'a> {
     // which contains a valid value in this slot
     unsafe { self._tab.get::<u32>(Frame::VT_INTEGRATION_SAMPLES, None)}
   }
+  /// Momentary Loudness ueber 400 ms (SONDE-013 M-01, §39.1, BS.1770-5).
+  ///
+  /// Er steht NEBEN `lufs_s` (3 s) und `lufs_i`, nicht statt eines von
+  /// beiden: die drei Fenster beantworten drei verschiedene Fragen, und
+  /// keiner der drei Werte laesst sich aus den anderen rechnen.
+  #[inline]
+  pub fn lufs_m(&self) -> Option<f32> {
+    // Safety:
+    // Created from valid Table for this object
+    // which contains a valid value in this slot
+    unsafe { self._tab.get::<f32>(Frame::VT_LUFS_M, None)}
+  }
+  /// True Peak dieses Rahmens in dBTP (SONDE-013 M-02, §39.1).
+  ///
+  /// NICHT dasselbe wie `peak_db`: der Sample-Peak ist der groesste
+  /// Abtastwert, der True Peak der groesste Wert der Wellenform DAZWISCHEN.
+  /// Bei einem Sinus mit fs/4 und 45 Grad Phase liegen 3,01 dB zwischen den
+  /// beiden (EBU Tech 3341, Testfall 16). Beide reisen, weil ein Host den
+  /// einen anzeigt und ein Encoder am anderen clippt.
+  #[inline]
+  pub fn true_peak_db(&self) -> Option<f32> {
+    // Safety:
+    // Created from valid Table for this object
+    // which contains a valid value in this slot
+    unsafe { self._tab.get::<f32>(Frame::VT_TRUE_PEAK_DB, None)}
+  }
+  /// Groesster True Peak seit dem Beginn der laufenden Passage, in dBTP.
+  ///
+  /// Die Zutat von `plr_db` und fuer sich schon die Headroomfrage aus §39.2
+  /// ("wie nah war die lauteste Stelle an Vollaussteuerung"). Sie reist
+  /// getrennt, weil `lufs_i` fehlen darf — ohne sie waere mit dem Paar auch
+  /// die Headroomaussage weg.
+  #[inline]
+  pub fn true_peak_passage_db(&self) -> Option<f32> {
+    // Safety:
+    // Created from valid Table for this object
+    // which contains a valid value in this slot
+    unsafe { self._tab.get::<f32>(Frame::VT_TRUE_PEAK_PASSAGE_DB, None)}
+  }
+  /// PLR = Passage-True-Peak-Maximum minus LUFS-I (SONDE-013 M-03, §39.1).
+  ///
+  /// Ergaenzende Produktmetrik, ausdruecklich KEIN EBU-Qualitaetsurteil
+  /// (§39.1 woertlich). Praesent nur, wenn das integrierte Lautheitspaar
+  /// praesent ist — sonst fehlte der Bezugspunkt, und eine Zahl gegen einen
+  /// unbekannten Bezug ist keine Messung.
+  #[inline]
+  pub fn plr_db(&self) -> Option<f32> {
+    // Safety:
+    // Created from valid Table for this object
+    // which contains a valid value in this slot
+    unsafe { self._tab.get::<f32>(Frame::VT_PLR_DB, None)}
+  }
+  /// Loudness Range in LU nach EBU Tech 3342 (SONDE-013 M-04).
+  ///
+  /// Abwesenheit heisst hier ausdruecklich `nicht belastbar`: LRA gilt erst
+  /// nach rund 60 s GEEIGNETEM, also gegatetem Material (§39.1). Eine 0 vor
+  /// dieser Schwelle waere eine Dynamikaussage, die niemand gemessen hat.
+  #[inline]
+  pub fn lra_lu(&self) -> Option<f32> {
+    // Safety:
+    // Created from valid Table for this object
+    // which contains a valid value in this slot
+    unsafe { self._tab.get::<f32>(Frame::VT_LRA_LU, None)}
+  }
+  /// Crest-Faktor ueber das 3-s-Fenster in dB (SONDE-013 M-04).
+  ///
+  /// Das zweite Fenster neben `crest_db` (100-ms-Rahmen). §39.1 verlangt den
+  /// Crest "in mehreren Fenstern statt nur als globales Maximum" — dichte
+  /// kleine Spitzen und eine einzelne grosse sehen im Rahmen gleich aus und
+  /// ueber drei Sekunden verschieden.
+  #[inline]
+  pub fn crest_kurz_db(&self) -> Option<f32> {
+    // Safety:
+    // Created from valid Table for this object
+    // which contains a valid value in this slot
+    unsafe { self._tab.get::<f32>(Frame::VT_CREST_KURZ_DB, None)}
+  }
+  /// Headroom als VERTEILUNG ueber die Rahmen der Passage (SONDE-013 M-03).
+  #[inline]
+  pub fn headroom(&self) -> Option<Headroomverteilung<'a>> {
+    // Safety:
+    // Created from valid Table for this object
+    // which contains a valid value in this slot
+    unsafe { self._tab.get::<::flatbuffers::ForwardsUOffset<Headroomverteilung>>(Frame::VT_HEADROOM, None)}
+  }
 }
 
 impl ::flatbuffers::Verifiable for Frame<'_> {
@@ -1664,6 +1926,13 @@ impl ::flatbuffers::Verifiable for Frame<'_> {
      .visit_field::<f32>("lufs_i_unsicherheit_lu", Self::VT_LUFS_I_UNSICHERHEIT_LU, false)?
      .visit_field::<u8>("lufs_i_status", Self::VT_LUFS_I_STATUS, false)?
      .visit_field::<u32>("integration_samples", Self::VT_INTEGRATION_SAMPLES, false)?
+     .visit_field::<f32>("lufs_m", Self::VT_LUFS_M, false)?
+     .visit_field::<f32>("true_peak_db", Self::VT_TRUE_PEAK_DB, false)?
+     .visit_field::<f32>("true_peak_passage_db", Self::VT_TRUE_PEAK_PASSAGE_DB, false)?
+     .visit_field::<f32>("plr_db", Self::VT_PLR_DB, false)?
+     .visit_field::<f32>("lra_lu", Self::VT_LRA_LU, false)?
+     .visit_field::<f32>("crest_kurz_db", Self::VT_CREST_KURZ_DB, false)?
+     .visit_field::<::flatbuffers::ForwardsUOffset<Headroomverteilung>>("headroom", Self::VT_HEADROOM, false)?
      .finish();
     Ok(())
   }
@@ -1684,6 +1953,13 @@ pub struct FrameArgs<'a> {
     pub lufs_i_unsicherheit_lu: Option<f32>,
     pub lufs_i_status: Option<u8>,
     pub integration_samples: Option<u32>,
+    pub lufs_m: Option<f32>,
+    pub true_peak_db: Option<f32>,
+    pub true_peak_passage_db: Option<f32>,
+    pub plr_db: Option<f32>,
+    pub lra_lu: Option<f32>,
+    pub crest_kurz_db: Option<f32>,
+    pub headroom: Option<::flatbuffers::WIPOffset<Headroomverteilung<'a>>>,
 }
 impl<'a> Default for FrameArgs<'a> {
   #[inline]
@@ -1704,6 +1980,13 @@ impl<'a> Default for FrameArgs<'a> {
       lufs_i_unsicherheit_lu: None,
       lufs_i_status: None,
       integration_samples: None,
+      lufs_m: None,
+      true_peak_db: None,
+      true_peak_passage_db: None,
+      plr_db: None,
+      lra_lu: None,
+      crest_kurz_db: None,
+      headroom: None,
     }
   }
 }
@@ -1774,6 +2057,34 @@ impl<'a: 'b, 'b, A: ::flatbuffers::Allocator + 'a> FrameBuilder<'a, 'b, A> {
     self.fbb_.push_slot_always::<u32>(Frame::VT_INTEGRATION_SAMPLES, integration_samples);
   }
   #[inline]
+  pub fn add_lufs_m(&mut self, lufs_m: f32) {
+    self.fbb_.push_slot_always::<f32>(Frame::VT_LUFS_M, lufs_m);
+  }
+  #[inline]
+  pub fn add_true_peak_db(&mut self, true_peak_db: f32) {
+    self.fbb_.push_slot_always::<f32>(Frame::VT_TRUE_PEAK_DB, true_peak_db);
+  }
+  #[inline]
+  pub fn add_true_peak_passage_db(&mut self, true_peak_passage_db: f32) {
+    self.fbb_.push_slot_always::<f32>(Frame::VT_TRUE_PEAK_PASSAGE_DB, true_peak_passage_db);
+  }
+  #[inline]
+  pub fn add_plr_db(&mut self, plr_db: f32) {
+    self.fbb_.push_slot_always::<f32>(Frame::VT_PLR_DB, plr_db);
+  }
+  #[inline]
+  pub fn add_lra_lu(&mut self, lra_lu: f32) {
+    self.fbb_.push_slot_always::<f32>(Frame::VT_LRA_LU, lra_lu);
+  }
+  #[inline]
+  pub fn add_crest_kurz_db(&mut self, crest_kurz_db: f32) {
+    self.fbb_.push_slot_always::<f32>(Frame::VT_CREST_KURZ_DB, crest_kurz_db);
+  }
+  #[inline]
+  pub fn add_headroom(&mut self, headroom: ::flatbuffers::WIPOffset<Headroomverteilung<'b >>) {
+    self.fbb_.push_slot_always::<::flatbuffers::WIPOffset<Headroomverteilung>>(Frame::VT_HEADROOM, headroom);
+  }
+  #[inline]
   pub fn new(_fbb: &'b mut ::flatbuffers::FlatBufferBuilder<'a, A>) -> FrameBuilder<'a, 'b, A> {
     let start = _fbb.start_table();
     FrameBuilder {
@@ -1808,6 +2119,13 @@ impl ::core::fmt::Debug for Frame<'_> {
       ds.field("lufs_i_unsicherheit_lu", &self.lufs_i_unsicherheit_lu());
       ds.field("lufs_i_status", &self.lufs_i_status());
       ds.field("integration_samples", &self.integration_samples());
+      ds.field("lufs_m", &self.lufs_m());
+      ds.field("true_peak_db", &self.true_peak_db());
+      ds.field("true_peak_passage_db", &self.true_peak_passage_db());
+      ds.field("plr_db", &self.plr_db());
+      ds.field("lra_lu", &self.lra_lu());
+      ds.field("crest_kurz_db", &self.crest_kurz_db());
+      ds.field("headroom", &self.headroom());
       ds.finish()
   }
 }

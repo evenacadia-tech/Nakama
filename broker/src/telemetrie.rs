@@ -222,6 +222,10 @@ fn strukturriegel(batch: &fb::FeatureBatch) -> bool {
         if !offset_nicht_null(&f._tab, fb::Frame::VT_TRANSPORT)
             || !offset_nicht_null(&f._tab, fb::Frame::VT_BAENDER)
             || !offset_nicht_null(&f._tab, fb::Frame::VT_BAND_STEREO)
+            // SONDE-013 M-03: `headroom` ist das dritte Offsetfeld des Frames.
+            // `Headroomverteilung` trägt selbst nur Skalare — hier endet der
+            // Ast, wie bei `AbgeleiteteGrenzen` weiter unten.
+            || !offset_nicht_null(&f._tab, fb::Frame::VT_HEADROOM)
         {
             return false;
         }
@@ -537,6 +541,16 @@ fn pruefe_frame(f: &fb::Frame, p: &str, out: &mut Vec<Verstoss>) {
         ("korrelation", f.korrelation()),
         ("lufs_i", f.lufs_i()),
         ("lufs_i_unsicherheit_lu", f.lufs_i_unsicherheit_lu()),
+        // SONDE-013 M-07: jede NEUE Metrik erbt denselben NaN-Riegel. Sie
+        // stehen in derselben Liste und nicht in einer zweiten daneben —
+        // eine zweite Liste waere der Ort, an dem ein spaeteres Feld
+        // vergessen wird.
+        ("lufs_m", f.lufs_m()),
+        ("true_peak_db", f.true_peak_db()),
+        ("true_peak_passage_db", f.true_peak_passage_db()),
+        ("plr_db", f.plr_db()),
+        ("lra_lu", f.lra_lu()),
+        ("crest_kurz_db", f.crest_kurz_db()),
     ] {
         if let Some(x) = wert {
             if !x.is_finite() {
@@ -593,6 +607,74 @@ fn pruefe_frame(f: &fb::Frame, p: &str, out: &mut Vec<Verstoss>) {
             &format!("{p}/integration_samples"),
             "integration_samples_null",
         ));
+    }
+
+    // ── SONDE-013 M-02 bis M-04: die Grenzen der neuen Metriken ───────────
+    //
+    // Jede dieser vier Regeln beschreibt einen Zustand, den ein RICHTIGER
+    // Erzeuger nie herstellt. Sie stehen hier und nicht in der Anzeige, weil
+    // ein Wert, den der Empfaenger erst beim Zeichnen als unmoeglich erkennt,
+    // vorher schon gespeichert wurde.
+
+    // Eine negative Loudness Range gibt es nicht: LRA ist P95 minus P10 ueber
+    // derselben Verteilung, also nie kleiner als null (EBU Tech 3342).
+    if let Some(lra) = f.lra_lu() {
+        if lra.is_finite() && lra < 0.0 {
+            out.push(Verstoss::neu(&format!("{p}/lra_lu"), "lra_negativ"));
+        }
+    }
+
+    // PLR ist Passagen-True-Peak MINUS LUFS-I. Ohne das integrierte
+    // Lautheitspaar gibt es den Bezugspunkt nicht — die Zahl waere gegen
+    // etwas gerechnet, das der Frame nicht mitschickt (§39.1, E-A02).
+    if f.plr_db().is_some() && !lufs_i_paar {
+        out.push(Verstoss::neu(&format!("{p}/plr_db"), "plr_ohne_lufs_i"));
+    }
+
+    // Der True Peak liegt ZWISCHEN den Samples und ist deshalb nie KLEINER
+    // als der Sample-Peak desselben Rahmens. Ein Erzeuger, bei dem er es
+    // ist, hat die zwei vertauscht — und genau diese Verwechslung ist der
+    // Fehler, gegen den M-02 schuetzt.
+    if let (Some(tp), Some(sp)) = (f.true_peak_db(), f.peak_db()) {
+        // 0,01 dB Spielraum fuer die float32-Rundung der beiden Wege.
+        if tp.is_finite() && sp.is_finite() && tp < sp - 0.01 {
+            out.push(Verstoss::neu(
+                &format!("{p}/true_peak_db"),
+                "true_peak_unter_sample_peak",
+            ));
+        }
+    }
+
+    // Die Headroomverteilung ist als GANZES optional; ist sie da, muss sie
+    // geordnet und belegt sein. Ein leeres Fenster hiesse "Verteilung ueber
+    // nichts", eine verdrehte Ordnung waere keine Verteilung.
+    if let Some(h) = f.headroom() {
+        for (name, wert) in [
+            ("p10_db", h.p10_db()),
+            ("p50_db", h.p50_db()),
+            ("p95_db", h.p95_db()),
+        ] {
+            if !wert.is_finite() {
+                out.push(Verstoss::neu(
+                    &format!("{p}/headroom/{name}"),
+                    "nicht_endlich",
+                ));
+            }
+        }
+        if h.fenster() == 0 {
+            out.push(Verstoss::neu(
+                &format!("{p}/headroom/fenster"),
+                "headroom_fenster_null",
+            ));
+        }
+        if h.p10_db().is_finite() && h.p50_db().is_finite() && h.p95_db().is_finite()
+            && !(h.p10_db() <= h.p50_db() && h.p50_db() <= h.p95_db())
+        {
+            out.push(Verstoss::neu(
+                &format!("{p}/headroom"),
+                "headroom_unsortiert",
+            ));
+        }
     }
 }
 

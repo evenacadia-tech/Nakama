@@ -256,6 +256,46 @@ def gueltige() -> list[tuple[str, dict, str]]:
                    "dasselbe Feld auf dem 221er-Evidenzrahmen: die Kennzahl haengt "
                    "am Rahmen, nicht am Gitter"))
 
+    # SONDE-013 M-01 bis M-04, Feld-IDs 15 bis 21. Drei Faelle, die zusammen
+    # zeigen, wofuer die neuen Felder da sind - und dass Abwesenheit weiterhin
+    # ein gueltiger Zustand ist, kein halber Frame.
+    e = eintrag()
+    e["frame"]["integration_samples"] = 4800
+    e["frame"]["lufs_m"] = -14.2
+    e["frame"]["lufs_s"] = -15.8
+    e["frame"]["lufs_i"] = -16.4
+    e["frame"]["lufs_i_unsicherheit_lu"] = 0.3
+    e["frame"]["peak_db"] = -1.2
+    e["frame"]["true_peak_db"] = -0.9
+    e["frame"]["true_peak_passage_db"] = -0.2
+    e["frame"]["plr_db"] = 16.2
+    e["frame"]["lra_lu"] = 7.4
+    e["frame"]["crest_db"] = 11.5
+    e["frame"]["crest_kurz_db"] = 14.8
+    e["frame"]["headroom"] = {"p10_db": -12.0, "p50_db": -6.5,
+                              "p95_db": -0.4, "fenster": 64}
+    faelle.append(("dynamik-vollstaendig", batch(e),
+                   "SONDE-013: alle drei Loudnessfenster, beide Peakarten, beide "
+                   "Crestfenster, LRA, PLR und die Headroomverteilung in EINEM "
+                   "Frame. True Peak liegt ueber dem Sample-Peak, PLR haengt am "
+                   "vorhandenen LUFS-I-Paar, die drei Perzentile sind geordnet"))
+
+    e = eintrag()
+    e["frame"]["integration_samples"] = 512
+    e["frame"]["lufs_m"] = -32.0
+    faelle.append(("dynamik-nur-momentary", batch(e),
+                   "kurz nach einer Grenze steht nur das 400-ms-Fenster: Short-term "
+                   "braucht 3 s, LRA rund 60 s, und keines der beiden wird "
+                   "vorgetaeuscht. Abwesenheit ist hier die Aussage"))
+
+    e = eintrag()
+    e["frame"]["peak_db"] = -6.02
+    e["frame"]["true_peak_db"] = -6.02
+    faelle.append(("true-peak-gleich-sample-peak", batch(e),
+                   "der Grenzfall der Regel `true_peak_unter_sample_peak`: bei einem "
+                   "Sinus, dessen Abtastpunkte den Scheitel treffen, sind die zwei "
+                   "Zahlen gleich. Gleich ist erlaubt, kleiner nicht"))
+
     lokal = eintrag()
     lokal["frame"]["transport"]["zeitbasis"] = "local_monotonic"
     del lokal["frame"]["transport"]["project_sample_start"]
@@ -754,10 +794,91 @@ def ungueltige() -> list[tuple[str, dict, list[dict], str]]:
          "Minus unendlich ist keine Stereobreite"),
         ("korrelation-nicht-endlich", "korrelation", float("nan"),
          "NaN ist keine Korrelation"),
+        # SONDE-013 M-07: dieselbe Regel fuer jede NEUE Metrik. Sie stehen in
+        # DIESER Liste, weil eine zweite daneben genau der Ort waere, an dem
+        # das naechste Feld vergessen wird.
+        ("lufs-m-nicht-endlich", "lufs_m", float("-inf"),
+         "Minus unendlich ist keine Momentanlautheit"),
+        ("true-peak-db-nicht-endlich", "true_peak_db", float("nan"),
+         "NaN ist kein True Peak"),
+        ("true-peak-passage-db-nicht-endlich", "true_peak_passage_db", float("inf"),
+         "Plus unendlich ist kein Passagenmaximum"),
+        ("lra-lu-nicht-endlich", "lra_lu", float("nan"),
+         "NaN ist keine Loudness Range"),
+        ("crest-kurz-db-nicht-endlich", "crest_kurz_db", float("inf"),
+         "Plus unendlich ist kein Crest-Faktor"),
     ]:
         b = batch(eintrag())
         b["eintraege"][0]["frame"][feld] = wert
         faelle.append((name, b, [v(f"{P}/{feld}", "nicht_endlich")], warum))
+
+    # `plr_db` braucht eine EIGENE Zeile statt der Schleife oben: ein
+    # nichtendliches PLR ohne LUFS-I-Paar traefe ZWEI Regeln, und der Fixture
+    # soll genau eine messen.
+    b = batch(eintrag())
+    b["eintraege"][0]["frame"]["lufs_i"] = -16.0
+    b["eintraege"][0]["frame"]["lufs_i_unsicherheit_lu"] = 0.4
+    b["eintraege"][0]["frame"]["plr_db"] = float("nan")
+    faelle.append((
+        "plr-db-nicht-endlich", b, [v(f"{P}/plr_db", "nicht_endlich")],
+        "NaN ist kein PLR. Das Lautheitspaar ist hier vorhanden, damit genau "
+        "die Nichtendlichkeit faellt und nicht zusaetzlich `plr_ohne_lufs_i`"))
+
+    # ── SONDE-013 M-02 bis M-04: je ein Negativfixture pro neuer Regel ─────
+
+    b = batch(eintrag())
+    b["eintraege"][0]["frame"]["lra_lu"] = -0.5
+    faelle.append((
+        "lra-negativ", b, [v(f"{P}/lra_lu", "lra_negativ")],
+        "LRA ist P95 minus P10 ueber derselben Verteilung (EBU Tech 3342) und "
+        "damit nie kleiner als null. Ein negativer Wert ist ein Erzeugerfehler"))
+
+    b = batch(eintrag())
+    b["eintraege"][0]["frame"]["plr_db"] = 16.0
+    faelle.append((
+        "plr-ohne-lufs-i", b, [v(f"{P}/plr_db", "plr_ohne_lufs_i")],
+        "PLR ist Passagen-True-Peak MINUS LUFS-I. Ohne das integrierte "
+        "Lautheitspaar fehlt der Bezugspunkt, und die Zahl waere gegen etwas "
+        "gerechnet, das der Frame nicht mitschickt (§39.1, E-A02)"))
+
+    b = batch(eintrag())
+    b["eintraege"][0]["frame"]["peak_db"] = -1.0
+    b["eintraege"][0]["frame"]["true_peak_db"] = -3.0
+    faelle.append((
+        "true-peak-unter-sample-peak", b,
+        [v(f"{P}/true_peak_db", "true_peak_unter_sample_peak")],
+        "Der True Peak liegt ZWISCHEN den Samples und ist deshalb nie kleiner "
+        "als der Sample-Peak desselben Rahmens. Wer hier einen kleineren Wert "
+        "sendet, hat die beiden vertauscht - genau die Verwechslung, gegen die "
+        "M-02 schuetzt"))
+
+    b = batch(eintrag())
+    b["eintraege"][0]["frame"]["headroom"] = {
+        "p10_db": -12.0, "p50_db": -6.0, "p95_db": -1.0, "fenster": 0}
+    faelle.append((
+        "headroom-fenster-null", b,
+        [v(f"{P}/headroom/fenster", "headroom_fenster_null")],
+        "Eine Verteilung ueber null Rahmen ist keine Verteilung. Das Feld sagt, "
+        "wie viele Rahmen wirklich eingegangen sind - 0 waere die Behauptung, "
+        "drei Perzentile ohne einen einzigen Messwert gebildet zu haben"))
+
+    b = batch(eintrag())
+    b["eintraege"][0]["frame"]["headroom"] = {
+        "p10_db": -1.0, "p50_db": -6.0, "p95_db": -12.0, "fenster": 32}
+    faelle.append((
+        "headroom-unsortiert", b, [v(f"{P}/headroom", "headroom_unsortiert")],
+        "P10 <= P50 <= P95 ist die Definition von Perzentilen, nicht eine "
+        "Konvention. Drei Zahlen in der falschen Ordnung sind keine Verteilung"))
+
+    b = batch(eintrag())
+    b["eintraege"][0]["frame"]["headroom"] = {
+        "p10_db": -12.0, "p50_db": float("nan"), "p95_db": -1.0, "fenster": 16}
+    faelle.append((
+        "headroom-p50-nicht-endlich", b,
+        [v(f"{P}/headroom/p50_db", "nicht_endlich")],
+        "Der NaN-Riegel gilt auch INNERHALB der Headroomtabelle. Ohne diese "
+        "Zeile waere die Tabelle die eine Stelle des Frames, an der ein NaN "
+        "durchkaeme"))
 
     # --- T2-Runde 3: eingebettete NUL in laengenbehafteten Strings ----------
     #

@@ -1,0 +1,165 @@
+SONDE-013 Etappe 2 E - Rotbeweis M-25-dirty
+=========================================
+
+Datei:     eq-copilot/plugin/src/PluginProcessor.cpp
+Ziel:      EqCopSonde013PassageStateTest (Kanon B23)
+Warum:     Das Vergessen einer Passage meldet dem Host KEIN Dirty. Die State-Invariante aus CLAUDE.md sagt: "jede persistente Aenderung meldet dem Host Dirty-State" - ein Loeschen, das der Host nicht mitbekommt, kaeme beim naechsten Oeffnen des Projekts zurueck. Der Fehler ist unsichtbar, solange man nur das Merken prueft.
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+        zustand.manuellePassagen.erase (gefunden);
+    }
+    // Das Vergessen meldet Dirty wie das Merken. Ein Loeschen, das der Host
+    // nicht mitbekommt, kaeme beim naechsten Oeffnen zurueck.
+    meldeHostDirty();
+--- NEU ---
+        zustand.manuellePassagen.erase (gefunden);
+    }
+    // Das Vergessen meldet Dirty wie das Merken. Ein Loeschen, das der Host
+    // nicht mitbekommt, kaeme beim naechsten Oeffnen zurueck.
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+== Nakama SONDE-013 - manuelle Passage als Projektintent (§33.5) ==
+
+== M-25  manual_passage_persists_in_main_project_state_and_marks_host_dirty ==
+[ok]   ein frisches Main-Projekt haelt keine Passage - kein erfundener Vorgabewert
+[ok]   eine markierte Passage wird gemerkt
+[ok]   und meldet GENAU einmal Host-Dirty  [1]
+[ok]   alle vier Intentfelder stehen unveraendert im State
+[ok]   eine unbekannte passage_id zu vergessen aendert nichts
+[ok]   und meldet folglich auch kein Dirty  [1]
+[ok]   die gemerkte Passage laesst sich vergessen
+[ROT]  das Vergessen meldet Dirty wie das Merken  [1]
+[ok]   und die Liste ist wieder leer
+[ok]   eine Nicht-main-Instanz haelt keine Passagen - Â§33.5 gibt sie dem MainProject
+
+== M-69  save_load_roundtrip_is_byte_identical ==
+[ok]   Passage 3 gemerkt
+[ok]   Passage 1 gemerkt
+[ok]   Passage 2 mit 120-Zeichen-Label gemerkt
+[ok]   der geschriebene Stand ist fuer den eigenen Leser gueltig
+[ok]   drei Passagen kommen zurueck  [3]
+[ok]   und zwar nach Projektposition sortiert - die Reihenfolge ist deterministisch
+[ok]   das 120-Zeichen-Label ueberlebt vollstaendig
+[ok]   SaveâLoadâSave ist bytegleich  [543 vs 543]
+[ok]   ein Altstand OHNE das Feld laedt normal und haelt keine Passagen
+[ok]   auch der Altstand ist ueber zwei Runden bytegleich
+[ok]   die leere Liste laesst die Eigenschaft weg statt sie als leeres Array zu schreiben
+
+== M-69  unknown_newer_field_stays_read_only_with_original_bytes ==
+[ok]   ein unbekanntes ZUSATZfeld macht den Stand nicht ungueltig - additive Erweiterung
+[ok]   die bekannte Passage wird trotzdem gelesen
+[ok]   und das unbekannte Feld steht unveraendert im naechsten Save
+[ok]   unbekanntes Major: read-only
+[ok]   und KEINE Passage wird interpretiert - ein fremder Stand wird nicht halb gelesen
+[ok]   read-only verweigert auch das Merken
+[ok]   und ebenso das Vergessen
+[ok]   die Originalbytes gehen unveraendert zurueck
+[ok]   und nichts davon meldet Host-Dirty  [0]
+
+== Die Raender, Seite 1: was die API ablehnt ==
+[ok]   API: keine passage_id ausserhalb hex32
+[ok]   API: kein Label ueber 120 Codepoints
+[ok]   API: kein negativer Start - Projektsamples zaehlen ab Projektbeginn
+[ok]   API: kein leeres Fenster - `[start, ende)` ist halboffen
+[ok]   API: kein rueckwaerts laufendes Fenster
+[ok]   API: der Gutfall geht
+[ok]   API: keine zweite Passage mit derselben id
+[ok]   API: die feste Obergrenze aus Â§48.1 haelt  [64]
+[ok]   nach einem Vergessen ist wieder Platz fuer genau eine
+
+== Die Raender, Seite 2: was der Leser ablehnt ==
+[ok]   Leser: keine passage_id ausserhalb hex32 → read-only, Originalbytes zurueck
+[ok]   Leser: kein Label ueber 120 Codepoints → read-only, Originalbytes zurueck
+[ok]   Leser: kein negativer Start → read-only, Originalbytes zurueck
+[ok]   Leser: kein leeres Fenster → read-only, Originalbytes zurueck
+[ok]   Leser: kein rueckwaerts laufendes Fenster → read-only, Originalbytes zurueck
+[ok]   Leser: keine Bruchzahl als Projektsample - 44100.5 gibt es nicht → read-only, Originalbytes zurueck
+[ok]   Leser: keine Zahl als Text - stille Umwandlung waere eine erfundene Grenze → read-only, Originalbytes zurueck
+[ok]   Leser: keine doppelte passage_id → read-only, Originalbytes zurueck
+[ok]   Leser: keine unvollstaendige Vierergruppe → read-only, Originalbytes zurueck
+[ok]   Leser: genau die Obergrenze ist gueltig  [64]
+[ok]   Leser: eine ueber der Obergrenze ist read-only
+[ok]   Leser: ein blanker Wert statt eines Arrays ist read-only
+
+== Zahlenraender: `int64` an seinen Enden ==
+[ok]   eine Passage am oberen int64-Rand wird gemerkt
+[ok]   und kommt exakt zurueck - kein Umweg ueber `double` unterwegs
+[ok]   auch am Rand ist der Roundtrip bytegleich
+
+53 bestanden, 1 gescheitert
+
+Exitcode: 1  ->  ROT (gut)
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+== Nakama SONDE-013 - manuelle Passage als Projektintent (§33.5) ==
+
+== M-25  manual_passage_persists_in_main_project_state_and_marks_host_dirty ==
+[ok]   ein frisches Main-Projekt haelt keine Passage - kein erfundener Vorgabewert
+[ok]   eine markierte Passage wird gemerkt
+[ok]   und meldet GENAU einmal Host-Dirty  [1]
+[ok]   alle vier Intentfelder stehen unveraendert im State
+[ok]   eine unbekannte passage_id zu vergessen aendert nichts
+[ok]   und meldet folglich auch kein Dirty  [1]
+[ok]   die gemerkte Passage laesst sich vergessen
+[ok]   das Vergessen meldet Dirty wie das Merken  [2]
+[ok]   und die Liste ist wieder leer
+[ok]   eine Nicht-main-Instanz haelt keine Passagen - Â§33.5 gibt sie dem MainProject
+
+== M-69  save_load_roundtrip_is_byte_identical ==
+[ok]   Passage 3 gemerkt
+[ok]   Passage 1 gemerkt
+[ok]   Passage 2 mit 120-Zeichen-Label gemerkt
+[ok]   der geschriebene Stand ist fuer den eigenen Leser gueltig
+[ok]   drei Passagen kommen zurueck  [3]
+[ok]   und zwar nach Projektposition sortiert - die Reihenfolge ist deterministisch
+[ok]   das 120-Zeichen-Label ueberlebt vollstaendig
+[ok]   SaveâLoadâSave ist bytegleich  [543 vs 543]
+[ok]   ein Altstand OHNE das Feld laedt normal und haelt keine Passagen
+[ok]   auch der Altstand ist ueber zwei Runden bytegleich
+[ok]   die leere Liste laesst die Eigenschaft weg statt sie als leeres Array zu schreiben
+
+== M-69  unknown_newer_field_stays_read_only_with_original_bytes ==
+[ok]   ein unbekanntes ZUSATZfeld macht den Stand nicht ungueltig - additive Erweiterung
+[ok]   die bekannte Passage wird trotzdem gelesen
+[ok]   und das unbekannte Feld steht unveraendert im naechsten Save
+[ok]   unbekanntes Major: read-only
+[ok]   und KEINE Passage wird interpretiert - ein fremder Stand wird nicht halb gelesen
+[ok]   read-only verweigert auch das Merken
+[ok]   und ebenso das Vergessen
+[ok]   die Originalbytes gehen unveraendert zurueck
+[ok]   und nichts davon meldet Host-Dirty  [0]
+
+== Die Raender, Seite 1: was die API ablehnt ==
+[ok]   API: keine passage_id ausserhalb hex32
+[ok]   API: kein Label ueber 120 Codepoints
+[ok]   API: kein negativer Start - Projektsamples zaehlen ab Projektbeginn
+[ok]   API: kein leeres Fenster - `[start, ende)` ist halboffen
+[ok]   API: kein rueckwaerts laufendes Fenster
+[ok]   API: der Gutfall geht
+[ok]   API: keine zweite Passage mit derselben id
+[ok]   API: die feste Obergrenze aus Â§48.1 haelt  [64]
+[ok]   nach einem Vergessen ist wieder Platz fuer genau eine
+
+== Die Raender, Seite 2: was der Leser ablehnt ==
+[ok]   Leser: keine passage_id ausserhalb hex32 → read-only, Originalbytes zurueck
+[ok]   Leser: kein Label ueber 120 Codepoints → read-only, Originalbytes zurueck
+[ok]   Leser: kein negativer Start → read-only, Originalbytes zurueck
+[ok]   Leser: kein leeres Fenster → read-only, Originalbytes zurueck
+[ok]   Leser: kein rueckwaerts laufendes Fenster → read-only, Originalbytes zurueck
+[ok]   Leser: keine Bruchzahl als Projektsample - 44100.5 gibt es nicht → read-only, Originalbytes zurueck
+[ok]   Leser: keine Zahl als Text - stille Umwandlung waere eine erfundene Grenze → read-only, Originalbytes zurueck
+[ok]   Leser: keine doppelte passage_id → read-only, Originalbytes zurueck
+[ok]   Leser: keine unvollstaendige Vierergruppe → read-only, Originalbytes zurueck
+[ok]   Leser: genau die Obergrenze ist gueltig  [64]
+[ok]   Leser: eine ueber der Obergrenze ist read-only
+[ok]   Leser: ein blanker Wert statt eines Arrays ist read-only
+
+== Zahlenraender: `int64` an seinen Enden ==
+[ok]   eine Passage am oberen int64-Rand wird gemerkt
+[ok]   und kommt exakt zurueck - kein Umweg ueber `double` unterwegs
+[ok]   auch am Rand ist der Roundtrip bytegleich
+
+54 bestanden, 0 gescheitert
+
+Exitcode: 0  ->  GRUEN (gut)

@@ -670,6 +670,27 @@ target_link_libraries(EqCopStateMigrationTest PRIVATE juce::juce_audio_utils juc
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
 nakama_kern_anbinden(EqCopStateMigrationTest)
 
+# ── SONDE-013 Etappe E: manuelle Passage als Projektintent (Kanon B23) ────
+# Ein NEUES persistentes Feld im Host-State. Das Bein misst die fuenf Teile der
+# State-Invariante einzeln - versionieren, Altstand laden, unbekanntes Feld
+# durchreichen, Save/Load bytegleich, Host-Dirty - und jede Grenze von beiden
+# Seiten: was die Produkt-API ablehnt, muss auch der Leser ablehnen.
+juce_add_console_app(EqCopSonde013PassageStateTest PRODUCT_NAME "eqcop-sonde013passagestatetest")
+target_sources(EqCopSonde013PassageStateTest PRIVATE
+    tests/Sonde013PassageStateTest.cpp
+    src/PluginProcessor.cpp
+    src/PluginEditor.cpp
+    src/PipeClient.cpp
+    src/AnalyseEngine.cpp
+    src/Diagnose.cpp
+)
+target_include_directories(EqCopSonde013PassageStateTest PRIVATE src)
+target_compile_definitions(EqCopSonde013PassageStateTest PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
+target_link_libraries(EqCopSonde013PassageStateTest PRIVATE juce::juce_audio_utils juce::juce_dsp
+    PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+nakama_kern_anbinden(EqCopSonde013PassageStateTest)
+
 # ── S9/SONDE-007b Abschnitt 3: Lifecycle-Klassifikation (Kanon B8) ─────────
 # Zwei Ebenen in einem Ziel: der Automat pur (NakamaLebenslauf, im Kern) UND
 # derselbe Automat verdrahtet im echten EqCopilotProcessor. Die zweite Ebene
@@ -1006,7 +1027,7 @@ nakama_kern_anbinden(EqCopSchemaTest)
 # NAKAMA_SONDE_PASSIV/AKTIV in sonde/SondeProcessor.h.
 foreach(ziel EqCopilot
              EqCopNullTest EqCopMarkierungTest EqCopShot EqCopPaintBench
-             EqCopIdentityTest EqCopStateMigrationTest EqCopLebenslaufTest
+             EqCopIdentityTest EqCopStateMigrationTest EqCopSonde013PassageStateTest EqCopLebenslaufTest
              EqCopQueueStressTest EqCopAnalysisGoldenTest
              EqCopSonde012ProjectReloadTest)
     target_compile_definitions(${ziel} PRIVATE NAKAMA_BUNDLE_MAIN=1)
@@ -1016,7 +1037,7 @@ endforeach()
 # echten Main-Prozessor uebersetzt, bekommt exakt dieselbe Uebersetzungseinheit.
 foreach(ziel EqCopilot
              EqCopNullTest EqCopMarkierungTest EqCopShot EqCopPaintBench
-             EqCopIdentityTest EqCopStateMigrationTest EqCopLebenslaufTest
+             EqCopIdentityTest EqCopStateMigrationTest EqCopSonde013PassageStateTest EqCopLebenslaufTest
              EqCopQueueStressTest EqCopAnalysisGoldenTest
              EqCopSonde012ProjectReloadTest)
     target_sources(${ziel} PRIVATE src/SourcesModel.cpp)
@@ -1028,7 +1049,7 @@ endforeach()
 # Hersteller-Namensraum ist Zielidentitaet, keine geteilte Kernwahrheit.
 foreach(ziel EqCopilot
              EqCopNullTest EqCopMarkierungTest EqCopShot EqCopPaintBench
-             EqCopIdentityTest EqCopStateMigrationTest EqCopLebenslaufTest
+             EqCopIdentityTest EqCopStateMigrationTest EqCopSonde013PassageStateTest EqCopLebenslaufTest
              EqCopQueueStressTest EqCopAnalysisGoldenTest
              EqCopSonde012ProjectReloadTest)
     target_sources(${ziel} PRIVATE core/ipc/PipeToken.cpp)
@@ -1041,7 +1062,7 @@ endforeach()
 # B8/B10 fahren den Lifecycle selbst mit Testhaken beziehungsweise PID-basierten
 # Probe-Pipenamen; nur das eigentliche Bundle aktiviert die Produktthreads.
 foreach(ziel EqCopNullTest EqCopMarkierungTest EqCopShot EqCopPaintBench
-             EqCopIdentityTest EqCopStateMigrationTest EqCopLebenslaufTest
+             EqCopIdentityTest EqCopStateMigrationTest EqCopSonde013PassageStateTest EqCopLebenslaufTest
              EqCopQueueStressTest EqCopAnalysisGoldenTest
              EqCopSonde012ProjectReloadTest)
     target_compile_definitions(${ziel} PRIVATE
@@ -1057,7 +1078,7 @@ endforeach()
 # dort), und AnalyseEngine haelt den fixed-memory LoudnessAccumulator.
 foreach(ziel EqCopilot
              EqCopNullTest EqCopGoldenTest EqCopMarkierungTest EqCopShot EqCopPaintBench
-             EqCopIdentityTest EqCopStateMigrationTest EqCopLebenslaufTest
+             EqCopIdentityTest EqCopStateMigrationTest EqCopSonde013PassageStateTest EqCopLebenslaufTest
              EqCopQueueStressTest EqCopLoudnessGoldenTest EqCopAnalysisGoldenTest
              EqCopSonde012ProjectReloadTest EqCopSonde012SourcesModelTest)
     target_include_directories(${ziel} PRIVATE
@@ -1071,7 +1092,7 @@ foreach(ziel NakamaKern
              EqCopilot EqCopPipeProbe EqCopPipeClientTest EqCopNullTest EqCopGoldenTest EqCopMarkierungTest EqCopShot EqCopPaintBench
              EqCopIpcTest EqCopIpcLast
              EqCopIdentityTest EqCopAuxSpike EqCopAuxSpikeTest EqCopHostContextTest
-             EqCopSchemaTest EqCopStateMigrationTest EqCopLebenslaufTest
+             EqCopSchemaTest EqCopStateMigrationTest EqCopSonde013PassageStateTest EqCopLebenslaufTest
              EqCopQueueStressTest EqCopLoudnessGoldenTest EqCopAnalysisGoldenTest
              EqCopHostProbe EqCopHostProbeTest
              NakamaProbeeq EqCopProbeeqNullTest

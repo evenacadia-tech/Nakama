@@ -187,6 +187,18 @@ public:
                                   const juce::String& label);
     bool entferneSourcesHauptziel (const std::string& erwarteteInstanceId);
     void reconnectSources();
+
+    /*  Manuelle Passagen als Projektintent (SONDE-013 M-25, M-69).
+
+        Der Store ist autoritativ fuer die Passage als Evidenzobjekt; hier
+        reist nur der Intent mit der FL-Projektdatei. Beide Handgriffe pruefen
+        GENAU dieselben Bedingungen wie der Leser in `NakamaState.cpp` - eine
+        API, die einen Stand schreibt, den der eigene Leser als read-only
+        zurueckgibt, waere ein stiller Datenverlust beim naechsten Oeffnen. */
+    bool merkeManuellePassage (const juce::String& passageId, const juce::String& label,
+                               juce::int64 projektStart, juce::int64 projektEnde);
+    bool vergissManuellePassage (const juce::String& passageId);
+    std::vector<nakama::state::ManuellePassage> manuellePassagen() const;
 #if defined(NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
     nakama::ipc::ControlHello v3HelloFuerTest() const { return v3Hello(); }
     nakama::ipc::ControlStatus v3StatusFuerTest() const { return v3Status(); }

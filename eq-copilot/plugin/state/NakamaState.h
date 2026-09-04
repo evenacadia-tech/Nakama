@@ -76,6 +76,40 @@ struct MainProjectMitglied
 
 inline constexpr int maxMainProjectMitglieder = 64;
 
+/** Eine vom User markierte Passage als PROJEKTINTENT (SONDE-013 M-25, M-69).
+
+    §33.5 teilt die Wahrheit auf: der Store ist autoritativ fuer die Passage
+    als Evidenzobjekt, `MainProjectState` haelt sie als Intent, der mit der
+    FL-Projektdatei reist. Dieser Typ ist deshalb absichtlich klein.
+
+    Was hier NICHT steht, und warum: Fingerprint, aktives Quellenset,
+    Abdeckung und Transportepoche sind MESSERGEBNISSE. Sie im Host-State zu
+    fuehren hiesse, dass ein Projekt nach dem Loeschen der Datenbank weiter
+    behauptet, es gebe Evidenz - M-32 verlangt genau das Gegenteil: "Fehlt
+    oder wird die SQLite-Datenbank geloescht, bleiben Projekt-Recall und DSP
+    vollstaendig - nur historische Passagen und Experimente fehlen."
+
+    Dieselbe Trennung, die `MainProjectMitglied` schon vormacht: stabile
+    Identitaet und User-Wort ja, Liveness und Messframes nein. */
+struct ManuellePassage
+{
+    juce::String passageId;      ///< stabile hex32-Identitaet, nie erfunden
+    juce::String label;          ///< User-Wort, hoechstens 120 Codepoints, nie interpretiert
+    juce::int64  projektStart = 0;  ///< Projektsamples, halboffen `[start, ende)`
+    juce::int64  projektEnde  = 0;
+
+    bool operator== (const ManuellePassage& a) const noexcept
+    {
+        return passageId == a.passageId && label == a.label
+            && projektStart == a.projektStart && projektEnde == a.projektEnde;
+    }
+};
+
+/*  Dieselbe feste Obergrenze wie fuer die bestaetigten Quellen. Beide reisen
+    im selben Host-State, und §48.1 verlangt feste Obergrenzen statt einer
+    Liste, die mit dem Projekt waechst. */
+inline constexpr int maxManuellePassagen = 64;
+
 /** Welche Klassen ein Bundle laden darf (§2.3 des Vertrags). */
 struct Bundle
 {
@@ -93,6 +127,7 @@ struct Zustand
     juce::ValueTree baum;
     Common common;
     std::vector<MainProjectMitglied> mainProjectMitglieder;
+    std::vector<ManuellePassage>     manuellePassagen;
     bool hatParameters = false;
 
     /*  Der NEUTRALE Satz, nicht Nullen. `Satz` ist ein std::array; ein

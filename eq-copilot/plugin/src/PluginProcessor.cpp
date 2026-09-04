@@ -1397,6 +1397,62 @@ bool EqCopilotProcessor::entferneSourcesHauptziel (const std::string& erwarteteI
     return sendeSourcesCommand (SourcesCommandArt::unbindProbe, erwarteteInstanceId);
 }
 
+bool EqCopilotProcessor::merkeManuellePassage (const juce::String& passageId,
+                                               const juce::String& label,
+                                               juce::int64 projektStart,
+                                               juce::int64 projektEnde)
+{
+    // Die Riegel VOR dem Schloss: sie brauchen keinen Zustand und halten die
+    // kritische Strecke kurz.
+    if (! nakama::ipc::istHex32 (passageId.toStdString()) || label.length() > 120)
+        return false;
+    if (projektStart < 0 || projektEnde <= projektStart)
+        return false;
+
+    {
+        std::lock_guard<std::mutex> l (bindungMutex);
+        if (zustand.nurLesen || zustand.common.klasse != nakama::state::Klasse::main)
+            return false;
+        if (static_cast<int> (zustand.manuellePassagen.size()) >= nakama::state::maxManuellePassagen)
+            return false;
+        const auto gefunden = std::find_if (
+            zustand.manuellePassagen.begin(), zustand.manuellePassagen.end(),
+            [&] (const auto& s) { return s.passageId == passageId; });
+        if (gefunden != zustand.manuellePassagen.end())
+            return false;
+        zustand.manuellePassagen.push_back ({ passageId, label, projektStart, projektEnde });
+    }
+    meldeHostDirty();
+    v3StateRevision.fetch_add (1);
+    return true;
+}
+
+bool EqCopilotProcessor::vergissManuellePassage (const juce::String& passageId)
+{
+    {
+        std::lock_guard<std::mutex> l (bindungMutex);
+        if (zustand.nurLesen || zustand.common.klasse != nakama::state::Klasse::main)
+            return false;
+        const auto gefunden = std::find_if (
+            zustand.manuellePassagen.begin(), zustand.manuellePassagen.end(),
+            [&] (const auto& s) { return s.passageId == passageId; });
+        if (gefunden == zustand.manuellePassagen.end())
+            return false;
+        zustand.manuellePassagen.erase (gefunden);
+    }
+    // Das Vergessen meldet Dirty wie das Merken. Ein Loeschen, das der Host
+    // nicht mitbekommt, kaeme beim naechsten Oeffnen zurueck.
+    meldeHostDirty();
+    v3StateRevision.fetch_add (1);
+    return true;
+}
+
+std::vector<nakama::state::ManuellePassage> EqCopilotProcessor::manuellePassagen() const
+{
+    std::lock_guard<std::mutex> l (bindungMutex);
+    return zustand.manuellePassagen;
+}
+
 bool EqCopilotProcessor::sendeSourcesCommand (SourcesCommandArt art,
                                                const std::string& erwarteteInstanceId)
 {

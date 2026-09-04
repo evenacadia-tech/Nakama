@@ -29,6 +29,11 @@ const juce::Identifier kLabel       ("label");
 const juce::Identifier kPairId      ("pair_id");
 const juce::Identifier kBinding     ("project_binding_id");
 const juce::Identifier kMainMitglieder ("confirmed_members_v1");
+// SONDE-013 M-69: neues persistentes Feld, und der Name traegt seine
+// Fassung. Ein alter Build kennt es nicht, laesst es aber unangetastet im
+// Baum stehen und schreibt es beim Speichern zurueck - genau die additive
+// Erweiterung, die der Vertrag verlangt.
+const juce::Identifier kMainPassagen ("manual_passages_v1");
 // Schema 1
 const juce::Identifier kSensorId    ("sensor_id");
 const juce::Identifier kRole        ("role");
@@ -505,6 +510,34 @@ juce::ValueTree synchronisiert (const Zustand& z)
             }
             mainProject.setProperty (kMainMitglieder, juce::var (flach), nullptr);
         }
+
+        // Die manuellen Passagen (M-69). Leere Liste heisst: Eigenschaft weg,
+        // nicht leeres Array - sonst unterschieden sich ein Projekt ohne
+        // Passagen und eines, dessen letzte geloescht wurde, in den Bytes.
+        if (z.manuellePassagen.empty())
+        {
+            mainProject.removeProperty (kMainPassagen, nullptr);
+        }
+        else
+        {
+            auto passagen = z.manuellePassagen;
+            std::sort (passagen.begin(), passagen.end(), [] (const auto& a, const auto& b)
+            {
+                if (a.projektStart != b.projektStart) return a.projektStart < b.projektStart;
+                if (a.projektEnde  != b.projektEnde)  return a.projektEnde  < b.projektEnde;
+                return a.passageId.compare (b.passageId) < 0;
+            });
+            juce::Array<juce::var> flach;
+            flach.ensureStorageAllocated (static_cast<int> (passagen.size() * 4));
+            for (const auto& s : passagen)
+            {
+                flach.add (s.passageId);
+                flach.add (s.label);
+                flach.add (juce::var (s.projektStart));
+                flach.add (juce::var (s.projektEnde));
+            }
+            mainProject.setProperty (kMainPassagen, juce::var (flach), nullptr);
+        }
     }
     else if (mainProject.isValid())
     {
@@ -580,6 +613,19 @@ bool hatWriterHeadroom (const Zustand& eingang, const Bundle& bundle)
     {
         kandidat.mainProjectMitglieder.push_back ({
             juce::String::toHexString (i + 1).paddedLeft ('0', 32), maximalerText (120)
+        });
+    }
+    // Und die manuellen Passagen in ihrer groessten erreichbaren Form: volle
+    // Liste, volle Labels, `int64`-Grenzen am oberen Rand. Ohne diesen Zusatz
+    // versprache der Headroomriegel etwas ueber einen Stand, den die
+    // Produkt-API laengst uebertreffen kann (M-69).
+    kandidat.manuellePassagen.clear();
+    for (int i = 0; i < maxManuellePassagen; ++i)
+    {
+        kandidat.manuellePassagen.push_back ({
+            juce::String::toHexString (i + 1).paddedLeft ('0', 32), maximalerText (120),
+            std::numeric_limits<juce::int64>::max() - 2,
+            std::numeric_limits<juce::int64>::max() - 1
         });
     }
 
@@ -728,6 +774,67 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
         }
     }
 
+    /*  Die manuellen Passagen (M-69). Derselbe fail-closed-Riegel wie fuer die
+        Mitglieder, um vier zusaetzliche Fragen erweitert:
+
+        - Start und Ende sind GANZE Zahlen. `var` haelt auch Doubles, und ein
+          Projektsample 44100.5 gibt es nicht; still zu runden hiesse, eine
+          Passagengrenze zu erfinden.
+        - Ende liegt echt hinter Start. Das Fenster ist halboffen; eine leere
+          Passage waere eine Markierung ueber nichts.
+        - Start ist nicht negativ. Projektsamples zaehlen ab Projektbeginn.
+        - Keine doppelte passage_id, sonst zeigten zwei Intents auf dasselbe
+          Objekt im Store. */
+    std::vector<ManuellePassage> mainPassagen;
+    if (istMain)
+    {
+        const auto mainProject = v.getChildWithName (kMainProject);
+        if (mainProject.hasProperty (kMainPassagen))
+        {
+            const auto wert = mainProject.getProperty (kMainPassagen);
+            const auto* flach = wert.getArray();
+            if (flach == nullptr || flach->size() % 4 != 0
+                || flach->size() > maxManuellePassagen * 4)
+            {
+                grund = "MainProject.manual_passages_v1 must be an array of quadruples with at most 64 entries";
+                return false;
+            }
+            std::set<std::string> gesehen;
+            for (int i = 0; i < flach->size(); i += 4)
+            {
+                const auto idWert    = flach->getReference (i);
+                const auto labelWert = flach->getReference (i + 1);
+                const auto vonWert   = flach->getReference (i + 2);
+                const auto bisWert   = flach->getReference (i + 3);
+                if (! idWert.isString() || ! labelWert.isString()
+                    || ! istHex32 (idWert.toString()) || labelWert.toString().length() > 120)
+                {
+                    grund = "MainProject.manual_passages_v1 contains an invalid passage_id or label";
+                    return false;
+                }
+                if (! (vonWert.isInt() || vonWert.isInt64())
+                    || ! (bisWert.isInt() || bisWert.isInt64()))
+                {
+                    grund = "MainProject.manual_passages_v1 bounds must be integers";
+                    return false;
+                }
+                const auto von = static_cast<juce::int64> (vonWert);
+                const auto bis = static_cast<juce::int64> (bisWert);
+                if (von < 0 || bis <= von)
+                {
+                    grund = "MainProject.manual_passages_v1 bounds must satisfy 0 <= start < end";
+                    return false;
+                }
+                if (! gesehen.insert (idWert.toString().toStdString()).second)
+                {
+                    grund = "MainProject.manual_passages_v1 contains a duplicate passage_id";
+                    return false;
+                }
+                mainPassagen.push_back ({ idWert.toString(), labelWert.toString(), von, bis });
+            }
+        }
+    }
+
     parameter::Satz satz {};
     if (istAktiv)
     {
@@ -739,6 +846,7 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
     aus.baum = v;
     aus.common = c;
     aus.mainProjectMitglieder = std::move (mainMitglieder);
+    aus.manuellePassagen      = std::move (mainPassagen);
     aus.hatParameters = istAktiv;
     aus.parameters = satz;
     aus.nurLesen = false;

@@ -37,6 +37,7 @@ mod senke;
 mod sicht;
 mod subscription;
 mod uhr;
+pub mod vergleichbarkeit;
 mod zustand;
 
 pub use sicht::{

@@ -1,0 +1,31 @@
+SONDE-013 Etappe 2 E - Rotbeweis M-29-literal
+=========================================
+
+Datei:     broker/src/coordinator/vergleichbarkeit.rs
+Ziel:      pruefe_v3_vertrag.py (Kanon A5)
+Warum:     Ein Gate steht als nacktes Literal im Vergleich statt als Konstante. Das ist der Rueckfall, den M-29 woertlich ausschliesst ("nicht als Literal im Produktpfad"): eine spaetere Kalibrierung hoebe die Konstante, und der stille Zwilling entschiede weiter. Der allgemeine Registerriegel merkt das NICHT - die Konstante stimmt ja noch.
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+    if zeit < GATE_ZEITUEBERDECKUNG {
+--- NEU ---
+    if zeit < 0.95 {
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+jsonschema 4.26.0 (draft 2020-12)
+72 Definitionen, 21 Nachrichtenfamilien, 285 Fixtures
+Pruefungen: 469 bestanden, 1 gescheitert
+  ROT: comparability_schwellen_haengen_an_metrics_version: keine Gate-Zahl als Literal im Produktpfad — Zeile 263: 0.95 in 'if zeit < 0.95 {'
+C:\Users\phili\Projekte\Nakama\tools\eq-copilot\pruefe_v3_vertrag.py:1706: DeprecationWarning: Accessing jsonschema.__version__ is deprecated and will be removed in a future release. Use importlib.metadata directly to query for jsonschema's version.
+  print(f"jsonschema {jsonschema.__version__} (draft 2020-12)")
+
+Exitcode: 2  ->  ROT (gut)
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+jsonschema 4.26.0 (draft 2020-12)
+72 Definitionen, 21 Nachrichtenfamilien, 285 Fixtures
+Pruefungen: 470 bestanden, 0 gescheitert
+C:\Users\phili\Projekte\Nakama\tools\eq-copilot\pruefe_v3_vertrag.py:1706: DeprecationWarning: Accessing jsonschema.__version__ is deprecated and will be removed in a future release. Use importlib.metadata directly to query for jsonschema's version.
+  print(f"jsonschema {jsonschema.__version__} (draft 2020-12)")
+
+Exitcode: 0  ->  GRUEN (gut)

@@ -3,7 +3,7 @@
 | Merkmal | Wert |
 |---|---|
 | Ticket | S20–22, `SONDE-013` (Phase P4–P5) |
-| Phase | **Etappe 2 — Bau, Etappe C läuft.** Etappen A und B stehen und sind mit einem sauberen Kanonlauf beglaubigt. **Die Etappen C und D sind vollständig gebaut und mit GRUEN 46/46 auf `c8b310b` beglaubigt** (C: M-01 bis M-04, M-06 bis M-12, M-74 bis M-77, M-86; D: M-33 bis M-39, M-78). Von **E** ist der Fingerprint gebaut (M-26, M-27, M-31); offen sind M-25, M-28, M-29, M-30, M-32, M-68 und M-69, wobei M-25 und M-32 nach dem Fund in §10.6 am Träger aus Etappe G hängen. Etappe 1 (Verhaltensmatrix) ist am 2026-09-04 nach Matrixprüfung 1, Nacharbeit 1, Wiederprüfung 1, Nacharbeit 2 und Wiederprüfung 2 (PASS) abgenommen; die Matrix in §3 ist ab hier die Spezifikation. Bauauftrag: `docs/beweise/roh/SONDE-013-etappe-2-auftrag.txt`, Bau-Verlauf in §10 |
+| Phase | **Etappe 2 — Bau, Etappe C läuft.** Etappen A und B stehen und sind mit einem sauberen Kanonlauf beglaubigt. **Die Etappen C und D sind vollständig gebaut und mit GRUEN 46/46 auf `c8b310b` beglaubigt** (C: M-01 bis M-04, M-06 bis M-12, M-74 bis M-77, M-86; D: M-33 bis M-39, M-78). Von **E** sind der Fingerprint (M-26, M-27, M-31) und der Comparability-Score (M-28, M-29, M-30) gebaut; offen sind M-25, M-32, M-68 und M-69, wobei M-25 und M-32 nach dem Fund in §10.6 am Träger aus Etappe G hängen. Etappe 1 (Verhaltensmatrix) ist am 2026-09-04 nach Matrixprüfung 1, Nacharbeit 1, Wiederprüfung 1, Nacharbeit 2 und Wiederprüfung 2 (PASS) abgenommen; die Matrix in §3 ist ab hier die Spezifikation. Bauauftrag: `docs/beweise/roh/SONDE-013-etappe-2-auftrag.txt`, Bau-Verlauf in §10 |
 | Urteil | **offen** — T1 setzt der Erbauer nach der letzten Bauetappe, T2 der Dirigent nach der Codex-Abnahme |
 | Prüfstufe | T1+T2 gefordert (`docs/bauaufteilung-sonden.md`:392). T1 ist das Selbstaudit des Erbauers am Ende der letzten Bauetappe, T2 setzt der Dirigent nach der Codex-Abnahme |
 | Basis-SHA | Etappe 1 begann auf `ed9bbf7fec951a061749abf143cb2158c1c4ee52`; **Etappe 2 baut ab `0fdbb4a09c75e2c93ab9b76e7fcf5d92d0ef17e4`** (Abschluss der Matrixetappe), beide mit `git rev-parse HEAD` gemessen |
@@ -14,7 +14,7 @@
 | Rundenbilanz Etappe 1 | `py -3.13 tools/dirigent/rundenbilanz.py --runden ed9bbf7 4a2f50a 367a0ea ca20f3a 6e8bebb`: Matrix `ed9bbf7..4a2f50a` Doku 2 Dateien +1019/−0; Entscheide `4a2f50a..367a0ea` Doku +51/−0; Nacharbeit 1 `367a0ea..ca20f3a` Doku 4 Dateien +533/−63; Nacharbeit 2 `ca20f3a..6e8bebb` Doku 4 Dateien +286/−17. Produkt und Tests 0 Zeilen in allen vier Runden — erwartet, weil Etappe 1 nach der Regel „Spezifikation vor Code" ausschließlich das Manifest schreibt; das Konvergenzsignal des Werkzeugs greift erst ab Etappe 2. |
 | Änderungssatz dieser Etappe | Erster Commit `4a2f50a` und Entscheidcommit `367a0ea`: dieses Manifest und `docs/beweise/roh/SONDE-013-etappe-1-auftrag.txt`. Nacharbeit 1: dieses Manifest sowie die drei Rohdateien `docs/beweise/roh/SONDE-013-matrixpruefung-1-auftrag.txt`, `docs/beweise/roh/SONDE-013-matrixpruefung-1-367a0ea.txt` und `docs/beweise/roh/SONDE-013-nacharbeit-1-auftrag.txt` unverändert. Nacharbeit 2: dieses Manifest sowie die drei Rohdateien `docs/beweise/roh/SONDE-013-wiederpruefung-1-auftrag.txt`, `docs/beweise/roh/SONDE-013-wiederpruefung-1-ca20f3a.txt` und `docs/beweise/roh/SONDE-013-nacharbeit-2-auftrag.txt` unverändert. Kein Produkt-, Test-, Schema-, Fixture- oder Werkzeugcode. |
 | Kanon nachher | **GRUEN 46/46 auf `c8b310b`, Arbeitsbaum sauber** — die Beglaubigung der Etappen C und D. Rohausgabe `docs/beweise/roh/SONDE-013-c8b310b.md`. Der Weg dahin steht in §10.3 bis §10.5: der Lauf auf `ab0251d` war GRUEN 45/45, aber `-dirty` gestempelt (die zwei Dateien der beginnenden Etappe D lagen schon im Baum); der Lauf auf `e2ea2ec` war der erste auf sauberem Baum und kam **ROT 45/46** zurück — gefallen war **B8** an genau der Produktwirkung, die M-33 und M-34 herstellen, und dass kein anderes Bein fiel, ist die eigentliche Aussage jenes Laufs. Die Beinzahl wächst von 41 auf **46** und sinkt um kein Bein; 2 geplante noch nicht gebaut (B6, B7 ab P6), 1 stillgelegtes (A15). |
-| Testanzahl | A5 467 Prüfungen · A3 61 · B3c 75 · B8 77 · B10 313 · B16 52 · B17 23 (neu) · B18 44 (neu) · B19 57 (neu) · B20 24 (neu) · B21 22 (neu) · B22 24 (neu) · B5 237 · Broker 203 Lib-Tests plus alle Integrationsbeine · JSON-Fixturekorpus 285 (75 gültig, 210 ungültig) · Binärkorpus 104 (20 gültig, 84 ungültig) · Envelope-Korpus 37. Alle Zahlen aus dem Lauf dieser Sitzung, nicht abgeschrieben. |
+| Testanzahl | A5 470 Prüfungen · A3 61 · B3c 75 · B8 77 · B10 313 · B16 52 · B17 23 (neu) · B18 44 (neu) · B19 57 (neu) · B20 24 (neu) · B21 22 (neu) · B22 24 (neu) · B5 237 · Broker 203 Lib-Tests plus alle Integrationsbeine · JSON-Fixturekorpus 285 (75 gültig, 210 ungültig) · Binärkorpus 104 (20 gültig, 84 ungültig) · Envelope-Korpus 37. Alle Zahlen aus dem Lauf dieser Sitzung, nicht abgeschrieben. |
 | Änderungssatz Etappe 2 | Fortlaufend in §10 je Bauetappe geführt: Commits, Beine, Rotbeweise, Abweichungen von §5 und Nebenbefunde. Die Beinzahl wächst mit Etappe C von 41 auf **43** (neu: **B17** `EqCopSonde013TruePeakGoldenTest`, **B18** `EqCopSonde013DynamicsTest`) und sinkt um kein Bein; der volle Kanon auf diesem Stand steht aus, weil Etappe C Schema-, Fixture- und Runnerdateien berührt (§5.1) und deshalb erst am Ende der ganzen Etappe beglaubigt wird. |
 | Grenze | Etappe 2 baut ausschließlich, was §3 zusagt. Prüfbereich sind die Ticketpfade aus §5.2; jede Datei außerhalb steht mit Begründung in §10. `docs/offene-punkte.md` und `docs/PLAN-STAND.md` bleiben unberührt — Nebenbefunde sammelt §10, der Dirigent zieht sie im Abschluss nach. |
 
@@ -493,9 +493,9 @@ Ein Testname mit **NEU** existiert noch nicht.
 | M-25 | User markiert eine Passage | Eine `Passage` speichert Start und Ende, Transportepoche, aktive Quellen, Abdeckung, manuelles Label und den Fingerprint. Reihenfolge: Grenzen in Projektsamples auflösen → Transportepoche binden → aktives Quellenset einfrieren → Abdeckung berechnen → Fingerprint bilden → Objekt in den Store schreiben. Autoritative Ablage ist der Store; `MainProjectState` hält die manuellen Passagen als Projektintent, der mit der FL-Projektdatei reist. | **NEU** `sonde013_passage.rs`, Fall `passage_carries_all_six_fields`; **NEU** `EqCopSonde013PassageStateTest`, Fall `manual_passage_persists_in_main_project_state_and_marks_host_dirty`. | Entwurf §32.4:1967-1975; §33.5:2135-2142 (Zeile „manuelle Passagen"); `broker/src/store/migration.rs`:68-76. **BELEGT, BAULÜCKE** |
 | M-26 | Passage wird gebildet; Fingerprint entsteht | Der Fingerprint besteht aus quantisierten Bandenergie-, Chroma- und Onset-Verläufen. Er enthält **kein rekonstruierbares PCM** und dient nur dazu, grob anderes musikalisches Material zu erkennen. Ein Experiment kann vollständig inklusive Evidenz-IDs exportiert und ohne PCM gelöscht werden. | **teilweise gemessen** (2026-09-04, Etappe E): **B22** `EqCopSonde013FingerprintGoldenTest`::`fingerprint_carries_no_reconstructible_pcm` — 76 Byte für 204 800 Samples (ein Byte je 2694), ein Sinus und ein Dreieck derselben Grundfrequenz sind sich ähnlich (0,656), und alle drei Verläufe sind Energien ohne Phase. `export_and_delete_without_pcm` gehört zum Store und damit zum Träger aus Etappe G. | Entwurf §32.4:1969-1971; §43.4:2818 (Exportkriterium). **BELEGT, Erzeuger gemessen** (Etappe E, 2026-09-04); der Exportpfad gehört zum Store (Etappe G, §10.6) |
 | M-27 | Fingerprintfenster läuft; Epochengrenze tritt ein | Kein Fingerprintfenster überbrückt eine echte oder mögliche Epochengrenze. Es gilt dieselbe Ein-Block-Quarantäne wie für FFT-, Loudness- und Korrelationsfenster: erst der monotone Beginn des Folgeblocks versiegelt zur Veröffentlichung; stoppt der Callback vorher, bleibt das Fenster unvollständig. Ein nachträglich sichtbarer Loop-Wrap kann so keine persistierte Evidenz kontaminieren. | **gemessen** (2026-09-04, Etappe E): bestehend **B4** für die Quarantäne; **B22**::`fingerprint_window_never_crosses_epoch_boundary` — nach einer Stromlücke trägt die Engine den Fingerprint des NEUEN Materials (Ähnlichkeit 1,00 zur neuen Referenz, 0,00 zur alten), und der Fensterzähler fällt mit. Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-27-fingerprint.txt`. | Entwurf §32.3:1955-1966; `docs/beweise/SONDE-008.md`. **BELEGT, gemessen** (Etappe E, 2026-09-04) |
-| M-28 | Zwei Passagen; Vergleichbarkeit wird bestimmt | Vergleichbarkeit entsteht aus **fünf** Belegen, nicht aus einem: identischer Projektbereich, gleicher beziehungsweise sehr ähnlicher Fingerprint, vergleichbare aktive Quellen, gleiche Samplerate und Messpunktklasse, ausreichende gemeinsame Abdeckung. **Kein einzelner Hash hebt einen Widerspruch der anderen Belege auf.** | **NEU** `sonde013_passage.rs`, Fall `comparability_needs_all_five_and_hash_alone_never_wins` mit einem Gegenbeispiel je Beleg. | Entwurf §32.4:1971-1983. **BELEGT, BAULÜCKE** |
-| M-29 | Vergleichbarkeit wird als Score ausgedrückt | Startgates für **starke** Vergleichbarkeit sind 95 % Zeitüberdeckung, Aktivquellen-Jaccard mindestens 0,9 und Upstream-Feature-Cosine mindestens 0,95. Sie sind ausdrücklich **Startwerte, am Korpus zu kalibrieren**, und leben deshalb in der versionierten `metrics_version`, nicht als Literal im Produktpfad. Unterhalb eines Gates gibt es keinen starken Vergleich, sondern eine benannte Herabstufung. | **NEU** `sonde013_passage.rs`, Fall `each_start_gate_falls_alone_at_its_threshold` mit Gleichheitsfall und erstem Unterschreiten je Gate; **NEU** **A5**-Fall `comparability_schwellen_haengen_an_metrics_version`. | Entwurf §43.2:2861-2866; §34.3:2235-2237. **BELEGT, BAULÜCKE** |
-| M-30 | Passage liegt vor; Abdeckung wird gebraucht | Abdeckung ist die tatsächlich gemessene Signalabdeckung der Passage, nicht ihre Wanddauer. Smart Disable und Suspend gelten als **fehlende** Coverage; nach Resume oder Discontinuity beginnt eine neue Transportepoche. Eine Passage mit unzureichender Abdeckung erhält kein Siegerlabel. | **NEU** `sonde013_passage.rs`, Fall `coverage_is_measured_signal_not_wall_duration`; **NEU** derselbe Test, Fall `suspend_counts_as_missing_coverage`. | Entwurf §48.2:3437-3439; §43.2:2870; §34.2:2196. **BELEGT, BAULÜCKE** |
+| M-28 | Zwei Passagen; Vergleichbarkeit wird bestimmt | Vergleichbarkeit entsteht aus **fünf** Belegen, nicht aus einem: identischer Projektbereich, gleicher beziehungsweise sehr ähnlicher Fingerprint, vergleichbare aktive Quellen, gleiche Samplerate und Messpunktklasse, ausreichende gemeinsame Abdeckung. **Kein einzelner Hash hebt einen Widerspruch der anderen Belege auf.** | **gemessen** (2026-09-04, Etappe E): **A4** `sonde013_passage.rs`::`comparability_needs_all_five_and_hash_alone_never_wins` — die fünf Belege fallen einzeln bei sonst perfekter Lage und identischem Fingerprint; die Klasse ist ein Minimum, kein Score. Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-28.txt`. | Entwurf §32.4:1971-1983. **BELEGT, gemessen** |
+| M-29 | Vergleichbarkeit wird als Score ausgedrückt | Startgates für **starke** Vergleichbarkeit sind 95 % Zeitüberdeckung, Aktivquellen-Jaccard mindestens 0,9 und Upstream-Feature-Cosine mindestens 0,95. Sie sind ausdrücklich **Startwerte, am Korpus zu kalibrieren**, und leben deshalb in der versionierten `metrics_version`, nicht als Literal im Produktpfad. Unterhalb eines Gates gibt es keinen starken Vergleich, sondern eine benannte Herabstufung. | **gemessen** (2026-09-04, Etappe E): **A4** `sonde013_passage.rs`::`each_start_gate_falls_alone_at_its_threshold` und ::`urteil_traegt_seine_kalibrierungsfassung`; **A5**::`comparability_schwellen_haengen_an_metrics_version` (drei Prüfungen: alle vier Gates in der aktuellen Fassung geführt, `METRICS_VERSION` des Brokers gleich `aktuell`, keine Gate-Zahl als Literal im Produktpfad). Rotbeweise `docs/beweise/roh/SONDE-013-rot-M-29-literal.txt` und `-M-29-register.txt`. | Entwurf §43.2:2861-2866; §34.3:2235-2237. **BELEGT, gemessen** |
+| M-30 | Passage liegt vor; Abdeckung wird gebraucht | Abdeckung ist die tatsächlich gemessene Signalabdeckung der Passage, nicht ihre Wanddauer. Smart Disable und Suspend gelten als **fehlende** Coverage; nach Resume oder Discontinuity beginnt eine neue Transportepoche. Eine Passage mit unzureichender Abdeckung erhält kein Siegerlabel. | **gemessen** (2026-09-04, Etappe E): **A4** `sonde013_passage.rs`::`coverage_is_measured_signal_not_wall_duration` und ::`suspend_counts_as_missing_coverage` — die Abdeckung wird auf BEIDEN Seiten geprüft, und eine lange Passage mit dünnem Signal verliert gegen eine kurze mit dichtem. Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-30.txt`. | Entwurf §48.2:3437-3439; §43.2:2870; §34.2:2196. **BELEGT, gemessen** |
 | M-31 | Passage soll gebildet werden, aber das Material wechselt mittendrin | Bei anderem Material oder unzureichender Abdeckung gibt es **kein** Siegerlabel. Der Fingerprintvergleich meldet den Wechsel, statt zwei Hälften zu mitteln. Das ist der Produktschutz aus §15: „Warnung oder Sperre, wenn das musikalische Material nicht vergleichbar ist." | **gemessen** (2026-09-04, Etappe E): **B22**::`material_change_mid_passage_is_detected_not_averaged` — mit Gegenproben in beide Richtungen: dasselbe Material zweimal ergibt BITGLEICH denselben Fingerprint, derselbe Akkord in zwei Lautstärken bleibt über 0,95 ähnlich, ein anderer Akkord ist messbar unähnlicher, Rauschen deutlich. Die Ähnlichkeit ist ein MINIMUM über die drei Verläufe, kein Mittelwert. Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-31.txt`. | Entwurf §15:1098; §43.2:2870. **BELEGT, gemessen** (Etappe E, 2026-09-04) |
 | M-32 | Passage existiert im Store; Broker startet neu oder Main lädt neu | Die Passage bleibt rekonstruierbar: Store ist autoritativ, `MainProjectState` hält kompakte aktuelle IDs. Fehlt oder wird die SQLite-Datenbank gelöscht, bleiben Projekt-Recall und DSP vollständig — nur historische Passagen und Experimente fehlen. Umgekehrt darf ein alter Datenbankeintrag nie einen neueren Plugin-State zurücksetzen. | Bestehend **A4-SI** `store_crash_matrix` für die Rekonstruktionsform; **NEU** `sonde013_passage.rs`, Fall `passage_survives_restart_and_missing_db_degrades_gracefully`. | Entwurf §33.5:2129-2160; `broker/src/store/migration.rs`:68-76. **BELEGT, BAULÜCKE** |
 
@@ -2330,6 +2330,96 @@ zwischen richtiger und falscher Rechnung liegen 33 dB.
 | `SONDE-013-rot-M-07-cpp-leser.txt` | Regel `true_peak_unter_sample_peak` aus dem C++-Leser entfernt | B3c |
 | `SONDE-013-rot-M-07-rust-leser.txt` | Regel `headroom_fenster_null` aus dem Rust-Leser entfernt | `contract_cross_language` |
 
+#### Der Comparability-Score: fünf Belege, und die Klasse ist ihr Minimum
+
+§32.4 zählt die Belege abschließend auf, und M-28 sagt den Satz, der das Modul
+trägt: „**Kein einzelner Hash hebt einen Widerspruch der anderen Belege auf.**"
+
+Das ist keine Formulierungsfrage. Der Fingerprint ist eine 76-Byte-
+Zusammenfassung von Sekunden Audio und bewusst nicht injektiv — der Abschnitt
+darüber beweist das mit einem Sinus und einem Dreieck, die sich zu 0,656
+ähneln. Wer aus einer Fingerprintgleichheit auf Vergleichbarkeit schließt, hat
+genau den Fehler gemacht, vor dem §15 warnt.
+
+Deshalb ist `Vergleichbarkeit` ein **Minimum über die fünf Belege**, kein
+gewichteter Score — dieselbe Bauform wie `Konfidenzklasse` in `Konfidenz.h`
+und wie die Fingerprintähnlichkeit daneben. Ein Deckel lässt sich nicht
+mitteln. Die Reihenfolge ist Absicht: erst die Abdeckung (ohne Signal gibt es
+keinen Vergleich), dann Projektbereich, Material, Quellen, Messpunkt. Ein
+widersprochener Beleg ergibt `Unvergleichbar`; alle fünf da, aber mindestens
+einer unter seinem Gate, ergibt `Schwach`.
+
+**Alle Gründe reisen mit, nicht nur der erste.** Ein Empfänger, der nur den
+ersten sähe, behöbe ihn und fände den nächsten; die Liste sagt ihm gleich, wie
+weit es ist.
+
+**Der Broker rechnet, nicht die Sonde** (§7.1 E-07). Er hält Sessiongraph und
+Passagen; eine Sonde sieht ihre eigene Coverage und keine der übrigen vier
+Größen.
+
+#### Warum die drei Gates im Register stehen und nicht im Pfad
+
+M-29 wörtlich über die Zahlen aus §43.2: „Sie sind ausdrücklich **Startwerte,
+am Korpus zu kalibrieren**, und leben deshalb in der versionierten
+`metrics_version`, nicht als Literal im Produktpfad."
+
+Der allgemeine Registerriegel aus M-06 prüft, dass jede geführte Schwelle so im
+Code steht. Er merkt **nicht**, wenn jemand daneben ein zweites Mal
+`if zeit < 0.95` schreibt — und genau das wäre der Rückfall: eine Kalibrierung
+höbe die Konstante, und der stille Zwilling entschiede weiter. Der neue
+A5-Fall stellt deshalb drei Fragen an denselben Pfad: die vier Gates stehen in
+der **aktuellen** Fassung (nicht in einer älteren, aus der sie beim
+Fassungswechsel herausgefallen wären), der Broker nennt dieselbe Fassung wie
+das Register, und im Produktpfad steht keine der vier Zahlen als nacktes
+Literal.
+
+Dazu trägt jedes `Vergleichsurteil` seine `metrics_version` mit. Ohne sie wäre
+ein gespeichertes Urteil nach der nächsten Kalibrierung eine Klasse ohne
+Maßstab: dieselbe `Stark` meint bei anderen Gates etwas anderes. Dasselbe
+Muster wie das `version`-Feld im Fingerprint.
+
+#### Die Zahlenränder dieses Moduls
+
+Zwei Stellen, an denen ein naiver Vergleich das Gegenteil seiner Aussage
+liefert:
+
+- **Die Zeitüberdeckung sättigt.** Zwei gültige Fenster an entgegengesetzten
+  `i64`-Rändern dürfen weder paniken noch umbrechen und dadurch als
+  deckungsgleich gelten; `checked_sub` fängt genau das. Ohne ihn wäre ein
+  Überlauf eine Überdeckung von 100 %.
+- **Zwei leere Quellensets sind nicht identisch, sondern ohne Aussage.** Ein
+  Jaccard-Index über zwei leeren Mengen ist mathematisch unbestimmt; als 1,0
+  gelesen wäre eine Passage ohne bestätigte Quellen mit jeder anderen maximal
+  vergleichbar. Das ist der teuerste Fehler, den dieser Index machen kann.
+
+#### Belege des Comparability-Bausteins
+
+| Bein | Ergebnis |
+|---|---|
+| **A4** `cargo test --release`, gesamter Broker | 203 + 9 + 51 + 23 + 5 bestanden, 0 gescheitert |
+| **A4** `sonde013_passage.rs` (NEU in E) | 9 bestanden, 0 gescheitert |
+| **A5** `pruefe_v3_vertrag.py` | 470 Prüfungen bestanden, 0 gescheitert (467 vorher, +3 durch M-29) |
+
+| Rotbeweis | Eingebauter Fehler | Fallendes Bein |
+|---|---|---|
+| `SONDE-013-rot-M-28.txt` | ein Fingerprint über seinem Gate hebt die übrigen vier Belege auf | A4 |
+| `SONDE-013-rot-M-29-literal.txt` | ein Gate steht als nacktes Literal im Vergleich statt als Konstante | A5 |
+| `SONDE-013-rot-M-29-register.txt` | ein Gate wird im Register kalibriert, ohne dass der Code folgt | A5 |
+| `SONDE-013-rot-M-30.txt` | die Abdeckung wird nur auf der linken Seite geprüft | A4 |
+
+**Ein Rotbeweis kam zuerst grün zurück, und der Grund gehört ins Protokoll.**
+Der erste M-28-Versuch hängte den Fehler an `material < 1.0` — der Cosinus
+zweier identischer Fingerprints landet numerisch knapp **unter** eins, der Fall
+trat gar nicht erst ein. Die Warnung steht jetzt im Testkommentar und im
+Rohbeweis. Es ist der vierte Fall dieser Art in diesem Ticket; die Lehre ist
+jedesmal dieselbe: ein Rotbeweis beweist erst dann etwas, wenn der eingebaute
+Fehler auch wirklich eintritt.
+
+**Ein Werkzeugfund am Rand:** ein eingerückter Zitatblock in einem Rust-Doc-
+Kommentar wird von rustdoc als Doctest gelesen und bricht `cargo test
+--release` mit `E0308`, obwohl kein Test existiert. Blockquote statt
+Einrückung. Der Fund kostete einen A4-Lauf.
+
 #### Abweichungen von §5, mit Begründung
 
 - **Sieben neue `.fbs`-Felder und eine neue Tabelle, ohne P2-Fassungsschritt.**
@@ -2822,8 +2912,9 @@ und die 32-Sonden-Last (A22, A24) halten den neuen Ausfade unverändert.
 
 ### 10.6 Etappe E — Passage und Fingerprint (2026-09-04)
 
-**Gebaute Matrixzeilen bisher:** M-26, M-27, M-31 (der Content-Fingerprint).
-M-25, M-28, M-29, M-30, M-32, M-68 und M-69 stehen noch aus.
+**Gebaute Matrixzeilen bisher:** M-26, M-27, M-31 (der Content-Fingerprint),
+M-28, M-29, M-30 (der Comparability-Score). M-25, M-32, M-68 und M-69 stehen
+noch aus.
 
 #### Ein Vertragsfund VOR dem Bau, der die Etappenzuordnung ändert
 

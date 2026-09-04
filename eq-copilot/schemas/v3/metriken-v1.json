@@ -11,7 +11,8 @@
   "handgeschrieben": true,
   "quellen": [
     "eq-copilot/plugin/core/analysis/FeatureEngine.h",
-    "eq-copilot/plugin/core/analysis/Konfidenz.h"
+    "eq-copilot/plugin/core/analysis/Konfidenz.h",
+    "broker/src/coordinator/vergleichbarkeit.rs"
   ],
 
   "aktuell": 20260904,
@@ -61,6 +62,30 @@
           "einheit": "Abdeckung in [0,1]",
           "datei": "eq-copilot/plugin/core/analysis/Konfidenz.h",
           "zweck": "M-06: dieselbe Frage fuer `mittel`."
+        },
+        "GATE_ZEITUEBERDECKUNG": {
+          "wert": 0.95,
+          "einheit": "Ueberdeckung in [0,1]",
+          "datei": "broker/src/coordinator/vergleichbarkeit.rs",
+          "zweck": "M-29: Zeitueberdeckung fuer eine STARKE Vergleichbarkeit (§43.2: 95 %). Ausdruecklich ein Startwert, am Korpus zu kalibrieren."
+        },
+        "GATE_QUELLEN_JACCARD": {
+          "wert": 0.9,
+          "einheit": "Jaccard in [0,1]",
+          "datei": "broker/src/coordinator/vergleichbarkeit.rs",
+          "zweck": "M-29: Aktivquellen-Jaccard fuer eine starke Vergleichbarkeit (§43.2: 0,9)."
+        },
+        "GATE_MATERIAL_COSINE": {
+          "wert": 0.95,
+          "einheit": "Cosinus in [0,1]",
+          "datei": "broker/src/coordinator/vergleichbarkeit.rs",
+          "zweck": "M-29: Upstream-Feature-Cosine fuer eine starke Vergleichbarkeit (§43.2: 0,95)."
+        },
+        "GATE_ABDECKUNG": {
+          "wert": 0.5,
+          "einheit": "Abdeckung in [0,1]",
+          "datei": "broker/src/coordinator/vergleichbarkeit.rs",
+          "zweck": "M-30: ab welcher gemessenen Abdeckung eine Passage ueberhaupt einen Vergleich traegt. Eine Passage mit unzureichender Abdeckung erhaelt kein Siegerlabel."
         }
       },
       "ganzzahlige_schwellen": {

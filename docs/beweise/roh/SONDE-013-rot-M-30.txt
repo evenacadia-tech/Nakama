@@ -1,0 +1,81 @@
+SONDE-013 Etappe 2 E - Rotbeweis M-30
+=========================================
+
+Datei:     broker/src/coordinator/vergleichbarkeit.rs
+Ziel:      sonde013_passage.rs (Kanon A4)
+Warum:     Die Abdeckung wird nur auf der linken Seite geprueft. Eine Referenzpassage mit ausreichendem Signal zoege damit jede beliebig duenne Vergleichspassage mit hoch - und M-30 sagt, eine Passage mit unzureichender Abdeckung erhaelt KEIN Siegerlabel. Ein einseitiger Riegel ist kein Riegel, weil die Reihenfolge der Argumente ihn entscheidet.
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+    if a.abdeckung < GATE_ABDECKUNG || b.abdeckung < GATE_ABDECKUNG {
+--- NEU ---
+    if a.abdeckung < GATE_ABDECKUNG {
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+running 9 tests
+test coverage_is_measured_signal_not_wall_duration ... ok
+test fehlender_fingerprint_ist_keine_aehnlichkeit ... ok
+test leere_quellensets_sind_nicht_identisch ... ok
+test zahlenraender_saettigen_statt_umzubrechen ... ok
+test suspend_counts_as_missing_coverage ... FAILED
+test kein_beleg_wird_still_uebergangen ... FAILED
+test each_start_gate_falls_alone_at_its_threshold ... ok
+test comparability_needs_all_five_and_hash_alone_never_wins ... FAILED
+test urteil_traegt_seine_kalibrierungsfassung ... ok
+
+failures:
+
+---- suspend_counts_as_missing_coverage stdout ----
+
+thread 'suspend_counts_as_missing_coverage' (6688) panicked at tests\sonde013_passage.rs:253:5:
+assertion `left == right` failed
+  left: Stark
+ right: Unvergleichbar
+
+---- kein_beleg_wird_still_uebergangen stdout ----
+
+thread 'kein_beleg_wird_still_uebergangen' (19500) panicked at tests\sonde013_passage.rs:274:5:
+alle drei Widersprueche reisen, nicht nur der erste: [ProjektbereichVerschieden, MesspunktVerschieden]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- comparability_needs_all_five_and_hash_alone_never_wins stdout ----
+
+thread 'comparability_needs_all_five_and_hash_alone_never_wins' (20560) panicked at tests\sonde013_passage.rs:123:5:
+assertion `left == right` failed
+  left: Stark
+ right: Unvergleichbar
+
+
+failures:
+    comparability_needs_all_five_and_hash_alone_never_wins
+    kein_beleg_wird_still_uebergangen
+    suspend_counts_as_missing_coverage
+
+test result: FAILED. 6 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.05s
+     Running tests\sonde013_passage.rs (target\debug\deps\sonde013_passage-1f134177ed15bbcd.exe)
+error: test failed, to rerun pass `--test sonde013_passage`
+
+Exitcode: 101  ->  ROT (gut)
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+running 9 tests
+test coverage_is_measured_signal_not_wall_duration ... ok
+test fehlender_fingerprint_ist_keine_aehnlichkeit ... ok
+test comparability_needs_all_five_and_hash_alone_never_wins ... ok
+test kein_beleg_wird_still_uebergangen ... ok
+test leere_quellensets_sind_nicht_identisch ... ok
+test suspend_counts_as_missing_coverage ... ok
+test zahlenraender_saettigen_statt_umzubrechen ... ok
+test each_start_gate_falls_alone_at_its_threshold ... ok
+test urteil_traegt_seine_kalibrierungsfassung ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.02s
+     Running tests\sonde013_passage.rs (target\debug\deps\sonde013_passage-1f134177ed15bbcd.exe)
+
+Exitcode: 0  ->  GRUEN (gut)

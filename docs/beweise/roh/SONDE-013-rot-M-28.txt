@@ -1,0 +1,118 @@
+SONDE-013 Etappe 2 E - Rotbeweis M-28
+=========================================
+
+Datei:     broker/src/coordinator/vergleichbarkeit.rs
+Ziel:      sonde013_passage.rs (Kanon A4)
+Warum:     Ein Fingerprint UEBER seinem Gate hebt die uebrigen vier Belege auf. Genau der Satz, den M-28 verbietet: "KEIN einzelner Hash hebt einen Widerspruch der anderen Belege auf." Der Fehler ist verfuehrerisch, weil er im Gutfall NICHTS aendert - er greift nur dort, wo ein anderer Beleg widerspricht, und macht aus einer bewusst nicht injektiven 76-Byte-Zusammenfassung (§10.6) einen Freibrief.
+           WARNUNG fuer spaetere Rotbeweise an dieser Stelle: die Bedingung `material < 1.0` faellt NICHT. Der Cosinus zweier identischer Fingerprints ist numerisch knapp unter 1,0, nie exakt 1,0 - ein Fehler, der an einer exakten Eins haengt, tritt gar nicht erst ein und beweist deshalb nichts.
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+    // Ein widersprochener Beleg ⇒ unvergleichbar. Kein Hash hebt das auf.
+    if !gruende.is_empty() {
+--- NEU ---
+    // Ein widersprochener Beleg ⇒ unvergleichbar. Kein Hash hebt das auf.
+    if !gruende.is_empty() && material < GATE_MATERIAL_COSINE {
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+running 9 tests
+test fehlender_fingerprint_ist_keine_aehnlichkeit ... ok
+test coverage_is_measured_signal_not_wall_duration ... FAILED
+test zahlenraender_saettigen_statt_umzubrechen ... FAILED
+test kein_beleg_wird_still_uebergangen ... FAILED
+test comparability_needs_all_five_and_hash_alone_never_wins ... FAILED
+test suspend_counts_as_missing_coverage ... FAILED
+test urteil_traegt_seine_kalibrierungsfassung ... FAILED
+test leere_quellensets_sind_nicht_identisch ... FAILED
+test each_start_gate_falls_alone_at_its_threshold ... ok
+
+failures:
+
+---- coverage_is_measured_signal_not_wall_duration stdout ----
+
+thread 'coverage_is_measured_signal_not_wall_duration' (8912) panicked at tests\sonde013_passage.rs:234:5:
+assertion `left == right` failed: eine sehr lange Passage mit fast keinem Signal traegt keinen Vergleich - die Wanddauer rettet nichts
+  left: Schwach
+ right: Unvergleichbar
+
+---- zahlenraender_saettigen_statt_umzubrechen stdout ----
+
+thread 'zahlenraender_saettigen_statt_umzubrechen' (19444) panicked at tests\sonde013_passage.rs:302:5:
+assertion `left == right` failed
+  left: Schwach
+ right: Unvergleichbar
+
+---- kein_beleg_wird_still_uebergangen stdout ----
+
+thread 'kein_beleg_wird_still_uebergangen' (20736) panicked at tests\sonde013_passage.rs:273:5:
+assertion `left == right` failed
+  left: Schwach
+ right: Unvergleichbar
+
+---- comparability_needs_all_five_and_hash_alone_never_wins stdout ----
+
+thread 'comparability_needs_all_five_and_hash_alone_never_wins' (22088) panicked at tests\sonde013_passage.rs:82:5:
+assertion `left == right` failed
+  left: Schwach
+ right: Unvergleichbar
+
+---- suspend_counts_as_missing_coverage stdout ----
+
+thread 'suspend_counts_as_missing_coverage' (7608) panicked at tests\sonde013_passage.rs:253:5:
+assertion `left == right` failed
+  left: Schwach
+ right: Unvergleichbar
+
+---- urteil_traegt_seine_kalibrierungsfassung stdout ----
+
+thread 'urteil_traegt_seine_kalibrierungsfassung' (6932) panicked at tests\sonde013_passage.rs:358:5:
+assertion `left == right` failed
+  left: Schwach
+ right: Unvergleichbar
+
+---- leere_quellensets_sind_nicht_identisch stdout ----
+
+thread 'leere_quellensets_sind_nicht_identisch' (6808) panicked at tests\sonde013_passage.rs:322:5:
+assertion `left == right` failed
+  left: Schwach
+ right: Unvergleichbar
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    comparability_needs_all_five_and_hash_alone_never_wins
+    coverage_is_measured_signal_not_wall_duration
+    kein_beleg_wird_still_uebergangen
+    leere_quellensets_sind_nicht_identisch
+    suspend_counts_as_missing_coverage
+    urteil_traegt_seine_kalibrierungsfassung
+    zahlenraender_saettigen_statt_umzubrechen
+
+test result: FAILED. 2 passed; 7 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.92s
+     Running tests\sonde013_passage.rs (target\debug\deps\sonde013_passage-1f134177ed15bbcd.exe)
+error: test failed, to rerun pass `--test sonde013_passage`
+
+Exitcode: 101  ->  ROT (gut)
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+running 9 tests
+test coverage_is_measured_signal_not_wall_duration ... ok
+test fehlender_fingerprint_ist_keine_aehnlichkeit ... ok
+test kein_beleg_wird_still_uebergangen ... ok
+test comparability_needs_all_five_and_hash_alone_never_wins ... ok
+test leere_quellensets_sind_nicht_identisch ... ok
+test suspend_counts_as_missing_coverage ... ok
+test zahlenraender_saettigen_statt_umzubrechen ... ok
+test each_start_gate_falls_alone_at_its_threshold ... ok
+test urteil_traegt_seine_kalibrierungsfassung ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.11s
+     Running tests\sonde013_passage.rs (target\debug\deps\sonde013_passage-1f134177ed15bbcd.exe)
+
+Exitcode: 0  ->  GRUEN (gut)

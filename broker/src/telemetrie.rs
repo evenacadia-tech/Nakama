@@ -57,6 +57,57 @@ pub struct Quellframe {
     pub integration_samples: Option<u32>,
 }
 
+/// Die drei Fingerprintverlaeufe einer Passage (SONDE-013 M-26, §32.4).
+///
+/// Wortgleiche Form wie `nakama::analyse::Fingerprint` auf der C++-Seite und
+/// wie `$defs/fingerprint` im Vertrag: 32 Bandenergien, 12 Chromawerte, 32
+/// Onsetstuetzstellen, je ein Byte. Die Groesse IST die Zusage — 76 Byte fuer
+/// Sekunden bis Minuten Audio tragen kein rekonstruierbares PCM.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Fingerprintwerte {
+    pub version: u16,
+    pub band_energie: [u8; 32],
+    pub chroma: [u8; 12],
+    pub onset: [u8; 32],
+}
+
+impl Default for Fingerprintwerte {
+    fn default() -> Self {
+        Self { version: 1, band_energie: [0; 32], chroma: [0; 12], onset: [0; 32] }
+    }
+}
+
+/// Aehnlichkeit zweier Fingerprints in [0, 1] (M-28, M-31).
+///
+/// Cosinus je Verlauf, dann das MINIMUM der drei — nicht der Mittelwert.
+/// Wortgleich mit `fingerprintAehnlichkeit` in `FeatureEngine.h`: ein
+/// Material, das spektral passt und rhythmisch nicht, ist nicht "zu zwei
+/// Dritteln dasselbe". Der schwaechste Beleg bestimmt die Aussage.
+///
+/// ⚠️ Zwei Nullvektoren sind NICHT aehnlich. Ohne diese Zeile waere "beide
+/// leer" die hoechste Aehnlichkeit, die es gibt.
+pub fn fingerprint_aehnlichkeit(a: &Fingerprintwerte, b: &Fingerprintwerte) -> f64 {
+    fn cosinus(x: &[u8], y: &[u8]) -> f64 {
+        let (mut xy, mut xx, mut yy) = (0.0f64, 0.0f64, 0.0f64);
+        for (u, v) in x.iter().zip(y.iter()) {
+            let (u, v) = (*u as f64, *v as f64);
+            xy += u * v;
+            xx += u * u;
+            yy += v * v;
+        }
+        let nenner = xx.sqrt() * yy.sqrt();
+        if nenner <= 0.0 {
+            return 0.0;
+        }
+        let c = xy / nenner;
+        if c.is_finite() { c.clamp(0.0, 1.0) } else { 0.0 }
+    }
+    let c_band = cosinus(&a.band_energie, &b.band_energie);
+    let c_chroma = cosinus(&a.chroma, &b.chroma);
+    let c_onset = cosinus(&a.onset, &b.onset);
+    c_band.min(c_chroma).min(c_onset)
+}
+
 /// Ergebnis der Broker-Eingangspruefung. Ein ausschliesslich kaputtes
 /// LUFS-I-Paar entwertet nicht die uebrigen Framefelder: die drei optionalen
 /// Lautheitsfelder werden aus einer Kopie des Puffers entfernt und genau diese

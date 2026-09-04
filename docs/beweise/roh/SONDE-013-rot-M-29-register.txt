@@ -1,0 +1,33 @@
+SONDE-013 Etappe 2 E - Rotbeweis M-29-register
+=========================================
+
+Datei:     eq-copilot/schemas/v3/metriken-v1.json
+Ziel:      pruefe_v3_vertrag.py (Kanon A5)
+Warum:     Ein Gate wird im Register kalibriert, ohne dass der Code folgt. Beide Richtungen des Riegels muessen beissen: eine Zahl, die nur an einer der zwei Stellen steht, ist keine versionierte Schwelle, sondern zwei verschiedene Wahrheiten.
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+"GATE_QUELLEN_JACCARD": {
+          "wert": 0.9,
+--- NEU ---
+"GATE_QUELLEN_JACCARD": {
+          "wert": 0.85,
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+jsonschema 4.26.0 (draft 2020-12)
+72 Definitionen, 21 Nachrichtenfamilien, 285 Fixtures
+Pruefungen: 469 bestanden, 1 gescheitert
+  ROT: metrics_version_bindet_schwellen: und mit demselben Wert an derselben Stelle — GATE_QUELLEN_JACCARD: Code 0.9, Register 0.85
+C:\Users\phili\Projekte\Nakama\tools\eq-copilot\pruefe_v3_vertrag.py:1706: DeprecationWarning: Accessing jsonschema.__version__ is deprecated and will be removed in a future release. Use importlib.metadata directly to query for jsonschema's version.
+  print(f"jsonschema {jsonschema.__version__} (draft 2020-12)")
+
+Exitcode: 2  ->  ROT (gut)
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+jsonschema 4.26.0 (draft 2020-12)
+72 Definitionen, 21 Nachrichtenfamilien, 285 Fixtures
+Pruefungen: 470 bestanden, 0 gescheitert
+C:\Users\phili\Projekte\Nakama\tools\eq-copilot\pruefe_v3_vertrag.py:1706: DeprecationWarning: Accessing jsonschema.__version__ is deprecated and will be removed in a future release. Use importlib.metadata directly to query for jsonschema's version.
+  print(f"jsonschema {jsonschema.__version__} (draft 2020-12)")
+
+Exitcode: 0  ->  GRUEN (gut)

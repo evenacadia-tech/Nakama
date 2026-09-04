@@ -1519,13 +1519,21 @@ def _konstanten_aus_kern(dateien: list[pathlib.Path]) -> dict[str, tuple[str, st
     in JSON aber nicht, und ein Vergleich ueber `float()` waere gegenueber
     einem vertippten `1.20` blind.
     """
-    muster = re.compile(
+    cpp = re.compile(
         r"^inline\s+constexpr\s+(?:std::)?\w+\s+(k\w+)\s*=\s*([^;]+);", re.MULTILINE)
+    # Dieselbe Frage auf der Rust-Seite: die Vergleichbarkeitsgates aus M-29
+    # leben dort, und ein Register, das nur eine Sprache haelt, waere genau
+    # die halbe Wache.
+    rust = re.compile(
+        r"^pub\s+const\s+([A-Z][A-Z0-9_]*)\s*:\s*\w+\s*=\s*([^;]+);", re.MULTILINE)
     aus: dict[str, tuple[str, str]] = {}
     for datei in dateien:
         if not datei.exists():
             continue
-        for name, wert in muster.findall(datei.read_text(encoding="utf-8")):
+        text = datei.read_text(encoding="utf-8")
+        for name, wert in cpp.findall(text):
+            aus[name] = (wert.strip().rstrip("uf"), datei.name)
+        for name, wert in rust.findall(text):
             aus[name] = (wert.strip().rstrip("uf"), datei.name)
     return aus
 
@@ -1563,6 +1571,7 @@ def pruefe_metrikregister(lauf: Lauf) -> None:
     konstanten = _konstanten_aus_kern([
         kern / "FeatureEngine.h",
         kern / "Konfidenz.h",
+        WURZEL / "broker/src/coordinator/vergleichbarkeit.rs",
     ])
     lauf.wahr("metrics_version_bindet_schwellen: Kernkonstanten lesbar",
               len(konstanten) > 5, f"{len(konstanten)} gefunden")
@@ -1609,6 +1618,70 @@ def pruefe_metrikregister(lauf: Lauf) -> None:
               not abweichend, "; ".join(abweichend))
 
 
+def pruefe_comparability_schwellen(lauf: Lauf) -> None:
+    """SONDE-013 M-29: die drei Startgates leben in der `metrics_version`.
+
+    M-29 woertlich ueber die Zahlen aus §43.2 (95 % Zeitueberdeckung,
+    Aktivquellen-Jaccard 0,9, Upstream-Feature-Cosine 0,95): "Sie sind
+    ausdruecklich **Startwerte, am Korpus zu kalibrieren**, und leben deshalb
+    in der versionierten `metrics_version`, nicht als Literal im Produktpfad."
+
+    Das ist eine schaerfere Zusage als der allgemeine Registerriegel. Der
+    prueft, dass jede GEFUEHRTE Schwelle so im Code steht; er merkt nicht,
+    wenn jemand daneben ein zweites Mal `if zeit < 0.95` schreibt. Genau das
+    waere aber der Rueckfall, den M-29 ausschliesst: eine Kalibrierung hoebe
+    dann die Konstante, und der stille Zwilling entschiede weiter.
+
+    Deshalb hier drei Fragen an denselben Pfad:
+
+    1. Die vier Gates sind in der AKTUELLEN Fassung gefuehrt - nicht in einer
+       aelteren, aus der sie beim Fassungswechsel herausgefallen waeren.
+    2. Der Broker nennt dieselbe Fassung wie das Register (`METRICS_VERSION`).
+    3. Im Produktpfad steht keine der vier Zahlen als nacktes Literal.
+    """
+    quelle = WURZEL / "broker/src/coordinator/vergleichbarkeit.rs"
+    if not quelle.exists() or not METRIKEN.exists():
+        lauf.wahr("comparability_schwellen_haengen_an_metrics_version: Quellen vorhanden",
+                  False, f"{quelle.name} oder {METRIKEN.name} fehlt")
+        return
+
+    register = json_laden_strikt(METRIKEN.read_text(encoding="utf-8"))
+    aktuell = str(register.get("aktuell", ""))
+    eintrag = register.get("fassungen", {}).get(aktuell, {})
+    gefuehrt = dict(eintrag.get("schwellen", {}))
+    gefuehrt.update(eintrag.get("ganzzahlige_schwellen", {}))
+
+    gates = ("GATE_ZEITUEBERDECKUNG", "GATE_QUELLEN_JACCARD",
+             "GATE_MATERIAL_COSINE", "GATE_ABDECKUNG")
+    fehlend = [g for g in gates if g not in gefuehrt]
+    lauf.wahr("comparability_schwellen_haengen_an_metrics_version: "
+              "alle vier Gates stehen in der aktuellen Fassung",
+              not fehlend, ", ".join(fehlend))
+
+    konstanten = _konstanten_aus_kern([quelle])
+    broker_version = konstanten.get("METRICS_VERSION", ("", ""))[0]
+    lauf.wahr("comparability_schwellen_haengen_an_metrics_version: "
+              "der Broker nennt die Fassung des Registers",
+              broker_version == aktuell,
+              f"Broker {broker_version!r}, Register {aktuell!r}")
+
+    # Kein nacktes Literal im Pfad. Kommentare und die Konstantenzeilen
+    # selbst sind genau die Stellen, an denen die Zahl stehen MUSS.
+    zahlen = {str(gefuehrt[g].get("wert")) for g in gates if g in gefuehrt}
+    muster = [(z, re.compile(r"(?<![\d.])" + re.escape(z) + r"(?![\d])")) for z in sorted(zahlen)]
+    treffer = []
+    for nr, zeile in enumerate(quelle.read_text(encoding="utf-8").splitlines(), 1):
+        nackt = zeile.split("//")[0]
+        if "pub const" in nackt:
+            continue
+        for z, m in muster:
+            if m.search(nackt):
+                treffer.append(f"Zeile {nr}: {z} in {nackt.strip()[:60]!r}")
+    lauf.wahr("comparability_schwellen_haengen_an_metrics_version: "
+              "keine Gate-Zahl als Literal im Produktpfad",
+              not treffer, "; ".join(treffer))
+
+
 def main(argv: list[str]) -> int:
     schema = json_laden_strikt(SCHEMA.read_text(encoding="utf-8"))
     reserviert = json_laden_strikt(RESERVIERT.read_text(encoding="utf-8"))
@@ -1628,6 +1701,7 @@ def main(argv: list[str]) -> int:
     pruefe_command_ack(lauf, schema)
     pruefe_fixtures(lauf, schema, manifest)
     pruefe_metrikregister(lauf)
+    pruefe_comparability_schwellen(lauf)
 
     print(f"jsonschema {jsonschema.__version__} (draft 2020-12)")
     print(f"{len(schema['$defs'])} Definitionen, {len(schema['oneOf'])} Nachrichtenfamilien, "

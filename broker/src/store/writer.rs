@@ -23,6 +23,7 @@ impl StoreWriter {
                 sicht,
                 db_pfad: PathBuf::new(),
                 capture_aktiv: Arc::new(AtomicBool::new(false)),
+                append_naht: Arc::new(AtomicBool::new(false)),
             },
             join: None,
             restaurierte_guards: Vec::new(),
@@ -81,6 +82,7 @@ impl StoreWriter {
                     sicht,
                     db_pfad,
                     capture_aktiv,
+                    append_naht: Arc::new(AtomicBool::new(false)),
                 };
                 Self {
                     handle,
@@ -95,6 +97,7 @@ impl StoreWriter {
                     sicht,
                     db_pfad,
                     capture_aktiv,
+                    append_naht: Arc::new(AtomicBool::new(false)),
                 };
                 Self {
                     handle,

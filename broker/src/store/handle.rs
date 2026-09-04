@@ -115,6 +115,15 @@ pub struct StoreHandle {
     pub(super) sicht: Arc<Mutex<StoreSicht>>,
     pub(super) db_pfad: PathBuf,
     pub(super) capture_aktiv: Arc<AtomicBool>,
+    /// 🔑 Naht fuer Befund B16: laesst JEDEN Append scheitern, als haette der
+    /// Store den Dienst verweigert.
+    ///
+    /// Die Zusage „kein lokaler Ausschluss ohne persistierte Invalidierung"
+    /// ist nur pruefbar, wenn ein Append verlaesslich scheitert. Ein echter
+    /// SQLite-Fehler laesst sich nicht deterministisch herstellen — dieselbe
+    /// Begruendung wie bei `IdleCheckpointNaht` daneben. Sie liegt VOR dem
+    /// Kanal und beruehrt Guards, Checkpoints und Kompaktierung nicht.
+    pub(super) append_naht: Arc<AtomicBool>,
 }
 
 impl StoreHandle {
@@ -130,6 +139,12 @@ impl StoreHandle {
         self.capture_aktiv.store(aktiv, Ordering::SeqCst);
     }
 
+    /// Schaltet die Append-Naht (Befund B16). Nur Tests rufen sie.
+    #[doc(hidden)]
+    pub fn append_naht_setzen(&self, an: bool) {
+        self.append_naht.store(an, Ordering::SeqCst);
+    }
+
     pub fn append(&self, events: Vec<StoreEvent>) -> Result<Vec<AppendAusgang>, StoreFehler> {
         let antwort_rx = self.append_einreihen(events)?;
         antwort_rx.recv().map_err(|_| StoreFehler::Beendet)?
@@ -142,6 +157,11 @@ impl StoreHandle {
         &self,
         events: Vec<StoreEvent>,
     ) -> Result<mpsc::Receiver<Result<Vec<AppendAusgang>, StoreFehler>>, StoreFehler> {
+        if self.append_naht.load(Ordering::SeqCst) {
+            return Err(StoreFehler::Degradiert(
+                "Testnaht: der Append wird verweigert".into(),
+            ));
+        }
         let (antwort_tx, antwort_rx) = mpsc::channel();
         self.senden(WriterBefehl::AppendBatch {
             events,

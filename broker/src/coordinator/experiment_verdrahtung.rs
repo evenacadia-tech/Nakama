@@ -23,7 +23,7 @@
 use super::*;
 use crate::coordinator::experiment::{
     Abbruchgrund, Achsenrechnung, Alignmentwert, Blindreihenfolge, Experimentreferenz, Hoerurteil,
-    Passage, Resultatmessung, Terminal,
+    Passage, Resultatmessung, Ruecknahme, Terminal,
 };
 use crate::coordinator::vergleichbarkeit::Passagenbeleg;
 use crate::telemetrie::Fingerprintwerte;
@@ -230,10 +230,27 @@ impl Coordinator {
         let evidenzfolge = self.evidenz_folge.load(Ordering::SeqCst);
 
         // ── 1. Die Wirkung, vorlaeufig ─────────────────────────────────
-        let (rueckfall, ereignisse) = {
+        //
+        // 🔑 Nacharbeit 3 (Befund B3): der Rueckweg ist GEZIELT.
+        //
+        // Die Runde 2 klonte hier den GANZEN Experimentstore und ersetzte bei
+        // gescheitertem Append den gesamten Stand durch die Kopie. Committet
+        // waehrenddessen eine andere Sitzung erfolgreich, loeschte dieser
+        // Rollback ihre Wirkung aus dem Speicher, obwohl sie persistiert ist;
+        // das Shard-Lock deckt Klon- und Rollbackfenster nicht, weil es je
+        // Sitzung geschlossen wird. Zurueckgenommen wird jetzt nur, was DIESER
+        // Befehl angefasst hat.
+        let (ruecknahme, ereignisse, materialwechsel) = {
             let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
-            let rueckfall = stand.experimente.clone();
-            let ereignisse = match art {
+            // 🔑 Befund B14: der Materialwechsel wird VOR der Wirkung
+            // festgestellt. `beginne` legt eine bereits bekannte Passage nicht
+            // neu an, und danach ist der alte Fingerprint nicht mehr lesbar.
+            let materialwechsel = if art == "experiment_begin" {
+                Self::materialwechsel_erkennen_locked(&stand, wert)
+            } else {
+                None
+            };
+            let ergebnis = match art {
                 "experiment_begin" => {
                     Self::begin_anwenden_locked(
                         &mut stand,
@@ -258,10 +275,9 @@ impl Coordinator {
                 }
                 _ => None,
             };
-            match ereignisse {
-                Some(e) => (rueckfall, e),
+            match ergebnis {
+                Some((e, r)) => (r, e, materialwechsel),
                 None => {
-                    stand.experimente = rueckfall;
                     return Self::command_ack(
                         command_id,
                         "abgelehnt",
@@ -273,20 +289,52 @@ impl Coordinator {
             }
         };
 
+        // 🔑 Befund B14: der Materialwechsel ist WIRKUNG DESSELBEN Befehls.
+        //
+        // Die Runde 2 invalidierte ihn NACH dem Ack in einem zweiten Append.
+        // Stuerzte der Broker dazwischen, lieferte der Retry
+        // `idempotent_wiederholt` und uebersprang die Invalidierung fuer immer:
+        // Evidenz, die zu anderem Material gehoert, blieb dauerhaft gueltig.
+        // Sie geht deshalb als Domaenenereignis in DENSELBEN Append.
+        let mut ereignisse = ereignisse;
+        let invalidierung = materialwechsel.and_then(|(alt, neu)| {
+            self.invalidierung_wegen_material_vorbereiten(&session, Some(&alt), Some(&neu))
+        });
+        if let Some(w) = &invalidierung {
+            ereignisse.push(self.invalidierung_als_domaenenereignis(w));
+        }
+
         // ── 2. Befehl UND Wirkung in EINEM Append ──────────────────────
-        let ack = self.persistenz_p0_mit_domaene(link_id, wert, ereignisse);
+        let (ack, ords) = self.persistenz_p0_mit_domaene_und_ords(link_id, wert, ereignisse);
         let angewandt = ack.as_deref().is_some_and(Self::ack_ist_angewandt);
         if !angewandt {
             // ── 3. Ruecknahme ──────────────────────────────────────────
-            let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
-            stand.experimente = rueckfall;
+            {
+                let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+                stand.experimente.zuruecknehmen(&ruecknahme);
+            }
+            if let Some(w) = invalidierung {
+                self.invalidierung_ruecknehmen(w);
+            }
             return ack;
         }
+        if let (Some(w), Some(ord)) = (invalidierung, ords.last().copied()) {
+            self.invalidierung_zustellen(&w, ord);
+        }
 
-        // Der Taint gehoert zur Wirkung, aber nicht in den Rueckfall: er
-        // schliesst Intervalle, die es ohne die Wirkung gar nicht gaebe.
+        // Der Taint gehoert zur Wirkung, aber nicht in den Rueckweg: er
+        // schliesst Intervalle, die es ohne die Wirkung gar nicht gaebe — und
+        // er wird deshalb erst NACH dem erfolgreichen Append gesetzt.
+        //
+        // 🔑 Befund B4: die Schliessung laeuft in der Sitzung, die das
+        // Intervall HAELT, nicht in der des Aufrufers. Der Deckel verdraengt
+        // projektuebergreifend; mit der Aufrufersitzung blieb der Taint des
+        // Opfers offen.
         if art != "experiment_begin" {
-            self.taint_von_experiment_schliessen(&session, experiment_id);
+            self.taint_von_experiment_schliessen(experiment_id);
+        }
+        for weg in &ruecknahme.terminale {
+            self.taint_von_experiment_schliessen(weg);
         }
         // 🔑 Nacharbeit 2 (Befund R14, M-49): das Ergebnis ERREICHT Gen.
         //
@@ -305,40 +353,27 @@ impl Coordinator {
             stand.dirty_sessions.insert(session.clone());
         }
         self.flush_session(&session, Some(link_id));
-        // 🔑 Nacharbeit 2 (Befund R24, M-54/M-31): DER Produktaufrufer der
-        // MATERIALinvalidierung.
-        //
-        // `invalidierung_wegen_material` hatte ausserhalb seiner Huelle keinen.
-        // Der Vergleich gehoert hierher, weil hier zwei ueber DASSELBE Fenster
-        // gerechnete Fingerprints nebeneinander stehen: der gespeicherte der
-        // Passage und der, den dieses `experiment_begin` fuer dieselbe
-        // `passage_id` mitbringt. M-31 sagt ausdruecklich, dass der Wechsel aus
-        // dem Fingerprintvergleich kommt und nicht aus einer Zeitheuristik.
-        //
-        // `beginne` legt eine bereits bekannte Passage NICHT neu an — der neue
-        // Fingerprint faellt also weg. Genau deshalb darf die Abweichung nicht
-        // still bleiben: fail-closed heisst hier invalidieren.
-        if art == "experiment_begin" {
-            if let Some(neu) = Self::passage_aus_wert(wert) {
-                let alt = self
-                    .stand
-                    .lock()
-                    .unwrap_or_else(|e| e.into_inner())
-                    .experimente
-                    .passage(&neu.passage_id)
-                    .map(|p| p.fingerprint.clone());
-                if let Some(alt) = alt {
-                    if alt != neu.fingerprint {
-                        self.invalidierung_wegen_material(
-                            &session,
-                            Some(&alt),
-                            Some(&neu.fingerprint),
-                        );
-                    }
-                }
-            }
-        }
         ack
+    }
+
+    /// Traegt dieses `experiment_begin` einen ANDEREN Fingerprint fuer eine
+    /// bereits bekannte Passage (M-31/M-54, Befund B14)?
+    ///
+    /// Der Vergleich gehoert vor die Wirkung: `beginne` legt eine bekannte
+    /// Passage nicht neu an, und danach ist der alte Fingerprint fort. M-31
+    /// sagt ausdruecklich, dass der Materialwechsel aus dem
+    /// Fingerprintvergleich kommt und nicht aus einer Zeitheuristik — und
+    /// fail-closed heisst hier invalidieren.
+    fn materialwechsel_erkennen_locked(
+        stand: &Stand,
+        wert: &Value,
+    ) -> Option<(Fingerprintwerte, Fingerprintwerte)> {
+        let neu = Self::passage_aus_wert(wert)?;
+        let alt = stand
+            .experimente
+            .passage(&neu.passage_id)
+            .map(|p| p.fingerprint.clone())?;
+        (alt != neu.fingerprint).then_some((alt, neu.fingerprint))
     }
 
     /// Steht in diesem `command_ack` „angewandt"?
@@ -360,12 +395,13 @@ impl Coordinator {
         experiment_id: &str,
         session: &SessionKey,
         evidenzfolge: u64,
-    ) -> Option<Vec<Domaenenereignis>> {
+    ) -> Option<(Vec<Domaenenereignis>, Ruecknahme)> {
         let passage = Self::passage_aus_wert(wert)?;
         let baseline = Self::referenz_aus_wert(wert.get("referenz"))?;
         let passage_id = passage.passage_id.clone();
         let passage_neu = stand.experimente.passage(&passage_id).is_none();
         let passage_kopie = passage.clone();
+        let (log_laenge, naechste_folge) = stand.experimente.marke();
         let verdraengt = stand
             .experimente
             .beginne(
@@ -376,6 +412,14 @@ impl Coordinator {
                 evidenzfolge,
             )
             .ok()?;
+        let ruecknahme = Ruecknahme {
+            angelegt: Some(experiment_id.to_owned()),
+            terminale: verdraengt.clone(),
+            vorher: None,
+            passage: passage_neu.then(|| passage_id.clone()),
+            log_laenge,
+            naechste_folge,
+        };
 
         let mut aus = Vec::new();
         // Die Passage zuerst: sie ist das Objekt, auf das der Versuch zeigt.
@@ -404,7 +448,11 @@ impl Coordinator {
                     ziele: Vec::new(),
                 });
             }
-            Self::taint_intervalle_schliessen(stand, session, "experiment", Some(weg));
+            // Der Taint des Opfers wird NICHT hier geschlossen: er ist die
+            // Wirkung eines Appends, der noch nicht steht, und er liegt in der
+            // Sitzung des OPFERS, nicht in dieser (Befund B4). Der Aufrufer
+            // schliesst ihn nach dem erfolgreichen Append ueber
+            // `ruecknahme.terminale`.
         }
         let e = stand.experimente.experiment(experiment_id)?;
         let payload =
@@ -414,7 +462,7 @@ impl Coordinator {
             payload,
             ziele: Vec::new(),
         });
-        Some(aus)
+        Some((aus, ruecknahme))
     }
 
     /// `experiment_candidate` auf dem gehaltenen Lock (M-41/M-44, R16/R21).
@@ -428,8 +476,9 @@ impl Coordinator {
         wert: &Value,
         experiment_id: &str,
         evidenzfolge: u64,
-    ) -> Option<Vec<Domaenenereignis>> {
+    ) -> Option<(Vec<Domaenenereignis>, Ruecknahme)> {
         let referenz = Self::referenz_aus_wert(wert.get("referenz"))?;
+        let ruecknahme = Self::ruecknahme_fuer(stand, experiment_id);
         stand
             .experimente
             .neuer_kandidat(experiment_id, referenz, evidenzfolge)
@@ -446,11 +495,14 @@ impl Coordinator {
             .ok()?;
         let e = stand.experimente.experiment(experiment_id)?;
         let payload = Self::experiment_json(e, stand.experimente.passage(&e.passage_id), "kandidat");
-        Some(vec![Domaenenereignis {
-            event_type: "experiment".into(),
-            payload,
-            ziele: Vec::new(),
-        }])
+        Some((
+            vec![Domaenenereignis {
+                event_type: "experiment".into(),
+                payload,
+                ziele: Vec::new(),
+            }],
+            ruecknahme,
+        ))
     }
 
     /// `experiment_abort` auf dem gehaltenen Lock (M-47).
@@ -458,16 +510,20 @@ impl Coordinator {
         stand: &mut Stand,
         experiment_id: &str,
         grund: Abbruchgrund,
-    ) -> Option<Vec<Domaenenereignis>> {
+    ) -> Option<(Vec<Domaenenereignis>, Ruecknahme)> {
+        let ruecknahme = Self::ruecknahme_fuer(stand, experiment_id);
         stand.experimente.schliesse(experiment_id, grund).ok()?;
         let e = stand.experimente.experiment(experiment_id)?;
         let payload =
             Self::experiment_json(e, stand.experimente.passage(&e.passage_id), "abgebrochen");
-        Some(vec![Domaenenereignis {
-            event_type: "experiment".into(),
-            payload,
-            ziele: Vec::new(),
-        }])
+        Some((
+            vec![Domaenenereignis {
+                event_type: "experiment".into(),
+                payload,
+                ziele: Vec::new(),
+            }],
+            ruecknahme,
+        ))
     }
 
     /// `experiment_manual_result` auf dem gehaltenen Lock (M-44/M-45/M-49).
@@ -476,7 +532,8 @@ impl Coordinator {
         wert: &Value,
         experiment_id: &str,
         messung: &Resultatmessung,
-    ) -> Option<Vec<Domaenenereignis>> {
+    ) -> Option<(Vec<Domaenenereignis>, Ruecknahme)> {
+        let ruecknahme = Self::ruecknahme_fuer(stand, experiment_id);
         let hoerurteil = match wert.get("hoerurteil").and_then(Value::as_str) {
             Some("baseline") => Hoerurteil::Baseline,
             Some("kandidat") => Hoerurteil::Kandidat,
@@ -503,18 +560,38 @@ impl Coordinator {
         let e = stand.experimente.experiment(experiment_id)?;
         let payload =
             Self::experiment_json(e, stand.experimente.passage(&e.passage_id), "ergebnis");
-        Some(vec![Domaenenereignis {
-            event_type: "experiment".into(),
-            payload,
-            ziele: Vec::new(),
-        }])
+        Some((
+            vec![Domaenenereignis {
+                event_type: "experiment".into(),
+                payload,
+                ziele: Vec::new(),
+            }],
+            ruecknahme,
+        ))
     }
 
-    /// M-59, Befund B22: JEDES Terminal schliesst die zugehoerigen
-    /// `art=experiment`-Taintintervalle.
-    fn taint_von_experiment_schliessen(&self, session: &SessionKey, experiment_id: &str) {
+    /// Der Rueckweg fuer einen Befehl, der GENAU EINEN bestehenden Versuch
+    /// aendert (Befund B3): sein Zustand vor dem Befehl, und sonst nichts.
+    fn ruecknahme_fuer(stand: &Stand, experiment_id: &str) -> Ruecknahme {
+        let (log_laenge, naechste_folge) = stand.experimente.marke();
+        Ruecknahme {
+            angelegt: None,
+            terminale: Vec::new(),
+            vorher: stand
+                .experimente
+                .experiment(experiment_id)
+                .map(|e| (experiment_id.to_owned(), e.clone())),
+            passage: None,
+            log_laenge,
+            naechste_folge,
+        }
+    }
+
+    /// M-59, Befund B22/B4: JEDES Terminal schliesst die zugehoerigen
+    /// `art=experiment`-Taintintervalle — dort, wo sie WIRKLICH liegen.
+    fn taint_von_experiment_schliessen(&self, experiment_id: &str) {
         let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
-        Self::taint_intervalle_schliessen(&mut stand, session, "experiment", Some(experiment_id));
+        Self::taint_intervalle_des_experiments_schliessen(&mut stand, experiment_id);
     }
 
     // ── Die Domaenenform: der VOLLSTAENDIGE Zustand, nicht die Transition ──

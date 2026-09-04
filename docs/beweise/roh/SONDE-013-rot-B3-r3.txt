@@ -1,0 +1,112 @@
+Rotbeweis B3 - der Rueckweg eines Experimentbefehls trifft nur den eigenen Versuch
+Datum: 2026-09-04
+Datei: broker/src/coordinator/experiment.rs
+Test:  cargo test --test sonde013_verdrahtung ruecknahme_trifft_nur_den_eigenen_versuch
+
+== 1. Fehler eingebaut ==
+ALT:     pub fn zuruecknehmen(&mut self, r: &Ruecknahme) {
+        if let Some(id) = &r.angelegt {
+            self.experimente.remove(id);
+        }
+NEU:     pub fn zuruecknehmen(&mut self, r: &Ruecknahme) {
+        // Rotbeweis: der ganze Bestand faellt, wie in Runde 2.
+        self.experimente.clear();
+        self.passagen.clear();
+        if let Some(id) = &r.angelegt {
+            self.experimente.remove(id);
+        }
+
+== 2. Der Test FAELLT ==
+exit=101
+
+running 1 test
+test ruecknahme_trifft_nur_den_eigenen_versuch ... FAILED
+
+failures:
+
+---- ruecknahme_trifft_nur_den_eigenen_versuch stdout ----
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde013-b3-gezielter-rueckweg-17500-814868a9d8b147348dbe3daf030cd6b8\nakama-broker.sqlite3
+
+thread 'ruecknahme_trifft_nur_den_eigenen_versuch' (18264) panicked at tests\sonde013_verdrahtung.rs:3276:5:
+ruecknahme_trifft_nur_den_eigenen_versuch - der bereits persistierte Versuch steht UNVERAENDERT; ein Klonersatz haette ihn mitgenommen
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    ruecknahme_trifft_nur_den_eigenen_versuch
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 46 filtered out; finished in 0.29s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:2841:9
+     |
+2841 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+     |
+     = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `clock` is never read
+   --> tests\sonde013_verdrahtung.rs:250:5
+    |
+247 | struct HarnischMitStore {
+    |        ---------------- field in this struct
+...
+250 |     clock: Arc<ManualClock>,
+    |     ^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `sonde_mit_evidenz` is never used
+    --> tests\sonde013_verdrahtung.rs:1844:4
+     |
+1844 | fn sonde_mit_evidenz(h: &HarnischMitStore, anzahl: usize) -> HelloControl {
+     |    ^^^^^^^^^^^^^^^^^
+
+warning: `eqcop-broker` (test "sonde013_verdrahtung") generated 3 warnings (run `cargo fix --test "sonde013_verdrahtung" -p eqcop-broker` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.66s
+     Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)
+error: test failed, to rerun pass `--test sonde013_verdrahtung`
+
+
+== 3. Fehler entfernt, der Test ist GRUEN ==
+exit=0
+
+running 1 test
+test ruecknahme_trifft_nur_den_eigenen_versuch ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 46 filtered out; finished in 0.54s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:2841:9
+     |
+2841 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+     |
+     = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `clock` is never read
+   --> tests\sonde013_verdrahtung.rs:250:5
+    |
+247 | struct HarnischMitStore {
+    |        ---------------- field in this struct
+...
+250 |     clock: Arc<ManualClock>,
+    |     ^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `sonde_mit_evidenz` is never used
+    --> tests\sonde013_verdrahtung.rs:1844:4
+     |
+1844 | fn sonde_mit_evidenz(h: &HarnischMitStore, anzahl: usize) -> HelloControl {
+     |    ^^^^^^^^^^^^^^^^^
+
+warning: `eqcop-broker` (test "sonde013_verdrahtung") generated 3 warnings (run `cargo fix --test "sonde013_verdrahtung" -p eqcop-broker` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.75s
+     Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)

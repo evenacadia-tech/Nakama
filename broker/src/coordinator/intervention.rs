@@ -394,6 +394,35 @@ impl Coordinator {
         vorher - taint.interventionen.len()
     }
 
+    /// Schliesst die `art=experiment`-Intervalle eines Versuchs in JEDER
+    /// Sitzung, die eines haelt (Befund B4, M-59).
+    ///
+    /// 🔑 Wiederpruefung 2: `verdraenge_fuer` verdraengt projektuebergreifend,
+    /// und die Runde 2 rief die Schliessung mit der Sitzung des NEUEN
+    /// Begin-Aufrufers. Verdraengt der Deckel einen Versuch aus einer anderen
+    /// Sitzung, blieb dessen Taint dort OFFEN — der Versuch war terminal, sein
+    /// Eingriff aber galt weiter, und die Sitzung des Opfers lieferte
+    /// dauerhaft keine starke Evidenz mehr.
+    ///
+    /// Ein Intervall kennt seinen Besitzer: es liegt in der Taintmap GENAU der
+    /// Sitzung, die es geoeffnet hat, und `experiment_id` ist global
+    /// eindeutig. Die Zuordnung muss deshalb nicht geraten und nicht zusaetzlich
+    /// persistiert werden — sie steht da, wo das Intervall steht.
+    pub(super) fn taint_intervalle_des_experiments_schliessen(
+        stand: &mut Stand,
+        experiment_id: &str,
+    ) -> usize {
+        let mut geschlossen = 0usize;
+        for taint in stand.taint.values_mut() {
+            let vorher = taint.interventionen.len();
+            taint.interventionen.retain(|_, i| {
+                !(i.art == "experiment" && i.experiment_id.as_deref() == Some(experiment_id))
+            });
+            geschlossen += vorher - taint.interventionen.len();
+        }
+        geschlossen
+    }
+
     /// Schliesst die `art=experiment`-Intervalle EINES Versuchs, ueber einen
     /// Link adressiert (M-59).
     ///

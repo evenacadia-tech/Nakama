@@ -462,7 +462,16 @@ impl Coordinator {
         if let Some((session, alt, neu)) = messpunktwechsel {
             // `invalidierung_wegen_messpunkt` entscheidet selbst, ob der
             // Wechsel einer ist; ein gleicher Messpunkt nimmt nichts zurueck.
-            self.invalidierung_wegen_messpunkt(&session, &alt, &neu);
+            //
+            // Befund B16: scheitert ihr Append, ist der lokale Ausschluss
+            // zurueckgenommen und der Link gilt als storeverweigert. Ein
+            // gezaehltes Schweigen waere hier dasselbe wie gar keine Wache.
+            if self
+                .invalidierung_wegen_messpunkt(&session, &alt, &neu)
+                .is_err()
+            {
+                self.store_verweigert_fuer_link(link_id);
+            }
         }
         for session in dirty_sessions {
             self.flush_session(&session, Some(link_id));
@@ -710,7 +719,16 @@ impl Coordinator {
         if let (Some(alt), Some(neu)) = (alte_klasse, neue_klasse) {
             // `invalidierung_wegen_messpunkt` entscheidet selbst, ob der
             // Wechsel einer ist; ein gleicher Messpunkt nimmt nichts zurueck.
-            self.invalidierung_wegen_messpunkt(&session, &alt, &neu);
+            //
+            // Befund B16: scheitert ihr Append, ist der lokale Ausschluss
+            // zurueckgenommen und der Link gilt als storeverweigert. Ein
+            // gezaehltes Schweigen waere hier dasselbe wie gar keine Wache.
+            if self
+                .invalidierung_wegen_messpunkt(&session, &alt, &neu)
+                .is_err()
+            {
+                self.store_verweigert_fuer_link(link_id);
+            }
         }
         self.flush_session(&session, Some(link_id));
         true

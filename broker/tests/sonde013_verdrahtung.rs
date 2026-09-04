@@ -302,15 +302,34 @@ impl HarnischMitStore {
     }
 
     fn p0(&self, wert: &Value) -> Value {
+        self.p0_von("main", wert)
+            .expect("die Familie wird beantwortet")
+    }
+
+    /// Derselbe Weg ueber einen benannten Link — und mit der Moeglichkeit, dass
+    /// GAR KEINE Antwort kommt.
+    ///
+    /// 🔑 Nacharbeit 3 (Befund B16): verweigert der Store den Append, bleibt
+    /// der P0 unbeantwortet und der Link gilt als storeverweigert. Das ist die
+    /// haerteste Form von „nicht angewandt", und ein Bein, das eine Antwort
+    /// ERZWINGT, koennte sie nicht messen.
+    fn p0_von(&self, link: &str, wert: &Value) -> Option<Value> {
         let payload = serde_json::to_vec(wert).unwrap();
-        let antwort = Senke::p0(&self.c, "main", &payload).expect("die Familie wird beantwortet");
-        serde_json::from_slice(&antwort).expect("command_ack ist JSON")
+        let antwort = Senke::p0(&self.c, link, &payload)?;
+        Some(serde_json::from_slice(&antwort).expect("command_ack ist JSON"))
     }
 
     /// Ein ZWEITER Coordinator auf DEMSELBEN Store — der Brokerneustart.
     ///
     /// 🔑 Befund R12: der behauptete Restart-Test der Runde 1 erzeugte gar
     /// keinen zweiten Coordinator und konnte deshalb nicht fallen.
+    /// Schaltet die Append-Naht des Stores (Befund B16). Sie liegt VOR dem
+    /// Writerkanal und laesst jeden Append scheitern, als haette der Store den
+    /// Dienst verweigert; Guards, Checkpoints und Kompaktierung bleiben heil.
+    fn naht(&self, an: bool) {
+        self._writer.handle().append_naht_setzen(an);
+    }
+
     fn neuer_coordinator(&self) -> Coordinator {
         Coordinator::mit_store(Arc::new(ManualClock::default()), hex(0xbeee), &self._writer)
     }
@@ -3023,5 +3042,340 @@ fn der_snapshot_haelt_den_versuchsdeckel_des_vertrages() {
         liste.last().map(|e| &e["experiment_id"]),
         Some(&json!(hex(0xe000 + runden - 1))),
         "und der juengste steht am Ende: {liste:?}"
+    );
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// NACHARBEIT 3 · W3 — Befehl und Wirkung sind EIN Append, und der Rueckweg
+// ist gezielt
+// ═════════════════════════════════════════════════════════════════════════
+
+/// B14 — eine Preview committet ihre Ruecknahme MIT sich, oder gar nicht.
+///
+/// 🔑 Wiederpruefung 2: Die Runde 2 committete `preview_*` ueber
+/// `persistenz_p0` und invalidierte erst NACH dem Ack in einem zweiten Append.
+/// Stuerzte der Broker dazwischen, lieferte der Retry `idempotent_wiederholt`,
+/// und die Bedingung „nur bei angewandt" uebersprang die Invalidierung FUER
+/// IMMER: die Vorschau stand persistiert da, ihre Evidenz blieb gueltig, und
+/// niemand konnte es sehen. Der Test der Runde 2 fuhr nur den stoerungsfreien
+/// Erstaufruf.
+#[cfg(windows)]
+#[test]
+fn preview_und_ruecknahme_liegen_in_einem_append() {
+    let h = HarnischMitStore::neu("b14-preview-atomar");
+    let sonde = {
+        let mut s = h.main.clone();
+        s.plugin_kind = "passive_probe".into();
+        s.adresse.instance_id = hex(0x20);
+        s.adresse.runtime_nonce = hex(0x21);
+        s
+    };
+    anmelden(&h.c, "sonde", &sonde);
+    report(&h.c, "sonde", &sonde.adresse);
+    for nr in 0..3 {
+        assert!(h
+            .c
+            .evidence_snapshot_json("sonde", &evidenz_payload(&sonde.adresse, nr, |_| {})));
+    }
+    let preview = |command_id: String| {
+        json!({
+            "type": "preview_begin",
+            "kopf": {
+                "command_id": command_id,
+                "ziel": h.main.adresse,
+                "base_revision": 0,
+                "ttl_ms": 1000,
+                "schema_major": 3,
+                "schema_minor": 0
+            },
+            "lease_duration_ms": 400,
+            "renew_id": hex(0x931)
+        })
+    };
+    let invalidierungen =
+        || h.zeilen("select count(*) from event_log where event_type='evidence_invalidate'");
+    let vorher = invalidierungen();
+
+    // ── 1. Befehl UND Ruecknahme stehen in EINEM Append ─────────────────
+    let ack = h.p0(&preview(hex(0x941)));
+    assert_eq!(ack["ergebnis"], "angewandt", "{ack}");
+    assert_eq!(invalidierungen(), vorher + 1, "die Ruecknahme steht im Log");
+    let abstand = h.zeilen(
+        "select (select max(event_ord) from event_log where event_type='evidence_invalidate') \
+         - (select max(event_ord) from event_log where event_type='command')",
+    );
+    assert_eq!(
+        abstand, 1,
+        "preview_und_ruecknahme_liegen_in_einem_append - die Ruecknahme folgt \
+         dem Befehl UNMITTELBAR; dazwischen passt kein zweiter Commit und damit \
+         auch kein Absturz"
+    );
+    assert!(
+        h.c.evidenz_historie(&hex(0x20))
+            .iter()
+            .all(|e| e.ausschlussgrund.as_deref() == Some("intervention")),
+        "und jeder Beleg traegt seinen Grund"
+    );
+
+    // ── 2. Der Retry wiederholt idempotent und laesst die Ruecknahme stehen
+    let ack = h.p0(&preview(hex(0x941)));
+    assert_eq!(
+        ack["ergebnis"], "idempotent_wiederholt",
+        "derselbe Befehl zweimal ist eine Wiederholung, kein zweiter: {ack}"
+    );
+    assert_eq!(
+        invalidierungen(),
+        vorher + 1,
+        "und die Ruecknahme bleibt GENAU EINE - der Retry legt keine zweite an \
+         und laesst auch keine fehlen"
+    );
+
+    // ── 3. Mit gestoertem Store entsteht GAR KEIN Zustand ───────────────
+    //
+    // Auf FRISCHER Evidenz, denn die alte ist bereits zurueckgenommen: sonst
+    // liesse sich „nicht ausgeschlossen" nicht von „schon ausgeschlossen"
+    // unterscheiden.
+    let zweite = {
+        let mut z = h.main.clone();
+        z.plugin_kind = "passive_probe".into();
+        z.adresse.instance_id = hex(0x22);
+        z.adresse.runtime_nonce = hex(0x23);
+        z
+    };
+    anmelden(&h.c, "sonde2", &zweite);
+    report(&h.c, "sonde2", &zweite.adresse);
+    for nr in 0..3 {
+        assert!(h
+            .c
+            .evidence_snapshot_json("sonde2", &evidenz_payload(&zweite.adresse, nr, |_| {})));
+    }
+    let nach_zwei = invalidierungen();
+    h.naht(true);
+    assert!(
+        h.p0_von("main", &preview(hex(0x940))).is_none(),
+        "ein Befehl, dessen Append scheitert, wird NICHT angewandt - er bleibt \
+         unbeantwortet, und der Link gilt als storeverweigert"
+    );
+    assert_eq!(
+        invalidierungen(),
+        nach_zwei,
+        "und es kommt KEINE Invalidierung ins Log"
+    );
+    assert!(
+        h.c.evidenz_historie(&hex(0x22))
+            .iter()
+            .all(|e| e.ausschlussgrund.is_none()),
+        "B16: und AUCH KEIN lokaler Ausschluss - der fluechtige Stand bleibt \
+         gleich dem persistierten"
+    );
+}
+
+/// B16 — ein gescheiterter Append hinterlaesst keinen lokalen Ausschluss.
+///
+/// 🔑 Wiederpruefung 2: `invalidierung_anwenden` schloss die Evidenz lokal
+/// aus, zaehlte einen Storefehler nur und kehrte mit `()` zurueck. Der
+/// Ausschluss blieb stehen, der Auslöser galt als erfolgreich, und ein
+/// Neustart liess dieselbe Evidenz wieder zu — fluechtiger Stand und Log
+/// sagten Verschiedenes.
+#[cfg(windows)]
+#[test]
+fn gescheiterter_append_laesst_keinen_ausschluss_stehen() {
+    let h = HarnischMitStore::neu("b16-append-fehler");
+    let sonde = {
+        let mut s = h.main.clone();
+        s.plugin_kind = "passive_probe".into();
+        s.adresse.instance_id = hex(0x20);
+        s.adresse.runtime_nonce = hex(0x21);
+        s
+    };
+    anmelden(&h.c, "sonde", &sonde);
+    report(&h.c, "sonde", &sonde.adresse);
+    assert!(h
+        .c
+        .descriptor_setzen("sonde", descriptor(&sonde.adresse, "pre", &hex(0x77))));
+    for nr in 0..3 {
+        assert!(h
+            .c
+            .evidence_snapshot_json("sonde", &evidenz_payload(&sonde.adresse, nr, |_| {})));
+    }
+
+    let vorher = h.zeilen("select count(*) from event_log where event_type='evidence_invalidate'");
+    h.naht(true);
+    assert_eq!(
+        h.c.invalidierung_wegen_messpunkt_fuer_link("sonde", "pre", "post"),
+        0,
+        "ein Messpunktwechsel, dessen Append scheitert, schliesst NICHTS aus"
+    );
+    assert!(
+        h.c.evidenz_historie(&hex(0x20))
+            .iter()
+            .all(|e| e.ausschlussgrund.is_none()),
+        "gescheiterter_append_laesst_keinen_ausschluss_stehen - die Evidenz ist \
+         UNVERAENDERT"
+    );
+    assert_eq!(
+        h.zeilen("select count(*) from event_log where event_type='evidence_invalidate'"),
+        vorher,
+        "und im Log kommt nichts hinzu"
+    );
+
+    // Nach dem Neustart ist der Stand IDENTISCH: die Evidenz ist zugelassen,
+    // weil sie nie ausgeschlossen wurde.
+    let neu = h.neuer_coordinator();
+    assert!(
+        neu.evidenz_historie(&hex(0x20))
+            .iter()
+            .all(|e| e.ausschlussgrund.is_none()),
+        "und ein Neustart sieht denselben Stand - keine zweite Wahrheit"
+    );
+
+    // Die Gegenprobe im selben Lauf: ohne Stoerung greift derselbe Weg.
+    h.naht(false);
+    assert!(
+        h.c.invalidierung_wegen_messpunkt_fuer_link("sonde", "pre", "post") > 0,
+        "derselbe Wechsel mit gesundem Store nimmt zurueck - der Riegel sperrt \
+         die richtige Haelfte, nicht alles"
+    );
+}
+
+/// B3 — der Rueckweg trifft NUR den eigenen Versuch.
+///
+/// 🔑 Wiederpruefung 2: Die Runde 2 klonte vor jedem Experimentbefehl den
+/// GANZEN Store und ersetzte bei gescheitertem Append den gesamten Stand durch
+/// die Kopie. Committet waehrenddessen eine andere Sitzung erfolgreich,
+/// loescht dieser Rollback ihre Wirkung aus dem Speicher, obwohl sie
+/// persistiert ist. Der Test der Runde 2 war seriell und injizierte keinen
+/// Appendfehler.
+#[cfg(windows)]
+#[test]
+fn ruecknahme_trifft_nur_den_eigenen_versuch() {
+    let h = HarnischMitStore::neu("b3-gezielter-rueckweg");
+
+    let mut eins = experiment_begin_wert(&h.main.adresse, 0x951, 0x9b1);
+    eins["passage"]["passage_id"] = json!(hex(0x9a1));
+    let ack = h.p0(&eins);
+    assert_eq!(ack["ergebnis"], "angewandt", "{ack}");
+    assert!(h.c.experiment_sicht(&hex(0x9b1)).is_some(), "er steht");
+
+    // Der zweite scheitert am Store — und darf den ersten nicht mitnehmen.
+    h.naht(true);
+    let mut zwei = experiment_begin_wert(&h.main.adresse, 0x952, 0x9b2);
+    zwei["passage"]["passage_id"] = json!(hex(0x9a2));
+    assert!(
+        h.p0_von("main", &zwei).is_none(),
+        "ein Begin, dessen Append scheitert, wird nicht angewandt"
+    );
+    assert!(
+        h.c.experiment_sicht(&hex(0x9b2)).is_none(),
+        "der gescheiterte Versuch ist zurueckgenommen"
+    );
+    assert!(
+        h.c.passage_sicht(&hex(0x9a2)).is_none(),
+        "und seine Passage mit ihm - ein halber Zustand bleibt nicht stehen"
+    );
+    assert!(
+        h.c.experiment_sicht(&hex(0x9b1)).is_some(),
+        "ruecknahme_trifft_nur_den_eigenen_versuch - der bereits persistierte \
+         Versuch steht UNVERAENDERT; ein Klonersatz haette ihn mitgenommen"
+    );
+    assert!(
+        h.c.passage_sicht(&hex(0x9a1)).is_some(),
+        "und seine Passage ebenso"
+    );
+
+    // Und nach einem Reconnect geht es normal weiter: der Rueckweg hat nichts
+    // verklemmt. Der ALTE Link bleibt storeverweigert — das ist die Zusage,
+    // kein Nebeneffekt.
+    h.naht(false);
+    anmelden(&h.c, "main-neu", &h.main);
+    assert!(report_main(&h.c, "main-neu", &h.main.adresse));
+    assert!(h
+        .c
+        .state_report_json("main-neu", &state_report_payload(&h.main.adresse, 0)));
+    let mut drei = experiment_begin_wert(&h.main.adresse, 0x953, 0x9b3);
+    drei["passage"]["passage_id"] = json!(hex(0x9a3));
+    let ack = h
+        .p0_von("main-neu", &drei)
+        .expect("die Familie wird beantwortet");
+    assert_eq!(ack["ergebnis"], "angewandt", "{ack}");
+    assert!(h.c.experiment_sicht(&hex(0x9b3)).is_some());
+}
+
+/// B4 — der Taint eines VERDRAENGTEN Versuchs wird in SEINER Sitzung
+/// geschlossen (M-59).
+///
+/// 🔑 Wiederpruefung 2: `verdraenge_fuer` verdraengt projektuebergreifend, und
+/// die Runde 2 schloss die Intervalle mit der Sitzung des NEUEN Aufrufers.
+/// Verdraengt der Deckel einen Versuch aus einer anderen Sitzung, blieb dessen
+/// Taint dort OFFEN: der Versuch war terminal, sein Eingriff galt weiter, und
+/// die Sitzung des Opfers lieferte dauerhaft keine starke Evidenz mehr. Der
+/// Test der Runde 2 nutzte nur EINE Sitzung.
+#[cfg(windows)]
+#[test]
+fn verdraengter_taint_faellt_in_der_opfersitzung() {
+    let h = HarnischMitStore::neu("b4-verdraengter-taint");
+
+    // Sitzung A fuellt den Projektdeckel (N_PROJEKT = 8).
+    let mut ids = Vec::new();
+    for i in 0..8usize {
+        let mut wert = experiment_begin_wert(&h.main.adresse, 0x960 + i, 0x9c0 + i);
+        wert["passage"]["passage_id"] = json!(hex(0x9d0 + i));
+        let ack = h.p0(&wert);
+        assert_eq!(ack["ergebnis"], "angewandt", "Versuch {i}: {ack}");
+        ids.push(hex(0x9c0 + i));
+    }
+
+    // Der AELTESTE traegt ein offenes Taintintervall in Sitzung A.
+    assert!(h.c.intervention_begin_mit_art(
+        "main",
+        &h.main.adresse,
+        &hex(0x9e0),
+        1,
+        "experiment",
+        Some(&ids[0]),
+        Some(0),
+    ));
+    assert_eq!(
+        h.c.interventionssicht_fuer_link("main").aktive,
+        1,
+        "Sitzung A haelt das Intervall ihres aeltesten Versuchs"
+    );
+
+    // Eine ZWEITE Sitzung desselben Projekts — der Projektdeckel greift ueber
+    // Sitzungsgrenzen hinweg, und genau darin liegt der Befund.
+    // Ein EIGENER Host-PID: `auto_join_locked` bestaetigt einen Main nur, wenn
+    // seine Sitzung fuer diesen Host eindeutig ist. Zwei Mains desselben Hosts
+    // in zwei Sitzungen waeren ein Konfliktfall und keine zweite Sitzung — und
+    // der Befund handelt von zwei ECHTEN Sitzungen.
+    let main_b = hello(1, 3, 0x11, 0x101, "main", Some(10));
+    anmelden(&h.c, "mainb", &main_b);
+    report_main(&h.c, "mainb", &main_b.adresse);
+    assert!(h
+        .c
+        .state_report_json("mainb", &state_report_payload(&main_b.adresse, 0)));
+
+    // Sitzung B beginnt den neunten Versuch DESSELBEN Projekts. Der
+    // Projektdeckel verdraengt den aeltesten — und der gehoert A.
+    let mut neunter = experiment_begin_wert(&main_b.adresse, 0x970, 0x9c9);
+    neunter["passage"]["passage_id"] = json!(hex(0x9d9));
+    let ack = h
+        .p0_von("mainb", &neunter)
+        .expect("die Familie wird beantwortet");
+    assert_eq!(ack["ergebnis"], "angewandt", "{ack}");
+    assert!(
+        h.c.experiment_sicht(&ids[0]).is_some_and(|e| !e.offen()),
+        "der aelteste Versuch aus A ist verdraengt"
+    );
+    assert_eq!(
+        h.c.interventionssicht_fuer_link("main").aktive,
+        0,
+        "verdraengter_taint_faellt_in_der_opfersitzung - sein Intervall ist in \
+         SEINER Sitzung geschlossen, nicht in der des neuen Aufrufers"
+    );
+    assert!(
+        h.c.interventionssicht_fuer_link("main")
+            .starke_evidenz_erlaubt,
+        "und Sitzung A liefert wieder starke Evidenz, statt dauerhaft gesperrt \
+         zu bleiben"
     );
 }

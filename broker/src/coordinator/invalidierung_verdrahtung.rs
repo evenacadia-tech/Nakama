@@ -27,89 +27,165 @@
 use super::*;
 use crate::coordinator::invalidierung::{Grund, Invalidierung, Umfang};
 
+/// Was eine vorbereitete Invalidierung bereits GETAN hat — und was noetig
+/// ist, um es rueckgaengig zu machen (Befund B16).
+///
+/// 🔑 Wiederpruefung 2: Die Runde 2 schloss die Evidenz lokal aus, zaehlte
+/// einen gescheiterten Store-Append nur und kehrte mit `()` zurueck. Der
+/// Ausschluss blieb, der Befehl galt als angewandt, und ein Neustart liess
+/// dieselbe Evidenz wieder zu — der fluechtige Stand und das Log sagten
+/// Verschiedenes. Der Ausschluss ist deshalb VORLAEUFIG, bis sein Append steht.
+pub(super) struct Invalidierungswirkung {
+    pub(super) betroffen: usize,
+    pub(super) ziele: Vec<SnapshotZiel>,
+    pub(super) nachricht: Value,
+    /// Genau die Eintraege, die DIESE Invalidierung markiert hat.
+    zurueck: Vec<(ClientKey, usize)>,
+}
+
 impl Coordinator {
     /// Der EINE Weg, eine Invalidierung wirksam zu machen.
     ///
     /// Rueckgabe: wie viele gespeicherte Evidenzstaende sie ausgeschlossen
-    /// hat. 0 ist kein Fehler — ein Seek, der keine Evidenz trifft, ist eine
+    /// hat. `Err` heisst „der Store hat den Append verweigert" — dann ist der
+    /// lokale Ausschluss zurueckgenommen und der Auslöser muss ablehnen.
+    /// `Ok(0)` ist kein Fehler: ein Seek, der keine Evidenz trifft, ist eine
     /// Tatsache und keine Panne.
     pub(super) fn invalidierung_anwenden(
         &self,
         session: &SessionKey,
         invalidierung: &Invalidierung,
-    ) -> usize {
-        if !invalidierung.gueltig() {
-            // Eine leere ID-Menge oder ein leerer Bereich nehmen nichts
-            // zurueck. Sie zu senden hiesse, dem Empfaenger eine Ruecknahme zu
-            // melden, die nichts zurueckninmt, und ihn danach glauben zu
-            // lassen, es sei aufgeraeumt (M-57).
-            return 0;
+    ) -> Result<usize, ()> {
+        let Some(wirkung) = self.invalidierung_vorbereiten(session, invalidierung) else {
+            return Ok(0);
+        };
+        let betroffen = wirkung.betroffen;
+        match self.invalidierung_alleine_persistieren(session, &wirkung) {
+            // Ein Broker OHNE Store haelt seinen Bestand ausschliesslich
+            // fluechtig; dort gibt es nichts, wovon der Speicher abweichen
+            // koennte. Der Ausschluss steht, und es gibt keine Zustellschuld.
+            Ok(None) => Ok(betroffen),
+            Ok(Some(event_ord)) => {
+                self.invalidierung_zustellen(&wirkung, event_ord);
+                Ok(betroffen)
+            }
+            Err(()) => {
+                self.invalidierung_ruecknehmen(wirkung);
+                Err(())
+            }
         }
-        // 1. Der lokale Ausschluss.
-        let (betroffen, ziele) = {
-            let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
-            let mut betroffen = 0usize;
-            let keys: Vec<ClientKey> = stand
-                .evidenz
-                .keys()
-                .filter(|key| key.session() == *session)
-                .cloned()
-                .collect();
-            for key in keys {
-                let Some(historie) = stand.evidenz.get_mut(&key) else {
+    }
+
+    /// Schliesst die Evidenz VORLAEUFIG aus und sagt, was das getroffen hat.
+    ///
+    /// `None` heisst „diese Invalidierung nimmt nichts zurueck" — eine leere
+    /// ID-Menge oder ein leerer Bereich. Sie zu senden hiesse, dem Empfaenger
+    /// eine Ruecknahme zu melden, die nichts zuruecknimmt, und ihn danach
+    /// glauben zu lassen, es sei aufgeraeumt (M-57).
+    pub(super) fn invalidierung_vorbereiten(
+        &self,
+        session: &SessionKey,
+        invalidierung: &Invalidierung,
+    ) -> Option<Invalidierungswirkung> {
+        if !invalidierung.gueltig() {
+            return None;
+        }
+        let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+        let mut zurueck: Vec<(ClientKey, usize)> = Vec::new();
+        let keys: Vec<ClientKey> = stand
+            .evidenz
+            .keys()
+            .filter(|key| key.session() == *session)
+            .cloned()
+            .collect();
+        for key in keys {
+            let Some(historie) = stand.evidenz.get_mut(&key) else {
+                continue;
+            };
+            for (index, eintrag) in historie.iter_mut().enumerate() {
+                if eintrag.ausschlussgrund.is_some() {
+                    // Schon ausgeschlossen: der ERSTE Grund bleibt stehen.
+                    // Ihn zu ueberschreiben hiesse, die Geschichte des
+                    // Ausschlusses umzuschreiben.
                     continue;
-                };
-                for eintrag in historie.iter_mut() {
-                    if eintrag.ausschlussgrund.is_some() {
-                        // Schon ausgeschlossen: der ERSTE Grund bleibt stehen.
-                        // Ihn zu ueberschreiben hiesse, die Geschichte des
-                        // Ausschlusses umzuschreiben.
-                        continue;
-                    }
-                    let von = eintrag.project_sample_start.unwrap_or(i64::MIN);
-                    let bis = von.saturating_add(eintrag.sample_count as i64);
-                    if invalidierung
-                        .umfang
-                        .erfasst(&eintrag.evidence_id, von, bis)
-                    {
-                        eintrag.ausschlussgrund = Some(invalidierung.grund.wort().to_string());
-                        betroffen += 1;
-                    }
+                }
+                let von = eintrag.project_sample_start.unwrap_or(i64::MIN);
+                let bis = von.saturating_add(eintrag.sample_count as i64);
+                if invalidierung
+                    .umfang
+                    .erfasst(&eintrag.evidence_id, von, bis)
+                {
+                    eintrag.ausschlussgrund = Some(invalidierung.grund.wort().to_string());
+                    zurueck.push((key.clone(), index));
                 }
             }
-            stand.invalidierungen = stand.invalidierungen.saturating_add(1);
-            stand.evidenz_ausgeschlossen =
-                stand.evidenz_ausgeschlossen.saturating_add(betroffen as u64);
-            // Die Abonnenten DIESER Sitzung — sie bekommen den Ausschluss.
-            let ziele: Vec<SnapshotZiel> = stand
-                .subscriptions
-                .values()
-                .filter(|sub| {
-                    sub.session_epoch == session.session_epoch
-                        && sub.adresse.project_binding_id == session.project_binding_id
-                })
-                .map(|sub| SnapshotZiel {
-                    project_binding_id: session.project_binding_id.clone(),
-                    session_epoch: session.session_epoch.clone(),
-                    instance_id: sub.adresse.instance_id.clone(),
-                    object_key: "evidence_invalidate".into(),
-                })
-                .collect();
-            (betroffen, ziele)
-        };
+        }
+        let betroffen = zurueck.len();
+        stand.invalidierungen = stand.invalidierungen.saturating_add(1);
+        stand.evidenz_ausgeschlossen =
+            stand.evidenz_ausgeschlossen.saturating_add(betroffen as u64);
+        // Die Abonnenten DIESER Sitzung — sie bekommen den Ausschluss.
+        let ziele: Vec<SnapshotZiel> = stand
+            .subscriptions
+            .values()
+            .filter(|sub| {
+                sub.session_epoch == session.session_epoch
+                    && sub.adresse.project_binding_id == session.project_binding_id
+            })
+            .map(|sub| SnapshotZiel {
+                project_binding_id: session.project_binding_id.clone(),
+                session_epoch: session.session_epoch.clone(),
+                instance_id: sub.adresse.instance_id.clone(),
+                object_key: "evidence_invalidate".into(),
+            })
+            .collect();
+        Some(Invalidierungswirkung {
+            betroffen,
+            ziele,
+            nachricht: Self::invalidierung_als_json(invalidierung),
+            zurueck,
+        })
+    }
 
-        // 2. und 3.: Ablage und Outbox in EINEM Store-Append. Der Writer legt
-        // die Outboxzeilen im selben Commit an wie das Ereignis — Eventwahrheit
-        // und Zustellschuld koennen so nicht auseinanderlaufen.
-        //
-        // 🔑 Nacharbeit 2 (Befund R28, G1(d)): und danach wird sie WIRKLICH
-        // ZUGESTELLT. Die Runde 1 legte nur eine Outbox-Schuld an; kein
-        // Produktcode las sie je aus, und `SessionPush::snapshot_schreiben`
-        // wurde fuer die Invalidierung nie gerufen. Ein aktiver Subscriber
-        // erhielt die Ruecknahme damit nie — eine Zustellschuld ohne Leser ist
-        // ein Defekt, kein Zustand.
-        self.invalidierung_persistieren(session, invalidierung, betroffen, ziele);
-        betroffen
+    /// Nimmt einen vorlaeufigen Ausschluss zurueck (Befund B16).
+    ///
+    /// Zurueckgesetzt wird GENAU, was diese Invalidierung markiert hat — nicht
+    /// jeder Ausschluss der Sitzung. Ein aelterer Grund gehoert einer anderen
+    /// Ruecknahme und bleibt stehen.
+    pub(super) fn invalidierung_ruecknehmen(&self, wirkung: Invalidierungswirkung) {
+        let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+        for (key, index) in &wirkung.zurueck {
+            if let Some(historie) = stand.evidenz.get_mut(key) {
+                if let Some(eintrag) = historie.get_mut(*index) {
+                    eintrag.ausschlussgrund = None;
+                }
+            }
+        }
+        stand.invalidierungen = stand.invalidierungen.saturating_sub(1);
+        stand.evidenz_ausgeschlossen = stand
+            .evidenz_ausgeschlossen
+            .saturating_sub(wirkung.betroffen as u64);
+        stand.store_verweigerungen = stand.store_verweigerungen.saturating_add(1);
+    }
+
+    /// Die Invalidierung als Domaenenereignis fuer den Append eines BEFEHLS
+    /// (Befund B14).
+    ///
+    /// Damit liegen Befehlsriegel und Ruecknahme in derselben Transaktion. Ein
+    /// Crash dazwischen kann es nicht mehr geben, und ein Retry bekommt nicht
+    /// `idempotent_wiederholt` fuer einen Befehl, dessen Wirkung fehlt.
+    pub(super) fn invalidierung_als_domaenenereignis(
+        &self,
+        wirkung: &Invalidierungswirkung,
+    ) -> Domaenenereignis {
+        Domaenenereignis {
+            event_type: "evidence_invalidate".into(),
+            payload: serde_json::json!({
+                "nachricht": wirkung.nachricht,
+                "ausgeschlossen": wirkung.betroffen,
+            }),
+            ziele: wirkung.ziele.clone(),
+        }
     }
 
     /// Die Wireform von `evidence_invalidate` (M-57).
@@ -147,15 +223,21 @@ impl Coordinator {
         })
     }
 
-    fn invalidierung_persistieren(
+    /// Der eigene Append einer Invalidierung, die zu KEINEM Befehl gehoert
+    /// (Marker, Transportbruch, Messpunktwechsel).
+    ///
+    /// `Err` heisst „der Store hat verweigert"; der Aufrufer nimmt dann den
+    /// vorlaeufigen Ausschluss zurueck. `Ok(None)` heisst „dieser Broker
+    /// fuehrt gar keinen Store" — dann gibt es nichts zu persistieren und
+    /// nichts zuzustellen, und der fluechtige Ausschluss ist die ganze
+    /// Wahrheit.
+    fn invalidierung_alleine_persistieren(
         &self,
         session: &SessionKey,
-        invalidierung: &Invalidierung,
-        betroffen: usize,
-        ziele: Vec<SnapshotZiel>,
-    ) {
+        wirkung: &Invalidierungswirkung,
+    ) -> Result<Option<i64>, ()> {
         let Some(store) = self.store.as_ref() else {
-            return;
+            return Ok(None);
         };
         // 🔑 Nacharbeit 2 (Befund R26): der WIRE-Payload bleibt genau die
         // Nachricht. `evidence_invalidate` ist `additionalProperties: false`;
@@ -163,13 +245,12 @@ impl Coordinator {
         // Subscriber haette ihn abweisen muessen. Die Zahl der getroffenen
         // Belege ist eine Aussage UEBER die Ruecknahme, kein Feld IN ihr — sie
         // steht deshalb im Store-Ereignis NEBEN der Nachricht.
-        let nachricht = Self::invalidierung_als_json(invalidierung);
         let payload = serde_json::json!({
-            "nachricht": nachricht,
-            "ausgeschlossen": betroffen,
+            "nachricht": wirkung.nachricht,
+            "ausgeschlossen": wirkung.betroffen,
         });
         let Ok(payload_jcs) = serde_json_canonicalizer::to_vec(&payload) else {
-            return;
+            return Err(());
         };
         let sequence = self.event_sequence.fetch_add(1, Ordering::SeqCst);
         let mut event = StoreEvent::session_snapshot(
@@ -187,43 +268,46 @@ impl Coordinator {
         // Subscribe erwartet `subscription.rs` dort einen `session_snapshot`,
         // verwirft die Projektion und setzt Routing fail-closed. Eine
         // Ruecknahme von Evidenz nahm so die ganze Sitzungsprojektion mit.
-        //
-        // `sessions.state_jcs` ist ausschliesslich die
-        // `session_snapshot`-Projektion. Die Invalidierung hat ihre eigene:
-        // `projektionen_anwenden` traegt ihren Ausschlussgrund in die
-        // betroffenen `evidence`-Zeilen ein — dieselbe Wirkung wie im
-        // fluechtigen Bestand, nur haltbar.
         event.event_type = "evidence_invalidate".into();
-        event.snapshot_ziele = ziele.clone();
+        event.snapshot_ziele = wirkung.ziele.clone();
         let Ok(ausgaenge) = store.append(vec![event]) else {
-            let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
-            stand.store_verweigerungen = stand.store_verweigerungen.saturating_add(1);
-            return;
+            return Err(());
         };
-        let Some(event_ord) = ausgaenge.first().map(|a| a.event_ord()) else {
-            return;
-        };
+        match ausgaenge.first() {
+            Some(a) => Ok(Some(a.event_ord())),
+            None => Err(()),
+        }
+    }
 
-        // ── 3. Die ZUSTELLUNG (Befund R28) ──────────────────────────────
-        //
-        // Die WIRE-Nachricht ist die Invalidierung selbst — sie ist eine
-        // eigene v3-Familie mit eigenem Leser im Plugin, kein Sessionschnitt.
-        // Was zugestellt wurde, wird kompaktiert: eine Schuld, die niemand
-        // abtraegt, waechst.
-        let Ok(payload) = serde_json::to_vec(&nachricht) else {
+    /// Die ZUSTELLUNG (Befund R28) — nach dem Append, nie davor.
+    ///
+    /// Die WIRE-Nachricht ist die Invalidierung selbst; sie ist eine eigene
+    /// v3-Familie mit eigenem Leser im Plugin, kein Sessionschnitt. Was
+    /// zugestellt wurde, wird kompaktiert: eine Schuld, die niemand abtraegt,
+    /// waechst. Was NICHT ankommt, bleibt als Schuld stehen und wird beim
+    /// naechsten Subscribe nachgespielt (Befund B17).
+    pub(super) fn invalidierung_zustellen(
+        &self,
+        wirkung: &Invalidierungswirkung,
+        event_ord: i64,
+    ) {
+        let Some(store) = self.store.as_ref() else {
+            return;
+        };
+        let Ok(payload) = serde_json::to_vec(&wirkung.nachricht) else {
             return;
         };
         let push = self.push.lock().unwrap_or_else(|e| e.into_inner()).clone();
-        for ziel in ziele {
-            let Some(link_id) = self.link_des_abonnenten(&ziel) else {
+        for ziel in &wirkung.ziele {
+            let Some(link_id) = self.link_des_abonnenten(ziel) else {
                 continue;
             };
-            let geschrieben = self.push_ziel_noch_gueltig(&link_id, &ziel)
+            let geschrieben = self.push_ziel_noch_gueltig(&link_id, ziel)
                 && push
                     .as_ref()
                     .is_some_and(|push| push.snapshot_schreiben(&link_id, &payload));
             if geschrieben {
-                let _ = store.snapshot_schuld_kompaktieren(ziel, event_ord);
+                let _ = store.snapshot_schuld_kompaktieren(ziel.clone(), event_ord);
             }
         }
     }
@@ -252,7 +336,7 @@ impl Coordinator {
         session: &SessionKey,
         von: i64,
         bis: i64,
-    ) -> usize {
+    ) -> Result<usize, ()> {
         self.invalidierung_anwenden(
             session,
             &Invalidierung {
@@ -270,7 +354,7 @@ impl Coordinator {
     pub(super) fn invalidierung_wegen_intervention_ganze_sitzung(
         &self,
         session: &SessionKey,
-    ) -> usize {
+    ) -> Result<usize, ()> {
         self.invalidierung_anwenden(
             session,
             &Invalidierung {
@@ -287,8 +371,18 @@ impl Coordinator {
     /// Evidenz gehoert nicht in einen Vergleich. Der Umfang ist die ganze
     /// Sitzung, weil die Nachrichten keinen Bereich in Projektzeit tragen —
     /// ein geratenes Fenster waere schlimmer als ein zu grosses (§32.3).
-    pub(super) fn invalidierung_wegen_preview(&self, session: &SessionKey) -> usize {
-        self.invalidierung_anwenden(
+    ///
+    /// 🔑 Nacharbeit 3 (Befund B14): sie wird nur VORBEREITET. Die Runde 2
+    /// committete den Befehl ueber `persistenz_p0` und invalidierte erst
+    /// DANACH in einem zweiten Append. Stuerzte der Broker dazwischen, bekam
+    /// der Retry `idempotent_wiederholt` — und die Bedingung „nur bei
+    /// angewandt" uebersprang die Ruecknahme fuer immer. Die Vorschau war
+    /// persistiert, ihre Evidenz blieb gueltig, und niemand sah es.
+    pub(super) fn preview_invalidierung_vorbereiten(
+        &self,
+        session: &SessionKey,
+    ) -> Option<Invalidierungswirkung> {
+        self.invalidierung_vorbereiten(
             session,
             &Invalidierung {
                 grund: Grund::Intervention,
@@ -350,7 +444,7 @@ impl Coordinator {
             // heisst dann: die ganze Sitzung (§32.3) — nicht „nichts".
             None => Umfang::GanzeSitzung,
         };
-        self.invalidierung_anwenden(&session, &Invalidierung { grund, umfang });
+        let _ = self.invalidierung_anwenden(&session, &Invalidierung { grund, umfang });
     }
 
     /// Der Auslöser „Materialwechsel" (M-54).
@@ -365,15 +459,33 @@ impl Coordinator {
         session: &SessionKey,
         vorher: Option<&crate::telemetrie::Fingerprintwerte>,
         jetzt: Option<&crate::telemetrie::Fingerprintwerte>,
-    ) -> usize {
+    ) -> Result<usize, ()> {
         match crate::coordinator::invalidierung::material_wechsel(
             vorher,
             jetzt,
             Umfang::GanzeSitzung,
         ) {
             Some(inv) => self.invalidierung_anwenden(session, &inv),
-            None => 0,
+            None => Ok(0),
         }
+    }
+
+    /// Dieselbe Feststellung, aber nur VORBEREITET (Befund B14).
+    ///
+    /// Der Materialwechsel nach `experiment_begin` ist Wirkung DIESES Befehls
+    /// und geht in denselben Append; er darf deshalb keinen eigenen bekommen.
+    pub(super) fn invalidierung_wegen_material_vorbereiten(
+        &self,
+        session: &SessionKey,
+        vorher: Option<&crate::telemetrie::Fingerprintwerte>,
+        jetzt: Option<&crate::telemetrie::Fingerprintwerte>,
+    ) -> Option<Invalidierungswirkung> {
+        let inv = crate::coordinator::invalidierung::material_wechsel(
+            vorher,
+            jetzt,
+            Umfang::GanzeSitzung,
+        )?;
+        self.invalidierung_vorbereiten(session, &inv)
     }
 
     /// Der Auslöser „Messpunktwechsel" (M-55) — die Kante zu Gate 7.
@@ -382,14 +494,14 @@ impl Coordinator {
         session: &SessionKey,
         alte_klasse: &str,
         neue_klasse: &str,
-    ) -> usize {
+    ) -> Result<usize, ()> {
         match crate::coordinator::invalidierung::messpunkt_wechsel(
             alte_klasse,
             neue_klasse,
             Umfang::GanzeSitzung,
         ) {
             Some(inv) => self.invalidierung_anwenden(session, &inv),
-            None => 0,
+            None => Ok(0),
         }
     }
 
@@ -408,6 +520,7 @@ impl Coordinator {
             return 0;
         };
         self.invalidierung_wegen_intervention(&session, von, bis)
+            .unwrap_or(0)
     }
 
     pub fn invalidierung_wegen_material_fuer_link(
@@ -420,6 +533,7 @@ impl Coordinator {
             return 0;
         };
         self.invalidierung_wegen_material(&session, vorher, jetzt)
+            .unwrap_or(0)
     }
 
     pub fn invalidierung_wegen_messpunkt_fuer_link(
@@ -432,6 +546,7 @@ impl Coordinator {
             return 0;
         };
         self.invalidierung_wegen_messpunkt(&session, alte_klasse, neue_klasse)
+            .unwrap_or(0)
     }
 
     fn session_fuer_link(&self, link_id: &str) -> Option<SessionKey> {

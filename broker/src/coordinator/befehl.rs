@@ -100,15 +100,30 @@ impl Coordinator {
             .unwrap_or(false)
     }
 
-    pub(super) fn persistenz_p0(&self, link_id: &str, wert: &Value) -> Option<Vec<u8>> {
-        self.persistenz_p0_mit_domaene(link_id, wert, Vec::new())
-    }
-
-    pub(super) fn persistenz_p0_mit_domaene(
+    /// Derselbe Weg, aber mit den Ereignisordnungen der geschriebenen Zeilen.
+    ///
+    /// 🔑 Nacharbeit 3 (Befund B14): eine Invalidierung, die als
+    /// Domaenenereignis MIT einem Befehl committet, braucht ihre `event_ord`,
+    /// um die zugestellte Outbox-Schuld zu kompaktieren. Ohne sie bliebe eine
+    /// bereits ausgelieferte Ruecknahme als Schuld stehen und wuerde beim
+    /// naechsten Subscribe erneut ausgespielt.
+    pub(super) fn persistenz_p0_mit_domaene_und_ords(
         &self,
         link_id: &str,
         wert: &Value,
         domaene: Vec<Domaenenereignis>,
+    ) -> (Option<Vec<u8>>, Vec<i64>) {
+        let mut ords = Vec::new();
+        let ack = self.persistenz_p0_intern(link_id, wert, domaene, &mut ords);
+        (ack, ords)
+    }
+
+    fn persistenz_p0_intern(
+        &self,
+        link_id: &str,
+        wert: &Value,
+        domaene: Vec<Domaenenereignis>,
+        ords: &mut Vec<i64>,
     ) -> Option<Vec<u8>> {
         let kopf = wert.get("kopf")?;
         let command_id = kopf.get("command_id")?.as_str()?;
@@ -336,7 +351,9 @@ impl Coordinator {
             ereignisse.push(e);
         }
         match store.append(ereignisse) {
-            Ok(ausgaenge) => match ausgaenge.first()? {
+            Ok(ausgaenge) => {
+                ords.extend(ausgaenge.iter().map(|a| a.event_ord()));
+                match ausgaenge.first()? {
                 crate::store::AppendAusgang::Angewandt { .. } => {
                     Self::command_ack(command_id, "angewandt", revision, Some(&hash), None)
                 }
@@ -361,7 +378,8 @@ impl Coordinator {
                         )
                     }
                 }
-            },
+                }
+            }
             Err(_) => {
                 self.store_verweigert_fuer_link(link_id);
                 None
@@ -629,11 +647,19 @@ impl Coordinator {
                         // begann bei `i64::MIN / 2` und nahm damit auch
                         // Evidenz zurueck, die der Marker nie beruehrt hat.
                         (Some(von), Some(bis)) => {
-                            self.invalidierung_wegen_intervention(
-                                &session,
-                                von,
-                                bis.saturating_add(tail.min(i64::MAX as u64) as i64),
-                            );
+                            // Befund B16: scheitert der Append, bleibt KEIN
+                            // lokaler Ausschluss stehen; der Link wird als
+                            // storeverweigert gefuehrt.
+                            if self
+                                .invalidierung_wegen_intervention(
+                                    &session,
+                                    von,
+                                    bis.saturating_add(tail.min(i64::MAX as u64) as i64),
+                                )
+                                .is_err()
+                            {
+                                self.store_verweigert_fuer_link(link_id);
+                            }
                         }
                         // Fehlt eine der beiden Grenzen, gibt es keinen
                         // Bereich. Die Runde 1 invalidierte dann GAR NICHTS —
@@ -641,7 +667,12 @@ impl Coordinator {
                         // Sitzung verlangt: der Marker hat gefaerbt, und
                         // niemand weiss wo.
                         _ => {
-                            self.invalidierung_wegen_intervention_ganze_sitzung(&session);
+                            if self
+                                .invalidierung_wegen_intervention_ganze_sitzung(&session)
+                                .is_err()
+                            {
+                                self.store_verweigert_fuer_link(link_id);
+                            }
                         }
                     }
                 }
@@ -649,11 +680,10 @@ impl Coordinator {
             }
             "session_command" => self.session_command(link_id, &wert),
             "preview_begin" | "preview_renew" | "preview_end" => {
-                let ack = self.persistenz_p0(link_id, &wert)?;
                 // 🔑 Nacharbeit 2 (Befund R24, M-52): eine PREVIEW nimmt die
                 // Evidenz ihrer Sitzung zurueck.
                 //
-                // Die drei Familien liefen bis hierher NUR durch
+                // Die drei Familien liefen bis dahin NUR durch
                 // `persistenz_p0`; der Invalidierungszaehler blieb unveraendert,
                 // und die waehrend der Vorschau gemessene Evidenz sah aus wie
                 // jede andere. M-52 zaehlt die Preview ausdruecklich als
@@ -664,15 +694,42 @@ impl Coordinator {
                 // Projektzeit, und ein geratenes Fenster waere schlimmer als ein
                 // zu grosses (§32.3). Der Grund ist `intervention` — eine
                 // Vorschau IST ein hoerbarer Eingriff.
-                if Self::ack_ist_angewandt_p0(&ack) {
-                    if let Ok(ziel) = serde_json::from_value::<Adresse>(
-                        wert.pointer("/kopf/ziel").cloned().unwrap_or(Value::Null),
-                    ) {
-                        let session = ClientKey::aus_adresse(&ziel).session();
-                        self.invalidierung_wegen_preview(&session);
+                //
+                // 🔑 Nacharbeit 3 (Befund B14): Befehlsriegel und Ruecknahme
+                // gehen in EINEN Append. Die Runde 2 committete erst den Befehl
+                // und invalidierte danach; ein Crash dazwischen liess den Retry
+                // `idempotent_wiederholt` melden und die Invalidierung fuer
+                // immer ausfallen.
+                let session = serde_json::from_value::<Adresse>(
+                    wert.pointer("/kopf/ziel").cloned().unwrap_or(Value::Null),
+                )
+                .ok()
+                .map(|ziel| ClientKey::aus_adresse(&ziel).session());
+                let wirkung = session
+                    .as_ref()
+                    .and_then(|s| self.preview_invalidierung_vorbereiten(s));
+                let domaene = wirkung
+                    .as_ref()
+                    .map(|w| vec![self.invalidierung_als_domaenenereignis(w)])
+                    .unwrap_or_default();
+                let (ack, ords) =
+                    self.persistenz_p0_mit_domaene_und_ords(link_id, &wert, domaene);
+                match ack {
+                    Some(a) if Self::ack_ist_angewandt_p0(&a) => {
+                        if let (Some(w), Some(ord)) = (wirkung, ords.last().copied()) {
+                            self.invalidierung_zustellen(&w, ord);
+                        }
+                        Some(a)
+                    }
+                    andere => {
+                        // Kein angewandter Befehl, keine Ruecknahme: der
+                        // fluechtige Ausschluss faellt mit ihm.
+                        if let Some(w) = wirkung {
+                            self.invalidierung_ruecknehmen(w);
+                        }
+                        andere
                     }
                 }
-                Some(ack)
             }
             // 🔑 Nacharbeit 1 (Befund B18): die drei Experimentfamilien fielen
             // vorher in `_ => None`. Schema-gueltige Produktnachrichten

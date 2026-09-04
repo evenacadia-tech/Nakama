@@ -1,0 +1,108 @@
+Rotbeweis B4 - der Taint eines verdraengten Versuchs faellt in der Opfersitzung
+Datum: 2026-09-04
+Datei: broker/src/coordinator/intervention.rs
+Test:  cargo test --test sonde013_verdrahtung verdraengter_taint_faellt_in_der_opfersitzung
+
+== 1. Fehler eingebaut ==
+ALT:         let mut geschlossen = 0usize;
+        for taint in stand.taint.values_mut() {
+NEU:         // Rotbeweis: nur die Sitzung des Aufrufers, wie in Runde 2.
+        let mut geschlossen = 0usize;
+        for taint in stand.taint.values_mut().take(0) {
+
+== 2. Der Test FAELLT ==
+exit=101
+
+running 1 test
+test verdraengter_taint_faellt_in_der_opfersitzung ... FAILED
+
+failures:
+
+---- verdraengter_taint_faellt_in_der_opfersitzung stdout ----
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde013-b4-verdraengter-taint-16444-fd3a5e13f24a4b9d8afd70c11131d97f\nakama-broker.sqlite3
+
+thread 'verdraengter_taint_faellt_in_der_opfersitzung' (19624) panicked at tests\sonde013_verdrahtung.rs:3369:5:
+assertion `left == right` failed: verdraengter_taint_faellt_in_der_opfersitzung - sein Intervall ist in SEINER Sitzung geschlossen, nicht in der des neuen Aufrufers
+  left: 1
+ right: 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    verdraengter_taint_faellt_in_der_opfersitzung
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 46 filtered out; finished in 1.46s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:2841:9
+     |
+2841 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+     |
+     = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `clock` is never read
+   --> tests\sonde013_verdrahtung.rs:250:5
+    |
+247 | struct HarnischMitStore {
+    |        ---------------- field in this struct
+...
+250 |     clock: Arc<ManualClock>,
+    |     ^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `sonde_mit_evidenz` is never used
+    --> tests\sonde013_verdrahtung.rs:1844:4
+     |
+1844 | fn sonde_mit_evidenz(h: &HarnischMitStore, anzahl: usize) -> HelloControl {
+     |    ^^^^^^^^^^^^^^^^^
+
+warning: `eqcop-broker` (test "sonde013_verdrahtung") generated 3 warnings (run `cargo fix --test "sonde013_verdrahtung" -p eqcop-broker` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.92s
+     Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)
+error: test failed, to rerun pass `--test sonde013_verdrahtung`
+
+
+== 3. Fehler entfernt, der Test ist GRUEN ==
+exit=0
+
+running 1 test
+test verdraengter_taint_faellt_in_der_opfersitzung ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 46 filtered out; finished in 1.42s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:2841:9
+     |
+2841 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+     |
+     = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `clock` is never read
+   --> tests\sonde013_verdrahtung.rs:250:5
+    |
+247 | struct HarnischMitStore {
+    |        ---------------- field in this struct
+...
+250 |     clock: Arc<ManualClock>,
+    |     ^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `sonde_mit_evidenz` is never used
+    --> tests\sonde013_verdrahtung.rs:1844:4
+     |
+1844 | fn sonde_mit_evidenz(h: &HarnischMitStore, anzahl: usize) -> HelloControl {
+     |    ^^^^^^^^^^^^^^^^^
+
+warning: `eqcop-broker` (test "sonde013_verdrahtung") generated 3 warnings (run `cargo fix --test "sonde013_verdrahtung" -p eqcop-broker` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.92s
+     Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)

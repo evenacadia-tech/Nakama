@@ -692,15 +692,40 @@ pub enum Ereignis {
     Abgebrochen { experiment_id: String, grund: Abbruchgrund },
 }
 
+/// Der Rueckweg eines einzelnen Experimentbefehls (Befund B3).
+///
+/// Er wird VOR der Wirkung gebaut und nur benutzt, wenn der gemeinsame Append
+/// von Befehl und Wirkung scheitert. Er nennt ausdruecklich, was dieser
+/// Befehl angefasst hat — nicht den Zustand der Welt.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct Ruecknahme {
+    /// Ein von diesem Befehl NEU angelegter Versuch. Er wird entfernt.
+    pub angelegt: Option<String>,
+    /// Versuche, deren Terminal dieser Befehl gesetzt hat (Verdraengung).
+    pub terminale: Vec<String>,
+    /// Der Zustand des adressierten Versuchs VOR dem Befehl.
+    pub vorher: Option<(String, Experiment)>,
+    /// Eine von diesem Befehl NEU angelegte Passage.
+    pub passage: Option<String>,
+    pub log_laenge: usize,
+    pub naechste_folge: u64,
+}
+
+
 /// Der Experimentteil des Stores.
 ///
-/// `Clone` ist kein Komfort, sondern der RUECKFALL aus Befund R08: die Wirkung
-/// eines Experimentbefehls wird VORLAEUFIG angewandt, damit ihre Ereignisse
-/// aus dem entstandenen Zustand entstehen und mit dem Befehl in EINE
-/// Transaktion gehen. Scheitert der Append, wird der Stand zurueckgenommen —
-/// ein Speicher, der dem Log voraus ist, waere genau die zweite Wahrheit, die
-/// §33.5 ausschliesst. Der Bestand ist auf `N_GLOBAL` gedeckelt; die Kopie ist
-/// deshalb klein und beschraenkt.
+/// Die Wirkung eines Experimentbefehls wird VORLAEUFIG angewandt, damit ihre
+/// Ereignisse aus dem entstandenen Zustand entstehen und mit dem Befehl in
+/// EINE Transaktion gehen (Befund R08). Scheitert der Append, wird sie
+/// zurueckgenommen — ein Speicher, der dem Log voraus ist, waere genau die
+/// zweite Wahrheit, die §33.5 ausschliesst.
+///
+/// 🔑 Nacharbeit 3 (Befund B3): der Rueckweg laeuft ueber `Ruecknahme` und
+/// fasst NUR an, was der Befehl geaendert hat. Die Runde 2 klonte den ganzen
+/// Store und ersetzte ihn im Fehlerfall; damit loeschte ein scheiternder
+/// Befehl die bereits persistierte Wirkung PARALLELER Befehle aus dem
+/// Speicher. `Clone` bleibt fuer Tests und Sichten, ist aber kein Rueckfall
+/// mehr.
 #[derive(Debug, Default, Clone)]
 pub struct Experimentstore {
     passagen: BTreeMap<String, Passage>,
@@ -1105,6 +1130,46 @@ impl Experimentstore {
                 .cloned()
                 .collect(),
         })
+    }
+
+    /// Nimmt GENAU die Wirkung EINES Befehls zurueck (Befund B3).
+    ///
+    /// 🔑 Wiederpruefung 2: Die Runde 2 klonte vor jedem Experimentbefehl den
+    /// GANZEN Store und ersetzte bei gescheitertem Append den gesamten Stand
+    /// durch diese Kopie. Committet in derselben Zeit eine andere Sitzung
+    /// erfolgreich, loescht so ein Rollback deren Wirkung aus dem Speicher,
+    /// obwohl sie persistiert ist — der fluechtige Stand faellt hinter das Log
+    /// zurueck, und genau das schliesst §33.5 aus.
+    ///
+    /// Diese Form fasst nur an, was der Befehl selbst geaendert hat: den
+    /// angelegten oder veraenderten Eintrag, die Terminale der von IHM
+    /// verdraengten Versuche, eine von IHM angelegte Passage und die Laenge
+    /// seines Logs. Alles andere bleibt stehen.
+    pub fn zuruecknehmen(&mut self, r: &Ruecknahme) {
+        if let Some(id) = &r.angelegt {
+            self.experimente.remove(id);
+        }
+        for id in &r.terminale {
+            // Eine Verdraengung setzt AUSSCHLIESSLICH das Terminal. Der
+            // Rueckweg loest genau das wieder — eine vollstaendige Kopie des
+            // Opfers waere mehr, als der Befehl angefasst hat.
+            if let Some(e) = self.experimente.get_mut(id) {
+                e.terminal = None;
+            }
+        }
+        if let Some((id, vorher)) = &r.vorher {
+            self.experimente.insert(id.clone(), vorher.clone());
+        }
+        if let Some(passage_id) = &r.passage {
+            self.passagen.remove(passage_id);
+        }
+        self.log.truncate(r.log_laenge);
+        self.naechste_folge = r.naechste_folge;
+    }
+
+    /// Der Stand, auf den ein Rueckweg zurueckfuehrt.
+    pub fn marke(&self) -> (usize, u64) {
+        (self.log.len(), self.naechste_folge)
     }
 
     /// Der Gegenpfad zum Anlegen (M-51, CLAUDE.md Änderungssatzregel).

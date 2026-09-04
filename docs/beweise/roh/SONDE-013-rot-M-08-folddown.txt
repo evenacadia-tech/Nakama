@@ -1,0 +1,196 @@
+SONDE-013 Etappe 2 C - Rotbeweis M-08-folddown
+=========================================
+
+Datei:     eq-copilot\plugin\core\analysis\FeatureEngine.h
+Ziel:      EqCopSonde013StereoGoldenTest
+Warum:     Der physische Mono-Check (L+R)/2 wird mit dem ENERGIENORMIERTEN M/S aus §40.3 (M=(L+R)/sqrt(2)) vermischt - genau die Verwechslung, die §40.3 ausschliesst. Der gemeldete Folddown weicht dann um 3 dB vom wirklich gefalteten Puffer ab.
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+        const double mono = 0.5 * (l + r);
+--- NEU ---
+        const double mono = 0.70710678118654752 * (l + r);
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+== Nakama SONDE-013 - bandweise Stereoevidenz (§40.1, §40.3) ==
+
+== M-08  mono_identity ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   das 1-kHz-Band ist im Gitter auffindbar  [Band 121]
+[ok]   es traegt eine Basis
+[ok]   bei echtem Mono ist die Korrelation exakt 1  [1.000000]
+[ok]   und der Seitenanteil liegt am Boden - es gibt keine Seitenenergie  [-120.00 dB]
+[ok]   die Kohaerenz ist 1 - zwei identische Kanaele sind vollstaendig kohaerent  [1.000000]
+[ok]   und die Phase ist 0 - kein Laufzeitunterschied  [0.000000 rad]
+[ROT]  der Mono-Folddown ist 0 dB innerhalb 0,25 dB (Â§40.3) - eine Monosumme aus zwei gleichen Kanaelen verliert nichts  [3.0103 dB]
+[ok]   und die L/R-Balance ist 0 dB  [0.0000 dB]
+
+== M-08  silent_channel_has_no_bit ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   mit einem stillen Kanal faellt das Kohaerenzbit weg, statt 0 oder NaN zu senden
+[ok]   und die Phase erst recht - sie ist eine Teilmenge der Kohaerenzbits
+[ok]   die Basis steht trotzdem: ein stiller Kanal ist maximal breit (Mid und Side tragen dieselbe Energie)  [-3.01 dB]
+[ROT]  der Mono-Folddown ist rund -3 dB - die halbe Energie ist im stillen Kanal  [0.000 dB]
+[ok]   und die Balance kippt vollstaendig nach links - der Wert laeuft an die Vertragsgrenze, statt zu fehlen: 'ganz links' ist eine Aussage, kein Schweigen  [400.0 dB]
+
+== M-08  folddown_matches_real_buffer_within_0p25db ==
+[ok]   ein Evidenzfenster entsteht
+[ROT]  der gemeldete Verlust stimmt mit dem von Hand gefalteten Puffer innerhalb 0,25 dB ueberein  [gemeldet -0.000 dB, von Hand -3.010 dB]
+
+== M-11  bandwise_ms_and_correlation ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   100 Hz und 5 kHz liegen in verschiedenen Baendern  [Band 41 gegen 176]
+[ok]   beide tragen eine Basis
+[ok]   unten ist das Material mono - Korrelation nahe 1  [1.0000]
+[ok]   oben ist es dekorreliert - und GENAU DAS koennen zwei globale Skalare nicht ausdruecken  [unten 1.0000, oben -0.0002]
+[ok]   und der Seitenanteil trennt die beiden Baender ebenso  [unten -120.00 dB, oben -3.01 dB]
+
+== M-11  coherence_carries_window_and_dof ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   das Band traegt seine Freiheitsgrade - die Zahl der gemittelten gueltigen Welch-Frames (Â§40.1: 'Fensterdauer und Freiheitsgrade werden Teil der Evidenz')  [24 Frames]
+[ok]   und seine Fensterdauer in Millisekunden  [1024.0 ms]
+[ok]   mit genug Frames traegt die Kohaerenz ein Bit
+[ok]   und die Dauer ist die Summe der Hops ueber genau diese Frames  [1024.00 ms gegen 1024.00 ms]
+
+== M-11  coherence_is_null_below_eight_frames ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   es gibt wirklich Baender mit weniger als acht Frames - der Fall ist hergestellt, nicht ausgerechnet  [149 von 149 Baendern mit Basis]
+[ok]   und KEINES davon traegt ein Kohaerenzbit - unter acht Frames ist die Kohaerenz `null`, nicht 1  [0 mit Bit, 149 ohne]
+
+== M-11  phase_only_in_coherent_bands ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   es gibt Baender MIT und OHNE Phase - der Fall trennt wirklich  [2 mit Phase, 149 mit Kohaerenz]
+[ok]   kein Band traegt eine Phase ohne Kohaerenz - die Phasenbits sind eine TEILMENGE der Kohaerenzbits (das kann das Schema nicht sagen)  [0 Verletzungen]
+[ok]   und keines unterhalb der benannten Schwelle 0.80  [0 Verletzungen]
+
+== M-11  bekannte Laufzeit: die Phase folgt -2*pi*f*tau ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   mindestens zwei der drei Traegerfrequenzen tragen eine Phase  [3 von 3]
+[ok]   und jede folgt der Formel +2*pi*f*tau - die Phase ist gemessen, nicht geraten  [groesste Abweichung 0.0000 rad]
+
+== M-11  persistence_is_reported ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   ein durchgehend kohaerentes Band meldet hohe Persistenz  [1.000]
+[ok]   ein unkorreliertes Band meldet niedrige - die Zahl misst wirklich die Stabilitaet des Befundes  [0.000]
+
+== M-10  band_stereo_metrics_share_the_nyquist_cap ==
+[ok]   ein Evidenzfenster bei 22,05 kHz entsteht
+[ok]   es gibt Baender ueber der Kappe - der Fall ist hergestellt  [18 Baender ab 10.47 kHz]
+[ok]   und KEINES traegt eine Stereometrik - die neuen Bandmetriken erben die Nyquist-Kappe, es entsteht keine zweite Regel  [0 Verletzungen]
+
+== M-12  width_alone_is_never_a_defect / low_coherence_yields_no_recommendation ==
+[ok]   ein sehr breites, inkohaerentes Evidenzfenster entsteht
+[ok]   viele Baender sind maximal breit  [195 von 196]
+[ok]   und trotzdem entsteht in KEINEM eine Phase - bei niedriger Kohaerenz gibt es keine Lag- oder Polaritaetsaussage (Â§40.2), und Breite allein ist kein Befund  [0 Baender mit Phase]
+
+== §40.3  Polaritaetsinvertierung: Korrelation -1, Monosumme loescht aus ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   die Korrelation ist -1  [-1.000000]
+[ok]   die KOHAERENZ ist dabei 1 - sie misst den Zusammenhang, nicht das Vorzeichen. Wer beide verwechselt, meldet Antiphase als Rauschen  [1.000000]
+[ok]   und die Phase ist +/-pi - genau die Aussage 'invertiert'  [3.1416 rad]
+[ok]   die Monosumme loescht sich VOLLSTAENDIG aus - der Wert laeuft an die Vertragsgrenze, statt zu fehlen. Gemessen am wirklich gefalteten Puffer, nicht aus der Korrelation geschaetzt: das ist die schaerfste Stereoaussage, die es gibt, und sie darf nicht schweigen  [-400.0 dB]
+
+== §32.3  keine Stereogroesse ueberbrueckt eine Transportgrenze ==
+[ok]   vor der Grenze steht ein Evidenzfenster
+[ok]   mit hoher Korrelation und gemessenem Folddown  [Korr 1.0000, Folddown 3.010 dB]
+[ok]   nach der Grenze entsteht ein neues Evidenzfenster
+[ok]   und seine Korrelation ist die des NEUEN Materials - kein Kreuzspektrum hat die Grenze ueberbrueckt  [-0.1377]
+[ok]   auch der Folddown ist neu gemessen und nicht fortgeschrieben  [vorher 3.010 dB, nachher -0.016 dB]
+
+-----------------------------------------
+54 bestanden, 3 gescheitert
+
+EXITCODE=1
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+== Nakama SONDE-013 - bandweise Stereoevidenz (§40.1, §40.3) ==
+
+== M-08  mono_identity ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   das 1-kHz-Band ist im Gitter auffindbar  [Band 121]
+[ok]   es traegt eine Basis
+[ok]   bei echtem Mono ist die Korrelation exakt 1  [1.000000]
+[ok]   und der Seitenanteil liegt am Boden - es gibt keine Seitenenergie  [-120.00 dB]
+[ok]   die Kohaerenz ist 1 - zwei identische Kanaele sind vollstaendig kohaerent  [1.000000]
+[ok]   und die Phase ist 0 - kein Laufzeitunterschied  [0.000000 rad]
+[ok]   der Mono-Folddown ist 0 dB innerhalb 0,25 dB (Â§40.3) - eine Monosumme aus zwei gleichen Kanaelen verliert nichts  [0.0000 dB]
+[ok]   und die L/R-Balance ist 0 dB  [0.0000 dB]
+
+== M-08  silent_channel_has_no_bit ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   mit einem stillen Kanal faellt das Kohaerenzbit weg, statt 0 oder NaN zu senden
+[ok]   und die Phase erst recht - sie ist eine Teilmenge der Kohaerenzbits
+[ok]   die Basis steht trotzdem: ein stiller Kanal ist maximal breit (Mid und Side tragen dieselbe Energie)  [-3.01 dB]
+[ok]   der Mono-Folddown ist rund -3 dB - die halbe Energie ist im stillen Kanal  [-3.010 dB]
+[ok]   und die Balance kippt vollstaendig nach links - der Wert laeuft an die Vertragsgrenze, statt zu fehlen: 'ganz links' ist eine Aussage, kein Schweigen  [400.0 dB]
+
+== M-08  folddown_matches_real_buffer_within_0p25db ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   der gemeldete Verlust stimmt mit dem von Hand gefalteten Puffer innerhalb 0,25 dB ueberein  [gemeldet -3.010 dB, von Hand -3.010 dB]
+
+== M-11  bandwise_ms_and_correlation ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   100 Hz und 5 kHz liegen in verschiedenen Baendern  [Band 41 gegen 176]
+[ok]   beide tragen eine Basis
+[ok]   unten ist das Material mono - Korrelation nahe 1  [1.0000]
+[ok]   oben ist es dekorreliert - und GENAU DAS koennen zwei globale Skalare nicht ausdruecken  [unten 1.0000, oben -0.0002]
+[ok]   und der Seitenanteil trennt die beiden Baender ebenso  [unten -120.00 dB, oben -3.01 dB]
+
+== M-11  coherence_carries_window_and_dof ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   das Band traegt seine Freiheitsgrade - die Zahl der gemittelten gueltigen Welch-Frames (Â§40.1: 'Fensterdauer und Freiheitsgrade werden Teil der Evidenz')  [24 Frames]
+[ok]   und seine Fensterdauer in Millisekunden  [1024.0 ms]
+[ok]   mit genug Frames traegt die Kohaerenz ein Bit
+[ok]   und die Dauer ist die Summe der Hops ueber genau diese Frames  [1024.00 ms gegen 1024.00 ms]
+
+== M-11  coherence_is_null_below_eight_frames ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   es gibt wirklich Baender mit weniger als acht Frames - der Fall ist hergestellt, nicht ausgerechnet  [149 von 149 Baendern mit Basis]
+[ok]   und KEINES davon traegt ein Kohaerenzbit - unter acht Frames ist die Kohaerenz `null`, nicht 1  [0 mit Bit, 149 ohne]
+
+== M-11  phase_only_in_coherent_bands ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   es gibt Baender MIT und OHNE Phase - der Fall trennt wirklich  [2 mit Phase, 149 mit Kohaerenz]
+[ok]   kein Band traegt eine Phase ohne Kohaerenz - die Phasenbits sind eine TEILMENGE der Kohaerenzbits (das kann das Schema nicht sagen)  [0 Verletzungen]
+[ok]   und keines unterhalb der benannten Schwelle 0.80  [0 Verletzungen]
+
+== M-11  bekannte Laufzeit: die Phase folgt -2*pi*f*tau ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   mindestens zwei der drei Traegerfrequenzen tragen eine Phase  [3 von 3]
+[ok]   und jede folgt der Formel +2*pi*f*tau - die Phase ist gemessen, nicht geraten  [groesste Abweichung 0.0000 rad]
+
+== M-11  persistence_is_reported ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   ein durchgehend kohaerentes Band meldet hohe Persistenz  [1.000]
+[ok]   ein unkorreliertes Band meldet niedrige - die Zahl misst wirklich die Stabilitaet des Befundes  [0.000]
+
+== M-10  band_stereo_metrics_share_the_nyquist_cap ==
+[ok]   ein Evidenzfenster bei 22,05 kHz entsteht
+[ok]   es gibt Baender ueber der Kappe - der Fall ist hergestellt  [18 Baender ab 10.47 kHz]
+[ok]   und KEINES traegt eine Stereometrik - die neuen Bandmetriken erben die Nyquist-Kappe, es entsteht keine zweite Regel  [0 Verletzungen]
+
+== M-12  width_alone_is_never_a_defect / low_coherence_yields_no_recommendation ==
+[ok]   ein sehr breites, inkohaerentes Evidenzfenster entsteht
+[ok]   viele Baender sind maximal breit  [195 von 196]
+[ok]   und trotzdem entsteht in KEINEM eine Phase - bei niedriger Kohaerenz gibt es keine Lag- oder Polaritaetsaussage (Â§40.2), und Breite allein ist kein Befund  [0 Baender mit Phase]
+
+== §40.3  Polaritaetsinvertierung: Korrelation -1, Monosumme loescht aus ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   die Korrelation ist -1  [-1.000000]
+[ok]   die KOHAERENZ ist dabei 1 - sie misst den Zusammenhang, nicht das Vorzeichen. Wer beide verwechselt, meldet Antiphase als Rauschen  [1.000000]
+[ok]   und die Phase ist +/-pi - genau die Aussage 'invertiert'  [3.1416 rad]
+[ok]   die Monosumme loescht sich VOLLSTAENDIG aus - der Wert laeuft an die Vertragsgrenze, statt zu fehlen. Gemessen am wirklich gefalteten Puffer, nicht aus der Korrelation geschaetzt: das ist die schaerfste Stereoaussage, die es gibt, und sie darf nicht schweigen  [-400.0 dB]
+
+== §32.3  keine Stereogroesse ueberbrueckt eine Transportgrenze ==
+[ok]   vor der Grenze steht ein Evidenzfenster
+[ok]   mit hoher Korrelation und gemessenem Folddown  [Korr 1.0000, Folddown 0.000 dB]
+[ok]   nach der Grenze entsteht ein neues Evidenzfenster
+[ok]   und seine Korrelation ist die des NEUEN Materials - kein Kreuzspektrum hat die Grenze ueberbrueckt  [-0.1377]
+[ok]   auch der Folddown ist neu gemessen und nicht fortgeschrieben  [vorher 0.000 dB, nachher -3.026 dB]
+
+-----------------------------------------
+57 bestanden, 0 gescheitert
+
+EXITCODE=0
+
+URTEIL: BELEGT (rot=1, gruen=0)

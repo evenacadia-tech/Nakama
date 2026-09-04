@@ -118,6 +118,21 @@ public:
         return r * r + i * i;
     }
 
+    /** Real- und Imaginaerteil eines Bins (SONDE-013 M-11).
+
+        `leistung()` wirft die Phase weg, und genau sie braucht die
+        Kreuzspektralanalyse: Kohaerenz und Interchannel-Phase entstehen aus
+        dem KOMPLEXEN Produkt L·conj(R), nicht aus zwei Betragsquadraten.
+        §40.1 verlangt sie ausdruecklich "aus komplexen L/R-STFTs".
+
+        Zwei getrennte Zugriffe statt eines `std::complex`: dieser Kern haelt
+        Real- und Imaginaerteil in zwei Feldern (bessere Lokalitaet in der
+        Schmetterlingsschleife), und ein `std::complex` daraus zu bauen hiesse,
+        je Aufruf ein Objekt zu erzeugen, das der Aufrufer sofort wieder
+        zerlegt. */
+    double realTeil (int k) const noexcept { return re[(std::size_t) k]; }
+    double imagTeil (int k) const noexcept { return im[(std::size_t) k]; }
+
 private:
     int punkte { 0 };
     int stufen { 0 };

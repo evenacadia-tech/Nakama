@@ -218,11 +218,144 @@ bool klasseGueltig (const std::string& k)
 {
     return k == "stark" || k == "mittel" || k == "schwach" || k == "unbrauchbar";
 }
+/*  Ein `stereo_bandwerte`-Objekt (SONDE-013 M-11).
+
+    NICHT dasselbe wie `bandsatzJson` daneben, und der Unterschied ist
+    vertraglich: die drei Stereo-Bandsatzdefinitionen tragen KEIN `saturated`.
+    Die Marke gehoert zur Quantisierung und kann bei float32 nie `true`
+    werden; sie mitzufuehren waere ein totes Feld auf der Leitung (Manifest
+    §10.1, Abweichung 2) — und weil `additionalProperties` bei allen dreien
+    `false` ist, waere sie zugleich eine Vertragsverletzung.
+
+    `waehle` liefert je Band Wert und Gueltigkeit. Ein Band ohne Bit bekommt
+    den Wert 0 auf der Leitung, aber sein Bitmapbit bleibt null — genau die
+    Trennung, die `bandwerte` seit SONDE-005 fuehrt: eine gemeldete 0 ist
+    etwas anderes als „nie gesagt". */
+template <typename Waehler>
+bool stereoBandsatzJson (const char* encoding, const Waehler& waehle,
+                         std::string& aus)
+{
+    using namespace nakama::analyse;
+    constexpr int N = Gitter::evidenzBaender;
+    std::uint8_t bitmap[(N + 7) / 8] {};
+
+    aus += "{\"gitter_id\":\"nakama_1_24_oct_30_18k_v1\",\"encoding\":\"";
+    aus += encoding;
+    aus += "\",\"werte\":[";
+    for (int b = 0; b < N; ++b)
+    {
+        if (b > 0) aus += ',';
+        double wert = 0.0;
+        const bool gueltig = waehle (b, wert);
+        // Der NaN-Riegel liegt HIER und nicht erst am Textriegel: ein
+        // nichtendlicher Wert wird zu 0 ohne Bit uebersetzt, wie
+        // `quantisierung-v1.json` es fuer jede Kennzahl vorschreibt.
+        if (! gueltig || ! std::isfinite (wert))
+        {
+            aus += '0';
+            continue;
+        }
+        bitmapSetze (bitmap, b, true);
+        aus += zahlJson (wert);
+    }
+    aus += "],\"gueltig_bitmap\":\"";
+    aus += base64 (bitmap, sizeof bitmap);
+    aus += "\"}";
+    return true;
+}
+
+/*  Das ganze `stereo`-Objekt (SONDE-013 M-11, §40.1).
+
+    Elf Bandsaetze, zwei Metadatenlisten und zwei Skalare. Die Reihenfolge
+    folgt der `required`-Liste des Schemas, damit ein Leser der Datei sie
+    nebeneinanderlegen kann.
+
+    ⚠️ Die zwei fail-closed-Stufen sind hier NICHT noch einmal entschieden.
+    Der Erzeuger (`FeatureEngine::stereoAuswerten`) setzt `kohaerenzGesetzt`
+    und `phaseGesetzt`, und dieser Bauer traegt sie nur weiter. Eine zweite
+    Schwellenpruefung an dieser Stelle waere eine zweite Wahrheit ueber
+    dieselbe Regel. */
+bool stereoJson (const nakama::evidenz::Stereosicht& s, std::string& aus)
+{
+    using namespace nakama::analyse;
+    constexpr int N = Gitter::evidenzBaender;
+    if (s.baender == nullptr)
+        return false;
+    const auto* b = s.baender;
+
+    aus += "{\"fenster_dauer_ms\":[";
+    for (int i = 0; i < N; ++i)
+    {
+        if (i > 0) aus += ',';
+        const double d = (double) b[i].fensterDauerMs;
+        // Eine Fensterdauer 0 IST die ehrliche Aussage "in diesem Band wurde
+        // nichts integriert" - deshalb hat diese Liste kein Gueltigkeitsbitmap
+        // (so steht es am Schemafeld).
+        aus += zahlJson ((std::isfinite (d) && d >= 0.0) ? d : 0.0);
+    }
+    aus += "],\"freiheitsgrade\":[";
+    for (int i = 0; i < N; ++i)
+    {
+        if (i > 0) aus += ',';
+        aus += std::to_string ((unsigned long long) b[i].freiheitsgrade);
+    }
+    aus += "]";
+
+    aus += ",\"mid_db\":";
+    if (! stereoBandsatzJson ("float32", [b] (int i, double& w)
+        { w = (double) b[i].midDb; return b[i].basisGesetzt; }, aus)) return false;
+    aus += ",\"side_db\":";
+    if (! stereoBandsatzJson ("float32", [b] (int i, double& w)
+        { w = (double) b[i].sideDb; return b[i].basisGesetzt; }, aus)) return false;
+    aus += ",\"seitenanteil_db\":";
+    if (! stereoBandsatzJson ("float32", [b] (int i, double& w)
+        { w = (double) b[i].seitenanteilDb; return b[i].basisGesetzt; }, aus)) return false;
+    aus += ",\"korrelation_kurz\":";
+    if (! stereoBandsatzJson ("float32", [b] (int i, double& w)
+        { w = (double) b[i].korrelationKurz; return b[i].basisGesetzt; }, aus)) return false;
+    aus += ",\"korrelation_mittel\":";
+    if (! stereoBandsatzJson ("float32", [b] (int i, double& w)
+        { w = (double) b[i].korrelationMittel; return b[i].basisGesetzt; }, aus)) return false;
+    aus += ",\"kohaerenz\":";
+    if (! stereoBandsatzJson ("float32", [b] (int i, double& w)
+        { w = (double) b[i].kohaerenz; return b[i].kohaerenzGesetzt; }, aus)) return false;
+    aus += ",\"phase_rad\":";
+    if (! stereoBandsatzJson ("float32", [b] (int i, double& w)
+        { w = (double) b[i].phaseRad; return b[i].phaseGesetzt; }, aus)) return false;
+    aus += ",\"persistenz\":";
+    if (! stereoBandsatzJson ("float32", [b] (int i, double& w)
+        { w = (double) b[i].persistenz; return b[i].basisGesetzt; }, aus)) return false;
+
+    aus += ",\"zeitperzentile\":{\"p10\":";
+    if (! stereoBandsatzJson ("float32", [b] (int i, double& w)
+        { w = (double) b[i].p10Db; return b[i].perzentileGesetzt; }, aus)) return false;
+    aus += ",\"p50\":";
+    if (! stereoBandsatzJson ("float32", [b] (int i, double& w)
+        { w = (double) b[i].p50Db; return b[i].perzentileGesetzt; }, aus)) return false;
+    aus += ",\"p95\":";
+    if (! stereoBandsatzJson ("float32", [b] (int i, double& w)
+        { w = (double) b[i].p95Db; return b[i].perzentileGesetzt; }, aus)) return false;
+    aus += '}';
+
+    // Die zwei Skalare sind PFLICHT im Schema und tragen deshalb kein
+    // Praesenzbit. Ohne Messung stehen sie auf 0 - was bei beiden die
+    // ehrliche Aussage ist: kein Verlust, keine Schieflage.
+    aus += ",\"mono_folddown_db\":";
+    aus += zahlJson (s.skalare.folddownGesetzt && std::isfinite (s.skalare.monoFolddownDb)
+                     ? (double) s.skalare.monoFolddownDb : 0.0);
+    aus += ",\"lr_balance_db\":";
+    aus += zahlJson (s.skalare.balanceGesetzt && std::isfinite (s.skalare.lrBalanceDb)
+                     ? (double) s.skalare.lrBalanceDb : 0.0);
+    aus += '}';
+    return true;
+}
+
 } // namespace
 
 bool evidenceSnapshotAlsJson (const nakama::analyse::FeatureFrame& frame,
                               const Snapshotkopf& kopf,
                               const Ereignisstrom& ereignisse,
+                              const Stereosicht& stereo,
                               std::string& aus)
 {
     // Fail-closed, in dieser Reihenfolge: erst die Identitaet, dann der
@@ -271,6 +404,18 @@ bool evidenceSnapshotAlsJson (const nakama::analyse::FeatureFrame& frame,
 
     text += ",\"baender\":";
     if (! bandsatzJson (frame.evidenz, text)) return false;
+
+    // ── Stereoevidenz (M-11) ─────────────────────────────────────────────
+    //
+    // Optional im Schema und optional hier: ohne Baender entsteht das Feld
+    // gar nicht. Ein Satz aus 221 leeren Baendern waeren 11 KiB, die nichts
+    // sagen — und §33.2 zaehlt den Snapshotinhalt abschliessend auf, ohne
+    // ein leeres Stereofeld zu verlangen.
+    if (stereo.baender != nullptr)
+    {
+        text += ",\"stereo\":";
+        if (! stereoJson (stereo, text)) return false;
+    }
 
     // ── Ereignisse (M-05) ────────────────────────────────────────────────
     //

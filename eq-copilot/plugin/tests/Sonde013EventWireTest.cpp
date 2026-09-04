@@ -205,7 +205,7 @@ int main()
 
         std::string json;
         const bool gebaut = kam && nakama::evidenz::evidenceSnapshotAlsJson (
-            f, testkopf(), {}, json);
+            f, testkopf(), {}, {}, json);
         pruefe (gebaut, "Snapshot wird gebaut");
 
         juce::String riegelfehler;
@@ -237,6 +237,96 @@ int main()
             o->setProperty ("abdeckung", 2.0);
         pruefe (geladen && ! schema.pruefe (verdorben).isEmpty(),
                 "Gegenprobe: eine Abdeckung ueber 1 faellt an derselben Engine");
+    }
+
+    // ── A2 · Der Snapshot MIT Stereoevidenz haelt denselben Vertrag ───────
+    //
+    // SONDE-013 M-11. `stereo` ist elf Bandsaetze, zwei Metadatenlisten und
+    // zwei Skalare — die groesste zusammenhaengende Flaeche, die dieses
+    // Ticket auf die Leitung bringt, und `stereo_evidenz` ist
+    // `additionalProperties: false`. Ohne diesen Fall waere der ganze
+    // Serialisierer ungeprueft: `EqCopSonde013StereoGoldenTest` misst den
+    // ERZEUGER (rechnet er richtig?), dieser Fall die WIRE-FORM (darf das so
+    // auf die Leitung?). Das sind zwei verschiedene Fragen.
+    abschnitt ("A2 · Der Snapshot mit Stereoevidenz haelt denselben Vertrag");
+    {
+        FeatureEngine e;
+        e.vorbereiten (48000.0);
+        Speiser s { e };
+        e.evidenzIntervallSetzen (1.0);       // genug Welch-Frames fuer Kohaerenz
+        FeatureFrame f {};
+        const bool kam = bisEvidenz (s, sinus (0.35, 1000.0, 48000.0), f, 900);
+        pruefe (kam, "ein Evidenzframe mit langer Kadenz wird faellig");
+        pruefe (kam && e.stereoHatInhalt(),
+                "und die Engine traegt bandweise Stereoevidenz");
+
+        nakama::evidenz::Stereosicht sicht;
+        if (e.stereoHatInhalt())
+        {
+            sicht.baender = &e.stereoBand (0);
+            sicht.skalare = e.stereoSkalare();
+        }
+
+        std::string json;
+        const bool gebaut = kam && nakama::evidenz::evidenceSnapshotAlsJson (
+            f, testkopf(), {}, sicht, json);
+        pruefe (gebaut, "Snapshot mit Stereo wird gebaut");
+
+        juce::String riegelfehler;
+        pruefe (gebaut && nakama::vertrag::textriegel (json, riegelfehler),
+                "er passiert den gemeinsamen Textriegel - kein NaN, kein Inf",
+                riegelfehler);
+
+        nakama::vertrag::Schema schema2;
+        juce::String ladefehler2;
+        const bool geladen2 = nakama::vertrag::Schema::laden (
+            juce::JSON::parse (finde ("eq-copilot/schemas/v3/eq-ipc-v3.schema.json")),
+            schema2, ladefehler2);
+        const auto daten = juce::JSON::parse (juce::String (json));
+        const auto verstoesse = geladen2 ? schema2.pruefe (daten)
+                                         : juce::Array<nakama::vertrag::Verletzung> {};
+        juce::String erste;
+        if (! verstoesse.isEmpty())
+            erste = verstoesse[0].instanz + " | " + verstoesse[0].schema
+                  + " | " + verstoesse[0].schluessel;
+        pruefe (gebaut && geladen2 && verstoesse.isEmpty(),
+                "und wird von derselben Vertragsengine wie B3c angenommen - alle elf "
+                "Bandsaetze, beide Metadatenlisten und die zwei Skalare",
+                erste);
+
+        // Die Form im Einzelnen: `saturated` darf NICHT dabei sein. Der
+        // Zweig fuer float32 fuehrt die Saettigungsmarke nicht, weil sie zur
+        // Quantisierung gehoert und bei float32 nie `true` werden kann - und
+        // `additionalProperties: false` macht sie zur Vertragsverletzung.
+        const auto stereo = daten.getProperty ("stereo", {});
+        pruefe (stereo.isObject(), "das `stereo`-Objekt ist da");
+        const auto midDb = stereo.getProperty ("mid_db", {});
+        pruefe (midDb.isObject()
+                  && ! midDb.getDynamicObject()->hasProperty ("saturated"),
+                "und seine Bandsaetze tragen KEIN `saturated` - die Marke gehoert zur "
+                "Quantisierung und waere hier ein totes Feld");
+        const auto werte = midDb.getProperty ("werte", {}).getArray();
+        pruefe (werte != nullptr && werte->size() == nakama::analyse::Gitter::evidenzBaender,
+                "jeder Bandsatz traegt genau 221 Werte",
+                werte != nullptr ? juce::String (werte->size()) : juce::String ("kein Array"));
+        const auto dof = stereo.getProperty ("freiheitsgrade", {}).getArray();
+        pruefe (dof != nullptr && dof->size() == nakama::analyse::Gitter::evidenzBaender,
+                "und die Freiheitsgrade ebenso - §40.1 verlangt sie je Band");
+
+        // Ohne Stereosicht entsteht das Feld GAR NICHT. Ein Satz aus 221
+        // leeren Baendern waere 11 KiB Schweigen auf der Leitung.
+        std::string ohne;
+        const bool gebautOhne = kam && nakama::evidenz::evidenceSnapshotAlsJson (
+            f, testkopf(), {}, {}, ohne);
+        const auto datenOhne = juce::JSON::parse (juce::String (ohne));
+        pruefe (gebautOhne && ! datenOhne.hasProperty ("stereo"),
+                "ohne Stereosicht fehlt das Feld ganz - Abwesenheit ist erlaubt und "
+                "billiger als 11 KiB Nullen");
+        pruefe (gebautOhne && ohne.size() * 3 < json.size(),
+                "und der Snapshot ist dadurch um ein Vielfaches kleiner - die "
+                "Rueckstauschwelle misst in EINTRAEGEN, nicht in Bytes",
+                juce::String ((int) ohne.size()) + " gegen "
+                + juce::String ((int) json.size()) + " Byte");
     }
 
     // ── B · Die Verteilung traegt den VERLAUF, nicht den Mittelwert ───────
@@ -408,7 +498,7 @@ int main()
 
         std::string json;
         const bool gebaut = kam
-            && nakama::evidenz::evidenceSnapshotAlsJson (f, testkopf(), strom, json);
+            && nakama::evidenz::evidenceSnapshotAlsJson (f, testkopf(), strom, {}, json);
         const auto daten = juce::JSON::parse (juce::String (json));
         const auto* liste = daten.getProperty ("ereignisse", {})
                                  .getProperty ("liste", {}).getArray();
@@ -448,7 +538,7 @@ int main()
         mitFremd.verloren = 0;
         std::string json2;
         const bool gebaut2 = kam
-            && nakama::evidenz::evidenceSnapshotAlsJson (f, testkopf(), mitFremd, json2);
+            && nakama::evidenz::evidenceSnapshotAlsJson (f, testkopf(), mitFremd, {}, json2);
         const auto daten2 = juce::JSON::parse (juce::String (json2));
         const auto* liste2 = daten2.getProperty ("ereignisse", {})
                                    .getProperty ("liste", {}).getArray();
@@ -470,7 +560,7 @@ int main()
         nakama::evidenz::Ereignisstrom mitAusreisser { ausreisser, 2, 0 };
         std::string jsonAus;
         const bool gebautAus = kam && nakama::evidenz::evidenceSnapshotAlsJson (
-            f, testkopf(), mitAusreisser, jsonAus);
+            f, testkopf(), mitAusreisser, {}, jsonAus);
         const auto datenAus = juce::JSON::parse (juce::String (jsonAus));
         const auto* listeAus = datenAus.getProperty ("ereignisse", {})
                                        .getProperty ("liste", {}).getArray();
@@ -496,7 +586,7 @@ int main()
         // Ein leerer Strom OHNE Verlust laesst das Feld ganz weg.
         std::string json3;
         const bool gebaut3 = kam
-            && nakama::evidenz::evidenceSnapshotAlsJson (f, testkopf(), {}, json3);
+            && nakama::evidenz::evidenceSnapshotAlsJson (f, testkopf(), {}, {}, json3);
         pruefe (gebaut3
                     && ! juce::JSON::parse (juce::String (json3))
                             .hasProperty ("ereignisse"),
@@ -516,37 +606,37 @@ int main()
         auto ohneEvidenz = f;
         ohneEvidenz.evidenzFrisch = false;
         pruefe (kam && ! nakama::evidenz::evidenceSnapshotAlsJson (
-                    ohneEvidenz, testkopf(), {}, json),
+                    ohneEvidenz, testkopf(), {}, {}, json),
                 "kein Snapshot ohne faelliges Evidenzfenster");
 
         auto ohneAbdeckung = f;
         ohneAbdeckung.abdeckungGesetzt = false;
         pruefe (kam && ! nakama::evidenz::evidenceSnapshotAlsJson (
-                    ohneAbdeckung, testkopf(), {}, json),
+                    ohneAbdeckung, testkopf(), {}, {}, json),
                 "kein Snapshot ohne Abdeckungsbit — 0 waere eine andere Aussage");
 
         auto ohneKonvergenz = f;
         ohneKonvergenz.konvergenzGesetzt = false;
         pruefe (kam && ! nakama::evidenz::evidenceSnapshotAlsJson (
-                    ohneKonvergenz, testkopf(), {}, json),
+                    ohneKonvergenz, testkopf(), {}, {}, json),
                 "kein Snapshot ohne Konvergenzbit");
 
         auto kopfOhneId = testkopf();
         kopfOhneId.evidenceId = "keine-hex32";
         pruefe (kam && ! nakama::evidenz::evidenceSnapshotAlsJson (
-                    f, kopfOhneId, {}, json),
+                    f, kopfOhneId, {}, {}, json),
                 "kein Snapshot ohne gueltige evidence_id");
 
         auto kopfFremdeKlasse = testkopf();
         kopfFremdeKlasse.klasse = "ziemlich_gut";
         pruefe (kam && ! nakama::evidenz::evidenceSnapshotAlsJson (
-                    f, kopfFremdeKlasse, {}, json),
+                    f, kopfFremdeKlasse, {}, {}, json),
                 "kein Snapshot mit einer erfundenen Konfidenzklasse");
 
         auto kaputteZeit = f;
         kaputteZeit.transport.sample_rate = 0.0;
         pruefe (kam && ! nakama::evidenz::evidenceSnapshotAlsJson (
-                    kaputteZeit, testkopf(), {}, json),
+                    kaputteZeit, testkopf(), {}, {}, json),
                 "kein Snapshot mit unmoeglicher Samplerate");
 
         // Ein Ereignis ohne Anker haengt an keiner Zeit — es reist nicht.
@@ -560,7 +650,7 @@ int main()
         nakama::evidenz::Ereignisstrom strom { &eins, 1, 0 };
         std::string jsonOhneAnker;
         const bool gebaut = kam && nakama::evidenz::evidenceSnapshotAlsJson (
-            ohneAnker, testkopf(), strom, jsonOhneAnker);
+            ohneAnker, testkopf(), strom, {}, jsonOhneAnker);
         const auto daten = juce::JSON::parse (juce::String (jsonOhneAnker));
         const auto* liste = daten.getProperty ("ereignisse", {})
                                  .getProperty ("liste", {}).getArray();

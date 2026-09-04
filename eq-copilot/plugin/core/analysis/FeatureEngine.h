@@ -308,6 +308,98 @@ struct Ereignis
 };
 
 //==============================================================================
+/** Bandweise Stereoevidenz eines Evidenzfensters (SONDE-013 M-08, M-10 bis M-12).
+
+    §40.1 sagt, dass zwei globale Skalare nicht reichen: `breite` und
+    `korrelation` im 10-Hz-Liveframe beschreiben die ganze Bandbreite mit einer
+    Zahl, und ein Signal, das unten mono und oben breit ist, sieht darin genauso
+    aus wie eines mit gleichmaessiger Breite. Diese Struktur ist die bandweise
+    Antwort.
+
+    ── WARUM SIE NICHT IM `FeatureFrame` STEHT ──────────────────────────────
+
+    Elf Bandsaetze zu 221 `float` sind rund 11 KiB. Der `FeatureFrame` liegt in
+    `baueFrame()` auf dem Stack und wird in B5 von einem Dutzend Engines
+    gleichzeitig gehalten; die Etappe C hat den 1-MiB-Stack dieses Beins
+    bereits DREIMAL gesprengt (Manifest §10.3, §10.4). Die Stereoevidenz liegt
+    deshalb im Heap der Engine, und der Serialisierer liest sie ueber
+    `stereoBand()` — dasselbe Muster wie beim Ereignisring, den der
+    Sondenprozessor auch direkt aus der Engine holt.
+
+    ⚠️ Das hat einen Preis, und er ist benannt: die Zwillingsprobe G13
+    vergleicht `FeatureFrame`-Objekte und sieht diese Traeger deshalb NICHT.
+    Dass keiner von ihnen eine Transportgrenze ueberbrueckt, misst statt
+    dessen `EqCopSonde013StereoGoldenTest` ausdruecklich und namentlich.
+
+    ── DIE ZWEI FAIL-CLOSED-STUFEN ──────────────────────────────────────────
+
+    §40.1 woertlich: "Bei zu wenig Energie oder Frames ist Kohaerenz `null`"
+    und "Interchannel-Phase wird nur in ausreichend kohaerenten Baendern
+    interpretiert". Das sind zwei Stufen, nicht eine:
+
+    1. `kohaerenzGesetzt` faellt weg, wenn das Band weniger als
+       `kWelchMindestFrames` gueltige Welch-Frames hat oder eine der beiden
+       Autospektralsummen null ist.
+    2. `phaseGesetzt` faellt zusaetzlich weg, wenn die Kohaerenz
+       `kKohaerenzSchwellePhase` nicht ueberschreitet — eine Phase aus einem
+       inkohaerenten Band ist der Winkel eines Zufallszeigers.
+
+    Die Phasenbits sind damit eine Teilmenge der Kohaerenzbits. Das kann das
+    JSON-Schema nicht ausdruecken (es steht als Kommentar an `stereo_evidenz`);
+    der Golden misst es.
+*/
+struct StereoBandwert
+{
+    /** Mid-/Side-Energie und Seitenanteil in dB, plus die zwei Korrelationen.
+        Ein Band ohne dieses Bit hat in KEINEM der fuenf Felder einen Wert. */
+    bool  basisGesetzt { false };
+    float midDb { 0.0f }, sideDb { 0.0f }, seitenanteilDb { 0.0f };
+    /** Pearson-Korrelation zwischen L und R, bandbegrenzt: der Realteil des
+        gemittelten Kreuzspektrums, normiert auf die zwei Autospektren. „Kurz"
+        geht ueber `kKorrelationKurzFrames` Welch-Frames, „mittel" ueber das
+        ganze Evidenzfenster — zwei Fenster, weil eine kurzzeitig wandernde
+        Korrelation etwas anderes ist als eine dauerhaft niedrige. */
+    float korrelationKurz { 0.0f }, korrelationMittel { 0.0f };
+
+    /** Magnitude-Squared Coherence in [0, 1]. Stufe 1 des fail-closed. */
+    bool  kohaerenzGesetzt { false };  float kohaerenz { 0.0f };
+    /** Interchannel-Phase in Radiant. Stufe 2 des fail-closed. */
+    bool  phaseGesetzt { false };      float phaseRad { 0.0f };
+
+    /** Anteil der abgeschlossenen Kurzfenster, in denen dieses Band kohaerent
+        war — „wie stabil ist der Befund". 0 heisst nicht „keine Persistenz",
+        sondern „in keinem Kurzfenster kohaerent"; ohne `basisGesetzt` hat das
+        Feld gar keinen Wert. */
+    float persistenz { 0.0f };
+
+    /** P10/P50/P95 des Seitenanteils UEBER DIE ZEIT des Evidenzfensters —
+        nicht ueber die Baender. Braucht mindestens vier Werte, dieselbe
+        Untergrenze wie die Bandkonvergenz: zwei Perzentile aus je einem Wert
+        sind kein Verlauf. */
+    bool  perzentileGesetzt { false };
+    float p10Db { 0.0f }, p50Db { 0.0f }, p95Db { 0.0f };
+
+    /** §40.1 woertlich: "Fensterdauer und Freiheitsgrade werden Teil der
+        Evidenz." Beide je Band, weil die Zahl gueltiger Frames je Band
+        verschieden sein kann — ein Band ueber der Nyquist-Kappe hat null. */
+    float         fensterDauerMs { 0.0f };
+    std::uint32_t freiheitsgrade { 0 };
+};
+
+/** Die zwei Stereoskalare des Evidenzfensters (M-08, §40.3).
+
+    Beide sind ausdruecklich GEMESSEN und nicht aus einer Korrelation
+    geschaetzt: der Mono-Folddown am wirklich gefalteten Puffer `(L+R)/2`, die
+    Balance aus den zwei Kanalenergien. §40.3 verlangt eine Uebereinstimmung
+    innerhalb 0,25 dB mit dem echten Folddown — eine Schaetzung aus dem
+    Korrelationsskalar liegt bei dekorrelierten Kanaelen um Dezibel daneben. */
+struct StereoSkalare
+{
+    bool  folddownGesetzt { false };  float monoFolddownDb { 0.0f };
+    bool  balanceGesetzt  { false };  float lrBalanceDb    { 0.0f };
+};
+
+//==============================================================================
 // ── Bandvertrag ─────────────────────────────────────────────────────────────
 
 /** Gegenstueck zu `table Bandwerte`.  Fester Speicher: die Groessen stehen im
@@ -570,6 +662,53 @@ inline constexpr double kPeakSteigungSchwelleDb = 12.0;
     Kalibrierungsfalle gewesen, die §5.3 Risiko 5 beschreibt. */
 inline constexpr double kPeakCrestSchwelleDb = 12.0;
 
+/** Wie viele gueltige Welch-Frames ein Band mindestens braucht, damit seine
+    Kohaerenz ueberhaupt einen Wert bekommt (SONDE-013 M-11, §40.1 woertlich:
+    "Auto- und Cross-Spektren werden ueber mindestens ACHT gueltige
+    ueberlappende Welch-Frames gemittelt").
+
+    Der Grund ist nicht Geschmack, sondern Statistik: die Magnitude-Squared
+    Coherence aus EINEM Frame ist identisch 1, ganz gleich wie unkorreliert
+    die zwei Kanaele sind — |L·conj(R)|² = |L|²·|R|² gilt fuer jedes einzelne
+    Bin exakt. Erst die Mittelung ueber mehrere Frames macht daraus eine
+    Aussage. Acht ist der Startwert aus §40.1; er lebt hier neben
+    `kFeatureMetricsVersion` und nicht als Literal im Rechenpfad. */
+inline constexpr int kWelchMindestFrames = 8;
+
+/*  ⚠️ WAS DIESE ZAHL FUER DIE BASSSTUFE BEDEUTET, gemessen beim Bau.
+
+    Die Bassstufe hat bei 48 kHz einen Hop von 8192 Samples, also 170,7 ms je
+    Frame. Acht davon sind 1,37 s — laenger als das laengste Evidenzfenster
+    (`kEvidenzIntervallMaxS` = 1 s). Baender unter `kTrennungHz` tragen damit
+    im heutigen Kadenzrahmen NIE eine Kohaerenz und nie eine Phase.
+
+    Das ist fail-closed und kein Fehler: die Kohaerenz aus fuenf Frames waere
+    unbrauchbar, und §40.1 verlangt genau dieses Schweigen. Der Empfaenger
+    sieht den Grund an den `freiheitsgrade` des Bandes. Aber es ist auch keine
+    gute Produkteigenschaft — Phasenprobleme im Bass sind musikalisch die
+    wichtigsten. Der Punkt steht als Nebenbefund im Manifest §10.4; ihn zu
+    beheben hiesse, der Bassstufe fuer die Stereoanalyse ein eigenes,
+    kuerzeres Fenster zu geben, und das ist mehr als eine Zeile. */
+
+/** Ab welcher Kohaerenz die Interchannel-Phase eines Bandes ueberhaupt
+    ausgewertet wird (M-11, §40.1: "Interchannel-Phase wird nur in ausreichend
+    kohaerenten Baendern interpretiert").
+
+    0,8 ist dieselbe Schwelle, die §38.3 fuer einen zulaessigen Transferwert
+    nennt — die Frage ist dieselbe: ab wann beschreibt das Kreuzspektrum eine
+    Beziehung und nicht zwei unabhaengige Zufallszeiger. Startwert, am Korpus
+    kalibrierbar (§5.3, Risiko 5). */
+inline constexpr double kKohaerenzSchwellePhase = 0.8;
+
+/** Laenge des KURZEN Korrelationsfensters in Welch-Frames.
+
+    §40.1 verlangt die bandweise Korrelation "in kurzen und mittleren
+    Fenstern". Das mittlere ist das ganze Evidenzfenster; das kurze sind
+    `kKorrelationKurzFrames` Frames, also bei 4096 Punkten und 50 % Ueberlappung
+    rund 340 ms. Es ist zugleich das Fenster, ueber dem die Persistenz gezaehlt
+    wird: „in wie vielen dieser Abschnitte war das Band kohaerent". */
+inline constexpr int kKorrelationKurzFrames = 8;
+
 /** Fester Ring der letzten Bandwerte EINES Bandes im Evidenzfenster.
 
     Warum ein Ring und kein Histogramm: P10/P50/P95 sollen exakt sein,
@@ -717,6 +856,15 @@ public:
         kurzRmsZellen.assign ((std::size_t) kKurzZellen, 0.0);
         lraHistogramm.assign ((std::size_t) kLraBins, 0u);
         headroomRing.assign (1u, VerteilungsRing {});
+        // SONDE-013 M-11: alle Stereotraeger im Heap, angelegt auf dem
+        // Nachrichtenthread. Der Audiothread alloziert weiterhin nie.
+        stereoAkku.assign ((std::size_t) Gitter::evidenzBaender, StereoAkku {});
+        stereoKurz.assign ((std::size_t) Gitter::evidenzBaender, StereoAkku {});
+        stereoVerlauf.assign ((std::size_t) Gitter::evidenzBaender, VerteilungsRing {});
+        stereoErgebnis.assign ((std::size_t) Gitter::evidenzBaender, StereoBandwert {});
+        stereoKorrKurz.assign ((std::size_t) Gitter::evidenzBaender, 0.0f);
+        stereoKorrKurzGesetzt.assign ((std::size_t) Gitter::evidenzBaender, 0u);
+        stereoPersistenzZaehler.assign ((std::size_t) Gitter::evidenzBaender, 0u);
         tp.vorbereiten (sr);
 
         evidenzVerteilung.assign ((std::size_t) Gitter::evidenzBaender,
@@ -744,6 +892,9 @@ public:
         for (auto& v : evidenzAkku) v = { 0.0, 0 };
         for (auto& v : liveBreiteAkku)    v = { 0.0, 0.0 };
         for (auto& r : evidenzVerteilung) r.leeren();   // SONDE-013 M-05
+        stereoLeeren();                                // SONDE-013 M-11
+        for (auto& e : stereoErgebnis) e = StereoBandwert {};
+        stereoSkalareErgebnis = StereoSkalare {};
         evidenzFensterGesamt = 0;
         evidenzFensterAktiv = 0;
         liveSupport = {};
@@ -878,6 +1029,31 @@ public:
     const FeatureFrame& frame() const noexcept { return aktuell; }
 
     /** Die Ereignisse des letzten Rahmens, aeltestes zuerst. */
+    /** Die bandweise Stereoevidenz des zuletzt ausgewerteten
+        Evidenzfensters (SONDE-013 M-11).
+
+        Sie liegt bewusst NICHT im `FeatureFrame` - die Begruendung steht bei
+        `StereoBandwert`. Der Serialisierer holt sie hier, genau wie den
+        Ereignisring daneben. Gueltig ist sie, solange der zuletzt
+        veroeffentlichte Frame `evidenzFrisch` trug; danach fuellt sich das
+        naechste Fenster. */
+    const StereoBandwert& stereoBand (int b) const noexcept
+    { return stereoErgebnis[(std::size_t) b]; }
+    /** Mono-Folddown und L/R-Balance desselben Fensters (M-08). */
+    const StereoSkalare& stereoSkalare() const noexcept
+    { return stereoSkalareErgebnis; }
+    /** Ob ueberhaupt ein Band eine Basis traegt - der Riegel, mit dem ein
+        Erzeuger entscheidet, ob er das `stereo`-Feld ueberhaupt schreibt.
+        Ein Satz aus 221 leeren Baendern waere 11 KiB Schweigen auf der
+        Leitung. */
+    bool stereoHatInhalt() const noexcept
+    {
+        for (const auto& e : stereoErgebnis)
+            if (e.basisGesetzt)
+                return true;
+        return false;
+    }
+
     int ereignisAnzahlJetzt() const noexcept { return ereignisAnzahl; }
     const Ereignis& ereignis (int i) const noexcept
     {
@@ -1489,6 +1665,11 @@ private:
         }
         evidenzFensterGesamt = 0;
         evidenzFensterAktiv = 0;
+        // SONDE-013 M-11: die Stereoevidenz ist ein Fenster wie jedes andere.
+        // Ein Kreuzspektrum ueber eine Grenze hinweg mittelte zwei Stellen
+        // der Musik zu einer Kohaerenz - und die saehe danach aus wie eine
+        // Messung.
+        stereoLeeren();
         liveSupport = {};
         evidenzSupport = {};
         evidenzContinuousHabe = false;
@@ -1755,6 +1936,11 @@ private:
             rahmenTruePeak = std::max (rahmenTruePeak, tpJetzt);
             zelleTruePeak  = std::max (zelleTruePeak, tpJetzt);
             zelleRmsEnergie += 0.5 * (l * l + r * r);
+            // SONDE-013 M-08: der Mono-Folddown wird am WIRKLICH gefalteten
+            // Puffer gemessen (§40.3), nicht aus einer Korrelation
+            // geschaetzt. Er gehoert deshalb hierher und nicht zu den
+            // Spektren.
+            stereoSample (l, r);
             rahmenSummeQuadrat += 0.5 * (l * l + r * r);
             ++rahmenSamples;
             rahmenMid2 += m * m;
@@ -1964,8 +2150,32 @@ private:
         // (85 ms Hop gegen 341 ms).  Ein Onset aus dem Bassfenster waere ein
         // Ereignis mit einer Dauer, die groesser ist als der Abstand zweier
         // Ereignisse — das ist keine Detektion mehr.
+        // SONDE-013 M-11: die Kreuzspektren entstehen in BEIDEN Stufen.
+        //
+        // 🔑 Das war beim ersten Bau falsch und der Golden hat es gefunden:
+        // die Stereozeile lief nur in der Hauptstufe, und die ist erst ab
+        // `kTrennungHz` = 200 Hz zustaendig. Alle Baender darunter — bei
+        // 48 kHz die unteren 60 von 221 — trugen KEINE Stereoevidenz, obwohl
+        // M-11 sie fuer alle 221 verlangt. Ein 100-Hz-Mono-Signal meldete
+        // dort schlicht nichts.
+        //
+        // Dass die zwei Stufen verschiedene Fensterlaengen haben (341 ms
+        // gegen 85 ms bei 48 kHz), ist dabei kein Problem, sondern der Grund
+        // fuer `fenster_dauer_ms` und `freiheitsgrade` JE BAND: §40.1
+        // verlangt beide ausdruecklich als Teil der Evidenz, und das Schema
+        // sagt am Feld "je Band, weil die Fensterlaenge ueber die Baender
+        // nicht gleich sein muss". Jede Stufe fuellt nur ihre eigenen
+        // Baender (`bandVon`/`bandBis` sind je Stufe zugeordnet), also
+        // mischen sie sich nicht.
+        stereoSchritt (s, &s == &haupt);
+
         if (&s == &haupt)
+        {
+            // Reihenfolge: erst Stereo, dann Fluss. `flussSchritt` schreibt
+            // `vorigesSpektrum` fort und ist damit destruktiv fuer die Frage
+            // "wie sah das Spektrum in DIESEM Fenster aus".
             flussSchritt (s);
+        }
     }
 
     static double summeBereich (const Stufe& s, int von, int bis) noexcept
@@ -2125,6 +2335,281 @@ private:
         ereignisse[(std::size_t) ereignisStand] = e;
         ereignisStand = (ereignisStand + 1) % kEreignisPlaetze;
         if (ereignisAnzahl < kEreignisPlaetze) ++ereignisAnzahl;
+    }
+
+    //== Stereoevidenz (SONDE-013 M-08, M-10 bis M-12) ========================
+
+    /** Ein Welch-Frame der Hauptstufe in die bandweisen Kreuzspektren.
+
+        🔑 WARUM KEINE ZWEITE FFT. Die Engine transformiert MID und SIDE, nicht
+        L und R. Die Fouriertransformation ist linear, und M = (L+R)/2,
+        S = (L-R)/2 sind Linearkombinationen — also gilt im Spektrum
+        EXAKT dasselbe:
+
+            L(f) = M(f) + S(f),      R(f) = M(f) - S(f).
+
+        Zwei zusaetzliche 4096-Punkt-FFTs je Fenster waeren also nicht
+        genauer, sondern nur teurer. Der Umweg ueber M/S ist hier kein
+        Kompromiss, sondern die identische Rechnung.
+
+        ⚠️ Was NICHT gilt: das energienormierte M/S aus §40.3
+        (M = (L+R)/√2) ist eine ANDERE Rechnung als der physische
+        Mono-Check (L+R)/2. Diese Engine fuehrt durchgehend die Halbierung,
+        und der Mono-Folddown wird deshalb am wirklich gefalteten Puffer
+        gemessen (siehe `verarbeiteSamples`), nicht aus diesen Spektren
+        geschaetzt.
+
+        Die Nyquist-Kappe aus M-10 wirkt hier ueber die Bandzuordnung: ein
+        Band ueber `kappeBand` hat `bandBis <= bandVon`, bekommt also keinen
+        einzigen Bin und bleibt bei null Freiheitsgraden. Es entsteht keine
+        zweite Kappenregel. */
+    void stereoSchritt (const Stufe& s, bool zaehlKurzfenster) noexcept
+    {
+        if ((int) stereoAkku.size() < Gitter::evidenzBaender)
+            return;
+
+        const double hopMs = 1000.0 * (double) s.hop / s.fs;
+        for (int b = 0; b < Gitter::evidenzBaender; ++b)
+        {
+            const int von = s.bandVon[(std::size_t) b];
+            const int bis = s.bandBis[(std::size_t) b];
+            if (bis <= von)
+                continue;                       // nicht messbar (Kappe, Aufloesung)
+
+            double smm = 0.0, sss = 0.0, sll = 0.0, srr = 0.0;
+            double sxyRe = 0.0, sxyIm = 0.0;
+            for (int k = von; k < bis; ++k)
+            {
+                const double mr = s.fftM.realTeil (k), mi = s.fftM.imagTeil (k);
+                const double sr = s.fftS.realTeil (k), si = s.fftS.imagTeil (k);
+                const double lr = mr + sr, li = mi + si;      // L = M + S
+                const double rr = mr - sr, ri = mi - si;      // R = M - S
+                smm += mr * mr + mi * mi;
+                sss += sr * sr + si * si;
+                sll += lr * lr + li * li;
+                srr += rr * rr + ri * ri;
+                // L · conj(R)
+                sxyRe += lr * rr + li * ri;
+                sxyIm += li * rr - lr * ri;
+            }
+            if (! (std::isfinite (smm) && std::isfinite (sss)
+                   && std::isfinite (sll) && std::isfinite (srr)
+                   && std::isfinite (sxyRe) && std::isfinite (sxyIm)))
+                continue;                       // NaN-Riegel beim ERZEUGEN
+
+            auto& a = stereoAkku[(std::size_t) b];
+            a.smm += smm; a.sss += sss;
+            a.sll += sll; a.srr += srr;
+            a.sxyRe += sxyRe; a.sxyIm += sxyIm;
+            ++a.frames;
+            a.dauerMs += hopMs;
+
+            auto& kz = stereoKurz[(std::size_t) b];
+            kz.sll += sll; kz.srr += srr;
+            kz.sxyRe += sxyRe; kz.sxyIm += sxyIm;
+            ++kz.frames;
+
+            // Der Zeitverlauf des SEITENANTEILS, ein Wert je Frame. Er ist
+            // die Grundlage der Zeitperzentile aus §40.1 - und die einzige
+            // Groesse hier, die ueber die Zeit und nicht ueber die Baender
+            // geht.
+            const double gesamt = smm + sss;
+            if (gesamt > 0.0 && (int) stereoVerlauf.size() > b)
+            {
+                const double anteil = sss / gesamt;
+                stereoVerlauf[(std::size_t) b].schiebe (
+                    (float) (10.0 * std::log10 (std::max (anteil, 1e-12))));
+            }
+        }
+
+        // Ein abgeschlossenes KURZFENSTER: Korrelation einfrieren und die
+        // Persistenz zaehlen. Sie wird HIER gezaehlt und nicht am Ende
+        // gerechnet, weil sie eine Aussage ueber den VERLAUF ist - am Ende
+        // stuende nur noch das Gesamtmittel zur Verfuegung.
+        // Das Kurzfenster zaehlt NUR die Hauptstufe. Zwei Stufen mit
+        // verschiedenem Hop wuerden es doppelt und ungleichmaessig
+        // weiterschieben, und die Persistenz waere ein Anteil ueber zwei
+        // Zeitachsen — derselbe Fehler, den die Abdeckung nebenan vermeidet.
+        if (! zaehlKurzfenster)
+            return;
+        if (++stereoKurzFrames >= kKorrelationKurzFrames)
+        {
+            stereoKurzFrames = 0;
+            ++stereoKurzfenster;
+            for (int b = 0; b < Gitter::evidenzBaender; ++b)
+            {
+                auto& kz = stereoKurz[(std::size_t) b];
+                if (kz.frames > 0)
+                {
+                    const double nenner = std::sqrt (kz.sll * kz.srr);
+                    if (nenner > 0.0)
+                    {
+                        const double r = kz.sxyRe / nenner;
+                        if (std::isfinite (r))
+                        {
+                            stereoKorrKurz[(std::size_t) b] =
+                                (float) std::clamp (r, -1.0, 1.0);
+                            stereoKorrKurzGesetzt[(std::size_t) b] = 1u;
+                        }
+                        const double koh = (kz.sxyRe * kz.sxyRe + kz.sxyIm * kz.sxyIm)
+                                         / (kz.sll * kz.srr);
+                        if (std::isfinite (koh) && koh >= kKohaerenzSchwellePhase
+                            && kz.frames >= kWelchMindestFrames)
+                            ++stereoPersistenzZaehler[(std::size_t) b];
+                    }
+                }
+                kz = StereoAkku {};
+            }
+        }
+    }
+
+    /** Der laufende Mono-Folddown und die L/R-Balance des Evidenzfensters.
+
+        Beide entstehen im SAMPLEPFAD und nicht aus den Spektren: §40.3
+        verlangt den Folddown "am wirklich gefalteten Puffer", und genau das
+        ist `(l + r) / 2`. Eine Schaetzung aus der Korrelation liegt bei
+        dekorrelierten Kanaelen um Dezibel daneben - der Golden misst die
+        Uebereinstimmung auf 0,25 dB. */
+    void stereoSample (double l, double r) noexcept
+    {
+        const double mono = 0.5 * (l + r);
+        stereoMonoEnergie += mono * mono;
+        stereoStereoEnergie += 0.5 * (l * l + r * r);
+        stereoLEnergie += l * l;
+        stereoREnergie += r * r;
+    }
+
+    /** Wertet die Akkumulatoren zu `StereoBandwert`n aus. Am Ende eines
+        Evidenzfensters, zusammen mit den Baendern und der Verteilung. */
+    void stereoAuswerten() noexcept
+    {
+        if ((int) stereoAkku.size() < Gitter::evidenzBaender
+            || (int) stereoErgebnis.size() < Gitter::evidenzBaender)
+            return;
+
+        float folge[kVerteilungPlaetze];
+        for (int b = 0; b < Gitter::evidenzBaender; ++b)
+        {
+            const auto& a = stereoAkku[(std::size_t) b];
+            auto& e = stereoErgebnis[(std::size_t) b];
+            e = StereoBandwert {};
+            e.freiheitsgrade = a.frames;
+            e.fensterDauerMs = (float) a.dauerMs;
+            if (a.frames == 0u)
+                continue;                       // kein Bit, kein Wert
+
+            // ⚠️ NUR die Gesamtenergie muss positiv sein, nicht die Mid-Energie.
+            // Bei perfekter Polaritaetsinvertierung (R = -L) ist die
+            // Mid-Energie EXAKT null - und genau dieser Fall ist der
+            // interessanteste, den Stereoanalyse kennt. Eine Bedingung
+            // `smm > 0` sperrte ihn aus, und das Band schwiege ausgerechnet
+            // dort, wo es am meisten zu sagen haette (gemessen beim Bau:
+            // Korrelation 0.000 statt -1). `midDb` laeuft dann ueber das
+            // Epsilon unten an die Untergrenze - eine Aussage, kein
+            // Schweigen.
+            const double gesamt = a.smm + a.sss;
+            if (gesamt > 0.0)
+            {
+                e.basisGesetzt = true;
+                e.midDb  = (float) (10.0 * std::log10 (std::max (a.smm / (double) a.frames, 1e-30)));
+                e.sideDb = (float) (10.0 * std::log10 (std::max (a.sss / (double) a.frames, 1e-30)));
+                e.seitenanteilDb =
+                    (float) (10.0 * std::log10 (std::max (a.sss / gesamt, 1e-12)));
+
+                const double nenner = std::sqrt (a.sll * a.srr);
+                if (nenner > 0.0)
+                {
+                    const double rMittel = a.sxyRe / nenner;
+                    if (std::isfinite (rMittel))
+                        e.korrelationMittel = (float) std::clamp (rMittel, -1.0, 1.0);
+                }
+                if (stereoKorrKurzGesetzt[(std::size_t) b] != 0u)
+                    e.korrelationKurz = stereoKorrKurz[(std::size_t) b];
+
+                // Stufe 1: Kohaerenz nur mit genug Frames UND Energie.
+                if (a.frames >= (std::uint32_t) kWelchMindestFrames
+                    && a.sll > 0.0 && a.srr > 0.0)
+                {
+                    const double koh = (a.sxyRe * a.sxyRe + a.sxyIm * a.sxyIm)
+                                     / (a.sll * a.srr);
+                    if (std::isfinite (koh))
+                    {
+                        e.kohaerenzGesetzt = true;
+                        e.kohaerenz = (float) std::clamp (koh, 0.0, 1.0);
+                        // Stufe 2: Phase nur ueber der benannten Schwelle.
+                        if (koh > kKohaerenzSchwellePhase)
+                        {
+                            const double phi = std::atan2 (a.sxyIm, a.sxyRe);
+                            if (std::isfinite (phi))
+                            {
+                                e.phaseGesetzt = true;
+                                e.phaseRad = (float) phi;
+                            }
+                        }
+                    }
+                }
+
+                if (stereoKurzfenster > 0)
+                    e.persistenz = (float) std::clamp (
+                        (double) stereoPersistenzZaehler[(std::size_t) b]
+                        / (double) stereoKurzfenster, 0.0, 1.0);
+
+                if ((int) stereoVerlauf.size() > b
+                    && stereoVerlauf[(std::size_t) b].gefuellt >= 4)
+                {
+                    const int n = ringInZeitfolge (stereoVerlauf[(std::size_t) b], folge);
+                    std::sort (folge, folge + n);
+                    e.perzentileGesetzt = true;
+                    e.p10Db = (float) perzentil (folge, n, 0.10);
+                    e.p50Db = (float) perzentil (folge, n, 0.50);
+                    e.p95Db = (float) perzentil (folge, n, 0.95);
+                }
+            }
+        }
+
+        // ⚠️ Die zwei Grenzfaelle sind AUSSAGEN, kein Schweigen — und beim
+        // ersten Bau war es umgekehrt. Bei Polaritaetsinvertierung ist die
+        // Monosumme exakt null, bei einem stillen Kanal eine Kanalenergie;
+        // ein `log10(0)` ist -unendlich, und ohne Bit haette der Empfaenger
+        // an der wichtigsten Stelle nichts erfahren: „die Monosumme loescht
+        // sich vollstaendig aus" ist die schaerfste Stereoaussage, die es
+        // gibt. Beide Werte laufen deshalb ueber ein Epsilon und werden auf
+        // die Vertragsgrenze +/-400 dB geklemmt, die das Schema ohnehin
+        // zieht. Ein Bit fehlt nur, wenn gar nichts gemessen wurde.
+        stereoSkalareErgebnis = StereoSkalare {};
+        constexpr double kEps = 1e-40;
+        if (stereoStereoEnergie > 0.0)
+        {
+            stereoSkalareErgebnis.folddownGesetzt = true;
+            stereoSkalareErgebnis.monoFolddownDb = (float) std::clamp (
+                10.0 * std::log10 (std::max (stereoMonoEnergie, kEps) / stereoStereoEnergie),
+                -400.0, 400.0);
+        }
+        if (stereoLEnergie > 0.0 || stereoREnergie > 0.0)
+        {
+            stereoSkalareErgebnis.balanceGesetzt = true;
+            stereoSkalareErgebnis.lrBalanceDb = (float) std::clamp (
+                10.0 * std::log10 (std::max (stereoLEnergie, kEps)
+                                 / std::max (stereoREnergie, kEps)),
+                -400.0, 400.0);
+        }
+    }
+
+    /** Leert alles, was zu GENAU DIESEM Evidenzfenster gehoert. Wird von
+        `evidenzLeeren()` und von `grenzeZiehen()` gerufen — die
+        Stereoevidenz ist ein Fenster wie jedes andere (§32.3). */
+    void stereoLeeren() noexcept
+    {
+        for (auto& a : stereoAkku)  a = StereoAkku {};
+        for (auto& a : stereoKurz)  a = StereoAkku {};
+        for (auto& r : stereoVerlauf) r.leeren();
+        for (auto& v : stereoKorrKurz) v = 0.0f;
+        for (auto& v : stereoKorrKurzGesetzt) v = 0u;
+        for (auto& v : stereoPersistenzZaehler) v = 0u;
+        stereoKurzFrames = 0;
+        stereoKurzfenster = 0;
+        stereoMonoEnergie = stereoStereoEnergie = 0.0;
+        stereoLEnergie = stereoREnergie = 0.0;
     }
 
     //== Loudness =============================================================
@@ -2388,6 +2873,10 @@ private:
             // Verteilung waere die halbe Aussage aus §33.2.
             fuelleVerteilung (f);
             fuelleAbdeckungUndKonvergenz (f);
+            // SONDE-013 M-11: die Stereoevidenz gehoert zu DIESEM
+            // Evidenzfenster und wird mit ihm ausgewertet - vor
+            // `evidenzLeeren()`, das die Akkus raeumt.
+            stereoAuswerten();
             f.evidenzStromStartGesetzt = evidenzSupport.gesetzt;
             f.evidenzStromStart = evidenzSupport.stromStart;
         }
@@ -2425,6 +2914,7 @@ private:
         // aus fremdem Material zu rechnen — dieselbe Regel wie fuer den
         // Bandakku daneben.
         for (auto& r : evidenzVerteilung) r.leeren();
+        stereoLeeren();                 // SONDE-013 M-11, dasselbe Fenster
         evidenzFensterGesamt = 0;
         evidenzFensterAktiv = 0;
         evidenzSamples = 0;
@@ -2960,6 +3450,34 @@ private:
     Breite liveBreiteAkku[Gitter::evidenzBaender] {};
     Support liveSupport {};
     Support evidenzSupport {};
+
+    /// SONDE-013 M-11: die bandweisen Kreuzspektralsummen eines Fensters.
+    /// `smm`/`sss` tragen Mid- und Side-Energie, `sll`/`srr` die
+    /// L/R-Autospektren, `sxyRe`/`sxyIm` das komplexe Kreuzspektrum.
+    /// `frames` ist die Zahl der GUELTIGEN Welch-Frames - also genau das
+    /// Feld `freiheitsgrade`, das §40.1 als Teil der Evidenz verlangt.
+    struct StereoAkku
+    {
+        double smm { 0.0 }, sss { 0.0 };
+        double sll { 0.0 }, srr { 0.0 };
+        double sxyRe { 0.0 }, sxyIm { 0.0 };
+        std::uint32_t frames { 0 };
+        double dauerMs { 0.0 };
+    };
+    /// Alle Stereotraeger liegen im HEAP: elf Bandsaetze zu 221 Werten sind
+    /// rund 11 KiB, und der Stack dieses Beins ist in Etappe C schon dreimal
+    /// gerissen (Manifest §10.3, §10.4).
+    std::vector<StereoAkku>      stereoAkku, stereoKurz;
+    std::vector<VerteilungsRing> stereoVerlauf;
+    std::vector<StereoBandwert>  stereoErgebnis;
+    std::vector<float>           stereoKorrKurz;
+    std::vector<std::uint8_t>    stereoKorrKurzGesetzt;
+    std::vector<std::uint32_t>   stereoPersistenzZaehler;
+    int           stereoKurzFrames { 0 };
+    std::uint32_t stereoKurzfenster { 0 };
+    double stereoMonoEnergie { 0.0 }, stereoStereoEnergie { 0.0 };
+    double stereoLEnergie { 0.0 }, stereoREnergie { 0.0 };
+    StereoSkalare stereoSkalareErgebnis {};
 
     // SONDE-013 M-05: Verteilung, Abdeckung und Konvergenz des Evidenzfensters.
     // Die zwei Zaehler stehen NEBENEINANDER, weil die Abdeckung genau ihr

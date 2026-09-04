@@ -71,6 +71,23 @@ struct Ereignisstrom
     std::uint64_t verloren { 0 };
 };
 
+/** Die bandweise Stereoevidenz eines Evidenzfensters (SONDE-013 M-11).
+
+    Sie kommt nicht aus dem `FeatureFrame`, sondern direkt aus der Engine —
+    elf Bandsaetze zu 221 `float` sind rund 11 KiB, und der Frame liegt auf
+    dem Stack (Begruendung bei `analyse::StereoBandwert`). Der Sondenprozessor
+    holt sie mit `merkmale.stereoBand(b)` und `merkmale.stereoSkalare()`,
+    genau wie den Ereignisring daneben.
+
+    `baender` zeigt auf `Gitter::evidenzBaender` Eintraege oder ist
+    `nullptr`. Ist es `nullptr`, entsteht das `stereo`-Feld GAR NICHT — ein
+    Satz aus 221 leeren Baendern waeren 11 KiB Schweigen auf der Leitung. */
+struct Stereosicht
+{
+    const nakama::analyse::StereoBandwert* baender { nullptr };
+    nakama::analyse::StereoSkalare         skalare {};
+};
+
 /** Baut den `evidence_snapshot`-JSON-Text.
 
     Fail-closed: `false`, wenn der Frame keinen Snapshot traegt
@@ -89,6 +106,7 @@ struct Ereignisstrom
 bool evidenceSnapshotAlsJson (const nakama::analyse::FeatureFrame& frame,
                               const Snapshotkopf& kopf,
                               const Ereignisstrom& ereignisse,
+                              const Stereosicht& stereo,
                               std::string& aus);
 
 } // namespace nakama::evidenz

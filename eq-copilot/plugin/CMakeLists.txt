@@ -776,6 +776,22 @@ target_link_libraries(EqCopSonde013DynamicsTest PRIVATE juce::juce_core Advapi32
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
 nakama_kern_anbinden(EqCopSonde013DynamicsTest)
 
+# ── S20-22/SONDE-013: bandweise Stereoevidenz (Kanon B19) ─────────────────
+# Misst die fuenf Klassen aus §40.3 gegen ihre ANALYTISCH bekannte Antwort:
+# Mono (Korrelation exakt 1), Polaritaet (-1 bei Kohaerenz 1), bekannte
+# Laufzeit (Phase folgt +2*pi*f*tau), unkorreliert (Kohaerenz null) und den
+# Mono-Folddown gegen den von Hand gefalteten Puffer. Dazu die zwei
+# fail-closed-Stufen aus §40.1 - Kohaerenz erst ab acht Welch-Frames, Phase
+# nur ueber der benannten Kohaerenzschwelle - und die Grenzwache, die G13
+# fuer diese Traeger nicht leisten kann. Braucht nur den Kern.
+juce_add_console_app(EqCopSonde013StereoGoldenTest PRODUCT_NAME "eqcop-sonde013stereogoldentest")
+target_sources(EqCopSonde013StereoGoldenTest PRIVATE tests/Sonde013StereoGoldenTest.cpp)
+target_compile_definitions(EqCopSonde013StereoGoldenTest PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
+target_link_libraries(EqCopSonde013StereoGoldenTest PRIVATE juce::juce_core Advapi32
+    PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+nakama_kern_anbinden(EqCopSonde013StereoGoldenTest)
+
 # ── S20-22/SONDE-013 M-02: der True-Peak-Pfad (Kanon B17) ─────────────────
 # Misst den 8-fach-Interpolator gegen die ANALYTISCHE Referenz der
 # EBU-Tech-3341-Testfaelle: deren Signale sind Sinus mit definierter Frequenz,

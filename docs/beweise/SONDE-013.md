@@ -3,7 +3,7 @@
 | Merkmal | Wert |
 |---|---|
 | Ticket | S20–22, `SONDE-013` (Phase P4–P5) |
-| Phase | **Etappe 2 — Bau, Etappe C läuft.** Etappen A und B stehen und sind mit einem sauberen Kanonlauf beglaubigt. Von Etappe C sind der erste Änderungssatz (Loudnessfenster, True Peak, Headroom, `integration_samples`) und aus dem zweiten der Peakpfad (M-86) gebaut; Qualitätsklasse (M-06) und Stereo (M-08, M-10, M-11, M-12) stehen aus. Etappe 1 (Verhaltensmatrix) ist am 2026-09-04 nach Matrixprüfung 1, Nacharbeit 1, Wiederprüfung 1, Nacharbeit 2 und Wiederprüfung 2 (PASS) abgenommen; die Matrix in §3 ist ab hier die Spezifikation. Bauauftrag: `docs/beweise/roh/SONDE-013-etappe-2-auftrag.txt`, Bau-Verlauf in §10 |
+| Phase | **Etappe 2 — Bau, Etappe C läuft.** Etappen A und B stehen und sind mit einem sauberen Kanonlauf beglaubigt. Von Etappe C sind der erste Änderungssatz (Loudnessfenster, True Peak, Headroom, `integration_samples`) und aus dem zweiten der Peakpfad (M-86) sowie die bandweise Stereoevidenz (M-08, M-10, M-11, M-12) gebaut; die Qualitätsklasse (M-06) steht aus. Etappe 1 (Verhaltensmatrix) ist am 2026-09-04 nach Matrixprüfung 1, Nacharbeit 1, Wiederprüfung 1, Nacharbeit 2 und Wiederprüfung 2 (PASS) abgenommen; die Matrix in §3 ist ab hier die Spezifikation. Bauauftrag: `docs/beweise/roh/SONDE-013-etappe-2-auftrag.txt`, Bau-Verlauf in §10 |
 | Urteil | **offen** — T1 setzt der Erbauer nach der letzten Bauetappe, T2 der Dirigent nach der Codex-Abnahme |
 | Prüfstufe | T1+T2 gefordert (`docs/bauaufteilung-sonden.md`:392). T1 ist das Selbstaudit des Erbauers am Ende der letzten Bauetappe, T2 setzt der Dirigent nach der Codex-Abnahme |
 | Basis-SHA | Etappe 1 begann auf `ed9bbf7fec951a061749abf143cb2158c1c4ee52`; **Etappe 2 baut ab `0fdbb4a09c75e2c93ab9b76e7fcf5d92d0ef17e4`** (Abschluss der Matrixetappe), beide mit `git rev-parse HEAD` gemessen |
@@ -14,7 +14,7 @@
 | Rundenbilanz Etappe 1 | `py -3.13 tools/dirigent/rundenbilanz.py --runden ed9bbf7 4a2f50a 367a0ea ca20f3a 6e8bebb`: Matrix `ed9bbf7..4a2f50a` Doku 2 Dateien +1019/−0; Entscheide `4a2f50a..367a0ea` Doku +51/−0; Nacharbeit 1 `367a0ea..ca20f3a` Doku 4 Dateien +533/−63; Nacharbeit 2 `ca20f3a..6e8bebb` Doku 4 Dateien +286/−17. Produkt und Tests 0 Zeilen in allen vier Runden — erwartet, weil Etappe 1 nach der Regel „Spezifikation vor Code" ausschließlich das Manifest schreibt; das Konvergenzsignal des Werkzeugs greift erst ab Etappe 2. |
 | Änderungssatz dieser Etappe | Erster Commit `4a2f50a` und Entscheidcommit `367a0ea`: dieses Manifest und `docs/beweise/roh/SONDE-013-etappe-1-auftrag.txt`. Nacharbeit 1: dieses Manifest sowie die drei Rohdateien `docs/beweise/roh/SONDE-013-matrixpruefung-1-auftrag.txt`, `docs/beweise/roh/SONDE-013-matrixpruefung-1-367a0ea.txt` und `docs/beweise/roh/SONDE-013-nacharbeit-1-auftrag.txt` unverändert. Nacharbeit 2: dieses Manifest sowie die drei Rohdateien `docs/beweise/roh/SONDE-013-wiederpruefung-1-auftrag.txt`, `docs/beweise/roh/SONDE-013-wiederpruefung-1-ca20f3a.txt` und `docs/beweise/roh/SONDE-013-nacharbeit-2-auftrag.txt` unverändert. Kein Produkt-, Test-, Schema-, Fixture- oder Werkzeugcode. |
 | Kanon nachher | **GRUEN 41/41 auf `5397680`, Arbeitsbaum sauber** — die Beglaubigung des Endstands der Etappen A und B. Rohausgabe `docs/beweise/roh/SONDE-013-5397680.md`; der Lauf davor auf `6334dc1` war ebenfalls GRUEN 41/41 und deckt alles ausser dem Selbstauditfix; 2 geplante Beine noch nicht gebaut (B6, B7 ab P6), 1 stillgelegtes (A15). Die Beinzahl wächst von 40 auf **41** (neu: **B16** `EqCopSonde013EventWireTest`) und sinkt um kein Bein. Der Weg dahin steht vollständig in §10: der erste Lauf auf `8d8fc96` war GRUEN 40/40, aber `-dirty` gestempelt; der zweite auf `fcaa55c` fiel an einer zeitabhängigen Zusage in B10; der dritte auf `8645529` fand drei echte Befunde dieser Etappe (Soak-Speicher, Kernobjektliste, Minor-Literale); der vierte auf `f701388` fand ein Datenrennen in der eigenen Nacharbeit. Alle vier sind behoben und einzeln belegt. |
-| Testanzahl | A5 461 Prüfungen · B3c 75 · B10 313 · B16 41 · B17 23 (neu) · B18 44 (neu) · B5 237 · Broker 203 Lib-Tests plus alle Integrationsbeine · JSON-Fixturekorpus 285 (75 gültig, 210 ungültig) · Binärkorpus 104 (20 gültig, 84 ungültig) · Envelope-Korpus 37. Alle Zahlen aus dem Lauf dieser Sitzung, nicht abgeschrieben. |
+| Testanzahl | A5 461 Prüfungen · B3c 75 · B10 313 · B16 52 · B17 23 (neu) · B18 44 (neu) · B19 57 (neu) · B5 237 · Broker 203 Lib-Tests plus alle Integrationsbeine · JSON-Fixturekorpus 285 (75 gültig, 210 ungültig) · Binärkorpus 104 (20 gültig, 84 ungültig) · Envelope-Korpus 37. Alle Zahlen aus dem Lauf dieser Sitzung, nicht abgeschrieben. |
 | Änderungssatz Etappe 2 | Fortlaufend in §10 je Bauetappe geführt: Commits, Beine, Rotbeweise, Abweichungen von §5 und Nebenbefunde. Die Beinzahl wächst mit Etappe C von 41 auf **43** (neu: **B17** `EqCopSonde013TruePeakGoldenTest`, **B18** `EqCopSonde013DynamicsTest`) und sinkt um kein Bein; der volle Kanon auf diesem Stand steht aus, weil Etappe C Schema-, Fixture- und Runnerdateien berührt (§5.1) und deshalb erst am Ende der ganzen Etappe beglaubigt wird. |
 | Grenze | Etappe 2 baut ausschließlich, was §3 zusagt. Prüfbereich sind die Ticketpfade aus §5.2; jede Datei außerhalb steht mit Begründung in §10. `docs/offene-punkte.md` und `docs/PLAN-STAND.md` bleiben unberührt — Nebenbefunde sammelt §10, der Dirigent zieht sie im Abschluss nach. |
 
@@ -462,11 +462,11 @@ Ein Testname mit **NEU** existiert noch nicht.
 | M-05 | Ereignisring hat Einträge; Evidenzsnapshot wird fällig | Diese Zeile ist **nur der Transport**. Der lokal **teilweise** gebaute `DynamicsEvent`-Strom reist als `evidence_snapshot.ereignisse`. Jedes Ereignis trägt Samplezeit, Stärke, Bandzentrum, Dauer und Qualität; die zwei Qualitätsbits trennen den SuperFlux-Flusspfad vom eigenständigen Peakpfad. Dass der Peakpfad heute überhaupt nicht auslöst, ist nicht diese Zeile, sondern **M-86**. Kadenz 1 bis 4 Hz; bei Überlast wird die Kadenz reduziert, nie der Ring stillschweigend geleert. Der Ring bleibt auf 64 Plätze gedeckelt und zählt seine Verluste. | **gemessen** (2026-09-04, Etappe B): **A5**::`evidence_snapshot_ereignisse_belegt`, `ereignisring_bleibt_bei_64_und_zaehlt_verluste`; **B16** `EqCopSonde013EventWireTest`::`events_travel_with_quality_and_loss_counter/alle_drei_reisen`, `…/beide_bits_getrennt`, `…/verlustzaehler`, `fremde_epoche_reist_nicht_und_wird_gezaehlt` sowie die Kadenzfälle; **A4** `coordinator_model`::`evidenzsnapshot_wird_angenommen_und_zusammengefasst`, `…_fremder_adresse_wird_verworfen`, `…_wird_bei_offener_intervention_gesperrt`, `…_der_fassung_2_faellt_bei_einem_leser_der_fassung_1`. Rotbeweise `docs/beweise/roh/SONDE-013-rot-M-05-verlust.txt`, `-M-05-verteilung.txt`, `-M-05-grenze.txt`, `-M-05-riegel.txt`. | Entwurf §39.1:2593-2600; §33.2:2041; `reservierte-nachrichten-v1.json` (Feldname für SONDE-013 verbrannt); `FeatureEngine.h`:290-313,448,1607-1650. **BELEGT, gemessen** (Etappe B, 2026-09-04) — Abgrenzung zu M-86 aus Nacharbeit 1 (§8, D6); der Peakpfad selbst bleibt M-86 in Etappe C |
 | M-06 | Beliebige Metrik verlässt die Sonde | Jede Metrik trägt eine Qualitätsklasse mit. Eine Gesamtklasse wird nicht aus einem Mittelwert gerettet: ein harter Mangel bei Session, Passage, Coverage oder Alignment begrenzt die Gesamtaussage. Gewichte und Schwellen leben in einer versionierten `metrics_version`, die im Frame bereits mitreist. | **NEU** `EqCopSonde013QualityClassTest`, Fall `hard_deficiency_caps_overall_class`; **NEU** **A5**-Fall `metrics_version_bindet_schwellen`. | Entwurf §34.3:2224-2237; `.fbs`:218 (`metrics_version` ID 2). **BELEGT, BAULÜCKE** |
 | M-07 | Beliebige Metrik; ein nicht endlicher Zwischenwert entsteht | Nichtendliches wird beim **Erzeugen** in Wert 0 mit `gueltig=false` übersetzt und gezählt, nie sanitisiert auf die Leitung gelassen. Ein NaN oder Inf im Frame ist ein Senderfehler und wird von beiden Lesern abgelehnt. Bei den Rahmenskalaren fehlt statt dessen das Präsenzbit. Der Zähler wird ausgewertet, nicht ignoriert. | **teilweise gemessen** (2026-09-04, Etappe C): bestehend **B3c** und **A10** für die Ablehnung, **B9** für `bloeckeNichtEndlich()`; **B18**::`non_finite_never_reaches_wire_for_new_metrics` misst die Erzeugerseite über alle neun Träger der Loudness-, Peak- und Headroomgruppe, und je ein A10-Negativfixture die Leiterseite (`lufs-m-`, `true-peak-db-`, `true-peak-passage-db-`, `plr-db-`, `lra-lu-`, `crest-kurz-db-nicht-endlich`, `headroom-p50-nicht-endlich`). Die STEREO-Metriken sind noch offen — sie kommen im zweiten Änderungssatz der Etappe C. Rotbeweise `docs/beweise/roh/SONDE-013-rot-M-07-cpp-leser.txt` und `-M-07-rust-leser.txt`. | `.fbs`:208-215; `quantisierung-v1.json`; `LoudnessAccumulator.h`:383; CLAUDE.md NaN-Ehrlichkeit. **BELEGT** für den heutigen Bestand, **BAULÜCKE** für jede neue Metrik |
-| M-08 | Monomaterial oder ein stiller Kanal; Stereometrik wird gebildet | Bei echtem Mono ist Korrelation exakt 1 und Breite 0; bei einem stillen Kanal fällt das Präsenzbit weg, statt 0 oder NaN zu senden. Der Mono-Folddown wird am **wirklich gefalteten** Puffer gemessen, nicht aus einem Korrelationsskalar geschätzt, und stimmt innerhalb 0,25 dB. Physischer Mono-Check ist `mono=(L+R)/2`, energienormiertes M/S ist `M=(L+R)/√2`, `S=(L−R)/√2` — die beiden werden nicht vermischt. | Bestehend `FeatureEngine.h`:2008-2022 für die Präsenzbits; **NEU** `EqCopSonde013StereoGoldenTest`, Fälle `mono_identity`, `silent_channel_has_no_bit`, `folddown_matches_real_buffer_within_0p25db`. | Entwurf §40.1:2637-2652; §40.3:2666-2669; `FeatureEngine.h`:2008-2022. **BELEGT, BAULÜCKE** |
+| M-08 | Monomaterial oder ein stiller Kanal; Stereometrik wird gebildet | Bei echtem Mono ist Korrelation exakt 1 und Breite 0; bei einem stillen Kanal fällt das Präsenzbit weg, statt 0 oder NaN zu senden. Der Mono-Folddown wird am **wirklich gefalteten** Puffer gemessen, nicht aus einem Korrelationsskalar geschätzt, und stimmt innerhalb 0,25 dB. Physischer Mono-Check ist `mono=(L+R)/2`, energienormiertes M/S ist `M=(L+R)/√2`, `S=(L−R)/√2` — die beiden werden nicht vermischt. | **gemessen** (2026-09-04, Etappe C): bestehend `FeatureEngine.h` für die Präsenzbits; **B19**::`mono_identity` (Korrelation exakt 1, Kohärenz 1, Phase 0, Folddown 0 dB), `silent_channel_has_no_bit` (das Kohärenzbit fällt weg statt 0 oder NaN zu senden) und `folddown_matches_real_buffer_within_0p25db` (gegen den im Test von Hand gefalteten Puffer, −3,010 gegen −3,010 dB); dazu der Polaritätsfall aus §40.3, in dem die Monosumme an die Vertragsgrenze läuft statt zu schweigen. Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-08-folddown.txt`. | Entwurf §40.1:2637-2652; §40.3:2666-2669; `FeatureEngine.h`:2008-2022. **BELEGT, gemessen** (Etappe C, 2026-09-04) |
 | M-09 | Epochengrenze liegt kurz zurück; nächster Rahmen wird fällig | Der Frame nennt, über wie viel Audio er integriert wurde. Ein Feld `integration_samples` im `FeatureFrame` **und** in `table Frame` (nächste freie Feld-ID 14) macht einen dünnen Frame erkennbar; der Empfänger entscheidet selbst, ob er ihn anzeigt. Ohne das Feld kann er heute „leise" nicht von „kurz gemessen" unterscheiden. Save/Load ist nicht betroffen, der Wire-Vertrag schon: neues Feld ⇒ `schema_minor`-Bump plus beidseitige Fixtures. | **gemessen**: Vertragsseite in Etappe A (**A10**::`integration-samples-id14`, **A9** Drift 0, **B3c**::`integration_samples_wird_von_beiden_lesern_klassifiziert`); Erzeugerseite in Etappe C (2026-09-04) durch **B18**::`thin_frame_after_boundary_is_recognisable` — der Rahmen im Dauerbetrieb trägt 5120 Samples, der erste nach einer Grenze mitten im Rahmen messbar weniger. Der Fall aus M-09 liegt in **B18** statt im dort genannten `EqCopSonde013MetricsEdgeTest`: er misst dieselbe Engine mit demselben Speiser wie die Nachbarfälle, und ein eigenes Bein für einen Fall wäre ein zusätzliches Kanonbein ohne zusätzliche Messung. Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-09.txt`. | NAK-47/NAK-68-Zitat §1.5; `docs/beweise/SONDE-009.md` §10.1; `.fbs`:216-239; `FELD-IDS.json`. **BELEGT, gemessen** (Vertrag Etappe A, Erzeuger Etappe C, 2026-09-04) |
-| M-10 | Samplerate wechselt; Bandmetrik wird gebildet | Die Nyquist-Kappe bleibt `min(18 kHz, 0,95 · Nyquist)`. Bänder darüber bekommen kein Gültigkeitsbit. Jede neue bandweise Metrik dieses Tickets erbt dieselbe Kappe; keine zweite Kappenregel entsteht. | Bestehend **B5** (Kappe greift bei 22,05 kHz wirklich); **NEU** `EqCopSonde013StereoGoldenTest`, Fall `band_stereo_metrics_share_the_nyquist_cap`. | `FeatureEngine.h`:433-437,944,975; Entwurf §35.1:2222-2226. **BELEGT, BAULÜCKE für neue Bandmetriken** |
-| M-11 | Stereoanalyse; zwei globale Skalare reichen nicht | Der Worker liefert aus komplexen L/R-STFTs bandweise Mid-/Side-Energie und Side-Anteil in dB, bandweise Pearson-Korrelation in kurzen und mittleren Fenstern, Magnitude-Squared Coherence, **bandweise Interchannel-Phase**, gemessenen Mono-Folddown-Verlust sowie L/R-Balance, Zeitperzentile und Persistenz. Kohärenz ist keine Einzel-FFT-Metrik: Auto- und Cross-Spektren werden über mindestens **acht** gültige überlappende Welch-Frames gemittelt. Jedes Band führt zwei Metadatenfelder der Evidenz mit: **Fensterdauer in ms** und **Freiheitsgrade**, also die Zahl der gemittelten gültigen Welch-Frames. Fail-closed in zwei Stufen: Kohärenz ist `null` bei zu wenig Energie oder weniger als acht Frames, und die **Phase wird nur** in Bändern ausgewertet, deren Kohärenz eine benannte Schwelle überschreitet — sonst ist auch sie `null`, nie ein geschätzter Wert. Alle drei Felder reisen auf dem Evidenzpfad (E-05) und stehen in §3.8 als von SONDE-013 belegte Felder des `evidence_snapshot`. | **NEU** `EqCopSonde013StereoGoldenTest`, Fälle `bandwise_ms_and_correlation`, `phase_only_in_coherent_bands`, `coherence_carries_window_and_dof`, `coherence_is_null_below_eight_frames` (ersetzt `coherence_needs_eight_welch_frames`), `persistence_is_reported`. | Entwurf §40.1:2628-2660, wörtlich :2642-2645 („Fensterdauer und Freiheitsgrade werden Teil der Evidenz", „Bei zu wenig Energie oder Frames ist Kohärenz `null`", „Interchannel-Phase wird nur in ausreichend kohärenten Bändern interpretiert"). **BELEGT, BAULÜCKE** — Phase, Fensterdauer und Freiheitsgrade aus Nacharbeit 1 (§8, D7) |
-| M-12 | Auffälliger Stereozustand erkannt | Breite ist kein Qualitätswert. Es entsteht **kein** Vorschlag zu Laufzeit- oder Polaritätskorrektur ohne kohärentes Paar, stabilen Lag und nachweislich bessere Mono-Summe; bei niedriger Kohärenz gibt es keine Lag- oder Polaritätsempfehlung. Statische Breitenänderung und bandbegrenzte M/S-Korrektur sind verschiedene Vorschlagstypen. Musikalisch unabhängige Busse werden nie automatisch gegeneinander verschoben. | **NEU** `EqCopSonde013StereoGoldenTest`, Fälle `low_coherence_yields_no_recommendation` und `width_alone_is_never_a_defect`. | Entwurf §40.2:2661-2665; §40.3:2668. **BELEGT, BAULÜCKE** |
+| M-10 | Samplerate wechselt; Bandmetrik wird gebildet | Die Nyquist-Kappe bleibt `min(18 kHz, 0,95 · Nyquist)`. Bänder darüber bekommen kein Gültigkeitsbit. Jede neue bandweise Metrik dieses Tickets erbt dieselbe Kappe; keine zweite Kappenregel entsteht. | **gemessen** (2026-09-04, Etappe C): bestehend **B5**; **B19**::`band_stereo_metrics_share_the_nyquist_cap` — bei 22,05 kHz liegen 18 Bänder über der Kappe, und keines trägt eine Stereometrik. Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-10-kappe.txt`. | `FeatureEngine.h`:433-437,944,975; Entwurf §35.1:2222-2226. **BELEGT, gemessen** (Etappe C, 2026-09-04) — die neuen Bandmetriken erben die Kappe über die Bandzuordnung, es entsteht keine zweite Regel |
+| M-11 | Stereoanalyse; zwei globale Skalare reichen nicht | Der Worker liefert aus komplexen L/R-STFTs bandweise Mid-/Side-Energie und Side-Anteil in dB, bandweise Pearson-Korrelation in kurzen und mittleren Fenstern, Magnitude-Squared Coherence, **bandweise Interchannel-Phase**, gemessenen Mono-Folddown-Verlust sowie L/R-Balance, Zeitperzentile und Persistenz. Kohärenz ist keine Einzel-FFT-Metrik: Auto- und Cross-Spektren werden über mindestens **acht** gültige überlappende Welch-Frames gemittelt. Jedes Band führt zwei Metadatenfelder der Evidenz mit: **Fensterdauer in ms** und **Freiheitsgrade**, also die Zahl der gemittelten gültigen Welch-Frames. Fail-closed in zwei Stufen: Kohärenz ist `null` bei zu wenig Energie oder weniger als acht Frames, und die **Phase wird nur** in Bändern ausgewertet, deren Kohärenz eine benannte Schwelle überschreitet — sonst ist auch sie `null`, nie ein geschätzter Wert. Alle drei Felder reisen auf dem Evidenzpfad (E-05) und stehen in §3.8 als von SONDE-013 belegte Felder des `evidence_snapshot`. | **gemessen** (2026-09-04, Etappe C): **B19** mit allen fünf Fällen plus einem sechsten, der die Phase gegen die FORMEL +2·π·f·τ hält statt gegen ein Vorzeichen (drei Trägerfrequenzen, größte Abweichung 0,0000 rad). `coherence_is_null_below_eight_frames`: 149 Bänder mit Basis, 0 mit Kohärenzbit. `phase_only_in_coherent_bands`: 0 Bänder mit Phase ohne Kohärenz, 0 unterhalb der Schwelle. Die Wire-Form misst **B16** Abschnitt A2. Rotbeweise `docs/beweise/roh/SONDE-013-rot-M-11-welch.txt` und `-M-11-phase.txt`. | Entwurf §40.1:2628-2660, wörtlich :2642-2645 („Fensterdauer und Freiheitsgrade werden Teil der Evidenz", „Bei zu wenig Energie oder Frames ist Kohärenz `null`", „Interchannel-Phase wird nur in ausreichend kohärenten Bändern interpretiert"). **BELEGT, gemessen** (Etappe C, 2026-09-04) — Phase, Fensterdauer und Freiheitsgrade aus Nacharbeit 1 (§8, D7). Einschränkung, benannt und nicht kaschiert: Bänder unter 200 Hz erreichen die acht Welch-Frames im 1-s-Fenster nicht und tragen deshalb nie eine Kohärenz (Nebenbefund in §10.4) |
+| M-12 | Auffälliger Stereozustand erkannt | Breite ist kein Qualitätswert. Es entsteht **kein** Vorschlag zu Laufzeit- oder Polaritätskorrektur ohne kohärentes Paar, stabilen Lag und nachweislich bessere Mono-Summe; bei niedriger Kohärenz gibt es keine Lag- oder Polaritätsempfehlung. Statische Breitenänderung und bandbegrenzte M/S-Korrektur sind verschiedene Vorschlagstypen. Musikalisch unabhängige Busse werden nie automatisch gegeneinander verschoben. | **gemessen** (2026-09-04, Etappe C): **B19**::`width_alone_is_never_a_defect / low_coherence_yields_no_recommendation` — in einem sehr breiten, inkohärenten Fenster sind 149 von 149 Bändern maximal breit, und in keinem entsteht eine Phase. Die Zusage ist zugleich strukturell: ein `StereoBandwert` trägt Messwerte und Gültigkeitsbits, kein Urteilsfeld. | Entwurf §40.2:2661-2665; §40.3:2668. **BELEGT, gemessen** (Etappe C, 2026-09-04) |
 | M-86 | Sehr kurzer Impuls; der spektrale Fluss überschreitet die adaptive Schwelle **nicht** | Der Detektor hat **zwei unabhängige Auslöser**. Peaksteigung — der Anstieg des Rahmenpeaks gegenüber dem Vorrahmen in dB je Rahmen — und Crest erzeugen ein Ereignis auch ohne Flussüberschreitung; es trägt `qualitaetFluss = false` und `qualitaetPeak = true`. Ein Flussereignis trägt `qualitaetFluss = true`. Lösen beide Pfade im selben Rahmen aus, entsteht **genau ein** Ereignis mit beiden Bits. Ring-Deckel 64 und Verlustzähler gelten unverändert. Die Schwellen der Peaksteigung wählt der Bau begründet und misst sie am Golden; sie sind Startwerte, kein Literal ohne Beleg (§5.3, Risiko 5). | **gemessen** (2026-09-04, Etappe C): **B5** Abschnitt I2 mit den drei Fällen `short_impulse_triggers_peak_path_only` (11 reine Peakereignisse von 24 im Ring), `flux_event_carries_flux_quality` und `both_paths_yield_one_event` samt der Zusage, dass kein Zeitpunkt zwei Ereignisse trägt, plus einer Gegenprobe (ein stehender Sinus ohne Pegelsprung erzeugt kein reines Peakereignis). Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-86.txt`. | Entwurf §39.1:2592-2599 (Detektor aus spektralem Fluss, Peaksteigung und Crest); Ist-Stand §2.1 (`FeatureEngine.h`:1605-1621 — vor diesem Ticket nur Flussauslöser, `qualitaetFluss` konstant `true`, Peaksteigung unbenutzt). **BELEGT, gemessen** (Etappe C, 2026-09-04) — neue Zeile aus Nacharbeit 1 (§8, D6); die zwei Schwellen sind als `kPeakSteigungSchwelleDb` und `kPeakCrestSchwelleDb` benannt, nicht literal |
 
 ### 3.2 PRE/POST-Paare, Alignment und ehrliche Herabstufung
@@ -2389,8 +2389,9 @@ zwischen richtiger und falscher Rechnung liegen 33 dB.
 
 ### 10.4 Etappe C — Metriken in der Sonde, zweiter Satz (2026-09-04)
 
-**Gebaute Matrixzeile bisher:** M-86 (eigenständiger Peakpfad im
-Ereignisdetektor). M-06, M-08, M-10, M-11 und M-12 stehen noch aus.
+**Gebaute Matrixzeilen:** M-86 (eigenständiger Peakpfad im
+Ereignisdetektor) sowie M-08, M-10, M-11 und M-12 (bandweise Stereoevidenz).
+M-06 (Qualitätsklasse) steht noch aus.
 
 #### M-86: der Detektor hatte nur einen Auslöser
 
@@ -2449,6 +2450,83 @@ Die vier neuen Engines des Abschnitts sprengten den 1-MiB-Stack von
 aus §10.3 gilt unverändert für die übrigen Engines dieser Datei — diese vier
 machen ihn nicht kleiner, sondern nur den Abschnitt lauffähig.
 
+#### M-08, M-10, M-11, M-12: die bandweise Stereoevidenz
+
+§40.1 sagt, warum es sie gibt: zwei globale Skalare reichen nicht. `breite`
+und `korrelation` im 10-Hz-Liveframe beschreiben die ganze Bandbreite mit je
+einer Zahl, und ein Signal, das unten mono und oben breit ist, sieht darin
+genauso aus wie eines mit gleichmäßiger Breite. Gebaut sind jetzt: bandweise
+Mid-/Side-Energie und Seitenanteil, Pearson-Korrelation in einem kurzen und
+einem mittleren Fenster, Magnitude-Squared Coherence, Interchannel-Phase,
+Persistenz, Zeitperzentile des Seitenanteils, Fensterdauer und Freiheitsgrade
+je Band, dazu Mono-Folddown und L/R-Balance als Skalare.
+
+**Keine zweite FFT.** Die Engine transformiert Mid und Side, nicht L und R.
+Die Fouriertransformation ist linear und M = (L+R)/2, S = (L−R)/2 sind
+Linearkombinationen — also gilt im Spektrum exakt dasselbe: `L(f) = M(f)+S(f)`,
+`R(f) = M(f)−S(f)`. Zwei zusätzliche 4096-Punkt-FFTs je Fenster wären nicht
+genauer, nur teurer. `Fft` bekam dafür zwei Accessoren auf Real- und
+Imaginärteil; `leistung()` wirft die Phase weg, und genau sie braucht die
+Kreuzspektralanalyse.
+
+**Nicht im `FeatureFrame`.** Elf Bandsätze zu 221 `float` sind rund 11 KiB.
+Der Frame liegt auf dem Stack, und der ist in dieser Etappe schon dreimal
+gerissen. Die Stereoevidenz liegt deshalb im Heap der Engine; der
+Serialisierer holt sie über `stereoBand()` — dasselbe Muster wie beim
+Ereignisring. Der Preis ist benannt: die Zwillingsprobe G13 sieht diese Träger
+nicht, und die Grenzwache dafür steht namentlich in B19.
+
+#### Vier Befunde, alle vom Golden gefunden
+
+**1. Die Bassbänder trugen gar nichts.** Die Stereozeile lief nur in der
+Hauptstufe — und die ist erst ab `kTrennungHz` = 200 Hz zuständig. Alle Bänder
+darunter, bei 48 kHz die unteren 60 von 221, hatten **keine** Stereoevidenz,
+obwohl M-11 sie für alle 221 verlangt. Ein 100-Hz-Mono-Signal meldete dort
+schlicht nichts. Behoben: beide Stufen füllen ihre eigenen Bänder. Dass sie
+verschiedene Fensterlängen haben, ist dabei kein Problem, sondern genau der
+Grund für `fenster_dauer_ms` und `freiheitsgrade` **je Band** — das Schema
+sagt am Feld: „je Band, weil die Fensterlänge über die Bänder nicht gleich
+sein muss".
+
+**2. Perfekte Antiphase war ausgesperrt.** Die Basisbedingung verlangte
+`smm > 0` — Mid-Energie über null. Bei `R = −L` ist die Mid-Energie **exakt
+null**, und das ist der interessanteste Fall, den Stereoanalyse kennt. Das
+Band schwieg ausgerechnet dort, wo es am meisten zu sagen hätte (gemessen:
+Korrelation 0,000 statt −1). Jetzt genügt die Gesamtenergie.
+
+**3. Folddown und Balance verschwiegen ihre Grenzfälle.** Bei
+Polaritätsinvertierung ist die Monosumme exakt null, bei einem stillen Kanal
+eine Kanalenergie; `log10(0)` ist −unendlich, und ohne Bit hätte der Empfänger
+an der wichtigsten Stelle nichts erfahren. „Die Monosumme löscht sich
+vollständig aus" ist die schärfste Stereoaussage, die es gibt. Beide Werte
+laufen jetzt über ein Epsilon an die Vertragsgrenze ±400 dB, die das Schema
+ohnehin zieht; ein Bit fehlt nur, wenn gar nichts gemessen wurde.
+
+**4. Die Bassstufe erreicht acht Welch-Frames nie.** Ihr Hop ist bei 48 kHz
+170,7 ms; acht davon sind 1,37 s, länger als das längste Evidenzfenster (1 s).
+Bänder unter 200 Hz tragen deshalb im heutigen Kadenzrahmen **nie** eine
+Kohärenz und nie eine Phase. Das ist fail-closed und kein Fehler — die
+Kohärenz aus fünf Frames wäre unbrauchbar, und §40.1 verlangt genau dieses
+Schweigen; der Empfänger sieht den Grund an den Freiheitsgraden. Es ist aber
+auch keine gute Produkteigenschaft: Phasenprobleme im Bass sind musikalisch
+die wichtigsten. Der Punkt steht unten als Nebenbefund.
+
+#### Belege
+
+| Bein | Ergebnis |
+|---|---|
+| **B19** `EqCopSonde013StereoGoldenTest` (NEU) | 57 bestanden, 0 gescheitert |
+| **B16** `EqCopSonde013EventWireTest` | 52 bestanden, 0 gescheitert — der neue Abschnitt A2 misst die **Wire-Form**: alle elf Bandsätze, beide Metadatenlisten und die zwei Skalare passieren dieselbe Vertragsengine wie B3c, und kein Bandsatz trägt ein `saturated` |
+| Snapshotgröße | 4 593 Byte ohne Stereo, 17 805 Byte mit — Faktor 3,9. Die Rückstauschwelle `kEvidenzP1Schwelle` misst in Einträgen, nicht in Bytes; A24 ist deshalb die Wache |
+
+| Rotbeweis | Eingebauter Fehler | Fallendes Bein |
+|---|---|---|
+| `SONDE-013-rot-M-11-welch.txt` | Mindestframezahl von acht auf eins — die Kohärenz aus einem Frame ist identisch 1, auch für Rauschen | B19 |
+| `SONDE-013-rot-M-11-phase.txt` | die zweite fail-closed-Stufe fällt: Phase auch in inkohärenten Bändern | B19 |
+| `SONDE-013-rot-M-08-folddown.txt` | der physische Mono-Check `(L+R)/2` wird mit dem energienormierten M/S `(L+R)/√2` vermischt — 3 dB Abweichung | B19 |
+| `SONDE-013-rot-M-10-kappe.txt` | Bänder ohne einen einzigen Bin werden nicht mehr übersprungen und bekämen Freiheitsgrade ohne Messung | B19 |
+
+
 #### Belege
 
 | Bein | Ergebnis |
@@ -2460,6 +2538,25 @@ machen ihn nicht kleiner, sondern nur den Abschnitt lauffähig.
 | Rotbeweis | Eingebauter Fehler | Fallendes Bein |
 |---|---|---|
 | `SONDE-013-rot-M-86.txt` | der Peakpfad löst nicht mehr aus — der Detektor fällt auf den Zustand vor M-86 zurück | B5 |
+
+#### Nebenbefunde für `docs/offene-punkte.md`
+
+- **[SONDE-013 · P4]** Bänder unter `kTrennungHz` (200 Hz) tragen im heutigen
+  Kadenzrahmen **nie** eine Kohärenz und nie eine Phase: der Hop der
+  Bassstufe ist bei 48 kHz 170,7 ms, acht davon sind 1,37 s, und das längste
+  Evidenzfenster ist 1 s (`kEvidenzIntervallMaxS`). Fail-closed und korrekt
+  nach §40.1 — der Empfänger sieht den Grund an den Freiheitsgraden —, aber
+  Phasenprobleme im Bass sind musikalisch die wichtigsten. Wer es angeht: der
+  Bassstufe für die Stereoanalyse ein eigenes, kürzeres Fenster geben
+  (Kohärenz braucht keine 1/24-Oktav-Auflösung), oder die Evidenzkadenz für
+  einen Stereodurchgang entkoppeln. Beides ist mehr als eine Zeile.
+- **[SONDE-013 · P4]** Der Evidenzsnapshot ist mit Stereoevidenz 3,9-mal so
+  groß (4 593 → 17 805 Byte). Die Rückstauschwelle `kEvidenzP1Schwelle` zählt
+  weiterhin **Einträge**, nicht Bytes — sie wurde in Etappe B auf die damalige
+  Nachrichtengröße gemessen. A24 ist die Wache, aber die Schwelle selbst
+  beschreibt jetzt eine andere Menge Speicher als bei ihrer Kalibrierung. Wer
+  es angeht: die Schwelle an eine Bytegrenze binden statt an eine
+  Eintragszahl, gemeinsam mit der P1-Queue-Politik aus SONDE-010.
 
 ---
 

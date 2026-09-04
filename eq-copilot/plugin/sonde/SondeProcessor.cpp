@@ -508,8 +508,20 @@ void SondeProcessor::evidenzSnapshotSenden (const nakama::analyse::FeatureFrame&
                         ? "schwach"
                         : "mittel";
 
+    // SONDE-013 M-11: die bandweise Stereoevidenz kommt direkt aus der
+    // Engine, nicht aus dem Frame. Sie reist nur, wenn ueberhaupt ein Band
+    // eine Basis traegt - ein Satz aus 221 leeren Baendern waere 11 KiB
+    // Schweigen auf der Leitung, und die Rueckstauschwelle unten misst in
+    // EINTRAEGEN, nicht in Bytes.
+    nakama::evidenz::Stereosicht stereo;
+    if (merkmale.stereoHatInhalt())
+    {
+        stereo.baender = &merkmale.stereoBand (0);
+        stereo.skalare = merkmale.stereoSkalare();
+    }
+
     std::string json;
-    if (nakama::evidenz::evidenceSnapshotAlsJson (frame, kopf, strom, json))
+    if (nakama::evidenz::evidenceSnapshotAlsJson (frame, kopf, strom, stereo, json))
     {
         // Leerer Koaleszenzschluessel: zwei Snapshots derselben Quelle sind
         // ZWEI Belege mit eigener evidence_id, nicht zweimal derselbe Blick

@@ -1,0 +1,87 @@
+Mehrere vorgeschriebene R01–R33-Regeln bleiben offen; zusätzlich regressiert der Produktpfad die Effektstabilität. Gemessen wurden der v3-Vertragsvalidator mit 504/504 sowie die gezielten C++- und Rust-Suites überwiegend grün; `sonde013_prepost` hatte nur den cwd-bedingten Fixturefehler. Die Windows-Store-/Verdrahtungs-Crashsuites waren durch den Sandbox-Tempzugriff blockiert und `EqCopIpcTest` lief nur bis G8; HEAD blieb unverändert auf eb115af775386ae087aa90e18fcec2462ce9fae5.
+
+Full review comments:
+
+- [P1] Gleiche die Resync-Sequenzbasis mit dem Plugin ab — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/src/PluginProcessor.cpp:1094-1095
+  R01 bleibt offen: Der erste neutrale Heartbeat setzt die Broker-Basis auf 0, während das Plugin seine erste Intervention ebenfalls mit Sequenz 0 sendet und die Sequenz bei Reconnect nicht zurücksetzt. Damit lehnt der Broker die erste Intervention nach einem normalen Verbindungsaufbau oder Reconnect als Lücke ab; `r01Resync` ruft nur `v3LinkFuerTest` lokal auf und kann an diesem Wire-Handschlag nicht fallen.
+
+- [P1] Starte die Tail-Zeitrechnung erst mit dem Tail — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/liveness.rs:233-239
+  R02 bleibt offen, wenn ein Tail zwischen zwei Liveness-Ticks beginnt: Der nächste Tick zieht das gesamte Intervall seit dem vorherigen Tick ab, obwohl der Tail erst später entstand. Ein kurzer Tail kann dadurch nahezu sofort freigegeben werden; `nachlauf_laeuft_in_echtzeit_ab` startet den Tail vor dem ersten Referenztick und kann diese normale Phasenlage nicht erkennen.
+
+- [P1] Übertrage die beim Markieren erfasste Transportepoche — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/src/PluginProcessor.cpp:780-782
+  R03 bleibt offen: Als dritte Eingabe wird die aktuelle Engine-Epoche beim Abarbeiten des Wunsches verwendet, wodurch die Epochenprüfung in `setzePassagenfenster` stets tautologisch erfüllt ist. Erfolgt zwischen Markierung und Worker-Lauf ein Seek, werden die alten Grenzen unter der neuen Epoche akzeptiert; `r03Passagenfenster` enthält keinen solchen Epochenwechsel.
+
+- [P1] Binde den aktiven Analysestand an eine Passage — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/src/PluginProcessor.cpp:1598-1600
+  R03/R06 bleiben bei mehreren gespeicherten Passagen offen: Nach Markierung von A und B löscht `vergissManuellePassage(A)` hier bedingungslos das globale Fenster und stoppt den Pegel von B; umgekehrt aktiviert `beginneVersuch(A)` A nicht erneut, sondern friert den zuletzt gesetzten globalen Stand ein. Der State erlaubt bis zu 64 Passagen und Begin adressiert per ID, während `r03Passagenfenster` nur eine Passage verwendet.
+
+- [P1] Begrenze die Pegelmessung auf die markierte Passage — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/src/PluginProcessor.cpp:500-505
+  R06 bleibt offen, weil `versuchspegelSpeist` der einzige Gate ist: Jeder Audioblock wird unabhängig von Projektzeit, Passagengrenzen und Transportepoche in den Vergleichspegel aufgenommen. Wird nach Markierung eines Refrains an anderer Stelle abgespielt, kann dieses Material die 400-ms-Schwelle erfüllen und als Match-Gain des Refrains reisen; `r06Vergleichspegel` setzt überhaupt keine Projektzeit und kann deshalb nicht fallen.
+
+- [P2] Übertrage den Nichtendlich-Zähler im Experimentzustand — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/src/PluginProcessor.cpp:1707-1712
+  R06 verlangt, dass `nichtEndlicheSamples()` in Evidenz oder Wirezustand reist, aber der Experimentserializer schreibt nur Quellen, Klassen, Gain und Alignment; der Zähler bleibt ausschließlich über einen lokalen Test-Getter erreichbar. `r06Vergleichspegel` ruft genau diesen Getter direkt auf und behauptet damit einen Wirebeweis, an dessen Fehlen der Test nicht fallen kann.
+
+- [P1] Übergib den Vergleichspegel ohne Datenrennen — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/src/PluginProcessor.cpp:1755-1757
+  Während der Wiedergabe kann ein Audiocallback bereits das Flag `true` gelesen haben und die nichtatomaren Felder von `Vergleichspegel::speise` schreiben, während diese Zeilen einfrieren und dieselben Felder lesen; der Release-Store wartet keinen laufenden Callback ab. Auch `vorbereiten` wird vom Nachrichtenthread parallel aufgerufen, sodass normales Markieren oder Beginnen während Playback undefiniertes Verhalten erzeugt; ein Lock im Audiothread wäre nach `CLAUDE.md:43-44` ebenfalls unzulässig.
+
+- [P1] Sperre FeatureEngine-Leser im Experimentpfad — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/src/PluginProcessor.cpp:1673-1675
+  Der Experimentpfad liest hier Fingerprint-Akkumulatoren und später `frame()` sowie Passagenepoche, während der Analyseworker dieselbe `FeatureEngine` mutiert. Anders als `passagenfensterInEngine` nimmt dieser Leser keinen `externerAnalyseSteuerZug`, sodass Begin oder Kandidat während Analyse ein C++-Datenrennen und inkohärente Referenzen erzeugt; dies widerspricht der Threadtrennung aus `CLAUDE.md:202-204`.
+
+- [P1] Setze Blindvergleich nach einem Ergebnis zurück — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/src/PluginProcessor.cpp:1875-1878
+  Nach einem erfolgreichen Ergebnis werden nur die aktiven IDs geleert, während `Blindvergleich` sein Urteil und `gainGesetzt` behält; der nächste Versuch scheitert deshalb dauerhaft an `uebernimmVergleichspegel`. Nur der Abbruchpfad ruft `loeschen()` auf, und kein Test schließt zwei Versuche nacheinander erfolgreich ab.
+
+- [P1] Ändere lokalen Experimentzustand erst nach dem ACK — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/src/PluginProcessor.cpp:1793-1797
+  `sendePersistenzP0` bestätigt nur die Einreihung, nicht den Broker-ACK, dennoch wird Begin sofort lokal aktiv und werden Resultat beziehungsweise Abbruch sofort lokal geschlossen. Lehnt der Broker etwa wegen fehlender Resultatevidenz oder Revisionskonflikt ab, bleibt dort ein offener Versuch zurück, während das Plugin dessen ID verloren hat; `v3Antwort` wertet ACKs nur für Source-Kommandos aus und kein Test fährt diesen Plugin-zu-Broker-Fehlerpfad.
+
+- [P1] Rolle Nebenwirkungen abgelehnter Evidenz zurück — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/evidenz.rs:210-217
+  R07 bleibt bei einem Snapshot mit Epoch- oder Segmentwechsel offen: `invalidierung_aus_transportbruch` läuft bereits vor dem Evidence-Append und kann ältere Evidenz ausschließen sowie die Rücknahme persistieren und pushen. Scheitert danach der Snapshot-Append, entfernt dieser Rollback nur die neue Evidence-ID, sodass ein abgelehnter Snapshot dauerhafte Nebenwirkungen hinterlässt; der R07-Test verwendet nur einen ersten Snapshot ohne Transportbruch.
+
+- [P1] Isoliere den spekulativen Experiment-Rollback — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/experiment_verdrahtung.rs:279-282
+  R08 bleibt unter parallelen P0-Ingress-Threads offen: Jeder Befehl klont den gesamten globalen Experimentstore vor seinem Append, und ein später scheiternder Befehl ersetzt anschließend den gesamten Stand durch diese alte Kopie. Committen andere Sitzungen währenddessen erfolgreich, löscht dieser Rollback deren In-Memory-Wirkung trotz persistiertem Store; der Test ist seriell und injiziert keinen parallelen Append-Fehler, obwohl `AGENTS.md:48-52` gekoppelte Persistenzlebenszyklen verlangt.
+
+- [P1] Schließe verdrängten Taint in der Opfersitzung — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/experiment_verdrahtung.rs:407-407
+  R10 bleibt offen, sobald der Projekt- oder Globaldeckel einen Versuch aus einer anderen Session verdrängt: Diese Zeile schließt dessen Intervall mit der Session des neu beginnenden Versuchs, sodass der Taint des Opfers offen bleibt. Zudem gehört diese Taintmutation nicht zur geklonten Rückfallmenge und bleibt auch bei gescheitertem Append bestehen; `verdraengung_bekommt_ihr_eigenes_terminal` nutzt nur dieselbe Session und weder aktiven Taint noch einen Append-Fehler.
+
+- [P1] Stelle die Experiment-Ereignishistorie wieder her — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/experiment.rs:765-774
+  R12 bleibt offen, weil `wiederherstellen` das In-Memory-Log ausdrücklich leer lässt und `Coordinator::mit_store` keine `experiment_events` liest. Nach einem Neustart liefert `experiment_export(id)` deshalb eine leere Transitionhistorie trotz vorhandener Indexzeilen; der Restart-Test prüft nur `experiment_sicht`, nicht den Export, und verfehlt damit auch die Writer/Reader-Regel aus `AGENTS.md:51-52`.
+
+- [P1] Stelle die Evidenzreihenfolge beim Neustart wieder her — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/mod.rs:275-276
+  R12/R17 bleiben für einen offenen Versuch über Brokerneustart offen: Restaurierte Evidenz erhält `empfangsfolge = 0`, und hier startet auch der globale Zähler wieder bei 0, während persistierte Begin- und Kandidatengrenzen größere Werte behalten. Neue Resultatevidenz wird dadurch zunächst als Baseline eingeordnet oder verworfen; der vorhandene Restart-Test startet nur einen bereits terminalen Versuch neu und kann diesen Rechenpfad nicht prüfen.
+
+- [P1] Speichere die Reihenfolgebindung als eigene Transition — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/experiment_verdrahtung.rs:448-452
+  R13 bleibt gegenüber der V2-Regel offen: `neuer_kandidat` und `binde_reihenfolge` erzeugen intern zwei Transitionen, aber dieser Pfad emittiert nur einen Domänen-Event mit `ereignis = kandidat`. Der Writer kann daher keine eigene `reihenfolge`-Zeile in `experiment_events` anlegen; der Test erwartet nach Begin und Candidate gerade zwei statt der erforderlichen drei Zeilen und kann nicht fallen.
+
+- [P1] Gib Experimentterminalen einen eigenen Outbox-Schlüssel — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/experiment_verdrahtung.rs:506-510
+  R14 erfüllt die V3-Regel nicht, weil der terminale Domänen-Event weiterhin keine `snapshot_ziele` besitzt und nur ein späterer generischer `session_snapshot` mit gemeinsamem Object-Key zugestellt wird. Bei Offline-Zustellung oder nach mehr als 32 späteren Experimenten kann das Terminal aus dem gekappten Snapshot verschwinden; der R14-Test prüft nur den sofort erfolgreichen Push und erwartet sogar den generischen Key.
+
+- [P1] Nimm den ersten Snapshot nach dem Kandidaten auf — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/experiment_verdrahtung.rs:764-767
+  R17 hat einen Off-by-one-Fehler: Beim Kandidaten wird der aktuelle nächste Evidenzzähler N gespeichert, und der erste danach angenommene Snapshot erhält durch `fetch_add` ebenfalls N. Da nur `empfangsfolge > kandidat_folge` als Resultat gilt, wird dieser eindeutig nach dem Kandidaten eingegangene Snapshot verworfen; die Tests senden mehrere Resultatsnapshots und können den Ein-Snapshot-Fall nicht erkennen.
+
+- [P1] Vergleiche echte Kandidatenreferenzen und Quellensätze — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/experiment_verdrahtung.rs:976-979
+  R17/R18 bleiben offen, weil beide `Passagenbeleg`-Seiten künstlich denselben Passage-Fingerprint und den vollständigen eingefrorenen Quellensatz erhalten; `kandidat.referenz` und die tatsächlich je Hälfte vertretenen Quellen werden nicht gelesen. So können Baseline nur von Quelle A und Resultat nur von Quelle B oder ein Kandidat mit geändertem Upstream-Fingerprint als stark vergleichbar erscheinen; der Produkttest verwendet dieselbe Referenz und eine Quelle.
+
+- [P1] Nutze echte Loudness- und True-Peak-Guardrails — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/experiment_verdrahtung.rs:889-897
+  R19 ist fachlich nicht geschlossen: `guardrail_loudness_db` wird aus dem arithmetischen Mittel spektraler P50-dB-Werte und `guardrail_peak_db` aus dem höchsten gemittelten Band-P95 berechnet; weder Wert ist Loudness noch True Peak. Spektrale Umverteilung beziehungsweise ein Intersample-Überschwinger kann dadurch unentdeckt bleiben, während der Test lediglich alle Bänder gleichmäßig um 6 dB verschiebt und diese Ersatzgrößen nicht von den geforderten Metriken unterscheidet.
+
+- [P1] Lies Schutzbereiche statt das größte Delta umzudeuten — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/experiment_verdrahtung.rs:945-952
+  R19 ermittelt keinen deklarierten geschützten Bereich, sondern erklärt stets das Band mit dem größten absoluten Delta zum Ziel und schließt es aus dem Guardrail aus. Ist gerade die größte Bewegung eine unbeabsichtigte Verschlechterung in einem geschützten Band, wird genau dieser Fehler entschuldigt; weder Payload noch Test liefern den konkret adressierten Befund beziehungsweise die Schutzbereiche.
+
+- [P1] Befülle die Effektstabilität im Produktpfad — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/experiment_verdrahtung.rs:840-846
+  Der neue Resultatpfad befüllt nur `fenster_delta_db`, aber nie `erste_haelfte` und `zweite_haelfte`; deshalb liefert `Resultatmessung::achsen` für jedes reale Experiment `effekt_stabil = None`. Das regressiert den vorher vorhandenen Produktpfad und die geforderte Effektstabilitätsachse; die reinen Tests setzen beide Hälften manuell, während der Integrationstest dieses Feld nicht prüft.
+
+- [P1] Mache befehlsbedingte Invalidierungen crash-atomar — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/befehl.rs:667-672
+  R24 bleibt bei einem Crash zwischen Befehlscommit und Invalidierungsappend offen: Ein Retry von `preview_*` erhält `idempotent_wiederholt`, wodurch diese `angewandt`-Bedingung die Invalidierung dauerhaft überspringt. Der Materialwechsel nach `experiment_begin` hat denselben Post-Commit-Spalt in `experiment_verdrahtung.rs:321-336`; die Tests fahren nur den störungsfreien Erstaufruf, obwohl `AGENTS.md:48-52` gekoppelte Lebenszyklen gemeinsam verlangt.
+
+- [P2] Beende Markerinvalidierung bei project_sample_end — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/befehl.rs:631-636
+  R25 verlangt den exakten Bereich Begin bis Ende, aber bei positivem `tail_samples` erweitert dieser Pfad die Invalidierung über `project_sample_end` hinaus. Dadurch wird Evidenz nach dem gemeldeten Ende ausgeschlossen; `markerinvalidierung_trifft_genau_ihren_bereich` setzt `tail_samples` auf 0 und kann diese Abweichung nicht erkennen.
+
+- [P1] Lehne Invalidierungen bei gescheitertem Append ab — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/invalidierung_verdrahtung.rs:198-201
+  R28 bleibt bei Storefehler offen: `invalidierung_anwenden` hat die Evidenz bereits lokal ausgeschlossen, aber dieser Append-Fehler wird nur gezählt und über die `void`-Hilfsfunktion nicht an den Auslöser zurückgegeben. Ein Preview-Befehl bleibt damit erfolgreich bestätigt, obwohl weder haltbare Rücknahme noch Outbox oder Push existiert und ein Neustart die Evidenz wieder zulässt; der R28-Test verwendet nur einen erfolgreichen Store.
+
+- [P1] Spiele persistente Invalidierungsschulden erneut aus — C:/Users/phili/Projekte/Nakama/broker/src/store/handle.rs:301-307
+  R28 besitzt weiterhin keinen Produktleser für liegengebliebene Outbox-Schuld: `outbox_lesen` wird außerhalb der Tests nirgends aufgerufen, und Re-Subscribe liest nur die `session_snapshot`-Projektion. Scheitert der unmittelbare Push einer `evidence_invalidate`-Nachricht oder ist der Subscriber kurz getrennt, bleibt die Schuld dauerhaft stehen und die Rücknahme erreicht das Pluginmodell nie; der Test erzwingt einen sofort erfolgreichen Push.
+
+- [P1] Bilde Paarurteile nach jedem Evidenzentzug neu — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/liveness.rs:300-301
+  R29/R33 bleiben auf zwei Lebenszykluspfaden offen: `eviktiert` wird nur für Tombstone-Opfer gesetzt, sodass die Kapazitäts-Evictions aus `platz_schaffen_locked` zwar das Urteil entfernen, aber keine getrennte Hälfte neu bilden; auch `invalidierung_anwenden` stößt keine Neubildung an und lässt das alte volle Urteil stehen. Der R33-Test nutzt nur Tombstone-Eviction, während der R29-Test erst einen weiteren Snapshot einspeist und damit beide Lücken maskiert.
+
+- [P1] Persistiere Paarurteile als eigenes Domänenereignis — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/prepost_verdrahtung.rs:135-138
+  R32 endet weiterhin nur in der flüchtigen Map und gelangt anschließend beiläufig in einen generischen Session-Snapshot; es gibt weder eigenen `StoreEvent` noch eigene Projektion oder eigenen Outbox-Key. Ein Crash nach dem Evidence-Append und vor dem folgenden Heartbeat oder ein Neustart verliert das Urteil bis zu neuer Evidenz, während der R32-Test ausschließlich den sofortigen generischen Push prüft.

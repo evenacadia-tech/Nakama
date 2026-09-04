@@ -228,7 +228,15 @@ pub(super) struct Stand {
     pub(super) evidence_beeinflusst: u64,
     /// Die Urteile des PRE/POST-Joins, je `pair_id` (M-13/M-14, Befund B25).
     /// Gedeckelt wie jede andere Map hier (M-74).
-    pub(super) paarurteile: HashMap<String, super::prepost::Paarurteil>,
+    /// PRE/POST-Urteile, adressiert ueber (Sitzung, `pair_id`).
+    ///
+    /// 🔑 Nacharbeit 2 (Befund R31, M-13): die Map lag vorher an der `pair_id`
+    /// ALLEIN. Zwei FL-Instanzen, die dieselbe `pair_id` vergeben — und sie
+    /// kommt aus dem Deskriptor des Users, nicht aus einer globalen Vergabe —
+    /// teilten sich damit einen Eintrag: die PRE-Haelfte aus Sitzung A und die
+    /// POST-Haelfte aus Sitzung B bildeten ein Paar und mischten
+    /// Projektdaten. Die `pair_id` allein identifiziert kein Paar.
+    pub(super) paarurteile: HashMap<(SessionKey, String), super::prepost::Paarurteil>,
     /// Der Experimentteil des Stores (M-40 bis M-51, Befund B18).
     ///
     /// Er liegt IM `Stand` und nicht daneben: die Terminalereignisse muessen

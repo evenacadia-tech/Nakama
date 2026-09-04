@@ -39,6 +39,11 @@ pub const PAARURTEIL_DECKEL: usize = 64;
 /// Woraus eine Haelfte entsteht: die Historie EINER Quelle plus ihr
 /// Deskriptor. Beides liegt im Coordinator; dieses Modul liest nur.
 struct Halbzeug {
+    /// 🔑 Nacharbeit 2 (Befund R31, M-13): die SITZUNG gehoert zum Schluessel.
+    /// Ohne sie sammelte die Schleife Evidenz ALLER Sitzungen in eine Liste
+    /// und gruppierte nur ueber `pair_id` — eine PRE-Haelfte aus Sitzung A und
+    /// eine POST-Haelfte aus Sitzung B bildeten damit ein Paar.
+    session: SessionKey,
     pair_id: String,
     rolle: Rolle,
     haelfte: Paarhaelfte,
@@ -82,6 +87,7 @@ impl Coordinator {
                 };
                 let verbunden = client.current_link.is_some();
                 aus.push(Halbzeug {
+                    session: key.session(),
                     pair_id: pair_id.to_string(),
                     rolle,
                     haelfte: Self::haelfte_aus_historie(
@@ -99,18 +105,38 @@ impl Coordinator {
             return;
         }
 
-        let eingaben: Vec<(String, Rolle, Paarhaelfte)> = halbzeuge
-            .into_iter()
-            .map(|h| (h.pair_id, h.rolle, h.haelfte))
-            .collect();
-        // `bilde_paare` beurteilt selbst - es ist der EINE Weg von Haelften zu
-        // Urteilen, samt Paarkonflikt und fehlender Haelfte. Ihn hier
-        // nachzubauen waere eine zweite Wahrheit ueber dieselbe Frage.
-        let urteile = bilde_paare(&eingaben);
+        // 🔑 Nacharbeit 2 (Befund R31, M-13): erst nach SITZUNG gruppieren,
+        // dann `bilde_paare` je Sitzung. `bilde_paare` gruppiert selbst
+        // ausschliesslich ueber `pair_id`; bekaeme es die Haelften aller
+        // Sitzungen in einer Liste, koennte es die Sitzungsgrenze gar nicht
+        // sehen. Die Regel gehoert deshalb hierher, wo die Sitzung noch
+        // bekannt ist, und nicht in das reine Modul darunter.
+        let mut je_sitzung: std::collections::BTreeMap<
+            (String, String),
+            (SessionKey, Vec<(String, Rolle, Paarhaelfte)>),
+        > = std::collections::BTreeMap::new();
+        for h in halbzeuge {
+            let schluessel = (
+                h.session.project_binding_id.clone(),
+                h.session.session_epoch.clone(),
+            );
+            je_sitzung
+                .entry(schluessel)
+                .or_insert_with(|| (h.session.clone(), Vec::new()))
+                .1
+                .push((h.pair_id, h.rolle, h.haelfte));
+        }
 
         let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
-        for urteil in urteile {
-            stand.paarurteile.insert(urteil.pair_id.clone(), urteil);
+        for (_, (session, eingaben)) in je_sitzung {
+            // `bilde_paare` beurteilt selbst - es ist der EINE Weg von Haelften
+            // zu Urteilen, samt Paarkonflikt und fehlender Haelfte. Ihn hier
+            // nachzubauen waere eine zweite Wahrheit ueber dieselbe Frage.
+            for urteil in bilde_paare(&eingaben) {
+                stand
+                    .paarurteile
+                    .insert((session.clone(), urteil.pair_id.clone()), urteil);
+            }
         }
         // ⚠️ Der Deckel ist eine SPEICHERGRENZE, keine Auswahlregel: welches
         // Paar hier faellt, ist nicht bestimmt, und dieser Kommentar sagt das
@@ -208,14 +234,36 @@ impl Coordinator {
         }
     }
 
-    /// Das Urteil ueber ein Paar, wie der Produktpfad es gerechnet hat.
-    pub fn paarurteil(&self, pair_id: &str) -> Option<Paarurteil> {
-        self.stand
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
+    /// Das Urteil ueber ein Paar EINER Sitzung, ueber ihren Link adressiert.
+    ///
+    /// Das ist der genaue Weg: eine `pair_id` allein identifiziert kein Paar
+    /// (M-13). `paarurteil` daneben bleibt der bequeme Weg fuer den
+    /// Einzelsitzungsfall und sagt ausdruecklich nichts, wenn er mehrdeutig
+    /// waere.
+    pub fn paarurteil_fuer_link(&self, link_id: &str, pair_id: &str) -> Option<Paarurteil> {
+        let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+        let session = Self::session_des_links(&stand, link_id)?;
+        stand
             .paarurteile
-            .get(pair_id)
+            .get(&(session, pair_id.to_owned()))
             .cloned()
+    }
+
+    /// Das Urteil ueber ein Paar, wie der Produktpfad es gerechnet hat.
+    ///
+    /// ⚠️ Nur EINDEUTIG: fuehren zwei Sitzungen dieselbe `pair_id`, ist die
+    /// Frage falsch gestellt, und die Antwort ist `None` statt eine der beiden
+    /// zu waehlen (M-13, Befund R31). Wer die Sitzung kennt, nimmt
+    /// `paarurteil_fuer_link`.
+    pub fn paarurteil(&self, pair_id: &str) -> Option<Paarurteil> {
+        let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+        let mut treffer = stand
+            .paarurteile
+            .iter()
+            .filter(|((_, id), _)| id == pair_id)
+            .map(|(_, urteil)| urteil);
+        let erster = treffer.next()?;
+        treffer.next().is_none().then(|| erster.clone())
     }
 
     /// Wie viele Paare der Produktpfad zurzeit fuehrt.

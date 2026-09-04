@@ -51,8 +51,33 @@ impl Coordinator {
         let session_vorab = serde_json::from_value::<Adresse>(kopf.get("ziel")?.clone())
             .ok()
             .map(|a| ClientKey::aus_adresse(&a).session());
+        // 🔑 Nacharbeit 2 (Befund R09, E-03/M-48): die Vorpruefung findet ein
+        // Experiment ueber die GLOBALE `experiment_id`. Ohne den Vergleich mit
+        // der Projektbindung der ZIELSITZUNG konnte ein autorisiertes Main aus
+        // Projekt B mit der ID eines Versuchs aus Projekt A dessen Abbruch oder
+        // Resultat ausloesen — und Persistenz und Taintschliessung wurden
+        // danach sogar Projekt B zugeordnet. Ein Versuch gehoert seinem
+        // Projekt; ein fremdes ist ein Konflikt, keine Zustaendigkeit.
+        let fremdes_projekt = |stand: &Stand| -> bool {
+            let (Some(ziel), Some(e)) = (
+                session_vorab.as_ref(),
+                stand.experimente.experiment(&experiment_id),
+            ) else {
+                return false;
+            };
+            e.projektbindung != ziel.project_binding_id
+        };
         let ablehnung = {
             let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+            if fremdes_projekt(&stand) {
+                return Self::command_ack(
+                    command_id,
+                    "abgelehnt",
+                    base_revision,
+                    None,
+                    Some("revision_conflict"),
+                );
+            }
             match art {
                 "experiment_begin" => {
                     if stand.experimente.experiment(&experiment_id).is_some() {

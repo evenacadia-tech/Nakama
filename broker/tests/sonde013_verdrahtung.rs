@@ -1269,3 +1269,135 @@ fn invalidierung_projiziert_ihren_grund_in_die_evidenzzeilen() {
         "und der Wire-Snapshot darunter bleibt unangetastet"
     );
 }
+
+// ═════════════════════════════════════════════════════════════════════════
+// R09/R31 · Autorisierung und Isolation (Nacharbeit 2)
+// ═════════════════════════════════════════════════════════════════════════
+
+/// R31 — zwei Sitzungen mit DERSELBEN `pair_id` bilden kein gemeinsames Paar.
+///
+/// Die `pair_id` kommt aus dem Deskriptor des Users, nicht aus einer globalen
+/// Vergabe: zwei FL-Instanzen koennen dieselbe waehlen. Die Schleife sammelte
+/// bis hierher die Evidenz ALLER Sitzungen in eine Liste und gruppierte nur
+/// ueber `pair_id` — eine PRE-Haelfte aus Sitzung A und eine POST-Haelfte aus
+/// Sitzung B bildeten damit ein Paar und mischten Projektdaten. Der alte
+/// Produktpfadtest benutzte nur EINE Sitzung und konnte daran nicht fallen.
+#[test]
+fn paare_bleiben_in_ihrer_sitzung() {
+    use eqcop_broker::coordinator::prepost::Ausschlussgrund;
+    let (c, _) = coordinator();
+    let paar = hex(0x77);
+
+    // Sitzung A traegt NUR die PRE-Haelfte, Sitzung B nur die POST-Haelfte.
+    let a_pre = hello(1, 2, 10, 100, "passive_probe", Some(9));
+    let b_post = hello(1, 3, 11, 101, "passive_probe", Some(9));
+    anmelden(&c, "a_pre", &a_pre);
+    anmelden(&c, "b_post", &b_post);
+    assert!(c.descriptor_setzen("a_pre", descriptor(&a_pre.adresse, "pre", &paar)));
+    assert!(c.descriptor_setzen("b_post", descriptor(&b_post.adresse, "post", &paar)));
+    for nr in 0..8 {
+        c.evidence_snapshot_json("a_pre", &evidenz_payload(&a_pre.adresse, nr, |_| {}));
+        c.evidence_snapshot_json("b_post", &evidenz_payload(&b_post.adresse, nr, |_| {}));
+    }
+
+    // Beide Sitzungen fuehren ein EIGENES Urteil unter derselben `pair_id`.
+    assert_eq!(
+        c.paarurteile_anzahl(),
+        2,
+        "je Sitzung ein Urteil, nicht ein gemeinsames"
+    );
+    let a = c
+        .paarurteil_fuer_link("a_pre", &paar)
+        .expect("Sitzung A fuehrt ihr Paar");
+    let b = c
+        .paarurteil_fuer_link("b_post", &paar)
+        .expect("Sitzung B fuehrt ihr Paar");
+
+    // Und JEDES ist unvollstaendig: die andere Haelfte liegt in einer FREMDEN
+    // Sitzung und zaehlt nicht. Waeren sie zusammengefallen, staende hier ein
+    // vollstaendiges Paar aus zwei Projekten.
+    assert_eq!(
+        a.ausschluss,
+        Some(Ausschlussgrund::HaelfteFehlt),
+        "Sitzung A hat nur die PRE-Haelfte: {a:?}"
+    );
+    assert_eq!(
+        b.ausschluss,
+        Some(Ausschlussgrund::HaelfteFehlt),
+        "Sitzung B hat nur die POST-Haelfte: {b:?}"
+    );
+
+    // Die bequeme Abfrage ohne Sitzung sagt in diesem Fall NICHTS, statt eine
+    // der beiden zu waehlen.
+    assert!(
+        c.paarurteil(&paar).is_none(),
+        "eine pair_id allein identifiziert kein Paar (M-13)"
+    );
+}
+
+/// R09 — ein Experimentbefehl bleibt in seinem Projekt (E-03/M-48).
+///
+/// Die Vorpruefung fand ein Experiment ausschliesslich ueber die globale
+/// `experiment_id`. Ein autorisiertes Main aus Projekt B konnte damit den
+/// Versuch aus Projekt A abbrechen; Persistenz und Taintschliessung wurden
+/// danach sogar Projekt B zugeordnet. Alle Produkttests der Runde 1 benutzten
+/// nur EIN Projekt und konnten daran nicht fallen.
+#[cfg(windows)]
+#[test]
+fn experimentbefehl_bleibt_in_seinem_projekt() {
+    let versuch = 0xabe;
+    let a = HarnischMitStore::mit_projekt("projekt-a", 1);
+    let begin = experiment_begin_wert(&a.main.adresse, 0x910, versuch);
+    assert_eq!(a.p0(&begin)["ergebnis"], "angewandt", "Projekt A legt an");
+    assert!(a.c.experiment_sicht(&hex(versuch)).is_some());
+
+    // Ein ZWEITES Projekt, eigener Store, eigenes fuehrendes Main - und
+    // derselbe Versuch existiert dort nicht.
+    let b = HarnischMitStore::mit_projekt("projekt-b", 5);
+    assert!(
+        b.c.experiment_sicht(&hex(versuch)).is_none(),
+        "Projekt B kennt den Versuch nicht"
+    );
+
+    // Jetzt derselbe Versuch IM SELBEN Broker, aber aus dem fremden Projekt.
+    // Dafuer wird das zweite Projekt in dieselbe Coordinator-Instanz gelegt.
+    let fremd = {
+        let mut h = a.main.clone();
+        h.adresse.project_binding_id = hex(5);
+        h.adresse.session_epoch = hex(6);
+        h.adresse.instance_id = hex(0x30);
+        h.adresse.runtime_nonce = hex(0x31);
+        h
+    };
+    anmelden(&a.c, "fremd", &fremd);
+    report_main(&a.c, "fremd", &fremd.adresse);
+    assert!(a.c.state_report_json("fremd", &state_report_payload(&fremd.adresse, 0)));
+
+    let mut abbruch: Value = serde_json::from_slice(
+        &std::fs::read(
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../eq-copilot/fixtures/v3/gueltig/experiment_abort.json"),
+        )
+        .unwrap(),
+    )
+    .unwrap();
+    abbruch["kopf"]["ziel"] = serde_json::to_value(&fremd.adresse).unwrap();
+    abbruch["kopf"]["command_id"] = json!(hex(0x911));
+    abbruch["kopf"]["base_revision"] = json!(0);
+    abbruch["experiment_id"] = json!(hex(versuch));
+
+    let antwort = Senke::p0(&a.c, "fremd", &serde_json::to_vec(&abbruch).unwrap())
+        .expect("die Familie wird beantwortet");
+    let ack: Value = serde_json::from_slice(&antwort).unwrap();
+    assert_eq!(
+        ack["ergebnis"], "abgelehnt",
+        "ein fremdes Projekt darf den Versuch nicht anfassen: {ack}"
+    );
+    assert_eq!(ack["code"], "revision_conflict");
+    assert!(
+        a.c.experiment_sicht(&hex(versuch))
+            .expect("der Versuch steht noch")
+            .offen(),
+        "und er bleibt OFFEN - der fremde Abbruch hat nichts bewirkt"
+    );
+}

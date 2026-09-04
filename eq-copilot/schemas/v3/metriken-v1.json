@@ -1,0 +1,99 @@
+{
+  "$id": "evenacadia.nakama.metriken.v1",
+  "titel": "Versionierte Schwellen und Gewichte der Messmetriken (SONDE-013 M-06)",
+
+  "zweck": "Entwurf §34.3 woertlich: 'Zahlengewichte und Schwellen gehoeren in eine versionierte metrics_version und werden ueber Reliability-Diagramm, Brier Score und adversariale Goldens kalibriert.' Diese Datei IST diese Version. Sie steht neben dem Vertrag und nicht im Code, damit eine Kalibrierung ein sichtbarer Versionsschritt ist statt einer stillen Zeilenaenderung - genau das Risiko 5 aus SONDE-013 §5.3.",
+
+  "wie_das_greift": "pruefe_v3_vertrag.py (Kanon A5) liest die `inline constexpr`-Zeilen aus den Kernheadern und haelt sie gegen die Eintraege der aktuellen Fassung. Wer eine Schwelle im Code aendert, ohne hier zu editieren, faellt rot; wer beides aendert, ohne `aktuell` zu heben, faellt ebenfalls rot. Dasselbe Muster wie FELD-IDS.json fuer die FlatBuffers-Feld-IDs.",
+
+  "warum_nicht_im_schema": "Die Schwellen sind keine Wire-Form. Sie bestimmen, WAS ein Erzeuger meldet, nicht WIE es aussieht - ein Empfaenger prueft sie nie. Sie ins JSON-Schema zu schreiben hiesse, jeden Leser an eine Erzeugerkalibrierung zu binden.",
+
+  "handgeschrieben": true,
+  "quellen": [
+    "eq-copilot/plugin/core/analysis/FeatureEngine.h",
+    "eq-copilot/plugin/core/analysis/Konfidenz.h"
+  ],
+
+  "aktuell": 20260904,
+
+  "fassungen": {
+    "20260823": {
+      "seit": "SONDE-009",
+      "hinweis": "Erste Fassung. Ihre Schwellen sind nicht einzeln gefuehrt - die Datei entsteht erst mit SONDE-013, und eine rueckwirkende Liste waere eine Behauptung ueber einen Stand, den niemand mehr misst. Sie steht hier, damit die Reihenfolge der Versionen lueckenlos ist.",
+      "schwellen": {}
+    },
+    "20260904": {
+      "seit": "SONDE-013 (S20-22), Etappe C",
+      "hinweis": "Erste vollstaendig gefuehrte Fassung. Sie hebt die Version, weil dieses Ticket vier neue Schwellen einfuehrt UND eine bestehende Bedeutung aendert: psr_db rechnet seit hier gegen das True-Peak-Maximum des 3-s-Fensters statt gegen den Sample-Peak des 100-ms-Rahmens.",
+      "schwellen": {
+        "kPeakSteigungSchwelleDb": {
+          "wert": 12.0,
+          "einheit": "dB",
+          "datei": "eq-copilot/plugin/core/analysis/FeatureEngine.h",
+          "zweck": "M-86: ab welchem Anstieg des Rahmenpeaks gegenueber dem Vorrahmen der eigene Peakpfad des Ereignisdetektors ausloest. Ein Faktor 4 im Pegel; unter 6 dB liegt die normale Pegelschwankung zwischen zwei 100-ms-Rahmen."
+        },
+        "kPeakCrestSchwelleDb": {
+          "wert": 12.0,
+          "einheit": "dB",
+          "datei": "eq-copilot/plugin/core/analysis/FeatureEngine.h",
+          "zweck": "M-86: ab welchem Crest im Rahmen das Peak-Qualitaetsbit gilt. Dieselbe Zahl wie die Peaksteigung, aber eine andere Groesse - hier Peak gegen RMS INNERHALB eines Rahmens."
+        },
+        "kKohaerenzSchwellePhase": {
+          "wert": 0.8,
+          "einheit": "Kohaerenz in [0,1]",
+          "datei": "eq-copilot/plugin/core/analysis/FeatureEngine.h",
+          "zweck": "M-11: ab welcher Kohaerenz die Interchannel-Phase eines Bandes ueberhaupt ausgewertet wird (§40.1). Dieselbe Schwelle, die §38.3 fuer einen zulaessigen Transferwert nennt."
+        },
+        "kKonvergenzSpanneDb": {
+          "wert": 12.0,
+          "einheit": "dB",
+          "datei": "eq-copilot/plugin/core/analysis/FeatureEngine.h",
+          "zweck": "M-05: Spanne, ueber die aus der Medianabweichung der Bandhaelften eine Konvergenz in [0,1] wird."
+        },
+        "kKonfidenzAbdeckungStark": {
+          "wert": 0.8,
+          "einheit": "Abdeckung in [0,1]",
+          "datei": "eq-copilot/plugin/core/analysis/Konfidenz.h",
+          "zweck": "M-06: ab welcher gemessenen Signalabdeckung eine Aussage `stark` sein KANN, bevor die Deckel aus §34.3 greifen."
+        },
+        "kKonfidenzAbdeckungMittel": {
+          "wert": 0.5,
+          "einheit": "Abdeckung in [0,1]",
+          "datei": "eq-copilot/plugin/core/analysis/Konfidenz.h",
+          "zweck": "M-06: dieselbe Frage fuer `mittel`."
+        }
+      },
+      "ganzzahlige_schwellen": {
+        "kWelchMindestFrames": {
+          "wert": 8,
+          "einheit": "Welch-Frames",
+          "datei": "eq-copilot/plugin/core/analysis/FeatureEngine.h",
+          "zweck": "M-11: wie viele gueltige ueberlappende Welch-Frames ein Band mindestens braucht, damit seine Kohaerenz einen Wert bekommt (§40.1 woertlich 'mindestens acht'). Aus EINEM Frame ist die Magnitude-Squared Coherence identisch 1, auch fuer Rauschen."
+        },
+        "kKorrelationKurzFrames": {
+          "wert": 8,
+          "einheit": "Welch-Frames",
+          "datei": "eq-copilot/plugin/core/analysis/FeatureEngine.h",
+          "zweck": "M-11: Laenge des KURZEN Korrelationsfensters, zugleich das Fenster, ueber dem die Persistenz gezaehlt wird."
+        },
+        "kKonfidenzFensterStark": {
+          "wert": 8,
+          "einheit": "Analysefenster",
+          "datei": "eq-copilot/plugin/core/analysis/Konfidenz.h",
+          "zweck": "M-06: wie viele Analysefenster hinter der Verteilung stehen muessen, damit eine Aussage `stark` sein kann."
+        }
+      },
+      "nicht_gefuehrt": {
+        "hinweis": "NORMFESTE Zahlen und Ressourcengrenzen, keine kalibrierbaren Schwellen. Sie zu aendern waere kein Kalibrierungsschritt, sondern ein Bruch mit der Norm beziehungsweise eine Speicherentscheidung - beides gehoert nicht in eine Metrikversion. Der Riegel prueft deshalb nur die eine Richtung: jede GEFUEHRTE Schwelle steht mit ihrem Wert im Code. Eine Vollstaendigkeitspruefung zwaenge jede neue Konstante ins Register und machte die Unterscheidung wertlos.",
+        "werte": [
+          "kLraMindestSekunden = 60 (EBU Tech 3342 / Entwurf §39.1: 'rund 60 s geeignetes Material')",
+          "kLraAbsGateLufs = -70 (EBU Tech 3342, absolutes Gate)",
+          "kLraRelGateLu = -20 (EBU Tech 3342, relatives Gate der LRA - NICHT die -10 LU der integrierten Lautheit)",
+          "kLraHopZellen = 10 (EBU Tech 3342 §2.2: 1 s Hop der Kurzzeitfolge)",
+          "kEreignisPlaetze = 64, kVerteilungPlaetze = 64 (Ressourcengrenzen, §48.1 'feste Obergrenzen')",
+          "kWelchMindestFrames steht dagegen SEHR WOHL im Register: §40.1 nennt acht ausdruecklich als Startwert, nicht als Norm"
+        ]
+      }
+    }
+  }
+}

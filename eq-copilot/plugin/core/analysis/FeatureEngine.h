@@ -61,6 +61,7 @@
 #include "BandGrid.h"
 #include "Fft.h"
 #include "KGewichtung.h"
+#include "Konfidenz.h"
 #include "TruePeak.h"
 #include "../StampedAudioQueue.h"
 
@@ -617,7 +618,23 @@ struct FeatureFrame
 /** Versionierte Startwerte.  Aenderung nur ueber eine neue Zahl, nie still —
     dieselbe Regel wie `kMetricsVersion` in `AnalyseEngine`, nur maschinenlesbar,
     weil `table Frame` ein `uint` verlangt. */
-inline constexpr std::uint32_t kFeatureMetricsVersion = 20260823u;
+inline constexpr std::uint32_t kFeatureMetricsVersion = 20260904u;
+
+/*  ⚠️ WARUM DIE ZAHL MIT SONDE-013 STEIGT — und warum sie es MUSS.
+
+    Zwei Gruende, und beide waeren ohne diesen Schritt still:
+
+    1. Vier neue kalibrierbare Schwellen (Peaksteigung, Peakcrest,
+       Kohaerenzschwelle der Phase, die zwei Konfidenzgates).
+    2. `psrDb` rechnet seit diesem Ticket gegen das True-Peak-Maximum des
+       3-s-Fensters statt gegen den Sample-Peak des 100-ms-Rahmens. Dasselbe
+       Feld, dieselbe Feld-ID, ANDERE Bedeutung — ohne die Version haette ein
+       Empfaenger kein Mittel, die zwei Faelle zu unterscheiden.
+
+    Die Schwellen dieser Fassung stehen in
+    `eq-copilot/schemas/v3/metriken-v1.json`; **A5**
+    (`metrics_version_bindet_schwellen`) haelt Register und Code
+    gegeneinander und faellt, wenn eine Zahl ohne Versionsschritt wandert. */
 
 /** Wie viele Analysefenster hoechstens in P10/P50/P95 eines Bandes eingehen.
 

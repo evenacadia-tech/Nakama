@@ -501,12 +501,25 @@ void SondeProcessor::evidenzSnapshotSenden (const nakama::analyse::FeatureFrame&
     nakama::evidenz::Snapshotkopf kopf;
     kopf.evidenceId = uuidHex32();
     kopf.adresse    = v3Hello().adresse;
-    kopf.klasse     = ! frame.abdeckungGesetzt || frame.abdeckung <= 0.0f
-                        ? "unbrauchbar"
-                    : (frame.abdeckung < 0.5f || ! frame.konvergenzGesetzt
-                       || frame.konvergenz < 0.5f)
-                        ? "schwach"
-                        : "mittel";
+    // SONDE-013 M-06: die Gesamtklasse kommt aus der REGEL, nicht aus einer
+    // Kette von Sonderfaellen an dieser Stelle (§34.3, `Konfidenz.h`).
+    //
+    // Die erste Fassung stand hier als drei verschachtelte Bedingungen mit
+    // dem Literal "mittel" am Ende — und dieses "mittel" war der wichtigste
+    // Teil: eine Sonde kennt von den vier Mangelquellen aus §34.3 genau
+    // EINE, ihre eigene Coverage. Session, Passage und Alignment entstehen
+    // im Broker. Als Literal war das eine Behauptung an einer Stelle; jetzt
+    // folgt es aus den drei nicht gesetzten `…Bekannt`-Bits und laesst sich
+    // an der Regel selbst pruefen.
+    nakama::analyse::Konfidenzlage lage;
+    lage.coverageBekannt   = frame.abdeckungGesetzt;
+    lage.coverageHart      = frame.abdeckungGesetzt && frame.abdeckung < 0.5f;
+    lage.abdeckungGesetzt  = frame.abdeckungGesetzt;
+    lage.abdeckung         = frame.abdeckung;
+    lage.verteilungFenster = frame.evidenzFenster;
+    // sessionBekannt, passageBekannt und alignmentBekannt bleiben `false`:
+    // eine Sonde sieht diese drei nicht. Genau das deckelt sie auf `mittel`.
+    kopf.klasse = nakama::analyse::klasseName (nakama::analyse::gesamtklasse (lage));
 
     // SONDE-013 M-11: die bandweise Stereoevidenz kommt direkt aus der
     // Engine, nicht aus dem Frame. Sie reist nur, wenn ueberhaupt ein Band

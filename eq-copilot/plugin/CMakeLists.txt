@@ -776,6 +776,20 @@ target_link_libraries(EqCopSonde013DynamicsTest PRIVATE juce::juce_core Advapi32
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
 nakama_kern_anbinden(EqCopSonde013DynamicsTest)
 
+# ── S20-22/SONDE-013 M-06: die Gesamtklasse nach §34.3 (Kanon B20) ────────
+# Misst die Regel, nicht ein Beispiel: `gesamtklasse` ist constexpr mit acht
+# binaeren Eingaben, also laesst sich der Raum VOLLSTAENDIG abfahren. Die
+# Zusage aus §34.3 in ihrer scharfen Form lautet, dass ein zusaetzlicher
+# harter Mangel die Klasse NIE hebt - ein Mittelwert koennte das, ein Deckel
+# nicht. Braucht nur einen Header.
+juce_add_console_app(EqCopSonde013QualityClassTest PRODUCT_NAME "eqcop-sonde013qualityclasstest")
+target_sources(EqCopSonde013QualityClassTest PRIVATE tests/Sonde013QualityClassTest.cpp)
+target_compile_definitions(EqCopSonde013QualityClassTest PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
+target_link_libraries(EqCopSonde013QualityClassTest PRIVATE juce::juce_core Advapi32
+    PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+nakama_kern_anbinden(EqCopSonde013QualityClassTest)
+
 # ── S20-22/SONDE-013: bandweise Stereoevidenz (Kanon B19) ─────────────────
 # Misst die fuenf Klassen aus §40.3 gegen ihre ANALYTISCH bekannte Antwort:
 # Mono (Korrelation exakt 1), Polaritaet (-1 bei Kohaerenz 1), bekannte

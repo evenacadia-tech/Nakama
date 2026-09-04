@@ -3,7 +3,7 @@
 | Merkmal | Wert |
 |---|---|
 | Ticket | S20–22, `SONDE-013` (Phase P4–P5) |
-| Phase | **Etappe 2 — Bau, Etappe C läuft.** Etappen A und B stehen und sind mit einem sauberen Kanonlauf beglaubigt. Von Etappe C sind der erste Änderungssatz (Loudnessfenster, True Peak, Headroom, `integration_samples`) und aus dem zweiten der Peakpfad (M-86) sowie die bandweise Stereoevidenz (M-08, M-10, M-11, M-12) gebaut; die Qualitätsklasse (M-06) steht aus. Etappe 1 (Verhaltensmatrix) ist am 2026-09-04 nach Matrixprüfung 1, Nacharbeit 1, Wiederprüfung 1, Nacharbeit 2 und Wiederprüfung 2 (PASS) abgenommen; die Matrix in §3 ist ab hier die Spezifikation. Bauauftrag: `docs/beweise/roh/SONDE-013-etappe-2-auftrag.txt`, Bau-Verlauf in §10 |
+| Phase | **Etappe 2 — Bau, Etappe C läuft.** Etappen A und B stehen und sind mit einem sauberen Kanonlauf beglaubigt. **Etappe C ist vollständig gebaut** (M-01 bis M-04, M-06 bis M-12, M-74 bis M-77, M-86); der volle Kanon auf diesem Stand steht aus. Nächste Etappe ist **D — Interventions-Producer und NAK-47**. Etappe 1 (Verhaltensmatrix) ist am 2026-09-04 nach Matrixprüfung 1, Nacharbeit 1, Wiederprüfung 1, Nacharbeit 2 und Wiederprüfung 2 (PASS) abgenommen; die Matrix in §3 ist ab hier die Spezifikation. Bauauftrag: `docs/beweise/roh/SONDE-013-etappe-2-auftrag.txt`, Bau-Verlauf in §10 |
 | Urteil | **offen** — T1 setzt der Erbauer nach der letzten Bauetappe, T2 der Dirigent nach der Codex-Abnahme |
 | Prüfstufe | T1+T2 gefordert (`docs/bauaufteilung-sonden.md`:392). T1 ist das Selbstaudit des Erbauers am Ende der letzten Bauetappe, T2 setzt der Dirigent nach der Codex-Abnahme |
 | Basis-SHA | Etappe 1 begann auf `ed9bbf7fec951a061749abf143cb2158c1c4ee52`; **Etappe 2 baut ab `0fdbb4a09c75e2c93ab9b76e7fcf5d92d0ef17e4`** (Abschluss der Matrixetappe), beide mit `git rev-parse HEAD` gemessen |
@@ -14,7 +14,7 @@
 | Rundenbilanz Etappe 1 | `py -3.13 tools/dirigent/rundenbilanz.py --runden ed9bbf7 4a2f50a 367a0ea ca20f3a 6e8bebb`: Matrix `ed9bbf7..4a2f50a` Doku 2 Dateien +1019/−0; Entscheide `4a2f50a..367a0ea` Doku +51/−0; Nacharbeit 1 `367a0ea..ca20f3a` Doku 4 Dateien +533/−63; Nacharbeit 2 `ca20f3a..6e8bebb` Doku 4 Dateien +286/−17. Produkt und Tests 0 Zeilen in allen vier Runden — erwartet, weil Etappe 1 nach der Regel „Spezifikation vor Code" ausschließlich das Manifest schreibt; das Konvergenzsignal des Werkzeugs greift erst ab Etappe 2. |
 | Änderungssatz dieser Etappe | Erster Commit `4a2f50a` und Entscheidcommit `367a0ea`: dieses Manifest und `docs/beweise/roh/SONDE-013-etappe-1-auftrag.txt`. Nacharbeit 1: dieses Manifest sowie die drei Rohdateien `docs/beweise/roh/SONDE-013-matrixpruefung-1-auftrag.txt`, `docs/beweise/roh/SONDE-013-matrixpruefung-1-367a0ea.txt` und `docs/beweise/roh/SONDE-013-nacharbeit-1-auftrag.txt` unverändert. Nacharbeit 2: dieses Manifest sowie die drei Rohdateien `docs/beweise/roh/SONDE-013-wiederpruefung-1-auftrag.txt`, `docs/beweise/roh/SONDE-013-wiederpruefung-1-ca20f3a.txt` und `docs/beweise/roh/SONDE-013-nacharbeit-2-auftrag.txt` unverändert. Kein Produkt-, Test-, Schema-, Fixture- oder Werkzeugcode. |
 | Kanon nachher | **GRUEN 41/41 auf `5397680`, Arbeitsbaum sauber** — die Beglaubigung des Endstands der Etappen A und B. Rohausgabe `docs/beweise/roh/SONDE-013-5397680.md`; der Lauf davor auf `6334dc1` war ebenfalls GRUEN 41/41 und deckt alles ausser dem Selbstauditfix; 2 geplante Beine noch nicht gebaut (B6, B7 ab P6), 1 stillgelegtes (A15). Die Beinzahl wächst von 40 auf **41** (neu: **B16** `EqCopSonde013EventWireTest`) und sinkt um kein Bein. Der Weg dahin steht vollständig in §10: der erste Lauf auf `8d8fc96` war GRUEN 40/40, aber `-dirty` gestempelt; der zweite auf `fcaa55c` fiel an einer zeitabhängigen Zusage in B10; der dritte auf `8645529` fand drei echte Befunde dieser Etappe (Soak-Speicher, Kernobjektliste, Minor-Literale); der vierte auf `f701388` fand ein Datenrennen in der eigenen Nacharbeit. Alle vier sind behoben und einzeln belegt. |
-| Testanzahl | A5 461 Prüfungen · B3c 75 · B10 313 · B16 52 · B17 23 (neu) · B18 44 (neu) · B19 57 (neu) · B5 237 · Broker 203 Lib-Tests plus alle Integrationsbeine · JSON-Fixturekorpus 285 (75 gültig, 210 ungültig) · Binärkorpus 104 (20 gültig, 84 ungültig) · Envelope-Korpus 37. Alle Zahlen aus dem Lauf dieser Sitzung, nicht abgeschrieben. |
+| Testanzahl | A5 467 Prüfungen · B3c 75 · B10 313 · B16 52 · B17 23 (neu) · B18 44 (neu) · B19 57 (neu) · B20 24 (neu) · B5 237 · Broker 203 Lib-Tests plus alle Integrationsbeine · JSON-Fixturekorpus 285 (75 gültig, 210 ungültig) · Binärkorpus 104 (20 gültig, 84 ungültig) · Envelope-Korpus 37. Alle Zahlen aus dem Lauf dieser Sitzung, nicht abgeschrieben. |
 | Änderungssatz Etappe 2 | Fortlaufend in §10 je Bauetappe geführt: Commits, Beine, Rotbeweise, Abweichungen von §5 und Nebenbefunde. Die Beinzahl wächst mit Etappe C von 41 auf **43** (neu: **B17** `EqCopSonde013TruePeakGoldenTest`, **B18** `EqCopSonde013DynamicsTest`) und sinkt um kein Bein; der volle Kanon auf diesem Stand steht aus, weil Etappe C Schema-, Fixture- und Runnerdateien berührt (§5.1) und deshalb erst am Ende der ganzen Etappe beglaubigt wird. |
 | Grenze | Etappe 2 baut ausschließlich, was §3 zusagt. Prüfbereich sind die Ticketpfade aus §5.2; jede Datei außerhalb steht mit Begründung in §10. `docs/offene-punkte.md` und `docs/PLAN-STAND.md` bleiben unberührt — Nebenbefunde sammelt §10, der Dirigent zieht sie im Abschluss nach. |
 
@@ -460,7 +460,7 @@ Ein Testname mit **NEU** existiert noch nicht.
 | M-03 | Passage liegt vor; Headroomaussage wird gebildet | `PLR = Passage-True-Peak-Maximum minus LUFS-I`, `PSR(3 s) = True-Peak-Maximum desselben 3-s-Fensters minus LUFS-S`. Beide werden ausdrücklich als ergänzende Produktmetriken bezeichnet, nie als EBU-Qualitätsurteil. Headroom reist in dBTP und als Verteilung über die Passage, nicht als Einzelspitze. | **gemessen** (2026-09-04, Etappe C): **B18**::`plr_psr_definitions_and_labels` — PSR rechnet gegen das True-Peak-Maximum DESSELBEN 3-s-Fensters, gemessen an einem lauten Impuls mit zwei Sekunden Stille danach (33 dB Unterschied zur falschen Rechnung); **B18**::`headroom_is_distribution_not_single_peak` — zwei Signale mit gleichem P95 trennen sich um mehr als 10 dB im P50. Rotbeweise `docs/beweise/roh/SONDE-013-rot-M-03-psr.txt` und `-M-03-headroom.txt`. | Entwurf §39.1:2583-2586; §39.2:2610-2612. **BELEGT, gemessen** (Etappe C, 2026-09-04) — `psrDb` rechnet jetzt gegen das 3-s-True-Peak-Maximum; PLR entsteht im Sondenprozessor, weil LUFS-I dort zugemischt wird |
 | M-04 | Sonde misst; Dynamikaussage wird gebildet | Crest wird in **mehreren** Fenstern geführt, nicht nur als globales Maximum. LRA gilt erst nach mindestens rund 60 s geeignetem Material; davor ist der Wert ausdrücklich `nicht belastbar` und wird nicht numerisch vorgetäuscht. | **gemessen** (2026-09-04, Etappe C): **B18**::`crest_multiple_windows` (in impulsfreien Rahmen liegt der 3-s-Crest mehr als 10 dB über dem des 100-ms-Rahmens) und `lra_below_sixty_seconds_is_not_a_number` (nach 30 s kein Wert, nach 75 s 18,9 LU, ohne Dynamik 0,000 LU, nach 90 s Stille kein Wert). Rotbeweise `docs/beweise/roh/SONDE-013-rot-M-04-crest.txt` und `-M-04-lra.txt`. | Entwurf §39.1:2580-2587; §39.3:2617. **BELEGT, gemessen** (Etappe C, 2026-09-04) |
 | M-05 | Ereignisring hat Einträge; Evidenzsnapshot wird fällig | Diese Zeile ist **nur der Transport**. Der lokal **teilweise** gebaute `DynamicsEvent`-Strom reist als `evidence_snapshot.ereignisse`. Jedes Ereignis trägt Samplezeit, Stärke, Bandzentrum, Dauer und Qualität; die zwei Qualitätsbits trennen den SuperFlux-Flusspfad vom eigenständigen Peakpfad. Dass der Peakpfad heute überhaupt nicht auslöst, ist nicht diese Zeile, sondern **M-86**. Kadenz 1 bis 4 Hz; bei Überlast wird die Kadenz reduziert, nie der Ring stillschweigend geleert. Der Ring bleibt auf 64 Plätze gedeckelt und zählt seine Verluste. | **gemessen** (2026-09-04, Etappe B): **A5**::`evidence_snapshot_ereignisse_belegt`, `ereignisring_bleibt_bei_64_und_zaehlt_verluste`; **B16** `EqCopSonde013EventWireTest`::`events_travel_with_quality_and_loss_counter/alle_drei_reisen`, `…/beide_bits_getrennt`, `…/verlustzaehler`, `fremde_epoche_reist_nicht_und_wird_gezaehlt` sowie die Kadenzfälle; **A4** `coordinator_model`::`evidenzsnapshot_wird_angenommen_und_zusammengefasst`, `…_fremder_adresse_wird_verworfen`, `…_wird_bei_offener_intervention_gesperrt`, `…_der_fassung_2_faellt_bei_einem_leser_der_fassung_1`. Rotbeweise `docs/beweise/roh/SONDE-013-rot-M-05-verlust.txt`, `-M-05-verteilung.txt`, `-M-05-grenze.txt`, `-M-05-riegel.txt`. | Entwurf §39.1:2593-2600; §33.2:2041; `reservierte-nachrichten-v1.json` (Feldname für SONDE-013 verbrannt); `FeatureEngine.h`:290-313,448,1607-1650. **BELEGT, gemessen** (Etappe B, 2026-09-04) — Abgrenzung zu M-86 aus Nacharbeit 1 (§8, D6); der Peakpfad selbst bleibt M-86 in Etappe C |
-| M-06 | Beliebige Metrik verlässt die Sonde | Jede Metrik trägt eine Qualitätsklasse mit. Eine Gesamtklasse wird nicht aus einem Mittelwert gerettet: ein harter Mangel bei Session, Passage, Coverage oder Alignment begrenzt die Gesamtaussage. Gewichte und Schwellen leben in einer versionierten `metrics_version`, die im Frame bereits mitreist. | **NEU** `EqCopSonde013QualityClassTest`, Fall `hard_deficiency_caps_overall_class`; **NEU** **A5**-Fall `metrics_version_bindet_schwellen`. | Entwurf §34.3:2224-2237; `.fbs`:218 (`metrics_version` ID 2). **BELEGT, BAULÜCKE** |
+| M-06 | Beliebige Metrik verlässt die Sonde | Jede Metrik trägt eine Qualitätsklasse mit. Eine Gesamtklasse wird nicht aus einem Mittelwert gerettet: ein harter Mangel bei Session, Passage, Coverage oder Alignment begrenzt die Gesamtaussage. Gewichte und Schwellen leben in einer versionierten `metrics_version`, die im Frame bereits mitreist. | **gemessen** (2026-09-04, Etappe C): **B20** `EqCopSonde013QualityClassTest`::`hard_deficiency_caps_overall_class` — jeder der vier Mängel deckelt einzeln, zwei ergeben in allen zwölf Paarungen `unbrauchbar`, und die Zusage steht zusätzlich als INVARIANTE über 1536 Übergänge (alle 256 Bitkombinationen in drei Basislagen): kein zusätzlicher Mangel hebt je die Klasse. **A5**::`metrics_version_bindet_schwellen` (sechs Prüfungen) hält das Register `metriken-v1.json` gegen die `inline constexpr`-Zeilen der Kernheader. Rotbeweise `docs/beweise/roh/SONDE-013-rot-M-06-deckel.txt`, `-M-06-unbekannt.txt`, `-M-06-register.txt`. | Entwurf §34.3:2224-2237; `.fbs`:218 (`metrics_version` ID 2). **BELEGT, gemessen** (Etappe C, 2026-09-04) — `kFeatureMetricsVersion` steigt mit diesem Ticket auf 20260904, weil vier Schwellen neu sind und `psrDb` seine Bedeutung geändert hat |
 | M-07 | Beliebige Metrik; ein nicht endlicher Zwischenwert entsteht | Nichtendliches wird beim **Erzeugen** in Wert 0 mit `gueltig=false` übersetzt und gezählt, nie sanitisiert auf die Leitung gelassen. Ein NaN oder Inf im Frame ist ein Senderfehler und wird von beiden Lesern abgelehnt. Bei den Rahmenskalaren fehlt statt dessen das Präsenzbit. Der Zähler wird ausgewertet, nicht ignoriert. | **teilweise gemessen** (2026-09-04, Etappe C): bestehend **B3c** und **A10** für die Ablehnung, **B9** für `bloeckeNichtEndlich()`; **B18**::`non_finite_never_reaches_wire_for_new_metrics` misst die Erzeugerseite über alle neun Träger der Loudness-, Peak- und Headroomgruppe, und je ein A10-Negativfixture die Leiterseite (`lufs-m-`, `true-peak-db-`, `true-peak-passage-db-`, `plr-db-`, `lra-lu-`, `crest-kurz-db-nicht-endlich`, `headroom-p50-nicht-endlich`). Die STEREO-Metriken sind noch offen — sie kommen im zweiten Änderungssatz der Etappe C. Rotbeweise `docs/beweise/roh/SONDE-013-rot-M-07-cpp-leser.txt` und `-M-07-rust-leser.txt`. | `.fbs`:208-215; `quantisierung-v1.json`; `LoudnessAccumulator.h`:383; CLAUDE.md NaN-Ehrlichkeit. **BELEGT** für den heutigen Bestand, **BAULÜCKE** für jede neue Metrik |
 | M-08 | Monomaterial oder ein stiller Kanal; Stereometrik wird gebildet | Bei echtem Mono ist Korrelation exakt 1 und Breite 0; bei einem stillen Kanal fällt das Präsenzbit weg, statt 0 oder NaN zu senden. Der Mono-Folddown wird am **wirklich gefalteten** Puffer gemessen, nicht aus einem Korrelationsskalar geschätzt, und stimmt innerhalb 0,25 dB. Physischer Mono-Check ist `mono=(L+R)/2`, energienormiertes M/S ist `M=(L+R)/√2`, `S=(L−R)/√2` — die beiden werden nicht vermischt. | **gemessen** (2026-09-04, Etappe C): bestehend `FeatureEngine.h` für die Präsenzbits; **B19**::`mono_identity` (Korrelation exakt 1, Kohärenz 1, Phase 0, Folddown 0 dB), `silent_channel_has_no_bit` (das Kohärenzbit fällt weg statt 0 oder NaN zu senden) und `folddown_matches_real_buffer_within_0p25db` (gegen den im Test von Hand gefalteten Puffer, −3,010 gegen −3,010 dB); dazu der Polaritätsfall aus §40.3, in dem die Monosumme an die Vertragsgrenze läuft statt zu schweigen. Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-08-folddown.txt`. | Entwurf §40.1:2637-2652; §40.3:2666-2669; `FeatureEngine.h`:2008-2022. **BELEGT, gemessen** (Etappe C, 2026-09-04) |
 | M-09 | Epochengrenze liegt kurz zurück; nächster Rahmen wird fällig | Der Frame nennt, über wie viel Audio er integriert wurde. Ein Feld `integration_samples` im `FeatureFrame` **und** in `table Frame` (nächste freie Feld-ID 14) macht einen dünnen Frame erkennbar; der Empfänger entscheidet selbst, ob er ihn anzeigt. Ohne das Feld kann er heute „leise" nicht von „kurz gemessen" unterscheiden. Save/Load ist nicht betroffen, der Wire-Vertrag schon: neues Feld ⇒ `schema_minor`-Bump plus beidseitige Fixtures. | **gemessen**: Vertragsseite in Etappe A (**A10**::`integration-samples-id14`, **A9** Drift 0, **B3c**::`integration_samples_wird_von_beiden_lesern_klassifiziert`); Erzeugerseite in Etappe C (2026-09-04) durch **B18**::`thin_frame_after_boundary_is_recognisable` — der Rahmen im Dauerbetrieb trägt 5120 Samples, der erste nach einer Grenze mitten im Rahmen messbar weniger. Der Fall aus M-09 liegt in **B18** statt im dort genannten `EqCopSonde013MetricsEdgeTest`: er misst dieselbe Engine mit demselben Speiser wie die Nachbarfälle, und ein eigenes Bein für einen Fall wäre ein zusätzliches Kanonbein ohne zusätzliche Messung. Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-09.txt`. | NAK-47/NAK-68-Zitat §1.5; `docs/beweise/SONDE-009.md` §10.1; `.fbs`:216-239; `FELD-IDS.json`. **BELEGT, gemessen** (Vertrag Etappe A, Erzeuger Etappe C, 2026-09-04) |
@@ -2384,14 +2384,17 @@ zwischen richtiger und falscher Rechnung liegen 33 dB.
   dafür heute kein Mittel — `kFeatureMetricsVersion` steigt in diesem Ticket
   noch nicht. Wer es angeht: sie mit dem Abschluss von SONDE-013 anheben,
   gemeinsam mit den in M-06 und M-29 an sie gebundenen Schwellen.
+  **Geschlossen im zweiten Änderungssatz derselben Etappe (§10.4, M-06):**
+  `kFeatureMetricsVersion` steht auf 20260904, und das Register
+  `metriken-v1.json` führt die Schwellen dieser Fassung.
 
 ---
 
 ### 10.4 Etappe C — Metriken in der Sonde, zweiter Satz (2026-09-04)
 
-**Gebaute Matrixzeilen:** M-86 (eigenständiger Peakpfad im
-Ereignisdetektor) sowie M-08, M-10, M-11 und M-12 (bandweise Stereoevidenz).
-M-06 (Qualitätsklasse) steht noch aus.
+**Gebaute Matrixzeilen:** M-86 (eigenständiger Peakpfad), M-08, M-10, M-11
+und M-12 (bandweise Stereoevidenz) sowie M-06 (Gesamtklasse und
+Metrikregister). Damit ist Etappe C vollständig.
 
 #### M-86: der Detektor hatte nur einen Auslöser
 
@@ -2538,6 +2541,77 @@ die wichtigsten. Der Punkt steht unten als Nebenbefund.
 | Rotbeweis | Eingebauter Fehler | Fallendes Bein |
 |---|---|---|
 | `SONDE-013-rot-M-86.txt` | der Peakpfad löst nicht mehr aus — der Detektor fällt auf den Zustand vor M-86 zurück | B5 |
+
+#### M-06: die Gesamtklasse ist ein Deckel, kein Mittelwert
+
+§34.3 wörtlich: „Eine Gesamtklasse wird nicht aus einem schönen Mittelwert
+gerettet: ein harter Mangel bei Session, Passage, Coverage oder Alignment
+begrenzt die Gesamtaussage. Zahlengewichte und Schwellen gehören in eine
+versionierte `metrics_version`."
+
+Beide Hälften sind jetzt gebaut, und beide waren vorher nur an einer Stelle
+behauptet.
+
+**Die Regel.** `eq-copilot/plugin/core/analysis/Konfidenz.h` ist neu und
+header-only. Sie führt die vier Klassen als geordnetes `enum` — die Ordnung
+ist tragend, weil „deckeln" eine Minimumbildung ist und kein Mittelwert. Die
+`Konfidenzlage` trägt je Quelle **zwei** Bits, und ihr Unterschied ist der
+Kern: `…Bekannt` heißt „ich kann diese Quelle beurteilen", `…Hart` heißt „ich
+beurteile sie, und sie ist schlecht". Die beiden zusammenzulegen wäre genau
+der schöne Mittelwert — eine Sonde sähe drei ihrer vier Quellen als „kein
+Mangel" und meldete `stark`.
+
+Damit fällt auch ein Literal aus Etappe B: der Sondenprozessor hatte die
+Klasse als Kette von drei Bedingungen mit `"mittel"` am Ende gesetzt. Das
+`"mittel"` war der wichtigste Teil, und es steht jetzt nirgends mehr — es
+**folgt** aus den drei nicht gesetzten `…Bekannt`-Bits.
+
+**Das Register.** `eq-copilot/schemas/v3/metriken-v1.json` führt je
+`metrics_version` die kalibrierbaren Schwellen mit Wert, Einheit, Datei und
+Zweck. **A5** liest die `inline constexpr`-Zeilen der Kernheader und hält
+beide gegeneinander: wer eine Schwelle im Code ändert, ohne hier zu editieren,
+fällt rot. Das ist Risiko 5 aus §5.3, als Riegel statt als Warnung.
+
+Der Riegel prüft bewusst **eine** Richtung — jede geführte Schwelle steht mit
+ihrem Wert im Code, nicht umgekehrt. Der Kern führt auch Ressourcengrenzen
+(`kEreignisPlaetze`) und normfeste Zahlen (die drei LRA-Gates aus EBU
+Tech 3342), und beide sind keine kalibrierbaren Schwellen. Sie stehen im
+Register unter `nicht_gefuehrt` mit Begründung; eine
+Vollständigkeitsprüfung zwänge jede neue Konstante hinein und machte die
+Unterscheidung wertlos.
+
+**`kFeatureMetricsVersion` steigt von 20260823 auf 20260904.** Zwei Gründe,
+und beide wären ohne den Schritt still: vier neue kalibrierbare Schwellen, und
+`psrDb` hat seine **Bedeutung** geändert (3-s-True-Peak statt
+100-ms-Sample-Peak) bei gleicher Feld-ID. Damit ist der Nebenbefund aus §10.3
+geschlossen.
+
+#### Warum die Invariante und nicht fünf Beispiele
+
+`gesamtklasse` ist `constexpr` mit acht binären Eingaben — der Raum lässt sich
+**vollständig** abfahren. B20 fährt alle 256 Bitkombinationen in drei
+Basislagen und prüft die Zusage als Invariante: **in keinem der 1536 Übergänge
+hebt ein zusätzlicher harter Mangel die Klasse.** Ein Mittelwert könnte das
+(ein Mangel bei einer gering gewichteten Quelle zöge den Schnitt kaum), ein
+Deckel nicht. Wer die Regel je auf einen Score umstellt, fällt hier.
+
+Die Gegenprobe steht daneben: alle vier Klassen kommen im Raum wirklich vor.
+Ohne sie wäre „hebt nie" auch dann grün, wenn die Funktion konstant
+`unbrauchbar` lieferte.
+
+#### Belege
+
+| Bein | Ergebnis |
+|---|---|
+| **B20** `EqCopSonde013QualityClassTest` (NEU) | 24 bestanden, 0 gescheitert; 1536 Übergänge in der Invariante |
+| **A5** `pruefe_v3_vertrag.py` | 467 bestanden, 0 gescheitert (von 461) — sechs neue Prüfungen des Metrikregisters |
+
+| Rotbeweis | Eingebauter Fehler | Fallendes Bein |
+|---|---|---|
+| `SONDE-013-rot-M-06-deckel.txt` | ein einzelner harter Mangel deckelt nicht mehr — er wird gegen die guten Nachbarquellen verrechnet | B20 |
+| `SONDE-013-rot-M-06-unbekannt.txt` | was der Erzeuger nicht beurteilen kann, deckelt nicht mehr — eine Sonde meldete `stark` | B20 |
+| `SONDE-013-rot-M-06-register.txt` | eine Schwelle wandert im Code, ohne dass das Register mitzieht | A5 |
+
 
 #### Nebenbefunde für `docs/offene-punkte.md`
 

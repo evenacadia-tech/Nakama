@@ -1,0 +1,38 @@
+SONDE-013 Etappe 2 C - Rotbeweis M-06-register
+==============================================
+
+Datei:     eq-copilot\plugin\core\analysis\Konfidenz.h
+Ziel:      py -3.13 tools/eq-copilot/pruefe_v3_vertrag.py (Kanon A5)
+Warum:     Eine kalibrierbare Schwelle wandert im Code, ohne dass das
+           Register metriken-v1.json mitzieht. Genau das schliesst §34.3 aus
+           ("Zahlengewichte und Schwellen gehoeren in eine versionierte
+           metrics_version") und genau davor warnt Risiko 5 in §5.3: eine
+           spaetere Kalibrierung waere sonst ein stiller Bruch statt eines
+           Versionsschritts.
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+inline constexpr double kKonfidenzAbdeckungStark = 0.80;
+--- NEU ---
+inline constexpr double kKonfidenzAbdeckungStark = 0.75;
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+C:\Users\phili\Projekte\Nakama\tools\eq-copilot\pruefe_v3_vertrag.py:1632: DeprecationWarning: Accessing jsonschema.__version__ is deprecated and will be removed in a future release. Use importlib.metadata directly to query for jsonschema's version.
+  print(f"jsonschema {jsonschema.__version__} (draft 2020-12)")
+jsonschema 4.26.0 (draft 2020-12)
+72 Definitionen, 21 Nachrichtenfamilien, 285 Fixtures
+Pruefungen: 466 bestanden, 1 gescheitert
+  ROT: metrics_version_bindet_schwellen: und mit demselben Wert an derselben Stelle — kKonfidenzAbdeckungStark: Code 0.75, Register 0.8
+
+EXITCODE=2
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+C:\Users\phili\Projekte\Nakama\tools\eq-copilot\pruefe_v3_vertrag.py:1632: DeprecationWarning: Accessing jsonschema.__version__ is deprecated and will be removed in a future release. Use importlib.metadata directly to query for jsonschema's version.
+  print(f"jsonschema {jsonschema.__version__} (draft 2020-12)")
+jsonschema 4.26.0 (draft 2020-12)
+72 Definitionen, 21 Nachrichtenfamilien, 285 Fixtures
+Pruefungen: 467 bestanden, 0 gescheitert
+
+EXITCODE=0
+
+URTEIL: BELEGT (rot=2, gruen=0)

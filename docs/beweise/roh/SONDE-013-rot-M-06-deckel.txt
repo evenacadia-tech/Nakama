@@ -1,0 +1,102 @@
+SONDE-013 Etappe 2 C - Rotbeweis M-06-deckel
+=========================================
+
+Datei:     eq-copilot\plugin\core\analysis\Konfidenz.h
+Ziel:      EqCopSonde013QualityClassTest
+Warum:     Ein einzelner harter Mangel deckelt nicht mehr. §34.3 woertlich: 'ein harter Mangel bei Session, Passage, Coverage oder Alignment BEGRENZT die Gesamtaussage' - ohne den Deckel wird er gegen die drei guten Nachbarquellen verrechnet, also genau der 'schoene Mittelwert', den der Satz ausschliesst.
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+    if (harte == 1)
+--- NEU ---
+    if (harte == 99)
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+== Nakama SONDE-013 M-06 - Gesamtklasse nach §34.3 ==
+
+== Die vier Klassen sind geordnet - `deckeln` ist ein Minimum ==
+[ok]   unbrauchbar < schwach < mittel < stark
+[ok]   und ihre Namen sind genau die vier des Vertrags (Â§defs/konfidenz)
+
+== M-06  hard_deficiency_caps_overall_class ==
+[ok]   eine Lage ohne jeden Mangel und mit voller Abdeckung ist `stark` - sonst koennte der Test unten nichts zeigen  [stark]
+[ROT]  ein harter Mangel bei Session deckelt auf `schwach` - er wird NICHT gegen die drei guten Nachbarquellen verrechnet  [stark]
+[ROT]  ein harter Mangel bei Passage deckelt auf `schwach` - er wird NICHT gegen die drei guten Nachbarquellen verrechnet  [stark]
+[ROT]  ein harter Mangel bei Coverage deckelt auf `schwach` - er wird NICHT gegen die drei guten Nachbarquellen verrechnet  [stark]
+[ROT]  ein harter Mangel bei Alignment deckelt auf `schwach` - er wird NICHT gegen die drei guten Nachbarquellen verrechnet  [stark]
+[ok]   zwei harte Maengel ergeben `unbrauchbar` - in ALLEN zwoelf Paarungen
+
+== M-06  was nicht beurteilbar ist, deckelt auf `mittel` ==
+[ok]   wer Session nicht beurteilen kann, kommt hoechstens auf `mittel`  [mittel]
+[ok]   wer Passage nicht beurteilen kann, kommt hoechstens auf `mittel`  [mittel]
+[ok]   wer Coverage nicht beurteilen kann, kommt hoechstens auf `mittel`  [mittel]
+[ok]   wer Alignment nicht beurteilen kann, kommt hoechstens auf `mittel`  [mittel]
+[ok]   eine Sonde mit PERFEKTER Abdeckung kommt trotzdem nur auf `mittel` - sie sieht Session, Passage und Alignment nicht, und `stark` waere eine Aussage ueber drei Dinge, die sie nicht kennt  [mittel]
+
+== M-06  die Basis kommt aus der gemessenen Abdeckung ==
+[ok]   ohne Abdeckungsbit ist die Aussage `unbrauchbar` - nicht weil nichts da waere, sondern weil niemand weiss, ob etwas da war  [unbrauchbar]
+[ok]   und bei Abdeckung 0 ebenfalls
+[ok]   Abdeckung 0.80 (genau an der Starkschwelle) ergibt `stark`  [stark]
+[ok]   Abdeckung 0.79 (knapp darunter) ergibt `mittel`  [mittel]
+[ok]   Abdeckung 0.50 (genau an der Mittelschwelle) ergibt `mittel`  [mittel]
+[ok]   Abdeckung 0.49 (knapp darunter) ergibt `schwach`  [schwach]
+
+== M-06  eine duenne Verteilung traegt keine starke Aussage ==
+[ok]   unter der Fensterschwelle ist hoechstens `mittel` moeglich, auch bei voller Abdeckung und ohne jeden Mangel  [mittel]
+[ok]   genau an der Schwelle ist `stark` wieder moeglich - die Grenze faellt am richtigen Punkt (Muster C-09)  [stark]
+
+== M-06  Invariante: ein zusaetzlicher Mangel hebt die Klasse NIE ==
+[ok]   der Raum ist wirklich abgefahren - alle 256 Bitkombinationen in drei Basislagen  [1536 Uebergaenge]
+[ok]   und in KEINEM davon hebt ein zusaetzlicher harter Mangel die Klasse. Das ist Â§34.3 als Invariante statt als Beispiel - ein Mittelwert koennte diese Zusage nicht halten  [0 Verletzungen]
+[ok]   und alle VIER Klassen kommen im Raum wirklich vor - die Invariante ist nicht dadurch erfuellt, dass die Funktion immer dasselbe liefert  [4 von 4]
+
+-----------------------------------------
+20 bestanden, 4 gescheitert
+
+EXITCODE=1
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+== Nakama SONDE-013 M-06 - Gesamtklasse nach §34.3 ==
+
+== Die vier Klassen sind geordnet - `deckeln` ist ein Minimum ==
+[ok]   unbrauchbar < schwach < mittel < stark
+[ok]   und ihre Namen sind genau die vier des Vertrags (Â§defs/konfidenz)
+
+== M-06  hard_deficiency_caps_overall_class ==
+[ok]   eine Lage ohne jeden Mangel und mit voller Abdeckung ist `stark` - sonst koennte der Test unten nichts zeigen  [stark]
+[ok]   ein harter Mangel bei Session deckelt auf `schwach` - er wird NICHT gegen die drei guten Nachbarquellen verrechnet  [schwach]
+[ok]   ein harter Mangel bei Passage deckelt auf `schwach` - er wird NICHT gegen die drei guten Nachbarquellen verrechnet  [schwach]
+[ok]   ein harter Mangel bei Coverage deckelt auf `schwach` - er wird NICHT gegen die drei guten Nachbarquellen verrechnet  [schwach]
+[ok]   ein harter Mangel bei Alignment deckelt auf `schwach` - er wird NICHT gegen die drei guten Nachbarquellen verrechnet  [schwach]
+[ok]   zwei harte Maengel ergeben `unbrauchbar` - in ALLEN zwoelf Paarungen
+
+== M-06  was nicht beurteilbar ist, deckelt auf `mittel` ==
+[ok]   wer Session nicht beurteilen kann, kommt hoechstens auf `mittel`  [mittel]
+[ok]   wer Passage nicht beurteilen kann, kommt hoechstens auf `mittel`  [mittel]
+[ok]   wer Coverage nicht beurteilen kann, kommt hoechstens auf `mittel`  [mittel]
+[ok]   wer Alignment nicht beurteilen kann, kommt hoechstens auf `mittel`  [mittel]
+[ok]   eine Sonde mit PERFEKTER Abdeckung kommt trotzdem nur auf `mittel` - sie sieht Session, Passage und Alignment nicht, und `stark` waere eine Aussage ueber drei Dinge, die sie nicht kennt  [mittel]
+
+== M-06  die Basis kommt aus der gemessenen Abdeckung ==
+[ok]   ohne Abdeckungsbit ist die Aussage `unbrauchbar` - nicht weil nichts da waere, sondern weil niemand weiss, ob etwas da war  [unbrauchbar]
+[ok]   und bei Abdeckung 0 ebenfalls
+[ok]   Abdeckung 0.80 (genau an der Starkschwelle) ergibt `stark`  [stark]
+[ok]   Abdeckung 0.79 (knapp darunter) ergibt `mittel`  [mittel]
+[ok]   Abdeckung 0.50 (genau an der Mittelschwelle) ergibt `mittel`  [mittel]
+[ok]   Abdeckung 0.49 (knapp darunter) ergibt `schwach`  [schwach]
+
+== M-06  eine duenne Verteilung traegt keine starke Aussage ==
+[ok]   unter der Fensterschwelle ist hoechstens `mittel` moeglich, auch bei voller Abdeckung und ohne jeden Mangel  [mittel]
+[ok]   genau an der Schwelle ist `stark` wieder moeglich - die Grenze faellt am richtigen Punkt (Muster C-09)  [stark]
+
+== M-06  Invariante: ein zusaetzlicher Mangel hebt die Klasse NIE ==
+[ok]   der Raum ist wirklich abgefahren - alle 256 Bitkombinationen in drei Basislagen  [1536 Uebergaenge]
+[ok]   und in KEINEM davon hebt ein zusaetzlicher harter Mangel die Klasse. Das ist Â§34.3 als Invariante statt als Beispiel - ein Mittelwert koennte diese Zusage nicht halten  [0 Verletzungen]
+[ok]   und alle VIER Klassen kommen im Raum wirklich vor - die Invariante ist nicht dadurch erfuellt, dass die Funktion immer dasselbe liefert  [4 von 4]
+
+-----------------------------------------
+24 bestanden, 0 gescheitert
+
+EXITCODE=0
+
+URTEIL: BELEGT (rot=1, gruen=0)

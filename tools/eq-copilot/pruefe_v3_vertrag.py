@@ -36,6 +36,7 @@ import copy
 import json
 import math
 import pathlib
+import re
 import sys
 
 try:
@@ -48,6 +49,7 @@ WURZEL = pathlib.Path(__file__).resolve().parents[2]
 SCHEMA = WURZEL / "eq-copilot" / "schemas" / "v3" / "eq-ipc-v3.schema.json"
 RESERVIERT = WURZEL / "eq-copilot" / "schemas" / "v3" / "reservierte-nachrichten-v1.json"
 QUANTISIERUNG = WURZEL / "eq-copilot" / "schemas" / "v3" / "quantisierung-v1.json"
+METRIKEN = WURZEL / "eq-copilot" / "schemas" / "v3" / "metriken-v1.json"
 FIXTURES = WURZEL / "eq-copilot" / "fixtures" / "v3"
 MAX_DOKUMENT_BYTES = 16 * 1024 * 1024
 
@@ -1509,6 +1511,104 @@ def abdeckung(schema: dict, manifest: dict) -> tuple[list[str], dict[str, tuple[
 
 # ------------------------------------------------------------------ Hauptlauf
 
+def _konstanten_aus_kern(dateien: list[pathlib.Path]) -> dict[str, tuple[str, str]]:
+    """Liest jede `inline constexpr`-Zeile der genannten Kernheader.
+
+    Rueckgabe: Name -> (Rohwert als Text, Dateiname). Der Wert bleibt TEXT und
+    wird erst beim Vergleich gedeutet: `12.0` und `12` sind in C++ dasselbe,
+    in JSON aber nicht, und ein Vergleich ueber `float()` waere gegenueber
+    einem vertippten `1.20` blind.
+    """
+    muster = re.compile(
+        r"^inline\s+constexpr\s+(?:std::)?\w+\s+(k\w+)\s*=\s*([^;]+);", re.MULTILINE)
+    aus: dict[str, tuple[str, str]] = {}
+    for datei in dateien:
+        if not datei.exists():
+            continue
+        for name, wert in muster.findall(datei.read_text(encoding="utf-8")):
+            aus[name] = (wert.strip().rstrip("uf"), datei.name)
+    return aus
+
+
+def pruefe_metrikregister(lauf: Lauf) -> None:
+    """SONDE-013 M-06: die Schwellen haengen an einer `metrics_version`.
+
+    Entwurf §34.3 woertlich: "Zahlengewichte und Schwellen gehoeren in eine
+    versionierte `metrics_version`". Das ist keine Doku-Zusage, sondern eine
+    ueber die Kalibrierbarkeit: wer eine Schwelle aendert, ohne die Version
+    zu heben, macht aus einer spaeteren Kalibrierung einen stillen Bruch
+    statt eines Versionsschritts (SONDE-013 §5.3, Risiko 5).
+
+    Der Riegel greift in beide Richtungen:
+
+    - jede im Register gefuehrte Schwelle steht mit GENAU DIESEM Wert im Code;
+    - die im Code benutzte `kFeatureMetricsVersion` ist die `aktuell` des
+      Registers.
+
+    Was er NICHT prueft: dass jede Codekonstante im Register steht. Der Kern
+    fuehrt Ressourcengrenzen (`kEreignisPlaetze`, `kVerteilungPlaetze`) und
+    normfeste Zahlen (die drei LRA-Gates aus EBU Tech 3342), und beide sind
+    ausdruecklich KEINE kalibrierbaren Schwellen — sie stehen im Register
+    unter `nicht_gefuehrt` mit Begruendung. Eine Vollstaendigkeitspruefung
+    zwaenge jede neue Konstante ins Register und machte die Unterscheidung
+    wertlos.
+    """
+    if not METRIKEN.exists():
+        lauf.wahr("metrics_version_bindet_schwellen: Register vorhanden", False,
+                  f"{METRIKEN} fehlt")
+        return
+    register = json_laden_strikt(METRIKEN.read_text(encoding="utf-8"))
+
+    kern = WURZEL / "eq-copilot/plugin/core/analysis"
+    konstanten = _konstanten_aus_kern([
+        kern / "FeatureEngine.h",
+        kern / "Konfidenz.h",
+    ])
+    lauf.wahr("metrics_version_bindet_schwellen: Kernkonstanten lesbar",
+              len(konstanten) > 5, f"{len(konstanten)} gefunden")
+
+    aktuell = str(register.get("aktuell", ""))
+    fassungen = register.get("fassungen", {})
+    lauf.wahr("metrics_version_bindet_schwellen: `aktuell` hat einen Eintrag",
+              aktuell in fassungen, aktuell)
+
+    # Die Version im Code IST die des Registers.
+    code_version = konstanten.get("kFeatureMetricsVersion", ("", ""))[0]
+    lauf.wahr("metrics_version_bindet_schwellen: Code und Register nennen dieselbe Version",
+              code_version == aktuell,
+              f"Code {code_version!r}, Register {aktuell!r}")
+
+    eintrag = fassungen.get(aktuell, {})
+    fehlend, abweichend = [], []
+    gefuehrt = 0
+    for block, ganzzahlig in (("schwellen", False), ("ganzzahlige_schwellen", True)):
+        for name, feld in eintrag.get(block, {}).items():
+            gefuehrt += 1
+            if name not in konstanten:
+                fehlend.append(name)
+                continue
+            roh = konstanten[name][0]
+            soll = feld.get("wert")
+            try:
+                passt = (int(roh) == int(soll)) if ganzzahlig else (float(roh) == float(soll))
+            except ValueError:
+                passt = False
+            if not passt:
+                abweichend.append(f"{name}: Code {roh}, Register {soll}")
+            # Die Datei muss ebenfalls stimmen - sonst zeigte das Register auf
+            # eine Stelle, an der die Zahl gar nicht steht.
+            elif not feld.get("datei", "").endswith(konstanten[name][1]):
+                abweichend.append(f"{name}: Register nennt {feld.get('datei')!r}, "
+                                  f"gefunden in {konstanten[name][1]}")
+
+    lauf.wahr("metrics_version_bindet_schwellen: die Fassung fuehrt Schwellen",
+              gefuehrt >= 8, f"{gefuehrt} Eintraege")
+    lauf.wahr("metrics_version_bindet_schwellen: jede gefuehrte Schwelle steht im Code",
+              not fehlend, ", ".join(fehlend))
+    lauf.wahr("metrics_version_bindet_schwellen: und mit demselben Wert an derselben Stelle",
+              not abweichend, "; ".join(abweichend))
+
+
 def main(argv: list[str]) -> int:
     schema = json_laden_strikt(SCHEMA.read_text(encoding="utf-8"))
     reserviert = json_laden_strikt(RESERVIERT.read_text(encoding="utf-8"))
@@ -1527,6 +1627,7 @@ def main(argv: list[str]) -> int:
     pruefe_bandkodierung(lauf, schema, quantisierung)
     pruefe_command_ack(lauf, schema)
     pruefe_fixtures(lauf, schema, manifest)
+    pruefe_metrikregister(lauf)
 
     print(f"jsonschema {jsonschema.__version__} (draft 2020-12)")
     print(f"{len(schema['$defs'])} Definitionen, {len(schema['oneOf'])} Nachrichtenfamilien, "

@@ -1,0 +1,104 @@
+SONDE-013 Etappe 2 E - Rotbeweis M-41
+=========================================
+
+Datei:     broker/src/coordinator/experiment.rs
+Ziel:      sonde013_experiment.rs (Kanon A4)
+Warum:     Eine erneute Aenderung ueberschreibt die Baseline, statt einen neuen Kandidaten anzulegen. M-41 verbietet genau das - und der Fehler sieht wie eine Vereinfachung aus, weil er die Datenstruktur kleiner macht.
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+        let nummer = e.kandidaten.len() as u32 + 1;
+        e.kandidaten.push(Kandidat { nummer, referenz });
+--- NEU ---
+        let nummer = e.kandidaten.len() as u32 + 1;
+        e.baseline = referenz.clone();
+        e.kandidaten.push(Kandidat { nummer, referenz });
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+running 18 tests
+test four_axes_are_reported_separately ... ok
+test gate6_incomparable_never_gets_a_strong_winner ... ok
+test lower_reproducibility_class_is_explicit ... ok
+test manual_result_writes_terminal_event_and_deltas ... ok
+test manual_external_begin_locks_baseline ... ok
+test abort_writes_terminal_event_for_each_trigger ... ok
+test blind_order_is_bound_before_the_verdict_and_revealed_after ... ok
+test manual_external_has_no_state_hash_and_no_revert ... ok
+test export_is_complete_and_delete_leaves_no_pcm ... ok
+test experiment_survives_restart_without_silent_continuation ... FAILED
+test match_gain_is_frozen_in_the_immutable_reference ... FAILED
+test passage_carries_all_six_fields ... ok
+test open_cap_per_project_at_n_and_n_plus_one ... ok
+test passage_survives_restart_and_missing_db_degrades_gracefully ... ok
+test second_change_creates_new_candidate_not_a_new_baseline ... FAILED
+test verdict_vocabulary_is_closed_and_keep_needs_user ... ok
+test open_cap_global_at_n_and_n_plus_one ... ok
+test block_bootstrap_und_fdr_halten_ihre_zusagen ... ok
+
+failures:
+
+---- experiment_survives_restart_without_silent_continuation stdout ----
+
+thread 'experiment_survives_restart_without_silent_continuation' (10104) panicked at tests\sonde013_experiment.rs:701:5:
+assertion `left == right` failed
+  left: -1.0
+ right: -2.5
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- match_gain_is_frozen_in_the_immutable_reference stdout ----
+
+thread 'match_gain_is_frozen_in_the_immutable_reference' (20808) panicked at tests\sonde013_experiment.rs:257:5:
+assertion `left == right` failed
+  left: -1.75
+ right: -2.5
+
+---- second_change_creates_new_candidate_not_a_new_baseline stdout ----
+
+thread 'second_change_creates_new_candidate_not_a_new_baseline' (17920) panicked at tests\sonde013_experiment.rs:177:5:
+assertion `left == right` failed: die Baseline bleibt unberuehrt
+  left: Experimentreferenz { passage_fingerprint: Fingerprintwerte { version: 1, band_energie: [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36], chroma: [15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26], onset: [35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66] }, upstream_fingerprint: Fingerprintwerte { version: 1, band_energie: [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40], chroma: [27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38], onset: [63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94] }, aktive_quellen: ["0000000000000000000000000000000b", "0000000000000000000000000000000c"], messpunktklassen: ["pre", "post"], match_gain_db: -0.5, alignment: FeatureAligned }
+ right: Experimentreferenz { passage_fingerprint: Fingerprintwerte { version: 1, band_energie: [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36], chroma: [15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26], onset: [35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66] }, upstream_fingerprint: Fingerprintwerte { version: 1, band_energie: [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40], chroma: [27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38], onset: [63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94] }, aktive_quellen: ["0000000000000000000000000000000b", "0000000000000000000000000000000c"], messpunktklassen: ["pre", "post"], match_gain_db: -2.5, alignment: FeatureAligned }
+
+
+failures:
+    experiment_survives_restart_without_silent_continuation
+    match_gain_is_frozen_in_the_immutable_reference
+    second_change_creates_new_candidate_not_a_new_baseline
+
+test result: FAILED. 15 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.18s
+     Running tests\sonde013_experiment.rs (target\debug\deps\sonde013_experiment-994d32cd62e1b354.exe)
+error: test failed, to rerun pass `--test sonde013_experiment`
+
+Exitcode: 101  ->  ROT (gut)
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+running 18 tests
+test four_axes_are_reported_separately ... ok
+test lower_reproducibility_class_is_explicit ... ok
+test experiment_survives_restart_without_silent_continuation ... ok
+test gate6_incomparable_never_gets_a_strong_winner ... ok
+test abort_writes_terminal_event_for_each_trigger ... ok
+test manual_result_writes_terminal_event_and_deltas ... ok
+test manual_external_has_no_state_hash_and_no_revert ... ok
+test export_is_complete_and_delete_leaves_no_pcm ... ok
+test blind_order_is_bound_before_the_verdict_and_revealed_after ... ok
+test manual_external_begin_locks_baseline ... ok
+test match_gain_is_frozen_in_the_immutable_reference ... ok
+test open_cap_per_project_at_n_and_n_plus_one ... ok
+test passage_carries_all_six_fields ... ok
+test passage_survives_restart_and_missing_db_degrades_gracefully ... ok
+test second_change_creates_new_candidate_not_a_new_baseline ... ok
+test verdict_vocabulary_is_closed_and_keep_needs_user ... ok
+test open_cap_global_at_n_and_n_plus_one ... ok
+test block_bootstrap_und_fdr_halten_ihre_zusagen ... ok
+
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.37s
+     Running tests\sonde013_experiment.rs (target\debug\deps\sonde013_experiment-994d32cd62e1b354.exe)
+
+Exitcode: 0  ->  GRUEN (gut)

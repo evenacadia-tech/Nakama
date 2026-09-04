@@ -1,0 +1,108 @@
+SONDE-013 Etappe 2 E - Rotbeweis M-44-ui
+=========================================
+
+Datei:     eq-copilot/plugin/core/analysis/Blindvergleich.h
+Ziel:      EqCopSonde013ExperimentUiTest (Kanon B26)
+Warum:     Die Gen-Seite gibt die Blindreihenfolge schon vor dem Urteil heraus. Der Typ ist genau dafuer gebaut, dass es keinen Weg daran vorbei gibt: eine UI, die sie kennt und sich nur verpflichtet, sie nicht zu zeigen, ist kein Blindvergleich - ein Tooltip, ein Debugausdruck oder eine spaetere Sortierung reichen, und niemand merkt es.
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+        if (! hatUrteil || ! gebunden)
+            return false;
+--- NEU ---
+        if (! gebunden)
+            return false;
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+== Nakama SONDE-013 - die zwei Kanten des Blindvergleichs (§43.1) ==
+
+== M-43  no_sound_verdict_before_loudness_match ==
+[ok]   frisch: kein Abgleich, kein Urteil
+[ok]   und die Sperre nennt genau diesen Grund  [ohne Lautheitsabgleich]
+[ok]   die Reihenfolge laesst sich schon vorher binden
+[ok]   die Sperre bleibt trotzdem der fehlende Abgleich  [ohne Lautheitsabgleich]
+[ok]   und ein Urteil wird NICHT angenommen - lauter klingt besser, und ein A/B ohne Pegelabgleich misst genau das
+[ok]   es steht also auch keines da
+[ok]   ein noch nicht eingefrorener Pegel wird abgelehnt
+[ok]   und aendert nichts
+[ok]   ein eingefrorener Pegel wird uebernommen
+[ok]   der Abgleich steht
+[ok]   und die Sperre ist frei  [frei]
+[ok]   jetzt wird das Urteil angenommen
+[ok]   und steht unveraendert da
+[ok]   ein zweites Urteil wird abgelehnt
+[ok]   das erste bleibt stehen
+[ok]   mit benanntem Grund  [schon geurteilt]
+[ok]   und ein neuer Pegel wird nach dem Urteil nicht mehr uebernommen
+[ok]   der Passagenwechsel raeumt Urteil, Abgleich und Bindung ab
+[ok]   und der Automat steht wieder am Anfang
+
+== M-44  ui_cannot_read_the_order_before_the_verdict ==
+[ok]   ungebunden: es gibt nichts zu lesen
+[ok]   gebunden
+[ok]   die UI darf WISSEN, dass ein Blindvergleich laeuft
+[ROT]  sie darf aber NICHT wissen, welche Seite welche ist - das ist die Kante aus M-44
+[ROT]  und der Ausgabeparameter bleibt unberuehrt, statt still einen Wert zu tragen, den jemand liest
+[ok]   ein zweites Binden wird abgelehnt - sonst liesse sie sich nach dem Hoeren noch zum Urteil passend drehen
+[ok]   das Urteil faellt
+[ok]   jetzt ist sie aufgedeckt - und es ist die gebundene, keine andere
+[ok]   die andere Reihenfolge kommt ebenso zurueck - der Wert ist gebunden, nicht geraten
+[ok]   ohne Bindung nennt die Sperre genau das  [Reihenfolge nicht gebunden]
+[ok]   und das Urteil wird abgelehnt
+[ok]   es gibt nichts aufzudecken
+[ok]   die UI kann zwei Seiten unterscheiden, ohne zu wissen, welche welche ist
+[ok]   die Sperre traegt ein Wort: ohne Lautheitsabgleich
+[ok]   die Sperre traegt ein Wort: Reihenfolge nicht gebunden
+[ok]   die Sperre traegt ein Wort: schon geurteilt
+[ok]   die Sperre traegt ein Wort: frei
+
+34 bestanden, 2 gescheitert
+
+Exitcode: 1  ->  ROT (gut)
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+== Nakama SONDE-013 - die zwei Kanten des Blindvergleichs (§43.1) ==
+
+== M-43  no_sound_verdict_before_loudness_match ==
+[ok]   frisch: kein Abgleich, kein Urteil
+[ok]   und die Sperre nennt genau diesen Grund  [ohne Lautheitsabgleich]
+[ok]   die Reihenfolge laesst sich schon vorher binden
+[ok]   die Sperre bleibt trotzdem der fehlende Abgleich  [ohne Lautheitsabgleich]
+[ok]   und ein Urteil wird NICHT angenommen - lauter klingt besser, und ein A/B ohne Pegelabgleich misst genau das
+[ok]   es steht also auch keines da
+[ok]   ein noch nicht eingefrorener Pegel wird abgelehnt
+[ok]   und aendert nichts
+[ok]   ein eingefrorener Pegel wird uebernommen
+[ok]   der Abgleich steht
+[ok]   und die Sperre ist frei  [frei]
+[ok]   jetzt wird das Urteil angenommen
+[ok]   und steht unveraendert da
+[ok]   ein zweites Urteil wird abgelehnt
+[ok]   das erste bleibt stehen
+[ok]   mit benanntem Grund  [schon geurteilt]
+[ok]   und ein neuer Pegel wird nach dem Urteil nicht mehr uebernommen
+[ok]   der Passagenwechsel raeumt Urteil, Abgleich und Bindung ab
+[ok]   und der Automat steht wieder am Anfang
+
+== M-44  ui_cannot_read_the_order_before_the_verdict ==
+[ok]   ungebunden: es gibt nichts zu lesen
+[ok]   gebunden
+[ok]   die UI darf WISSEN, dass ein Blindvergleich laeuft
+[ok]   sie darf aber NICHT wissen, welche Seite welche ist - das ist die Kante aus M-44
+[ok]   und der Ausgabeparameter bleibt unberuehrt, statt still einen Wert zu tragen, den jemand liest
+[ok]   ein zweites Binden wird abgelehnt - sonst liesse sie sich nach dem Hoeren noch zum Urteil passend drehen
+[ok]   das Urteil faellt
+[ok]   jetzt ist sie aufgedeckt - und es ist die gebundene, keine andere
+[ok]   die andere Reihenfolge kommt ebenso zurueck - der Wert ist gebunden, nicht geraten
+[ok]   ohne Bindung nennt die Sperre genau das  [Reihenfolge nicht gebunden]
+[ok]   und das Urteil wird abgelehnt
+[ok]   es gibt nichts aufzudecken
+[ok]   die UI kann zwei Seiten unterscheiden, ohne zu wissen, welche welche ist
+[ok]   die Sperre traegt ein Wort: ohne Lautheitsabgleich
+[ok]   die Sperre traegt ein Wort: Reihenfolge nicht gebunden
+[ok]   die Sperre traegt ein Wort: schon geurteilt
+[ok]   die Sperre traegt ein Wort: frei
+
+36 bestanden, 0 gescheitert
+
+Exitcode: 0  ->  GRUEN (gut)

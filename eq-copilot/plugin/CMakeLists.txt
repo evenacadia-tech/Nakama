@@ -670,6 +670,30 @@ target_link_libraries(EqCopStateMigrationTest PRIVATE juce::juce_audio_utils juc
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
 nakama_kern_anbinden(EqCopStateMigrationTest)
 
+# -- SONDE-013 Etappe G: Statistik und Blindvergleich (Kanon B25, B26) -----
+# Zwei kleine Ziele ohne Prozessor: beide messen JUCE-freien Kerncode, und
+# `EqCopSonde013ExperimentGoldenTest` prueft dieselben festen Zahlen, die
+# `sonde013_experiment.rs` auf der Rust-Seite prueft.
+juce_add_console_app(EqCopSonde013ExperimentGoldenTest PRODUCT_NAME "eqcop-sonde013experimentgoldentest")
+target_sources(EqCopSonde013ExperimentGoldenTest PRIVATE tests/Sonde013ExperimentGoldenTest.cpp)
+target_include_directories(EqCopSonde013ExperimentGoldenTest PRIVATE src core)
+target_compile_definitions(EqCopSonde013ExperimentGoldenTest PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
+target_link_libraries(EqCopSonde013ExperimentGoldenTest
+    PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+target_compile_options(EqCopSonde013ExperimentGoldenTest PRIVATE "$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+nakama_kern_anbinden(EqCopSonde013ExperimentGoldenTest)
+
+juce_add_console_app(EqCopSonde013ExperimentUiTest PRODUCT_NAME "eqcop-sonde013experimentuitest")
+target_sources(EqCopSonde013ExperimentUiTest PRIVATE tests/Sonde013ExperimentUiTest.cpp)
+target_include_directories(EqCopSonde013ExperimentUiTest PRIVATE src core)
+target_compile_definitions(EqCopSonde013ExperimentUiTest PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
+target_link_libraries(EqCopSonde013ExperimentUiTest
+    PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+target_compile_options(EqCopSonde013ExperimentUiTest PRIVATE "$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+nakama_kern_anbinden(EqCopSonde013ExperimentUiTest)
+
 # -- SONDE-013 Etappe F: PRE/POST auf der Audioseite (Kanon B24) -----------
 # Die Magnitude-Squared Coherence ist 1 fuer JEDE lineare zeitinvariante Kette
 # und faellt genau dann, wenn die Kette nichtlinear oder zeitvariabel ist. Das

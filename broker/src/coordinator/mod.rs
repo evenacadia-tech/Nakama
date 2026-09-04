@@ -37,6 +37,7 @@ mod senke;
 mod sicht;
 mod subscription;
 mod uhr;
+pub mod experiment;
 pub mod prepost;
 pub mod vergleichbarkeit;
 mod zustand;

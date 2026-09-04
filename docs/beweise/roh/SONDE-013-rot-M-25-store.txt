@@ -1,0 +1,103 @@
+SONDE-013 Etappe 2 E - Rotbeweis M-25-store
+=========================================
+
+Datei:     broker/src/coordinator/experiment.rs
+Ziel:      sonde013_experiment.rs (Kanon A4)
+Warum:     Die Passage wird beim ersten `experiment_begin` NICHT angelegt. Dann zeigte jeder Versuch auf ein Objekt, das es nicht gibt - und der Export waere ein Verweis auf einen Store, den der Empfaenger nicht hat. M-25 verlangt das Passageobjekt ausdruecklich im Store.
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+        if !self.passagen.contains_key(&passage_id) {
+            self.passagen.insert(passage_id.clone(), passage);
+--- NEU ---
+        if false {
+            self.passagen.insert(passage_id.clone(), passage);
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+running 18 tests
+test four_axes_are_reported_separately ... ok
+test lower_reproducibility_class_is_explicit ... ok
+test manual_external_begin_locks_baseline ... ok
+test blind_order_is_bound_before_the_verdict_and_revealed_after ... ok
+test manual_result_writes_terminal_event_and_deltas ... ok
+test gate6_incomparable_never_gets_a_strong_winner ... ok
+test manual_external_has_no_state_hash_and_no_revert ... ok
+test abort_writes_terminal_event_for_each_trigger ... ok
+test match_gain_is_frozen_in_the_immutable_reference ... ok
+test export_is_complete_and_delete_leaves_no_pcm ... FAILED
+test experiment_survives_restart_without_silent_continuation ... FAILED
+test passage_carries_all_six_fields ... FAILED
+test passage_survives_restart_and_missing_db_degrades_gracefully ... FAILED
+test open_cap_per_project_at_n_and_n_plus_one ... ok
+test second_change_creates_new_candidate_not_a_new_baseline ... ok
+test verdict_vocabulary_is_closed_and_keep_needs_user ... ok
+test open_cap_global_at_n_and_n_plus_one ... ok
+test block_bootstrap_und_fdr_halten_ihre_zusagen ... ok
+
+failures:
+
+---- export_is_complete_and_delete_leaves_no_pcm stdout ----
+
+thread 'export_is_complete_and_delete_leaves_no_pcm' (4376) panicked at tests\sonde013_experiment.rs:758:36:
+Export
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- experiment_survives_restart_without_silent_continuation stdout ----
+
+thread 'experiment_survives_restart_without_silent_continuation' (2300) panicked at tests\sonde013_experiment.rs:700:36:
+Export
+
+---- passage_carries_all_six_fields stdout ----
+
+thread 'passage_carries_all_six_fields' (21616) panicked at tests\sonde013_experiment.rs:84:38:
+Passage
+
+---- passage_survives_restart_and_missing_db_degrades_gracefully stdout ----
+
+thread 'passage_survives_restart_and_missing_db_degrades_gracefully' (7972) panicked at tests\sonde013_experiment.rs:722:36:
+Export
+
+
+failures:
+    experiment_survives_restart_without_silent_continuation
+    export_is_complete_and_delete_leaves_no_pcm
+    passage_carries_all_six_fields
+    passage_survives_restart_and_missing_db_degrades_gracefully
+
+test result: FAILED. 14 passed; 4 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.72s
+     Running tests\sonde013_experiment.rs (target\debug\deps\sonde013_experiment-994d32cd62e1b354.exe)
+error: test failed, to rerun pass `--test sonde013_experiment`
+
+Exitcode: 101  ->  ROT (gut)
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+running 18 tests
+test gate6_incomparable_never_gets_a_strong_winner ... ok
+test four_axes_are_reported_separately ... ok
+test experiment_survives_restart_without_silent_continuation ... ok
+test lower_reproducibility_class_is_explicit ... ok
+test blind_order_is_bound_before_the_verdict_and_revealed_after ... ok
+test manual_external_begin_locks_baseline ... ok
+test abort_writes_terminal_event_for_each_trigger ... ok
+test manual_external_has_no_state_hash_and_no_revert ... ok
+test manual_result_writes_terminal_event_and_deltas ... ok
+test match_gain_is_frozen_in_the_immutable_reference ... ok
+test export_is_complete_and_delete_leaves_no_pcm ... ok
+test passage_carries_all_six_fields ... ok
+test passage_survives_restart_and_missing_db_degrades_gracefully ... ok
+test second_change_creates_new_candidate_not_a_new_baseline ... ok
+test open_cap_per_project_at_n_and_n_plus_one ... ok
+test verdict_vocabulary_is_closed_and_keep_needs_user ... ok
+test open_cap_global_at_n_and_n_plus_one ... ok
+test block_bootstrap_und_fdr_halten_ihre_zusagen ... ok
+
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.69s
+     Running tests\sonde013_experiment.rs (target\debug\deps\sonde013_experiment-994d32cd62e1b354.exe)
+
+Exitcode: 0  ->  GRUEN (gut)

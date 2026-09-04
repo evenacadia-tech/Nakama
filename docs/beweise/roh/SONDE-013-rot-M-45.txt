@@ -1,0 +1,90 @@
+SONDE-013 Etappe 2 E - Rotbeweis M-45
+=========================================
+
+Datei:     broker/src/coordinator/experiment.rs
+Ziel:      sonde013_experiment.rs (Kanon A4)
+Warum:     Die FDR-Korrektur wird durch den naiven Test ersetzt. Bei 221 gleichzeitig gescannten Baendern sind bei alpha 0,05 rund elf Fehlalarme zu erwarten, wenn sich NICHTS geaendert hat - Nakama meldete also fast immer irgendein "veraendertes" Band, und der User lernte, die Meldung zu ignorieren.
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+        if *p <= (k as f64 / m as f64) * q {
+            grenze = Some(rang);
+        }
+--- NEU ---
+        let _ = k;
+        if *p <= q {
+            grenze = Some(rang);
+        }
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+running 18 tests
+test four_axes_are_reported_separately ... ok
+test gate6_incomparable_never_gets_a_strong_winner ... ok
+test experiment_survives_restart_without_silent_continuation ... ok
+test lower_reproducibility_class_is_explicit ... ok
+test manual_result_writes_terminal_event_and_deltas ... ok
+test blind_order_is_bound_before_the_verdict_and_revealed_after ... ok
+test abort_writes_terminal_event_for_each_trigger ... ok
+test export_is_complete_and_delete_leaves_no_pcm ... ok
+test match_gain_is_frozen_in_the_immutable_reference ... ok
+test manual_external_begin_locks_baseline ... ok
+test manual_external_has_no_state_hash_and_no_revert ... ok
+test passage_carries_all_six_fields ... ok
+test passage_survives_restart_and_missing_db_degrades_gracefully ... ok
+test open_cap_per_project_at_n_and_n_plus_one ... ok
+test second_change_creates_new_candidate_not_a_new_baseline ... ok
+test verdict_vocabulary_is_closed_and_keep_needs_user ... ok
+test open_cap_global_at_n_and_n_plus_one ... ok
+test block_bootstrap_und_fdr_halten_ihre_zusagen ... FAILED
+
+failures:
+
+---- block_bootstrap_und_fdr_halten_ihre_zusagen stdout ----
+
+thread 'block_bootstrap_und_fdr_halten_ihre_zusagen' (3864) panicked at tests\sonde013_experiment.rs:439:5:
+assertion `left == right` failed: reines Rauschen darf kein einziges Band melden
+  left: 11
+ right: 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    block_bootstrap_und_fdr_halten_ihre_zusagen
+
+test result: FAILED. 17 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.10s
+     Running tests\sonde013_experiment.rs (target\debug\deps\sonde013_experiment-994d32cd62e1b354.exe)
+error: test failed, to rerun pass `--test sonde013_experiment`
+
+Exitcode: 101  ->  ROT (gut)
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+running 18 tests
+test four_axes_are_reported_separately ... ok
+test gate6_incomparable_never_gets_a_strong_winner ... ok
+test lower_reproducibility_class_is_explicit ... ok
+test experiment_survives_restart_without_silent_continuation ... ok
+test blind_order_is_bound_before_the_verdict_and_revealed_after ... ok
+test abort_writes_terminal_event_for_each_trigger ... ok
+test manual_external_begin_locks_baseline ... ok
+test export_is_complete_and_delete_leaves_no_pcm ... ok
+test manual_external_has_no_state_hash_and_no_revert ... ok
+test manual_result_writes_terminal_event_and_deltas ... ok
+test match_gain_is_frozen_in_the_immutable_reference ... ok
+test open_cap_per_project_at_n_and_n_plus_one ... ok
+test passage_carries_all_six_fields ... ok
+test passage_survives_restart_and_missing_db_degrades_gracefully ... ok
+test second_change_creates_new_candidate_not_a_new_baseline ... ok
+test verdict_vocabulary_is_closed_and_keep_needs_user ... ok
+test open_cap_global_at_n_and_n_plus_one ... ok
+test block_bootstrap_und_fdr_halten_ihre_zusagen ... ok
+
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.09s
+     Running tests\sonde013_experiment.rs (target\debug\deps\sonde013_experiment-994d32cd62e1b354.exe)
+
+Exitcode: 0  ->  GRUEN (gut)

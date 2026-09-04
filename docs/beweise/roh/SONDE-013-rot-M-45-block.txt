@@ -1,0 +1,74 @@
+SONDE-013 Etappe 2 E - Rotbeweis M-45-block
+=========================================
+
+Datei:     eq-copilot/plugin/core/analysis/Statistik.h
+Ziel:      EqCopSonde013ExperimentGoldenTest (Kanon B25)
+Warum:     Der Block-Bootstrap zieht EINZELNE Werte statt Bloecke. Die Deltas benachbarter Analysefenster sind korreliert - dasselbe Material, dieselbe Kette, ueberlappende Fenster. Wer Unabhaengigkeit annimmt, bekommt ein viel zu enges Intervall, und genau daraus entstuende eine "belastbare" Aenderung, die keine ist. Der Fehler ist eine einzige Zahl und macht jedes Ergebnis SICHERER aussehend.
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+    const std::size_t bl = std::min (blocklaenge, n);
+--- NEU ---
+    const std::size_t bl = 1;
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+== Nakama SONDE-013 - Unsicherheit und Mehrfachtestung (§43.2) ==
+
+== M-45  block_bootstrap_interval ==
+[ok]   dieselbe Saat ergibt dasselbe Intervall - ein Golden ueber einen Zufallsprozess ist sonst keiner  [0.953906 .. 1.039844]
+[ok]   und es enthaelt den Mittelwert  [0.994531]
+[ROT]  und es ist BITGLEICH dem der Rust-Fassung - derselbe Generator, dieselbe Ziehungsreihenfolge  [0.953906 .. 1.039844]
+[ROT]  bei bloeckigem Material ist das Blockintervall breiter als das Einzelwertintervall - genau dafuer gibt es den Block-Bootstrap  [0.8750 gegen 0.8750]
+[ok]   ohne Daten kein Intervall
+[ok]   ohne Blocklaenge keins
+[ok]   ohne Ziehungen keins
+[ROT]  eine Blocklaenge ueber der Folgenlaenge klemmt auf sie - das Intervall wird dann zum Mittelwert selbst  [0.964062]
+[ok]   ein groesseres alpha ergibt ein engeres Intervall  [0.02969 gegen 0.08594]
+
+== M-45  band_scan_uses_cluster_or_fdr ==
+[ok]   ohne Korrektur meldete reines Rauschen zweistellig viele Baender  [11 von 221]
+[ok]   mit FDR-Korrektur kein einziges - das ist der ganze Punkt  [0]
+[ok]   20 klare Treffer kommen durch  [20]
+[ok]   p_(k) = k/m * q gilt noch als signifikant - die Grenze ist inklusiv
+[ok]   und knapp darueber nicht mehr  [0]
+[ok]   drei verstreute Einzelbaender ergeben keinen Cluster
+[ok]   vier benachbarte schon  [1 Cluster]
+[ok]   und einer am rechten Rand ebenso
+[ok]   und einer am linken
+[ok]   die Mindestlaenge faellt an ihrem Wert
+[ok]   ein leerer Bandscan ergibt nichts, statt zu paniken
+
+17 bestanden, 3 gescheitert
+
+Exitcode: 1  ->  ROT (gut)
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+== Nakama SONDE-013 - Unsicherheit und Mehrfachtestung (§43.2) ==
+
+== M-45  block_bootstrap_interval ==
+[ok]   dieselbe Saat ergibt dasselbe Intervall - ein Golden ueber einen Zufallsprozess ist sonst keiner  [0.979688 .. 1.016406]
+[ok]   und es enthaelt den Mittelwert  [0.994531]
+[ok]   und es ist BITGLEICH dem der Rust-Fassung - derselbe Generator, dieselbe Ziehungsreihenfolge  [0.979688 .. 1.016406]
+[ok]   bei bloeckigem Material ist das Blockintervall breiter als das Einzelwertintervall - genau dafuer gibt es den Block-Bootstrap  [1.6875 gegen 0.8750]
+[ok]   ohne Daten kein Intervall
+[ok]   ohne Blocklaenge keins
+[ok]   ohne Ziehungen keins
+[ok]   eine Blocklaenge ueber der Folgenlaenge klemmt auf sie - das Intervall wird dann zum Mittelwert selbst  [0.994531]
+[ok]   ein groesseres alpha ergibt ein engeres Intervall  [0.01328 gegen 0.03672]
+
+== M-45  band_scan_uses_cluster_or_fdr ==
+[ok]   ohne Korrektur meldete reines Rauschen zweistellig viele Baender  [11 von 221]
+[ok]   mit FDR-Korrektur kein einziges - das ist der ganze Punkt  [0]
+[ok]   20 klare Treffer kommen durch  [20]
+[ok]   p_(k) = k/m * q gilt noch als signifikant - die Grenze ist inklusiv
+[ok]   und knapp darueber nicht mehr  [0]
+[ok]   drei verstreute Einzelbaender ergeben keinen Cluster
+[ok]   vier benachbarte schon  [1 Cluster]
+[ok]   und einer am rechten Rand ebenso
+[ok]   und einer am linken
+[ok]   die Mindestlaenge faellt an ihrem Wert
+[ok]   ein leerer Bandscan ergibt nichts, statt zu paniken
+
+20 bestanden, 0 gescheitert
+
+Exitcode: 0  ->  GRUEN (gut)

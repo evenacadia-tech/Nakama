@@ -1,0 +1,87 @@
+SONDE-013 Etappe 2 E - Rotbeweis M-43
+=========================================
+
+Datei:     broker/src/coordinator/experiment.rs
+Ziel:      sonde013_experiment.rs (Kanon A4)
+Warum:     Ein Klangurteil wird auch ohne eingefrorenen Match-Gain angenommen. §15 woertlich: "Eine Klangwertung ohne vorherigen Lautheitsabgleich ist unzulaessig." Lauter klingt besser - ein A/B ohne Pegelabgleich misst zuverlaessig, welche Seite lauter war.
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+        if !e.baseline.match_gain_db.is_finite() {
+            return Err(Abschlussfehler::OhneLautheitsabgleich);
+        }
+--- NEU ---
+        // (Rotbeweis: Urteil ohne Lautheitsabgleich)
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+running 18 tests
+test four_axes_are_reported_separately ... ok
+test gate6_incomparable_never_gets_a_strong_winner ... ok
+test lower_reproducibility_class_is_explicit ... ok
+test manual_external_begin_locks_baseline ... ok
+test blind_order_is_bound_before_the_verdict_and_revealed_after ... ok
+test abort_writes_terminal_event_for_each_trigger ... ok
+test experiment_survives_restart_without_silent_continuation ... ok
+test manual_external_has_no_state_hash_and_no_revert ... ok
+test export_is_complete_and_delete_leaves_no_pcm ... ok
+test manual_result_writes_terminal_event_and_deltas ... ok
+test match_gain_is_frozen_in_the_immutable_reference ... FAILED
+test passage_carries_all_six_fields ... ok
+test passage_survives_restart_and_missing_db_degrades_gracefully ... ok
+test second_change_creates_new_candidate_not_a_new_baseline ... ok
+test open_cap_per_project_at_n_and_n_plus_one ... ok
+test verdict_vocabulary_is_closed_and_keep_needs_user ... ok
+test open_cap_global_at_n_and_n_plus_one ... ok
+test block_bootstrap_und_fdr_halten_ihre_zusagen ... ok
+
+failures:
+
+---- match_gain_is_frozen_in_the_immutable_reference stdout ----
+
+thread 'match_gain_is_frozen_in_the_immutable_reference' (15200) panicked at tests\sonde013_experiment.rs:267:5:
+assertion `left == right` failed
+  left: Ok(())
+ right: Err(OhneLautheitsabgleich)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    match_gain_is_frozen_in_the_immutable_reference
+
+test result: FAILED. 17 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.10s
+     Running tests\sonde013_experiment.rs (target\debug\deps\sonde013_experiment-994d32cd62e1b354.exe)
+error: test failed, to rerun pass `--test sonde013_experiment`
+
+Exitcode: 101  ->  ROT (gut)
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+running 18 tests
+test four_axes_are_reported_separately ... ok
+test gate6_incomparable_never_gets_a_strong_winner ... ok
+test experiment_survives_restart_without_silent_continuation ... ok
+test manual_result_writes_terminal_event_and_deltas ... ok
+test abort_writes_terminal_event_for_each_trigger ... ok
+test blind_order_is_bound_before_the_verdict_and_revealed_after ... ok
+test match_gain_is_frozen_in_the_immutable_reference ... ok
+test lower_reproducibility_class_is_explicit ... ok
+test manual_external_has_no_state_hash_and_no_revert ... ok
+test manual_external_begin_locks_baseline ... ok
+test export_is_complete_and_delete_leaves_no_pcm ... ok
+test passage_carries_all_six_fields ... ok
+test open_cap_per_project_at_n_and_n_plus_one ... ok
+test passage_survives_restart_and_missing_db_degrades_gracefully ... ok
+test second_change_creates_new_candidate_not_a_new_baseline ... ok
+test verdict_vocabulary_is_closed_and_keep_needs_user ... ok
+test open_cap_global_at_n_and_n_plus_one ... ok
+test block_bootstrap_und_fdr_halten_ihre_zusagen ... ok
+
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.14s
+     Running tests\sonde013_experiment.rs (target\debug\deps\sonde013_experiment-994d32cd62e1b354.exe)
+
+Exitcode: 0  ->  GRUEN (gut)

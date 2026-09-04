@@ -1695,6 +1695,34 @@ def pruefe_comparability_schwellen(lauf: Lauf) -> None:
               not treffer, "; ".join(treffer))
 
 
+def pruefe_experiment_belegung(lauf: Lauf, schema: dict, reserviert: dict) -> None:
+    """SONDE-013 M-40 und M-47: `experiment_begin` und `experiment_abort`
+    gehoeren diesem Ticket.
+
+    Beide Namen lagen bis SONDE-013 in der Reserve. Sie zu benutzen, OHNE sie
+    zu belegen, waere die teuerste Form des Vorgriffs: eine spaetere Phase
+    faende den Namen frei, definierte ihn anders, und zwei Erzeuger schrieben
+    dieselbe Nachricht mit verschiedener Bedeutung auf dieselbe Leitung.
+
+    Geprueft wird deshalb in beide Richtungen: das Register nennt SONDE-013
+    als Eigentuemer UND das Schema traegt die Familie wirklich. Ein Register,
+    das eine Belegung behauptet, die es im Schema nicht gibt, waere eine
+    Reservierung ohne Nutzlast; ein Schema mit einer Familie ohne Registerzeile
+    waere eine stille Landnahme.
+    """
+    familien = {r.get("$ref", "").removeprefix("#/$defs/") for r in schema.get("oneOf", [])}
+    belegt = {e.get("name"): e for e in reserviert.get("belegte_nachrichten", [])
+              if isinstance(e, dict)}
+
+    for name, kennung in (("experiment_begin", "M-40"), ("experiment_abort", "M-47")):
+        eintrag = belegt.get(name, {})
+        durch = str(eintrag.get("eigentuemer", ""))
+        lauf.wahr(f"{name}_belegt_von_sonde013: das Register nennt den Eigentuemer",
+                  "SONDE-013" in durch, f"{kennung}: {durch!r}")
+        lauf.wahr(f"{name}_belegt_von_sonde013: und das Schema traegt die Familie",
+                  name in familien and name in schema.get("$defs", {}), kennung)
+
+
 def main(argv: list[str]) -> int:
     schema = json_laden_strikt(SCHEMA.read_text(encoding="utf-8"))
     reserviert = json_laden_strikt(RESERVIERT.read_text(encoding="utf-8"))
@@ -1715,6 +1743,7 @@ def main(argv: list[str]) -> int:
     pruefe_fixtures(lauf, schema, manifest)
     pruefe_metrikregister(lauf)
     pruefe_comparability_schwellen(lauf)
+    pruefe_experiment_belegung(lauf, schema, reserviert)
 
     print(f"jsonschema {jsonschema.__version__} (draft 2020-12)")
     print(f"{len(schema['$defs'])} Definitionen, {len(schema['oneOf'])} Nachrichtenfamilien, "

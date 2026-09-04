@@ -3,7 +3,7 @@
 | Merkmal | Wert |
 |---|---|
 | Ticket | S20–22, `SONDE-013` (Phase P4–P5) |
-| Phase | **Etappe 2 — Bau, Etappe C läuft.** Etappen A und B stehen und sind mit einem sauberen Kanonlauf beglaubigt. **Die Etappen C und D sind vollständig gebaut und mit GRUEN 46/46 auf `c8b310b` beglaubigt** (C: M-01 bis M-04, M-06 bis M-12, M-74 bis M-77, M-86; D: M-33 bis M-39, M-78). **Die Etappen C bis F sind gebaut und mit GRUEN 49/49 auf `e480fe3` beglaubigt** (M-26, M-27, M-31 Fingerprint; M-28, M-29, M-30 Comparability; M-69 und der State-Teil von M-25; M-68 entschieden: keine Migration 2); der Store-Teil von M-25 und M-32 hängen nach dem Fund in §10.6 am Träger aus Etappe G. Nächste Etappe ist **G — Experiment `manual_external`** (mit den dorthin verschobenen M-25 und M-32). Etappe 1 (Verhaltensmatrix) ist am 2026-09-04 nach Matrixprüfung 1, Nacharbeit 1, Wiederprüfung 1, Nacharbeit 2 und Wiederprüfung 2 (PASS) abgenommen; die Matrix in §3 ist ab hier die Spezifikation. Bauauftrag: `docs/beweise/roh/SONDE-013-etappe-2-auftrag.txt`, Bau-Verlauf in §10 |
+| Phase | **Etappe 2 — Bau, Etappe C läuft.** Etappen A und B stehen und sind mit einem sauberen Kanonlauf beglaubigt. **Die Etappen C und D sind vollständig gebaut und mit GRUEN 46/46 auf `c8b310b` beglaubigt** (C: M-01 bis M-04, M-06 bis M-12, M-74 bis M-77, M-86; D: M-33 bis M-39, M-78). **Die Etappen C bis G sind gebaut**; C bis F sind mit GRUEN 49/49 auf `e480fe3` beglaubigt (M-26, M-27, M-31 Fingerprint; M-28, M-29, M-30 Comparability; M-69 und der State-Teil von M-25; M-68 entschieden: keine Migration 2); der Store-Teil von M-25 und M-32 hängen nach dem Fund in §10.6 am Träger aus Etappe G. Nächste Etappe ist **H — Invalidierung, Taint und P4-Referenzkorpus** (mit dem dorthin verschobenen M-59). Etappe 1 (Verhaltensmatrix) ist am 2026-09-04 nach Matrixprüfung 1, Nacharbeit 1, Wiederprüfung 1, Nacharbeit 2 und Wiederprüfung 2 (PASS) abgenommen; die Matrix in §3 ist ab hier die Spezifikation. Bauauftrag: `docs/beweise/roh/SONDE-013-etappe-2-auftrag.txt`, Bau-Verlauf in §10 |
 | Urteil | **offen** — T1 setzt der Erbauer nach der letzten Bauetappe, T2 der Dirigent nach der Codex-Abnahme |
 | Prüfstufe | T1+T2 gefordert (`docs/bauaufteilung-sonden.md`:392). T1 ist das Selbstaudit des Erbauers am Ende der letzten Bauetappe, T2 setzt der Dirigent nach der Codex-Abnahme |
 | Basis-SHA | Etappe 1 begann auf `ed9bbf7fec951a061749abf143cb2158c1c4ee52`; **Etappe 2 baut ab `0fdbb4a09c75e2c93ab9b76e7fcf5d92d0ef17e4`** (Abschluss der Matrixetappe), beide mit `git rev-parse HEAD` gemessen |
@@ -14,8 +14,8 @@
 | Rundenbilanz Etappe 1 | `py -3.13 tools/dirigent/rundenbilanz.py --runden ed9bbf7 4a2f50a 367a0ea ca20f3a 6e8bebb`: Matrix `ed9bbf7..4a2f50a` Doku 2 Dateien +1019/−0; Entscheide `4a2f50a..367a0ea` Doku +51/−0; Nacharbeit 1 `367a0ea..ca20f3a` Doku 4 Dateien +533/−63; Nacharbeit 2 `ca20f3a..6e8bebb` Doku 4 Dateien +286/−17. Produkt und Tests 0 Zeilen in allen vier Runden — erwartet, weil Etappe 1 nach der Regel „Spezifikation vor Code" ausschließlich das Manifest schreibt; das Konvergenzsignal des Werkzeugs greift erst ab Etappe 2. |
 | Änderungssatz dieser Etappe | Erster Commit `4a2f50a` und Entscheidcommit `367a0ea`: dieses Manifest und `docs/beweise/roh/SONDE-013-etappe-1-auftrag.txt`. Nacharbeit 1: dieses Manifest sowie die drei Rohdateien `docs/beweise/roh/SONDE-013-matrixpruefung-1-auftrag.txt`, `docs/beweise/roh/SONDE-013-matrixpruefung-1-367a0ea.txt` und `docs/beweise/roh/SONDE-013-nacharbeit-1-auftrag.txt` unverändert. Nacharbeit 2: dieses Manifest sowie die drei Rohdateien `docs/beweise/roh/SONDE-013-wiederpruefung-1-auftrag.txt`, `docs/beweise/roh/SONDE-013-wiederpruefung-1-ca20f3a.txt` und `docs/beweise/roh/SONDE-013-nacharbeit-2-auftrag.txt` unverändert. Kein Produkt-, Test-, Schema-, Fixture- oder Werkzeugcode. |
 | Kanon nachher | **GRUEN 49/49 auf `e480fe3`, Arbeitsbaum sauber** — die Beglaubigung der Etappen C bis F. Rohausgabe `docs/beweise/roh/SONDE-013-e480fe3.md`. Davor: **GRUEN 48/48 auf `e3e2299`** für C bis E. Rohausgabe `docs/beweise/roh/SONDE-013-e3e2299.md`. Davor: **GRUEN 46/46 auf `c8b310b`** — die Beglaubigung der Etappen C und D. Rohausgabe `docs/beweise/roh/SONDE-013-c8b310b.md`. Der Weg dahin steht in §10.3 bis §10.5: der Lauf auf `ab0251d` war GRUEN 45/45, aber `-dirty` gestempelt (die zwei Dateien der beginnenden Etappe D lagen schon im Baum); der Lauf auf `e2ea2ec` war der erste auf sauberem Baum und kam **ROT 45/46** zurück — gefallen war **B8** an genau der Produktwirkung, die M-33 und M-34 herstellen, und dass kein anderes Bein fiel, ist die eigentliche Aussage jenes Laufs. Die Beinzahl wächst von 41 auf **49** und sinkt um kein Bein; 2 geplante noch nicht gebaut (B6, B7 ab P6), 1 stillgelegtes (A15). |
-| Testanzahl | A5 471 Prüfungen · B2 176 · B23 54 (neu) · B24 29 (neu) · A4-prepost 13 (neu) · A3 61 · B3c 75 · B8 77 · B10 313 · B16 52 · B17 23 (neu) · B18 44 (neu) · B19 57 (neu) · B20 24 (neu) · B21 22 (neu) · B22 24 (neu) · B5 237 · Broker 203 Lib-Tests plus alle Integrationsbeine · JSON-Fixturekorpus 285 (75 gültig, 210 ungültig) · Binärkorpus 104 (20 gültig, 84 ungültig) · Envelope-Korpus 37. Alle Zahlen aus dem Lauf dieser Sitzung, nicht abgeschrieben. |
-| Änderungssatz Etappe 2 | Fortlaufend in §10 je Bauetappe geführt: Commits, Beine, Rotbeweise, Abweichungen von §5 und Nebenbefunde. Die Beinzahl wächst mit den Etappen C bis F von 41 auf **49** (neu: **B17** `EqCopSonde013TruePeakGoldenTest`, **B18** `EqCopSonde013DynamicsTest`, **B19** `EqCopSonde013StereoGoldenTest`, **B20** `EqCopSonde013QualityClassTest`, **B21** `EqCopSonde013InterventionRingTest`, **B22** `EqCopSonde013FingerprintGoldenTest`, **B23** `EqCopSonde013PassageStateTest`, **B24** `EqCopSonde013PrePostGoldenTest`) und sinkt um kein Bein. Der volle Kanon steht am Ende jeder Etappe, die Schema-, Fixture- oder Runnerdateien berührt (§5.1); für C bis F ist er mit GRUEN 49/49 auf `e480fe3` beglaubigt (davor GRUEN 48/48 auf `e3e2299` für C bis E). |
+| Testanzahl | A5 475 Prüfungen · B2 176 · B23 54 (neu) · B24 29 (neu) · A4-prepost 13 (neu) · A4-experiment 18 (neu) · B25 20 (neu) · B26 36 (neu) · A3 61 · B3c 75 · B8 77 · B10 313 · B16 52 · B17 23 (neu) · B18 44 (neu) · B19 57 (neu) · B20 24 (neu) · B21 22 (neu) · B22 24 (neu) · B5 237 · Broker 203 Lib-Tests plus alle Integrationsbeine · JSON-Fixturekorpus 285 (75 gültig, 210 ungültig) · Binärkorpus 104 (20 gültig, 84 ungültig) · Envelope-Korpus 37. Alle Zahlen aus dem Lauf dieser Sitzung, nicht abgeschrieben. |
+| Änderungssatz Etappe 2 | Fortlaufend in §10 je Bauetappe geführt: Commits, Beine, Rotbeweise, Abweichungen von §5 und Nebenbefunde. Die Beinzahl wächst mit den Etappen C bis G von 41 auf **51** (neu: **B17** `EqCopSonde013TruePeakGoldenTest`, **B18** `EqCopSonde013DynamicsTest`, **B19** `EqCopSonde013StereoGoldenTest`, **B20** `EqCopSonde013QualityClassTest`, **B21** `EqCopSonde013InterventionRingTest`, **B22** `EqCopSonde013FingerprintGoldenTest`, **B23** `EqCopSonde013PassageStateTest`, **B24** `EqCopSonde013PrePostGoldenTest`, **B25** `EqCopSonde013ExperimentGoldenTest`, **B26** `EqCopSonde013ExperimentUiTest`) und sinkt um kein Bein. Der volle Kanon steht am Ende jeder Etappe, die Schema-, Fixture- oder Runnerdateien berührt (§5.1); für C bis F ist er mit GRUEN 49/49 auf `e480fe3` beglaubigt (davor GRUEN 48/48 auf `e3e2299` für C bis E). |
 | Grenze | Etappe 2 baut ausschließlich, was §3 zusagt. Prüfbereich sind die Ticketpfade aus §5.2; jede Datei außerhalb steht mit Begründung in §10. `docs/offene-punkte.md` und `docs/PLAN-STAND.md` bleiben unberührt — Nebenbefunde sammelt §10, der Dirigent zieht sie im Abschluss nach. |
 
 > **Belegfeld gesetzt, Urteilsmarke noch nicht.** Seit dem ersten Commit der
@@ -490,14 +490,14 @@ Ein Testname mit **NEU** existiert noch nicht.
 
 | ID | Ausgangszustand × Ereignis | Zusage samt Reihenfolge und Frist | Test | Quelle / Belegstatus |
 |---|---|---|---|---|
-| M-25 | User markiert eine Passage | Eine `Passage` speichert Start und Ende, Transportepoche, aktive Quellen, Abdeckung, manuelles Label und den Fingerprint. Reihenfolge: Grenzen in Projektsamples auflösen → Transportepoche binden → aktives Quellenset einfrieren → Abdeckung berechnen → Fingerprint bilden → Objekt in den Store schreiben. Autoritative Ablage ist der Store; `MainProjectState` hält die manuellen Passagen als Projektintent, der mit der FL-Projektdatei reist. | **teilweise gemessen** (2026-09-04, Etappe E): **B23** `EqCopSonde013PassageStateTest`::`manual_passage_persists_in_main_project_state_and_marks_host_dirty` — der Projektintent hält vier Felder, meldet je Änderung genau einmal Host-Dirty und verweigert sich einer Nicht-main-Instanz. Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-25-dirty.txt`. `passage_carries_all_six_fields` misst das Passageobjekt im Store und gehört damit zum Träger aus Etappe G (§10.6). | Entwurf §32.4:1967-1975; §33.5:2135-2142 (Zeile „manuelle Passagen"); `broker/src/store/migration.rs`:68-76. **BELEGT, BAULÜCKE** |
+| M-25 | User markiert eine Passage | Eine `Passage` speichert Start und Ende, Transportepoche, aktive Quellen, Abdeckung, manuelles Label und den Fingerprint. Reihenfolge: Grenzen in Projektsamples auflösen → Transportepoche binden → aktives Quellenset einfrieren → Abdeckung berechnen → Fingerprint bilden → Objekt in den Store schreiben. Autoritative Ablage ist der Store; `MainProjectState` hält die manuellen Passagen als Projektintent, der mit der FL-Projektdatei reist. | **gemessen** (2026-09-04, Etappe G): **A4** `sonde013_experiment.rs`::`passage_carries_all_six_fields` — die Passage entsteht mit dem ersten `experiment_begin`, das sie nennt (§10.6), trägt alle sechs Felder und wird beim zweiten Versuch nicht noch einmal angelegt; eine Passage unter der Abdeckungsschwelle trägt gar keinen Versuch. **B23**::`manual_passage_persists_in_main_project_state_and_marks_host_dirty` für den Projektintent (Etappe E). Rotbeweise `docs/beweise/roh/SONDE-013-rot-M-25-store.txt` und `-M-25-dirty.txt`. | Entwurf §32.4:1967-1975; §33.5:2135-2142 (Zeile „manuelle Passagen"); `broker/src/store/migration.rs`:68-76. **BELEGT, gemessen** |
 | M-26 | Passage wird gebildet; Fingerprint entsteht | Der Fingerprint besteht aus quantisierten Bandenergie-, Chroma- und Onset-Verläufen. Er enthält **kein rekonstruierbares PCM** und dient nur dazu, grob anderes musikalisches Material zu erkennen. Ein Experiment kann vollständig inklusive Evidenz-IDs exportiert und ohne PCM gelöscht werden. | **teilweise gemessen** (2026-09-04, Etappe E): **B22** `EqCopSonde013FingerprintGoldenTest`::`fingerprint_carries_no_reconstructible_pcm` — 76 Byte für 204 800 Samples (ein Byte je 2694), ein Sinus und ein Dreieck derselben Grundfrequenz sind sich ähnlich (0,656), und alle drei Verläufe sind Energien ohne Phase. `export_and_delete_without_pcm` gehört zum Store und damit zum Träger aus Etappe G. | Entwurf §32.4:1969-1971; §43.4:2818 (Exportkriterium). **BELEGT, Erzeuger gemessen** (Etappe E, 2026-09-04); der Exportpfad gehört zum Store (Etappe G, §10.6) |
 | M-27 | Fingerprintfenster läuft; Epochengrenze tritt ein | Kein Fingerprintfenster überbrückt eine echte oder mögliche Epochengrenze. Es gilt dieselbe Ein-Block-Quarantäne wie für FFT-, Loudness- und Korrelationsfenster: erst der monotone Beginn des Folgeblocks versiegelt zur Veröffentlichung; stoppt der Callback vorher, bleibt das Fenster unvollständig. Ein nachträglich sichtbarer Loop-Wrap kann so keine persistierte Evidenz kontaminieren. | **gemessen** (2026-09-04, Etappe E): bestehend **B4** für die Quarantäne; **B22**::`fingerprint_window_never_crosses_epoch_boundary` — nach einer Stromlücke trägt die Engine den Fingerprint des NEUEN Materials (Ähnlichkeit 1,00 zur neuen Referenz, 0,00 zur alten), und der Fensterzähler fällt mit. Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-27-fingerprint.txt`. | Entwurf §32.3:1955-1966; `docs/beweise/SONDE-008.md`. **BELEGT, gemessen** (Etappe E, 2026-09-04) |
 | M-28 | Zwei Passagen; Vergleichbarkeit wird bestimmt | Vergleichbarkeit entsteht aus **fünf** Belegen, nicht aus einem: identischer Projektbereich, gleicher beziehungsweise sehr ähnlicher Fingerprint, vergleichbare aktive Quellen, gleiche Samplerate und Messpunktklasse, ausreichende gemeinsame Abdeckung. **Kein einzelner Hash hebt einen Widerspruch der anderen Belege auf.** | **gemessen** (2026-09-04, Etappe E): **A4** `sonde013_passage.rs`::`comparability_needs_all_five_and_hash_alone_never_wins` — die fünf Belege fallen einzeln bei sonst perfekter Lage und identischem Fingerprint; die Klasse ist ein Minimum, kein Score. Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-28.txt`. | Entwurf §32.4:1971-1983. **BELEGT, gemessen** |
 | M-29 | Vergleichbarkeit wird als Score ausgedrückt | Startgates für **starke** Vergleichbarkeit sind 95 % Zeitüberdeckung, Aktivquellen-Jaccard mindestens 0,9 und Upstream-Feature-Cosine mindestens 0,95. Sie sind ausdrücklich **Startwerte, am Korpus zu kalibrieren**, und leben deshalb in der versionierten `metrics_version`, nicht als Literal im Produktpfad. Unterhalb eines Gates gibt es keinen starken Vergleich, sondern eine benannte Herabstufung. | **gemessen** (2026-09-04, Etappe E): **A4** `sonde013_passage.rs`::`each_start_gate_falls_alone_at_its_threshold` und ::`urteil_traegt_seine_kalibrierungsfassung`; **A5**::`comparability_schwellen_haengen_an_metrics_version` (drei Prüfungen: alle vier Gates in der aktuellen Fassung geführt, `METRICS_VERSION` des Brokers gleich `aktuell`, keine Gate-Zahl als Literal im Produktpfad). Rotbeweise `docs/beweise/roh/SONDE-013-rot-M-29-literal.txt` und `-M-29-register.txt`. | Entwurf §43.2:2861-2866; §34.3:2235-2237. **BELEGT, gemessen** |
 | M-30 | Passage liegt vor; Abdeckung wird gebraucht | Abdeckung ist die tatsächlich gemessene Signalabdeckung der Passage, nicht ihre Wanddauer. Smart Disable und Suspend gelten als **fehlende** Coverage; nach Resume oder Discontinuity beginnt eine neue Transportepoche. Eine Passage mit unzureichender Abdeckung erhält kein Siegerlabel. | **gemessen** (2026-09-04, Etappe E): **A4** `sonde013_passage.rs`::`coverage_is_measured_signal_not_wall_duration` und ::`suspend_counts_as_missing_coverage` — die Abdeckung wird auf BEIDEN Seiten geprüft, und eine lange Passage mit dünnem Signal verliert gegen eine kurze mit dichtem. Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-30.txt`. | Entwurf §48.2:3437-3439; §43.2:2870; §34.2:2196. **BELEGT, gemessen** |
 | M-31 | Passage soll gebildet werden, aber das Material wechselt mittendrin | Bei anderem Material oder unzureichender Abdeckung gibt es **kein** Siegerlabel. Der Fingerprintvergleich meldet den Wechsel, statt zwei Hälften zu mitteln. Das ist der Produktschutz aus §15: „Warnung oder Sperre, wenn das musikalische Material nicht vergleichbar ist." | **gemessen** (2026-09-04, Etappe E): **B22**::`material_change_mid_passage_is_detected_not_averaged` — mit Gegenproben in beide Richtungen: dasselbe Material zweimal ergibt BITGLEICH denselben Fingerprint, derselbe Akkord in zwei Lautstärken bleibt über 0,95 ähnlich, ein anderer Akkord ist messbar unähnlicher, Rauschen deutlich. Die Ähnlichkeit ist ein MINIMUM über die drei Verläufe, kein Mittelwert. Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-31.txt`. | Entwurf §15:1098; §43.2:2870. **BELEGT, gemessen** (Etappe E, 2026-09-04) |
-| M-32 | Passage existiert im Store; Broker startet neu oder Main lädt neu | Die Passage bleibt rekonstruierbar: Store ist autoritativ, `MainProjectState` hält kompakte aktuelle IDs. Fehlt oder wird die SQLite-Datenbank gelöscht, bleiben Projekt-Recall und DSP vollständig — nur historische Passagen und Experimente fehlen. Umgekehrt darf ein alter Datenbankeintrag nie einen neueren Plugin-State zurücksetzen. | Bestehend **A4-SI** `store_crash_matrix` für die Rekonstruktionsform; **NEU** `sonde013_passage.rs`, Fall `passage_survives_restart_and_missing_db_degrades_gracefully`. | Entwurf §33.5:2129-2160; `broker/src/store/migration.rs`:68-76. **BELEGT, BAULÜCKE** |
+| M-32 | Passage existiert im Store; Broker startet neu oder Main lädt neu | Die Passage bleibt rekonstruierbar: Store ist autoritativ, `MainProjectState` hält kompakte aktuelle IDs. Fehlt oder wird die SQLite-Datenbank gelöscht, bleiben Projekt-Recall und DSP vollständig — nur historische Passagen und Experimente fehlen. Umgekehrt darf ein alter Datenbankeintrag nie einen neueren Plugin-State zurücksetzen. | **gemessen** (2026-09-04, Etappe G): **A4**::`passage_survives_restart_and_missing_db_degrades_gracefully` — der Export trägt die Passage VOLLSTÄNDIG (nicht nur ihre ID), ein leerer Store liefert `None` statt zu paniken oder zu erfinden, und ein alter Eintrag setzt keinen neueren zurück. Bestehend **A4-SI** `store_crash_matrix`. | Entwurf §33.5:2129-2160; `broker/src/store/migration.rs`:68-76. **BELEGT, gemessen** |
 
 ### 3.4 Lokaler Hörmarker fail-closed und die NAK-47-Ausblendung
 
@@ -515,18 +515,18 @@ Ein Testname mit **NEU** existiert noch nicht.
 
 | ID | Ausgangszustand × Ereignis | Zusage samt Reihenfolge und Frist | Test | Quelle / Belegstatus |
 |---|---|---|---|---|
-| M-40 | User will eine Fremdänderung nachmessen; Versuch beginnt | `experiment_begin` mit `execution_mode=manual_external`. Reihenfolge: Passage bestimmen → Baseline messen → Baseline **verriegeln** → `experiment_begin` mit unveränderlichen Referenzen in den append-only Store → User um die Änderung bitten → dieselbe Passage erneut erfassen. Der Versuch trägt Passage- und Upstream-Fingerprint, aktives Quellenset, Messpunktklassen, eingefrorenen Match-Gain und Alignmentqualität. | **NEU** `sonde013_experiment.rs`, Fall `manual_external_begin_locks_baseline`; **NEU** **A5**-Fall `experiment_begin_belegt_von_sonde013`. | Entwurf §43.1:2828-2840,2852-2860; `reservierte-nachrichten-v1.json` (Eigentümer SONDE-013). **BELEGT, BAULÜCKE** |
-| M-41 | Versuch läuft; der User ändert erneut | Eine erneute Änderung erzeugt einen **neuen Kandidaten** und überschreibt die Baseline nicht. Baseline und Kandidat sind unveränderliche Referenzen; nur so ist der Vergleich nach Reconnect und UI-Neustart rekonstruierbar. | **NEU** `sonde013_experiment.rs`, Fall `second_change_creates_new_candidate_not_a_new_baseline`. | Entwurf §43.1:2842-2844. **BELEGT, BAULÜCKE** |
-| M-42 | `manual_external`; der Fremdzustand ist weder lesbar noch reproduzierbar | Statt State-Hashes speichert der Versuch eine Usernotiz, optional einen Werkzeugnamen und optional einen vom User bereitgestellten Preset- oder Screenshot-Hash. Er ist klar als `manuell · nicht automatisch wiederherstellbar` markiert, erlaubt **kein** Nakama-Revert und erhält eine niedrigere Reproduzierbarkeitsklasse. Die Mess- und Hörbewertung bleibt dennoch gültig, wenn Passage, Upstream-Fingerprint und Coverage passen. | **NEU** `sonde013_experiment.rs`, Fall `manual_external_has_no_state_hash_and_no_revert`; **NEU** derselbe Test, Fall `lower_reproducibility_class_is_explicit`. | Entwurf §43.1:2846-2856; §43.4:2812-2815. **BELEGT, BAULÜCKE** |
-| M-43 | Baseline und Kandidat liegen vor; Lautheit wird abgeglichen | Der Match-Gain wird für die Passage **vorab** gemessen und für die Dauer des Versuchs eingefroren; er ist Teil der unveränderlichen Referenzen. Eine Klangwertung ohne vorherigen Lautheitsabgleich ist unzulässig. Keine laufende Nachregelung (siehe M-20). | **NEU** `sonde013_experiment.rs`, Fall `match_gain_is_frozen_in_the_immutable_reference`; **NEU** `EqCopSonde013ExperimentUiTest`, Fall `no_sound_verdict_before_loudness_match`. | Entwurf §43.1:2837; §15 Vergleichbarkeitsregeln:1096; §38.3:2523-2526. **BELEGT, BAULÜCKE** |
-| M-44 | Vergleich steht; der User soll urteilen | Der optionale blind- beziehungsweise randomisierte A/B-Modus verringert Erwartungseffekte. **Identität und Reihenfolge werden erst nach dem Urteil aufgedeckt** und vorher im append-only Experimentereignis gebunden — das ist die Kante, die verhindert, dass die Reihenfolge nachträglich zum Urteil passend erzählt wird. Die UI hält sie bis dahin verborgen. | **NEU** `sonde013_experiment.rs`, Fall `blind_order_is_bound_before_the_verdict_and_revealed_after`; **NEU** `EqCopSonde013ExperimentUiTest`, Fall `ui_cannot_read_the_order_before_the_verdict`. | Entwurf §43.2:2872-2874; §43.4:2816-2817. **BELEGT, BAULÜCKE** |
-| M-45 | Vergleich wird ausgewertet | Vier getrennte Achsen, nie eine Gesamtnote: **Zielmetrik** (hat sich der adressierte Befund verändert), **Guardrails** (wurden Loudness, Peak, Transient, Breite oder geschützte Bereiche schlechter), **Effektstabilität** (bleibt Richtung und Größenordnung über Teilfenster) und **Hörurteil** (ausdrücklich Userdaten, keine Messung). Metrikdeltas erhalten per Block-Bootstrap ein Unsicherheitsintervall; für 221 gleichzeitig gescannte Bänder werden zusammenhängende Cluster beziehungsweise FDR-Korrektur verwendet. | **NEU** `sonde013_experiment.rs`, Fall `four_axes_are_reported_separately`; **NEU** `EqCopSonde013ExperimentGoldenTest`, Fälle `block_bootstrap_interval` und `band_scan_uses_cluster_or_fdr`. | Entwurf §43.2:2867-2872. **BELEGT, BAULÜCKE** |
-| M-46 | Auswertung steht; ein Urteil wird formuliert | Genau fünf zulässige Aussagen: Ziel verbessert und Guardrails stabil; messbar anders, musikalisches Urteil offen; keine belastbare Änderung; Ziel verbessert, aber geschützte Eigenschaft verschlechtert; Vergleich nicht gültig. **Nie** „objektiv besser" allein aus einem Metrikdelta. `Behalten` ist nur möglich, wenn der User es bestätigt. Ein nicht vergleichbares Experiment erhält kein starkes Siegerurteil (harter Gate 6 aus §49.2). | **NEU** `sonde013_experiment.rs`, Fall `verdict_vocabulary_is_closed_and_keep_needs_user`; **NEU** Gate-Bein `sonde013_experiment.rs`, Fall `gate6_incomparable_never_gets_a_strong_winner` mit adversarialen Gegenbeispielen. | Entwurf §43.3:2876-2888; §49.2 Gate 6:3560. **BELEGT, BAULÜCKE** |
-| M-47 | Versuch läuft; der User misst ihn nie nach | `experiment_abort` schließt ihn mit einem terminalen `aborted`-Ereignis im append-only Store ab. Das ist ausdrücklich der **häufigste Realfall** und Teil des Vertrags, nicht ein Fehlerpfad. Auslöser eines terminalen `aborted` sind **genau zwei**: expliziter Userabbruch (`experiment_abort`) und Verdrängung durch einen Bestandsdeckel (§7.1 E-03, Grund `verdraengt`, siehe M-48). **Sitzungsende, Projektwechsel, Reconnect, UI-Neustart und Brokerneustart brechen nicht ab** — ein offenes Experiment überdauert sie und bleibt danach rekonstruierbar (§43.1, siehe M-50). | **NEU** `sonde013_experiment.rs`, Fall `abort_writes_terminal_event_for_each_trigger` mit genau diesen zwei Auslöserklassen **und** der Gegenprobe, dass Sitzungsende und Neustart **kein** Ereignis schreiben; **NEU** **A5**-Fall `experiment_abort_belegt_von_sonde013`. | Entwurf §43.1:2839-2845; §7.1 E-03; `reservierte-nachrichten-v1.json` (Eigentümer SONDE-013). **BELEGT, BAULÜCKE** — Auslöserliste korrigiert in Nacharbeit 1 (§8, D4) |
-| M-48 | Versuch hat kein Terminalereignis | Er gilt als **offen** und fällt unter die Retention. Offene Zeilen sammeln sich nicht unbegrenzt an — **weder je Projektbindung noch projektübergreifend**. Zwei Deckel: `N_projekt` je Projektbindung (mindestens 2) und `N_global` über alle Projektbindungen (mindestens `N_projekt`); beide sind benannte Konstanten des Stores, kein Literal im Pfad, vom Bau begründet gewählt. Reihenfolge beim Anlegen: betroffenen Deckel prüfen → ältestes offenes Experiment **des jeweiligen Bereichs** mit terminalem `aborted` und Grund `verdraengt` schließen → neues anlegen. Der append-only Store verliert dabei nichts; keine alte Zeile wird geändert. Terminale und benannte Experimente bleiben, bis der User sie löscht (Roadmap 15). Keine Wanduhrfrist und kein Sitzungsende-Abbruch (M-47). | **NEU** `sonde013_experiment.rs`, Fälle `open_cap_per_project_at_n_and_n_plus_one` und `open_cap_global_at_n_and_n_plus_one` (Grenztests an `N` und `N+1`, Muster C-09). | Entwurf §43.1:2842-2845 (Retention aus Roadmap 15); `broker/src/store/migration.rs`:131-135; §7.1 E-03. **BELEGT, ENTSCHIEDEN** — §7.1 E-03, um den globalen Deckel ergänzt in Nacharbeit 1 (§8, D5) |
-| M-49 | `manual_external`-Versuch ist ausgewertet; das Ergebnis soll persistent werden | Das Ergebnis reist als **neue Wirefamilie** `experiment_manual_result` im Eigentum von SONDE-013 von Gen zum Broker. Sie trägt `experiment_id`, Zieladresse, `base_revision`, `ttl_ms` und Schema-/Capability-Version wie jede steuernde Nachricht (M-66), dazu Hörurteil, aufgedeckte Blindreihenfolge, Usernotiz und optionalen Werkzeugnamen; **keine** State-Hashes, **keine** Candidate-Revision, **keinen** Match-Gain. Zielmetrik, Guardrail-Deltas und Effektstabilität rechnet der **Broker** aus Baseline- und Resultatevidenz im Store und schreibt das terminale `result`-Ereignis mit `execution_mode = manual_external` append-only in `experiment_events`; der Rückweg zu Gen läuft über den bestehenden Outbox-/Snapshot-Pfad, nicht über eine weitere Familie. Die Familie `experiment_result` **bleibt vollständig reserviert bei SONDE-017** — SONDE-013 belegt weder einen fremden Namen noch einen Teilzweig davon (M-73). | **NEU** **A5**-Fälle `experiment_manual_result_definiert`, `experiment_result_bleibt_reserviert_fuer_sonde017` und `summe_ist_28`; **NEU** **B10** `EqCopIpcTest` für die C++-Hälfte; **NEU** `sonde013_experiment.rs`, Fall `manual_result_writes_terminal_event_and_deltas`. | `reservierte-nachrichten-v1.json`:156-158 (Eigentümer von `experiment_result`); `tools/eq-copilot/pruefe_v3_vertrag.py`:1063-1079 (Namens- und Summenprüfung kennt nur ganze Familien); Entwurf §43.1:2839-2845; §58 („Blindurteil und Guardrail-Deltas"). **BELEGT, ENTSCHIEDEN** — §7.1 E-02, ersetzt in Nacharbeit 1 (§8, D1) |
-| M-50 | Broker oder Main startet neu; ein Versuch war offen | Baseline, Kandidat und Match-Gain bleiben nach Broker- und Main-Neustart reproduzierbar; ein manueller Versuch weist seine schwächere Reproduzierbarkeit dabei ehrlich aus. Reihenfolge: Store lesen → unveränderliche Referenzen wiederherstellen → offenen Zustand anzeigen → **keine** stillschweigende Fortsetzung einer Messung über den Neustart hinweg. | Bestehend **A4-SI** `store_crash_matrix` für die Rekonstruktionsform; **NEU** `sonde013_experiment.rs`, Fall `experiment_survives_restart_without_silent_continuation`. | Entwurf §43.1:2842-2844; §43.4:2814-2815. **BELEGT, BAULÜCKE** |
-| M-51 | Versuch soll exportiert oder gelöscht werden | Ein Experiment kann **vollständig inklusive Evidenz-IDs** exportiert und **ohne PCM** gelöscht werden. Löschen ist der Gegenpfad zum Anlegen und gehört in denselben Änderungssatz. | **NEU** `sonde013_experiment.rs`, Fall `export_is_complete_and_delete_leaves_no_pcm`. | Entwurf §43.4:2818; CLAUDE.md Änderungssatzregel. **BELEGT, BAULÜCKE** |
+| M-40 | User will eine Fremdänderung nachmessen; Versuch beginnt | `experiment_begin` mit `execution_mode=manual_external`. Reihenfolge: Passage bestimmen → Baseline messen → Baseline **verriegeln** → `experiment_begin` mit unveränderlichen Referenzen in den append-only Store → User um die Änderung bitten → dieselbe Passage erneut erfassen. Der Versuch trägt Passage- und Upstream-Fingerprint, aktives Quellenset, Messpunktklassen, eingefrorenen Match-Gain und Alignmentqualität. | **gemessen** (2026-09-04, Etappe G): **A4**::`manual_external_begin_locks_baseline` — die Baseline trägt alle Referenzfelder und wird von einer wiederholten `experiment_begin` nicht überschrieben; **A5**::`experiment_begin_belegt_von_sonde013` (Register nennt den Eigentümer UND das Schema trägt die Familie). Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-40.txt`. | Entwurf §43.1:2828-2840,2852-2860; `reservierte-nachrichten-v1.json` (Eigentümer SONDE-013). **BELEGT, gemessen** |
+| M-41 | Versuch läuft; der User ändert erneut | Eine erneute Änderung erzeugt einen **neuen Kandidaten** und überschreibt die Baseline nicht. Baseline und Kandidat sind unveränderliche Referenzen; nur so ist der Vergleich nach Reconnect und UI-Neustart rekonstruierbar. | **gemessen** (2026-09-04, Etappe G): **A4**::`second_change_creates_new_candidate_not_a_new_baseline` — die Baseline bleibt unberührt, Kandidaten zählen ab 1 (sie ist NICHT Kandidat 0), und nach dem Terminal gibt es keinen neuen mehr. Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-41.txt`. | Entwurf §43.1:2842-2844. **BELEGT, gemessen** |
+| M-42 | `manual_external`; der Fremdzustand ist weder lesbar noch reproduzierbar | Statt State-Hashes speichert der Versuch eine Usernotiz, optional einen Werkzeugnamen und optional einen vom User bereitgestellten Preset- oder Screenshot-Hash. Er ist klar als `manuell · nicht automatisch wiederherstellbar` markiert, erlaubt **kein** Nakama-Revert und erhält eine niedrigere Reproduzierbarkeitsklasse. Die Mess- und Hörbewertung bleibt dennoch gültig, wenn Passage, Upstream-Fingerprint und Coverage passen. | **gemessen** (2026-09-04, Etappe G): **A4**::`manual_external_has_no_state_hash_and_no_revert` und ::`lower_reproducibility_class_is_explicit` — statt State-Hashes eine Usernotiz und ein optionaler Werkzeugname, beide wirklich optional; die niedrigere Klasse ist ein eigener Wert im Typ und keine fehlende Angabe, und die Messung bleibt vollständig gültig. | Entwurf §43.1:2846-2856; §43.4:2812-2815. **BELEGT, gemessen** |
+| M-43 | Baseline und Kandidat liegen vor; Lautheit wird abgeglichen | Der Match-Gain wird für die Passage **vorab** gemessen und für die Dauer des Versuchs eingefroren; er ist Teil der unveränderlichen Referenzen. Eine Klangwertung ohne vorherigen Lautheitsabgleich ist unzulässig. Keine laufende Nachregelung (siehe M-20). | **gemessen** (2026-09-04, Etappe G): **A4**::`match_gain_is_frozen_in_the_immutable_reference` und **B26** `EqCopSonde013ExperimentUiTest`::`no_sound_verdict_before_loudness_match` — die Sperre sitzt im Broker UND in Gen; ein noch laufender Pegel zählt nicht als Abgleich, und nach dem Urteil ändert ein neuer Pegel nichts mehr. Rotbeweise `docs/beweise/roh/SONDE-013-rot-M-43.txt` und `-M-43-ui.txt`. | Entwurf §43.1:2837; §15 Vergleichbarkeitsregeln:1096; §38.3:2523-2526. **BELEGT, gemessen** |
+| M-44 | Vergleich steht; der User soll urteilen | Der optionale blind- beziehungsweise randomisierte A/B-Modus verringert Erwartungseffekte. **Identität und Reihenfolge werden erst nach dem Urteil aufgedeckt** und vorher im append-only Experimentereignis gebunden — das ist die Kante, die verhindert, dass die Reihenfolge nachträglich zum Urteil passend erzählt wird. Die UI hält sie bis dahin verborgen. | **gemessen** (2026-09-04, Etappe G): **A4**::`blind_order_is_bound_before_the_verdict_and_revealed_after` und **B26**::`ui_cannot_read_the_order_before_the_verdict` — vor dem Urteil gibt der Typ die Reihenfolge gar nicht heraus (auch der Ausgabeparameter bleibt unberührt), ein zweites Binden dreht sie nicht, ein abgebrochener Versuch deckt nichts auf. Rotbeweise `docs/beweise/roh/SONDE-013-rot-M-44.txt` und `-M-44-ui.txt`. | Entwurf §43.2:2872-2874; §43.4:2816-2817. **BELEGT, gemessen** |
+| M-45 | Vergleich wird ausgewertet | Vier getrennte Achsen, nie eine Gesamtnote: **Zielmetrik** (hat sich der adressierte Befund verändert), **Guardrails** (wurden Loudness, Peak, Transient, Breite oder geschützte Bereiche schlechter), **Effektstabilität** (bleibt Richtung und Größenordnung über Teilfenster) und **Hörurteil** (ausdrücklich Userdaten, keine Messung). Metrikdeltas erhalten per Block-Bootstrap ein Unsicherheitsintervall; für 221 gleichzeitig gescannte Bänder werden zusammenhängende Cluster beziehungsweise FDR-Korrektur verwendet. | **gemessen** (2026-09-04, Etappe G): **A4**::`four_axes_are_reported_separately` (keine Methode verrechnet sie; das Hörurteil geht in keine Messachse ein) und **B25** `EqCopSonde013ExperimentGoldenTest`::`block_bootstrap_interval` und ::`band_scan_uses_cluster_or_fdr`. Beide Sprachen prüfen dieselben festen Zahlen. Rotbeweise `docs/beweise/roh/SONDE-013-rot-M-45.txt` und `-M-45-block.txt`. | Entwurf §43.2:2867-2872. **BELEGT, gemessen** |
+| M-46 | Auswertung steht; ein Urteil wird formuliert | Genau fünf zulässige Aussagen: Ziel verbessert und Guardrails stabil; messbar anders, musikalisches Urteil offen; keine belastbare Änderung; Ziel verbessert, aber geschützte Eigenschaft verschlechtert; Vergleich nicht gültig. **Nie** „objektiv besser" allein aus einem Metrikdelta. `Behalten` ist nur möglich, wenn der User es bestätigt. Ein nicht vergleichbares Experiment erhält kein starkes Siegerurteil (harter Gate 6 aus §49.2). | **gemessen** (2026-09-04, Etappe G): **A4**::`verdict_vocabulary_is_closed_and_keep_needs_user` (alle 192 Achsenkombinationen abgefahren, `Behalten` verlangt in jeder die Userbestätigung) und ::`gate6_incomparable_never_gets_a_strong_winner`. Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-46.txt`. | Entwurf §43.3:2876-2888; §49.2 Gate 6:3560. **BELEGT, gemessen** |
+| M-47 | Versuch läuft; der User misst ihn nie nach | `experiment_abort` schließt ihn mit einem terminalen `aborted`-Ereignis im append-only Store ab. Das ist ausdrücklich der **häufigste Realfall** und Teil des Vertrags, nicht ein Fehlerpfad. Auslöser eines terminalen `aborted` sind **genau zwei**: expliziter Userabbruch (`experiment_abort`) und Verdrängung durch einen Bestandsdeckel (§7.1 E-03, Grund `verdraengt`, siehe M-48). **Sitzungsende, Projektwechsel, Reconnect, UI-Neustart und Brokerneustart brechen nicht ab** — ein offenes Experiment überdauert sie und bleibt danach rekonstruierbar (§43.1, siehe M-50). | **gemessen** (2026-09-04, Etappe G): **A4**::`abort_writes_terminal_event_for_each_trigger` — genau zwei Auslöser, beide schreiben ein terminales Ereignis, ein zweites wird abgelehnt; **A5**::`experiment_abort_belegt_von_sonde013`. Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-47.txt`. | Entwurf §43.1:2839-2845; §7.1 E-03; `reservierte-nachrichten-v1.json` (Eigentümer SONDE-013). **BELEGT, gemessen** — Auslöserliste korrigiert in Nacharbeit 1 (§8, D4) |
+| M-48 | Versuch hat kein Terminalereignis | Er gilt als **offen** und fällt unter die Retention. Offene Zeilen sammeln sich nicht unbegrenzt an — **weder je Projektbindung noch projektübergreifend**. Zwei Deckel: `N_projekt` je Projektbindung (mindestens 2) und `N_global` über alle Projektbindungen (mindestens `N_projekt`); beide sind benannte Konstanten des Stores, kein Literal im Pfad, vom Bau begründet gewählt. Reihenfolge beim Anlegen: betroffenen Deckel prüfen → ältestes offenes Experiment **des jeweiligen Bereichs** mit terminalem `aborted` und Grund `verdraengt` schließen → neues anlegen. Der append-only Store verliert dabei nichts; keine alte Zeile wird geändert. Terminale und benannte Experimente bleiben, bis der User sie löscht (Roadmap 15). Keine Wanduhrfrist und kein Sitzungsende-Abbruch (M-47). | **gemessen** (2026-09-04, Etappe G): **A4**::`open_cap_per_project_at_n_and_n_plus_one` und ::`open_cap_global_at_n_and_n_plus_one` — bei N+1 wird das ÄLTESTE offene Experiment des jeweiligen Bereichs mit `verdraengt` geschlossen, nicht das neueste abgelehnt, und ein volles Projekt verdrängt keine fremden Zeilen. `N_PROJEKT` = 8, `N_GLOBAL` = 32, beide mit Begründung in §10.8. Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-48.txt`. | Entwurf §43.1:2842-2845 (Retention aus Roadmap 15); `broker/src/store/migration.rs`:131-135; §7.1 E-03. **BELEGT, ENTSCHIEDEN** — §7.1 E-03, um den globalen Deckel ergänzt in Nacharbeit 1 (§8, D5) |
+| M-49 | `manual_external`-Versuch ist ausgewertet; das Ergebnis soll persistent werden | Das Ergebnis reist als **neue Wirefamilie** `experiment_manual_result` im Eigentum von SONDE-013 von Gen zum Broker. Sie trägt `experiment_id`, Zieladresse, `base_revision`, `ttl_ms` und Schema-/Capability-Version wie jede steuernde Nachricht (M-66), dazu Hörurteil, aufgedeckte Blindreihenfolge, Usernotiz und optionalen Werkzeugnamen; **keine** State-Hashes, **keine** Candidate-Revision, **keinen** Match-Gain. Zielmetrik, Guardrail-Deltas und Effektstabilität rechnet der **Broker** aus Baseline- und Resultatevidenz im Store und schreibt das terminale `result`-Ereignis mit `execution_mode = manual_external` append-only in `experiment_events`; der Rückweg zu Gen läuft über den bestehenden Outbox-/Snapshot-Pfad, nicht über eine weitere Familie. Die Familie `experiment_result` **bleibt vollständig reserviert bei SONDE-017** — SONDE-013 belegt weder einen fremden Namen noch einen Teilzweig davon (M-73). | **gemessen** (2026-09-04, Etappe G): **A4**::`manual_result_writes_terminal_event_and_deltas` — das Ergebnis trägt NUR Hörurteil, aufgedeckte Reihenfolge, Notiz und Werkzeug; der Match-Gain steht in der Referenz, und der Broker rechnet die Deltas aus dem Store. Die Wirefamilie ist seit Fassung 2 (Etappe A) im Vertrag. | `reservierte-nachrichten-v1.json`:156-158 (Eigentümer von `experiment_result`); `tools/eq-copilot/pruefe_v3_vertrag.py`:1063-1079 (Namens- und Summenprüfung kennt nur ganze Familien); Entwurf §43.1:2839-2845; §58 („Blindurteil und Guardrail-Deltas"). **BELEGT, ENTSCHIEDEN** — §7.1 E-02, ersetzt in Nacharbeit 1 (§8, D1) |
+| M-50 | Broker oder Main startet neu; ein Versuch war offen | Baseline, Kandidat und Match-Gain bleiben nach Broker- und Main-Neustart reproduzierbar; ein manueller Versuch weist seine schwächere Reproduzierbarkeit dabei ehrlich aus. Reihenfolge: Store lesen → unveränderliche Referenzen wiederherstellen → offenen Zustand anzeigen → **keine** stillschweigende Fortsetzung einer Messung über den Neustart hinweg. | **gemessen** (2026-09-04, Etappe G): **A4**::`experiment_survives_restart_without_silent_continuation` — Baseline, Kandidaten und Match-Gain reisen vollständig mit, der offene Zustand bleibt offen, die gebundene Reihenfolge bleibt gebunden UND verborgen, und es entsteht kein Ergebnis aus dem Nichts. | Entwurf §43.1:2842-2844; §43.4:2814-2815. **BELEGT, gemessen** |
+| M-51 | Versuch soll exportiert oder gelöscht werden | Ein Experiment kann **vollständig inklusive Evidenz-IDs** exportiert und **ohne PCM** gelöscht werden. Löschen ist der Gegenpfad zum Anlegen und gehört in denselben Änderungssatz. | **gemessen** (2026-09-04, Etappe G): **A4**::`export_is_complete_and_delete_leaves_no_pcm` — der Export trägt Experiment, Passage und nur die eigenen Ereignisse; die 76 Fingerprintbyte sind das einzige, was vom Audio bleibt. Löschen lässt die Passage stehen (sie kann weitere Versuche tragen) und das append-only Log unberührt. Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-51.txt`. | Entwurf §43.4:2818; CLAUDE.md Änderungssatzregel. **BELEGT, gemessen** |
 
 ### 3.6 Invalidierung
 
@@ -3265,6 +3265,194 @@ Einfrieren. Der Aufruf steht jetzt davor; die Warnung steht im Test.
   gewählten 3,0. Eine lineare Kette hält die Relation exakt konstant; ihre
   Streuung ist bis auf das 0,1-dB-Raster des Livepfads null. Alles darüber ist
   keine Messstreuung, sondern Wirkung.
+
+---
+
+### 10.8 Etappe G — das Experiment `manual_external` (2026-09-04)
+
+**Gebaute Matrixzeilen:** M-25 (jetzt vollständig), M-32, M-40 bis M-51.
+M-59 misst `sonde013_taint.rs` und gehört damit zur Etappe H; die beiden
+Terminalereignisse, an denen es hängt, stehen hier.
+
+#### Der Fund aus §10.6 ist aufgelöst
+
+M-25 verlangte ein Passageobjekt im Store, und SONDE-013 hat keinen eigenen
+Wire-Weg, eines anzulegen. Die Auflösung, die §10.6 vorschlug, hält: **die
+Passage entsteht mit dem ersten `experiment_begin`, das sie nennt.**
+`experiment_referenz` trägt genau die Felder, die M-25 verlangt, und
+`experiment_begin` trägt die `passage_id`.
+
+Das ist auch fachlich stimmig, und der Bau hat es bestätigt: eine Passage ohne
+Versuch ist ein Projektintent in Gen — dafür gibt es seit Etappe E
+`manual_passages_v1` im `MainProjectState` —, kein Evidenzobjekt. Erst der
+Versuch macht sie zu Evidenz. Ein zweiter Versuch auf derselben Passage legt
+sie nicht noch einmal an; sonst hätte dasselbe Stück Musik zwei
+Evidenzobjekte.
+
+#### Append-only ist keine Speicherform, sondern die Zusage
+
+§43.1 verlangt unveränderliche Referenzen, und M-41 sagt, wofür: nur so ist
+der Vergleich nach Reconnect und UI-Neustart **rekonstruierbar**. Eine
+überschriebene Baseline wäre nicht bloss verloren — sie machte jedes spätere
+Urteil unprüfbar, weil niemand mehr sagen kann, wogegen verglichen wurde.
+
+Der Typ hält das durch, nicht die Disziplin des Aufrufers:
+
+- es gibt kein `&mut Experimentreferenz` und keinen Setter;
+- eine wiederholte `experiment_begin` mit derselben ID wird abgelehnt, statt
+  zu überschreiben;
+- ein zweites Terminalereignis wird abgelehnt, sonst liesse sich ein
+  abgebrochener Versuch nachträglich in ein Ergebnis verwandeln;
+- die Baseline ist **nicht** Kandidat 0 — eine gemeinsame Nummerierung lüde
+  dazu ein, sie zu überschreiben.
+
+#### Die Kante des Blindvergleichs liegt im Typ
+
+M-44 wörtlich: „Identität und Reihenfolge werden erst **nach dem Urteil**
+aufgedeckt und vorher im append-only Experimentereignis gebunden — das ist die
+Kante, die verhindert, dass die Reihenfolge nachträglich zum Urteil passend
+erzählt wird."
+
+Eine UI, die die Reihenfolge kennt und sich nur verpflichtet, sie nicht zu
+zeigen, ist kein Blindvergleich: ein Tooltip, ein Debugausdruck oder eine
+spätere Sortierung reichen, und niemand merkt es. Deshalb gibt es die
+Reihenfolge auf **beiden** Seiten erst nach dem Urteil heraus — im Broker
+(`Experiment::aufgedeckte_reihenfolge`) und in Gen (`Blindvergleich`). Und
+`aufgedeckteReihenfolge` liefert ein `bool` plus Ausgabeparameter statt eines
+Wertes: ein Rückgabewert, den man versehentlich als Reihenfolge lesen kann,
+wäre genau das Leck, das der Typ schliesst.
+
+Die UI darf **wissen**, dass ein Blindvergleich läuft (`reihenfolge_gebunden`)
+und zwei Seiten auseinanderhalten (`seiteA`, `seiteB`). Sie darf nur nicht
+wissen, welche welche ist. Ein abgebrochener Versuch deckt nichts auf: es gab
+kein Urteil, also gibt es nichts aufzudecken.
+
+#### Kein Klangurteil ohne Lautheitsabgleich, und zwar an beiden Stellen
+
+§15 wörtlich: „Eine Klangwertung ohne vorherigen Lautheitsabgleich ist
+unzulässig." Lauter klingt besser — das ist keine Meinung, sondern eine seit
+Jahrzehnten gemessene Eigenschaft des Gehörs. Ein A/B ohne Pegelabgleich misst
+zuverlässig, welche Seite lauter war.
+
+Die Sperre sitzt deshalb im Broker **und** in Gen. Eine Sperre an nur einer der
+zwei Stellen ist keine: die UI sammelte sonst ein Urteil, das der Store danach
+ablehnt. In Gen zählt ein noch laufender Pegel nicht als Abgleich, und nach dem
+Urteil ändert auch ein neuer Pegel nichts mehr — er gehört zum Versuch, und ein
+später neu gemessener darf ein gefälltes Urteil nicht rückläufig entwerten.
+
+#### Vier Achsen, fünf Aussagen, und keine Gesamtnote
+
+M-45 verlangt vier getrennte Achsen; es gibt bewusst **keine** Methode, die sie
+verrechnet — die gäbe es nur, damit jemand sie benutzt. Zielmetrik besser und
+Guardrail schlechter ergibt eine eigene Aussage, keine Verrechnung zu
+„unentschieden". Das Hörurteil ist Userdaten und geht in keine Messachse ein:
+dasselbe Messbild mit anderem Hörurteil ergibt dasselbe Urteil.
+
+`NichtBeurteilbar` ist die vierte, eigenständige Antwort und kein Zwischenwert
+— dieselbe fail-closed-Form wie die Präsenzbits der Evidenz. Eine Achse, die
+niemand beurteilen kann, macht den Vergleich ungültig und nicht etwa neutral;
+sonst hiesse „ich weiss es nicht" im Ergebnis dasselbe wie „es hat sich nichts
+geändert".
+
+Der Urteilsraum wird im Test **vollständig** abgefahren: 4 × 4 × 4 × 3 = 192
+Kombinationen, und jede landet auf einer der fünf Aussagen. `Behalten` verlangt
+in allen 192 die Userbestätigung, und selbst mit Bestätigung nicht bei einem
+ungültigen Vergleich — eine Bestätigung ersetzt keine fehlende Grundlage.
+
+Der harte Gate 6 aus §49.2 steht **vor** allem anderen: ein Gate, das erst nach
+der Auswertung greift, ist eine Empfehlung.
+
+#### Zwei Deckel, und der häufigste Realfall ist der Abbruch
+
+M-47 sagt es ausdrücklich: der User misst einen Versuch meistens nie nach.
+`aborted` ist Teil des Vertrags und kein Fehlerpfad, und die Auslöser sind
+**genau zwei** — expliziter Userabbruch und Verdrängung. Sitzungsende,
+Projektwechsel, Reconnect, UI-Neustart und Brokerneustart brechen nicht ab; in
+diesem Typ gibt es gar keinen Weg, ein Terminal ohne einen der zwei Gründe zu
+schreiben.
+
+Die beiden Deckel (M-48) sind benannte Konstanten mit begründeten Werten:
+
+| Deckel | Wert | Begründung |
+|---|---|---|
+| `N_PROJEKT` | 8 | M-48 verlangt mindestens 2; mit weniger könnte der User nicht einmal zwei Änderungen nebeneinander offen halten. Acht deckt eine Arbeitssitzung ab, ohne dass eine vergessene Zeile ewig mitreist. |
+| `N_GLOBAL` | 32 | mindestens `N_PROJEKT`; vier Projekte gleichzeitig offen (Bridge, zweites FL, Vorlage, Bounce) ist realistisch, fünf nicht mehr. |
+
+Beim Überschreiten wird das **älteste offene Experiment des jeweiligen
+Bereichs** mit `verdraengt` geschlossen, nicht das neueste abgelehnt — der User
+soll weiterarbeiten können. Der Bereichsdeckel greift vor dem globalen: ein
+Projekt, das seinen eigenen sprengt, soll nicht die Zeilen anderer Projekte
+verdrängen. Und die Verdrängung läuft **vor** dem Anlegen, sonst überschritte
+der Store seinen eigenen Deckel für die Dauer eines Aufrufs.
+
+#### Die Statistik steht in zwei Sprachen und liefert dieselben Zahlen
+
+M-45 nennt für den Block-Bootstrap ein C++-Golden-Bein und für die Achsen den
+Rust-Test. Beide Seiten brauchen die Rechnung: Gen zeigt sie live, der Broker
+schreibt sie in den Store. Sie stehen deshalb zweimal — mit demselben
+Generator, denselben Konstanten und derselben Ziehungsreihenfolge — und beide
+Beine prüfen **dieselben festen Zahlen** (`0,979688 .. 1,016406`). Ein Golden,
+der nur Eigenschaften prüft, liesse die zwei Fassungen auseinanderdriften, ohne
+dass es auffiele.
+
+**Warum Block-Bootstrap:** die Deltas benachbarter Analysefenster sind
+korreliert — dasselbe Material, dieselbe Kette, überlappende Fenster. Ein
+Bootstrap über Einzelwerte nimmt Unabhängigkeit an, die es nicht gibt, und
+liefert ein viel zu enges Intervall. Bei blockigem Material ist das
+Blockintervall messbar breiter (1,69 gegen 0,88).
+
+**Warum FDR:** bei 221 gleichzeitig gescannten Bändern melden gleichverteilte
+p-Werte naiv elf „signifikante" Bänder, obwohl sich nichts geändert hat. Nach
+der Korrektur bleibt kein einziges, während 20 klare Treffer durchkommen.
+
+**Ein Golden, der nichts mass.** Die erste Fassung der Testfolge hatte Periode
+8 bei Blocklänge 8 — dann hat jeder Block denselben Mittelwert, jede Ziehung
+liefert dieselbe Zahl, und das Intervall ist trivial null. Der Fall „ein
+grösseres alpha ergibt ein engeres Intervall" verglich 0,00000 mit 0,00000 und
+fiel auf. Die Folge hat jetzt zwei zur Blocklänge teilerfremde Perioden (5 und
+7) und kommt ohne transzendente Funktionen aus: `sin` kann sich zwischen zwei
+libm-Implementierungen im letzten Bit unterscheiden, und dieser Golden wird
+sprachübergreifend geprüft.
+
+#### Belege
+
+| Bein | Ergebnis |
+|---|---|
+| **A4** `sonde013_experiment.rs` (NEU) | 18 bestanden, 0 gescheitert |
+| **A4** `cargo test --release`, gesamter Broker | 17 Suiten, 0 gescheitert |
+| **A5** `pruefe_v3_vertrag.py` | 475 Prüfungen, 0 gescheitert (471 vorher, +4 durch M-40 und M-47) |
+| **B25** `EqCopSonde013ExperimentGoldenTest` (NEU) | 20 bestanden, 0 gescheitert |
+| **B26** `EqCopSonde013ExperimentUiTest` (NEU) | 36 bestanden, 0 gescheitert |
+
+| Rotbeweis | Eingebauter Fehler | Fallendes Bein |
+|---|---|---|
+| `-M-25-store.txt` | die Passage wird beim ersten Versuch nicht angelegt | A4 |
+| `-M-40.txt` | eine wiederholte `experiment_begin` überschreibt die Baseline | A4 |
+| `-M-41.txt` | eine erneute Änderung überschreibt die Baseline statt einen Kandidaten anzulegen | A4 |
+| `-M-43.txt` | ein Klangurteil ohne eingefrorenen Match-Gain wird angenommen (Broker) | A4 |
+| `-M-43-ui.txt` | dasselbe auf der Gen-Seite | B26 |
+| `-M-44.txt` | die Blindreihenfolge lässt sich vor dem Urteil lesen (Broker) | A4 |
+| `-M-44-ui.txt` | dasselbe auf der Gen-Seite | B26 |
+| `-M-45.txt` | die FDR-Korrektur wird durch den naiven Test ersetzt | A4 |
+| `-M-45-block.txt` | der Block-Bootstrap zieht Einzelwerte statt Blöcke | B25 |
+| `-M-46.txt` | der harte Gate 6 greift nicht | A4 |
+| `-M-47.txt` | ein zweites Terminalereignis überschreibt das erste | A4 |
+| `-M-48.txt` | der Bestandsdeckel verdrängt nicht | A4 |
+| `-M-51.txt` | das Löschen eines Experiments nimmt die Passage mit | A4 |
+
+#### Abweichungen von §5, mit Begründung
+
+- **Zwei neue Kernheader** `core/analysis/Statistik.h` und
+  `core/analysis/Blindvergleich.h`. §5.2 nennt `plugin/core/analysis/` als
+  Ticketpfad; M-43, M-44 und M-45 verlangen je eine Produktwirkung auf der
+  Gen-Seite, und alle drei gehören in den JUCE-freien Kern statt in eine
+  Testdatei.
+- **Zwei neue Kanonbeine B25 und B26.** §5.1 nennt beide für Etappe G. Die
+  Beinzahl wächst von 49 auf **51**.
+- **M-59 wandert nach H.** §5.1 zählt es zu G, aber die Matrixzeile nennt
+  `sonde013_taint.rs` als messenden Test — und der gehört zu H. Die beiden
+  Terminalereignisse, an denen M-59 hängt, stehen hier und werden dort
+  gemessen.
 
 ---
 

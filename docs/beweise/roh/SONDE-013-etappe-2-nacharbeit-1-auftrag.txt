@@ -1,0 +1,77 @@
+SONDE-013 / Planschritt S20–22 — ETAPPE 2, NACHARBEIT RUNDE 1 (Budget: Runde 1 von 3 für den Bau): 31 Defekte und 2 entschiedene Lücken der Erstprüfung 1 schließen — nach Ursachen, nicht als Punktkorrekturen.
+
+ROLLE UND ORT
+Du bist der Nacharbeits-Bauworker (Opus) im sichtbaren Checkout C:/Users/phili/Projekte/Nakama, Branch master. Stand vor dieser Runde: {{BASIS}} (Ticket-Basis des Baus: 0fdbb4a; Kanon GRUEN 53/53 auf f71d741). Der Dirigent (Fable) misst nur am Repo. Lies zuerst CLAUDE.md, dann docs/beweise/roh/SONDE-013-etappe-2-auftrag.txt (der Bauauftrag gilt unverändert: technische Grenzen, Kanon abgekoppelt mit Log, Rotbeweise, Git-Regeln, Selbstaudit), dann docs/beweise/SONDE-013.md (Matrix §3 mit §7 ist die Spezifikation; §10 der Bau-Verlauf), dann das Rohurteil docs/beweise/roh/SONDE-013-erstpruefung-1-2379ebf.txt (Codex gpt-5.6-sol, Effort max, lesend, Thread 01a06b42-0f1c-7500-95d4-713850720677, HEAD 2379ebf; 34 Befunde, kein URTEIL-Zeile, vom Dirigenten als NEEDS_WORK gewertet). Der Dirigent hat jeden Befund an der Quelle prüfen lassen: 31 Defekte, 2 Lücken mit entschiedener Regel, 1 Härtung (B33, Fingerprint-Version: geht ins Register, KEINE Nacharbeit). Du setzt genau die Regeln unten um, nicht mehr; wo eine Gruppe eine gemeinsame Ursache hat, behebst du die Ursache.
+
+BEFUNDE — Nummer, Quelle, Einordnung, Gruppe (Codex-Wortlaut steht in der Rohdatei in derselben Reihenfolge; Matrixbezüge zeigen auf docs/beweise/SONDE-013.md)
+B01 HoerMarkierung.h:430,438 — Oversize-Ausfade rechnet mit fadeSamples statt min(fadeSamples, wetKapazitaet); Restfade 0,867 nach 512 Samples bei 48 kHz — DEFEKT M-36 — G3
+B02 HoerMarkierung.h:455 — `istHoerbar = fade > 0.001`, Folgeblöcke mischen noch Wet, `endete` zu früh — DEFEKT M-38 — G3
+B03 PluginProcessor.cpp:494 — project_sample_end = Blockanfang statt letztes Fade-Sample — DEFEKT M-38/M-52 — G3
+B04 PluginProcessor.cpp:507,902 — Ringüberlauf-Sticky nie gelesen; v3Status() ohne intervention_state_unknown — DEFEKT M-39 — G3
+B05 PluginProcessor.cpp:843, SondeProcessor.cpp:503, NakamaEvidenz.cpp:369 — direkter P0-Pfad und Evidenzsnapshots prüfen die rohe v3Hello()-Adresse ohne NAK-40-Alias — DEFEKT M-05/M-37, Identität — G7
+B06 SondeProcessor.cpp:479 — bei P1-Rückstau und nach abgewiesenem Snapshot wird der Ereignisring geleert und die Verlustbasis vorgesetzt — DEFEKT M-05 — G7
+B07 FeatureEngine.h:2034 — NaN/Inf im Audioblock wird zu 0 sanitisiert, kein Zähler, kein Latch — DEFEKT M-07, CLAUDE.md NaN-Ehrlichkeit — G2
+B08 FeatureEngine.h:3224-3227 — passageTruePeak/Headroom/LRA/Fingerprint laufen seit der Transportgrenze, nicht zwischen den Grenzen der markierten Passage — DEFEKT M-03/M-25 — G4
+B09 FeatureEngine.h:2086 — Polyphasen-True-Peak bis 12 Samples verzögert, an der Grenze samt Filterzustand verworfen — LÜCKE, Regel unten — G4
+B10 Vergleichspegel.h:61 — NaN/Inf übersprungen ohne Zähler/Latch — DEFEKT M-07, CLAUDE.md — G2
+B11 Blindvergleich.h:84 — Match-Gain vor dem Urteil beliebig oft überschreibbar — DEFEKT M-43 — G7
+B12 evidenz.rs:86,120 — Taintprüfung und Insert unter zwei Locks — DEFEKT M-63 — G1
+B13 evidenz.rs:122 — Snapshot je Quelle ersetzt, nur 8 Skalare, kein Store-Event, keine Evidence-IDs — DEFEKT M-49/M-51 — G1
+B14 evidenz.rs:99-105 — Frame-Flag `beeinflusst` hat keinen Leser im Broker — LÜCKE, Regel unten — G1
+B15 zustand.rs:176, link.rs:137-139/345-347, liveness.rs:95-97 — `evidenz`-Map wird bei Reconnect/Eviction nicht bereinigt — DEFEKT M-74, verbinden↔trennen — G1
+B16 intervention.rs:135,144 — tail_fortschritt/neutral_resync ohne Produktaufrufer — DEFEKT M-58/M-60/M-61 — G1
+B17 intervention.rs:171 — evidence_dispatch ohne Client/Session, Taint brokerweit statt sitzungsweit — DEFEKT M-62 — G1
+B18 mod.rs:40, befehl.rs:458-481 — experiment_begin/abort/manual_result fallen in `_ => None`; Coordinator hat keinen Experimentstore — DEFEKT M-40/M-47/M-49 — G1
+B19 experiment.rs:272-277 — Store flüchtig (BTreeMap/Vec), kein StoreHandle/SQLite, Ereignisse nur IDs — DEFEKT M-47/M-50 — G1
+B20 experiment.rs:470-486 — ergebnis() ohne Kandidat terminierbar, keine Achsen/Deltas berechnet — DEFEKT M-45/M-49 — G1
+B21 experiment.rs:554-559 — Export ohne Evidence-IDs — DEFEKT M-51 — G1
+B22 experiment.rs:490-506, zustand.rs:92 — Terminal schließt keine art=experiment-Taintintervalle; Intervention ohne art/Experimentbezug — DEFEKT M-59 — G1
+B23 eq-ipc-v3.schema.json:1397-1409 — experiment_begin trägt nur passage_id + referenz; kein Wire-Aufruf kann Experimentstore::beginne bedienen — DEFEKT M-25 — G6
+B24 mod.rs:41 — invalidierung::* ohne Aufrufer, Serializer, Outbox, Evidenzmutation — DEFEKT M-52 bis M-57 — G1
+B25 mod.rs:42, prepost.rs:947, evidenz.rs:90-117 — bilde_paare ohne Aufrufer; Empfänger verwirft Hüllkurven/Deskriptoren — DEFEKT M-13/M-14 — G1
+B26 prepost.rs:911-914,770 — FeatureAligned ohne Presentation-Nachweis; frameschluessel ohne Aufrufer — DEFEKT M-21 — G8
+B27 prepost.rs:508 — unwrap_or(zentral) ersetzt fehlenden Teilfenster-Lag durch den Prüfwert — DEFEKT M-16 — G8
+B28 prepost.rs:664-668 — f64::NAN als Banddelta auf die Leitung — DEFEKT M-07 — G2
+B29 prepost.rs:459 — f64::INFINITY als PSR — DEFEKT M-07 — G2
+B30 vergleichbarkeit.rs:230 — NaN-Abdeckung fail-open (Vergleich false) — DEFEKT M-07/M-30 — G2
+B31 vergleichbarkeit.rs:196 — Jaccard über Listen statt Mengen (a=[x,x,x], b=[x] → 3,0) — DEFEKT M-29 — G5
+B32 vergleichbarkeit.rs:249-253 — Messpunktklassen als sortierte Liste statt je Quelle — DEFEKT M-28/M-55 — G5
+B33 telemetrie.rs:105-108 — Fingerprint-Ähnlichkeit ignoriert `version` — HÄRTUNG (Register, nicht bauen) — G5
+B34 experiment.rs:709-721 — block_bootstrap ohne is_finite-Riegel, NaN-Intervall — DEFEKT M-07/M-45 — G2
+
+REGELN DES DIRIGENTEN JE URSACHENGRUPPE (2026-09-04)
+
+G1 — Coordinator-Verdrahtung (B12, B13, B15, B16, B17, B18, B19, B20, B21, B22, B24, B25; dazu B14 als Lücke). URSACHE: broker/src/coordinator/mod.rs:40-42 exportiert experiment, invalidierung, prepost und vergleichbarkeit als Bibliotheken; der Coordinator besitzt weder Felder noch Aufrufer dafür. REGEL: Die Module werden in den Produktpfad verdrahtet, so wie die Matrixzeilen es zusagen:
+ (a) Experimentstore sitzungsweit im Coordinator-Stand, persistiert über den vorhandenen StoreHandle in den append-only SQLite-Tabellen (experiments, experiment_events; Migration mit Vor- und Rückweg, Killmatrix bleibt grün); jedes Ereignis trägt die unveränderlichen Referenzen aus §43.1 (Passage samt Fingerprint, Referenzen, Kandidat, Match-Gain, Blindreihenfolge, Evidence-IDs), sodass ein Brokerneustart offene Versuche rekonstruiert (M-47/M-50) und der Export Evidence-IDs enthält (M-51).
+ (b) befehl.rs::p0_json_mit_minor bekommt Match-Zweige für experiment_begin, experiment_abort, experiment_manual_result (M-40/M-47/M-49). ergebnis() rechnet vor dem Terminalereignis die vier Achsen aus gespeicherter Baseline- und Resultatevidenz (Block-Bootstrap/FDR, Comparability, Guardrails, Effektstabilität; M-45) und lehnt einen Abschluss ohne Resultatmessung ab; das terminale Ereignis trägt die Deltas (M-49). Interventionen tragen `art` und Experimentbezug; Resultat, Abbruch und Verdrängung schließen alle art=experiment-Intervalle (M-59).
+ (c) Evidenz: evidence_dispatch erhält Client und Session; Taintzustand (Interventionen, intervention_state_unknown, tail_samples_offen) ist je Session gehalten (M-62); Prüfung, Zählung und Insert laufen unter demselben Lock (M-63). Jeder angenommene Snapshot wird vollständig persistiert (Bänder, Perzentile, Stereo, Transport, evidence_id) mit Store-Event und fester Retention (M-49/M-51/M-74); die `evidenz`-Map wird in denselben Remove-Blöcken bereinigt wie messframes/messfehler/lautheit (link.rs, liveness.rs; M-74). tail_fortschritt wird aus dem Uhr-/Liveness-Tick aufgerufen, neutral_resync aus link.rs beim bestätigten Resync (M-58/M-60/M-61).
+ (d) invalidierung: Serializer, Outbox-Einreihung und Markierung gespeicherter Evidenz als ausgeschlossen für alle Auslöser Marker, Preview, Seek, Drop, Material- und Messpunktwechsel (M-52 bis M-57; Gründe: Seek/Loop-Wrap `epochwechsel`, Drop `sequenzluecke`, Material `material_wechsel`, Messpunkt `messpunkt_wechsel`).
+ (e) prepost: bilde_paare wird aus dem Evidenzempfänger aufgerufen; der Empfänger behält Hüllkurven und Deskriptoren, die Paarhaelfte braucht (M-13/M-14).
+ (f) LÜCKE B14, entschieden: Der Broker liest `beeinflusst = true` im Snapshot und führt ihn als ausgeschlossen (gezählt), unabhängig vom globalen Gate — als zusätzlicher Beleg im Sinn von M-52, nie als alleinige Garantie.
+ Je Zeile ein Broker-Test, der am Produktpfad misst (Nachricht rein → Store/Outbox raus), nicht am Modul allein; Rotbeweis je Zeile.
+
+G2 — NaN/Inf-Ehrlichkeit (B07, B10, B28, B29, B30, B34). REGEL: Erzeuger (FeatureEngine.h:2034, Vergleichspegel.h:61, prepost.rs:664, prepost.rs:459) liefern Wert 0 mit gueltig=false und zählen den Fall in einem Zähler, der auf die Leitung beziehungsweise in die Evidenz reist; kein nichtendlicher Wert verlässt einen Erzeuger. Konsumenten (vergleichbarkeit.rs:230 Abdeckung, experiment.rs:709 block_bootstrap) sind fail-closed: nichtendliche Eingaben ergeben Herabstufung beziehungsweise „ungültig", nie ein Siegerlabel oder ein gesetztes Intervall. Je Stelle ein Test mit NaN- und Inf-Eingabe.
+
+G3 — RT-Pfad Hörmarker und Interventionsring (B01, B02, B03, B04). REGEL: Schritt = 1/min(fadeSamples, wetKapazitaet) auf dem Oversize-Pfad, Rest des Blocks und Folgeblöcke bitidentischer Neutralpfad (M-36, §7.1 E-01); `endete` erst bei fade == 0 exakt und nach dem letzten gemischten Sample (M-38); Uebergang liefert den Sampleoffset des letzten Fade-Samples, project_sample_end = Blockanfang + Offset (M-38/M-52); v3Status() liest das Überlauf-Sticky und meldet intervention_state_unknown, bis ein bestätigter Resync es löst (M-39). Nulltest, A3 und B21 bleiben grün; keine Allokation, keine Sperre.
+
+G4 — Passagenbindung in der FeatureEngine (B08; B09 als Lücke). REGEL: Die FeatureEngine kennt das Fenster der markierten Passage (Start/Ende in Projektzeit, Transportepoche); passageTruePeak, Headroom-Ring, LRA und Fingerprint werden an dieses Fenster gebunden, nicht an die letzte Transportgrenze (M-03/M-25); die Kopplung zwischen gespeicherter Passage und Engine ist ein Produktpfad mit Test. LÜCKE B09, entschieden: An jeder Fenster- und Transportgrenze wird der Polyphasenfilter vor dem Reset geleert (die verzögerten Ausgangssamples werden ausgewertet), damit Intersample-Peaks der letzten Samples einer Passage nicht verloren gehen; eine framegenaue Zuordnung innerhalb des Fensters wird nicht zugesagt. Test: Impuls in den letzten 12 Samples einer Passage erscheint im Passagen-True-Peak.
+
+G5 — Vergleichbarkeit (B31, B32). REGEL: Jaccard über Mengen (BTreeSet) der Aktivquellen (M-29); Messpunktklassen werden je Quelle als Paar (Quelle, Klasse) verglichen, ein Wechsel einer Quelle ist ein Herabstufungsgrund (M-28/M-55). B33 bleibt Härtung.
+
+G6 — Wire-Schema experiment_begin (B23). REGEL: experiment_begin trägt die vollständige Passage (Start/Ende, Transportepoche, aktive Quellen mit Messpunktklasse, Abdeckung, Label optional, Fingerprint) innerhalb der Fassung 2 (sie ist Eigentum dieses Tickets und noch nicht abgenommen; kein weiterer Fassungsschritt); Schema, beide Leser, Fixture-Korpora und Negativfixtures im selben Änderungssatz; A5/A8/B3c/A9 grün.
+
+G7 — Sonstige (B05, B06, B11). REGEL: B05: der direkte P0-Pfad in PluginProcessor.cpp:843, die Evidenzsnapshots in SondeProcessor.cpp:503 und NakamaEvidenz.cpp:369 verwenden dieselbe NAK-40-Aliasadresse wie der Control-Bootstrap (eine gemeinsame Hilfsfunktion, kein dritter Weg); Test mit nicht-hex32-Legacy-ID. B06: bei P1-Rückstau oder abgewiesenem Snapshot bleiben Ereignisse im Ring und die Verlustbasis unverändert; nur eine erfolgreiche Übergabe entnimmt (M-05); Test mit Rückstau. B11: Der Match-Gain wird genau einmal je Versuch eingefroren; ein zweiter Vergleichspegel vor dem Urteil wird abgelehnt (M-43); Test.
+
+G8 — PRE/POST-Alignment (B26, B27). REGEL: FeatureAligned nur nach validierter Presentation-Abbildung über frameschluessel (M-21); fehlt der Teilfenster-Lag, wird herabgestuft, nie durch den Gesamtlag ersetzt (M-16). Tests: ein Paar ohne Presentation-Nachweis bleibt probable; ein Paar mit fehlendem Teilfenster-Lag bleibt probable.
+
+BEWEIS
+Je geänderter Matrixzeile Rotbeweis unter docs/beweise/roh/SONDE-013-rot-<ID>-r1.txt. Die betroffenen Beine laufen gezielt; am Ende der Runde ein VOLLER Kanon abgekoppelt mit Log (Bauauftrag), Rohausgabe committet. Ein Bein, das nicht fallen kann, ist keines.
+
+MANIFEST
+Kopf: Zeile „Erstprüfung 1" (Codex gpt-5.6-sol max, Thread 01a06b42-0f1c-7500-95d4-713850720677, HEAD 2379ebf, Prüfbereich 0fdbb4a...2379ebf, kein URTEIL-Zeile → NEEDS_WORK: 31 Defekte, 2 Lücken entschieden, 1 Härtung; Auftrag docs/beweise/roh/SONDE-013-erstpruefung-1-auftrag.txt, Rohurteil docs/beweise/roh/SONDE-013-erstpruefung-1-2379ebf.txt), Phase „Etappe 2 — Nacharbeit 1 läuft/abgeschlossen", Kanon nachher, Testanzahl, Rundenbilanz. Matrixzeilen: Vermerke „gemessen" und Rotbeweis nachziehen. Neuer Paragraph „§11 Nacharbeit 1 nach Erstprüfung 1 (2026-09-04)" append-only: je Befund B01–B34 Einordnung, Regel, Commit, Test, Rotbeweis; B33 als Härtung für das Register benannt. Prüfliste §6 aktualisieren. NAKAMA-URTEIL-Marke bleibt T1 PASS <Datum> offen (Datum des letzten Selbstaudits). dokuriegel sauber. docs/PLAN-STAND.md, docs/offene-punkte.md, docs/plan/ nicht anfassen.
+
+GRENZE UND GIT
+Ticketpfade nach §5.2 plus die in dieser Runde genannten Dateien. Nie git add -A, nie --amend, nie git reset --hard, nie git clean; fremde uncommittete Dateien nie anfassen (Worktree ist zu Beginn sauber; dieser Auftrag und die Erstprüfungs-Rohdateien sind bereits committet). Commits mit Pathspec, ein Ursachenblock je Commit, Betreff „SONDE-013 Etappe 2 Nacharbeit 1 <G1..G8>: <was>"; vor jedem Push git pull --rebase bei sauberem Worktree, dann git push. Nie einen Stand mit NOT RUN übergeben. Musst du anhalten: an einer Gruppengrenze, alles committet und gepusht, Stand in §11.
+
+ABSCHLUSS
+Fertig heißt: alle 31 Defekte und die 2 Lücken nach Regel geschlossen, Kanon GRUEN auf dem Endstand mit Rohdatei, HEAD auf origin/master, Worktree sauber. Letzte Meldung: End-SHA, Kanonzeile, je Gruppe eine Zeile mit den geschlossenen Befunden.

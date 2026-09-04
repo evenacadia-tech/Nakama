@@ -1,0 +1,44 @@
+Erstprüfung S20–22 / Ticket SONDE-013 — gebundener Prüfauftrag des Dirigenten (2026-09-04)
+
+Du bist der frische, lesende Prüfer. Prüfbereich ist ausschließlich der Änderungssatz dieses Tickets:
+`git diff 0fdbb4a09c75e2c93ab9b76e7fcf5d92d0ef17e4...{{ZIEL}} -- eq-copilot/schemas/v3 eq-copilot/fixtures eq-copilot/plugin broker tools/eq-copilot tools/beweise.ps1 .gitattributes docs/beweise/SONDE-013.md docs/beweise/roh`
+mit BASIS = 0fdbb4a09c75e2c93ab9b76e7fcf5d92d0ef17e4 (Stand nach der abgenommenen Verhaltensmatrix, vor dem Bau) und ZIEL = {{ZIEL}} (HEAD; er muss vor und nach deinem Lauf identisch sein).
+Alles andere, was seit BASIS im Repo geändert wurde, gehört zu anderen Tickets und ist hier nicht Prüfgegenstand.
+Prüfstufe T2, verlangt vom Plan für S20–22 (docs/bauaufteilung-sonden.md Zeile 392: T1+T2; T1 ist die Marke des Erbauers im Manifestkopf).
+
+GATE-TEXT, wörtlich und vollständig (docs/FL-Nakama-Sonden-Design-Entwurf.md §58, Zeilen 4272–4290; Tickettabelle Zeile 4474; docs/bauaufteilung-sonden.md Zeile 392):
+„## 58. P4 — Vergleichsevidenz und manueller Versuch
+Zweck: Die Landkarte wird von Pegelanzeigen zu belastbarer, passagengebundener Evidenz.
+Lieferumfang:
+- Dynamik-, Headroom-, Stereo-, Korrelations- und Ereignismetriken mit Qualitätsklasse;
+- PRE/POST-Paare, Restlag/Alignment, Coverage und ehrliche Herabstufung bei Modulation oder unbekannter Zeit;
+- manuell markierte Passage, Fingerprint und Comparability-Score;
+- lokaler Hörmarker mit fail-closed playing=true, recording=false, Realtime und Editor offen;
+- Experiment für immutable Baseline/Kandidat, zunächst manual_external, Lautheitsabgleich, Blindurteil und Guardrail-Deltas;
+- Invalidierung bei Marker, Preview, Seek, Drop, geändertem Material oder Messpunkt.
+Exit-Gate: Referenzkorpus, Loop-/Seek-/PDC-Goldens und adversariale Vergleichsfixtures bestehen. Kein unbekannter Zeitpfad erzeugt eine starke Cross-Probe- oder PRE/POST-Aussage. Hörmarker- und Experimentende schließen alle Taintintervalle; der reguläre Pfad nullt danach wieder."
+Tickettabelle: „SONDE-013 | Dynamik/Stereo/PRE-POST/Passage und manueller Experimentkern | P4-Korpus und inverse Taintpfade grün". Bauaufteilung: „S20–22 | SONDE-013 | Dynamik/Stereo/PRE-POST/Passage + manueller Experimentkern | T1+T2". Dazu die Registerzeilen NAK-47 (Hörmarker-Ausblendung) und NAK-68 (Integrationsfenster des Frames), wörtlich in docs/beweise/SONDE-013.md §1.5.
+
+Mehr verlangt das Gate nicht. Die Verhaltensmatrix steht in docs/beweise/SONDE-013.md, Abschnitt 3 (M-01 bis M-86), mit den Dirigentenentscheiden in Abschnitt 7 (E-01 bis E-08, in place nachgezogen nach §8 und §9); sie ist Referenz. Wo §3/§7 und §8/§9 abweichen, gilt der jüngere in-place-Wortlaut in §3/§7. Der Bauplan steht in §5, der Bau-Verlauf in §10.
+Die Riegel/Tests, die es messen (tools/beweise.ps1, Kürzel wie in der Rohausgabe): neu A25 (P4-Korpus bytegleich), A26 (Sammelbein des P4-Exit-Gates), B16 (Evidenzpfad), B17 (True Peak), B18 (Loudnessfenster/Headroom/Dynamik), B19 (bandweise Stereoevidenz), B20 (Gesamtklasse), B21 (RT→Control-Ring), B22 (Fingerprint), B23 (Passage im MainProjectState), B24 (PRE/POST Audioseite), B25 (Unsicherheit/Bootstrap), B26 (Blindvergleich); erweitert A3 (Hörmarkierung, Ausfade), A4 (Broker: sonde013_prepost.rs, sonde013_experiment.rs, sonde013_passage.rs, sonde013_taint.rs), A5 (pruefe_v3_vertrag.py, Fassung 2), A8/A10/A20 (Fixtures), B2 (State), B3c (C++-Vertrag), B5 (FeatureEngine, Peakpfad), B8, B10, B12. Jüngster Kanon: GRUEN 53/53 auf f71d741 (Rohausgabe docs/beweise/roh/SONDE-013-f71d741.md); die Commits danach berühren nur docs/ und docs/plan/plan.json.
+
+BEFUNDKLASSEN — du ordnest jeden Befund ein, der Dirigent prüft die Einordnung an der Quelle:
+- DEFEKT: verletzt einen Satz des Gate-Textes oben, eine Zeile der Verhaltensmatrix (§3 mit §7), einen Test oder eine Invariante aus CLAUDE.md (Identität eingefroren; Audio echtzeitfest: keine Sperren, Allokationen, Datei-, Pipe- oder Netzzugriffe, kein Logging im Audio-Thread; Nulltest bitidentisch, Passthrough sampleidentisch ohne Latenz und Tail; State verlustfrei mit Save/Load-Symmetrie und Host-Dirty; Discriminator/Zieladresse/Revision/Capability nicht additiv erweiterbar; NaN-Ehrlichkeit; nichts Ungefragtes). Reproduzierbar, mit Kommando; je Defekt: Datei:Zeile und der Satz, der bricht.
+- LÜCKE: Gate, Matrix und Entwurf sagen zu dem Fall nichts — benennen, keine Nacharbeit.
+- HÄRTUNG: wünschenswert, von keiner Zusage verlangt — benennen, keine Nacharbeit.
+
+AUSDRÜCKLICH AUSGESCHLOSSEN (kein Befund, keine Erwähnung als NEEDS_WORK-Grund):
+1. docs/** — Manifeste, Register, Planstand, Prosa, Zeilenverweise, Trefferzahlen, Abschnittsstände, Kommentar-Wortlaute. Manifeste sind Kontext (Matrix, Gate, Urteilsmarken), kein Prüfgegenstand.
+2. Im Register datierte Härtungen: NAK-146 bis NAK-154 (NAK-121-Abschluss), NAK-103 (K1b eingefroren); die in docs/beweise/SONDE-013.md §10 als Nebenbefund oder Härtung benannten Punkte. Ein Befund gegen ein Prüfskript, einen Riegel oder den Runner, der absichtliche Sabotage in repo-eigenen Quellen voraussetzt, ist HÄRTUNG — das Bedrohungsmodell der Riegel ist die versehentliche Regression, nicht der Angreifer mit Schreibrecht.
+3. tools/dirigent/pruefliste.md ist eine Arbeitsliste des Workers, keine Anforderungsquelle. §2.4 des Codex-Skills sondenplan-audit („Wiederholung bis lückenlos") gilt für Gate-Audits, nicht für diesen Ticketreview. Kosmetik, Stil, optionale Härtung, theoretische Randfälle, Ticketfremdes (Intent/CauseHypothesis/Proposal/AssistantStep = SONDE-014; Active-DSP = SONDE-015; Pairing/Lease/Active-Compare = SONDE-016/017; Sidechain-Unmasking = SONDE-018; sichtbare Bedienflächen für Passage und Experiment = offene Produktfragen P-01 bis P-06, gehören dem User): nein.
+
+WAS DU TUST:
+1. Lies den Diff im Prüfbereich (zuerst --stat, dann die Hunks; die Fixture-Korpora unter eq-copilot/fixtures prüfst du über ihre Erzeuger und Manifeste, nicht Datei für Datei).
+2. Prüfe am Zielstand, ob Tests und Riegel messen, was Gate und Matrix verlangen: (a) Bleiben Passthrough und Nulltest auf jedem neuen Pfad bitidentisch, und halten die neuen Audio-Thread-Anteile (Metriken in FeatureEngine/Statistik/Vergleichspegel, Ausfade in HoerMarkierung.h statt hartAus, RT→Control-Ring in PluginProcessor) die Echtzeit-Invarianten ohne Sperre, Allokation und Logging — mit welchem Bein ist das gemessen, und kann dieses Bein fallen? (b) Ist die Vertragsrunde (Fassung 2 des wire_envelope_schema_minor; experiment_begin, experiment_abort, experiment_manual_result definiert; evidence_invalidate.grund um material_wechsel und messpunkt_wechsel; integration_samples Feld-ID 14; evidence_snapshot-Felder) in beiden Lesern (C++ und Rust) und in allen Fixture-Korpora deckungsgleich, lehnt ein Leser der Fassung 1 die neuen Formen ab, bleiben experiment_result (SONDE-017) und user_verdict (SONDE-014) ohne Nutzlast, und ist der Codegen-Drift 0? (c) Hält der Experimentkern die Matrix: unveränderliche Baseline, Terminalereignisse result/abort append-only im Store, zwei Bestandsdeckel (je Projektbindung und global) mit Grenztests an N und N+1, kein Abbruch bei Sitzungsende/Reconnect/Neustart, SQLite-Migration mit Vor- und Rückweg und grüner Killmatrix, Save/Load-Symmetrie der Passage im MainProjectState mit Host-Dirty? (d) Schließen Hörmarker- und Experimentende beweisbar alle Taintintervalle, nullt der reguläre Pfad danach wieder, tragen Seek/Loop-Wrap `epochwechsel` und Drop `sequenzluecke`, erzeugt kein unbekannter Zeitpfad eine starke Cross-Probe- oder PRE/POST-Aussage (Herabstufung auf probable mit benanntem Grund), und ist der P4-Referenzkorpus bytegleich reproduzierbar (A25) mit einem Sammelbein (A26), das an jeder seiner vier Klassen fallen kann? Du darfst lesen und lesende Kommandos fahren; du schreibst nichts.
+3. Prüfe, ob der Änderungssatz seit BASIS etwas am Produktverhalten gebrochen hat (Identität, Passthrough/Nulltest, State, Audio-Thread, bestehende Kanonbeine) — nenne, was du selbst nachgemessen und was du nur gelesen hast.
+
+URTEIL — genau eine der drei Formen, als erste Zeile:
+URTEIL: PASS — kein DEFEKT (Lücken und Härtungen dürfen benannt sein).
+URTEIL: NEEDS_WORK — mindestens ein DEFEKT; je Defekt: Datei:Zeile, Reproduktion, welcher Satz von Gate oder Matrix bricht.
+URTEIL: BLOCKED — du konntest den Prüfbereich nicht lesen.
+Danach: geprüft / nicht geprüft, je ein Absatz.

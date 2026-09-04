@@ -1,0 +1,105 @@
+Die gezielten P4-Korpus-, Vertrags-, C++- und Broker-Tests liefen grün, und HEAD blieb unverändert auf 2379ebf510f96b46f11302b59d14c7bf6fa4c14f. Der Patch ist dennoch inkorrekt, weil mehrere zugesagte Produktpfade nur als isolierte Testmodelle vorliegen und konkrete RT-, Taint-, Passage-, PRE/POST- und NaN-Invarianten brechen; der vollständige 53/53-Kanonlauf wurde in dieser Lesesession nicht erneut ausgeführt.
+
+Full review comments:
+
+- [P1] Beende den Oversize-Ausfade innerhalb der Kapazität — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/src/HoerMarkierung.h:438-438
+  Bei 48 kHz und einer Kapazität von 512 Samples bleibt nach dem Oversizeblock wegen `schritt = 1 / 3840` noch etwa 0,867 Wet-Anteil übrig; dadurch verändern mehrere Folgeblöcke weiterhin Audio. M-36 verlangt dagegen eine Rampe der Länge `min(Rampenlänge, wetKapazitaet)` und danach sofort bitidentische Folgeblöcke (`docs/beweise/SONDE-013.md:512`).
+
+- [P2] Melde das Marker-Ende erst bei Fade null — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/src/HoerMarkierung.h:455-455
+  Wenn ein Block mit `fade` zwischen 0 und 0,001 endet, wird bereits `endete` gemeldet, obwohl der nächste Block noch einige Samples mit Wet-Anteil verarbeitet. Das gibt den Taint vor Abschluss des Ausfades frei und widerspricht M-38 (`docs/beweise/SONDE-013.md:514`).
+
+- [P1] Zeitstempele das Ende nach dem letzten Fade-Sample — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/src/PluginProcessor.cpp:494-494
+  `projektZeitSamples` ist der Beginn des aktuellen Hostblocks, wird hier aber auch als `project_sample_end` verwendet. Endet der Fade innerhalb eines Blocks, lässt der gemeldete Bereich damit bis zu einen vollständigen Block gefärbten Audios aus der Invalidierung heraus; M-38 und M-52 verlangen das tatsächliche Ende des Eingriffs (`docs/beweise/SONDE-013.md:514,538`).
+
+- [P1] Melde den RT-Ringüberlauf auch ohne Folgeereignis — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/src/PluginProcessor.cpp:507-508
+  Das gesetzte `interventionsRingUeberlauf` sowie `InterventionsRing::ueberlaufGesehen()` werden im Produkt nirgends gelesen, und `v3Status()` setzt kein `intervention_state_unknown`. Wird das letzte Begin oder End verworfen, folgt keine Sequenzlücke mehr, sodass der Broker fälschlich sauber bleiben kann; dies bricht M-39 (`docs/beweise/SONDE-013.md:515`).
+
+- [P1] Aliasiere die Adressen der neuen Direktnachrichten — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/src/PluginProcessor.cpp:843-843
+  Bei erhaltenen Legacy-Instance-IDs bildet nur der Control-Bootstrap den Wirealias; dieser direkte P0-Pfad validiert dagegen die rohe `v3Hello()`-Adresse und leert anschließend die Ereignisse. Derselbe Fehler trifft Evidenzsnapshots in `SondeProcessor.cpp:503`, sodass Marker und Evidenz für unterstützte nicht-hexadezimale State-IDs verschwinden; das verletzt die eingefrorene Identität und M-05/M-37 (`CLAUDE.md:216-218`, `docs/beweise/SONDE-013.md:465,513`).
+
+- [P1] Bewahre Ereignisse bei Evidenz-Rückstau auf — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/sonde/SondeProcessor.cpp:479-480
+  Sobald die P1-Tiefe den Schwellwert überschreitet, leert dieser Aufruf den Ereignisring und setzt anschließend auch die Verlustbasis vor. Damit kann der nächste Snapshot weder Ereignisse noch ihren Verlust melden; derselbe stille Verlust tritt nach einem abgewiesenen Snapshot auf. M-05 erlaubt bei Überlast nur Kadenzreduktion und verlangt gezählte Ringverluste (`docs/beweise/SONDE-013.md:465`).
+
+- [P1] Zähle und invalidiere nichtendliche Analysesamples — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/core/analysis/FeatureEngine.h:2034-2035
+  Ein NaN oder Inf im Audioblock wird hier lediglich durch Stille ersetzt; `FeatureEngine` besitzt weder einen Fehlerzähler noch einen Invalid-Latch, sodass spätere Metriken weiterhin als gültig erscheinen. M-07 und die NaN-Invariante verlangen Verriegelung und Zählung statt einer ununterscheidbaren Sanitization (`docs/beweise/SONDE-013.md:467`, `CLAUDE.md:207-209`).
+
+- [P1] Binde Passagenmetriken an die markierten Grenzen — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/core/analysis/FeatureEngine.h:3224-3227
+  `passageTruePeak`, Headroom, LRA und Fingerprint laufen seit der letzten Transportgrenze, nicht zwischen den Grenzen einer manuellen Passage; die gespeicherten Passagen werden mit der Engine nirgends gekoppelt. Wird nach einem lauten Abschnitt eine leisere Passage ohne Seek markiert, übernimmt sie daher Peak und Verteilungen des vorherigen Materials, entgegen M-03 und M-25 (`docs/beweise/SONDE-013.md:463,496`).
+
+- [P1] Schreibe verzögerte True Peaks dem richtigen Fenster zu — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/core/analysis/FeatureEngine.h:2086-2088
+  Der Polyphasenfilter liefert einen Peak erst bis zu zwölf Eingangssamples später, während `rahmenTruePeak` vorher dem aktuellen Frame zugerechnet und an Grenzen samt Filterzustand gelöscht wird. Ein Intersample-Peak in den letzten zwölf Samples einer Passage landet deshalb im Folgeframe oder geht an der Grenze ganz verloren, obwohl M-02 BS.1770-konforme True Peaks verlangt (`docs/beweise/SONDE-013.md:462`).
+
+- [P1] Zähle nichtendliche Vergleichssamples — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/core/analysis/Vergleichspegel.h:61-62
+  NaN/Inf werden ohne Fehlerzustand oder Zähler übersprungen, sodass eine Passage mit beschädigten Samples denselben gültigen eingefrorenen Gain wie eine kürzere saubere Passage liefert. Das macht den Fehler nachträglich unsichtbar und verletzt die verpflichtende Verriegelungs- und Zählregel (`CLAUDE.md:207-209`, M-07 in `docs/beweise/SONDE-013.md:467`).
+
+- [P2] Verhindere erneutes Setzen des Match-Gains — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/core/analysis/Blindvergleich.h:84-87
+  Vor dem Urteil akzeptiert die Methode beliebig viele eingefrorene `Vergleichspegel` und überschreibt `gainDb` jedes Mal. Zwei Aufrufe mit verschiedenen Pegeln verändern damit den angeblich für die Versuchsdauer eingefrorenen Match-Gain und brechen M-43 (`docs/beweise/SONDE-013.md:524`).
+
+- [P1] Halte Taintprüfung und Evidenzcommit in einem Lock — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/evidenz.rs:120-122
+  Die Taintprüfung gibt ihren Lock vor dem späteren Insert frei. Ein paralleles `intervention_begin` kann daher zwischen erfolgreichem `evidence_dispatch()` und diesem zweiten Lock laufen, worauf die bereits kontaminierte Evidenz trotzdem committed wird; M-63 verlangt Prüfung, Zählung und tatsächlichen Commit unter demselben Lock (`docs/beweise/SONDE-013.md:554`).
+
+- [P1] Persistiere jeden Evidenzsnapshot vollständig — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/evidenz.rs:122-122
+  Der Insert ersetzt den vorherigen Snapshot derselben Quelle und behält nur die kleine `Evidenzstand`-Zusammenfassung; Bandwerte, Perzentile, Stereo- und Transportdetails sowie frühere Evidence-IDs gehen verloren und es entsteht kein Store-Event. Damit kann der Broker weder Resultat- und Guardrail-Deltas berechnen noch vollständige Exporte oder Restart-Rekonstruktion liefern, wie M-49/M-51 verlangen (`docs/beweise/SONDE-013.md:530-532`).
+
+- [P1] Schließe lokal beeinflusste Evidenz aus — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/evidenz.rs:99-105
+  Ein schema-gültiger Snapshot mit `beeinflusst=true` wird hier ohne dieses Flag zusammengefasst und bei momentan freiem globalem Gate normal angenommen. Bei verspätetem oder verlorenem Interventions-P0 kann er dadurch als saubere Baseline dienen, obwohl M-52 das Frame-Flag ausdrücklich als zusätzlichen Ausschlussbeleg verlangt (`docs/beweise/SONDE-013.md:538`).
+
+- [P2] Räume Evidenz beim Client-Lebenszyklus auf — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/zustand.rs:176-176
+  Die neue Map wird weder bei kontrolliertem Reconnect noch bei Client-Eviction entfernt, obwohl die Nachbarmaps `messframes`, `messfehler` und `lautheit` dort bereinigt werden. Wiederholte Session-Epochen lassen sie deshalb trotz Client-Caps unbegrenzt wachsen und halten stale Evidenz; dies verletzt die gekoppelte Lebenszyklusregel und die festen Historiengrenzen (`AGENTS.md:46-52`, M-74 in `docs/beweise/SONDE-013.md:602`).
+
+- [P1] Verdrahte die inversen Taint-Lebenszyklen — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/evidenz.rs:86-86
+  `tail_fortschritt` und `neutral_resync` haben außerhalb der Tests keinen Aufrufer. Nach einem Endereignis mit positivem Tail beziehungsweise nach dem ersten Control-Disconnect bleibt dieser neue Evidenzpfad daher dauerhaft gesperrt, statt nach Nachlauf oder bestätigtem Resync wieder zu nullen; das bricht M-58 bis M-61 (`docs/beweise/SONDE-013.md:549-552`).
+
+- [P1] Isoliere den Taintzustand je Sitzung — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/evidenz.rs:86-86
+  `evidence_dispatch()` erhält weder Client noch Session und prüft die brokerweit globalen Interventionen. Dadurch blockiert ein Marker in Sitzung A auch Sitzung B; noch gefährlicher löscht ein `neutral_resync` von B die aktiven IDs von A und lässt dort kontaminierte Evidenz zu. M-62 verlangt ausdrücklich sitzungsweiten, nicht brokerweiten Zustand (`docs/beweise/SONDE-013.md:553`).
+
+- [P1] Verarbeite Experimentfamilien im Coordinator — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/mod.rs:40-40
+  Das Modul wird nur öffentlich exportiert: Der Coordinator besitzt keinen `Experimentstore`, und `p0_json_mit_minor` hat für `experiment_begin`, `experiment_abort` und `experiment_manual_result` keinen Match-Zweig. Schema-gültige Produktnachrichten fallen deshalb in `_ => None` und bewirken nichts, wodurch M-40, M-47 und M-49 nicht im Produktpfad existieren (`docs/beweise/SONDE-013.md:521,528,530`).
+
+- [P1] Persistiere einen replayfähigen Experimentzustand — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/experiment.rs:272-275
+  Der neue Store besteht ausschließlich aus flüchtigen `BTreeMap`s und einem `Vec`; weder `StoreHandle` noch die vorhandenen SQLite-Tabellen werden benutzt. Zusätzlich enthalten seine Ereignisse nur IDs statt Passage, Referenzen, Kandidaten, Gain oder Reihenfolge, sodass auch ein persistiertes Log den Zustand nicht rekonstruieren könnte. Ein Brokerneustart verliert damit offene Versuche entgegen M-47/M-50 (`docs/beweise/SONDE-013.md:528,531`).
+
+- [P1] Berechne Ergebnisdeltas vor dem Terminalereignis — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/experiment.rs:478-483
+  `ergebnis()` kann unmittelbar nach Begin und Reihenfolgebindung ohne einen einzigen Kandidaten erfolgreich terminieren und speichert ausschließlich die Userfelder. Es ruft weder Bootstrap/FDR noch Comparability oder Guardrail-Auswertung auf, und `Terminal::Ergebnis` besitzt keine berechneten Achsen oder Deltas; dies verletzt M-45 und den ausdrücklich brokerseitigen Rechenweg aus M-49 (`docs/beweise/SONDE-013.md:526,530`).
+
+- [P2] Exportiere die verwendeten Evidence-IDs — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/experiment.rs:556-559
+  Weder `Experiment`, `Passage`, Referenzen noch `Export` enthalten Evidence-IDs; der Export kann sie daher unabhängig vom Aufrufer nicht liefern. M-51 verlangt einen vollständigen Export ausdrücklich inklusive dieser IDs (`docs/beweise/SONDE-013.md:532`).
+
+- [P1] Schließe Experiment-Taint bei jedem Terminal — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/experiment.rs:502-506
+  Resultat, expliziter Abbruch und Retention-Abbruch mutieren nur den isolierten `Experimentstore`; Interventionen tragen zudem keine Experimentzuordnung. Zugehörige `art=experiment`-Intervalle können deshalb nicht geschlossen werden und bleiben nach jedem Terminal offen, entgegen M-59 (`docs/beweise/SONDE-013.md:550`).
+
+- [P1] Übertrage die vollständige Passage zum Broker — C:/Users/phili/Projekte/Nakama/eq-copilot/schemas/v3/eq-ipc-v3.schema.json:1408-1409
+  `experiment_begin` überträgt nur `passage_id` und Referenz; Passagengrenzen, Transportepoche, Coverage und Label fehlen, und es existiert keine andere Passage-Nachricht. `Experimentstore::beginne` benötigt dagegen ein vollständiges `Passage`-Objekt, sodass kein gültiger Wire-Aufruf das von M-25 verlangte Storeobjekt erzeugen kann (`docs/beweise/SONDE-013.md:496`).
+
+- [P1] Verdrahte Invalidierungen mit Store und Outbox — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/mod.rs:41-41
+  Das exportierte Modul enthält nur reine Konstruktoren; außerhalb seiner Tests gibt es keinen Aufrufer, keinen Serializer, keine Outbox-Einreihung und keine Mutation gespeicherter Evidenz. Marker, Preview, Seek, Drop, Material- und Messpunktwechsel nehmen daher im Produkt keine bereits angenommene Evidenz zurück, obwohl M-52 bis M-57 genau diesen Sender- und Ausschlusspfad verlangen (`docs/beweise/SONDE-013.md:538-543`).
+
+- [P1] Rufe den PRE/POST-Join im Evidenzpfad auf — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/mod.rs:42-42
+  `prepost` wird nur als freies Modul exportiert; `bilde_paare` hat außerhalb der Tests keinen Aufrufer, und der Evidenzempfänger verwirft sogar die für `Paarhaelfte` benötigten Kurven und Deskriptordaten. Reale PRE-/POST-Snapshots erreichen damit nie den v3-Join oder eine Paaraussage aus M-13 bis M-24 (`docs/beweise/SONDE-013.md:479-490`).
+
+- [P1] Deckele unbekannte Zeitpfade auf probable — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/prepost.rs:911-914
+  `beurteile_paar` vergibt allein aufgrund der Featurekorrelation `FeatureAligned`, ohne einen Nachweis der Presentation-Abbildung entgegenzunehmen. `dreifachergebnis` behandelt diese Klasse anschließend als sicher und erzeugt ausgerichtete Deltas; der separate `frameschluessel`-Riegel wird dabei nie aufgerufen. So entsteht trotz unbekannter Zeit eine starke PRE/POST-Aussage entgegen M-21 (`docs/beweise/SONDE-013.md:487`).
+
+- [P1] Lehne fehlende Teilfenster-Lags ab — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/prepost.rs:508-508
+  Kann die zweite Hälfte wegen zu weniger Samples oder fehlender Korrelation keinen Lag liefern, ersetzt `unwrap_or(zentral)` den fehlenden Beleg durch exakt den Gesamtlag. Das Stabilitätsgate gilt anschließend als bestanden und kann `feature_aligned` vergeben, obwohl M-16 einen tatsächlich stabilen Lag über Teilfenster verlangt (`docs/beweise/SONDE-013.md:482`).
+
+- [P1] Repräsentiere leere Banddeltas ohne NaN — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/prepost.rs:664-668
+  Für ein leeres oder stilles Band wird ein öffentliches `f64::NAN` in `roh_db` geschrieben; bei sicherem Alignment bleibt derselbe NaN auch im ausgerichteten Vektor. Damit erzeugt die Auswertung nicht serialisierbare, ungekennzeichnete Metriken statt Wert 0 plus Ungültigkeit und Zähler, was M-07 verletzt (`docs/beweise/SONDE-013.md:467`).
+
+- [P1] Halte den PSR ohne Nebenmaximum endlich — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/prepost.rs:459-459
+  Eine eindeutige Korrelationsspitze ohne positives Nebenmaximum erzeugt hier `f64::INFINITY`; dieser Wert wird als `Restlag.peak_to_sidelobe` übernommen und kann sogar ein `FeatureAligned`-Urteil tragen. M-07 verbietet nichtendliche erzeugte Metriken und verlangt einen explizit gültigen endlichen Wert oder einen ungültigen Zustand (`docs/beweise/SONDE-013.md:467`).
+
+- [P1] Lehne nichtendliche Coverage fail-closed ab — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/vergleichbarkeit.rs:230-232
+  Für `abdeckung = NaN` sind beide `< GATE_ABDECKUNG`-Vergleiche falsch; wenn die übrigen Belege passen, erreicht die Passage dadurch `Stark`. Eine nicht gemessene Coverage kann somit ein Siegerlabel tragen, entgegen M-07 und M-30 (`docs/beweise/SONDE-013.md:467,501`).
+
+- [P1] Berechne Jaccard über echte Mengen — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/vergleichbarkeit.rs:196-197
+  Die Funktion zählt Listeneinträge statt eindeutiger Quellen, während das Schema Duplikate nicht verbietet. Für `a=[x,x,x]` und `b=[x]` ergibt die Formel sogar 3,0 statt 1,0 und passiert das starke 0,9-Gate; M-29 verlangt ausdrücklich den Jaccard der Aktivquellensets (`docs/beweise/SONDE-013.md:500`).
+
+- [P1] Vergleiche Messpunktklassen je Quelle — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/vergleichbarkeit.rs:249-253
+  Quellen und Messpunktklassen werden unabhängig verglichen. Zwei Passagen mit denselben Quellen `[A,B]`, aber Zuordnung `[pre,post]` gegenüber `[post,pre]`, haben dasselbe Quellenset und dieselbe sortierte Klassenliste und können deshalb `Stark` werden, obwohl jede Quelle ihren Messpunkt gewechselt hat; das bricht M-28/M-55 (`docs/beweise/SONDE-013.md:499,541`).
+
+- [P1] Lehne verschiedene Fingerprint-Versionen ab — C:/Users/phili/Projekte/Nakama/broker/src/telemetrie.rs:105-108
+  Die Ähnlichkeit ignoriert `version`, sodass identische Bytefolgen aus Version 1 und 2 den Score 1,0 erhalten. Die Erzeugerdefinition sagt ausdrücklich, dass eine geänderte Quantisierung oder Bandgruppierung alte Fingerprints unvergleichbar macht; andernfalls können Materialwechsel und Comparability fälschlich stark bleiben (`FeatureEngine.h:354-357`, M-28/M-54 in `docs/beweise/SONDE-013.md:499,540`).
+
+- [P1] Weise nichtendliche Statistikdaten vor Bootstrap ab — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/experiment.rs:712-716
+  `block_bootstrap(&[f64::NAN], ...)` akkumuliert NaN und liefert anschließend ein gesetztes NaN-Intervall; der C++-Spiegel sortiert dieselben nichtgeordneten Werte ebenfalls ohne Vorprüfung. Da PRE/POST derzeit selbst NaNs erzeugen kann, können diese direkt in die Unsicherheitsauswertung gelangen, entgegen M-07 und M-45 (`docs/beweise/SONDE-013.md:467,526`).

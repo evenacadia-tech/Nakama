@@ -1,0 +1,94 @@
+SONDE-013 Etappe 2 E - Rotbeweis M-14
+=========================================
+
+Datei:     broker/src/coordinator/prepost.rs
+Ziel:      sonde013_prepost.rs (Kanon A4)
+Warum:     Das ausgerichtete Delta entsteht auch ohne sichere Restlag- und Gainschaetzung. Damit erscheint eine Laufzeitaenderung als EQ-Effekt - genau die Verwechslung, die §38.1 mit der Dreiteilung ausschliesst. Der Fehler macht die Ausgabe REICHER, nicht aermer, und faellt deshalb bei einer Sichtpruefung nicht auf.
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+    let sicher = klasse >= Alignmentklasse::AudioAligned;
+--- NEU ---
+    let sicher = true;
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+running 13 tests
+test duplicate_half_is_conflict_not_first_wins ... ok
+test kettenbefund_und_dreifachergebnis_haengen_nicht_am_urteil ... FAILED
+test hard_exclusions_each_name_their_reason ... ok
+test unknown_time_path_can_never_reach_strong ... ok
+test noise_yields_unclear ... FAILED
+test urteil_traegt_seine_kalibrierungsfassung ... ok
+test pairing_requires_exactly_one_pre_and_one_post ... ok
+test coverage_is_saturating_and_normalised_to_shorter_window ... ok
+test each_downgrade_reason_falls_alone ... ok
+test three_results_are_never_collapsed ... FAILED
+test distributed_pair_never_produces_transfer_function ... ok
+test feature_alignment_search_space_and_pdc_is_hint_only ... ok
+test alignment_class_has_four_values_and_each_criterion_falls_alone ... ok
+
+failures:
+
+---- kettenbefund_und_dreifachergebnis_haengen_nicht_am_urteil stdout ----
+
+thread 'kettenbefund_und_dreifachergebnis_haengen_nicht_am_urteil' (16952) panicked at tests\sonde013_prepost.rs:628:5:
+Unclear trägt kein ausgerichtetes Delta
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- noise_yields_unclear stdout ----
+
+thread 'noise_yields_unclear' (17968) panicked at tests\sonde013_prepost.rs:359:5:
+und kein ausgerichtetes Delta tragen
+
+---- three_results_are_never_collapsed stdout ----
+
+thread 'three_results_are_never_collapsed' (1844) panicked at tests\sonde013_prepost.rs:223:5:
+aber das ausgerichtete Delta nicht
+
+
+failures:
+    kettenbefund_und_dreifachergebnis_haengen_nicht_am_urteil
+    noise_yields_unclear
+    three_results_are_never_collapsed
+
+test result: FAILED. 10 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: unused variable: `klasse`
+   --> src\coordinator\prepost.rs:621:5
+    |
+621 |     klasse: Alignmentklasse,
+    |     ^^^^^^ help: if this is intentional, prefix it with an underscore: `_klasse`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib) generated 1 warning (run `cargo fix --lib -p eqcop-broker` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.06s
+     Running tests\sonde013_prepost.rs (target\debug\deps\sonde013_prepost-b89fd89ce4865d4e.exe)
+error: test failed, to rerun pass `--test sonde013_prepost`
+
+Exitcode: 101  ->  ROT (gut)
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+running 13 tests
+test duplicate_half_is_conflict_not_first_wins ... ok
+test kettenbefund_und_dreifachergebnis_haengen_nicht_am_urteil ... ok
+test hard_exclusions_each_name_their_reason ... ok
+test noise_yields_unclear ... ok
+test unknown_time_path_can_never_reach_strong ... ok
+test urteil_traegt_seine_kalibrierungsfassung ... ok
+test three_results_are_never_collapsed ... ok
+test each_downgrade_reason_falls_alone ... ok
+test coverage_is_saturating_and_normalised_to_shorter_window ... ok
+test pairing_requires_exactly_one_pre_and_one_post ... ok
+test distributed_pair_never_produces_transfer_function ... ok
+test feature_alignment_search_space_and_pdc_is_hint_only ... ok
+test alignment_class_has_four_values_and_each_criterion_falls_alone ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.06s
+     Running tests\sonde013_prepost.rs (target\debug\deps\sonde013_prepost-b89fd89ce4865d4e.exe)
+
+Exitcode: 0  ->  GRUEN (gut)

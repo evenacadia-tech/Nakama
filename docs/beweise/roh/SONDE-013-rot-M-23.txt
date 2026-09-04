@@ -1,0 +1,85 @@
+SONDE-013 Etappe 2 E - Rotbeweis M-23
+=========================================
+
+Datei:     broker/src/coordinator/prepost.rs
+Ziel:      sonde013_prepost.rs (Kanon A4)
+Warum:     Ein Loop- oder Seeksprung im Messfenster stuft nur herab, statt zu invalidieren. M-23 sagt, dass der vierte Grund des v2-Vorlaeufers im v3-Pfad ENTFAELLT: eine Passage bindet an genau eine Transportepoche (§32.4), also ist ein Sprung ein Epochenbruch. Eine Herabstufung liesse die Messung als schwache Aussage stehen.
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+    if pre.spruenge > 0 || post.spruenge > 0 {
+        return ausschluss(pair_id, Ausschlussgrund::SprungImFenster, 0.0);
+    }
+--- NEU ---
+    // (Rotbeweis: der Sprung stuft nur herab)
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+running 13 tests
+test duplicate_half_is_conflict_not_first_wins ... ok
+test kettenbefund_und_dreifachergebnis_haengen_nicht_am_urteil ... ok
+test each_downgrade_reason_falls_alone ... FAILED
+test noise_yields_unclear ... ok
+test unknown_time_path_can_never_reach_strong ... ok
+test hard_exclusions_each_name_their_reason ... FAILED
+test urteil_traegt_seine_kalibrierungsfassung ... ok
+test three_results_are_never_collapsed ... ok
+test distributed_pair_never_produces_transfer_function ... ok
+test pairing_requires_exactly_one_pre_and_one_post ... ok
+test coverage_is_saturating_and_normalised_to_shorter_window ... ok
+test feature_alignment_search_space_and_pdc_is_hint_only ... ok
+test alignment_class_has_four_values_and_each_criterion_falls_alone ... ok
+
+failures:
+
+---- each_downgrade_reason_falls_alone stdout ----
+
+thread 'each_downgrade_reason_falls_alone' (18480) panicked at tests\sonde013_prepost.rs:567:5:
+assertion `left == right` failed: ein Sprung ist im v3-Pfad ein Epochenbruch, keine Herabstufung
+  left: None
+ right: Some(SprungImFenster)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- hard_exclusions_each_name_their_reason stdout ----
+
+thread 'hard_exclusions_each_name_their_reason' (21336) panicked at tests\sonde013_prepost.rs:540:13:
+assertion `left == right` failed: Sprung (Seite 0)
+  left: FeatureAligned
+ right: Unclear
+
+
+failures:
+    each_downgrade_reason_falls_alone
+    hard_exclusions_each_name_their_reason
+
+test result: FAILED. 11 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.07s
+     Running tests\sonde013_prepost.rs (target\debug\deps\sonde013_prepost-b89fd89ce4865d4e.exe)
+error: test failed, to rerun pass `--test sonde013_prepost`
+
+Exitcode: 101  ->  ROT (gut)
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+running 13 tests
+test kettenbefund_und_dreifachergebnis_haengen_nicht_am_urteil ... ok
+test duplicate_half_is_conflict_not_first_wins ... ok
+test hard_exclusions_each_name_their_reason ... ok
+test unknown_time_path_can_never_reach_strong ... ok
+test urteil_traegt_seine_kalibrierungsfassung ... ok
+test noise_yields_unclear ... ok
+test three_results_are_never_collapsed ... ok
+test each_downgrade_reason_falls_alone ... ok
+test coverage_is_saturating_and_normalised_to_shorter_window ... ok
+test distributed_pair_never_produces_transfer_function ... ok
+test pairing_requires_exactly_one_pre_and_one_post ... ok
+test feature_alignment_search_space_and_pdc_is_hint_only ... ok
+test alignment_class_has_four_values_and_each_criterion_falls_alone ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.17s
+     Running tests\sonde013_prepost.rs (target\debug\deps\sonde013_prepost-b89fd89ce4865d4e.exe)
+
+Exitcode: 0  ->  GRUEN (gut)

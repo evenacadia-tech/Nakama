@@ -12,7 +12,8 @@
   "quellen": [
     "eq-copilot/plugin/core/analysis/FeatureEngine.h",
     "eq-copilot/plugin/core/analysis/Konfidenz.h",
-    "broker/src/coordinator/vergleichbarkeit.rs"
+    "broker/src/coordinator/vergleichbarkeit.rs",
+    "broker/src/coordinator/prepost.rs"
   ],
 
   "aktuell": 20260904,
@@ -86,6 +87,24 @@
           "einheit": "Abdeckung in [0,1]",
           "datei": "broker/src/coordinator/vergleichbarkeit.rs",
           "zweck": "M-30: ab welcher gemessenen Abdeckung eine Passage ueberhaupt einen Vergleich traegt. Eine Passage mit unzureichender Abdeckung erhaelt kein Siegerlabel."
+        },
+        "GATE_KORRELATIONSSPITZE": {
+          "wert": 0.5,
+          "einheit": "normierte Kreuzkorrelation in [-1,1]",
+          "datei": "broker/src/coordinator/prepost.rs",
+          "zweck": "M-16: ab welcher Korrelationsspitze ein Restlag ueberhaupt benannt wird. §38.2 nennt das Kriterium ('Korrelationsspitze und Peak-to-Sidelobe-Verhaeltnis ausreichend'), aber KEINE Zahl - also ein Startwert, kein Vertragswert."
+        },
+        "GATE_PEAK_TO_SIDELOBE": {
+          "wert": 2.0,
+          "einheit": "Verhaeltnis",
+          "datei": "broker/src/coordinator/prepost.rs",
+          "zweck": "M-16: wie deutlich die Spitze gegenueber dem besten Nebenmaximum sein muss. Ohne dieses Verhaeltnis genuegte ein flacher Korrelationsberg, dessen Maximum an einer beliebigen Stelle liegt."
+        },
+        "GATE_RELATIONSSCHWANKUNG_DB": {
+          "wert": 1.5,
+          "einheit": "dB Standardabweichung",
+          "datei": "broker/src/coordinator/prepost.rs",
+          "zweck": "M-18: ab welcher Schwankung der Bandrelation POST/PRE eine Kette als zeitvariabel markiert wird. §38.3 sagt 'inkonsistente Pegel- und Spektralrelationen', nennt aber keine Zahl. Der Wert liegt bewusst tief: eine LINEARE Kette haelt die Relation exakt konstant, ihre Streuung ist bis auf das 0,1-dB-Raster des Livepfads null - alles darueber ist keine Messstreuung, sondern Wirkung."
         }
       },
       "ganzzahlige_schwellen": {
@@ -100,6 +119,12 @@
           "einheit": "Welch-Frames",
           "datei": "eq-copilot/plugin/core/analysis/FeatureEngine.h",
           "zweck": "M-11: Laenge des KURZEN Korrelationsfensters, zugleich das Fenster, ueber dem die Persistenz gezaehlt wird."
+        },
+        "GATE_KONSISTENTE_SPUREN": {
+          "wert": 3,
+          "einheit": "Spuren",
+          "datei": "broker/src/coordinator/prepost.rs",
+          "zweck": "M-16: wie viele der bandbegrenzten Huellkurven und die Onsetfolge denselben Lag liefern muessen. §38.2 sagt 'mehrere Baender einen konsistenten Lag' - 'mehrere' ist ein Startwert, keine Norm."
         },
         "kKonfidenzFensterStark": {
           "wert": 8,
@@ -116,7 +141,11 @@
           "kLraRelGateLu = -20 (EBU Tech 3342, relatives Gate der LRA - NICHT die -10 LU der integrierten Lautheit)",
           "kLraHopZellen = 10 (EBU Tech 3342 §2.2: 1 s Hop der Kurzzeitfolge)",
           "kEreignisPlaetze = 64, kVerteilungPlaetze = 64 (Ressourcengrenzen, §48.1 'feste Obergrenzen')",
-          "kWelchMindestFrames steht dagegen SEHR WOHL im Register: §40.1 nennt acht ausdruecklich als Startwert, nicht als Norm"
+          "kWelchMindestFrames steht dagegen SEHR WOHL im Register: §40.1 nennt acht ausdruecklich als Startwert, nicht als Norm",
+          "GATE_SUCHRAUM_S = 2.0 und GATE_MINDESTCAPTURE_S = 6.0 (§38.2 nennt beide Zahlen als GRENZE des Verfahrens, nicht als Kalibrierung: 'Der maximale Suchraum beider Stufen ist auf +/-2 s begrenzt und benoetigt dafuer mindestens 6 s Capture')",
+          "GATE_UEBERLAPPUNG = 0.8 und GATE_AKTIVZEIT_DIFFERENZ = 0.1 (M-23 nennt beide woertlich als die drei Herabstufungsgruende des v3-Pfads - sie zu kalibrieren hiesse, die Matrixzeile zu aendern)",
+          "FEATURE_HOP_MS = 100 (die Framekadenz der Telemetrie, eine Vertragsgroesse)",
+          "Vergleichspegel::kMindestSekunden = 0.4 (Ressourcen- und Messgrenze, keine Kalibrierung)"
         ]
       }
     }

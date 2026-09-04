@@ -1,0 +1,98 @@
+SONDE-013 Etappe 2 E - Rotbeweis M-24
+=========================================
+
+Datei:     eq-copilot/plugin/core/analysis/Vergleichspegel.h
+Ziel:      EqCopSonde013PrePostGoldenTest (Kanon B24)
+Warum:     Die Delta-Sperre laesst sich mit gutem Alignment und ausreichendem Lag umgehen, auch ohne nachgewiesenes Compare-Routing. §38.4 sagt, dass Feature-Telemetrie POST-PRE NIEMALS als Audio erzeugen kann - kein noch so gutes Alignment aendert daran etwas, weil das fehlende Stueck nicht Genauigkeit ist, sondern das Signal selbst.
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+    if (! compareRoutingNachgewiesen)
+        return Deltasperre::keinComparerouting;
+--- NEU ---
+    if (! compareRoutingNachgewiesen && ! (alignmentBelastbar && lagTraegtGruppenlaufzeit))
+        return Deltasperre::keinComparerouting;
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+== Nakama SONDE-013 - PRE/POST auf der Audioseite (§38.3, §38.4) ==
+
+== M-18  nonlinear_chain_never_yields_static_eq_claim ==
+[ok]   genug Baender und Fenster - sonst misst der Rest nichts  [149 Baender, 8 Fenster]
+[ok]   identische Kette: die Kohaerenz liegt fast ueberall ueber 0,8  [1.0000]
+[ok]   reiner Gain (+15 dB): unveraendert kohaerent - die Kohaerenz ist pegelunabhaengig, und GENAU deshalb ist ein Transferwert hier zulaessig  [1.0000]
+[ok]   linearer Tiefpass: ebenfalls kohaerent - eine LTI-Kette DARF einen Frequenzgang tragen, so stark sie den Klang auch aendert  [0.9998]
+[ok]   und ihre PRE/POST-Relation steht still - eine LTI-Kette haelt sie ueber alle Fenster konstant  [0.001 dB Streuung]
+[ok]   Kompression: faellt an mindestens einer Wache durch  [Kohaerenz 0.834, Streuung 34.653 dB]
+[ok]   Modulation: faellt an mindestens einer Wache durch  [Kohaerenz 0.666, Streuung 0.274 dB]
+[ok]   Saturation: faellt an mindestens einer Wache durch  [Kohaerenz 0.572, Streuung 3.632 dB]
+[ok]   wechselnde Latenz: faellt an mindestens einer Wache durch  [Kohaerenz 0.236, Streuung 0.201 dB]
+[ok]   und der Befund selbst: die Kompression haelt die Kohaerenzschwelle, wandert aber in der Relation - eine Wache allein genuegt nicht  [78 % ueber 0,8, Streuung 34.65 dB]
+[ok]   die beiden Gruppen ueberlappen an der Kohaerenz nicht  [0.785 gegen 1.000]
+
+== M-20  match_gain_is_frozen_before_ab_not_tracked ==
+[ok]   ohne Material ist der Pegel NICHT gesetzt - eine gemeldete 0 dB waere die Behauptung 'gleich laut'
+[ok]   und laesst sich nicht einfrieren - ein eingefrorener Wert ohne Messung waere eine Luege
+[ok]   nach 0,5 s ist genug Material da
+[ok]   der Pegel friert ein
+[ok]   und trifft den bekannten Gain  [6.0206 dB]
+[ok]   sechs Sekunden mit +18 dB aendern ihn um kein Tausendstel - eine mitlaufende Regelung wuerde selbst zum hoerbaren Prozessor  [6.020600 dB]
+[ok]   und zwei Sekunden Stille auch nicht
+[ok]   erst ein ausdruecklicher Passagenwechsel loescht ihn
+[ok]   NaN und Inf im Material verriegeln, statt den Pegel zu vergiften  [6.0206 dB]
+
+== M-24  audible_delta_locked_without_compare_routing ==
+[ROT]  ohne nachgewiesenes Compare-Routing ist Delta in ALLEN vier Kombinationen gesperrt - und zwar mit genau diesem Grund
+[ROT]  genau EINE der acht Kombinationen ist frei: alle drei Nachweise zusammen  [2 frei, 6 gesperrt]
+[ok]   die Gruende kommen in der Reihenfolge ihrer Haerte
+[ok]   in P4 gibt es kein Compare-Routing (Â§38.4)
+[ROT]  also ist hoerbares Delta gesperrt, egal wie gut Alignment und Lag sind  [frei]
+[ok]   der Zustand traegt ein Wort: kein Compare-Routing
+[ok]   der Zustand traegt ein Wort: Alignment unzureichend
+[ok]   der Zustand traegt ein Wort: Lag traegt die Gruppenlaufzeit nicht
+[ok]   der Zustand traegt ein Wort: frei
+
+26 bestanden, 3 gescheitert
+
+Exitcode: 1  ->  ROT (gut)
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+== Nakama SONDE-013 - PRE/POST auf der Audioseite (§38.3, §38.4) ==
+
+== M-18  nonlinear_chain_never_yields_static_eq_claim ==
+[ok]   genug Baender und Fenster - sonst misst der Rest nichts  [149 Baender, 8 Fenster]
+[ok]   identische Kette: die Kohaerenz liegt fast ueberall ueber 0,8  [1.0000]
+[ok]   reiner Gain (+15 dB): unveraendert kohaerent - die Kohaerenz ist pegelunabhaengig, und GENAU deshalb ist ein Transferwert hier zulaessig  [1.0000]
+[ok]   linearer Tiefpass: ebenfalls kohaerent - eine LTI-Kette DARF einen Frequenzgang tragen, so stark sie den Klang auch aendert  [0.9998]
+[ok]   und ihre PRE/POST-Relation steht still - eine LTI-Kette haelt sie ueber alle Fenster konstant  [0.001 dB Streuung]
+[ok]   Kompression: faellt an mindestens einer Wache durch  [Kohaerenz 0.834, Streuung 34.653 dB]
+[ok]   Modulation: faellt an mindestens einer Wache durch  [Kohaerenz 0.666, Streuung 0.274 dB]
+[ok]   Saturation: faellt an mindestens einer Wache durch  [Kohaerenz 0.572, Streuung 3.632 dB]
+[ok]   wechselnde Latenz: faellt an mindestens einer Wache durch  [Kohaerenz 0.236, Streuung 0.201 dB]
+[ok]   und der Befund selbst: die Kompression haelt die Kohaerenzschwelle, wandert aber in der Relation - eine Wache allein genuegt nicht  [78 % ueber 0,8, Streuung 34.65 dB]
+[ok]   die beiden Gruppen ueberlappen an der Kohaerenz nicht  [0.785 gegen 1.000]
+
+== M-20  match_gain_is_frozen_before_ab_not_tracked ==
+[ok]   ohne Material ist der Pegel NICHT gesetzt - eine gemeldete 0 dB waere die Behauptung 'gleich laut'
+[ok]   und laesst sich nicht einfrieren - ein eingefrorener Wert ohne Messung waere eine Luege
+[ok]   nach 0,5 s ist genug Material da
+[ok]   der Pegel friert ein
+[ok]   und trifft den bekannten Gain  [6.0206 dB]
+[ok]   sechs Sekunden mit +18 dB aendern ihn um kein Tausendstel - eine mitlaufende Regelung wuerde selbst zum hoerbaren Prozessor  [6.020600 dB]
+[ok]   und zwei Sekunden Stille auch nicht
+[ok]   erst ein ausdruecklicher Passagenwechsel loescht ihn
+[ok]   NaN und Inf im Material verriegeln, statt den Pegel zu vergiften  [6.0206 dB]
+
+== M-24  audible_delta_locked_without_compare_routing ==
+[ok]   ohne nachgewiesenes Compare-Routing ist Delta in ALLEN vier Kombinationen gesperrt - und zwar mit genau diesem Grund
+[ok]   genau EINE der acht Kombinationen ist frei: alle drei Nachweise zusammen  [1 frei, 7 gesperrt]
+[ok]   die Gruende kommen in der Reihenfolge ihrer Haerte
+[ok]   in P4 gibt es kein Compare-Routing (Â§38.4)
+[ok]   also ist hoerbares Delta gesperrt, egal wie gut Alignment und Lag sind  [kein Compare-Routing]
+[ok]   der Zustand traegt ein Wort: kein Compare-Routing
+[ok]   der Zustand traegt ein Wort: Alignment unzureichend
+[ok]   der Zustand traegt ein Wort: Lag traegt die Gruppenlaufzeit nicht
+[ok]   der Zustand traegt ein Wort: frei
+
+29 bestanden, 0 gescheitert
+
+Exitcode: 0  ->  GRUEN (gut)

@@ -1572,6 +1572,7 @@ def pruefe_metrikregister(lauf: Lauf) -> None:
         kern / "FeatureEngine.h",
         kern / "Konfidenz.h",
         WURZEL / "broker/src/coordinator/vergleichbarkeit.rs",
+        WURZEL / "broker/src/coordinator/prepost.rs",
     ])
     lauf.wahr("metrics_version_bindet_schwellen: Kernkonstanten lesbar",
               len(konstanten) > 5, f"{len(konstanten)} gefunden")
@@ -1640,6 +1641,18 @@ def pruefe_comparability_schwellen(lauf: Lauf) -> None:
     3. Im Produktpfad steht keine der vier Zahlen als nacktes Literal.
     """
     quelle = WURZEL / "broker/src/coordinator/vergleichbarkeit.rs"
+    prepost = WURZEL / "broker/src/coordinator/prepost.rs"
+    if prepost.exists():
+        # Der PRE/POST-Pfad haelt eigene Startwerte (M-16, M-18) und eine
+        # eigene `METRICS_VERSION`. Sie hier mitzupruefen ist keine
+        # Bequemlichkeit: eine zweite Datei mit eigener Fassung koennte sonst
+        # unbemerkt auf einer alten Kalibrierung stehenbleiben.
+        pp = _konstanten_aus_kern([prepost])
+        register_pp = json_laden_strikt(METRIKEN.read_text(encoding="utf-8"))
+        lauf.wahr("comparability_schwellen_haengen_an_metrics_version: "
+                  "auch der PRE/POST-Pfad nennt die Fassung des Registers",
+                  pp.get("METRICS_VERSION", ("", ""))[0] == str(register_pp.get("aktuell", "")),
+                  f"prepost {pp.get('METRICS_VERSION', ('', ''))[0]!r}")
     if not quelle.exists() or not METRIKEN.exists():
         lauf.wahr("comparability_schwellen_haengen_an_metrics_version: Quellen vorhanden",
                   False, f"{quelle.name} oder {METRIKEN.name} fehlt")

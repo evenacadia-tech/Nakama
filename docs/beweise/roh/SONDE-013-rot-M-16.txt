@@ -1,0 +1,75 @@
+SONDE-013 Etappe 2 E - Rotbeweis M-16
+=========================================
+
+Datei:     broker/src/coordinator/prepost.rs
+Ziel:      sonde013_prepost.rs (Kanon A4)
+Warum:     Das Peak-to-Sidelobe-Kriterium aus §38.2 entfaellt. Damit genuegt ein flacher oder MEHRDEUTIGER Korrelationsberg: ein geloopter Takt, in dem jedes Band demselben Puls folgt, traegt bei jeder Taktperiode ein gleich hohes Nebenmaximum. Spitze und Spurenkonsistenz sind dabei tadellos - niemand kann trotzdem sagen, um wie viele Takte POST verschoben ist.
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+        || lag.peak_to_sidelobe < GATE_PEAK_TO_SIDELOBE
+--- NEU ---
+
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+running 13 tests
+test duplicate_half_is_conflict_not_first_wins ... ok
+test kettenbefund_und_dreifachergebnis_haengen_nicht_am_urteil ... ok
+test hard_exclusions_each_name_their_reason ... ok
+test unknown_time_path_can_never_reach_strong ... ok
+test noise_yields_unclear ... ok
+test urteil_traegt_seine_kalibrierungsfassung ... ok
+test coverage_is_saturating_and_normalised_to_shorter_window ... ok
+test distributed_pair_never_produces_transfer_function ... ok
+test each_downgrade_reason_falls_alone ... ok
+test pairing_requires_exactly_one_pre_and_one_post ... ok
+test three_results_are_never_collapsed ... ok
+test feature_alignment_search_space_and_pdc_is_hint_only ... ok
+test alignment_class_has_four_values_and_each_criterion_falls_alone ... FAILED
+
+failures:
+
+---- alignment_class_has_four_values_and_each_criterion_falls_alone stdout ----
+
+thread 'alignment_class_has_four_values_and_each_criterion_falls_alone' (17784) panicked at tests\sonde013_prepost.rs:357:5:
+assertion `left == right` failed: ein mehrdeutiger Lag darf nie stark ausgerichtet heissen: Paarurteil { pair_id: "paar-a", klasse: FeatureAligned, ausschluss: None, herabstufungen: [], kettenbefund: Stationaer, restlag: Some(Restlag { frames: 0, aufloesung_ms: 100, streuung_frames: 0.0, spitze: 1.0, peak_to_sidelobe: 1.0, konsistente_spuren: 5, lag_zweite_haelfte: 0 }), ueberlappung: 1.0, ergebnis: Some(Dreifachergebnis { roh_db: [0.0, 0.0, 0.0, 0.0], ausgerichtet_db: Some([0.0, 0.0, 0.0, 0.0]), match_gain_db: Some(0.0), wirkung: Some("Kette wirkt breitbandig gleichmäßig") }), metrics_version: 20260904 }
+  left: FeatureAligned
+ right: Probable
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    alignment_class_has_four_values_and_each_criterion_falls_alone
+
+test result: FAILED. 12 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.18s
+     Running tests\sonde013_prepost.rs (target\debug\deps\sonde013_prepost-b89fd89ce4865d4e.exe)
+error: test failed, to rerun pass `--test sonde013_prepost`
+
+Exitcode: 101  ->  ROT (gut)
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+running 13 tests
+test kettenbefund_und_dreifachergebnis_haengen_nicht_am_urteil ... ok
+test duplicate_half_is_conflict_not_first_wins ... ok
+test hard_exclusions_each_name_their_reason ... ok
+test unknown_time_path_can_never_reach_strong ... ok
+test noise_yields_unclear ... ok
+test urteil_traegt_seine_kalibrierungsfassung ... ok
+test distributed_pair_never_produces_transfer_function ... ok
+test three_results_are_never_collapsed ... ok
+test pairing_requires_exactly_one_pre_and_one_post ... ok
+test each_downgrade_reason_falls_alone ... ok
+test coverage_is_saturating_and_normalised_to_shorter_window ... ok
+test feature_alignment_search_space_and_pdc_is_hint_only ... ok
+test alignment_class_has_four_values_and_each_criterion_falls_alone ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.66s
+     Running tests\sonde013_prepost.rs (target\debug\deps\sonde013_prepost-b89fd89ce4865d4e.exe)
+
+Exitcode: 0  ->  GRUEN (gut)

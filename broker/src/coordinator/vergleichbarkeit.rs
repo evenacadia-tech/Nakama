@@ -166,15 +166,22 @@ pub const GATE_ABDECKUNG: f32 = 0.5;
 /// deckungsgleich gelten (M-17). `i64::checked_sub` faengt genau das; ohne
 /// ihn waere ein Ueberlauf eine Ueberdeckung von 100 %.
 fn ueberdeckung(a: (i64, i64), b: (i64, i64)) -> f64 {
-    let laenge_a = a.1.checked_sub(a.0).unwrap_or(i64::MAX).max(0);
-    let laenge_b = b.1.checked_sub(b.0).unwrap_or(i64::MAX).max(0);
+    // ⚠️ `saturating_sub`, nicht `checked_sub(..).unwrap_or(0)`. Der
+    // Ausfallwert 0 traf genau den Fall, den er schuetzen soll: zwei
+    // IDENTISCHE Fenster ueber den ganzen Zahlenbereich ergaben eine
+    // Ueberdeckung von 0 statt 1 und damit `ProjektbereichVerschieden` fuer
+    // zwei deckungsgleiche Passagen. Gefunden in Etappe F beim Bau der
+    // gleichnamigen Rechnung in `prepost.rs` (§10.7); die Korrektur gehoert
+    // hierher, weil dieselbe Zahlenreihe hier dieselbe Wirkung hat.
+    let laenge_a = a.1.saturating_sub(a.0).max(0);
+    let laenge_b = b.1.saturating_sub(b.0).max(0);
     let kuerzer = laenge_a.min(laenge_b);
     if kuerzer <= 0 {
         return 0.0;
     }
     let start = a.0.max(b.0);
     let ende = a.1.min(b.1);
-    let gemeinsam = ende.checked_sub(start).unwrap_or(0).max(0);
+    let gemeinsam = ende.saturating_sub(start).max(0);
     (gemeinsam as f64 / kuerzer as f64).clamp(0.0, 1.0)
 }
 

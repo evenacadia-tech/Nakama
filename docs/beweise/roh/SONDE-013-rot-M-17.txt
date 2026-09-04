@@ -1,0 +1,91 @@
+SONDE-013 Etappe 2 E - Rotbeweis M-17
+=========================================
+
+Datei:     broker/src/coordinator/prepost.rs
+Ziel:      sonde013_prepost.rs (Kanon A4)
+Warum:     Die Ueberlappung rechnet wieder mit `checked_sub(..).unwrap_or(0)` statt saettigend. Der Ausfallwert 0 trifft genau den Fall, den er schuetzen soll: zwei IDENTISCHE Fenster ueber den ganzen Zahlenbereich ergeben eine Ueberlappung von 0 statt 1. Genau dieser Defekt lag bis Etappe F auch in `vergleichbarkeit.rs` (§10.7).
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+    let laenge_a = a.1.saturating_sub(a.0).max(0);
+    let laenge_b = b.1.saturating_sub(b.0).max(0);
+    let kuerzer = laenge_a.min(laenge_b);
+    if kuerzer <= 0 {
+        return 0.0;
+    }
+    let start = a.0.max(b.0);
+    let ende = a.1.min(b.1);
+    let gemeinsam = ende.saturating_sub(start).max(0);
+--- NEU ---
+    let laenge_a = a.1.checked_sub(a.0).unwrap_or(i64::MAX).max(0);
+    let laenge_b = b.1.checked_sub(b.0).unwrap_or(i64::MAX).max(0);
+    let kuerzer = laenge_a.min(laenge_b);
+    if kuerzer <= 0 {
+        return 0.0;
+    }
+    let start = a.0.max(b.0);
+    let ende = a.1.min(b.1);
+    let gemeinsam = ende.checked_sub(start).unwrap_or(0).max(0);
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+running 13 tests
+test duplicate_half_is_conflict_not_first_wins ... ok
+test coverage_is_saturating_and_normalised_to_shorter_window ... FAILED
+test kettenbefund_und_dreifachergebnis_haengen_nicht_am_urteil ... ok
+test hard_exclusions_each_name_their_reason ... ok
+test noise_yields_unclear ... ok
+test unknown_time_path_can_never_reach_strong ... ok
+test urteil_traegt_seine_kalibrierungsfassung ... ok
+test each_downgrade_reason_falls_alone ... ok
+test distributed_pair_never_produces_transfer_function ... ok
+test three_results_are_never_collapsed ... ok
+test pairing_requires_exactly_one_pre_and_one_post ... ok
+test feature_alignment_search_space_and_pdc_is_hint_only ... ok
+test alignment_class_has_four_values_and_each_criterion_falls_alone ... ok
+
+failures:
+
+---- coverage_is_saturating_and_normalised_to_shorter_window stdout ----
+
+thread 'coverage_is_saturating_and_normalised_to_shorter_window' (4004) panicked at tests\sonde013_prepost.rs:389:5:
+assertion `left == right` failed
+  left: 0.0
+ right: 1.0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    coverage_is_saturating_and_normalised_to_shorter_window
+
+test result: FAILED. 12 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.08s
+     Running tests\sonde013_prepost.rs (target\debug\deps\sonde013_prepost-b89fd89ce4865d4e.exe)
+error: test failed, to rerun pass `--test sonde013_prepost`
+
+Exitcode: 101  ->  ROT (gut)
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+running 13 tests
+test duplicate_half_is_conflict_not_first_wins ... ok
+test kettenbefund_und_dreifachergebnis_haengen_nicht_am_urteil ... ok
+test hard_exclusions_each_name_their_reason ... ok
+test unknown_time_path_can_never_reach_strong ... ok
+test noise_yields_unclear ... ok
+test urteil_traegt_seine_kalibrierungsfassung ... ok
+test distributed_pair_never_produces_transfer_function ... ok
+test pairing_requires_exactly_one_pre_and_one_post ... ok
+test three_results_are_never_collapsed ... ok
+test coverage_is_saturating_and_normalised_to_shorter_window ... ok
+test each_downgrade_reason_falls_alone ... ok
+test feature_alignment_search_space_and_pdc_is_hint_only ... ok
+test alignment_class_has_four_values_and_each_criterion_falls_alone ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.13s
+     Running tests\sonde013_prepost.rs (target\debug\deps\sonde013_prepost-b89fd89ce4865d4e.exe)
+
+Exitcode: 0  ->  GRUEN (gut)

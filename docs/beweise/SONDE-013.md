@@ -3,7 +3,7 @@
 | Merkmal | Wert |
 |---|---|
 | Ticket | S20–22, `SONDE-013` (Phase P4–P5) |
-| Phase | **Etappe 2 — Bau, Etappe C läuft.** Etappen A und B stehen und sind mit einem sauberen Kanonlauf beglaubigt. **Die Etappen C und D sind vollständig gebaut und mit GRUEN 46/46 auf `c8b310b` beglaubigt** (C: M-01 bis M-04, M-06 bis M-12, M-74 bis M-77, M-86; D: M-33 bis M-39, M-78). **Etappe E ist gebaut und mit GRUEN 48/48 auf `e3e2299` beglaubigt** (M-26, M-27, M-31 Fingerprint; M-28, M-29, M-30 Comparability; M-69 und der State-Teil von M-25; M-68 entschieden: keine Migration 2); der Store-Teil von M-25 und M-32 hängen nach dem Fund in §10.6 am Träger aus Etappe G. Nächste Etappe ist **F — PRE/POST-Join**. Etappe 1 (Verhaltensmatrix) ist am 2026-09-04 nach Matrixprüfung 1, Nacharbeit 1, Wiederprüfung 1, Nacharbeit 2 und Wiederprüfung 2 (PASS) abgenommen; die Matrix in §3 ist ab hier die Spezifikation. Bauauftrag: `docs/beweise/roh/SONDE-013-etappe-2-auftrag.txt`, Bau-Verlauf in §10 |
+| Phase | **Etappe 2 — Bau, Etappe C läuft.** Etappen A und B stehen und sind mit einem sauberen Kanonlauf beglaubigt. **Die Etappen C und D sind vollständig gebaut und mit GRUEN 46/46 auf `c8b310b` beglaubigt** (C: M-01 bis M-04, M-06 bis M-12, M-74 bis M-77, M-86; D: M-33 bis M-39, M-78). **Die Etappen C bis F sind gebaut**; C bis E sind mit GRUEN 48/48 auf `e3e2299` beglaubigt (M-26, M-27, M-31 Fingerprint; M-28, M-29, M-30 Comparability; M-69 und der State-Teil von M-25; M-68 entschieden: keine Migration 2); der Store-Teil von M-25 und M-32 hängen nach dem Fund in §10.6 am Träger aus Etappe G. Nächste Etappe ist **G — Experiment `manual_external`** (mit den dorthin verschobenen M-25 und M-32). Etappe 1 (Verhaltensmatrix) ist am 2026-09-04 nach Matrixprüfung 1, Nacharbeit 1, Wiederprüfung 1, Nacharbeit 2 und Wiederprüfung 2 (PASS) abgenommen; die Matrix in §3 ist ab hier die Spezifikation. Bauauftrag: `docs/beweise/roh/SONDE-013-etappe-2-auftrag.txt`, Bau-Verlauf in §10 |
 | Urteil | **offen** — T1 setzt der Erbauer nach der letzten Bauetappe, T2 der Dirigent nach der Codex-Abnahme |
 | Prüfstufe | T1+T2 gefordert (`docs/bauaufteilung-sonden.md`:392). T1 ist das Selbstaudit des Erbauers am Ende der letzten Bauetappe, T2 setzt der Dirigent nach der Codex-Abnahme |
 | Basis-SHA | Etappe 1 begann auf `ed9bbf7fec951a061749abf143cb2158c1c4ee52`; **Etappe 2 baut ab `0fdbb4a09c75e2c93ab9b76e7fcf5d92d0ef17e4`** (Abschluss der Matrixetappe), beide mit `git rev-parse HEAD` gemessen |
@@ -14,8 +14,8 @@
 | Rundenbilanz Etappe 1 | `py -3.13 tools/dirigent/rundenbilanz.py --runden ed9bbf7 4a2f50a 367a0ea ca20f3a 6e8bebb`: Matrix `ed9bbf7..4a2f50a` Doku 2 Dateien +1019/−0; Entscheide `4a2f50a..367a0ea` Doku +51/−0; Nacharbeit 1 `367a0ea..ca20f3a` Doku 4 Dateien +533/−63; Nacharbeit 2 `ca20f3a..6e8bebb` Doku 4 Dateien +286/−17. Produkt und Tests 0 Zeilen in allen vier Runden — erwartet, weil Etappe 1 nach der Regel „Spezifikation vor Code" ausschließlich das Manifest schreibt; das Konvergenzsignal des Werkzeugs greift erst ab Etappe 2. |
 | Änderungssatz dieser Etappe | Erster Commit `4a2f50a` und Entscheidcommit `367a0ea`: dieses Manifest und `docs/beweise/roh/SONDE-013-etappe-1-auftrag.txt`. Nacharbeit 1: dieses Manifest sowie die drei Rohdateien `docs/beweise/roh/SONDE-013-matrixpruefung-1-auftrag.txt`, `docs/beweise/roh/SONDE-013-matrixpruefung-1-367a0ea.txt` und `docs/beweise/roh/SONDE-013-nacharbeit-1-auftrag.txt` unverändert. Nacharbeit 2: dieses Manifest sowie die drei Rohdateien `docs/beweise/roh/SONDE-013-wiederpruefung-1-auftrag.txt`, `docs/beweise/roh/SONDE-013-wiederpruefung-1-ca20f3a.txt` und `docs/beweise/roh/SONDE-013-nacharbeit-2-auftrag.txt` unverändert. Kein Produkt-, Test-, Schema-, Fixture- oder Werkzeugcode. |
 | Kanon nachher | **GRUEN 48/48 auf `e3e2299`, Arbeitsbaum sauber** — die Beglaubigung der Etappen C bis E. Rohausgabe `docs/beweise/roh/SONDE-013-e3e2299.md`. Davor: **GRUEN 46/46 auf `c8b310b`** — die Beglaubigung der Etappen C und D. Rohausgabe `docs/beweise/roh/SONDE-013-c8b310b.md`. Der Weg dahin steht in §10.3 bis §10.5: der Lauf auf `ab0251d` war GRUEN 45/45, aber `-dirty` gestempelt (die zwei Dateien der beginnenden Etappe D lagen schon im Baum); der Lauf auf `e2ea2ec` war der erste auf sauberem Baum und kam **ROT 45/46** zurück — gefallen war **B8** an genau der Produktwirkung, die M-33 und M-34 herstellen, und dass kein anderes Bein fiel, ist die eigentliche Aussage jenes Laufs. Die Beinzahl wächst von 41 auf **48** und sinkt um kein Bein; 2 geplante noch nicht gebaut (B6, B7 ab P6), 1 stillgelegtes (A15). |
-| Testanzahl | A5 470 Prüfungen · B2 176 · B23 54 (neu) · A3 61 · B3c 75 · B8 77 · B10 313 · B16 52 · B17 23 (neu) · B18 44 (neu) · B19 57 (neu) · B20 24 (neu) · B21 22 (neu) · B22 24 (neu) · B5 237 · Broker 203 Lib-Tests plus alle Integrationsbeine · JSON-Fixturekorpus 285 (75 gültig, 210 ungültig) · Binärkorpus 104 (20 gültig, 84 ungültig) · Envelope-Korpus 37. Alle Zahlen aus dem Lauf dieser Sitzung, nicht abgeschrieben. |
-| Änderungssatz Etappe 2 | Fortlaufend in §10 je Bauetappe geführt: Commits, Beine, Rotbeweise, Abweichungen von §5 und Nebenbefunde. Die Beinzahl wächst mit den Etappen C bis E von 41 auf **48** (neu: **B17** `EqCopSonde013TruePeakGoldenTest`, **B18** `EqCopSonde013DynamicsTest`, **B19** `EqCopSonde013StereoGoldenTest`, **B20** `EqCopSonde013QualityClassTest`, **B21** `EqCopSonde013InterventionRingTest`, **B22** `EqCopSonde013FingerprintGoldenTest`, **B23** `EqCopSonde013PassageStateTest`) und sinkt um kein Bein. Der volle Kanon steht am Ende jeder Etappe, die Schema-, Fixture- oder Runnerdateien berührt (§5.1); für C bis E ist er mit GRUEN 48/48 auf `e3e2299` beglaubigt (davor GRUEN 46/46 auf `c8b310b` für C und D). |
+| Testanzahl | A5 471 Prüfungen · B2 176 · B23 54 (neu) · B24 29 (neu) · A4-prepost 13 (neu) · A3 61 · B3c 75 · B8 77 · B10 313 · B16 52 · B17 23 (neu) · B18 44 (neu) · B19 57 (neu) · B20 24 (neu) · B21 22 (neu) · B22 24 (neu) · B5 237 · Broker 203 Lib-Tests plus alle Integrationsbeine · JSON-Fixturekorpus 285 (75 gültig, 210 ungültig) · Binärkorpus 104 (20 gültig, 84 ungültig) · Envelope-Korpus 37. Alle Zahlen aus dem Lauf dieser Sitzung, nicht abgeschrieben. |
+| Änderungssatz Etappe 2 | Fortlaufend in §10 je Bauetappe geführt: Commits, Beine, Rotbeweise, Abweichungen von §5 und Nebenbefunde. Die Beinzahl wächst mit den Etappen C bis F von 41 auf **49** (neu: **B17** `EqCopSonde013TruePeakGoldenTest`, **B18** `EqCopSonde013DynamicsTest`, **B19** `EqCopSonde013StereoGoldenTest`, **B20** `EqCopSonde013QualityClassTest`, **B21** `EqCopSonde013InterventionRingTest`, **B22** `EqCopSonde013FingerprintGoldenTest`, **B23** `EqCopSonde013PassageStateTest`, **B24** `EqCopSonde013PrePostGoldenTest`) und sinkt um kein Bein. Der volle Kanon steht am Ende jeder Etappe, die Schema-, Fixture- oder Runnerdateien berührt (§5.1); für C bis E ist er mit GRUEN 48/48 auf `e3e2299` beglaubigt (davor GRUEN 46/46 auf `c8b310b` für C und D). |
 | Grenze | Etappe 2 baut ausschließlich, was §3 zusagt. Prüfbereich sind die Ticketpfade aus §5.2; jede Datei außerhalb steht mit Begründung in §10. `docs/offene-punkte.md` und `docs/PLAN-STAND.md` bleiben unberührt — Nebenbefunde sammelt §10, der Dirigent zieht sie im Abschluss nach. |
 
 > **Belegfeld gesetzt, Urteilsmarke noch nicht.** Seit dem ersten Commit der
@@ -473,18 +473,18 @@ Ein Testname mit **NEU** existiert noch nicht.
 
 | ID | Ausgangszustand × Ereignis | Zusage samt Reihenfolge und Frist | Test | Quelle / Belegstatus |
 |---|---|---|---|---|
-| M-13 | Zwei Sonden melden `measurement_position` `pre` beziehungsweise `post` mit derselben `pair_id` | Ein Paar entsteht nur aus **genau einer** PRE- und **genau einer** POST-Hälfte derselben `pair_id` in derselben Session. Reihenfolge: Descriptor validieren → Paarkandidat bilden → Vollständigkeit prüfen → erst dann eine Paaraussage erzeugen. Eine fehlende Hälfte ergibt einen benannten unvollständigen Zustand, nie eine halbe Aussage. Zwei PRE oder zwei POST derselben `pair_id` sind ein Konflikt, kein Zufallssieger. | **NEU** `sonde013_prepost.rs`, Fall `pairing_requires_exactly_one_pre_and_one_post`; **NEU** derselbe Test, Fall `duplicate_half_is_conflict_not_first_wins`; bestehend **A5** für die Discriminatorform. | `eq-ipc-v3.schema.json`:573-576,613,642; Entwurf §3.4:699-711; §10:930-935. **BELEGT, BAULÜCKE im v3-Pfad** (v2-Vorläufer `broker/src/lib.rs`:656) |
-| M-14 | Vollständiges Paar; Aussage wird gebildet | Es gibt **drei getrennte Ergebnisse**, nie einen einzigen Differenzwert: rohe Messdifferenz derselben Projektfenster, ausgerichtetes pegelbezogenes Delta nach sicherer Restlag- und Gainschätzung, und interpretierte Wirkung. Die Trennung verhindert, dass mehr Pegel als mehr Höhen oder eine Laufzeitänderung als EQ-Effekt erscheint. | **NEU** `sonde013_prepost.rs`, Fall `three_results_are_never_collapsed`. | Entwurf §38.1:2470-2477. **BELEGT, BAULÜCKE** |
-| M-15 | Paar liefert Features; Restlag wird geschätzt | Erster Anker ist `project_sample_start` aus dem Host. Danach schätzt der Broker auf gemeinsamem Material einen Restlag über normierte Kreuzkorrelation mehrerer bandbegrenzter Hüllkurven und Onsetfolgen. Suchraum höchstens ±2 s bei mindestens 6 s Capture; bei kürzerem Capture wird er proportional verkleinert. Host-PDC darf ihn um einen erwarteten Offset zentrieren, ersetzt die Prüfung aber nicht. Ergebnis ist ausdrücklich **keine** behauptete Samplegenauigkeit. | **NEU** `sonde013_prepost.rs`, Fall `feature_alignment_search_space_and_pdc_is_hint_only`; **NEU** Golden-Korpus mit 0 bis 2 s bekannter Verzögerung, Treffer innerhalb **eines Feature-Hops**. | Entwurf §38.2:2480-2506; §38.5:2551-2553. **BELEGT, BAULÜCKE** |
-| M-16 | Restlag geschätzt; Alignment-Score wird gesetzt | Genau vier Klassen: `feature_aligned`, `audio_aligned`, `probable`, `unclear`. Akzeptiert wird nur, wenn Korrelationsspitze und Peak-to-Sidelobe-Verhältnis ausreichen, mehrere Bänder einen konsistenten Lag liefern, der Lag über Teilfenster stabil bleibt und weder Transportlücke noch andere Samplerate vorliegt. Geschätzter Lag, seine Auflösung und seine Streuung bleiben sichtbar. Rauschen oder anderes Material ergibt `unclear`. | **NEU** `sonde013_prepost.rs`, Fall `alignment_class_has_four_values_and_each_criterion_falls_alone`; **NEU** Fall `noise_yields_unclear`. | Entwurf §38.2:2493-2506; §38.5:2551-2555. **BELEGT, BAULÜCKE** |
-| M-17 | Paar mit Alignment; Coverage wird bestimmt | Coverage ist die gemeinsame Abdeckung der beiden Messfenster in Projektzeit. Reihenfolge: beide Fenster in Projektsamples auflösen → Überlappung berechnen → gegen das **kürzere** Fenster normieren. Zwei gültige Fenster an entgegengesetzten `i64`-Rändern dürfen weder paniken noch umbrechen und dadurch als deckungsgleich gelten. Überlappung ≤ 0 heißt „vermutlich verschiedene Passagen", nicht 0 % Ähnlichkeit. | **NEU** `sonde013_prepost.rs`, Fall `coverage_is_saturating_and_normalised_to_shorter_window`; Formvorläufer bestehend `broker/src/lib.rs`:793-806. | Entwurf §58 Lieferumfang; `broker/src/lib.rs`:784-806. **BELEGT, BAULÜCKE im v3-Pfad** |
-| M-18 | Paar; die Kette dazwischen ist zeitvariabel oder nichtlinear | Inkonsistente Pegel- und Spektralrelationen werden **markiert**. Danach darf Nakama keinen festen Übertragungsfrequenzgang behaupten. Kompression, Modulation, Saturation und wechselnde Latenz erzeugen keine falsche statische EQ-Behauptung; das Ergebnis lautet dann „wahrscheinliche PRE/POST-Wirkung" statt einer kausalen Behauptung. | **NEU** `EqCopSonde013PrePostGoldenTest` mit adversarialen Fixtures Kompressor, Tremolo, Saturation und wechselnder Latenz, Fall `nonlinear_chain_never_yields_static_eq_claim`. | Entwurf §38.3:2509-2513; §38.5:2560; §10 Grenze:948-950. **BELEGT, BAULÜCKE** |
-| M-19 | Paar; Transferfunktion wird erwogen | `H₁(f)=Sᵧₓ/Sₓₓ` und Magnitude-Squared Coherence entstehen **nur im lokalen Compare-Routing** und nur für eine hinreichend stationäre lineare Kette. Ein Transferwert ist nur in Bändern mit genügend PRE-Energie und zunächst mindestens 0,8 Kohärenz zulässig; ab rund 0,9 gilt er als sehr belastbar. Unterhalb davon und bei **verteilten** Probes zeigt Nakama robuste P10/P50/P95-Differenzen statt eines vermeintlichen Frequenzgangs. Da es in P4 kein Compare-Routing gibt, ist der verteilte Zweig der einzige aktive. | **NEU** `sonde013_prepost.rs`, Fall `distributed_pair_never_produces_transfer_function`. | Entwurf §38.3:2515-2521. **BELEGT**; **BAULÜCKE nur im Bein** — der Compare-Routing-Zweig selbst gehört ausdrücklich nicht in dieses Ticket (§5.3) |
-| M-20 | Paar; Vergleichspegel wird gebraucht | Der Vergleichspegel wird für die gewählte Passage **vorab** gemessen und während des A/B eingefroren. Eine kontinuierliche automatische Nachregelung während des Umschaltens ist ausgeschlossen: sie bewertet Transienten und Stille falsch und wird selbst zum hörbaren Prozessor. | **NEU** `EqCopSonde013PrePostGoldenTest`, Fall `match_gain_is_frozen_before_ab_not_tracked`. | Entwurf §38.3:2523-2526; §43.1:2833. **BELEGT, BAULÜCKE** |
-| M-21 | Zeitpfad zwischen zwei Instanzen ist nicht validiert; Cross-Probe- oder PRE/POST-Aussage wird angefragt | Solange FLs PDC-/Presentation-Abbildung nicht bewiesen ist, lautet der Schlüssel `raw_project_frame_key = (instance_id, transport_epoch, sample_rate, resolution, frame_start)` und behauptet **keine** Inhaltsgleichheit zwischen Instanzen. Erst eine validierte Presentation-Abbildung **plus** Alignmentqualität erzeugt `aligned_frame_key = (session_epoch, timeline_epoch, sample_rate, resolution, aligned_start)` für starke Cross-Probe-Evidenz. Exit-Gate wörtlich: **„Kein unbekannter Zeitpfad erzeugt eine starke Cross-Probe- oder PRE/POST-Aussage."** | **NEU** `sonde013_prepost.rs`, Fall `unknown_time_path_can_never_reach_strong` als Gate-Bein — es muss über **alle** Wege scheitern, nicht nur über den erwarteten; **NEU** Mutationsprobe: ein künstlich auf `aligned` gehobener Schlüssel bringt das Bein zum Fallen. | Entwurf §35.1:2255-2266; §58 Exit-Gate:4288-4289. **BELEGT, BAULÜCKE** |
-| M-22 | Eine Hälfte ist getrennt, stale, sammelt noch oder lief ohne Transport | Harte Ausschlüsse führen zu `unclear` mit benanntem Grund, nicht zu einer schwachen Zahl: fehlende Hälfte, getrennte Hälfte, stale Hälfte, Zustand nicht messbereit, fehlende Projektzeit, Fensterlänge ≤ 0. Der v2-Vorläufer führt genau diese Fälle bereits; der v3-Pfad erbt sie samt Wortlautklasse. | **NEU** `sonde013_prepost.rs`, Fall `hard_exclusions_each_name_their_reason`; Formvorläufer bestehend `broker/src/lib.rs`:700-806, gedeckt von **A4**. | `broker/src/lib.rs`:700-806; Entwurf §58 („ehrliche Herabstufung"). **BELEGT, BAULÜCKE im v3-Pfad** |
-| M-23 | Paar ist vollständig, aber die Überdeckung ist gering, die aktive Messzeit klafft auseinander oder die Hälften laufen in verschiedenen Prozessen | Herabstufung auf `probable` mit benanntem Grund statt Ausschluss. Im v3-Pfad sind es **genau drei** Gründe: Überlappung unter 80 % des kürzeren Fensters; aktive Messzeit um mehr als 10 % verschieden (Smart Disable oder Stille auf einem Punkt); verschiedene Host-PIDs. Der vierte Grund des v2-Vorläufers, „Loop-/Seek-Sprünge im Messfenster", **entfällt im v3-Pfad** und bleibt nur als Vorläufer benannt: eine Passage bindet an genau eine Transportepoche (§32.4), also **invalidiert** ein Sprung die Messung, statt sie herabzustufen; der Grund auf dem Draht ist dabei je Auslöser eindeutig — Seek und Loop-Wrap innerhalb der Passage `epochwechsel`, Drop `sequenzluecke` (M-53). Regel und Abgrenzung stehen in M-53. Keine Herabstufung ist ein stiller Ausschluss. | **NEU** `sonde013_prepost.rs`, Fall `each_downgrade_reason_falls_alone` mit einem Fall je Grund, also **drei**; **NEU** `sonde013_taint.rs`, Fälle `seek_inside_passage_invalidates_instead_of_downgrading` und `loop_wrap_at_passage_edge_starts_next_pass`; Formvorläufer bestehend `broker/src/lib.rs`:809-826 (dort vier Gründe — v2-Erbe, Verlauf). | `broker/src/lib.rs`:809-826 (v2-Vorläufer, Plan §5.7); Entwurf §58:4285 („Invalidierung bei Marker, Preview, Seek, Drop, geändertem Material oder Messpunkt"); §32.4:1969; §15 Vergleichbarkeitsregeln:1093-1098. **BELEGT, BAULÜCKE im v3-Pfad** — Sprunggrund gestrichen in Nacharbeit 1 (§8, D3) |
-| M-24 | Paar; hörbares Delta wird angefragt | Feature-Telemetrie kann `POST − PRE` niemals als Audio erzeugen. Ohne nachgewiesenes Compare-Routing bietet Gen nur Messvergleich plus angeleiteten manuellen Bypass. Hörbares Delta wird ohne Routingnachweis **nicht** freigeschaltet. | **NEU** `EqCopSonde013PrePostGoldenTest`, Fall `audible_delta_locked_without_compare_routing`. | Entwurf §38.4:2528-2549; §38.5:2562. **BELEGT**; **BAULÜCKE nur im Bein** — die Freischaltung gehört zu P8, hier gilt nur die Sperre |
+| M-13 | Zwei Sonden melden `measurement_position` `pre` beziehungsweise `post` mit derselben `pair_id` | Ein Paar entsteht nur aus **genau einer** PRE- und **genau einer** POST-Hälfte derselben `pair_id` in derselben Session. Reihenfolge: Descriptor validieren → Paarkandidat bilden → Vollständigkeit prüfen → erst dann eine Paaraussage erzeugen. Eine fehlende Hälfte ergibt einen benannten unvollständigen Zustand, nie eine halbe Aussage. Zwei PRE oder zwei POST derselben `pair_id` sind ein Konflikt, kein Zufallssieger. | **gemessen** (2026-09-04, Etappe F): **A4** `sonde013_prepost.rs`::`pairing_requires_exactly_one_pre_and_one_post` und ::`duplicate_half_is_conflict_not_first_wins` — eine fehlende Hälfte ergibt `HaelfteFehlt` ohne jede Zahl, zwei PRE oder zwei POST ergeben `Paarkonflikt` statt eines Zufallssiegers. Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-13.txt`. | `eq-ipc-v3.schema.json`:573-576,613,642; Entwurf §3.4:699-711; §10:930-935. **BELEGT, gemessen im v3-Pfad** (v2-Vorläufer `broker/src/lib.rs`:656) |
+| M-14 | Vollständiges Paar; Aussage wird gebildet | Es gibt **drei getrennte Ergebnisse**, nie einen einzigen Differenzwert: rohe Messdifferenz derselben Projektfenster, ausgerichtetes pegelbezogenes Delta nach sicherer Restlag- und Gainschätzung, und interpretierte Wirkung. Die Trennung verhindert, dass mehr Pegel als mehr Höhen oder eine Laufzeitänderung als EQ-Effekt erscheint. | **gemessen** (2026-09-04, Etappe F): **A4**::`three_results_are_never_collapsed` — eine Kette mit +6 dB zeigt roh +6,02 dB, ausgerichtet 0 dB und die Wirkung „breitbandig gleichmäßig"; ohne sicheres Alignment gibt es die rohe Differenz, aber KEIN ausgerichtetes Delta und keine Wirkung. Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-14.txt`. | Entwurf §38.1:2470-2477. **BELEGT, gemessen** |
+| M-15 | Paar liefert Features; Restlag wird geschätzt | Erster Anker ist `project_sample_start` aus dem Host. Danach schätzt der Broker auf gemeinsamem Material einen Restlag über normierte Kreuzkorrelation mehrerer bandbegrenzter Hüllkurven und Onsetfolgen. Suchraum höchstens ±2 s bei mindestens 6 s Capture; bei kürzerem Capture wird er proportional verkleinert. Host-PDC darf ihn um einen erwarteten Offset zentrieren, ersetzt die Prüfung aber nicht. Ergebnis ist ausdrücklich **keine** behauptete Samplegenauigkeit. | **gemessen** (2026-09-04, Etappe F): **A4**::`feature_alignment_search_space_and_pdc_is_hint_only` — der Suchraum ist 20 Hops bei ≥ 6 s und 10 bei 3 s Capture; der Golden-Korpus mit 0 bis 2 s bekannter Verzögerung wird auf einen Feature-Hop genau gefunden, und die Auflösung reist als Zahl mit statt einer behaupteten Samplegenauigkeit. Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-15.txt`. | Entwurf §38.2:2480-2506; §38.5:2551-2553. **BELEGT, gemessen** |
+| M-16 | Restlag geschätzt; Alignment-Score wird gesetzt | Genau vier Klassen: `feature_aligned`, `audio_aligned`, `probable`, `unclear`. Akzeptiert wird nur, wenn Korrelationsspitze und Peak-to-Sidelobe-Verhältnis ausreichen, mehrere Bänder einen konsistenten Lag liefern, der Lag über Teilfenster stabil bleibt und weder Transportlücke noch andere Samplerate vorliegt. Geschätzter Lag, seine Auflösung und seine Streuung bleiben sichtbar. Rauschen oder anderes Material ergibt `unclear`. | **gemessen** (2026-09-04, Etappe F): **A4**::`alignment_class_has_four_values_and_each_criterion_falls_alone` (fünf Kriterien fallen einzeln, darunter ein exakt periodischer Takt, bei dem NUR das Peak-to-Sidelobe-Verhältnis fällt) und ::`noise_yields_unclear`. `audio_aligned` ist in P4 unerreichbar und wird von keinem Eingabewert vergeben. Rotbeweise `docs/beweise/roh/SONDE-013-rot-M-16.txt` und `-M-16-tiebreak.txt`. | Entwurf §38.2:2493-2506; §38.5:2551-2555. **BELEGT, gemessen** |
+| M-17 | Paar mit Alignment; Coverage wird bestimmt | Coverage ist die gemeinsame Abdeckung der beiden Messfenster in Projektzeit. Reihenfolge: beide Fenster in Projektsamples auflösen → Überlappung berechnen → gegen das **kürzere** Fenster normieren. Zwei gültige Fenster an entgegengesetzten `i64`-Rändern dürfen weder paniken noch umbrechen und dadurch als deckungsgleich gelten. Überlappung ≤ 0 heißt „vermutlich verschiedene Passagen", nicht 0 % Ähnlichkeit. | **gemessen** (2026-09-04, Etappe F): **A4**::`coverage_is_saturating_and_normalised_to_shorter_window` — auf das kürzere Fenster normiert, Überlappung ≤ 0 schließt aus statt herabzustufen, und die `i64`-Ränder sättigen. Der Fall zwei identischer Vollbereichsfenster deckte denselben Defekt in `vergleichbarkeit.rs` auf (§10.7). Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-17.txt`. | Entwurf §58 Lieferumfang; `broker/src/lib.rs`:784-806. **BELEGT, gemessen im v3-Pfad** |
+| M-18 | Paar; die Kette dazwischen ist zeitvariabel oder nichtlinear | Inkonsistente Pegel- und Spektralrelationen werden **markiert**. Danach darf Nakama keinen festen Übertragungsfrequenzgang behaupten. Kompression, Modulation, Saturation und wechselnde Latenz erzeugen keine falsche statische EQ-Behauptung; das Ergebnis lautet dann „wahrscheinliche PRE/POST-Wirkung" statt einer kausalen Behauptung. | **gemessen** (2026-09-04, Etappe F): **B24** `EqCopSonde013PrePostGoldenTest`::`nonlinear_chain_never_yields_static_eq_claim` — identische Kette, +15 dB Gain und ein linearer Tiefpass halten die Kohärenz über 0,8; Kompression, Modulation, Saturation und wechselnde Latenz fallen an mindestens einer der zwei Wachen durch, und die Gruppen überlappen nicht. Der Befund, dass die Kohärenz allein für Kompression NICHT genügt, steht in §10.7. Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-18.txt`. | Entwurf §38.3:2509-2513; §38.5:2560; §10 Grenze:948-950. **BELEGT, gemessen** |
+| M-19 | Paar; Transferfunktion wird erwogen | `H₁(f)=Sᵧₓ/Sₓₓ` und Magnitude-Squared Coherence entstehen **nur im lokalen Compare-Routing** und nur für eine hinreichend stationäre lineare Kette. Ein Transferwert ist nur in Bändern mit genügend PRE-Energie und zunächst mindestens 0,8 Kohärenz zulässig; ab rund 0,9 gilt er als sehr belastbar. Unterhalb davon und bei **verteilten** Probes zeigt Nakama robuste P10/P50/P95-Differenzen statt eines vermeintlichen Frequenzgangs. Da es in P4 kein Compare-Routing gibt, ist der verteilte Zweig der einzige aktive. | **gemessen** (2026-09-04, Etappe F): **A4**::`distributed_pair_never_produces_transfer_function` — die Ausgabe hat genau so viele Werte wie Bänder, keine Frequenzachse feiner als die übertragene Auflösung, und eine markierte Kette trägt „wahrscheinliche PRE/POST-Wirkung" statt einer kausalen Behauptung. Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-19.txt`. | Entwurf §38.3:2515-2521. **BELEGT**; **BAULÜCKE nur im Bein** — der Compare-Routing-Zweig selbst gehört ausdrücklich nicht in dieses Ticket (§5.3) |
+| M-20 | Paar; Vergleichspegel wird gebraucht | Der Vergleichspegel wird für die gewählte Passage **vorab** gemessen und während des A/B eingefroren. Eine kontinuierliche automatische Nachregelung während des Umschaltens ist ausgeschlossen: sie bewertet Transienten und Stille falsch und wird selbst zum hörbaren Prozessor. | **gemessen** (2026-09-04, Etappe F): **B24**::`match_gain_is_frozen_before_ab_not_tracked` — sechs Sekunden mit +18 dB und zwei Sekunden Stille ändern den eingefrorenen Pegel um kein Tausendstel; ohne genug Material friert er gar nicht erst ein. Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-20.txt`. | Entwurf §38.3:2523-2526; §43.1:2833. **BELEGT, gemessen** |
+| M-21 | Zeitpfad zwischen zwei Instanzen ist nicht validiert; Cross-Probe- oder PRE/POST-Aussage wird angefragt | Solange FLs PDC-/Presentation-Abbildung nicht bewiesen ist, lautet der Schlüssel `raw_project_frame_key = (instance_id, transport_epoch, sample_rate, resolution, frame_start)` und behauptet **keine** Inhaltsgleichheit zwischen Instanzen. Erst eine validierte Presentation-Abbildung **plus** Alignmentqualität erzeugt `aligned_frame_key = (session_epoch, timeline_epoch, sample_rate, resolution, aligned_start)` für starke Cross-Probe-Evidenz. Exit-Gate wörtlich: **„Kein unbekannter Zeitpfad erzeugt eine starke Cross-Probe- oder PRE/POST-Aussage."** | **gemessen** (2026-09-04, Etappe F): **A4**::`unknown_time_path_can_never_reach_strong` — der ausgerichtete Schlüssel verlangt validierte Presentation-Abbildung UND Alignmentqualität; eines allein genügt nie, und der rohe Schlüssel ist an die Instanz gebunden. Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-21.txt`. | Entwurf §35.1:2255-2266; §58 Exit-Gate:4288-4289. **BELEGT, gemessen** |
+| M-22 | Eine Hälfte ist getrennt, stale, sammelt noch oder lief ohne Transport | Harte Ausschlüsse führen zu `unclear` mit benanntem Grund, nicht zu einer schwachen Zahl: fehlende Hälfte, getrennte Hälfte, stale Hälfte, Zustand nicht messbereit, fehlende Projektzeit, Fensterlänge ≤ 0. Der v2-Vorläufer führt genau diese Fälle bereits; der v3-Pfad erbt sie samt Wortlautklasse. | **gemessen** (2026-09-04, Etappe F): **A4**::`hard_exclusions_each_name_their_reason` — sieben Ausschlüsse, jeder von BEIDEN Seiten gefahren, jeder mit benanntem Grund und ohne Zahl und ohne Lag. Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-22.txt`. | `broker/src/lib.rs`:700-806; Entwurf §58 („ehrliche Herabstufung"). **BELEGT, gemessen im v3-Pfad** |
+| M-23 | Paar ist vollständig, aber die Überdeckung ist gering, die aktive Messzeit klafft auseinander oder die Hälften laufen in verschiedenen Prozessen | Herabstufung auf `probable` mit benanntem Grund statt Ausschluss. Im v3-Pfad sind es **genau drei** Gründe: Überlappung unter 80 % des kürzeren Fensters; aktive Messzeit um mehr als 10 % verschieden (Smart Disable oder Stille auf einem Punkt); verschiedene Host-PIDs. Der vierte Grund des v2-Vorläufers, „Loop-/Seek-Sprünge im Messfenster", **entfällt im v3-Pfad** und bleibt nur als Vorläufer benannt: eine Passage bindet an genau eine Transportepoche (§32.4), also **invalidiert** ein Sprung die Messung, statt sie herabzustufen; der Grund auf dem Draht ist dabei je Auslöser eindeutig — Seek und Loop-Wrap innerhalb der Passage `epochwechsel`, Drop `sequenzluecke` (M-53). Regel und Abgrenzung stehen in M-53. Keine Herabstufung ist ein stiller Ausschluss. | **gemessen** (2026-09-04, Etappe F): **A4**::`each_downgrade_reason_falls_alone` — genau drei Gründe, alle reisen mit, und der vierte des v2-Vorläufers ist zum Ausschluss geworden: ein Sprung invalidiert, statt herabzustufen. Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-23.txt`. | `broker/src/lib.rs`:809-826 (v2-Vorläufer, Plan §5.7); Entwurf §58:4285 („Invalidierung bei Marker, Preview, Seek, Drop, geändertem Material oder Messpunkt"); §32.4:1969; §15 Vergleichbarkeitsregeln:1093-1098. **BELEGT, gemessen im v3-Pfad** — Sprunggrund gestrichen in Nacharbeit 1 (§8, D3) |
+| M-24 | Paar; hörbares Delta wird angefragt | Feature-Telemetrie kann `POST − PRE` niemals als Audio erzeugen. Ohne nachgewiesenes Compare-Routing bietet Gen nur Messvergleich plus angeleiteten manuellen Bypass. Hörbares Delta wird ohne Routingnachweis **nicht** freigeschaltet. | **gemessen** (2026-09-04, Etappe F): **B24**::`audible_delta_locked_without_compare_routing` — der Raum aus drei binären Nachweisen wird vollständig abgefahren, genau eine der acht Kombinationen ist frei, und in P4 gibt es kein Compare-Routing. Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-24.txt`. | Entwurf §38.4:2528-2549; §38.5:2562. **BELEGT, gemessen** — die Freischaltung gehört zu P8, hier gilt nur die Sperre |
 
 ### 3.3 Manuell markierte Passage, Fingerprint und Comparability-Score
 
@@ -3076,6 +3076,195 @@ Rückrechnung *schwer* ist — sie zeigt, dass die Information **nicht da ist**:
   Konstante im Objekt, damit ein gespeicherter Fingerprint seine
   Erzeugerversion mitträgt statt sie beim Lesen aus der jeweils aktuellen zu
   holen.
+
+---
+
+### 10.7 Etappe F — der PRE/POST-Join (2026-09-04)
+
+**Gebaute Matrixzeilen:** M-13 bis M-24, vollständig.
+
+#### Der verteilte Zweig ist in P4 der einzige, und das prägt alles
+
+§38.2 kennt zwei Qualitätsstufen: verteiltes Feature-Alignment über die
+übertragenen Features, und lokales Audio-Alignment mit GCC-PHAT, das PRE und
+POST als echte Audiopuffer in **einer** Instanz verlangt. In P4 gibt es kein
+Compare-Routing (M-19, M-24). Daraus folgt dreierlei:
+
+- `AudioAligned` ist eine Klasse, die dieses Modul **nie vergibt**. Sie steht
+  trotzdem im Typ — sie wegzulassen bräche den Vertrag der vier Klasen aus
+  M-16 und verschöbe die Arbeit nur.
+- Es entsteht **keine** Transferfunktion. `H₁(f) = Sᵧₓ/Sₓₓ` ist laut §38.3
+  ausdrücklich dem lokalen Compare-Routing vorbehalten; verteilt gibt es
+  bandweise Differenzen, deren Auflösung nicht feiner ist als die übertragene
+  Bandauflösung.
+- Hörbares Delta ist gesperrt, und zwar ohne Ausnahme.
+
+#### Drei Ergebnisse, und keines ersetzt ein anderes
+
+M-14 verbietet den einen Differenzwert. Die drei Stufen sind hier verschiedene
+Felder und keine drei Sichten auf dieselbe Zahl:
+
+| Stufe | Wann sie entsteht | Was sie verhindert |
+|---|---|---|
+| rohe Messdifferenz | immer, wenn das Paar vollständig ist | nichts — sie ist die Grundlage |
+| ausgerichtetes Delta | **nur** bei sicherem Alignment | dass eine Laufzeitänderung wie ein EQ-Effekt aussieht |
+| interpretierte Wirkung | nur zusätzlich bei stationärer Kette | dass mehr Pegel als mehr Höhen gelesen wird |
+
+Ein Paar mit verschiedenen Host-PIDs trägt deshalb die rohe Differenz, aber
+**kein** ausgerichtetes Delta und keine Wirkung. Das ist keine Sparsamkeit,
+sondern die Zusage.
+
+#### Was der Bau über die Restlagschätzung gelernt hat
+
+Drei Befunde, jeder mit einem Rotbeweis, und alle drei betreffen dieselbe
+Rechnung:
+
+**Die Kreuzkorrelation muss mittelwertfrei sein.** Hüllkurven sind
+nichtnegativ; ihr Kosinuswinkel liegt für *jeden* Lag nahe eins, weil beide
+Vektoren im positiven Orthanten liegen und der Gleichanteil alles dominiert.
+Der Suchlauf findet damit zwar noch das richtige Maximum, aber das
+Peak-to-Sidelobe-Verhältnis aus §38.2 wird zu 1,00x und lehnt **jede**
+Ausrichtung ab — auch die perfekte. Gemessen: identische Spuren ergaben Spitze
+1,000 und PSR 1,008, und der Join stufte sich selbst herab.
+
+**Spitze und PSR gehören auf die summierte Kurve, nicht auf die einzelne
+Spur.** Musik ist rhythmisch periodisch: die Korrelationskurve einer einzelnen
+Bandhüllkurve hat bei jedem Vielfachen ihrer Taktperiode ein fast gleich hohes
+Nebenmaximum. Über mehrere Spuren mit *verschiedenen* Periodizitäten summieren
+sich die Nebenmaxima nicht auf, die echte Spitze schon. Genau das meint §38.2
+mit „mehrere Bänder einen konsistenten Lag liefern" — die Mehrdeutigkeit einer
+Spur wird durch die anderen aufgelöst, nicht durch eine schärfere Schwelle.
+
+**Der Gleichstand zweier Maxima braucht eine Toleranz und überall dieselbe
+Regel.** Bei exakt periodischem Material sind mehrere Maxima mathematisch
+gleich hoch; ohne Toleranz entscheidet die letzte Nachkommastelle, welches
+gewinnt. Gemessen: dasselbe Signal ergab im ganzen Fenster Lag 0 und in der
+zweiten Hälfte −5 — und das Stabilitätskriterium schlug auf reines
+Gleitkommarauschen an. Gewinnt jetzt der betragskleinste Lag: wo kein Versatz
+nötig ist, wird keiner behauptet.
+
+#### Ein Defekt aus Etappe E, den ein Test aus F aufgedeckt hat
+
+`vergleichbarkeit::ueberdeckung` rechnete die Fensterlänge mit
+`checked_sub(..).unwrap_or(0)`. Der Ausfallwert 0 traf damit genau den Fall,
+den er schützen sollte: **zwei identische Fenster über den ganzen
+Zahlenbereich ergaben eine Überdeckung von 0 statt 1** — und damit
+`ProjektbereichVerschieden` für zwei deckungsgleiche Passagen. Der Fund kam
+aus `coverage_is_saturating_and_normalised_to_shorter_window`, dessen
+Zahlenrandprobe schärfer ist als die von Etappe E.
+
+Beide Stellen rechnen jetzt sättigend. Das ist eine Änderung an Etappe E, wie
+§5.2 sie erlaubt: ein Test einer späteren Etappe hat dort einen Defekt
+aufgedeckt. Rotbeweis `SONDE-013-rot-M-17.txt`.
+
+#### Eine Wache genügt für M-18 nicht — der wichtigste Befund der Etappe
+
+Die Magnitude-Squared Coherence ist **1 für jede lineare zeitinvariante
+Kette**, unabhängig davon, wie stark sie den Klang verändert. Ein Gain von
++15 dB und ein steiler Tiefpass bleiben bei 1,000 beziehungsweise 0,9998. Sie
+fällt genau dann, wenn die Kette nichtlinear oder zeitvariabel ist. Das macht
+sie zur natürlichen Wache für M-18 — und deshalb schickt **B24** PRE nach
+links und POST nach rechts durch *eine* FeatureEngine: die bandweise
+Interchannel-Kohärenz aus §40.1 ist dann die PRE/POST-Kohärenz, ohne eine
+zweite Engine und ohne eine neue Zahl.
+
+Gemessen an vier adversarialen Ketten:
+
+| Kette | Kohärenz | Bänder über 0,8 | Relationsstreuung je Band |
+|---|---|---|---|
+| identisch / Gain +15 dB | 1,000 | > 95 % | 0,001 dB |
+| linearer Tiefpass | 0,9998 | > 90 % | 0,001 dB |
+| **Kompression 6:1** | **0,834** | **78 %** | **34,7 dB** |
+| Modulation 7 Hz | 0,666 | — | 0,27 dB |
+| Saturation (tanh) | 0,572 | — | 3,6 dB |
+| wechselnde Latenz | 0,236 | — | 0,20 dB |
+
+**Die Kompression hält die Kohärenzschwelle.** Rund vier Fünftel ihrer Bänder
+liegen über den 0,8 aus §38.3 — wer M-18 allein an der Kohärenz aufhängte,
+ließe ausgerechnet das häufigste Gerät der Kette durch und baute aus ihm einen
+Frequenzgang. Deshalb gibt es die zweite Wache: die Streuung der
+PRE/POST-Relation über die Fenster (`prepost::kettenbefund`). Die Zusage
+lautet: jede der vier fällt an **mindestens einer** durch, und keine lineare
+Kette an einer von beiden.
+
+Zwei Dinge waren dafür nötig und stehen als Warnung im Test:
+
+- **Das Material muss dynamisch sein.** Ein Kompressor verhält sich bei
+  stationärem Material wie ein linearer Gain — seine Verstärkung steht still,
+  und dann ist er auch messtechnisch linear. Mit konstanter Amplitude wanderte
+  die Relation eines 6:1-Kompressors um 0,06 dB, nicht unterscheidbar von
+  einem Kabel.
+- **Die Streuung gehört je Band gerechnet.** Eine nichtlineare Kette wirkt
+  bandabhängig verschieden; der Mittelwert über 149 Bänder löscht genau das
+  aus.
+
+#### Der Vergleichspegel und die Delta-Sperre
+
+Beide sind neuer Kerncode (`core/analysis/Vergleichspegel.h`), JUCE-frei und
+allokationsfrei wie `Konfidenz.h`.
+
+Der **Vergleichspegel** (M-20) nimmt nach `friereEin()` zwar weiter Material
+entgegen — der Aufrufer im Audiothread soll nicht verzweigen müssen —, ändert
+seinen Wert aber nicht mehr. Der Riegel liegt im Typ, nicht in der Disziplin
+des Aufrufers. Sechs Sekunden mit +18 dB und zwei Sekunden Stille lassen ihn
+um kein Tausendstel wandern. Ohne genug Material friert er gar nicht erst ein:
+eine gemeldete 0 dB wäre die Behauptung „gleich laut", und „nie gemessen" ist
+etwas anderes.
+
+Die **Delta-Sperre** (M-24) ist eine `constexpr`-Funktion mit drei binären
+Eingaben, also lässt sich ihr Raum vollständig abfahren — dieselbe Bauform wie
+`gesamtklasse` in `Konfidenz.h`. Genau eine der acht Kombinationen ist frei,
+und `kCompareroutingInDieserPhase` steht an genau einer Stelle, damit die
+spätere Freischaltung ein sichtbarer Schritt ist statt einer verstreuten
+Bedingung.
+
+#### Ein Testfehler, den nur die Auswertungsreihenfolge erklärt
+
+Der NaN-Fall in B24 meldete einen grünen Haken neben „0,0000 dB". Grund:
+`friereEin()` (mit Seiteneffekt) und `gainDb()` standen als verschiedene
+Argumente **desselben** Aufrufs, und C++ legt die Auswertungsreihenfolge von
+Funktionsargumenten nicht fest — der Zusatztext las den Pegel vor dem
+Einfrieren. Der Aufruf steht jetzt davor; die Warnung steht im Test.
+
+#### Belege
+
+| Bein | Ergebnis |
+|---|---|
+| **A4** `sonde013_prepost.rs` (NEU) | 13 bestanden, 0 gescheitert |
+| **A4** `cargo test --release`, gesamter Broker | 16 Suiten, 0 gescheitert |
+| **A5** `pruefe_v3_vertrag.py` | 471 Prüfungen, 0 gescheitert |
+| **B24** `EqCopSonde013PrePostGoldenTest` (NEU) | 29 bestanden, 0 gescheitert |
+
+| Rotbeweis | Eingebauter Fehler | Fallendes Bein |
+|---|---|---|
+| `-M-13.txt` | bei zwei PRE-Hälften gewinnt die erste statt eines Konflikts | A4 |
+| `-M-14.txt` | das ausgerichtete Delta entsteht auch ohne sichere Schätzung | A4 |
+| `-M-15.txt` | der Suchraum wird bei kurzem Capture nicht verkleinert | A4 |
+| `-M-16.txt` | das Peak-to-Sidelobe-Kriterium entfällt | A4 |
+| `-M-16-tiebreak.txt` | der Gleichstand wird ohne Toleranz und uneinheitlich aufgelöst | A4 |
+| `-M-17.txt` | die Überlappung rechnet wieder mit `unwrap_or(0)` statt sättigend | A4 |
+| `-M-18.txt` | die Relationsstreuung wird über die Bänder gemittelt | B24 |
+| `-M-19.txt` | der Kettenbefund meldet immer `Stationaer` | A4 |
+| `-M-20.txt` | der Vergleichspegel rechnet bei jeder Abfrage neu | B24 |
+| `-M-21.txt` | der ausgerichtete Frameschlüssel entsteht ohne Presentation-Nachweis | A4 |
+| `-M-22.txt` | eine stale Hälfte stuft herab statt auszuschließen | A4 |
+| `-M-23.txt` | ein Sprung im Messfenster stuft herab statt zu invalidieren | A4 |
+| `-M-24.txt` | die Delta-Sperre lässt sich mit gutem Alignment umgehen | B24 |
+
+#### Abweichungen von §5, mit Begründung
+
+- **Ein neuer Kernheader** `core/analysis/Vergleichspegel.h`. §5.2 nennt
+  `plugin/core/analysis/` als Ticketpfad; M-20 und M-24 verlangen eine
+  Produktwirkung, und beide gehören in den JUCE-freien Kern statt in eine
+  Testdatei.
+- **Ein Defekt in `vergleichbarkeit.rs`** (Etappe E) behoben — Begründung
+  oben.
+- **Neues Kanonbein B24.** §5.1 nennt es für Etappe F. Die Beinzahl wächst von
+  48 auf **49**.
+- **`GATE_RELATIONSSCHWANKUNG_DB` steht auf 1,5 dB**, nicht auf dem zuerst
+  gewählten 3,0. Eine lineare Kette hält die Relation exakt konstant; ihre
+  Streuung ist bis auf das 0,1-dB-Raster des Livepfads null. Alles darüber ist
+  keine Messstreuung, sondern Wirkung.
 
 ---
 

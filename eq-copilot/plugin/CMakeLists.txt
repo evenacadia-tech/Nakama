@@ -670,6 +670,24 @@ target_link_libraries(EqCopStateMigrationTest PRIVATE juce::juce_audio_utils juc
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
 nakama_kern_anbinden(EqCopStateMigrationTest)
 
+# -- SONDE-013 Etappe F: PRE/POST auf der Audioseite (Kanon B24) -----------
+# Die Magnitude-Squared Coherence ist 1 fuer JEDE lineare zeitinvariante Kette
+# und faellt genau dann, wenn die Kette nichtlinear oder zeitvariabel ist. Das
+# Bein schickt PRE nach links und POST nach rechts durch EINE FeatureEngine;
+# die bandweise Interchannel-Kohaerenz aus §40.1 ist dann die PRE/POST-
+# Kohaerenz, und §38.3 haengt genau daran die Zulaessigkeit eines
+# Transferwerts. Kein Produktcode und keine zweite Engine noetig - nur die
+# richtige Frage an eine vorhandene.
+juce_add_console_app(EqCopSonde013PrePostGoldenTest PRODUCT_NAME "eqcop-sonde013prepostgoldentest")
+target_sources(EqCopSonde013PrePostGoldenTest PRIVATE tests/Sonde013PrePostGoldenTest.cpp)
+target_include_directories(EqCopSonde013PrePostGoldenTest PRIVATE src core)
+target_compile_definitions(EqCopSonde013PrePostGoldenTest PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
+target_link_libraries(EqCopSonde013PrePostGoldenTest PRIVATE juce::juce_dsp
+    PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+target_compile_options(EqCopSonde013PrePostGoldenTest PRIVATE "$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+nakama_kern_anbinden(EqCopSonde013PrePostGoldenTest)
+
 # ── SONDE-013 Etappe E: manuelle Passage als Projektintent (Kanon B23) ────
 # Ein NEUES persistentes Feld im Host-State. Das Bein misst die fuenf Teile der
 # State-Invariante einzeln - versionieren, Altstand laden, unbekanntes Feld

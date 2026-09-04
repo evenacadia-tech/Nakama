@@ -321,6 +321,10 @@ impl Coordinator {
         if let (Some(w), Some(ord)) = (invalidierung, ords.last().copied()) {
             self.invalidierung_zustellen(&w, ord);
         }
+        // Selbstaudit der Runde 3 (Befund B18): dieselbe Zeile wie im
+        // Preview-Pfad — ein Materialwechsel nimmt Evidenz zurueck, und das
+        // Paarurteil folgt ihr.
+        self.paare_bei_bedarf_bilden();
 
         // Der Taint gehoert zur Wirkung, aber nicht in den Rueckweg: er
         // schliesst Intervalle, die es ohne die Wirkung gar nicht gaebe — und

@@ -719,6 +719,12 @@ impl Coordinator {
                         if let (Some(w), Some(ord)) = (wirkung, ords.last().copied()) {
                             self.invalidierung_zustellen(&w, ord);
                         }
+                        // Selbstaudit der Runde 3 (Befund B18): eine Ruecknahme
+                        // ist eine Evidenzaenderung — auch die, die MIT einem
+                        // Befehl committet. Ohne diese Zeile bliebe das alte
+                        // volle Paarurteil ausgerechnet auf dem Weg stehen, der
+                        // die Evidenz gerade zurueckgenommen hat.
+                        self.paare_bei_bedarf_bilden();
                         Some(a)
                     }
                     andere => {

@@ -510,9 +510,23 @@ void EqCopilotProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::M
         && kanaele > 0
         && (std::size_t) (buffer.getNumSamples() * kanaele) <= versuchTrocken.size())
     {
+        // Selbstaudit der Runde 3: ein NEGATIVER Blockanfang ist keine Stelle
+        // in der Passage — ihre Grenzen sind nach `merkeManuellePassage` beide
+        // >= 0. Er wird deshalb ausgeschlossen, BEVOR gerechnet wird: die
+        // Differenz `ende - blockAnfang` liefe sonst am i64-Rand ueber, und
+        // ein Ueberlauf ergaebe ein Fenster, das es nicht gibt (M-17).
         const std::int64_t blockAnfang = stempel.projectSampleStart;
-        std::int64_t von = pegelFensterStart.load (std::memory_order_relaxed) - blockAnfang;
-        std::int64_t bis = pegelFensterEnde.load (std::memory_order_relaxed) - blockAnfang;
+        std::int64_t von = 0, bis = 0;
+        if (blockAnfang >= 0)
+        {
+            von = pegelFensterStart.load (std::memory_order_relaxed) - blockAnfang;
+            bis = pegelFensterEnde.load (std::memory_order_relaxed) - blockAnfang;
+        }
+        else
+        {
+            von = 1;
+            bis = 0;                     // leerer Ausschnitt: nichts wird aufgenommen
+        }
         if (von < 0) von = 0;
         if (bis > (std::int64_t) buffer.getNumSamples()) bis = buffer.getNumSamples();
         if (von < bis)

@@ -144,11 +144,31 @@ pub const RATE_PRO_SEKUNDE: u32 = 4000;
 /// die Antwort still unter den Tisch.
 pub const CAP_WRITER: usize = 256;
 
-/// Aktive additive Vertragsfassungen. Die Version lebt ausschliesslich im
+/// Aktive Vertragsfassungen JE FAMILIE. Die Version lebt ausschliesslich im
 /// Wire-Envelope: Descriptor-Hostfelder und LUFS-I-Framefelder wurden in
 /// SONDE-012 B1 mit Minor 1 belegt.
-const P0_SCHEMA_MINOR: u8 = 1;
-const P1_SCHEMA_MINOR: u8 = 1;
+///
+/// SONDE-013 (04.09.2026) hebt **P0 und P1** auf 2: die drei
+/// Experimentfamilien, die belegten Felder `evidence_snapshot.ereignisse`
+/// und `.stereo` und die zwei neuen Invalidierungsgruende reisen dort.
+///
+/// 🔑 **P2 bleibt bei 1**, und das ist kein Versehen. `integration_samples`
+/// (Feld-ID 14) liegt auf der FlatBuffers-Flaeche, deren eigene
+/// `schema_major`/`schema_minor` im 16-Byte-Envelope leben
+/// (`nakama_telemetry_v1.fbs`). Ein neues OPTIONALES FlatBuffers-Feld ist
+/// genau der additive Fall, den das Format traegt: ein alter Leser
+/// uebergeht es. Waere P2 hier mitgehoben worden, haette der Broker jede
+/// heutige Sonde abgewiesen, ohne dass sich an P2 etwas geaendert haette.
+///
+/// ⚠️ WARUM DIESE DREI ZAHLEN UEBERHAUPT EINZELN STEHEN — gemessen am
+/// 04.09.2026: mit `kJsonSchemaMinor = 2` auf der C++-Seite und einer 1
+/// hier wies der Server JEDEN P0-Rahmen der Sonde ab, bevor er die Senke
+/// erreichte. Der Kanon blieb an `subscription_server_integration` haengen,
+/// vier `eqcop-store-crash-worker` warteten 17 Minuten ohne CPU-Last auf ein
+/// `command_ack`, das nie kam. Ein Fassungsschritt ist erst vollstaendig,
+/// wenn BEIDE Seiten und der Transport dazwischen ihn kennen.
+const P0_SCHEMA_MINOR: u8 = 2;
+const P1_SCHEMA_MINOR: u8 = 2;
 const P2_SCHEMA_MINOR: u8 = 1;
 
 fn schema_minor_bekannt(familie: Familie, schema_minor: u8) -> bool {
@@ -684,11 +704,40 @@ mod tests {
 
     #[test]
     fn unbekannter_schema_minor_wird_vor_der_senke_abgewiesen() {
+        // Die drei Familien haben SEIT SONDE-013 nicht mehr dieselbe
+        // Obergrenze. Eine gemeinsame Schleife haette das nicht ausdruecken
+        // koennen und war genau deshalb still falsch, als P0/P1 stiegen.
         for familie in [Familie::P0, Familie::P1, Familie::P2] {
             assert!(schema_minor_bekannt(familie, 0));
             assert!(schema_minor_bekannt(familie, 1));
-            assert!(!schema_minor_bekannt(familie, 2));
         }
+        // P0 und P1 tragen die Fassung 2 (Experimentfamilien, belegte
+        // Evidenzfelder, zwei neue Invalidierungsgruende).
+        assert!(schema_minor_bekannt(Familie::P0, 2));
+        assert!(schema_minor_bekannt(Familie::P1, 2));
+        // P2 nicht: dort ist seit SONDE-013 nichts hinzugekommen, was eine
+        // Fassung braeuchte - `integration_samples` ist ein optionales
+        // FlatBuffers-Feld und damit der additive Fall, den das Format traegt.
+        assert!(!schema_minor_bekannt(Familie::P2, 2));
+        // Und die Gegenprobe nach oben: eine Fassung, die es nicht gibt,
+        // wird auch bei P0/P1 abgewiesen.
+        for familie in [Familie::P0, Familie::P1, Familie::P2] {
+            assert!(!schema_minor_bekannt(familie, 3));
+            assert!(!schema_minor_bekannt(familie, 200));
+        }
+    }
+
+    /// SONDE-013: die Fassung des Transports und die des JSON-Lesers sind
+    /// DIESELBE Zahl. Liefen sie auseinander, wiese der Server Rahmen ab, die
+    /// der Coordinator lesen koennte - oder liesse Rahmen durch, fuer die er
+    /// keinen Leser hat. Gemessen, nicht kommentiert.
+    #[test]
+    fn transportfassung_und_json_leser_stimmen_ueberein() {
+        assert_eq!(
+            u8::from(P1_SCHEMA_MINOR),
+            crate::coordinator::JSON_SCHEMA_MINOR_AKTIV_FUER_TEST
+        );
+        assert_eq!(P0_SCHEMA_MINOR, P1_SCHEMA_MINOR);
     }
 
     /// T2-Befund 2: endet die Control-Verbindung, endet die Telemetrie mit —
@@ -1924,7 +1973,7 @@ mod tests {
         assert!(main_control.schreiben(&control_hello_fach(&main_adresse, "main", Some(7711),)));
         let main_welcome = frame_roh_lesen(&main_control).expect("Main-Welcome");
         assert_eq!(main_welcome.kopf.familie, Familie::P0);
-        assert_eq!(main_welcome.kopf.schema_minor, 1);
+        assert_eq!(main_welcome.kopf.schema_minor, P0_SCHEMA_MINOR);
         let main_welcome_json: serde_json::Value =
             serde_json::from_slice(&main_welcome.payload).expect("Welcome ist JSON");
         let main_link = main_welcome_json["link_id"]
@@ -1947,7 +1996,7 @@ mod tests {
         assert!(main_control.schreiben(&subscribe(&main_adresse)));
         let snapshot = frame_roh_lesen(&main_control).expect("absoluter Snapshot");
         assert_eq!(snapshot.kopf.familie, Familie::P1);
-        assert_eq!(snapshot.kopf.schema_minor, 1);
+        assert_eq!(snapshot.kopf.schema_minor, P1_SCHEMA_MINOR);
         assert_eq!(
             serde_json::from_slice::<serde_json::Value>(&snapshot.payload).unwrap()["type"],
             "session_snapshot"

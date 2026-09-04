@@ -14,7 +14,7 @@
 | Rundenbilanz Etappe 1 | `py -3.13 tools/dirigent/rundenbilanz.py --runden ed9bbf7 4a2f50a 367a0ea ca20f3a 6e8bebb`: Matrix `ed9bbf7..4a2f50a` Doku 2 Dateien +1019/−0; Entscheide `4a2f50a..367a0ea` Doku +51/−0; Nacharbeit 1 `367a0ea..ca20f3a` Doku 4 Dateien +533/−63; Nacharbeit 2 `ca20f3a..6e8bebb` Doku 4 Dateien +286/−17. Produkt und Tests 0 Zeilen in allen vier Runden — erwartet, weil Etappe 1 nach der Regel „Spezifikation vor Code" ausschließlich das Manifest schreibt; das Konvergenzsignal des Werkzeugs greift erst ab Etappe 2. |
 | Änderungssatz dieser Etappe | Erster Commit `4a2f50a` und Entscheidcommit `367a0ea`: dieses Manifest und `docs/beweise/roh/SONDE-013-etappe-1-auftrag.txt`. Nacharbeit 1: dieses Manifest sowie die drei Rohdateien `docs/beweise/roh/SONDE-013-matrixpruefung-1-auftrag.txt`, `docs/beweise/roh/SONDE-013-matrixpruefung-1-367a0ea.txt` und `docs/beweise/roh/SONDE-013-nacharbeit-1-auftrag.txt` unverändert. Nacharbeit 2: dieses Manifest sowie die drei Rohdateien `docs/beweise/roh/SONDE-013-wiederpruefung-1-auftrag.txt`, `docs/beweise/roh/SONDE-013-wiederpruefung-1-ca20f3a.txt` und `docs/beweise/roh/SONDE-013-nacharbeit-2-auftrag.txt` unverändert. Kein Produkt-, Test-, Schema-, Fixture- oder Werkzeugcode. |
 | Kanon nachher | **GRUEN 40/40** auf `8d8fc96` (Etappe A), Rohausgabe `docs/beweise/roh/SONDE-013-8d8fc96-dirty.md`. Der Lauf stempelt `-dirty`, weil beim Baustand-Schnappschuss **eine** unbestätigte Datei im Baum lag — dieses Manifest, also Dokumentation; die Rohdatei nennt sie namentlich. Jede gemessene Prüfbinärdatei trägt „frisch (Bau bestätigt)" aus den Quellen von `8d8fc96`; kein Produkt-, Test-, Schema- oder Werkzeugcode war unbestätigt. Die Beinzahl bleibt 40 und ist um kein Bein gesunken. **Zweiter Lauf auf sauberem Baum** (`fcaa55c`, Rohausgabe `docs/beweise/roh/SONDE-013-fcaa55c.md`): **ROT 39/40** an einer zeitabhängigen Zusage in B10 (`parken_uebergeht_den_backoff/control/access_denied`, geparkt bei Versuch 3 statt 4). Dieselbe Binärdatei unmittelbar danach allein: 313/0 grün. Der Pfad liegt außerhalb der Ticketpfade und außerhalb des Änderungssatzes; Diagnose und Folge stehen in §10.1. |
-| Testanzahl | A5 461 Prüfungen · B3c 75 · B10 313 · B16 40 (neu) · B5 237 · Broker 202 Lib-Tests plus alle Integrationsbeine · JSON-Fixturekorpus 285 (75 gültig, 210 ungültig) · Binärkorpus 104 (20 gültig, 84 ungültig) · Envelope-Korpus 37. Alle Zahlen aus dem Lauf dieser Sitzung, nicht abgeschrieben. |
+| Testanzahl | A5 461 Prüfungen · B3c 75 · B10 313 · B16 40 (neu) · B5 237 · Broker 203 Lib-Tests plus alle Integrationsbeine · JSON-Fixturekorpus 285 (75 gültig, 210 ungültig) · Binärkorpus 104 (20 gültig, 84 ungültig) · Envelope-Korpus 37. Alle Zahlen aus dem Lauf dieser Sitzung, nicht abgeschrieben. |
 | Änderungssatz Etappe 2 | Fortlaufend in §10 je Bauetappe geführt: Commits, Beine, Rotbeweise, Abweichungen von §5 und Nebenbefunde. |
 | Grenze | Etappe 2 baut ausschließlich, was §3 zusagt. Prüfbereich sind die Ticketpfade aus §5.2; jede Datei außerhalb steht mit Begründung in §10. `docs/offene-punkte.md` und `docs/PLAN-STAND.md` bleiben unberührt — Nebenbefunde sammelt §10, der Dirigent zieht sie im Abschluss nach. |
 
@@ -1861,6 +1861,56 @@ genau dieser Fund.
   `kJsonSchemaMinorSessionHuelle = 1`. Die Formfrage hängt an der Fassung, die
   die Form eingeführt hat, nicht an der jeweils neuesten.
 
+#### Was der Kanon danach noch gefunden hat — der dritte Beteiligte am Fassungsschritt
+
+Der erste vollständige Kanonlauf nach dem Etappe-B-Commit blieb an
+**`subscription_server_integration`** hängen. Kein Fehler, kein Timeout: vier
+`eqcop-store-crash-worker` standen 17 Minuten mit zusammen 7 Sekunden CPU-Zeit
+und warteten auf ein `command_ack`, das nie kam.
+
+**Ursache.** `broker/src/transport/server_v3/mod.rs` führte
+`P0_SCHEMA_MINOR = P1_SCHEMA_MINOR = 1` und wies über
+`schema_minor_bekannt()` jeden Rahmen mit einer höheren Fassung ab —
+**bevor** er die Senke erreicht. Mit `kJsonSchemaMinor = 2` auf der
+C++-Seite hieß das: der Client sendet, der Server verwirft still, der Client
+wartet.
+
+Der Fassungsschritt hat also **drei** Beteiligte, nicht zwei: den JSON-Leser
+(`coordinator/schema.rs`), den JSON-Schreiber
+(`core/ipc/WireEnvelope.h`) und das **Transporttor** dazwischen, das
+entscheidet, welche Envelope-Fassungen es überhaupt weiterreicht. Zwei von
+drei zu heben funktioniert nicht halb — es blockiert.
+
+**Behoben und messbar gemacht:**
+
+- `P0_SCHEMA_MINOR = 2`, `P1_SCHEMA_MINOR = 2`. **`P2_SCHEMA_MINOR` bleibt
+  bei 1**: `integration_samples` ist ein optionales FlatBuffers-Feld, also
+  genau der additive Fall, den das Format trägt — ein alter Leser übergeht
+  es. P2 mitzuheben hätte jede heutige Sonde abgewiesen, ohne dass sich an
+  P2 etwas geändert hätte.
+- `unbekannter_schema_minor_wird_vor_der_senke_abgewiesen` prüft die drei
+  Familien jetzt **einzeln**. Die gemeinsame Schleife konnte den Unterschied
+  gar nicht ausdrücken und war deshalb still falsch, sobald P0/P1 stiegen.
+- Neu: `transportfassung_und_json_leser_stimmen_ueberein` hält
+  `P1_SCHEMA_MINOR` gegen `JSON_SCHEMA_MINOR_AKTIV`. Liefen sie auseinander,
+  wiese der Server Rahmen ab, die der Coordinator lesen könnte — oder ließe
+  Rahmen durch, für die er keinen Leser hat.
+- Zwei Testzusicherungen im Servertest verglichen die Fassung des `welcome`
+  und des `session_snapshot` gegen die **Literale** `1`. Genau diese Literale
+  wurden beim Fassungsschritt still falsch; sie stehen jetzt gegen
+  `P0_SCHEMA_MINOR` beziehungsweise `P1_SCHEMA_MINOR`.
+
+**Belegt:** `SONDE-013-rot-M-67-transport.txt` (Transportfassung zurück auf 1
+⇒ der Abgleich fällt), und der zuvor hängende Lauf ist wieder eine Messung:
+`cargo test --test store_crash_matrix -- --ignored --test-threads=1` →
+**22 passed, 0 failed, 12,08 s**.
+
+**Warum das kein Beleg gegen die Etappe ist, sondern für den Kanon.** Kein
+Bein außer dem Ende-zu-Ende-Lauf konnte diesen Fehler sehen: die Rust-Tests
+sprechen den Coordinator direkt an, die C++-Tests reden mit einem
+Testserver, und beide Seiten für sich waren korrekt. Erst der echte
+C++-Client am echten Rust-Listener zeigt, dass zwischen ihnen ein Tor steht.
+
 #### Was der Evidenzpfad jetzt kann
 
 **Verteilung (P10/P50/P95).** Je Band ein fester Ring der jüngsten
@@ -1911,7 +1961,7 @@ abgeschwächt gespeichert.
 |---|---|
 | **B16** `EqCopSonde013EventWireTest` (NEU) | 40 Prüfungen, 0 gescheitert |
 | **A5** `pruefe_v3_vertrag.py --abdeckung` | 461 bestanden, 0 gescheitert |
-| **A4** `cargo test` (Broker) | 202 Lib-Tests (198 + 4 Fassungsleiter) plus alle Integrationsbeine grün; `coordinator_model` 50 Tests |
+| **A4** `cargo test` (Broker) | 203 Lib-Tests plus alle Integrationsbeine grün; `coordinator_model` 51 Tests; `store_crash_matrix --ignored` 22 Tests in 12,08 s (der zuvor hängende Lauf) |
 | **B3c** `EqCopSchemaTest` | 75 bestanden, 0 gescheitert |
 | **B5** `EqCopAnalysisGoldenTest` | 237 bestanden, 0 Fehler — einschließlich der um drei Träger erweiterten Vollständigkeitsprobe |
 | **B12** `EqCopSonde012LoudnessSourceTest` | 4 bestanden, 0 gescheitert, 0 Audiothread-Allokationen |
@@ -1926,9 +1976,10 @@ abgeschwächt gespeichert.
 | `SONDE-013-rot-M-05-grenze.txt` | Verteilungsring überlebt die Transportgrenze | B5 und B16 |
 | `SONDE-013-rot-M-05-riegel.txt` | Interventionsriegel vor dem Evidence-Commit übersprungen | `coordinator_model` |
 | `SONDE-013-rot-M-67-leser.txt` | Leser der Fassung 1 lädt wieder das committete Schema | `fassungsleiter` |
+| `SONDE-013-rot-M-67-transport.txt` | Transportfassung von P0 zurück auf 1, während der JSON-Leser auf 2 steht | `schema_minor`-Beine |
 
-Der letzte ist der wichtigste: er ist genau der Fehler, den diese Etappe
-gefunden hat, und beweist, dass der neue Riegel ihn fängt.
+Die letzten beiden sind die wichtigsten: sie sind genau die zwei Fehler, die
+diese Etappe gefunden hat, und beweisen, dass die neuen Riegel sie fangen.
 
 **Drei Befunde am eigenen Test, die erst der Lauf gezeigt hat**
 

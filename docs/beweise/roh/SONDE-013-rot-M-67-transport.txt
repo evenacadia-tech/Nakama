@@ -1,0 +1,60 @@
+# Rotbeweis M-67-transport — SONDE-013 Etappe 2
+# 2026-09-04
+#
+# Regel: eine neue Zusage ohne Rotbeweis ist eine Behauptung. Hier wird
+# der Fehler bewusst eingebaut, das Bein faellt, der Fehler wird
+# entfernt und dasselbe Bein ist wieder gruen.
+#
+# Eingebauter Fehler: die Transportfassung von P0 faellt auf 1 zurueck, waehrend der JSON-Leser auf 2 steht — der Server wiese dann jeden Rahmen der Sonde ab, BEVOR er die Senke erreicht. Genau so blieb der Kanon am 04.09.2026 an subscription_server_integration haengen
+
+# mutiert: broker/src/transport/server_v3/mod.rs
+
+========================================================================
+ROT — mit eingebautem Fehler
+========================================================================
+
+$ cargo test --manifest-path broker/Cargo.toml --lib --color never schema_minor
+EXIT=101
+
+running 1 test
+test transport::server_v3::tests::unbekannter_schema_minor_wird_vor_der_senke_abgewiesen ... FAILED
+
+failures:
+
+---- transport::server_v3::tests::unbekannter_schema_minor_wird_vor_der_senke_abgewiesen stdout ----
+
+thread 'transport::server_v3::tests::unbekannter_schema_minor_wird_vor_der_senke_abgewiesen' (14540) panicked at src\transport\server_v3\mod.rs:716:9:
+assertion failed: schema_minor_bekannt(Familie::P0, 2)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    transport::server_v3::tests::unbekannter_schema_minor_wird_vor_der_senke_abgewiesen
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 202 filtered out; finished in 0.00s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.41s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+error: test failed, to rerun pass `--lib`
+
+========================================================================
+GRUEN — Fehler entfernt, derselbe Befehl
+========================================================================
+
+$ cargo test --manifest-path broker/Cargo.toml --lib --color never schema_minor
+EXIT=0
+
+running 1 test
+test transport::server_v3::tests::unbekannter_schema_minor_wird_vor_der_senke_abgewiesen ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 202 filtered out; finished in 0.00s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.38s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+
+========================================================================
+ROTBEWEIS BESTANDEN: rot=True gruen=True
+========================================================================

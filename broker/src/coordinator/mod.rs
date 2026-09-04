@@ -44,6 +44,13 @@ pub use sicht::{
     MessframeSicht, SessionModellSicht,
 };
 pub use evidenz::Evidenzstand;
+/// Die aktive JSON-Vertragsfassung, nur fuer Beine sichtbar.
+///
+/// Der Transport (`server_v3`) und der JSON-Leser muessen dieselbe
+/// Fassung fuehren; laufen sie auseinander, weist der Server Rahmen ab,
+/// die der Coordinator lesen koennte. Damit das MESSBAR ist und nicht
+/// nur kommentiert, ist die Zahl hier lesbar.
+pub const JSON_SCHEMA_MINOR_AKTIV_FUER_TEST: u8 = schema::JSON_SCHEMA_MINOR_AKTIV;
 pub use uhr::{ManualClock, MonotonicClock};
 use zustand::{
     kollisionsriegel_setzen_locked, ClientKey, ClientStand, Deckelausgang, Intervention, LinkStand,

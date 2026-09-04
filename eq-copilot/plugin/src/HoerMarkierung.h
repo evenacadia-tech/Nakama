@@ -291,6 +291,15 @@ public:
         /// Nur bei `endete` gefuellt; die Grundlage des konservativen
         /// `tail_samples` (§34.2).
         std::uint64_t dauerSamples { 0 };
+        /// SONDE-013 M-38/M-52: der Offset des LETZTEN gefaerbten Samples
+        /// innerhalb dieses Blocks. Nur bei `endete` gefuellt.
+        ///
+        /// ⚠️ Ohne ihn stempelte der Prozessor `project_sample_end` auf den
+        /// BLOCKANFANG, und die Invalidierung liesse bis zu einen ganzen
+        /// Hostblock gefaerbtes Audio ausserhalb der Quarantaene — genau der
+        /// Bereich, in dem der Ausfade lief. Der Offset ist relativ zum
+        /// Blockanfang, weil nur der Prozessor die Projektzeit kennt.
+        int endeOffsetSamples { 0 };
     };
 
     // Audiothread. erlaubt = Echtzeit bewiesen ∧ Transport spielt (falls
@@ -427,14 +436,29 @@ public:
         }
 
         // Linearer Crossfade Richtung Ziel (korrelierte Signale, B5).
-        const double schritt = lokal.fadeSamples > 0 ? 1.0 / (double) lokal.fadeSamples : 1.0;
+        //
+        // 🔑 SONDE-013 M-36 (§7.1 E-01): auf dem Oversize-Pfad ist die
+        // Rampenlaenge `min(fadeSamples, wetKapazitaet)` — NICHT die volle
+        // Fadelaenge. Mit der vollen Laenge reichten die `wetKapazitaet`
+        // rechenbaren Samples nicht aus, um `fade` auf 0 zu bringen: bei
+        // 48 kHz, 80 ms Fade (3840 Samples) und 512 Samples Kapazitaet blieb
+        // ein Wet-Anteil von rund 0,867 stehen, und die FOLGEbloecke waren
+        // weiterhin gefaerbt. E-01 verlangt aber "Rest des Blocks und jeder
+        // Folgeblock sind bitidentischer Neutralpfad". Die Kuerzung macht die
+        // Rampe steiler, nicht laenger — und genau das ist der Entscheid.
+        const int rampe = oversize ? std::min (lokal.fadeSamples, wetKapazitaet)
+                                   : lokal.fadeSamples;
+        const double schritt = rampe > 0 ? 1.0 / (double) rampe : 1.0;
         const double zielWert = zielAn ? 1.0 : 0.0;
         double fEnde = fade;
+        // Index des letzten Samples MIT Wet-Anteil; -1 heisst "keines".
+        int letztesGemischt = -1;
         for (int k = 0; k < ch; ++k)
         {
             float* aus = puffer.getWritePointer (k);
             const float* w = wetK[k];
             double f = fade;
+            int letztes = -1;
             for (int i = 0; i < nutzbar; ++i)
             {
                 if (f < zielWert)      f = std::min (zielWert, f + schritt);
@@ -442,17 +466,30 @@ public:
                 if (f <= 0.0 && zielWert == 0.0)
                     break;             // Rest des Blocks bleibt wörtlich der Eingang
                 aus[i] = (float) ((double) aus[i] + f * ((double) w[i] - (double) aus[i]));
+                letztes = i;
             }
             fEnde = f;
+            if (letztes > letztesGemischt)
+                letztesGemischt = letztes;
         }
         fade = fEnde;
 
         // ── SONDE-013 M-37/M-38: die zwei Uebergaenge ────────────────────
         //
-        // Hoerbar heisst hier: der Wet-Anteil ist von null verschieden. Die
-        // Schwelle 0,001 ist dieselbe wie beim `hoerbar()`-Bit daneben, damit
-        // Ereignis und Anzeige nicht auseinanderlaufen koennen.
-        const bool istHoerbar = fade > 0.001;
+        // Hoerbar heisst hier: der Wet-Anteil ist von null verschieden —
+        // EXAKT null, nicht "unter 0,001".
+        //
+        // ⚠️ Die frueher hier stehende Schwelle 0,001 meldete das Ende, waehrend
+        // die Folgebloecke noch Wet mischten: die Rampe laeuft linear bis 0,
+        // und zwischen 0,001 und 0 liegen bei 80 ms Fade noch knapp vier
+        // Samples plus jeder weitere Block, den die Rampe braucht. Ein Ende zu
+        // frueh gemeldet heisst den Taint freigeben, waehrend noch gefaerbtes
+        // Audio laeuft (M-38). Die Rampe erreicht die 0 exakt, weil
+        // `std::max (zielWert, f - schritt)` auf `zielWert` klemmt — es gibt
+        // also keinen Restwert, an dem ein Vergleich haengenbliebe.
+        // Das `hoerbar()`-Bit fuehrt dieselbe Schwelle, damit Ereignis und
+        // Anzeige nicht auseinanderlaufen koennen.
+        const bool istHoerbar = fade > 0.0;
         if (istHoerbar && ! warHoerbar)
         {
             uebergang.begann = true;
@@ -469,6 +506,11 @@ public:
             // gefaerbtes Audio lief.
             uebergang.endete = true;
             uebergang.dauerSamples = hoerbareSamples;
+            // M-38/M-52: der gemeldete Bereich endet am letzten gefaerbten
+            // Sample dieses Blocks. `letztesGemischt` ist -1, wenn der Block
+            // gar nichts mischte (die Rampe war schon beim ersten Sample auf
+            // 0) — dann ist der Blockanfang die richtige Grenze.
+            uebergang.endeOffsetSamples = letztesGemischt >= 0 ? letztesGemischt : 0;
             hoerbareSamples = 0;
         }
         warHoerbar = istHoerbar;

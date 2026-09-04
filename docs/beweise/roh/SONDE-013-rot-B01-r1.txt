@@ -1,0 +1,29 @@
+SONDE-013 Etappe 2 Nacharbeit 1 - Rotbeweis B01
+============================================================
+
+Datei:     eq-copilot/plugin/src/HoerMarkierung.h
+Bein:      EqCopMarkierungTest
+Warum:     Die Rampe auf dem Oversize-Pfad rechnet wieder mit der VOLLEN Fadelaenge. Bei 48 kHz, 80 ms Fade und 512 Samples Kapazitaet bleibt nach dem Oversizeblock rund 0,867 Wet stehen, und die Folgebloecke sind weiter gefaerbt - entgegen der Zusage aus 7.1 E-01 ('Rest des Blocks und jeder Folgeblock sind bitidentischer Neutralpfad').
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+        const int rampe = oversize ? std::min (lokal.fadeSamples, wetKapazitaet)
+                                   : lokal.fadeSamples;
+--- NEU ---
+        const int rampe = lokal.fadeSamples;
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+  ok      B01: die Markierung klingt vor dem Oversizeblock
+  ok      B01: der Teil jenseits der Kapazitaet bleibt woertlich der Eingang
+  FEHLER  B01: oversize_fade_endet_in_der_kapazitaet - der Block UNMITTELBAR nach dem Oversizeblock ist bitidentisch, nicht erst nach 20 Rampenbloecken (7.1 E-01)
+  FEHLER  B01: und die Markierung meldet sich sofort als still
+EXIT=1
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+  ok      B01: die Markierung klingt vor dem Oversizeblock
+  ok      B01: der Teil jenseits der Kapazitaet bleibt woertlich der Eingang
+  ok      B01: oversize_fade_endet_in_der_kapazitaet - der Block UNMITTELBAR nach dem Oversizeblock ist bitidentisch, nicht erst nach 20 Rampenbloecken (7.1 E-01)
+  ok      B01: und die Markierung meldet sich sofort als still
+EXIT=0
+
+URTEIL: BEWIESEN - der Test faellt am eingebauten Fehler und steht ohne ihn.

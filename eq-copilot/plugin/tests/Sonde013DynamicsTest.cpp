@@ -587,9 +587,31 @@ int main()
                 "nichtendlichen Wert - der Riegel liegt beim Erzeugen, nicht auf der "
                 "Leitung",
                 allesEndlich ? juce::String ("alle 9 Traeger endlich") : schuldig);
-        pruefe (f.truePeakGesetzt,
-                "und die Metriken entstehen ueberhaupt - der Riegel ersetzt sie nicht "
-                "durch Schweigen");
+        // Nacharbeit 1 (2026-09-04, Befund B07): die alte Zusage an dieser
+        // Stelle lautete "und die Metriken entstehen ueberhaupt". Genau die war
+        // der Fehler. M-07 verlangt beim Erzeugen "Wert 0 mit `gueltig=false`"
+        // UND einen Zaehler; ein Rahmen, der ueber stillgelegte Samples
+        // rechnet und seine Skalare trotzdem als gesetzt meldet, sieht aus wie
+        // eine saubere Messung. Der Riegel ist deshalb ein LATCH DES RAHMENS,
+        // kein Dauerschweigen: der naechste saubere Rahmen traegt wieder alles.
+        pruefe (f.nichtEndlichRahmen > 0,
+                "der Rahmen ZAEHLT seine nicht-endlichen Eingangssamples",
+                juce::String ((int) f.nichtEndlichRahmen));
+        pruefe (! f.truePeakGesetzt && ! f.lufsMGesetzt && ! f.crestKurzGesetzt,
+                "und traegt seine sampleabhaengigen Skalare NICHT - 'nicht gemessen' "
+                "statt 'gemessen und sauber' (M-07)");
+
+        // Die Gegenprobe: derselbe Aufbau mit sauberem Material traegt sie.
+        FeatureEngine rein;
+        rein.vorbereiten (fs);
+        Speiser s2 { rein };
+        const auto sauber = s2.fahre (
+            [] (std::uint64_t n)
+            { return (float) (0.4 * std::sin (kZweiPi * 1000.0 * (double) n / 48000.0)); },
+            bloeckeFuer (8.0, fs, s2.frames));
+        pruefe (sauber.nichtEndlichRahmen == 0 && sauber.truePeakGesetzt,
+                "ohne NaN traegt derselbe Aufbau seine Skalare - der Riegel ist ein "
+                "Latch des Rahmens, kein Dauerschweigen");
     }
 
     // ── M-75 / M-77: der verworfene Block schliesst auch die neuen Fenster ─

@@ -40,6 +40,7 @@ public:
         mindestSamples = (std::uint64_t) (kMindestSekunden * fs);
         summeA = summeB = 0.0;
         gesehen = 0;
+        nichtEndlich = 0;
         istEingefroren = false;
         gehalten = 0.0;
         gehaltenGesetzt = false;
@@ -55,11 +56,21 @@ public:
         {
             const double x = (double) a[i];
             const double y = (double) b[i];
-            // Nicht-endliche Werte werden verriegelt, nie gezählt (CLAUDE.md
-            // NaN-Ehrlichkeit): ein einziges NaN machte sonst die ganze
-            // Summe und damit den eingefrorenen Pegel unbrauchbar.
+            // 🔑 SONDE-013 M-07: nicht-endliche Werte werden GEZAEHLT und
+            // VERRIEGELN den Pegel.
+            //
+            // Vorher wurden sie nur uebersprungen. Eine Passage mit
+            // beschaedigten Samples lieferte danach denselben gueltigen
+            // eingefrorenen Gain wie eine kuerzere saubere — der Fehler war
+            // hinterher unsichtbar, obwohl CLAUDE.md ausdruecklich
+            // „verriegelt und gezaehlt" verlangt. Jetzt merkt der Typ sich den
+            // Fall: `friereEin()` liefert danach KEINEN Wert, und
+            // `nichtEndlicheSamples()` sagt, wie viele es waren.
             if (! std::isfinite (x) || ! std::isfinite (y))
+            {
+                ++nichtEndlich;
                 continue;
+            }
             summeA += x * x;
             summeB += y * y;
             ++gesehen;
@@ -68,8 +79,16 @@ public:
 
     bool bereit() const noexcept
     {
-        return gesehen >= mindestSamples && summeA > 0.0 && summeB > 0.0;
+        // Ein einziges nicht-endliches Sample sperrt: der Pegel dieser Passage
+        // ist nicht mehr messbar, und eine Zahl ohne diesen Vorbehalt waere
+        // genau die unsichtbare Beschoenigung, gegen die M-07 steht.
+        return nichtEndlich == 0
+            && gesehen >= mindestSamples && summeA > 0.0 && summeB > 0.0;
     }
+
+    /** Wie viele nicht-endliche Samples der Pegel gesehen hat. 0 heisst
+        nachweislich keines, nicht „nicht gemessen". */
+    std::uint64_t nichtEndlicheSamples() const noexcept { return nichtEndlich; }
 
     /** Friert den Pegel ein. `false`, wenn zu wenig Material da ist — dann
         bleibt er ungesetzt, statt eine Zahl zu erfinden. */
@@ -77,6 +96,17 @@ public:
     {
         if (istEingefroren)
             return gehaltenGesetzt;
+        if (nichtEndlich > 0)
+        {
+            // M-07: „Wert 0 mit gueltig=false". Der Pegel FRIERT hier ein —
+            // ohne Wert. Ein Aufrufer, der es weiter versucht, bekaeme sonst
+            // bei jedem Aufruf dieselbe Absage ohne Endzustand, und der
+            // Blindvergleich haengte an einem Pegel, der nie fertig wird.
+            istEingefroren = true;
+            gehalten = 0.0;
+            gehaltenGesetzt = false;
+            return false;
+        }
         if (! bereit())
         {
             // Ausdrücklich KEIN Einfrieren: ein gesperrter Zustand ohne Wert
@@ -104,6 +134,7 @@ public:
     {
         summeA = summeB = 0.0;
         gesehen = 0;
+        nichtEndlich = 0;
         istEingefroren = false;
         gehalten = 0.0;
         gehaltenGesetzt = false;
@@ -114,6 +145,8 @@ private:
     std::uint64_t mindestSamples { 19200 };
     double summeA { 0.0 }, summeB { 0.0 };
     std::uint64_t gesehen { 0 };
+    /// M-07: gezaehlte nicht-endliche Eingangssamples. Sie verriegeln.
+    std::uint64_t nichtEndlich { 0 };
     bool istEingefroren { false };
     double gehalten { 0.0 };
     bool gehaltenGesetzt { false };

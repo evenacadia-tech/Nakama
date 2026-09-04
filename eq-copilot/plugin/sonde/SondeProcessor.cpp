@@ -476,8 +476,17 @@ void SondeProcessor::evidenzSnapshotSenden (const nakama::analyse::FeatureFrame&
         if (merkmale.evidenzIntervallJetzt() > alt)
             evidenzKadenzReduktionen.fetch_add (1);
         evidenzNichtGesendet.fetch_add (1);
-        merkmale.ereignisseEntnommen();
-        letzteEreignisverluste = merkmale.ereignisseVerworfen();
+        // 🔑 SONDE-013 M-05: der Ring bleibt STEHEN, und die Verlustbasis
+        // bleibt, wo sie ist.
+        //
+        // Die frueheren zwei Zeilen leerten hier den Ereignisring und setzten
+        // `letzteEreignisverluste` vor. Beides zusammen loeschte angenommene
+        // Ereignisse SPURLOS: der naechste Snapshot trug sie nicht mehr, und
+        // weil die Basis mitgewandert war, meldete er auch keinen Verlust.
+        // M-05 erlaubt bei Ueberlast ausdruecklich nur die Kadenzreduktion
+        // (die darueber steht) und verlangt GEZAEHLTE Ringverluste. Der Ring
+        // hat seinen eigenen Deckel mit eigenem Zaehler; laeuft er waehrend
+        // des Rueckstaus ueber, ist genau das die ehrliche Meldung.
         return;
     }
 
@@ -500,7 +509,12 @@ void SondeProcessor::evidenzSnapshotSenden (const nakama::analyse::FeatureFrame&
 
     nakama::evidenz::Snapshotkopf kopf;
     kopf.evidenceId = uuidHex32();
-    kopf.adresse    = v3Hello().adresse;
+    // 🔑 NAK-40: die Wireadresse, nicht die persistente. `v3Hello()` liefert
+    // die Original-Instance-ID aus dem State; der Alias entsteht an der
+    // v3-Grenze. Ohne ihn wies `evidenceSnapshotAlsJson` jede unterstuetzte
+    // Legacy-ID an `adresseGueltig` zurueck, und die Evidenz dieser Sonde
+    // verschwand still — derselbe Fehler wie im direkten P0-Pfad in Gen.
+    kopf.adresse    = nakama::ipc::wireAdresseAusState (v3Hello().adresse);
     // SONDE-013 M-06: die Gesamtklasse kommt aus der REGEL, nicht aus einer
     // Kette von Sonderfaellen an dieser Stelle (§34.3, `Konfidenz.h`).
     //
@@ -517,6 +531,10 @@ void SondeProcessor::evidenzSnapshotSenden (const nakama::analyse::FeatureFrame&
     lage.abdeckungGesetzt  = frame.abdeckungGesetzt;
     lage.abdeckung         = frame.abdeckung;
     lage.verteilungFenster = frame.evidenzFenster;
+    // SONDE-013 M-07: der GEZAEHLTE Teil der NaN-Ehrlichkeit reist mit dem
+    // Beleg, der VERRIEGELNDE deckelt hier die Klasse auf `unbrauchbar`.
+    lage.sampleFehlerBekannt = true;
+    lage.sampleFehler        = frame.nichtEndlichEvidenz;
     // sessionBekannt, passageBekannt und alignmentBekannt bleiben `false`:
     // eine Sonde sieht diese drei nicht. Genau das deckelt sie auf `mittel`.
     kopf.klasse = nakama::analyse::klasseName (nakama::analyse::gesamtklasse (lage));
@@ -534,6 +552,8 @@ void SondeProcessor::evidenzSnapshotSenden (const nakama::analyse::FeatureFrame&
     }
 
     std::string json;
+    // M-05: erst eine erfolgreiche Uebergabe entnimmt die Ereignisse.
+    bool uebergeben = false;
     if (nakama::evidenz::evidenceSnapshotAlsJson (frame, kopf, strom, stereo, json))
     {
         // Leerer Koaleszenzschluessel: zwei Snapshots derselben Quelle sind
@@ -541,6 +561,10 @@ void SondeProcessor::evidenzSnapshotSenden (const nakama::analyse::FeatureFrame&
         // auf ein Objekt. Sie zu koaleszieren hiesse, angenommene Evidenz zu
         // loeschen — genau das, was die Prioritaetspolitik verbietet.
         const auto ergebnis = controlV3.sendeP1 ({}, json);
+        // Die Regel steht in `IpcQueues.h` als Funktion, nicht hier als
+        // Bedingung: sie gilt fuer jeden Sender, der seine Quelle leert, und
+        // ein Bein kann sie ueber alle fuenf Ergebnisse abfahren.
+        uebergeben = nakama::ipc::p1Uebergeben (ergebnis);
         const bool rueckstau =
             ergebnis == nakama::ipc::P1Ergebnis::zurWiederholung
          || ergebnis == nakama::ipc::P1Ergebnis::abgewiesen;
@@ -566,12 +590,23 @@ void SondeProcessor::evidenzSnapshotSenden (const nakama::analyse::FeatureFrame&
         evidenzNichtGesendet.fetch_add (1);
     }
 
-    // Der Ring ist mit diesem Fenster abgeschlossen — unabhaengig davon, ob
-    // der Snapshot zustande kam. Bliebe er stehen, traegen dieselben
-    // Ereignisse im naechsten Snapshot ein zweites Mal, und ein Empfaenger
-    // zaehlte einen Transienten doppelt.
-    merkmale.ereignisseEntnommen();
-    letzteEreignisverluste = verworfen;
+    // Der Ring ist mit diesem Fenster abgeschlossen — aber NUR, wenn der
+    // Snapshot wirklich uebergeben wurde. Bliebe er sonst stehen, traegen
+    // dieselben Ereignisse im naechsten Snapshot ein zweites Mal, und ein
+    // Empfaenger zaehlte einen Transienten doppelt.
+    //
+    // 🔑 Die Bedingung ist der Fix zu M-05: fruehen entnahmen diese zwei
+    // Zeilen bedingungslos. Ein abgewiesener Snapshot (P1-Puffer voll, zu
+    // gross, oder `evidenceSnapshotAlsJson` fail-closed) loeschte damit die
+    // Ereignisse, die er gerade NICHT transportiert hat — ein stiller
+    // Verlust ohne Zaehler. Jetzt bleiben sie liegen und reisen im naechsten
+    // Snapshot mit; nur der Ringdeckel selbst darf sie noch verwerfen, und
+    // der zaehlt.
+    if (uebergeben)
+    {
+        merkmale.ereignisseEntnommen();
+        letzteEreignisverluste = verworfen;
+    }
 }
 
 #if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)

@@ -74,14 +74,23 @@ public:
 
     bool reihenfolgeGebunden() const noexcept { return gebunden; }
 
-    /** Uebernimmt den eingefrorenen Vergleichspegel (M-43).
+    /** Uebernimmt den eingefrorenen Vergleichspegel (M-43) — GENAU EINMAL.
 
         Er wird KOPIERT und nicht referenziert: der Pegel der Passage gehoert
         zum Versuch, und ein spaeter geloeschter oder neu gemessener Pegel
-        darf ein bereits gefaelltes Urteil nicht ruecklaeufig entwerten. */
+        darf ein bereits gefaelltes Urteil nicht ruecklaeufig entwerten.
+
+        ⚠️ Ein ZWEITER Pegel wird abgelehnt, auch vor dem Urteil. M-43 sagt
+        „fuer die Dauer des Versuchs eingefroren" und zaehlt den Match-Gain zu
+        den UNVERAENDERLICHEN Referenzen (§43.1). Solange ein zweiter Aufruf
+        `gainDb` ueberschrieb, war „eingefroren" eine Absichtserklaerung der
+        UI und keine Eigenschaft des Typs: zwei Aufrufe mit verschiedenen
+        Pegeln verschoben den Bezugspunkt des Vergleichs, und das Urteil
+        stuende danach gegen einen anderen Pegel als den gemessenen. Wer den
+        Pegel wirklich neu setzen will, verwirft den Versuch (`loeschen()`). */
     bool uebernimmVergleichspegel (const Vergleichspegel& p) noexcept
     {
-        if (hatUrteil || ! p.eingefroren() || ! p.gainGesetzt())
+        if (hatUrteil || gainGesetzt || ! p.eingefroren() || ! p.gainGesetzt())
             return false;
         gainDb = p.gainDb();
         gainGesetzt = true;

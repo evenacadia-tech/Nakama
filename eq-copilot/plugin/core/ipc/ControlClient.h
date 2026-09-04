@@ -63,6 +63,19 @@ bool adresseGueltig (const Adresse& a);
 /// waehlt. Nicht fuer den Audiothread: allokiert und hasht.
 std::string instanceAdresseAusState (const std::string& instanceId);
 
+/** Dieselbe Adresse, wie sie auf die Leitung geht (NAK-40).
+
+    Der Control-Bootstrap bildete den Wirealias frueher an EINER Stelle
+    (`ControlClient.cpp`), und jeder weitere Sender, der `v3Hello()` direkt
+    benutzte, schickte statt dessen die rohe persistente Instance-ID. Fuer
+    eine hex32-ID faellt das nie auf — sie ist ihr eigener Alias —, fuer eine
+    unterstuetzte Legacy-ID verschwanden Marker und Evidenz dagegen
+    kommentarlos, weil `adresseGueltig` sie zurueckwies.
+
+    Diese Funktion IST der eine Weg. Sie ist idempotent: eine bereits
+    aliasierte Adresse geht bytegleich durch. */
+Adresse wireAdresseAusState (Adresse adresse);
+
 /// Rueckweg der nicht umkehrbaren Abbildung: der Zielclient berechnet den
 /// Alias aus seiner lokalen Original-ID neu. Ein unbekannter Wirewert ist
 /// fail-closed; es gibt keine Dekodierung und keinen Alias im Host-State.
@@ -134,6 +147,11 @@ struct ControlStatus
     std::uint64_t framesDropped = 0;
     std::uint64_t parseErrors = 0;
     std::uint64_t queueOverflows = 0;
+    /// SONDE-013 M-39: sticky `intervention_state_unknown`. Gesetzt nach
+    /// Ringueberlauf, Control-Disconnect oder Sequenzluecke; es reist im
+    /// Heartbeat, damit ein VERLORENES letztes Ereignis den Empfaenger
+    /// trotzdem erreicht — die Sequenzluecke allein reicht dafuer nicht.
+    bool          interventionStateUnknown = false;
     ControlRuntime runtime;
 };
 

@@ -469,7 +469,12 @@ void m20()
     pruefe (! p.eingefroren() && ! p.gainGesetzt(),
             "erst ein ausdruecklicher Passagenwechsel loescht ihn");
 
-    // Nicht-endliche Werte werden verriegelt, nie gezaehlt.
+    // Nacharbeit 1 (2026-09-04, Befund B10): nicht-endliche Werte werden
+    // GEZAEHLT und VERRIEGELN. Die alte Zusage an dieser Stelle lautete
+    // "verriegeln, statt den Pegel zu vergiften" und meinte damit: ueberspringen
+    // und trotzdem einen gueltigen Gain liefern. Genau das machte den Fehler
+    // hinterher unsichtbar - eine Passage mit beschaedigten Samples lieferte
+    // denselben Wert wie eine saubere. CLAUDE.md verlangt beides zusammen.
     Vergleichspegel q;
     q.vorbereiten (fs);
     for (int i = 0; i < 48; ++i, n += (std::uint64_t) block)
@@ -485,8 +490,12 @@ void m20()
     // `gainDb()` vor dem Einfrieren und meldete 0,0000 dB neben einem gruenen
     // Haken. Gemessen beim Bau von Etappe F.
     const bool gefroren = q.friereEin();
-    pruefe (gefroren && std::abs (q.gainDb() - 6.0206) < 0.1,
-            "NaN und Inf im Material verriegeln, statt den Pegel zu vergiften",
+    pruefe (q.nichtEndlicheSamples() == 48 * 2,
+            "beide nicht-endlichen Samples JEDES Blocks sind gezaehlt",
+            juce::String ((int) q.nichtEndlicheSamples()));
+    pruefe (! gefroren && q.eingefroren() && ! q.gainGesetzt(),
+            "NaN und Inf im Material VERRIEGELN den Pegel - er friert ohne Wert ein "
+            "statt eine Zahl zu liefern, die den Fehler unsichtbar macht (M-07)",
             juce::String (q.gainDb(), 4) + " dB");
 }
 

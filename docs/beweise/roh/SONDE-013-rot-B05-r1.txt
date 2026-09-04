@@ -1,0 +1,34 @@
+SONDE-013 Etappe 2 Nacharbeit 1 - Rotbeweis B05
+============================================================
+
+Datei:     eq-copilot/plugin/vertrag/NakamaEvidenz.cpp
+Bein:      EqCopSonde013EventWireTest
+Warum:     Der Snapshot prueft und serialisiert wieder die ROHE Adresse aus dem State statt der NAK-40-Wireadresse. Eine unterstuetzte Legacy-Instance-ID faellt damit an `adresseGueltig`, und die Evidenz dieser Sonde verschwindet kommentarlos (M-05/M-37).
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+    const auto wire = nakama::ipc::wireAdresseAusState (kopf.adresse);
+    if (! nakama::ipc::adresseGueltig (wire))
+--- NEU ---
+    const auto wire = kopf.adresse;
+    if (! nakama::ipc::adresseGueltig (wire))
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+== N1 - B05: die Evidenz reist unter der NAK-40-WIREadresse ==
+[ok]   B05: die Ausgangs-ID ist bewusst KEIN hex32
+[ROT]  B05: evidenz_reist_unter_der_wireadresse - eine Legacy-ID verhindert den Snapshot NICHT mehr
+[ROT]  B05: und auf der Leitung steht der ALIAS, nicht die persistente ID  [ebd0bb1af0b846bc5c4d21ebd496671e]
+[ROT]  B05: die persistente ID fliesst NICHT auf die Leitung
+[ok]   B05: die Hilfsfunktion ist idempotent - es gibt genau EINEN Weg zur Wireadresse
+EXIT=1
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+== N1 - B05: die Evidenz reist unter der NAK-40-WIREadresse ==
+[ok]   B05: die Ausgangs-ID ist bewusst KEIN hex32
+[ok]   B05: evidenz_reist_unter_der_wireadresse - eine Legacy-ID verhindert den Snapshot NICHT mehr
+[ok]   B05: und auf der Leitung steht der ALIAS, nicht die persistente ID  [ebd0bb1af0b846bc5c4d21ebd496671e]
+[ok]   B05: die persistente ID fliesst NICHT auf die Leitung
+[ok]   B05: die Hilfsfunktion ist idempotent - es gibt genau EINEN Weg zur Wireadresse
+EXIT=0
+
+URTEIL: BEWIESEN - der Test faellt am eingebauten Fehler und steht ohne ihn.

@@ -183,6 +183,29 @@ public:
         return std::isfinite (groesster) ? groesster : 0.0;
     }
 
+    /** Schiebt die Verzoegerungskette leer und liefert den groessten dabei
+        herausfallenden Betrag (SONDE-013, Luecke B09).
+
+        Der Interpolatorkern ist um seine halbe Laenge zentriert: ein Sample
+        ist erst `kTapsJePhase / 2` Ticks spaeter vollstaendig durchgelaufen.
+        Ein `zuruecksetzen()` an einer Fenster- oder Epochengrenze warf diese
+        letzten Zwischenwerte weg — ein Intersample-Peak in den letzten zwoelf
+        Samples einer Passage fehlte deshalb im Passagen-True-Peak.
+
+        ⚠️ Der Nachlauf sagt NICHT, an welchem Sample der Peak lag: er wird dem
+        laufenden Fenster als Ganzes zugeschlagen. Eine framegenaue Zuordnung
+        innerhalb des Fensters ist damit ausdruecklich nicht zugesagt.
+
+        Aufzurufen VOR `zuruecksetzen()`; danach ist die Kette ohnehin leer und
+        der Rueckgabewert 0. */
+    double nachlauf() noexcept
+    {
+        double groesster = 0.0;
+        for (int i = 0; i < kTapsJePhase / 2; ++i)
+            groesster = std::max (groesster, tick (0.0, 0.0));
+        return groesster;
+    }
+
     /** Der ausgerechnete Interpolationsfehler dieses Faktors bei einer
         normierten Frequenz `fRelFs` = f/fs, in dB (negativ oder 0).
 

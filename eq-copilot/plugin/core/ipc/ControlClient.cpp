@@ -400,7 +400,15 @@ std::string heartbeatAlsJson (const Adresse& adresse, std::uint64_t sequence,
          + std::to_string (jsonSafe (status.framesDropped))
          + ",\"parse_errors\":" + std::to_string (jsonSafe (status.parseErrors))
          + ",\"queue_overflows\":" + std::to_string (jsonSafe (status.queueOverflows))
-         + "}" + runtimeJson (status.runtime) + "}";
+         + "}"
+         // SONDE-013 M-39: nur GESETZT reist es. Ein `false` in jedem
+         // Heartbeat waere die Behauptung "Zustand bekannt" — und das Feld ist
+         // im Schema optional, damit genau diese Behauptung nicht bei jedem
+         // Takt mitfaehrt.
+         + (status.interventionStateUnknown
+                ? std::string (",\"intervention_state_unknown\":true")
+                : std::string())
+         + runtimeJson (status.runtime) + "}";
 }
 
 /// Haelt ein `welcome` den VOLLSTAENDIGEN Vertrag aus
@@ -498,6 +506,12 @@ std::string instanceAdresseAusState (const std::string& instanceId)
 
     const auto hash = nakama::kanon::sha256Hex (eingang.data(), eingang.size());
     return hash.substring (0, 32).toStdString();
+}
+
+Adresse wireAdresseAusState (Adresse adresse)
+{
+    adresse.instanceId = instanceAdresseAusState (adresse.instanceId);
+    return adresse;
 }
 
 bool instanceAliasZielPasst (const std::string& lokaleInstanceId,
@@ -1060,7 +1074,7 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
     // v3-Grenze entsteht der Wirealias; in den Host-State fliesst er nie
     // zurueck. Leere bleibt leer und faellt weiter fail-closed — nur der
     // State-Lader darf dafuer den bestehenden Frisch-UUID-Pfad waehlen.
-    hello.adresse.instanceId = instanceAdresseAusState (hello.adresse.instanceId);
+    hello.adresse = wireAdresseAusState (hello.adresse);
     // Der Provider ist FREMDER Code und darf beliebig lange stehen. In dieser
     // Zeit kann `stop()` diesen Lauf abgeloest und ein neuer `start()` laengst
     // verbunden haben. Dann wird hier NICHT mehr geoeffnet: ein abgeloester

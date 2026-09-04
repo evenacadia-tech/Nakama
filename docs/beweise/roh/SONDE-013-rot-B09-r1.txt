@@ -1,0 +1,31 @@
+SONDE-013 Etappe 2 Nacharbeit 1 - Rotbeweis B09
+============================================================
+
+Datei:     eq-copilot/plugin/core/analysis/TruePeak.h
+Bein:      EqCopSonde013EventWireTest
+Warum:     Der Nachlauf liefert nichts mehr. Die letzten zwoelf Zwischenwerte der Verzoegerungskette gehen an jeder Fenster- und Transportgrenze verloren, und ein Intersample-Peak am Passagenende fehlt im Passagen-True-Peak (Luecke B09).
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+        double groesster = 0.0;
+        for (int i = 0; i < kTapsJePhase / 2; ++i)
+            groesster = std::max (groesster, tick (0.0, 0.0));
+        return groesster;
+--- NEU ---
+        return 0.0;
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+== N1 - B08/B09: die Passagenmetriken haengen am Passagenfenster ==
+[ok]   B09: der Interpolator hat eine Verzoegerung, die geleert werden muss  [24]
+[ROT]  B09: polyphasen_nachlauf_am_fensterende - nach dem letzten Sample steht noch Energie in der Kette, und `nachlauf()` holt sie  [0.0000]
+[ROT]  B09: zusammen erreichen sie den wahren Scheitel - ohne den Nachlauf ginge er an der Grenze verloren  [0.0035]
+EXIT=1
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+== N1 - B08/B09: die Passagenmetriken haengen am Passagenfenster ==
+[ok]   B09: der Interpolator hat eine Verzoegerung, die geleert werden muss  [24]
+[ok]   B09: polyphasen_nachlauf_am_fensterende - nach dem letzten Sample steht noch Energie in der Kette, und `nachlauf()` holt sie  [0.8000]
+[ok]   B09: zusammen erreichen sie den wahren Scheitel - ohne den Nachlauf ginge er an der Grenze verloren  [0.8000]
+EXIT=0
+
+URTEIL: BEWIESEN - der Test faellt am eingebauten Fehler und steht ohne ihn.

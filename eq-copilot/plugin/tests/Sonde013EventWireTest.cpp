@@ -24,6 +24,7 @@
 #include "../core/StampedAudioQueue.h"
 #include "../vertrag/NakamaEvidenz.h"
 #include "../vertrag/NakamaVertrag.h"
+#include "../core/ipc/IpcQueues.h"
 
 #include <juce_core/juce_core.h>
 
@@ -758,6 +759,225 @@ int main()
                 juce::String ((int) e.evidenzVerteilungPlaetze()));
         pruefe (e.evidenzFensterGesamtJetzt() == 0 && e.evidenzFensterAktivJetzt() == 0,
                 "beide Fensterzaehler der Abdeckung sind leer");
+    }
+
+    // === Nacharbeit 1 nach der Erstpruefung 1 (2026-09-04) ==============
+    //
+    // Fuenf Befunde, die alle am selben Punkt haengen: der Erzeuger sagte
+    // nicht, was er wirklich gemessen hat.
+
+    abschnitt ("N1 - B05: die Evidenz reist unter der NAK-40-WIREadresse");
+    {
+        // Der Bootstrap bildet den Wirealias seit NAK-40 an EINER Stelle. Jeder
+        // Sender, der `v3Hello()` direkt benutzte, schickte statt dessen die
+        // PERSISTENTE Instance-ID. Fuer eine hex32-ID faellt das nie auf; fuer
+        // eine unterstuetzte Legacy-ID wies `adresseGueltig` den Snapshot ab,
+        // und die Evidenz dieser Sonde verschwand kommentarlos.
+        FeatureEngine engine;
+        engine.vorbereiten (48000.0);
+        Speiser s (engine);
+        FeatureFrame f;
+        if (! bisEvidenz (s, sinus (0.25, 1000.0, 48000.0), f))
+        {
+            pruefe (false, "B05: ein Evidenzframe entsteht", {});
+        }
+        else
+        {
+            auto kopf = testkopf();
+            kopf.adresse.instanceId = "legacy-instance-id-2019";   // NICHT hex32
+            pruefe (! nakama::ipc::istHex32 (kopf.adresse.instanceId),
+                    "B05: die Ausgangs-ID ist bewusst KEIN hex32");
+
+            nakama::evidenz::Ereignisstrom leer;
+            nakama::evidenz::Stereosicht ohneStereo;
+            std::string json;
+            const bool ok = nakama::evidenz::evidenceSnapshotAlsJson (
+                                f, kopf, leer, ohneStereo, json);
+            pruefe (ok,
+                    "B05: evidenz_reist_unter_der_wireadresse - eine Legacy-ID "
+                    "verhindert den Snapshot NICHT mehr");
+            const auto alias = nakama::ipc::instanceAdresseAusState (
+                                   kopf.adresse.instanceId);
+            pruefe (ok && json.find (alias) != std::string::npos,
+                    "B05: und auf der Leitung steht der ALIAS, nicht die "
+                    "persistente ID", juce::String (alias));
+            pruefe (ok && json.find (kopf.adresse.instanceId) == std::string::npos,
+                    "B05: die persistente ID fliesst NICHT auf die Leitung");
+
+            // Idempotenz: eine bereits aliasierte Adresse geht bytegleich durch.
+            auto zwei = kopf.adresse;
+            zwei.instanceId = alias;
+            pruefe (nakama::ipc::wireAdresseAusState (zwei).instanceId == alias,
+                    "B05: die Hilfsfunktion ist idempotent - es gibt genau EINEN "
+                    "Weg zur Wireadresse");
+        }
+    }
+
+    abschnitt ("N1 - B06: nur eine erfolgreiche Uebergabe entnimmt den Ring");
+    {
+        // M-05: bei Ueberlast sinkt die Kadenz, der Ring wird NIE stillschweigend
+        // geleert. Der Sender leerte ihn trotzdem - bei Rueckstau UND nach einem
+        // abgewiesenen Snapshot -, und weil er dabei auch die Verlustbasis
+        // vorsetzte, meldete der naechste Snapshot nicht einmal einen Verlust.
+        using nakama::ipc::P1Ergebnis;
+        pruefe (nakama::ipc::p1Uebergeben (P1Ergebnis::eingereiht),
+                "B06: `eingereiht` gilt als uebergeben");
+        pruefe (nakama::ipc::p1Uebergeben (P1Ergebnis::koalesziert),
+                "B06: `koalesziert` ebenso - der Platz in der Reihenfolge bleibt");
+        pruefe (nakama::ipc::p1Uebergeben (P1Ergebnis::zurWiederholung),
+                "B06: `zurWiederholung` ebenso - der Wiederholpuffer wirft nichts "
+                "weg (SONDE-010)");
+        pruefe (! nakama::ipc::p1Uebergeben (P1Ergebnis::abgewiesen),
+                "B06: ring_bleibt_bei_rueckstau - `abgewiesen` ist ein echter "
+                "Verlust, die Quelle bleibt stehen");
+        pruefe (! nakama::ipc::p1Uebergeben (P1Ergebnis::zuGross),
+                "B06: `zuGross` ebenso - an der Tuer abgewiesen ist nicht "
+                "uebergeben");
+
+        // Und die Gegenprobe am Ring selbst: er verliert nichts, solange
+        // `ereignisseEntnommen()` nicht gerufen wird.
+        FeatureEngine engine;
+        engine.vorbereiten (48000.0);
+        Speiser s (engine);
+        FeatureFrame f;
+        int mitEreignissen = 0;
+        for (int i = 0; i < 200; ++i)
+        {
+            const bool laut = (i / 10) % 2 == 0;
+            s.sende (sinus (laut ? 0.5 : 0.001, 1000.0, 48000.0));
+            if (engine.ereignisAnzahlJetzt() > 0)
+                ++mitEreignissen;
+        }
+        const int vorher = engine.ereignisAnzahlJetzt();
+        pruefe (vorher > 0, "B06: der Ring traegt Ereignisse",
+                juce::String (vorher));
+        pruefe (engine.ereignisAnzahlJetzt() == vorher,
+                "B06: und behaelt sie, solange niemand sie ENTNIMMT - genau das "
+                "tat der Sender bei Rueckstau trotzdem");
+        engine.ereignisseEntnommen();
+        pruefe (engine.ereignisAnzahlJetzt() == 0,
+                "B06: erst `ereignisseEntnommen()` leert ihn - die Gegenprobe, "
+                "ohne die der Fall darueber nichts sagt");
+        juce::ignoreUnused (mitEreignissen);
+    }
+
+    abschnitt ("N1 - B07: nicht-endliche Samples werden gezaehlt und verriegeln");
+    {
+        // CLAUDE.md: "Nicht-endliche Werte werden verriegelt und gezaehlt".
+        // Die Engine ersetzte sie nur durch Stille - der Rahmen sah danach aus
+        // wie eine saubere Messung.
+        FeatureEngine engine;
+        engine.vorbereiten (48000.0);
+        Speiser s (engine);
+        FeatureFrame sauber;
+        pruefe (bisEvidenz (s, sinus (0.25, 1000.0, 48000.0), sauber),
+                "B07: ein sauberer Evidenzframe entsteht");
+        pruefe (sauber.nichtEndlichRahmen == 0 && sauber.nichtEndlichEvidenz == 0,
+                "B07: und zaehlt NULL nicht-endliche Samples - 0 heisst "
+                "nachweislich keines");
+        pruefe (sauber.peakGesetzt,
+                "B07: seine Rahmenskalare sind gesetzt (die Gegenprobe)");
+
+        FeatureEngine kaputt;
+        kaputt.vorbereiten (48000.0);
+        Speiser s2 (kaputt);
+        auto mitNaN = [] (std::uint64_t n) -> float
+        {
+            if ((n % 4096u) == 100u) return std::numeric_limits<float>::quiet_NaN();
+            if ((n % 4096u) == 200u) return std::numeric_limits<float>::infinity();
+            return (float) (0.25 * std::sin (2.0 * 3.14159265358979323846
+                                             * 1000.0 * (double) n / 48000.0));
+        };
+        FeatureFrame f;
+        pruefe (bisEvidenz (s2, mitNaN, f), "B07: auch mit NaN/Inf entsteht ein Frame");
+        pruefe (kaputt.nichtEndlicheSamples() > 0,
+                "B07: nicht_endliche_samples_werden_gezaehlt",
+                juce::String ((int) kaputt.nichtEndlicheSamples()));
+        pruefe (f.nichtEndlichEvidenz > 0,
+                "B07: und die Zahl reist im Frame mit",
+                juce::String ((int) f.nichtEndlichEvidenz));
+
+        // Die VERRIEGELUNG: die Konfidenzklasse faellt auf `unbrauchbar`.
+        nakama::analyse::Konfidenzlage lage;
+        lage.coverageBekannt = true;
+        lage.abdeckungGesetzt = true;
+        lage.abdeckung = 1.0f;
+        lage.verteilungFenster = 64;
+        lage.sampleFehlerBekannt = true;
+        lage.sampleFehler = 0;
+        pruefe (nakama::analyse::gesamtklasse (lage) != nakama::analyse::Konfidenzklasse::unbrauchbar,
+                "B07: ohne Samplefehler ist die Klasse brauchbar (die Gegenprobe)");
+        lage.sampleFehler = 1;
+        pruefe (nakama::analyse::gesamtklasse (lage) == nakama::analyse::Konfidenzklasse::unbrauchbar,
+                "B07: EIN nicht-endliches Sample macht den Beleg `unbrauchbar` - "
+                "nicht `schwach`: die Zahl beschreibt Stille, nicht Musik");
+
+        // Und der Zaehler steht im Snapshot.
+        auto kopf = testkopf();
+        kopf.klasse = "unbrauchbar";
+        nakama::evidenz::Ereignisstrom leer;
+        nakama::evidenz::Stereosicht ohneStereo;
+        std::string json;
+        if (nakama::evidenz::evidenceSnapshotAlsJson (f, kopf, leer, ohneStereo, json))
+            pruefe (json.find ("\"samples_nicht_endlich\":") != std::string::npos,
+                    "B07: und `samples_nicht_endlich` steht im Snapshot");
+        else
+            pruefe (false, "B07: der Snapshot entsteht", {});
+    }
+
+    abschnitt ("N1 - B08/B09: die Passagenmetriken haengen am Passagenfenster");
+    {
+        // M-03/M-25: `passageTruePeak`, Headroom, LRA und Fingerprint liefen
+        // seit der letzten TRANSPORTgrenze. Eine leise Passage, die nach einem
+        // lauten Abschnitt ohne Seek markiert wird, uebernahm dessen Spitze.
+        FeatureEngine engine;
+        engine.vorbereiten (48000.0);
+        Speiser s (engine);
+
+        // Erst laut - der Abschnitt, der NICHT in die Passage gehoert.
+        for (int i = 0; i < 60; ++i)
+            s.sende (sinus (0.9, 1000.0, 48000.0));
+        FeatureFrame lautF;
+        bisEvidenz (s, sinus (0.9, 1000.0, 48000.0), lautF);
+        pruefe (lautF.truePeakPassageGesetzt && lautF.truePeakPassageDb > -3.0f,
+                "B08: der laute Abschnitt setzt ein hohes Passagenmaximum",
+                juce::String (lautF.truePeakPassageDb, 2));
+
+        // Jetzt markiert der User eine LEISE Passage - ohne Seek.
+        const std::int64_t start = s.projekt;
+        pruefe (engine.setzePassagenfenster (start, start + 48000 * 4),
+                "B08: das Passagenfenster wird gesetzt");
+        pruefe (engine.passagenfensterIntakt(),
+                "B08: und ist intakt");
+        FeatureFrame leiseF;
+        pruefe (bisEvidenz (s, sinus (0.02, 1000.0, 48000.0), leiseF),
+                "B08: ein Frame in der leisen Passage entsteht");
+        pruefe (! leiseF.truePeakPassageGesetzt
+                  || leiseF.truePeakPassageDb < lautF.truePeakPassageDb - 10.0f,
+                "B08: passage_metriken_haengen_am_fenster - die leise Passage erbt "
+                "die Spitze des lauten Abschnitts NICHT",
+                juce::String (leiseF.truePeakPassageDb, 2) + " gegen "
+                + juce::String (lautF.truePeakPassageDb, 2));
+
+        // B09: der Polyphasenfilter laeuft am Fensterende aus.
+        pruefe (nakama::analyse::TruePeakDetektor::kTapsJePhase >= 2,
+                "B09: der Interpolator hat eine Verzoegerung, die geleert werden "
+                "muss", juce::String (nakama::analyse::TruePeakDetektor::kTapsJePhase));
+        nakama::analyse::TruePeakDetektor tpd;
+        tpd.vorbereiten (48000.0);
+        double waehrend = 0.0;
+        for (int i = 0; i < 8; ++i)
+            waehrend = std::max (waehrend, tpd.tick (i == 4 ? 0.8 : 0.0,
+                                                     i == 4 ? 0.8 : 0.0));
+        const double rest = tpd.nachlauf();
+        pruefe (rest > 0.0,
+                "B09: polyphasen_nachlauf_am_fensterende - nach dem letzten Sample "
+                "steht noch Energie in der Kette, und `nachlauf()` holt sie",
+                juce::String (rest, 4));
+        pruefe (std::max (waehrend, rest) >= 0.79,
+                "B09: zusammen erreichen sie den wahren Scheitel - ohne den "
+                "Nachlauf ginge er an der Grenze verloren",
+                juce::String (std::max (waehrend, rest), 4));
     }
 
     std::cout << "\n-----------------------------------------\n"

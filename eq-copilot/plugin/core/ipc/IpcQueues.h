@@ -133,6 +133,25 @@ enum class P1Ergebnis
     zuGross,
 };
 
+/** Gilt eine P1-Nachricht mit diesem Ergebnis als UEBERGEBEN? (SONDE-013 M-05)
+
+    Die Frage entscheidet, ob ein Sender seine Quelle leeren darf. Sie ist als
+    Regel geschrieben und nicht als Bedingung an der Aufrufstelle, weil genau
+    diese Unterscheidung schon einmal gefehlt hat: der Evidenzsender leerte
+    seinen Ereignisring bedingungslos und loeschte damit Ereignisse, die er
+    gerade NICHT transportiert hatte — ein stiller Verlust ohne Zaehler.
+
+    `zurWiederholung` zaehlt als uebergeben: der Wiederholpuffer wirft
+    ausdruecklich nichts weg („Was einmal angenommen wurde, bleibt
+    angenommen", SONDE-010). `abgewiesen` und `zuGross` dagegen sind ein
+    echter Verlust — dort bleibt die Quelle stehen. */
+constexpr bool p1Uebergeben (P1Ergebnis e) noexcept
+{
+    return e == P1Ergebnis::eingereiht
+        || e == P1Ergebnis::koalesziert
+        || e == P1Ergebnis::zurWiederholung;
+}
+
 /// P1-Queue: Snapshots koaleszieren nach Objektschluessel, Ereignisse nicht.
 /// Der Wiederholpuffer ist die CLIENT-Haelfte des Outbox-Gedankens aus §53.9;
 /// die Outbox im Broker ist SONDE-011.

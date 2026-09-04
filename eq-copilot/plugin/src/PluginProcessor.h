@@ -217,6 +217,19 @@ public:
         const nakama::ipc::ControlClient::Snapshot& transport)
     { sourcesModel.setzeControlTransport (transport); }
     std::string ausstehenderSourcesCommandFuerTest() const;
+    /** Nur Tests (SONDE-013 M-39): schreibt in den ECHTEN RT-Control-Ring,
+        bis er voll ist. Das Sticky-Bit setzt dabei der Ring selbst, nicht
+        dieser Aufruf — gemessen wird der Weg von dort nach `v3Status()`.
+        Rueckgabe: wie viele Ereignisse Platz hatten. */
+    int interventionsRingFuellenFuerTest()
+    {
+        nakama::ipc::Interventionsereignis e;
+        int n = 0;
+        while (interventionsRing.schreibe (e))
+            ++n;
+        return n;
+    }
+
     std::uint64_t v3StateRevisionFuerTest() const noexcept
     { return v3StateRevision.load(); }
 #endif

@@ -26,6 +26,9 @@
 
 #include "../core/analysis/Blindvergleich.h"
 
+#include <cmath>
+#include <limits>
+
 #include <iostream>
 #include <vector>
 
@@ -218,12 +221,111 @@ void uiCannotReadTheOrderBeforeTheVerdict()
 
 } // namespace
 
+// =========================================================================
+// Nacharbeit 1 (2026-09-04) - B10 und B11
+//
+// Beide Befunde sagen dasselbe an zwei Stellen: "eingefroren" war eine
+// Absichtserklaerung des Aufrufers und keine Eigenschaft des Typs.
+void nacharbeit1B10B11()
+{
+    abschnitt ("N1  B11  match_gain_wird_genau_einmal_eingefroren");
+    {
+        // M-43: der Match-Gain gehoert zu den UNVERAENDERLICHEN Referenzen
+        // (43.1). Vor dem Urteil nahm die Methode beliebig viele Pegel an und
+        // ueberschrieb `gainDb` jedes Mal - zwei Aufrufe mit verschiedenen
+        // Pegeln verschoben damit den Bezugspunkt des laufenden Vergleichs.
+        Blindvergleich v;
+        const auto erster = eingefrorenerPegel (2.0);      // +6,02 dB
+        const auto zweiter = eingefrorenerPegel (4.0);     // +12,04 dB
+        pruefe (std::abs (erster.gainDb() - zweiter.gainDb()) > 3.0,
+                "B11: die zwei Pegel sind wirklich verschieden",
+                juce::String (erster.gainDb(), 2) + " gegen "
+                + juce::String (zweiter.gainDb(), 2));
+
+        pruefe (v.uebernimmVergleichspegel (erster),
+                "B11: der erste Pegel wird uebernommen");
+        pruefe (v.lautheitAbgeglichen(), "B11: der Abgleich steht");
+        pruefe (! v.uebernimmVergleichspegel (zweiter),
+                "B11: match_gain_wird_genau_einmal_eingefroren - ein ZWEITER Pegel "
+                "wird abgelehnt, auch VOR dem Urteil (M-43)");
+
+        // Und der erste bleibt wirklich stehen: das Urteil steht danach gegen
+        // ihn, nicht gegen den zweiten.
+        pruefe (v.bindeReihenfolge (Blindreihenfolge::baselineZuerst),
+                "B11: die Reihenfolge wird gebunden");
+        pruefe (v.urteile (Hoerurteil::kandidat),
+                "B11: und das Urteil wird angenommen");
+
+        // Nach `verwirf()` beginnt der Versuch von vorn - das ist der legitime
+        // Weg zu einem neuen Pegel.
+        v.loeschen();
+        pruefe (! v.lautheitAbgeglichen(),
+                "B11: `loeschen()` loest die Bindung - der legitime Weg zu einem "
+                "neuen Pegel, statt ihn heimlich zu ueberschreiben");
+        pruefe (v.uebernimmVergleichspegel (zweiter),
+                "B11: danach wird der zweite Pegel angenommen");
+    }
+
+    abschnitt ("N1  B10  nicht_endliche_samples_verriegeln_den_pegel");
+    {
+        // M-07 und CLAUDE.md: nicht-endliche Werte werden verriegelt UND
+        // gezaehlt. Der Pegel uebersprang sie nur - eine Passage mit
+        // beschaedigten Samples lieferte danach denselben gueltigen Gain wie
+        // eine saubere, und der Fehler war hinterher unsichtbar.
+        constexpr double fs = 48000.0;
+        constexpr int block = 512;
+        Vergleichspegel p;
+        p.vorbereiten (fs);
+        std::vector<float> a ((std::size_t) block), b ((std::size_t) block);
+        for (int i = 0; i < 48; ++i)
+        {
+            for (int k = 0; k < block; ++k)
+            {
+                const double t = (double) (i * block + k) / fs;
+                const double x = 0.3 * std::sin (6.283185307179586 * 220.0 * t);
+                a[(std::size_t) k] = (float) x;
+                b[(std::size_t) k] = (float) (x * 2.0);
+            }
+            if (i == 10)
+            {
+                a[7]  = std::numeric_limits<float>::quiet_NaN();
+                b[19] = std::numeric_limits<float>::infinity();
+            }
+            p.speise (a.data(), b.data(), block);
+        }
+        pruefe (p.nichtEndlicheSamples() == 2,
+                "B10: beide nicht-endlichen Samples sind GEZAEHLT",
+                juce::String ((int) p.nichtEndlicheSamples()));
+        pruefe (! p.bereit(),
+                "B10: und der Pegel ist nicht mehr messbereit - ein einziges NaN "
+                "sperrt");
+        pruefe (! p.friereEin(),
+                "B10: nicht_endliche_samples_verriegeln_den_pegel - er liefert "
+                "KEINEN Wert (M-07)");
+        pruefe (p.eingefroren() && ! p.gainGesetzt(),
+                "B10: er ist eingefroren OHNE Wert - 'Wert 0 mit gueltig=false', "
+                "kein Zustand, der ewig weiterprobiert");
+
+        Blindvergleich v;
+        pruefe (! v.uebernimmVergleichspegel (p),
+                "B10: der Blindvergleich nimmt ihn nicht an - eine Klangwertung "
+                "ohne belastbaren Lautheitsabgleich bleibt unzulaessig (M-43)");
+
+        // Die Gegenprobe: derselbe Aufbau ohne NaN liefert einen Wert.
+        const auto sauber = eingefrorenerPegel (2.0);
+        pruefe (sauber.nichtEndlicheSamples() == 0 && sauber.gainGesetzt(),
+                "B10: die Gegenprobe ohne NaN liefert den Gain wie zuvor",
+                juce::String (sauber.gainDb(), 2));
+    }
+}
+
 int main()
 {
     std::cout << "== Nakama SONDE-013 - die zwei Kanten des Blindvergleichs (§43.1) =="
               << std::endl;
     noSoundVerdictBeforeLoudnessMatch();
     uiCannotReadTheOrderBeforeTheVerdict();
+    nacharbeit1B10B11();
     std::cout << std::endl << bestanden << " bestanden, " << fehler << " gescheitert"
               << std::endl;
     return fehler == 0 ? 0 : 1;

@@ -395,6 +395,11 @@
           "$comment": "SONDE-013 M-05: auf wie viele Analysefenster sich der SCHWAECHSTE Punkt von `verteilung` stuetzt. Dieselbe Rolle wie `integration_samples` bei den Rahmenskalaren — ein Perzentil ueber drei Fenster sieht sonst aus wie eines ueber sechzig. Es steht hier und nicht im Snapshot selbst, weil `konfidenz` im Vertrag ausdruecklich ADDITIV ist (§34.3): das Objekt sagt selbst, dass es waechst, also ist ein weiteres Feld darin kein Fassungsschritt am strikten Snapshot.",
           "type": "integer",
           "minimum": 0
+        },
+        "samples_nicht_endlich": {
+          "$comment": "SONDE-013 M-07: nicht-endliche EINGANGSsamples in dem Fenster, aus dem dieser Beleg entstand. Der Erzeuger ersetzt sie durch Stille und ZAEHLT sie hier; ein Wert groesser 0 deckelt die Klasse auf `unbrauchbar`. 0 heisst nachweislich keines, nicht \"nicht gemessen\". Es steht in `konfidenz`, weil dieses Objekt im Vertrag ausdruecklich ADDITIV ist (§34.3) — derselbe Grund wie bei `verteilung_fenster`.",
+          "type": "integer",
+          "minimum": 0
         }
       }
     },

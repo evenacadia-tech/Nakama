@@ -491,9 +491,18 @@ void EqCopilotProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::M
         else
             e.nummer = interventionsNummer.load (std::memory_order_relaxed) - 1;
         e.projektzeitGesetzt = projektZeitGueltig.load (std::memory_order_relaxed);
-        e.projektSample = (std::int64_t) projektZeitSamples.load (std::memory_order_relaxed);
+        // 🔑 SONDE-013 M-38/M-52: `projektZeitSamples` ist der BLOCKANFANG.
+        // Fuer das Ende ist das die falsche Zahl: der Ausfade endet irgendwo
+        // IM Block, und ein `project_sample_end` am Blockanfang liesse den
+        // gesamten Ausfade — bis zu einen vollen Hostblock gefaerbtes Audio —
+        // ausserhalb der Invalidierung. Die Markierung liefert deshalb den
+        // Offset des letzten gefaerbten Samples, und er wird hier addiert.
+        const std::int64_t blockAnfang =
+            (std::int64_t) projektZeitSamples.load (std::memory_order_relaxed);
+        e.projektSample = blockAnfang;
         if (schritt.endete)
         {
+            e.projektSample = blockAnfang + (std::int64_t) schritt.endeOffsetSamples;
             e.dauerSamples = schritt.dauerSamples;
             // Konservativ (§34.2): der Bereich wird LAENGER quarantaenisiert
             // als der Eingriff dauerte. Der Faktor ist doppelt plus ein
@@ -839,7 +848,14 @@ void EqCopilotProcessor::interventionenSenden()
 {
     if (interventionsRing.fuellstand() == 0)
         return;
-    const auto h = v3Hello();
+    // 🔑 NAK-40: DIESELBE Wireadresse wie der Control-Bootstrap. `v3Hello()`
+    // liefert die PERSISTENTE Instance-ID; der Alias entsteht erst an der
+    // v3-Grenze. Ohne ihn pruefte dieser Pfad eine Adresse, die so nie auf
+    // der Leitung steht — bei einer hex32-ID faellt das nicht auf, bei einer
+    // unterstuetzten Legacy-ID schlug `adresseGueltig` fehl und der Ring
+    // wurde kommentarlos GELEERT: der Marker verschwand.
+    auto h = v3Hello();
+    h.adresse = nakama::ipc::wireAdresseAusState (h.adresse);
     if (h.pluginKind != "main" || ! nakama::ipc::adresseGueltig (h.adresse))
     {
         // Ohne gueltige Adresse kann kein Ereignis reisen. Es wird trotzdem
@@ -944,6 +960,22 @@ nakama::ipc::ControlStatus EqCopilotProcessor::v3Status() const
     s.recordStateValid = aufnahmeGueltig.load();
     s.recording = aufnahmeAktiv.load();
     s.framesDropped = queue.verloreneFrames();
+    // 🔑 SONDE-013 M-39: das Sticky-Bit des RT→Control-Rings wird GELESEN.
+    //
+    // Vorher setzten beide Ueberlaufpfade (Audiothread und P0-Sender) das Bit,
+    // und niemand las es: ein verlorenes Begin oder End erzeugte dann keine
+    // Sequenzluecke mehr — die Nummer war verbraucht, aber wenn das LETZTE
+    // Ereignis fiel, folgte kein weiteres, an dem die Luecke sichtbar wuerde.
+    // Der Broker blieb scheinbar sauber, und genau das verbietet §34.2:
+    // "Ein verlorenes Begin oder End darf niemals eine scheinbar saubere
+    // Baseline erzeugen". Der 1-Hz-Heartbeat traegt das Bit deshalb aktiv;
+    // beim Empfaenger loest es dasselbe sticky Unknown aus wie die Luecke.
+    //
+    // Es heilt nicht von selbst: nur `interventionsRing.resync()` bzw.
+    // `zuruecksetzen()` loeschen es, und beide laufen ausserhalb des
+    // Audiothreads am bestaetigten Neuaufbau.
+    s.interventionStateUnknown = interventionsRingUeberlauf.load (std::memory_order_relaxed)
+                              || interventionsRing.ueberlaufGesehen();
     return s;
 }
 
@@ -960,7 +992,7 @@ nakama::ipc::TelemetryHello EqCopilotProcessor::v3TelemetryHello() const
 std::string EqCopilotProcessor::v3SubscribeJson() const
 {
     auto h = v3Hello();
-    h.adresse.instanceId = nakama::ipc::instanceAdresseAusState (h.adresse.instanceId);
+    h.adresse = nakama::ipc::wireAdresseAusState (h.adresse);
     if (h.pluginKind != "main" || ! nakama::ipc::adresseGueltig (h.adresse))
         return {};
     return std::string ("{\"type\":\"subscribe_session\",\"adresse\":")
@@ -978,7 +1010,7 @@ void EqCopilotProcessor::v3ControlLink (bool verbunden)
     }
 
     auto h = v3Hello();
-    h.adresse.instanceId = nakama::ipc::instanceAdresseAusState (h.adresse.instanceId);
+    h.adresse = nakama::ipc::wireAdresseAusState (h.adresse);
     if (h.pluginKind != "main" || ! nakama::ipc::adresseGueltig (h.adresse))
         return;
     sourcesModel.beginneSubscription (h.adresse.projectBindingId,

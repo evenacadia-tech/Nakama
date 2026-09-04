@@ -513,6 +513,245 @@ static void sonde013M36 (const Pruefer& pruefe, double fs, int bs)
     }
 }
 
+// === Nacharbeit 1 nach der Erstpruefung 1 (2026-09-04) ===================
+//
+// Drei Befunde an DERSELBEN Stelle des RT-Pfades, und alle drei haben
+// dieselbe Wurzel: der Ausfade wurde nicht bis zur Null zu Ende gerechnet
+// und sein Ende nicht dort gemeldet, wo es lag.
+//
+//  B01  Der Oversizeblock rechnete mit der VOLLEN Rampenlaenge, obwohl er nur
+//       `wetKapazitaet` Samples rechnen kann. Bei 48 kHz, 80 ms Fade und
+//       512 Samples Kapazitaet blieben rund 0,867 Wet uebrig - die
+//       Folgebloecke waren weiter gefaerbt, entgegen 7.1 E-01.
+//  B02  `endete` fiel schon bei `fade <= 0,001`, also waehrend noch gemischt
+//       wurde. Der Taint war frei, bevor das Audio sauber war (M-38).
+//  B03  `project_sample_end` trug den BLOCKANFANG. Bis zu ein ganzer Hostblock
+//       gefaerbtes Audio lag damit ausserhalb der Invalidierung (M-38/M-52).
+static void sonde013Nacharbeit1 (const Pruefer& pruefe, double fs, int bs)
+{
+    MarkierungsWunsch w;
+    w.modus = MarkierungsModus::solo;
+    w.istResonanz = false;
+    w.fVon = 120.0; w.fBis = 300.0; w.fSchwerpunkt = 200.0;
+    w.fs = fs;
+    MarkierungsAuftrag auftrag;
+    if (! baueMarkierungsAuftrag (auftrag, w))
+    {
+        pruefe (false, "Nacharbeit 1: der Auftrag baut", {});
+        return;
+    }
+
+    auto fuelleSinus = [fs] (juce::AudioBuffer<float>& b)
+    {
+        for (int k = 0; k < b.getNumChannels(); ++k)
+            for (int i = 0; i < b.getNumSamples(); ++i)
+                b.setSample (k, i, 0.4f * std::sin (2.0f * 3.14159265f
+                                                    * 200.0f * (float) i / (float) fs));
+    };
+
+    // -- B01: der Oversizeblock ist mit dem Ausfade FERTIG ----------------
+    //
+    // Die Zusage aus E-01 lautet "Rest des Blocks UND JEDER FOLGEBLOCK sind
+    // bitidentischer Neutralpfad". Der alte Bau erfuellte nur die erste
+    // Haelfte; gemessen wird deshalb der Block UNMITTELBAR danach, nicht
+    // einer nach zwanzig Rampenbloecken.
+    {
+        HoerMarkierungDsp dsp;
+        dsp.setzeSamplerate (fs);
+        dsp.vorbereiten (bs);
+        dsp.reicheEin (auftrag);
+
+        juce::AudioBuffer<float> puffer (2, bs);
+        for (int block = 0; block < 40; ++block)
+        {
+            fuelleSinus (puffer);
+            dsp.verarbeite (puffer, 2, true);
+        }
+        pruefe (dsp.hoerbar(), "B01: die Markierung klingt vor dem Oversizeblock", {});
+
+        const int gross = bs * 2;
+        juce::AudioBuffer<float> grossPuffer (2, gross), grossKopie (2, gross);
+        fuelleSinus (grossPuffer);
+        grossKopie.makeCopyOf (grossPuffer);
+        dsp.verarbeite (grossPuffer, 2, true);
+
+        bool hintenBitgleich = true;
+        for (int k = 0; k < 2 && hintenBitgleich; ++k)
+            for (int i = bs; i < gross; ++i)
+                if (grossPuffer.getSample (k, i) != grossKopie.getSample (k, i))
+                { hintenBitgleich = false; break; }
+        pruefe (hintenBitgleich,
+                "B01: der Teil jenseits der Kapazitaet bleibt woertlich der Eingang");
+
+        // DAS ist die neue Zusage: der NAECHSTE Block ist schon bitidentisch.
+        juce::AudioBuffer<float> nach (2, bs), nachKopie (2, bs);
+        fuelleSinus (nach);
+        nachKopie.makeCopyOf (nach);
+        dsp.verarbeite (nach, 2, true);
+        pruefe (blockBitgleich (nach, nachKopie),
+                "B01: oversize_fade_endet_in_der_kapazitaet - der Block UNMITTELBAR "
+                "nach dem Oversizeblock ist bitidentisch, nicht erst nach 20 "
+                "Rampenbloecken (7.1 E-01)");
+        pruefe (! dsp.hoerbar(),
+                "B01: und die Markierung meldet sich sofort als still", {});
+    }
+
+    // -- B02: das Ende faellt bei fade == 0 EXAKT ------------------------
+    //
+    // Die alte Schwelle war `fade > 0,001`. Sie faellt nur dann auf, wenn ein
+    // Block GENAU in dem schmalen Band zwischen 0,001 und 0 endet - bei 80 ms
+    // Fade sind das knapp vier Samples von 3840. Mit 512er Bloecken trifft man
+    // sie fast nie; mit EINsample-Bloecken trifft man sie zwangslaeufig, weil
+    // dann jeder Fadewert einmal am Blockende steht.
+    //
+    // Gemessen wird deshalb der Fadewert selbst: `phase()` ist im Solobetrieb
+    // genau `fade`. Faellt das Ende, muss er 0 sein - nicht "fast 0".
+    {
+        HoerMarkierungDsp dsp;
+        dsp.setzeSamplerate (fs);
+        dsp.vorbereiten (bs);
+        dsp.reicheEin (auftrag);
+
+        juce::AudioBuffer<float> gross (2, bs);
+        for (int block = 0; block < 40; ++block)
+        {
+            fuelleSinus (gross);
+            dsp.verarbeite (gross, 2, true);
+        }
+
+        juce::AudioBuffer<float> eins (2, 1);
+        float phaseBeimEnde = -1.0f;
+        int schritte = 0;
+        for (; schritte < 8000; ++schritte)
+        {
+            eins.setSample (0, 0, 0.4f);
+            eins.setSample (1, 0, 0.4f);
+            const auto schritt = dsp.verarbeite (eins, 2, false);
+            if (schritt.endete)
+            {
+                phaseBeimEnde = dsp.phase();
+                break;
+            }
+        }
+        pruefe (phaseBeimEnde >= 0.0f, "B02: der Ausfade meldet ein Ende",
+                juce::String (schritte) + " Samples");
+        pruefe (phaseBeimEnde == 0.0f,
+                "B02: ende_erst_bei_fade_null - beim gemeldeten Ende ist der "
+                "Wet-Anteil EXAKT 0, nicht 'unter 0,001' (M-38)",
+                juce::String (phaseBeimEnde, 6));
+    }
+
+    // -- B03: das Ende traegt den Offset des letzten gefaerbten Samples ---
+    {
+        HoerMarkierungDsp dsp;
+        dsp.setzeSamplerate (fs);
+        dsp.vorbereiten (bs);
+        dsp.reicheEin (auftrag);
+
+        juce::AudioBuffer<float> puffer (2, bs), kopie (2, bs);
+        for (int block = 0; block < 40; ++block)
+        {
+            fuelleSinus (puffer);
+            dsp.verarbeite (puffer, 2, true);
+        }
+
+        // Erlaubnis weg: die Rampe laeuft zu Ende. Der Block, in dem `endete`
+        // faellt, ist der einzige interessante.
+        int endeBlock = -1, endeOffset = -1;
+        bool schwanzBitgleich = false, kopfGefaerbt = false, folgeBitgleich = true;
+        for (int block = 0; block < 40; ++block)
+        {
+            fuelleSinus (puffer);
+            kopie.makeCopyOf (puffer);
+            const auto schritt = dsp.verarbeite (puffer, 2, false);
+            if (schritt.endete && endeBlock < 0)
+            {
+                endeBlock = block;
+                endeOffset = schritt.endeOffsetSamples;
+                // Hinter dem gemeldeten Offset ist der Puffer woertlich der
+                // Eingang - sonst zeigte der Offset vor das Ende des Eingriffs.
+                schwanzBitgleich = true;
+                for (int k = 0; k < 2 && schwanzBitgleich; ++k)
+                    for (int i = endeOffset + 1; i < bs; ++i)
+                        if (puffer.getSample (k, i) != kopie.getSample (k, i))
+                        { schwanzBitgleich = false; break; }
+                // Und der Offset liegt NICHT vor der gefaerbten Zone: das
+                // letzte Sample, das sich vom Eingang unterscheidet, liegt bei
+                // oder vor ihm. (Genau AM Offset kann die Differenz unter der
+                // float-Aufloesung liegen — dort ist `f` bereits ein
+                // Zehntausendstel, und dann ist Bitgleichheit die richtige
+                // Rechnung, nicht ein Fehler.)
+                int letzteDifferenz = -1;
+                for (int k = 0; k < 2; ++k)
+                    for (int i = 0; i < bs; ++i)
+                        if (puffer.getSample (k, i) != kopie.getSample (k, i))
+                            letzteDifferenz = std::max (letzteDifferenz, i);
+                kopfGefaerbt = letzteDifferenz >= 0 && letzteDifferenz <= endeOffset;
+            }
+            else if (endeBlock >= 0 && ! blockBitgleich (puffer, kopie))
+                folgeBitgleich = false;
+        }
+
+        pruefe (endeBlock >= 0, "B03: der Ausfade meldet ein Ende",
+                juce::String (endeBlock));
+        pruefe (folgeBitgleich,
+                "B03: nach dem gemeldeten Ende mischt KEIN Folgeblock mehr Wet");
+        pruefe (endeOffset >= 0 && endeOffset < bs,
+                "B03: der Uebergang traegt einen Offset INNERHALB des Blocks",
+                juce::String (endeOffset));
+        pruefe (schwanzBitgleich,
+                "B03: ende_offset_zeigt_auf_das_letzte_gefaerbte_sample - hinter dem "
+                "Offset ist der Block woertlich der Eingang");
+        pruefe (kopfGefaerbt,
+                "B03: der Offset deckt die gefaerbte Zone VOLLSTAENDIG ab - das "
+                "letzte vom Eingang abweichende Sample liegt bei oder vor ihm");
+    }
+
+    // -- B04: das Sticky-Bit des Rings erreicht `v3Status()` -------------
+    //
+    // 34.2: "Ein verlorenes Begin oder End darf niemals eine scheinbar
+    // saubere Baseline erzeugen." Fiel das LETZTE Ereignis, folgte keine
+    // Sequenzluecke mehr - der Empfaenger blieb ohne Meldung. Der Heartbeat
+    // traegt das Bit deshalb aktiv.
+    {
+        auto halter = std::make_unique<EqCopilotProcessor>();
+        auto& p = *halter;
+        p.setPlayConfigDetails (2, 2, fs, bs);
+        p.prepareToPlay (fs, bs);
+        p.testForciereEchtzeit (true);
+        LaufenderTransport transport (p);
+        pruefe (alsMainKlassifizieren (p), "B04: als Main klassifiziert", {});
+        pruefe (! p.v3StatusFuerTest().interventionStateUnknown,
+                "B04: frisch ist der Interventionszustand BEKANNT - ein Bit, das "
+                "immer stuende, sagte nichts");
+
+        // Der Ring laeuft ueber. Das Sticky-Bit setzt der RING (in `schreibe`),
+        // nicht der Testaufruf - gemessen wird der Weg von dort in `v3Status()`.
+        const int platz = p.interventionsRingFuellenFuerTest();
+        pruefe (platz > 0, "B04: der Ring nimmt seine Kapazitaet auf",
+                juce::String (platz));
+        const auto status = p.v3StatusFuerTest();
+        pruefe (status.interventionStateUnknown,
+                "B04: ring_overflow_reist_im_heartbeat - der Ueberlauf des "
+                "RT-Control-Rings erreicht `v3Status()` (M-39)");
+
+        nakama::ipc::Adresse a;
+        a.logonSid = "S-1-5-21-1";
+        a.projectBindingId = std::string (32, 'a');
+        a.sessionEpoch     = std::string (32, 'b');
+        a.instanceId       = std::string (32, 'c');
+        a.runtimeNonce     = std::string (32, 'd');
+        const auto mit = nakama::ipc::heartbeatAlsJson (a, 1, status);
+        pruefe (mit.find ("\"intervention_state_unknown\":true") != std::string::npos,
+                "B04: und steht im Heartbeat-JSON");
+        nakama::ipc::ControlStatus sauber;
+        const auto ohne = nakama::ipc::heartbeatAlsJson (a, 1, sauber);
+        pruefe (ohne.find ("intervention_state_unknown") == std::string::npos,
+                "B04: ein sauberer Zustand schreibt das Feld GAR NICHT - ein "
+                "`false` in jedem Takt waere die Behauptung 'Zustand bekannt'");
+    }
+}
+
 int main()
 {
     juce::ScopedJuceInitialiser_GUI juceInit;
@@ -669,6 +908,7 @@ int main()
     sonde013M33 (pruefer, fs, bs);
     sonde013M34 (pruefer, fs, bs);
     sonde013M36 (pruefer, fs, bs);
+    sonde013Nacharbeit1 (pruefer, fs, bs);
 
     // ── T9: Puls — Ruhephase praktisch identisch, Schwellphase hörbar ──────
     {

@@ -604,6 +604,20 @@ struct FeatureFrame
         abgelehnt (`integration_samples_null`). */
     bool  integrationGesetzt { false };  std::uint32_t integrationSamples { 0 };
 
+    /** SONDE-013 M-07: nicht-endliche EINGANGSsamples, die in diesen Rahmen
+        beziehungsweise in dieses Evidenzfenster gelaufen sind.
+
+        Sie sind der GEZAEHLTE Teil der NaN-Ehrlichkeit; die Verriegelung ist
+        der andere: ist `nichtEndlichRahmen` groesser als 0, traegt der Rahmen
+        seine sampleabhaengigen Skalare NICHT (Wert 0, Praesenzbit falsch)
+        statt eine Zahl aus stillgelegtem Audio zu melden. `nichtEndlichEvidenz`
+        reist im Evidenzsnapshot und deckelt dort die Konfidenzklasse.
+
+        Beide Zahlen sind IMMER gesetzt: 0 heisst nachweislich keines. Sie
+        brauchen deshalb kein Praesenzbit. */
+    std::uint32_t nichtEndlichRahmen  { 0 };
+    std::uint32_t nichtEndlichEvidenz { 0 };
+
     /** SONDE-013 M-01 bis M-04: die drei Loudnessfenster, der True Peak und
         die zwei Headroomgroessen.
 
@@ -1056,6 +1070,21 @@ public:
         tp.zuruecksetzen();
         rahmenTruePeak = 0.0;
         passageTruePeak = 0.0;
+        passagenTruePeakRahmen = 0.0;
+        // M-25: `zuruecksetzen()` ist der Neuanfang der ganzen Engine
+        // (`prepareToPlay`). Ein Passagenfenster aus dem vorigen Anlauf ist
+        // danach keine Aussage mehr — es faellt GANZ, nicht als "gebrochen".
+        // Der Besitzer setzt es neu, wenn die Passage noch gilt.
+        passagenfenster = {};
+        passagenfensterGebrochen = false;
+        hatSampleAusserhalb = false;
+        verarbeiteteSamples = 0;
+        letztesSampleAusserhalb = 0;
+        zelleImFensterSamples = 0;
+        // M-07: die drei NaN-Zaehler beginnen mit der Engine von vorn.
+        rahmenNichtEndlich = 0;
+        evidenzNichtEndlich = 0;
+        nichtEndlicheSamplesGesamt = 0;
         for (auto& r : headroomRing) r.leeren();
         for (auto& b : lraHistogramm) b = 0u;
         lraGezaehlt = 0;
@@ -1199,6 +1228,88 @@ public:
                 return true;
         return false;
     }
+
+    //== Passagenfenster (SONDE-013 M-25) =====================================
+    //
+    // Der EINE Produktpfad zwischen der gespeicherten Passage und der Engine.
+    // Er laeuft auf demselben Thread wie `verarbeiteSamples`/`auswerten`
+    // (Analyse-Worker), nicht im Audiothread — deshalb genuegt einfacher
+    // Zustand ohne Atomics, wie bei `evidenzIntervallSetzen` daneben.
+
+    /** Bindet die Passagenmetriken an [startSample, endeSample) in Projektzeit.
+
+        Die vier Traeger aus M-03/M-04/M-26 — Passagenmaximum, Headroomring,
+        LRA-Histogramm und Fingerprint — beginnen dabei VON VORN. Genau das war
+        der Fehler ohne Fenster: eine neue Passage erbte die Spitze und die
+        Verteilungen des Materials davor.
+
+        `false`, wenn das Fenster leer oder verdreht ist — dann bleibt der
+        vorige Zustand unangetastet, statt eine Passage der Laenge 0 zu
+        fuehren. */
+    bool setzePassagenfenster (std::int64_t startSample, std::int64_t endeSample) noexcept
+    {
+        if (endeSample <= startSample)
+            return false;
+        passagenfenster.gesetzt = true;
+        passagenfenster.startSample = startSample;
+        passagenfenster.endeSample = endeSample;
+        passagenfensterGebrochen = false;
+        hatSampleAusserhalb = true;                 // alles VOR dem Fenster zaehlt nicht
+        letztesSampleAusserhalb = verarbeiteteSamples;
+        passageTruePeak = 0.0;
+        passagenTruePeakRahmen = 0.0;
+        zelleImFensterSamples = 0;
+        // 🔑 Der Polyphasenfilter wird geleert. Ein Passagenanfang IST eine
+        // Fenstergrenze (§32.3): seine 24 Taps je Phase reichen zwoelf Samples
+        // vor den Anfang zurueck, und ohne diesen Reset trug der erste
+        // Passagenrahmen den Nachklang des Materials DAVOR. Genau daran hing
+        // der Befund B08: eine leise Passage nach einem lauten Abschnitt
+        // uebernahm dessen Spitze — nicht ueber einen Puffer, sondern ueber den
+        // Filterzustand, die subtilste Form desselben Fehlers.
+        //
+        // Der Nachlaufwert wird VERWORFEN: er gehoert zum Material vor der
+        // Passage, und die Passage beginnt bei null.
+        (void) tp.nachlauf();
+        tp.zuruecksetzen();
+        for (auto& r : headroomRing) r.leeren();
+        for (auto& b : lraHistogramm) b = 0u;
+        lraGezaehlt = 0;
+        lraZellenSeitHop = 0;
+        fingerprintLeeren();
+        return true;
+    }
+
+    /** Loest die Bindung. Danach gilt wieder die Transportepoche als Fenster —
+        der Fall "der User hat keine Passage markiert". */
+    void loeschePassagenfenster() noexcept
+    {
+        passagenfenster = {};
+        passagenfensterGebrochen = false;
+        hatSampleAusserhalb = false;
+        zelleImFensterSamples = 0;
+        passageTruePeak = 0.0;
+        passagenTruePeakRahmen = 0.0;
+        for (auto& r : headroomRing) r.leeren();
+        for (auto& b : lraHistogramm) b = 0u;
+        lraGezaehlt = 0;
+        fingerprintLeeren();
+    }
+
+    bool passagenfensterGesetzt() const noexcept { return passagenfenster.gesetzt; }
+    /** `false` heisst: eine Transportgrenze lief durch das Fenster, und die
+        Passagenmetriken bleiben leer, bis ein neues Fenster gesetzt wird. */
+    bool passagenfensterIntakt() const noexcept
+    { return passagenfenster.gesetzt && ! passagenfensterGebrochen; }
+    std::int64_t passagenfensterStart() const noexcept { return passagenfenster.startSample; }
+    std::int64_t passagenfensterEnde() const noexcept  { return passagenfenster.endeSample; }
+
+    /** SONDE-013 M-07: nicht-endliche Eingangssamples seit `zuruecksetzen()`.
+        0 heisst nachweislich keines, nicht "nicht gemessen". */
+    std::uint64_t nichtEndlicheSamples() const noexcept { return nichtEndlicheSamplesGesamt; }
+    /** Dieselbe Zahl fuer das laufende EVIDENZfenster — sie reist mit dem
+        Beleg und deckelt dort die Konfidenzklasse. */
+    std::uint32_t nichtEndlicheSamplesImEvidenzfenster() const noexcept
+    { return evidenzNichtEndlich; }
 
     int ereignisAnzahlJetzt() const noexcept { return ereignisAnzahl; }
     const Ereignis& ereignis (int i) const noexcept
@@ -1767,6 +1878,26 @@ private:
         statt nur die fuenf Fuellstaende, an denen der Bruch unsichtbar war. */
     void grenzeZiehen (Grenzgrund grund) noexcept
     {
+        // 🔑 Luecke B09, ZUERST und vor jedem Nullen: der Polyphasenfilter
+        // laeuft aus, bevor sein Zustand faellt.
+        //
+        // Sein Kern ist um die halbe Laenge zentriert; die letzten zwoelf
+        // Eingangssamples stehen beim Reset noch in der Verzoegerungskette.
+        // Sie gehoeren zur ALTEN Seite der Grenze, also werden sie hier den
+        // Groessen der alten Seite zugeschlagen und nicht weggeworfen.
+        //
+        // ⚠️ Ehrlich benannt: an einer TRANSPORTgrenze fallen genau diese
+        // Groessen unmittelbar danach mit der Epoche (§32.3/§32.4, die Liste
+        // unten). Der Nachlauf ist dort deshalb ohne beobachtbaren Wert und
+        // garantiert nur, dass kein Zwischenwert die Grenze ueberlebt. Seine
+        // Wirkung hat er am PASSAGENfensterende, das `verarbeiteSamples`
+        // eigenstaendig behandelt — dort bleibt das Maximum stehen.
+        {
+            const double rest = tp.nachlauf();
+            rahmenTruePeak = std::max (rahmenTruePeak, rest);
+            passagenTruePeakRahmen = std::max (passagenTruePeakRahmen, rest);
+            passageTruePeak = std::max (passageTruePeak, rest);
+        }
         ++zGetrennteFenster;
         ++grundZaehler[(std::size_t) grund];
 
@@ -1886,6 +2017,15 @@ private:
         // Der Preis ist benannt und richtig: LRA braucht seine rund 60 s
         // OHNE Grenze. Genau das heisst "60 s geeignetes Material" (§39.1).
         passageTruePeak = 0.0;
+        passagenTruePeakRahmen = 0.0;
+        // M-25/§32.4: eine Passage bindet an GENAU EINE Transportepoche. Eine
+        // Grenze darin macht das Fenster unbrauchbar — es wird nicht still
+        // fortgesetzt, sondern als GEBROCHEN gefuehrt, bis der Besitzer ein
+        // neues setzt. Ein Fenster, das eine Grenze ueberlebte, beschriebe
+        // zwei Passagen als eine.
+        if (passagenfenster.gesetzt)
+            passagenfensterGebrochen = true;
+        zelleImFensterSamples = 0;
         for (auto& r : headroomRing) r.leeren();
         for (auto& b : lraHistogramm) b = 0u;
         lraGezaehlt = 0;
@@ -1898,6 +2038,10 @@ private:
         // Derselbe Grund fuer den True-Peak-Interpolator: seine 24 Taps je
         // Phase reichen ueber die Grenze zurueck, und ein daraus gerechneter
         // Zwischenwert gehoert zu keiner der beiden Epochen.
+        //
+        // Der Nachlauf des Filters (Luecke B09) ist bereits GANZ OBEN in dieser
+        // Funktion ausgewertet worden — vor jedem Nullen. Hier bleibt nur das
+        // Leeren des Zustands.
         tp.zuruecksetzen();
 
         rahmenPeak = 0.0;               // Korrelations-/Peakfenster
@@ -2025,14 +2169,70 @@ private:
         evidenzContinuousBelegen (block);
         rahmenZeitBelegen (block);
 
+        // ── SONDE-013 M-03/M-25: welcher Teil DIESES Blocks in der markierten
+        //    Passage liegt ────────────────────────────────────────────────────
+        //
+        // 🔑 Ohne diesen Ausschnitt liefen `passageTruePeak`, der Headroomring,
+        // das LRA-Histogramm und der Fingerprint seit der letzten
+        // TRANSPORTgrenze. Eine leise Passage, die ohne Seek nach einem lauten
+        // Abschnitt markiert wird, uebernahm damit dessen Spitze und
+        // Verteilungen — M-03 und M-25 verlangen aber die Groessen ZWISCHEN
+        // den Grenzen der markierten Passage.
+        //
+        // Ohne gesetztes Fenster bleibt es beim bisherigen Verhalten: dann ist
+        // gar keine Passage markiert, und die Transportepoche IST das Fenster.
+        // Das ist kein Rueckfall, sondern der Fall "der User hat nichts
+        // markiert" — M-03 setzt "Passage liegt vor" ausdruecklich voraus.
+        int passVon = 0, passBis = n;
+        if (passagenfenster.gesetzt)
+        {
+            passVon = passBis = 0;
+            if (! passagenfensterGebrochen
+                && (block.flags & echtzeit::kFlagZeitGueltig) != 0)
+            {
+                const std::int64_t b0 = block.projectSampleStart;
+                const std::int64_t von = std::max (passagenfenster.startSample, b0);
+                const std::int64_t bis = std::min (passagenfenster.endeSample,
+                                                   b0 + (std::int64_t) n);
+                if (bis > von)
+                {
+                    passVon = (int) (von - b0);
+                    passBis = (int) (bis - b0);
+                }
+            }
+        }
+
         for (int i = 0; i < n; ++i)
         {
+            const bool imPassagenfenster = i >= passVon && i < passBis;
+            ++verarbeiteteSamples;
+            if (! imPassagenfenster)
+            {
+                hatSampleAusserhalb = true;
+                letztesSampleAusserhalb = verarbeiteteSamples;
+            }
             double l = (double) daten[(std::size_t) i * 2u];
             double r = (double) daten[(std::size_t) i * 2u + 1u];
             // NaN-Riegel: nicht-endliche Eingangswerte werden VOR jeder Rechnung
             // durch Stille ersetzt.  Das Audio sieht die Engine ohnehin nie.
-            if (! std::isfinite (l)) l = 0.0;
-            if (! std::isfinite (r)) r = 0.0;
+            //
+            // 🔑 SONDE-013 M-07: sie werden dabei GEZAEHLT und VERRIEGELT.
+            // Die stille Ersetzung allein war der Fehler: ein Rahmen mit
+            // beschaedigten Samples rechnete danach ueber Stille und sah
+            // aus wie eine saubere Messung — dieselbe Zahl, dieselben
+            // Praesenzbits, kein Zaehler. CLAUDE.md sagt dazu ausdruecklich
+            // "Nicht-endliche Werte werden verriegelt UND gezaehlt"; die
+            // Verriegelung wirkt ueber `rahmenNichtEndlich` (Praesenzbits
+            // des Rahmens fallen) und `evidenzNichtEndlich` (Konfidenz des
+            // Belegs faellt auf `unbrauchbar`).
+            if (! std::isfinite (l) || ! std::isfinite (r))
+            {
+                if (! std::isfinite (l)) l = 0.0;
+                if (! std::isfinite (r)) r = 0.0;
+                if (rahmenNichtEndlich < 0xFFFFFFFFu) ++rahmenNichtEndlich;
+                if (evidenzNichtEndlich < 0xFFFFFFFFu) ++evidenzNichtEndlich;
+                ++nichtEndlicheSamplesGesamt;
+            }
             if (! stereo) r = l;
 
             const double m = 0.5 * (l + r);
@@ -2085,6 +2285,14 @@ private:
             // gemessen von B18::`impuls_am_rahmenende`.)
             const double tpJetzt = std::max (tp.tick (l, r), std::max (absL, absR));
             rahmenTruePeak = std::max (rahmenTruePeak, tpJetzt);
+            // M-03/M-25: das PASSAGENmaximum zaehlt nur, was im Fenster lag.
+            // Ohne Fenster ist `imPassagenfenster` fuer jedes Sample wahr, und
+            // die zwei Groessen sind identisch.
+            if (imPassagenfenster)
+            {
+                passagenTruePeakRahmen = std::max (passagenTruePeakRahmen, tpJetzt);
+                ++zelleImFensterSamples;
+            }
             zelleTruePeak  = std::max (zelleTruePeak, tpJetzt);
             zelleRmsEnergie += 0.5 * (l * l + r * r);
             // SONDE-013 M-08: der Mono-Folddown wird am WIRKLICH gefalteten
@@ -2107,7 +2315,31 @@ private:
                 zelleAktivEnergie = 0.0;
                 zelleTruePeak = 0.0;
                 zelleRmsEnergie = 0.0;
+                zelleImFensterSamples = 0;
             }
+        }
+
+        // ── SONDE-013 M-02/M-25, Luecke B09: der Nachlauf des Polyphasen-
+        //    filters am Fensterende ──────────────────────────────────────────
+        //
+        // Der Interpolator sieht ein Sample erst `kTapsJePhase / 2` Samples
+        // spaeter vollstaendig. Endete die Passage, waren die Zwischenwerte der
+        // letzten zwoelf Samples deshalb noch in der Verzoegerungskette und
+        // gingen mit dem naechsten `zuruecksetzen()` verloren: ein
+        // Intersample-Peak am Passagenende fehlte im Passagen-True-Peak.
+        //
+        // Der Nachlauf schiebt Stille nach und wertet die dabei
+        // herausfallenden Ausgaenge aus. Eine FRAMEGENAUE Zuordnung innerhalb
+        // des Fensters wird damit nicht zugesagt — der Rest landet im
+        // Passagenmaximum, und genau das ist die Groesse, um die es geht.
+        if (passagenfenster.gesetzt && passBis > 0
+            && (block.flags & echtzeit::kFlagZeitGueltig) != 0
+            && block.projectSampleStart + (std::int64_t) passBis
+                   >= passagenfenster.endeSample)
+        {
+            const double rest = tp.nachlauf();
+            rahmenTruePeak = std::max (rahmenTruePeak, rest);
+            passagenTruePeakRahmen = std::max (passagenTruePeakRahmen, rest);
         }
 
         liveSamples    += (std::uint64_t) n;
@@ -2384,7 +2616,19 @@ private:
         // Detektor - ohne dessen Schwelle. Hier zaehlt der Verlauf, nicht das
         // Ereignis; ihn zweimal zu rechnen waere zwei Wahrheiten ueber
         // dieselbe Groesse.
-        fingerprintSchritt (s, fluss);
+        //
+        // M-25/M-27: bei gesetztem Passagenfenster zaehlt nur ein Analysefenster,
+        // dessen SAEMTLICHE Samples in der Passage lagen. `s.punkte` ist seine
+        // Laenge; liegt das juengste Sample ausserhalb weiter als diese Laenge
+        // zurueck, war das Fenster sauber. Ein Fingerprint aus einem Fenster,
+        // das die Passagengrenze ueberlappt, beschriebe zwei Stellen der Musik.
+        const bool fpFensterSauber =
+            ! passagenfenster.gesetzt
+            || ! hatSampleAusserhalb
+            || verarbeiteteSamples - letztesSampleAusserhalb
+                   > (std::uint64_t) s.punkte;
+        if (fpFensterSauber)
+            fingerprintSchritt (s, fluss);
 
         // Adaptive Schwelle: Median + 3·MAD ueber die Historie.  Erst ab voller
         // Historie — eine Schwelle aus drei Werten ist keine Schwelle, und ein
@@ -2966,11 +3210,16 @@ private:
         // aktuelle Kurzzeitwert ins Histogramm, sofern das VOLLE 3-s-Fenster
         // steht und der Wert das absolute Gate nimmt.  Nur diese gezaehlten
         // Werte tragen die 60-s-Regel; Stille laesst den Zaehler stehen.
+        // M-04/M-25: nur eine Zelle, die VOLLSTAENDIG in der markierten Passage
+        // lag, geht ins LRA-Histogramm. Ohne Fenster zaehlt jede Zelle, weil
+        // dann keine Passage markiert ist.
+        const bool zelleImFenster = ! passagenfenster.gesetzt
+                                 || (int) zelleImFensterSamples >= zellenSamples;
         if (++lraZellenSeitHop >= kLraHopZellen)
         {
             lraZellenSeitHop = 0;
             double kurzJetzt = 0.0;
-            if (kurzLufs (kurzJetzt) && kurzJetzt >= kLraAbsGateLufs)
+            if (zelleImFenster && kurzLufs (kurzJetzt) && kurzJetzt >= kLraAbsGateLufs)
             {
                 const int bin = lraBin (kurzJetzt);
                 if (bin >= 0)
@@ -3221,10 +3470,12 @@ private:
         // wachsen um GENAU DIESEN Rahmen, bevor die Skalare sie lesen — sonst
         // fehlte dem Frame sein eigener Beitrag und die Verteilung liefe dem
         // Wert daneben um einen Rahmen hinterher.
-        if (rahmenTruePeak > 0.0 && ! headroomRing.empty())
+        // M-25: der Beitrag ist das Maximum ueber die Samples IM Fenster, nicht
+        // ueber den ganzen Rahmen. Ohne gesetztes Fenster sind beide gleich.
+        if (passagenTruePeakRahmen > 0.0 && ! headroomRing.empty())
         {
-            passageTruePeak = std::max (passageTruePeak, rahmenTruePeak);
-            headroomRing[0].schiebe ((float) (20.0 * std::log10 (rahmenTruePeak)));
+            passageTruePeak = std::max (passageTruePeak, passagenTruePeakRahmen);
+            headroomRing[0].schiebe ((float) (20.0 * std::log10 (passagenTruePeakRahmen)));
         }
 
         fuelleSkalare (f);
@@ -3250,6 +3501,8 @@ private:
         evidenzFensterGesamt = 0;
         evidenzFensterAktiv = 0;
         evidenzSamples = 0;
+        // M-07: der Zaehler gehoert zu GENAU diesem Beleg.
+        evidenzNichtEndlich = 0;
         evidenzSupport = {};
         evidenzContinuousHabe = false;
         evidenzContinuousDurchgehend = true;
@@ -3274,6 +3527,10 @@ private:
         // PASSAGEN-Maximum nicht — sonst waere PLR eine Aussage ueber 100 ms
         // und nicht ueber die Passage (§39.1).
         rahmenTruePeak = 0.0;
+        passagenTruePeakRahmen = 0.0;
+        // M-07: der Rahmenzaehler faellt mit dem Rahmen; der Evidenzzaehler
+        // faellt erst mit dem Evidenzfenster, und der Gesamtzaehler nie.
+        rahmenNichtEndlich = 0;
         rahmenSummeQuadrat = 0.0;
         rahmenSamples = 0;
         rahmenStartBlock = {};
@@ -3643,6 +3900,21 @@ private:
 
     void fuelleSkalare (FeatureFrame& f) const noexcept
     {
+        // 🔑 SONDE-013 M-07, DIE VERRIEGELUNG. Sie steht vor allem anderen.
+        //
+        // Ein nicht-endliches Eingangssample wurde durch Stille ersetzt. Jede
+        // Zahl, die dieser Rahmen daraus rechnet, ist damit eine Aussage ueber
+        // Audio, das die Engine nie so gesehen hat — endlich, plausibel und
+        // falsch. CLAUDE.md verlangt genau hier "verriegelt UND gezaehlt":
+        // gezaehlt wird in `nichtEndlichRahmen`, verriegelt wird, indem der
+        // Rahmen seine sampleabhaengigen Skalare gar nicht erst setzt. Ein
+        // Leser sieht dann "nicht gemessen" statt "gemessen und sauber" — der
+        // Unterschied, um den es in dieser Invariante geht.
+        f.nichtEndlichRahmen  = rahmenNichtEndlich;
+        f.nichtEndlichEvidenz = evidenzNichtEndlich;
+        if (rahmenNichtEndlich > 0)
+            return;
+
         if (rahmenZellen > 0)
         {
             f.aktivitaetGesetzt = true;
@@ -3857,6 +4129,35 @@ private:
     /// nicht (das ist Etappe E); bis dahin ist die Epochengrenze die
     /// einzige belegbare Passagengrenze.
     double rahmenTruePeak { 0.0 }, passageTruePeak { 0.0 };
+    /// SONDE-013 M-03/M-25: das Maximum ueber die Samples, die im
+    /// Passagenfenster lagen. Ohne gesetztes Fenster identisch mit
+    /// `rahmenTruePeak`.
+    double passagenTruePeakRahmen { 0.0 };
+    /// SONDE-013 M-07: nicht-endliche EINGANGSsamples. Drei Zeitraeume, weil
+    /// drei Verbraucher: der Rahmen verriegelt seine Skalare, das
+    /// Evidenzfenster seine Konfidenzklasse, der Gesamtzaehler ist die
+    /// Diagnose ueber die Laufzeit.
+    std::uint32_t rahmenNichtEndlich { 0 };
+    std::uint32_t evidenzNichtEndlich { 0 };
+    std::uint64_t nichtEndlicheSamplesGesamt { 0 };
+    /// SONDE-013 M-25: das Fenster der markierten Passage in PROJEKTzeit.
+    struct Passagenfenster
+    {
+        bool         gesetzt     { false };
+        std::int64_t startSample { 0 };
+        std::int64_t endeSample  { 0 };   ///< exklusiv
+    };
+    Passagenfenster passagenfenster {};
+    /// Eine Transportgrenze im Fenster macht es unbrauchbar (§32.4).
+    bool passagenfensterGebrochen { false };
+    /// Monotone Samplezaehlung und die Stelle des juengsten Samples AUSSERHALB
+    /// des Fensters. Aus beiden folgt, ob ein Analysefenster der Laenge
+    /// `s.punkte` vollstaendig in der Passage lag.
+    std::uint64_t verarbeiteteSamples     { 0 };
+    std::uint64_t letztesSampleAusserhalb { 0 };
+    bool          hatSampleAusserhalb     { false };
+    /// Wie viele Samples der laufenden Loudnesszelle im Fenster lagen.
+    std::uint32_t zelleImFensterSamples { 0 };
     /// LRA: Histogramm der gegateten Kurzzeitwerte plus der Zaehler, der die
     /// 60-s-Regel traegt. `lraZellenSeitHop` erzeugt den 1-s-Hop. Beide
     /// fallen an jeder Grenze — siehe `grenzeZiehen()`.

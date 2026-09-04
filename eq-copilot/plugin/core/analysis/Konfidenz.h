@@ -91,6 +91,17 @@ struct Konfidenzlage
         stuetzt (`konfidenz.verteilung_fenster`). Eine Verteilung ueber drei
         Fenster traegt keine starke Aussage, auch bei voller Abdeckung. */
     std::uint32_t verteilungFenster { 0 };
+
+    /** SONDE-013 M-07: nicht-endliche EINGANGSsamples im Fenster, aus dem
+        dieser Beleg entstand.
+
+        Das ist kein Mangel, den man gegen gute Nachbarwerte verrechnet, und
+        deshalb auch kein fuenfter Eintrag in der Zaehlung der harten Maengel:
+        ein NaN im Eingang heisst, dass die Engine an dieser Stelle STILLE
+        gerechnet hat. Jede Zahl darueber ist eine Aussage ueber Audio, das es
+        so nie gab. Der Beleg ist damit `unbrauchbar` — nicht `schwach`. */
+    bool          sampleFehlerBekannt { false };
+    std::uint32_t sampleFehler        { 0 };
 };
 
 //==============================================================================
@@ -141,6 +152,12 @@ constexpr Konfidenzklasse deckle (Konfidenzklasse a, Konfidenzklasse b) noexcept
     fahren, ohne eine Engine zu bauen. */
 constexpr Konfidenzklasse gesamtklasse (const Konfidenzlage& l) noexcept
 {
+    // 0. Verriegelung (SONDE-013 M-07). Sie steht VOR der Basis, weil sie
+    //    keine Deckelung ist: ein nicht-endliches Eingangssample macht die
+    //    Messung nicht schwaecher, sondern zu einer Aussage ueber Stille.
+    if (l.sampleFehlerBekannt && l.sampleFehler > 0)
+        return Konfidenzklasse::unbrauchbar;
+
     // 1. Basis.
     if (! l.abdeckungGesetzt)
         return Konfidenzklasse::unbrauchbar;

@@ -366,7 +366,15 @@ bool evidenceSnapshotAlsJson (const nakama::analyse::FeatureFrame& frame,
         return false;
     if (! nakama::ipc::istHex32 (kopf.evidenceId))
         return false;
-    if (! nakama::ipc::adresseGueltig (kopf.adresse))
+    // 🔑 NAK-40: die Adresse wird HIER auf ihre Wireform gebracht — an der
+    // Vertragsgrenze, nicht bei jedem Aufrufer. Sonst gaebe es je Sender einen
+    // eigenen Weg, und genau daran verschwand die Evidenz einer Sonde mit
+    // unterstuetzter Legacy-Instance-ID: `adresseGueltig` sah eine nicht-hex32
+    // ID und wies den Snapshot ab, obwohl der Bootstrap dieselbe ID laengst
+    // aliasiert. Die Funktion ist idempotent, ein bereits aliasierter Aufrufer
+    // aendert nichts.
+    const auto wire = nakama::ipc::wireAdresseAusState (kopf.adresse);
+    if (! nakama::ipc::adresseGueltig (wire))
         return false;
     if (! klasseGueltig (kopf.klasse))
         return false;
@@ -387,7 +395,7 @@ bool evidenceSnapshotAlsJson (const nakama::analyse::FeatureFrame& frame,
     text += "{\"type\":\"evidence_snapshot\",\"evidence_id\":\"";
     text += kopf.evidenceId;
     text += "\",\"adresse\":";
-    text += nakama::ipc::adresseAlsJson (kopf.adresse);
+    text += nakama::ipc::adresseAlsJson (wire);
     text += ",\"transport\":";
     if (! transportJson (frame.transport, text))
         return false;
@@ -513,6 +521,13 @@ bool evidenceSnapshotAlsJson (const nakama::analyse::FeatureFrame& frame,
     text += kopf.klasse;
     text += "\",\"verteilung_fenster\":";
     text += std::to_string (frame.evidenzFenster);
+    // SONDE-013 M-07: derselbe Grund, dieselbe Stelle. Der Zaehler der
+    // nicht-endlichen Eingangssamples IST der Beleg dafuer, dass die
+    // Sanitisierung stattgefunden hat; ohne ihn saehe ein Fenster mit
+    // beschaedigten Samples aus wie ein sauberes. 0 heisst nachweislich
+    // keines, nicht "nicht gemessen" — deshalb reist es immer.
+    text += ",\"samples_nicht_endlich\":";
+    text += std::to_string (frame.nichtEndlichEvidenz);
     text += "}}";
 
     aus = std::move (text);

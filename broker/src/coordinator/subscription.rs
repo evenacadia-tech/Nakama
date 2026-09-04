@@ -163,9 +163,86 @@ impl Coordinator {
                 .is_some_and(|push| push.snapshot_schreiben(link_id, &payload));
         if geschrieben {
             if let (Some(store), Some(ord)) = (&self.store, gedeckt_bis) {
-                let _ = store.snapshot_schuld_kompaktieren(ziel, ord);
+                let _ = store.snapshot_schuld_kompaktieren(ziel.clone(), ord);
             }
             self.messframes_an_subscriber_push(link_id);
+        }
+        // 🔑 Nacharbeit 3 (Befund B17, V3): und danach die UEBRIGEN Schulden.
+        //
+        // Der Re-Subscribe las bis dahin ausschliesslich die
+        // `session_snapshot`-Projektion und kompaktierte auch nur diesen
+        // Schluessel. Scheiterte der unmittelbare Push einer
+        // `evidence_invalidate` oder war der Subscriber kurz getrennt, blieb
+        // die Schuld FUER IMMER stehen: `outbox_lesen` hatte ausserhalb der
+        // Tests keinen Aufrufer, und die Ruecknahme erreichte das Pluginmodell
+        // nie. Eine Zustellschuld ohne Leser ist ein Defekt, kein Zustand.
+        self.offene_outbox_nachspielen(link_id, &ziel);
+    }
+
+    /// Spielt alle offenen Outbox-Zeilen dieses Ziels nach — jeden
+    /// `object_key`, in Ereignisreihenfolge (Befund B17).
+    ///
+    /// `session_snapshot` ist oben bereits absolut zugestellt und wird hier
+    /// uebersprungen. Ein Schluessel, dessen Wireform dieser Broker nicht
+    /// kennt, bleibt als Schuld STEHEN — sie zu kompaktieren, ohne sie
+    /// zugestellt zu haben, waere die stille Loeschung einer Zusage.
+    fn offene_outbox_nachspielen(&self, link_id: &str, ziel: &SnapshotZiel) {
+        let Some(store) = self.store.as_ref() else {
+            return;
+        };
+        let Ok(zeilen) = store.outbox_lesen() else {
+            return;
+        };
+        let mut offen: Vec<(SnapshotZiel, i64)> = zeilen
+            .into_iter()
+            .filter(|(z, _, _)| {
+                z.project_binding_id == ziel.project_binding_id
+                    && z.session_epoch == ziel.session_epoch
+                    && z.instance_id == ziel.instance_id
+                    && z.object_key != "session_snapshot"
+            })
+            .map(|(z, ord, _)| (z, ord))
+            .collect();
+        // Reihenfolge ist Vertrag: eine Ruecknahme, die vor einer spaeteren
+        // ankommt, erzaehlt die Geschichte falsch herum.
+        offen.sort_by_key(|(_, ord)| *ord);
+        let push = self.push.lock().unwrap_or_else(|e| e.into_inner()).clone();
+        for (schuld, ord) in offen {
+            let Ok(Some(gespeichert)) = store.event_payload_lesen(ord) else {
+                continue;
+            };
+            let Some(payload) = Self::outbox_wireform(&schuld.object_key, &gespeichert) else {
+                continue;               // Unbekannter Schluessel: Schuld bleibt.
+            };
+            if !self.push_ziel_noch_gueltig(link_id, &schuld) {
+                return;
+            }
+            let geschrieben = push
+                .as_ref()
+                .is_some_and(|push| push.snapshot_schreiben(link_id, &payload));
+            if !geschrieben {
+                // Der Empfaenger nimmt gerade nichts mehr an. Der Rest bleibt
+                // Schuld und kommt beim naechsten Subscribe wieder.
+                return;
+            }
+            let _ = store.snapshot_schuld_kompaktieren(schuld, ord);
+        }
+    }
+
+    /// Die WIREFORM einer gespeicherten Schuld (Befund B17).
+    ///
+    /// Das Store-Ereignis traegt die Nachricht plus Aussagen ueber sie; auf
+    /// die Leitung geht nur die Nachricht. Ein Schluessel, den diese Funktion
+    /// nicht kennt, liefert `None` — und die Schuld bleibt stehen.
+    fn outbox_wireform(object_key: &str, gespeichert: &[u8]) -> Option<Vec<u8>> {
+        match object_key {
+            "evidence_invalidate" => {
+                let wert: Value = serde_json::from_slice(gespeichert).ok()?;
+                let nachricht = wert.get("nachricht")?;
+                let payload = serde_json::to_vec(nachricht).ok()?;
+                v3_nachricht_lesen(&payload, "evidence_invalidate").is_some().then_some(payload)
+            }
+            _ => None,
         }
     }
 

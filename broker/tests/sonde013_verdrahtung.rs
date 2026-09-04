@@ -218,9 +218,15 @@ impl Drop for TestOrdner {
 }
 
 /// Sammelt, was der Broker an einen Subscriber geschrieben haette.
+///
+/// 🔑 Nacharbeit 3 (Befund B17): sie kann den Push auch ABLEHNEN. Ein
+/// Subscriber, der gerade nichts annimmt, ist der Normalfall — kurz getrennt,
+/// Puffer voll, Reconnect —, und genau dann entsteht die Zustellschuld, um die
+/// es geht. Eine Probe, die immer annimmt, kann sie nie erzeugen.
 #[derive(Default)]
 struct PushProbe {
     geschrieben: std::sync::Mutex<Vec<(String, Value)>>,
+    lehnt_ab: std::sync::atomic::AtomicBool,
 }
 
 impl PushProbe {
@@ -230,10 +236,18 @@ impl PushProbe {
             .unwrap_or_else(|e| e.into_inner())
             .clone()
     }
+
+    fn lehnt_ab(&self, an: bool) {
+        self.lehnt_ab
+            .store(an, std::sync::atomic::Ordering::SeqCst);
+    }
 }
 
 impl eqcop_broker::coordinator::SessionPush for PushProbe {
     fn snapshot_schreiben(&self, link_id: &str, payload: &[u8]) -> bool {
+        if self.lehnt_ab.load(std::sync::atomic::Ordering::SeqCst) {
+            return false;
+        }
         let wert: Value = serde_json::from_slice(payload).unwrap_or(Value::Null);
         self.geschrieben
             .lock()
@@ -326,6 +340,17 @@ impl HarnischMitStore {
     /// Schaltet die Append-Naht des Stores (Befund B16). Sie liegt VOR dem
     /// Writerkanal und laesst jeden Append scheitern, als haette der Store den
     /// Dienst verweigert; Guards, Checkpoints und Kompaktierung bleiben heil.
+    /// Die offenen Zustellschulden dieses Stores (Befund B17).
+    fn outbox(&self) -> Vec<(String, i64)> {
+        self._writer
+            .handle()
+            .outbox_lesen()
+            .unwrap_or_default()
+            .into_iter()
+            .map(|(z, ord, _)| (z.object_key, ord))
+            .collect()
+    }
+
     fn naht(&self, an: bool) {
         self._writer.handle().append_naht_setzen(an);
     }
@@ -3663,5 +3688,88 @@ fn evidenzreihenfolge_ueberdauert_den_neustart() {
     assert!(
         !e.resultat_evidence_ids.is_empty(),
         "und er ist als Resultat gefuehrt"
+    );
+}
+
+
+/// B17 — eine liegengebliebene Zustellschuld wird beim Subscribe NACHGESPIELT.
+///
+/// 🔑 Wiederpruefung 2: `outbox_lesen` hatte ausserhalb der Tests keinen
+/// Aufrufer, und der Re-Subscribe las ausschliesslich die
+/// `session_snapshot`-Projektion und kompaktierte auch nur diesen Schluessel.
+/// Scheiterte der unmittelbare Push einer `evidence_invalidate` oder war der
+/// Subscriber kurz getrennt, blieb die Schuld FUER IMMER stehen und die
+/// Ruecknahme erreichte das Pluginmodell nie. Der Test der Runde 2 erzwang
+/// einen sofort erfolgreichen Push.
+#[cfg(windows)]
+#[test]
+fn liegengebliebene_ruecknahme_wird_beim_subscribe_nachgespielt() {
+    let h = HarnischMitStore::neu("b17-outbox-nachspielen");
+    h.abonniert();
+    let sonde = {
+        let mut s = h.main.clone();
+        s.plugin_kind = "passive_probe".into();
+        s.adresse.instance_id = hex(0x20);
+        s.adresse.runtime_nonce = hex(0x21);
+        s
+    };
+    anmelden(&h.c, "sonde", &sonde);
+    report(&h.c, "sonde", &sonde.adresse);
+    for nr in 0..3 {
+        assert!(h
+            .c
+            .evidence_snapshot_json("sonde", &evidenz_payload(&sonde.adresse, nr, |_| {})));
+    }
+
+    // Der Subscriber nimmt gerade NICHTS an — kurz getrennt, Puffer voll.
+    h.push.lehnt_ab(true);
+    let ack = h.p0(&json!({
+        "type": "preview_begin",
+        "kopf": {
+            "command_id": hex(0x9f0),
+            "ziel": h.main.adresse,
+            "base_revision": 0,
+            "ttl_ms": 1000,
+            "schema_major": 3,
+            "schema_minor": 0
+        },
+        "lease_duration_ms": 400,
+        "renew_id": hex(0x9f1)
+    }));
+    assert_eq!(ack["ergebnis"], "angewandt", "{ack}");
+    assert!(
+        h.outbox()
+            .iter()
+            .any(|(schluessel, _)| schluessel == "evidence_invalidate"),
+        "die Ruecknahme steht als SCHULD in der Outbox"
+    );
+    assert!(
+        !h.push
+            .payloads()
+            .iter()
+            .any(|(_, w)| w["type"] == "evidence_invalidate"),
+        "und ist nachweislich NICHT zugestellt"
+    );
+
+    // Der Subscriber ist zurueck und abonniert erneut.
+    h.push.lehnt_ab(false);
+    h.abonniert();
+
+    assert!(
+        h.push
+            .payloads()
+            .iter()
+            .any(|(_, w)| w["type"] == "evidence_invalidate"
+                && w["grund"] == "intervention"),
+        "liegengebliebene_ruecknahme_wird_beim_subscribe_nachgespielt - die \
+         Invalidierung kommt beim Pluginmodell an, statt fuer immer als Schuld \
+         zu stehen"
+    );
+    assert!(
+        !h.outbox()
+            .iter()
+            .any(|(schluessel, _)| schluessel == "evidence_invalidate"),
+        "und die Schuld ist danach getilgt - eine Schuld, die niemand abtraegt, \
+         waechst"
     );
 }

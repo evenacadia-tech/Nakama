@@ -1,0 +1,119 @@
+Rotbeweis B17 - liegengebliebene Zustellschulden werden beim Subscribe nachgespielt
+Datum: 2026-09-04
+Datei: broker/src/coordinator/subscription.rs
+Test:  cargo test --test sonde013_verdrahtung liegengebliebene_ruecknahme_wird_beim_subscribe_nachgespielt
+
+== 1. Fehler eingebaut ==
+ALT:         self.offene_outbox_nachspielen(link_id, &ziel);
+NEU:         // Rotbeweis: nur der session_snapshot, wie in Runde 2.
+        let _ = &ziel;
+
+== 2. Der Test FAELLT ==
+exit=101
+
+running 1 test
+test liegengebliebene_ruecknahme_wird_beim_subscribe_nachgespielt ... FAILED
+
+failures:
+
+---- liegengebliebene_ruecknahme_wird_beim_subscribe_nachgespielt stdout ----
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde013-b17-outbox-nachspielen-8392-58164a4d1eb6424faa14354a9e1678ee\nakama-broker.sqlite3
+
+thread 'liegengebliebene_ruecknahme_wird_beim_subscribe_nachgespielt' (20308) panicked at tests\sonde013_verdrahtung.rs:3758:5:
+liegengebliebene_ruecknahme_wird_beim_subscribe_nachgespielt - die Invalidierung kommt beim Pluginmodell an, statt fuer immer als Schuld zu stehen
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    liegengebliebene_ruecknahme_wird_beim_subscribe_nachgespielt
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 50 filtered out; finished in 0.74s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: associated items `offene_outbox_nachspielen` and `outbox_wireform` are never used
+   --> src\coordinator\subscription.rs:190:8
+    |
+  8 | impl Coordinator {
+    | ---------------- associated items in this implementation
+...
+190 |     fn offene_outbox_nachspielen(&self, link_id: &str, ziel: &SnapshotZiel) {
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+238 |     fn outbox_wireform(object_key: &str, gespeichert: &[u8]) -> Option<Vec<u8>> {
+    |        ^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib) generated 1 warning
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:2866:9
+     |
+2866 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+     |
+     = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `clock` is never read
+   --> tests\sonde013_verdrahtung.rs:264:5
+    |
+261 | struct HarnischMitStore {
+    |        ---------------- field in this struct
+...
+264 |     clock: Arc<ManualClock>,
+    |     ^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `sonde_mit_evidenz` is never used
+    --> tests\sonde013_verdrahtung.rs:1869:4
+     |
+1869 | fn sonde_mit_evidenz(h: &HarnischMitStore, anzahl: usize) -> HelloControl {
+     |    ^^^^^^^^^^^^^^^^^
+
+warning: `eqcop-broker` (test "sonde013_verdrahtung") generated 3 warnings (run `cargo fix --test "sonde013_verdrahtung" -p eqcop-broker` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.47s
+     Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)
+error: test failed, to rerun pass `--test sonde013_verdrahtung`
+
+
+== 3. Fehler entfernt, der Test ist GRUEN ==
+exit=0
+
+running 1 test
+test liegengebliebene_ruecknahme_wird_beim_subscribe_nachgespielt ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 50 filtered out; finished in 0.76s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:2866:9
+     |
+2866 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+     |
+     = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `clock` is never read
+   --> tests\sonde013_verdrahtung.rs:264:5
+    |
+261 | struct HarnischMitStore {
+    |        ---------------- field in this struct
+...
+264 |     clock: Arc<ManualClock>,
+    |     ^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `sonde_mit_evidenz` is never used
+    --> tests\sonde013_verdrahtung.rs:1869:4
+     |
+1869 | fn sonde_mit_evidenz(h: &HarnischMitStore, anzahl: usize) -> HelloControl {
+     |    ^^^^^^^^^^^^^^^^^
+
+warning: `eqcop-broker` (test "sonde013_verdrahtung") generated 3 warnings (run `cargo fix --test "sonde013_verdrahtung" -p eqcop-broker` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.23s
+     Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)

@@ -337,6 +337,24 @@ impl StoreHandle {
         })
     }
 
+    /// Der Payload EINES Ereignisses (Befund B17).
+    ///
+    /// Eine Outbox-Zeile nennt nur die `event_ord` ihrer Schuld. Ohne den
+    /// Payload liesse sich die Schuld zaehlen, aber nicht abtragen — und genau
+    /// das war der Zustand: `outbox_lesen` hatte ausserhalb der Tests keinen
+    /// Aufrufer.
+    pub fn event_payload_lesen(&self, event_ord: i64) -> Result<Option<Vec<u8>>, StoreFehler> {
+        kurze_leseconnection(&self.db_pfad, |conn| {
+            let mut stmt =
+                conn.prepare("SELECT payload_jcs FROM event_log WHERE event_ord=?1")?;
+            let mut rows = stmt.query([event_ord])?;
+            match rows.next()? {
+                Some(zeile) => Ok(Some(zeile.get::<_, Vec<u8>>(0)?)),
+                None => Ok(None),
+            }
+        })
+    }
+
     pub fn outbox_lesen(&self) -> Result<Vec<(SnapshotZiel, i64, i64)>, StoreFehler> {
         kurze_leseconnection(&self.db_pfad, |conn| {
             let mut stmt = conn.prepare(

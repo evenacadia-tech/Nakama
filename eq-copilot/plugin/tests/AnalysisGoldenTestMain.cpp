@@ -588,7 +588,16 @@ void zwillingsprobe (const juce::String& name, Grenzgrund erwartet,
 {
     constexpr double kZweiPi = 6.283185307179586476925286766559;
     const double fs = 48000.0;
-    FeatureEngine eA, eB;
+    // ⚠️ AUF DEM HEAP, nicht im Rahmen. `zwillingsprobe` wird aus `main`
+    // gerufen, dessen Rahmen schon mehrere `FeatureEngine`-Objekte traegt;
+    // die Engine ist ein halbes Megabyte gross. Zwei weitere auf dem Stack
+    // sprengten den 1-MB-Vorgaberahmen von MSVC, und das Bein starb mit
+    // 0xC00000FD (STACK_OVERFLOW) statt mit einem Urteil. Gemessen wird
+    // dadurch nichts anderes: dieselben zwei Objekte, dieselben Aufrufe.
+    const auto engineA = std::make_unique<FeatureEngine>();
+    const auto engineB = std::make_unique<FeatureEngine>();
+    FeatureEngine& eA = *engineA;
+    FeatureEngine& eB = *engineB;
     eA.vorbereiten (fs);
     eB.vorbereiten (fs);
     Speiser sA { eA }, sB { eB };

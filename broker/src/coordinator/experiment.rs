@@ -696,6 +696,16 @@ pub fn block_bootstrap(
     if n == 0 || blocklaenge == 0 || ziehungen == 0 {
         return None;
     }
+    // 🔑 Nacharbeit 1 (Befund B34): FAIL-CLOSED vor der ersten Addition.
+    //
+    // `block_bootstrap(&[f64::NAN], …)` akkumulierte NaN, sortierte danach
+    // eine nicht geordnete Menge (`partial_cmp` faellt auf `Equal` zurueck)
+    // und lieferte ein GESETZTES NaN-Intervall. Ein Aufrufer sah damit eine
+    // Unsicherheitsaussage, wo gar keine gerechnet werden konnte. M-07 und
+    // M-45 verlangen an dieser Stelle „ungueltig", nicht „ein Intervall".
+    if deltas.iter().any(|d| !d.is_finite()) || !alpha.is_finite() {
+        return None;
+    }
     let bl = blocklaenge.min(n);
     let bloecke = n - bl + 1;
     let mut w = Wuerfel::neu(saat);
@@ -718,7 +728,13 @@ pub fn block_bootstrap(
     mittel.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
     let u = ((alpha / 2.0) * ziehungen as f64).floor() as usize;
     let o = (((1.0 - alpha / 2.0) * ziehungen as f64).ceil() as usize).min(ziehungen - 1);
-    Some((mittel[u.min(ziehungen - 1)], mittel[o]))
+    let (unten, oben) = (mittel[u.min(ziehungen - 1)], mittel[o]);
+    // Der Riegel steht auch am AUSGANG: eine Summe endlicher Werte kann
+    // ueberlaufen, und ein ueberlaufenes Intervall ist keines.
+    if !unten.is_finite() || !oben.is_finite() {
+        return None;
+    }
+    Some((unten, oben))
 }
 
 /// Benjamini-Hochberg-Korrektur für viele gleichzeitige Tests (M-45).

@@ -76,6 +76,15 @@ inline Intervall blockBootstrap (const std::vector<double>& deltas,
     const std::size_t n = deltas.size();
     if (n == 0 || blocklaenge == 0 || ziehungen == 0)
         return {};
+    // 🔑 SONDE-013 Nacharbeit 1 (Befund B34), derselbe Riegel wie im Broker:
+    // ein nicht-endlicher Delta wandert sonst durch die Summe, macht die
+    // Sortierung bedeutungslos und ergibt ein GESETZTES NaN-Intervall. M-07
+    // und M-45 verlangen hier "ungueltig", nicht "ein Intervall".
+    for (const double d : deltas)
+        if (! std::isfinite (d))
+            return {};
+    if (! std::isfinite (alpha))
+        return {};
     const std::size_t bl = std::min (blocklaenge, n);
     const std::size_t bloecke = n - bl + 1;
 
@@ -98,7 +107,12 @@ inline Intervall blockBootstrap (const std::vector<double>& deltas,
     const std::size_t u = (std::size_t) std::floor ((alpha / 2.0) * (double) ziehungen);
     const std::size_t o = std::min ((std::size_t) std::ceil ((1.0 - alpha / 2.0) * (double) ziehungen),
                                     ziehungen - 1);
-    return { true, mittel[std::min (u, ziehungen - 1)], mittel[o] };
+    const double unten = mittel[std::min (u, ziehungen - 1)];
+    const double oben  = mittel[o];
+    // Auch am Ausgang: eine Summe endlicher Werte kann ueberlaufen.
+    if (! std::isfinite (unten) || ! std::isfinite (oben))
+        return {};
+    return { true, unten, oben };
 }
 
 /** Benjamini-Hochberg-Korrektur fuer viele gleichzeitige Tests (M-45).

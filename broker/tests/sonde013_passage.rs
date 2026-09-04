@@ -175,6 +175,12 @@ fn each_start_gate_falls_alone_at_its_threshold() {
         a.aktive_quellen = gemeinsam.clone();
         b.aktive_quellen = gemeinsam.clone();
         b.aktive_quellen.push("f".repeat(32));
+        // Nacharbeit 1 (B32): die Messpunktklasse gehoert seit dieser Runde JE
+        // QUELLE. Der Fall isoliert das Jaccard-Gate, also traegt jede Quelle
+        // dieselbe Klasse - sonst faellt hier zusaetzlich der Messpunktbeleg,
+        // und der Test maesse zwei Dinge auf einmal.
+        a.messpunktklassen = vec!["insert".to_string(); a.aktive_quellen.len()];
+        b.messpunktklassen = vec!["insert".to_string(); b.aktive_quellen.len()];
         let u = beurteile(&a, &b);
         assert!(
             (u.quellen_jaccard - 0.9).abs() < 1e-9,
@@ -189,6 +195,7 @@ fn each_start_gate_falls_alone_at_its_threshold() {
 
         // Ein Element mehr auf der anderen Seite: 9 von 11 = 0,818.
         a.aktive_quellen.push("g".repeat(32));
+        a.messpunktklassen = vec!["insert".to_string(); a.aktive_quellen.len()];
         let u2 = beurteile(&a, &b);
         assert!(u2.quellen_jaccard < GATE_QUELLEN_JACCARD);
         assert_eq!(u2.klasse, Vergleichbarkeit::Schwach);
@@ -370,4 +377,135 @@ fn urteil_traegt_seine_kalibrierungsfassung() {
         .expect("Metrikregister lesbar");
     let marke = format!("\"aktuell\": {}", vergleichbarkeit::METRICS_VERSION);
     assert!(register.contains(&marke), "Register nennt eine andere Fassung als {marke}");
+}
+
+
+// ═════════════════════════════════════════════════════════════════════════
+// Nacharbeit 1 nach der Erstpruefung 1 (2026-09-04)
+
+/// B30 - eine nicht gemessene Abdeckung traegt kein Siegerlabel (M-07/M-30).
+///
+/// Fuer `abdeckung = NaN` sind BEIDE `<`-Vergleiche falsch. Die Passage nahm
+/// das Gate damit lautlos und konnte, wenn die uebrigen vier Belege passten,
+/// `Stark` werden - fail-OPEN an genau der Stelle, an der M-30 fail-closed
+/// verlangt.
+#[test]
+fn nicht_endliche_abdeckung_ist_fail_closed() {
+    let (a, b) = perfekt();
+    assert_eq!(
+        beurteile(&a, &b).klasse,
+        Vergleichbarkeit::Stark,
+        "die Gegenprobe: ohne sie sagt der Rest nichts"
+    );
+
+    for wert in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+        let (mut x, y) = perfekt();
+        x.abdeckung = wert;
+        let u = beurteile(&x, &y);
+        assert_ne!(
+            u.klasse,
+            Vergleichbarkeit::Stark,
+            "eine nicht gemessene Abdeckung ({wert}) darf kein Siegerlabel tragen"
+        );
+        assert!(
+            u.gruende.contains(&Herabstufungsgrund::AbdeckungZuGering),
+            "und der Grund wird BENANNT, nicht still: {:?}",
+            u.gruende
+        );
+
+        // Und auf der zweiten Seite genauso - der Riegel gilt fuer beide.
+        let (p, mut q) = perfekt();
+        q.abdeckung = wert;
+        assert_ne!(beurteile(&p, &q).klasse, Vergleichbarkeit::Stark);
+    }
+}
+
+/// B31 - Jaccard ueber MENGEN, nicht ueber Listeneintraege (M-29).
+///
+/// Das Schema verbietet Duplikate in `aktive_quellen` nicht. Die Listenformel
+/// rechnete fuer `a = [x, x, x]` gegen `b = [x]` den Wert 3,0 - einen
+/// Jaccard-Index ueber 1, der das starke 0,9-Gate mit Abstand nahm.
+#[test]
+fn jaccard_rechnet_ueber_mengen_nicht_ueber_listen() {
+    let x = "a".repeat(32);
+    let (mut a, mut b) = perfekt();
+    a.aktive_quellen = vec![x.clone(), x.clone(), x.clone()];
+    b.aktive_quellen = vec![x.clone()];
+    a.messpunktklassen = vec!["insert".to_string(); 3];
+    b.messpunktklassen = vec!["insert".to_string()];
+    let u = beurteile(&a, &b);
+    assert!(
+        u.quellen_jaccard <= 1.0,
+        "ein Jaccard-Index kann nicht groesser als 1 sein: {}",
+        u.quellen_jaccard
+    );
+    assert!(
+        (u.quellen_jaccard - 1.0).abs() < 1e-9,
+        "dreimal dieselbe Quelle IST dieselbe Quelle: {}",
+        u.quellen_jaccard
+    );
+
+    // Und die Gegenprobe: zwei wirklich verschiedene Mengen bleiben unter 1.
+    let y = "b".repeat(32);
+    let (mut c, mut d) = perfekt();
+    c.aktive_quellen = vec![x.clone(), x.clone()];
+    d.aktive_quellen = vec![x.clone(), y.clone()];
+    c.messpunktklassen = vec!["insert".to_string(); 2];
+    d.messpunktklassen = vec!["insert".to_string(); 2];
+    let v = beurteile(&c, &d);
+    assert!(
+        (v.quellen_jaccard - 0.5).abs() < 1e-9,
+        "eine von zwei gemeinsam ergibt 0,5: {}",
+        v.quellen_jaccard
+    );
+}
+
+/// B32 - die Messpunktklasse wird JE QUELLE verglichen (M-28/M-55).
+///
+/// Zwei Passagen mit denselben Quellen `[A, B]`, aber der Zuordnung
+/// `[pre, post]` gegenueber `[post, pre]`, hatten dasselbe Quellenset UND
+/// dieselbe sortierte Klassenliste. Sie konnten deshalb `Stark` werden,
+/// obwohl JEDE Quelle ihren Messpunkt gewechselt hat.
+#[test]
+fn messpunktklasse_wird_je_quelle_verglichen() {
+    let qa = "a".repeat(32);
+    let qb = "b".repeat(32);
+
+    // Gegenprobe: dieselbe Zuordnung auf beiden Seiten ist stark.
+    let (mut a, mut b) = perfekt();
+    a.aktive_quellen = vec![qa.clone(), qb.clone()];
+    b.aktive_quellen = vec![qa.clone(), qb.clone()];
+    a.messpunktklassen = vec!["pre".into(), "post".into()];
+    b.messpunktklassen = vec!["pre".into(), "post".into()];
+    assert_eq!(
+        beurteile(&a, &b).klasse,
+        Vergleichbarkeit::Stark,
+        "gleiche Zuordnung, gleiche Quellen: stark"
+    );
+
+    // Der Fall: dieselben Quellen, VERTAUSCHTE Messpunkte.
+    let mut c = b.clone();
+    c.messpunktklassen = vec!["post".into(), "pre".into()];
+    let u = beurteile(&a, &c);
+    assert_ne!(
+        u.klasse,
+        Vergleichbarkeit::Stark,
+        "jede Quelle hat ihren Messpunkt gewechselt - das ist kein starker Vergleich"
+    );
+    assert!(
+        u.gruende.contains(&Herabstufungsgrund::MesspunktVerschieden),
+        "und der Grund ist benannt: {:?}",
+        u.gruende
+    );
+
+    // Auch die Reihenfolge der Quellen darf das Urteil nicht drehen: dieselbe
+    // Zuordnung, andere Reihenfolge, bleibt stark.
+    let mut d = b.clone();
+    d.aktive_quellen = vec![qb.clone(), qa.clone()];
+    d.messpunktklassen = vec!["post".into(), "pre".into()];
+    assert_eq!(
+        beurteile(&a, &d).klasse,
+        Vergleichbarkeit::Stark,
+        "die Zuordnung zaehlt, nicht die Reihenfolge der Liste"
+    );
 }

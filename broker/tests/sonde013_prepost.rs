@@ -71,6 +71,13 @@ fn haelfte(instance: &str, huellkurven: Vec<Vec<f32>>, onsets: Vec<f32>) -> Paar
         aktiv_s: FRAMES as f64 * FEATURE_HOP_MS as f64 / 1000.0,
         huellkurven,
         onsets,
+        // Nacharbeit 1 (B26): der Presentation-Nachweis ist Teil der Haelfte.
+        // Die Vorgabe fuer die bestehenden Faelle ist `true` - sie messen
+        // ausdruecklich das ALIGNMENT, nicht den Nachweis; der eigene Fall
+        // dafuer steht unten.
+        presentation_validiert: true,
+        session_epoch: 11,
+        timeline_epoch: 7,
     }
 }
 
@@ -361,7 +368,7 @@ fn alignment_class_has_four_values_and_each_criterion_falls_alone() {
     // duerfen sich nicht in der letzten Nachkommastelle unterscheiden und
     // dadurch in zwei Teilfenstern verschieden ausfallen.
     assert_eq!(
-        lag5.lag_zweite_haelfte, lag5.frames,
+        lag5.lag_zweite_haelfte, Some(lag5.frames),
         "der Gleichstand wird in beiden Teilfenstern gleich aufgeloest"
     );
     assert!(
@@ -780,5 +787,186 @@ fn nicht_endliche_werte_ergeben_keine_stationaere_kette() {
         u.klasse,
         Alignmentklasse::FeatureAligned,
         "unbrauchbares Material darf nie stark ausgerichtet heissen: {u:?}"
+    );
+}
+
+
+// ═════════════════════════════════════════════════════════════════════════
+// Nacharbeit 1 nach der Erstpruefung 1 (2026-09-04)
+
+/// B26 - `FeatureAligned` verlangt den Presentation-Nachweis (M-21).
+///
+/// `beurteile_paar` vergab die Klasse allein aus der Featurekorrelation, und
+/// `dreifachergebnis` behandelte sie danach als sicher und erzeugte
+/// ausgerichtete Deltas. Der `frameschluessel`-Riegel, der die Abbildung
+/// prueft, wurde dabei nie gerufen - obwohl das Exit-Gate ausdruecklich sagt:
+/// "Kein unbekannter Zeitpfad erzeugt eine starke PRE/POST-Aussage."
+#[test]
+fn feature_aligned_verlangt_den_presentation_nachweis() {
+    // Die Gegenprobe zuerst: mit Nachweis ist die starke Klasse erreichbar.
+    let (pre, post) = paar_mit_lag(0);
+    let mit = beurteile_paar("p1", &pre, &post);
+    assert_eq!(
+        mit.klasse,
+        Alignmentklasse::FeatureAligned,
+        "mit validierter Abbildung ist die starke Klasse erreichbar: {:?}",
+        mit.herabstufungen
+    );
+    assert!(
+        mit.ergebnis.as_ref().unwrap().ausgerichtet_db.is_some(),
+        "und das ausgerichtete Delta entsteht"
+    );
+
+    // Und jetzt OHNE Nachweis - bei sonst identischer Lage.
+    for (a_ok, b_ok) in [(false, true), (true, false), (false, false)] {
+        let (mut p2, mut q2) = paar_mit_lag(0);
+        p2.presentation_validiert = a_ok;
+        q2.presentation_validiert = b_ok;
+        let u = beurteile_paar("p2", &p2, &q2);
+        assert_eq!(
+            u.klasse,
+            Alignmentklasse::Probable,
+            "ohne Presentation-Nachweis ({a_ok}/{b_ok}) bleibt es bei probable"
+        );
+        assert!(
+            u.herabstufungen
+                .contains(&Herabstufungsgrund::KeinPresentationNachweis),
+            "und der Grund ist benannt: {:?}",
+            u.herabstufungen
+        );
+        assert!(
+            u.ergebnis.as_ref().unwrap().ausgerichtet_db.is_none(),
+            "kein ausgerichtetes Delta ohne sichere Zeitachse"
+        );
+    }
+}
+
+/// B27 - ein FEHLENDER Teilfenster-Lag wird nicht durch den Gesamtlag ersetzt
+/// (M-16).
+///
+/// `unwrap_or(zentral)` setzte den fehlenden Beleg auf genau den Wert, gegen
+/// den er geprueft wird. Das Stabilitaetsgate galt danach immer als bestanden.
+#[test]
+fn fehlender_teilfenster_lag_stuft_herab() {
+    // Ein Paar, dessen zweite Haelfte zu kurz fuer eine eigene Messung ist:
+    // `zweite_haelfte_lag` verlangt mindestens vier Frames je Spur.
+    let kurz = 6usize;
+    let baender: Vec<Vec<f32>> = (0..4)
+        .map(|b| huelle(kurz, 11 + b as u64, 3.0 + b as f64))
+        .collect();
+    let onsets = huelle(kurz, 99, 2.0);
+    let mut pre = haelfte("aaaa", baender.clone(), onsets.clone());
+    let mut post = haelfte("bbbb", baender, onsets);
+    let fenster = (0i64, (kurz as i64) * (FEATURE_HOP_MS * RATE as i64 / 1000));
+    pre.projekt_fenster = Some(fenster);
+    post.projekt_fenster = Some(fenster);
+    pre.aktiv_s = kurz as f64 * FEATURE_HOP_MS as f64 / 1000.0;
+    post.aktiv_s = pre.aktiv_s;
+
+    let capture_s = (fenster.1 - fenster.0) as f64 / RATE;
+    if let Some(lag) = schaetze_restlag(&pre, &post, capture_s) {
+        assert!(
+            lag.lag_zweite_haelfte.is_none(),
+            "auf sechs Frames laesst sich kein zweiter Teilfensterlag messen"
+        );
+        let u = beurteile_paar("kurz", &pre, &post);
+        assert_eq!(
+            u.klasse,
+            Alignmentklasse::Probable,
+            "ohne zweiten Messpunkt bleibt es bei probable: {:?}",
+            u.herabstufungen
+        );
+        assert!(
+            u.herabstufungen
+                .contains(&Herabstufungsgrund::TeilfensterLagFehlt),
+            "und der fehlende Beleg wird BENANNT, nicht durch den Gesamtlag \
+             ersetzt: {:?}",
+            u.herabstufungen
+        );
+    } else {
+        // Auch das ist ein gueltiges Ergebnis: ohne benennbaren Lag gibt es
+        // gar keine Aussage. Dann misst der Fall die Klasse direkt.
+        let u = beurteile_paar("kurz", &pre, &post);
+        assert_eq!(
+            u.klasse,
+            Alignmentklasse::Unclear,
+            "ohne benennbaren Lag gibt es keinen Zeitbezug"
+        );
+    }
+}
+
+/// B28 - kein NaN in den Banddeltas (M-07).
+///
+/// Fuer ein leeres oder stilles Band schrieb `mittlere_relation` ein
+/// oeffentliches `f64::NAN` in `roh_db`; bei sicherem Alignment stand
+/// derselbe NaN auch im ausgerichteten Vektor. Das ist eine nicht
+/// serialisierbare, ungekennzeichnete Metrik statt "Wert 0 plus
+/// Ungueltigkeit und Zaehler".
+#[test]
+fn leere_baender_erzeugen_kein_nan() {
+    let (mut pre, mut post) = paar_mit_lag(0);
+    // Ein Band ohne einen einzigen Frame - genau der Fall, der NaN erzeugte.
+    pre.huellkurven.push(Vec::new());
+    post.huellkurven.push(Vec::new());
+
+    let u = beurteile_paar("nan", &pre, &post);
+    let e = u.ergebnis.as_ref().expect("ein Ergebnis entsteht");
+    assert!(
+        e.roh_db.iter().all(|v| v.is_finite()),
+        "kein roher Banddelta ist nichtendlich: {:?}",
+        e.roh_db
+    );
+    if let Some(aus) = &e.ausgerichtet_db {
+        assert!(
+            aus.iter().all(|v| v.is_finite()),
+            "und kein ausgerichteter: {aus:?}"
+        );
+    }
+    assert_eq!(
+        e.roh_gueltig.len(),
+        e.roh_db.len(),
+        "jedes Band traegt sein Praesenzbit"
+    );
+    assert!(
+        e.baender_ohne_messung >= 1,
+        "und das leere Band ist GEZAEHLT: {}",
+        e.baender_ohne_messung
+    );
+    assert!(
+        !e.roh_gueltig[e.roh_gueltig.len() - 1],
+        "genau das leere Band traegt kein Praesenzbit"
+    );
+}
+
+/// B29 - der Peak-to-Sidelobe bleibt endlich (M-07).
+///
+/// Eine eindeutige Spitze ohne positives Nebenmaximum erzeugte
+/// `f64::INFINITY`; der Wert reiste als `Restlag.peak_to_sidelobe` weiter und
+/// konnte sogar ein `FeatureAligned` tragen.
+#[test]
+fn peak_to_sidelobe_bleibt_endlich() {
+    // Eine Spur, die ausserhalb der Sperrzone ueberall null ist: ein einzelner
+    // Impuls. Sein Korrelationsmaximum steht allein.
+    let mut impuls = vec![0.0f32; 64];
+    impuls[32] = 1.0;
+    let pre = haelfte("aaaa", vec![impuls.clone(); 4], impuls.clone());
+    let post = haelfte("bbbb", vec![impuls.clone(); 4], impuls);
+
+    let capture_s = 64.0 * FEATURE_HOP_MS as f64 / 1000.0;
+    let lag = schaetze_restlag(&pre, &post, capture_s).expect("ein Lag entsteht");
+    assert!(
+        lag.peak_to_sidelobe.is_finite(),
+        "der PSR ist endlich: {}",
+        lag.peak_to_sidelobe
+    );
+    assert!(
+        lag.psr_gedeckelt,
+        "und der Fall 'kein Nebenmaximum' wird BENANNT statt als Unendlich \
+         ausgedrueckt"
+    );
+    assert!(
+        (lag.peak_to_sidelobe - eqcop_broker::coordinator::prepost::PSR_DECKEL).abs() < 1e-9,
+        "im gedeckelten Fall steht der Deckel: {}",
+        lag.peak_to_sidelobe
     );
 }

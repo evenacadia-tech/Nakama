@@ -788,3 +788,44 @@ fn export_is_complete_and_delete_leaves_no_pcm() {
     // keine Luecke darin.
     assert!(s.log().iter().any(|ev| matches!(ev, Ereignis::Ergebnis { .. })));
 }
+
+
+// ═════════════════════════════════════════════════════════════════════════
+// Nacharbeit 1 nach der Erstpruefung 1 (2026-09-04)
+
+/// B34 - der Block-Bootstrap weist Nichtendliches ab (M-07/M-45).
+///
+/// `block_bootstrap(&[f64::NAN], …)` akkumulierte NaN, sortierte danach eine
+/// nicht geordnete Menge und lieferte ein GESETZTES NaN-Intervall. Ein
+/// Aufrufer sah damit eine Unsicherheitsaussage, wo keine gerechnet werden
+/// konnte - und PRE/POST konnte selbst NaNs erzeugen (B28).
+#[test]
+fn block_bootstrap_weist_nichtendliches_ab() {
+    use eqcop_broker::coordinator::experiment::block_bootstrap;
+
+    // Die Gegenprobe: saubere Deltas ergeben ein endliches Intervall.
+    let sauber: Vec<f64> = (0..64).map(|i| (i as f64) * 0.01 - 0.32).collect();
+    let gut = block_bootstrap(&sauber, 4, 200, 0.05, 42).expect("ein Intervall entsteht");
+    assert!(
+        gut.0.is_finite() && gut.1.is_finite() && gut.0 <= gut.1,
+        "das Intervall ist endlich und geordnet: {gut:?}"
+    );
+
+    for gift in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+        assert!(
+            block_bootstrap(&[gift], 1, 10, 0.05, 1).is_none(),
+            "ein einzelner nichtendlicher Delta ({gift}) ergibt KEIN Intervall"
+        );
+        let mut gemischt = sauber.clone();
+        gemischt[7] = gift;
+        assert!(
+            block_bootstrap(&gemischt, 4, 200, 0.05, 42).is_none(),
+            "auch EIN nichtendlicher Wert unter 64 sauberen sperrt - ein \
+             Intervall ueber teilweise unbekannte Daten waere keine Aussage"
+        );
+    }
+    assert!(
+        block_bootstrap(&sauber, 4, 200, f64::NAN, 42).is_none(),
+        "und ein nichtendliches Alpha ebenso"
+    );
+}

@@ -100,6 +100,21 @@ pub enum Herabstufungsgrund {
     VerschiedeneHostPids,
     /// Ein Alignmentkriterium aus §38.2 ist nicht erfüllt.
     AlignmentSchwach,
+    /// Es gibt keinen Nachweis der Presentation-Abbildung (M-21).
+    ///
+    /// 🔑 Nacharbeit 1 (Befund B26): `beurteile_paar` vergab `FeatureAligned`
+    /// allein aus der Featurekorrelation, und `dreifachergebnis` behandelte
+    /// diese Klasse danach als sicher. Der `frameschluessel`-Riegel, der die
+    /// Abbildung prüft, wurde dabei nie gerufen. Das Exit-Gate sagt aber:
+    /// „Kein unbekannter Zeitpfad erzeugt eine starke Cross-Probe- oder
+    /// PRE/POST-Aussage."
+    KeinPresentationNachweis,
+    /// Auf dem zweiten Teilfenster war gar kein Lag messbar (M-16).
+    ///
+    /// 🔑 Nacharbeit 1 (Befund B27): der fehlende Beleg wurde vorher durch
+    /// den Gesamtlag ERSETZT (`unwrap_or(zentral)`), womit das Stabilitätsgate
+    /// immer bestand. Ein fehlender Messpunkt ist keine Stabilität.
+    TeilfensterLagFehlt,
 }
 
 /// Warum eine Kette keine statische EQ-Behauptung trägt (M-18).
@@ -149,6 +164,17 @@ pub struct Paarhaelfte {
     pub huellkurven: Vec<Vec<f32>>,
     /// Onsetstärke je Frame — die zweite, unabhängige Spur aus §38.2.
     pub onsets: Vec<f32>,
+    /// Ist die Presentation-Abbildung dieser Hälfte VALIDIERT (M-21)?
+    ///
+    /// Ohne sie weiß niemand, ob die zwei Zeitachsen überhaupt dasselbe
+    /// meinen — eine gute Korrelation allein sagt nur, dass zwei Reihen
+    /// zueinander passen, nicht, dass sie dieselbe Stelle der Musik zeigen.
+    /// `false` ist die Vorgabe: der Nachweis wird ERBRACHT, nicht angenommen.
+    pub presentation_validiert: bool,
+    /// Sitzungsepoche und Transportepoche für den ausgerichteten
+    /// Frameschlüssel (M-21).
+    pub session_epoch: u64,
+    pub timeline_epoch: u64,
 }
 
 // ── Die Startgates ───────────────────────────────────────────────────────
@@ -204,11 +230,21 @@ pub struct Restlag {
     /// Streuung der Einzelspuren um den Median, in Frames.
     pub streuung_frames: f64,
     pub spitze: f64,
+    /// Peak-to-Sidelobe. IMMER endlich (M-07); bei `psr_gedeckelt` steht hier
+    /// `PSR_DECKEL` und nicht der gerechnete Wert.
     pub peak_to_sidelobe: f64,
+    /// `true`: es gab kein unterscheidbares Nebenmaximum, der Wert ist der
+    /// Deckel. Der Fall ist der eindeutigste, den es gibt — er wird BENANNT
+    /// und nicht als Unendlich ausgedrückt.
+    pub psr_gedeckelt: bool,
     pub konsistente_spuren: usize,
-    /// Der auf dem zweiten Teilfenster gemessene Lag. Weicht er ab, wechselt
-    /// die Latenz (M-18).
-    pub lag_zweite_haelfte: i64,
+    /// Der auf dem zweiten Teilfenster gemessene Lag, oder `None`.
+    ///
+    /// `None` heisst „auf dem zweiten Teilfenster war kein Lag messbar" und
+    /// ist ein HERABSTUFUNGSGRUND (M-16) — nicht „derselbe wie der zentrale".
+    /// Der frühere `unwrap_or(zentral)` machte genau daraus ein bestandenes
+    /// Stabilitätsgate.
+    pub lag_zweite_haelfte: Option<i64>,
 }
 
 /// Ein Frameschlüssel. Die beiden Formen sind verschiedene Typen und keine
@@ -239,7 +275,16 @@ pub enum Frameschluessel {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Dreifachergebnis {
     /// 1. Rohe Messdifferenz derselben Projektfenster, je Band in dB.
+    ///
+    /// IMMER endlich (M-07). Ein Band ohne Messung trägt hier 0,0 und in
+    /// `roh_gueltig` ein `false` — nie `NaN`.
     pub roh_db: Vec<f64>,
+    /// Je Band: trägt `roh_db` wirklich eine Messung? (M-07, Befund B28)
+    pub roh_gueltig: Vec<bool>,
+    /// Je Band: trägt `ausgerichtet_db` wirklich eine Messung?
+    pub ausgerichtet_gueltig: Vec<bool>,
+    /// Wie viele Bänder ohne Messung — der GEZÄHLTE Teil der NaN-Regel.
+    pub baender_ohne_messung: usize,
     /// 2. Ausgerichtetes, pegelbezogenes Delta — erst nach sicherer Restlag-
     ///    und Gainschätzung. `None`, solange die nicht vorliegt: ein Delta
     ///    ohne Ausrichtung wäre eine Laufzeitänderung, die wie ein EQ aussieht.
@@ -429,7 +474,16 @@ fn bester_lag(a: &[f32], b: &[f32], max_lag: i64) -> Option<i64> {
 /// „mehrere Bänder einen konsistenten Lag liefern" — die Mehrdeutigkeit einer
 /// einzelnen Spur wird durch die anderen aufgelöst, nicht durch eine
 /// schärfere Schwelle.
-fn summenkurve(spuren: &[(&[f32], &[f32])], max_lag: i64) -> Option<(i64, f64, f64)> {
+/// Der Deckel des Peak-to-Sidelobe-Verhaeltnisses (M-07, Befund B29).
+///
+/// Er ist keine Messgrenze, sondern die Aufloesungsgrenze der
+/// Korrelationskurve: unter `1e-9` ist ein Nebenmaximum von numerischem
+/// Rauschen nicht mehr zu unterscheiden. Jedes Verhaeltnis darueber traegt
+/// dieselbe Aussage — „die Spitze steht allein" — und `psr_gedeckelt` sagt,
+/// dass genau dieser Fall vorliegt.
+pub const PSR_DECKEL: f64 = 1.0e6;
+
+fn summenkurve(spuren: &[(&[f32], &[f32])], max_lag: i64) -> Option<(i64, f64, f64, bool)> {
     if spuren.is_empty() || max_lag <= 0 {
         return None;
     }
@@ -451,14 +505,32 @@ fn summenkurve(spuren: &[(&[f32], &[f32])], max_lag: i64) -> Option<(i64, f64, f
             sidelobe = sidelobe.max(wert);
         }
     }
-    let psr = if sidelobe > 1e-9 {
-        spitze / sidelobe
+    // 🔑 Nacharbeit 1 (Befund B29): der Wert bleibt ENDLICH.
+    //
+    // Vorher stand hier `f64::INFINITY` fuer „kein positives Nebenmaximum".
+    // Fachlich ist das der eindeutigste Fall, den es gibt — aber die Zahl
+    // reist als `Restlag.peak_to_sidelobe` weiter, geht in die
+    // Alignmentbewertung ein und ist nicht serialisierbar. M-07 verbietet
+    // nichtendliche ERZEUGTE Metriken; verlangt ist ein ausdruecklich
+    // gueltiger endlicher Wert oder ein ungueltiger Zustand.
+    //
+    // Gewaehlt ist der erste Weg mit einem benannten Deckel: das Verhaeltnis
+    // wird bei `PSR_DECKEL` gekappt, und `psr_gedeckelt` sagt es. Der Deckel
+    // ist keine Messgrenze, sondern die Aufloesungsgrenze der Kurve — unter
+    // `1e-9` ist ein Nebenmaximum von numerischem Rauschen nicht mehr zu
+    // unterscheiden, also ist jedes Verhaeltnis darueber dieselbe Aussage:
+    // „die Spitze steht allein".
+    let (psr, gedeckelt) = if sidelobe > 1e-9 {
+        let roh = spitze / sidelobe;
+        if roh.is_finite() && roh < PSR_DECKEL {
+            (roh, false)
+        } else {
+            (PSR_DECKEL, true)
+        }
     } else {
-        // Kein positives Nebenmaximum: die Spitze steht allein. Das ist der
-        // eindeutigste Fall, den es gibt.
-        f64::INFINITY
+        (PSR_DECKEL, true)
     };
-    Some((bester, spitze, psr))
+    Some((bester, spitze, psr, gedeckelt))
 }
 
 
@@ -486,7 +558,7 @@ pub fn schaetze_restlag(pre: &Paarhaelfte, post: &Paarhaelfte, capture_s: f64) -
     }
 
     // Spitze und PSR auf der Summenkurve, die Konsistenz je Spur.
-    let (zentral, spitze, psr) = summenkurve(&spuren, max_lag)?;
+    let (zentral, spitze, psr, psr_gedeckelt) = summenkurve(&spuren, max_lag)?;
 
     let lags: Vec<i64> = spuren
         .iter()
@@ -505,7 +577,14 @@ pub fn schaetze_restlag(pre: &Paarhaelfte, post: &Paarhaelfte, capture_s: f64) -
 
     // Stabilität über Teilfenster: dieselbe Rechnung auf der zweiten Hälfte.
     // Eine wechselnde Latenz zeigt sich genau hier und nirgends sonst.
-    let zweite = zweite_haelfte_lag(&spuren, max_lag).unwrap_or(zentral);
+    //
+    // 🔑 Nacharbeit 1 (Befund B27): `unwrap_or(zentral)` ersetzte einen
+    // FEHLENDEN Beleg durch genau den Wert, gegen den er geprüft wird. Das
+    // Stabilitätsgate galt danach immer als bestanden, und ein Paar ohne
+    // zweiten Messpunkt konnte `feature_aligned` tragen. M-16 verlangt einen
+    // tatsächlich über Teilfenster stabilen Lag; fehlt er, wird herabgestuft.
+    // `None` heisst hier „nicht messbar", nicht „gleich".
+    let zweite = zweite_haelfte_lag(&spuren, max_lag);
 
     Some(Restlag {
         frames: zentral,
@@ -513,6 +592,7 @@ pub fn schaetze_restlag(pre: &Paarhaelfte, post: &Paarhaelfte, capture_s: f64) -
         streuung_frames: streuung,
         spitze,
         peak_to_sidelobe: psr,
+        psr_gedeckelt,
         konsistente_spuren: konsistent,
         lag_zweite_haelfte: zweite,
     })
@@ -530,7 +610,7 @@ fn zweite_haelfte_lag(spuren: &[(&[f32], &[f32])], max_lag: i64) -> Option<i64> 
             }
         })
         .collect();
-    summenkurve(&hinten, max_lag).map(|(lag, _, _)| lag)
+    summenkurve(&hinten, max_lag).map(|(lag, _, _, _)| lag)
 }
 
 // ── Der Kettenbefund (M-18) ──────────────────────────────────────────────
@@ -603,8 +683,14 @@ pub fn kettenbefund(pre: &Paarhaelfte, post: &Paarhaelfte, restlag: Option<&Rest
     let lag = restlag.map(|r| r.frames).unwrap_or(0);
 
     if let Some(r) = restlag {
-        if r.lag_zweite_haelfte != r.frames {
+        // B27: ein GEMESSENER, abweichender Teilfensterlag heisst
+        // „Latenz wechselt". Ein FEHLENDER heisst das nicht — er heisst
+        // „nicht beurteilbar", und diese Klasse gibt es unten schon.
+        if r.lag_zweite_haelfte.is_some_and(|z| z != r.frames) {
             return Kettenbefund::LatenzWechseltMarkiert;
+        }
+        if r.lag_zweite_haelfte.is_none() {
+            return Kettenbefund::NichtBeurteilbar;
         }
     }
 
@@ -657,17 +743,33 @@ pub fn kettenbefund(pre: &Paarhaelfte, post: &Paarhaelfte, restlag: Option<&Rest
 
 // ── Die drei Ergebnisse (M-14) ───────────────────────────────────────────
 
-fn mittlere_relation(pre: &Paarhaelfte, post: &Paarhaelfte, lag: i64) -> Vec<f64> {
+/// Die mittlere Relation je Band, mit ihrem Praesenzbit.
+///
+/// 🔑 Nacharbeit 1 (Befund B28): vorher schrieb diese Funktion `f64::NAN` in
+/// den Vektor, sobald ein Band keine Relationswerte lieferte (leeres oder
+/// stilles Band). Der Wert reiste als `roh_db` weiter, bei sicherem Alignment
+/// auch als `ausgerichtet_db`, und war weder serialisierbar noch als „nicht
+/// gemessen" erkennbar. M-07 verlangt beim Erzeugen „Wert 0 mit
+/// `gueltig=false`" UND einen Zaehler — beides liefert diese Funktion jetzt.
+fn mittlere_relation(pre: &Paarhaelfte, post: &Paarhaelfte, lag: i64) -> (Vec<f64>, Vec<bool>) {
     let mut aus = Vec::new();
+    let mut gueltig = Vec::new();
     for (a, b) in pre.huellkurven.iter().zip(post.huellkurven.iter()) {
         let rel = relation_db(a, b, lag);
-        aus.push(if rel.is_empty() {
+        let mittel = if rel.is_empty() {
             f64::NAN
         } else {
             rel.iter().sum::<f64>() / rel.len() as f64
-        });
+        };
+        if mittel.is_finite() {
+            aus.push(mittel);
+            gueltig.push(true);
+        } else {
+            aus.push(0.0);
+            gueltig.push(false);
+        }
     }
-    aus
+    (aus, gueltig)
 }
 
 /// Baut die drei getrennten Ergebnisse (M-14).
@@ -686,28 +788,37 @@ pub fn dreifachergebnis(
     befund: Kettenbefund,
 ) -> Dreifachergebnis {
     // 1. Roh: dieselben Projektfenster, OHNE Lagkorrektur.
-    let roh = mittlere_relation(pre, post, 0);
+    let (roh, roh_gueltig) = mittlere_relation(pre, post, 0);
 
     let sicher = klasse >= Alignmentklasse::AudioAligned;
-    let (ausgerichtet, gain) = if sicher {
+    let (ausgerichtet, ausgerichtet_gueltig, gain) = if sicher {
         let lag = restlag.map(|r| r.frames).unwrap_or(0);
-        let voll = mittlere_relation(pre, post, lag);
-        let endlich: Vec<f64> = voll.iter().cloned().filter(|v| v.is_finite()).collect();
+        let (voll, voll_gueltig) = mittlere_relation(pre, post, lag);
+        let endlich: Vec<f64> = voll
+            .iter()
+            .zip(voll_gueltig.iter())
+            .filter(|(_, g)| **g)
+            .map(|(v, _)| *v)
+            .collect();
         if endlich.is_empty() {
-            (None, None)
+            (None, Vec::new(), None)
         } else {
             // Der Breitbandgain ist der Median, nicht der Mittelwert: ein
             // einzelnes stark verändertes Band soll ihn nicht ziehen.
             let mut sortiert = endlich.clone();
             sortiert.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
             let g = sortiert[sortiert.len() / 2];
-            (
-                Some(voll.iter().map(|v| v - g).collect::<Vec<f64>>()),
-                Some(g),
-            )
+            // Ein Band OHNE Messung bleibt auch nach dem Abzug ohne Messung:
+            // `0 - g` wäre eine Zahl, die wie ein gemessenes Delta aussieht.
+            let delta: Vec<f64> = voll
+                .iter()
+                .zip(voll_gueltig.iter())
+                .map(|(v, ok)| if *ok { v - g } else { 0.0 })
+                .collect();
+            (Some(delta), voll_gueltig, Some(g))
         }
     } else {
-        (None, None)
+        (None, Vec::new(), None)
     };
 
     let wirkung = match (&ausgerichtet, befund) {
@@ -722,8 +833,12 @@ pub fn dreifachergebnis(
         (None, _) => None,
     };
 
+    let ohne = roh_gueltig.iter().filter(|g| !**g).count();
     Dreifachergebnis {
         roh_db: roh,
+        roh_gueltig,
+        ausgerichtet_gueltig,
+        baender_ohne_messung: ohne,
         ausgerichtet_db: ausgerichtet,
         match_gain_db: gain,
         wirkung,
@@ -888,9 +1003,16 @@ pub fn beurteile_paar(pair_id: &str, pre: &Paarhaelfte, post: &Paarhaelfte) -> P
     if lag.spitze < GATE_KORRELATIONSSPITZE
         || lag.peak_to_sidelobe < GATE_PEAK_TO_SIDELOBE
         || lag.konsistente_spuren < GATE_KONSISTENTE_SPUREN
-        || lag.lag_zweite_haelfte != lag.frames
+        || lag.lag_zweite_haelfte.is_some_and(|z| z != lag.frames)
     {
         gruende.push(Herabstufungsgrund::AlignmentSchwach);
+    }
+    // B27: ein FEHLENDER Teilfenster-Lag ist ein eigener Grund und nicht
+    // stillschweigend „stabil". Er steht getrennt von `AlignmentSchwach`,
+    // damit ein Empfänger „gemessen und abweichend" von „gar nicht gemessen"
+    // unterscheiden kann (M-16).
+    if lag.lag_zweite_haelfte.is_none() {
+        gruende.push(Herabstufungsgrund::TeilfensterLagFehlt);
     }
 
     // 5. Die drei Herabstufungsgründe aus M-23.
@@ -903,6 +1025,37 @@ pub fn beurteile_paar(pair_id: &str, pre: &Paarhaelfte, post: &Paarhaelfte) -> P
     }
     if pre.host_pid != post.host_pid {
         gruende.push(Herabstufungsgrund::VerschiedeneHostPids);
+    }
+
+    // 🔑 B26/M-21: der Presentation-Nachweis. Er wird NICHT hier nachgebaut,
+    // sondern über denselben `frameschluessel` geprüft, der ihn auch für die
+    // Frames bildet — zwei Wahrheiten über dieselbe Frage wären genau der
+    // Fehler, der ihn beim ersten Bau ganz umgangen hat. Nur wenn beide
+    // Hälften einen AUSGERICHTETEN Schlüssel tragen, ist die Zeitachse
+    // belegt; sonst bleibt es bei `Probable`.
+    let kandidat = if gruende.is_empty() {
+        Alignmentklasse::FeatureAligned
+    } else {
+        Alignmentklasse::Probable
+    };
+    let schluessel_ausgerichtet = |h: &Paarhaelfte| {
+        matches!(
+            frameschluessel(
+                h,
+                h.projekt_fenster.map(|f| f.0).unwrap_or(0),
+                h.presentation_validiert,
+                h.session_epoch,
+                h.timeline_epoch,
+                kandidat,
+                lag.frames,
+            ),
+            Frameschluessel::Ausgerichtet { .. }
+        )
+    };
+    if kandidat == Alignmentklasse::FeatureAligned
+        && !(schluessel_ausgerichtet(pre) && schluessel_ausgerichtet(post))
+    {
+        gruende.push(Herabstufungsgrund::KeinPresentationNachweis);
     }
 
     // `AudioAligned` bleibt in P4 unerreichbar: es verlangt PRE und POST als

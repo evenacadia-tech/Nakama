@@ -185,20 +185,81 @@ fn ueberdeckung(a: (i64, i64), b: (i64, i64)) -> f64 {
     (gemeinsam as f64 / kuerzer as f64).clamp(0.0, 1.0)
 }
 
-/// Jaccard-Index zweier Quellensets: |Schnitt| / |Vereinigung|.
+/// Jaccard-Index zweier Quellen-MENGEN: |Schnitt| / |Vereinigung|.
+///
+/// 🔑 Nacharbeit 1 (Befund B31): die erste Fassung zaehlte LISTENEINTRAEGE.
+/// Das Schema verbietet Duplikate in `aktive_quellen` nicht, und fuer
+/// `a = [x, x, x]` gegen `b = [x]` rechnete sie `3 / (3 + 1 - 3) = 3,0` —
+/// einen Index ueber 1, der das starke 0,9-Gate mit Abstand nahm. M-29
+/// verlangt ausdruecklich den Jaccard der Aktivquellen-SETS, also wird hier
+/// zuerst zur Menge verdichtet.
 fn jaccard(a: &[String], b: &[String]) -> f64 {
-    if a.is_empty() && b.is_empty() {
+    use std::collections::BTreeSet;
+    let sa: BTreeSet<&String> = a.iter().collect();
+    let sb: BTreeSet<&String> = b.iter().collect();
+    if sa.is_empty() && sb.is_empty() {
         // Zwei leere Sets sind NICHT identisch, sondern ohne Aussage. Sonst
         // waere eine Passage ohne bestaetigte Quellen mit jeder anderen
         // maximal vergleichbar.
         return 0.0;
     }
-    let schnitt = a.iter().filter(|x| b.contains(x)).count();
-    let vereinigung = a.len() + b.len() - schnitt;
+    let schnitt = sa.intersection(&sb).count();
+    let vereinigung = sa.union(&sb).count();
     if vereinigung == 0 {
         return 0.0;
     }
-    schnitt as f64 / vereinigung as f64
+    (schnitt as f64 / vereinigung as f64).clamp(0.0, 1.0)
+}
+
+/// Die Messpunktklassen JE QUELLE, als Menge von Paaren (Quelle, Klasse).
+///
+/// 🔑 Nacharbeit 1 (Befund B32): vorher wurden Quellen und Klassen
+/// UNABHAENGIG verglichen — einmal als Quellenset, einmal als sortierte
+/// Klassenliste. Zwei Passagen mit denselben Quellen `[A, B]`, aber der
+/// Zuordnung `[pre, post]` gegenueber `[post, pre]`, hatten damit dasselbe
+/// Quellenset UND dieselbe sortierte Klassenliste und konnten `Stark`
+/// werden, obwohl jede einzelne Quelle ihren Messpunkt gewechselt hatte.
+/// Genau das schliessen M-28 und M-55 aus.
+///
+/// Eine Quelle ohne Klasse (kuerzere Liste) traegt `""` — sie ist damit von
+/// einer Quelle MIT Klasse unterscheidbar, statt still wegzufallen.
+fn messpunkt_karte(
+    quellen: &[String],
+    klassen: &[String],
+) -> std::collections::BTreeMap<String, String> {
+    quellen
+        .iter()
+        .enumerate()
+        .map(|(i, q)| (q.clone(), klassen.get(i).cloned().unwrap_or_default()))
+        .collect()
+}
+
+/// Hat eine GEMEINSAME Quelle ihren Messpunkt gewechselt? (M-28/M-55)
+///
+/// Verglichen wird ausdruecklich nur der SCHNITT der zwei Quellensets. Dass
+/// die Sets ueberhaupt verschieden sind, ist die Aussage des Jaccard-Belegs
+/// daneben; sie hier ein zweites Mal zu werten hiesse, denselben Unterschied
+/// doppelt zu bestrafen und den Quellenbeleg damit bedeutungslos zu machen.
+///
+/// `None` heisst „kein gemeinsamer Messpunkt" — auch das ist ein fehlender
+/// Beleg und keine Uebereinstimmung.
+fn messpunkt_wechsel(a: &Passagenbeleg, b: &Passagenbeleg) -> Option<bool> {
+    let ka = messpunkt_karte(&a.aktive_quellen, &a.messpunktklassen);
+    let kb = messpunkt_karte(&b.aktive_quellen, &b.messpunktklassen);
+    let mut gemeinsam = 0usize;
+    let mut gewechselt = false;
+    for (quelle, klasse) in &ka {
+        if let Some(andere) = kb.get(quelle) {
+            gemeinsam += 1;
+            if andere != klasse {
+                gewechselt = true;
+            }
+        }
+    }
+    if gemeinsam == 0 {
+        return None;
+    }
+    Some(gewechselt)
 }
 
 /// Das Urteil ueber zwei Passagen (M-28, M-29, M-30).
@@ -227,8 +288,18 @@ pub fn beurteile(a: &Passagenbeleg, b: &Passagenbeleg) -> Vergleichsurteil {
         _ => 0.0,
     };
 
-    // 1. Abdeckung — auf beiden Seiten.
-    if a.abdeckung < GATE_ABDECKUNG || b.abdeckung < GATE_ABDECKUNG {
+    // 1. Abdeckung — auf beiden Seiten, und FAIL-CLOSED.
+    //
+    // 🔑 Nacharbeit 1 (Befund B30): fuer `abdeckung = NaN` sind BEIDE
+    // `<`-Vergleiche falsch. Eine nicht gemessene Coverage nahm damit das
+    // Gate, und wenn die uebrigen vier Belege passten, trug die Passage ein
+    // `Stark`. M-07 und M-30 verlangen das Gegenteil: was nicht endlich ist,
+    // ist nicht gemessen, und was nicht gemessen ist, traegt kein Siegerlabel.
+    if !a.abdeckung.is_finite()
+        || !b.abdeckung.is_finite()
+        || a.abdeckung < GATE_ABDECKUNG
+        || b.abdeckung < GATE_ABDECKUNG
+    {
         gruende.push(Herabstufungsgrund::AbdeckungZuGering);
     }
     // 2. Projektbereich. Ueberlappung 0 heisst "vermutlich verschiedene
@@ -244,13 +315,17 @@ pub fn beurteile(a: &Passagenbeleg, b: &Passagenbeleg) -> Vergleichsurteil {
     if quellen <= 0.0 {
         gruende.push(Herabstufungsgrund::QuellenVerschieden);
     }
-    // 5. Messpunkt: Samplerate UND Klassenmenge.
-    let raten_gleich = (a.samplerate - b.samplerate).abs() < 1e-9 && a.samplerate > 0.0;
-    let mut klassen_a = a.messpunktklassen.clone();
-    let mut klassen_b = b.messpunktklassen.clone();
-    klassen_a.sort();
-    klassen_b.sort();
-    if !raten_gleich || klassen_a != klassen_b || klassen_a.is_empty() {
+    // 5. Messpunkt: Samplerate UND die Klasse JE QUELLE (M-28/M-55).
+    let raten_gleich = (a.samplerate - b.samplerate).abs() < 1e-9
+        && a.samplerate.is_finite()
+        && a.samplerate > 0.0
+        && b.samplerate.is_finite();
+    let wechsel = messpunkt_wechsel(a, b);
+    if !raten_gleich
+        || wechsel != Some(false)
+        || a.messpunktklassen.is_empty()
+        || b.messpunktklassen.is_empty()
+    {
         gruende.push(Herabstufungsgrund::MesspunktVerschieden);
     }
 

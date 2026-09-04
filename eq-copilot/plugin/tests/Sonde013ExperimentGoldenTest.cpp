@@ -24,6 +24,7 @@
 #include "../core/analysis/Statistik.h"
 
 #include <cmath>
+#include <limits>
 #include <iostream>
 #include <vector>
 
@@ -152,6 +153,29 @@ void blockBootstrapInterval()
             "ein groesseres alpha ergibt ein engeres Intervall",
             juce::String (eng.oben - eng.unten, 5) + " gegen "
                 + juce::String (a.oben - a.unten, 5));
+
+    // ── Nacharbeit 1 (2026-09-04, Befund B34): FAIL-CLOSED an NaN/Inf ────
+    //
+    // Der Spiegel dieser Funktion im Broker akkumulierte einen
+    // nicht-endlichen Delta, sortierte danach eine nicht geordnete Menge und
+    // lieferte ein GESETZTES NaN-Intervall. Dieselbe Rechnung steht hier;
+    // beide tragen jetzt denselben Riegel, und beide werden gemessen.
+    for (const double gift : { std::numeric_limits<double>::quiet_NaN(),
+                               std::numeric_limits<double>::infinity(),
+                               -std::numeric_limits<double>::infinity() })
+    {
+        pruefe (! blockBootstrap ({ gift }, 1, 10, 0.05, 1).gesetzt,
+                "B34: ein einzelner nichtendlicher Delta ergibt KEIN Intervall");
+        auto gemischt = deltas;
+        gemischt[7] = gift;
+        const auto u = blockBootstrap (gemischt, 8, 400, 0.05, 42);
+        pruefe (! u.gesetzt,
+                "B34: auch EIN nichtendlicher Wert unter sauberen sperrt - ein "
+                "Intervall ueber teilweise unbekannte Daten waere keine Aussage");
+    }
+    pruefe (! blockBootstrap (deltas, 8, 400,
+                              std::numeric_limits<double>::quiet_NaN(), 42).gesetzt,
+            "B34: und ein nichtendliches alpha ebenso");
 }
 
 // ═════════════════════════════════════════════════════════════════════════

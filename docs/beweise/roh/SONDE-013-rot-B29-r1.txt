@@ -1,0 +1,31 @@
+SONDE-013 Etappe 2 Nacharbeit 1 - Rotbeweis B29
+============================================================
+
+Datei:     broker/src/coordinator/prepost.rs
+Bein:      cargo test --test sonde013_prepost
+Warum:     Ohne positives Nebenmaximum entsteht wieder `f64::INFINITY`. Der Wert reist als `Restlag.peak_to_sidelobe` weiter und kann ein `FeatureAligned` tragen (M-07).
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+    } else {
+        (PSR_DECKEL, true)
+    };
+    Some((bester, spitze, psr, gedeckelt))
+--- NEU ---
+    } else {
+        (f64::INFINITY, true)
+    };
+    Some((bester, spitze, psr, gedeckelt))
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+test peak_to_sidelobe_bleibt_endlich ... FAILED
+---- peak_to_sidelobe_bleibt_endlich stdout ----
+thread 'peak_to_sidelobe_bleibt_endlich' (13980) panicked at tests\sonde013_prepost.rs:957:5:
+    peak_to_sidelobe_bleibt_endlich
+EXIT=101
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+test peak_to_sidelobe_bleibt_endlich ... ok
+EXIT=0
+
+URTEIL: BEWIESEN - der Test faellt am eingebauten Fehler und steht ohne ihn.

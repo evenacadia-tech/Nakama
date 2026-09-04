@@ -1,0 +1,32 @@
+SONDE-013 Etappe 2 Nacharbeit 1 - Rotbeweis B28
+============================================================
+
+Datei:     broker/src/coordinator/prepost.rs
+Bein:      cargo test --test sonde013_prepost
+Warum:     Ein leeres oder stilles Band schreibt wieder `f64::NAN` in `roh_db`. Der Wert ist nicht serialisierbar, traegt kein Praesenzbit und wird nicht gezaehlt (M-07).
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+        if mittel.is_finite() {
+            aus.push(mittel);
+            gueltig.push(true);
+        } else {
+            aus.push(0.0);
+            gueltig.push(false);
+        }
+--- NEU ---
+        aus.push(mittel);
+        gueltig.push(mittel.is_finite());
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+test leere_baender_erzeugen_kein_nan ... FAILED
+---- leere_baender_erzeugen_kein_nan stdout ----
+thread 'leere_baender_erzeugen_kein_nan' (21028) panicked at tests\sonde013_prepost.rs:914:5:
+    leere_baender_erzeugen_kein_nan
+EXIT=101
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+test leere_baender_erzeugen_kein_nan ... ok
+EXIT=0
+
+URTEIL: BEWIESEN - der Test faellt am eingebauten Fehler und steht ohne ihn.

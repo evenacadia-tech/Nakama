@@ -22,6 +22,7 @@
 //
 // Exit 0 nur bei "QUEUE-STRESSTEST OK".
 #include "PluginProcessor.h"
+#include "HoerMarkierung.h"
 #include "StampedAudioQueue.h"
 #include "WorkerCadence.h"
 
@@ -790,6 +791,81 @@ int main()
         std::cout << "  dabei Ueberlauf-Drops " << p.analyseDropsUeberlauf()
                   << " (der Worker kommt bei 4 000 Bloecken ohne Pause nicht nach - "
                   << "genau dafuer ist der Ganzblockdrop da)" << std::endl;
+        p.setPlayHead (nullptr);
+    }
+
+    //==========================================================================
+    // SONDE-013 M-74: DERSELBE Zaehler ueber die NEUEN Pfade dieses Tickets.
+    //
+    // Der Abschnitt darueber faehrt den Audiothread ohne Hoer-Markierung. Die
+    // neuen Pfade aus den Etappen C und D laufen aber erst dann vollstaendig:
+    // die Markierungsfaerbung, das Ein- und Ausfaden und der
+    // Interventionsring, der jeden Beginn und jedes Ende an den Worker meldet.
+    // Ein Allokationsbeweis, der sie auslaesst, misst genau die Haelfte, die
+    // es vorher schon gab.
+    //
+    // ⚠️ Die Markierung wird im Lauf mehrfach ein- und ausgeschaltet: eine
+    // Faerbung, die nur einmal beginnt, laesst den Ring nach dem ersten
+    // Eintrag in Ruhe - und ein Ring, der nur einmal schreibt, beweist nichts
+    // ueber den Dauerbetrieb.
+    std::cout << std::endl
+              << "== SONDE-013 M-74: 0 Allokationen auch mit Markierung und Ring =="
+              << std::endl;
+    {
+        constexpr double fs = 48000.0;
+        constexpr int bs = 512;
+        EqCopilotProcessor p;
+        p.setPlayConfigDetails (2, 2, fs, bs);
+        p.prepareToPlay (fs, bs);
+        TestPlayHead kopf; kopf.spielt = true;
+        p.setPlayHead (&kopf);
+        p.setzeEditorOffen (true);
+        p.testForciereEchtzeit (true);
+
+        MarkierungsWunsch w;
+        w.modus = MarkierungsModus::solo;
+        w.istResonanz = false;
+        w.fVon = 120.0; w.fBis = 300.0; w.fSchwerpunkt = 200.0;
+        w.fs = fs;
+        MarkierungsAuftrag auftrag;
+        pruefe (baueMarkierungsAuftrag (auftrag, w), "M-74: Markierungsauftrag baut", {});
+
+        juce::AudioBuffer<float> puffer (2, bs);
+        juce::MidiBuffer midi;
+        double phase = 0.0;
+        auto fuelle = [&]
+        {
+            for (int i = 0; i < bs; ++i)
+            {
+                const float v = 0.35f * (float) std::sin (phase);
+                phase += 2.0 * juce::MathConstants<double>::pi * 220.0 / fs;
+                puffer.setSample (0, i, v);
+                puffer.setSample (1, i, v);
+            }
+        };
+
+        // Ein Block VOR dem Zaehlen: was `prepareToPlay` noch offen laesst,
+        // gehoert nicht in die Messung, und was der erste Block allozierte,
+        // waere ein Befund fuer sich - den misst der Abschnitt darueber.
+        fuelle();
+        p.processBlock (puffer, midi);
+
+        allokationen = 0;
+        zaehleAllokationen = true;
+        for (int i = 0; i < 2000; ++i)
+        {
+            if ((i % 200) == 0)   p.markierungEinreichen (auftrag);
+            if ((i % 200) == 120) p.markierungAus();
+            if ((i % 500) == 0)   kopf.spielt = ! kopf.spielt;
+            fuelle();
+            p.processBlock (puffer, midi);
+            kopf.pos += bs;
+        }
+        zaehleAllokationen = false;
+        pruefe (allokationen == 0,
+                "2 000 Bloecke mit wechselnder Markierung, Ein- und Ausfade und "
+                "Interventionsring: 0 Allokationen",
+                std::to_string (allokationen));
         p.setPlayHead (nullptr);
     }
 

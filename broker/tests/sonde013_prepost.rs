@@ -693,3 +693,92 @@ fn kettenbefund_und_dreifachergebnis_haengen_nicht_am_urteil() {
         e2.wirkung
     );
 }
+
+// ═════════════════════════════════════════════════════════════════════════
+// Selbstaudit: nicht-endliche Werte dürfen keine Aussage tragen
+// ═════════════════════════════════════════════════════════════════════════
+#[test]
+fn nicht_endliche_werte_ergeben_keine_stationaere_kette() {
+    // ⚠️ Der Fund, für den dieser Fall existiert: JEDER Vergleich mit NaN ist
+    // false. `x <= 1e-9` liess ein NaN durch, die Relation wurde NaN, die
+    // Streuung wurde NaN — und `NaN > GATE` ist wieder false. Die Kette galt
+    // damit als STATIONÄR und durfte einen festen Übertragungsgang tragen.
+    // Ein einziger kaputter Frame hätte genau die Behauptung erlaubt, die
+    // M-18 verbietet. Gefunden im Selbstaudit von Etappe H.
+    for kaputt in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+        let (pre, mut post) = perfekt();
+        for band in post.huellkurven.iter_mut() {
+            for v in band.iter_mut() {
+                *v = kaputt;
+            }
+        }
+        let befund = kettenbefund(&pre, &post, None);
+        assert_ne!(
+            befund,
+            Kettenbefund::Stationaer,
+            "{kaputt} darf keine stationäre Kette ergeben: {befund:?}"
+        );
+        assert_eq!(befund, Kettenbefund::NichtBeurteilbar, "{kaputt}");
+
+        // Und es entsteht ueberhaupt keine Wirkungsaussage: ohne verwertbare
+        // Relation gibt es kein ausgerichtetes Delta, und ohne Delta keine
+        // Wirkung. Das ist die staerkere Antwort als ein vorsichtig
+        // formulierter Satz.
+        let e = dreifachergebnis(
+            &pre,
+            &post,
+            Alignmentklasse::FeatureAligned,
+            None,
+            befund,
+        );
+        assert!(e.ausgerichtet_db.is_none(), "{kaputt}: {:?}", e.ausgerichtet_db);
+        assert!(e.wirkung.is_none(), "{kaputt}: {:?}", e.wirkung);
+    }
+
+    // Der Textzweig fuer `NichtBeurteilbar` greift dort, wo ein Delta zwar
+    // entsteht, die Kette aber nicht beurteilt werden konnte. Er darf nicht
+    // „zeitvariabel oder nichtlinear" sagen - das weiss er nicht.
+    let (gut_pre, gut_post) = perfekt();
+    let e = dreifachergebnis(
+        &gut_pre,
+        &gut_post,
+        Alignmentklasse::FeatureAligned,
+        None,
+        Kettenbefund::NichtBeurteilbar,
+    );
+    assert!(e.ausgerichtet_db.is_some());
+    let w = e.wirkung.as_ref().expect("Wirkung");
+    assert!(w.contains("nicht beurteilbar"), "{w}");
+    assert!(!w.contains("zeitvariabel"), "{w}");
+
+    // Ein EINZELNER kaputter Frame reicht schon, um die betroffene Stelle
+    // auszuschliessen - aber der Rest des Bandes bleibt verwertbar.
+    let (pre, mut post) = perfekt();
+    post.huellkurven[0][7] = f32::NAN;
+    let befund = kettenbefund(&pre, &post, None);
+    assert_eq!(
+        befund,
+        Kettenbefund::Stationaer,
+        "ein einzelner kaputter Frame macht die Kette nicht unbeurteilbar"
+    );
+
+    // Und dasselbe für die Ausrichtung: NaN macht Spitze und
+    // Peak-to-Sidelobe zu NaN, und `NaN < GATE` ist false - die Kriterien
+    // griffen dann NICHT und ein kaputter Frame erzeugte eine starke
+    // Ausrichtung.
+    let (a, mut b) = perfekt();
+    for band in b.huellkurven.iter_mut() {
+        for v in band.iter_mut() {
+            *v = f32::NAN;
+        }
+    }
+    for v in b.onsets.iter_mut() {
+        *v = f32::NAN;
+    }
+    let u = beurteile_paar("paar-a", &a, &b);
+    assert_ne!(
+        u.klasse,
+        Alignmentklasse::FeatureAligned,
+        "unbrauchbares Material darf nie stark ausgerichtet heissen: {u:?}"
+    );
+}

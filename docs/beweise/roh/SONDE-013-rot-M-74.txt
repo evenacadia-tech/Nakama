@@ -1,0 +1,324 @@
+SONDE-013 Etappe 2 - Rotbeweis M-74
+=========================================
+
+Datei:     eq-copilot/plugin/src/HoerMarkierung.h
+Ziel:      EqCopQueueStressTest (Kanon B4)
+Warum:     Eine Allokation IM MARKIERUNGSPFAD. Der bestehende Abschnitt von B4 faehrt den Audiothread ohne Hoer-Markierung und bleibt davon unberuehrt gruen - genau deshalb verlangt M-74 denselben Zaehler ueber die NEUEN Pfade. Der Rotbeweis zeigt beides in einem Lauf: der alte Abschnitt haelt, der neue faellt.
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+        Schritt uebergang;
+        const int n = puffer.getNumSamples();
+--- NEU ---
+        Schritt uebergang;
+        std::vector<float> rotbeweis_allokation (4, 0.0f);  // ROTBEWEIS M-74
+        (void) rotbeweis_allokation;
+        const int n = puffer.getNumSamples();
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+== Nakama SONDE-008 - StampedAudioQueue, Quarantaene, Blockgroessen ==
+Produktionsstrom GenStrom: 1 Tap(s), 131072 Frames Ring, 2048 Deskriptoren, max 16384 Frames je Block.
+
+== A - Ganzblockaufnahme: Inhalt, Stempel, Reihenfolge ==
+  ok      drei Bloecke, drei Deskriptoren  [3]
+  ok      jeder Frame kommt bitgleich und an derselben Stelle heraus
+  ok      Stempel: lokaler Strom und Projektzeit stimmen je Block
+  ok      nach dem Leeren ist die Queue leer
+  ok      kein Verlust bei Normallast
+== B - Wrap: der Ring laeuft mehrfach um ==
+  ok      der Ring ist wirklich mehrfach umgelaufen  [11 Umlaeufe]
+  ok      ueber jeden Wrap hinweg bitgleicher Inhalt
+  ok      kein Frame verloren, keiner doppelt  [12000/12000]
+== C - Ueberlauf des SAMPLE-Rings: ganz oder gar nicht ==
+  ok      vier Bloecke passen, danach ist Schluss  [4]
+  ok      beide abgewiesenen Bloecke sind gezaehlt  [2]
+  ok      verlorene Frames = 2 x 256 (keine Teilmenge)  [512]
+  ok      ein verworfener Block behauptet die noch ausstehende Luecke nicht selbst
+  ok      im Ring liegen NUR vollstaendige Bloecke  [4]
+  ok      nach dem Leeren nimmt der Ring wieder an
+  ok      die Produzentenrueckmeldung markiert genau den angenommenen Lueckenblock
+  ok      der erste Block nach dem Verlust traegt kFlagLueckeDavor
+  ok      und beginnt ein neues continuity_segment  [1]
+== D - Ueberlauf des DESKRIPTOR-Rings (der zweite Ring zaehlt) ==
+  ok      genau `deskriptorPlaetze` Bloecke passen  [8]
+  ok      die vier ueberzaehligen sind gezaehlt  [4]
+  ok      und genau so viele stehen zum Lesen bereit  [8]
+== E - Oversize: ein Block ueber der Slotkapazitaet ==
+  ok      ein Block ueber maxBlockFrames wird als GANZES abgewiesen
+  ok      und als Oversize gezaehlt, nicht als Ueberlauf  [1/0]
+  ok      der Ueberlaufzaehler bleibt sauber
+  ok      nichts Halbes im Ring
+  ok      die verlorene Zeit ist vollstaendig gemeldet  [257]
+  ok      genau maxBlockFrames passt noch (Kante, nicht Ausschluss)
+== F - Flush (numSamples == 0) ist kein Verlust ==
+  ok      ein Flush-Block wird nicht eingestellt
+  ok      und zaehlt NICHT als Verlust - er traegt keine Audiozeit
+  ok      der Folgeblock geht normal
+  ok      und traegt keine Luecke
+== G - Mono und Mehrfach-Tap ==
+  ok      Mono: R traegt das L-Duplikat (FIFO-Vertrag der Engine)
+  ok      und der Deskriptor sagt kanaele == 1
+  ok      Drei-Tap-Layout: Block angenommen
+  ok      das Bitset meldet genau die belegten Taps  [3]
+  ok      jeder Tap liegt getrennt und richtig; der inaktive liefert false
+  ok      eine falsche Tapzahl wird abgewiesen statt halb kopiert
+  ok      ein Block ohne aktiven Tap ist ein Verlust, kein leerer Deskriptor
+== H - Ein-Block-Quarantaene ==
+  ok      5 Bloecke rein, 4 versiegelt - einer bleibt in Quarantaene  [4]
+  ok      und die Quarantaene haelt ihn wirklich
+  ok      kein Bruch bei lueckenlosem Strom
+  ok      der Seek ist als Bruch erkannt  [1]
+  ok      genau EIN Block faellt an der Grenze - der Strom laeuft weiter
+  ok      der Block NACH der Grenze ist schon wieder in Quarantaene
+  ok      Stopp verwirft den gehaltenen Block („bleiben sie unvollstaendig“)
+  ok      stehende Projektzeit (Teilpuffer/Stop) ist kein Bruch  [0]
+  ok      und alle bis auf den juengsten sind versiegelt  [5]
+  ok      Vorlauf ohne Bruch
+  ok      Transportkante play->stop ist ein Bruch  [1]
+  ok      ohne Hostkontext traegt der lokale monotone Strom (§53.6)
+  ok      und versiegelt normal  [3]
+  ok      Projektzeit nahe INT64_MAX: Ueberlauf ist eine Grenze, keine Fortsetzung
+  ok      negative Projektzeit ist eine gueltige, fortsetzbare Zeit (HostProbe sah sie)
+== I - Blockgroessen-Fuzz auf der Queue (1 .. ueber die Kante) ==
+  20 000 Bloecke, Groessen 1..288: angenommen 17809, Ueberlauf-Drops 0, Oversize-Drops 2191, groesster Block 256, versiegelt 15872, Brueche 1936
+  ok      jeder gelesene Frame steht an der Stelle, die sein Stempel nennt
+  ok      es gab nie einen Block mit sampleCount 0
+  ok      die Oversize-Faelle sind aufgetreten UND vollstaendig gezaehlt  [2191]
+  ok      kein angenommener Block war je groesser als die Slotkapazitaet  [256]
+  ok      es wurde wirklich gelesen  [2288127 Frames]
+== J - verdrahtet: Passthrough bitgleich ueber alle Blockgroessen ==
+  ok      18 Blockgroessen von 1 bis 16 384: kein Sample veraendert
+  ok      0 Samples Latenz  [0]
+  ok      kein Tail
+  angenommen 18, groesster Block 16384, Ueberlauf 0, Oversize 0
+== K - verdrahtet: Oversize aendert das Audio nicht ==
+  ok      ein Block ueber der Slotkapazitaet laeuft unveraendert durch
+  ok      und ist als Oversize-Drop der ANALYSE gezaehlt  [1]
+  ok      der abgewiesene Oversize-Block erscheint nicht im Projektfenster
+  ok      der naechste angenommene Lueckenblock beginnt das Fenster exakt neu  [16385..16449]
+  ok      der Analyseverlust wird nicht als Seek im alten Fenster ausgegeben  [0]
+== L - verdrahtet: der Audiothread alloziert nicht ==
+  ok      als Main klassifiziert (§53.5)
+  FEHLER  4 000 Bloecke wechselnder Groesse mit Transportkanten: 0 Allokationen  [4000]
+  dabei Ueberlauf-Drops 3863 (der Worker kommt bei 4 000 Bloecken ohne Pause nicht nach - genau dafuer ist der Ganzblockdrop da)
+
+== SONDE-013 M-74: 0 Allokationen auch mit Markierung und Ring ==
+  ok      M-74: Markierungsauftrag baut
+  FEHLER  2 000 Bloecke mit wechselnder Markierung, Ein- und Ausfade und Interventionsring: 0 Allokationen  [2000]
+== M - verdrahtet: die Messung bekommt den Strom wirklich ==
+  eingespeist 287744, analysiert 287232, Drops 0, versiegelt 561, Quarantaene-Verwuerfe 0, Brueche 0
+  ok      bei Normallast kein einziger Drop
+  ok      und kein Kontinuitaetsbruch (lueckenloser Transport)
+  ok      die Engine sieht den ganzen Strom bis auf den Block in Quarantaene  [512 Frames offen]
+  ok      Kurz-LUFS steht (der fixed-memory Akku wird wirklich gefuettert)  [-8.684240]
+  ok      framesDropped im Stats-Snapshot kommt aus derselben Quelle
+== N - Gegenpfad: prepareToPlay mitten im Betrieb ==
+  FEHLER  auch der erste Block nach prepareToPlay alloziert nicht  [40]
+  veraltete Bloecke (alter Anlauf, nicht analysiert): 40
+  ok      ein Neuanlauf ist kein Oversize
+== O - Anlaufwechsel: Altbloecke sind SOFORT erkennbar (T2-3) ==
+  ok      der Anlauf steigt sofort, nicht erst beim naechsten Audioblock  [0 -> 1]
+  Bloecke aus dem ALTEN Anlauf: als veraltet erkannt 3, als aktuell durchgelassen 0
+  ok      alle drei Bloecke des alten Anlaufs sind als veraltet erkennbar  [3/3]
+  ok      der Produzent meldet exakt den Zug, der den Neuanlauf uebernimmt
+  ok      Gegenprobe: der erste Block nach dem Neuanlauf gilt als aktuell
+  ok      und er traegt die Luecke, die der Neuanlauf gerissen hat
+  ok      der Folgezug meldet keinen bereits verbrauchten Neuanlauf erneut
+  ok      zwei Neuanlaeufe hintereinander gehen beide nicht verloren  [1 -> 3]
+  ok      zwei zusammengefallene Anforderungen ergeben eine uebernommene Endgeneration
+  ok      und der Produzent holt sich die ENDGUELTIGE Nummer, nicht die erste
+  ok      Nullframe konsumiert die wartende Generation nicht
+  ok      der naechste echte Block uebernimmt sie weiterhin
+== P - Seek bei gestopptem Transport ist eine Grenze (T2-4) ==
+  ok      Seek um 10 s bei gestopptem Transport ist EIN Bruch  [1]
+  ok      Gegenprobe: stehende Zeit bei Stopp bleibt KEIN Bruch (§4.3 Punkt 2)  [0]
+  ok      und bei laufendem Transport ist der Seek weiterhin ein Bruch  [1]
+  ok      bei Stopp ist eine LUECKENLOS fortschreitende Zeit kein Bruch  [0]
+  ok      und alle bis auf den juengsten sind versiegelt  [5]
+  ok      ohne gueltiges „spielt“ bleibt eine wandernde Zeit unbewertet  [0]
+== Q - Worker-Kadenz: monotone Deadlines statt Batchzaehler ==
+  ok      nach Start ist nur die leichte Publikation sofort faellig
+  ok      10 000 Workerzuege bei gleicher Wanduhr loesen keine Schwer-Auswertung aus
+  ok      vor 250 ms bleibt Gating/Kandidaten gesperrt
+  ok      bei 250 ms ist genau die schwere Runde faellig
+  ok      dieselbe Deadline kann nicht zweimal verbraucht werden
+  ok      nach Pause genau eine Runde, kein Catch-up-Sturm
+  ok      Reset/Generation startet die 250-ms-Deadline neu
+== R - verdrahtet: Rueckstau beschleunigt Auswertung nicht; Stop bleibt begrenzt ==
+  ok      Test hat echten Queue-Rueckstau hergestellt  [257 Bloecke bis zum ersten Drop]
+  ok      unter Rueckstau hoechstens ~1 Schwer-Auswertung je 250 ms  [1 Runden in 600 ms]
+  ok      neue Generation erbt keinen Batch-beschleunigten Schwertakt  [0 Runden in den ersten 100 ms]
+  ok      Frame-Leser wird unter Rueckstau explizit vorgelassen  [0 ms]
+  ok      Reset-Steuerer wird unter Rueckstau explizit vorgelassen  [0 ms]
+  ok      Stop/Join bleibt auch mit Queue-Rest begrenzt  [0 ms]
+== S - Projektfenster folgt der tatsaechlich uebernommenen Queue-Generation ==
+  ok      Gegenprobe: erste Generation hat ihr eigenes Projektfenster
+  ok      Testbarriere liegt deterministisch im laufenden Audiocallback
+  ok      der erste Block der neuen Queue-Generation beginnt ein frisches Projektfenster  [10000..10064]
+  ok      die Generationskante ist kein Seek innerhalb des alten Fensters  [0]
+== T - ungueltige Samplerate deaktiviert beide Analyse-Engines ==
+  ok      Gegenprobe: mit 48 kHz laufen M1 und FeatureEngine
+  ok      nichtendliche Hostrate wird fail-closed auf 0 gespiegelt
+  ok      M1 verarbeitet unter ungueltiger Rate keinen Block  [0]
+  ok      FeatureEngine verarbeitet unter ungueltiger Rate keinen Block  [0]
+  ok      ohne gueltige Analyserate behauptet auch das Projektfenster keine Messung
+  ok      eine folgende gueltige Generation aktiviert beide Engines wieder
+
+116 Pruefungen, 3 Fehler.
+QUEUE-STRESSTEST FEHLGESCHLAGEN
+
+Exitcode: 1  ->  ROT (gut)
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+== Nakama SONDE-008 - StampedAudioQueue, Quarantaene, Blockgroessen ==
+Produktionsstrom GenStrom: 1 Tap(s), 131072 Frames Ring, 2048 Deskriptoren, max 16384 Frames je Block.
+
+== A - Ganzblockaufnahme: Inhalt, Stempel, Reihenfolge ==
+  ok      drei Bloecke, drei Deskriptoren  [3]
+  ok      jeder Frame kommt bitgleich und an derselben Stelle heraus
+  ok      Stempel: lokaler Strom und Projektzeit stimmen je Block
+  ok      nach dem Leeren ist die Queue leer
+  ok      kein Verlust bei Normallast
+== B - Wrap: der Ring laeuft mehrfach um ==
+  ok      der Ring ist wirklich mehrfach umgelaufen  [11 Umlaeufe]
+  ok      ueber jeden Wrap hinweg bitgleicher Inhalt
+  ok      kein Frame verloren, keiner doppelt  [12000/12000]
+== C - Ueberlauf des SAMPLE-Rings: ganz oder gar nicht ==
+  ok      vier Bloecke passen, danach ist Schluss  [4]
+  ok      beide abgewiesenen Bloecke sind gezaehlt  [2]
+  ok      verlorene Frames = 2 x 256 (keine Teilmenge)  [512]
+  ok      ein verworfener Block behauptet die noch ausstehende Luecke nicht selbst
+  ok      im Ring liegen NUR vollstaendige Bloecke  [4]
+  ok      nach dem Leeren nimmt der Ring wieder an
+  ok      die Produzentenrueckmeldung markiert genau den angenommenen Lueckenblock
+  ok      der erste Block nach dem Verlust traegt kFlagLueckeDavor
+  ok      und beginnt ein neues continuity_segment  [1]
+== D - Ueberlauf des DESKRIPTOR-Rings (der zweite Ring zaehlt) ==
+  ok      genau `deskriptorPlaetze` Bloecke passen  [8]
+  ok      die vier ueberzaehligen sind gezaehlt  [4]
+  ok      und genau so viele stehen zum Lesen bereit  [8]
+== E - Oversize: ein Block ueber der Slotkapazitaet ==
+  ok      ein Block ueber maxBlockFrames wird als GANZES abgewiesen
+  ok      und als Oversize gezaehlt, nicht als Ueberlauf  [1/0]
+  ok      der Ueberlaufzaehler bleibt sauber
+  ok      nichts Halbes im Ring
+  ok      die verlorene Zeit ist vollstaendig gemeldet  [257]
+  ok      genau maxBlockFrames passt noch (Kante, nicht Ausschluss)
+== F - Flush (numSamples == 0) ist kein Verlust ==
+  ok      ein Flush-Block wird nicht eingestellt
+  ok      und zaehlt NICHT als Verlust - er traegt keine Audiozeit
+  ok      der Folgeblock geht normal
+  ok      und traegt keine Luecke
+== G - Mono und Mehrfach-Tap ==
+  ok      Mono: R traegt das L-Duplikat (FIFO-Vertrag der Engine)
+  ok      und der Deskriptor sagt kanaele == 1
+  ok      Drei-Tap-Layout: Block angenommen
+  ok      das Bitset meldet genau die belegten Taps  [3]
+  ok      jeder Tap liegt getrennt und richtig; der inaktive liefert false
+  ok      eine falsche Tapzahl wird abgewiesen statt halb kopiert
+  ok      ein Block ohne aktiven Tap ist ein Verlust, kein leerer Deskriptor
+== H - Ein-Block-Quarantaene ==
+  ok      5 Bloecke rein, 4 versiegelt - einer bleibt in Quarantaene  [4]
+  ok      und die Quarantaene haelt ihn wirklich
+  ok      kein Bruch bei lueckenlosem Strom
+  ok      der Seek ist als Bruch erkannt  [1]
+  ok      genau EIN Block faellt an der Grenze - der Strom laeuft weiter
+  ok      der Block NACH der Grenze ist schon wieder in Quarantaene
+  ok      Stopp verwirft den gehaltenen Block („bleiben sie unvollstaendig“)
+  ok      stehende Projektzeit (Teilpuffer/Stop) ist kein Bruch  [0]
+  ok      und alle bis auf den juengsten sind versiegelt  [5]
+  ok      Vorlauf ohne Bruch
+  ok      Transportkante play->stop ist ein Bruch  [1]
+  ok      ohne Hostkontext traegt der lokale monotone Strom (§53.6)
+  ok      und versiegelt normal  [3]
+  ok      Projektzeit nahe INT64_MAX: Ueberlauf ist eine Grenze, keine Fortsetzung
+  ok      negative Projektzeit ist eine gueltige, fortsetzbare Zeit (HostProbe sah sie)
+== I - Blockgroessen-Fuzz auf der Queue (1 .. ueber die Kante) ==
+  20 000 Bloecke, Groessen 1..288: angenommen 17809, Ueberlauf-Drops 0, Oversize-Drops 2191, groesster Block 256, versiegelt 15872, Brueche 1936
+  ok      jeder gelesene Frame steht an der Stelle, die sein Stempel nennt
+  ok      es gab nie einen Block mit sampleCount 0
+  ok      die Oversize-Faelle sind aufgetreten UND vollstaendig gezaehlt  [2191]
+  ok      kein angenommener Block war je groesser als die Slotkapazitaet  [256]
+  ok      es wurde wirklich gelesen  [2288127 Frames]
+== J - verdrahtet: Passthrough bitgleich ueber alle Blockgroessen ==
+  ok      18 Blockgroessen von 1 bis 16 384: kein Sample veraendert
+  ok      0 Samples Latenz  [0]
+  ok      kein Tail
+  angenommen 18, groesster Block 16384, Ueberlauf 0, Oversize 0
+== K - verdrahtet: Oversize aendert das Audio nicht ==
+  ok      ein Block ueber der Slotkapazitaet laeuft unveraendert durch
+  ok      und ist als Oversize-Drop der ANALYSE gezaehlt  [1]
+  ok      der abgewiesene Oversize-Block erscheint nicht im Projektfenster
+  ok      der naechste angenommene Lueckenblock beginnt das Fenster exakt neu  [16385..16449]
+  ok      der Analyseverlust wird nicht als Seek im alten Fenster ausgegeben  [0]
+== L - verdrahtet: der Audiothread alloziert nicht ==
+  ok      als Main klassifiziert (§53.5)
+  ok      4 000 Bloecke wechselnder Groesse mit Transportkanten: 0 Allokationen  [0]
+  dabei Ueberlauf-Drops 3848 (der Worker kommt bei 4 000 Bloecken ohne Pause nicht nach - genau dafuer ist der Ganzblockdrop da)
+
+== SONDE-013 M-74: 0 Allokationen auch mit Markierung und Ring ==
+  ok      M-74: Markierungsauftrag baut
+  ok      2 000 Bloecke mit wechselnder Markierung, Ein- und Ausfade und Interventionsring: 0 Allokationen  [0]
+== M - verdrahtet: die Messung bekommt den Strom wirklich ==
+  eingespeist 287744, analysiert 287232, Drops 0, versiegelt 561, Quarantaene-Verwuerfe 0, Brueche 0
+  ok      bei Normallast kein einziger Drop
+  ok      und kein Kontinuitaetsbruch (lueckenloser Transport)
+  ok      die Engine sieht den ganzen Strom bis auf den Block in Quarantaene  [512 Frames offen]
+  ok      Kurz-LUFS steht (der fixed-memory Akku wird wirklich gefuettert)  [-8.684240]
+  ok      framesDropped im Stats-Snapshot kommt aus derselben Quelle
+== N - Gegenpfad: prepareToPlay mitten im Betrieb ==
+  ok      auch der erste Block nach prepareToPlay alloziert nicht  [0]
+  veraltete Bloecke (alter Anlauf, nicht analysiert): 40
+  ok      ein Neuanlauf ist kein Oversize
+== O - Anlaufwechsel: Altbloecke sind SOFORT erkennbar (T2-3) ==
+  ok      der Anlauf steigt sofort, nicht erst beim naechsten Audioblock  [0 -> 1]
+  Bloecke aus dem ALTEN Anlauf: als veraltet erkannt 3, als aktuell durchgelassen 0
+  ok      alle drei Bloecke des alten Anlaufs sind als veraltet erkennbar  [3/3]
+  ok      der Produzent meldet exakt den Zug, der den Neuanlauf uebernimmt
+  ok      Gegenprobe: der erste Block nach dem Neuanlauf gilt als aktuell
+  ok      und er traegt die Luecke, die der Neuanlauf gerissen hat
+  ok      der Folgezug meldet keinen bereits verbrauchten Neuanlauf erneut
+  ok      zwei Neuanlaeufe hintereinander gehen beide nicht verloren  [1 -> 3]
+  ok      zwei zusammengefallene Anforderungen ergeben eine uebernommene Endgeneration
+  ok      und der Produzent holt sich die ENDGUELTIGE Nummer, nicht die erste
+  ok      Nullframe konsumiert die wartende Generation nicht
+  ok      der naechste echte Block uebernimmt sie weiterhin
+== P - Seek bei gestopptem Transport ist eine Grenze (T2-4) ==
+  ok      Seek um 10 s bei gestopptem Transport ist EIN Bruch  [1]
+  ok      Gegenprobe: stehende Zeit bei Stopp bleibt KEIN Bruch (§4.3 Punkt 2)  [0]
+  ok      und bei laufendem Transport ist der Seek weiterhin ein Bruch  [1]
+  ok      bei Stopp ist eine LUECKENLOS fortschreitende Zeit kein Bruch  [0]
+  ok      und alle bis auf den juengsten sind versiegelt  [5]
+  ok      ohne gueltiges „spielt“ bleibt eine wandernde Zeit unbewertet  [0]
+== Q - Worker-Kadenz: monotone Deadlines statt Batchzaehler ==
+  ok      nach Start ist nur die leichte Publikation sofort faellig
+  ok      10 000 Workerzuege bei gleicher Wanduhr loesen keine Schwer-Auswertung aus
+  ok      vor 250 ms bleibt Gating/Kandidaten gesperrt
+  ok      bei 250 ms ist genau die schwere Runde faellig
+  ok      dieselbe Deadline kann nicht zweimal verbraucht werden
+  ok      nach Pause genau eine Runde, kein Catch-up-Sturm
+  ok      Reset/Generation startet die 250-ms-Deadline neu
+== R - verdrahtet: Rueckstau beschleunigt Auswertung nicht; Stop bleibt begrenzt ==
+  ok      Test hat echten Queue-Rueckstau hergestellt  [257 Bloecke bis zum ersten Drop]
+  ok      unter Rueckstau hoechstens ~1 Schwer-Auswertung je 250 ms  [1 Runden in 600 ms]
+  ok      neue Generation erbt keinen Batch-beschleunigten Schwertakt  [0 Runden in den ersten 100 ms]
+  ok      Frame-Leser wird unter Rueckstau explizit vorgelassen  [0 ms]
+  ok      Reset-Steuerer wird unter Rueckstau explizit vorgelassen  [0 ms]
+  ok      Stop/Join bleibt auch mit Queue-Rest begrenzt  [0 ms]
+== S - Projektfenster folgt der tatsaechlich uebernommenen Queue-Generation ==
+  ok      Gegenprobe: erste Generation hat ihr eigenes Projektfenster
+  ok      Testbarriere liegt deterministisch im laufenden Audiocallback
+  ok      der erste Block der neuen Queue-Generation beginnt ein frisches Projektfenster  [10000..10064]
+  ok      die Generationskante ist kein Seek innerhalb des alten Fensters  [0]
+== T - ungueltige Samplerate deaktiviert beide Analyse-Engines ==
+  ok      Gegenprobe: mit 48 kHz laufen M1 und FeatureEngine
+  ok      nichtendliche Hostrate wird fail-closed auf 0 gespiegelt
+  ok      M1 verarbeitet unter ungueltiger Rate keinen Block  [0]
+  ok      FeatureEngine verarbeitet unter ungueltiger Rate keinen Block  [0]
+  ok      ohne gueltige Analyserate behauptet auch das Projektfenster keine Messung
+  ok      eine folgende gueltige Generation aktiviert beide Engines wieder
+
+116 Pruefungen, 0 Fehler.
+QUEUE-STRESSTEST OK
+
+Exitcode: 0  ->  GRUEN (gut)

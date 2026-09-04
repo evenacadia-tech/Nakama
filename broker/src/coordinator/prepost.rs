@@ -113,6 +113,13 @@ pub enum Kettenbefund {
     PegelabhaengigMarkiert,
     /// Der geschätzte Lag ist über Teilfenster nicht stabil.
     LatenzWechseltMarkiert,
+    /// Es gibt zu wenig verwertbares Material, um die Kette zu beurteilen.
+    ///
+    /// ⚠️ Das ist ausdrücklich NICHT `Stationaer`. Eine Kette, über die
+    /// niemand etwas sagen kann, darf keinen festen Übertragungsgang tragen —
+    /// „nie beurteilt" und „stationär" sind zwei verschiedene Aussagen, und
+    /// nur die zweite erlaubt eine EQ-Behauptung.
+    NichtBeurteilbar,
 }
 
 // ── Die Eingaben ─────────────────────────────────────────────────────────
@@ -324,8 +331,16 @@ fn korrelation(a: &[f32], b: &[f32], lag: i64) -> f64 {
         if j < 0 || j as usize >= b.len() {
             continue;
         }
-        sa += a[i] as f64;
-        sb += b[j as usize] as f64;
+        let (x, y) = (a[i] as f64, b[j as usize] as f64);
+        // Derselbe Fund wie in `relation_db`: ein NaN macht Spitze und
+        // Peak-to-Sidelobe zu NaN, und `NaN < GATE` ist false — die
+        // Alignmentkriterien griffen dann NICHT und ein kaputter Frame
+        // erzeugte eine starke Ausrichtung.
+        if !x.is_finite() || !y.is_finite() {
+            continue;
+        }
+        sa += x;
+        sb += y;
         n += 1;
     }
     if n < 2 {
@@ -340,7 +355,11 @@ fn korrelation(a: &[f32], b: &[f32], lag: i64) -> f64 {
         if j < 0 || j as usize >= b.len() {
             continue;
         }
-        let (x, y) = (a[i] as f64 - ma, b[j as usize] as f64 - mb);
+        let (rx, ry) = (a[i] as f64, b[j as usize] as f64);
+        if !rx.is_finite() || !ry.is_finite() {
+            continue;
+        }
+        let (x, y) = (rx - ma, ry - mb);
         summe += x * y;
         ea += x * x;
         eb += y * y;
@@ -525,6 +544,16 @@ fn relation_db(pre: &[f32], post: &[f32], lag: i64) -> Vec<f64> {
             continue;
         }
         let (x, y) = (pre[i] as f64, post[j as usize] as f64);
+        // ⚠️ Die Endlichkeitsprüfung steht VOR dem Vergleich, und das ist
+        // kein Stil. Jeder Vergleich mit NaN ist false — `x <= 1e-9` lässt
+        // ein NaN also durch, die Relation wird NaN, die Streuung wird NaN,
+        // und `NaN > GATE` ist wieder false: die Kette gälte als STATIONÄR
+        // und dürfte einen festen Übertragungsgang tragen. Ein einziger
+        // kaputter Frame hätte damit genau die Behauptung erlaubt, die M-18
+        // verbietet. Gefunden im Selbstaudit von Etappe H.
+        if !x.is_finite() || !y.is_finite() {
+            continue;
+        }
         // Ohne PRE-Energie gibt es keine Relation. Sie auf 0 dB zu setzen
         // hiesse, Stille als "die Kette tut nichts" zu lesen.
         if x <= 1e-9 || y <= 1e-9 {
@@ -581,6 +610,7 @@ pub fn kettenbefund(pre: &Paarhaelfte, post: &Paarhaelfte, restlag: Option<&Rest
 
     let mut pegelabhaengig = false;
     let mut zeitvariabel = false;
+    let mut beurteilbare_baender = 0usize;
     for (a, b) in pre.huellkurven.iter().zip(post.huellkurven.iter()) {
         let rel = relation_db(a, b, lag);
         if rel.len() < 3 {
@@ -600,6 +630,7 @@ pub fn kettenbefund(pre: &Paarhaelfte, post: &Paarhaelfte, restlag: Option<&Rest
             }
             pegel.push(20.0 * x.log10());
         }
+        beurteilbare_baender += 1;
         let schwankung = standardabweichung(&rel);
         if schwankung > GATE_RELATIONSSCHWANKUNG_DB {
             zeitvariabel = true;
@@ -614,6 +645,11 @@ pub fn kettenbefund(pre: &Paarhaelfte, post: &Paarhaelfte, restlag: Option<&Rest
         Kettenbefund::PegelabhaengigMarkiert
     } else if zeitvariabel {
         Kettenbefund::ZeitvariabelMarkiert
+    } else if beurteilbare_baender == 0 {
+        // Kein einziges Band lieferte genug endliche Relationswerte. Ohne
+        // Beleg gibt es keine Aussage - und schon gar keine, die einen
+        // Frequenzgang trägt.
+        Kettenbefund::NichtBeurteilbar
     } else {
         Kettenbefund::Stationaer
     }
@@ -676,6 +712,9 @@ pub fn dreifachergebnis(
 
     let wirkung = match (&ausgerichtet, befund) {
         (Some(delta), Kettenbefund::Stationaer) => Some(beschreibe_wirkung(delta)),
+        (Some(_), Kettenbefund::NichtBeurteilbar) => Some(
+            "wahrscheinliche PRE/POST-Wirkung (Kette nicht beurteilbar)".to_string(),
+        ),
         (Some(_), _) => Some(
             "wahrscheinliche PRE/POST-Wirkung (Kette zeitvariabel oder nichtlinear markiert)"
                 .to_string(),

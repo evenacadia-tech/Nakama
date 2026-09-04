@@ -461,6 +461,38 @@ int main()
                                       + juce::String ((int) verloren2) + " verloren"
                                   : "keine Liste");
 
+        // Ein Ereignis AUSSERHALB der Vertragsgrenzen faellt einzeln heraus,
+        // statt den ganzen Snapshot schemawidrig zu machen. Ohne diesen Fall
+        // koennte ein einziger Ausreisser alle Ereignisse eines Fensters
+        // mitnehmen - der Empfaenger verwirft dann die ganze Nachricht.
+        nakama::analyse::Ereignis ausreisser[2] { eintraege[0], eintraege[0] };
+        ausreisser[1].staerke = 5000.0f;            // Vertragsgrenze ist 1000
+        nakama::evidenz::Ereignisstrom mitAusreisser { ausreisser, 2, 0 };
+        std::string jsonAus;
+        const bool gebautAus = kam && nakama::evidenz::evidenceSnapshotAlsJson (
+            f, testkopf(), mitAusreisser, jsonAus);
+        const auto datenAus = juce::JSON::parse (juce::String (jsonAus));
+        const auto* listeAus = datenAus.getProperty ("ereignisse", {})
+                                       .getProperty ("liste", {}).getArray();
+        bool ausGueltig = false;
+        if (gebautAus)
+        {
+            nakama::vertrag::Schema s2;
+            juce::String f2;
+            if (nakama::vertrag::Schema::laden (
+                    juce::JSON::parse (finde ("eq-copilot/schemas/v3/eq-ipc-v3.schema.json")),
+                    s2, f2))
+                ausGueltig = s2.pruefe (datenAus).isEmpty();
+        }
+        pruefe (gebautAus && listeAus != nullptr && listeAus->size() == 1
+                    && (int) datenAus.getProperty ("ereignisse", {})
+                                     .getProperty ("verloren", {}) == 1
+                    && ausGueltig,
+                "ein Ereignis ausserhalb der Vertragsgrenzen faellt einzeln heraus",
+                listeAus != nullptr ? juce::String (listeAus->size()) + " getragen, Snapshot gueltig: "
+                                        + (ausGueltig ? "ja" : "nein")
+                                    : "keine Liste");
+
         // Ein leerer Strom OHNE Verlust laesst das Feld ganz weg.
         std::string json3;
         const bool gebaut3 = kam

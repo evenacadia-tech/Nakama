@@ -288,8 +288,17 @@ bool evidenceSnapshotAlsJson (const nakama::analyse::FeatureFrame& frame,
             const auto& e = ereignisse.eintraege[i];
             const bool passt = e.epoche == frame.transport.transport_epoch
                             && e.segment == frame.transport.continuity_segment;
-            const bool zahlenOk = std::isfinite (e.staerke) && e.staerke >= 0.0f
-                               && std::isfinite (e.bandZentrumHz) && e.bandZentrumHz > 0.0f
+            // Die Grenzen sind die des Vertrags, nicht der Plausibilitaet:
+            // `staerke_mad` <= 1000, `band_zentrum_hz` <= 384000. Ein Ereignis
+            // darueber wird wie ein nichtendliches behandelt und faellt
+            // EINZELN heraus. Wuerde es mitgeschrieben, verletzte der ganze
+            // Snapshot das Schema und der Empfaenger verwuerfe ALLE Ereignisse
+            // dieses Fensters - ein schlechter Wert darf nicht die guten
+            // mitnehmen.
+            const bool zahlenOk = std::isfinite (e.staerke)
+                               && e.staerke >= 0.0f && e.staerke <= 1000.0f
+                               && std::isfinite (e.bandZentrumHz)
+                               && e.bandZentrumHz > 0.0f && e.bandZentrumHz <= 384000.0f
                                && std::isfinite (e.dauerMs) && e.dauerMs >= 0.0f;
             if (! passt || ! zahlenOk)
             {

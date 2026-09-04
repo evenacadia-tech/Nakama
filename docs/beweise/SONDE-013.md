@@ -2052,7 +2052,7 @@ abgeschwächt gespeichert.
 
 | Bein | Ergebnis |
 |---|---|
-| **B16** `EqCopSonde013EventWireTest` (NEU) | 40 Prüfungen, 0 gescheitert |
+| **B16** `EqCopSonde013EventWireTest` (NEU) | 41 Prüfungen, 0 gescheitert |
 | **A5** `pruefe_v3_vertrag.py --abdeckung` | 461 bestanden, 0 gescheitert |
 | **A4** `cargo test` (Broker) | 203 Lib-Tests plus alle Integrationsbeine grün; `coordinator_model` 51 Tests; `store_crash_matrix --ignored` 22 Tests in 12,08 s (der zuvor hängende Lauf) |
 | **A24** `pruefe_session_soak.py` | GRUEN: Client-Working-Set +0,7 MB über 120 s (Budget 16,8 MB), 2336/2336 P0 beantwortet, ACK-p95 22 ms |
@@ -2077,7 +2077,7 @@ abgeschwächt gespeichert.
 Die letzten drei sind die wichtigsten: sie sind genau die drei Fehler, die
 diese Etappe gefunden hat, und beweisen, dass die neuen Riegel sie fangen.
 
-**Drei Befunde am eigenen Test, die erst der Lauf gezeigt hat**
+**Vier Befunde am eigenen Bau — drei zeigte erst der Lauf, den vierten das Selbstaudit**
 
 1. **Stack statt Heap.** Der Verteilungsring als Feld im Objekt (rund 58 KiB)
    sprengte in B5 den 1-MiB-Stack — die Zwillingsprobe G13 hält zwei Engines
@@ -2089,7 +2089,15 @@ diese Etappe gefunden hat, und beweisen, dass die neuen Riegel sie fangen.
    4096 Samples Fensterlänge (85 ms) nimmt jedes Fenster das Aktivgate, und
    die Abdeckung blieb bei exakt 1,000. Der Fall läuft jetzt mit 1 Hz
    Evidenzkadenz und 250-ms-Blöcken.
-3. **Nach dem Snapshot ist der Träger leer — das ist der Vertrag.** Der
+3. **Ein Ausreißer darf die guten Ereignisse nicht mitnehmen** (aus dem
+   Selbstaudit des Diffs, nicht aus einem Lauf). Der Bauer prüfte `staerke`
+   und `band_zentrum_hz` nur nach unten. Ein Ereignis über der Vertragsgrenze
+   (`staerke_mad` ≤ 1000, `band_zentrum_hz` ≤ 384000) wäre mitgeschrieben
+   worden, hätte den ganzen Snapshot schemawidrig gemacht — und der Empfänger
+   hätte **alle** Ereignisse dieses Fensters verworfen. Es fällt jetzt
+   einzeln heraus und zählt als Verlust; **B16** misst, dass der Snapshot
+   danach gültig bleibt.
+4. **Nach dem Snapshot ist der Träger leer — das ist der Vertrag.** Der
    Grenzfall prüfte den Ring unmittelbar nach der Veröffentlichung und fand
    ihn erwartungsgemäß leer, hätte also nichts gemessen. Er füllt jetzt erst
    ein Stück des nächsten Fensters.

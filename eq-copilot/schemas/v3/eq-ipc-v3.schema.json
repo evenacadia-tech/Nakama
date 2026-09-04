@@ -383,7 +383,7 @@
       "type": "object",
       "required": ["metrics_version", "klasse"],
       "additionalProperties": true,
-      "maxProperties": 15,
+      "maxProperties": 16,
       "properties": {
         "metrics_version": { "type": "integer", "minimum": 1 },
         "klasse": { "enum": ["stark", "mittel", "schwach", "unbrauchbar"] },
@@ -1369,6 +1369,88 @@
       "enum": ["feature_aligned", "audio_aligned", "probable", "unclear"]
     },
 
+    "passage_id": {
+      "$comment": "Die Adresse einer Passage. Sie steht als eigener Typ da, weil sie an zwei Stellen auftaucht - im Passageobjekt und im Fingerprintbezug - und zwei Kopien derselben Definition in diesem Projekt schon einmal auseinandergelaufen sind.",
+      "$ref": "#/$defs/hex32"
+    },
+    "passage": {
+      "$comment": "SONDE-013 M-25, Nacharbeit 1 (Befund B23): die VOLLSTAENDIGE Passage, wie `experiment_begin` sie traegt. Vorher reisten nur `passage_id` und die Referenz - der Broker konnte daraus kein Passageobjekt bauen, und M-25 verlangt genau eines im Store. Die sechs Felder sind dieselben wie in M-25 aufgezaehlt; `label` ist das einzige optionale, weil eine Passage ohne Usernamen eine Passage bleibt. Es gibt bewusst KEINE eigene Passage-Nachricht: `session_command` ist ein geschlossener Discriminator, und dieses Ticket hat genau einen Fassungsschritt.",
+      "type": "object",
+      "required": [
+        "passage_id",
+        "projekt_von",
+        "projekt_bis",
+        "transport_epoch",
+        "aktive_quellen",
+        "messpunktklassen",
+        "abdeckung",
+        "label",
+        "fingerprint"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "passage_id": {
+          "$ref": "#/$defs/passage_id"
+        },
+        "projekt_von": {
+          "$comment": "Grenzen in PROJEKTsamples, halboffen [von, bis). Sie sind der Grund, warum die Passage ueberhaupt reisen muss: ohne sie kann der Broker die Passagenmetriken nicht an ihr Fenster binden (M-03/M-25).",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "projekt_bis": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "transport_epoch": {
+          "$comment": "Eine Passage bindet an GENAU EINE Transportepoche (Paragraph 32.4). Ohne sie waere ein Fenster ueber einen Seek hinweg dieselbe Zahl wie eines darin.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "aktive_quellen": {
+          "$comment": "Eingefrorenes aktives Quellenset als instance_id-Liste, in DERSELBEN Reihenfolge wie `messpunktklassen`: die Zuordnung Quelle-Messpunkt ist Teil des Belegs (M-28/M-55).",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "$ref": "#/$defs/hex32"
+          }
+        },
+        "messpunktklassen": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "enum": [
+              "insert",
+              "pre",
+              "post",
+              "post_fader_contribution"
+            ]
+          }
+        },
+        "abdeckung": {
+          "$comment": "GEMESSENE Signalabdeckung in [0, 1], nicht die Wanddauer (M-30). Smart Disable und Suspend gelten als FEHLENDE Coverage.",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "label": {
+          "$comment": "Das User-Wort, nie interpretiert. `null` heisst: die Passage hat keines - eine leere Zeichenkette ist keine zweite Schreibweise dafuer.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "fingerprint": {
+          "$ref": "#/$defs/fingerprint"
+        }
+      }
+    },
     "experiment_referenz": {
       "description": "Die UNVERAENDERLICHEN Referenzen eines Versuchs (§43.1). Sie werden vor `experiment_begin` gemessen und danach nicht mehr angefasst; nur so ist der Vergleich nach Reconnect und UI-Neustart rekonstruierbar. Der Match-Gain steht hier und NICHT im Ergebnis: er wird vorab gemessen und fuer die Dauer des Versuchs eingefroren, eine laufende Nachregelung waere selbst ein hoerbarer Prozessor (§38.3).",
       "type": "object",
@@ -1399,7 +1481,7 @@
     "experiment_begin": {
       "description": "Beginn eines manuellen Versuchs (§43.1, SONDE-013/P4). Reihenfolge: Passage bestimmen, Baseline messen, Baseline VERRIEGELN, dann diese Nachricht mit den unveraenderlichen Referenzen in den append-only Store, dann den User um die Aenderung bitten. `execution_mode` ist heute auf `manual_external` FESTGELEGT statt eine offene Menge zu sein: der Active-Compare-Pfad gehoert SONDE-017, und ihn hier als Zweig vorzusehen waere ein Vorgriff (Bauaufteilung §6.2). Ihn spaeter zu ergaenzen ist ein ausdruecklicher Fassungsschritt.",
       "type": "object",
-      "required": ["type", "kopf", "experiment_id", "execution_mode", "reproduzierbarkeit", "passage_id", "referenz"],
+      "required": ["type", "kopf", "experiment_id", "execution_mode", "reproduzierbarkeit", "passage", "referenz"],
       "additionalProperties": false,
       "properties": {
         "type": { "const": "experiment_begin" },
@@ -1410,7 +1492,7 @@
           "$comment": "Steht trotz Ableitbarkeit ausdruecklich im Vertrag - dieselbe Begruendung wie bei `probe_descriptor.aussageklasse`: ein Verbraucher, der Text und Angebot erzeugt, liest die Klasse und nicht die Modustabelle. `manual_external` ist ausdruecklich nicht automatisch wiederherstellbar: es gibt keinen State-Hash, keinen Nakama-Revert und eine niedrigere Reproduzierbarkeitsklasse (§43.1).",
           "const": "manuell_nicht_wiederherstellbar"
         },
-        "passage_id": { "$ref": "#/$defs/hex32" },
+        "passage": { "$ref": "#/$defs/passage" },
         "referenz": { "$ref": "#/$defs/experiment_referenz" }
       }
     },

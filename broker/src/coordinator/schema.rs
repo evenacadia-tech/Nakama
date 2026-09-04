@@ -26,7 +26,13 @@ const FASSUNG_2_FAMILIEN: [&str; 3] = [
 /// Sie tragen keinen eigenen `oneOf`-Zweig und stehen deshalb nicht im
 /// Register; ohne ihre Familien sind sie aber unerreichbar, und ein `$ref`
 /// ins Leere bricht den Ladelauf.
-const FASSUNG_2_HILFSDEFS: [&str; 9] = [
+const FASSUNG_2_HILFSDEFS: [&str; 11] = [
+    // Nacharbeit 1 (Befund B23): `experiment_begin` traegt die VOLLSTAENDIGE
+    // Passage. Sie gehoert damit zur Fassung 2 und muss beim Rueckbau auf die
+    // Fassung 1 mit verschwinden - sonst laese ein Leser der alten Fassung
+    // einen Typ, den es dort nie gab.
+    "passage",
+    "passage_id",
     "experiment_referenz",
     "alignment_klasse",
     "fingerprint",

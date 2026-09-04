@@ -212,6 +212,30 @@ EXPERIMENT_REFERENZ = {
     "alignment": "feature_aligned",
 }
 
+# SONDE-013 Nacharbeit 1 (Befund B23): die vollstaendige Passage aus M-25.
+# Sie steht als eigene Konstante, weil die Negativfaelle sie einzeln
+# verderben - eine im Fall eingebettete Kopie liefe von ihr weg.
+PASSAGE = {
+    "passage_id": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+    "projekt_von": 480000,
+    "projekt_bis": 960000,
+    "transport_epoch": 3,
+    "aktive_quellen": [
+        "33333333333333333333333333333333",
+        "44444444444444444444444444444444",
+    ],
+    "messpunktklassen": ["insert", "post"],
+    "abdeckung": 0.91,
+    "label": "Refrain 2",
+    # Eine EIGENE Kopie, nicht dieselbe Instanz wie in EXPERIMENT_REFERENZ:
+    # `copy.deepcopy` erhaelt die Aliasbeziehungen INNERHALB der kopierten
+    # Struktur, und eine Mutation an `referenz.passage_fingerprint` traefe
+    # sonst auch `passage.fingerprint`. Jeder Negativfall soll genau EIN Feld
+    # verderben. Die WERTE sind dieselben - in einer echten Nachricht
+    # beschreiben beide dieselbe Passage.
+    "fingerprint": copy.deepcopy(FINGERPRINT),
+}
+
 
 PROBE = {
     "adresse": ADRESSE,
@@ -548,13 +572,14 @@ GRUND: dict[str, dict] = {
         "grund": "intervention",
         "umfang": {"art": "evidence_ids", "evidence_ids": ["99999999999999999999999999999999"]},
     },
+
     "experiment_begin": {
         "type": "experiment_begin",
         "kopf": STEUERKOPF,
         "experiment_id": "abababababababababababababababab",
         "execution_mode": "manual_external",
         "reproduzierbarkeit": "manuell_nicht_wiederherstellbar",
-        "passage_id": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+        "passage": PASSAGE,
         "referenz": EXPERIMENT_REFERENZ,
     },
     "experiment_abort": {
@@ -916,8 +941,20 @@ def zusatz_gueltig() -> list[tuple[str, dict, str]]:
     ev["ereignisse"] = {"liste": [EREIGNIS, EREIGNIS_PEAK], "verloren": 0}
     ev["stereo"] = copy.deepcopy(STEREO)
     ev["konfidenz"]["verteilung_fenster"] = 41
+    # Nacharbeit 1 (Befund B07): der Zaehler der nicht-endlichen
+    # Eingangssamples reist im additiven `konfidenz`-Objekt mit. 0 heisst
+    # nachweislich keines - deshalb steht er auch im GUTFALL.
+    ev["konfidenz"]["samples_nicht_endlich"] = 0
     faelle.append(("evidence-snapshot-mit-ereignissen-und-stereo", ev,
                    "M-05/M-11: der Ereignisstrom und die bandweise Stereoevidenz reisen auf dem Evidenzpfad, nicht im 10-Hz-Liveframe"))
+
+    ev = copy.deepcopy(GRUND["evidence_snapshot"])
+    ev["konfidenz"]["samples_nicht_endlich"] = 3
+    ev["konfidenz"]["klasse"] = "unbrauchbar"
+    faelle.append(("evidence-snapshot-samples-nicht-endlich", ev,
+                   "M-07: ein Beleg, dessen Fenster nicht-endliche Eingangssamples "
+                   "gesehen hat, ZAEHLT sie und traegt die Klasse `unbrauchbar` - "
+                   "nicht `schwach`: die Zahl beschreibt Stille, nicht Musik"))
 
     ev = copy.deepcopy(GRUND["evidence_snapshot"])
     ev["ereignisse"] = {"liste": [], "verloren": 7}
@@ -963,6 +1000,12 @@ def zusatz_gueltig() -> list[tuple[str, dict, str]]:
     r["werkzeug"] = None
     faelle.append(("experiment-manual-result-ohne-notiz", r,
                    "M-42/M-44: beide Reihenfolgen sind gueltig; null heisst ausdruecklich 'nichts angegeben' und ist keine leere Zeichenkette"))
+
+    eb = copy.deepcopy(GRUND["experiment_begin"])
+    eb["passage"]["label"] = None
+    faelle.append(("experiment-begin-passage-ohne-label", eb,
+                   "M-25: das Userwort ist das EINZIGE optionale Feld der Passage; "
+                   "null heisst 'die Passage hat keines' und ist keine leere Zeichenkette"))
 
     eb = copy.deepcopy(GRUND["experiment_begin"])
     eb["referenz"]["alignment"] = "unclear"
@@ -1240,11 +1283,12 @@ UNGUELTIG: list[tuple] = [
      "additiv heisst begrenzt erweiterbar, nicht beliebig gross (§33.1)"),
 
     ("konfidenz-ueber-maxproperties", "evidence_snapshot",
-     [setze("konfidenz", f"zusatz_{i}", 0.5) for i in range(13)],
+     [setze("konfidenz", f"zusatz_{i}", 0.5) for i in range(14)],
      [v("/konfidenz", f"{S}/konfidenz/maxProperties", "maxProperties")],
      "dieselbe Grenze am zweiten additiven Objekt - konfidenz deklariert seit "
-     "SONDE-013 SIEBEN Eigenschaften, also 7+8=15; drei stehen in der "
-     "Grundform, dreizehn Zusaetze sind 16 und damit einer zu viel"),
+     "der Nacharbeit 1 ACHT Eigenschaften (samples_nicht_endlich kam dazu), "
+     "also 8+8=16; drei stehen in der Grundform, vierzehn Zusaetze sind 17 "
+     "und damit einer zu viel"),
 
     # --- Typen ------------------------------------------------------------
     ("sequence-als-string", "heartbeat", [setze("sequence", "91")],
@@ -2143,6 +2187,57 @@ UNGUELTIG: list[tuple] = [
         f"{S}/experiment_begin/properties/reproduzierbarkeit/const", "const")],
      "M-42: ein manueller Versuch erlaubt KEIN Nakama-Revert. Eine hoehere "
      "Reproduzierbarkeitsklasse zu behaupten waere eine Luege ueber den Rueckweg"),
+
+    # ── Nacharbeit 1 (Befund B23): die vollstaendige Passage ─────────────
+    #
+    # Vorher trug `experiment_begin` nur `passage_id` und die Referenz. Kein
+    # gueltiger Wire-Aufruf konnte damit das von M-25 verlangte Storeobjekt
+    # erzeugen - `Experimentstore::beginne` braucht Grenzen, Transportepoche,
+    # Quellen mit Messpunktklasse, Abdeckung und Fingerprint. Jedes dieser
+    # Felder faellt hier EINZELN.
+    ("experiment-begin-ohne-passage", "experiment_begin",
+     [loesche("passage")],
+     [v("", f"{S}/experiment_begin/required/passage", "required")],
+     "M-25/B23: ohne Passageobjekt kann der Broker keine Passage anlegen, und "
+     "der Versuch haette kein Fenster, auf das er sich bezieht"),
+
+    ("experiment-begin-passage-ohne-grenzen", "experiment_begin",
+     [loesche("passage", "projekt_bis")],
+     [v("/passage", f"{S}/passage/required/projekt_bis", "required")],
+     "M-25: die Grenzen in Projektsamples sind der Kern der Passage. Ohne sie "
+     "waere sie ein Zeitfenster ohne Zeit"),
+
+    ("experiment-begin-passage-ohne-transportepoche", "experiment_begin",
+     [loesche("passage", "transport_epoch")],
+     [v("/passage", f"{S}/passage/required/transport_epoch", "required")],
+     "§32.4: eine Passage bindet an GENAU EINE Transportepoche. Ohne sie waere "
+     "ein Fenster ueber einen Seek hinweg dieselbe Zahl wie eines darin"),
+
+    ("experiment-begin-passage-ohne-fingerprint", "experiment_begin",
+     [loesche("passage", "fingerprint")],
+     [v("/passage", f"{S}/passage/required/fingerprint", "required")],
+     "M-26: ohne Fingerprint gibt es keinen Materialbeleg, und ein fehlender "
+     "Beleg ist keine Aehnlichkeit"),
+
+    ("experiment-begin-passage-abdeckung-ueber-eins", "experiment_begin",
+     [setze("passage", "abdeckung", 1.5)],
+     [v("/passage/abdeckung", f"{S}/passage/properties/abdeckung/maximum", "maximum")],
+     "M-30: die Abdeckung ist ein Anteil in [0, 1]. Ein Wert darueber waere "
+     "keine Messung, sondern ein Rechenfehler beim Sender"),
+
+    ("experiment-begin-passage-fremde-messpunktklasse", "experiment_begin",
+     [setze("passage", "messpunktklassen", ["seitenkette"])],
+     [v("/passage/messpunktklassen/0",
+        f"{S}/passage/properties/messpunktklassen/items/enum", "enum")],
+     "M-55: die Messpunktklassen sind eine GESCHLOSSENE Menge. Eine fremde "
+     "Klasse waere ein Messpunkt, den keine Invalidierungsregel kennt"),
+
+    ("experiment-begin-passage-leeres-label", "experiment_begin",
+     [setze("passage", "label", "")],
+     [v("/passage/label", f"{S}/passage/properties/label/minLength", "minLength")],
+     "M-25: `null` heisst 'kein Userwort'. Eine leere Zeichenkette waere eine "
+     "zweite Schreibweise dafuer, und zwei Schreibweisen fuer denselben "
+     "Zustand sind der Anfang von Sonderfaellen"),
 
     ("experiment-begin-ohne-referenz", "experiment_begin",
      [loesche("referenz")],

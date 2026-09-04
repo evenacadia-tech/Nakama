@@ -66,21 +66,8 @@
   "ausschlussgrund": null,
   "konfidenz": {
     "metrics_version": 1,
-    "klasse": "mittel",
+    "klasse": "unbrauchbar",
     "timing_alignment": 0.8,
-    "zusatz_0": 0.5,
-    "zusatz_1": 0.5,
-    "zusatz_2": 0.5,
-    "zusatz_3": 0.5,
-    "zusatz_4": 0.5,
-    "zusatz_5": 0.5,
-    "zusatz_6": 0.5,
-    "zusatz_7": 0.5,
-    "zusatz_8": 0.5,
-    "zusatz_9": 0.5,
-    "zusatz_10": 0.5,
-    "zusatz_11": 0.5,
-    "zusatz_12": 0.5,
-    "zusatz_13": 0.5
+    "samples_nicht_endlich": 3
   }
 }

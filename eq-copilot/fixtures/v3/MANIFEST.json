@@ -6,8 +6,8 @@
   "wurzel_skalar": "Markiert ein Fixture, dessen Wurzel weder Objekt noch Array ist. JUCEs JSON-Leser folgt RFC 4627 und lehnt es schon im PARSER ab; serde_json und Python folgen RFC 8259 und lehnen es erst am Schema ab. Beide Wege sind eine Ablehnung, nur an verschiedenen Stellen - die Verletzungsmenge gilt daher nur fuer die Beine mit RFC-8259-Parser.",
   "sortierung": "Verletzungen sind kanonisch nach (instanz, schema, schluessel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
   "textriegel_lehnt_ab": "Markiert ein Fixture, das der TEXTRIEGEL abweist, BEVOR ein Parser es sieht. Diese Fixtures tragen keine Verletzungsmenge, weil sie das Schema nie erreichen — eine erfundene waere eine Luege ueber den Ort der Ablehnung. Regeln und Begruendung: schemas/v3/README.md.",
-  "anzahl_gueltig": 75,
-  "anzahl_ungueltig": 210,
+  "anzahl_gueltig": 77,
+  "anzahl_ungueltig": 217,
   "fixtures": [
     {
       "datei": "gueltig/audible_intervention_begin.json",
@@ -118,6 +118,12 @@
       "verletzungen": []
     },
     {
+      "datei": "gueltig/evidence-snapshot-samples-nicht-endlich.json",
+      "urteil": "gueltig",
+      "warum": "M-07: ein Beleg, dessen Fenster nicht-endliche Eingangssamples gesehen hat, ZAEHLT sie und traegt die Klasse `unbrauchbar` - nicht `schwach`: die Zahl beschreibt Stille, nicht Musik",
+      "verletzungen": []
+    },
+    {
       "datei": "gueltig/evidence-stereo-ohne-kohaerenz.json",
       "urteil": "gueltig",
       "warum": "M-11 fail-closed: unter acht Welch-Frames traegt weder Kohaerenz noch Phase ein Bit — es entsteht keine geschaetzte Zahl",
@@ -151,6 +157,12 @@
       "datei": "gueltig/experiment-abort-verdraengt.json",
       "urteil": "gueltig",
       "warum": "M-47/E-03: die Verdraengung durch einen Bestandsdeckel ist der zweite und letzte Ausloeser eines terminalen aborted",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/experiment-begin-passage-ohne-label.json",
+      "urteil": "gueltig",
+      "warum": "M-25: das Userwort ist das EINZIGE optionale Feld der Passage; null heisst 'die Passage hat keines' und ist keine leere Zeichenkette",
       "verletzungen": []
     },
     {
@@ -1372,6 +1384,18 @@
       ]
     },
     {
+      "datei": "ungueltig/experiment-begin-ohne-passage.json",
+      "urteil": "ungueltig",
+      "warum": "M-25/B23: ohne Passageobjekt kann der Broker keine Passage anlegen, und der Versuch haette kein Fenster, auf das er sich bezieht",
+      "verletzungen": [
+        {
+          "instanz": "",
+          "schema": "#/$defs/experiment_begin/required/passage",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
       "datei": "ungueltig/experiment-begin-ohne-referenz.json",
       "urteil": "ungueltig",
       "warum": "M-40: Baseline und Referenzen werden VOR dem Begin verriegelt. Ein Begin ohne sie waere ein Versuch ohne rekonstruierbaren Ausgangspunkt",
@@ -1379,6 +1403,78 @@
         {
           "instanz": "",
           "schema": "#/$defs/experiment_begin/required/referenz",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/experiment-begin-passage-abdeckung-ueber-eins.json",
+      "urteil": "ungueltig",
+      "warum": "M-30: die Abdeckung ist ein Anteil in [0, 1]. Ein Wert darueber waere keine Messung, sondern ein Rechenfehler beim Sender",
+      "verletzungen": [
+        {
+          "instanz": "/passage/abdeckung",
+          "schema": "#/$defs/passage/properties/abdeckung/maximum",
+          "schluessel": "maximum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/experiment-begin-passage-fremde-messpunktklasse.json",
+      "urteil": "ungueltig",
+      "warum": "M-55: die Messpunktklassen sind eine GESCHLOSSENE Menge. Eine fremde Klasse waere ein Messpunkt, den keine Invalidierungsregel kennt",
+      "verletzungen": [
+        {
+          "instanz": "/passage/messpunktklassen/0",
+          "schema": "#/$defs/passage/properties/messpunktklassen/items/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/experiment-begin-passage-leeres-label.json",
+      "urteil": "ungueltig",
+      "warum": "M-25: `null` heisst 'kein Userwort'. Eine leere Zeichenkette waere eine zweite Schreibweise dafuer, und zwei Schreibweisen fuer denselben Zustand sind der Anfang von Sonderfaellen",
+      "verletzungen": [
+        {
+          "instanz": "/passage/label",
+          "schema": "#/$defs/passage/properties/label/minLength",
+          "schluessel": "minLength"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/experiment-begin-passage-ohne-fingerprint.json",
+      "urteil": "ungueltig",
+      "warum": "M-26: ohne Fingerprint gibt es keinen Materialbeleg, und ein fehlender Beleg ist keine Aehnlichkeit",
+      "verletzungen": [
+        {
+          "instanz": "/passage",
+          "schema": "#/$defs/passage/required/fingerprint",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/experiment-begin-passage-ohne-grenzen.json",
+      "urteil": "ungueltig",
+      "warum": "M-25: die Grenzen in Projektsamples sind der Kern der Passage. Ohne sie waere sie ein Zeitfenster ohne Zeit",
+      "verletzungen": [
+        {
+          "instanz": "/passage",
+          "schema": "#/$defs/passage/required/projekt_bis",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/experiment-begin-passage-ohne-transportepoche.json",
+      "urteil": "ungueltig",
+      "warum": "§32.4: eine Passage bindet an GENAU EINE Transportepoche. Ohne sie waere ein Fenster ueber einen Seek hinweg dieselbe Zahl wie eines darin",
+      "verletzungen": [
+        {
+          "instanz": "/passage",
+          "schema": "#/$defs/passage/required/transport_epoch",
           "schluessel": "required"
         }
       ]
@@ -1965,7 +2061,7 @@
     {
       "datei": "ungueltig/konfidenz-ueber-maxproperties.json",
       "urteil": "ungueltig",
-      "warum": "dieselbe Grenze am zweiten additiven Objekt - konfidenz deklariert seit SONDE-013 SIEBEN Eigenschaften, also 7+8=15; drei stehen in der Grundform, dreizehn Zusaetze sind 16 und damit einer zu viel",
+      "warum": "dieselbe Grenze am zweiten additiven Objekt - konfidenz deklariert seit der Nacharbeit 1 ACHT Eigenschaften (samples_nicht_endlich kam dazu), also 8+8=16; drei stehen in der Grundform, vierzehn Zusaetze sind 17 und damit einer zu viel",
       "verletzungen": [
         {
           "instanz": "/konfidenz",

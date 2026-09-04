@@ -28,6 +28,7 @@
       "2": {
         "hinweis": "SONDE-013 (P4) hebt den Minor GENAU EINMAL. Jede P1-Vertragsaenderung dieses Tickets liegt in dieser einen Fassung; ein Leser der Fassung 1 lehnt sie ab, statt sie still auf einen bekannten Zweig abzubilden. NICHT Teil dieser Fassung ist `integration_samples` (Feld-ID 14): das ist die FlatBuffers-Flaeche P2, deren schema_major/schema_minor im 16-Byte-Envelope leben und hier nicht gefuehrt werden.",
         "experiment_begin": true,
+      "experiment_begin_passage": "SONDE-013 Nacharbeit 1 (Befund B23): `experiment_begin` traegt seit dieser Runde die VOLLSTAENDIGE Passage (`passage`) statt nur ihrer `passage_id`. Ohne die Grenzen, die Transportepoche, die Quellen mit Messpunktklasse, die Abdeckung und den Fingerprint konnte kein gueltiger Wire-Aufruf das von M-25 verlangte Storeobjekt erzeugen. Der Schritt liegt INNERHALB der Fassung 2 und ist kein zweiter Fassungsschritt.",
         "experiment_abort": true,
         "experiment_manual_result": true,
         "evidence_snapshot_ereignisse": true,

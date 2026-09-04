@@ -17,7 +17,28 @@
   "experiment_id": "abababababababababababababababab",
   "execution_mode": "manual_external",
   "reproduzierbarkeit": "manuell_nicht_wiederherstellbar",
-  "passage_id": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+  "passage": {
+    "passage_id": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+    "projekt_von": 480000,
+    "projekt_bis": 960000,
+    "transport_epoch": 3,
+    "aktive_quellen": [
+      "33333333333333333333333333333333",
+      "44444444444444444444444444444444"
+    ],
+    "messpunktklassen": [
+      "insert",
+      "post"
+    ],
+    "abdeckung": 0.91,
+    "label": "Refrain 2",
+    "fingerprint": {
+      "version": 1,
+      "band_energie": [0, 7, 14, 21, 28, 35, 42, 49, 56, 63, 70, 77, 84, 91, 98, 105, 112, 119, 126, 133, 140, 147, 154, 161, 168, 175, 182, 189, 196, 203, 210, 217],
+      "chroma": [0, 21, 42, 63, 84, 105, 126, 147, 168, 189, 210, 231],
+      "onset": [0, 13, 26, 39, 52, 65, 78, 91, 104, 117, 130, 143, 156, 169, 182, 195, 208, 221, 234, 247, 4, 17, 30, 43, 56, 69, 82, 95, 108, 121, 134, 147]
+    }
+  },
   "referenz": {
     "passage_fingerprint": {
       "version": 1,

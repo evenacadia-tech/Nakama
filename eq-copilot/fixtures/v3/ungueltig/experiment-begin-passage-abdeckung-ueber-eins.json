@@ -30,7 +30,7 @@
       "insert",
       "post"
     ],
-    "abdeckung": 0.91,
+    "abdeckung": 1.5,
     "label": "Refrain 2",
     "fingerprint": {
       "version": 1,
@@ -53,12 +53,14 @@
       "onset": [0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 60, 63, 66, 69, 72, 75, 78, 81, 84, 87, 90, 93]
     },
     "aktive_quellen": [
-      "33333333333333333333333333333333"
+      "33333333333333333333333333333333",
+      "44444444444444444444444444444444"
     ],
     "messpunktklassen": [
-      "post_fader_contribution"
+      "insert",
+      "post"
     ],
     "match_gain_db": -1.5,
-    "alignment": "unclear"
+    "alignment": "feature_aligned"
   }
 }

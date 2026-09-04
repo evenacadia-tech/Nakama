@@ -1,0 +1,26 @@
+SONDE-013 Etappe 2 Nacharbeit 1 - Rotbeweis B23
+============================================================
+
+Datei:     eq-copilot/schemas/v3/eq-ipc-v3.schema.json
+Bein:      cargo
+Warum:     experiment_begin traegt wieder nur `passage_id` statt der vollstaendigen Passage. Kein gueltiger Wire-Aufruf kann damit das von M-25 verlangte Storeobjekt erzeugen: `Experimentstore::beginne` braucht Grenzen, Transportepoche, Quellen mit Messpunktklasse, Abdeckung und Fingerprint.
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+"reproduzierbarkeit", "passage", "referenz"],
+--- NEU ---
+"reproduzierbarkeit", "referenz"],
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+  ROT: ungueltig/experiment-begin-ohne-passage.json: jsonschema sagt gueltig, Manifest erwartet ungueltig
+EXIT=2
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+jsonschema 4.26.0 (draft 2020-12)
+74 Definitionen, 21 Nachrichtenfamilien, 294 Fixtures
+Pruefungen: 484 bestanden, 0 gescheitert
+C:\Users\phili\Projekte\Nakama\tools\eq-copilot\pruefe_v3_vertrag.py:1749: DeprecationWarning: Accessing jsonschema.__version__ is deprecated and will be removed in a future release. Use importlib.metadata directly to query for jsonschema's version.
+  print(f"jsonschema {jsonschema.__version__} (draft 2020-12)")
+EXIT=0
+
+URTEIL: BEWIESEN - der Test faellt am eingebauten Fehler und steht ohne ihn.

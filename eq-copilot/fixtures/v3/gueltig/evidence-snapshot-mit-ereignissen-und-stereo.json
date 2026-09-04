@@ -68,7 +68,8 @@
     "metrics_version": 1,
     "klasse": "mittel",
     "timing_alignment": 0.8,
-    "verteilung_fenster": 41
+    "verteilung_fenster": 41,
+    "samples_nicht_endlich": 0
   },
   "ereignisse": {
     "liste": [

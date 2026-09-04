@@ -309,6 +309,121 @@ struct Ereignis
 };
 
 //==============================================================================
+/** Grober Content-Fingerprint einer Passage (SONDE-013 M-26, Entwurf §32.4).
+
+    Der Vertrag legt Form und Groesse fest
+    (`eq-ipc-v3.schema.json`, `$defs/fingerprint`): 32 Bandenergien, 12
+    Chromawerte, 32 Onsetstuetzstellen, je EIN Byte. Diese Groesse ist die
+    ganze Zusage:
+
+        "Er enthaelt KEIN rekonstruierbares PCM und dient nur dazu, grob
+         anderes musikalisches Material zu erkennen."
+
+    76 Byte fuer eine Passage von Sekunden bis Minuten — bei 48 kHz sind das
+    weniger als ein Byte je 3000 Samples. Aus dieser Dichte laesst sich kein
+    Signal zurueckrechnen, und zwar nicht, weil die Rueckrechnung schwer
+    waere, sondern weil die Information nicht da ist. Genau das misst
+    `EqCopSonde013FingerprintGoldenTest` an einer adversarialen Probe.
+
+    ── DIE DREI VERLAEUFE, UND WARUM ES DREI SIND ────────────────────────────
+
+    Sie beantworten drei verschiedene Fragen, und keine ersetzt eine andere:
+
+    - **Bandenergie** — WIE klingt das Material spektral? Trennt Bass von
+      Gitarre, aber nicht C-Dur von D-Dur.
+    - **Chroma** — WELCHE Toene? Trennt Tonarten und Akkorde, ist aber gegen
+      Klangfarbe unempfindlich (das ist Absicht: derselbe Akkord auf zwei
+      Instrumenten SOLL aehnlich aussehen).
+    - **Onset** — WANN passiert etwas? Trennt zwei Passagen mit demselben
+      Material und anderem Rhythmus.
+
+    Ein Fingerprint aus nur einem der drei liesse jeweils eine ganze Klasse
+    von Materialwechseln durch. §15 verlangt aber „Warnung oder Sperre, wenn
+    das musikalische Material nicht vergleichbar ist" — und ein Wechsel, den
+    der Vergleich nicht sieht, ist schlimmer als keiner.
+
+    ── DIE GRENZE (M-27) ─────────────────────────────────────────────────────
+
+    §32.3 nennt das Fingerprintfenster ausdruecklich neben FFT, Loudness und
+    Korrelation: keines darf eine echte oder moegliche Epochengrenze
+    ueberbruecken. Der Akkumulator faellt deshalb in `grenzeZiehen()` wie
+    jeder andere. Ein Fingerprint ueber zwei Stellen der Musik beschriebe
+    keine von beiden — und wuerde als „dasselbe Material" gelesen. */
+struct Fingerprint
+{
+    /** Version des Erzeugers. Sie reist mit, weil eine spaetere Aenderung an
+        der Quantisierung oder der Bandgruppierung alle alten Fingerprints
+        unvergleichbar macht — und das soll auffallen, nicht stillschweigend
+        zu falschen Aehnlichkeiten fuehren. */
+    static constexpr int kVersion = 1;
+
+    static constexpr int kBaender = 32;
+    static constexpr int kChroma  = 12;
+    static constexpr int kOnsets  = 32;
+
+    bool gesetzt { false };
+    /// Kopie von `kVersion` im Objekt, damit ein gespeicherter oder
+    /// uebertragener Fingerprint seine Erzeugerversion MITTRAEGT statt sie
+    /// beim Lesen aus der jeweils aktuellen Konstante zu holen.
+    int  version { kVersion };
+    std::uint8_t bandEnergie[kBaender] {};
+    std::uint8_t chroma[kChroma] {};
+    std::uint8_t onset[kOnsets] {};
+
+    /** Wie viele Analysefenster hinter ihm stehen. Dieselbe Ehrlichkeit wie
+        ueberall sonst: ein Fingerprint aus drei Fenstern ist keine Passage. */
+    std::uint32_t fenster { 0 };
+
+    bool operator== (const Fingerprint&) const = default;
+};
+
+/** Wie viele Analysefenster ein Fingerprint mindestens braucht.
+
+    Unter dieser Zahl gibt es keinen — nicht, weil die Rechnung fehlschluege,
+    sondern weil ein Onsetverlauf aus vier Fenstern keine Rhythmusaussage ist
+    und eine Bandenergie aus vier Fenstern kein Klangbild. Startwert, am
+    Korpus kalibrierbar (§5.3, Risiko 5); er lebt deshalb neben
+    `kFeatureMetricsVersion`. */
+inline constexpr int kFingerprintMindestFenster = 32;
+
+/** Aehnlichkeit zweier Fingerprints in [0, 1] (M-28, M-31).
+
+    Cosinus-Aehnlichkeit je Verlauf, dann das MINIMUM der drei — nicht der
+    Mittelwert. Das ist dieselbe Regel wie bei der Konfidenzklasse (§34.3):
+    ein Material, das spektral passt und rhythmisch nicht, ist nicht „zu zwei
+    Dritteln dasselbe". Der schwaechste Beleg bestimmt die Aussage.
+
+    ⚠️ Zwei Fingerprints ohne Bit sind NICHT aehnlich. Ohne diese Zeile waere
+    „beide leer" die hoechste Aehnlichkeit, die es gibt — und eine Passage
+    ohne Material verglichen sich mit jeder anderen als identisch. */
+inline double fingerprintAehnlichkeit (const Fingerprint& a,
+                                       const Fingerprint& b) noexcept
+{
+    if (! a.gesetzt || ! b.gesetzt)
+        return 0.0;
+
+    auto cosinus = [] (const std::uint8_t* x, const std::uint8_t* y, int n)
+    {
+        double xy = 0.0, xx = 0.0, yy = 0.0;
+        for (int i = 0; i < n; ++i)
+        {
+            const double u = (double) x[i], v = (double) y[i];
+            xy += u * v; xx += u * u; yy += v * v;
+        }
+        const double nenner = std::sqrt (xx) * std::sqrt (yy);
+        if (! (nenner > 0.0))
+            return 0.0;
+        const double c = xy / nenner;
+        return std::isfinite (c) ? std::clamp (c, 0.0, 1.0) : 0.0;
+    };
+
+    const double cBand   = cosinus (a.bandEnergie, b.bandEnergie, Fingerprint::kBaender);
+    const double cChroma = cosinus (a.chroma,      b.chroma,      Fingerprint::kChroma);
+    const double cOnset  = cosinus (a.onset,       b.onset,       Fingerprint::kOnsets);
+    return std::min (cBand, std::min (cChroma, cOnset));
+}
+
+//==============================================================================
 /** Bandweise Stereoevidenz eines Evidenzfensters (SONDE-013 M-08, M-10 bis M-12).
 
     §40.1 sagt, dass zwei globale Skalare nicht reichen: `breite` und
@@ -882,6 +997,10 @@ public:
         stereoKorrKurz.assign ((std::size_t) Gitter::evidenzBaender, 0.0f);
         stereoKorrKurzGesetzt.assign ((std::size_t) Gitter::evidenzBaender, 0u);
         stereoPersistenzZaehler.assign ((std::size_t) Gitter::evidenzBaender, 0u);
+        fpBandSumme.assign ((std::size_t) Fingerprint::kBaender, 0.0);
+        fpBandAnzahl.assign ((std::size_t) Fingerprint::kBaender, 0u);
+        fpChromaSumme.assign ((std::size_t) Fingerprint::kChroma, 0.0);
+        fpOnset.assign ((std::size_t) Fingerprint::kOnsets, 0.0);
         tp.vorbereiten (sr);
 
         evidenzVerteilung.assign ((std::size_t) Gitter::evidenzBaender,
@@ -964,6 +1083,7 @@ public:
         flussGefuellt = 0;
         vorigerRahmenPeak = 0.0;
         peakEreignisImRahmen = false;
+        fingerprintLeeren();
 
         ereignisStand = 0;
         ereignisAnzahl = 0;
@@ -1046,6 +1166,15 @@ public:
     const FeatureFrame& frame() const noexcept { return aktuell; }
 
     /** Die Ereignisse des letzten Rahmens, aeltestes zuerst. */
+    /** Der Fingerprint der laufenden Passage (SONDE-013 M-26).
+
+        Er wird bei JEDEM Aufruf frisch aus den Akkumulatoren gebaut, nicht
+        zwischengespeichert: der Aufrufer entscheidet, wann eine Passage
+        endet, und ein gecachter Fingerprint waere dann die Antwort auf eine
+        Frage, die niemand gestellt hat. Ohne genug Fenster traegt er kein
+        Bit. */
+    Fingerprint fingerprint() const noexcept { return fingerprintJetzt(); }
+
     /** Die bandweise Stereoevidenz des zuletzt ausgewerteten
         Evidenzfensters (SONDE-013 M-11).
 
@@ -1788,6 +1917,11 @@ private:
         // gegen den Rahmen VOR der Grenze vergliche zwei Stellen der Musik.
         vorigerRahmenPeak = 0.0;
         peakEreignisImRahmen = false;
+        // SONDE-013 M-27: §32.3 nennt das Fingerprintfenster ausdruecklich
+        // neben FFT, Loudness und Korrelation. Ein Fingerprint ueber zwei
+        // Stellen der Musik beschriebe keine von beiden — und wuerde als
+        // "dasselbe Material" gelesen.
+        fingerprintLeeren();
 
         if (grund == Grenzgrund::lokaleLuecke)
         {
@@ -2246,6 +2380,12 @@ private:
         if (! hatteVorgaenger)
             return;                     // erster Rahmen nach einer Grenze: kein Fluss
 
+        // SONDE-013 M-26: der Fingerprint bekommt DENSELBEN Fluss wie der
+        // Detektor - ohne dessen Schwelle. Hier zaehlt der Verlauf, nicht das
+        // Ereignis; ihn zweimal zu rechnen waere zwei Wahrheiten ueber
+        // dieselbe Groesse.
+        fingerprintSchritt (s, fluss);
+
         // Adaptive Schwelle: Median + 3·MAD ueber die Historie.  Erst ab voller
         // Historie — eine Schwelle aus drei Werten ist keine Schwelle, und ein
         // Detektor, der am Anfang jeder Epoche wild feuert, waere genau das
@@ -2627,6 +2767,181 @@ private:
         stereoKurzfenster = 0;
         stereoMonoEnergie = stereoStereoEnergie = 0.0;
         stereoLEnergie = stereoREnergie = 0.0;
+    }
+
+    //== Fingerprint (SONDE-013 M-26, M-27, M-31) =============================
+
+    /** Ein Welch-Frame der Hauptstufe in den Fingerprintakkumulator.
+
+        Reihenfolge und Herkunft der drei Verlaeufe:
+
+        - **Bandenergie**: die 221 Evidenzbaender werden auf 32 Gruppen
+          gemittelt. 32 statt 221, weil ein Fingerprint GROB sein soll — er
+          soll anderes Material erkennen, nicht dasselbe Material auf zwei
+          Anlagen unterscheiden.
+        - **Chroma**: jedes Band traegt zu genau einer Halbtonklasse bei,
+          bestimmt aus seiner Mittenfrequenz gegen A4 = 440 Hz. Ueber alle
+          Oktaven summiert — das ist der Punkt: derselbe Akkord in einer
+          anderen Lage soll gleich aussehen.
+        - **Onset**: der spektrale Fluss dieses Frames, an seiner Stelle im
+          Zeitraster. Er kommt aus derselben Rechnung wie der
+          Ereignisdetektor, aber ohne dessen Schwelle — hier zaehlt der
+          Verlauf, nicht das Ereignis.
+
+        ⚠️ Der Onsetverlauf braucht ein ZEITRASTER, und das ist die einzige
+        Stelle, an der dieser Erzeuger etwas ueber die Passagenlaenge annimmt.
+        Er verteilt die Frames gleichmaessig auf 32 Stuetzstellen und faengt
+        von vorne an, sobald sie voll sind — jede Stuetzstelle traegt dann das
+        Maximum ihrer Frames. Das ist kein Fenster, das ueberlaeuft, sondern
+        eine Aufloesung, die mit der Laenge sinkt; ein Fingerprint ueber zehn
+        Sekunden hat dieselben 32 Punkte wie einer ueber zwei. */
+    void fingerprintSchritt (const Stufe& s, double fluss) noexcept
+    {
+        if ((int) fpBandSumme.size() < Fingerprint::kBaender)
+            return;
+
+        // Bandenergie: 221 Baender auf 32 Gruppen.
+        constexpr int kProGruppe = (Gitter::evidenzBaender + Fingerprint::kBaender - 1)
+                                 / Fingerprint::kBaender;
+        for (int b = 0; b < Gitter::evidenzBaender; ++b)
+        {
+            const int von = s.bandVon[(std::size_t) b];
+            const int bis = s.bandBis[(std::size_t) b];
+            if (bis <= von)
+                continue;
+            double energie = 0.0;
+            for (int k = von; k < bis; ++k)
+                energie += s.psd[(std::size_t) k];
+            energie /= (double) (bis - von);
+            if (! std::isfinite (energie) || energie <= 0.0)
+                continue;
+
+            const int gruppe = std::min (b / kProGruppe, Fingerprint::kBaender - 1);
+            fpBandSumme[(std::size_t) gruppe] += energie;
+            ++fpBandAnzahl[(std::size_t) gruppe];
+
+            // Chroma: die Halbtonklasse der Bandmitte gegen A4 = 440 Hz.
+            const double hz = Gitter::evidenzMitte (b);
+            if (hz > 0.0)
+            {
+                const double halbtoene = 12.0 * std::log2 (hz / 440.0);
+                int klasse = (int) std::llround (halbtoene) % Fingerprint::kChroma;
+                if (klasse < 0) klasse += Fingerprint::kChroma;
+                fpChromaSumme[(std::size_t) klasse] += energie;
+            }
+        }
+
+        // Onset: der Fluss an seiner Stelle im Zeitraster.
+        if (fpOnsetStand >= Fingerprint::kOnsets)
+        {
+            // Raster voll: verdichten. Je zwei Stuetzstellen werden zu einer,
+            // und die Frames je Stelle verdoppeln sich. Die Aufloesung sinkt
+            // mit der Laenge, statt dass ein Fenster ueberlaeuft.
+            for (int i = 0; i < Fingerprint::kOnsets / 2; ++i)
+                fpOnset[(std::size_t) i] = std::max (fpOnset[(std::size_t) (2 * i)],
+                                                     fpOnset[(std::size_t) (2 * i + 1)]);
+            for (int i = Fingerprint::kOnsets / 2; i < Fingerprint::kOnsets; ++i)
+                fpOnset[(std::size_t) i] = 0.0;
+            fpOnsetStand = Fingerprint::kOnsets / 2;
+            fpOnsetProStelle *= 2;
+            fpOnsetInStelle = 0;
+        }
+        if (std::isfinite (fluss) && fluss > 0.0)
+            fpOnset[(std::size_t) fpOnsetStand] =
+                std::max (fpOnset[(std::size_t) fpOnsetStand], fluss);
+        if (++fpOnsetInStelle >= fpOnsetProStelle)
+        {
+            fpOnsetInStelle = 0;
+            ++fpOnsetStand;
+        }
+        ++fpFenster;
+    }
+
+    /** Baut den Fingerprint aus den Akkumulatoren.
+
+        Quantisierung: jeder Verlauf wird auf sein eigenes Maximum normiert
+        und dann auf 0..255 abgebildet. Die Normierung JE VERLAUF ist tragend
+        — sie macht den Fingerprint pegelunabhaengig, und genau das soll er
+        sein: dieselbe Passage lauter gespielt ist dasselbe Material.
+
+        Die Bandenergie geht dabei ueber dB, nicht ueber Leistung. Linear
+        quantisiert waeren 60 dB Dynamik in den unteren zwei Bytewerten
+        zusammengedrueckt, und der ganze Verlauf saehe aus wie eine Spitze. */
+    Fingerprint fingerprintJetzt() const noexcept
+    {
+        Fingerprint f;
+        if (fpFenster < (std::uint32_t) kFingerprintMindestFenster
+            || (int) fpBandSumme.size() < Fingerprint::kBaender)
+            return f;                             // kein Bit, kein Wert
+
+        // ── Bandenergie in dB, dann auf die Spanne normiert ──────────────
+        double db[Fingerprint::kBaender] {};
+        bool   hat[Fingerprint::kBaender] {};
+        double maxDb = -1e300, minDb = 1e300;
+        for (int i = 0; i < Fingerprint::kBaender; ++i)
+        {
+            if (fpBandAnzahl[(std::size_t) i] == 0)
+                continue;
+            const double mittel = fpBandSumme[(std::size_t) i]
+                                / (double) fpBandAnzahl[(std::size_t) i];
+            if (! (mittel > 0.0))
+                continue;
+            db[i] = 10.0 * std::log10 (mittel);
+            if (! std::isfinite (db[i]))
+                continue;
+            hat[i] = true;
+            maxDb = std::max (maxDb, db[i]);
+            minDb = std::min (minDb, db[i]);
+        }
+        if (maxDb <= -1e299)
+            return f;                             // nichts Messbares
+        // Spanne auf hoechstens 96 dB deckeln: darunter ist alles Rauschen,
+        // und eine unbegrenzte Spanne machte einen einzelnen stillen Bin zum
+        // Massstab des ganzen Fingerprints.
+        const double unten = std::max (minDb, maxDb - 96.0);
+        const double spanne = std::max (maxDb - unten, 1e-9);
+        for (int i = 0; i < Fingerprint::kBaender; ++i)
+            f.bandEnergie[(std::size_t) i] = hat[i]
+                ? (std::uint8_t) std::clamp (
+                      std::llround (255.0 * (db[i] - unten) / spanne), 0LL, 255LL)
+                : (std::uint8_t) 0;
+
+        // ── Chroma und Onset: linear auf ihr eigenes Maximum ─────────────
+        auto normiere = [] (const double* quelle, std::uint8_t* ziel, int n)
+        {
+            double gross = 0.0;
+            for (int i = 0; i < n; ++i)
+                if (std::isfinite (quelle[i]))
+                    gross = std::max (gross, quelle[i]);
+            if (! (gross > 0.0))
+                return;
+            for (int i = 0; i < n; ++i)
+                ziel[(std::size_t) i] = std::isfinite (quelle[i])
+                    ? (std::uint8_t) std::clamp (
+                          std::llround (255.0 * quelle[i] / gross), 0LL, 255LL)
+                    : (std::uint8_t) 0;
+        };
+        normiere (fpChromaSumme.data(), f.chroma, Fingerprint::kChroma);
+        normiere (fpOnset.data(), f.onset, Fingerprint::kOnsets);
+
+        f.gesetzt = true;
+        f.fenster = fpFenster;
+        return f;
+    }
+
+    /** Leert den Fingerprintakkumulator. §32.3 nennt das Fingerprintfenster
+        ausdruecklich neben FFT, Loudness und Korrelation — es ueberbrueckt
+        keine Grenze (M-27). */
+    void fingerprintLeeren() noexcept
+    {
+        for (auto& v : fpBandSumme)   v = 0.0;
+        for (auto& v : fpBandAnzahl)  v = 0;
+        for (auto& v : fpChromaSumme) v = 0.0;
+        for (auto& v : fpOnset)       v = 0.0;
+        fpOnsetStand = 0;
+        fpOnsetProStelle = 1;
+        fpOnsetInStelle = 0;
+        fpFenster = 0;
     }
 
     //== Loudness =============================================================
@@ -3573,6 +3888,18 @@ private:
     bool evidenzContinuousHabe { false };
     bool evidenzContinuousDurchgehend { true };
     std::int64_t evidenzContinuousErwartet { 0 };
+
+    // SONDE-013 M-26: der Fingerprintakkumulator. Alles im HEAP - dieselbe
+    // Begruendung wie bei den Stereotraegern daneben.
+    std::vector<double>        fpBandSumme, fpChromaSumme, fpOnset;
+    std::vector<std::uint32_t> fpBandAnzahl;
+    int           fpOnsetStand { 0 };
+    /// Wie viele Frames auf EINE Onsetstuetzstelle fallen. Er verdoppelt
+    /// sich, sobald das Raster voll ist — die Aufloesung sinkt mit der
+    /// Passagenlaenge, statt dass ein Fenster ueberlaeuft.
+    int           fpOnsetProStelle { 1 };
+    int           fpOnsetInStelle { 0 };
+    std::uint32_t fpFenster { 0 };
 
     // Ereignisse
     /// SONDE-013 M-86: Peak des zuletzt ABGESCHLOSSENEN Rahmens und das Flag,

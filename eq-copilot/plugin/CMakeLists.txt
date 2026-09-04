@@ -782,6 +782,21 @@ target_link_libraries(EqCopSonde013DynamicsTest PRIVATE juce::juce_core Advapi32
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
 nakama_kern_anbinden(EqCopSonde013DynamicsTest)
 
+# ── S20-22/SONDE-013: der Content-Fingerprint (Kanon B22) ─────────────────
+# Misst beide Haelften der Zusage aus §32.4: dass der Fingerprint einen
+# Materialwechsel erkennt UND dass er kein rekonstruierbares PCM traegt. Zu
+# jedem Trennfall steht eine Gegenprobe - ein Fingerprint, der immer
+# anschlaegt, ist so nutzlos wie einer, der nie anschlaegt. Die adversariale
+# Rueckrechenprobe zeigt nicht, dass eine Rueckrechnung schwer waere, sondern
+# dass die Information nicht da ist. Braucht nur den Kern.
+juce_add_console_app(EqCopSonde013FingerprintGoldenTest PRODUCT_NAME "eqcop-sonde013fingerprintgoldentest")
+target_sources(EqCopSonde013FingerprintGoldenTest PRIVATE tests/Sonde013FingerprintGoldenTest.cpp)
+target_compile_definitions(EqCopSonde013FingerprintGoldenTest PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
+target_link_libraries(EqCopSonde013FingerprintGoldenTest PRIVATE juce::juce_core Advapi32
+    PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+nakama_kern_anbinden(EqCopSonde013FingerprintGoldenTest)
+
 # ── S20-22/SONDE-013: der Interventionsring (Kanon B21) ───────────────────
 # Misst den RT→Control-Ring als Datenstruktur: FIFO-Ordnung, Sequenzen und vor
 # allem, dass er bei Ueberlauf MELDET statt das aelteste zu verwerfen. Das ist

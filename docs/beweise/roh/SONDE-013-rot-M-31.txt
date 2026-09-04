@@ -1,0 +1,98 @@
+SONDE-013 Etappe 2 C - Rotbeweis M-31
+=========================================
+
+Datei:     eq-copilot\plugin\core\analysis\FeatureEngine.h
+Ziel:      EqCopSonde013FingerprintGoldenTest
+Warum:     Die Aehnlichkeit wird zum MITTELWERT der drei Verlaeufe statt zum Minimum. Ein Material, das spektral passt und rhythmisch nicht, gilt dann als 'zu zwei Dritteln dasselbe' - genau die Rettung durch einen schoenen Mittelwert, die §34.3 fuer die Konfidenzklasse ausschliesst und die hier denselben Schaden anrichtet.
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+    return std::min (cBand, std::min (cChroma, cOnset));
+--- NEU ---
+    return (cBand + cChroma + cOnset) / 3.0;
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+== Nakama SONDE-013 - Content-Fingerprint einer Passage (§32.4) ==
+
+== Der Fingerprint braucht genug Material - vorher gibt es keinen ==
+[ok]   nach acht Bloecken traegt er KEIN Bit - ein Onsetverlauf aus vier Fenstern ist keine Rhythmusaussage und eine Bandenergie aus vier Fenstern kein Klangbild
+[ok]   nach 400 Bloecken steht er
+[ok]   und sagt, ueber wie viele Analysefenster er geht  [98 Fenster]
+[ok]   die Erzeugerversion ist gefuehrt - eine spaetere Aenderung an der Quantisierung macht alte Fingerprints unvergleichbar, und das soll auffallen
+
+== M-31  material_change_mid_passage_is_detected_not_averaged ==
+[ok]   dasselbe Material zweimal ergibt BITGLEICH denselben Fingerprint - der Erzeuger ist deterministisch
+[ok]   derselbe Akkord in zwei Lautstaerken bleibt aehnlich - der Fingerprint ist pegelunabhaengig, weil jeder Verlauf auf sein EIGENES Maximum normiert wird  [1.0000]
+[ok]   ein anderer Akkord ist messbar unaehnlicher als derselbe in anderer Lautstaerke - GENAU das ist die Aufgabe aus Â§32.4  [gleich 1.0000, gewechselt 0.6881]
+[ok]   und breitbandiges Rauschen ist einem Akkord deutlich unaehnlich  [0.6510]
+
+== M-26  fingerprint_carries_no_reconstructible_pcm ==
+[ok]   ein Fingerprint liegt vor
+[ok]   76 Byte fuer 204800 Samples - weniger als ein Byte je 2600 Samples. Die Rueckrechnung ist nicht schwer, die Information ist NICHT DA  [76 Byte, 2694 Samples je Byte]
+[ok]   beide adversarialen Signale ergeben einen Fingerprint
+[ok]   ein Sinus und ein Dreieck derselben Grundfrequenz sind sich im Fingerprint AEHNLICH, obwohl sie voellig anders klingen - der Fingerprint ist bewusst NICHT injektiv  [0.8666]
+[ok]   die Verlaeufe tragen Werte - der Test misst keine leeren Felder
+[ok]   und alle drei sind ENERGIEN ohne Vorzeichen und ohne Phase: selbst bei perfekter Amplitudenkenntnis fehlt die halbe Information
+
+== M-27  fingerprint_window_never_crosses_epoch_boundary ==
+[ok]   beide Referenzen stehen
+[ok]   vor der Grenze traegt die Engine den Fingerprint von Material A  [1.0000]
+[ok]   nach der Grenze steht wieder einer
+[ok]   und er gehoert zu Material B, nicht zu einer Mischung aus beiden - das Fingerprintfenster hat die Grenze NICHT ueberbrueckt (Â§32.3)  [zu A 0.3339, zu B 1.0000]
+[ok]   er ist der von B, nicht nur naeher an B  [1.0000]
+[ok]   auch der Fensterzaehler faellt an der Grenze - er zaehlt DIESE Passage, nicht die Laufzeit. Bei einer Ueberbrueckung waeren es rund doppelt so viele  [98 vorher, 98 nachher]
+
+== Aehnlichkeit ist ein MINIMUM, kein Mittelwert (M-28-Vorgriff) ==
+[ok]   zwei gleiche Fingerprints sind maximal aehnlich
+[ROT]  ein einziger auseinanderlaufender Verlauf senkt die Aehnlichkeit deutlich - der SCHWAECHSTE Beleg bestimmt sie, nicht der Durchschnitt der drei  [0.9024]
+[ok]   zwei Fingerprints OHNE Bit sind nicht aehnlich, sondern gar nichts - sonst vergliche sich eine Passage ohne Material mit jeder anderen als identisch
+[ok]   und einer mit einem ohne ebenso
+
+-----------------------------------------
+23 bestanden, 1 gescheitert
+
+EXITCODE=1
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+== Nakama SONDE-013 - Content-Fingerprint einer Passage (§32.4) ==
+
+== Der Fingerprint braucht genug Material - vorher gibt es keinen ==
+[ok]   nach acht Bloecken traegt er KEIN Bit - ein Onsetverlauf aus vier Fenstern ist keine Rhythmusaussage und eine Bandenergie aus vier Fenstern kein Klangbild
+[ok]   nach 400 Bloecken steht er
+[ok]   und sagt, ueber wie viele Analysefenster er geht  [98 Fenster]
+[ok]   die Erzeugerversion ist gefuehrt - eine spaetere Aenderung an der Quantisierung macht alte Fingerprints unvergleichbar, und das soll auffallen
+
+== M-31  material_change_mid_passage_is_detected_not_averaged ==
+[ok]   dasselbe Material zweimal ergibt BITGLEICH denselben Fingerprint - der Erzeuger ist deterministisch
+[ok]   derselbe Akkord in zwei Lautstaerken bleibt aehnlich - der Fingerprint ist pegelunabhaengig, weil jeder Verlauf auf sein EIGENES Maximum normiert wird  [0.9999]
+[ok]   ein anderer Akkord ist messbar unaehnlicher als derselbe in anderer Lautstaerke - GENAU das ist die Aufgabe aus Â§32.4  [gleich 0.9999, gewechselt 0.5210]
+[ok]   und breitbandiges Rauschen ist einem Akkord deutlich unaehnlich  [0.3648]
+
+== M-26  fingerprint_carries_no_reconstructible_pcm ==
+[ok]   ein Fingerprint liegt vor
+[ok]   76 Byte fuer 204800 Samples - weniger als ein Byte je 2600 Samples. Die Rueckrechnung ist nicht schwer, die Information ist NICHT DA  [76 Byte, 2694 Samples je Byte]
+[ok]   beide adversarialen Signale ergeben einen Fingerprint
+[ok]   ein Sinus und ein Dreieck derselben Grundfrequenz sind sich im Fingerprint AEHNLICH, obwohl sie voellig anders klingen - der Fingerprint ist bewusst NICHT injektiv  [0.6557]
+[ok]   die Verlaeufe tragen Werte - der Test misst keine leeren Felder
+[ok]   und alle drei sind ENERGIEN ohne Vorzeichen und ohne Phase: selbst bei perfekter Amplitudenkenntnis fehlt die halbe Information
+
+== M-27  fingerprint_window_never_crosses_epoch_boundary ==
+[ok]   beide Referenzen stehen
+[ok]   vor der Grenze traegt die Engine den Fingerprint von Material A  [1.0000]
+[ok]   nach der Grenze steht wieder einer
+[ok]   und er gehoert zu Material B, nicht zu einer Mischung aus beiden - das Fingerprintfenster hat die Grenze NICHT ueberbrueckt (Â§32.3)  [zu A 0.0000, zu B 1.0000]
+[ok]   er ist der von B, nicht nur naeher an B  [1.0000]
+[ok]   auch der Fensterzaehler faellt an der Grenze - er zaehlt DIESE Passage, nicht die Laufzeit. Bei einer Ueberbrueckung waeren es rund doppelt so viele  [98 vorher, 98 nachher]
+
+== Aehnlichkeit ist ein MINIMUM, kein Mittelwert (M-28-Vorgriff) ==
+[ok]   zwei gleiche Fingerprints sind maximal aehnlich
+[ok]   ein einziger auseinanderlaufender Verlauf senkt die Aehnlichkeit deutlich - der SCHWAECHSTE Beleg bestimmt sie, nicht der Durchschnitt der drei  [0.7071]
+[ok]   zwei Fingerprints OHNE Bit sind nicht aehnlich, sondern gar nichts - sonst vergliche sich eine Passage ohne Material mit jeder anderen als identisch
+[ok]   und einer mit einem ohne ebenso
+
+-----------------------------------------
+24 bestanden, 0 gescheitert
+
+EXITCODE=0
+
+URTEIL: BELEGT (rot=1, gruen=0)

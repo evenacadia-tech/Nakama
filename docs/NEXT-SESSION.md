@@ -1,5 +1,13 @@
 # NEXT-SESSION — Einstieg für die nächste Runde
 
+> ## ✅ SONDE-013 / S20–22 ABGENOMMEN — T2 PASS 05.09.2026 (Dirigent), Codestand `f1566f5`, Abschlussdoku im Folgecommit
+>
+> Etappe 2 (Bau A–H) lief Erstprüfung 1 → Nacharbeit 1 → Wiederprüfung 1 → Nacharbeit 2 → Wiederprüfung 2 → Nacharbeit 3 → Wiederprüfung 3 (Codex Sol max, NEEDS_WORK mit 14 Befunden) → **Konvergenzentscheid** (`docs/beweise/SONDE-013.md` §14: 0 Defekte — fünf Testform-Befunde bei korrektem Produktpfad, fünf Mikrosekunden- oder Fehlerpfad-Ränder, zwei Lücken, eine Härtung, ein bestehendes Ack-Muster; Entscheide E-13 und E-14 in §7). Kanon GRUEN 53/53 auf `043e98e`. Register: 25 neue Zeilen NAK-155 bis NAK-179, NAK-47 und NAK-68 geschlossen; Produktfragen P-01 bis P-06 als Karten U28 bis U33 in `docs/plan/fragen.json` (Skill `/fragen`). Planstand 27 von 40 abgenommen.
+>
+> **Als Nächstes (Planstand):** **G4** `Gate` — C++-Review (DSP) + Codex, Stufe T3. Präzedenz für den Gate-Lauf durch den Dirigenten: `docs/beweise/G3.md` (03.09.2026). Vorher prüfen: Codex-Wochenkontingent stand am 05.09. 01:20 bei **81 %** (Warnschwelle 85 %, ab 95 % keine neue Arbeitsphase); ein voller Gate-Lauf mit Sol max kann sie reißen — dann prüft ein frischer Opus-Thread (User-Fallback 31.08.2026). Offen bei dir: sieben Karten U11, U13, U22–U26 plus die neuen sechs.
+>
+> Landminen dieses Laufs: Codex-Sol-max-Wiederprüfungen über einen Fixdiff von rund 17 000 Zeilen dauern 40–65 min (Monitor mit 1 h, danach neu setzen); der Beobachter meldet „Statusquelle unbekannt: Zeitlimit" einmalig ohne Befund und fängt sich; ein Codex-Review ohne `URTEIL:`-Zeile ist NEEDS_WORK, wenn der Kopf „bleiben offen" sagt; die Konvergenzkriterien (bestehender Test, Matrixzeile, Gate-Satz) sind enger als die Regeln eines Nacharbeitsauftrags — Testform-Befunde und Mikrosekunden-Rennen sind Härtung, nicht Defekt; die Cockpit-Caches `$env:TEMP\nakama-dirigent-<session>-telemetry.json` tragen das native Kontextmaß (`ContextPercent`), wenn die Statuszeile ohne stdin nicht lesbar ist.
+
 > ## ⏳ SONDE-013 / S20–22 IM BAU — Etappe 2, Nacharbeit 2 abgeschlossen, Wiederprüfung 2 offen (04.09.2026, Dirigent), Stand `7568ce6`
 >
 > Etappe 1 (Verhaltensmatrix M-01 bis M-86, `docs/beweise/SONDE-013.md` §3/§7) ist nach zwei Nacharbeitsrunden mit Wiederprüfung 2 PASS abgenommen. Etappe 2 (Bau A bis H) steht seit `2379ebf` mit Kanon GRUEN 53/53; Erstprüfung 1 (Codex Sol max, Thread `01a06b42-…`) fand 31 Defekte → Nacharbeit 1 (`b69cd55`); Wiederprüfung 1 (Thread `01a06c5f-…`) fand 31 Defekte und 2 Lücken, Kern: Produktpfade nur halb verdrahtet → Nacharbeit 2 (`7568ce6`, Kanon GRUEN 53/53 auf `b3eccf7`, §12 des Manifests).

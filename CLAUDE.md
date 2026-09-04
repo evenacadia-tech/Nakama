@@ -287,3 +287,8 @@ State-Migrationsstand und den letzten Installationsbeweis prüfen.
 - Ein `git clone` dieses Repos braucht `-c core.longpaths=true` und einen
   kurzen Zielpfad, sonst bricht der Checkout unter `tools/codex-plugins/` mit
   „Filename too long" ab.
+- Der MSVC-Standardstack ist 1 MiB: Testfunktionen, die `FeatureEngine`-Objekte
+  (rund 0,5 MB) oder ganze Prozessoren im Rahmen anlegen, reißen ihn — in
+  SONDE-013 dreimal, jedes Mal an einem neuen Feld unter 2 KiB. Engines in
+  Tests auf den Heap (`std::unique_ptr`); der Fund zeigt sich erst im vollen
+  Kanon, das betroffene Bein allein läuft grün (Register NAK-175).

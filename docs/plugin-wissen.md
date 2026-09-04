@@ -154,7 +154,7 @@ und Kontinuität).
 
 ⚠️ **Warum zwei Engines und nicht eine.** Beide messen 221 Bänder à 1/24
 Oktave — auf **verschiedenen Achsen**: M1 verankert bei 30 Hz (die Achse von
-`tools/analyze-track.py`, Maßstab der Golden-Kreuzvalidierung), der v3-Vertrag
+`tools/analyze-track.py` (historisch, aus dem Repo entfernt), Maßstab der Golden-Kreuzvalidierung), der v3-Vertrag
 nach IEC 61260-1 bei 1000 Hz. Gemessen **1,2 % Versatz**, rund ein Fünftel
 Bandbreite. M1 auf das v3-Gitter zu ziehen hieße, `EqCopGoldenTest` aufzugeben.
 Der Vermerk steht im Kopf von `BandGrid.h`.
@@ -491,7 +491,7 @@ D-K/D-P/D-A in `docs/beweise/NAK-134.md`.
 ### 1.6 Editor — Material-Kit-Front (Provisorium)
 
 `PluginEditor.cpp` + `EqCopilotAssetKit.h` (`skin::`, Tokens aus
-`design/tokens.json`). Größe (`:176-183`): `setResizable(true, true)`,
+`eq-copilot/design/tokens.json`). Größe (`:176-183`): `setResizable(true, true)`,
 Limits 600×416…1950×1352, festes Verhältnis 750:520, Start 1200×832, Timer
 30 Hz. Der Timer ist Poll, kein Maltakt (`:195-267`): EIN Snapshot-Zug pro
 Tick; `repaint()` nur bei neuer `revision`, UI-Änderung, Pipe-Statuswechsel
@@ -903,6 +903,53 @@ JSON-Korpus + MANIFEST · `erzeuge_fb_fixtures.py` Binärkorpus + MANIFEST (je
   `tests/ShotTestMain.cpp:7` und `probe/PipeProbeMain.cpp:1` (Hub-App bzw.
   „Tauri-Broker" — gibt es nicht mehr). `PipeClient.cpp:252` (v1-Zweig) ist
   unerreichbar, weil `:219` nur ein v2-`welcome` annimmt.
+
+## 7 · SONDE-013 (P4): Passage, Experiment, PRE/POST, Invalidierung — Stand 05.09.2026
+
+Abgenommen T2 PASS 2026-09-05 (`docs/beweise/SONDE-013.md`: Matrix §3, Entscheide
+§7 E-01 bis E-14, Bau §10, drei Nacharbeiten §11–§13, Konvergenzentscheid §14;
+Verlauf in `SONDE-013-verlauf.md`). Was seitdem gilt:
+
+- **Plugin** (`plugin/src/PluginProcessor.cpp`, `core/analysis/FeatureEngine.h`,
+  `core/analysis/Vergleichspegel.h`): eine manuelle Passage wird im
+  Nachrichtenthread gebunden (`bindePassagenfenster`, Epoche beim Markieren,
+  Wunsch-Atomics) und im Analyseworker gesetzt (`setzePassagenfenster` mit
+  id, Grenzen, Epoche; ein Seek verwirft sie). Der Vergleichspegel nimmt Audio
+  nur innerhalb des gebundenen Fensters und übergibt per CAS-Tor, nie mit
+  Sperre im Audio-Thread. Der Experimentpfad (`beginneVersuch`,
+  `urteileVersuch`, `brichVersuchAb`) liest die Engine nur unter
+  `externerAnalyseSteuerZug`. Der Hörmarker ist ein Interventionsring mit
+  Sequenz; ein bestätigter Resync setzt sie auf 0, die nächste Intervention
+  sendet 1. `SourcesModel` konsumiert `experimente`, `paare` und
+  `evidence_invalidate` aus dem Snapshotpfad.
+- **Broker** (`broker/src/coordinator/`): `experiment_verdrahtung.rs`
+  (Begin, Kandidat mit gebundener Blindreihenfolge, Terminal;
+  `experiment_events`-Writer; Resultatmessung ab der Begin-Grenze nach E-12;
+  Vergleichbarkeit; Guardrails nur mit echten Größen, sonst „nicht gemessen",
+  E-11), `invalidierung_verdrahtung.rs` (Marker, Preview, Material,
+  Messpunkt; eigener Outbox-Key), `prepost_verdrahtung.rs` (Paare je Session,
+  Neubildung bei jeder Evidenzänderung, kein eigener StoreEvent, E-10),
+  `liveness.rs` (Tail je Taintintervall, Eviction), `befehl.rs` (Befehl und
+  Wirkung in EINEM Append über `persistenz_p0_mit_domaene_und_ords`; ein
+  gescheiterter Append bleibt unbeantwortet, der Link ist danach tot, E-13),
+  `mod.rs::mit_store` (Restore von Passagen, Experimenten, Ereignissen und
+  Evidenz samt Folge).
+- **Verträge** (`eq-copilot/schemas/v3/`): Fassung 2 der Wirefamilien (Stand in
+  `reservierte-nachrichten-v1.json`); `experiment_begin` trägt ein
+  Referenzobjekt (Passage- und Upstream-Fingerprint sind beim Ein-Punkt-Messer
+  dieselbe Zahl, E-14; `nicht_endliche_samples`), `audible_intervention_begin`
+  ein optionales `experiment_id`, `evidence_invalidate` `sample_start` und
+  `sample_end`. `fixtures/v3/handschlag-v1.json` hält sprachübergreifende
+  Konstanten neben dem Korpus. `evidence_snapshot` trägt keine integrierte
+  Lautheit und keinen True Peak (Register NAK-171).
+- **Beweise:** Beine B17 bis B26 und A25/A26 (P4-Korpus); A4-verdrahtung fährt
+  mit `HarnischMitStore` gegen einen echten SQLite-Store — ohne Store ist ein
+  persistenzpflichtiger P0-Befehl `abgelehnt/internal`, und ein Test, der das
+  Modul direkt ruft statt den Produktpfad (Nachricht → Coordinator → Store →
+  Outbox → Subscriber), kann nicht fallen (Lehre der Nacharbeit 2).
+- **Offen im Register:** NAK-155 bis NAK-179 (Konvergenz-Härtungen, Testformen,
+  Vertragsschritte, Nebenbefunde der Etappen); Produktfragen P-01 bis P-06 als
+  Karten U28 bis U33.
 
 ## Gemessen am 21.08.2026
 

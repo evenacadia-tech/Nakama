@@ -1,13 +1,13 @@
 # SONDE-013 — S20–22: Dynamik, Stereo, PRE/POST, Passage und der manuelle Experimentkern
 
-<!-- NAKAMA-URTEIL: T1 PASS 2026-09-04 offen -->
+<!-- NAKAMA-URTEIL: T2 PASS 2026-09-05 -->
 
 | Merkmal | Wert |
 |---|---|
 | Ticket | S20–22, `SONDE-013` (Phase P4–P5) |
-| Phase | **Etappe 2 — Nacharbeit 3 nach Wiederprüfung 2 abgeschlossen (Runde 3 von 3)** (2026-09-04): alle **21 Defekte** und die **entschiedene Lücke B3** der Wiederprüfung 2 sind nach den Ursachenklassen W1 bis W6 geschlossen, je Befund mit Rotbeweis, und gemessen wird mit den Konstellationen, die fallen können — zwei Passagen, zwei Sessions, Seek zwischen Markierung und Worker, genau EIN Resultatsnapshot, injizierter Append-Fehler, Neustart mit OFFENEM Versuch, Push-Fehler mit Reconnect. Verlauf in §13. **Damit ist das Budget von drei Nacharbeitsrunden verbraucht.** Davor: **Etappe 2 — Nacharbeit 2 nach Wiederprüfung 1 abgeschlossen (Runde 2 von 3)** (2026-09-04): alle **31 Defekte** und die **2 entschiedenen Lücken** der Wiederprüfung 1 sind nach den Ursachenklassen V1 bis V7 geschlossen, je Befund mit Rotbeweis, und die Produktpfade sind dort gemessen, wo sie enden — Nachricht rein → Coordinator → Store → Outbox → Subscriber. Verlauf in §12. Davor: **Etappe 2 — Nacharbeit 1 nach Erstprüfung 1 abgeschlossen** (2026-09-04): alle **31 Defekte** und die **2 entschiedenen Lücken** der Erstprüfung 1 sind nach Ursachengruppen geschlossen, je Befund mit Rotbeweis; **B33 bleibt Härtung fürs Register**. Verlauf in §11. Davor: **Etappe 2 — Bau abgeschlossen.** Alle Etappen A bis H sind gebaut und mit einem sauberen Kanonlauf beglaubigt. **Die Etappen C und D sind vollständig gebaut und mit GRUEN 46/46 auf `c8b310b` beglaubigt** (C: M-01 bis M-04, M-06 bis M-12, M-74 bis M-77, M-86; D: M-33 bis M-39, M-78). **Alle Etappen A bis H sind gebaut und mit GRUEN 53/53 auf `f71d741` beglaubigt** (M-26, M-27, M-31 Fingerprint; M-28, M-29, M-30 Comparability; M-69 und der State-Teil von M-25; M-68 entschieden: keine Migration 2); der Store-Teil von M-25 und M-32 hängen nach dem Fund in §10.6 am Träger aus Etappe G. Damit ist die Verhaltensmatrix vollständig gebaut. Etappe 1 (Verhaltensmatrix) ist am 2026-09-04 nach Matrixprüfung 1, Nacharbeit 1, Wiederprüfung 1, Nacharbeit 2 und Wiederprüfung 2 (PASS) abgenommen; die Matrix in §3 ist ab hier die Spezifikation. Bauauftrag: `docs/beweise/roh/SONDE-013-etappe-2-auftrag.txt`, Bau-Verlauf in §10 |
-| Urteil | **offen** — T1 setzt der Erbauer nach der letzten Bauetappe, T2 der Dirigent nach der Codex-Abnahme |
-| Prüfstufe | T1+T2 gefordert (`docs/bauaufteilung-sonden.md`:392). T1 ist das Selbstaudit des Erbauers am Ende der letzten Bauetappe, T2 setzt der Dirigent nach der Codex-Abnahme |
+| Phase | **Abgeschlossen — T2 PASS 2026-09-05** nach Wiederprüfung 3 (NEEDS_WORK, 14 Befunde) und Konvergenzentscheid (§14: 0 Defekte, 14 Register-Zeilen). Davor: **Etappe 2 — Nacharbeit 3 nach Wiederprüfung 2 abgeschlossen (Runde 3 von 3)** (2026-09-04): alle **21 Defekte** und die **entschiedene Lücke B3** der Wiederprüfung 2 sind nach den Ursachenklassen W1 bis W6 geschlossen, je Befund mit Rotbeweis, und gemessen wird mit den Konstellationen, die fallen können — zwei Passagen, zwei Sessions, Seek zwischen Markierung und Worker, genau EIN Resultatsnapshot, injizierter Append-Fehler, Neustart mit OFFENEM Versuch, Push-Fehler mit Reconnect. Verlauf in §13. **Damit ist das Budget von drei Nacharbeitsrunden verbraucht.** Davor: **Etappe 2 — Nacharbeit 2 nach Wiederprüfung 1 abgeschlossen (Runde 2 von 3)** (2026-09-04): alle **31 Defekte** und die **2 entschiedenen Lücken** der Wiederprüfung 1 sind nach den Ursachenklassen V1 bis V7 geschlossen, je Befund mit Rotbeweis, und die Produktpfade sind dort gemessen, wo sie enden — Nachricht rein → Coordinator → Store → Outbox → Subscriber. Verlauf in §12. Davor: **Etappe 2 — Nacharbeit 1 nach Erstprüfung 1 abgeschlossen** (2026-09-04): alle **31 Defekte** und die **2 entschiedenen Lücken** der Erstprüfung 1 sind nach Ursachengruppen geschlossen, je Befund mit Rotbeweis; **B33 bleibt Härtung fürs Register**. Verlauf in §11. Davor: **Etappe 2 — Bau abgeschlossen.** Alle Etappen A bis H sind gebaut und mit einem sauberen Kanonlauf beglaubigt. **Die Etappen C und D sind vollständig gebaut und mit GRUEN 46/46 auf `c8b310b` beglaubigt** (C: M-01 bis M-04, M-06 bis M-12, M-74 bis M-77, M-86; D: M-33 bis M-39, M-78). **Alle Etappen A bis H sind gebaut und mit GRUEN 53/53 auf `f71d741` beglaubigt** (M-26, M-27, M-31 Fingerprint; M-28, M-29, M-30 Comparability; M-69 und der State-Teil von M-25; M-68 entschieden: keine Migration 2); der Store-Teil von M-25 und M-32 hängen nach dem Fund in §10.6 am Träger aus Etappe G. Damit ist die Verhaltensmatrix vollständig gebaut. Etappe 1 (Verhaltensmatrix) ist am 2026-09-04 nach Matrixprüfung 1, Nacharbeit 1, Wiederprüfung 1, Nacharbeit 2 und Wiederprüfung 2 (PASS) abgenommen; die Matrix in §3 ist ab hier die Spezifikation. Bauauftrag: `docs/beweise/roh/SONDE-013-etappe-2-auftrag.txt`, Bau-Verlauf in §10 |
+| Urteil | **T2 PASS 2026-09-05** — Dirigent (Fable), nach Wiederprüfung 3 und Konvergenzentscheid (§14): **0 Defekte**; die 14 Befunde der Wiederprüfung 3 sind an der Quelle und am wörtlichen Gate-Text als Härtung oder Lücke eingeordnet und datiert im Register (NAK-155 bis NAK-165). Kanon des Endstands: GRUEN 53/53 auf `043e98e` (`roh/SONDE-013-043e98e.md`); die Commits danach berühren nur `docs/`. T1 PASS 2026-09-04 vom Erbauer. |
+| Prüfstufe | T1+T2 gefordert (`docs/bauaufteilung-sonden.md`:392). T1 ist das Selbstaudit des Erbauers am Ende der letzten Bauetappe, T2 setzt der Dirigent nach der Codex-Abnahme. **Beide vergeben:** T1 2026-09-04 (Erbauer), T2 2026-09-05 (Dirigent, nach Konvergenzentscheid §14). |
 | Basis-SHA | Etappe 1 begann auf `ed9bbf7fec951a061749abf143cb2158c1c4ee52`; **Etappe 2 baut ab `0fdbb4a09c75e2c93ab9b76e7fcf5d92d0ef17e4`** (Abschluss der Matrixetappe), beide mit `git rev-parse HEAD` gemessen |
 | Kanon vorher | GRUEN 40/40 auf `a627ebb`, Rohausgabe `docs/beweise/roh/NAK-121-a627ebb.md`. `git diff --stat a627ebb..ed9bbf7 -- broker eq-copilot tools` ist **leer**: der Codestand von `ed9bbf7` ist mit dem beglaubigten Kanonstand identisch, die acht Commits dazwischen ändern ausschließlich Dateien unter `docs/` (`git diff --name-only a627ebb..ed9bbf7` liefert 8 Pfade, alle mit diesem Präfix). |
 | Matrixprüfung 1 | Codex `gpt-5.6-sol`, Effort **high**, lesend, Thread `01a06922-fd1d-7222-b180-fcddb1fdfc2d`; `HEAD` vor und nach der Prüfung `367a0ea732c9e883df12f2bfc5abb2f67df6da5d`. Urteil **NEEDS_WORK**, sieben Defekte. Rohausgabe `docs/beweise/roh/SONDE-013-matrixpruefung-1-367a0ea.txt`, Auftrag `docs/beweise/roh/SONDE-013-matrixpruefung-1-auftrag.txt`. Alle sieben Befunde sind an der Quelle als Defekt bestätigt; Wortlaut, Regel und geänderte Zeilen stehen in §8. |
@@ -16,6 +16,8 @@
 | Erstprüfung 1 | Codex `gpt-5.6-sol`, Effort **max**, lesend, Thread `01a06b42-0f1c-7500-95d4-713850720677`; `HEAD` vor und nach dem Lauf `2379ebf510f96b46f11302b59d14c7bf6fa4c14f`, Prüfbereich `0fdbb4a...2379ebf`. Der Lauf gibt **keine URTEIL-Zeile** aus; der Dirigent wertet ihn als **NEEDS_WORK** und hat jeden der 34 Befunde an der Quelle geprüft: **31 Defekte**, **2 Lücken mit entschiedener Regel**, **1 Härtung** (B33, Fingerprint-Version — Register, kein Bau). Auftrag `docs/beweise/roh/SONDE-013-erstpruefung-1-auftrag.txt`, Rohurteil `docs/beweise/roh/SONDE-013-erstpruefung-1-2379ebf.txt`, Nacharbeitsauftrag `docs/beweise/roh/SONDE-013-etappe-2-nacharbeit-1-auftrag.txt`. Wortlaut, Regel, Commit, Test und Rotbeweis je Befund stehen in §11. |
 | Wiederprüfung 1 (Etappe 2) | Codex `gpt-5.6-sol`, Effort **max**, lesend, Thread `01a06c5f-1704-7820-a245-3f02abe1dff8`; `HEAD` `b69cd55`, Prüfbereich `5e978e7...b69cd55`. Der Lauf gibt **keine URTEIL-Zeile** aus; der Dirigent wertet ihn als **NEEDS_WORK** und hat jeden der 33 Befunde an der Quelle prüfen lassen: **31 Defekte**, **2 Lücken mit entschiedener Regel**, **0 widerlegt**. Kernbefund: die Runde 1 hat Funktionen gebaut und Tests geschrieben, die das Modul direkt aufrufen — der Produktpfad war an vielen Stellen nicht geschlossen, und ein Test, der das Modul direkt ruft, kann nicht fallen. Auftrag `docs/beweise/roh/SONDE-013-etappe-2-wiederpruefung-1-auftrag.txt`, Rohurteil `docs/beweise/roh/SONDE-013-etappe-2-wiederpruefung-1-b69cd55.txt`, Nacharbeitsauftrag `docs/beweise/roh/SONDE-013-etappe-2-nacharbeit-2-auftrag.txt`. Wortlaut, Regel, Commit, Test und Rotbeweis je Befund stehen in §12. |
 | Wiederprüfung 2 (Etappe 2) | Codex `gpt-5.6-sol`, Effort **max**, lesend, Thread `01a06d88-46be-7d41-b9b7-9745128f6c44`; `HEAD` vor und nach dem Lauf `eb115af`, Prüfbereich `9876822...eb115af`. Der Lauf gibt **keine URTEIL-Zeile** aus; der Dirigent wertet ihn als **NEEDS_WORK** und hat jeden der 28 Befunde an der Quelle prüfen lassen: **21 Defekte**, **1 Lücke entschieden** (B3), **3 Lücken fürs Register** (B2, B12, C9), **1 Härtung** (B8), **1 widerlegt** (B15), **1 durch Regelanpassung geschlossen** (B7). Kernbefund: die Runde 2 hat die Produktpfade verdrahtet, aber Passagenfenster und Vergleichspegel im Plugin als einen globalen, unsynchronisierten Slot; im Broker lagen Befehl und Wirkung an drei Stellen weiter in getrennten Appends; Paarurteile entstanden nur bei NEUER Evidenz. Auftrag `docs/beweise/roh/SONDE-013-etappe-2-wiederpruefung-2-auftrag.txt`, Rohurteil `docs/beweise/roh/SONDE-013-etappe-2-wiederpruefung-2-eb115af.txt`, Nacharbeitsauftrag `docs/beweise/roh/SONDE-013-etappe-2-nacharbeit-3-auftrag.txt`. Wortlaut, Regel, Commit, Test und Rotbeweis je Befund stehen in §13. |
+| Wiederprüfung 3 (Etappe 2) | Codex `gpt-5.6-sol`, Effort **max**, lesend, Thread `01a06e93-f4a0-7a71-a240-c366944759f2`; `HEAD` vor und nach dem Lauf `f1566f5`, Prüfbereich `8c02520...f1566f5`. **URTEIL: NEEDS_WORK** mit **14 Befunden** (Wortlaut in der Rohdatei). Selbst gemessen hat der Prüfer Passage 127/127, Experiment-UI 52/52, Schema 75/75, Null- und Identitätstests, Rust Experiment 19/19, Taint 14/14 und 29 nicht-storegebundene Verdrahtungstests; Store-/Crashfälle und Codegen-Drift nur gelesen (Sandbox-Temp schreibgeschützt, Python in der Sandbox nicht gestartet). Auftrag `docs/beweise/roh/SONDE-013-etappe-2-wiederpruefung-3-auftrag.txt`, Rohurteil `docs/beweise/roh/SONDE-013-etappe-2-wiederpruefung-3-f1566f5.txt`. Budget: **drei von drei** Nacharbeitsrunden verbraucht → Konvergenzentscheid. |
+| Konvergenzentscheid | Dirigent (Fable), 2026-09-05, §14. Jeder der 14 Befunde ist an der Quelle (lesender Prüfagent, sechs Quellenfragen F1–F6) und am **wörtlichen** Gate-Text, der Matrix und den Invarianten aus `CLAUDE.md` eingeordnet. **0 Defekte.** Fünf Test-Form-Befunde (C1-Test, C2-Test, B14-Test, B17-Test, B18-Test): der Produktpfad ist an der Quelle korrekt, die Testkonstellation ist schwächer als die Dirigentenregel. Fünf Nebenläufigkeits-Randfälle in Mikrosekundenfenstern oder Fehlerpfaden (C1-Rennen, C6, B9, B16-Index, B17-Replay). Zwei Lücken ohne Zusage (B3-Rest; B10 — der Ein-Punkt-Messer sendet Upstream- gleich Passage-Fingerprint, `PluginProcessor.cpp:1930-1934`, das Gate ist damit wertgleich, E-14). Eine Härtung am Normalpfad (C4: ein Block derselben Koordinaten nach Seek). Ein bestehendes Muster (B16-Ack: gescheiterter Append bleibt unbeantwortet wie `persistenz_p0` seit SONDE-011; der W3-Wortlaut „abgelehnt/internal" ist zurückgenommen, E-13). Alle datiert im Register **NAK-155 bis NAK-165**; keine vierte Runde. |
 | Nacharbeit 3 | Fünf Ursachencommits: `899df16` (W1 Passagenbindung und Nebenläufigkeit im Plugin: C2, C3, C4, C6, C7 — **zusammen mit** W2 Wirezustand und Handschlag: C1, C5, C8, weil beide Klassen `PluginProcessor.cpp/.h` und `Sonde013PassageStateTest.cpp` teilen und jede Trennung einen nicht übersetzenden Zwischenstand erzeugt hätte), `71194a7` (W3 Atomarität Befehl↔Wirkung und Rollback: B3, B4, B14, B16), `a3654f5` (W4 Replay und Reihenfolge: B5, B6, B9), `562c4cc` (W5 Zustellung: B17), `14e0d5c` (W6 Rechenwege und Paarbildung: B1, B10, B11, B13, B18, B19). **22 Rotbeweise** unter `docs/beweise/roh/` (`SONDE-013-rot-C1-r3.txt` bis `-C8-r3.txt` sowie `-B1-`, `-B3-` bis `-B6-`, `-B9-` bis `-B11-`, `-B13-`, `-B14-`, `-B16-` bis `-B19-r3.txt`); C1 trägt beide Hälften des Handschlags, Plugin und Broker. Jeder fällt an einem TESTFALL, nicht an einem Übersetzungsfehler. Budget: **drei von drei** Nacharbeitsrunden verbraucht. |
 | Nacharbeit 2 | Sechs Ursachencommits, eine Ursachenklasse je Commit: `725ab66` (V4 Schema- und Vertragsbruch: R22, R23, R26, R27), `6631c36` (V7 Autorisierung und Isolation: R09, R31), `da00cc7` (V6 Grenzen und Lebenszyklus: R02, R04, R05, R33), `fb92928` (V1 Produktaufrufer und V2 Persistenz/Replay: R01, R03, R06, R21, R24 sowie R07, R08, R10–R13, R15 — **bewusst in einem Commit**, weil beide Klassen sich `experiment_verdrahtung.rs` und `befehl.rs` teilen und jede Trennung einen nicht übersetzenden Zwischenstand erzeugt hätte), `163b865` (V5 Fachliche Rechenwege: R16–R20, R25, R29, R30), `14dea8c` (V3 Outbox und Zustellung: R14, R28, R32). **33 Rotbeweise** unter `docs/beweise/roh/` (`SONDE-013-rot-R01-r2.txt` bis `-R33-r2.txt`, je einer für die 31 Defekte und die 2 Lücken). Jeder fällt an einem TESTFALL, nicht an einem Übersetzungsfehler. Budget: **zwei von drei** Nacharbeitsrunden verbraucht. |
 | Nacharbeit 1 | Vier Ursachencommits, ein Block je Commit: `e49d16c` (G2 C++, G3, G4, G7), `344d858` (G2 Broker, G5, G8), `7e7629b` (G6), `f6c6650` (G1); dazu Manifest (`3f3238d`), drei Selbstauditcommits (`22fd1b2`, `9e6fd9c`, `5fdf36b`), zwei Kanonbefunde (`8777410`, `41a707b`) und der Abschluss (`ddfae10`). **33 Rotbeweise** unter `docs/beweise/roh/` (`SONDE-013-rot-B01-r1.txt` bis `-B32-r1.txt` und `-B34-r1.txt` — je einer für die 31 Defekte und die 2 Lücken; B33 ist Härtung und hat keinen), plus `-N1-taintdeckel-r1.txt` für den zweiten Selbstauditfund. Jeder fällt an einem TESTFALL, nicht an einem Übersetzungsfehler. Budget: **eine von drei** Nacharbeitsrunden verbraucht. |
@@ -27,14 +29,14 @@
 | Änderungssatz Etappe 2 | Fortlaufend in §10 je Bauetappe geführt: Commits, Beine, Rotbeweise, Abweichungen von §5 und Nebenbefunde. Die Beinzahl wächst mit den Etappen C bis H von 41 auf **53** (neu: **B17** `EqCopSonde013TruePeakGoldenTest`, **B18** `EqCopSonde013DynamicsTest`, **B19** `EqCopSonde013StereoGoldenTest`, **B20** `EqCopSonde013QualityClassTest`, **B21** `EqCopSonde013InterventionRingTest`, **B22** `EqCopSonde013FingerprintGoldenTest`, **B23** `EqCopSonde013PassageStateTest`, **B24** `EqCopSonde013PrePostGoldenTest`, **B25** `EqCopSonde013ExperimentGoldenTest`, **B26** `EqCopSonde013ExperimentUiTest`, **A25** `erzeuge_p4_korpus.py`, **A26** `pruefe_p4_korpus.py`) und sinkt um kein Bein. Der volle Kanon steht am Ende jeder Etappe, die Schema-, Fixture- oder Runnerdateien berührt (§5.1); für alle Etappen ist er mit GRUEN 53/53 auf `f71d741` beglaubigt (davor GRUEN 51/51 auf `e8c179b` für C bis G). |
 | Grenze | Etappe 2 baut ausschließlich, was §3 zusagt. Prüfbereich sind die Ticketpfade aus §5.2; jede Datei außerhalb steht mit Begründung in §10. `docs/offene-punkte.md` und `docs/PLAN-STAND.md` bleiben unberührt — Nebenbefunde sammelt §10, der Dirigent zieht sie im Abschluss nach. |
 
-> **Belegfeld gesetzt, T1 vergeben, T2 offen.** Seit dem ersten Commit der
+> **Belegfeld gesetzt, T1 und T2 vergeben.** Seit dem ersten Commit der
 > Etappe 2 (`65fa1db`) zeigt das `beleg`-Feld von Schritt `S20–22` in
 > `docs/plan/plan.json` auf dieses Manifest. Seit dem 2026-09-04 trägt es
 > die Marke `T1 PASS`: alle acht Bauetappen stehen, die Verhaltensmatrix aus
 > §3 ist vollständig gebaut, und der volle Kanon ist auf dem Endstand grün.
-> **T2 kommt vom Dirigenten nach der Codex-Abnahme** — bis dahin steht in der
-> Marke ausdrücklich `offen`, und `docs/PLAN-STAND.md` zeigt den Schritt
-> nicht als fertig.
+> **Seit dem 2026-09-05 trägt es `T2 PASS`:** der Dirigent hat sie nach der
+> dritten Codex-Wiederprüfung im Konvergenzentscheid (§14) vergeben, und
+> `docs/PLAN-STAND.md` zeigt den Schritt als abgenommen.
 
 **Warum Etappe 1 überhaupt:** Das Ticket berührt drei Klassen, die im
 Nachhinein teuer sind. **Verträge** — die v3-Schemas sind nach dem ersten
@@ -1151,6 +1153,8 @@ belegte neue Wortlaut.
 | **E-10** (M-13/M-22) | **Ein Paarurteil bekommt KEINEN eigenen `StoreEvent`.** Dirigentenentscheid 2026-09-04 (Nacharbeit 3, Befund B19). Ersetzt die Regel V3/V4 aus §12 **für Paarurteile**; für Experimentterminal und Invalidierung bleibt sie unverändert. | Das Urteil folgt deterministisch aus der Evidenz, und die ist persistiert. Es wird beim Restore **gerechnet**, nicht gelesen: `Coordinator::mit_store` bildet die Paare, und `descriptor_setzen` bildet sie erneut, sobald die Rolle einer Quelle zurück ist — ohne dass ein neuer Snapshot kommen muss. Ein eigenes Ereignis wäre eine zweite Wahrheit über denselben Sachverhalt und könnte von der Evidenz abweichen. Die Neubildung läuft bei JEDER Evidenzänderung: Append, Invalidierung, Kapazitäts-Eviction, Tombstone-Eviction und Restore. | A4-verdrahtung `paarurteil_entsteht_beim_neustart_aus_der_evidenz` und `invalidierung_bildet_das_paarurteil_neu`. |
 | **E-11** (M-45) | **Guardrails tragen nur echte Grössen; eine fehlende Grösse ist `nicht gemessen` mit Grund.** Dirigentenentscheid 2026-09-04 (Nacharbeit 3, Befund B11). | `evidence_snapshot` trägt heute weder integrierte Lautheit noch True Peak. Die Achsen `guardrail_loudness_db` und `guardrail_peak_db` bleiben deshalb `None`, und `guardrail_nicht_gemessen` nennt den Grund; die Guardrail-Achse fällt dann auf `NichtBeurteilbar` statt auf `Unveraendert`. Eine Ersatzgrösse unter dem echten Namen — etwa das Mittel spektraler P50-Werte als „Loudness" — ist ausgeschlossen (M-07). Der fehlende Vertragsteil ist ein eigener Fassungsschritt und gehört nicht in dieses Ticket; er steht als Nebenbefund in §13.9. | A4-verdrahtung `resultatmessung_ist_an_versuch_passage_und_grenze_gebunden`. |
 | **E-12** (M-49) | **Die Evidenzgrenzen sind der Wert, den der NÄCHSTE angenommene Snapshot tragen wird.** Dirigentenentscheid 2026-09-04 (Nacharbeit 3, Befund B9). | `evidenz_folge.load()` liefert genau diesen Wert, weil `fetch_add` den alten zurückgibt. Daraus folgt die Konvention: Baseline ist `empfangsfolge < begin_folge`, Resultat ist `empfangsfolge >= kandidat_folge`. Ein `>` beim Kandidaten verwürfe den ERSTEN Beleg der Änderung. | A4-verdrahtung `genau_ein_snapshot_nach_dem_kandidaten_ist_ein_resultat`. |
+| **E-13** (M-49/M-52) | **Ein persistenzpflichtiger Befehl mit gescheitertem Append bleibt unbeantwortet; der Link ist danach tot.** Dirigentenentscheid 2026-09-05 (Konvergenzentscheid, Befund B16-Ack). Der W3-Wortlaut „abgelehnt/internal" aus dem Nacharbeitsauftrag 3 ist damit zurückgenommen. | Das ist das bestehende Muster von `persistenz_p0` (`store_verweigert_fuer_link` und `None`, `befehl.rs:353/383-386`, gleich dem Lesefehlerpfad `:173-177`) und die Retryzusage aus SONDE-011 (`brokerkill_vor_ack_reiht_dieselbe_command_id_wieder_ein`); ein `command_ack abgelehnt/internal` gibt es nur bei fehlendem Store. Eine definitive Quittung statt Timeout wäre ehrlicher und steht als Härtung **NAK-164** im Register. | §13.4 „Die Naht"; A4-verdrahtung fährt den Reconnect-Fall. |
+| **E-14** (M-29/M-31) | **Beim Ein-Punkt-Messer ist der Upstream-Fingerprint der Passage-Fingerprint; das Gate „Upstream-Feature-Cosine" rechnet bis auf Weiteres über `passage_fingerprint`.** Dirigentenentscheid 2026-09-05 (Konvergenzentscheid, Befund B10). | Das Plugin misst genau einen Punkt der Kette und setzt beide Felder gleich (`PluginProcessor.cpp:1930-1934`); ein Vergleich über `upstream_fingerprint` (`experiment_verdrahtung.rs:1134-1146` liest es heute nicht) wäre wertgleich. Sobald ein Erzeuger einen eigenen Upstream liefert (PRE-Hälfte eines Paares nach M-13, Aktivmodus), liest das Gate `upstream_fingerprint`; ohne beobachtbaren Upstream ist das Gate „nicht beobachtbar" mit benannter Herabstufung (M-29), nie ein starker Vergleich. Register **NAK-162**. | `vergleichbarkeit.rs` `GATE_MATERIAL_COSINE`; A4-verdrahtung `passagenbelege_kommen_aus_den_vertretenen_quellen`. |
 | **E-08** | **Der Hörmarker bleibt in Gen/Main.** Kein Marker in Probeeq in diesem Ticket. | Interventions-Producer (M-37, M-38) und NAK-47-Ausfade (M-34, M-36) an der vorhandenen Stelle in `PluginProcessor.cpp` / `HoerMarkierung.h`. Ein Marker in Probeeq wäre eine Produktfähigkeit ohne Entscheid und widerspricht Erratum (p). | wie §3.4. |
 
 ### 7.2 Widersprüche und Produktfragen
@@ -4299,6 +4303,101 @@ Nebenbefunde, die kein Codex-Befund waren. Sie gehören datiert nach
 | F · Writer, Reader, Migration, Fixtures im selben Änderungssatz | C5: Schema, `erzeuge_v3_fixtures.py`, Positiv- und Negativfixtures, A5-Korpus und Brokerleser in `899df16` |
 
 > **Ältere Kanonläufe:** die Abschnitte vor dem jüngsten stehen unverändert in [`docs/beweise/SONDE-013-verlauf.md`](SONDE-013-verlauf.md) — ausgelagert am 2026-09-04, weil der Lesetext dieses Manifests über 3 000 Zeilen lag. Der jüngste Lauf bleibt hier, weil `tools/plan/planstand.py` seine Bilanz an dieser Stelle liest.
+
+## 14. Konvergenzentscheid nach Wiederprüfung 3 (2026-09-05)
+
+Append-only. Die Wiederprüfung 3 (Codex `gpt-5.6-sol`, Effort **max**, lesend,
+Thread `01a06e93-f4a0-7a71-a240-c366944759f2`, `HEAD` `f1566f5` vor und nach
+dem Lauf, Prüfbereich `8c02520...f1566f5`) endet mit **URTEIL: NEEDS_WORK**
+und 14 Befunden. Das Rundenbudget (drei Nacharbeitsrunden) ist verbraucht;
+nach §3.4 des Dirigenten-Skills startet keine vierte Runde, sondern der
+Konvergenzentscheid: **Defekt nur, wenn ein bestehender Test, eine Zeile der
+Verhaltensmatrix oder ein Satz des Gate-Textes bricht** — alles andere ist
+Lücke oder Härtung und geht datiert ins Register. Auftrag
+`docs/beweise/roh/SONDE-013-etappe-2-wiederpruefung-3-auftrag.txt`, Rohurteil
+`docs/beweise/roh/SONDE-013-etappe-2-wiederpruefung-3-f1566f5.txt`.
+
+Sechs Befunde hingen an einer Quellenfrage; ein lesender Prüfagent hat sie am
+Stand `f1566f5` beantwortet (F1–F6). Die übrigen acht sind am Wortlaut von
+Gate, Matrix und Invarianten eingeordnet. **Ergebnis: 0 Defekte.** Kein
+Befund bricht einen bestehenden Test, eine Matrixzeile oder einen Gate-Satz
+auf dem Produktpfad; die Prüferregeln, die brechen, sind die Regeln des
+Dirigenten aus dem Nacharbeitsauftrag 3 (Testkonstellationen), nicht die
+Zusagen des Tickets.
+
+### 14.1 Einordnung je Befund
+
+| Kennung (Codex-Überschrift) | Quelle | Einordnung | Register |
+|---|---|---|---|
+| C1-Rennen „Synchronisiere den Sequenz-Reset mit dem Audiocallback" | F1: der sequenzielle Pfad ist korrekt — `PluginProcessor.cpp:1199-1209` setzt nach `fuellstand()==0 && !hoerbar()` den Zähler auf 0, `:577/:613` senden `fetch_add(1)+1` = 1, `intervention.rs:370` erwartet 1. Das Rennen braucht einen Audiocallback, der genau zwischen Leerprüfung und Reset eine Intervention erzeugt. | **HÄRTUNG** — Mikrosekundenfenster, kein Matrixbruch am Normalpfad (M-61 hält). | NAK-155 |
+| C1-Test „Prüfe C1 über den echten Control-Link" | Test `r01Resync` ruft `v3LinkFuerTest` und den Rust-Gegenpart direkt; kein ControlClient↔Broker-Handschlag. | **HÄRTUNG** (Testform) — kein Test, keine Matrixzeile, kein Gate-Satz bricht; die Konstellation stammt aus der W2-Regel. | NAK-156 |
+| C2-Test „Markiere C2 vor dem Seek im Produkttest" | F2: der Produktpfad liest die Epoche beim Markieren (`PluginProcessor.cpp:1776-1786` unter `externerAnalyseSteuerZug`, `:1804` `passagenfensterEpocheWunsch`), der Worker vergleicht `:840-853`, die Engine `FeatureEngine.h:1259`, der Seek erhöht `:2109`. Der Test injiziert die alte Epoche statt vor dem Seek zu markieren. | **HÄRTUNG** (Testform) — Gate „Invalidierung bei … Seek" hält am Produktpfad. | NAK-156 |
+| C4 „Lösche das Pegelfenster schon an der Transportkante" | Seek oder Loop **innerhalb derselben** `[start,end)`-Koordinaten: der Audiocallback löscht `fensterAktiv`, nicht `pegelFensterAktiv`; bis der Worker nachzieht, nimmt der Vergleichspegel den ersten Block der neuen Epoche — dasselbe Material an denselben Koordinaten. | **HÄRTUNG** — M-20 („für die gewählte Passage") hält, die Epochenbindung ist eine Dirigentenregel. | NAK-158 |
+| C6 „Übergib den Vergleichspegel als ganzen Hostblock" | `speise` je Kanal, das CAS-Tor wird je Aufruf freigegeben; `friereEin` kann zwischen Kanal 0 und 1 übernehmen. Kein Datenrennen mehr (das Tor schließt es), ein halber Stereoblock im Pegel über ≥ 400 ms. | **HÄRTUNG** — Invariante „Audio echtzeitfest" hält; Genauigkeitsrand. | NAK-159 |
+| B3 „Rolle das globale Experimentlog nicht zurück" | Rollback bei Append-Fehler ist auf den Eintrag der `experiment_id` begrenzt (Regel B3), trunkiert aber Transitionslog und globale Folge; sichtbar nur bei parallelen Sessions mit gleichzeitigem Append-Fehler. | **LÜCKE** — war schon in der Wiederprüfung 2 Lücke; Rest bleibt ohne Zusage. | NAK-160 |
+| B9 „Setze die Kandidatengrenze unter dem Evidenz-Lock" | `evidenzfolge` wird vor dem `stand`-Lock gelesen (`experiment_verdrahtung.rs:878`); ein Snapshot, der genau dazwischen das Lock gewinnt, landet in der Resultathälfte. | **HÄRTUNG** — Mikrosekundenfenster; E-12 hält am seriellen Pfad. | NAK-161 |
+| B10 „Vergleiche auch den Upstream-Fingerprint" | F3: `upstream_fingerprint` wird nie verglichen — aber das Plugin setzt ihn gleich dem Passage-Fingerprint (`PluginProcessor.cpp:1930-1934`, Ein-Punkt-Messer); das Gate ist damit wertgleich. Keine Matrixzeile verlangt wörtlich den Vergleich des Feldes; Entwurf §43.2 setzt einen beobachtbaren Upstream voraus. | **LÜCKE mit Dirigentenregel** (E-14). | NAK-162 |
+| B14-Test „Beweise die Invalidierungsatomarität mit einem Crash" | F4: preview_begin/renew/end und der Materialwechsel nach `experiment_begin` laufen in EINEM `persistenz_p0_mit_domaene_und_ords` (`befehl.rs:703-716`, `experiment_verdrahtung.rs:243-308`, Unterbau `befehl.rs:336-353`). Der Test misst `event_ord`-Abstand 1 statt eines Crashs. | **HÄRTUNG** (Testform) — Killmatrix-Fall fehlt, Produktpfad ist atomar. | NAK-157 |
+| B16-Ack „Antworte auf Append-Fehler mit abgelehnt/internal" | F5: `None` ohne Antwort ist das bestehende Muster von `persistenz_p0` (`befehl.rs:353/383-386`, wie `:173-177` und `liveness.rs:466-472`); SONDE-011 deckt den Retry über Reconnect ab. | **kein Befund** — bestehendes Muster; W3-Wortlaut zurückgenommen (E-13). Definitive Quittung als Härtung. | NAK-164 |
+| B16-Index „Rolle Invalidierungen über stabile Evidence-IDs zurück" | Rollback über Indizes; nur wenn die Historie am Retention-Deckel steht UND während eines **fehlgeschlagenen** Appends ein Snapshot eintrifft, verschieben sich die Indizes. | **HÄRTUNG** — Fehlerpfad × Randlage. | NAK-163 |
+| B17-Replay „Spiele Deltas erst nach dem absoluten Snapshot nach" | Scheitert der absolute Snapshot-Push beim Re-Subscribe, laufen die Outbox-Deltas trotzdem; die Session-Projektion trägt den Ausschluss ohnehin, der nächste absolute Snapshot heilt. | **HÄRTUNG** — Fehlerpfad beim Reconnect. | NAK-165 |
+| B17-Test „Fahre B17 über Reconnect bis ins Pluginmodell" | Test abonniert auf demselben Link erneut; kein Disconnect, kein `V3Sender`, kein `SourcesModel::uebernehmeEvidenzruecknahme`. | **HÄRTUNG** (Testform). | NAK-157 |
+| B18-Test „Ergänze die Kapazitäts-Eviction im B18-Test" | F6: `client_eviktieren_locked` (`liveness.rs:123-130`, aus `platz_schaffen_locked:36,42`) setzt `paare_neu_bilden`, `link.rs:296-310` ruft `paare_bei_bedarf_bilden`, `prepost_verdrahtung.rs:64-72` bildet neu. Kein Test füllt den Clientdeckel. | **HÄRTUNG** (Testform) — M-22 hält am Produktpfad. | NAK-157 |
+
+### 14.2 Was aus der Wiederprüfung 2 noch ins Register geht
+
+B2 (Transportbruch-Invalidierung vor dem Evidence-Append, Lücke → NAK-167),
+B8 (Experimentterminal ohne eigenen Outbox-Key, Härtung → NAK-166), B12
+(Herkunft der Schutzbereiche, Lücke für SONDE-014 → NAK-168), C9
+(Plugin-Experimentzustand vor dem Broker-ACK, Lücke für das UI-Ticket →
+NAK-169), B33 (Fingerprint-Ähnlichkeit ignoriert `version`, Härtung →
+NAK-170). B7 ist durch E-09 geschlossen, B15 widerlegt (M-52 nennt den Tail).
+
+### 14.3 Nebenbefunde der Etappen (§10, §12.9, §13.9) im Register
+
+NAK-171 (`evidence_snapshot` ohne integrierte Lautheit und True Peak, §13.9
+Nr. 1), NAK-172 (`experiment_manual_result` ohne Preset-/Screenshot-Hash,
+§10.1), NAK-173 (`parken_uebergeht_den_backoff` zeitabhängig, §10.1), NAK-174
+(Fassungsnummer an vier Orten, `kJsonSchemaMinor` ohne Riegel, §10.2), NAK-175
+(Teststacks mit Engines im Funktionsrahmen, §10.3/§10.6/§12.9 Nr. 4), NAK-176
+(`psrDb`-Bedeutung ohne `kFeatureMetricsVersion`-Anhebung, §10.3), NAK-177
+(Bass unter 200 Hz ohne Kohärenz und Phase, §10.4), NAK-178 (Evidenzsnapshot
+3,9-mal größer, `kEvidenzP1Schwelle` zählt Einträge, §10.4), NAK-179 (Hörmarker
+stumm ohne gepatchte Hostbrücke, Zustandsmeldung, §10.5). Die Produktfragen
+P-01 bis P-06 aus §4.2 stehen seit dem 2026-09-05 als Karten U28 bis U33 in
+`docs/plan/fragen.json`. NAK-47 (Rampe statt Schnitt, §10.5) und NAK-68
+(`integration_samples`, Feld-ID 14, §10.2) sind mit diesem Ticket geschlossen.
+
+### 14.4 Prüffolge und Bilanz der Etappe 2
+
+| Runde | Bereich | Urteil | Ergebnis |
+|---|---|---|---|
+| Erstprüfung 1 | `0fdbb4a...2379ebf` | NEEDS_WORK (34 Befunde) | 31 Defekte, 2 Lücken, 1 Härtung → Nacharbeit 1 |
+| Wiederprüfung 1 | `5e978e7...b69cd55` | NEEDS_WORK (33) | 31 Defekte, 2 Lücken → Nacharbeit 2 |
+| Wiederprüfung 2 | `9876822...eb115af` | NEEDS_WORK (28) | 21 Defekte, 1 Lücke entschieden, 3 Lücken, 1 Härtung, 1 widerlegt, 1 Regelanpassung → Nacharbeit 3 |
+| Wiederprüfung 3 | `8c02520...f1566f5` | NEEDS_WORK (14) | Konvergenzentscheid: 0 Defekte, 14 Register-Zeilen → **T2 PASS** |
+
+`py -3.13 tools/dirigent/rundenbilanz.py --runden 0fdbb4a 2379ebf b69cd55 9876822 b3eccf7 8c02520 14e0d5c`:
+Bau `0fdbb4a..2379ebf` Produkt 105 Dateien +12924/−217, Tests 22 Dateien
++8717/−30; Nacharbeit 1 `2379ebf..b69cd55` Produkt 58 Dateien +4358/−233,
+Tests 14 Dateien +2101/−30; Nacharbeit 2 `9876822..b3eccf7` Produkt 42 Dateien
++4774/−397, Tests 10 Dateien +2846/−81; Nacharbeit 3 `8c02520..14e0d5c`
+Produkt 25 Dateien +4120/−2235, Tests 5 Dateien +1822/−41; die Zwischenstände
+`b69cd55..9876822` und `b3eccf7..8c02520` sind reine Doku (Auftrag und
+Urteil). Gesamt `0fdbb4a..f1566f5`: **Produkt 154 Dateien +24741/−1623 ·
+Tests 25 Dateien +15341/−37 · Prüfwerkzeug 7 Dateien +1674/−17 · Doku 208
+Dateien +120984/−116.** Kein Konvergenzsignal des Werkzeugs; jede
+Nacharbeitsrunde trug Produktdiff, und die dritte Wiederprüfung erhebt keinen
+Befund mehr, der eine Zusage bricht.
+
+**Warum das kein Wegdeklarieren ist.** Jeder der 14 Befunde steht mit Quelle,
+Einordnung und Registernummer in §14.1; fünf sind Testformen für einen
+Produktpfad, der an der Quelle geprüft korrekt ist, fünf sind
+Nebenläufigkeitsränder in Mikrosekundenfenstern oder Fehlerpfaden, zwei sind
+Lücken ohne Zusage, einer eine Härtung am Normalpfad, einer das bestehende
+Broker-Muster. Die Codex-Läufe S8 (19 Runden) und dieses Ticket (drei Runden,
+je Runde deutlich weniger und andere Befunde) zeigen dieselbe Kurve: die
+Prüferregeln wachsen mit jeder Runde, die Zusagen des Tickets nicht.
 
 ## Kanon-Lauf - SONDE-013
 

@@ -81,6 +81,72 @@
    "wo": "docs/offene-punkte.md NAK-122 und NAK-106; docs/plan/plan.json S18–19; eq-copilot/identity/host-capabilities-fl-v1.json",
    "seit": "02.09.",
    "status": "offen"
+  },
+  {
+   "id": "U28",
+   "dringlichkeit": "vor dem Gen-UI-Ticket (S31b)",
+   "art": "Produktentscheid (Bedienung)",
+   "titel": "Wie markierst du eine Passage — welche Geste, welcher sichtbare Zustand, und was passiert bei Transportstopp mittendrin?",
+   "was": "Auf Gens erster Oberfläche soll eine Passage von Hand markiert werden (SONDE-013 baut die Technik: Start, Ende, Transportepoche, Fingerprint). Offen ist die Bedienung: eine Geste (z. B. Start-/Ende-Taste, Ziehen im Graph), was während der Markierung sichtbar ist, und ob ein Transportstopp die halbe Markierung verwirft oder hält.",
+   "warum": "SONDE-013 §4.2 P-01. Die Technik hält das Fenster passagengebunden und verwirft es bei Seek (Gate §58); wie der User es setzt und sieht, entscheidet die Bedienarchitektur, nicht die Technik.",
+   "wo": "docs/beweise/SONDE-013.md §4.2; design/docs/funktions-und-bedien-blueprint.md; docs/offene-punkte.md NAK-179",
+   "seit": "05.09.",
+   "status": "offen"
+  },
+  {
+   "id": "U29",
+   "dringlichkeit": "vor dem Gen-UI-Ticket (S31b)",
+   "art": "Produktentscheid (Bedienung)",
+   "titel": "Was zeigt Gen von einem laufenden Versuch, während du im fremden Werkzeug arbeitest?",
+   "was": "Ein manueller Versuch (Baseline verriegelt, du änderst etwas in einem anderen Plugin, dann Kandidat) läuft minutenlang. Bleibt die Landkarte dabei normal bedienbar, oder gibt es einen sichtbaren Versuchszustand (Banner, gesperrte Elemente, Fortschritt)?",
+   "warum": "SONDE-013 §4.2 P-02. Der Broker hält den offenen Versuch (M-48 Retention, M-50 Neustart); Register NAK-172 (Preset-/Screenshot-Hash als Beleg) hängt an derselben Antwort.",
+   "wo": "docs/beweise/SONDE-013.md §4.2; design/docs/funktions-und-bedien-blueprint.md; docs/offene-punkte.md NAK-179",
+   "seit": "05.09.",
+   "status": "offen"
+  },
+  {
+   "id": "U30",
+   "dringlichkeit": "vor dem Gen-UI-Ticket (S31b)",
+   "art": "Produktentscheid (Bedienung)",
+   "titel": "Ist der Blind-A/B-Modus der Standard oder eine Zuschaltung?",
+   "was": "Beim Hörurteil kann Gen die Reihenfolge von Baseline und Kandidat verbergen und randomisieren (M-44: Reihenfolge wird vor dem Urteil append-only gebunden). Der Entwurf §43.2 nennt den Modus „optional\". Standard an, Standard aus, oder je Versuch wählbar?",
+   "warum": "SONDE-013 §4.2 P-03. Rein eine Bedienentscheidung; die Technik bindet die Reihenfolge in beiden Fällen.",
+   "wo": "docs/beweise/SONDE-013.md §4.2; design/docs/funktions-und-bedien-blueprint.md; docs/offene-punkte.md NAK-179",
+   "seit": "05.09.",
+   "status": "offen"
+  },
+  {
+   "id": "U31",
+   "dringlichkeit": "vor dem Gen-UI-Ticket (S31b)",
+   "art": "Produktentscheid (Bedienung)",
+   "titel": "In welcher Reihenfolge zeigt Gen Zielmetrik, Guardrails, Effektstabilität und Hörurteil — und welche Guardrail-Verletzung ist sichtbar dringlicher?",
+   "was": "Die Auswertung hat vier getrennte Achsen und nie eine Gesamtnote (M-45). Gesucht: die Lesereihenfolge auf der Fläche und ob z. B. eine Loudness-Verletzung lauter angezeigt wird als eine Breiten-Verletzung.",
+   "warum": "SONDE-013 §4.2 P-04. Loudness und True Peak sind bis NAK-171 „nicht gemessen\" mit Grund; die Anzeige muss das ehrlich zeigen können.",
+   "wo": "docs/beweise/SONDE-013.md §4.2; design/docs/funktions-und-bedien-blueprint.md; docs/offene-punkte.md NAK-179",
+   "seit": "05.09.",
+   "status": "offen"
+  },
+  {
+   "id": "U32",
+   "dringlichkeit": "vor dem Gen-UI-Ticket (S31b)",
+   "art": "Produktentscheid (Bedienung)",
+   "titel": "Wie sieht ein PRE/POST-Paar in der Quellenliste aus — zwei Zeilen, eine Zeile mit zwei Hälften, oder eine eigene Ansicht?",
+   "was": "Zwei Sonden mit derselben pair_id (vor und nach der Kette) bilden ein Paar mit drei getrennten Ergebnissen (M-14). Wie das Paar in der Quellenliste erscheint und wie eine fehlende oder getrennte Hälfte aussieht (M-22 „unclear mit Grund\"), ist offen.",
+   "warum": "SONDE-013 §4.2 P-05; Blueprint Gen Fläche 1.",
+   "wo": "docs/beweise/SONDE-013.md §4.2; design/docs/funktions-und-bedien-blueprint.md; docs/offene-punkte.md NAK-179",
+   "seit": "05.09.",
+   "status": "offen"
+  },
+  {
+   "id": "U33",
+   "dringlichkeit": "vor dem Gen-UI-Ticket (S31b)",
+   "art": "Produktentscheid (Bedienung)",
+   "titel": "Soll der User eine Passage benennen können, und reist der Name mit dem FL-Projekt?",
+   "was": "Die Technik kann beides: ein Name im Plugin-State reist mit dem Projekt (NakamaState, bis 64 Passagen). Die Frage ist, ob das Produkt Namen will oder Passagen nur über Zeitbereich und Zeitpunkt identifiziert.",
+   "warum": "SONDE-013 §4.2 P-06. Ein Name wäre ein persistentes Feld und damit ein Vertragsschritt am State — deshalb vor dem UI-Ticket entscheiden.",
+   "wo": "docs/beweise/SONDE-013.md §4.2; design/docs/funktions-und-bedien-blueprint.md; docs/offene-punkte.md NAK-179",
+   "seit": "05.09.",
+   "status": "offen"
   }
  ],
  "beantwortet": {

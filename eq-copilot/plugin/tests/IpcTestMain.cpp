@@ -2473,6 +2473,20 @@ void kopplungswarte_faelscht_den_backoff_nicht()
     const auto verzug = std::chrono::duration_cast<std::chrono::milliseconds> (
         std::chrono::steady_clock::now() - t0).count();
     const auto danach = versuchsStempel (versuche, 1, 8000);
+    // ⚠️ SONDE-013 Nacharbeit 1: auf den PRUEFSTATUS warten, statt ihn
+    // anzunehmen.
+    //
+    // Der Fall las den Snapshot unmittelbar nach dem letzten Versuchsstempel
+    // und erwartete `nichtDa`. Der Statuswechsel passiert aber IM Clientthread
+    // und ist mit dem Stempel nicht synchronisiert: unter Last steht dort noch
+    // `nichtGeprueft` (0), und der Fall fiel — einmal im Kanonlauf vom
+    // 04.09.2026 auf `8777410`, waehrend derselbe Lauf ihn standalone zweimal
+    // gruen sah (Status 1). Das ist eine Zeitannahme im TEST, keine Aussage
+    // ueber das Produkt; die Wartezeit macht sie zu einer Messung. Faellt sie
+    // ab, bleibt der Status stehen und die Pruefung darunter faellt weiterhin.
+    warteAuf (4000, [&] {
+        return client.snapshot().serverPruefstatus != ServerPruefStatus::nichtGeprueft;
+    });
     const auto s = client.snapshot();
     client.stop();
 

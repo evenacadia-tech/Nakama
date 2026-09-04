@@ -2184,6 +2184,9 @@ private:
         // Das ist kein Rueckfall, sondern der Fall "der User hat nichts
         // markiert" — M-03 setzt "Passage liegt vor" ausdruecklich voraus.
         int passVon = 0, passBis = n;
+        // Endet das Fenster IN diesem Block? Nur dann laeuft der Filter unten
+        // aus (Luecke B09).
+        bool fensterEndetHier = false;
         if (passagenfenster.gesetzt)
         {
             passVon = passBis = 0;
@@ -2191,13 +2194,24 @@ private:
                 && (block.flags & echtzeit::kFlagZeitGueltig) != 0)
             {
                 const std::int64_t b0 = block.projectSampleStart;
+                // ⚠️ M-17: der Blockrand SAETTIGT. `b0 + n` kann am oberen
+                // i64-Rand ueberlaufen, und ein uebergelaufener Rand ergaebe
+                // ein Fenster, das vor sich selbst endet — der Ausschnitt
+                // waere dann leer, obwohl der Block mitten in der Passage
+                // liegt. Dieselbe Regel wie in `blockProjektSpanneGueltig`
+                // daneben, nur an dieser zweiten Rechnung.
+                const std::int64_t kMax = std::numeric_limits<std::int64_t>::max();
+                const std::int64_t bEnde = b0 > kMax - (std::int64_t) n
+                                             ? kMax : b0 + (std::int64_t) n;
                 const std::int64_t von = std::max (passagenfenster.startSample, b0);
-                const std::int64_t bis = std::min (passagenfenster.endeSample,
-                                                   b0 + (std::int64_t) n);
+                const std::int64_t bis = std::min (passagenfenster.endeSample, bEnde);
                 if (bis > von)
                 {
                     passVon = (int) (von - b0);
                     passBis = (int) (bis - b0);
+                    // `bis` ist bereits auf `endeSample` gekappt: Gleichheit
+                    // heisst, dass die Passage genau hier zu Ende ist.
+                    fensterEndetHier = bis >= passagenfenster.endeSample;
                 }
             }
         }
@@ -2332,10 +2346,7 @@ private:
         // herausfallenden Ausgaenge aus. Eine FRAMEGENAUE Zuordnung innerhalb
         // des Fensters wird damit nicht zugesagt — der Rest landet im
         // Passagenmaximum, und genau das ist die Groesse, um die es geht.
-        if (passagenfenster.gesetzt && passBis > 0
-            && (block.flags & echtzeit::kFlagZeitGueltig) != 0
-            && block.projectSampleStart + (std::int64_t) passBis
-                   >= passagenfenster.endeSample)
+        if (fensterEndetHier)
         {
             const double rest = tp.nachlauf();
             rahmenTruePeak = std::max (rahmenTruePeak, rest);

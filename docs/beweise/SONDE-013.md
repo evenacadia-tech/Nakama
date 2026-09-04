@@ -3820,6 +3820,28 @@ aus der Erstprüfung. Sie sind mit Test und Rotbeweis geschlossen.
 | **i64-Rand am Markerende** (M-17) | `project_sample_end = Blockanfang + Offset` konnte am oberen `i64`-Rand überlaufen. Das Ergebnis wäre eine Projektzeit VOR dem Blockanfang, und die Invalidierung nutzte einen Bereich, den es nicht gibt. | Die Addition sättigt. | **A3** bleibt grün (dieselbe Zusage, jetzt ohne Überlaufweg) | — (kein eigener Rotbeweis: der Fall ist am realen Rand nicht herstellbar, die Sättigung ist eine Leseregel am Zahlenrand) |
 | **Deckel der Taintmap** (M-74) | Der sitzungsweite Taint aus B17 hat eine Kehrseite, die es vorher nicht gab: die Map wächst mit jeder Sitzung, die je einen Eingriff gesehen hat, und Sitzungen entstehen bei jedem FL-Neustart neu. Ein SAUBERER Eintrag ohne Client fällt sofort; ein DIRTY bleibt, weil sein sticky Unknown eine Aussage ist (§34.2) — genau die häufen sich an. | `taint_deckel_halten()` läuft im Liveness-Tick, hält `GLOBAL_SESSION_CAP`, wirft zuerst die sauberen toten Sitzungen weg und **zählt** jeden Verlust einer sticky Sperre (`taint_verworfen`). Eine lebende Sitzung verliert ihre Sperre nie. | **A4**-verdrahtung::`taintmap_haelt_ihren_deckel` | `roh/SONDE-013-rot-N1-taintdeckel-r1.txt` |
 
+**Dritter Fund: das ACK sagte nicht die Wahrheit über die Wirkung.**
+`persistenz_p0` schreibt den Befehl fest und antwortet `angewandt`, **bevor**
+die fachliche Wirkung läuft. Drei Fälle wären damit als „angewandt"
+bestätigt worden, ohne etwas zu tun — genau die Klasse „totes Element", gegen
+die dieses Ticket steht:
+
+| Fall | Regel | Code |
+|---|---|---|
+| Passage unter der Abdeckungsschwelle | M-30: sie trägt keinen Vergleich, also auch keinen Versuch | `abdeckung_zu_gering` |
+| Ergebnis ohne Resultatmessung | M-45: ein Urteil ohne Gegenprobe ist keines | `ohne_resultatmessung` |
+| Gemeldete Blindreihenfolge widerspricht der gebundenen | M-44: die Reihenfolge lässt sich nicht nachträglich zum Urteil passend erzählen | `blindreihenfolge_widerspruch` |
+
+Die Vorprüfung deckt jetzt **alles** ab, was die Wirkung ablehnen könnte. Die
+fünf Codes (dazu `schon_terminal` für M-47 und `ohne_lautheitsabgleich` für
+M-43) sind neu im `fehlercode`-Enum und gehören zur **Fassung 2**: sie
+verschwinden im Rückbau auf Fassung 1 wie die zwei Invalidierungsgründe zuvor
+(`FASSUNG_2_FEHLERCODES` in `schema.rs`), stehen im Register und tragen je ein
+Korpusfixture. Keiner der generischen Codes kann diese Regeln ausdrücken, und
+ein `abgelehnt` ohne Grund liesse den Sender raten.
+Gemessen: **A4-SI**::`produkt_coordinator_ackt_keine_wirkung_die_nicht_stattfindet`;
+**A5** 489 Prüfungen über 299 Fixtures; **B3c** und **B10** grün.
+
 ⚠️ Der zweite Fund ist die Kante, an der die Aufräumregel und C-08 aufeinander
 treffen. Eine Eviction, die eine **aktive** Intervention weggeräumt hat,
 hinterlässt genau den Zustand, den §34.2 sticky halten will; ein sauberer

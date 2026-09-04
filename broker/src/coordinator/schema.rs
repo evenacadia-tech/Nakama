@@ -46,6 +46,16 @@ const FASSUNG_2_HILFSDEFS: [&str; 11] = [
 
 const FASSUNG_2_EVIDENZFELDER: [&str; 2] = ["ereignisse", "stereo"];
 const FASSUNG_2_GRUENDE: [&str; 2] = ["material_wechsel", "messpunkt_wechsel"];
+/// Die Fehlercodes der Fassung 2 (SONDE-013 Nacharbeit 1). Sie benennen die
+/// Produktregeln der Experimentfamilien; ein Leser der Fassung 1 kennt sie
+/// nicht und muss sie ABLEHNEN, statt sie still auf `internal` abzubilden.
+const FASSUNG_2_FEHLERCODES: [&str; 5] = [
+    "abdeckung_zu_gering",
+    "schon_terminal",
+    "ohne_lautheitsabgleich",
+    "ohne_resultatmessung",
+    "blindreihenfolge_widerspruch",
+];
 
 /// Baut aus der committeten **Fassung 2** die **Fassung 1** zurueck.
 ///
@@ -76,6 +86,13 @@ pub(super) fn v3_schema_minor_1_wurzel() -> Value {
             .retain(|wert| {
                 wert.as_str()
                     .is_none_or(|g| !FASSUNG_2_GRUENDE.contains(&g))
+            });
+        defs["fehlercode"]["enum"]
+            .as_array_mut()
+            .expect("fehlercode-enum ist ein Array")
+            .retain(|wert| {
+                wert.as_str()
+                    .is_none_or(|c| !FASSUNG_2_FEHLERCODES.contains(&c))
             });
         defs["konfidenz"]["properties"]
             .as_object_mut()

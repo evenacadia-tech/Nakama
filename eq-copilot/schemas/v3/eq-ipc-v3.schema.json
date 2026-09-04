@@ -807,7 +807,7 @@
     },
 
     "fehlercode": {
-      "description": "Maschinenlesbar (§33.3). Ein neuer Code ist eine Minor-Aenderung; ein unbekannter Code wird als generischer Fehler behandelt, nie als Erfolg.",
+      "description": "Maschinenlesbar (§33.3). Ein neuer Code ist eine Minor-Aenderung; ein unbekannter Code wird als generischer Fehler behandelt, nie als Erfolg. SONDE-013 Nacharbeit 1: die fuenf letzten Codes gehoeren zur Fassung 2 und benennen die PRODUKTREGELN der Experimentfamilien - `abdeckung_zu_gering` (M-30), `schon_terminal` (M-47, append-only), `ohne_lautheitsabgleich` (M-43), `ohne_resultatmessung` (M-45) und `blindreihenfolge_widerspruch` (M-44). Sie stehen hier, weil keiner der generischen Codes sie ausdruecken kann und ein `abgelehnt` OHNE Grund den Sender raten liesse; ein Leser der Fassung 1 lehnt sie ab, statt sie still auf `internal` abzubilden.",
       "enum": [
         "protocol_mismatch",
         "unknown_message",
@@ -820,7 +820,12 @@
         "recording_active",
         "lease_expired",
         "rate_limited",
-        "internal"
+        "internal",
+        "abdeckung_zu_gering",
+        "schon_terminal",
+        "ohne_lautheitsabgleich",
+        "ohne_resultatmessung",
+        "blindreihenfolge_widerspruch"
       ]
     },
 

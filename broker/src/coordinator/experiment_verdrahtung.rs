@@ -42,6 +42,15 @@ impl Coordinator {
         let experiment_id = wert.get("experiment_id")?.as_str()?.to_owned();
 
         // ── Vorpruefung, ohne etwas zu aendern ──────────────────────────
+        //
+        // 🔑 Sie prueft ALLES, was die Wirkung unten ablehnen koennte. Der
+        // Grund ist die Ehrlichkeit des ACK: `persistenz_p0` schreibt den
+        // Befehl fest und antwortet `angewandt`, BEVOR die Wirkung laeuft.
+        // Was hier durchrutscht, bekaeme also ein `angewandt` und taete
+        // nichts — ein totes Element auf der Leitung.
+        let session_vorab = serde_json::from_value::<Adresse>(kopf.get("ziel")?.clone())
+            .ok()
+            .map(|a| ClientKey::aus_adresse(&a).session());
         let ablehnung = {
             let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
             match art {
@@ -49,27 +58,85 @@ impl Coordinator {
                     if stand.experimente.experiment(&experiment_id).is_some() {
                         // Append-only: dieselbe ID zweimal ist kein
                         // Ueberschreiben, sondern ein Konflikt.
-                        Some("id_vergeben")
+                        Some("revision_conflict")
                     } else {
-                        Self::passage_aus_wert(wert)
-                            .is_none()
-                            .then_some("passage_unvollstaendig")
+                        match Self::passage_aus_wert(wert) {
+                            None => Some("schema_violation"),
+                            // M-30: eine Passage ohne genug gemessenes Signal
+                            // traegt keinen Vergleich, also auch keinen
+                            // Versuch. `Experimentstore::beginne` lehnt sie ab
+                            // — der Sender soll das ERFAHREN.
+                            Some(p) if !(p.abdeckung >= 0.5) => Some("abdeckung_zu_gering"),
+                            Some(_) => None,
+                        }
                     }
                 }
-                "experiment_abort" | "experiment_manual_result" => {
-                    match stand.experimente.experiment(&experiment_id) {
-                        None => Some("unknown_target"),
-                        Some(e) if !e.offen() => Some("schon_terminal"),
-                        Some(_) => None,
+                "experiment_abort" => match stand.experimente.experiment(&experiment_id) {
+                    None => Some("unknown_target"),
+                    Some(e) if !e.offen() => Some("schon_terminal"),
+                    Some(_) => None,
+                },
+                "experiment_manual_result" => match stand.experimente.experiment(&experiment_id) {
+                    None => Some("unknown_target"),
+                    Some(e) if !e.offen() => Some("schon_terminal"),
+                    Some(e) => {
+                        // M-44: die auf der Leitung stehende Reihenfolge ist
+                        // die AUFGEDECKTE. Widerspricht sie der gebundenen,
+                        // waere genau das passiert, was M-44 ausschliesst —
+                        // die Reihenfolge nachtraeglich zum Urteil passend
+                        // erzaehlen. Fail-closed.
+                        let gemeldet = match wert.get("blindreihenfolge").and_then(Value::as_str) {
+                            Some("kandidat_zuerst") => Blindreihenfolge::KandidatZuerst,
+                            _ => Blindreihenfolge::BaselineZuerst,
+                        };
+                        if e.reihenfolge_gebunden()
+                            && e.gebundene_reihenfolge_fuer_pruefung() != Some(gemeldet)
+                        {
+                            Some("blindreihenfolge_widerspruch")
+                        } else if !e.baseline.match_gain_db.is_finite() {
+                            Some("ohne_lautheitsabgleich")
+                        } else {
+                            // M-45: ohne Resultatmessung gibt es kein
+                            // Terminal. Das steht hier UND im Store — hier,
+                            // damit der Sender ein ehrliches `abgelehnt`
+                            // bekommt, dort, weil die Regel dem Store gehoert.
+                            drop(stand);
+                            let messung = session_vorab
+                                .as_ref()
+                                .map(|s| self.resultatmessung(s))
+                                .unwrap_or_default();
+                            return if messung.hat_resultat() {
+                                self.experiment_p0_weiter(link_id, wert, art, &experiment_id)
+                            } else {
+                                Self::command_ack(
+                                    command_id,
+                                    "abgelehnt",
+                                    base_revision,
+                                    None,
+                                    Some("ohne_resultatmessung"),
+                                )
+                            };
+                        }
                     }
-                }
+                },
                 _ => Some("internal"),
             }
         };
         if let Some(code) = ablehnung {
             return Self::command_ack(command_id, "abgelehnt", base_revision, None, Some(code));
         }
+        self.experiment_p0_weiter(link_id, wert, art, &experiment_id)
+    }
 
+    /// Persistenz und Wirkung — der Teil nach der Vorpruefung.
+    fn experiment_p0_weiter(
+        &self,
+        link_id: &str,
+        wert: &Value,
+        art: &str,
+        experiment_id: &str,
+    ) -> Option<Vec<u8>> {
+        let kopf = wert.get("kopf")?;
         // ── Persistenz des Befehls (Idempotenz, Autorisierung, Outbox) ──
         let ack = self.persistenz_p0(link_id, wert)?;
         if !Self::ack_ist_angewandt(&ack) {
@@ -84,18 +151,18 @@ impl Coordinator {
         )
         .session();
         match art {
-            "experiment_begin" => self.experiment_begin_anwenden(wert, &experiment_id, &session),
+            "experiment_begin" => self.experiment_begin_anwenden(wert, experiment_id, &session),
             "experiment_abort" => {
                 let grund = match wert.get("grund").and_then(Value::as_str) {
                     Some("verdraengt") => Abbruchgrund::Verdraengt,
                     _ => Abbruchgrund::UserAbbruch,
                 };
-                self.experiment_terminal_anwenden(&experiment_id, &session, |stand| {
-                    stand.experimente.schliesse(&experiment_id, grund).is_ok()
+                self.experiment_terminal_anwenden(experiment_id, &session, |stand| {
+                    stand.experimente.schliesse(experiment_id, grund).is_ok()
                 });
             }
             "experiment_manual_result" => {
-                self.experiment_ergebnis_anwenden(wert, &experiment_id, &session);
+                self.experiment_ergebnis_anwenden(wert, experiment_id, &session);
             }
             _ => {}
         }
@@ -311,7 +378,7 @@ impl Coordinator {
     /// juengere. Das ist die ehrliche Zuordnung ohne zusaetzliche Wirefelder:
     /// die Baseline wurde vor der Fremdaenderung gemessen, das Resultat
     /// danach, und dazwischen liegt kein weiterer Beleg.
-    fn resultatmessung(&self, session: &SessionKey) -> Resultatmessung {
+    pub(super) fn resultatmessung(&self, session: &SessionKey) -> Resultatmessung {
         let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         let mut messung = Resultatmessung::default();
         // Die Quelle mit der laengsten Historie in dieser Sitzung traegt die
@@ -490,6 +557,25 @@ impl Coordinator {
             .experimente
             .passage(passage_id)
             .cloned()
+    }
+
+    /// Nur Beine: bindet die Blindreihenfolge direkt am Store.
+    ///
+    /// Sie hat keinen eigenen Wireweg — gebunden wird sie in Gen, bevor der
+    /// User hoert (M-44), und das Ergebnis meldet danach die AUFGEDECKTE.
+    /// Ein Bein, das den Widerspruchsfall messen will, braucht deshalb diesen
+    /// Zugang; ein Produktpfad braucht ihn nicht.
+    #[doc(hidden)]
+    pub fn binde_blindreihenfolge_fuer_test(&self, experiment_id: &str, wort: &str) -> bool {
+        let reihenfolge = match wort {
+            "kandidat_zuerst" => Blindreihenfolge::KandidatZuerst,
+            _ => Blindreihenfolge::BaselineZuerst,
+        };
+        let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+        stand
+            .experimente
+            .binde_reihenfolge(experiment_id, reihenfolge)
+            .unwrap_or(false)
     }
 
     /// Der vollstaendige Export eines Versuchs (M-51).

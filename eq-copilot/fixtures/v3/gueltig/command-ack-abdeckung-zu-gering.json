@@ -1,0 +1,7 @@
+{
+  "type": "command_ack",
+  "command_id": "55555555555555555555555555555555",
+  "ergebnis": "abgelehnt",
+  "state_revision": 13,
+  "code": "abdeckung_zu_gering"
+}

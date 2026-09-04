@@ -420,6 +420,22 @@ impl Experiment {
     pub fn reihenfolge_gebunden(&self) -> bool {
         self.gebundene_reihenfolge.is_some()
     }
+
+    /// Die gebundene Reihenfolge — AUSSCHLIESSLICH zum Abgleich mit einer
+    /// gemeldeten (M-44).
+    ///
+    /// ⚠️ Das ist ausdruecklich KEIN zweiter Weg zu `aufgedeckte_reihenfolge`.
+    /// Der Unterschied liegt im Verwendungszweck, und er ist tragend: hier
+    /// wird geprueft, ob eine von aussen GEMELDETE Reihenfolge zur gebundenen
+    /// passt — der Aufrufer bringt seine Antwort schon mit und erfaehrt
+    /// nichts, was er nicht schon wusste. `aufgedeckte_reihenfolge` gibt sie
+    /// dagegen HERAUS, und genau das darf erst nach dem Urteil geschehen.
+    ///
+    /// Ein Widerspruch ist der Fall, den M-44 ausschliesst: „damit sich die
+    /// Reihenfolge nicht nachtraeglich zum Urteil passend erzaehlen laesst."
+    pub fn gebundene_reihenfolge_fuer_pruefung(&self) -> Option<Blindreihenfolge> {
+        self.gebundene_reihenfolge
+    }
 }
 
 /// Was beim Anlegen schiefgehen kann.

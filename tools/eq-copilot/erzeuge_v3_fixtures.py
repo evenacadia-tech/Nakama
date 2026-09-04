@@ -756,6 +756,22 @@ def zusatz_gueltig() -> list[tuple[str, dict, str]]:
     faelle.append(("command-ack-abgelehnt-ohne-state-hash", ack,
                    "eine Ablehnung bestaetigt keinen angewandten Stand und darf ohne Hash antworten"))
 
+    # SONDE-013 Nacharbeit 1: die fuenf Produktcodes der Experimentfamilien.
+    # Jeder benennt eine Regel aus der Matrix; ein `abgelehnt` OHNE Grund
+    # liesse den Sender raten, welche.
+    for code, warum in (
+        ("abdeckung_zu_gering", "M-30: eine Passage ohne genug gemessenes Signal traegt keinen Versuch"),
+        ("schon_terminal", "M-47: append-only - ein zweites Terminalereignis wuerde das erste umdeuten"),
+        ("ohne_lautheitsabgleich", "M-43/§15: eine Klangwertung ohne vorherigen Lautheitsabgleich ist unzulaessig"),
+        ("ohne_resultatmessung", "M-45: ein Urteil ohne Gegenprobe ist kein Ergebnis"),
+        ("blindreihenfolge_widerspruch", "M-44: die Reihenfolge laesst sich nicht nachtraeglich zum Urteil passend erzaehlen"),
+    ):
+        ack = copy.deepcopy(GRUND["command_ack"])
+        ack["ergebnis"] = "abgelehnt"
+        del ack["state_hash"]
+        ack["code"] = code
+        faelle.append((f"command-ack-{code.replace('_', '-')}", ack, warum))
+
     ack = copy.deepcopy(GRUND["command_ack"])
     ack["ergebnis"] = "idempotent_wiederholt"
     faelle.append(("command-ack-idempotent-mit-state-hash", ack,

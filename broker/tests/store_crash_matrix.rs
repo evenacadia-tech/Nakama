@@ -868,6 +868,109 @@ fn produkt_coordinator_legt_passage_und_experiment_aus_dem_wire_an() {
     );
 }
 
+/// Selbstaudit dieser Runde: das ACK sagt die Wahrheit ueber die Wirkung.
+///
+/// `persistenz_p0` schreibt den Befehl fest und antwortet `angewandt`, BEVOR
+/// die fachliche Wirkung laeuft. Was die Vorpruefung durchlaesst und die
+/// Wirkung dann ablehnt, bekaeme also ein `angewandt` und taete nichts — ein
+/// totes Element auf der Leitung, und genau die Klasse Fehler, gegen die
+/// dieses Ticket steht. Drei Faelle, drei benannte Codes.
+#[cfg(windows)]
+#[test]
+fn produkt_coordinator_ackt_keine_wirkung_die_nicht_stattfindet() {
+    let (_ordner, _writer, coordinator, _clock, _push) =
+        si_coordinator_mit_store("produkt-experiment-ack", true);
+    let main = si_hello(10, 100, "main");
+    let probe = si_hello(11, 101, "active_probe");
+    assert!(
+        coordinator
+            .control_hello_registrieren("main", &main)
+            .angenommen
+    );
+    assert!(si_report(&coordinator, "main", &main.adresse, 1));
+    assert!(
+        coordinator
+            .control_hello_registrieren("probe", &probe)
+            .angenommen
+    );
+    assert!(si_state_report(&coordinator, "probe", &probe.adresse, 13));
+    assert!(si_subscribe(&coordinator, "probe", &probe.adresse));
+
+    let pfad = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../eq-copilot/fixtures/v3/gueltig/experiment_begin.json");
+    let vorlage: Value =
+        serde_json::from_slice(&std::fs::read(&pfad).expect("experiment_begin im Korpus"))
+            .expect("Fixture ist JSON");
+    let begin = |command: usize, experiment: usize, abdeckung: f64| {
+        let mut w = vorlage.clone();
+        w["kopf"]["ziel"] = serde_json::to_value(&probe.adresse).unwrap();
+        w["kopf"]["command_id"] = json!(si_hex(command));
+        w["kopf"]["base_revision"] = json!(13);
+        w["experiment_id"] = json!(si_hex(experiment));
+        w["passage"]["passage_id"] = json!(si_hex(experiment + 1));
+        w["passage"]["abdeckung"] = json!(abdeckung);
+        w
+    };
+    let ack = |w: &Value| -> Value {
+        let bytes = Senke::p0(coordinator.as_ref(), "main", &serde_json::to_vec(w).unwrap())
+            .expect("command_ack");
+        serde_json::from_slice(&bytes).unwrap()
+    };
+
+    // 1. M-30: eine Passage unter der Abdeckungsschwelle traegt keinen
+    //    Versuch — und das ACK sagt es.
+    let a = ack(&begin(910, 0xd00, 0.2));
+    assert_eq!(a["ergebnis"], "abgelehnt");
+    assert_eq!(a["code"], "abdeckung_zu_gering");
+    assert!(
+        coordinator.experiment_sicht(&si_hex(0xd00)).is_none(),
+        "und es entsteht kein halber Zustand"
+    );
+
+    // 2. M-45: ein Ergebnis ohne Resultatmessung schliesst nicht ab.
+    let gut = begin(911, 0xd10, 0.9);
+    assert_eq!(ack(&gut)["ergebnis"], "angewandt");
+    let ergebnis = json!({
+        "type": "experiment_manual_result",
+        "kopf": {
+            "command_id": si_hex(912),
+            "ziel": probe.adresse,
+            "base_revision": 13,
+            "ttl_ms": 1000,
+            "schema_major": 3,
+            "schema_minor": 0
+        },
+        "experiment_id": si_hex(0xd10),
+        "hoerurteil": "kandidat",
+        "blindreihenfolge": "baseline_zuerst",
+        "notiz": null,
+        "werkzeug": null
+    });
+    let a = ack(&ergebnis);
+    assert_eq!(a["ergebnis"], "abgelehnt");
+    assert_eq!(a["code"], "ohne_resultatmessung");
+    assert!(
+        coordinator.experiment_sicht(&si_hex(0xd10)).unwrap().offen(),
+        "der Versuch bleibt OFFEN - ein Urteil ohne Gegenprobe ist keines"
+    );
+
+    // 3. M-44: eine gemeldete Blindreihenfolge, die der gebundenen
+    //    widerspricht, wird abgelehnt.
+    assert!(coordinator.binde_blindreihenfolge_fuer_test(
+        &si_hex(0xd10),
+        "kandidat_zuerst"
+    ));
+    let mut widerspruch = ergebnis.clone();
+    widerspruch["kopf"]["command_id"] = json!(si_hex(913));
+    let a = ack(&widerspruch);
+    assert_eq!(a["ergebnis"], "abgelehnt");
+    assert_eq!(
+        a["code"], "blindreihenfolge_widerspruch",
+        "die Reihenfolge laesst sich nicht nachtraeglich zum Urteil passend \
+         erzaehlen (M-44)"
+    );
+}
+
 #[test]
 fn brokerneustart_sendet_keine_laufgebundenen_felder_der_alten_projektion() {
     let ordner = TestOrdner::neu("projektion-neuer-brokerlauf");

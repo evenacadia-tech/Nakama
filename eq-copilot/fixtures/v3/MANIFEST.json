@@ -6,7 +6,7 @@
   "wurzel_skalar": "Markiert ein Fixture, dessen Wurzel weder Objekt noch Array ist. JUCEs JSON-Leser folgt RFC 4627 und lehnt es schon im PARSER ab; serde_json und Python folgen RFC 8259 und lehnen es erst am Schema ab. Beide Wege sind eine Ablehnung, nur an verschiedenen Stellen - die Verletzungsmenge gilt daher nur fuer die Beine mit RFC-8259-Parser.",
   "sortierung": "Verletzungen sind kanonisch nach (instanz, schema, schluessel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
   "textriegel_lehnt_ab": "Markiert ein Fixture, das der TEXTRIEGEL abweist, BEVOR ein Parser es sieht. Diese Fixtures tragen keine Verletzungsmenge, weil sie das Schema nie erreichen — eine erfundene waere eine Luege ueber den Ort der Ablehnung. Regeln und Begruendung: schemas/v3/README.md.",
-  "anzahl_gueltig": 77,
+  "anzahl_gueltig": 82,
   "anzahl_ungueltig": 217,
   "fixtures": [
     {
@@ -22,15 +22,45 @@
       "verletzungen": []
     },
     {
+      "datei": "gueltig/command-ack-abdeckung-zu-gering.json",
+      "urteil": "gueltig",
+      "warum": "M-30: eine Passage ohne genug gemessenes Signal traegt keinen Versuch",
+      "verletzungen": []
+    },
+    {
       "datei": "gueltig/command-ack-abgelehnt-ohne-state-hash.json",
       "urteil": "gueltig",
       "warum": "eine Ablehnung bestaetigt keinen angewandten Stand und darf ohne Hash antworten",
       "verletzungen": []
     },
     {
+      "datei": "gueltig/command-ack-blindreihenfolge-widerspruch.json",
+      "urteil": "gueltig",
+      "warum": "M-44: die Reihenfolge laesst sich nicht nachtraeglich zum Urteil passend erzaehlen",
+      "verletzungen": []
+    },
+    {
       "datei": "gueltig/command-ack-idempotent-mit-state-hash.json",
       "urteil": "gueltig",
       "warum": "die Wiederholung bestaetigt denselben bereits angewandten Stand samt Hash",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/command-ack-ohne-lautheitsabgleich.json",
+      "urteil": "gueltig",
+      "warum": "M-43/§15: eine Klangwertung ohne vorherigen Lautheitsabgleich ist unzulaessig",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/command-ack-ohne-resultatmessung.json",
+      "urteil": "gueltig",
+      "warum": "M-45: ein Urteil ohne Gegenprobe ist kein Ergebnis",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/command-ack-schon-terminal.json",
+      "urteil": "gueltig",
+      "warum": "M-47: append-only - ein zweites Terminalereignis wuerde das erste umdeuten",
       "verletzungen": []
     },
     {

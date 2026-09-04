@@ -502,7 +502,13 @@ void EqCopilotProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::M
         e.projektSample = blockAnfang;
         if (schritt.endete)
         {
-            e.projektSample = blockAnfang + (std::int64_t) schritt.endeOffsetSamples;
+            // M-17: der i64-Rand wird gesaettigt, nicht ueberlaufen. Ein
+            // Ueberlauf ergaebe eine Projektzeit VOR dem Blockanfang, und die
+            // Invalidierung nutzte dann einen Bereich, den es nicht gibt.
+            const std::int64_t offset = (std::int64_t) schritt.endeOffsetSamples;
+            e.projektSample = blockAnfang > std::numeric_limits<std::int64_t>::max() - offset
+                                ? std::numeric_limits<std::int64_t>::max()
+                                : blockAnfang + offset;
             e.dauerSamples = schritt.dauerSamples;
             // Konservativ (§34.2): der Bereich wird LAENGER quarantaenisiert
             // als der Eingriff dauerte. Der Faktor ist doppelt plus ein

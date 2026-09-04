@@ -3,7 +3,7 @@
 | Merkmal | Wert |
 |---|---|
 | Ticket | S20–22, `SONDE-013` (Phase P4–P5) |
-| Phase | **Etappe 2 — Bau, Etappe C läuft.** Etappen A und B stehen und sind mit einem sauberen Kanonlauf beglaubigt. **Die Etappen C und D sind vollständig gebaut und mit GRUEN 46/46 auf `c8b310b` beglaubigt** (C: M-01 bis M-04, M-06 bis M-12, M-74 bis M-77, M-86; D: M-33 bis M-39, M-78). **Die Etappen C bis G sind gebaut und mit GRUEN 51/51 auf `e8c179b` beglaubigt** (M-26, M-27, M-31 Fingerprint; M-28, M-29, M-30 Comparability; M-69 und der State-Teil von M-25; M-68 entschieden: keine Migration 2); der Store-Teil von M-25 und M-32 hängen nach dem Fund in §10.6 am Träger aus Etappe G. Nächste Etappe ist **H — Invalidierung, Taint und P4-Referenzkorpus** (mit dem dorthin verschobenen M-59). Etappe 1 (Verhaltensmatrix) ist am 2026-09-04 nach Matrixprüfung 1, Nacharbeit 1, Wiederprüfung 1, Nacharbeit 2 und Wiederprüfung 2 (PASS) abgenommen; die Matrix in §3 ist ab hier die Spezifikation. Bauauftrag: `docs/beweise/roh/SONDE-013-etappe-2-auftrag.txt`, Bau-Verlauf in §10 |
+| Phase | **Etappe 2 — Bau, Etappe C läuft.** Etappen A und B stehen und sind mit einem sauberen Kanonlauf beglaubigt. **Die Etappen C und D sind vollständig gebaut und mit GRUEN 46/46 auf `c8b310b` beglaubigt** (C: M-01 bis M-04, M-06 bis M-12, M-74 bis M-77, M-86; D: M-33 bis M-39, M-78). **Alle Etappen C bis H sind gebaut**; C bis G sind mit GRUEN 51/51 auf `e8c179b` beglaubigt (M-26, M-27, M-31 Fingerprint; M-28, M-29, M-30 Comparability; M-69 und der State-Teil von M-25; M-68 entschieden: keine Migration 2); der Store-Teil von M-25 und M-32 hängen nach dem Fund in §10.6 am Träger aus Etappe G. Damit ist die Verhaltensmatrix vollständig gebaut. Etappe 1 (Verhaltensmatrix) ist am 2026-09-04 nach Matrixprüfung 1, Nacharbeit 1, Wiederprüfung 1, Nacharbeit 2 und Wiederprüfung 2 (PASS) abgenommen; die Matrix in §3 ist ab hier die Spezifikation. Bauauftrag: `docs/beweise/roh/SONDE-013-etappe-2-auftrag.txt`, Bau-Verlauf in §10 |
 | Urteil | **offen** — T1 setzt der Erbauer nach der letzten Bauetappe, T2 der Dirigent nach der Codex-Abnahme |
 | Prüfstufe | T1+T2 gefordert (`docs/bauaufteilung-sonden.md`:392). T1 ist das Selbstaudit des Erbauers am Ende der letzten Bauetappe, T2 setzt der Dirigent nach der Codex-Abnahme |
 | Basis-SHA | Etappe 1 begann auf `ed9bbf7fec951a061749abf143cb2158c1c4ee52`; **Etappe 2 baut ab `0fdbb4a09c75e2c93ab9b76e7fcf5d92d0ef17e4`** (Abschluss der Matrixetappe), beide mit `git rev-parse HEAD` gemessen |
@@ -13,9 +13,9 @@
 | Wiederprüfung 2 | Codex `gpt-5.6-sol`, Effort **high**, lesend, Thread `01a06955-10da-7892-b465-cd52b7119ac9`; `HEAD` vor und nach dem Lauf `6e8bebb3cae7d836c51bd7ae5362a69b06b72ace`; Prüfbereich Fixdiff `ca20f3a...6e8bebb -- docs/beweise/SONDE-013.md`. **URTEIL: PASS** — R2-1 (M-67 gegen v3-README und Register), R2-2 (M-23/M-53 gegen SONDE-009 und Schema) und R2-3 (§5.1/§5.2, M-01 bis M-86 je genau einer Etappe zugeordnet) geschlossen, nichts gebrochen. Auftrag `docs/beweise/roh/SONDE-013-wiederpruefung-2-auftrag.txt`, Rohausgabe `docs/beweise/roh/SONDE-013-wiederpruefung-2-6e8bebb.txt`. Damit ist Etappe 1 abgenommen (Budget: zwei von drei Nacharbeitsrunden verbraucht). |
 | Rundenbilanz Etappe 1 | `py -3.13 tools/dirigent/rundenbilanz.py --runden ed9bbf7 4a2f50a 367a0ea ca20f3a 6e8bebb`: Matrix `ed9bbf7..4a2f50a` Doku 2 Dateien +1019/−0; Entscheide `4a2f50a..367a0ea` Doku +51/−0; Nacharbeit 1 `367a0ea..ca20f3a` Doku 4 Dateien +533/−63; Nacharbeit 2 `ca20f3a..6e8bebb` Doku 4 Dateien +286/−17. Produkt und Tests 0 Zeilen in allen vier Runden — erwartet, weil Etappe 1 nach der Regel „Spezifikation vor Code" ausschließlich das Manifest schreibt; das Konvergenzsignal des Werkzeugs greift erst ab Etappe 2. |
 | Änderungssatz dieser Etappe | Erster Commit `4a2f50a` und Entscheidcommit `367a0ea`: dieses Manifest und `docs/beweise/roh/SONDE-013-etappe-1-auftrag.txt`. Nacharbeit 1: dieses Manifest sowie die drei Rohdateien `docs/beweise/roh/SONDE-013-matrixpruefung-1-auftrag.txt`, `docs/beweise/roh/SONDE-013-matrixpruefung-1-367a0ea.txt` und `docs/beweise/roh/SONDE-013-nacharbeit-1-auftrag.txt` unverändert. Nacharbeit 2: dieses Manifest sowie die drei Rohdateien `docs/beweise/roh/SONDE-013-wiederpruefung-1-auftrag.txt`, `docs/beweise/roh/SONDE-013-wiederpruefung-1-ca20f3a.txt` und `docs/beweise/roh/SONDE-013-nacharbeit-2-auftrag.txt` unverändert. Kein Produkt-, Test-, Schema-, Fixture- oder Werkzeugcode. |
-| Kanon nachher | **GRUEN 51/51 auf `e8c179b`, Arbeitsbaum sauber** — die Beglaubigung der Etappen C bis G. Rohausgabe `docs/beweise/roh/SONDE-013-e8c179b.md`. Davor: **GRUEN 49/49 auf `e480fe3`** für C bis F. Rohausgabe `docs/beweise/roh/SONDE-013-e480fe3.md`. Davor: **GRUEN 48/48 auf `e3e2299`** für C bis E. Rohausgabe `docs/beweise/roh/SONDE-013-e3e2299.md`. Davor: **GRUEN 46/46 auf `c8b310b`** — die Beglaubigung der Etappen C und D. Rohausgabe `docs/beweise/roh/SONDE-013-c8b310b.md`. Der Weg dahin steht in §10.3 bis §10.5: der Lauf auf `ab0251d` war GRUEN 45/45, aber `-dirty` gestempelt (die zwei Dateien der beginnenden Etappe D lagen schon im Baum); der Lauf auf `e2ea2ec` war der erste auf sauberem Baum und kam **ROT 45/46** zurück — gefallen war **B8** an genau der Produktwirkung, die M-33 und M-34 herstellen, und dass kein anderes Bein fiel, ist die eigentliche Aussage jenes Laufs. Die Beinzahl wächst von 41 auf **51** und sinkt um kein Bein; 2 geplante noch nicht gebaut (B6, B7 ab P6), 1 stillgelegtes (A15). |
-| Testanzahl | A5 475 Prüfungen · B2 176 · B23 54 (neu) · B24 29 (neu) · A4-prepost 13 (neu) · A4-experiment 18 (neu) · B25 20 (neu) · B26 36 (neu) · A3 61 · B3c 75 · B8 77 · B10 313 · B16 52 · B17 23 (neu) · B18 44 (neu) · B19 57 (neu) · B20 24 (neu) · B21 22 (neu) · B22 24 (neu) · B5 237 · Broker 203 Lib-Tests plus alle Integrationsbeine · JSON-Fixturekorpus 285 (75 gültig, 210 ungültig) · Binärkorpus 104 (20 gültig, 84 ungültig) · Envelope-Korpus 37. Alle Zahlen aus dem Lauf dieser Sitzung, nicht abgeschrieben. |
-| Änderungssatz Etappe 2 | Fortlaufend in §10 je Bauetappe geführt: Commits, Beine, Rotbeweise, Abweichungen von §5 und Nebenbefunde. Die Beinzahl wächst mit den Etappen C bis G von 41 auf **51** (neu: **B17** `EqCopSonde013TruePeakGoldenTest`, **B18** `EqCopSonde013DynamicsTest`, **B19** `EqCopSonde013StereoGoldenTest`, **B20** `EqCopSonde013QualityClassTest`, **B21** `EqCopSonde013InterventionRingTest`, **B22** `EqCopSonde013FingerprintGoldenTest`, **B23** `EqCopSonde013PassageStateTest`, **B24** `EqCopSonde013PrePostGoldenTest`, **B25** `EqCopSonde013ExperimentGoldenTest`, **B26** `EqCopSonde013ExperimentUiTest`) und sinkt um kein Bein. Der volle Kanon steht am Ende jeder Etappe, die Schema-, Fixture- oder Runnerdateien berührt (§5.1); für C bis G ist er mit GRUEN 51/51 auf `e8c179b` beglaubigt (davor GRUEN 49/49 auf `e480fe3` für C bis F). |
+| Kanon nachher | **GRUEN 51/51 auf `e8c179b`, Arbeitsbaum sauber** — die Beglaubigung der Etappen C bis G. Rohausgabe `docs/beweise/roh/SONDE-013-e8c179b.md`. Davor: **GRUEN 49/49 auf `e480fe3`** für C bis F. Rohausgabe `docs/beweise/roh/SONDE-013-e480fe3.md`. Davor: **GRUEN 48/48 auf `e3e2299`** für C bis E. Rohausgabe `docs/beweise/roh/SONDE-013-e3e2299.md`. Davor: **GRUEN 46/46 auf `c8b310b`** — die Beglaubigung der Etappen C und D. Rohausgabe `docs/beweise/roh/SONDE-013-c8b310b.md`. Der Weg dahin steht in §10.3 bis §10.5: der Lauf auf `ab0251d` war GRUEN 45/45, aber `-dirty` gestempelt (die zwei Dateien der beginnenden Etappe D lagen schon im Baum); der Lauf auf `e2ea2ec` war der erste auf sauberem Baum und kam **ROT 45/46** zurück — gefallen war **B8** an genau der Produktwirkung, die M-33 und M-34 herstellen, und dass kein anderes Bein fiel, ist die eigentliche Aussage jenes Laufs. Die Beinzahl wächst von 41 auf **53** und sinkt um kein Bein; 2 geplante noch nicht gebaut (B6, B7 ab P6), 1 stillgelegtes (A15). |
+| Testanzahl | A5 475 Prüfungen · B2 176 · B23 54 (neu) · B24 29 (neu) · A4-prepost 13 (neu) · A4-experiment 18 (neu) · B25 20 (neu) · B26 36 (neu) · A4-taint 14 (neu) · A26 22 Korpusfälle (neu) · A3 61 · B3c 75 · B8 77 · B10 313 · B16 52 · B17 23 (neu) · B18 44 (neu) · B19 57 (neu) · B20 24 (neu) · B21 22 (neu) · B22 24 (neu) · B5 237 · Broker 203 Lib-Tests plus alle Integrationsbeine · JSON-Fixturekorpus 285 (75 gültig, 210 ungültig) · Binärkorpus 104 (20 gültig, 84 ungültig) · Envelope-Korpus 37. Alle Zahlen aus dem Lauf dieser Sitzung, nicht abgeschrieben. |
+| Änderungssatz Etappe 2 | Fortlaufend in §10 je Bauetappe geführt: Commits, Beine, Rotbeweise, Abweichungen von §5 und Nebenbefunde. Die Beinzahl wächst mit den Etappen C bis H von 41 auf **53** (neu: **B17** `EqCopSonde013TruePeakGoldenTest`, **B18** `EqCopSonde013DynamicsTest`, **B19** `EqCopSonde013StereoGoldenTest`, **B20** `EqCopSonde013QualityClassTest`, **B21** `EqCopSonde013InterventionRingTest`, **B22** `EqCopSonde013FingerprintGoldenTest`, **B23** `EqCopSonde013PassageStateTest`, **B24** `EqCopSonde013PrePostGoldenTest`, **B25** `EqCopSonde013ExperimentGoldenTest`, **B26** `EqCopSonde013ExperimentUiTest`, **A25** `erzeuge_p4_korpus.py`, **A26** `pruefe_p4_korpus.py`) und sinkt um kein Bein. Der volle Kanon steht am Ende jeder Etappe, die Schema-, Fixture- oder Runnerdateien berührt (§5.1); für C bis G ist er mit GRUEN 51/51 auf `e8c179b` beglaubigt (davor GRUEN 49/49 auf `e480fe3` für C bis F). |
 | Grenze | Etappe 2 baut ausschließlich, was §3 zusagt. Prüfbereich sind die Ticketpfade aus §5.2; jede Datei außerhalb steht mit Begründung in §10. `docs/offene-punkte.md` und `docs/PLAN-STAND.md` bleiben unberührt — Nebenbefunde sammelt §10, der Dirigent zieht sie im Abschluss nach. |
 
 > **Belegfeld gesetzt, Urteilsmarke noch nicht.** Seit dem ersten Commit der
@@ -532,23 +532,23 @@ Ein Testname mit **NEU** existiert noch nicht.
 
 | ID | Ausgangszustand × Ereignis | Zusage samt Reihenfolge und Frist | Test | Quelle / Belegstatus |
 |---|---|---|---|---|
-| M-52 | Evidenz ist eingegangen; ein Hörmarker oder eine Preview überlappt sie | Der Broker quarantänisiert den überlappenden Routing- und Timelinebereich; bei **unbekanntem Routing die ganze Sitzung**. Bereits eingegangene Evidenz wird per ID oder Bereich invalidiert. Reihenfolge: Interventionsereignis annehmen → Bereich bestimmen → `evidence_invalidate` mit Grund `intervention` und passendem `invalidate_umfang` senden → Evidenz als ausgeschlossen führen. Das per Frame übertragene Flag bleibt ein **zusätzlicher lokaler Beleg, nie die alleinige Garantie**. | **NEU** `sonde013_taint.rs`, Fall `marker_invalidates_overlapping_range_and_unknown_routing_takes_the_session`; bestehend Schemaform über **A5**. | Entwurf §34.2:2196-2211; `eq-ipc-v3.schema.json`:1085-1097. **BELEGT im Schema, BAULÜCKE im Sender** |
-| M-53 | Evidenzfenster läuft; Seek, Loop-Wrap, Drop oder Kontinuitätsbruch tritt ein | Der Bruch beendet die alte Zeitreihe. Kein Fenster wird über die Grenze interpoliert; ein Drop erzeugt Zähler, sichtbare Lücke und eine neue Kontinuitätsgrenze. **Der Grund auf dem Draht ist je Auslöser eindeutig** und folgt der Zeitvertragsregel aus SONDE-009 („Drop zaehlt als Segment, alles andere als Epoche", B5 §F/G1-G2): ein **Seek** trägt `epochwechsel`; ein **Loop-Wrap innerhalb** der Passage trägt `epochwechsel`; jeder **andere Kontinuitätsbruch** trägt `epochwechsel`; ein **Drop** trägt `sequenzluecke`. Kein Auslöser trägt zwei Gründe, und keiner bleibt der Implementierung überlassen. Bis zur neuen gültigen Baseline gibt es keinen alten Wert und keine 0. **Passagenbindung (Nacharbeit 1):** Eine Passage bindet an genau eine Transportepoche (§32.4). Ein Seek, ein Loop-Wrap **innerhalb** der Passage (Loop kürzer als die Passage) oder ein Drop während der laufenden Passagenmessung invalidiert diese Messung — jeweils mit dem oben je Auslöser festgelegten Grund — und die Messung beginnt mit der nächsten gültigen Epoche neu; kein Frame, der eine Grenze überspannt, geht in eine Paarauswertung ein (B5-Garantie aus SONDE-009). Ein Loop-Wrap **an** der Passagengrenze (Loop deckt die Passage vollständig) beendet einen Durchlauf und beginnt den nächsten — das ist **keine** Invalidierung und **keine** Herabstufung (Abgrenzung zu M-23). | Bestehend **B5** für die lokale Fenstertrennung und **B4** für den Drop-Pfad; **NEU** `sonde013_taint.rs`, Fall `epoch_change_invalidates_open_evidence`; er misst den **Grundwert je Auslöser** — Seek → `epochwechsel`, Loop-Wrap innerhalb → `epochwechsel`, Drop → `sequenzluecke` —, sodass ein vertauschter Grund fällt statt grün zu werden. Dazu die zwei Passagenfälle aus M-23. | Entwurf §48.1:3413-3417; §34.2; §32.4:1969; §58:4285; `docs/beweise/SONDE-009.md`:4544,1954,1958 (B5-Zeitvertrag). **BELEGT, BAULÜCKE in der Invalidierungsnachricht** — Passagenbindung aus Nacharbeit 1 (§8, D3), Grundzuordnung je Auslöser aus Nacharbeit 2 (§9, R2-2) |
-| M-54 | Passage ist gebunden; das musikalische Material ändert sich | Geändertes Material invalidiert die abhängige Evidenz. Erkannt wird es über den Fingerprintvergleich (M-31), nicht über eine Zeitheuristik. Die heutige Gründemenge kennt den Fall nicht; sie wird um `material_wechsel` und `messpunkt_wechsel` (M-55) erweitert. **Kein Steuerkopf und kein zweites Versionsfeld im Payload:** `evidence_invalidate` trägt nur `type`, `grund` und `umfang` (`eq-ipc-v3.schema.json`:1085-1094), und die Fassungswahl läuft über `message_family` und `schema_minor` des Wire-Envelopes. Beide Gründe kommen deshalb mit **Fassung 2** des `wire_envelope_schema_minor` (§3.8, §7.1 E-04). Ein Leser der Fassung 1 lehnt sie ab, statt sie still auf einen bekannten Grund abzubilden. | **NEU** `sonde013_taint.rs`, Fall `material_change_invalidates_dependent_evidence`. | Entwurf §58 Lieferumfang („geändertem Material"); `eq-ipc-v3.schema.json`:1085-1094 (kein Steuerkopf); `reservierte-nachrichten-v1.json`:7-11 (`auswahlregel`). **BELEGT, ENTSCHIEDEN** — §7.1 E-04, ersetzt in Nacharbeit 1 (§8, D2) |
-| M-55 | Evidenz hängt an einem Messpunkt; der Messpunkt ändert sich | Ein geänderter Messpunkt oder eine geänderte Messpunktklasse invalidiert die abhängige Evidenz. Das ist die Kante zu Gate 7 (§49.2): eine Standard-Insertprobe wird nie als exakter Mastersummenbeitrag bezeichnet — folglich darf Evidenz von `insert` nach einem Wechsel auf `post_fader_contribution` nicht mitwandern. | Bestehend **A16** `EqCopProbeeqNullTest` und **B2** für die Klassenmatrix; **NEU** `sonde013_taint.rs`, Fall `measurement_position_change_invalidates_dependent_evidence`. | Entwurf §58; §49.2 Gate 7:3561; `eq-ipc-v3.schema.json`:573-576. **BELEGT, BAULÜCKE** |
-| M-56 | Ein `apply_transaction` bestätigt einen neuen DSP-Zustand | Ein **angewendeter** DSP-Zustand ist ausdrücklich **kein dauerhafter Taint**. Sein Apply schließt die alte Baseline, segmentiert die Timeline nach `state_revision`, macht abhängige Findings stale und erlaubt nach definierter Warm-up-Zeit eine neue gültige `post_committed`-Baseline dieser Revision. Grund auf dem Draht ist `state_revision`. | **NEU** `sonde013_taint.rs`, Fall `applied_state_segments_instead_of_tainting`. | Entwurf §34.2:2199-2205; `eq-ipc-v3.schema.json`:1091-1093. **BELEGT**; **BAULÜCKE nur im Bein** — der Apply-Pfad selbst gehört zu P6/P7, hier gilt nur die Klassifikationsregel |
-| M-57 | Invalidierung wird gesendet | `evidence_invalidate` trägt genau einen Grund aus der geschlossenen Menge und genau einen über `art` diskriminierten Umfang: `evidence_ids`, Samplebereich oder ganze Sitzung. Ein `art=sample_range` ohne Bereich und ein `art=ganze_sitzung` **mit** Bereich sind ungültig — der Discriminator ist kein Etikett ohne Wirkung. | Bestehend **A5** und **B3c** für die Schemaform; **NEU** `sonde013_taint.rs`, Fall `invalidate_scope_discriminator_rejects_mismatched_payloads`. | `eq-ipc-v3.schema.json`:1085-1104. **BELEGT, BAULÜCKE im Sender** |
+| M-52 | Evidenz ist eingegangen; ein Hörmarker oder eine Preview überlappt sie | Der Broker quarantänisiert den überlappenden Routing- und Timelinebereich; bei **unbekanntem Routing die ganze Sitzung**. Bereits eingegangene Evidenz wird per ID oder Bereich invalidiert. Reihenfolge: Interventionsereignis annehmen → Bereich bestimmen → `evidence_invalidate` mit Grund `intervention` und passendem `invalidate_umfang` senden → Evidenz als ausgeschlossen führen. Das per Frame übertragene Flag bleibt ein **zusätzlicher lokaler Beleg, nie die alleinige Garantie**. | **gemessen** (2026-09-04, Etappe H): **A4** `sonde013_taint.rs`::`marker_invalidates_overlapping_range_and_unknown_routing_takes_the_session`, ::`unknown_routing_widens_to_whole_session` und ::`marker_end_closes_its_interval_only_after_the_tail` — der Bereich ist halboffen und sättigt an den `i64`-Rändern, unbekanntes Routing nimmt die ganze Sitzung, und ein halb abgelaufener Nachlauf gibt nicht frei. Rotbeweise `docs/beweise/roh/SONDE-013-rot-M-52.txt` und `-M-60.txt`. | Entwurf §34.2:2196-2211; `eq-ipc-v3.schema.json`:1085-1097. **BELEGT im Schema, BAULÜCKE im Sender** |
+| M-53 | Evidenzfenster läuft; Seek, Loop-Wrap, Drop oder Kontinuitätsbruch tritt ein | Der Bruch beendet die alte Zeitreihe. Kein Fenster wird über die Grenze interpoliert; ein Drop erzeugt Zähler, sichtbare Lücke und eine neue Kontinuitätsgrenze. **Der Grund auf dem Draht ist je Auslöser eindeutig** und folgt der Zeitvertragsregel aus SONDE-009 („Drop zaehlt als Segment, alles andere als Epoche", B5 §F/G1-G2): ein **Seek** trägt `epochwechsel`; ein **Loop-Wrap innerhalb** der Passage trägt `epochwechsel`; jeder **andere Kontinuitätsbruch** trägt `epochwechsel`; ein **Drop** trägt `sequenzluecke`. Kein Auslöser trägt zwei Gründe, und keiner bleibt der Implementierung überlassen. Bis zur neuen gültigen Baseline gibt es keinen alten Wert und keine 0. **Passagenbindung (Nacharbeit 1):** Eine Passage bindet an genau eine Transportepoche (§32.4). Ein Seek, ein Loop-Wrap **innerhalb** der Passage (Loop kürzer als die Passage) oder ein Drop während der laufenden Passagenmessung invalidiert diese Messung — jeweils mit dem oben je Auslöser festgelegten Grund — und die Messung beginnt mit der nächsten gültigen Epoche neu; kein Frame, der eine Grenze überspannt, geht in eine Paarauswertung ein (B5-Garantie aus SONDE-009). Ein Loop-Wrap **an** der Passagengrenze (Loop deckt die Passage vollständig) beendet einen Durchlauf und beginnt den nächsten — das ist **keine** Invalidierung und **keine** Herabstufung (Abgrenzung zu M-23). | **gemessen** (2026-09-04, Etappe H): **A4**::`epoch_change_invalidates_open_evidence` — der Grund je Auslöser EINZELN gemessen (Seek, Loop-Wrap innerhalb und anderer Bruch → `epochwechsel`, Drop → `sequenzluecke`), und ein Loop-Wrap AN der Passagengrenze ist gar kein Bruch. Rotbeweise `docs/beweise/roh/SONDE-013-rot-M-53.txt` und `-M-53-loop.txt`. | Entwurf §48.1:3413-3417; §34.2; §32.4:1969; §58:4285; `docs/beweise/SONDE-009.md`:4544,1954,1958 (B5-Zeitvertrag). **BELEGT, BAULÜCKE in der Invalidierungsnachricht** — Passagenbindung aus Nacharbeit 1 (§8, D3), Grundzuordnung je Auslöser aus Nacharbeit 2 (§9, R2-2) |
+| M-54 | Passage ist gebunden; das musikalische Material ändert sich | Geändertes Material invalidiert die abhängige Evidenz. Erkannt wird es über den Fingerprintvergleich (M-31), nicht über eine Zeitheuristik. Die heutige Gründemenge kennt den Fall nicht; sie wird um `material_wechsel` und `messpunkt_wechsel` (M-55) erweitert. **Kein Steuerkopf und kein zweites Versionsfeld im Payload:** `evidence_invalidate` trägt nur `type`, `grund` und `umfang` (`eq-ipc-v3.schema.json`:1085-1094), und die Fassungswahl läuft über `message_family` und `schema_minor` des Wire-Envelopes. Beide Gründe kommen deshalb mit **Fassung 2** des `wire_envelope_schema_minor` (§3.8, §7.1 E-04). Ein Leser der Fassung 1 lehnt sie ab, statt sie still auf einen bekannten Grund abzubilden. | **gemessen** (2026-09-04, Etappe H): **A4**::`material_change_invalidates_dependent_evidence` — erkannt über den Fingerprintvergleich (die Funktion kennt gar keine Zeit), und ein FEHLENDER Fingerprint ist kein „gleiches Material". Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-54.txt`. | Entwurf §58 Lieferumfang („geändertem Material"); `eq-ipc-v3.schema.json`:1085-1094 (kein Steuerkopf); `reservierte-nachrichten-v1.json`:7-11 (`auswahlregel`). **BELEGT, ENTSCHIEDEN** — §7.1 E-04, ersetzt in Nacharbeit 1 (§8, D2) |
+| M-55 | Evidenz hängt an einem Messpunkt; der Messpunkt ändert sich | Ein geänderter Messpunkt oder eine geänderte Messpunktklasse invalidiert die abhängige Evidenz. Das ist die Kante zu Gate 7 (§49.2): eine Standard-Insertprobe wird nie als exakter Mastersummenbeitrag bezeichnet — folglich darf Evidenz von `insert` nach einem Wechsel auf `post_fader_contribution` nicht mitwandern. | **gemessen** (2026-09-04, Etappe H): **A4**::`measurement_position_change_invalidates_dependent_evidence` — jeder Klassenwechsel invalidiert, in beide Richtungen geprüft; der Riegel hängt nicht an einer bestimmten Klasse. Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-55.txt`. | Entwurf §58; §49.2 Gate 7:3561; `eq-ipc-v3.schema.json`:573-576. **BELEGT, gemessen** |
+| M-56 | Ein `apply_transaction` bestätigt einen neuen DSP-Zustand | Ein **angewendeter** DSP-Zustand ist ausdrücklich **kein dauerhafter Taint**. Sein Apply schließt die alte Baseline, segmentiert die Timeline nach `state_revision`, macht abhängige Findings stale und erlaubt nach definierter Warm-up-Zeit eine neue gültige `post_committed`-Baseline dieser Revision. Grund auf dem Draht ist `state_revision`. | **gemessen** (2026-09-04, Etappe H): **A4**::`applied_state_segments_instead_of_tainting` — die alte Baseline wird geschlossen, Findings werden stale, und die Warm-up-Zeit skaliert mit der Samplerate; eine unsinnige Rate fällt auf den Vorgabewert zurück statt null Warm-up zu melden. Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-56.txt`. | Entwurf §34.2:2199-2205; `eq-ipc-v3.schema.json`:1091-1093. **BELEGT**; **BAULÜCKE nur im Bein** — der Apply-Pfad selbst gehört zu P6/P7, hier gilt nur die Klassifikationsregel |
+| M-57 | Invalidierung wird gesendet | `evidence_invalidate` trägt genau einen Grund aus der geschlossenen Menge und genau einen über `art` diskriminierten Umfang: `evidence_ids`, Samplebereich oder ganze Sitzung. Ein `art=sample_range` ohne Bereich und ein `art=ganze_sitzung` **mit** Bereich sind ungültig — der Discriminator ist kein Etikett ohne Wirkung. | **gemessen** (2026-09-04, Etappe H): **A4**::`invalidate_scope_discriminator_rejects_mismatched_payloads` — als Enum ist `art=sample_range` ohne Bereich nicht formulierbar, und was formulierbar bleibt (leere ID-Menge, leerer Bereich) fällt in `gueltig()`. Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-57.txt`. | `eq-ipc-v3.schema.json`:1085-1104. **BELEGT, BAULÜCKE im Sender** |
 
 ### 3.7 Taint und die inversen Taintpfade
 
 | ID | Ausgangszustand × Ereignis | Zusage samt Reihenfolge und Frist | Test | Quelle / Belegstatus |
 |---|---|---|---|---|
 | M-58 | Ein oder mehrere Taintintervalle sind offen; der Hörmarker endet | Das Markerende **schließt** sein Taintintervall. Reihenfolge: Ausfade abgeschlossen (M-34) → `audible_intervention_end` mit konservativem `tail_samples` → Coordinator entfernt die `intervention_id` und zieht `tail_samples_offen` hoch → nach Ablauf des Nachlaufs ist der reguläre Pfad wieder frei. Das Ende allein genügt nicht: der Nachlauf muss abgelaufen sein. | Bestehend `broker/src/coordinator/intervention.rs`:66-92,128-137 über **A4**; **NEU** `sonde013_taint.rs`, Fall `marker_end_closes_its_interval_only_after_the_tail`. | Entwurf §58 Exit-Gate:4288-4290; `intervention.rs`:86-92. **BELEGT im Broker, BAULÜCKE im Producer** |
-| M-59 | Ein Experiment ist aktiv (`art=experiment`); es endet mit `result` oder `abort` | Beide Terminalereignisse schließen alle zugehörigen Taintintervalle. Ein Versuch, der ohne Terminalereignis endet, lässt sie **nicht** offen zurück: die Retention (M-48) schreibt das terminale `aborted` und schließt sie damit. | **NEU** `sonde013_taint.rs`, Fall `both_experiment_terminals_close_all_intervals`; **NEU** derselbe Test, Fall `retention_abort_also_closes_intervals`. | Entwurf §58 Exit-Gate:4288-4290; §43.1:2842-2846; `eq-ipc-v3.schema.json`:1062 (`art: experiment`). **BELEGT, BAULÜCKE** |
-| M-60 | Alle Intervalle sind geschlossen und der Nachlauf ist abgelaufen | **Der reguläre Pfad nullt wieder.** Messbar heißt das: `interventionssicht().starke_evidenz_erlaubt` ist `true`, `aktive` ist 0, `tail_samples_offen` ist 0 und `unknown` ist `false`; der nächste `evidence_dispatch()` wird angenommen statt gesperrt. Das ist die Zeile, die der Gate-Text „inverse Taintpfade grün" wörtlich verlangt. | Bestehend `broker/src/coordinator/intervention.rs`:154-182 über **A4**; **NEU** `sonde013_taint.rs`, Fall `inverse_path_returns_to_zero_after_every_intervention_kind` über alle vier `art`-Werte. | Entwurf §58:4289-4290; Tickettabelle:4474; `intervention.rs`:154-182. **BELEGT im Broker, BAULÜCKE für die Experimentart** |
-| M-61 | Sticky `intervention_state_unknown` steht | Nur `neutral_resync` löst es. Er setzt die bestätigte Sequenzbasis für den Link, leert **aktive IDs und Nachlauf gemeinsam** und ist eine ausdrückliche Coordinator-Lebenszyklusoperation, keine neue Wirefamilie und kein normales End. Ein `end` ohne bekanntes Begin löst es nicht. | Bestehend `broker/src/coordinator/intervention.rs`:80-92,139-152 über **A4**; **NEU** `sonde013_taint.rs`, Fall `only_neutral_resync_clears_sticky_unknown` mit einem Gegenbeispiel je Nicht-Weg. | `intervention.rs`:80-92,139-152; Entwurf §34.2:2212-2220. **BELEGT**, heute erfüllt; **BAULÜCKE nur im Bein** |
-| M-62 | Eine nachgelagerte Sonde hört die Intervention einer vorgelagerten | Die Taint-Logik ist **sitzungsweit**, nicht instanzlokal. Preview-, Focus-, Delta- und Markermatrix liegen hinter den Analysetaps der eigenen Instanz — das schützt die eigene Messung, nicht die der nachgelagerten. Deshalb greift zusätzlich die Sitzungsquarantäne aus §34. Bei unbekanntem Routing ist der Umfang die ganze Sitzung. | **NEU** `sonde013_taint.rs`, Fall `downstream_probe_is_tainted_by_upstream_intervention`; **NEU** derselbe Test, Fall `unknown_routing_widens_to_whole_session`. | Entwurf §44.2:3000-3007; §34.2:2207-2210. **BELEGT, BAULÜCKE** |
-| M-63 | Taint steht; eine starke Evidenzaussage wird angefragt | Der Riegel liegt **vor** dem Evidence-Commit und zählt sein Urteil unter demselben Lock — so kann ein Begin nicht erst nach dem Dispatch wirken. Gesperrt heißt: keine starke Aussage, nicht „leiser Wert". Der Zähler `evidence_gesperrt` wird ausgewertet, nicht ignoriert. | Bestehend `broker/src/coordinator/intervention.rs`:171-182 über **A4**; **NEU** `sonde013_taint.rs`, Fall `dispatch_lock_ordering_holds_under_concurrent_begin`. | `intervention.rs`:169-182; Prüfliste §A („Zähler werden ausgewertet"). **BELEGT**, heute erfüllt; **BAULÜCKE nur im Bein** |
+| M-59 | Ein Experiment ist aktiv (`art=experiment`); es endet mit `result` oder `abort` | Beide Terminalereignisse schließen alle zugehörigen Taintintervalle. Ein Versuch, der ohne Terminalereignis endet, lässt sie **nicht** offen zurück: die Retention (M-48) schreibt das terminale `aborted` und schließt sie damit. | **gemessen** (2026-09-04, Etappe H): **A4**::`both_experiment_terminals_close_all_intervals` und ::`retention_abort_also_closes_intervals` — beide Terminalereignisse schließen den Versuch, und der Bestandsdeckel schreibt das terminale `aborted` mit dem Grund `verdraengt`. | Entwurf §58 Exit-Gate:4288-4290; §43.1:2842-2846; `eq-ipc-v3.schema.json`:1062 (`art: experiment`). **BELEGT, gemessen** |
+| M-60 | Alle Intervalle sind geschlossen und der Nachlauf ist abgelaufen | **Der reguläre Pfad nullt wieder.** Messbar heißt das: `interventionssicht().starke_evidenz_erlaubt` ist `true`, `aktive` ist 0, `tail_samples_offen` ist 0 und `unknown` ist `false`; der nächste `evidence_dispatch()` wird angenommen statt gesperrt. Das ist die Zeile, die der Gate-Text „inverse Taintpfade grün" wörtlich verlangt. | **gemessen** (2026-09-04, Etappe H): **A4**::`inverse_path_returns_to_zero_after_every_intervention_kind` — vier Interventionsarten mit verschiedenen Nachläufen, und geprüft wird nicht nur die Sicht, sondern der wirklich angenommene `evidence_dispatch()`. Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-60.txt`. | Entwurf §58:4289-4290; Tickettabelle:4474; `intervention.rs`:154-182. **BELEGT im Broker, BAULÜCKE für die Experimentart** |
+| M-61 | Sticky `intervention_state_unknown` steht | Nur `neutral_resync` löst es. Er setzt die bestätigte Sequenzbasis für den Link, leert **aktive IDs und Nachlauf gemeinsam** und ist eine ausdrückliche Coordinator-Lebenszyklusoperation, keine neue Wirefamilie und kein normales End. Ein `end` ohne bekanntes Begin löst es nicht. | **gemessen** (2026-09-04, Etappe H): **A4**::`only_neutral_resync_clears_sticky_unknown` — mit dem von M-61 verlangten Gegenbeispiel: ein `end` ohne bekanntes Begin löst es nicht, ebenso wenig ein sauberes End oder die v2-Hörmarkierung. Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-61.txt`. | `intervention.rs`:80-92,139-152; Entwurf §34.2:2212-2220. **BELEGT**, heute erfüllt; **BAULÜCKE nur im Bein** |
+| M-62 | Eine nachgelagerte Sonde hört die Intervention einer vorgelagerten | Die Taint-Logik ist **sitzungsweit**, nicht instanzlokal. Preview-, Focus-, Delta- und Markermatrix liegen hinter den Analysetaps der eigenen Instanz — das schützt die eigene Messung, nicht die der nachgelagerten. Deshalb greift zusätzlich die Sitzungsquarantäne aus §34. Bei unbekanntem Routing ist der Umfang die ganze Sitzung. | **gemessen** (2026-09-04, Etappe H): **A4**::`downstream_probe_is_tainted_by_upstream_intervention` — der Umfang kennt gar kein Instanzfeld, und genau das ist die Zusage; bei unbekanntem Routing ist er die ganze Sitzung. | Entwurf §44.2:3000-3007; §34.2:2207-2210. **BELEGT, gemessen** |
+| M-63 | Taint steht; eine starke Evidenzaussage wird angefragt | Der Riegel liegt **vor** dem Evidence-Commit und zählt sein Urteil unter demselben Lock — so kann ein Begin nicht erst nach dem Dispatch wirken. Gesperrt heißt: keine starke Aussage, nicht „leiser Wert". Der Zähler `evidence_gesperrt` wird ausgewertet, nicht ignoriert. | **gemessen** (2026-09-04, Etappe H): **A4**::`dispatch_lock_ordering_holds_under_concurrent_begin` — 2000 Dispatches gegen 200 Begin/End-Paare in zwei Threads: angenommene plus gesperrte sind genau die Zahl der Versuche, und beide Fälle kommen wirklich vor. Rotbeweis `docs/beweise/roh/SONDE-013-rot-M-63.txt`. | `intervention.rs`:169-182; Prüfliste §A („Zähler werden ausgewertet"). **BELEGT**, heute erfüllt; **BAULÜCKE nur im Bein** |
 
 ### 3.8 Vertragsfolgen
 
@@ -606,13 +606,13 @@ werden. A9 (Codegen-Drift 0) ist von der Fassung 2 nur berührt, wenn ein
 
 | ID | Ausgangszustand × Ereignis | Zusage samt Reihenfolge und Frist | Test | Quelle / Belegstatus |
 |---|---|---|---|---|
-| M-79 | Exit-Gate wird gefahren | Der Korpus besteht aus vier Klassen: **Referenzkorpus** (Loudness und True Peak gegen validierte Referenz, ±0,1 LU beziehungsweise ±0,1 dB), **Loop-/Seek-/PDC-Goldens**, **adversariale Vergleichsfixtures** und **Stereo-Goldens**. Alle vier bestehen, sonst ist das Gate rot. Neben Precision und Recall zählen Kalibrierung, Brier Score, Coverage, Enthaltungsrate und die Zahl **falscher starker Behauptungen**. Ein konservatives `unsicher` ist besser als eine überzeugende falsche Ursache. | **NEU** Sammelbein `pruefe_p4_korpus.py` mit einem Unterbericht je Klasse; bestehend **B9** und **A2** `EqCopGoldenTest` als Vorstufe. | Entwurf §58 Exit-Gate:4288-4290; §49.4:3591-3600. **BELEGT, BAULÜCKE** |
-| M-80 | Korpus soll reproduzierbar sein | Ein Erzeuger-Skript baut jede Fixture **bytegleich** neu; ein `--pruefen`-Lauf vergleicht den committeten Bestand gegen die Neuerzeugung samt `MANIFEST` und meldet jede verwaiste Datei. Das ist dasselbe Muster wie **A6**, **A7**, **A8**, **A10**, **A12** und **A20**. Bytegleich geprüfte Fixtures brauchen passende `.gitattributes`-Regeln, sonst verdirbt die Zeilenendenormalisierung den Vergleich. | **NEU** `erzeuge_p4_korpus.py` mit `--pruefen` als Kanonbein; **NEU** `.gitattributes`-Eintrag für die neuen Binärfixtures im selben Änderungssatz. | `tools/beweise.ps1`:488-490,512,572; CLAUDE.md Maschinen-Landminen. **BELEGT, BAULÜCKE** |
-| M-81 | Loudness- und True-Peak-Referenz wird geprüft | Toleranz ±0,1 LU und ±0,1 dB gegen eine validierte Referenz auf Standard-Testmaterial. Der 8-fach-True-Peak-Pfad besteht das offizielle EBU-Testset bei 48 kHz **plus** äquivalente generierte Mehrsampleraten-Goldens — oder er wird durch den BS.1770-Polyphase-Referenzpfad ersetzt (M-02). LRA wird bei zu kurzem oder zu stillem Material nicht numerisch vorgetäuscht. | Bestehend **B9** für den Akkumulator; **NEU** `EqCopSonde013TruePeakGoldenTest` mit dem EBU-Testset. | Entwurf §39.3:2613-2621; §49.3:3584. **BELEGT, BAULÜCKE** |
-| M-82 | Stereo-Goldens werden gefahren | Fünf Klassen werden über **alle** unterstützten Blockgrößen korrekt klassifiziert: Mono, identisches Stereo, Polaritätsinvertierung, bekannte Laufzeit und unkorrelierte Kanäle. Der angezeigte Mono-Verlust entspricht dem wirklich gefalteten Audiopuffer innerhalb 0,25 dB. | **NEU** `EqCopSonde013StereoGoldenTest` als Gate-Bein über den Blockgrößensweep. | Entwurf §40.3:2666-2671. **BELEGT, BAULÜCKE** |
-| M-83 | PRE/POST-Goldens werden gefahren | Verteilte Feature-Goldens mit 0 bis 2 s bekannter Verzögerung finden den Lag innerhalb **eines Feature-Hops**. Der verteilte `q_db_0p1_i16`-Livepfad wird nicht gegen die 0,05-dB-Grenze des lokalen Audio-Compare geprüft; fokussierte 0,01-dB-Evidenz muss Gain innerhalb ±0,1 dB samt statistischem Intervall wiederfinden. Kompression, Modulation, Saturation und wechselnde Latenz erzeugen keine falsche statische EQ-Behauptung. | **NEU** `EqCopSonde013PrePostGoldenTest` als Gate-Bein mit dem Verzögerungssweep und den vier adversarialen Kettenklassen. | Entwurf §38.5:2551-2562. **BELEGT, BAULÜCKE** |
-| M-84 | Loop-, Seek- und PDC-Goldens werden gefahren | Bekannte Impulsereignisse bleiben über Blockgrößen und Sampleraten **zeitlich stabil**. Jede Grenze — Drop, Seek laufend und gestoppt, Loop-Wrap, möglicher Straddle, Transportkante, Sampleratewechsel, Neuanlauf, Beweislagewechsel — trennt jedes offene Fenster, auch die neuen dieses Tickets. Kein Fenster überbrückt eine Grenze. | Bestehend **B5** `EqCopAnalysisGoldenTest` für die neun Grenzarten; **NEU** derselbe Sweep über die neuen Metrik-, Fingerprint- und Ereignisfenster. | Entwurf §39.3:2619; `docs/beweise/SONDE-009.md`; `tools/beweise.ps1`:623. **BELEGT, BAULÜCKE für neue Fenster** |
-| M-85 | Adversariale Vergleichsfixtures werden gefahren | Ein **korrelierter, aber nicht kausaler Distraktor** wird als Alternative gezeigt und nicht als sicherer Auslöser bezeichnet. Ein nicht vergleichbares Experiment erhält kein starkes Siegerurteil. Eine Standard-Insertprobe wird nie als exakter Mastersummenbeitrag bezeichnet. Diese drei sind die Falsifikationsziele, die das Gate **G4** (`/c-review` DSP plus Codex) später gegen dieses Ticket fährt. | **NEU** `pruefe_p4_korpus.py`-Unterbericht `adversarial`, mit einem Fixture je Falsifikationsziel und der Enthaltungsrate als Messwert. | Entwurf §39.3:2621; §49.2 Gate 6 und 7:3560-3561; §49.4:3596-3600; `docs/bauaufteilung-sonden.md`:393 (Gate G4, Falsifikation Gate 5 und 6). **BELEGT, BAULÜCKE** |
+| M-79 | Exit-Gate wird gefahren | Der Korpus besteht aus vier Klassen: **Referenzkorpus** (Loudness und True Peak gegen validierte Referenz, ±0,1 LU beziehungsweise ±0,1 dB), **Loop-/Seek-/PDC-Goldens**, **adversariale Vergleichsfixtures** und **Stereo-Goldens**. Alle vier bestehen, sonst ist das Gate rot. Neben Precision und Recall zählen Kalibrierung, Brier Score, Coverage, Enthaltungsrate und die Zahl **falscher starker Behauptungen**. Ein konservatives `unsicher` ist besser als eine überzeugende falsche Ursache. | **gemessen** (2026-09-04, Etappe H): **A26** `pruefe_p4_korpus.py` — vier Klassen mit je einem Unterbericht, Precision, Recall, Kalibrierung, Brier Score, Coverage, Enthaltungsrate und die Zahl falscher starker Behauptungen (sie muss null sein). Jedes genannte Bein steht wirklich im Kanon-Runner. | Entwurf §58 Exit-Gate:4288-4290; §49.4:3591-3600. **BELEGT, gemessen** |
+| M-80 | Korpus soll reproduzierbar sein | Ein Erzeuger-Skript baut jede Fixture **bytegleich** neu; ein `--pruefen`-Lauf vergleicht den committeten Bestand gegen die Neuerzeugung samt `MANIFEST` und meldet jede verwaiste Datei. Das ist dasselbe Muster wie **A6**, **A7**, **A8**, **A10**, **A12** und **A20**. Bytegleich geprüfte Fixtures brauchen passende `.gitattributes`-Regeln, sonst verdirbt die Zeilenendenormalisierung den Vergleich. | **gemessen** (2026-09-04, Etappe H): **A25** `erzeuge_p4_korpus.py --pruefen` — bytegleich zur Neuerzeugung samt MANIFEST, verwaiste Dateien werden gemeldet, und die `.gitattributes`-Regel steht im selben Änderungssatz. | `tools/beweise.ps1`:488-490,512,572; CLAUDE.md Maschinen-Landminen. **BELEGT, gemessen** |
+| M-81 | Loudness- und True-Peak-Referenz wird geprüft | Toleranz ±0,1 LU und ±0,1 dB gegen eine validierte Referenz auf Standard-Testmaterial. Der 8-fach-True-Peak-Pfad besteht das offizielle EBU-Testset bei 48 kHz **plus** äquivalente generierte Mehrsampleraten-Goldens — oder er wird durch den BS.1770-Polyphase-Referenzpfad ersetzt (M-02). LRA wird bei zu kurzem oder zu stillem Material nicht numerisch vorgetäuscht. | **gemessen** (2026-09-04, Etappe H): **A26**, Klasse `referenz` — die fünf Fälle aus **B17** und **B18** (EBU-Testset, 8×-Fehlerschranke, LUFS gegen Referenz, LRA unter 60 s als `unsicher`, PSR gegen dasselbe Fenster). | Entwurf §39.3:2613-2621; §49.3:3584. **BELEGT, gemessen** |
+| M-82 | Stereo-Goldens werden gefahren | Fünf Klassen werden über **alle** unterstützten Blockgrößen korrekt klassifiziert: Mono, identisches Stereo, Polaritätsinvertierung, bekannte Laufzeit und unkorrelierte Kanäle. Der angezeigte Mono-Verlust entspricht dem wirklich gefalteten Audiopuffer innerhalb 0,25 dB. | **gemessen** (2026-09-04, Etappe H): **A26**, Klasse `stereo` — die sechs Fälle aus **B19** (Mono, identisch, Polaritätsinversion, bekannte Laufzeit, unkorreliert, Folddown gegen den gefalteten Puffer). | Entwurf §40.3:2666-2671. **BELEGT, gemessen** |
+| M-83 | PRE/POST-Goldens werden gefahren | Verteilte Feature-Goldens mit 0 bis 2 s bekannter Verzögerung finden den Lag innerhalb **eines Feature-Hops**. Der verteilte `q_db_0p1_i16`-Livepfad wird nicht gegen die 0,05-dB-Grenze des lokalen Audio-Compare geprüft; fokussierte 0,01-dB-Evidenz muss Gain innerhalb ±0,1 dB samt statistischem Intervall wiederfinden. Kompression, Modulation, Saturation und wechselnde Latenz erzeugen keine falsche statische EQ-Behauptung. | **gemessen** (2026-09-04, Etappe H): **A26**, Klasse `vergleich` zusammen mit **B24** und **A4** — der Lag wird auf einen Feature-Hop genau gefunden (§10.7), und Kompression, Modulation, Saturation und wechselnde Latenz tragen keine statische EQ-Behauptung. | Entwurf §38.5:2551-2562. **BELEGT, gemessen** |
+| M-84 | Loop-, Seek- und PDC-Goldens werden gefahren | Bekannte Impulsereignisse bleiben über Blockgrößen und Sampleraten **zeitlich stabil**. Jede Grenze — Drop, Seek laufend und gestoppt, Loop-Wrap, möglicher Straddle, Transportkante, Sampleratewechsel, Neuanlauf, Beweislagewechsel — trennt jedes offene Fenster, auch die neuen dieses Tickets. Kein Fenster überbrückt eine Grenze. | **gemessen** (2026-09-04, Etappe H): **A26**, Klasse `zeitachse` — die fünf Fälle aus **B4**, **B5**, **B22** und **A4**; kein Fenster überbrückt eine Grenze, und ein Drop zählt als Segment. | Entwurf §39.3:2619; `docs/beweise/SONDE-009.md`; `tools/beweise.ps1`:623. **BELEGT, BAULÜCKE für neue Fenster** |
+| M-85 | Adversariale Vergleichsfixtures werden gefahren | Ein **korrelierter, aber nicht kausaler Distraktor** wird als Alternative gezeigt und nicht als sicherer Auslöser bezeichnet. Ein nicht vergleichbares Experiment erhält kein starkes Siegerurteil. Eine Standard-Insertprobe wird nie als exakter Mastersummenbeitrag bezeichnet. Diese drei sind die Falsifikationsziele, die das Gate **G4** (`/c-review` DSP plus Codex) später gegen dieses Ticket fährt. | **gemessen** (2026-09-04, Etappe H): **A26**, Klasse `vergleich` — die drei Falsifikationsziele stehen als eigene Fälle im Korpus: kein starkes Siegerurteil ohne Vergleichbarkeit (Gate 6), keine kausale Behauptung aus einer markierten Kette, und eine Insertprobe wird nie exakter Mastersummenbeitrag genannt (Gate 7). | Entwurf §39.3:2621; §49.2 Gate 6 und 7:3560-3561; §49.4:3596-3600; `docs/bauaufteilung-sonden.md`:393 (Gate G4, Falsifikation Gate 5 und 6). **BELEGT, gemessen** |
 
 ### 3.11 Zählung
 
@@ -3453,6 +3453,179 @@ sprachübergreifend geprüft.
   `sonde013_taint.rs` als messenden Test — und der gehört zu H. Die beiden
   Terminalereignisse, an denen M-59 hängt, stehen hier und werden dort
   gemessen.
+
+---
+
+### 10.9 Etappe H — Invalidierung, Taint und der P4-Korpus (2026-09-04)
+
+**Gebaute Matrixzeilen:** M-52 bis M-57, M-59 bis M-63, M-79 bis M-85.
+
+#### Der Grund auf dem Draht ist keine Beschriftung
+
+M-53 legt ihn je Auslöser fest und lässt ihn ausdrücklich nicht der
+Implementierung. Der Empfänger entscheidet an ihm, ob er eine Zeitreihe
+fortsetzen darf: ein Drop, der als Epochwechsel ankommt, kostet ihn eine ganze
+Epoche Evidenz; umgekehrt setzte er über eine echte Epochengrenze hinweg fort.
+
+| Auslöser | Grund | Warum |
+|---|---|---|
+| Seek | `epochwechsel` | „Drop zählt als Segment, alles andere als Epoche" (SONDE-009 B5) |
+| Loop-Wrap **innerhalb** der Passage | `epochwechsel` | der Wrap fällt mitten in die Messung |
+| anderer Kontinuitätsbruch | `epochwechsel` | Transportkante, Sampleratewechsel, Neuanlauf |
+| Drop | `sequenzluecke` | ein Drop ist ein Segment, keine Epoche |
+| Loop-Wrap **an** der Passagengrenze | **kein Grund** | er beendet einen Durchlauf und beginnt den nächsten |
+
+Die letzte Zeile ist die wichtigste. Deckt der Loop die Passage vollständig
+ab, ist der Wrap weder Invalidierung noch Herabstufung (Abgrenzung zu M-23).
+Ein `epochwechsel` an dieser Stelle nähme dem User bei **jedem** Loopdurchlauf
+seine Evidenz — genau bei der Arbeitsweise, für die Passagen gedacht sind.
+Deshalb trennt `Bruchart` zwischen `LoopWrapInnerhalb` und `LoopWrapAnGrenze`,
+statt einen Wahrheitswert zu tragen.
+
+#### Der Discriminator ist kein Etikett — und als Enum gar nicht umgehbar
+
+M-57 verlangt, dass `art=sample_range` ohne Bereich und `art=ganze_sitzung`
+**mit** Bereich ungültig sind. Als Rust-Enum ist der erste Fall nicht einmal
+formulierbar: jeder Zweig trägt genau die Felder seiner Art. Was formulierbar
+bleibt, fällt in `gueltig()` — eine leere ID-Menge und ein leerer Bereich
+nehmen nichts zurück. Sie zu senden hiesse, dem Empfänger eine Rücknahme zu
+melden, die nichts zurücknimmt, und ihn danach glauben zu lassen, es sei
+aufgeräumt.
+
+#### Fail-closed heisst hier: invalidieren
+
+Zwei Stellen, an denen ein fehlender Beleg **nicht** als „alles in Ordnung"
+gelesen wird:
+
+- **Ein fehlender Fingerprint ist kein „gleiches Material"** (M-54). Ohne
+  Beleg gibt es keine Aussage; sonst hielte eine Passage ohne Fingerprint ihre
+  Evidenz durch jeden Materialwechsel hindurch.
+- **Kein Bereich trotz bekanntem Routing ist die ganze Sitzung** (M-52). Wir
+  wissen dann, *wo* die Kette läuft, aber nicht *wann*. Ein `intervention` mit
+  halbem Bereich wäre die gefährlichere Meldung: der Empfänger nähme an, der
+  Rest sei sauber.
+
+Und die Erkennung des Materialwechsels läuft über den Fingerprintvergleich,
+nicht über eine Zeitheuristik — „seit zehn Sekunden anderes Material" ist eine
+Vermutung über den User, der Fingerprint eine Messung über dasselbe Fenster.
+Die Funktion kennt gar keine Zeit.
+
+#### Ein angewendeter Zustand segmentiert, statt zu tainten
+
+M-56 ist die Zeile, die den Advisor überhaupt brauchbar hält. Ein
+**angewendeter** DSP-Zustand als dauerhafter Taint hiesse, dass jede vom User
+bestätigte Änderung die Messung für immer entwertet — und der Advisor nie
+wieder eine starke Aussage träfe, sobald der User ihm einmal gefolgt ist.
+
+Stattdessen: die alte Baseline wird **geschlossen** (nicht gelöscht), abhängige
+Findings werden **stale** (nicht falsch), und nach einer Warm-up-Zeit ist eine
+neue `post_committed`-Baseline dieser Revision gültig. Die Warm-up-Zeit sind
+500 ms — lang genug, dass die längste Zeitkonstante der Kette (der
+LUFS-Momentanwert mit 400 ms) eingeschwungen ist, und kurz genug, dass der User
+die Wirkung seiner Änderung noch mit ihr in Verbindung bringt. Sie skaliert mit
+der Samplerate; eine unsinnige Rate fällt auf den Vorgabewert zurück, statt
+null Warm-up zu melden — null hiesse „sofort wieder gültig".
+
+#### Der inverse Pfad, und warum er ein eigenes Bein braucht
+
+M-60 nennt ihn „die Zeile, die der Gate-Text ‚inverse Taintpfade grün' wörtlich
+verlangt". Ein Taintpfad ohne beweisbaren Rückweg wäre ein Einwegventil: die
+erste Vorschau des Tages nimmt dem User seine Evidenz für immer.
+
+Gemessen wird der Rückweg für vier Interventionsarten mit verschiedenen
+Nachläufen, und zwar vollständig: `aktive` 0, `tail_samples_offen` 0, `unknown`
+false, `starke_evidenz_erlaubt` true — **und** der nächste `evidence_dispatch()`
+wird wirklich angenommen. Die vier Sichtfelder allein wären eine Behauptung
+über den Zustand; erst der angenommene Dispatch ist die Wirkung.
+
+**Der Nachlauf schliesst nicht sofort** (M-52). Der Hall einer Vorschau klingt
+in die Messung hinein, und eine Evidenz, die ihn mitmisst, wäre falsch, ohne
+falsch auszusehen. Ein halb abgelaufener Nachlauf genügt deshalb nicht.
+
+#### Nur `neutral_resync` löst das Sticky-Bit — mit Gegenbeispiel
+
+M-61 verlangt ausdrücklich ein Gegenbeispiel, und es ist der Kern der Zusage:
+ein `end` **ohne bekanntes Begin** löst `intervention_state_unknown` nicht. Das
+Begin kann vor Reconnect oder Overflow verloren gegangen sein; ein `end` ist
+dann gerade kein Beweis, dass alles sauber ist. Auch ein sauberes End der
+bekannten Intervention und die v2-Hörmarkierung lösen es nicht.
+
+#### Die Reihenfolge unter Last
+
+M-63: der Riegel liegt **vor** dem Evidence-Commit und zählt sein Urteil unter
+demselben Lock.
+
+Der Test misst das in zwei Schritten, und die Reihenfolge ist Absicht. **Erst
+deterministisch**: ohne Intervention wird der Dispatch angenommen, mit offener
+gesperrt, danach wieder angenommen. **Dann unter Last**: ein Leser läuft,
+solange ein Schreiber Begin/End-Paare fährt, und am Ende steht der Automat
+wieder sauber da.
+
+Die erste Fassung erwartete beide Ausgänge allein aus dem Wettlauf zweier
+Threads — und war flaky: im Release-Build lief der Leser durch, bevor der
+Schreiber überhaupt startete, und es gab keinen einzigen gesperrten Dispatch.
+Im Debug-Build grün, im Release rot. Ein nebenläufiger Test, dessen Aussage von
+der Ausführungsgeschwindigkeit abhängt, misst nicht die Zusage, sondern den
+Rechner.
+
+#### Der P4-Korpus ist keine fünfte Implementierung
+
+M-79 verlangt vier Klassen und die Kennzahlen aus §49.4. Diese Zahlen lassen
+sich aus einem grünen Testlauf nicht ablesen: ein Bein sagt „bestanden", nicht
+„wie sicher war es dabei". Der Korpus ergänzt genau diese Angabe — je Fall das
+messende Bein, die Wahrheit, die Aussage und die Konfidenz — und rechnet daraus
+Precision, Recall, Kalibrierung, Brier Score, Coverage, Enthaltungsrate und die
+Zahl falscher starker Behauptungen. Er misst **nichts** selbst nach; eine
+zweite Messung derselben Sache wäre eine Implementierung, die niemand prüft.
+
+**Eine Enthaltung ist kein Fehler.** §49.4 wörtlich: „Ein konservatives
+`unsicher` ist besser als eine überzeugende falsche Ursache." Eine Kennzahl,
+die Enthaltungen bestrafte, zöge das Werkzeug genau in die falsche Richtung.
+Sie senken die Coverage und erhöhen die Enthaltungsrate, sind aber niemals eine
+falsche starke Behauptung — und deren Zahl muss null sein.
+
+**Und jedes genannte Bein muss der Runner wirklich führen.** Ein Korpus, der
+auf ein Bein zeigt, das es nicht gibt, wäre die schlimmste Form von grün: er
+behauptet Messung, und niemand merkt, dass sie nie lief.
+
+Die `.gitattributes`-Regel gehört in denselben Änderungssatz (M-80): ohne sie
+normalisiert git die Zeilenenden beim Checkout, und der Bytevergleich fällt auf
+jedem Rechner anders aus.
+
+#### Belege
+
+| Bein | Ergebnis |
+|---|---|
+| **A4** `sonde013_taint.rs` (NEU) | 14 bestanden, 0 gescheitert |
+| **A4** `cargo test --release`, gesamter Broker | 18 Suiten, 0 gescheitert |
+| **A5** `pruefe_v3_vertrag.py` | 475 Prüfungen, 0 gescheitert |
+| **A25** `erzeuge_p4_korpus.py --pruefen` (NEU) | bytegleich, 5 Dateien, 22 Fälle in 4 Klassen |
+| **A26** `pruefe_p4_korpus.py` (NEU) | alle vier Klassen bestehen, 0 falsche starke Behauptungen, Brier 0,0174, Coverage 0,77 |
+
+| Rotbeweis | Eingebauter Fehler | Fallendes Bein |
+|---|---|---|
+| `-M-52.txt` | unbekanntes Routing quarantänisiert nur den Bereich | A4 |
+| `-M-53.txt` | ein Drop trägt `epochwechsel` statt `sequenzluecke` | A4 |
+| `-M-53-loop.txt` | ein Loop-Wrap an der Passagengrenze invalidiert | A4 |
+| `-M-54.txt` | ein fehlender Fingerprint gilt als gleiches Material | A4 |
+| `-M-55.txt` | der Messpunktwechsel greift nur bei einer Klasse | A4 |
+| `-M-56.txt` | ein Apply meldet keine Warm-up-Zeit | A4 |
+| `-M-57.txt` | ein leerer Bereich gilt als gültiger Umfang | A4 |
+| `-M-60.txt` | der Nachlauf wird beim End sofort auf 0 gesetzt | A4 |
+| `-M-61.txt` | ein `end` auf eine unbekannte ID löst das Sticky-Bit | A4 |
+| `-M-63.txt` | der Dispatch zählt sein Urteil nicht | A4 |
+| `-M-79.txt` | ein Fall behauptet stark, wo die Wahrheit unbekannt ist | A26 |
+| `-M-80.txt` | eine committete Korpusdatei weicht von der Neuerzeugung ab | A25 |
+
+#### Abweichungen von §5, mit Begründung
+
+- **Ein neues Rust-Modul** `broker/src/coordinator/invalidierung.rs`. §5.2
+  nennt `broker/src/coordinator/` als Ticketpfad.
+- **Zwei neue Kanonbeine A25 und A26** statt der in §5.1 genannten einen
+  Korpuszeile: M-80 verlangt den Erzeuger mit `--pruefen` **als Kanonbein**,
+  M-79 das Sammelbein. Beide zusammenzulegen hiesse, die Reproduzierbarkeit
+  und das Exit-Gate an denselben Exitcode zu hängen.
+- **M-59 kommt aus Etappe G** (dort verschoben, §10.8) und wird hier gemessen.
 
 ---
 

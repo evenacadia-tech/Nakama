@@ -54,3 +54,8 @@ eq-copilot/fixtures/state/** -text
 # eine Schleuse wuerde nicht blocken, sondern still scheitern. Deshalb LF
 # erzwungen (Regel uebernommen aus Nakama-Design/.gitattributes).
 *.sh text eol=lf
+
+# SONDE-013 M-80: der P4-Korpus wird BYTEGLEICH geprueft. Ohne diese Regel
+# normalisiert git die Zeilenenden beim Checkout, und der Vergleich gegen die
+# Neuerzeugung faellt auf jedem Rechner anders aus.
+eq-copilot/fixtures/p4-korpus/** -text

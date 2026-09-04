@@ -1,0 +1,51 @@
+{
+  "beine": [
+    "B4",
+    "B5",
+    "B22",
+    "A4"
+  ],
+  "faelle": [
+    {
+      "aussage": "stark",
+      "bein": "B5",
+      "fall": "no_window_crosses_an_epoch_boundary",
+      "hinweis": "§32.3: kein Fenster ueberbrueckt eine echte oder moegliche Grenze",
+      "konfidenz": 0.99,
+      "wahrheit": "getrennt"
+    },
+    {
+      "aussage": "stark",
+      "bein": "B5",
+      "fall": "drop_counts_as_segment_not_epoch",
+      "hinweis": "SONDE-009 B5 §F/G1-G2, und M-53 haengt den Wiregrund daran",
+      "konfidenz": 0.98,
+      "wahrheit": "segment"
+    },
+    {
+      "aussage": "stark",
+      "bein": "B4",
+      "fall": "drop_produces_counter_gap_and_boundary",
+      "hinweis": "ein Drop erzeugt Zaehler, sichtbare Luecke und neue Grenze",
+      "konfidenz": 0.97,
+      "wahrheit": "getrennt"
+    },
+    {
+      "aussage": "stark",
+      "bein": "B22",
+      "fall": "fingerprint_window_never_crosses_epoch_boundary",
+      "hinweis": "auch der Fingerprint faellt unter §32.3 - Etappe E",
+      "konfidenz": 0.96,
+      "wahrheit": "getrennt"
+    },
+    {
+      "aussage": "stark",
+      "bein": "A4",
+      "fall": "epoch_change_invalidates_open_evidence",
+      "hinweis": "M-53: der Grund auf dem Draht ist je Ausloeser eindeutig",
+      "konfidenz": 0.98,
+      "wahrheit": "getrennt"
+    }
+  ],
+  "klasse": "zeitachse"
+}

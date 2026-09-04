@@ -1,0 +1,32 @@
+{
+  "$id": "evenacadia.nakama.p4korpus.v1",
+  "dateien": {
+    "referenz.json": {
+      "bytes": 1341,
+      "sha256": "6e2ebd0046e13ccccdc62d0a3160232ee5836685d1a06fe70bb691584fac7ae9"
+    },
+    "stereo.json": {
+      "bytes": 1152,
+      "sha256": "dd8b0945dd388d6adafac144135c03cb421cfd95947ee82f20cd564aaf3a9539"
+    },
+    "vergleich.json": {
+      "bytes": 1629,
+      "sha256": "8b5eaabfb7c780b97a56919afcade840de0d1dbe62052462d5d74df6c7382926"
+    },
+    "zeitachse.json": {
+      "bytes": 1344,
+      "sha256": "86c7ae24aa5c4f2cd4597a0ea7ece196e9187df86e93922bb97a6831574a53c3"
+    }
+  },
+  "erzeuger": "tools/eq-copilot/erzeuge_p4_korpus.py",
+  "faelle_gesamt": 22,
+  "klassen": [
+    "referenz",
+    "stereo",
+    "vergleich",
+    "zeitachse"
+  ],
+  "pruefer": "tools/eq-copilot/pruefe_p4_korpus.py",
+  "titel": "P4-Referenzkorpus (SONDE-013 M-79 bis M-85)",
+  "zweck": "Haelt je Fall fest, WELCHES Bein ihn misst, was die Wahrheit ist und welche Aussage Nakama darueber trifft. Aus diesen drei Angaben rechnet pruefe_p4_korpus.py die Kennzahlen aus §49.4. Der Korpus misst NICHT selbst - er waere sonst eine fuenfte Implementierung."
+}

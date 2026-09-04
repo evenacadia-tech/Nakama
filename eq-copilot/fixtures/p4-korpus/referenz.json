@@ -1,0 +1,49 @@
+{
+  "beine": [
+    "B17",
+    "B18"
+  ],
+  "faelle": [
+    {
+      "aussage": "stark",
+      "bein": "B17",
+      "fall": "true_peak_matches_ebu_test_set",
+      "hinweis": "EBU Tech 3341 Faelle 15-19: fs/4, fs/6, fs/8 bei 0,50 und 1,41 FFS",
+      "konfidenz": 0.98,
+      "wahrheit": "ueberschreitet"
+    },
+    {
+      "aussage": "stark",
+      "bein": "B17",
+      "fall": "eight_times_oversampling_error_bound",
+      "hinweis": "die geschlossene Fehlerformel bei fs/4: -0,042 dB mit 8x",
+      "konfidenz": 0.97,
+      "wahrheit": "ueberschreitet"
+    },
+    {
+      "aussage": "stark",
+      "bein": "B18",
+      "fall": "lufs_integrated_matches_reference",
+      "hinweis": "ITU-R BS.1770-5 mit EBU-R128-Gating, Toleranz +/-0,1 LU",
+      "konfidenz": 0.99,
+      "wahrheit": "innerhalb"
+    },
+    {
+      "aussage": "unsicher",
+      "bein": "B18",
+      "fall": "lra_below_sixty_seconds_is_unstable",
+      "hinweis": "EBU Tech 3342: unter 60 s geeignetem Material kein stabiler LRA",
+      "konfidenz": 0.5,
+      "wahrheit": "unbekannt"
+    },
+    {
+      "aussage": "stark",
+      "bein": "B18",
+      "fall": "psr_against_true_peak_of_same_window",
+      "hinweis": "psr_db rechnet gegen das True-Peak-Maximum DESSELBEN 3-s-Fensters",
+      "konfidenz": 0.95,
+      "wahrheit": "innerhalb"
+    }
+  ],
+  "klasse": "referenz"
+}

@@ -1,0 +1,52 @@
+{
+  "beine": [
+    "B19"
+  ],
+  "faelle": [
+    {
+      "aussage": "stark",
+      "bein": "B19",
+      "fall": "mono_identity",
+      "konfidenz": 0.99,
+      "wahrheit": "mono"
+    },
+    {
+      "aussage": "stark",
+      "bein": "B19",
+      "fall": "identical_stereo",
+      "konfidenz": 0.99,
+      "wahrheit": "identisch"
+    },
+    {
+      "aussage": "stark",
+      "bein": "B19",
+      "fall": "polarity_inversion",
+      "hinweis": "perfekte Antiphase: die Mid-Energie ist exakt null (Etappe C)",
+      "konfidenz": 0.98,
+      "wahrheit": "invertiert"
+    },
+    {
+      "aussage": "stark",
+      "bein": "B19",
+      "fall": "known_delay",
+      "konfidenz": 0.96,
+      "wahrheit": "laufzeit"
+    },
+    {
+      "aussage": "stark",
+      "bein": "B19",
+      "fall": "uncorrelated_channels",
+      "konfidenz": 0.95,
+      "wahrheit": "unkorreliert"
+    },
+    {
+      "aussage": "stark",
+      "bein": "B19",
+      "fall": "mono_folddown_matches_folded_buffer",
+      "hinweis": "der angezeigte Monoverlust entspricht dem gefalteten Puffer, 0,25 dB",
+      "konfidenz": 0.97,
+      "wahrheit": "innerhalb"
+    }
+  ],
+  "klasse": "stereo"
+}

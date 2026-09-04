@@ -1,0 +1,58 @@
+{
+  "beine": [
+    "B24",
+    "A4",
+    "A16"
+  ],
+  "faelle": [
+    {
+      "aussage": "unsicher",
+      "bein": "B24",
+      "fall": "nonlinear_chain_never_yields_static_eq_claim",
+      "hinweis": "Kompression, Modulation, Saturation und wechselnde Latenz",
+      "konfidenz": 0.5,
+      "wahrheit": "nicht_kausal"
+    },
+    {
+      "aussage": "schwach",
+      "bein": "A4",
+      "fall": "distributed_pair_never_produces_transfer_function",
+      "hinweis": "verteilt gibt es Banddifferenzen, keinen Frequenzgang",
+      "konfidenz": 0.6,
+      "wahrheit": "nicht_kausal"
+    },
+    {
+      "aussage": "unsicher",
+      "bein": "A4",
+      "fall": "gate6_incomparable_never_gets_a_strong_winner",
+      "hinweis": "harter Gate 6 aus §49.2",
+      "konfidenz": 0.5,
+      "wahrheit": "unvergleichbar"
+    },
+    {
+      "aussage": "unsicher",
+      "bein": "A4",
+      "fall": "comparability_needs_all_five_and_hash_alone_never_wins",
+      "hinweis": "kein einzelner Hash hebt einen Widerspruch auf",
+      "konfidenz": 0.5,
+      "wahrheit": "unvergleichbar"
+    },
+    {
+      "aussage": "unsicher",
+      "bein": "A4",
+      "fall": "unknown_time_path_can_never_reach_strong",
+      "hinweis": "Exit-Gate M-21: kein unbekannter Zeitpfad erzeugt eine starke Aussage",
+      "konfidenz": 0.5,
+      "wahrheit": "unbekannt"
+    },
+    {
+      "aussage": "schwach",
+      "bein": "A16",
+      "fall": "insert_probe_is_never_called_master_sum",
+      "hinweis": "Gate 7 aus §49.2 - eine Insertprobe ist kein Mastersummenbeitrag",
+      "konfidenz": 0.65,
+      "wahrheit": "nicht_exakt"
+    }
+  ],
+  "klasse": "vergleich"
+}

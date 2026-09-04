@@ -1,0 +1,90 @@
+SONDE-013 Etappe 2 E - Rotbeweis M-55
+=========================================
+
+Datei:     broker/src/coordinator/invalidierung.rs
+Ziel:      sonde013_taint.rs (Kanon A4)
+Warum:     Der Messpunktwechsel greift nur beim Sprung auf `post_fader_contribution`. Die Kante zu Gate 7 haengt aber nicht an einer bestimmten Klasse: JEDER Wechsel der Messposition macht die abhaengige Evidenz ungueltig, weil sie an einem Punkt gemessen wurde, den es so nicht mehr gibt.
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+    if alte_klasse == neue_klasse {
+        return None;
+    }
+--- NEU ---
+    if neue_klasse != "post_fader_contribution" {
+        return None;
+    }
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+running 14 tests
+test applied_state_segments_instead_of_tainting ... ok
+test downstream_probe_is_tainted_by_upstream_intervention ... ok
+test marker_invalidates_overlapping_range_and_unknown_routing_takes_the_session ... ok
+test epoch_change_invalidates_open_evidence ... ok
+test material_change_invalidates_dependent_evidence ... ok
+test invalidate_scope_discriminator_rejects_mismatched_payloads ... ok
+test both_experiment_terminals_close_all_intervals ... ok
+test unknown_routing_widens_to_whole_session ... ok
+test measurement_position_change_invalidates_dependent_evidence ... FAILED
+test retention_abort_also_closes_intervals ... ok
+test inverse_path_returns_to_zero_after_every_intervention_kind ... ok
+test only_neutral_resync_clears_sticky_unknown ... ok
+test marker_end_closes_its_interval_only_after_the_tail ... ok
+test dispatch_lock_ordering_holds_under_concurrent_begin ... ok
+
+failures:
+
+---- measurement_position_change_invalidates_dependent_evidence stdout ----
+
+thread 'measurement_position_change_invalidates_dependent_evidence' (6724) panicked at tests\sonde013_taint.rs:205:9:
+assertion `left == right` failed: post_fader_contribution -> insert
+  left: None
+ right: Some(MesspunktWechsel)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    measurement_position_change_invalidates_dependent_evidence
+
+test result: FAILED. 13 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: unused variable: `alte_klasse`
+   --> src\coordinator\invalidierung.rs:230:5
+    |
+230 |     alte_klasse: &str,
+    |     ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_alte_klasse`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib) generated 1 warning (run `cargo fix --lib -p eqcop-broker` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.18s
+     Running tests\sonde013_taint.rs (target\debug\deps\sonde013_taint-8f6252999ec5716d.exe)
+error: test failed, to rerun pass `--test sonde013_taint`
+
+Exitcode: 101  ->  ROT (gut)
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+running 14 tests
+test applied_state_segments_instead_of_tainting ... ok
+test downstream_probe_is_tainted_by_upstream_intervention ... ok
+test measurement_position_change_invalidates_dependent_evidence ... ok
+test epoch_change_invalidates_open_evidence ... ok
+test marker_invalidates_overlapping_range_and_unknown_routing_takes_the_session ... ok
+test material_change_invalidates_dependent_evidence ... ok
+test invalidate_scope_discriminator_rejects_mismatched_payloads ... ok
+test both_experiment_terminals_close_all_intervals ... ok
+test unknown_routing_widens_to_whole_session ... ok
+test only_neutral_resync_clears_sticky_unknown ... ok
+test inverse_path_returns_to_zero_after_every_intervention_kind ... ok
+test marker_end_closes_its_interval_only_after_the_tail ... ok
+test retention_abort_also_closes_intervals ... ok
+test dispatch_lock_ordering_holds_under_concurrent_begin ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.66s
+     Running tests\sonde013_taint.rs (target\debug\deps\sonde013_taint-8f6252999ec5716d.exe)
+
+Exitcode: 0  ->  GRUEN (gut)

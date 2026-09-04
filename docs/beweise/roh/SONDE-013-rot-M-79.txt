@@ -1,0 +1,44 @@
+SONDE-013 Etappe 2 - Rotbeweis M-79
+=========================================
+
+Datei:     eq-copilot/fixtures/p4-korpus/vergleich.json
+Ziel:      pruefe_p4_korpus.py (Kanon A26)
+Warum:     Ein Fall behauptet STARK, wo die Wahrheit `unbekannt` ist - genau die falsche starke Behauptung, deren Zahl nach M-79 null sein muss. §49.4 woertlich: "Ein konservatives `unsicher` ist besser als eine ueberzeugende falsche Ursache." Der Fehler ist eine einzige Zeichenkette im Korpus und faellt bei einer Sichtpruefung nicht auf.
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+      "aussage": "unsicher",
+      "bein": "A4",
+      "fall": "unknown_time_path_can_never_reach_strong",
+--- NEU ---
+      "aussage": "stark",
+      "bein": "A4",
+      "fall": "unknown_time_path_can_never_reach_strong",
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+P4-Referenzkorpus: 22 Faelle in 4 Klassen
+
+[ok]  referenz    5 Faelle · 4 stark · 1 Enthaltungen · Precision 1.00 · Recall 1.00 · Brier 0.0010 · Coverage 0.80
+[ok]  stereo      6 Faelle · 6 stark · 0 Enthaltungen · Precision 1.00 · Recall 1.00 · Brier 0.0009 · Coverage 1.00
+[ROT] vergleich   6 Faelle · 1 stark · 3 Enthaltungen · Precision 0.00 · Recall 1.00 · Brier 0.1775 · Coverage 0.50
+[ok]  zeitachse   5 Faelle · 5 stark · 0 Enthaltungen · Precision 1.00 · Recall 1.00 · Brier 0.0007 · Coverage 1.00
+
+Gesamt: 22 Faelle · 1 falsche starke Behauptungen · Brier 0.0303 · Kalibrierung 0.0356 · Coverage 0.82 · Enthaltungsrate 0.18
+
+  ROT: vergleich: 1 falsche starke Behauptung(en): unknown_time_path_can_never_reach_strong
+  ROT: Gesamt: 1 falsche starke Behauptungen (erlaubt: 0)
+
+Exitcode: 2  ->  ROT (gut)
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+P4-Referenzkorpus: 22 Faelle in 4 Klassen
+
+[ok]  referenz    5 Faelle · 4 stark · 1 Enthaltungen · Precision 1.00 · Recall 1.00 · Brier 0.0010 · Coverage 0.80
+[ok]  stereo      6 Faelle · 6 stark · 0 Enthaltungen · Precision 1.00 · Recall 1.00 · Brier 0.0009 · Coverage 1.00
+[ok]  vergleich   6 Faelle · 0 stark · 4 Enthaltungen · Precision 1.00 · Recall 1.00 · Brier 0.1413 · Coverage 0.33
+[ok]  zeitachse   5 Faelle · 5 stark · 0 Enthaltungen · Precision 1.00 · Recall 1.00 · Brier 0.0007 · Coverage 1.00
+
+Gesamt: 22 Faelle · 0 falsche starke Behauptungen · Brier 0.0174 · Kalibrierung 0.0671 · Coverage 0.77 · Enthaltungsrate 0.23
+Exit-Gate P4: alle vier Klassen bestehen, keine falsche starke Behauptung.
+
+Exitcode: 0  ->  GRUEN (gut)

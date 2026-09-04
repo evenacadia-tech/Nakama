@@ -13,7 +13,8 @@
     "eq-copilot/plugin/core/analysis/FeatureEngine.h",
     "eq-copilot/plugin/core/analysis/Konfidenz.h",
     "broker/src/coordinator/vergleichbarkeit.rs",
-    "broker/src/coordinator/prepost.rs"
+    "broker/src/coordinator/prepost.rs",
+    "broker/src/coordinator/invalidierung.rs"
   ],
 
   "aktuell": 20260904,
@@ -99,6 +100,12 @@
           "einheit": "Verhaeltnis",
           "datei": "broker/src/coordinator/prepost.rs",
           "zweck": "M-16: wie deutlich die Spitze gegenueber dem besten Nebenmaximum sein muss. Ohne dieses Verhaeltnis genuegte ein flacher Korrelationsberg, dessen Maximum an einer beliebigen Stelle liegt."
+        },
+        "GATE_MATERIAL_GLEICH": {
+          "wert": 0.95,
+          "einheit": "Fingerprintaehnlichkeit in [0,1]",
+          "datei": "broker/src/coordinator/invalidierung.rs",
+          "zweck": "M-54: ab welcher Fingerprintaehnlichkeit dasselbe musikalische Material gilt. Derselbe Startwert wie GATE_MATERIAL_COSINE der Vergleichbarkeit - beide beantworten dieselbe Frage an denselben Verlauf, und zwei verschiedene Zahlen dafuer waeren zwei Wahrheiten ueber dasselbe Material."
         },
         "GATE_RELATIONSSCHWANKUNG_DB": {
           "wert": 1.5,

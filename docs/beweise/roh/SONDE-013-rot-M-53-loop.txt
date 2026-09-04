@@ -1,0 +1,77 @@
+SONDE-013 Etappe 2 - Rotbeweis M-53-loop
+=========================================
+
+Datei:     broker/src/coordinator/invalidierung.rs
+Ziel:      sonde013_taint.rs (Kanon A4)
+Warum:     Ein Loop-Wrap AN der Passagengrenze invalidiert. Deckt der Loop die Passage vollstaendig ab, beendet der Wrap einen Durchlauf und beginnt den naechsten - weder Invalidierung noch Herabstufung (M-53, Abgrenzung zu M-23). Der Fehler naehme dem User bei JEDEM Loopdurchlauf seine Evidenz, und zwar genau bei der Arbeitsweise, fuer die Passagen gedacht sind.
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+        Bruchart::LoopWrapAnGrenze => None,
+--- NEU ---
+        Bruchart::LoopWrapAnGrenze => Some(Grund::Epochwechsel),
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+running 14 tests
+test applied_state_segments_instead_of_tainting ... ok
+test marker_invalidates_overlapping_range_and_unknown_routing_takes_the_session ... ok
+test measurement_position_change_invalidates_dependent_evidence ... ok
+test material_change_invalidates_dependent_evidence ... ok
+test epoch_change_invalidates_open_evidence ... FAILED
+test downstream_probe_is_tainted_by_upstream_intervention ... ok
+test both_experiment_terminals_close_all_intervals ... ok
+test invalidate_scope_discriminator_rejects_mismatched_payloads ... ok
+test unknown_routing_widens_to_whole_session ... ok
+test inverse_path_returns_to_zero_after_every_intervention_kind ... ok
+test marker_end_closes_its_interval_only_after_the_tail ... ok
+test only_neutral_resync_clears_sticky_unknown ... ok
+test retention_abort_also_closes_intervals ... ok
+test dispatch_lock_ordering_holds_under_concurrent_begin ... ok
+
+failures:
+
+---- epoch_change_invalidates_open_evidence stdout ----
+
+thread 'epoch_change_invalidates_open_evidence' (20684) panicked at tests\sonde013_taint.rs:127:5:
+assertion `left == right` failed
+  left: Some(Epochwechsel)
+ right: None
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    epoch_change_invalidates_open_evidence
+
+test result: FAILED. 13 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.19s
+     Running tests\sonde013_taint.rs (target\debug\deps\sonde013_taint-8f6252999ec5716d.exe)
+error: test failed, to rerun pass `--test sonde013_taint`
+
+Exitcode: 101  ->  ROT (gut)
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+running 14 tests
+test applied_state_segments_instead_of_tainting ... ok
+test downstream_probe_is_tainted_by_upstream_intervention ... ok
+test marker_invalidates_overlapping_range_and_unknown_routing_takes_the_session ... ok
+test epoch_change_invalidates_open_evidence ... ok
+test measurement_position_change_invalidates_dependent_evidence ... ok
+test material_change_invalidates_dependent_evidence ... ok
+test both_experiment_terminals_close_all_intervals ... ok
+test invalidate_scope_discriminator_rejects_mismatched_payloads ... ok
+test unknown_routing_widens_to_whole_session ... ok
+test inverse_path_returns_to_zero_after_every_intervention_kind ... ok
+test marker_end_closes_its_interval_only_after_the_tail ... ok
+test only_neutral_resync_clears_sticky_unknown ... ok
+test retention_abort_also_closes_intervals ... ok
+test dispatch_lock_ordering_holds_under_concurrent_begin ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.02s
+     Running tests\sonde013_taint.rs (target\debug\deps\sonde013_taint-8f6252999ec5716d.exe)
+
+Exitcode: 0  ->  GRUEN (gut)

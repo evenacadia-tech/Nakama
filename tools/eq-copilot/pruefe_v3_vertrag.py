@@ -1573,6 +1573,7 @@ def pruefe_metrikregister(lauf: Lauf) -> None:
         kern / "Konfidenz.h",
         WURZEL / "broker/src/coordinator/vergleichbarkeit.rs",
         WURZEL / "broker/src/coordinator/prepost.rs",
+        WURZEL / "broker/src/coordinator/invalidierung.rs",
     ])
     lauf.wahr("metrics_version_bindet_schwellen: Kernkonstanten lesbar",
               len(konstanten) > 5, f"{len(konstanten)} gefunden")

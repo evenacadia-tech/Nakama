@@ -1,0 +1,24 @@
+SONDE-013 Etappe 2 - Rotbeweis M-80
+=========================================
+
+Datei:     eq-copilot/fixtures/p4-korpus/stereo.json
+Ziel:      erzeuge_p4_korpus.py --pruefen (Kanon A25)
+Warum:     Eine committete Korpusdatei weicht von der Neuerzeugung ab. Genau das soll der --pruefen-Lauf finden: eine handgepflegte Aenderung am Bestand driftet sonst gegen den Erzeuger, und der Drift faellt niemandem auf, weil beide Seiten fuer sich gruen sind.
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+"konfidenz": 0.99
+--- NEU ---
+"konfidenz": 0.77
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+P4-Korpus: 5 Dateien, 22 Faelle in 4 Klassen
+  ROT: nicht bytegleich: stereo.json
+
+Exitcode: 2  ->  ROT (gut)
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+P4-Korpus: 5 Dateien, 22 Faelle in 4 Klassen
+bytegleich
+
+Exitcode: 0  ->  GRUEN (gut)

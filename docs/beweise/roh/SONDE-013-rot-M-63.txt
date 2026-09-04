@@ -1,0 +1,116 @@
+SONDE-013 Etappe 2 - Rotbeweis M-63
+=========================================
+
+Datei:     broker/src/coordinator/intervention.rs
+Ziel:      sonde013_taint.rs (Kanon A4)
+Warum:     Der Dispatch zaehlt sein Urteil nicht und gibt immer `true` zurueck. M-63 verlangt, dass der Riegel VOR dem Evidence-Commit liegt und sein Urteil unter demselben Lock zaehlt - ohne den Zaehler laesst sich nicht sagen, ob ein stiller Lauf sauber war oder ob jede einzelne Aussage gesperrt wurde.
+
+Eingebauter Fehler (alt -> neu):
+--- ALT ---
+        if erlaubt {
+            stand.evidence_angenommen = stand.evidence_angenommen.saturating_add(1);
+        } else {
+            stand.evidence_gesperrt = stand.evidence_gesperrt.saturating_add(1);
+        }
+        erlaubt
+--- NEU ---
+        let _ = &mut stand;
+        true
+
+=== LAUF 1: MIT dem Fehler (erwartet: ROT) ===
+running 14 tests
+test applied_state_segments_instead_of_tainting ... ok
+test downstream_probe_is_tainted_by_upstream_intervention ... ok
+test both_experiment_terminals_close_all_intervals ... ok
+test epoch_change_invalidates_open_evidence ... ok
+test material_change_invalidates_dependent_evidence ... ok
+test invalidate_scope_discriminator_rejects_mismatched_payloads ... ok
+test marker_invalidates_overlapping_range_and_unknown_routing_takes_the_session ... ok
+test measurement_position_change_invalidates_dependent_evidence ... ok
+test inverse_path_returns_to_zero_after_every_intervention_kind ... FAILED
+test dispatch_lock_ordering_holds_under_concurrent_begin ... FAILED
+test marker_end_closes_its_interval_only_after_the_tail ... FAILED
+test unknown_routing_widens_to_whole_session ... ok
+test only_neutral_resync_clears_sticky_unknown ... ok
+test retention_abort_also_closes_intervals ... ok
+
+failures:
+
+---- inverse_path_returns_to_zero_after_every_intervention_kind stdout ----
+
+thread 'inverse_path_returns_to_zero_after_every_intervention_kind' (19980) panicked at tests\sonde013_taint.rs:493:9:
+0: gesperrt
+
+---- dispatch_lock_ordering_holds_under_concurrent_begin stdout ----
+
+thread 'dispatch_lock_ordering_holds_under_concurrent_begin' (21724) panicked at tests\sonde013_taint.rs:591:5:
+mit offener Intervention gesperrt
+
+---- marker_end_closes_its_interval_only_after_the_tail stdout ----
+
+thread 'marker_end_closes_its_interval_only_after_the_tail' (23452) panicked at tests\sonde013_taint.rs:444:5:
+waehrend der Intervention nicht
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    dispatch_lock_ordering_holds_under_concurrent_begin
+    inverse_path_returns_to_zero_after_every_intervention_kind
+    marker_end_closes_its_interval_only_after_the_tail
+
+test result: FAILED. 11 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: unused variable: `erlaubt`
+   --> src\coordinator\intervention.rs:173:13
+    |
+173 |         let erlaubt = !stand.intervention_state_unknown
+    |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_erlaubt`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `evidence_angenommen` and `evidence_gesperrt` are never read
+   --> src\coordinator\zustand.rs:171:16
+    |
+160 | pub(super) struct Stand {
+    |                   ----- fields in this struct
+...
+171 |     pub(super) evidence_angenommen: u64,
+    |                ^^^^^^^^^^^^^^^^^^^
+172 |     pub(super) evidence_gesperrt: u64,
+    |                ^^^^^^^^^^^^^^^^^
+    |
+    = note: `Stand` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib) generated 2 warnings (run `cargo fix --lib -p eqcop-broker` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.29s
+     Running tests\sonde013_taint.rs (target\debug\deps\sonde013_taint-8f6252999ec5716d.exe)
+error: test failed, to rerun pass `--test sonde013_taint`
+
+Exitcode: 101  ->  ROT (gut)
+
+=== LAUF 2: OHNE den Fehler (erwartet: GRUEN) ===
+running 14 tests
+test applied_state_segments_instead_of_tainting ... ok
+test marker_invalidates_overlapping_range_and_unknown_routing_takes_the_session ... ok
+test epoch_change_invalidates_open_evidence ... ok
+test downstream_probe_is_tainted_by_upstream_intervention ... ok
+test measurement_position_change_invalidates_dependent_evidence ... ok
+test material_change_invalidates_dependent_evidence ... ok
+test both_experiment_terminals_close_all_intervals ... ok
+test invalidate_scope_discriminator_rejects_mismatched_payloads ... ok
+test unknown_routing_widens_to_whole_session ... ok
+test inverse_path_returns_to_zero_after_every_intervention_kind ... ok
+test retention_abort_also_closes_intervals ... ok
+test marker_end_closes_its_interval_only_after_the_tail ... ok
+test only_neutral_resync_clears_sticky_unknown ... ok
+test dispatch_lock_ordering_holds_under_concurrent_begin ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.29s
+     Running tests\sonde013_taint.rs (target\debug\deps\sonde013_taint-8f6252999ec5716d.exe)
+
+Exitcode: 0  ->  GRUEN (gut)

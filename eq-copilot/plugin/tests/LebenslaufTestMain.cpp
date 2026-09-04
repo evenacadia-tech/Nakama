@@ -25,6 +25,8 @@
 #include "PluginProcessor.h"
 #include "HoerMarkierung.h"
 
+#include <pluginterfaces/vst/ivstprocesscontext.h>
+
 #include <cmath>
 #include <cstring>
 #include <iostream>
@@ -34,6 +36,8 @@ using nakama::state::Klasse;
 using nakama::state::Klassifikation;
 using nakama::state::LadeErgebnis;
 using nakama::state::Lebenslauf;
+
+using VstKontext = Steinberg::Vst::ProcessContext;
 
 namespace
 {
@@ -166,13 +170,30 @@ struct TestPlayHead : juce::AudioPlayHead
     }
 };
 
-/** Faehrt `bloecke` Sinusbloecke und meldet, ob EIN Sample abwich. */
+/** Faehrt `bloecke` Sinusbloecke und meldet, ob EIN Sample abwich.
+
+    ⚠️ S20-22/SONDE-013 M-33 — WARUM HIER SEIT DIESEM TICKET EINE HOSTBRUECKE
+    LAEUFT.
+
+    §58 verlangt fuer den Hoermarker vier fail-closed-Terme: `playing=true`,
+    `recording=false`, Realtime und Editor offen. Der Aufnahmezustand kommt
+    AUSSCHLIESSLICH ueber die Hostbruecke — JUCEs oeffentlicher Playhead
+    traegt ihn nicht, und B5 misst ausdruecklich, dass ueber ihn nur zwei
+    Gueltigkeitsbits durchkommen. Ohne Bruecke ist er unbekannt, und ein
+    unbekannter blockiert wie ein aktiver.
+
+    Dieser Helfer hat den Test deshalb nach M-33 fallen lassen: „main faerbt
+    jetzt" war gruen, solange kein Aufnahmeterm existierte. Er faehrt jetzt
+    denselben Weg wie das Produkt — Bruecke pro Block, wie der gepatchte
+    Wrapper. */
 bool faerbtAudio (EqCopilotProcessor& p, double fs, int bs, int bloecke)
 {
     juce::AudioBuffer<float> puffer (2, bs), kopie (2, bs);
     juce::MidiBuffer midi;
     TestPlayHead kopf;
     p.setPlayHead (&kopf);
+    eqcop::hostbruecke::Bruecke bruecke;
+    bruecke.verbinde (&p);
     double phase = 0.0;
     const double dPhase = 2.0 * juce::MathConstants<double>::pi * 200.0 / fs;
     bool gefaerbt = false;
@@ -186,6 +207,19 @@ bool faerbtAudio (EqCopilotProcessor& p, double fs, int bs, int bloecke)
             puffer.setSample (1, i, v);
         }
         kopie.makeCopyOf (puffer);
+        {
+            VstKontext c {};
+            c.state = VstKontext::kContTimeValid;
+            if (kopf.spielt)
+                c.state |= VstKontext::kPlaying;
+            // Kein kRecording: der Host nimmt nachweislich NICHT auf.
+            c.projectTimeSamples = kopf.pos;
+            c.continousTimeSamples = kopf.pos;
+            c.sampleRate = fs;
+            bruecke.beginneBlock ((std::uint32_t) bs);
+            bruecke.kontextAus (c);
+            bruecke.uebergib();
+        }
         p.processBlock (puffer, midi);
         kopf.pos += bs;
         for (int k = 0; k < 2; ++k)
@@ -193,6 +227,7 @@ bool faerbtAudio (EqCopilotProcessor& p, double fs, int bs, int bloecke)
                              (size_t) bs * sizeof (float)) != 0)
                 gefaerbt = true;
     }
+    bruecke.verbinde (nullptr);
     p.setPlayHead (nullptr);     // der Playhead lebt nur in diesem Aufruf
     return gefaerbt;
 }
@@ -485,9 +520,17 @@ int main()
         p.setzeBindung ("sensor", {}, {});
         pruefe (p.holeKlassifikation() == Klassifikation::legacy,
                 "Rueckweg: 'sensor' klassifiziert zurueck auf legacy");
+        // ⚠️ S20-22/SONDE-013 M-34 hat diese Zusage GEAENDERT, und zwar
+        // bewusst. Bis hierher hiess sie "der Schnitt auf neutral greift
+        // sofort" — genau der Sofortschnitt aus NAK-47, der einen hoerbaren
+        // Klick erzeugt (§49.3). Jetzt laeuft eine Rampe; neutral wird der
+        // Pfad NACH ihr. Gemessen wird deshalb beides: dass die Rampe
+        // endlich ist, und dass danach kein Sample mehr abweicht.
         p.markierungEinreichen (soloAuftrag (fs));
+        (void) faerbtAudio (p, fs, bs, 40);          // die Rampe auslaufen lassen
         pruefe (! faerbtAudio (p, fs, bs, 80),
-                "Rueckweg: der Schnitt auf neutral greift sofort");
+                "Rueckweg/M-34: nach dem Ausfade greift neutral - und bleibt es "
+                "ueber 80 Bloecke");
     }
 
     // P5 · Ein Stand, den dieser Build nicht lesen darf, nimmt die

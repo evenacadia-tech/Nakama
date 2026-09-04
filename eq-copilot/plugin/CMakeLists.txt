@@ -686,6 +686,9 @@ target_sources(EqCopLebenslaufTest PRIVATE
     src/Diagnose.cpp
 )
 target_include_directories(EqCopLebenslaufTest PRIVATE src)
+target_include_directories(EqCopLebenslaufTest PRIVATE
+    hostbridge
+    "${juce_SOURCE_DIR}/modules/juce_audio_processors/format_types/VST3_SDK")
 target_compile_definitions(EqCopLebenslaufTest PRIVATE
     JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
 target_link_libraries(EqCopLebenslaufTest PRIVATE juce::juce_audio_utils juce::juce_dsp

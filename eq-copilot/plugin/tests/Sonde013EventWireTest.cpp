@@ -980,6 +980,161 @@ int main()
                 juce::String (std::max (waehrend, rest), 4));
     }
 
+    abschnitt ("N2 - R04: das Kurzzeitfenster faellt mit dem Passagenanfang");
+    {
+        // 🔑 Nacharbeit 2 (Befund R04): `setzePassagenfenster` leerte Histogramm
+        // und Hop-Zaehler, nicht aber die 3-s-Ringe `kurzZellen`, `kurzTpZellen`,
+        // `kurzRmsZellen` und die laufende Zelle. Beginnt eine Passage nach
+        // bereits gemessenem Material - der Normalfall, der User markiert mitten
+        // im Stueck -, enthielten ihre ersten LRA-, PSR- und Crest-Fenster bis zu
+        // zwei Sekunden Audio VOR der Passage. Der B08-Fall oben prueft nur den
+        // Passagen-True-Peak und kann diese Vererbung nicht sehen.
+        FeatureEngine engine;
+        engine.vorbereiten (48000.0);
+        Speiser s (engine);
+
+        // Reichlich LAUTES Material: das 3-s-Fenster ist danach voll.
+        FeatureFrame lautF;
+        bool kurzVoll = false;
+        for (int i = 0; i < 400 && ! kurzVoll; ++i)
+        {
+            s.sende (sinus (0.9, 1000.0, 48000.0));
+            kurzVoll = engine.frame().crestKurzGesetzt;
+            if (kurzVoll) lautF = engine.frame();
+        }
+        pruefe (kurzVoll, "R04: das 3-s-Fenster ist vor der Passage gefuellt");
+
+        // Jetzt markiert der User eine Passage - ohne Seek.
+        const std::int64_t start = s.projekt;
+        pruefe (engine.setzePassagenfenster (start, start + 48000 * 8),
+                "R04: das Passagenfenster wird gesetzt");
+
+        // Bis zum naechsten Frame leises Material - rund 100 ms. Das 3-s-Fenster
+        // muss LEER sein und sich erst wieder fuellen: es gehoert zur Passage,
+        // nicht zum Material davor. Ohne die Korrektur stuende hier weiter der
+        // Wert von oben.
+        auto bisFrame = [&s] (const std::function<float (std::uint64_t)>& f)
+        {
+            for (int i = 0; i < 400; ++i)
+                if (s.sende (f))
+                    return true;
+            return false;
+        };
+        pruefe (bisFrame (sinus (0.02, 1000.0, 48000.0)),
+                "R04: nach dem Passagenanfang entsteht ein Frame");
+        pruefe (! engine.frame().crestKurzGesetzt,
+                "R04: kurzzeitfenster_faellt_mit_dem_passagenanfang - direkt nach "
+                "dem Passagenanfang gibt es KEINEN 3-s-Wert mehr; er muss sich "
+                "aus der Passage neu fuellen");
+
+        // Und auch nach rund einer Sekunde noch nicht: das Fenster ist drei
+        // Sekunden lang. Ohne die Korrektur staende hier ein Wert, der zu zwei
+        // Dritteln aus dem lauten Abschnitt stammt - rund 30 statt 3 dB.
+        for (int i = 0; i < 10; ++i)
+            bisFrame (sinus (0.02, 1000.0, 48000.0));
+        pruefe (! engine.frame().crestKurzGesetzt,
+                "R04: auch nach einer Sekunde nicht - das Fenster ist drei "
+                "Sekunden lang und fuellt sich AUS DER PASSAGE",
+                juce::String (engine.frame().crestKurzDb, 2));
+
+        // Und wenn es sich gefuellt hat, traegt es NUR die Passage.
+        FeatureFrame leiseF;
+        bool wiederVoll = false;
+        for (int i = 0; i < 400 && ! wiederVoll; ++i)
+        {
+            s.sende (sinus (0.02, 1000.0, 48000.0));
+            wiederVoll = engine.frame().crestKurzGesetzt;
+            if (wiederVoll) leiseF = engine.frame();
+        }
+        pruefe (wiederVoll, "R04: das Fenster fuellt sich aus der Passage neu");
+        // Ein reiner Sinus hat einen Crest von rund 3 dB. Traegt das Fenster
+        // noch die Spitze des lauten Abschnitts, steht hier ein Wert um 30 dB.
+        pruefe (wiederVoll && leiseF.crestKurzDb < 12.0f,
+                "R04: und der Crest ist der der leisen Passage, nicht der des "
+                "lauten Abschnitts davor",
+                juce::String (leiseF.crestKurzDb, 2) + " gegen "
+                + juce::String (lautF.crestKurzDb, 2));
+    }
+
+    abschnitt ("N3 - R05: der Nachlauf laeuft am Index passBis, nicht nach dem Block");
+    {
+        // 🔑 Nacharbeit 2 (Befund R05): endete die Passage mindestens zwoelf
+        // Samples VOR dem Blockende, verarbeitete die Runde 1 zuerst alle
+        // nachfolgenden Samples mit `imPassagenfenster = false`. Die verzoegerten
+        // Ausgaenge der letzten Passagensamples wurden dabei verbraucht und dem
+        // Passagenmaximum NICHT zugeschlagen; der Nachlauf nach der Schleife kam
+        // zu spaet und lief ueber einen Filter, der schon Post-Material trug.
+        // Der B09-Fall oben prueft `TruePeakDetektor::nachlauf()` ISOLIERT und
+        // kann an dieser integrierten Mid-Block-Grenze nicht fallen.
+        //
+        // Die Zusage, die hier gemessen wird: WO der Blockrand faellt, aendert
+        // das Passagenmaximum nicht.
+        //
+        // Das Signal der letzten zwoelf Samples ist fs/4 mit 45 Grad Phase -
+        // der klassische Fall, in dem der wahre Scheitel um 3 dB UEBER dem
+        // Samplescheitel liegt. Alle seine interpolierten Ausgaenge fallen erst
+        // NACH dem Fensterende heraus; ohne den Nachlauf an der Grenze bleibt
+        // nur der Samplewert stehen.
+        const int kTonSamples = 12;
+        auto messen = [&] (int endeImBlock) -> double
+        {
+            FeatureEngine engine;
+            engine.vorbereiten (48000.0);
+            Speiser s (engine);
+            s.sende ([] (std::uint64_t) { return 0.0f; });      // ein Block Ruhe
+            const std::int64_t start = s.projekt;
+            const std::int64_t ende  = start + 512 * 2 + endeImBlock;
+            engine.setzePassagenfenster (start, ende);
+            // Zwei volle Bloecke Stille, dann der Block mit dem Ton am
+            // Fensterende und Stille danach.
+            s.sende ([] (std::uint64_t) { return 0.0f; });
+            s.sende ([] (std::uint64_t) { return 0.0f; });
+            // `Speiser` fuehrt Strom und Projektzeit im Gleichschritt ab 0;
+            // `n` IST damit die Projektposition dieses Samples.
+            s.sende ([ende] (std::uint64_t n)
+            {
+                const std::int64_t k = (std::int64_t) n - (ende - kTonSamples);
+                if (k < 0 || k >= kTonSamples)
+                    return 0.0f;
+                return (float) (0.7 * std::cos (3.14159265358979323846 * 0.5 * (double) k
+                                                + 3.14159265358979323846 * 0.25));
+            });
+            // Ein Frame muss faellig werden, damit `passageTruePeak` fortschreibt.
+            FeatureFrame f;
+            for (int i = 0; i < 400; ++i)
+                if (s.sende ([] (std::uint64_t) { return 0.0f; })
+                    && s.engine.frame().truePeakPassageGesetzt)
+                {
+                    f = s.engine.frame();
+                    return (double) f.truePeakPassageDb;
+                }
+            return -999.0;
+        };
+
+        // Fall A: das Fenster endet GENAU am Blockrand - der Nachlauf nach der
+        // Schleife greift, wie er es immer tat.
+        const double amRand = messen (512);
+        // Fall B: das Fenster endet 100 Samples vor dem Blockrand - also
+        // mindestens zwoelf Samples davor, und genau das ist der Fall aus R05.
+        const double mittenDrin = messen (412);
+
+        const double samplescheitel = 20.0 * std::log10 (0.7 * std::cos (
+            3.14159265358979323846 * 0.25));
+        pruefe (amRand > -900.0 && mittenDrin > -900.0,
+                "R05: beide Faelle liefern ein Passagenmaximum",
+                juce::String (amRand, 2) + " / " + juce::String (mittenDrin, 2));
+        pruefe (mittenDrin > samplescheitel + 1.0,
+                "R05: nachlauf_am_index_passbis - der wahre Scheitel der letzten "
+                "zwoelf Samples steht im Passagenmaximum, nicht nur ihr "
+                "Samplewert",
+                juce::String (mittenDrin, 2) + " gegen Samplescheitel "
+                + juce::String (samplescheitel, 2));
+        pruefe (std::abs (amRand - mittenDrin) < 0.5,
+                "R05: und WO der Blockrand faellt, aendert das Passagenmaximum "
+                "nicht",
+                juce::String (amRand - mittenDrin, 3) + " dB Unterschied");
+    }
+
     std::cout << "\n-----------------------------------------\n"
               << bestanden << " bestanden, " << fehler << " gescheitert" << std::endl;
     return fehler == 0 ? 0 : 1;

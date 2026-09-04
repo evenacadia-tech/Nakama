@@ -58,6 +58,14 @@ pub(super) struct ClientStand {
     pub(super) adresse: Adresse,
     pub(super) plugin_kind: String,
     pub(super) host_pid: Option<u32>,
+    /// Die im Hello gemeldete Abtastrate dieser Instanz.
+    ///
+    /// 🔑 Nacharbeit 2 (Befund R02, M-58): der offene Nachlauf steht in
+    /// SAMPLES, der Liveness-Tick laeuft in ZEIT. Ohne die Rate der Instanz,
+    /// die den Nachlauf gemeldet hat, laesst sich das eine nicht in das andere
+    /// umrechnen — und genau daran lag der Fehler: eine feste Schrittzahl je
+    /// Tick gab den Nachlauf bei 100-ms-Ticks fuenfmal zu schnell frei.
+    pub(super) abtastrate: f64,
     pub(super) session_ungebunden: bool,
     pub(super) current_link: Option<String>,
     pub(super) current_nonce: String,
@@ -128,6 +136,12 @@ pub(super) struct Taintstand {
     pub(super) interventionen: HashMap<String, Intervention>,
     pub(super) unknown: bool,
     pub(super) tail_samples_offen: u64,
+    /// Die Abtastrate, in der `tail_samples_offen` gezaehlt ist (M-58).
+    ///
+    /// Sie stammt von der Instanz, die das Endereignis geschickt hat: der
+    /// Nachlauf ist IHRE Groesse. `0.0` heisst „noch kein Nachlauf gemeldet";
+    /// der Tick zieht dann nichts ab, weil es nichts abzuziehen gibt.
+    pub(super) abtastrate: f64,
 }
 
 impl Taintstand {

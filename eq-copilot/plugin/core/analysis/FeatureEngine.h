@@ -1275,6 +1275,27 @@ public:
         for (auto& b : lraHistogramm) b = 0u;
         lraGezaehlt = 0;
         lraZellenSeitHop = 0;
+        // 🔑 SONDE-013 Nacharbeit 2 (Befund R04): DAS KURZZEITFENSTER FAELLT
+        // MIT.
+        //
+        // Die Runde 1 leerte Histogramm und Hop-Zaehler, nicht aber die
+        // 3-s-Ringe `kurzZellen`, `kurzTpZellen`, `kurzRmsZellen` und die
+        // laufende Zelle. Beginnt eine Passage nach bereits gemessenem
+        // Material — und das ist der Normalfall, der User markiert mitten im
+        // Stueck —, enthielten ihre ersten LRA-, PSR- und Crest-Fenster bis zu
+        // zwei Sekunden Audio VOR der Passage. Der Fehler ist derselbe wie an
+        // der Transportgrenze eine Bildschirmseite weiter unten, nur an der
+        // anderen Fensterart; deshalb faellt hier dasselbe.
+        zelleStand = 0;
+        zelleKEnergie = 0.0;
+        zelleAktivEnergie = 0.0;
+        zelleTruePeak = 0.0;
+        zelleRmsEnergie = 0.0;
+        kurzStand = 0;
+        kurzGefuellt = 0;
+        for (auto& z : kurzZellen)     z = 0.0;
+        for (auto& z : kurzTpZellen)   z = 0.0;
+        for (auto& z : kurzRmsZellen)  z = 0.0;
         fingerprintLeeren();
         return true;
     }
@@ -2219,6 +2240,29 @@ private:
         for (int i = 0; i < n; ++i)
         {
             const bool imPassagenfenster = i >= passVon && i < passBis;
+            // 🔑 SONDE-013 Nacharbeit 2 (Befund R05): DER NACHLAUF LAEUFT AM
+            // INDEX `passBis`, nicht nach der Schleife.
+            //
+            // Der Interpolator sieht ein Sample erst `kTapsJePhase / 2` Samples
+            // spaeter vollstaendig. Endete die Passage mindestens zwoelf Samples
+            // VOR dem Blockende, verarbeitete die Runde 1 zuerst alle
+            // nachfolgenden Samples mit `imPassagenfenster = false` — dabei
+            // wurden die verzoegerten Ausgaenge der letzten Passagensamples
+            // bereits verbraucht und dem Passagenmaximum NICHT zugeschlagen. Der
+            // Nachlauf nach der Schleife kam dafuer zu spaet und mischte
+            // zusaetzlich Post-Material ein: er lief ueber einen Filter, der
+            // inzwischen Samples NACH der Passage trug.
+            //
+            // Hier laeuft er an der exakten Grenze, VOR dem ersten
+            // Post-Sample. Danach ist die Verzoegerungskette leer, und das
+            // Material danach beginnt sauber.
+            if (fensterEndetHier && i == passBis)
+            {
+                const double rest = tp.nachlauf();
+                rahmenTruePeak = std::max (rahmenTruePeak, rest);
+                passagenTruePeakRahmen = std::max (passagenTruePeakRahmen, rest);
+                fensterEndetHier = false;   // genau EINMAL je Block
+            }
             ++verarbeiteteSamples;
             if (! imPassagenfenster)
             {
@@ -2346,6 +2390,12 @@ private:
         // herausfallenden Ausgaenge aus. Eine FRAMEGENAUE Zuordnung innerhalb
         // des Fensters wird damit nicht zugesagt — der Rest landet im
         // Passagenmaximum, und genau das ist die Groesse, um die es geht.
+        //
+        // 🔑 Nacharbeit 2 (Befund R05): endet das Fenster MITTEN im Block,
+        // hat die Schleife oben ihn bei `i == passBis` schon gefahren und
+        // `fensterEndetHier` dabei geloescht. Diese Stelle traegt nur noch den
+        // Fall `passBis == n` — das Fenster endet mit dem Block, und es gibt
+        // kein Post-Material, das der Nachlauf einmischen koennte.
         if (fensterEndetHier)
         {
             const double rest = tp.nachlauf();

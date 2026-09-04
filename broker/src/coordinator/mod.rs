@@ -78,13 +78,16 @@ pub const STALE_VERPASSTE_INTERVALLE: u64 = 2;
 pub const STALE_JITTER_MS: u64 = 500;
 pub const STALE_NACH_MS: u64 = STALE_VERPASSTE_INTERVALLE * HEARTBEAT_INTERVAL_MS + STALE_JITTER_MS;
 pub const TOMBSTONE_MS: u64 = 10_000;
-/// Wie viele Samples ein Liveness-Tick vom offenen Nachlauf abzieht (M-58).
-///
-/// Der Tick laeuft im Heartbeatintervall (1 s). Bei 48 kHz waeren das 48000
-/// Samples; die Haelfte davon ist die konservative Wahl — sie gibt die Sperre
-/// eher zu spaet als zu frueh frei, und genau das ist bei einem Taint die
-/// richtige Richtung (§34.2).
-pub const TAIL_SCHRITT_JE_TICK: u64 = 24_000;
+// 🔑 Nacharbeit 2 (Befund R02, M-58): `TAIL_SCHRITT_JE_TICK` ist ENTFALLEN.
+//
+// Die Konstante zog je Tick eine feste Samplezahl ab und war mit einem
+// Ein-Sekunden-Tick begruendet; der produktive Supervisor ruft
+// `liveness_tick()` aber alle 100 ms (`lib.rs`). Ein Nachlauf von 48.000
+// Samples war damit nach 200 ms frei statt nach einer Sekunde. Der Schritt
+// kommt jetzt aus der monotonen Uhr mal der Abtastrate der Instanz, die den
+// Nachlauf gemeldet hat (`tail_fortschritt_zeit`) — eine Konstante, die vom
+// Tickintervall abhaengt, ohne es zu kennen, waere derselbe Fehler in einer
+// neuen Zahl.
 pub const SESSION_CLIENT_CAP: usize = 64;
 pub const GLOBAL_CLIENT_CAP: usize = 128;
 /// H-12: Obergrenze der Sessionmap. Eine Session hat immer mindestens einen
@@ -182,6 +185,13 @@ pub struct Coordinator {
     /// Zahl war oder die Division nicht endlich blieb. NaN-Ehrlichkeit heisst
     /// verriegeln UND zaehlen, nicht still `inf` ausliefern.
     fenster_nicht_endlich: AtomicU64,
+    /// Wann `liveness_tick` zuletzt lief (SONDE-013 M-58, Befund R02).
+    ///
+    /// Der offene Nachlauf schrumpft mit der VERSTRICHENEN Zeit, nicht mit der
+    /// Zahl der Ticks. Ohne diesen Stempel gaebe es keinen Bezugspunkt, und
+    /// eine feste Schrittzahl je Tick haengt am Tickintervall — genau daran
+    /// lief der Nachlauf fuenfmal zu schnell ab.
+    letzter_tail_tick: Mutex<Option<Duration>>,
 }
 
 const SESSION_FLUSH_SCHLOSS_ANZAHL: usize = 64;
@@ -212,6 +222,7 @@ impl Coordinator {
             flush_test_haken: Mutex::new(None),
             test_panik_unter_standlock: AtomicBool::new(false),
             fenster_nicht_endlich: AtomicU64::new(0),
+            letzter_tail_tick: Mutex::new(None),
         }
     }
 
@@ -241,6 +252,7 @@ impl Coordinator {
             flush_test_haken: Mutex::new(None),
             test_panik_unter_standlock: AtomicBool::new(false),
             fenster_nicht_endlich: AtomicU64::new(0),
+            letzter_tail_tick: Mutex::new(None),
         }
     }
 

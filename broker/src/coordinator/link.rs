@@ -239,6 +239,7 @@ impl Coordinator {
             adresse: adresse.clone(),
             plugin_kind: hello.plugin_kind.clone(),
             host_pid,
+            abtastrate: hello.audio.samplerate,
             session_ungebunden,
             current_link: Some(link_id.to_owned()),
             current_nonce: adresse.runtime_nonce.clone(),

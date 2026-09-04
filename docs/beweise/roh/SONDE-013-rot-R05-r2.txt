@@ -1,0 +1,84 @@
+Rotbeweis R05 - der Nachlauf laeuft am Index passBis, nicht nach dem Block
+Datum: 2026-09-04
+Datei: eq-copilot/plugin/core/analysis/FeatureEngine.h
+Test:  EqCopSonde013EventWireTest N3 (R05)
+
+== 1. Fehler eingebaut ==
+ALT: if (fensterEndetHier && i == passBis)
+            {
+                const double rest = tp.nachlauf();
+                rahmenTruePeak = std::max (rahmenTruePeak, rest);
+                passagenTruePeakRahmen = std::max (passagenTruePeakRahmen, rest);
+                fensterEndetHier = false;   // genau EINMAL je Block
+            }
+NEU: // Rotbeweis: der Nachlauf laeuft erst nach der Schleife.
+
+== 2. Der Test FAELLT ==
+exit=1
+ing_bleibt_bei_rueckstau - `abgewiesen` ist ein echter Verlust, die Quelle bleibt stehen
+[ok]   B06: `zuGross` ebenso - an der Tuer abgewiesen ist nicht uebergeben
+[ok]   B06: der Ring traegt Ereignisse  [6]
+[ok]   B06: und behaelt sie, solange niemand sie ENTNIMMT - genau das tat der Sender bei Rueckstau trotzdem
+[ok]   B06: erst `ereignisseEntnommen()` leert ihn - die Gegenprobe, ohne die der Fall darueber nichts sagt
+
+== N1 - B07: nicht-endliche Samples werden gezaehlt und verriegeln ==
+[ok]   B07: ein sauberer Evidenzframe entsteht
+[ok]   B07: und zaehlt NULL nicht-endliche Samples - 0 heisst nachweislich keines
+[ok]   B07: seine Rahmenskalare sind gesetzt (die Gegenprobe)
+[ok]   B07: auch mit NaN/Inf entsteht ein Frame
+[ok]   B07: nicht_endliche_samples_werden_gezaehlt  [8]
+[ok]   B07: und die Zahl reist im Frame mit  [8]
+[ok]   B07: ohne Samplefehler ist die Klasse brauchbar (die Gegenprobe)
+[ok]   B07: EIN nicht-endliches Sample macht den Beleg `unbrauchbar` - nicht `schwach`: die Zahl beschreibt Stille, nicht Musik
+[ok]   B07: und `samples_nicht_endlich` steht im Snapshot
+
+== N1 - B08/B09: die Passagenmetriken haengen am Passagenfenster ==
+[ok]   B08: der laute Abschnitt setzt ein hohes Passagenmaximum  [-0.92]
+[ok]   B08: das Passagenfenster wird gesetzt
+[ok]   B08: und ist intakt
+[ok]   B08: ein Frame in der leisen Passage entsteht
+[ok]   B08: passage_metriken_haengen_am_fenster - die leise Passage erbt die Spitze des lauten Abschnitts NICHT  [-33.98 gegen -0.92]
+[ok]   B09: der Interpolator hat eine Verzoegerung, die geleert werden muss  [24]
+[ok]   B09: polyphasen_nachlauf_am_fensterende - nach dem letzten Sample steht noch Energie in der Kette, und `nachlauf()` holt sie  [0.8000]
+[ok]   B09: zusammen erreichen sie den wahren Scheitel - ohne den Nachlauf ginge er an der Grenze verloren  [0.8000]
+
+== N2 - R04: das Kurzzeitfenster faellt mit dem Passagenanfang ==
+[ok]   R04: das 3-s-Fenster ist vor der Passage gefuellt
+[ok]   R04: das Passagenfenster wird gesetzt
+[ok]   R04: nach dem Passagenanfang entsteht ein Frame
+[ok]   R04: kurzzeitfenster_faellt_mit_dem_passagenanfang - direkt nach dem Passagenanfang gibt es KEINEN 3-s-Wert mehr; er muss sich aus der Passage neu fuellen
+[ok]   R04: auch nach einer Sekunde nicht - das Fenster ist drei Sekunden lang und fuellt sich AUS DER PASSAGE  [0.00]
+[ok]   R04: das Fenster fuellt sich aus der Passage neu
+[ok]   R04: und der Crest ist der der leisen Passage, nicht der des lauten Abschnitts davor  [3.01 gegen 3.01]
+
+== N3 - R05: der Nachlauf laeuft am Index passBis, nicht nach dem Block ==
+[ok]   R05: beide Faelle liefern ein Passagenmaximum  [-2.35 / -5.94]
+[ROT]  R05: nachlauf_am_index_passbis - der wahre Scheitel der letzten zwoelf Samples steht im Passagenmaximum, nicht nur ihr Samplewert  [-5.94 gegen Samplescheitel -6.11]
+[ROT]  R05: und WO der Blockrand faellt, aendert das Passagenmaximum nicht  [3.584 dB Unterschied]
+
+-----------------------------------------
+90 bestanden, 2 gescheitert
+
+
+== 3. Fehler entfernt, der Test ist GRUEN ==
+exit=0
+k]   B09: der Interpolator hat eine Verzoegerung, die geleert werden muss  [24]
+[ok]   B09: polyphasen_nachlauf_am_fensterende - nach dem letzten Sample steht noch Energie in der Kette, und `nachlauf()` holt sie  [0.8000]
+[ok]   B09: zusammen erreichen sie den wahren Scheitel - ohne den Nachlauf ginge er an der Grenze verloren  [0.8000]
+
+== N2 - R04: das Kurzzeitfenster faellt mit dem Passagenanfang ==
+[ok]   R04: das 3-s-Fenster ist vor der Passage gefuellt
+[ok]   R04: das Passagenfenster wird gesetzt
+[ok]   R04: nach dem Passagenanfang entsteht ein Frame
+[ok]   R04: kurzzeitfenster_faellt_mit_dem_passagenanfang - direkt nach dem Passagenanfang gibt es KEINEN 3-s-Wert mehr; er muss sich aus der Passage neu fuellen
+[ok]   R04: auch nach einer Sekunde nicht - das Fenster ist drei Sekunden lang und fuellt sich AUS DER PASSAGE  [0.00]
+[ok]   R04: das Fenster fuellt sich aus der Passage neu
+[ok]   R04: und der Crest ist der der leisen Passage, nicht der des lauten Abschnitts davor  [3.01 gegen 3.01]
+
+== N3 - R05: der Nachlauf laeuft am Index passBis, nicht nach dem Block ==
+[ok]   R05: beide Faelle liefern ein Passagenmaximum  [-2.35 / -2.35]
+[ok]   R05: nachlauf_am_index_passbis - der wahre Scheitel der letzten zwoelf Samples steht im Passagenmaximum, nicht nur ihr Samplewert  [-2.35 gegen Samplescheitel -6.11]
+[ok]   R05: und WO der Blockrand faellt, aendert das Passagenmaximum nicht  [0.000 dB Unterschied]
+
+-----------------------------------------
+92 bestanden, 0 gescheitert

@@ -501,33 +501,64 @@ fn taint_ist_sitzungsweit() {
     assert!(c.interventionssicht_fuer_link("la").starke_evidenz_erlaubt);
 }
 
-/// B16 — der Nachlauf laeuft am Liveness-Tick ab (M-58/M-60).
+/// B16/R02 — der Nachlauf laeuft in ECHTZEIT ab, nicht je Tick (M-58/M-60).
+///
+/// 🔑 Nacharbeit 2 (Befund R02): der alte Fall rief `liveness_tick()` OHNE
+/// Zeitfortschritt und pruefte nur, dass der Wert irgendwann null wird. Er
+/// konnte deshalb nicht sehen, dass die Runde 1 je Tick eine feste Samplezahl
+/// abzog, die mit einem Ein-Sekunden-Tick begruendet war — waehrend der
+/// produktive Supervisor alle 100 ms tickt (`lib.rs`). Ein Nachlauf von 48.000
+/// Samples war damit nach 200 ms frei statt nach einer Sekunde, und genau in
+/// diesem Fenster laeuft der Filterhall des Markers noch in die Messung.
+///
+/// Dieser Fall faehrt den PRODUKTIVEN Takt: 100 ms je Tick bei 48 kHz.
 #[test]
-fn nachlauf_laeuft_am_tick_ab() {
-    let (c, _) = coordinator();
+fn nachlauf_laeuft_in_echtzeit_ab() {
+    let (c, clock) = coordinator();
     let h = hello(1, 2, 10, 100, "main", Some(9));
     anmelden(&c, "a", &h);
     let id = hex(0x600);
     assert!(c.intervention_begin("a", &h.adresse, &id, 1));
-    assert!(c.intervention_end("a", &h.adresse, &id, 2, 30_000));
-    assert_eq!(c.interventionssicht_fuer_link("a").tail_samples_offen, 30_000);
+    // Eine ganze Sekunde Nachlauf bei 48 kHz.
+    assert!(c.intervention_end("a", &h.adresse, &id, 2, 48_000));
+    assert_eq!(c.interventionssicht_fuer_link("a").tail_samples_offen, 48_000);
     assert!(!c.evidence_dispatch_fuer_link("a"), "der Nachlauf sperrt");
 
-    // Der Tick zieht ab - und zwar von selbst, ohne dass jemand
-    // `tail_fortschritt` von Hand ruft. Genau DAS war Befund B16.
+    // Der erste Tick hat keinen Vorgaenger und zieht nichts ab: ihm die
+    // Laufzeit seit Brokerstart zuzuschreiben waere eine erfundene Frist.
     c.liveness_tick();
-    let nach_einem = c.interventionssicht_fuer_link("a").tail_samples_offen;
-    assert!(
-        nach_einem < 30_000,
-        "ein Tick zieht vom Nachlauf ab: {nach_einem}"
+    assert_eq!(
+        c.interventionssicht_fuer_link("a").tail_samples_offen,
+        48_000,
+        "der erste Tick setzt nur den Bezugspunkt"
     );
-    for _ in 0..8 {
+
+    // Fuenf produktive Ticks = 500 ms. Der Nachlauf ist zur HAELFTE abgelaufen
+    // und sperrt weiter. Mit der alten Konstante (24.000 je Tick) waere er
+    // hier laengst frei — das ist der Rotbeweis dieses Falls.
+    for _ in 0..5 {
+        clock.vor(100);
+        c.liveness_tick();
+    }
+    let rest = c.interventionssicht_fuer_link("a").tail_samples_offen;
+    assert_eq!(
+        rest, 24_000,
+        "nach 500 ms sind bei 48 kHz genau 24.000 Samples abgelaufen"
+    );
+    assert!(
+        !c.evidence_dispatch_fuer_link("a"),
+        "und der halbe Nachlauf sperrt weiter"
+    );
+
+    // Die zweite Haelfte.
+    for _ in 0..5 {
+        clock.vor(100);
         c.liveness_tick();
     }
     assert_eq!(
         c.interventionssicht_fuer_link("a").tail_samples_offen,
         0,
-        "und nach genug Ticks ist er abgelaufen"
+        "nach einer Sekunde ist er abgelaufen"
     );
     assert!(
         c.evidence_dispatch_fuer_link("a"),
@@ -1399,5 +1430,51 @@ fn experimentbefehl_bleibt_in_seinem_projekt() {
             .expect("der Versuch steht noch")
             .offen(),
         "und er bleibt OFFEN - der fremde Abbruch hat nichts bewirkt"
+    );
+}
+
+/// R33 — die Eviction raeumt das Paarurteil mit und bildet neu (M-22).
+///
+/// Die Runde 1 entfernte die Evidenzhistorie und liess das daraus gerechnete
+/// Urteil stehen. Nach Disconnect oder Tombstone lieferte `paarurteil` deshalb
+/// weiter das ALTE, vollstaendige Urteil, bis zufaellig ein weiterer Snapshot
+/// eintraf — obwohl M-22 sofort einen BENANNTEN unvollstaendigen Zustand
+/// verlangt. `evidenz_faellt_mit_dem_client` prueft nur die Evidenzmap und
+/// konnte den stale Paarzustand nicht sehen.
+#[test]
+fn eviction_raeumt_das_paarurteil_und_bildet_neu() {
+    use eqcop_broker::coordinator::prepost::Ausschlussgrund;
+    let (c, clock) = coordinator();
+    let paar = hex(0x78);
+    let pre = hello(1, 2, 10, 100, "passive_probe", Some(9));
+    let post = hello(1, 2, 11, 101, "passive_probe", Some(9));
+    anmelden(&c, "pre", &pre);
+    anmelden(&c, "post", &post);
+    assert!(c.descriptor_setzen("pre", descriptor(&pre.adresse, "pre", &paar)));
+    assert!(c.descriptor_setzen("post", descriptor(&post.adresse, "post", &paar)));
+    for nr in 0..8 {
+        c.evidence_snapshot_json("pre", &evidenz_payload(&pre.adresse, nr, |_| {}));
+        c.evidence_snapshot_json("post", &evidenz_payload(&post.adresse, nr, |_| {}));
+    }
+    let vorher = c.paarurteil(&paar).expect("das Paar ist vollstaendig");
+    assert_eq!(
+        vorher.ausschluss, None,
+        "vor der Eviction ist es kein Ausschlussfall: {vorher:?}"
+    );
+
+    // Die POST-Haelfte faellt: stale, dann Tombstone.
+    c.control_ende("post");
+    clock.vor(60_000);
+    c.liveness_tick();
+    c.liveness_tick();
+
+    let nachher = c
+        .paarurteil(&paar)
+        .expect("das Paar bleibt sichtbar - es ist unvollstaendig, nicht fort");
+    assert_eq!(
+        nachher.ausschluss,
+        Some(Ausschlussgrund::HaelfteFehlt),
+        "die verbliebene Haelfte wird als getrennte Haelfte GEFUEHRT, nicht als \
+         vollstaendiges Paar von gestern: {nachher:?}"
     );
 }

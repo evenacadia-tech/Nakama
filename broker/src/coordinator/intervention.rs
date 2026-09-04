@@ -179,6 +179,17 @@ impl Coordinator {
         }
         taint.interventionen.remove(intervention_id);
         taint.tail_samples_offen = taint.tail_samples_offen.max(tail_samples);
+        // 🔑 Nacharbeit 2 (Befund R02, M-58): der Nachlauf steht in SAMPLES,
+        // der Tick laeuft in ZEIT. Die Umrechnung braucht die Rate DERSELBEN
+        // Instanz, die den Nachlauf gemeldet hat — er ist ihre Groesse.
+        let rate = stand
+            .links
+            .get(link_id)
+            .and_then(|link| stand.clients.get(&link.client_key))
+            .map(|client| client.abtastrate)
+            .filter(|r| r.is_finite() && *r > 0.0)
+            .unwrap_or(48_000.0);
+        Self::taint_mut(&mut stand, &session).abtastrate = rate;
         true
     }
 
@@ -244,6 +255,42 @@ impl Coordinator {
     pub fn tail_fortschritt(&self, samples: u64) {
         let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         for taint in stand.taint.values_mut() {
+            taint.tail_samples_offen = taint.tail_samples_offen.saturating_sub(samples);
+        }
+    }
+
+    /// Derselbe Fortschritt, aber aus VERSTRICHENER ZEIT gerechnet (M-58).
+    ///
+    /// 🔑 Nacharbeit 2 (Befund R02): die Runde 1 zog je Tick eine feste
+    /// Samplezahl ab, begruendet mit einem Ein-Sekunden-Tick. Der produktive
+    /// Supervisor ruft `liveness_tick()` aber alle 100 ms (`lib.rs`). Ein
+    /// Nachlauf von 48.000 Samples war damit nach 200 ms frei statt nach einer
+    /// Sekunde — fuenfmal zu schnell, und genau in dem Fenster, in dem der
+    /// Filterhall des Markers noch in die Messung laeuft. Der alte Test rief
+    /// den Tick OHNE Zeitfortschritt und pruefte nur, dass der Wert irgendwann
+    /// null wird; er konnte den Fehler nicht sehen.
+    ///
+    /// Jede Sitzung rechnet mit IHRER Rate: der Nachlauf gehoert der Instanz,
+    /// die ihn gemeldet hat.
+    pub(super) fn tail_fortschritt_zeit(&self, verstrichen: Duration) {
+        let sekunden = verstrichen.as_secs_f64();
+        if !(sekunden > 0.0) {
+            return;
+        }
+        let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+        for taint in stand.taint.values_mut() {
+            if taint.tail_samples_offen == 0 || !(taint.abtastrate > 0.0) {
+                continue;
+            }
+            let samples = (sekunden * taint.abtastrate).floor();
+            // NaN-Ehrlichkeit: eine nicht endliche Rechnung zieht NICHTS ab.
+            // Eine Sperre zu frueh zu loesen ist der teure Fehler, sie zu
+            // spaet zu loesen der billige (§34.2).
+            let samples = if samples.is_finite() && samples >= 0.0 {
+                samples.min(u64::MAX as f64) as u64
+            } else {
+                0
+            };
             taint.tail_samples_offen = taint.tail_samples_offen.saturating_sub(samples);
         }
     }

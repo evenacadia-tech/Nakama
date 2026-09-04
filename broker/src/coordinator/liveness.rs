@@ -99,6 +99,27 @@ impl Coordinator {
         // Nachbarmaps. Eine Eviction, die sie stehen liesse, hielte die
         // Messwahrheit eines Clients, den es nicht mehr gibt (M-74).
         stand.evidenz.remove(key);
+        // 🔑 Nacharbeit 2 (Befund R33, M-22): und die daraus gerechneten
+        // PAARURTEILE fallen mit.
+        //
+        // Die Runde 1 entfernte die Historie und liess das Urteil stehen. Nach
+        // einem Disconnect lieferte `paarurteil(pair_id)` deshalb weiter das
+        // ALTE, vollstaendige Urteil — bis zufaellig ein weiterer Snapshot
+        // eintraf. M-22 verlangt an dieser Stelle sofort einen BENANNTEN
+        // unvollstaendigen Zustand: die verbleibende Haelfte ist eine
+        // „getrennte Haelfte" mit Grund, kein stehengebliebenes Paar. Welche
+        // Paare betroffen sind, weiss nur der Deskriptor des gerade
+        // entfernten Clients — deshalb hier und nicht spaeter.
+        if let Some(pair_id) = client
+            .descriptor
+            .as_ref()
+            .and_then(|d| d.get("pair_id"))
+            .and_then(Value::as_str)
+        {
+            stand
+                .paarurteile
+                .remove(&(key.session(), pair_id.to_owned()));
+        }
         let link_ids: Vec<String> = stand
             .links
             .iter()
@@ -195,15 +216,29 @@ impl Coordinator {
         // und die Sperre danach von selbst faellt.
         //
         // Der Tick ist die richtige Stelle: der Nachlauf ist eine Zeitgroesse,
-        // und dies ist die einzige monotone Uhr des Coordinators. Der Schritt
-        // ist das Tickintervall in Samples bei der Standardrate — mehr
-        // Genauigkeit gaebe es nur mit einer zweiten Zeitquelle, und zwei
-        // Uhren fuer dieselbe Frist waeren zwei Wahrheiten. Er ist bewusst
-        // KONSERVATIV klein gewaehlt: ein zu grosser Schritt gaebe die Sperre
-        // zu frueh frei, ein zu kleiner nur spaeter.
-        self.tail_fortschritt(TAIL_SCHRITT_JE_TICK);
+        // und dies ist die einzige monotone Uhr des Coordinators.
+        //
+        // 🔑 Nacharbeit 2 (Befund R02): der Schritt kommt aus der UHR, nicht
+        // aus einer Konstanten je Tick. Die Runde 1 zog `TAIL_SCHRITT_JE_TICK`
+        // ab und begruendete die Zahl mit einem Ein-Sekunden-Tick; der
+        // produktive Supervisor ruft diese Funktion aber alle 100 ms
+        // (`lib.rs`). Der Nachlauf lief damit fuenfmal zu schnell ab. Jetzt
+        // zaehlt die tatsaechlich verstrichene Zeit mal der Abtastrate der
+        // Instanz, die den Nachlauf gemeldet hat.
+        let verstrichen = {
+            let mut letzter = self
+                .letzter_tail_tick
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
+            let vorher = letzter.replace(jetzt);
+            // Der ERSTE Tick hat keinen Vorgaenger und zieht deshalb nichts ab.
+            // Ihm die ganze Laufzeit seit Brokerstart zuzuschreiben waere eine
+            // erfundene Frist.
+            vorher.map(|v| jetzt.saturating_sub(v)).unwrap_or_default()
+        };
+        self.tail_fortschritt_zeit(verstrichen);
         self.taint_deckel_halten();
-        let (schliessen, dirty) = {
+        let (schliessen, dirty, eviktiert) = {
             let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
             Self::stale_aktualisieren_locked(&mut stand, jetzt);
             let opfer: Vec<ClientKey> = stand
@@ -227,6 +262,7 @@ impl Coordinator {
                 .filter(|(_, link)| link.trennen)
                 .map(|(link_id, _)| link_id.clone())
                 .collect();
+            let eviktiert = !opfer.is_empty();
             for key in opfer {
                 schliessen.extend(self.client_eviktieren_locked(&mut stand, &key));
             }
@@ -253,8 +289,17 @@ impl Coordinator {
             let dirty = stand.dirty_sessions.iter().cloned().collect::<Vec<_>>();
             let mut schliessen = schliessen.into_iter().collect::<Vec<_>>();
             schliessen.sort();
-            (schliessen, dirty)
+            (schliessen, dirty, eviktiert)
         };
+        // 🔑 Nacharbeit 2 (Befund R33, M-22): nach einer Eviction werden die
+        // Paare NEU gebildet. Das Entfernen allein liesse das Paar der
+        // verbliebenen Haelfte einfach verschwinden; M-22 verlangt aber einen
+        // BENANNTEN unvollstaendigen Zustand („getrennte Haelfte"), und den
+        // erzeugt `bilde_paare` aus dem verbliebenen Bestand. Der Aufruf steht
+        // ausserhalb des Standlocks, weil er sich sein eigenes nimmt.
+        if eviktiert {
+            self.evidenz_paare_bilden();
+        }
         for session in dirty {
             self.flush_session(&session, None);
         }

@@ -1374,10 +1374,6 @@
       "enum": ["feature_aligned", "audio_aligned", "probable", "unclear"]
     },
 
-    "passage_id": {
-      "$comment": "Die Adresse einer Passage. Sie steht als eigener Typ da, weil sie an zwei Stellen auftaucht - im Passageobjekt und im Fingerprintbezug - und zwei Kopien derselben Definition in diesem Projekt schon einmal auseinandergelaufen sind.",
-      "$ref": "#/$defs/hex32"
-    },
     "passage": {
       "$comment": "SONDE-013 M-25, Nacharbeit 1 (Befund B23): die VOLLSTAENDIGE Passage, wie `experiment_begin` sie traegt. Vorher reisten nur `passage_id` und die Referenz - der Broker konnte daraus kein Passageobjekt bauen, und M-25 verlangt genau eines im Store. Die sechs Felder sind dieselben wie in M-25 aufgezaehlt; `label` ist das einzige optionale, weil eine Passage ohne Usernamen eine Passage bleibt. Es gibt bewusst KEINE eigene Passage-Nachricht: `session_command` ist ein geschlossener Discriminator, und dieses Ticket hat genau einen Fassungsschritt.",
       "type": "object",
@@ -1395,7 +1391,7 @@
       "additionalProperties": false,
       "properties": {
         "passage_id": {
-          "$ref": "#/$defs/passage_id"
+          "$ref": "#/$defs/hex32"
         },
         "projekt_von": {
           "$comment": "Grenzen in PROJEKTsamples, halboffen [von, bis). Sie sind der Grund, warum die Passage ueberhaupt reisen muss: ohne sie kann der Broker die Passagenmetriken nicht an ihr Fenster binden (M-03/M-25).",

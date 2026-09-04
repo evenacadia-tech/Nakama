@@ -26,13 +26,18 @@ const FASSUNG_2_FAMILIEN: [&str; 3] = [
 /// Sie tragen keinen eigenen `oneOf`-Zweig und stehen deshalb nicht im
 /// Register; ohne ihre Familien sind sie aber unerreichbar, und ein `$ref`
 /// ins Leere bricht den Ladelauf.
-const FASSUNG_2_HILFSDEFS: [&str; 11] = [
+const FASSUNG_2_HILFSDEFS: [&str; 10] = [
     // Nacharbeit 1 (Befund B23): `experiment_begin` traegt die VOLLSTAENDIGE
     // Passage. Sie gehoert damit zur Fassung 2 und muss beim Rueckbau auf die
     // Fassung 1 mit verschwinden - sonst laese ein Leser der alten Fassung
     // einen Typ, den es dort nie gab.
+    //
+    // ⚠️ Die `passage_id` hat ausdruecklich KEINE eigene Definition. Sie waere
+    // ein blosser `$ref` auf `hex32` — und A5 verlangt zu Recht je Definition
+    // ein Negativfixture, das sich von dem der hex32 unterscheidet. Eine
+    // Definition, deren Gegenbeispiel dasselbe ist wie das ihres Ziels, traegt
+    // keine eigene Aussage.
     "passage",
-    "passage_id",
     "experiment_referenz",
     "alignment_klasse",
     "fingerprint",

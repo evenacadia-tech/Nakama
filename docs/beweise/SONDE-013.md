@@ -3810,7 +3810,24 @@ und 2 bekämen heute den Score 1,0, obwohl die Erzeugerdefinition eine
 geänderte Quantisierung oder Bandgruppierung ausdrücklich als
 unvergleichbar bezeichnet. Er steht hier, damit er nicht verlorengeht.
 
-### 11.9 Was diese Runde ausserdem geändert hat
+### 11.9 Selbstaudit — zwei Funde am eigenen Diff
+
+Beide stammen aus dem adversarialen Lesen des eigenen Änderungssatzes, nicht
+aus der Erstprüfung. Sie sind mit Test und Rotbeweis geschlossen.
+
+| Fund | Was er ist | Regel | Test | Rotbeweis |
+|---|---|---|---|---|
+| **i64-Rand am Markerende** (M-17) | `project_sample_end = Blockanfang + Offset` konnte am oberen `i64`-Rand überlaufen. Das Ergebnis wäre eine Projektzeit VOR dem Blockanfang, und die Invalidierung nutzte einen Bereich, den es nicht gibt. | Die Addition sättigt. | **A3** bleibt grün (dieselbe Zusage, jetzt ohne Überlaufweg) | — (kein eigener Rotbeweis: der Fall ist am realen Rand nicht herstellbar, die Sättigung ist eine Leseregel am Zahlenrand) |
+| **Deckel der Taintmap** (M-74) | Der sitzungsweite Taint aus B17 hat eine Kehrseite, die es vorher nicht gab: die Map wächst mit jeder Sitzung, die je einen Eingriff gesehen hat, und Sitzungen entstehen bei jedem FL-Neustart neu. Ein SAUBERER Eintrag ohne Client fällt sofort; ein DIRTY bleibt, weil sein sticky Unknown eine Aussage ist (§34.2) — genau die häufen sich an. | `taint_deckel_halten()` läuft im Liveness-Tick, hält `GLOBAL_SESSION_CAP`, wirft zuerst die sauberen toten Sitzungen weg und **zählt** jeden Verlust einer sticky Sperre (`taint_verworfen`). Eine lebende Sitzung verliert ihre Sperre nie. | **A4**-verdrahtung::`taintmap_haelt_ihren_deckel` | `roh/SONDE-013-rot-N1-taintdeckel-r1.txt` |
+
+⚠️ Der zweite Fund ist die Kante, an der die Aufräumregel und C-08 aufeinander
+treffen. Eine Eviction, die eine **aktive** Intervention weggeräumt hat,
+hinterlässt genau den Zustand, den §34.2 sticky halten will; ein sauberer
+Eintrag sagt nichts und darf fallen. Die erste Fassung dieser Runde räumte
+BEIDE weg — der bestehende Fall `eviction_loescht_intervention_unknown_nicht`
+ist daran gefallen und hat den Fehler gefunden, bevor er in einen Commit kam.
+
+### 11.10 Was diese Runde ausserdem geändert hat
 
 Fünf bestehende Testzusagen sind der neuen Regel gewichen. Sie sind
 **ausdrücklich umgeschrieben** und nicht stillschweigend angepasst — jede

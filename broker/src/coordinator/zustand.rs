@@ -240,6 +240,8 @@ pub(super) struct Stand {
     pub(super) invalidierungen: u64,
     /// Wie viele gespeicherte Evidenzstaende sie ausgeschlossen haben.
     pub(super) evidenz_ausgeschlossen: u64,
+    /// Wie viele sticky Taintsperren der Deckel verworfen hat (M-74).
+    pub(super) taint_verworfen: u64,
     pub(super) cap_abweisungen: u64,
     pub(super) store_verweigerungen: u64,
     pub(super) p2_live_frames: u64,
@@ -442,6 +444,7 @@ impl Default for Stand {
             experimente: super::experiment::Experimentstore::neu(),
             invalidierungen: 0,
             evidenz_ausgeschlossen: 0,
+            taint_verworfen: 0,
             evidenz: HashMap::new(),
             cap_abweisungen: 0,
             store_verweigerungen: 0,

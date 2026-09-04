@@ -719,3 +719,44 @@ fn prepost_join_laeuft_im_produktpfad() {
         urteil.klasse
     );
 }
+
+/// Selbstaudit dieser Runde (M-74): die Taintmap haelt ihren Deckel.
+///
+/// Der sitzungsweite Taint aus B17 hat eine Kehrseite, die die Erstpruefung
+/// nicht melden konnte, weil es ihn noch nicht gab: die Map waechst mit jeder
+/// Sitzung, die je einen Eingriff gesehen hat, und Sitzungen entstehen bei
+/// jedem FL-Neustart neu. Ein SAUBERER Eintrag ohne Client faellt sofort; ein
+/// DIRTY bleibt, weil sein sticky Unknown eine Aussage ist (§34.2). Genau die
+/// koennen sich anhaeufen — deshalb der Deckel.
+#[test]
+fn taintmap_haelt_ihren_deckel() {
+    use eqcop_broker::coordinator::GLOBAL_SESSION_CAP;
+    let (c, clock) = coordinator();
+
+    // Mehr TOTE Sitzungen mit offenem Taint, als der Broker fuehren kann.
+    for nr in 0..(GLOBAL_SESSION_CAP + 8) {
+        let link = format!("l{nr}");
+        let h = hello(1, 1000 + nr, 2000 + nr, 3000 + nr, "main", Some(9));
+        anmelden(&c, &link, &h);
+        // Eine offene Intervention: der Eintrag ist DIRTY.
+        assert!(c.intervention_begin(&link, &h.adresse, &hex(0x9000 + nr), 1));
+        // Und der Disconnect macht ihn sticky unbekannt.
+        c.control_ende(&link);
+        clock.setze_ms((nr as u64 + 1) * 60_000);
+        c.liveness_tick();
+    }
+
+    // Die Zusage: die Map bleibt in ihren Grenzen. Ohne den Deckel stuende
+    // hier die volle Zahl der jemals gesehenen Sitzungen.
+    let sicht = c.interventionssicht();
+    assert!(
+        sicht.unknown,
+        "der Zustand bleibt konservativ unbekannt - der Deckel raeumt auf, er \
+         beschoenigt nicht"
+    );
+    assert!(
+        c.taint_verworfen_zaehler() > 0,
+        "und der Verlust einer sticky Sperre ist GEZAEHLT, nicht still: {}",
+        c.taint_verworfen_zaehler()
+    );
+}

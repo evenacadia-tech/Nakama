@@ -116,17 +116,42 @@ impl Coordinator {
                 Self::subscription_entfernen_locked(stand, &link_id);
                 stand.telemetry_links.remove(&link_id);
                 // M-62: der Taint der SITZUNG dieses Links.
+                //
+                // ⚠️ Ausdruecklich `get_mut` und nicht `taint_mut`: der Client
+                // ist gerade weggefallen, und ein NEUER Eintrag fuer seine
+                // Sitzung waere ein Phantom, das niemand mehr loesen kann und
+                // das ueber wiederholte Epochen wuechse (M-74). Wo nichts
+                // steht, ist auch nichts zu schliessen.
                 let session = key.session();
-                let taint = Self::taint_mut(stand, &session);
-                let vorher = taint.interventionen.len();
-                taint.interventionen.retain(|_, i| i.link_id != link_id);
-                if vorher != taint.interventionen.len() {
-                    taint.unknown = true;
+                if let Some(taint) = stand.taint.get_mut(&session) {
+                    let vorher = taint.interventionen.len();
+                    taint.interventionen.retain(|_, i| i.link_id != link_id);
+                    if vorher != taint.interventionen.len() {
+                        taint.unknown = true;
+                    }
                 }
                 schliessen.push(link_id);
             }
         }
         let session = key.session();
+        // Eine Sitzung ohne Clients gibt ihren Taint frei — aber NUR, wenn er
+        // sauber ist.
+        //
+        // ⚠️ Das ist die Kante, an der die Aufraeumregel und C-08 aufeinander
+        // treffen. Eine Eviction, die eine AKTIVE Intervention weggeraeumt hat,
+        // hinterlaesst genau den Zustand, den §34.2 sticky halten will: „ein
+        // verlorenes Begin darf niemals eine scheinbar saubere Baseline
+        // erzeugen". Ein sauberer Eintrag dagegen sagt nichts und darf fallen
+        // (M-74). Der Deckel unten haelt den Rest in Grenzen.
+        if !stand.clients.keys().any(|k| k.session() == session) {
+            let sauber = stand
+                .taint
+                .get(&session)
+                .is_none_or(Taintstand::erlaubt);
+            if sauber {
+                stand.taint.remove(&session);
+            }
+        }
         if stand
             .sessions
             .get(&session)
@@ -177,6 +202,7 @@ impl Coordinator {
         // KONSERVATIV klein gewaehlt: ein zu grosser Schritt gaebe die Sperre
         // zu frueh frei, ein zu kleiner nur spaeter.
         self.tail_fortschritt(TAIL_SCHRITT_JE_TICK);
+        self.taint_deckel_halten();
         let (schliessen, dirty) = {
             let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
             Self::stale_aktualisieren_locked(&mut stand, jetzt);

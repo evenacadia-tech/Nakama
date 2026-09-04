@@ -306,6 +306,64 @@ impl Coordinator {
         vorher - taint.interventionen.len()
     }
 
+    /// Haelt die Taintmap in ihren Grenzen (M-74).
+    ///
+    /// Die Map waechst mit jeder Sitzung, die je einen Eingriff gesehen hat —
+    /// und Sitzungen entstehen bei jedem FL-Neustart neu. Ein Eintrag ohne
+    /// Client und ohne Aussage faellt sofort (`client_eviktieren_locked`);
+    /// ein DIRTY Eintrag ohne Client bleibt, weil sein sticky Unknown eine
+    /// Aussage ist. Genau die koennen sich anhaeufen.
+    ///
+    /// Der Deckel ist deshalb derselbe wie fuer die Sessionmap: mehr Sitzungen
+    /// als `GLOBAL_SESSION_CAP` fuehrt der Broker ohnehin nicht. Ueber der
+    /// Grenze fallen zuerst die sauberen Eintraege; erst wenn davon keiner
+    /// mehr da ist, faellt ein dirty — und das ist ausdruecklich ein Verlust
+    /// einer Sperre, kein stilles Aufraeumen. Er wird gezaehlt.
+    pub(super) fn taint_deckel_halten(&self) {
+        let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+        if stand.taint.len() <= GLOBAL_SESSION_CAP {
+            return;
+        }
+        let lebende: std::collections::HashSet<SessionKey> =
+            stand.clients.keys().map(|k| k.session()).collect();
+        let sauber: Vec<SessionKey> = stand
+            .taint
+            .iter()
+            .filter(|(session, taint)| taint.erlaubt() && !lebende.contains(*session))
+            .map(|(session, _)| session.clone())
+            .collect();
+        for session in sauber {
+            if stand.taint.len() <= GLOBAL_SESSION_CAP {
+                return;
+            }
+            stand.taint.remove(&session);
+        }
+        while stand.taint.len() > GLOBAL_SESSION_CAP {
+            let Some(weg) = stand
+                .taint
+                .keys()
+                .find(|session| !lebende.contains(*session))
+                .cloned()
+            else {
+                // Nur noch lebende Sitzungen: der Deckel greift dann nicht,
+                // denn eine lebende Sitzung darf ihre Sperre nicht verlieren.
+                return;
+            };
+            stand.taint.remove(&weg);
+            stand.taint_verworfen = stand.taint_verworfen.saturating_add(1);
+        }
+    }
+
+    /// Wie viele sticky Sperren der Deckel verworfen hat. `> 0` heisst: der
+    /// Broker hat mehr tote Sitzungen mit offenem Taint gesehen, als er
+    /// fuehren kann — eine Zahl, die niemand ignorieren sollte.
+    pub fn taint_verworfen_zaehler(&self) -> u64 {
+        self.stand
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .taint_verworfen
+    }
+
     /// Die brokerweite Zusammenfassung ueber ALLE Sitzungen.
     ///
     /// Sie bleibt konservativ: unbekannt in EINER Sitzung heisst unbekannt,

@@ -112,10 +112,13 @@ impl Coordinator {
         for urteil in urteile {
             stand.paarurteile.insert(urteil.pair_id.clone(), urteil);
         }
-        // Der Deckel schneidet die aeltesten Schluessel weg. `BTreeMap`-artige
-        // Ordnung gibt es hier nicht, also entscheidet die Einfuegereihenfolge
-        // nicht — der Deckel ist eine Speichergrenze, keine Auswahlregel, und
-        // ein Paar, das wieder Evidenz bekommt, kommt sofort zurueck.
+        // ⚠️ Der Deckel ist eine SPEICHERGRENZE, keine Auswahlregel: welches
+        // Paar hier faellt, ist nicht bestimmt, und dieser Kommentar sagt das
+        // ausdruecklich, statt eine Ordnung zu behaupten, die eine `HashMap`
+        // nicht hat. Ein Paar, das wieder Evidenz bekommt, kommt beim naechsten
+        // Snapshot ohnehin zurueck — der Verlust kostet eine Runde, keine
+        // Aussage. Ein Deckel ganz ohne Regel waere trotzdem falsch; deshalb
+        // steht die Zahl als benannte Konstante da (M-74).
         while stand.paarurteile.len() > PAARURTEIL_DECKEL {
             let Some(weg) = stand.paarurteile.keys().next().cloned() else {
                 break;

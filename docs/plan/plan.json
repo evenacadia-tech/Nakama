@@ -263,7 +263,7 @@
      "leitungsname": "Klangberechnung und Vergleichslogik unabhängig prüfen",
      "ticket": "Gate",
      "text": "C++-Review (DSP) + Codex.",
-     "beleg": "",
+     "beleg": "docs/beweise/G4.md",
      "stufe": "T3"
     },
     {

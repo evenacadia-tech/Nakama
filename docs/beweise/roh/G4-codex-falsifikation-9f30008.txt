@@ -1,0 +1,36 @@
+Der Änderungssatz enthält mehrere reproduzierbare Taint- und Zeitpfadfehler, die die Exit-Gates verletzen. Zusätzlich können die neuen Korpusprüfungen falsche starke Aussagen übersehen und mehrere ausdrücklich zugesagte Goldens werden nicht gemessen.
+
+Full review comments:
+
+- [P1] Sende beim neutralen Reconnect explizit false — C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\ControlClient.cpp:408-410
+  Nach einem Control-Abbruch bei weiterbestehender Session setzt `control_ende` den Brokerzustand auf unknown. Der neutrale Reconnect löscht lokal Ring, Sticky-Bit und Sequenz, aber dieser Serializer lässt bei `false` das Feld weg; `befehl.rs` ruft `resync_bestaetigen` ausschließlich für `Some(false)` auf. Dadurch bleibt `starke_evidenz_erlaubt` trotz leerem Ring dauerhaft false und M-60/M-61 sowie der Exit-Satz zum erneuten Nullen brechen; `MarkierungTestMain` schreibt derzeit nur das Weglassen fest, während die Broker-Tests nur die andere Hälfte messen.
+
+- [P1] Markiere den Reconnect mit aktivem Marker als unbekannt — C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\src\PluginProcessor.cpp:1199-1199
+  Wenn ein bereits gemeldeter Hörmarker läuft, der Broker nach dem Begin neu startet und der lokale Ring leer ist, überspringt diese Bedingung den Resync wegen `markierung.hoerbar()`, setzt aber kein lokales Unknown. Der neue Broker beginnt ohne Taint, `v3Status()` kennt nur Overflow, und P1-Replay oder neue Probe-Evidenz kann vor dem ersten Heartbeat eintreffen; nachgelagerte, tatsächlich gefärbte Frames werden dadurch als sauber angenommen. Das verletzt M-62/M-63 und Exit-Gate Satz 3; kein aktueller Test fährt den Broker-Neustart mit aktivem Marker.
+
+- [P1] Bewahre den Quarantänebruch im Evidenzstempel — C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\sonde\SondeProcessor.cpp:408-408
+  Bei einem Drop oder Seek erkennt `Blockquarantaene::schiebe` den Bruch und hält den ersten Block danach, anschließend setzt der Worker jedoch `FeatureEngine` vollständig zurück. Beim nächsten Block wird der gehaltene Block mit `habeVorigen=false` verarbeitet, sodass sein Bruch nicht in Epoche oder Segment eingeht; dieser neue Versand kann deshalb erneut `transport_epoch=0` und `continuity_segment=0` liefern, worauf der Broker alte Evidenz nicht invalidiert. Damit kann PRE/POST-Evidenz eine unbekannte Zeitgrenze überbrücken und M-53 beziehungsweise Exit-Gate Satz 2 verletzen; die Queue-Tests messen Quarantäne und Engine nur getrennt.
+
+- [P1] Melde ausgeschlossene PRE/POST-Ketten als nicht beurteilbar — C:\Users\phili\Projekte\Nakama\broker\src\coordinator\prepost.rs:926-926
+  Für fehlende, getrennte, stale oder zeitlich ungültige Hälften liefert `ausschluss` zwar `Unclear` ohne Ergebnis und Lag, serialisiert aber zugleich den sichtbaren Kettenbefund `Stationaer`. Das behauptet eine stationäre Kette, obwohl sie ausdrücklich nicht beurteilt wurde, und widerspricht der eigenen `NichtBeurteilbar`-Semantik sowie M-18/M-22; `hard_exclusions_each_name_their_reason` prüft dieses Feld nicht.
+
+- [P2] Erhalte die tatsächlich gemessene Aktivzeit — C:\Users\phili\Projekte\Nakama\broker\src\coordinator\prepost_verdrahtung.rs:276-278
+  Wenn einer Hälfte zwischen demselben ersten und letzten Projektzeitpunkt Snapshots fehlen oder nur die andere Hälfte aktiv misst, unterscheiden sich die aufsummierten `sample_count`-Zeiten um mehr als 10 %, die Min/Max-Projektspannen bleiben jedoch gleich. Diese Zuweisung überschreibt die tatsächlich berechnete Aktivzeit mit der Spanne und verhindert dadurch `AktivzeitKlafft`, obwohl M-23 bei Smart Disable oder einseitiger Stille genau diese Herabstufung verlangt; der Unit-Test setzt `aktiv_s` direkt und misst die Verdrahtung nicht.
+
+- [P1] Lehne starke Aussagen für unvergleichbare Wahrheiten ab — C:\Users\phili\Projekte\Nakama\tools\eq-copilot\pruefe_p4_korpus.py:139-139
+  Für einen Korpusfall mit `wahrheit="unvergleichbar"`, `"nicht_kausal"` oder `"nicht_exakt"` und `aussage="stark"` gibt `_passt` hier true zurück, sodass `falsche_starke` null bleibt und A26 einen Gate-6-Verstoß als grün ausweist. Das widerspricht sogar der unmittelbar vorher berechneten Menge `moegliche_starke` und verletzt M-79/M-85; ein Negativtest des Prüfers fehlt.
+
+- [P1] Verifiziere die referenzierten Testfälle statt nur die Beine — C:\Users\phili\Projekte\Nakama\tools\eq-copilot\pruefe_p4_korpus.py:162-162
+  Der aktuelle Referenzkorpus nennt `B18::lufs_integrated_matches_reference`, doch `Sonde013DynamicsTest.cpp` enthält diesen Fall und keinen Test des `LoudnessAccumulator` überhaupt; die reale ±0,1-LU-Prüfung liegt in B9. Weil diese Schleife lediglich prüft, ob irgendwo im Runner `Kuerzel='B18'` steht, meldet A26 den erfundenen Fall trotzdem als gemessen und würde auch Löschung oder Umbenennung eines Falls nicht erkennen, womit M-81 unbelegt bleibt.
+
+- [P1] Fahre Stereo-Goldens über alle Blockgrößen — C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\tests\Sonde013StereoGoldenTest.cpp:78-78
+  Alle fünf Stereo-Klassen verwenden den `Speiser` mit festem `frames=512` und im Hauptlauf 48 kHz; nur der separate Nyquist-Fall ändert die Samplerate. Damit prüft B19 die Klassifikation und den Folddown nicht über alle unterstützten Blockgrößen, obwohl M-82 genau diesen Sweep verlangt.
+
+- [P1] Messe den 0,01-dB-Evidenzpfad samt Intervall — C:\Users\phili\Projekte\Nakama\tools\eq-copilot\erzeuge_p4_korpus.py:101-101
+  Die Klasse `vergleich` enthält keinen Fall, der fokussierte `q_db_0p01_i16`-Evidenz mit bekanntem Gain durch Sender, Brokerdekodierung und PRE/POST-Auswertung führt und anschließend ±0,1 dB samt statistischem Intervall prüft. B24 misst einen lokalen Audio-/Match-Gain und der Rust-Test arbeitet mit direkt aufgebauten Float-Hüllkurven; B25 prüft den Bootstrap isoliert. Der ausdrücklich gekoppelte Nachweis aus M-83 ist daher ungemessen.
+
+- [P1] Ergänze den Raten- und Blockgrößen-Sweep für Impulse — C:\Users\phili\Projekte\Nakama\tools\eq-copilot\erzeuge_p4_korpus.py:84-84
+  Die Klasse `zeitachse` listet nur Grenz- und Stempelklassifikationen. B4 variiert Blockgrößen lediglich für den Audio-Passthrough, und die B5-Ereignisfälle sind an keinen Sampleraten-, Blockgrößen- oder PDC-Sweep ihrer Zeitpunkte gebunden. Damit wird die von M-84 verlangte zeitliche Stabilität bekannter Impulsereignisse über diese drei Achsen nicht gemessen.
+
+- [P1] Prüfe den korrelierten nichtkausalen Distraktor — C:\Users\phili\Projekte\Nakama\tools\eq-copilot\erzeuge_p4_korpus.py:102-104
+  Der hier als `nicht_kausal` eingetragene B24-Fall verarbeitet dasselbe Signal durch Kompression, Modulation, Saturation oder Latenz und prüft damit kausale, zeitvariable PRE/POST-Ketten. Er stellt keinen korrelierten, aber nichtkausalen Alternativ-Distraktor her und prüft auch nicht, dass dieser nicht als sicherer Auslöser bezeichnet wird; das erste Falsifikationsziel aus M-85 fehlt daher vollständig.

@@ -1,0 +1,76 @@
+- `src\SourcesModel.cpp:91-101` (11 Z.) - clean
+- `src\SourcesModel.cpp:103-123` (21 Z.) - clean
+- `src\SourcesModel.cpp:125-133` (9 Z.) - clean
+- `src\SourcesModel.cpp:135-141` (7 Z.) - clean
+- `src\SourcesModel.cpp:143-149` (7 Z.) - clean
+- `src\SourcesModel.cpp:167-243` (77 Z.) - clean (bereits registriert: NAK-141)
+- `src\SourcesModel.cpp:245-262` (18 Z.) - clean
+- `src\SourcesModel.cpp:264-270` (7 Z.) - clean
+- `src\SourcesModel.cpp:274-324` (51 Z.) - clean
+- `src\SourcesModel.cpp:326-362` (37 Z.) - clean
+- `src\SourcesModel.cpp:364-383` (20 Z.) - clean
+- `src\SourcesModel.cpp:385-404` (20 Z.) - clean
+- `src\SourcesModel.cpp:406-438` (33 Z.) - Befund F3
+- `src\SourcesModel.cpp:440-575` (136 Z.) - Befund F1
+- `src\SourcesModel.cpp:576-697` (122 Z.) - Befund F1, F2
+- `src\SourcesModel.cpp:698-796` (99 Z.) - clean
+- `src\SourcesModel.cpp:798-945` (148 Z.) - clean
+- `src\SourcesModel.cpp:947-1027` (81 Z.) - Befund F5
+- `src\SourcesModel.cpp:1029-1047` (19 Z.) - clean
+- `src\SourcesModel.cpp:1049-1088` (40 Z.) - clean
+- `src\SourcesModel.cpp:1090-1098` (9 Z.) - clean
+- `src\SourcesModel.cpp:1100-1104` (5 Z.) - clean
+- `src\SourcesModel.cpp:1106-1111` (6 Z.) - clean
+- `src\SourcesModel.cpp:1113-1122` (10 Z.) - clean
+- `src\SourcesModel.cpp:1124-1132` (9 Z.) - clean
+- `src\SourcesModel.cpp:1134-1140` (7 Z.) - clean
+- `src\SourcesModel.cpp:1143-1164` (22 Z.) - clean
+- `src\SourcesModel.cpp:1167-1172` (6 Z.) - clean
+- `src\SourcesModel.cpp:1174-1191` (18 Z.) - clean
+- `src\SourcesModel.cpp:1193-1237` (45 Z.) - clean
+- `src\SourcesModel.cpp:1239-1248` (10 Z.) - clean
+- `src\SourcesModel.cpp:1250-1253` (4 Z.) - clean
+- `src\SourcesModel.cpp:1255-1278` (24 Z.) - clean
+- `src\SourcesModel.cpp:1280-1288` (9 Z.) - clean
+- `src\SourcesModel.cpp:1289-1297` (9 Z.) - clean
+- `src\SourcesModel.cpp:1298-1305` (8 Z.) - clean
+- `src\SourcesModel.cpp:1306-1314` (9 Z.) - clean
+- `src\SourcesModel.cpp:1315-1321` (7 Z.) - clean
+- `src\SourcesModel.cpp:1322-1329` (8 Z.) - clean
+- `src\SourcesModel.cpp:1330-1340` (11 Z.) - clean
+- `src\SourcesModel.h:file-scope-1` (127 Z.) - clean
+- `src\SourcesModel.h:128-241` (114 Z.) - clean
+- `src\WorkerCadence.h:file-scope-1` (14 Z.) - clean
+- `src\WorkerCadence.h:13-68` (56 Z.) - clean
+- `src\ZonenRegeln.h:file-scope-1` (9 Z.) - clean
+- `src\ZonenRegeln.h:10-37` (28 Z.) - clean
+- `state\NakamaKanon.cpp:file-scope-1` (60 Z.) - clean
+- `state\NakamaKanon.cpp:18-26` (9 Z.) - clean
+- `state\NakamaKanon.cpp:30-95` (66 Z.) - clean
+- `state\NakamaKanon.cpp:102-109` (8 Z.) - clean
+- `state\NakamaKanon.cpp:111-141` (31 Z.) - clean
+- `state\NakamaKanon.cpp:143-161` (19 Z.) - clean
+- `state\NakamaKanon.cpp:163-228` (66 Z.) - clean
+- `state\NakamaKanon.cpp:232-241` (10 Z.) - Befund F4
+- `state\NakamaKanon.cpp:243-246` (4 Z.) - clean
+- `state\NakamaKanon.cpp:259-259` (1 Z.) - clean
+- `state\NakamaKanon.cpp:260-260` (1 Z.) - clean
+- `state\NakamaKanon.cpp:261-261` (1 Z.) - clean
+- `state\NakamaKanon.cpp:263-269` (7 Z.) - clean
+- `state\NakamaKanon.cpp:271-282` (12 Z.) - clean
+- `state\NakamaKanon.cpp:285-342` (58 Z.) - clean
+- `state\NakamaKanon.cpp:344-377` (34 Z.) - clean
+- `state\NakamaKanon.cpp:379-386` (8 Z.) - clean
+- `state\NakamaKanon.cpp:388-455` (68 Z.) - clean
+- `state\NakamaKanon.cpp:460-470` (11 Z.) - clean
+- `state\NakamaKanon.h:file-scope-1` (58 Z.) - clean
+- `state\NakamaKanon.h:24-53` (30 Z.) - clean
+- `state\NakamaKernRiegel.h:file-scope-1` (122 Z.) - clean
+- `state\NakamaLebenslauf.cpp:file-scope-1` (14 Z.) - clean
+- `state\NakamaLebenslauf.cpp:7-18` (12 Z.) - clean
+- `state\NakamaLebenslauf.cpp:20-31` (12 Z.) - clean
+- `state\NakamaLebenslauf.cpp:33-43` (11 Z.) - clean
+- `state\NakamaLebenslauf.cpp:45-87` (43 Z.) - clean
+- `state\NakamaLebenslauf.cpp:89-115` (27 Z.) - clean
+- `state\NakamaLebenslauf.h:file-scope-1` (50 Z.) - clean
+- `state\NakamaLebenslauf.h:51-148` (98 Z.) - clean

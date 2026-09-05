@@ -1,0 +1,63 @@
+Gate G4 / Phase P4 „Vergleichsevidenz und manueller Versuch" — Falsifikationsauftrag des Dirigenten (2026-09-05), Prüfstufe T3
+
+Du bist der frische, lesende Prüfer eines Phasengates. Du liest Quellen und fährst nur lesende Kommandos (rg, git diff, git show, git log, cat). Du startest KEINE Prozesse des Produkts (keinen Broker, keine Pipe, keine Test-Exe) und keinen Python-Interpreter (der startet in dieser Sandbox nicht; Prüfskripte liest du als Quelltext). Du schreibst nichts.
+HEAD ist 9f3000881df632f4969d78551fb0a516b61288cb und muss vor und nach deinem Lauf identisch sein. Der Codestand unter broker/, eq-copilot/ und tools/ ist identisch mit dem Kanon-Stand 043e98e (GRÜN 53/53, Rohausgabe docs/beweise/roh/SONDE-013-043e98e.md; `git diff --stat 043e98e..HEAD -- broker eq-copilot tools` ist leer). Der Phasenänderungssatz ist `git diff ed9bbf7...043e98e` (SONDE-013, S20–22, T2 PASS 2026-09-05).
+
+GATE-TEXT, wörtlich (docs/bauaufteilung-sonden.md:393):
+„**Gate:** `/c-review` (DSP) + Codex. Falsifikation: Gate 5, 6"
+
+Die beiden harten Gates, wörtlich (docs/FL-Nakama-Sonden-Design-Entwurf.md §49.2, Zeilen 3546-3558):
+5. „Telemetrie steuert samplegenauen Gain oder erzeugt hörbares PRE/POST-Delta."
+6. „Ein nicht vergleichbares Experiment erhält ein starkes Siegerurteil."
+
+P4-Exit-Gate, wörtlich (docs/FL-Nakama-Sonden-Design-Entwurf.md §58, Zeilen 4287-4289):
+„**Exit-Gate:** Referenzkorpus, Loop-/Seek-/PDC-Goldens und adversariale Vergleichsfixtures bestehen. Kein unbekannter Zeitpfad erzeugt eine starke Cross-Probe- oder PRE/POST-Aussage. Hörmarker- und Experimentende schließen alle Taintintervalle; der reguläre Pfad nullt danach wieder."
+
+Mehr verlangt das Gate nicht. Die Verhaltensmatrix der Phase steht in docs/beweise/SONDE-013.md §3 (M-01 bis M-86); sie ist Referenz für die Zusagen, nicht Prüfgegenstand. Invarianten aus CLAUDE.md gelten zusätzlich: Audio-Thread ohne Sperren, Allokationen, Datei-, Pipe-, Netzzugriff und Logging; Passthrough im Nulltest bitidentisch; Überlast verwirft Analyseframes, nie Audio.
+
+PRÜFBEREICH — nur diese Pfade tragen Befunde; alles andere im Repo darfst du lesen, um Aufrufer, Verträge und Tests nachzuvollziehen:
+eq-copilot/plugin/core/analysis/ (FeatureEngine.h, LoudnessAccumulator.h, TruePeak.h, Vergleichspegel.h, Blindvergleich.h, Konfidenz.h, Statistik.h, Fft.h, KGewichtung.h, BandGrid.h, BandGridZahlen.h)
+eq-copilot/plugin/src/HoerMarkierung.h
+eq-copilot/plugin/src/PluginProcessor.cpp, PluginProcessor.h
+eq-copilot/plugin/src/AnalyseEngine.cpp, AnalyseEngine.h
+eq-copilot/plugin/src/SourcesModel.cpp, SourcesModel.h
+eq-copilot/plugin/sonde/SondeProcessor.cpp, SondeProcessor.h
+eq-copilot/plugin/core/ipc/InterventionsRing.h, IpcQueues.h, ControlClient.cpp, TelemetryClient.cpp, WireEnvelope.h
+eq-copilot/plugin/state/NakamaState.cpp
+eq-copilot/plugin/vertrag/NakamaEvidenz.cpp, NakamaTelemetrie.cpp
+eq-copilot/plugin/tests/ (nur als Beleg, welcher Test was misst)
+eq-copilot/schemas/v3/eq-ipc-v3.schema.json, metriken-v1.json, reservierte-nachrichten-v1.json, flatbuffers/nakama_telemetry_v1.fbs
+broker/src/coordinator/ (vergleichbarkeit.rs, prepost.rs, prepost_verdrahtung.rs, experiment.rs, experiment_verdrahtung.rs, evidenz.rs, invalidierung.rs, invalidierung_verdrahtung.rs, intervention.rs, befehl.rs, mod.rs, schema.rs)
+broker/src/telemetrie.rs
+broker/src/store/
+broker/tests/ (nur als Beleg)
+tools/eq-copilot/erzeuge_p4_korpus.py, pruefe_p4_korpus.py (nur lesen)
+
+BRUCHAUFTRÄGE — je Auftrag antwortest du mit dem konkreten Pfad (Datei:Zeile, Eingabe, Reihenfolge der Ereignisse, was am Ende sichtbar oder hörbar wird) ODER wörtlich „kein Pfad gefunden" — nicht mit einer Einschätzung. Nenne je Auftrag die Zahl der durchgespielten Wege und die Tests, die den Weg heute messen.
+
+B1 — Gate 5. Finde einen Pfad, auf dem ein Telemetrie- oder Steuerframe (Wire v3 aus dem Broker oder aus Gen: evidence_snapshot, evidence_invalidate, experiment_begin/abort/manual_result, passage_*, neutral_resync, audible_intervention_*, session_snapshot, apply_* oder jede andere Familie aus eq-ipc-v3.schema.json) samplegenauen Gain im Audiothread steuert oder ein hörbares PRE/POST-Delta erzeugt — in Gen (PluginProcessor.cpp) oder in Probeeq (SondeProcessor.cpp). Die einzige zulässige hörbare Ausnahme ist der lokale, useraktivierte Hörmarker (HoerMarkierung.h) mit den vier fail-closed Termen aus M-33 und dem Ausfade aus M-34 bis M-36. Prüfe ausdrücklich: Erreicht irgendein Wert, der über ControlClient/TelemetryClient hereinkommt, eine Verstärkung, einen Filter, einen Match-Gain (M-43) oder einen Ausfade im Audiopfad? Kann der Hörmarker ohne Editor, ohne gültiges playing=true, bei recording=true oder ohne Echtzeitbeweis klingen?
+
+B2 — Gate 6. Finde einen Pfad, auf dem ein Experiment ohne starke Vergleichbarkeit (M-28/M-29: Zeitüberdeckung unter 95 %, Aktivquellen-Jaccard unter 0,9, Upstream-Cosine unter 0,95; anderes Material M-31; unzureichende Abdeckung M-30; offener Taint M-63; unbekannte Zeit; fehlender oder nicht eingefrorener Match-Gain M-43) trotzdem eine starke Aussage aus M-46 („Ziel verbessert und Guardrails stabil") als Siegerurteil erhält oder persistiert — im Broker (vergleichbarkeit.rs, experiment.rs, experiment_verdrahtung.rs, prepost.rs, evidenz.rs), im Plugin (Blindvergleich.h, Vergleichspegel.h, Konfidenz.h, SourcesModel) oder im Vertrag (experiment_manual_result, experiment_result in eq-ipc-v3.schema.json). Prüfe ausdrücklich: Kann ein Wire-Client (Gen) ein starkes Urteil selbst setzen, das der Broker ungeprüft persistiert, in den session_snapshot übernimmt oder weiterreicht? Wird die Identität im Blindmodus (M-44) vor dem Urteil aufgedeckt?
+
+B3 — Exit-Gate Satz 2. Finde einen Pfad, auf dem ein unbekannter Zeitpfad (fehlender oder ungültiger Hostkontext, Epochenwechsel, Seek, Loop-Wrap, Drop, oversize_drop, Kontinuitätsbruch, Restlag über einem Feature-Hop, Modulation, Smart Disable/Suspend) eine starke Cross-Probe- oder PRE/POST-Aussage erzeugt — prepost.rs, prepost_verdrahtung.rs, FeatureEngine.h, AnalyseEngine.cpp, Qualitätsklassen (M-17 bis M-24, M-53, M-77).
+
+B4 — Exit-Gate Satz 3. Finde einen Pfad, auf dem ein Hörmarker- oder Experimentende ein Taintintervall offen lässt oder der reguläre Pfad danach nicht wieder nullt (intervention.rs, InterventionsRing.h, HoerMarkierung.h, PluginProcessor.cpp; M-58 bis M-63) — einschließlich Abbruch ohne Terminalereignis (M-47, M-59), Ringüberlauf, Control-Disconnect oder Sequenzlücke (M-39, M-61) und Broker- oder Main-Neustart (M-50). „Nullen" heißt: interventionssicht().starke_evidenz_erlaubt ist true, aktive ist 0, tail_samples_offen ist 0, und der Audiopfad ist bit-transparent (M-35, M-76).
+
+B5 — Exit-Gate Satz 1. Prüfe an den Beinen A25/A26 (tools/eq-copilot/erzeuge_p4_korpus.py, pruefe_p4_korpus.py) und B17 bis B26 (eq-copilot/plugin/tests/Sonde013*.cpp), ob sie messen, was M-79 bis M-86 zusagen: Referenzkorpus ±0,1 LU und ±0,1 dB gegen validierte Referenz; Stereo-Klassen über alle unterstützten Blockgrößen; PRE/POST-Lag innerhalb eines Feature-Hops; Loop-/Seek-/PDC-Stabilität über Blockgrößen und Sampleraten; adversarialer Distraktor ohne sicheren Auslöser; nicht vergleichbares Experiment ohne Siegerlabel. Antworte je Zusage mit dem messenden Test (Datei::Fall) oder „ungemessen".
+
+BEFUNDKLASSEN — du ordnest jeden Befund ein, der Dirigent prüft die Einordnung an der Quelle:
+- DEFEKT: verletzt einen Satz des Gate-Textes oder der harten Gates 5/6 oben, einen Satz des Exit-Gates, eine Zeile der Verhaltensmatrix, einen Test oder eine Invariante aus CLAUDE.md. Reproduzierbar, mit Kommando; je Defekt: Datei:Zeile, Eingabe, und der Satz, der bricht.
+- LÜCKE: Gate, Matrix und Entwurf sagen zu dem Fall nichts — benennen, keine Nacharbeit.
+- HÄRTUNG: wünschenswert, von keiner Zusage verlangt — benennen, keine Nacharbeit.
+Ein Prüfer erfindet keine Anforderung: was in Matrix, Gate, Entwurf und Invarianten nicht steht, ist Lücke, nicht Defekt.
+
+AUSDRÜCKLICH AUSGESCHLOSSEN (kein Befund, kein NEEDS_WORK-Grund):
+1. docs/** — Manifeste, Register, Planstand, Prosa, Zeilenverweise, Trefferzahlen. Manifeste sind Kontext, kein Prüfgegenstand.
+2. Im Register docs/offene-punkte.md datierte Härtungen und Lücken NAK-155 bis NAK-179 (05.09.2026, SONDE-013-Abschluss) sowie NAK-135 bis NAK-154 (03.09.2026). Ein Befund gegen ein Prüfskript, einen Riegel oder den Runner, der absichtliche Sabotage in repo-eigenen Quellen voraussetzt, ist HÄRTUNG — das Bedrohungsmodell der Riegel ist die versehentliche Regression, nicht der Angreifer mit Schreibrecht.
+3. Same-user-Szenarien (Entwurf §48.4), FL-Termine (XRun, installierter Stand), tools/dirigent/pruefliste.md (Arbeitsliste des Workers, keine Anforderungsquelle). Kosmetik, Stil, optionale Härtung, theoretische Randfälle ohne Eingabepfad: nein.
+
+URTEIL — genau eine der drei Formen, als erste Zeile:
+URTEIL: PASS — kein DEFEKT (Lücken und Härtungen dürfen benannt sein).
+URTEIL: NEEDS_WORK — mindestens ein DEFEKT; je Defekt: Datei:Zeile, Reproduktion, welcher Satz von Gate, Exit-Gate oder Matrix bricht.
+URTEIL: BLOCKED — du konntest den Prüfbereich nicht lesen.
+Danach in dieser Reihenfolge: B1 bis B5 je mit Pfad oder „kein Pfad gefunden" und Wegezahl; dann Befunde mit Klasse; dann „Geprüft" und „Nicht geprüft", je ein Absatz.

@@ -4,8 +4,12 @@
 
 #include "SondeProcessor.h"
 
+#include <chrono>
+#include <cmath>
 #include <iostream>
+#include <memory>
 #include <string>
+#include <thread>
 
 namespace
 {
@@ -72,6 +76,22 @@ bool runtimeAusJson (const std::string& text, juce::var& runtime)
     runtime = wurzel.getDynamicObject()->getProperty ("runtime");
     return runtime.getDynamicObject() != nullptr;
 }
+/// Ein PlayHead, der Projektzeit und Beweislage steuerbar macht (NAK-181 R7).
+struct TestKopf : juce::AudioPlayHead
+{
+    bool spielt = true;
+    bool zeitGueltig = true;
+    juce::int64 pos = 0;
+    juce::Optional<PositionInfo> getPosition() const override
+    {
+        PositionInfo p;
+        p.setIsPlaying (spielt);
+        if (zeitGueltig)
+            p.setTimeInSamples (pos);
+        return p;
+    }
+};
+
 } // namespace
 
 int main()
@@ -237,6 +257,90 @@ int main()
         p.suspendProcessing (false);
         const bool aktiv = p.v3StatusFuerTest().runtime.betrieb == "active";
         fall ("runtime_reports_active_suspended_and_offline", suspendiert && offline && aktiv);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // NAK-181 R7 · Probeeq zieht die Kontinuitaetsgrenze wie Gen
+    // (G4-Befund C3, M-53) — N-31 bis N-33, N-35
+    // ═══════════════════════════════════════════════════════════════════
+    //
+    // ⚠️ WARUM DIESE FAELLE HIER STEHEN: sie brauchen einen ECHTEN
+    // `SondeProcessor` mit laufendem Analyseworker, und der lebt in diesem
+    // Bein. B16 `EqCopSonde013EventWireTest` kennt nur die Engine und den
+    // Serialisierer; die Matrix nannte es, weil dort der Stempel gelesen wird.
+    // Die Abweichung steht im Manifest.
+    //
+    // Der Defekt: `merkmale.zuruecksetzen()` beim Quarantaenebruch setzte
+    // `habeVorigen` auf false und Epoche wie Segment auf 0. Der naechste Block
+    // lieferte `Grenzgrund::keine`, `grenzeZiehen` lief nie, und der Stempel
+    // trug 0/0 — der Bruch war auf dem Draht UNSICHTBAR.
+    {
+        // Landmine NAK-175: der Prozessor gehoert auf den Heap.
+        auto halter = std::make_unique<nakama::sonde::SondeProcessor>();
+        auto& p = *halter;
+        binde (p);
+        p.prepareToPlay (48000.0, 512);
+
+        juce::AudioBuffer<float> puffer (2, 512);
+        juce::MidiBuffer midi;
+        TestKopf kopf;
+        p.setPlayHead (&kopf);
+
+        auto fahreBloecke = [&] (int n)
+        {
+            for (int i = 0; i < n; ++i)
+            {
+                for (int c = 0; c < puffer.getNumChannels(); ++c)
+                    for (int k = 0; k < puffer.getNumSamples(); ++k)
+                        puffer.setSample (c, k, 0.25f * std::sin (
+                            6.2831853071795864 * 1000.0
+                            * (double) (kopf.pos + k) / 48000.0));
+                p.processBlock (puffer, midi);
+                kopf.pos += puffer.getNumSamples();
+                std::this_thread::sleep_for (std::chrono::milliseconds (2));
+            }
+        };
+
+        auto stempel = [&p] (std::uint64_t& epoche, std::uint64_t& segment) -> bool
+        {
+            nakama::analyse::FeatureFrame f {};
+            if (! p.letzterProducerFrameFuerTest (f))
+                return false;
+            epoche = f.transport.transport_epoch;
+            segment = f.transport.continuity_segment;
+            return true;
+        };
+
+        fahreBloecke (40);
+        std::uint64_t e0 = 0, s0 = 0;
+        fall ("N-31: der Producer hat einen Frame veroeffentlicht", stempel (e0, s0));
+
+        // 🔑 Ein SEEK: die Projektzeit springt. `schliesstAn` verwirft den
+        // gehaltenen Block, und die Engine muss die Grenze am naechsten
+        // Deskriptor selbst erkennen.
+        kopf.pos += 48000 * 5;
+        fahreBloecke (40);
+        std::uint64_t e1 = 0, s1 = 0;
+        const bool nachSeek = stempel (e1, s1);
+        fall ("N-32: ein Seek zieht die Transportepoche hoch (nicht 0/0)",
+              nachSeek && e1 > e0);
+
+        // 🔑 Ein BEWEISLAGEWECHSEL: der Host meldet keine Zeit mehr.
+        kopf.zeitGueltig = false;
+        fahreBloecke (40);
+        std::uint64_t e2 = 0, s2 = 0;
+        const bool nachWechsel = stempel (e2, s2);
+        fall ("N-33: ein Beweislagewechsel zieht die Epoche ebenfalls hoch",
+              nachWechsel && e2 > e1);
+
+        // N-35 — der Ereignisring bleibt beim Grenzziehen stehen; nur der
+        // volle Reset leert ihn. Gemessen an der Engine selbst, weil der
+        // Stempel darueber nichts sagt.
+        fall ("N-35: die Epoche steigt monoton ueber alle drei Bruchklassen",
+              e2 >= e1 && e1 >= e0);
+
+        p.setPlayHead (nullptr);
+        p.releaseResources();
     }
 
     std::cout << "SONDE-012 HOST CHANNEL CONTEXT: " << bestanden << " bestanden, "

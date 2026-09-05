@@ -1,7 +1,10 @@
 NAK-181 Rotbeweis b4 - 2026-09-05
-Zuruecknahme: R7: merkmale.zuruecksetzen() beim Quarantaenebruch zurueck
-Bein: EqCopProbeeqNullTest
+Zuruecknahme: R7: merkmale.zuruecksetzen() beim Quarantaenebruch zurueck - die Engine sieht die Grenze dann nicht mehr
+Bein: EqCopSonde012HostChannelContextTest
 ---
-SONDE-NULLTEST OK - 87 Pruefungen ok, 0 Fehler
+[ok]  N-31: der Producer hat einen Frame veroeffentlicht
+[ROT] N-32: ein Seek zieht die Transportepoche hoch (nicht 0/0)
+[ROT] N-33: ein Beweislagewechsel zieht die Epoche ebenfalls hoch
+[ok]  N-35: die Epoche steigt monoton ueber alle drei Bruchklassen
 ---
-SONDE-NULLTEST OK - 87 Pruefungen ok, 0 Fehler
+SONDE-012 HOST CHANNEL CONTEXT: 11 bestanden, 2 fehlgeschlagen

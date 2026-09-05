@@ -32,6 +32,9 @@
 #include <deque>
 #include <thread>
 #include "ControlClient.h"
+// NAK-180 Nacharbeit 2 (WN-08): DER Riegel des Probe-Namensraums steht im
+// Prozessor, nicht im Kern - `PipeToken.h` bleibt ausserhalb von NakamaKern.
+#include "PipeToken.h"
 #include "TelemetryClient.h"
 #include "SourcesModel.h"
 
@@ -478,6 +481,22 @@ public:
     std::uint64_t replayFaelligFuerTest() const { return replayFaellig.load(); }
     std::uint64_t wireGenerationFuerTest() const
     { return controlV3.wireGenerationJetzt(); }
+    /** NAK-180 Nacharbeit 2 (WN-08/EP-18/R3b): den ECHTEN Control-Client auf
+        einen Probe-Server zeigen lassen (Test).
+
+        DER Riegel des Probe-Namensraums (§48.3) steht hier - `PipeToken.h`
+        liegt bewusst ausserhalb von NakamaKern, und der Produktionsname darf
+        nie ein Testserver-Ziel werden. Erst damit kann ein Bein
+        `start()`, Pipe-Handschlag, Heartbeat-Takt, P0-Enqueue und
+        Wire-Commit wirklich fahren, statt `v3LinkFuerTest` aufzurufen und
+        das Ergebnis Handschlag zu nennen. */
+    bool v3ProbeGegenstelleFuerTest (const std::string& pipename,
+                                     nakama::ipc::ServerErwartung erwartung)
+    {
+        if (! nakama::ipc::istProbePipename (pipename))
+            return false;
+        return controlV3.setzeProbeGegenstelleFuerTest (pipename, std::move (erwartung));
+    }
     void v3ReconnectFuerTest() { controlV3.reconnect(); }
     void v3StopFuerTest() { controlV3.stop(); }
     void v3StartFuerTest() { controlV3.start(); }

@@ -857,6 +857,24 @@ void ControlClient::setzeAufbauZugHakenFuerTest (std::function<void (int)> haken
     k->aufbauZugHakenFuerTest = std::move (haken);
 }
 
+bool ControlClient::setzeProbeGegenstelleFuerTest (const std::string& pipename,
+                                                   ServerErwartung erwartung)
+{
+    // Fail-closed: nur solange der Client STEHT, und nie mit leerem Namen.
+    //
+    // Den NAMENSRAUM prueft der Aufrufer - `PipeToken.h` liegt bewusst
+    // ausserhalb von NakamaKern (CMakeLists §Kernquellen: sein
+    // Hersteller-Namensraum ist Zielidentitaet, keine geteilte Kernwahrheit).
+    // Der einzige erreichbare Aufrufer ist `EqCopilotProcessor::
+    // v3ProbeGegenstelleFuerTest`, und der laesst ausschliesslich
+    // `istProbePipename` durch.
+    if (pipename.empty() || k->laeuft.load())
+        return false;
+    k->pipeName = pipename;
+    k->serverErwartung = std::move (erwartung);
+    return true;
+}
+
 /** 🔑 NAK-180 R11: die Generation, FUER DIE der laufende Link-Callback laeuft.
 
     `meldeAufbauUrteil` las bis hier `wireGeneration.load()` - die AKTUELLE

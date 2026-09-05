@@ -458,6 +458,25 @@ public:
     /// Leert sie wieder, ohne etwas zu melden.
     void leereP0QueueFuerTest();
 
+    /** NAK-180 Nacharbeit 2 (WN-08/EP-18/R3b): den LAUFENDEN Client auf einen
+        Probe-Server zeigen lassen (Test).
+
+        Bis hierher konnte nur `EqCopIpcTest` den echten Handschlag fahren -
+        Pipe, Hello, Welcome, Heartbeat-Takt, P0-Enqueue, Wire-Commit -, weil
+        Pipename und Servererwartung des Produkts unerreichbar waren. Jedes
+        andere Bein blieb bei `v3LinkFuerTest` stehen und mass den Callback,
+        nicht den Handschlag.
+
+        Fail-closed: nur solange der Client STEHT und nie mit leerem Namen.
+        Den PROBE-Namensraum (§48.3) prueft der Aufrufer - `PipeToken.h` liegt
+        bewusst ausserhalb von NakamaKern. Der einzige erreichbare Aufrufer ist
+        `EqCopilotProcessor::v3ProbeGegenstelleFuerTest`, und der laesst
+        ausschliesslich `istProbePipename` durch.
+
+        Rueckgabe: uebernommen? `false` heisst, es bleibt beim Produktnamen. */
+    bool setzeProbeGegenstelleFuerTest (const std::string& pipename,
+                                        ServerErwartung erwartung);
+
     /** NAK-180 Nacharbeit 2 (WN-06/EP-16/N-35): die Schranke AM EINTRITT des
         Aufbauzugs (Test).
 

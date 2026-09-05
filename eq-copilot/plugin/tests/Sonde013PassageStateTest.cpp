@@ -41,6 +41,22 @@
 
 #include <pluginterfaces/vst/ivstprocesscontext.h>
 
+// NAK-180 Nacharbeit 2 (WN-08/EP-18/R3b): der v3-Probe-Server. Bis hierher lag
+// er allein in `IpcTestMain.cpp`, und `r01Resync` konnte den Handschlag
+// deshalb nur ueber Testhaken nachbilden.
+#include "IpcVerbindung.h"
+#include "WireEnvelope.h"
+#include "PipeToken.h"
+#if defined(_WIN32)
+ #ifndef WIN32_LEAN_AND_MEAN
+  #define WIN32_LEAN_AND_MEAN
+ #endif
+ #ifndef NOMINMAX
+  #define NOMINMAX
+ #endif
+ #include <windows.h>
+#endif
+
 #include <chrono>
 #include <cstring>
 #include <iostream>
@@ -66,6 +82,12 @@ using VstKontext = Steinberg::Vst::ProcessContext;
 
 namespace
 {
+// Der Probe-Server spricht den v3-Bootstrap unqualifiziert.
+using namespace nakama::ipc;
+// Das GETEILTE Testdouble - dieselbe Datei, die EqCopIpcTest einbindet
+// (NAK-180 Nacharbeit 2, WN-08). Es gehoert in den anonymen Namensraum.
+#include "V3TestServer.h"
+
 int bestanden = 0;
 int fehler = 0;
 
@@ -668,11 +690,31 @@ void r03Passagenfenster()
 void r01Resync()
 {
     abschnitt ("R01  ueberlauf_sticky_wird_beim_bestaetigten_resync_geloescht");
-    auto p = mainProzessor();
+    auto p = mainProzessorMitBindung();
     p->prepareToPlay (48000.0, 512);
 
     pruefe (! p->v3StatusFuerTest().interventionStateUnknown,
             "R01: frisch ist der Interventionszustand BEKANNT");
+
+    // ── Der ECHTE Handschlag gegen einen Probe-Server ────────────────────
+    //
+    // 🔑 NAK-180 Nacharbeit 2 (WN-08/EP-18/R3b): bis hierher rief dieses Bein
+    // `v3LinkFuerTest(true)` und nannte das Ergebnis Resync. Kein
+    // ControlClient-Thread lief, keine Pipe wurde geoeffnet, kein Heartbeat
+    // gebildet, nichts zugestellt - Fehler im echten Lebenszyklus blieben
+    // gruen. Jetzt laeuft der Produktclient: `start()`, Pipe-Handschlag,
+    // Hello/Welcome, Heartbeat-Takt, P0-Enqueue, Wire-Commit. Gemessen wird,
+    // was der SERVER empfangen hat.
+    const auto pipe = testPipeName ("sonde013.r01");
+    pruefe (nakama::ipc::istProbePipename (pipe),
+            "R01: der Testserver liegt im PROBE-Namensraum - nie auf der "
+            "Produktionspipe (Paragraph 48.3)",
+            juce::String (pipe));
+    pruefe (p->v3ProbeGegenstelleFuerTest (pipe, testExeErwartung()),
+            "R01: der echte ControlClient zeigt auf den Probe-Server");
+
+    TestServer server (pipe);
+    pruefe (server.starten(), "R01: der Probe-Server steht");
 
     // Den Ring bis zum Ueberlauf fuellen — derselbe Weg wie im Audiothread.
     const int geschrieben = p->interventionsRingFuellenFuerTest();
@@ -681,19 +723,91 @@ void r01Resync()
     pruefe (p->v3StatusFuerTest().interventionStateUnknown,
             "R01: der Ueberlauf meldet sich als `intervention_state_unknown`");
 
-    // Der Neuaufbau des Control-Links IST der bestaetigte Resync. Er behauptet
-    // Neutralitaet nur, wenn der Ring leer ist — also erst nach dem Leeren.
-    p->v3LinkFuerTest (true);
+    // Jetzt den Client wirklich starten. Der Aufbau urteilt bei GEFUELLTEM
+    // Ring NICHT neutral - eine Selbstheilung waere genau das, was
+    // Paragraph 34.2 verbietet.
+    p->v3StartFuerTest();
+
+    auto warteAuf = [] (int fristMs, auto&& bedingung)
+    {
+        const auto bis = std::chrono::steady_clock::now()
+                       + std::chrono::milliseconds (fristMs);
+        while (std::chrono::steady_clock::now() < bis)
+        {
+            if (bedingung())
+                return true;
+            std::this_thread::sleep_for (std::chrono::milliseconds (5));
+        }
+        return bedingung();
+    };
+
+    pruefe (warteAuf (8000, [&]
+            {
+                return p->controlV3Snapshot().status
+                       == nakama::ipc::ControlClient::Status::verbunden;
+            }),
+            "R01/WN-08: der ECHTE Client ist ueber die Probe-Pipe verbunden - "
+            "Hello und Welcome sind gelaufen, nicht ein Testhaken");
+
+    // Der Heartbeat-Takt ist 1 Hz; der erste geht sofort nach dem Welcome.
+    auto heartbeats = [&] ()
+    {
+        std::lock_guard<std::mutex> l (server.textMutex);
+        return server.p0Texte;
+    };
+    auto sucheNeutral = [&] (bool wert)
+    {
+        const std::string gesucht = wert
+            ? std::string (R"("intervention_state_unknown":true)")
+            : std::string (R"("intervention_state_unknown":false)");
+        for (const auto& t : heartbeats())
+            if (t.find (gesucht) != std::string::npos)
+                return true;
+        return false;
+    };
+
+    // 🔑 Erst messen, DANN berichten. Die Argumente von `pruefe` werden in
+    // unbestimmter Reihenfolge ausgewertet; ein `heartbeats().size()` im
+    // Detailtext kann sonst VOR der Wartebedingung gelesen werden und einen
+    // Stand melden, den die Zusage nie gesehen hat.
+    const bool p0Kam = warteAuf (8000, [&] { return ! heartbeats().empty(); });
+    const int p0NachStart = (int) heartbeats().size();
+    pruefe (p0Kam,
+            "R01/WN-08: der Server hat wirklich P0 empfangen - der Takt laeuft",
+            juce::String (p0NachStart) + " P0");
+    const bool trugTrue = sucheNeutral (true);
+    const bool trugFalse = sucheNeutral (false);
+    pruefe (trugTrue && ! trugFalse,
+            "R01/WN-08: bei GEFUELLTEM Ring traegt der erste Heartbeat "
+            "ausdrueckliches `true` - und KEIN `false`, das den Resync ausloeste",
+            juce::String (p0NachStart) + " P0, `true` "
+                + (trugTrue ? "steht" : "FEHLT") + ", `false` "
+                + (trugFalse ? "STEHT" : "fehlt"));
     pruefe (p->v3StatusFuerTest().interventionStateUnknown,
             "R01: bei GEFUELLTEM Ring bleibt das Sticky stehen - eine "
             "Selbstheilung waere genau das, was Paragraph 34.2 verbietet");
 
+    // Jetzt leeren und den Link NEU aufbauen - ueber den echten Reconnect,
+    // nicht ueber einen Haken. Der bestaetigte Neuaufbau IST der Resync.
     p->interventionsRingLeerenFuerTest();
-    p->v3LinkFuerTest (true);
-    pruefe (! p->v3StatusFuerTest().interventionStateUnknown,
-            "R01: ueberlauf_sticky_wird_beim_bestaetigten_resync_geloescht - der "
-            "bestaetigte Neuaufbau loescht es, und der Zustand ist wieder bekannt");
+    const auto vorReconnect = heartbeats().size();
+    p->v3ReconnectFuerTest();
 
+    const bool falseKam = warteAuf (10000, [&] { return sucheNeutral (false); });
+    const int p0NachReconnect = (int) heartbeats().size();
+    pruefe (falseKam && p0NachReconnect > (int) vorReconnect,
+            "R01/WN-08: ueberlauf_sticky_wird_beim_bestaetigten_resync_geloescht - "
+            "der erste Heartbeat des NEUEN Links traegt auf dem DRAHT das "
+            "ausdrueckliche `false`, und genau das loest beim Broker "
+            "`resync_bestaetigen` aus",
+            juce::String ((int) vorReconnect) + " -> "
+                + juce::String (p0NachReconnect) + " P0, `false` "
+                + (falseKam ? "steht" : "FEHLT"));
+    pruefe (! p->v3StatusFuerTest().interventionStateUnknown,
+            "R01: und der lokale Zustand ist wieder bekannt");
+
+    p->v3StopFuerTest();
+    server.stoppen();
     p->releaseResources();
 }
 

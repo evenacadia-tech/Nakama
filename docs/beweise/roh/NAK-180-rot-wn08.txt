@@ -1,0 +1,17 @@
+NAK-180 Etappe 2, Nacharbeit 2 - ROTBEWEIS WN08
+Erzeugt: 2026-09-05 14:41:17
+Basis:   f8dc0d66c763a632aa5e8996e7c6b645f94abdb7
+Ziel:    EqCopSonde013PassageStateTest
+Regel zurueckgedreht durch tools/dirigent (Helfer im Jobordner), danach wiederhergestellt.
+EXIT=1
+
+[ok]   R01/WN-08: der ECHTE Client ist ueber die Probe-Pipe verbunden - Hello und Welcome sind gelaufen, nicht ein Testhaken
+[ok]   R01/WN-08: der Server hat wirklich P0 empfangen - der Takt laeuft  [1 P0]
+[ok]   R01/WN-08: bei GEFUELLTEM Ring traegt der erste Heartbeat ausdrueckliches `true` - und KEIN `false`, das den Resync ausloeste  [1 P0, `true` steht, `false` fehlt]
+[ROT]  R01/WN-08: ueberlauf_sticky_wird_beim_bestaetigten_resync_geloescht - der erste Heartbeat des NEUEN Links traegt auf dem DRAHT das ausdrueckliche `false`, und genau das loest beim Broker `resync_bestaetigen` aus  [1 -> 11 P0, `false` FEHLT]
+
+--- Schluss der Ausgabe ---
+[ok]   N-02/N-12: der naechste Heartbeat schweigt wieder - die Aussage reist genau einmal  [{"type":"heartbeat","adresse":{"logon_sid":"S-1-5-21-369263037-1611576211-208123]
+[ok]   N-12: und sie nimmt die Aussage eines neueren Links NICHT mit
+
+206 bestanden, 1 gescheitert

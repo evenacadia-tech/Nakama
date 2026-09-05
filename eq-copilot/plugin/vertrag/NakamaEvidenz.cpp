@@ -1,5 +1,7 @@
 #include "NakamaEvidenz.h"
 
+#include "../core/ipc/WireZahl.h"
+
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -63,19 +65,40 @@ std::string boolJson (bool b) { return b ? "true" : "false"; }
 
 /*  Zahl fuer den Draht.
 
-    Derselbe Riegel wie in `ControlClient.cpp`: eine Wandlung nach
-    `long long` ist fuer NaN, ±Inf und alles ausserhalb des darstellbaren
-    Bereichs undefiniertes Verhalten, und undefiniertes Verhalten passiert
-    VOR jeder Pruefung, die danach kaeme. Nichtendliches erreicht diesen
-    Bauer gar nicht (der Aufrufer prueft), der Riegel steht trotzdem. */
+    🔑 NAK-181 R4 (G4-Befund V05): der Textbau laeuft ueber
+    `nakama::wire::wireZahl` — locale-frei durch Konstruktion und mit den
+    Grenzen des v3-Textriegels. Bis hierher stand hier `std::to_string(double)`,
+    unter MSVC `sprintf("%f")`: LC_NUMERIC-abhaengig und auf sechs
+    Nachkommastellen fixiert. Ein fremdes Modul im FL-Prozess mit
+    `setlocale(LC_ALL, "")` machte daraus `1,5` — und aus einem Bandsatz mit
+    221 Werten 442 Arrayelemente, zu denen die `gueltig_bitmap` nicht mehr
+    passt.
+
+    `"null"` ist der letzte Riegel und wird von KEINEM Aufrufer erreicht:
+    jeder von ihnen prueft `wireZahlTauglich` vorher und nimmt bei `false`
+    seinen eigenen Ersatzweg (0 ohne Praesenzbit, Ersatzzahl, entfallendes
+    Objekt, kein Snapshot). Die Zeile bleibt, weil ein Riegel ohne Aufrufer
+    billiger ist als ein Aufrufer ohne Riegel. */
 std::string zahlJson (double w)
 {
-    if (! std::isfinite (w))
+    std::string text;
+    if (! nakama::wire::wireZahl (w, text))
         return "null";
-    if (w >= -9.007199254740992e15 && w <= 9.007199254740992e15
-        && w == static_cast<double> (static_cast<long long> (w)))
-        return std::to_string (static_cast<long long> (w));
-    return std::to_string (w);
+    return text;
+}
+
+/** Traegt der v3-Draht diesen Wert? Die Vorpruefung jedes Aufrufers.
+
+    🔑 NAK-181 R4b/R4d: sie ersetzt an jedem Aufrufer die bisherige
+    `std::isfinite`-Frage. Nicht endlich ist nur EINER von vier Gruenden, aus
+    denen der Textriegel eine Zahl ablehnt; die anderen drei sind Betrag,
+    Ganzzahlgrenze und Stellenzahl. Ein Aufrufer, der nur `isfinite` fragt,
+    laesst `1e-308` durch — und ein `null` in einem `type: number`-Pflichtfeld
+    macht die ganze Nachricht ungueltig. */
+bool wireZahlTauglich (double w)
+{
+    std::string verworfen;
+    return nakama::wire::wireZahl (w, verworfen);
 }
 
 const char* gitterName (GitterId g)
@@ -159,8 +182,13 @@ bool transportJson (const Transportstempel& t, std::string& aus)
     const char* basis = t.zeitbasis == Zeitbasis::project_samples ? "project_samples"
                       : t.zeitbasis == Zeitbasis::local_monotonic ? "local_monotonic"
                       : nullptr;
+    // 🔑 NAK-181 R4d (MP3-1): die vierte Bedingung. `> 0` ist KEINE Schranke
+    // gegen `1e-308` — endlich, positiv, unter 768000, und der Textriegel
+    // lehnt sie trotzdem ab (`dez = -308`). Ohne diese Zeile stuende `null` in
+    // einem Pflicht-`number` und der ganze Snapshot waere ungueltig.
     if (basis == nullptr || ! std::isfinite (t.sample_rate)
-        || t.sample_rate <= 0.0 || t.sample_rate > 768000.0)
+        || t.sample_rate <= 0.0 || t.sample_rate > 768000.0
+        || ! wireZahlTauglich (t.sample_rate))
         return false;
 
     aus += "{\"transport_epoch\":";
@@ -189,10 +217,29 @@ bool transportJson (const Transportstempel& t, std::string& aus)
         aus += ",\"continuous_time_samples\":";
         aus += std::to_string (t.continuous_time_samples);
     }
-    if (t.cycle_start_ppq_gesetzt && t.cycle_end_ppq_gesetzt
-        && std::isfinite (t.cycle_start_ppq) && std::isfinite (t.cycle_end_ppq))
+    // 🔑 NAK-181 R4b (MP2-3) und der Nebenfund aus derselben Runde:
+    //
+    // (a) Die Vorpruefung fragt „traegt der Draht diesen Wert" statt nur
+    //     `isfinite`. Ein endlicher, aber vom Riegel verweigerter PPQ-Wert
+    //     (etwa `1e-308`) erreichte sonst `zahlJson`, und `"start_ppq":null`
+    //     in einem `type: number`-Pflichtfeld macht den GANZEN Snapshot
+    //     ungueltig. Das `cycle`-Objekt ist optional — also entfaellt es ganz,
+    //     genau wie heute schon bei nicht endlichen Werten.
+    //
+    // (b) `active` und `bounds_valid` sind im Schema Pflichtfelder von
+    //     `$defs/cycle` (`:207`). Der Serialisierer schrieb beide NIE; jeder
+    //     Snapshot mit Schleifengrenzen war damit schemaungueltig. Unentdeckt,
+    //     weil kein Bein einen Zyklus durch diesen Bauer faehrt.
+    const bool zyklusTraegt = t.cycle_start_ppq_gesetzt && t.cycle_end_ppq_gesetzt
+                           && wireZahlTauglich (t.cycle_start_ppq)
+                           && wireZahlTauglich (t.cycle_end_ppq);
+    if (zyklusTraegt)
     {
-        aus += ",\"cycle\":{\"start_ppq\":";
+        aus += ",\"cycle\":{\"active\":";
+        aus += boolJson (t.cycle_active);
+        aus += ",\"bounds_valid\":";
+        aus += boolJson (t.cycle_bounds_valid);
+        aus += ",\"start_ppq\":";
         aus += zahlJson (t.cycle_start_ppq);
         aus += ",\"end_ppq\":";
         aus += zahlJson (t.cycle_end_ppq);
@@ -208,8 +255,17 @@ bool transportJson (const Transportstempel& t, std::string& aus)
         aus += ",\"output_presentation_latency\":";
         aus += std::to_string (t.output_presentation_latency);
     }
+    // 🔑 NAK-181 N-18c: `validity.cycle_bounds` und das `cycle`-Objekt fallen
+    // ZUSAMMEN. Das Schema koppelt sie (`:266-271`, `:308-313`): ein
+    // `cycle_bounds: true` ohne `cycle` mit `start_ppq`/`end_ppq` ist
+    // ungueltig — und eine Gueltigkeitsmarke ohne die Werte, die sie bezeugt,
+    // waere genau die Behauptung, die dieses Ticket schliesst.
+    auto gueltigkeit = t.gueltigkeit;
+    if (! zyklusTraegt)
+        gueltigkeit = (decltype (gueltigkeit)) (
+            gueltigkeit & (decltype (gueltigkeit)) ~nakama::analyse::kGCycleBounds);
     aus += ",\"validity\":";
-    aus += validityJson (t.gueltigkeit);
+    aus += validityJson (gueltigkeit);
     aus += '}';
     return true;
 }
@@ -250,7 +306,9 @@ bool stereoBandsatzJson (const char* encoding, const Waehler& waehle,
         // Der NaN-Riegel liegt HIER und nicht erst am Textriegel: ein
         // nichtendlicher Wert wird zu 0 ohne Bit uebersetzt, wie
         // `quantisierung-v1.json` es fuer jede Kennzahl vorschreibt.
-        if (! gueltig || ! std::isfinite (wert))
+        // NAK-181 R4b: „traegt der Draht ihn" statt nur `isfinite` — dieselbe
+        // Richtung, nur um die drei uebrigen Riegelregeln erweitert.
+        if (! gueltig || ! wireZahlTauglich (wert))
         {
             aus += '0';
             continue;
@@ -291,7 +349,7 @@ bool stereoJson (const nakama::evidenz::Stereosicht& s, std::string& aus)
         // Eine Fensterdauer 0 IST die ehrliche Aussage "in diesem Band wurde
         // nichts integriert" - deshalb hat diese Liste kein Gueltigkeitsbitmap
         // (so steht es am Schemafeld).
-        aus += zahlJson ((std::isfinite (d) && d >= 0.0) ? d : 0.0);
+        aus += zahlJson ((wireZahlTauglich (d) && d >= 0.0) ? d : 0.0);
     }
     aus += "],\"freiheitsgrade\":[";
     for (int i = 0; i < N; ++i)
@@ -310,12 +368,17 @@ bool stereoJson (const nakama::evidenz::Stereosicht& s, std::string& aus)
     aus += ",\"seitenanteil_db\":";
     if (! stereoBandsatzJson ("float32", [b] (int i, double& w)
         { w = (double) b[i].seitenanteilDb; return b[i].basisGesetzt; }, aus)) return false;
+    // 🔑 NAK-181 R5 (G4-Befund V06, M-08/M-11): die zwei Korrelationen und
+    // die Persistenz tragen ihre EIGENEN Praesenzbits. Bis hierher reichten
+    // sie `basisGesetzt` durch — ein Bit ueber die Bandenergie, nicht ueber
+    // ihre eigene Messung; bei Vorgabekadenz und bei stillem Kanal reisten sie
+    // damit als gemessene 0,0.
     aus += ",\"korrelation_kurz\":";
     if (! stereoBandsatzJson ("float32", [b] (int i, double& w)
-        { w = (double) b[i].korrelationKurz; return b[i].basisGesetzt; }, aus)) return false;
+        { w = (double) b[i].korrelationKurz; return b[i].korrelationKurzGesetzt; }, aus)) return false;
     aus += ",\"korrelation_mittel\":";
     if (! stereoBandsatzJson ("float32", [b] (int i, double& w)
-        { w = (double) b[i].korrelationMittel; return b[i].basisGesetzt; }, aus)) return false;
+        { w = (double) b[i].korrelationMittel; return b[i].korrelationMittelGesetzt; }, aus)) return false;
     aus += ",\"kohaerenz\":";
     if (! stereoBandsatzJson ("float32", [b] (int i, double& w)
         { w = (double) b[i].kohaerenz; return b[i].kohaerenzGesetzt; }, aus)) return false;
@@ -324,7 +387,7 @@ bool stereoJson (const nakama::evidenz::Stereosicht& s, std::string& aus)
         { w = (double) b[i].phaseRad; return b[i].phaseGesetzt; }, aus)) return false;
     aus += ",\"persistenz\":";
     if (! stereoBandsatzJson ("float32", [b] (int i, double& w)
-        { w = (double) b[i].persistenz; return b[i].basisGesetzt; }, aus)) return false;
+        { w = (double) b[i].persistenz; return b[i].persistenzGesetzt; }, aus)) return false;
 
     aus += ",\"zeitperzentile\":{\"p10\":";
     if (! stereoBandsatzJson ("float32", [b] (int i, double& w)
@@ -341,10 +404,12 @@ bool stereoJson (const nakama::evidenz::Stereosicht& s, std::string& aus)
     // Praesenzbit. Ohne Messung stehen sie auf 0 - was bei beiden die
     // ehrliche Aussage ist: kein Verlust, keine Schieflage.
     aus += ",\"mono_folddown_db\":";
-    aus += zahlJson (s.skalare.folddownGesetzt && std::isfinite (s.skalare.monoFolddownDb)
+    aus += zahlJson (s.skalare.folddownGesetzt
+                       && wireZahlTauglich ((double) s.skalare.monoFolddownDb)
                      ? (double) s.skalare.monoFolddownDb : 0.0);
     aus += ",\"lr_balance_db\":";
-    aus += zahlJson (s.skalare.balanceGesetzt && std::isfinite (s.skalare.lrBalanceDb)
+    aus += zahlJson (s.skalare.balanceGesetzt
+                       && wireZahlTauglich ((double) s.skalare.lrBalanceDb)
                      ? (double) s.skalare.lrBalanceDb : 0.0);
     aus += '}';
     return true;
@@ -387,7 +452,11 @@ bool evidenceSnapshotAlsJson (const nakama::analyse::FeatureFrame& frame,
     // erfinden, die wie „gemessen, aber leer" aussaehe.
     if (! frame.abdeckungGesetzt || ! frame.konvergenzGesetzt)
         return false;
-    if (! std::isfinite (frame.abdeckung) || ! std::isfinite (frame.konvergenz))
+    // NAK-181 R4b: derselbe fail-closed-Ausgang wie bisher, nur um die drei
+    // uebrigen Riegelregeln erweitert. Beide Felder sind Pflicht und haben
+    // keine ehrliche Ersatzzahl — also entsteht kein Snapshot.
+    if (! wireZahlTauglich ((double) frame.abdeckung)
+        || ! wireZahlTauglich ((double) frame.konvergenz))
         return false;
 
     std::string text;
@@ -448,9 +517,9 @@ bool evidenceSnapshotAlsJson (const nakama::analyse::FeatureFrame& frame,
             // Snapshot das Schema und der Empfaenger verwuerfe ALLE Ereignisse
             // dieses Fensters - ein schlechter Wert darf nicht die guten
             // mitnehmen.
-            const bool zahlenOk = std::isfinite (e.staerke)
+            const bool zahlenOk = wireZahlTauglich ((double) e.staerke)
                                && e.staerke >= 0.0f && e.staerke <= 1000.0f
-                               && std::isfinite (e.bandZentrumHz)
+                               && wireZahlTauglich ((double) e.bandZentrumHz)
                                && e.bandZentrumHz > 0.0f && e.bandZentrumHz <= 384000.0f
                                && std::isfinite (e.dauerMs) && e.dauerMs >= 0.0f;
             if (! passt || ! zahlenOk)

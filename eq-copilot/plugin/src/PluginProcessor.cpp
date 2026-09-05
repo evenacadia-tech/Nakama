@@ -2198,6 +2198,18 @@ void EqCopilotProcessor::setStateInformation (const void* daten, int groesse)
         ausstehendeSourcesCommands.clear();
         bestaetigteSourcesCommands.clear();
     }
+    // 🔑 NAK-181 R3 (G4-Befund V03, M-50): der Projektwechsel beendet den
+    // Vergleichszustand — VOR dem Tausch von `zustand`.
+    //
+    // `versuchKopfJson` baut den Kopf aus dem aktuellen `zustand`. Zwischen
+    // Tausch und Leeren gaebe es sonst ein Fenster, in dem ein Handgriff die
+    // alte `experiment_id` unter der NEUEN `project_binding_id` serialisiert —
+    // genau das, was M-50 mit „keine stillschweigende Fortsetzung einer
+    // Messung ueber den Neustart hinweg" ausschliesst.
+    //
+    // Der Zug laeuft in BEIDEN Zweigen (`nurLesen` und Vollrestore): ein
+    // read-only geladener State ist genauso ein anderes Projekt.
+    vergleichszustandLeeren();
 
     if (ergebnis == nakama::state::LadeErgebnis::nurLesen)
     {
@@ -2641,6 +2653,51 @@ juce::uint64 EqCopilotProcessor::versuchAufgenommeneBloecke() const
     return (juce::uint64) vergleichspegel.aufgenommeneBloecke();
 }
 
+void EqCopilotProcessor::vergleichszustandLeeren()
+{
+    // 🔑 NAK-181 R3 (G4-Befund V03, M-50): der Projektwechsel beendet den
+    // Vergleichszustand.
+    //
+    // Die Menge ist genau die von `loesePassagenfenster` daneben, plus der
+    // Versuchszustand — binden und loesen liegen damit in einem Aenderungssatz,
+    // und wer die eine Menge erweitert, erweitert die andere.
+    //
+    // WAS HIER NICHT PASSIERT: es reist kein `experiment_abort`. Der v3-Vertrag
+    // sagt es woertlich („Sitzungsende, Projektwechsel, Reconnect, UI-Neustart
+    // und Brokerneustart brechen NICHT ab - ein offener Versuch ueberdauert sie
+    // und bleibt danach rekonstruierbar"), und M-50 verlangt nicht, dass der
+    // BELEG verschwindet, sondern dass die MESSUNG nicht stillschweigend
+    // weiterlaeuft. Der persistierte Versuch bleibt beim Broker offen unter
+    // seiner alten Bindung.
+    //
+    // Threads: alles laeuft auf dem Nachrichtenthread. Die vom Audiothread
+    // gelesenen Flags bleiben Atomics mit derselben Ordnung wie in
+    // `loesePassagenfenster`; `processBlock` nimmt keine der zwei Sperren.
+    {
+        std::lock_guard<std::mutex> l (versuchMutex);
+        versuchIdAktiv = {};
+        versuchPassageId = {};
+    }
+    blindvergleich.loeschen();
+    {
+        std::lock_guard<std::mutex> l (passagenBindungMutex);
+        gebundenePassageId = {};
+        gebundenerStart = gebundenesEnde = 0;
+        gebundeneEpoche = 0;
+    }
+    passagenfensterGeneration.fetch_add (1);
+    passagenfensterWunsch.store (false);
+    passagenfensterLoeschen.store (true);
+    pegelFensterAktiv.store (false, std::memory_order_release);
+    versuchspegelSpeist.store (false, std::memory_order_release);
+    vergleichspegel.loeschen();
+    versuchNichtEndlich.store (0, std::memory_order_relaxed);
+    {
+        std::lock_guard<std::mutex> l (versuchWireMutex);
+        letzterVersuchP0.clear();
+    }
+}
+
 bool EqCopilotProcessor::loesePassagenfenster (const juce::String& passageId)
 {
     {
@@ -2726,7 +2783,23 @@ std::string EqCopilotProcessor::versuchReferenzJson (const Engineabzug& abzug) c
     s += ",\"upstream_fingerprint\":" + fingerprintJson (fp);
     s += ",\"aktive_quellen\":" + quellen;
     s += ",\"messpunktklassen\":" + klassen;
-    s += ",\"match_gain_db\":" + zahl (vergleichspegel.gainDb());
+    // 🔑 NAK-181 R1 (G4-Befund V01, M-43): der Match-Gain kommt aus der
+    // EINGEFRORENEN Referenz, nicht aus dem lebenden Pegel.
+    //
+    // Der Blindvergleich haelt ihn als Kopie, seit `beginneVersuch` ihn
+    // uebernommen hat; der lebende Pegel wird von `prepareToPlay` (`:485`) und
+    // von jedem neuen Binden (`:2609`) geleert. Bis hierher las diese Zeile
+    // den lebenden — und ein Kandidat nach einem Sampleratenwechsel trug
+    // `match_gain_db: 0`, also „gleich laut" statt „nie gemessen"
+    // (`Vergleichspegel.h:29-31`).
+    //
+    // Ohne eingefrorenen Gain entsteht KEINE Referenz und damit kein Kandidat:
+    // beide Aufrufer pruefen `referenz.empty()`. Das ist der Riegel, den
+    // `beginneVersuch` schon hatte und `erfasseKandidat` nicht.
+    double eingefrorenerGain = 0.0;
+    if (! blindvergleich.gainDbEingefroren (eingefrorenerGain))
+        return {};
+    s += ",\"match_gain_db\":" + zahl (eingefrorenerGain);
     // 🔑 Nacharbeit 3 (Befund C5, M-07/R06): der Nichtendlich-Zaehler REIST.
     //
     // Die Runde 2 machte ihn nur ueber einen Test-Getter sichtbar; im
@@ -2734,8 +2807,15 @@ std::string EqCopilotProcessor::versuchReferenzJson (const Engineabzug& abzug) c
     // auf. Damit war „reist in den Wirezustand" eine Behauptung ueber eine
     // Zeile, die es nicht gab. Das Feld ist optional in der Fassung 2 und
     // traegt 0 als „nachweislich keines", nicht als „nicht gemessen".
+    // 🔑 NAK-181 R1: und derselbe Zaehler, den `beginneVersuch` eingefroren
+    // hat (`:2816`), nicht der laufende. Ein nach dem Versuchsbeginn
+    // gespeistes nichtendliches Sample gehoert zur naechsten Passage; im
+    // Kandidaten dieses Versuchs waere es eine falsche Aussage — und ein nach
+    // `vorbereiten()` genullter Zaehler die Behauptung „nachweislich keines"
+    // (`Vergleichspegel.h:134-135`).
     s += ",\"nicht_endliche_samples\":"
-       + std::to_string ((unsigned long long) vergleichspegel.nichtEndlicheSamples());
+       + std::to_string ((unsigned long long) versuchNichtEndlich.load (
+             std::memory_order_relaxed));
     // M-21: kein Host validiert heute die Presentation-Abbildung. `probable`
     // ist die staerkste Klasse, die dieser Pfad tragen darf.
     s += ",\"alignment\":\"probable\"}";
@@ -2816,7 +2896,26 @@ bool EqCopilotProcessor::beginneVersuch (const juce::String& passageId)
     versuchNichtEndlich.store (vergleichspegel.nichtEndlicheSamples(),
                                std::memory_order_relaxed);
     if (! eingefroren || ! vergleichspegel.gainGesetzt())
+    {
+        // 🔑 NAK-181 R2 (G4-Befund V02): „zu wenig Material" ist KEIN
+        // Endzustand — die Speisung geht wieder an.
+        //
+        // `friereEin()` kennt drei Ausgaenge, und nur der Rueckgabewert
+        // unterscheidet sie nicht: bei nichtendlichen Samples friert der Pegel
+        // EIN (ohne Wert, M-07 „ein gesperrter Zustand ohne Wert ist
+        // ehrlich"), bei zu wenig Material ausdruecklich NICHT
+        // (`Vergleichspegel.h:203-208`, auf Retry ausgelegt). `eingefroren()`
+        // trennt die beiden.
+        //
+        // Bis hierher blieb `versuchspegelSpeist` in beiden Faellen aus. Der
+        // einzige Setzer auf `true` ist `bindePassagenfensterMitEpoche`; bei
+        // GEBUNDENER Passage war der Handgriff damit beim zweiten Druck stumm
+        // tot — derselbe Fehler wie ein totes Element, und der Code benennt
+        // ihn bei `:2152-2159` selbst.
+        if (! vergleichspegel.eingefroren())
+            versuchspegelSpeist.store (true, std::memory_order_release);
         return false;
+    }
     if (! blindvergleich.uebernimmVergleichspegel (vergleichspegel))
         return false;
 
@@ -2986,12 +3085,42 @@ juce::String EqCopilotProcessor::laufenderVersuch() const
 
 bool EqCopilotProcessor::versuchLautheitAbgeglichen() const
 {
+    // 🔑 NAK-181 R1: bei OFFENEM Versuch antwortet die eingefrorene Referenz.
+    // Bis hierher las auch dieser Leser den lebenden Pegel und behauptete nach
+    // einem `prepareToPlay` „kein Lautheitsabgleich", obwohl der Versuch seinen
+    // Gain laengst haelt — dieselbe Falschaussage wie V01, nur auf der
+    // Anzeigeseite. Ohne offenen Versuch bleibt der lebende Pegel die richtige
+    // Antwort: dort lautet die Frage „ist schon genug Material da".
+    double unbenutzt = 0.0;
+    if (blindvergleich.gainDbEingefroren (unbenutzt))
+        return true;
     return vergleichspegel.eingefroren() && vergleichspegel.gainGesetzt();
 }
 
 double EqCopilotProcessor::versuchMatchGainDb() const
 {
+    double eingefroren = 0.0;
+    if (blindvergleich.gainDbEingefroren (eingefroren))
+        return eingefroren;
     return vergleichspegel.gainDb();
+}
+
+void EqCopilotProcessor::vergleichspegelZaehlerstand (juce::uint64& bloecke,
+                                                       juce::uint64& endliche,
+                                                       juce::uint64& nichtEndliche) const
+{
+    // 🔑 NAK-181 R1a (Matrixnacharbeit 1, MP1-8): der Leser fuer den LEBENDEN
+    // Zaehler. `versuchNichtEndlicheSamples()` liest das eingefrorene Atomic —
+    // den Stand vom letzten Binden oder Beginnversuch — und ist damit der
+    // falsche Zeuge fuer die Frage „waechst der lebende Zaehler weiter".
+    //
+    // Drei Zaehler in EINEM Torzug, wie `Vergleichspegel::zaehlerstand` sie
+    // herausgibt: drei Einzelaufrufe koennten drei Staende sehen.
+    std::uint64_t b = 0, e = 0, n = 0;
+    vergleichspegel.zaehlerstand (b, e, n);
+    bloecke = (juce::uint64) b;
+    endliche = (juce::uint64) e;
+    nichtEndliche = (juce::uint64) n;
 }
 
 juce::uint64 EqCopilotProcessor::versuchNichtEndlicheSamples() const

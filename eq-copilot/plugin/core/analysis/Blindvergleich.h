@@ -99,6 +99,27 @@ public:
 
     bool lautheitAbgeglichen() const noexcept { return gainGesetzt; }
 
+    /** Der EINGEFRORENE Match-Gain in dB, oder `false` ohne Abgleich.
+
+        🔑 NAK-181 R1 (G4-Befund V01, M-43): bis hierher hatte diese Klasse
+        keinen Leser fuer `gainDb` — und `versuchReferenzJson` nahm deshalb den
+        LEBENDEN `Vergleichspegel`. Ein `prepareToPlay` oder ein zweites Binden
+        zwischen Versuchsbeginn und Kandidat leert den lebenden Pegel
+        (`Vergleichspegel::vorbereiten` → `leerenIntern`), und im
+        `experiment_candidate` reiste danach `match_gain_db: 0` — die
+        Behauptung „die beiden sind gleich laut", wo nie gemessen wurde.
+
+        Hier liegt der Wert seit `uebernimmVergleichspegel` als KOPIE; ein
+        zweiter Aufruf wird abgewiesen, geloescht wird nur mit dem Versuch.
+        Das ist genau, was M-43 „unveraenderliche Referenz" nennt. */
+    bool gainDbEingefroren (double& aus) const noexcept
+    {
+        if (! gainGesetzt)
+            return false;
+        aus = gainDb;
+        return true;
+    }
+
     /** Was einem Urteil im Weg steht — oder `frei`. */
     Urteilsperre sperre() const noexcept
     {

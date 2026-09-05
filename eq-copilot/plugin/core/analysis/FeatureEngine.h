@@ -468,6 +468,13 @@ struct StereoBandwert
 {
     /** Mid-/Side-Energie und Seitenanteil in dB, plus die zwei Korrelationen.
         Ein Band ohne dieses Bit hat in KEINEM der fuenf Felder einen Wert. */
+    /** Praesenzbit der drei ENERGIEfelder: `midDb`, `sideDb`,
+        `seitenanteilDb`.
+
+        ⚠️ NAK-181 R5: es gilt AUSSCHLIESSLICH diesen dreien. Die zwei
+        Korrelationen und die Persistenz tragen seit diesem Ticket ihre eigenen
+        Bits — sie beantworten andere Fragen und werden unter anderen
+        Bedingungen gesetzt. */
     bool  basisGesetzt { false };
     float midDb { 0.0f }, sideDb { 0.0f }, seitenanteilDb { 0.0f };
     /** Pearson-Korrelation zwischen L und R, bandbegrenzt: der Realteil des
@@ -476,6 +483,18 @@ struct StereoBandwert
         ganze Evidenzfenster — zwei Fenster, weil eine kurzzeitig wandernde
         Korrelation etwas anderes ist als eine dauerhaft niedrige. */
     float korrelationKurz { 0.0f }, korrelationMittel { 0.0f };
+    /** Praesenzbits der zwei Korrelationen (NAK-181 R5, G4-Befund V06).
+
+        🔑 Bis NAK-181 hingen beide Felder auf der Leitung an `basisGesetzt`
+        — einem Bit, das eine ANDERE Frage beantwortet („wurde in diesem Band
+        ueberhaupt Energie integriert"). Bei der Vorgabekadenz 0,25 s schliesst
+        das Kurzfenster nie (5,86 Hops bei 48 kHz, Schwelle 8), und bei einem
+        stillen Kanal ist der Nenner der Mittelkorrelation null: beide reisten
+        als GEMESSENE 0,0. M-08 verlangt an genau dieser Stelle, dass „bei
+        einem stillen Kanal das Praesenzbit wegfaellt, statt 0 oder NaN zu
+        senden", M-11 „null bei zu wenig Frames, nie ein geschaetzter Wert". */
+    bool  korrelationKurzGesetzt { false };
+    bool  korrelationMittelGesetzt { false };
 
     /** Magnitude-Squared Coherence in [0, 1]. Stufe 1 des fail-closed. */
     bool  kohaerenzGesetzt { false };  float kohaerenz { 0.0f };
@@ -487,6 +506,20 @@ struct StereoBandwert
         sondern „in keinem Kurzfenster kohaerent"; ohne `basisGesetzt` hat das
         Feld gar keinen Wert. */
     float persistenz { 0.0f };
+    /** Praesenzbit der Persistenz (NAK-181 R5a).
+
+        🔑 Es haengt an einem BANDWEISEN Nachweis, nicht am globalen
+        `stereoKurzfenster`: dieser Zaehler steigt bei jedem achten Hop, auch
+        wenn das Band in keinem der Fenster einen gueltigen Nenner hatte. Bei
+        einem stillen Kanal waere die Persistenz dann `0 / N` MIT Bit — wieder
+        die gemessene 0. Gezaehlt wird deshalb `stereoKurzfensterBand[b]`,
+        genau dort, wo `nenner > 0` gilt.
+
+        Der NENNER der Persistenz bleibt global: sie ist der „Anteil der
+        abgeschlossenen Kurzfenster, in denen dieses Band kohaerent war", und
+        die Bezugsmenge ist das Evidenzfenster. Der neue Zaehler entscheidet
+        nur ueber das Bit. */
+    bool  persistenzGesetzt { false };
 
     /** P10/P50/P95 des Seitenanteils UEBER DIE ZEIT des Evidenzfensters —
         nicht ueber die Baender. Braucht mindestens vier Werte, dieselbe
@@ -1010,6 +1043,7 @@ public:
         stereoErgebnis.assign ((std::size_t) Gitter::evidenzBaender, StereoBandwert {});
         stereoKorrKurz.assign ((std::size_t) Gitter::evidenzBaender, 0.0f);
         stereoKorrKurzGesetzt.assign ((std::size_t) Gitter::evidenzBaender, 0u);
+        stereoKurzfensterBand.assign ((std::size_t) Gitter::evidenzBaender, 0u);
         stereoPersistenzZaehler.assign ((std::size_t) Gitter::evidenzBaender, 0u);
         fpBandSumme.assign ((std::size_t) Fingerprint::kBaender, 0.0);
         fpBandAnzahl.assign ((std::size_t) Fingerprint::kBaender, 0u);
@@ -2917,6 +2951,10 @@ private:
                     const double nenner = std::sqrt (kz.sll * kz.srr);
                     if (nenner > 0.0)
                     {
+                        // NAK-181 R5a: DIESES Band hatte in DIESEM Kurzfenster
+                        // einen gueltigen Nenner — der Messnachweis, an dem
+                        // `persistenzGesetzt` haengt.
+                        ++stereoKurzfensterBand[(std::size_t) b];
                         const double r = kz.sxyRe / nenner;
                         if (std::isfinite (r))
                         {
@@ -2994,10 +3032,16 @@ private:
                 {
                     const double rMittel = a.sxyRe / nenner;
                     if (std::isfinite (rMittel))
+                    {
                         e.korrelationMittel = (float) std::clamp (rMittel, -1.0, 1.0);
+                        e.korrelationMittelGesetzt = true;   // NAK-181 R5
+                    }
                 }
                 if (stereoKorrKurzGesetzt[(std::size_t) b] != 0u)
+                {
                     e.korrelationKurz = stereoKorrKurz[(std::size_t) b];
+                    e.korrelationKurzGesetzt = true;         // NAK-181 R5
+                }
 
                 // Stufe 1: Kohaerenz nur mit genug Frames UND Energie.
                 if (a.frames >= (std::uint32_t) kWelchMindestFrames
@@ -3022,10 +3066,16 @@ private:
                     }
                 }
 
-                if (stereoKurzfenster > 0)
+                // 🔑 NAK-181 R5a: das Bit haengt am BANDWEISEN Nachweis, der
+                // Nenner am Evidenzfenster. `stereoKurzfenster > 0` allein
+                // waere fuer ein stilles Band ein Bit ohne Messung.
+                if (stereoKurzfensterBand[(std::size_t) b] > 0u && stereoKurzfenster > 0)
+                {
                     e.persistenz = (float) std::clamp (
                         (double) stereoPersistenzZaehler[(std::size_t) b]
                         / (double) stereoKurzfenster, 0.0, 1.0);
+                    e.persistenzGesetzt = true;
+                }
 
                 if ((int) stereoVerlauf.size() > b
                     && stereoVerlauf[(std::size_t) b].gefuellt >= 4)
@@ -3079,6 +3129,7 @@ private:
         for (auto& v : stereoKorrKurz) v = 0.0f;
         for (auto& v : stereoKorrKurzGesetzt) v = 0u;
         for (auto& v : stereoPersistenzZaehler) v = 0u;
+        for (auto& v : stereoKurzfensterBand) v = 0u;   // NAK-181 R5a
         stereoKurzFrames = 0;
         stereoKurzfenster = 0;
         stereoMonoEnergie = stereoStereoEnergie = 0.0;
@@ -4148,6 +4199,9 @@ private:
     std::vector<StereoBandwert>  stereoErgebnis;
     std::vector<float>           stereoKorrKurz;
     std::vector<std::uint8_t>    stereoKorrKurzGesetzt;
+    /// NAK-181 R5a: je Band die Zahl der abgeschlossenen Kurzfenster MIT
+    /// gueltigem Nenner. Nur das Praesenzbit haengt daran, nie der Wert.
+    std::vector<std::uint32_t>   stereoKurzfensterBand;
     std::vector<std::uint32_t>   stereoPersistenzZaehler;
     int           stereoKurzFrames { 0 };
     std::uint32_t stereoKurzfenster { 0 };

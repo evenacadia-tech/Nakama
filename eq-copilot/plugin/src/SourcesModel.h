@@ -91,16 +91,29 @@ public:
         /// Leer heisst „nicht gerechnet", nie „stark".
         std::string vergleichbarkeit;
         /// Eine der fuenf zulaessigen Aussagen aus M-46, oder leer.
+        ///
+        /// 🔑 NAK-181 R6: seit diesem Ticket ist das WAHR. Der Leser haelt die
+        /// geschlossene Menge des Schemas durch; ein fremder Wert macht den
+        /// ganzen Snapshot ungueltig, statt ihn zu uebernehmen.
         std::string urteil;
     };
 
     /// Ein PRE/POST-Paarurteil aus dem Sessionsnapshot (M-13, Befund R32).
     struct Paar
     {
+        /// Leer heisst `pair_id: null` — „kein Paar" (NAK-181 R6a).
+        ///
+        /// Eine LEERE Zeichenkette auf der Leitung ist ausdruecklich keine
+        /// zweite Schreibweise dafuer und wird abgewiesen; die zwei Faelle
+        /// waeren im Modell sonst nicht mehr zu unterscheiden.
         std::string pairId;
         std::string klasse;
         std::string kettenbefund;
         /// Leer heisst „das Paar traegt eine Aussage".
+        ///
+        /// 🔑 NAK-181 R6: seit diesem Ticket ist das WAHR. Ein vorhandenes
+        /// `ausschluss` muss aus der geschlossenen Menge kommen; ein
+        /// Nicht-String faellt nicht mehr still weg (V10).
         std::string ausschluss;
     };
 

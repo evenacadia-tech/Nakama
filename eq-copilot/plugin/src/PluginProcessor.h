@@ -302,6 +302,21 @@ public:
     bool versuchLautheitAbgeglichen() const;
     /** Der eingefrorene Match-Gain in dB. Nur mit `versuchLautheitAbgeglichen`. */
     double versuchMatchGainDb() const;
+
+    /** Die drei Zaehler des LEBENDEN Vergleichspegels in einem Zug.
+
+        🔑 NAK-181 R1a: `versuchNichtEndlicheSamples()` daneben liest das
+        eingefrorene Atomic — den Stand vom letzten Binden oder Beginnversuch.
+        Fuer die Frage „waechst der lebende Zaehler weiter, ohne die Leitung zu
+        erreichen" ist er der falsche Zeuge. */
+    void vergleichspegelZaehlerstand (juce::uint64& bloecke, juce::uint64& endliche,
+                                      juce::uint64& nichtEndliche) const;
+
+    /** Beendet Versuch, Passagenbindung und Vergleichspegel (NAK-181 R3).
+
+        Wird von `setStateInformation` in BEIDEN Zweigen gerufen, vor dem
+        Tausch des Zustands. Laeuft auf dem Nachrichtenthread. */
+    void vergleichszustandLeeren();
     /** 🔑 DER Produktleser von `Vergleichspegel::nichtEndlicheSamples()`
         (Befund R06/M-07). `> 0` heisst: im Vergleichsmaterial standen
         nichtendliche Samples, der Pegel ist verriegelt, und die Zahl reist im

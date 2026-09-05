@@ -7,6 +7,7 @@
 #include "ControlClient.h"
 #include "NakamaKanon.h"
 #include "WireEnvelope.h"
+#include "WireZahl.h"
 
 #include <algorithm>
 #include <chrono>
@@ -358,19 +359,21 @@ std::string stateReportJson (const Adresse& adresse, const ControlStatus& status
          + ",\"recording\":" + boolJson (status.recording) + "}}";
 }
 
-/// Zahl aus einem Audiofeld. Sie wird NUR gerufen, nachdem `audioGueltig`
-/// zugestimmt hat — der Riegel steht trotzdem hier: eine Wandlung nach
-/// `long long` ist fuer NaN, ±Inf und alles ausserhalb des darstellbaren
-/// Bereichs undefiniertes Verhalten, und undefiniertes Verhalten passiert VOR
-/// jeder Pruefung, die danach kaeme (T2-Befund 9 vom 2026-08-29).
+/// Zahl aus einem Audiofeld.
+///
+/// 🔑 NAK-181 R4 (G4-Befund V05): derselbe locale-freie Bauer wie in
+/// `NakamaEvidenz.cpp`, mit den Grenzen des v3-Textriegels. Bis hierher stand
+/// hier `std::to_string(double)` — unter MSVC LC_NUMERIC-abhaengig.
+///
+/// `"null"` bleibt unerreichbar: `audioGueltig` laesst keinen Handschlag zu,
+/// dessen Samplerate der Draht nicht traegt (T2-Befund 9 vom 2026-08-29,
+/// NAK-181 R4d).
 std::string zahl (double w)
 {
-    if (! std::isfinite (w))
+    std::string text;
+    if (! nakama::wire::wireZahl (w, text))
         return "null";
-    if (w >= -9.007199254740992e15 && w <= 9.007199254740992e15
-        && w == static_cast<double> (static_cast<long long> (w)))
-        return std::to_string (static_cast<long long> (w));
-    return std::to_string (w);
+    return text;
 }
 } // namespace
 
@@ -467,7 +470,15 @@ bool audioGueltig (double samplerate, int blockSize, int channels) noexcept
     // Vertrags) und im Schema `audio_lage`. Ein Client, der wissentlich
     // Nicht-Zahlen sendet, verschleiert nur die Ursache — er verbindet gar
     // nicht erst (CLAUDE.md, NaN-Ehrlichkeit).
+    // 🔑 NAK-181 R4d (MP3-1): die vierte Bedingung an der Samplerate. `> 0`
+    // ist keine Schranke gegen `1e-308` — der Wert ist endlich, positiv und
+    // unter 768000, und der v3-Textriegel lehnt ihn trotzdem ab. Ohne diese
+    // Zeile reiste `"samplerate":null` in einem Pflicht-`number` des Hellos,
+    // und der Gegenleser verwuerfe den Handschlag. Ein Client, der wissentlich
+    // Unzustellbares sendet, verbindet lieber gar nicht erst.
+    std::string verworfen;
     return std::isfinite (samplerate) && samplerate > 0.0 && samplerate <= 768000.0
+        && nakama::wire::wireZahl (samplerate, verworfen)
         && blockSize >= 1 && blockSize <= 65536
         && channels >= 0 && channels <= 64;
 }

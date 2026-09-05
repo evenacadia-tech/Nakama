@@ -1,6 +1,8 @@
 #include "NakamaKernRiegel.h"   // S8/SONDE-007a: K1 — keine JucePlugin_*-Konstante im Kern
 #include "NakamaKanon.h"
 
+#include "WireZahl.h"
+
 #include <juce_cryptography/juce_cryptography.h>
 
 #include <algorithm>
@@ -29,68 +31,20 @@ bool Wert::objektSetze (const juce::String& schluessel, Wert wert)
 
 bool zahlAlsEs6 (double x, juce::String& aus)
 {
-    if (! std::isfinite (x))
-        return false;
-
-    // Schritt 2 der Norm: +0 und -0 sind beide "0".
-    if (x == 0.0)
-    {
-        aus = "0";
-        return true;
-    }
-
-    const bool negativ = x < 0.0;
-    const double betrag = std::fabs (x);
-
-    // Schritt 5: k, s, n - die KUERZESTE Ziffernfolge s mit k Ziffern, so dass
-    // s * 10^(n-k) exakt x ist. std::to_chars ohne Genauigkeit liefert genau
-    // diese kuerzeste round-trip-exakte Form (Ryu), hier als d.ddde±XX.
-    char puffer[64];
-    const auto ergebnis = std::to_chars (puffer, puffer + sizeof (puffer), betrag,
-                                         std::chars_format::scientific);
-    if (ergebnis.ec != std::errc())
-        return false;
-
-    const std::string wissenschaftlich (puffer, ergebnis.ptr);
-    const auto ePos = wissenschaftlich.find ('e');
-    if (ePos == std::string::npos)
-        return false;
-
-    std::string ziffern;
-    for (size_t i = 0; i < ePos; ++i)
-        if (wissenschaftlich[i] != '.')
-            ziffern += wissenschaftlich[i];
-    // d.ddd-Form: Nullen am Ende der Mantisse tragen keine Information.
-    while (ziffern.size() > 1 && ziffern.back() == '0')
-        ziffern.pop_back();
-
-    const int exponent10 = std::atoi (wissenschaftlich.c_str() + ePos + 1);
-    const int k = (int) ziffern.size();
-    const int n = exponent10 + 1;   // d.ddd * 10^e  ==  s * 10^(n-k)  mit  n = e + 1
-
+    // 🔑 NAK-181 R4: der Algorithmus steht seit diesem Ticket EINMAL, in
+    // `core/ipc/WireZahl.h`, und wird von drei Stellen gerufen — hier fuer den
+    // `state_hash` (ungedeckelt, RFC 8785 §3.2.2.3), und von
+    // `NakamaEvidenz.cpp`/`ControlClient.cpp` fuer den Draht (gedeckelt auf
+    // die Grenzen des v3-Textriegels).
+    //
+    // ⚠️ HIER wird `es6Zahl` gerufen und NICHT `wireZahl`: der State-Hash ist
+    // kein Wire-Payload und laeuft durch keinen Textriegel. Ein Deckel wuerde
+    // hier bestehende Hashes aendern; die Cross-Language-Fixtures unter
+    // `eq-copilot/fixtures/state/` halten genau das fest.
     std::string text;
-    if (n >= -5 && n <= 21)
-    {
-        // Schritt 6: Positionsschreibweise.
-        if (n >= k)
-            text = ziffern + std::string ((size_t) (n - k), '0');
-        else if (n > 0)
-            text = ziffern.substr (0, (size_t) n) + "." + ziffern.substr ((size_t) n);
-        else
-            text = "0." + std::string ((size_t) (-n), '0') + ziffern;
-    }
-    else
-    {
-        // Schritte 7-10: Exponentschreibweise mit Vorzeichen, abs (n - 1).
-        const char vorzeichen = (n < 0) ? '-' : '+';
-        const int e = std::abs (n - 1);
-        if (k == 1)
-            text = ziffern + "e" + vorzeichen + std::to_string (e);
-        else
-            text = ziffern.substr (0, 1) + "." + ziffern.substr (1) + "e" + vorzeichen + std::to_string (e);
-    }
-
-    aus = juce::String ((negativ ? "-" : "") + text);
+    if (! nakama::wire::es6Zahl (x, text))
+        return false;
+    aus = juce::String (text);
     return true;
 }
 

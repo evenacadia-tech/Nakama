@@ -336,10 +336,27 @@ void SondeProcessor::workerLauf()
                 analyseQueue.freigeben();
                 if (quarantaene.kontinuitaetsbrueche() != bruecheVorher)
                 {
-                    // Queue-Drop/Deskriptorsprung: kein alter K-/Loudness-
-                    // oder Featurezustand darf die Luecke ueberbruecken.
+                    // 🔑 NAK-181 R7 (G4-Befund C3, M-53): kein alter
+                    // K-/Loudness-Zustand darf die Luecke ueberbruecken — die
+                    // FeatureEngine erkennt die Grenze am naechsten
+                    // freigegebenen Deskriptor aber SELBST.
+                    //
+                    // Bis hierher stand hier zusaetzlich
+                    // `merkmale.zuruecksetzen()`. Das setzt `habeVorigen` auf
+                    // false und Epoche wie Segment auf 0; der naechste Block
+                    // liefert damit `Grenzgrund::keine`, `grenzeZiehen` laeuft
+                    // nie, und der Stempel traegt 0/0 — der Bruch war auf dem
+                    // Draht UNSICHTBAR, und stand die Engine vorher ueber 0,
+                    // meldete der Broker `Epochwechsel` auch fuer einen Drop
+                    // (M-53 verlangt dort `sequenzluecke`).
+                    //
+                    // Gen macht es an derselben Stelle seit jeher richtig
+                    // (`PluginProcessor.cpp:904-912`). `grenzeZiehen` leert
+                    // dieselben Fenster wie der Reset UND zieht Epoche
+                    // beziehungsweise Segment hoch; der Ereignisring bleibt
+                    // dabei bewusst stehen, weil jedes Ereignis seine Epoche
+                    // mittraegt (`FeatureEngine.h:3619-3622`).
                     analyseEngine.zuruecksetzen();
-                    merkmale.zuruecksetzen();
                     producerStandLeeren();
                 }
                 if (! frei || ! rateGueltig)

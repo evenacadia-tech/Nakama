@@ -20,6 +20,48 @@ const juce::DynamicObject* objekt (const juce::var& v)
     return v.getDynamicObject();
 }
 
+/*  Ein Wert aus einer GESCHLOSSENEN Menge des Schemas (NAK-181 R6).
+
+    🔑 Der Leser hielt fuer `experimente` und `paare` jeden String. Damit
+    stand „objektiv besser" genauso im Modell wie eine der fuenf zulaessigen
+    Aussagen aus M-46 — und `SourcesModel.h` behauptete das Gegenteil. Die
+    fuenf anderen geschlossenen Mengen dieses Lesers (`measurement_position`,
+    `aussageklasse`, `betrieb`, `p2_reject.grund`, `plugin_kind`) werden
+    laengst erzwungen; diese hier fehlten.
+
+    `false` heisst: das Feld ist vorhanden und traegt etwas, das der Vertrag
+    nicht kennt. Der Aufrufer macht daraus `SnapshotErgebnis::ungueltig` —
+    denselben Ausgang wie jedes andere Typvergehen in derselben Funktion, nie
+    ein stilles Verwerfen des Feldes. */
+bool ausMenge (const juce::var& wert, std::initializer_list<const char*> menge,
+               std::string& aus)
+{
+    if (! wert.isString())
+        return false;
+    const auto text = wert.toString().toStdString();
+    for (const auto* m : menge)
+        if (text == m)
+        {
+            aus = text;
+            return true;
+        }
+    return false;
+}
+
+/// Dasselbe fuer ein OPTIONALES Feld: fehlt es, bleibt `aus` leer und die
+/// Antwort ist `true`. Ein vorhandenes Feld muss die Menge halten — auch
+/// wenn es kein String ist (V10: der einzige fail-open-Zweig der Funktion).
+bool ausMengeOptional (const juce::DynamicObject& o, const char* name,
+                       std::initializer_list<const char*> menge, std::string& aus)
+{
+    if (! o.hasProperty (name))
+        return true;
+    const auto wert = o.getProperty (name);
+    if (wert.isVoid())
+        return true;              // `null` ist im Schema kein gesetzter Wert.
+    return ausMenge (wert, menge, aus);
+}
+
 bool exakteFelder (const juce::DynamicObject& o,
                    std::initializer_list<const char*> pflicht,
                    std::initializer_list<const char*> optional = {})
@@ -550,25 +592,39 @@ SourcesModel::SnapshotErgebnis SourcesModel::uebernehmeSessionSnapshot (
             const auto id = e->getProperty ("experiment_id");
             const auto ereignis = e->getProperty ("ereignis");
             const auto offen = e->getProperty ("offen");
-            if (! id.isString() || ! hex32 (id.toString())
-                || ! ereignis.isString() || ! offen.isBool())
+            if (! id.isString() || ! hex32 (id.toString()) || ! offen.isBool())
             {
-                fehler = "session experiment id, transition or open flag is invalid";
+                fehler = "session experiment id or open flag is invalid";
                 return SnapshotErgebnis::ungueltig;
             }
             Versuch v;
             v.experimentId = id.toString().toStdString();
-            v.ereignis = ereignis.toString().toStdString();
             v.offen = static_cast<bool> (offen);
-            auto wort = [&e] (const char* name)
+            // 🔑 NAK-181 R6 (G4 V09, M-46/M-22): die fuenf geschlossenen
+            // Mengen des Schemas, wortgleich mit `$defs/session_experiment`.
+            // Jede Verletzung ist `ungueltig` wie jedes andere Typvergehen —
+            // ein stilles Verwerfen liesse „objektiv besser" im Modell stehen.
+            if (! ausMenge (ereignis, { "begonnen", "kandidat", "ergebnis",
+                                        "abgebrochen", "verdraengt" }, v.ereignis)
+                || ! ausMengeOptional (*e, "hoerurteil",
+                                       { "baseline", "kandidat", "kein_unterschied",
+                                         "enthaltung" }, v.hoerurteil)
+                || ! ausMengeOptional (*e, "blindreihenfolge",
+                                       { "baseline_zuerst", "kandidat_zuerst" },
+                                       v.blindreihenfolge)
+                || ! ausMengeOptional (*e, "vergleichbarkeit",
+                                       { "stark", "schwach", "unvergleichbar" },
+                                       v.vergleichbarkeit)
+                || ! ausMengeOptional (*e, "urteil",
+                                       { "ziel_verbessert_guardrails_stabil",
+                                         "messbar_anders_urteil_offen",
+                                         "keine_belastbare_aenderung",
+                                         "ziel_verbessert_geschuetztes_schlechter",
+                                         "vergleich_nicht_gueltig" }, v.urteil))
             {
-                const auto w = e->getProperty (name);
-                return w.isString() ? w.toString().toStdString() : std::string {};
-            };
-            v.hoerurteil = wort ("hoerurteil");
-            v.blindreihenfolge = wort ("blindreihenfolge");
-            v.vergleichbarkeit = wort ("vergleichbarkeit");
-            v.urteil = wort ("urteil");
+                fehler = "session experiment carries a value outside its closed set";
+                return SnapshotErgebnis::ungueltig;
+            }
             geleseneVersuche.push_back (std::move (v));
         }
     }
@@ -594,19 +650,48 @@ SourcesModel::SnapshotErgebnis SourcesModel::uebernehmeSessionSnapshot (
             const auto id = pz->getProperty ("pair_id");
             const auto klasse = pz->getProperty ("klasse");
             const auto kette = pz->getProperty ("kettenbefund");
-            if (! id.isString() || id.toString().isEmpty()
-                || ! klasse.isString() || ! kette.isString())
+            Paar pp;
+            // 🔑 NAK-181 R6a (G4 V09, MP1-5): `pair_id` ist im Schema
+            // `["string","null"]` mit 1 bis 64 Codepoints. `null` heisst
+            // „kein Paar" — dieselbe Lesart wie `liesDescriptor` mit
+            // `isVoid()` (`:217-224`); eine LEERE Zeichenkette ist
+            // ausdruecklich keine zweite Schreibweise dafuer.
+            //
+            // Gezaehlt wird mit `juce::String::length()`: Codepoints, wie das
+            // Schema sagt, nicht UTF-8-Bytes.
+            if (! id.isVoid())
             {
-                fehler = "session pair id, class or chain finding is invalid";
+                if (! id.isString() || id.toString().isEmpty()
+                    || id.toString().length() > 64)
+                {
+                    fehler = "session pair id is not null and not 1..64 codepoints";
+                    return SnapshotErgebnis::ungueltig;
+                }
+                pp.pairId = id.toString().toStdString();
+            }
+            // 🔑 NAK-181 R6 (V09/V10, M-22): `klasse` und `kettenbefund` sind
+            // Pflicht und geschlossen; `ausschluss` ist optional und
+            // geschlossen. Der bisherige `if (aus.isString())`-Zweig war der
+            // EINZIGE fail-open-Pfad dieser Funktion: ein vorhandenes
+            // Nicht-String-`ausschluss` fiel still weg, und aus „das Paar
+            // traegt keine Aussage" wurde „es traegt eine".
+            if (! ausMenge (klasse, { "feature_aligned", "audio_aligned",
+                                      "probable", "unclear" }, pp.klasse)
+                || ! ausMenge (kette, { "stationaer", "zeitvariabel_markiert",
+                                        "pegelabhaengig_markiert",
+                                        "latenz_wechselt_markiert",
+                                        "nicht_beurteilbar" }, pp.kettenbefund)
+                || ! ausMengeOptional (*pz, "ausschluss",
+                                       { "haelfte_fehlt", "paarkonflikt",
+                                         "haelfte_getrennt", "haelfte_stale",
+                                         "nicht_messbereit", "keine_projektzeit",
+                                         "fenster_leer", "samplerate_verschieden",
+                                         "keine_ueberlappung", "sprung_im_fenster" },
+                                       pp.ausschluss))
+            {
+                fehler = "session pair carries a value outside its closed set";
                 return SnapshotErgebnis::ungueltig;
             }
-            Paar pp;
-            pp.pairId = id.toString().toStdString();
-            pp.klasse = klasse.toString().toStdString();
-            pp.kettenbefund = kette.toString().toStdString();
-            const auto aus = pz->getProperty ("ausschluss");
-            if (aus.isString())
-                pp.ausschluss = aus.toString().toStdString();
             gelesenePaare.push_back (std::move (pp));
         }
     }

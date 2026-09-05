@@ -1,0 +1,36 @@
+Matrixprüfung 1 NAK-180 / G4-Nacharbeit 1 — gebundener Prüfauftrag des Dirigenten (2026-09-05)
+
+Du bist der frische, lesende Prüfer. Du liest und fährst nur lesende Kommandos (rg, git diff, git show, cat); du startest keine Prozesse des Produkts und keinen Python-Interpreter; du schreibst nichts. Prüfgegenstand ist ausschließlich die Verhaltensmatrix der Etappe 1 dieses Tickets:
+`git diff e388e764e05b951ddd6b26d3c87c42c1942a2397...b05dc32e5d302d9e666945d45787cbe5be670a90 -- docs/beweise/NAK-180.md`
+mit BASIS = e388e764e05b951ddd6b26d3c87c42c1942a2397 und ZIEL = b05dc32e5d302d9e666945d45787cbe5be670a90 (HEAD; er muss vor und nach deinem Lauf identisch sein).
+In dieser Etappe gibt es keinen Produktcode: das Ticket berührt Lebenszyklen, Nebenläufigkeit und die Wire-Semantik eines bestehenden Feldes, deshalb entstand zuerst die Matrix (docs/beweise/NAK-180.md §2 mit den Entscheiden E1 bis E5 in §2.0, den Zuständen in §2.1, der Matrix in §2.2, Fristen §2.3, Nicht-Zusagen §2.4), die Ist-Messung (§3) und der Bauplan (§4). Prüfstufe T3-Nacharbeit zum Gate G4.
+
+GATE-BEZUG, wörtlich: P4-Exit-Gate (docs/FL-Nakama-Sonden-Design-Entwurf.md:4287-4289) Satz 3: „Hörmarker- und Experimentende schließen alle Taintintervalle; der reguläre Pfad nullt danach wieder." Entwurf §34.2 (Taint, Resync als ausdrückliche, bestätigte Lebenszyklusoperation — lies den Abschnitt). Entwurf §48.4 (:3481-3515): „Das schützt vor fremden Windows-Usern, Verwechslung und zufälligen lokalen Clients." Invarianten aus CLAUDE.md: Audio-Thread ohne Sperren, Allokationen, Datei-, Pipe-, Netzzugriff und Logging; Passthrough im Nulltest bitidentisch; NaN-Ehrlichkeit (nicht-endliche Werte werden verriegelt und gezählt); Schemas sind Verträge (v3 eingefroren; keine neuen Felder in diesem Ticket).
+
+DEFEKTE, die die Matrix schließen muss (an der Quelle bestätigt, docs/beweise/G4.md §1/§7/§11 Nr. 1): D-01/C1 (bestätigter Resync ohne Produktauslöser: ControlClient.cpp:404-411, befehl.rs:550-575, link.rs:444-453, intervention.rs:370-399), C2 (Neuaufbau bei hörbarem Marker; Broker-Neustart ohne Taint; docs/beweise/roh/G4-quellencheck-codex-9f30008.md Abschnitt C2), NaN-Latch (HoerMarkierung.h:548-560, :405, :468, :518-522), Tail-Samplerate (PluginProcessor.cpp:611), Pipe-Wait (IpcVerbindung.cpp:27, BrokerLifecycle.cpp:660-661/784, PluginProcessor.cpp:167).
+REGELN R1 bis R6 des Dirigenten, wörtlich: docs/beweise/roh/NAK-180-auftrag.txt (Abschnitt REGELN). Die Matrix legt für R2 einen Weg fest (§2.0 E3: erster Heartbeat `true`, Replay des offenen Begins, Abschluss mit `false`); sie darf von den Regeln nur mit benannter Begründung in §4.4 abweichen.
+Referenzmatrix: docs/beweise/SONDE-013.md §3.4 (M-33 bis M-39), §3.7 (M-58 bis M-63), §3.9 (M-74, M-76); Zeilen 460-653. Verträge: eq-copilot/schemas/v3/eq-ipc-v3.schema.json (heartbeat, audible_intervention_begin/end), eq-copilot/schemas/v3/README.md.
+
+BEFUNDKLASSEN — du ordnest jeden Befund ein, der Dirigent prüft die Einordnung an der Quelle:
+- DEFEKT: eine Matrixzeile oder ein Entscheid E1–E5 widerspricht einem Satz des Gate-Bezugs oben, dem Entwurf (§34.2, §48.4), einer Zeile der SONDE-013-Matrix (M-33 bis M-39, M-58 bis M-63, M-74, M-76), einem bestehenden Vertrag, dem gemessenen Code an ZIEL oder einer Invariante aus CLAUDE.md; ODER eine Regel R1–R6 ist von keiner Zeile mit messendem Test gedeckt; ODER die Matrix lässt ein Fenster, in dem fremde Evidenz als stark angenommen wird, während lokal ein Marker läuft; ODER ein neuer Zustand wird aus dem Audiothread unter Lock, mit Allokation oder ohne definierte Speicherordnung berührt. Je Defekt: Zeilen-ID (N-xx oder Exx), Quelle Datei:Zeile, welcher Satz bricht.
+- LÜCKE: Gate, Matrix, Regeln und Entwurf sagen zu dem Fall nichts — benennen, keine Nacharbeit.
+- HÄRTUNG: wünschenswert, von keiner Zusage verlangt — benennen, keine Nacharbeit.
+
+AUSDRÜCKLICH AUSGESCHLOSSEN (kein Befund, kein NEEDS_WORK-Grund):
+1. Prosa, Zeilenverweise, Trefferzahlen, Abschnittsstände in docs/**; der Manifestkopf; docs/beweise/G4.md; docs/offene-punkte.md. Nur §2, §3 und §4 von docs/beweise/NAK-180.md sind Prüfgegenstand.
+2. Im Register datierte Härtungen und Lücken NAK-155 bis NAK-179 und NAK-183 bis NAK-190 (davon NAK-187/NAK-188 dieselbe Fläche). Sabotage-Szenarien gegen Prüfwerkzeuge = Härtung.
+3. tools/dirigent/pruefliste.md ist eine Arbeitsliste des Workers, keine Anforderungsquelle. Ticketfremdes (NAK-181 Vergleichsevidenz, NAK-182 Korpus, die Fristlogik von `IpcVerbindung::oeffnen` :75-89, G6/G7-Nebenläufigkeit im ControlClient NAK-184/185): nein. Kosmetik, Stil: nein.
+
+WAS DU TUST:
+1. Lies das Manifest §2–§4 vollständig, dann die Regeln, dann die zitierten Quellen und die Referenzmatrix.
+2. Prüfe je Regel R1–R6: Welche Zeile(n) der Matrix decken sie, welcher Test misst jede Zeile (bestehend mit Datei::Fall oder NEU mit Bein), und gibt es einen Rotbeweis?
+3. Prüfe den gewählten R2-Weg (E3) auf: (a) Fenster zwischen `true`-Heartbeat, Replay und `false` — kann Sondenevidenz dazwischen als stark durchgehen (Broker: intervention.rs `evidence_dispatch_locked`, befehl.rs Heartbeat-Zweig, link.rs `control_ende`, `link_ohne_ereignissequenz`)? (b) Bricht der Replay (dieselbe `intervention_id`, nächste Sequenznummer) eine Brokerregel (Duplikat, Sequenzbasis 0 nach Resync, M-61 „ein `end` ohne bekanntes Begin")? (c) Braucht der Weg Brokeränderungen, und nennt die Matrix sie mit Test in Rust? (d) Same-Broker- und Neu-Broker-Fall beide gedeckt? (e) Bindung des Berichts an den Link (v3ControlLink(false) löscht) — ist N-23 ausreichend?
+4. Prüfe E1 (Neutralität = Ring leer, kein offenes gesendetes Begin, nicht hörbar) gegen HoerMarkierung.h (hoerbarAtomic, vorbereiten, setzeSamplerate) und PluginProcessor.cpp (interventionenSenden, v3ControlLink, prepareToPlay): stimmen die Zeilenangaben, ist der neue Mutex wirklich außerhalb von processBlock, und gibt es einen zweiten Schreiber des Sendezustands, den die Matrix nicht nennt?
+5. Prüfe R4/R5/R6-Zeilen gegen HoerMarkierung.h:401-475/548-560, PluginProcessor.cpp:594-615 und IpcVerbindung.cpp:19-31, BrokerLifecycle.cpp:640-690/775-790: messen die genannten Tests die Zusage, und bleibt der Hostpuffer unberührt (Nulltest)?
+6. Prüfe §4 (Bauplan): enthält er eine Etappe, die ohne einen offenen Entscheid nicht ehrlich fortfahren kann; sind die Abweichungen in §4.4 zulässig (keine Regel gebrochen)?
+
+URTEIL — genau eine der drei Formen, als erste Zeile:
+URTEIL: PASS — kein DEFEKT (Lücken und Härtungen dürfen benannt sein).
+URTEIL: NEEDS_WORK — mindestens ein DEFEKT; je Defekt: Zeilen-ID oder Manifestzeile, Quelle Datei:Zeile, welcher Satz von Gate, Regel, Entwurf, Vertrag oder Invariante bricht.
+URTEIL: BLOCKED — du konntest den Prüfbereich nicht lesen.
+Danach: geprüft / nicht geprüft, je ein Absatz.

@@ -1,0 +1,18 @@
+NAK-180 — Etappe 2 (Bau) nach Konvergenzentscheid. Zusatzauftrag des Dirigenten (2026-09-05).
+
+Du bist der Bauer dieses Tickets (Session-Fortsetzung). Basis = `git rev-parse HEAD` beim Start (der Dirigent hat §5.4 committet). Es gilt der Abschnitt BAU aus docs/beweise/roh/NAK-180-auftrag.txt vollständig (Ticketgrenze D-01, C2, NaN-Latch, Tail-Samplerate, Pipe-Wait; Regeln R1 bis R6; Beine; Kanon abgekoppelt; Git-Regeln; Selbstaudit; Endzeile „ETAPPE 2 ABGESCHLOSSEN <end-sha>"), dazu die Matrix docs/beweise/NAK-180.md §2 bis §4 mit E1 bis E10 und N-01 bis N-34 als Referenz — und die zwei Regeln aus dem Konvergenzentscheid §5.4, die du ZUERST in die Matrix einarbeitest und dann baust:
+
+R12 — Die Ordnung E7.2 wird dort entschieden, wo die Generation nicht wechseln kann (Wortlaut §5.4, Zeile MP4-1). Schritt 2 und Schritt 3 der Aufbaufolge sind ein Zug unter `sendeMutex`; jeder Vergleich mit `wireGeneration`, auf den eine Wirkung auf die Queue folgt, läuft unter derselben Sperre; die Ordnung wird zusätzlich bei der Zustellung geprüft (ein `end` in der Queue beim Aufbau von G+1, dessen Begin auf einer älteren Generation zugestellt wurde, reist nie ohne unmittelbar vorangestelltes Replay-Begin). Zwei Tests (a) und (b) mit Rotbeweis, wie in §5.4 benannt.
+R13 — Aufräumen und Verbrauch nur per CAS auf den beobachteten Wert (Wortlaut §5.4, Zeile MP4-2). Kein blindes `store(0)`; `v3ControlLink(false)` löscht nur Zustände seiner sterbenden Generation per CAS. Test und Rotbeweis wie in §5.4.
+N-34 Fall 2 — Wortlaut aus §5.4, Zeile MP4-3 (stop() wartet im Join, der positive Callback wird dann freigegeben, stop() kehrt vor kStopFristMs regulär zurück; Detach-Pfad bleibt NAK-184).
+
+REIHENFOLGE:
+1. Matrix nachziehen (nur docs/beweise/NAK-180.md, eigener Commit „NAK-180 Etappe 2 Vorspann: R12/R13 in der Matrix (E11)"): E11 in §2.0 mit gewähltem Weg für die Zustellprüfung (Aufbaufilter fügt Replay-Begin ein ODER gibt das `end` an den Worker zurück — eins wählen, begründen); E7.2, §2.1 (Zustandstabelle: Aufräumen/Verbrauch als CAS; Schritt 2+3 als ein Zug unter sendeMutex), N-27, N-29, N-34 nachziehen; neue Zeilen N-35 (R12 a), N-36 (R12 b), N-37 (R13); Bauplan §4.1/§4.3/§4.4/§4.6.
+2. Bau nach §4 (Etappen A bis H bzw. wie im Bauplan), in allen betroffenen Sprachen (C++ Plugin, Rust Broker soweit die Matrix es verlangt, Fixtures + Erzeuger Python). Landmine: MSVC-Stack 1 MiB — Engines/Prozessoren in Tests auf den Heap.
+3. Beine aus dem BAU-Abschnitt fahren; Rohausgaben nach docs/beweise/roh/NAK-180-<sha>.txt; Rotbeweise nach docs/beweise/roh/NAK-180-rot-<kennung>.txt; je Matrixzeile im Manifest der messende Test und sein Ergebnis.
+4. Voller Kanon abgekoppelt (Befehl im BAU-Abschnitt), warten bis EXIT=; kein Stand mit NOT RUN.
+5. Manifest: Bauabschnitte (§6 ff.), Rotbeweise, Abweichungen, Nebenbefunde (nicht ins Register); tools/dirigent/pruefliste.md abgehakt mit Messort je Zeile. Kopfzeile Phase: „Etappe 2 gebaut, Kanon <GRÜN n/n> auf <sha>, Erstprüfung offen".
+6. Commits mit explizitem Pathspec in logischen Schritten (Produkt, Tests, Fixtures, Erzeuger, docs/beweise/NAK-180.md, docs/beweise/roh/NAK-180-*), `git pull --rebase` bei sauberem Worktree, Push. Kein Anfassen von docs/beweise/G4.md, docs/offene-punkte.md, docs/PLAN-STAND.md, docs/plan/.
+7. Turn mit der letzten Zeile „ETAPPE 2 ABGESCHLOSSEN <end-sha>" beenden. Keine Nachfrage an den User.
+
+SELBSTAUDIT vor jedem Commit wie im Ticketauftrag; zusätzlich die Frage der Runden 2 bis 4: Gibt es irgendwo einen Vergleich mit `wireGeneration`, dem eine Wirkung folgt, ohne dass beides unter derselben Sperre oder als CAS geschieht? Jede solche Stelle ist ein Defekt vor dem Commit.

@@ -4078,3 +4078,165 @@ fn passagenbelege_kommen_aus_den_vertretenen_quellen() {
          eine Effektstabilitaet: {achsen:?}"
     );
 }
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-180 · die Naht zwischen den Sprachen (R1, R3a, R9, E4)
+// ═════════════════════════════════════════════════════════════════════════
+
+/// Die Byteinstanz, gegen die AUCH der C++-Serialisierer misst.
+///
+/// Sie ist von Hand geschrieben und damit die Ausgabe keiner der beiden
+/// Implementierungen (dieselbe Bauform wie `handschlag-v1.json`): stimmt der
+/// C++-Writer mit ihr ueberein und nimmt der Rust-Leser sie an, stimmen beide
+/// transitiv miteinander ueberein. Ein Test auf nur EINER Seite kann an einem
+/// Vertragsbruch zwischen zwei Sprachen nicht fallen — genau daran fiel C1.
+fn heartbeat_wire_instanz() -> Value {
+    let pfad = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .unwrap()
+        .join("eq-copilot/fixtures/v3/heartbeat-wire-v1.json");
+    serde_json::from_str(&std::fs::read_to_string(&pfad).expect("Byteinstanz fehlt"))
+        .expect("Byteinstanz ist kein JSON")
+}
+
+/// Hello mit GENAU der Adresse aus der Byteinstanz - sonst weist
+/// `p0_json_mit_minor` den Heartbeat als fremde Adresse ab.
+fn hello_aus_wire_instanz(wurzel: &Value, art: &str) -> HelloControl {
+    let a = &wurzel["eingabe"]["adresse"];
+    let mut h = hello(1, 2, 3, 4, art, Some(9));
+    h.adresse = Adresse {
+        logon_sid: a["logon_sid"].as_str().unwrap().into(),
+        project_binding_id: a["project_binding_id"].as_str().unwrap().into(),
+        session_epoch: a["session_epoch"].as_str().unwrap().into(),
+        instance_id: a["instance_id"].as_str().unwrap().into(),
+        runtime_nonce: a["runtime_nonce"].as_str().unwrap().into(),
+    };
+    h
+}
+
+fn wire(wurzel: &Value, fall: &str) -> Vec<u8> {
+    wurzel["faelle"][fall]["wire"]
+        .as_str()
+        .expect("Wiretext fehlt")
+        .as_bytes()
+        .to_vec()
+}
+
+/// NAK-180 R1/R3a (N-01, N-02, N-03): das `false` des ersten Heartbeats IST
+/// der bestaetigte Resync — und nur dort.
+///
+/// Vor diesem Ticket hatte `resync_bestaetigen` im Produkt gar keinen
+/// Aufrufer: der C++-Writer liess das Feld bei `false` weg, und ein
+/// FEHLENDES Feld liefert `None`, nicht `Some(false)`. Das sticky Unknown aus
+/// `control_ende` blieb damit fuer die ganze Sitzung stehen (G4 D-01).
+#[test]
+fn erster_heartbeat_mit_false_loest_das_sticky_unknown() {
+    let wurzel = heartbeat_wire_instanz();
+    let (c, _clock) = coordinator();
+    let h = hello_aus_wire_instanz(&wurzel, "main");
+
+    // NUR der Main: eine zweite Instanz mit DERSELBEN `instance_id` wuerde
+    // ihn verdraengen, und `resync_bestaetigen` verlangt einen stehenden,
+    // nicht verdraengten Link.
+    anmelden_roh(&c, "main", &h);
+
+    // R9: schon das MAIN-HELLO sperrt - eine Nachricht vor dem Heartbeat.
+    assert!(
+        c.interventionssicht_fuer_link("main").unknown,
+        "N-30: das Main-Hello setzt taint.unknown; ohne das koennte eine Sonde \r
+         zwischen Hello und erstem Heartbeat starke Evidenz committen"
+    );
+
+    // Der erste Heartbeat traegt das ausdrueckliche `false` aus der
+    // Byteinstanz - dieselben Bytes, die der C++-Writer erzeugt.
+    let antwort = Senke::p0(&c, "main", &wire(&wurzel, "bestaetigt_neutral"));
+    assert!(antwort.is_some(), "N-01: der Heartbeat wird beantwortet");
+    let sicht = c.interventionssicht_fuer_link("main");
+    assert!(
+        !sicht.unknown && sicht.starke_evidenz_erlaubt,
+        "N-01: erster_heartbeat_mit_false_ist_der_resync - der Zustand ist wieder \r
+         BEKANNT und starke Evidenz erlaubt: {sicht:?}"
+    );
+
+    // N-02: ein zweiter Heartbeat OHNE Feld aendert nichts.
+    Senke::p0(&c, "main", &wire(&wurzel, "steady"));
+    assert!(
+        !c.interventionssicht_fuer_link("main").unknown,
+        "N-02: der Steady-State schweigt und aendert nichts"
+    );
+}
+
+/// NAK-180 (N-03, M-61): ein SPAETERES `false` loest nichts.
+///
+/// Das ist die Zusage, die den Fix vom Selbstheilen trennt. Sie ist der Grund,
+/// warum der Riegel in `befehl.rs` eng bleiben MUSS.
+#[test]
+fn spaeteres_false_loest_das_sticky_unknown_nicht() {
+    let wurzel = heartbeat_wire_instanz();
+    let (c, _clock) = coordinator();
+    let h = hello_aus_wire_instanz(&wurzel, "main");
+    anmelden(&c, "main", &h);
+
+    // Ein Ereignis meldet eine Sequenz - der Link ist nicht mehr "ohne
+    // Ereignissequenz", und ein Ueberlauf setzt Unknown.
+    assert!(c.intervention_begin("main", &h.adresse, &hex(0x8101), 1));
+    Senke::p0(&c, "main", &wire(&wurzel, "unbekannt"));
+    assert!(
+        c.interventionssicht_fuer_link("main").unknown,
+        "der gemeldete Ueberlauf setzt Unknown"
+    );
+
+    Senke::p0(&c, "main", &wire(&wurzel, "bestaetigt_neutral"));
+    assert!(
+        c.interventionssicht_fuer_link("main").unknown,
+        "N-03: ein spaeterer Heartbeat mit `false` loescht Unknown NIE (M-61) - \r
+         eine Selbstheilung waere genau das, was Paragraph 34.2 verbietet"
+    );
+}
+
+/// NAK-180 R9 (N-30, N-31, N-32): das Fenster zwischen Hello und erstem
+/// Heartbeat ist zu.
+#[test]
+fn sitzung_ist_zwischen_main_hello_und_erstem_heartbeat_gesperrt() {
+    let wurzel = heartbeat_wire_instanz();
+    let (c, _clock) = coordinator();
+    let h = hello_aus_wire_instanz(&wurzel, "main");
+
+    anmelden_roh(&c, "main", &h);
+    // N-30: eine Sondenevidenz DERSELBEN Sitzung, eingespeist BEVOR der erste
+    // Heartbeat verarbeitet ist, wird gesperrt. Ohne R9 laege hier ein
+    // offenes Fenster: `evidence_dispatch_locked` liest eine Sitzung ohne
+    // Taint-Eintrag als erlaubt.
+    assert!(
+        !c.evidence_dispatch_fuer_link("main"),
+        "N-30: starke Evidenz ist zwischen Main-Hello und erstem Heartbeat GESPERRT"
+    );
+
+    // N-32: bleibt das Feld aus, bleibt gesperrt. Schweigen ist keine Aussage.
+    Senke::p0(&c, "main", &wire(&wurzel, "steady"));
+    assert!(
+        !c.evidence_dispatch_fuer_link("main"),
+        "N-32: ein erster Heartbeat OHNE Feld loest nichts - fail-closed"
+    );
+
+    // Und erst das ausdrueckliche `false` oeffnet.
+    Senke::p0(&c, "main", &wire(&wurzel, "bestaetigt_neutral"));
+    assert!(
+        c.evidence_dispatch_fuer_link("main"),
+        "N-01: erst die ausdrueckliche Aussage loest die Sperre"
+    );
+}
+
+/// NAK-180 R9 (N-31): ein SONDEN-Hello aendert den Taint nicht.
+#[test]
+fn sondenhello_aendert_den_taint_nicht() {
+    let wurzel = heartbeat_wire_instanz();
+    let (c, _clock) = coordinator();
+    let sonde = hello_aus_wire_instanz(&wurzel, "active_probe");
+    anmelden_roh(&c, "sonde", &sonde);
+    assert!(
+        !c.interventionssicht_fuer_link("sonde").unknown,
+        "N-31: eine Sonde macht keine Aussage ueber Interventionen - ihr Hello \r
+         darf weder sperren noch entsperren"
+    );
+}

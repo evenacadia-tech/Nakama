@@ -1,0 +1,60 @@
+{
+  "_kommentar": [
+    "NAK-180 R3(a) — die BYTEINSTANZ des Heartbeat-Serialisierers, VON HAND",
+    "geschrieben.",
+    "",
+    "Die Fixtures unter gueltig/ sind die VERTRAGSinstanz: eingerueckt, gegen",
+    "das Schema geprueft, vom Erzeuger gefuehrt. Fuer einen Bytevergleich",
+    "taugen sie nicht — `heartbeatAlsJson` schreibt kompakt, und ein",
+    "reformatierter Vergleich liesse genau die Regressionen durch, um die es",
+    "geht: Feldreihenfolge, Escaping, eine stille Auslassung.",
+    "",
+    "Diese Datei traegt deshalb die Bytes selbst. Sie ist von Hand geschrieben",
+    "und damit die Ausgabe KEINER der beiden Implementierungen — dieselbe",
+    "Bauform wie handschlag-v1.json. Stimmt der C++-Serialisierer mit ihr",
+    "ueberein und der Rust-Leser nimmt sie an, stimmen beide transitiv",
+    "miteinander ueberein.",
+    "",
+    "Gemessen wird die DREIWERTIGE Feldregel aus R1:",
+    "  · steady          — der Zustand ist bekannt, das Feld fehlt GANZ.",
+    "  · bestaetigt_neutral — erster Heartbeat nach neutralem Neuaufbau: false.",
+    "  · unbekannt       — Ueberlauf oder nicht neutraler Neuaufbau: true.",
+    "",
+    "`eingabe` sind die Werte, die der Test in `Adresse` und `ControlStatus`",
+    "setzt; `wire` ist der Text, den `heartbeatAlsJson` daraus bilden MUSS.",
+    "",
+    "C++-Leser: EqCopMarkierungTest (B04).",
+    "Rust-Leser: broker/tests/sonde013_verdrahtung.rs (NAK-180 R1)."
+  ],
+  "eingabe": {
+    "adresse": {
+      "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+      "project_binding_id": "11111111111111111111111111111111",
+      "session_epoch": "22222222222222222222222222222222",
+      "instance_id": "33333333333333333333333333333333",
+      "runtime_nonce": "44444444444444444444444444444444"
+    },
+    "sequence": 91,
+    "state_revision": 12,
+    "frames_dropped": 0,
+    "parse_errors": 0,
+    "queue_overflows": 0
+  },
+  "faelle": {
+    "steady": {
+      "intervention_state_unknown": null,
+      "bestaetigt_neutral": false,
+      "wire": "{\"type\":\"heartbeat\",\"adresse\":{\"logon_sid\":\"S-1-5-21-1111111111-2222222222-3333333333-1001\",\"project_binding_id\":\"11111111111111111111111111111111\",\"session_epoch\":\"22222222222222222222222222222222\",\"instance_id\":\"33333333333333333333333333333333\",\"runtime_nonce\":\"44444444444444444444444444444444\"},\"sequence\":91,\"state_revision\":12,\"capabilities\":{\"host_context_presence\":\"supported\",\"project_time_samples\":\"supported\",\"sample_accurate_automation\":\"unsupported\",\"presentation_latency\":\"unsupported\",\"aux_compare_pre\":\"unsupported\",\"aux_priority_sidechain\":\"unsupported\",\"contribution_aux\":\"unsupported\",\"float64_processing\":\"unsupported\",\"binary_telemetry\":\"unsupported\",\"remote_control\":\"unsupported\"},\"zaehler\":{\"frames_dropped\":0,\"parse_errors\":0,\"queue_overflows\":0}}"
+    },
+    "bestaetigt_neutral": {
+      "intervention_state_unknown": false,
+      "bestaetigt_neutral": true,
+      "wire": "{\"type\":\"heartbeat\",\"adresse\":{\"logon_sid\":\"S-1-5-21-1111111111-2222222222-3333333333-1001\",\"project_binding_id\":\"11111111111111111111111111111111\",\"session_epoch\":\"22222222222222222222222222222222\",\"instance_id\":\"33333333333333333333333333333333\",\"runtime_nonce\":\"44444444444444444444444444444444\"},\"sequence\":91,\"state_revision\":12,\"capabilities\":{\"host_context_presence\":\"supported\",\"project_time_samples\":\"supported\",\"sample_accurate_automation\":\"unsupported\",\"presentation_latency\":\"unsupported\",\"aux_compare_pre\":\"unsupported\",\"aux_priority_sidechain\":\"unsupported\",\"contribution_aux\":\"unsupported\",\"float64_processing\":\"unsupported\",\"binary_telemetry\":\"unsupported\",\"remote_control\":\"unsupported\"},\"zaehler\":{\"frames_dropped\":0,\"parse_errors\":0,\"queue_overflows\":0},\"intervention_state_unknown\":false}"
+    },
+    "unbekannt": {
+      "intervention_state_unknown": true,
+      "bestaetigt_neutral": false,
+      "wire": "{\"type\":\"heartbeat\",\"adresse\":{\"logon_sid\":\"S-1-5-21-1111111111-2222222222-3333333333-1001\",\"project_binding_id\":\"11111111111111111111111111111111\",\"session_epoch\":\"22222222222222222222222222222222\",\"instance_id\":\"33333333333333333333333333333333\",\"runtime_nonce\":\"44444444444444444444444444444444\"},\"sequence\":91,\"state_revision\":12,\"capabilities\":{\"host_context_presence\":\"supported\",\"project_time_samples\":\"supported\",\"sample_accurate_automation\":\"unsupported\",\"presentation_latency\":\"unsupported\",\"aux_compare_pre\":\"unsupported\",\"aux_priority_sidechain\":\"unsupported\",\"contribution_aux\":\"unsupported\",\"float64_processing\":\"unsupported\",\"binary_telemetry\":\"unsupported\",\"remote_control\":\"unsupported\"},\"zaehler\":{\"frames_dropped\":0,\"parse_errors\":0,\"queue_overflows\":0},\"intervention_state_unknown\":true}"
+    }
+  }
+}

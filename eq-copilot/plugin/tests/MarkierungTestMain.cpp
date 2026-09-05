@@ -921,6 +921,82 @@ static void sonde013Nacharbeit1 (const Pruefer& pruefe, double fs, int bs)
         pruefe (ohne.find ("intervention_state_unknown") == std::string::npos,
                 "B04: ein sauberer Zustand schreibt das Feld GAR NICHT - ein "
                 "`false` in jedem Takt waere die Behauptung 'Zustand bekannt'");
+
+        // ── NAK-180 R1/R3(a): die DREIWERTIGE Regel, bytegleich (N-01, N-02,
+        //    N-33) ──────────────────────────────────────────────────────────
+        //
+        // Gemessen wird der VOLLSTAENDIGE Wiretext gegen eine von Hand
+        // geschriebene dritte Instanz - nicht nur das Feldsegment. Nur so
+        // fallen auch Regressionen bei Feldreihenfolge, Escaping oder einer
+        // stillen Auslassung ausserhalb des Interventionsfelds auf.
+        auto findeFixture = [] (const juce::String& relativ) -> juce::File
+        {
+            auto ausCwd = juce::File::getCurrentWorkingDirectory().getChildFile (relativ);
+            if (ausCwd.existsAsFile())
+                return ausCwd;
+            auto ordner = juce::File::getSpecialLocation (
+                              juce::File::currentExecutableFile).getParentDirectory();
+            for (int i = 0; i < 10 && ordner.exists(); ++i)
+            {
+                auto kandidat = ordner.getChildFile (relativ);
+                if (kandidat.existsAsFile())
+                    return kandidat;
+                ordner = ordner.getParentDirectory();
+            }
+            return ausCwd;
+        };
+
+        const auto datei = findeFixture ("eq-copilot/fixtures/v3/heartbeat-wire-v1.json");
+        pruefe (datei.existsAsFile(),
+                "B04: die Byteinstanz heartbeat-wire-v1.json liegt im Repo",
+                datei.getFullPathName());
+        if (datei.existsAsFile())
+        {
+            const auto wurzel = juce::JSON::parse (datei);
+            const auto eingabe = wurzel.getProperty ("eingabe", {});
+            const auto adr = eingabe.getProperty ("adresse", {});
+
+            nakama::ipc::Adresse fa;
+            fa.logonSid         = adr.getProperty ("logon_sid", {}).toString().toStdString();
+            fa.projectBindingId = adr.getProperty ("project_binding_id", {}).toString().toStdString();
+            fa.sessionEpoch     = adr.getProperty ("session_epoch", {}).toString().toStdString();
+            fa.instanceId       = adr.getProperty ("instance_id", {}).toString().toStdString();
+            fa.runtimeNonce     = adr.getProperty ("runtime_nonce", {}).toString().toStdString();
+
+            const auto sequence = (std::uint64_t) (juce::int64)
+                eingabe.getProperty ("sequence", 0);
+            nakama::ipc::ControlStatus fs;
+            fs.stateRevision   = (std::uint64_t) (juce::int64) eingabe.getProperty ("state_revision", 0);
+            fs.framesDropped   = (std::uint64_t) (juce::int64) eingabe.getProperty ("frames_dropped", 0);
+            fs.parseErrors     = (std::uint64_t) (juce::int64) eingabe.getProperty ("parse_errors", 0);
+            fs.queueOverflows  = (std::uint64_t) (juce::int64) eingabe.getProperty ("queue_overflows", 0);
+
+            const auto faelle = wurzel.getProperty ("faelle", {});
+            struct Fall { const char* name; bool unbekannt; bool neutral; };
+            const Fall drei[] = {
+                { "steady",             false, false },
+                { "bestaetigt_neutral", false, true  },
+                { "unbekannt",          true,  false },
+            };
+            for (const auto& f : drei)
+            {
+                const auto eintrag = faelle.getProperty (f.name, {});
+                const auto erwartet = eintrag.getProperty ("wire", {}).toString();
+                auto st = fs;
+                st.interventionStateUnknown = f.unbekannt;
+                const juce::String gebaut (
+                    nakama::ipc::heartbeatAlsJson (fa, sequence, st, f.neutral).c_str());
+                pruefe (erwartet.isNotEmpty() && gebaut == erwartet,
+                        juce::String ("B04: heartbeat_ist_bytegleich_zur_dritten_instanz/")
+                            + f.name + " - der VOLLSTAENDIGE Text stimmt, nicht nur "
+                              "das Interventionsfeld (R3a)",
+                        gebaut == erwartet
+                            ? juce::String ("bytegleich, ") + juce::String (gebaut.length())
+                                  + " Zeichen"
+                            : juce::String ("gebaut:   ") + gebaut + "\n          erwartet: "
+                                  + erwartet);
+            }
+        }
     }
 }
 

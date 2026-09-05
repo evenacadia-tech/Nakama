@@ -547,6 +547,14 @@ impl Coordinator {
                 {
                     return None;
                 }
+                // 🔑 NAK-180 Nacharbeit 1 (EP-10/E4): "erster Heartbeat" ist
+                // eine eigene Tatsache, keine Ableitung aus der
+                // Ereignissequenz. Die Frage wird HIER gestellt - vor der
+                // Auswertung des Feldes -, damit auch ein erster Heartbeat
+                // ohne das Feld als erster zaehlt: Schweigen loest nichts
+                // (N-32), verbraucht den Erstling aber, sonst koennte ein
+                // spaeteres `false` den R1-Zweig noch ausloesen.
+                let ist_erster_heartbeat = self.ersten_heartbeat_markieren(link_id);
                 match wert
                     .get("intervention_state_unknown")
                     .and_then(Value::as_bool)
@@ -563,9 +571,9 @@ impl Coordinator {
                         // abschliessen, sobald er wieder neutral ist.
                         //
                         // Ein SPAETERES `true` (Ringueberlauf im Betrieb)
-                        // oeffnet nichts: `neuaufbau_bericht_oeffnen` prueft,
-                        // dass der Link noch keine Ereignissequenz gemeldet hat.
-                        self.neuaufbau_bericht_oeffnen(link_id);
+                        // oeffnet nichts: nur der erste Heartbeat des Links
+                        // kann den Bericht oeffnen.
+                        self.neuaufbau_bericht_oeffnen(link_id, ist_erster_heartbeat);
                     }
                     // 🔑 Nacharbeit 2 (Befund R01, M-61): DER Produktaufrufer
                     // von `resync_bestaetigen`.
@@ -580,7 +588,13 @@ impl Coordinator {
                     // Die Gegenseite ist `EqCopilotProcessor::v3ControlLink`:
                     // sie erklaert Neutralitaet nur, wenn der Ring leer und
                     // kein Marker hoerbar ist.
-                    Some(false) if self.link_ohne_ereignissequenz(link_id) => {
+                    //
+                    // 🔑 Nacharbeit 1 (EP-10): der Riegel ist der ERSTE
+                    // Heartbeat, nicht "noch keine Ereignissequenz gemeldet".
+                    // Replay und erster Heartbeat duerfen ungeordnet kommen
+                    // (§2.1); setzte das Replay die Sequenz zuerst, verlor der
+                    // R1-Weg seinen einzigen Ausloeser.
+                    Some(false) if ist_erster_heartbeat => {
                         let _ = self.resync_bestaetigen(link_id, 0);
                     }
                     // 🔑 NAK-180 R2/E4: der zweite, ENGERE Zweig - der
@@ -599,9 +613,12 @@ impl Coordinator {
                     // heilt nichts von selbst, er prueft eine ausdrueckliche
                     // Aussage gegen seinen eigenen Bestand und verwirft sie,
                     // sobald er selbst eine Luecke gesehen hat.
-                    Some(false) if self.nachbericht_abgeschlossen(link_id) => {
-                        let _ = self.resync_bestaetigen(link_id, 0);
-                    }
+                    //
+                    // 🔑 Nacharbeit 1 (EP-11/EP-12): Pruefung, Flag und
+                    // Freigabe liegen unter EINEM Lock, und die Sequenzbasis
+                    // bleibt stehen - der Pluginzaehler wird im R2-Weg
+                    // ausdruecklich nicht zurueckgesetzt.
+                    Some(false) if self.nachbericht_abschliessen_und_bestaetigen(link_id) => {}
                     _ => {}
                 }
                 let sequence = wert.get("sequence")?.as_u64()?;

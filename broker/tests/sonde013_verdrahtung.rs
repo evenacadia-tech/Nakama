@@ -4219,11 +4219,351 @@ fn sitzung_ist_zwischen_main_hello_und_erstem_heartbeat_gesperrt() {
         "N-32: ein erster Heartbeat OHNE Feld loest nichts - fail-closed"
     );
 
-    // Und erst das ausdrueckliche `false` oeffnet.
+    // NAK-180 Nacharbeit 1 (EP-10): und ein SPAETERES `false` loest ihn auch
+    // nicht mehr.
+    //
+    // Das ist die Praezisierung, die das eigene Feld `erster_heartbeat_gesehen`
+    // mitbringt: der schweigende Heartbeat WAR der erste. Vorher stand
+    // `letzte_event_sequence.is_none()` fuer die Frage, und weil dieser Link
+    // noch kein Ereignis gemeldet hatte, galt der zweite Heartbeat ebenfalls
+    // als erster - ein spaeteres `false` konnte den R1-Zweig ausloesen,
+    // waehrend der Marker klingt. M-61 sagt genau das Gegenteil: nur ein
+    // NEUER Linkaufbau entsperrt.
     Senke::p0(&c, "main", &wire(&wurzel, "bestaetigt_neutral"));
     assert!(
-        c.evidence_dispatch_fuer_link("main"),
-        "N-01: erst die ausdrueckliche Aussage loest die Sperre"
+        !c.evidence_dispatch_fuer_link("main"),
+        "EP-10/N-32: ein spaeteres `false` loest die Sperre NICHT - der \
+         schweigende Heartbeat war der erste, und ein zweiter ist nie einer"
+    );
+
+    // Erst ein NEUER Link urteilt frisch: sein erster Heartbeat traegt das
+    // ausdrueckliche `false`, und DAS loest.
+    c.control_ende("main");
+    anmelden_roh(&c, "main2", &h);
+    Senke::p0(&c, "main2", &wire(&wurzel, "bestaetigt_neutral"));
+    assert!(
+        c.evidence_dispatch_fuer_link("main2"),
+        "N-01: erst die ausdrueckliche Aussage des ERSTEN Heartbeats eines \
+         frischen Links loest die Sperre"
+    );
+}
+
+/// NAK-180 Nacharbeit 1 (EP-10, E4, Paragraph 2.1): Replay und erster
+/// Heartbeat sind UNGEORDNET - das Replay nimmt dem Heartbeat seinen Erstling
+/// nicht.
+///
+/// Die Matrix sagt ausdruecklich keine Ordnung zu ("Reihenfolge von Replay und
+/// erstem Heartbeat ist gleichgueltig"). `letzte_event_sequence` als Riegel
+/// machte daraus stillschweigend eine: kam das Replay zuerst, oeffnete der
+/// folgende erste `true`-Heartbeat keinen Bericht mehr, und der R2-Weg war
+/// fuer diesen Link tot.
+///
+/// Rotbeweis: den Riegel wieder auf `letzte_event_sequence.is_none()`
+/// zurueckdrehen - dann faellt genau dieser Fall.
+#[test]
+fn replay_vor_dem_ersten_heartbeat_nimmt_ihm_den_erstling_nicht() {
+    let wurzel = heartbeat_wire_instanz();
+    let (c, clock) = coordinator();
+    let h = hello_aus_wire_instanz(&wurzel, "main");
+    anmelden_roh(&c, "main", &h);
+
+    // Das Replay kommt ZUERST und meldet damit eine Ereignissequenz.
+    assert!(
+        c.intervention_begin("main", &h.adresse, &hex(0x8201), 1),
+        "das Replay-Begin wird angenommen"
+    );
+
+    // Und JETZT der erste Heartbeat mit ausdruecklichem `true`.
+    Senke::p0(&c, "main", &wire(&wurzel, "unbekannt"));
+
+    // Das Intervall schliessen, den Nachlauf ablaufen lassen - dann darf das
+    // einmalige `false` den Bericht abschliessen.
+    assert!(c.intervention_end("main", &h.adresse, &hex(0x8201), 2, 4_800));
+    // 4800 Samples bei 48 kHz sind 100 ms echter Zeit - die Uhr geht mit.
+    clock.vor(500);
+    c.liveness_tick();
+    let sicht = c.interventionssicht_fuer_link("main");
+    assert_eq!(
+        sicht.tail_samples_offen, 0,
+        "der Nachlauf ist abgelaufen: {sicht:?}"
+    );
+
+    Senke::p0(&c, "main", &wire(&wurzel, "bestaetigt_neutral"));
+    let sicht = c.interventionssicht_fuer_link("main");
+    assert!(
+        !sicht.unknown && sicht.starke_evidenz_erlaubt,
+        "EP-10: der Bericht war offen, obwohl das Replay die Sequenz zuerst \
+         gesetzt hat - der erste Heartbeat ist eine eigene Tatsache: {sicht:?}"
+    );
+}
+
+/// NAK-180 Nacharbeit 1 (EP-11, R2): der Nachbericht behaelt die laufende
+/// Sequenzbasis.
+///
+/// `resync_bestaetigen(link, 0)` setzte sie auf 0, obwohl Replay und End im
+/// R2-Weg bereits Sequenzen verbraucht haben und der Pluginzaehler
+/// ausdruecklich NICHT zurueckgesetzt wird. Der naechste regulaere Marker kam
+/// mit 3, der Broker erwartete 1, setzte sofort wieder `unknown` - und konnte
+/// ohne neuen Link nicht mehr nullen.
+///
+/// Rotbeweis: den Abschluss wieder `resync_bestaetigen(link, 0)` rufen lassen.
+#[test]
+fn nachbericht_behaelt_die_sequenzbasis() {
+    let wurzel = heartbeat_wire_instanz();
+    let (c, clock) = coordinator();
+    let h = hello_aus_wire_instanz(&wurzel, "main");
+    anmelden_roh(&c, "main", &h);
+
+    // Der R2-Weg: erster Heartbeat `true`, Replay 1, End 2, Nachlauf, `false`.
+    Senke::p0(&c, "main", &wire(&wurzel, "unbekannt"));
+    assert!(c.intervention_begin("main", &h.adresse, &hex(0x8301), 1));
+    assert!(c.intervention_end("main", &h.adresse, &hex(0x8301), 2, 4_800));
+    clock.vor(500);
+    c.liveness_tick();
+    Senke::p0(&c, "main", &wire(&wurzel, "bestaetigt_neutral"));
+    let sicht = c.interventionssicht_fuer_link("main");
+    assert!(
+        !sicht.unknown && sicht.starke_evidenz_erlaubt,
+        "der Nachbericht hat abgeschlossen: {sicht:?}"
+    );
+
+    // Und JETZT die Zusage: der naechste regulaere Marker traegt 3 - die
+    // Zahl, die der Pluginzaehler wirklich vergibt.
+    assert!(
+        c.intervention_begin("main", &h.adresse, &hex(0x8302), 3),
+        "EP-11: die Basis blieb bei 2, also ist 3 lueckenlos"
+    );
+    let sicht = c.interventionssicht_fuer_link("main");
+    assert!(
+        !sicht.unknown,
+        "EP-11: nachbericht_behaelt_die_sequenzbasis - ein Reset auf 0 haette \
+         aus der 3 eine Luecke gemacht und `unknown` sofort wieder gesetzt: \
+         {sicht:?}"
+    );
+}
+
+/// NAK-180 Nacharbeit 1 (EP-12, E4): Sicht, Flag und Freigabe unter EINEM
+/// Lock - der Abschluss greift nicht, solange die Sitzung noch ein Intervall
+/// eines ZWEITEN lebenden Links haelt, und er raeumt es nicht weg.
+///
+/// E4 verlangt "am Wirkpunkt keine Intervalle und kein Tail" - mit drei
+/// getrennten Locks war "am Wirkpunkt" nicht dasselbe wie "bei der Pruefung".
+#[test]
+fn nachbericht_greift_nicht_bei_fremdem_intervall_derselben_sitzung() {
+    let wurzel = heartbeat_wire_instanz();
+    let (c, _clock) = coordinator();
+    let h = hello_aus_wire_instanz(&wurzel, "main");
+    anmelden_roh(&c, "main", &h);
+
+    // Der Bericht ist offen (erster Heartbeat `true`).
+    Senke::p0(&c, "main", &wire(&wurzel, "unbekannt"));
+
+    // Ein ZWEITER lebender Link derselben Sitzung startet eine Intervention.
+    let mut zweiter = h.clone();
+    zweiter.adresse.instance_id = hex(0x5150);
+    anmelden_roh(&c, "main-zwei", &zweiter);
+    assert!(
+        c.intervention_begin("main-zwei", &zweiter.adresse, &hex(0x8401), 1),
+        "der zweite Link haelt ein aktives Intervall"
+    );
+
+    // Der Abschluss darf NICHT greifen - und vor allem darf er das fremde
+    // Intervall nicht loeschen.
+    Senke::p0(&c, "main", &wire(&wurzel, "bestaetigt_neutral"));
+    let sicht = c.interventionssicht_fuer_link("main");
+    assert!(
+        sicht.unknown && sicht.aktive == 1,
+        "EP-12: der Abschluss greift nicht, solange die Sitzung ein aktives \
+         Intervall haelt - und er raeumt es nicht weg: {sicht:?}"
+    );
+}
+
+/// NAK-180 Nacharbeit 1 (EP-17, R3a, N-05 bis N-08): der VOLLE R2-Zyklus
+/// ueber die Sprachgrenze.
+///
+/// Der bisherige Abschnitt nannte E4, fuhr aber nur den neutralen `false`-Pfad,
+/// ein spaeteres `false` und R9. Es fehlten der `control_ende`-Reconnect mit
+/// verbleibender Sonde UND der vollstaendige Ablauf
+/// `true` -> Replay/Begin -> End -> Tail -> `false`. Damit waren N-05 bis N-08
+/// und die neuen Brokerzweige cross-language ungeprueft: die C++-Seite maass
+/// den Sendezustand, die Rust-Seite den Brokerzustand, und niemand mass die
+/// NAHT.
+///
+/// Gemessen wird in JEDEM Zwischenzustand: `unknown`,
+/// `starke_evidenz_erlaubt` und die Dispatchentscheidung der verbleibenden
+/// Sonde.
+#[test]
+fn r2_lebenszyklus_mit_verbleibender_sonde_end_zu_end() {
+    let wurzel = heartbeat_wire_instanz();
+    let (c, clock) = coordinator();
+    let h = hello_aus_wire_instanz(&wurzel, "main");
+    anmelden_roh(&c, "main", &h);
+
+    // Eine Sonde DERSELBEN Sitzung - sie ueberlebt den Linkwechsel des Mains
+    // und ist der Grund, warum die Sperre ueberhaupt zaehlt: sie wuerde sonst
+    // waehrend des Markers starke Evidenz committen.
+    let mut sonde = hello_aus_wire_instanz(&wurzel, "passive_probe");
+    sonde.adresse.instance_id = hex(0x7001);
+    anmelden_roh(&c, "sonde", &sonde);
+
+    // (1) Erster Heartbeat des Mains: ausdrueckliches `false` (N-01).
+    Senke::p0(&c, "main", &wire(&wurzel, "bestaetigt_neutral"));
+    let sicht = c.interventionssicht_fuer_link("main");
+    assert!(
+        !sicht.unknown && sicht.starke_evidenz_erlaubt,
+        "N-01: der Zustand ist bekannt: {sicht:?}"
+    );
+    assert!(
+        c.evidence_dispatch_fuer_link("sonde"),
+        "und die Sonde darf committen"
+    );
+
+    // (2) Ein Marker laeuft - Begin auf dem ALTEN Link.
+    assert!(c.intervention_begin("main", &h.adresse, &hex(0x8501), 1));
+    let sicht = c.interventionssicht_fuer_link("main");
+    assert!(
+        sicht.aktive == 1 && !sicht.starke_evidenz_erlaubt,
+        "das aktive Intervall sperrt: {sicht:?}"
+    );
+    assert!(
+        !c.evidence_dispatch_fuer_link("sonde"),
+        "N-07: waehrend der Marker klingt, ist starke Evidenz gesperrt"
+    );
+
+    // (3) `control_ende`: der Link stirbt, die Sonde bleibt. Sticky Unknown.
+    c.control_ende("main");
+    assert!(
+        !c.evidence_dispatch_fuer_link("sonde"),
+        "N-05: der Disconnect macht die Sitzung NICHT sauber"
+    );
+
+    // (4) Neuer Link. Sein erster Heartbeat traegt ausdrueckliches `true` -
+    //     der Prozessor meldet, dass beim Aufbau ein Marker lief (R2).
+    anmelden_roh(&c, "main2", &h);
+    Senke::p0(&c, "main2", &wire(&wurzel, "unbekannt"));
+    let sicht = c.interventionssicht_fuer_link("main2");
+    assert!(
+        sicht.unknown && !sicht.starke_evidenz_erlaubt,
+        "N-05: kein `false` beim Aufbau - der erste Heartbeat traegt `true`: {sicht:?}"
+    );
+    assert!(
+        !c.evidence_dispatch_fuer_link("sonde"),
+        "N-07: und zwischen erstem Heartbeat und Replay gibt es KEIN Fenster"
+    );
+
+    // (5) Das Replay-Begin mit DERSELBEN `intervention_id`. Der frische Link
+    //     fuehrt noch keine Sequenzbasis und nimmt die erste Zahl
+    //     vorbehaltlos an.
+    assert!(
+        c.intervention_begin("main2", &h.adresse, &hex(0x8501), 1),
+        "N-05: das Replay traegt dieselbe ID und wird angenommen"
+    );
+    assert!(
+        !c.evidence_dispatch_fuer_link("sonde"),
+        "N-07: das Replay hat den wahren Zustand hergestellt - weiter gesperrt"
+    );
+
+    // (6) Das regulaere `end` schliesst GENAU dieses Intervall; der Nachlauf
+    //     startet und laeuft in Echtzeit ab (M-58).
+    assert!(c.intervention_end("main2", &h.adresse, &hex(0x8501), 2, 4_800));
+    let sicht = c.interventionssicht_fuer_link("main2");
+    assert!(
+        sicht.aktive == 0 && sicht.tail_samples_offen == 4_800 && sicht.unknown,
+        "M-58: das Ende allein genuegt nicht - der Nachlauf steht: {sicht:?}"
+    );
+
+    // (7) Ein `false` WAEHREND des Nachlaufs greift nicht - und verbraucht den
+    //     Bericht auch nicht.
+    Senke::p0(&c, "main2", &wire(&wurzel, "bestaetigt_neutral"));
+    let sicht = c.interventionssicht_fuer_link("main2");
+    assert!(
+        sicht.unknown && sicht.tail_samples_offen == 4_800,
+        "M-58/E4: das `false` waehrend des Nachlaufs schneidet ihn nicht ab: {sicht:?}"
+    );
+    assert!(
+        !c.evidence_dispatch_fuer_link("sonde"),
+        "und die Sonde bleibt gesperrt"
+    );
+
+    // (8) Der Nachlauf laeuft ab - 4800 Samples bei 48 kHz sind 100 ms.
+    clock.vor(500);
+    c.liveness_tick();
+    assert_eq!(
+        c.interventionssicht_fuer_link("main2").tail_samples_offen,
+        0,
+        "der Nachlauf ist abgelaufen"
+    );
+
+    // (9) ERST JETZT schliesst das einmalige `false` den Bericht ab.
+    Senke::p0(&c, "main2", &wire(&wurzel, "bestaetigt_neutral"));
+    let sicht = c.interventionssicht_fuer_link("main2");
+    assert!(
+        !sicht.unknown && sicht.starke_evidenz_erlaubt,
+        "N-05/E4: der Nachbericht schliesst ab, und die Sitzung nullt ueber den \
+         REGULAEREN Pfad - ohne neuen Link: {sicht:?}"
+    );
+    assert!(
+        c.evidence_dispatch_fuer_link("sonde"),
+        "N-07: und die verbliebene Sonde darf wieder committen"
+    );
+
+    // (10) EP-11: die Sequenzbasis blieb stehen. Der naechste regulaere Marker
+    //      traegt 3 - die Zahl, die der Pluginzaehler wirklich vergibt.
+    assert!(
+        c.intervention_begin("main2", &h.adresse, &hex(0x8502), 3),
+        "EP-11: 3 ist lueckenlos, weil der Abschluss die Basis nicht auf 0 setzte"
+    );
+    assert!(
+        !c.interventionssicht_fuer_link("main2").unknown,
+        "EP-11: und der Broker sieht keine Luecke"
+    );
+}
+
+/// NAK-180 Nacharbeit 1 (EP-17, N-08): der Backlog-Aufbau ueber die
+/// Sprachgrenze - Ring nicht leer, Marker still.
+///
+/// Kein `false` beim Aufbau, erster Heartbeat `true`, KEIN Replay; das Backlog
+/// reist mit weiterlaufenden Nummern, der frische Link nimmt die erste
+/// vorbehaltlos an, danach lueckenlos. Ist der Ring leer, traegt der naechste
+/// Heartbeat `false`, und E4 laesst ihn gelten.
+#[test]
+fn r2_backlog_ohne_replay_end_zu_end() {
+    let wurzel = heartbeat_wire_instanz();
+    let (c, clock) = coordinator();
+    let h = hello_aus_wire_instanz(&wurzel, "main");
+    anmelden_roh(&c, "main", &h);
+    Senke::p0(&c, "main", &wire(&wurzel, "bestaetigt_neutral"));
+
+    // Der Link stirbt, waehrend im Ring des Plugins ein vollstaendiges Paar
+    // wartet - beim Broker ist davon noch nichts angekommen.
+    c.control_ende("main");
+    anmelden_roh(&c, "main2", &h);
+
+    // N-08: erster Heartbeat `true` (der Ring war nicht leer), KEIN Replay.
+    Senke::p0(&c, "main2", &wire(&wurzel, "unbekannt"));
+    assert!(
+        c.interventionssicht_fuer_link("main2").unknown,
+        "N-08: kein `false` beim Aufbau"
+    );
+
+    // Das Backlog reist in unveraenderter Reihenfolge - die erste Zahl nimmt
+    // der frische Link vorbehaltlos an, danach lueckenlos.
+    assert!(c.intervention_begin("main2", &h.adresse, &hex(0x8601), 7));
+    assert!(c.intervention_end("main2", &h.adresse, &hex(0x8601), 8, 4_800));
+    let sicht = c.interventionssicht_fuer_link("main2");
+    assert!(
+        sicht.aktive == 0 && sicht.tail_samples_offen == 4_800,
+        "das Backlog ist vollstaendig angekommen: {sicht:?}"
+    );
+
+    clock.vor(500);
+    c.liveness_tick();
+    Senke::p0(&c, "main2", &wire(&wurzel, "bestaetigt_neutral"));
+    let sicht = c.interventionssicht_fuer_link("main2");
+    assert!(
+        !sicht.unknown && sicht.starke_evidenz_erlaubt,
+        "N-08: ist der Ring leer, traegt der naechste Heartbeat `false`, und E4 \
+         laesst ihn gelten: {sicht:?}"
     );
 }
 

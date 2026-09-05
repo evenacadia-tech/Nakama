@@ -112,6 +112,18 @@ pub(super) struct LinkStand {
     /// spaeterer Heartbeat mit `false` ist die normale Meldung, und die
     /// loescht Unknown nie").
     pub(super) neuaufbau_bericht_offen: bool,
+    /// 🔑 NAK-180 Nacharbeit 1 (EP-10/E4): dieser Link hat SEINEN ERSTEN
+    /// Heartbeat gesehen.
+    ///
+    /// Bis hier stand `letzte_event_sequence.is_none()` fuer dieselbe Frage -
+    /// und das war keine Antwort, sondern ein Zufall. Replay und erster
+    /// Heartbeat duerfen ausdruecklich in beliebiger Reihenfolge kommen
+    /// (§2.1): setzte das Replay die Sequenz zuerst, oeffnete der folgende
+    /// erste `true`-Heartbeat keinen Bericht mehr; kam umgekehrt gar kein
+    /// Ereignis, galt JEDER weitere Heartbeat weiter als "erster" und konnte
+    /// den Bericht erneut oeffnen oder den ungeschuetzten R1-Zweig ausloesen.
+    /// Ein eigenes Feld beantwortet die Frage, statt sie abzuleiten.
+    pub(super) erster_heartbeat_gesehen: bool,
     /// Seit dem Aufbau dieses Links hat ein Ereignis fail-closed geurteilt -
     /// eine Sequenzluecke, ein `end` ohne bekanntes Begin oder ein weiteres
     /// `true`. Dann ist der lokale Zustand des Plugins gerade NICHT

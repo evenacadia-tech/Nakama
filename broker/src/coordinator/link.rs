@@ -295,6 +295,7 @@ impl Coordinator {
                 join_neuverbinden: false,
                 neuaufbau_bericht_offen: false,
                 bericht_verwirkt: false,
+                erster_heartbeat_gesehen: false,
             },
         );
         // Kam die Probe vor dem Main, bleibt sie intern ungebundener Kandidat.
@@ -351,15 +352,39 @@ impl Coordinator {
     /// spaetere ist die normale Meldung — und die loescht sticky Unknown nie.
     /// 🔑 NAK-180 R2/E4: der erste Heartbeat trug `true` - der Bericht ist offen.
     ///
-    /// Nur ein Link, der noch keine Ereignissequenz gemeldet hat, kann seinen
-    /// Bericht oeffnen: das ist derselbe enge Riegel wie beim R1-Weg, nur mit
-    /// umgekehrtem Vorzeichen.
-    pub(super) fn neuaufbau_bericht_oeffnen(&self, link_id: &str) {
+    /// Nur der ERSTE Heartbeat dieses Links kann seinen Bericht oeffnen: das
+    /// ist derselbe enge Riegel wie beim R1-Weg, nur mit umgekehrtem
+    /// Vorzeichen. Der Aufrufer sagt, ob es der erste war
+    /// (`ersten_heartbeat_markieren`); die frueher benutzte Ableitung ueber
+    /// `letzte_event_sequence` war ein Zufall, kein Riegel (EP-10).
+    pub(super) fn neuaufbau_bericht_oeffnen(&self, link_id: &str, ist_erster: bool) {
+        if !ist_erster {
+            return;
+        }
         let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         if let Some(link) = stand.links.get_mut(link_id) {
-            if link.letzte_event_sequence.is_none() && !link.bericht_verwirkt {
+            if !link.bericht_verwirkt {
                 link.neuaufbau_bericht_offen = true;
             }
+        }
+    }
+
+    /// 🔑 NAK-180 Nacharbeit 1 (EP-10): ist DAS der erste Heartbeat dieses
+    /// Links? Die Frage wird genau einmal mit `true` beantwortet.
+    ///
+    /// Sie steht VOR der Auswertung des Interventionsfelds, damit auch ein
+    /// erster Heartbeat OHNE das Feld als erster zaehlt: Schweigen loest
+    /// nichts (N-32), aber es verbraucht den Erstling - sonst koennte ein
+    /// spaeteres `false` den R1-Zweig noch ausloesen, waehrend der Marker
+    /// klingt.
+    pub(super) fn ersten_heartbeat_markieren(&self, link_id: &str) -> bool {
+        let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+        match stand.links.get_mut(link_id) {
+            Some(link) if !link.erster_heartbeat_gesehen => {
+                link.erster_heartbeat_gesehen = true;
+                true
+            }
+            _ => false,
         }
     }
 
@@ -382,29 +407,68 @@ impl Coordinator {
     ///     schnitte ihn ab und braeche M-58 ("das Ende allein genuegt nicht").
     ///
     /// Beim Ausloesen faellt das Flag: je Link gilt genau EIN Abschluss.
-    pub(super) fn nachbericht_abgeschlossen(&self, link_id: &str) -> bool {
-        let sicht = self.interventionssicht_fuer_link(link_id);
-        if sicht.aktive != 0 || sicht.tail_samples_offen != 0 {
-            return false;
-        }
+    ///
+    /// 🔑 NAK-180 Nacharbeit 1 (EP-12/EP-11): Sicht, Flag UND Resync laufen
+    /// unter EINEM `stand`-Lock, und der Resync behaelt die laufende
+    /// Sequenzbasis.
+    ///
+    /// Vorher lagen die drei Schritte unter drei getrennten Locks. Begann ein
+    /// anderer lebender Link derselben Sitzung zwischen der leeren Sicht und
+    /// dem Resync eine Intervention, loeschte der Resync deren aktives
+    /// Intervall und gab `unknown` frei - E4 verlangt aber, dass die Sitzung
+    /// AM WIRKPUNKT keine Intervalle und keinen Nachlauf haelt. Und
+    /// `resync_bestaetigen(link, 0)` setzte die Brokerbasis auf 0, obwohl
+    /// Replay und End im R2-Weg bereits Sequenzen verbraucht haben und der
+    /// Pluginzaehler ausdruecklich NICHT zurueckgesetzt wird: der naechste
+    /// regulaere Marker kam mit 3, der Broker erwartete 1, setzte sofort
+    /// wieder `unknown` und konnte ohne neuen Link nicht mehr nullen.
+    ///
+    /// Rueckgabe: hat der Abschluss gegriffen?
+    pub(super) fn nachbericht_abschliessen_und_bestaetigen(&self, link_id: &str) -> bool {
         let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
-        match stand.links.get_mut(link_id) {
-            Some(link) if link.neuaufbau_bericht_offen && !link.bericht_verwirkt => {
-                link.neuaufbau_bericht_offen = false;
-                true
+        let Some(session) = Self::session_des_links(&stand, link_id) else {
+            return false;
+        };
+        // Die Sicht wird INNERHALB desselben Locks gerechnet - genau das war
+        // der Defekt EP-12.
+        {
+            let leer = Taintstand::default();
+            let taint = stand.taint.get(&session).unwrap_or(&leer);
+            if !taint.interventionen.is_empty() || taint.tail_samples_offen != 0 {
+                return false;
             }
-            _ => false,
         }
+        // Nur ein Link, der wirklich steht, darf entsperren - dieselbe
+        // Bedingung wie in `resync_bestaetigen`. Ein Resync von einem
+        // sterbenden Link waere eine Freigabe ohne Gegenueber.
+        match stand.links.get_mut(link_id) {
+            Some(link)
+                if link.neuaufbau_bericht_offen
+                    && !link.bericht_verwirkt
+                    && !link.trennen
+                    && !link.verdraengt =>
+            {
+                link.neuaufbau_bericht_offen = false;
+            }
+            _ => return false,
+        }
+        // Und die Freigabe selbst, unter demselben Lock. `letzte_event_sequence`
+        // bleibt UNVERAENDERT: der Pluginzaehler laeuft im R2-Weg weiter.
+        {
+            let taint = Self::taint_mut(&mut stand, &session);
+            taint.interventionen.clear();
+            taint.tail_samples_offen = 0;
+            taint.unknown = false;
+        }
+        Self::taint_mut(&mut stand, &SessionKey::unbekannt()).unknown = false;
+        true
     }
 
-    pub(super) fn link_ohne_ereignissequenz(&self, link_id: &str) -> bool {
-        self.stand
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .links
-            .get(link_id)
-            .is_some_and(|link| link.letzte_event_sequence.is_none())
-    }
+    // `link_ohne_ereignissequenz` faellt mit EP-10: es war die ABLEITUNG, die
+    // "erster Heartbeat" bedeuten sollte, und genau daran brach E4. Die Frage
+    // beantwortet jetzt `ersten_heartbeat_markieren` an der Tatsache selbst.
+    // Ein toter Helfer, der dieselbe falsche Antwort weiter anbietet, waere
+    // eine Einladung, den Defekt neu einzubauen.
 
     pub fn resync_bestaetigen(&self, link_id: &str, bestaetigte_sequence_basis: u64) -> bool {
         // Nur ein Link, der wirklich steht, darf entsperren. Ein Resync von

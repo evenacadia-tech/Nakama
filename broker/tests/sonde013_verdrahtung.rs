@@ -1222,6 +1222,24 @@ fn intervention_begin_payload(
     serde_json::to_vec(&wert).unwrap()
 }
 
+/// Ein `audible_intervention_end`, wie der Draht ihn traegt (NAK-180
+/// Nacharbeit 2, WN-07).
+///
+/// Ohne ihn fuhren Replay und End des R2-Wegs als direkte Methodenaufrufe -
+/// der Weg durch `p0_json_mit_minor`, die Vertragspruefung und das Auslesen
+/// von `tail_samples` blieb dabei ungemessen.
+fn intervention_end_payload(adresse: &Adresse, intervention: usize, sequenz: u64, tail: u64) -> Vec<u8> {
+    serde_json::to_vec(&json!({
+        "type": "audible_intervention_end",
+        "intervention_id": hex(intervention),
+        "adresse": adresse,
+        "event_sequence": sequenz,
+        "project_sample_end": null,
+        "tail_samples": tail
+    }))
+    .unwrap()
+}
+
 /// R22 — `art` und `experiment_id` reisen vom DRAHT bis in den Taintzustand.
 ///
 /// Der echte Dispatch rief `intervention_begin` und schrieb JEDE Intervention
@@ -4378,20 +4396,20 @@ fn nachbericht_greift_nicht_bei_fremdem_intervall_derselben_sitzung() {
     );
 }
 
-/// NAK-180 Nacharbeit 1 (EP-17, R3a, N-05 bis N-08): der VOLLE R2-Zyklus
-/// ueber die Sprachgrenze.
+/// NAK-180 Nacharbeit 1 (EP-17, R3a, N-05 bis N-08), berichtigt in
+/// Nacharbeit 2 (WN-07): der VOLLE R2-Zyklus ueber die Sprachgrenze - als
+/// WIRE-JSON und mit EINGESPEISTER Sondenevidenz.
 ///
-/// Der bisherige Abschnitt nannte E4, fuhr aber nur den neutralen `false`-Pfad,
-/// ein spaeteres `false` und R9. Es fehlten der `control_ende`-Reconnect mit
-/// verbleibender Sonde UND der vollstaendige Ablauf
-/// `true` -> Replay/Begin -> End -> Tail -> `false`. Damit waren N-05 bis N-08
-/// und die neuen Brokerzweige cross-language ungeprueft: die C++-Seite maass
-/// den Sendezustand, die Rust-Seite den Brokerzustand, und niemand mass die
-/// NAHT.
+/// Der Fall der Runde 1 schickte nur die Heartbeats durch `Senke::p0`; Replay
+/// und End riefen `intervention_begin`/`intervention_end` direkt auf, und die
+/// Sonde wurde ueber `evidence_dispatch_fuer_link` nur BEFRAGT. Damit konnten
+/// Parser-, Routing- und echte Evidence-Commit-Regressionen gruen bleiben -
+/// die fixture-getriebene, injizierte Cross-Language-Naht aus R3(a) fehlte.
 ///
-/// Gemessen wird in JEDEM Zwischenzustand: `unknown`,
-/// `starke_evidenz_erlaubt` und die Dispatchentscheidung der verbleibenden
-/// Sonde.
+/// Jetzt reist JEDE Nachricht des Wegs als Wire-JSON durch `Senke::p0` und
+/// damit durch `p0_json_mit_minor`, und die Sondenevidenz wird in jedem
+/// Zwischenzustand per `evidence_snapshot_json` EINGESPEIST; gemessen wird
+/// ihre Wirkung (angenommen/gesperrt) und was danach in `evidenz_sicht` steht.
 #[test]
 fn r2_lebenszyklus_mit_verbleibender_sonde_end_zu_end() {
     let wurzel = heartbeat_wire_instanz();
@@ -4406,34 +4424,57 @@ fn r2_lebenszyklus_mit_verbleibender_sonde_end_zu_end() {
     sonde.adresse.instance_id = hex(0x7001);
     anmelden_roh(&c, "sonde", &sonde);
 
-    // (1) Erster Heartbeat des Mains: ausdrueckliches `false` (N-01).
+    // Der Belegweg der Sonde: EINSPEISEN, nicht befragen. `nr` waehlt die
+    // `evidence_id`, damit `evidenz_sicht` sagen kann, WELCHER Snapshot
+    // wirklich angekommen ist - ein gesperrter hinterlaesst dort nichts.
+    let einspeisen = |nr: usize| c.evidence_snapshot_json("sonde", &evidenz_payload(&sonde.adresse, nr, |_| {}));
+    let zuletzt = || {
+        c.evidenz_sicht(&sonde.adresse.instance_id)
+            .map(|e| e.evidence_id)
+    };
+
+    assert_eq!(zuletzt(), None, "vor dem ersten Beleg steht nichts");
+
+    // (1) Erster Heartbeat des Mains: ausdrueckliches `false` (N-01), aus der
+    //     Byteinstanz, die AUCH der C++-Serialisierer haelt.
     Senke::p0(&c, "main", &wire(&wurzel, "bestaetigt_neutral"));
     let sicht = c.interventionssicht_fuer_link("main");
     assert!(
         !sicht.unknown && sicht.starke_evidenz_erlaubt,
         "N-01: der Zustand ist bekannt: {sicht:?}"
     );
-    assert!(
-        c.evidence_dispatch_fuer_link("sonde"),
-        "und die Sonde darf committen"
+    assert!(einspeisen(1), "und die Sonde darf committen");
+    assert_eq!(
+        zuletzt(),
+        Some(hex(0x1001)),
+        "N-01: der eingespeiste Beleg steht wirklich im Evidenzstand"
     );
 
-    // (2) Ein Marker laeuft - Begin auf dem ALTEN Link.
-    assert!(c.intervention_begin("main", &h.adresse, &hex(0x8501), 1));
+    // (2) Ein Marker laeuft - Begin auf dem ALTEN Link, als WIRE-JSON.
+    Senke::p0(
+        &c,
+        "main",
+        &intervention_begin_payload(&h.adresse, 0x8501, 1, "hoermarkierung", None),
+    );
     let sicht = c.interventionssicht_fuer_link("main");
     assert!(
         sicht.aktive == 1 && !sicht.starke_evidenz_erlaubt,
         "das aktive Intervall sperrt: {sicht:?}"
     );
     assert!(
-        !c.evidence_dispatch_fuer_link("sonde"),
-        "N-07: waehrend der Marker klingt, ist starke Evidenz gesperrt"
+        !einspeisen(2),
+        "N-07: waehrend der Marker klingt, wird eingespeiste Evidenz VERWORFEN"
+    );
+    assert_eq!(
+        zuletzt(),
+        Some(hex(0x1001)),
+        "N-07: und sie hinterlaesst nichts - der Stand bleibt der alte"
     );
 
     // (3) `control_ende`: der Link stirbt, die Sonde bleibt. Sticky Unknown.
     c.control_ende("main");
     assert!(
-        !c.evidence_dispatch_fuer_link("sonde"),
+        !einspeisen(3),
         "N-05: der Disconnect macht die Sitzung NICHT sauber"
     );
 
@@ -4447,29 +4488,46 @@ fn r2_lebenszyklus_mit_verbleibender_sonde_end_zu_end() {
         "N-05: kein `false` beim Aufbau - der erste Heartbeat traegt `true`: {sicht:?}"
     );
     assert!(
-        !c.evidence_dispatch_fuer_link("sonde"),
+        !einspeisen(4),
         "N-07: und zwischen erstem Heartbeat und Replay gibt es KEIN Fenster"
     );
 
-    // (5) Das Replay-Begin mit DERSELBEN `intervention_id`. Der frische Link
-    //     fuehrt noch keine Sequenzbasis und nimmt die erste Zahl
-    //     vorbehaltlos an.
+    // (5) Das Replay-Begin mit DERSELBEN `intervention_id` - ebenfalls als
+    //     Wire-JSON. Der frische Link fuehrt noch keine Sequenzbasis und nimmt
+    //     die erste Zahl vorbehaltlos an.
+    Senke::p0(
+        &c,
+        "main2",
+        &intervention_begin_payload(&h.adresse, 0x8501, 1, "hoermarkierung", None),
+    );
+    let sicht = c.interventionssicht_fuer_link("main2");
     assert!(
-        c.intervention_begin("main2", &h.adresse, &hex(0x8501), 1),
-        "N-05: das Replay traegt dieselbe ID und wird angenommen"
+        sicht.aktive == 1,
+        "N-05: das Replay traegt dieselbe ID, reist durch den Wireweg und wird \
+         angenommen: {sicht:?}"
     );
     assert!(
-        !c.evidence_dispatch_fuer_link("sonde"),
+        !einspeisen(5),
         "N-07: das Replay hat den wahren Zustand hergestellt - weiter gesperrt"
     );
 
     // (6) Das regulaere `end` schliesst GENAU dieses Intervall; der Nachlauf
-    //     startet und laeuft in Echtzeit ab (M-58).
-    assert!(c.intervention_end("main2", &h.adresse, &hex(0x8501), 2, 4_800));
+    //     startet und laeuft in Echtzeit ab (M-58). Auch das als Wire-JSON -
+    //     `tail_samples` wird DORT gelesen.
+    Senke::p0(
+        &c,
+        "main2",
+        &intervention_end_payload(&h.adresse, 0x8501, 2, 4_800),
+    );
     let sicht = c.interventionssicht_fuer_link("main2");
     assert!(
         sicht.aktive == 0 && sicht.tail_samples_offen == 4_800 && sicht.unknown,
-        "M-58: das Ende allein genuegt nicht - der Nachlauf steht: {sicht:?}"
+        "M-58: das Ende allein genuegt nicht - der Nachlauf steht, und seine \
+         Laenge kommt vom DRAHT: {sicht:?}"
+    );
+    assert!(
+        !einspeisen(6),
+        "M-58: waehrend des Nachlaufs bleibt eingespeiste Evidenz gesperrt"
     );
 
     // (7) Ein `false` WAEHREND des Nachlaufs greift nicht - und verbraucht den
@@ -4480,9 +4538,11 @@ fn r2_lebenszyklus_mit_verbleibender_sonde_end_zu_end() {
         sicht.unknown && sicht.tail_samples_offen == 4_800,
         "M-58/E4: das `false` waehrend des Nachlaufs schneidet ihn nicht ab: {sicht:?}"
     );
-    assert!(
-        !c.evidence_dispatch_fuer_link("sonde"),
-        "und die Sonde bleibt gesperrt"
+    assert!(!einspeisen(7), "und die Sonde bleibt gesperrt");
+    assert_eq!(
+        zuletzt(),
+        Some(hex(0x1001)),
+        "sechs verworfene Belege haben nichts hinterlassen"
     );
 
     // (8) Der Nachlauf laeuft ab - 4800 Samples bei 48 kHz sind 100 ms.
@@ -4503,19 +4563,32 @@ fn r2_lebenszyklus_mit_verbleibender_sonde_end_zu_end() {
          REGULAEREN Pfad - ohne neuen Link: {sicht:?}"
     );
     assert!(
-        c.evidence_dispatch_fuer_link("sonde"),
+        einspeisen(9),
         "N-07: und die verbliebene Sonde darf wieder committen"
+    );
+    assert_eq!(
+        zuletzt(),
+        Some(hex(0x1009)),
+        "N-07: der erste Beleg NACH dem Nachbericht steht im Evidenzstand - \
+         gemessen an seiner `evidence_id`, nicht an einer Dispatchfrage"
     );
 
     // (10) EP-11: die Sequenzbasis blieb stehen. Der naechste regulaere Marker
     //      traegt 3 - die Zahl, die der Pluginzaehler wirklich vergibt.
-    assert!(
-        c.intervention_begin("main2", &h.adresse, &hex(0x8502), 3),
-        "EP-11: 3 ist lueckenlos, weil der Abschluss die Basis nicht auf 0 setzte"
+    Senke::p0(
+        &c,
+        "main2",
+        &intervention_begin_payload(&h.adresse, 0x8502, 3, "hoermarkierung", None),
     );
     assert!(
         !c.interventionssicht_fuer_link("main2").unknown,
-        "EP-11: und der Broker sieht keine Luecke"
+        "EP-11: 3 ist lueckenlos, weil der Abschluss die Basis nicht auf 0 setzte - \
+         und der Broker sieht keine Luecke"
+    );
+    assert_eq!(
+        c.interventionssicht_fuer_link("main2").aktive,
+        1,
+        "EP-11: und das neue Intervall steht"
     );
 }
 

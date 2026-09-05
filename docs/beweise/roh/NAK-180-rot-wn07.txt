@@ -1,0 +1,20 @@
+NAK-180 Etappe 2, Nacharbeit 2 - ROTBEWEIS WN07
+Erzeugt: 2026-09-05 14:32:08
+Basis:   882a185fadab7cb4fbcabc384e8b0da6e505f021
+Ziel:    cargo test --test sonde013_verdrahtung
+Regel zurueckgedreht durch den Rotbeweis-Helfer, danach wiederhergestellt.
+EXIT=101
+
+test r2_lebenszyklus_mit_verbleibender_sonde_end_zu_end ... FAILED
+---- r2_lebenszyklus_mit_verbleibender_sonde_end_zu_end stdout ----
+thread 'r2_lebenszyklus_mit_verbleibender_sonde_end_zu_end' (19284) panicked at tests\sonde013_verdrahtung.rs:4523:5:
+M-58: das Ende allein genuegt nicht - der Nachlauf steht, und seine Laenge kommt vom DRAHT: Interventionssicht { aktive: 0, tail_samples_offen: 0, unknown: true, starke_evidenz_erlaubt: false }
+    r2_lebenszyklus_mit_verbleibender_sonde_end_zu_end
+
+--- Schluss der Ausgabe ---
+failures:
+    r2_lebenszyklus_mit_verbleibender_sonde_end_zu_end
+
+test result: FAILED. 63 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.49s
+
+error: test failed, to rerun pass `--test sonde013_verdrahtung`

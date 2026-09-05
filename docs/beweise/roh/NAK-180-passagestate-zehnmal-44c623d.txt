@@ -1,0 +1,12 @@
+START 2026-09-05T16:37:55.2484393+02:00 EXE=C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSonde013PassageStateTest_artefacts\Release\EqCopSonde013PassageStateTest.exe
+LAUF 1 EXIT=0 DAUER=11s 222 bestanden, 0 gescheitert
+LAUF 2 EXIT=0 DAUER=11s 222 bestanden, 0 gescheitert
+LAUF 3 EXIT=0 DAUER=11s 222 bestanden, 0 gescheitert
+LAUF 4 EXIT=0 DAUER=11s 222 bestanden, 0 gescheitert
+LAUF 5 EXIT=0 DAUER=11s 222 bestanden, 0 gescheitert
+LAUF 6 EXIT=0 DAUER=11s 222 bestanden, 0 gescheitert
+LAUF 7 EXIT=0 DAUER=11s 222 bestanden, 0 gescheitert
+LAUF 8 EXIT=0 DAUER=11s 222 bestanden, 0 gescheitert
+LAUF 9 EXIT=0 DAUER=11s 222 bestanden, 0 gescheitert
+LAUF 10 EXIT=0 DAUER=11s 222 bestanden, 0 gescheitert
+FERTIG 2026-09-05T16:39:46.3347015+02:00

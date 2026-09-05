@@ -3129,6 +3129,134 @@ int main()
         p->setPlayHead (nullptr);
         p->releaseResources();
     }
+
+    abschnitt ("NAK-181 N-02  kandidat_ueberlebt_das_zweite_binden");
+    {
+        auto p = mainProzessorMitBindung();
+        p->setzeSourcesFixtureFuerTest (eineQuelle());
+        p->prepareToPlay (kFs, kBlock);
+        TestPlayHead kopf;
+        p->setPlayHead (&kopf);
+        juce::AudioBuffer<float> puffer (2, kBlock);
+        fahre (*p, kopf, puffer, 20);
+        const auto a = hex32 (0xB2);
+        pruefe (p->merkeManuellePassage (a, "Refrain", 0, 4800000), "N-02: Passage gemerkt");
+        pruefe (warte (*p, kopf, puffer, [&] { return p->passagenfensterFuehrt (a); }),
+                "N-02: die Engine fuehrt das Fenster");
+        pruefe (fahreBisPegel (*p, kopf, puffer), "N-02: genug Material");
+        pruefe (p->beginneVersuch (a), "N-02: der Versuch beginnt");
+        const auto versuchId = p->laufenderVersuch();
+        const double eingefroren = p->versuchMatchGainDb();
+
+        // 🔑 Ein ZWEITES Binden leert den lebenden Pegel genauso wie
+        // `prepareToPlay` — `bindePassagenfensterMitEpoche` ruft
+        // `vergleichspegel.vorbereiten()`.
+        const auto zweite = hex32 (0xB3);
+        pruefe (p->merkeManuellePassage (zweite, "Bridge", 4800000, 9600000),
+                "N-02: eine zweite Passage");
+        pruefe (p->passagenfensterWunschFuerTest (zweite, 4800000, 9600000, 0),
+                "N-02: und sie wird gebunden");
+        pruefe (! p->versuchLautheitAbgeglichenLebendFuerTest(),
+                "N-02: der LEBENDE Pegel ist danach leer");
+
+        pruefe (p->laufenderVersuch() == versuchId,
+                "N-02: der Versuch bleibt der ALTEN Passage zugeordnet");
+        pruefe (! p->passagenfensterFuehrt (a),
+                "N-02: die alte Passage wird nicht mehr gefuehrt");
+        pruefe (! p->beginneVersuch (zweite),
+                "N-02: und ein zweiter Versuch wird abgelehnt - einer nach dem anderen");
+
+        pruefe (p->erfasseKandidat (true), "N-02: der Kandidat wird erfasst");
+        const auto kandidat = juce::JSON::parse (juce::String (p->letzterVersuchP0FuerTest()));
+        const double aufDerLeitung = (double) kandidat.getProperty ("referenz", {})
+                                                      .getProperty ("match_gain_db", -999.0);
+        pruefe (std::abs (aufDerLeitung - eingefroren) < 1e-6,
+                "N-02: und traegt den eingefrorenen Match-Gain der ALTEN Passage",
+                juce::String (aufDerLeitung, 4));
+        pruefe (kandidat.getProperty ("experiment_id", {}).toString() == versuchId,
+                "N-02: unter der alten experiment_id");
+
+        p->setPlayHead (nullptr);
+        p->releaseResources();
+    }
+
+    abschnitt ("NAK-181 N-05  ohne_eingefrorenen_gain_entsteht_keine_referenz");
+    {
+        // Wache, kein erreichbarer Fehler: am HEAD kann ein OFFENER Versuch
+        // seinen eingefrorenen Gain nicht verlieren (Paragraph 2.0 E1). Der Riegel
+        // steht trotzdem, und dieser Fall misst ihn ueber den Weg, den es
+        // gibt - vor dem Versuchsbeginn.
+        auto p = mainProzessorMitBindung();
+        p->setzeSourcesFixtureFuerTest (eineQuelle());
+        p->prepareToPlay (kFs, kBlock);
+        TestPlayHead kopf;
+        p->setPlayHead (&kopf);
+        juce::AudioBuffer<float> puffer (2, kBlock);
+        fahre (*p, kopf, puffer, 20);
+        const auto a = hex32 (0xB5);
+        pruefe (p->merkeManuellePassage (a, "Refrain", 0, 4800000), "N-05: Passage gemerkt");
+        pruefe (warte (*p, kopf, puffer, [&] { return p->passagenfensterFuehrt (a); }),
+                "N-05: die Engine fuehrt das Fenster");
+        pruefe (p->laufenderVersuch().isEmpty(), "N-05: kein Versuch laeuft");
+        pruefe (! p->erfasseKandidat (true),
+                "N-05: ohne offenen Versuch entsteht kein Kandidat");
+        pruefe (p->letzterVersuchP0FuerTest().empty(),
+                "N-05: und nichts reist - die leere Referenz haelt beide Aufrufer");
+        p->setPlayHead (nullptr);
+        p->releaseResources();
+    }
+
+    abschnitt ("NAK-181 N-13/N-14  nurlesen_reload_leert_den_vergleich_und_bleibt_verlustfrei");
+    {
+        auto p = mainProzessorMitBindung();
+        p->setzeSourcesFixtureFuerTest (eineQuelle());
+        p->prepareToPlay (kFs, kBlock);
+        TestPlayHead kopf;
+        p->setPlayHead (&kopf);
+        juce::AudioBuffer<float> puffer (2, kBlock);
+        fahre (*p, kopf, puffer, 20);
+        const auto a = hex32 (0xB6);
+        pruefe (p->merkeManuellePassage (a, "Refrain", 0, 4800000), "N-13: Passage gemerkt");
+        pruefe (warte (*p, kopf, puffer, [&] { return p->passagenfensterFuehrt (a); }),
+                "N-13: die Engine fuehrt das Fenster");
+        pruefe (fahreBisPegel (*p, kopf, puffer), "N-13: genug Material");
+        pruefe (p->beginneVersuch (a), "N-13: der Versuch beginnt");
+
+        // Ein State OHNE vertrauenswuerdige Identitaet: `lade` stuft ihn als
+        // `nurLesen` ein. Der Vergleichszustand muss auch DORT fallen - ein
+        // read-only geladener Stand ist genauso ein anderes Projekt.
+        juce::ValueTree v ("NakamaState");
+        v.setProperty ("schema", 2, nullptr);
+        juce::ValueTree c ("Common");
+        c.setProperty ("schema", 1, nullptr);
+        c.setProperty ("instance_id", hex32 (0x1234), nullptr);
+        c.setProperty ("project_binding_id", hex32 (0x77), nullptr);
+        c.setProperty ("plugin_kind", "sensor", nullptr);      // Schema-1-Rolle
+        c.setProperty ("measurement_position", "pre", nullptr);
+        v.appendChild (c, nullptr);
+        juce::MemoryBlock bytes;
+        juce::MemoryOutputStream os (bytes, false);
+        v.writeToStream (os);
+        os.flush();
+        p->setStateInformation (bytes.getData(), (int) bytes.getSize());
+
+        pruefe (p->laufenderVersuch().isEmpty(),
+                "N-13: auch im nurLesen-Zweig faellt der Versuch");
+        pruefe (! p->versuchLautheitAbgeglichen(), "N-13: und die Referenz");
+        pruefe (! p->passagenfensterFuehrt (a), "N-13: und die Bindung");
+        pruefe (p->letzterVersuchP0FuerTest().empty(),
+                "N-14: aus dem Zug reist kein Byte - kein experiment_abort, "
+                "der Vertrag verbietet ihn beim Projektwechsel ausdruecklich");
+
+        // Und die State-Bytes bleiben verlustfrei.
+        juce::MemoryBlock zurueck;
+        p->getStateInformation (zurueck);
+        pruefe (zurueck.getSize() > 0, "N-13: der Stand wird zurueckgegeben",
+                juce::String ((int) zurueck.getSize()) + " Bytes");
+
+        p->setPlayHead (nullptr);
+        p->releaseResources();
+    }
     std::cout << std::endl << bestanden << " bestanden, " << fehler << " gescheitert"
               << std::endl;
     return fehler == 0 ? 0 : 1;

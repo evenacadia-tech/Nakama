@@ -152,6 +152,33 @@ void fahreWireZahl()
 // Bauers nachgestellt, nicht seine Ausgabe gemessen.
 void fahreLocale()
 {
+    // N-17 — Heartbeat und Hello unter Komma-Locale.
+    {
+        const char* vorher = std::setlocale (LC_NUMERIC, nullptr);
+        const std::string gesichert = vorher != nullptr ? vorher : "C";
+        nakama::ipc::Adresse a;
+        a.logonSid = "S-1-5-21-1111111111-2222222222-3333333333-1001";
+        a.projectBindingId = "11111111111111111111111111111111";
+        a.sessionEpoch     = "22222222222222222222222222222222";
+        a.instanceId       = "33333333333333333333333333333333";
+        a.runtimeNonce     = "44444444444444444444444444444444";
+        nakama::ipc::ControlStatus st;
+        const auto unterC = nakama::ipc::heartbeatAlsJson (a, 7, st);
+
+        const char* gesetzt = std::setlocale (LC_NUMERIC, "de-DE");
+        if (gesetzt == nullptr)
+            gesetzt = std::setlocale (LC_NUMERIC, "German_Germany.1252");
+        pruefe (gesetzt != nullptr, "N-17: eine Komma-Locale ist verfuegbar");
+        if (gesetzt != nullptr)
+        {
+            const auto unterKomma = nakama::ipc::heartbeatAlsJson (a, 7, st);
+            pruefe (unterKomma == unterC,
+                    "N-17: der Heartbeat ist unter Komma-Locale BYTEGLEICH",
+                    juce::String ((int) unterKomma.size()) + " Bytes");
+            std::setlocale (LC_NUMERIC, gesichert.c_str());
+        }
+    }
+
     pruefe (! nakama::ipc::audioGueltig (1e-308, 512, 2),
             "N-18d: audioGueltig weist eine riegelwidrige Samplerate ab — der "
             "Client verbindet gar nicht erst, statt ein null in ein Pflicht-number "

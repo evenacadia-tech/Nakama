@@ -1,0 +1,16 @@
+NAK-180 Etappe 2, Nacharbeit 2 - ROTBEWEIS WN04
+Erzeugt: 2026-09-05 14:22:07
+Basis:   d67b7a97b6f7a4782cca88cf987bd0620e628ac2
+Ziel:    EqCopSonde013PassageStateTest
+Regel zurueckgedreht durch tools/dirigent (Helfer im Jobordner), danach wiederhergestellt.
+EXIT=1
+
+[ok]   N-35/WN-06: der Linkwechsel kommt NICHT zwischen Vergleich und Einreihen - der Wechsler steht BEWIESEN im Aufbauzug (Phase 0) und bekommt `sendeMutex` erst, wenn der Sendezug ihn freigibt  [1, Eintritt bewiesen, Sperre haelt]
+[ok]   WN-04: G+1 hat geschrieben, waehrend der alte Callback vor seinem CAS steht - das ist die Lage, die der Test braucht  [G4 haelt, G5 schreibt]
+[ROT]  WN-04/N-37: cas_statt_store - der ueberholte Callback nimmt die Wirkung des neueren Links NICHT mit; ein blindes `store` haette beide Zustaende durch seine alte Zahl ersetzt, und Bericht wie Replay von G+1 waeren weg  [Bericht 4, Replay 4 (G4 gegen G5)]
+
+--- Schluss der Ausgabe ---
+[ok]   N-02/N-12: der naechste Heartbeat schweigt wieder - die Aussage reist genau einmal  [{"type":"heartbeat","adresse":{"logon_sid":"S-1-5-21-369263037-1611576211-208123]
+[ok]   N-12: und sie nimmt die Aussage eines neueren Links NICHT mit
+
+199 bestanden, 1 gescheitert

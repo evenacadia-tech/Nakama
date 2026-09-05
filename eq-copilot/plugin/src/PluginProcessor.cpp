@@ -1834,6 +1834,17 @@ void EqCopilotProcessor::v3ControlLink (bool verbunden)
         // genau dessen Urteil, Replay und Bericht — die Wirkung des NEUEN
         // Links. Der Client hinterlegt die Zahl beim Statuswechsel, und
         // `meldeLinkStatus` serialisiert den per `exchange`.
+        // 🔑 NAK-180 Nacharbeit 2 (WN-05): der Einhaengepunkt liegt VOR der
+        // Ermittlung der sterbenden Generation - nicht erst vor den
+        // Loeschungen.
+        //
+        // Genau darin steckt der Defekt, den N-37 Fall 2 messen soll: ein
+        // Callback, der die Zahl bei AUSFUEHRUNG liest, findet nach einem
+        // dazwischen aufgebauten G+1 dessen Zahl und loescht dessen Wirkung.
+        // Ein Haken hinter dieser Zeile koennte das nicht mehr zeigen - die
+        // Zahl staende dann laengst fest.
+        if (linkEndeHakenFuerTest)
+            linkEndeHakenFuerTest (controlV3.sterbendeGenerationJetzt());
         const auto sterbend = controlV3.sterbendeGenerationJetzt();
         if (sterbend == 0)
         {
@@ -1843,13 +1854,6 @@ void EqCopilotProcessor::v3ControlLink (bool verbunden)
             telemetryV3.reconnect();
             return;
         }
-        // 🔑 NAK-180 Nacharbeit 2 (WN-05): der Einhaengepunkt liegt VOR den
-        // Loeschungen. Nur hier kann ein Bein einen ALTEN negativen Callback
-        // festhalten, waehrend G+1 vollstaendig aufbaut und schreibt - die
-        // Ueberlappung, die N-37 Fall 2 verlangt und die eine sequentielle
-        // Folge zweier Aufrufe nie erzeugt.
-        if (linkEndeHakenFuerTest)
-            linkEndeHakenFuerTest (sterbend);
         controlV3.loescheAufbauUrteil (sterbend);
         auto a = sterbend;
         replayFaellig.compare_exchange_strong (a, 0);

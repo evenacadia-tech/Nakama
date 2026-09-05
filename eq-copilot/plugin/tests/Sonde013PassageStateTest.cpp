@@ -1622,13 +1622,35 @@ void n35SendezugGegenAufbauzug()
     (void) s.ernte();
     s.zustellen();
 
+    // 🔑 Nacharbeit 2 (WN-06): die Ordnung traegt keine Pause mehr.
+    //
+    // Bis hierher stand nach dem Start des Wechslers ein `sleep_for(30ms)`.
+    // Er bewies weder, dass der Faden den Aufbauzug ueberhaupt BETRETEN hatte,
+    // noch dass er an `sendeMutex` stand: bei verzoegerter Planung wurde
+    // `weiter` gesetzt, bevor er lief, und der Test blieb auch mit
+    // AUFGETEILTER Sperre gruen. Zwei Schranken IM Aufbauzug ersetzen ihn:
+    // Phase 0 meldet den Eintritt (die Sperre wird als naechstes angefordert),
+    // Phase 1 die Uebernahme. Faellt Phase 1, waehrend der Sendezug die Sperre
+    // noch haelt, ist es nicht dieselbe Sperre - und genau das ist der
+    // Rotbeweis.
     std::mutex m;
     std::condition_variable cv;
-    bool amHaken = false;          // der Zug steht zwischen Vergleich und Einreihen
-    bool weiter = false;           // der zweite Faden hat es versucht
-    std::atomic<bool> wechselDurch { false };
+    bool amHaken = false;              // der Sendezug steht zwischen Vergleich und Einreihen
+    bool wechslerAmEintritt = false;   // Phase 0: der Aufbauzug ist betreten
+    bool wechslerHatSperre = false;    // Phase 1: die Sperre ist uebernommen
+    bool weiter = false;
     std::uint64_t generationAmHaken = 0;
-    bool wechselWarDurchAmHaken = false;
+    bool sperreDurchbrochen = false;
+
+    s.p->setzeAufbauZugHakenFuerTest ([&] (int phase)
+    {
+        {
+            std::lock_guard<std::mutex> l (m);
+            if (phase == 0) wechslerAmEintritt = true;
+            else            wechslerHatSperre  = true;
+        }
+        cv.notify_all();
+    });
 
     s.p->setzeZugHakenFuerTest ([&] (int phase)
     {
@@ -1642,52 +1664,59 @@ void n35SendezugGegenAufbauzug()
         cv.notify_all();
         std::unique_lock<std::mutex> l (m);
         cv.wait (l, [&] { return weiter; });
-        // Der zweite Faden hatte seine Chance. Kam er durch, saehe der Zug
-        // hier eine andere Generation - genau das darf nicht sein.
-        wechselWarDurchAmHaken = wechselDurch.load();
+        // Hat der Wechsler die Sperre uebernommen, waehrend dieser Zug sie
+        // haelt? Unter EINER Sperre ist das unmoeglich.
+        sperreDurchbrochen = wechslerHatSperre;
     });
 
     // Der zweite Faden will den Linkwechsel GENAU HIER erzwingen. Er nimmt
     // `sendeMutex` im Aufbauzug und steht deshalb, bis der Sendezug fertig
     // ist - das IST die Zusage.
-    std::thread wechsler;
+    std::thread wechsler ([&]
+    {
+        {
+            std::unique_lock<std::mutex> l (m);
+            cv.wait (l, [&] { return amHaken; });
+        }
+        s.p->v3LinkFuerTest (false);
+        s.p->v3LinkFuerTest (true);
+    });
     std::thread ausloeser ([&]
     {
         std::unique_lock<std::mutex> l (m);
-        cv.wait (l, [&] { return amHaken; });
+        // (a) Kausale Kante: der Wechsler steht WIRKLICH im Aufbauzug.
+        cv.wait (l, [&] { return wechslerAmEintritt; });
+        // (b) Falsifikationsbudget, nicht Ordnung: greift `sendeMutex`, KANN
+        //     Phase 1 hier nicht fallen und die Frist laeuft ab. Ist die
+        //     Sperre aufgeteilt, meldet sie sich sofort - und der Sendezug
+        //     liest sie unten als `sperreDurchbrochen`.
+        cv.wait_for (l, std::chrono::milliseconds (400),
+                     [&] { return wechslerHatSperre; });
+        weiter = true;
         l.unlock();
-        wechsler = std::thread ([&]
-        {
-            s.p->v3LinkFuerTest (false);
-            s.p->v3LinkFuerTest (true);
-            wechselDurch.store (true);
-        });
-        // Dem Wechsler eine echte Chance geben: er soll wirklich an der
-        // Sperre stehen, nicht erst danach starten. Die Ordnung traegt nicht
-        // dieses Warten, sondern `sendeMutex` - das Warten macht den Versuch
-        // nur ernsthaft.
-        std::this_thread::sleep_for (std::chrono::milliseconds (30));
-        {
-            std::lock_guard<std::mutex> l2 (m);
-            weiter = true;
-        }
         cv.notify_all();
     });
 
-    // Jetzt das Ende erzeugen - der Sendezug laeuft in den Haken.
+    // Jetzt das Ende erzeugen - der Sendezug laeuft in den Haken. SYNCHRON,
+    // damit nicht der 50-ms-Takt des Workers ueber den Zeitpunkt entscheidet.
+    s.p->senderAnhaltenFuerTest (true);
     s.p->markierungAus();
     s.bloecke (140);
-    (void) s.ernte();
+    s.p->interventionenSendenFuerTest();
 
     ausloeser.join();
-    if (wechsler.joinable())
-        wechsler.join();
+    wechsler.join();
     s.p->setzeZugHakenFuerTest ({});
+    s.p->setzeAufbauZugHakenFuerTest ({});
+    s.p->senderAnhaltenFuerTest (false);
 
-    pruefe (generationAmHaken != 0 && ! wechselWarDurchAmHaken,
-            "N-35: der Linkwechsel kommt NICHT zwischen Vergleich und Einreihen - "
-            "beide liegen unter `sendeMutex`, den der Aufbauzug ebenfalls nimmt",
-            juce::String ((int) generationAmHaken) + (wechselWarDurchAmHaken ? " DURCH" : " blockiert"));
+    pruefe (generationAmHaken != 0 && wechslerAmEintritt && ! sperreDurchbrochen,
+            "N-35/WN-06: der Linkwechsel kommt NICHT zwischen Vergleich und "
+            "Einreihen - der Wechsler steht BEWIESEN im Aufbauzug (Phase 0) und "
+            "bekommt `sendeMutex` erst, wenn der Sendezug ihn freigibt",
+            juce::String ((int) generationAmHaken)
+                + (wechslerAmEintritt ? ", Eintritt bewiesen" : ", NIE EINGETRETEN")
+                + (sperreDurchbrochen ? ", Sperre DURCHBROCHEN" : ", Sperre haelt"));
 
     // Und auf dem neuen Link steht kein `end` ohne sein Begin.
     s.bloecke (6);
@@ -2225,43 +2254,61 @@ void n37ProzessorZustaendeTragenIhreGeneration()
             "N-37: der frische Link schreibt ungestoert",
             juce::String ((int) s.p->berichtOffenFuerTest()));
 
-    // 🔑 EP-04/R13: der UEBERHOLTE positive Callback schreibt zuletzt - und
-    // darf die Wirkung des neueren Links nicht mitnehmen.
+    // 🔑 WN-04/EP-04/R13: der UEBERHOLTE positive Callback schreibt zuletzt -
+    // und darf die Wirkung des neueren Links nicht mitnehmen.
     //
-    // Das ist der Fall, den ein blindes `store` verliert und den ein CAS auf
-    // eine kleinere Generation abweist. Beide Aufbauten urteilen NICHT
-    // neutral, damit sie denselben Zustand beschreiben; sonst kollidierten
-    // sie gar nicht. Die Ordnung traegt eine Bedingungsvariable.
+    // 🔑 Nacharbeit 2 (WN-04): festgehalten wird der ECHTE Callback, VOR
+    // seinem CAS. Bis hierher haengte sich der Fall HINTER
+    // `v3ControlLink(true)` und schrieb ueber `berichtOffenFuerTestSetzen` -
+    // eine zweite Zeile neben der Produktzeile, deren echter Schreibzugriff
+    // laengst gelaufen war. `gAlt` bekam seinen Wert zudem erst nach der
+    // Rueckkehr des Callbacks und war im Callback stets 0: der Rotbeweis fiel
+    // mit `[0 (G4 gegen G5)]`, also aus dem falschen Grund, und eine Rueckkehr
+    // zu blinden `store`s waere gruen geblieben.
+    //
+    // Beide Aufbauten urteilen NICHT neutral (der Marker klingt), damit sie
+    // denselben Zustand beschreiben; sonst kollidierten sie gar nicht.
     {
         std::mutex m;
         std::condition_variable cv;
         bool steht = false, darfSchreiben = false;
         std::uint64_t gAlt = 0;
+        std::atomic<int> aufrufe { 0 };
 
-        std::thread haltend ([&]
+        // Der Haken faengt NUR den ersten Aufbau. Der zweite - G+1 - laeuft
+        // ungehindert durch und schreibt, waehrend der erste noch steht.
+        s.p->setzeLinkAufbauHakenFuerTest ([&] (std::uint64_t g)
         {
-            gAlt = s.p->v3LinkAufbauFuerTest ([&]
+            if (aufrufe.fetch_add (1) != 0)
+                return;
             {
-                {
-                    std::lock_guard<std::mutex> l (m);
-                    steht = true;
-                }
-                cv.notify_all();
-                std::unique_lock<std::mutex> l (m);
-                cv.wait (l, [&] { return darfSchreiben; });
-                // ERST JETZT schreibt der ueberholte Callback - mit SEINER,
-                // inzwischen alten Generation.
-                s.p->berichtOffenFuerTestSetzen (gAlt);
-            });
+                std::lock_guard<std::mutex> l (m);
+                gAlt = g;              // die Generation DIESES Aufbaus (R10)
+                steht = true;
+            }
+            cv.notify_all();
+            std::unique_lock<std::mutex> l (m);
+            cv.wait (l, [&] { return darfSchreiben; });
+            // Beim Verlassen des Hakens folgt der ECHTE Schreibzugriff des
+            // Produkts - mit SEINER, inzwischen alten Generation.
         });
+
+        std::thread haltend ([&] { s.p->v3LinkFuerTest (true); });
         {
             std::unique_lock<std::mutex> l (m);
             cv.wait (l, [&] { return steht; });
         }
 
-        // Der naechste Link baut vollstaendig auf und schreibt seine Zahl.
+        // Der naechste Link baut vollstaendig auf und schreibt seine Zahl -
+        // waehrend der alte Callback noch VOR seinem CAS steht.
         s.p->v3LinkFuerTest (true);
         const auto gNeu = s.p->wireGenerationFuerTest();
+        pruefe (gNeu > gAlt && s.p->berichtOffenFuerTest() == gNeu
+                    && s.p->replayFaelligFuerTest() == gNeu,
+                "WN-04: G+1 hat geschrieben, waehrend der alte Callback vor seinem "
+                "CAS steht - das ist die Lage, die der Test braucht",
+                "G" + juce::String ((int) gAlt) + " haelt, G"
+                    + juce::String ((int) gNeu) + " schreibt");
 
         {
             std::lock_guard<std::mutex> l (m);
@@ -2269,13 +2316,80 @@ void n37ProzessorZustaendeTragenIhreGeneration()
         }
         cv.notify_all();
         haltend.join();
+        s.p->setzeLinkAufbauHakenFuerTest ({});
 
-        pruefe (gNeu > gAlt && s.p->berichtOffenFuerTest() == gNeu,
-                "N-37/EP-04: cas_statt_store - der ueberholte Callback nimmt die "
-                "Wirkung des neueren Links NICHT mit; ein blindes `store` haette sie "
-                "durch seine alte Zahl ersetzt, und der Bericht von G+1 waere weg",
-                juce::String ((int) s.p->berichtOffenFuerTest()) + " (G"
-                    + juce::String ((int) gAlt) + " gegen G" + juce::String ((int) gNeu) + ")");
+        pruefe (s.p->berichtOffenFuerTest() == gNeu
+                    && s.p->replayFaelligFuerTest() == gNeu,
+                "WN-04/N-37: cas_statt_store - der ueberholte Callback nimmt die "
+                "Wirkung des neueren Links NICHT mit; ein blindes `store` haette "
+                "beide Zustaende durch seine alte Zahl ersetzt, und Bericht wie "
+                "Replay von G+1 waeren weg",
+                "Bericht " + juce::String ((int) s.p->berichtOffenFuerTest())
+                    + ", Replay " + juce::String ((int) s.p->replayFaelligFuerTest())
+                    + " (G" + juce::String ((int) gAlt) + " gegen G"
+                    + juce::String ((int) gNeu) + ")");
+    }
+
+    // 🔑 WN-05/EP-15/N-37 Fall 2: der ALTE negative Callback ueberlappt einen
+    // NEUEREN Aufbau.
+    //
+    // 🔑 Nacharbeit 2 (WN-05): bis hierher liefen zwei `v3LinkFuerTest(false)`
+    // NACHEINANDER. Der erste beendete seine Generation synchron, der als
+    // verspaetet bezeichnete zweite fand `0` - und `0` loescht nichts. Kein
+    // alter negativer Callback ueberlappte je einen neueren Aufbau, und eine
+    // Rueckkehr zu `wireGenerationJetzt()` waere gruen geblieben. Der Haken
+    // haelt den Callback jetzt VOR seinen Loeschungen fest.
+    {
+        s.p->v3LinkFuerTest (true);            // ein lebender Link zum Sterben
+        std::mutex m;
+        std::condition_variable cv;
+        bool steht = false, darfLoeschen = false;
+        std::uint64_t sterbend = 0;
+
+        s.p->setzeLinkEndeHakenFuerTest ([&] (std::uint64_t g)
+        {
+            {
+                std::lock_guard<std::mutex> l (m);
+                sterbend = g;
+                steht = true;
+            }
+            cv.notify_all();
+            std::unique_lock<std::mutex> l (m);
+            cv.wait (l, [&] { return darfLoeschen; });
+        });
+
+        std::thread sterbender ([&] { s.p->v3LinkFuerTest (false); });
+        {
+            std::unique_lock<std::mutex> l (m);
+            cv.wait (l, [&] { return steht; });
+        }
+
+        // G+1 baut auf und schreibt - WAEHREND der alte Ende-Callback vor
+        // seinen Loeschungen steht.
+        s.p->v3LinkFuerTest (true);
+        const auto gNeu = s.p->wireGenerationFuerTest();
+        pruefe (gNeu > sterbend && s.p->berichtOffenFuerTest() == gNeu
+                    && s.p->replayFaelligFuerTest() == gNeu,
+                "WN-05: G+1 steht vollstaendig, waehrend der alte negative Callback "
+                "noch vor seinen Loeschungen wartet",
+                "sterbend G" + juce::String ((int) sterbend) + ", neu G"
+                    + juce::String ((int) gNeu));
+
+        {
+            std::lock_guard<std::mutex> l (m);
+            darfLoeschen = true;
+        }
+        cv.notify_all();
+        sterbender.join();
+        s.p->setzeLinkEndeHakenFuerTest ({});
+
+        pruefe (s.p->berichtOffenFuerTest() == gNeu
+                    && s.p->replayFaelligFuerTest() == gNeu,
+                "WN-05/N-37 Fall 2: der verspaetete negative Callback loescht NUR "
+                "seine sterbende Generation - mit `wireGenerationJetzt()` haette er "
+                "genau die Zustaende des NEUEN Links mitgenommen",
+                "Bericht " + juce::String ((int) s.p->berichtOffenFuerTest())
+                    + ", Replay " + juce::String ((int) s.p->replayFaelligFuerTest()));
     }
 }
 

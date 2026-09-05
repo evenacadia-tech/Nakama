@@ -1,0 +1,14 @@
+NAK-180 Etappe 2, Nacharbeit 2 - ROTBEWEIS WN06
+Erzeugt: 2026-09-05 14:22:43
+Basis:   d67b7a97b6f7a4782cca88cf987bd0620e628ac2
+Ziel:    EqCopSonde013PassageStateTest
+Regel zurueckgedreht durch tools/dirigent (Helfer im Jobordner), danach wiederhergestellt.
+EXIT=1
+
+[ROT]  N-35/WN-06: der Linkwechsel kommt NICHT zwischen Vergleich und Einreihen - der Wechsler steht BEWIESEN im Aufbauzug (Phase 0) und bekommt `sendeMutex` erst, wenn der Sendezug ihn freigibt  [1, Eintritt bewiesen, Sperre DURCHBROCHEN]
+
+--- Schluss der Ausgabe ---
+[ok]   N-02/N-12: der naechste Heartbeat schweigt wieder - die Aussage reist genau einmal  [{"type":"heartbeat","adresse":{"logon_sid":"S-1-5-21-369263037-1611576211-208123]
+[ok]   N-12: und sie nimmt die Aussage eines neueren Links NICHT mit
+
+198 bestanden, 2 gescheitert

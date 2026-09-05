@@ -1,0 +1,15 @@
+NAK-180 Etappe 2, Nacharbeit 2 - ROTBEWEIS WN05
+Erzeugt: 2026-09-05 14:24:02
+Basis:   d67b7a97b6f7a4782cca88cf987bd0620e628ac2
+Ziel:    EqCopSonde013PassageStateTest
+Regel zurueckgedreht durch tools/dirigent (Helfer im Jobordner), danach wiederhergestellt.
+EXIT=1
+
+[ok]   WN-05: G+1 steht vollstaendig, waehrend der alte negative Callback noch vor seinen Loeschungen wartet  [sterbend G6, neu G7]
+[ROT]  WN-05/N-37 Fall 2: der verspaetete negative Callback loescht NUR seine sterbende Generation - mit `wireGenerationJetzt()` haette er genau die Zustaende des NEUEN Links mitgenommen  [Bericht 0, Replay 0]
+
+--- Schluss der Ausgabe ---
+[ok]   N-02/N-12: der naechste Heartbeat schweigt wieder - die Aussage reist genau einmal  [{"type":"heartbeat","adresse":{"logon_sid":"S-1-5-21-369263037-1611576211-208123]
+[ok]   N-12: und sie nimmt die Aussage eines neueren Links NICHT mit
+
+199 bestanden, 1 gescheitert

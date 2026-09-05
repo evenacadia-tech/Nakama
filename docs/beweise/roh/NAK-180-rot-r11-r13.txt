@@ -1,0 +1,16 @@
+NAK-180 Rotbeweis R11/R13 - Generationsbindung und CAS der Aufbau-Aussage
+Stand: 6a690480ee020e9db72fa9805df64db2c77dd445
+Zuruecknahme (zwei Stellen in ControlClient::meldeAufbauUrteil):
+  1. Das Generationsfenster faellt weg - der Callback stempelt wieder die
+     AKTUELLE Generation statt der seines eigenen Aufbaus (MP3-1).
+  2. Loeschen und Setzen wieder als blindes store() statt als CAS - ein
+     ueberholter Callback nimmt die Aussage des neueren Links mit (MP4-2).
+
+Erwartung: N-34 faellt - der erste Heartbeat von G2 traegt nicht mehr sein
+eigenes Urteil, sondern das des toten Links oder gar keines.
+
+  ok      NAK-180 N-34: der zweite Aufbau vergibt die naechste Generation  [1 -> 2]
+  FEHLER  NAK-180 N-34: ueberholter_callback_praegt_keinen_spaeteren_link - der erste Heartbeat von G2 traegt dessen eigenes Urteil (`true`), nicht das `false`, das der Callback von G1 danach schrieb  [":"unsupported"},"zaehler":{"frames_dropped":0,"parse_errors":0,"queue_overflows":0},"intervention_state_unknown":false}]
+  FEHLER  NAK-180 N-23: und die Aussage des toten Links reist nicht mit
+FEHLER — 333 Pruefungen, 2 Fehler
+EXIT=1

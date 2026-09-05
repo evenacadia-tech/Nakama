@@ -23,6 +23,15 @@
 */
 
 #include "PluginProcessor.h"
+#include "../core/ipc/PipeToken.h"
+
+#define WIN32_LEAN_AND_MEAN
+#ifndef NOMINMAX
+ #define NOMINMAX
+#endif
+#include <windows.h>
+#include <chrono>
+#include <thread>
 #include "HoerMarkierung.h"
 
 #include <pluginterfaces/vst/ivstprocesscontext.h>
@@ -688,6 +697,66 @@ int main()
 
     std::cout << std::endl;
     if (fehlerZahl == 0)
+    // ── NAK-180 R6/N-20: `stop()` kehrt in gemessener Frist zurueck, auch
+    //    wenn ein Tick gerade in `namedPipeErreichbar` steht ────────────────
+    //
+    // Der Befund aus G4 §7 (Part 05): der Lebenslaufthread haelt das
+    // Win32-Startmutex, `stop()` joint ihn fristlos, und `stop()` ist die
+    // ERSTE Anweisung des Prozessordestruktors. Stand der Tick in einem
+    // `WaitNamedPipeW` mit der Frist eines FREMDEN Pipe-Besitzers, hing der
+    // Message-Thread des Hosts fuer die vom Angreifer gewaehlte Dauer.
+    //
+    // Gemessen wird die Frist von `stop()` selbst, gegen eine Pipe mit
+    // `nDefaultTimeOut = 0xFFFFFFFE` ohne `ConnectNamedPipe` - im
+    // PROBE-Namensraum, nie auf dem produktiven Namen.
+    {
+        const auto pipe = std::string (nakama::ipc::kPipePraefixProbe)
+                        + "test.nak180-stopfrist."
+                        + std::to_string ((int) GetCurrentProcessId());
+        std::wstring breit;
+        for (char c : pipe)
+            breit.push_back (static_cast<wchar_t> (static_cast<unsigned char> (c)));
+        HANDLE feindlich = CreateNamedPipeW (
+            breit.c_str(), PIPE_ACCESS_DUPLEX,
+            PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
+            1, 4096, 4096, 0xFFFFFFFE, nullptr);
+        pruefe (feindlich != INVALID_HANDLE_VALUE,
+                "NAK-180 N-20: die feindliche Pipe steht");
+
+        if (feindlich != INVALID_HANDLE_VALUE)
+        {
+            std::atomic<int> ticks { 0 };
+            nakama::ipc::BrokerLifecycleHooks hooks;
+            hooks.verbunden = [] { return false; };
+            hooks.connectFehlgeschlagen = [] { return true; };
+            hooks.darfStarten = [] { return true; };
+            hooks.pruefen = [&] { ++ticks; return nakama::ipc::BrokerPruefBericht {}; };
+            hooks.spawn = [] { return false; };
+            hooks.mutexName = L"Local\Nakama.NAK180.Stopfrist";
+            hooks.pipeName = pipe;          // hier steht der Tick im Wait
+            nakama::ipc::BrokerLifecycle lifecycle (std::move (hooks));
+            lifecycle.start();
+
+            // Dem Thread Zeit geben, in den Tick und damit in den Wait zu
+            // laufen; der Takt ist 25 ms.
+            const auto los = std::chrono::steady_clock::now();
+            while (std::chrono::steady_clock::now() - los < std::chrono::milliseconds (120))
+                std::this_thread::sleep_for (std::chrono::milliseconds (5));
+
+            const auto vorStop = std::chrono::steady_clock::now();
+            lifecycle.stop();
+            const auto dauerMs = (long long) std::chrono::duration_cast<std::chrono::milliseconds> (
+                std::chrono::steady_clock::now() - vorStop).count();
+
+            pruefe (dauerMs < 1000,
+                    "NAK-180 N-20: stop_kehrt_in_gemessener_frist_zurueck - auch wenn ein "
+                    "Tick gerade in `namedPipeErreichbar` steht, kehrt `stop()` unter 1 s "
+                    "zurueck; mit der Serverfrist stuende er bis zu 49,7 Tage",
+                    std::to_string (dauerMs) + " ms");
+            CloseHandle (feindlich);
+        }
+    }
+
     {
         std::cout << "LEBENSLAUF-TEST OK - " << okZahl << " Pruefungen ok, 0 Fehler" << std::endl;
         return 0;

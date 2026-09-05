@@ -325,12 +325,15 @@ public:
     /// eingereihte Ereignis in Zustand 1, und die Faelle, die ZUSTELLUNG
     /// voraussetzen (Replay nach Linkwechsel), waeren unerreichbar.
     std::size_t zustelleAllesFuerTest() { return controlV3.zustelleAllesFuerTest(); }
+    std::size_t fuelleP0QueueFuerTest() { return controlV3.fuelleP0QueueFuerTest(); }
+    void leereP0QueueFuerTest() { controlV3.leereP0QueueFuerTest(); }
 
     void v3LinkFuerTest (bool verbunden)
     {
         if (verbunden)
-            controlV3.aufbauZug();
-        v3ControlLink (verbunden);
+            controlV3.linkAufbauFuerTest ([this] { v3ControlLink (true); });
+        else
+            v3ControlLink (false);
     }
     void v3AntwortFuerTest (const std::string& json,
                             std::uint8_t schemaMinor = nakama::ipc::kJsonSchemaMinor)

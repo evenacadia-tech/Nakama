@@ -6214,6 +6214,81 @@ int main (int argc, char** argv)
         }
     }
 
+    // ── NAK-180 R11/R12/R13: erzwungenes true/false-Interleaving
+    //    (Matrix N-23, N-24, N-34, N-35) ────────────────────────────────────
+    //
+    // Vier Pruefungsrunden fanden ihren Defekt in derselben Luecke: eine
+    // Aussage ueber "diesen Link", deren Zeitpunkt gegenueber dem
+    // Generationswechsel offen blieb. Gemessen wird deshalb das
+    // ZUSAMMENTREFFEN, nicht die Absicht - mit einem zweiten Thread und einer
+    // deterministischen Schranke, nie mit `sleep` als einziger Ordnung.
+    {
+        nakama::ipc::ControlClient client ([] { return ControlHello {}; },
+                                          testPipeName ("nak180-interleave"));
+
+        // (N-34, Fall 1) Der positive Callback von G1 wird FESTGEHALTEN.
+        // Waehrenddessen laeuft der naechste Aufbau (G2) vollstaendig durch -
+        // genau die Lage, die `reconnect()` erzeugt: sein negativer Callback
+        // laeuft synchron auf dem Aufruferthread, waehrend der positive noch
+        // steht.
+        std::mutex m;
+        std::condition_variable cv;
+        bool g1DarfSchreiben = false;
+        bool g1Steht = false;
+        std::uint64_t g1 = 0, g2 = 0;
+
+        std::thread haltend ([&]
+        {
+            g1 = client.linkAufbauFuerTest ([&]
+            {
+                {
+                    std::lock_guard<std::mutex> l (m);
+                    g1Steht = true;
+                }
+                cv.notify_all();
+                // Der Callback von G1 haelt hier, bis G2 komplett durch ist.
+                std::unique_lock<std::mutex> l (m);
+                cv.wait (l, [&] { return g1DarfSchreiben; });
+                // ERST JETZT schreibt der ueberholte Callback seine Aussage.
+                client.meldeAufbauUrteil (true);
+            });
+        });
+
+        {
+            std::unique_lock<std::mutex> l (m);
+            cv.wait (l, [&] { return g1Steht; });
+        }
+
+        // G2 baut auf und urteilt NICHT neutral (Marker laeuft).
+        g2 = client.linkAufbauFuerTest ([&] { client.meldeAufbauUrteil (false); });
+
+        {
+            std::lock_guard<std::mutex> l (m);
+            g1DarfSchreiben = true;
+        }
+        cv.notify_all();
+        haltend.join();                     // erst danach steht `g1`
+        pruefe (g2 == g1 + 1,
+                "NAK-180 N-34: der zweite Aufbau vergibt die naechste Generation",
+                std::to_string (g1) + " -> " + std::to_string (g2));
+
+        // Die Aussage des ueberholten Callbacks traegt G1 und ist fuer G2
+        // inert. Gemessen am Heartbeat: er darf NICHT `false` tragen.
+        nakama::ipc::Adresse a;
+        a.logonSid = "S-1-5-21-1"; a.projectBindingId = std::string (32, 'a');
+        a.sessionEpoch = std::string (32, 'b'); a.instanceId = std::string (32, 'c');
+        a.runtimeNonce = std::string (32, 'd');
+        nakama::ipc::ControlStatus st;
+        const auto text = client.heartbeatTextFuerTest (a, 1, st);
+        pruefe (text.find ("\"intervention_state_unknown\":true") != std::string::npos,
+                "NAK-180 N-34: ueberholter_callback_praegt_keinen_spaeteren_link - der "
+                "erste Heartbeat von G2 traegt dessen eigenes Urteil (`true`), nicht "
+                "das `false`, das der Callback von G1 danach schrieb",
+                text.substr (text.size() > 120 ? text.size() - 120 : 0));
+        pruefe (text.find ("\"intervention_state_unknown\":false") == std::string::npos,
+                "NAK-180 N-23: und die Aussage des toten Links reist nicht mit");
+    }
+
     // ── NAK-180 R6: die Wartefrist gehoert UNS, nicht dem Pipe-Besitzer
     //    (Matrix N-19, N-21, N-22) ──────────────────────────────────────────
     {

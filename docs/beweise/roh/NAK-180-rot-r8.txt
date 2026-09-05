@@ -1,0 +1,28 @@
+NAK-180 Rotbeweis R8 - das Replay des offenen lokalen Begins
+Stand: 6a690480ee020e9db72fa9805df64db2c77dd445
+Zuruecknahme: `replayNoetig()` im Sendezug liefert immer false - es entsteht
+kein Replay mehr, weder nach Linkwechsel noch nach einem abgewiesenen Begin.
+
+Erwartung: N-05 (Replay bei hoerbarem Marker), N-28 (Replay nach
+abgewiesenem Begin) und N-29 (kein end ohne sein Begin) fallen - das `end`
+trifft beim Broker auf kein Begin und setzt `unknown`.
+
+== NAK-180 N-05/N-09  replay_bei_hoerbarem_marker ==
+[ok]   N-05: der Marker klingt
+[ok]   N-05: sein Begin ist gesendet  [1]
+[ok]   N-05: und der Draht hat es bestaetigt
+[ROT]  N-05: replay_traegt_dieselbe_intervention_id - der Neuaufbau stellt den wahren Zustand her, statt den Marker beim Broker verschwinden zu lassen  [0 Replay-Begin]
+== NAK-180 N-10  prepare_to_play_schliesst_das_tote_begin ==
+[ok]   N-10: der Marker klingt vor dem Prepare
+[ROT]  N-10: prepare_to_play_paar - Replay-Begin UND synthetisches `end` fuer das tote Intervall, dazu das neue Begin des wieder hochfahrenden Markers; ohne das Paar bliebe das tote Intervall beim Broker fuer immer offen  [1 Begin, 1 End]
+[ok]   N-10: das synthetische Ende traegt KEINE Projektzeit - sie ist hier ehrlich unbekannt, und der Broker invalidiert dann fail-closed die ganze Sitzung (M-52)
+[ok]   N-10: und den vollen Nachlauf der letzten gueltigen Rate  [4800]
+== NAK-180 N-28  replay_auch_nach_abgewiesenem_begin ==
+[ok]   N-28: die P0-Queue ist voll  [64]
+[ok]   N-28: der Marker klingt
+[ROT]  N-28: replay_auch_nach_abgewiesenem_begin - das Begin ist lokal offen, auch wenn es den Draht nie erreicht hat  [0]
+[ok]   N-28: und das `end` folgt - der regulaere Pfad nullt
+== NAK-180 N-29/N-35  kein_end_ohne_begin_im_selben_zug ==
+[ROT]  N-29: kein_end_ohne_begin_desselben_links - nach dem Linkwechsel geht das Replay-Begin unmittelbar voran; ohne die Ordnungsregel traefe das `end` beim Broker auf nichts und setzte `unknown`
+150 bestanden, 4 gescheitert
+EXIT=1

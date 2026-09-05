@@ -390,6 +390,33 @@ public:
         Rueckgabe: wie viele Eintraege zugestellt wurden. */
     std::size_t zustelleAllesFuerTest();
 
+    /** Fuellt die P0-Queue bis zum Rand, damit `sendeP0` ABWEIST (Test).
+
+        Nur so ist der Zustand „nicht eingereiht" erreichbar - und mit ihm der
+        Fall, dass ein Begin lokal offen ist, obwohl es den Draht nie gesehen
+        hat (E6 Zustand 1, R8). Rueckgabe: wie viele Platzhalter passten. */
+    std::size_t fuelleP0QueueFuerTest();
+    /// Leert sie wieder, ohne etwas zu melden.
+    void leereP0QueueFuerTest();
+
+    /** Der positive Link-Callback wie im Produkt, samt Generationsfenster
+        (NAK-180 R11, Test).
+
+        `aufbauZug()` vergibt die Generation, das Fenster macht sie fuer
+        `meldeAufbauUrteil` sichtbar, und der Rueckruf laeuft dazwischen -
+        genau die Folge aus `eineVerbindung`. Ein Bein, das den Rueckruf ohne
+        dieses Fenster ausloest, stempelte die AKTUELLE Generation statt der
+        eigenen und maesse damit einen Pfad, den das Produkt nicht hat. */
+    std::uint64_t linkAufbauFuerTest (const std::function<void()>& imCallback);
+
+    /** Der Heartbeat-Text, den die Sendeschleife JETZT bilden wuerde (Test).
+
+        Er verbraucht die Aufbau-Aussage genauso wie die Schleife - per CAS auf
+        die eigene Generation, mit Aufraeumen einer fremden. Ein Bein misst
+        damit die Wirkung eines Callbacks, ohne eine Pipe zu brauchen. */
+    std::string heartbeatTextFuerTest (const Adresse& adresse, std::uint64_t sequence,
+                                       const ControlStatus& status);
+
     /// Persistenzpflichtiger P0-Auftrag. Der JSON-Text muss genau eine
     /// gueltige `command_id` tragen. Sein Queueplatz wird nach dem Wire-Write
     /// frei; logisch erledigt ist er erst durch ein schemafestes

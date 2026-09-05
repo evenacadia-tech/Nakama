@@ -833,21 +833,56 @@ void ControlClient::setzeReplayBeginHook (std::function<std::string()> hook)
     k->hookReplayBegin = std::move (hook);
 }
 
+/** 🔑 NAK-180 R11: die Generation, FUER DIE der laufende Link-Callback laeuft.
+
+    `meldeAufbauUrteil` las bis hier `wireGeneration.load()` - die AKTUELLE
+    Zahl. Ein ueberholter positiver Callback (sein Link ist tot, ein neuer
+    steht schon) haette damit die NEUE Generation gestempelt, und seine
+    Aussage waere fuer den naechsten Link faelschlich gueltig gewesen: genau
+    MP3-1, nur eine Ebene tiefer. Die Generationsbindung traegt nur, wenn die
+    Wirkung die Zahl ihres EIGENEN Aufbaus bekommt.
+    
+    `thread_local`, weil der positive Callback synchron auf dem Client-Thread
+    laeuft und zwei Clients in einem Prozess sonst dieselbe Zahl teilten. Der
+    Worker ruft `meldeAufbauUrteil` beim Abschluss (E3.3) ohne dieses Fenster
+    - dort ist die aktuelle Generation die richtige. */
+thread_local std::uint64_t tlAufbauGeneration = 0;
+
 std::uint64_t ControlClient::meldeAufbauUrteil (bool neutral)
 {
-    const auto generation = k->wireGeneration.load();
-    // Genau EINE der beiden Aussagen steht; die andere wird geloescht, damit
-    // ein Urteilswechsel innerhalb desselben Aufbaus nicht beide stehen
-    // laesst.
+    const auto generation = tlAufbauGeneration != 0 ? tlAufbauGeneration
+                                                    : k->wireGeneration.load();
+    // 🔑 NAK-180 R13: das jeweils ANDERE Flag faellt per CAS, nie blind.
+    //
+    // Ein blindes `store(0)` nahm die Aussage eines NEUEREN Links mit: der
+    // ueberholte Callback von G1 loeschte das `true`, das G2 gerade gesetzt
+    // hatte, und der erste Heartbeat von G2 trug gar keine Aussage - die
+    // Sitzung blieb gesperrt, ohne dass sie je jemand aufloesen konnte. Nur
+    // die eigene Generation darf fallen.
+    auto loescheEigene = [generation] (std::atomic<std::uint64_t>& flag)
+    {
+        auto meine = generation;
+        flag.compare_exchange_strong (meine, 0);
+    };
+    // Und die eigene Aussage wird nur gesetzt, solange kein NEUERER Link den
+    // Platz belegt hat: `0` (frei) oder eine kleinere/gleiche Generation
+    // duerfen weichen, eine hoehere nie.
+    auto setzeEigene = [generation] (std::atomic<std::uint64_t>& flag)
+    {
+        auto gesehen = flag.load();
+        while (gesehen <= generation)
+            if (flag.compare_exchange_weak (gesehen, generation))
+                return;
+    };
     if (neutral)
     {
-        k->nichtNeutralerNeuaufbau.store (0);
-        k->neutralerNeuaufbau.store (generation);
+        loescheEigene (k->nichtNeutralerNeuaufbau);
+        setzeEigene (k->neutralerNeuaufbau);
     }
     else
     {
-        k->neutralerNeuaufbau.store (0);
-        k->nichtNeutralerNeuaufbau.store (generation);
+        loescheEigene (k->neutralerNeuaufbau);
+        setzeEigene (k->nichtNeutralerNeuaufbau);
     }
     return generation;
 }
@@ -1195,6 +1230,59 @@ std::uint64_t ControlClient::Laufzeit::aufbauZug()
 
 std::uint64_t ControlClient::aufbauZug() { return k->aufbauZug(); }
 
+std::uint64_t ControlClient::linkAufbauFuerTest (const std::function<void()>& imCallback)
+{
+    const auto generation = k->aufbauZug();
+    tlAufbauGeneration = generation;
+    if (imCallback)
+        imCallback();
+    tlAufbauGeneration = 0;
+    return generation;
+}
+
+std::string ControlClient::heartbeatTextFuerTest (const Adresse& adresse,
+                                                 std::uint64_t sequence,
+                                                 const ControlStatus& status)
+{
+    // Dieselbe Verbrauchsregel wie in der Sendeschleife (R1/R13): CAS auf die
+    // eigene Generation, fremde nur aufraeumen.
+    const auto meine = k->wireGeneration.load();
+    auto verbrauche = [meine] (std::atomic<std::uint64_t>& flag)
+    {
+        auto gesehen = flag.load();
+        if (gesehen == 0)
+            return false;
+        if (gesehen == meine)
+            return flag.compare_exchange_strong (gesehen, 0);
+        flag.compare_exchange_strong (gesehen, 0);
+        return false;
+    };
+    const bool neutral   = verbrauche (k->neutralerNeuaufbau);
+    const bool unbekannt = verbrauche (k->nichtNeutralerNeuaufbau);
+    auto st = status;
+    if (unbekannt)
+        st.interventionStateUnknown = true;
+    return heartbeatAlsJson (adresse, sequence, st, neutral);
+}
+
+std::size_t ControlClient::fuelleP0QueueFuerTest()
+{
+    std::lock_guard<std::mutex> l (k->sendeMutex);
+    std::size_t n = 0;
+    while (k->p0.einreihen (P0Eintrag { "{\"fuellung\":1}", P0Klasse::ereignis,
+                                        k->wireGeneration.load(), 0 }))
+        ++n;
+    return n;
+}
+
+void ControlClient::leereP0QueueFuerTest()
+{
+    std::lock_guard<std::mutex> l (k->sendeMutex);
+    P0Eintrag e;
+    while (k->p0.entnehmen (e))
+        k->p0.bestaetigen();
+}
+
 std::size_t ControlClient::zustelleAllesFuerTest()
 {
     std::vector<std::uint64_t> marken;
@@ -1517,7 +1605,13 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
     // auf kein Begin und setzte `unknown` (MP2-1/MP4-1).
     const auto dieseWireGeneration = aufbauZug();
 
+    // Das Fenster, in dem `meldeAufbauUrteil` die Generation DIESES Aufbaus
+    // sieht - nicht die aktuelle. Ein ueberholter Callback stempelt damit
+    // seine eigene, alte Zahl, und seine Wirkung ist fuer den naechsten Link
+    // inert (R11).
+    tlAufbauGeneration = dieseWireGeneration;
     meldeLinkStatus (true);
+    tlAufbauGeneration = 0;
 
     // Was der letzte Verbindungsabbruch offen liess, geht jetzt zuerst raus
     // (§53.9 "nicht koaleszierbare Events bei Ueberlauf ueber Reconnect

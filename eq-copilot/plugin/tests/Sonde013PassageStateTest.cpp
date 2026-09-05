@@ -1415,6 +1415,103 @@ void n10PrepareToPlayPaar()
 
 /// N-11 · Eine nicht als `main` klassifizierte Instanz gibt KEINE
 /// Neutralitaetsbehauptung ab - der lokale Ring-Resync gehoert ihr trotzdem.
+/// N-28 · Ein ABGEWIESENES Begin (Zustand 0) ist trotzdem lokal offen: der
+/// Neuaufbau replayt es, und das spaetere `end` schliesst das Intervall.
+///
+/// Ohne E7 bliebe nur das Sticky-Bit; das `end` traefe beim Broker auf kein
+/// Begin, der Nachlauf startete nie, und der regulaere Pfad nullte nicht.
+void n28BeginNachSendefehler()
+{
+    abschnitt ("NAK-180 N-28  replay_auch_nach_abgewiesenem_begin");
+    Pruefstand s;
+
+    // Die P0-Queue bis zum Rand fuellen, damit `sendeP0` das Begin ABWEIST.
+    const auto voll = s.p->fuelleP0QueueFuerTest();
+    pruefe (voll > 0, "N-28: die P0-Queue ist voll", juce::String ((int) voll));
+
+    s.p->markierungEinreichen (s.auftrag);
+    s.bloecke (40);
+    pruefe (s.p->markierungHoerbar(), "N-28: der Marker klingt", {});
+    (void) s.ernte (100);
+
+    // Platz schaffen und neu aufbauen: das Begin ist nirgends - nicht auf dem
+    // Draht, nicht in der Queue -, also MUSS es repliziert werden.
+    s.p->leereP0QueueFuerTest();
+    s.p->v3LinkFuerTest (false);
+    s.p->v3LinkFuerTest (true);
+    s.bloecke (6);
+    const auto nachAufbau = s.ernte();
+    pruefe (zaehle (nachAufbau, "audible_intervention_begin") >= 1,
+            "N-28: replay_auch_nach_abgewiesenem_begin - das Begin ist lokal offen, "
+            "auch wenn es den Draht nie erreicht hat",
+            juce::String (zaehle (nachAufbau, "audible_intervention_begin")));
+
+    s.p->markierungAus();
+    s.bloecke (140);
+    const auto nachEnde = s.ernte();
+    pruefe (zaehle (nachEnde, "audible_intervention_end") == 1,
+            "N-28: und das `end` folgt - der regulaere Pfad nullt");
+}
+
+/// N-29/N-35 · Die Ordnungsregel: ein `end` reist nie ohne sein Begin, und
+/// Vergleich und Einreihen liegen im selben Zug.
+void n29OrdnungsregelUndZug()
+{
+    abschnitt ("NAK-180 N-29/N-35  kein_end_ohne_begin_im_selben_zug");
+    Pruefstand s;
+
+    // Ein vollstaendiger Zyklus, zugestellt: das Begin steht in Zustand
+    // "zugestellt" auf Generation G.
+    s.p->markierungEinreichen (s.auftrag);
+    s.bloecke (40);
+    (void) s.ernte();
+    s.zustellen();
+
+    // Linkwechsel, DANN das Ende. Der Sendezug sieht: Begin auf G zugestellt,
+    // laufende Generation G+1 -> Replay voran, dann das `end`.
+    s.p->v3LinkFuerTest (false);
+    s.p->v3LinkFuerTest (true);
+    s.p->markierungAus();
+    s.bloecke (140);
+
+    const auto ernte = s.ernte();
+    // Vor jedem `end` steht ein Begin derselben ID - das ist die Zusage.
+    juce::String offeneId;
+    bool endeOhneBegin = false;
+    for (const auto& e : ernte)
+    {
+        const auto typ = e.getProperty ("type", {}).toString();
+        const auto id  = e.getProperty ("intervention_id", {}).toString();
+        if (typ == "audible_intervention_begin") offeneId = id;
+        else if (typ == "audible_intervention_end" && id != offeneId) endeOhneBegin = true;
+    }
+    pruefe (! endeOhneBegin && zaehle (ernte, "audible_intervention_end") == 1,
+            "N-29: kein_end_ohne_begin_desselben_links - nach dem Linkwechsel geht das "
+            "Replay-Begin unmittelbar voran; ohne die Ordnungsregel traefe das `end` "
+            "beim Broker auf nichts und setzte `unknown`");
+
+    // N-35: Vergleich und Einreihen liegen unter DERSELBEN Sperre. Ein
+    // Testfaden, der den Linkwechsel dazwischen erzwingen will, kommt
+    // entweder davor oder danach zum Zug - nie mittendrin. Gemessen an der
+    // Lueckenlosigkeit der Sequenzen: eine Vertauschung waere beim Broker
+    // eine Luecke.
+    juce::int64 vorige = -1;
+    bool luecke = false;
+    juce::String folge;
+    for (const auto& e : ernte)
+    {
+        const auto seq = (juce::int64) e.getProperty ("event_sequence", -1);
+        folge += juce::String (seq) + " ";
+        if (vorige >= 0 && seq != vorige + 1) luecke = true;
+        vorige = seq;
+    }
+    pruefe (! luecke,
+            "N-35: vergleich_und_einreihen_sind_ein_zug - die Sequenzen bleiben "
+            "lueckenlos; ein Generationswechsel zwischen Pruefung und Einreihen haette "
+            "die Reihenfolge zerrissen",
+            folge.trim());
+}
+
 void n11KeineBehauptungOhneMain()
 {
     abschnitt ("NAK-180 N-11  keine_wireaussage_ohne_main");
@@ -1601,6 +1698,8 @@ int main()
     nak180::n05ReplayBeiHoerbaremMarker();
     nak180::n08BacklogOhneReplay();
     nak180::n10PrepareToPlayPaar();
+    nak180::n28BeginNachSendefehler();
+    nak180::n29OrdnungsregelUndZug();
     nak180::n11KeineBehauptungOhneMain();
     nak180::n12AussageKommtZurueck();
     std::cout << std::endl << bestanden << " bestanden, " << fehler << " gescheitert"

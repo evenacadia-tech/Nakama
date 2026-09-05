@@ -1,0 +1,30 @@
+Die Matrix ist nicht baureif: Mehrere Zeilen widersprechen eingefrorenen v3-Verträgen oder können mit den geplanten Änderungen nicht erfüllt werden. Geprüft wurden ausschließlich §2–§4 des angegebenen Diffs und die verlangten Quellen bei unverändertem HEAD 548bf9d4294918618e3b36a01973d1fc1f002663; Produktprozesse, Compiler, Cargo, Python und Tests wurden auftragsgemäß nicht ausgeführt.
+
+Full review comments:
+
+- [P1] Stimme N-18 auf den v3-Textriegel ab — C:\Users\phili\Projekte\Nakama\docs\beweise\NAK-181.md:518-518
+  `wireZahl(1.0/3.0)` erzeugt im gewählten ES6-Format `0.3333333333333333`, doch jeder Broker-v3-Payload läuft vor `serde_json` durch `textriegel_bytes` (`broker/src/coordinator/schema.rs:229`), das nichtganzzahlige Literale mit mehr als 15 signifikanten Stellen ablehnt (`broker/src/vertrag.rs:219-226`; A5 spiegelgleich in `tools/eq-copilot/pruefe_v3_vertrag.py:232-237`). Auch `1e300` und `4.9e-324` verletzen dessen Zahlenränder, sodass N-18 nur C++-Parsebarkeit statt der von R4 verlangten Rust-/A5-Vertragsannahme misst und die v3-Vertragsinvariante aus `CLAUDE.md:194-199` bricht.
+
+- [P1] Berücksichtige ausstehende P0-Retries beim Reload — C:\Users\phili\Projekte\Nakama\docs\beweise\NAK-181.md:504-504
+  Wenn beim Reload ein Experiment-P0 bereits auf den Draht geschrieben, aber noch nicht bestätigt wurde, bleibt sein Text in `inFlight` (`ControlClient.h:537-542`) und wird nach `controlV3.reconnect()` erneut eingereiht (`ControlClient.cpp:1137-1151`). B9 leert nur den lokalen Vergleichszustand und §2.4 lässt die Queue unangetastet; N-09s Zusage „kein einziges P0-Byte“ ist damit gerade in diesem erreichbaren Retry-Fall falsch und muss den gekoppelten Reload-/Reconnect-Lebenszyklus aus `AGENTS.md:48-52` berücksichtigen.
+
+- [P1] Binde das Persistenzbit an einen bandweisen Messnachweis — C:\Users\phili\Projekte\Nakama\docs\beweise\NAK-181.md:300-302
+  Bei N-23 mit einem stillen Kanal wird `stereoKurzfenster` dennoch global erhöht (`FeatureEngine.h:2908-2934`), während die heutige Persistenzzuweisung allein `stereoKurzfenster > 0` prüft (`:3025-3028`). Wird `persistenzGesetzt` wie E5 verlangt genau an dieser Zuweisungsstelle gesetzt, reist für das stille Band weiterhin eine gemessene 0 statt eines fehlenden Bits; das Bit muss an einen bandweisen Messnachweis gebunden werden, damit N-23 und M-08 geschlossen werden.
+
+- [P1] Erhalte N-22s Präsenzbits bis zur Serialisierung — C:\Users\phili\Projekte\Nakama\docs\beweise\NAK-181.md:747-747
+  Wenn B7 die neuen Bits in `StereoBandwert` wie beschrieben in `stereoLeeren()` nullt, geschieht das über `evidenzLeeren()` noch in `baueFrame()` (`FeatureEngine.h:3555-3572`); `SondeProcessor` liest `stereoBand()` erst anschließend für den JSON-Writer (`SondeProcessor.cpp:542-557`). Damit sind die publizierten Bits in jedem frischen Snapshot bereits gelöscht und N-22 kann nie einen gesetzten Wert beobachten.
+
+- [P1] Akzeptiere den schema-gültigen null-Wert für pair_id — C:\Users\phili\Projekte\Nakama\docs\beweise\NAK-181.md:339-342
+  Ein `session_paar` mit `pair_id: null` ist nach dem eingefrorenen v3-Schema gültig: `$defs/pair_id` erlaubt String oder null (`eq-ipc-v3.schema.json:788-792`), und `session_paar` referenziert diese Definition (`:1030-1037`). E6/N-28 schreibt dagegen zwingend einen nichtleeren String vor, obwohl §2.4 keine Schemaänderung erlaubt; damit bricht die Matrix die Vertragsinvariante `CLAUDE.md:194-199`.
+
+- [P1] Ergänze E7 um Kanalwechsel als Epochengrenze — C:\Users\phili\Projekte\Nakama\docs\beweise\NAK-181.md:744-744
+  Bei einem Kanalwechsel innerhalb derselben `startFolge` verwirft `Blockquarantaene::schliesstAn` den gehaltenen Block (`StampedAudioQueue.h:727-734`), aber `FeatureEngine::grenzeZwischen` vergleicht `kanaele` nicht (`FeatureEngine.h:1773-1824`). Der nächste freigegebene Block erscheint dadurch nur als `lokaleLuecke`/`sequenzluecke`; weil B4 den Klassifizierer weder ändert noch diesen Auslöser testet, bleibt E7 im Widerspruch zu M-53s Vorgabe „jeder andere Kontinuitätsbruch → epochwechsel“ (`docs/beweise/SONDE-013.md:548`).
+
+- [P2] Ergänze die vorgeschriebene Retry-Diagnose — C:\Users\phili\Projekte\Nakama\docs\beweise\NAK-181.md:119-125
+  Beim ersten Druck nach 0,2 s liefert der Plan nur `false` und lässt zwei Rohzähler abfragen; ein Produkt-/Editorpfad ruft diese Getter am Ziel jedoch nicht auf. Damit meldet der Handgriff nicht die von R2 ausdrücklich geforderte Diagnose „zu wenig Material, weiter sammeln“, und N-06/B9 misst auch keine benannte Absage (`docs/beweise/roh/NAK-181-auftrag.txt:20`); die Regel bleibt ohne Abweichungsbegründung ungedeckt.
+
+- [P2] Trenne in N-03 lebenden und eingefrorenen Zähler — C:\Users\phili\Projekte\Nakama\docs\beweise\NAK-181.md:488-488
+  Nach Beginn lädt `versuchNichtEndlicheSamples()` am Ziel ausschließlich das eingefrorene Atomic `versuchNichtEndlich` (`PluginProcessor.cpp:2997-2999`); neue Audiosamples erhöhen nur den internen Zähler des lebenden `Vergleichspegel`. B8 ändert den Getter nicht, sodass er im Zustand von N-03 weiterhin 0 liefert: Die Zusage, der lebende Zähler wachse über genau diesen Leser, und der benannte B26-Test sind unerfüllbar.
+
+- [P2] Beschreibe N-35s Reset-Unterschiede korrekt — C:\Users\phili\Projekte\Nakama\docs\beweise\NAK-181.md:550-550
+  `zuruecksetzen()` leert den Ereignisring (`FeatureEngine.h:1117-1118`), `grenzeZiehen()` berührt ihn dagegen nicht, und `rahmenLeeren()` ordnet ihn ausdrücklich nur dem Reset zu (`:3615-3618`). Da B4 `FeatureEngine.h` nicht ändert, ist N-35s Zusage desselben Fenstersatzes einschließlich Ereignisring falsch; der Test kann diese Gleichheit nicht belegen und E7s Begründung muss die beabsichtigte Differenz benennen.

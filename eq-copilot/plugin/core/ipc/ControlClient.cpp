@@ -389,7 +389,7 @@ bool commandAckHaeltVertrag (const std::string& text, GelesenesCommandAck& geles
 }
 
 std::string heartbeatAlsJson (const Adresse& adresse, std::uint64_t sequence,
-                              const ControlStatus& status)
+                              const ControlStatus& status, bool bestaetigtNeutral)
 {
     return std::string ("{\"type\":\"heartbeat\",\"adresse\":")
          + adresseAlsJson (adresse)
@@ -405,9 +405,19 @@ std::string heartbeatAlsJson (const Adresse& adresse, std::uint64_t sequence,
          // Heartbeat waere die Behauptung "Zustand bekannt" — und das Feld ist
          // im Schema optional, damit genau diese Behauptung nicht bei jedem
          // Takt mitfaehrt.
+         //
+         // 🔑 NAK-180 R1: die Regel ist DREIWERTIG. Das Feld traegt eine
+         // Aussage in genau zwei Faellen - gemeldeter Ueberlauf (`true`) und
+         // ausdruecklich bestaetigter Neuaufbau (`false`); sonst fehlt es
+         // ganz. M-39 bleibt damit fuer den Dauerbetrieb woertlich erhalten:
+         // der Steady-State schweigt weiter. Das `false` ist der einzige
+         // Ausloeser von `resync_bestaetigen` im Broker - vorher hatte der
+         // dort gebaute Riegel im Produkt gar keinen Aufrufer (D-01).
          + (status.interventionStateUnknown
                 ? std::string (",\"intervention_state_unknown\":true")
-                : std::string())
+                : (bestaetigtNeutral
+                       ? std::string (",\"intervention_state_unknown\":false")
+                       : std::string()))
          + runtimeJson (status.runtime) + "}";
 }
 
@@ -551,12 +561,39 @@ struct ControlClient::Laufzeit
     /// womoeglich gerade verbunden da (`B-CC-12`, NAK-104).
     bool abgeloest (std::uint64_t meinLauf) const noexcept
     { return lebenslauf.load() != meinLauf; }
-    bool sendeP0 (const std::string& json);
+    bool sendeP0 (const std::string& json, P0Klasse klasse, std::uint64_t marke);
     bool sendePersistenzP0 (const std::string& json);
     P1Ergebnis sendeP1 (const std::string& schluessel, const std::string& json);
     Snapshot snapshotIntern() const;
     bool kopplung (std::string& linkId, std::string& challenge) const;
     void meldeLinkStatus (bool verbunden);
+    void aufbauAussageZurueckstellen (std::uint64_t marke);
+    // NAK-180 R7/R12: Rueckmeldung und Zustellpruefung. Alle drei laufen
+    // unter `sendeMutex`; sie duerfen den Sendezustand des Prozessors nehmen,
+    // aber NIE erneut senden (Sperrenordnung: sendeMutex vor Sendezustand).
+    std::function<void (std::uint64_t)> beiP0Zugestellt;
+    std::function<void (std::uint64_t)> beiP0Verworfen;
+    std::function<std::string()>        hookReplayBegin;
+
+    // 🔑 NAK-180 R1/R10/R13: die Aussage des Aufbaus - als GENERATIONSZAHL,
+    // nicht als Bit.
+    //
+    // Ein Bit haette beim Linkende umgeschrieben werden muessen, und ob das
+    // rechtzeitig geschieht, haengt an der Reihenfolge zweier Threads: der
+    // negative Callback laeuft synchron auf dem Aufruferthread von
+    // `reconnect()`/`stop()`, waehrend der positive noch steht (MP3-1). Eine
+    // Zahl muss nur VERGLICHEN werden und veraltet von selbst. `0` = keine
+    // Aussage; jeder Zugriff ist ein CAS auf den beobachteten Wert (MP4-2:
+    // ein blindes `store(0)` war ein Lost-Update).
+    std::atomic<std::uint64_t> neutralerNeuaufbau { 0 };
+    std::atomic<std::uint64_t> nichtNeutralerNeuaufbau { 0 };
+    /// Fortlaufende Rueckmeldekennung fuer P0-Eintraege (0 bleibt frei).
+    std::atomic<std::uint64_t> p0MarkenFolge { 0 };
+    /// Marke des Aufbau-Heartbeats und die Aussage, die er mitgenommen hat -
+    /// damit ein Verwurf sie zurueckstellen kann (N-12/N-25).
+    std::atomic<std::uint64_t> aufbauHeartbeatMarke { 0 };
+    std::atomic<std::uint64_t> aufbauHeartbeatGeneration { 0 };
+    std::atomic<bool>          aufbauHeartbeatWarNeutral { false };
 
     std::function<ControlHello()> helloProvider;
     std::function<void (const std::string&)> beiAntwort;
@@ -774,7 +811,104 @@ bool ControlClient::statusProviderGesetzt() const noexcept
     return static_cast<bool> (k->statusProvider);
 }
 
-bool ControlClient::sendeP0 (const std::string& json) { return k->sendeP0 (json); }
+bool ControlClient::sendeP0 (const std::string& json, P0Klasse klasse, std::uint64_t marke)
+{
+    return k->sendeP0 (json, klasse, marke);
+}
+
+void ControlClient::setzeP0Rueckmeldung (std::function<void (std::uint64_t)> zugestellt,
+                                         std::function<void (std::uint64_t)> verworfen)
+{
+    // Vor dem `start()` gesetzt und danach unveraendert - wie der
+    // `statusProvider`. Ein Wechsel unter laufender Verbindung waere ein
+    // Datenrennen auf einem `std::function`, das die Sendeschleife gerade
+    // ruft.
+    k->beiP0Zugestellt = std::move (zugestellt);
+    k->beiP0Verworfen  = std::move (verworfen);
+}
+
+void ControlClient::setzeReplayBeginHook (std::function<std::string()> hook)
+{
+    k->hookReplayBegin = std::move (hook);
+}
+
+std::uint64_t ControlClient::meldeAufbauUrteil (bool neutral)
+{
+    const auto generation = k->wireGeneration.load();
+    // Genau EINE der beiden Aussagen steht; die andere wird geloescht, damit
+    // ein Urteilswechsel innerhalb desselben Aufbaus nicht beide stehen
+    // laesst.
+    if (neutral)
+    {
+        k->nichtNeutralerNeuaufbau.store (0);
+        k->neutralerNeuaufbau.store (generation);
+    }
+    else
+    {
+        k->neutralerNeuaufbau.store (0);
+        k->nichtNeutralerNeuaufbau.store (generation);
+    }
+    return generation;
+}
+
+void ControlClient::loescheAufbauUrteil (std::uint64_t generation)
+{
+    if (generation == 0)
+        return;
+    auto a = generation;
+    k->neutralerNeuaufbau.compare_exchange_strong (a, 0);
+    auto b = generation;
+    k->nichtNeutralerNeuaufbau.compare_exchange_strong (b, 0);
+}
+
+std::uint64_t ControlClient::wireGenerationJetzt() const noexcept
+{
+    return k->wireGeneration.load();
+}
+
+void ControlClient::interventionsZug (
+    const std::function<void (std::uint64_t, const ZugSenke&)>& zug)
+{
+    if (! zug)
+        return;
+    // 🔑 NAK-180 R12: Vergleich und Wirkung unter DERSELBEN Sperre.
+    //
+    // Der Aufbauzug 2+3 haelt `sendeMutex` ebenfalls. Zwischen dem Lesen der
+    // Generation hier und dem Einreihen der Folgenachricht kann sie deshalb
+    // nicht wechseln - das Fenster, durch das ein `end` ohne sein Begin auf
+    // den naechsten Link geriet (MP4-1), existiert nicht mehr.
+    std::lock_guard<std::mutex> l (k->sendeMutex);
+    const auto generation = k->wireGeneration.load();
+    bool ueberlauf = false;
+    const ZugSenke senke = [this, generation, &ueberlauf]
+        (const std::string& json, P0Klasse klasse, std::uint64_t marke)
+    {
+        if (json.size() > kMaxPayloadBytes)
+        {
+            std::lock_guard<std::mutex> z (k->zustandMutex);
+            ++k->zustand.zuGross;
+            return false;
+        }
+        if (! k->p0.einreihen (P0Eintrag { json, klasse, generation, marke }))
+        {
+            ueberlauf = true;
+            k->p0UeberlaufZaehler.fetch_add (1);
+            std::lock_guard<std::mutex> z (k->zustandMutex);
+            k->zustand.p0Ueberlaeufe = k->p0.ueberlauf();
+            return false;
+        }
+        return true;
+    };
+    zug (generation, senke);
+    if (ueberlauf)
+    {
+        // Wie in `sendeP0`: der Verbindungsthread haengt womoeglich in einem
+        // blockierten Write. Der Abbruch steht AUSSERHALB der Sperre nicht
+        // zur Verfuegung, ohne den Zug zu zerreissen - er folgt deshalb hier,
+        // und `ioAbbrechen` nimmt `sendeMutex` nicht.
+        k->aktuelleVerbindung()->ioAbbrechen();
+    }
+}
 
 bool ControlClient::sendePersistenzP0 (const std::string& json)
 {
@@ -796,7 +930,8 @@ bool ControlClient::Laufzeit::sollAbbrechen (std::uint64_t generation) const noe
     return ! laeuft.load() || verbindungsGeneration.load() != generation;
 }
 
-bool ControlClient::Laufzeit::sendeP0 (const std::string& json)
+bool ControlClient::Laufzeit::sendeP0 (const std::string& json,
+                                       P0Klasse klasse, std::uint64_t marke)
 {
     // An der TUER, nicht am Draht. Eine eingereihte Nachricht ueber der
     // Paketgrenze koennte NIE gesendet werden — sie bliebe dank der
@@ -812,7 +947,11 @@ bool ControlClient::Laufzeit::sendeP0 (const std::string& json)
     bool ueberlauf = false;
     {
         std::lock_guard<std::mutex> l (sendeMutex);
-        if (! p0.einreihen (json))
+        // NAK-180 R10: die Generation wird HIER gelesen, beim Einreihen -
+        // nicht beim Bilden der Nachricht. Ein frueh gebauter, spaet
+        // eingereihter Bericht truege sonst eine ueberholte Zahl, und das
+        // Vorziehen der Generationsvergabe waere wirkungslos.
+        if (! p0.einreihen (P0Eintrag { json, klasse, wireGeneration.load(), marke }))
         {
             ueberlauf = true;
             p0UeberlaufZaehler.fetch_add (1);
@@ -859,7 +998,9 @@ bool ControlClient::Laufzeit::sendePersistenzP0 (const std::string& json)
             return bekannt->json == json;
         }
         inFlight.push_back (InFlightEintrag { commandId, json, 0, true });
-        if (! p0.einreihen (json))
+        // Persistenzpflichtige Befehle sind EREIGNISSE: sie ueberleben jeden
+        // Linkwechsel und werden nie verworfen (§53.9).
+        if (! p0.einreihen (P0Eintrag { json, P0Klasse::ereignis, wireGeneration.load(), 0 }))
         {
             inFlight.pop_back();
             ueberlauf = true;
@@ -888,7 +1029,8 @@ void ControlClient::Laufzeit::inFlightNachReconnect (std::uint64_t generation)
         {
             if (e.inQueue || e.gesendetInGeneration == generation)
                 continue;
-            if (! p0.einreihen (e.json))
+            if (! p0.einreihen (P0Eintrag { e.json, P0Klasse::ereignis,
+                                            wireGeneration.load(), 0 }))
                 break;
             e.inQueue = true;
             ++wiederholt;
@@ -983,6 +1125,28 @@ bool ControlClient::Laufzeit::kopplung (std::string& linkId, std::string& challe
     linkId = zustand.linkId;
     challenge = zustand.challenge;
     return true;
+}
+
+/** NAK-180 R1/R13: ein verworfener Aufbau-Heartbeat gibt seine Aussage zurueck.
+
+    Ohne das waere die Aussage weg: das Flag ist beim Bilden des Heartbeats
+    per CAS verbraucht worden, und wenn dieser Heartbeat den Draht nie
+    erreicht, faende der Broker nie ein `false` - die Sitzung bliebe fuer
+    immer gesperrt (D-01 in neuer Form). Zurueckgestellt wird nur, wenn der
+    Platz noch LEER ist: hat ein neuerer Callback dort schon geschrieben,
+    gehoert er ihm, und seine Aussage ist die juengere. */
+void ControlClient::Laufzeit::aufbauAussageZurueckstellen (std::uint64_t marke)
+{
+    if (marke == 0 || aufbauHeartbeatMarke.load() != marke)
+        return;
+    const auto generation = aufbauHeartbeatGeneration.load();
+    if (generation == 0)
+        return;
+    auto& flag = aufbauHeartbeatWarNeutral.load() ? neutralerNeuaufbau
+                                                  : nichtNeutralerNeuaufbau;
+    std::uint64_t leer = 0;
+    flag.compare_exchange_strong (leer, generation);
+    aufbauHeartbeatMarke.store (0);
 }
 
 void ControlClient::Laufzeit::meldeLinkStatus (bool verbunden)
@@ -1279,8 +1443,47 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
         zustand.brokerVersion = brokerVersion;
         zustand.letzterFehler.clear();
     }
+    // 🔑 NAK-180 R10/R12: der Aufbauzug 2+3 - EIN Zug unter `sendeMutex`,
+    // und er laeuft VOR dem Link-Callback.
+    //
+    // Vorher stand `meldeLinkStatus (true)` hier oben und die Generation
+    // darunter. Weil der positive Callback den Worker fuer ein Replay weckt,
+    // konnte der sein Replay noch unter der ALTEN Generation einreihen - und
+    // der unmittelbar folgende Filter warf es weg. Das `end` traf beim Broker
+    // auf kein Begin und setzte `unknown` (MP2-1/MP4-1).
+    //
+    // Getrennt waeren Vergabe und Filter ausserdem ein Fenster, in dem ein
+    // Einreiher die neue Generation schon liest, der Filter aber noch nicht
+    // durch ist. Unter EINER Sperre gibt es dieses Fenster nicht.
+    const auto dieseWireGeneration = wireGeneration.load() + 1;
+    std::vector<std::uint64_t> verworfeneMarken;
+    {
+        std::lock_guard<std::mutex> l (sendeMutex);
+        wireGeneration.store (dieseWireGeneration);
+        // Berichte des alten Links fallen - ihre Aussage galt ihm allein.
+        p0.berichteAelterAls (dieseWireGeneration,
+                              [&verworfeneMarken] (std::uint64_t m)
+                              { if (m != 0) verworfeneMarken.push_back (m); });
+        // Zustellpruefung: liegt noch ein EREIGNIS aelterer Generation da,
+        // kann darunter ein `end` sein, dessen Begin auf dem alten Link
+        // zugestellt wurde. Es reist nie ohne sein Begin - der Prozessor
+        // liefert den Wiretext, wir stellen ihn voran.
+        if (hookReplayBegin && p0.hatEreignisAelterAls (dieseWireGeneration))
+        {
+            const auto replay = hookReplayBegin();
+            if (! replay.empty())
+                p0.voranstellen (P0Eintrag { replay, P0Klasse::bericht,
+                                             dieseWireGeneration, 0 });
+        }
+    }
+    for (const auto m : verworfeneMarken)
+    {
+        aufbauAussageZurueckstellen (m);
+        if (beiP0Verworfen)
+            beiP0Verworfen (m);
+    }
+
     meldeLinkStatus (true);
-    const auto dieseWireGeneration = wireGeneration.fetch_add (1) + 1;
 
     // Was der letzte Verbindungsabbruch offen liess, geht jetzt zuerst raus
     // (§53.9 "nicht koaleszierbare Events bei Ueberlauf ueber Reconnect
@@ -1397,6 +1600,7 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
     };
 
     std::vector<std::uint8_t> ausgang;
+    P0Eintrag p0Eintrag;                 // NAK-180 R7: Klasse und Marke reisen mit
     while (! sollAbbrechen (generation))
     {
         const auto jetzt = std::chrono::steady_clock::now();
@@ -1414,7 +1618,47 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
             }
 
             const auto sequence = heartbeatFolge.fetch_add (1) % kJsonSafeModulus;
-            sendeP0 (heartbeatAlsJson (hello.adresse, sequence, status));
+
+            // 🔑 NAK-180 R1/R13: die Aussage des Aufbaus reist GENAU EINMAL.
+            //
+            // Verbraucht wird per CAS auf die eigene Generation - schlaegt er
+            // fehl, hat ein NEUERER Callback den Platz belegt, und die Aussage
+            // gehoert ihm. Ein blindes `exchange` haette dessen Wirkung
+            // geloescht (MP4-2). Eine FREMDE Generation wird ebenfalls nur per
+            // CAS aufgeraeumt, damit sie nicht ein gerade geschriebenes G+1
+            // mitnimmt.
+            auto verbrauche = [this, dieseWireGeneration] (std::atomic<std::uint64_t>& flag)
+            {
+                auto gesehen = flag.load();
+                if (gesehen == 0)
+                    return false;
+                if (gesehen == dieseWireGeneration)
+                    return flag.compare_exchange_strong (gesehen, 0);
+                // Fremde Generation: nicht werten, nur aufraeumen - und auch
+                // das nur, wenn sie noch dasteht.
+                flag.compare_exchange_strong (gesehen, 0);
+                return false;
+            };
+            const bool bestaetigtNeutral = verbrauche (neutralerNeuaufbau);
+            const bool bestaetigtUnbekannt = verbrauche (nichtNeutralerNeuaufbau);
+
+            auto statusFuerDraht = status;
+            if (bestaetigtUnbekannt)
+                statusFuerDraht.interventionStateUnknown = true;
+
+            // Marke: nur der Aufbau-Heartbeat braucht eine - er ist der
+            // einzige, dessen Verlust eine Aussage kostet.
+            std::uint64_t marke = 0;
+            if (bestaetigtNeutral || bestaetigtUnbekannt)
+            {
+                marke = p0MarkenFolge.fetch_add (1) + 1;
+                aufbauHeartbeatMarke.store (marke);
+                aufbauHeartbeatGeneration.store (dieseWireGeneration);
+                aufbauHeartbeatWarNeutral.store (bestaetigtNeutral);
+            }
+            sendeP0 (heartbeatAlsJson (hello.adresse, sequence, statusFuerDraht,
+                                       bestaetigtNeutral),
+                     P0Klasse::bericht, marke);
             naechsterHeartbeat = jetzt + std::chrono::milliseconds (kHeartbeatTaktMs);
         }
 
@@ -1433,7 +1677,9 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
         std::size_t p1TiefeJetzt = 0, p1WiederholJetzt = 0;
         {
             std::lock_guard<std::mutex> l (sendeMutex);
-            istP0 = p0.entnehmen (nachricht);
+            istP0 = p0.entnehmen (p0Eintrag);
+            if (istP0)
+                nachricht = p0Eintrag.json;
             etwasGesendet = istP0 || p1.entnehmen (schluessel, nachricht);
             // 🔑 Die Fuellstaende werden HIER gelesen, unter `sendeMutex`.
             // `zustandMutex` schuetzt den Snapshot, nicht die Queues; ein
@@ -1459,7 +1705,28 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
                 {
                     std::lock_guard<std::mutex> l (sendeMutex);
                     if (istP0)
-                        p0.zuruecklegen (std::move (nachricht));
+                    {
+                        // 🔑 NAK-180 R7: ein BERICHT geht nicht zurueck.
+                        //
+                        // "Nichts verwerfen" gilt Ereignissen (§53.9). Ein
+                        // Heartbeat ist periodisch, ein Replay-Begin wird beim
+                        // naechsten Aufbau neu gebildet - beide gelten nur fuer
+                        // den Link, der gerade stirbt. Zurueckgelegt reisten sie
+                        // auf dem NAECHSTEN und behaupteten dort etwas Falsches:
+                        // ein altes `intervention_state_unknown: false` loeste
+                        // den Resync aus, waehrend der Marker klang.
+                        if (p0Eintrag.klasse == P0Klasse::bericht)
+                        {
+                            p0.fallenLassen();
+                            aufbauAussageZurueckstellen (p0Eintrag.marke);
+                            if (beiP0Verworfen && p0Eintrag.marke != 0)
+                                beiP0Verworfen (p0Eintrag.marke);
+                        }
+                        else
+                        {
+                            p0.zuruecklegen (std::move (p0Eintrag));
+                        }
+                    }
                     else
                         p1.zuruecklegen (schluessel, std::move (nachricht));
                     // Hier ist `sendeMutex` bereits gehalten (Zeile darueber),
@@ -1496,7 +1763,14 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
             {
                 std::lock_guard<std::mutex> l (sendeMutex);
                 if (istP0)
+                {
                     p0.bestaetigen();
+                    // NAK-180 R7: DAS ist der Wire-Commit. Erst hier weiss der
+                    // Einreicher, dass seine Nachricht wirklich raus ist - der
+                    // Rueckgabewert von `sendeP0` sagt nur "eingereiht".
+                    if (beiP0Zugestellt && p0Eintrag.marke != 0)
+                        beiP0Zugestellt (p0Eintrag.marke);
+                }
                 else
                     p1.bestaetigen();
             }

@@ -150,6 +150,67 @@ EqCopilotProcessor::EqCopilotProcessor()
     // SONDE-008: der gesamte Backing-Store beider Ringe entsteht HIER - vor dem
     // Start des Workers und lange vor dem ersten Audioblock. `prepareToPlay`
     // fasst danach keinen Speicher mehr an, es meldet nur einen Neuanlauf.
+    // 🔑 NAK-180 R7/R12: die drei Rueckwege des Sendepfads.
+    //
+    // Alle drei laufen unter `sendeMutex` des ControlClients. Sie duerfen den
+    // Sendezustand nehmen (Ordnung: sendeMutex VOR sendeZustandMutex), aber
+    // NIE erneut senden — das waere Rekursion auf derselben Sperre.
+    controlV3.setzeP0Rueckmeldung (
+        [this] (std::uint64_t marke)
+        {
+            // Wire-Commit: erst JETZT ist das Begin beim Broker. Die
+            // Generation, auf der das geschah, entscheidet spaeter, ob ein
+            // Replay noetig ist — ein Vergleich statt einer Umschreibung beim
+            // Linkende (E10).
+            std::lock_guard<std::mutex> l (sendeZustandMutex);
+            if (offenesBegin.gueltig && offenesBegin.marke == marke)
+            {
+                offenesBegin.zustand = 2;
+                offenesBegin.zustellGeneration = controlV3.wireGenerationJetzt();
+            }
+        },
+        [this] (std::uint64_t marke)
+        {
+            // Verworfen: das Begin ist NICHT beim Broker und liegt auch nicht
+            // mehr in der Queue. Es faellt auf "nicht eingereiht" zurueck,
+            // und der naechste Zug replayt es (R8).
+            std::lock_guard<std::mutex> l (sendeZustandMutex);
+            if (offenesBegin.gueltig && offenesBegin.marke == marke)
+            {
+                offenesBegin.zustand = 0;
+                offenesBegin.marke = 0;
+            }
+        });
+    controlV3.setzeReplayBeginHook (
+        [this] () -> std::string
+        {
+            // 🔑 R12, Zustellpruefung. Der Aufbauzug hat ein EREIGNIS aelterer
+            // Generation in der Queue gefunden; darunter kann ein `end` sein,
+            // dessen Begin auf dem alten Link zugestellt wurde. Dann geht das
+            // Replay-Begin voran — sonst traefe das `end` auf nichts.
+            //
+            // Dieser Hook LIEST und FORMT nur; er sendet nicht und wartet
+            // nicht. Der Wiretext bleibt damit beim Prozessor, und der
+            // Transport interpretiert nichts.
+            std::lock_guard<std::mutex> l (sendeZustandMutex);
+            if (! offenesBegin.gueltig || offenesBegin.zustand != 2)
+                return {};
+            auto h = v3Hello();
+            h.adresse = nakama::ipc::wireAdresseAusState (h.adresse);
+            if (h.pluginKind != "main" || ! nakama::ipc::adresseGueltig (h.adresse))
+                return {};
+            const std::string adresseJson =
+                std::string ("{\"logon_sid\":\"") + h.adresse.logonSid
+                + "\",\"project_binding_id\":\"" + h.adresse.projectBindingId
+                + "\",\"session_epoch\":\"" + h.adresse.sessionEpoch
+                + "\",\"instance_id\":\"" + h.adresse.instanceId
+                + "\",\"runtime_nonce\":\"" + h.adresse.runtimeNonce + "\"}";
+            auto ev = offenesBegin.ereignis;
+            ev.beginn = true;
+            ev.sequenz = interventionsSequenz.fetch_add (1, std::memory_order_relaxed) + 1;
+            return interventionsWireJson (ev, adresseJson);
+        });
+
     queue.vorbereiten();
 
     workerLaeuft.store (true);
@@ -219,6 +280,21 @@ void EqCopilotProcessor::prepareToPlay (double samplerate, int maxBlock)
     lzLetzterNs = 0;
     lzBucketStartNs = 0;
     lzBucketSamples = 0;
+    // 🔑 NAK-180 N-10: der Marker ist hart aus, sein `end` kommt NIE.
+    //
+    // `markierung.vorbereiten()` und `setzeSamplerate()` setzen `warHoerbar`
+    // zurueck und loeschen den Fade, ohne den faelligen Uebergang zu melden —
+    // der Audiothread erzeugt fuer dieses Intervall also kein `endete` mehr.
+    // Ohne diese Markierung bliebe das Begin beim Broker fuer immer offen und
+    // die Sitzung dauerhaft gesperrt. Der Sender bildet das `end` stattdessen
+    // selbst, mit `project_sample_end: null` (die Endprojektzeit ist hier
+    // ehrlich unbekannt) und dem Tail der letzten gueltigen Rate.
+    {
+        std::lock_guard<std::mutex> l (sendeZustandMutex);
+        if (offenesBegin.gueltig)
+            offenesBegin.tot = true;
+    }
+
     // Der v3-Hello-Provider liest Samplerate/Block/Kanaele erst beim Aufbau.
     // Prepare laeuft auf dem Host-/Nachrichtenthread, nie im Audiocallback.
     controlV3.reconnect();
@@ -1059,7 +1135,16 @@ std::string EqCopilotProcessor::interventionsWireJson (
 
 void EqCopilotProcessor::interventionenSenden()
 {
-    if (interventionsRing.fuellstand() == 0)
+    // 🔑 NAK-180 R8: der Ring ist nicht mehr die einzige Quelle.
+    //
+    // Ein Replay steht auch dann an, wenn der Ring LEER ist — genau dann
+    // naemlich, wenn ein Begin bereits gesendet wurde und sein Marker
+    // weiterklingt (C2). Die alte Abbruchbedingung liess diesen Zug nie
+    // laufen.
+    const bool etwasZuTun = interventionsRing.fuellstand() != 0
+                         || replayFaellig.load() != 0
+                         || berichtOffen.load() != 0;
+    if (! etwasZuTun)
         return;
     // 🔑 NAK-40: DIESELBE Wireadresse wie der Control-Bootstrap. `v3Hello()`
     // liefert die PERSISTENTE Instance-ID; der Alias entsteht erst an der
@@ -1089,18 +1174,155 @@ void EqCopilotProcessor::interventionenSenden()
         return a;
     }();
 
-    nakama::ipc::Interventionsereignis e;
-    while (interventionsRing.lies (e))
+    // 🔑 NAK-180 R12: EIN Zug unter `sendeMutex`. Der Vergleich der
+    // Zustellgeneration und das Einreihen der Folgenachricht liegen damit in
+    // derselben kritischen Zone — zwischen ihnen kann kein Link aufgebaut
+    // werden. Vorher entschied die Ordnung beim Einreihen, ihre Gueltigkeit
+    // hing aber am Link bei der Zustellung (MP4-1).
+    bool neutralErreicht = false;
+    controlV3.interventionsZug (
+        [this, &adresseJson, &neutralErreicht]
+        (std::uint64_t generation, const nakama::ipc::ControlClient::ZugSenke& senke)
     {
-        const std::string json = interventionsWireJson (e, adresseJson);
-        if (controlV3.sendeP0 (json))
+        std::lock_guard<std::mutex> l (sendeZustandMutex);   // Ordnung: sendeMutex zuerst
+
+        auto sende = [&] (const nakama::ipc::Interventionsereignis& ev,
+                          nakama::ipc::P0Klasse klasse) -> std::uint64_t
+        {
+            const auto marke = sendeMarkenFolge.fetch_add (1) + 1;
+            if (! senke (interventionsWireJson (ev, adresseJson), klasse, marke))
+            {
+                // Der P0-Ueberlauf ist derselbe Fall wie der Ringueberlauf:
+                // die Sequenzluecke kommt beim Coordinator an.
+                interventionsRingUeberlauf.store (true, std::memory_order_relaxed);
+                return 0;
+            }
             interventionenGesendet.fetch_add (1, std::memory_order_relaxed);
-        else
-            // Der P0-Ueberlauf ist derselbe Fall wie der Ringueberlauf: die
-            // Sequenzluecke kommt beim Coordinator an. Er wird trotzdem
-            // gespiegelt, damit ein Test ihn lokal sieht.
-            interventionsRingUeberlauf.store (true, std::memory_order_relaxed);
-    }
+            return marke;
+        };
+
+        // Bildet das Replay-Begin des offenen lokalen Begins. Dieselbe
+        // `intervention_id` (sie entsteht deterministisch aus `instance_id`
+        // und Nummer), dieselbe `art`, dieselbe Projektzeit — nur die
+        // Sequenznummer ist die naechste.
+        auto replaySenden = [&] () -> bool
+        {
+            if (! offenesBegin.gueltig)
+                return false;
+            auto ev = offenesBegin.ereignis;
+            ev.beginn = true;
+            ev.sequenz = interventionsSequenz.fetch_add (1, std::memory_order_relaxed) + 1;
+            const auto marke = sende (ev, nakama::ipc::P0Klasse::bericht);
+            if (marke == 0)
+                return false;
+            offenesBegin.zustand = 1;              // eingereiht
+            offenesBegin.marke = marke;
+            return true;
+        };
+
+        // (1) Faelliges Replay des Aufbaus — nur fuer DIESE Generation.
+        auto faellig = replayFaellig.load();
+        if (faellig != 0)
+        {
+            if (faellig == generation)
+            {
+                if (replayFaellig.compare_exchange_strong (faellig, 0))
+                    replaySenden();
+            }
+            else
+            {
+                // Fremde Generation: nicht werten, nur aufraeumen — und auch
+                // das nur per CAS, damit ein gerade geschriebenes G+1 stehen
+                // bleibt (R13).
+                replayFaellig.compare_exchange_strong (faellig, 0);
+            }
+        }
+
+        // (2) Der Ringinhalt, in unveraenderter Reihenfolge.
+        nakama::ipc::Interventionsereignis e;
+        while (interventionsRing.lies (e))
+        {
+            if (e.beginn)
+            {
+                const auto marke = sende (e, nakama::ipc::P0Klasse::ereignis);
+                offenesBegin.ereignis = e;
+                offenesBegin.gueltig = true;
+                offenesBegin.tot = false;
+                offenesBegin.zustand = marke != 0 ? 1 : 0;
+                offenesBegin.marke = marke;
+                sendeBeginOffen.store (true, std::memory_order_relaxed);
+                continue;
+            }
+
+            // 🔑 R8, Ordnungsregel: ein `end` reist nur, wenn sein Begin auf
+            // DIESEM Link zugestellt ist (Zustand 2 mit der laufenden
+            // Generation) oder in derselben Queue vor ihm liegt (Zustand 1 —
+            // die FIFO-Ordnung stellt es von selbst zu). Sonst geht das
+            // Replay-Begin unmittelbar voran; ohne das traefe das `end` beim
+            // Broker auf kein Begin und setzte `unknown`.
+            const bool begleitet =
+                offenesBegin.gueltig
+                && (offenesBegin.zustand == 1
+                    || (offenesBegin.zustand == 2
+                        && offenesBegin.zustellGeneration == generation));
+            if (! begleitet && offenesBegin.gueltig)
+                replaySenden();
+
+            sende (e, nakama::ipc::P0Klasse::ereignis);
+            offenesBegin = OffenesBegin {};
+            sendeBeginOffen.store (false, std::memory_order_relaxed);
+        }
+
+        // (3) Ein TOTES Begin (N-10: `prepareToPlay` hat den Marker hart
+        //     abgeschaltet, sein `end` kommt vom Audiothread nie) bekommt
+        //     sein Paar hier: Replay-Begin, dann ein synthetisches `end` ohne
+        //     Projektzeit — der Broker invaliditert ohne Endstempel
+        //     fail-closed die ganze Sitzung (M-52), und die Sitzung nullt
+        //     danach ueber den regulaeren Pfad.
+        if (offenesBegin.gueltig && offenesBegin.tot)
+        {
+            const bool begleitet =
+                offenesBegin.zustand == 1
+                || (offenesBegin.zustand == 2
+                    && offenesBegin.zustellGeneration == generation);
+            if (! begleitet)
+                replaySenden();
+            auto ende = offenesBegin.ereignis;
+            ende.beginn = false;
+            ende.projektzeitGesetzt = false;
+            ende.sequenz = interventionsSequenz.fetch_add (1, std::memory_order_relaxed) + 1;
+            ende.tailSamples = nakama::ipc::tailSamplesFuer (
+                ende.dauerSamples,
+                letzteGueltigeSamplerate.load (std::memory_order_relaxed));
+            sende (ende, nakama::ipc::P0Klasse::ereignis);
+            offenesBegin = OffenesBegin {};
+            sendeBeginOffen.store (false, std::memory_order_relaxed);
+        }
+
+        // (4) Abschluss des Neuaufbau-Berichts (E3.3): ist der Prozessor nach
+        //     einem NICHT neutralen Aufbau wieder neutral, darf jetzt genau
+        //     ein `false` reisen. Nur fuer die laufende Generation.
+        auto bericht = berichtOffen.load();
+        if (bericht != 0)
+        {
+            if (bericht != generation)
+            {
+                berichtOffen.compare_exchange_strong (bericht, 0);
+            }
+            else if (interventionsRing.fuellstand() == 0 && ! offenesBegin.gueltig
+                     && ! markierung.hoerbar())
+            {
+                if (berichtOffen.compare_exchange_strong (bericht, 0))
+                    neutralErreicht = true;
+            }
+        }
+    });
+
+    // AUSSERHALB des Zugs: `meldeAufbauUrteil` nimmt `sendeMutex` nicht, aber
+    // die Regel "im Zug wird nicht gesendet" gilt trotzdem — der naechste
+    // Heartbeat traegt das `false`.
+    if (neutralErreicht)
+        controlV3.meldeAufbauUrteil (true);
 }
 
 nakama::ipc::ControlHello EqCopilotProcessor::v3Hello() const
@@ -1188,10 +1410,39 @@ void EqCopilotProcessor::v3ControlLink (bool verbunden)
 {
     if (! verbunden)
     {
+        // 🔑 NAK-180 R11/R13: loeschen NUR fuer die sterbende Generation, und
+        // NUR per CAS. Positiver und negativer Callback koennen ueberlappen —
+        // `meldeLinkStatus` serialisiert das Statusbit, nicht die
+        // Callback-Ausfuehrung, und `reconnect()`/`stop()` rufen den negativen
+        // synchron auf ihrem Aufruferthread (MP3-1). Ein blindes Loeschen
+        // naehme dem naechsten Link seine gerade geschriebene Aussage mit.
+        //
+        // Das ist HYGIENE, nicht die Zusage: die Korrektheit traegt der
+        // Generationsvergleich beim Verbraucher. Deshalb ist es auch
+        // ungefaehrlich, dass hier gar kein zweiter Ende-Callback kommt, wenn
+        // das Statusbit schon `false` war.
+        const auto sterbend = controlV3.wireGenerationJetzt();
+        controlV3.loescheAufbauUrteil (sterbend);
+        auto a = sterbend;
+        replayFaellig.compare_exchange_strong (a, 0);
+        auto b = sterbend;
+        berichtOffen.compare_exchange_strong (b, 0);
         sourcesModel.controlEnde();
         telemetryV3.reconnect();
         return;
     }
+
+    // 🔑 NAK-180 N-11: der Klassentest steht VOR dem Neutralitaetsurteil.
+    //
+    // Er stand bisher dahinter, und damit gab auch eine als Sonde
+    // klassifizierte Instanz eine Aussage ueber Interventionen ab — sie hat
+    // aber gar keine Marker (§7.1 E-08). Ein ueberlaufbedingtes `true` aus
+    // `v3Status()` reist unveraendert weiter; das ist keine Aussage ueber den
+    // Aufbau, sondern fail-closed ueber den Ring.
+    auto hVoraus = v3Hello();
+    hVoraus.adresse = nakama::ipc::wireAdresseAusState (hVoraus.adresse);
+    const bool darfAufbauUrteilMelden =
+        hVoraus.pluginKind == "main" && nakama::ipc::adresseGueltig (hVoraus.adresse);
 
     // 🔑 SONDE-013 Nacharbeit 2 (Befund R01, M-61): DER Produktaufrufer von
     // `InterventionsRing::resync()`.
@@ -1211,7 +1462,19 @@ void EqCopilotProcessor::v3ControlLink (bool verbunden)
     // ⚠️ Er behauptet Neutralitaet nur, wenn sie WIRKLICH gilt: kein Ereignis
     // wartet mehr im Ring, und es ist gerade kein Marker hoerbar. Sonst bleibt
     // das Bit stehen — eine Selbstheilung waere genau das, was §34.2 verbietet.
-    if (interventionsRing.fuellstand() == 0 && ! markierung.hoerbar())
+    // 🔑 NAK-180 E1: Neutralitaet ist SENDEBUCHFUEHRUNG, nicht `hoerbar()`.
+    //
+    // `hoerbar()` allein genuegt nicht: `prepareToPlay` ruft `vorbereiten()`
+    // und `setzeSamplerate()`, beide setzen `warHoerbar = false` und ueber
+    // `hartAus()` `fade = 0`, OHNE `hoerbarAtomic` zu beruehren — das wird
+    // erst im naechsten Audioblock nachgezogen, bei gestopptem Transport also
+    // nie. Der dritte Term ist die einzige Aussage darueber, was der BROKER
+    // gesehen hat. Jeder Term darf allein sperren, keiner allein entsperren
+    // (§34.2: der teure Fehler liegt auf der Seite "zu frueh entsperrt").
+    const bool neutral = interventionsRing.fuellstand() == 0
+                      && ! sendeBeginOffen.load (std::memory_order_relaxed)
+                      && ! markierung.hoerbar();
+    if (neutral)
     {
         interventionsRing.resync();
         interventionsRingUeberlauf.store (false, std::memory_order_relaxed);
@@ -1222,6 +1485,42 @@ void EqCopilotProcessor::v3ControlLink (bool verbunden)
         // Luecke — und der Resync haette den Zustand nicht geklaert, sondern
         // gerade erst wieder unbekannt gemacht.
         interventionsSequenz.store (0, std::memory_order_relaxed);
+    }
+
+    // 🔑 NAK-180 R1/R2: die Aussage des Aufbaus reist — als Generationszahl.
+    //
+    // Neutral: der erste Heartbeat dieses Links traegt
+    // `intervention_state_unknown: false`, und DAS ist der einzige Ausloeser
+    // von `resync_bestaetigen` im Broker (D-01).
+    //
+    // Nicht neutral: er traegt ausdrueckliches `true`. Ein FRISCHER Broker
+    // haette sonst kein `unknown` — sein `Stand` ist leer, `taint` wird nicht
+    // persistiert —, und die Sitzung waere von der ersten Sekunde an
+    // faelschlich sauber, waehrend der Marker klingt (C2). Danach stellt das
+    // Replay den wahren Zustand her, und der Bericht bleibt offen, bis der
+    // Prozessor wieder neutral ist (E3.3).
+    //
+    // ⚠️ Der Klassentest umschliesst NUR die Wireaussage, nicht den lokalen
+    // Resync darueber: der Ring, sein Sticky-Bit und der Sequenzzaehler sind
+    // Prozessorzustand und gehoeren jeder Klasse. Nur die BEHAUPTUNG ueber
+    // Interventionen darf eine Sonde nicht abgeben — sie hat gar keine
+    // Marker (§7.1 E-08).
+    if (! darfAufbauUrteilMelden)
+    {
+        telemetryV3.reconnect();
+        return;
+    }
+
+    const auto meineGeneration = controlV3.meldeAufbauUrteil (neutral);
+    if (! neutral)
+    {
+        berichtOffen.store (meineGeneration);
+        replayFaellig.store (meineGeneration);
+        // Den Worker wecken, damit das Replay nicht auf den 50-ms-Takt
+        // wartet. Eine veraltete Weckung ist harmlos: der Zug prueft
+        // `replayFaellig` gegen die laufende Generation.
+        std::lock_guard<std::mutex> l (workerWarteMutex);
+        workerWarte.notify_all();
     }
 
     auto h = v3Hello();

@@ -157,9 +157,25 @@ struct ControlStatus
 
 /** Der produktive Heartbeat-Writer, zugleich direkter C++-Beweispunkt fuer
     die optionale Runtime-Praesenz. Ein unbekannter Messpunkt/Betrieb laesst
-    den Block fail-closed weg; es entsteht nie ein halber Runtime-Block. */
+    den Block fail-closed weg; es entsteht nie ein halber Runtime-Block.
+
+    NAK-180 R1: `intervention_state_unknown` ist DREIWERTIG.
+
+      | `status.interventionStateUnknown` | `bestaetigtNeutral` | Feld       |
+      |-----------------------------------|---------------------|------------|
+      | `true`                            | beliebig            | `true`     |
+      | `false`                           | `true`              | `false`    |
+      | `false`                           | `false`             | fehlt ganz |
+
+    Der Steady-State schweigt also weiter (M-39, "nur gesetzt reist es"); ein
+    `false` reist ausschliesslich im ersten Heartbeat nach einem bestaetigt
+    neutralen Neuaufbau. Genau dieses `false` ist der einzige Ausloeser von
+    `resync_bestaetigen` im Broker - ohne es hatte der dort gebaute Riegel im
+    Produkt keinen Aufrufer, und das sticky Unknown blieb fuer die Sitzung
+    stehen (G4 D-01). Die Vorgabe `false` haelt jeden Aufrufer gueltig, der
+    keine Aufbauaussage macht. */
 std::string heartbeatAlsJson (const Adresse&, std::uint64_t sequence,
-                              const ControlStatus&);
+                              const ControlStatus&, bool bestaetigtNeutral = false);
 
 struct GelesenesCommandAck
 {
@@ -274,7 +290,80 @@ public:
 
     /// P0 einreihen. `false` = Ueberlauf der 64er-Queue ⇒ die Verbindung wird
     /// geschlossen (§53.9 "nichts verwerfen; Verbindung schliessen").
-    bool sendeP0 (const std::string& json);
+    ///
+    /// NAK-180 R7: `klasse` sagt, ob der Eintrag den Linkwechsel ueberlebt.
+    /// Ein EREIGNIS tut es (Vorgabe, unveraendertes Verhalten); ein BERICHT
+    /// gilt nur fuer die Generation, in der er eingereiht wurde, und wird
+    /// beim Write-Fehler oder beim naechsten Aufbau verworfen. `marke` ist
+    /// die Rueckmeldekennung des Einreichers (0 = keine Rueckmeldung).
+    bool sendeP0 (const std::string& json,
+                  P0Klasse klasse = P0Klasse::ereignis,
+                  std::uint64_t marke = 0);
+
+    /// Senke des Interventionszugs (NAK-180 R12): einreihen unter derselben
+    /// Sperre, unter der die Generation gelesen wurde.
+    using ZugSenke = std::function<bool (const std::string& json, P0Klasse klasse,
+                                         std::uint64_t marke)>;
+
+    /** NAK-180 R12: Vergleich und Wirkung als EIN Zug.
+
+        Der Aufrufer bekommt die laufende `wireGeneration` und eine Senke;
+        beide gelten unter `sendeMutex`, das der Aufbauzug ebenfalls haelt.
+        Zwischen dem Vergleich einer Zustellgeneration und dem Einreihen der
+        Folgenachricht kann die Generation deshalb nicht wechseln — genau das
+        Fenster, durch das ein `end` ohne sein Begin auf den naechsten Link
+        geriet.
+
+        ⚠️ Der Zug darf `sendeP0`, `sendePersistenzP0` oder `sendeP1` NICHT
+        rufen: er haelt die Sperre bereits. Er darf den Sendezustand des
+        Aufrufers nehmen — die Ordnung ist `sendeMutex` VOR Sendezustand, nie
+        umgekehrt. */
+    void interventionsZug (const std::function<void (std::uint64_t generation,
+                                                     const ZugSenke& senke)>& zug);
+
+    /** NAK-180 R7: wer erfaehrt, dass ein P0-Eintrag den Draht erreicht hat
+        (`zugestellt`) oder verworfen wurde (`verworfen`)?
+
+        Beide laufen unter `sendeMutex`. Ein Rueckruf darf deshalb den
+        Sendezustand des Prozessors nehmen, aber NIE erneut senden. Sie
+        ersetzen die frueher unmoegliche Frage "ist meine Nachricht wirklich
+        raus?": der Rueckgabewert von `sendeP0` beantwortet sie nicht, er
+        sagt nur, dass eingereiht wurde. */
+    void setzeP0Rueckmeldung (std::function<void (std::uint64_t marke)> zugestellt,
+                              std::function<void (std::uint64_t marke)> verworfen);
+
+    /** NAK-180 R12, Zustellpruefung: liefert den Wiretext eines
+        Replay-Begin, wenn beim Aufbau eines neuen Links noch ein Ereignis
+        aelterer Generation in der Queue liegt — sonst einen leeren Text.
+
+        Der Hook laeuft unter `sendeMutex`; er darf nur lesen und formen, nie
+        senden oder warten. So bleibt der Wiretext beim Prozessor, und der
+        Transport interpretiert nichts. */
+    void setzeReplayBeginHook (std::function<std::string()> hook);
+
+    /** NAK-180 R1/R2/R10: die Aussage des Aufbaus, gebunden an den Link.
+
+        Der Prozessor ruft genau eine der beiden aus `v3ControlLink(true)`,
+        nachdem er nach E1 geurteilt hat: `neutral` heisst "Ring leer, kein
+        offenes lokales Begin, kein Marker" und laesst den ersten Heartbeat
+        `intervention_state_unknown: false` tragen; `nichtNeutral` laesst ihn
+        ausdruecklich `true` tragen, damit auch ein FRISCHER Broker die
+        Sitzung sofort sperrt.
+
+        Die Aussage traegt die `wireGeneration` ihres Links (Rueckgabe). Was
+        ein ueberholter Callback danach schreibt, ist fuer den naechsten Link
+        inert - ohne dass ein zweiter Ende-Callback noetig waere (MP3-1). */
+    std::uint64_t meldeAufbauUrteil (bool neutral);
+
+    /** Loescht die Aufbauaussage der STERBENDEN Generation - per CAS, damit
+        ein alter negativer Callback nach dem positiven von G+1 nichts
+        mitnimmt (MP4-2). Aufruf aus `v3ControlLink(false)`. Reine Hygiene:
+        die Korrektheit traegt der Generationsvergleich des Verbrauchers. */
+    void loescheAufbauUrteil (std::uint64_t generation);
+
+    /// Die laufende Wire-Generation. Der Prozessor braucht sie, um seine
+    /// eigenen generationsgebundenen Zustaende zu setzen und zu vergleichen.
+    std::uint64_t wireGenerationJetzt() const noexcept;
 
     /// Persistenzpflichtiger P0-Auftrag. Der JSON-Text muss genau eine
     /// gueltige `command_id` tragen. Sein Queueplatz wird nach dem Wire-Write

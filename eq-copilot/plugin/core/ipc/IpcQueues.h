@@ -53,26 +53,90 @@ inline constexpr std::size_t kCapP2JeSonde = 2;
 /// Platz und kann gar nicht scheitern. Der Preis ist ein Platz weniger
 /// waehrend eines laufenden Writes — und genau dieser Platz ist es, der
 /// vorher still verlorenging.
+/** NAK-180 R7: wozu ein P0-Eintrag da ist — und was mit ihm beim Linkwechsel
+    geschieht.
+
+    Die Zusage "P0 verwirft nichts" (§53.9) gilt EREIGNISSEN. Ein Bericht ist
+    etwas anderes: ein Heartbeat ist periodisch (der naechste traegt denselben
+    Zustand), und ein Replay-Begin wird beim naechsten Aufbau neu gebildet.
+    Beide gelten AUSSCHLIESSLICH fuer den Link, auf dem sie entstanden sind —
+    reisen sie auf dem naechsten, behaupten sie etwas Falsches. Genau das war
+    der Defekt: ein altes `intervention_state_unknown: false` loeste auf einem
+    frischen Link den Resync aus, waehrend der Marker klang. */
+enum class P0Klasse
+{
+    /// `audible_intervention_begin` / `_end`. Ueberlebt jeden Linkwechsel;
+    /// wird bei einem Write-Fehler zurueckgelegt, nie verworfen.
+    ereignis,
+    /// Heartbeat, Replay-Begin. Gilt nur fuer seine `wireGeneration`; beim
+    /// Write-Fehler und beim Aufbau eines neuen Links wird er verworfen —
+    /// gezaehlt und dem Einreicher gemeldet, nie stillschweigend.
+    bericht,
+};
+
+/** Ein P0-Eintrag mit seiner Herkunft (NAK-180 R7/R10). */
+struct P0Eintrag
+{
+    /// Ein blosser Text ist ein EREIGNIS der Generation 0 - die konservative
+    /// Klasse. So bleibt jeder Aufrufer gueltig, der keine Aussage ueber die
+    /// Herkunft macht, und "nichts verwerfen" gilt fuer ihn unveraendert.
+    P0Eintrag() = default;
+    P0Eintrag (std::string j) : json (std::move (j)) {}
+    P0Eintrag (const char* j) : json (j) {}
+    P0Eintrag (std::string j, P0Klasse k, std::uint64_t g, std::uint64_t m)
+        : json (std::move (j)), klasse (k), generation (g), marke (m) {}
+
+    std::string   json;
+    P0Klasse      klasse = P0Klasse::ereignis;
+    /// Die `wireGeneration`, die beim EINREIHEN galt. Sie wird dort gelesen,
+    /// nicht beim Bilden der Nachricht: ein frueh gebauter, spaet
+    /// eingereihter Bericht truege sonst eine ueberholte Zahl.
+    std::uint64_t generation = 0;
+    /// Rueckmeldemarke des Einreichers. Er erfaehrt darueber, ob sein Eintrag
+    /// den Draht erreicht hat (`beiP0Zugestellt`) oder verworfen wurde
+    /// (`beiP0Verworfen`) — die Grundlage des dreiwertigen Zustellstands.
+    std::uint64_t marke = 0;
+};
+
 class P0Warteschlange
 {
 public:
     explicit P0Warteschlange (std::size_t kapazitaet = kCapP0) : kap (kapazitaet) {}
 
-    bool einreihen (std::string nachricht)
+    bool einreihen (P0Eintrag eintrag)
     {
         if (inhalt.size() + reserviert >= kap)
         {
             ++ueberlaeufe;
             return false;
         }
-        inhalt.push_back (std::move (nachricht));
+        inhalt.push_back (std::move (eintrag));
+        return true;
+    }
+
+    /** NAK-180 R12: das Replay-Begin geht VOR den Rest.
+
+        Der Aufbauzug braucht diesen Weg, wenn beim Aufbau von G+1 ein `end`
+        in der Queue liegt, dessen Begin auf einer aelteren Generation
+        zugestellt wurde: ohne vorangestelltes Begin traefe das `end` beim
+        Broker auf nichts und setzte `unknown` (`intervention.rs`). Der Platz
+        ist da, weil der Aufrufer unter derselben Sperre gerade einen Eintrag
+        GESEHEN hat; ein voller Ring gibt trotzdem ehrlich `false` zurueck. */
+    bool voranstellen (P0Eintrag eintrag)
+    {
+        if (inhalt.size() + reserviert >= kap)
+        {
+            ++ueberlaeufe;
+            return false;
+        }
+        inhalt.push_front (std::move (eintrag));
         return true;
     }
 
     /// Entnimmt UND reserviert. Der Aufrufer schuldet danach genau ein
     /// `bestaetigen()` (auf dem Draht) oder `zuruecklegen()` (nicht auf dem
     /// Draht).
-    bool entnehmen (std::string& ziel)
+    bool entnehmen (P0Eintrag& ziel)
     {
         if (inhalt.empty())
             return false;
@@ -81,6 +145,64 @@ public:
         ++reserviert;
         return true;
     }
+
+    /// Bequemform fuer Aufrufer, die nur den Text brauchen (Beine, die die
+    /// Klassenlogik nicht messen).
+    bool entnehmen (std::string& ziel)
+    {
+        P0Eintrag e;
+        if (! entnehmen (e))
+            return false;
+        ziel = std::move (e.json);
+        return true;
+    }
+
+    /** NAK-180 R10/R12: der Aufbaufilter, als EINE Operation.
+
+        Er wirft jeden BERICHT aelterer Generation weg und meldet dessen Marke
+        an `verworfen`. Ereignisse bleiben unberuehrt — fuer sie gilt "nichts
+        verwerfen" unveraendert. Rueckgabe: wie viele Berichte fielen.
+
+        Er laeuft unter derselben Sperre wie die Vergabe der neuen Generation
+        (Aufbauzug 2+3): getrennt liesse er ein Fenster, in dem ein Einreiher
+        die neue Generation schon liest, der Filter aber noch nicht durch ist. */
+    template <typename Verworfen>
+    std::size_t berichteAelterAls (std::uint64_t generation, Verworfen&& verworfen)
+    {
+        std::size_t gefallen = 0;
+        for (auto it = inhalt.begin(); it != inhalt.end(); )
+        {
+            if (it->klasse == P0Klasse::bericht && it->generation < generation)
+            {
+                const auto marke = it->marke;
+                it = inhalt.erase (it);
+                ++gefallen;
+                ++verworfeneBerichte;
+                verworfen (marke);
+            }
+            else
+            {
+                ++it;
+            }
+        }
+        return gefallen;
+    }
+
+    /** NAK-180 R12, Zustellpruefung: liegt hier ein EREIGNIS aelterer
+        Generation? Nur dann kann ein `end` den Linkwechsel ueberleben und auf
+        dem neuen Link ohne sein Begin ankommen. */
+    bool hatEreignisAelterAls (std::uint64_t generation) const noexcept
+    {
+        for (const auto& e : inhalt)
+            if (e.klasse == P0Klasse::ereignis && e.generation < generation)
+                return true;
+        return false;
+    }
+
+    /// Wie viele Berichte der Aufbaufilter und der Write-Fehler zusammen
+    /// verworfen haben. Ein Verwurf ohne Zahl waere ein stiller Verlust.
+    std::uint64_t verworfen() const noexcept { return verworfeneBerichte; }
+    void zaehleVerworfen() noexcept { ++verworfeneBerichte; }
 
     /// Der Eintrag ist auf dem Draht: der reservierte Platz wird frei.
     void bestaetigen() noexcept
@@ -93,9 +215,20 @@ public:
     /// gilt auch fuer den Weg zwischen Queue und Pipe: der Eintrag geht an
     /// seinen Platz zurueck. Dank der Reservierung ist dort Platz — dieser
     /// Weg hat keinen Fehlerfall.
-    void zuruecklegen (std::string nachricht)
+    void zuruecklegen (P0Eintrag eintrag)
     {
-        inhalt.push_front (std::move (nachricht));
+        inhalt.push_front (std::move (eintrag));
+        if (reserviert > 0)
+            --reserviert;
+    }
+
+    /** NAK-180 R7: ein BERICHT wird beim Write-Fehler nicht zurueckgelegt,
+        sondern fallen gelassen — seine Aussage galt dem Link, der gerade
+        gestorben ist. Der reservierte Platz wird frei wie bei
+        `bestaetigen()`, und der Verwurf wird gezaehlt. */
+    void fallenLassen() noexcept
+    {
+        ++verworfeneBerichte;
         if (reserviert > 0)
             --reserviert;
     }
@@ -109,8 +242,9 @@ public:
 private:
     std::size_t kap;
     std::size_t reserviert = 0;
-    std::deque<std::string> inhalt;
+    std::deque<P0Eintrag> inhalt;
     std::uint64_t ueberlaeufe = 0;
+    std::uint64_t verworfeneBerichte = 0;
 };
 
 /// Was mit einer P1-Nachricht passiert ist.

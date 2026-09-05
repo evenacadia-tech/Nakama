@@ -744,6 +744,45 @@ private:
     /// Gespiegelt aus dem Ring, damit der Worker den Ueberlauf auch dann
     /// sieht, wenn er den Ring gerade geleert hat.
     std::atomic<bool> interventionsRingUeberlauf { false };
+
+    // ── NAK-180: der Sendezustand des Interventionspfads ──────────────────
+    //
+    // Er beantwortet die eine Frage, die der Ring nicht beantworten kann:
+    // WAS WEISS DER BROKER? Der Ring kennt nur, was noch nicht entnommen ist;
+    // ein bereits gesendetes Begin ist dort verschwunden, obwohl sein Marker
+    // weiterklingt. Genau daran fiel C2 (Reconnect bei hoerbarem Marker).
+    struct OffenesBegin
+    {
+        nakama::ipc::Interventionsereignis ereignis {};
+        bool gueltig = false;
+        /// `prepareToPlay` hat den Marker hart abgeschaltet; sein `end` kommt
+        /// vom Audiothread nie (HoerMarkierung `vorbereiten` meldet keinen
+        /// Uebergang). Der Sender bildet es dann selbst (N-10).
+        bool tot = false;
+        /// Dreiwertiger Zustellstand (Matrix E6):
+        ///   0 = nicht eingereiht (sendeP0 wies ab) → Replay noetig
+        ///   1 = eingereiht, nicht auf dem Draht     → KEIN Replay, es reist selbst
+        ///   2 = zugestellt                          → Replay noetig, wenn der
+        ///                                             Link seither wechselte
+        int zustand = 0;
+        /// Die `wireGeneration`, auf der zugestellt wurde (Zustand 2). Ein
+        /// Vergleich statt einer Umschreibung beim Linkende (E10).
+        std::uint64_t zustellGeneration = 0;
+        /// Rueckmeldemarke des zuletzt eingereihten Begin.
+        std::uint64_t marke = 0;
+    };
+    /// ⚠️ Sperrenordnung (E11): `sendeMutex` des ControlClients wird VOR
+    /// diesem genommen, nie umgekehrt. Der Audiothread fasst ihn nie an.
+    mutable std::mutex sendeZustandMutex;
+    OffenesBegin offenesBegin;
+    /// Lock-freie Spiegelung fuer `v3ControlLink`, damit der Callback die
+    /// Sperre nicht nehmen muss.
+    std::atomic<bool> sendeBeginOffen { false };
+    /// Fortlaufende Marke fuer die P0-Rueckmeldung (0 bleibt frei).
+    std::atomic<std::uint64_t> sendeMarkenFolge { 0 };
+    /// NAK-180 R10/R13: generationsgebunden, jeder Zugriff ein CAS.
+    std::atomic<std::uint64_t> replayFaellig { 0 };
+    std::atomic<std::uint64_t> berichtOffen { 0 };
     /// Wie viele Begin/End-Paare der Worker wirklich gesendet hat — die
     /// Gegenzahl zu `verworfeneEreignisse()` des Rings.
     std::atomic<std::uint64_t> interventionenGesendet { 0 };

@@ -1,0 +1,23 @@
+NAK-180 Rotbeweis R7/R12 - P0-Klassen und Zustellpruefung
+Stand: 51bc76de2d974a41b1cb3b2fb92e763bcb6f4b7b
+Zuruecknahme (zwei Stellen in IpcQueues.h):
+  1. berichteAelterAls - die Klassen- und Generationspruefung entfernt:
+     der Aufbaufilter verwirft nichts mehr, ein alter Bericht reist auf
+     dem naechsten Link (das ist MP1-1).
+  2. hatEreignisAelterAls - die Pruefung entfernt: der Aufbauzug sieht das
+     ueberlebende `end` nicht und stellt kein Replay-Begin voran (MP4-1).
+
+Erwartung: N-25, N-26 und N-36 fallen.
+
+  FEHLER  NAK-180 R7: aufbaufilter_verwirft_nur_alte_berichte - genau der Bericht der alten Generation faellt, gemeldet mit seiner Marke  [0 gefallen]
+  FEHLER  NAK-180 R7: das EREIGNIS bleibt - fuer P0-Ereignisse gilt 'nichts verwerfen' unveraendert (Paragraph 53.9)  [3]
+  FEHLER  NAK-180 R7: und der Verwurf ist GEZAEHLT, nie stillschweigend  [0]
+  ok      NAK-180 R10: ein waehrend des Callbacks eingereihtes Replay traegt die NEUE Generation und wird ZUGESTELLT, nicht verworfen
+  FEHLER  NAK-180 R12: der Aufbauzug SIEHT das Ereignis aelterer Generation
+  ok      NAK-180 R12: zustellpruefung_stellt_das_replay_voran - auf dem neuen Link reist Begin VOR End, ohne dass ein Rennen noetig waere  [{"replaybegin":1}]
+  ok      NAK-180 R12: und das `end` folgt unmittelbar  [{"end":1}]
+  ok      NAK-180 R7: der Bericht ist entnommen und reserviert
+  ok      NAK-180 R7: bericht_wird_beim_write_fehler_fallen_gelassen - er geht NICHT zurueck in die Queue, und der Platz wird frei  [0/0]
+  ok      NAK-180 R7: ein Ereignis geht mit Klasse, Generation und Marke UNVERAENDERT zurueck - es reist auf dem neuen Link von selbst, und genau deshalb darf der Prozessor es nicht replayen (N-27)
+FEHLER — 330 Pruefungen, 4 Fehler
+EXIT=1

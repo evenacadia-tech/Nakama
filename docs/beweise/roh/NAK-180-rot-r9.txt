@@ -1,0 +1,14 @@
+NAK-180 Rotbeweis R9 - das Main-Hello sperrt seine Sitzung
+Stand: 51bc76de2d974a41b1cb3b2fb92e763bcb6f4b7b
+Zuruecknahme: in link.rs::control_hello_registrieren faellt das Setzen von
+taint.unknown fuer plugin_kind == "main" weg (die Bedingung wird false).
+
+Erwartung: das Fenster zwischen Main-Hello und erstem Heartbeat ist wieder
+offen - eine Sonde koennte dort starke Evidenz committen, waehrend der
+Marker klingt (G4 C2, MP1-3).
+
+ERGEBNIS: sonde013_verdrahtung 57 passed, 2 FAILED
+  erster_heartbeat_mit_false_loest_das_sticky_unknown  (N-30)
+  sitzung_ist_zwischen_main_hello_und_erstem_heartbeat_gesperrt  (N-30)
+
+EXIT=101

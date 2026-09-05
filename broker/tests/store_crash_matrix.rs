@@ -724,6 +724,13 @@ fn produkt_coordinator_legt_passage_und_experiment_aus_dem_wire_an() {
             .angenommen
     );
     assert!(si_report(&coordinator, "main", &main.adresse, 1));
+    // 🔑 NAK-180 R9: das MAIN-Hello sperrt seine Sitzung, bis der erste
+    // Heartbeat sie loest. Im Produkt tut das ein ausdrueckliches
+    // `intervention_state_unknown: false`; hier steht dafuer derselbe
+    // bestaetigte Resync, den dieses `false` ausloest. Ohne ihn maesse der
+    // Test unten nicht mehr M-59 (schliesst das Terminal sein Intervall?),
+    // sondern die Aufbausperre - zwei verschiedene Aussagen.
+    assert!(coordinator.resync_bestaetigen("main", 0));
     assert!(
         coordinator
             .control_hello_registrieren("probe", &probe)

@@ -6080,6 +6080,140 @@ int main (int argc, char** argv)
         server.stoppen();
     }
 
+    // ── NAK-180 R7/R10/R12/R13: die P0-Queue trägt Klasse, Generation und
+    //    Marke (Matrix N-25 bis N-27, N-35 bis N-37) ─────────────────────────
+    //
+    // Gemessen wird die Queue selbst, nicht der ControlClient darum herum:
+    // jede der vier Prüfungsrunden fand ihren Defekt genau hier — im
+    // Verhältnis zwischen einem Eintrag und dem Link, für den er gilt.
+    {
+        using nakama::ipc::P0Warteschlange;
+        using nakama::ipc::P0Eintrag;
+        using nakama::ipc::P0Klasse;
+
+        // -- N-26 (a): Berichte älterer Generation fallen beim Aufbau -------
+        {
+            P0Warteschlange q;
+            q.einreihen (P0Eintrag { "{\"alt\":1}", P0Klasse::bericht,  1, 11 });
+            q.einreihen (P0Eintrag { "{\"ev\":1}",  P0Klasse::ereignis, 1, 12 });
+            q.einreihen (P0Eintrag { "{\"neu\":1}", P0Klasse::bericht,  2, 13 });
+
+            std::vector<std::uint64_t> verworfen;
+            const auto gefallen = q.berichteAelterAls (
+                2, [&verworfen] (std::uint64_t m) { verworfen.push_back (m); });
+
+            pruefe (gefallen == 1 && verworfen.size() == 1 && verworfen[0] == 11,
+                    "NAK-180 R7: aufbaufilter_verwirft_nur_alte_berichte - genau der "
+                    "Bericht der alten Generation faellt, gemeldet mit seiner Marke",
+                    std::to_string (gefallen) + " gefallen");
+            pruefe (q.groesse() == 2,
+                    "NAK-180 R7: das EREIGNIS bleibt - fuer P0-Ereignisse gilt "
+                    "'nichts verwerfen' unveraendert (Paragraph 53.9)",
+                    std::to_string (q.groesse()));
+            pruefe (q.verworfen() == 1,
+                    "NAK-180 R7: und der Verwurf ist GEZAEHLT, nie stillschweigend",
+                    std::to_string ((unsigned long long) q.verworfen()));
+        }
+
+        // -- N-26 (b): ein Bericht der NEUEN Generation ueberlebt -----------
+        //
+        // Das ist die Haelfte, die MP2-1 offenliess: wird waehrend des
+        // Link-Callbacks eingereiht - also nachdem die Generation vergeben
+        // ist -, traegt der Eintrag die neue Zahl und darf nicht fallen.
+        {
+            P0Warteschlange q;
+            q.einreihen (P0Eintrag { "{\"replay\":1}", P0Klasse::bericht, 2, 21 });
+            std::vector<std::uint64_t> verworfen;
+            q.berichteAelterAls (2, [&verworfen] (std::uint64_t m) { verworfen.push_back (m); });
+            pruefe (q.groesse() == 1 && verworfen.empty(),
+                    "NAK-180 R10: ein waehrend des Callbacks eingereihtes Replay traegt "
+                    "die NEUE Generation und wird ZUGESTELLT, nicht verworfen");
+        }
+
+        // -- N-36: das `end` in der Queue beim Aufbau von G+1 ---------------
+        //
+        // Dieser Bruch braucht kein Rennen: er entsteht allein daraus, dass
+        // die Queue den Linkwechsel ueberlebt. Ohne die Zustellpruefung
+        // traefe das `end` beim Broker auf kein Begin.
+        {
+            P0Warteschlange q;
+            q.einreihen (P0Eintrag { "{\"end\":1}", P0Klasse::ereignis, 1, 31 });
+            pruefe (q.hatEreignisAelterAls (2),
+                    "NAK-180 R12: der Aufbauzug SIEHT das Ereignis aelterer Generation");
+
+            const bool vorn = q.voranstellen (
+                P0Eintrag { "{\"replaybegin\":1}", P0Klasse::bericht, 2, 32 });
+            P0Eintrag erster;
+            pruefe (vorn && q.entnehmen (erster) && erster.json == "{\"replaybegin\":1}",
+                    "NAK-180 R12: zustellpruefung_stellt_das_replay_voran - auf dem neuen "
+                    "Link reist Begin VOR End, ohne dass ein Rennen noetig waere",
+                    erster.json);
+            q.bestaetigen();
+            P0Eintrag zweiter;
+            pruefe (q.entnehmen (zweiter) && zweiter.json == "{\"end\":1}",
+                    "NAK-180 R12: und das `end` folgt unmittelbar", zweiter.json);
+            q.bestaetigen();
+        }
+
+        // -- N-25: Abbruch zwischen Enqueue und Wire-Commit -----------------
+        //
+        // Ein BERICHT wird nicht zurueckgelegt: seine Aussage galt dem Link,
+        // der gerade stirbt. Zurueckgelegt reiste er auf dem naechsten und
+        // behauptete dort etwas Falsches (MP1-1).
+        {
+            P0Warteschlange q;
+            q.einreihen (P0Eintrag { "{\"hb\":1}", P0Klasse::bericht, 1, 41 });
+            P0Eintrag raus;
+            pruefe (q.entnehmen (raus) && raus.klasse == P0Klasse::bericht,
+                    "NAK-180 R7: der Bericht ist entnommen und reserviert");
+            q.fallenLassen();
+            pruefe (q.groesse() == 0 && q.inFlug() == 0 && q.verworfen() == 1,
+                    "NAK-180 R7: bericht_wird_beim_write_fehler_fallen_gelassen - er geht "
+                    "NICHT zurueck in die Queue, und der Platz wird frei",
+                    std::to_string (q.groesse()) + "/" + std::to_string (q.inFlug()));
+        }
+
+        // -- N-27: ein EREIGNIS geht dagegen unveraendert zurueck -----------
+        {
+            P0Warteschlange q;
+            q.einreihen (P0Eintrag { "{\"begin\":1}", P0Klasse::ereignis, 1, 51 });
+            P0Eintrag raus;
+            q.entnehmen (raus);
+            q.zuruecklegen (std::move (raus));
+            P0Eintrag wieder;
+            pruefe (q.groesse() == 1 && q.entnehmen (wieder)
+                        && wieder.json == "{\"begin\":1}"
+                        && wieder.klasse == P0Klasse::ereignis
+                        && wieder.generation == 1 && wieder.marke == 51,
+                    "NAK-180 R7: ein Ereignis geht mit Klasse, Generation und Marke "
+                    "UNVERAENDERT zurueck - es reist auf dem neuen Link von selbst, "
+                    "und genau deshalb darf der Prozessor es nicht replayen (N-27)");
+            q.bestaetigen();
+        }
+
+        // -- N-37: CAS statt blindem store - kein Lost-Update ---------------
+        //
+        // Der Verbraucher hat G beobachtet, der positive Callback von G+1
+        // schreibt dazwischen. Ein blindes `store(0)` nahm dessen Wirkung
+        // mit; ein verlorenes `neutralerNeuaufbau` ist D-01 in neuer Form.
+        {
+            std::atomic<std::uint64_t> flag { 1 };
+            auto gesehen = flag.load();          // Verbraucher sieht G = 1
+            flag.store (2);                      // Callback von G+1 schreibt
+            const bool geloescht = flag.compare_exchange_strong (gesehen, 0);
+            pruefe (! geloescht && flag.load() == 2,
+                    "NAK-180 R13: aufraeumen_per_cas_verliert_kein_update - das CAS "
+                    "schlaegt fehl, und die Wirkung von G+1 bleibt stehen",
+                    std::to_string ((unsigned long long) flag.load()));
+
+            // Gegenprobe: steht der beobachtete Wert noch, raeumt das CAS auf.
+            std::atomic<std::uint64_t> flag2 { 1 };
+            auto g2 = flag2.load();
+            pruefe (flag2.compare_exchange_strong (g2, 0) && flag2.load() == 0,
+                    "NAK-180 R13: und wenn niemand dazwischenschrieb, raeumt es auf");
+        }
+    }
+
     // ── NAK-180 R6: die Wartefrist gehoert UNS, nicht dem Pipe-Besitzer
     //    (Matrix N-19, N-21, N-22) ──────────────────────────────────────────
     {

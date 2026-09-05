@@ -257,7 +257,21 @@ EqCopilotProcessor::EqCopilotProcessor()
             auto gesehen = replayFaellig.load();
             if (gesehen != 0 && gesehen < generation)
                 replayFaellig.compare_exchange_strong (gesehen, 0);
-            return interventionsWireJson (ev, adresseJson);
+            // 🔑 EP-13/R7: auch DIESER Text ist eine gesendete Intervention.
+            //
+            // Der Client stellt ihn voran, nicht der Sendezug - er kaeme also
+            // nie durch `sende()` und damit nie in die Buchfuehrung. Ein
+            // Replay, das der Aufbauzug voranstellt, waere sonst unsichtbar:
+            // der Zaehler zaehlte es nicht, und ein Bein saehe auf dem Draht
+            // ein `end` ohne sein Begin, obwohl das Begin da war.
+            auto json = interventionsWireJson (ev, adresseJson);
+            if (marke != 0)
+            {
+                if (ausstehendeMitschnitte.size() >= kAusstehendDeckel)
+                    ausstehendeMitschnitte.pop_front();
+                ausstehendeMitschnitte.emplace_back (marke, json);
+            }
+            return json;
         });
 
     queue.vorbereiten();
@@ -1607,6 +1621,14 @@ void EqCopilotProcessor::interventionenSenden()
             else if (interventionsRing.fuellstand() == 0 && ! offenesBegin.gueltig
                      && ! abschlussBegin.gueltig
                      && ! ausstehenderTotUebergang.gueltig
+                     // 🔑 EP-02, zweite Haelfte: ein `end`, das eingereiht,
+                     // aber noch NICHT auf dem Draht ist, hat den Nachlauf
+                     // beim Broker noch gar nicht gestartet. Schloesse der
+                     // Bericht hier, reiste das `false` unmittelbar hinter dem
+                     // `end` - und traefe dort auf den vollen Nachlauf. Die
+                     // Frist allein genuegt nicht: sie steht erst ab dem
+                     // Wire-Commit.
+                     && letzteEndeMarke == 0
                      && ! markierung.hoerbar()
                      // 🔑 NAK-180 Nacharbeit 1 (EP-02/N-05/M-58): der
                      // NACHLAUF des zuletzt zugestellten `end` muss in

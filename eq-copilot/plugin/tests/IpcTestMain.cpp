@@ -6318,6 +6318,87 @@ int main (int argc, char** argv)
                 "Generationspruefung fuer Queue-Inhalte - dafuer braucht es keinen "
                 "Ende-Callback",
                 std::to_string (verworfen.size()));
+        // -- EP-07: EIN Markenraum ----------------------------------------
+        //
+        // `sendeMarkenFolge` im Prozessor und `p0MarkenFolge` im Client
+        // begannen unabhaengig bei 1, und die Rueckrufe tragen nur die Zahl.
+        // Ein Aufbau-Heartbeat und das erste Marker-Begin konnten damit
+        // dieselbe Marke tragen: wurde der Heartbeat zuerst committet,
+        // markierte sein Rueckruf das Begin faelschlich als zugestellt, und
+        // ein Reconnect erzeugte ein doppeltes Replay (N-27/N-36).
+        {
+            std::vector<std::uint64_t> marken;
+            ControlClient zwei ([] { return ControlHello {}; },
+                                testPipeName ("nak180-ep07-marken"));
+            zwei.setzeP0Rueckmeldung (
+                [&] (std::uint64_t m, std::uint64_t) { marken.push_back (m); }, {});
+            zwei.aufbauZug();
+
+            // Der Heartbeat-Schritt der Sendeschleife vergibt seine Marke...
+            ControlHello hello;
+            hello.adresse.logonSid = "S-1-5-21-1";
+            hello.adresse.projectBindingId = std::string (32, 'a');
+            hello.adresse.sessionEpoch = std::string (32, 'b');
+            hello.adresse.instanceId = std::string (32, 'c');
+            hello.adresse.runtimeNonce = std::string (32, 'd');
+            nakama::ipc::ControlStatus stz;
+            std::string hbText;
+            zwei.meldeAufbauUrteil (true);
+            pruefe (zwei.heartbeatSchrittFuerTest (hello, 1, stz, hbText),
+                    "NAK-180 EP-07: der Aufbau-Heartbeat ist eingereiht");
+
+            // ...und der Interventionszug seine aus DERSELBEN Folge.
+            std::uint64_t markeBegin = 0;
+            zwei.interventionsZug ([&] (std::uint64_t,
+                                        const ControlClient::ZugSenke& senke)
+            {
+                markeBegin = senke ("{\"begin\":1}", P0Klasse::intervention);
+            });
+            zwei.zustelleAllesFuerTest();
+            pruefe (markeBegin != 0 && marken.size() == 2 && marken[0] != marken[1],
+                    "NAK-180 EP-07: ein_markenraum - Heartbeat und Marker-Begin tragen "
+                    "VERSCHIEDENE Marken; zwei Folgen mit eigenem Nullpunkt liessen den "
+                    "Rueckruf des einen das andere als zugestellt buchen",
+                    (marken.size() == 2
+                        ? std::to_string ((unsigned long long) marken[0]) + " vs "
+                              + std::to_string ((unsigned long long) marken[1])
+                        : std::string ("Marken: ") + std::to_string (marken.size())));
+            zwei.stop();
+        }
+
+        // -- EP-03: ein Urteil gilt GENAU seiner Generation -----------------
+        //
+        // Der Worker stellt die Neutralitaet unter `sendeMutex` fuer G fest
+        // und ruft danach - ausserhalb der Sperre. Baut G+1 in diesem Fenster
+        // auf, ersetzte das alte `false` dessen frisches `true`: der Bericht
+        // des neuen Links waere nie eroeffnet, waehrend sein Marker klingt.
+        {
+            ControlClient drei ([] { return ControlHello {}; },
+                                testPipeName ("nak180-ep03-generation"));
+            const auto gAlt = drei.aufbauZug();
+            const auto gNeu = drei.aufbauZug();
+            drei.meldeAufbauUrteil (false);          // G+1 urteilt NICHT neutral
+
+            const auto angewandt = drei.meldeAufbauUrteil (true, gAlt);
+            pruefe (angewandt == 0,
+                    "NAK-180 EP-03: ein Urteil fuer eine TOTE Generation wird nicht "
+                    "angewendet",
+                    std::to_string ((unsigned long long) angewandt) + " (G"
+                        + std::to_string (gAlt) + " gegen G" + std::to_string (gNeu) + ")");
+
+            nakama::ipc::Adresse ad;
+            ad.logonSid = "S-1-5-21-1"; ad.projectBindingId = std::string (32, 'a');
+            ad.sessionEpoch = std::string (32, 'b'); ad.instanceId = std::string (32, 'c');
+            ad.runtimeNonce = std::string (32, 'd');
+            nakama::ipc::ControlStatus st3;
+            const auto text = drei.heartbeatTextFuerTest (ad, 1, st3);
+            pruefe (text.find ("\"intervention_state_unknown\":true") != std::string::npos
+                        && text.find ("\"intervention_state_unknown\":false") == std::string::npos,
+                    "NAK-180 EP-03/R12: der erste Heartbeat von G+1 traegt SEIN Urteil - "
+                    "der veraltete Abschluss hat es nicht durch `false` ersetzt");
+            drei.stop();
+        }
+
         client.stop();
     }
 

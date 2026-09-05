@@ -1778,6 +1778,123 @@ void n12AussageKommtZurueck()
     p->releaseResources();
 }
 
+/// N-36 · Ein `end`, das beim Aufbau von G+1 noch in der Queue liegt, reist
+/// nie ohne sein Begin - und der Mitschnitt entsteht erst am Wire-Commit.
+///
+/// 🔑 NAK-180 Nacharbeit 1 (EP-01/EP-13): dieser Bruch braucht KEIN Rennen.
+/// Er entsteht allein daraus, dass die Queue den Linkwechsel ueberlebt: der
+/// Sender loeschte das offene Begin, sobald das `end` eingereiht war, und der
+/// Aufbauzug des naechsten Links fand nichts mehr, was er voranstellen
+/// koennte. Beim Broker traf das `end` auf nichts, und die Sitzung nullte nie.
+///
+/// Rotbeweis: `abschlussBegin` in `sendeEnde` nicht setzen -> kein Replay vor
+/// dem `end`.
+void n36EndeUeberlebtDenLinkwechsel()
+{
+    abschnitt ("NAK-180 N-36  end_in_der_queue_reist_nie_ohne_sein_begin");
+    Pruefstand s;
+    s.p->v3LinkFuerTest (true);
+
+    // Ein zugestelltes Begin auf G.
+    s.p->markierungEinreichen (s.auftrag);
+    s.bloecke (40);
+    (void) s.ernte();
+    const auto gesendetVorEnde = s.p->interventionenGesendetFuerTest();
+
+    // Das Ende entsteht - und wird EINGEREIHT, aber NICHT zugestellt.
+    // Dafuer steht der Sender, und der Zug laeuft genau einmal synchron.
+    s.p->senderAnhaltenFuerTest (true);
+    s.p->markierungAus();
+    s.bloecke (140);
+    s.p->interventionenSendenFuerTest();
+
+    // 🔑 EP-13/R7: eingereiht ist NICHT gesendet. Der Zaehler steht still,
+    // bis der Draht bestaetigt.
+    pruefe (s.p->interventionenGesendetFuerTest() == gesendetVorEnde,
+            "N-36/EP-13: das eingereihte `end` zaehlt noch NICHT als gesendet - "
+            "'gesendet' heisst Wire-Commit",
+            juce::String ((int) s.p->interventionenGesendetFuerTest()) + " statt "
+                + juce::String ((int) gesendetVorEnde));
+
+    // Und JETZT stirbt der Link, waehrend das `end` in der Queue liegt.
+    s.p->v3LinkFuerTest (false);
+    s.p->v3LinkFuerTest (true);
+    s.p->senderAnhaltenFuerTest (false);
+    s.bloecke (6);
+
+    const auto ernte = s.ernte();
+    juce::String offeneId;
+    bool endeOhneBegin = false;
+    int begins = 0;
+    for (const auto& e : ernte)
+    {
+        const auto typ = e.getProperty ("type", {}).toString();
+        const auto id  = e.getProperty ("intervention_id", {}).toString();
+        if (typ == "audible_intervention_begin") { offeneId = id; ++begins; }
+        else if (typ == "audible_intervention_end" && id != offeneId)
+            endeOhneBegin = true;
+    }
+    pruefe (! endeOhneBegin && begins >= 1,
+            "N-36: der Aufbauzug stellt das Replay-Begin VOR das wartende `end` - "
+            "ohne die Zustellpruefung traefe es beim Broker auf nichts",
+            juce::String (begins) + " Begin, End ohne Begin: "
+                + (endeOhneBegin ? "ja" : "nein"));
+    pruefe (zaehle (ernte, "audible_intervention_end") == 1,
+            "N-36: und das `end` reist genau einmal");
+}
+
+/// N-05/M-58 · Das einmalige `false` wartet den NACHLAUF ab.
+///
+/// 🔑 NAK-180 Nacharbeit 1 (EP-02): der Bericht endete bisher, sobald Ring,
+/// lokales Begin und Marker leer waren. Bei einem laengeren Marker erreichte
+/// das `false` den Broker noch waehrend `tail_samples_offen > 0`, wurde dort
+/// verworfen und nie wiederholt - `berichtOffen` und die Aufbauaussage waren
+/// mit ihm verbraucht, und die Sitzung blieb fuer immer gesperrt.
+///
+/// Rotbeweis: `nachlaufAbgelaufen()` immer `true` liefern lassen.
+void n05NachlaufWirdAbgewartet()
+{
+    abschnitt ("NAK-180 N-05/M-58  false_wartet_den_nachlauf_ab");
+    Pruefstand s;
+
+    // Ein nicht neutraler Aufbau bei hoerbarem Marker oeffnet den Bericht.
+    s.p->markierungEinreichen (s.auftrag);
+    s.bloecke (40);
+    pruefe (s.p->markierungHoerbar(), "N-05: der Marker klingt", {});
+    s.p->v3LinkFuerTest (true);
+    const auto g = s.p->wireGenerationFuerTest();
+    pruefe (s.p->berichtOffenFuerTest() == g,
+            "N-05: der Bericht ist offen", juce::String ((int) g));
+
+    // Der Marker endet; das `end` geht auf den Draht und stellt die Frist.
+    s.p->markierungAus();
+    s.bloecke (140);
+    (void) s.ernte();
+
+    // 🔑 Unmittelbar danach ist der Nachlauf NOCH nicht abgelaufen: der Tail
+    // eines 40-Block-Markers ist rund 0,9 s, dazu eine Heartbeat-Periode
+    // Marge. Der Bericht MUSS deshalb offen bleiben.
+    s.p->interventionenSendenFuerTest();
+    pruefe (s.p->berichtOffenFuerTest() == g,
+            "N-05/M-58: der Bericht bleibt offen, solange der Nachlauf laeuft - "
+            "ein `false` waehrend `tail_samples_offen > 0` wird beim Broker "
+            "verworfen und von niemandem wiederholt",
+            juce::String ((int) s.p->berichtOffenFuerTest()));
+
+    // Und nach Ablauf der Frist schliesst er - genau einmal.
+    const auto bis = std::chrono::steady_clock::now() + std::chrono::seconds (8);
+    while (s.p->berichtOffenFuerTest() != 0
+           && std::chrono::steady_clock::now() < bis)
+    {
+        s.bloecke (2);
+        s.p->interventionenSendenFuerTest();
+    }
+    pruefe (s.p->berichtOffenFuerTest() == 0,
+            "N-05: nach dem Nachlauf schliesst der Bericht - der regulaere Pfad "
+            "nullt die Sitzung ohne neuen Link",
+            juce::String ((int) s.p->berichtOffenFuerTest()));
+}
+
 /// N-37 · Die zwei Generationszustaende DES PROZESSORS - nicht ein isoliertes
 /// Atomic daneben (NAK-180 Nacharbeit 1, EP-15).
 ///
@@ -2002,6 +2119,8 @@ int main()
     nak180::n28BeginNachSendefehler();
     nak180::n29OrdnungsregelUndZug();
     nak180::n35SendezugGegenAufbauzug();
+    nak180::n36EndeUeberlebtDenLinkwechsel();
+    nak180::n05NachlaufWirdAbgewartet();
     nak180::n37ProzessorZustaendeTragenIhreGeneration();
     nak180::n11KeineBehauptungOhneMain();
     nak180::n12AussageKommtZurueck();

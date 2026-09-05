@@ -237,7 +237,8 @@ und zerstört die JSONL-Weiterverarbeitung). Temp nur unter `$env:TEMP`.
 ```powershell
 $baseSha = '<Stand vor dem Ticket>'
 $headSha = git rev-parse HEAD
-$solEffort = 'xhigh' # oder 'high', Regel unten
+$pruefModell = 'gpt-6-astra' # Astra prüft, Sol nur Gegenprüfer (User-Wort 05.09.2026, Regel unten)
+$pruefEffort = 'max'         # nie 'ultra'
 $reviewJsonl = Join-Path $env:TEMP "nakama-$headSha-review.jsonl"
 $reviewLast = Join-Path $env:TEMP "nakama-$headSha-review-last.txt"
 
@@ -247,7 +248,7 @@ $reviewLast = Join-Path $env:TEMP "nakama-$headSha-review-last.txt"
 # Basis- und Ziel-SHA, die Ticketpfade (nie `.`), Gate-Text wörtlich,
 # Matrix, Ausschlüsse. Freie Prompts sind nicht zulässig.
 $reviewPrompt | codex -a never exec --ignore-user-config `
-  -m gpt-5.6-sol -c "model_reasoning_effort=`"$solEffort`"" `
+  -m $pruefModell -c "model_reasoning_effort=`"$pruefEffort`"" `
   -c 'windows.sandbox="elevated"' `
   -C . -s read-only review --json -o $reviewLast - |
   Tee-Object -FilePath $reviewJsonl
@@ -264,13 +265,23 @@ Vor und nach dem Lauf muss HEAD `$headSha` sein, sonst ist das Urteil ungültig.
 Die Thread-ID kommt aus dem JSONL; fehlt sie → `BLOCKED`. Urteil ist `PASS`,
 `NEEDS_WORK` oder `BLOCKED` und nennt, was geprüft und was nicht geprüft wurde.
 
-**Sol-Effort** (bei Review-Beginn wählen, im Manifest vermerken):
-
-- `high` bei kleiner, lokal begrenzter Änderung mit eindeutiger Abnahme —
-  dazu zählen Prüfskripte, Runner, CMake-Riegel und Doku,
-- `xhigh` bei Audio-Thread, State/Migration, IPC/Verträgen, Nebenläufigkeit,
-  Sicherheit oder einem Phasengate.
-- Nacharbeit behält das Effort; eine Wiederprüfung senkt es nie ab.
+**Prüfmodell und Effort** (bei Review-Beginn im Manifest vermerken, seit
+05.09.2026): Prüfer ist `gpt-6-astra` für **alle** Urteilsläufe — Erst-,
+Wieder- und Abschlussprüfung, Matrixprüfung, Gate-Falsifikation — mit Effort
+`max`; `ultra` ist ausgeschlossen (delegiert automatisch an Unteragenten,
+für eine lesende Prüfung ungeeignet). `gpt-5.6-sol` (max) ist nur noch
+**Gegenprüfer**: zweites unabhängiges Modell bei Gate-Läufen und Fallback,
+wenn Astra mit Kapazitäts- oder Versionsfehler antwortet. User-Wort
+05.09.2026: „gtp 6 astra ist draussen, wesentlich stärkeres model als SOL, das
+sollten wir logischerweise in kombination mit SOL benutzen" → nach Vorlage der
+Arbeitsteilung „ok, dann astra für alle prüfungen, sol nur gegenprüfer".
+Voraussetzung ist Codex-CLI ≥ 0.153.4; 0.149.1 antwortete „The 'gpt-6-astra'
+model requires a newer version of Codex" → `codex update`. Nacharbeit behält
+Modell und Effort; eine Wiederprüfung senkt nie ab. Läufe über zehn Minuten
+laufen nie als Session-Hintergrundbefehl, sondern abgekoppelt über
+`tools/dirigent/codex-lauf.ps1 -Kennung <k> -Prompt <auftragsdatei> -HeadSha
+<sha> [-Model gpt-6-astra] [-Effort max]` mit Monitor auf der `-start.log`
+bis `EXIT=`; Urteil in `-last.txt`, Thread-ID im JSONL.
 
 **Zulässige Befunde** müssen reproduzierbar sein und die Ticketabnahme
 berühren (critical: Daten-/State-Verlust, Sicherheitsbruch, Audio-/Nulltest;
@@ -315,7 +326,7 @@ $fixJsonl = Join-Path $env:TEMP "nakama-$headSha-fix.jsonl"
 $fixLast = Join-Path $env:TEMP "nakama-$headSha-fix-last.txt"
 
 $fixPrompt | codex -a never exec --ignore-user-config `
-  -m gpt-5.6-sol -c "model_reasoning_effort=`"$solEffort`"" `
+  -m $pruefModell -c "model_reasoning_effort=`"$pruefEffort`"" `
   -c 'windows.sandbox="elevated"' `
   -C . -s workspace-write resume <thread-id> --json -o $fixLast - |
   Tee-Object -FilePath $fixJsonl
@@ -434,14 +445,15 @@ anfang, habe genug wochen kontigent". Damit gilt wieder die Grundform aus
 - Der Bauer ist ein frischer Opus-Worker (max) im sichtbaren Checkout. Er
   kompiliert, fährt die Tests seines Tickets und den Kanon selbst (§3.5,
   abgekoppelt) und übergibt keinen Stand mit Laufstatus `NOT RUN`.
-- Der Prüfer ist ein frischer, lesender Codex-Thread (Sol, Effort max —
-  User-Wort 30.08. «Sol auf max»); Bauer- und Prüfer-Thread sind nie
-  derselbe (§6).
+- Der Prüfer ist ein frischer, lesender Codex-Thread (seit 05.09.2026
+  `gpt-6-astra`, Effort max — User-Wort „astra für alle prüfungen, sol nur
+  gegenprüfer"; davor Sol max nach User-Wort 30.08. «Sol auf max»); Bauer- und
+  Prüfer-Thread sind nie derselbe (§6).
 - Grund neben dem Kontingent: Ein Bauer ohne Compiler übergibt ungelaufenen
   Code. NAK-123 lieferte am 01.09. rund 2 800 Zeilen Sicherheitscode mit
   `NOT RUN` in den Worktree, und der externe Kanonlauf dazu ging verloren.
 
-Codex als Bauer (`workspace-write`, Sol max) ist seit dem 01.09. nur noch
+Codex als Bauer (`workspace-write`, Astra max) ist seit dem 01.09. nur noch
 **Fallback**, wenn die Claude-Wochennutzung die 85-%-Warnschwelle aus §5
 erreicht hat. Dann gelten die Verlaufsregeln unten, und der Dirigent
 committet den Codex-Stand nach eigenem Kanonlauf als benannten Zwischenstand

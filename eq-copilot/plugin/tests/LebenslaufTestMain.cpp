@@ -695,8 +695,6 @@ int main()
                 "processblock_quellschnitt_store_wait_null");
     }
 
-    std::cout << std::endl;
-    if (fehlerZahl == 0)
     // ── NAK-180 R6/N-20: `stop()` kehrt in gemessener Frist zurueck, auch
     //    wenn ein Tick gerade in `namedPipeErreichbar` steht ────────────────
     //
@@ -732,7 +730,7 @@ int main()
             hooks.darfStarten = [] { return true; };
             hooks.pruefen = [&] { ++ticks; return nakama::ipc::BrokerPruefBericht {}; };
             hooks.spawn = [] { return false; };
-            hooks.mutexName = L"Local\Nakama.NAK180.Stopfrist";
+            hooks.mutexName = L"Local\\Nakama.NAK180.Stopfrist";   // Backslash ESCAPEN: `\N` ist kein Escape
             hooks.pipeName = pipe;          // hier steht der Tick im Wait
             nakama::ipc::BrokerLifecycle lifecycle (std::move (hooks));
             lifecycle.start();
@@ -757,6 +755,19 @@ int main()
         }
     }
 
+    // 🔑 NAK-180 Nacharbeit 1 (EP-14): der Erfolgsblock ist wieder
+    // BEDINGT.
+    //
+    // Der vorhandene `if (fehlerZahl == 0)` band bis hier den neu eingefuegten
+    // N-20-Abschnitt; der Erfolgsblock darunter war dadurch bedingungslos und
+    // gab IMMER 0 zurueck. Jeder frueher gezaehlte Fehler uebersprang N-20 und
+    // endete erfolgreich, und auch ein Fehler INNERHALB von N-20 wurde als
+    // Erfolg gemeldet - der verpflichtende Frist-Riegel war wirkungslos, und
+    // das Bein konnte im Kanon nicht mehr fallen.
+    //
+    // Rotbeweis: eine Pruefung absichtlich brechen -> Exit ungleich 0.
+    std::cout << std::endl;
+    if (fehlerZahl == 0)
     {
         std::cout << "LEBENSLAUF-TEST OK - " << okZahl << " Pruefungen ok, 0 Fehler" << std::endl;
         return 0;

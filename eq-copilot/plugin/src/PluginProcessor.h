@@ -389,6 +389,21 @@ public:
     int interventionsRingFuellstandFuerTest() const
     { return interventionsRing.fuellstand(); }
 
+    /** NAK-180 Nacharbeit 1 (EP-18/R3b): DER Heartbeat-Schritt der
+        Sendeschleife, gefahren vom Bein - mit dem echten Hello und dem echten
+        Status des Prozessors.
+
+        Er verbraucht die Aufbau-Aussage per CAS, vergibt die Marke, bildet den
+        Wiretext und REIHT ihn ein; bei Abweisung stellt er die Aussage
+        zurueck. `zustelleAllesFuerTest()` fuegt den Wire-Commit an. Der
+        frueher benutzte Weg ueber `v3LinkFuerTest` beruehrte nichts davon. */
+    bool v3HeartbeatSchrittFuerTest (std::string& textAus, std::uint64_t sequence = 1)
+    {
+        auto h = v3Hello();
+        h.adresse = nakama::ipc::wireAdresseAusState (h.adresse);
+        return controlV3.heartbeatSchrittFuerTest (h, sequence, v3Status(), textAus);
+    }
+
     std::uint64_t berichtOffenFuerTest() const { return berichtOffen.load(); }
     std::uint64_t replayFaelligFuerTest() const { return replayFaellig.load(); }
     std::uint64_t wireGenerationFuerTest() const

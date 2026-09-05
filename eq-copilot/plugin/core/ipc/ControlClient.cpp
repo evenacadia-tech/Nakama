@@ -568,6 +568,10 @@ struct ControlClient::Laufzeit
     void meldeLinkStatus (bool verbunden);
     void aufbauAussageZurueckstellen (std::uint64_t marke);
     std::uint64_t aufbauZug();
+    bool heartbeatSchritt (const ControlHello& hello, std::uint64_t sequence,
+                           const ControlStatus& status,
+                           std::uint64_t dieseWireGeneration,
+                           std::string* textAus);
     // NAK-180 R7/R12: Rueckmeldung und Zustellpruefung. Alle drei laufen
     // unter `sendeMutex`; sie duerfen den Sendezustand des Prozessors nehmen,
     // aber NIE erneut senden (Sperrenordnung: sendeMutex vor Sendezustand).
@@ -1254,6 +1258,79 @@ void ControlClient::Laufzeit::aufbauAussageZurueckstellen (std::uint64_t marke)
     Getrennt waeren Vergabe und Filter ausserdem ein Fenster, in dem ein
     Einreiher die neue Generation schon liest, der Filter aber noch nicht
     durch ist. Unter EINER Sperre gibt es dieses Fenster nicht. */
+/** Der Heartbeat-Schritt der Sendeschleife (NAK-180 R1/R13) - als EINE
+    benannte Operation.
+
+    🔑 Nacharbeit 1 (EP-18): er steht als Methode und nicht mehr inline in
+    `eineVerbindung`, damit ein Bein DENSELBEN Schritt fahren kann. Ein Test,
+    der den Handschlag nur ueber `v3LinkFuerTest` fuhr, beruehrte weder
+    Textbildung noch P0-Enqueue, Wire-Commit oder Rueckstellung - er mass den
+    Callback und nannte es Handschlag.
+
+    Die Aussage des Aufbaus reist GENAU EINMAL: verbraucht wird per CAS auf die
+    eigene Generation - schlaegt er fehl, hat ein NEUERER Callback den Platz
+    belegt, und die Aussage gehoert ihm. Ein blindes `exchange` haette dessen
+    Wirkung geloescht (MP4-2). Eine FREMDE Generation wird ebenfalls nur per
+    CAS aufgeraeumt, damit sie nicht ein gerade geschriebenes G+1 mitnimmt.
+
+    Rueckgabe: wurde der Heartbeat eingereiht? `textAus` bekommt den gebildeten
+    Wiretext, wenn der Aufrufer ihn braucht. */
+bool ControlClient::Laufzeit::heartbeatSchritt (const ControlHello& hello,
+                                               std::uint64_t sequence,
+                                               const ControlStatus& status,
+                                               std::uint64_t dieseWireGeneration,
+                                               std::string* textAus)
+{
+    auto verbrauche = [this, dieseWireGeneration] (std::atomic<std::uint64_t>& flag)
+    {
+        auto gesehen = flag.load();
+        if (gesehen == 0)
+            return false;
+        if (gesehen == dieseWireGeneration)
+            return flag.compare_exchange_strong (gesehen, 0);
+        // Fremde Generation: nicht werten, nur aufraeumen - und auch das nur,
+        // wenn sie noch dasteht.
+        flag.compare_exchange_strong (gesehen, 0);
+        return false;
+    };
+    const bool bestaetigtNeutral = verbrauche (neutralerNeuaufbau);
+    const bool bestaetigtUnbekannt = verbrauche (nichtNeutralerNeuaufbau);
+
+    auto statusFuerDraht = status;
+    if (bestaetigtUnbekannt)
+        statusFuerDraht.interventionStateUnknown = true;
+
+    // Marke: nur der Aufbau-Heartbeat braucht eine - er ist der einzige,
+    // dessen Verlust eine Aussage kostet.
+    std::uint64_t marke = 0;
+    if (bestaetigtNeutral || bestaetigtUnbekannt)
+    {
+        marke = p0MarkenFolge.fetch_add (1) + 1;
+        aufbauHeartbeatMarke.store (marke);
+        aufbauHeartbeatGeneration.store (dieseWireGeneration);
+        aufbauHeartbeatWarNeutral.store (bestaetigtNeutral);
+        aufbauHeartbeatWarUnbekannt.store (bestaetigtUnbekannt);
+    }
+    auto text = heartbeatAlsJson (hello.adresse, sequence, statusFuerDraht,
+                                  bestaetigtNeutral);
+    if (textAus)
+        *textAus = text;
+    // 🔑 NAK-180 Nacharbeit 1 (EP-06/N-12): der Rueckgabewert wird
+    // AUSGEWERTET.
+    //
+    // Weist die P0-Queue ab (voll oder zu gross), existiert gar kein Eintrag,
+    // dessen spaeterer Verwurf die Aussage zurueckstellen koennte - beide
+    // Flags sind aber schon per CAS verbraucht. Die Aussage entstuende nur
+    // zufaellig durch einen weiteren Linkaufbau neu; bis dahin bliebe die
+    // Sitzung gesperrt, ohne dass sie je jemand aufloesen kann (D-01 in neuer
+    // Form).
+    if (sendeP0 (std::move (text), P0Klasse::bericht, marke))
+        return true;
+    if (marke != 0)
+        aufbauAussageZurueckstellen (marke);
+    return false;
+}
+
 std::uint64_t ControlClient::Laufzeit::aufbauZug()
 {
     const auto neueGeneration = wireGeneration.load() + 1;
@@ -1332,6 +1409,15 @@ std::uint64_t ControlClient::linkEndeFuerTest (const std::function<void()>& imCa
         imCallback();
     tlLinkEndeGeneration = vorheriger;
     return sterbend;
+}
+
+bool ControlClient::heartbeatSchrittFuerTest (const ControlHello& hello,
+                                             std::uint64_t sequence,
+                                             const ControlStatus& status,
+                                             std::string& textAus)
+{
+    return k->heartbeatSchritt (hello, sequence, status,
+                                k->wireGeneration.load(), &textAus);
 }
 
 std::string ControlClient::heartbeatTextFuerTest (const Adresse& adresse,
@@ -1870,60 +1956,8 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
 
             const auto sequence = heartbeatFolge.fetch_add (1) % kJsonSafeModulus;
 
-            // 🔑 NAK-180 R1/R13: die Aussage des Aufbaus reist GENAU EINMAL.
-            //
-            // Verbraucht wird per CAS auf die eigene Generation - schlaegt er
-            // fehl, hat ein NEUERER Callback den Platz belegt, und die Aussage
-            // gehoert ihm. Ein blindes `exchange` haette dessen Wirkung
-            // geloescht (MP4-2). Eine FREMDE Generation wird ebenfalls nur per
-            // CAS aufgeraeumt, damit sie nicht ein gerade geschriebenes G+1
-            // mitnimmt.
-            auto verbrauche = [this, dieseWireGeneration] (std::atomic<std::uint64_t>& flag)
-            {
-                auto gesehen = flag.load();
-                if (gesehen == 0)
-                    return false;
-                if (gesehen == dieseWireGeneration)
-                    return flag.compare_exchange_strong (gesehen, 0);
-                // Fremde Generation: nicht werten, nur aufraeumen - und auch
-                // das nur, wenn sie noch dasteht.
-                flag.compare_exchange_strong (gesehen, 0);
-                return false;
-            };
-            const bool bestaetigtNeutral = verbrauche (neutralerNeuaufbau);
-            const bool bestaetigtUnbekannt = verbrauche (nichtNeutralerNeuaufbau);
-
-            auto statusFuerDraht = status;
-            if (bestaetigtUnbekannt)
-                statusFuerDraht.interventionStateUnknown = true;
-
-            // Marke: nur der Aufbau-Heartbeat braucht eine - er ist der
-            // einzige, dessen Verlust eine Aussage kostet.
-            std::uint64_t marke = 0;
-            if (bestaetigtNeutral || bestaetigtUnbekannt)
-            {
-                marke = p0MarkenFolge.fetch_add (1) + 1;
-                aufbauHeartbeatMarke.store (marke);
-                aufbauHeartbeatGeneration.store (dieseWireGeneration);
-                aufbauHeartbeatWarNeutral.store (bestaetigtNeutral);
-                aufbauHeartbeatWarUnbekannt.store (bestaetigtUnbekannt);
-            }
-            // 🔑 NAK-180 Nacharbeit 1 (EP-06/N-12): der Rueckgabewert wird
-            // AUSGEWERTET.
-            //
-            // Weist die P0-Queue ab (voll oder zu gross), existiert gar kein
-            // Eintrag, dessen spaeterer Verwurf die Aussage zurueckstellen
-            // koennte - beide Flags sind aber schon per CAS verbraucht. Die
-            // Aussage entstuende nur zufaellig durch einen weiteren
-            // Linkaufbau neu; bis dahin bliebe die Sitzung gesperrt, ohne dass
-            // sie je jemand aufloesen kann (D-01 in neuer Form).
-            if (! sendeP0 (heartbeatAlsJson (hello.adresse, sequence, statusFuerDraht,
-                                             bestaetigtNeutral),
-                           P0Klasse::bericht, marke)
-                && marke != 0)
-            {
-                aufbauAussageZurueckstellen (marke);
-            }
+            (void) heartbeatSchritt (hello, sequence, status, dieseWireGeneration,
+                                     nullptr);
             naechsterHeartbeat = jetzt + std::chrono::milliseconds (kHeartbeatTaktMs);
         }
 

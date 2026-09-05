@@ -50,6 +50,7 @@
 #include <atomic>
 #include <limits>
 #include <memory>
+#include <string>
 #include <vector>
 
 using namespace eqcop;
@@ -1722,28 +1723,117 @@ void n11KeineBehauptungOhneMain()
 void n12AussageKommtZurueck()
 {
     abschnitt ("NAK-180 N-12  abgewiesener_heartbeat_gibt_die_aussage_zurueck");
-    // Gemessen an der Zustandsmaschine selbst: das Flag traegt eine
-    // Generation, der Verbraucher nimmt sie per CAS, und ein Verwurf stellt
-    // sie zurueck - nur wenn der Platz noch leer ist.
-    std::atomic<std::uint64_t> flag { 7 };
-    auto gesehen = flag.load();
-    const bool verbraucht = flag.compare_exchange_strong (gesehen, 0);
-    pruefe (verbraucht && flag.load() == 0,
-            "N-12: der Heartbeat verbraucht die Aussage per CAS");
+    // 🔑 NAK-180 Nacharbeit 1 (EP-06/EP-18): gemessen am ECHTEN
+    // Heartbeat-Schritt der Sendeschleife, nicht an einem isolierten Atomic.
+    //
+    // Der Schritt verbraucht die Aufbau-Aussage per CAS, vergibt die Marke,
+    // bildet den Wiretext und reiht ihn ein. Weist die volle P0-Queue ab,
+    // MUSS die Aussage zurueckkommen - sonst faende der Broker nie ein
+    // `false`, und die Sitzung bliebe fuer immer gesperrt (D-01 in neuer
+    // Form). Ein Atomic daneben konnte diese Kette nicht messen.
+    auto p = mainProzessorMitBindung();
+    p->prepareToPlay (kFs, kBlock);
 
+    // (1) Ein neutraler Aufbau setzt die Aussage.
+    p->v3LinkFuerTest (true);
+
+    // (2) Die P0-Queue voll: der Heartbeat wird ABGEWIESEN.
+    const auto voll = p->fuelleP0QueueFuerTest();
+    pruefe (voll > 0, "N-12: die P0-Queue ist voll", juce::String ((int) voll));
+    std::string text;
+    const bool eingereiht = p->v3HeartbeatSchrittFuerTest (text, 1);
+    pruefe (! eingereiht,
+            "N-12: der Aufbau-Heartbeat wird abgewiesen - genau der Fall, dessen "
+            "Rueckgabewert bisher verworfen wurde");
+    pruefe (text.find ("\"intervention_state_unknown\":false") != std::string::npos,
+            "N-12: er TRUG die Aussage - sie ist per CAS verbraucht",
+            juce::String (text.substr (0, 80)));
+
+    // (3) Platz schaffen: der naechste Heartbeat traegt die Aussage WIEDER.
+    p->leereP0QueueFuerTest();
+    std::string text2;
+    const bool eingereiht2 = p->v3HeartbeatSchrittFuerTest (text2, 2);
+    pruefe (eingereiht2
+                && text2.find ("\"intervention_state_unknown\":false") != std::string::npos,
+            "N-12: aussage_kommt_zurueck - der naechste erfolgreich eingereihte "
+            "Heartbeat traegt sie; ohne die Rueckstellung waere sie fuer immer weg",
+            juce::String (text2.substr (0, 80)));
+
+    // (4) Und GENAU EINMAL: der dritte traegt sie nicht mehr.
+    std::string text3;
+    p->v3HeartbeatSchrittFuerTest (text3, 3);
+    pruefe (text3.find ("intervention_state_unknown") == std::string::npos,
+            "N-02/N-12: der naechste Heartbeat schweigt wieder - die Aussage reist "
+            "genau einmal",
+            juce::String (text3.substr (0, 80)));
+
+    // (5) Gegenprobe zur Generationsbindung: eine Aussage, die einem NEUEREN
+    //     Link gehoert, wird von der Rueckstellung nicht mitgenommen.
+    std::atomic<std::uint64_t> flag { 0 };
+    flag.store (9);                         // Callback von G+1
     std::uint64_t leer = 0;
-    const bool zurueck = flag.compare_exchange_strong (leer, 7);
-    pruefe (zurueck && flag.load() == 7,
-            "N-12: ein Verwurf stellt sie zurueck - sonst bliebe die Sitzung fuer "
-            "immer gesperrt (D-01 in neuer Form)");
-
-    // Gegenprobe: hat ein NEUERER Callback geschrieben, bleibt seine Aussage.
-    std::atomic<std::uint64_t> flag2 { 0 };
-    flag2.store (9);                        // Callback von G+1
-    std::uint64_t leer2 = 0;
-    const bool ueberschrieben = flag2.compare_exchange_strong (leer2, 7);
-    pruefe (! ueberschrieben && flag2.load() == 9,
+    const bool ueberschrieben = flag.compare_exchange_strong (leer, 7);
+    pruefe (! ueberschrieben && flag.load() == 9,
             "N-12: und sie nimmt die Aussage eines neueren Links NICHT mit");
+    p->releaseResources();
+}
+
+/// N-37 · Die zwei Generationszustaende DES PROZESSORS - nicht ein isoliertes
+/// Atomic daneben (NAK-180 Nacharbeit 1, EP-15).
+///
+/// Gemessen wird an `berichtOffen` und `replayFaellig` selbst: sie tragen die
+/// Generation ihres Links, der negative Callback loescht per CAS auf SEINE
+/// sterbende Generation, und ein ueberholter Callback nimmt die Wirkung des
+/// naechsten Links nicht mit.
+void n37ProzessorZustaendeTragenIhreGeneration()
+{
+    abschnitt ("NAK-180 N-37  prozessorzustaende_tragen_ihre_generation");
+    Pruefstand s;
+
+    // Ein hoerbarer Marker: der Aufbau urteilt NICHT neutral und setzt beide
+    // Zustaende.
+    s.p->markierungEinreichen (s.auftrag);
+    s.bloecke (40);
+    pruefe (s.p->markierungHoerbar(), "N-37: der Marker klingt", {});
+
+    s.p->v3LinkFuerTest (true);
+    const auto g1 = s.p->wireGenerationFuerTest();
+    pruefe (s.p->berichtOffenFuerTest() == g1 && s.p->replayFaelligFuerTest() == g1,
+            "N-37: berichtOffen und replayFaellig tragen die Generation IHRES Links",
+            juce::String ((int) s.p->berichtOffenFuerTest()) + "/"
+                + juce::String ((int) s.p->replayFaelligFuerTest())
+                + " bei G" + juce::String ((int) g1));
+
+    // Der negative Callback loescht per CAS auf seine sterbende Generation.
+    s.p->v3LinkFuerTest (false);
+    pruefe (s.p->berichtOffenFuerTest() == 0 && s.p->replayFaelligFuerTest() == 0,
+            "N-37: der Ende-Callback raeumt SEINE Generation auf");
+
+    // Der naechste Link urteilt frisch - und seine Wirkung traegt G2.
+    s.p->v3LinkFuerTest (true);
+    const auto g2 = s.p->wireGenerationFuerTest();
+    pruefe (g2 == g1 + 1 && s.p->berichtOffenFuerTest() == g2
+                && s.p->replayFaelligFuerTest() == g2,
+            "N-37: und der naechste Link schreibt SEINE Generation",
+            juce::String ((int) g1) + " -> " + juce::String ((int) g2));
+
+    // 🔑 Die Zusage: ein Ende-Callback, dessen sterbende Generation ALT ist,
+    // nimmt die Wirkung von G2 NICHT mit. Der Client hinterlegt die Zahl beim
+    // Statuswechsel; ein zweiter `v3LinkFuerTest(false)` ohne vorherigen
+    // Aufbau findet deshalb `0` - und `0` loescht nichts.
+    s.p->v3LinkFuerTest (false);
+    const auto nachErstem = s.p->berichtOffenFuerTest();
+    s.p->v3LinkFuerTest (false);            // ein zweiter, verspaeteter Ende-Callback
+    pruefe (nachErstem == 0 && s.p->berichtOffenFuerTest() == 0,
+            "N-37: ein zweiter Ende-Callback ohne gemeldeten Link loescht nichts - "
+            "die sterbende Generation ist verbraucht, nicht die aktuelle");
+
+    // Und ein Aufbau danach steht wieder allein da.
+    s.p->v3LinkFuerTest (true);
+    const auto g3 = s.p->wireGenerationFuerTest();
+    pruefe (s.p->berichtOffenFuerTest() == g3,
+            "N-37: der frische Link schreibt ungestoert",
+            juce::String ((int) s.p->berichtOffenFuerTest()));
 }
 
 /// N-04 · Ueberlauf NACH dem Resync setzt das Sticky neu.
@@ -1827,11 +1917,29 @@ void c1Sequenzhandschlag()
             "C1: vor dem Resync sind Begin und Ende wirklich entstanden",
             juce::String (vorher));
 
-    // 2. Der bestaetigte Resync. `v3ControlLink` ist der Rueckruf, den der
-    //    ECHTE `ControlClient` beim Verbindungsaufbau ausloest — nicht ein
-    //    Testpfad daneben.
+    // 2. Der bestaetigte Resync - ueber den ECHTEN Weg des ControlClients.
+    //
+    // 🔑 NAK-180 Nacharbeit 1 (EP-18/R3b): bis hier endete der Handschlag
+    // beim Link-Callback. Der Callback bildet aber keinen Heartbeat, reiht
+    // nichts ein und stellt nichts zu - gemessen war damit ein lokales Flag,
+    // nicht der Handschlag. Jetzt laeuft die ganze Kette: Aufbauzug und
+    // Callback (`v3LinkFuerTest`), DER Heartbeat-Schritt der Sendeschleife
+    // (`v3HeartbeatSchrittFuerTest`, dieselbe Methode wie im Produkt) und der
+    // Wire-Commit (`zustelleAllesFuerTest`).
     pruefe (! p->markierungHoerbar(), "C1: der Marker ist vor dem Resync still");
     p->v3LinkFuerTest (true);
+    std::string handschlag;
+    const bool heartbeatEingereiht = p->v3HeartbeatSchrittFuerTest (handschlag, 1);
+    pruefe (heartbeatEingereiht,
+            "C1/EP-18: der Aufbau-Heartbeat ist eingereiht - der echte Schritt der "
+            "Sendeschleife, nicht der Callback allein");
+    pruefe (handschlag.find ("\"intervention_state_unknown\":false") != std::string::npos,
+            "C1/EP-18: und er traegt die ausdrueckliche Neutralitaetsaussage - genau "
+            "das loest beim Broker `resync_bestaetigen`",
+            juce::String (handschlag.substr (0, 90)));
+    pruefe (p->zustelleAllesFuerTest() >= 1,
+            "C1/EP-18: und er erreicht den DRAHT - erst der Wire-Commit ist "
+            "'gesendet' (R7)");
 
     // 3. Der ERSTE Eingriff danach. Gemessen wird die Zahl, die WIRKLICH auf
     //    die Leitung geht — der gebaute Wiretext, nicht ein lokales Flag.
@@ -1894,6 +2002,7 @@ int main()
     nak180::n28BeginNachSendefehler();
     nak180::n29OrdnungsregelUndZug();
     nak180::n35SendezugGegenAufbauzug();
+    nak180::n37ProzessorZustaendeTragenIhreGeneration();
     nak180::n11KeineBehauptungOhneMain();
     nak180::n12AussageKommtZurueck();
     std::cout << std::endl << bestanden << " bestanden, " << fehler << " gescheitert"

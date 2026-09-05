@@ -477,6 +477,20 @@ public:
         Generation. */
     std::uint64_t linkEndeFuerTest (const std::function<void()>& imCallback);
 
+    /** DER Heartbeat-Schritt der Sendeschleife, gefahren vom Bein
+        (NAK-180 Nacharbeit 1, EP-18/R3b).
+
+        Nicht ein Nachbau daneben, sondern dieselbe Methode, die
+        `eineVerbindung` ruft: Aussage per CAS verbrauchen, Marke vergeben,
+        Wiretext bilden, in die P0-Queue EINREIHEN und bei Abweisung
+        zurueckstellen. Ein Bein, das den Handschlag nur ueber den
+        Link-Callback fuhr, beruehrte nichts davon.
+
+        Rueckgabe: wurde eingereiht? `textAus` traegt den gebildeten Text. Den
+        Wire-Commit fuegt `zustelleAllesFuerTest()` an. */
+    bool heartbeatSchrittFuerTest (const ControlHello& hello, std::uint64_t sequence,
+                                   const ControlStatus& status, std::string& textAus);
+
     /** Der Heartbeat-Text, den die Sendeschleife JETZT bilden wuerde (Test).
 
         Er verbraucht die Aufbau-Aussage genauso wie die Schleife - per CAS auf

@@ -30,6 +30,8 @@
 #include <cstring>
 #include <iostream>
 #include <limits>
+#include <condition_variable>
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <set>
@@ -6228,79 +6230,442 @@ int main (int argc, char** argv)
         }
     }
 
-    // ── NAK-180 R11/R12/R13: erzwungenes true/false-Interleaving
-    //    (Matrix N-23, N-24, N-34, N-35) ────────────────────────────────────
+    // -- NAK-180 Nacharbeit 1 (EP-21): N-26, alle drei Haelften AM ECHTEN
+    //    AUFBAUZUG ------------------------------------------------------
+    //
+    // Die drei Haelften standen bis hier ausschliesslich an der nackten
+    // Queue: ein Eintrag mit handgeschriebener Generation 2, in eine isolierte
+    // `P0Warteschlange` gelegt. Damit war weder gemessen, dass die Generation
+    // WIRKLICH vor dem Callback vergeben wird, noch dass ein aus dem Callback
+    // eingereihter Bericht ueberlebt, noch die Gegenrichtung eines sterbenden
+    // Links. Genau diese drei Aussagen sind N-26 - und sie haengen am
+    // Zusammenspiel von `aufbauZug()`, `meldeLinkStatus` und der Queue, nicht
+    // an der Queue allein.
+    {
+        using nakama::ipc::ControlClient;
+        using nakama::ipc::P0Klasse;
+
+        std::vector<std::uint64_t> zugestellt, verworfen;
+        ControlClient client ([] { return ControlHello {}; },
+                              testPipeName ("nak180-n26-aufbauzug"));
+        client.setzeP0Rueckmeldung (
+            [&] (std::uint64_t m, std::uint64_t) { zugestellt.push_back (m); },
+            [&] (std::uint64_t m) { verworfen.push_back (m); });
+
+        // (a) Ein BERICHT aelterer Generation faellt beim Aufbau - gemeldet
+        //     mit seiner Marke. Ohne den Filter loeste ein altes
+        //     `intervention_state_unknown: false` den Resync auf dem frischen
+        //     Link aus, waehrend der Marker klingt (MP1-1).
+        const auto g1 = client.aufbauZug();
+        pruefe (client.sendeP0 ("{\"alter_bericht\":1}", P0Klasse::bericht, 4711),
+                "NAK-180 N-26 (a): der Bericht von G1 ist eingereiht");
+        pruefe (client.sendeP0 ("{\"ereignis\":1}", P0Klasse::intervention, 4712),
+                "NAK-180 N-26 (a): und ein Interventionsereignis daneben");
+
+        const auto g2 = client.aufbauZug();
+        pruefe (g2 == g1 + 1, "NAK-180 N-26: der Aufbauzug vergibt die naechste Generation",
+                std::to_string (g1) + " -> " + std::to_string (g2));
+        pruefe (verworfen.size() == 1 && verworfen[0] == 4711,
+                "NAK-180 N-26 (a): der Aufbaufilter verwirft GENAU den Bericht der alten "
+                "Generation und meldet seine Marke - am echten Zug, nicht an einer "
+                "isolierten Queue",
+                std::to_string (verworfen.size()));
+
+        // (b) Interleaving (R10): ein Bericht, der WAEHREND des Link-Callbacks
+        //     eingereiht wird, traegt die NEUE Generation und wird zugestellt.
+        //     Die Generation ist vor dem Callback vergeben - genau das ist die
+        //     Zusage der Aufbaufolge (Schritt 2+3 vor Schritt 4).
+        std::uint64_t generationImCallback = 0;
+        const auto g3 = client.linkAufbauFuerTest ([&]
+        {
+            generationImCallback = client.wireGenerationJetzt();
+            pruefe (client.sendeP0 ("{\"replay_im_callback\":1}", P0Klasse::bericht, 4713),
+                    "NAK-180 N-26 (b): das Replay wird IM Callback eingereiht");
+        });
+        pruefe (generationImCallback == g3,
+                "NAK-180 N-26 (b): der Callback sieht bereits die NEUE Generation - die "
+                "Vergabe liegt VOR ihm, sonst wuerfe der Filter das Replay des geweckten "
+                "Workers weg (MP2-1/MP4-1)",
+                std::to_string ((unsigned long long) generationImCallback) + " == "
+                    + std::to_string (g3));
+
+        zugestellt.clear();
+        client.zustelleAllesFuerTest();
+        bool replayZugestellt = false, ereignisZugestellt = false;
+        for (const auto m : zugestellt)
+        {
+            if (m == 4713) replayZugestellt = true;
+            if (m == 4712) ereignisZugestellt = true;
+        }
+        pruefe (replayZugestellt,
+                "NAK-180 N-26 (b): und es wird ZUGESTELLT, nicht verworfen");
+        pruefe (ereignisZugestellt,
+                "NAK-180 N-26 (a): das Interventionsereignis hat beide Wechsel "
+                "ueberlebt - fuer Ereignisse gilt 'nichts verwerfen' unveraendert");
+
+        // (c) Gegenrichtung (R11): ein Bericht, den ein bereits STERBENDER
+        //     Link noch einreiht, traegt dessen Generation und faellt beim
+        //     Filter des naechsten - ohne dass ein Ende-Callback noetig waere.
+        verworfen.clear();
+        client.linkEndeFuerTest ([&]
+        {
+            pruefe (client.sendeP0 ("{\"nachzuegler\":1}", P0Klasse::bericht, 4714),
+                    "NAK-180 N-26 (c): der sterbende Link reiht noch einen Bericht ein");
+        });
+        client.aufbauZug();
+        pruefe (verworfen.size() == 1 && verworfen[0] == 4714,
+                "NAK-180 N-26 (c): der Filter des naechsten Links ist zugleich die "
+                "Generationspruefung fuer Queue-Inhalte - dafuer braucht es keinen "
+                "Ende-Callback",
+                std::to_string (verworfen.size()));
+        client.stop();
+    }
+
+    // -- NAK-180 R11/R12/R13: erzwungenes true/false-Interleaving
+    //    (Matrix N-23, N-24, N-34, N-37) --------------------------------
     //
     // Vier Pruefungsrunden fanden ihren Defekt in derselben Luecke: eine
     // Aussage ueber "diesen Link", deren Zeitpunkt gegenueber dem
     // Generationswechsel offen blieb. Gemessen wird deshalb das
     // ZUSAMMENTREFFEN, nicht die Absicht - mit einem zweiten Thread und einer
     // deterministischen Schranke, nie mit `sleep` als einziger Ordnung.
+    //
+    // 🔑 NAK-180 Nacharbeit 1 (EP-15): die drei Faelle laufen ueber die
+    // ECHTEN negativen Produktcallbacks - `reconnect()`, `stop()`+`start()`
+    // und den reentranten Weg aus dem positiven Callback heraus. Bis hier
+    // fuhr der Fall lediglich zwei positive `linkAufbauFuerTest`-Callbacks:
+    // weder `reconnect()` noch `stop()` noch der reentrante Callback wurden
+    // beruehrt, und die generationsgebundenen Zustaende eines Verbrauchers
+    // gar nicht. Die blind schreibenden `store`s und die falsche Generation
+    // des negativen Callbacks blieben damit trotz N-34/N-37 gruen.
     {
-        nakama::ipc::ControlClient client ([] { return ControlHello {}; },
-                                          testPipeName ("nak180-interleave"));
+        using nakama::ipc::ControlClient;
 
-        // (N-34, Fall 1) Der positive Callback von G1 wird FESTGEHALTEN.
-        // Waehrenddessen laeuft der naechste Aufbau (G2) vollstaendig durch -
-        // genau die Lage, die `reconnect()` erzeugt: sein negativer Callback
-        // laeuft synchron auf dem Aufruferthread, waehrend der positive noch
-        // steht.
-        std::mutex m;
-        std::condition_variable cv;
-        bool g1DarfSchreiben = false;
-        bool g1Steht = false;
-        std::uint64_t g1 = 0, g2 = 0;
-
-        std::thread haltend ([&]
+        // Der Verbraucher, wie ihn das Produkt fuehrt: zwei
+        // Generationszahlen, jeder Zugriff ein CAS (R13).
+        std::atomic<std::uint64_t> berichtOffen { 0 };
+        std::atomic<std::uint64_t> replayFaellig { 0 };
+        auto setzeGeneration = [] (std::atomic<std::uint64_t>& ziel, std::uint64_t g)
         {
-            g1 = client.linkAufbauFuerTest ([&]
+            auto gesehen = ziel.load();
+            while (gesehen < g)
+                if (ziel.compare_exchange_weak (gesehen, g))
+                    return;
+        };
+
+        std::unique_ptr<ControlClient> client;
+        std::atomic<bool> aufbauNeutral { true };
+        std::atomic<int>  aufbauZaehler { 0 };
+        std::function<void()> fensterImErsten;   // vor `start()` gesetzt
+        std::function<void()> beiNegativ;        // Beobachter des Ende-Callbacks
+        std::atomic<std::uint64_t> letzteSterbende { 0 };
+
+        auto beiStatus = [&] (bool verbunden)
+        {
+            if (! verbunden)
+            {
+                // 🔑 Das Fenster liegt VOR dem Lesen der Generation - genau
+                // dort ist der Unterschied messbar. `meldeLinkStatus` hat sie
+                // beim Statuswechsel hinterlegt; eine Verzoegerung hier kann
+                // daran nichts mehr aendern. Las der Callback stattdessen
+                // `wireGenerationJetzt()`, faende er nach einem
+                // zwischenzeitlichen Aufbau G+1 und loeschte dessen Wirkung.
+                if (beiNegativ)
+                    beiNegativ();
+                // Genau der Produktweg aus `v3ControlLink(false)`: die
+                // STERBENDE Generation kommt vom Client, und geloescht wird
+                // nur per CAS auf sie.
+                const auto sterbend = client->sterbendeGenerationJetzt();
+                letzteSterbende.store (sterbend);
+                if (sterbend != 0)
+                {
+                    client->loescheAufbauUrteil (sterbend);
+                    auto a = sterbend;
+                    replayFaellig.compare_exchange_strong (a, 0);
+                    auto b = sterbend;
+                    berichtOffen.compare_exchange_strong (b, 0);
+                }
+                return;
+            }
+            const bool neutral = aufbauNeutral.load();
+            const bool istErster = aufbauZaehler.fetch_add (1) == 0;
+            if (istErster && fensterImErsten)
+                fensterImErsten();           // der Callback wird FESTGEHALTEN
+            const auto g = client->meldeAufbauUrteil (neutral);
+            if (! neutral && g != 0)
+            {
+                setzeGeneration (berichtOffen, g);
+                setzeGeneration (replayFaellig, g);
+            }
+        };
+
+        nakama::ipc::Adresse a;
+        a.logonSid = "S-1-5-21-1"; a.projectBindingId = std::string (32, 'a');
+        a.sessionEpoch = std::string (32, 'b'); a.instanceId = std::string (32, 'c');
+        a.runtimeNonce = std::string (32, 'd');
+        nakama::ipc::ControlStatus st;
+
+        // ---- Fall 1: `reconnect()` aus einem zweiten Thread, waehrend der
+        //      positive Callback von G1 noch steht -------------------------
+        {
+            client.reset (new ControlClient ([] { return ControlHello {}; },
+                                             testPipeName ("nak180-n34-reconnect"),
+                                             {}, {},
+                                             [&] (bool v) { beiStatus (v); }));
+            std::mutex m;
+            std::condition_variable cv;
+            bool g1Steht = false, g1DarfSchreiben = false;
+            fensterImErsten = [&]
             {
                 {
                     std::lock_guard<std::mutex> l (m);
                     g1Steht = true;
                 }
                 cv.notify_all();
-                // Der Callback von G1 haelt hier, bis G2 komplett durch ist.
                 std::unique_lock<std::mutex> l (m);
                 cv.wait (l, [&] { return g1DarfSchreiben; });
-                // ERST JETZT schreibt der ueberholte Callback seine Aussage.
-                client.meldeAufbauUrteil (true);
-            });
-        });
+            };
+            aufbauNeutral.store (true);      // G1 urteilt neutral -> `false`
+            aufbauZaehler.store (0);
 
-        {
-            std::unique_lock<std::mutex> l (m);
-            cv.wait (l, [&] { return g1Steht; });
+            std::uint64_t g1 = 0, g2 = 0;
+            std::thread haltend ([&] { g1 = client->linkAufbauFuerTest ([&] { beiStatus (true); }); });
+            {
+                std::unique_lock<std::mutex> l (m);
+                cv.wait (l, [&] { return g1Steht; });
+            }
+
+            // Der ECHTE negative Callback: `reconnect()` ruft ihn synchron
+            // auf DIESEM Thread, waehrend G1 noch steht.
+            client->reconnect();
+            pruefe (letzteSterbende.load() == 1,
+                    "NAK-180 EP-05/N-37: der negative Callback bekommt die STERBENDE "
+                    "Generation, nicht die aktuelle",
+                    std::to_string ((unsigned long long) letzteSterbende.load()));
+
+            // Und G2 baut vollstaendig auf - nicht neutral (Marker laeuft).
+            aufbauNeutral.store (false);
+            g2 = client->linkAufbauFuerTest ([&] { beiStatus (true); });
+
+            {
+                std::lock_guard<std::mutex> l (m);
+                g1DarfSchreiben = true;
+            }
+            cv.notify_all();
+            haltend.join();
+            fensterImErsten = {};
+
+            pruefe (g2 == g1 + 1,
+                    "NAK-180 N-34: der zweite Aufbau vergibt die naechste Generation",
+                    std::to_string (g1) + " -> " + std::to_string (g2));
+            pruefe (berichtOffen.load() == g2 && replayFaellig.load() == g2,
+                    "NAK-180 N-37: berichtOffen und replayFaellig tragen G2 - der "
+                    "ueberholte Callback von G1 hat sie nicht mitgenommen",
+                    std::to_string ((unsigned long long) berichtOffen.load()) + "/"
+                        + std::to_string ((unsigned long long) replayFaellig.load()));
+
+            const auto text = client->heartbeatTextFuerTest (a, 1, st);
+            pruefe (text.find ("\"intervention_state_unknown\":true") != std::string::npos,
+                    "NAK-180 N-34: ueberholter_callback_praegt_keinen_spaeteren_link - der "
+                    "erste Heartbeat von G2 traegt dessen eigenes Urteil (`true`), nicht "
+                    "das `false`, das der Callback von G1 danach schrieb");
+            pruefe (text.find ("\"intervention_state_unknown\":false") == std::string::npos,
+                    "NAK-180 N-23: und die Aussage des toten Links reist nicht mit");
+
+            // ---- Fall 1b (N-37, Fall 2 der Matrix): der NEGATIVE Callback
+            //      von G2 wird festgehalten, waehrend G3 vollstaendig
+            //      aufbaut. Das ist die Lage, an der `wireGenerationJetzt()`
+            //      bricht - und die einzige, in der sich "sterbend" und
+            //      "aktuell" wirklich unterscheiden.
+            {
+                std::mutex m2;
+                std::condition_variable cv2;
+                bool negativSteht = false, negativDarfWeiter = false;
+                beiNegativ = [&]
+                {
+                    {
+                        std::lock_guard<std::mutex> l (m2);
+                        negativSteht = true;
+                    }
+                    cv2.notify_all();
+                    std::unique_lock<std::mutex> l (m2);
+                    cv2.wait (l, [&] { return negativDarfWeiter; });
+                };
+                // G2 steht als gemeldeter Link (aus dem Aufbau oben) und
+                // haelt Bericht und Replay.
+                pruefe (berichtOffen.load() == g2,
+                        "NAK-180 N-37: Ausgangslage - G2 haelt seine Zustaende");
+
+                std::thread sterbender ([&] { client->reconnect(); });
+                {
+                    std::unique_lock<std::mutex> l (m2);
+                    cv2.wait (l, [&] { return negativSteht; });
+                }
+
+                // JETZT baut G3 vollstaendig auf - waehrend der negative
+                // Callback von G2 noch steht.
+                aufbauNeutral.store (false);
+                const auto g3 = client->linkAufbauFuerTest ([&] { beiStatus (true); });
+                pruefe (berichtOffen.load() == g3 && replayFaellig.load() == g3,
+                        "NAK-180 N-37: G3 hat geschrieben",
+                        std::to_string ((unsigned long long) berichtOffen.load()));
+
+                {
+                    std::lock_guard<std::mutex> l (m2);
+                    negativDarfWeiter = true;
+                }
+                cv2.notify_all();
+                sterbender.join();
+                beiNegativ = {};
+
+                pruefe (letzteSterbende.load() == g2,
+                        "NAK-180 EP-05/N-37 Fall 2: der festgehaltene negative Callback "
+                        "liest SEINE sterbende Generation, nicht die inzwischen aktuelle",
+                        std::to_string ((unsigned long long) letzteSterbende.load())
+                            + " statt " + std::to_string (g3));
+                pruefe (berichtOffen.load() == g3 && replayFaellig.load() == g3,
+                        "NAK-180 EP-05/N-37 Fall 2: und er loescht die Wirkung von G3 "
+                        "NICHT - das CAS auf die sterbende Generation schlaegt fehl",
+                        std::to_string ((unsigned long long) berichtOffen.load()) + "/"
+                            + std::to_string ((unsigned long long) replayFaellig.load()));
+                const auto text3 = client->heartbeatTextFuerTest (a, 2, st);
+                pruefe (text3.find ("\"intervention_state_unknown\":true") != std::string::npos,
+                        "NAK-180 N-37: der erste Heartbeat von G3 traegt dessen E1-Urteil - "
+                        "ein verlorenes `neutralerNeuaufbau` waere D-01 in neuer Form");
+            }
+
+            client->stop();
+            client.reset();
         }
 
-        // G2 baut auf und urteilt NICHT neutral (Marker laeuft).
-        g2 = client.linkAufbauFuerTest ([&] { client.meldeAufbauUrteil (false); });
-
+        // ---- Fall 2: `stop()` aus dem zweiten Thread, waehrend der positive
+        //      Callback steht; danach `start()` (Wortlaut aus §5.4, MP4-3) --
         {
-            std::lock_guard<std::mutex> l (m);
-            g1DarfSchreiben = true;
-        }
-        cv.notify_all();
-        haltend.join();                     // erst danach steht `g1`
-        pruefe (g2 == g1 + 1,
-                "NAK-180 N-34: der zweite Aufbau vergibt die naechste Generation",
-                std::to_string (g1) + " -> " + std::to_string (g2));
+            berichtOffen.store (0);
+            replayFaellig.store (0);
+            letzteSterbende.store (0);
+            client.reset (new ControlClient ([] { return ControlHello {}; },
+                                             testPipeName ("nak180-n34-stop"),
+                                             {}, {},
+                                             [&] (bool v) { beiStatus (v); }));
+            client->start();                 // ein ECHTER Clientthread, den `stop()` joint
 
-        // Die Aussage des ueberholten Callbacks traegt G1 und ist fuer G2
-        // inert. Gemessen am Heartbeat: er darf NICHT `false` tragen.
-        nakama::ipc::Adresse a;
-        a.logonSid = "S-1-5-21-1"; a.projectBindingId = std::string (32, 'a');
-        a.sessionEpoch = std::string (32, 'b'); a.instanceId = std::string (32, 'c');
-        a.runtimeNonce = std::string (32, 'd');
-        nakama::ipc::ControlStatus st;
-        const auto text = client.heartbeatTextFuerTest (a, 1, st);
-        pruefe (text.find ("\"intervention_state_unknown\":true") != std::string::npos,
-                "NAK-180 N-34: ueberholter_callback_praegt_keinen_spaeteren_link - der "
-                "erste Heartbeat von G2 traegt dessen eigenes Urteil (`true`), nicht "
-                "das `false`, das der Callback von G1 danach schrieb",
-                text.substr (text.size() > 120 ? text.size() - 120 : 0));
-        pruefe (text.find ("\"intervention_state_unknown\":false") == std::string::npos,
-                "NAK-180 N-23: und die Aussage des toten Links reist nicht mit");
+            std::mutex m;
+            std::condition_variable cv;
+            bool steht = false, darfSchreiben = false;
+            bool negativGesehen = false;
+            beiNegativ = [&]
+            {
+                {
+                    std::lock_guard<std::mutex> l (m);
+                    negativGesehen = true;
+                }
+                cv.notify_all();
+            };
+            fensterImErsten = [&]
+            {
+                {
+                    std::lock_guard<std::mutex> l (m);
+                    steht = true;
+                }
+                cv.notify_all();
+                std::unique_lock<std::mutex> l (m);
+                cv.wait (l, [&] { return darfSchreiben; });
+            };
+            aufbauNeutral.store (true);
+            aufbauZaehler.store (0);
+
+            std::uint64_t g1 = 0;
+            std::thread haltend ([&] { g1 = client->linkAufbauFuerTest ([&] { beiStatus (true); }); });
+            {
+                std::unique_lock<std::mutex> l (m);
+                cv.wait (l, [&] { return steht; });
+            }
+
+            const auto vorStop = std::chrono::steady_clock::now();
+            std::thread stopper ([&] { client->stop(); });
+            // `stop()` fuehrt seinen negativen Callback aus und wartet dann im
+            // Join. Erst wenn wir ihn gesehen haben, geben wir den positiven
+            // frei - die Ordnung traegt die Bedingungsvariable, nicht `sleep`.
+            {
+                std::unique_lock<std::mutex> l (m);
+                cv.wait_for (l, std::chrono::seconds (5), [&] { return negativGesehen; });
+                darfSchreiben = true;
+            }
+            cv.notify_all();
+            haltend.join();
+            stopper.join();
+            const auto stopMs = (long long) std::chrono::duration_cast<std::chrono::milliseconds> (
+                std::chrono::steady_clock::now() - vorStop).count();
+            fensterImErsten = {};
+            beiNegativ = {};
+
+            pruefe (negativGesehen && letzteSterbende.load() == g1,
+                    "NAK-180 EP-15/N-34 Fall 2: `stop()` fuehrt seinen negativen Callback "
+                    "mit der sterbenden Generation aus, waehrend der positive noch steht",
+                    std::to_string ((unsigned long long) letzteSterbende.load()));
+            pruefe (stopMs < 5000,
+                    "NAK-180 N-34 Fall 2: und `stop()` kehrt regulaer zurueck",
+                    std::to_string (stopMs) + " ms");
+
+            // `start()` und die Messung: der naechste Link urteilt frisch.
+            client->start();
+            aufbauNeutral.store (false);
+            const auto g2 = client->linkAufbauFuerTest ([&] { beiStatus (true); });
+            pruefe (berichtOffen.load() == g2 && replayFaellig.load() == g2,
+                    "NAK-180 N-37: nach `stop()`+`start()` tragen beide Zustaende die "
+                    "Generation des NEUEN Links",
+                    std::to_string ((unsigned long long) berichtOffen.load()));
+            const auto text = client->heartbeatTextFuerTest (a, 1, st);
+            pruefe (text.find ("\"intervention_state_unknown\":true") != std::string::npos
+                        && text.find ("\"intervention_state_unknown\":false") == std::string::npos,
+                    "NAK-180 N-34 Fall 2: der erste Heartbeat traegt das E1-Urteil von G2, "
+                    "nicht das `false`, das der ueberholte Callback danach schrieb");
+            client->stop();
+            client.reset();
+        }
+
+        // ---- Fall 3: reentrant - der positive Callback ruft selbst
+        //      `reconnect()` (PluginProcessor.cpp:1226-1227) ---------------
+        {
+            berichtOffen.store (0);
+            replayFaellig.store (0);
+            letzteSterbende.store (0);
+            client.reset (new ControlClient ([] { return ControlHello {}; },
+                                             testPipeName ("nak180-n34-reentrant"),
+                                             {}, {},
+                                             [&] (bool v) { beiStatus (v); }));
+            bool negativGesehen = false;
+            beiNegativ = [&] { negativGesehen = true; };
+            fensterImErsten = [&] { client->reconnect(); };   // REENTRANT
+            aufbauNeutral.store (false);
+            aufbauZaehler.store (0);
+
+            const auto g1 = client->linkAufbauFuerTest ([&] { beiStatus (true); });
+            fensterImErsten = {};
+            beiNegativ = {};
+
+            pruefe (negativGesehen && letzteSterbende.load() == g1,
+                    "NAK-180 EP-15/N-34 Fall 3: der reentrante negative Callback bekommt "
+                    "die Generation SEINES Links, nicht die aktuelle - und er verklemmt "
+                    "nicht (keine Serialisierung der Callbacks, E10)",
+                    std::to_string ((unsigned long long) letzteSterbende.load()));
+            // Der positive Callback schreibt seine Wirkung NACH dem negativen -
+            // sie traegt G1 und ist fuer den naechsten Link inert.
+            pruefe (berichtOffen.load() == g1,
+                    "NAK-180 N-34 Fall 3: die spaete Wirkung traegt ihre eigene Generation",
+                    std::to_string ((unsigned long long) berichtOffen.load()));
+
+            aufbauNeutral.store (true);
+            const auto g2 = client->linkAufbauFuerTest ([&] { beiStatus (true); });
+            const auto text = client->heartbeatTextFuerTest (a, 1, st);
+            pruefe (text.find ("\"intervention_state_unknown\":false") != std::string::npos,
+                    "NAK-180 N-34 Fall 3: G2 urteilt frisch - sein `false` reist, das "
+                    "`true` von G1 nicht",
+                    std::to_string (g1) + " -> " + std::to_string (g2));
+            client->stop();
+            client.reset();
+        }
     }
 
     // ── NAK-180 R6: die Wartefrist gehoert UNS, nicht dem Pipe-Besitzer

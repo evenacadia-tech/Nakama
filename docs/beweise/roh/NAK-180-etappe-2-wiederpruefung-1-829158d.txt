@@ -1,0 +1,27 @@
+Die Quellprüfung lässt EP-01, EP-04 und EP-15 bis EP-18 offen und findet zusätzlich konkrete N-27- sowie N-05/M-58-Brüche im Fixdiff. Ausgeführt wurden nur lesende Diff- und Quellprüfungen bei unverändertem HEAD 829158d; Binär- und Testläufe wurden gemäß Auftrag nicht ausgeführt.
+
+Full review comments:
+
+- [P1] Halte wartende Enden im Aufbauurteil für nicht neutral — C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\src\PluginProcessor.cpp:1498-1499
+  Wenn das Begin auf G zugestellt war und sein End beim Linkwechsel noch in P0 liegt, wird zwar `abschlussBegin` gesetzt, hier aber das dafür vom Aufbauurteil gelesene `sendeBeginOffen` gelöscht; `v3ControlLink(true)` ignoriert `abschlussBegin` in Zeile 1831–1833. G+1 meldet daher neutral, sodass sein erstes `false` nach Replay und End den R1-Resync auslöst und den gerade gestarteten Tail sofort löscht. Damit bleiben EP-01/N-36 sowie N-05/M-58 (`docs/beweise/NAK-180.md:299,345,862`) gebrochen; behalte diesen Abschluss bis zum End-Wire-Commit im Neutralitätsprädikat.
+
+- [P1] Melde die Generation des tatsächlichen Wire-Commits — C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\ControlClient.cpp:2071-2071
+  Überlebt ein in G eingereihtes Begin den Reconnect und wird erst auf G+1 geschrieben, bleibt `p0Eintrag.generation` gleich G. Der Rückruf stempelt das Begin deshalb als auf G zugestellt; beim späteren End auf G+1 erzeugt `replayNoetig` ein zweites Begin mit derselben Sequenz, worauf `sequenz_annehmen` die Sitzung `unknown` setzt. N-27 (`docs/beweise/NAK-180.md:326`) verlangt hier ausdrücklich kein Replay; übergib die beim Write aktive `dieseWireGeneration`.
+
+- [P1] Halte die lokale Frist mindestens so lang wie den Broker-Tail — C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\src\PluginProcessor.cpp:328-337
+  `nachlaufFristSetzen` kann die lokale Frist unter die Brokerfrist setzen: Ein einzelner Tail über 3600 Sekunden wird gekappt, und ein späteres kürzeres End überschreibt eine noch längere Frist, während der Broker das Maximum behält. In beiden Fällen verbraucht das Plugin sein einmaliges `false`, solange `tail_samples_offen > 0`; E4 verwirft es und die Sitzung bleibt entgegen N-05/M-58 (`docs/beweise/NAK-180.md:299,312`) dauerhaft gesperrt. Sättige nach oben und verkürze eine bereits offene Frist nie.
+
+- [P1] Verzögere im EP-04-Test den echten Produkt-Schreibzugriff — C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\tests\Sonde013PassageStateTest.cpp:1970-1970
+  `gAlt` erhält den Rückgabewert erst nachdem `v3LinkAufbauFuerTest` samt Callback beendet ist, ist beim Aufruf von `berichtOffenFuerTestSetzen` in Zeile 1981 also stets 0; zudem hat `v3ControlLink(true)` seinen echten Schreibzugriff vor diesem Testfenster schon ausgeführt. Der Rotbeweis `docs/beweise/roh/NAK-180-rot-ep04.txt` fällt folgerichtig mit `[0 (G4 gegen G5)]`, sodass eine Rückkehr zu blinden Produkt-`store`s grün bleiben kann. Halte stattdessen den echten positiven Callback vor seinem CAS mit der bereits erfassten Generation fest.
+
+- [P1] Halte den alten Prozessor-Endcallback bis nach G+1 fest — C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\tests\Sonde013PassageStateTest.cpp:1941-1943
+  Der erste Aufruf hier beendet G2 synchron und löscht dessen Prozessorzustände; der als verspätet bezeichnete zweite Aufruf erhält danach Generation 0, und G3 wird erst anschließend aufgebaut. Damit überlappt kein alter negativer `v3ControlLink(false)` einen neueren Aufbau; der IPC-Test prüft daneben nur nachgebildete lokale Atomics. Eine Regression zurück zu `wireGenerationJetzt()` oder blinden Löschungen im Prozessor bliebe trotz EP-15/N-37 (`docs/beweise/NAK-180.md:346,876`) grün.
+
+- [P2] Synchronisiere den N-35-Konkurrenten ohne Sleep — C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\tests\Sonde013PassageStateTest.cpp:1663-1667
+  Nach dem Start von `wechsler` beweist die 30-ms-Pause nicht, dass der Faden den Aufbauzug bereits betreten und an `sendeMutex` blockiert hat; bei verzögerter Planung kann `weiter` gesetzt werden, bevor er überhaupt läuft. Dann bleibt der Test auch bei entfernter oder geteilter Sperre grün, obwohl N-35 deterministisch erzwungene Konkurrenz verlangt (`docs/beweise/NAK-180.md:344,895`). Verwende eine Schranke am Eintritt des Aufbauzugs statt Zeitablauf.
+
+- [P1] Führe den R2-E2E über Wire- und Evidenzpfad — C:\Users\phili\Projekte\Nakama\broker\tests\sonde013_verdrahtung.rs:4458-4458
+  Der neue R2-Fall sendet nur die Heartbeats durch `Senke::p0`; Replay und End rufen direkt `intervention_begin`/`intervention_end` auf, und die Sonde wird nur über `evidence_dispatch_fuer_link` geprüft statt mit `evidence_snapshot_json` eingespeist. Damit können Parser-, Routing- oder echte Evidence-Commit-Regressionen grün bleiben, sodass die fixture-getriebene, injizierte Cross-Language-Naht aus EP-17/R3(a) (`docs/beweise/NAK-180.md:878`; `docs/beweise/roh/NAK-180-auftrag.txt:16`) weiterhin fehlt.
+
+- [P2] Fahre R01 über den laufenden ControlClient — C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\tests\Sonde013PassageStateTest.cpp:2102-2102
+  Dieser Zusatz ruft Aufbau, Heartbeat-Schritt und Zustellung weiterhin manuell über Testhaken auf; `r01Resync` selbst verwendet in Zeile 684/690 unverändert nur `v3LinkFuerTest`. Kein ControlClient-Thread, Heartbeat-Takt, Pipe-Handshake oder Probe-Server läuft, sodass Fehler im echten Lebenszyklus grün bleiben. EP-18/R3(b) verlangt ausdrücklich den realen ControlClient gegen einen Probe-Server (`docs/beweise/NAK-180.md:879`; `docs/beweise/roh/NAK-180-auftrag.txt:16`).

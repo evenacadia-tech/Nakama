@@ -1,0 +1,87 @@
+Wiederprüfung Etappe 2 / Ticket NAK-180 (G4-Nacharbeit 1: Plugin-Lebenszyklus), Runde 1 — gebundener Prüfauftrag des Dirigenten (2026-09-05)
+
+Du bist der frische, lesende Prüfer dieser Runde. Prüfbereich ist ausschließlich der Fixdiff der Runde:
+`git diff be99d2cfecab18216bb043306eb745dae88fb37b...829158ddf731ad5ca21157b9667681204ff5ce27 -- broker/src/coordinator/befehl.rs broker/src/coordinator/link.rs broker/src/coordinator/zustand.rs broker/tests/sonde013_verdrahtung.rs eq-copilot/plugin/core/ipc/ControlClient.cpp eq-copilot/plugin/core/ipc/ControlClient.h eq-copilot/plugin/core/ipc/IpcQueues.h eq-copilot/plugin/src/HoerMarkierung.h eq-copilot/plugin/src/PluginProcessor.cpp eq-copilot/plugin/src/PluginProcessor.h eq-copilot/plugin/tests/IpcTestMain.cpp eq-copilot/plugin/tests/LebenslaufTestMain.cpp eq-copilot/plugin/tests/Sonde013PassageStateTest.cpp`
+(ZIEL = 829158ddf731ad5ca21157b9667681204ff5ce27 = HEAD, vor und nach deinem Lauf identisch). Der übrige Ticketbereich wurde in der Erstprüfung geprüft und ist hier nicht Prüfgegenstand. Du liest und fährst nur lesende Kommandos; du startest keine Prozesse und keinen Python-Interpreter; du schreibst nichts.
+
+BEFUNDE, die diese Runde schließen sollte (wörtlich aus der Erstprüfung, docs/beweise/roh/NAK-180-erstpruefung-be99d2c.txt; die Regel des Dirigenten je Befund steht in docs/beweise/NAK-180.md §7, Tabelle EP-01 bis EP-21; was der Worker eingearbeitet hat, in §7.1 und §2.5):
+Die Quellprüfung des gebundenen Diffs zeigt mehrere direkte Brüche des R2/E4-Lebenszyklus sowie nicht wirksame oder nicht deterministische Gate-Tests. HEAD blieb vor und nach der Prüfung bei be99d2cfecab18216bb043306eb745dae88fb37b; Binär- und Testläufe wurden in dieser lesenden Prüfung nicht ausgeführt.
+
+Full review comments:
+
+- [P1] Halte das Begin bis zum Wire-Commit des Ends offen — C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\src\PluginProcessor.cpp:1334-1336
+  DEFEKT: Hier wird `offenesBegin` bereits nach dem Einreihen des Ends gelöscht. Stirbt Link G vor dessen Wire-Commit, bleibt das End für G+1 in der Queue, aber der Aufbau-Hook findet kein Begin mehr und stellt kein Replay voran; das End trifft beim Broker auf nichts und die Sitzung nullt nicht. Das verletzt N-36 (`docs/beweise/NAK-180.md:345`).
+
+- [P1] Warte vor dem Abschluss-Heartbeat den Tail ab — C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\src\PluginProcessor.cpp:1349-1353
+  DEFEKT: Der Bericht wird beendet, sobald Ring, lokales Begin und Marker leer sind, ohne den gemeldeten Nachlauf abzuwarten. Bei einem längeren Marker erreicht der einmalige `false`-Heartbeat den Broker noch während `tail_samples_offen > 0`, wird dort verworfen und nie wiederholt, weil `berichtOffen` und das Heartbeat-Flag bereits verbraucht sind; N-05 verlangt das `false` erst nach dem Tail (`docs/beweise/NAK-180.md:299`).
+
+- [P1] Binde den Nachbericht-Abschluss an seine Generation — C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\src\PluginProcessor.cpp:1361-1362
+  DEFEKT: `neutralErreicht` wird unter `sendeMutex` für Generation G festgestellt, aber danach ohne Generation an `meldeAufbauUrteil` übergeben. Baut G+1 in diesem Fenster auf, liest der Worker dort G+1 und ein veralteter Abschluss kann dessen nicht-neutrales Urteil durch `false` ersetzen; Vergleich und Wirkung müssen nach R12 eine Einheit bleiben (`docs/beweise/NAK-180.md:233-263`).
+
+- [P1] Setze Bericht und Replay nur per generationsgebundenem CAS — C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\src\PluginProcessor.cpp:1554-1555
+  DEFEKT: Ein verspäteter positiver Callback von G kann nach dem Aufbau von G+1 diese beiden Zustände blind mit G überschreiben. Der Worker räumt den fremden Wert anschließend auf und verliert damit Bericht beziehungsweise Replay von G+1; R13 verbietet gerade diese Lost-Updates und fordert CAS für die vier Generationszustände (`docs/beweise/NAK-180.md:253-259`).
+
+- [P1] Übergib dem negativen Callback die sterbende Generation — C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\src\PluginProcessor.cpp:1461-1466
+  DEFEKT: Der negative Callback liest erst bei seiner Ausführung die aktuelle `wireGeneration`. Bei `reconnect()` kann der Clientthread G beenden und G+1 vollständig aufbauen, bevor der externe Aufrufer seinen verspäteten `false`-Callback erreicht; dieser liest dann G+1 und löscht genau dessen Urteil, Replay und Bericht. N-37 fordert einen CAS mit der Generation des sterbenden Links (`docs/beweise/NAK-180.md:346`).
+
+- [P2] Stelle abgewiesene Aufbauaussagen sofort zurück — C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\ControlClient.cpp:1787-1789
+  DEFEKT: Beide Aufbau-Flags wurden vor diesem Aufruf per CAS verbraucht, der Rückgabewert von `sendeP0` wird jedoch verworfen. Bei voller P0-Queue existiert kein Eintrag, dessen späterer Verwurf `aufbauAussageZurueckstellen` auslösen könnte, sodass die Aussage nur zufällig durch einen weiteren Linkaufbau neu entsteht; N-12 verlangt die sofortige Rückstellung beider Flags (`docs/beweise/NAK-180.md:306`).
+
+- [P1] Verwende einen gemeinsamen P0-Markenraum — C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\src\PluginProcessor.cpp:1208-1208
+  DEFEKT: `sendeMarkenFolge` und `p0MarkenFolge` beginnen unabhängig bei 0, während die Rückrufe nur die Zahl und keine Herkunft erhalten. Ein Aufbau-Heartbeat und das erste Marker-Begin können daher beide Marke 1 tragen; wird der Heartbeat vor dem dahinter wartenden Begin committet, markiert sein Rückruf dieses Begin fälschlich als zugestellt und ein Reconnect erzeugt ein doppeltes Replay. Das bricht N-27/N-36 (`docs/beweise/NAK-180.md:326,345`).
+
+- [P1] Erfasse den Markerübergang vor dem Prepare-Reset — C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\src\PluginProcessor.cpp:295-303
+  DEFEKT: Der Marker wurde bereits zurückgesetzt, bevor dieser Block versucht, das End aus `offenesBegin` zu rekonstruieren. Liegt das Begin noch ausschließlich im RT-Ring, ist `offenesBegin.gueltig` falsch und es entsteht gar kein End; wurde es schon entnommen, enthält die kopierte Begin-Struktur weiterhin `dauerSamples == 0`, sodass der synthetische Tail die gezählte Hördauer verliert. Beides widerspricht N-10 (`docs/beweise/NAK-180.md:304`).
+
+- [P1] Begrenze den Setup-Replay-Hook auf Marker-Enden — C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\ControlClient.cpp:1214-1219
+  DEFEKT: `hatEreignisAelterAls` umfasst auch persistente P0-Befehle, weil diese ebenfalls als `P0Klasse::ereignis` eingereiht werden. Liegt bei einem aktiven, auf G zugestellten Marker nur ein solcher Befehl in der Queue, stellt der Aufbauzug bereits ein Replay voran; anschließend setzt der positive Callback zusätzlich `replayFaellig`, und weil das Hook-Replay mit Marke 0 den Zustellzustand nicht aktualisiert, reiht der Worker dasselbe Begin erneut ein. Damit entsteht die in N-27 verbotene doppelte `intervention_id` (`docs/beweise/NAK-180.md:326`).
+
+- [P1] Verfolge den ersten Heartbeat separat — C:\Users\phili\Projekte\Nakama\broker\src\coordinator\link.rs:359-361
+  DEFEKT: `letzte_event_sequence` ist kein Marker für den ersten Heartbeat. Da Replay und erster Heartbeat ausdrücklich ungeordnet sein dürfen, kann das Replay die Sequenz zuerst setzen und der anschließende erste `true`-Heartbeat öffnet keinen Bericht; umgekehrt gilt ein weiterer `true` beziehungsweise `false` ohne vorheriges Ereignis weiterhin als erster und kann den Bericht erneut öffnen oder den ungeschützten R1-Zweig auslösen. Das verletzt E4 und die Ordnungsfreiheit (`docs/beweise/NAK-180.md:69-74,285`).
+
+- [P1] Behalte beim Nachbericht die laufende Sequenzbasis — C:\Users\phili\Projekte\Nakama\broker\src\coordinator\befehl.rs:602-603
+  DEFEKT: Nach einem erfolgreichen R2-Zyklus setzt dieser Aufruf die Brokerbasis auf 0, obwohl Replay und End bereits Sequenzen verbraucht haben und der Pluginzähler im R2-Weg ausdrücklich nicht zurückgesetzt wird. Nach Replay 1 und End 2 sendet der nächste reguläre Marker beispielsweise 3, während der Broker 1 erwartet, setzt sofort wieder `unknown` und kann ohne neuen Link nicht nullen. Das widerspricht dem R2-Entscheid (`docs/beweise/NAK-180.md:63,299`).
+
+- [P1] Führe Prüfung und Resync unter einem Broker-Lock aus — C:\Users\phili\Projekte\Nakama\broker\src\coordinator\link.rs:385-390
+  DEFEKT: Sitzungszustand, Berichtsflag und der anschließende `neutral_resync` werden unter drei getrennten Locks geprüft beziehungsweise verändert. Beginnt ein anderer lebender Link derselben Sitzung zwischen der leeren Sicht und dem Resync eine Intervention, wird deren aktives Intervall anschließend gelöscht und `unknown` freigegeben; E4 verlangt, dass die Sitzung am Wirkpunkt keine Intervalle und keinen Tail hält (`docs/beweise/NAK-180.md:71-76`).
+
+- [P1] Erfasse Testmitschnitte erst am Wire-Commit — C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\src\PluginProcessor.cpp:1216-1222
+  DEFEKT: Der angebliche Wire-Mitschnitt und der Zähler werden unmittelbar nach erfolgreichem Enqueue gefüllt, nicht nach `schreibenGenau` und `p0.bestaetigen`. Die Passage-Tests ernten diesen Mitschnitt überwiegend ohne `zustelleAllesFuerTest` und bleiben daher grün, wenn ein Write scheitert oder ein Eintrag beim Aufbau verworfen wird; R7 definiert gesendet ausdrücklich als Wire-Commit (`docs/beweise/NAK-180.md:88-101`).
+
+- [P1] Lass den Lebenslauftest Fehler zurückgeben — C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\tests\LebenslaufTestMain.cpp:712-712
+  DEFEKT: Der vorhandene `if (fehlerZahl == 0)` bindet nun diesen neu eingefügten Block; der danach folgende Erfolgsblock ist dadurch bedingungslos und gibt immer 0 zurück. Frühere Fehler überspringen N-20 und enden erfolgreich, und auch ein Fehler innerhalb N-20 wird als Erfolg gemeldet, sodass der verpflichtende Frist-Riegel wirkungslos ist (`docs/beweise/NAK-180.md:314`; `AGENTS.md:76-87`).
+
+- [P1] Fahre N-34/N-37 über die negativen Produktcallbacks — C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\tests\IpcTestMain.cpp:6262-6263
+  DEFEKT: Der Interleaving-Fall führt lediglich zwei positive `linkAufbauFuerTest`-Callbacks aus; weder `reconnect()` noch `stop()` noch der reentrante negative Callback und auch nicht die Prozessorzustände `berichtOffen`/`replayFaellig` werden berührt. N-37 prüft daneben nur ein isoliertes lokales Atomic, sodass die blind schreibenden Stores und die falsche Generation des negativen Callbacks trotz N-34/N-37 grün bleiben (`docs/beweise/NAK-180.md:338,346`).
+
+- [P2] Erzwinge in N-35 echte Mutex-Konkurrenz — C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\tests\Sonde013PassageStateTest.cpp:1493-1498
+  DEFEKT: Der Kommentar behauptet einen Testfaden, anschließend wird aber nur die bereits sequentiell erzeugte Ereignisfolge ausgewertet. Kein Thread versucht den Aufbau zwischen Vergleich und Einreihen, sodass das Entfernen oder Aufteilen von `sendeMutex` weiterhin bestehen kann; N-35 verlangt genau diese deterministisch synchronisierte Konkurrenz (`docs/beweise/NAK-180.md:344`).
+
+- [P1] Ergänze den zugesagten Rust-E2E für R2 — C:\Users\phili\Projekte\Nakama\broker\tests\sonde013_verdrahtung.rs:4082-4084
+  DEFEKT: Der neue Abschnitt nennt E4, enthält aber nur den neutralen `false`-Pfad, ein späteres `false` und R9. Es fehlt sowohl der vorgeschriebene `control_ende`-Reconnect mit verbleibender Sonde als auch der vollständige R2-Ablauf `true` → Replay/Begin → End → Tail → `false` samt injizierter Evidenz; damit sind N-05 bis N-08 und die neuen Brokerzweige nicht cross-language geprüft (`docs/beweise/roh/NAK-180-auftrag.txt:16`).
+
+- [P2] Fahre R01 durch den echten Heartbeat-Pfad — C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\src\PluginProcessor.h:331-336
+  DEFEKT: Der geänderte Helfer ruft weiterhin nur Aufbauzug und Link-Callback direkt auf; er startet weder die Heartbeat-Schleife noch P0-Enqueue, Wire-Commit oder Rückstellung. `r01Resync` verwendet genau diesen Haken und prüft nur den lokalen Status, obwohl R3(b) ausdrücklich den Handschlag über den echten ControlClient statt `v3LinkFuerTest` verlangt (`docs/beweise/roh/NAK-180-auftrag.txt:16`).
+
+- [P2] Erzwinge in N-08 einen Backlog beim Aufbau — C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\tests\Sonde013PassageStateTest.cpp:1299-1304
+  DEFEKT: Der Test lässt den Worker den zweiten vollständigen Zyklus beliebig vor dem Linkwechsel abarbeiten und erntet erst danach alle zuvor aufgezeichneten Enqueues. Wenn Begin und End schon vor dem Reconnect verarbeitet wurden, bestehen sämtliche Assertions ohne einen nichtleeren Ring beim Aufbau; damit misst der Fall nicht den in N-08 festgelegten Backlog-Zustand (`docs/beweise/NAK-180.md:302`).
+
+- [P2] Erzwinge N-28 innerhalb des Link-Callbacks — C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\tests\Sonde013PassageStateTest.cpp:1439-1442
+  DEFEKT: Nach dem Leeren der Queue werden Linkende, positiver Callback und weitere Audioblöcke nur nacheinander aufgerufen; es gibt keine Schranke, die den Worker das Replay noch während des festgehaltenen positiven Callbacks einreihen lässt. Der Test kann deshalb auch bestehen, wenn das Replay erst nach Callback-Rückkehr entsteht, obwohl N-28 genau das R10-Interleaving erzwingen muss (`docs/beweise/NAK-180.md:327`).
+
+- [P2] Prüfe N-26 am echten Aufbauzug — C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\tests\IpcTestMain.cpp:6124-6130
+  DEFEKT: Der angeblich während des Callbacks eingereihte Bericht wird hier lediglich mit einer handgeschriebenen Generation 2 in eine isolierte Queue gelegt. Weder die Generation-vor-Callback-Reihenfolge noch das Einreihen aus dem Callback oder die Gegenrichtung eines sterbenden Links werden ausgeführt, sodass die drei für N-26 verlangten Hälften nicht gemessen werden (`docs/beweise/NAK-180.md:325`).
+
+GATE-TEXT, wörtlich (docs/FL-Nakama-Sonden-Design-Entwurf.md:4289, P4-Exit-Gate Satz 3): „Hörmarker- und Experimentende schließen alle Taintintervalle; der reguläre Pfad nullt danach wieder." Dazu Entwurf §34.2 (Resync als ausdrückliche, bestätigte Lebenszyklusoperation), SONDE-013-Matrix M-33 bis M-39 und M-58 bis M-63 (docs/beweise/SONDE-013.md:460-653), die Verhaltensmatrix docs/beweise/NAK-180.md §2 (E1 bis E11, N-01 bis N-37, §2.5 Nachträge) als Referenz, Regeln R1 bis R13, Invarianten aus CLAUDE.md (Audio-Thread ohne Sperre/Allokation, Nulltest bitidentisch, NaN-Ehrlichkeit, Schemas eingefroren: keine neuen Wire-Felder). Jüngster Kanon: GRÜN 53/53 auf fbbecc7 (docs/beweise/roh/NAK-180-fbbecc7-dirty.md; „dirty" = Manifest und Rohausgabe, die der Runner selbst schreibt), seither kein Code-Diff.
+
+Du beantwortest genau zwei Fragen:
+1. Ist jeder der 21 Befunde EP-01 bis EP-21 am Zielstand geschlossen (je Befund: ja/nein, mit Beleg — Datei:Zeile der Änderung, messender Test, Rotbeweis docs/beweise/roh/NAK-180-rot-ep*.txt)? Prüfe insbesondere an der Quelle: keine blinden `store`s mehr auf generationsgebundenen Zuständen; der negative Callback erhält die sterbende Generation; `offenesBegin` schließt erst beim Zustellrückruf; ein Markenraum; Zustellprüfung nur für Interventionsereignisse und genau ein Replay je Aufbau; `false` erst nach dem Nachlauf; Broker: eigenes Feld für den ersten Heartbeat, Sequenzbasis nach dem Nachbericht behalten, Prüfung und Resync unter einem Lock; Tests: Lebenslauftest kann wieder fehlschlagen, N-34/N-37/N-35/N-28/N-26/N-08 erzwingen ihre Lage deterministisch, Rust-E2E fährt den R2-Weg, r01Resync über den echten ControlClient.
+2. Hat der Fixdiff etwas gebrochen — einen Test, eine Matrixzeile (N-01 bis N-37), einen Entscheid E1 bis E11, einen Satz des Gate-Textes, eine Invariante aus CLAUDE.md, einen Vertrag (keine neuen Wire-Felder), das Bestandsverhalten der P0-Queue für Ereignisse („nichts verwerfen") oder die SONDE-013-Zusagen M-33 bis M-39 und M-58 bis M-63?
+
+Neue Befunde außerhalb dieser zwei Fragen erhebst du nicht. Befundklassen und Ausschlüsse wie in der Erstprüfung (DEFEKT nur, wenn eine Matrixzeile, eine Regel R1 bis R13, der Gate-Satz, ein Test oder eine Invariante bricht; was §2.4 ausdrücklich nicht zusagt — Ordnung der Callback-Ausführung, abgelöster Thread nach kStopFristMs (NAK-184), Sources-Wirkungen, Reihenfolge von Replay und erstem Heartbeat —, ist LÜCKE; docs/** ausgeschlossen; Härtungen NAK-183 bis NAK-189, NAK-155 bis NAK-179, NAK-135 bis NAK-154; Ticketfremdes NAK-181/NAK-182, `IpcVerbindung::oeffnen`-Fristlogik, same-user-Szenarien §48.4; tools/dirigent/pruefliste.md keine Anforderung; Sabotage-Szenarien gegen Prüfwerkzeuge = Härtung; Kosmetik, Stil, theoretische Randfälle: nein).
+
+URTEIL — genau eine der drei Formen, als erste Zeile:
+URTEIL: PASS — alle 21 Befunde geschlossen, nichts gebrochen.
+URTEIL: NEEDS_WORK — je offenem Befund oder Bruch: Kennung EP-xx bzw. neu, Datei:Zeile, Reproduktion, welcher Satz bricht, Befundklasse.
+URTEIL: BLOCKED — Prüfbereich nicht lesbar.
+Danach: geprüft / nicht geprüft, je ein Absatz.

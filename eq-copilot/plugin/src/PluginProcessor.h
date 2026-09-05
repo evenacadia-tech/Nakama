@@ -405,6 +405,19 @@ public:
     }
 
     std::uint64_t berichtOffenFuerTest() const { return berichtOffen.load(); }
+    /** NAK-180 Nacharbeit 1 (EP-04/R13): schreibt `berichtOffen` GENAU SO, wie
+        `v3ControlLink(true)` es tut - per CAS, nie blind.
+
+        Ein Bein misst damit den Fall, den ein `store` verliert: der ueberholte
+        Callback von G schreibt NACH dem von G+1. Der Haken fuehrt dieselbe
+        Zeile, nicht eine Nachbildung daneben. */
+    void berichtOffenFuerTestSetzen (std::uint64_t g)
+    {
+        auto gesehen = berichtOffen.load();
+        while (gesehen < g)
+            if (berichtOffen.compare_exchange_weak (gesehen, g))
+                return;
+    }
     std::uint64_t replayFaelligFuerTest() const { return replayFaellig.load(); }
     std::uint64_t wireGenerationFuerTest() const
     { return controlV3.wireGenerationJetzt(); }

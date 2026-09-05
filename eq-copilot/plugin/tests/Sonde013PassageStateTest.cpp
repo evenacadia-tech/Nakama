@@ -1951,6 +1951,59 @@ void n37ProzessorZustaendeTragenIhreGeneration()
     pruefe (s.p->berichtOffenFuerTest() == g3,
             "N-37: der frische Link schreibt ungestoert",
             juce::String ((int) s.p->berichtOffenFuerTest()));
+
+    // 🔑 EP-04/R13: der UEBERHOLTE positive Callback schreibt zuletzt - und
+    // darf die Wirkung des neueren Links nicht mitnehmen.
+    //
+    // Das ist der Fall, den ein blindes `store` verliert und den ein CAS auf
+    // eine kleinere Generation abweist. Beide Aufbauten urteilen NICHT
+    // neutral, damit sie denselben Zustand beschreiben; sonst kollidierten
+    // sie gar nicht. Die Ordnung traegt eine Bedingungsvariable.
+    {
+        std::mutex m;
+        std::condition_variable cv;
+        bool steht = false, darfSchreiben = false;
+        std::uint64_t gAlt = 0;
+
+        std::thread haltend ([&]
+        {
+            gAlt = s.p->v3LinkAufbauFuerTest ([&]
+            {
+                {
+                    std::lock_guard<std::mutex> l (m);
+                    steht = true;
+                }
+                cv.notify_all();
+                std::unique_lock<std::mutex> l (m);
+                cv.wait (l, [&] { return darfSchreiben; });
+                // ERST JETZT schreibt der ueberholte Callback - mit SEINER,
+                // inzwischen alten Generation.
+                s.p->berichtOffenFuerTestSetzen (gAlt);
+            });
+        });
+        {
+            std::unique_lock<std::mutex> l (m);
+            cv.wait (l, [&] { return steht; });
+        }
+
+        // Der naechste Link baut vollstaendig auf und schreibt seine Zahl.
+        s.p->v3LinkFuerTest (true);
+        const auto gNeu = s.p->wireGenerationFuerTest();
+
+        {
+            std::lock_guard<std::mutex> l (m);
+            darfSchreiben = true;
+        }
+        cv.notify_all();
+        haltend.join();
+
+        pruefe (gNeu > gAlt && s.p->berichtOffenFuerTest() == gNeu,
+                "N-37/EP-04: cas_statt_store - der ueberholte Callback nimmt die "
+                "Wirkung des neueren Links NICHT mit; ein blindes `store` haette sie "
+                "durch seine alte Zahl ersetzt, und der Bericht von G+1 waere weg",
+                juce::String ((int) s.p->berichtOffenFuerTest()) + " (G"
+                    + juce::String ((int) gAlt) + " gegen G" + juce::String ((int) gNeu) + ")");
+    }
 }
 
 /// N-04 · Ueberlauf NACH dem Resync setzt das Sticky neu.

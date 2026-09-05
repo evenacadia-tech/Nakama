@@ -20,8 +20,13 @@
 #include "../core/ipc/TelemetryClient.h"
 #include "../vertrag/generiert/nakama_telemetry_v1_generated.h"
 
+#include "../core/ipc/WireZahl.h"
+#include "../vertrag/NakamaEvidenz.h"
+
 #include <algorithm>
+#include <clocale>
 #include <cmath>
+#include <limits>
 #include <cstdint>
 #include <cstring>
 #include <iostream>
@@ -31,6 +36,133 @@ namespace
 int bestanden = 0;
 int fehler = 0;
 void pruefe (bool ok, const juce::String& was, const juce::String& zusatz = {});
+
+// ═══════════════════════════════════════════════════════════════════════
+// NAK-181 R4 · die Zahl auf dem Draht (G4-Befund V05)
+// ═══════════════════════════════════════════════════════════════════════
+
+/// N-18, N-18b — jeder Randwert einzeln am Riegel.
+///
+/// Die Liste ist die Randwerttabelle aus `docs/beweise/NAK-181.md` §2.0 E4,
+/// Zeile fuer Zeile gegen A5 `pruefe_v3_vertrag.py` nachgerechnet. Sie prueft
+/// nicht „irgendeine Zahl kommt heraus", sondern GENAU den Text und GENAU die
+/// Annahme oder Verweigerung.
+void fahreWireZahl()
+{
+    using nakama::wire::wireZahl;
+    using nakama::wire::es6Zahl;
+
+    struct Fall { double wert; const char* text; const char* was; };
+
+    // N-18 — die zehn Werte, die alle vier Riegelregeln bestehen.
+    const Fall angenommen[] = {
+        { -0.0,                 "0",                    "-0 wird 0" },
+        { 0.1,                  "0.1",                  "ein Zehntel" },
+        { 1.0 / 3.0,            "0.333333333333333",    "ein Drittel, auf 15 Stellen gedeckelt" },
+        { 1e-7,                 "1e-7",                 "kleiner Exponent" },
+        { 1.1754943508222875e-38, "1.17549435082229e-38", "kleinster normaler float" },
+        { 1.401298464324817e-45,  "1.40129846432482e-45", "kleinster subnormaler float" },
+        { 1e-300,               "1e-300",               "weit unten, aber ueber der Grenze" },
+        { 1e-307,               "1e-307",               "der kleinste angenommene Betrag" },
+        { 9007199254740991.0,   "9007199254740991",     "2^53-1 als EXAKTE Ganzzahl" },
+        { 48000.0,              "48000",                "eine Samplerate" },
+    };
+    for (const auto& f : angenommen)
+    {
+        std::string text;
+        const bool ok = wireZahl (f.wert, text);
+        pruefe (ok && text == f.text,
+                juce::String ("N-18: ") + f.was,
+                ok ? juce::String (text.c_str()) : juce::String ("verweigert"));
+    }
+
+    // 🔑 N-18 / R4f — der Rundungszeuge. DREI Pruefungen, sonst belegt er
+    // nichts: der Wert liegt ECHT unter der Grenze, sein gedeckelter Text
+    // liegt darueber, und die UNGEDECKELTE Form faellt.
+    //
+    // Warum nicht `9.9999999999999999e-308`: dieses Literal ist als Binary64
+    // bitgleich mit `1e-307` (beide `0x0031fa182c40c60d`) — es waere gar kein
+    // Wert unter der Grenze (MP4-1).
+    {
+        const double knapp = std::nextafter (1e-307, 0.0);
+        pruefe (knapp < 1e-307,
+                "N-18/R4f: die Eingabe liegt ECHT unter 1e-307 (Wertvergleich)");
+        std::string text;
+        const bool ok = wireZahl (knapp, text);
+        pruefe (ok && text == "1e-307",
+                "N-18/R4f: ihr gedeckelter Wiretext lautet 1e-307",
+                ok ? juce::String (text.c_str()) : juce::String ("verweigert"));
+        std::string ungedeckelt;
+        pruefe (es6Zahl (knapp, ungedeckelt) && ungedeckelt != "1e-307",
+                "N-18/R4f: die UNGEDECKELTE Form ist eine andere und faellt am Riegel",
+                juce::String (ungedeckelt.c_str()));
+    }
+
+    // N-18b — die dreizehn verweigerten Werte.
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    const double inf = std::numeric_limits<double>::infinity();
+    const Fall verweigert[] = {
+        { nan,                  nullptr, "NaN" },
+        { inf,                  nullptr, "+Inf" },
+        { -inf,                 nullptr, "-Inf" },
+        { 9007199254740992.0,   nullptr, "2^53 — eine Ganzzahl ueber der Grenze" },
+        { 1e21,                 nullptr, "1e21 an der ES6-Schreibweisengrenze" },
+        { 3.4028234663852886e38, nullptr, "groesster normaler float — Ganzzahl ueber 2^53" },
+        { 1e300,                nullptr, "1e300 — Ganzzahl, nicht Betragsgrenze" },
+        { -1e300,               nullptr, "-1e300" },
+        { 1e308,                nullptr, "1e308 an der Betragsgrenze" },
+        { 2e-308,               nullptr, "2e-308 — GROESSER als 1e-308 und trotzdem drausen" },
+        { 9.99e-308,            nullptr, "9.99e-308 — dez = -308" },
+        { 1e-308,               nullptr, "1e-308" },
+        { 5e-324,               nullptr, "4.9e-324, der kleinste subnormale double" },
+    };
+    for (const auto& f : verweigert)
+    {
+        std::string text;
+        pruefe (! wireZahl (f.wert, text),
+                juce::String ("N-18b: verweigert — ") + f.was,
+                juce::String (text.c_str()));
+    }
+
+    // Der Deckel trifft NIE eine exakte Ganzzahl: gedeckelt waere 2^53-1
+    // `9.00719925474099e15` — ein anderer Wert.
+    {
+        std::string text;
+        pruefe (wireZahl (9007199254740991.0, text) && text.find ('e') == std::string::npos,
+                "N-18: der Deckel laesst exakte Ganzzahlen unangetastet",
+                juce::String (text.c_str()));
+    }
+
+    // N-19 — `es6Zahl` bleibt ungedeckelt, sonst aendern sich State-Hashes.
+    {
+        std::string text;
+        pruefe (es6Zahl (1.0 / 3.0, text) && text == "0.3333333333333333",
+                "N-19: es6Zahl bleibt ungedeckelt (der state_hash laeuft durch keinen Riegel)",
+                juce::String (text.c_str()));
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// NAK-181 N-16, N-17, N-18c, N-18d · Locale und die Aufrufer
+// ═══════════════════════════════════════════════════════════════════════
+
+// N-18d (b) — der Handschlag. Die Snapshot-Haelfte von N-16/N-17/N-18c/N-18d
+// liegt in B16 `EqCopSonde013EventWireTest`: dort entsteht der Frame aus einer
+// ECHTEN Engine, und ein handgebauter Frame haette hier nur die Riegel des
+// Bauers nachgestellt, nicht seine Ausgabe gemessen.
+void fahreLocale()
+{
+    pruefe (! nakama::ipc::audioGueltig (1e-308, 512, 2),
+            "N-18d: audioGueltig weist eine riegelwidrige Samplerate ab — der "
+            "Client verbindet gar nicht erst, statt ein null in ein Pflicht-number "
+            "zu senden");
+    pruefe (! nakama::ipc::audioGueltig (5e-324, 512, 2),
+            "N-18d: dasselbe fuer den kleinsten subnormalen double");
+    pruefe (nakama::ipc::audioGueltig (48000.0, 512, 2),
+            "N-18d: und nimmt die gewoehnliche Samplerate an");
+    pruefe (nakama::ipc::audioGueltig (44100.5, 512, 2),
+            "N-18d: auch eine nichtganzzahlige, die der Riegel traegt");
+}
 
 void fahreBandStereoRoundtrip()
 {
@@ -1005,6 +1137,8 @@ int main (int, char*[])
 
     fahreBandgitter();
     fahreQuantisierung();
+    fahreWireZahl();
+    fahreLocale();
 
     std::cout << "-----------------------------------------" << std::endl;
     std::cout << bestanden << " bestanden, " << fehler << " gescheitert" << std::endl;

@@ -32,7 +32,9 @@
 #include <cstdint>
 #include <limits>
 #include <functional>
+#include <clocale>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -1135,6 +1137,169 @@ int main()
                 juce::String (amRand - mittenDrin, 3) + " dB Unterschied");
     }
 
+
+    // ═══════════════════════════════════════════════════════════════════
+    // NAK-181 · N-16, N-17, N-18c, N-18d(a), N-24 — die Zahl auf dem Draht
+    // ═══════════════════════════════════════════════════════════════════
+    abschnitt ("NAK-181 N-16  zahlen_bleiben_locale_unabhaengig");
+    {
+        auto halter = std::make_unique<FeatureEngine>();
+        auto& e = *halter;
+        e.vorbereiten (48000.0);
+        Speiser sp { e };
+        FeatureFrame f {};
+        const bool kam = bisEvidenz (sp, sinus (0.25, 1000.0, 48000.0), f);
+        pruefe (kam, "N-16: ein Evidenzframe wird faellig");
+
+        // Ein Stereobandsatz mit NICHTGANZZAHLIGEN Werten — genau die Klasse,
+        // an der die Locale-Abhaengigkeit sichtbar wird. Ein Satz aus lauter
+        // Ganzzahlen liefe durch den Ganzzahlzweig und maesse nichts.
+        std::vector<nakama::analyse::StereoBandwert> baender (
+            (std::size_t) nakama::analyse::Gitter::evidenzBaender);
+        for (std::size_t i = 0; i < baender.size(); ++i)
+        {
+            baender[i].basisGesetzt = true;
+            baender[i].midDb = -12.5f - (float) i * 0.01f;
+            baender[i].sideDb = -18.25f;
+            baender[i].seitenanteilDb = -6.125f;
+            baender[i].fensterDauerMs = 21.3f;
+            baender[i].freiheitsgrade = 9;
+        }
+        nakama::evidenz::Stereosicht sicht;
+        sicht.baender = baender.data();
+        sicht.skalare.folddownGesetzt = true;
+        sicht.skalare.monoFolddownDb = -3.125f;
+        sicht.skalare.balanceGesetzt = true;
+        sicht.skalare.lrBalanceDb = 0.5f;
+
+        std::string unterC;
+        const bool okC = kam && nakama::evidenz::evidenceSnapshotAlsJson (
+            f, testkopf(), {}, sicht, unterC);
+        pruefe (okC, "N-16: der Snapshot entsteht unter der C-Locale");
+
+        const char* vorher = std::setlocale (LC_NUMERIC, nullptr);
+        const std::string gesichert = vorher != nullptr ? vorher : "C";
+        const char* gesetzt = std::setlocale (LC_NUMERIC, "de-DE");
+        if (gesetzt == nullptr)
+            gesetzt = std::setlocale (LC_NUMERIC, "German_Germany.1252");
+        pruefe (gesetzt != nullptr,
+                "N-16: eine Komma-Locale ist verfuegbar — ohne sie misst der Fall nichts");
+        if (gesetzt != nullptr && okC)
+        {
+            std::string unterKomma;
+            const bool okK = nakama::evidenz::evidenceSnapshotAlsJson (
+                f, testkopf(), {}, sicht, unterKomma);
+            pruefe (okK && unterKomma == unterC,
+                    "N-16: derselbe Aufruf ist unter Komma-Locale BYTEGLEICH",
+                    juce::String ((int) unterKomma.size()) + " Bytes");
+            pruefe (okK && unterKomma.find ("-12,5") == std::string::npos,
+                    "N-16: und traegt keinen Komma-Dezimaltrenner");
+            const auto geparst = juce::JSON::parse (juce::String (unterKomma));
+            pruefe (! geparst.isVoid(), "N-16: juce::JSON nimmt ihn an");
+            // Der Bandsatz traegt weiterhin GENAU 221 Werte — bei Komma-Locale
+            // waeren es 442 gewesen, und die gueltig_bitmap passte nicht mehr.
+            const auto stereo = geparst.getProperty ("stereo", {});
+            const auto mid = stereo.getProperty ("mid_db", {});
+            const auto* werte = mid.getProperty ("werte", {}).getArray();
+            pruefe (werte != nullptr
+                    && werte->size() == nakama::analyse::Gitter::evidenzBaender,
+                    "N-16: der Bandsatz traegt genau 221 Werte",
+                    juce::String (werte != nullptr ? werte->size() : -1));
+            std::setlocale (LC_NUMERIC, gesichert.c_str());
+        }
+
+        // N-24 — die drei Bandsaetze tragen EIGENE Bitmaps.
+        const auto sicht2 = juce::JSON::parse (juce::String (unterC));
+        const auto st = sicht2.getProperty ("stereo", {});
+        const auto bitmapVon = [&st] (const char* feld)
+        {
+            return st.getProperty (feld, {}).getProperty ("gueltig_bitmap", {}).toString();
+        };
+        pruefe (bitmapVon ("mid_db").isNotEmpty()
+                && bitmapVon ("korrelation_kurz") != bitmapVon ("mid_db"),
+                "N-24: korrelation_kurz traegt eine EIGENE Bitmap, nicht die von mid_db",
+                bitmapVon ("korrelation_kurz"));
+        pruefe (bitmapVon ("persistenz") != bitmapVon ("mid_db"),
+                "N-24: persistenz ebenso", bitmapVon ("persistenz"));
+        pruefe (bitmapVon ("korrelation_mittel") != bitmapVon ("mid_db"),
+                "N-24: korrelation_mittel ebenso", bitmapVon ("korrelation_mittel"));
+    }
+
+    abschnitt ("NAK-181 N-18c  ppq_ausserhalb_des_riegels_laesst_den_zyklus_entfallen");
+    {
+        auto halter = std::make_unique<FeatureEngine>();
+        auto& e = *halter;
+        e.vorbereiten (48000.0);
+        Speiser sp { e };
+        FeatureFrame f {};
+        const bool kam = bisEvidenz (sp, sinus (0.25, 1000.0, 48000.0), f);
+        pruefe (kam, "N-18c: ein Evidenzframe wird faellig");
+
+        // Ein PPQ-Paar, das der Textriegel NICHT traegt: `1e-308` ist endlich
+        // und positiv, aber `dez = -308`. Bis NAK-181 erreichte es `zahlJson`,
+        // und `"start_ppq":null` in einem `type: number` machte den GANZEN
+        // Snapshot ungueltig.
+        auto mitZyklus = f;
+        mitZyklus.transport.cycle_active = true;
+        mitZyklus.transport.cycle_bounds_valid = true;
+        mitZyklus.transport.cycle_start_ppq_gesetzt = true;
+        mitZyklus.transport.cycle_start_ppq = 1e-308;
+        mitZyklus.transport.cycle_end_ppq_gesetzt = true;
+        mitZyklus.transport.cycle_end_ppq = 4.0;
+        mitZyklus.transport.gueltigkeit |= nakama::analyse::kGCycleBounds;
+
+        std::string json;
+        const bool gebaut = kam && nakama::evidenz::evidenceSnapshotAlsJson (
+            mitZyklus, testkopf(), {}, {}, json);
+        pruefe (gebaut, "N-18c: der Snapshot entsteht trotz verweigerter PPQ-Werte");
+        pruefe (gebaut && json.find ("\"cycle\":") == std::string::npos,
+                "N-18c: das cycle-Objekt entfaellt GANZ — kein null in einem number");
+        pruefe (gebaut && json.find ("\"cycle_bounds\":false") != std::string::npos,
+                "N-18c: und validity.cycle_bounds faellt mit ihm (das Schema koppelt sie)");
+        juce::String riegelfehler;
+        pruefe (gebaut && nakama::vertrag::textriegel (json, riegelfehler),
+                "N-18c: der Snapshot passiert den Textriegel", riegelfehler);
+
+        // Gegenprobe: mit vertragsgueltigen Werten reist der Zyklus
+        // VOLLSTAENDIG — samt der zwei Pflichtfelder, die der Writer nie schrieb.
+        auto gut = mitZyklus;
+        gut.transport.cycle_start_ppq = 918.5;
+        gut.transport.cycle_end_ppq = 928.75;
+        std::string json2;
+        const bool gebaut2 = kam && nakama::evidenz::evidenceSnapshotAlsJson (
+            gut, testkopf(), {}, {}, json2);
+        pruefe (gebaut2 && json2.find ("\"cycle\":{\"active\":true,\"bounds_valid\":true,"
+                                       "\"start_ppq\":918.5,\"end_ppq\":928.75}")
+                          != std::string::npos,
+                "N-18c: mit gueltigen Werten traegt cycle active, bounds_valid und beide PPQ");
+        pruefe (gebaut2 && json2.find ("\"cycle_bounds\":true") != std::string::npos,
+                "N-18c: und validity.cycle_bounds steht");
+    }
+
+    abschnitt ("NAK-181 N-18d  samplerate_ausserhalb_des_riegels_erzeugt_keinen_snapshot");
+    {
+        auto halter = std::make_unique<FeatureEngine>();
+        auto& e = *halter;
+        e.vorbereiten (48000.0);
+        Speiser sp { e };
+        FeatureFrame f {};
+        const bool kam = bisEvidenz (sp, sinus (0.25, 1000.0, 48000.0), f);
+        pruefe (kam, "N-18d: ein Evidenzframe wird faellig");
+
+        // Endlich, groesser null, unter 768000 — und der Riegel traegt sie
+        // trotzdem nicht. Die Vorpruefung fragte bis NAK-181 nur `isfinite`.
+        auto schlecht = f;
+        schlecht.transport.sample_rate = 1e-308;
+        std::string json = "unberuehrt";
+        pruefe (kam && ! nakama::evidenz::evidenceSnapshotAlsJson (
+                    schlecht, testkopf(), {}, {}, json),
+                "N-18d: sample_rate = 1e-308 erzeugt KEINEN Snapshot");
+
+        std::string json2;
+        pruefe (kam && nakama::evidenz::evidenceSnapshotAlsJson (
+                    f, testkopf(), {}, {}, json2),
+                "N-18d: mit 48000 entsteht er unveraendert");
+    }
     std::cout << "\n-----------------------------------------\n"
               << bestanden << " bestanden, " << fehler << " gescheitert" << std::endl;
     return fehler == 0 ? 0 : 1;

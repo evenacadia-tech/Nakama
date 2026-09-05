@@ -157,7 +157,25 @@ pub struct Paarhaelfte {
     /// Loop-/Seeksprünge im Messfenster.
     pub spruenge: u32,
     /// Aktive Messzeit in Sekunden — nicht die Wanddauer.
+    ///
+    /// 🔑 NAK-181 R9 (G4 C5, M-23): Sie speist AUSSCHLIESSLICH die
+    /// Herabstufungsprüfung „aktive Messzeit klafft auseinander". Bis hierher
+    /// überschrieb `haelfte_aus_historie` sie mit der Projektspanne, weil
+    /// `schaetze_restlag` einen brauchbaren Suchraum braucht (Befund R30) —
+    /// damit war der zweite der „genau drei" M-23-Gründe im Produktpfad tot:
+    /// zwei Hälften über derselben Passage haben immer dieselbe Spanne, auch
+    /// wenn eine von ihnen halb so viele Snapshots geliefert hat.
+    ///
+    /// Der Suchraum hat jetzt sein eigenes Feld (`spanne_s`).
     pub aktiv_s: f64,
+    /// Die PROJEKTSPANNE der Hälfte in Sekunden — `(bis − von) / rate` über
+    /// dieselben Grenzen, aus denen `projekt_fenster` entsteht.
+    ///
+    /// Sie beantwortet eine andere Frage als `aktiv_s`: nicht „wie lange wurde
+    /// gemessen", sondern „über welchen Abschnitt der Musik". Genau das
+    /// braucht `schaetze_restlag` als Suchraum (Befund R30, NAK-181 R9). Ohne
+    /// gültige Projektzeit ist sie gleich `aktiv_s`.
+    pub spanne_s: f64,
     /// Bandbegrenzte Hüllkurven über die Zeit: `huellkurven[band][frame]`.
     /// §38.2 verlangt MEHRERE Bänder, damit die Konsistenzprüfung überhaupt
     /// etwas zu prüfen hat.
@@ -923,7 +941,18 @@ fn ausschluss(pair_id: &str, grund: Ausschlussgrund, ueberlappung: f64) -> Paaru
         klasse: Alignmentklasse::Unclear,
         ausschluss: Some(grund),
         herabstufungen: Vec::new(),
-        kettenbefund: Kettenbefund::Stationaer,
+        // 🔑 NAK-181 R8 (G4 C4, M-18/M-22): ein hart ausgeschlossenes Paar
+        // trägt `NichtBeurteilbar`, nie `Stationaer`.
+        //
+        // Bis hierher stand hier der Vorgabewert des Enums. Damit reiste für
+        // JEDEN der zehn Ausschlüsse die Zeichenkette `"stationaer"` zu Gen —
+        // also ein FESTER Übertragungsgang für eine Kette, über die gerade
+        // niemand etwas sagen kann. Die Definition daneben (`:131-137`) sagt
+        // den Unterschied selbst: „‚nie beurteilt' und ‚stationär' sind zwei
+        // verschiedene Aussagen, und nur die zweite erlaubt eine
+        // EQ-Behauptung." M-22 verbietet an dieser Stelle ausdrücklich „eine
+        // schwache Zahl" — und `stationaer` ist genau das.
+        kettenbefund: Kettenbefund::NichtBeurteilbar,
         restlag: None,
         ueberlappung,
         ergebnis: None,
@@ -989,7 +1018,9 @@ pub fn beurteile_paar(pair_id: &str, pre: &Paarhaelfte, post: &Paarhaelfte) -> P
     // Zeitbezug finden — jedes Paar blieb `Unclear`, egal wie sauber das
     // Material war. Dieselbe Sorte Fehler wie die dB-als-Amplitude daneben:
     // zwei Einheiten, eine Rechnung.
-    let capture_s = pre.aktiv_s.min(post.aktiv_s);
+    // 🔑 NAK-181 R9: der Suchraum kommt aus der PROJEKTSPANNE, die
+    // Herabstufung unten aus der GEMESSENEN Zeit. Zwei Fragen, zwei Felder.
+    let capture_s = pre.spanne_s.min(post.spanne_s);
     let restlag = schaetze_restlag(pre, post, capture_s);
 
     // Ohne benennbaren Lag gibt es keinen Zeitbezug — Rauschen oder anderes
@@ -1030,6 +1061,10 @@ pub fn beurteile_paar(pair_id: &str, pre: &Paarhaelfte, post: &Paarhaelfte) -> P
     if ueber < GATE_UEBERLAPPUNG {
         gruende.push(Herabstufungsgrund::UeberlappungGering);
     }
+    // 🔑 NAK-181 R9: `aktiv_s` ist ab hier wieder die SUMMIERTE Messzeit —
+    // Smart Disable, einseitige Stille und die Kadenzreduktion des
+    // Evidenzsenders werden damit sichtbar. Vorher stand hier beidseits die
+    // gleiche Projektspanne, und dieser Grund fiel nie.
     let (klein, gross) = (pre.aktiv_s.min(post.aktiv_s), pre.aktiv_s.max(post.aktiv_s));
     if gross > 0.0 && (gross - klein) > GATE_AKTIVZEIT_DIFFERENZ * gross {
         gruende.push(Herabstufungsgrund::AktivzeitKlafft);

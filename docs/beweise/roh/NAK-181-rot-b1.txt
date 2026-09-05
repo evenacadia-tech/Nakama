@@ -1,0 +1,16 @@
+NAK-181 Rotbeweis b1 — 2026-09-05
+Zuruecknahme: B1 (R8): Kettenbefund::NichtBeurteilbar zurueck auf Stationaer in prepost.rs:ausschluss()
+Befehl: cargo test --test sonde013_prepost bzw. sonde013_verdrahtung
+---
+assertion `left == right` failed: getrennt (Seite 0): harter Ausschluss traegt NICHT `stationaer`
+  left: Stationaer
+ right: NichtBeurteilbar
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    hard_exclusions_each_name_their_reason
+
+test result: FAILED. 17 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+error: test failed, to rerun pass `--test sonde013_prepost`

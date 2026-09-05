@@ -68,7 +68,11 @@ fn haelfte(instance: &str, huellkurven: Vec<Vec<f32>>, onsets: Vec<f32>) -> Paar
         messbereit: true,
         projekt_fenster: Some((0, (FRAMES as i64) * (FEATURE_HOP_MS * RATE as i64 / 1000))),
         spruenge: 0,
+        // NAK-181 R9: `aktiv_s` ist die GEMESSENE Zeit, `spanne_s` die
+        // Projektspanne. Die Vorgabe setzt beide gleich — die Faelle, die den
+        // Unterschied messen, verstellen genau eines der beiden.
         aktiv_s: FRAMES as f64 * FEATURE_HOP_MS as f64 / 1000.0,
+        spanne_s: FRAMES as f64 * FEATURE_HOP_MS as f64 / 1000.0,
         huellkurven,
         onsets,
         // Nacharbeit 1 (B26): der Presentation-Nachweis ist Teil der Haelfte.
@@ -600,6 +604,14 @@ fn hard_exclusions_each_name_their_reason() {
             assert_eq!(u.ausschluss, Some(grund), "{name} (Seite {seite})");
             assert!(u.ergebnis.is_none(), "{name}: keine schwache Zahl");
             assert!(u.restlag.is_none(), "{name}: und kein Lag");
+            // 🔑 NAK-181 N-36 (R8, M-18/M-22): und kein fester
+            // Uebertragungsgang. `stationaer` waere genau die schwache
+            // Aussage, die M-22 hier verbietet.
+            assert_eq!(
+                u.kettenbefund,
+                Kettenbefund::NichtBeurteilbar,
+                "{name} (Seite {seite}): harter Ausschluss traegt NICHT `stationaer`"
+            );
         }
     }
 
@@ -607,10 +619,44 @@ fn hard_exclusions_each_name_their_reason() {
     let (mut a, mut b) = perfekt();
     a.sample_rate = 0.0;
     b.sample_rate = 0.0;
-    assert_eq!(
-        beurteile_paar("paar-a", &a, &b).ausschluss,
-        Some(Ausschlussgrund::SamplerateVerschieden)
-    );
+    let u0 = beurteile_paar("paar-a", &a, &b);
+    assert_eq!(u0.ausschluss, Some(Ausschlussgrund::SamplerateVerschieden));
+    assert_eq!(u0.kettenbefund, Kettenbefund::NichtBeurteilbar);
+
+    // ── Der neunte Grund: KEINE UEBERLAPPUNG ───────────────────────────
+    //
+    // Er entsteht nicht durch ein kaputtes Feld, sondern durch zwei
+    // DISJUNKTE Projektfenster — deshalb steht er hier und nicht in der
+    // Falltabelle oben.
+    let (mut a, mut b) = perfekt();
+    let laenge = (FRAMES as i64) * (FEATURE_HOP_MS * RATE as i64 / 1000);
+    a.projekt_fenster = Some((0, laenge));
+    b.projekt_fenster = Some((laenge * 4, laenge * 5));
+    let u1 = beurteile_paar("paar-a", &a, &b);
+    assert_eq!(u1.ausschluss, Some(Ausschlussgrund::KeineUeberlappung));
+    assert_eq!(u1.klasse, Alignmentklasse::Unclear);
+    assert_eq!(u1.kettenbefund, Kettenbefund::NichtBeurteilbar);
+
+    // ── Die zwei Gruende aus `bilde_paare` ─────────────────────────────
+    //
+    // `Paarkonflikt` und `HaelfteFehlt` entstehen NUR dort; `beurteile_paar`
+    // sieht sie nie. Ohne diese zwei Faelle prueft der Test acht von zehn.
+    let (p, q) = perfekt();
+    let mut zweites_pre = p.clone();
+    zweites_pre.instance_id = "zweites-pre".to_string();
+    let konflikt = bilde_paare(&[
+        ("paar-a".to_string(), Rolle::Pre, p.clone()),
+        ("paar-a".to_string(), Rolle::Pre, zweites_pre),
+        ("paar-a".to_string(), Rolle::Post, q.clone()),
+    ]);
+    assert_eq!(konflikt.len(), 1);
+    assert_eq!(konflikt[0].ausschluss, Some(Ausschlussgrund::Paarkonflikt));
+    assert_eq!(konflikt[0].kettenbefund, Kettenbefund::NichtBeurteilbar);
+
+    let unvollstaendig = bilde_paare(&[("paar-a".to_string(), Rolle::Pre, p)]);
+    assert_eq!(unvollstaendig.len(), 1);
+    assert_eq!(unvollstaendig[0].ausschluss, Some(Ausschlussgrund::HaelfteFehlt));
+    assert_eq!(unvollstaendig[0].kettenbefund, Kettenbefund::NichtBeurteilbar);
 }
 
 // ═════════════════════════════════════════════════════════════════════════

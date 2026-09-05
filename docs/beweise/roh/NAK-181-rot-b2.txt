@@ -1,0 +1,12 @@
+NAK-181 Rotbeweis b2 — 2026-09-05
+Zuruecknahme: B2 (R9): die Ueberschreibung von aktiv_s mit der Projektspanne in prepost_verdrahtung.rs zurueck
+Befehl: cargo test --test sonde013_prepost bzw. sonde013_verdrahtung
+---
+test gleiche_dichte_stuft_nicht_herab ... ok
+test halbe_snapshotdichte_stuft_herab ... FAILED
+test resultatmessung_ist_an_versuch_passage_und_grenze_gebunden ... ok
+---- halbe_snapshotdichte_stuft_herab stdout ----
+thread 'halbe_snapshotdichte_stuft_herab' (19708) panicked at tests\sonde013_verdrahtung.rs:4810:5:
+thread 'projektspanne_traegt_weiter_den_suchraum' (16776) panicked at tests\sonde013_verdrahtung.rs:4895:5:
+    halbe_snapshotdichte_stuft_herab
+test result: FAILED. 65 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.46s

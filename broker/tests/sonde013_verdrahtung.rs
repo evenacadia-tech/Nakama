@@ -4676,3 +4676,240 @@ fn sondenhello_aendert_den_taint_nicht() {
          darf weder sperren noch entsperren"
     );
 }
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-181 · R9 — gemessene Aktivzeit gegen Projektspanne (Befund C5, M-23)
+// ═════════════════════════════════════════════════════════════════════════
+//
+// Der Defekt: `haelfte_aus_historie` ueberschrieb die summierte Messzeit mit
+// der PROJEKTSPANNE. Zwei Haelften ueber derselben Passage tragen damit immer
+// dieselbe Zahl — und der zweite der „genau drei" M-23-Herabstufungsgruende
+// („aktive Messzeit um mehr als 10 % verschieden, Smart Disable oder Stille
+// auf einem Punkt") konnte im Produktpfad nie fallen.
+//
+// Warum diese drei Faelle die Haelfte lesen und nicht nur das Urteil: das
+// Urteil erreicht seine Herabstufungen erst NACH einem gefundenen Restlag,
+// und der braucht deutlich mehr Frames, als ein Verdrahtungsfall einspeist.
+// Der Defekt sass aber in der Verdrahtung. Also misst der Test die gebildete
+// Haelfte und laesst `beurteile_paar` mit genau diesen zwei Haelften urteilen
+// — derselbe Weg, den der Produktpfad geht, nur ohne die Kurvenlaenge, die
+// der Lagschaetzer braucht.
+
+/// Speist `anzahl` Snapshots so ein, dass sie zusammen genau die Projektspanne
+/// `[0, spanne)` abdecken — jeder mit `laenge` Samples Fensterlaenge.
+///
+/// Die Spanne haengt damit an den GRENZEN, die Zahl der Snapshots an der
+/// Dichte. Genau diese zwei Groessen trennt R9.
+fn speise_mit_dichte(
+    c: &eqcop_broker::coordinator::Coordinator,
+    link: &str,
+    adresse: &Adresse,
+    anzahl: usize,
+    laenge: u64,
+    spanne: i64,
+) {
+    for nr in 0..anzahl {
+        // Der letzte Snapshot endet EXAKT bei `spanne` — sonst haengt die
+        // Projektspanne an der Dichte, und der Fall misst sich selbst.
+        let start = if anzahl <= 1 {
+            spanne - laenge as i64
+        } else {
+            ((spanne - laenge as i64) as f64 * (nr as f64 / (anzahl - 1) as f64)) as i64
+        };
+        c.evidence_snapshot_json(
+            link,
+            &evidenz_payload(adresse, nr, |w| {
+                let t = w.get_mut("transport").expect("Fixture traegt transport");
+                t["project_sample_start"] = json!(start);
+                t["sample_count"] = json!(laenge);
+                // Keine Spruenge: Epoche und Segment bleiben, sonst greift
+                // `SprungImFenster` vor jeder Herabstufung.
+                t["transport_epoch"] = json!(17);
+                t["continuity_segment"] = json!(3);
+            }),
+        );
+    }
+}
+
+/// Eine deterministische, musikaehnliche Huellkurve — dieselbe Bauform wie in
+/// `sonde013_prepost.rs`.
+///
+/// ⚠️ WARUM DIESER TEST SIE BRAUCHT: die Evidenzfixture traegt in jedem
+/// Snapshot DENSELBEN Bandsatz. Aus einer Folge gleicher Snapshots entsteht
+/// eine FLACHE Huellkurve, und eine flache Kurve hat keine Korrelationsspitze
+/// — `schaetze_restlag` liefert `None`, und `beurteile_paar` kehrt zurueck,
+/// BEVOR es die Herabstufungen rechnet. Das ist keine Eigenschaft dieses
+/// Defekts, sondern der Fixture; `prepost_join_laeuft_im_produktpfad` prueft
+/// aus demselben Grund nur die Klasse.
+///
+/// Der Fall trennt deshalb sauber: die zwei ZEITEN kommen aus dem echten
+/// Produktpfad (`paarhaelfte_fuer_test`), die KURVEN sind hier synthetisch und
+/// als solche benannt. Gemessen wird damit genau die Kopplung, um die es geht
+/// — „mit den Zeiten, die die Verdrahtung liefert, faellt der Grund" — und
+/// nicht der Lagschaetzer, den B24 und `sonde013_prepost` messen.
+fn huelle(laenge: usize, saat: u64, takt: f64) -> Vec<f32> {
+    let mut aus = Vec::with_capacity(laenge);
+    let mut x = saat.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
+    for i in 0..laenge {
+        x = x
+            .wrapping_mul(6_364_136_223_846_793_005)
+            .wrapping_add(1_442_695_040_888_963_407);
+        let rauschen = ((x >> 33) as f64 / (1u64 << 31) as f64) - 0.5;
+        let t = i as f64;
+        let puls = (t / takt * std::f64::consts::TAU).sin().max(0.0).powi(3);
+        let lang = (t / (takt * 7.3) * std::f64::consts::TAU).sin() * 0.3;
+        aus.push((0.35 + puls * 0.5 + lang * 0.2 + rauschen * 0.12).max(0.01) as f32);
+    }
+    aus
+}
+
+/// Setzt taugliche Kurven in eine aus dem Produktpfad gewonnene Haelfte —
+/// und laesst jedes andere Feld, besonders `aktiv_s` und `spanne_s`, unberuehrt.
+fn mit_tauglichen_kurven(
+    mut h: eqcop_broker::coordinator::prepost::Paarhaelfte,
+) -> eqcop_broker::coordinator::prepost::Paarhaelfte {
+    const FRAMES: usize = 300;
+    h.huellkurven = (0..4)
+        .map(|b| huelle(FRAMES, 11 + b as u64, 5.0 + b as f64 * 2.0))
+        .collect();
+    h.onsets = huelle(FRAMES, 99, 4.0);
+    h
+}
+
+/// N-38 — halbe Snapshotdichte bei gleicher Projektspanne stuft herab.
+#[test]
+fn halbe_snapshotdichte_stuft_herab() {
+    use eqcop_broker::coordinator::prepost::{beurteile_paar, Herabstufungsgrund};
+    let (c, _) = coordinator();
+    let pre = hello(1, 2, 10, 100, "passive_probe", Some(9));
+    let post = hello(1, 2, 11, 101, "passive_probe", Some(9));
+    anmelden(&c, "pre", &pre);
+    anmelden(&c, "post", &post);
+    let paar = hex(0x77);
+    assert!(c.descriptor_setzen("pre", descriptor(&pre.adresse, "pre", &paar)));
+    assert!(c.descriptor_setzen("post", descriptor(&post.adresse, "post", &paar)));
+
+    // Dieselbe Passage, dieselbe Spanne — aber POST liefert halb so viele
+    // Snapshots (Smart Disable, einseitige Stille oder die
+    // Rueckstau-Kadenzreduktion aus `SondeProcessor.cpp:471-478`).
+    const SPANNE: i64 = 48_000 * 10;
+    const LAENGE: u64 = 512;
+    speise_mit_dichte(&c, "pre", &pre.adresse, 16, LAENGE, SPANNE);
+    speise_mit_dichte(&c, "post", &post.adresse, 8, LAENGE, SPANNE);
+
+    let h_pre = c.paarhaelfte_fuer_test("pre").expect("PRE-Haelfte entsteht");
+    let h_post = c.paarhaelfte_fuer_test("post").expect("POST-Haelfte entsteht");
+
+    // 🔑 Die Zusage der Verdrahtung: die SPANNE ist gleich, die MESSZEIT nicht.
+    assert!(
+        (h_pre.spanne_s - h_post.spanne_s).abs() < 1e-9,
+        "beide Haelften decken dieselbe Projektspanne ab: {} gegen {}",
+        h_pre.spanne_s,
+        h_post.spanne_s
+    );
+    assert!(
+        h_pre.aktiv_s > h_post.aktiv_s * 1.9,
+        "die doppelte Dichte ergibt rund die doppelte gemessene Zeit: {} gegen {}",
+        h_pre.aktiv_s,
+        h_post.aktiv_s
+    );
+
+    // 🔑 Und die Folge im Urteil: genau dieser Unterschied stuft herab.
+    // Die Kurven sind dafuer synthetisch (Begruendung an `huelle`); die zwei
+    // Zeiten sind die aus dem Produktpfad gewonnenen.
+    let u = beurteile_paar(
+        &paar,
+        &mit_tauglichen_kurven(h_pre.clone()),
+        &mit_tauglichen_kurven(h_post.clone()),
+    );
+    assert!(
+        u.herabstufungen.contains(&Herabstufungsgrund::AktivzeitKlafft),
+        "N-38: halbe Snapshotdichte ergibt `AktivzeitKlafft` (M-23, zweiter Grund): {:?}",
+        u.herabstufungen
+    );
+}
+
+/// N-39 — gleiche Dichte stuft NICHT herab. Der Riegel ist scharf.
+#[test]
+fn gleiche_dichte_stuft_nicht_herab() {
+    use eqcop_broker::coordinator::prepost::{beurteile_paar, Herabstufungsgrund};
+    let (c, _) = coordinator();
+    let pre = hello(1, 2, 10, 100, "passive_probe", Some(9));
+    let post = hello(1, 2, 11, 101, "passive_probe", Some(9));
+    anmelden(&c, "pre", &pre);
+    anmelden(&c, "post", &post);
+    let paar = hex(0x77);
+    assert!(c.descriptor_setzen("pre", descriptor(&pre.adresse, "pre", &paar)));
+    assert!(c.descriptor_setzen("post", descriptor(&post.adresse, "post", &paar)));
+
+    const SPANNE: i64 = 48_000 * 10;
+    speise_mit_dichte(&c, "pre", &pre.adresse, 16, 512, SPANNE);
+    speise_mit_dichte(&c, "post", &post.adresse, 16, 512, SPANNE);
+
+    let h_pre = c.paarhaelfte_fuer_test("pre").expect("PRE-Haelfte entsteht");
+    let h_post = c.paarhaelfte_fuer_test("post").expect("POST-Haelfte entsteht");
+    assert!(
+        (h_pre.aktiv_s - h_post.aktiv_s).abs() < 1e-9,
+        "gleiche Dichte ergibt gleiche Messzeit: {} gegen {}",
+        h_pre.aktiv_s,
+        h_post.aktiv_s
+    );
+
+    let u = beurteile_paar(
+        &paar,
+        &mit_tauglichen_kurven(h_pre.clone()),
+        &mit_tauglichen_kurven(h_post.clone()),
+    );
+    assert!(
+        !u.herabstufungen.contains(&Herabstufungsgrund::AktivzeitKlafft),
+        "N-39: ohne Dichteunterschied faellt der Grund nicht — sonst waere er kein Riegel: {:?}",
+        u.herabstufungen
+    );
+}
+
+/// N-40 — die Projektspanne traegt weiter den Suchraum.
+///
+/// Der R30-Fix bleibt erhalten: `capture_s` und damit `schaetze_restlag`
+/// rechnen mit der Spanne, nicht mit der Summe der Analysefensterlaengen. Bei
+/// 16 Snapshots à 512 Samples waere die Summe 0,17 s — `suchraum_frames`
+/// machte daraus einen Suchraum von null, und der Produktpfad faende NIE einen
+/// Zeitbezug.
+#[test]
+fn projektspanne_traegt_weiter_den_suchraum() {
+    use eqcop_broker::coordinator::prepost::{suchraum_frames, GATE_MINDESTCAPTURE_S};
+    let (c, _) = coordinator();
+    let pre = hello(1, 2, 10, 100, "passive_probe", Some(9));
+    anmelden(&c, "pre", &pre);
+    let paar = hex(0x77);
+    assert!(c.descriptor_setzen("pre", descriptor(&pre.adresse, "pre", &paar)));
+
+    const SPANNE: i64 = 48_000 * 10; // 10 s Passage
+    speise_mit_dichte(&c, "pre", &pre.adresse, 16, 512, SPANNE);
+
+    let h = c.paarhaelfte_fuer_test("pre").expect("Haelfte entsteht");
+    assert!(
+        (h.spanne_s - 10.0).abs() < 0.01,
+        "die Spanne ist die Projektspanne: {}",
+        h.spanne_s
+    );
+    assert!(
+        h.aktiv_s < 1.0,
+        "die gemessene Zeit ist die Summe der Fenster und viel kleiner: {}",
+        h.aktiv_s
+    );
+    // 🔑 Genau darum steht der Suchraum an der SPANNE: aus der Messzeit
+    // entstuende keiner.
+    assert!(
+        h.spanne_s >= GATE_MINDESTCAPTURE_S,
+        "die Spanne traegt das Mindestcapture aus Paragraph 38.2"
+    );
+    assert!(
+        suchraum_frames(h.spanne_s) > 0,
+        "und damit einen Suchraum ueber null"
+    );
+    assert_eq!(
+        suchraum_frames(h.aktiv_s),
+        0,
+        "aus der Messzeit allein entstuende keiner — der R30-Fix bleibt noetig"
+    );
+}

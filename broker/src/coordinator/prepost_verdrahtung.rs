@@ -267,13 +267,26 @@ impl Coordinator {
             verbunden,
             stale: !messbereit,
             messbereit,
-            // 🔑 Nacharbeit 2 (Befund R30): die gemessene Zeit ist die
-            // PROJEKTSPANNE, nicht die Summe der Analysefensterlaengen. Ein
-            // Evidenzsnapshot kommt bei 1 bis 4 Hz und traegt ein Fenster von
-            // wenigen hundert Samples: die Summe unterschaetzt die
+            // 🔑 NAK-181 R9 (Befund C5, M-23): zwei Fragen, zwei Felder.
+            //
+            // `aktiv_s` ist die SUMMIERTE Messzeit ueber die nicht
+            // zurueckgenommenen Historieneintraege — genau das, was M-23 fuer
+            // „aktive Messzeit um mehr als 10 % verschieden" braucht. Bis
+            // NAK-181 wurde sie hier mit der Projektspanne UEBERSCHRIEBEN;
+            // damit trugen beide Haelften derselben Passage immer dieselbe
+            // Zahl, und der zweite der drei Herabstufungsgruende konnte im
+            // Produktpfad nie fallen.
+            aktiv_s,
+            // Die PROJEKTSPANNE, aus denselben Grenzen wie `projekt_fenster`.
+            //
+            // 🔑 Nacharbeit 2 (Befund R30): sie und nicht die Summe der
+            // Analysefensterlaengen ist der Suchraum fuer `schaetze_restlag`.
+            // Ein Evidenzsnapshot kommt bei 1 bis 4 Hz und traegt ein Fenster
+            // von wenigen hundert Samples: die Summe unterschaetzt die
             // Aufnahmedauer um Groessenordnungen, und `suchraum_frames`
-            // bekaeme daraus einen Suchraum von null.
-            aktiv_s: match (von, bis, letzter.sample_rate) {
+            // bekaeme daraus einen Suchraum von null. Ohne gueltige
+            // Projektzeit faellt sie auf die Summe zurueck.
+            spanne_s: match (von, bis, letzter.sample_rate) {
                 (Some(a), Some(b), r) if b > a && r > 0.0 => (b - a) as f64 / r,
                 _ => aktiv_s,
             },
@@ -325,6 +338,37 @@ impl Coordinator {
             .map(|(_, urteil)| urteil);
         let erster = treffer.next()?;
         treffer.next().is_none().then(|| erster.clone())
+    }
+
+    /// Die aus der Evidenzhistorie GEBILDETE Haelfte einer Quelle.
+    ///
+    /// 🔑 NAK-181 N-38 bis N-40 (R9, Befund C5): der Defekt sass nicht im
+    /// Urteil, sondern in der Verdrahtung — `haelfte_aus_historie` schrieb
+    /// die Projektspanne in `aktiv_s` und machte damit den zweiten der drei
+    /// M-23-Gruende unerreichbar. Ein Bein, das nur das Urteil liest, kann das
+    /// nicht sehen: es haengt an einem gefundenen Restlag, und der braucht
+    /// mehr Frames, als ein Verdrahtungsfall sinnvoll einspeist. Deshalb gibt
+    /// dieser Zugang die Haelfte selbst heraus; die Herabstufung daraus misst
+    /// `beurteile_paar` im selben Test.
+    ///
+    /// `haelfte_aus_historie` ist und bleibt privat — hier laeuft derselbe
+    /// Weg wie in `evidenz_paare_bilden`, nicht ein zweiter.
+    pub fn paarhaelfte_fuer_test(&self, link_id: &str) -> Option<Paarhaelfte> {
+        let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+        let link = stand.links.get(link_id)?;
+        let key = link.client_key.clone();
+        let historie = stand.evidenz.get(&key)?;
+        if historie.is_empty() {
+            return None;
+        }
+        let client = stand.clients.get(&key)?;
+        Some(Self::haelfte_aus_historie(
+            &key,
+            client.host_pid.unwrap_or(0),
+            client.current_link.is_some(),
+            !client.stale,
+            historie,
+        ))
     }
 
     /// Wie viele Paare der Produktpfad zurzeit fuehrt.

@@ -32,6 +32,15 @@
 
 namespace nakama::ipc
 {
+/** Der v3-Heartbeat-Takt. Der Vertrag beschreibt 1 Hz.
+
+    🔑 NAK-180 Nacharbeit 1 (EP-02): die Zahl steht seit dieser Runde im
+    Header, weil der Prozessor sie als MARGE braucht — das einmalige `false`
+    des Nachberichts reist als naechster Heartbeat, und zwischen dem Ablauf
+    des Nachlaufs und dem Draht liegt bis zu ein Takt. Zwei Kopien derselben
+    Zahl waeren eine Frist, die sich unbemerkt auseinanderentwickelt. */
+constexpr int kHeartbeatTaktMs = 1000;
+
 
 /// Effektive Steueradresse (§32.1). Alle hex32-Felder sind 32 Kleinbuchstaben-
 /// Hexziffern; ein Feld ausserhalb dieser Form wird gar nicht erst gesendet.
@@ -300,10 +309,17 @@ public:
                   P0Klasse klasse = P0Klasse::ereignis,
                   std::uint64_t marke = 0);
 
-    /// Senke des Interventionszugs (NAK-180 R12): einreihen unter derselben
-    /// Sperre, unter der die Generation gelesen wurde.
-    using ZugSenke = std::function<bool (const std::string& json, P0Klasse klasse,
-                                         std::uint64_t marke)>;
+    /** Senke des Interventionszugs (NAK-180 R12): einreihen unter derselben
+        Sperre, unter der die Generation gelesen wurde.
+
+        🔑 Nacharbeit 1 (EP-07): sie VERGIBT die Marke und gibt sie zurueck
+        (`0` = abgewiesen). Vorher zog der Prozessor sie aus einer eigenen
+        Folge, und beide Raeume begannen bei 1: ein Aufbau-Heartbeat und das
+        erste Marker-Begin trugen dieselbe Zahl, und der Zustellrueckruf des
+        einen markierte das andere faelschlich als zugestellt. Es gibt ab hier
+        EINEN Markenraum, und er gehoert dem ControlClient. */
+    using ZugSenke = std::function<std::uint64_t (const std::string& json,
+                                                  P0Klasse klasse)>;
 
     /** NAK-180 R12: Vergleich und Wirkung als EIN Zug.
 
@@ -328,18 +344,37 @@ public:
         Sendezustand des Prozessors nehmen, aber NIE erneut senden. Sie
         ersetzen die frueher unmoegliche Frage "ist meine Nachricht wirklich
         raus?": der Rueckgabewert von `sendeP0` beantwortet sie nicht, er
-        sagt nur, dass eingereiht wurde. */
-    void setzeP0Rueckmeldung (std::function<void (std::uint64_t marke)> zugestellt,
-                              std::function<void (std::uint64_t marke)> verworfen);
+        sagt nur, dass eingereiht wurde.
+
+        🔑 NAK-180 Nacharbeit 1: `zugestellt` bekommt die Generation, AUF DER
+        der Eintrag den Draht erreicht hat - die des Eintrags selbst, nicht die
+        beim Aufruf gerade laufende. Sie sind im Produkt dieselbe Zahl, in
+        einem Bein aber nicht: `zustelleAllesFuerTest` meldet ausserhalb der
+        Sperre, und ein dazwischen gefahrener Aufbauzug stempelte sonst G+1 auf
+        ein Begin, das auf G zugestellt wurde - der Zustellstand loeschte damit
+        genau das Replay, das er ausloesen soll. */
+    void setzeP0Rueckmeldung (
+        std::function<void (std::uint64_t marke, std::uint64_t generation)> zugestellt,
+        std::function<void (std::uint64_t marke)> verworfen);
 
     /** NAK-180 R12, Zustellpruefung: liefert den Wiretext eines
-        Replay-Begin, wenn beim Aufbau eines neuen Links noch ein Ereignis
-        aelterer Generation in der Queue liegt — sonst einen leeren Text.
+        Replay-Begin, wenn beim Aufbau eines neuen Links noch ein
+        INTERVENTIONSEREIGNIS aelterer Generation in der Queue liegt — sonst
+        einen leeren Text.
 
         Der Hook laeuft unter `sendeMutex`; er darf nur lesen und formen, nie
         senden oder warten. So bleibt der Wiretext beim Prozessor, und der
-        Transport interpretiert nichts. */
-    void setzeReplayBeginHook (std::function<std::string()> hook);
+        Transport interpretiert nichts.
+
+        🔑 Nacharbeit 1 (EP-09): er bekommt die neue Generation UND die Marke,
+        unter der der Eintrag eingereiht wird. Ohne die Marke blieb der
+        Zustellstand des Prozessors auf „nicht eingereiht", und der geweckte
+        Worker reihte dasselbe Begin ein zweites Mal ein — die doppelte
+        `intervention_id` aus N-27. Liefert der Hook einen Text, gilt das Begin
+        als eingereiht; scheitert das Voranstellen, meldet der Client die Marke
+        ueber `beiP0Verworfen`. */
+    void setzeReplayBeginHook (
+        std::function<std::string (std::uint64_t generation, std::uint64_t marke)> hook);
 
     /** NAK-180 R1/R2/R10: die Aussage des Aufbaus, gebunden an den Link.
 
@@ -352,8 +387,16 @@ public:
 
         Die Aussage traegt die `wireGeneration` ihres Links (Rueckgabe). Was
         ein ueberholter Callback danach schreibt, ist fuer den naechsten Link
-        inert - ohne dass ein zweiter Ende-Callback noetig waere (MP3-1). */
-    std::uint64_t meldeAufbauUrteil (bool neutral);
+        inert - ohne dass ein zweiter Ende-Callback noetig waere (MP3-1).
+
+        🔑 Nacharbeit 1 (EP-03): `fuerGeneration` benennt die Generation, FUER
+        DIE das Urteil gilt — der Weg des Workers beim Abschluss (E3.3), der
+        die Neutralitaet unter `sendeMutex` fuer eine bestimmte Generation
+        festgestellt hat. Ist sie nicht mehr die laufende, wird das Urteil NICHT
+        angewendet und `0` zurueckgegeben: ein veralteter Abschluss darf das
+        frische `true` des naechsten Links nicht durch `false` ersetzen.
+        `0` heisst wie bisher „nimm die Generation dieses Callbacks". */
+    std::uint64_t meldeAufbauUrteil (bool neutral, std::uint64_t fuerGeneration = 0);
 
     /** Loescht die Aufbauaussage der STERBENDEN Generation - per CAS, damit
         ein alter negativer Callback nach dem positiven von G+1 nichts
@@ -364,6 +407,22 @@ public:
     /// Die laufende Wire-Generation. Der Prozessor braucht sie, um seine
     /// eigenen generationsgebundenen Zustaende zu setzen und zu vergleichen.
     std::uint64_t wireGenerationJetzt() const noexcept;
+
+    /** NAK-180 Nacharbeit 1 (EP-05): die Generation des Links, der GERADE
+        STIRBT — gueltig ausschliesslich innerhalb des negativen
+        Link-Callbacks.
+
+        Der Callback las bis hier `wireGenerationJetzt()`. Bei einem
+        `reconnect()` kann der Clientthread G beenden und G+1 vollstaendig
+        aufbauen, bevor der externe Aufrufer seinen verspaeteten `false`-
+        Callback erreicht; er loeschte dann Urteil, Replay und Bericht von
+        G+1 (N-37, Fall 2). Der Client hinterlegt die Zahl stattdessen beim
+        Statuswechsel `true → false`, und `meldeLinkStatus` serialisiert
+        diesen Wechsel per `exchange` — es gibt genau einen Verbraucher.
+
+        Ausserhalb des negativen Callbacks ist die Rueckgabe `0`, und `0`
+        loescht nichts. */
+    std::uint64_t sterbendeGenerationJetzt() const noexcept;
 
     /** Der Aufbauzug 2+3 als EINE benannte Operation (NAK-180 R10/R12).
 
@@ -408,6 +467,15 @@ public:
         dieses Fenster ausloest, stempelte die AKTUELLE Generation statt der
         eigenen und maesse damit einen Pfad, den das Produkt nicht hat. */
     std::uint64_t linkAufbauFuerTest (const std::function<void()>& imCallback);
+
+    /** Der NEGATIVE Link-Callback wie im Produkt, samt sterbender Generation
+        (NAK-180 Nacharbeit 1, EP-05, Test).
+
+        Ohne ihn liefe ein Bein den Ende-Callback ohne hinterlegte Zahl, und
+        `sterbendeGenerationJetzt()` gaebe `0` - der Test maesse ein Loeschen,
+        das das Produkt so nie ausfuehrt. Rueckgabe: die verbrauchte
+        Generation. */
+    std::uint64_t linkEndeFuerTest (const std::function<void()>& imCallback);
 
     /** Der Heartbeat-Text, den die Sendeschleife JETZT bilden wuerde (Test).
 

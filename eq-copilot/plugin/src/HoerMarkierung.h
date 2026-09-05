@@ -248,35 +248,6 @@ inline bool baueMarkierungsAuftrag (MarkierungsAuftrag& ziel, const MarkierungsW
 class HoerMarkierungDsp
 {
 public:
-    // prepareToPlay-Kontext (nie gleichzeitig mit verarbeite).
-    void vorbereiten (int maxBlock)
-    {
-        wetKapazitaet = std::max (maxBlock, 16);
-        wet.calloc ((size_t) wetKapazitaet * 2);
-        hartAus();
-        // §7.1 E-01: der Oversize-Riegel gilt "bis zum naechsten
-        // prepareToPlay". Der ruft beide Vorbereiter, also loesen ihn auch
-        // beide — sonst haengte die Verriegelung daran, welchen von zweien
-        // der Prozessor zuerst ruft.
-        oversizeRiegel = false;
-        warHoerbar = false;
-        hoerbareSamples = 0;
-    }
-
-    // Message-Thread: neuen Auftrag publizieren (Ring aus 4, s. Kopfkommentar).
-    void reicheEin (const MarkierungsAuftrag& a)
-    {
-        const std::uint32_t nr = veroeffentlicht.load (std::memory_order_relaxed) + 1;
-        ring[nr % ring.size()] = a;
-        veroeffentlicht.store (nr, std::memory_order_release);
-        zielGesetztAtomic.store (a.modus != MarkierungsModus::aus,
-                                 std::memory_order_relaxed);
-    }
-    void reicheAus()
-    {
-        reicheEin (MarkierungsAuftrag {});
-    }
-
     /** Was ein Block an der Hoerbarkeit geaendert hat (SONDE-013 M-37/M-38).
 
         Die Markierung kennt den Interventionsring nicht — sie MELDET nur,
@@ -301,6 +272,57 @@ public:
         /// Blockanfang, weil nur der Prozessor die Projektzeit kennt.
         int endeOffsetSamples { 0 };
     };
+
+    /** prepareToPlay-Kontext (nie gleichzeitig mit verarbeite).
+
+        🔑 NAK-180 Nacharbeit 1 (EP-08/N-10): der faellige Uebergang wird
+        ZURUECKGEGEBEN, nicht verschluckt.
+
+        `hartAus()` loescht den Fade und `warHoerbar` faellt — der Audiothread
+        meldet fuer dieses Intervall danach kein `endete` mehr. Der Prozessor
+        rekonstruierte das `end` bisher NACH diesem Aufruf aus seinem
+        Sendezustand: lag das Begin noch im RT-Ring, entstand gar keines, und
+        selbst im guenstigen Fall trug die Kopie des BEGINS `dauerSamples == 0`
+        — der synthetische Nachlauf verlor die gezaehlte Hoerdauer. Der
+        Uebergang traegt sie hier ehrlich mit. */
+    Schritt vorbereiten (int maxBlock)
+    {
+        Schritt uebergang;
+        if (warHoerbar)
+        {
+            uebergang.endete = true;
+            uebergang.dauerSamples = hoerbareSamples;
+        }
+        wetKapazitaet = std::max (maxBlock, 16);
+        wet.calloc ((size_t) wetKapazitaet * 2);
+        hartAus();
+        // §7.1 E-01: der Oversize-Riegel gilt "bis zum naechsten
+        // prepareToPlay". Der ruft beide Vorbereiter, also loesen ihn auch
+        // beide — sonst haengte die Verriegelung daran, welchen von zweien
+        // der Prozessor zuerst ruft.
+        oversizeRiegel = false;
+        warHoerbar = false;
+        hoerbareSamples = 0;
+        // `hoerbarAtomic` bleibt UNBERUEHRT: es wird erst im naechsten Audioblock
+        // nachgezogen, und ein `false` von hier aus liesse die Neutralitaet zu
+        // frueh gelten - genau die Seite des Fehlers, die §34.2 ausschliesst.
+        // Der Prozessor fuehrt die Sendebuchfuehrung als dritten Term (E1).
+        return uebergang;
+    }
+
+    // Message-Thread: neuen Auftrag publizieren (Ring aus 4, s. Kopfkommentar).
+    void reicheEin (const MarkierungsAuftrag& a)
+    {
+        const std::uint32_t nr = veroeffentlicht.load (std::memory_order_relaxed) + 1;
+        ring[nr % ring.size()] = a;
+        veroeffentlicht.store (nr, std::memory_order_release);
+        zielGesetztAtomic.store (a.modus != MarkierungsModus::aus,
+                                 std::memory_order_relaxed);
+    }
+    void reicheAus()
+    {
+        reicheEin (MarkierungsAuftrag {});
+    }
 
     // Audiothread. erlaubt = Echtzeit bewiesen ∧ Transport spielt (falls
     // vorhanden) ∧ Aufnahme nachweislich AUS ∧ kein Offline-Render ∧ Editor
@@ -540,12 +562,26 @@ public:
     /** prepareToPlay-Kontext. Loest zugleich den Oversize-Riegel (§7.1 E-01):
         eine neue Blockgroesse ist genau der Moment, in dem der Grund fuer die
         Verriegelung entfaellt. */
-    void setzeSamplerate (double fs)
+    Schritt setzeSamplerate (double fs)
     {
+        // 🔑 EP-08: derselbe Grund wie bei `vorbereiten`. `prepareToPlay` ruft
+        // BEIDE; der erste von beiden meldet den Uebergang, der zweite findet
+        // `warHoerbar == false` und meldet nichts.
+        Schritt uebergang;
+        if (warHoerbar)
+        {
+            uebergang.endete = true;
+            uebergang.dauerSamples = hoerbareSamples;
+        }
         fsAktuell = fs;
         oversizeRiegel = false;
         warHoerbar = false;
         hoerbareSamples = 0;
+        // `hoerbarAtomic` bleibt UNBERUEHRT: es wird erst im naechsten Audioblock
+        // nachgezogen, und ein `false` von hier aus liesse die Neutralitaet zu
+        // frueh gelten - genau die Seite des Fehlers, die §34.2 ausschliesst.
+        // Der Prozessor fuehrt die Sendebuchfuehrung als dritten Term (E1).
+        return uebergang;
     }
 
     /** NAK-180 R4: wie viele nicht-endliche Zwischenwerte der Wet-Pfad

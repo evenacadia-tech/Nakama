@@ -21,10 +21,9 @@ namespace
 /// drankommen. Kurz genug, dass ein P0-Befehl nicht hinter Stille wartet.
 constexpr int kLeseTaktMs = 20;
 
-/// Der Vertrag beschreibt Heartbeats mit 1 Hz. Ein erster wird unmittelbar
-/// nach dem welcome eingereiht, damit die 2,5-s-Stalegrenze nicht von einem
-/// zufaelligen Phasenversatz abhaengt.
-constexpr int kHeartbeatTaktMs = 1000;
+// Der Takt selbst steht im Header (`nakama::ipc::kHeartbeatTaktMs`): ein
+// erster Heartbeat wird unmittelbar nach dem welcome eingereiht, damit die
+// 2,5-s-Stalegrenze nicht von einem zufaelligen Phasenversatz abhaengt.
 constexpr std::uint64_t kJsonSafeModulus = 9007199254740992ULL; // 2^53
 
 /// Frist, die `stop()` einem LAUFENDEN Callback noch laesst (Matrix
@@ -572,9 +571,9 @@ struct ControlClient::Laufzeit
     // NAK-180 R7/R12: Rueckmeldung und Zustellpruefung. Alle drei laufen
     // unter `sendeMutex`; sie duerfen den Sendezustand des Prozessors nehmen,
     // aber NIE erneut senden (Sperrenordnung: sendeMutex vor Sendezustand).
-    std::function<void (std::uint64_t)> beiP0Zugestellt;
+    std::function<void (std::uint64_t, std::uint64_t)> beiP0Zugestellt;
     std::function<void (std::uint64_t)> beiP0Verworfen;
-    std::function<std::string()>        hookReplayBegin;
+    std::function<std::string (std::uint64_t, std::uint64_t)> hookReplayBegin;
 
     // 🔑 NAK-180 R1/R10/R13: die Aussage des Aufbaus - als GENERATIONSZAHL,
     // nicht als Bit.
@@ -595,6 +594,11 @@ struct ControlClient::Laufzeit
     std::atomic<std::uint64_t> aufbauHeartbeatMarke { 0 };
     std::atomic<std::uint64_t> aufbauHeartbeatGeneration { 0 };
     std::atomic<bool>          aufbauHeartbeatWarNeutral { false };
+    /// 🔑 Nacharbeit 1 (EP-06/N-12): BEIDE Flags koennen von demselben
+    /// Heartbeat verbraucht worden sein. Ein Verwurf stellt beide zurueck -
+    /// eine Aussage, die nur zur Haelfte zurueckkommt, waere dieselbe
+    /// verlorene Aussage in kleiner.
+    std::atomic<bool>          aufbauHeartbeatWarUnbekannt { false };
 
     std::function<ControlHello()> helloProvider;
     std::function<void (const std::string&)> beiAntwort;
@@ -602,6 +606,12 @@ struct ControlClient::Laufzeit
     std::function<void (bool)> beiLinkStatus;
     std::function<void (const std::string&, std::uint8_t)> beiVersionierterAntwort;
     std::atomic<bool> linkAlsVerbundenGemeldet { false };
+    /// 🔑 NAK-180 Nacharbeit 1 (EP-05): die Generation, fuer die der Link als
+    /// VERBUNDEN gemeldet wurde. `meldeLinkStatus` serialisiert den
+    /// Statuswechsel per `exchange`; damit setzt genau ein Aufrufer diese Zahl
+    /// und genau einer verbraucht sie beim Wechsel nach `false`. Der negative
+    /// Callback bekommt so die STERBENDE Generation, nicht die aktuelle.
+    std::atomic<std::uint64_t> gemeldeteLinkGeneration { 0 };
     std::string pipeName;
     ServerErwartung serverErwartung;
     std::atomic<std::uint64_t> heartbeatFolge { 0 };
@@ -817,8 +827,9 @@ bool ControlClient::sendeP0 (const std::string& json, P0Klasse klasse, std::uint
     return k->sendeP0 (json, klasse, marke);
 }
 
-void ControlClient::setzeP0Rueckmeldung (std::function<void (std::uint64_t)> zugestellt,
-                                         std::function<void (std::uint64_t)> verworfen)
+void ControlClient::setzeP0Rueckmeldung (
+    std::function<void (std::uint64_t, std::uint64_t)> zugestellt,
+    std::function<void (std::uint64_t)> verworfen)
 {
     // Vor dem `start()` gesetzt und danach unveraendert - wie der
     // `statusProvider`. Ein Wechsel unter laufender Verbindung waere ein
@@ -828,7 +839,8 @@ void ControlClient::setzeP0Rueckmeldung (std::function<void (std::uint64_t)> zug
     k->beiP0Verworfen  = std::move (verworfen);
 }
 
-void ControlClient::setzeReplayBeginHook (std::function<std::string()> hook)
+void ControlClient::setzeReplayBeginHook (
+    std::function<std::string (std::uint64_t, std::uint64_t)> hook)
 {
     k->hookReplayBegin = std::move (hook);
 }
@@ -848,10 +860,24 @@ void ControlClient::setzeReplayBeginHook (std::function<std::string()> hook)
     - dort ist die aktuelle Generation die richtige. */
 thread_local std::uint64_t tlAufbauGeneration = 0;
 
-std::uint64_t ControlClient::meldeAufbauUrteil (bool neutral)
+std::uint64_t ControlClient::meldeAufbauUrteil (bool neutral,
+                                               std::uint64_t fuerGeneration)
 {
-    const auto generation = tlAufbauGeneration != 0 ? tlAufbauGeneration
-                                                    : k->wireGeneration.load();
+    // 🔑 NAK-180 Nacharbeit 1 (EP-03/R12): ein Urteil, das AUSDRUECKLICH einer
+    // Generation gilt, wird nur angewendet, solange sie die laufende ist.
+    //
+    // Der Worker stellt die Neutralitaet unter `sendeMutex` fuer Generation G
+    // fest und ruft danach - ausserhalb der Sperre, weil im Zug nicht gesendet
+    // wird. Baut G+1 in diesem Fenster auf, traefe das alte `false` dessen
+    // frisches `true` und ersetzte es: der Bericht des neuen Links waere nie
+    // eroeffnet, waehrend sein Marker klingt. Vergleich und Wirkung bleiben
+    // damit eine Einheit, auch ueber die Sperrengrenze hinweg.
+    if (fuerGeneration != 0 && fuerGeneration != k->wireGeneration.load())
+        return 0;
+    const auto generation = fuerGeneration != 0
+                              ? fuerGeneration
+                              : (tlAufbauGeneration != 0 ? tlAufbauGeneration
+                                                         : k->wireGeneration.load());
     // 🔑 NAK-180 R13: das jeweils ANDERE Flag faellt per CAS, nie blind.
     //
     // Ein blindes `store(0)` nahm die Aussage eines NEUEREN Links mit: der
@@ -902,6 +928,23 @@ std::uint64_t ControlClient::wireGenerationJetzt() const noexcept
     return k->wireGeneration.load();
 }
 
+/** 🔑 NAK-180 Nacharbeit 1 (EP-05): die Generation des sterbenden Links,
+    hinterlegt fuer die Dauer des negativen Callbacks.
+
+    `thread_local` aus demselben Grund wie `tlAufbauGeneration`: der negative
+    Callback laeuft SYNCHRON auf dem Aufruferthread von `reconnect()`/`stop()`
+    (oder auf dem Clientthread bei `eineVerbindung`), und zwei Clients in einem
+    Prozess teilten sonst dieselbe Zahl. Der Wert wird um den Aufruf herum
+    gesichert und wiederhergestellt, weil der negative Callback reentrant aus
+    dem positiven erreichbar ist (`PluginProcessor.cpp` ruft `reconnect()` aus
+    `v3ControlLink(true)`). */
+thread_local std::uint64_t tlLinkEndeGeneration = 0;
+
+std::uint64_t ControlClient::sterbendeGenerationJetzt() const noexcept
+{
+    return tlLinkEndeGeneration;
+}
+
 void ControlClient::interventionsZug (
     const std::function<void (std::uint64_t, const ZugSenke&)>& zug)
 {
@@ -916,24 +959,30 @@ void ControlClient::interventionsZug (
     std::lock_guard<std::mutex> l (k->sendeMutex);
     const auto generation = k->wireGeneration.load();
     bool ueberlauf = false;
+    // 🔑 Nacharbeit 1 (EP-07): DIE Senke vergibt die Marke, aus dem EINEN
+    // Markenraum `p0MarkenFolge`. Der Einreicher erfaehrt sie als Rueckgabe;
+    // `0` heisst abgewiesen. Zwei Folgen mit eigenem Nullpunkt liessen einen
+    // Aufbau-Heartbeat und ein Marker-Begin dieselbe Zahl tragen, und der
+    // Zustellrueckruf des einen buchte den anderen als zugestellt.
     const ZugSenke senke = [this, generation, &ueberlauf]
-        (const std::string& json, P0Klasse klasse, std::uint64_t marke)
+        (const std::string& json, P0Klasse klasse) -> std::uint64_t
     {
         if (json.size() > kMaxPayloadBytes)
         {
             std::lock_guard<std::mutex> z (k->zustandMutex);
             ++k->zustand.zuGross;
-            return false;
+            return 0;
         }
+        const auto marke = k->p0MarkenFolge.fetch_add (1) + 1;
         if (! k->p0.einreihen (P0Eintrag { json, klasse, generation, marke }))
         {
             ueberlauf = true;
             k->p0UeberlaufZaehler.fetch_add (1);
             std::lock_guard<std::mutex> z (k->zustandMutex);
             k->zustand.p0Ueberlaeufe = k->p0.ueberlauf();
-            return false;
+            return 0;
         }
-        return true;
+        return marke;
     };
     zug (generation, senke);
     if (ueberlauf)
@@ -1178,10 +1227,19 @@ void ControlClient::Laufzeit::aufbauAussageZurueckstellen (std::uint64_t marke)
     const auto generation = aufbauHeartbeatGeneration.load();
     if (generation == 0)
         return;
-    auto& flag = aufbauHeartbeatWarNeutral.load() ? neutralerNeuaufbau
-                                                  : nichtNeutralerNeuaufbau;
-    std::uint64_t leer = 0;
-    flag.compare_exchange_strong (leer, generation);
+    // 🔑 Nacharbeit 1 (EP-06/N-12): BEIDE verbrauchten Aussagen kommen
+    // zurueck. Der Heartbeat verbraucht beide Flags; welche gesetzt waren,
+    // steht in den zwei Merkbits. Eine halb zurueckgestellte Aussage waere
+    // dieselbe verlorene Aussage in kleiner.
+    auto zurueck = [generation] (std::atomic<std::uint64_t>& flag)
+    {
+        std::uint64_t leer = 0;
+        flag.compare_exchange_strong (leer, generation);
+    };
+    if (aufbauHeartbeatWarNeutral.load())
+        zurueck (neutralerNeuaufbau);
+    if (aufbauHeartbeatWarUnbekannt.load())
+        zurueck (nichtNeutralerNeuaufbau);
     aufbauHeartbeatMarke.store (0);
 }
 
@@ -1207,16 +1265,31 @@ std::uint64_t ControlClient::Laufzeit::aufbauZug()
         p0.berichteAelterAls (neueGeneration,
                               [&verworfeneMarken] (std::uint64_t m)
                               { if (m != 0) verworfeneMarken.push_back (m); });
-        // Zustellpruefung: liegt noch ein EREIGNIS aelterer Generation da,
-        // kann darunter ein `end` sein, dessen Begin auf dem alten Link
-        // zugestellt wurde. Es reist nie ohne sein Begin - der Prozessor
-        // liefert den Wiretext, wir stellen ihn voran.
-        if (hookReplayBegin && p0.hatEreignisAelterAls (neueGeneration))
+        // Zustellpruefung: liegt noch ein INTERVENTIONSEREIGNIS aelterer
+        // Generation da, kann darunter ein `end` sein, dessen Begin auf dem
+        // alten Link zugestellt wurde. Es reist nie ohne sein Begin - der
+        // Prozessor liefert den Wiretext, wir stellen ihn voran.
+        //
+        // 🔑 Nacharbeit 1 (EP-09): die Frage gilt NUR Interventionen (ein
+        // persistenter Befehl loeste sonst ein Replay aus, das niemand
+        // angefordert hat), und der Eintrag bekommt eine ECHTE Marke aus dem
+        // gemeinsamen Raum. Ohne sie blieb der Zustellstand des Prozessors auf
+        // „nicht eingereiht", und der geweckte Worker reihte dasselbe Begin
+        // ein zweites Mal ein - die doppelte `intervention_id` aus N-27.
+        if (hookReplayBegin && p0.hatInterventionsereignisAelterAls (neueGeneration))
         {
-            const auto replay = hookReplayBegin();
-            if (! replay.empty())
-                p0.voranstellen (P0Eintrag { replay, P0Klasse::bericht,
-                                             neueGeneration, 0 });
+            const auto marke = p0MarkenFolge.fetch_add (1) + 1;
+            const auto replay = hookReplayBegin (neueGeneration, marke);
+            if (! replay.empty()
+                && ! p0.voranstellen (P0Eintrag { replay, P0Klasse::bericht,
+                                                  neueGeneration, marke }))
+            {
+                // Der Hook hat das Begin bereits als eingereiht gebucht; ohne
+                // Eintrag kaeme nie ein Rueckruf. Die Marke geht deshalb
+                // sofort in die Verwurfmeldung - der Zustellstand faellt damit
+                // auf „nicht eingereiht" zurueck, und der naechste Zug replayt.
+                verworfeneMarken.push_back (marke);
+            }
         }
     }
     for (const auto m : verworfeneMarken)
@@ -1234,10 +1307,31 @@ std::uint64_t ControlClient::linkAufbauFuerTest (const std::function<void()>& im
 {
     const auto generation = k->aufbauZug();
     tlAufbauGeneration = generation;
+    // 🔑 Nacharbeit 1 (EP-05): dasselbe Buch wie `meldeLinkStatus(true)`. Ohne
+    // die hinterlegte Zahl faende ein spaeterer Ende-Callback des Beins die
+    // sterbende Generation nicht und loeschte nichts - der Test maesse einen
+    // Pfad, den das Produkt nicht hat.
+    k->linkAlsVerbundenGemeldet.store (true);
+    k->gemeldeteLinkGeneration.store (generation);
     if (imCallback)
         imCallback();
     tlAufbauGeneration = 0;
     return generation;
+}
+
+std::uint64_t ControlClient::linkEndeFuerTest (const std::function<void()>& imCallback)
+{
+    // Die Gegenrichtung von `linkAufbauFuerTest`, Zeile fuer Zeile wie
+    // `meldeLinkStatus(false)`: die gemeldete Generation wird EINMAL
+    // verbraucht und fuer die Dauer des Callbacks hinterlegt.
+    k->linkAlsVerbundenGemeldet.store (false);
+    const auto sterbend = k->gemeldeteLinkGeneration.exchange (0);
+    const auto vorheriger = tlLinkEndeGeneration;
+    tlLinkEndeGeneration = sterbend;
+    if (imCallback)
+        imCallback();
+    tlLinkEndeGeneration = vorheriger;
+    return sterbend;
 }
 
 std::string ControlClient::heartbeatTextFuerTest (const Adresse& adresse,
@@ -1285,7 +1379,10 @@ void ControlClient::leereP0QueueFuerTest()
 
 std::size_t ControlClient::zustelleAllesFuerTest()
 {
-    std::vector<std::uint64_t> marken;
+    // 🔑 Nacharbeit 1: Marke UND die Generation des Eintrags. Die Meldung
+    // laeuft ausserhalb der Sperre; die "aktuelle" Zahl waere dort schon eine
+    // andere, wenn ein Bein dazwischen einen Aufbauzug faehrt.
+    std::vector<std::pair<std::uint64_t, std::uint64_t>> marken;
     {
         std::lock_guard<std::mutex> l (k->sendeMutex);
         P0Eintrag e;
@@ -1293,12 +1390,12 @@ std::size_t ControlClient::zustelleAllesFuerTest()
         {
             k->p0.bestaetigen();
             if (e.marke != 0)
-                marken.push_back (e.marke);
+                marken.emplace_back (e.marke, e.generation);
         }
     }
-    for (const auto m : marken)
+    for (const auto& m : marken)
         if (k->beiP0Zugestellt)
-            k->beiP0Zugestellt (m);
+            k->beiP0Zugestellt (m.first, m.second);
     return marken.size();
 }
 
@@ -1308,8 +1405,34 @@ void ControlClient::Laufzeit::meldeLinkStatus (bool verbunden)
     // der blockierte Read erst danach zurueckkehrt. `exchange` verhindert den
     // spaeteren doppelten Ende-Callback aus `eineVerbindung`.
     const bool vorher = linkAlsVerbundenGemeldet.exchange (verbunden);
-    if (vorher != verbunden && beiLinkStatus)
-        beiLinkStatus (verbunden);
+    if (vorher == verbunden || ! beiLinkStatus)
+    {
+        // Kein Wechsel: aber die Zahl des gerade gemeldeten Links darf nicht
+        // von einem spaeteren `true` ohne Wechsel ueberschrieben werden.
+        return;
+    }
+    if (verbunden)
+    {
+        // 🔑 EP-05: die Generation DIESES Aufbaus wird hinterlegt, bevor der
+        // Callback laeuft. `tlAufbauGeneration` ist gesetzt, wenn der Aufruf
+        // aus `eineVerbindung` oder `linkAufbauFuerTest` kommt; sonst ist die
+        // laufende Zahl die richtige.
+        gemeldeteLinkGeneration.store (tlAufbauGeneration != 0
+                                           ? tlAufbauGeneration
+                                           : wireGeneration.load());
+        beiLinkStatus (true);
+        return;
+    }
+    // 🔑 EP-05/N-37 Fall 2: der negative Callback bekommt die STERBENDE
+    // Generation. `exchange` gibt sie genau einem Aufrufer; ein spaeterer
+    // Aufruf ohne Statuswechsel kommt hier gar nicht an. Der alte Wert wird
+    // gesichert und wiederhergestellt, weil dieser Callback reentrant aus dem
+    // positiven erreichbar ist.
+    const auto sterbend = gemeldeteLinkGeneration.exchange (0);
+    const auto vorheriger = tlLinkEndeGeneration;
+    tlLinkEndeGeneration = sterbend;
+    beiLinkStatus (false);
+    tlLinkEndeGeneration = vorheriger;
 }
 
 void ControlClient::Laufzeit::threadLauf (std::uint64_t meinLauf,
@@ -1783,10 +1906,24 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
                 aufbauHeartbeatMarke.store (marke);
                 aufbauHeartbeatGeneration.store (dieseWireGeneration);
                 aufbauHeartbeatWarNeutral.store (bestaetigtNeutral);
+                aufbauHeartbeatWarUnbekannt.store (bestaetigtUnbekannt);
             }
-            sendeP0 (heartbeatAlsJson (hello.adresse, sequence, statusFuerDraht,
-                                       bestaetigtNeutral),
-                     P0Klasse::bericht, marke);
+            // 🔑 NAK-180 Nacharbeit 1 (EP-06/N-12): der Rueckgabewert wird
+            // AUSGEWERTET.
+            //
+            // Weist die P0-Queue ab (voll oder zu gross), existiert gar kein
+            // Eintrag, dessen spaeterer Verwurf die Aussage zurueckstellen
+            // koennte - beide Flags sind aber schon per CAS verbraucht. Die
+            // Aussage entstuende nur zufaellig durch einen weiteren
+            // Linkaufbau neu; bis dahin bliebe die Sitzung gesperrt, ohne dass
+            // sie je jemand aufloesen kann (D-01 in neuer Form).
+            if (! sendeP0 (heartbeatAlsJson (hello.adresse, sequence, statusFuerDraht,
+                                             bestaetigtNeutral),
+                           P0Klasse::bericht, marke)
+                && marke != 0)
+            {
+                aufbauAussageZurueckstellen (marke);
+            }
             naechsterHeartbeat = jetzt + std::chrono::milliseconds (kHeartbeatTaktMs);
         }
 
@@ -1897,7 +2034,7 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
                     // Einreicher, dass seine Nachricht wirklich raus ist - der
                     // Rueckgabewert von `sendeP0` sagt nur "eingereiht".
                     if (beiP0Zugestellt && p0Eintrag.marke != 0)
-                        beiP0Zugestellt (p0Eintrag.marke);
+                        beiP0Zugestellt (p0Eintrag.marke, p0Eintrag.generation);
                 }
                 else
                     p1.bestaetigen();

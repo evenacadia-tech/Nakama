@@ -156,18 +156,41 @@ EqCopilotProcessor::EqCopilotProcessor()
     // Sendezustand nehmen (Ordnung: sendeMutex VOR sendeZustandMutex), aber
     // NIE erneut senden — das waere Rekursion auf derselben Sperre.
     controlV3.setzeP0Rueckmeldung (
-        [this] (std::uint64_t marke)
+        [this] (std::uint64_t marke, std::uint64_t generation)
         {
             // Wire-Commit: erst JETZT ist das Begin beim Broker. Die
             // Generation, auf der das geschah, entscheidet spaeter, ob ein
             // Replay noetig ist — ein Vergleich statt einer Umschreibung beim
             // Linkende (E10).
+            //
+            // 🔑 Nacharbeit 1: sie kommt vom EINTRAG, nicht aus
+            // `wireGenerationJetzt()`. Ein Callback, der die aktuelle Zahl
+            // liest, stempelt bei einem Aufbau zwischen Draht und Meldung G+1
+            // auf ein Begin, das auf G zugestellt wurde - und der
+            // Generationsvergleich unterdrueckte danach genau das Replay, das
+            // er ausloesen soll.
             std::lock_guard<std::mutex> l (sendeZustandMutex);
             if (offenesBegin.gueltig && offenesBegin.marke == marke)
             {
                 offenesBegin.zustand = 2;
-                offenesBegin.zustellGeneration = controlV3.wireGenerationJetzt();
+                offenesBegin.zustellGeneration = generation;
             }
+            // 🔑 EP-01/N-36: der Wire-Commit des `end` schliesst das Paar.
+            // Vorher bleibt das Begin stehen, damit der Aufbauzug des naechsten
+            // Links es findet und sein Replay voranstellt.
+            if (abschlussBegin.gueltig && abschlussBegin.endeMarke == marke)
+                abschlussBegin = AbschlussBegin {};
+            // 🔑 EP-02/N-05: JETZT beginnt der Broker den Nachlauf zu zaehlen.
+            // Vor dessen Ablauf verwirft er ein `false`, und niemand
+            // wiederholt es.
+            if (letzteEndeMarke != 0 && letzteEndeMarke == marke)
+            {
+                nachlaufFristSetzen (letzterEndeTail);
+                letzteEndeMarke = 0;
+            }
+            // 🔑 EP-13/R7: Mitschnitt und Zaehler entstehen am WIRE-COMMIT,
+            // nicht beim Einreihen. „Gesendet" heisst Draht.
+            mitschnittZustellen (marke);
         },
         [this] (std::uint64_t marke)
         {
@@ -180,9 +203,10 @@ EqCopilotProcessor::EqCopilotProcessor()
                 offenesBegin.zustand = 0;
                 offenesBegin.marke = 0;
             }
+            mitschnittVerwerfen (marke);
         });
     controlV3.setzeReplayBeginHook (
-        [this] () -> std::string
+        [this] (std::uint64_t generation, std::uint64_t marke) -> std::string
         {
             // 🔑 R12, Zustellpruefung. Der Aufbauzug hat ein EREIGNIS aelterer
             // Generation in der Queue gefunden; darunter kann ein `end` sein,
@@ -193,7 +217,11 @@ EqCopilotProcessor::EqCopilotProcessor()
             // nicht. Der Wiretext bleibt damit beim Prozessor, und der
             // Transport interpretiert nichts.
             std::lock_guard<std::mutex> l (sendeZustandMutex);
-            if (! offenesBegin.gueltig || offenesBegin.zustand != 2)
+            // 🔑 EP-01/N-36: das Begin, dessen `end` bereits in der Queue
+            // liegt, hat Vorrang - genau fuer diesen Fall gibt es die
+            // Zustellpruefung. Erst danach das noch laufende offene Begin.
+            const bool ausAbschluss = abschlussBegin.gueltig;
+            if (! ausAbschluss && (! offenesBegin.gueltig || offenesBegin.zustand != 2))
                 return {};
             auto h = v3Hello();
             h.adresse = nakama::ipc::wireAdresseAusState (h.adresse);
@@ -208,8 +236,27 @@ EqCopilotProcessor::EqCopilotProcessor()
             // Dieselbe Regel wie im Sendezug: ein Replay ist eine
             // Wiederholung und traegt die ORIGINALSEQUENZ. Eine frische Zahl
             // stuende ueber der des Backlogs und waere beim Broker eine Luecke.
-            auto ev = offenesBegin.ereignis;
+            auto ev = ausAbschluss ? abschlussBegin.ereignis : offenesBegin.ereignis;
             ev.beginn = true;
+            // 🔑 EP-09/N-27: das Replay ist EINGEREIHT, und der Zustellstand
+            // sagt das auch. Mit Marke 0 blieb er auf „nicht eingereiht", der
+            // geweckte Worker reihte dasselbe Begin ein zweites Mal ein, und
+            // beim Broker stand die doppelte `intervention_id`. Fuer den
+            // Abschlussfall gibt es kein offenes Begin mehr, dessen Stand zu
+            // fuehren waere — dort traegt allein die Queue die Ordnung.
+            if (! ausAbschluss)
+            {
+                offenesBegin.zustand = 1;
+                offenesBegin.marke = marke;
+            }
+            // Ein noch offenes `replayFaellig` AELTERER Generation ist damit
+            // erledigt; es wird nur aufgeraeumt (CAS auf den beobachteten
+            // Wert), nie blind ueberschrieben (R13). Ein bereits gesetztes
+            // G+1 bleibt stehen - der positive Callback laeuft erst nach
+            // diesem Zug.
+            auto gesehen = replayFaellig.load();
+            if (gesehen != 0 && gesehen < generation)
+                replayFaellig.compare_exchange_strong (gesehen, 0);
             return interventionsWireJson (ev, adresseJson);
         });
 
@@ -238,6 +285,91 @@ EqCopilotProcessor::~EqCopilotProcessor()
     }
     if (worker.joinable())
         worker.join();
+}
+
+//==============================================================================
+// NAK-180 Nacharbeit 1: die Helfer des Sendezustands. Alle vier setzen
+// `sendeZustandMutex` als GEHALTEN voraus (Sperrenordnung: `sendeMutex` des
+// ControlClients zuerst, dann dieser).
+
+/** EP-02/N-05: die Frist, vor deren Ablauf kein `false` reisen darf.
+
+    Der Broker zaehlt `tail_samples_offen` ab dem Empfang des `end` in
+    ECHTZEIT herunter. Ein `false`, das ihn waehrenddessen erreicht, wird
+    verworfen — und weil `berichtOffen` und die Aufbauaussage mit ihm
+    verbraucht sind, wiederholt es niemand. Die Frist beginnt am WIRE-COMMIT,
+    weil der Broker vorher nichts gesehen hat, und traegt eine
+    Heartbeat-Periode Marge: der Abschluss reist als naechster Heartbeat, und
+    zwischen Frist und Draht liegt bis zu ein Takt. */
+void EqCopilotProcessor::nachlaufFristSetzen (std::uint64_t tailSamples)
+{
+    double rate = letzteGueltigeSamplerate.load (std::memory_order_relaxed);
+    if (! (std::isfinite (rate) && rate > 0.0))
+        rate = 48000.0;                      // dieselbe Vorgabe wie im Broker
+    const double sekunden = (double) tailSamples / rate;
+    // Saettigen statt ueberlaufen: `tailSamples` kann bis an den u64-Rand
+    // gehen (N-18), und eine Frist von 10^12 Sekunden waere eine Sperre ohne
+    // Ende. Eine Stunde ist weit jenseits jedes echten Nachlaufs und bleibt
+    // in `int64`-Nanosekunden rechenbar.
+    constexpr double kDeckelSekunden = 3600.0;
+    const double gedeckelt = std::isfinite (sekunden)
+        ? std::min (std::max (sekunden, 0.0), kDeckelSekunden) : 0.0;
+    const auto jetzt = std::chrono::steady_clock::now().time_since_epoch();
+    const auto jetztNs =
+        std::chrono::duration_cast<std::chrono::nanoseconds> (jetzt).count();
+    const std::int64_t tailNs = (std::int64_t) (gedeckelt * 1e9);
+    const std::int64_t margeNs =
+        (std::int64_t) nakama::ipc::kHeartbeatTaktMs * 1000000LL;
+    nachlaufFristNs.store (jetztNs + tailNs + margeNs, std::memory_order_relaxed);
+}
+
+bool EqCopilotProcessor::nachlaufAbgelaufen() const
+{
+    const auto frist = nachlaufFristNs.load (std::memory_order_relaxed);
+    if (frist == 0)
+        return true;
+    const auto jetzt = std::chrono::steady_clock::now().time_since_epoch();
+    return std::chrono::duration_cast<std::chrono::nanoseconds> (jetzt).count()
+           >= frist;
+}
+
+/** EP-13/R7: „gesendet" heisst Wire-Commit.
+
+    Mitschnitt und Zaehler entstanden bisher unmittelbar nach dem Enqueue. Die
+    Passage-Tests ernteten ihn dann meist ohne `zustelleAllesFuerTest` und
+    blieben gruen, obwohl ein Write scheiterte oder der Aufbaufilter den
+    Eintrag verwarf — sie massen das Einreihen und nannten es Senden. */
+void EqCopilotProcessor::mitschnittZustellen (std::uint64_t marke)
+{
+    if (marke == 0)
+        return;
+    for (auto it = ausstehendeMitschnitte.begin();
+         it != ausstehendeMitschnitte.end(); ++it)
+    {
+        if (it->first != marke)
+            continue;
+        if (gesendeteInterventionen.size() >= kMitschnittDeckel)
+            gesendeteInterventionen.pop_front();
+        gesendeteInterventionen.push_back (std::move (it->second));
+        ausstehendeMitschnitte.erase (it);
+        interventionenGesendet.fetch_add (1, std::memory_order_relaxed);
+        return;
+    }
+}
+
+void EqCopilotProcessor::mitschnittVerwerfen (std::uint64_t marke)
+{
+    if (marke == 0)
+        return;
+    for (auto it = ausstehendeMitschnitte.begin();
+         it != ausstehendeMitschnitte.end(); ++it)
+    {
+        if (it->first == marke)
+        {
+            ausstehendeMitschnitte.erase (it);
+            return;
+        }
+    }
 }
 
 void EqCopilotProcessor::prepareToPlay (double samplerate, int maxBlock)
@@ -271,8 +403,20 @@ void EqCopilotProcessor::prepareToPlay (double samplerate, int maxBlock)
     // Hör-Markierung: Puffer/Zustände neu, Echtzeit-Beweis verfällt — nach
     // jedem prepareToPlay (auch Render-Vorlauf) gilt wieder „neutral, bis
     // Echtzeit bewiesen" (Konzept v2 §4).
-    markierung.setzeSamplerate (sichereSamplerate);
-    markierung.vorbereiten (maxBlock);
+    // 🔑 NAK-180 Nacharbeit 1 (EP-08/N-10): der faellige Uebergang wird VOR
+    // dem Reset erfasst, mit der GEZAEHLTEN Hoerdauer.
+    //
+    // Beide Vorbereiter loeschten `warHoerbar` und `hoerbareSamples`, und der
+    // Prozessor versuchte danach, das `end` aus seinem Sendezustand zu
+    // rekonstruieren. Lag das Begin noch im RT-Ring, war `offenesBegin`
+    // ungueltig und es entstand gar kein `end`; war es entnommen, trug die
+    // Kopie des BEGINS `dauerSamples == 0`, und der Nachlauf verlor die
+    // gezaehlte Dauer. Beides bricht N-10.
+    const auto uebergangA = markierung.setzeSamplerate (sichereSamplerate);
+    const auto uebergangB = markierung.vorbereiten (maxBlock);
+    const bool markerAbgebrochen = uebergangA.endete || uebergangB.endete;
+    const std::uint64_t abgebrocheneDauer =
+        std::max (uebergangA.dauerSamples, uebergangB.dauerSamples);
     // Befund R06: die Trockenkopie des Vergleichspegels wird HIER allokiert —
     // im Audiothread nie. Zwei Kanaele reichen dem Vertrag dieses Plugins.
     versuchTrocken.assign ((std::size_t) std::max (1, maxBlock) * 2u, 0.0f);
@@ -291,23 +435,50 @@ void EqCopilotProcessor::prepareToPlay (double samplerate, int maxBlock)
     // die Sitzung dauerhaft gesperrt. Der Sender bildet das `end` stattdessen
     // selbst, mit `project_sample_end: null` (die Endprojektzeit ist hier
     // ehrlich unbekannt) und dem Tail der letzten gueltigen Rate.
+    if (markerAbgebrochen)
     {
         std::lock_guard<std::mutex> l (sendeZustandMutex);
-        if (offenesBegin.gueltig && ! offenesBegin.tot)
+        // Ein LEBENDES offenes Begin nimmt das Ende direkt; sonst wartet der
+        // Uebergang auf das Begin, das noch im Ring liegt. Steht schon ein
+        // Wartender, gaebe es zwei zu schliessende Intervalle und nur einen
+        // Platz — dann sagt der Ueberlauf die Wahrheit (fail-closed, §34.2).
+        const bool anLebendes = offenesBegin.gueltig && ! offenesBegin.tot;
+        const bool alsWartender = ! anLebendes && ! ausstehenderTotUebergang.gueltig;
+        if (! anLebendes && ! alsWartender)
+        {
+            interventionsRingUeberlauf.store (true, std::memory_order_relaxed);
+        }
+        // 🔑 Die Sequenz wird NUR gezogen, wenn sie auch reist. Eine
+        // verbrauchte, nie gesendete Nummer waere beim Broker eine Luecke -
+        // genau das Signal, das ein verlorenes Ereignis meldet.
+        const auto sequenz = (anLebendes || alsWartender)
+            ? interventionsSequenz.fetch_add (1, std::memory_order_relaxed) + 1
+            : 0;
+        const auto tail = nakama::ipc::tailSamplesFuer (
+            abgebrocheneDauer,
+            letzteGueltigeSamplerate.load (std::memory_order_relaxed));
+        if (anLebendes)
         {
             offenesBegin.tot = true;
-            // 🔑 Die Sequenz wird HIER gezogen, aus derselben Folge wie der
-            // Audiothread. Sie liegt damit VOR der des neuen Begins, das der
-            // wieder hochfahrende Marker gleich schreibt - und die Folge auf
-            // dem Draht bleibt lueckenlos.
             auto ende = offenesBegin.ereignis;
             ende.beginn = false;
             ende.projektzeitGesetzt = false;   // die Endzeit ist ehrlich unbekannt
-            ende.sequenz = interventionsSequenz.fetch_add (1, std::memory_order_relaxed) + 1;
-            ende.tailSamples = nakama::ipc::tailSamplesFuer (
-                ende.dauerSamples,
-                letzteGueltigeSamplerate.load (std::memory_order_relaxed));
+            ende.sequenz = sequenz;
+            // 🔑 EP-08: die Dauer kommt aus dem UEBERGANG, nicht aus der Kopie
+            // des Begins - dort steht sie nie.
+            ende.dauerSamples = abgebrocheneDauer;
+            ende.tailSamples = tail;
             offenesBegin.totesEnde = ende;
+        }
+        else if (alsWartender)
+        {
+            // 🔑 EP-08, zweiter Fall: das Begin liegt noch im RT-Ring. Der
+            // Prozessor darf ihn hier nicht lesen — er hat genau EINEN
+            // Konsumenten, den Worker (§6.6). Der Uebergang wartet deshalb
+            // mit seiner Sequenz, bis der Sender das Begin entnommen hat, und
+            // wird dann genau davor eingereiht.
+            ausstehenderTotUebergang = TotUebergang { true, sequenz,
+                                                      abgebrocheneDauer, tail };
         }
     }
 
@@ -1080,7 +1251,12 @@ void EqCopilotProcessor::workerLauf()
         // Er wird in JEDEM Workerzug geleert, nicht an einer Kadenz — die
         // Kadenz ist der Grund, warum das Heartbeat-Bit nicht reichte. Der
         // Zug laeuft spaetestens alle 50 ms, bei Rueckstau sofort.
-        interventionenSenden();
+        //
+        // NAK-180 Nacharbeit 1 (EP-19): das Pausebit ist ein Testhaken. Es
+        // steht im Produkt nie; nur so ist die Lage aus N-08 (Ring NICHT leer
+        // beim Linkaufbau) erzwingbar statt vom Workertakt abhaengig.
+        if (! senderPauseFuerTest.load (std::memory_order_relaxed))
+            interventionenSenden();
 
         if (queueHatRest)
         {
@@ -1196,30 +1372,39 @@ void EqCopilotProcessor::interventionenSenden()
     // werden. Vorher entschied die Ordnung beim Einreihen, ihre Gueltigkeit
     // hing aber am Link bei der Zustellung (MP4-1).
     bool neutralErreicht = false;
+    std::uint64_t abschlussGeneration = 0;
     controlV3.interventionsZug (
-        [this, &adresseJson, &neutralErreicht]
+        [this, &adresseJson, &neutralErreicht, &abschlussGeneration]
         (std::uint64_t generation, const nakama::ipc::ControlClient::ZugSenke& senke)
     {
         std::lock_guard<std::mutex> l (sendeZustandMutex);   // Ordnung: sendeMutex zuerst
+        if (zugHakenFuerTest)
+            zugHakenFuerTest (0);            // Zug begonnen (Test, EP-16/EP-20)
 
         auto sende = [&] (const nakama::ipc::Interventionsereignis& ev,
                           nakama::ipc::P0Klasse klasse) -> std::uint64_t
         {
-            const auto marke = sendeMarkenFolge.fetch_add (1) + 1;
-            if (! senke (interventionsWireJson (ev, adresseJson), klasse, marke))
+            // 🔑 NAK-180 Nacharbeit 1 (EP-07): die Marke kommt aus dem EINEN
+            // Markenraum des ControlClients. Zwei Folgen mit eigenem Nullpunkt
+            // liessen einen Aufbau-Heartbeat und das erste Marker-Begin
+            // dieselbe Zahl tragen; der Zustellrueckruf des Heartbeats buchte
+            // dann das Begin als zugestellt, und ein Reconnect erzeugte ein
+            // doppeltes Replay (N-27/N-36).
+            auto json = interventionsWireJson (ev, adresseJson);
+            const auto marke = senke (json, klasse);
+            if (marke == 0)
             {
                 // Der P0-Ueberlauf ist derselbe Fall wie der Ringueberlauf:
                 // die Sequenzluecke kommt beim Coordinator an.
                 interventionsRingUeberlauf.store (true, std::memory_order_relaxed);
                 return 0;
             }
-            interventionenGesendet.fetch_add (1, std::memory_order_relaxed);
-            // NAK-180 Messlauf: der Mitschnitt entsteht HIER, am echten
-            // Sendepfad - nicht in einem Testleser daneben. `sendeZustandMutex`
-            // haelt der Zug bereits.
-            if (gesendeteInterventionen.size() >= kMitschnittDeckel)
-                gesendeteInterventionen.pop_front();
-            gesendeteInterventionen.push_back (interventionsWireJson (ev, adresseJson));
+            // 🔑 EP-13/R7: Mitschnitt und Zaehler entstehen NICHT hier. Das
+            // Einreihen ist kein Senden; erst der Wire-Commit ist es. Der Text
+            // wartet unter seiner Marke auf den Zustellrueckruf.
+            if (ausstehendeMitschnitte.size() >= kAusstehendDeckel)
+                ausstehendeMitschnitte.pop_front();
+            ausstehendeMitschnitte.emplace_back (marke, std::move (json));
             return marke;
         };
 
@@ -1270,6 +1455,54 @@ void EqCopilotProcessor::interventionenSenden()
             return true;
         };
 
+        // 🔑 NAK-180 Nacharbeit 1 (EP-01/N-36): das offene Begin faellt erst
+        // mit dem WIRE-COMMIT seines `end`, nicht mit dessen Einreihen.
+        //
+        // Stirbt der Link dazwischen, ueberlebt das `end` als Ereignis in der
+        // Queue — der Aufbauzug des naechsten Links faende ohne diese
+        // Aufzeichnung kein Begin mehr, stellte kein Replay voran, und das
+        // `end` traefe beim Broker auf nichts: die Sitzung nullt nie. Und
+        // derselbe Rueckruf stellt die Nachlauffrist (EP-02): erst ab dem
+        // Draht zaehlt der Broker `tail_samples_offen`.
+        auto sendeEnde = [&] (const nakama::ipc::Interventionsereignis& ende)
+        {
+            // Lag das Begin selbst noch in der Queue (Zustand 1), reist es vor
+            // dem `end` und braucht keine Aufzeichnung — die FIFO-Ordnung
+            // traegt sie. Nur ein bereits ZUGESTELLTES Begin ist nirgends mehr
+            // greifbar.
+            const bool warZugestellt = offenesBegin.gueltig && offenesBegin.zustand == 2;
+            auto begin = offenesBegin.ereignis;
+            begin.beginn = true;
+            const auto marke = sende (ende, nakama::ipc::P0Klasse::intervention);
+            if (marke != 0)
+            {
+                letzteEndeMarke = marke;
+                letzterEndeTail = ende.tailSamples;
+                if (warZugestellt)
+                    abschlussBegin = AbschlussBegin { begin, true, marke };
+            }
+            offenesBegin = OffenesBegin {};
+            sendeBeginOffen.store (false, std::memory_order_relaxed);
+        };
+
+        // 🔑 EP-08/N-10, zweiter Fall: `prepareToPlay` hat den Marker hart
+        // abgeschaltet, waehrend sein Begin noch im RT-Ring lag. Der Uebergang
+        // wartet mit seiner Sequenz; er wird genau vor dem ersten Ringereignis
+        // mit HOEHERER Sequenz eingereiht, damit die Folge lueckenlos bleibt.
+        auto totEndeSenden = [&] ()
+        {
+            auto ende = offenesBegin.ereignis;
+            ende.beginn = false;
+            ende.projektzeitGesetzt = false;   // die Endzeit ist ehrlich unbekannt
+            ende.sequenz = ausstehenderTotUebergang.sequenz;
+            ende.dauerSamples = ausstehenderTotUebergang.dauerSamples;
+            ende.tailSamples = ausstehenderTotUebergang.tailSamples;
+            if (replayNoetig (generation))
+                replaySenden();
+            sendeEnde (ende);
+            ausstehenderTotUebergang = TotUebergang {};
+        };
+
         // (1) Faelliges Replay des Aufbaus — nur fuer DIESE Generation.
         auto faellig = replayFaellig.load();
         if (faellig != 0)
@@ -1301,23 +1534,31 @@ void EqCopilotProcessor::interventionenSenden()
         {
             if (replayNoetig (generation))
                 replaySenden();
-            sende (offenesBegin.totesEnde, nakama::ipc::P0Klasse::ereignis);
-            offenesBegin = OffenesBegin {};
-            sendeBeginOffen.store (false, std::memory_order_relaxed);
+            sendeEnde (offenesBegin.totesEnde);
         }
 
         // (2) Der Ringinhalt, in unveraenderter Reihenfolge.
         nakama::ipc::Interventionsereignis e;
         while (interventionsRing.lies (e))
         {
+            // EP-08: das wartende tote Ende gehoert VOR jedes Ereignis mit
+            // hoeherer Sequenz — sonst stuende auf dem Draht Begin(n-1),
+            // Begin(n+1), End(n), und der Broker saehe eine Luecke.
+            if (ausstehenderTotUebergang.gueltig && offenesBegin.gueltig
+                && e.sequenz > ausstehenderTotUebergang.sequenz)
+            {
+                totEndeSenden();
+            }
+
             if (e.beginn)
             {
-                const auto marke = sende (e, nakama::ipc::P0Klasse::ereignis);
+                const auto marke = sende (e, nakama::ipc::P0Klasse::intervention);
                 offenesBegin.ereignis = e;
                 offenesBegin.gueltig = true;
                 offenesBegin.tot = false;
                 offenesBegin.zustand = marke != 0 ? 1 : 0;
                 offenesBegin.marke = marke;
+                offenesBegin.zustellGeneration = 0;
                 sendeBeginOffen.store (true, std::memory_order_relaxed);
                 continue;
             }
@@ -1331,9 +1572,26 @@ void EqCopilotProcessor::interventionenSenden()
             if (replayNoetig (generation))
                 replaySenden();
 
-            sende (e, nakama::ipc::P0Klasse::ereignis);
-            offenesBegin = OffenesBegin {};
-            sendeBeginOffen.store (false, std::memory_order_relaxed);
+            // EP-16/N-35: das Fenster zwischen Vergleich und Einreihen. Im
+            // Produkt gibt es keines - beide liegen unter derselben Sperre.
+            // Der Haken macht genau das messbar: ein zweiter Faden, der den
+            // Linkwechsel HIER erzwingen will, kommt erst nach dem Einreihen
+            // zum Zug.
+            if (zugHakenFuerTest)
+                zugHakenFuerTest (1);
+
+            sendeEnde (e);
+        }
+
+        // Ring erschoepft: ein noch wartendes totes Ende geht jetzt raus.
+        // Ohne jedes Begin — es ging im Ringueberlauf verloren — faellt es
+        // ersatzlos weg; das Sticky-Bit des Ueberlaufs traegt den Zustand.
+        if (ausstehenderTotUebergang.gueltig)
+        {
+            if (offenesBegin.gueltig)
+                totEndeSenden();
+            else
+                ausstehenderTotUebergang = TotUebergang {};
         }
 
         // (4) Abschluss des Neuaufbau-Berichts (E3.3): ist der Prozessor nach
@@ -1347,19 +1605,42 @@ void EqCopilotProcessor::interventionenSenden()
                 berichtOffen.compare_exchange_strong (bericht, 0);
             }
             else if (interventionsRing.fuellstand() == 0 && ! offenesBegin.gueltig
-                     && ! markierung.hoerbar())
+                     && ! abschlussBegin.gueltig
+                     && ! ausstehenderTotUebergang.gueltig
+                     && ! markierung.hoerbar()
+                     // 🔑 NAK-180 Nacharbeit 1 (EP-02/N-05/M-58): der
+                     // NACHLAUF des zuletzt zugestellten `end` muss in
+                     // Echtzeit abgelaufen sein. Erreicht das einmalige
+                     // `false` den Broker waehrend `tail_samples_offen > 0`,
+                     // verwirft er es — und niemand wiederholt es, weil
+                     // `berichtOffen` und die Aufbauaussage mit ihm
+                     // verbraucht sind. `berichtOffen` bleibt bis dahin
+                     // stehen; der naechste Zug prueft erneut.
+                     && nachlaufAbgelaufen())
             {
                 if (berichtOffen.compare_exchange_strong (bericht, 0))
+                {
                     neutralErreicht = true;
+                    // 🔑 EP-03/R12: das Urteil gilt GENAU DIESER Generation.
+                    abschlussGeneration = generation;
+                }
             }
         }
+
+        if (zugHakenFuerTest)
+            zugHakenFuerTest (2);            // Zug beendet (Test)
     });
 
     // AUSSERHALB des Zugs: `meldeAufbauUrteil` nimmt `sendeMutex` nicht, aber
     // die Regel "im Zug wird nicht gesendet" gilt trotzdem — der naechste
     // Heartbeat traegt das `false`.
+    //
+    // 🔑 EP-03: die Generation reist MIT. Baut G+1 in diesem Fenster auf,
+    // wendet der ControlClient den veralteten Abschluss nicht an — sonst
+    // ersetzte ein `false` von G das frische, nicht neutrale Urteil von G+1,
+    // und der Bericht des neuen Links waere nie eroeffnet.
     if (neutralErreicht)
-        controlV3.meldeAufbauUrteil (true);
+        controlV3.meldeAufbauUrteil (true, abschlussGeneration);
 }
 
 nakama::ipc::ControlHello EqCopilotProcessor::v3Hello() const
@@ -1458,7 +1739,24 @@ void EqCopilotProcessor::v3ControlLink (bool verbunden)
         // Generationsvergleich beim Verbraucher. Deshalb ist es auch
         // ungefaehrlich, dass hier gar kein zweiter Ende-Callback kommt, wenn
         // das Statusbit schon `false` war.
-        const auto sterbend = controlV3.wireGenerationJetzt();
+        // 🔑 NAK-180 Nacharbeit 1 (EP-05/N-37 Fall 2): die STERBENDE
+        // Generation kommt vom ControlClient, nicht aus `wireGenerationJetzt()`.
+        //
+        // Bei `reconnect()` kann der Clientthread G beenden und G+1
+        // vollstaendig aufbauen, bevor der externe Aufrufer seinen
+        // verspaeteten `false`-Callback erreicht. Er las dann G+1 und loeschte
+        // genau dessen Urteil, Replay und Bericht — die Wirkung des NEUEN
+        // Links. Der Client hinterlegt die Zahl beim Statuswechsel, und
+        // `meldeLinkStatus` serialisiert den per `exchange`.
+        const auto sterbend = controlV3.sterbendeGenerationJetzt();
+        if (sterbend == 0)
+        {
+            // Kein gemeldeter Link — es gibt nichts zu loeschen. `0` traefe
+            // ohnehin keinen Zustand, der Fruehausstieg macht es sichtbar.
+            sourcesModel.controlEnde();
+            telemetryV3.reconnect();
+            return;
+        }
         controlV3.loescheAufbauUrteil (sterbend);
         auto a = sterbend;
         replayFaellig.compare_exchange_strong (a, 0);
@@ -1549,10 +1847,24 @@ void EqCopilotProcessor::v3ControlLink (bool verbunden)
     }
 
     const auto meineGeneration = controlV3.meldeAufbauUrteil (neutral);
-    if (! neutral)
+    if (! neutral && meineGeneration != 0)
     {
-        berichtOffen.store (meineGeneration);
-        replayFaellig.store (meineGeneration);
+        // 🔑 NAK-180 Nacharbeit 1 (EP-04/R13/N-37): CAS statt `store`.
+        //
+        // Ein verspaeteter positiver Callback von G konnte nach dem Aufbau von
+        // G+1 diese beiden Zustaende blind mit G ueberschreiben. Der Worker
+        // raeumte den fremden Wert danach auf und verlor damit Bericht und
+        // Replay von G+1 — das Lost-Update, das R13 gerade verbietet. Gesetzt
+        // wird nur, solange kein NEUERER Link den Platz belegt hat.
+        auto setzeGeneration = [] (std::atomic<std::uint64_t>& ziel, std::uint64_t g)
+        {
+            auto gesehen = ziel.load();
+            while (gesehen < g)
+                if (ziel.compare_exchange_weak (gesehen, g))
+                    return;
+        };
+        setzeGeneration (berichtOffen, meineGeneration);
+        setzeGeneration (replayFaellig, meineGeneration);
         // Den Worker wecken, damit das Replay nicht auf den 50-ms-Takt
         // wartet. Eine veraltete Weckung ist harmlos: der Zug prueft
         // `replayFaellig` gegen die laufende Generation.

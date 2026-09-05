@@ -45,6 +45,9 @@
 #include <cstring>
 #include <iostream>
 #include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <atomic>
 #include <limits>
 #include <memory>
 #include <vector>
@@ -1183,18 +1186,41 @@ struct Pruefstand
     /// traete gar nicht auf.
     std::size_t zustellen() { return p->zustelleAllesFuerTest(); }
 
-    /// Alles, was der Sender bis jetzt abgesetzt hat.
+    /** Alles, was der Sender bis jetzt WIRKLICH ABGESETZT hat.
+
+        🔑 NAK-180 Nacharbeit 1 (EP-13/R7): jede Runde stellt erst zu, dann
+        erntet sie. Mitschnitt und Zaehler entstehen seit dieser Runde am
+        WIRE-COMMIT, nicht beim Einreihen — ein Bein ohne Pipe muss den Commit
+        deshalb selbst fahren. Vorher erntete dieselbe Schleife das blosse
+        Einreihen und nannte es „gesendet": ein gescheiterter Write oder ein
+        vom Aufbaufilter verworfener Eintrag blieb unsichtbar, und der Test war
+        gruen aus einem Grund, den das Produkt nicht kennt. */
     std::vector<juce::var> ernte (int fristMs = 400)
     {
         std::vector<juce::var> aus;
-        for (;;)
+        auto ziehe = [&] (int frist)
         {
-            const auto text = p->naechstesInterventionsJsonFuerTest (
-                aus.empty() ? fristMs : 20);
-            if (text.empty())
-                return aus;
-            aus.push_back (juce::JSON::parse (juce::String (text)));
-        }
+            const auto bis = std::chrono::steady_clock::now()
+                           + std::chrono::milliseconds (std::max (0, frist));
+            for (;;)
+            {
+                zustellen();      // der Wire-Commit ohne Draht
+                const auto text = p->naechstesInterventionsJsonFuerTest (0);
+                if (! text.empty())
+                {
+                    aus.push_back (juce::JSON::parse (juce::String (text)));
+                    return true;
+                }
+                if (std::chrono::steady_clock::now() >= bis)
+                    return false;
+                std::this_thread::sleep_for (std::chrono::milliseconds (2));
+            }
+        };
+        if (! ziehe (fristMs))
+            return aus;
+        while (ziehe (20))
+            ;
+        return aus;
     }
 
     /// Ein voller Zyklus: Marker an, klingen lassen, aus, ausfaden.
@@ -1250,9 +1276,14 @@ void n05ReplayBeiHoerbaremMarker()
     const auto vorReconnect = s.ernte();
     const int begin1 = zaehle (vorReconnect, "audible_intervention_begin");
     pruefe (begin1 == 1, "N-05: sein Begin ist gesendet", juce::String (begin1));
-    // Erst der Wire-Commit macht daraus Zustand "zugestellt". Solange es in
-    // der Queue liegt, waere ein Replay die doppelte `intervention_id` (N-27).
-    pruefe (s.zustellen() >= 1, "N-05: und der Draht hat es bestaetigt");
+    // 🔑 NAK-180 Nacharbeit 1 (EP-13/R7): der Mitschnitt entsteht am
+    // WIRE-COMMIT. Dass das Begin oben geerntet wurde, IST damit der Beweis
+    // der Zustellung - `ernte()` hat den Commit gefahren. Ein zweiter
+    // `zustellen()` findet nichts mehr, und genau das ist die Zusage: nichts
+    // blieb in der Queue, das Begin steht in Zustand "zugestellt" (E6), und
+    // ein Replay nach dem Linkwechsel ist deshalb noetig statt doppelt.
+    pruefe (s.zustellen() == 0,
+            "N-05: und der Draht hat es bestaetigt - nichts blieb in der Queue");
 
     // Der Neuaufbau bei HOERBAREM Marker: kein `false`, dafuer ein Replay.
     s.p->v3LinkFuerTest (false);
@@ -1296,18 +1327,29 @@ void n08BacklogOhneReplay()
     s.zyklus();
     (void) s.ernte();                       // Zyklus 1 abgeräumt
 
-    // Zweiter Zyklus, danach ein Linkwechsel. Ob der Sender das Begin VOR
-    // dem Wechsel schon zugestellt hat, entscheidet der Workertakt - und
-    // beide Lagen sind zulaessig: liegt Begin UND End noch im Ring, reist
-    // das Backlog allein; war das Begin schon auf dem alten Link, gehoert
-    // ein Replay davor (E7/R8). Der Test misst deshalb die INVARIANTE, die
-    // in beiden Lagen gilt, statt eine Zufallslage festzuschreiben.
+    // 🔑 NAK-180 Nacharbeit 1 (EP-19): die Lage wird ERZWUNGEN, nicht gehofft.
+    //
+    // Bis hier entschied der Workertakt, ob Begin und End vor dem Linkwechsel
+    // schon verarbeitet waren. Beide Lagen sind zulaessig, aber nur EINE ist
+    // N-08: „Ring NICHT leer (Backlog aus der Trennungszeit)". War der Ring
+    // beim Aufbau leer, bestanden saemtliche Assertions, ohne dass der Fall je
+    // eingetreten waere - und die zweite Lage (zugestelltes Begin, Replay
+    // davor) liess sogar die doppelte ID und die wiederholte Sequenz zu, die
+    // N-05 zusagt und N-08 gerade ausschliesst. Der Sender steht deshalb,
+    // waehrend der zweite Zyklus laeuft.
+    s.p->senderAnhaltenFuerTest (true);
     s.p->markierungEinreichen (s.auftrag);
     s.bloecke (40);
     s.p->markierungAus();
     s.bloecke (120);
+    const int backlog = s.p->interventionsRingFuellstandFuerTest();
+    pruefe (backlog >= 2,
+            "N-08: der Ring ist beim Linkaufbau WIRKLICH nicht leer - der "
+            "Backlog-Zustand ist erzwungen, nicht zufaellig",
+            juce::String (backlog));
     s.p->v3LinkFuerTest (false);
     s.p->v3LinkFuerTest (true);
+    s.p->senderAnhaltenFuerTest (false);
     s.bloecke (6);
 
     const auto ernte = s.ernte();
@@ -1438,12 +1480,58 @@ void n28BeginNachSendefehler()
     // Draht, nicht in der Queue -, also MUSS es repliziert werden.
     s.p->leereP0QueueFuerTest();
     s.p->v3LinkFuerTest (false);
-    s.p->v3LinkFuerTest (true);
+
+    // 🔑 NAK-180 Nacharbeit 1 (EP-20/R10): das Interleaving wird ERZWUNGEN.
+    //
+    // N-28 sagt zu, dass ein Replay, das der geweckte Worker WAEHREND des
+    // Link-Callbacks einreiht, den Aufbaufilter ueberlebt - weil die
+    // Generation vor dem Callback vergeben ist. Liefen Aufbau und Replay
+    // nacheinander, bestuende der Test auch dann, wenn das Replay erst nach
+    // der Rueckkehr entsteht: gemessen waere die Absicht, nicht das
+    // Zusammentreffen. Die Ordnung traegt eine Bedingungsvariable, nie ein
+    // `sleep`.
+    std::mutex m;
+    std::condition_variable cv;
+    bool zugFertig = false;
+    s.p->setzeZugHakenFuerTest ([&] (int phase)
+    {
+        if (phase != 2)
+            return;
+        {
+            std::lock_guard<std::mutex> l (m);
+            zugFertig = true;
+        }
+        cv.notify_all();
+    });
+    s.p->senderAnhaltenFuerTest (true);     // kein Zug, bevor der Callback steht
+
+    std::string imCallbackGeerntet;
+    s.p->v3LinkAufbauFuerTest ([&]
+    {
+        // Der Callback STEHT. Jetzt darf der Worker - und wir warten, bis
+        // sein Zug wirklich durch ist, statt ihm Zeit zu schenken.
+        s.p->senderAnhaltenFuerTest (false);
+        std::unique_lock<std::mutex> l (m);
+        cv.wait (l, [&] { return zugFertig; });
+        l.unlock();
+        // Noch INNERHALB des Callbacks: was hat der Zug abgesetzt?
+        s.zustellen();
+        imCallbackGeerntet = s.p->naechstesInterventionsJsonFuerTest (0);
+    });
+    s.p->setzeZugHakenFuerTest ({});
+
+    const auto imCallback = juce::JSON::parse (juce::String (imCallbackGeerntet));
+    pruefe (imCallback.getProperty ("type", {}).toString() == "audible_intervention_begin",
+            "N-28: replay_waehrend_des_link_callbacks - das Replay entsteht IM "
+            "Callback und ueberlebt den Aufbaufilter, weil die Generation vor dem "
+            "Callback vergeben ist (R10)",
+            juce::String (imCallbackGeerntet.substr (0, 90)));
+
     s.bloecke (6);
     const auto nachAufbau = s.ernte();
-    pruefe (zaehle (nachAufbau, "audible_intervention_begin") >= 1,
-            "N-28: replay_auch_nach_abgewiesenem_begin - das Begin ist lokal offen, "
-            "auch wenn es den Draht nie erreicht hat",
+    pruefe (zaehle (nachAufbau, "audible_intervention_begin") == 0,
+            "N-28: und GENAU EIN Replay - der Zustellstand des Hook-Replays "
+            "verhindert das zweite (EP-09/N-27)",
             juce::String (zaehle (nachAufbau, "audible_intervention_begin")));
 
     s.p->markierungAus();
@@ -1490,11 +1578,6 @@ void n29OrdnungsregelUndZug()
             "Replay-Begin unmittelbar voran; ohne die Ordnungsregel traefe das `end` "
             "beim Broker auf nichts und setzte `unknown`");
 
-    // N-35: Vergleich und Einreihen liegen unter DERSELBEN Sperre. Ein
-    // Testfaden, der den Linkwechsel dazwischen erzwingen will, kommt
-    // entweder davor oder danach zum Zug - nie mittendrin. Gemessen an der
-    // Lueckenlosigkeit der Sequenzen: eine Vertauschung waere beim Broker
-    // eine Luecke.
     juce::int64 vorige = -1;
     bool luecke = false;
     juce::String folge;
@@ -1506,10 +1589,117 @@ void n29OrdnungsregelUndZug()
         vorige = seq;
     }
     pruefe (! luecke,
-            "N-35: vergleich_und_einreihen_sind_ein_zug - die Sequenzen bleiben "
-            "lueckenlos; ein Generationswechsel zwischen Pruefung und Einreihen haette "
-            "die Reihenfolge zerrissen",
+            "N-29: die Sequenzen bleiben lueckenlos - eine Vertauschung waere beim "
+            "Broker ein verlorenes Ereignis",
             folge.trim());
+}
+
+/// N-35 · Vergleich und Einreihen liegen unter DERSELBEN Sperre.
+///
+/// 🔑 NAK-180 Nacharbeit 1 (EP-16): der Fall wird jetzt GEFAHREN, nicht
+/// beschrieben. Bis hier wertete derselbe Abschnitt nur die sequentiell
+/// erzeugte Ereignisfolge aus; kein Faden versuchte den Aufbau zwischen
+/// Vergleich und Einreihen, und `sendeMutex` haette aufgeteilt werden koennen,
+/// ohne dass etwas fiel. Der Testhaken im Zug haelt genau dort an, ein zweiter
+/// Faden versucht den Linkwechsel, und gemessen wird, dass er erst NACH dem
+/// Einreihen zum Zug kommt. Rotbeweis: den Aufbauzug ohne `sendeMutex` fahren
+/// - dann laeuft der zweite Faden mitten durch, und das `end` traegt die
+/// falsche Generation.
+void n35SendezugGegenAufbauzug()
+{
+    abschnitt ("NAK-180 N-35  vergleich_und_einreihen_sind_ein_zug");
+    Pruefstand s;
+
+    // Ein zugestelltes Begin auf Generation G - die Lage, in der die
+    // Zustandspruefung ueberhaupt etwas entscheidet. `wireGeneration` steht
+    // erst nach dem ersten Aufbauzug ueber 0, und `0` heisst "keine Aussage".
+    s.p->v3LinkFuerTest (true);
+    s.p->markierungEinreichen (s.auftrag);
+    s.bloecke (40);
+    (void) s.ernte();
+    s.zustellen();
+
+    std::mutex m;
+    std::condition_variable cv;
+    bool amHaken = false;          // der Zug steht zwischen Vergleich und Einreihen
+    bool weiter = false;           // der zweite Faden hat es versucht
+    std::atomic<bool> wechselDurch { false };
+    std::uint64_t generationAmHaken = 0;
+    bool wechselWarDurchAmHaken = false;
+
+    s.p->setzeZugHakenFuerTest ([&] (int phase)
+    {
+        if (phase != 1)
+            return;
+        generationAmHaken = s.p->wireGenerationFuerTest();
+        {
+            std::lock_guard<std::mutex> l (m);
+            amHaken = true;
+        }
+        cv.notify_all();
+        std::unique_lock<std::mutex> l (m);
+        cv.wait (l, [&] { return weiter; });
+        // Der zweite Faden hatte seine Chance. Kam er durch, saehe der Zug
+        // hier eine andere Generation - genau das darf nicht sein.
+        wechselWarDurchAmHaken = wechselDurch.load();
+    });
+
+    // Der zweite Faden will den Linkwechsel GENAU HIER erzwingen. Er nimmt
+    // `sendeMutex` im Aufbauzug und steht deshalb, bis der Sendezug fertig
+    // ist - das IST die Zusage.
+    std::thread wechsler;
+    std::thread ausloeser ([&]
+    {
+        std::unique_lock<std::mutex> l (m);
+        cv.wait (l, [&] { return amHaken; });
+        l.unlock();
+        wechsler = std::thread ([&]
+        {
+            s.p->v3LinkFuerTest (false);
+            s.p->v3LinkFuerTest (true);
+            wechselDurch.store (true);
+        });
+        // Dem Wechsler eine echte Chance geben: er soll wirklich an der
+        // Sperre stehen, nicht erst danach starten. Die Ordnung traegt nicht
+        // dieses Warten, sondern `sendeMutex` - das Warten macht den Versuch
+        // nur ernsthaft.
+        std::this_thread::sleep_for (std::chrono::milliseconds (30));
+        {
+            std::lock_guard<std::mutex> l2 (m);
+            weiter = true;
+        }
+        cv.notify_all();
+    });
+
+    // Jetzt das Ende erzeugen - der Sendezug laeuft in den Haken.
+    s.p->markierungAus();
+    s.bloecke (140);
+    (void) s.ernte();
+
+    ausloeser.join();
+    if (wechsler.joinable())
+        wechsler.join();
+    s.p->setzeZugHakenFuerTest ({});
+
+    pruefe (generationAmHaken != 0 && ! wechselWarDurchAmHaken,
+            "N-35: der Linkwechsel kommt NICHT zwischen Vergleich und Einreihen - "
+            "beide liegen unter `sendeMutex`, den der Aufbauzug ebenfalls nimmt",
+            juce::String ((int) generationAmHaken) + (wechselWarDurchAmHaken ? " DURCH" : " blockiert"));
+
+    // Und auf dem neuen Link steht kein `end` ohne sein Begin.
+    s.bloecke (6);
+    const auto nach = s.ernte();
+    juce::String offene;
+    bool ohneBegin = false;
+    for (const auto& e : nach)
+    {
+        const auto typ = e.getProperty ("type", {}).toString();
+        const auto id  = e.getProperty ("intervention_id", {}).toString();
+        if (typ == "audible_intervention_begin") offene = id;
+        else if (typ == "audible_intervention_end" && id != offene) ohneBegin = true;
+    }
+    pruefe (! ohneBegin,
+            "N-35: und auf G+1 kommt kein `end` ohne Begin an");
 }
 
 void n11KeineBehauptungOhneMain()
@@ -1650,6 +1840,9 @@ void c1Sequenzhandschlag()
     for (int i = 0; i < 60 && wire.isEmpty(); ++i)
     {
         ph = block (ph);
+        // 🔑 EP-13/R7: erst der Wire-Commit macht aus einem eingereihten
+        // Eintrag ein gesendetes Ereignis; ohne Pipe faehrt ihn das Bein.
+        (void) p->zustelleAllesFuerTest();
         wire = p->naechstesInterventionsJsonFuerTest();
     }
     pruefe (wire.isNotEmpty(), "C1: der erste Eingriff nach dem Resync steht auf der Leitung");
@@ -1700,6 +1893,7 @@ int main()
     nak180::n10PrepareToPlayPaar();
     nak180::n28BeginNachSendefehler();
     nak180::n29OrdnungsregelUndZug();
+    nak180::n35SendezugGegenAufbauzug();
     nak180::n11KeineBehauptungOhneMain();
     nak180::n12AussageKommtZurueck();
     std::cout << std::endl << bestanden << " bestanden, " << fehler << " gescheitert"

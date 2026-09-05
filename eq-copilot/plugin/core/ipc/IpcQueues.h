@@ -65,14 +65,34 @@ inline constexpr std::size_t kCapP2JeSonde = 2;
     frischen Link den Resync aus, waehrend der Marker klang. */
 enum class P0Klasse
 {
-    /// `audible_intervention_begin` / `_end`. Ueberlebt jeden Linkwechsel;
-    /// wird bei einem Write-Fehler zurueckgelegt, nie verworfen.
+    /// Jede andere P0-Nachricht: persistenzpflichtige Befehle, Testfuellung,
+    /// alles ohne Aussage ueber den Interventionszustand. Ueberlebt jeden
+    /// Linkwechsel; wird bei einem Write-Fehler zurueckgelegt, nie verworfen.
     ereignis,
+    /// `audible_intervention_begin` / `_end`. Verhaelt sich beim Verwurf wie
+    /// `ereignis` — aber NUR diese Klasse zaehlt fuer die Zustellpruefung des
+    /// Aufbauzugs.
+    ///
+    /// 🔑 NAK-180 Nacharbeit 1 (EP-09): sie hiess bis hier ebenfalls
+    /// `ereignis`, und `hatEreignisAelterAls` sah damit auch persistente
+    /// Befehle. Lag bei einem bereits zugestellten Marker nur ein solcher
+    /// Befehl in der Queue, stellte der Aufbauzug ein Replay voran, das
+    /// niemand angefordert hatte — zusammen mit dem `replayFaellig` des
+    /// positiven Callbacks entstand die in N-27 verbotene doppelte
+    /// `intervention_id`.
+    intervention,
     /// Heartbeat, Replay-Begin. Gilt nur fuer seine `wireGeneration`; beim
     /// Write-Fehler und beim Aufbau eines neuen Links wird er verworfen —
     /// gezaehlt und dem Einreicher gemeldet, nie stillschweigend.
     bericht,
 };
+
+/// Ueberlebt ein Eintrag dieser Klasse den Linkwechsel? Genau die zwei
+/// Ereignisklassen tun es; §53.9 "nichts verwerfen" gilt fuer beide.
+constexpr bool istEreignisKlasse (P0Klasse k) noexcept
+{
+    return k == P0Klasse::ereignis || k == P0Klasse::intervention;
+}
 
 /** Ein P0-Eintrag mit seiner Herkunft (NAK-180 R7/R10). */
 struct P0Eintrag
@@ -188,13 +208,19 @@ public:
         return gefallen;
     }
 
-    /** NAK-180 R12, Zustellpruefung: liegt hier ein EREIGNIS aelterer
-        Generation? Nur dann kann ein `end` den Linkwechsel ueberleben und auf
-        dem neuen Link ohne sein Begin ankommen. */
-    bool hatEreignisAelterAls (std::uint64_t generation) const noexcept
+    /** NAK-180 R12, Zustellpruefung: liegt hier ein INTERVENTIONSEREIGNIS
+        aelterer Generation? Nur dann kann ein `end` den Linkwechsel ueberleben
+        und auf dem neuen Link ohne sein Begin ankommen.
+
+        🔑 Nacharbeit 1 (EP-09): die Frage gilt ausschliesslich
+        `P0Klasse::intervention`. Ein persistenzpflichtiger Befehl ist zwar
+        ebenfalls ein Ereignis und ueberlebt den Wechsel — er sagt aber nichts
+        ueber Interventionen, und ein Replay auf seinen Anlass hin waere die
+        doppelte `intervention_id` aus N-27. */
+    bool hatInterventionsereignisAelterAls (std::uint64_t generation) const noexcept
     {
         for (const auto& e : inhalt)
-            if (e.klasse == P0Klasse::ereignis && e.generation < generation)
+            if (e.klasse == P0Klasse::intervention && e.generation < generation)
                 return true;
         return false;
     }

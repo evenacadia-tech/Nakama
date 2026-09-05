@@ -6137,9 +6137,23 @@ int main (int argc, char** argv)
         // traefe das `end` beim Broker auf kein Begin.
         {
             P0Warteschlange q;
-            q.einreihen (P0Eintrag { "{\"end\":1}", P0Klasse::ereignis, 1, 31 });
-            pruefe (q.hatEreignisAelterAls (2),
-                    "NAK-180 R12: der Aufbauzug SIEHT das Ereignis aelterer Generation");
+            q.einreihen (P0Eintrag { "{\"end\":1}", P0Klasse::intervention, 1, 31 });
+            pruefe (q.hatInterventionsereignisAelterAls (2),
+                    "NAK-180 R12: der Aufbauzug SIEHT das Interventionsereignis "
+                    "aelterer Generation");
+            // 🔑 Nacharbeit 1 (EP-09): und NUR dieses. Ein persistenter
+            // P0-Befehl ist ebenfalls ein Ereignis und ueberlebt den Wechsel -
+            // er sagt aber nichts ueber Interventionen. Loeste er die
+            // Zustellpruefung aus, entstuende ein Replay, das niemand
+            // angefordert hat, und mit `replayFaellig` daneben die doppelte
+            // `intervention_id` aus N-27.
+            {
+                P0Warteschlange nurBefehl;
+                nurBefehl.einreihen (P0Eintrag { "{\"cmd\":1}", P0Klasse::ereignis, 1, 91 });
+                pruefe (! nurBefehl.hatInterventionsereignisAelterAls (2),
+                        "NAK-180 EP-09: ein persistenter P0-Befehl loest die "
+                        "Zustellpruefung NICHT aus - nur Interventionen tun das");
+            }
 
             const bool vorn = q.voranstellen (
                 P0Eintrag { "{\"replaybegin\":1}", P0Klasse::bericht, 2, 32 });

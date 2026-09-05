@@ -328,12 +328,85 @@ public:
     std::size_t fuelleP0QueueFuerTest() { return controlV3.fuelleP0QueueFuerTest(); }
     void leereP0QueueFuerTest() { controlV3.leereP0QueueFuerTest(); }
 
+    /** NAK-180 Nacharbeit 1 (EP-20/N-28): der positive Aufbau mit einem
+        Fenster INNERHALB des Callbacks.
+
+        `imCallback` laeuft, nachdem `v3ControlLink(true)` seine Aufbau-Flags
+        und `replayFaellig` gesetzt hat, und BEVOR der Callback zurueckkehrt -
+        also genau in der Lage, die N-28 verlangt: der geweckte Worker reiht
+        sein Replay ein, waehrend der Link-Callback noch steht. Ohne dieses
+        Fenster liefen Aufbau und Replay nacheinander, und der Test bestuende
+        auch dann, wenn das Replay erst nach der Rueckkehr entsteht. */
+    std::uint64_t v3LinkAufbauFuerTest (const std::function<void()>& imCallback)
+    {
+        return controlV3.linkAufbauFuerTest ([this, &imCallback]
+        {
+            v3ControlLink (true);
+            if (imCallback)
+                imCallback();
+        });
+    }
+
+    /** NAK-180 Nacharbeit 1 (EP-19/N-08): den Sender ANHALTEN.
+
+        Nur so ist die Lage aus N-08 erzwingbar - ein nicht leerer Ring beim
+        Linkaufbau. Laeuft der Worker frei, entscheidet sein Takt, ob Begin und
+        End schon verarbeitet sind, und der Fall misst eine Zufallslage statt
+        des festgelegten Backlog-Zustands. */
+    void senderAnhaltenFuerTest (bool an)
+    {
+        senderPauseFuerTest.store (an, std::memory_order_relaxed);
+        if (! an)
+            weckeWorkerFuerTest();
+    }
+    void weckeWorkerFuerTest()
+    {
+        std::lock_guard<std::mutex> l (workerWarteMutex);
+        workerWarte.notify_all();
+    }
+    /** Der Sendezug SYNCHRON, auf dem Aufruferthread (Test).
+
+        Fuer Faelle, in denen der Zeitpunkt des Zugs Teil der Messung ist und
+        ein zweiter Thread ihn nicht liefern kann. */
+    void interventionenSendenFuerTest() { interventionenSenden(); }
+
+    /** NAK-180 Nacharbeit 1 (EP-16/EP-20): Schranken IM Sendezug.
+
+        `phase` ist 0 (Zug begonnen, Sperre und Generation stehen), 1 (der
+        Zustellstand ist geprueft, das `end` ist NOCH NICHT eingereiht) und 2
+        (Zug beendet). Ein Bein haengt sich hier ein und laesst einen zweiten
+        Faden genau dort zum Zug kommen - deterministisch ueber Latch oder
+        Bedingungsvariable, nie ueber `sleep` als einzige Ordnung.
+
+        ⚠️ Der Haken laeuft unter `sendeMutex` UND `sendeZustandMutex`. Wer
+        hier wartet, blockiert beide - genau das ist bei N-35 der Zweck. */
+    void setzeZugHakenFuerTest (std::function<void (int phase)> haken)
+    { zugHakenFuerTest = std::move (haken); }
+
+    /// Wie viele Ereignisse JETZT im RT-Ring warten - ohne sie zu entnehmen.
+    /// Der Riegel, mit dem N-08 seinen Backlog-Zustand BEWEIST statt ihn
+    /// anzunehmen (EP-19).
+    int interventionsRingFuellstandFuerTest() const
+    { return interventionsRing.fuellstand(); }
+
+    std::uint64_t berichtOffenFuerTest() const { return berichtOffen.load(); }
+    std::uint64_t replayFaelligFuerTest() const { return replayFaellig.load(); }
+    std::uint64_t wireGenerationFuerTest() const
+    { return controlV3.wireGenerationJetzt(); }
+    void v3ReconnectFuerTest() { controlV3.reconnect(); }
+    void v3StopFuerTest() { controlV3.stop(); }
+    void v3StartFuerTest() { controlV3.start(); }
+
     void v3LinkFuerTest (bool verbunden)
     {
+        // 🔑 NAK-180 Nacharbeit 1 (EP-05): BEIDE Richtungen fahren den
+        // Produktweg. Der Ende-Callback braucht die hinterlegte sterbende
+        // Generation; ohne sie loeschte er nichts, und ein Bein maesse einen
+        // Pfad, den das Produkt nicht hat.
         if (verbunden)
             controlV3.linkAufbauFuerTest ([this] { v3ControlLink (true); });
         else
-            v3ControlLink (false);
+            controlV3.linkEndeFuerTest ([this] { v3ControlLink (false); });
     }
     void v3AntwortFuerTest (const std::string& json,
                             std::uint8_t schemaMinor = nakama::ipc::kJsonSchemaMinor)
@@ -837,15 +910,85 @@ private:
         /// Rueckmeldemarke des zuletzt eingereihten Begin.
         std::uint64_t marke = 0;
     };
+
+    /** NAK-180 Nacharbeit 1 (EP-01/N-36): ein Begin, dessen `end` eingereiht,
+        aber noch NICHT auf dem Draht ist.
+
+        Der Sender loeschte das offene Begin bisher, sobald das `end` in der
+        Queue stand. Stirbt der Link davor, ueberlebt das `end` als Ereignis —
+        aber der Aufbauzug des naechsten Links faende kein Begin mehr, stellte
+        kein Replay voran, und das `end` traefe beim Broker auf nichts: die
+        Sitzung nullt nie (N-36). Das Begin bleibt deshalb hier stehen, bis der
+        Zustellrueckruf seiner `endeMarke` kommt.
+
+        Genau EINE solche Aufzeichnung kann noetig sein: sie entsteht nur,
+        wenn das Begin bereits ZUGESTELLT war (also nicht selbst in der Queue
+        liegt), und der naechste Kandidat kann erst zugestellt werden, wenn
+        dieses `end` den Draht verlassen hat — die Queue ist FIFO. */
+    struct AbschlussBegin
+    {
+        nakama::ipc::Interventionsereignis ereignis {};
+        bool gueltig = false;
+        /// Marke des eingereihten `end`. Sein Wire-Commit schliesst das Paar.
+        std::uint64_t endeMarke = 0;
+    };
+
+    /** NAK-180 Nacharbeit 1 (EP-08/N-10): ein faelliger Markerabbruch, dessen
+        Begin beim `prepareToPlay` noch im RT-Ring lag.
+
+        `vorbereiten()`/`setzeSamplerate()` melden den Uebergang seit dieser
+        Runde ZURUECK, statt ihn zu verschlucken. War das Begin zu diesem
+        Zeitpunkt noch nicht aus dem Ring entnommen, kann `prepareToPlay` das
+        `end` nicht bilden — es haette kein Ereignis, an das es anknuepft. Der
+        Uebergang wartet deshalb hier, bis der Sender den Ring geleert hat, und
+        wird genau vor dem ersten Ringereignis mit HOEHERER Sequenz eingereiht:
+        die Folge auf dem Draht bleibt lueckenlos. */
+    struct TotUebergang
+    {
+        bool gueltig = false;
+        std::uint64_t sequenz = 0;
+        std::uint64_t dauerSamples = 0;
+        std::uint64_t tailSamples = 0;
+    };
     /// ⚠️ Sperrenordnung (E11): `sendeMutex` des ControlClients wird VOR
     /// diesem genommen, nie umgekehrt. Der Audiothread fasst ihn nie an.
     mutable std::mutex sendeZustandMutex;
     OffenesBegin offenesBegin;
+    AbschlussBegin abschlussBegin;
+    TotUebergang ausstehenderTotUebergang;
+    /// Marke und Nachlauf des zuletzt EINGEREIHTEN `end` (EP-02). Sein
+    /// Wire-Commit stellt die Frist; vorher zaehlt der Broker nichts.
+    std::uint64_t letzteEndeMarke = 0;
+    std::uint64_t letzterEndeTail = 0;
+
+    // ── NAK-180 Nacharbeit 1: Helfer des Sendezustands ────────────────────
+    // Alle drei setzen `sendeZustandMutex` als GEHALTEN voraus; sie werden
+    // ausschliesslich aus den P0-Rueckwegen und dem Sendezug gerufen.
+    /** EP-02/N-05: Frist bis zum Ablauf des Nachlaufs, gestellt am
+        Wire-Commit des `end`. Marge: eine Heartbeat-Periode. */
+    void nachlaufFristSetzen (std::uint64_t tailSamples);
+    /** EP-02: ist die Frist abgelaufen (oder gab es gar keine)? */
+    bool nachlaufAbgelaufen() const;
+    /** EP-13/R7: der Wiretext dieser Marke ist auf dem Draht. */
+    void mitschnittZustellen (std::uint64_t marke);
+    /** EP-13/R7: er ist es nicht und wird es nie. */
+    void mitschnittVerwerfen (std::uint64_t marke);
     /// Lock-freie Spiegelung fuer `v3ControlLink`, damit der Callback die
     /// Sperre nicht nehmen muss.
     std::atomic<bool> sendeBeginOffen { false };
-    /// Fortlaufende Marke fuer die P0-Rueckmeldung (0 bleibt frei).
-    std::atomic<std::uint64_t> sendeMarkenFolge { 0 };
+    /** NAK-180 Nacharbeit 1 (EP-02/N-05): fruehestens ab dieser Zeit darf das
+        einmalige `false` des Nachberichts reisen.
+
+        Der Nachlauf des letzten gesendeten `end` laeuft beim Broker in
+        ECHTZEIT ab (`tail_samples_offen`). Kam das `false` davor, verwarf der
+        Broker es — und niemand wiederholte es, weil `berichtOffen` und die
+        Aufbauaussage bereits verbraucht waren; die Sitzung blieb fuer immer
+        gesperrt (M-58). Die Frist wird am WIRE-COMMIT des `end` gestellt, denn
+        erst dort beginnt der Broker zu zaehlen, und traegt eine Heartbeat-
+        Periode Marge.
+
+        Steady-Clock-Nanosekunden; `0` = keine Frist offen. */
+    std::atomic<std::int64_t> nachlaufFristNs { 0 };
     /// NAK-180 R10/R13: generationsgebunden, jeder Zugriff ein CAS.
     std::atomic<std::uint64_t> replayFaellig { 0 };
     std::atomic<std::uint64_t> berichtOffen { 0 };
@@ -855,9 +998,27 @@ private:
     /// unbegrenzter Mitschnitt in einer langen Sitzung waechst.
     std::deque<std::string> gesendeteInterventionen;
     static constexpr std::size_t kMitschnittDeckel = 256;
+    /** NAK-180 Nacharbeit 1 (EP-13/R7): Wiretexte, die EINGEREIHT, aber noch
+        nicht auf dem Draht sind.
+
+        Mitschnitt und Zaehler entstanden bisher unmittelbar nach dem Enqueue.
+        Die Passage-Tests ernteten ihn dann ohne `zustelleAllesFuerTest` und
+        blieben gruen, obwohl ein Write scheiterte oder der Aufbaufilter den
+        Eintrag verwarf. R7 definiert „gesendet" als Wire-Commit; der Text
+        wartet deshalb hier auf seine Zustellmeldung. */
+    std::deque<std::pair<std::uint64_t, std::string>> ausstehendeMitschnitte;
+    static constexpr std::size_t kAusstehendDeckel = 256;
     /// Wie viele Begin/End-Paare der Worker wirklich gesendet hat — die
     /// Gegenzahl zu `verworfeneEreignisse()` des Rings.
     std::atomic<std::uint64_t> interventionenGesendet { 0 };
+    /// NAK-180 Nacharbeit 1 (EP-19/EP-20): nur Tests. Der Sender ueberspringt
+    /// seinen Zug, solange das Bit steht - der einzige Weg, die Lage aus N-08
+    /// (Ring nicht leer beim Aufbau) zu ERZWINGEN statt sie zu hoffen.
+    std::atomic<bool> senderPauseFuerTest { false };
+    /// NAK-180 Nacharbeit 1 (EP-16/EP-20): Schranke im Sendezug, nur Tests.
+    /// Vor dem ersten `start()` gesetzt und danach unveraendert - wie der
+    /// Statusprovider des ControlClients.
+    std::function<void (int)> zugHakenFuerTest;
     std::atomic<bool> editorOffen { false };
     std::atomic<bool> testEchtzeit { false };     // nur Tests, s. testForciereEchtzeit
     // §53.5 Satz 1 ("unclassified und audio-neutral") als Atomic fuer den

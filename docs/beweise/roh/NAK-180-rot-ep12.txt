@@ -1,0 +1,153 @@
+NAK-180 Nacharbeit 1 - Rotbeweis ep12
+============================================================
+
+Zurueckgedreht: EP-12/E4: der Abschluss prueft die Sicht GAR NICHT - er greift, obwohl die Sitzung am Wirkpunkt noch ein aktives Intervall haelt, und raeumt es weg.
+Bein: sonde013_verdrahtung (rust)
+Exitcode: 101
+Erwartung: ROT (Exit ungleich 0). Ein gruener Rotbeweis waere der Befund -
+dann misst die Pruefung ihre Regel nicht.
+Der Stand ist danach unveraendert (git status leer).
+------------------------------------------------------------
+
+
+running 64 tests
+test bestaetigter_resync_loest_das_sticky_unknown ... ok
+test erste_intervention_nach_resync_wird_angenommen ... ok
+test ergebnis_ohne_resultatmessung_wird_abgelehnt ... ok
+test bootstrap_zieht_zeitfenster_und_rechnet_echte_p_werte ... ok
+test erster_heartbeat_mit_false_loest_das_sticky_unknown ... ok
+test experiment_begin_legt_passage_und_versuch_an ... ok
+test evidenz_faellt_mit_dem_client ... ok
+test evidenz_ohne_erfolgreiche_ablage_ist_nicht_angenommen ... ok
+test beeinflusste_evidenz_wird_ausgeschlossen_und_gezaehlt ... ok
+test evidenz_historie_bleibt_und_ist_gedeckelt ... ok
+test invalidierung_aus_dem_produktpfad_haelt_den_vertrag ... ok
+test invalidierung_bildet_das_paarurteil_neu ... ok
+test eviction_raeumt_das_paarurteil_und_bildet_neu ... ok
+test experimentbefehl_und_wirkung_sind_ein_append ... ok
+test invalidierung_schliesst_gespeicherte_evidenz_aus ... ok
+test invalidierung_serialisiert_ihre_drei_umfaenge ... ok
+test evidenz_historie_haelt_ihren_deckel ... ok
+test experimenttransitionen_stehen_im_ereignisindex_mit_vollen_referenzen ... ok
+test markerinvalidierung_ohne_projektzeit_ist_fail_closed ... ok
+test markerinvalidierung_trifft_genau_ihren_bereich ... ok
+test blindreihenfolge_wird_im_eigenen_befehlszweig_gebunden ... ok
+test experimentbefehl_bleibt_in_seinem_projekt ... ok
+test nachbericht_behaelt_die_sequenzbasis ... ok
+test nachbericht_greift_nicht_bei_fremdem_intervall_derselben_sitzung ... FAILED
+test nachlauf_laeuft_in_echtzeit_ab ... ok
+test nachlauf_rechnet_ab_seinem_start ... ok
+test messpunktwechsel_invalidiert_aus_dem_deskriptorvergleich ... ok
+test invalidierung_laesst_die_sessionprojektion_stehen ... ok
+test paare_bleiben_in_ihrer_sitzung ... ok
+test gescheiterter_append_laesst_keinen_ausschluss_stehen ... ok
+test invalidierung_projiziert_ihren_grund_in_die_evidenzzeilen ... ok
+test passage_aus_dem_wire_traegt_ihre_messpunktklassen ... ok
+test export_traegt_seine_transitionen_auch_nach_dem_neustart ... ok
+test liegengebliebene_ruecknahme_wird_beim_subscribe_nachgespielt ... ok
+test prepost_filtert_ausschluss_und_rechnet_in_einer_konvention ... ok
+test r2_backlog_ohne_replay_end_zu_end ... ok
+test r2_lebenszyklus_mit_verbleibender_sonde_end_zu_end ... FAILED
+test replay_vor_dem_ersten_heartbeat_nimmt_ihm_den_erstling_nicht ... ok
+test prepost_join_laeuft_im_produktpfad ... ok
+test materialwechsel_invalidiert_aus_dem_fingerprintvergleich ... ok
+test sitzung_ist_zwischen_main_hello_und_erstem_heartbeat_gesperrt ... ok
+test sondenhello_aendert_den_taint_nicht ... ok
+test spaeteres_false_loest_das_sticky_unknown_nicht ... FAILED
+test genau_ein_snapshot_nach_dem_kandidaten_ist_ein_resultat ... ok
+test taint_ist_sitzungsweit ... ok
+test taintmap_haelt_ihren_deckel ... ok
+test transportbruch_invalidiert_mit_seinem_grund ... ok
+test invalidierung_wird_dem_abonnenten_wirklich_zugestellt ... ok
+test evidenzreihenfolge_ueberdauert_den_neustart ... ok
+test ruecknahme_trifft_nur_den_eigenen_versuch ... ok
+test wire_experimentintervall_ohne_id_wird_abgelehnt ... ok
+test wire_hoermarkierung_wird_von_keinem_experimentterminal_geschlossen ... ok
+test wire_intervention_traegt_art_und_experiment_bis_zum_terminal ... ok
+test preview_nimmt_die_evidenz_ihrer_sitzung_zurueck ... ok
+test paarurteil_entsteht_beim_neustart_aus_der_evidenz ... ok
+test preview_und_ruecknahme_liegen_in_einem_append ... ok
+test verdraengung_bekommt_ihr_eigenes_terminal ... ok
+test passagenbelege_kommen_aus_den_vertretenen_quellen ... ok
+test verdraengter_taint_faellt_in_der_opfersitzung ... ok
+test terminal_traegt_die_nutzerdaten_und_ueberdauert_den_neustart ... ok
+test paarurteil_erreicht_gen_ueber_outbox_und_push ... ok
+test resultatmessung_ist_an_versuch_passage_und_grenze_gebunden ... ok
+test versuchsergebnis_erreicht_gen_ueber_outbox_und_push ... ok
+test der_snapshot_haelt_den_versuchsdeckel_des_vertrages ... ok
+
+failures:
+
+---- nachbericht_greift_nicht_bei_fremdem_intervall_derselben_sitzung stdout ----
+
+thread 'nachbericht_greift_nicht_bei_fremdem_intervall_derselben_sitzung' (17328) panicked at tests\sonde013_verdrahtung.rs:4374:5:
+EP-12: der Abschluss greift nicht, solange die Sitzung ein aktives Intervall haelt - und er raeumt es nicht weg: Interventionssicht { aktive: 0, tail_samples_offen: 0, unknown: false, starke_evidenz_erlaubt: true }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- r2_lebenszyklus_mit_verbleibender_sonde_end_zu_end stdout ----
+
+thread 'r2_lebenszyklus_mit_verbleibender_sonde_end_zu_end' (11364) panicked at tests\sonde013_verdrahtung.rs:4479:5:
+M-58/E4: das `false` waehrend des Nachlaufs schneidet ihn nicht ab: Interventionssicht { aktive: 0, tail_samples_offen: 0, unknown: false, starke_evidenz_erlaubt: true }
+
+---- spaeteres_false_loest_das_sticky_unknown_nicht stdout ----
+
+thread 'spaeteres_false_loest_das_sticky_unknown_nicht' (5752) panicked at tests\sonde013_verdrahtung.rs:4190:5:
+N-03: ein spaeterer Heartbeat mit `false` loescht Unknown NIE (M-61) - 
+         eine Selbstheilung waere genau das, was Paragraph 34.2 verbietet
+
+
+failures:
+    nachbericht_greift_nicht_bei_fremdem_intervall_derselben_sitzung
+    r2_lebenszyklus_mit_verbleibender_sonde_end_zu_end
+    spaeteres_false_loest_das_sticky_unknown_nicht
+
+test result: FAILED. 61 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.56s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:2887:9
+     |
+2887 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+     |
+     = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:3872:9
+     |
+3872 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:3919:9
+     |
+3919 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: field `clock` is never read
+   --> tests\sonde013_verdrahtung.rs:280:5
+    |
+277 | struct HarnischMitStore {
+    |        ---------------- field in this struct
+...
+280 |     clock: Arc<ManualClock>,
+    |     ^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `sonde_mit_evidenz` is never used
+    --> tests\sonde013_verdrahtung.rs:1886:4
+     |
+1886 | fn sonde_mit_evidenz(h: &HarnischMitStore, anzahl: usize) -> HelloControl {
+     |    ^^^^^^^^^^^^^^^^^
+
+warning: `eqcop-broker` (test "sonde013_verdrahtung") generated 5 warnings (run `cargo fix --test "sonde013_verdrahtung" -p eqcop-broker` to apply 3 suggestions)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.63s
+     Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)
+error: test failed, to rerun pass `--test sonde013_verdrahtung`

@@ -1,0 +1,98 @@
+NAK-180 Nacharbeit 1 - Rotbeweis ep14
+============================================================
+
+Zurueckgedreht: EP-14/N-20: der Erfolgsblock ist wieder BEDINGUNGSLOS (der alte `if (fehlerZahl == 0)` bindet den N-20-Block) - bei einem erzwungenen Fehler endet das Bein trotzdem mit Exit 0.
+Bein: EqCopLebenslaufTest (cpp)
+Exitcode: 0
+Erwartung: EXIT 0 - und genau das IST der Defekt: der zurueckgedrehte
+Stand meldet trotz eines erzwungenen Fehlers Erfolg.
+Der Stand ist danach unveraendert (git status leer).
+------------------------------------------------------------
+
+LEBENSLAUF-TEST — §53.5 Lifecycle-Klassifikation
+
+[1] Der Automat (nakama::state::Lebenslauf)
+  ok      frisch: unclassified  [unclassified]
+  ok      frisch: neutral
+  ok      frisch: keine Audio-Ausnahme (audio-neutral)
+  ok      frisch: kein Brokerstart
+  ok      Schema-1 'sensor' -> legacy  [legacy]
+  ok      Schema-1 'sensor': bleibt passiv (keine Audio-Ausnahme)
+  ok      Schema-1 'pre' -> legacy  [legacy]
+  ok      Schema-1 'pre': bleibt passiv (keine Audio-Ausnahme)
+  ok      Schema-1 'post' -> legacy  [legacy]
+  ok      Schema-1 'post': bleibt passiv (keine Audio-Ausnahme)
+  ok      Schema-1 'hub' -> main  [main]
+  ok      Schema-1 'hub': Audio-Ausnahme moeglich
+  ok      Schema-2 main (Kind-Matrix bestaetigt) -> main
+  ok      Schema-2 legacy -> legacy
+  ok      Vorbereitung: erst main
+  ok      unbekanntes Major danach -> zurueck auf unclassified
+  ok      Muell (ignoriert) aendert nichts - main bleibt main
+  ok      Muell auf einen frischen Automaten klassifiziert nicht
+  ok      explizite Initialisierung OHNE Editor: abgelehnt
+  ok      ... und der Automat bleibt neutral
+  ok      der geoeffnete Editor allein klassifiziert NICHT
+  ok      Editor offen + explizite Initialisierung: angenommen
+  ok      ... -> main
+  ok      main + offener Editor darf den Broker starten
+  ok      Editor zu: die Klassifikation bleibt (der Stand hat sich nicht geaendert)
+  ok      main OHNE offenen Editor darf NICHT starten
+  ok      Rueckweg: derselbe Akt fuehrt von main zurueck
+  ok      ... -> legacy
+  ok      legacy darf nie starten - auch mit Editor nicht
+  ok      legacy ist wieder audio-neutral
+  ok      Sonde (NkPr) frisch: neutral trotz fester Produktklasse
+  ok      Sonde (NkPr): gueltiger eigener Stand -> passive_probe
+  ok      Sonde (NkPr): kein Brokerstart
+  ok      Sonde (NkPr): auch mit offenem Editor kein Brokerstart
+  ok      Sonde (NkPr): kein Akt macht sie zum Main
+  ok      Sonde (NkAc): gueltiger eigener Stand -> active_probe
+  ok      Sonde (NkAc): ein fremder Main-Stand faellt auf neutral, nie auf main
+
+[2] Verdrahtet: EqCopilotProcessor (Gen)
+  ok      produkt_v3_hello_bindet_originalidentitaet_rolle_und_host
+  ok      Gen-ControlClient traegt den produktiven Heartbeat-/State-Report-Provider
+  ok      Scannerlauf: klassifiziert NICHT (53.5)  [unclassified]
+  ok      Scannerlauf: kein Brokerstart
+  ok      Scannerlauf: unclassified bleibt audio-neutral (kein Sample gefaerbt)
+  ok      Scannerlauf: Markierung meldet sich nicht hoerbar
+  ok      Altprojekt 'sensor' -> legacy  [legacy]
+  ok      legacy mit offenem Editor: kein Brokerstart
+  ok      legacy ist 'immer passiv' - kein Sample gefaerbt
+  ok      Altprojekt 'hub' -> main  [main]
+  ok      Schema-1-Migration erfindet keine Projektbindung
+  ok      main, aber Editor zu: noch kein Brokerstart
+  ok      main + offener Editor: Brokerstart erlaubt
+  ok      expliziter Main-Bindungsakt erzeugt die autoritative Projektbindung
+  ok      Projektbindung reist im bestehenden Host-State verlustfrei
+  ok      main: DIESELBE Markierung faerbt jetzt (der Riegel kann fallen)
+  ok      Vorbereitung: Rollenwahl aendert den Stand
+  ok      frischer expliziter Main-Akt stellt vor dem Connect eine Bindung bereit
+  ok      Rollenwahl OHNE offenen Editor klassifiziert nicht (53.5)  [unclassified]
+  ok      der geoeffnete Editor allein holt es auch nicht nach
+  ok      Vorbereitung: der User waehlt die Rolle im offenen Editor
+  ok      frische Instanz: Editor offen + Rollenwahl 'hub' -> main
+  ok      frische Instanz als main: faerbt
+  ok      Rueckweg: 'sensor' klassifiziert zurueck auf legacy
+  ok      Rueckweg/M-34: nach dem Ausfade greift neutral - und bleibt es ueber 80 Bloecke
+  ok      Vorbereitung: main
+  ok      der fremde Stand kommt read-only zurueck
+  ok      read-only -> zurueck auf unclassified
+  ok      read-only: kein Brokerstart
+  ok      read-only: wieder audio-neutral
+
+[3] Phase B — Broker-Lifecycle-Gate und Audiothread-Nulltest
+  ok      brokerstart_gate_alle_negativzustaende
+  ok      launcher_bleibt_vor_gate_unberuehrt
+  ok      broker_lifecycle_aufrufe_im_audiothread_null
+  ok      brokerstop_nie_im_processblock
+  ok      broker_lifecycle_aufrufe_im_audiothread_null Gegenprobe sieht echte Sperre
+  ok      processblock_quellschnitt_dateioperationen_null
+  ok      processblock_quellschnitt_pipeoperationen_null
+  ok      processblock_quellschnitt_prozessoperationen_null
+  ok      processblock_quellschnitt_logoperationen_null
+  ok      processblock_quellschnitt_store_wait_null
+  FEHLER  ROTBEWEIS EP-14: erzwungener Fehler
+
+LEBENSLAUF-TEST OK (ROT) - 77

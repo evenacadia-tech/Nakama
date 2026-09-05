@@ -90,6 +90,22 @@ fn coordinator() -> (Coordinator, Arc<ManualClock>) {
 }
 
 fn anmelden(c: &Coordinator, link: &str, hello: &HelloControl) {
+    anmelden_roh(c, link, hello);
+    // 🔑 NAK-180 R9: ein MAIN-Hello sperrt seine Sitzung, bis der erste
+    // Heartbeat sie loest. Im Produkt tut das ein ausdrueckliches
+    // `intervention_state_unknown: false`; hier steht dafuer derselbe
+    // bestaetigte Resync, den dieses `false` ausloest. So startet jeder Test,
+    // der NICHT R9 misst, in demselben Zustand wie vor der Regel.
+    //
+    // Wer R9 selbst misst, nimmt `anmelden_roh` - dort bleibt die Sperre
+    // stehen, und genau das ist die Zusage (N-30 bis N-32).
+    if hello.plugin_kind == "main" {
+        let _ = c.resync_bestaetigen(link, 0);
+    }
+}
+
+/// Anmelden OHNE den Resync des ersten Heartbeats (NAK-180 R9).
+fn anmelden_roh(c: &Coordinator, link: &str, hello: &HelloControl) {
     let ausgang = c.control_hello_registrieren(link, hello);
     assert!(ausgang.angenommen, "{:?}", ausgang.grund);
 }

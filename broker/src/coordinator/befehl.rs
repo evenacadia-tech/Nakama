@@ -555,6 +555,17 @@ impl Coordinator {
                         // M-39/M-62: der gemeldete Ueberlauf trifft die Sitzung
                         // dieses Links, nicht den ganzen Broker.
                         self.intervention_overflow_fuer_link(link_id);
+                        // 🔑 NAK-180 R2/E4: ein ausdrueckliches `true` im ERSTEN
+                        // Heartbeat eines Links ist der nicht neutrale
+                        // Neuaufbau - der Prozessor meldet, dass beim Aufbau ein
+                        // Marker lief oder der Ring nicht leer war. Er darf
+                        // seinen Bericht spaeter mit genau EINEM `false`
+                        // abschliessen, sobald er wieder neutral ist.
+                        //
+                        // Ein SPAETERES `true` (Ringueberlauf im Betrieb)
+                        // oeffnet nichts: `neuaufbau_bericht_oeffnen` prueft,
+                        // dass der Link noch keine Ereignissequenz gemeldet hat.
+                        self.neuaufbau_bericht_oeffnen(link_id);
                     }
                     // 🔑 Nacharbeit 2 (Befund R01, M-61): DER Produktaufrufer
                     // von `resync_bestaetigen`.
@@ -570,6 +581,25 @@ impl Coordinator {
                     // sie erklaert Neutralitaet nur, wenn der Ring leer und
                     // kein Marker hoerbar ist.
                     Some(false) if self.link_ohne_ereignissequenz(link_id) => {
+                        let _ = self.resync_bestaetigen(link_id, 0);
+                    }
+                    // 🔑 NAK-180 R2/E4: der zweite, ENGERE Zweig - der
+                    // Abschluss des Neuaufbau-Berichts.
+                    //
+                    // Der Zweig darueber bleibt Zeichen fuer Zeichen stehen; er
+                    // ist der R1-Weg (bestaetigt neutraler Aufbau). Dieser hier
+                    // gilt dem R2-Weg: der erste Heartbeat trug `true`, das
+                    // Replay hat den wahren Zustand hergestellt, der Marker ist
+                    // geendet, der Nachlauf abgelaufen - und ERST JETZT sagt der
+                    // Prozessor "neutral".
+                    //
+                    // M-61 bleibt woertlich erhalten: fuer jeden Link ohne
+                    // offenen Bericht und fuer jedes zweite `false` desselben
+                    // Links loest nichts. Und §34.2 bleibt gewahrt - der Broker
+                    // heilt nichts von selbst, er prueft eine ausdrueckliche
+                    // Aussage gegen seinen eigenen Bestand und verwirft sie,
+                    // sobald er selbst eine Luecke gesehen hat.
+                    Some(false) if self.nachbericht_abgeschlossen(link_id) => {
                         let _ = self.resync_bestaetigen(link_id, 0);
                     }
                     _ => {}

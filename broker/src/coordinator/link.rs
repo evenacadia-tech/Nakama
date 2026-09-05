@@ -262,6 +262,25 @@ impl Coordinator {
         };
         stand.clients.insert(key.clone(), client);
         stand.sessions.entry(key.session()).or_default();
+        // 🔑 NAK-180 R9: das Hello eines MAIN-Links sperrt seine Sitzung.
+        //
+        // Bis hier entstand `unknown` erst mit dem ausgewerteten Heartbeat -
+        // eine Nachricht zu spaet. `evidence_dispatch_locked` liest eine
+        // Sitzung OHNE Taint-Eintrag als erlaubt (`map_or(true, ...)`), und
+        // auf einem frischen Broker (leerer `Stand`, `taint` wird nicht
+        // persistiert) konnte eine Sonde deshalb zwischen dem angenommenen
+        // Main-Hello und Gens erstem Heartbeat starke Evidenz committen -
+        // waehrend der Marker klang (G4 C2, MP1-3).
+        //
+        // Geloest wird es ausschliesslich vom ersten Heartbeat: mit `false`
+        // (bestaetigt neutraler Neuaufbau, R1) oder ueber den Nachbericht
+        // (R2). Bleibt das Feld aus, bleibt gesperrt - fail-closed nach
+        // Paragraph 34.2. Eine SONDE aendert den Taint nicht: sie macht gar
+        // keine Aussage ueber Interventionen.
+        if hello.plugin_kind == "main" {
+            let sitzung = key.session();
+            Self::taint_mut(&mut stand, &sitzung).unknown = true;
+        }
         stand.links.insert(
             link_id.to_owned(),
             LinkStand {
@@ -274,6 +293,8 @@ impl Coordinator {
                 verdraengt: false,
                 trennen: false,
                 join_neuverbinden: false,
+                neuaufbau_bericht_offen: false,
+                bericht_verwirkt: false,
             },
         );
         // Kam die Probe vor dem Main, bleibt sie intern ungebundener Kandidat.
@@ -328,6 +349,54 @@ impl Coordinator {
     /// Genau das unterscheidet den ersten Heartbeat eines neu aufgebauten
     /// Links von jedem spaeteren: der erste ist der bestaetigte Neuaufbau, jeder
     /// spaetere ist die normale Meldung — und die loescht sticky Unknown nie.
+    /// 🔑 NAK-180 R2/E4: der erste Heartbeat trug `true` - der Bericht ist offen.
+    ///
+    /// Nur ein Link, der noch keine Ereignissequenz gemeldet hat, kann seinen
+    /// Bericht oeffnen: das ist derselbe enge Riegel wie beim R1-Weg, nur mit
+    /// umgekehrtem Vorzeichen.
+    pub(super) fn neuaufbau_bericht_oeffnen(&self, link_id: &str) {
+        let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some(link) = stand.links.get_mut(link_id) {
+            if link.letzte_event_sequence.is_none() && !link.bericht_verwirkt {
+                link.neuaufbau_bericht_offen = true;
+            }
+        }
+    }
+
+    /// Ein Ereignis dieses Links hat fail-closed geurteilt: der Abschluss
+    /// verfaellt. Nur ein NEUER Linkaufbau kann danach wieder entsperren.
+    pub(super) fn bericht_verwirken(stand: &mut Stand, link_id: &str) {
+        if let Some(link) = stand.links.get_mut(link_id) {
+            link.bericht_verwirkt = true;
+            link.neuaufbau_bericht_offen = false;
+        }
+    }
+
+    /// Darf das `false` dieses Heartbeats den Bericht abschliessen?
+    ///
+    /// VIER Bedingungen, alle noetig (E4):
+    ///   * der erste Heartbeat trug `true` (der Bericht ist ueberhaupt offen);
+    ///   * seit dem Aufbau hat kein Ereignis fail-closed geurteilt;
+    ///   * die Sitzung haelt keine offenen Intervalle mehr;
+    ///   * und keinen offenen Nachlauf - ein `false` waehrend des Nachlaufs
+    ///     schnitte ihn ab und braeche M-58 ("das Ende allein genuegt nicht").
+    ///
+    /// Beim Ausloesen faellt das Flag: je Link gilt genau EIN Abschluss.
+    pub(super) fn nachbericht_abgeschlossen(&self, link_id: &str) -> bool {
+        let sicht = self.interventionssicht_fuer_link(link_id);
+        if sicht.aktive != 0 || sicht.tail_samples_offen != 0 {
+            return false;
+        }
+        let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+        match stand.links.get_mut(link_id) {
+            Some(link) if link.neuaufbau_bericht_offen && !link.bericht_verwirkt => {
+                link.neuaufbau_bericht_offen = false;
+                true
+            }
+            _ => false,
+        }
+    }
+
     pub(super) fn link_ohne_ereignissequenz(&self, link_id: &str) -> bool {
         self.stand
             .lock()

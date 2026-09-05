@@ -67,6 +67,12 @@ impl Coordinator {
         if let Some(letzte) = link.letzte_event_sequence {
             if letzte.checked_add(1) != Some(sequence) {
                 Self::taint_mut(stand, &session).unknown = true;
+                // 🔑 NAK-180 E4: eine Luecke heisst "ein Ereignis fehlt". Der
+                // lokale Zustand des Plugins ist damit gerade NICHT
+                // vertrauenswuerdig, und sein spaeteres `false` gilt nicht
+                // mehr - auch dann nicht, wenn Intervalle und Nachlauf
+                // inzwischen leer sind. Nur ein neuer Linkaufbau entsperrt.
+                Self::bericht_verwirken(stand, link_id);
                 return false;
             }
         }
@@ -216,6 +222,9 @@ impl Coordinator {
             // Neutralzustand: das Begin kann vor Reconnect/Overflow verloren
             // gegangen sein. Nur `neutral_resync` darf dieses Urteil loesen.
             taint.unknown = true;
+            // NAK-180 E4: und der Nachbericht dieses Links verfaellt - siehe
+            // `sequenz_annehmen`.
+            Self::bericht_verwirken(&mut stand, link_id);
             return (false, None);
         }
         taint.interventionen.remove(intervention_id);

@@ -103,6 +103,21 @@ pub(super) struct LinkStand {
     pub(super) verdraengt: bool,
     pub(super) trennen: bool,
     pub(super) join_neuverbinden: bool,
+    /// 🔑 NAK-180 R2/E4: der erste Heartbeat dieses Links trug ausdrueckliches
+    /// `intervention_state_unknown: true` - ein NICHT neutraler Neuaufbau.
+    ///
+    /// Er darf seinen Bericht spaeter mit genau EINEM `false` abschliessen,
+    /// sobald der Prozessor wieder neutral ist. Das Feld faellt beim
+    /// Ausloesen; ein zweites `false` gilt nie (M-61 bleibt woertlich: "ein
+    /// spaeterer Heartbeat mit `false` ist die normale Meldung, und die
+    /// loescht Unknown nie").
+    pub(super) neuaufbau_bericht_offen: bool,
+    /// Seit dem Aufbau dieses Links hat ein Ereignis fail-closed geurteilt -
+    /// eine Sequenzluecke, ein `end` ohne bekanntes Begin oder ein weiteres
+    /// `true`. Dann ist der lokale Zustand des Plugins gerade NICHT
+    /// vertrauenswuerdig, und der Abschluss verfaellt. Der Riegel traegt sich
+    /// damit selbst, statt dem Plugin zu glauben.
+    pub(super) bericht_verwirkt: bool,
 }
 
 #[derive(Debug, Clone)]

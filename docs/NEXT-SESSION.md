@@ -1,5 +1,13 @@
 # NEXT-SESSION — Einstieg für die nächste Runde
 
+> ## ⏳ G4 GEFAHREN — T3 NEEDS_WORK 05.09.2026 (Dirigent `3d3f130c`), Nacharbeit NAK-180 in Etappe 1, Stand `6c7668c`
+>
+> Gate 5 hält (beide Modelle), Gate 6 im Produkt hält, P4-Exit-Gate fällt in allen drei Sätzen — D-01 (bestätigter Resync ohne Produktauslöser) von Codex und eigenem Lauf unabhängig gefunden. 18 an der Quelle bestätigte Defekte in drei Nacharbeitstickets: **NAK-180** (Plugin-Lebenszyklus: Taint-Resync, Hörmarker-NaN, Pipe-Wartefrist), **NAK-181** (Vergleichsevidenz-Semantik), **NAK-182** (Korpus und Goldens); Reihenfolge fest. Manifest `docs/beweise/G4.md` (§8 Einordnung, §11 Regeln), Register NAK-180 bis NAK-190.
+>
+> **NAK-180 Stand:** Verhaltensmatrix (33 Zeilen, E1–E9) nach Matrixprüfung 1 (NEEDS_WORK, 4 Defekte → R7–R9, R3a) und Matrixprüfung 2 (NEEDS_WORK, 1 Defekt → R10) mit `3d4413a` nachgearbeitet. **Als Nächstes:** Matrixprüfung 3 (Vorlage B, Codex Sol high, Fixdiff `35d1d86...3d4413a -- docs/beweise/NAK-180.md`), bei PASS Etappe 2 über `--resume aa654d94-e7bf-4f21-bdf3-b47a53229966` — Wortlaut in `docs/beweise/NAK-180.md` §5.2 „Stand 2026-09-05".
+>
+> Landminen dieses Laufs: `/c-review` 2.0.1 fällt auf Windows dreifach (`_within` mit `/`, Workflow-Freigabedialog lehnt CR-Bytes in `c-review.js` ab, Safety-Classifier blockiert alle Review-Agenten) — Ersatz nach G2-Vorbild: Detect über gepatchte Plugin-Kopie im Scratchpad, dann 14 Opus-Klartext-Leser über `assignments/unit-NN.json` (Leserauftrag `docs/beweise/roh/G4-creview-leser-auftrag.md`). Codex-Läufe über 10 min nie als Session-Hintergrundbefehl: `tools/dirigent/codex-lauf.ps1` (abgekoppelt per `Start-Process`, Monitor auf die `-start.log` bis `EXIT=`). Codex-Woche stand bei 86 % (ab 95 % prüft ein frischer Opus-Thread, §3.6). Kontext-Messung nur über `…-telemetry.json` der Statuszeile; diese Session endete planmäßig bei 50 %.
+
 > ## ✅ SONDE-013 / S20–22 ABGENOMMEN — T2 PASS 05.09.2026 (Dirigent), Codestand `f1566f5`, Abschlussdoku im Folgecommit
 >
 > Etappe 2 (Bau A–H) lief Erstprüfung 1 → Nacharbeit 1 → Wiederprüfung 1 → Nacharbeit 2 → Wiederprüfung 2 → Nacharbeit 3 → Wiederprüfung 3 (Codex Sol max, NEEDS_WORK mit 14 Befunden) → **Konvergenzentscheid** (`docs/beweise/SONDE-013.md` §14: 0 Defekte — fünf Testform-Befunde bei korrektem Produktpfad, fünf Mikrosekunden- oder Fehlerpfad-Ränder, zwei Lücken, eine Härtung, ein bestehendes Ack-Muster; Entscheide E-13 und E-14 in §7). Kanon GRUEN 53/53 auf `043e98e`. Register: 25 neue Zeilen NAK-155 bis NAK-179, NAK-47 und NAK-68 geschlossen; Produktfragen P-01 bis P-06 als Karten U28 bis U33 in `docs/plan/fragen.json` (Skill `/fragen`). Planstand 27 von 40 abgenommen.

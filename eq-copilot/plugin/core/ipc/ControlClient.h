@@ -365,6 +365,31 @@ public:
     /// eigenen generationsgebundenen Zustaende zu setzen und zu vergleichen.
     std::uint64_t wireGenerationJetzt() const noexcept;
 
+    /** Der Aufbauzug 2+3 als EINE benannte Operation (NAK-180 R10/R12).
+
+        `eineVerbindung` ruft ihn unmittelbar vor `meldeLinkStatus(true)`; ein
+        Bein, das den Link-Callback ohne echte Pipe fahren will, ruft ihn
+        davor. So fahren Produkt und Test denselben Zug: Generation vergeben,
+        Berichte aelterer Generation verwerfen, Zustellpruefung. Ohne ihn
+        bliebe `wireGeneration` im Test auf 0, und `0` heisst "keine Aussage" —
+        jede generationsgebundene Wirkung liefe ins Leere.
+
+        Rueckgabe: die neue Generation. Die gemeldeten Verwuerfe sind bereits
+        an `beiP0Verworfen` gegangen. */
+    std::uint64_t aufbauZug();
+
+    /** Der Wire-Commit ohne Draht (NAK-180, Test).
+
+        Entnimmt jeden wartenden P0-Eintrag, bestaetigt ihn und meldet seine
+        Marke an `beiP0Zugestellt` — genau der Weg, den die Sendeschleife nach
+        einem erfolgreichen `schreibenGenau` geht. Ohne ihn bliebe in einem
+        Bein ohne Pipe jeder Eintrag in Zustand „eingereiht, nicht auf dem
+        Draht", und die Faelle, die ZUSTELLUNG voraussetzen (Replay nach
+        Linkwechsel, E6 Zustand 3), waeren nicht erreichbar.
+
+        Rueckgabe: wie viele Eintraege zugestellt wurden. */
+    std::size_t zustelleAllesFuerTest();
+
     /// Persistenzpflichtiger P0-Auftrag. Der JSON-Text muss genau eine
     /// gueltige `command_id` tragen. Sein Queueplatz wird nach dem Wire-Write
     /// frei; logisch erledigt ist er erst durch ein schemafestes

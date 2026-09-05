@@ -568,6 +568,7 @@ struct ControlClient::Laufzeit
     bool kopplung (std::string& linkId, std::string& challenge) const;
     void meldeLinkStatus (bool verbunden);
     void aufbauAussageZurueckstellen (std::uint64_t marke);
+    std::uint64_t aufbauZug();
     // NAK-180 R7/R12: Rueckmeldung und Zustellpruefung. Alle drei laufen
     // unter `sendeMutex`; sie duerfen den Sendezustand des Prozessors nehmen,
     // aber NIE erneut senden (Sperrenordnung: sendeMutex vor Sendezustand).
@@ -1149,6 +1150,70 @@ void ControlClient::Laufzeit::aufbauAussageZurueckstellen (std::uint64_t marke)
     aufbauHeartbeatMarke.store (0);
 }
 
+/** Der Aufbauzug 2+3 als EINE benannte Operation (NAK-180 R10/R12).
+
+    Er steht als Methode und nicht mehr inline in `eineVerbindung`, damit
+    Produkt UND Bein denselben Zug fahren. Ein Test, der `beiLinkStatus` ohne
+    echte Pipe ausloest, liesse `wireGeneration` sonst auf 0 - und `0` heisst
+    "keine Aussage": jede generationsgebundene Wirkung liefe ins Leere, und
+    der Test waere gruen oder rot aus einem Grund, den das Produkt nicht hat.
+
+    Getrennt waeren Vergabe und Filter ausserdem ein Fenster, in dem ein
+    Einreiher die neue Generation schon liest, der Filter aber noch nicht
+    durch ist. Unter EINER Sperre gibt es dieses Fenster nicht. */
+std::uint64_t ControlClient::Laufzeit::aufbauZug()
+{
+    const auto neueGeneration = wireGeneration.load() + 1;
+    std::vector<std::uint64_t> verworfeneMarken;
+    {
+        std::lock_guard<std::mutex> l (sendeMutex);
+        wireGeneration.store (neueGeneration);
+        // Berichte des alten Links fallen - ihre Aussage galt ihm allein.
+        p0.berichteAelterAls (neueGeneration,
+                              [&verworfeneMarken] (std::uint64_t m)
+                              { if (m != 0) verworfeneMarken.push_back (m); });
+        // Zustellpruefung: liegt noch ein EREIGNIS aelterer Generation da,
+        // kann darunter ein `end` sein, dessen Begin auf dem alten Link
+        // zugestellt wurde. Es reist nie ohne sein Begin - der Prozessor
+        // liefert den Wiretext, wir stellen ihn voran.
+        if (hookReplayBegin && p0.hatEreignisAelterAls (neueGeneration))
+        {
+            const auto replay = hookReplayBegin();
+            if (! replay.empty())
+                p0.voranstellen (P0Eintrag { replay, P0Klasse::bericht,
+                                             neueGeneration, 0 });
+        }
+    }
+    for (const auto m : verworfeneMarken)
+    {
+        aufbauAussageZurueckstellen (m);
+        if (beiP0Verworfen)
+            beiP0Verworfen (m);
+    }
+    return neueGeneration;
+}
+
+std::uint64_t ControlClient::aufbauZug() { return k->aufbauZug(); }
+
+std::size_t ControlClient::zustelleAllesFuerTest()
+{
+    std::vector<std::uint64_t> marken;
+    {
+        std::lock_guard<std::mutex> l (k->sendeMutex);
+        P0Eintrag e;
+        while (k->p0.entnehmen (e))
+        {
+            k->p0.bestaetigen();
+            if (e.marke != 0)
+                marken.push_back (e.marke);
+        }
+    }
+    for (const auto m : marken)
+        if (k->beiP0Zugestellt)
+            k->beiP0Zugestellt (m);
+    return marken.size();
+}
+
 void ControlClient::Laufzeit::meldeLinkStatus (bool verbunden)
 {
     // Ein Reconnect/stop darf die Subscription sofort entwerten, auch wenn
@@ -1443,45 +1508,14 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
         zustand.brokerVersion = brokerVersion;
         zustand.letzterFehler.clear();
     }
-    // 🔑 NAK-180 R10/R12: der Aufbauzug 2+3 - EIN Zug unter `sendeMutex`,
-    // und er laeuft VOR dem Link-Callback.
+    // 🔑 NAK-180 R10/R12: der Aufbauzug 2+3 laeuft VOR dem Link-Callback.
     //
     // Vorher stand `meldeLinkStatus (true)` hier oben und die Generation
     // darunter. Weil der positive Callback den Worker fuer ein Replay weckt,
     // konnte der sein Replay noch unter der ALTEN Generation einreihen - und
     // der unmittelbar folgende Filter warf es weg. Das `end` traf beim Broker
     // auf kein Begin und setzte `unknown` (MP2-1/MP4-1).
-    //
-    // Getrennt waeren Vergabe und Filter ausserdem ein Fenster, in dem ein
-    // Einreiher die neue Generation schon liest, der Filter aber noch nicht
-    // durch ist. Unter EINER Sperre gibt es dieses Fenster nicht.
-    const auto dieseWireGeneration = wireGeneration.load() + 1;
-    std::vector<std::uint64_t> verworfeneMarken;
-    {
-        std::lock_guard<std::mutex> l (sendeMutex);
-        wireGeneration.store (dieseWireGeneration);
-        // Berichte des alten Links fallen - ihre Aussage galt ihm allein.
-        p0.berichteAelterAls (dieseWireGeneration,
-                              [&verworfeneMarken] (std::uint64_t m)
-                              { if (m != 0) verworfeneMarken.push_back (m); });
-        // Zustellpruefung: liegt noch ein EREIGNIS aelterer Generation da,
-        // kann darunter ein `end` sein, dessen Begin auf dem alten Link
-        // zugestellt wurde. Es reist nie ohne sein Begin - der Prozessor
-        // liefert den Wiretext, wir stellen ihn voran.
-        if (hookReplayBegin && p0.hatEreignisAelterAls (dieseWireGeneration))
-        {
-            const auto replay = hookReplayBegin();
-            if (! replay.empty())
-                p0.voranstellen (P0Eintrag { replay, P0Klasse::bericht,
-                                             dieseWireGeneration, 0 });
-        }
-    }
-    for (const auto m : verworfeneMarken)
-    {
-        aufbauAussageZurueckstellen (m);
-        if (beiP0Verworfen)
-            beiP0Verworfen (m);
-    }
+    const auto dieseWireGeneration = aufbauZug();
 
     meldeLinkStatus (true);
 

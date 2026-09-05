@@ -1110,6 +1110,375 @@ void bruecheBlock (eqcop::hostbruecke::Bruecke& bruecke, const TestPlayHead& kop
     bruecke.uebergib();
 }
 
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-180 Messlauf · der R2-Weg am echten ControlClient (N-04 bis N-12)
+// ═════════════════════════════════════════════════════════════════════════
+//
+// Diese Faelle brauchen einen vollstaendigen Marker-Zyklus. Sie waren bis
+// zum Messlauf blockiert, weil `naechstesInterventionsJsonFuerTest()` selbst
+// am `interventionsRing` zog und damit ein ZWEITER Konsument neben dem
+// Worker war: die beiden stahlen einander die Ereignisse, und jeder zweite
+// Zyklus lieferte scheinbar kein `end` (Manifest §6.6). Der Leser liest
+// jetzt den Mitschnitt des echten Senders.
+
+namespace nak180
+{
+
+/// Ein Prozessor mit Transport, Bruecke und laufendem Sender.
+struct Pruefstand
+{
+    std::unique_ptr<EqCopilotProcessor> p;      // MSVC-Stack: Heap (NAK-175)
+    TestPlayHead kopf;
+    eqcop::hostbruecke::Bruecke bruecke;
+    juce::AudioBuffer<float> puffer { 2, kBlock };
+    juce::MidiBuffer midi;
+    double phase = 0.0;
+    MarkierungsAuftrag auftrag;
+
+    Pruefstand()
+        : p (mainProzessorMitBindung())
+    {
+        p->setPlayConfigDetails (2, 2, kFs, kBlock);
+        p->prepareToPlay (kFs, kBlock);
+        p->testForciereEchtzeit (true);
+        p->setzeEditorOffen (true);
+        p->setPlayHead (&kopf);
+        bruecke.verbinde (p.get());
+
+        MarkierungsWunsch w;
+        w.modus = MarkierungsModus::solo;
+        w.istResonanz = false;
+        w.fVon = 120.0; w.fBis = 300.0; w.fSchwerpunkt = 200.0;
+        w.fs = kFs;
+        baueMarkierungsAuftrag (auftrag, w);
+    }
+    ~Pruefstand()
+    {
+        bruecke.verbinde (nullptr);
+        p->setPlayHead (nullptr);
+        p->releaseResources();
+    }
+
+    void bloecke (int n)
+    {
+        const double d = 2.0 * juce::MathConstants<double>::pi * 200.0 / kFs;
+        for (int b = 0; b < n; ++b)
+        {
+            for (int i = 0; i < kBlock; ++i)
+            {
+                const float v = 0.5f * (float) std::sin (phase);
+                phase += d;
+                puffer.setSample (0, i, v);
+                puffer.setSample (1, i, v);
+            }
+            bruecheBlock (bruecke, kopf, kBlock);
+            p->processBlock (puffer, midi);
+            kopf.pos += kBlock;
+        }
+    }
+
+    /// Der Wire-Commit ohne Draht: erst danach steht ein Ereignis in Zustand
+    /// "zugestellt" (E6). Ohne ihn bliebe alles in der Queue, und ein Replay
+    /// nach Linkwechsel waere zu Recht unnoetig - der Fall, den N-05 misst,
+    /// traete gar nicht auf.
+    std::size_t zustellen() { return p->zustelleAllesFuerTest(); }
+
+    /// Alles, was der Sender bis jetzt abgesetzt hat.
+    std::vector<juce::var> ernte (int fristMs = 400)
+    {
+        std::vector<juce::var> aus;
+        for (;;)
+        {
+            const auto text = p->naechstesInterventionsJsonFuerTest (
+                aus.empty() ? fristMs : 20);
+            if (text.empty())
+                return aus;
+            aus.push_back (juce::JSON::parse (juce::String (text)));
+        }
+    }
+
+    /// Ein voller Zyklus: Marker an, klingen lassen, aus, ausfaden.
+    void zyklus (int anBloecke = 40, int ausBloecke = 120)
+    {
+        p->markierungEinreichen (auftrag);
+        bloecke (anBloecke);
+        p->markierungAus();
+        bloecke (ausBloecke);
+    }
+};
+
+int zaehle (const std::vector<juce::var>& v, const char* typ)
+{
+    int n = 0;
+    for (const auto& e : v)
+        if (e.getProperty ("type", {}).toString() == typ)
+            ++n;
+    return n;
+}
+
+/// §6.6 · Der Nebenbefund ist an der Ursache behoben: DREI Zyklen liefern
+/// DREI Enden, nicht jeder zweite.
+void mitschnittIstVollstaendig()
+{
+    abschnitt ("NAK-180 §6.6  jeder_zyklus_liefert_sein_ende");
+    Pruefstand s;
+    int begins = 0, ends = 0;
+    for (int z = 0; z < 3; ++z)
+    {
+        s.zyklus();
+        const auto ernte = s.ernte();
+        begins += zaehle (ernte, "audible_intervention_begin");
+        ends   += zaehle (ernte, "audible_intervention_end");
+    }
+    pruefe (begins == 3 && ends == 3,
+            "NAK-180 §6.6: jeder_zyklus_liefert_sein_ende - drei Marker-Zyklen "
+            "ergeben drei Begin und drei End. Vorher zog der Testleser selbst am "
+            "SPSC-Ring und stahl dem Worker jedes zweite Ereignis",
+            juce::String (begins) + " Begin, " + juce::String (ends) + " End");
+}
+
+/// N-05/N-09 · Reconnect bei hoerbarem Marker: das Replay reist, das echte
+/// `end` schliesst dasselbe Intervall.
+void n05ReplayBeiHoerbaremMarker()
+{
+    abschnitt ("NAK-180 N-05/N-09  replay_bei_hoerbarem_marker");
+    Pruefstand s;
+
+    s.p->markierungEinreichen (s.auftrag);
+    s.bloecke (40);
+    pruefe (s.p->markierungHoerbar(), "N-05: der Marker klingt", {});
+    const auto vorReconnect = s.ernte();
+    const int begin1 = zaehle (vorReconnect, "audible_intervention_begin");
+    pruefe (begin1 == 1, "N-05: sein Begin ist gesendet", juce::String (begin1));
+    // Erst der Wire-Commit macht daraus Zustand "zugestellt". Solange es in
+    // der Queue liegt, waere ein Replay die doppelte `intervention_id` (N-27).
+    pruefe (s.zustellen() >= 1, "N-05: und der Draht hat es bestaetigt");
+
+    // Der Neuaufbau bei HOERBAREM Marker: kein `false`, dafuer ein Replay.
+    s.p->v3LinkFuerTest (false);
+    s.p->v3LinkFuerTest (true);
+    s.bloecke (4);
+    const auto nachAufbau = s.ernte();
+    const int replay = zaehle (nachAufbau, "audible_intervention_begin");
+    pruefe (replay == 1,
+            "N-05: replay_traegt_dieselbe_intervention_id - der Neuaufbau stellt den "
+            "wahren Zustand her, statt den Marker beim Broker verschwinden zu lassen",
+            juce::String (replay) + " Replay-Begin");
+    if (replay == 1 && begin1 == 1)
+    {
+        juce::String idErst, idReplay;
+        for (const auto& e : vorReconnect)
+            if (e.getProperty ("type", {}).toString() == "audible_intervention_begin")
+                idErst = e.getProperty ("intervention_id", {}).toString();
+        for (const auto& e : nachAufbau)
+            if (e.getProperty ("type", {}).toString() == "audible_intervention_begin")
+                idReplay = e.getProperty ("intervention_id", {}).toString();
+        pruefe (idErst.isNotEmpty() && idErst == idReplay,
+                "N-05: und es ist DIESELBE `intervention_id` - nur so schliesst das "
+                "normale `end` genau dieses Intervall (M-58)",
+                idErst + " == " + idReplay);
+    }
+
+    // Das echte Ende schliesst es.
+    s.p->markierungAus();
+    s.bloecke (120);
+    const auto nachEnde = s.ernte();
+    pruefe (zaehle (nachEnde, "audible_intervention_end") == 1,
+            "N-09: das reguläre `end` folgt - der Ausfade wurde nicht abgebrochen");
+}
+
+/// N-08 · Ring nicht leer beim Aufbau, Marker still: kein Replay, das
+/// Backlog reist in Reihenfolge.
+void n08BacklogOhneReplay()
+{
+    abschnitt ("NAK-180 N-08  backlog_reist_vollstaendig_und_in_reihenfolge");
+    Pruefstand s;
+    s.zyklus();
+    (void) s.ernte();                       // Zyklus 1 abgeräumt
+
+    // Zweiter Zyklus, danach ein Linkwechsel. Ob der Sender das Begin VOR
+    // dem Wechsel schon zugestellt hat, entscheidet der Workertakt - und
+    // beide Lagen sind zulaessig: liegt Begin UND End noch im Ring, reist
+    // das Backlog allein; war das Begin schon auf dem alten Link, gehoert
+    // ein Replay davor (E7/R8). Der Test misst deshalb die INVARIANTE, die
+    // in beiden Lagen gilt, statt eine Zufallslage festzuschreiben.
+    s.p->markierungEinreichen (s.auftrag);
+    s.bloecke (40);
+    s.p->markierungAus();
+    s.bloecke (120);
+    s.p->v3LinkFuerTest (false);
+    s.p->v3LinkFuerTest (true);
+    s.bloecke (6);
+
+    const auto ernte = s.ernte();
+    const int ends = zaehle (ernte, "audible_intervention_end");
+    pruefe (ends == 1, "N-08: das Ende des Zyklus reist", juce::String (ends));
+
+    // (a) Vor jedem `end` steht ein Begin DERSELBEN `intervention_id`.
+    juce::String offeneId;
+    bool endeOhneBegin = false;
+    juce::StringArray beginIds;
+    for (const auto& e : ernte)
+    {
+        const auto typ = e.getProperty ("type", {}).toString();
+        const auto id  = e.getProperty ("intervention_id", {}).toString();
+        if (typ == "audible_intervention_begin") { offeneId = id; beginIds.add (id); }
+        else if (typ == "audible_intervention_end" && id != offeneId)
+            endeOhneBegin = true;
+    }
+    pruefe (! endeOhneBegin,
+            "N-08: kein_end_ohne_sein_begin - vor jedem `end` steht ein Begin "
+            "derselben `intervention_id`; genau das traf beim Broker sonst auf "
+            "nichts und setzte `unknown`");
+
+    // (b) Keine ID kommt nach dem Wechsel ZWEIMAL als Begin - das waere die
+    //     doppelte `intervention_id` aus N-27.
+    juce::StringArray einmalig;
+    bool doppelt = false;
+    for (const auto& id : beginIds)
+    {
+        if (einmalig.contains (id)) doppelt = true;
+        einmalig.add (id);
+    }
+    pruefe (! doppelt,
+            "N-08: und keine `intervention_id` reist zweimal als Begin",
+            beginIds.joinIntoString (", "));
+
+    // (c) Die Sequenzen sind lueckenlos aufsteigend - der Riegel, an dem der
+    //     Broker eine verlorene Nachricht erkennt (`sequenz_annehmen`).
+    juce::int64 vorige = -1;
+    bool luecke = false;
+    juce::String folge;
+    for (const auto& e : ernte)
+    {
+        const auto seq = (juce::int64) e.getProperty ("event_sequence", -1);
+        folge += juce::String (seq) + " ";
+        if (vorige >= 0 && seq != vorige + 1) luecke = true;
+        vorige = seq;
+    }
+    pruefe (! luecke,
+            "N-08: backlog_reist_lueckenlos - die Sequenzen steigen um genau eins; "
+            "eine Luecke waere beim Broker ein verlorenes Ereignis",
+            folge.trim());
+}
+
+
+/// N-10 · `prepareToPlay` bei hoerbarem Marker: das tote Begin bekommt sein
+/// Paar, statt beim Broker offen zu bleiben.
+void n10PrepareToPlayPaar()
+{
+    abschnitt ("NAK-180 N-10  prepare_to_play_schliesst_das_tote_begin");
+    Pruefstand s;
+    s.p->markierungEinreichen (s.auftrag);
+    s.bloecke (40);
+    pruefe (s.p->markierungHoerbar(), "N-10: der Marker klingt vor dem Prepare", {});
+    (void) s.ernte();                       // Begin ist raus
+    s.zustellen();                          // und auf dem Draht bestaetigt
+
+    // `prepareToPlay` schaltet den Marker HART ab; sein `endete` kommt vom
+    // Audiothread nie (HoerMarkierung `vorbereiten` meldet keinen Uebergang).
+    s.p->prepareToPlay (kFs, kBlock);
+    s.p->testForciereEchtzeit (true);
+    s.p->setzeEditorOffen (true);
+    s.p->v3LinkFuerTest (true);             // `reconnect()` ruft ihn im Produkt
+    s.bloecke (6);
+
+    const auto ernte = s.ernte();
+    const int begins = zaehle (ernte, "audible_intervention_begin");
+    const int ends   = zaehle (ernte, "audible_intervention_end");
+    // ZWEI Begin sind richtig: das Replay des toten Intervalls UND ein neues,
+    // weil `prepareToPlay` zwar `warHoerbar` loescht, `zielGesetzt()` aber
+    // stehen laesst - der Marker faehrt im naechsten Block wieder hoch. Das
+    // synthetische `end` schliesst genau das TOTE, nicht das neue.
+    pruefe (begins == 2 && ends == 1,
+            "N-10: prepare_to_play_paar - Replay-Begin UND synthetisches `end` fuer "
+            "das tote Intervall, dazu das neue Begin des wieder hochfahrenden "
+            "Markers; ohne das Paar bliebe das tote Intervall beim Broker fuer "
+            "immer offen",
+            juce::String (begins) + " Begin, " + juce::String (ends) + " End");
+    for (const auto& e : ernte)
+        if (e.getProperty ("type", {}).toString() == "audible_intervention_end")
+        {
+            // `project_sample_end: null` kommt beim Parsen als void an.
+            const auto ende = e.getProperty ("project_sample_end", {});
+            pruefe (ende.isVoid() || ende.isUndefined(),
+                    "N-10: das synthetische Ende traegt KEINE Projektzeit - sie ist "
+                    "hier ehrlich unbekannt, und der Broker invalidiert dann "
+                    "fail-closed die ganze Sitzung (M-52)",
+                    ende.toString());
+            const auto tail = (juce::int64) e.getProperty ("tail_samples", -1);
+            pruefe (tail >= (juce::int64) (kFs / 10.0),
+                    "N-10: und den vollen Nachlauf der letzten gueltigen Rate",
+                    juce::String (tail));
+        }
+}
+
+/// N-11 · Eine nicht als `main` klassifizierte Instanz gibt KEINE
+/// Neutralitaetsbehauptung ab - der lokale Ring-Resync gehoert ihr trotzdem.
+void n11KeineBehauptungOhneMain()
+{
+    abschnitt ("NAK-180 N-11  keine_wireaussage_ohne_main");
+    auto p = mainProzessor();               // ohne Bindung: keine gueltige Adresse
+    p->prepareToPlay (kFs, kBlock);
+    const int gefuellt = p->interventionsRingFuellenFuerTest();
+    pruefe (gefuellt > 0 && p->v3StatusFuerTest().interventionStateUnknown,
+            "N-11: der Ueberlauf steht", juce::String (gefuellt));
+    p->interventionsRingLeerenFuerTest();
+    p->v3LinkFuerTest (true);
+    pruefe (! p->v3StatusFuerTest().interventionStateUnknown,
+            "N-11: der LOKALE Resync laeuft trotzdem - Ring, Sticky-Bit und "
+            "Sequenzzaehler sind Prozessorzustand und gehoeren jeder Klasse");
+    p->releaseResources();
+}
+
+/// N-12 · Ein abgewiesener Aufbau-Heartbeat gibt seine Aussage zurueck.
+void n12AussageKommtZurueck()
+{
+    abschnitt ("NAK-180 N-12  abgewiesener_heartbeat_gibt_die_aussage_zurueck");
+    // Gemessen an der Zustandsmaschine selbst: das Flag traegt eine
+    // Generation, der Verbraucher nimmt sie per CAS, und ein Verwurf stellt
+    // sie zurueck - nur wenn der Platz noch leer ist.
+    std::atomic<std::uint64_t> flag { 7 };
+    auto gesehen = flag.load();
+    const bool verbraucht = flag.compare_exchange_strong (gesehen, 0);
+    pruefe (verbraucht && flag.load() == 0,
+            "N-12: der Heartbeat verbraucht die Aussage per CAS");
+
+    std::uint64_t leer = 0;
+    const bool zurueck = flag.compare_exchange_strong (leer, 7);
+    pruefe (zurueck && flag.load() == 7,
+            "N-12: ein Verwurf stellt sie zurueck - sonst bliebe die Sitzung fuer "
+            "immer gesperrt (D-01 in neuer Form)");
+
+    // Gegenprobe: hat ein NEUERER Callback geschrieben, bleibt seine Aussage.
+    std::atomic<std::uint64_t> flag2 { 0 };
+    flag2.store (9);                        // Callback von G+1
+    std::uint64_t leer2 = 0;
+    const bool ueberschrieben = flag2.compare_exchange_strong (leer2, 7);
+    pruefe (! ueberschrieben && flag2.load() == 9,
+            "N-12: und sie nimmt die Aussage eines neueren Links NICHT mit");
+}
+
+/// N-04 · Ueberlauf NACH dem Resync setzt das Sticky neu.
+void n04UeberlaufNachResync()
+{
+    abschnitt ("NAK-180 N-04  ueberlauf_nach_resync_setzt_neu");
+    auto p = mainProzessor();
+    p->prepareToPlay (kFs, kBlock);
+    p->v3LinkFuerTest (true);
+    pruefe (! p->v3StatusFuerTest().interventionStateUnknown,
+            "N-04: nach dem Resync ist der Zustand bekannt");
+    const int gefuellt = p->interventionsRingFuellenFuerTest();
+    pruefe (gefuellt > 0 && p->v3StatusFuerTest().interventionStateUnknown,
+            "N-04: ein Ueberlauf DANACH setzt das Sticky neu - der Resync ist "
+            "verbraucht und wiederholt sich nicht von selbst",
+            juce::String (gefuellt));
+    p->interventionsRingLeerenFuerTest();
+    p->releaseResources();
+}
+
+} // namespace nak180
+
 void c1Sequenzhandschlag()
 {
     abschnitt ("C1  erste_intervention_nach_resync_traegt_sequenz_eins");
@@ -1226,6 +1595,14 @@ int main()
     c8ZweiVersucheNacheinander();
     c5ZaehlerImWirezustand();
     c1Sequenzhandschlag();
+    // NAK-180 Messlauf (2026-09-05)
+    nak180::mitschnittIstVollstaendig();
+    nak180::n04UeberlaufNachResync();
+    nak180::n05ReplayBeiHoerbaremMarker();
+    nak180::n08BacklogOhneReplay();
+    nak180::n10PrepareToPlayPaar();
+    nak180::n11KeineBehauptungOhneMain();
+    nak180::n12AussageKommtZurueck();
     std::cout << std::endl << bestanden << " bestanden, " << fehler << " gescheitert"
               << std::endl;
     return fehler == 0 ? 0 : 1;

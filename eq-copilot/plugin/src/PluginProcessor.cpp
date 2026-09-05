@@ -205,9 +205,11 @@ EqCopilotProcessor::EqCopilotProcessor()
                 + "\",\"session_epoch\":\"" + h.adresse.sessionEpoch
                 + "\",\"instance_id\":\"" + h.adresse.instanceId
                 + "\",\"runtime_nonce\":\"" + h.adresse.runtimeNonce + "\"}";
+            // Dieselbe Regel wie im Sendezug: ein Replay ist eine
+            // Wiederholung und traegt die ORIGINALSEQUENZ. Eine frische Zahl
+            // stuende ueber der des Backlogs und waere beim Broker eine Luecke.
             auto ev = offenesBegin.ereignis;
             ev.beginn = true;
-            ev.sequenz = interventionsSequenz.fetch_add (1, std::memory_order_relaxed) + 1;
             return interventionsWireJson (ev, adresseJson);
         });
 
@@ -291,8 +293,22 @@ void EqCopilotProcessor::prepareToPlay (double samplerate, int maxBlock)
     // ehrlich unbekannt) und dem Tail der letzten gueltigen Rate.
     {
         std::lock_guard<std::mutex> l (sendeZustandMutex);
-        if (offenesBegin.gueltig)
+        if (offenesBegin.gueltig && ! offenesBegin.tot)
+        {
             offenesBegin.tot = true;
+            // 🔑 Die Sequenz wird HIER gezogen, aus derselben Folge wie der
+            // Audiothread. Sie liegt damit VOR der des neuen Begins, das der
+            // wieder hochfahrende Marker gleich schreibt - und die Folge auf
+            // dem Draht bleibt lueckenlos.
+            auto ende = offenesBegin.ereignis;
+            ende.beginn = false;
+            ende.projektzeitGesetzt = false;   // die Endzeit ist ehrlich unbekannt
+            ende.sequenz = interventionsSequenz.fetch_add (1, std::memory_order_relaxed) + 1;
+            ende.tailSamples = nakama::ipc::tailSamplesFuer (
+                ende.dauerSamples,
+                letzteGueltigeSamplerate.load (std::memory_order_relaxed));
+            offenesBegin.totesEnde = ende;
+        }
     }
 
     // Der v3-Hello-Provider liest Samplerate/Block/Kanaele erst beim Aufbau.
@@ -1198,6 +1214,12 @@ void EqCopilotProcessor::interventionenSenden()
                 return 0;
             }
             interventionenGesendet.fetch_add (1, std::memory_order_relaxed);
+            // NAK-180 Messlauf: der Mitschnitt entsteht HIER, am echten
+            // Sendepfad - nicht in einem Testleser daneben. `sendeZustandMutex`
+            // haelt der Zug bereits.
+            if (gesendeteInterventionen.size() >= kMitschnittDeckel)
+                gesendeteInterventionen.pop_front();
+            gesendeteInterventionen.push_back (interventionsWireJson (ev, adresseJson));
             return marke;
         };
 
@@ -1205,13 +1227,41 @@ void EqCopilotProcessor::interventionenSenden()
         // `intervention_id` (sie entsteht deterministisch aus `instance_id`
         // und Nummer), dieselbe `art`, dieselbe Projektzeit — nur die
         // Sequenznummer ist die naechste.
+        // Darf das offene lokale Begin repliziert werden? (E6, dreiwertiger
+        // Zustellstand)
+        //   0 — nicht eingereiht        → ja, es ist nirgends
+        //   1 — eingereiht, nicht auf dem Draht → NEIN, es liegt in der Queue
+        //       und reist auf dem neuen Link von selbst; ein Replay waere die
+        //       doppelte `intervention_id` aus N-27
+        //   2 — zugestellt              → ja, wenn auf einer AELTEREN
+        //       Generation; der laufende Link kennt es dann nicht
+        auto replayNoetig = [&] (std::uint64_t g)
+        {
+            if (! offenesBegin.gueltig)
+                return false;
+            if (offenesBegin.zustand == 1)
+                return false;
+            if (offenesBegin.zustand == 2)
+                return offenesBegin.zustellGeneration != g;
+            return true;                       // Zustand 0
+        };
+
         auto replaySenden = [&] () -> bool
         {
             if (! offenesBegin.gueltig)
                 return false;
+            // 🔑 NAK-180 Messlauf: das Replay traegt die ORIGINALSEQUENZ.
+            //
+            // Es ist eine WIEDERHOLUNG, keine neue Nachricht - dieselbe
+            // `intervention_id`, dieselbe Nummer. Zog es eine frische Zahl,
+            // stand sie ueber der des Ring-Backlogs, das der Audiothread
+            // schon nummeriert hat: der Broker sah 3, dann 2, wertete das als
+            // Luecke und setzte `unknown` (`sequenz_annehmen`). Der frische
+            // Link fuehrt `letzte_event_sequence = None` und nimmt die erste
+            // Zahl vorbehaltlos an; das Backlog zaehlt danach lueckenlos
+            // weiter.
             auto ev = offenesBegin.ereignis;
             ev.beginn = true;
-            ev.sequenz = interventionsSequenz.fetch_add (1, std::memory_order_relaxed) + 1;
             const auto marke = sende (ev, nakama::ipc::P0Klasse::bericht);
             if (marke == 0)
                 return false;
@@ -1226,7 +1276,8 @@ void EqCopilotProcessor::interventionenSenden()
         {
             if (faellig == generation)
             {
-                if (replayFaellig.compare_exchange_strong (faellig, 0))
+                if (replayFaellig.compare_exchange_strong (faellig, 0)
+                    && replayNoetig (generation))
                     replaySenden();
             }
             else
@@ -1236,6 +1287,23 @@ void EqCopilotProcessor::interventionenSenden()
                 // bleibt (R13).
                 replayFaellig.compare_exchange_strong (faellig, 0);
             }
+        }
+
+        // (1b) Ein TOTES Begin wird VOR dem Ringinhalt geschlossen.
+        //
+        // `prepareToPlay` hat den Marker hart abgeschaltet; sein `end` kommt
+        // vom Audiothread nie. Es steht fertig im Sendezustand - mit einer
+        // Sequenz, die VOR der des neuen Begins liegt, das der wieder
+        // hochfahrende Marker gleich schreibt. Erst danach darf der Ring
+        // gelesen werden: ein neues Begin ueberschriebe den Sendezustand,
+        // und das tote Intervall bliebe beim Broker fuer immer offen.
+        if (offenesBegin.gueltig && offenesBegin.tot)
+        {
+            if (replayNoetig (generation))
+                replaySenden();
+            sende (offenesBegin.totesEnde, nakama::ipc::P0Klasse::ereignis);
+            offenesBegin = OffenesBegin {};
+            sendeBeginOffen.store (false, std::memory_order_relaxed);
         }
 
         // (2) Der Ringinhalt, in unveraenderter Reihenfolge.
@@ -1260,41 +1328,10 @@ void EqCopilotProcessor::interventionenSenden()
             // die FIFO-Ordnung stellt es von selbst zu). Sonst geht das
             // Replay-Begin unmittelbar voran; ohne das traefe das `end` beim
             // Broker auf kein Begin und setzte `unknown`.
-            const bool begleitet =
-                offenesBegin.gueltig
-                && (offenesBegin.zustand == 1
-                    || (offenesBegin.zustand == 2
-                        && offenesBegin.zustellGeneration == generation));
-            if (! begleitet && offenesBegin.gueltig)
+            if (replayNoetig (generation))
                 replaySenden();
 
             sende (e, nakama::ipc::P0Klasse::ereignis);
-            offenesBegin = OffenesBegin {};
-            sendeBeginOffen.store (false, std::memory_order_relaxed);
-        }
-
-        // (3) Ein TOTES Begin (N-10: `prepareToPlay` hat den Marker hart
-        //     abgeschaltet, sein `end` kommt vom Audiothread nie) bekommt
-        //     sein Paar hier: Replay-Begin, dann ein synthetisches `end` ohne
-        //     Projektzeit — der Broker invaliditert ohne Endstempel
-        //     fail-closed die ganze Sitzung (M-52), und die Sitzung nullt
-        //     danach ueber den regulaeren Pfad.
-        if (offenesBegin.gueltig && offenesBegin.tot)
-        {
-            const bool begleitet =
-                offenesBegin.zustand == 1
-                || (offenesBegin.zustand == 2
-                    && offenesBegin.zustellGeneration == generation);
-            if (! begleitet)
-                replaySenden();
-            auto ende = offenesBegin.ereignis;
-            ende.beginn = false;
-            ende.projektzeitGesetzt = false;
-            ende.sequenz = interventionsSequenz.fetch_add (1, std::memory_order_relaxed) + 1;
-            ende.tailSamples = nakama::ipc::tailSamplesFuer (
-                ende.dauerSamples,
-                letzteGueltigeSamplerate.load (std::memory_order_relaxed));
-            sende (ende, nakama::ipc::P0Klasse::ereignis);
             offenesBegin = OffenesBegin {};
             sendeBeginOffen.store (false, std::memory_order_relaxed);
         }

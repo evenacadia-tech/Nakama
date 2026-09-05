@@ -28,6 +28,9 @@
 #include "../core/analysis/Vergleichspegel.h"
 #include "../core/analysis/Blindvergleich.h"
 #include "BrokerLifecycle.h"
+#include <chrono>
+#include <deque>
+#include <thread>
 #include "ControlClient.h"
 #include "TelemetryClient.h"
 #include "SourcesModel.h"
@@ -310,7 +313,25 @@ public:
         return controlV3.statusProviderGesetzt();
     }
     std::string v3SubscribeFuerTest() const { return v3SubscribeJson(); }
-    void v3LinkFuerTest (bool verbunden) { v3ControlLink (verbunden); }
+    /** Der Link-Callback wie im Produkt (Test).
+
+        🔑 NAK-180: der POSITIVE Fall faehrt den Aufbauzug 2+3 mit - genau
+        wie `eineVerbindung` es tut. Ohne ihn bliebe `wireGeneration` auf 0,
+        und `0` heisst "keine Aussage": `replayFaellig` und `berichtOffen`
+        wuerden auf 0 gesetzt, der Sender uebersaehe sie, und jeder Test des
+        R2-Wegs waere gruen oder rot aus einem Grund, den das Produkt nicht
+        kennt. */
+    /// NAK-180 (Test): der Wire-Commit ohne Draht. Ohne ihn bliebe jedes
+    /// eingereihte Ereignis in Zustand 1, und die Faelle, die ZUSTELLUNG
+    /// voraussetzen (Replay nach Linkwechsel), waeren unerreichbar.
+    std::size_t zustelleAllesFuerTest() { return controlV3.zustelleAllesFuerTest(); }
+
+    void v3LinkFuerTest (bool verbunden)
+    {
+        if (verbunden)
+            controlV3.aufbauZug();
+        v3ControlLink (verbunden);
+    }
     void v3AntwortFuerTest (const std::string& json,
                             std::uint8_t schemaMinor = nakama::ipc::kJsonSchemaMinor)
     { v3Antwort (json, schemaMinor); }
@@ -363,20 +384,52 @@ public:
         Befund C1: er entnimmt wie der Sender und baut wie der Sender — ein
         Bein misst damit die Zahl, die auf die Leitung geht, statt ein lokales
         Flag. Leer heisst „der Ring ist leer". */
-    std::string naechstesInterventionsJsonFuerTest()
+    /** Der Wiretext, den der Sender WIRKLICH auf die Leitung gegeben hat.
+
+        🔑 NAK-180 Messlauf: dieser Leser zog frueher selbst am
+        `interventionsRing` — und war damit ein ZWEITER Konsument an einem
+        Ring, dessen Kopfkommentar Single-Producer-Single-Consumer zusagt.
+        Der Produktkonsument ist `interventionenSenden()` im Worker, und der
+        Worker startet unbedingt im Konstruktor. Beide riefen `lies()`, beide
+        schrieben `schwanz`: ein Datenrennen, und praktisch stahlen sie
+        einander die Ereignisse. Ein Test sah deshalb in jedem zweiten
+        Marker-Zyklus kein `audible_intervention_end` — nicht weil keines
+        entstand, sondern weil der Worker es zuerst hatte (Manifest §6.6).
+
+        Statt am Ring zu ziehen liest dieser Helfer jetzt den MITSCHNITT des
+        echten Senders. Das ist zugleich die staerkere Aussage: gemessen wird,
+        was gesendet WURDE, nicht was ein Testpfad daneben gebaut haette.
+
+        Leer heisst „der Sender hat (noch) nichts abgesetzt"; der Aufrufer
+        fahre weitere Bloecke. */
+    std::string naechstesInterventionsJsonFuerTest (int fristMs = 250)
     {
-        nakama::ipc::Interventionsereignis e;
-        if (! interventionsRing.lies (e))
-            return {};
-        auto h = v3Hello();
-        h.adresse = nakama::ipc::wireAdresseAusState (h.adresse);
-        const std::string adresseJson =
-            std::string ("{\"logon_sid\":\"") + h.adresse.logonSid
-            + "\",\"project_binding_id\":\"" + h.adresse.projectBindingId
-            + "\",\"session_epoch\":\"" + h.adresse.sessionEpoch
-            + "\",\"instance_id\":\"" + h.adresse.instanceId
-            + "\",\"runtime_nonce\":\"" + h.adresse.runtimeNonce + "\"}";
-        return interventionsWireJson (e, adresseJson);
+        // Der Sender ist der Worker; er zieht spaetestens alle 50 ms. Diese
+        // Frist wartet auf IHN, statt selbst am Ring zu ziehen — sie ist der
+        // Preis dafuer, dass der Ring genau einen Konsumenten behaelt.
+        const auto bis = std::chrono::steady_clock::now()
+                       + std::chrono::milliseconds (std::max (0, fristMs));
+        for (;;)
+        {
+            {
+                std::lock_guard<std::mutex> l (sendeZustandMutex);
+                if (! gesendeteInterventionen.empty())
+                {
+                    auto text = std::move (gesendeteInterventionen.front());
+                    gesendeteInterventionen.pop_front();
+                    return text;
+                }
+            }
+            if (std::chrono::steady_clock::now() >= bis)
+                return {};
+            std::this_thread::sleep_for (std::chrono::milliseconds (2));
+        }
+    }
+
+    /// Wie viele Wiretexte der Sender seit dem Start abgesetzt hat (Test).
+    std::uint64_t interventionenGesendetFuerTest() const
+    {
+        return interventionenGesendet.load (std::memory_order_relaxed);
     }
 #endif
     double holeSamplerate() const                          { return samplerateAtomic.load(); }
@@ -757,8 +810,18 @@ private:
         bool gueltig = false;
         /// `prepareToPlay` hat den Marker hart abgeschaltet; sein `end` kommt
         /// vom Audiothread nie (HoerMarkierung `vorbereiten` meldet keinen
-        /// Uebergang). Der Sender bildet es dann selbst (N-10).
+        /// Uebergang). `prepareToPlay` bildet es deshalb SOFORT - samt
+        /// Sequenznummer, die es sich aus derselben Folge zieht wie der
+        /// Audiothread.
+        ///
+        /// Warum sofort und nicht erst beim Senden: der Marker faehrt nach
+        /// `zielGesetzt()` im naechsten Block WIEDER HOCH und schreibt ein
+        /// neues Begin mit der naechsten Nummer in den Ring. Wuerde das
+        /// synthetische Ende erst danach gebildet, laege seine Sequenz HINTER
+        /// der des neuen Begins - und auf dem Draht stuende Begin(1),
+        /// Begin(3), End(2): beim Broker eine Luecke.
         bool tot = false;
+        nakama::ipc::Interventionsereignis totesEnde {};
         /// Dreiwertiger Zustellstand (Matrix E6):
         ///   0 = nicht eingereiht (sendeP0 wies ab) → Replay noetig
         ///   1 = eingereiht, nicht auf dem Draht     → KEIN Replay, es reist selbst
@@ -783,6 +846,12 @@ private:
     /// NAK-180 R10/R13: generationsgebunden, jeder Zugriff ein CAS.
     std::atomic<std::uint64_t> replayFaellig { 0 };
     std::atomic<std::uint64_t> berichtOffen { 0 };
+    /// NAK-180 Messlauf: Mitschnitt der tatsaechlich abgesetzten Wiretexte.
+    /// Er lebt unter `sendeZustandMutex` — derselben Sperre wie der
+    /// Sendezustand, damit kein dritter Mutex entsteht. Gedeckelt, weil ein
+    /// unbegrenzter Mitschnitt in einer langen Sitzung waechst.
+    std::deque<std::string> gesendeteInterventionen;
+    static constexpr std::size_t kMitschnittDeckel = 256;
     /// Wie viele Begin/End-Paare der Worker wirklich gesendet hat — die
     /// Gegenzahl zu `verworfeneEreignisse()` des Rings.
     std::atomic<std::uint64_t> interventionenGesendet { 0 };

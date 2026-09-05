@@ -1,0 +1,7 @@
+NAK-181 Rotbeweis b4 - 2026-09-05
+Zuruecknahme: R7: merkmale.zuruecksetzen() beim Quarantaenebruch zurueck
+Bein: EqCopProbeeqNullTest
+---
+SONDE-NULLTEST OK - 87 Pruefungen ok, 0 Fehler
+---
+SONDE-NULLTEST OK - 87 Pruefungen ok, 0 Fehler

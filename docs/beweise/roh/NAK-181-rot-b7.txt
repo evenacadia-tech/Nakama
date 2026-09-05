@@ -1,0 +1,8 @@
+NAK-181 Rotbeweis b7 - 2026-09-05
+Zuruecknahme: R5: die Praesenzbits zurueck auf basisGesetzt
+Bein: EqCopSonde013EventWireTest
+---
+[ok]   B07: ohne Samplefehler ist die Klasse brauchbar (die Gegenprobe)
+[ROT]  N-24: korrelation_kurz traegt eine EIGENE Bitmap, nicht die von mid_db  [////////////////////////////////////Hw==]
+---
+111 bestanden, 1 gescheitert

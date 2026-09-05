@@ -2843,6 +2843,292 @@ int main()
     nak180::n37ProzessorZustaendeTragenIhreGeneration();
     nak180::n11KeineBehauptungOhneMain();
     nak180::n12AussageKommtZurueck();
+
+    // ═══════════════════════════════════════════════════════════════════
+    // NAK-181 R1 · die eingefrorene Referenz (G4-Befund V01, M-43)
+    // ═══════════════════════════════════════════════════════════════════
+    abschnitt ("NAK-181 N-01  kandidat_traegt_die_eingefrorene_referenz");
+    {
+        auto p = mainProzessorMitBindung();
+        p->setzeSourcesFixtureFuerTest (eineQuelle());
+        p->prepareToPlay (kFs, kBlock);
+        TestPlayHead kopf;
+        p->setPlayHead (&kopf);
+        juce::AudioBuffer<float> puffer (2, kBlock);
+        fahre (*p, kopf, puffer, 20);
+
+        const auto a = hex32 (0xA1);
+        pruefe (p->merkeManuellePassage (a, "Refrain", 0, 4800000), "N-01: Passage gemerkt");
+        pruefe (warte (*p, kopf, puffer, [&] { return p->passagenfensterFuehrt (a); }),
+                "N-01: die Engine fuehrt das Fenster");
+        pruefe (fahreBisPegel (*p, kopf, puffer), "N-01: der Pegel hat genug Material");
+        pruefe (p->beginneVersuch (a), "N-01: der Versuch beginnt");
+        const double eingefroren = p->versuchMatchGainDb();
+        pruefe (p->versuchLautheitAbgeglichen() && std::isfinite (eingefroren),
+                "N-01: der Match-Gain ist gemessen und eingefroren",
+                juce::String (eingefroren, 4));
+        // ⚠️ Der Wert ist bei diesem Testsignal 0 dB — beide Kanaele tragen
+        // dasselbe. Das ist eine ECHTE Messung, und genau darum geht es: eine
+        // gemessene 0 und eine erfundene 0 sind auf der Leitung nicht zu
+        // unterscheiden, wenn der Sender den lebenden Pegel liest. Der Beleg
+        // ist deshalb nicht der WERT, sondern dass er den geleerten Pegel
+        // ueberlebt und `gainGesetzt` weiter steht.
+
+        // 🔑 Der Bruch: `prepareToPlay` leert den LEBENDEN Pegel. Bis NAK-181
+        // las `versuchReferenzJson` genau den — und der Kandidat trug
+        // `match_gain_db: 0`, also „gleich laut" statt „nie gemessen".
+        p->prepareToPlay (44100.0, kBlock);
+        pruefe (! p->versuchLautheitAbgeglichenLebendFuerTest(),
+                "N-01: der LEBENDE Pegel ist danach leer");
+        pruefe (p->versuchLautheitAbgeglichen(),
+                "N-01: die Referenz des offenen Versuchs steht trotzdem (N-04)");
+        pruefe (std::abs (p->versuchMatchGainDb() - eingefroren) < 1e-9,
+                "N-01: und traegt denselben Wert (N-04)",
+                juce::String (p->versuchMatchGainDb(), 4));
+
+        p->setPlayHead (&kopf);
+        pruefe (p->erfasseKandidat (true), "N-01: der Kandidat wird erfasst");
+        const auto kandidat = juce::JSON::parse (juce::String (p->letzterVersuchP0FuerTest()));
+        const auto referenz = kandidat.getProperty ("referenz", {});
+        const double aufDerLeitung = (double) referenz.getProperty ("match_gain_db", -999.0);
+        pruefe (std::abs (aufDerLeitung - eingefroren) < 1e-6,
+                "N-01: und traegt den EINGEFRORENEN Match-Gain, nicht 0",
+                juce::String (aufDerLeitung, 4) + " gegen " + juce::String (eingefroren, 4));
+
+        p->setPlayHead (nullptr);
+        p->releaseResources();
+    }
+
+    abschnitt ("NAK-181 N-03  der_lebende_zaehler_erreicht_den_kandidaten_nicht");
+    {
+        auto p = mainProzessorMitBindung();
+        p->setzeSourcesFixtureFuerTest (eineQuelle());
+        p->prepareToPlay (kFs, kBlock);
+        TestPlayHead kopf;
+        p->setPlayHead (&kopf);
+        juce::AudioBuffer<float> puffer (2, kBlock);
+        fahre (*p, kopf, puffer, 20);
+        const auto a = hex32 (0xA3);
+        pruefe (p->merkeManuellePassage (a, "Refrain", 0, 4800000), "N-03: Passage gemerkt");
+        pruefe (warte (*p, kopf, puffer, [&] { return p->passagenfensterFuehrt (a); }),
+                "N-03: die Engine fuehrt das Fenster");
+        pruefe (fahreBisPegel (*p, kopf, puffer), "N-03: genug Material");
+        pruefe (p->beginneVersuch (a), "N-03: der Versuch beginnt");
+
+        juce::uint64 b0 = 0, e0 = 0, n0 = 0;
+        p->vergleichspegelZaehlerstand (b0, e0, n0);
+        pruefe (n0 == 0, "N-03: der lebende Zaehler steht auf null", juce::String ((juce::int64) n0));
+        const auto eingefrorenerZaehler = p->versuchNichtEndlicheSamples();
+
+        // 🔑 Eine NEUE Passage BINDEN — das leert den lebenden Pegel und
+        // schaltet seine Speisung wieder an (`bindePassagenfensterMitEpoche`).
+        // Ohne das Binden bleibt die Speisung aus, der lebende Zaehler steht
+        // auf null wie der eingefrorene, und der Fall waere eine Tautologie.
+        const auto zweite = hex32 (0xA4);
+        pruefe (p->merkeManuellePassage (zweite, "Bridge", 4800000, 9600000),
+                "N-03: eine zweite Passage");
+        pruefe (p->passagenfensterWunschFuerTest (zweite, 4800000, 9600000, 0),
+                "N-03: und sie wird gebunden");
+        pruefe (warte (*p, kopf, puffer, [&] { return p->passagenfensterFuehrt (zweite); }),
+                "N-03: die Engine fuehrt das zweite Fenster");
+        kopf.pos = 4800000;
+        for (int i = 0; i < 40; ++i)
+        {
+            juce::MidiBuffer midi;
+            puffer.clear();
+            for (int c = 0; c < puffer.getNumChannels(); ++c)
+                puffer.setSample (c, 0, std::numeric_limits<float>::quiet_NaN());
+            p->processBlock (puffer, midi);
+            kopf.pos += puffer.getNumSamples();
+        }
+        juce::uint64 b1 = 0, e1 = 0, n1 = 0;
+        p->vergleichspegelZaehlerstand (b1, e1, n1);
+        pruefe (n1 > 0,
+                "N-03: der LEBENDE Zaehler waechst - ohne das misst der Fall nichts",
+                juce::String ((juce::int64) n1));
+        pruefe (p->versuchNichtEndlicheSamples() == eingefrorenerZaehler,
+                "N-03: der eingefrorene bleibt, wo er war",
+                juce::String ((juce::int64) p->versuchNichtEndlicheSamples()));
+
+        pruefe (p->erfasseKandidat (true), "N-03: der Kandidat wird erfasst");
+        const auto kandidat = juce::JSON::parse (juce::String (p->letzterVersuchP0FuerTest()));
+        const auto ne = kandidat.getProperty ("referenz", {})
+                                .getProperty ("nicht_endliche_samples", -1);
+        pruefe ((juce::int64) ne == 0,
+                "N-03: der Kandidat traegt den EINGEFRORENEN Zaehler (0), nicht den lebenden",
+                juce::String ((juce::int64) ne) + " (lebend: "
+                + juce::String ((juce::int64) n1) + ")");
+
+        p->setPlayHead (nullptr);
+        p->releaseResources();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // NAK-181 R2 · die retryfaehige Speisung (G4-Befund V02)
+    // ═══════════════════════════════════════════════════════════════════
+    abschnitt ("NAK-181 N-06/N-07  zu_wenig_material_ist_kein_endzustand");
+    {
+        auto p = mainProzessorMitBindung();
+        p->setzeSourcesFixtureFuerTest (eineQuelle());
+        p->prepareToPlay (kFs, kBlock);
+        TestPlayHead kopf;
+        p->setPlayHead (&kopf);
+        juce::AudioBuffer<float> puffer (2, kBlock);
+        fahre (*p, kopf, puffer, 20);
+        const auto a = hex32 (0xA6);
+        pruefe (p->merkeManuellePassage (a, "Refrain", 0, 4800000), "N-06: Passage gemerkt");
+        pruefe (warte (*p, kopf, puffer, [&] { return p->passagenfensterFuehrt (a); }),
+                "N-06: die Engine fuehrt das Fenster");
+
+        // Weniger als `kMindestSekunden` = 0,4 s: 0,4 s bei 48 kHz und 512
+        // Samples sind rund 38 Bloecke. Zehn reichen nicht.
+        fahre (*p, kopf, puffer, 10);
+        const auto vorher = p->versuchAufgenommeneBloecke();
+        pruefe (! p->beginneVersuch (a),
+                "N-06: mit zu wenig Material entsteht KEIN Versuch");
+        pruefe (p->laufenderVersuch().isEmpty(), "N-06: und kein Versuch laeuft");
+
+        // 🔑 Die Zusage: die Speisung geht weiter. Bis NAK-181 blieb sie aus,
+        // und der Handgriff war bei GEBUNDENER Passage beim zweiten Druck
+        // stumm tot.
+        fahre (*p, kopf, puffer, 5);
+        pruefe (p->versuchAufgenommeneBloecke() > vorher,
+                "N-06: der Pegel sammelt WEITER - die Speisung ist wieder an",
+                juce::String ((juce::int64) p->versuchAufgenommeneBloecke())
+                + " nach " + juce::String ((juce::int64) vorher));
+
+        pruefe (fahreBisPegel (*p, kopf, puffer), "N-07: genug Material ist erreicht");
+        pruefe (p->beginneVersuch (a),
+                "N-07: derselbe Handgriff gelingt beim zweiten Druck - ohne Umweg "
+                "ueber Passage loesen und neu binden");
+        pruefe (p->versuchLautheitAbgeglichen(), "N-07: und der Abgleich steht");
+
+        p->setPlayHead (nullptr);
+        p->releaseResources();
+    }
+
+    abschnitt ("NAK-181 N-08  nichtendliche_samples_bleiben_ein_endzustand");
+    {
+        auto p = mainProzessorMitBindung();
+        p->setzeSourcesFixtureFuerTest (eineQuelle());
+        p->prepareToPlay (kFs, kBlock);
+        TestPlayHead kopf;
+        p->setPlayHead (&kopf);
+        juce::AudioBuffer<float> puffer (2, kBlock);
+        fahre (*p, kopf, puffer, 20);
+        const auto a = hex32 (0xA8);
+        pruefe (p->merkeManuellePassage (a, "Refrain", 0, 4800000), "N-08: Passage gemerkt");
+        pruefe (warte (*p, kopf, puffer, [&] { return p->passagenfensterFuehrt (a); }),
+                "N-08: die Engine fuehrt das Fenster");
+        for (int i = 0; i < 60; ++i)
+        {
+            juce::MidiBuffer midi;
+            puffer.clear();
+            if (i == 10)
+                for (int c = 0; c < puffer.getNumChannels(); ++c)
+                    puffer.setSample (c, 3, std::numeric_limits<float>::quiet_NaN());
+            p->processBlock (puffer, midi);
+            kopf.pos += puffer.getNumSamples();
+        }
+        pruefe (! p->beginneVersuch (a),
+                "N-08: mit nichtendlichem Material entsteht kein Versuch");
+        pruefe (p->versuchNichtEndlicheSamples() > 0,
+                "N-08: und der Zaehler steht",
+                juce::String ((juce::int64) p->versuchNichtEndlicheSamples()));
+        const auto stand = p->versuchAufgenommeneBloecke();
+        fahre (*p, kopf, puffer, 5);
+        pruefe (p->versuchAufgenommeneBloecke() == stand,
+                "N-08: die Speisung bleibt AUS - der Pegel dieser Passage ist "
+                "nicht mehr messbar, und Weitersammeln waere der stille Handgriff",
+                juce::String ((juce::int64) p->versuchAufgenommeneBloecke()));
+
+        p->setPlayHead (nullptr);
+        p->releaseResources();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // NAK-181 R3 · der Projektwechsel (G4-Befund V03, M-50)
+    // ═══════════════════════════════════════════════════════════════════
+    abschnitt ("NAK-181 N-09/N-10  reload_schliesst_passage_und_versuch");
+    {
+        auto p = mainProzessorMitBindung();
+        p->setzeSourcesFixtureFuerTest (eineQuelle());
+        p->prepareToPlay (kFs, kBlock);
+        TestPlayHead kopf;
+        p->setPlayHead (&kopf);
+        juce::AudioBuffer<float> puffer (2, kBlock);
+        fahre (*p, kopf, puffer, 20);
+        const auto a = hex32 (0xA9);
+        pruefe (p->merkeManuellePassage (a, "Refrain", 0, 4800000), "N-09: Passage gemerkt");
+        pruefe (warte (*p, kopf, puffer, [&] { return p->passagenfensterFuehrt (a); }),
+                "N-09: die Engine fuehrt das Fenster");
+        pruefe (fahreBisPegel (*p, kopf, puffer), "N-09: genug Material");
+        pruefe (p->beginneVersuch (a), "N-09: der Versuch beginnt");
+        const auto vorReload = p->letzterVersuchP0FuerTest();
+        pruefe (! vorReload.empty(), "N-09: ein Befehl steht auf der Leitung");
+
+        // Ein ANDERES Projekt: dieselbe Bauform, andere `project_binding_id`.
+        juce::ValueTree v ("NakamaState");
+        v.setProperty ("schema", 2, nullptr);
+        juce::ValueTree c ("Common");
+        c.setProperty ("schema", 1, nullptr);
+        c.setProperty ("instance_id", hex32 (0x1234), nullptr);
+        c.setProperty ("project_binding_id", hex32 (0x99), nullptr);
+        c.setProperty ("plugin_kind", "main", nullptr);
+        c.setProperty ("measurement_position", "insert", nullptr);
+        c.setProperty ("label", "Anderes Projekt", nullptr);
+        v.appendChild (c, nullptr);
+        juce::ValueTree m ("MainProject");
+        m.setProperty ("schema", 1, nullptr);
+        v.appendChild (m, nullptr);
+        juce::MemoryBlock bytes;
+        juce::MemoryOutputStream os (bytes, false);
+        v.writeToStream (os);
+        os.flush();
+        p->setStateInformation (bytes.getData(), (int) bytes.getSize());
+
+        // 🔑 Die Zusage: der Laufzeitzustand faellt.
+        pruefe (p->laufenderVersuch().isEmpty(), "N-09: kein Versuch laeuft mehr");
+        pruefe (! p->versuchLautheitAbgeglichen(), "N-09: die Referenz ist geloescht");
+        pruefe (! p->passagenfensterFuehrt (a),
+                "N-09: die alte Passage wird nicht mehr gefuehrt");
+        pruefe (p->versuchAufgenommeneBloecke() == 0, "N-09: der Pegel ist leer");
+        pruefe (p->versuchNichtEndlicheSamples() == 0, "N-09: und sein Zaehler auch");
+        pruefe (p->letzterVersuchP0FuerTest().empty(),
+                "N-09: aus dem Reload-Zug selbst reist kein Byte");
+
+        // N-10 — und danach sendet kein Handgriff mehr.
+        pruefe (! p->erfasseKandidat (true), "N-10: erfasseKandidat liefert false");
+        pruefe (! p->urteileVersuch ("kandidat", {}, {}), "N-10: urteileVersuch auch");
+        pruefe (! p->brichVersuchAb(), "N-10: und brichVersuchAb");
+        pruefe (p->letzterVersuchP0FuerTest().empty(),
+                "N-10: kein Befehl traegt die alte experiment_id unter der neuen Bindung");
+
+        p->setPlayHead (nullptr);
+        p->releaseResources();
+    }
+
+    abschnitt ("NAK-181 N-12  reload_ohne_versuch_loest_die_passage");
+    {
+        auto p = mainProzessorMitBindung();
+        p->setzeSourcesFixtureFuerTest (eineQuelle());
+        p->prepareToPlay (kFs, kBlock);
+        TestPlayHead kopf;
+        p->setPlayHead (&kopf);
+        juce::AudioBuffer<float> puffer (2, kBlock);
+        fahre (*p, kopf, puffer, 20);
+        const auto a = hex32 (0xAB);
+        pruefe (p->merkeManuellePassage (a, "Refrain", 0, 4800000), "N-12: Passage gemerkt");
+        pruefe (warte (*p, kopf, puffer, [&] { return p->passagenfensterFuehrt (a); }),
+                "N-12: die Engine fuehrt das Fenster");
+        const auto saat = mainBaumMitBindung();
+        p->setStateInformation (saat.getData(), (int) saat.getSize());
+        pruefe (! p->passagenfensterFuehrt (a),
+                "N-12: auch OHNE offenen Versuch faellt die Bindung");
+        pruefe (p->versuchAufgenommeneBloecke() == 0, "N-12: und der Pegel ist leer");
+        p->setPlayHead (nullptr);
+        p->releaseResources();
+    }
     std::cout << std::endl << bestanden << " bestanden, " << fehler << " gescheitert"
               << std::endl;
     return fehler == 0 ? 0 : 1;

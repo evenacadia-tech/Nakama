@@ -1,0 +1,9 @@
+NAK-181 Rotbeweis b6 - 2026-09-05
+Zuruecknahme: R4b: die cycle-Vorpruefung zurueck auf isfinite
+Bein: EqCopSonde013EventWireTest
+---
+[ok]   B07: ohne Samplefehler ist die Klasse brauchbar (die Gegenprobe)
+[ROT]  N-18c: das cycle-Objekt entfaellt GANZ â kein null in einem number
+[ROT]  N-18c: und validity.cycle_bounds faellt mit ihm (das Schema koppelt sie)
+---
+110 bestanden, 2 gescheitert

@@ -1,0 +1,10 @@
+NAK-181 Rotbeweis b9 - 2026-09-05
+Zuruecknahme: R2/R3: das Wiederanschalten der Speisung und vergleichszustandLeeren zurueck
+Bein: EqCopSonde013PassageStateTest
+---
+[ROT]  N-06: der Pegel sammelt WEITER - die Speisung ist wieder an  [20 nach 20]
+[ROT]  N-07: genug Material ist erreicht
+[ROT]  N-07: derselbe Handgriff gelingt beim zweiten Druck - ohne Umweg ueber Passage loesen und neu binden
+[ROT]  N-07: und der Abgleich steht
+---
+268 bestanden, 4 gescheitert

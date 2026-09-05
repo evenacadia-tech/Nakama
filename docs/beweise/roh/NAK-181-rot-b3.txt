@@ -1,0 +1,8 @@
+NAK-181 Rotbeweis b3 - 2026-09-05
+Zuruecknahme: R6: die geschlossenen Mengen zurueck auf wort() - jeder String wird angenommen
+Bein: EqCopSonde012SourcesModelTest
+---
+FEHLER  R14_R32_experiment_and_pair_verdict_arrive_in_the_model
+FEHLER  N-26: ereignis ausserhalb der Menge ist ungueltig  [begonnnen]
+---
+SONDE-012 SourcesModel: 69/71 gruen

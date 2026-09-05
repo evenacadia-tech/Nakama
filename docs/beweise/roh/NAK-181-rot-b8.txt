@@ -1,0 +1,7 @@
+NAK-181 Rotbeweis b8 - 2026-09-05
+Zuruecknahme: R1: BEIDE Leser der eingefrorenen Referenz zurueck auf den lebenden Vergleichspegel (Gain und Nichtendlich-Zaehler)
+Bein: EqCopSonde013PassageStateTest
+---
+[ROT]  N-03: der Kandidat traegt den EINGEFRORENEN Zaehler (0), nicht den lebenden  [80 (lebend: 80)]
+---
+275 bestanden, 1 gescheitert

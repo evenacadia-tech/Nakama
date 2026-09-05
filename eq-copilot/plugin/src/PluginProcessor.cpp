@@ -3105,6 +3105,11 @@ double EqCopilotProcessor::versuchMatchGainDb() const
     return vergleichspegel.gainDb();
 }
 
+bool EqCopilotProcessor::versuchLautheitAbgeglichenLebendFuerTest() const
+{
+    return vergleichspegel.eingefroren() && vergleichspegel.gainGesetzt();
+}
+
 void EqCopilotProcessor::vergleichspegelZaehlerstand (juce::uint64& bloecke,
                                                        juce::uint64& endliche,
                                                        juce::uint64& nichtEndliche) const

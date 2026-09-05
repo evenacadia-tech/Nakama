@@ -1,0 +1,12 @@
+NAK-181 Rotbeweis b5 - 2026-09-05
+Zuruecknahme: R4: wireZahl zurueck auf std::to_string - locale-abhaengig
+Bein: EqCopSonde013EventWireTest
+---
+[ok]   B07: ohne Samplefehler ist die Klasse brauchbar (die Gegenprobe)
+[ROT]  N-16: derselbe Aufruf ist unter Komma-Locale BYTEGLEICH  [19396 Bytes]
+[ROT]  N-16: und traegt keinen Komma-Dezimaltrenner
+[ROT]  N-16: juce::JSON nimmt ihn an
+[ROT]  N-16: der Bandsatz traegt genau 221 Werte  [-1]
+[ROT]  N-18c: mit gueltigen Werten traegt cycle active, bounds_valid und beide PPQ
+---
+107 bestanden, 5 gescheitert

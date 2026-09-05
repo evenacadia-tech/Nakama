@@ -312,6 +312,13 @@ public:
     void vergleichspegelZaehlerstand (juce::uint64& bloecke, juce::uint64& endliche,
                                       juce::uint64& nichtEndliche) const;
 
+    /** Ist der LEBENDE Vergleichspegel abgeglichen? (NAK-181 R1, N-01.)
+
+        `versuchLautheitAbgeglichen()` daneben antwortet bei offenem Versuch aus
+        der eingefrorenen Referenz — das ist die Produktfrage. Fuer den Beleg,
+        dass der lebende Pegel wirklich geleert wurde, braucht es diesen. */
+    bool versuchLautheitAbgeglichenLebendFuerTest() const;
+
     /** Beendet Versuch, Passagenbindung und Vergleichspegel (NAK-181 R3).
 
         Wird von `setStateInformation` in BEIDEN Zweigen gerufen, vor dem

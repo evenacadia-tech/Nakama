@@ -1,0 +1,26 @@
+NAK-180 — Etappe 2, Nacharbeit 1 (Runde 1 von 3). Auftrag des Dirigenten (2026-09-05).
+
+DU BIST ein frischer Opus-Bauer (max) im sichtbaren Checkout C:\Users\phili\Projekte\Nakama, Branch master. Basis = `git rev-parse HEAD` beim Start. Aufsicht ENG. Git-Regeln: nie `git add -A`, nie `--amend`, nie fremde uncommittete Dateien anfassen, Commits nur mit explizitem Pathspec, Push nach `git pull --rebase` bei sauberem Worktree. Keine Neben-Refactors, keine Legacy-Umbenennung, keine Schemaänderung (v3-Verträge eingefroren; keine neuen Wire-Felder). Landminen: MSVC-Stack 1 MiB (Engines/Prozessoren in Tests auf den Heap); der Kanon läuft abgekoppelt (Befehl unten), Logausgabe mit *> (überschreibt, kein Löschen nötig); Test-Pipes nur im Probe-Namensraum.
+
+QUELLEN, die du zuerst liest:
+1. docs/beweise/NAK-180.md — Kopftabelle, §2 (Verhaltensmatrix E1 bis E11, N-01 bis N-37, §2.1 Aufbaufolge/Zustände/Linkende, §2.4 Nicht-Zusagen), §4 Bauplan, §6 (Bau und Messlauf), **§7 (Erstprüfung 1: die 21 Defekte EP-01 bis EP-21 mit je der Regel, die sie schließt — das ist dein Auftrag)**.
+2. docs/beweise/roh/NAK-180-erstpruefung-be99d2c.txt — die Befunde wörtlich (Datei:Zeile, Begründung).
+3. docs/beweise/roh/NAK-180-auftrag.txt — Ticketgrenze, Regeln R1 bis R6, Beine, Kanonbefehl, Selbstaudit.
+4. tools/dirigent/pruefliste.md — vor jedem Commit abhaken, im Manifest je Zeile den Messort nennen.
+
+AUFTRAG: Schließe genau die 21 Defekte aus §7 mit den dort genannten Regeln. Nicht weniger (kein Defekt bleibt offen ohne an der Quelle belegten technischen Blocker), nicht mehr (keine zusätzlichen Umbauten, keine neuen Zusagen ohne Test). Die gemeinsame Ursache (§7, Absatz „Gemeinsame Ursache") ist der Maßstab: jede generationsabhängige Wirkung als CAS bzw. unter derselben Sperre wie der Vergleich; „gesendet" heißt Wire-Commit; ein Markenraum; die Interleaving-Tests ERZWINGEN die Lage, die ihre Matrixzeile nennt, mit deterministischer Synchronisation (Latch/Barrier/Condition), nie mit Sleep als einziger Ordnung; je Regel ein Rotbeweis (Rohdatei docs/beweise/roh/NAK-180-rot-<kennung>.txt), der genau die Regel zurückdreht.
+
+REIHENFOLGE (je Schritt eigener Commit mit Pathspec, betroffene Beine grün vor dem Commit):
+1. Produkt Plugin: EP-01, EP-03, EP-04, EP-05, EP-06, EP-07, EP-08, EP-09, EP-13 (ControlClient.cpp/.h, IpcQueues.h, PluginProcessor.cpp/.h, HoerMarkierung.h soweit N-10 es verlangt).
+2. Produkt Plugin, Nachlauf: EP-02 (Tail-Wartezeit vor dem einmaligen `false`, Marge eine Heartbeat-Periode).
+3. Produkt Broker: EP-10, EP-11, EP-12 (link.rs, befehl.rs, intervention.rs, zustand.rs) mit Rust-Tests.
+4. Tests: EP-14 (Lebenslauftest-Rückgabe — zuerst, er maskiert alles andere), EP-15, EP-16, EP-19, EP-20, EP-21 (Plugin-Tests), EP-17 (Rust-E2E R2), EP-18 (r01Resync über den echten ControlClient).
+5. Manifest: §2 nachziehen, wo eine Regel den Wortlaut einer Zeile präzisiert (N-05 Tail-Wartezeit, N-10, N-12, N-27, N-36, N-37; E4 erster Heartbeat; R2 Sequenzbasis) — als Nachtrag mit Datum, nie durch Umschreiben der Geschichte; §6.3 Messbilanz aktualisieren; neuer Abschnitt §7.1 „Nacharbeit 1 — was eingearbeitet wurde" (Tabelle EP-xx → Stelle → Test → Rotbeweis); §6.7 Prüfliste nachziehen; Kopfzeile Phase „Etappe 2: Nacharbeit 1 abgeschlossen, Kanon <GRÜN n/n> auf <sha>, Wiederprüfung 1 offen".
+6. Voller Kanon abgekoppelt:
+   $log = Join-Path $env:TEMP 'nakama-nak180-kanon.log'
+   $befehl = "pwsh -NoProfile -File tools/beweise.ps1 -Bauen -Ziel docs/beweise/NAK-180.md -Anhaengen -Titel NAK-180 *> $log; Add-Content $log ('EXIT=' + `$LASTEXITCODE)"
+   Start-Process pwsh -WindowStyle Hidden -WorkingDirectory (Get-Location) -ArgumentList '-NoProfile','-Command',$befehl
+   Fertig, wenn die letzte Logzeile mit EXIT= beginnt (höchstens alle 15 Minuten `Get-Content $log -Tail 3`); kein Stand mit NOT RUN. Rohausgabe liegt unter docs/beweise/roh/NAK-180-<sha>.md.
+7. Commit (Manifest, Rohausgaben) mit Pathspec, `git pull --rebase`, Push. Kein Anfassen von docs/beweise/G4.md, docs/offene-punkte.md, docs/PLAN-STAND.md, docs/plan/. Turn mit der letzten Zeile „ETAPPE 2 NACHARBEIT 1 ABGESCHLOSSEN <end-sha>" beenden. Keine Nachfrage an den User.
+
+SELBSTAUDIT vor jedem Commit (adversarial): Gibt es noch einen `store` auf `berichtOffen`, `replayFaellig`, die Aufbau-Flags oder den Zustellstand? Liest irgendein Callback die aktuelle statt der ihm gehörenden Generation? Wird irgendwo „gesendet" beim Einreihen statt beim Wire-Commit gebucht? Kann ein Test grün sein, obwohl seine Regel entfernt ist (Rotbeweis wirklich rot)? Audiothread ohne Sperre/Allokation, Nulltest bitidentisch, keine Schemaänderung.

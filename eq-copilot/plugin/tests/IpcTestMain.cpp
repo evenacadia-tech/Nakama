@@ -6080,6 +6080,71 @@ int main (int argc, char** argv)
         server.stoppen();
     }
 
+    // ── NAK-180 R6: die Wartefrist gehoert UNS, nicht dem Pipe-Besitzer
+    //    (Matrix N-19, N-21, N-22) ──────────────────────────────────────────
+    {
+        // Ein fremder lokaler Prozess darf jeden `\\.\pipe\`-Namen anlegen.
+        // Genau das wird hier nachgestellt: eine Pipe mit
+        // `nDefaultTimeOut = 0xFFFFFFFE` und OHNE `ConnectNamedPipe`, also
+        // ohne horchende Instanz. Mit dem alten `WaitNamedPipeW(name, 0)`
+        // uebernahm der Aufrufer diese Frist und stand bis zu ~49,7 Tage —
+        // im Lebenslaufthread, der das Win32-Startmutex haelt, und damit
+        // spaeter im Destruktor auf dem Message-Thread des Hosts (§48.4).
+        //
+        // Der Name liegt im PROBE-Namensraum; ein produktiver v3-Name wird
+        // hier nie belegt (N-22).
+        const auto pipe = testPipeName ("nak180-frist");
+        pruefe (istProbePipename (pipe),
+                "NAK-180 R6: der Testname liegt im Probe-Namensraum - ein produktiver "
+                "v3-Name wird nie belegt");
+
+        std::wstring breit;
+        for (char c : pipe)
+            breit.push_back (static_cast<wchar_t> (static_cast<unsigned char> (c)));
+        HANDLE feindlich = CreateNamedPipeW (
+            breit.c_str(), PIPE_ACCESS_DUPLEX,
+            PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
+            1,                       // nMaxInstances: genau eine, und die ist belegt
+            4096, 4096,
+            0xFFFFFFFE,              // nDefaultTimeOut: die Frist des ANGREIFERS
+            nullptr);
+        pruefe (feindlich != INVALID_HANDLE_VALUE,
+                "NAK-180 R6: die feindliche Pipe steht (jedes lokale Konto darf das)");
+
+        if (feindlich != INVALID_HANDLE_VALUE)
+        {
+            const auto start = std::chrono::steady_clock::now();
+            const bool erreichbar = namedPipeErreichbar (pipe);
+            const auto dauerMs = (long long) std::chrono::duration_cast<std::chrono::milliseconds> (
+                std::chrono::steady_clock::now() - start).count();
+
+            pruefe (dauerMs < 1000,
+                    "NAK-180 R6: wartefrist_ist_unsere_nicht_die_des_servers - der Aufruf "
+                    "kehrt unter 1 s zurueck, obwohl der Pipe-Besitzer 0xFFFFFFFE als "
+                    "Default-Timeout gesetzt hat",
+                    std::to_string (dauerMs) + " ms");
+            // Die Semantik bleibt: eine belegte Instanz heisst "da, nur gerade
+            // keine frei" — sonst haelte der Lebenslauf einen gerade
+            // startenden eigenen Broker faelschlich fuer abwesend.
+            pruefe (erreichbar,
+                    "NAK-180 R6: und eine belegte Instanz zaehlt weiter als erreichbar",
+                    erreichbar ? "true" : "false");
+            CloseHandle (feindlich);
+        }
+
+        // N-21: ein Name, den es gar nicht gibt, bleibt "nicht erreichbar" —
+        // sonst oeffnete der Lebenslauf den Spawnweg nie.
+        const auto leer = testPipeName ("nak180-leer");
+        const auto start2 = std::chrono::steady_clock::now();
+        const bool nichtDa = namedPipeErreichbar (leer);
+        const auto dauer2 = (long long) std::chrono::duration_cast<std::chrono::milliseconds> (
+            std::chrono::steady_clock::now() - start2).count();
+        pruefe (! nichtDa && dauer2 < 1000,
+                "NAK-180 R6: ein nicht existierender Name bleibt nicht erreichbar und "
+                "kehrt sofort zurueck",
+                std::to_string (dauer2) + " ms");
+    }
+
     std::cout << "\n" << (fehler == 0 ? "ALLE PRUEFUNGEN GRUEN" : "FEHLER")
               << " — " << geprueft << " Pruefungen, " << fehler << " Fehler" << std::endl;
     return fehler == 0 ? 0 : 1;

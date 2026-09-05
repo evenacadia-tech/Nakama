@@ -404,12 +404,15 @@ public:
         for (int k = 0; k < ch; ++k)
             std::memcpy (wetK[k], puffer.getReadPointer (k), (size_t) nutzbar * sizeof (float));
 
+        // NAK-180 R4: je Blocklauf EINE Zahl, EINE Addition aufs Atomic.
+        std::uint64_t nichtEndlichImBlock = 0;
         float huell = 1.0f;
         if (lokal.modus == MarkierungsModus::solo)
         {
             for (int k = 0; k < ch; ++k)
                 for (int s = 0; s < lokal.sektionen; ++s)
-                    tdf2Lauf (wetK[k], nutzbar, lokal.statisch[(size_t) s], zust[k][s]);
+                    tdf2Lauf (wetK[k], nutzbar, lokal.statisch[(size_t) s], zust[k][s],
+                              nichtEndlichImBlock);
         }
         else
         {
@@ -426,7 +429,8 @@ public:
                     stufe = lokal.stufenFolge[(size_t) std::min (pulsPos / kPulsChunk,
                                                                  kPulsMaxChunks - 1)];
                 for (int k = 0; k < ch; ++k)
-                    tdf2Lauf (wetK[k] + i, stueck, lokal.puls[(size_t) stufe], pulsZust[k]);
+                    tdf2Lauf (wetK[k] + i, stueck, lokal.puls[(size_t) stufe], pulsZust[k],
+                              nichtEndlichImBlock);
                 huell = (float) stufe / (float) (kPulsStufen - 1);
                 pulsPos += stueck;
                 if (periode > 0 && pulsPos >= periode)
@@ -524,6 +528,12 @@ public:
         phaseAtomic.store (lokal.modus == MarkierungsModus::puls ? huell * (float) fade
                                                                  : (float) fade,
                            std::memory_order_relaxed);
+        // NAK-180 R4: EINE Addition je Blocklauf, ohne Sperre und ohne
+        // Allokation. Vorbild ist `nanSeen` im Prozessor; anders als dort
+        // wird nicht nur ein Bit gesetzt, sondern gezaehlt — die Zahl
+        // unterscheidet einen einzelnen Ausrutscher von einem Dauerzustand.
+        if (nichtEndlichImBlock != 0)
+            wetNichtEndlich.fetch_add (nichtEndlichImBlock, std::memory_order_relaxed);
         return uebergang;
     }
 
@@ -538,6 +548,14 @@ public:
         hoerbareSamples = 0;
     }
 
+    /** NAK-180 R4: wie viele nicht-endliche Zwischenwerte der Wet-Pfad
+        verriegelt hat. Kumulativ ueber die Lebenszeit des Prozessors; ein
+        Reset waere ein Leser, der seine eigene Vergangenheit loescht. */
+    std::uint64_t nichtEndlicheWetSamples() const
+    {
+        return wetNichtEndlich.load (std::memory_order_relaxed);
+    }
+
     bool  hoerbar() const     { return hoerbarAtomic.load (std::memory_order_relaxed); }
     float phase() const       { return phaseAtomic.load (std::memory_order_relaxed); }
     bool  zielGesetzt() const { return zielGesetztAtomic.load (std::memory_order_relaxed); }
@@ -545,17 +563,46 @@ public:
 private:
     struct Zust { double s1 = 0.0, s2 = 0.0; };
 
-    static void tdf2Lauf (float* d, int n, const BiquadKoeff& c, Zust& z)
+    /** NAK-180 R4: der Wet-Pfad latcht NIE einen nicht-endlichen Zustand.
+
+        Vorher genuegte ein einziges +-Inf im Hostpuffer, um den Filter
+        dauerhaft zu vergiften: `y = b0*x + s1` wurde Inf, und in DERSELBEN
+        Iteration ergab `s1 = b1*x - a1*y + s2` genau `Inf - Inf = NaN`. Ab da
+        lieferte jede weitere Iteration NaN, unabhaengig vom Eingang, und die
+        Mischzeile schrieb das in den Hostpuffer, solange der Marker engagiert
+        blieb — `resetZustaende()` laeuft erst bei `fade <= 0 && ! zielAn`.
+
+        DREI Riegel, nicht einer (Matrix E5):
+          - EINGANG: ein nicht-endliches Sample geht als 0.0 ins Filter.
+          - AUSGANG: ein nicht-endliches `y` wird als 0.0f geschrieben, statt
+            in die Wet-Kopie zu gelangen.
+          - ZUSTAND: nach dem Block faellt ein nicht-endliches s1/s2 auf 0.
+        Der Eingangsriegel allein genuegt nicht: `y` kann auch bei endlichem
+        `x` nicht endlich werden, wenn `s1` es aus einem frueheren Block schon
+        war — und genau diese Verkettung IST der Latch.
+
+        Gezaehlt wird in `n`, einer lokalen Variable des Aufrufers; das Atomic
+        bekommt EINE Addition je Blocklauf, nie eine je Sample. Bei endlichem
+        Material aendert der Riegel kein Bit: `isfinite` ist dann wahr und die
+        Konvertierung dieselbe wie zuvor (Nulltest und Goldens unberuehrt). */
+    static void tdf2Lauf (float* d, int n, const BiquadKoeff& c, Zust& z,
+                          std::uint64_t& nichtEndlich)
     {
         double s1 = z.s1, s2 = z.s2;
         for (int i = 0; i < n; ++i)
         {
-            const double x = (double) d[i];
+            double x = (double) d[i];
+            if (! std::isfinite (x)) { x = 0.0; ++nichtEndlich; }
             const double y = c.b0 * x + s1;
             s1 = c.b1 * x - c.a1 * y + s2;
             s2 = c.b2 * x - c.a2 * y;
-            d[i] = (float) y;
+            if (std::isfinite (y))
+                d[i] = (float) y;
+            else
+                { d[i] = 0.0f; ++nichtEndlich; }
         }
+        if (! std::isfinite (s1)) { s1 = 0.0; ++nichtEndlich; }
+        if (! std::isfinite (s2)) { s2 = 0.0; ++nichtEndlich; }
         z.s1 = s1; z.s2 = s2;
     }
 
@@ -602,6 +649,8 @@ private:
 
     // Audiothread → UI/Heartbeat
     std::atomic<bool>  hoerbarAtomic { false };
+    // NAK-180 R4: Riegelzaehler des Wet-Pfads (Eingang, Ausgang, Zustand).
+    std::atomic<std::uint64_t> wetNichtEndlich { 0 };
     std::atomic<float> phaseAtomic { 0.0f };
 };
 

@@ -50,6 +50,10 @@ struct StatsSnapshot
     // `project_time_samples` als null hinaus, nie als 0 (NAK-24).
     bool     projectTimeValid = false;
     juce::int64 projectTimeSamples = 0;
+    // NAK-180 R4: wie viele nicht-endliche Zwischenwerte der Wet-Pfad der
+    // Hoer-Markierung verriegelt hat. `nanSeen` daneben zaehlt den EINGANG;
+    // beides sind verschiedene Aussagen und duerfen nicht zu einer werden.
+    juce::uint64 wetNichtEndlich = 0;
 };
 
 // Kompakter Messstand für den v2-Heartbeat (measurement in eq-ipc.schema.json).

@@ -42,13 +42,52 @@
 
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <atomic>
+#include <cmath>
 #include <cstdint>
 #include <cstring>
+#include <limits>
 
 namespace nakama::ipc
 {
+
+//==============================================================================
+/** Konservativer Quarantaene-Nachlauf zu einem beendeten Eingriff (NAK-180 R5).
+
+    Zwei Zusagen stecken in dieser Zahl, und beide waren gebrochen:
+
+    1. Sie rechnet mit einer GEPRUEFTEN Samplerate. Der Aufrufer uebergibt
+       `letzteGueltigeSamplerate`, nicht JUCEs `getSampleRate()`: eine
+       nicht-endliche oder ueber `INT_MAX` liegende Hostrate machte
+       `(int) getSampleRate()` zu undefiniertem Verhalten. Auf MSVC/x64
+       liefert `cvttsd2si` dort `INT_MIN`, `INT_MIN / 10` ist negativ, und
+       `std::max (1, …)` ergab genau EIN Sample Nachlauf statt rund 100 ms —
+       gefaerbtes Audio laege danach ausserhalb der Invalidierung (§34.2:
+       "zu kurz waere hier der teure Fehler").
+    2. Sie SAETTIGT an beiden Raendern. Die Verdopplung einer sehr langen
+       Markerdauer lief vorher ueber und ergab einen Nachlauf, der KUERZER
+       war als der Eingriff selbst — derselbe teure Fehler durch eine andere
+       Tuer.
+
+    Der Nachlauf ist doppelte Dauer plus ein festes Zehntel der Rate. Der
+    Deckel von 76800 Samples ist ein Zehntel der hoechsten vom Plugin
+    akzeptierten Rate (768 kHz, `prepareToPlay`); eine hoehere Zahl koennte
+    nur aus einer Rate stammen, die nie geprueft durchgekommen waere. */
+inline std::uint64_t tailSamplesFuer (std::uint64_t dauerSamples, double samplerate) noexcept
+{
+    constexpr std::uint64_t kMax = std::numeric_limits<std::uint64_t>::max();
+    constexpr double kPolsterDeckel = 76800.0;          // 768 kHz / 10
+    const double zehntel = std::isfinite (samplerate) ? samplerate / 10.0 : 0.0;
+    // Ohne je gueltige Rate bleibt 1 - dieselbe untere Schranke wie zuvor.
+    // Sie ist hier unerreichbar, weil der Aufrufer mit 48000 vorbelegt ist;
+    // die Zeile haelt die Funktion trotzdem fuer sich allein ehrlich.
+    const std::uint64_t polster =
+        zehntel >= 1.0 ? (std::uint64_t) std::min (zehntel, kPolsterDeckel) : 1u;
+    const std::uint64_t doppelt = dauerSamples > kMax / 2u ? kMax : dauerSamples * 2u;
+    return doppelt > kMax - polster ? kMax : doppelt + polster;
+}
 
 //==============================================================================
 /** Ein hoerbarer Eingriff, wie ihn der Audiothread meldet.

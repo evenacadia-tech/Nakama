@@ -1,0 +1,14 @@
+NAK-180 Rotbeweis R6 - die Wartefrist von namedPipeErreichbar
+Stand: 7d88a9282fb5657fdb504d2fd47df7338954f602
+Zuruecknahme: kErreichbarWarteMs von 50 zurueck auf 0 (= NMPWAIT_USE_DEFAULT_WAIT,
+also die Frist des Pipe-BESITZERS) in IpcVerbindung.cpp.
+
+Erwartung: der Testfall N-19 legt eine fremde Pipe mit nDefaultTimeOut = 0xFFFFFFFE
+und ohne ConnectNamedPipe an; namedPipeErreichbar uebernimmt diese Frist.
+
+ERGEBNIS: EqCopIpcTest kehrt nach 180 s NICHT zurueck und wird abgebrochen.
+Das ist der Defekt in Reinform - der Aufruf stuende bis zu ~49,7 Tage, im
+Lebenslaufthread, der das Win32-Startmutex haelt. Mit der 50-ms-Frist misst
+derselbe Testfall 0 ms (siehe Gruenlauf im Manifest).
+
+EXIT=ABGEBROCHEN nach 180 s (kein Exitcode, der Prozess hing)

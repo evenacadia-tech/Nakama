@@ -1,0 +1,13 @@
+NAK-180 Rotbeweis R4 - der Wet-Riegel der Hoer-Markierung
+Stand: 7d88a9282fb5657fdb504d2fd47df7338954f602
+Zuruecknahme: die drei Riegel in HoerMarkierung.h::tdf2Lauf (Eingang, Ausgang, Zustand) entfernt.
+Erwartung: N-13 faellt - ein +Inf-Block vergiftet die Folgebloecke.
+
+  ok      NAK-180 R4: die Markierung klingt vor dem Inf-Block
+  ok      NAK-180 R4: bei endlichem Material zaehlt der Riegel NICHTS - er ist kein Rauschen im Normalbetrieb  [0]
+  FEHLER  NAK-180 R4: der Riegel hat gegriffen und GEZAEHLT  [0]
+  FEHLER  NAK-180 R4: wet_pfad_latcht_kein_nicht_endliches_sample - nach einem +Inf-Block liefern acht Folgebloecke mit endlichem Eingang wieder endliches Audio (Invariante NaN-Ehrlichkeit)
+  ok      NAK-180 R4: und der Marker klingt weiter - der Riegel schaltet ihn nicht heimlich ab
+  ok      NAK-180 R4: der Riegel ist bei endlichem Material bit-neutral
+MARKIERUNGSTEST FEHLGESCHLAGEN
+EXIT=1

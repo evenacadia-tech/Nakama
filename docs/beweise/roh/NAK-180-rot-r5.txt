@@ -1,0 +1,19 @@
+NAK-180 Rotbeweis R5 - Quarantaene-Tail aus der geprueften Samplerate
+Stand: 7d88a9282fb5657fdb504d2fd47df7338954f602
+Zuruecknahme (zwei Stellen):
+  1. InterventionsRing.h::tailSamplesFuer - Polsterdeckel und beide Saettigungen entfernt.
+  2. PluginProcessor.cpp - speist wieder JUCEs ungeprueftes getSampleRate().
+Erwartung: die Randfaelle der reinen Funktion fallen (Deckel, u64-Saettigung).
+
+  ok      NAK-180 R5: der Normalfall ist doppelte Dauer plus ein Zehntel der Rate  [6800]
+  ok      NAK-180 R5: eine NaN-Rate ergibt kein UB, sondern die untere Schranke
+  FEHLER  NAK-180 R5: das Polster ist gedeckelt - eine absurde Rate blaeht den Nachlauf nicht ins Unendliche  [-9223372036854773808]
+  FEHLER  NAK-180 R5: tail_saettigt_statt_ueberzulaufen - eine Dauer am u64-Rand ergibt den Maximalwert, NIE einen kuerzeren Nachlauf als den Eingriff
+  FEHLER  NAK-180 R5: auch die Verdopplung genau an der Kante saettigt
+  ok      NAK-180 R5: eine gueltige Rate wird gemerkt  [48000]
+  ok      NAK-180 R5: die ANALYSE verwirft die nicht-endliche Rate wie bisher  [0]
+  ok      NAK-180 R5: tail_rechnet_mit_gepruefter_samplerate - die gemerkte gueltige Rate BLEIBT stehen; genau sie speist `tailSamplesFuer`, waehrend JUCEs ungeprueftes `getSampleRate()` hier UB waere  [48000]
+  ok      NAK-180 R5: auch eine endliche, aber unzulaessige Rate (> 768 kHz) verstellt die gemerkte nicht  [48000]
+  ok      NAK-180 R5: eine neue GUELTIGE Rate loest die alte ab  [96000]
+MARKIERUNGSTEST FEHLGESCHLAGEN
+EXIT=1

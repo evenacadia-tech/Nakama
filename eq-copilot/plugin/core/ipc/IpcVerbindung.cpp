@@ -24,7 +24,29 @@ bool namedPipeErreichbar (const std::string& pipeName)
     breit.reserve (pipeName.size());
     for (char c : pipeName)
         breit.push_back (static_cast<wchar_t> (static_cast<unsigned char> (c)));
-    if (WaitNamedPipeW (breit.c_str(), 0) != FALSE)
+    // 🔑 NAK-180 R6: die Frist ist UNSERE, nicht die des Servers.
+    //
+    // Hier stand `0` — das ist `NMPWAIT_USE_DEFAULT_WAIT`, und MSDN sagt dazu:
+    // "the time-out interval is the default value specified by the server
+    // process in the CreateNamedPipe function". Der Server ist an dieser
+    // Stelle aber gerade der, ueber den wir noch gar nichts wissen: einen
+    // `\\.\pipe\`-Namen darf jedes lokale Konto anlegen, und mit
+    // `nDefaultTimeOut = 0xFFFFFFFE` plus belegter Instanz stand der Aufruf
+    // bis zu ~49,7 Tage. Der Lebenslaufthread haelt dabei das Win32-Startmutex,
+    // und `BrokerLifecycle::stop()` joint ihn fristlos als erste Anweisung des
+    // Prozessordestruktors — Plugin entfernen oder Projekt schliessen haette
+    // den Message-Thread des Hosts fuer die vom Angreifer gewaehlte Dauer
+    // aufgehalten (Entwurf §48.4, G4 §7 Part 05).
+    //
+    // 50 ms ist keine willkuerliche Zahl: es ist genau die Frist, die unser
+    // EIGENER Broker als `nDefaultTimeOut`-Vorgabe bekommt. Im Normalfall
+    // aendert sich damit nichts; ein fremder Besitzer kann sie nur nicht mehr
+    // strecken. `ERROR_PIPE_BUSY` und `ERROR_SEM_TIMEOUT` zaehlen weiter als
+    // "erreichbar" — beide heissen "da, aber gerade keine Instanz frei", und
+    // genau dieser Zustand liegt zwischen `CreateNamedPipe` und
+    // `ConnectNamedPipe` unseres eigenen Servers.
+    static constexpr DWORD kErreichbarWarteMs = 50;
+    if (WaitNamedPipeW (breit.c_str(), kErreichbarWarteMs) != FALSE)
         return true;
     const DWORD fehler = GetLastError();
     return fehler == ERROR_PIPE_BUSY || fehler == ERROR_SEM_TIMEOUT;

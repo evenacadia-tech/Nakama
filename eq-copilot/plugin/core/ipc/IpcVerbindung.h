@@ -146,7 +146,14 @@ const char* serverPruefFehlerName (ServerPruefFehler fehler) noexcept;
 
 /// Reine Existenzprobe fuer eine lokale Named Pipe. Sie oeffnet keine
 /// Verbindung und verbraucht deshalb keinen Server-Slot. `ERROR_PIPE_BUSY`
-/// bzw. das Nullzeitlimit bedeuten: Broker vorhanden, nur gerade belegt.
+/// und `ERROR_SEM_TIMEOUT` bedeuten: Broker vorhanden, nur gerade belegt.
+///
+/// NAK-180 R6: sie wartet mit einer EIGENEN, kleinen Frist (50 ms), nie mit
+/// der des Servers. Die alte Fassung uebergab `0` — das ist
+/// `NMPWAIT_USE_DEFAULT_WAIT`, also die Frist des Pipe-BESITZERS, und dieser
+/// Kopf las sie faelschlich als "nicht warten". Ein fremder lokaler Prozess
+/// konnte den Aufruf damit beliebig lange halten und ueber das Startmutex den
+/// Message-Thread des Hosts blockieren (Entwurf §48.4).
 bool namedPipeErreichbar (const std::string& pipeName);
 
 enum class LeseAusgang

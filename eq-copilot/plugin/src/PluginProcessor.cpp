@@ -182,6 +182,11 @@ void EqCopilotProcessor::prepareToPlay (double samplerate, int maxBlock)
     const double sichereSamplerate = std::isfinite (samplerate)
                                   && samplerate > 0.0 && samplerate <= 768000.0
         ? samplerate : 0.0;
+    // NAK-180 R5: NUR eine geprueft gueltige Rate wird gemerkt. Eine
+    // nicht-endliche Hostrate laesst die letzte gute stehen, statt den
+    // Quarantaene-Tail auf ein Sample zu kuerzen.
+    if (sichereSamplerate > 0.0)
+        letzteGueltigeSamplerate.store (sichereSamplerate, std::memory_order_relaxed);
     // Jeder Prepare-Aufruf ist eine Queue-Generation. Der Audiothread setzt
     // sein Projektfenster exakt dann zurueck, wenn `veroeffentliche()` diese
     // Generation wirklich uebernimmt - auch bei unveraenderter Samplerate.
@@ -607,8 +612,18 @@ void EqCopilotProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::M
             // biquadratisch und damit theoretisch unendlich, praktisch nach
             // wenigen Millisekunden unter dem Rauschen. Zu kurz waere hier
             // der teure Fehler, zu lang nur eine verzoegerte Freigabe.
-            e.tailSamples = schritt.dauerSamples * 2u
-                          + (std::uint64_t) std::max (1, (int) getSampleRate() / 10);
+            // 🔑 NAK-180 R5: die Rate kommt aus `letzteGueltigeSamplerate`,
+            // nicht aus JUCEs ungeprueftem `getSampleRate()`. Eine
+            // nicht-endliche oder ueber INT_MAX liegende Hostrate machte
+            // `(int) getSampleRate()` zu UB; auf MSVC/x64 liefert `cvttsd2si`
+            // dann INT_MIN, `INT_MIN/10` ist negativ, und `std::max(1, ...)`
+            // ergab genau EIN Sample Nachlauf statt rund 100 ms — der Fall,
+            // den der Kommentar oben ausschliesst. Die Rechnung saettigt an
+            // beiden Raendern: das Polster ist gedeckelt, und die Verdopplung
+            // laeuft nicht ueber.
+            e.tailSamples = nakama::ipc::tailSamplesFuer (
+                schritt.dauerSamples,
+                letzteGueltigeSamplerate.load (std::memory_order_relaxed));
         }
         if (! interventionsRing.schreibe (e))
             interventionsRingUeberlauf.store (true, std::memory_order_relaxed);
@@ -1302,6 +1317,9 @@ StatsSnapshot EqCopilotProcessor::statsSnapshot() const
     // Einheit unverändert: verlorene Analyse-FRAMES.
     s.framesDropped = queue.verloreneFrames();
     s.nanSeen = nanSeen.load();
+    // NAK-180 R4: DER Produktleser des Wet-Riegels. Ein gesetzter Zaehler
+    // ohne Leser ist dasselbe wie kein Zaehler (Pruefliste A).
+    s.wetNichtEndlich = markierung.nichtEndlicheWetSamples();
     s.hasTransport = hatTransport.load();
     s.transportPlaying = transportSpielt.load();
     s.projectTimeValid = projektZeitGueltig.load();

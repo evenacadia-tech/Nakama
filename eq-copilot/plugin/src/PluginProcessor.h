@@ -380,6 +380,14 @@ public:
     }
 #endif
     double holeSamplerate() const                          { return samplerateAtomic.load(); }
+    /** NAK-180 R5: die letzte als gueltig befundene Rate - die Zahl, mit der
+        `tailSamplesFuer` den Quarantaene-Nachlauf rechnet. Ein Bein misst
+        damit die EINSPEISUNG; die Rechnung selbst misst es an der reinen
+        Funktion in `InterventionsRing.h`. */
+    double letzteGueltigeSamplerateFuerTest() const
+    {
+        return letzteGueltigeSamplerate.load (std::memory_order_relaxed);
+    }
     int    holeBlockSize() const                           { return blockSizeAtomic.load(); }
 
     // ── M1-Messung (Engine gehört dem Worker; siehe Single-Writer-Kontrakt) ──
@@ -477,6 +485,14 @@ private:
 
     // Audiothread → Rest der Welt: nur Atomics.
     std::atomic<double> samplerateAtomic { 0.0 };
+    // NAK-180 R5: die letzte Rate, die `prepareToPlay` als GUELTIG befunden
+    // hat. `samplerateAtomic` faellt bei einer nicht-endlichen Hostrate auf
+    // 0.0 — richtig fuer die Analyse, aber falsch fuer den Quarantaene-Tail:
+    // dort waere 0 ein Nachlauf von einem Sample, und §34.2 nennt "zu kurz"
+    // den teuren Fehler. Vorgabe 48000 ist dieselbe Zahl, die der Broker bei
+    // fehlender Rate ansetzt (`intervention.rs`), damit beide Seiten dieselbe
+    // Groesse meinen.
+    std::atomic<double> letzteGueltigeSamplerate { 48000.0 };
     std::atomic<int>    blockSizeAtomic  { 0 };
     std::atomic<int>    kanaeleAtomic    { 0 };
     std::atomic<float>  rmsL { 0.0f }, rmsR { 0.0f };

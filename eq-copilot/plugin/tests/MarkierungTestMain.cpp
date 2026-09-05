@@ -527,6 +527,178 @@ static void sonde013M36 (const Pruefer& pruefe, double fs, int bs)
 //       wurde. Der Taint war frei, bevor das Audio sauber war (M-38).
 //  B03  `project_sample_end` trug den BLOCKANFANG. Bis zu ein ganzer Hostblock
 //       gefaerbtes Audio lag damit ausserhalb der Invalidierung (M-38/M-52).
+// ── NAK-180 R4: der Wet-Pfad latcht nie einen nicht-endlichen Zustand
+//    (Matrix N-13 bis N-15) ────────────────────────────────────────────────
+static void nak180WetRiegel (const Pruefer& pruefe, double fs, int bs)
+{
+    MarkierungsWunsch w;
+    w.modus = MarkierungsModus::solo;
+    w.istResonanz = false;
+    w.fVon = 120.0; w.fBis = 300.0; w.fSchwerpunkt = 200.0;
+    w.fs = fs;
+    MarkierungsAuftrag auftrag;
+    if (! baueMarkierungsAuftrag (auftrag, w))
+    {
+        pruefe (false, "NAK-180 R4: der Auftrag baut", {});
+        return;
+    }
+
+    auto fuelleSinus = [fs] (juce::AudioBuffer<float>& b)
+    {
+        for (int k = 0; k < b.getNumChannels(); ++k)
+            for (int i = 0; i < b.getNumSamples(); ++i)
+                b.setSample (k, i, 0.4f * std::sin (2.0f * 3.14159265f
+                                                    * 200.0f * (float) i / (float) fs));
+    };
+    auto alleEndlich = [] (const juce::AudioBuffer<float>& b)
+    {
+        for (int k = 0; k < b.getNumChannels(); ++k)
+            for (int i = 0; i < b.getNumSamples(); ++i)
+                if (! std::isfinite (b.getSample (k, i)))
+                    return false;
+        return true;
+    };
+
+    // -- N-13: ein +Inf-Block vergiftet KEINEN Folgeblock ----------------
+    //
+    // Der Latch war: `y = b0*x + s1` wird Inf, und in DERSELBEN Iteration
+    // ergibt `s1 = b1*x - a1*y + s2` genau `Inf - Inf = NaN`. Ab da liefert
+    // jede weitere Iteration NaN, unabhaengig vom Eingang, und
+    // `resetZustaende()` laeuft erst bei `fade <= 0 && ! zielAn` - bei
+    // engagiertem Marker also nie. Gemessen wird deshalb NICHT der vergiftete
+    // Block selbst (dessen Ausgang ist der durchgereichte Eingang und darf
+    // nicht endlich sein), sondern die BLOECKE DANACH.
+    {
+        auto dsp = std::make_unique<HoerMarkierungDsp>();   // MSVC-Stack: Heap (NAK-175)
+        dsp->setzeSamplerate (fs);
+        dsp->vorbereiten (bs);
+        dsp->reicheEin (auftrag);
+
+        juce::AudioBuffer<float> puffer (2, bs);
+        for (int block = 0; block < 40; ++block)
+        {
+            fuelleSinus (puffer);
+            dsp->verarbeite (puffer, 2, true);
+        }
+        pruefe (dsp->hoerbar(), "NAK-180 R4: die Markierung klingt vor dem Inf-Block", {});
+        pruefe (dsp->nichtEndlicheWetSamples() == 0,
+                "NAK-180 R4: bei endlichem Material zaehlt der Riegel NICHTS - er ist "
+                "kein Rauschen im Normalbetrieb",
+                juce::String ((juce::int64) dsp->nichtEndlicheWetSamples()));
+
+        fuelleSinus (puffer);
+        puffer.setSample (0, bs / 2, std::numeric_limits<float>::infinity());
+        dsp->verarbeite (puffer, 2, true);
+        pruefe (dsp->nichtEndlicheWetSamples() > 0,
+                "NAK-180 R4: der Riegel hat gegriffen und GEZAEHLT",
+                juce::String ((juce::int64) dsp->nichtEndlicheWetSamples()));
+
+        bool alleFolgeEndlich = true;
+        for (int block = 0; block < 8 && alleFolgeEndlich; ++block)
+        {
+            fuelleSinus (puffer);
+            dsp->verarbeite (puffer, 2, true);
+            alleFolgeEndlich = alleEndlich (puffer);
+        }
+        pruefe (alleFolgeEndlich,
+                "NAK-180 R4: wet_pfad_latcht_kein_nicht_endliches_sample - nach einem "
+                "+Inf-Block liefern acht Folgebloecke mit endlichem Eingang wieder "
+                "endliches Audio (Invariante NaN-Ehrlichkeit)");
+        pruefe (dsp->hoerbar(),
+                "NAK-180 R4: und der Marker klingt weiter - der Riegel schaltet ihn "
+                "nicht heimlich ab", {});
+    }
+
+    // -- N-14: bei endlichem Material aendert der Riegel KEIN Bit --------
+    //
+    // Ohne diese Gegenprobe koennte R4 den DSP still verstellen und N-13
+    // trotzdem gruen sein. Zwei Laeufe mit identischer Eingabe muessen
+    // bitgleich bleiben, und der Zaehler steht auf null.
+    {
+        auto a = std::make_unique<HoerMarkierungDsp>();
+        auto b = std::make_unique<HoerMarkierungDsp>();
+        for (auto* d : { a.get(), b.get() })
+        {
+            d->setzeSamplerate (fs);
+            d->vorbereiten (bs);
+            d->reicheEin (auftrag);
+        }
+        juce::AudioBuffer<float> pa (2, bs), pb (2, bs);
+        bool gleich = true;
+        for (int block = 0; block < 60 && gleich; ++block)
+        {
+            fuelleSinus (pa); fuelleSinus (pb);
+            a->verarbeite (pa, 2, true);
+            b->verarbeite (pb, 2, true);
+            for (int k = 0; k < 2 && gleich; ++k)
+                for (int i = 0; i < bs; ++i)
+                    if (pa.getSample (k, i) != pb.getSample (k, i)) { gleich = false; break; }
+        }
+        pruefe (gleich && a->nichtEndlicheWetSamples() == 0,
+                "NAK-180 R4: der Riegel ist bei endlichem Material bit-neutral");
+    }
+
+    // -- N-16/N-17/N-18: der Tail rechnet mit der GEPRUEFTEN Rate --------
+    //
+    // Die reine Funktion zuerst: sie traegt die Zahlenraender, und ein
+    // Produkttest allein koennte sie nicht erreichen.
+    {
+        using nakama::ipc::tailSamplesFuer;
+        constexpr std::uint64_t kMax = std::numeric_limits<std::uint64_t>::max();
+
+        pruefe (tailSamplesFuer (1000, fs) == 2000u + (std::uint64_t) (fs / 10.0),
+                "NAK-180 R5: der Normalfall ist doppelte Dauer plus ein Zehntel der Rate",
+                juce::String ((juce::int64) tailSamplesFuer (1000, fs)));
+        pruefe (tailSamplesFuer (1000, std::numeric_limits<double>::quiet_NaN()) == 2001u,
+                "NAK-180 R5: eine NaN-Rate ergibt kein UB, sondern die untere Schranke");
+        pruefe (tailSamplesFuer (1000, 1e300) == 2000u + 76800u,
+                "NAK-180 R5: das Polster ist gedeckelt - eine absurde Rate blaeht den "
+                "Nachlauf nicht ins Unendliche",
+                juce::String ((juce::int64) tailSamplesFuer (1000, 1e300)));
+        pruefe (tailSamplesFuer (kMax, fs) == kMax,
+                "NAK-180 R5: tail_saettigt_statt_ueberzulaufen - eine Dauer am u64-Rand "
+                "ergibt den Maximalwert, NIE einen kuerzeren Nachlauf als den Eingriff");
+        pruefe (tailSamplesFuer (kMax / 2u, fs) == kMax,
+                "NAK-180 R5: auch die Verdopplung genau an der Kante saettigt");
+    }
+
+    // Und der Produktpfad. Gemessen wird die EINSPEISUNG: dass eine
+    // nicht-endliche Hostrate die gemerkte gueltige Rate NICHT verstellt.
+    // Zusammen mit den Randfaellen der reinen Funktion oben ist die Kette
+    // damit geschlossen - die Rate ist die gepruefte, die Rechnung stimmt an
+    // jedem Rand, und `processBlock` verbindet beides in einer Zeile.
+    {
+        auto p = std::make_unique<EqCopilotProcessor>();   // MSVC-Stack (NAK-175)
+        p->setPlayConfigDetails (2, 2, fs, bs);
+        p->prepareToPlay (fs, bs);
+        pruefe (p->letzteGueltigeSamplerateFuerTest() == fs,
+                "NAK-180 R5: eine gueltige Rate wird gemerkt",
+                juce::String (p->letzteGueltigeSamplerateFuerTest()));
+
+        p->prepareToPlay (std::numeric_limits<double>::quiet_NaN(), bs);
+        pruefe (p->holeSamplerate() == 0.0,
+                "NAK-180 R5: die ANALYSE verwirft die nicht-endliche Rate wie bisher",
+                juce::String (p->holeSamplerate()));
+        pruefe (p->letzteGueltigeSamplerateFuerTest() == fs,
+                "NAK-180 R5: tail_rechnet_mit_gepruefter_samplerate - die gemerkte "
+                "gueltige Rate BLEIBT stehen; genau sie speist `tailSamplesFuer`, "
+                "waehrend JUCEs ungeprueftes `getSampleRate()` hier UB waere",
+                juce::String (p->letzteGueltigeSamplerateFuerTest()));
+
+        p->prepareToPlay (1e300, bs);
+        pruefe (p->letzteGueltigeSamplerateFuerTest() == fs,
+                "NAK-180 R5: auch eine endliche, aber unzulaessige Rate (> 768 kHz) "
+                "verstellt die gemerkte nicht",
+                juce::String (p->letzteGueltigeSamplerateFuerTest()));
+
+        p->prepareToPlay (96000.0, bs);
+        pruefe (p->letzteGueltigeSamplerateFuerTest() == 96000.0,
+                "NAK-180 R5: eine neue GUELTIGE Rate loest die alte ab",
+                juce::String (p->letzteGueltigeSamplerateFuerTest()));
+        p->releaseResources();
+    }
+}
+
 static void sonde013Nacharbeit1 (const Pruefer& pruefe, double fs, int bs)
 {
     MarkierungsWunsch w;
@@ -908,6 +1080,7 @@ int main()
     sonde013M33 (pruefer, fs, bs);
     sonde013M34 (pruefer, fs, bs);
     sonde013M36 (pruefer, fs, bs);
+    nak180WetRiegel (pruefer, fs, bs);
     sonde013Nacharbeit1 (pruefer, fs, bs);
 
     // ── T9: Puls — Ruhephase praktisch identisch, Schwellphase hörbar ──────

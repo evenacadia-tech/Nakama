@@ -733,13 +733,24 @@ fn wirezahl_texte_halten_den_textriegel() {
         // kuerzesten Form, faellt er am Riegel. Genau deshalb liefert
         // `wireZahl` dort `false`, statt zu saettigen.
         let wert = bits_zu_f64(e["eingabe_hex64"].as_str().unwrap());
-        if wert.is_finite() {
-            let doc = format!("{{\"a\":{wert:?}}}");
-            assert!(
-                eqcop_broker::vertrag::textriegel_bytes(doc.as_bytes()).is_err(),
-                "{klasse}: `{wert:?}` wird vom Riegel angenommen — dann duerfte                  `wireZahl` ihn nicht verweigern"
-            );
-        }
+        // Ein `if wert.is_finite() { ... }` OHNE `else` haette die Klasse
+        // `nicht_endlich` stillschweigend durchgelassen — eine Zeile, die
+        // nichts misst, sieht wie eine aus, die misst. Beide Zweige stehen.
+        let kandidat = if wert.is_finite() {
+            format!("{wert:?}")
+        } else if wert.is_nan() {
+            "NaN".to_string()
+        } else if wert > 0.0 {
+            "Infinity".to_string()
+        } else {
+            "-Infinity".to_string()
+        };
+        let doc = format!("{{\"a\":{kandidat}}}");
+        assert!(
+            eqcop_broker::vertrag::textriegel_bytes(doc.as_bytes()).is_err(),
+            "{klasse}: `{kandidat}` wird vom Riegel angenommen — dann duerfte \
+             `wireZahl` ihn nicht verweigern"
+        );
     }
 
     println!(

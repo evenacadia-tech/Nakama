@@ -1,0 +1,47 @@
+NAK-181 Rotbeweis b10 - die dritte Instanz misst wirklich
+
+Gebrochen wird die Fixture selbst, an EINER Stelle: der Wiretext von
+`ein_drittel` bekommt eine 16. Stelle (0.3333333333333333). Das ist genau
+der Wert, den `wireZahl` OHNE Deckel erzeugen wuerde - und den der
+v3-Textriegel abweist. Alle drei Leser muessen fallen; faellt einer nicht,
+misst er nicht gegen die Datei, sondern gegen sich selbst.
+
+2026-09-05 22:56:10
+
+========================================================================
+BEIN C++ B3c EqCopSchemaTest
+========================================================================
+[ROT]  N-18: ein_drittel - wireZahl erzeugt GENAU den Text der Fixture  [0.333333333333333 gegen 0.3333333333333333]
+[ok]   N-18b: verweigert â 2e-308 — GROESSER als 1e-308 und trotzdem drausen
+126 bestanden, 1 gescheitert
+EXIT=1
+
+========================================================================
+BEIN Rust contract_cross_language
+========================================================================
+test wirezahl_texte_halten_den_textriegel ... FAILED
+test textriegel_deckt_die_gemeinsame_falltabelle ... ok
+---- wirezahl_texte_halten_den_textriegel stdout ----
+thread 'wirezahl_texte_halten_den_textriegel' (9480) panicked at tests\contract_cross_language.rs:696:9:
+ein_drittel: `0.3333333333333333` faellt am Textriegel: Err("Zahl mit mehr als 15 signifikanten Dezimalziffern: 0.3333333333333333")
+    wirezahl_texte_halten_den_textriegel
+test result: FAILED. 9 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.27s
+EXIT=101
+
+========================================================================
+BEIN A5 pruefe_v3_vertrag.py
+========================================================================
+Pruefungen: 510 bestanden, 2 gescheitert
+  ROT: Wire-Zahlklassen: jeder angenommene Text haelt den Riegel (9 Klassen) — ein_drittel: Zahl mit mehr als 15 signifikanten Dezimalziffern: 0.3333333333333333
+  ROT: Wire-Zahlklassen: und traegt den auf 15 Stellen gedeckelten Wert — ein_drittel: 0.3333333333333333 statt 0.333333333333333
+EXIT=2
+
+========================================================================
+BEIN A8 erzeuge_v3_fixtures.py --pruefen
+========================================================================
+87 gueltige, 230 ungueltige Fixtures
+  ROT: eq-copilot\fixtures\v3\evidenz-zahlen-wire-v1.json weicht ab
+EXIT=2
+
+Fixture aus dem Index wiederhergestellt (git checkout --).
+git status danach: ''

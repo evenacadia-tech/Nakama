@@ -1,0 +1,20 @@
+NAK-180 — Etappe 2, Nacharbeit 3 (Runde 3 von 3, Budget). Auftrag des Dirigenten (2026-09-05).
+
+DU BIST ein frischer Opus-Bauer (max) im sichtbaren Checkout C:\Users\phili\Projekte\Nakama, Branch master. Basis = `git rev-parse HEAD` beim Start. Aufsicht ENG. Git-Regeln: nie `git add -A`, nie `--amend`, nie fremde uncommittete Dateien anfassen, Commits nur mit explizitem Pathspec, Push nach `git pull --rebase` bei sauberem Worktree. Keine Neben-Refactors, keine Schemaänderung. Landminen: MSVC-Stack 1 MiB; Kanon abgekoppelt (Befehl unten), Logausgabe mit *> (überschreibt, kein Löschen nötig); Test-Pipes nur im Probe-Namensraum.
+
+QUELLEN: docs/beweise/NAK-180.md — §2 (Matrix, §2.5 Nachträge), §7 bis §7.3 (Verlauf), **§7.4 (Wiederprüfung 2: die vier Testform-Defekte WA-01 bis WA-04 mit je der Regel — das ist dein Auftrag)**; docs/beweise/roh/NAK-180-etappe-2-wiederpruefung-2-3e4ab9d.txt (Befunde wörtlich); docs/beweise/roh/NAK-180-auftrag.txt (Ticketgrenze, R3 (a)/(b), Beine, Kanonbefehl); tools/dirigent/pruefliste.md.
+
+AUFTRAG: Schließe genau WA-01 bis WA-04 — nicht mehr. Produktcode nur, wo WA-01 einen gemeinsamen Commit-Helfer für Schreibschleife und Testzustellung verlangt (keine Verhaltensänderung des Produktpfads; `ControlClient.cpp:2129` bleibt die Produktzeile). Der vorhandene Haken `senderAnhaltenFuerTest` (PluginProcessor.h:359) ist das Mittel für WA-02 und WA-04.
+1. WA-01: WN-02-Test über den echten Writer (laufender ControlClient gegen V3TestServer, wie r01Resync seit WN-08) oder über den gemeinsamen Commit-Helfer; Beleg: Rücknahme von `ControlClient.cpp:2129` ALLEIN lässt den Test fallen (Rotbeweis docs/beweise/roh/NAK-180-rot-wa01.txt).
+2. WA-02: `senderAnhaltenFuerTest(true)` vor dem G+1-Callback bis nach den Assertions in beiden Blöcken (WN-04 ab :2394, WN-05 ab :2463); die vorhandenen Rotbeweise erneut fahren (rot-wn04/wn05 bleiben rot aus demselben Grund).
+3. WA-03: Rust-E2E, neuer Schritt zwischen Tailablauf und `false`: `einspeisen` abgewiesen, `unknown` gesetzt, `starke_evidenz_erlaubt == false`; erst nach dem `false` angenommen. Rotbeweis (rot-wa03): Tick löst `unknown` → Schritt fällt.
+4. WA-04: r01Resync — Sender vor dem Ringfüllen anhalten, Ring-Leeren unter derselben Pause, Freigabe erst nach dem Messfenster; Test zehnmal in Folge grün (Beleg im Manifest).
+5. Betroffene Beine (`EqCopSonde013PassageStateTest`, `EqCopIpcTest`, `cargo test sonde013_verdrahtung`), dann voller Kanon abgekoppelt:
+   $log = Join-Path $env:TEMP 'nakama-nak180-kanon.log'
+   $befehl = "pwsh -NoProfile -File tools/beweise.ps1 -Bauen -Ziel docs/beweise/NAK-180.md -Anhaengen -Titel NAK-180 *> $log; Add-Content $log ('EXIT=' + `$LASTEXITCODE)"
+   Start-Process pwsh -WindowStyle Hidden -WorkingDirectory (Get-Location) -ArgumentList '-NoProfile','-Command',$befehl
+   Fertig, wenn die letzte Logzeile mit EXIT= beginnt (höchstens alle 15 Minuten Tail lesen); kein Stand mit NOT RUN.
+6. Manifest: §7.5 „Nacharbeit 3 — was eingearbeitet wurde" (Tabelle WA-xx → Stelle → Test → Rotbeweis), §6.3 Messbilanz, §6.7 Prüfliste, Kopfzeile Phase „Etappe 2: Nacharbeit 3 abgeschlossen, Kanon <GRÜN n/n> auf <sha>, Wiederprüfung 3 offen".
+7. Commits mit Pathspec, `git pull --rebase`, Push. Kein Anfassen von docs/beweise/G4.md, docs/offene-punkte.md, docs/PLAN-STAND.md, docs/plan/. Turn mit der letzten Zeile „ETAPPE 2 NACHARBEIT 3 ABGESCHLOSSEN <end-sha>" beenden. Keine Nachfrage an den User.
+
+SELBSTAUDIT: Fällt jeder Rotbeweis aus GENAU dem Grund seiner Regel? Läuft während einer Messung noch ein dritter Teilnehmer (Sender, Worker, Client-Thread), den keine Schranke ordnet? Haken nie im Audiothread.

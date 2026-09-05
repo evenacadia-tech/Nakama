@@ -1319,6 +1319,14 @@ void EqCopilotProcessor::workerLauf()
         // beim Linkaufbau) erzwingbar statt vom Workertakt abhaengig.
         if (! senderPauseFuerTest.load (std::memory_order_relaxed))
             interventionenSenden();
+        else
+            // NAK-180 Nacharbeit 3 (WA-02/WA-04): die QUITTUNG der Pause. Erst
+            // sie beweist einem Bein, dass der Worker aus `interventionenSenden`
+            // heraus ist und keinen neuen Zug beginnt - das blosse Setzen des
+            // Bits ordnet ihn nicht (er hat die Pruefung womoeglich schon
+            // passiert). Im Produkt steht das Bit nie; dieser Zweig laeuft dort
+            // also nicht.
+            senderPauseQuittungFuerTest.fetch_add (1, std::memory_order_release);
 
         if (queueHatRest)
         {

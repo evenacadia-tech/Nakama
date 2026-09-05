@@ -362,6 +362,45 @@ public:
         if (! an)
             weckeWorkerFuerTest();
     }
+
+    /** NAK-180 Nacharbeit 3 (WA-02/WA-04): die BESTAETIGTE Senderpause.
+
+        `senderAnhaltenFuerTest(true)` setzt nur ein Bit. Der Analyseworker
+        prueft es VOR seinem Zug - er kann die Pruefung also laengst passiert
+        haben und steckt dann noch in `interventionenSenden()`: er verbraucht
+        `replayFaellig` per CAS oder entnimmt Ringereignisse, waehrend ein Bein
+        misst. Eine Sperre beweist das Gegenteil nicht; sie ordnet nur den Zug
+        selbst, nicht die Pruefung davor.
+
+        Deshalb quittiert der Worker JEDEN Durchlauf, in dem er die Pause
+        gesehen hat. Ist die Quittung seit dem Anhalten gewachsen, steht fest:
+        er ist aus `interventionenSenden()` heraus UND beginnt keinen neuen
+        Zug. Erst dann ist der Sender als dritter Teilnehmer geordnet.
+
+        Rueckgabe `false` heisst „nicht bestaetigt" - der Fall meldet das als
+        Befund, statt weiterzumessen. */
+    bool warteAufSenderPauseFuerTest (int fristMs = 4000)
+    {
+        if (! senderPauseFuerTest.load (std::memory_order_relaxed))
+            return false;
+        const auto start = senderPauseQuittungFuerTest.load (std::memory_order_acquire);
+        auto quittiert = [this, start]
+        {
+            return senderPauseQuittungFuerTest.load (std::memory_order_acquire) != start;
+        };
+        const auto bis = std::chrono::steady_clock::now()
+                       + std::chrono::milliseconds (juce::jmax (0, fristMs));
+        for (;;)
+        {
+            // Wecken statt warten: der Worker schlaeft sonst bis zu 50 ms.
+            weckeWorkerFuerTest();
+            if (quittiert())
+                return true;
+            if (std::chrono::steady_clock::now() >= bis)
+                return quittiert();
+            std::this_thread::sleep_for (std::chrono::milliseconds (1));
+        }
+    }
     void weckeWorkerFuerTest()
     {
         std::lock_guard<std::mutex> l (workerWarteMutex);
@@ -1146,6 +1185,11 @@ private:
     /// seinen Zug, solange das Bit steht - der einzige Weg, die Lage aus N-08
     /// (Ring nicht leer beim Aufbau) zu ERZWINGEN statt sie zu hoffen.
     std::atomic<bool> senderPauseFuerTest { false };
+    /// NAK-180 Nacharbeit 3 (WA-02/WA-04): die Quittung der Pause. Der Worker
+    /// zaehlt jeden Durchlauf hoch, in dem er `senderPauseFuerTest` gesetzt
+    /// SAH. Im Produkt steht das Pausebit nie, also zaehlt hier auch nie
+    /// etwas - der Produktpfad bleibt unveraendert.
+    std::atomic<std::uint64_t> senderPauseQuittungFuerTest { 0 };
     /// NAK-180 Nacharbeit 1 (EP-16/EP-20): Schranke im Sendezug, nur Tests.
     /// Vor dem ersten `start()` gesetzt und danach unveraendert - wie der
     /// Statusprovider des ControlClients.

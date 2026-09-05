@@ -1,8 +1,8 @@
-NAK-180 Etappe 2, Nacharbeit 3 - ROTBEWEIS WN05
-Erzeugt: 2026-09-05 16:00:33
+NAK-180 Etappe 2, Nacharbeit 3 - ROTBEWEIS WA01
+Erzeugt: 2026-09-05 15:59:55
 Basis:   292aefa3f0e56eebf0ac27febd8ab8a04b84ae7a
 Ziel:    EqCopSonde013PassageStateTest
-Regel zurueckgedreht: der negative Callback liest wieder wireGenerationJetzt() statt der sterbenden Generation (PluginProcessor.cpp)
+Regel zurueckgedreht: Wire-Commit meldet wieder p0Eintrag.generation statt dieseWireGeneration (ControlClient.cpp:2129)
 Zurueckgedreht durch den Helfer im Jobordner, danach wiederhergestellt.
 EXIT=1
 == Nakama SONDE-013 - manuelle Passage als Projektintent (§33.5) ==
@@ -83,7 +83,7 @@ EXIT=1
 
 == R01  ueberlauf_sticky_wird_beim_bestaetigten_resync_geloescht ==
 [ok]   R01: frisch ist der Interventionszustand BEKANNT
-[ok]   R01: der Testserver liegt im PROBE-Namensraum - nie auf der Produktionspipe (Paragraph 48.3)  [\\.\pipe\evenacadia.nakama.v3.probe.test.18892.0.sonde013.r01]
+[ok]   R01: der Testserver liegt im PROBE-Namensraum - nie auf der Produktionspipe (Paragraph 48.3)  [\\.\pipe\evenacadia.nakama.v3.probe.test.22880.0.sonde013.r01]
 [ok]   R01: der echte ControlClient zeigt auf den Probe-Server
 [ok]   R01: der Probe-Server steht
 [ok]   R01/WA-04: der Sender ist BESTAETIGT angehalten, bevor der Ring gefuellt wird - der Handschlag misst danach keinen Wettlauf mit ihm
@@ -240,7 +240,7 @@ EXIT=1
 [ok]   WN-01/N-05: und danach schliesst er - ueber den REGULAEREN Pfad, ohne neuen Link  [0]
 
 == NAK-180 WN-02/N-27  zustellung_meldet_die_generation_des_wire_commits ==
-[ok]   WN-02: der Testserver liegt im PROBE-Namensraum - nie auf der Produktionspipe (Paragraph 48.3)  [\\.\pipe\evenacadia.nakama.v3.probe.test.18892.1.sonde013.wn02]
+[ok]   WN-02: der Testserver liegt im PROBE-Namensraum - nie auf der Produktionspipe (Paragraph 48.3)  [\\.\pipe\evenacadia.nakama.v3.probe.test.22880.1.sonde013.wn02]
 [ok]   WN-02/WA-01: der ECHTE ControlClient zeigt auf den Probe-Server
 [ok]   WN-02: der erste Probe-Server steht
 [ok]   WN-02/WA-01: Hello und Welcome sind gelaufen - der Handschlag ist echt, kein Testhaken
@@ -252,12 +252,12 @@ EXIT=1
 [ok]   WN-02/WA-01: der Client steht auf dem NEUEN Link
 [ok]   WN-02: der Link ist gewechselt  [G1 -> G2]
 [ok]   WN-02/WA-01: das eingereihte Begin ueberlebt den Reconnect und wird von der SCHREIBSCHLEIFE auf G+1 zugestellt  [1 zugestellt]
-[ok]   WN-02: auch das `end` ist zugestellt  [2 zugestellt]
+[ok]   WN-02: auch das `end` ist zugestellt  [3 zugestellt]
 [ok]   WN-02/WA-01: das `end` ist beim Server angekommen - und mit ihm alles, was ihm auf dem Draht vorausging
-[ok]   WN-02/WA-01: Begin UND End sind wirklich beim Server angekommen - gemessen am Draht, nicht am Testhaken  [1 Begin, 1 End]
-[ok]   WN-02/N-27: das auf G+1 zugestellte Begin gilt als auf G+1 zugestellt - das `end` braucht KEIN Replay, und keine `intervention_id` reist zweimal  [1 Begin je intervention_id]
-[ok]   WN-02/N-27: und keine Sequenznummer reist doppelt - genau daran setzt `sequenz_annehmen` die Sitzung sonst `unknown`  [begin/1 end/2 ]
-[ok]   WN-02: das `end` reist genau einmal  [begin/1 end/2 ]
+[ok]   WN-02/WA-01: Begin UND End sind wirklich beim Server angekommen - gemessen am Draht, nicht am Testhaken  [2 Begin, 1 End]
+[ROT]  WN-02/N-27: das auf G+1 zugestellte Begin gilt als auf G+1 zugestellt - das `end` braucht KEIN Replay, und keine `intervention_id` reist zweimal  [2 Begin je intervention_id]
+[ROT]  WN-02/N-27: und keine Sequenznummer reist doppelt - genau daran setzt `sequenz_annehmen` die Sitzung sonst `unknown`  [begin/1 begin/1 end/2 ]
+[ok]   WN-02: das `end` reist genau einmal  [begin/1 begin/1 end/2 ]
 
 == NAK-180 WN-03/N-05/M-58  nachlauffrist_ist_ein_maximum_ohne_deckel ==
 [ok]   WN-03: ein Nachlauf von zwei Stunden reist ungekuerzt in die Frist - kein 3600-s-Deckel; der Broker zaehlt `tail_samples_offen` ungekappt herunter  [7201.0 s Restfrist]
@@ -279,7 +279,7 @@ EXIT=1
 [ok]   WN-04/N-37: cas_statt_store - der ueberholte Callback nimmt die Wirkung des neueren Links NICHT mit; ein blindes `store` haette beide Zustaende durch seine alte Zahl ersetzt, und Bericht wie Replay von G+1 waeren weg  [Bericht 5, Replay 5 (G4 gegen G5)]
 [ok]   WA-02: auch fuer den WN-05-Block ist der Sender BESTAETIGT angehalten
 [ok]   WN-05: G+1 steht vollstaendig, waehrend der alte negative Callback noch vor seinen Loeschungen wartet  [sterbend G6, neu G7]
-[ROT]  WN-05/N-37 Fall 2: der verspaetete negative Callback loescht NUR seine sterbende Generation - mit `wireGenerationJetzt()` haette er genau die Zustaende des NEUEN Links mitgenommen  [Bericht 0, Replay 0]
+[ok]   WN-05/N-37 Fall 2: der verspaetete negative Callback loescht NUR seine sterbende Generation - mit `wireGenerationJetzt()` haette er genau die Zustaende des NEUEN Links mitgenommen  [Bericht 7, Replay 7]
 
 == NAK-180 N-11  keine_wireaussage_ohne_main ==
 [ok]   N-11: der Ueberlauf steht  [32]
@@ -293,4 +293,4 @@ EXIT=1
 [ok]   N-02/N-12: der naechste Heartbeat schweigt wieder - die Aussage reist genau einmal  [{"type":"heartbeat","adresse":{"logon_sid":"S-1-5-21-369263037-1611576211-208123]
 [ok]   N-12: und sie nimmt die Aussage eines neueren Links NICHT mit
 
-221 bestanden, 1 gescheitert
+220 bestanden, 2 gescheitert

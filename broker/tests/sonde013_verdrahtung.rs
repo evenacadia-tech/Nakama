@@ -4554,6 +4554,29 @@ fn r2_lebenszyklus_mit_verbleibender_sonde_end_zu_end() {
         "der Nachlauf ist abgelaufen"
     );
 
+    // (8b) 🔑 Nacharbeit 3 (WA-03/M-61, §34.2): der Zwischenzustand ZWISCHEN
+    //      Tailablauf und Abschluss. Bis hierher pruefte Schritt 8 allein
+    //      `tail_samples_offen == 0` und speiste erst NACH dem `false` wieder
+    //      ein: ein Tick, der `unknown` unerlaubt loeste, waere gruen
+    //      geblieben. §34.2/M-61 verlangt aber den BESTAETIGTEN Abschluss -
+    //      abgelaufene Zeit ist keine Bestaetigung.
+    let sicht = c.interventionssicht_fuer_link("main2");
+    assert!(
+        sicht.unknown && !sicht.starke_evidenz_erlaubt,
+        "WA-03/M-61: der Tick zaehlt den Nachlauf herunter, er spricht den \
+         Abschluss NICHT aus - `unknown` steht weiter: {sicht:?}"
+    );
+    assert!(
+        !einspeisen(8),
+        "WA-03/N-07: und darum bleibt eingespeiste Evidenz auch nach dem \
+         Tailablauf VERWORFEN - bis der Nachbericht kommt"
+    );
+    assert_eq!(
+        zuletzt(),
+        Some(hex(0x1001)),
+        "WA-03: der abgelaufene Nachlauf hinterlaesst nichts im Evidenzstand"
+    );
+
     // (9) ERST JETZT schliesst das einmalige `false` den Bericht ab.
     Senke::p0(&c, "main2", &wire(&wurzel, "bestaetigt_neutral"));
     let sicht = c.interventionssicht_fuer_link("main2");

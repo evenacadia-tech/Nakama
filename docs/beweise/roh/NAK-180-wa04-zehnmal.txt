@@ -1,0 +1,68 @@
+NAK-180 Etappe 2, Nacharbeit 3 - WA-04: r01Resync ZEHNMAL in Folge
+Erzeugt: 2026-09-05 16:00:55
+Basis:   292aefa3f0e56eebf0ac27febd8ab8a04b84ae7a (Arbeitsstand der Nacharbeit 3, vor dem Commit)
+Ziel:    EqCopSonde013PassageStateTest - das Bein, das r01Resync traegt.
+Gemessen: je Lauf die Bilanz des Beins und die R01-Zusagen woertlich.
+
+--- Lauf 1  EXIT=0  10.9s  222 bestanden, 0 gescheitert
+    [ok]   R01/WA-04: der Sender ist BESTAETIGT angehalten, bevor der Ring gefuellt wird - der Handschlag misst danach keinen Wettlauf mit ihm
+    [ok]   R01/WN-08: der ECHTE Client ist ueber die Probe-Pipe verbunden - Hello und Welcome sind gelaufen, nicht ein Testhaken
+    [ok]   R01/WN-08: der Server hat wirklich P0 empfangen - der Takt laeuft  [1 P0]
+    [ok]   R01/WN-08: bei GEFUELLTEM Ring traegt der erste Heartbeat ausdrueckliches `true` - und KEIN `false`, das den Resync ausloeste  [1 P0, `true` steht, `false` fehlt]
+    [ok]   R01/WN-08: ueberlauf_sticky_wird_beim_bestaetigten_resync_geloescht - der erste Heartbeat des NEUEN Links traegt auf dem DRAHT das ausdrueckliche `false`, und genau das loest beim Broker `resync_bestaetigen` aus  [1 -> 2 P0, `false` steht]
+--- Lauf 2  EXIT=0  10.8s  222 bestanden, 0 gescheitert
+    [ok]   R01/WA-04: der Sender ist BESTAETIGT angehalten, bevor der Ring gefuellt wird - der Handschlag misst danach keinen Wettlauf mit ihm
+    [ok]   R01/WN-08: der ECHTE Client ist ueber die Probe-Pipe verbunden - Hello und Welcome sind gelaufen, nicht ein Testhaken
+    [ok]   R01/WN-08: der Server hat wirklich P0 empfangen - der Takt laeuft  [1 P0]
+    [ok]   R01/WN-08: bei GEFUELLTEM Ring traegt der erste Heartbeat ausdrueckliches `true` - und KEIN `false`, das den Resync ausloeste  [1 P0, `true` steht, `false` fehlt]
+    [ok]   R01/WN-08: ueberlauf_sticky_wird_beim_bestaetigten_resync_geloescht - der erste Heartbeat des NEUEN Links traegt auf dem DRAHT das ausdrueckliche `false`, und genau das loest beim Broker `resync_bestaetigen` aus  [1 -> 2 P0, `false` steht]
+--- Lauf 3  EXIT=0  10.8s  222 bestanden, 0 gescheitert
+    [ok]   R01/WA-04: der Sender ist BESTAETIGT angehalten, bevor der Ring gefuellt wird - der Handschlag misst danach keinen Wettlauf mit ihm
+    [ok]   R01/WN-08: der ECHTE Client ist ueber die Probe-Pipe verbunden - Hello und Welcome sind gelaufen, nicht ein Testhaken
+    [ok]   R01/WN-08: der Server hat wirklich P0 empfangen - der Takt laeuft  [1 P0]
+    [ok]   R01/WN-08: bei GEFUELLTEM Ring traegt der erste Heartbeat ausdrueckliches `true` - und KEIN `false`, das den Resync ausloeste  [1 P0, `true` steht, `false` fehlt]
+    [ok]   R01/WN-08: ueberlauf_sticky_wird_beim_bestaetigten_resync_geloescht - der erste Heartbeat des NEUEN Links traegt auf dem DRAHT das ausdrueckliche `false`, und genau das loest beim Broker `resync_bestaetigen` aus  [1 -> 2 P0, `false` steht]
+--- Lauf 4  EXIT=0  10.8s  222 bestanden, 0 gescheitert
+    [ok]   R01/WA-04: der Sender ist BESTAETIGT angehalten, bevor der Ring gefuellt wird - der Handschlag misst danach keinen Wettlauf mit ihm
+    [ok]   R01/WN-08: der ECHTE Client ist ueber die Probe-Pipe verbunden - Hello und Welcome sind gelaufen, nicht ein Testhaken
+    [ok]   R01/WN-08: der Server hat wirklich P0 empfangen - der Takt laeuft  [1 P0]
+    [ok]   R01/WN-08: bei GEFUELLTEM Ring traegt der erste Heartbeat ausdrueckliches `true` - und KEIN `false`, das den Resync ausloeste  [1 P0, `true` steht, `false` fehlt]
+    [ok]   R01/WN-08: ueberlauf_sticky_wird_beim_bestaetigten_resync_geloescht - der erste Heartbeat des NEUEN Links traegt auf dem DRAHT das ausdrueckliche `false`, und genau das loest beim Broker `resync_bestaetigen` aus  [1 -> 2 P0, `false` steht]
+--- Lauf 5  EXIT=0  10.8s  222 bestanden, 0 gescheitert
+    [ok]   R01/WA-04: der Sender ist BESTAETIGT angehalten, bevor der Ring gefuellt wird - der Handschlag misst danach keinen Wettlauf mit ihm
+    [ok]   R01/WN-08: der ECHTE Client ist ueber die Probe-Pipe verbunden - Hello und Welcome sind gelaufen, nicht ein Testhaken
+    [ok]   R01/WN-08: der Server hat wirklich P0 empfangen - der Takt laeuft  [1 P0]
+    [ok]   R01/WN-08: bei GEFUELLTEM Ring traegt der erste Heartbeat ausdrueckliches `true` - und KEIN `false`, das den Resync ausloeste  [1 P0, `true` steht, `false` fehlt]
+    [ok]   R01/WN-08: ueberlauf_sticky_wird_beim_bestaetigten_resync_geloescht - der erste Heartbeat des NEUEN Links traegt auf dem DRAHT das ausdrueckliche `false`, und genau das loest beim Broker `resync_bestaetigen` aus  [1 -> 2 P0, `false` steht]
+--- Lauf 6  EXIT=0  10.8s  222 bestanden, 0 gescheitert
+    [ok]   R01/WA-04: der Sender ist BESTAETIGT angehalten, bevor der Ring gefuellt wird - der Handschlag misst danach keinen Wettlauf mit ihm
+    [ok]   R01/WN-08: der ECHTE Client ist ueber die Probe-Pipe verbunden - Hello und Welcome sind gelaufen, nicht ein Testhaken
+    [ok]   R01/WN-08: der Server hat wirklich P0 empfangen - der Takt laeuft  [1 P0]
+    [ok]   R01/WN-08: bei GEFUELLTEM Ring traegt der erste Heartbeat ausdrueckliches `true` - und KEIN `false`, das den Resync ausloeste  [1 P0, `true` steht, `false` fehlt]
+    [ok]   R01/WN-08: ueberlauf_sticky_wird_beim_bestaetigten_resync_geloescht - der erste Heartbeat des NEUEN Links traegt auf dem DRAHT das ausdrueckliche `false`, und genau das loest beim Broker `resync_bestaetigen` aus  [1 -> 2 P0, `false` steht]
+--- Lauf 7  EXIT=0  10.8s  222 bestanden, 0 gescheitert
+    [ok]   R01/WA-04: der Sender ist BESTAETIGT angehalten, bevor der Ring gefuellt wird - der Handschlag misst danach keinen Wettlauf mit ihm
+    [ok]   R01/WN-08: der ECHTE Client ist ueber die Probe-Pipe verbunden - Hello und Welcome sind gelaufen, nicht ein Testhaken
+    [ok]   R01/WN-08: der Server hat wirklich P0 empfangen - der Takt laeuft  [1 P0]
+    [ok]   R01/WN-08: bei GEFUELLTEM Ring traegt der erste Heartbeat ausdrueckliches `true` - und KEIN `false`, das den Resync ausloeste  [1 P0, `true` steht, `false` fehlt]
+    [ok]   R01/WN-08: ueberlauf_sticky_wird_beim_bestaetigten_resync_geloescht - der erste Heartbeat des NEUEN Links traegt auf dem DRAHT das ausdrueckliche `false`, und genau das loest beim Broker `resync_bestaetigen` aus  [1 -> 2 P0, `false` steht]
+--- Lauf 8  EXIT=0  10.9s  222 bestanden, 0 gescheitert
+    [ok]   R01/WA-04: der Sender ist BESTAETIGT angehalten, bevor der Ring gefuellt wird - der Handschlag misst danach keinen Wettlauf mit ihm
+    [ok]   R01/WN-08: der ECHTE Client ist ueber die Probe-Pipe verbunden - Hello und Welcome sind gelaufen, nicht ein Testhaken
+    [ok]   R01/WN-08: der Server hat wirklich P0 empfangen - der Takt laeuft  [1 P0]
+    [ok]   R01/WN-08: bei GEFUELLTEM Ring traegt der erste Heartbeat ausdrueckliches `true` - und KEIN `false`, das den Resync ausloeste  [1 P0, `true` steht, `false` fehlt]
+    [ok]   R01/WN-08: ueberlauf_sticky_wird_beim_bestaetigten_resync_geloescht - der erste Heartbeat des NEUEN Links traegt auf dem DRAHT das ausdrueckliche `false`, und genau das loest beim Broker `resync_bestaetigen` aus  [1 -> 2 P0, `false` steht]
+--- Lauf 9  EXIT=0  10.8s  222 bestanden, 0 gescheitert
+    [ok]   R01/WA-04: der Sender ist BESTAETIGT angehalten, bevor der Ring gefuellt wird - der Handschlag misst danach keinen Wettlauf mit ihm
+    [ok]   R01/WN-08: der ECHTE Client ist ueber die Probe-Pipe verbunden - Hello und Welcome sind gelaufen, nicht ein Testhaken
+    [ok]   R01/WN-08: der Server hat wirklich P0 empfangen - der Takt laeuft  [1 P0]
+    [ok]   R01/WN-08: bei GEFUELLTEM Ring traegt der erste Heartbeat ausdrueckliches `true` - und KEIN `false`, das den Resync ausloeste  [1 P0, `true` steht, `false` fehlt]
+    [ok]   R01/WN-08: ueberlauf_sticky_wird_beim_bestaetigten_resync_geloescht - der erste Heartbeat des NEUEN Links traegt auf dem DRAHT das ausdrueckliche `false`, und genau das loest beim Broker `resync_bestaetigen` aus  [1 -> 2 P0, `false` steht]
+--- Lauf 10  EXIT=0  10.8s  222 bestanden, 0 gescheitert
+    [ok]   R01/WA-04: der Sender ist BESTAETIGT angehalten, bevor der Ring gefuellt wird - der Handschlag misst danach keinen Wettlauf mit ihm
+    [ok]   R01/WN-08: der ECHTE Client ist ueber die Probe-Pipe verbunden - Hello und Welcome sind gelaufen, nicht ein Testhaken
+    [ok]   R01/WN-08: der Server hat wirklich P0 empfangen - der Takt laeuft  [1 P0]
+    [ok]   R01/WN-08: bei GEFUELLTEM Ring traegt der erste Heartbeat ausdrueckliches `true` - und KEIN `false`, das den Resync ausloeste  [1 P0, `true` steht, `false` fehlt]
+    [ok]   R01/WN-08: ueberlauf_sticky_wird_beim_bestaetigten_resync_geloescht - der erste Heartbeat des NEUEN Links traegt auf dem DRAHT das ausdrueckliche `false`, und genau das loest beim Broker `resync_bestaetigen` aus  [1 -> 2 P0, `false` steht]
+
+URTEIL: zehn von zehn GRUEN

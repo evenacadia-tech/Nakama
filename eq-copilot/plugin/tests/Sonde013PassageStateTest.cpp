@@ -716,6 +716,21 @@ void r01Resync()
     TestServer server (pipe);
     pruefe (server.starten(), "R01: der Probe-Server steht");
 
+    // 🔑 Nacharbeit 3 (WA-04/N-04): der Sender wird VOR dem Ringfuellen
+    // angehalten - und BESTAETIGT, nicht angenommen.
+    //
+    // Seit `mainProzessorMitBindung()` reiht der Analyseworker die Ringinhalte
+    // wirklich als P0 ein. Erhielte er nach dem Fuellen einen Zug, entnaehme er
+    // die Testereignisse vor oder waehrend des echten Handschlags
+    // (`PluginProcessor.cpp:1320-1321`): die erste empfangene P0-Nachricht
+    // waere dann ein `end` statt des erwarteten Heartbeats, und die Messung
+    // unten fiele bei KORREKTEM Produktcode. Auch das Ring-Leeren konkurriert
+    // sonst mit ihm. Die Pause traegt deshalb bis zum Ende des Messfensters.
+    p->senderAnhaltenFuerTest (true);
+    pruefe (p->warteAufSenderPauseFuerTest(),
+            "R01/WA-04: der Sender ist BESTAETIGT angehalten, bevor der Ring "
+            "gefuellt wird - der Handschlag misst danach keinen Wettlauf mit ihm");
+
     // Den Ring bis zum Ueberlauf fuellen — derselbe Weg wie im Audiothread.
     const int geschrieben = p->interventionsRingFuellenFuerTest();
     pruefe (geschrieben > 0, "R01: der Ring nimmt Ereignisse auf",
@@ -789,6 +804,10 @@ void r01Resync()
 
     // Jetzt leeren und den Link NEU aufbauen - ueber den echten Reconnect,
     // nicht ueber einen Haken. Der bestaetigte Neuaufbau IST der Resync.
+    //
+    // 🔑 Nacharbeit 3 (WA-04): das Leeren laeuft unter DERSELBEN Pause.
+    // Ein hier wieder laufender Sender entnaehme dieselben Ereignisse und
+    // schickte sie los, waehrend das Messfenster noch offen ist.
     p->interventionsRingLeerenFuerTest();
     const auto vorReconnect = heartbeats().size();
     p->v3ReconnectFuerTest();
@@ -805,6 +824,9 @@ void r01Resync()
                 + (falseKam ? "steht" : "FEHLT"));
     pruefe (! p->v3StatusFuerTest().interventionStateUnknown,
             "R01: und der lokale Zustand ist wieder bekannt");
+
+    // Das Messfenster ist geschlossen - erst JETZT darf der Sender wieder.
+    p->senderAnhaltenFuerTest (false);
 
     p->v3StopFuerTest();
     server.stoppen();
@@ -2142,7 +2164,7 @@ void wn01WartendesEndeVerbietetNeutralitaet()
 }
 
 /// WN-02/N-27 · Der Zustellrueckruf meldet die Generation des TATSAECHLICHEN
-/// Wire-Commits, nicht die des Einreihens.
+/// Wire-Commits, nicht die des Einreihens - gemessen am ECHTEN Writer.
 ///
 /// 🔑 NAK-180 Nacharbeit 2 (WN-02): ein Interventionsereignis ueberlebt den
 /// Reconnect - es wird zurueckgelegt und auf dem NAECHSTEN Link geschrieben.
@@ -2152,74 +2174,190 @@ void wn01WartendesEndeVerbietetNeutralitaet()
 /// derselben `intervention_id` und derselben Sequenz, und `sequenz_annehmen`
 /// setzte die Sitzung `unknown` - genau was N-27 hier ausschliesst.
 ///
-/// Rotbeweis: im Wire-Commit wieder `p0Eintrag.generation` melden.
+/// 🔑 Nacharbeit 3 (WA-01): bis hierher stellte der Fall ueber
+/// `zustelleAllesFuerTest()` zu. Der Haken IST ein Wire-Commit, aber er waehlt
+/// seine Zustellgeneration SELBST (`ControlClient.cpp:1516-1522`) - die
+/// Ruecknahme der Produktzeile `ControlClient.cpp:2129` ALLEIN konnte den Test
+/// deshalb nicht fallen lassen. Er mass die Generationswahl des Testhakens,
+/// nicht die der Schreibschleife.
+///
+/// Jetzt faehrt der ECHTE ControlClient gegen einen Probe-Server, wie
+/// `r01Resync` seit WN-08: das Begin wird auf G EINGEREIHT, der Server
+/// verschwindet vor dem Write, der Eintrag wird zurueckgelegt und auf G+1 von
+/// der Schreibschleife GESCHRIEBEN. Gemessen wird, was der Server empfing.
+///
+/// Rotbeweis: in der Schreibschleife wieder `p0Eintrag.generation` melden.
 void wn02ZustellungMeldetDieWireGeneration()
 {
     abschnitt ("NAK-180 WN-02/N-27  zustellung_meldet_die_generation_des_wire_commits");
     Pruefstand s;
-    s.p->v3LinkFuerTest (true);
+
+    const auto pipe = testPipeName ("sonde013.wn02");
+    pruefe (nakama::ipc::istProbePipename (pipe),
+            "WN-02: der Testserver liegt im PROBE-Namensraum - nie auf der "
+            "Produktionspipe (Paragraph 48.3)",
+            juce::String (pipe));
+    pruefe (s.p->v3ProbeGegenstelleFuerTest (pipe, testExeErwartung()),
+            "WN-02/WA-01: der ECHTE ControlClient zeigt auf den Probe-Server");
+
+    auto warteAuf = [] (int fristMs, auto&& bedingung)
+    {
+        const auto bis = std::chrono::steady_clock::now()
+                       + std::chrono::milliseconds (fristMs);
+        while (std::chrono::steady_clock::now() < bis)
+        {
+            if (bedingung())
+                return true;
+            std::this_thread::sleep_for (std::chrono::milliseconds (5));
+        }
+        return bedingung();
+    };
+    auto verbunden = [&s] ()
+    {
+        return s.p->controlV3Snapshot().status
+               == nakama::ipc::ControlClient::Status::verbunden;
+    };
+
+    // ── G: der erste Link steht wirklich ─────────────────────────────────
+    auto server = std::make_unique<TestServer> (pipe);
+    pruefe (server->starten(), "WN-02: der erste Probe-Server steht");
+    s.p->v3StartFuerTest();
+    pruefe (warteAuf (8000, verbunden),
+            "WN-02/WA-01: Hello und Welcome sind gelaufen - der Handschlag ist "
+            "echt, kein Testhaken");
     const auto g1 = s.p->wireGenerationFuerTest();
 
-    // Das Begin wird auf G1 EINGEREIHT und bleibt in der Queue: der Reconnect
-    // faellt zwischen Enqueue und Write.
+    // Der Sender wird BESTAETIGT angehalten: WANN das Begin die Queue erreicht,
+    // ist Teil der Messung und darf nicht am Workertakt haengen.
     s.p->senderAnhaltenFuerTest (true);
+    pruefe (s.p->warteAufSenderPauseFuerTest(),
+            "WN-02: der Sender ist bestaetigt angehalten - das Einreihen faehrt "
+            "der Fall selbst");
+
     s.p->markierungEinreichen (s.auftrag);
     s.bloecke (40);
-    s.p->interventionenSendenFuerTest();
     pruefe (s.p->markierungHoerbar(),
             "WN-02: der Marker klingt - der Aufbau von G+1 urteilt darum nicht neutral");
 
-    s.p->v3LinkFuerTest (false);
-    s.p->v3LinkFuerTest (true);
+    // ── Der Link stirbt VOR dem Write ────────────────────────────────────
+    server->stoppen();
+    pruefe (warteAuf (8000, [&] { return ! verbunden(); }),
+            "WN-02/WA-01: der Link ist wirklich weg - ab hier kann kein Write "
+            "mehr gelingen");
+
+    // ERST JETZT wird das Begin eingereiht: auf G, ohne Draht. Die Generation
+    // steht still, bis der naechste Aufbauzug sie erhoeht.
+    s.p->interventionenSendenFuerTest();
+    pruefe (s.p->wireGenerationFuerTest() == g1,
+            "WN-02: das Begin ist auf G EINGEREIHT - der Aufbauzug hat noch "
+            "nicht gezogen",
+            "G" + juce::String ((int) g1));
+
+    // ── G+1: derselbe Eintrag geht vom ECHTEN Writer auf den Draht ───────
+    server = std::make_unique<TestServer> (pipe);
+    pruefe (server->starten(), "WN-02: der zweite Probe-Server steht");
+    s.p->v3ReconnectFuerTest();
+    pruefe (warteAuf (12000, verbunden),
+            "WN-02/WA-01: der Client steht auf dem NEUEN Link");
     const auto g2 = s.p->wireGenerationFuerTest();
-    pruefe (g2 == g1 + 1, "WN-02: der Link ist gewechselt",
+    pruefe (g2 > g1, "WN-02: der Link ist gewechselt",
             "G" + juce::String ((int) g1) + " -> G" + juce::String ((int) g2));
 
-    // ERST JETZT geht das ueberlebende Begin auf den Draht - auf G+1.
-    pruefe (s.p->zustelleAllesFuerTest() >= 1,
-            "WN-02: das eingereihte Begin ueberlebt den Reconnect und wird auf G+1 "
-            "geschrieben");
+    // Der Wire-Commit des Begins ist gelaufen, wenn der Zustellrueckruf gelaufen
+    // ist - `interventionenGesendet` zaehlt GENAU dort (`mitschnittZustellen`).
+    // Der Serverempfang allein waere die schwaechere Kante: die Bytes koennen
+    // vor dem Rueckruf gelesen sein.
+    // 🔑 Erst messen, DANN berichten (wie in `r01Resync`): die Argumente von
+    // `pruefe` werden in unbestimmter Reihenfolge ausgewertet, ein Zaehler im
+    // Detailtext koennte sonst VOR der Wartebedingung gelesen werden.
+    const bool beginZugestellt =
+        warteAuf (10000, [&] { return s.p->interventionenGesendetFuerTest() >= 1; });
+    const int nachBegin = (int) s.p->interventionenGesendetFuerTest();
+    pruefe (beginZugestellt,
+            "WN-02/WA-01: das eingereihte Begin ueberlebt den Reconnect und wird "
+            "von der SCHREIBSCHLEIFE auf G+1 zugestellt",
+            juce::String (nachBegin) + " zugestellt");
 
-    // Das `end` folgt. Sein Begin ist auf DIESEM Link zugestellt; ein Replay
-    // waere die doppelte `intervention_id` aus N-27.
-    s.p->senderAnhaltenFuerTest (false);
+    // ── Das `end` folgt. Sein Begin ist auf DIESEM Link zugestellt; ein
+    //    Replay waere die doppelte `intervention_id` aus N-27. ────────────
     s.p->markierungAus();
     s.bloecke (140);
-    // Den Zug SYNCHRON fahren: der Takt des Workers ist nicht Teil der
-    // Messung, und ein Erntefenster als einzige Ordnung waere genau der
-    // Sleep, den WN-06 andernorts abschafft.
     s.p->interventionenSendenFuerTest();
-    const auto ernte = s.ernte();
+    const bool endeZugestellt =
+        warteAuf (10000, [&] { return s.p->interventionenGesendetFuerTest() >= 2; });
+    const int nachEnde = (int) s.p->interventionenGesendetFuerTest();
+    pruefe (endeZugestellt,
+            "WN-02: auch das `end` ist zugestellt",
+            juce::String (nachEnde) + " zugestellt");
+
+    // Gemessen wird, was der SERVER empfing - nicht der Mitschnitt daneben.
+    auto p0Texte = [&server] ()
+    {
+        std::lock_guard<std::mutex> l (server->textMutex);
+        return server->p0Texte;
+    };
+    auto amDraht = [&p0Texte] (const char* typ)
+    {
+        int n = 0;
+        for (const auto& t : p0Texte())
+            if (t.find (std::string ("\"type\":\"") + typ + "\"") != std::string::npos)
+                ++n;
+        return n;
+    };
+    // 🔑 Die Ordnung ist der DRAHT, keine Pause: die Pipe ist FIFO, und ein
+    // Replay-Begin ginge dem `end` immer voran (es entsteht im selben Sendezug
+    // davor). Wer das `end` beim Server sieht, sieht damit auch alles, was
+    // vorher gereist ist - ein `sleep` als einzige Ordnung waere genau das,
+    // was WN-06 andernorts abgeschafft hat.
+    pruefe (warteAuf (10000, [&] { return amDraht ("audible_intervention_end") >= 1; }),
+            "WN-02/WA-01: das `end` ist beim Server angekommen - und mit ihm alles, "
+            "was ihm auf dem Draht vorausging");
 
     std::map<juce::String, int> beginsJeId;
     std::set<juce::int64> sequenzen;
     bool doppelteSequenz = false;
-    for (const auto& e : ernte)
+    int begins = 0, enden = 0;
+    juce::String folge;
+    for (const auto& text : p0Texte())
     {
+        const auto e = juce::JSON::parse (juce::String (text));
         const auto typ = e.getProperty ("type", {}).toString();
+        if (! typ.startsWith ("audible_intervention_"))
+            continue;
         const auto seq = (juce::int64) e.getProperty ("event_sequence", -1);
         if (! sequenzen.insert (seq).second)
             doppelteSequenz = true;
+        folge += typ.substring (21) + "/" + juce::String ((int) seq) + " ";
         if (typ == "audible_intervention_begin")
+        {
+            ++begins;
             ++beginsJeId[e.getProperty ("intervention_id", {}).toString()];
+        }
+        else if (typ == "audible_intervention_end")
+            ++enden;
     }
     int maxBegins = 0;
     for (const auto& kv : beginsJeId)
         maxBegins = std::max (maxBegins, kv.second);
 
+    pruefe (begins >= 1 && enden >= 1,
+            "WN-02/WA-01: Begin UND End sind wirklich beim Server angekommen - "
+            "gemessen am Draht, nicht am Testhaken",
+            juce::String (begins) + " Begin, " + juce::String (enden) + " End");
     pruefe (maxBegins == 1,
             "WN-02/N-27: das auf G+1 zugestellte Begin gilt als auf G+1 zugestellt - "
             "das `end` braucht KEIN Replay, und keine `intervention_id` reist zweimal",
             juce::String (maxBegins) + " Begin je intervention_id");
     pruefe (! doppelteSequenz,
             "WN-02/N-27: und keine Sequenznummer reist doppelt - genau daran setzt "
-            "`sequenz_annehmen` die Sitzung sonst `unknown`");
-    juce::String folge;
-    for (const auto& e : ernte)
-        folge += e.getProperty ("type", {}).toString().substring (21) + "/"
-               + juce::String ((int) (juce::int64) e.getProperty ("event_sequence", -1)) + " ";
-    pruefe (zaehle (ernte, "audible_intervention_end") == 1,
+            "`sequenz_annehmen` die Sitzung sonst `unknown`",
+            folge);
+    pruefe (enden == 1,
             "WN-02: das `end` reist genau einmal", folge);
+
+    s.p->senderAnhaltenFuerTest (false);
+    s.p->v3StopFuerTest();
+    server->stoppen();
 }
 
 /// WN-03/N-05/M-58 · Die lokale Nachlauffrist ist ein MAXIMUM ohne Deckel.
@@ -2383,6 +2521,18 @@ void n37ProzessorZustaendeTragenIhreGeneration()
     // Beide Aufbauten urteilen NICHT neutral (der Marker klingt), damit sie
     // denselben Zustand beschreiben; sonst kollidierten sie gar nicht.
     {
+        // 🔑 Nacharbeit 3 (WA-02/N-37): der Sender ist der DRITTE Teilnehmer.
+        // Die Schranken unten ordnen die beiden Callbacks; der Analyseworker
+        // lief bis hierher weiter und konnte `replayFaellig` regulaer per CAS
+        // verbrauchen (`PluginProcessor.cpp:1585-1592`). Dann stuende bei den
+        // Assertions `0` statt G+1, und der Fall fiele bei KORREKTEM Produkt.
+        // Die Pause wird BESTAETIGT, nicht angenommen: ein blosses Bit sagt
+        // nichts darueber, ob der Worker gerade schon im Zug steht.
+        s.p->senderAnhaltenFuerTest (true);
+        pruefe (s.p->warteAufSenderPauseFuerTest(),
+                "WA-02: der Sender ist BESTAETIGT angehalten - erst damit ordnen "
+                "die Schranken alle drei Teilnehmer, nicht nur die zwei Callbacks");
+
         std::mutex m;
         std::condition_variable cv;
         bool steht = false, darfSchreiben = false;
@@ -2442,6 +2592,8 @@ void n37ProzessorZustaendeTragenIhreGeneration()
                     + ", Replay " + juce::String ((int) s.p->replayFaelligFuerTest())
                     + " (G" + juce::String ((int) gAlt) + " gegen G"
                     + juce::String ((int) gNeu) + ")");
+
+        s.p->senderAnhaltenFuerTest (false);   // erst NACH den Assertions
     }
 
     // 🔑 WN-05/EP-15/N-37 Fall 2: der ALTE negative Callback ueberlappt einen
@@ -2454,6 +2606,13 @@ void n37ProzessorZustaendeTragenIhreGeneration()
     // Rueckkehr zu `wireGenerationJetzt()` waere gruen geblieben. Der Haken
     // haelt den Callback jetzt VOR seinen Loeschungen fest.
     {
+        // 🔑 Nacharbeit 3 (WA-02/N-37): dieselbe Lage, derselbe dritte
+        // Teilnehmer - die Pause gilt hier bis nach den Assertions.
+        s.p->senderAnhaltenFuerTest (true);
+        pruefe (s.p->warteAufSenderPauseFuerTest(),
+                "WA-02: auch fuer den WN-05-Block ist der Sender BESTAETIGT "
+                "angehalten");
+
         s.p->v3LinkFuerTest (true);            // ein lebender Link zum Sterben
         std::mutex m;
         std::condition_variable cv;
@@ -2504,6 +2663,8 @@ void n37ProzessorZustaendeTragenIhreGeneration()
                 "genau die Zustaende des NEUEN Links mitgenommen",
                 "Bericht " + juce::String ((int) s.p->berichtOffenFuerTest())
                     + ", Replay " + juce::String ((int) s.p->replayFaelligFuerTest()));
+
+        s.p->senderAnhaltenFuerTest (false);   // erst NACH den Assertions
     }
 }
 

@@ -1,0 +1,6 @@
+URTEIL: NEEDS_WORK — MP2-1 ist für den positiven Aufbau durch E9, N-26/N-28 und die Rotbeweise geschlossen, aber die neue Linkende-Zusage berücksichtigt überlappende true/false-Callbacks nicht und bricht damit N-23. Geprüft wurden ausschließlich Fixdiff und angegebene Quellen; Tests oder andere Prozesse wurden nicht ausgeführt.
+
+Review comment:
+
+- [P1] Serialisiere positive und negative Linkcallbacks — C:\Users\phili\Projekte\Nakama\docs\beweise\NAK-180.md:194-194
+  Bei `reconnect()` oder `stop()` während eines laufenden positiven Callbacks kann `v3ControlLink(false)` dessen Zustand zuerst löschen und der noch laufende `v3ControlLink(true)` anschließend `replayFaellig` bzw. den Bericht erneut setzen: Der negative Callback läuft ausdrücklich auf dem Aufruferthread (`ControlClient.h:239-243`), während `meldeLinkStatus` nur das Statusbit, nicht die Callback-Ausführung serialisiert (`ControlClient.cpp:988-995`). Weil danach wegen des bereits falschen Status kein zweiter Ende-Callback folgt, übernimmt der nächste Link den veralteten Bericht. Damit reicht die hier zugesagte sterbende Generation nicht aus und N-23/verbinden↔trennen bleibt gebrochen; erforderlich ist eine Generationsprüfung beziehungsweise Serialisierung samt Test dieses true/false-Interleavings. **Befundklasse: DEFEKT.** Siehe auch [AGENTS.md:48-50](../../AGENTS.md#L48-L50).

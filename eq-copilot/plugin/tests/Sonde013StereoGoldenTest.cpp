@@ -784,6 +784,115 @@ int main()
     }
 
     std::cout << "\n-----------------------------------------" << std::endl;
+
+    // ═══════════════════════════════════════════════════════════════════
+    // NAK-181 R5 · Praesenzbits fuer die Stereofelder (G4-Befund V06)
+    // ═══════════════════════════════════════════════════════════════════
+    //
+    // ⚠️ Alle bestehenden Faelle dieses Beins fahren `evidenzIntervallSetzen(1.0)`
+    // — genau deshalb hat keiner den Defekt gesehen. Bei der VORGABEkadenz
+    // 0,25 s schliesst das Kurzfenster nie (12000 Samples / 2048 = 5,86 Hops,
+    // Schwelle 8), und `korrelation_kurz` wie `persistenz` reisten mit dem
+    // Bit von `basisGesetzt` als gemessene 0,0.
+    abschnitt ("NAK-181 N-21  kurzkorrelation_und_persistenz_schweigen_ohne_kurzfenster");
+    {
+        auto halter = std::make_unique<FeatureEngine>();
+        auto& e = *halter;
+        e.vorbereiten (fs);
+        Speiser s { e };
+        // KEIN evidenzIntervallSetzen: die Vorgabe ist 0,25 s.
+        pruefe (std::abs (e.evidenzIntervallJetzt() - 0.25) < 1e-9,
+                "N-21: der Fall faehrt die VORGABEkadenz",
+                juce::String (e.evidenzIntervallJetzt(), 3));
+        std::uint32_t lcg = 0x13572468;
+        const bool kam = s.bisEvidenz ([&lcg] (std::uint64_t, float& l, float& r)
+        {
+            auto zug = [&lcg]
+            {
+                lcg = lcg * 1664525u + 1013904223u;
+                return (float) (((double) ((lcg >> 8) & 0xffffu) / 32768.0) - 1.0) * 0.3f;
+            };
+            l = zug();
+            r = l * 0.8f + zug() * 0.2f;      // korreliert, aber nicht identisch
+        });
+        pruefe (kam, "N-21: ein Evidenzfenster entsteht");
+
+        int mitBasis = 0, mitKurz = 0, mitPersistenz = 0;
+        for (int b = 0; b < nakama::analyse::Gitter::evidenzBaender; ++b)
+        {
+            const auto& w = e.stereoBand (b);
+            if (w.basisGesetzt) ++mitBasis;
+            if (w.korrelationKurzGesetzt) ++mitKurz;
+            if (w.persistenzGesetzt) ++mitPersistenz;
+        }
+        pruefe (mitBasis > 0, "N-21: Baender mit Basis gibt es", juce::String (mitBasis));
+        pruefe (mitKurz == 0,
+                "N-21: aber KEIN Band traegt korrelation_kurz - das Kurzfenster "
+                "schliesst bei 0,25 s nie",
+                juce::String (mitKurz));
+        pruefe (mitPersistenz == 0,
+                "N-21: und keines persistenz", juce::String (mitPersistenz));
+    }
+
+    abschnitt ("NAK-181 N-22  praesenzbits_ueberleben_das_fensterleeren");
+    {
+        // Bei 1 s schliessen 23 Hops (48 kHz) beziehungsweise 46 (96 kHz)
+        // Kurzfenster - die Bits werden gesetzt UND muessen den Leser erreichen.
+        // `baueFrame` ruft `evidenzLeeren` -> `stereoLeeren` in sich selbst,
+        // BEVOR der Writer `stereoBand()` liest; ein Bit, das dort genullt
+        // wuerde, waere in jedem Snapshot schon weg.
+        for (const double sr : { 48000.0, 96000.0 })
+        {
+            auto halter = std::make_unique<FeatureEngine>();
+            auto& e = *halter;
+            e.vorbereiten (sr);
+            Speiser s { e };
+            e.evidenzIntervallSetzen (1.0);
+            const bool kam = s.bisEvidenz ([sr] (std::uint64_t n, float& l, float& r)
+            {
+                l = (float) (0.4 * std::sin (kZweiPi * 1000.0 * (double) n / sr));
+                r = l;
+            });
+            pruefe (kam, juce::String ("N-22: ein Evidenzfenster bei ")
+                         + juce::String (sr / 1000.0, 0) + " kHz");
+            const auto& w = e.stereoBand (bandFuer (1000.0));
+            pruefe (w.korrelationKurzGesetzt && w.persistenzGesetzt,
+                    juce::String ("N-22: beide Bits stehen NACH dem Fensterleeren (")
+                    + juce::String (sr / 1000.0, 0) + " kHz)",
+                    juce::String (w.persistenz, 3));
+            pruefe (w.persistenz > 0.5f,
+                    "N-22: und die Persistenz traegt ihren Wert",
+                    juce::String (w.persistenz, 3));
+        }
+    }
+
+    abschnitt ("NAK-181 N-23  stiller_kanal_laesst_alle_drei_bits_weg");
+    {
+        auto halter = std::make_unique<FeatureEngine>();
+        auto& e = *halter;
+        e.vorbereiten (fs);
+        Speiser s { e };
+        e.evidenzIntervallSetzen (1.0);        // die Kurzfenster SCHLIESSEN
+        const bool kam = s.bisEvidenz ([] (std::uint64_t n, float& l, float& r)
+        {
+            l = (float) (0.4 * std::sin (kZweiPi * 1000.0 * (double) n / 48000.0));
+            r = 0.0f;                          // ein stiller Kanal
+        });
+        pruefe (kam, "N-23: ein Evidenzfenster entsteht");
+        const auto& w = e.stereoBand (bandFuer (1000.0));
+        // Das globale `stereoKurzfenster` ist hier GROESSER null - genau
+        // deshalb reicht es als Bedingung nicht: dieses Band hatte in keinem
+        // der Fenster einen gueltigen Nenner.
+        pruefe (w.basisGesetzt, "N-23: die Basis steht (ein stiller Kanal ist maximal breit)");
+        pruefe (! w.korrelationMittelGesetzt,
+                "N-23: korrelation_mittel traegt KEIN Bit - der Nenner ist null "
+                "(M-08: bei stillem Kanal faellt das Praesenzbit weg)");
+        pruefe (! w.korrelationKurzGesetzt,
+                "N-23: korrelation_kurz ebenso");
+        pruefe (! w.persistenzGesetzt,
+                "N-23: und persistenz ebenso - obwohl Kurzfenster geschlossen "
+                "haben, hatte DIESES Band in keinem einen gueltigen Nenner");
+    }
     std::cout << bestanden << " bestanden, " << fehler << " gescheitert" << std::endl;
     return fehler == 0 ? 0 : 1;
 }

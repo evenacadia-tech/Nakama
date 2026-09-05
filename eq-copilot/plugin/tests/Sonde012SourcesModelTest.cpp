@@ -819,6 +819,144 @@ int main()
                 "invalidate_scope_discriminator_is_not_a_label", grund);
     }
 
+
+    // ═══════════════════════════════════════════════════════════════════
+    // NAK-181 R6 · geschlossene Mengen im Gen-Empfaenger (V09, V10)
+    // ═══════════════════════════════════════════════════════════════════
+    //
+    // Der Leser hielt fuer `experimente` und `paare` jeden String. „objektiv
+    // besser" stand damit genauso im Modell wie eine der fuenf zulaessigen
+    // Aussagen aus M-46 — und `SourcesModel.h` behauptete das Gegenteil. Die
+    // Faelle bauen auf dem Korpusfixture auf und veraendern GENAU EIN Feld.
+    {
+        const auto basis = fixture ("gueltig/session-snapshot-mit-experimenten-und-paaren.json");
+        auto mitFeld = [&basis] (const char* wo, int index, const char* feld,
+                                 const juce::var& wert) -> juce::String
+        {
+            auto baum = juce::JSON::parse (basis);
+            auto* liste = baum.getProperty (wo, {}).getArray();
+            if (liste == nullptr || index >= liste->size())
+                return {};
+            auto* o = (*liste)[index].getDynamicObject();
+            if (o == nullptr)
+                return {};
+            // `juce::var()` wird von `JSON::toString` als `null` geschrieben —
+            // genau der Fall, den das Schema fuer `pair_id` erlaubt.
+            o->setProperty (feld, wert);
+            return juce::JSON::toString (baum, true);
+        };
+        auto ohneFeld = [&basis] (const char* wo, int index, const char* feld) -> juce::String
+        {
+            auto baum = juce::JSON::parse (basis);
+            auto* liste = baum.getProperty (wo, {}).getArray();
+            if (liste == nullptr || index >= liste->size())
+                return {};
+            auto* o = (*liste)[index].getDynamicObject();
+            if (o == nullptr)
+                return {};
+            o->removeProperty (feld);
+            return juce::JSON::toString (baum, true);
+        };
+        auto ergebnis = [&] (const juce::String& json) -> Model::SnapshotErgebnis
+        {
+            Model m;
+            m.beginneSubscription ("11111111111111111111111111111111",
+                                   "22222222222222222222222222222222",
+                                   "33333333333333333333333333333333");
+            juce::String grund;
+            return m.uebernehmeSessionSnapshot (json.toStdString(), 2, t0, grund);
+        };
+
+        // N-26 — je Feld ein Wert AUSSERHALB der Menge.
+        struct Aussen { const char* wo; const char* feld; const char* wert; };
+        const Aussen ausserhalb[] = {
+            { "experimente", "ereignis",         "begonnnen" },
+            { "experimente", "hoerurteil",       "vielleicht" },
+            { "experimente", "blindreihenfolge", "zufaellig" },
+            { "experimente", "vergleichbarkeit", "mittel" },
+            { "experimente", "urteil",           "objektiv besser" },
+            { "paare",       "klasse",           "fast_aligned" },
+            { "paare",       "kettenbefund",     "eher_stationaer" },
+            { "paare",       "ausschluss",       "keine_lust" },
+        };
+        for (const auto& a : ausserhalb)
+        {
+            const auto json = mitFeld (a.wo, a.wo[0] == 'p' ? 1 : 0, a.feld, juce::var (a.wert));
+            pruefe (! json.isEmpty()
+                    && ergebnis (json) == Model::SnapshotErgebnis::ungueltig,
+                    (juce::String ("N-26: ") + a.feld
+                        + " ausserhalb der Menge ist ungueltig").toRawUTF8(),
+                    a.wert);
+        }
+
+        // N-27 — je Feld ein Wert INNERHALB der Menge wird uebernommen.
+        const Aussen innerhalb[] = {
+            { "experimente", "ereignis",         "verdraengt" },
+            { "experimente", "hoerurteil",       "enthaltung" },
+            { "experimente", "blindreihenfolge", "baseline_zuerst" },
+            { "experimente", "vergleichbarkeit", "unvergleichbar" },
+            { "experimente", "urteil",           "vergleich_nicht_gueltig" },
+            { "paare",       "klasse",           "audio_aligned" },
+            { "paare",       "kettenbefund",     "latenz_wechselt_markiert" },
+            { "paare",       "ausschluss",       "sprung_im_fenster" },
+        };
+        for (const auto& a : innerhalb)
+        {
+            const auto json = mitFeld (a.wo, a.wo[0] == 'p' ? 1 : 0, a.feld, juce::var (a.wert));
+            pruefe (! json.isEmpty()
+                    && ergebnis (json) == Model::SnapshotErgebnis::uebernommen,
+                    (juce::String ("N-27: ") + a.feld
+                        + " innerhalb der Menge wird uebernommen").toRawUTF8(),
+                    a.wert);
+        }
+
+        // N-28 — pair_id: null, 64, 65, leer, jenseits der BMP.
+        {
+            juce::String vierundsechzig;
+            for (int i = 0; i < 64; ++i) vierundsechzig += "a";
+            const auto fuenfundsechzig = vierundsechzig + "a";
+            // Ein Zeichen jenseits der BMP zaehlt als EIN Codepoint.
+            juce::String jenseits (juce::CharPointer_UTF8 ("\xF0\x9F\x8E\xB5"));  // U+1F3B5
+            for (int i = 0; i < 63; ++i) jenseits += juce::String ("a");
+
+            pruefe (ergebnis (mitFeld ("paare", 0, "pair_id", juce::var()))
+                        == Model::SnapshotErgebnis::uebernommen,
+                    "N-28: pair_id null ist gueltig (Schema: string|null)");
+            pruefe (ergebnis (mitFeld ("paare", 0, "pair_id", juce::var (vierundsechzig)))
+                        == Model::SnapshotErgebnis::uebernommen,
+                    "N-28: 64 Codepoints sind gueltig");
+            pruefe (ergebnis (mitFeld ("paare", 0, "pair_id", juce::var (fuenfundsechzig)))
+                        == Model::SnapshotErgebnis::ungueltig,
+                    "N-28: 65 nicht");
+            pruefe (ergebnis (mitFeld ("paare", 0, "pair_id", juce::var (juce::String())))
+                        == Model::SnapshotErgebnis::ungueltig,
+                    "N-28: der leere String auch nicht - er ist ausdruecklich keine "
+                    "zweite Schreibweise fuer kein Paar");
+            pruefe (jenseits.length() == 64
+                    && ergebnis (mitFeld ("paare", 0, "pair_id", juce::var (jenseits)))
+                        == Model::SnapshotErgebnis::uebernommen,
+                    "N-28: gezaehlt werden CODEPOINTS - ein Vier-Byte-Zeichen zaehlt als eins",
+                    juce::String (jenseits.length()));
+        }
+
+        // N-29 — ausschluss als Nicht-String faellt nicht mehr still weg.
+        {
+            pruefe (ergebnis (mitFeld ("paare", 1, "ausschluss", juce::var (7)))
+                        == Model::SnapshotErgebnis::ungueltig,
+                    "N-29: ausschluss als Zahl ist ungueltig - der einzige "
+                    "fail-open-Zweig der Funktion ist zu");
+            pruefe (ergebnis (mitFeld ("paare", 1, "ausschluss", juce::var (true)))
+                        == Model::SnapshotErgebnis::ungueltig,
+                    "N-29: als Bool ebenso");
+            pruefe (ergebnis (ohneFeld ("paare", 1, "ausschluss"))
+                        == Model::SnapshotErgebnis::uebernommen,
+                    "N-29: FEHLT es, bleibt der Snapshot gueltig - leer heisst: "
+                    "das Paar traegt eine Aussage");
+            pruefe (ergebnis (mitFeld ("paare", 1, "ausschluss", juce::var()))
+                        == Model::SnapshotErgebnis::uebernommen,
+                    "N-29: und `null` ist wie fehlend - kein gesetzter Wert");
+        }
+    }
     std::cout << "SONDE-012 SourcesModel: " << bestanden << "/"
               << (bestanden + fehler) << " gruen\n";
     return fehler == 0 ? 0 : 1;

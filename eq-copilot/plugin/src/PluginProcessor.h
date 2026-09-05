@@ -383,6 +383,12 @@ public:
     void setzeZugHakenFuerTest (std::function<void (int phase)> haken)
     { zugHakenFuerTest = std::move (haken); }
 
+    /** NAK-180 Nacharbeit 2 (WN-06/N-35): dieselbe Schranke am EINTRITT des
+        Aufbauzugs des ControlClients. Phase 0 = betreten (Sperre wird gleich
+        angefordert), Phase 1 = Sperre uebernommen. */
+    void setzeAufbauZugHakenFuerTest (std::function<void (int phase)> haken)
+    { controlV3.setzeAufbauZugHakenFuerTest (std::move (haken)); }
+
     /// Wie viele Ereignisse JETZT im RT-Ring warten - ohne sie zu entnehmen.
     /// Der Riegel, mit dem N-08 seinen Backlog-Zustand BEWEIST statt ihn
     /// anzunehmen (EP-19).
@@ -403,6 +409,57 @@ public:
         h.adresse = nakama::ipc::wireAdresseAusState (h.adresse);
         return controlV3.heartbeatSchrittFuerTest (h, sequence, v3Status(), textAus);
     }
+
+    /** NAK-180 Nacharbeit 2 (WN-01/N-36): wartet ein `end` auf seinen
+        Wire-Commit? Der vierte Term des Neutralitaetsurteils, LESBAR. */
+    bool abschlussOffenFuerTest() const
+    { return abschlussOffen.load (std::memory_order_relaxed); }
+
+    // ── NAK-180 Nacharbeit 2 (WN-03/N-05/M-58): die Nachlauffrist ─────────
+    // DIE Produktfunktionen, nicht eine Nachbildung daneben. Die Frist haengt
+    // an `tail_samples` eines `end`; ueber den Audioweg allein sind weder der
+    // Zahlenrand noch die Reihenfolge lang-dann-kurz erzwingbar.
+    void nachlaufFristSetzenFuerTest (std::uint64_t tailSamples)
+    {
+        std::lock_guard<std::mutex> l (sendeZustandMutex);
+        nachlaufFristSetzen (tailSamples);
+    }
+    bool nachlaufAbgelaufenFuerTest() const
+    {
+        std::lock_guard<std::mutex> l (sendeZustandMutex);
+        return nachlaufAbgelaufen();
+    }
+    std::int64_t nachlaufFristNsFuerTest() const
+    { return nachlaufFristNs.load (std::memory_order_relaxed); }
+
+    /** NAK-180 Nacharbeit 2 (WN-04/EP-04/R13): der Haken IM positiven
+        Link-Callback, VOR seinem CAS.
+
+        Der alte Fall haengte sich hinter `v3ControlLink(true)` und schrieb
+        danach ueber `berichtOffenFuerTestSetzen` - eine zweite Zeile neben
+        der Produktzeile. Der echte Schreibzugriff des Callbacks war zu dem
+        Zeitpunkt laengst gelaufen, und `gAlt` war im Callback noch 0: der
+        Rotbeweis fiel mit `[0 (G4 gegen G5)]`, also aus dem falschen Grund,
+        und eine Rueckkehr zu blinden `store`s waere gruen geblieben.
+
+        Der Haken bekommt die Generation DIESES Aufbaus (nach R10 dort bereits
+        vergeben) und laeuft, bevor der Callback `berichtOffen` und
+        `replayFaellig` per CAS setzt. Ein Bein haelt ihn fest, baut G+1
+        vollstaendig auf und laesst ihn dann los. */
+    void setzeLinkAufbauHakenFuerTest (std::function<void (std::uint64_t)> haken)
+    { linkAufbauHakenFuerTest = std::move (haken); }
+
+    /** NAK-180 Nacharbeit 2 (WN-05/EP-15/N-37 Fall 2): der Haken IM negativen
+        Link-Callback, VOR seinen Loeschungen.
+
+        Ohne ihn konnte kein alter negativer Callback einen NEUEREN Aufbau
+        ueberlappen: der erste `v3LinkFuerTest(false)` beendete seine
+        Generation synchron, und der als verspaetet bezeichnete zweite fand
+        `0` - `0` loescht nichts, und der Fall war folgenlos gruen. Der Haken
+        bekommt die STERBENDE Generation und haelt den Callback genau dort an,
+        wo seine Loeschungen gleich laufen. */
+    void setzeLinkEndeHakenFuerTest (std::function<void (std::uint64_t)> haken)
+    { linkEndeHakenFuerTest = std::move (haken); }
 
     std::uint64_t berichtOffenFuerTest() const { return berichtOffen.load(); }
     /** NAK-180 Nacharbeit 1 (EP-04/R13): schreibt `berichtOffen` GENAU SO, wie
@@ -984,10 +1041,22 @@ private:
     OffenesBegin offenesBegin;
     AbschlussBegin abschlussBegin;
     TotUebergang ausstehenderTotUebergang;
-    /// Marke und Nachlauf des zuletzt EINGEREIHTEN `end` (EP-02). Sein
-    /// Wire-Commit stellt die Frist; vorher zaehlt der Broker nichts.
-    std::uint64_t letzteEndeMarke = 0;
-    std::uint64_t letzterEndeTail = 0;
+    /** Marke und Nachlauf JEDES eingereihten, noch nicht zugestellten `end`
+        (EP-02, berichtigt in Nacharbeit 2 fuer WN-03).
+
+        Bis hierher stand nur das ZULETZT eingereihte `end` in zwei Feldern.
+        Liegen zwei Enden gleichzeitig in der Queue - ein langes, dann ein
+        kurzes -, verlor das lange seine Marke, sein Wire-Commit stellte gar
+        keine Frist, und die des kurzen galt allein. Der Broker haelt in
+        derselben Lage das MAXIMUM beider Nachlaeufe
+        (`intervention.rs`: `tail_samples_offen.max(tail_samples)`), das
+        Plugin lief also mit der kuerzeren Frist gegen die laengere des
+        Brokers - und sein einmaliges `false` reiste in einen laufenden
+        Nachlauf (N-05/M-58).
+
+        Strukturell gedeckelt: jeder Eintrag entspricht genau einem
+        eingereihten P0-Platz, und `kCapP0` ist 64. */
+    std::deque<std::pair<std::uint64_t, std::uint64_t>> ausstehendeEnden;
 
     // ── NAK-180 Nacharbeit 1: Helfer des Sendezustands ────────────────────
     // Alle drei setzen `sendeZustandMutex` als GEHALTEN voraus; sie werden
@@ -1004,6 +1073,21 @@ private:
     /// Lock-freie Spiegelung fuer `v3ControlLink`, damit der Callback die
     /// Sperre nicht nehmen muss.
     std::atomic<bool> sendeBeginOffen { false };
+    /** NAK-180 Nacharbeit 2 (WN-01/N-36, N-05/M-58): ein `end` wartet auf
+        seinen Wire-Commit.
+
+        Das Neutralitaetsurteil des Aufbaus las bis hierher nur
+        `sendeBeginOffen` - und das loescht `sendeEnde()`, sobald das `end`
+        EINGEREIHT ist. Stirbt der Link in genau diesem Fenster, urteilte
+        G+1 „neutral": sein erster Heartbeat trug `false`, der Broker fuehrte
+        den R1-Resync aus und loeschte den Tail, den das gerade zugestellte
+        `end` erst gestartet hatte. Solange ein `end` auf den Draht wartet, ist
+        der Prozessor NICHT neutral - der Broker hat das Paar noch nicht
+        gesehen.
+
+        Spiegel von `! ausstehendeEnden.empty()`, unter `sendeZustandMutex`
+        geschrieben und vom Callback lock-frei gelesen. */
+    std::atomic<bool> abschlussOffen { false };
     /** NAK-180 Nacharbeit 1 (EP-02/N-05): fruehestens ab dieser Zeit darf das
         einmalige `false` des Nachberichts reisen.
 
@@ -1047,6 +1131,12 @@ private:
     /// Vor dem ersten `start()` gesetzt und danach unveraendert - wie der
     /// Statusprovider des ControlClients.
     std::function<void (int)> zugHakenFuerTest;
+    /// NAK-180 Nacharbeit 2 (WN-04/WN-05): Test-Einhaengepunkte IN den beiden
+    /// Link-Callbacks, jeweils VOR der generationsgebundenen Wirkung. Beide
+    /// laufen auf dem Nachrichten- bzw. Clientthread, nie im Audiothread, und
+    /// halten dabei keine Sperre des Sendezustands.
+    std::function<void (std::uint64_t)> linkAufbauHakenFuerTest;
+    std::function<void (std::uint64_t)> linkEndeHakenFuerTest;
     std::atomic<bool> editorOffen { false };
     std::atomic<bool> testEchtzeit { false };     // nur Tests, s. testForciereEchtzeit
     // §53.5 Satz 1 ("unclassified und audio-neutral") als Atomic fuer den

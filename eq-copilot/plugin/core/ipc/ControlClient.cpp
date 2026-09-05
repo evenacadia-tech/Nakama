@@ -577,6 +577,9 @@ struct ControlClient::Laufzeit
     // aber NIE erneut senden (Sperrenordnung: sendeMutex vor Sendezustand).
     std::function<void (std::uint64_t, std::uint64_t)> beiP0Zugestellt;
     std::function<void (std::uint64_t)> beiP0Verworfen;
+    /// NAK-180 Nacharbeit 2 (WN-06/N-35): Schranke am Eintritt des Aufbauzugs.
+    /// Phase 0 vor dem Anfordern von `sendeMutex`, Phase 1 nach der Uebernahme.
+    std::function<void (int)> aufbauZugHakenFuerTest;
     std::function<std::string (std::uint64_t, std::uint64_t)> hookReplayBegin;
 
     // 🔑 NAK-180 R1/R10/R13: die Aussage des Aufbaus - als GENERATIONSZAHL,
@@ -847,6 +850,11 @@ void ControlClient::setzeReplayBeginHook (
     std::function<std::string (std::uint64_t, std::uint64_t)> hook)
 {
     k->hookReplayBegin = std::move (hook);
+}
+
+void ControlClient::setzeAufbauZugHakenFuerTest (std::function<void (int)> haken)
+{
+    k->aufbauZugHakenFuerTest = std::move (haken);
 }
 
 /** 🔑 NAK-180 R11: die Generation, FUER DIE der laufende Link-Callback laeuft.
@@ -1335,8 +1343,19 @@ std::uint64_t ControlClient::Laufzeit::aufbauZug()
 {
     const auto neueGeneration = wireGeneration.load() + 1;
     std::vector<std::uint64_t> verworfeneMarken;
+    // 🔑 NAK-180 Nacharbeit 2 (WN-06/N-35): Phase 0 - der Zug ist BETRETEN,
+    // die Sperre wird als naechstes angefordert. Ein Bein weiss damit
+    // deterministisch, dass sein zweiter Faden wirklich hier steht; vorher
+    // musste es das aus einer Pause schliessen.
+    if (aufbauZugHakenFuerTest)
+        aufbauZugHakenFuerTest (0);
     {
         std::lock_guard<std::mutex> l (sendeMutex);
+        // Phase 1 - die Sperre ist UEBERNOMMEN. Faellt sie, waehrend ein
+        // Sendezug sie noch haelt, ist es nicht dieselbe Sperre: genau das
+        // misst der Rotbeweis mit aufgeteiltem Mutex.
+        if (aufbauZugHakenFuerTest)
+            aufbauZugHakenFuerTest (1);
         wireGeneration.store (neueGeneration);
         // Berichte des alten Links fallen - ihre Aussage galt ihm allein.
         p0.berichteAelterAls (neueGeneration,
@@ -1465,18 +1484,24 @@ void ControlClient::leereP0QueueFuerTest()
 
 std::size_t ControlClient::zustelleAllesFuerTest()
 {
-    // 🔑 Nacharbeit 1: Marke UND die Generation des Eintrags. Die Meldung
-    // laeuft ausserhalb der Sperre; die "aktuelle" Zahl waere dort schon eine
-    // andere, wenn ein Bein dazwischen einen Aufbauzug faehrt.
+    // 🔑 Nacharbeit 1: Marke UND die Generation, unter der Sperre gelesen.
+    // Die Meldung laeuft ausserhalb; die "aktuelle" Zahl waere dort schon
+    // eine andere, wenn ein Bein dazwischen einen Aufbauzug faehrt.
+    //
+    // 🔑 Nacharbeit 2 (WN-02/N-27): gemeldet wird - wie in der echten
+    // Sendeschleife - die Generation des COMMITS, nicht die des Einreihens.
+    // Dieser Haken IST der Wire-Commit ohne Draht; buchte er die alte Zahl,
+    // maesse jedes Bein den Pfad, den das Produkt gerade nicht mehr hat.
     std::vector<std::pair<std::uint64_t, std::uint64_t>> marken;
     {
         std::lock_guard<std::mutex> l (k->sendeMutex);
+        const auto dieseWireGeneration = k->wireGeneration.load();
         P0Eintrag e;
         while (k->p0.entnehmen (e))
         {
             k->p0.bestaetigen();
             if (e.marke != 0)
-                marken.emplace_back (e.marke, e.generation);
+                marken.emplace_back (e.marke, dieseWireGeneration);
         }
     }
     for (const auto& m : marken)
@@ -2067,8 +2092,23 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
                     // NAK-180 R7: DAS ist der Wire-Commit. Erst hier weiss der
                     // Einreicher, dass seine Nachricht wirklich raus ist - der
                     // Rueckgabewert von `sendeP0` sagt nur "eingereiht".
+                    //
+                    // 🔑 Nacharbeit 2 (WN-02/N-27): gemeldet wird die
+                    // Generation des TATSAECHLICHEN Wire-Commits, nicht die
+                    // des Einreihens.
+                    //
+                    // Ein Intervensionsereignis geht beim Reconnect nicht
+                    // verloren - es wird zurueckgelegt (unten) und auf dem
+                    // NAECHSTEN Link geschrieben. Sein Eintrag traegt aber
+                    // weiter die alte Zahl. Meldete der Rueckruf sie, stuende
+                    // ein auf G+1 geschriebenes Begin beim Prozessor als "auf
+                    // G zugestellt", und `replayNoetig` erzeugte beim `end`
+                    // ein ZWEITES Begin derselben `intervention_id`:
+                    // `sequenz_annehmen` sieht die Wiederholung und setzt die
+                    // Sitzung `unknown` - genau das, was N-27 hier ausdruecklich
+                    // ausschliesst.
                     if (beiP0Zugestellt && p0Eintrag.marke != 0)
-                        beiP0Zugestellt (p0Eintrag.marke, p0Eintrag.generation);
+                        beiP0Zugestellt (p0Eintrag.marke, dieseWireGeneration);
                 }
                 else
                     p1.bestaetigen();

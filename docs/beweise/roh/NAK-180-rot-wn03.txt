@@ -1,0 +1,20 @@
+NAK-180 Etappe 2, Nacharbeit 2 - ROTBEWEIS WN03
+Erzeugt: 2026-09-05 14:13:12
+Basis:   4aaf7baffcba57dee6c1f06513f8122bf691c66c
+Ziel:    EqCopSonde013PassageStateTest
+Regel zurueckgedreht durch tools/dirigent (Helfer im Jobordner), danach wiederhergestellt.
+EXIT=1
+
+== NAK-180 WN-03/N-05/M-58  nachlauffrist_ist_ein_maximum_ohne_deckel ==
+[ROT]  WN-03: ein Nachlauf von zwei Stunden reist ungekuerzt in die Frist - kein 3600-s-Deckel; der Broker zaehlt `tail_samples_offen` ungekappt herunter  [3601.0 s Restfrist]
+[ROT]  WN-03: ein kuerzeres `end` danach verkuerzt sie NICHT - die lokale Frist ist nie kuerzer als die des Brokers, der das Maximum haelt  [1.1 s Restfrist]
+[ROT]  WN-03: `tailSamples` am u64-Rand saettigt in `int64`-Nanosekunden, statt zu ueberlaufen - eine negative Frist waere sofort abgelaufen  [316330 s seit Systemstart]
+[ok]   WN-03: der Marker klingt
+[ok]   WN-03: der Bericht ist offen  [1]
+[ROT]  WN-03/M-58: der Bericht bleibt ueber die kurze Frist hinaus offen - das einmalige `false` reist nicht in einen laufenden Nachlauf  [0]
+
+--- Schluss der Ausgabe ---
+[ok]   N-02/N-12: der naechste Heartbeat schweigt wieder - die Aussage reist genau einmal  [{"type":"heartbeat","adresse":{"logon_sid":"S-1-5-21-369263037-1611576211-208123]
+[ok]   N-12: und sie nimmt die Aussage eines neueren Links NICHT mit
+
+193 bestanden, 4 gescheitert

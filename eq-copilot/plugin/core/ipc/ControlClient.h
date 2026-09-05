@@ -458,6 +458,22 @@ public:
     /// Leert sie wieder, ohne etwas zu melden.
     void leereP0QueueFuerTest();
 
+    /** NAK-180 Nacharbeit 2 (WN-06/EP-16/N-35): die Schranke AM EINTRITT des
+        Aufbauzugs (Test).
+
+        `phase` ist 0 (der Zug ist betreten, `sendeMutex` wird als NAECHSTES
+        angefordert) und 1 (er HAT die Sperre). Bis hierher ordnete den
+        N-35-Fall eine 30-ms-Pause: sie bewies weder, dass der zweite Faden
+        den Zug ueberhaupt betreten hatte, noch dass er an der Sperre stand -
+        bei verzoegerter Planung blieb der Test auch mit AUFGETEILTER Sperre
+        gruen. Phase 0 beweist den Eintritt, Phase 1 beweist die Uebernahme:
+        faellt sie, waehrend der Sendezug noch haelt, ist die Sperre nicht
+        dieselbe.
+
+        ⚠️ Phase 1 laeuft UNTER `sendeMutex`. Wer dort wartet, blockiert jeden
+        Sendezug. */
+    void setzeAufbauZugHakenFuerTest (std::function<void (int phase)> haken);
+
     /** Der positive Link-Callback wie im Produkt, samt Generationsfenster
         (NAK-180 R11, Test).
 

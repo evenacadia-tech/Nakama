@@ -183,11 +183,22 @@ EqCopilotProcessor::EqCopilotProcessor()
             // 🔑 EP-02/N-05: JETZT beginnt der Broker den Nachlauf zu zaehlen.
             // Vor dessen Ablauf verwirft er ein `false`, und niemand
             // wiederholt es.
-            if (letzteEndeMarke != 0 && letzteEndeMarke == marke)
+            //
+            // 🔑 Nacharbeit 2 (WN-03): JEDES zugestellte `end` stellt seine
+            // Frist, und `nachlaufFristSetzen` nimmt das Maximum - genau wie
+            // der Broker. Vorher trug nur das zuletzt eingereihte `end` seine
+            // Marke, und ein langes verlor seine Frist an ein kurzes.
+            for (auto it = ausstehendeEnden.begin(); it != ausstehendeEnden.end(); ++it)
             {
-                nachlaufFristSetzen (letzterEndeTail);
-                letzteEndeMarke = 0;
+                if (it->first != marke)
+                    continue;
+                nachlaufFristSetzen (it->second);
+                ausstehendeEnden.erase (it);
+                break;
             }
+            // 🔑 WN-01/N-36: erst wenn KEIN `end` mehr auf den Draht wartet,
+            // darf der Aufbau eines neuen Links wieder neutral urteilen.
+            abschlussOffen.store (! ausstehendeEnden.empty(), std::memory_order_relaxed);
             // 🔑 EP-13/R7: Mitschnitt und Zaehler entstehen am WIRE-COMMIT,
             // nicht beim Einreihen. „Gesendet" heisst Draht.
             mitschnittZustellen (marke);
@@ -314,27 +325,64 @@ EqCopilotProcessor::~EqCopilotProcessor()
     verbraucht sind, wiederholt es niemand. Die Frist beginnt am WIRE-COMMIT,
     weil der Broker vorher nichts gesehen hat, und traegt eine
     Heartbeat-Periode Marge: der Abschluss reist als naechster Heartbeat, und
-    zwischen Frist und Draht liegt bis zu ein Takt. */
+    zwischen Frist und Draht liegt bis zu ein Takt.
+
+    🔑 NAK-180 Nacharbeit 2 (WN-03/N-05/M-58): die lokale Frist ist NIE
+    kuerzer als die des Brokers.
+
+    Zwei Wege hatten sie verkuerzt. Erstens ein Deckel von 3600 Sekunden: ein
+    einzelner Tail darueber wurde gekappt, waehrend der Broker
+    `tail_samples_offen` ungekappt herunterzaehlt
+    (`intervention.rs:231`). Zweitens ein spaeteres, KUERZERES `end`: es
+    ueberschrieb eine noch laufende laengere Frist, waehrend der Broker das
+    MAXIMUM haelt (`tail_samples_offen.max(tail_samples)`). In beiden Faellen
+    verbrauchte das Plugin sein einmaliges `false`, solange
+    `tail_samples_offen > 0` — E4 verwirft es, niemand wiederholt es, und die
+    Sitzung bleibt gesperrt.
+
+    Gesaettigt wird deshalb nur noch am ZAHLENRAND (`int64`-Nanosekunden),
+    nicht an einer erfundenen Stunde, und eine offene Frist wird nur
+    verlaengert, nie gekuerzt. */
 void EqCopilotProcessor::nachlaufFristSetzen (std::uint64_t tailSamples)
 {
     double rate = letzteGueltigeSamplerate.load (std::memory_order_relaxed);
     if (! (std::isfinite (rate) && rate > 0.0))
         rate = 48000.0;                      // dieselbe Vorgabe wie im Broker
     const double sekunden = (double) tailSamples / rate;
-    // Saettigen statt ueberlaufen: `tailSamples` kann bis an den u64-Rand
-    // gehen (N-18), und eine Frist von 10^12 Sekunden waere eine Sperre ohne
-    // Ende. Eine Stunde ist weit jenseits jedes echten Nachlaufs und bleibt
-    // in `int64`-Nanosekunden rechenbar.
-    constexpr double kDeckelSekunden = 3600.0;
-    const double gedeckelt = std::isfinite (sekunden)
-        ? std::min (std::max (sekunden, 0.0), kDeckelSekunden) : 0.0;
     const auto jetzt = std::chrono::steady_clock::now().time_since_epoch();
     const auto jetztNs =
         std::chrono::duration_cast<std::chrono::nanoseconds> (jetzt).count();
-    const std::int64_t tailNs = (std::int64_t) (gedeckelt * 1e9);
     const std::int64_t margeNs =
         (std::int64_t) nakama::ipc::kHeartbeatTaktMs * 1000000LL;
-    nachlaufFristNs.store (jetztNs + tailNs + margeNs, std::memory_order_relaxed);
+    constexpr std::int64_t kMaxNs = std::numeric_limits<std::int64_t>::max();
+    // Der Platz, der nach Jetzt und Marge bis zum Rand bleibt. `jetztNs` ist
+    // die Laufzeit seit dem Systemstart und liegt viele Groessenordnungen
+    // unter dem Rand; die Klammer schuetzt trotzdem, damit die Summe unten
+    // unter keinen Umstaenden ueberlaeuft (UB).
+    const std::int64_t platzNs =
+        (jetztNs >= kMaxNs - margeNs) ? 0 : (kMaxNs - margeNs - jetztNs);
+    std::int64_t tailNs = 0;
+    if (tailSamples > 0)
+    {
+        const double ns = sekunden * 1e9;
+        // Nicht-endlich saettigt NACH OBEN, nicht auf 0. Eine winzige (aber
+        // formal gueltige) Rate laesst `sekunden` nach `+inf` laufen; ein
+        // stiller Sturz auf 0 hiesse „kein Nachlauf" und liesse das einmalige
+        // `false` sofort reisen - der teure Fehler liegt nach §34.2 genau auf
+        // dieser Seite.
+        //
+        // `>=` statt `>`: der Vergleich laeuft in `double`, und
+        // `(double) platzNs` rundet nach oben. Ein Gleichstand nimmt deshalb
+        // den gesaettigten Zweig, nie die Umwandlung am Rand.
+        tailNs = (! std::isfinite (ns) || ns >= (double) platzNs)
+            ? platzNs : (std::int64_t) std::max (ns, 0.0);
+    }
+    const std::int64_t neu = jetztNs + tailNs + margeNs;
+    // 🔑 Nur verlaengern. Eine bereits abgelaufene Frist liegt in der
+    // Vergangenheit und verliert diesen Vergleich von selbst; eine noch
+    // offene laengere bleibt stehen — genau wie ihr Gegenstueck beim Broker.
+    if (neu > nachlaufFristNs.load (std::memory_order_relaxed))
+        nachlaufFristNs.store (neu, std::memory_order_relaxed);
 }
 
 bool EqCopilotProcessor::nachlaufAbgelaufen() const
@@ -1490,8 +1538,24 @@ void EqCopilotProcessor::interventionenSenden()
             const auto marke = sende (ende, nakama::ipc::P0Klasse::intervention);
             if (marke != 0)
             {
-                letzteEndeMarke = marke;
-                letzterEndeTail = ende.tailSamples;
+                // 🔑 Nacharbeit 2 (WN-03): JEDES eingereihte `end` wartet mit
+                // SEINEM Nachlauf auf den Wire-Commit. Der Deckel ist
+                // Verteidigung, nicht Politik: jeder Eintrag haelt einen der
+                // 64 P0-Plaetze, mehr als das kann hier nicht stehen.
+                if (ausstehendeEnden.size() >= kAusstehendDeckel)
+                {
+                    // Unerreichbar, solange die Invariante haelt - und wenn
+                    // doch, dann fail-closed: die Frist des verdraengten
+                    // Eintrags gilt ab JETZT, statt ersatzlos zu verfallen.
+                    nachlaufFristSetzen (ausstehendeEnden.front().second);
+                    ausstehendeEnden.pop_front();
+                }
+                ausstehendeEnden.emplace_back (marke, ende.tailSamples);
+                // 🔑 Nacharbeit 2 (WN-01/N-36): der Prozessor ist ab hier
+                // NICHT neutral. Das `end` ist eingereiht, aber der Broker hat
+                // es noch nicht gesehen; ein `false` des naechsten Aufbaus
+                // loeschte genau den Tail, den es gleich startet.
+                abschlussOffen.store (true, std::memory_order_relaxed);
                 if (warZugestellt)
                     abschlussBegin = AbschlussBegin { begin, true, marke };
             }
@@ -1628,7 +1692,7 @@ void EqCopilotProcessor::interventionenSenden()
                      // `end` - und traefe dort auf den vollen Nachlauf. Die
                      // Frist allein genuegt nicht: sie steht erst ab dem
                      // Wire-Commit.
-                     && letzteEndeMarke == 0
+                     && ausstehendeEnden.empty()
                      && ! markierung.hoerbar()
                      // 🔑 NAK-180 Nacharbeit 1 (EP-02/N-05/M-58): der
                      // NACHLAUF des zuletzt zugestellten `end` muss in
@@ -1779,6 +1843,13 @@ void EqCopilotProcessor::v3ControlLink (bool verbunden)
             telemetryV3.reconnect();
             return;
         }
+        // 🔑 NAK-180 Nacharbeit 2 (WN-05): der Einhaengepunkt liegt VOR den
+        // Loeschungen. Nur hier kann ein Bein einen ALTEN negativen Callback
+        // festhalten, waehrend G+1 vollstaendig aufbaut und schreibt - die
+        // Ueberlappung, die N-37 Fall 2 verlangt und die eine sequentielle
+        // Folge zweier Aufrufe nie erzeugt.
+        if (linkEndeHakenFuerTest)
+            linkEndeHakenFuerTest (sterbend);
         controlV3.loescheAufbauUrteil (sterbend);
         auto a = sterbend;
         replayFaellig.compare_exchange_strong (a, 0);
@@ -1828,8 +1899,21 @@ void EqCopilotProcessor::v3ControlLink (bool verbunden)
     // nie. Der dritte Term ist die einzige Aussage darueber, was der BROKER
     // gesehen hat. Jeder Term darf allein sperren, keiner allein entsperren
     // (§34.2: der teure Fehler liegt auf der Seite "zu frueh entsperrt").
+    //
+    // 🔑 NAK-180 Nacharbeit 2 (WN-01/N-36, N-05/M-58): ein `end`, das auf
+    // seinen Wire-Commit wartet, ist der VIERTE Sperrgrund.
+    //
+    // `sendeBeginOffen` faellt schon beim EINREIHEN des `end`. Stirbt der Link
+    // in diesem Fenster, sah der Broker weder Begin-Abschluss noch Tail,
+    // waehrend das Praedikat hier bereits „neutral" las: der erste Heartbeat
+    // von G+1 trug `false`, `resync_bestaetigen` loeschte das Unknown, und das
+    // unmittelbar danach zugestellte `end` startete einen Tail, den der R1-
+    // Resync gerade weggeraeumt hatte. Solange ein `end` unterwegs ist, weiss
+    // nur das Plugin davon - und genau darum darf es keine Neutralitaet
+    // behaupten.
     const bool neutral = interventionsRing.fuellstand() == 0
                       && ! sendeBeginOffen.load (std::memory_order_relaxed)
+                      && ! abschlussOffen.load (std::memory_order_relaxed)
                       && ! markierung.hoerbar();
     if (neutral)
     {
@@ -1869,6 +1953,14 @@ void EqCopilotProcessor::v3ControlLink (bool verbunden)
     }
 
     const auto meineGeneration = controlV3.meldeAufbauUrteil (neutral);
+    // 🔑 NAK-180 Nacharbeit 2 (WN-04): der Einhaengepunkt liegt VOR dem CAS,
+    // und die Generation ist hier bereits vergeben (R10). Ein Bein haelt den
+    // ECHTEN Callback genau hier fest, laesst G+1 vollstaendig aufbauen und
+    // gibt ihn dann frei; gemessen wird, ob die Wirkung von G+1 stehen bleibt.
+    // Hinter dem Callback gehaengt maesse derselbe Test nichts: der
+    // Schreibzugriff waere laengst gelaufen.
+    if (linkAufbauHakenFuerTest)
+        linkAufbauHakenFuerTest (meineGeneration);
     if (! neutral && meineGeneration != 0)
     {
         // 🔑 NAK-180 Nacharbeit 1 (EP-04/R13/N-37): CAS statt `store`.

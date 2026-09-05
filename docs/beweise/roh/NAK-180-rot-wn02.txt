@@ -1,0 +1,20 @@
+NAK-180 Etappe 2, Nacharbeit 2 - ROTBEWEIS WN02
+Erzeugt: 2026-09-05 14:12:54
+Basis:   4aaf7baffcba57dee6c1f06513f8122bf691c66c
+Ziel:    EqCopSonde013PassageStateTest
+Regel zurueckgedreht durch tools/dirigent (Helfer im Jobordner), danach wiederhergestellt.
+EXIT=1
+
+== NAK-180 WN-02/N-27  zustellung_meldet_die_generation_des_wire_commits ==
+[ok]   WN-02: der Marker klingt - der Aufbau von G+1 urteilt darum nicht neutral
+[ok]   WN-02: der Link ist gewechselt  [G1 -> G2]
+[ok]   WN-02: das eingereihte Begin ueberlebt den Reconnect und wird auf G+1 geschrieben
+[ROT]  WN-02/N-27: das auf G+1 zugestellte Begin gilt als auf G+1 zugestellt - das `end` braucht KEIN Replay, und keine `intervention_id` reist zweimal  [2 Begin je intervention_id]
+[ROT]  WN-02/N-27: und keine Sequenznummer reist doppelt - genau daran setzt `sequenz_annehmen` die Sitzung sonst `unknown`
+[ok]   WN-02: das `end` reist genau einmal  [begin/1 begin/1 end/2 ]
+
+--- Schluss der Ausgabe ---
+[ok]   N-02/N-12: der naechste Heartbeat schweigt wieder - die Aussage reist genau einmal  [{"type":"heartbeat","adresse":{"logon_sid":"S-1-5-21-369263037-1611576211-208123]
+[ok]   N-12: und sie nimmt die Aussage eines neueren Links NICHT mit
+
+195 bestanden, 2 gescheitert

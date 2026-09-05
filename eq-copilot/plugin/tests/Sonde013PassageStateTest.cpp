@@ -49,7 +49,9 @@
 #include <condition_variable>
 #include <atomic>
 #include <limits>
+#include <map>
 #include <memory>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -1895,6 +1897,277 @@ void n05NachlaufWirdAbgewartet()
             juce::String ((int) s.p->berichtOffenFuerTest()));
 }
 
+/// WN-01/N-36 · Ein `end`, das auf seinen WIRE-COMMIT wartet, macht den
+/// Aufbau des naechsten Links NICHT neutral.
+///
+/// 🔑 NAK-180 Nacharbeit 2 (WN-01): `sendeEnde()` loescht `sendeBeginOffen`
+/// schon beim EINREIHEN des `end`. Stirbt der Link in diesem Fenster, sagten
+/// alle drei bisherigen Terme des Neutralitaetsurteils „neutral" - Ring leer,
+/// kein offenes Begin, kein hoerbarer Marker -, obwohl der Broker weder
+/// Abschluss noch Nachlauf gesehen hatte. G+1 trug dann ein ausdrueckliches
+/// `false`, `resync_bestaetigen` loeschte das Unknown, und das unmittelbar
+/// danach zugestellte `end` startete einen Tail, den derselbe R1-Resync
+/// gerade weggeraeumt hatte (N-05/M-58).
+///
+/// Rotbeweis: den Term `! abschlussOffen` aus dem Praedikat nehmen.
+void wn01WartendesEndeVerbietetNeutralitaet()
+{
+    abschnitt ("NAK-180 WN-01/N-36  wartendes_end_verbietet_das_neutralitaetsurteil");
+    Pruefstand s;
+    s.p->v3LinkFuerTest (true);
+    const auto g1 = s.p->wireGenerationFuerTest();
+
+    // Ein ZUGESTELLTES Begin auf G1 - nur so entsteht ueberhaupt ein
+    // `abschlussBegin`, und nur dann kann der Aufbauzug etwas voranstellen.
+    s.p->markierungEinreichen (s.auftrag);
+    s.bloecke (40);
+    (void) s.ernte();                     // `ernte()` faehrt den Wire-Commit mit
+
+    // Das `end` entsteht und wird EINGEREIHT - der Sender steht, es geht nicht
+    // auf den Draht.
+    s.p->senderAnhaltenFuerTest (true);
+    s.p->markierungAus();
+    s.bloecke (140);
+    s.p->interventionenSendenFuerTest();
+
+    pruefe (s.p->interventionsRingFuellstandFuerTest() == 0
+                && ! s.p->markierungHoerbar()
+                && s.p->abschlussOffenFuerTest(),
+            "WN-01: Ring leer, kein offenes Begin, Marker still - und TROTZDEM "
+            "wartet ein `end` auf den Draht; genau diese Lage nannte das alte "
+            "Praedikat neutral",
+            juce::String (s.p->interventionsRingFuellstandFuerTest()) + " im Ring, "
+                + (s.p->abschlussOffenFuerTest() ? "Abschluss offen" : "nichts offen"));
+
+    // Der Linkwechsel.
+    s.p->v3LinkFuerTest (false);
+    s.p->v3LinkFuerTest (true);
+    const auto g2 = s.p->wireGenerationFuerTest();
+    pruefe (g2 == g1 + 1 && s.p->berichtOffenFuerTest() == g2
+                && s.p->replayFaelligFuerTest() == g2,
+            "WN-01: G+1 urteilt NICHT neutral - Bericht und Replay tragen SEINE "
+            "Generation, statt dass ein `false` den frischen Tail wegraeumt",
+            "G" + juce::String ((int) g1) + " -> G" + juce::String ((int) g2)
+                + ", Bericht " + juce::String ((int) s.p->berichtOffenFuerTest()));
+
+    // Und der erste Heartbeat von G+1 traegt ausdrueckliches `true` (R2).
+    std::string hb;
+    const bool eingereiht = s.p->v3HeartbeatSchrittFuerTest (hb, 1);
+    pruefe (eingereiht
+                && hb.find (R"("intervention_state_unknown":true)") != std::string::npos,
+            "WN-01/R2: sein erster Heartbeat traegt ausdrueckliches `true` - kein "
+            "`false`, das `resync_bestaetigen` ausloest",
+            juce::String (hb.substr (0, 110)));
+
+    // Danach der wahre Zustand: Replay voran, dann das `end`.
+    s.p->senderAnhaltenFuerTest (false);
+    s.bloecke (6);
+    s.p->interventionenSendenFuerTest();
+    const auto ernte = s.ernte();
+    juce::String offeneId;
+    bool endeOhneBegin = false;
+    for (const auto& e : ernte)
+    {
+        const auto typ = e.getProperty ("type", {}).toString();
+        const auto id  = e.getProperty ("intervention_id", {}).toString();
+        if (typ == "audible_intervention_begin") offeneId = id;
+        else if (typ == "audible_intervention_end" && id != offeneId) endeOhneBegin = true;
+    }
+    pruefe (! endeOhneBegin && zaehle (ernte, "audible_intervention_end") == 1,
+            "WN-01: auf G+1 steht das Replay-Begin VOR dem `end` - der Broker "
+            "sieht das Paar, nicht ein `end` ohne Anfang",
+            juce::String ((int) ernte.size()) + " Nachrichten");
+
+    // Und erst nach dem Nachlauf schliesst der Bericht - das einmalige `false`
+    // reist nie in einen laufenden Tail.
+    s.p->interventionenSendenFuerTest();
+    pruefe (s.p->berichtOffenFuerTest() == g2,
+            "WN-01/N-05: der Bericht bleibt offen, solange der Nachlauf des gerade "
+            "zugestellten `end` laeuft",
+            juce::String ((int) s.p->berichtOffenFuerTest()));
+    const auto bis = std::chrono::steady_clock::now() + std::chrono::seconds (8);
+    while (s.p->berichtOffenFuerTest() != 0
+           && std::chrono::steady_clock::now() < bis)
+    {
+        s.bloecke (2);
+        s.p->interventionenSendenFuerTest();
+    }
+    pruefe (s.p->berichtOffenFuerTest() == 0,
+            "WN-01/N-05: und danach schliesst er - ueber den REGULAEREN Pfad, ohne "
+            "neuen Link",
+            juce::String ((int) s.p->berichtOffenFuerTest()));
+}
+
+/// WN-02/N-27 · Der Zustellrueckruf meldet die Generation des TATSAECHLICHEN
+/// Wire-Commits, nicht die des Einreihens.
+///
+/// 🔑 NAK-180 Nacharbeit 2 (WN-02): ein Interventionsereignis ueberlebt den
+/// Reconnect - es wird zurueckgelegt und auf dem NAECHSTEN Link geschrieben.
+/// Sein Queueeintrag trug aber weiter die alte Zahl. Meldete der Rueckruf sie,
+/// stand ein auf G+1 geschriebenes Begin beim Prozessor als „auf G
+/// zugestellt": `replayNoetig` erzeugte beim `end` ein ZWEITES Begin mit
+/// derselben `intervention_id` und derselben Sequenz, und `sequenz_annehmen`
+/// setzte die Sitzung `unknown` - genau was N-27 hier ausschliesst.
+///
+/// Rotbeweis: im Wire-Commit wieder `p0Eintrag.generation` melden.
+void wn02ZustellungMeldetDieWireGeneration()
+{
+    abschnitt ("NAK-180 WN-02/N-27  zustellung_meldet_die_generation_des_wire_commits");
+    Pruefstand s;
+    s.p->v3LinkFuerTest (true);
+    const auto g1 = s.p->wireGenerationFuerTest();
+
+    // Das Begin wird auf G1 EINGEREIHT und bleibt in der Queue: der Reconnect
+    // faellt zwischen Enqueue und Write.
+    s.p->senderAnhaltenFuerTest (true);
+    s.p->markierungEinreichen (s.auftrag);
+    s.bloecke (40);
+    s.p->interventionenSendenFuerTest();
+    pruefe (s.p->markierungHoerbar(),
+            "WN-02: der Marker klingt - der Aufbau von G+1 urteilt darum nicht neutral");
+
+    s.p->v3LinkFuerTest (false);
+    s.p->v3LinkFuerTest (true);
+    const auto g2 = s.p->wireGenerationFuerTest();
+    pruefe (g2 == g1 + 1, "WN-02: der Link ist gewechselt",
+            "G" + juce::String ((int) g1) + " -> G" + juce::String ((int) g2));
+
+    // ERST JETZT geht das ueberlebende Begin auf den Draht - auf G+1.
+    pruefe (s.p->zustelleAllesFuerTest() >= 1,
+            "WN-02: das eingereihte Begin ueberlebt den Reconnect und wird auf G+1 "
+            "geschrieben");
+
+    // Das `end` folgt. Sein Begin ist auf DIESEM Link zugestellt; ein Replay
+    // waere die doppelte `intervention_id` aus N-27.
+    s.p->senderAnhaltenFuerTest (false);
+    s.p->markierungAus();
+    s.bloecke (140);
+    // Den Zug SYNCHRON fahren: der Takt des Workers ist nicht Teil der
+    // Messung, und ein Erntefenster als einzige Ordnung waere genau der
+    // Sleep, den WN-06 andernorts abschafft.
+    s.p->interventionenSendenFuerTest();
+    const auto ernte = s.ernte();
+
+    std::map<juce::String, int> beginsJeId;
+    std::set<juce::int64> sequenzen;
+    bool doppelteSequenz = false;
+    for (const auto& e : ernte)
+    {
+        const auto typ = e.getProperty ("type", {}).toString();
+        const auto seq = (juce::int64) e.getProperty ("event_sequence", -1);
+        if (! sequenzen.insert (seq).second)
+            doppelteSequenz = true;
+        if (typ == "audible_intervention_begin")
+            ++beginsJeId[e.getProperty ("intervention_id", {}).toString()];
+    }
+    int maxBegins = 0;
+    for (const auto& kv : beginsJeId)
+        maxBegins = std::max (maxBegins, kv.second);
+
+    pruefe (maxBegins == 1,
+            "WN-02/N-27: das auf G+1 zugestellte Begin gilt als auf G+1 zugestellt - "
+            "das `end` braucht KEIN Replay, und keine `intervention_id` reist zweimal",
+            juce::String (maxBegins) + " Begin je intervention_id");
+    pruefe (! doppelteSequenz,
+            "WN-02/N-27: und keine Sequenznummer reist doppelt - genau daran setzt "
+            "`sequenz_annehmen` die Sitzung sonst `unknown`");
+    juce::String folge;
+    for (const auto& e : ernte)
+        folge += e.getProperty ("type", {}).toString().substring (21) + "/"
+               + juce::String ((int) (juce::int64) e.getProperty ("event_sequence", -1)) + " ";
+    pruefe (zaehle (ernte, "audible_intervention_end") == 1,
+            "WN-02: das `end` reist genau einmal", folge);
+}
+
+/// WN-03/N-05/M-58 · Die lokale Nachlauffrist ist ein MAXIMUM ohne Deckel.
+///
+/// 🔑 NAK-180 Nacharbeit 2 (WN-03): `nachlaufFristSetzen` deckelte auf 3600
+/// Sekunden und ueberschrieb eine noch offene laengere Frist mit einer
+/// kuerzeren. Der Broker haelt in derselben Lage das MAXIMUM
+/// (`tail_samples_offen.max(tail_samples)`) und zaehlt ungekappt herunter. In
+/// beiden Faellen verbrauchte das Plugin sein einmaliges `false`, waehrend
+/// `tail_samples_offen > 0` galt - E4 verwirft es, niemand wiederholt es, und
+/// die Sitzung bleibt gesperrt.
+///
+/// Rotbeweis: Deckel und bedingungsloses `store` zurueckdrehen.
+void wn03NachlaufFristIstEinMaximum()
+{
+    abschnitt ("NAK-180 WN-03/N-05/M-58  nachlauffrist_ist_ein_maximum_ohne_deckel");
+    Pruefstand s;
+
+    auto jetztNs = []
+    {
+        return std::chrono::duration_cast<std::chrono::nanoseconds> (
+                   std::chrono::steady_clock::now().time_since_epoch()).count();
+    };
+    constexpr std::int64_t kStundeNs = 3600LL * 1000000000LL;
+
+    // (1) Ein Tail JENSEITS der alten Stunde wird nicht gekappt. 7200 s bei
+    //     48 kHz sind 345 600 000 Samples.
+    s.p->nachlaufFristSetzenFuerTest (7200ull * 48000ull);
+    const auto lang = s.p->nachlaufFristNsFuerTest();
+    // Gemessen wird der ANGEFORDERTE Nachlauf, nicht "mehr als eine Stunde":
+    // der alte Deckel lieferte exakt 3600 s plus Marge und haette einen
+    // Vergleich gegen eine Stunde bestanden.
+    pruefe (lang - jetztNs() > 7000LL * 1000000000LL,
+            "WN-03: ein Nachlauf von zwei Stunden reist ungekuerzt in die Frist - "
+            "kein 3600-s-Deckel; der Broker zaehlt `tail_samples_offen` ungekappt "
+            "herunter",
+            juce::String ((double) (lang - jetztNs()) / 1e9, 1) + " s Restfrist");
+
+    // (2) Ein spaeteres, KUERZERES `end` verkuerzt die offene Frist nicht.
+    s.p->nachlaufFristSetzenFuerTest (4800);        // 0,1 s bei 48 kHz
+    pruefe (s.p->nachlaufFristNsFuerTest() == lang && ! s.p->nachlaufAbgelaufenFuerTest(),
+            "WN-03: ein kuerzeres `end` danach verkuerzt sie NICHT - die lokale "
+            "Frist ist nie kuerzer als die des Brokers, der das Maximum haelt",
+            juce::String ((double) (s.p->nachlaufFristNsFuerTest() - jetztNs()) / 1e9, 1)
+                + " s Restfrist");
+
+    // (3) Der Zahlenrand saettigt, statt zu ueberlaufen. `tailSamples` kann bis
+    //     an den u64-Rand gehen (N-18); die Saettigung liegt jetzt DORT und
+    //     nicht an einer erfundenen Stunde.
+    s.p->nachlaufFristSetzenFuerTest (std::numeric_limits<std::uint64_t>::max());
+    const auto rand = s.p->nachlaufFristNsFuerTest();
+    pruefe (rand - jetztNs() > 24LL * kStundeNs && rand > 0
+                && ! s.p->nachlaufAbgelaufenFuerTest(),
+            "WN-03: `tailSamples` am u64-Rand saettigt in `int64`-Nanosekunden, "
+            "statt zu ueberlaufen - eine negative Frist waere sofort abgelaufen",
+            juce::String ((double) rand / 1e9, 0) + " s seit Systemstart");
+
+    // (4) Und die WIRKUNG: solange die laengere Frist steht, schliesst der
+    //     Bericht nicht. Ohne die Regel stuende hier die kurze Frist, der
+    //     Bericht schloesse nach gut einer Sekunde, und das `false` traefe den
+    //     laufenden Nachlauf des Brokers.
+    Pruefstand t;
+    t.p->markierungEinreichen (t.auftrag);
+    t.bloecke (40);
+    pruefe (t.p->markierungHoerbar(), "WN-03: der Marker klingt");
+    t.p->v3LinkFuerTest (true);
+    const auto g = t.p->wireGenerationFuerTest();
+    pruefe (t.p->berichtOffenFuerTest() == g, "WN-03: der Bericht ist offen",
+            juce::String ((int) g));
+    t.p->markierungAus();
+    t.bloecke (140);
+    (void) t.ernte();                 // das `end` geht auf den Draht
+
+    // Ein LANGES `end` (2 h), danach ein kurzes - genau die Reihenfolge, die
+    // die Frist verlor.
+    t.p->nachlaufFristSetzenFuerTest (7200ull * 48000ull);
+    t.p->nachlaufFristSetzenFuerTest (4800);
+    const auto endeDerGeduld = std::chrono::steady_clock::now()
+                             + std::chrono::milliseconds (3000);
+    while (t.p->berichtOffenFuerTest() != 0
+           && std::chrono::steady_clock::now() < endeDerGeduld)
+    {
+        t.bloecke (2);
+        t.p->interventionenSendenFuerTest();
+    }
+    pruefe (t.p->berichtOffenFuerTest() == g,
+            "WN-03/M-58: der Bericht bleibt ueber die kurze Frist hinaus offen - das "
+            "einmalige `false` reist nicht in einen laufenden Nachlauf",
+            juce::String ((int) t.p->berichtOffenFuerTest()));
+}
+
 /// N-37 · Die zwei Generationszustaende DES PROZESSORS - nicht ein isoliertes
 /// Atomic daneben (NAK-180 Nacharbeit 1, EP-15).
 ///
@@ -2174,6 +2447,10 @@ int main()
     nak180::n35SendezugGegenAufbauzug();
     nak180::n36EndeUeberlebtDenLinkwechsel();
     nak180::n05NachlaufWirdAbgewartet();
+    // NAK-180 Etappe 2, Nacharbeit 2 (2026-09-05): WN-01 bis WN-03.
+    nak180::wn01WartendesEndeVerbietetNeutralitaet();
+    nak180::wn02ZustellungMeldetDieWireGeneration();
+    nak180::wn03NachlaufFristIstEinMaximum();
     nak180::n37ProzessorZustaendeTragenIhreGeneration();
     nak180::n11KeineBehauptungOhneMain();
     nak180::n12AussageKommtZurueck();

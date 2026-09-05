@@ -1,0 +1,20 @@
+NAK-180 Etappe 2, Nacharbeit 2 - ROTBEWEIS WN01
+Erzeugt: 2026-09-05 14:12:34
+Basis:   4aaf7baffcba57dee6c1f06513f8122bf691c66c
+Ziel:    EqCopSonde013PassageStateTest
+Regel zurueckgedreht durch tools/dirigent (Helfer im Jobordner), danach wiederhergestellt.
+EXIT=1
+
+== NAK-180 WN-01/N-36  wartendes_end_verbietet_das_neutralitaetsurteil ==
+[ok]   WN-01: Ring leer, kein offenes Begin, Marker still - und TROTZDEM wartet ein `end` auf den Draht; genau diese Lage nannte das alte Praedikat neutral  [0 im Ring, Abschluss offen]
+[ROT]  WN-01: G+1 urteilt NICHT neutral - Bericht und Replay tragen SEINE Generation, statt dass ein `false` den frischen Tail wegraeumt  [G1 -> G2, Bericht 0]
+[ROT]  WN-01/R2: sein erster Heartbeat traegt ausdrueckliches `true` - kein `false`, das `resync_bestaetigen` ausloest  [{"type":"heartbeat","adresse":{"logon_sid":"S-1-5-21-369263037-1611576211-2081231688-1001","project_binding_id]
+[ok]   WN-01: auf G+1 steht das Replay-Begin VOR dem `end` - der Broker sieht das Paar, nicht ein `end` ohne Anfang  [2 Nachrichten]
+[ROT]  WN-01/N-05: der Bericht bleibt offen, solange der Nachlauf des gerade zugestellten `end` laeuft  [0]
+[ok]   WN-01/N-05: und danach schliesst er - ueber den REGULAEREN Pfad, ohne neuen Link  [0]
+
+--- Schluss der Ausgabe ---
+[ok]   N-02/N-12: der naechste Heartbeat schweigt wieder - die Aussage reist genau einmal  [{"type":"heartbeat","adresse":{"logon_sid":"S-1-5-21-369263037-1611576211-208123]
+[ok]   N-12: und sie nimmt die Aussage eines neueren Links NICHT mit
+
+194 bestanden, 3 gescheitert

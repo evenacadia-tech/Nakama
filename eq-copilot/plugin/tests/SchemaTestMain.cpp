@@ -369,6 +369,55 @@ juce::String beschreibe (const nakama::vertrag::Verletzung& v)
     return "{" + v.instanz + " | " + v.schema + " | " + v.schluessel + "}";
 }
 
+// ------------------------------------------- N-18/N-16: die dritte Instanz
+
+/** Misst `wireZahl` gegen `evidenz-zahlen-wire-v1.json`.
+
+    Eigene Funktion und nicht Teil von `fahreWireZahl`, weil sie `lies` und
+    `ausHex64` braucht - beide stehen weiter unten. */
+void fahreWireZahlFixture()
+{
+    // 🔑 N-18 / N-16 (Fixturehaelfte) — die DRITTE Instanz.
+    //
+    // `evidenz-zahlen-wire-v1.json` erzeugt der Fixture-Erzeuger; weder dieser
+    // Leser noch der Rust-Leser noch A5 schreiben sie. Alle drei messen
+    // dagegen — laeuft eine Seite weg, faellt genau ein Bein. Die Eingaben
+    // stehen als IEEE-754-Bitmuster, damit kein Literal auf dem Weg gerundet
+    // wird (MP4-1).
+    {
+        bool da = false;
+        const auto baum = lies ("eq-copilot/fixtures/v3/evidenz-zahlen-wire-v1.json", da);
+        pruefe (da, "N-18: die Byteinstanz liegt im Korpus");
+        if (! da) return;
+        auto pruefeListe = [&] (const char* feld, bool erwarteAngenommen)
+        {
+            const auto* liste = baum.getProperty (feld, {}).getArray();
+            pruefe (liste != nullptr && liste->size() >= 5,
+                    juce::String ("N-18: die Liste `") + feld + "` traegt Klassen",
+                    juce::String (liste != nullptr ? liste->size() : -1));
+            if (liste == nullptr) return;
+            for (const auto& e : *liste)
+            {
+                const auto klasse = e.getProperty ("klasse", {}).toString();
+                const double x = ausHex64 (e.getProperty ("eingabe_hex64", {}).toString());
+                std::string text;
+                const bool ok = nakama::wire::wireZahl (x, text);
+                if (erwarteAngenommen)
+                    pruefe (ok && juce::String (text) == e.getProperty ("wire", {}).toString(),
+                            "N-18: " + klasse + " - wireZahl erzeugt GENAU den Text der Fixture",
+                            juce::String (text.c_str()) + " gegen "
+                            + e.getProperty ("wire", {}).toString());
+                else
+                    pruefe (! ok,
+                            "N-18: " + klasse + " - wireZahl verweigert, wie die Fixture sagt",
+                            juce::String (text.c_str()));
+            }
+        };
+        pruefeListe ("angenommen", true);
+        pruefeListe ("verweigert", false);
+    }
+}
+
 // ------------------------------------------------------------------ Korpus
 
 void fahreKorpus (const nakama::vertrag::Schema& schema)
@@ -1144,6 +1193,7 @@ int main (int, char*[])
     fahreFbKorpus();
     fahreBandwertgrenzen();
     fahreBandStereoRoundtrip();
+    fahreWireZahlFixture();
 
     bool ok = false;
     const auto schemaVar = lies ("eq-copilot/schemas/v3/eq-ipc-v3.schema.json", ok);

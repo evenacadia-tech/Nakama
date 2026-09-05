@@ -37,6 +37,7 @@ import json
 import math
 import pathlib
 import re
+import struct
 import sys
 
 try:
@@ -430,6 +431,66 @@ def pruefe_textriegel(lauf: Lauf) -> None:
             pass
     lauf.wahr("json.loads lehnt nicht-endliche Python-Erweiterungen unabhaengig ab",
               not parser_durchlass, ", ".join(parser_durchlass))
+
+
+def pruefe_wire_zahlklassen(lauf: Lauf) -> None:
+    """NAK-181 R4 — die dritte Sprache an derselben Byteinstanz.
+
+    `evidenz-zahlen-wire-v1.json` erzeugt der Fixture-Erzeuger; C++
+    (`EqCopSchemaTest`), Rust (`contract_cross_language.rs`) und dieses Bein
+    messen dagegen. Hier ist der RIEGEL die eigene Instanz: `textriegel_bytes`
+    in dieser Datei ist eine dritte, unabhaengige Umsetzung derselben vier
+    lexikalischen Zahlenregeln. Laeuft eine Seite weg, faellt genau ein Bein.
+
+    Die Wertprobe leitet den 15-Stellen-Deckel mit Pythons eigenem `%.15g`
+    nach - dass sie eine zweite Datei ist, macht sie nicht unabhaengig von
+    Python, wohl aber vom Erzeuger.
+    """
+    datei = FIXTURES / "evidenz-zahlen-wire-v1.json"
+    if not datei.exists():
+        lauf.wahr("Wire-Zahlklassen: Byteinstanz vorhanden", False, str(datei))
+        return
+    tabelle = json_laden_strikt(datei.read_text(encoding="utf-8"))
+
+    def ausbits(hex64: str) -> float:
+        return struct.unpack("<d", struct.pack("<Q", int(hex64, 16)))[0]
+
+    angenommen = tabelle["angenommen"]
+    verweigert = tabelle["verweigert"]
+    lauf.wahr("Wire-Zahlklassen: die Tabelle hat Substanz (>= 12 Klassen)",
+              len(angenommen) + len(verweigert) >= 12,
+              f"{len(angenommen)} angenommen, {len(verweigert)} verweigert")
+
+    riegel_rot: list[str] = []
+    wert_rot: list[str] = []
+    for e in angenommen:
+        x = ausbits(e["eingabe_hex64"])
+        text = e["wire"]
+        grund = textriegel_bytes(('{"w": ' + text + '}').encode("utf-8"))
+        if grund is not None:
+            riegel_rot.append(f'{e["klasse"]}: {grund}')
+        ganzzahlig = math.isfinite(x) and float(x) == math.floor(x)
+        erwartet = float(x) if ganzzahlig else float("%.15g" % x)
+        if float(text) != erwartet:
+            wert_rot.append(f'{e["klasse"]}: {text} statt {erwartet!r}')
+    lauf.wahr(f"Wire-Zahlklassen: jeder angenommene Text haelt den Riegel "
+              f"({len(angenommen)} Klassen)", not riegel_rot, "; ".join(riegel_rot))
+    lauf.wahr("Wire-Zahlklassen: und traegt den auf 15 Stellen gedeckelten Wert",
+              not wert_rot, "; ".join(wert_rot))
+
+    durchlass: list[str] = []
+    for e in verweigert:
+        x = ausbits(e["eingabe_hex64"])
+        if "wire" in e:
+            durchlass.append(f'{e["klasse"]}: traegt trotzdem einen Wiretext')
+            continue
+        # Die KUERZESTE Form ist die beste Chance des Wertes, durchzukommen.
+        # Faellt schon sie, faellt jede laengere Schreibweise mit.
+        kurz = json.dumps(x) if math.isfinite(x) else repr(x).replace("inf", "Infinity")
+        if textriegel_bytes(('{"w": ' + kurz + '}').encode("utf-8")) is None:
+            durchlass.append(f'{e["klasse"]}: {kurz} kommt durch')
+    lauf.wahr(f"Wire-Zahlklassen: jede verweigerte Klasse faellt am Riegel "
+              f"({len(verweigert)} Klassen)", not durchlass, "; ".join(durchlass))
 
 
 def werttyp_passt(name: str, wert) -> bool:
@@ -1757,6 +1818,7 @@ def main(argv: list[str]) -> int:
 
     lauf = Lauf()
     pruefe_textriegel(lauf)
+    pruefe_wire_zahlklassen(lauf)
     pruefe_schema(lauf, schema)
     pruefe_discriminator_enginekante(lauf)
     pruefe_namen(lauf, schema, reserviert)

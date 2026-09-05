@@ -1,0 +1,125 @@
+{
+  "_kommentar": [
+    "NAK-181 R4 - die BYTEINSTANZ der Wire-Zahlform.",
+    "",
+    "Sie ist die dritte Instanz zwischen C++, Rust und Python: keiner der",
+    "drei erzeugt sie, alle drei messen dagegen. Die Eingaben stehen als",
+    "IEEE-754-Bitmuster, weil ein Dezimalliteral auf dem Weg gerundet",
+    "werden kann - `9.9999999999999999e-308` ist als binary64 bitgleich",
+    "mit `1e-307` und belegte deshalb nichts (Matrixpruefung 4, MP4-1).",
+    "",
+    "`angenommen: false` heisst: der v3-Textriegel traegt den Wert nicht,",
+    "und `wireZahl` liefert `false`. Was statt dessen reist, entscheidet",
+    "der Aufrufer - 0 ohne Praesenzbit, Ersatzzahl, entfallendes Objekt",
+    "oder gar keine Nachricht (docs/beweise/NAK-181.md Paragraph 2.0 E4)."
+  ],
+  "regeln": {
+    "endlichkeit": "NaN und +/-Inf reisen nie als Zahl",
+    "betrag": "dez > -308 und dez < 308 am GERUNDETEN Wiretext",
+    "ganzzahl": "exakt ganzzahliger Betrag hoechstens 2^53-1, in jeder Schreibweise",
+    "stellen": "nichtganzzahlig hoechstens 15 signifikante Dezimalziffern"
+  },
+  "angenommen": [
+    {
+      "klasse": "minus_null",
+      "eingabe_hex64": "0x8000000000000000",
+      "warum": "ES6 Schritt 2: +0 und -0 sind beide `0`",
+      "angenommen": true,
+      "wire": "0"
+    },
+    {
+      "klasse": "ein_zehntel",
+      "eingabe_hex64": "0x3fb999999999999a",
+      "warum": "gewoehnlicher Bruch",
+      "angenommen": true,
+      "wire": "0.1"
+    },
+    {
+      "klasse": "ein_drittel",
+      "eingabe_hex64": "0x3fd5555555555555",
+      "warum": "ungedeckelt 16 Stellen und damit abgelehnt; der Deckel macht ihn tragbar",
+      "angenommen": true,
+      "wire": "0.333333333333333"
+    },
+    {
+      "klasse": "kleinster_normaler_float",
+      "eingabe_hex64": "0x3810000000000000",
+      "warum": "jeder Bandwert ist ein float; 9 Stellen reichen ihm exakt",
+      "angenommen": true,
+      "wire": "1.17549435082229e-38"
+    },
+    {
+      "klasse": "eins_e_minus_307",
+      "eingabe_hex64": "0x0031fa182c40c60d",
+      "warum": "der kleinste angenommene Betrag (dez = -307)",
+      "angenommen": true,
+      "wire": "1e-307"
+    },
+    {
+      "klasse": "knapp_unter_der_grenze",
+      "eingabe_hex64": "0x0031fa182c40c60c",
+      "warum": "der Wert liegt darunter, sein GEDECKELTER Text nicht - die Grenze gilt dem Text",
+      "angenommen": true,
+      "wire": "1e-307"
+    },
+    {
+      "klasse": "sichere_ganzzahl",
+      "eingabe_hex64": "0x433fffffffffffff",
+      "warum": "2^53-1 reist EXAKT; der Deckel trifft nie eine Ganzzahl",
+      "angenommen": true,
+      "wire": "9007199254740991"
+    },
+    {
+      "klasse": "nyquist_gekappter_bandwert",
+      "eingabe_hex64": "0x40d1940000000000",
+      "warum": "eine Bandmitte an der Kappe",
+      "angenommen": true,
+      "wire": "18000"
+    },
+    {
+      "klasse": "samplerate",
+      "eingabe_hex64": "0x40e7700000000000",
+      "warum": "die gewoehnliche Samplerate",
+      "angenommen": true,
+      "wire": "48000"
+    }
+  ],
+  "verweigert": [
+    {
+      "klasse": "zwei_e_minus_308",
+      "eingabe_hex64": "0x000e61acf033d1a4",
+      "warum": "GROESSER als 1e-308 und trotzdem drausen: dez = -308",
+      "angenommen": false
+    },
+    {
+      "klasse": "eins_e_minus_308",
+      "eingabe_hex64": "0x000730d67819e8d2",
+      "warum": "genau an der unteren Kante",
+      "angenommen": false
+    },
+    {
+      "klasse": "zwei_hoch_53",
+      "eingabe_hex64": "0x4340000000000000",
+      "warum": "eine Ganzzahl ueber der sicheren Grenze",
+      "angenommen": false
+    },
+    {
+      "klasse": "groesster_normaler_float",
+      "eingabe_hex64": "0x47efffffe0000000",
+      "warum": "eine Ganzzahl weit ueber 2^53 - jeder double ab 2^53 ist ganzzahlig",
+      "angenommen": false
+    },
+    {
+      "klasse": "eins_e_308",
+      "eingabe_hex64": "0x7fe1ccf385ebc8a0",
+      "warum": "an der oberen Betragsgrenze",
+      "angenommen": false
+    },
+    {
+      "klasse": "nicht_endlich",
+      "eingabe_hex64": "0x7ff0000000000000",
+      "warum": "unendlich reist nie als Zahl",
+      "angenommen": false
+    }
+  ]
+}

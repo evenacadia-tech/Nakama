@@ -657,3 +657,94 @@ fn envelope_korpus_klassifiziert_wie_das_manifest() {
     assert!(geprueft >= 30, "Envelopekorpus zu klein: {geprueft}");
     println!("{geprueft} Envelope-Fixtures gegen das Manifest geprueft");
 }
+
+/// NAK-181 R4 — die Wire-Zahlform haelt den Textriegel, in allen drei Sprachen.
+///
+/// 🔑 Die Fixture `evidenz-zahlen-wire-v1.json` ist die DRITTE Instanz: der
+/// Erzeuger schreibt sie, keiner der drei Leser erzeugt sie, und alle drei
+/// messen dagegen. Die Eingaben stehen als IEEE-754-Bitmuster, weil ein
+/// Dezimalliteral auf dem Weg gerundet werden kann —
+/// `9.9999999999999999e-308` ist als binary64 bitgleich mit `1e-307` und
+/// belegte deshalb nichts (Matrixpruefung 4, MP4-1).
+///
+/// Gemessen wird beides: dass jeder ANGENOMMENE Text durch `textriegel_bytes`
+/// kommt und `serde_json` denselben `f64` zurueckliest, und dass die
+/// VERWEIGERTEN Klassen am Riegel fallen, wenn man ihre ungedeckelte Form
+/// trotzdem sendet.
+#[test]
+fn wirezahl_texte_halten_den_textriegel() {
+    let f = lies(&wurzel().join("eq-copilot/fixtures/v3/evidenz-zahlen-wire-v1.json"));
+
+    let bits_zu_f64 = |hex: &str| -> f64 {
+        let roh = u64::from_str_radix(hex.trim_start_matches("0x"), 16).unwrap();
+        f64::from_bits(roh)
+    };
+
+    let angenommen = f["angenommen"].as_array().expect("Liste `angenommen`");
+    assert!(angenommen.len() >= 8, "zu wenige Klassen: {}", angenommen.len());
+    for e in angenommen {
+        let klasse = e["klasse"].as_str().unwrap();
+        let text = e["wire"].as_str().unwrap_or_else(|| panic!("{klasse} ohne `wire`"));
+        assert!(
+            e["angenommen"].as_bool().unwrap(),
+            "{klasse}: steht unter `angenommen`, ist aber als abgelehnt markiert"
+        );
+
+        // 1. Der Textriegel nimmt ihn an — DAS ist die Zusage, nicht die
+        //    Parsebarkeit.
+        let doc = format!("{{\"a\":{text}}}");
+        assert!(
+            eqcop_broker::vertrag::textriegel_bytes(doc.as_bytes()).is_ok(),
+            "{klasse}: `{text}` faellt am Textriegel: {:?}",
+            eqcop_broker::vertrag::textriegel_bytes(doc.as_bytes())
+        );
+
+        // 2. Und `serde_json` liest ihn als denselben Wert zurueck, den die
+        //    Bitfolge nennt — bei den `float`-Klassen bitgleich, bei
+        //    `ein_drittel` auf die Vertragsgenauigkeit (15 Stellen) gerundet.
+        let gelesen: Value = serde_json::from_str(&doc).unwrap();
+        let wert = gelesen["a"].as_f64().unwrap();
+        let erwartet = bits_zu_f64(e["eingabe_hex64"].as_str().unwrap());
+        let zurueck: f64 = text.parse().unwrap();
+        assert_eq!(
+            wert, zurueck,
+            "{klasse}: serde_json liest den Text anders als Rusts eigener Parser"
+        );
+        if erwartet == 0.0 {
+            assert_eq!(wert, 0.0, "{klasse}: -0 reist als 0");
+        } else {
+            let abweichung = ((wert - erwartet) / erwartet).abs();
+            assert!(
+                abweichung < 1e-14,
+                "{klasse}: `{text}` liest sich als {wert}, erwartet {erwartet}"
+            );
+        }
+    }
+
+    let verweigert = f["verweigert"].as_array().expect("Liste `verweigert`");
+    assert!(verweigert.len() >= 5, "zu wenige Klassen: {}", verweigert.len());
+    for e in verweigert {
+        let klasse = e["klasse"].as_str().unwrap();
+        assert!(
+            !e["angenommen"].as_bool().unwrap() && e.get("wire").is_none(),
+            "{klasse}: eine verweigerte Klasse traegt keinen Wiretext"
+        );
+        // Die Gegenprobe: schickte ein Sender den Wert trotzdem in seiner
+        // kuerzesten Form, faellt er am Riegel. Genau deshalb liefert
+        // `wireZahl` dort `false`, statt zu saettigen.
+        let wert = bits_zu_f64(e["eingabe_hex64"].as_str().unwrap());
+        if wert.is_finite() {
+            let doc = format!("{{\"a\":{wert:?}}}");
+            assert!(
+                eqcop_broker::vertrag::textriegel_bytes(doc.as_bytes()).is_err(),
+                "{klasse}: `{wert:?}` wird vom Riegel angenommen — dann duerfte                  `wireZahl` ihn nicht verweigern"
+            );
+        }
+    }
+
+    println!(
+        "{} angenommene und {} verweigerte Zahlklassen gegen den Textriegel geprueft",
+        angenommen.len(),
+        verweigert.len()
+    );
+}

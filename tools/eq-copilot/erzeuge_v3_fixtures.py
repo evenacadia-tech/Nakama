@@ -2787,6 +2787,137 @@ def als_text(inhalt) -> bytes:
     return (text + "\n").encode("utf-8")
 
 
+
+# ── NAK-181 R4 · die Byteinstanz der Wire-Zahlform ──────────────────────
+#
+# 🔑 Die DRITTE Instanz zwischen den Sprachen, in der Bauform von
+# `handschlag-v1.json` und `heartbeat-wire-v1.json`. Sie traegt je Zahlklasse
+# die Eingabe als IEEE-754-Bitmuster (damit kein Literal auf dem Weg gerundet
+# wird — MP4-1 hat gezeigt, wohin das fuehrt) und den erwarteten Wiretext.
+#
+# Drei Leser messen dagegen:
+#   · C++  `EqCopSchemaTest` — `nakama::wire::wireZahl` erzeugt GENAU diesen Text;
+#   · Rust `contract_cross_language.rs` — `textriegel_bytes` nimmt ihn an
+#          beziehungsweise weist ihn ab, und `serde_json` liest den Wert zurueck;
+#   · Python A5 `pruefe_v3_vertrag.py` — derselbe Riegel, dieselbe Antwort.
+#
+# Laufen zwei Seiten auseinander, faellt genau ein Bein — der Bruch, den ein
+# Test auf nur einer Seite nie sieht.
+
+def wire_zahl(x: float) -> str | None:
+    """Die Wire-Zahlform aus `eq-copilot/plugin/core/ipc/WireZahl.h`.
+
+    ES6 `Number::toString`, gedeckelt bei 15 signifikanten Stellen fuer
+    NICHTGANZZAHLIGE Werte; `None`, wenn der v3-Textriegel den Wert nicht
+    traegt. Die Regeln stehen dort im Kopf; hier ist die Python-Haelfte, und
+    dass beide dasselbe sagen, misst die Fixture.
+    """
+    import math
+    if not math.isfinite(x):
+        return None
+    if x == 0.0:
+        return "0"                      # deckt +0 und -0 ab
+    betrag = abs(x)
+    ganzzahlig = betrag == math.floor(betrag)
+    if ganzzahlig and betrag > 9007199254740991.0:
+        return None                     # Regel 3
+    # Ziffernfolge und Exponent, gedeckelt nur bei Nachkommaanteil.
+    roh = repr(betrag) if ganzzahlig else "%.*e" % (14, betrag)
+    if ganzzahlig:
+        ziffern = str(int(betrag))
+        n = len(ziffern)
+        ziffern = ziffern.rstrip("0") or "0"
+    else:
+        mant, exp = roh.split("e")
+        ziffern = mant.replace(".", "").rstrip("0") or "0"
+        n = int(exp) + 1
+    dez = n - 1
+    if dez >= 308 or dez <= -308:        # Regel 2, am GERUNDETEN Text
+        return None
+    k = len(ziffern)
+    if -5 <= n <= 21:
+        if n >= k:
+            text = ziffern + "0" * (n - k)
+        elif n > 0:
+            text = ziffern[:n] + "." + ziffern[n:]
+        else:
+            text = "0." + "0" * (-n) + ziffern
+    else:
+        vz = "-" if n < 0 else "+"
+        e = abs(n - 1)
+        text = (ziffern if k == 1 else ziffern[0] + "." + ziffern[1:]) + "e" + vz + str(e)
+    if not ganzzahlig and float(text) == math.floor(float(text)) \
+            and abs(float(text)) > 9007199254740991.0:
+        return None                     # Regel 3 am gerundeten Text
+    return ("-" if x < 0 else "") + text
+
+
+def zahlklassen_wire() -> bytes:
+    """`evidenz-zahlen-wire-v1.json` — die Byteinstanz je Zahlklasse."""
+    import math, struct
+
+    def bits(x: float) -> str:
+        return "0x%016x" % struct.unpack("<Q", struct.pack("<d", x))[0]
+
+    def eintrag(name: str, x: float, warum: str) -> dict:
+        text = wire_zahl(x)
+        e = {"klasse": name, "eingabe_hex64": bits(x), "warum": warum,
+             "angenommen": text is not None}
+        if text is not None:
+            e["wire"] = text
+        return e
+
+    angenommen = [
+        eintrag("minus_null", -0.0, "ES6 Schritt 2: +0 und -0 sind beide `0`"),
+        eintrag("ein_zehntel", 0.1, "gewoehnlicher Bruch"),
+        eintrag("ein_drittel", 1.0 / 3.0,
+                "ungedeckelt 16 Stellen und damit abgelehnt; der Deckel macht ihn tragbar"),
+        eintrag("kleinster_normaler_float", float(struct.unpack("f", struct.pack("f", 1.1754943508222875e-38))[0]),
+                "jeder Bandwert ist ein float; 9 Stellen reichen ihm exakt"),
+        eintrag("eins_e_minus_307", 1e-307, "der kleinste angenommene Betrag (dez = -307)"),
+        eintrag("knapp_unter_der_grenze", math.nextafter(1e-307, 0.0),
+                "der Wert liegt darunter, sein GEDECKELTER Text nicht - die Grenze gilt dem Text"),
+        eintrag("sichere_ganzzahl", 9007199254740991.0,
+                "2^53-1 reist EXAKT; der Deckel trifft nie eine Ganzzahl"),
+        eintrag("nyquist_gekappter_bandwert", 18000.0, "eine Bandmitte an der Kappe"),
+        eintrag("samplerate", 48000.0, "die gewoehnliche Samplerate"),
+    ]
+    verweigert = [
+        eintrag("zwei_e_minus_308", 2e-308,
+                "GROESSER als 1e-308 und trotzdem drausen: dez = -308"),
+        eintrag("eins_e_minus_308", 1e-308, "genau an der unteren Kante"),
+        eintrag("zwei_hoch_53", 9007199254740992.0, "eine Ganzzahl ueber der sicheren Grenze"),
+        eintrag("groesster_normaler_float", float(struct.unpack("f", struct.pack("f", 3.4028234663852886e38))[0]),
+                "eine Ganzzahl weit ueber 2^53 - jeder double ab 2^53 ist ganzzahlig"),
+        eintrag("eins_e_308", 1e308, "an der oberen Betragsgrenze"),
+        eintrag("nicht_endlich", float("inf"), "unendlich reist nie als Zahl"),
+    ]
+    return als_text({
+        "_kommentar": [
+            "NAK-181 R4 - die BYTEINSTANZ der Wire-Zahlform.",
+            "",
+            "Sie ist die dritte Instanz zwischen C++, Rust und Python: keiner der",
+            "drei erzeugt sie, alle drei messen dagegen. Die Eingaben stehen als",
+            "IEEE-754-Bitmuster, weil ein Dezimalliteral auf dem Weg gerundet",
+            "werden kann - `9.9999999999999999e-308` ist als binary64 bitgleich",
+            "mit `1e-307` und belegte deshalb nichts (Matrixpruefung 4, MP4-1).",
+            "",
+            "`angenommen: false` heisst: der v3-Textriegel traegt den Wert nicht,",
+            "und `wireZahl` liefert `false`. Was statt dessen reist, entscheidet",
+            "der Aufrufer - 0 ohne Praesenzbit, Ersatzzahl, entfallendes Objekt",
+            "oder gar keine Nachricht (docs/beweise/NAK-181.md Paragraph 2.0 E4).",
+        ],
+        "regeln": {
+            "endlichkeit": "NaN und +/-Inf reisen nie als Zahl",
+            "betrag": "dez > -308 und dez < 308 am GERUNDETEN Wiretext",
+            "ganzzahl": "exakt ganzzahliger Betrag hoechstens 2^53-1, in jeder Schreibweise",
+            "stellen": "nichtganzzahlig hoechstens 15 signifikante Dezimalziffern",
+        },
+        "angenommen": angenommen,
+        "verweigert": verweigert,
+    })
+
+
 def main(argv: list[str]) -> int:
     nur_pruefen = "--pruefen" in argv
     manifest, dateien, rohdateien = baue()
@@ -2798,6 +2929,10 @@ def main(argv: list[str]) -> int:
     alle: list[tuple[pathlib.Path, bytes]] = [
         (ZIEL / "MANIFEST.json", als_text(manifest)),
         (ZIEL / "TEXTRIEGEL-FAELLE.json", als_text(textriegel_tabelle())),
+        # NAK-181 R4: die Byteinstanz der Wire-Zahlform. Sie liegt NEBEN
+        # `gueltig/`, weil sie keine v3-Nachricht ist, sondern eine Tabelle
+        # ueber Zahlen - wie `handschlag-v1.json` und `heartbeat-wire-v1.json`.
+        (ZIEL / "evidenz-zahlen-wire-v1.json", zahlklassen_wire()),
     ]
     alle += [(ZIEL / p, als_text(d)) for p, d in sorted(dateien.items())]
     alle += [(ZIEL / p, b) for p, b in sorted(rohdateien.items())]

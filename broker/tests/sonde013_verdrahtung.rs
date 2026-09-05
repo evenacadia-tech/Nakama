@@ -4913,3 +4913,435 @@ fn projektspanne_traegt_weiter_den_suchraum() {
         "aus der Messzeit allein entstuende keiner — der R30-Fix bleibt noetig"
     );
 }
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-181 Messlauf · N-11, N-41, N-41b — die drei Riegel des Experimentwegs
+// ═════════════════════════════════════════════════════════════════════════
+//
+// Alle drei messen BESTAND: `fremdes_projekt` (`experiment_verdrahtung.rs:74-93`),
+// die Zielaufloesung ueber die Sendersitzung (`befehl.rs:210-217`, `:292-293`)
+// und `bekannter_befehl` (`befehl.rs:66-89`) sind aelter als NAK-181 und wurden
+// von diesem Ticket nicht angefasst. Genau deshalb stehen sie hier: NAK-181 R3
+// stuetzt seine Zusage „keine Wirkung, die es vor dem Reload nicht schon gab"
+// auf sie, und eine Zusage auf einem ungemessenen Riegel ist eine Annahme.
+//
+// ⚠️ Die drei Faelle liegen in DIESER Datei und nicht in `sonde013_experiment.rs`,
+// wie die Matrix sie nannte: jener Test faehrt den `Experimentstore` direkt und
+// kennt keinen `Coordinator`. Die Riegel sitzen aber im Coordinator, und sein
+// Harnisch mit echtem Store steht hier.
+
+/// N-11 — ein `experiment_candidate` aus einem FREMDEN Projekt erreicht den
+/// Versuch nicht.
+///
+/// Der Nachbar `experimentbefehl_bleibt_in_seinem_projekt` misst denselben
+/// Riegel fuer `experiment_abort`. NAK-181 N-11 nennt ausdruecklich den
+/// KANDIDATEN, weil er der Weg ist, den V03 beschrieb: ein nach dem Reload
+/// gebauter Kandidat traegt die alte `experiment_id` unter der neuen Bindung.
+#[cfg(windows)]
+#[test]
+fn fremdes_projekt_erreicht_den_versuch_nicht() {
+    let versuch = 0xac1;
+    let a = HarnischMitStore::mit_projekt("n11-projekt-a", 1);
+    let begin = experiment_begin_wert(&a.main.adresse, 0x920, versuch);
+    assert_eq!(a.p0(&begin)["ergebnis"], "angewandt", "Projekt A legt den Versuch an");
+    let vorher = a
+        .c
+        .experiment_sicht(&hex(versuch))
+        .expect("der Versuch steht unter Projekt A");
+
+    // Ein zweites Projekt im SELBEN Broker — dieselbe Lage wie nach einem
+    // Reload: der Sender fuehrt jetzt eine andere Projektbindung.
+    let fremd = {
+        let mut h = a.main.clone();
+        h.adresse.project_binding_id = hex(5);
+        h.adresse.session_epoch = hex(6);
+        h.adresse.instance_id = hex(0x30);
+        h.adresse.runtime_nonce = hex(0x31);
+        h
+    };
+    anmelden(&a.c, "fremd", &fremd);
+    report_main(&a.c, "fremd", &fremd.adresse);
+    assert!(a.c.state_report_json("fremd", &state_report_payload(&fremd.adresse, 0)));
+
+    let mut kandidat: Value = serde_json::from_slice(
+        &std::fs::read(
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../eq-copilot/fixtures/v3/gueltig/experiment_candidate.json"),
+        )
+        .unwrap(),
+    )
+    .unwrap();
+    kandidat["kopf"]["ziel"] = serde_json::to_value(&fremd.adresse).unwrap();
+    kandidat["kopf"]["command_id"] = json!(hex(0x921));
+    kandidat["kopf"]["base_revision"] = json!(0);
+    kandidat["experiment_id"] = json!(hex(versuch));
+
+    let antwort = a
+        .p0_von("fremd", &kandidat)
+        .expect("N-11: die Familie wird beantwortet");
+    assert_eq!(
+        antwort["ergebnis"], "abgelehnt",
+        "N-11: ein Kandidat aus fremdem Projekt wird abgewiesen"
+    );
+    assert_eq!(
+        antwort["code"], "revision_conflict",
+        "N-11: mit benanntem Grund — ein Versuch gehoert seinem Projekt"
+    );
+
+    // 🔑 Und der Versuch bleibt UNVERAENDERT unter Projekt A: Baseline,
+    // Match-Gain und die gebundene Reihenfolge stehen wie vorher.
+    let nachher = a
+        .c
+        .experiment_sicht(&hex(versuch))
+        .expect("N-11: der Versuch steht weiter unter Projekt A");
+    assert_eq!(nachher.offen(), vorher.offen(), "N-11: er bleibt offen");
+    assert_eq!(
+        nachher.baseline.match_gain_db, vorher.baseline.match_gain_db,
+        "N-11: mit demselben Match-Gain"
+    );
+    assert_eq!(
+        nachher.gebundene_reihenfolge_fuer_pruefung(),
+        vorher.gebundene_reihenfolge_fuer_pruefung(),
+        "N-11: und derselben Blindreihenfolge"
+    );
+}
+
+/// N-41 — ein NICHT persistierter Retry mit alter Zieladresse wird abgewiesen.
+///
+/// Die Lage nach einem Reload: der Prozessor hat einen unbestaetigten
+/// Versuchsbefehl in `inFlight`; `inFlightNachReconnect` reiht ihn erneut ein,
+/// und er traegt die ALTE Zieladresse. Beim Broker gibt es diese Zielsitzung
+/// fuer den Sender nicht mehr.
+#[cfg(windows)]
+#[test]
+fn retry_an_fremde_sitzung_wird_abgewiesen() {
+    let versuch = 0xac2;
+    let a = HarnischMitStore::mit_projekt("n41-nicht-persistiert", 1);
+
+    // Der Sender wechselt das Projekt (Reload). Sein Link fuehrt jetzt eine
+    // andere Sitzung.
+    let neu = {
+        let mut h = a.main.clone();
+        h.adresse.project_binding_id = hex(7);
+        h.adresse.session_epoch = hex(8);
+        h.adresse.instance_id = hex(0x40);
+        h.adresse.runtime_nonce = hex(0x41);
+        h
+    };
+    anmelden(&a.c, "neu", &neu);
+    report_main(&a.c, "neu", &neu.adresse);
+    assert!(a.c.state_report_json("neu", &state_report_payload(&neu.adresse, 0)));
+
+    // Der Retry traegt die ALTE Adresse — der Text ist derselbe wie vor dem
+    // Reload, denn `sendePersistenzP0` wiederholt Bytes, nicht Absichten.
+    let retry = experiment_begin_wert(&a.main.adresse, 0x930, versuch);
+    let antwort = a
+        .p0_von("neu", &retry)
+        .expect("N-41: die Familie wird beantwortet");
+    assert_eq!(
+        antwort["ergebnis"], "abgelehnt",
+        "N-41: der Retry an eine Sitzung, die es beim Sender nicht mehr gibt, wird abgewiesen"
+    );
+    // 🔑 GEMESSEN, nicht angenommen: der Riegel greift eine Stufe FRUEHER als
+    // die Matrix erwartete. `sender_erlaubt` (`befehl.rs:186-205`) verlangt
+    // vom SENDER, dass er das bestaetigte fuehrende Main seiner Sitzung ist —
+    // ein Link, der gerade erst in eine frische Sitzung gewechselt ist, darf
+    // ueberhaupt nicht dispatchen. Die Zielaufloesung mit `unknown_target`
+    // kommt erst danach und wird unten einzeln gemessen.
+    assert_eq!(
+        antwort["code"], "unauthorized",
+        "N-41: mit `unauthorized` — der Sender darf in seiner frischen Sitzung noch gar nicht dispatchen"
+    );
+
+    // 🔑 Kein Store-Eintrag, kein Experimentzustand, keine Wirkung.
+    assert!(
+        a.c.experiment_sicht(&hex(versuch)).is_none(),
+        "N-41: es entsteht KEIN Versuch"
+    );
+    assert!(
+        a.c.passage_sicht(retry["passage"]["passage_id"].as_str().unwrap())
+            .is_none(),
+        "N-41: und keine Passage"
+    );
+
+}
+
+/// N-41, zweite Stufe — ein ERLAUBTER Sender, aber ein Ziel, das seine Sitzung
+/// nicht fuehrt: `unknown_target` (`befehl.rs:210-217`, `:292-293`).
+///
+/// Eigener Harnisch, weil die erste Stufe einen zweiten Main-Link anmeldet und
+/// damit die Dispatchlage der Sitzung veraendert. Zwei unabhaengige Riegel
+/// gehoeren in zwei Lagen.
+#[cfg(windows)]
+#[test]
+fn retry_an_unbekanntes_ziel_wird_abgewiesen() {
+    let a = HarnischMitStore::mit_projekt("n41-unknown-target", 1);
+    let fremdes_ziel = {
+        let mut z = a.main.adresse.clone();
+        z.instance_id = hex(0x50);
+        z.runtime_nonce = hex(0x51);
+        z
+    };
+    let an_fremdes_ziel = experiment_begin_wert(&fremdes_ziel, 0x931, 0xac9);
+    let antwort = a.p0(&an_fremdes_ziel);
+    assert_eq!(
+        antwort["ergebnis"], "abgelehnt",
+        "N-41: ein Ziel, das die Sitzung nicht fuehrt, wird abgewiesen"
+    );
+    assert_eq!(
+        antwort["code"], "unknown_target",
+        "N-41: mit `unknown_target` — die Zielaufloesung geht ueber die Linkidentitaet"
+    );
+    assert!(
+        a.c.experiment_sicht(&hex(0xac9)).is_none(),
+        "N-41: und es entsteht kein Versuch"
+    );
+}
+
+/// N-41b — ein PERSISTIERTER Retry ist idempotent.
+///
+/// „Unbestaetigt" heisst nur, dass das `command_ack` den SENDER nicht erreicht
+/// hat. Der Broker kann den Befehl laengst geschrieben haben; dann antwortet
+/// `bekannter_befehl` VOR jeder Zielpruefung `idempotent_wiederholt`.
+///
+/// ⚠️ Diese Idempotenz ist gewollt und wird von NAK-181 ausdruecklich NICHT
+/// gebrochen (Paragraph 2.0 E3.4). Der Fall misst, dass sie keine ZWEITE
+/// Wirkung erzeugt — das ist die Zusage „keine Wirkung, die es vor dem Reload
+/// nicht schon gab".
+#[cfg(windows)]
+#[test]
+fn persistierter_retry_bleibt_idempotent() {
+    let versuch = 0xac3;
+    let a = HarnischMitStore::mit_projekt("n41b-persistiert", 1);
+    let begin = experiment_begin_wert(&a.main.adresse, 0x940, versuch);
+
+    let erste = a.p0(&begin);
+    assert_eq!(erste["ergebnis"], "angewandt", "N-41b: der Befehl wird angewandt");
+    let vorher = a
+        .c
+        .experiment_sicht(&hex(versuch))
+        .expect("N-41b: der Versuch steht");
+    let passage_vorher = a
+        .c
+        .passage_sicht(begin["passage"]["passage_id"].as_str().unwrap())
+        .expect("N-41b: die Passage steht");
+
+    // DERSELBE Text, dieselbe `command_id` — genau das, was
+    // `inFlightNachReconnect` wiederholt.
+    let zweite = a.p0(&begin);
+    assert_eq!(
+        zweite["ergebnis"], "idempotent_wiederholt",
+        "N-41b: der Broker erkennt seinen eigenen Befehl wieder"
+    );
+    assert_eq!(
+        zweite["base_revision"], erste["base_revision"],
+        "N-41b: mit derselben Revision"
+    );
+
+    // 🔑 Und KEINE zweite Wirkung: der Versuch steht wie vorher unter der
+    // alten Bindung, die Passage ebenso.
+    let nachher = a
+        .c
+        .experiment_sicht(&hex(versuch))
+        .expect("N-41b: der Versuch steht weiter");
+    assert_eq!(nachher.offen(), vorher.offen(), "N-41b: er ist unveraendert offen");
+    assert_eq!(
+        nachher.baseline.match_gain_db, vorher.baseline.match_gain_db,
+        "N-41b: mit demselben Match-Gain"
+    );
+    assert_eq!(
+        nachher.projektbindung, vorher.projektbindung,
+        "N-41b: unter DERSELBEN Projektbindung"
+    );
+    let passage_nachher = a
+        .c
+        .passage_sicht(begin["passage"]["passage_id"].as_str().unwrap())
+        .expect("N-41b: die Passage steht weiter");
+    assert_eq!(
+        passage_nachher.projekt_von, passage_vorher.projekt_von,
+        "N-41b: und ist nicht neu angelegt worden"
+    );
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-181 Messlauf · N-25, N-34, N-42 (Brokerhaelfte)
+// ═════════════════════════════════════════════════════════════════════════
+
+/// N-25 — ein Bandsatz mit geloeschtem Bit liest sich fail-closed.
+///
+/// Der gemeinsame Dekodierweg (`evidenz.rs::perzentil_dekodieren`) ist
+/// Bestand; NAK-181 R5 stuetzt seine Zusage darauf, dass ein Band ohne Bit als
+/// `(0.0, false)` ankommt und NIE als Wert des Vorgaengerbands. Gemessen wird
+/// an `verteilung.p50` — dem Bandsatz, den der Broker heute wirklich liest.
+#[cfg(windows)]
+#[test]
+fn bandsatz_ohne_bit_ist_fail_closed() {
+    let (c, _) = coordinator();
+    let q = hello(1, 2, 10, 100, "passive_probe", Some(9));
+    anmelden(&c, "q", &q);
+
+    // Bitmap mit GENAU einem geloeschten Bit an Position 1; die Werte bleiben
+    // verschieden, damit ein durchgereichter Vorgaengerwert auffiele.
+    let mut bits = vec![0xffu8; (221 + 7) / 8];
+    bits[0] &= !0b10; // Position 1 aus
+    let letztes = bits.len() - 1;
+    bits[letztes] &= 0b0001_1111; // die fuenf Fuellbits des letzten Bytes
+    let bitmap = base64_kodieren(&bits);
+
+    c.evidence_snapshot_json(
+        "q",
+        &evidenz_payload(&q.adresse, 0, |w| {
+            let satz = w
+                .pointer_mut("/verteilung/p50")
+                .expect("die Fixture traegt verteilung.p50");
+            satz["encoding"] = json!("float32");
+            let werte: Vec<Value> = (0..221).map(|i| json!(-10.0 - i as f64)).collect();
+            satz["werte"] = Value::Array(werte);
+            satz["gueltig_bitmap"] = json!(bitmap);
+        }),
+    );
+
+    let h = c
+        .paarhaelfte_fuer_test("q")
+        .expect("N-25: die Haelfte entsteht");
+    // `haelfte_aus_historie` traegt die dekodierten Kurven; ein Band ohne Bit
+    // steht dort als LINEARE Null (0 dB waere 1.0), nie als Nachbarwert.
+    assert!(h.huellkurven.len() >= 3, "N-25: mehrere Baender");
+    assert_eq!(
+        h.huellkurven[1][0], 0.0,
+        "N-25: das Band ohne Bit ist 0 — nicht der Wert des Vorgaengers"
+    );
+    assert!(
+        h.huellkurven[0][0] != 0.0 && h.huellkurven[2][0] != 0.0,
+        "N-25: seine Nachbarn tragen ihre Werte — sonst maesse der Fall nichts"
+    );
+}
+
+/// Base64 mit Fuellzeichen, dieselbe Ordnung wie der Vertrag.
+fn base64_kodieren(daten: &[u8]) -> String {
+    const A: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut aus = String::new();
+    let mut i = 0;
+    while i + 3 <= daten.len() {
+        let w = ((daten[i] as u32) << 16) | ((daten[i + 1] as u32) << 8) | daten[i + 2] as u32;
+        for s in [18, 12, 6, 0] {
+            aus.push(A[((w >> s) & 0x3f) as usize] as char);
+        }
+        i += 3;
+    }
+    let rest = daten.len() - i;
+    if rest == 1 {
+        let w = (daten[i] as u32) << 16;
+        aus.push(A[((w >> 18) & 0x3f) as usize] as char);
+        aus.push(A[((w >> 12) & 0x3f) as usize] as char);
+        aus.push_str("==");
+    } else if rest == 2 {
+        let w = ((daten[i] as u32) << 16) | ((daten[i + 1] as u32) << 8);
+        for s in [18, 12, 6] {
+            aus.push(A[((w >> s) & 0x3f) as usize] as char);
+        }
+        aus.push('=');
+    }
+    aus
+}
+
+/// N-34 und N-42 (Brokerhaelfte) — der Grund auf dem Draht ist je Ausloeser
+/// eindeutig (M-53).
+///
+/// Die Stempel sind die, die der Plugin-Test misst: ein DROP zieht
+/// `continuity_segment` hoch und laesst die Epoche stehen (N-31, N-42), ein
+/// SEEK zieht die Epoche hoch (N-32). `invalidierung_aus_transportbruch`
+/// vergleicht die zwei juengsten Historieneintraege — Epoche zuerst, Segment
+/// danach.
+#[cfg(windows)]
+#[test]
+fn drop_invalidiert_als_sequenzluecke() {
+    // ── Drop: Epoche gleich, Segment + 1 → Sequenzluecke ────────────────
+    {
+        let (c, _) = coordinator();
+        let q = hello(1, 2, 10, 100, "passive_probe", Some(9));
+        anmelden(&c, "q", &q);
+        for (nr, segment) in [(0usize, 3u64), (1, 4)] {
+            c.evidence_snapshot_json(
+                "q",
+                &evidenz_payload(&q.adresse, nr, |w| {
+                    let t = w.get_mut("transport").unwrap();
+                    t["transport_epoch"] = json!(17);
+                    t["continuity_segment"] = json!(segment);
+                }),
+            );
+        }
+        assert_eq!(
+            gruende_der_historie(&c, &hex(10)),
+            vec!["sequenzluecke".to_string()],
+            "N-34: ein Drop traegt `sequenzluecke` — nie `epochwechsel` (M-53)"
+        );
+    }
+
+    // ── Seek: Epoche + 1 → Epochwechsel ────────────────────────────────
+    {
+        let (c, _) = coordinator();
+        let q = hello(1, 2, 11, 101, "passive_probe", Some(9));
+        anmelden(&c, "q", &q);
+        for (nr, epoche) in [(0usize, 17u64), (1, 18)] {
+            c.evidence_snapshot_json(
+                "q",
+                &evidenz_payload(&q.adresse, nr, |w| {
+                    let t = w.get_mut("transport").unwrap();
+                    t["transport_epoch"] = json!(epoche);
+                    t["continuity_segment"] = json!(0);
+                }),
+            );
+        }
+        assert_eq!(
+            gruende_der_historie(&c, &hex(11)),
+            vec!["epochwechsel".to_string()],
+            "N-34: ein Seek traegt `epochwechsel`"
+        );
+    }
+
+    // ── N-42: ein Kanal-/Tapwechsel.
+    //
+    // ⚠️ Die Zahlenlage kommt aus dem Plugin-Test (N-42 in
+    // `EqCopSonde012HostChannelContextTest`), und die hat den Messlauf
+    // korrigiert: der Wechsel reist als EPOCHENbruch, nicht als Segmentbruch.
+    // `schliesstAn` verwirft den gehaltenen Block, die Hostzeit laeuft
+    // lueckenlos weiter, und `grenzeZwischen` sieht deshalb einen `zeitSprung`
+    // — der vor `lokaleLuecke` geprueft wird. Der Broker invalidiert ihn
+    // folglich als `Epochwechsel`.
+    {
+        let (c, _) = coordinator();
+        let q = hello(1, 2, 12, 102, "passive_probe", Some(9));
+        anmelden(&c, "q", &q);
+        for (nr, epoche) in [(0usize, 21u64), (1, 22)] {
+            c.evidence_snapshot_json(
+                "q",
+                &evidenz_payload(&q.adresse, nr, |w| {
+                    let t = w.get_mut("transport").unwrap();
+                    t["transport_epoch"] = json!(epoche);
+                    t["continuity_segment"] = json!(0);
+                }),
+            );
+        }
+        assert_eq!(
+            gruende_der_historie(&c, &hex(12)),
+            vec!["epochwechsel".to_string()],
+            "N-42: der Kanalwechsel invalidiert — als `epochwechsel`, weil die Hostzeit lueckenlos weiterlaeuft und die Engine einen Zeitsprung sieht"
+        );
+    }
+}
+
+/// Die Ausschlussgruende, die in der Evidenzhistorie einer Quelle stehen.
+///
+/// `invalidierung_aus_transportbruch` schreibt sie in die betroffenen
+/// Historieneintraege; das ist der Weg, auf dem der Grund im Produkt sichtbar
+/// wird — ein eigener Testzugang waere eine zweite Wahrheit.
+fn gruende_der_historie(c: &eqcop_broker::coordinator::Coordinator, instanz: &str) -> Vec<String> {
+    let mut aus: Vec<String> = c
+        .evidenz_historie(instanz)
+        .into_iter()
+        .filter_map(|e| e.ausschlussgrund)
+        .collect();
+    aus.dedup();
+    aus
+}

@@ -348,17 +348,19 @@ int main()
         // Die Kette: `Blockquarantaene::schliesstAn` vergleicht `kanaele` und
         // `tapMaske` (`StampedAudioQueue.h:732-733`) und verwirft den
         // gehaltenen Block. `grenzeZwischen` vergleicht die zwei zwar nicht
-        // (`FeatureEngine.h:1773-1824`) — aber die HOSTZEIT laeuft lueckenlos
+        // (`FeatureEngine.h:1807-1859`) — aber die HOSTZEIT laeuft lueckenlos
         // weiter: der naechste freigegebene Block beginnt genau eine
         // Blocklaenge spaeter als `alt.projectSampleStart + alt.sampleCount`.
         // Das ist ein `zeitSprung`, und der wird VOR `lokaleLuecke` geprueft
-        // (`:1804-1816` vor `:1819-1822`).
+        // (`:1833-1850` vor `:1852-1856`).
         //
-        // Vier der fuenf Epochengruende sind hier ausgeschlossen: die
-        // `startFolge` bleibt (`neustartAnfordern` steht nur in
-        // `prepareToPlay`, `SondeProcessor.cpp:132`), die Samplerate bleibt,
-        // die Beweislageflags bleiben, und der Transport laeuft durch. Es
-        // bleibt `zeitSprung`.
+        // `grenzeZwischen` kann sechs Epochengruende liefern; fuenf sind hier
+        // ausgeschlossen: die `startFolge` bleibt (`neustartAnfordern` steht
+        // nur in `prepareToPlay`, `SondeProcessor.cpp:132`), die Samplerate
+        // bleibt, die Beweislageflags bleiben, der Transport laeuft durch, und
+        // ohne aktive Schleife (`kFlagCycleAktiv` ist nicht gesetzt) kann
+        // `istLoopWrap` nicht greifen. Es bleibt `zeitSprung`. Nur
+        // `lokaleLuecke` haette das SEGMENT gehoben (`:2136-2145`).
         //
         // Der Wechsel reist damit schon heute als `epochwechsel` — STAERKER
         // als die Matrix annahm. Die Invalidierung findet statt, keine starke
@@ -375,15 +377,21 @@ int main()
         {
             mono.clear();
             for (int k = 0; k < mono.getNumSamples(); ++k)
-                mono.setSample (0, k, 0.25f * std::sin (
+                mono.setSample (0, k, (float) (0.25 * std::sin (
                     6.2831853071795864 * 1000.0
-                    * (double) (kopf.pos + k) / 48000.0));
+                    * (double) (kopf.pos + k) / 48000.0)));
             p.processBlock (mono, midi);
             kopf.pos += mono.getNumSamples();
             std::this_thread::sleep_for (std::chrono::milliseconds (2));
         }
         std::uint64_t e4 = 0, s4 = 0;
         const bool nachWechsel2 = stempel (e4, s4);
+        // ⚠️ Gemessen ist der KANALwechsel (stereo -> mono). Der Tapwechsel
+        // geht durch DIESELBE Bedingung in `schliesstAn`
+        // (`StampedAudioQueue.h:732-733`: `kanaele != ... || tapMaske != ...`)
+        // und danach durch denselben Weg; ihn hier zweimal zu fahren, mass
+        // dieselbe Zeile ein zweites Mal. Das Manifest sagt deshalb nicht
+        // "beide Ausloeser einzeln" (Paragraph 6.9).
         fall ("N-42: ein Kanalwechsel zieht die EPOCHE hoch (zeitSprung, nicht "
               "lokaleLuecke) - der Bruch ist auf dem Draht sichtbar",
               vorWechsel && nachWechsel2 && e4 > e3);

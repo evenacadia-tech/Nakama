@@ -5249,8 +5249,9 @@ fn base64_kodieren(daten: &[u8]) -> String {
 /// eindeutig (M-53).
 ///
 /// Die Stempel sind die, die der Plugin-Test misst: ein DROP zieht
-/// `continuity_segment` hoch und laesst die Epoche stehen (N-31, N-42), ein
-/// SEEK zieht die Epoche hoch (N-32). `invalidierung_aus_transportbruch`
+/// `continuity_segment` hoch und laesst die Epoche stehen (N-31), ein SEEK
+/// zieht die Epoche hoch (N-32), und ein KANALWECHSEL ebenfalls (N-42 — der
+/// Messlauf hat das korrigiert, siehe dritter Block). `invalidierung_aus_transportbruch`
 /// vergleicht die zwei juengsten Historieneintraege — Epoche zuerst, Segment
 /// danach.
 #[cfg(windows)]

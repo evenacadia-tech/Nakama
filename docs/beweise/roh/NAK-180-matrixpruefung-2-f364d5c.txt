@@ -1,0 +1,6 @@
+MP1-3 ist durch E8/N-30 bis N-32/B7 und MP2-4 durch N-33/B4 mit messenden Tests und Rotbeweisen geschlossen; neue Wire-Felder werden nicht eingeführt. Die festgelegte Aufbaufolge lässt jedoch ein Replay unter alter Generation einreihen und verwerfen, sodass MP1-1 und dadurch auch der R8-Endpfad weiterhin brechen können.
+
+Review comment:
+
+- [P1] Ziehe die Wire-Generation vor den Link-Callback — C:\Users\phili\Projekte\Nakama\docs\beweise\NAK-180.md:152-154
+  Wenn `v3ControlLink(true)` den Worker für ein Replay weckt, wird die neue `wireGeneration` laut dieser Reihenfolge erst nach Rückkehr des Callbacks vergeben (`ControlClient.cpp:1282-1283`). Der Worker kann daher ein zum neuen Link gehörendes Replay noch mit der alten Generation einreihen, worauf der unmittelbar folgende N-26-Filter es verwirft; bei Zustand 1 oder 3 erreicht anschließend das `end` den Broker ohne Begin und setzt wieder `unknown` (`intervention.rs:214-219`). Damit bleiben MP1-1 und MP1-2 trotz N-26/N-28 offen: Generation und Filter müssen vor dem Callback liegen oder die neue Generation muss dem Callback übergeben werden, und N-26/N-28 samt B3b/B5-Rotbeweis müssen dieses Interleaving erzwingen. Siehe auch `AGENTS.md:46-52` zur gekoppelten Verbinden/Trennen-Prüfung.

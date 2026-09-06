@@ -3,7 +3,7 @@
 | Merkmal | Wert |
 |---|---|
 | Ticket | S23–25, `SONDE-014` (Phase P4–P5), Leitungsname „Aus Messungen belegte Befunde und kleinste Tests ableiten" |
-| Phase | **Etappe 2 — Bau, läuft.** Fertig: **Etappe A** (`SourceIntent` im Main-State, Commit `8f030f5`), **Etappe B** (Fassung 3 des Wire-Envelopes, Commits `edea7a9`, `baa6291`, `581431a`) **Etappe C** (Evidenzgraph und `CauseHypothesis`), **Etappe D** (Befundzustände) und **Etappe E** (Maskierungs-Datenweg). Davor ohne Produktcode: **Matrixnacharbeit 1** (2026-09-06), **Etappe 1b — Entscheide E-01 bis E-10** (`fdb04e4`) und **Etappe 1 — Verhaltensmatrix** (`1f126a4`). Der Bauverlauf steht in §7. |
+| Phase | **Etappe 2 — Bau, läuft.** Fertig: **Etappe A** (`SourceIntent` im Main-State, Commit `8f030f5`), **Etappe B** (Fassung 3 des Wire-Envelopes, Commits `edea7a9`, `baa6291`, `581431a`) **Etappe C** (Evidenzgraph und `CauseHypothesis`), **Etappe D** (Befundzustände), **Etappe E** (Maskierungs-Datenweg) und **Etappe F** (Proposal-Policy). Davor ohne Produktcode: **Matrixnacharbeit 1** (2026-09-06), **Etappe 1b — Entscheide E-01 bis E-10** (`fdb04e4`) und **Etappe 1 — Verhaltensmatrix** (`1f126a4`). Der Bauverlauf steht in §7. |
 | Matrixprüfung 2 | Codex `gpt-6-astra`, Effort **max**, lesend, Thread `01a077a3-1411-7830-9bfd-e17d233baab1`; `HEAD` vor und nach dem Lauf `f90abf5`. **URTEIL: PASS** — D1 bis D4 geschlossen, nichts gebrochen. Auftrag `docs/beweise/roh/SONDE-014-matrixpruefung-2-auftrag.txt`, Rohurteil `docs/beweise/roh/SONDE-014-matrixpruefung-2-f90abf5.txt`. **Etappe 1 ist damit abgenommen; §3 ist ab hier die Spezifikation.** |
 | Etappe 2 | Bauauftrag `docs/beweise/roh/SONDE-014-etappe-2-auftrag.txt`, Basis `f90abf5`; Fortsetzung 1 (Etappen C bis I) `docs/beweise/roh/SONDE-014-etappe-2-fortsetzung-1-auftrag.txt`, Startstand `6b96c64`, mit **Entscheid E-12** (`GATE_MINDEST_FENSTER` in Etappe C ohne Versionsschritt; der eine erlaubte Schritt der `metrics_version` liegt in Etappe H). Neun Bauetappen A bis I nach §5.1; Bauverlauf, gemessene Matrixzeilen, Rotbeweise, Abweichungen und Nebenbefunde in **§7**. |
 | Entscheide | E-01 bis E-10 wörtlich in `docs/beweise/roh/SONDE-014-etappe-1-entscheid-auftrag.txt`. Eingearbeitet in Etappe 1b: neun angenommene Technikentscheide (E-01 bis E-09, E-01 und E-03 mit Präzisierung, E-08 mit Autoritätenzuweisung) und **eine neue Lücke E-10** (Transport des Intents vom Main zum Broker) mit den zwei zusätzlichen Matrixzeilen **M-85** und **M-86**. **Seit der Matrixnacharbeit 1 kommt E-11 dazu** (Transport und versionierter Spiegel des `AssistantStep`, Regel R3, §4.13) mit **M-88** und **M-89**. Je Entscheid steht ein Block „Etappe 1b (Entscheid des Dirigenten, 06.09.2026)" unter dem zugehörigen §4-Abschnitt; der vorige Vorschlagstext bleibt als Historie stehen. |
@@ -2020,8 +2020,8 @@ Cross-Language-Fixtures.
 |---|---|---|
 | **M-15** | `pruefe_v3_vertrag.py::pruefe_sonde014_fassung_3` (`causehypothesis_traegt_die_zehn_felder_aus_36_3`); Fixtures `session-snapshot-mit-findings`, `finding-belegtext-statt-zone`, `finding-vierte-anzeigezeile`, `finding-ohne-evidenz-ids` | `roh/SONDE-014-rot-M-15.txt` |
 | **M-40** | `schema.rs::minor_2_leser_lehnt_die_fassung_3_ab` und `fassung_1_und_0_erben_den_rueckbau_der_fassung_3`; `pruefe_v3_vertrag.py::fassung_2_leser_lehnt_session_snapshot_findings_ab`; C++-Hälfte in `IpcTestMain.cpp::fassung_3_familien_und_felder_werden_von_der_cpp_engine_angenommen` | `roh/SONDE-014-rot-M-40.txt` |
-| **M-42** | `pruefe_v3_vertrag.py::proposal_traegt_die_fuenfzehn_felder_aus_42_1_plus_revert`; elf Negativfixtures am Proposal | `roh/SONDE-014-rot-M-42.txt` |
-| **M-48** | `pruefe_v3_vertrag.py::fassung_2_leser_lehnt_experiment_begin_ziel_ab`; Fixtures `experiment-begin-mit-ziel`, `experiment-ziel-fremdes-feld`, `experiment-ziel-band-ueber-dem-rand`. **Die Leseseite des Guardrail-Rechners gehört Etappe F** — hier steht nur der Vertragsteil | `roh/SONDE-014-rot-M-48.txt` |
+| **M-42** | `pruefe_v3_vertrag.py::proposal_traegt_die_fuenfzehn_felder_aus_42_1_plus_revert`; elf Negativfixtures am Proposal | `roh/SONDE-014-rot-M-42-erzeuger.txt` |
+| **M-48** | `pruefe_v3_vertrag.py::fassung_2_leser_lehnt_experiment_begin_ziel_ab`; Fixtures `experiment-begin-mit-ziel`, `experiment-ziel-fremdes-feld`, `experiment-ziel-band-ueber-dem-rand`. **Die Leseseite des Guardrail-Rechners gehört Etappe F** — hier steht nur der Vertragsteil | `roh/SONDE-014-rot-M-48-rechner.txt` |
 | **M-73** (Vertragshälfte) | Register (`draft_offer`/`user_verdict` belegt, Eigentümer SONDE-014); `IpcTestMain.cpp::draft_offer_reist_als_p1_mit_proposal_schluessel` und `user_verdict_ist_ein_persistenzpflichtiger_p0_befehl_und_koalesziert_nicht` | `roh/SONDE-014-rot-M-73.txt` |
 | **M-77** | `intent.rs::geschlossene_mengen_des_lesers_decken_sich_mit_dem_vertrag` (Rust) **und** `IpcTestMain.cpp::sechster_rollenwert_faellt_an_der_cpp_engine`, `vierter_rueckweg_dsp_revert_faellt_an_der_cpp_engine`, `vierter_befundzustand_faellt_an_der_cpp_engine` (C++) | `roh/SONDE-014-rot-M-77.txt` |
 | **M-85** | `sonde014_verdrahtung.rs::intent_update_koalesziert_je_quelle_und_scope` und `teilmeldung_mit_mehreren_objekten_wird_abgewiesen`; Senderhälfte `PluginProcessor.cpp::sendeIntentFortschreibung` | `roh/SONDE-014-rot-M-85.txt` |
@@ -2476,6 +2476,123 @@ bleibt **56** — diese Etappe legt kein neues Bein an, sondern erweitert zwei.
   fail-open-Zweig dieses Lesers: ein Objekt beliebiger Form wäre
   durchgegangen, und die Anzeige hätte daraus eine Zone gebaut. Der Leser
   prüft ihn jetzt vollständig; sechs vertragswidrige Formen fallen einzeln.
+
+
+### 7.6 Etappe F — Proposal-Policy
+
+**Gebaut:** das `Proposal` als validiertes, versioniertes Objekt mit fünfzehn
+Feldern plus `revert`, die deterministische Erzeugung in fünf Schritten, die
+Sicherheitsbudgets aus §42.3, der gelesene statt geratene Zielbereich (E-05)
+und die Sperre, die einen nicht handelbaren Vorschlag gar nicht erst zum
+Angebot macht.
+
+| Stück | Ort |
+|---|---|
+| Rechnung (rein) | **NEU** `broker/src/coordinator/proposal.rs` — `proposal()`, `aktionstemplates()`, `constraint_solver()`, `kosten()`, `eingriff()`, `darf_draft_offer()`, `bandmitte_hz()`, die fünf geschlossenen Mengen und die fünf Budgetkonstanten |
+| Produktpfad | **NEU** `broker/src/coordinator/proposal_verdrahtung.rs` — `vorschlaege_bilden()` direkt hinter `befunde_eintragen`, `vorschlag_persistieren()` als `event_type = "proposal"`, `draft_offer_zustellen()` über den Pushpfad, `proposal_json()` |
+| Zielbereich im Experiment (E-05) | `broker/src/coordinator/experiment.rs` — `struct Experimentziel`, `Experiment::ziel`, `Achsenrechnung::ziel_geraten`, `Resultatmessung::ziel_geraten`, `beginne(..., ziel)`; `experiment_verdrahtung.rs` — `ziel_aus_wert()` und der gelesene Zielbereich im Guardrail-Rechner |
+| Flüchtiger Bestand | `broker/src/coordinator/zustand.rs` — `Stand::vorschlaege`, `Stand::draft_offers` |
+| Bein | **NEU** `broker/tests/sonde014_proposal.rs`, 15 Fälle; ein Fall in `broker/tests/sonde013_verdrahtung.rs` für M-48 |
+
+**Gemessene Matrixzeilen.**
+
+| Zeile | Wo gemessen | Rotbeweis |
+|---|---|---|
+| **M-42** | `sonde014_proposal.rs::proposal_traegt_die_fuenfzehn_felder` — jedes Pflichtfeld aus `$defs/proposal.required` am **erzeugten** Objekt, und **kein** Feld außerhalb des Vertrags | `roh/SONDE-014-rot-M-42.txt` |
+| **M-43** | `…::sechs_gate_felder_sind_pflicht_und_revert_hat_drei_werte` — die sechs Gate-Felder einzeln, die geschlossene Dreiermenge gegen den Vertrag, `dsp_revert` fällt, und die Abbildung Aktion → Rückweg ist total | `roh/SONDE-014-rot-M-43.txt` |
+| **M-44** | `…::derselbe_eingang_erzeugt_denselben_entwurf` — hundert Bühnen, bytegleiche serialisierte Vorschläge | `roh/SONDE-014-rot-M-44.txt` |
+| **M-45** | `…::in_p5_ist_jede_aktion_manual` — im Modell **und** auf der Leitung | `roh/SONDE-014-rot-M-45.txt` |
+| **M-46** | `…::keine_aenderung_und_mehr_daten_sind_vorschlaege` — vollständiges Objekt mit Hörziel, Stopbedingung, Rückweg und Evidenz-IDs; **keine** Parameter, denn ein Nichteingriff hat keine | `roh/SONDE-014-rot-M-46.txt` |
+| **M-47** | `…::zielbereich_kommt_aus_dem_befund_nicht_aus_dem_delta` — mit **Gegenprobe**, dass mit Capability wirklich ein Eingriff entsteht; die Frequenz ist die Bandmitte des Befundbands, und die Grenzen liegen in diesem Band | `roh/SONDE-014-rot-M-47.txt` |
+| **M-48** | `sonde013_verdrahtung.rs::sonde014_m48_gelesenes_ziel_schlaegt_die_heuristik` — derselbe Versuch zweimal, einmal mit `ziel` (Band 5) und einmal ohne. Der Fall ist so gebaut, dass die Pfade **auseinanderlaufen müssen**: die größte Bewegung liegt auf Band 100. Mit `ziel` sind es 12 dB außerhalb, ohne 6 dB — und `ziel_geraten` sagt beides Mal die Wahrheit | `roh/SONDE-014-rot-M-48.txt` |
+| **M-49** | `…::geschuetzte_eigenschaft_ist_harte_constraint` — mit **Gegenprobe**: ohne Schutz entsteht ein Eingriff, mit Schutz keiner, und der Schutz steht als Constraint im Vorschlag | `roh/SONDE-014-rot-M-49.txt` |
+| **M-50** | `…::stop_if_auf_nicht_messbarem_guardrail_ist_nicht_handelbar` — die Aktion ist `more_data`, der Guardrail bleibt trotzdem in `stop_if`, und es geht kein Angebot hinaus | `roh/SONDE-014-rot-M-50.txt` |
+| **M-51** | `…::jede_zahl_hat_feld_evidenz_und_generatorversion` — jede Zahl im Wire-Objekt steht in einem benannten Feld; Generatorversion und Evidenz-IDs sind belegt | `roh/SONDE-014-rot-M-51.txt` |
+| **M-52** | `…::veraltet_ungueltig_capability_erreichen_keine_probe` — drei Gründe einzeln (Capability, `stale`, `base_revision`), jeder gegen dieselbe **Gegenprobe**, in der ein Angebot entstünde | `roh/SONDE-014-rot-M-52.txt` |
+| **M-53** | `…::hard_caps_und_engeres_userbudget_werden_nie_ueberschritten` — 500 zufällige Lagen, deterministischer Würfel; die engere Usergrenze gewinnt immer, und ein Zähler beweist, dass die Prüfung wirklich Eingriffe gesehen hat | `roh/SONDE-014-rot-M-53.txt` |
+| **M-54** | `…::evidenz_ids_und_intent_revision_sind_pflicht` — die Revision ist die, **gegen die** der Solver gelaufen ist, und die Evidenz-IDs kommen aus dem Befund | `roh/SONDE-014-rot-M-54.txt` |
+| **M-63** | `…::manueller_busvorschlag_ist_ein_proposal` — dieselbe Struktur, Rückweg `manual_only`, und kein Fremdwerkzeugfeld | `roh/SONDE-014-rot-M-63.txt` |
+| **M-10** | `…::rollenaenderung_macht_den_vorschlag_stale` — §37.3; §7.1 hatte die Zeile ausdrücklich hierher vertagt | `roh/SONDE-014-rot-M-10.txt` |
+| **Gitterregel** | `…::bandmitte_folgt_dem_eingefrorenen_gitter` — alle 221 Mitten der Regel gegen die **committete** Datei, plus beide Ränder | `roh/SONDE-014-rot-Gitter.txt` |
+
+**Läufe.** `cargo test` **615 Prüfungen, 0 Fehler** (Bein **A4**, darunter
+**NEU** `sonde014_proposal` mit 15 Fällen und ein neuer Fall in
+`sonde013_verdrahtung`); `cargo clippy --all-targets` meldet in den neuen
+Dateien nichts. Die Kanonzahl bleibt **56**.
+
+**Rotbeweise.** Sechzehn Dateien
+`docs/beweise/roh/SONDE-014-rot-{M-10,M-42-erzeuger,M-43..M-47,M-48-rechner,M-49..M-54,M-63,Gitter}.txt`. **M-42** und **M-48** tragen ihren Zusatz, weil Etappe B unter dem blanken Namen bereits die Vertragshälfte belegt — einen fremden Beweis zu überschreiben wäre Verlust.
+
+**Abweichungen von §5, mit Begründung.**
+
+1. **Kein Bein `EqCopSonde014ProposalTest`.** Wie in §7.3 und §7.5: E-08 legt
+   die Rechnung in den Broker-Coordinator. Gebaut ist ein Rust-Bein unter
+   **A4**; die C++-Hälfte der geschlossenen Mengen (Rückweg, `execution`)
+   liegt seit Etappe B in **B10** (`IpcTestMain.cpp`).
+2. **`ziel_geraten` reist nicht auf der Leitung.** M-48 verlangt das
+   Kennzeichen am **Resultat**; `session_experiment` ist
+   `additionalProperties: false` mit sieben Feldern, und ein achtes wäre ein
+   zweiter Fassungsschritt (§5.3 R4). Das Kennzeichen steht deshalb in
+   `Resultatmessung` und `Achsenrechnung` — dort, wo es entsteht und wo der
+   Guardrail-Wert danebensteht, auf den es sich bezieht.
+3. **`M-49` misst nur die Vorschlagsseite.** §3.5 führt die Zeile selbst als
+   „**BELEGT** (Vorschlagsseite) · **OFFEN für P7**": das DSP-ACK gehört
+   S26–28/S29–31 und wird hier nicht vorgegriffen.
+4. **Der Zielbereich überlebt einen Brokerneustart nicht.** Der Store trägt
+   `experiment_begin.ziel` heute nicht; ein restaurierter Versuch rechnet
+   wieder mit der Heuristik — und **sagt es** (`ziel_geraten`). Das ist eine
+   ehrliche Lücke und keine stille: ein restauriertes Resultat behauptet
+   nirgends, sein Ziel gelesen zu haben. Eine Store-Migration dafür wäre ein
+   Eingriff in `MIGRATION_1_SQL` und damit dieselbe Klasse Entscheidung wie
+   die, die §7.2 Abweichung 2 abgelehnt hat.
+
+**Technische Entscheide dieser Etappe.**
+
+- **Ein Eingriff schlägt eine Anleitung — immer.** „Der kleinste sichere
+  Kandidat gewinnt" meint den kleinsten **wirksamen**. `manual_guidance`
+  kostet nichts, weil es nichts tut, und würde eine reine Kostenordnung jedes
+  Mal gewinnen; der Vorschlag wäre dann immer „mach es selbst" — ein Advisor,
+  der nie etwas vorschlägt. Die Anleitung ist der **Rückfall**, wenn kein
+  Eingriff sicher ist. Gefunden wurde das an der Gegenprobe: die erste Fassung
+  der Fälle M-47, M-49, M-52 und M-53 lief grün, **weil** sie nie einen
+  Eingriff erzeugte.
+- **Die Frequenz kommt aus der Gitterregel, nicht aus einer Tabelle.** Das
+  Gitter trägt seine Erzeugungsregel selbst (`herkunft.regel`, IEC 61260-1);
+  eine 221 Werte lange Tabelle im Broker wäre eine **Kopie** des
+  eingefrorenen Gitters. Ein eigener Fall hält die Regel gegen die committete
+  Datei — damit ist die Kopie vermieden und die Übereinstimmung gemessen.
+- **Die Budgets sind Vertragswerte, keine Kalibrierung.** Die Zahlen aus §42.3
+  stehen wörtlich im Entwurf und deshalb **nicht** in `metriken-v1.json`: sie
+  zu kalibrieren wäre eine Produktentscheidung, keine Messung. §42.3 verlangt
+  für jede Änderung eine neue Policy-Version und Regressionstests — genau das
+  leistet die Benennung: wer eine Zahl ändert, ändert eine benannte Konstante,
+  und die Eigenschaftsprüfung fällt darüber.
+- **Der Guardrail bleibt in `stop_if`, auch wenn er nicht messbar ist.** Ihn
+  wegzulassen hieße, den Abbruch stillschweigend zu streichen. Die Folge steht
+  woanders: die Aktion ist `more_data`, und es geht kein Angebot hinaus.
+- **`darf_draft_offer` verlangt die Passage.** Das Exit-Gate nennt sie
+  wörtlich; ein Vorschlag, der nicht sagen kann, **wo** er gilt, wird nicht
+  angeboten — auch wenn alles andere stimmt.
+- **In P5 ist `capability_vorhanden` immer falsch.** Der aktive Kern entsteht
+  in P6. Ein Broker, der hier optimistisch `true` schriebe, erzeugte Angebote,
+  die keine Probe ausführen kann. Das Feld steht trotzdem da, weil M-52
+  „Capability fehlt" als eigenen Grund führt — und ein Grund, den niemand
+  setzen kann, ist keiner.
+
+**Nebenbefunde.**
+
+- **N-14 (neu, im Werkzeug behoben).** Der Rotbeweistreiber schrieb die
+  Rücknahme und startete `cargo test` sofort. Cargos Änderungserkennung hängt
+  an der Dateizeit mit **einer Sekunde** Auflösung: vier rote Läufe liefen
+  gegen ein **altes** Binary und meldeten grün. Ein Rotbeweis, der das alte
+  Binary misst, ist wertlos — und er sieht aus wie ein bestandener. Der
+  Treiber wartet jetzt zwischen Schreiben und Lauf. Der Treiber liegt
+  außerhalb des Repos; die Lehre steht hier.
+- **N-15 (neu, keine Änderung).** `security_vectors.rs::zwei_listener_plus_96_worker_erhalten_cap_und_namensbesitz`
+  fiel in **einem** Sammellauf rot und lief allein sowie in allen späteren
+  Sammelläufen grün. Der Fall öffnet 96 Worker und zwei Listener auf echten
+  Named Pipes; unter paralleler Last ist er zeitempfindlich. Er gehört nicht
+  zu diesem Ticket und wurde nicht angefasst — der Dirigent entscheidet.
 
 ---
 

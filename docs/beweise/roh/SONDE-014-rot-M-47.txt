@@ -1,0 +1,65 @@
+SONDE-014 Etappe F - Rotbeweis M-47
+========================================================================
+
+GEWERTETE ZUSAGE
+Der Zielbereich kommt aus dem BAND DES BEFUNDS, nicht aus dem groessten Betrag der Banddeltas.
+
+GEMESSEN AN  broker/tests/sonde014_proposal.rs::zielbereich_kommt_aus_dem_befund_nicht_aus_dem_delta
+
+RUECKNAHME AM PRODUKTCODE  broker/src/coordinator/proposal.rs
+------------------------------------------------------------------------
+VORHER:
+    let mitte = bandmitte_hz(bandmitte_index(band));
+
+NACHHER:
+    // RUECKNAHME M-47: die Frequenz wird geraten statt gelesen.
+    let mitte = bandmitte_hz(0);
+------------------------------------------------------------------------
+
+[1] LAUF MIT RUECKNAHME - erwartet ROT (Exitcode 101)
+========================================================================
+
+running 1 test
+test zielbereich_kommt_aus_dem_befund_nicht_aus_dem_delta ... FAILED
+
+failures:
+
+---- zielbereich_kommt_aus_dem_befund_nicht_aus_dem_delta stdout ----
+
+thread 'zielbereich_kommt_aus_dem_befund_nicht_aus_dem_delta' (21608) panicked at tests\sonde014_proposal.rs:401:5:
+die Frequenz kommt aus dem Band 96..100: 522.1368912137069 gegen 30.802
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    zielbereich_kommt_aus_dem_befund_nicht_aus_dem_delta
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.28s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: function `bandmitte_index` is never used
+   --> src\coordinator\proposal.rs:779:4
+    |
+779 | fn bandmitte_index(band: Bandintervall) -> u32 {
+    |    ^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib) generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.96s
+     Running tests\sonde014_proposal.rs (broker\target\debug\deps\sonde014_proposal-7c92fc847c987d9d.exe)
+error: test failed, to rerun pass `--test sonde014_proposal`
+
+[2] RUECKNAHME ZURUECKGENOMMEN, LAUF ERNEUT - erwartet GRUEN (Exitcode 0)
+========================================================================
+
+running 1 test
+test zielbereich_kommt_aus_dem_befund_nicht_aus_dem_delta ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.31s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.95s
+     Running tests\sonde014_proposal.rs (broker\target\debug\deps\sonde014_proposal-7c92fc847c987d9d.exe)
+
+URTEIL: OK (rot=101, gruen=0)

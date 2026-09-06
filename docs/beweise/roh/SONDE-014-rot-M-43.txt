@@ -1,0 +1,57 @@
+SONDE-014 Etappe F - Rotbeweis M-43
+========================================================================
+
+GEWERTETE ZUSAGE
+Der Rueckweg ist ein FELD mit genau drei Werten; `dsp_revert` gehoert P7 und faellt.
+
+GEMESSEN AN  broker/tests/sonde014_proposal.rs::sechs_gate_felder_sind_pflicht_und_revert_hat_drei_werte
+
+RUECKNAHME AM PRODUKTCODE  broker/src/coordinator/proposal.rs
+------------------------------------------------------------------------
+VORHER:
+            "none_needed" => Self::NoneNeeded,
+
+NACHHER:
+            "none_needed" => Self::NoneNeeded,
+            // RUECKNAHME M-43: `dsp_revert` wird angenommen.
+            "dsp_revert" => Self::NoneNeeded,
+------------------------------------------------------------------------
+
+[1] LAUF MIT RUECKNAHME - erwartet ROT (Exitcode 101)
+========================================================================
+
+running 1 test
+test sechs_gate_felder_sind_pflicht_und_revert_hat_drei_werte ... FAILED
+
+failures:
+
+---- sechs_gate_felder_sind_pflicht_und_revert_hat_drei_werte stdout ----
+
+thread 'sechs_gate_felder_sind_pflicht_und_revert_hat_drei_werte' (12816) panicked at tests\sonde014_proposal.rs:242:5:
+assertion failed: Rueckweg::aus_wire("dsp_revert").is_none()
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    sechs_gate_felder_sind_pflicht_und_revert_hat_drei_werte
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.31s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.91s
+     Running tests\sonde014_proposal.rs (broker\target\debug\deps\sonde014_proposal-7c92fc847c987d9d.exe)
+error: test failed, to rerun pass `--test sonde014_proposal`
+
+[2] RUECKNAHME ZURUECKGENOMMEN, LAUF ERNEUT - erwartet GRUEN (Exitcode 0)
+========================================================================
+
+running 1 test
+test sechs_gate_felder_sind_pflicht_und_revert_hat_drei_werte ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.29s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.73s
+     Running tests\sonde014_proposal.rs (broker\target\debug\deps\sonde014_proposal-7c92fc847c987d9d.exe)
+
+URTEIL: OK (rot=101, gruen=0)

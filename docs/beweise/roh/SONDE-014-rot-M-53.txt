@@ -1,0 +1,63 @@
+SONDE-014 Etappe F - Rotbeweis M-53
+========================================================================
+
+GEWERTETE ZUSAGE
+Hard Caps und eine engere Usergrenze werden NIE ueberschritten; die engere Grenze gewinnt immer.
+
+GEMESSEN AN  broker/tests/sonde014_proposal.rs::hard_caps_und_engeres_userbudget_werden_nie_ueberschritten
+
+RUECKNAHME AM PRODUKTCODE  broker/src/coordinator/proposal.rs
+------------------------------------------------------------------------
+VORHER:
+    let wirksam = match lage.usergrenze_db {
+        Some(u) if u.is_finite() && u >= 0.0 => deckel.min(u),
+        _ => deckel,
+    };
+    // Der Gain ist eine REDUKTION: negativ, und nie mehr als das Budget.
+
+NACHHER:
+    // RUECKNAHME M-53: die Produktgrenze schlaegt die Usergrenze.
+    let wirksam = match lage.usergrenze_db {
+        Some(u) if u.is_finite() && u >= 0.0 => deckel.max(u),
+        _ => deckel,
+    };
+------------------------------------------------------------------------
+
+[1] LAUF MIT RUECKNAHME - erwartet ROT (Exitcode 101)
+========================================================================
+
+running 1 test
+test hard_caps_und_engeres_userbudget_werden_nie_ueberschritten ... FAILED
+
+failures:
+
+---- hard_caps_und_engeres_userbudget_werden_nie_ueberschritten stdout ----
+
+thread 'hard_caps_und_engeres_userbudget_werden_nie_ueberschritten' (22960) panicked at tests\sonde014_proposal.rs:689:9:
+Runde 5: Budget verletzt bei Some(0.292): Grenzen { frequency_hz: Some(Wertebereich { von: 492.8316, bis: 537.4367 }), q: Some(Wertebereich { von: 3.0, bis: 12.0 }), gain_db: Some(Wertebereich { von: -1.5, bis: 1.5 }) }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    hard_caps_und_engeres_userbudget_werden_nie_ueberschritten
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.29s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.73s
+     Running tests\sonde014_proposal.rs (broker\target\debug\deps\sonde014_proposal-7c92fc847c987d9d.exe)
+error: test failed, to rerun pass `--test sonde014_proposal`
+
+[2] RUECKNAHME ZURUECKGENOMMEN, LAUF ERNEUT - erwartet GRUEN (Exitcode 0)
+========================================================================
+
+running 1 test
+test hard_caps_und_engeres_userbudget_werden_nie_ueberschritten ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.30s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.86s
+     Running tests\sonde014_proposal.rs (broker\target\debug\deps\sonde014_proposal-7c92fc847c987d9d.exe)
+
+URTEIL: OK (rot=101, gruen=0)

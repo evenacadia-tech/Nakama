@@ -1,0 +1,58 @@
+SONDE-014 Etappe F - Rotbeweis M-54
+========================================================================
+
+GEWERTETE ZUSAGE
+Jedes Proposal referenziert Evidenz-IDs und die Intent-Revision, GEGEN DIE der Solver gelaufen ist.
+
+GEMESSEN AN  broker/tests/sonde014_proposal.rs::evidenz_ids_und_intent_revision_sind_pflicht
+
+RUECKNAHME AM PRODUKTCODE  broker/src/coordinator/proposal.rs
+------------------------------------------------------------------------
+VORHER:
+        intent_revision: lage.intent.as_ref().map_or(0, |i| i.revision),
+
+NACHHER:
+        // RUECKNAHME M-54: die Revision wird nicht mitgefuehrt.
+        intent_revision: 0,
+------------------------------------------------------------------------
+
+[1] LAUF MIT RUECKNAHME - erwartet ROT (Exitcode 101)
+========================================================================
+
+running 1 test
+test evidenz_ids_und_intent_revision_sind_pflicht ... FAILED
+
+failures:
+
+---- evidenz_ids_und_intent_revision_sind_pflicht stdout ----
+
+thread 'evidenz_ids_und_intent_revision_sind_pflicht' (9804) panicked at tests\sonde014_proposal.rs:748:5:
+assertion `left == right` failed: die Revision, GEGEN DIE der Solver gelaufen ist
+  left: 0
+ right: 7
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    evidenz_ids_und_intent_revision_sind_pflicht
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.31s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.97s
+     Running tests\sonde014_proposal.rs (broker\target\debug\deps\sonde014_proposal-7c92fc847c987d9d.exe)
+error: test failed, to rerun pass `--test sonde014_proposal`
+
+[2] RUECKNAHME ZURUECKGENOMMEN, LAUF ERNEUT - erwartet GRUEN (Exitcode 0)
+========================================================================
+
+running 1 test
+test evidenz_ids_und_intent_revision_sind_pflicht ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.31s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.89s
+     Running tests\sonde014_proposal.rs (broker\target\debug\deps\sonde014_proposal-7c92fc847c987d9d.exe)
+
+URTEIL: OK (rot=101, gruen=0)

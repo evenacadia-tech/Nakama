@@ -1,0 +1,55 @@
+SONDE-014 Etappe F - Rotbeweis M-42
+========================================================================
+
+GEWERTETE ZUSAGE
+Ein Proposal traegt die fuenfzehn Felder aus §42.1 plus `revert` - und keines mehr.
+
+GEMESSEN AN  broker/tests/sonde014_proposal.rs::proposal_traegt_die_fuenfzehn_felder
+
+RUECKNAHME AM PRODUKTCODE  broker/src/coordinator/proposal_verdrahtung.rs
+------------------------------------------------------------------------
+VORHER:
+        objekt.insert("revert".into(), Value::String(p.revert.wire().into()));
+
+NACHHER:
+        // RUECKNAHME M-42: das Pflichtfeld faellt weg.
+------------------------------------------------------------------------
+
+[1] LAUF MIT RUECKNAHME - erwartet ROT (Exitcode 101)
+========================================================================
+
+running 1 test
+test proposal_traegt_die_fuenfzehn_felder ... FAILED
+
+failures:
+
+---- proposal_traegt_die_fuenfzehn_felder stdout ----
+
+thread 'proposal_traegt_die_fuenfzehn_felder' (22268) panicked at tests\sonde014_proposal.rs:184:9:
+Pflichtfeld revert fehlt
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    proposal_traegt_die_fuenfzehn_felder
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.28s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.19s
+     Running tests\sonde014_proposal.rs (broker\target\debug\deps\sonde014_proposal-7c92fc847c987d9d.exe)
+error: test failed, to rerun pass `--test sonde014_proposal`
+
+[2] RUECKNAHME ZURUECKGENOMMEN, LAUF ERNEUT - erwartet GRUEN (Exitcode 0)
+========================================================================
+
+running 1 test
+test proposal_traegt_die_fuenfzehn_felder ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.29s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.12s
+     Running tests\sonde014_proposal.rs (broker\target\debug\deps\sonde014_proposal-7c92fc847c987d9d.exe)
+
+URTEIL: OK (rot=101, gruen=0)

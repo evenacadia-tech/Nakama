@@ -1,0 +1,61 @@
+SONDE-014 Etappe F - Rotbeweis M-46
+========================================================================
+
+GEWERTETE ZUSAGE
+`keine Aenderung` und `mehr Daten` sind gueltige Vorschlaege mit VOLLSTAENDIGEM Objekt.
+
+GEMESSEN AN  broker/tests/sonde014_proposal.rs::keine_aenderung_und_mehr_daten_sind_vorschlaege
+
+RUECKNAHME AM PRODUKTCODE  broker/src/coordinator/proposal.rs
+------------------------------------------------------------------------
+VORHER:
+fn stopbedingungen(befund: &CauseHypothesis) -> Vec<Stopbedingung> {
+    let mut aus = vec![Stopbedingung::GuardrailAbdeckung];
+
+NACHHER:
+fn stopbedingungen(befund: &CauseHypothesis) -> Vec<Stopbedingung> {
+    // RUECKNAHME M-46: ein Nichteingriff bekommt kein vollstaendiges Objekt.
+    if befund.ursachenklasse == Ursachenklasse::DatenReichenNicht {
+        return Vec::new();
+    }
+    let mut aus = vec![Stopbedingung::GuardrailAbdeckung];
+------------------------------------------------------------------------
+
+[1] LAUF MIT RUECKNAHME - erwartet ROT (Exitcode 101)
+========================================================================
+
+running 1 test
+test keine_aenderung_und_mehr_daten_sind_vorschlaege ... FAILED
+
+failures:
+
+---- keine_aenderung_und_mehr_daten_sind_vorschlaege stdout ----
+
+thread 'keine_aenderung_und_mehr_daten_sind_vorschlaege' (9636) panicked at tests\sonde014_proposal.rs:348:5:
+assertion failed: !v.stop_if.is_empty()
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    keine_aenderung_und_mehr_daten_sind_vorschlaege
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.16s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.90s
+     Running tests\sonde014_proposal.rs (broker\target\debug\deps\sonde014_proposal-7c92fc847c987d9d.exe)
+error: test failed, to rerun pass `--test sonde014_proposal`
+
+[2] RUECKNAHME ZURUECKGENOMMEN, LAUF ERNEUT - erwartet GRUEN (Exitcode 0)
+========================================================================
+
+running 1 test
+test keine_aenderung_und_mehr_daten_sind_vorschlaege ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.15s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.19s
+     Running tests\sonde014_proposal.rs (broker\target\debug\deps\sonde014_proposal-7c92fc847c987d9d.exe)
+
+URTEIL: OK (rot=101, gruen=0)

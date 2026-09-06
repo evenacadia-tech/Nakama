@@ -1,0 +1,55 @@
+SONDE-014 Etappe F - Rotbeweis Gitter
+========================================================================
+
+GEWERTETE ZUSAGE
+Die Bandmitte folgt der Regel des EINGEFRORENEN Gitters - keine zweite Tabelle im Broker.
+
+GEMESSEN AN  broker/tests/sonde014_proposal.rs::bandmitte_folgt_dem_eingefrorenen_gitter
+
+RUECKNAHME AM PRODUKTCODE  broker/src/coordinator/proposal.rs
+------------------------------------------------------------------------
+VORHER:
+pub const GITTER_REFERENZ_HZ: f64 = 1000.0;
+
+NACHHER:
+pub const GITTER_REFERENZ_HZ: f64 = 1001.0; // RUECKNAHME: eine zweite Wahrheit
+------------------------------------------------------------------------
+
+[1] LAUF MIT RUECKNAHME - erwartet ROT (Exitcode 101)
+========================================================================
+
+running 1 test
+test bandmitte_folgt_dem_eingefrorenen_gitter ... FAILED
+
+failures:
+
+---- bandmitte_folgt_dem_eingefrorenen_gitter stdout ----
+
+thread 'bandmitte_folgt_dem_eingefrorenen_gitter' (4144) panicked at tests\sonde014_proposal.rs:435:9:
+Band 0: Regel 30.832776932463375 gegen Gitter 30.80197495750586
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    bandmitte_folgt_dem_eingefrorenen_gitter
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.00s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.77s
+     Running tests\sonde014_proposal.rs (broker\target\debug\deps\sonde014_proposal-7c92fc847c987d9d.exe)
+error: test failed, to rerun pass `--test sonde014_proposal`
+
+[2] RUECKNAHME ZURUECKGENOMMEN, LAUF ERNEUT - erwartet GRUEN (Exitcode 0)
+========================================================================
+
+running 1 test
+test bandmitte_folgt_dem_eingefrorenen_gitter ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.00s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.66s
+     Running tests\sonde014_proposal.rs (broker\target\debug\deps\sonde014_proposal-7c92fc847c987d9d.exe)
+
+URTEIL: OK (rot=101, gruen=0)

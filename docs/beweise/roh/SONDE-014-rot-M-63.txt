@@ -1,0 +1,58 @@
+SONDE-014 Etappe F - Rotbeweis M-63
+========================================================================
+
+GEWERTETE ZUSAGE
+Der manuelle Busvorschlag ist DIESELBE Struktur wie jedes andere Proposal, mit Rueckweg `manual_only`.
+
+GEMESSEN AN  broker/tests/sonde014_proposal.rs::manueller_busvorschlag_ist_ein_proposal
+
+RUECKNAHME AM PRODUKTCODE  broker/src/coordinator/proposal.rs
+------------------------------------------------------------------------
+VORHER:
+        Aktion::ManualGuidance => Rueckweg::ManualOnly,
+
+NACHHER:
+        // RUECKNAHME M-63: der Busvorschlag bekommt einen fremden Rueckweg.
+        Aktion::ManualGuidance => Rueckweg::NoneNeeded,
+------------------------------------------------------------------------
+
+[1] LAUF MIT RUECKNAHME - erwartet ROT (Exitcode 101)
+========================================================================
+
+running 1 test
+test manueller_busvorschlag_ist_ein_proposal ... FAILED
+
+failures:
+
+---- manueller_busvorschlag_ist_ein_proposal stdout ----
+
+thread 'manueller_busvorschlag_ist_ein_proposal' (22968) panicked at tests\sonde014_proposal.rs:799:5:
+assertion `left == right` failed: er nimmt sich selbst zurueck
+  left: NoneNeeded
+ right: ManualOnly
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    manueller_busvorschlag_ist_ein_proposal
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.29s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.88s
+     Running tests\sonde014_proposal.rs (broker\target\debug\deps\sonde014_proposal-7c92fc847c987d9d.exe)
+error: test failed, to rerun pass `--test sonde014_proposal`
+
+[2] RUECKNAHME ZURUECKGENOMMEN, LAUF ERNEUT - erwartet GRUEN (Exitcode 0)
+========================================================================
+
+running 1 test
+test manueller_busvorschlag_ist_ein_proposal ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.35s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.88s
+     Running tests\sonde014_proposal.rs (broker\target\debug\deps\sonde014_proposal-7c92fc847c987d9d.exe)
+
+URTEIL: OK (rot=101, gruen=0)

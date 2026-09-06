@@ -1,0 +1,59 @@
+SONDE-014 Etappe F - Rotbeweis M-49
+========================================================================
+
+GEWERTETE ZUSAGE
+Eine geschuetzte Eigenschaft ist eine HARTE Constraint - kein Gewicht, das ein guter Rang ueberstimmt.
+
+GEMESSEN AN  broker/tests/sonde014_proposal.rs::geschuetzte_eigenschaft_ist_harte_constraint
+
+RUECKNAHME AM PRODUKTCODE  broker/src/coordinator/proposal.rs
+------------------------------------------------------------------------
+VORHER:
+        if intent.schutz_verletzt(&befund.candidate_source, befund.band_hz.von, befund.band_hz.bis)
+        {
+            return Some(Solvergrund::IntentSchutz);
+        }
+
+NACHHER:
+        // RUECKNAHME M-49: der Schutz wird zum Hinweis statt zur Grenze.
+        let _ = intent;
+------------------------------------------------------------------------
+
+[1] LAUF MIT RUECKNAHME - erwartet ROT (Exitcode 101)
+========================================================================
+
+running 1 test
+test geschuetzte_eigenschaft_ist_harte_constraint ... FAILED
+
+failures:
+
+---- geschuetzte_eigenschaft_ist_harte_constraint stdout ----
+
+thread 'geschuetzte_eigenschaft_ist_harte_constraint' (5356) panicked at tests\sonde014_proposal.rs:500:5:
+ein geschuetztes Band traegt keinen Eingriff: DynamicEqCut
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    geschuetzte_eigenschaft_ist_harte_constraint
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.29s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.82s
+     Running tests\sonde014_proposal.rs (broker\target\debug\deps\sonde014_proposal-7c92fc847c987d9d.exe)
+error: test failed, to rerun pass `--test sonde014_proposal`
+
+[2] RUECKNAHME ZURUECKGENOMMEN, LAUF ERNEUT - erwartet GRUEN (Exitcode 0)
+========================================================================
+
+running 1 test
+test geschuetzte_eigenschaft_ist_harte_constraint ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.30s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.79s
+     Running tests\sonde014_proposal.rs (broker\target\debug\deps\sonde014_proposal-7c92fc847c987d9d.exe)
+
+URTEIL: OK (rot=101, gruen=0)

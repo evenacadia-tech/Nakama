@@ -1,0 +1,58 @@
+SONDE-014 Etappe F - Rotbeweis M-50
+========================================================================
+
+GEWERTETE ZUSAGE
+Ein `stop_if` auf einem nicht messbaren Guardrail ist NICHT handelbar und meldet MORE DATA.
+
+GEMESSEN AN  broker/tests/sonde014_proposal.rs::stop_if_auf_nicht_messbarem_guardrail_ist_nicht_handelbar
+
+RUECKNAHME AM PRODUKTCODE  broker/src/coordinator/proposal.rs
+------------------------------------------------------------------------
+VORHER:
+    if !alle_messbar {
+
+NACHHER:
+    // RUECKNAHME M-50: ein nicht messbarer Guardrail gilt als gruen.
+    if false && !alle_messbar {
+------------------------------------------------------------------------
+
+[1] LAUF MIT RUECKNAHME - erwartet ROT (Exitcode 101)
+========================================================================
+
+running 1 test
+test stop_if_auf_nicht_messbarem_guardrail_ist_nicht_handelbar ... FAILED
+
+failures:
+
+---- stop_if_auf_nicht_messbarem_guardrail_ist_nicht_handelbar stdout ----
+
+thread 'stop_if_auf_nicht_messbarem_guardrail_ist_nicht_handelbar' (18912) panicked at tests\sonde014_proposal.rs:537:5:
+assertion `left == right` failed: M-50 woertlich: nicht handelbar, und die Meldung ist MORE DATA -          nicht eine Ersatzaktion, die den Abbruch als ueberwacht ausgibt
+  left: ManualGuidance
+ right: MoreData
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    stop_if_auf_nicht_messbarem_guardrail_ist_nicht_handelbar
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.30s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.41s
+     Running tests\sonde014_proposal.rs (broker\target\debug\deps\sonde014_proposal-7c92fc847c987d9d.exe)
+error: test failed, to rerun pass `--test sonde014_proposal`
+
+[2] RUECKNAHME ZURUECKGENOMMEN, LAUF ERNEUT - erwartet GRUEN (Exitcode 0)
+========================================================================
+
+running 1 test
+test stop_if_auf_nicht_messbarem_guardrail_ist_nicht_handelbar ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.28s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.04s
+     Running tests\sonde014_proposal.rs (broker\target\debug\deps\sonde014_proposal-7c92fc847c987d9d.exe)
+
+URTEIL: OK (rot=101, gruen=0)

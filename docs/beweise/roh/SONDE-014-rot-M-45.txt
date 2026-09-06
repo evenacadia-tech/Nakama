@@ -1,0 +1,59 @@
+SONDE-014 Etappe F - Rotbeweis M-45
+========================================================================
+
+GEWERTETE ZUSAGE
+In P5 ist JEDE Aktion `manual`; `previewable` ist ein Vertragsbruch, kein Vorgriff.
+
+GEMESSEN AN  broker/tests/sonde014_proposal.rs::in_p5_ist_jede_aktion_manual
+
+RUECKNAHME AM PRODUKTCODE  broker/src/coordinator/proposal.rs
+------------------------------------------------------------------------
+VORHER:
+        // Schritt 5: in P5 ist JEDE Aktion `manual`.
+        execution: Ausfuehrung::Manual,
+
+NACHHER:
+        // RUECKNAHME M-45: previewable in P5.
+        execution: Ausfuehrung::Previewable,
+------------------------------------------------------------------------
+
+[1] LAUF MIT RUECKNAHME - erwartet ROT (Exitcode 101)
+========================================================================
+
+running 1 test
+test in_p5_ist_jede_aktion_manual ... FAILED
+
+failures:
+
+---- in_p5_ist_jede_aktion_manual stdout ----
+
+thread 'in_p5_ist_jede_aktion_manual' (24220) panicked at tests\sonde014_proposal.rs:306:9:
+assertion `left == right` failed: more_data traegt previewable
+  left: Previewable
+ right: Manual
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    in_p5_ist_jede_aktion_manual
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.27s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.93s
+     Running tests\sonde014_proposal.rs (broker\target\debug\deps\sonde014_proposal-7c92fc847c987d9d.exe)
+error: test failed, to rerun pass `--test sonde014_proposal`
+
+[2] RUECKNAHME ZURUECKGENOMMEN, LAUF ERNEUT - erwartet GRUEN (Exitcode 0)
+========================================================================
+
+running 1 test
+test in_p5_ist_jede_aktion_manual ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.30s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.76s
+     Running tests\sonde014_proposal.rs (broker\target\debug\deps\sonde014_proposal-7c92fc847c987d9d.exe)
+
+URTEIL: OK (rot=101, gruen=0)

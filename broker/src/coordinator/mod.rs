@@ -41,6 +41,8 @@ mod subscription;
 mod uhr;
 pub mod experiment;
 mod experiment_verdrahtung;
+pub mod hypothese;
+mod hypothese_verdrahtung;
 pub mod invalidierung;
 mod invalidierung_verdrahtung;
 pub mod prepost;
@@ -57,6 +59,10 @@ pub use evidenz::{Evidenzstand, EVIDENZ_RETENTION};
 pub use intent::{IntentAbweisung, IntentBestand, SchutzangabeSpiegel, SourceIntentSpiegel,
                  INTENT_DECKEL};
 pub use prepost_verdrahtung::PAARURTEIL_DECKEL;
+pub use hypothese::{
+    Ausschluss, Ausschlussgrund, Aussageklasse, Befundkonfidenz, Befundzustand, CauseHypothesis,
+    NaechsterTest, Sicherheitsklasse, Ursachenklasse, Zielmetrik, KANDIDATEN_DECKEL,
+};
 /// Die aktive JSON-Vertragsfassung, nur fuer Beine sichtbar.
 ///
 /// Der Transport (`server_v3`) und der JSON-Leser muessen dieselbe

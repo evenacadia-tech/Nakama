@@ -319,6 +319,20 @@ pub(super) struct Stand {
     /// fluechtig; der persistente Teil liegt im append-only `event_log`.
     pub(super) assistent: HashMap<SessionKey, super::assistent::AssistentSpiegel>,
     pub(super) assistent_updates: u64,
+    /// SONDE-014 Etappe C: die Ursachenbefunde JE SITZUNG, in ihrer
+    /// Rangordnung.
+    ///
+    /// FLUECHTIG wie der Sessiongraph — die dauerhafte Form liegt in der
+    /// Projektion `findings` (`writer.rs`:572), die bis zu diesem Ticket
+    /// keinen Produzenten hatte (§2.11 L3). Ein Befund ist eine AUSSAGE ueber
+    /// Evidenz; verschwindet die Evidenz, verschwindet er mit ihr (M-24,
+    /// M-28), und genau deshalb liegt er neben `evidenz` unter demselben Lock.
+    pub(super) befunde: HashMap<SessionKey, Vec<super::hypothese::CauseHypothesis>>,
+    /// Der Evidenzbestand hat sich geaendert, und die Befunde stehen noch auf
+    /// dem alten Stand. Dasselbe Muster wie `paare_neu_bilden`: gesetzt UNTER
+    /// dem Standlock, eingeloest ausserhalb — die Rechnung nimmt sich ihr
+    /// eigenes Lock und darf den Sessiongraphen nicht anhalten.
+    pub(super) befunde_neu_bilden: bool,
     /// Der Experimentteil des Stores (M-40 bis M-51, Befund B18).
     ///
     /// Er liegt IM `Stand` und nicht daneben: die Terminalereignisse muessen
@@ -536,6 +550,8 @@ impl Default for Stand {
             intent_updates: 0,
             assistent: HashMap::new(),
             assistent_updates: 0,
+            befunde: HashMap::new(),
+            befunde_neu_bilden: false,
             experimente: super::experiment::Experimentstore::neu(),
             invalidierungen: 0,
             evidenz_ausgeschlossen: 0,

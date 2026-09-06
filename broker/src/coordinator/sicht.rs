@@ -13,6 +13,15 @@ use super::*;
 /// nach M-48 nie geben; gekappt wird also ausschliesslich Historie.
 const SNAPSHOT_VERSUCHE_MAX: usize = crate::coordinator::experiment::N_GLOBAL;
 
+/// Wie viele Befunde ein `session_snapshot` traegt.
+///
+/// Der Wert steht im Vertrag (`session_snapshot.findings.maxItems`) und ist
+/// hier benannt statt als Literal im Pfad — dieselbe Regel wie eine Zeile
+/// darueber. Er ist bewusst GROESSER als der Kandidatendeckel aus M-18: ein
+/// Befund hat hoechstens fuenf Kandidaten, aber eine Sitzung kann mehrere
+/// Befunde tragen.
+const SNAPSHOT_BEFUNDE_MAX: usize = 64;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Interventionssicht {
     pub aktive: usize,
@@ -612,6 +621,26 @@ impl Coordinator {
                 "paare".into(),
                 Value::Array(paare.into_iter().map(|(_, w)| w).collect()),
             );
+        }
+        // 🔑 SONDE-014 E-04: die Ursachenbefunde reisen ueber DENSELBEN
+        // Rueckweg wie `experimente` und `paare` — nicht ueber eine weitere
+        // Familie. Zwei Wege fuer dieselbe Sache waeren zwei Reihenfolgen und
+        // zwei Koaleszierungen.
+        //
+        // Der Vertragsdeckel ist 64 (`session_snapshot.findings.maxItems`).
+        // Gekappt wird am SCHWAECHSTEN Ende: die Liste kommt bereits in
+        // Rangordnung, und der fuehrende Befund ist der, um den es geht. Ein
+        // Schnitt am starken Ende schnitte den Befund weg und liesse seine
+        // Alternativen stehen.
+        if let Some(befunde) = stand.befunde.get(session) {
+            let findings: Vec<Value> = befunde
+                .iter()
+                .take(SNAPSHOT_BEFUNDE_MAX)
+                .map(Self::befund_json)
+                .collect();
+            if !findings.is_empty() {
+                objekt.insert("findings".into(), Value::Array(findings));
+            }
         }
         if self.store_degradiert() {
             objekt.insert("store_degraded".into(), Value::Bool(true));

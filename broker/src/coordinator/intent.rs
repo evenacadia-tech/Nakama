@@ -131,6 +131,32 @@ impl IntentBestand {
             .iter()
             .any(|s| s.quelle_id == quelle_id && s.eigenschaft == eigenschaft)
     }
+
+    /// SONDE-014 M-87: greift ein Schutz dieser Quelle IN diesem Bandbereich?
+    ///
+    /// Der Unterschied zu `geschuetzt` ist der Ort: `geschuetzt` fragt, ob die
+    /// Eigenschaft ueberhaupt geschuetzt ist, diese Funktion fragt, ob der
+    /// Schutz das Band beruehrt, um das es gerade geht. Ein Attack-Schutz an
+    /// einer Quelle darf einen Befund im Hochton nicht sperren — sonst waere
+    /// jede Schutzangabe ein globales Veto, und M-03 fuehrt sie ausdruecklich
+    /// ORTHOGONAL zur Rolle.
+    ///
+    /// Die drei bandlosen Eigenschaften (`attack`, `gewicht`, `breite`) tragen
+    /// kein Intervall und gelten deshalb fuer die GANZE Quelle: wer sie
+    /// schuetzt, schuetzt eine Eigenschaft ihres Klangs, nicht einen
+    /// Ausschnitt ihres Spektrums.
+    ///
+    /// Halboffen `[von, bis)` auf beiden Seiten — zwei Intervalle beruehren
+    /// sich nicht, wenn das eine dort endet, wo das andere beginnt.
+    pub fn schutz_verletzt(&self, quelle_id: &str, von: u32, bis: u32) -> bool {
+        self.schutzangaben.iter().any(|s| {
+            s.quelle_id == quelle_id
+                && match s.band {
+                    Some((s_von, s_bis)) => s_von < bis && von < s_bis,
+                    None => true,
+                }
+        })
+    }
 }
 
 /// M-06: hat der `fuehrt_vor`-Teilgraph einen Zyklus?

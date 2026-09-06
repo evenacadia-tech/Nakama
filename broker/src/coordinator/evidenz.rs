@@ -223,6 +223,13 @@ impl Coordinator {
         }
         // Und der PRE/POST-Join sieht den neuen Beleg (M-13/M-14, Befund B25).
         self.evidenz_paare_bilden();
+        // 🔑 SONDE-014 Etappe C: derselbe Anlass traegt die Ursachenrechnung.
+        //
+        // Sie steht NACH dem Paarjoin, nicht davor: `claim_class` = 2 haengt
+        // an einem PRE/POST-Paarurteil (§36.1, M-17), und ein Befund, der vor
+        // dem Join gebildet wuerde, saehe das Paar dieses Belegs nie. Die
+        // Rechnung nimmt sich ihr eigenes Lock und haelt hier keines.
+        self.hypothesen_bilden();
         self.heartbeat_kontakt(link_id, None)
     }
 

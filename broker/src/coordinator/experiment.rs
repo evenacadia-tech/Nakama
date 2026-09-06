@@ -845,6 +845,23 @@ impl Experimentstore {
         self.log = log;
     }
 
+    /// Die JUENGSTE Passage eines Projekts (SONDE-014 M-23).
+    ///
+    /// Passagen entstehen mit dem `experiment_begin`, das sie nennt
+    /// (`experiment_verdrahtung.rs`), und tragen selbst keine
+    /// Projektbindung — die haengt am Versuch. Die Auswahl laeuft deshalb
+    /// ueber die Versuche und nicht ueber `passagen`: sonst faende eine
+    /// Sitzung die Passage einer anderen.
+    ///
+    /// „Juengste" ist die groesste `folge`, also die Anlegereihenfolge des
+    /// Brokers — nicht die groesste Projektzeit. Wer nach Projektzeit
+    /// sortierte, holte nach einem Sprung an den Songanfang die falsche.
+    pub fn juengste_passage_im_projekt(&self, bindung: &str) -> Option<&Passage> {
+        self.alle_im_projekt(bindung)
+            .max_by_key(|e| e.folge)
+            .and_then(|e| self.passagen.get(&e.passage_id))
+    }
+
     pub fn passage(&self, id: &str) -> Option<&Passage> {
         self.passagen.get(id)
     }

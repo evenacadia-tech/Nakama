@@ -66,15 +66,23 @@ impl Coordinator {
             // koennte. Der Ausschluss steht, und es gibt keine Zustellschuld.
             Ok(None) => {
                 self.paare_bei_bedarf_bilden();
+                self.befunde_nach_ruecknahme_zustellen(session, betroffen);
                 Ok(betroffen)
             }
             Ok(Some(event_ord)) => {
                 self.invalidierung_zustellen(&wirkung, event_ord);
                 self.paare_bei_bedarf_bilden();
+                self.befunde_nach_ruecknahme_zustellen(session, betroffen);
                 Ok(betroffen)
             }
             Err(()) => {
                 self.invalidierung_ruecknehmen(wirkung);
+                // Die Ruecknahme hat die Befunde als neu zu bilden markiert;
+                // eingeloest wird sie HIER und nicht erst beim naechsten
+                // Evidenzsnapshot. Sonst bliebe der Befund `stale`, solange
+                // keine neue Evidenz kommt — und genau in dem Zustand ist der
+                // Store degradiert, in dem sie ausbleiben kann.
+                self.hypothesen_bei_bedarf_bilden();
                 Err(())
             }
         }
@@ -96,6 +104,14 @@ impl Coordinator {
         }
         let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         let mut zurueck: Vec<(ClientKey, usize)> = Vec::new();
+        // 🔑 SONDE-014 M-24: die Menge der markierten Evidenz-IDs.
+        //
+        // Sie ist ein `BTreeSet` und kein `Vec`, weil M-24 „deterministisch"
+        // woertlich so definiert: „dieselbe Ruecknahme in anderer Reihenfolge
+        // trifft dieselbe Menge". Eine Liste haette eine Reihenfolge, die
+        // niemand braucht und an der ein spaeterer Leser sich orientieren
+        // koennte.
+        let mut genommene_ids: BTreeSet<String> = BTreeSet::new();
         let keys: Vec<ClientKey> = stand
             .evidenz
             .keys()
@@ -120,6 +136,7 @@ impl Coordinator {
                     .erfasst(&eintrag.evidence_id, von, bis)
                 {
                     eintrag.ausschlussgrund = Some(invalidierung.grund.wort().to_string());
+                    genommene_ids.insert(eintrag.evidence_id.clone());
                     zurueck.push((key.clone(), index));
                 }
             }
@@ -132,6 +149,25 @@ impl Coordinator {
         if betroffen > 0 {
             stand.paare_neu_bilden = true;
         }
+        // 🔑 SONDE-014 M-24/M-28: die abhaengigen Hypothesen fallen UNTER
+        // DEMSELBEN LOCK, in dem die Evidenz markiert wurde.
+        //
+        // Reihenfolge woertlich aus M-24: Umfang aufloesen → Evidenz-IDs
+        // markieren → jede Hypothese, deren `evidence_ids` eine davon
+        // enthaelt, terminal invalidieren. Laege der letzte Schritt
+        // ausserhalb, koennte eine gleichzeitige Neurechnung dieselbe
+        // Hypothese zwischen Markierung und Invalidierung wieder aufbauen —
+        // und Gen saehe eine Behauptung ueber Belege, die es nicht mehr gibt.
+        //
+        // ⚠️ Und genau deshalb wird hier NICHT `befunde_neu_bilden` gesetzt.
+        // „Terminal" heisst: diese Ruecknahme laesst die Hypothese nicht
+        // gueltig zurueck. Eine Neurechnung unmittelbar danach rechnete sie
+        // aus den VERBLIEBENEN Belegen frisch auf und haette den Zustand
+        // `stale` in derselben Bewegung wieder weggeraeumt — die
+        // Invalidierung waere ein Flackern gewesen, kein Zustand. Neu
+        // gerechnet wird erst, wenn NEUES Material ankommt; dann ruht die
+        // Aussage auch wirklich auf neuem Material.
+        Self::befunde_invalidieren_locked(&mut stand, session, &genommene_ids);
         stand.invalidierungen = stand.invalidierungen.saturating_add(1);
         stand.evidenz_ausgeschlossen =
             stand.evidenz_ausgeschlossen.saturating_add(betroffen as u64);
@@ -175,6 +211,18 @@ impl Coordinator {
         // Der Merker faellt mit: die Aenderung, die ihn setzte, gibt es nicht
         // mehr. Ein stehengebliebener Merker triebe eine Neubildung ohne Anlass.
         stand.paare_neu_bilden = false;
+        // 🔑 SONDE-014 M-24, Gegenrichtung: die Befunde muessen SEHR WOHL neu
+        // gebildet werden.
+        //
+        // Der Unterschied zu den Paaren ist die Richtung der Wirkung. Die
+        // Paare waren unveraendert, weil ihre Neubildung nie lief; die
+        // Befunde dagegen wurden unter demselben Lock bereits terminal
+        // invalidiert. Sie hier stehen zu lassen hiesse: die Evidenz ist
+        // zurueck, die Behauptung darueber bleibt `stale` — eine Sperre ohne
+        // Grund, die kein Ereignis mehr aufheben wuerde. Die Rechnung ist
+        // eine reine Funktion des Evidenzbestands und stellt den alten Stand
+        // deterministisch wieder her.
+        stand.befunde_neu_bilden = true;
         stand.invalidierungen = stand.invalidierungen.saturating_sub(1);
         stand.evidenz_ausgeschlossen = stand
             .evidenz_ausgeschlossen
@@ -324,6 +372,25 @@ impl Coordinator {
                 let _ = store.snapshot_schuld_kompaktieren(ziel.clone(), event_ord);
             }
         }
+    }
+
+    /// Schiebt den `session_snapshot` nach, wenn eine Ruecknahme Befunde
+    /// getroffen hat (SONDE-014 M-24/M-28).
+    ///
+    /// Die `evidence_invalidate`-Nachricht daneben sagt, WELCHE Evidenz
+    /// zurueckgenommen wurde; sie sagt nicht, welche Behauptung damit
+    /// unsichtbar oder `stale` geworden ist. Ohne diesen Push zeigte Gen
+    /// einen Befund weiter, dessen Belege der Broker gerade verworfen hat —
+    /// genau die Behauptung ohne Beleg, die das Exit-Gate ausschliesst.
+    fn befunde_nach_ruecknahme_zustellen(&self, session: &SessionKey, betroffen: usize) {
+        if betroffen == 0 {
+            return;
+        }
+        {
+            let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+            stand.dirty_sessions.insert(session.clone());
+        }
+        self.flush_session(session, None);
     }
 
     /// Der Link, ueber den ein Abonnent dieses Ziels erreichbar ist.

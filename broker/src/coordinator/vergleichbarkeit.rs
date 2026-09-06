@@ -159,6 +159,42 @@ pub const GATE_MATERIAL_COSINE: f64 = 0.95;
 /// Siegerlabel").
 pub const GATE_ABDECKUNG: f32 = 0.5;
 
+/// Wie viele UNABHAENGIGE Evidenzfenster je beteiligter Quelle eine Passage
+/// mindestens tragen muss, damit ein Befund die Sicherheit `hoch` erreicht
+/// (SONDE-014 R1, M-23).
+///
+/// ── WARUM DIE VIER GATES DARUEBER NICHT REICHEN ──────────────────────────
+///
+/// Die Matrixpruefung 1 hat den Defekt D1 genau hier gefunden: `ueberdeckung`
+/// rechnet RELATIV und normiert auf das kuerzere Fenster. Zwei identische,
+/// beliebig kurze Passagen bestehen deshalb alle vier Gates mit 1,0 — „zu
+/// kurz" war nie gemessen. Die Groesse, die hier fehlt, ist eine ABSOLUTE:
+/// wie viel unabhaengiges Material hinter dem Vergleich steht.
+///
+/// Gezaehlt werden FENSTER, nicht Wanddauer. Das ist dieselbe Wahl wie in
+/// `Passagenprofil::abdeckung` (Zeile 108 f.): „GEMESSENE Signalabdeckung —
+/// nicht die Wanddauer". Eine Passage ueber zwei Minuten Stille traegt keine
+/// Aussage, und eine ueber vier Sekunden dichtes Material sehr wohl.
+///
+/// ── WOHER DIE 8 KOMMT ────────────────────────────────────────────────────
+///
+/// `kEvidenzIntervallMinS` = 0,25 s liefert bis zu vier Fenster je Sekunde,
+/// bei Kadenzreduktion eines. Acht Fenster sind damit 2 bis 8 s und geben dem
+/// Block-Bootstrap (`BOOTSTRAP_BLOCK` = 4) mindestens zwei Bloecke — dieselbe
+/// Untergrenze, die SONDE-013 M-11 fuer die Welch-Mittelung setzt.
+///
+/// ⚠️ STARTWERT, kein Vertragswert. Etappe H zieht ihn am P5-Korpus fest
+/// (Sessions „zu kurze Passage" und „verschobene Passage"). Er steht bewusst
+/// HIER neben den vier bestehenden Gates und nirgendwo sonst: eine zweite
+/// Schwellenfamilie waere genau der Rueckfall, den M-29 ausschliesst.
+///
+/// ⚠️ NICHT im Register `metriken-v1.json` — noch nicht. Entscheid E-12 des
+/// Dirigenten (06.09.2026): Etappe C baut die Konstante OHNE Versionsschritt,
+/// weil das Gate im Broker angewendet wird und keinen Messwert der Engine
+/// aendert. Der eine erlaubte Sprung der `metrics_version` liegt in Etappe H,
+/// zusammen mit der Kalibrierung und den uebrigen Rangkonstanten.
+pub const GATE_MINDEST_FENSTER: usize = 8;
+
 /// Ueberdeckung zweier Projektfenster, normiert auf das KUERZERE.
 ///
 /// ⚠️ Saettigend gerechnet. Zwei gueltige Fenster an entgegengesetzten

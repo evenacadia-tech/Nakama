@@ -28,6 +28,10 @@
     { "$ref": "#/$defs/preview_end" },
     { "$ref": "#/$defs/command_ack" },
     { "$ref": "#/$defs/state_report" },
+    { "$ref": "#/$defs/intent_update" },
+    { "$ref": "#/$defs/assistant_step_update" },
+    { "$ref": "#/$defs/draft_offer" },
+    { "$ref": "#/$defs/user_verdict" },
     { "$ref": "#/$defs/error" }
   ],
 
@@ -1096,6 +1100,13 @@
           "type": "boolean",
           "const": true
         },
+        "findings": {
+          "$comment": "SONDE-014 E-04, seit Wire-Envelope-schema_minor 3 optional belegt: die Ursachenbefunde dieser Sitzung auf dem Rueckweg zu Gen — mit Zustand, den sechs Teilen aus §8, den drei Anzeigezeilen, den Evidenz-IDs, der verwendeten Intent-Revision, den Ausschlussgruenden und je Befund dem optionalen Maskierungswert. Der Rueckweg laeuft ueber den bestehenden Outbox-/Snapshot-Pfad statt ueber eine weitere Familie, genau wie `experimente` und `paare` in der Fassung 2. Abwesenheit heisst 'diese Sitzung fuehrt keine Befunde', nie 'alle geschlossen'.",
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 64,
+          "items": { "$ref": "#/$defs/session_finding" }
+        },
         "mitglieder": {
           "type": "array",
           "minItems": 0,
@@ -1575,6 +1586,517 @@
       }
     },
 
+    "intent_rolle": {
+      "$comment": "SONDE-014 (P5), Antwort U22 vom 06.09.2026: eine Quelle kann GENAU FUENF musikalische Rollen bekommen. Impuls und Raum sind KEINE Rollen — kurze Anschlaege haengen an `intent_schutz`, Hall und Breite an `intent_beziehung.darf_verschmelzen` (§37.1). Die Menge lebt an DIESER einen Stelle im Vertrag; C++ und Rust pruefen gegen sie. Die §37.1-Belegung (prominence, Funktionstag, Veto) wird daraus ABGELEITET und nie getrennt uebertragen — zwei Wahrheiten fuer dieselbe Aussage waeren ein Verstoss gegen §33.5.",
+      "enum": ["fuehrt", "traegt", "begleitet", "geschuetzt", "verschmolzen"]
+    },
+
+    "intent_herkunft": {
+      "$comment": "§37.1: Herkunft eines Intentwerts. Eine abgeleitete Vermutung (`inferred`) ueberschreibt einen Userwert NIE und bleibt als abgeleitet erkennbar (§37.2, §37.4).",
+      "enum": ["user", "template", "inferred"]
+    },
+
+    "intent_beziehungsart": {
+      "$comment": "§37.1 gerichtete Beziehungen. `gleichrangig` ist der von §37.2 woertlich verlangte Speicherplatz fuer einen aufgeloesten Zyklus: 'ein Zyklus muss aufgeloest oder als nicht steuerbare Gleichrangigkeit gespeichert werden'. Dass der `fuehrt_vor`-Teilgraph ZYKLENFREI ist, kann diese Schluesselwortmenge nicht ausdruecken — die Regel gehoert dem Consumer und steht in schemas/v3/README.md.",
+      "enum": ["fuehrt_vor", "darf_verschmelzen", "gleichrangig"]
+    },
+
+    "intent_schutzeigenschaft": {
+      "$comment": "§37.1 geschuetzte Eigenschaften einer Quelle: Attack, Breite, Ausklang oder ein Bandintervall. Orthogonal zur Rolle — eine Quelle mit Rolle `begleitet` kann Attack geschuetzt haben, und ein Rollenwechsel loescht keinen Schutzbereich.",
+      "enum": ["attack", "breite", "ausklang", "band"]
+    },
+
+    "bandintervall": {
+      "$comment": "Halboffenes Intervall [von, bis) im eingefrorenen Evidenzgitter `nakama_1_24_oct_30_18k_v1` (221 Baender). Frequenzen entstehen ausschliesslich aus den `kanten_hz` dieses Gitters; es entsteht KEINE zweite Frequenzachse. Band 0 ist gueltig, 220 das letzte, und `bis` darf deshalb 221 sein. Dass `von < bis` gilt, ist ein Feldvergleich und gehoert dem Consumer.",
+      "type": "object",
+      "required": ["von", "bis"],
+      "additionalProperties": false,
+      "properties": {
+        "von": { "type": "integer", "minimum": 0, "maximum": 220 },
+        "bis": { "type": "integer", "minimum": 1, "maximum": 221 }
+      }
+    },
+
+    "source_intent": {
+      "$comment": "§37.1 `SourceIntent`. Autoritativ liegt er im `MainProjectState` des Gen-Plugins (§33.5); diese Form ist der SPIEGEL auf der Leitung. Eine Quelle traegt je Scope — global (ohne `passage_id`) oder Passage — genau eine Rolle.",
+      "type": "object",
+      "required": ["quelle_id", "rolle", "revision", "herkunft", "konfidenz"],
+      "additionalProperties": false,
+      "properties": {
+        "quelle_id": { "$ref": "#/$defs/hex32" },
+        "passage_id": {
+          "$comment": "Abwesenheit heisst GLOBALER Scope, nie `null`. §37.2 Stufe 3: der passagespezifische Intent gewinnt vor dem globalen.",
+          "$ref": "#/$defs/hex32"
+        },
+        "rolle": { "$ref": "#/$defs/intent_rolle" },
+        "revision": { "type": "integer", "minimum": 1 },
+        "herkunft": { "$ref": "#/$defs/intent_herkunft" },
+        "konfidenz": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+
+    "intent_schutz": {
+      "$comment": "§37.1 Schutzangabe an einer Quelle. `band` traegt zusaetzlich ein Bandintervall, die drei uebrigen Eigenschaften keines — dass beides zusammenpasst, ist ein Feldvergleich und gehoert dem Consumer.",
+      "type": "object",
+      "required": ["quelle_id", "eigenschaft"],
+      "additionalProperties": false,
+      "properties": {
+        "quelle_id": { "$ref": "#/$defs/hex32" },
+        "eigenschaft": { "$ref": "#/$defs/intent_schutzeigenschaft" },
+        "band": { "$ref": "#/$defs/bandintervall" }
+      }
+    },
+
+    "intent_beziehung": {
+      "$comment": "§37.1 gerichtete Beziehung zwischen zwei Quellen. Genau eine Beziehung je geordnetem Paar; dass `quelle_a` und `quelle_b` verschieden sind, ist ein Feldvergleich und gehoert dem Consumer.",
+      "type": "object",
+      "required": ["quelle_a", "quelle_b", "art"],
+      "additionalProperties": false,
+      "properties": {
+        "quelle_a": { "$ref": "#/$defs/hex32" },
+        "quelle_b": { "$ref": "#/$defs/hex32" },
+        "art": { "$ref": "#/$defs/intent_beziehungsart" }
+      }
+    },
+
+    "intent_update": {
+      "$comment": "SONDE-014 E-10 (M-85, M-86): der Weg des musikalischen Intents vom Main zum Broker. Der Name folgt dem Schnitt der uebrigen Familien — Gegenstand plus Vorgang — und sagt, dass es eine FORTSCHREIBUNG MIT REVISION ist, keine Anfrage; `state_report` traegt Plugin-Identitaet, `session_command` den Sessiongraphen, keiner von beiden die musikalische Absicht. Klasse P1 mit Schluessel `intent:<quelle_id>:<passage_id oder global>`; Koaleszierung ist zulaessig, weil nur die juengste Revision wirkt. `vollstaendig` ist die VOLLSTAENDIGKEITSMARKE: `true` heisst 'dies ist der ganze Bestand samt `bestand_revision`' — auch ein LEERER —, und erst danach rechnet der Broker Hypothesen oder Proposals (M-86). Ein Veto darf durch Transportverlust nie verschwinden. Bei `vollstaendig = false` traegt die Nachricht genau EINEN Eintrag in genau EINER der drei Listen; das ist ein Feldvergleich und gehoert dem Consumer.",
+      "type": "object",
+      "required": ["type", "adresse", "session_epoch", "bestand_revision", "vollstaendig"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "intent_update" },
+        "adresse": { "$ref": "#/$defs/adresse" },
+        "session_epoch": { "$ref": "#/$defs/hex32" },
+        "bestand_revision": {
+          "$comment": "Revision des GANZEN Bestands, nicht die eines Objekts. 0 heisst 'nie etwas gesetzt' und ist zusammen mit `vollstaendig = true` die ehrliche Meldung eines leeren Bestands.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "vollstaendig": { "type": "boolean" },
+        "intents": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 256,
+          "items": { "$ref": "#/$defs/source_intent" }
+        },
+        "schutzangaben": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 256,
+          "items": { "$ref": "#/$defs/intent_schutz" }
+        },
+        "beziehungen": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 256,
+          "items": { "$ref": "#/$defs/intent_beziehung" }
+        }
+      }
+    },
+
+    "assistant_schritt": {
+      "$comment": "§46.1: die Zustandsfolge des Assistenten. `preview` BLEIBT in der Menge — der Zustand existiert, P5 fuehrt nur keine Kante dorthin, und ein gespeicherter Schritt mit `preview` ist in P5 ein LESEFEHLER, kein stiller Sprung (SONDE-014 E-07). Ihn hier wegzulassen hiesse, ihn in P6 neu erfinden zu muessen.",
+      "enum": ["coverage", "finding", "evidence", "listen", "proposal", "preview", "remeasure", "verdict"]
+    },
+
+    "assistant_step_update": {
+      "$comment": "SONDE-014 E-11 (M-88, M-89): die Schwesterfamilie von `intent_update` fuer den aktuellen `AssistantStep`. §33.5 (Zeile 2147) sagt den versionierten SQLite-SPIEGEL des Schritts zu; `state_report` ist strikt und traegt keinen Schritt, `intent_update` transportiert nur den Intent — ohne diese Familie haette der zugesagte Spiegel keinen Produktpfad. Klasse P1 mit Schluessel `assistant_step:<session_id>`, koaleszierend, weil nur die juengste Revision wirkt. Der Spiegel ist NIE autoritativ: bei Widerspruch gewinnt der neuere Main-State (§33.5).",
+      "type": "object",
+      "required": ["type", "adresse", "session_epoch", "step_id", "schritt", "revision", "offen"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "assistant_step_update" },
+        "adresse": { "$ref": "#/$defs/adresse" },
+        "session_epoch": { "$ref": "#/$defs/hex32" },
+        "step_id": { "$ref": "#/$defs/hex32" },
+        "schritt": { "$ref": "#/$defs/assistant_schritt" },
+        "revision": { "type": "integer", "minimum": 1 },
+        "offen": {
+          "$comment": "`false` heisst: der Schritt ist terminal (abgeschlossen oder abgebrochen). Verwerfen ist ein terminales Ereignis, kein Loeschen der Historie (§46.1).",
+          "type": "boolean"
+        },
+        "finding_id": { "$ref": "#/$defs/hex32" },
+        "proposal_id": { "$ref": "#/$defs/hex32" },
+        "experiment_id": { "$ref": "#/$defs/hex32" }
+      }
+    },
+
+    "ursachenklasse": {
+      "$comment": "Die SIEBEN Ursachenklassen aus Entwurf §8, geschlossen. Die siebte (`daten_reichen_nicht`) ist ein REGULAERES Ergebnis, kein Fehlerzweig — im Evaluationskorpus zaehlt sie als Enthaltung, nicht als Fehlschlag.",
+      "enum": [
+        "quelle_resonanz",
+        "zwei_quellen_konkurrenz",
+        "effektkette_pre_post",
+        "summe_auf_master",
+        "peak_aus_transient",
+        "stereo_aus_quelle_oder_kette",
+        "daten_reichen_nicht"
+      ]
+    },
+
+    "aussageklasse": {
+      "$comment": "Die drei sichtbar getrennten Aussageklassen aus §36.1. Aus paralleler Telemetrie allein entsteht NIE `wirkungsbeleg` oder `ursachenbeleg`: der Wirkungsbeleg verlangt ein PRE/POST-Paar, der Ursachenbeleg eine kontrollierte Preview — und die gibt es in P5 nicht (§42.2 Punkt 5).",
+      "enum": ["zusammenhang", "wirkungsbeleg", "ursachenbeleg"]
+    },
+
+    "sicherheitsklasse": {
+      "$comment": "Die drei Sicherheitsstufen aus Entwurf §8 'Ergebnisform'. Sie werden im Datenweg auf `befund_zustand` ABGEBILDET; die Anzeige liest den Zustand und raet nie (Abnahme U21 vom 02.09.2026).",
+      "enum": ["hoch", "mittel", "unklar"]
+    },
+
+    "befund_zustand": {
+      "$comment": "Abnahme U21 (02.09.2026, Fuenferblock 03): genau drei Zustaende. NUR `ready_to_send` erlaubt Audition und Draft; `more_data` und `stale` bieten KEINEN Draft an, und die Sperre liegt im Datenweg, nicht in einer ausgegrauten Schaltflaeche. Die Woerter sind die maschinenlesbare Form der Anzeigebegriffe READY TO SEND, MORE DATA und STALE.",
+      "enum": ["ready_to_send", "more_data", "stale"]
+    },
+
+    "befund_konfidenz": {
+      "$comment": "§36.3: `class` UND `score` sind ZWEI Felder. Die Klasse wird nicht aus dem Score gerundet — sonst waere eine harte Gate-Regel (M-20) durch einen schoenen Mittelwert zu ueberstimmen. STRIKT, anders als `$defs/konfidenz`: das dort ist die Messqualitaet der Passage, dies hier die Sicherheit des Befunds. Beide duerfen nicht vermischt werden.",
+      "type": "object",
+      "required": ["class", "score"],
+      "additionalProperties": false,
+      "properties": {
+        "class": { "$ref": "#/$defs/sicherheitsklasse" },
+        "score": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+
+    "zielmetrik": {
+      "$comment": "Die Zielgroesse eines Befunds — geschlossen und an das gebunden, was der `evidence_snapshot` WIRKLICH traegt: Bandpegel und Bandspanne aus `baender`/`verteilung`, die zwei Ereignisraten aus `ereignisse`, der Seitenanteil aus `stereo`. Eine Metrik ohne Vertragsteil waere nicht messbar (M-50).",
+      "enum": [
+        "band_pegel_db",
+        "band_spanne_db",
+        "peak_ereignisrate",
+        "fluss_ereignisrate",
+        "stereo_seitenanteil_db"
+      ]
+    },
+
+    "naechster_test": {
+      "$comment": "Der billigste naechste Beweisschritt (§8 Teil 6, §46.2). `passage_messen`, `routing_bestaetigen` und `keine_aenderung_empfohlen` sind die drei Antworten, die §46.2 dem Assistenten ausdruecklich erlaubt; sie sind eigene benannte Ergebnisse, keine Leerzustaende.",
+      "enum": [
+        "passage_messen",
+        "routing_bestaetigen",
+        "pre_post_paar_messen",
+        "manueller_versuch",
+        "keine_aenderung_empfohlen",
+        "mehr_daten_sammeln"
+      ]
+    },
+
+    "ausschlussgrund": {
+      "$comment": "SONDE-014 R4 (M-87): Entwurf §59 Lieferumfang Punkt 2 verlangt AUSSCHLUSSGRUENDE. Jeder Kandidat, der aus dem Ranking ausscheidet, traegt einen Grund aus dieser geschlossenen Menge; ein kommentarlos entfernter Kandidat ist ein Defekt. Jeder Wert ist an eine Matrixzeile gebunden: coverage_fehlt und alignment_falsch an M-20, passage_unvergleichbar und passage_zu_kurz an M-23, die beiden Vetos an M-03/M-04, capability_fehlt an M-44/M-52, evidenz_zurueckgenommen an M-24.",
+      "enum": [
+        "coverage_fehlt",
+        "alignment_falsch",
+        "passage_unvergleichbar",
+        "passage_zu_kurz",
+        "intent_veto_geschuetzt",
+        "intent_veto_verschmolzen",
+        "capability_fehlt",
+        "evidenz_zurueckgenommen"
+      ]
+    },
+
+    "finding_ausschluss": {
+      "$comment": "Ein ausgeschiedener Kandidat samt Grund. Die Ausschluesse reisen MIT der Hypothese und werden im Store beim Finding erhalten; ob und wie Gen sie zeigt, ist Anzeige (S31b) und hier nicht entschieden.",
+      "type": "object",
+      "required": ["candidate_source", "grund"],
+      "additionalProperties": false,
+      "properties": {
+        "candidate_source": { "$ref": "#/$defs/hex32" },
+        "grund": { "$ref": "#/$defs/ausschlussgrund" }
+      }
+    },
+
+    "maskierung": {
+      "$comment": "SONDE-014 E-04 (M-36, M-40): der laufende, je Frequenzbereich aufloesbare Maskierungswert aus Antwort U16. Er haengt AM BEFUND und reist nicht in einer zweiten Liste — zwei Listen koennten auseinanderlaufen, und der Blueprint nennt die Zone ausdruecklich 'eine zweite Darstellung desselben Finding-Datenwegs'. Das Wort ist MASKIERUNG, nicht `ueberdeckung`: letzteres ist im Code die ZEITueberdeckung zweier Passagenfenster (vergleichbarkeit.rs) und etwas anderes. Er traegt Frequenzbereich und Wert, KEINE Farbe, keine Achse und keinen Zoom — die Engine kennt keine Optik. `herabgesetzt` meldet die Kadenzreduktion bei P1-Rueckstau; ein interpolierter Zwischenwert entsteht nie.",
+      "type": "object",
+      "required": ["quelle_a", "quelle_b", "band_von", "band_bis", "wert_db", "gueltig", "herabgesetzt"],
+      "additionalProperties": false,
+      "properties": {
+        "quelle_a": { "$ref": "#/$defs/hex32" },
+        "quelle_b": { "$ref": "#/$defs/hex32" },
+        "band_von": { "type": "integer", "minimum": 0, "maximum": 220 },
+        "band_bis": { "type": "integer", "minimum": 1, "maximum": 221 },
+        "wert_db": {
+          "$comment": "Ohne `gueltig` ist die Zahl KEINE Messung: ein Band ohne Messung traegt 0 mit `gueltig = false`, nie NaN (NaN-Ehrlichkeit, CLAUDE.md).",
+          "type": "number",
+          "minimum": -200,
+          "maximum": 200
+        },
+        "gueltig": { "type": "boolean" },
+        "herabgesetzt": { "type": "boolean" }
+      }
+    },
+
+    "rangkomponenten": {
+      "$comment": "§36.2: der Rang entsteht aus SECHS getrennten Komponenten. Sie stehen einzeln auf der Leitung, damit jeder angezeigte Zahlenwert auf ein Feld zurueckfuehrbar bleibt (§42.4). Dass keine einzelne hohe Komponente fehlende Coverage oder falsches Alignment kompensiert, ist eine harte Gate-Regel VOR der Gewichtung und kein Gewicht — sie gehoert dem Consumer.",
+      "type": "object",
+      "required": ["bandpassung", "koinzidenz", "uplift", "intent_relevanz", "wiederholbarkeit", "routingqualitaet"],
+      "additionalProperties": false,
+      "properties": {
+        "bandpassung": { "type": "number", "minimum": 0, "maximum": 1 },
+        "koinzidenz": { "type": "number", "minimum": 0, "maximum": 1 },
+        "uplift": { "type": "number", "minimum": 0, "maximum": 1 },
+        "intent_relevanz": { "type": "number", "minimum": 0, "maximum": 1 },
+        "wiederholbarkeit": { "type": "number", "minimum": 0, "maximum": 1 },
+        "routingqualitaet": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+
+    "beobachtung": {
+      "$comment": "§8 Teil 2 'Beobachtung': WAS gemessen wurde. Der Wert traegt sein Gueltigkeitsbit; ohne es ist die Zahl keine Messung.",
+      "type": "object",
+      "required": ["wert_db", "gueltig"],
+      "additionalProperties": false,
+      "properties": {
+        "wert_db": { "type": "number", "minimum": -200, "maximum": 200 },
+        "gueltig": { "type": "boolean" }
+      }
+    },
+
+    "session_finding": {
+      "$comment": "SONDE-014 E-04: der Ursachenbefund auf dem Rueckweg zu Gen. Er traegt die zehn Felder aus §36.3 UND die sechs Teile aus §8 'Ergebnisform' — Ort (`candidate_source` samt optionalem `pre_post`), Beobachtung (`target_metric`, `band_hz`, `beobachtung`), Zusammenhang (`claim_class`, `ursachenklasse`, `rang`), Alternativen (`alternatives` als IDs EIGENER Befunde, nie Freitext), Sicherheit (`confidence`) und naechster Beweisschritt (`next_test`). Die sechs Teile sind DATENMODELL und Regelbasis, keine Vorgabe, sechs Werte anzuzeigen (Abnahme U21). Gen Flaeche 1 zeigt genau drei Zeilen, und die stehen als DREI Felder hier — `likely_cause`, `smallest_test`, `listen_for` —, damit die Anzeige keine davon aus mehreren Feldern zusammensetzt. Ein BELEGTEXTFELD gibt es bewusst nicht: der Beleg ist die markierte Frequenzzone mit Ziel- und Referenzkurve, nicht ein wiederholter Text.",
+      "type": "object",
+      "required": [
+        "finding_id", "claim_class", "ursachenklasse", "target_metric", "candidate_source",
+        "band_hz", "beobachtung", "rang", "confidence", "evidence_ids", "next_test",
+        "zustand", "intent_revision", "likely_cause", "smallest_test", "listen_for"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "finding_id": { "$ref": "#/$defs/hex32" },
+        "claim_class": { "$ref": "#/$defs/aussageklasse" },
+        "ursachenklasse": { "$ref": "#/$defs/ursachenklasse" },
+        "target_metric": { "$ref": "#/$defs/zielmetrik" },
+        "candidate_source": { "$ref": "#/$defs/hex32" },
+        "pre_post": {
+          "$comment": "§8 Teil 1: die optionale PRE/POST-Stelle des Orts. Abwesenheit heisst 'die Stelle ist nicht benannt', nie `null`.",
+          "enum": ["pre", "post"]
+        },
+        "passage_id": { "$ref": "#/$defs/hex32" },
+        "band_hz": {
+          "$comment": "§36.3 nennt das Feld `band_hz`; der Name bleibt. Getragen wird ein Bandintervall des eingefrorenen Gitters — die Hertzwerte folgen aus dessen `kanten_hz` und sind keine zweite Achse.",
+          "$ref": "#/$defs/bandintervall"
+        },
+        "beobachtung": { "$ref": "#/$defs/beobachtung" },
+        "rang": { "$ref": "#/$defs/rangkomponenten" },
+        "confidence": { "$ref": "#/$defs/befund_konfidenz" },
+        "evidence_ids": {
+          "$comment": "Exit-Gate §59 woertlich: jede sichtbare Behauptung referenziert EXISTENTE Evidenz-IDs. 'Existent' ist eine Pruefung gegen den Store und gehoert dem Consumer.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/hex32" }
+        },
+        "alternatives": {
+          "$comment": "Abnahme U21: Alternativen sind EIGENE Befunde in der Liste mit eigenem Zustand. Dieses Feld traegt deshalb ihre IDs, keinen Text und keine Zweitmeinung.",
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 8,
+          "items": { "$ref": "#/$defs/hex32" }
+        },
+        "ausschluesse": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/finding_ausschluss" }
+        },
+        "maskierung": { "$ref": "#/$defs/maskierung" },
+        "next_test": { "$ref": "#/$defs/naechster_test" },
+        "zustand": { "$ref": "#/$defs/befund_zustand" },
+        "intent_revision": {
+          "$comment": "§37.3: jede auf Intent basierende Empfehlung referenziert die VERWENDETE Intent-Revision. Steigt sie, geht der Befund sichtbar in `stale`, ohne dass Zahlen nachgerechnet werden.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "likely_cause": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "smallest_test": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "listen_for": { "type": "string", "minLength": 1, "maxLength": 200 }
+      }
+    },
+
+    "proposal_aktion": {
+      "$comment": "§42.2 Punkt 1: der Befundtyp waehlt eine GEPRUEFTE Aktionstemplate. `no_change` und `more_data` sind gueltige Vorschlaege mit vollstaendigem Objekt, keine leeren Rueckgabewerte (§59 Lieferumfang).",
+      "enum": ["static_eq_cut", "dynamic_eq_cut", "trim", "manual_guidance", "no_change", "more_data"]
+    },
+
+    "proposal_execution": {
+      "$comment": "§42.2 Punkt 5. In P5 ist JEDE Aktion `manual`: `previewable` setzt exakt unterstuetzte eigene DSP-Aktionen voraus, und der aktive Kern entsteht erst in P6 (SONDE-015). Der Wert steht trotzdem im Vertrag, weil der Vertrag ihn ausdruecken koennen muss, bevor ein Bau ihn traegt — dass er in P5 ein Vertragsbruch ist, gehoert dem Consumer.",
+      "enum": ["manual", "previewable"]
+    },
+
+    "proposal_revert": {
+      "$comment": "SONDE-014 E-06 (M-43): der Rueckweg ist ein FELD, kein Versprechen im Text. Das Exit-Gate verlangt ihn woertlich neben Ziel, Passage, Grenzen, Hoerziel und Stopbedingung. `dsp_revert` gehoert P7 (`revert_transaction`, SONDE-016) und ist in P5 dieselbe Klasse Vertragsbruch wie `execution = previewable`.",
+      "enum": ["experiment_abort", "manual_only", "none_needed"]
+    },
+
+    "proposal_wirkung": {
+      "$comment": "§42.1 `expected_effect`: die erwartete Wirkung als geschlossene Menge statt als Text. `none` gehoert zu `no_change` und `more_data`.",
+      "enum": ["reduce_masking_pressure", "reduce_peak_pressure", "restore_stereo_balance", "none"]
+    },
+
+    "proposal_stopbedingung": {
+      "$comment": "§42.1 `stop_if`. Die sechs Guardrailnamen spiegeln die Konstanten aus `experiment.rs`; `keine_wiederholbare_masteraenderung` ist der zweite Fall aus dem §42.1-Beispiel. Ein Proposal, dessen Stopbedingung auf einen NICHT MESSBAREN Guardrail zeigt, ist nicht handelbar — das ist eine Consumerregel (M-50).",
+      "enum": [
+        "guardrail_abdeckung",
+        "guardrail_loudness",
+        "guardrail_peak",
+        "guardrail_transient",
+        "guardrail_breite",
+        "guardrail_geschuetzt",
+        "keine_wiederholbare_masteraenderung"
+      ]
+    },
+
+    "wertebereich": {
+      "$comment": "Ein geschlossenes Intervall [von, bis] eines Proposal-Parameters. Dass `von <= bis` gilt, ist ein Feldvergleich und gehoert dem Consumer.",
+      "type": "object",
+      "required": ["von", "bis"],
+      "additionalProperties": false,
+      "properties": {
+        "von": { "type": "number", "minimum": -1000000, "maximum": 1000000 },
+        "bis": { "type": "number", "minimum": -1000000, "maximum": 1000000 }
+      }
+    },
+
+    "proposal_parameter": {
+      "$comment": "§42.1 `parameters`. STRIKT und ohne Pflichtfeld: `no_change` und `more_data` tragen ein leeres Objekt, ein EQ-Vorschlag Frequenz, Guete und Deckelgain. Die Frequenz kommt aus dem Band des BEFUNDS, nicht aus dem groessten Betrag der Banddeltas (NAK-168).",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "frequency_hz": { "type": "number", "minimum": 1, "maximum": 24000 },
+        "q": { "type": "number", "minimum": 0.1, "maximum": 20 },
+        "max_gain_db": { "type": "number", "minimum": -24, "maximum": 24 }
+      }
+    },
+
+    "proposal_grenzen": {
+      "$comment": "§42.1 `allowed_bounds`. Dieselbe Form wie `parameters`, ein Intervall je Groesse. Die Sicherheitsbudgets aus §42.3 sind HARD CAPS ueber diesen Grenzen; eine engere Usergrenze gewinnt immer. Beides gehoert dem Consumer.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "frequency_hz": { "$ref": "#/$defs/wertebereich" },
+        "q": { "$ref": "#/$defs/wertebereich" },
+        "gain_db": { "$ref": "#/$defs/wertebereich" }
+      }
+    },
+
+    "proposal": {
+      "$comment": "§42.1: eine Empfehlung ist ZUERST ein validiertes, versioniertes Objekt und erst danach Text. Die fuenfzehn Felder des Entwurfs stehen hier vollstaendig, dazu `revert` aus SONDE-014 E-06. `protected_traits` traegt die geschuetzten Eigenschaften als HARTE Constraint in derselben Form wie der Intent — nicht als Wortliste, damit ein Verbraucher sie gegen den Bestand pruefen kann.",
+      "type": "object",
+      "required": [
+        "proposal_id", "proposal_schema", "target", "base_revision", "action",
+        "parameters", "allowed_bounds", "evidence_ids", "expected_effect",
+        "protected_traits", "listen_for", "stop_if", "execution", "confidence", "revert"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "proposal_id": { "$ref": "#/$defs/hex32" },
+        "proposal_schema": { "type": "integer", "const": 1 },
+        "target": { "$ref": "#/$defs/hex32" },
+        "base_revision": { "type": "integer", "minimum": 0 },
+        "passage_id": { "$ref": "#/$defs/hex32" },
+        "finding_id": { "$ref": "#/$defs/hex32" },
+        "action": { "$ref": "#/$defs/proposal_aktion" },
+        "parameters": { "$ref": "#/$defs/proposal_parameter" },
+        "allowed_bounds": { "$ref": "#/$defs/proposal_grenzen" },
+        "evidence_ids": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/hex32" }
+        },
+        "expected_effect": { "$ref": "#/$defs/proposal_wirkung" },
+        "protected_traits": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/intent_schutz" }
+        },
+        "listen_for": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "stop_if": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": { "$ref": "#/$defs/proposal_stopbedingung" }
+        },
+        "execution": { "$ref": "#/$defs/proposal_execution" },
+        "confidence": { "$ref": "#/$defs/befund_konfidenz" },
+        "revert": { "$ref": "#/$defs/proposal_revert" },
+        "intent_revision": {
+          "$comment": "§37.3: die Revision, gegen die der Constraint-Solver gelaufen ist — nicht die zum Anzeigezeitpunkt.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "generatorversion": {
+          "$comment": "§42.4: jeder angezeigte Zahlenwert laesst sich auf Proposal-Feld, Evidenz UND Generatorversion zurueckfuehren.",
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+
+    "draft_offer": {
+      "$comment": "SONDE-014 (P5), seit Wire-Envelope-schema_minor 3 BELEGT: der reservierte Name traegt jetzt ein `Proposal` — kleinster Versuch mit Grenzen, Hoerziel und Stopbedingung. Er reist als P1 mit Schluessel `proposal:<proposal_id>`; ein neuer Entwurf desselben Vorschlags darf den aelteren verdraengen, ein fremder nie (E-09).",
+      "type": "object",
+      "required": ["type", "kopf", "proposal"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "draft_offer" },
+        "kopf": { "$ref": "#/$defs/steuerkopf" },
+        "proposal": { "$ref": "#/$defs/proposal" }
+      }
+    },
+
+    "user_urteil": {
+      "$comment": "Das Userurteil zu einem Befund oder Vorschlag. Ausdruecklich USERDATEN, keine Messung — dieselbe Trennung wie beim `hoerurteil` des Experiments.",
+      "enum": ["angenommen", "abgelehnt", "spaeter", "enthaltung"]
+    },
+
+    "user_verdict": {
+      "$comment": "SONDE-014 (P5), seit Wire-Envelope-schema_minor 3 BELEGT: das Userurteil bindet an Finding- und Proposal-IDs, die es vor P5 nicht gab. Es reist als PERSISTENZPFLICHTIGER P0 unter derselben `command_id` ueber einen Brokerkill hinweg und KOALESZIERT NICHT — ein Userurteil, das ein anderes verdraengt, waere verlorene Userarbeit (E-09).",
+      "type": "object",
+      "required": ["type", "kopf", "user_verdict_id", "finding_id", "urteil"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "user_verdict" },
+        "kopf": { "$ref": "#/$defs/steuerkopf" },
+        "user_verdict_id": { "$ref": "#/$defs/hex32" },
+        "finding_id": { "$ref": "#/$defs/hex32" },
+        "proposal_id": { "$ref": "#/$defs/hex32" },
+        "urteil": { "$ref": "#/$defs/user_urteil" },
+        "notiz": {
+          "$comment": "User-Wort, untrusted, nie interpretiert. Abwesenheit heisst 'keine Notiz'.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        }
+      }
+    },
+
+    "experiment_ziel": {
+      "$comment": "SONDE-014 E-05 (M-48, NAK-168): der Zielbereich und die Schutzbereiche, die ein Vorschlag BENENNT und das Experiment LIEST. Bis zu dieser Fassung riet der Guardrail-Rechner das Ziel aus dem groessten Betrag der Banddeltas; mit diesem Feld raet er nichts. OHNE das Feld — der manuelle Versuch ohne Vorschlag, der SONDE-013-Pfad — bleibt die Heuristik, und das Resultat traegt das Kennzeichen `ziel_geraten`. Beide Pfade werden gemessen.",
+      "type": "object",
+      "required": ["band_von", "band_bis"],
+      "additionalProperties": false,
+      "properties": {
+        "band_von": { "type": "integer", "minimum": 0, "maximum": 220 },
+        "band_bis": { "type": "integer", "minimum": 1, "maximum": 221 },
+        "geschuetzte_baender": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/bandintervall" }
+        },
+        "proposal_id": {
+          "$comment": "Rueckverweis auf den Vorschlag, aus dem das Ziel stammt. Abwesenheit heisst 'kein Vorschlag genannt', nie `null`.",
+          "$ref": "#/$defs/hex32"
+        }
+      }
+    },
+
     "experiment_begin": {
       "description": "Beginn eines manuellen Versuchs (§43.1, SONDE-013/P4). Reihenfolge: Passage bestimmen, Baseline messen, Baseline VERRIEGELN, dann diese Nachricht mit den unveraenderlichen Referenzen in den append-only Store, dann den User um die Aenderung bitten. `execution_mode` ist heute auf `manual_external` FESTGELEGT statt eine offene Menge zu sein: der Active-Compare-Pfad gehoert SONDE-017, und ihn hier als Zweig vorzusehen waere ein Vorgriff (Bauaufteilung §6.2). Ihn spaeter zu ergaenzen ist ein ausdruecklicher Fassungsschritt.",
       "type": "object",
@@ -1590,7 +2112,11 @@
           "const": "manuell_nicht_wiederherstellbar"
         },
         "passage": { "$ref": "#/$defs/passage" },
-        "referenz": { "$ref": "#/$defs/experiment_referenz" }
+        "referenz": { "$ref": "#/$defs/experiment_referenz" },
+        "ziel": {
+          "$comment": "SONDE-014 E-05, seit Wire-Envelope-schema_minor 3 optional belegt (NAK-168): Zielbereich und Schutzbereiche kommen aus dem VORSCHLAG, statt aus dem groessten Betrag der Banddeltas geraten zu werden. Abwesenheit heisst 'kein Vorschlag hat ein Ziel benannt' — dann bleibt die Heuristik, und das Resultat traegt `ziel_geraten`.",
+          "$ref": "#/$defs/experiment_ziel"
+        }
       }
     },
 

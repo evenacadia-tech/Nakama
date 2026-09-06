@@ -6,8 +6,8 @@ falsch — nie der Vertrag.
 
 | Datei | Was |
 |---|---|
-| `eq-ipc-v3.schema.json` | Die 18 definierten JSON-Nachrichtenfamilien (P0/P1) |
-| `reservierte-nachrichten-v1.json` | Die 9 reservierten sowie die spaeter belegten Familien-/Feldnamen + ihr Eigentuemerticket |
+| `eq-ipc-v3.schema.json` | Die definierten JSON-Nachrichtenfamilien (P0/P1). Die Zahl steht ausdruecklich NICHT hier, sondern maschinenlesbar in `reservierte-nachrichten-v1.json` (`gesamt_erwartet`, `definiert`, `reserviert`) — eine Zahl in Prosa lief in diesem Projekt schon einmal gegen die Maschine (Nebenbefund N-05, 06.09.2026). |
+| `reservierte-nachrichten-v1.json` | Die reservierten sowie die spaeter belegten Familien-/Feldnamen + ihr Eigentuemerticket, dazu die Fassungsleiter `wire_envelope_schema_minor` |
 | `quantisierung-v1.json` | Kodierung der Bandwerte + 61 Testvektoren |
 | `bandgitter/nakama_1_24_oct_30_18k_v1.json` | 221 Baender (Evidenz, 1–4 Hz) |
 | `bandgitter/nakama_log64_v1.json` | 64 Gruppen (Live, 10 Hz) |
@@ -325,6 +325,17 @@ gleich viel. T2-Runde 1 hat gemessen, dass `konfidenz` sich nicht daran hielt
 nachgezogen, und `pruefe_v3_vertrag.py` rechnet die Regel jetzt nach, statt
 sie nur hier zu behaupten.
 
+**SONDE-014 (06.09.2026) fuegt keine vierte additive Stelle hinzu.** Alle
+Objekte der Fassung 3 — `source_intent`, `intent_schutz`, `intent_beziehung`,
+`intent_update`, `assistant_step_update`, `session_finding`, `maskierung`,
+`rangkomponenten`, `beobachtung`, `befund_konfidenz`, `finding_ausschluss`,
+`proposal` samt Parametern und Grenzen, `draft_offer`, `user_verdict` und
+`experiment_ziel` — sind **strikt**. `befund_konfidenz` ist dabei ausdruecklich
+NICHT dasselbe wie `konfidenz`: das eine ist die Sicherheit eines Befunds und
+strikt, das andere die additive Messqualitaet einer Passage. Beide zu
+vermischen ist der Fehler, den die Abnahme U21 vom 02.09.2026 ausdruecklich
+ausschliesst.
+
 ## Regeln, die dem Consumer gehoeren
 
 Die Schluesselwortmenge dieses Vertrags ist **geschlossen** (siehe „Die
@@ -337,6 +348,19 @@ Empfaenger durchgesetzt, statt sie im Schema anzudeuten:
 |---|---|---|
 | `invalidate_bereich.sample_start <= sample_end` | `$defs/invalidate_bereich` | Consumer (SONDE-011). |
 | `audible_intervention_begin.experiment_id` ist bei `art = "experiment"` PFLICHT | `$defs/audible_intervention_begin` | Consumer: der Broker lehnt das Intervall ab und setzt sticky `intervention_state_unknown`, statt es still als Hoermarkierung zu fuehren. Ein Intervall ohne Versuch koennte von keinem Terminal geschlossen werden (SONDE-013 M-59, Nacharbeit 2 / Befund R22; gemessen von `wire_experimentintervall_ohne_id_wird_abgelehnt` in `broker/tests/sonde013_verdrahtung.rs`). |
+| `bandintervall.von < bandintervall.bis` | `$defs/bandintervall`, `$defs/experiment_ziel`, `$defs/maskierung` | Consumer (SONDE-014). Das Intervall ist halboffen `[von, bis)`; ein leeres waere eine Markierung ueber nichts. |
+| `wertebereich.von <= wertebereich.bis` | `$defs/wertebereich` | Consumer (SONDE-014). |
+| `intent_schutz.band` ist bei `eigenschaft = "band"` PFLICHT und sonst VERBOTEN | `$defs/intent_schutz` | Consumer (SONDE-014 M-03). Attack, Breite und Ausklang tragen kein Bandintervall; eine Bandangabe ohne Intervall benennt kein Band. |
+| `intent_beziehung.quelle_a != quelle_b` und je geordnetem Paar genau eine Beziehung | `$defs/intent_beziehung` | Consumer (SONDE-014 M-06). |
+| Der `fuehrt_vor`-Teilgraph aus `intent_update.beziehungen` ist ZYKLENFREI | `$defs/intent_update` | Consumer (SONDE-014 M-06). §37.4 woertlich: „Zyklische Entmaskierungsprioritaeten koennen nicht angewendet werden". Ein Zyklus wird beim Speichern erkannt und entweder aufgeloest oder als `gleichrangig` markiert; die Autoritaet dafuer liegt im Main (E-08), der Broker weist einen zyklischen Bestand ab. |
+| Bei `intent_update.vollstaendig = false` traegt die Nachricht genau EINEN Eintrag in genau EINER der drei Listen | `$defs/intent_update` | Consumer (SONDE-014 M-85). Der P1-Schluessel `intent:<quelle_id>:<passage_id oder global>` adressiert genau ein Objekt; eine Sammelnachricht unter demselben Schluessel koennte fremde Objekte verdraengen. |
+| `intent_update` mit Inhalt traegt `bestand_revision >= 1` | `$defs/intent_update` | Consumer (SONDE-014 M-86). Revision 0 heisst „nie etwas gesetzt" und gilt nur zusammen mit `vollstaendig = true` und leeren Listen. |
+| `session_finding.alternatives` enthaelt nie die eigene `finding_id` | `$defs/session_finding` | Consumer (SONDE-014 M-32). Alternativen sind EIGENE Befunde mit eigenem Zustand; ein Selbstverweis waere ein Zyklus in der Liste. |
+| `session_finding.zustand = "ready_to_send"` verlangt `confidence.class = "hoch"` | `$defs/session_finding` | Consumer (SONDE-014 M-29/M-30). Die Abbildung Sicherheit → Zustand ist eine FUNKTION im Datenweg; nur ein sicherer Befund ist handelbar. |
+| `proposal.execution = "previewable"` ist in **P5** ein Vertragsbruch | `$defs/proposal` | Consumer (SONDE-014 M-45). `previewable` setzt exakt unterstuetzte eigene DSP-Aktionen voraus, und der aktive Kern entsteht erst in P6 (SONDE-015). Der Wert steht im Vertrag, weil der Vertrag ihn ausdruecken koennen muss, bevor ein Bau ihn traegt. |
+| `proposal.parameters` und `.allowed_bounds` sind bei `action = "no_change"` beziehungsweise `"more_data"` LEER | `$defs/proposal` | Consumer (SONDE-014 M-46). Beide sind gueltige Vorschlaege mit vollstaendigem Objekt — Ziel, Passage, Hoerziel, Stopbedingung und Rueckweg stehen, nur der Eingriff fehlt. |
+| Jede Zahl in `likely_cause`, `smallest_test`, `listen_for` steht auch in einem Feld desselben Objekts | `$defs/session_finding`, `$defs/proposal` | Consumer (SONDE-014 M-79). Der Advisor ist regelbasiert; die Empfehlungssprache entsteht aus festen Bausteinen und erfindet keine Frequenz, Guete, Gain, Zielinstanz oder Grenze. |
+| `assistant_step_update.schritt = "preview"` ist in **P5** ein Lesefehler | `$defs/assistant_step_update` | Consumer (SONDE-014 E-07, M-55). Der Zustand bleibt in der Menge — die P5-Uebergangstabelle fuehrt nur keine Kante dorthin, und ein gespeicherter Schritt mit `preview` wird nicht still auf `proposal` oder `remeasure` abgebildet. |
 
 Eine Regel in dieser Tabelle ist **keine** Abschwaechung: sie ist genauso
 bindend wie eine Schemazeile, nur an einer anderen Stelle gemessen. Was hier

@@ -1,0 +1,113 @@
+{
+  "type": "session_snapshot",
+  "session_epoch": "22222222222222222222222222222222",
+  "broker_epoch": "88888888888888888888888888888888",
+  "fuehrendes_main": "33333333333333333333333333333333",
+  "beitritt_bestaetigung_noetig": false,
+  "mitglieder": [
+    {
+      "adresse": {
+        "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+        "project_binding_id": "11111111111111111111111111111111",
+        "session_epoch": "22222222222222222222222222222222",
+        "instance_id": "33333333333333333333333333333333",
+        "runtime_nonce": "44444444444444444444444444444444"
+      },
+      "plugin_kind": "passive_probe",
+      "frische": {
+        "stale": false,
+        "letzter_kontakt_ms": 120
+      },
+      "probe_descriptor": {
+        "adresse": {
+          "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "project_binding_id": "11111111111111111111111111111111",
+          "session_epoch": "22222222222222222222222222222222",
+          "instance_id": "33333333333333333333333333333333",
+          "runtime_nonce": "44444444444444444444444444444444"
+        },
+        "plugin_kind": "passive_probe",
+        "measurement_position": "insert",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Klavier-Bus",
+        "pair_id": null,
+        "capabilities": {
+          "host_context_presence": "supported",
+          "project_time_samples": "supported",
+          "sample_accurate_automation": "supported",
+          "presentation_latency": "unsupported",
+          "aux_compare_pre": "supported",
+          "aux_priority_sidechain": "unsupported",
+          "contribution_aux": "supported",
+          "float64_processing": "unsupported",
+          "binary_telemetry": "supported",
+          "remote_control": "unsupported"
+        },
+        "frische": {
+          "stale": false,
+          "letzter_kontakt_ms": 120
+        }
+      }
+    }
+  ],
+  "findings": [
+    {
+      "finding_id": "0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f",
+      "claim_class": "zusammenhang",
+      "ursachenklasse": "zwei_quellen_konkurrenz",
+      "target_metric": "band_pegel_db",
+      "candidate_source": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "pre_post": "post",
+      "passage_id": "99999999999999999999999999999999",
+      "band_hz": {
+        "von": 40,
+        "bis": 96
+      },
+      "beobachtung": {
+        "wert_db": -4.5,
+        "gueltig": true
+      },
+      "rang": {
+        "bandpassung": 0.9,
+        "koinzidenz": 0.8,
+        "uplift": 0.55,
+        "intent_relevanz": 0.7,
+        "wiederholbarkeit": 0.6,
+        "routingqualitaet": 1.0
+      },
+      "confidence": {
+        "class": "unklar",
+        "score": 0.2
+      },
+      "evidence_ids": [
+        "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b",
+        "09090909090909090909090909090909"
+      ],
+      "alternatives": [
+        "0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a"
+      ],
+      "ausschluesse": [
+        {
+          "candidate_source": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "grund": "coverage_fehlt"
+        }
+      ],
+      "maskierung": {
+        "quelle_a": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "quelle_b": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "band_von": 40,
+        "band_bis": 96,
+        "wert_db": 0.0,
+        "gueltig": false,
+        "herabgesetzt": true
+      },
+      "next_test": "pre_post_paar_messen",
+      "zustand": "more_data",
+      "intent_revision": 4,
+      "likely_cause": "Klavierbus konkurriert im markierten Band",
+      "smallest_test": "PRE/POST-Paar der Kette messen",
+      "listen_for": "Refrainworte klarer, Klavier nicht duenner"
+    }
+  ]
+}

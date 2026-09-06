@@ -50,12 +50,22 @@ inline constexpr std::uint8_t kSchemaMajor = 3u;
 /// werden aber gegen IHREN historischen Feldsatz validiert; hoehere Werte
 /// sind fremd und werden abgewiesen.
 ///
-/// Seit SONDE-013 (04.09.2026) steht sie auf **2**: die Fassung 2 traegt die
+/// Seit SONDE-013 (04.09.2026) stand sie auf **2**: die Fassung 2 traegt die
 /// drei Experimentfamilien, die belegten Felder `evidence_snapshot.ereignisse`
 /// und `.stereo` sowie die zwei neuen Invalidierungsgruende. Ohne diesen
 /// Schritt koennte keine dieser Nachrichten reisen — das Register stuende auf
 /// 2 und der Draht auf 1.
-inline constexpr std::uint8_t kJsonSchemaMinor = 2u;
+///
+/// Seit SONDE-014 (06.09.2026) steht sie auf **3**: die Fassung 3 traegt die
+/// zwei neuen Familien `intent_update` und `assistant_step_update`, die zwei
+/// belegten Reservierungen `draft_offer` und `user_verdict`, das Feld
+/// `session_snapshot.findings` samt eingebettetem `maskierung` und den
+/// Ausschlussgruenden sowie `experiment_begin.ziel`. Ein Fassungsschritt ist
+/// erst vollstaendig, wenn BEIDE Seiten und der Transport dazwischen ihn
+/// kennen — die Zahl steht deshalb hier, in `P0_SCHEMA_MINOR`/`P1_SCHEMA_MINOR`
+/// des Rust-Servers und in `JSON_SCHEMA_MINOR_AKTIV` des Coordinators, und ein
+/// Rust-Bein misst, dass die drei uebereinstimmen.
+inline constexpr std::uint8_t kJsonSchemaMinor = 3u;
 
 /// Die Fassung, die die MITGLIEDSHUELLE des `session_snapshot` eingefuehrt hat
 /// (SONDE-012, Minor 1).

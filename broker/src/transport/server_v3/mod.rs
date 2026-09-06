@@ -167,8 +167,8 @@ pub const CAP_WRITER: usize = 256;
 /// vier `eqcop-store-crash-worker` warteten 17 Minuten ohne CPU-Last auf ein
 /// `command_ack`, das nie kam. Ein Fassungsschritt ist erst vollstaendig,
 /// wenn BEIDE Seiten und der Transport dazwischen ihn kennen.
-const P0_SCHEMA_MINOR: u8 = 2;
-const P1_SCHEMA_MINOR: u8 = 2;
+const P0_SCHEMA_MINOR: u8 = 3;
+const P1_SCHEMA_MINOR: u8 = 3;
 const P2_SCHEMA_MINOR: u8 = 1;
 
 fn schema_minor_bekannt(familie: Familie, schema_minor: u8) -> bool {
@@ -712,9 +712,12 @@ mod tests {
             assert!(schema_minor_bekannt(familie, 1));
         }
         // P0 und P1 tragen die Fassung 2 (Experimentfamilien, belegte
-        // Evidenzfelder, zwei neue Invalidierungsgruende).
+        // Evidenzfelder, zwei neue Invalidierungsgruende) und seit SONDE-014
+        // die Fassung 3 (Intent, Assistentenschritt, Draft und Userurteil).
         assert!(schema_minor_bekannt(Familie::P0, 2));
         assert!(schema_minor_bekannt(Familie::P1, 2));
+        assert!(schema_minor_bekannt(Familie::P0, 3));
+        assert!(schema_minor_bekannt(Familie::P1, 3));
         // P2 nicht: dort ist seit SONDE-013 nichts hinzugekommen, was eine
         // Fassung braeuchte - `integration_samples` ist ein optionales
         // FlatBuffers-Feld und damit der additive Fall, den das Format traegt.
@@ -722,7 +725,7 @@ mod tests {
         // Und die Gegenprobe nach oben: eine Fassung, die es nicht gibt,
         // wird auch bei P0/P1 abgewiesen.
         for familie in [Familie::P0, Familie::P1, Familie::P2] {
-            assert!(!schema_minor_bekannt(familie, 3));
+            assert!(!schema_minor_bekannt(familie, 4));
             assert!(!schema_minor_bekannt(familie, 200));
         }
     }
@@ -1904,8 +1907,12 @@ mod tests {
         // Nacharbeit 2 (04.09.2026, Befunde R16/R21): `experiment_candidate`
         // kommt als vierte Familie dieses Tickets dazu — der Schritt zwischen
         // Begin und Ergebnis. 21/7 -> 22/7.
-        assert_eq!(definiert, 22);
-        assert_eq!(spaeter, 7);
+        // SONDE-014 E-09/E-10/E-11 (06.09.2026): `draft_offer` und
+        // `user_verdict` wandern aus der Reserve nach `definiert`,
+        // `intent_update` und `assistant_step_update` kommen neu dazu.
+        // 22/7 -> 26/5.
+        assert_eq!(definiert, 26);
+        assert_eq!(spaeter, 5);
         assert_eq!(
             definiert + spaeter,
             reserviert["gesamt_erwartet"].as_u64().unwrap() as usize

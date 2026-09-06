@@ -1,0 +1,70 @@
+{
+  "type": "draft_offer",
+  "kopf": {
+    "command_id": "55555555555555555555555555555555",
+    "ziel": {
+      "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+      "project_binding_id": "11111111111111111111111111111111",
+      "session_epoch": "22222222222222222222222222222222",
+      "instance_id": "33333333333333333333333333333333",
+      "runtime_nonce": "44444444444444444444444444444444"
+    },
+    "base_revision": 12,
+    "ttl_ms": 2000,
+    "schema_major": 3,
+    "schema_minor": 0
+  },
+  "proposal": {
+    "proposal_id": "0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e",
+    "proposal_schema": 1,
+    "target": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "base_revision": 14,
+    "passage_id": "99999999999999999999999999999999",
+    "finding_id": "0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f",
+    "action": "dynamic_eq_cut",
+    "parameters": {
+      "frequency_hz": 930.0,
+      "q": 1.1,
+      "max_gain_db": -1.5
+    },
+    "allowed_bounds": {
+      "frequency_hz": {
+        "von": 700.0,
+        "bis": 1200.0
+      },
+      "q": {
+        "von": 0.7,
+        "bis": 2.0
+      },
+      "gain_db": {
+        "von": -2.0,
+        "bis": 0.0
+      }
+    },
+    "evidence_ids": [
+      "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b",
+      "09090909090909090909090909090909"
+    ],
+    "expected_effect": "reduce_masking_pressure",
+    "protected_traits": [
+      {
+        "quelle_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "eigenschaft": "attack"
+      }
+    ],
+    "listen_for": "Refrainworte klarer, Klavier nicht duenner",
+    "stop_if": [
+      "guardrail_geschuetzt",
+      "keine_wiederholbare_masteraenderung"
+    ],
+    "execution": "manual",
+    "confidence": {
+      "class": "mittel",
+      "score": 0.68
+    },
+    "revert": "manual_only",
+    "intent_revision": 4,
+    "generatorversion": 1,
+    "warum": "klingt besser"
+  }
+}

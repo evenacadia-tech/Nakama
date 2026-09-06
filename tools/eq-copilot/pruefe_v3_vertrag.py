@@ -748,8 +748,11 @@ def pruefe_probe_descriptor(lauf: Lauf, schema: dict, reserviert: dict) -> None:
     fassungen = version.get("fassungen", {})
     lauf.wahr("host_channel_context_fields_are_optional_strict_and_versioned",
               version.get("familie") == "P1"
-              and version.get("vorher") == 1
-              and version.get("aktuell") == 2
+              # SONDE-014: der Fassungsschritt 3 hebt `vorher`/`aktuell` um
+              # eins. Die Zahlen stehen hier, damit ein STILLES Heben faellt -
+              # nicht, weil 1/2 richtiger waere als 2/3.
+              and version.get("vorher") == 2
+              and version.get("aktuell") == 3
               and fassungen.get("0", {}).get("probe_descriptor_hostfelder") == []
               and set(fassungen.get("1", {}).get("probe_descriptor_hostfelder", []))
                   == HOST_DESCRIPTOR_FELDER
@@ -866,15 +869,61 @@ def pruefe_probe_descriptor(lauf: Lauf, schema: dict, reserviert: dict) -> None:
               beitragsriegel_gelockert != PLUGIN_KIND_MATRIX["probe_descriptor_beitrag"])
 
 
+# SONDE-014 (P5), Fassung 3: die Familien und Hilfsdefinitionen, die mit
+# diesem Fassungsschritt entstehen. Sie stehen hier als DATEN, nicht als
+# Kommentar - `fassung_2_schema()` baut daraus zurueck, und der Eintrag
+# `wire_envelope_schema_minor.fassungen."3".neue_definitionen` im Register
+# wird gegen dieselbe Liste gehalten. Drei handgepflegte Kopien derselben
+# Liste sind in diesem Projekt schon einmal auseinandergelaufen.
+FASSUNG_3_FAMILIEN = {"intent_update", "assistant_step_update",
+                      "draft_offer", "user_verdict"}
+
+FASSUNG_3_HILFSDEFS = {
+    "intent_rolle", "intent_herkunft", "intent_beziehungsart",
+    "intent_schutzeigenschaft", "bandintervall", "source_intent",
+    "intent_schutz", "intent_beziehung", "assistant_schritt",
+    "ursachenklasse", "aussageklasse", "sicherheitsklasse", "befund_zustand",
+    "befund_konfidenz", "zielmetrik", "naechster_test", "ausschlussgrund",
+    "finding_ausschluss", "maskierung", "rangkomponenten", "beobachtung",
+    "session_finding", "proposal_aktion", "proposal_execution",
+    "proposal_revert", "proposal_wirkung", "proposal_stopbedingung",
+    "wertebereich", "proposal_parameter", "proposal_grenzen", "proposal",
+    "user_urteil", "experiment_ziel",
+}
+
+
+def fassung_2_schema(schema: dict) -> dict:
+    """Baut die Fassung 2 des P1-Vertrags aus der committeten Fassung 3 zurueck.
+
+    Der Kern der Zusage `nicht additiv erweiterbar`: ein Leser der Fassung 2
+    muss JEDE Neuerung der Fassung 3 ABLEHNEN, statt sie still auf einen
+    bekannten Zweig abzubilden. Das kann er nur, wenn seine Fassung wirklich
+    existiert - eine Konstante, die in Wahrheit das neueste Schema laedt,
+    waere das Gegenteil der Zusage (die Lehre aus SONDE-013).
+    """
+    alt = copy.deepcopy(schema)
+    alt["oneOf"] = [r for r in alt["oneOf"]
+                    if r.get("$ref", "").removeprefix("#/$defs/") not in FASSUNG_3_FAMILIEN]
+    for name in FASSUNG_3_FAMILIEN | FASSUNG_3_HILFSDEFS:
+        alt["$defs"].pop(name, None)
+    alt["$defs"]["session_snapshot"]["properties"].pop("findings", None)
+    alt["$defs"]["experiment_begin"]["properties"].pop("ziel", None)
+    return alt
+
+
 def fassung_1_schema(schema: dict) -> dict:
-    """Baut die Fassung 1 des P1-Vertrags aus der committeten Fassung 2 zurueck.
+    """Baut die Fassung 1 des P1-Vertrags aus der Fassung 2 zurueck.
 
     Warum zurueckbauen statt eine zweite Datei zu pflegen: zwei Kopien
     driften. Der Rueckbau ist genau die Liste aus
     `wire_envelope_schema_minor.fassungen."2"` - stimmt sie nicht mit dem
     Schema ueberein, faellt schon der Rueckbau und nicht erst ein Fixture.
+
+    SONDE-014: die Rueckbauten sind eine KETTE. Wer hier auf der committeten
+    Fassung 3 aufsetzte, gaebe dem Leser der Fassung 1 alle Neuerungen der
+    Fassung 3 mit - der Fehler, gegen den die Kette existiert.
     """
-    alt = copy.deepcopy(schema)
+    alt = fassung_2_schema(schema)
     neue_familien = {"experiment_begin", "experiment_abort", "experiment_manual_result",
                      "experiment_candidate"}
     alt["oneOf"] = [r for r in alt["oneOf"]
@@ -969,6 +1018,108 @@ def pruefe_sonde013_fassung_2(lauf: Lauf, schema: dict, reserviert: dict) -> Non
     lauf.wahr("Gegenprobe: der Rueckbau auf Fassung 1 aendert das Schema wirklich",
               fassung_1_schema(schema) != schema
               and pruefer_1.is_valid(lade("evidence_snapshot")))
+
+
+def pruefe_sonde014_fassung_3(lauf: Lauf, schema: dict, reserviert: dict) -> None:
+    """SONDE-014 M-40, M-48, M-73, M-85, M-87, M-88, M-89.
+
+    Der Riegel dieses Tickets ist derselbe wie der von SONDE-013, eine
+    Fassung weiter: EIN Fassungsschritt traegt alle P1-Vertragsaenderungen,
+    und ein Leser der Fassung 2 LEHNT jede von ihnen AB. Dazu die Kette: der
+    Leser der Fassung 1 kennt auch die Fassung 3 nicht, und der aelteste
+    Leser erst recht nicht.
+    """
+    fassung = reserviert.get("wire_envelope_schema_minor", {}).get("fassungen", {}).get("3", {})
+    lauf.wahr("fassung_3_nennt_jede_neuerung_dieses_tickets",
+              fassung.get("intent_update") is True
+              and fassung.get("assistant_step_update") is True
+              and fassung.get("draft_offer") is True
+              and fassung.get("user_verdict") is True
+              and isinstance(fassung.get("session_snapshot_findings"), str)
+              and isinstance(fassung.get("experiment_begin_ziel"), str))
+
+    # Die Rueckbauliste ist eine KOPIE der Wahrheit aus dem Register. Laufen
+    # sie auseinander, faellt es hier - nicht an einem Fixture, das zufaellig
+    # darauf zielt.
+    lauf.wahr("fassung_3_liste_deckt_sich_mit_dem_register",
+              set(fassung.get("neue_definitionen", []))
+                  == FASSUNG_3_FAMILIEN | FASSUNG_3_HILFSDEFS)
+    lauf.wahr("jede_neue_definition_steht_wirklich_im_schema",
+              all(n in schema["$defs"] for n in FASSUNG_3_FAMILIEN | FASSUNG_3_HILFSDEFS))
+
+    pruefer_3 = jsonschema.Draft202012Validator(schema)
+    pruefer_2 = jsonschema.Draft202012Validator(fassung_2_schema(schema))
+    pruefer_1 = jsonschema.Draft202012Validator(fassung_1_schema(schema))
+
+    def lade(name: str) -> dict:
+        return json_laden_strikt((FIXTURES / f"gueltig/{name}.json").read_text(encoding="utf-8"))
+
+    neu = {name: lade(name) for name in sorted(FASSUNG_3_FAMILIEN)}
+    lauf.wahr("fassung_2_leser_lehnt_die_vier_neuen_familien_ab",
+              all(pruefer_3.is_valid(d) for d in neu.values())
+              and not any(pruefer_2.is_valid(d) for d in neu.values()))
+    lauf.wahr("fassung_1_leser_kennt_die_fassung_3_erst_recht_nicht",
+              not any(pruefer_1.is_valid(d) for d in neu.values()))
+
+    mit_findings = lade("session-snapshot-mit-findings")
+    lauf.wahr("fassung_2_leser_lehnt_session_snapshot_findings_ab",
+              pruefer_3.is_valid(mit_findings)
+              and not pruefer_2.is_valid(mit_findings))
+
+    mit_ziel = lade("experiment-begin-mit-ziel")
+    lauf.wahr("fassung_2_leser_lehnt_experiment_begin_ziel_ab",
+              pruefer_3.is_valid(mit_ziel)
+              and not pruefer_2.is_valid(mit_ziel))
+
+    # Gegenprobe zum Rueckbau: er muss etwas entfernen UND darf nicht mehr
+    # entfernen als seine Liste. Ein Rueckbau, der das Schema zerstoert, saehe
+    # sonst wie eine erfuellte Zusage aus.
+    lauf.wahr("Gegenprobe: der Rueckbau auf Fassung 2 aendert das Schema wirklich",
+              fassung_2_schema(schema) != schema
+              and pruefer_2.is_valid(lade("experiment_begin"))
+              and pruefer_2.is_valid(lade("session_snapshot"))
+              and pruefer_2.is_valid(lade("evidence_snapshot")))
+
+    # M-87: die acht Ausschlussgruende leben an EINER Stelle im Vertrag.
+    lauf.wahr("ausschlussgruende_sind_eine_geschlossene_achtermenge",
+              schema["$defs"]["ausschlussgrund"]["enum"] == [
+                  "coverage_fehlt", "alignment_falsch", "passage_unvergleichbar",
+                  "passage_zu_kurz", "intent_veto_geschuetzt",
+                  "intent_veto_verschmolzen", "capability_fehlt",
+                  "evidenz_zurueckgenommen"]
+              and schema["$defs"]["finding_ausschluss"]["properties"]["grund"]
+                  == {"$ref": "#/$defs/ausschlussgrund"}
+              and schema["$defs"]["session_finding"]["properties"]["ausschluesse"]["items"]
+                  == {"$ref": "#/$defs/finding_ausschluss"})
+
+    # M-01/M-77: dieselbe Rollenmenge wie der C++-Leser im Main-State. Der
+    # Vertrag ist die EINE Stelle; das C++-Bein B27 misst gegen dieselbe.
+    lauf.wahr("rollenmenge_ist_geschlossen_und_fuenf",
+              schema["$defs"]["intent_rolle"]["enum"]
+                  == ["fuehrt", "traegt", "begleitet", "geschuetzt", "verschmolzen"])
+
+    # M-14: die sieben Ursachenklassen aus Entwurf Paragraph 8.
+    lauf.wahr("ursachenklassen_sind_geschlossen_und_sieben",
+              len(schema["$defs"]["ursachenklasse"]["enum"]) == 7
+              and "daten_reichen_nicht" in schema["$defs"]["ursachenklasse"]["enum"])
+
+    # M-15/M-42: die Feldmengen aus Entwurf Paragraph 36.3 und 42.1 stehen
+    # vollstaendig, und beide Objekte sind STRIKT.
+    finding = schema["$defs"]["session_finding"]
+    lauf.wahr("causehypothesis_traegt_die_zehn_felder_aus_36_3",
+              finding.get("additionalProperties") is False
+              and {"finding_id", "claim_class", "target_metric", "candidate_source",
+                   "passage_id", "band_hz", "confidence", "evidence_ids",
+                   "alternatives", "next_test"} <= set(finding["properties"]))
+    proposal = schema["$defs"]["proposal"]
+    lauf.wahr("proposal_traegt_die_fuenfzehn_felder_aus_42_1_plus_revert",
+              proposal.get("additionalProperties") is False
+              and {"proposal_id", "proposal_schema", "target", "base_revision",
+                   "passage_id", "action", "parameters", "allowed_bounds",
+                   "evidence_ids", "expected_effect", "protected_traits",
+                   "listen_for", "stop_if", "execution", "confidence",
+                   "revert"} <= set(proposal["properties"])
+              and "revert" in proposal["required"])
 
 
 def pruefe_runtime_und_p2_reject(lauf: Lauf, schema: dict) -> None:
@@ -1260,7 +1411,11 @@ def pruefe_namen(lauf: Lauf, schema: dict, reserviert: dict) -> None:
                   for n in belegt_nachrichten)
               and {n.get("name") for n in belegt_nachrichten}
                   == {"session_command", "experiment_begin", "experiment_abort",
-                      "experiment_manual_result", "experiment_candidate"}
+                      "experiment_manual_result", "experiment_candidate",
+                      # SONDE-014 (P5), Fassung 3: zwei neue Familien und die
+                      # zwei belegten Reservierungen.
+                      "intent_update", "assistant_step_update",
+                      "draft_offer", "user_verdict"}
               and all(n.get("name") in definiert and n.get("name") not in reserv
                       for n in belegt_nachrichten))
 
@@ -1287,9 +1442,13 @@ def pruefe_namen(lauf: Lauf, schema: dict, reserviert: dict) -> None:
               and "#/$defs/experiment_candidate" in {r["$ref"] for r in schema["oneOf"]}
               and next(n["eigentuemer"] for n in belegt_nachrichten
                        if n["name"] == "experiment_candidate").startswith("SONDE-013"))
-    lauf.wahr("summe_ist_29",
-              reserviert["gesamt_erwartet"] == 29
-              and len(definiert) == 22 and len(reserv) == 7)
+    # SONDE-014 (P5): 22 -> 26 definierte Familien. `draft_offer` und
+    # `user_verdict` WANDERN aus der Reserve (7 -> 5), `intent_update` und
+    # `assistant_step_update` entstehen neu - die Summe steigt deshalb um
+    # zwei, nicht um vier.
+    lauf.wahr("summe_ist_31",
+              reserviert["gesamt_erwartet"] == 31
+              and len(definiert) == 26 and len(reserv) == 5)
 
     # M-73: kein Ticket belegt einen Namen, dessen Eigentuemer ein anderes
     # Ticket ist - und der Vertrag kennt nur GANZE Familien, keine
@@ -1300,13 +1459,35 @@ def pruefe_namen(lauf: Lauf, schema: dict, reserviert: dict) -> None:
               and eigentuemer.get("experiment_result", "").startswith("SONDE-017")
               and "experiment_result" not in definiert
               and "experiment_result" not in schema["$defs"])
+    # SONDE-014 (P5) belegt seine EIGENEN zwei Reservierungen und nur die.
+    # `experiment_result` gehoert SONDE-017 und bleibt unberuehrt - genau das
+    # ist die Regel, die diese Zeile misst.
+    belegt_von_014 = {n["name"]: n.get("eigentuemer", "") for n in belegt_nachrichten}
+    lauf.wahr("sonde014_belegt_nur_die_eigenen_reservierungen",
+              belegt_von_014.get("draft_offer", "").startswith("SONDE-014")
+              and belegt_von_014.get("user_verdict", "").startswith("SONDE-014")
+              and "draft_offer" in definiert and "user_verdict" in definiert
+              and "draft_offer" in schema["$defs"] and "user_verdict" in schema["$defs"]
+              and "draft_offer" not in reserv and "user_verdict" not in reserv
+              and not any(n.startswith("experiment_result") for n in schema["$defs"]))
     lauf.wahr("fremde_eigentuemer_bleiben_unberuehrt",
-              eigentuemer.get("user_verdict", "").startswith("SONDE-014")
-              and "user_verdict" not in definiert
-              and "user_verdict" not in schema["$defs"]
-              and not any(n.startswith("experiment_result")
-                          or n.startswith("user_verdict")
+              eigentuemer.get("apply_transaction", "").startswith("SONDE-016")
+              and eigentuemer.get("revert_transaction", "").startswith("SONDE-016")
+              and "apply_transaction" not in definiert
+              and "revert_transaction" not in definiert
+              and not any(n.startswith("apply_transaction")
+                          or n.startswith("revert_transaction")
                           for n in schema["$defs"]))
+    # SONDE-014 E-10/E-11: die zwei NEUEN Familien entstehen direkt in
+    # `definiert` - sie waren nie reserviert, also darf auch keine Reserve
+    # ihren Namen tragen.
+    lauf.wahr("intent_update_und_assistant_step_update_sind_neu_und_definiert",
+              belegt_von_014.get("intent_update", "").startswith("SONDE-014")
+              and belegt_von_014.get("assistant_step_update", "").startswith("SONDE-014")
+              and {"intent_update", "assistant_step_update"} <= set(definiert)
+              and not ({"intent_update", "assistant_step_update"} & set(reserv))
+              and {"#/$defs/intent_update", "#/$defs/assistant_step_update"}
+                  <= {r["$ref"] for r in schema["oneOf"]})
     lauf.wahr("reservierter_name_reference_match_wird_nicht_umgewidmet",
               "reference_match" in reserv and "reference_match" not in zweige
               and "reference_match" not in schema["$defs"])
@@ -1344,6 +1525,9 @@ def pruefe_namen(lauf: Lauf, schema: dict, reserviert: dict) -> None:
         "evidence_snapshot.stereo.freiheitsgrade",
         "session_snapshot.experimente",
         "session_snapshot.paare",
+        # SONDE-014 (P5), Fassung 3.
+        "session_snapshot.findings",
+        "experiment_begin.ziel",
     }
     lauf.wahr("SONDE-012-Minor-1-Felder sind als belegt fortgeschrieben",
               {f.get("name") for f in belegt} == erwartete_belegte
@@ -1823,6 +2007,7 @@ def main(argv: list[str]) -> int:
     pruefe_discriminator_enginekante(lauf)
     pruefe_namen(lauf, schema, reserviert)
     pruefe_sonde013_fassung_2(lauf, schema, reserviert)
+    pruefe_sonde014_fassung_3(lauf, schema, reserviert)
     pruefe_probe_descriptor(lauf, schema, reserviert)
     pruefe_runtime_und_p2_reject(lauf, schema)
     pruefe_session_command_und_store(lauf, schema)

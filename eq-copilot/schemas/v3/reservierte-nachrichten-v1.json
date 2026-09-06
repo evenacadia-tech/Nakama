@@ -1,13 +1,13 @@
 {
   "$id": "evenacadia.nakama.ipc.v3.reserviert",
   "titel": "Reservierte v3-Nachrichtenfamilien",
-  "zweck": "Entwurf §33.3 zaehlt nach dem SONDE-011-Entscheid 26 Nachrichtenfamilien auf. Der bindende SONDE-012-Entscheid E-L18/L04 vom 01.09.2026 belegt zusaetzlich `session_command`; der bindende SONDE-013-Entscheid E-02 vom 03.09.2026 definiert zusaetzlich `experiment_manual_result` und holt `experiment_begin` und `experiment_abort` aus der Reserve. Damit umfasst das Register 28 Namen. Die uebrigen 7 reservierten Familien tragen weiterhin Nutzlasten aus spaeteren Phasen — sie jetzt zu erfinden waere ein Vorgriff, den eine spaetere Phase teuer zuruecknehmen muesste (Bauaufteilung §6.2 'Kein Vorgriff').",
+  "zweck": "Entwurf §33.3 zaehlt nach dem SONDE-011-Entscheid 26 Nachrichtenfamilien auf. Der bindende SONDE-012-Entscheid E-L18/L04 vom 01.09.2026 belegt zusaetzlich `session_command`; der bindende SONDE-013-Entscheid E-02 vom 03.09.2026 definiert `experiment_manual_result` und `experiment_candidate` und holt `experiment_begin` und `experiment_abort` aus der Reserve. Der bindende SONDE-014-Entscheid E-09/E-10/E-11 vom 06.09.2026 belegt die reservierten Namen `draft_offer` und `user_verdict` und legt die zwei neuen Familien `intent_update` und `assistant_step_update` an. Damit umfasst das Register 31 Namen: 26 definierte und 5 reservierte. Die reservierten tragen weiterhin Nutzlasten aus spaeteren Phasen — sie jetzt zu erfinden waere ein Vorgriff, den eine spaetere Phase teuer zuruecknehmen muesste (Bauaufteilung §6.2 'Kein Vorgriff'). NACHGEZOGEN am 06.09.2026 (SONDE-014, Nebenbefund N-05): dieser Fliesstext rechnete bis dahin auf 28 Namen und hatte `experiment_candidate` nicht mitgezaehlt, waehrend `gesamt_erwartet` bereits 29 sagte. Die maschinenlesbare Zahl war richtig, die Prosa nicht.",
   "regel": "Ihre NAMEN sind trotzdem jetzt vergeben. Ein reservierter Discriminator wird vom v3-Parser ABGELEHNT (er steht nicht im oneOf des Schemas) und darf von keinem spaeteren Ticket fuer etwas anderes verwendet werden. Genau das ist der Vertragsanteil, der spaeter bricht, wenn man ihn heute offen laesst.",
-  "pruefung": "pruefe_v3_vertrag.py prueft, dass sich reservierte, belegte und definierte Namen konsistent verhalten, dass alle reservierten Namen ohne Nutzlast bleiben und dass die Summe 28 ergibt.",
+  "pruefung": "pruefe_v3_vertrag.py prueft, dass sich reservierte, belegte und definierte Namen konsistent verhalten, dass alle reservierten Namen ohne Nutzlast bleiben und dass die Summe 31 ergibt.",
   "wire_envelope_schema_minor": {
     "familie": "P1",
-    "vorher": 1,
-    "aktuell": 2,
+    "vorher": 2,
+    "aktuell": 3,
     "auswahlregel": "Der Empfaenger waehlt die JSON-Schemafassung anhand von message_family und schema_minor im Wire-Envelope; im Payload entsteht kein weiteres Versionsfeld.",
     "fassungen": {
       "0": {
@@ -48,6 +48,29 @@
           "material_wechsel",
           "messpunkt_wechsel"
         ]
+      },
+      "3": {
+        "hinweis": "SONDE-014 (P5) hebt den Minor GENAU EINMAL. Jede P1-Vertragsaenderung dieses Tickets liegt in dieser einen Fassung; ein Leser der Fassung 2 lehnt sie ab, statt sie still auf einen bekannten Zweig abzubilden. Fuenf Teilschritte an demselben schema_minor haetten fuenf Zwischenstaende ergeben, von denen jeder eine eigene Fassungsleiter braeuchte.",
+        "intent_update": true,
+        "assistant_step_update": true,
+        "draft_offer": true,
+        "user_verdict": true,
+        "session_snapshot_findings": "SONDE-014 E-04 (M-40): der `session_snapshot` traegt seit dieser Fassung die Ursachenbefunde der Sitzung - mit Zustand, den sechs Teilen aus Entwurf Paragraph 8, den drei Anzeigezeilen, den Evidenz-IDs, der Intent-Revision, den Ausschlussgruenden (R4) und je Befund dem optionalen Objekt `maskierung`. Der Rueckweg zu Gen laeuft ueber den bestehenden Outbox-/Snapshot-Pfad statt ueber eine weitere Familie - derselbe Weg, den `experimente` und `paare` in der Fassung 2 gegangen sind. Die Maskierung haengt AM BEFUND und nicht in einer zweiten Liste: zwei Listen koennten auseinanderlaufen.",
+        "experiment_begin_ziel": "SONDE-014 E-05 (M-48, NAK-168): `experiment_begin` traegt seit dieser Fassung ein optionales `ziel` mit Bandintervall, geschuetzten Baendern und dem Rueckverweis `proposal_id`. Bis hierher riet der Guardrail-Rechner den Zielbereich aus dem groessten Betrag der Banddeltas; mit dem Feld liest er ihn. OHNE das Feld bleibt die Heuristik, und das Resultat traegt `ziel_geraten` - beide Pfade werden gemessen.",
+        "neue_definitionen": [
+          "intent_rolle", "intent_herkunft", "intent_beziehungsart",
+          "intent_schutzeigenschaft", "bandintervall", "source_intent",
+          "intent_schutz", "intent_beziehung", "intent_update",
+          "assistant_schritt", "assistant_step_update", "ursachenklasse",
+          "aussageklasse", "sicherheitsklasse", "befund_zustand",
+          "befund_konfidenz", "zielmetrik", "naechster_test",
+          "ausschlussgrund", "finding_ausschluss", "maskierung",
+          "rangkomponenten", "beobachtung", "session_finding",
+          "proposal_aktion", "proposal_execution", "proposal_revert",
+          "proposal_wirkung", "proposal_stopbedingung", "wertebereich",
+          "proposal_parameter", "proposal_grenzen", "proposal",
+          "draft_offer", "user_urteil", "user_verdict", "experiment_ziel"
+        ]
       }
     }
   },
@@ -71,6 +94,26 @@
       "name": "experiment_abort",
       "eigentuemer": "SONDE-013 (P4)",
       "grund": "Seit Wire-Envelope-schema_minor 2 belegt: Gegenpfad zu experiment_begin mit genau zwei Ausloesern - Userabbruch und Verdraengung durch einen Bestandsdeckel. Sitzungsende und Neustart brechen nicht ab."
+    },
+    {
+      "name": "intent_update",
+      "eigentuemer": "SONDE-014 (P5)",
+      "grund": "Seit Wire-Envelope-schema_minor 3 definiert (SONDE-014 E-10): der Weg des musikalischen Intents vom Main zum Broker. Paragraph 33.5 legt den Intent in den MainProjectState und laesst den Broker damit rechnen, aber bis zu diesem Ticket nannte keine Zeile eine Nachricht dafuer. Der Name folgt dem Schnitt der uebrigen Familien - Gegenstand plus Vorgang - und grenzt sich gegen `state_report` (Plugin-Identitaet) und `session_command` (Sessiongraph) ab. Klasse P1 mit Schluessel intent:<quelle_id>:<passage_id oder global>, koaleszierend, weil nur die juengste Revision wirkt. Traegt zusaetzlich die VOLLSTAENDIGKEITSMARKE: nach Verbindungsaufbau und nach jedem Brokerneustart meldet Main seinen ganzen Bestand - auch einen leeren -, bevor der Broker rechnet. Ein Veto darf durch Transportverlust nie verschwinden."
+    },
+    {
+      "name": "assistant_step_update",
+      "eigentuemer": "SONDE-014 (P5)",
+      "grund": "Seit Wire-Envelope-schema_minor 3 definiert (SONDE-014 E-11, Regel R3): die Schwesterfamilie von `intent_update` fuer den aktuellen AssistantStep. Paragraph 33.5 Zeile 2147 sagt einen versionierten SQLite-Spiegel des Schritts zu; `state_report` ist strikt und traegt keinen Schritt, `intent_update` transportiert nur den Intent - ohne diese Familie haette der zugesagte Spiegel keinen Produktpfad. Klasse P1 mit Schluessel assistant_step:<session_id>, koaleszierend. Der Spiegel ist NIE autoritativ: bei Widerspruch gewinnt der neuere Main-State."
+    },
+    {
+      "name": "draft_offer",
+      "eigentuemer": "SONDE-014 (P5)",
+      "grund": "Seit Wire-Envelope-schema_minor 3 BELEGT: der zuvor reservierte Name traegt jetzt ein Proposal - kleinster Versuch mit Grenzen, Hoerziel, Stopbedingung und Rueckweg. Er reist als P1 mit Schluessel proposal:<proposal_id>; ein neuer Entwurf desselben Vorschlags darf den aelteren verdraengen, ein fremder nie."
+    },
+    {
+      "name": "user_verdict",
+      "eigentuemer": "SONDE-014 (P5)",
+      "grund": "Seit Wire-Envelope-schema_minor 3 BELEGT: das Userurteil bindet an Finding- und Proposal-IDs, die es vor P5 nicht gab. Es reist als persistenzpflichtiger P0 unter derselben command_id ueber einen Brokerkill hinweg und KOALESZIERT NICHT - ein Userurteil, das ein anderes verdraengt, waere verlorene Userarbeit."
     },
     {
       "name": "experiment_manual_result",
@@ -123,6 +166,16 @@
       "name": "session_snapshot.paare",
       "eigentuemer": "SONDE-013 (P4)",
       "grund": "Seit Wire-Envelope-schema_minor 2 optional belegt (Nacharbeit 2, Befund R32): die PRE/POST-Paarurteile der Sitzung. Vorher endeten sie in einer fluechtigen Map ohne Store und ohne Outboxziel."
+    },
+    {
+      "name": "session_snapshot.findings",
+      "eigentuemer": "SONDE-014 (P5)",
+      "grund": "Seit Wire-Envelope-schema_minor 3 optional belegt (E-04): die Ursachenbefunde der Sitzung auf dem Rueckweg zu Gen, je Befund mit optionalem Objekt `maskierung`. Abwesenheit heisst \u0027diese Sitzung fuehrt keine Befunde\u0027, nie \u0027alle geschlossen\u0027. Der Name lautet `maskierung` und nicht `ueberdeckung`: letzteres ist im Code die ZEITueberdeckung zweier Passagenfenster und etwas anderes."
+    },
+    {
+      "name": "experiment_begin.ziel",
+      "eigentuemer": "SONDE-014 (P5)",
+      "grund": "Seit Wire-Envelope-schema_minor 3 optional belegt (E-05, NAK-168): Zielbereich und Schutzbereiche kommen aus dem Vorschlag, statt aus dem groessten Betrag der Banddeltas geraten zu werden. Abwesenheit heisst \u0027kein Vorschlag hat ein Ziel benannt\u0027 - dann bleibt die Heuristik, und das Resultat traegt `ziel_geraten`."
     },
     {
       "name": "evidence_snapshot.ereignisse",
@@ -179,7 +232,7 @@
   ],
   "hinweis_felder": "Dieselbe Regel wie fuer die Nachrichtennamen, eine Ebene tiefer: der Vertragsanteil, der spaeter bricht, wenn man ihn heute offen laesst, ist der NAME - nicht die Nutzlast.",
 
-  "gesamt_erwartet": 29,
+  "gesamt_erwartet": 31,
   "definiert": [
     "hello",
     "welcome",
@@ -202,6 +255,10 @@
     "preview_end",
     "command_ack",
     "state_report",
+    "intent_update",
+    "assistant_step_update",
+    "draft_offer",
+    "user_verdict",
     "error"
   ],
   "reserviert": [
@@ -209,11 +266,6 @@
       "name": "telemetry_frame",
       "eigentuemer": "SONDE-005b",
       "grund": "P2-Featureframes sind FlatBuffers (`FeatureBatch` mit CRC32C), kein JSON — Entwurf §33.1. Der Name bleibt reserviert, damit ihn keine JSON-Familie belegt."
-    },
-    {
-      "name": "draft_offer",
-      "eigentuemer": "SONDE-014 (P5)",
-      "grund": "Traegt ein `Proposal` — kleinster Versuch mit Grenzen, Hoerziel und Stopbedingung. Das Objekt entsteht in P5."
     },
     {
       "name": "apply_transaction",
@@ -229,11 +281,6 @@
       "name": "experiment_result",
       "eigentuemer": "SONDE-017 (P7)",
       "grund": "Deltas und Urteil setzen den Active-Compare-Pfad voraus."
-    },
-    {
-      "name": "user_verdict",
-      "eigentuemer": "SONDE-014 (P5)",
-      "grund": "Userurteil bindet an Finding/Proposal-IDs, die es vor P5 nicht gibt."
     },
     {
       "name": "reference_match",

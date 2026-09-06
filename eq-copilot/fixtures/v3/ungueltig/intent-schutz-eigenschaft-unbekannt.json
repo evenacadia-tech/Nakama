@@ -1,0 +1,40 @@
+{
+  "type": "intent_update",
+  "adresse": {
+    "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+    "project_binding_id": "11111111111111111111111111111111",
+    "session_epoch": "22222222222222222222222222222222",
+    "instance_id": "33333333333333333333333333333333",
+    "runtime_nonce": "44444444444444444444444444444444"
+  },
+  "session_epoch": "22222222222222222222222222222222",
+  "bestand_revision": 4,
+  "vollstaendig": true,
+  "intents": [
+    {
+      "quelle_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "passage_id": "99999999999999999999999999999999",
+      "rolle": "fuehrt",
+      "revision": 3,
+      "herkunft": "user",
+      "konfidenz": 1.0
+    }
+  ],
+  "schutzangaben": [
+    {
+      "quelle_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "eigenschaft": "hall",
+      "band": {
+        "von": 40,
+        "bis": 96
+      }
+    }
+  ],
+  "beziehungen": [
+    {
+      "quelle_a": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "quelle_b": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "art": "fuehrt_vor"
+    }
+  ]
+}

@@ -6,9 +6,27 @@
   "wurzel_skalar": "Markiert ein Fixture, dessen Wurzel weder Objekt noch Array ist. JUCEs JSON-Leser folgt RFC 4627 und lehnt es schon im PARSER ab; serde_json und Python folgen RFC 8259 und lehnen es erst am Schema ab. Beide Wege sind eine Ablehnung, nur an verschiedenen Stellen - die Verletzungsmenge gilt daher nur fuer die Beine mit RFC-8259-Parser.",
   "sortierung": "Verletzungen sind kanonisch nach (instanz, schema, schluessel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
   "textriegel_lehnt_ab": "Markiert ein Fixture, das der TEXTRIEGEL abweist, BEVOR ein Parser es sieht. Diese Fixtures tragen keine Verletzungsmenge, weil sie das Schema nie erreichen — eine erfundene waere eine Luege ueber den Ort der Ablehnung. Regeln und Begruendung: schemas/v3/README.md.",
-  "anzahl_gueltig": 87,
-  "anzahl_ungueltig": 230,
+  "anzahl_gueltig": 104,
+  "anzahl_ungueltig": 281,
   "fixtures": [
+    {
+      "datei": "gueltig/assistant-step-ohne-bezug.json",
+      "urteil": "gueltig",
+      "warum": "Ein Schritt vor dem ersten Befund traegt keine Bezuege - Abwesenheit ist kein null",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/assistant-step-preview-bleibt-im-vertrag.json",
+      "urteil": "gueltig",
+      "warum": "E-07: `preview` bleibt in der Zustandsmenge; dass P5 keine Kante dorthin fuehrt, gehoert dem Consumer",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/assistant_step_update.json",
+      "urteil": "gueltig",
+      "warum": "Grundform der Familie",
+      "verletzungen": []
+    },
     {
       "datei": "gueltig/audible-intervention-begin-experiment.json",
       "urteil": "gueltig",
@@ -71,6 +89,24 @@
     },
     {
       "datei": "gueltig/command_ack.json",
+      "urteil": "gueltig",
+      "warum": "Grundform der Familie",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/draft-offer-keine-aenderung.json",
+      "urteil": "gueltig",
+      "warum": "§59: `keine Aenderung` ist ein GUELTIGER Vorschlag mit vollstaendigem Objekt, kein leerer Rueckgabewert",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/draft-offer-mehr-daten.json",
+      "urteil": "gueltig",
+      "warum": "§59: `mehr Daten` ebenso - beide tragen Evidenz-IDs, Hoerziel, Stopbedingung und Rueckweg",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/draft_offer.json",
       "urteil": "gueltig",
       "warum": "Grundform der Familie",
       "verletzungen": []
@@ -193,6 +229,12 @@
       "datei": "gueltig/experiment-abort-verdraengt.json",
       "urteil": "gueltig",
       "warum": "M-47/E-03: die Verdraengung durch einen Bestandsdeckel ist der zweite und letzte Ausloeser eines terminalen aborted",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/experiment-begin-mit-ziel.json",
+      "urteil": "gueltig",
+      "warum": "E-05: mit `ziel` liest der Guardrail-Rechner Ziel- und Schutzbereiche, statt sie zu raten",
       "verletzungen": []
     },
     {
@@ -334,6 +376,36 @@
       "verletzungen": []
     },
     {
+      "datei": "gueltig/intent-update-alle-fuenf-rollen.json",
+      "urteil": "gueltig",
+      "warum": "U22: die Rollenmenge hat genau fuenf Werte, und alle fuenf sind gueltig",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/intent-update-einzelne-fortschreibung.json",
+      "urteil": "gueltig",
+      "warum": "M-85: die inkrementelle Fortschreibung traegt genau ein Objekt",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/intent-update-globaler-scope.json",
+      "urteil": "gueltig",
+      "warum": "Abwesenheit der passage_id heisst GLOBALER Scope, nie null",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/intent-update-leerer-bestand-mit-marke.json",
+      "urteil": "gueltig",
+      "warum": "M-86: der vollstaendige LEERE Bestand wird gemeldet, nicht verschwiegen",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/intent_update.json",
+      "urteil": "gueltig",
+      "warum": "Grundform der Familie",
+      "verletzungen": []
+    },
+    {
       "datei": "gueltig/invalidate-bereich.json",
       "urteil": "gueltig",
       "warum": "§34.2 verlangt Ruecknahme per ID ODER Bereich - der Bereichszweig kam im ganzen Korpus bisher in keinem gueltigen Fixture vor",
@@ -466,9 +538,27 @@
       "verletzungen": []
     },
     {
+      "datei": "gueltig/session-snapshot-finding-more-data-herabgesetzt.json",
+      "urteil": "gueltig",
+      "warum": "NaN-Ehrlichkeit: ein Maskierungswert ohne Messung traegt 0 mit gueltig=false, und Rueckstau setzt `herabgesetzt`",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/session-snapshot-finding-ohne-optionales.json",
+      "urteil": "gueltig",
+      "warum": "Abwesenheit von maskierung, Alternativen, Ausschluessen, Ort und Passage heisst `nichts`, nie null",
+      "verletzungen": []
+    },
+    {
       "datei": "gueltig/session-snapshot-mit-experimenten-und-paaren.json",
       "urteil": "gueltig",
       "warum": "M-49/M-13, Nacharbeit 2 (R14/R32): der Rueckweg zu Gen laeuft ueber den bestehenden Snapshot-Pfad",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/session-snapshot-mit-findings.json",
+      "urteil": "gueltig",
+      "warum": "E-04: die Befunde reisen im Sessionsnapshot, je Befund mit eingebettetem maskierung",
       "verletzungen": []
     },
     {
@@ -511,6 +601,18 @@
       "datei": "gueltig/transport-project-samples.json",
       "urteil": "gueltig",
       "warum": "project_samples mit project_time=true und project_sample_start",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/user-verdict-enthaltung-ohne-notiz.json",
+      "urteil": "gueltig",
+      "warum": "Eine Enthaltung ohne Notiz und ohne Vorschlag ist ein regulaeres Urteil",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/user_verdict.json",
+      "urteil": "gueltig",
+      "warum": "Grundform der Familie",
       "verletzungen": []
     },
     {
@@ -588,6 +690,42 @@
           "instanz": "/adresse/host_pid",
           "schema": "#/$defs/adresse/additionalProperties",
           "schluessel": "additionalProperties"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/assistant-schritt-unbekannt.json",
+      "urteil": "ungueltig",
+      "warum": "§46.1 fuehrt genau acht Zustaende; ein neunter waere eine zweite Zustandsmaschine",
+      "verletzungen": [
+        {
+          "instanz": "/schritt",
+          "schema": "#/$defs/assistant_schritt/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/assistant-step-fremdes-feld.json",
+      "urteil": "ungueltig",
+      "warum": "Der Spiegel ist strikt: was der Main nicht sagt, erfindet der Broker nicht",
+      "verletzungen": [
+        {
+          "instanz": "/kommentar",
+          "schema": "#/$defs/assistant_step_update/additionalProperties",
+          "schluessel": "additionalProperties"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/assistant-step-revision-null.json",
+      "urteil": "ungueltig",
+      "warum": "Auch der Schritt beginnt bei Revision 1 - sonst waere `nie gemeldet` von `erste Meldung` nicht zu trennen",
+      "verletzungen": [
+        {
+          "instanz": "/revision",
+          "schema": "#/$defs/assistant_step_update/properties/revision/minimum",
+          "schluessel": "minimum"
         }
       ]
     },
@@ -1225,6 +1363,18 @@
       ]
     },
     {
+      "datei": "ungueltig/draft-offer-fremdes-feld.json",
+      "urteil": "ungueltig",
+      "warum": "Der Traeger des Vorschlags ist strikt",
+      "verletzungen": [
+        {
+          "instanz": "/dringlichkeit",
+          "schema": "#/$defs/draft_offer/additionalProperties",
+          "schluessel": "additionalProperties"
+        }
+      ]
+    },
+    {
       "datei": "ungueltig/einsames-surrogat-im-label.json",
       "urteil": "ungueltig",
       "warum": "GEMESSEN: beide eigenen Engines lehnen ab, das Referenzbein nimmt an - die umgekehrte Richtung derselben Klasse",
@@ -1696,6 +1846,30 @@
       ]
     },
     {
+      "datei": "ungueltig/experiment-ziel-band-ueber-dem-rand.json",
+      "urteil": "ungueltig",
+      "warum": "Das Ziel liegt im 221-Band-Gitter wie jede andere bandweise Angabe",
+      "verletzungen": [
+        {
+          "instanz": "/ziel/band_bis",
+          "schema": "#/$defs/experiment_ziel/properties/band_bis/maximum",
+          "schluessel": "maximum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/experiment-ziel-fremdes-feld.json",
+      "urteil": "ungueltig",
+      "warum": "E-05: das Ziel benennt Baender, keine Eingriffswerte - die stehen im Proposal",
+      "verletzungen": [
+        {
+          "instanz": "/ziel/gain_db",
+          "schema": "#/$defs/experiment_ziel/additionalProperties",
+          "schluessel": "additionalProperties"
+        }
+      ]
+    },
+    {
       "datei": "ungueltig/fehlercode-erfunden.json",
       "urteil": "ungueltig",
       "warum": "der Code ist maschinenlesbar; ein unbekannter faellt auf",
@@ -1703,6 +1877,222 @@
         {
           "instanz": "/code",
           "schema": "#/$defs/fehlercode/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/finding-aussageklasse-vierte.json",
+      "urteil": "ungueltig",
+      "warum": "§36.1 fuehrt genau drei Aussageklassen",
+      "verletzungen": [
+        {
+          "instanz": "/findings/0/claim_class",
+          "schema": "#/$defs/aussageklasse/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/finding-ausschluss-fremdes-feld.json",
+      "urteil": "ungueltig",
+      "warum": "Ein Ausschluss traegt Kandidat und Grund, keinen Freitext",
+      "verletzungen": [
+        {
+          "instanz": "/findings/0/ausschluesse/0/text",
+          "schema": "#/$defs/finding_ausschluss/additionalProperties",
+          "schluessel": "additionalProperties"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/finding-ausschlussgrund-unbekannt.json",
+      "urteil": "ungueltig",
+      "warum": "R4: acht Gruende, jeder an eine Matrixzeile gebunden; ein neunter waere erfunden",
+      "verletzungen": [
+        {
+          "instanz": "/findings/0/ausschluesse/0/grund",
+          "schema": "#/$defs/ausschlussgrund/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/finding-band-hz-fremdes-feld.json",
+      "urteil": "ungueltig",
+      "warum": "M-36: der Wert benennt ein Bandintervall des bestehenden Gitters und traegt keine eigene Achse",
+      "verletzungen": [
+        {
+          "instanz": "/findings/0/band_hz/achse",
+          "schema": "#/$defs/bandintervall/additionalProperties",
+          "schluessel": "additionalProperties"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/finding-belegtext-statt-zone.json",
+      "urteil": "ungueltig",
+      "warum": "Abnahme U21: der Beleg ist die markierte Zone mit zwei Kurven, NICHT ein wiederholter Text",
+      "verletzungen": [
+        {
+          "instanz": "/findings/0/beleg_text",
+          "schema": "#/$defs/session_finding/additionalProperties",
+          "schluessel": "additionalProperties"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/finding-beobachtung-ohne-bit.json",
+      "urteil": "ungueltig",
+      "warum": "Ohne Gueltigkeitsbit ist die Zahl keine Messung",
+      "verletzungen": [
+        {
+          "instanz": "/findings/0/beobachtung",
+          "schema": "#/$defs/beobachtung/required/gueltig",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/finding-konfidenz-fremdes-feld.json",
+      "urteil": "ungueltig",
+      "warum": "Die BefundSICHERHEIT ist strikt - anders als die additive Messqualitaet der Passage",
+      "verletzungen": [
+        {
+          "instanz": "/findings/0/confidence/prozent",
+          "schema": "#/$defs/befund_konfidenz/additionalProperties",
+          "schluessel": "additionalProperties"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/finding-maskierung-band-unter-null.json",
+      "urteil": "ungueltig",
+      "warum": "Band 0 ist das erste; ein negativer Index benennt kein Band dieses Gitters",
+      "verletzungen": [
+        {
+          "instanz": "/findings/0/maskierung/band_von",
+          "schema": "#/$defs/maskierung/properties/band_von/minimum",
+          "schluessel": "minimum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/finding-maskierung-fremdes-feld.json",
+      "urteil": "ungueltig",
+      "warum": "Die Engine kennt keine Optik: der Datenweg traegt Frequenzbereich und Wert, keine Zeichenanweisung",
+      "verletzungen": [
+        {
+          "instanz": "/findings/0/maskierung/farbe",
+          "schema": "#/$defs/maskierung/additionalProperties",
+          "schluessel": "additionalProperties"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/finding-naechster-test-unbekannt.json",
+      "urteil": "ungueltig",
+      "warum": "Der naechste Beweisschritt kommt aus einer geschlossenen Menge geprueft Templates",
+      "verletzungen": [
+        {
+          "instanz": "/findings/0/next_test",
+          "schema": "#/$defs/naechster_test/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/finding-ohne-evidenz-ids.json",
+      "urteil": "ungueltig",
+      "warum": "Exit-Gate §59 woertlich: JEDE sichtbare Behauptung referenziert existente Evidenz-IDs",
+      "verletzungen": [
+        {
+          "instanz": "/findings/0/evidence_ids",
+          "schema": "#/$defs/session_finding/properties/evidence_ids/minItems",
+          "schluessel": "minItems"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/finding-pre-post-unbekannt.json",
+      "urteil": "ungueltig",
+      "warum": "§8 Teil 1 kennt genau die PRE- und die POST-Stelle",
+      "verletzungen": [
+        {
+          "instanz": "/findings/0/pre_post",
+          "schema": "#/$defs/session_finding/properties/pre_post/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/finding-rang-ohne-komponente.json",
+      "urteil": "ungueltig",
+      "warum": "§36.2: der Rang hat SECHS getrennte Komponenten; eine fehlende waere eine stille Gewichtung",
+      "verletzungen": [
+        {
+          "instanz": "/findings/0/rang",
+          "schema": "#/$defs/rangkomponenten/required/uplift",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/finding-sicherheitsklasse-unbekannt.json",
+      "urteil": "ungueltig",
+      "warum": "Entwurf §8: hoch, mittel oder noch unklar - mehr Stufen gibt es nicht",
+      "verletzungen": [
+        {
+          "instanz": "/findings/0/confidence/class",
+          "schema": "#/$defs/sicherheitsklasse/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/finding-ursachenklasse-achte.json",
+      "urteil": "ungueltig",
+      "warum": "Entwurf §8 zaehlt SIEBEN Ursachenklassen ab; die siebte ist `daten_reichen_nicht`, eine achte gibt es nicht",
+      "verletzungen": [
+        {
+          "instanz": "/findings/0/ursachenklasse",
+          "schema": "#/$defs/ursachenklasse/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/finding-vierte-anzeigezeile.json",
+      "urteil": "ungueltig",
+      "warum": "Abnahme U21: genau drei Zeilen je Befund - eine vierte entsteht auch im Datenweg nicht",
+      "verletzungen": [
+        {
+          "instanz": "/findings/0/why_it_matters",
+          "schema": "#/$defs/session_finding/additionalProperties",
+          "schluessel": "additionalProperties"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/finding-zielmetrik-unbekannt.json",
+      "urteil": "ungueltig",
+      "warum": "Eine Zielmetrik ohne Vertragsteil im evidence_snapshot waere nicht messbar",
+      "verletzungen": [
+        {
+          "instanz": "/findings/0/target_metric",
+          "schema": "#/$defs/zielmetrik/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/finding-zustand-vierter.json",
+      "urteil": "ungueltig",
+      "warum": "Abnahme U21: genau drei Zustaende, und die UI liest sie, statt sie zu raten",
+      "verletzungen": [
+        {
+          "instanz": "/findings/0/zustand",
+          "schema": "#/$defs/befund_zustand/enum",
           "schluessel": "enum"
         }
       ]
@@ -2095,6 +2485,126 @@
       ]
     },
     {
+      "datei": "ungueltig/intent-band-ueber-dem-gitterrand.json",
+      "urteil": "ungueltig",
+      "warum": "Das Evidenzgitter hat 221 Baender; `bis` ist halboffen und endet bei 221",
+      "verletzungen": [
+        {
+          "instanz": "/schutzangaben/0/band/bis",
+          "schema": "#/$defs/bandintervall/properties/bis/maximum",
+          "schluessel": "maximum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/intent-beziehung-fremdes-feld.json",
+      "urteil": "ungueltig",
+      "warum": "Eine Beziehung traegt zwei Quellen und ihre Art - ein Gewicht waere ein Score, und §37.2 ist eine geordnete Liste",
+      "verletzungen": [
+        {
+          "instanz": "/beziehungen/0/gewicht",
+          "schema": "#/$defs/intent_beziehung/additionalProperties",
+          "schluessel": "additionalProperties"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/intent-beziehungsart-unbekannt.json",
+      "urteil": "ungueltig",
+      "warum": "§37.1 kennt fuehrt_vor und darf_verschmelzen; gleichrangig ist der aufgeloeste Zyklus",
+      "verletzungen": [
+        {
+          "instanz": "/beziehungen/0/art",
+          "schema": "#/$defs/intent_beziehungsart/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/intent-herkunft-unbekannt.json",
+      "urteil": "ungueltig",
+      "warum": "§37.1 kennt genau user, template und inferred",
+      "verletzungen": [
+        {
+          "instanz": "/intents/0/herkunft",
+          "schema": "#/$defs/intent_herkunft/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/intent-konfidenz-ueber-eins.json",
+      "urteil": "ungueltig",
+      "warum": "Die Konfidenz liegt in [0,1]; 1,5 ist keine grosszuegige Angabe, sondern eine falsche",
+      "verletzungen": [
+        {
+          "instanz": "/intents/0/konfidenz",
+          "schema": "#/$defs/source_intent/properties/konfidenz/maximum",
+          "schluessel": "maximum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/intent-revision-null.json",
+      "urteil": "ungueltig",
+      "warum": "Revision 0 gibt es nicht: die erste Fassung eines Intents traegt 1",
+      "verletzungen": [
+        {
+          "instanz": "/intents/0/revision",
+          "schema": "#/$defs/source_intent/properties/revision/minimum",
+          "schluessel": "minimum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/intent-rolle-sechster-wert.json",
+      "urteil": "ungueltig",
+      "warum": "U22: die Rollenmenge hat GENAU fuenf Werte; Impuls ist keine Rolle, sondern eine Schutzangabe",
+      "verletzungen": [
+        {
+          "instanz": "/intents/0/rolle",
+          "schema": "#/$defs/intent_rolle/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/intent-schutz-eigenschaft-unbekannt.json",
+      "urteil": "ungueltig",
+      "warum": "§37.1 nennt Attack, Breite, Ausklang und Bandintervall - Hall gehoert zur Verschmelzungs-Erlaubnis",
+      "verletzungen": [
+        {
+          "instanz": "/schutzangaben/0/eigenschaft",
+          "schema": "#/$defs/intent_schutzeigenschaft/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/intent-update-fremdes-feld.json",
+      "urteil": "ungueltig",
+      "warum": "Der Intenttransport ist STRIKT: ein unbekanntes Feld waere eine unbekannte Absicht",
+      "verletzungen": [
+        {
+          "instanz": "/prioritaet",
+          "schema": "#/$defs/intent_update/additionalProperties",
+          "schluessel": "additionalProperties"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/intent-update-ohne-vollstaendigkeitsmarke.json",
+      "urteil": "ungueltig",
+      "warum": "M-86: ohne die Marke kann der Broker `vollstaendiger Bestand` nicht von `Ausschnitt` unterscheiden",
+      "verletzungen": [
+        {
+          "instanz": "",
+          "schema": "#/$defs/intent_update/required/vollstaendig",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
       "datei": "ungueltig/intervention-art-erfunden.json",
       "urteil": "ungueltig",
       "warum": "jede hoerbare Intervention gehoert einer benannten Art an (§34.2)",
@@ -2472,6 +2982,174 @@
         {
           "instanz": "/mitglieder/0/probe_descriptor/plugin_kind",
           "schema": "#/$defs/probe_descriptor_pre/properties/plugin_kind/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/proposal-aktion-unbekannt.json",
+      "urteil": "ungueltig",
+      "warum": "§42.2: der Befundtyp waehlt eine GEPRUEFTE Aktionstemplate, keine freie Aktion",
+      "verletzungen": [
+        {
+          "instanz": "/proposal/action",
+          "schema": "#/$defs/proposal_aktion/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/proposal-execution-unbekannt.json",
+      "urteil": "ungueltig",
+      "warum": "§42.2 Punkt 5 kennt manual und previewable; in P5 ist previewable zusaetzlich eine Consumerregel",
+      "verletzungen": [
+        {
+          "instanz": "/proposal/execution",
+          "schema": "#/$defs/proposal_execution/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/proposal-fremdes-feld.json",
+      "urteil": "ungueltig",
+      "warum": "Das Proposal ist zuerst ein validiertes Objekt und erst danach Text",
+      "verletzungen": [
+        {
+          "instanz": "/proposal/warum",
+          "schema": "#/$defs/proposal/additionalProperties",
+          "schluessel": "additionalProperties"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/proposal-grenzen-fremdes-feld.json",
+      "urteil": "ungueltig",
+      "warum": "Dieselbe Strenge auf der Grenzenseite - sonst traege ein Vorschlag Grenzen fuer etwas, das er nicht setzt",
+      "verletzungen": [
+        {
+          "instanz": "/proposal/allowed_bounds/slope",
+          "schema": "#/$defs/proposal_grenzen/additionalProperties",
+          "schluessel": "additionalProperties"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/proposal-ohne-grenzen.json",
+      "urteil": "ungueltig",
+      "warum": "Exit-Gate §59: jedes Proposal nennt seine Grenzen",
+      "verletzungen": [
+        {
+          "instanz": "/proposal",
+          "schema": "#/$defs/proposal/required/allowed_bounds",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/proposal-ohne-rueckweg.json",
+      "urteil": "ungueltig",
+      "warum": "E-06: der Rueckweg ist ein FELD, kein Versprechen im Text",
+      "verletzungen": [
+        {
+          "instanz": "/proposal",
+          "schema": "#/$defs/proposal/required/revert",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/proposal-ohne-stopbedingung.json",
+      "urteil": "ungueltig",
+      "warum": "Exit-Gate §59: JEDES Proposal nennt eine Stopbedingung",
+      "verletzungen": [
+        {
+          "instanz": "/proposal/stop_if",
+          "schema": "#/$defs/proposal/properties/stop_if/minItems",
+          "schluessel": "minItems"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/proposal-parameter-fremdes-feld.json",
+      "urteil": "ungueltig",
+      "warum": "Die Parametermenge ist strikt: ein unbekannter Parameter waere ein unbekannter Eingriff",
+      "verletzungen": [
+        {
+          "instanz": "/proposal/parameters/slope_db_oct",
+          "schema": "#/$defs/proposal_parameter/additionalProperties",
+          "schluessel": "additionalProperties"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/proposal-revert-vierter-wert.json",
+      "urteil": "ungueltig",
+      "warum": "E-06: drei Rueckwege; `dsp_revert` gehoert P7 und ist in P5 ein Vertragsbruch",
+      "verletzungen": [
+        {
+          "instanz": "/proposal/revert",
+          "schema": "#/$defs/proposal_revert/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/proposal-schema-zwei.json",
+      "urteil": "ungueltig",
+      "warum": "Das Proposal-Schema ist eingefroren; eine zweite Fassung ist ein eigener Vertragsschritt",
+      "verletzungen": [
+        {
+          "instanz": "/proposal/proposal_schema",
+          "schema": "#/$defs/proposal/properties/proposal_schema/const",
+          "schluessel": "const"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/proposal-schutz-als-wortliste.json",
+      "urteil": "ungueltig",
+      "warum": "M-49: die geschuetzte Eigenschaft ist eine HARTE Constraint in derselben Form wie der Intent, keine Wortliste",
+      "verletzungen": [
+        {
+          "instanz": "/proposal/protected_traits/0",
+          "schema": "#/$defs/intent_schutz/type",
+          "schluessel": "type"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/proposal-stopbedingung-unbekannt.json",
+      "urteil": "ungueltig",
+      "warum": "Eine Stopbedingung ohne messbaren Guardrail waere nicht ueberpruefbar",
+      "verletzungen": [
+        {
+          "instanz": "/proposal/stop_if/0",
+          "schema": "#/$defs/proposal_stopbedingung/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/proposal-wertebereich-fremdes-feld.json",
+      "urteil": "ungueltig",
+      "warum": "Ein Wertebereich hat zwei Enden und keine dritte Angabe",
+      "verletzungen": [
+        {
+          "instanz": "/proposal/allowed_bounds/q/schritt",
+          "schema": "#/$defs/wertebereich/additionalProperties",
+          "schluessel": "additionalProperties"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/proposal-wirkung-unbekannt.json",
+      "urteil": "ungueltig",
+      "warum": "Die erwartete Wirkung ist eine geschlossene Menge, kein Werbetext",
+      "verletzungen": [
+        {
+          "instanz": "/proposal/expected_effect",
+          "schema": "#/$defs/proposal_wirkung/enum",
           "schluessel": "enum"
         }
       ]
@@ -3124,6 +3802,42 @@
           "instanz": "/undo_tiefe",
           "schema": "#/$defs/state_report/properties/undo_tiefe/maximum",
           "schluessel": "maximum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/user-urteil-unbekannt.json",
+      "urteil": "ungueltig",
+      "warum": "Das Userurteil ist eine geschlossene Menge; `vielleicht` ist `spaeter`",
+      "verletzungen": [
+        {
+          "instanz": "/urteil",
+          "schema": "#/$defs/user_urteil/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/user-verdict-fremdes-feld.json",
+      "urteil": "ungueltig",
+      "warum": "Userdaten sind Notiz und Urteil, keine Bewertungsskala",
+      "verletzungen": [
+        {
+          "instanz": "/sterne",
+          "schema": "#/$defs/user_verdict/additionalProperties",
+          "schluessel": "additionalProperties"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/user-verdict-ohne-finding.json",
+      "urteil": "ungueltig",
+      "warum": "Ein Urteil ohne Befund haette keinen Gegenstand",
+      "verletzungen": [
+        {
+          "instanz": "",
+          "schema": "#/$defs/user_verdict/required/finding_id",
+          "schluessel": "required"
         }
       ]
     },

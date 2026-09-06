@@ -98,6 +98,117 @@ TRANSPORT = {
 
 KONFIDENZ = {"metrics_version": 1, "klasse": "mittel", "timing_alignment": 0.8}
 
+# ── SONDE-014 (P5), Fassung 3: Intent, Befund, Vorschlag, Urteil ───────────
+#
+# Die IDs sind bewusst NICHT die der Adresse: ein Fixture, in dem Quelle,
+# Passage und Befund dieselbe Zeichenkette tragen, liesse einen vertauschten
+# Feldzugriff gruen aussehen.
+
+QUELLE_A    = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+QUELLE_B    = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+PASSAGE_S14 = "99999999999999999999999999999999"
+FINDING_ID  = "0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f"
+FINDING_ALT = "0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a"
+PROPOSAL_ID = "0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e"
+STEP_ID     = "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
+VERDICT_ID  = "0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c"
+EVIDENZ_1   = "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b"
+EVIDENZ_2   = "0909090909090909090909090909090909"[:32]
+
+SOURCE_INTENT = {
+    "quelle_id": QUELLE_A,
+    "passage_id": PASSAGE_S14,
+    "rolle": "fuehrt",
+    "revision": 3,
+    "herkunft": "user",
+    "konfidenz": 1.0,
+}
+
+INTENT_SCHUTZ = {
+    "quelle_id": QUELLE_A,
+    "eigenschaft": "band",
+    "band": {"von": 40, "bis": 96},
+}
+
+INTENT_BEZIEHUNG = {"quelle_a": QUELLE_A, "quelle_b": QUELLE_B, "art": "fuehrt_vor"}
+
+RANG = {
+    "bandpassung": 0.9,
+    "koinzidenz": 0.8,
+    "uplift": 0.55,
+    "intent_relevanz": 0.7,
+    "wiederholbarkeit": 0.6,
+    "routingqualitaet": 1.0,
+}
+
+MASKIERUNG = {
+    "quelle_a": QUELLE_A,
+    "quelle_b": QUELLE_B,
+    "band_von": 40,
+    "band_bis": 96,
+    "wert_db": -3.25,
+    "gueltig": True,
+    "herabgesetzt": False,
+}
+
+SESSION_FINDING = {
+    "finding_id": FINDING_ID,
+    "claim_class": "zusammenhang",
+    "ursachenklasse": "zwei_quellen_konkurrenz",
+    "target_metric": "band_pegel_db",
+    "candidate_source": QUELLE_A,
+    "pre_post": "post",
+    "passage_id": PASSAGE_S14,
+    "band_hz": {"von": 40, "bis": 96},
+    "beobachtung": {"wert_db": -4.5, "gueltig": True},
+    "rang": RANG,
+    "confidence": {"class": "mittel", "score": 0.68},
+    "evidence_ids": [EVIDENZ_1, EVIDENZ_2],
+    "alternatives": [FINDING_ALT],
+    "ausschluesse": [{"candidate_source": QUELLE_B, "grund": "coverage_fehlt"}],
+    "maskierung": MASKIERUNG,
+    "next_test": "pre_post_paar_messen",
+    "zustand": "ready_to_send",
+    "intent_revision": 4,
+    "likely_cause": "Klavierbus konkurriert im markierten Band",
+    "smallest_test": "PRE/POST-Paar der Kette messen",
+    "listen_for": "Refrainworte klarer, Klavier nicht duenner",
+}
+
+PROPOSAL = {
+    "proposal_id": PROPOSAL_ID,
+    "proposal_schema": 1,
+    "target": QUELLE_A,
+    "base_revision": 14,
+    "passage_id": PASSAGE_S14,
+    "finding_id": FINDING_ID,
+    "action": "dynamic_eq_cut",
+    "parameters": {"frequency_hz": 930.0, "q": 1.1, "max_gain_db": -1.5},
+    "allowed_bounds": {
+        "frequency_hz": {"von": 700.0, "bis": 1200.0},
+        "q": {"von": 0.7, "bis": 2.0},
+        "gain_db": {"von": -2.0, "bis": 0.0},
+    },
+    "evidence_ids": [EVIDENZ_1, EVIDENZ_2],
+    "expected_effect": "reduce_masking_pressure",
+    "protected_traits": [{"quelle_id": QUELLE_A, "eigenschaft": "attack"}],
+    "listen_for": "Refrainworte klarer, Klavier nicht duenner",
+    "stop_if": ["guardrail_geschuetzt", "keine_wiederholbare_masteraenderung"],
+    "execution": "manual",
+    "confidence": {"class": "mittel", "score": 0.68},
+    "revert": "manual_only",
+    "intent_revision": 4,
+    "generatorversion": 1,
+}
+
+EXPERIMENT_ZIEL = {
+    "band_von": 40,
+    "band_bis": 96,
+    "geschuetzte_baender": [{"von": 4, "bis": 12}],
+    "proposal_id": PROPOSAL_ID,
+}
+
+
 
 def bitmap(n: int) -> str:
     """Alle n Baender gueltig, FUELLBITS DES LETZTEN BYTES AUF 0.
@@ -558,6 +669,41 @@ GRUND: dict[str, dict] = {
         "fuehrendes_main": "33333333333333333333333333333333",
         "beitritt_bestaetigung_noetig": False,
         "mitglieder": [PROBE],
+    },
+    "intent_update": {
+        "type": "intent_update",
+        "adresse": ADRESSE,
+        "session_epoch": "22222222222222222222222222222222",
+        "bestand_revision": 4,
+        "vollstaendig": True,
+        "intents": [SOURCE_INTENT],
+        "schutzangaben": [INTENT_SCHUTZ],
+        "beziehungen": [INTENT_BEZIEHUNG],
+    },
+    "assistant_step_update": {
+        "type": "assistant_step_update",
+        "adresse": ADRESSE,
+        "session_epoch": "22222222222222222222222222222222",
+        "step_id": STEP_ID,
+        "schritt": "proposal",
+        "revision": 3,
+        "offen": True,
+        "finding_id": FINDING_ID,
+        "proposal_id": PROPOSAL_ID,
+    },
+    "draft_offer": {
+        "type": "draft_offer",
+        "kopf": STEUERKOPF,
+        "proposal": PROPOSAL,
+    },
+    "user_verdict": {
+        "type": "user_verdict",
+        "kopf": STEUERKOPF,
+        "user_verdict_id": VERDICT_ID,
+        "finding_id": FINDING_ID,
+        "proposal_id": PROPOSAL_ID,
+        "urteil": "angenommen",
+        "notiz": "klingt offener, Klavier bleibt",
     },
     "evidence_snapshot": {
         "type": "evidence_snapshot",
@@ -1099,6 +1245,121 @@ def zusatz_gueltig() -> list[tuple[str, dict, str]]:
     faelle.append(("experiment-begin-unclear-alignment", eb,
                    "M-16: `unclear` ist eine vollwertige der vier Alignmentklassen und sperrt keine Nachricht"))
 
+
+    # ── SONDE-014 (P5), Fassung 3 ─────────────────────────────────────────
+    #
+    # Die drei optionalen Listen des `intent_update` duerfen FEHLEN: ein
+    # leerer Bestand mit Vollstaendigkeitsmarke ist die ehrliche Meldung
+    # "diese Sitzung hat keinen Intent" (M-86). Ohne sie saehe ein
+    # Transportverlust wie "kein Schutz gewuenscht" aus.
+    iu = copy.deepcopy(GRUND["intent_update"])
+    for feld in ("intents", "schutzangaben", "beziehungen"):
+        iu.pop(feld)
+    iu["bestand_revision"] = 0
+    faelle.append(("intent-update-leerer-bestand-mit-marke", iu,
+                   "M-86: der vollstaendige LEERE Bestand wird gemeldet, nicht verschwiegen"))
+
+    iu = copy.deepcopy(GRUND["intent_update"])
+    iu["vollstaendig"] = False
+    iu.pop("schutzangaben")
+    iu.pop("beziehungen")
+    faelle.append(("intent-update-einzelne-fortschreibung", iu,
+                   "M-85: die inkrementelle Fortschreibung traegt genau ein Objekt"))
+
+    iu = copy.deepcopy(GRUND["intent_update"])
+    iu["intents"] = [dict(SOURCE_INTENT)]
+    iu["intents"][0].pop("passage_id")
+    faelle.append(("intent-update-globaler-scope", iu,
+                   "Abwesenheit der passage_id heisst GLOBALER Scope, nie null"))
+
+    # Alle fuenf Rollen und alle drei Herkuenfte kommen wirklich vor.
+    iu = copy.deepcopy(GRUND["intent_update"])
+    iu["intents"] = []
+    for i, (rolle, herkunft) in enumerate(
+            [("fuehrt", "user"), ("traegt", "template"), ("begleitet", "inferred"),
+             ("geschuetzt", "user"), ("verschmolzen", "user")]):
+        eintrag = dict(SOURCE_INTENT)
+        eintrag["quelle_id"] = f"{i + 1}" * 32
+        eintrag["rolle"] = rolle
+        eintrag["herkunft"] = herkunft
+        iu["intents"].append(eintrag)
+    faelle.append(("intent-update-alle-fuenf-rollen", iu,
+                   "U22: die Rollenmenge hat genau fuenf Werte, und alle fuenf sind gueltig"))
+
+    asu = copy.deepcopy(GRUND["assistant_step_update"])
+    asu["schritt"] = "preview"
+    asu["offen"] = False
+    faelle.append(("assistant-step-preview-bleibt-im-vertrag", asu,
+                   "E-07: `preview` bleibt in der Zustandsmenge; dass P5 keine Kante dorthin fuehrt, gehoert dem Consumer"))
+
+    asu = copy.deepcopy(GRUND["assistant_step_update"])
+    asu.pop("finding_id")
+    asu.pop("proposal_id")
+    faelle.append(("assistant-step-ohne-bezug", asu,
+                   "Ein Schritt vor dem ersten Befund traegt keine Bezuege - Abwesenheit ist kein null"))
+
+    ss = copy.deepcopy(GRUND["session_snapshot"])
+    ss["findings"] = [SESSION_FINDING]
+    faelle.append(("session-snapshot-mit-findings", ss,
+                   "E-04: die Befunde reisen im Sessionsnapshot, je Befund mit eingebettetem maskierung"))
+
+    ss = copy.deepcopy(GRUND["session_snapshot"])
+    befund = copy.deepcopy(SESSION_FINDING)
+    befund.pop("maskierung")
+    befund.pop("alternatives")
+    befund.pop("ausschluesse")
+    befund.pop("pre_post")
+    befund.pop("passage_id")
+    ss["findings"] = [befund]
+    faelle.append(("session-snapshot-finding-ohne-optionales", ss,
+                   "Abwesenheit von maskierung, Alternativen, Ausschluessen, Ort und Passage heisst `nichts`, nie null"))
+
+    ss = copy.deepcopy(GRUND["session_snapshot"])
+    befund = copy.deepcopy(SESSION_FINDING)
+    befund["zustand"] = "more_data"
+    befund["confidence"] = {"class": "unklar", "score": 0.2}
+    befund["maskierung"] = dict(MASKIERUNG)
+    befund["maskierung"]["gueltig"] = False
+    befund["maskierung"]["wert_db"] = 0.0
+    befund["maskierung"]["herabgesetzt"] = True
+    ss["findings"] = [befund]
+    faelle.append(("session-snapshot-finding-more-data-herabgesetzt", ss,
+                   "NaN-Ehrlichkeit: ein Maskierungswert ohne Messung traegt 0 mit gueltig=false, und Rueckstau setzt `herabgesetzt`"))
+
+    eb = copy.deepcopy(GRUND["experiment_begin"])
+    eb["ziel"] = EXPERIMENT_ZIEL
+    faelle.append(("experiment-begin-mit-ziel", eb,
+                   "E-05: mit `ziel` liest der Guardrail-Rechner Ziel- und Schutzbereiche, statt sie zu raten"))
+
+    do = copy.deepcopy(GRUND["draft_offer"])
+    do["proposal"] = copy.deepcopy(PROPOSAL)
+    do["proposal"]["action"] = "no_change"
+    do["proposal"]["parameters"] = {}
+    do["proposal"]["allowed_bounds"] = {}
+    do["proposal"]["expected_effect"] = "none"
+    do["proposal"]["revert"] = "none_needed"
+    do["proposal"]["stop_if"] = ["keine_wiederholbare_masteraenderung"]
+    faelle.append(("draft-offer-keine-aenderung", do,
+                   "§59: `keine Aenderung` ist ein GUELTIGER Vorschlag mit vollstaendigem Objekt, kein leerer Rueckgabewert"))
+
+    do = copy.deepcopy(GRUND["draft_offer"])
+    do["proposal"] = copy.deepcopy(PROPOSAL)
+    do["proposal"]["action"] = "more_data"
+    do["proposal"]["parameters"] = {}
+    do["proposal"]["allowed_bounds"] = {}
+    do["proposal"]["expected_effect"] = "none"
+    do["proposal"]["revert"] = "none_needed"
+    do["proposal"]["next"] = None
+    do["proposal"].pop("next")
+    faelle.append(("draft-offer-mehr-daten", do,
+                   "§59: `mehr Daten` ebenso - beide tragen Evidenz-IDs, Hoerziel, Stopbedingung und Rueckweg"))
+
+    uv = copy.deepcopy(GRUND["user_verdict"])
+    uv.pop("notiz")
+    uv.pop("proposal_id")
+    uv["urteil"] = "enthaltung"
+    faelle.append(("user-verdict-enthaltung-ohne-notiz", uv,
+                   "Eine Enthaltung ohne Notiz und ohne Vorschlag ist ein regulaeres Urteil"))
     return faelle
 
 
@@ -1131,6 +1392,298 @@ def vm(instanz: str, schema: str, schluessel: str) -> dict:
 
 
 UNGUELTIG: list[tuple] = [
+
+    # ── SONDE-014 (P5), Fassung 3 ─────────────────────────────────────────
+    #
+    # Je Definition mindestens eine Verletzung, je Wertedomaene eine an ihrem
+    # eigenen Pfad. A5 laeuft mit --abdeckung fail-closed.
+
+    ("intent-rolle-sechster-wert", "intent_update",
+     [setze("intents", 0, "rolle", "impuls")],
+     [v("/intents/0/rolle", f"{S}/intent_rolle/enum", "enum")],
+     "U22: die Rollenmenge hat GENAU fuenf Werte; Impuls ist keine Rolle, sondern eine Schutzangabe"),
+
+    ("intent-herkunft-unbekannt", "intent_update",
+     [setze("intents", 0, "herkunft", "geraten")],
+     [v("/intents/0/herkunft", f"{S}/intent_herkunft/enum", "enum")],
+     "§37.1 kennt genau user, template und inferred"),
+
+    ("intent-konfidenz-ueber-eins", "intent_update",
+     [setze("intents", 0, "konfidenz", 1.5)],
+     [v("/intents/0/konfidenz", f"{S}/source_intent/properties/konfidenz/maximum", "maximum")],
+     "Die Konfidenz liegt in [0,1]; 1,5 ist keine grosszuegige Angabe, sondern eine falsche"),
+
+    ("intent-revision-null", "intent_update",
+     [setze("intents", 0, "revision", 0)],
+     [v("/intents/0/revision", f"{S}/source_intent/properties/revision/minimum", "minimum")],
+     "Revision 0 gibt es nicht: die erste Fassung eines Intents traegt 1"),
+
+    ("intent-schutz-eigenschaft-unbekannt", "intent_update",
+     [setze("schutzangaben", 0, "eigenschaft", "hall")],
+     [v("/schutzangaben/0/eigenschaft", f"{S}/intent_schutzeigenschaft/enum", "enum")],
+     "§37.1 nennt Attack, Breite, Ausklang und Bandintervall - Hall gehoert zur Verschmelzungs-Erlaubnis"),
+
+    ("intent-band-ueber-dem-gitterrand", "intent_update",
+     [setze("schutzangaben", 0, "band", "bis", 222)],
+     [v("/schutzangaben/0/band/bis", f"{S}/bandintervall/properties/bis/maximum", "maximum")],
+     "Das Evidenzgitter hat 221 Baender; `bis` ist halboffen und endet bei 221"),
+
+    ("intent-beziehungsart-unbekannt", "intent_update",
+     [setze("beziehungen", 0, "art", "haengt_ab")],
+     [v("/beziehungen/0/art", f"{S}/intent_beziehungsart/enum", "enum")],
+     "§37.1 kennt fuehrt_vor und darf_verschmelzen; gleichrangig ist der aufgeloeste Zyklus"),
+
+    ("intent-beziehung-fremdes-feld", "intent_update",
+     [setze("beziehungen", 0, "gewicht", 0.5)],
+     [v("/beziehungen/0/gewicht", f"{S}/intent_beziehung/additionalProperties",
+        "additionalProperties")],
+     "Eine Beziehung traegt zwei Quellen und ihre Art - ein Gewicht waere ein Score, und §37.2 ist eine geordnete Liste"),
+
+    ("intent-update-fremdes-feld", "intent_update",
+     [setze("prioritaet", 3)],
+     [v("/prioritaet", f"{S}/intent_update/additionalProperties", "additionalProperties")],
+     "Der Intenttransport ist STRIKT: ein unbekanntes Feld waere eine unbekannte Absicht"),
+
+    ("intent-update-ohne-vollstaendigkeitsmarke", "intent_update",
+     [loesche("vollstaendig")],
+     [v("", f"{S}/intent_update/required/vollstaendig", "required")],
+     "M-86: ohne die Marke kann der Broker `vollstaendiger Bestand` nicht von `Ausschnitt` unterscheiden"),
+
+    ("assistant-schritt-unbekannt", "assistant_step_update",
+     [setze("schritt", "nachdenken")],
+     [v("/schritt", f"{S}/assistant_schritt/enum", "enum")],
+     "§46.1 fuehrt genau acht Zustaende; ein neunter waere eine zweite Zustandsmaschine"),
+
+    ("assistant-step-fremdes-feld", "assistant_step_update",
+     [setze("kommentar", "spaeter")],
+     [v("/kommentar", f"{S}/assistant_step_update/additionalProperties", "additionalProperties")],
+     "Der Spiegel ist strikt: was der Main nicht sagt, erfindet der Broker nicht"),
+
+    ("assistant-step-revision-null", "assistant_step_update",
+     [setze("revision", 0)],
+     [v("/revision", f"{S}/assistant_step_update/properties/revision/minimum", "minimum")],
+     "Auch der Schritt beginnt bei Revision 1 - sonst waere `nie gemeldet` von `erste Meldung` nicht zu trennen"),
+
+    ("finding-ursachenklasse-achte", "session_snapshot",
+     [setze("findings", [SESSION_FINDING]),
+      setze("findings", 0, "ursachenklasse", "unbekannt")],
+     [v("/findings/0/ursachenklasse", f"{S}/ursachenklasse/enum", "enum")],
+     "Entwurf §8 zaehlt SIEBEN Ursachenklassen ab; die siebte ist `daten_reichen_nicht`, eine achte gibt es nicht"),
+
+    ("finding-aussageklasse-vierte", "session_snapshot",
+     [setze("findings", [SESSION_FINDING]),
+      setze("findings", 0, "claim_class", "vermutung")],
+     [v("/findings/0/claim_class", f"{S}/aussageklasse/enum", "enum")],
+     "§36.1 fuehrt genau drei Aussageklassen"),
+
+    ("finding-zustand-vierter", "session_snapshot",
+     [setze("findings", [SESSION_FINDING]),
+      setze("findings", 0, "zustand", "pending")],
+     [v("/findings/0/zustand", f"{S}/befund_zustand/enum", "enum")],
+     "Abnahme U21: genau drei Zustaende, und die UI liest sie, statt sie zu raten"),
+
+    ("finding-sicherheitsklasse-unbekannt", "session_snapshot",
+     [setze("findings", [SESSION_FINDING]),
+      setze("findings", 0, "confidence", "class", "sehr_hoch")],
+     [v("/findings/0/confidence/class", f"{S}/sicherheitsklasse/enum", "enum")],
+     "Entwurf §8: hoch, mittel oder noch unklar - mehr Stufen gibt es nicht"),
+
+    ("finding-konfidenz-fremdes-feld", "session_snapshot",
+     [setze("findings", [SESSION_FINDING]),
+      setze("findings", 0, "confidence", "prozent", 68)],
+     [v("/findings/0/confidence/prozent",
+        f"{S}/befund_konfidenz/additionalProperties", "additionalProperties")],
+     "Die BefundSICHERHEIT ist strikt - anders als die additive Messqualitaet der Passage"),
+
+    ("finding-zielmetrik-unbekannt", "session_snapshot",
+     [setze("findings", [SESSION_FINDING]),
+      setze("findings", 0, "target_metric", "master_glanz")],
+     [v("/findings/0/target_metric", f"{S}/zielmetrik/enum", "enum")],
+     "Eine Zielmetrik ohne Vertragsteil im evidence_snapshot waere nicht messbar"),
+
+    ("finding-naechster-test-unbekannt", "session_snapshot",
+     [setze("findings", [SESSION_FINDING]),
+      setze("findings", 0, "next_test", "einfach_lauter")],
+     [v("/findings/0/next_test", f"{S}/naechster_test/enum", "enum")],
+     "Der naechste Beweisschritt kommt aus einer geschlossenen Menge geprueft Templates"),
+
+    ("finding-ausschlussgrund-unbekannt", "session_snapshot",
+     [setze("findings", [SESSION_FINDING]),
+      setze("findings", 0, "ausschluesse", 0, "grund", "passt_nicht")],
+     [v("/findings/0/ausschluesse/0/grund", f"{S}/ausschlussgrund/enum", "enum")],
+     "R4: acht Gruende, jeder an eine Matrixzeile gebunden; ein neunter waere erfunden"),
+
+    ("finding-ausschluss-fremdes-feld", "session_snapshot",
+     [setze("findings", [SESSION_FINDING]),
+      setze("findings", 0, "ausschluesse", 0, "text", "zu schwach")],
+     [v("/findings/0/ausschluesse/0/text",
+        f"{S}/finding_ausschluss/additionalProperties", "additionalProperties")],
+     "Ein Ausschluss traegt Kandidat und Grund, keinen Freitext"),
+
+    ("finding-pre-post-unbekannt", "session_snapshot",
+     [setze("findings", [SESSION_FINDING]),
+      setze("findings", 0, "pre_post", "mitte")],
+     [v("/findings/0/pre_post",
+        f"{S}/session_finding/properties/pre_post/enum", "enum")],
+     "§8 Teil 1 kennt genau die PRE- und die POST-Stelle"),
+
+    ("finding-ohne-evidenz-ids", "session_snapshot",
+     [setze("findings", [SESSION_FINDING]),
+      setze("findings", 0, "evidence_ids", [])],
+     [v("/findings/0/evidence_ids",
+        f"{S}/session_finding/properties/evidence_ids/minItems", "minItems")],
+     "Exit-Gate §59 woertlich: JEDE sichtbare Behauptung referenziert existente Evidenz-IDs"),
+
+    ("finding-belegtext-statt-zone", "session_snapshot",
+     [setze("findings", [SESSION_FINDING]),
+      setze("findings", 0, "beleg_text", "180-280 Hz, 78 Prozent der Faelle")],
+     [v("/findings/0/beleg_text", f"{S}/session_finding/additionalProperties",
+        "additionalProperties")],
+     "Abnahme U21: der Beleg ist die markierte Zone mit zwei Kurven, NICHT ein wiederholter Text"),
+
+    ("finding-vierte-anzeigezeile", "session_snapshot",
+     [setze("findings", [SESSION_FINDING]),
+      setze("findings", 0, "why_it_matters", "Refrain traegt den Text")],
+     [v("/findings/0/why_it_matters", f"{S}/session_finding/additionalProperties",
+        "additionalProperties")],
+     "Abnahme U21: genau drei Zeilen je Befund - eine vierte entsteht auch im Datenweg nicht"),
+
+    ("finding-rang-ohne-komponente", "session_snapshot",
+     [setze("findings", [SESSION_FINDING]),
+      loesche("findings", 0, "rang", "uplift")],
+     [v("/findings/0/rang", f"{S}/rangkomponenten/required/uplift", "required")],
+     "§36.2: der Rang hat SECHS getrennte Komponenten; eine fehlende waere eine stille Gewichtung"),
+
+    ("finding-beobachtung-ohne-bit", "session_snapshot",
+     [setze("findings", [SESSION_FINDING]),
+      loesche("findings", 0, "beobachtung", "gueltig")],
+     [v("/findings/0/beobachtung", f"{S}/beobachtung/required/gueltig", "required")],
+     "Ohne Gueltigkeitsbit ist die Zahl keine Messung"),
+
+    ("finding-maskierung-fremdes-feld", "session_snapshot",
+     [setze("findings", [SESSION_FINDING]),
+      setze("findings", 0, "maskierung", "farbe", "#c0392b")],
+     [v("/findings/0/maskierung/farbe", f"{S}/maskierung/additionalProperties",
+        "additionalProperties")],
+     "Die Engine kennt keine Optik: der Datenweg traegt Frequenzbereich und Wert, keine Zeichenanweisung"),
+
+    ("finding-maskierung-band-unter-null", "session_snapshot",
+     [setze("findings", [SESSION_FINDING]),
+      setze("findings", 0, "maskierung", "band_von", -1)],
+     [v("/findings/0/maskierung/band_von",
+        f"{S}/maskierung/properties/band_von/minimum", "minimum")],
+     "Band 0 ist das erste; ein negativer Index benennt kein Band dieses Gitters"),
+
+    ("finding-band-hz-fremdes-feld", "session_snapshot",
+     [setze("findings", [SESSION_FINDING]),
+      setze("findings", 0, "band_hz", "achse", "log")],
+     [v("/findings/0/band_hz/achse", f"{S}/bandintervall/additionalProperties",
+        "additionalProperties")],
+     "M-36: der Wert benennt ein Bandintervall des bestehenden Gitters und traegt keine eigene Achse"),
+
+    ("proposal-aktion-unbekannt", "draft_offer",
+     [setze("proposal", "action", "kompressor")],
+     [v("/proposal/action", f"{S}/proposal_aktion/enum", "enum")],
+     "§42.2: der Befundtyp waehlt eine GEPRUEFTE Aktionstemplate, keine freie Aktion"),
+
+    ("proposal-execution-unbekannt", "draft_offer",
+     [setze("proposal", "execution", "automatisch")],
+     [v("/proposal/execution", f"{S}/proposal_execution/enum", "enum")],
+     "§42.2 Punkt 5 kennt manual und previewable; in P5 ist previewable zusaetzlich eine Consumerregel"),
+
+    ("proposal-revert-vierter-wert", "draft_offer",
+     [setze("proposal", "revert", "dsp_revert")],
+     [v("/proposal/revert", f"{S}/proposal_revert/enum", "enum")],
+     "E-06: drei Rueckwege; `dsp_revert` gehoert P7 und ist in P5 ein Vertragsbruch"),
+
+    ("proposal-wirkung-unbekannt", "draft_offer",
+     [setze("proposal", "expected_effect", "klingt_besser")],
+     [v("/proposal/expected_effect", f"{S}/proposal_wirkung/enum", "enum")],
+     "Die erwartete Wirkung ist eine geschlossene Menge, kein Werbetext"),
+
+    ("proposal-stopbedingung-unbekannt", "draft_offer",
+     [setze("proposal", "stop_if", ["klingt_komisch"])],
+     [v("/proposal/stop_if/0", f"{S}/proposal_stopbedingung/enum", "enum")],
+     "Eine Stopbedingung ohne messbaren Guardrail waere nicht ueberpruefbar"),
+
+    ("proposal-ohne-stopbedingung", "draft_offer",
+     [setze("proposal", "stop_if", [])],
+     [v("/proposal/stop_if", f"{S}/proposal/properties/stop_if/minItems", "minItems")],
+     "Exit-Gate §59: JEDES Proposal nennt eine Stopbedingung"),
+
+    ("proposal-ohne-rueckweg", "draft_offer",
+     [loesche("proposal", "revert")],
+     [v("/proposal", f"{S}/proposal/required/revert", "required")],
+     "E-06: der Rueckweg ist ein FELD, kein Versprechen im Text"),
+
+    ("proposal-ohne-grenzen", "draft_offer",
+     [loesche("proposal", "allowed_bounds")],
+     [v("/proposal", f"{S}/proposal/required/allowed_bounds", "required")],
+     "Exit-Gate §59: jedes Proposal nennt seine Grenzen"),
+
+    ("proposal-schema-zwei", "draft_offer",
+     [setze("proposal", "proposal_schema", 2)],
+     [v("/proposal/proposal_schema",
+        f"{S}/proposal/properties/proposal_schema/const", "const")],
+     "Das Proposal-Schema ist eingefroren; eine zweite Fassung ist ein eigener Vertragsschritt"),
+
+    ("proposal-parameter-fremdes-feld", "draft_offer",
+     [setze("proposal", "parameters", "slope_db_oct", 12)],
+     [v("/proposal/parameters/slope_db_oct",
+        f"{S}/proposal_parameter/additionalProperties", "additionalProperties")],
+     "Die Parametermenge ist strikt: ein unbekannter Parameter waere ein unbekannter Eingriff"),
+
+    ("proposal-grenzen-fremdes-feld", "draft_offer",
+     [setze("proposal", "allowed_bounds", "slope", {"von": 6.0, "bis": 12.0})],
+     [v("/proposal/allowed_bounds/slope",
+        f"{S}/proposal_grenzen/additionalProperties", "additionalProperties")],
+     "Dieselbe Strenge auf der Grenzenseite - sonst traege ein Vorschlag Grenzen fuer etwas, das er nicht setzt"),
+
+    ("proposal-wertebereich-fremdes-feld", "draft_offer",
+     [setze("proposal", "allowed_bounds", "q", "schritt", 0.1)],
+     [v("/proposal/allowed_bounds/q/schritt",
+        f"{S}/wertebereich/additionalProperties", "additionalProperties")],
+     "Ein Wertebereich hat zwei Enden und keine dritte Angabe"),
+
+    ("proposal-schutz-als-wortliste", "draft_offer",
+     [setze("proposal", "protected_traits", ["piano_attack"])],
+     [v("/proposal/protected_traits/0", f"{S}/intent_schutz/type", "type")],
+     "M-49: die geschuetzte Eigenschaft ist eine HARTE Constraint in derselben Form wie der Intent, keine Wortliste"),
+
+    ("proposal-fremdes-feld", "draft_offer",
+     [setze("proposal", "warum", "klingt besser")],
+     [v("/proposal/warum", f"{S}/proposal/additionalProperties", "additionalProperties")],
+     "Das Proposal ist zuerst ein validiertes Objekt und erst danach Text"),
+
+    ("draft-offer-fremdes-feld", "draft_offer",
+     [setze("dringlichkeit", "hoch")],
+     [v("/dringlichkeit", f"{S}/draft_offer/additionalProperties", "additionalProperties")],
+     "Der Traeger des Vorschlags ist strikt"),
+
+    ("user-urteil-unbekannt", "user_verdict",
+     [setze("urteil", "vielleicht")],
+     [v("/urteil", f"{S}/user_urteil/enum", "enum")],
+     "Das Userurteil ist eine geschlossene Menge; `vielleicht` ist `spaeter`"),
+
+    ("user-verdict-ohne-finding", "user_verdict",
+     [loesche("finding_id")],
+     [v("", f"{S}/user_verdict/required/finding_id", "required")],
+     "Ein Urteil ohne Befund haette keinen Gegenstand"),
+
+    ("user-verdict-fremdes-feld", "user_verdict",
+     [setze("sterne", 4)],
+     [v("/sterne", f"{S}/user_verdict/additionalProperties", "additionalProperties")],
+     "Userdaten sind Notiz und Urteil, keine Bewertungsskala"),
+
+    ("experiment-ziel-fremdes-feld", "experiment_begin",
+     [setze("ziel", EXPERIMENT_ZIEL), setze("ziel", "gain_db", -1.5)],
+     [v("/ziel/gain_db", f"{S}/experiment_ziel/additionalProperties", "additionalProperties")],
+     "E-05: das Ziel benennt Baender, keine Eingriffswerte - die stehen im Proposal"),
+
+    ("experiment-ziel-band-ueber-dem-rand", "experiment_begin",
+     [setze("ziel", EXPERIMENT_ZIEL), setze("ziel", "band_bis", 300)],
+     [v("/ziel/band_bis", f"{S}/experiment_ziel/properties/band_bis/maximum", "maximum")],
+     "Das Ziel liegt im 221-Band-Gitter wie jede andere bandweise Angabe"),
     # --- SONDE-012 Sessionbefehle und Storediagnose ----------------------
     ("session-command-fremdes-main-senderfeld", "session_command",
      [setze("sender", ADRESSE)],
@@ -2498,16 +3051,25 @@ def hole(daten, pfad):
 
 
 def wende_an(daten, mutation):
+    """Wendet EINE Mutation auf eine bereits tiefkopierte Grundform an.
+
+    ⚠️ Der eingesetzte Wert wird ebenfalls TIEFKOPIERT. Ohne das teilen sich
+    zwei Fixtures, die denselben Baustein einsetzen (`setze("ziel",
+    EXPERIMENT_ZIEL)`), dasselbe Objekt — und die naechste Mutation an dem
+    einen erscheint im anderen. Gemessen am 06.09.2026 (SONDE-014): zwanzig
+    Fassung-3-Fixtures trugen die Felder ihrer Nachbarn, weil die Grundform
+    kopiert wurde, der eingesetzte Baustein aber nicht.
+    """
     art = mutation[0]
     if art == "ersetze":
-        return mutation[2]
+        return copy.deepcopy(mutation[2])
     pfad = mutation[1]
     if art == "loesche":
         eltern = hole(daten, pfad[:-1])
         del eltern[pfad[-1]]
     elif art == "setze":
         eltern = hole(daten, pfad[:-1])
-        eltern[pfad[-1]] = mutation[2]
+        eltern[pfad[-1]] = copy.deepcopy(mutation[2])
     else:
         raise SystemExit(f"unbekannte Mutation {art!r}")
     return daten

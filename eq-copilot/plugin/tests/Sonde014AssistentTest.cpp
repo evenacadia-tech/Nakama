@@ -1,0 +1,615 @@
+/*  EqCopSonde014AssistentTest — der `AssistantStep` im Main-State
+    (SONDE-014 Etappe G, Matrixzeilen M-55 bis M-62).
+
+    ── WAS DIESES BEIN MISST UND WARUM ES IM MAIN LIEGT ─────────────────────
+
+    Entscheid E-08 (§4.8): „Zustandsmaschine des `AssistantStep`: Uebergaenge,
+    Abbruch, Zurueck, Ueberspringen, Resume, Rekonstruktion — MAIN, persistent
+    im `MainProjectState`." `assistent.rs` im Broker ist Spiegel und
+    Vertragsvalidierung, KEINE zweite Zustandsmaschine. Dieses Bein misst
+    deshalb die Maschine, nicht ihren Spiegel.
+
+    ── DIE SCHAERFSTE ZEILE: PREVIEW (E-07, M-55) ───────────────────────────
+
+    Der Zustand `preview` BLEIBT in der Vertragsmenge — ihn zu streichen
+    hiesse, ihn in P6 neu erfinden zu muessen. Die P5-Uebergangstabelle fuehrt
+    aber keine Kante dorthin, und ein GESPEICHERTER Schritt mit `preview` ist
+    in P5 ein LESEFEHLER, kein stiller Sprung auf `proposal` oder `remeasure`.
+    Beide Haelften fallen hier einzeln.
+
+    ── ZWEI EBENEN, UND DER ROTBEWEIS FAELLT AN DER ZWEITEN ─────────────────
+
+    Wie in Etappe A: erst die reinen Funktionen aus `NakamaState.cpp`, dann
+    derselbe Handgriff ueber den ECHTEN `EqCopilotProcessor` mit
+    `setStateInformation`/`getStateInformation` als Rand. Prozessoren liegen
+    auf dem HEAP (NAK-175, MSVC-Standardstack 1 MiB).
+*/
+
+#include <juce_audio_processors/juce_audio_processors.h>
+#include <juce_data_structures/juce_data_structures.h>
+
+#include "NakamaState.h"
+#include "PluginProcessor.h"
+
+#include <algorithm>
+#include <initializer_list>
+#include <iostream>
+#include <memory>
+#include <set>
+#include <string>
+#include <vector>
+
+using namespace eqcop;
+namespace state = nakama::state;
+
+namespace
+{
+int bestanden = 0;
+int fehler    = 0;
+
+void pruefe (bool ok, const juce::String& was)
+{
+    std::cout << (ok ? "  ok      " : "  FEHLER  ") << was << std::endl;
+    ok ? ++bestanden : ++fehler;
+}
+
+void abschnitt (const char* name)
+{
+    std::cout << std::endl << "== " << name << " ==" << std::endl;
+}
+
+struct DirtyZaehler final : public juce::AudioProcessorListener
+{
+    int nonParam = 0;
+    void audioProcessorParameterChanged (juce::AudioProcessor*, int, float) override {}
+    void audioProcessorChanged (juce::AudioProcessor*, const ChangeDetails& d) override
+    {
+        if (d.nonParameterStateChanged) ++nonParam;
+    }
+};
+
+juce::String hex32 (int n)
+{
+    return juce::String::toHexString (n).paddedLeft ('0', 32);
+}
+
+const auto kSchritt = hex32 (0x5741);
+const auto kBefund  = hex32 (0xF1D6);
+
+/// Die acht Zustaende in Vertragsreihenfolge.
+const std::vector<state::Assistentenschritt> kAlle {
+    state::Assistentenschritt::coverage,  state::Assistentenschritt::finding,
+    state::Assistentenschritt::evidence,  state::Assistentenschritt::listen,
+    state::Assistentenschritt::proposal,  state::Assistentenschritt::preview,
+    state::Assistentenschritt::remeasure, state::Assistentenschritt::verdict,
+};
+
+/// Die P5-Folge OHNE `preview`.
+const std::vector<state::Assistentenschritt> kP5Folge {
+    state::Assistentenschritt::coverage,  state::Assistentenschritt::finding,
+    state::Assistentenschritt::evidence,  state::Assistentenschritt::listen,
+    state::Assistentenschritt::proposal,  state::Assistentenschritt::remeasure,
+    state::Assistentenschritt::verdict,
+};
+
+juce::ValueTree mainBaum()
+{
+    juce::ValueTree v ("NakamaState");
+    v.setProperty ("schema", 2, nullptr);
+    juce::ValueTree c ("Common");
+    c.setProperty ("schema", 1, nullptr);
+    c.setProperty ("instance_id", hex32 (0x1234), nullptr);
+    c.setProperty ("plugin_kind", "main", nullptr);
+    c.setProperty ("measurement_position", "insert", nullptr);
+    c.setProperty ("label", "Leitstand", nullptr);
+    v.appendChild (c, nullptr);
+    juce::ValueTree m ("MainProject");
+    m.setProperty ("schema", 1, nullptr);
+    v.appendChild (m, nullptr);
+    return v;
+}
+
+juce::MemoryBlock alsBlock (const juce::ValueTree& v)
+{
+    juce::MemoryBlock b;
+    juce::MemoryOutputStream s (b, false);
+    v.writeToStream (s);
+    s.flush();
+    return b;
+}
+
+/// Ein von Hand gebauter Stand mit einem Assistentenschritt — so entstehen
+/// Staende, die die Produkt-API gar nicht erzeugen kann. Genau die misst der
+/// Leser.
+juce::MemoryBlock baumMitSchritt (const juce::var& liste)
+{
+    auto v = mainBaum();
+    auto mp = v.getChildWithName ("MainProject");
+    mp.setProperty ("assistant_step_v1", liste, nullptr);
+    return alsBlock (v);
+}
+
+juce::var schrittListe (const juce::String& id, const char* schritt, juce::int64 revision,
+                        bool offen, const char* ergebnis = "schritt")
+{
+    juce::Array<juce::var> flach;
+    flach.add (id);
+    flach.add (juce::String (schritt));
+    flach.add (juce::var (revision));
+    flach.add (juce::var (offen));
+    flach.add (juce::String());
+    flach.add (juce::String());
+    flach.add (juce::String());
+    flach.add (juce::String (ergebnis));
+    return juce::var (flach);
+}
+
+state::Zustand frischerZustand()
+{
+    state::Zustand z;
+    const auto block = alsBlock (mainBaum());
+    const auto ergebnis = state::lade (block.getData(), block.getSize(),
+                                       state::Bundle::eqcp(), z);
+    jassert (ergebnis == state::LadeErgebnis::geladen);
+    juce::ignoreUnused (ergebnis);
+    return z;
+}
+
+/// Laedt einen von Hand gebauten Stand und sagt, ob er READ-ONLY wurde.
+bool wirdReadOnly (const juce::MemoryBlock& block, juce::String& grund)
+{
+    state::Zustand z;
+    const auto ergebnis = state::lade (block.getData(), block.getSize(),
+                                       state::Bundle::eqcp(), z);
+    grund = z.grund;
+    return ergebnis != state::LadeErgebnis::geladen || z.nurLesen;
+}
+
+/// Laedt einen Stand, der GELADEN werden soll.
+bool laedtNormal (const juce::MemoryBlock& block, state::Zustand& aus, juce::String& grund)
+{
+    const auto ergebnis = state::lade (block.getData(), block.getSize(),
+                                       state::Bundle::eqcp(), aus);
+    grund = aus.grund;
+    return ergebnis == state::LadeErgebnis::geladen && ! aus.nurLesen;
+}
+
+std::unique_ptr<EqCopilotProcessor> prozessor()
+{
+    // HEAP, nicht Rahmen: NAK-175, der MSVC-Standardstack ist 1 MiB.
+    auto p = std::make_unique<EqCopilotProcessor>();
+    const auto block = alsBlock (mainBaum());
+    p->setStateInformation (block.getData(), static_cast<int> (block.getSize()));
+    return p;
+}
+} // namespace
+
+int main()
+{
+    std::cout.setf (std::ios::unitbuf);
+    std::cout << "SONDE-014 Etappe G - AssistantStep im Main (M-55 bis M-62)\n";
+
+    // ═══════════════════════════════════════════════════════════════════
+    // M-55 · p5_uebergangstabelle_hat_keine_kante_nach_preview
+    // ═══════════════════════════════════════════════════════════════════
+    abschnitt ("M-55: die Zustandsmenge, die Folge und der Sonderfall preview");
+    {
+        // Die Menge hat ACHT Werte, und jeder kommt ueber seinen eigenen
+        // Rueckweg zurueck.
+        std::set<std::string> woerter;
+        for (auto s : kAlle)
+        {
+            const auto w = std::string (state::wort (s));
+            woerter.insert (w);
+            state::Assistentenschritt zurueck {};
+            pruefe (state::assistentenschrittAus (juce::String (w), zurueck) && zurueck == s,
+                    juce::String ("M-55: ") + w.c_str() + " kommt ueber seinen Rueckweg zurueck");
+        }
+        pruefe (woerter.size() == 8, "M-55: acht verschiedene Zustaende");
+        state::Assistentenschritt fremd {};
+        pruefe (! state::assistentenschrittAus ("neunter", fremd),
+                "M-55: ein neunter Zustand faellt");
+        pruefe (! state::assistentenschrittAus ("", fremd),
+                "M-55: und ein leeres Wort ebenso");
+
+        // Die Folge: keine Kante nach `preview`, in KEINE Richtung.
+        for (auto s : kAlle)
+        {
+            pruefe (! state::p5UebergangErlaubt (s, state::Assistentenschritt::preview),
+                    juce::String ("M-55: keine Kante von ") + state::wort (s) + " nach preview");
+            pruefe (! state::p5UebergangErlaubt (state::Assistentenschritt::preview, s),
+                    juce::String ("M-55: und keine von preview nach ") + state::wort (s));
+        }
+        // Die P5-Folge selbst ist vollstaendig verkettet.
+        for (size_t i = 0; i + 1 < kP5Folge.size(); ++i)
+            pruefe (state::p5UebergangErlaubt (kP5Folge[i], kP5Folge[i + 1]),
+                    juce::String ("M-55: ") + state::wort (kP5Folge[i]) + " -> "
+                        + state::wort (kP5Folge[i + 1]));
+        state::Assistentenschritt weiter {};
+        pruefe (! state::p5Naechster (state::Assistentenschritt::verdict, weiter),
+                "M-55: `verdict` ist terminal");
+        pruefe (! state::p5Naechster (state::Assistentenschritt::preview, weiter),
+                "M-55: und `preview` fuehrt nirgendwohin");
+        // Ein Sprung ueber einen Zustand ist keine Kante.
+        pruefe (! state::p5UebergangErlaubt (state::Assistentenschritt::coverage,
+                                             state::Assistentenschritt::listen),
+                "M-55: ein Sprung ueber zwei Zustaende ist keine Kante");
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // M-55 · gespeicherter_preview_schritt_ist_ein_lesefehler
+    // ═══════════════════════════════════════════════════════════════════
+    abschnitt ("M-55: ein gespeicherter preview-Schritt ist ein Lesefehler");
+    {
+        juce::String grund;
+        const auto block = baumMitSchritt (schrittListe (kSchritt, "preview", 3, true));
+        pruefe (wirdReadOnly (block, grund),
+                "M-55: ein gespeicherter preview-Schritt wird NICHT normal geladen");
+        pruefe (grund.contains ("preview"),
+                juce::String ("M-55: und der Grund nennt ihn beim Namen: ") + grund);
+        // ⚠️ Die Gegenprobe: derselbe Stand mit einem P5-Zustand laedt.
+        state::Zustand z2;
+        juce::String grund2;
+        const auto ok = baumMitSchritt (schrittListe (kSchritt, "proposal", 3, true));
+        pruefe (laedtNormal (ok, z2, grund2) && z2.assistent.gesetzt
+                    && z2.assistent.schritt == state::Assistentenschritt::proposal,
+                juce::String ("M-55: derselbe Stand mit `proposal` laedt normal: ") + grund2);
+        // Und die Produkt-API kann `preview` gar nicht erst setzen.
+        auto z3 = frischerZustand();
+        bool veraendert = false;
+        juce::String g3;
+        pruefe (! state::setzeAssistentenschritt (z3, kSchritt,
+                                                  state::Assistentenschritt::preview,
+                                                  veraendert, g3)
+                    && ! veraendert,
+                "M-55: die API setzt `preview` nicht");
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // M-56 · jeder_zustand_traegt_fuenf_angaben
+    // ═══════════════════════════════════════════════════════════════════
+    abschnitt ("M-56: fuenf Angaben je Zustand, keine optional");
+    {
+        for (auto s : kAlle)
+        {
+            const auto v = state::schrittvertrag (s);
+            pruefe (v.schritt == s && v.vollstaendig(),
+                    juce::String ("M-56: ") + state::wort (s) + " traegt alle fuenf Angaben");
+            pruefe (v.timeoutMs > 0,
+                    juce::String ("M-56: ") + state::wort (s) + " hat ein Timeout > 0");
+            // Die Rueckkante ist IMMER ein Zustand — der erste zeigt auf sich
+            // selbst, und das ist die sichere Rueckkante „bleib, wo du bist".
+            pruefe (std::find (kAlle.begin(), kAlle.end(), v.rueckkante) != kAlle.end(),
+                    juce::String ("M-56: ") + state::wort (s) + " hat eine Rueckkante");
+        }
+        // ⚠️ Auch `preview` traegt seinen vollstaendigen Vertrag: der Zustand
+        // existiert, P5 fuehrt nur keine Kante dorthin. Ihn leer zu lassen
+        // hiesse, ihn halb zu streichen.
+        pruefe (state::schrittvertrag (state::Assistentenschritt::preview).vollstaendig(),
+                "M-56: auch `preview` traegt seinen vollstaendigen Vertrag");
+        // Und die Rueckkante des ersten Zustands zeigt auf ihn selbst.
+        pruefe (state::schrittvertrag (state::Assistentenschritt::coverage).rueckkante
+                    == state::Assistentenschritt::coverage,
+                "M-56: der erste Zustand ist seine eigene sichere Rueckkante");
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // M-57 · hoechstens_ein_klanglicher_versuch
+    // ═══════════════════════════════════════════════════════════════════
+    abschnitt ("M-57: EIN Slot, strukturell");
+    {
+        auto z = frischerZustand();
+        bool veraendert = false;
+        juce::String grund;
+        pruefe (state::setzeAssistentenschritt (z, kSchritt,
+                                                state::Assistentenschritt::coverage,
+                                                veraendert, grund)
+                    && veraendert && z.assistent.gesetzt && z.assistent.offen,
+                juce::String ("M-57: der erste Schritt beginnt: ") + grund);
+        // Ein ZWEITER Startversuch bei offenem Schritt wird ABGEWIESEN, nicht
+        // eingereiht.
+        bool v2 = false;
+        juce::String g2;
+        pruefe (! state::setzeAssistentenschritt (z, hex32 (0x5742),
+                                                  state::Assistentenschritt::coverage,
+                                                  v2, g2)
+                    && ! v2,
+                "M-57: ein zweiter Startversuch wird abgewiesen, nicht eingereiht");
+        pruefe (z.assistent.stepId == kSchritt,
+                "M-57: und der erste Schritt steht unveraendert");
+        // Nach dem Abbruch ist der Slot frei — und der erste Schritt bleibt
+        // als Historie stehen.
+        bool v3 = false;
+        juce::String g3;
+        pruefe (state::assistentAbbrechen (z, v3, g3) && v3 && ! z.assistent.offen,
+                "M-57: der Abbruch macht den Schritt terminal");
+        bool v4 = false;
+        juce::String g4;
+        pruefe (state::setzeAssistentenschritt (z, hex32 (0x5742),
+                                                state::Assistentenschritt::coverage,
+                                                v4, g4)
+                    && v4 && z.assistent.stepId == hex32 (0x5742),
+                juce::String ("M-57: danach beginnt ein neuer Schritt: ") + g4);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // M-58 · vier_gegenpfade
+    // ═══════════════════════════════════════════════════════════════════
+    abschnitt ("M-58: Abbruch, Zurueck, Ueberspringen, Resume");
+    {
+        auto z = frischerZustand();
+        bool v = false;
+        juce::String g;
+        state::setzeAssistentenschritt (z, kSchritt, state::Assistentenschritt::coverage, v, g);
+        state::setzeAssistentenschritt (z, kSchritt, state::Assistentenschritt::finding, v, g);
+        state::setzeAssistentenschritt (z, kSchritt, state::Assistentenschritt::evidence, v, g);
+        const auto revisionVorher = z.assistent.revision;
+
+        // ZURUECK geht auf die sichere Rueckkante.
+        pruefe (state::assistentZurueck (z, v, g) && v
+                    && z.assistent.schritt == state::Assistentenschritt::finding,
+                juce::String ("M-58: Zurueck geht auf die Rueckkante: ") + g);
+        pruefe (z.assistent.revision == revisionVorher + 1,
+                "M-58: und hebt die Revision genau einmal");
+
+        // UEBERSPRINGEN geht auf den naechsten Zustand.
+        pruefe (state::assistentUeberspringen (z, v, g) && v
+                    && z.assistent.schritt == state::Assistentenschritt::evidence,
+                "M-58: Ueberspringen geht auf den naechsten Zustand");
+
+        // RESUME an derselben belegten Stelle.
+        state::Assistentenzustand fortsetzung {};
+        pruefe (state::assistentResume (z, fortsetzung)
+                    && fortsetzung.stepId == kSchritt
+                    && fortsetzung.schritt == state::Assistentenschritt::evidence,
+                "M-58: Resume setzt an derselben Stelle fort");
+        const auto revisionNachResume = z.assistent.revision;
+        state::Assistentenzustand nochmal {};
+        state::assistentResume (z, nochmal);
+        pruefe (z.assistent.revision == revisionNachResume,
+                "M-58: Resume ist eine FRAGE - es aendert nichts und hebt keine Revision");
+
+        // ABBRUCH ist terminal, und der Schritt bleibt stehen.
+        pruefe (state::assistentAbbrechen (z, v, g) && ! z.assistent.offen
+                    && z.assistent.gesetzt && z.assistent.stepId == kSchritt,
+                "M-58: Verwerfen ist ein terminales Ereignis, kein Loeschen der Historie");
+        state::Assistentenzustand nachTerminal {};
+        pruefe (! state::assistentResume (z, nachTerminal),
+                "M-58: ein terminaler Schritt wird nicht fortgesetzt");
+        // Und ein zweiter Abbruch ist kein Abbruch mehr.
+        bool v2 = false;
+        pruefe (! state::assistentAbbrechen (z, v2, g) && ! v2,
+                "M-58: ein zweiter Abbruch faellt");
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // M-61 · drei_benannte_ergebnisse
+    // ═══════════════════════════════════════════════════════════════════
+    abschnitt ("M-61: drei benannte Ergebnisse, keine Leerzustaende");
+    {
+        auto z = frischerZustand();
+        bool v = false;
+        juce::String g;
+        state::setzeAssistentenschritt (z, kSchritt, state::Assistentenschritt::coverage, v, g);
+        for (auto e : { state::Assistentenergebnis::passageMessen,
+                        state::Assistentenergebnis::routingBestaetigen,
+                        state::Assistentenergebnis::keineAenderungEmpfohlen })
+        {
+            const auto vorher = z.assistent.revision;
+            bool ve = false;
+            pruefe (state::setzeAssistentenergebnis (z, e, ve, g) && ve
+                        && z.assistent.ergebnis == e
+                        && z.assistent.revision == vorher + 1,
+                    juce::String ("M-61: ") + state::wort (e)
+                        + " ist ein eigenes Ergebnis mit Objekt");
+            // Der SCHRITT bleibt stehen — das Ergebnis ist kein Leerzustand.
+            pruefe (z.assistent.gesetzt && z.assistent.offen,
+                    juce::String ("M-61: und der Schritt bleibt offen"));
+        }
+        // Dasselbe Ergebnis zweimal ist ein No-op.
+        const auto vorher = z.assistent.revision;
+        bool ve = false;
+        pruefe (state::setzeAssistentenergebnis (
+                    z, state::Assistentenergebnis::keineAenderungEmpfohlen, ve, g)
+                    && ! ve && z.assistent.revision == vorher,
+                "M-61: dasselbe Ergebnis zweimal hebt keine Revision");
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // M-60 · harte_gates_greifen_vor_der_gewichtung
+    // ═══════════════════════════════════════════════════════════════════
+    abschnitt ("M-60: harte Gates vor der Gewichtung");
+    {
+        const auto perfekt = [] (const char* id, bool vergleichbar, bool sicher,
+                                 bool erfolglos)
+        {
+            state::Schrittkandidat k;
+            k.findingId = juce::String (id);
+            k.schritt = state::Assistentenschritt::finding;
+            k.erwarteterNutzen = 1.0;
+            k.intentRelevanz = 1.0;
+            k.konfidenz = 1.0;
+            k.reversibilitaet = 1.0;
+            k.messkosten = 0.0;
+            k.vergleichbar = vergleichbar;
+            k.sicher = sicher;
+            k.bereitsErfolglos = erfolglos;
+            return k;
+        };
+        // Drei Kandidaten mit PERFEKTEM Nutzen, jeder mit genau einem
+        // gerissenen Gate — und ein bescheidener, der alle drei haelt.
+        std::vector<state::Schrittkandidat> liste {
+            perfekt ("aaa", false, true, false),
+            perfekt ("bbb", true, false, false),
+            perfekt ("ccc", true, true, true),
+        };
+        auto bescheiden = perfekt ("ddd", true, true, false);
+        bescheiden.erwarteterNutzen = 0.2;
+        bescheiden.intentRelevanz = 0.2;
+        bescheiden.konfidenz = 0.2;
+        bescheiden.reversibilitaet = 0.2;
+        bescheiden.messkosten = 0.8;
+        liste.push_back (bescheiden);
+
+        const auto geordnet = state::ordneSchritte (liste);
+        pruefe (geordnet.size() == 1 && geordnet[0].findingId == "ddd",
+                "M-60: die drei Gates entfernen ihre Kandidaten VOR der Gewichtung");
+        pruefe (state::schrittrang (liste[0]) > state::schrittrang (bescheiden),
+                "M-60: und zwar, obwohl ihr Rang der hoechste waere");
+
+        // Bei Gleichstand die kleinere Kennung — eine stabile Wahl.
+        auto a = perfekt ("bbb", true, true, false);
+        auto b = perfekt ("aaa", true, true, false);
+        const auto stabil = state::ordneSchritte ({ a, b });
+        pruefe (stabil.size() == 2 && stabil[0].findingId == "aaa",
+                "M-60: bei Gleichstand gewinnt die kleinere Kennung");
+        // Und der Rang selbst ist eine Zahl in [0,1], auch bei Unsinn.
+        auto unsinn = perfekt ("eee", true, true, false);
+        unsinn.konfidenz = std::numeric_limits<double>::quiet_NaN();
+        unsinn.messkosten = 5.0;
+        const auto rang = state::schrittrang (unsinn);
+        pruefe (rang >= 0.0 && rang <= 1.0,
+                "M-60: NaN und Ausreisser vergiften den Rang nicht");
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // Die Verdrahtung: derselbe Handgriff ueber den echten Prozessor
+    // ═══════════════════════════════════════════════════════════════════
+    abschnitt ("Verdrahtung: der echte EqCopilotProcessor");
+    {
+        auto p = prozessor();
+        DirtyZaehler z;
+        p->addListener (&z);
+
+        pruefe (p->assistentStarten (kSchritt), "Verdrahtung: der Schritt beginnt");
+        pruefe (z.nonParam == 1, "Verdrahtung: und meldet GENAU einmal Host-Dirty");
+        pruefe (! p->assistentStarten (hex32 (0x5742)),
+                "M-57 verdrahtet: ein zweiter Start wird abgewiesen");
+        pruefe (z.nonParam == 1, "und ein abgewiesener Start meldet nichts");
+
+        pruefe (p->assistentWeiter (state::Assistentenschritt::finding),
+                "Verdrahtung: der Uebergang laeuft");
+        pruefe (! p->assistentWeiter (state::Assistentenschritt::preview),
+                "M-55 verdrahtet: `preview` ist auch hier unerreichbar");
+        pruefe (! p->assistentWeiter (state::Assistentenschritt::verdict),
+                "Verdrahtung: ein Sprung ueber vier Zustaende faellt");
+
+        // M-61 verdrahtet.
+        pruefe (p->assistentAntwort (state::Assistentenergebnis::routingBestaetigen),
+                "M-61 verdrahtet: das benannte Ergebnis wird gesetzt");
+        pruefe (p->assistentAusState().ergebnis
+                    == state::Assistentenergebnis::routingBestaetigen,
+                "M-61 verdrahtet: und steht im Main-State");
+
+        // M-59: Save/Load und Rekonstruktion.
+        juce::MemoryBlock gespeichert;
+        p->getStateInformation (gespeichert);
+        auto zweiter = std::make_unique<EqCopilotProcessor>();
+        zweiter->setStateInformation (gespeichert.getData(),
+                                      static_cast<int> (gespeichert.getSize()));
+        const auto wieder = zweiter->assistentAusState();
+        pruefe (wieder.gesetzt && wieder.stepId == kSchritt
+                    && wieder.schritt == state::Assistentenschritt::finding
+                    && wieder.ergebnis == state::Assistentenergebnis::routingBestaetigen,
+                "M-59: der Schritt wird aus dem gespeicherten MainProject rekonstruiert");
+        state::Assistentenzustand fortsetzung {};
+        pruefe (zweiter->assistentFortsetzen (fortsetzung)
+                    && fortsetzung.schritt == state::Assistentenschritt::finding,
+                "M-59: und laesst sich an derselben Stelle fortsetzen");
+
+        // Save/Load ist bytegleich ueber zwei Runden.
+        juce::MemoryBlock zweitesMal;
+        zweiter->getStateInformation (zweitesMal);
+        pruefe (zweitesMal == gespeichert, "M-59: Save/Load ist bytegleich");
+
+        // Der Abbruch: terminal, und danach kein Resume mehr.
+        pruefe (p->assistentAbbrechen(), "M-58 verdrahtet: der Abbruch laeuft");
+        state::Assistentenzustand nachTerminal {};
+        pruefe (! p->assistentFortsetzen (nachTerminal),
+                "M-58 verdrahtet: ein terminaler Schritt wird nicht fortgesetzt");
+        pruefe (p->assistentAusState().gesetzt && ! p->assistentAusState().offen,
+                "M-58 verdrahtet: und bleibt als Historie stehen");
+        p->removeListener (&z);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // M-62 · der Assistent ruft den BESTEHENDEN Experimentweg
+    // ═══════════════════════════════════════════════════════════════════
+    //
+    // „Der Assistent erzeugt KEINE neue Experimentfamilie; er ruft die
+    // vorhandenen." Gemessen daran, dass er ohne den bestehenden Weg gar
+    // nichts erreicht: ohne offenen Schritt faellt er, und mit offenem
+    // Schritt haengt er vollstaendig an `beginneVersuch` — schlaegt das fehl
+    // (kein eingefrorener Vergleichspegel, §15), traegt der Schritt KEINE
+    // Versuchskennung. Ein Assistent mit eigenem Weg haette hier eine.
+    abschnitt ("M-62: der Assistent hat keinen eigenen Experimentweg");
+    {
+        auto p = prozessor();
+        pruefe (! p->assistentVersuchStarten (kBefund),
+                "M-62: ohne offenen Schritt startet der Assistent nichts");
+        pruefe (p->assistentStarten (kSchritt), "M-62: Vorbedingung - ein Schritt laeuft");
+        // `beginneVersuch` verlangt einen eingefrorenen Vergleichspegel und
+        // ein gesetztes Passagenfenster; beides gibt es hier nicht.
+        pruefe (! p->assistentVersuchStarten (kBefund),
+                "M-62: und ohne den bestehenden Weg auch mit offenem Schritt nicht");
+        pruefe (p->assistentAusState().experimentId.isEmpty(),
+                "M-62: der Schritt traegt KEINE Versuchskennung - der Assistent "
+                "erzeugt keine eigene Experimentfamilie");
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // Die Raender: jede Grenze von BEIDEN Seiten
+    // ═══════════════════════════════════════════════════════════════════
+    abschnitt ("Die Raender");
+    {
+        struct Fall { juce::var liste; const char* was; };
+        juce::Array<juce::var> zuKurz;
+        zuKurz.add (kSchritt);
+        const Fall faelle[] = {
+            { juce::var (zuKurz),                                    "eine Liste mit sieben fehlenden Werten" },
+            { schrittListe ("nicht-hex", "coverage", 1, true),       "eine step_id, die keine hex32 ist" },
+            { schrittListe (kSchritt, "neunter", 1, true),           "ein unbekannter Zustand" },
+            { schrittListe (kSchritt, "coverage", 0, true),          "Revision 0" },
+            { schrittListe (kSchritt, "coverage", -1, true),         "eine negative Revision" },
+            { schrittListe (kSchritt, "coverage", 1, true, "sonst"), "ein unbekanntes Ergebnis" },
+            { schrittListe (kSchritt, "preview", 1, true),           "ein gespeicherter preview-Schritt" },
+        };
+        for (const auto& f : faelle)
+        {
+            juce::String grund;
+            pruefe (wirdReadOnly (baumMitSchritt (f.liste), grund),
+                    juce::String ("Rand: ") + f.was + " wird read-only");
+        }
+        // Die GEGENPROBE: der gueltige Stand laedt.
+        state::Zustand ok;
+        juce::String grundOk;
+        const auto gut = baumMitSchritt (schrittListe (kSchritt, "listen", 4, false,
+                                                       "keine_aenderung_empfohlen"));
+        pruefe (laedtNormal (gut, ok, grundOk) && ok.assistent.gesetzt
+                    && ok.assistent.schritt == state::Assistentenschritt::listen
+                    && ok.assistent.revision == 4 && ! ok.assistent.offen
+                    && ok.assistent.ergebnis
+                           == state::Assistentenergebnis::keineAenderungEmpfohlen,
+                juce::String ("Rand: der gueltige Stand laedt: ") + grundOk);
+
+        // Ein Stand OHNE die Eigenschaft laedt und traegt keinen Schritt —
+        // „noch nie einen Assistenten benutzt" ist etwas anderes als „ein
+        // Schritt mit leeren Feldern".
+        state::Zustand leer;
+        juce::String grundLeer;
+        const auto ohne = alsBlock (mainBaum());
+        pruefe (laedtNormal (ohne, leer, grundLeer) && ! leer.assistent.gesetzt,
+                "Rand: ein Altstand ohne die Eigenschaft laedt normal und traegt keinen Schritt");
+        // Und er schreibt sie auch nicht.
+        juce::MemoryBlock zurueck;
+        state::speichere (leer, zurueck);
+        juce::MemoryInputStream ein (zurueck, false);
+        const auto baum = juce::ValueTree::readFromStream (ein);
+        pruefe (! baum.getChildWithName ("MainProject").hasProperty ("assistant_step_v1"),
+                "Rand: ein nicht gesetzter Schritt reist gar nicht");
+    }
+
+    std::cout << std::endl << "SONDE-014 AssistantStep: " << bestanden << "/"
+              << (bestanden + fehler) << " gruen" << std::endl;
+    return fehler == 0 ? 0 : 1;
+}

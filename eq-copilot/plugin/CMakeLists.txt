@@ -448,6 +448,32 @@ nakama_kern_anbinden(EqCopSonde012SourcesModelTest)
 # die SPERRE muss dort greifen, wo die Aktion angeboten wird - also hier. Das
 # Ziel bindet denselben handgeschriebenen Leser wie das Produkt und startet
 # weder Broker noch Pipe.
+# ── SONDE-014 Etappe G: der AssistantStep im Main (Kanon B29) ─────────────
+# E-08 legt die Zustandsmaschine in den MAIN, persistent im MainProjectState;
+# `assistent.rs` im Broker ist Spiegel. Das Ziel misst deshalb die Maschine
+# auf zwei Ebenen: die reinen Funktionen aus NakamaState.cpp und denselben
+# Handgriff ueber den echten EqCopilotProcessor mit Save/Load als Rand.
+juce_add_console_app(EqCopSonde014AssistentTest
+                     PRODUCT_NAME "eqcop-sonde014-assistenttest")
+target_sources(EqCopSonde014AssistentTest PRIVATE
+    tests/Sonde014AssistentTest.cpp
+    src/PluginProcessor.cpp
+    src/PluginEditor.cpp
+    src/PipeClient.cpp
+    src/AnalyseEngine.cpp
+    src/Diagnose.cpp
+)
+target_include_directories(EqCopSonde014AssistentTest PRIVATE src core)
+target_include_directories(EqCopSonde014AssistentTest PRIVATE
+    hostbridge
+    "${juce_SOURCE_DIR}/modules/juce_audio_processors/format_types/VST3_SDK")
+target_compile_definitions(EqCopSonde014AssistentTest PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
+target_link_libraries(EqCopSonde014AssistentTest PRIVATE juce::juce_audio_utils juce::juce_dsp
+    PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+target_compile_options(EqCopSonde014AssistentTest PRIVATE "$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+nakama_kern_anbinden(EqCopSonde014AssistentTest)
+
 juce_add_console_app(EqCopSonde014BefundTest
                      PRODUCT_NAME "eqcop-sonde014-befundtest")
 target_sources(EqCopSonde014BefundTest PRIVATE
@@ -1133,7 +1159,8 @@ foreach(ziel EqCopilot
              EqCopNullTest EqCopMarkierungTest EqCopShot EqCopPaintBench
              EqCopIdentityTest EqCopStateMigrationTest EqCopSonde013PassageStateTest EqCopLebenslaufTest
              EqCopQueueStressTest EqCopAnalysisGoldenTest
-             EqCopSonde012ProjectReloadTest EqCopSonde014IntentTest)
+             EqCopSonde012ProjectReloadTest EqCopSonde014IntentTest
+             EqCopSonde014AssistentTest)
     target_compile_definitions(${ziel} PRIVATE NAKAMA_BUNDLE_MAIN=1)
 endforeach()
 
@@ -1143,7 +1170,8 @@ foreach(ziel EqCopilot
              EqCopNullTest EqCopMarkierungTest EqCopShot EqCopPaintBench
              EqCopIdentityTest EqCopStateMigrationTest EqCopSonde013PassageStateTest EqCopLebenslaufTest
              EqCopQueueStressTest EqCopAnalysisGoldenTest
-             EqCopSonde012ProjectReloadTest EqCopSonde014IntentTest)
+             EqCopSonde012ProjectReloadTest EqCopSonde014IntentTest
+             EqCopSonde014AssistentTest)
     target_sources(${ziel} PRIVATE src/SourcesModel.cpp)
 endforeach()
 
@@ -1155,7 +1183,8 @@ foreach(ziel EqCopilot
              EqCopNullTest EqCopMarkierungTest EqCopShot EqCopPaintBench
              EqCopIdentityTest EqCopStateMigrationTest EqCopSonde013PassageStateTest EqCopLebenslaufTest
              EqCopQueueStressTest EqCopAnalysisGoldenTest
-             EqCopSonde012ProjectReloadTest EqCopSonde014IntentTest)
+             EqCopSonde012ProjectReloadTest EqCopSonde014IntentTest
+             EqCopSonde014AssistentTest)
     target_sources(${ziel} PRIVATE core/ipc/PipeToken.cpp)
     target_include_directories(${ziel} PRIVATE "${NAKAMA_BROKER_BINDING_DIR}")
     target_link_libraries(${ziel} PRIVATE Advapi32)
@@ -1168,7 +1197,8 @@ endforeach()
 foreach(ziel EqCopNullTest EqCopMarkierungTest EqCopShot EqCopPaintBench
              EqCopIdentityTest EqCopStateMigrationTest EqCopSonde013PassageStateTest EqCopLebenslaufTest
              EqCopQueueStressTest EqCopAnalysisGoldenTest
-             EqCopSonde012ProjectReloadTest EqCopSonde014IntentTest)
+             EqCopSonde012ProjectReloadTest EqCopSonde014IntentTest
+             EqCopSonde014AssistentTest)
     target_compile_definitions(${ziel} PRIVATE
         NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3=1)
 endforeach()

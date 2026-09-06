@@ -649,6 +649,13 @@ pub struct CauseHypothesis {
     pub likely_cause: String,
     pub smallest_test: String,
     pub listen_for: String,
+    /// Der laufende Maskierungswert AM Befund (E-04, Etappe E).
+    ///
+    /// `None` heisst „dieser Befund traegt keinen" — nie „0 dB". Das Objekt
+    /// haengt hier und nicht in einer zweiten Liste: zwei Listen koennten
+    /// auseinanderlaufen, und die Zone waere eine zweite Wahrheit neben dem
+    /// Befundtext.
+    pub maskierung: Option<super::maskierung::Maskierung>,
     /// Die Fassung, unter der dieser Befund entstanden ist.
     pub metrics_version: u32,
 }
@@ -1220,6 +1227,9 @@ fn enthaltung(
         likely_cause: "Die Datenlage traegt noch keine Ursachenaussage.".into(),
         smallest_test: NaechsterTest::MehrDatenSammeln.satz().into(),
         listen_for: "Noch nichts — erst mehr Material sammeln.".into(),
+        // Eine Enthaltung hat keinen Kandidaten und damit kein Paar, ueber
+        // dessen Maskierung sich etwas sagen liesse.
+        maskierung: None,
         metrics_version: aufnahme.metrics_version,
     }
 }
@@ -1330,6 +1340,10 @@ fn baue_befund(
         // M-34: die Zeile BILDET `next_test` ab; die Abbildung lebt am Enum.
         smallest_test: next_test.satz().into(),
         listen_for: "Ob der Master im markierten Bereich Luft bekommt.".into(),
+        // M-36/M-41: der Wert faellt AUS dem Befund heraus — er entsteht mit
+        // ihm, aus denselben zwei Quellen und demselben Bandbereich, und es
+        // gibt keinen Weg, ihn ohne Befund zu bekommen.
+        maskierung: super::maskierung::maskierung(&aufnahme.master, kandidat, band),
         metrics_version: aufnahme.metrics_version,
     }
 }
@@ -2046,6 +2060,7 @@ mod tests {
             likely_cause: "x".into(),
             smallest_test: "y".into(),
             listen_for: "z".into(),
+            maskierung: None,
             metrics_version: 1,
         };
         let teile = befund.sechs_teile();

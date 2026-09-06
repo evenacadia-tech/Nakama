@@ -968,6 +968,47 @@ SourcesModel::SnapshotErgebnis SourcesModel::uebernehmeSessionSnapshot (
                         grund);
                 }
             }
+            // 🔑 SONDE-014 Etappe E (M-36 bis M-41): der Maskierungswert.
+            //
+            // Bis zur Etappe E stand `maskierung` zwar in der erlaubten
+            // Feldmenge, wurde aber NICHT geprueft — der einzige fail-open
+            // Zweig dieses Lesers. Ein Objekt beliebiger Form waere
+            // durchgegangen, und die Anzeige haette daraus eine Zone gebaut.
+            if (f->hasProperty ("maskierung"))
+            {
+                const auto* mk = objekt (f->getProperty ("maskierung"));
+                std::uint64_t mvon = 0, mbis = 0;
+                if (mk == nullptr
+                    || ! exakteFelder (*mk, { "quelle_a", "quelle_b", "band_von",
+                                              "band_bis", "wert_db", "gueltig",
+                                              "herabgesetzt" })
+                    || ! mk->getProperty ("quelle_a").isString()
+                    || ! hex32 (mk->getProperty ("quelle_a").toString())
+                    || ! mk->getProperty ("quelle_b").isString()
+                    || ! hex32 (mk->getProperty ("quelle_b").toString())
+                    || ! nichtnegativeGanzzahl (mk->getProperty ("band_von"), mvon)
+                    || ! nichtnegativeGanzzahl (mk->getProperty ("band_bis"), mbis)
+                    || mvon > 220 || mbis < 1 || mbis > 221 || mvon >= mbis
+                    || ! endlicheZahl (mk->getProperty ("wert_db"), -200.0, 200.0,
+                                       b.maskierungWertDb)
+                    || ! mk->getProperty ("gueltig").isBool()
+                    || ! mk->getProperty ("herabgesetzt").isBool())
+                {
+                    fehler = "session finding masking value is invalid";
+                    return SnapshotErgebnis::ungueltig;
+                }
+                b.maskierungVorhanden = true;
+                b.maskierungQuelleA =
+                    mk->getProperty ("quelle_a").toString().toStdString();
+                b.maskierungQuelleB =
+                    mk->getProperty ("quelle_b").toString().toStdString();
+                b.maskierungBandVon = static_cast<std::uint32_t> (mvon);
+                b.maskierungBandBis = static_cast<std::uint32_t> (mbis);
+                b.maskierungGueltig =
+                    static_cast<bool> (mk->getProperty ("gueltig"));
+                b.maskierungHerabgesetzt =
+                    static_cast<bool> (mk->getProperty ("herabgesetzt"));
+            }
             std::uint64_t intentRevision = 0;
             if (! nichtnegativeGanzzahl (f->getProperty ("intent_revision"),
                                          intentRevision))

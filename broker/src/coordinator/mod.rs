@@ -43,6 +43,7 @@ pub mod experiment;
 mod experiment_verdrahtung;
 pub mod hypothese;
 mod hypothese_verdrahtung;
+pub mod maskierung;
 pub mod invalidierung;
 mod invalidierung_verdrahtung;
 pub mod prepost;
@@ -63,6 +64,7 @@ pub use hypothese::{
     Ausschluss, Ausschlussgrund, Aussageklasse, Befundkonfidenz, Befundzustand, CauseHypothesis,
     NaechsterTest, Sicherheitsklasse, Ursachenklasse, Zielmetrik, KANDIDATEN_DECKEL,
 };
+pub use maskierung::Maskierung;
 /// Die aktive JSON-Vertragsfassung, nur fuer Beine sichtbar.
 ///
 /// Der Transport (`server_v3`) und der JSON-Leser muessen dieselbe

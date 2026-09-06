@@ -444,6 +444,26 @@ impl Coordinator {
                 ),
             );
         }
+        // 🔑 M-36/M-40: der Maskierungswert reist AM Befund, nicht daneben.
+        //
+        // Abwesenheit heisst „dieser Befund traegt keinen" — nie `null` und nie
+        // ein Objekt mit 0 dB. Der Unterschied ist genau das, was die Anzeige
+        // braucht, um „hier ist nichts gemessen" von „hier ist nichts" zu
+        // trennen.
+        if let Some(m) = b.maskierung.as_ref() {
+            objekt.insert(
+                "maskierung".into(),
+                serde_json::json!({
+                    "quelle_a": m.quelle_a,
+                    "quelle_b": m.quelle_b,
+                    "band_von": m.band_von,
+                    "band_bis": m.band_bis,
+                    "wert_db": zahl(m.wert_db, -200.0, 200.0),
+                    "gueltig": m.gueltig,
+                    "herabgesetzt": m.herabgesetzt
+                }),
+            );
+        }
         objekt.insert(
             "next_test".into(),
             Value::String(b.next_test.wire().into()),

@@ -154,6 +154,25 @@ public:
         /// Achtermenge. Ein kommentarlos entfernter Kandidat ist ein Defekt.
         std::vector<std::pair<std::string, std::string>> ausschluesse;
         std::vector<std::string> evidenceIds;
+        /// SONDE-014 Etappe E (E-04, M-36 bis M-41): der laufende, je
+        /// Frequenzbereich aufloesbare Maskierungswert — AM Befund, nicht in
+        /// einer zweiten Liste.
+        ///
+        /// ⚠️ `maskierungVorhanden == false` heisst „dieser Befund traegt
+        /// keinen" und ist etwas ANDERES als ein Wert mit
+        /// `maskierungGueltig == false` („hier ist nichts gemessen"). Die
+        /// Anzeige braucht beide Faelle getrennt.
+        ///
+        /// Der Wert traegt Frequenzbereich und Zahl — KEINE Farbe, keine
+        /// Achse, keinen Zoom (M-80, M-38, M-39).
+        bool maskierungVorhanden = false;
+        std::string maskierungQuelleA, maskierungQuelleB;
+        std::uint32_t maskierungBandVon = 0, maskierungBandBis = 0;
+        double maskierungWertDb = 0.0;
+        bool maskierungGueltig = false;
+        /// Die Kadenz einer der beiden Quellen ist reduziert (M-37). Ein
+        /// Kennzeichen, nie ein interpolierter Zwischenwert.
+        bool maskierungHerabgesetzt = false;
         std::string nextTest;
         std::uint64_t intentRevision = 0;
         /// Die drei Zeilen aus Abnahme U21, als DREI Felder — damit die

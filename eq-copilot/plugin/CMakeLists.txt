@@ -745,6 +745,37 @@ target_link_libraries(EqCopSonde013PassageStateTest PRIVATE juce::juce_audio_uti
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
 nakama_kern_anbinden(EqCopSonde013PassageStateTest)
 
+# ── SONDE-014 Etappe A: der musikalische Intent im Main-State (Kanon B27) ──
+# Wieder ein NEUES persistentes Feld im Host-State - drei diesmal, plus die
+# Bestandsrevision. Das Bein misst die fuenf Teile der State-Invariante
+# einzeln UND das Regelwerk darueber (geschlossene Rollenmenge, totale und
+# injektive Belegung, Konfliktordnung ohne Score, Zyklenriegel beim
+# Speichern), jeweils auf zwei Ebenen: Modul und Produktpfad.
+juce_add_console_app(EqCopSonde014IntentTest PRODUCT_NAME "eqcop-sonde014intenttest")
+target_sources(EqCopSonde014IntentTest PRIVATE
+    tests/Sonde014IntentTest.cpp
+    src/PluginProcessor.cpp
+    src/PluginEditor.cpp
+    src/PipeClient.cpp
+    src/AnalyseEngine.cpp
+    src/Diagnose.cpp
+)
+target_include_directories(EqCopSonde014IntentTest PRIVATE src core)
+# M-11 misst am echten Produktpfad, und der verlangt den VST3-Prozesskontext
+# ueber die Hostbruecke - dieselbe Naht wie EqCopSonde013PassageStateTest.
+target_include_directories(EqCopSonde014IntentTest PRIVATE
+    hostbridge
+    "${juce_SOURCE_DIR}/modules/juce_audio_processors/format_types/VST3_SDK")
+# NAKAMA_BUNDLE_MAIN, SourcesModel.cpp, PipeToken.cpp und
+# NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3 kommen aus den gemeinsamen Schleifen der
+# Main-Ziele weiter unten - sie stehen hier bewusst NICHT ein zweites Mal.
+target_compile_definitions(EqCopSonde014IntentTest PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
+target_link_libraries(EqCopSonde014IntentTest PRIVATE juce::juce_audio_utils juce::juce_dsp
+    PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+target_compile_options(EqCopSonde014IntentTest PRIVATE "$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+nakama_kern_anbinden(EqCopSonde014IntentTest)
+
 # ── S9/SONDE-007b Abschnitt 3: Lifecycle-Klassifikation (Kanon B8) ─────────
 # Zwei Ebenen in einem Ziel: der Automat pur (NakamaLebenslauf, im Kern) UND
 # derselbe Automat verdrahtet im echten EqCopilotProcessor. Die zweite Ebene
@@ -1083,7 +1114,7 @@ foreach(ziel EqCopilot
              EqCopNullTest EqCopMarkierungTest EqCopShot EqCopPaintBench
              EqCopIdentityTest EqCopStateMigrationTest EqCopSonde013PassageStateTest EqCopLebenslaufTest
              EqCopQueueStressTest EqCopAnalysisGoldenTest
-             EqCopSonde012ProjectReloadTest)
+             EqCopSonde012ProjectReloadTest EqCopSonde014IntentTest)
     target_compile_definitions(${ziel} PRIVATE NAKAMA_BUNDLE_MAIN=1)
 endforeach()
 
@@ -1093,7 +1124,7 @@ foreach(ziel EqCopilot
              EqCopNullTest EqCopMarkierungTest EqCopShot EqCopPaintBench
              EqCopIdentityTest EqCopStateMigrationTest EqCopSonde013PassageStateTest EqCopLebenslaufTest
              EqCopQueueStressTest EqCopAnalysisGoldenTest
-             EqCopSonde012ProjectReloadTest)
+             EqCopSonde012ProjectReloadTest EqCopSonde014IntentTest)
     target_sources(${ziel} PRIVATE src/SourcesModel.cpp)
 endforeach()
 
@@ -1105,7 +1136,7 @@ foreach(ziel EqCopilot
              EqCopNullTest EqCopMarkierungTest EqCopShot EqCopPaintBench
              EqCopIdentityTest EqCopStateMigrationTest EqCopSonde013PassageStateTest EqCopLebenslaufTest
              EqCopQueueStressTest EqCopAnalysisGoldenTest
-             EqCopSonde012ProjectReloadTest)
+             EqCopSonde012ProjectReloadTest EqCopSonde014IntentTest)
     target_sources(${ziel} PRIVATE core/ipc/PipeToken.cpp)
     target_include_directories(${ziel} PRIVATE "${NAKAMA_BROKER_BINDING_DIR}")
     target_link_libraries(${ziel} PRIVATE Advapi32)
@@ -1118,7 +1149,7 @@ endforeach()
 foreach(ziel EqCopNullTest EqCopMarkierungTest EqCopShot EqCopPaintBench
              EqCopIdentityTest EqCopStateMigrationTest EqCopSonde013PassageStateTest EqCopLebenslaufTest
              EqCopQueueStressTest EqCopAnalysisGoldenTest
-             EqCopSonde012ProjectReloadTest)
+             EqCopSonde012ProjectReloadTest EqCopSonde014IntentTest)
     target_compile_definitions(${ziel} PRIVATE
         NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3=1)
 endforeach()

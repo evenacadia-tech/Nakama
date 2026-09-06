@@ -3182,6 +3182,204 @@ std::vector<nakama::state::ManuellePassage> EqCopilotProcessor::manuellePassagen
     return zustand.manuellePassagen;
 }
 
+// ── SONDE-014 Etappe A: der musikalische Intent im Produktpfad ─────────────
+//
+// Die sieben Handgriffe teilen sich eine Form, und die Form IST die Zusage:
+//
+//   Schloss nehmen -> read-only und Klasse pruefen -> die reine Funktion aus
+//   `NakamaState.cpp` rufen -> Schloss loesen -> NUR bei echter Aenderung
+//   Host-Dirty melden und die v3-Revision heben.
+//
+// Warum das Melden ausserhalb des Schlosses steht: `updateHostDisplay` ruft
+// in den Host. Ein Hostaufruf unter einem eigenen Mutex ist eine
+// Sperrreihenfolge, die dieses Projekt nirgends fuehrt.
+//
+// Warum ein No-op nichts meldet (M-13): ein Dirty ohne Aenderung markiert das
+// Projekt als ungespeichert, obwohl sich nichts geaendert hat - und ein
+// abgewiesener Wert darf erst recht nichts melden.
+
+bool EqCopilotProcessor::setzeQuellenrolle (const juce::String& quelleId,
+                                            const juce::String& passageId,
+                                            nakama::state::Rolle rolle,
+                                            nakama::state::IntentHerkunft herkunft,
+                                            double konfidenz)
+{
+    bool veraendert = false;
+    {
+        std::lock_guard<std::mutex> l (bindungMutex);
+        if (zustand.nurLesen || zustand.common.klasse != nakama::state::Klasse::main)
+            return false;
+        juce::String grund;
+        if (! nakama::state::setzeIntent (zustand, quelleId, passageId, rolle, herkunft,
+                                          konfidenz, veraendert, grund))
+            return false;
+    }
+    if (veraendert)
+    {
+        meldeHostDirty();
+        v3StateRevision.fetch_add (1);
+    }
+    return true;
+}
+
+bool EqCopilotProcessor::entferneQuellenrolle (const juce::String& quelleId,
+                                               const juce::String& passageId)
+{
+    bool veraendert = false;
+    {
+        std::lock_guard<std::mutex> l (bindungMutex);
+        if (zustand.nurLesen || zustand.common.klasse != nakama::state::Klasse::main)
+            return false;
+        juce::String grund;
+        if (! nakama::state::entferneIntent (zustand, quelleId, passageId, veraendert, grund))
+            return false;
+    }
+    if (veraendert)
+    {
+        meldeHostDirty();
+        v3StateRevision.fetch_add (1);
+    }
+    return true;
+}
+
+bool EqCopilotProcessor::schuetzeQuelle (const juce::String& quelleId,
+                                         nakama::state::Schutzeigenschaft eigenschaft,
+                                         int bandVon, int bandBis)
+{
+    bool veraendert = false;
+    {
+        std::lock_guard<std::mutex> l (bindungMutex);
+        if (zustand.nurLesen || zustand.common.klasse != nakama::state::Klasse::main)
+            return false;
+        juce::String grund;
+        if (! nakama::state::setzeSchutzangabe (zustand, quelleId, eigenschaft, bandVon, bandBis,
+                                                veraendert, grund))
+            return false;
+    }
+    if (veraendert)
+    {
+        meldeHostDirty();
+        v3StateRevision.fetch_add (1);
+    }
+    return true;
+}
+
+bool EqCopilotProcessor::hebeQuellenschutzAuf (const juce::String& quelleId,
+                                               nakama::state::Schutzeigenschaft eigenschaft,
+                                               int bandVon, int bandBis)
+{
+    bool veraendert = false;
+    {
+        std::lock_guard<std::mutex> l (bindungMutex);
+        if (zustand.nurLesen || zustand.common.klasse != nakama::state::Klasse::main)
+            return false;
+        juce::String grund;
+        if (! nakama::state::entferneSchutzangabe (zustand, quelleId, eigenschaft, bandVon, bandBis,
+                                                   veraendert, grund))
+            return false;
+    }
+    if (veraendert)
+    {
+        meldeHostDirty();
+        v3StateRevision.fetch_add (1);
+    }
+    return true;
+}
+
+bool EqCopilotProcessor::setzeQuellenbeziehung (const juce::String& quelleA,
+                                                const juce::String& quelleB,
+                                                nakama::state::Beziehungsart art)
+{
+    bool veraendert = false;
+    {
+        std::lock_guard<std::mutex> l (bindungMutex);
+        if (zustand.nurLesen || zustand.common.klasse != nakama::state::Klasse::main)
+            return false;
+        juce::String grund;
+        // M-06: die Zyklenpruefung laeuft HIER, beim Speichern - nicht beim
+        // Anwenden. Ein Zyklus erreicht die Persistenz nie unmarkiert.
+        if (! nakama::state::setzeBeziehung (zustand, quelleA, quelleB, art, veraendert, grund))
+            return false;
+    }
+    if (veraendert)
+    {
+        meldeHostDirty();
+        v3StateRevision.fetch_add (1);
+    }
+    return true;
+}
+
+bool EqCopilotProcessor::speichereQuellenGleichrangigkeit (const juce::String& quelleA,
+                                                           const juce::String& quelleB)
+{
+    return setzeQuellenbeziehung (quelleA, quelleB,
+                                  nakama::state::Beziehungsart::gleichrangig);
+}
+
+bool EqCopilotProcessor::entferneQuellenbeziehung (const juce::String& quelleA,
+                                                   const juce::String& quelleB)
+{
+    bool veraendert = false;
+    {
+        std::lock_guard<std::mutex> l (bindungMutex);
+        if (zustand.nurLesen || zustand.common.klasse != nakama::state::Klasse::main)
+            return false;
+        juce::String grund;
+        if (! nakama::state::entferneBeziehung (zustand, quelleA, quelleB, veraendert, grund))
+            return false;
+    }
+    if (veraendert)
+    {
+        meldeHostDirty();
+        v3StateRevision.fetch_add (1);
+    }
+    return true;
+}
+
+std::vector<nakama::state::SourceIntent> EqCopilotProcessor::sourceIntents() const
+{
+    std::lock_guard<std::mutex> l (bindungMutex);
+    return zustand.sourceIntents;
+}
+
+std::vector<nakama::state::Schutzangabe> EqCopilotProcessor::intentSchutzangaben() const
+{
+    std::lock_guard<std::mutex> l (bindungMutex);
+    return zustand.schutzangaben;
+}
+
+std::vector<nakama::state::IntentBeziehung> EqCopilotProcessor::intentBeziehungen() const
+{
+    std::lock_guard<std::mutex> l (bindungMutex);
+    return zustand.intentBeziehungen;
+}
+
+juce::int64 EqCopilotProcessor::intentBestandRevision() const
+{
+    std::lock_guard<std::mutex> l (bindungMutex);
+    return zustand.intentBestandRevision;
+}
+
+bool EqCopilotProcessor::wirkendeQuellenrolle (const juce::String& quelleId,
+                                               const juce::String& passageId,
+                                               nakama::state::Rolle& aus) const
+{
+    std::lock_guard<std::mutex> l (bindungMutex);
+    const auto* intent = nakama::state::wirkenderIntent (zustand, quelleId, passageId);
+    if (intent == nullptr)
+        return false;
+    aus = intent->rolle;
+    return true;
+}
+
+bool EqCopilotProcessor::entmaskierungErlaubt (const juce::String& quelleA,
+                                               const juce::String& quelleB,
+                                               const juce::String& passageId) const
+{
+    std::lock_guard<std::mutex> l (bindungMutex);
+    return nakama::state::entmaskierungErlaubt (zustand, quelleA, quelleB, passageId);
+}
+
 bool EqCopilotProcessor::sendeSourcesCommand (SourcesCommandArt art,
                                                const std::string& erwarteteInstanceId)
 {

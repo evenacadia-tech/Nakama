@@ -1,0 +1,78 @@
+SONDE-014 Etappe A - Rotbeweis M-04
+========================================================================
+
+GEWERTETE ZUSAGE
+  Eine gerichtete Beziehung hebt das globale Veto NUR fuer ihr eigenes Paar auf, nie fuer ein drittes.
+
+RUECKNAHME (Produktcode, eq-copilot/plugin/state/NakamaState.cpp)
+--- vorher ---
+        const auto passt = (k.quelleA == quelleA && k.quelleB == quelleB)
+                        || (k.quelleA == quelleB && k.quelleB == quelleA);
+        if (passt)
+            return true;
+--- nachher ---
+        // ROTBEWEIS M-04: irgendeine Kante hebt das Veto fuer JEDES Paar auf
+        (void) quelleA; (void) quelleB;
+        return true;
+
+LAUF MIT RUECKNAHME - EqCopSonde014IntentTest
+  Exit 1
+EqCopSonde014IntentTest - der musikalische Intent im Main-State
+SONDE-014 Etappe A, M-01 bis M-09 und M-11
+== M-01  rollenmenge_ist_geschlossen_und_fuenf ==
+  ok      die Produktzusage aus U22 ist die Zahl 5
+  ok      das Rollenfeld dieses Beins hat genau so viele Eintraege
+  ok      Rolle traegt ein nicht leeres Wort: fuehrt
+... (191 Zeilen ausgelassen) ...
+  ok      Leser lehnt ab - Konfidenz Inf: MainProject.source_intents_v1 confidence must be finite within [0,1]
+  ok      Leser lehnt ab - zwei Intents fuer denselben Scope: MainProject.source_intents_v1 contains two intents for the same source and scope
+  ok      Leser lehnt ab - unvollstaendiges Sextupel: MainProject.source_intents_v1 must be an array of sextuples with at most 256 entries
+  ok      Leser lehnt ab - unbekannte Schutzeigenschaft: MainProject.intent_protections_v1 contains an unknown trait: hall
+  ok      Leser lehnt ab - Bandschutz ueber dem Gitterrand: MainProject.intent_protections_v1 band bounds are outside the evidence grid
+  ok      Leser lehnt ab - leeres Bandintervall: MainProject.intent_protections_v1 band bounds are outside the evidence grid
+  ok      Leser lehnt ab - Nicht-Bandeigenschaft mit Intervall: MainProject.intent_protections_v1 band bounds are outside the evidence grid
+  ok      Leser lehnt ab - Beziehung auf sich selbst: MainProject.intent_relations_v1 contains a self relation
+  ok      Leser lehnt ab - unbekannte Beziehungsart: MainProject.intent_relations_v1 contains an unknown relation: haengt_ab
+  ok      Leser lehnt ab - zwei Beziehungen fuer dasselbe geordnete Paar: MainProject.intent_relations_v1 contains two relations for the same ordered pair
+  ok      ein gueltiger Stand mit allen drei Bestandteilen laedt normal
+  ok      und traegt die Werte, die dort stehen
+  ok      samt Bestandsrevision 7
+  ok      Intent-Inhalt ohne Bestandsrevision wird abgewiesen: MainProject carries intent data without intent_revision_v1
+  ok      API lehnt ab - Quelle ist keine hex32
+  ok      API lehnt ab - Passagenscope ist weder leer noch hex32
+  ok      API lehnt ab - Konfidenz ueber 1
+  ok      API lehnt ab - Konfidenz Inf
+  ok      API lehnt ab - Beziehung auf sich selbst
+  ok      API lehnt ab - Bandschutz ueber dem Gitterrand
+  ok      und nach sechs Ablehnungen ist der Bestand unveraendert leer
+  ok      der Deckel von 256 Intents wird erreicht
+  ok      und der 257. wird abgewiesen statt still verworfen
+  ok      der volle Stand laedt - die API schreibt nichts, was der Leser verweigert
+  ok      und ist bytegleich reproduzierbar
+== M-11  intent_beruehrt_keine_messwerte ==
+  ok      beide Laeufe liefern einen Evidenzframe
+  ok      die 221 Evidenzbaender sind bitgleich (Werte, Bitmap, Gitter, Encoding)
+  ok      die drei Perzentile sind bitgleich
+  ok      die 64 Livebaender sind bitgleich
+  ok      die metrics_version ist dieselbe
+  ok      und die NaN-Zaehler ebenfalls
+  ok      Gegenprobe: 70 Evidenzbaender tragen wirklich einen Wert
+SONDE-014-INTENT-TEST FEHLGESCHLAGEN - 2 Fehler, 208 ok
+
+LAUF NACH RUECKNAHME RUECKGAENGIG - EqCopSonde014IntentTest
+  Exit 0
+EqCopSonde014IntentTest - der musikalische Intent im Main-State
+SONDE-014 Etappe A, M-01 bis M-09 und M-11
+== M-01  rollenmenge_ist_geschlossen_und_fuenf ==
+  ok      die Produktzusage aus U22 ist die Zahl 5
+  ok      das Rollenfeld dieses Beins hat genau so viele Eintraege
+  ok      Rolle traegt ein nicht leeres Wort: fuehrt
+... (219 Zeilen ausgelassen) ...
+  ok      die drei Perzentile sind bitgleich
+  ok      die 64 Livebaender sind bitgleich
+  ok      die metrics_version ist dieselbe
+  ok      und die NaN-Zaehler ebenfalls
+  ok      Gegenprobe: 70 Evidenzbaender tragen wirklich einen Wert
+SONDE-014-INTENT-TEST OK - 210 Pruefungen ok, 0 Fehler
+
+URTEIL: ROT mit Ruecknahme, GRUEN ohne - Rotbeweis gilt.

@@ -3,11 +3,14 @@
 #include "NakamaUtf8.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <cstring>
 #include <limits>
+#include <map>
 #include <new>
 #include <set>
+#include <utility>
 
 namespace nakama::state
 {
@@ -34,6 +37,14 @@ const juce::Identifier kMainMitglieder ("confirmed_members_v1");
 // Baum stehen und schreibt es beim Speichern zurueck - genau die additive
 // Erweiterung, die der Vertrag verlangt.
 const juce::Identifier kMainPassagen ("manual_passages_v1");
+// SONDE-014 M-02/M-03/M-06: der musikalische Intent. Drei additive
+// Eigenschaften plus die Bestandsrevision. Jeder Name traegt seine Fassung;
+// ein alter Build laesst sie unangetastet im Baum stehen und schreibt sie
+// beim Speichern zurueck.
+const juce::Identifier kMainIntents      ("source_intents_v1");
+const juce::Identifier kMainSchutz       ("intent_protections_v1");
+const juce::Identifier kMainBeziehungen  ("intent_relations_v1");
+const juce::Identifier kMainIntentRev    ("intent_revision_v1");
 // Schema 1
 const juce::Identifier kSensorId    ("sensor_id");
 const juce::Identifier kRole        ("role");
@@ -301,6 +312,22 @@ int schemaLesbar (const juce::ValueTree& t)
     return v.isInt() ? (int) v : 0;
 }
 
+/*  SONDE-014 M-03: der einzige Riegel fuer ein Schutz-Bandintervall - und er
+    steht hier EINMAL, damit Produkt-API und Leser wirklich denselben
+    benutzen. Zwei Kopien derselben Grenze sind in diesem Projekt schon
+    auseinandergelaufen.
+
+    Die Raender sind ausdruecklich benannt: Band 0 ist gueltig, Band 220 ist
+    das letzte, `bis` ist halboffen und darf deshalb 221 sein, und ein leeres
+    Intervall (`bis <= von`) ist keine Angabe, sondern ein Fehler. Wer keine
+    Bandeigenschaft schuetzt, fuehrt -1/-1 - nicht 0/0, denn 0 IST ein Band. */
+bool schutzbereichGueltig (Schutzeigenschaft eigenschaft, int bandVon, int bandBis)
+{
+    if (eigenschaft != Schutzeigenschaft::band)
+        return bandVon == -1 && bandBis == -1;
+    return bandVon >= 0 && bandVon < bandBis && bandBis <= bandAnzahlEvidenzgitter;
+}
+
 } // namespace
 
 // ── Woerter ────────────────────────────────────────────────────────────────
@@ -345,6 +372,180 @@ bool positionAusWort (const juce::String& w, Messposition& aus)
     if (w == "post")                    { aus = Messposition::post; return true; }
     if (w == "post_fader_contribution") { aus = Messposition::post_fader_contribution; return true; }
     return false;
+}
+
+// ── SONDE-014: Woerter des Intents ─────────────────────────────────────────
+//
+// Die Rollenmenge ist GESCHLOSSEN und hat genau fuenf Werte (U22). Ein
+// sechster Wert wird abgewiesen, nicht auf einen bekannten Zweig abgebildet -
+// deshalb steht in `rolleAusWort` kein `else`-Zweig mit Rueckfall, und `wort`
+// hat keinen Standardwert im `switch`, sondern nur eine erreichbare Zeile je
+// Wert. Der Rueckfall hinter dem `switch` ist die MSVC-Pflichtzeile fuer
+// einen aus dem Wertebereich gefallenen Enum, kein Produktverhalten.
+
+const char* wort (Rolle r)
+{
+    switch (r)
+    {
+        case Rolle::fuehrt:       return "fuehrt";
+        case Rolle::traegt:       return "traegt";
+        case Rolle::begleitet:    return "begleitet";
+        case Rolle::geschuetzt:   return "geschuetzt";
+        case Rolle::verschmolzen: return "verschmolzen";
+    }
+    return "traegt";
+}
+
+const char* wort (Prominenz p)
+{
+    switch (p)
+    {
+        case Prominenz::foreground: return "foreground";
+        case Prominenz::middle:     return "middle";
+        case Prominenz::background: return "background";
+    }
+    return "middle";
+}
+
+const char* wort (Funktionstag t)
+{
+    switch (t)
+    {
+        case Funktionstag::keiner:     return "";
+        case Funktionstag::lead:       return "lead";
+        case Funktionstag::foundation: return "foundation";
+        case Funktionstag::texture:    return "texture";
+    }
+    return "";
+}
+
+const char* wort (Veto v)
+{
+    switch (v)
+    {
+        case Veto::keins:        return "";
+        case Veto::schutz:       return "schutz";
+        case Veto::verschmolzen: return "verschmolzen";
+    }
+    return "";
+}
+
+const char* wort (IntentHerkunft h)
+{
+    switch (h)
+    {
+        case IntentHerkunft::user:       return "user";
+        case IntentHerkunft::vorlage:    return "template";
+        case IntentHerkunft::abgeleitet: return "inferred";
+    }
+    return "user";
+}
+
+const char* wort (Schutzeigenschaft e)
+{
+    switch (e)
+    {
+        case Schutzeigenschaft::attack:   return "attack";
+        case Schutzeigenschaft::breite:   return "breite";
+        case Schutzeigenschaft::ausklang: return "ausklang";
+        case Schutzeigenschaft::band:     return "band";
+    }
+    return "attack";
+}
+
+const char* wort (Beziehungsart a)
+{
+    switch (a)
+    {
+        case Beziehungsart::fuehrtVor:        return "fuehrt_vor";
+        case Beziehungsart::darfVerschmelzen: return "darf_verschmelzen";
+        case Beziehungsart::gleichrangig:     return "gleichrangig";
+    }
+    return "fuehrt_vor";
+}
+
+bool rolleAusWort (const juce::String& w, Rolle& aus)
+{
+    if (w == "fuehrt")       { aus = Rolle::fuehrt; return true; }
+    if (w == "traegt")       { aus = Rolle::traegt; return true; }
+    if (w == "begleitet")    { aus = Rolle::begleitet; return true; }
+    if (w == "geschuetzt")   { aus = Rolle::geschuetzt; return true; }
+    if (w == "verschmolzen") { aus = Rolle::verschmolzen; return true; }
+    return false;
+}
+
+bool intentHerkunftAusWort (const juce::String& w, IntentHerkunft& aus)
+{
+    if (w == "user")     { aus = IntentHerkunft::user; return true; }
+    if (w == "template") { aus = IntentHerkunft::vorlage; return true; }
+    if (w == "inferred") { aus = IntentHerkunft::abgeleitet; return true; }
+    return false;
+}
+
+bool schutzeigenschaftAusWort (const juce::String& w, Schutzeigenschaft& aus)
+{
+    if (w == "attack")   { aus = Schutzeigenschaft::attack; return true; }
+    if (w == "breite")   { aus = Schutzeigenschaft::breite; return true; }
+    if (w == "ausklang") { aus = Schutzeigenschaft::ausklang; return true; }
+    if (w == "band")     { aus = Schutzeigenschaft::band; return true; }
+    return false;
+}
+
+bool beziehungsartAusWort (const juce::String& w, Beziehungsart& aus)
+{
+    if (w == "fuehrt_vor")        { aus = Beziehungsart::fuehrtVor; return true; }
+    if (w == "darf_verschmelzen") { aus = Beziehungsart::darfVerschmelzen; return true; }
+    if (w == "gleichrangig")      { aus = Beziehungsart::gleichrangig; return true; }
+    return false;
+}
+
+/*  E-01a, M-02: die ABGELEITETE Belegung.
+
+    Der Vorschlagstext der Etappe 1 liess `prominence` fuer `geschuetzt` und
+    `verschmolzen` "unveraendert (orthogonal)". Das ist keine Belegung, aus
+    der sich die Rolle zurueckrechnen laesst - der Entscheid hat es deshalb
+    korrigiert: beide liegen auf dem festen Neutralwert `middle` mit leerem
+    Funktionstag und tragen ihr Veto-Kennzeichen ALS TEIL der Belegung. Erst
+    damit ist die Abbildung total UND injektiv, und §33.5 ("keine zweite
+    Wahrheit") ist eingehalten. */
+Belegung belegung (Rolle r)
+{
+    switch (r)
+    {
+        case Rolle::fuehrt:       return { Prominenz::foreground, Funktionstag::lead,       Veto::keins };
+        case Rolle::traegt:       return { Prominenz::middle,     Funktionstag::foundation, Veto::keins };
+        case Rolle::begleitet:    return { Prominenz::background, Funktionstag::texture,    Veto::keins };
+        case Rolle::geschuetzt:   return { Prominenz::middle,     Funktionstag::keiner,     Veto::schutz };
+        case Rolle::verschmolzen: return { Prominenz::middle,     Funktionstag::keiner,     Veto::verschmolzen };
+    }
+    return { Prominenz::middle, Funktionstag::foundation, Veto::keins };
+}
+
+bool rolleAus (const Belegung& b, Rolle& aus)
+{
+    for (const auto r : { Rolle::fuehrt, Rolle::traegt, Rolle::begleitet,
+                          Rolle::geschuetzt, Rolle::verschmolzen })
+    {
+        if (belegung (r) == b) { aus = r; return true; }
+    }
+    return false;
+}
+
+/*  §37.2, M-05: eine GEORDNETE LISTE, kein Score.
+
+    Der Unterschied ist messbar und nicht kosmetisch: ein Score liesse sich
+    aus mehreren niedrigen Stufen aufsummieren, bis er eine hohe schlaegt.
+    Diese Funktion vergleicht ausschliesslich die Stufenzahl; es gibt keinen
+    Additionsweg. Innerhalb derselben Stufe gewinnt der SPEZIFISCHERE
+    Anspruch (E-02: die paarweise Beziehung vor dem globalen Rollenveto) -
+    dieselbe Regel, die Stufe 3 fuer den Scope ausformuliert. */
+int vergleicheAnsprueche (const Anspruch& a, const Anspruch& b)
+{
+    const auto sa = static_cast<int> (a.stufe);
+    const auto sb = static_cast<int> (b.stufe);
+    if (sa != sb) return sa < sb ? -1 : 1;
+    if (a.spezifisch != b.spezifisch) return a.spezifisch ? -1 : 1;
+    return 0;
 }
 
 /*  §53.6-Capability `contribution_aux`, gemessen und eingefroren in
@@ -538,6 +739,105 @@ juce::ValueTree synchronisiert (const Zustand& z)
             }
             mainProject.setProperty (kMainPassagen, juce::var (flach), nullptr);
         }
+
+        /*  SONDE-014 Etappe A: der musikalische Intent (§37.1).
+
+            Dieselbe Regel wie bei den Passagen: eine leere Liste heisst
+            Eigenschaft WEG, nicht leeres Array - sonst unterschieden sich
+            ein Projekt ohne Intent und eines, dessen letzter geloescht
+            wurde, in den Bytes. Und dieselbe Regel wie bei den Mitgliedern:
+            die Reihenfolge auf der Leitung ist sortiert und traegt keine
+            Eingabereihenfolge. */
+        if (z.sourceIntents.empty())
+        {
+            mainProject.removeProperty (kMainIntents, nullptr);
+        }
+        else
+        {
+            auto intents = z.sourceIntents;
+            std::sort (intents.begin(), intents.end(), [] (const auto& a, const auto& b)
+            {
+                const auto q = a.quelleId.compare (b.quelleId);
+                if (q != 0) return q < 0;
+                return a.passageId.compare (b.passageId) < 0;
+            });
+            juce::Array<juce::var> flach;
+            flach.ensureStorageAllocated (static_cast<int> (intents.size() * 6));
+            for (const auto& s : intents)
+            {
+                flach.add (s.quelleId);
+                flach.add (s.passageId);
+                flach.add (juce::String (wort (s.rolle)));
+                flach.add (juce::var (s.revision));
+                flach.add (juce::String (wort (s.herkunft)));
+                flach.add (juce::var (s.konfidenz));
+            }
+            mainProject.setProperty (kMainIntents, juce::var (flach), nullptr);
+        }
+
+        if (z.schutzangaben.empty())
+        {
+            mainProject.removeProperty (kMainSchutz, nullptr);
+        }
+        else
+        {
+            auto schutz = z.schutzangaben;
+            std::sort (schutz.begin(), schutz.end(), [] (const auto& a, const auto& b)
+            {
+                const auto q = a.quelleId.compare (b.quelleId);
+                if (q != 0) return q < 0;
+                if (a.eigenschaft != b.eigenschaft)
+                    return static_cast<int> (a.eigenschaft) < static_cast<int> (b.eigenschaft);
+                if (a.bandVon != b.bandVon) return a.bandVon < b.bandVon;
+                return a.bandBis < b.bandBis;
+            });
+            juce::Array<juce::var> flach;
+            flach.ensureStorageAllocated (static_cast<int> (schutz.size() * 4));
+            for (const auto& s : schutz)
+            {
+                flach.add (s.quelleId);
+                flach.add (juce::String (wort (s.eigenschaft)));
+                flach.add (juce::var (s.bandVon));
+                flach.add (juce::var (s.bandBis));
+            }
+            mainProject.setProperty (kMainSchutz, juce::var (flach), nullptr);
+        }
+
+        if (z.intentBeziehungen.empty())
+        {
+            mainProject.removeProperty (kMainBeziehungen, nullptr);
+        }
+        else
+        {
+            auto kanten = z.intentBeziehungen;
+            std::sort (kanten.begin(), kanten.end(), [] (const auto& a, const auto& b)
+            {
+                const auto qa = a.quelleA.compare (b.quelleA);
+                if (qa != 0) return qa < 0;
+                const auto qb = a.quelleB.compare (b.quelleB);
+                if (qb != 0) return qb < 0;
+                return static_cast<int> (a.art) < static_cast<int> (b.art);
+            });
+            juce::Array<juce::var> flach;
+            flach.ensureStorageAllocated (static_cast<int> (kanten.size() * 3));
+            for (const auto& k : kanten)
+            {
+                flach.add (k.quelleA);
+                flach.add (k.quelleB);
+                flach.add (juce::String (wort (k.art)));
+            }
+            mainProject.setProperty (kMainBeziehungen, juce::var (flach), nullptr);
+        }
+
+        /*  Die Bestandsrevision. Revision 0 heisst "nie etwas gesetzt" und
+            reist deshalb GAR NICHT - der Rand, an dem ein leerer Bestand
+            und ein nie beschriebener sich sonst in den Bytes glichen und der
+            Empfaenger die Vollstaendigkeitsmarke aus M-86 nicht bilden
+            koennte. */
+        if (z.intentBestandRevision <= 0)
+            mainProject.removeProperty (kMainIntentRev, nullptr);
+        else
+            mainProject.setProperty (kMainIntentRev, juce::var (z.intentBestandRevision), nullptr);
     }
     else if (mainProject.isValid())
     {
@@ -628,6 +928,45 @@ bool hatWriterHeadroom (const Zustand& eingang, const Bundle& bundle)
             std::numeric_limits<juce::int64>::max() - 1
         });
     }
+
+    /*  SONDE-014: derselbe Zusatz fuer den Intent-Bestand in seiner groessten
+        erreichbaren Form. Ohne ihn versprache der Headroomriegel etwas ueber
+        einen Stand, den die Produkt-API laengst uebertreffen kann - genau die
+        Luecke, die M-69 fuer die Passagen geschlossen hat.
+
+        Die Kanten sind bewusst eine KETTE (i -> i+1) und kein Stern: eine
+        Kette hat die volle Kantenzahl und bleibt trotzdem zyklenfrei, also
+        laedt der erzeugte Stand auch wirklich. */
+    kandidat.sourceIntents.clear();
+    for (int i = 0; i < maxSourceIntents; ++i)
+    {
+        kandidat.sourceIntents.push_back ({
+            juce::String::toHexString (i + 1).paddedLeft ('0', 32),
+            juce::String::toHexString (i + 1).paddedLeft ('f', 32),
+            Rolle::verschmolzen,
+            std::numeric_limits<juce::int64>::max(),
+            IntentHerkunft::abgeleitet,
+            1.0
+        });
+    }
+    kandidat.schutzangaben.clear();
+    for (int i = 0; i < maxSchutzangaben; ++i)
+    {
+        kandidat.schutzangaben.push_back ({
+            juce::String::toHexString (i + 1).paddedLeft ('0', 32),
+            Schutzeigenschaft::band, 0, bandAnzahlEvidenzgitter
+        });
+    }
+    kandidat.intentBeziehungen.clear();
+    for (int i = 0; i < maxIntentBeziehungen; ++i)
+    {
+        kandidat.intentBeziehungen.push_back ({
+            juce::String::toHexString (i + 1).paddedLeft ('0', 32),
+            juce::String::toHexString (i + 2).paddedLeft ('0', 32),
+            Beziehungsart::darfVerschmelzen
+        });
+    }
+    kandidat.intentBestandRevision = std::numeric_limits<juce::int64>::max();
 
     // Eqcp kann zwischen main und legacy sowie allen heute erlaubten v2-
     // Positionen wechseln. Fuer Sonden ist die Menge kleiner; die Schleife
@@ -835,6 +1174,243 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
         }
     }
 
+    /*  SONDE-014 Etappe A: der Intent-Bestand, mit denselben Riegeln wie die
+        Produkt-API. Was `setzeIntent` ablehnt, muss auch hier fallen -
+        fail-closed als read-only, nie still korrigiert (M-06, M-07, M-13).
+
+        - hex32 fuer Quelle; hex32 ODER leer fuer die Passage (leer = global).
+        - Rollen- und Herkunftswort aus ihrer geschlossenen Menge. Ein
+          sechstes Rollenwort wird ABGEWIESEN, nicht auf einen bekannten
+          Zweig abgebildet (M-01).
+        - Revision >= 1 und ganzzahlig; Revision 0 gibt es nicht.
+        - Konfidenz ENDLICH und in [0,1]. NaN und Inf faellt hier, nicht
+          spaeter beim Rechnen (M-82).
+        - Genau ein Objekt je (Quelle, Scope) - zwei waeren zwei Wahrheiten
+          fuer dieselbe Frage (E-01). */
+    std::vector<SourceIntent> mainIntents;
+    std::vector<Schutzangabe> mainSchutz;
+    std::vector<IntentBeziehung> mainKanten;
+    juce::int64 mainIntentRevision = 0;
+    if (istMain)
+    {
+        const auto mainProject = v.getChildWithName (kMainProject);
+        if (mainProject.hasProperty (kMainIntents))
+        {
+            const auto wert = mainProject.getProperty (kMainIntents);
+            const auto* flach = wert.getArray();
+            if (flach == nullptr || flach->size() % 6 != 0
+                || flach->size() > maxSourceIntents * 6)
+            {
+                grund = "MainProject.source_intents_v1 must be an array of sextuples with at most 256 entries";
+                return false;
+            }
+            std::set<std::string> gesehen;
+            for (int i = 0; i < flach->size(); i += 6)
+            {
+                const auto quelle   = flach->getReference (i);
+                const auto passage  = flach->getReference (i + 1);
+                const auto rolle    = flach->getReference (i + 2);
+                const auto revision = flach->getReference (i + 3);
+                const auto herkunft = flach->getReference (i + 4);
+                const auto konf     = flach->getReference (i + 5);
+                if (! quelle.isString() || ! istHex32 (quelle.toString()))
+                {
+                    grund = "MainProject.source_intents_v1 contains an invalid source id";
+                    return false;
+                }
+                if (! passage.isString()
+                    || (passage.toString().isNotEmpty() && ! istHex32 (passage.toString())))
+                {
+                    grund = "MainProject.source_intents_v1 contains an invalid passage scope";
+                    return false;
+                }
+                SourceIntent eintrag;
+                eintrag.quelleId  = quelle.toString();
+                eintrag.passageId = passage.toString();
+                if (! rolle.isString() || ! rolleAusWort (rolle.toString(), eintrag.rolle))
+                {
+                    grund = "MainProject.source_intents_v1 contains an unknown role: " + rolle.toString();
+                    return false;
+                }
+                if (! (revision.isInt() || revision.isInt64()))
+                {
+                    grund = "MainProject.source_intents_v1 revision must be an integer";
+                    return false;
+                }
+                eintrag.revision = static_cast<juce::int64> (revision);
+                if (eintrag.revision < 1)
+                {
+                    grund = "MainProject.source_intents_v1 revision must be at least 1";
+                    return false;
+                }
+                if (! herkunft.isString() || ! intentHerkunftAusWort (herkunft.toString(), eintrag.herkunft))
+                {
+                    grund = "MainProject.source_intents_v1 contains an unknown origin: " + herkunft.toString();
+                    return false;
+                }
+                if (! (konf.isDouble() || konf.isInt() || konf.isInt64()))
+                {
+                    grund = "MainProject.source_intents_v1 confidence must be a number";
+                    return false;
+                }
+                eintrag.konfidenz = static_cast<double> (konf);
+                if (! std::isfinite (eintrag.konfidenz)
+                    || eintrag.konfidenz < 0.0 || eintrag.konfidenz > 1.0)
+                {
+                    grund = "MainProject.source_intents_v1 confidence must be finite within [0,1]";
+                    return false;
+                }
+                const auto schluessel = (eintrag.quelleId + "|" + eintrag.passageId).toStdString();
+                if (! gesehen.insert (schluessel).second)
+                {
+                    grund = "MainProject.source_intents_v1 contains two intents for the same source and scope";
+                    return false;
+                }
+                mainIntents.push_back (eintrag);
+            }
+        }
+
+        /*  Die Schutzangaben. Orthogonal zur Rolle (M-03): sie brauchen
+            keinen Intent und werden von keinem Rollenwechsel beruehrt.
+            `band` traegt ein halboffenes Intervall des 221er-Gitters; die
+            drei uebrigen Eigenschaften fuehren beide Grenzen auf -1 statt
+            auf 0, weil 0 ein GUELTIGER Bandindex ist. */
+        if (mainProject.hasProperty (kMainSchutz))
+        {
+            const auto wert = mainProject.getProperty (kMainSchutz);
+            const auto* flach = wert.getArray();
+            if (flach == nullptr || flach->size() % 4 != 0
+                || flach->size() > maxSchutzangaben * 4)
+            {
+                grund = "MainProject.intent_protections_v1 must be an array of quadruples with at most 256 entries";
+                return false;
+            }
+            std::set<std::string> gesehen;
+            for (int i = 0; i < flach->size(); i += 4)
+            {
+                const auto quelle = flach->getReference (i);
+                const auto eig    = flach->getReference (i + 1);
+                const auto von    = flach->getReference (i + 2);
+                const auto bis    = flach->getReference (i + 3);
+                if (! quelle.isString() || ! istHex32 (quelle.toString()))
+                {
+                    grund = "MainProject.intent_protections_v1 contains an invalid source id";
+                    return false;
+                }
+                Schutzangabe eintrag;
+                eintrag.quelleId = quelle.toString();
+                if (! eig.isString() || ! schutzeigenschaftAusWort (eig.toString(), eintrag.eigenschaft))
+                {
+                    grund = "MainProject.intent_protections_v1 contains an unknown trait: " + eig.toString();
+                    return false;
+                }
+                if (! von.isInt() || ! bis.isInt())
+                {
+                    grund = "MainProject.intent_protections_v1 band bounds must be integers";
+                    return false;
+                }
+                eintrag.bandVon = static_cast<int> (von);
+                eintrag.bandBis = static_cast<int> (bis);
+                if (! schutzbereichGueltig (eintrag.eigenschaft, eintrag.bandVon, eintrag.bandBis))
+                {
+                    grund = "MainProject.intent_protections_v1 band bounds are outside the evidence grid";
+                    return false;
+                }
+                const auto schluessel = (eintrag.quelleId + "|" + juce::String (wort (eintrag.eigenschaft))
+                                         + "|" + juce::String (eintrag.bandVon)
+                                         + "|" + juce::String (eintrag.bandBis)).toStdString();
+                if (! gesehen.insert (schluessel).second)
+                {
+                    grund = "MainProject.intent_protections_v1 contains a duplicate entry";
+                    return false;
+                }
+                mainSchutz.push_back (eintrag);
+            }
+        }
+
+        /*  Die gerichteten Beziehungen. Der scharfe Riegel steht am Ende:
+            ein Zyklus im `fuehrt_vor`-Teilgraphen macht den Stand
+            read-only. §37.4 woertlich: "Zyklische Entmaskierungsprioritaeten
+            koennen nicht angewendet werden" - ein Zyklus, den der Leser
+            annaehme, waere genau das. Als `gleichrangig` markierte Kanten
+            zaehlen dabei nicht mit; sie SIND der aufgeloeste Zyklus. */
+        if (mainProject.hasProperty (kMainBeziehungen))
+        {
+            const auto wert = mainProject.getProperty (kMainBeziehungen);
+            const auto* flach = wert.getArray();
+            if (flach == nullptr || flach->size() % 3 != 0
+                || flach->size() > maxIntentBeziehungen * 3)
+            {
+                grund = "MainProject.intent_relations_v1 must be an array of triples with at most 256 entries";
+                return false;
+            }
+            std::set<std::string> gesehen;
+            for (int i = 0; i < flach->size(); i += 3)
+            {
+                const auto a   = flach->getReference (i);
+                const auto b   = flach->getReference (i + 1);
+                const auto art = flach->getReference (i + 2);
+                if (! a.isString() || ! istHex32 (a.toString())
+                    || ! b.isString() || ! istHex32 (b.toString()))
+                {
+                    grund = "MainProject.intent_relations_v1 contains an invalid source id";
+                    return false;
+                }
+                if (a.toString() == b.toString())
+                {
+                    grund = "MainProject.intent_relations_v1 contains a self relation";
+                    return false;
+                }
+                IntentBeziehung kante;
+                kante.quelleA = a.toString();
+                kante.quelleB = b.toString();
+                if (! art.isString() || ! beziehungsartAusWort (art.toString(), kante.art))
+                {
+                    grund = "MainProject.intent_relations_v1 contains an unknown relation: " + art.toString();
+                    return false;
+                }
+                const auto schluessel = (kante.quelleA + "|" + kante.quelleB).toStdString();
+                if (! gesehen.insert (schluessel).second)
+                {
+                    grund = "MainProject.intent_relations_v1 contains two relations for the same ordered pair";
+                    return false;
+                }
+                mainKanten.push_back (kante);
+            }
+            if (hatZyklus (mainKanten))
+            {
+                grund = "MainProject.intent_relations_v1 contains a cycle in fuehrt_vor";
+                return false;
+            }
+        }
+
+        if (mainProject.hasProperty (kMainIntentRev))
+        {
+            const auto wert = mainProject.getProperty (kMainIntentRev);
+            if (! (wert.isInt() || wert.isInt64()))
+            {
+                grund = "MainProject.intent_revision_v1 must be an integer";
+                return false;
+            }
+            mainIntentRevision = static_cast<juce::int64> (wert);
+            if (mainIntentRevision < 1)
+            {
+                grund = "MainProject.intent_revision_v1 must be at least 1";
+                return false;
+            }
+        }
+        /*  Ein Bestand ohne Revision, der Inhalt traegt, ist kein gueltiger
+            Stand: die Vollstaendigkeitsmarke aus M-86 haette keine Zahl.
+            Umgekehrt ist eine Revision ohne Inhalt zulaessig - das ist der
+            leere Bestand, den M-86 ausdruecklich gemeldet haben will. */
+        if (mainIntentRevision == 0
+            && (! mainIntents.empty() || ! mainSchutz.empty() || ! mainKanten.empty()))
+        {
+            grund = "MainProject carries intent data without intent_revision_v1";
+            return false;
+        }
+    }
+
     parameter::Satz satz {};
     if (istAktiv)
     {
@@ -847,6 +1423,10 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
     aus.common = c;
     aus.mainProjectMitglieder = std::move (mainMitglieder);
     aus.manuellePassagen      = std::move (mainPassagen);
+    aus.sourceIntents         = std::move (mainIntents);
+    aus.schutzangaben         = std::move (mainSchutz);
+    aus.intentBeziehungen     = std::move (mainKanten);
+    aus.intentBestandRevision = mainIntentRevision;
     aus.hatParameters = istAktiv;
     aus.parameters = satz;
     aus.nurLesen = false;
@@ -1010,6 +1590,312 @@ bool ausV2Rolle (const juce::String& rolle, Klasse& klasse, Messposition& positi
     if (rolle == "sensor") { klasse = Klasse::legacy; position = Messposition::insert; return true; }
     if (rolle == "pre")    { klasse = Klasse::legacy; position = Messposition::pre;    return true; }
     if (rolle == "post")   { klasse = Klasse::legacy; position = Messposition::post;   return true; }
+    return false;
+}
+
+// ── SONDE-014 Etappe A: die Produkt-API des Intents ────────────────────────
+
+namespace
+{
+/*  Die Bestandsrevision steigt bei JEDER persistenten Aenderung an einem der
+    drei Bestandteile - und zwar genau einmal je Aenderung. Sie ist die Zahl,
+    die die Vollstaendigkeitsmarke aus M-86 traegt; ein Bestand, dessen
+    Revision nicht steigt, saehe fuer den Broker aus wie "nichts passiert".
+    Der obere Rand ist kein Ueberlauf, sondern ein Halt: `int64` reicht fuer
+    9,2 Trillionen Aenderungen, und ein Wrap waere eine ruecklaufende
+    Revision - genau das, was M-85 verbietet. */
+bool bestandsrevisionHeben (Zustand& z, juce::String& grund)
+{
+    if (z.intentBestandRevision >= std::numeric_limits<juce::int64>::max())
+    {
+        grund = "intent revision would overflow";
+        return false;
+    }
+    ++z.intentBestandRevision;
+    return true;
+}
+
+bool passageScopeGueltig (const juce::String& passageId)
+{
+    return passageId.isEmpty() || istHex32 (passageId);
+}
+} // namespace
+
+bool setzeIntent (Zustand& z, const juce::String& quelleId, const juce::String& passageId,
+                  Rolle rolle, IntentHerkunft herkunft, double konfidenz,
+                  bool& veraendert, juce::String& grund)
+{
+    veraendert = false;
+    if (! istHex32 (quelleId))         { grund = "source id is not hex32"; return false; }
+    if (! passageScopeGueltig (passageId)) { grund = "passage scope is neither empty nor hex32"; return false; }
+    if (! std::isfinite (konfidenz) || konfidenz < 0.0 || konfidenz > 1.0)
+    {
+        grund = "confidence must be finite within [0,1]"; return false;
+    }
+
+    auto treffer = std::find_if (z.sourceIntents.begin(), z.sourceIntents.end(),
+        [&] (const SourceIntent& s) { return s.quelleId == quelleId && s.passageId == passageId; });
+
+    if (treffer == z.sourceIntents.end())
+    {
+        if (static_cast<int> (z.sourceIntents.size()) >= maxSourceIntents)
+        {
+            grund = "source_intents_v1 is full"; return false;
+        }
+        if (! bestandsrevisionHeben (z, grund)) return false;
+        z.sourceIntents.push_back ({ quelleId, passageId, rolle, 1, herkunft, konfidenz });
+        veraendert = true;
+        return true;
+    }
+
+    /*  M-07: eine abgeleitete Vermutung ueberschreibt einen Userwert NIE.
+        Das ist kein Fehler des Aufrufers, sondern die Regel - deshalb `true`
+        mit `veraendert = false`, und deshalb meldet der Aufrufer kein
+        Host-Dirty. Ein `false` haette dieselbe Wirkung, waere aber eine
+        Fehlermeldung ueber ein korrektes Verhalten. */
+    if (herkunft == IntentHerkunft::abgeleitet && treffer->herkunft == IntentHerkunft::user)
+        return true;
+
+    if (treffer->rolle == rolle && treffer->herkunft == herkunft && treffer->konfidenz == konfidenz)
+        return true;   // No-op: keine Revision, kein Dirty.
+
+    if (treffer->revision >= std::numeric_limits<juce::int64>::max())
+    {
+        grund = "intent revision would overflow"; return false;
+    }
+    if (! bestandsrevisionHeben (z, grund)) return false;
+    treffer->rolle     = rolle;
+    treffer->herkunft  = herkunft;
+    treffer->konfidenz = konfidenz;
+    ++treffer->revision;
+    veraendert = true;
+    return true;
+}
+
+bool entferneIntent (Zustand& z, const juce::String& quelleId, const juce::String& passageId,
+                     bool& veraendert, juce::String& grund)
+{
+    veraendert = false;
+    if (! istHex32 (quelleId))             { grund = "source id is not hex32"; return false; }
+    if (! passageScopeGueltig (passageId)) { grund = "passage scope is neither empty nor hex32"; return false; }
+
+    const auto vorher = z.sourceIntents.size();
+    z.sourceIntents.erase (std::remove_if (z.sourceIntents.begin(), z.sourceIntents.end(),
+        [&] (const SourceIntent& s) { return s.quelleId == quelleId && s.passageId == passageId; }),
+        z.sourceIntents.end());
+    if (z.sourceIntents.size() == vorher)
+        return true;
+    if (! bestandsrevisionHeben (z, grund)) return false;
+    veraendert = true;
+    return true;
+}
+
+const SourceIntent* findeIntent (const Zustand& z, const juce::String& quelleId,
+                                 const juce::String& passageId)
+{
+    for (const auto& s : z.sourceIntents)
+        if (s.quelleId == quelleId && s.passageId == passageId)
+            return &s;
+    return nullptr;
+}
+
+const SourceIntent* wirkenderIntent (const Zustand& z, const juce::String& quelleId,
+                                     const juce::String& passageId)
+{
+    // §37.2 Stufe 3, woertlich: passagespezifischer VOR globalem Intent.
+    if (passageId.isNotEmpty())
+        if (const auto* speziell = findeIntent (z, quelleId, passageId))
+            return speziell;
+    return findeIntent (z, quelleId, {});
+}
+
+bool setzeSchutzangabe (Zustand& z, const juce::String& quelleId, Schutzeigenschaft eigenschaft,
+                        int bandVon, int bandBis, bool& veraendert, juce::String& grund)
+{
+    veraendert = false;
+    if (! istHex32 (quelleId)) { grund = "source id is not hex32"; return false; }
+    if (! schutzbereichGueltig (eigenschaft, bandVon, bandBis))
+    {
+        grund = "band bounds are outside the evidence grid"; return false;
+    }
+    const Schutzangabe eintrag { quelleId, eigenschaft, bandVon, bandBis };
+    if (std::find (z.schutzangaben.begin(), z.schutzangaben.end(), eintrag) != z.schutzangaben.end())
+        return true;   // No-op.
+    if (static_cast<int> (z.schutzangaben.size()) >= maxSchutzangaben)
+    {
+        grund = "intent_protections_v1 is full"; return false;
+    }
+    if (! bestandsrevisionHeben (z, grund)) return false;
+    z.schutzangaben.push_back (eintrag);
+    veraendert = true;
+    return true;
+}
+
+bool entferneSchutzangabe (Zustand& z, const juce::String& quelleId, Schutzeigenschaft eigenschaft,
+                           int bandVon, int bandBis, bool& veraendert, juce::String& grund)
+{
+    veraendert = false;
+    if (! istHex32 (quelleId)) { grund = "source id is not hex32"; return false; }
+    const Schutzangabe eintrag { quelleId, eigenschaft, bandVon, bandBis };
+    const auto vorher = z.schutzangaben.size();
+    z.schutzangaben.erase (std::remove (z.schutzangaben.begin(), z.schutzangaben.end(), eintrag),
+                           z.schutzangaben.end());
+    if (z.schutzangaben.size() == vorher)
+        return true;
+    if (! bestandsrevisionHeben (z, grund)) return false;
+    veraendert = true;
+    return true;
+}
+
+/*  M-06: die Zyklenpruefung.
+
+    Tiefensuche mit drei Farben ueber den `fuehrtVor`-Teilgraphen. `gleichrangig`
+    und `darfVerschmelzen` sind KEINE Prioritaetskanten und zaehlen nicht mit -
+    genau das macht `speichereAlsGleichrangigkeit` zum gueltigen Ausweg aus
+    einem Zyklus statt zu einer zweiten Wahrheit.
+
+    Rein und ohne Zustand, damit Leser und Schreiber denselben Riegel rufen. */
+bool hatZyklus (const std::vector<IntentBeziehung>& kanten)
+{
+    std::map<juce::String, std::vector<juce::String>> nachfolger;
+    for (const auto& k : kanten)
+        if (k.art == Beziehungsart::fuehrtVor)
+            nachfolger[k.quelleA].push_back (k.quelleB);
+
+    enum class Farbe { weiss, grau, schwarz };
+    std::map<juce::String, Farbe> farbe;
+
+    // Iterative Tiefensuche: eine rekursive risse bei 256 Kanten zwar nicht
+    // den 1-MiB-Stack von MSVC, aber der Riegel laeuft auch im Leser - und
+    // dort ist die Kantenzahl eine EINGABE (NAK-175, R2 des Bauplans).
+    std::vector<std::pair<juce::String, size_t>> stapel;
+    for (const auto& start : nachfolger)
+    {
+        if (farbe[start.first] != Farbe::weiss)
+            continue;
+        stapel.push_back ({ start.first, 0 });
+        farbe[start.first] = Farbe::grau;
+        while (! stapel.empty())
+        {
+            auto& oben = stapel.back();
+            const auto it = nachfolger.find (oben.first);
+            if (it == nachfolger.end() || oben.second >= it->second.size())
+            {
+                farbe[oben.first] = Farbe::schwarz;
+                stapel.pop_back();
+                continue;
+            }
+            const auto naechster = it->second[oben.second++];
+            const auto f = farbe.count (naechster) ? farbe[naechster] : Farbe::weiss;
+            if (f == Farbe::grau)   return true;
+            if (f == Farbe::schwarz) continue;
+            farbe[naechster] = Farbe::grau;
+            stapel.push_back ({ naechster, 0 });
+        }
+    }
+    return false;
+}
+
+bool setzeBeziehung (Zustand& z, const juce::String& quelleA, const juce::String& quelleB,
+                     Beziehungsart art, bool& veraendert, juce::String& grund)
+{
+    veraendert = false;
+    if (! istHex32 (quelleA) || ! istHex32 (quelleB))
+    {
+        grund = "source id is not hex32"; return false;
+    }
+    if (quelleA == quelleB) { grund = "a relation needs two different sources"; return false; }
+
+    auto treffer = std::find_if (z.intentBeziehungen.begin(), z.intentBeziehungen.end(),
+        [&] (const IntentBeziehung& k) { return k.quelleA == quelleA && k.quelleB == quelleB; });
+    if (treffer != z.intentBeziehungen.end() && treffer->art == art)
+        return true;   // No-op.
+
+    // Reihenfolge nach M-06: PRUEFEN, dann entscheiden, dann persistieren.
+    // Der Kandidat entsteht als Kopie; erst wenn er zyklenfrei ist, wird der
+    // Bestand angefasst. Ein Zyklus erreicht die Persistenz nie unmarkiert.
+    auto kandidat = z.intentBeziehungen;
+    auto kt = std::find_if (kandidat.begin(), kandidat.end(),
+        [&] (const IntentBeziehung& k) { return k.quelleA == quelleA && k.quelleB == quelleB; });
+    if (kt != kandidat.end()) kt->art = art;
+    else
+    {
+        if (static_cast<int> (kandidat.size()) >= maxIntentBeziehungen)
+        {
+            grund = "intent_relations_v1 is full"; return false;
+        }
+        kandidat.push_back ({ quelleA, quelleB, art });
+    }
+    if (hatZyklus (kandidat))
+    {
+        grund = "this relation would create a cycle in fuehrt_vor";
+        return false;
+    }
+    if (! bestandsrevisionHeben (z, grund)) return false;
+    z.intentBeziehungen = std::move (kandidat);
+    veraendert = true;
+    return true;
+}
+
+bool speichereAlsGleichrangigkeit (Zustand& z, const juce::String& quelleA,
+                                   const juce::String& quelleB,
+                                   bool& veraendert, juce::String& grund)
+{
+    return setzeBeziehung (z, quelleA, quelleB, Beziehungsart::gleichrangig, veraendert, grund);
+}
+
+bool entferneBeziehung (Zustand& z, const juce::String& quelleA, const juce::String& quelleB,
+                        bool& veraendert, juce::String& grund)
+{
+    veraendert = false;
+    if (! istHex32 (quelleA) || ! istHex32 (quelleB))
+    {
+        grund = "source id is not hex32"; return false;
+    }
+    const auto vorher = z.intentBeziehungen.size();
+    z.intentBeziehungen.erase (std::remove_if (z.intentBeziehungen.begin(), z.intentBeziehungen.end(),
+        [&] (const IntentBeziehung& k) { return k.quelleA == quelleA && k.quelleB == quelleB; }),
+        z.intentBeziehungen.end());
+    if (z.intentBeziehungen.size() == vorher)
+        return true;
+    if (! bestandsrevisionHeben (z, grund)) return false;
+    veraendert = true;
+    return true;
+}
+
+/*  E-02, M-04: das Veto und sein spezifischeres Gegenstueck.
+
+    Die Rolle `verschmolzen` an einer der beiden Quellen ist ein GLOBALES
+    Veto gegen jede Entmaskierungsempfehlung mit Beteiligung dieser Quelle.
+    Eine ausdrueckliche gerichtete Beziehung `A fuehrt vor B` ist das
+    SPEZIFISCHERE Werkzeug und hebt das Veto NUR FUER DIESES PAAR auf - beide
+    liegen auf Stufe 2, spezifisch vor global.
+
+    Die Richtung zaehlt in beiden Leserichtungen: sowohl `A fuehrt vor B` als
+    auch `B fuehrt vor A` ist eine ausdrueckliche Aussage ueber genau dieses
+    Paar. Was NICHT gilt, ist eine Beziehung, an der eine dritte Quelle
+    beteiligt ist - sonst hoebe eine Kante das Veto fuer ein fremdes Paar mit
+    auf, und genau das ist der zweite Rotbeweis von M-04. */
+bool entmaskierungErlaubt (const Zustand& z, const juce::String& quelleA,
+                           const juce::String& quelleB, const juce::String& passageId)
+{
+    const auto vetoAn = [&] (const juce::String& quelle)
+    {
+        const auto* intent = wirkenderIntent (z, quelle, passageId);
+        return intent != nullptr && belegung (intent->rolle).veto == Veto::verschmolzen;
+    };
+    if (! vetoAn (quelleA) && ! vetoAn (quelleB))
+        return true;
+
+    for (const auto& k : z.intentBeziehungen)
+    {
+        if (k.art != Beziehungsart::fuehrtVor)
+            continue;
+        const auto passt = (k.quelleA == quelleA && k.quelleB == quelleB)
+                        || (k.quelleA == quelleB && k.quelleB == quelleA);
+        if (passt)
+            return true;
+    }
     return false;
 }
 

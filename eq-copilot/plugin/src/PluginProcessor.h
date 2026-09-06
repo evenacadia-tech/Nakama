@@ -212,6 +212,45 @@ public:
     bool vergissManuellePassage (const juce::String& passageId);
     std::vector<nakama::state::ManuellePassage> manuellePassagen() const;
 
+    /*  ── SONDE-014 Etappe A: der musikalische Intent im Produktpfad ────────
+
+        Der Produktweg, nicht das Modul. E-08 legt die AUTORITAET fuer
+        Rollenmenge, Zyklenpruefung und Konfliktaufloesung in den Main - also
+        hierher; `intent.rs` im Broker ist Spiegel und Vertragsvalidierung
+        beim Empfang (M-71).
+
+        Jeder Handgriff prueft GENAU dieselben Bedingungen wie der Leser in
+        `NakamaState.cpp`, meldet bei echter Aenderung einmal Host-Dirty
+        (M-13) und hebt die v3-State-Revision - ein No-op meldet nichts.
+        Diese Schicht ist Modell und Nachrichtenweg, kein sichtbares Element:
+        die Bedienfragen gehoeren S31b. */
+    bool setzeQuellenrolle (const juce::String& quelleId, const juce::String& passageId,
+                            nakama::state::Rolle rolle,
+                            nakama::state::IntentHerkunft herkunft, double konfidenz);
+    bool entferneQuellenrolle (const juce::String& quelleId, const juce::String& passageId);
+    bool schuetzeQuelle (const juce::String& quelleId, nakama::state::Schutzeigenschaft eigenschaft,
+                         int bandVon, int bandBis);
+    bool hebeQuellenschutzAuf (const juce::String& quelleId,
+                               nakama::state::Schutzeigenschaft eigenschaft,
+                               int bandVon, int bandBis);
+    bool setzeQuellenbeziehung (const juce::String& quelleA, const juce::String& quelleB,
+                                nakama::state::Beziehungsart art);
+    bool speichereQuellenGleichrangigkeit (const juce::String& quelleA, const juce::String& quelleB);
+    bool entferneQuellenbeziehung (const juce::String& quelleA, const juce::String& quelleB);
+
+    std::vector<nakama::state::SourceIntent>    sourceIntents() const;
+    std::vector<nakama::state::Schutzangabe>    intentSchutzangaben() const;
+    std::vector<nakama::state::IntentBeziehung> intentBeziehungen() const;
+    juce::int64 intentBestandRevision() const;
+    /** Der WIRKENDE Intent einer Quelle in einer Passage (§37.2 Stufe 3).
+        `false`, wenn weder Passagen- noch globaler Wert existiert. */
+    bool wirkendeQuellenrolle (const juce::String& quelleId, const juce::String& passageId,
+                               nakama::state::Rolle& aus) const;
+    /** E-02/M-04 im Produktpfad: darf fuer dieses Paar eine Entmaskierung
+        empfohlen werden? */
+    bool entmaskierungErlaubt (const juce::String& quelleA, const juce::String& quelleB,
+                               const juce::String& passageId) const;
+
     // ── SONDE-013 M-40 bis M-51: der Experimentpfad des Plugins ────────────
     //
     // 🔑 Nacharbeit 2 (Befund R06): `Vergleichspegel` und `Blindvergleich`

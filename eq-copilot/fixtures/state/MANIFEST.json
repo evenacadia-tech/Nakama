@@ -226,6 +226,11 @@
       "datei": "schema2/fremdes-major-3.bin",
       "sha256": "4cd4a87f5a88e58b18618f10d2f1982b657a12d8e9276317d7662945d51bbe33",
       "bytes": 186
+    },
+    {
+      "datei": "schema2/main-intent-v1.bin",
+      "sha256": "9b79f87dc3ae33daf2189e033d7e126e2bc628c1b2a5525a4fcedbc8a948b1ec",
+      "bytes": 972
     }
   ],
   "referenz": {

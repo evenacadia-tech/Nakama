@@ -110,6 +110,183 @@ struct ManuellePassage
     Liste, die mit dem Projekt waechst. */
 inline constexpr int maxManuellePassagen = 64;
 
+/*  ── SONDE-014 Etappe A: der musikalische Intent einer Quelle ──────────────
+
+    Entwurf §37.1 gibt dem `SourceIntent` sechs Teile; Antwort U22 vom
+    06.09.2026 legt darueber die Produktzusage: eine Quelle kann GENAU FUENF
+    musikalische Rollen bekommen. Die Abbildung der fuenf Rollen auf die
+    Belegung des Entwurfs ist Technik dieses Tickets (Entscheid E-01/E-01a,
+    Matrixzeile M-02) und steht als `belegung()` weiter unten.
+
+    Was hier NICHT gespeichert wird, und warum: `prominence`, Funktionstag und
+    Veto-Kennzeichen sind ABGELEITET. Sie getrennt zu persistieren hiesse,
+    zwei Wahrheiten zu fuehren - genau das verbietet §33.5. Der Rueckweg
+    `rolleAus (Belegung)` ist deshalb eindeutig, und der Test misst genau das:
+    Roundtrip ueber alle fuenf plus die Probe, dass zwei verschiedene
+    Belegungen nie dieselbe Rolle zurueckgeben. */
+
+/** Die geschlossene Rollenmenge (U22, 06.09.2026). Genau fuenf Werte. */
+enum class Rolle { fuehrt, traegt, begleitet, geschuetzt, verschmolzen };
+
+/** §37.1 `prominence`. Abgeleitet aus der Rolle, nie getrennt gesetzt. */
+enum class Prominenz { foreground, middle, background };
+
+/** §37.1 Funktionstag. Abgeleitet; `keiner` ist der leere Tag. */
+enum class Funktionstag { keiner, lead, foundation, texture };
+
+/** Das Veto-Kennzeichen der Belegung (E-01a). Ohne es waere die Abbildung
+    weder total noch injektiv: `geschuetzt` und `verschmolzen` liegen beide
+    auf (`middle`, leerer Tag) und liessen sich nicht auseinanderhalten. */
+enum class Veto { keins, schutz, verschmolzen };
+
+/** Die abgeleitete §37.1-Belegung einer Rolle. */
+struct Belegung
+{
+    Prominenz    prominenz = Prominenz::middle;
+    Funktionstag tag       = Funktionstag::keiner;
+    Veto         veto      = Veto::keins;
+
+    bool operator== (const Belegung& a) const noexcept
+    { return prominenz == a.prominenz && tag == a.tag && veto == a.veto; }
+    bool operator!= (const Belegung& a) const noexcept { return ! (*this == a); }
+};
+
+/** §37.1: Herkunft eines Intentwerts. Eine abgeleitete Vermutung
+    ueberschreibt einen Userwert NIE (M-07). */
+enum class IntentHerkunft { user, vorlage, abgeleitet };
+
+/** §37.1: geschuetzte Eigenschaften einer Quelle. Orthogonal zur Rolle
+    (E-01a, M-03): eine Quelle mit Rolle `begleitet` kann Attack geschuetzt
+    haben, und ein Rollenwechsel loescht keinen Schutzbereich.
+
+    `band` traegt zusaetzlich ein halboffenes Bandintervall des bestehenden
+    221er-Gitters; die uebrigen drei tragen keines und fuehren `bandVon` und
+    `bandBis` auf -1. Es entsteht keine zweite Frequenzachse. */
+enum class Schutzeigenschaft { attack, breite, ausklang, band };
+
+/** §37.1: gerichtete Beziehungen zwischen zwei Quellen.
+
+    `gleichrangig` ist kein Entwurfsbegriff, sondern der von §37.2 woertlich
+    verlangte Speicherplatz: "ein Zyklus muss aufgeloest oder als nicht
+    steuerbare Gleichrangigkeit gespeichert werden". Ohne einen eigenen Wert
+    haette ein aufgeloester Zyklus keinen Ort und wuerde beim naechsten Laden
+    wieder als gerichtet gelesen (M-06). */
+enum class Beziehungsart { fuehrtVor, darfVerschmelzen, gleichrangig };
+
+/** §37.2, Reihenfolge der Konfliktregeln. Eine GEORDNETE LISTE, kein Score:
+    eine hoehere Stufe wird von keiner Summe niedrigerer geschlagen (M-05).
+    Der kleinere Zahlenwert gewinnt. */
+enum class Konfliktstufe
+{
+    schutzgrenze      = 1,   ///< 1. Schutz-/Sicherheitsgrenze
+    userintent        = 2,   ///< 2. expliziter Userintent
+    passagespezifisch = 3,   ///< 3. passagespezifischer vor globalem Intent
+    vorlage           = 4,   ///< 4. bestaetigte Vorlage
+    vermutung         = 5    ///< 5. abgeleitete Vermutung
+};
+
+inline constexpr int konfliktstufenAnzahl = 5;
+
+/** Ein Anspruch, wie ihn die Konfliktaufloesung vergleicht. `spezifisch`
+    trennt innerhalb der Stufe 2 die paarweise Beziehung (spezifisch) vom
+    globalen Rollenveto (E-02, M-04/M-05). */
+struct Anspruch
+{
+    Konfliktstufe stufe      = Konfliktstufe::vermutung;
+    bool          spezifisch = false;
+};
+
+/** §37.1: ein `SourceIntent`. Genau ein Objekt je Quelle UND Scope (E-01);
+    `passageId` leer heisst globaler Scope. */
+struct SourceIntent
+{
+    juce::String   quelleId;               ///< effektive, stabile hex32-Quellidentitaet
+    juce::String   passageId;              ///< leer = global, sonst hex32 (§37.1 Passage-Scope)
+    Rolle          rolle = Rolle::traegt;
+    juce::int64    revision = 1;           ///< je Objekt, streng steigend (§37.3)
+    IntentHerkunft herkunft = IntentHerkunft::user;
+    double         konfidenz = 1.0;        ///< [0,1], endlich
+
+    bool operator== (const SourceIntent& a) const noexcept
+    {
+        return quelleId == a.quelleId && passageId == a.passageId
+            && rolle == a.rolle && revision == a.revision
+            && herkunft == a.herkunft && konfidenz == a.konfidenz;
+    }
+};
+
+/** §37.1: ein geschuetzter Bereich beziehungsweise eine geschuetzte
+    Eigenschaft. Orthogonal zur Rolle (M-03). */
+struct Schutzangabe
+{
+    juce::String      quelleId;
+    Schutzeigenschaft eigenschaft = Schutzeigenschaft::attack;
+    int               bandVon = -1;   ///< nur bei `band`: Index im 221er-Gitter, sonst -1
+    int               bandBis = -1;   ///< halboffen `[von, bis)`
+
+    bool operator== (const Schutzangabe& a) const noexcept
+    {
+        return quelleId == a.quelleId && eigenschaft == a.eigenschaft
+            && bandVon == a.bandVon && bandBis == a.bandBis;
+    }
+};
+
+/** §37.1: eine gerichtete Beziehung zwischen zwei Quellen. */
+struct IntentBeziehung
+{
+    juce::String  quelleA;
+    juce::String  quelleB;
+    Beziehungsart art = Beziehungsart::fuehrtVor;
+
+    bool operator== (const IntentBeziehung& a) const noexcept
+    { return quelleA == a.quelleA && quelleB == a.quelleB && art == a.art; }
+};
+
+/*  Feste Obergrenzen (§48.1). Sie sind aus dem Bestand gerechnet, nicht
+    geraten: 64 bestaetigte Quellen mal (global + drei Passagenscopes) ist die
+    Groesse, die eine Sitzung mit dem heutigen Passagendeckel realistisch
+    erreicht; Schutzangaben und Beziehungen liegen in derselben Klasse. Wer
+    mehr braucht, hebt die Zahl bewusst - keine Liste, die mit dem Projekt
+    waechst. */
+inline constexpr int maxSourceIntents     = 256;
+inline constexpr int maxSchutzangaben     = 256;
+inline constexpr int maxIntentBeziehungen = 256;
+
+/** Der groesste Bandindex des Evidenzgitters `nakama_1_24_oct_30_18k_v1`
+    (221 Baender). Die Zahl steht hier NICHT als zweites Gitter, sondern als
+    Grenze: ein Schutzintervall, das darueber hinausgeht, benennt kein Band
+    dieses Vertrags. */
+inline constexpr int bandAnzahlEvidenzgitter = 221;
+
+/** Die Zahl der Rollen ist eine PRODUKTZUSAGE (U22), keine Zaehlung. */
+inline constexpr int rollenAnzahl = 5;
+
+const char* wort (Rolle r);
+const char* wort (Prominenz p);
+const char* wort (Funktionstag t);
+const char* wort (Veto v);
+const char* wort (IntentHerkunft h);
+const char* wort (Schutzeigenschaft e);
+const char* wort (Beziehungsart a);
+
+bool rolleAusWort             (const juce::String& w, Rolle& aus);
+bool intentHerkunftAusWort    (const juce::String& w, IntentHerkunft& aus);
+bool schutzeigenschaftAusWort (const juce::String& w, Schutzeigenschaft& aus);
+bool beziehungsartAusWort     (const juce::String& w, Beziehungsart& aus);
+
+/** E-01a, M-02: die ABGELEITETE §37.1-Belegung. Total und injektiv. */
+Belegung belegung (Rolle r);
+
+/** Der eindeutige Rueckweg. `false`, wenn die Belegung zu keiner Rolle
+    gehoert - es gibt keine stille Naeherung auf einen bekannten Zweig. */
+bool rolleAus (const Belegung& b, Rolle& aus);
+
+/** §37.2, M-05: welcher von zwei Anspruechen gewinnt.
+    Rueckgabe -1 = a gewinnt, +1 = b gewinnt, 0 = gleichrangig.
+    Die Stufe entscheidet zuerst; innerhalb derselben Stufe gewinnt der
+    spezifischere Anspruch (E-02). */
+int vergleicheAnsprueche (const Anspruch& a, const Anspruch& b);
+
 /** Welche Klassen ein Bundle laden darf (§2.3 des Vertrags). */
 struct Bundle
 {
@@ -128,6 +305,21 @@ struct Zustand
     Common common;
     std::vector<MainProjectMitglied> mainProjectMitglieder;
     std::vector<ManuellePassage>     manuellePassagen;
+
+    /*  SONDE-014 Etappe A: der musikalische Intent (§37.1, §33.5). Drei
+        additive Eigenschaften in einem BEKANNTEN Kind desselben Majors -
+        kein neues Kind, keine Root-Versionierung (M-81). */
+    std::vector<SourceIntent>    sourceIntents;
+    std::vector<Schutzangabe>    schutzangaben;
+    std::vector<IntentBeziehung> intentBeziehungen;
+
+    /*  Die Revision des GANZEN Intent-Bestands. Sie steigt bei jeder
+        persistenten Aenderung an einem der drei Bestandteile und ist die
+        Zahl, die die Vollstaendigkeitsmarke aus E-10/M-86 traegt. Ohne sie
+        koennte der Broker einen vollstaendigen leeren Bestand nicht von
+        "noch nichts gehoert" unterscheiden. */
+    juce::int64 intentBestandRevision = 0;
+
     bool hatParameters = false;
 
     /*  Der NEUTRALE Satz, nicht Nullen. `Satz` ist ein std::array; ein
@@ -172,6 +364,92 @@ void speichere (const Zustand& z, juce::MemoryBlock& aus);
 /** Bruecke zum heutigen v2-`hello` (bis SONDE-010): hub | sensor | pre | post. */
 juce::String v2Rolle (const Common& c);
 bool ausV2Rolle (const juce::String& rolle, Klasse& klasse, Messposition& position);
+
+/*  ── SONDE-014 Etappe A: die Produkt-API des Intents ───────────────────────
+
+    E-08 weist die AUTORITAET hier zu: Rollenmenge, Zyklenpruefung und
+    Konfliktaufloesung beim Setzen laufen im Main, also in diesem C++-Code.
+    `intent.rs` im Broker ist Spiegel und Vertragsvalidierung beim Empfang -
+    keine zweite Zustandsmaschine und keine zweite Wahrheit (M-71).
+
+    Jede dieser Funktionen ist ein GEGENPFAD-PAAR mit ihrem Leser: was die
+    API ablehnt, lehnt `lade()` ebenso ab - fail-closed als read-only, nie
+    still korrigiert. Ein Schreiber, der einen Stand erzeugt, den der eigene
+    Leser verweigert, ist stiller Datenverlust beim naechsten Oeffnen. */
+
+/** Setzt oder ersetzt den Intent einer Quelle in genau EINEM Scope.
+
+    Reihenfolge (M-06, M-13): Validierung -> Zyklenpruefung -> Schreiben ->
+    (der Aufrufer meldet Host-Dirty, wenn `true` UND `veraendert` true ist).
+
+    - `herkunft == abgeleitet` ersetzt einen bestehenden `user`-Wert NIE
+      (M-07); die Funktion gibt dann `true` mit `veraendert = false` zurueck,
+      weil das kein Fehler ist, sondern die Regel.
+    - Ein unveraenderter Wert erhoeht keine Revision und meldet kein Dirty.
+    - `false` mit `grund`, wenn die Quelle keine hex32 ist, die Passage keine
+      hex32, die Konfidenz nicht endlich oder ausserhalb [0,1] liegt oder der
+      Deckel `maxSourceIntents` erreicht ist. */
+bool setzeIntent (Zustand& z, const juce::String& quelleId, const juce::String& passageId,
+                  Rolle rolle, IntentHerkunft herkunft, double konfidenz,
+                  bool& veraendert, juce::String& grund);
+
+/** Entfernt den Intent einer Quelle in genau einem Scope. `veraendert` ist
+    false, wenn es keinen gab (No-op meldet kein Dirty). */
+bool entferneIntent (Zustand& z, const juce::String& quelleId, const juce::String& passageId,
+                     bool& veraendert, juce::String& grund);
+
+/** Findet den Intent einer Quelle in einem Scope. */
+const SourceIntent* findeIntent (const Zustand& z, const juce::String& quelleId,
+                                 const juce::String& passageId);
+
+/** §37.2 Stufe 3: der passagespezifische Intent gewinnt vor dem globalen.
+    Gibt den WIRKENDEN Intent einer Quelle in einer Passage zurueck; ohne
+    Passagenwert faellt er auf den globalen zurueck, ohne beide auf nullptr. */
+const SourceIntent* wirkenderIntent (const Zustand& z, const juce::String& quelleId,
+                                     const juce::String& passageId);
+
+/** Setzt eine Schutzangabe. Orthogonal zur Rolle (M-03): sie braucht keine
+    und veraendert keine. Doppelte Angaben sind ein No-op. */
+bool setzeSchutzangabe (Zustand& z, const juce::String& quelleId, Schutzeigenschaft eigenschaft,
+                        int bandVon, int bandBis, bool& veraendert, juce::String& grund);
+
+bool entferneSchutzangabe (Zustand& z, const juce::String& quelleId, Schutzeigenschaft eigenschaft,
+                           int bandVon, int bandBis, bool& veraendert, juce::String& grund);
+
+/** Setzt eine gerichtete Beziehung.
+
+    M-06: die Zyklenpruefung laeuft BEIM SPEICHERN dieses Werts, nicht beim
+    Anwenden. Erzeugte die Kante einen Zyklus im `fuehrtVor`-Teilgraphen,
+    gibt die Funktion `false` mit Grund zurueck - der Zyklus erreicht die
+    Persistenz nie unmarkiert. Der Aufrufer loest ihn auf oder ruft
+    `speichereAlsGleichrangigkeit`. */
+bool setzeBeziehung (Zustand& z, const juce::String& quelleA, const juce::String& quelleB,
+                     Beziehungsart art, bool& veraendert, juce::String& grund);
+
+/** §37.2, zweite Haelfte: speichert die Kante als NICHT STEUERBARE
+    Gleichrangigkeit. Das ist der einzige Weg, auf dem ein Zyklus in den
+    Bestand gelangt - und er ist dann als `gleichrangig` markiert und wird
+    beim Laden nie wieder als gerichtet gelesen. */
+bool speichereAlsGleichrangigkeit (Zustand& z, const juce::String& quelleA,
+                                   const juce::String& quelleB,
+                                   bool& veraendert, juce::String& grund);
+
+bool entferneBeziehung (Zustand& z, const juce::String& quelleA, const juce::String& quelleB,
+                        bool& veraendert, juce::String& grund);
+
+/** Prueft den `fuehrtVor`-Teilgraphen einer Kantenmenge auf Zyklen.
+    `true` = es gibt einen Zyklus. Reine Funktion, damit Leser und Schreiber
+    denselben Riegel benutzen. */
+bool hatZyklus (const std::vector<IntentBeziehung>& kanten);
+
+/** E-02, M-04: darf fuer dieses Paar eine Entmaskierung empfohlen werden?
+
+    Die Rolle `verschmolzen` an einer der beiden Quellen ist ein GLOBALES
+    VETO; eine ausdrueckliche gerichtete Beziehung `A fuehrt vor B` ist das
+    SPEZIFISCHERE Werkzeug und hebt das Veto NUR fuer dieses Paar auf. Beide
+    liegen auf Stufe 2, spezifisch vor global. */
+bool entmaskierungErlaubt (const Zustand& z, const juce::String& quelleA,
+                           const juce::String& quelleB, const juce::String& passageId);
 
 /** Lesbarer Text fuer Manifeste und Tests (XML-Form des Baums). */
 juce::String alsText (const Zustand& z);

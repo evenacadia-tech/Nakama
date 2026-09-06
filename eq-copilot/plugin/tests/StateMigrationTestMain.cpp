@@ -692,6 +692,68 @@ int main (int argc, char* argv[])
             pruefe (datei.existsAsFile() && datei.loadFileAsData (auf) && gleich (auf, bytes), "read-only-Fixture fremdes-major-3.bin bytegleich");
         }
 
+        /*  SONDE-014 Etappe A: ein Golden fuer den musikalischen Intent.
+
+            §5.5 des Bauplans, woertlich: "ein Probe-Datensatz 'in der Form des
+            Writers' wird vom Writer erzeugt und eingefroren". Genau deshalb
+            steht hier keine handgeschriebene Bytefolge, sondern derselbe
+            `state::speichere`, den das Produkt fuehrt - und der Lauf ohne
+            `--schreibe-goldens` misst dagegen.
+
+            Der Stand traegt alle vier neuen Eigenschaften mit ihren Raendern:
+            zwei Scopes derselben Quelle (M-08), alle drei Herkuenfte, ein
+            Bandintervall am vollen Rand [0, 221), eine gerichtete und eine
+            als gleichrangig markierte Kante (M-06) sowie die
+            Bestandsrevision. */
+        {
+            const auto q1 = juce::String::repeatedString ("a", 32);
+            const auto q2 = juce::String::repeatedString ("b", 32);
+            const auto q3 = juce::String::repeatedString ("c", 32);
+            const auto pas = juce::String::repeatedString ("d", 32);
+
+            state::Zustand z = state::frisch (juce::String::repeatedString ("1", 32));
+            z.common.klasse = state::Klasse::main;
+            z.common.position = state::Messposition::insert;
+            z.common.label = "Leitstand";
+            bool v = false; juce::String g;
+            state::setzeIntent (z, q1, {},  state::Rolle::fuehrt,       state::IntentHerkunft::user,       1.0,  v, g);
+            state::setzeIntent (z, q1, pas, state::Rolle::begleitet,    state::IntentHerkunft::vorlage,    0.5,  v, g);
+            state::setzeIntent (z, q2, {},  state::Rolle::verschmolzen, state::IntentHerkunft::abgeleitet, 0.25, v, g);
+            state::setzeIntent (z, q3, {},  state::Rolle::geschuetzt,   state::IntentHerkunft::user,       1.0,  v, g);
+            state::setzeSchutzangabe (z, q1, state::Schutzeigenschaft::attack, -1, -1, v, g);
+            state::setzeSchutzangabe (z, q2, state::Schutzeigenschaft::band, 0,
+                                      state::bandAnzahlEvidenzgitter, v, g);
+            state::setzeBeziehung (z, q1, q2, state::Beziehungsart::fuehrtVor, v, g);
+            state::speichereAlsGleichrangigkeit (z, q2, q1, v, g);
+
+            juce::MemoryBlock bytes;
+            state::speichere (z, bytes);
+            const auto datei = goldenOrdner.getChildFile ("main-intent-v1.bin");
+            if (schreibeGoldens)
+            {
+                datei.replaceWithData (bytes.getData(), bytes.getSize());
+                std::cout << "  geschrieben: " << datei.getFullPathName().toRawUTF8() << std::endl;
+            }
+            juce::MemoryBlock auf;
+            const bool gelesen = datei.existsAsFile() && datei.loadFileAsData (auf);
+            pruefe (gelesen && gleich (auf, bytes),
+                    "Intent-Golden main-intent-v1.bin bytegleich zum Writer");
+
+            // Und der Rueckweg am Golden: laden, wieder speichern, bytegleich.
+            state::Zustand zurueck;
+            const auto ergInt = state::lade (bytes.getData(), bytes.getSize(),
+                                             state::Bundle::eqcp(), zurueck);
+            pruefe (ergInt == state::LadeErgebnis::geladen && ! zurueck.nurLesen,
+                    "Intent-Golden laedt normal");
+            pruefe (zurueck.sourceIntents.size() == 4 && zurueck.schutzangaben.size() == 2
+                        && zurueck.intentBeziehungen.size() == 2
+                        && zurueck.intentBestandRevision == 8,
+                    "und traegt vier Intents, zwei Schutzangaben, zwei Kanten, Revision 8");
+            juce::MemoryBlock nochmal;
+            state::speichere (zurueck, nochmal);
+            pruefe (gleich (bytes, nochmal), "Save nach Load des Intent-Goldens ist bytegleich");
+        }
+
         // Reine Funktion direkt: unbekanntes Rollenwort ist nicht migrierbar.
         {
             juce::ValueTree alt ("EqCopilotState");

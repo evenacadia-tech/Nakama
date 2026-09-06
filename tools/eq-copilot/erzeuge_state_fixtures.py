@@ -623,7 +623,11 @@ def baue(v: dict) -> tuple[dict[str, bytes], dict]:
     # Binaerformat). Hier werden sie nur registriert, damit eine stille Aenderung
     # am --pruefen faellt.
     goldens = []
-    for datei in ("aus-schema1-sensor", "aus-schema1-hub", "aus-schema1-pre", "aus-schema1-post", "fremdes-major-3"):
+    # SONDE-014 Etappe A: `main-intent-v1.bin` kommt aus demselben Writer
+    # (§5.5, "Writer-Fixtures statt Handschrift") und traegt die vier neuen
+    # MainProject-Eigenschaften an ihren Raendern.
+    for datei in ("aus-schema1-sensor", "aus-schema1-hub", "aus-schema1-pre", "aus-schema1-post",
+                  "fremdes-major-3", "main-intent-v1"):
         pfad = FIXTURES / "schema2" / f"{datei}.bin"
         if pfad.exists():
             b = pfad.read_bytes()

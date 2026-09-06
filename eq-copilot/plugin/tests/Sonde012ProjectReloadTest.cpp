@@ -412,6 +412,80 @@ int main()
             juce::String (dirtyNach.nonParam));
     nach.removeListener (&dirtyNach);
 
+    /*  ── SONDE-014 M-13 und M-09: der Intent im selben Recall-Pfad ─────────
+
+        Dieselbe Zusage wie fuer die Mitgliedschaft, eine Ebene weiter: jede
+        persistente Intent-Aenderung meldet GENAU einmal Host-Dirty, ein
+        No-op und ein abgewiesener Wert melden nichts, Speichern und Laden
+        melden nichts - und der Bestand ueberlebt den Recall in eine FRISCHE
+        Instanz.
+
+        Warum hier und nicht nur im eigenen Bein B27: M-13 nennt ausdruecklich
+        `DirtyZaehler.nonParam` dieses Beins, und der Recall-Pfad ist der Ort,
+        an dem der Zaehler seit SONDE-012 gemessen wird. */
+    {
+        eqcop::EqCopilotProcessor intentMain;
+        DirtyZaehler dirtyIntent;
+        intentMain.addListener (&dirtyIntent);
+        const bool alsMain = intentMain.setzeBindung ("hub", "Gen", "");
+        const auto dirtyNachBindung = dirtyIntent.nonParam;
+
+        const auto qa = juce::String (id ('a'));
+        const auto qb = juce::String (id ('b'));
+        const auto pas = juce::String (id ('f'));
+
+        const bool gesetzt = intentMain.setzeQuellenrolle (
+            qa, {}, nakama::state::Rolle::fuehrt, nakama::state::IntentHerkunft::user, 1.0);
+        const bool meldetEinmal = dirtyIntent.nonParam == dirtyNachBindung + 1;
+        const bool noOpIntent = intentMain.setzeQuellenrolle (
+            qa, {}, nakama::state::Rolle::fuehrt, nakama::state::IntentHerkunft::user, 1.0);
+        const bool noOpSchweigt = dirtyIntent.nonParam == dirtyNachBindung + 1;
+        const bool abgewiesen = ! intentMain.setzeQuellenrolle (
+            "kurz", {}, nakama::state::Rolle::fuehrt, nakama::state::IntentHerkunft::user, 1.0);
+        const bool abweisungSchweigt = dirtyIntent.nonParam == dirtyNachBindung + 1;
+        const bool zweiterScope = intentMain.setzeQuellenrolle (
+            qa, pas, nakama::state::Rolle::begleitet, nakama::state::IntentHerkunft::user, 1.0);
+        const bool schutz = intentMain.schuetzeQuelle (
+            qa, nakama::state::Schutzeigenschaft::attack, -1, -1);
+        const bool kante = intentMain.setzeQuellenbeziehung (
+            qa, qb, nakama::state::Beziehungsart::fuehrtVor);
+        const bool vierWeitereMeldungen = dirtyIntent.nonParam == dirtyNachBindung + 4;
+        pruefe (alsMain && gesetzt && meldetEinmal && noOpIntent && noOpSchweigt
+                && abgewiesen && abweisungSchweigt && zweiterScope && schutz && kante
+                && vierWeitereMeldungen,
+                "intent_change_marks_host_dirty_once_and_noop_or_rejected_stays_silent",
+                juce::String (dirtyIntent.nonParam));
+
+        juce::MemoryBlock intentState;
+        intentMain.getStateInformation (intentState);
+        const bool saveSchweigt = dirtyIntent.nonParam == dirtyNachBindung + 4;
+        intentMain.removeListener (&dirtyIntent);
+
+        eqcop::EqCopilotProcessor intentRecall;
+        DirtyZaehler dirtyRecall;
+        intentRecall.addListener (&dirtyRecall);
+        intentRecall.setStateInformation (intentState.getData(), (int) intentState.getSize());
+        const auto intents = intentRecall.sourceIntents();
+        nakama::state::Rolle wirkt {};
+        const bool passageGewinnt = intentRecall.wirkendeQuellenrolle (qa, pas, wirkt)
+                                 && wirkt == nakama::state::Rolle::begleitet;
+        const bool globalBleibt = intentRecall.wirkendeQuellenrolle (qa, {}, wirkt)
+                               && wirkt == nakama::state::Rolle::fuehrt;
+        juce::MemoryBlock nochmal;
+        intentRecall.getStateInformation (nochmal);
+        const bool bytegleich = nochmal.getSize() == intentState.getSize()
+            && std::memcmp (nochmal.getData(), intentState.getData(), nochmal.getSize()) == 0;
+        pruefe (saveSchweigt && intents.size() == 2
+                && intentRecall.intentSchutzangaben().size() == 1
+                && intentRecall.intentBeziehungen().size() == 1
+                && intentRecall.intentBestandRevision() == 4
+                && passageGewinnt && globalBleibt && bytegleich
+                && dirtyRecall.nonParam == 0,
+                "intent_survives_project_recall_and_load_marks_no_dirty",
+                juce::String (dirtyRecall.nonParam));
+        intentRecall.removeListener (&dirtyRecall);
+    }
+
     std::cout << "SONDE-012 ProjectReload: " << bestanden << "/"
               << (bestanden + fehler) << " gruen\n";
     return fehler == 0 ? 0 : 1;

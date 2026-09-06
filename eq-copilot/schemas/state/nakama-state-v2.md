@@ -21,7 +21,12 @@ NakamaState                               schema = 2  (int)
 │     pair_id              string   NUR wenn nicht leer (fehlt = kein Paar; eigener Writer höchstens 60 Zeichen)
 │     project_binding_id   string   NUR wenn bestätigt gebunden (hex32); wird NIE still erzeugt (§32.2)
 ├── MainProject                           schema = 1  (int)   nur plugin_kind = main (Pflicht dort)
-│     confirmed_members_v1  array   optional; flach [instance_id, label, ...], höchstens 64 Paare
+│     confirmed_members_v1   array  optional; flach [instance_id, label, ...], höchstens 64 Paare
+│     manual_passages_v1     array  optional; flach [passage_id, label, projekt_start, projekt_ende, ...], höchstens 64 Vierergruppen (SONDE-013 M-69)
+│     source_intents_v1      array  optional; flach [quelle_id, passage_id|"", rolle, revision, herkunft, konfidenz, ...], höchstens 256 Sechsergruppen (SONDE-014 M-02)
+│     intent_protections_v1  array  optional; flach [quelle_id, eigenschaft, band_von, band_bis, ...], höchstens 256 Vierergruppen (SONDE-014 M-03)
+│     intent_relations_v1    array  optional; flach [quelle_a, quelle_b, art, ...], höchstens 256 Dreiergruppen (SONDE-014 M-06)
+│     intent_revision_v1     int64  optional; Revision des GANZEN Intent-Bestands, ab 1 (SONDE-014 M-86)
 ├── Parameters                            schema = 1  (int)   nur plugin_kind = active_probe (Pflicht dort)
 │     109 Eigenschaften mit den IDs aus nakama-parameter-v1.json, in Vertragsreihenfolge
 │     bool → bool · float → double (bit-exakt) · enum → string (Enumwort)
@@ -49,6 +54,47 @@ Die Reihenfolge auf der Leitung ist `instance_id`-aufsteigend und trägt keine
 Mixer- oder Verbindungsreihenfolge. Fehlt die Eigenschaft, ist die bestätigte
 Menge leer. Runtime-Nonce, PID, Control-Liveness, Frische, Descriptor, Hostname,
 Frames, Lautheit und Fehlergründe sind ausdrücklich **kein** Host-State.
+
+`MainProject.manual_passages_v1` ist seit SONDE-013 (M-25, M-69) der
+Projektintent der vom User markierten Passagen: Vierergruppen aus hex32-`passage_id`,
+User-Label (höchstens 120 Codepoints), `projekt_start` und `projekt_ende` als
+`int64` mit `0 <= start < ende`, höchstens 64 Einträge, sortiert nach Start.
+Fingerprint, aktives Quellenset, Abdeckung und Transportepoche sind
+**Messergebnisse** und bleiben im Store — sonst behauptete ein Projekt nach dem
+Löschen der Datenbank weiter, es gebe Evidenz.
+
+> **Nachgetragen am 06.09.2026 (SONDE-014, Nebenbefund N-02).** Der Zustandsbaum
+> oben führte `manual_passages_v1` bis zu diesem Ticket **nicht**, obwohl
+> `NakamaState.cpp` es seit SONDE-013 schreibt und liest. Der Vertragstext war
+> gegenüber dem Code unvollständig; die Zeile steht jetzt an ihrem Platz.
+
+### 2.1.1 Der musikalische Intent (SONDE-014, S23–25)
+
+Vier weitere additive Eigenschaften im bekannten Kind `MainProject` — kein
+neues Kind, keine Root-Versionierung. Entwurf §33.5 weist `SourceIntent` dem
+`MainProjectState` zu; die Produktzusage aus Antwort U22 (06.09.2026) ist die
+**Anzahl der Rollen: genau fünf**.
+
+| Eigenschaft | Form | Regeln |
+|---|---|---|
+| `source_intents_v1` | flaches Array aus Sechsergruppen | `quelle_id` hex32; `passage_id` hex32 **oder leer** (leer = globaler Scope); `rolle` aus der geschlossenen Menge `fuehrt`, `traegt`, `begleitet`, `geschuetzt`, `verschmolzen`; `revision` `int64` ≥ 1; `herkunft` aus `user`, `template`, `inferred`; `konfidenz` endlich in `[0,1]`. Genau **ein** Eintrag je (Quelle, Scope). Höchstens 256 Gruppen, sortiert nach Quelle, dann Scope. |
+| `intent_protections_v1` | flaches Array aus Vierergruppen | `quelle_id` hex32; `eigenschaft` aus `attack`, `breite`, `ausklang`, `band`; bei `band` ein halboffenes Intervall `[band_von, band_bis)` im 221-Band-Evidenzgitter (`0 <= von < bis <= 221`), sonst **beide `-1`** — `0` ist ein gültiger Bandindex und taugt deshalb nicht als „kein Intervall". Höchstens 256 Gruppen. |
+| `intent_relations_v1` | flaches Array aus Dreiergruppen | `quelle_a` und `quelle_b` hex32 und **verschieden**; `art` aus `fuehrt_vor`, `darf_verschmelzen`, `gleichrangig`. Genau eine Beziehung je geordnetem Paar. Der `fuehrt_vor`-Teilgraph ist **zyklenfrei**: ein Zyklus macht den Stand read-only (§37.4). Höchstens 256 Gruppen. |
+| `intent_revision_v1` | `int64` ≥ 1 | Revision des **ganzen** Bestands, steigt bei jeder persistenten Änderung genau einmal. Fehlt sie, ist der Bestand nie beschrieben worden; **Inhalt ohne Revision** ist ein ungültiger Stand, weil die Vollständigkeitsmarke aus SONDE-014 M-86 dann keine Zahl hätte. |
+
+Die §37.1-Belegung (`prominence`, Funktionstag, Veto-Kennzeichen) wird aus der
+Rolle **abgeleitet** und **nie** getrennt gespeichert: `fuehrt` → (`foreground`,
+`lead`), `traegt` → (`middle`, `foundation`), `begleitet` → (`background`,
+`texture`), `geschuetzt` → (`middle`, leerer Tag, Veto `schutz`),
+`verschmolzen` → (`middle`, leerer Tag, Veto `verschmolzen`). Die Abbildung ist
+total und injektiv; zwei Wahrheiten für dieselbe Aussage wären ein Verstoß
+gegen §33.5.
+
+Eine leere Liste bedeutet **Eigenschaft weg**, nicht leeres Array — sonst
+unterschieden sich ein Projekt ohne Intent und eines, dessen letzter Eintrag
+gelöscht wurde, in den Bytes. Golden: `fixtures/state/schema2/main-intent-v1.bin`,
+vom Writer erzeugt (Kanon **A12**, geschrieben von
+`EqCopStateMigrationTest --schreibe-goldens`).
 
 ### 2.2 Messposition je Klasse
 

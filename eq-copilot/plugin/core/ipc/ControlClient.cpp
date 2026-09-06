@@ -390,6 +390,28 @@ bool commandAckHaeltVertrag (const std::string& text, GelesenesCommandAck& geles
     return true;
 }
 
+/*  Der Bootstrap-`hello`-Text (NAK-181 Nacharbeit 1, EP-09/NR-09).
+
+    🔑 Er stand bis zu dieser Runde inline im Verbindungsaufbau — hinter
+    Pipe, Serverpruefung und Handschlag — und war damit ohne Draht nicht
+    messbar. `samplerate` laeuft hier durch `zahl()`, also durch dieselbe
+    locale-unabhaengige Zahlform wie jede andere v3-Zahl; `block_size` und
+    `channels` sind Ganzzahlen und duerfen `std::to_string` behalten. */
+std::string helloAlsJson (const ControlHello& hello)
+{
+    std::string aus =
+        std::string ("{\"type\":\"hello\",\"connection_kind\":\"control\",\"protocol\":3,")
+        + "\"plugin_version\":" + jsonString (hello.pluginVersion)
+        + ",\"plugin_kind\":" + jsonString (hello.pluginKind)
+        + ",\"adresse\":" + adresseAlsJson (hello.adresse);
+    if (hello.hostAngeben)
+        aus += ",\"host\":{\"pid\":" + std::to_string (hello.hostPid) + "}";
+    aus += ",\"audio\":{\"samplerate\":" + zahl (hello.samplerate)
+         + ",\"block_size\":" + std::to_string (hello.blockSize)
+         + ",\"channels\":" + std::to_string (hello.channels) + "}}";
+    return aus;
+}
+
 std::string heartbeatAlsJson (const Adresse& adresse, std::uint64_t sequence,
                               const ControlStatus& status, bool bestaetigtNeutral)
 {
@@ -1741,16 +1763,7 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
     if (! serverGeoeffnet)
         return false;
 
-    std::string helloJson =
-        std::string ("{\"type\":\"hello\",\"connection_kind\":\"control\",\"protocol\":3,")
-        + "\"plugin_version\":" + jsonString (hello.pluginVersion)
-        + ",\"plugin_kind\":" + jsonString (hello.pluginKind)
-        + ",\"adresse\":" + adresseAlsJson (hello.adresse);
-    if (hello.hostAngeben)
-        helloJson += ",\"host\":{\"pid\":" + std::to_string (hello.hostPid) + "}";
-    helloJson += ",\"audio\":{\"samplerate\":" + zahl (hello.samplerate)
-               + ",\"block_size\":" + std::to_string (hello.blockSize)
-               + ",\"channels\":" + std::to_string (hello.channels) + "}}";
+    const std::string helloJson = helloAlsJson (hello);
 
     std::vector<std::uint8_t> rahmen;
     if (! bootstrapRahmen (helloJson, rahmen)

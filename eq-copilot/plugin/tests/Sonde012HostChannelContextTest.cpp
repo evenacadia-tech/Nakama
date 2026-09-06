@@ -313,7 +313,13 @@ int main()
 
         fahreBloecke (40);
         std::uint64_t e0 = 0, s0 = 0;
-        fall ("N-31: der Producer hat einen Frame veroeffentlicht", stempel (e0, s0));
+        // 🔑 NAK-181 Nacharbeit 1 (EP-07): diese Zeile heisst nicht mehr
+        // N-31. Sie prueft die Vorbedingung dieses Blocks (es gibt ueberhaupt
+        // einen veroeffentlichten Frame) — nicht die Zusage von N-31.
+        // Gemessen wird N-31 im eigenen Fall `probeeq_drop_zieht_das_segment_hoch`
+        // weiter unten, mit einem ECHTEN Queue-Drop.
+        fall ("Vorbedingung: der Producer hat einen Frame veroeffentlicht",
+              stempel (e0, s0));
 
         // 🔑 Ein SEEK: die Projektzeit springt. `schliesstAn` verwirft den
         // gehaltenen Block, und die Engine muss die Grenze am naechsten
@@ -333,10 +339,14 @@ int main()
         fall ("N-33: ein Beweislagewechsel zieht die Epoche ebenfalls hoch",
               nachWechsel && e2 > e1);
 
-        // N-35 — der Ereignisring bleibt beim Grenzziehen stehen; nur der
-        // volle Reset leert ihn. Gemessen an der Engine selbst, weil der
-        // Stempel darueber nichts sagt.
-        fall ("N-35: die Epoche steigt monoton ueber alle drei Bruchklassen",
+        // 🔑 NAK-181 Nacharbeit 1 (EP-08): diese Zeile heisst nicht mehr
+        // N-35. Monotonie besteht auch bei durchgehend 0 und sagt weder ueber
+        // geleerte Fenster noch ueber den erhaltenen Ereignisring etwas.
+        // N-35 wird in B16 `EqCopSonde013EventWireTest` gemessen, im Fall
+        // `grenze_leert_die_fenster_und_laesst_den_ereignisring` — dort steht
+        // die Engine ohne Worker und ihre Zaehler sind direkt lesbar.
+        fall ("Quervergleich: die Epoche steigt monoton ueber alle drei "
+              "Bruchklassen",
               e2 >= e1 && e1 >= e0);
 
         // 🔑 N-42 — ein KANALWECHSEL bei gleicher `startFolge`.
@@ -395,6 +405,121 @@ int main()
         fall ("N-42: ein Kanalwechsel zieht die EPOCHE hoch (zeitSprung, nicht "
               "lokaleLuecke) - der Bruch ist auf dem Draht sichtbar",
               vorWechsel && nachWechsel2 && e4 > e3);
+
+        p.setPlayHead (nullptr);
+        p.releaseResources();
+    }
+
+    // 🔑 NAK-181 N-31 (Nacharbeit 1, EP-07/NR-07):
+    // `probeeq_drop_zieht_das_segment_hoch` — der Test, den die Matrix
+    // namentlich zusagte und den es nicht gab.
+    //
+    // Bis zu dieser Runde fuhr N-31 nur normale Bloecke und prueste, dass ein
+    // Frame da ist. Kein Drop wurde ausgeloest, kein Folgestempel verglichen
+    // — und deshalb blieb die Zeile sogar mit dem ALTEN vollen Reset gruen
+    // (Rotbeweis `roh/NAK-181-rot-b4.txt`).
+    //
+    // ⚠️ WARUM DIE PROJEKTZEIT HIER STEHT: `grenzeZwischen` prueft den
+    // Zeitsprung VOR der lokalen Luecke (`FeatureEngine.h:1833-1856`). Bei
+    // laufender Hostzeit ist ein Drop deshalb ein `zeitSprung` und hebt die
+    // EPOCHE (genau das misst N-42 nebenan). N-31 sagt `continuity_segment
+    // = s + 1` bei UNVERAENDERTER Epoche zu — das ist der Fall, in dem der
+    // Host Audio liefert, ohne die Projektzeit zu bewegen (FL zerteilt Puffer
+    // und wiederholt dabei dieselbe Projektzeit; `schliesstAn` und
+    // `grenzeZwischen` lesen eine STEHENDE Zeit ausdruecklich als "sagt
+    // nichts"). Der lokale Strom laeuft trotzdem weiter, und genau er traegt
+    // die Luecke.
+    {
+        // Landmine NAK-175: der Prozessor gehoert auf den Heap.
+        auto halter = std::make_unique<nakama::sonde::SondeProcessor>();
+        auto& p = *halter;
+        binde (p);
+        p.prepareToPlay (48000.0, 512);
+
+        juce::AudioBuffer<float> puffer (2, 512);
+        juce::MidiBuffer midi;
+        TestKopf kopf;
+        kopf.pos = 96000;          // eine gueltige, aber STEHENDE Projektzeit
+        p.setPlayHead (&kopf);
+
+        std::uint64_t phase = 0;
+        auto fuelle = [&] (juce::AudioBuffer<float>& b)
+        {
+            for (int c = 0; c < b.getNumChannels(); ++c)
+                for (int k = 0; k < b.getNumSamples(); ++k)
+                    b.setSample (c, k, 0.25f * std::sin (
+                        6.2831853071795864 * 1000.0
+                        * (double) (phase + (std::uint64_t) k) / 48000.0));
+            phase += (std::uint64_t) b.getNumSamples();
+        };
+        auto fahre = [&] (int n)
+        {
+            for (int i = 0; i < n; ++i)
+            {
+                fuelle (puffer);
+                p.processBlock (puffer, midi);
+                std::this_thread::sleep_for (std::chrono::milliseconds (2));
+            }
+        };
+        auto stempel = [&p] (std::uint64_t& epoche, std::uint64_t& segment) -> bool
+        {
+            nakama::analyse::FeatureFrame f {};
+            if (! p.letzterProducerFrameFuerTest (f))
+                return false;
+            epoche = f.transport.transport_epoch;
+            segment = f.transport.continuity_segment;
+            return true;
+        };
+
+        fahre (60);
+        std::uint64_t e0 = 0, s0 = 0;
+        const bool vorher = stempel (e0, s0);
+        fall ("N-31: vor dem Drop steht ein Stempel", vorher,
+              "Epoche " + std::to_string (e0) + ", Segment " + std::to_string (s0));
+        const auto bruecheVorher   = p.kontinuitaetsbruecheFuerTest();
+        const auto getrenntVorher  = p.getrennteFensterFuerTest();
+        const auto lueckenVorher   = p.grenzenMitGrundFuerTest (
+                                        nakama::analyse::Grenzgrund::lokaleLuecke);
+        const auto dropsVorher     = p.analyseDropsOversizeFuerTest();
+
+        // 🔑 DER ECHTE DROP: ein Block ueber `maxBlockFrames` faellt fuer die
+        // Analyse als GANZES weg (Paragraph 48.1). Der lokale Strom laeuft
+        // trotzdem weiter — nur so kann `kFlagLueckeDavor` die Wahrheit
+        // sagen —, und der naechste angenommene Block traegt das Flag.
+        {
+            juce::AudioBuffer<float> zuGross (
+                2, (int) nakama::echtzeit::GenStrom::maxBlockFrames + 1);
+            fuelle (zuGross);
+            p.processBlock (zuGross, midi);
+        }
+        fall ("N-31: der Block ist als Analyse-Drop gezaehlt",
+              p.analyseDropsOversizeFuerTest() == dropsVorher + 1,
+              std::to_string (p.analyseDropsOversizeFuerTest()));
+
+        fahre (60);
+        fall ("N-31: die Quarantaene meldet einen Kontinuitaetsbruch",
+              p.kontinuitaetsbruecheFuerTest() > bruecheVorher,
+              std::to_string (p.kontinuitaetsbruecheFuerTest()));
+
+        std::uint64_t e1 = 0, s1 = 0;
+        const bool nachher = stempel (e1, s1);
+        fall ("N-31: nach dem Drop steht wieder ein Stempel", nachher,
+              "Epoche " + std::to_string (e1) + ", Segment " + std::to_string (s1));
+        fall ("N-31: probeeq_drop_zieht_das_segment_hoch - transport_epoch bleibt, "
+              "continuity_segment steigt um genau 1",
+              nachher && e1 == e0 && s1 == s0 + 1,
+              "vorher " + std::to_string (e0) + "/" + std::to_string (s0)
+                  + ", nachher " + std::to_string (e1) + "/" + std::to_string (s1));
+        fall ("N-31: kein Fenster ueberbrueckt die Grenze - getrennteFenster ist "
+              "gestiegen",
+              p.getrennteFensterFuerTest() > getrenntVorher,
+              std::to_string (p.getrennteFensterFuerTest()));
+        fall ("N-31: und der Grundzaehler `lokaleLuecke` ebenso - nicht "
+              "`zeitSprung`, nicht `neuanlauf`",
+              p.grenzenMitGrundFuerTest (nakama::analyse::Grenzgrund::lokaleLuecke)
+                  > lueckenVorher,
+              std::to_string (p.grenzenMitGrundFuerTest (
+                  nakama::analyse::Grenzgrund::lokaleLuecke)));
 
         p.setPlayHead (nullptr);
         p.releaseResources();

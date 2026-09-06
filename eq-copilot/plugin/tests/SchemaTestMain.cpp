@@ -169,12 +169,47 @@ void fahreLocale()
         if (gesetzt == nullptr)
             gesetzt = std::setlocale (LC_NUMERIC, "German_Germany.1252");
         pruefe (gesetzt != nullptr, "N-17: eine Komma-Locale ist verfuegbar");
+        // 🔑 NAK-181 Nacharbeit 1 (EP-09/NR-09): der HELLO-Text, mit
+        // NICHTGANZZAHLIGER Samplerate.
+        //
+        // Der Heartbeat allein misst die Zahlform gar nicht: seine Felder sind
+        // Ganzzahlen und laufen durch `std::to_string`. Die einzige Stelle im
+        // Bootstrap, die `zahl()` benutzt, ist `audio.samplerate` im Hello —
+        // und die war bis zu dieser Runde ungemessen, weil der Text inline im
+        // Verbindungsaufbau hinter der Pipe stand.
+        nakama::ipc::ControlHello hallo;
+        hallo.adresse = a;
+        hallo.pluginKind = "main";
+        hallo.samplerate = 44100.5;          // nichtganzzahlig: hier faellt es auf
+        hallo.blockSize = 512;
+        hallo.channels = 2;
+        std::setlocale (LC_NUMERIC, gesichert.c_str());
+        const auto helloUnterC = nakama::ipc::helloAlsJson (hallo);
+        pruefe (helloUnterC.find ("44100.5") != std::string::npos,
+                "N-17: der Hello traegt die nichtganzzahlige Samplerate mit PUNKT",
+                juce::String (helloUnterC.c_str()));
+
         if (gesetzt != nullptr)
         {
+            std::setlocale (LC_NUMERIC, gesetzt);
             const auto unterKomma = nakama::ipc::heartbeatAlsJson (a, 7, st);
             pruefe (unterKomma == unterC,
                     "N-17: der Heartbeat ist unter Komma-Locale BYTEGLEICH",
                     juce::String ((int) unterKomma.size()) + " Bytes");
+
+            const auto helloUnterKomma = nakama::ipc::helloAlsJson (hallo);
+            pruefe (helloUnterKomma == helloUnterC,
+                    "N-17: und der HELLO-Text ebenso - bytegleich unter beiden "
+                    "Locales",
+                    juce::String ((int) helloUnterKomma.size()) + " Bytes");
+            pruefe (helloUnterKomma.find ("44100,5") == std::string::npos,
+                    "N-17: kein Komma-Dezimaltrenner im Hello - hier faellt der "
+                    "Rotbeweis, wenn `zahl` durch `std::to_string` ersetzt wird");
+            const auto geparst = juce::JSON::parse (juce::String (helloUnterKomma));
+            pruefe (! geparst.isVoid()
+                    && (double) geparst.getProperty ("audio", {})
+                                       .getProperty ("samplerate", {}) == 44100.5,
+                    "N-17: juce::JSON liest die Samplerate unveraendert zurueck");
             std::setlocale (LC_NUMERIC, gesichert.c_str());
         }
     }

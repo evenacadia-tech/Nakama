@@ -186,6 +186,20 @@ struct ControlStatus
 std::string heartbeatAlsJson (const Adresse&, std::uint64_t sequence,
                               const ControlStatus&, bool bestaetigtNeutral = false);
 
+/** Der Bootstrap-`hello`-Text — genau der, den `ControlClient` sendet.
+
+    🔑 NAK-181 Nacharbeit 1 (EP-09/NR-09): bis zu dieser Runde stand dieser
+    Text INLINE im Verbindungsaufbau, hinter Pipe, Serverpruefung und
+    Handschlag. Ein Bein konnte ihn deshalb nicht erzeugen, und N-17 mass nur
+    den Heartbeat — der die Zahlform gar nicht benutzt, weil seine Felder
+    Ganzzahlen sind. Eine versehentliche Rueckkehr zu `std::to_string` allein
+    im Hello waere gruen geblieben, obwohl `samplerate` dort durch `zahl()`
+    laeuft und unter Komma-Locale ein `44100,5` erzeugte — ungueltiges JSON
+    in einem Pflicht-`number`.
+
+    Es gibt genau EINEN Weg zum Hello-Text: der Client ruft dieselbe Funktion. */
+std::string helloAlsJson (const ControlHello&);
+
 struct GelesenesCommandAck
 {
     std::string commandId;

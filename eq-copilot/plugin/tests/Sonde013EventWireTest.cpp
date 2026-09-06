@@ -1154,8 +1154,19 @@ int main()
         // Ein Stereobandsatz mit NICHTGANZZAHLIGEN Werten — genau die Klasse,
         // an der die Locale-Abhaengigkeit sichtbar wird. Ein Satz aus lauter
         // Ganzzahlen liefe durch den Ganzzahlzweig und maesse nichts.
+        //
+        // 🔑 NAK-181 Nacharbeit 1 (EP-10/NR-10): jeder der drei neuen
+        // Bandsaetze bekommt ein EIGENES, nichttriviales Praesenzmuster.
+        //
+        // Bis zu dieser Runde blieben alle drei Flags im Aufbau `false`, und
+        // geprueft wurde nur UNGLEICHHEIT zur vollen `mid_db`-Bitmap. Ein
+        // Writer, der samtliche drei Bitmaps immer loescht ODER ihre
+        // Selektoren vertauscht, bestand das. Die Muster sind paarweise
+        // verschieden, keines ist leer, keines ist voll.
         std::vector<nakama::analyse::StereoBandwert> baender (
             (std::size_t) nakama::analyse::Gitter::evidenzBaender);
+        std::vector<bool> mKurz (baender.size()), mMittel (baender.size()),
+                          mPersistenz (baender.size());
         for (std::size_t i = 0; i < baender.size(); ++i)
         {
             baender[i].basisGesetzt = true;
@@ -1164,6 +1175,18 @@ int main()
             baender[i].seitenanteilDb = -6.125f;
             baender[i].fensterDauerMs = 21.3f;
             baender[i].freiheitsgrade = 9;
+
+            mKurz[i]       = (i % 3) == 0;
+            mMittel[i]     = (i % 5) == 1;
+            mPersistenz[i] = (i % 7) < 2;
+            baender[i].korrelationKurzGesetzt   = mKurz[i];
+            baender[i].korrelationMittelGesetzt = mMittel[i];
+            baender[i].persistenzGesetzt        = mPersistenz[i];
+            // Werte ungleich 0: eine 0 im Wertfeld liesse „Bit gesetzt" und
+            // „Bit nicht gesetzt" auf der Leitung gleich aussehen.
+            baender[i].korrelationKurz   = 0.75f;
+            baender[i].korrelationMittel = -0.5f;
+            baender[i].persistenz        = 0.25f;
         }
         nakama::evidenz::Stereosicht sicht;
         sicht.baender = baender.data();
@@ -1215,14 +1238,178 @@ int main()
         {
             return st.getProperty (feld, {}).getProperty ("gueltig_bitmap", {}).toString();
         };
+        // 🔑 NAK-181 Nacharbeit 1 (EP-10/NR-10): EXAKTER Vergleich der
+        // dekodierten Bitmap gegen das Muster, das der Aufbau gesetzt hat.
+        // Ungleichheit zu `mid_db` allein sagt nur, dass zwei Bitmaps
+        // verschieden sind — vertauschte Selektoren blieben unsichtbar.
+        const auto bitsVon = [&bitmapVon] (const char* feld)
+        {
+            juce::MemoryBlock roh;
+            juce::MemoryOutputStream strom (roh, false);
+            juce::Base64::convertFromBase64 (strom, bitmapVon (feld));
+            strom.flush();
+            std::vector<bool> bits ((std::size_t) nakama::analyse::Gitter::evidenzBaender, false);
+            const auto* bytes = (const std::uint8_t*) roh.getData();
+            if (roh.getSize() >= nakama::analyse::bitmapBytes (
+                                     nakama::analyse::Gitter::evidenzBaender))
+                for (int i = 0; i < nakama::analyse::Gitter::evidenzBaender; ++i)
+                    bits[(std::size_t) i] = nakama::analyse::bitmapLies (bytes, i);
+            return bits;
+        };
+        struct Satz { const char* feld; const std::vector<bool>* muster; };
+        const Satz saetze[] = { { "korrelation_kurz",   &mKurz },
+                                { "korrelation_mittel", &mMittel },
+                                { "persistenz",         &mPersistenz } };
+        for (const auto& satz : saetze)
+        {
+            const auto bits = bitsVon (satz.feld);
+            int falsch = -1;
+            for (std::size_t i = 0; i < bits.size(); ++i)
+                if (bits[i] != (*satz.muster)[i]) { falsch = (int) i; break; }
+            pruefe (falsch < 0,
+                    (juce::String ("N-24: ") + satz.feld
+                        + " traegt EXAKT sein eigenes Praesenzmuster").toRawUTF8(),
+                    falsch < 0 ? juce::String() : ("erstes falsches Band "
+                                                   + juce::String (falsch)));
+        }
+        // Und die drei Muster sind untereinander und von `mid_db` verschieden;
+        // ohne diese Zeile koennten drei identische Bitmaps alle drei Faelle
+        // darueber bestehen.
         pruefe (bitmapVon ("mid_db").isNotEmpty()
-                && bitmapVon ("korrelation_kurz") != bitmapVon ("mid_db"),
-                "N-24: korrelation_kurz traegt eine EIGENE Bitmap, nicht die von mid_db",
-                bitmapVon ("korrelation_kurz"));
-        pruefe (bitmapVon ("persistenz") != bitmapVon ("mid_db"),
-                "N-24: persistenz ebenso", bitmapVon ("persistenz"));
-        pruefe (bitmapVon ("korrelation_mittel") != bitmapVon ("mid_db"),
-                "N-24: korrelation_mittel ebenso", bitmapVon ("korrelation_mittel"));
+                && bitmapVon ("korrelation_kurz") != bitmapVon ("mid_db")
+                && bitmapVon ("korrelation_mittel") != bitmapVon ("mid_db")
+                && bitmapVon ("persistenz") != bitmapVon ("mid_db"),
+                "N-24: und keine der drei ist die Bitmap von mid_db");
+        pruefe (bitmapVon ("korrelation_kurz") != bitmapVon ("korrelation_mittel")
+                && bitmapVon ("korrelation_kurz") != bitmapVon ("persistenz")
+                && bitmapVon ("korrelation_mittel") != bitmapVon ("persistenz"),
+                "N-24: und sie sind paarweise verschieden - vertauschte "
+                "Selektoren faellt der Rotbeweis hier");
+    }
+
+    abschnitt ("NAK-181 N-35  grenze_leert_die_fenster_und_laesst_den_ereignisring");
+    {
+        // 🔑 NAK-181 Nacharbeit 1 (EP-08/NR-08): der Test, den die Matrix
+        // namentlich zusagte und den es nicht gab.
+        //
+        // Bis zu dieser Runde trug eine Zeile in B11 den Namen N-35 und
+        // prueste die MONOTONIE der Epoche — die besteht auch bei
+        // durchgehend 0, und der Rotbeweis b4 zeigte genau dieses falsche
+        // Gruen mit wiederhergestelltem vollem Reset. Gemessen gehoert die
+        // DIFFERENZ zwischen `grenzeZiehen` und `zuruecksetzen()`: beide
+        // leeren die Fenster, nur der Reset leert auch den Ereignisring und
+        // setzt Epoche wie Segment auf 0.
+        //
+        // Landmine NAK-175: die Engine gehoert auf den Heap.
+        auto halter = std::make_unique<FeatureEngine>();
+        auto& e = *halter;
+        e.vorbereiten (48000.0);
+        Speiser sp { e };
+
+        // Fenster fuellen UND mindestens ein Ereignis in den Ring bringen:
+        // ein wechselnder Pegel erzeugt Flussereignisse.
+        for (int i = 0; i < 200; ++i)
+            sp.sende (sinus ((i / 10) % 2 == 0 ? 0.5 : 0.001, 1000.0, 48000.0));
+
+        const int ringVorher = e.ereignisAnzahlJetzt();
+        pruefe (ringVorher > 0, "N-35: der Ereignisring traegt Ereignisse",
+                juce::String (ringVorher));
+        const auto letztesVorher = e.ereignis (ringVorher - 1);
+        const bool fensterVoll = e.fuellstandHaupt() > 0 || e.fuellstandBass() > 0
+                              || e.fuellstandLoudnessZelle() > 0
+                              || e.fuellstandKurzLoudness() > 0
+                              || e.liveAkkuBelegteBaender() > 0;
+        pruefe (fensterVoll,
+                "N-35: und die Fenster sind gefuellt - ohne das misst der Fall nichts",
+                juce::String (e.fuellstandHaupt()) + "/" + juce::String (e.fuellstandBass())
+                + " Haupt/Bass, " + juce::String (e.liveAkkuBelegteBaender()) + " Akkubaender");
+
+        const auto epocheVorher   = e.transportEpocheJetzt();
+        const auto segmentVorher  = e.segmentJetzt();
+        const auto getrenntVorher = e.getrennteFenster();
+        const auto lueckenVorher  = e.grenzenMitGrund (nakama::analyse::Grenzgrund::lokaleLuecke);
+
+        // Eine LOKALE Luecke: der lokale Strom springt, die Projektzeit laeuft
+        // lueckenlos weiter. `grenzeZwischen` prueft den Zeitsprung VOR der
+        // lokalen Luecke - bliebe die Projektzeit stehen oder spraenge sie,
+        // maesse der Fall die Epoche statt des Segments.
+        sp.strom += 4096;
+        sp.sende (sinus (0.5, 1000.0, 48000.0));
+
+        pruefe (e.getrennteFenster() == getrenntVorher + 1,
+                "N-35: `grenzeZiehen` hat GENAU EINMAL getrennt",
+                juce::String ((juce::int64) e.getrennteFenster()));
+        pruefe (e.grenzenMitGrund (nakama::analyse::Grenzgrund::lokaleLuecke)
+                    == lueckenVorher + 1,
+                "N-35: und der Grund ist die lokale Luecke");
+        pruefe (e.segmentJetzt() == segmentVorher + 1
+                    && e.transportEpocheJetzt() == epocheVorher,
+                "N-35: das SEGMENT steigt, die Epoche bleibt (Paragraph 32.3)",
+                "Epoche " + juce::String ((juce::int64) e.transportEpocheJetzt())
+                + ", Segment " + juce::String ((juce::int64) e.segmentJetzt()));
+
+        // Die Fenster: der Block NACH der Grenze hat schon wieder gefuellt,
+        // also wird gegen den Stand VOR ihm nicht auf 0 geprueft, sondern auf
+        // "hoechstens ein Block". Der Loudness-Zellenstand und die Bandakkus
+        // sind die harte Aussage: sie tragen nach der Grenze nur noch das
+        // Material DIESES Blocks.
+        pruefe (e.fuellstandHaupt() <= sp.frames && e.fuellstandBass() <= sp.frames,
+                "N-35: die zwei Analysefenster tragen nur noch den Block NACH "
+                "der Grenze",
+                juce::String (e.fuellstandHaupt()) + "/" + juce::String (e.fuellstandBass()));
+        pruefe (! e.flussHatVorgaenger() || e.liveAkkuBelegteBaender() <= 1,
+                "N-35: und kein Spektrum ueberbrueckt sie");
+
+        // 🔑 DIE ZUSAGE: der Ring bleibt, und sein Eintrag traegt weiter
+        // den ALTEN Stempel. Ein Ereignis ohne eigene Epoche liesse sich
+        // spaeter neben eines aus einer anderen legen.
+        pruefe (e.ereignisAnzahlJetzt() >= ringVorher,
+                "N-35: der Ereignisring UEBERLEBT die Grenze",
+                juce::String (e.ereignisAnzahlJetzt()) + " gegen "
+                + juce::String (ringVorher));
+        bool alterEintragSteht = false;
+        for (int i = 0; i < e.ereignisAnzahlJetzt(); ++i)
+        {
+            const auto& x = e.ereignis (i);
+            if (x.stromSample == letztesVorher.stromSample
+                && x.epoche == letztesVorher.epoche
+                && x.segment == letztesVorher.segment)
+            { alterEintragSteht = true; break; }
+        }
+        pruefe (alterEintragSteht,
+                "N-35: und der Eintrag von VOR der Grenze steht unveraendert mit "
+                "seinem alten Stempel darin",
+                "Epoche " + juce::String ((juce::int64) letztesVorher.epoche)
+                + ", Segment " + juce::String ((juce::int64) letztesVorher.segment));
+
+        // Ein ZEITSPRUNG daneben: er hebt die EPOCHE und setzt das Segment
+        // zurueck. Ohne ihn stuende vor dem Reset eine 0, und die Gegenprobe
+        // darunter bestuende, ohne etwas zu leeren.
+        sp.projekt += 48000 * 5;
+        sp.sende (sinus (0.5, 1000.0, 48000.0));
+        pruefe (e.transportEpocheJetzt() == epocheVorher + 1 && e.segmentJetzt() == 0,
+                "N-35: ein Zeitsprung hebt dagegen die EPOCHE und setzt das "
+                "Segment zurueck - die zwei Gruende sind unterscheidbar",
+                "Epoche " + juce::String ((juce::int64) e.transportEpocheJetzt())
+                + ", Segment " + juce::String ((juce::int64) e.segmentJetzt()));
+        pruefe (e.ereignisAnzahlJetzt() >= ringVorher,
+                "N-35: auch die Epochengrenze laesst den Ring stehen",
+                juce::String (e.ereignisAnzahlJetzt()));
+
+        // Die Gegenprobe: DAS tut `zuruecksetzen()`, und nur es.
+        const auto epocheVorReset = e.transportEpocheJetzt();
+        pruefe (epocheVorReset > 0,
+                "N-35: vor dem Reset steht die Epoche ueber 0 - sonst maesse die "
+                "Gegenprobe nichts",
+                juce::String ((juce::int64) epocheVorReset));
+        e.zuruecksetzen();
+        pruefe (e.ereignisAnzahlJetzt() == 0,
+                "N-35: `zuruecksetzen()` leert den Ring - genau die Differenz, "
+                "die Probeeq beim Quarantaenebruch nicht mehr faehrt (R7)");
+        pruefe (e.transportEpocheJetzt() == 0 && e.segmentJetzt() == 0,
+                "N-35: und setzt Epoche wie Segment auf 0 - ein Stempel 0/0 nach "
+                "einem Bruch ist auf dem Draht UNSICHTBAR",
+                "vorher Epoche " + juce::String ((juce::int64) epocheVorReset));
     }
 
     abschnitt ("NAK-181 N-18c  ppq_ausserhalb_des_riegels_laesst_den_zyklus_entfallen");

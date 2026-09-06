@@ -236,6 +236,33 @@ public:
     {
         return hostCallbackAufMessageThread.load();
     }
+
+    /** Die Grenzzaehler der FeatureEngine (NAK-181 Nacharbeit 1, EP-07/NR-07).
+
+        🔑 N-31 sagt nicht nur einen Stempel zu, sondern auch, dass KEIN
+        Fenster die Grenze ueberbrueckt und der Grund `lokaleLuecke` heisst.
+        Ohne diese zwei Zahlen misst ein Bein nur, dass irgendein Frame da ist
+        — und bleibt gruen, wenn der alte volle Reset zurueckkehrt. Gelesen
+        unter derselben Sperre wie `evidenzIntervallFuerTest` daneben. */
+    std::uint64_t getrennteFensterFuerTest() const
+    {
+        std::lock_guard<std::mutex> l (analyseSchloss);
+        return merkmale.getrennteFenster();
+    }
+    std::uint64_t grenzenMitGrundFuerTest (nakama::analyse::Grenzgrund g) const
+    {
+        std::lock_guard<std::mutex> l (analyseSchloss);
+        return merkmale.grenzenMitGrund (g);
+    }
+    /** Wie oft die Quarantaene einen Block ohne Nachfolgebeweis verworfen hat.
+
+        Der Zaehler, an dem "ein echter Queue-Drop ist passiert" haengt: ohne
+        ihn koennte ein Bein nicht von "der Drop kam gar nicht zustande"
+        unterscheiden. */
+    std::uint64_t kontinuitaetsbruecheFuerTest() const noexcept
+    {
+        return quarantaene.kontinuitaetsbrueche();
+    }
 #endif
 
 private:

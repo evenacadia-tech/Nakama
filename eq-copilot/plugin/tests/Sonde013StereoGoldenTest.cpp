@@ -960,6 +960,20 @@ int main()
             return (double) (x >> 11) / 4503599627370495.5 - 1.0;
         };
 
+        /*  Ein TRAEGER: das Band, in dem eine Frequenz liegt, mit seinen
+            Bandwerten.  NAK-182 Nacharbeit 1 (EP-02/NR-02): der Sweep speiste
+            drei Traeger ein und wertete nur einen aus - die Matrixzeile N-18
+            verlangt alle drei.  Ein Sample Versatz ergibt bei 2000 Hz
+            0,2618 rad; genau der Fall blieb bei 900 Hz gruen. */
+        struct Traeger
+        {
+            double hz { 0.0 };
+            bool basis { false }, kohGesetzt { false }, phaseGesetzt { false };
+            bool korrGesetzt { false };
+            float korrelation { 0.0f }, kohaerenz { 0.0f }, phase { 0.0f };
+            std::uint32_t dof { 0 };
+        };
+
         struct Lauf
         {
             bool kam { false };
@@ -969,12 +983,20 @@ int main()
             float folddown { 0.0f };
             std::uint32_t dof { 0 };
             double handFolddownDb { 0.0 };
+            std::vector<Traeger> traeger;
+            /*  NAK-182 Nacharbeit 1 (EP-03/NR-03): dieselben zwei Zahlen, die
+                der 512er-Abschnitt fuer M-12 erhebt - Baender mit Basis und
+                davon welche mit Phase.  "Keine Lag- oder Polaritaetsempfehlung"
+                ist genau `phaseGesetzt == false`, und ohne diese Zahl haette
+                eine faelschlich vorhandene Phase bei niedriger Korrelation als
+                richtige Antwort bestanden. */
+            int baenderMitBasis { 0 }, baenderMitPhase { 0 };
         };
 
         // Ein Lauf je Blockgroesse.  Die Engine liegt auf dem HEAP - der
         // MSVC-Standardstack ist 1 MiB, eine `FeatureEngine` rund 0,5 MB
         // (Register NAK-175).
-        const auto fahre = [&] (int frames, double hz,
+        const auto fahre = [&] (int frames, const std::vector<double>& hzListe,
                                 const std::function<void (std::uint64_t, float&, float&)>& f,
                                 bool mitHandfaltung) -> Lauf
         {
@@ -1003,18 +1025,45 @@ int main()
             if (! L.kam)
                 return L;
 
-            const int b = bandFuer (hz);
-            if (b >= 0)
+            for (double hz : hzListe)
+            {
+                Traeger t;
+                t.hz = hz;
+                const int b = bandFuer (hz);
+                if (b >= 0)
+                {
+                    const auto& w = e.stereoBand (b);
+                    t.basis       = w.basisGesetzt;
+                    t.korrGesetzt = w.korrelationMittelGesetzt;
+                    t.korrelation = w.korrelationMittel;
+                    t.kohGesetzt  = w.kohaerenzGesetzt;
+                    t.kohaerenz   = w.kohaerenz;
+                    t.phaseGesetzt = w.phaseGesetzt;
+                    t.phase       = w.phaseRad;
+                    t.dof         = w.freiheitsgrade;
+                }
+                L.traeger.push_back (t);
+            }
+            if (! L.traeger.empty())
+            {
+                // Die flachen Felder sind der ERSTE Traeger - die fuenf
+                // uebrigen Klassen messen genau ihn, unveraendert.
+                const auto& t = L.traeger.front();
+                L.basis        = t.basis;
+                L.korrGesetzt  = t.korrGesetzt;
+                L.korrelation  = t.korrelation;
+                L.kohGesetzt   = t.kohGesetzt;
+                L.kohaerenz    = t.kohaerenz;
+                L.phaseGesetzt = t.phaseGesetzt;
+                L.phase        = t.phase;
+                L.dof          = t.dof;
+            }
+            for (int b = 0; b < Gitter::evidenzBaender; ++b)
             {
                 const auto& w = e.stereoBand (b);
-                L.basis          = w.basisGesetzt;
-                L.korrGesetzt    = w.korrelationMittelGesetzt;
-                L.korrelation    = w.korrelationMittel;
-                L.kohGesetzt     = w.kohaerenzGesetzt;
-                L.kohaerenz      = w.kohaerenz;
-                L.phaseGesetzt   = w.phaseGesetzt;
-                L.phase          = w.phaseRad;
-                L.dof            = w.freiheitsgrade;
+                if (! w.basisGesetzt) continue;
+                ++L.baenderMitBasis;
+                if (w.phaseGesetzt) ++L.baenderMitPhase;
             }
             const auto& sk = e.stereoSkalare();
             L.folddownGesetzt = sk.folddownGesetzt;
@@ -1025,7 +1074,7 @@ int main()
         };
 
         // Jede Klasse: fuenf Laeufe, dann EINE Zusage ueber alle fuenf.
-        const auto klasse = [&] (const char* bezeichner, double hz,
+        const auto klasse = [&] (const char* bezeichner, const std::vector<double>& hzListe,
                                  const std::function<void (std::uint64_t, float&, float&)>& f,
                                  const std::function<bool (const Lauf&)>& antwortStimmt,
                                  const std::function<juce::String (const Lauf&)>& zeigen,
@@ -1036,7 +1085,7 @@ int main()
             juce::String bericht;
             for (int i = 0; i < kSweepN; ++i)
             {
-                laeufe[i] = fahre (kSweepBlockgroessen[i], hz, f, mitHandfaltung);
+                laeufe[i] = fahre (kSweepBlockgroessen[i], hzListe, f, mitHandfaltung);
                 if (laeufe[i].kam) ++kamAlle;
                 if (laeufe[i].kam && antwortStimmt (laeufe[i])) ++richtig;
                 bericht << (i ? ", " : "") << kSweepBlockgroessen[i] << ":"
@@ -1074,7 +1123,7 @@ int main()
         };
 
         // ── sweep_mono_identity ──────────────────────────────────────────
-        klasse ("sweep_mono_identity", 1000.0,
+        klasse ("sweep_mono_identity", { 1000.0 },
                 [] (std::uint64_t n, float& l, float& r)
                 {
                     l = (float) (0.4 * std::sin (kZweiPi * 1000.0 * (double) n / 48000.0));
@@ -1099,7 +1148,7 @@ int main()
         // Breitbandiges Material, auf beiden Kanaelen BITGLEICH: dieselbe
         // Antwort wie Mono, aber aus einem Signal, das ohne die Gleichheit
         // breit waere.
-        klasse ("sweep_identical_stereo", 1000.0,
+        klasse ("sweep_identical_stereo", { 1000.0 },
                 [&] (std::uint64_t n, float& l, float& r)
                 {
                     l = (float) (0.35 * rausch (n, 0x51ED2701A17B93C5ull));
@@ -1123,7 +1172,7 @@ int main()
         // ── sweep_polarity_inversion ─────────────────────────────────────
         // Korrelation -1 bei Kohaerenz 1, Phase +/-pi, und die Monosumme
         // laeuft an die Vertragsgrenze statt zu schweigen (§40.3).
-        klasse ("sweep_polarity_inversion", 1000.0,
+        klasse ("sweep_polarity_inversion", { 1000.0 },
                 [] (std::uint64_t n, float& l, float& r)
                 {
                     l = (float) (0.4 * std::sin (kZweiPi * 1000.0 * (double) n / 48000.0));
@@ -1150,15 +1199,37 @@ int main()
         // +2*pi*f*tau.  Gemessen an DREI Traegern wie im Abschnitt oben, mit
         // derselben Toleranz von 0,25 rad - die Phase ist ein BANDwert, und
         // der Traeger sitzt in einem Band endlicher Breite.
+        //
+        // 🔑 NAK-182 Nacharbeit 1 (EP-02/NR-02): bis hierher speiste die Zeile
+        // drei Traeger ein und wertete NUR 900 Hz aus.  N-18 verlangt drei je
+        // Blockgroesse, und der Unterschied ist messbar: ein Sample Versatz
+        // sind bei 900 Hz 0,1178 rad und bei 2000 Hz 0,2618 rad - der
+        // Rotbeweis M-82 fiel deshalb an dieser Zeile NICHT.  Die eingespeiste
+        // Welle und die ausgewerteten Baender kommen ab jetzt aus DERSELBEN
+        // Liste; ein vierter Traeger im Signal ohne Auswertung ist damit
+        // ausgeschlossen.
         {
             constexpr int kVerzoegerung = 8;
+            // EINE Zahl fuer Test und Matrixzeile N-18 (Begruendung: Manifest
+            // Paragraph 6.4 Nr. 6 - die Phase ist ein Bandwert).
+            constexpr double kPhaseToleranzRad = 0.25;
             const double tau = (double) kVerzoegerung / fs;
-            const auto welle = [] (double m)
+            // EINE Quelle fuer Signal und Auswertung: Frequenz und Startphase
+            // stehen zusammen, und die ausgewertete Liste wird daraus
+            // abgeleitet.  Zwei getrennte Listen koennten auseinanderlaufen -
+            // genau das war der Defekt.
+            struct Quelle { double hz, startphase; };
+            const Quelle quellen[] = { { 300.0, 0.0 }, { 900.0, 0.3 }, { 2000.0, 1.1 } };
+            std::vector<double> traeger;
+            for (const auto& q : quellen)
+                traeger.push_back (q.hz);
+            const auto welle = [&quellen] (double m)
             {
                 const double t = m / 48000.0;
-                return 0.20 * std::sin (kZweiPi * 300.0 * t)
-                     + 0.20 * std::sin (kZweiPi * 900.0 * t + 0.3)
-                     + 0.20 * std::sin (kZweiPi * 2000.0 * t + 1.1);
+                double s = 0.0;
+                for (const auto& q : quellen)
+                    s += 0.20 * std::sin (kZweiPi * q.hz * t + q.startphase);
+                return s;
             };
             const auto speise = [&] (std::uint64_t n, float& l, float& r)
             {
@@ -1176,23 +1247,42 @@ int main()
                 while (diff <= -3.14159265358979) diff += kZweiPi;
                 return std::abs (diff);
             };
-            klasse ("sweep_known_delay", 900.0, speise,
+            klasse ("sweep_known_delay", traeger, speise,
                     [&] (const Lauf& L)
                     {
-                        return L.basis && L.phaseGesetzt
-                            && phasenfehler (900.0, L.phase) <= 0.25;
+                        if (L.traeger.size() != traeger.size())
+                            return false;
+                        for (const auto& t : L.traeger)
+                            if (! t.basis || ! t.phaseGesetzt
+                                || phasenfehler (t.hz, t.phase) > kPhaseToleranzRad)
+                                return false;
+                        return true;
                     },
                     [&] (const Lauf& L)
                     {
-                        return juce::String (L.phase, 4) + "(d="
-                             + juce::String (phasenfehler (900.0, L.phase), 4) + ")";
+                        juce::String s;
+                        for (const auto& t : L.traeger)
+                            s << (s.isEmpty() ? "" : "|") << juce::String (t.hz, 0) << "Hz "
+                              << juce::String (t.phase, 4) << "(d="
+                              << juce::String (phasenfehler (t.hz, t.phase), 4) << ")";
+                        return s;
                     }, false);
         }
 
         // ── sweep_uncorrelated_channels ──────────────────────────────────
         // Zwei unabhaengige Rauschstroeme: die Korrelation faellt weit unter
         // die Schwelle, und die Kohaerenz traegt keine Empfehlung (M-12).
-        klasse ("sweep_uncorrelated_channels", 1000.0,
+        //
+        // 🔑 NAK-182 Nacharbeit 1 (EP-03/NR-03): N-19 verlangt neben der
+        // niedrigen Korrelation ausdruecklich "keine Lag- oder
+        // Polaritaetsempfehlung".  Bis hierher las das Praedikat nur Basis,
+        // Korrelationsbit und Korrelation - eine faelschlich vorhandene Phase
+        // waere bei niedriger Korrelation als richtige Antwort durchgegangen.
+        // Gemessen wird ab jetzt mit DENSELBEN Feldern wie der 512er-Abschnitt
+        // M-12 (`width_alone_is_never_a_defect`): kein Band mit Basis traegt
+        // eine Phase.  Die Phase ist Stufe 2 des fail-closed - ohne sie gibt es
+        // weder Lag- noch Polaritaetsaussage (Paragraph 40.2).
+        klasse ("sweep_uncorrelated_channels", { 1000.0 },
                 [&] (std::uint64_t n, float& l, float& r)
                 {
                     l = (float) (0.35 * rausch (n, 0x1234ABCD5678EF01ull));
@@ -1200,16 +1290,22 @@ int main()
                 },
                 [] (const Lauf& L)
                 {
-                    return L.basis && L.korrGesetzt && L.korrelation < 0.2f;
+                    return L.basis && L.korrGesetzt && L.korrelation < 0.2f
+                        && L.baenderMitBasis > 0 && L.baenderMitPhase == 0;
                 },
-                [] (const Lauf& L) { return juce::String (L.korrelation, 4); },
+                [] (const Lauf& L)
+                {
+                    return juce::String (L.korrelation, 4) + "/"
+                         + juce::String (L.baenderMitPhase) + " von "
+                         + juce::String (L.baenderMitBasis) + " mit Phase";
+                },
                 false);
 
         // ── sweep_folddown_within_0p25db ─────────────────────────────────
         // Der gemeldete Monoverlust gegen den WIRKLICH gefalteten Puffer,
         // je Blockgroesse, innerhalb 0,25 dB (§40.3).  Die Handrechnung
         // laeuft ueber dieselben Samples, die die Engine gesehen hat.
-        klasse ("sweep_folddown_within_0p25db", 700.0,
+        klasse ("sweep_folddown_within_0p25db", { 700.0 },
                 [] (std::uint64_t n, float& l, float& r)
                 {
                     const double t = (double) n / 48000.0;

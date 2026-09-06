@@ -1,0 +1,315 @@
+SONDE-014 Etappe G - Rotbeweis M-62
+========================================================================
+
+GEWERTETE ZUSAGE
+Der Assistent erzeugt KEINE eigene Experimentfamilie; ohne den bestehenden Weg traegt der Schritt keine Versuchskennung.
+
+GEMESSEN AN  eq-copilot/plugin/tests/Sonde014AssistentTest.cpp (Kanonbein B29)
+
+RUECKNAHME AM PRODUKTCODE  eq-copilot/plugin/src/PluginProcessor.cpp
+------------------------------------------------------------------------
+VORHER:
+    if (! beginneVersuch (passageId))
+        return false;
+
+NACHHER:
+    // RUECKNAHME M-62: der Assistent erfindet sich eine Kennung.
+    if (! beginneVersuch (passageId))
+    {
+        std::lock_guard<std::mutex> l (bindungMutex);
+        zustand.assistent.experimentId = juce::String ("eigenerweg").paddedLeft ('0', 32);
+        return false;
+    }
+------------------------------------------------------------------------
+
+[1] LAUF MIT RUECKNAHME - erwartet ROT (Exitcode 1)
+========================================================================
+SONDE-014 Etappe G - AssistantStep im Main (M-55 bis M-62)
+
+== M-55: die Zustandsmenge, die Folge und der Sonderfall preview ==
+  ok      M-55: coverage kommt ueber seinen Rueckweg zurueck
+  ok      M-55: finding kommt ueber seinen Rueckweg zurueck
+  ok      M-55: evidence kommt ueber seinen Rueckweg zurueck
+  ok      M-55: listen kommt ueber seinen Rueckweg zurueck
+  ok      M-55: proposal kommt ueber seinen Rueckweg zurueck
+  ok      M-55: preview kommt ueber seinen Rueckweg zurueck
+  ok      M-55: remeasure kommt ueber seinen Rueckweg zurueck
+  ok      M-55: verdict kommt ueber seinen Rueckweg zurueck
+  ok      M-55: acht verschiedene Zustaende
+  ok      M-55: ein neunter Zustand faellt
+  ok      M-55: und ein leeres Wort ebenso
+  ok      M-55: keine Kante von coverage nach preview
+  ok      M-55: und keine von preview nach coverage
+  ok      M-55: keine Kante von finding nach preview
+  ok      M-55: und keine von preview nach finding
+  ok      M-55: keine Kante von evidence nach preview
+  ok      M-55: und keine von preview nach evidence
+  ok      M-55: keine Kante von listen nach preview
+  ok      M-55: und keine von preview nach listen
+  ok      M-55: keine Kante von proposal nach preview
+  ok      M-55: und keine von preview nach proposal
+  ok      M-55: keine Kante von preview nach preview
+  ok      M-55: und keine von preview nach preview
+  ok      M-55: keine Kante von remeasure nach preview
+  ok      M-55: und keine von preview nach remeasure
+  ok      M-55: keine Kante von verdict nach preview
+  ok      M-55: und keine von preview nach verdict
+  ok      M-55: coverage -> finding
+  ok      M-55: finding -> evidence
+  ok      M-55: evidence -> listen
+  ok      M-55: listen -> proposal
+  ok      M-55: proposal -> remeasure
+  ok      M-55: remeasure -> verdict
+  ok      M-55: `verdict` ist terminal
+  ok      M-55: und `preview` fuehrt nirgendwohin
+  ok      M-55: ein Sprung ueber zwei Zustaende ist keine Kante
+
+== M-55: ein gespeicherter preview-Schritt ist ein Lesefehler ==
+  ok      M-55: ein gespeicherter preview-Schritt wird NICHT normal geladen
+  ok      M-55: und der Grund nennt ihn beim Namen: MainProject.assistant_step_v1 carries preview, which P5 cannot reach
+  ok      M-55: derselbe Stand mit `proposal` laedt normal: 
+  ok      M-55: die API setzt `preview` nicht
+
+== M-56: fuenf Angaben je Zustand, keine optional ==
+  ok      M-56: coverage traegt alle fuenf Angaben
+  ok      M-56: coverage hat ein Timeout > 0
+  ok      M-56: coverage hat eine Rueckkante
+  ok      M-56: finding traegt alle fuenf Angaben
+  ok      M-56: finding hat ein Timeout > 0
+  ok      M-56: finding hat eine Rueckkante
+  ok      M-56: evidence traegt alle fuenf Angaben
+  ok      M-56: evidence hat ein Timeout > 0
+  ok      M-56: evidence hat eine Rueckkante
+  ok      M-56: listen traegt alle fuenf Angaben
+  ok      M-56: listen hat ein Timeout > 0
+  ok      M-56: listen hat eine Rueckkante
+  ok      M-56: proposal traegt alle fuenf Angaben
+  ok      M-56: proposal hat ein Timeout > 0
+  ok      M-56: proposal hat eine Rueckkante
+  ok      M-56: preview traegt alle fuenf Angaben
+  ok      M-56: preview hat ein Timeout > 0
+  ok      M-56: preview hat eine Rueckkante
+  ok      M-56: remeasure traegt alle fuenf Angaben
+  ok      M-56: remeasure hat ein Timeout > 0
+  ok      M-56: remeasure hat eine Rueckkante
+  ok      M-56: verdict traegt alle fuenf Angaben
+  ok      M-56: verdict hat ein Timeout > 0
+  ok      M-56: verdict hat eine Rueckkante
+  ok      M-56: auch `preview` traegt seinen vollstaendigen Vertrag
+  ok      M-56: der erste Zustand ist seine eigene sichere Rueckkante
+
+== M-57: EIN Slot, strukturell ==
+  ok      M-57: der erste Schritt beginnt: 
+  ok      M-57: ein zweiter Startversuch wird abgewiesen, nicht eingereiht
+  ok      M-57: und der erste Schritt steht unveraendert
+  ok      M-57: der Abbruch macht den Schritt terminal
+  ok      M-57: danach beginnt ein neuer Schritt: 
+
+== M-58: Abbruch, Zurueck, Ueberspringen, Resume ==
+  ok      M-58: Zurueck geht auf die Rueckkante: 
+  ok      M-58: und hebt die Revision genau einmal
+  ok      M-58: Ueberspringen geht auf den naechsten Zustand
+  ok      M-58: Resume setzt an derselben Stelle fort
+  ok      M-58: Resume ist eine FRAGE - es aendert nichts und hebt keine Revision
+  ok      M-58: Verwerfen ist ein terminales Ereignis, kein Loeschen der Historie
+  ok      M-58: ein terminaler Schritt wird nicht fortgesetzt
+  ok      M-58: ein zweiter Abbruch faellt
+
+== M-61: drei benannte Ergebnisse, keine Leerzustaende ==
+  ok      M-61: passage_messen ist ein eigenes Ergebnis mit Objekt
+  ok      M-61: und der Schritt bleibt offen
+  ok      M-61: routing_bestaetigen ist ein eigenes Ergebnis mit Objekt
+  ok      M-61: und der Schritt bleibt offen
+  ok      M-61: keine_aenderung_empfohlen ist ein eigenes Ergebnis mit Objekt
+  ok      M-61: und der Schritt bleibt offen
+  ok      M-61: dasselbe Ergebnis zweimal hebt keine Revision
+
+== M-60: harte Gates vor der Gewichtung ==
+  ok      M-60: die drei Gates entfernen ihre Kandidaten VOR der Gewichtung
+  ok      M-60: und zwar, obwohl ihr Rang der hoechste waere
+  ok      M-60: bei Gleichstand gewinnt die kleinere Kennung
+  ok      M-60: NaN und Ausreisser vergiften den Rang nicht
+
+== Verdrahtung: der echte EqCopilotProcessor ==
+  ok      Verdrahtung: der Schritt beginnt
+  ok      Verdrahtung: und meldet GENAU einmal Host-Dirty
+  ok      M-57 verdrahtet: ein zweiter Start wird abgewiesen
+  ok      und ein abgewiesener Start meldet nichts
+  ok      Verdrahtung: der Uebergang laeuft
+  ok      M-55 verdrahtet: `preview` ist auch hier unerreichbar
+  ok      Verdrahtung: ein Sprung ueber vier Zustaende faellt
+  ok      M-61 verdrahtet: das benannte Ergebnis wird gesetzt
+  ok      M-61 verdrahtet: und steht im Main-State
+  ok      M-59: der Schritt wird aus dem gespeicherten MainProject rekonstruiert
+  ok      M-59: und laesst sich an derselben Stelle fortsetzen
+  ok      M-59: Save/Load ist bytegleich
+  ok      M-58 verdrahtet: der Abbruch laeuft
+  ok      M-58 verdrahtet: ein terminaler Schritt wird nicht fortgesetzt
+  ok      M-58 verdrahtet: und bleibt als Historie stehen
+
+== M-62: der Assistent hat keinen eigenen Experimentweg ==
+  ok      M-62: ohne offenen Schritt startet der Assistent nichts
+  ok      M-62: Vorbedingung - ein Schritt laeuft
+  ok      M-62: und ohne den bestehenden Weg auch mit offenem Schritt nicht
+  FEHLER  M-62: der Schritt traegt KEINE Versuchskennung - der Assistent erzeugt keine eigene Experimentfamilie
+
+== Die Raender ==
+  ok      Rand: eine Liste mit sieben fehlenden Werten wird read-only
+  ok      Rand: eine step_id, die keine hex32 ist wird read-only
+  ok      Rand: ein unbekannter Zustand wird read-only
+  ok      Rand: Revision 0 wird read-only
+  ok      Rand: eine negative Revision wird read-only
+  ok      Rand: ein unbekanntes Ergebnis wird read-only
+  ok      Rand: ein gespeicherter preview-Schritt wird read-only
+  ok      Rand: der gueltige Stand laedt: 
+  ok      Rand: ein Altstand ohne die Eigenschaft laedt normal und traegt keinen Schritt
+  ok      Rand: ein nicht gesetzter Schritt reist gar nicht
+
+SONDE-014 AssistantStep: 118/119 gruen
+
+[2] RUECKNAHME ZURUECKGENOMMEN, LAUF ERNEUT - erwartet GRUEN (Exitcode 0)
+========================================================================
+SONDE-014 Etappe G - AssistantStep im Main (M-55 bis M-62)
+
+== M-55: die Zustandsmenge, die Folge und der Sonderfall preview ==
+  ok      M-55: coverage kommt ueber seinen Rueckweg zurueck
+  ok      M-55: finding kommt ueber seinen Rueckweg zurueck
+  ok      M-55: evidence kommt ueber seinen Rueckweg zurueck
+  ok      M-55: listen kommt ueber seinen Rueckweg zurueck
+  ok      M-55: proposal kommt ueber seinen Rueckweg zurueck
+  ok      M-55: preview kommt ueber seinen Rueckweg zurueck
+  ok      M-55: remeasure kommt ueber seinen Rueckweg zurueck
+  ok      M-55: verdict kommt ueber seinen Rueckweg zurueck
+  ok      M-55: acht verschiedene Zustaende
+  ok      M-55: ein neunter Zustand faellt
+  ok      M-55: und ein leeres Wort ebenso
+  ok      M-55: keine Kante von coverage nach preview
+  ok      M-55: und keine von preview nach coverage
+  ok      M-55: keine Kante von finding nach preview
+  ok      M-55: und keine von preview nach finding
+  ok      M-55: keine Kante von evidence nach preview
+  ok      M-55: und keine von preview nach evidence
+  ok      M-55: keine Kante von listen nach preview
+  ok      M-55: und keine von preview nach listen
+  ok      M-55: keine Kante von proposal nach preview
+  ok      M-55: und keine von preview nach proposal
+  ok      M-55: keine Kante von preview nach preview
+  ok      M-55: und keine von preview nach preview
+  ok      M-55: keine Kante von remeasure nach preview
+  ok      M-55: und keine von preview nach remeasure
+  ok      M-55: keine Kante von verdict nach preview
+  ok      M-55: und keine von preview nach verdict
+  ok      M-55: coverage -> finding
+  ok      M-55: finding -> evidence
+  ok      M-55: evidence -> listen
+  ok      M-55: listen -> proposal
+  ok      M-55: proposal -> remeasure
+  ok      M-55: remeasure -> verdict
+  ok      M-55: `verdict` ist terminal
+  ok      M-55: und `preview` fuehrt nirgendwohin
+  ok      M-55: ein Sprung ueber zwei Zustaende ist keine Kante
+
+== M-55: ein gespeicherter preview-Schritt ist ein Lesefehler ==
+  ok      M-55: ein gespeicherter preview-Schritt wird NICHT normal geladen
+  ok      M-55: und der Grund nennt ihn beim Namen: MainProject.assistant_step_v1 carries preview, which P5 cannot reach
+  ok      M-55: derselbe Stand mit `proposal` laedt normal: 
+  ok      M-55: die API setzt `preview` nicht
+
+== M-56: fuenf Angaben je Zustand, keine optional ==
+  ok      M-56: coverage traegt alle fuenf Angaben
+  ok      M-56: coverage hat ein Timeout > 0
+  ok      M-56: coverage hat eine Rueckkante
+  ok      M-56: finding traegt alle fuenf Angaben
+  ok      M-56: finding hat ein Timeout > 0
+  ok      M-56: finding hat eine Rueckkante
+  ok      M-56: evidence traegt alle fuenf Angaben
+  ok      M-56: evidence hat ein Timeout > 0
+  ok      M-56: evidence hat eine Rueckkante
+  ok      M-56: listen traegt alle fuenf Angaben
+  ok      M-56: listen hat ein Timeout > 0
+  ok      M-56: listen hat eine Rueckkante
+  ok      M-56: proposal traegt alle fuenf Angaben
+  ok      M-56: proposal hat ein Timeout > 0
+  ok      M-56: proposal hat eine Rueckkante
+  ok      M-56: preview traegt alle fuenf Angaben
+  ok      M-56: preview hat ein Timeout > 0
+  ok      M-56: preview hat eine Rueckkante
+  ok      M-56: remeasure traegt alle fuenf Angaben
+  ok      M-56: remeasure hat ein Timeout > 0
+  ok      M-56: remeasure hat eine Rueckkante
+  ok      M-56: verdict traegt alle fuenf Angaben
+  ok      M-56: verdict hat ein Timeout > 0
+  ok      M-56: verdict hat eine Rueckkante
+  ok      M-56: auch `preview` traegt seinen vollstaendigen Vertrag
+  ok      M-56: der erste Zustand ist seine eigene sichere Rueckkante
+
+== M-57: EIN Slot, strukturell ==
+  ok      M-57: der erste Schritt beginnt: 
+  ok      M-57: ein zweiter Startversuch wird abgewiesen, nicht eingereiht
+  ok      M-57: und der erste Schritt steht unveraendert
+  ok      M-57: der Abbruch macht den Schritt terminal
+  ok      M-57: danach beginnt ein neuer Schritt: 
+
+== M-58: Abbruch, Zurueck, Ueberspringen, Resume ==
+  ok      M-58: Zurueck geht auf die Rueckkante: 
+  ok      M-58: und hebt die Revision genau einmal
+  ok      M-58: Ueberspringen geht auf den naechsten Zustand
+  ok      M-58: Resume setzt an derselben Stelle fort
+  ok      M-58: Resume ist eine FRAGE - es aendert nichts und hebt keine Revision
+  ok      M-58: Verwerfen ist ein terminales Ereignis, kein Loeschen der Historie
+  ok      M-58: ein terminaler Schritt wird nicht fortgesetzt
+  ok      M-58: ein zweiter Abbruch faellt
+
+== M-61: drei benannte Ergebnisse, keine Leerzustaende ==
+  ok      M-61: passage_messen ist ein eigenes Ergebnis mit Objekt
+  ok      M-61: und der Schritt bleibt offen
+  ok      M-61: routing_bestaetigen ist ein eigenes Ergebnis mit Objekt
+  ok      M-61: und der Schritt bleibt offen
+  ok      M-61: keine_aenderung_empfohlen ist ein eigenes Ergebnis mit Objekt
+  ok      M-61: und der Schritt bleibt offen
+  ok      M-61: dasselbe Ergebnis zweimal hebt keine Revision
+
+== M-60: harte Gates vor der Gewichtung ==
+  ok      M-60: die drei Gates entfernen ihre Kandidaten VOR der Gewichtung
+  ok      M-60: und zwar, obwohl ihr Rang der hoechste waere
+  ok      M-60: bei Gleichstand gewinnt die kleinere Kennung
+  ok      M-60: NaN und Ausreisser vergiften den Rang nicht
+
+== Verdrahtung: der echte EqCopilotProcessor ==
+  ok      Verdrahtung: der Schritt beginnt
+  ok      Verdrahtung: und meldet GENAU einmal Host-Dirty
+  ok      M-57 verdrahtet: ein zweiter Start wird abgewiesen
+  ok      und ein abgewiesener Start meldet nichts
+  ok      Verdrahtung: der Uebergang laeuft
+  ok      M-55 verdrahtet: `preview` ist auch hier unerreichbar
+  ok      Verdrahtung: ein Sprung ueber vier Zustaende faellt
+  ok      M-61 verdrahtet: das benannte Ergebnis wird gesetzt
+  ok      M-61 verdrahtet: und steht im Main-State
+  ok      M-59: der Schritt wird aus dem gespeicherten MainProject rekonstruiert
+  ok      M-59: und laesst sich an derselben Stelle fortsetzen
+  ok      M-59: Save/Load ist bytegleich
+  ok      M-58 verdrahtet: der Abbruch laeuft
+  ok      M-58 verdrahtet: ein terminaler Schritt wird nicht fortgesetzt
+  ok      M-58 verdrahtet: und bleibt als Historie stehen
+
+== M-62: der Assistent hat keinen eigenen Experimentweg ==
+  ok      M-62: ohne offenen Schritt startet der Assistent nichts
+  ok      M-62: Vorbedingung - ein Schritt laeuft
+  ok      M-62: und ohne den bestehenden Weg auch mit offenem Schritt nicht
+  ok      M-62: der Schritt traegt KEINE Versuchskennung - der Assistent erzeugt keine eigene Experimentfamilie
+
+== Die Raender ==
+  ok      Rand: eine Liste mit sieben fehlenden Werten wird read-only
+  ok      Rand: eine step_id, die keine hex32 ist wird read-only
+  ok      Rand: ein unbekannter Zustand wird read-only
+  ok      Rand: Revision 0 wird read-only
+  ok      Rand: eine negative Revision wird read-only
+  ok      Rand: ein unbekanntes Ergebnis wird read-only
+  ok      Rand: ein gespeicherter preview-Schritt wird read-only
+  ok      Rand: der gueltige Stand laedt: 
+  ok      Rand: ein Altstand ohne die Eigenschaft laedt normal und traegt keinen Schritt
+  ok      Rand: ein nicht gesetzter Schritt reist gar nicht
+
+SONDE-014 AssistantStep: 119/119 gruen
+
+URTEIL: OK (rot=1, gruen=0)

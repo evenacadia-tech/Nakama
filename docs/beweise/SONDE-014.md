@@ -3,7 +3,7 @@
 | Merkmal | Wert |
 |---|---|
 | Ticket | S23–25, `SONDE-014` (Phase P4–P5), Leitungsname „Aus Messungen belegte Befunde und kleinste Tests ableiten" |
-| Phase | **Etappe 2 — Bau, läuft.** Fertig: **Etappe A** (`SourceIntent` im Main-State, Commit `8f030f5`), **Etappe B** (Fassung 3 des Wire-Envelopes, Commits `edea7a9`, `baa6291`, `581431a`) **Etappe C** (Evidenzgraph und `CauseHypothesis`), **Etappe D** (Befundzustände), **Etappe E** (Maskierungs-Datenweg) und **Etappe F** (Proposal-Policy). Davor ohne Produktcode: **Matrixnacharbeit 1** (2026-09-06), **Etappe 1b — Entscheide E-01 bis E-10** (`fdb04e4`) und **Etappe 1 — Verhaltensmatrix** (`1f126a4`). Der Bauverlauf steht in §7. |
+| Phase | **Etappe 2 — Bau, läuft.** Fertig: **Etappe A** (`SourceIntent` im Main-State, Commit `8f030f5`), **Etappe B** (Fassung 3 des Wire-Envelopes, Commits `edea7a9`, `baa6291`, `581431a`) **Etappe C** (Evidenzgraph und `CauseHypothesis`), **Etappe D** (Befundzustände), **Etappe E** (Maskierungs-Datenweg), **Etappe F** (Proposal-Policy) und **Etappe G** (`AssistantStep` im Main). Davor ohne Produktcode: **Matrixnacharbeit 1** (2026-09-06), **Etappe 1b — Entscheide E-01 bis E-10** (`fdb04e4`) und **Etappe 1 — Verhaltensmatrix** (`1f126a4`). Der Bauverlauf steht in §7. |
 | Matrixprüfung 2 | Codex `gpt-6-astra`, Effort **max**, lesend, Thread `01a077a3-1411-7830-9bfd-e17d233baab1`; `HEAD` vor und nach dem Lauf `f90abf5`. **URTEIL: PASS** — D1 bis D4 geschlossen, nichts gebrochen. Auftrag `docs/beweise/roh/SONDE-014-matrixpruefung-2-auftrag.txt`, Rohurteil `docs/beweise/roh/SONDE-014-matrixpruefung-2-f90abf5.txt`. **Etappe 1 ist damit abgenommen; §3 ist ab hier die Spezifikation.** |
 | Etappe 2 | Bauauftrag `docs/beweise/roh/SONDE-014-etappe-2-auftrag.txt`, Basis `f90abf5`; Fortsetzung 1 (Etappen C bis I) `docs/beweise/roh/SONDE-014-etappe-2-fortsetzung-1-auftrag.txt`, Startstand `6b96c64`, mit **Entscheid E-12** (`GATE_MINDEST_FENSTER` in Etappe C ohne Versionsschritt; der eine erlaubte Schritt der `metrics_version` liegt in Etappe H). Neun Bauetappen A bis I nach §5.1; Bauverlauf, gemessene Matrixzeilen, Rotbeweise, Abweichungen und Nebenbefunde in **§7**. |
 | Entscheide | E-01 bis E-10 wörtlich in `docs/beweise/roh/SONDE-014-etappe-1-entscheid-auftrag.txt`. Eingearbeitet in Etappe 1b: neun angenommene Technikentscheide (E-01 bis E-09, E-01 und E-03 mit Präzisierung, E-08 mit Autoritätenzuweisung) und **eine neue Lücke E-10** (Transport des Intents vom Main zum Broker) mit den zwei zusätzlichen Matrixzeilen **M-85** und **M-86**. **Seit der Matrixnacharbeit 1 kommt E-11 dazu** (Transport und versionierter Spiegel des `AssistantStep`, Regel R3, §4.13) mit **M-88** und **M-89**. Je Entscheid steht ein Block „Etappe 1b (Entscheid des Dirigenten, 06.09.2026)" unter dem zugehörigen §4-Abschnitt; der vorige Vorschlagstext bleibt als Historie stehen. |
@@ -2593,6 +2593,101 @@ Dateien nichts. Die Kanonzahl bleibt **56**.
   Sammelläufen grün. Der Fall öffnet 96 Worker und zwei Listener auf echten
   Named Pipes; unter paralleler Last ist er zeitempfindlich. Er gehört nicht
   zu diesem Ticket und wurde nicht angefasst — der Dirigent entscheidet.
+
+
+### 7.7 Etappe G — `AssistantStep` im Main
+
+**Gebaut:** die deterministische Zustandsmaschine des Assistenten — **im
+Main**, persistent im `MainProjectState` (E-08). Acht Zustände, eine
+P5-Übergangstabelle ohne Kante nach `preview`, fünf Angaben je Zustand, ein
+struktureller Slot, vier Gegenpfade, die drei benannten Ergebnisse aus §46.2
+und das deterministische Ranking mit harten Gates vor der Gewichtung.
+
+| Stück | Ort |
+|---|---|
+| Zustandsmenge, Vertrag je Zustand, Übergangstabelle | `eq-copilot/plugin/state/NakamaState.h/.cpp` — `Assistentenschritt`, `Schrittvertrag`, `schrittvertrag()`, `p5UebergangErlaubt()`, `p5Naechster()` |
+| Die vier Gegenpfade | `NakamaState.cpp` — `setzeAssistentenschritt()`, `assistentAbbrechen()`, `assistentZurueck()`, `assistentUeberspringen()`, `assistentResume()` |
+| Die drei benannten Ergebnisse | `NakamaState.cpp` — `Assistentenergebnis`, `setzeAssistentenergebnis()` |
+| Ranking mit harten Gates | `NakamaState.cpp` — `Schrittkandidat`, `ordneSchritte()`, `schrittrang()` |
+| Persistenz | `NakamaState.cpp` — `assistant_step_v1` als **eine** additive Eigenschaft mit Fassung im Namen; Schreiber, Leser und der Headroomriegel |
+| Produktpfad | `eq-copilot/plugin/src/PluginProcessor.h/.cpp` — `assistentStarten()`, `assistentWeiter()`, `assistentZurueck()`, `assistentUeberspringen()`, `assistentAbbrechen()`, `assistentAntwort()`, `assistentAusState()`, `assistentFortsetzen()`, `assistentVersuchStarten()`, `assistentAenderungMelden()` |
+| Bein | **NEU** `eq-copilot/plugin/tests/Sonde014AssistentTest.cpp`, Kanonbein **B29**, 119 Prüfungen |
+
+**Gemessene Matrixzeilen.**
+
+| Zeile | Wo gemessen | Rotbeweis |
+|---|---|---|
+| **M-55** | `Sonde014AssistentTest.cpp` — die Menge hat **acht** Werte mit eigenem Rückweg, ein neunter fällt; nach `preview` führt **keine** Kante, in keiner Richtung; die P5-Folge ist vollständig verkettet; ein Sprung über zwei Zustände ist keine Kante; die API setzt `preview` nicht | `roh/SONDE-014-rot-M-55.txt` |
+| **M-55** (Leser) | derselbe Fall: ein **gespeicherter** `preview`-Schritt wird read-only, der Grund nennt ihn beim Namen, und die **Gegenprobe** mit `proposal` lädt normal | `roh/SONDE-014-rot-M-55-leser.txt` |
+| **M-56** | `…` — Tabellentest über **alle acht** Zustände: fünf Angaben, Timeout > 0, Rückkante im Wertebereich; auch `preview` trägt seinen vollständigen Vertrag; der erste Zustand ist seine eigene sichere Rückkante | `roh/SONDE-014-rot-M-56.txt` |
+| **M-57** | `…` — ein zweiter Startversuch bei offenem Schritt wird **abgewiesen**, nicht eingereiht; der erste steht unverändert; nach dem terminalen Abbruch beginnt ein neuer. Verdrahtet am echten Prozessor | `roh/SONDE-014-rot-M-57.txt` |
+| **M-58** | `…` — vier Gegenpfade einzeln: Zurück auf die Rückkante mit **genau einer** Revision, Überspringen auf den nächsten Zustand, Resume ohne Revisionssprung, Abbruch terminal statt gelöscht; ein zweiter Abbruch fällt | `roh/SONDE-014-rot-M-58.txt`, `roh/SONDE-014-rot-M-58-resume.txt` |
+| **M-59** | `…` — Save/Load über den echten Prozessor, Rekonstruktion aus dem gespeicherten `MainProject`, Fortsetzung an derselben Stelle, bytegleiches Save/Load über zwei Runden | `roh/SONDE-014-rot-M-59.txt` |
+| **M-60** | `…` — drei Kandidaten mit **perfektem** Rang und je einem gerissenen Gate verlassen die Liste, ein bescheidener bleibt; bei Gleichstand gewinnt die kleinere Kennung; NaN und Ausreißer vergiften den Rang nicht | `roh/SONDE-014-rot-M-60.txt` |
+| **M-61** | `…` — die drei Ergebnisse einzeln, jedes mit eigener Revision und offenem Schritt; dasselbe Ergebnis zweimal hebt keine Revision | `roh/SONDE-014-rot-M-61.txt` |
+| **M-62** | `…` — ohne offenen Schritt startet der Assistent nichts, und mit offenem Schritt hängt er **vollständig** an `beginneVersuch`: schlägt das fehl, trägt der Schritt **keine** Versuchskennung. Ein Assistent mit eigenem Weg hätte hier eine | `roh/SONDE-014-rot-M-62.txt` |
+| **M-71** (Main-Hälfte) | dasselbe Bein: die Maschine läuft im Main, der Broker spiegelt nur (`assistent.rs`, §7.2). Die Wire-Hälfte liegt in M-88/M-89 | — |
+
+**Läufe.** `EqCopSonde014AssistentTest` **119 Prüfungen, 0 Fehler** (neues
+Kanon-Bein **B29**); `EqCopStateMigrationTest` **180** (Bein **B2**),
+`EqCopSonde012ProjectReloadTest` **12/12** (Bein **B14**),
+`EqCopSonde014IntentTest` **210** (Bein **B27**) — alle unverändert grün nach
+der neuen Eigenschaft. Die Kanonzahl steigt von **56** auf **57**.
+
+**Rotbeweise.** Zehn Dateien
+`docs/beweise/roh/SONDE-014-rot-{M-55,M-55-leser,M-56,M-57,M-58,M-58-resume,M-59,M-60,M-61,M-62}.txt`.
+Jede fährt den vollen Weg: Rücknahme setzen, Ziel neu bauen, Binary fahren.
+
+**Abweichungen von §5, mit Begründung.**
+
+1. **`B25` und `B26` sind nicht erweitert.** §5.1 führt sie als „bestehend".
+   **B25** misst Bootstrap und FDR, **B26** die zwei Kanten des
+   Blindvergleichs; beide gehören dem Experiment, nicht dem Assistenten. Der
+   Anschluss aus M-62 ist gemessen — an der Stelle, an der er wirklich liegt:
+   dass der Assistent **keinen eigenen** Weg hat. Eine Erweiterung von B25
+   oder B26 ohne neue Zusage wäre eine Behauptung über eine Messung, die es
+   nicht gibt.
+2. **`A4` und `A4-SI` sind nicht erweitert.** Sie messen die **Brokerseite**;
+   dort liegt seit Etappe B der Spiegel (`assistent.rs`, M-88/M-89) und ist
+   dort gemessen. Diese Etappe fügt der Brokerseite nichts hinzu.
+
+**Technische Entscheide dieser Etappe.**
+
+- **`preview` trägt seinen vollständigen Vertrag.** Der Zustand existiert und
+  wird in P6 gebraucht; ihn hier leer zu lassen hieße, ihn halb zu streichen.
+  Was fehlt, ist die **Kante** — und die fehlt in beide Richtungen.
+- **Die sichere Rückkante ist immer ein Zustand, nie ein `optional`.** Der
+  erste Zustand zeigt auf sich selbst: „bleib, wo du bist". Ein `optional`
+  hätte einen Zustand ohne Rückkante möglich gemacht, und genau den nennt
+  M-56 einen Vertragsbruch.
+- **Der Slot ist strukturell.** `Zustand` hält **einen** `Assistentenzustand`.
+  Ein zweiter gleichzeitiger Schritt ist nicht „verboten", sondern nicht
+  darstellbar — das ist der Unterschied zu einem Zähler, der auch 2 tragen
+  könnte.
+- **Der Abbruch gibt den Slot erst nach dem Terminalereignis frei.** M-58
+  nennt die Reihenfolge wörtlich: Terminalereignis → Projektion → Outbox →
+  erst danach der Slot. `assistentAbbrechen` meldet deshalb erst den
+  terminalen Schritt und ruft **danach** `brichVersuchAb()`.
+- **Resume ist eine Frage.** Es setzt nichts und hebt keine Revision. Ein
+  Resume, das den Zustand anfasst, wäre nicht unterscheidbar von einem
+  Fortschritt — und der User sähe eine Änderung, die er nicht gemacht hat.
+- **Ein nicht gesetzter Schritt reist gar nicht.** „Noch nie einen Assistenten
+  benutzt" und „ein Schritt mit leeren Feldern" wären in den Bytes sonst
+  dasselbe, und der Broker könnte den Spiegel nicht davon unterscheiden
+  (M-88). Dieselbe Begründung wie bei `intent_revision_v1` in §7.1.
+- **Die Timeouts sind Produktgrenzen, keine Messung.** Sie stehen als Zahlen
+  im Vertrag je Zustand und nicht in `metriken-v1.json`: eine Kalibrierung
+  wäre eine Entscheidung über Bedienung, nicht über Messgenauigkeit. Die
+  Größenordnung folgt der Handlung — Hören dauert länger als Lesen.
+
+**Nebenbefunde.**
+
+- **N-16 (neu, im Rotbeweistreiber behoben).** Die erste Fassung der Rücknahme
+  für M-55 entfernte nur die Wache `nach == preview`. Sie lief **grün**: die
+  P5-Folge führt ohnehin keine Kante dorthin, und die Wache war nur die zweite
+  Verteidigungslinie. Die wirksame Rücknahme setzt die **Folge** zurück auf
+  `proposal → preview` — dieselbe Klasse Fehler wie N-14: eine Rücknahme, die
+  nichts zurücknimmt, sieht aus wie eine bestandene Prüfung.
 
 ---
 

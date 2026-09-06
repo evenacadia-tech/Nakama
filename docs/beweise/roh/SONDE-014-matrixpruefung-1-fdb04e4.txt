@@ -1,0 +1,19 @@
+URTEIL: NEEDS_WORK — vier DEFEKTE in der Matrix.
+
+Geprüft: vorgegebener Diff, §2–§5 einschließlich Etappe 1b, E-01–E-10 und die benannten Quellen; HEAD vor und nach der Prüfung unverändert fdb04e49a6b0a3e3508ff7af625f9f65e36997e5.
+
+Nicht geprüft: ausgeschlossene Bereiche und Laufzeitverhalten; keine Builds, Test-/Produktprozesse, Python-Läufe oder Schreibzugriffe.
+
+Full review comments:
+
+- [P2] Ergänze einen messbaren Kurzpassagen-Riegel in M-23 — C:\Users\phili\Projekte\Nakama\docs\beweise\SONDE-014.md:724-724
+  DEFEKT (M-23): Zwei identische, beliebig kurze Passagen können sämtliche genannten Vergleichbarkeitsgates bestehen: `broker/src/coordinator/vergleichbarkeit.rs:168–185,280–359` prüft relative Überdeckung, aber keine Mindestdauer. Damit deckt dieser Testweg die Zusage aus `docs/FL-Nakama-Sonden-Design-Entwurf.md:2415–2416` für „zu kurz“ nicht ab. Außerdem ist `claim_class = 3` bereits durch M-17/M-45 in P5 ausgeschlossen; der angegebene Rotbeweis kann deshalb am Preview-Verbot statt am Passagengate fallen. Benenne einen messbaren Dauer-/Stichprobenriegel und einen Rotfall mit einem ansonsten zulässigen P5-Ergebnis.
+
+- [P2] Binde den Korpus-Rotbeweis an die Hypothesen-Ausgabe — C:\Users\phili\Projekte\Nakama\docs\beweise\SONDE-014.md:791-791
+  DEFEKT (M-65): Der festgelegte Rotbeweis entfernt einen Quellenbezeichner, misst aber nicht die zugesagte Unterscheidung von Kandidat, Distraktor und Parent. Das benannte A25-Muster serialisiert deklarierte `aussage`-/`konfidenz`-Werte und prüft Quellenstellen (`tools/eq-copilot/erzeuge_p4_korpus.py:278–326`); eine falsche starke Produktbehauptung verändert diese Angaben nicht automatisch. Damit bleibt für NAK-190 der messende Korpusweg aus `docs/FL-Nakama-Sonden-Design-Entwurf.md:2413–2414` offen. Benenne die Auswertung derselben Session über die Coordinator-Verdrahtung und einen Rotbeweis, der bei unveränderten Quellenangaben an der tatsächlich ausgegebenen falschen Ursache fällt.
+
+- [P2] Plane den Transport des AssistantStep-Spiegels ein — C:\Users\phili\Projekte\Nakama\docs\beweise\SONDE-014.md:802-802
+  DEFEKT (M-71/E-08): Für einen im Main gespeicherten Schrittwechsel ohne Experimentabschluss oder Userurteil fehlt der benannte Weg zum zugesagten SQLite-Spiegel. E-10 transportiert nur Intent; für keine Erweiterung in Bauetappe B ist `AssistantStep` als Nutzlast festgelegt, und `state_report` trägt ausschließlich den geschlossenen Zustandsbericht aus `eq-copilot/schemas/v3/eq-ipc-v3.schema.json:1771–1793`. Der versionierte Spiegel des aktuellen Schritts aus `docs/FL-Nakama-Sonden-Design-Entwurf.md:2147` ist damit nicht durch einen Produktpfad samt Rotbeweis gedeckt. Ergänze Transport und Spiegel-/Reconnect-Test bereits zur Vertragsplanung; Writer und beidseitige Verbraucher gehören gemäß [AGENTS.md:51–52](AGENTS.md#L51-L52) zusammen.
+
+- [P2] Sichere Ausschlussgründe mit einem messenden Nachweis ab — C:\Users\phili\Projekte\Nakama\docs\beweise\SONDE-014.md:1436-1436
+  DEFEKT (§5.1 C, M-14–M-28): Lieferumfangspunkt 2 verlangt ausdrücklich Ausschlussgründe (`docs/FL-Nakama-Sonden-Design-Entwurf.md:4311`), aber keine Matrixzeile misst deren Ausgabe oder Erhaltung im Evidenzgraphen. M-20 prüft lediglich, dass Coverage und Alignment nicht überstimmt werden; M-15 prüft die zehn Hypothesenfelder. Eine Umsetzung, die ausgeschlossene Kandidaten kommentarlos entfernt, erfüllt diese Nachweise, lässt aber diesen Lieferumfangspunkt aus. Ergänze eine Zeile mit messendem Test und Rotbeweis für den fehlenden beziehungsweise falschen Ausschlussgrund.

@@ -53,6 +53,9 @@ fn messung() -> Resultatmessung {
         guardrail_breite_db: Some(0.0),
         guardrail_geschuetzt_db: Some(0.0),
         guardrail_nicht_gemessen: Vec::new(),
+        // SONDE-014 M-48: dieser Helfer baut kein `experiment_begin` und
+        // damit kein Ziel — der Wert sagt genau das.
+        ziel_geraten: true,
     }
 }
 
@@ -109,7 +112,7 @@ fn referenz(gain: f64) -> Experimentreferenz {
 fn store_mit_einem() -> (Experimentstore, String) {
     let mut s = Experimentstore::neu();
     let id = hex32(1);
-    s.beginne(&id, "projekt-a", passage(1), referenz(-2.5), 0)
+    s.beginne(&id, "projekt-a", passage(1), referenz(-2.5), 0, None)
         .expect("beginne");
     (s, id)
 }
@@ -156,7 +159,7 @@ fn passage_carries_all_six_fields() {
     // Ein zweiter Versuch auf DERSELBEN Passage legt sie nicht noch einmal
     // an - sonst haette dasselbe Stueck Musik zwei Evidenzobjekte.
     let mut s2 = s;
-    s2.beginne(&hex32(2), "projekt-a", passage(1), referenz(-2.5), 0)
+    s2.beginne(&hex32(2), "projekt-a", passage(1), referenz(-2.5), 0, None)
         .expect("zweiter Versuch");
     assert_eq!(
         s2.log()
@@ -172,7 +175,7 @@ fn passage_carries_all_six_fields() {
     duenn.abdeckung = 0.2;
     let mut s3 = Experimentstore::neu();
     assert_eq!(
-        s3.beginne(&hex32(3), "projekt-a", duenn, referenz(-2.5), 0),
+        s3.beginne(&hex32(3), "projekt-a", duenn, referenz(-2.5), 0, None),
         Err(Anlegefehler::AbdeckungZuGering)
     );
     assert!(s3.log().is_empty(), "und hinterlaesst keine halbe Zeile");
@@ -204,14 +207,14 @@ fn manual_external_begin_locks_baseline() {
     // heisst auch, dass eine Wiederholung keine Umdeutung ist.
     let mut s2 = s;
     assert_eq!(
-        s2.beginne(&id, "projekt-a", passage(1), referenz(-99.0), 0),
+        s2.beginne(&id, "projekt-a", passage(1), referenz(-99.0), 0, None),
         Err(Anlegefehler::IdVergeben)
     );
     assert_eq!(s2.experiment(&id).unwrap().baseline.match_gain_db, -2.5);
 
     // Und eine ID, die keine hex32 ist, legt gar nichts an.
     assert_eq!(
-        s2.beginne("kurz", "projekt-a", passage(2), referenz(0.0), 0),
+        s2.beginne("kurz", "projekt-a", passage(2), referenz(0.0), 0, None),
         Err(Anlegefehler::IdUngueltig)
     );
 }
@@ -316,7 +319,7 @@ fn match_gain_is_frozen_in_the_immutable_reference() {
     // ist hier genau die Form von "nie gemessen": keine Zahl, kein Urteil.
     let mut s2 = Experimentstore::neu();
     let id2 = hex32(77);
-    s2.beginne(&id2, "projekt-a", passage(2), referenz(f64::NAN), 0)
+    s2.beginne(&id2, "projekt-a", passage(2), referenz(f64::NAN), 0, None)
         .unwrap();
     s2.binde_reihenfolge(&id2, Blindreihenfolge::BaselineZuerst).unwrap();
     assert_eq!(
@@ -635,7 +638,7 @@ fn abort_writes_terminal_event_for_each_trigger() {
 fn open_cap_per_project_at_n_and_n_plus_one() {
     let mut s = Experimentstore::neu();
     for i in 0..N_PROJEKT {
-        s.beginne(&hex32(i as u32), "projekt-a", passage(i as u32), referenz(-1.0), 0)
+        s.beginne(&hex32(i as u32), "projekt-a", passage(i as u32), referenz(-1.0), 0, None)
             .expect("beginne");
     }
     assert_eq!(s.offene_im_projekt("projekt-a").count(), N_PROJEKT, "genau N");
@@ -649,6 +652,7 @@ fn open_cap_per_project_at_n_and_n_plus_one() {
         passage(99),
         referenz(-1.0),
         0,
+        None,
     )
     .expect("N+1");
     assert_eq!(s.offene_im_projekt("projekt-a").count(), N_PROJEKT);
@@ -663,7 +667,7 @@ fn open_cap_per_project_at_n_and_n_plus_one() {
 
     // Ein anderes Projekt hat seinen EIGENEN Deckel - ein volles Projekt
     // verdraengt keine fremden Zeilen.
-    s.beginne(&hex32(500), "projekt-b", passage(500), referenz(-1.0), 0)
+    s.beginne(&hex32(500), "projekt-b", passage(500), referenz(-1.0), 0, None)
         .expect("anderes Projekt");
     assert_eq!(s.offene_im_projekt("projekt-b").count(), 1);
     assert_eq!(s.offene_im_projekt("projekt-a").count(), N_PROJEKT);
@@ -686,6 +690,7 @@ fn open_cap_global_at_n_and_n_plus_one() {
                 passage(angelegt),
                 referenz(-1.0),
                 0,
+                None,
             )
             .expect("beginne");
             angelegt += 1;
@@ -694,7 +699,7 @@ fn open_cap_global_at_n_and_n_plus_one() {
     assert_eq!(s.offene().count(), N_GLOBAL, "genau N global");
     assert!(s.experiment(&hex32(0)).unwrap().offen());
 
-    s.beginne(&hex32(9000), "projekt-neu", passage(9000), referenz(-1.0), 0)
+    s.beginne(&hex32(9000), "projekt-neu", passage(9000), referenz(-1.0), 0, None)
         .expect("N+1 global");
     assert_eq!(s.offene().count(), N_GLOBAL);
     assert_eq!(
@@ -803,7 +808,7 @@ fn passage_survives_restart_and_missing_db_degrades_gracefully() {
     // vergebenen ID wird abgelehnt, statt zu ueberschreiben.
     let mut s2 = s;
     assert_eq!(
-        s2.beginne(&id, "projekt-a", passage(1), referenz(-99.0), 0),
+        s2.beginne(&id, "projekt-a", passage(1), referenz(-99.0), 0, None),
         Err(Anlegefehler::IdVergeben)
     );
 }
@@ -826,7 +831,7 @@ fn export_is_complete_and_delete_leaves_no_pcm() {
     assert!(!export.ereignisse.is_empty());
     // Und nur die Ereignisse DIESES Experiments.
     let (mut s2, id2) = (Experimentstore::neu(), hex32(2));
-    s2.beginne(&id2, "projekt-b", passage(2), referenz(0.0), 0).unwrap();
+    s2.beginne(&id2, "projekt-b", passage(2), referenz(0.0), 0, None).unwrap();
     let fremd = s2.exportiere(&id2).unwrap();
     assert_eq!(fremd.ereignisse.len(), 1);
 

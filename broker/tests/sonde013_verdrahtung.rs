@@ -803,7 +803,7 @@ fn ergebnis_ohne_resultatmessung_wird_abgelehnt() {
         alignment: Alignmentwert::FeatureAligned,
     };
     let id = hex(0xabc);
-    s.beginne(&id, &hex(1), passage, referenz.clone(), 100).unwrap();
+    s.beginne(&id, &hex(1), passage, referenz.clone(), 100, None).unwrap();
     s.binde_reihenfolge(&id, Blindreihenfolge::BaselineZuerst)
         .unwrap();
 
@@ -838,6 +838,9 @@ fn ergebnis_ohne_resultatmessung_wird_abgelehnt() {
         guardrail_breite_db: Some(0.0),
         guardrail_geschuetzt_db: Some(0.0),
         guardrail_nicht_gemessen: Vec::new(),
+        // SONDE-014 M-48: dieser Helfer baut kein `experiment_begin` und
+        // damit kein Ziel — der Wert sagt genau das.
+        ziel_geraten: true,
     };
     assert_eq!(
         s.ergebnis(&id, Hoerurteil::Kandidat, None, None, &messung),
@@ -5631,5 +5634,156 @@ fn dekodierte_evidenz_findet_gain_mit_intervall() {
     assert!(
         (g - gain).abs() <= toleranz,
         "a1: das zweitgroesste Banddelta liegt bei {gain} dB - gemessen {g}"
+    );
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// SONDE-014 M-48 · der GELESENE gegen den GERATENEN Zielbereich (E-05)
+// ═════════════════════════════════════════════════════════════════════════
+//
+// NAK-168, halb zwei: bis zur Fassung 3 RIET der Guardrail-Rechner das Ziel
+// aus dem groessten Betrag der Banddeltas. Mit `experiment_begin.ziel` liest
+// er es. Beide Pfade stehen hier nebeneinander, und der Fall ist so gebaut,
+// dass sie AUSEINANDERLAUFEN muessen:
+//
+//   Band 5   bewegt sich um  6 dB  ← das benannte ZIEL
+//   Band 100 bewegt sich um 12 dB  ← die groesste Bewegung
+//
+// MIT `ziel` ist die groesste Bewegung AUSSERHALB des Ziels 12 dB (Band 100);
+// OHNE `ziel` raet die Heuristik Band 100 als Ziel, und ausserhalb bleiben
+// 6 dB. Ein Fall, in dem beide Pfade dieselbe Zahl ergaeben, koennte den
+// Unterschied gar nicht zeigen.
+#[cfg(windows)]
+#[test]
+fn sonde014_m48_gelesenes_ziel_schlaegt_die_heuristik() {
+    /// Ein Versuch mit oder ohne benanntes Ziel, bis zum Resultat gefahren.
+    ///
+    /// Rueckgabe: `(ziel_geraten, guardrail_geschuetzt_db)`.
+    fn lauf(name: &str, mit_ziel: bool) -> (bool, Option<f64>) {
+        let versuch = 0xd48;
+        let h = HarnischMitStore::neu(name);
+        let vorlage = experiment_begin_wert(&h.main.adresse, 0xd40, versuch);
+        // Die Belege muessen IN der Passage liegen und ihre Epoche tragen —
+        // sonst ordnet `resultatmessung` sie weder Baseline noch Resultat zu
+        // und gibt eine leere Messung zurueck.
+        let von = vorlage["passage"]["projekt_von"].as_i64().unwrap();
+        let epoche = vorlage["passage"]["transport_epoch"].as_u64().unwrap();
+        let quelle = vorlage["passage"]["aktive_quellen"][0]
+            .as_str()
+            .unwrap()
+            .to_owned();
+        let klasse = vorlage["passage"]["messpunktklassen"][0]
+            .as_str()
+            .unwrap()
+            .to_owned();
+        let mut sonde = h.main.clone();
+        sonde.plugin_kind = "passive_probe".into();
+        sonde.adresse.instance_id = quelle;
+        sonde.adresse.runtime_nonce = hex(0x53);
+        anmelden(&h.c, "s", &sonde);
+        report(&h.c, "s", &sonde.adresse);
+        assert!(h
+            .c
+            .descriptor_setzen("s", descriptor(&sonde.adresse, &klasse, &hex(0x8a))));
+
+        let lage = move |w: &mut Value, nr: usize| {
+            w["transport"]["transport_epoch"] = json!(epoche);
+            w["transport"]["sequence"] = json!(nr as u64 + 1);
+            w["transport"]["project_sample_start"] = json!(von + (nr as i64) * 512);
+        };
+
+        // Die Baseline: die Fixture unveraendert, nur in der Passage verortet.
+        for nr in 0..4 {
+            assert!(h.c.evidence_snapshot_json(
+                "s",
+                &evidenz_payload(&sonde.adresse, nr, |w| lage(w, nr))
+            ));
+        }
+
+        let mut begin = experiment_begin_wert(&h.main.adresse, 0xd40, versuch);
+        if mit_ziel {
+            // Das ZIEL ist Band 5 — ausdruecklich NICHT das Band mit der
+            // groessten Bewegung.
+            begin["ziel"] = json!({
+                "band_von": 5,
+                "band_bis": 6,
+                "geschuetzte_baender": [],
+                "proposal_id": hex(0x777)
+            });
+        }
+        assert_eq!(h.p0(&begin)["ergebnis"], "angewandt");
+        assert_eq!(
+            h.p0(&json!({
+                "type": "experiment_candidate",
+                "kopf": {
+                    "command_id": hex(0xd41),
+                    "ziel": h.main.adresse,
+                    "base_revision": 0,
+                    "ttl_ms": 1000,
+                    "schema_major": 3,
+                    "schema_minor": 0
+                },
+                "experiment_id": hex(versuch),
+                "referenz": vorlage["referenz"],
+                "blindreihenfolge": "kandidat_zuerst"
+            }))["ergebnis"],
+            "angewandt"
+        );
+
+        // Das Resultat: Band 5 um 6 dB, Band 100 um 12 dB angehoben.
+        for nr in 10..14 {
+            assert!(h.c.evidence_snapshot_json(
+                "s",
+                &evidenz_payload(&sonde.adresse, nr, |w| {
+                    lage(w, nr);
+                    for pfad in [
+                        "/baender/werte",
+                        "/verteilung/p10/werte",
+                        "/verteilung/p50/werte",
+                        "/verteilung/p95/werte",
+                    ] {
+                        if let Some(Value::Array(werte)) = w.pointer_mut(pfad) {
+                            werte[5] = json!(werte[5].as_i64().unwrap_or(0) + 60);
+                            werte[100] = json!(werte[100].as_i64().unwrap_or(0) + 120);
+                        }
+                    }
+                })
+            ));
+        }
+
+        let messung = h
+            .c
+            .resultatmessung_fuer_test(&hex(versuch), &h.main.adresse);
+        (messung.ziel_geraten, messung.guardrail_geschuetzt_db)
+    }
+
+    let (geraten_mit, geschuetzt_mit) = lauf("m48-mit-ziel", true);
+    let (geraten_ohne, geschuetzt_ohne) = lauf("m48-ohne-ziel", false);
+
+    // Die erste Haelfte der Zusage: das Kennzeichen sagt die Wahrheit.
+    assert!(
+        !geraten_mit,
+        "MIT `ziel` raet der Rechner nichts - und sagt das auch"
+    );
+    assert!(
+        geraten_ohne,
+        "OHNE `ziel` bleibt die Heuristik, und das Resultat traegt `ziel_geraten`"
+    );
+
+    // Die zweite Haelfte: die Zahl ist wirklich eine andere. Ohne diesen
+    // Vergleich waere das Kennzeichen ein Merker ohne Wirkung.
+    let mit = geschuetzt_mit.expect("mit Ziel entsteht eine Zahl");
+    let ohne = geschuetzt_ohne.expect("ohne Ziel ebenso");
+    assert!(
+        (mit - 12.0).abs() < 0.5,
+        "MIT `ziel` (Band 5) liegt die groesste Bewegung ausserhalb bei 12 dB, gemessen {mit}"
+    );
+    assert!(
+        (ohne - 6.0).abs() < 0.5,
+        "OHNE `ziel` raet die Heuristik Band 100 als Ziel, ausserhalb bleiben 6 dB, gemessen {ohne}"
+    );
+    assert!(
+        (mit - ohne).abs() > 1.0,
+        "die beiden Pfade laufen wirklich auseinander: {mit} gegen {ohne}"
     );
 }

@@ -322,7 +322,7 @@ fn both_experiment_terminals_close_all_intervals() {
     for terminal_ist_ergebnis in [true, false] {
         let mut s = Experimentstore::neu();
         let id = hex32(1);
-        s.beginne(&id, "projekt-a", passage(1), referenz(), 0).unwrap();
+        s.beginne(&id, "projekt-a", passage(1), referenz(), 0, None).unwrap();
         assert!(s.experiment(&id).unwrap().offen(), "vorher offen");
 
         if terminal_ist_ergebnis {
@@ -348,12 +348,12 @@ fn retention_abort_also_closes_intervals() {
     let mut s = Experimentstore::neu();
     let deckel = eqcop_broker::coordinator::experiment::N_PROJEKT;
     for i in 0..deckel {
-        s.beginne(&hex32(i as u32), "projekt-a", passage(i as u32), referenz(), 0)
+        s.beginne(&hex32(i as u32), "projekt-a", passage(i as u32), referenz(), 0, None)
             .unwrap();
     }
     assert_eq!(s.offene().count(), deckel);
 
-    s.beginne(&hex32(999), "projekt-a", passage(999), referenz(), 0)
+    s.beginne(&hex32(999), "projekt-a", passage(999), referenz(), 0, None)
         .unwrap();
     assert_eq!(s.offene().count(), deckel, "der Deckel haelt");
     let aeltestes = s.experiment(&hex32(0)).unwrap();

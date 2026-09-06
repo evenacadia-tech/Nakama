@@ -3364,6 +3364,37 @@ int main()
         pruefe (p->letzterVersuchP0FuerTest().empty(),
                 "N-05: und nichts reist - die leere Referenz haelt beide Aufrufer");
 
+        // 🔑 NAK-181 Nacharbeit 2 (WP1-3/WN-03): die ZWEITE Haelfte der
+        // Matrixzeile - „`beginneVersuch` und `erfasseKandidat` liefern
+        // `false`, nichts reist".
+        //
+        // `erfasseKandidat` stand oben, `beginneVersuch` bis zu dieser Runde
+        // nur in der Gegenprobe darunter, und dort mit Erwartung `true`. Die
+        // negative Haelfte der Zusage war damit ungemessen: ein Beginn, der
+        // ohne einfrierbaren Pegel durchginge, haette diesen Fall nicht
+        // beruehrt.
+        //
+        // Die Vorbedingung wird GEMESSEN und nicht angenommen: der lebende
+        // Pegel braucht `Vergleichspegel::kMindestSekunden` Material, und
+        // genau so viel ist hier noch nicht gefahren.
+        const auto bloeckeVorBeginn = p->versuchAufgenommeneBloecke();
+        pruefe ((double) bloeckeVorBeginn * (double) kBlock
+                    < nakama::analyse::Vergleichspegel::kMindestSekunden * kFs,
+                "N-05 Vorbedingung: der lebende Pegel hat noch nicht genug "
+                "Material, um einen Gain einzufrieren",
+                juce::String ((juce::int64) bloeckeVorBeginn) + " Bloecke a "
+                + juce::String (kBlock));
+        pruefe (! p->versuchLautheitAbgeglichenLebendFuerTest(),
+                "N-05 Vorbedingung: und er traegt folglich keinen Gain");
+        pruefe (! p->beginneVersuch (a),
+                "N-05: `beginneVersuch` liefert FALSE, solange kein Gain "
+                "eingefroren werden kann");
+        pruefe (p->letzterVersuchP0FuerTest().empty(),
+                "N-05: und aus dem gescheiterten Beginn reist KEIN Byte - der "
+                "Sendezeuge ist unveraendert leer");
+        pruefe (p->laufenderVersuch().isEmpty(),
+                "N-05: kein Versuch ist dadurch offen");
+
         // Gegenprobe: MIT eingefrorenem Gain traegt dieselbe Funktion einen
         // Text. Ohne sie maesse die Zeile darueber nur, dass irgendetwas leer
         // ist — und bliebe auch ohne Riegel gruen.

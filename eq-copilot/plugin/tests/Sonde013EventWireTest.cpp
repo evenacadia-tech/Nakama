@@ -1311,18 +1311,53 @@ int main()
         for (int i = 0; i < 200; ++i)
             sp.sende (sinus ((i / 10) % 2 == 0 ? 0.5 : 0.001, 1000.0, 48000.0));
 
+        // Der LIVE-Bandakku faellt bei JEDER Frameveroeffentlichung
+        // (`rahmenLeeren`), nicht erst an einer Grenze - und die Schleife oben
+        // endete direkt hinter einer. Also wird bis zum naechsten belegten
+        // Stand weitergefahren: die Vorbedingung wird HERGESTELLT, nicht
+        // angenommen.
+        //
+        // 🔑 Ohne die Zeile war der Bandakku LEER, wenn die Grenze kam. Die
+        // alte Disjunktion `! flussHatVorgaenger() || liveAkkuBelegteBaender()
+        // <= 1` bestand trotzdem - sie maass die Leerung eines Traegers, der
+        // nichts hielt. Das ist die zweite Haelfte von WP1-2.
+        for (int i = 0; i < 32 && e.liveAkkuBelegteBaender() == 0; ++i)
+            sp.sende (sinus (0.5, 1000.0, 48000.0));
+
         const int ringVorher = e.ereignisAnzahlJetzt();
         pruefe (ringVorher > 0, "N-35: der Ereignisring traegt Ereignisse",
                 juce::String (ringVorher));
         const auto letztesVorher = e.ereignis (ringVorher - 1);
-        const bool fensterVoll = e.fuellstandHaupt() > 0 || e.fuellstandBass() > 0
-                              || e.fuellstandLoudnessZelle() > 0
-                              || e.fuellstandKurzLoudness() > 0
-                              || e.liveAkkuBelegteBaender() > 0;
-        pruefe (fensterVoll,
-                "N-35: und die Fenster sind gefuellt - ohne das misst der Fall nichts",
-                juce::String (e.fuellstandHaupt()) + "/" + juce::String (e.fuellstandBass())
-                + " Haupt/Bass, " + juce::String (e.liveAkkuBelegteBaender()) + " Akkubaender");
+
+        // 🔑 NAK-181 Nacharbeit 2 (WP1-2/WN-02): JEDER zugesagte
+        // Fenstertraeger bekommt seine eigene Zeile - vorher wie nachher.
+        //
+        // Bis zu dieser Runde stand hier EINE Disjunktion ueber fuenf
+        // Fuellstaende. Sie bestand schon, wenn EIN Traeger etwas hielt; die
+        // vier anderen konnten leer in die Grenze gehen, und die Zeilen
+        // danach maessen dann eine Leerung, die es nie gab. Genau dieselbe
+        // Schwaeche eine Ebene tiefer wie die, gegen die dieser Fall steht.
+        pruefe (e.fuellstandHaupt() > 0,
+                "N-35 Vorbedingung: das HAUPTfenster traegt Material",
+                juce::String (e.fuellstandHaupt()));
+        pruefe (e.fuellstandBass() > 0,
+                "N-35 Vorbedingung: das BASSfenster traegt Material",
+                juce::String (e.fuellstandBass()));
+        pruefe (e.fuellstandLoudnessZelle() > 0,
+                "N-35 Vorbedingung: die Loudness-ZELLE ist angefangen",
+                juce::String (e.fuellstandLoudnessZelle()));
+        pruefe (e.fuellstandKurzLoudness() > 0,
+                "N-35 Vorbedingung: die KURZ-Loudness traegt fertige Zellen",
+                juce::String (e.fuellstandKurzLoudness()));
+        pruefe (e.liveAkkuBelegteBaender() > 0,
+                "N-35 Vorbedingung: der BANDAKKU traegt belegte Baender",
+                juce::String (e.liveAkkuBelegteBaender()));
+        pruefe (e.fingerprintFenster() > 0,
+                "N-35 Vorbedingung: das FINGERPRINTfenster traegt Frames",
+                juce::String ((juce::int64) e.fingerprintFenster()));
+        pruefe (e.stereoAkkuBelegteBaender() > 0,
+                "N-35 Vorbedingung: die STEREOevidenz traegt belegte Baender",
+                juce::String (e.stereoAkkuBelegteBaender()));
 
         const auto epocheVorher   = e.transportEpocheJetzt();
         const auto segmentVorher  = e.segmentJetzt();
@@ -1350,15 +1385,40 @@ int main()
 
         // Die Fenster: der Block NACH der Grenze hat schon wieder gefuellt,
         // also wird gegen den Stand VOR ihm nicht auf 0 geprueft, sondern auf
-        // "hoechstens ein Block". Der Loudness-Zellenstand und die Bandakkus
-        // sind die harte Aussage: sie tragen nach der Grenze nur noch das
-        // Material DIESES Blocks.
-        pruefe (e.fuellstandHaupt() <= sp.frames && e.fuellstandBass() <= sp.frames,
-                "N-35: die zwei Analysefenster tragen nur noch den Block NACH "
-                "der Grenze",
-                juce::String (e.fuellstandHaupt()) + "/" + juce::String (e.fuellstandBass()));
-        pruefe (! e.flussHatVorgaenger() || e.liveAkkuBelegteBaender() <= 1,
-                "N-35: und kein Spektrum ueberbrueckt sie");
+        // "hoechstens dieser eine Block".
+        //
+        // 🔑 WN-02: je Traeger EINE Zeile, kein `||` zwischen zweien.
+        // Die alte Spektrumszeile lautete `! flussHatVorgaenger() ||
+        // liveAkkuBelegteBaender() <= 1` und bestand schon am geleerten
+        // Flussvorgaenger - der Bandakku daneben war damit ungemessen. Vier
+        // der Traeger koennen nach der Grenze GAR NICHTS tragen: die
+        // Hauptstufe braucht 4096 Punkte fuer einen Frame, und aus einem
+        // Block von `sp.frames` entsteht keiner. Also stehen dort exakte
+        // Nullen und keine Obergrenzen, die auch ein Rest bestuende.
+        pruefe (e.fuellstandHaupt() <= sp.frames,
+                "N-35: das HAUPTfenster traegt nur noch den Block NACH der Grenze",
+                juce::String (e.fuellstandHaupt()));
+        pruefe (e.fuellstandBass() <= sp.frames,
+                "N-35: das BASSfenster ebenso",
+                juce::String (e.fuellstandBass()));
+        pruefe (e.fuellstandLoudnessZelle() <= sp.frames,
+                "N-35: die Loudness-ZELLE ebenso",
+                juce::String (e.fuellstandLoudnessZelle()));
+        pruefe (e.fuellstandKurzLoudness() == 0,
+                "N-35: die KURZ-Loudness ist LEER - ein Block schliesst keine "
+                "100-ms-Zelle, also darf hier keine einzige stehen",
+                juce::String (e.fuellstandKurzLoudness()));
+        pruefe (e.liveAkkuBelegteBaender() == 0,
+                "N-35: der BANDAKKU ist leer - kein Spektrum ueberbrueckt die Grenze",
+                juce::String (e.liveAkkuBelegteBaender()));
+        pruefe (! e.flussHatVorgaenger(),
+                "N-35: und der Fluss hat keinen Vorgaenger aus der alten Epoche");
+        pruefe (e.fingerprintFenster() == 0,
+                "N-35: das FINGERPRINTfenster ist leer (M-27)",
+                juce::String ((juce::int64) e.fingerprintFenster()));
+        pruefe (e.stereoAkkuBelegteBaender() == 0,
+                "N-35: und die STEREOevidenz ebenso (M-11)",
+                juce::String (e.stereoAkkuBelegteBaender()));
 
         // 🔑 DIE ZUSAGE: der Ring bleibt, und sein Eintrag traegt weiter
         // den ALTEN Stempel. Ein Ereignis ohne eigene Epoche liesse sich

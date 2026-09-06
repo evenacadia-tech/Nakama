@@ -1,0 +1,30 @@
+NAK-181 Rotbeweis n2-wn01 - 2026-09-06 (Nacharbeit 2, WP1-1/WN-01)
+Zuruecknahme: zahl() im Hello zurueck auf std::to_string - LC_NUMERIC-abhaengig
+             (= die Ruecknahme aus n1-nr09, nach WN-01 WIEDERHOLT)
+Quelle: eq-copilot/plugin/core/ipc/ControlClient.cpp:409
+Bein: EqCopSchemaTest
+---
+[ok]   N-17: eine Komma-Locale ist verfuegbar
+[ok]   N-17: der Rueckwechsel auf die Ausgangs-Locale gelingt - ohne ihn maesse die Zeile darunter nicht die C-Seite  [C]
+[ok]   N-17: der Hello traegt die nichtganzzahlige Samplerate mit PUNKT  [... "samplerate":44100.500000 ...]
+[ok]   N-17: dieselbe Komma-Locale laesst sich nach dem Rueckwechsel ERNEUT setzen  [de-DE]
+[ok]   N-17: der Heartbeat ist unter Komma-Locale BYTEGLEICH  [771 Bytes]
+[ROT]  N-17: und der HELLO-Text ebenso - bytegleich unter beiden Locales  [449 Bytes]
+[ROT]  N-17: kein Komma-Dezimaltrenner im Hello - hier faellt der Rotbeweis, wenn `zahl` durch `std::to_string` ersetzt wird
+[ROT]  N-17: juce::JSON liest die Samplerate unveraendert zurueck
+[ok]   N-17: und die Ausgangs-Locale steht am Ende wieder - sonst liefe der REST dieses Beins unter Komma
+---
+131 bestanden, 3 gescheitert  (Exitcode 1)
+
+Was WN-01 geaendert hat und was das fuer diesen Beweis heisst:
+Die drei roten Zeilen sind dieselben wie in n1-nr09 - die Zahlform-Zusage ist
+unveraendert gemessen. NEU sind die drei gruenen Locale-Zeilen um sie herum:
+der Rueckwechsel auf die Ausgangs-Locale, das ERNEUTE Setzen der Komma-Locale
+aus dem gesicherten NAMEN (`std::string komma`) und die Wiederherstellung am
+Ende. Bis zur Runde 1 stand an der mittleren Stelle
+`std::setlocale (LC_NUMERIC, gesetzt)` mit dem Zeiger, den der Rueckwechsel
+davor entwertet haben durfte (C-Standard 7.11.1.1/8), und ohne Pruefung des
+Rueckgabewertes. Scheitert dieses erneute Setzen still, verglichen die drei
+Zeilen darunter zweimal dieselbe C-Ausgabe und blieben gruen, ohne die Zusage
+zu beruehren - genau das macht WP1-1 aus. Der Zeiger wird nirgends mehr nach
+einem weiteren `setlocale` gelesen.

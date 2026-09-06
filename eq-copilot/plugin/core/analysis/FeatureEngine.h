@@ -1468,6 +1468,27 @@ public:
     std::uint64_t evidenzFensterGesamtJetzt() const noexcept { return evidenzFensterGesamt; }
     std::uint64_t evidenzFensterAktivJetzt()  const noexcept { return evidenzFensterAktiv; }
 
+    /** Fingerprint- und Stereofenster — die zwei Traeger aus der Liste in
+        `grenzeZiehen()`, die bis NAK-181 keinen Leser hatten.
+
+        🔑 NAK-181 Nacharbeit 2 (WP1-2/WN-02).  Die Matrixzeile N-35 sagt
+        zu, dass die Grenze FUENF Fenster leert — Rahmen, Loudness, Spektrum,
+        Fingerprint, Stereo —, „gemessen an den Zaehlern".  Zwei davon hatten
+        gar keinen Zaehler nach aussen, also war die Zusage an ihnen nicht
+        pruefbar: eine ausgelassene `fingerprintLeeren()`- oder
+        `stereoLeeren()`-Zeile waere in KEINEM Bein rot geworden.  Dieselbe
+        Sorte Loch wie T2-1, nur eine Etappe spaeter.
+
+        Rein lesend, kein Verhalten: `fpFenster` zaehlt die Welch-Frames im
+        Fingerprintakkumulator, `stereoAkku[b].frames` die Frames je Band. */
+    std::uint32_t fingerprintFenster() const noexcept { return fpFenster; }
+    int stereoAkkuBelegteBaender() const noexcept
+    {
+        int n = 0;
+        for (const auto& a : stereoAkku) if (a.frames > 0) ++n;
+        return n;
+    }
+
     /** SONDE-013 M-05: Evidenzkadenz zwischen 1 und 4 Hz einstellen.
 
         Der Wert wird auf `[kEvidenzIntervallMinS, kEvidenzIntervallMaxS]`

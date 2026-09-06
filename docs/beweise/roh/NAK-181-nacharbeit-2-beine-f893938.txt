@@ -1,0 +1,18 @@
+NAK-181 Nacharbeit 2 - betroffene Beine, gruener Lauf - 2026-09-06
+Quellstand: Arbeitsbaum ueber f893938 (Basis der Runde), alle Ruecknahmen der
+            drei Rotbeweise zurueckgenommen; git diff nennt nur die vier
+            geaenderten Quelldateien.
+Gefahren wurden GENAU die drei betroffenen Beine; kein voller Kanon in dieser
+Runde (Auftrag).
+---
+EqCopSchemaTest                        Exit=0  134 bestanden, 0 gescheitert
+EqCopSonde013EventWireTest             Exit=0  140 bestanden, 0 gescheitert
+EqCopSonde013PassageStateTest          Exit=0  337 bestanden, 0 gescheitert
+---
+Urteil: ALLE BETROFFENEN BEINE GRUEN (3/3)
+
+Stand vor der Runde (roh/NAK-181-nacharbeit-1-beine-e3adef7.txt):
+B3c 131/0, B16 128/0, B23 332/0. Die Differenz sind genau die neuen Zeilen:
+B3c +3 (drei Locale-Pruefungen, WN-01), B16 +12 (sieben Vorbedingungen und
+fuenf getrennte Messungen statt zwei Sammelzeilen, WN-02), B23 +5 (zwei
+Vorbedingungen und drei Zusagezeilen, WN-03).

@@ -165,10 +165,23 @@ void fahreLocale()
         nakama::ipc::ControlStatus st;
         const auto unterC = nakama::ipc::heartbeatAlsJson (a, 7, st);
 
-        const char* gesetzt = std::setlocale (LC_NUMERIC, "de-DE");
-        if (gesetzt == nullptr)
-            gesetzt = std::setlocale (LC_NUMERIC, "German_Germany.1252");
-        pruefe (gesetzt != nullptr, "N-17: eine Komma-Locale ist verfuegbar");
+        // 🔑 NAK-181 Nacharbeit 2 (WP1-1/WN-01): der Locale-NAME wird
+        // gesichert, nicht der Zeiger.
+        //
+        // `setlocale` gibt einen Zeiger auf einen INTERNEN Puffer zurueck, den
+        // ein spaeterer `setlocale`-Aufruf ueberschreiben darf (C-Standard
+        // 7.11.1.1/8). Der Rueckwechsel auf `gesichert` unten liegt genau
+        // dazwischen: bis zu dieser Runde stand danach `setlocale (LC_NUMERIC,
+        // gesetzt)` da und las den entwerteten Zeiger. Was darunter als
+        // "unter Komma-Locale gemessen" ausgewiesen war, hing damit an
+        // unbestimmtem Verhalten - im guenstigen Fall lief es zweimal unter C
+        // und war still gruen.
+        const char* kommaZeiger = std::setlocale (LC_NUMERIC, "de-DE");
+        if (kommaZeiger == nullptr)
+            kommaZeiger = std::setlocale (LC_NUMERIC, "German_Germany.1252");
+        pruefe (kommaZeiger != nullptr, "N-17: eine Komma-Locale ist verfuegbar");
+        const std::string komma = kommaZeiger != nullptr ? std::string (kommaZeiger)
+                                                         : std::string {};
         // 🔑 NAK-181 Nacharbeit 1 (EP-09/NR-09): der HELLO-Text, mit
         // NICHTGANZZAHLIGER Samplerate.
         //
@@ -183,15 +196,25 @@ void fahreLocale()
         hallo.samplerate = 44100.5;          // nichtganzzahlig: hier faellt es auf
         hallo.blockSize = 512;
         hallo.channels = 2;
-        std::setlocale (LC_NUMERIC, gesichert.c_str());
+        pruefe (std::setlocale (LC_NUMERIC, gesichert.c_str()) != nullptr,
+                "N-17: der Rueckwechsel auf die Ausgangs-Locale gelingt - ohne "
+                "ihn maesse die Zeile darunter nicht die C-Seite",
+                juce::String (gesichert.c_str()));
         const auto helloUnterC = nakama::ipc::helloAlsJson (hallo);
         pruefe (helloUnterC.find ("44100.5") != std::string::npos,
                 "N-17: der Hello traegt die nichtganzzahlige Samplerate mit PUNKT",
                 juce::String (helloUnterC.c_str()));
 
-        if (gesetzt != nullptr)
+        if (! komma.empty())
         {
-            std::setlocale (LC_NUMERIC, gesetzt);
+            // Das erneute Setzen wird GEPRUEFT, bevor irgendetwas als
+            // "unter Komma" gemessen wird. Scheitert es still, verglichen die
+            // vier Zeilen darunter zweimal dieselbe C-Ausgabe miteinander und
+            // waeren gruen, ohne die Zusage zu beruehren.
+            pruefe (std::setlocale (LC_NUMERIC, komma.c_str()) != nullptr,
+                    "N-17: dieselbe Komma-Locale laesst sich nach dem "
+                    "Rueckwechsel ERNEUT setzen",
+                    juce::String (komma.c_str()));
             const auto unterKomma = nakama::ipc::heartbeatAlsJson (a, 7, st);
             pruefe (unterKomma == unterC,
                     "N-17: der Heartbeat ist unter Komma-Locale BYTEGLEICH",
@@ -210,7 +233,9 @@ void fahreLocale()
                     && (double) geparst.getProperty ("audio", {})
                                        .getProperty ("samplerate", {}) == 44100.5,
                     "N-17: juce::JSON liest die Samplerate unveraendert zurueck");
-            std::setlocale (LC_NUMERIC, gesichert.c_str());
+            pruefe (std::setlocale (LC_NUMERIC, gesichert.c_str()) != nullptr,
+                    "N-17: und die Ausgangs-Locale steht am Ende wieder - sonst "
+                    "liefe der REST dieses Beins unter Komma");
         }
     }
 

@@ -1,0 +1,69 @@
+NAK-181 Rotbeweis n2-wn02 - 2026-09-06 (Nacharbeit 2, WP1-2/WN-02)
+Bein: EqCopSonde013EventWireTest, Fall N-35
+     `grenze_leert_die_fenster_und_laesst_den_ereignisring`
+Quelle aller Ruecknahmen: eq-copilot/plugin/core/analysis/FeatureEngine.h,
+     Funktion `grenzeZiehen (Grenzgrund)`
+Vier Lagen, je EIN Traeger. Erwartung je Lage: genau die Zeile dieses Traegers
+rot, die sechs anderen gruen. Gemessen: genau so.
+
+════════ Lage a - RUECKNAHME: das 3-s-Fenster der KURZ-Loudness bleibt stehen
+(`kurzStand`, `kurzGefuellt`, `kurzZellen` nicht genullt)
+---
+[ok]   N-35: das HAUPTfenster traegt nur noch den Block NACH der Grenze  [512]
+[ok]   N-35: das BASSfenster ebenso  [512]
+[ok]   N-35: die Loudness-ZELLE ebenso  [512]
+[ROT]  N-35: die KURZ-Loudness ist LEER - ein Block schliesst keine 100-ms-Zelle, also darf hier keine einzige stehen  [21]
+[ok]   N-35: der BANDAKKU ist leer - kein Spektrum ueberbrueckt die Grenze  [0]
+[ok]   N-35: und der Fluss hat keinen Vorgaenger aus der alten Epoche
+[ok]   N-35: das FINGERPRINTfenster ist leer (M-27)  [0]
+[ok]   N-35: und die STEREOevidenz ebenso (M-11)  [0]
+---
+139 bestanden, 1 gescheitert  (Exitcode 1)
+
+════════ Lage b - RUECKNAHME: `fingerprintLeeren()` faellt aus `grenzeZiehen`
+---
+[ok]   N-35: die KURZ-Loudness ist LEER ...  [0]
+[ok]   N-35: der BANDAKKU ist leer ...  [0]
+[ok]   N-35: und der Fluss hat keinen Vorgaenger aus der alten Epoche
+[ROT]  N-35: das FINGERPRINTfenster ist leer (M-27)  [39]
+[ok]   N-35: und die STEREOevidenz ebenso (M-11)  [0]
+---
+139 bestanden, 1 gescheitert  (Exitcode 1)
+
+════════ Lage c - RUECKNAHME: `stereoLeeren()` faellt aus `grenzeZiehen`
+---
+[ok]   N-35: die KURZ-Loudness ist LEER ...  [0]
+[ok]   N-35: der BANDAKKU ist leer ...  [0]
+[ok]   N-35: das FINGERPRINTfenster ist leer (M-27)  [0]
+[ROT]  N-35: und die STEREOevidenz ebenso (M-11)  [196]
+---
+139 bestanden, 1 gescheitert  (Exitcode 1)
+
+════════ Lage d - RUECKNAHME: der LIVE-Bandakku bleibt stehen
+(die `for (auto& v : liveAkku)`-Schleife faellt aus `grenzeZiehen`)
+---
+[ok]   N-35: die Loudness-ZELLE ebenso  [512]
+[ok]   N-35: die KURZ-Loudness ist LEER ...  [0]
+[ROT]  N-35: der BANDAKKU ist leer - kein Spektrum ueberbrueckt die Grenze  [149]
+[ok]   N-35: und der Fluss hat keinen Vorgaenger aus der alten Epoche
+[ok]   N-35: das FINGERPRINTfenster ist leer (M-27)  [0]
+[ok]   N-35: und die STEREOevidenz ebenso (M-11)  [0]
+---
+139 bestanden, 1 gescheitert  (Exitcode 1)
+
+════════ Warum Lage d der eigentliche Befund ist
+Die alte Zeile lautete `! flussHatVorgaenger() || liveAkkuBelegteBaender() <= 1`.
+Unter Lage d bleibt `flussHatVorgaenger()` FALSCH (`vorigesSpektrumGueltig` wird
+weiter genullt), also waere die ganze Disjunktion GRUEN gewesen, waehrend 149
+Baender die Grenze ueberlebten. Genau das ist WP1-2. Ohne `||` faellt die Zeile.
+
+════════ Was die Vorbedingung dazu beitraegt
+Der LIVE-Bandakku faellt bei jeder Frameveroeffentlichung (`rahmenLeeren`), nicht
+erst an einer Grenze. Die Fuellschleife endete direkt hinter einer: gemessen
+stand vor der Grenze `liveAkkuBelegteBaender() == 0`. Die alte
+Sammel-Vorbedingung (eine Disjunktion ueber fuenf Fuellstaende) war trotzdem
+gruen, weil vier andere Traeger etwas hielten - und die Zeile nach der Grenze
+maass damit die Leerung eines Traegers, der nie etwas hatte. Der Fall faehrt
+jetzt bis `liveAkkuBelegteBaender() > 0` weiter und prueft jeden der sieben
+Traeger einzeln, vorher wie nachher (gemessen vorher: Haupt 2048, Bass 14336,
+Loudness-Zelle 3648, Kurz-Loudness 21, Bandakku 149, Fingerprint 39, Stereo 196).

@@ -1,0 +1,48 @@
+NAK-181 Rotbeweis n2-wn03 - 2026-09-06 (Nacharbeit 2, WP1-3/WN-03)
+Bein: EqCopSonde013PassageStateTest, Fall N-05
+     `ohne_eingefrorenen_gain_entsteht_keine_referenz`
+Quelle: eq-copilot/plugin/core/analysis/Vergleichspegel.h, `friereEin()`
+
+Die neue Zusage ist die zweite Haelfte der Matrixzeile N-05: „`beginneVersuch`
+und `erfasseKandidat` liefern `false`, nichts reist." `erfasseKandidat` stand
+schon oben; `beginneVersuch` kam bis zur Runde 1 nur in der Gegenprobe vor, und
+dort mit Erwartung `true`.
+
+════════ Lage a - RUECKNAHME: fail-OPEN statt fail-closed
+`friereEin()` friert ohne genug Material ein und meldet 0 dB als gueltigen
+Gain - genau die Luege, die der Klassenkopf ausschliesst („Eine gemeldete 0 dB
+waere die Behauptung 'die beiden sind gleich laut'").
+---
+[ok]   N-05 Vorbedingung: der lebende Pegel hat noch nicht genug Material, um einen Gain einzufrieren  [0 Bloecke a 512]
+[ok]   N-05 Vorbedingung: und er traegt folglich keinen Gain
+[ROT]  N-05: `beginneVersuch` liefert FALSE, solange kein Gain eingefroren werden kann
+[ROT]  N-05: und aus dem gescheiterten Beginn reist KEIN Byte - der Sendezeuge ist unveraendert leer
+[ROT]  N-05: kein Versuch ist dadurch offen
+[ROT]  N-05: genug Material            (Folgezeile: die Speisung bleibt aus)
+[ROT]  N-05: der Versuch beginnt       (Folgezeile: ein Versuch ist schon offen)
+[ok]   N-05: mit eingefrorenem Gain traegt die Referenz den Match-Gain  [606 Bytes]
+---
+326 bestanden, 11 gescheitert  (Exitcode 1)
+Alle drei NEUEN Zeilen fallen, jede an ihrer eigenen Aussage: der Beginn
+gelingt, ein Befehl reist, ein Versuch ist offen. Daneben fallen die Zeilen von
+N-06 und N-07 (dieselbe Zusage im erreichbaren Fall) und C4 (fremdes Material
+erreicht die 400-ms-Schwelle) - dieselbe Ruecknahme, dieselbe Regel.
+
+════════ Lage b - RUECKNAHME: nur die Materialschwelle faellt weg
+`if (! bereitIntern()) return false;` ganz entfernt, ohne den Wert zu faelschen.
+Ergebnis: die drei NEUEN Zeilen bleiben GRUEN.
+---
+[ok]   N-05: `beginneVersuch` liefert FALSE, solange kein Gain eingefroren werden kann
+[ok]   N-05: und aus dem gescheiterten Beginn reist KEIN Byte - der Sendezeuge ist unveraendert leer
+[ok]   N-05: kein Versuch ist dadurch offen
+[ROT]  N-05: genug Material
+[ROT]  N-05: der Versuch beginnt
+[ROT]  N-05: mit eingefrorenem Gain traegt die Referenz den Match-Gain  [0 Bytes]
+---
+329 bestanden, 8 gescheitert  (Exitcode 1)
+Grund, an der Quelle nachgelesen: der Pegel hat an dieser Stelle GAR KEIN
+Material aufgenommen (`0 Bloecke`, s. Vorbedingung). `friereEin()` rechnet dann
+`sqrt(0/0)`, `gehaltenGesetzt = std::isfinite(NaN)` bleibt falsch, und der Riegel
+`! vergleichspegel.gainGesetzt()` in `beginneVersuch` haelt weiter. Die Zusage
+haengt also nicht an der Schwelle, sondern an der FAIL-CLOSED-Regel darueber -
+und die faellt Lage a. Nicht behauptet, gemessen: zwei Laeufe, zwei Ergebnisse.

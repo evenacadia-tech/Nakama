@@ -854,6 +854,75 @@ fn gleichstand_zeigt_beide() {
 }
 
 // ═════════════════════════════════════════════════════════════════════════
+// M-21/M-65 · ungetrennter_erster_platz_ist_nicht_stark
+// ═════════════════════════════════════════════════════════════════════════
+//
+// Gefunden hat das der P5-Korpus (Etappe H), nicht dieses Bein: bei
+// Gleichstand entscheidet der Tie-Break, WER fuehrt — und eine starke
+// Aussage auf diesem Platz behauptet eine Unterscheidung, die die Messung
+// nicht hergibt. Sie waere richtig oder falsch, je nachdem wie die
+// Kennungen zufaellig liegen (§36.4 Satz 1, §49.4).
+//
+// Beide Richtungen stehen hier. Ohne die zweite waere der Riegel auch dann
+// gruen, wenn ueberhaupt nichts mehr `hoch` erreichte.
+#[test]
+fn ungetrennter_erster_platz_ist_nicht_stark() {
+    let anhebung = Some((ANOMALIEBAND, ANOMALIEBAND + 4, 9.0));
+
+    // (1) Zwei identische Kandidaten: KEINER ist stark, beide bleiben da.
+    let c = coordinator();
+    let adressen = buehne(&c, 2, Some(3));
+    reihe(&c, "main", &adressen[0], 0, 12, anhebung);
+    reihe(&c, "sonde0", &adressen[1], 100, 12, anhebung);
+    reihe(&c, "sonde1", &adressen[2], 200, 12, anhebung);
+    let befunde = c.befunde_sicht(&hex(0x11), &hex(0x22));
+    assert_eq!(befunde.len(), 2, "beide bleiben sichtbar");
+    assert_eq!(
+        befunde[0].rang.rang(),
+        befunde[1].rang.rang(),
+        "sie liegen wirklich gleich — sonst misst dieser Fall etwas anderes"
+    );
+    for (i, b) in befunde.iter().enumerate() {
+        assert!(
+            b.confidence.klasse < Sicherheitsklasse::Hoch,
+            "Kandidat {i} traegt {:?}, obwohl ihn nichts vom anderen trennt",
+            b.confidence.klasse
+        );
+        assert_ne!(b.zustand, Befundzustand::ReadyToSend);
+    }
+
+    // (2) GEGENPROBE: ein Kandidat mit unbekanntem Routing rangiert
+    //     schlechter. Jetzt TRENNT die Messung, und der erste darf stark
+    //     sein — sonst waere (1) trivial erfuellt.
+    let c = coordinator();
+    let master = adresse(1);
+    let stark = adresse(2);
+    let schwach = adresse(3);
+    anmelden(&c, "main", &master, "main", Some(0), None);
+    anmelden(&c, "sonde0", &stark, "passive_probe", Some(3), None);
+    anmelden(&c, "sonde1", &schwach, "passive_probe", None, None);
+    reihe(&c, "main", &master, 0, 12, anhebung);
+    reihe(&c, "sonde0", &stark, 100, 12, anhebung);
+    reihe(&c, "sonde1", &schwach, 200, 12, anhebung);
+    let befunde = c.befunde_sicht(&hex(0x11), &hex(0x22));
+    assert_eq!(befunde.len(), 2, "auch hier verschwindet keiner");
+    assert!(
+        befunde[0].rang.rang() > befunde[1].rang.rang(),
+        "die Gegenprobe trennt wirklich: {} gegen {}",
+        befunde[0].rang.rang(),
+        befunde[1].rang.rang()
+    );
+    assert_eq!(
+        befunde[0].confidence.klasse,
+        Sicherheitsklasse::Hoch,
+        "ein getrennter erster Platz darf stark sein"
+    );
+    assert_eq!(befunde[0].zustand, Befundzustand::ReadyToSend);
+    // Und der zweite bleibt trotzdem schwach (M-21).
+    assert!(befunde[1].confidence.klasse < Sicherheitsklasse::Hoch);
+}
+
+// ═════════════════════════════════════════════════════════════════════════
 // M-27 · mehr_daten_ist_ein_ergebnis
 // ═════════════════════════════════════════════════════════════════════════
 //

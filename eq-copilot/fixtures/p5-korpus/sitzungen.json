@@ -1,0 +1,161 @@
+{
+  "sitzungen": [
+    {
+      "erwartet": {
+        "ausschlussgrund": null,
+        "distraktor_ist_alternative": false,
+        "sicherheit_hoechstens": "hoch"
+      },
+      "hinweis": "Eine Quelle mit bekanntem Routing, zwoelf zusammenhaengenden Fenstern und derselben Bandanhebung wie der Master. Der Fall, auf dem eine starke Aussage ERLAUBT ist — ohne ihn waere jeder Riegel unten trivial erfuellt.",
+      "kennung": "wahrer_kandidat",
+      "master": {
+        "anhebung_db": 9.0,
+        "fenster": 12
+      },
+      "quellen": [
+        {
+          "anhebung_db": 9.0,
+          "fenster": 12,
+          "instanz": 2,
+          "mixer": 3,
+          "versatz_fenster": 0,
+          "wahre_ursache": true
+        }
+      ],
+      "ursachenklasse": "quelle_resonanz",
+      "wahrheit": "wahre_ursache"
+    },
+    {
+      "erwartet": {
+        "ausschlussgrund": null,
+        "distraktor_ist_alternative": true,
+        "sicherheit_hoechstens": "mittel"
+      },
+      "hinweis": "Zwei Quellen laufen im selben Band gleich. Der Distraktor darf als ALTERNATIVE erscheinen (NAK-190, SONDE-013 M-85 Ziel 1), aber nie als Ursache mit eigener starker Aussage. Hoechstens MITTEL, und zwar fuer BEIDE: im Material ist hier nichts, was sie trennt — wer fuehrt, entscheidet sonst nur der Gleichstandsschluessel. Eine starke Aussage auf diesem Platz waere richtig oder falsch je nach Lage der Kennungen, und genau diese Muenzwurf-Behauptung verbietet §36.4 Satz 1. Die Erwartung steht bewusst NICHT auf `hoch`: sonst maesse der Fall, ob die wahre Ursache die kleinere Kennung hat.",
+      "kennung": "korrelierter_distraktor",
+      "master": {
+        "anhebung_db": 9.0,
+        "fenster": 12
+      },
+      "quellen": [
+        {
+          "anhebung_db": 9.0,
+          "fenster": 12,
+          "instanz": 2,
+          "mixer": 3,
+          "versatz_fenster": 0,
+          "wahre_ursache": true
+        },
+        {
+          "anhebung_db": 9.0,
+          "fenster": 12,
+          "instanz": 3,
+          "mixer": 4,
+          "versatz_fenster": 0,
+          "wahre_ursache": false
+        }
+      ],
+      "ursachenklasse": "zwei_quellen_konkurrenz",
+      "wahrheit": "distraktor"
+    },
+    {
+      "erwartet": {
+        "ausschlussgrund": null,
+        "distraktor_ist_alternative": false,
+        "sicherheit_hoechstens": "mittel"
+      },
+      "hinweis": "Zwei Sonden auf DEMSELBEN Mixerkanal messen dasselbe Signal. Keine von beiden traegt eine starke Aussage (M-22).",
+      "kennung": "parent_duplikat",
+      "master": {
+        "anhebung_db": 9.0,
+        "fenster": 12
+      },
+      "quellen": [
+        {
+          "anhebung_db": 9.0,
+          "fenster": 12,
+          "instanz": 2,
+          "mixer": 7,
+          "versatz_fenster": 0,
+          "wahre_ursache": true
+        },
+        {
+          "anhebung_db": 9.0,
+          "fenster": 12,
+          "instanz": 3,
+          "mixer": 7,
+          "versatz_fenster": 0,
+          "wahre_ursache": false
+        }
+      ],
+      "ursachenklasse": "zwei_quellen_konkurrenz",
+      "wahrheit": "parent_duplikat"
+    },
+    {
+      "erwartet": {
+        "ausschlussgrund": "alignment_falsch",
+        "distraktor_ist_alternative": false,
+        "sicherheit_hoechstens": "unklar"
+      },
+      "hinweis": "Die Quelle misst ein um sechs Fenster verschobenes Zeitfenster. Das Alignment reisst, und der Kandidat verlaesst das Ranking MIT Grund (M-20, M-87).",
+      "kennung": "verschobene_passage",
+      "master": {
+        "anhebung_db": 9.0,
+        "fenster": 12
+      },
+      "quellen": [
+        {
+          "anhebung_db": 9.0,
+          "fenster": 12,
+          "instanz": 2,
+          "mixer": 3,
+          "versatz_fenster": 6,
+          "wahre_ursache": true
+        }
+      ],
+      "ursachenklasse": "quelle_resonanz",
+      "wahrheit": "verschobene_passage"
+    },
+    {
+      "erwartet": {
+        "ausschlussgrund": null,
+        "distraktor_ist_alternative": false,
+        "sicherheit_hoechstens": "mittel"
+      },
+      "hinweis": "Drei unabhaengige Fenster — unter `GATE_MINDEST_FENSTER`. Der Fall, den D1 aufgedeckt hat: die vier relativen Gates bestehen ihn alle, weil `ueberdeckung` auf das kuerzere Fenster normiert. Nur die absolute Zahl faengt ihn.",
+      "kennung": "zu_kurze_passage",
+      "master": {
+        "anhebung_db": 9.0,
+        "fenster": 3
+      },
+      "quellen": [
+        {
+          "anhebung_db": 9.0,
+          "fenster": 3,
+          "instanz": 2,
+          "mixer": 3,
+          "versatz_fenster": 0,
+          "wahre_ursache": true
+        }
+      ],
+      "ursachenklasse": "quelle_resonanz",
+      "wahrheit": "zu_kurze_passage"
+    },
+    {
+      "erwartet": {
+        "ausschlussgrund": null,
+        "distraktor_ist_alternative": false,
+        "sicherheit_hoechstens": "unklar"
+      },
+      "hinweis": "Kein Kandidat. Die Enthaltung ist das GEWUENSCHTE Ergebnis und zaehlt nicht als Fehlschlag (M-27, §49.4: 'Ein konservatives unsicher ist besser als eine ueberzeugende falsche Ursache.').",
+      "kennung": "daten_reichen_nicht",
+      "master": {
+        "anhebung_db": 9.0,
+        "fenster": 12
+      },
+      "quellen": [],
+      "ursachenklasse": "daten_reichen_nicht",
+      "wahrheit": "keine_ursache"
+    }
+  ]
+}

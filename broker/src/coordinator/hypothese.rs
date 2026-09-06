@@ -1127,6 +1127,57 @@ pub fn hypothesen(aufnahme: &Aufnahme) -> Rechenergebnis {
         })
         .collect();
 
+    // ⚠️ NUR DER FUEHRENDE BEFUND DARF STARK SEIN (M-21).
+    //
+    // „Der Distraktor erzeugt KEINE starke Ursachenbehauptung. Er darf als
+    // Alternative erscheinen." Genau das ist die Lage hier: die Alternativen
+    // sind Kandidaten, die das Ranking NICHT als Ursache ausgewiesen hat —
+    // bei gleichem Material sogar solche, die es gar nicht unterscheiden
+    // konnte. Zwei starke Behauptungen ueber dieselbe Ursache sind dieselbe
+    // Klasse Fehler wie das Parent-Duplikat aus M-22.
+    //
+    // Gefunden hat das der P5-Korpus (Etappe H): die Sitzung
+    // `korrelierter_distraktor` lieferte zwei Kandidaten mit `hoch`, und
+    // genau das ist die falsche starke Behauptung, die §36.4 Satz 1 verbietet.
+    for befund in befunde.iter_mut().skip(1) {
+        if befund.confidence.klasse >= Sicherheitsklasse::Hoch {
+            befund.confidence.klasse = Sicherheitsklasse::Mittel;
+            befund.zustand = zustand_aus_sicherheit(Sicherheitsklasse::Mittel, false);
+        }
+    }
+
+    // ⚠️ EIN UNGETRENNTER ERSTER PLATZ TRAEGT AUCH KEINE STARKE AUSSAGE.
+    //
+    // Der Riegel darueber allein reicht nicht, und der P5-Korpus hat genau
+    // das gezeigt: in `korrelierter_distraktor` sind zwei Kandidaten im
+    // Material NICHT unterscheidbar — gleiches Band, gleiche Anhebung,
+    // gleiche Fenster. Wer dann fuehrt, entscheidet der Gleichstands-
+    // schluessel, die aufsteigende `candidate_source`. Eine starke Aussage
+    // auf diesem Platz behauptet eine Unterscheidung, die die Messung nicht
+    // hergibt; sie waere richtig oder falsch, je nachdem wie die Kennungen
+    // zufaellig liegen. Das ist die „ueberzeugende falsche Ursache" aus
+    // §49.4 und die falsche starke Behauptung aus §36.4 Satz 1.
+    //
+    // GETRENNT heisst: der Abstand ist groesser als das Quantum, in dem
+    // Raenge ueberhaupt verglichen werden (`RANG_QUANTUM`, M-25) — dieselbe
+    // Aufloesung, die auch die Sortierung oben benutzt. Zwei Kandidaten, die
+    // die Sortierung nicht trennen konnte, darf die Sicherheit nicht trennen.
+    // Faellt der Abstand, faellt auch der fuehrende Befund auf `mittel`;
+    // beide bleiben sichtbar, jeder als Alternative des anderen.
+    let getrennt = match ueberlebende.as_slice() {
+        [erster, zweiter, ..] => {
+            let a = (quantisiert(erster.0.rang()) / RANG_QUANTUM).round() as i64;
+            let b = (quantisiert(zweiter.0.rang()) / RANG_QUANTUM).round() as i64;
+            a > b
+        }
+        // Ein einziger Kandidat hat niemanden, von dem er sich abheben muesste.
+        _ => true,
+    };
+    if !getrennt && befunde[0].confidence.klasse >= Sicherheitsklasse::Hoch {
+        befunde[0].confidence.klasse = Sicherheitsklasse::Mittel;
+        befunde[0].zustand = zustand_aus_sicherheit(Sicherheitsklasse::Mittel, false);
+    }
+
     // Der fuehrende Befund traegt die IDs der uebrigen als Alternativen und
     // die Ausschluesse (M-21, M-87). Die uebrigen sind EIGENE Befunde mit
     // eigenem Zustand — nicht sein Anhang.

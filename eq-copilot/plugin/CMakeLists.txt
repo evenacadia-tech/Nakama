@@ -442,6 +442,25 @@ target_link_libraries(EqCopSonde012SourcesModelTest PRIVATE juce::juce_core flat
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
 nakama_kern_anbinden(EqCopSonde012SourcesModelTest)
 
+# ── SONDE-014 Etappe D: die Befundzustaende auf der Gen-Seite (Kanon B28) ──
+# Abnahme U21 bildet die drei Sicherheitsstufen auf drei Zustaende ab, und NUR
+# `READY TO SEND` erlaubt Audition und Draft. Die Abbildung rechnet der Broker;
+# die SPERRE muss dort greifen, wo die Aktion angeboten wird - also hier. Das
+# Ziel bindet denselben handgeschriebenen Leser wie das Produkt und startet
+# weder Broker noch Pipe.
+juce_add_console_app(EqCopSonde014BefundTest
+                     PRODUCT_NAME "eqcop-sonde014-befundtest")
+target_sources(EqCopSonde014BefundTest PRIVATE
+    tests/Sonde014BefundTest.cpp
+    src/SourcesModel.cpp)
+target_include_directories(EqCopSonde014BefundTest PRIVATE src vertrag core)
+target_compile_definitions(EqCopSonde014BefundTest PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0
+    NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3=1)
+target_link_libraries(EqCopSonde014BefundTest PRIVATE juce::juce_core flatbuffers
+    PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+nakama_kern_anbinden(EqCopSonde014BefundTest)
+
 juce_add_console_app(EqCopSonde012ProjectReloadTest
                      PRODUCT_NAME "eqcop-sonde012-projectreloadtest")
 target_sources(EqCopSonde012ProjectReloadTest PRIVATE

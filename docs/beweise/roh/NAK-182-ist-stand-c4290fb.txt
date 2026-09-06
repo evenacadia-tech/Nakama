@@ -1,0 +1,50 @@
+NAK-182 Etappe 1 - Ist-Stand an der Quelle, Basis-SHA c4290fb15ebea9f30ca19772aeb6ed80a68ad2c7
+Rechner: PC, 2026-09-06. Strikt lesend: keine Repo-Datei veraendert, Worktree beim Lauf sauber.
+
+== 1. A25 erzeuge_p4_korpus.py --pruefen ==
+P4-Korpus: 5 Dateien, 22 Faelle in 4 Klassen
+bytegleich
+EXIT=0
+
+== 2. A26 pruefe_p4_korpus.py ==
+P4-Referenzkorpus: 22 Faelle in 4 Klassen
+
+[ok]  referenz    5 Faelle · 4 stark · 1 Enthaltungen · Precision 1.00 · Recall 1.00 · Brier 0.0010 · Coverage 0.80
+[ok]  stereo      6 Faelle · 6 stark · 0 Enthaltungen · Precision 1.00 · Recall 1.00 · Brier 0.0009 · Coverage 1.00
+[ok]  vergleich   6 Faelle · 0 stark · 4 Enthaltungen · Precision 1.00 · Recall 1.00 · Brier 0.1413 · Coverage 0.33
+[ok]  zeitachse   5 Faelle · 5 stark · 0 Enthaltungen · Precision 1.00 · Recall 1.00 · Brier 0.0007 · Coverage 1.00
+
+Gesamt: 22 Faelle · 0 falsche starke Behauptungen · Brier 0.0174 · Kalibrierung 0.0671 · Coverage 0.77 · Enthaltungsrate 0.23
+Exit-Gate P4: alle vier Klassen bestehen, keine falsche starke Behauptung.
+EXIT=0
+
+== 3. Kennzahlen heute gegen R1, und die C6-Falsifikation ==
+Gerechnet aus dem COMMITTETEN Korpus eq-copilot/fixtures/p4-korpus/*.json;
+der Korpus selbst wurde nicht veraendert, die Mutation lebt nur im Speicher.
+--- HEUTE _passt ---
+  gesamt: falsche_starke=0 falsche_schwache=0 []
+  brier=0.0174 (Gate <0.25)  kalibrierung=0.0671 (Gate <=0.15)  coverage=0.77 (Gate >=0.5)
+  referenz   fs=0 fw=0 prec=1.00 rec=1.00 brier=0.0010 cov=0.80
+  stereo     fs=0 fw=0 prec=1.00 rec=1.00 brier=0.0009 cov=1.00
+  vergleich  fs=0 fw=0 prec=1.00 rec=1.00 brier=0.1413 cov=0.33
+  zeitachse  fs=0 fw=0 prec=1.00 rec=1.00 brier=0.0007 cov=1.00
+--- R1 UNSICHERE_WAHRHEITEN ---
+  gesamt: falsche_starke=0 falsche_schwache=2 ['distributed_pair_never_produces_transfer_function', 'insert_probe_is_never_called_master_sum']
+  brier=0.0468 (Gate <0.25)  kalibrierung=0.0506 (Gate <=0.15)  coverage=0.77 (Gate >=0.5)
+  referenz   fs=0 fw=0 prec=1.00 rec=1.00 brier=0.0010 cov=0.80
+  stereo     fs=0 fw=0 prec=1.00 rec=1.00 brier=0.0009 cov=1.00
+  vergleich  fs=0 fw=2 prec=1.00 rec=1.00 brier=0.3912 cov=0.33
+  zeitachse  fs=0 fw=0 prec=1.00 rec=1.00 brier=0.0007 cov=1.00
+
+--- C6-Falsifikation: gate6_incomparable_never_gets_a_strong_winner -> stark (heutiges _passt) ---
+  falsche_starke=0 -> Gate GRUEN | recall=1.0667 (>1 ist unmoeglich)
+  unter R1: falsche_starke=1 ['gate6_incomparable_never_gets_a_strong_winner'] -> Gate ROT
+
+--- recall-Riegel: alle sechs vergleich-Faelle auf stark (heutiges _passt) ---
+  falsche_starke=1 precision=0.83 recall=1.0000
+
+== 4. git status nach dem Lauf ==
+Erwartet sind GENAU die zwei Etappe-1-Dateien; kein Produktcode, kein Test,
+kein Korpus, kein Runner. Fremde uncommittete Dateien wurden nicht angefasst.
+ M docs/beweise/NAK-182.md
+?? docs/beweise/roh/NAK-182-ist-stand-c4290fb.txt

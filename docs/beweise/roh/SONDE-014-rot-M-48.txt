@@ -1,0 +1,59 @@
+SONDE-014 Etappe B - Rotbeweis M-48
+========================================================================
+
+GEWERTETE ZUSAGE
+  experiment_begin.ziel ist ein Fassungsschritt: ein Leser der Fassung 2 lehnt das Feld AB.
+
+RUECKNAHME (broker/src/coordinator/schema.rs)
+--- vorher ---
+        defs["experiment_begin"]["properties"]
+            .as_object_mut()
+            .expect("experiment_begin-properties ist ein Objekt")
+            .remove("ziel");
+--- nachher ---
+        // ROTBEWEIS M-48: der Rueckbau laesst `ziel` stehen.
+        let _ = &defs["experiment_begin"];
+
+LAUF MIT RUECKNAHME - A4:schema
+  Exit 101
+running 8 tests
+test coordinator::schema::fassungsleiter_tests::unbekannte_fassung_hat_keinen_leser ... ok
+test coordinator::schema::fassungsleiter_tests::fassung_2_liste_deckt_sich_mit_dem_register ... ok
+test coordinator::schema::fassungsleiter_tests::fassung_3_liste_deckt_sich_mit_dem_register ... ok
+test coordinator::schema::fassungsleiter_tests::geschlossene_mengen_der_fassung_3_stehen_je_einmal_im_vertrag ... ok
+test coordinator::schema::fassungsleiter_tests::minor_0_erbt_den_rueckbau_der_fassung_1 ... ok
+test coordinator::schema::fassungsleiter_tests::fassung_1_und_0_erben_den_rueckbau_der_fassung_3 ... ok
+test coordinator::schema::fassungsleiter_tests::minor_2_leser_lehnt_die_fassung_3_ab ... FAILED
+test coordinator::schema::fassungsleiter_tests::minor_1_leser_lehnt_die_fassung_2_ab ... FAILED
+failures:
+---- coordinator::schema::fassungsleiter_tests::minor_2_leser_lehnt_die_fassung_3_ab stdout ----
+thread 'coordinator::schema::fassungsleiter_tests::minor_2_leser_lehnt_die_fassung_3_ab' (18776) panicked at src\coordinator\schema.rs:310:18:
+eingefrorenes v3-Minor-2-Schema ist unterstuetzt: "haengende Referenz bei #/$defs/experiment_begin/properties/ziel: #/$defs/experiment_ziel hat kein Ziel"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+---- coordinator::schema::fassungsleiter_tests::minor_1_leser_lehnt_die_fassung_2_ab stdout ----
+thread 'coordinator::schema::fassungsleiter_tests::minor_1_leser_lehnt_die_fassung_2_ab' (17072) panicked at src\coordinator\schema.rs:310:18:
+eingefrorenes v3-Minor-2-Schema ist unterstuetzt: "haengende Referenz bei #/$defs/experiment_begin/properties/ziel: #/$defs/experiment_ziel hat kein Ziel"
+failures:
+    coordinator::schema::fassungsleiter_tests::minor_1_leser_lehnt_die_fassung_2_ab
+    coordinator::schema::fassungsleiter_tests::minor_2_leser_lehnt_die_fassung_3_ab
+test result: FAILED. 6 passed; 2 failed; 0 ignored; 0 measured; 199 filtered out; finished in 0.01s
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.98s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+error: test failed, to rerun pass `--lib`
+
+LAUF NACH RUECKNAHME RUECKGAENGIG - A4:schema
+  Exit 0
+running 8 tests
+test coordinator::schema::fassungsleiter_tests::unbekannte_fassung_hat_keinen_leser ... ok
+test coordinator::schema::fassungsleiter_tests::fassung_2_liste_deckt_sich_mit_dem_register ... ok
+test coordinator::schema::fassungsleiter_tests::fassung_3_liste_deckt_sich_mit_dem_register ... ok
+test coordinator::schema::fassungsleiter_tests::geschlossene_mengen_der_fassung_3_stehen_je_einmal_im_vertrag ... ok
+... (3 Zeilen ausgelassen) ...
+test coordinator::schema::fassungsleiter_tests::minor_1_leser_lehnt_die_fassung_2_ab ... ok
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 199 filtered out; finished in 0.02s
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.86s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+URTEIL: ROT mit Ruecknahme, GRUEN ohne - Rotbeweis gilt.

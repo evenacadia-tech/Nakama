@@ -1,0 +1,108 @@
+SONDE-014 Etappe B - Rotbeweis M-77
+========================================================================
+
+GEWERTETE ZUSAGE
+  Dieselbe geschlossene Menge in BEIDEN Sprachen: die Rollenmenge lebt an genau einer Vertragsstelle, und beide Leser pruefen gegen sie.
+
+RUECKNAHME (broker/src/coordinator/intent.rs)
+--- vorher ---
+pub(crate) const ROLLEN: [&str; 5] = [
+    "fuehrt",
+    "traegt",
+    "begleitet",
+    "geschuetzt",
+    "verschmolzen",
+];
+--- nachher ---
+// ROTBEWEIS M-77: der Rust-Leser fuehrt eine EIGENE, groessere Menge.
+pub(crate) const ROLLEN: [&str; 6] = [
+    "fuehrt",
+    "traegt",
+    "begleitet",
+    "geschuetzt",
+    "verschmolzen",
+    "impuls",
+];
+
+LAUF MIT RUECKNAHME - A4:lib
+  Exit 101
+running 209 tests
+test aggregat::tests::profilfilter_laesst_fremde_sensoren_nie_still_hinein ... ok
+test aggregat::tests::schnittfenster_und_paare_im_dokument ... ok
+test aggregat::tests::filter_trennt_prozesse_und_v1_bekommt_warnung ... ok
+test coordinator::intent::tests::zyklenriegel_trennt_kette_runde_und_gleichrangigkeit ... ok
+... (194 Zeilen ausgelassen) ...
+test transport::server_v3::tests::p0_ueberlauf_trennt_die_verbindung ... ok
+test transport::server_v3::tests::subscription_cleanup_vor_weiterem_push ... ok
+test transport::server_v3::tests::trennreihenfolge_je_callback_genau_einmal ... ok
+test transport::server_v3::tests::stop_im_fenster_vor_der_bedienung_haengt_nicht ... ok
+test transport::server_v3::tests::welcome_folgt_dem_abgeschlossenen_control_verbunden ... ok
+test transport::server_v3::tests::telemetrie_endet_zuerst_control_getrennt_folgt_trotzdem ... ok
+test transport::server_v3::tests::trennreihenfolge_haelt_im_kopplungs_callback_fenster ... ok
+test transport::server_v3::tests::abgeloestes_telemetrie_getrennt_haelt_control_getrennt_nicht_auf ... ok
+test transport::server_v3::tests::abgeloestes_telemetrie_gekoppelt_laesst_control_getrennt_nicht_warten ... ok
+test transport::server_v3::tests::stoppen_endet_auch_bei_haengendem_lebenszyklusaufruf ... ok
+test transport::server_v3::tests::stoppen_endet_auch_bei_haengender_senke ... ok
+failures:
+---- coordinator::intent::tests::geschlossene_mengen_des_lesers_decken_sich_mit_dem_vertrag stdout ----
+thread 'coordinator::intent::tests::geschlossene_mengen_des_lesers_decken_sich_mit_dem_vertrag' (19720) panicked at src\coordinator\intent.rs:536:9:
+assertion `left == right` failed: die Rollenmenge des Lesers weicht vom Vertrag ab
+  left: ["fuehrt", "traegt", "begleitet", "geschuetzt", "verschmolzen", "impuls"]
+ right: ["fuehrt", "traegt", "begleitet", "geschuetzt", "verschmolzen"]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+failures:
+    coordinator::intent::tests::geschlossene_mengen_des_lesers_decken_sich_mit_dem_vertrag
+test result: FAILED. 208 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.33s
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.03s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+error: test failed, to rerun pass `--lib`
+
+LAUF MIT RUECKNAHME - A4:sonde014_verdrahtung
+  Exit 0
+running 11 tests
+test fremde_adresse_wird_abgewiesen ... ok
+test keine_rechnung_vor_der_vollstaendigkeitsmarke ... ok
+test sitzungsende_loescht_den_spiegel ... ok
+test entmaskierungsveto_wirkt_im_spiegel_wie_im_main ... ok
+test teilmeldung_mit_mehreren_objekten_wird_abgewiesen ... ok
+test angenommene_und_abgewiesene_meldungen_sind_zaehlbar ... ok
+test assistant_step_update_koalesziert_je_session ... ok
+test intent_update_koalesziert_je_quelle_und_scope ... ok
+test consumerregeln_des_intents_fallen_einzeln ... ok
+test intent_update_unter_der_fassung_zwei_wird_abgewiesen ... ok
+test spiegel_weicht_dem_neueren_main_schritt ... ok
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.24s
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.86s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+
+LAUF NACH RUECKNAHME RUECKGAENGIG - A4:lib
+  Exit 0
+running 209 tests
+test aggregat::tests::profilfilter_laesst_fremde_sensoren_nie_still_hinein ... ok
+test aggregat::tests::schnittfenster_und_paare_im_dokument ... ok
+test aggregat::tests::filter_trennt_prozesse_und_v1_bekommt_warnung ... ok
+test coordinator::intent::tests::zyklenriegel_trennt_kette_runde_und_gleichrangigkeit ... ok
+... (204 Zeilen ausgelassen) ...
+test transport::server_v3::tests::stoppen_endet_auch_bei_haengender_senke ... ok
+test result: ok. 209 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.35s
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.94s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+LAUF NACH RUECKNAHME RUECKGAENGIG - A4:sonde014_verdrahtung
+  Exit 0
+running 11 tests
+test teilmeldung_mit_mehreren_objekten_wird_abgewiesen ... ok
+test fremde_adresse_wird_abgewiesen ... ok
+test entmaskierungsveto_wirkt_im_spiegel_wie_im_main ... ok
+test sitzungsende_loescht_den_spiegel ... ok
+... (6 Zeilen ausgelassen) ...
+test spiegel_weicht_dem_neueren_main_schritt ... ok
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.25s
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.75s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+
+URTEIL: ROT mit Ruecknahme (gefallen: A4:lib), GRUEN ohne - Rotbeweis gilt.

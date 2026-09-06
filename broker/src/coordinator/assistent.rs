@@ -37,7 +37,7 @@ use super::*;
 /// Schritt mit `preview` ist in P5 ein **Lesefehler**, kein stiller Sprung
 /// (E-07, M-55). Ihn hier wegzulassen hiesse, ihn in P6 neu erfinden zu
 /// muessen.
-pub(super) const SCHRITTE: [&str; 8] = [
+pub(crate) const SCHRITTE: [&str; 8] = [
     "coverage",
     "finding",
     "evidence",

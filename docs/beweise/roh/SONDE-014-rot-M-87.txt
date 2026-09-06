@@ -1,0 +1,109 @@
+SONDE-014 Etappe B - Rotbeweis M-87
+========================================================================
+
+GEWERTETE ZUSAGE
+  Die acht Ausschlussgruende sind eine GESCHLOSSENE Menge an genau einer Vertragsstelle, beidseitig geprueft.
+
+RUECKNAHME (eq-copilot/schemas/v3/eq-ipc-v3.schema.json)
+--- vorher ---
+"passage_zu_kurz",
+        "intent_veto_geschuetzt",
+--- nachher ---
+"passage_zu_kurz",
+        "passt_nicht",
+        "intent_veto_geschuetzt",
+
+LAUF MIT RUECKNAHME - A5
+  Exit 2
+jsonschema 4.26.0 (draft 2020-12)
+113 Definitionen, 26 Nachrichtenfamilien, 385 Fixtures
+Pruefungen: 593 bestanden, 2 gescheitert
+  ROT: ausschlussgruende_sind_eine_geschlossene_achtermenge
+  ROT: ungueltig/finding-ausschlussgrund-unbekannt.json: jsonschema sagt gueltig, Manifest erwartet ungueltig
+Abdeckung je Schluesselwort (mit Negativfixture / vorhanden).
+HART sind nur enum und const: dort ist ein falscher Wert ein echtes
+Produktrisiko. Die uebrigen Quoten stehen hier VOLLSTAENDIG, damit
+Unterabdeckung sichtbar bleibt statt still zu sein.
+  additionalProperties     28 / 90  
+  const                    16 / 16   HART
+  enum                     50 / 50   HART
+  exclusiveMinimum          3 / 3   
+  items                     8 / 34  
+  maxItems                  4 / 34  
+  maxLength                 6 / 33  
+  maxProperties             2 / 3   
+  maximum                  13 / 59  
+  minItems                  5 / 34  
+  minLength                 8 / 26  
+  minimum                  14 / 101 
+  oneOf                    11 / 17  
+  pattern                   5 / 13  
+  required                 64 / 443 
+  type                     14 / 318 
+$defs ohne Negativfixture: keine
+C:\Users\phili\Projekte\Nakama\tools\eq-copilot\pruefe_v3_vertrag.py:2021: DeprecationWarning: Accessing jsonschema.__version__ is deprecated and will be removed in a future release. Use importlib.metadata directly to query for jsonschema's version.
+  print(f"jsonschema {jsonschema.__version__} (draft 2020-12)")
+
+LAUF MIT RUECKNAHME - A4:lib
+  Exit 101
+running 209 tests
+test aggregat::tests::profilfilter_laesst_fremde_sensoren_nie_still_hinein ... ok
+test aggregat::tests::schnittfenster_und_paare_im_dokument ... ok
+test aggregat::tests::filter_trennt_prozesse_und_v1_bekommt_warnung ... ok
+test coordinator::intent::tests::zyklenriegel_trennt_kette_runde_und_gleichrangigkeit ... ok
+... (194 Zeilen ausgelassen) ...
+test transport::server_v3::tests::p0_ueberlauf_trennt_die_verbindung ... ok
+test transport::server_v3::tests::subscription_cleanup_vor_weiterem_push ... ok
+test transport::server_v3::tests::trennreihenfolge_je_callback_genau_einmal ... ok
+test transport::server_v3::tests::stop_im_fenster_vor_der_bedienung_haengt_nicht ... ok
+test transport::server_v3::tests::welcome_folgt_dem_abgeschlossenen_control_verbunden ... ok
+test transport::server_v3::tests::telemetrie_endet_zuerst_control_getrennt_folgt_trotzdem ... ok
+test transport::server_v3::tests::trennreihenfolge_haelt_im_kopplungs_callback_fenster ... ok
+test transport::server_v3::tests::abgeloestes_telemetrie_gekoppelt_laesst_control_getrennt_nicht_warten ... ok
+test transport::server_v3::tests::abgeloestes_telemetrie_getrennt_haelt_control_getrennt_nicht_auf ... ok
+test transport::server_v3::tests::stoppen_endet_auch_bei_haengendem_lebenszyklusaufruf ... ok
+test transport::server_v3::tests::stoppen_endet_auch_bei_haengender_senke ... ok
+failures:
+---- coordinator::schema::fassungsleiter_tests::geschlossene_mengen_der_fassung_3_stehen_je_einmal_im_vertrag stdout ----
+thread 'coordinator::schema::fassungsleiter_tests::geschlossene_mengen_der_fassung_3_stehen_je_einmal_im_vertrag' (3828) panicked at src\coordinator\schema.rs:498:9:
+assertion `left == right` failed: R4: acht Ausschlussgruende
+  left: 9
+ right: 8
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+failures:
+    coordinator::schema::fassungsleiter_tests::geschlossene_mengen_der_fassung_3_stehen_je_einmal_im_vertrag
+test result: FAILED. 208 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.34s
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.92s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+error: test failed, to rerun pass `--lib`
+
+LAUF NACH RUECKNAHME RUECKGAENGIG - A5
+  Exit 0
+jsonschema 4.26.0 (draft 2020-12)
+113 Definitionen, 26 Nachrichtenfamilien, 385 Fixtures
+Pruefungen: 595 bestanden, 0 gescheitert
+Abdeckung je Schluesselwort (mit Negativfixture / vorhanden).
+HART sind nur enum und const: dort ist ein falscher Wert ein echtes
+... (16 Zeilen ausgelassen) ...
+  required                 64 / 443 
+  type                     14 / 318 
+$defs ohne Negativfixture: keine
+C:\Users\phili\Projekte\Nakama\tools\eq-copilot\pruefe_v3_vertrag.py:2021: DeprecationWarning: Accessing jsonschema.__version__ is deprecated and will be removed in a future release. Use importlib.metadata directly to query for jsonschema's version.
+  print(f"jsonschema {jsonschema.__version__} (draft 2020-12)")
+
+LAUF NACH RUECKNAHME RUECKGAENGIG - A4:lib
+  Exit 0
+running 209 tests
+test aggregat::tests::profilfilter_laesst_fremde_sensoren_nie_still_hinein ... ok
+test aggregat::tests::schnittfenster_und_paare_im_dokument ... ok
+test aggregat::tests::filter_trennt_prozesse_und_v1_bekommt_warnung ... ok
+test coordinator::intent::tests::zyklenriegel_trennt_kette_runde_und_gleichrangigkeit ... ok
+... (204 Zeilen ausgelassen) ...
+test transport::server_v3::tests::stoppen_endet_auch_bei_haengender_senke ... ok
+test result: ok. 209 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.35s
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.17s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+URTEIL: ROT mit Ruecknahme, GRUEN ohne - Rotbeweis gilt.

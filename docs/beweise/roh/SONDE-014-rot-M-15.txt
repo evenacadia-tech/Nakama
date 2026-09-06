@@ -1,0 +1,78 @@
+SONDE-014 Etappe B - Rotbeweis M-15
+========================================================================
+
+GEWERTETE ZUSAGE
+  Der Befund traegt die zehn Felder aus Entwurf Paragraph 36.3, und das Objekt ist STRIKT - ein Belegtextfeld faellt.
+
+RUECKNAHME (eq-copilot/schemas/v3/eq-ipc-v3.schema.json)
+--- vorher ---
+"zustand", "intent_revision", "likely_cause", "smallest_test", "listen_for"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "finding_id": { "$ref": "#/$defs/hex32" },
+--- nachher ---
+"zustand", "intent_revision", "likely_cause", "smallest_test", "listen_for"
+      ],
+      "additionalProperties": true,
+      "properties": {
+
+
+LAUF MIT RUECKNAHME - A5
+  Exit 2
+jsonschema 4.26.0 (draft 2020-12)
+113 Definitionen, 26 Nachrichtenfamilien, 385 Fixtures
+Pruefungen: 592 bestanden, 4 gescheitert
+  ROT: additives Objekt #/$defs/session_finding ohne maxProperties
+  ROT: causehypothesis_traegt_die_zehn_felder_aus_36_3
+  ROT: ungueltig/finding-belegtext-statt-zone.json: jsonschema sagt gueltig, Manifest erwartet ungueltig
+  ROT: ungueltig/finding-vierte-anzeigezeile.json: jsonschema sagt gueltig, Manifest erwartet ungueltig
+Abdeckung je Schluesselwort (mit Negativfixture / vorhanden).
+HART sind nur enum und const: dort ist ein falscher Wert ein echtes
+Produktrisiko. Die uebrigen Quoten stehen hier VOLLSTAENDIG, damit
+Unterabdeckung sichtbar bleibt statt still zu sein.
+  additionalProperties     28 / 90  
+  const                    16 / 16   HART
+  enum                     50 / 50   HART
+  exclusiveMinimum          3 / 3   
+  items                     8 / 34  
+  maxItems                  4 / 34  
+  maxLength                 6 / 33  
+  maxProperties             2 / 3   
+  maximum                  13 / 59  
+  minItems                  5 / 34  
+  minLength                 8 / 26  
+  minimum                  14 / 101 
+  oneOf                    11 / 17  
+  pattern                   5 / 13  
+  required                 64 / 443 
+  type                     14 / 318 
+$defs ohne Negativfixture: keine
+C:\Users\phili\Projekte\Nakama\tools\eq-copilot\pruefe_v3_vertrag.py:2021: DeprecationWarning: Accessing jsonschema.__version__ is deprecated and will be removed in a future release. Use importlib.metadata directly to query for jsonschema's version.
+  print(f"jsonschema {jsonschema.__version__} (draft 2020-12)")
+
+LAUF MIT RUECKNAHME - A8
+  Exit 0
+104 gueltige, 281 ungueltige Fixtures
+  bytegleich: 389 Dateien, MANIFEST sha256=6bf8645fc13657226e4b475b0db26c04455d5036863ac9f4d81f70a9531fc12e
+
+LAUF NACH RUECKNAHME RUECKGAENGIG - A5
+  Exit 0
+jsonschema 4.26.0 (draft 2020-12)
+113 Definitionen, 26 Nachrichtenfamilien, 385 Fixtures
+Pruefungen: 595 bestanden, 0 gescheitert
+Abdeckung je Schluesselwort (mit Negativfixture / vorhanden).
+HART sind nur enum und const: dort ist ein falscher Wert ein echtes
+... (16 Zeilen ausgelassen) ...
+  required                 64 / 443 
+  type                     14 / 318 
+$defs ohne Negativfixture: keine
+C:\Users\phili\Projekte\Nakama\tools\eq-copilot\pruefe_v3_vertrag.py:2021: DeprecationWarning: Accessing jsonschema.__version__ is deprecated and will be removed in a future release. Use importlib.metadata directly to query for jsonschema's version.
+  print(f"jsonschema {jsonschema.__version__} (draft 2020-12)")
+
+LAUF NACH RUECKNAHME RUECKGAENGIG - A8
+  Exit 0
+104 gueltige, 281 ungueltige Fixtures
+  bytegleich: 389 Dateien, MANIFEST sha256=6bf8645fc13657226e4b475b0db26c04455d5036863ac9f4d81f70a9531fc12e
+
+URTEIL: ROT mit Ruecknahme (gefallen: A5), GRUEN ohne - Rotbeweis gilt.

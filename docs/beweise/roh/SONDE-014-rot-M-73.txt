@@ -1,0 +1,59 @@
+SONDE-014 Etappe B - Rotbeweis M-73
+========================================================================
+
+GEWERTETE ZUSAGE
+  `draft_offer` reist als P1 mit Schluessel, `user_verdict` als persistenzpflichtiger P0 - und der koalesziert NICHT.
+
+RUECKNAHME (eq-copilot/schemas/v3/reservierte-nachrichten-v1.json)
+--- vorher ---
+"name": "user_verdict",
+      "eigentuemer": "SONDE-014 (P5)",
+--- nachher ---
+"name": "user_verdict",
+      "eigentuemer": "SONDE-016 (P7)",
+
+LAUF MIT RUECKNAHME - A5
+  Exit 2
+jsonschema 4.26.0 (draft 2020-12)
+113 Definitionen, 26 Nachrichtenfamilien, 385 Fixtures
+Pruefungen: 594 bestanden, 1 gescheitert
+  ROT: sonde014_belegt_nur_die_eigenen_reservierungen
+Abdeckung je Schluesselwort (mit Negativfixture / vorhanden).
+HART sind nur enum und const: dort ist ein falscher Wert ein echtes
+Produktrisiko. Die uebrigen Quoten stehen hier VOLLSTAENDIG, damit
+Unterabdeckung sichtbar bleibt statt still zu sein.
+  additionalProperties     28 / 90  
+  const                    16 / 16   HART
+  enum                     50 / 50   HART
+  exclusiveMinimum          3 / 3   
+  items                     8 / 34  
+  maxItems                  4 / 34  
+  maxLength                 6 / 33  
+  maxProperties             2 / 3   
+  maximum                  13 / 59  
+  minItems                  5 / 34  
+  minLength                 8 / 26  
+  minimum                  14 / 101 
+  oneOf                    11 / 17  
+  pattern                   5 / 13  
+  required                 64 / 443 
+  type                     14 / 318 
+$defs ohne Negativfixture: keine
+C:\Users\phili\Projekte\Nakama\tools\eq-copilot\pruefe_v3_vertrag.py:2021: DeprecationWarning: Accessing jsonschema.__version__ is deprecated and will be removed in a future release. Use importlib.metadata directly to query for jsonschema's version.
+  print(f"jsonschema {jsonschema.__version__} (draft 2020-12)")
+
+LAUF NACH RUECKNAHME RUECKGAENGIG - A5
+  Exit 0
+jsonschema 4.26.0 (draft 2020-12)
+113 Definitionen, 26 Nachrichtenfamilien, 385 Fixtures
+Pruefungen: 595 bestanden, 0 gescheitert
+Abdeckung je Schluesselwort (mit Negativfixture / vorhanden).
+HART sind nur enum und const: dort ist ein falscher Wert ein echtes
+... (16 Zeilen ausgelassen) ...
+  required                 64 / 443 
+  type                     14 / 318 
+$defs ohne Negativfixture: keine
+C:\Users\phili\Projekte\Nakama\tools\eq-copilot\pruefe_v3_vertrag.py:2021: DeprecationWarning: Accessing jsonschema.__version__ is deprecated and will be removed in a future release. Use importlib.metadata directly to query for jsonschema's version.
+  print(f"jsonschema {jsonschema.__version__} (draft 2020-12)")
+
+URTEIL: ROT mit Ruecknahme, GRUEN ohne - Rotbeweis gilt.

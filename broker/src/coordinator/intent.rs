@@ -80,7 +80,7 @@ pub struct IntentBestand {
 /// Wahrheit: `geschlossene_mengen_der_fassung_3_stehen_je_einmal_im_vertrag`
 /// haelt sie gegen `$defs/intent_rolle` des eingefrorenen Schemas, und das
 /// C++-Bein B27 misst dieselbe Menge auf seiner Seite (M-01, M-77).
-pub(super) const ROLLEN: [&str; 5] = [
+pub(crate) const ROLLEN: [&str; 5] = [
     "fuehrt",
     "traegt",
     "begleitet",
@@ -496,5 +496,112 @@ impl Coordinator {
     pub(super) fn intent_spiegel_leeren_locked(stand: &mut Stand, session: &SessionKey) {
         stand.intent.remove(session);
         stand.assistent.remove(session);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// **M-77, der Riegel gegen die zweite Kopie.**
+    ///
+    /// `ROLLEN` und `SCHRITTE` sind Kopien geschlossener Mengen, die im
+    /// eingefrorenen Schema stehen. Genau solche Kopien sind in diesem
+    /// Projekt schon auseinandergelaufen (T2-Runde 2, BF-5: drei
+    /// handgepflegte Listen derselben Sache). Dieselbe Form wie
+    /// `p2_reject_katalog_stimmt_mit_dem_strikten_wire_schema`: die Abweichung
+    /// faellt HIER und nicht an einem Fixture, das zufaellig darauf zielt.
+    ///
+    /// Ohne diesen Test waere „die Menge lebt an genau einer Stelle im
+    /// Vertrag" eine Behauptung: ein Leser mit einer sechsten Rolle nimmt
+    /// jedes gueltige Fixture an und faellt an keinem einzigen.
+    #[test]
+    fn geschlossene_mengen_des_lesers_decken_sich_mit_dem_vertrag() {
+        let schema: Value = serde_json::from_str(include_str!(
+            "../../../eq-copilot/schemas/v3/eq-ipc-v3.schema.json"
+        ))
+        .unwrap();
+
+        let aus_vertrag = |name: &str| -> Vec<String> {
+            schema["$defs"][name]["enum"]
+                .as_array()
+                .unwrap_or_else(|| panic!("{name} traegt kein enum"))
+                .iter()
+                .filter_map(|w| w.as_str().map(str::to_owned))
+                .collect()
+        };
+
+        assert_eq!(
+            ROLLEN.iter().map(|s| s.to_string()).collect::<Vec<_>>(),
+            aus_vertrag("intent_rolle"),
+            "die Rollenmenge des Lesers weicht vom Vertrag ab"
+        );
+        assert_eq!(
+            super::super::assistent::SCHRITTE
+                .iter()
+                .map(|s| s.to_string())
+                .collect::<Vec<_>>(),
+            aus_vertrag("assistant_schritt"),
+            "die Schrittmenge des Lesers weicht vom Vertrag ab"
+        );
+    }
+
+    /// Der Zyklenriegel, pur. Er laeuft auch im Leser, dessen Kantenzahl eine
+    /// EINGABE ist — deshalb iterativ und nicht rekursiv (NAK-175).
+    #[test]
+    fn zyklenriegel_trennt_kette_runde_und_gleichrangigkeit() {
+        let kante = |a: &str, b: &str, art: &str| ((a.to_string(), b.to_string()), art.to_string());
+
+        let leer: BTreeMap<(String, String), String> = BTreeMap::new();
+        assert!(!hat_zyklus(&leer));
+
+        let kette: BTreeMap<_, _> = [
+            kante("a", "b", "fuehrt_vor"),
+            kante("b", "c", "fuehrt_vor"),
+        ]
+        .into_iter()
+        .collect();
+        assert!(!hat_zyklus(&kette));
+
+        let runde: BTreeMap<_, _> = [
+            kante("a", "b", "fuehrt_vor"),
+            kante("b", "c", "fuehrt_vor"),
+            kante("c", "a", "fuehrt_vor"),
+        ]
+        .into_iter()
+        .collect();
+        assert!(hat_zyklus(&runde));
+
+        // Dieselbe Runde mit einer als `gleichrangig` MARKIERTEN Kante ist
+        // kein Zyklus - das ist der von Paragraph 37.2 verlangte Ausweg.
+        let aufgeloest: BTreeMap<_, _> = [
+            kante("a", "b", "fuehrt_vor"),
+            kante("b", "c", "fuehrt_vor"),
+            kante("c", "a", "gleichrangig"),
+        ]
+        .into_iter()
+        .collect();
+        assert!(!hat_zyklus(&aufgeloest));
+
+        // `darf_verschmelzen` ist keine Prioritaetskante.
+        let verschmelzung: BTreeMap<_, _> = [
+            kante("a", "b", "darf_verschmelzen"),
+            kante("b", "a", "darf_verschmelzen"),
+        ]
+        .into_iter()
+        .collect();
+        assert!(!hat_zyklus(&verschmelzung));
+
+        // Zwei getrennte Komponenten, von denen NUR die zweite eine Runde
+        // traegt: eine Tiefensuche, die nach der ersten Komponente aufhoert,
+        // faellt hier.
+        let zwei: BTreeMap<_, _> = [
+            kante("a", "b", "fuehrt_vor"),
+            kante("x", "y", "fuehrt_vor"),
+            kante("y", "x", "fuehrt_vor"),
+        ]
+        .into_iter()
+        .collect();
+        assert!(hat_zyklus(&zwei));
     }
 }

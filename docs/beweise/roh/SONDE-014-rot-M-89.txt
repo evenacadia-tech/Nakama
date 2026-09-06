@@ -1,0 +1,63 @@
+SONDE-014 Etappe B - Rotbeweis M-89
+========================================================================
+
+GEWERTETE ZUSAGE
+  Der Spiegel ist VERSIONIERT im append-only Log und NIE autoritativ.
+
+RUECKNAHME (broker/src/coordinator/assistent.rs)
+--- vorher ---
+        event.event_type = "assistant_step".into();
+        if store.append(vec![event]).is_err() {
+--- nachher ---
+        // ROTBEWEIS M-89: der Schritt wird nicht gespiegelt.
+        event.event_type = "assistant_step".into();
+        if true {
+            return true;
+        }
+        if store.append(vec![event]).is_err() {
+
+LAUF MIT RUECKNAHME - A4:sonde014_verdrahtung
+  Exit 101
+running 11 tests
+test keine_rechnung_vor_der_vollstaendigkeitsmarke ... ok
+test fremde_adresse_wird_abgewiesen ... ok
+test entmaskierungsveto_wirkt_im_spiegel_wie_im_main ... ok
+test teilmeldung_mit_mehreren_objekten_wird_abgewiesen ... ok
+test sitzungsende_loescht_den_spiegel ... ok
+test angenommene_und_abgewiesene_meldungen_sind_zaehlbar ... ok
+test assistant_step_update_koalesziert_je_session ... ok
+test intent_update_koalesziert_je_quelle_und_scope ... ok
+test consumerregeln_des_intents_fallen_einzeln ... ok
+test intent_update_unter_der_fassung_zwei_wird_abgewiesen ... ok
+test spiegel_weicht_dem_neueren_main_schritt ... FAILED
+failures:
+---- spiegel_weicht_dem_neueren_main_schritt stdout ----
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde014-schrittspiegel-19268-f8a4a85a30bd48d7a11e0530a3045596\nakama-broker.sqlite3
+thread 'spiegel_weicht_dem_neueren_main_schritt' (10152) panicked at tests\sonde014_verdrahtung.rs:575:5:
+assertion `left == right` failed: beide Schrittfassungen stehen im append-only Log
+  left: 0
+ right: 2
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+failures:
+    spiegel_weicht_dem_neueren_main_schritt
+test result: FAILED. 10 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.12s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+error: test failed, to rerun pass `--test sonde014_verdrahtung`
+
+LAUF NACH RUECKNAHME RUECKGAENGIG - A4:sonde014_verdrahtung
+  Exit 0
+running 11 tests
+test fremde_adresse_wird_abgewiesen ... ok
+test teilmeldung_mit_mehreren_objekten_wird_abgewiesen ... ok
+test keine_rechnung_vor_der_vollstaendigkeitsmarke ... ok
+test angenommene_und_abgewiesene_meldungen_sind_zaehlbar ... ok
+... (6 Zeilen ausgelassen) ...
+test spiegel_weicht_dem_neueren_main_schritt ... ok
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.25s
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.76s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+
+URTEIL: ROT mit Ruecknahme, GRUEN ohne - Rotbeweis gilt.

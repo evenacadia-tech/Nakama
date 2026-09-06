@@ -1,0 +1,107 @@
+SONDE-014 Etappe B - Rotbeweis M-40
+========================================================================
+
+GEWERTETE ZUSAGE
+  session_snapshot.findings ist ein Fassungsschritt: ein Leser der Fassung 2 lehnt das Feld AB, statt es still zu ignorieren.
+
+RUECKNAHME (broker/src/coordinator/schema.rs)
+--- vorher ---
+        defs["session_snapshot"]["properties"]
+            .as_object_mut()
+            .expect("session_snapshot-properties ist ein Objekt")
+            .remove("findings");
+--- nachher ---
+        // ROTBEWEIS M-40: der Rueckbau laesst `findings` stehen - der
+        // Leser der Fassung 2 nimmt es damit still an.
+        let _ = &defs["session_snapshot"];
+
+LAUF MIT RUECKNAHME - A4:schema
+  Exit 101
+running 8 tests
+test coordinator::schema::fassungsleiter_tests::unbekannte_fassung_hat_keinen_leser ... ok
+test coordinator::schema::fassungsleiter_tests::fassung_2_liste_deckt_sich_mit_dem_register ... ok
+test coordinator::schema::fassungsleiter_tests::fassung_3_liste_deckt_sich_mit_dem_register ... ok
+test coordinator::schema::fassungsleiter_tests::geschlossene_mengen_der_fassung_3_stehen_je_einmal_im_vertrag ... ok
+... (3 Zeilen ausgelassen) ...
+test coordinator::schema::fassungsleiter_tests::minor_1_leser_lehnt_die_fassung_2_ab ... FAILED
+failures:
+---- coordinator::schema::fassungsleiter_tests::minor_0_erbt_den_rueckbau_der_fassung_1 stdout ----
+thread 'coordinator::schema::fassungsleiter_tests::minor_0_erbt_den_rueckbau_der_fassung_1' (15244) panicked at src\coordinator\schema.rs:303:18:
+eingefrorenes v3-Minor-0-Schema ist unterstuetzt: "haengende Referenz bei #/$defs/session_snapshot/properties/findings/items: #/$defs/session_finding hat kein Ziel"
+---- coordinator::schema::fassungsleiter_tests::fassung_1_und_0_erben_den_rueckbau_der_fassung_3 stdout ----
+thread 'coordinator::schema::fassungsleiter_tests::fassung_1_und_0_erben_den_rueckbau_der_fassung_3' (14316) panicked at src\coordinator\schema.rs:307:18:
+eingefrorenes v3-Minor-1-Schema ist unterstuetzt: "haengende Referenz bei #/$defs/session_snapshot/properties/findings/items: #/$defs/session_finding hat kein Ziel"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+---- coordinator::schema::fassungsleiter_tests::minor_2_leser_lehnt_die_fassung_3_ab stdout ----
+thread 'coordinator::schema::fassungsleiter_tests::minor_2_leser_lehnt_die_fassung_3_ab' (10256) panicked at src\coordinator\schema.rs:311:18:
+eingefrorenes v3-Minor-2-Schema ist unterstuetzt: "haengende Referenz bei #/$defs/session_snapshot/properties/findings/items: #/$defs/session_finding hat kein Ziel"
+---- coordinator::schema::fassungsleiter_tests::minor_1_leser_lehnt_die_fassung_2_ab stdout ----
+thread 'coordinator::schema::fassungsleiter_tests::minor_1_leser_lehnt_die_fassung_2_ab' (22092) panicked at src\coordinator\schema.rs:307:18:
+eingefrorenes v3-Minor-1-Schema ist unterstuetzt: "haengende Referenz bei #/$defs/session_snapshot/properties/findings/items: #/$defs/session_finding hat kein Ziel"
+failures:
+    coordinator::schema::fassungsleiter_tests::fassung_1_und_0_erben_den_rueckbau_der_fassung_3
+    coordinator::schema::fassungsleiter_tests::minor_0_erbt_den_rueckbau_der_fassung_1
+    coordinator::schema::fassungsleiter_tests::minor_1_leser_lehnt_die_fassung_2_ab
+    coordinator::schema::fassungsleiter_tests::minor_2_leser_lehnt_die_fassung_3_ab
+test result: FAILED. 4 passed; 4 failed; 0 ignored; 0 measured; 199 filtered out; finished in 0.01s
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.07s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+error: test failed, to rerun pass `--lib`
+
+LAUF MIT RUECKNAHME - A4:sonde014_verdrahtung
+  Exit 101
+running 11 tests
+test keine_rechnung_vor_der_vollstaendigkeitsmarke ... ok
+test fremde_adresse_wird_abgewiesen ... ok
+test teilmeldung_mit_mehreren_objekten_wird_abgewiesen ... ok
+test sitzungsende_loescht_den_spiegel ... ok
+test entmaskierungsveto_wirkt_im_spiegel_wie_im_main ... ok
+test assistant_step_update_koalesziert_je_session ... ok
+test intent_update_unter_der_fassung_zwei_wird_abgewiesen ... FAILED
+test angenommene_und_abgewiesene_meldungen_sind_zaehlbar ... ok
+test intent_update_koalesziert_je_quelle_und_scope ... ok
+test consumerregeln_des_intents_fallen_einzeln ... ok
+test spiegel_weicht_dem_neueren_main_schritt ... ok
+failures:
+---- intent_update_unter_der_fassung_zwei_wird_abgewiesen stdout ----
+thread 'intent_update_unter_der_fassung_zwei_wird_abgewiesen' (9344) panicked at src\coordinator\schema.rs:311:18:
+eingefrorenes v3-Minor-2-Schema ist unterstuetzt: "haengende Referenz bei #/$defs/session_snapshot/properties/findings/items: #/$defs/session_finding hat kein Ziel"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+failures:
+    intent_update_unter_der_fassung_zwei_wird_abgewiesen
+test result: FAILED. 10 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.24s
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.48s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+error: test failed, to rerun pass `--test sonde014_verdrahtung`
+
+LAUF NACH RUECKNAHME RUECKGAENGIG - A4:schema
+  Exit 0
+running 8 tests
+test coordinator::schema::fassungsleiter_tests::unbekannte_fassung_hat_keinen_leser ... ok
+test coordinator::schema::fassungsleiter_tests::fassung_2_liste_deckt_sich_mit_dem_register ... ok
+test coordinator::schema::fassungsleiter_tests::fassung_3_liste_deckt_sich_mit_dem_register ... ok
+test coordinator::schema::fassungsleiter_tests::geschlossene_mengen_der_fassung_3_stehen_je_einmal_im_vertrag ... ok
+... (3 Zeilen ausgelassen) ...
+test coordinator::schema::fassungsleiter_tests::minor_1_leser_lehnt_die_fassung_2_ab ... ok
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 199 filtered out; finished in 0.02s
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.99s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+LAUF NACH RUECKNAHME RUECKGAENGIG - A4:sonde014_verdrahtung
+  Exit 0
+running 11 tests
+test keine_rechnung_vor_der_vollstaendigkeitsmarke ... ok
+test fremde_adresse_wird_abgewiesen ... ok
+test teilmeldung_mit_mehreren_objekten_wird_abgewiesen ... ok
+test sitzungsende_loescht_den_spiegel ... ok
+... (6 Zeilen ausgelassen) ...
+test spiegel_weicht_dem_neueren_main_schritt ... ok
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.22s
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.62s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+
+URTEIL: ROT mit Ruecknahme, GRUEN ohne - Rotbeweis gilt.

@@ -1,0 +1,66 @@
+SONDE-014 Etappe B - Rotbeweis M-88
+========================================================================
+
+GEWERTETE ZUSAGE
+  Ein Schrittwechsel OHNE Experimentabschluss und OHNE Userurteil erreicht den Spiegel; eine aeltere Revision ueberschreibt keine juengere.
+
+RUECKNAHME (broker/src/coordinator/senke.rs)
+--- vorher ---
+            Some("assistant_step_update") => {
+                let _ =
+                    self.assistant_step_update_json_mit_minor(link_id, payload, schema_minor);
+            }
+--- nachher ---
+            // ROTBEWEIS M-88: die Senke kennt die Familie nicht mehr -
+            // der Schrittwechsel hat keinen Weg.
+            Some("assistant_step_update") => {}
+
+LAUF MIT RUECKNAHME - A4:sonde014_verdrahtung
+  Exit 101
+running 11 tests
+test assistant_step_update_koalesziert_je_session ... FAILED
+test angenommene_und_abgewiesene_meldungen_sind_zaehlbar ... FAILED
+test sitzungsende_loescht_den_spiegel ... FAILED
+test keine_rechnung_vor_der_vollstaendigkeitsmarke ... ok
+... (13 Zeilen ausgelassen) ...
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+---- angenommene_und_abgewiesene_meldungen_sind_zaehlbar stdout ----
+thread 'angenommene_und_abgewiesene_meldungen_sind_zaehlbar' (23532) panicked at tests\sonde014_verdrahtung.rs:626:5:
+assertion `left == right` failed
+  left: 0
+ right: 1
+---- sitzungsende_loescht_den_spiegel stdout ----
+thread 'sitzungsende_loescht_den_spiegel' (22552) panicked at tests\sonde014_verdrahtung.rs:275:5:
+assertion failed: c.assistent_sicht(&a.project_binding_id, &a.session_epoch).is_some()
+---- spiegel_weicht_dem_neueren_main_schritt stdout ----
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde014-schrittspiegel-468-9ef89b1647434f2dadba657e0baa7b5c\nakama-broker.sqlite3
+thread 'spiegel_weicht_dem_neueren_main_schritt' (5356) panicked at tests\sonde014_verdrahtung.rs:562:5:
+assertion `left == right` failed
+  left: None
+ right: Some(2)
+failures:
+    angenommene_und_abgewiesene_meldungen_sind_zaehlbar
+    assistant_step_update_koalesziert_je_session
+    sitzungsende_loescht_den_spiegel
+    spiegel_weicht_dem_neueren_main_schritt
+test result: FAILED. 7 passed; 4 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.80s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+error: test failed, to rerun pass `--test sonde014_verdrahtung`
+
+LAUF NACH RUECKNAHME RUECKGAENGIG - A4:sonde014_verdrahtung
+  Exit 0
+running 11 tests
+test keine_rechnung_vor_der_vollstaendigkeitsmarke ... ok
+test fremde_adresse_wird_abgewiesen ... ok
+test sitzungsende_loescht_den_spiegel ... ok
+test teilmeldung_mit_mehreren_objekten_wird_abgewiesen ... ok
+... (6 Zeilen ausgelassen) ...
+test spiegel_weicht_dem_neueren_main_schritt ... ok
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.23s
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.82s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+
+URTEIL: ROT mit Ruecknahme, GRUEN ohne - Rotbeweis gilt.

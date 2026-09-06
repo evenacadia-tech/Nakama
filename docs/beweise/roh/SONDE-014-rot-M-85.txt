@@ -1,0 +1,61 @@
+SONDE-014 Etappe B - Rotbeweis M-85
+========================================================================
+
+GEWERTETE ZUSAGE
+  Eine aeltere Revision ueberschreibt nach der Koaleszierung NIE eine juengere; der Schluessel ist je Quelle UND Scope eigen.
+
+RUECKNAHME (broker/src/coordinator/intent.rs)
+--- vorher ---
+            if revision < bestand.revision {
+                return Err(IntentAbweisung::AeltereRevision);
+            }
+--- nachher ---
+            // ROTBEWEIS M-85: die Revisionsordnung faellt weg.
+            if false && revision < bestand.revision {
+                return Err(IntentAbweisung::AeltereRevision);
+            }
+
+LAUF MIT RUECKNAHME - A4:sonde014_verdrahtung
+  Exit 101
+running 11 tests
+test keine_rechnung_vor_der_vollstaendigkeitsmarke ... ok
+test fremde_adresse_wird_abgewiesen ... ok
+test teilmeldung_mit_mehreren_objekten_wird_abgewiesen ... ok
+test entmaskierungsveto_wirkt_im_spiegel_wie_im_main ... ok
+test sitzungsende_loescht_den_spiegel ... ok
+test angenommene_und_abgewiesene_meldungen_sind_zaehlbar ... ok
+test assistant_step_update_koalesziert_je_session ... ok
+test intent_update_koalesziert_je_quelle_und_scope ... FAILED
+test consumerregeln_des_intents_fallen_einzeln ... ok
+test intent_update_unter_der_fassung_zwei_wird_abgewiesen ... ok
+test spiegel_weicht_dem_neueren_main_schritt ... ok
+failures:
+---- intent_update_koalesziert_je_quelle_und_scope stdout ----
+thread 'intent_update_koalesziert_je_quelle_und_scope' (22372) panicked at tests\sonde014_verdrahtung.rs:160:5:
+assertion `left == right` failed
+  left: Ok(())
+ right: Err(AeltereRevision)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+failures:
+    intent_update_koalesziert_je_quelle_und_scope
+test result: FAILED. 10 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.23s
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.86s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+error: test failed, to rerun pass `--test sonde014_verdrahtung`
+
+LAUF NACH RUECKNAHME RUECKGAENGIG - A4:sonde014_verdrahtung
+  Exit 0
+running 11 tests
+test fremde_adresse_wird_abgewiesen ... ok
+test teilmeldung_mit_mehreren_objekten_wird_abgewiesen ... ok
+test entmaskierungsveto_wirkt_im_spiegel_wie_im_main ... ok
+test sitzungsende_loescht_den_spiegel ... ok
+... (6 Zeilen ausgelassen) ...
+test spiegel_weicht_dem_neueren_main_schritt ... ok
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.24s
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.06s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+
+URTEIL: ROT mit Ruecknahme, GRUEN ohne - Rotbeweis gilt.

@@ -1,0 +1,55 @@
+SONDE-014 Etappe B - Rotbeweis M-86
+========================================================================
+
+GEWERTETE ZUSAGE
+  Bis die Vollstaendigkeitsmarke vorliegt, rechnet der Broker NICHT - ein Veto darf durch Transportverlust nie verschwinden.
+
+RUECKNAHME (broker/src/coordinator/intent.rs)
+--- vorher ---
+            .is_some_and(|b| b.vollstaendig)
+--- nachher ---
+            // ROTBEWEIS M-86: jede Meldung gilt als vollstaendig.
+            .is_some()
+
+LAUF MIT RUECKNAHME - A4:sonde014_verdrahtung
+  Exit 101
+running 11 tests
+test fremde_adresse_wird_abgewiesen ... ok
+test sitzungsende_loescht_den_spiegel ... ok
+test entmaskierungsveto_wirkt_im_spiegel_wie_im_main ... ok
+test teilmeldung_mit_mehreren_objekten_wird_abgewiesen ... ok
+test keine_rechnung_vor_der_vollstaendigkeitsmarke ... FAILED
+test angenommene_und_abgewiesene_meldungen_sind_zaehlbar ... ok
+test assistant_step_update_koalesziert_je_session ... ok
+test intent_update_koalesziert_je_quelle_und_scope ... ok
+test consumerregeln_des_intents_fallen_einzeln ... ok
+test intent_update_unter_der_fassung_zwei_wird_abgewiesen ... ok
+test spiegel_weicht_dem_neueren_main_schritt ... ok
+failures:
+---- keine_rechnung_vor_der_vollstaendigkeitsmarke stdout ----
+thread 'keine_rechnung_vor_der_vollstaendigkeitsmarke' (544) panicked at tests\sonde014_verdrahtung.rs:226:5:
+eine Teilmeldung ist keine Vollstaendigkeitsmarke
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+failures:
+    keine_rechnung_vor_der_vollstaendigkeitsmarke
+test result: FAILED. 10 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.23s
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.83s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+error: test failed, to rerun pass `--test sonde014_verdrahtung`
+
+LAUF NACH RUECKNAHME RUECKGAENGIG - A4:sonde014_verdrahtung
+  Exit 0
+running 11 tests
+test fremde_adresse_wird_abgewiesen ... ok
+test keine_rechnung_vor_der_vollstaendigkeitsmarke ... ok
+test teilmeldung_mit_mehreren_objekten_wird_abgewiesen ... ok
+test entmaskierungsveto_wirkt_im_spiegel_wie_im_main ... ok
+... (6 Zeilen ausgelassen) ...
+test spiegel_weicht_dem_neueren_main_schritt ... ok
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.23s
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.07s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+
+URTEIL: ROT mit Ruecknahme, GRUEN ohne - Rotbeweis gilt.

@@ -216,6 +216,52 @@ juce::var liesFixture (const juce::String& relativ, bool& ok)
     ok = true;
     return wert;
 }
+
+/** Ein `bandwerte`-Objekt, wie es AUF DER LEITUNG steht: das Encoding-Wort,
+    die Ganzzahlen und die Praesenzbits aus der base64-Bitmap.
+
+    🔑 NAK-182 Nacharbeit 1 (EP-01/NR-01). Die Gain- und die Leiterzeile lasen
+    bis hierher `FeatureFrame`-Arrays ueber `perzentilDb` und riefen
+    `quantisiere16` auf Testzahlen — beides an der Serialisierung VORBEI. Die
+    zugesagte C++-Wirehaelfte der gekoppelten Kette fehlte damit: ein
+    Serialisierer, der die Verteilung falsch skalierte oder das Encoding-Wort
+    vertauschte, waere unsichtbar geblieben. Ab hier kommt JEDE Zahl der
+    C++-Haelfte aus diesem Text. Dieselbe Bauform wie `bitsVon` in N-24. */
+struct Wirebandsatz
+{
+    bool ok { false };
+    juce::String encoding;
+    std::vector<int> werte;
+    std::vector<bool> bits;
+};
+
+Wirebandsatz verteilungAusWire (const std::string& json, const char* punkt)
+{
+    Wirebandsatz w;
+    const auto satz = juce::JSON::parse (juce::String (json))
+                          .getProperty ("verteilung", {}).getProperty (punkt, {});
+    const auto* werte = satz.getProperty ("werte", {}).getArray();
+    if (werte == nullptr || werte->isEmpty())
+        return w;
+
+    w.encoding = satz.getProperty ("encoding", {}).toString();
+    w.werte.reserve ((std::size_t) werte->size());
+    for (int i = 0; i < werte->size(); ++i)
+        w.werte.push_back ((int) (*werte)[i]);
+
+    juce::MemoryBlock roh;
+    juce::MemoryOutputStream strom (roh, false);
+    juce::Base64::convertFromBase64 (strom, satz.getProperty ("gueltig_bitmap", {}).toString());
+    strom.flush();
+    w.bits.assign ((std::size_t) werte->size(), false);
+    if (roh.getSize() < nakama::analyse::bitmapBytes (werte->size()))
+        return w;                        // ohne Bitmap gibt es keine Aussage
+    const auto* bytes = (const std::uint8_t*) roh.getData();
+    for (int i = 0; i < werte->size(); ++i)
+        w.bits[(std::size_t) i] = nakama::analyse::bitmapLies (bytes, i);
+    w.ok = true;
+    return w;
+}
 } // namespace
 
 int main()
@@ -1612,53 +1658,90 @@ int main()
             const auto pegel = fix.getProperty ("pegel", {});
             const double gainDb    = (double) pegel.getProperty ("gain_db", 0.0);
             const double toleranz  = (double) pegel.getProperty ("toleranz_db", 0.0);
+            const double preBandDb = (double) pegel.getProperty ("pre_band_db", 0.0);
+            const auto aufl        = fix.getProperty ("aufloesung", {});
+            const juce::String encodingWort = aufl.getProperty ("encoding", {}).toString();
+            const double teiler    = (double) aufl.getProperty ("teiler", 0.0);
             const auto leiterVar   = fix.getProperty ("leiter", {});
             const double startDb   = (double) leiterVar.getProperty ("start_db", 0.0);
             const int    schritte  = (int)    leiterVar.getProperty ("schritte", 0);
             const double schrittDb = (double) leiterVar.getProperty ("schritt_db", 0.0);
             const auto*  ganzzahlen = leiterVar.getProperty ("ganzzahlen", {}).getArray();
 
-            pruefe (gainDb > 0.0 && toleranz > 0.0 && schritte >= 20
-                        && ganzzahlen != nullptr && ganzzahlen->size() == schritte,
-                    "die Fixture traegt Gain, Toleranz und die Leiter als ZAHLEN",
-                    "G=" + juce::String (gainDb, 2) + " dB, Toleranz "
-                        + juce::String (toleranz, 2) + " dB, "
-                        + juce::String (schritte) + " Stufen");
+            // NAK-182 Nacharbeit 1 (EP-05/NR-05): das MATERIAL steht in
+            // derselben Datei wie Pegel, Gain und Aufloesung. Bis hierher
+            // legte dieser Abschnitt Amplitude, 1000 Hz, 48000 Hz und die
+            // Laufbegrenzung LOKAL fest - damit war das zugesagte Material
+            // nicht ueber die gemeinsame Datei gebunden.
+            const auto material       = fix.getProperty ("material", {});
+            const double signalHz     = (double) material.getProperty ("signal_hz", 0.0);
+            const double srHz         = (double) material.getProperty ("samplerate_hz", 0.0);
+            const double amplitude    = (double) material.getProperty ("amplitude_pre", 0.0);
+            const int    blockgroesse = (int)    material.getProperty ("blockgroesse", 0);
+            const int    bloeckeMax   = (int)    material.getProperty ("bloecke_hoechstens", 0);
 
-            // ── Die GAINZEILE: der echte Encoder, zweimal ────────────────
-            const double amplitude = 0.25;
-            const double faktor = std::pow (10.0, gainDb / 20.0);
-            auto lauf = [&] (double amp, FeatureFrame& aus)
+            pruefe (gainDb > 0.0 && toleranz > 0.0 && schritte >= 20
+                        && ganzzahlen != nullptr && ganzzahlen->size() == schritte
+                        && teiler > 0.0 && encodingWort.isNotEmpty(),
+                    "die Fixture traegt Gain, Toleranz, Aufloesung und die Leiter als ZAHLEN",
+                    "G=" + juce::String (gainDb, 2) + " dB, Toleranz "
+                        + juce::String (toleranz, 2) + " dB, " + juce::String (schritte)
+                        + " Stufen, Teiler " + juce::String (teiler, 0) + ", " + encodingWort);
+            pruefe (signalHz > 0.0 && srHz > 0.0 && amplitude > 0.0
+                        && blockgroesse > 0 && bloeckeMax > 0,
+                    "und sie traegt das MATERIAL - Frequenz, Samplerate, Amplitude, "
+                    "Blockgroesse und Laufbegrenzung stehen nicht mehr lokal im Test",
+                    juce::String (signalHz, 0) + " Hz bei " + juce::String (srHz, 0)
+                        + " Hz, Amplitude " + juce::String (amplitude, 3) + ", bis zu "
+                        + juce::String (bloeckeMax) + " Bloecke zu "
+                        + juce::String (blockgroesse) + " Frames");
+
+            // Ein Lauf: echte Engine, echter Serialisierer, EIGENER Wire-Text.
+            // Ab hier kommt jede Zahl dieser Haelfte aus diesem Text.
+            const auto lauf = [&] (double amp, Wirebandsatz& aus)
             {
                 auto halter = std::make_unique<FeatureEngine>();
                 auto& e = *halter;
-                e.vorbereiten (48000.0);
+                e.vorbereiten (srHz);
                 Speiser s { e };
-                const bool ok = bisEvidenz (s, sinus (amp, 1000.0, 48000.0), aus, 900);
-                return ok;
+                s.sr = srHz;
+                s.frames = blockgroesse;
+                FeatureFrame f {};
+                if (! bisEvidenz (s, sinus (amp, signalHz, srHz), f, bloeckeMax))
+                    return false;
+                std::string json;
+                if (! nakama::evidenz::evidenceSnapshotAlsJson (f, testkopf(), {}, {}, json))
+                    return false;
+                aus = verteilungAusWire (json, "p50");
+                return aus.ok;
             };
-            FeatureFrame vor {}, nach {};
+
+            // ── Die GAINZEILE: zwei Wire-Texte, eine Differenz ───────────
+            const double faktor = std::pow (10.0, gainDb / 20.0);
+            Wirebandsatz vor, nach;
             const bool kamVor  = lauf (amplitude, vor);
             const bool kamNach = lauf (amplitude * faktor, nach);
             pruefe (kamVor && kamNach,
-                    "beide Laeufe erzeugen einen Evidenzframe (PRE und POST)");
+                    "aus beiden Laeufen entsteht ein SERIALISIERTER Snapshot samt "
+                    "`verteilung.p50` (PRE und POST)");
 
             if (kamVor && kamNach)
             {
-                pruefe (vor.evidenzP50.encoding == nakama::analyse::BandEncoding::q_db_0p01_i16
-                            && nach.evidenzP50.encoding
-                                   == nakama::analyse::BandEncoding::q_db_0p01_i16,
-                        "der echte Encoder schreibt die FOKUSSIERTE Aufloesung "
-                        "q_db_0p01_i16 - nicht die des Liveframes");
+                pruefe (vor.encoding == encodingWort && nach.encoding == encodingWort,
+                        "der Wire-Text nennt die FOKUSSIERTE Aufloesung der Fixture - "
+                        "nicht die des Liveframes",
+                        vor.encoding + " / " + nach.encoding + " gegen " + encodingWort);
 
                 int mitBit = 0, daneben = 0;
                 double groessteAbweichung = 0.0, kleinsteDifferenz = 1e9, groessteDifferenz = -1e9;
-                for (int b = 0; b < nakama::analyse::Gitter::evidenzBaender; ++b)
+                const int n = (int) std::min (vor.werte.size(), nach.werte.size());
+                for (int b = 0; b < n; ++b)
                 {
-                    double a = 0.0, c = 0.0;
-                    if (! perzentilDb (vor.evidenzP50, b, a))  continue;
-                    if (! perzentilDb (nach.evidenzP50, b, c)) continue;
+                    if (! vor.bits[(std::size_t) b] || ! nach.bits[(std::size_t) b])
+                        continue;
                     ++mitBit;
+                    const double a = (double) vor.werte[(std::size_t) b]  / teiler;
+                    const double c = (double) nach.werte[(std::size_t) b] / teiler;
                     const double d = c - a;
                     kleinsteDifferenz = std::min (kleinsteDifferenz, d);
                     groessteDifferenz = std::max (groessteDifferenz, d);
@@ -1666,13 +1749,17 @@ int main()
                     if (std::abs (d - gainDb) > toleranz)
                         ++daneben;
                 }
+                pruefe (n == nakama::analyse::Gitter::evidenzBaender,
+                        "beide Wire-Texte tragen genau 221 Bandwerte",
+                        juce::String (n));
                 pruefe (mitBit >= 8,
-                        "genug Baender tragen in BEIDEN Laeufen ein Praesenzbit - "
+                        "genug Baender tragen in BEIDEN Wire-Texten ein Praesenzbit - "
                         "sonst haette die Zeile nichts gemessen",
                         juce::String (mitBit) + " Baender");
                 pruefe (mitBit >= 8 && daneben == 0,
-                        "aus dem EIGENEN Wire-Text (Teiler 100) kommt der Gain je Band "
-                        "mit Bit innerhalb der Toleranz der Fixture zurueck",
+                        "aus dem EIGENEN Wire-Text, dekodiert mit der Vertragsformel "
+                        "(Teiler aus der Fixture), kommt der Gain je Band mit Bit "
+                        "innerhalb der Toleranz zurueck",
                         juce::String (daneben) + " Baender daneben, groesste Abweichung "
                             + juce::String (groessteAbweichung, 4) + " dB; Differenzen "
                             + juce::String (kleinsteDifferenz, 3) + " bis "
@@ -1680,47 +1767,90 @@ int main()
                             + juce::String (gainDb, 2));
             }
 
-            // ── Die LEITERZEILE: die Aufloesung selbst ───────────────────
+            // ── Die LEITERZEILE: die Aufloesung ERZEUGTER Snapshots ──────
             //
             // ⚠️ Ein einzelnes Pegelpaar im Abstand 0,01 dB beweist sie NICHT:
             // `quantisiere16` rundet die beiden ABSOLUTEN Pegel getrennt, und
             // bei -30,051/-30,041 liefert sogar Skalierung 10 zwei Ganzzahlen
             // im Abstand 1.  Zwanzig Stufen sind rundungsphasenunabhaengig.
-            if (ganzzahlen != nullptr && ganzzahlen->size() >= 2)
+            //
+            // 🔑 NAK-182 Nacharbeit 1 (EP-01/NR-01): die zwanzig Stufen laufen
+            // JE durch Engine und Serialisierer, und gelesen werden die
+            // Ganzzahlen aus dem Wire-Text.  `quantisiere16` auf Testzahlen
+            // war kein Ersatz - das misst die Formel, nicht die Aufloesung
+            // dessen, was die Sonde wirklich sendet.
+            //
+            // Der ABSOLUTE Bandpegel ist ohne zweite Implementierung nicht
+            // vorhersagbar, die SCHRITTE sind es.  Der Startpegel der Fixture
+            // sitzt 0,004 dB neben dem nominalen PRE-Pegel; genau dieser
+            // Versatz faehrt mit, damit die Leiter nicht auf der Rundungskante
+            // sitzt.
+            if (kamVor && ganzzahlen != nullptr && ganzzahlen->size() >= 2)
             {
-                int gegenFixture = 0, monoton = 0, schrittEins = 0;
-                juce::String reihe;
-                std::int16_t vorher = 0;
-                for (int k = 0; k < ganzzahlen->size(); ++k)
+                int band = -1;
+                for (int b = 0; b < (int) vor.werte.size(); ++b)
+                    if (vor.bits[(std::size_t) b]
+                        && (band < 0
+                            || vor.werte[(std::size_t) b] > vor.werte[(std::size_t) band]))
+                        band = b;
+
+                const double versatzDb = startDb - preBandDb;
+                std::vector<int> gemessen;
+                bool alleDa = band >= 0;
+                int mitEncoding = 0;
+                juce::String reihe, encodings;
+                for (int k = 0; k < schritte && alleDa; ++k)
                 {
-                    const double db = startDb + (double) k * schrittDb;
-                    const auto q = nakama::analyse::quantisiere16 (
-                        db, nakama::analyse::BandEncoding::q_db_0p01_i16);
-                    if (q.gueltig && ! q.saturiert
-                        && (int) q.wert == (int) (*ganzzahlen)[k])
-                        ++gegenFixture;
-                    if (k > 0)
+                    Wirebandsatz w;
+                    const double amp = amplitude
+                        * std::pow (10.0, (versatzDb + (double) k * schrittDb) / 20.0);
+                    if (! lauf (amp, w) || band >= (int) w.werte.size()
+                        || ! w.bits[(std::size_t) band])
                     {
-                        if (q.wert > vorher) ++monoton;
-                        if ((int) q.wert - (int) vorher == 1) ++schrittEins;
+                        alleDa = false;
+                        break;
                     }
-                    if (k < 4) reihe << (k ? ", " : "") << (int) q.wert;
-                    vorher = q.wert;
+                    if (w.encoding == encodingWort) ++mitEncoding;
+                    else if (encodings.isEmpty())   encodings = w.encoding;
+                    gemessen.push_back (w.werte[(std::size_t) band]);
+                    if (k < 4) reihe << (k ? ", " : "") << w.werte[(std::size_t) band];
                 }
-                const int paare = ganzzahlen->size() - 1;
-                pruefe (gegenFixture == ganzzahlen->size(),
-                        "die " + juce::String (ganzzahlen->size())
-                            + " Stufen der Leiter treffen die Ganzzahlen der Fixture",
-                        juce::String (gegenFixture) + " von "
-                            + juce::String (ganzzahlen->size()) + "; erste: " + reihe + ", ...");
-                pruefe (monoton == paare,
-                        "die Leiter ist STRENG MONOTON - 0,01 dB mehr sind nie "
-                        "dieselbe Ganzzahl",
+                pruefe (alleDa && (int) gemessen.size() == schritte,
+                        "jede der " + juce::String (schritte) + " Stufen erzeugt einen "
+                        "Snapshot, dessen Wire-Text das gemessene Band traegt",
+                        "Band " + juce::String (band) + " (Versatz "
+                            + juce::String (versatzDb, 3) + " dB), "
+                            + juce::String ((int) gemessen.size()) + " von "
+                            + juce::String (schritte) + "; erste: " + reihe + ", ...");
+                pruefe (alleDa && mitEncoding == schritte,
+                        "und jede Stufe nennt dasselbe Encoding-Wort wie die Fixture",
+                        juce::String (mitEncoding) + " von " + juce::String (schritte)
+                            + (encodings.isEmpty() ? juce::String() : ", erstes anderes: "
+                                                                      + encodings));
+
+                int monoton = 0, schrittEins = 0, wieFixture = 0;
+                for (std::size_t k = 1; alleDa && k < gemessen.size(); ++k)
+                {
+                    const int d = gemessen[k] - gemessen[k - 1];
+                    if (d > 0) ++monoton;
+                    if (d == 1) ++schrittEins;
+                    if (d == (int) (*ganzzahlen)[(int) k] - (int) (*ganzzahlen)[(int) k - 1])
+                        ++wieFixture;
+                }
+                const int paare = schritte - 1;
+                pruefe (alleDa && monoton == paare,
+                        "die Leiter im Wire-Text ist STRENG MONOTON - 0,01 dB mehr sind "
+                        "nie dieselbe Ganzzahl",
                         juce::String (monoton) + " von " + juce::String (paare));
-                pruefe (schrittEins == paare,
+                pruefe (alleDa && schrittEins == paare,
                         "und benachbarte Stufen unterscheiden sich um GENAU 1 - das ist "
-                        "die Aufloesung 0,01 dB, gemessen statt angenommen",
+                        "die Aufloesung 0,01 dB, am erzeugten Snapshot gemessen statt "
+                        "an einer Testzahl gerechnet",
                         juce::String (schrittEins) + " von " + juce::String (paare));
+                pruefe (alleDa && wieFixture == paare,
+                        "und es ist DIESELBE Schrittfolge, die die Fixture zusagt - der "
+                        "absolute Pegel ist nicht vorhersagbar, die Schritte sind es",
+                        juce::String (wieFixture) + " von " + juce::String (paare));
             }
         }
     }

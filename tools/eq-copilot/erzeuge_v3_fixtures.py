@@ -2936,6 +2936,10 @@ def evidenz_0p01_paar_wire() -> bytes:
       * C++ (B16, `Sonde013EventWireTest`): der echte Encoder erzeugt seinen
         eigenen Wire-Text; daraus kommt `gain_db` je Band mit Bit innerhalb
         `toleranz_db` zurueck, und die Leiter unten misst die Aufloesung.
+        Seit NAK-182 Nacharbeit 1 (NR-05) faehrt B16 dabei das MATERIAL aus
+        dem Block `material` - Frequenz, Samplerate, Amplitude, Blockgroesse
+        und Laufbegrenzung - statt eigener Konstanten, und liest jede Zahl
+        aus dem serialisierten `verteilung.p50` statt aus Frame-Arrays.
       * Rust (A4, `sonde013_verdrahtung`): `pre` und `post` gehen durch den
         echten Wirepfad; die Produktmessung gibt `gain_db` je Band wieder,
         und das Bootstrap-Intervall enthaelt ihn.
@@ -2956,6 +2960,17 @@ def evidenz_0p01_paar_wire() -> bytes:
     post_db = pre_db + gain_db
     leiter_start = -30.004        # keine Stufe faellt auf eine 0,5-Kante
     leiter_schritte = 20
+
+    # NAK-182 Nacharbeit 1 (NR-05): das MATERIAL steht als Zahl in derselben
+    # Datei wie Pegel, Gain und Aufloesung. Bis hierher legte B16 Amplitude,
+    # 1000 Hz, 48000 Hz und die Laufbegrenzung LOKAL fest - damit war das
+    # zugesagte Material nicht ueber die gemeinsame Datei gebunden, und zwei
+    # Verbraucher haetten unbemerkt auf verschiedenem Material messen koennen.
+    signal_hz = 1000.0
+    samplerate_hz = 48000.0
+    amplitude_pre = 0.25
+    blockgroesse = 512
+    bloecke_hoechstens = 900
 
     def quant(db: float) -> int:
         """Die Vertragsformel: halbe Werte von null weg, wie `quantisiere16`."""
@@ -2992,6 +3007,11 @@ def evidenz_0p01_paar_wire() -> bytes:
             "drei Sprachen erzeugt sie; C++ (B16) und Rust (A4) messen gegen sie,",
             "A8 haelt sie bytegleich.",
             "",
+            "NAK-182 Nacharbeit 1 (NR-05): der Block `material` traegt Signalfrequenz,",
+            "Samplerate, Amplitude von PRE, Blockgroesse und Laufbegrenzung. B16 liest",
+            "sie VON HIER statt aus lokalen Konstanten - sonst waere das zugesagte",
+            "Material nicht ueber die gemeinsame Datei gebunden.",
+            "",
             "Warum nicht Ganzzahl-Gleichheit mit dem echten Encoder: der",
             "Verteilungsring speichert float, `quantisiere16` rundet halbe Werte von",
             "null weg, und Bitgleichheit ueber Binaerstaende hinweg sagt dieses Repo",
@@ -2999,6 +3019,21 @@ def evidenz_0p01_paar_wire() -> bytes:
             "nicht vorhersagbar; die DIFFERENZ ist es, weil ein skalarer Gain jedes",
             "Band um exakt 20*log10(g) verschiebt.",
         ],
+        "material": {
+            "zweck": ("Das Material, auf dem die C++-Haelfte PRE und POST faehrt "
+                      "(NAK-182 Nacharbeit 1, NR-05). Sinus mit `amplitude_pre` bei "
+                      "`signal_hz`, Samplerate `samplerate_hz`, Bloecke zu "
+                      "`blockgroesse` Frames, hoechstens `bloecke_hoechstens` davon. "
+                      "POST ist dasselbe Material mit Amplitude "
+                      "amplitude_pre * 10^(gain_db/20)."),
+            "signal_hz": signal_hz,
+            "samplerate_hz": samplerate_hz,
+            "amplitude_pre": amplitude_pre,
+            "blockgroesse": blockgroesse,
+            "bloecke_hoechstens": bloecke_hoechstens,
+            "dauer_s_hoechstens": round(
+                bloecke_hoechstens * blockgroesse / samplerate_hz, 4),
+        },
         "aufloesung": {
             "encoding": "q_db_0p01_i16",
             "teiler": teiler,

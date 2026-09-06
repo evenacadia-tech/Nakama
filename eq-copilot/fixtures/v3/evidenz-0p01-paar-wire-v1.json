@@ -8,6 +8,11 @@
     "drei Sprachen erzeugt sie; C++ (B16) und Rust (A4) messen gegen sie,",
     "A8 haelt sie bytegleich.",
     "",
+    "NAK-182 Nacharbeit 1 (NR-05): der Block `material` traegt Signalfrequenz,",
+    "Samplerate, Amplitude von PRE, Blockgroesse und Laufbegrenzung. B16 liest",
+    "sie VON HIER statt aus lokalen Konstanten - sonst waere das zugesagte",
+    "Material nicht ueber die gemeinsame Datei gebunden.",
+    "",
     "Warum nicht Ganzzahl-Gleichheit mit dem echten Encoder: der",
     "Verteilungsring speichert float, `quantisiere16` rundet halbe Werte von",
     "null weg, und Bitgleichheit ueber Binaerstaende hinweg sagt dieses Repo",
@@ -15,6 +20,15 @@
     "nicht vorhersagbar; die DIFFERENZ ist es, weil ein skalarer Gain jedes",
     "Band um exakt 20*log10(g) verschiebt."
   ],
+  "material": {
+    "zweck": "Das Material, auf dem die C++-Haelfte PRE und POST faehrt (NAK-182 Nacharbeit 1, NR-05). Sinus mit `amplitude_pre` bei `signal_hz`, Samplerate `samplerate_hz`, Bloecke zu `blockgroesse` Frames, hoechstens `bloecke_hoechstens` davon. POST ist dasselbe Material mit Amplitude amplitude_pre * 10^(gain_db/20).",
+    "signal_hz": 1000.0,
+    "samplerate_hz": 48000.0,
+    "amplitude_pre": 0.25,
+    "blockgroesse": 512,
+    "bloecke_hoechstens": 900,
+    "dauer_s_hoechstens": 9.6
+  },
   "aufloesung": {
     "encoding": "q_db_0p01_i16",
     "teiler": 100,

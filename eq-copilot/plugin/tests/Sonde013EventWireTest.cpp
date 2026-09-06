@@ -1746,7 +1746,11 @@ int main()
                     kleinsteDifferenz = std::min (kleinsteDifferenz, d);
                     groessteDifferenz = std::max (groessteDifferenz, d);
                     groessteAbweichung = std::max (groessteAbweichung, std::abs (d - gainDb));
-                    if (std::abs (d - gainDb) > toleranz)
+                    // ⚠️ `! isfinite` MUSS eigens zaehlen: ein fehlender Teiler
+                    // ergaebe 0/0 = NaN, und `NaN > toleranz` ist FALSCH - die
+                    // Zeile bliebe still gruen. Genau die Sorte leises Gruen,
+                    // die dieses Ticket sucht.
+                    if (! std::isfinite (d) || std::abs (d - gainDb) > toleranz)
                         ++daneben;
                 }
                 pruefe (n == nakama::analyse::Gitter::evidenzBaender,
@@ -1756,7 +1760,7 @@ int main()
                         "genug Baender tragen in BEIDEN Wire-Texten ein Praesenzbit - "
                         "sonst haette die Zeile nichts gemessen",
                         juce::String (mitBit) + " Baender");
-                pruefe (mitBit >= 8 && daneben == 0,
+                pruefe (mitBit >= 8 && daneben == 0 && teiler > 0.0 && toleranz > 0.0,
                         "aus dem EIGENEN Wire-Text, dekodiert mit der Vertragsformel "
                         "(Teiler aus der Fixture), kommt der Gain je Band mit Bit "
                         "innerhalb der Toleranz zurueck",

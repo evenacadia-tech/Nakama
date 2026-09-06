@@ -35,6 +35,7 @@
 
 #include "../core/analysis/FeatureEngine.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <functional>
@@ -893,6 +894,340 @@ int main()
                 "N-23: und persistenz ebenso - obwohl Kurzfenster geschlossen "
                 "haben, hatte DIESES Band in keinem einen gueltigen Nenner");
     }
+    // ── NAK-182 M-82: der Blockgroessen-Sweep (R3/E3, N-15 bis N-20) ─────
+    //
+    // M-82 verlangt die fuenf Klassen aus §40.3 "ueber alle unterstuetzten
+    // Blockgroessen".  Die Abschnitte oben messen jede Klasse TIEF, aber bei
+    // einer einzigen Blockgroesse (`Speiser::frames` = 512).  Dieser Sweep
+    // misst dieselbe analytisch bekannte Antwort ueber die Blockgroessenmenge
+    // - flacher, dafuer auf der Achse, die M-82 nennt.
+    //
+    // DIE MENGE steht genau EINMAL, gleich hier: dieselben 18 Groessen, die
+    // B4 `EqCopQueueStressTest` §J fuer den Passthrough faehrt.  Ihre
+    // Obergrenze ist die Slotkapazitaet des Layouts (`GenStrom =
+    // StreamLayout<1, 131072, 2048, 16384>`, `core/StampedAudioQueue.h`): ein
+    // groesserer Hostblock wird als GANZES nur fuer die Analyse verworfen.
+    //
+    // ⚠️ Sie ist eine AUSWAHL, keine Erschoepfung.  "Alle unterstuetzten"
+    // waeren 16384 Werte; 256 zum Beispiel bleibt ungemessen.  Die
+    // Bein-Behauptung in `tools/beweise.ps1` nennt deshalb die 18 Werte
+    // einzeln und sagt nie "ueber alle" (Manifest §2.5).  Die vier Anker der
+    // Auswahl:
+    //
+    //       1  die kleinste; FL zerteilt Puffer bis auf 1 Sample (S4)
+    //     333  NICHTteiler des Hauptfensterhops 2048 und teilerfremd zur
+    //          Rahmenkadenz - die Phasenfalle aus `AnalysisGoldenTestMain`
+    //     512  der Wert der Abschnitte oben, damit der Sweep sie reproduziert
+    //    2048  GENAU der Hauptfensterhop: Block- und Fenstergrenze fallen
+    //          zusammen
+    //   16384  die groesste; zugleich `kBassPunkte` und die Slotkapazitaet
+    //
+    // ⚠️ DIE FALLE, an der ein naiver Sweep still gruen waere: `bisEvidenz`
+    // zaehlt BLOECKE, nicht Samples.  Bei Blockgroesse 1 waeren 900 Bloecke
+    // 900 Samples - kein Evidenzfenster, `kam == false`, und ohne Pruefung
+    // von `kam` haette der Fall nichts gemessen und trotzdem bestanden.  Die
+    // Schranke wird deshalb auf dieselbe SAMPLEZAHL gerechnet wie bei 512,
+    // und `kam` ist je Lauf eine eigene Zusage.
+    //
+    // ⚠️ Jedes Material ist eine reine Funktion der ABSOLUTEN Stromposition
+    // `n`.  Nur so ist der Sweep ueberhaupt eine Aussage ueber Blockgroessen:
+    // ein Signal, das aus einem Blockindex entstuende, waere je Blockgroesse
+    // ein anderes Signal.
+    abschnitt ("NAK-182 M-82  Blockgroessen-Sweep: fuenf Klassen und Folddown");
+    {
+        static constexpr int kSweepBlockgroessen[] = {
+            1, 2, 3, 7, 15, 16, 31, 64, 127, 128, 333, 512,
+            1024, 2048, 4096, 8192, 12345, 16384 };
+        constexpr int kSweepN = (int) (sizeof (kSweepBlockgroessen)
+                                       / sizeof (kSweepBlockgroessen[0]));
+        const juce::String mengenText ("1, 2, 3, 7, 15, 16, 31, 64, 127, 128, "
+                                       "333, 512, 1024, 2048, 4096, 8192, 12345, 16384");
+
+        // Deterministisches Breitbandrauschen als reine Funktion von (n, Saat).
+        //
+        // ⚠️ Der erste Versuch nahm `(n * 2654435761) ^ saat` mit einem
+        // xorshift32 darueber.  Zwei Saaten ergaben damit KEINE unabhaengigen
+        // Stroeme: die Bandkorrelation lag bei 0,93 statt nahe null, und
+        // `sweep_uncorrelated_channels` fiel zu Recht.  Die Saat muss VOR der
+        // Durchmischung in den Zustand, nicht danach - deshalb der
+        // splitmix64-Abschluss.
+        const auto rausch = [] (std::uint64_t n, std::uint64_t saat) -> double
+        {
+            std::uint64_t x = n * 0x9E3779B97F4A7C15ull + saat;
+            x ^= x >> 30; x *= 0xBF58476D1CE4E5B9ull;
+            x ^= x >> 27; x *= 0x94D049BB133111EBull;
+            x ^= x >> 31;
+            return (double) (x >> 11) / 4503599627370495.5 - 1.0;
+        };
+
+        struct Lauf
+        {
+            bool kam { false };
+            bool basis { false }, kohGesetzt { false }, phaseGesetzt { false };
+            bool korrGesetzt { false }, folddownGesetzt { false };
+            float korrelation { 0.0f }, kohaerenz { 0.0f }, phase { 0.0f };
+            float folddown { 0.0f };
+            std::uint32_t dof { 0 };
+            double handFolddownDb { 0.0 };
+        };
+
+        // Ein Lauf je Blockgroesse.  Die Engine liegt auf dem HEAP - der
+        // MSVC-Standardstack ist 1 MiB, eine `FeatureEngine` rund 0,5 MB
+        // (Register NAK-175).
+        const auto fahre = [&] (int frames, double hz,
+                                const std::function<void (std::uint64_t, float&, float&)>& f,
+                                bool mitHandfaltung) -> Lauf
+        {
+            auto halter = std::make_unique<FeatureEngine>();
+            auto& e = *halter;
+            e.vorbereiten (fs);
+            e.evidenzIntervallSetzen (1.0);
+            Speiser s { e };
+            s.frames = frames;
+            const long long noetig = (900LL * 512LL) / (long long) frames;
+            const int hoechstens = (int) std::max<long long> (900LL, noetig);
+
+            Lauf L {};
+            double monoEnergie = 0.0, stereoEnergie = 0.0;
+            L.kam = s.bisEvidenz ([&] (std::uint64_t n, float& l, float& r)
+            {
+                f (n, l, r);
+                if (mitHandfaltung)
+                {
+                    const double mono = 0.5 * ((double) l + (double) r);
+                    monoEnergie   += mono * mono;
+                    stereoEnergie += 0.5 * ((double) l * (double) l
+                                            + (double) r * (double) r);
+                }
+            }, hoechstens);
+            if (! L.kam)
+                return L;
+
+            const int b = bandFuer (hz);
+            if (b >= 0)
+            {
+                const auto& w = e.stereoBand (b);
+                L.basis          = w.basisGesetzt;
+                L.korrGesetzt    = w.korrelationMittelGesetzt;
+                L.korrelation    = w.korrelationMittel;
+                L.kohGesetzt     = w.kohaerenzGesetzt;
+                L.kohaerenz      = w.kohaerenz;
+                L.phaseGesetzt   = w.phaseGesetzt;
+                L.phase          = w.phaseRad;
+                L.dof            = w.freiheitsgrade;
+            }
+            const auto& sk = e.stereoSkalare();
+            L.folddownGesetzt = sk.folddownGesetzt;
+            L.folddown        = sk.monoFolddownDb;
+            if (mitHandfaltung && stereoEnergie > 0.0 && monoEnergie > 0.0)
+                L.handFolddownDb = 10.0 * std::log10 (monoEnergie / stereoEnergie);
+            return L;
+        };
+
+        // Jede Klasse: fuenf Laeufe, dann EINE Zusage ueber alle fuenf.
+        const auto klasse = [&] (const char* bezeichner, double hz,
+                                 const std::function<void (std::uint64_t, float&, float&)>& f,
+                                 const std::function<bool (const Lauf&)>& antwortStimmt,
+                                 const std::function<juce::String (const Lauf&)>& zeigen,
+                                 bool mitHandfaltung)
+        {
+            Lauf laeufe[kSweepN];
+            int kamAlle = 0, richtig = 0;
+            juce::String bericht;
+            for (int i = 0; i < kSweepN; ++i)
+            {
+                laeufe[i] = fahre (kSweepBlockgroessen[i], hz, f, mitHandfaltung);
+                if (laeufe[i].kam) ++kamAlle;
+                if (laeufe[i].kam && antwortStimmt (laeufe[i])) ++richtig;
+                bericht << (i ? ", " : "") << kSweepBlockgroessen[i] << ":"
+                        << zeigen (laeufe[i]);
+            }
+            const juce::String kopf (bezeichner);
+            // 1. Jeder Lauf hat wirklich gemessen.
+            pruefe (kamAlle == kSweepN,
+                    kopf + ": bei jeder Blockgroesse aus {" + mengenText
+                        + "} entsteht ein Evidenzfenster",
+                    juce::String (kamAlle) + " von " + juce::String (kSweepN));
+            // 2. Die analytisch bekannte Antwort steht bei JEDER Blockgroesse.
+            pruefe (richtig == kSweepN,
+                    kopf + ": und jede traegt dieselbe analytisch bekannte Antwort",
+                    bericht);
+            // 3. Kein Lauf besteht, weil zu wenig Material floss: die
+            //    Freiheitsgrade des Bandes sind ueber die Menge vergleichbar.
+            std::uint32_t sortiert[kSweepN];
+            for (int i = 0; i < kSweepN; ++i) sortiert[i] = laeufe[i].dof;
+            std::sort (sortiert, sortiert + kSweepN);
+            const double median = (double) sortiert[kSweepN / 2];
+            bool dofOk = median > 0.0;
+            juce::String dofText;
+            for (int i = 0; i < kSweepN; ++i)
+            {
+                dofText << (i ? ", " : "") << (int) laeufe[i].dof;
+                if (median > 0.0
+                    && std::abs ((double) laeufe[i].dof - median) > 0.2 * median)
+                    dofOk = false;
+            }
+            pruefe (dofOk,
+                    kopf + ": je Blockgroesse wurden vergleichbar viele Fenster "
+                           "gemittelt (Freiheitsgrade innerhalb 20 % des Medians)",
+                    dofText + " (Median " + juce::String (median, 0) + ")");
+        };
+
+        // ── sweep_mono_identity ──────────────────────────────────────────
+        klasse ("sweep_mono_identity", 1000.0,
+                [] (std::uint64_t n, float& l, float& r)
+                {
+                    l = (float) (0.4 * std::sin (kZweiPi * 1000.0 * (double) n / 48000.0));
+                    r = l;
+                },
+                [] (const Lauf& L)
+                {
+                    return L.basis && L.korrGesetzt && L.korrelation > 0.999f
+                        && L.kohGesetzt && L.kohaerenz > 0.99f
+                        && L.phaseGesetzt && std::abs (L.phase) < 0.01f
+                        && L.folddownGesetzt && std::abs (L.folddown) < 0.25f;
+                },
+                [] (const Lauf& L)
+                {
+                    return juce::String (L.korrelation, 4) + "/"
+                         + juce::String (L.kohaerenz, 4) + "/"
+                         + juce::String (L.phase, 4) + "/"
+                         + juce::String (L.folddown, 3);
+                }, false);
+
+        // ── sweep_identical_stereo ───────────────────────────────────────
+        // Breitbandiges Material, auf beiden Kanaelen BITGLEICH: dieselbe
+        // Antwort wie Mono, aber aus einem Signal, das ohne die Gleichheit
+        // breit waere.
+        klasse ("sweep_identical_stereo", 1000.0,
+                [&] (std::uint64_t n, float& l, float& r)
+                {
+                    l = (float) (0.35 * rausch (n, 0x51ED2701A17B93C5ull));
+                    r = l;
+                },
+                [] (const Lauf& L)
+                {
+                    return L.basis && L.korrGesetzt && L.korrelation > 0.999f
+                        && L.kohGesetzt && L.kohaerenz > 0.99f
+                        && L.phaseGesetzt && std::abs (L.phase) < 0.01f
+                        && L.folddownGesetzt && std::abs (L.folddown) < 0.25f;
+                },
+                [] (const Lauf& L)
+                {
+                    return juce::String (L.korrelation, 4) + "/"
+                         + juce::String (L.kohaerenz, 4) + "/"
+                         + juce::String (L.phase, 4) + "/"
+                         + juce::String (L.folddown, 3);
+                }, false);
+
+        // ── sweep_polarity_inversion ─────────────────────────────────────
+        // Korrelation -1 bei Kohaerenz 1, Phase +/-pi, und die Monosumme
+        // laeuft an die Vertragsgrenze statt zu schweigen (§40.3).
+        klasse ("sweep_polarity_inversion", 1000.0,
+                [] (std::uint64_t n, float& l, float& r)
+                {
+                    l = (float) (0.4 * std::sin (kZweiPi * 1000.0 * (double) n / 48000.0));
+                    r = -l;
+                },
+                [] (const Lauf& L)
+                {
+                    return L.basis && L.korrGesetzt && L.korrelation < -0.999f
+                        && L.kohGesetzt && L.kohaerenz > 0.99f
+                        && L.phaseGesetzt
+                        && std::abs (std::abs ((double) L.phase) - 3.14159265358979) < 0.05
+                        && L.folddownGesetzt && L.folddown < -300.0f;
+                },
+                [] (const Lauf& L)
+                {
+                    return juce::String (L.korrelation, 4) + "/"
+                         + juce::String (L.kohaerenz, 4) + "/"
+                         + juce::String (L.phase, 3) + "/"
+                         + juce::String (L.folddown, 0);
+                }, false);
+
+        // ── sweep_known_delay ────────────────────────────────────────────
+        // R ist um 8 Samples verzoegert, also eilt L vor: die Phase folgt
+        // +2*pi*f*tau.  Gemessen an DREI Traegern wie im Abschnitt oben, mit
+        // derselben Toleranz von 0,25 rad - die Phase ist ein BANDwert, und
+        // der Traeger sitzt in einem Band endlicher Breite.
+        {
+            constexpr int kVerzoegerung = 8;
+            const double tau = (double) kVerzoegerung / fs;
+            const auto welle = [] (double m)
+            {
+                const double t = m / 48000.0;
+                return 0.20 * std::sin (kZweiPi * 300.0 * t)
+                     + 0.20 * std::sin (kZweiPi * 900.0 * t + 0.3)
+                     + 0.20 * std::sin (kZweiPi * 2000.0 * t + 1.1);
+            };
+            const auto speise = [&] (std::uint64_t n, float& l, float& r)
+            {
+                l = (float) welle ((double) n);
+                r = (float) welle ((double) n >= (double) kVerzoegerung
+                                   ? (double) n - (double) kVerzoegerung : 0.0);
+            };
+            const auto phasenfehler = [&] (double hz, float gemessen)
+            {
+                double erwartet = kZweiPi * hz * tau;
+                while (erwartet >  3.14159265358979) erwartet -= kZweiPi;
+                while (erwartet <= -3.14159265358979) erwartet += kZweiPi;
+                double diff = (double) gemessen - erwartet;
+                while (diff >  3.14159265358979) diff -= kZweiPi;
+                while (diff <= -3.14159265358979) diff += kZweiPi;
+                return std::abs (diff);
+            };
+            klasse ("sweep_known_delay", 900.0, speise,
+                    [&] (const Lauf& L)
+                    {
+                        return L.basis && L.phaseGesetzt
+                            && phasenfehler (900.0, L.phase) <= 0.25;
+                    },
+                    [&] (const Lauf& L)
+                    {
+                        return juce::String (L.phase, 4) + "(d="
+                             + juce::String (phasenfehler (900.0, L.phase), 4) + ")";
+                    }, false);
+        }
+
+        // ── sweep_uncorrelated_channels ──────────────────────────────────
+        // Zwei unabhaengige Rauschstroeme: die Korrelation faellt weit unter
+        // die Schwelle, und die Kohaerenz traegt keine Empfehlung (M-12).
+        klasse ("sweep_uncorrelated_channels", 1000.0,
+                [&] (std::uint64_t n, float& l, float& r)
+                {
+                    l = (float) (0.35 * rausch (n, 0x1234ABCD5678EF01ull));
+                    r = (float) (0.35 * rausch (n, 0xC0FFEE1234567890ull));
+                },
+                [] (const Lauf& L)
+                {
+                    return L.basis && L.korrGesetzt && L.korrelation < 0.2f;
+                },
+                [] (const Lauf& L) { return juce::String (L.korrelation, 4); },
+                false);
+
+        // ── sweep_folddown_within_0p25db ─────────────────────────────────
+        // Der gemeldete Monoverlust gegen den WIRKLICH gefalteten Puffer,
+        // je Blockgroesse, innerhalb 0,25 dB (§40.3).  Die Handrechnung
+        // laeuft ueber dieselben Samples, die die Engine gesehen hat.
+        klasse ("sweep_folddown_within_0p25db", 700.0,
+                [] (std::uint64_t n, float& l, float& r)
+                {
+                    const double t = (double) n / 48000.0;
+                    l = (float) (0.35 * std::sin (kZweiPi * 700.0 * t));
+                    r = (float) (0.28 * std::sin (kZweiPi * 1100.0 * t + 1.1));
+                },
+                [] (const Lauf& L)
+                {
+                    return L.folddownGesetzt
+                        && std::abs ((double) L.folddown - L.handFolddownDb) < 0.25;
+                },
+                [] (const Lauf& L)
+                {
+                    return juce::String (L.folddown, 3) + " gegen "
+                         + juce::String (L.handFolddownDb, 3);
+                }, true);
+    }
+
     std::cout << bestanden << " bestanden, " << fehler << " gescheitert" << std::endl;
     return fehler == 0 ? 0 : 1;
 }

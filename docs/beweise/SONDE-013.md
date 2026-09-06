@@ -4399,6 +4399,27 @@ Broker-Muster. Die Codex-Läufe S8 (19 Runden) und dieses Ticket (drei Runden,
 je Runde deutlich weniger und andere Befunde) zeigen dieselbe Kurve: die
 Prüferregeln wachsen mit jeder Runde, die Zusagen des Tickets nicht.
 
+## 15. Nachtrag (2026-09-06, Dirigent, NAK-182): Belegstatus M-79 bis M-85 berichtigt
+
+Der Gate-Lauf G4 (`docs/beweise/G4.md` §6 Satz 1, §8) fand, dass die Zeilen
+M-79 bis M-85 in §3.10 mehr als „BELEGT, gemessen" führten, als A26 und die
+Goldens maßen. Die Zeilen oben bleiben als Verlauf stehen; bindend ist seit
+NAK-182 (`docs/beweise/NAK-182.md`, T3 PASS 2026-09-06, Kanon GRÜN 54/54 auf
+`aca0f28`) dieser Stand:
+
+| ID | Berichtigter Belegstatus (2026-09-06) |
+|---|---|
+| M-79 | **gemessen** — A26 `pruefe_p4_korpus.py` liest die zwei geschlossenen Mengen `KEINE_BEHAUPTUNG` und `KEINE_STARKE` aus dem Korpus-MANIFEST (Erzeuger ist die Quelle), riegelt `falsche_starke`, `falsche_schwache`, `precision <= 1`, `recall <= 1` und Brier, prüft jeden Fallnamen wörtlich in seiner Quelldatei und druckt die Lücken aus `nicht_gemessen`; das neue Bein **A27** (`--selbsttest`) misst jeden Riegel mit Gegenteil. Gate 6 und Gate 7 sind damit im Prüfwerkzeug erkennbar (Rotbeweise `roh/NAK-182-rot-M-79-*.txt`, `-M-85-gate7.txt`). |
+| M-80 | unverändert gemessen (A25 `--pruefen`, jetzt 25 Fälle in vier Klassen samt MANIFEST-Feld `nicht_gemessen`). |
+| M-81 | **teilweise gemessen**: ±0,1 dB True Peak gegen EBU Tech 3341 (B17, Standard-Testmaterial); ±0,1 LU LUFS-I gegen die **ausgebaute Vektorrechnung** in B9 `EqCopLoudnessGoldenTest` (Korpusfall `lufs_integrated_matches_reference`, vorher fälschlich B18 zugeschrieben) — ein unabhängiger Zweitdurchgang, **kein Standard-Testmaterial**; LRA nicht vorgetäuscht (B18 `lra_below_sixty_seconds_is_not_a_number`). Die fehlende Hälfte steht als Lücke **NAK-199**. |
+| M-82 | **gemessen** über die 18 Blockgrößen 1, 2, 3, 7, 15, 16, 31, 64, 127, 128, 333, 512, 1024, 2048, 4096, 8192, 12345, 16384 (B19-Sweep, `sweep_*`-Bezeichner; drei Träger für die Laufzeit, keine Lag-/Polaritätsempfehlung bei unkorrelierten Kanälen, Folddown ≤ 0,25 dB) — eine benannte Auswahl aus 1 bis 16384, keine Erschöpfung („über alle" wird nicht behauptet). |
+| M-83 | **gemessen**, auch Satz 2: die fokussierte 0,01-dB-Evidenz wird als eine Kette beidseitig gemessen — B16 aus dem Wire-Text des echten Serializers (Gain 3,00 dB je Band mit Bit ±0,1 dB, Leiter 20 × 0,01 dB → 20 um genau 1 verschiedene Ganzzahlen) und A4 `dekodierte_evidenz_findet_gain_mit_intervall` bandweise am Produkt über die lesende Testauskunft `resultatmessung_fuer_test` samt Bootstrap-Intervall, gekoppelt über `eq-copilot/fixtures/v3/evidenz-0p01-paar-wire-v1.json` (A8). Das Intervall lebt im Experimentpfad, nicht im Paarurteil (Lücke **NAK-198**). |
+| M-84 | **gemessen**, auch die Impulshälfte: B5 `impulse_time_is_stable_over_block_sizes_and_sample_rates` hält `stromSample` eines bekannten Impulses über 5 Sampleraten × 5 Blockgrößen (1, 333, 512, 2048, 16384) exakt gleich und innerhalb einer Fensterlänge (4096) vor t0; Ereigniszuordnung ohne t0 (stärkstes Flussereignis, Härtung **NAK-203** zur Flussschwelle). |
+| M-85 | **Ziel 2 und 3 gemessen** (Gate 6: `gate6_incomparable_never_gets_a_strong_winner`, `comparability_needs_all_five_and_hash_alone_never_wins`; Gate 7: `insert_probe_is_never_called_master_sum` mit Wahrheit `nicht_exakt` in `KEINE_STARKE`). **Ziel 1 (korrelierter, nicht kausaler Distraktor) ist in P4 nicht gemessen** — Entscheid G4 §8, Eigentümer P5/G5 (**NAK-190**); der Korpus behauptet ihn nicht mehr und A26 druckt die Lücke. Der frühere `nicht_kausal`-Fall zu B24 trägt jetzt die Wahrheit `zeitvariabel`. |
+
+Die Belegstatus-Spalte in §3.10 wird nicht umgeschrieben (append-only);
+wer M-79 bis M-85 liest, liest diese Tabelle mit.
+
 ## Kanon-Lauf - SONDE-013
 
 **Lauf:** 2026-09-04 23:20 | **Runner:** `tools/beweise.ps1` | **Urteil:** GRUEN - 53/53 Kanon-Laeufe bestanden | 2 geplante Pruefung(en) noch nicht gebaut | 1 stillgelegte(s) Bein(e), siehe Uebersicht | **Exitcode:** 0 | **Rohausgabe:** [roh/SONDE-013-043e98e.md](roh/SONDE-013-043e98e.md)

@@ -64,6 +64,14 @@ impl Coordinator {
             return;
         }
         stand.sessions.remove(session);
+        // SONDE-014 M-76: der gespiegelte Intent-Bestand und der gespiegelte
+        // Assistentenschritt sind FLUECHTIG und gehoeren zur Sitzung. Bleiben
+        // sie stehen, waechst die Map ueber jede Sitzungsgrenze hinaus - und
+        // schlimmer: eine gleichnamige neue Sitzung erbte eine
+        // Vollstaendigkeitsmarke, die ihr Main nie gesetzt hat. Der Broker
+        // rechnete dann auf einem Rest aus seinem Cache, genau das verbietet
+        // M-86.
+        Coordinator::intent_spiegel_leeren_locked(stand, session);
     }
 
     fn stales_opfer(
@@ -282,6 +290,7 @@ impl Coordinator {
                 .collect();
             for session in verwaist {
                 stand.sessions.remove(&session);
+                Coordinator::intent_spiegel_leeren_locked(&mut stand, &session);
             }
             let dirty = stand.dirty_sessions.iter().cloned().collect::<Vec<_>>();
             let mut schliessen = schliessen.into_iter().collect::<Vec<_>>();

@@ -20,14 +20,16 @@ use crate::store::{
 use crate::transport::bootstrap::{Adresse, AudioLage, HelloControl};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{BTreeSet, HashMap, HashSet, VecDeque};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex, OnceLock};
 use std::time::Duration;
 
+mod assistent;
 mod befehl;
 mod evidenz;
 mod flush;
+pub mod intent;
 mod intervention;
 mod link;
 mod liveness;
@@ -50,7 +52,10 @@ pub use sicht::{
     ClientModellSicht, ControlRegistrierung, Interventionssicht, Lautheitszustand,
     MessframeSicht, SessionModellSicht,
 };
+pub use assistent::{AssistentSpiegel, SchrittAbweisung};
 pub use evidenz::{Evidenzstand, EVIDENZ_RETENTION};
+pub use intent::{IntentAbweisung, IntentBestand, SchutzangabeSpiegel, SourceIntentSpiegel,
+                 INTENT_DECKEL};
 pub use prepost_verdrahtung::PAARURTEIL_DECKEL;
 /// Die aktive JSON-Vertragsfassung, nur fuer Beine sichtbar.
 ///

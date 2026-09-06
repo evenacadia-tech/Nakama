@@ -251,6 +251,51 @@ public:
     bool entmaskierungErlaubt (const juce::String& quelleA, const juce::String& quelleB,
                                const juce::String& passageId) const;
 
+    /*  ── SONDE-014 Etappe B: der Transport von Intent und Schritt ──────────
+
+        Der Weg, den E-10 und E-11 festlegen. Zwei Formen:
+
+        * `sendeIntentVollbestand()` nach Verbindungsaufbau und nach jedem
+          Brokerneustart — die VOLLSTAENDIGKEITSMARKE aus M-86, ohne die der
+          Broker gar nicht rechnet;
+        * eine Einzelfortschreibung je Aenderung, unter dem P1-Schluessel
+          `intent:<quelle_id>:<passage_id oder global>` (M-85).
+
+        Der Assistentenschritt reist unter `assistant_step:<session_epoch>`
+        (M-88). Beide koaleszieren, weil nur die juengste Revision wirkt. */
+    bool sendeIntentVollbestand();
+
+    /** Der aktuelle Assistentenschritt, wie der Main ihn haelt.
+
+        ⚠️ Dies ist der TRAEGER, nicht die Zustandsmaschine: Uebergaenge,
+        Abbruch, Zurueck, Ueberspringen und Resume gehoeren Etappe G. Hier
+        steht nur, was der Transport braucht — sonst haette die Fassung 3
+        eine Familie ohne Absender. */
+    struct AssistentSchritt
+    {
+        bool         gesetzt = false;
+        juce::String stepId;
+        juce::String schritt;        ///< aus der geschlossenen Menge des Vertrags
+        juce::int64  revision = 0;
+        bool         offen = true;
+        juce::String findingId;
+        juce::String proposalId;
+        juce::String experimentId;
+    };
+
+    /** Setzt den aktuellen Schritt und meldet ihn dem Broker.
+        `false`, wenn der Schrittname nicht in der Vertragsmenge steht oder
+        die Revision nicht steigt. */
+    bool setzeAssistentSchritt (const juce::String& stepId, const juce::String& schritt,
+                                bool offen, const juce::String& findingId = {},
+                                const juce::String& proposalId = {},
+                                const juce::String& experimentId = {});
+    AssistentSchritt assistentSchrittKopie() const;
+
+    std::string v3IntentUpdateFuerTest (bool vollstaendig) const
+    { return v3IntentUpdateJson (vollstaendig, nullptr, nullptr, nullptr); }
+    std::string v3AssistantStepFuerTest() const { return v3AssistantStepJson(); }
+
     // ── SONDE-013 M-40 bis M-51: der Experimentpfad des Plugins ────────────
     //
     // 🔑 Nacharbeit 2 (Befund R06): `Vergleichspegel` und `Blindvergleich`
@@ -824,6 +869,20 @@ private:
     nakama::ipc::ControlStatus v3Status() const;
     nakama::ipc::TelemetryHello v3TelemetryHello() const;
     std::string v3SubscribeJson() const;
+    /*  SONDE-014 E-10/E-11. `vollstaendig = false` verlangt GENAU EINEN der
+        drei Zeiger — die Consumerregel 5 aus `schemas/v3/README.md`. */
+    std::string v3IntentUpdateJson (bool vollstaendig,
+                                    const nakama::state::SourceIntent* nurDieser,
+                                    const nakama::state::Schutzangabe* nurDieserSchutz,
+                                    const nakama::state::IntentBeziehung* nurDiese) const;
+    std::string v3AssistantStepJson() const;
+    /** Meldet EIN geaendertes Intent-Objekt unter seinem eigenen
+        P1-Schluessel (M-85). Ohne Verbindung ein No-op. */
+    void sendeIntentFortschreibung (const juce::String& quelleId,
+                                    const juce::String& passageId);
+
+    mutable std::mutex assistentMutex;
+    AssistentSchritt   assistentSchritt;
     void v3ControlLink (bool verbunden);
     void v3Antwort (const std::string& json, std::uint8_t schemaMinor);
     void v3Frame (const std::uint8_t*, std::size_t, std::uint8_t schemaMinor);

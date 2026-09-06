@@ -1818,6 +1818,253 @@ std::string EqCopilotProcessor::v3SubscribeJson() const
          + ",\"session_epoch\":\"" + h.adresse.sessionEpoch + "\"}";
 }
 
+// ── SONDE-014 E-10/E-11: Intent und Assistentenschritt auf den Draht ───────
+//
+// Die Zahlen entstehen mit `juce::String` und nicht mit `std::to_string`:
+// letzteres ist LOCALE-abhaengig, und ein deutsches Dezimalkomma in einer
+// JSON-Zahl faellt beim Textriegel des Empfaengers. Derselbe Grund wie beim
+// Evidenzserialisierer (NAK-181 N-16).
+
+namespace
+{
+/// Eine endliche Zahl in Wire-Form. NaN und Inf entstehen hier gar nicht
+/// erst: der Aufrufer hat sie beim Setzen schon abgewiesen (M-82).
+std::string wireZahl (double x)
+{
+    if (! std::isfinite (x))
+        return "0";
+    return juce::String (x, 6).toStdString();
+}
+
+} // namespace
+
+std::string EqCopilotProcessor::v3IntentUpdateJson (bool vollstaendig,
+                                                    const nakama::state::SourceIntent* nurDieser,
+                                                    const nakama::state::Schutzangabe* nurDieserSchutz,
+                                                    const nakama::state::IntentBeziehung* nurDiese) const
+{
+    auto h = v3Hello();
+    h.adresse = nakama::ipc::wireAdresseAusState (h.adresse);
+    if (h.pluginKind != "main" || ! nakama::ipc::adresseGueltig (h.adresse))
+        return {};
+
+    std::vector<nakama::state::SourceIntent> intents;
+    std::vector<nakama::state::Schutzangabe> schutz;
+    std::vector<nakama::state::IntentBeziehung> kanten;
+    juce::int64 revision = 0;
+    {
+        std::lock_guard<std::mutex> l (bindungMutex);
+        revision = zustand.intentBestandRevision;
+        if (vollstaendig)
+        {
+            intents = zustand.sourceIntents;
+            schutz  = zustand.schutzangaben;
+            kanten  = zustand.intentBeziehungen;
+        }
+    }
+    // Eine TEILMELDUNG traegt genau EIN Objekt (Consumerregel 5, M-85): der
+    // P1-Schluessel adressiert genau eines, und eine Sammelnachricht unter
+    // demselben Schluessel koennte fremde Objekte verdraengen.
+    if (! vollstaendig)
+    {
+        if (nurDieser != nullptr)          intents.push_back (*nurDieser);
+        else if (nurDieserSchutz != nullptr) schutz.push_back (*nurDieserSchutz);
+        else if (nurDiese != nullptr)      kanten.push_back (*nurDiese);
+        else return {};
+    }
+
+    std::string aus = "{\"type\":\"intent_update\",\"adresse\":"
+                    + nakama::ipc::adresseAlsJson (h.adresse)
+                    + ",\"session_epoch\":\"" + h.adresse.sessionEpoch + "\""
+                    + ",\"bestand_revision\":" + std::to_string ((long long) revision)
+                    + ",\"vollstaendig\":" + (vollstaendig ? "true" : "false");
+
+    if (! intents.empty())
+    {
+        aus += ",\"intents\":[";
+        for (size_t i = 0; i < intents.size(); ++i)
+        {
+            const auto& s = intents[i];
+            if (i > 0) aus += ",";
+            aus += "{\"quelle_id\":\"" + s.quelleId.toStdString() + "\"";
+            // Abwesenheit heisst GLOBALER Scope, nie `null`.
+            if (s.passageId.isNotEmpty())
+                aus += ",\"passage_id\":\"" + s.passageId.toStdString() + "\"";
+            aus += ",\"rolle\":\"" + std::string (nakama::state::wort (s.rolle)) + "\"";
+            aus += ",\"revision\":" + std::to_string ((long long) s.revision);
+            aus += ",\"herkunft\":\"" + std::string (nakama::state::wort (s.herkunft)) + "\"";
+            aus += ",\"konfidenz\":" + wireZahl (s.konfidenz) + "}";
+        }
+        aus += "]";
+    }
+    if (! schutz.empty())
+    {
+        aus += ",\"schutzangaben\":[";
+        for (size_t i = 0; i < schutz.size(); ++i)
+        {
+            const auto& s = schutz[i];
+            if (i > 0) aus += ",";
+            aus += "{\"quelle_id\":\"" + s.quelleId.toStdString() + "\"";
+            aus += ",\"eigenschaft\":\"" + std::string (nakama::state::wort (s.eigenschaft)) + "\"";
+            // `band` genau dann, wenn die Eigenschaft es ist (Consumerregel 2).
+            if (s.eigenschaft == nakama::state::Schutzeigenschaft::band)
+                aus += ",\"band\":{\"von\":" + std::to_string (s.bandVon)
+                     + ",\"bis\":" + std::to_string (s.bandBis) + "}";
+            aus += "}";
+        }
+        aus += "]";
+    }
+    if (! kanten.empty())
+    {
+        aus += ",\"beziehungen\":[";
+        for (size_t i = 0; i < kanten.size(); ++i)
+        {
+            const auto& k = kanten[i];
+            if (i > 0) aus += ",";
+            aus += "{\"quelle_a\":\"" + k.quelleA.toStdString() + "\""
+                 + ",\"quelle_b\":\"" + k.quelleB.toStdString() + "\""
+                 + ",\"art\":\"" + std::string (nakama::state::wort (k.art)) + "\"}";
+        }
+        aus += "]";
+    }
+    aus += "}";
+    return aus;
+}
+
+std::string EqCopilotProcessor::v3AssistantStepJson() const
+{
+    auto h = v3Hello();
+    h.adresse = nakama::ipc::wireAdresseAusState (h.adresse);
+    if (h.pluginKind != "main" || ! nakama::ipc::adresseGueltig (h.adresse))
+        return {};
+
+    AssistentSchritt schritt;
+    {
+        std::lock_guard<std::mutex> l (assistentMutex);
+        if (! assistentSchritt.gesetzt)
+            return {};
+        schritt = assistentSchritt;
+    }
+    std::string aus = "{\"type\":\"assistant_step_update\",\"adresse\":"
+                    + nakama::ipc::adresseAlsJson (h.adresse)
+                    + ",\"session_epoch\":\"" + h.adresse.sessionEpoch + "\""
+                    + ",\"step_id\":\"" + schritt.stepId.toStdString() + "\""
+                    + ",\"schritt\":\"" + schritt.schritt.toStdString() + "\""
+                    + ",\"revision\":" + std::to_string ((long long) schritt.revision)
+                    + ",\"offen\":" + (schritt.offen ? "true" : "false");
+    if (schritt.findingId.isNotEmpty())
+        aus += ",\"finding_id\":\"" + schritt.findingId.toStdString() + "\"";
+    if (schritt.proposalId.isNotEmpty())
+        aus += ",\"proposal_id\":\"" + schritt.proposalId.toStdString() + "\"";
+    if (schritt.experimentId.isNotEmpty())
+        aus += ",\"experiment_id\":\"" + schritt.experimentId.toStdString() + "\"";
+    aus += "}";
+    return aus;
+}
+
+/*  M-86: die Vollstaendigkeitsmarke, BEVOR der Broker rechnet.
+
+    Reihenfolge nach M-75/M-76: anmelden -> Verbunden-Callback abgeschlossen
+    -> subscribe -> Intent-Vollbestand mit Marke -> Assistentenschritt -> erst
+    dann rechnet der Broker. Ein Veto darf durch Transportverlust nie
+    verschwinden; ein fehlender Intent saehe sonst aus wie „kein Schutz
+    gewuenscht".
+
+    Der Schluessel `intent:vollstaendig` ist ein EIGENER Koaleszierungsraum:
+    ein Vollbericht darf einen aelteren Vollbericht verdraengen, aber nie eine
+    Einzelfortschreibung unter `intent:<quelle>:<scope>` — die traegt ein
+    anderes Objekt. */
+bool EqCopilotProcessor::sendeIntentVollbestand()
+{
+    const auto json = v3IntentUpdateJson (true, nullptr, nullptr, nullptr);
+    if (json.empty())
+        return false;
+    const auto ergebnis = controlV3.sendeP1 ("intent:vollstaendig", json);
+    if (ergebnis != nakama::ipc::P1Ergebnis::eingereiht)
+        return false;
+
+    // Der Schritt reist im selben Zug. Fehlt er, ist das kein Fehler: ein
+    // frisches Projekt hat keinen offenen Assistentenschritt, und ein
+    // erfundener waere schlimmer als keiner.
+    const auto schritt = v3AssistantStepJson();
+    if (! schritt.empty())
+        controlV3.sendeP1 ("assistant_step:" + v3Hello().adresse.sessionEpoch, schritt);
+    return true;
+}
+
+void EqCopilotProcessor::sendeIntentFortschreibung (const juce::String& quelleId,
+                                                    const juce::String& passageId)
+{
+    nakama::state::SourceIntent kopie;
+    {
+        std::lock_guard<std::mutex> l (bindungMutex);
+        const auto* treffer = nakama::state::findeIntent (zustand, quelleId, passageId);
+        if (treffer == nullptr)
+            return;   // Ein Entfernen meldet der naechste Vollbestand; hier
+                      // gibt es kein Objekt, das reisen koennte.
+        kopie = *treffer;
+    }
+    const auto json = v3IntentUpdateJson (false, &kopie, nullptr, nullptr);
+    if (json.empty())
+        return;
+    // M-85: der Schluessel ist je Quelle UND Scope eigen. Zwei Passagen
+    // derselben Quelle sind zwei Objekte und duerfen sich nicht gegenseitig
+    // verdraengen; genau deshalb steht der Scope im Schluessel.
+    const auto schluessel = std::string ("intent:") + quelleId.toStdString() + ":"
+                          + (passageId.isEmpty() ? std::string ("global")
+                                                 : passageId.toStdString());
+    controlV3.sendeP1 (schluessel, json);
+}
+
+bool EqCopilotProcessor::setzeAssistentSchritt (const juce::String& stepId,
+                                                const juce::String& schritt,
+                                                bool offen,
+                                                const juce::String& findingId,
+                                                const juce::String& proposalId,
+                                                const juce::String& experimentId)
+{
+    // Die geschlossene Menge des Vertrags, hier als Riegel. Sie steht in
+    // `$defs/assistant_schritt`; `preview` gehoert ausdruecklich dazu — dass
+    // P5 keine Kante dorthin fuehrt, ist die Zustandsmaschine aus Etappe G,
+    // nicht der Vertrag (E-07).
+    static const char* const kSchritte[] = {
+        "coverage", "finding", "evidence", "listen",
+        "proposal", "preview", "remeasure", "verdict"
+    };
+    bool bekannt = false;
+    for (const auto* s : kSchritte)
+        bekannt = bekannt || schritt == s;
+    if (! bekannt || ! nakama::ipc::istHex32 (stepId.toStdString()))
+        return false;
+
+    {
+        std::lock_guard<std::mutex> l (assistentMutex);
+        // Die Revision ist streng steigend. Ein Schritt, dessen Revision
+        // nicht steigt, sieht fuer den Broker aus wie „nichts passiert" - und
+        // wuerde nach der Koaleszierung verschluckt (M-88).
+        if (assistentSchritt.revision >= std::numeric_limits<juce::int64>::max())
+            return false;
+        assistentSchritt.gesetzt      = true;
+        assistentSchritt.stepId       = stepId;
+        assistentSchritt.schritt      = schritt;
+        assistentSchritt.offen        = offen;
+        assistentSchritt.findingId    = findingId;
+        assistentSchritt.proposalId   = proposalId;
+        assistentSchritt.experimentId = experimentId;
+        ++assistentSchritt.revision;
+    }
+    const auto json = v3AssistantStepJson();
+    if (! json.empty())
+        controlV3.sendeP1 ("assistant_step:" + v3Hello().adresse.sessionEpoch, json);
+    return true;
+}
+
+EqCopilotProcessor::AssistentSchritt EqCopilotProcessor::assistentSchrittKopie() const
+{
+    std::lock_guard<std::mutex> l (assistentMutex);
+    return assistentSchritt;
+}
+
 void EqCopilotProcessor::v3ControlLink (bool verbunden)
 {
     if (! verbunden)
@@ -2016,6 +2263,17 @@ void EqCopilotProcessor::v3ControlLink (bool verbunden)
         controlV3.reconnect();
         return;
     }
+    // 🔑 SONDE-014 M-86: die VOLLSTAENDIGKEITSMARKE, und zwar HIER - nach dem
+    // subscribe und vor jeder Rechnung des Brokers.
+    //
+    // Die Reihenfolge ist die Zusage (M-75/M-76): anmelden, Verbunden-Callback
+    // abgeschlossen, subscribe, Intent-Vollbestand mit Marke, Schritt - erst
+    // dann rechnet der Broker. Ein Veto darf durch Transportverlust nie
+    // verschwinden; ein fehlender Intent saehe sonst aus wie „kein Schutz
+    // gewuenscht", und das ist der teuerste Irrtum, den dieser Datenweg
+    // machen kann. Auch ein LEERER Bestand wird gemeldet - „diese Sitzung hat
+    // keinen Intent" ist eine Aussage, „ich habe nichts gehoert" ist keine.
+    sendeIntentVollbestand();
     telemetryV3.reconnect();
 }
 
@@ -3218,6 +3476,11 @@ bool EqCopilotProcessor::setzeQuellenrolle (const juce::String& quelleId,
     {
         meldeHostDirty();
         v3StateRevision.fetch_add (1);
+        // M-85: die Fortschreibung reist unter ihrem eigenen Schluessel. Sie
+        // steht NACH dem Dirty, weil ein Wire-Write kein persistenter
+        // Vorgang ist - und ausserhalb des Schlosses, weil sie in den
+        // ControlClient ruft.
+        sendeIntentFortschreibung (quelleId, passageId);
     }
     return true;
 }
@@ -3238,6 +3501,12 @@ bool EqCopilotProcessor::entferneQuellenrolle (const juce::String& quelleId,
     {
         meldeHostDirty();
         v3StateRevision.fetch_add (1);
+        // Ein ENTFERNTES oder mengenwertiges Objekt hat keine Einzelform, die
+        // unter einem Objektschluessel reisen koennte. Es meldet deshalb den
+        // VOLLBESTAND mit neuer Marke - teurer, aber ehrlich: eine
+        // Fortschreibung, die ein Verschwinden ausdruecken soll, gibt es im
+        // Vertrag nicht.
+        sendeIntentVollbestand();
     }
     return true;
 }
@@ -3260,6 +3529,12 @@ bool EqCopilotProcessor::schuetzeQuelle (const juce::String& quelleId,
     {
         meldeHostDirty();
         v3StateRevision.fetch_add (1);
+        // Ein ENTFERNTES oder mengenwertiges Objekt hat keine Einzelform, die
+        // unter einem Objektschluessel reisen koennte. Es meldet deshalb den
+        // VOLLBESTAND mit neuer Marke - teurer, aber ehrlich: eine
+        // Fortschreibung, die ein Verschwinden ausdruecken soll, gibt es im
+        // Vertrag nicht.
+        sendeIntentVollbestand();
     }
     return true;
 }
@@ -3282,6 +3557,12 @@ bool EqCopilotProcessor::hebeQuellenschutzAuf (const juce::String& quelleId,
     {
         meldeHostDirty();
         v3StateRevision.fetch_add (1);
+        // Ein ENTFERNTES oder mengenwertiges Objekt hat keine Einzelform, die
+        // unter einem Objektschluessel reisen koennte. Es meldet deshalb den
+        // VOLLBESTAND mit neuer Marke - teurer, aber ehrlich: eine
+        // Fortschreibung, die ein Verschwinden ausdruecken soll, gibt es im
+        // Vertrag nicht.
+        sendeIntentVollbestand();
     }
     return true;
 }
@@ -3305,6 +3586,12 @@ bool EqCopilotProcessor::setzeQuellenbeziehung (const juce::String& quelleA,
     {
         meldeHostDirty();
         v3StateRevision.fetch_add (1);
+        // Ein ENTFERNTES oder mengenwertiges Objekt hat keine Einzelform, die
+        // unter einem Objektschluessel reisen koennte. Es meldet deshalb den
+        // VOLLBESTAND mit neuer Marke - teurer, aber ehrlich: eine
+        // Fortschreibung, die ein Verschwinden ausdruecken soll, gibt es im
+        // Vertrag nicht.
+        sendeIntentVollbestand();
     }
     return true;
 }
@@ -3332,6 +3619,12 @@ bool EqCopilotProcessor::entferneQuellenbeziehung (const juce::String& quelleA,
     {
         meldeHostDirty();
         v3StateRevision.fetch_add (1);
+        // Ein ENTFERNTES oder mengenwertiges Objekt hat keine Einzelform, die
+        // unter einem Objektschluessel reisen koennte. Es meldet deshalb den
+        // VOLLBESTAND mit neuer Marke - teurer, aber ehrlich: eine
+        // Fortschreibung, die ein Verschwinden ausdruecken soll, gibt es im
+        // Vertrag nicht.
+        sendeIntentVollbestand();
     }
     return true;
 }

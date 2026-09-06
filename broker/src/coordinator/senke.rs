@@ -106,6 +106,18 @@ impl crate::transport::server_v3::Senke for Coordinator {
             Some("evidence_snapshot") => {
                 let _ = self.evidence_snapshot_json_mit_minor(link_id, payload, schema_minor);
             }
+            // SONDE-014 E-10/E-11: Intent und Assistentenschritt reisen als
+            // P1 vom Main zum Broker. Dasselbe Muster wie bei den drei
+            // Nachbarn - ein abgelehnter P1 schliesst die Verbindung nicht,
+            // er wird gezaehlt. Der GRUND der Ablehnung bleibt hier bewusst
+            // unbenutzt: er ist die Testnaht, nicht der Produktweg.
+            Some("intent_update") => {
+                let _ = self.intent_update_json_mit_minor(link_id, payload, schema_minor);
+            }
+            Some("assistant_step_update") => {
+                let _ =
+                    self.assistant_step_update_json_mit_minor(link_id, payload, schema_minor);
+            }
             _ => {}
         }
     }

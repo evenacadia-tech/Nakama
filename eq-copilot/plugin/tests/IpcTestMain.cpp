@@ -133,6 +133,56 @@ std::string experimentErgebnisBefehl (const std::string& commandId)
            "\"werkzeug\":null}";
 }
 
+/*  SONDE-014 E-09: der Steuerkopf, den beide neuen P0-/P1-Traeger fuehren.
+
+    Er steht als eigene Zeichenkette da, weil `draft_offer` und `user_verdict`
+    ihn TEILEN — und weil das der Punkt ist: keine der beiden Familien braucht
+    im C++-Client eine Zeile Sonderbehandlung, das In-Flight-Register haengt
+    an der `command_id` und nicht am Familiennamen. */
+std::string testZielJson()
+{
+    return "{\"logon_sid\":\"S-1-5-21-1-2-3-1001\","
+           "\"project_binding_id\":\"00000000000000000000000000000000\","
+           "\"session_epoch\":\"11111111111111111111111111111111\","
+           "\"instance_id\":\"22222222222222222222222222222222\","
+           "\"runtime_nonce\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}";
+}
+
+std::string steuerkopfJson (const std::string& commandId)
+{
+    return "{\"command_id\":\"" + commandId + "\",\"ziel\":" + testZielJson()
+         + ",\"base_revision\":0,\"ttl_ms\":10000,\"schema_major\":3,"
+           "\"schema_minor\":3}";
+}
+
+/*  Der KLEINSTE gueltige Vorschlag: `keine Aenderung`.
+
+    §59 fuehrt ihn ausdruecklich als gueltigen Vorschlag mit vollstaendigem
+    Objekt — Ziel, Passage, Hoerziel, Stopbedingung und Rueckweg stehen, nur
+    der Eingriff fehlt. Genau deshalb ist er die richtige Nutzlast fuer ein
+    Transportbein: er misst den Weg, nicht die Policy. */
+std::string kleinstesProposalJson (const std::string& proposalId)
+{
+    return "{\"proposal_id\":\"" + proposalId + "\",\"proposal_schema\":1,"
+           "\"target\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"base_revision\":0,"
+           "\"action\":\"no_change\",\"parameters\":{},\"allowed_bounds\":{},"
+           "\"evidence_ids\":[\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"],"
+           "\"expected_effect\":\"none\",\"protected_traits\":[],"
+           "\"listen_for\":\"nichts aendert sich\","
+           "\"stop_if\":[\"keine_wiederholbare_masteraenderung\"],"
+           "\"execution\":\"manual\","
+           "\"confidence\":{\"class\":\"mittel\",\"score\":0.5},"
+           "\"revert\":\"none_needed\"}";
+}
+
+std::string userVerdictBefehl (const std::string& commandId)
+{
+    return "{\"type\":\"user_verdict\",\"kopf\":" + steuerkopfJson (commandId)
+         + ",\"user_verdict_id\":\"cccccccccccccccccccccccccccccccc\""
+           ",\"finding_id\":\"dddddddddddddddddddddddddddddddd\""
+           ",\"urteil\":\"angenommen\"}";
+}
+
 std::string persistenzBefehl (const std::string& commandId)
 {
     return "{\"type\":\"preview_begin\",\"kopf\":{\"command_id\":\""
@@ -5461,6 +5511,137 @@ int main (int argc, char** argv)
         });
         pruefe (frei,
                 "experiment_manual_result_ist_ein_persistenzpflichtiger_p0_befehl");
+        control.stop();
+        server.stoppen();
+    }
+
+    // ── SONDE-014 (P5) · die Fassung 3 auf der C++-Seite ───────────────────
+    //
+    // Dieselben zwei Ebenen wie eine Fassung tiefer:
+    //
+    //   1. die vier neuen Familien werden von DERSELBEN C++-Engine angenommen,
+    //      die B3c gegen das Manifest misst — mit Gegenproben, dass die
+    //      geschlossenen Mengen wirklich geschlossen sind (M-77);
+    //   2. `user_verdict` laeuft als PERSISTENZPFLICHTIGER P0 durch das echte
+    //      In-Flight-Register, und `draft_offer` als P1 mit Schluessel. Der
+    //      Unterschied ist die Zusage aus E-09: ein Userurteil darf NICHT
+    //      koaleszieren, ein Entwurf schon.
+    abschnitt ("SONDE-014 · Fassung 3 (C++-Haelfte, M-77/M-85/M-88/E-09)");
+    {
+        const auto schemaDatei = wurzel()
+            .getChildFile ("eq-copilot/schemas/v3/eq-ipc-v3.schema.json");
+        nakama::vertrag::Schema schema;
+        juce::String ladefehler;
+        const bool geladen = nakama::vertrag::Schema::laden (
+            juce::JSON::parse (schemaDatei), schema, ladefehler);
+        pruefe (geladen, "v3-Schema der Fassung 3 laedt in die C++-Engine",
+                ladefehler.toStdString());
+
+        const auto basis = wurzel().getChildFile ("eq-copilot/fixtures/v3/gueltig");
+        bool alleAngenommen = geladen;
+        std::string erstesAbweichende;
+        for (const char* name : { "intent_update", "assistant_step_update",
+                                  "draft_offer", "user_verdict",
+                                  "session-snapshot-mit-findings",
+                                  "experiment-begin-mit-ziel" })
+        {
+            const auto datei = basis.getChildFile (juce::String (name) + ".json");
+            const auto daten = juce::JSON::parse (datei);
+            const auto verletzungen = geladen ? schema.pruefe (daten)
+                                              : juce::Array<nakama::vertrag::Verletzung> {};
+            if (! datei.existsAsFile() || ! verletzungen.isEmpty())
+            {
+                alleAngenommen = false;
+                if (erstesAbweichende.empty())
+                    erstesAbweichende = name;
+            }
+        }
+        pruefe (alleAngenommen,
+                "fassung_3_familien_und_felder_werden_von_der_cpp_engine_angenommen",
+                erstesAbweichende);
+
+        // M-77, die scharfe Haelfte: die geschlossenen Mengen sind auf DIESER
+        // Seite genauso geschlossen wie auf der Rust-Seite. Ein sechster
+        // Rollenwert, ein vierter Rueckweg und ein neunter Ausschlussgrund
+        // fallen einzeln — sonst sagte die Zeile darueber nur, dass die
+        // Engine ueberhaupt etwas annimmt.
+        auto mitFeld = [&] (const char* fixture, const char* pfad0, int index,
+                            const char* feld, const juce::var& wert)
+        {
+            auto daten = juce::JSON::parse (basis.getChildFile (juce::String (fixture) + ".json"));
+            auto* obj = daten.getDynamicObject();
+            if (obj == nullptr) return daten;
+            auto liste = obj->getProperty (pfad0);
+            if (auto* arr = liste.getArray())
+                if (index < arr->size())
+                    if (auto* eintrag = (*arr)[index].getDynamicObject())
+                        eintrag->setProperty (feld, wert);
+            return daten;
+        };
+
+        const auto sechsteRolle = mitFeld ("intent_update", "intents", 0, "rolle", "impuls");
+        pruefe (geladen && ! schema.pruefe (sechsteRolle).isEmpty(),
+                "sechster_rollenwert_faellt_an_der_cpp_engine");
+
+        auto vierterRueckweg = juce::JSON::parse (basis.getChildFile ("draft_offer.json"));
+        if (auto* obj = vierterRueckweg.getDynamicObject())
+            if (auto* p = obj->getProperty ("proposal").getDynamicObject())
+                p->setProperty ("revert", "dsp_revert");
+        pruefe (geladen && ! schema.pruefe (vierterRueckweg).isEmpty(),
+                "vierter_rueckweg_dsp_revert_faellt_an_der_cpp_engine");
+
+        const auto neunterGrund = mitFeld ("session-snapshot-mit-findings",
+                                           "findings", 0, "zustand", "pending");
+        pruefe (geladen && ! schema.pruefe (neunterGrund).isEmpty(),
+                "vierter_befundzustand_faellt_an_der_cpp_engine");
+
+        // Und die Fassungswahl selbst: der Envelope traegt jetzt 3, und beide
+        // Seiten fuehren dieselbe Zahl.
+        pruefe (nakama::ipc::kJsonSchemaMinor == 3,
+                "der_wire_envelope_traegt_die_fassung_drei");
+
+        TestServer server (testPipeName ("sonde014-fassung3"));
+        server.commandAckArt.store (1);
+        server.starten();
+        ControlClient control ([&] {
+            ControlHello h;
+            h.adresse = testAdresse (hex32 ('f'));
+            return h;
+        }, server.pipeName());
+        control.start();
+        const bool verbunden = warteAuf (5000, [&] {
+            return control.snapshot().status == ControlClient::Status::verbunden;
+        });
+
+        // E-09, Haelfte 1: `draft_offer` reist als P1 mit Schluessel. Zwei
+        // Entwuerfe DESSELBEN Vorschlags koaleszieren; zwei verschiedene
+        // Vorschlaege verdraengen sich nicht.
+        const auto entwurf = [] (const std::string& proposalId)
+        {
+            return std::string ("{\"type\":\"draft_offer\",\"kopf\":")
+                 + steuerkopfJson (hex32 ('9'))
+                 + ",\"proposal\":" + kleinstesProposalJson (proposalId) + "}";
+        };
+        const bool p1Eins = verbunden
+            && control.sendeP1 (std::string ("proposal:") + hex32 ('1'), entwurf (hex32 ('1')))
+                   == nakama::ipc::P1Ergebnis::eingereiht;
+        const bool p1Zwei = p1Eins
+            && control.sendeP1 (std::string ("proposal:") + hex32 ('2'), entwurf (hex32 ('2')))
+                   == nakama::ipc::P1Ergebnis::eingereiht;
+        pruefe (p1Eins && p1Zwei,
+                "draft_offer_reist_als_p1_mit_proposal_schluessel");
+
+        // E-09, Haelfte 2: `user_verdict` ist ein PERSISTENZPFLICHTIGER P0.
+        // Er laeuft durch dasselbe In-Flight-Register wie jede andere
+        // steuernde Nachricht — und koalesziert damit strukturell NICHT.
+        const bool urteilAngenommen = verbunden
+            && control.sendePersistenzP0 (userVerdictBefehl (hex32 ('8')));
+        const bool urteilFrei = urteilAngenommen && warteAuf (3000, [&] {
+            const auto s = control.snapshot();
+            return s.inFlight == 0 && s.inFlightErfolg >= 1;
+        });
+        pruefe (urteilFrei,
+                "user_verdict_ist_ein_persistenzpflichtiger_p0_befehl_und_koalesziert_nicht");
         control.stop();
         server.stoppen();
     }

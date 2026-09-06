@@ -337,6 +337,41 @@ impl StoreHandle {
         })
     }
 
+    /// SONDE-014 E-11 (M-89): der **versionierte Spiegel** des
+    /// `AssistantStep` einer Sitzung, in Ereignisreihenfolge.
+    ///
+    /// Er liest das append-only `event_log` und keine Domaenentabelle — und
+    /// das ist der Punkt. §33.5 sagt „versionierter SQLite-Spiegel fuer Suche
+    /// und Crashdiagnose" zu; ein Log mit `event_ord`, Fassung im Envelope und
+    /// Revision im Payload IST das. Eine Domaenentabelle `assistant_steps`
+    /// haette dagegen eine Store-Migration 2 verlangt (und damit die
+    /// Pruefsumme von `MIGRATION_1_SQL` beruehrt) und einen ZWEITEN Ort
+    /// geschaffen, an dem ein Schritt steht — der Spiegel ist aber nie
+    /// autoritativ, und ein autoritativ AUSSEHENDER Ort ist die teuerste
+    /// Sorte Fehler.
+    ///
+    /// Der `event_ord` sortiert; die Reihenfolge ist damit die des Writers und
+    /// nicht die der Wanduhr.
+    pub fn assistent_schritte_lesen(
+        &self,
+        project_binding_id: &str,
+        session_epoch: &str,
+    ) -> Result<Vec<Vec<u8>>, StoreFehler> {
+        kurze_leseconnection(&self.db_pfad, |conn| {
+            let mut stmt = conn.prepare(
+                "SELECT payload_jcs FROM event_log \
+                 WHERE event_type='assistant_step' \
+                   AND project_binding_id=?1 AND session_epoch=?2 \
+                 ORDER BY event_ord",
+            )?;
+            let rows = stmt.query_map([project_binding_id, session_epoch], |row| {
+                row.get::<_, Vec<u8>>(0)
+            })?;
+            rows.collect::<Result<Vec<_>, _>>()
+                .map_err(StoreFehler::from)
+        })
+    }
+
     /// Der Payload EINES Ereignisses (Befund B17).
     ///
     /// Eine Outbox-Zeile nennt nur die `event_ord` ihrer Schuld. Ohne den

@@ -307,6 +307,18 @@ pub(super) struct Stand {
     /// POST-Haelfte aus Sitzung B bildeten ein Paar und mischten
     /// Projektdaten. Die `pair_id` allein identifiziert kein Paar.
     pub(super) paarurteile: HashMap<(SessionKey, String), super::prepost::Paarurteil>,
+    /// SONDE-014 E-10: der gespiegelte Intent-Bestand JE SITZUNG.
+    ///
+    /// FLUECHTIG wie der Sessiongraph: er wird aus dem Main-State
+    /// rekonstruiert, nie zurueckgeschrieben (§33.5, M-76). Solange
+    /// `IntentBestand::vollstaendig` falsch ist, rechnet der Broker nicht —
+    /// ein fehlender Intent saehe sonst aus wie „kein Schutz gewuenscht".
+    pub(super) intent: HashMap<SessionKey, super::intent::IntentBestand>,
+    pub(super) intent_updates: u64,
+    /// SONDE-014 E-11: der gespiegelte `AssistantStep` JE SITZUNG. Ebenfalls
+    /// fluechtig; der persistente Teil liegt im append-only `event_log`.
+    pub(super) assistent: HashMap<SessionKey, super::assistent::AssistentSpiegel>,
+    pub(super) assistent_updates: u64,
     /// Der Experimentteil des Stores (M-40 bis M-51, Befund B18).
     ///
     /// Er liegt IM `Stand` und nicht daneben: die Terminalereignisse muessen
@@ -520,6 +532,10 @@ impl Default for Stand {
             evidence_gesperrt: 0,
             evidence_beeinflusst: 0,
             paarurteile: HashMap::new(),
+            intent: HashMap::new(),
+            intent_updates: 0,
+            assistent: HashMap::new(),
+            assistent_updates: 0,
             experimente: super::experiment::Experimentstore::neu(),
             invalidierungen: 0,
             evidenz_ausgeschlossen: 0,

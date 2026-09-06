@@ -586,6 +586,13 @@ impl Coordinator {
                     taint.unknown = true;
                 } else {
                     stand.taint.remove(&session);
+                    // SONDE-014 M-76/M-86: derselbe Grund eine Zeile weiter.
+                    // Ein Intent-Spiegel auf einer Sitzung, die es nicht mehr
+                    // gibt, ist genauso ein Phantom wie ein sticky Unknown -
+                    // und ein gefaehrlicheres: seine Vollstaendigkeitsmarke
+                    // gaebe einer gleichnamigen neuen Sitzung das Rechnen
+                    // frei, ohne dass deren Main je etwas gemeldet haette.
+                    Self::intent_spiegel_leeren_locked(&mut stand, &session);
                 }
             }
             // Ein Link ohne auffindbare Sitzung: fail-closed ueber alle.

@@ -1,0 +1,301 @@
+NAK-182 Nacharbeit 1 - ROTBEWEIS M-82-empfehlung (Empfehlungsfreiheit je Blockgroesse)
+
+EP-03: `sweep_uncorrelated_channels` pruefte nur Basis, Korrelationsbit und
+Korrelation. N-19 verlangt zusaetzlich "keine Lag- oder
+Polaritaetsempfehlung" - eine faelschlich vorhandene Phase waere bei niedriger
+Korrelation als richtige Antwort durchgegangen.
+
+Manipulation (Test-Speiser): beide Kanaele bekommen ZUSAETZLICH zum jeweils
+eigenen, unabhaengigen Rauschen denselben Ton bei 5000 Hz (Amplitude 0,30).
+
+WARUM NICHT VOLLSTAENDIG KORRELIERTE KANAELE: das waere der naheliegende Weg
+und der WERTLOSE. Bei gleichen Kanaelen steigt die Korrelation im gemessenen
+1-kHz-Band ueber 0,2, und die Zeile faellt schon am alten Praedikat - eine
+Probe, die auch ohne den Fix rot ist, ist eine Regressionswache und kein Beleg
+(Pruefliste E). Der gemeinsame Ton bei 5 kHz laesst das GEMESSENE Band
+unkorreliert und macht nur ein anderes Band kohaerent.
+
+Gewertete Zeile (Manifest Paragraph 7.1, NR-03): "sweep_uncorrelated_channels:
+und jede traegt dieselbe analytisch bekannte Antwort".
+
+Erwartet und gemessen, LAUF 1 (mit der neuen Phasenpruefung): Korrelation im
+1-kHz-Band bleibt bei -0,1933, also unter der Schwelle 0,2 - und trotzdem
+faellt die Zeile, weil 1 von 196 Baendern mit Basis eine Phase traegt. Exit 1,
+90 bestanden, 1 gescheitert. Nur diese eine Zeile faellt; die uebrigen fuenf
+Klassen bleiben gruen.
+
+Erwartet und gemessen, LAUF 2 (dieselbe Manipulation, Praedikat OHNE die
+Phasenpruefung - also die Fassung vor der Nacharbeit): Exit 0, 91 bestanden,
+0 gescheitert. Der Bericht zeigt dieselbe Zahl "1 von 196 mit Phase", und die
+Zeile bleibt gruen. Damit ist gemessen, dass allein die neue Pruefung den
+Unterschied macht und nicht ein Nebeneffekt der Manipulation.
+
+Danach beides zurueckgenommen; der gruene Lauf steht in
+`NAK-182-nacharbeit-1-beine-d3d9661.txt`.
+
+Kommando: EqCopSonde013StereoGoldenTest.exe
+
+### LAUF 1 - mit der neuen Phasenpruefung (Exit 1)
+
+== Nakama SONDE-013 - bandweise Stereoevidenz (§40.1, §40.3) ==
+
+== M-08  mono_identity ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   das 1-kHz-Band ist im Gitter auffindbar  [Band 121]
+[ok]   es traegt eine Basis
+[ok]   bei echtem Mono ist die Korrelation exakt 1  [1.000000]
+[ok]   und der Seitenanteil liegt am Boden - es gibt keine Seitenenergie  [-120.00 dB]
+[ok]   die Kohaerenz ist 1 - zwei identische Kanaele sind vollstaendig kohaerent  [1.000000]
+[ok]   und die Phase ist 0 - kein Laufzeitunterschied  [0.000000 rad]
+[ok]   der Mono-Folddown ist 0 dB innerhalb 0,25 dB (Â§40.3) - eine Monosumme aus zwei gleichen Kanaelen verliert nichts  [0.0000 dB]
+[ok]   und die L/R-Balance ist 0 dB  [0.0000 dB]
+
+== M-08  silent_channel_has_no_bit ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   mit einem stillen Kanal faellt das Kohaerenzbit weg, statt 0 oder NaN zu senden
+[ok]   und die Phase erst recht - sie ist eine Teilmenge der Kohaerenzbits
+[ok]   die Basis steht trotzdem: ein stiller Kanal ist maximal breit (Mid und Side tragen dieselbe Energie)  [-3.01 dB]
+[ok]   der Mono-Folddown ist rund -3 dB - die halbe Energie ist im stillen Kanal  [-3.010 dB]
+[ok]   und die Balance kippt vollstaendig nach links - der Wert laeuft an die Vertragsgrenze, statt zu fehlen: 'ganz links' ist eine Aussage, kein Schweigen  [400.0 dB]
+
+== M-08  folddown_matches_real_buffer_within_0p25db ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   der gemeldete Verlust stimmt mit dem von Hand gefalteten Puffer innerhalb 0,25 dB ueberein  [gemeldet -3.010 dB, von Hand -3.010 dB]
+
+== M-11  bandwise_ms_and_correlation ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   100 Hz und 5 kHz liegen in verschiedenen Baendern  [Band 41 gegen 176]
+[ok]   beide tragen eine Basis
+[ok]   unten ist das Material mono - Korrelation nahe 1  [1.0000]
+[ok]   oben ist es dekorreliert - und GENAU DAS koennen zwei globale Skalare nicht ausdruecken  [unten 1.0000, oben -0.0002]
+[ok]   und der Seitenanteil trennt die beiden Baender ebenso  [unten -120.00 dB, oben -3.01 dB]
+
+== M-11  coherence_carries_window_and_dof ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   das Band traegt seine Freiheitsgrade - die Zahl der gemittelten gueltigen Welch-Frames (Â§40.1: 'Fensterdauer und Freiheitsgrade werden Teil der Evidenz')  [24 Frames]
+[ok]   und seine Fensterdauer in Millisekunden  [1024.0 ms]
+[ok]   mit genug Frames traegt die Kohaerenz ein Bit
+[ok]   und die Dauer ist die Summe der Hops ueber genau diese Frames  [1024.00 ms gegen 1024.00 ms]
+
+== M-11  coherence_is_null_below_eight_frames ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   es gibt wirklich Baender mit weniger als acht Frames - der Fall ist hergestellt, nicht ausgerechnet  [149 von 149 Baendern mit Basis]
+[ok]   und KEINES davon traegt ein Kohaerenzbit - unter acht Frames ist die Kohaerenz `null`, nicht 1  [0 mit Bit, 149 ohne]
+
+== M-11  phase_only_in_coherent_bands ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   es gibt Baender MIT und OHNE Phase - der Fall trennt wirklich  [2 mit Phase, 149 mit Kohaerenz]
+[ok]   kein Band traegt eine Phase ohne Kohaerenz - die Phasenbits sind eine TEILMENGE der Kohaerenzbits (das kann das Schema nicht sagen)  [0 Verletzungen]
+[ok]   und keines unterhalb der benannten Schwelle 0.80  [0 Verletzungen]
+
+== M-11  bekannte Laufzeit: die Phase folgt -2*pi*f*tau ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   mindestens zwei der drei Traegerfrequenzen tragen eine Phase  [3 von 3]
+[ok]   und jede folgt der Formel +2*pi*f*tau - die Phase ist gemessen, nicht geraten  [groesste Abweichung 0.0000 rad]
+
+== M-11  persistence_is_reported ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   ein durchgehend kohaerentes Band meldet hohe Persistenz  [1.000]
+[ok]   ein unkorreliertes Band meldet niedrige - die Zahl misst wirklich die Stabilitaet des Befundes  [0.000]
+
+== M-10  band_stereo_metrics_share_the_nyquist_cap ==
+[ok]   ein Evidenzfenster bei 22,05 kHz entsteht
+[ok]   es gibt Baender ueber der Kappe - der Fall ist hergestellt  [18 Baender ab 10.47 kHz]
+[ok]   und KEINES traegt eine Stereometrik - die neuen Bandmetriken erben die Nyquist-Kappe, es entsteht keine zweite Regel  [0 Verletzungen]
+
+== M-12  width_alone_is_never_a_defect / low_coherence_yields_no_recommendation ==
+[ok]   ein sehr breites, inkohaerentes Evidenzfenster entsteht
+[ok]   viele Baender sind maximal breit  [195 von 196]
+[ok]   und trotzdem entsteht in KEINEM eine Phase - bei niedriger Kohaerenz gibt es keine Lag- oder Polaritaetsaussage (Â§40.2), und Breite allein ist kein Befund  [0 Baender mit Phase]
+
+== §40.3  Polaritaetsinvertierung: Korrelation -1, Monosumme loescht aus ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   die Korrelation ist -1  [-1.000000]
+[ok]   die KOHAERENZ ist dabei 1 - sie misst den Zusammenhang, nicht das Vorzeichen. Wer beide verwechselt, meldet Antiphase als Rauschen  [1.000000]
+[ok]   und die Phase ist +/-pi - genau die Aussage 'invertiert'  [3.1416 rad]
+[ok]   die Monosumme loescht sich VOLLSTAENDIG aus - der Wert laeuft an die Vertragsgrenze, statt zu fehlen. Gemessen am wirklich gefalteten Puffer, nicht aus der Korrelation geschaetzt: das ist die schaerfste Stereoaussage, die es gibt, und sie darf nicht schweigen  [-400.0 dB]
+
+== §32.3  keine Stereogroesse ueberbrueckt eine Transportgrenze ==
+[ok]   vor der Grenze steht ein Evidenzfenster
+[ok]   mit hoher Korrelation und gemessenem Folddown  [Korr 1.0000, Folddown 0.000 dB]
+[ok]   nach der Grenze entsteht ein neues Evidenzfenster
+[ok]   und seine Korrelation ist die des NEUEN Materials - kein Kreuzspektrum hat die Grenze ueberbrueckt  [-0.1377]
+[ok]   auch der Folddown ist neu gemessen und nicht fortgeschrieben  [vorher 0.000 dB, nachher -3.026 dB]
+
+-----------------------------------------
+
+== NAK-181 N-21  kurzkorrelation_und_persistenz_schweigen_ohne_kurzfenster ==
+[ok]   N-21: der Fall faehrt die VORGABEkadenz  [0.250]
+[ok]   N-21: ein Evidenzfenster entsteht
+[ok]   N-21: Baender mit Basis gibt es  [149]
+[ok]   N-21: aber KEIN Band traegt korrelation_kurz - das Kurzfenster schliesst bei 0,25 s nie  [0]
+[ok]   N-21: und keines persistenz  [0]
+
+== NAK-181 N-22  praesenzbits_ueberleben_das_fensterleeren ==
+[ok]   N-22: ein Evidenzfenster bei 48 kHz
+[ok]   N-22: beide Bits stehen NACH dem Fensterleeren (48 kHz)  [1.000]
+[ok]   N-22: und die Persistenz traegt ihren Wert  [1.000]
+[ok]   N-22: ein Evidenzfenster bei 96 kHz
+[ok]   N-22: beide Bits stehen NACH dem Fensterleeren (96 kHz)  [1.000]
+[ok]   N-22: und die Persistenz traegt ihren Wert  [1.000]
+
+== NAK-181 N-23  stiller_kanal_laesst_alle_drei_bits_weg ==
+[ok]   N-23: ein Evidenzfenster entsteht
+[ok]   N-23: die Basis steht (ein stiller Kanal ist maximal breit)
+[ok]   N-23: korrelation_mittel traegt KEIN Bit - der Nenner ist null (M-08: bei stillem Kanal faellt das Praesenzbit weg)
+[ok]   N-23: korrelation_kurz ebenso
+[ok]   N-23: und persistenz ebenso - obwohl Kurzfenster geschlossen haben, hatte DIESES Band in keinem einen gueltigen Nenner
+
+== NAK-182 M-82  Blockgroessen-Sweep: fuenf Klassen und Folddown ==
+[ok]   sweep_mono_identity: bei jeder Blockgroesse aus {1, 2, 3, 7, 15, 16, 31, 64, 127, 128, 333, 512, 1024, 2048, 4096, 8192, 12345, 16384} entsteht ein Evidenzfenster  [18 von 18]
+[ok]   sweep_mono_identity: und jede traegt dieselbe analytisch bekannte Antwort  [1:1.0000/1.0000/0.0000/0.000, 2:1.0000/1.0000/0.0000/0.000, 3:1.0000/1.0000/0.0000/0.000, 7:1.0000/1.0000/0.0000/0.000, 15:1.0000/1.0000/0.0000/0.000, 16:1.0000/1.0000/0.0000/0.000, 31:1.0000/1.0000/0.0000/0.000, 64:1.0000/1.0000/0.0000/0.000, 127:1.0000/1.0000/0.0000/0.000, 128:1.0000/1.0000/0.0000/0.000, 333:1.0000/1.0000/0.0000/0.000, 512:1.0000/1.0000/0.0000/0.000, 1024:1.0000/1.0000/0.0000/0.000, 2048:1.0000/1.0000/0.0000/0.000, 4096:1.0000/1.0000/0.0000/0.000, 8192:1.0000/1.0000/0.0000/0.000, 12345:1.0000/1.0000/0.0000/0.000, 16384:1.0000/1.0000/0.0000/0.000]
+[ok]   sweep_mono_identity: je Blockgroesse wurden vergleichbar viele Fenster gemittelt (Freiheitsgrade innerhalb 20 % des Medians)  [22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 23, 24, 24, 23, 23, 23, 23, 23 (Median 22)]
+[ok]   sweep_identical_stereo: bei jeder Blockgroesse aus {1, 2, 3, 7, 15, 16, 31, 64, 127, 128, 333, 512, 1024, 2048, 4096, 8192, 12345, 16384} entsteht ein Evidenzfenster  [18 von 18]
+[ok]   sweep_identical_stereo: und jede traegt dieselbe analytisch bekannte Antwort  [1:1.0000/1.0000/0.0000/0.000, 2:1.0000/1.0000/0.0000/0.000, 3:1.0000/1.0000/0.0000/0.000, 7:1.0000/1.0000/0.0000/0.000, 15:1.0000/1.0000/0.0000/0.000, 16:1.0000/1.0000/0.0000/0.000, 31:1.0000/1.0000/0.0000/0.000, 64:1.0000/1.0000/0.0000/0.000, 127:1.0000/1.0000/0.0000/0.000, 128:1.0000/1.0000/0.0000/0.000, 333:1.0000/1.0000/0.0000/0.000, 512:1.0000/1.0000/0.0000/0.000, 1024:1.0000/1.0000/0.0000/0.000, 2048:1.0000/1.0000/0.0000/0.000, 4096:1.0000/1.0000/0.0000/0.000, 8192:1.0000/1.0000/0.0000/0.000, 12345:1.0000/1.0000/0.0000/0.000, 16384:1.0000/1.0000/0.0000/0.000]
+[ok]   sweep_identical_stereo: je Blockgroesse wurden vergleichbar viele Fenster gemittelt (Freiheitsgrade innerhalb 20 % des Medians)  [22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 23, 24, 24, 23, 23, 23, 23, 23 (Median 22)]
+[ok]   sweep_polarity_inversion: bei jeder Blockgroesse aus {1, 2, 3, 7, 15, 16, 31, 64, 127, 128, 333, 512, 1024, 2048, 4096, 8192, 12345, 16384} entsteht ein Evidenzfenster  [18 von 18]
+[ok]   sweep_polarity_inversion: und jede traegt dieselbe analytisch bekannte Antwort  [1:-1.0000/1.0000/3.142/-400, 2:-1.0000/1.0000/3.142/-400, 3:-1.0000/1.0000/3.142/-400, 7:-1.0000/1.0000/3.142/-400, 15:-1.0000/1.0000/3.142/-400, 16:-1.0000/1.0000/3.142/-400, 31:-1.0000/1.0000/3.142/-400, 64:-1.0000/1.0000/3.142/-400, 127:-1.0000/1.0000/3.142/-400, 128:-1.0000/1.0000/3.142/-400, 333:-1.0000/1.0000/3.142/-400, 512:-1.0000/1.0000/3.142/-400, 1024:-1.0000/1.0000/3.142/-400, 2048:-1.0000/1.0000/3.142/-400, 4096:-1.0000/1.0000/3.142/-400, 8192:-1.0000/1.0000/3.142/-400, 12345:-1.0000/1.0000/3.142/-400, 16384:-1.0000/1.0000/3.142/-400]
+[ok]   sweep_polarity_inversion: je Blockgroesse wurden vergleichbar viele Fenster gemittelt (Freiheitsgrade innerhalb 20 % des Medians)  [22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 23, 24, 24, 23, 23, 23, 23, 23 (Median 22)]
+[ok]   sweep_known_delay: bei jeder Blockgroesse aus {1, 2, 3, 7, 15, 16, 31, 64, 127, 128, 333, 512, 1024, 2048, 4096, 8192, 12345, 16384} entsteht ein Evidenzfenster  [18 von 18]
+[ok]   sweep_known_delay: und jede traegt dieselbe analytisch bekannte Antwort  [1:300Hz 0.3142(d=0.0000)|900Hz 0.9425(d=0.0000)|2000Hz 2.0944(d=0.0000), 2:300Hz 0.3142(d=0.0000)|900Hz 0.9425(d=0.0000)|2000Hz 2.0944(d=0.0000), 3:300Hz 0.3142(d=0.0000)|900Hz 0.9425(d=0.0000)|2000Hz 2.0944(d=0.0000), 7:300Hz 0.3142(d=0.0000)|900Hz 0.9425(d=0.0000)|2000Hz 2.0944(d=0.0000), 15:300Hz 0.3142(d=0.0000)|900Hz 0.9425(d=0.0000)|2000Hz 2.0944(d=0.0000), 16:300Hz 0.3142(d=0.0000)|900Hz 0.9425(d=0.0000)|2000Hz 2.0944(d=0.0000), 31:300Hz 0.3142(d=0.0000)|900Hz 0.9425(d=0.0000)|2000Hz 2.0944(d=0.0000), 64:300Hz 0.3142(d=0.0000)|900Hz 0.9425(d=0.0000)|2000Hz 2.0944(d=0.0000), 127:300Hz 0.3142(d=0.0000)|900Hz 0.9425(d=0.0000)|2000Hz 2.0944(d=0.0000), 128:300Hz 0.3142(d=0.0000)|900Hz 0.9425(d=0.0000)|2000Hz 2.0944(d=0.0000), 333:300Hz 0.3142(d=0.0000)|900Hz 0.9425(d=0.0000)|2000Hz 2.0944(d=0.0000), 512:300Hz 0.3142(d=0.0000)|900Hz 0.9425(d=0.0000)|2000Hz 2.0944(d=0.0000), 1024:300Hz 0.3142(d=0.0000)|900Hz 0.9425(d=0.0000)|2000Hz 2.0944(d=0.0000), 2048:300Hz 0.3142(d=0.0000)|900Hz 0.9425(d=0.0000)|2000Hz 2.0944(d=0.0000), 4096:300Hz 0.3142(d=0.0000)|900Hz 0.9425(d=0.0000)|2000Hz 2.0944(d=0.0000), 8192:300Hz 0.3142(d=0.0000)|900Hz 0.9425(d=0.0000)|2000Hz 2.0944(d=0.0000), 12345:300Hz 0.3142(d=0.0000)|900Hz 0.9425(d=0.0000)|2000Hz 2.0944(d=0.0000), 16384:300Hz 0.3142(d=0.0000)|900Hz 0.9425(d=0.0000)|2000Hz 2.0944(d=0.0000)]
+[ok]   sweep_known_delay: je Blockgroesse wurden vergleichbar viele Fenster gemittelt (Freiheitsgrade innerhalb 20 % des Medians)  [22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 23, 24, 24, 23, 23, 23, 23, 23 (Median 22)]
+[ok]   sweep_uncorrelated_channels: bei jeder Blockgroesse aus {1, 2, 3, 7, 15, 16, 31, 64, 127, 128, 333, 512, 1024, 2048, 4096, 8192, 12345, 16384} entsteht ein Evidenzfenster  [18 von 18]
+[ROT]  sweep_uncorrelated_channels: und jede traegt dieselbe analytisch bekannte Antwort  [1:-0.1933/1 von 196 mit Phase, 2:-0.1933/1 von 196 mit Phase, 3:-0.1933/1 von 196 mit Phase, 7:-0.1933/1 von 196 mit Phase, 15:-0.1933/1 von 196 mit Phase, 16:-0.1933/1 von 196 mit Phase, 31:-0.1933/1 von 196 mit Phase, 64:-0.1933/1 von 196 mit Phase, 127:-0.1933/1 von 196 mit Phase, 128:-0.1933/1 von 196 mit Phase, 333:-0.1840/1 von 196 mit Phase, 512:-0.1772/1 von 196 mit Phase, 1024:-0.1772/1 von 196 mit Phase, 2048:-0.1840/1 von 196 mit Phase, 4096:-0.1840/1 von 196 mit Phase, 8192:-0.1840/1 von 196 mit Phase, 12345:-0.1840/1 von 196 mit Phase, 16384:-0.1840/1 von 196 mit Phase]
+[ok]   sweep_uncorrelated_channels: je Blockgroesse wurden vergleichbar viele Fenster gemittelt (Freiheitsgrade innerhalb 20 % des Medians)  [22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 23, 24, 24, 23, 23, 23, 23, 23 (Median 22)]
+[ok]   sweep_folddown_within_0p25db: bei jeder Blockgroesse aus {1, 2, 3, 7, 15, 16, 31, 64, 127, 128, 333, 512, 1024, 2048, 4096, 8192, 12345, 16384} entsteht ein Evidenzfenster  [18 von 18]
+[ok]   sweep_folddown_within_0p25db: und jede traegt dieselbe analytisch bekannte Antwort  [1:-3.010 gegen -3.010, 2:-3.010 gegen -3.010, 3:-3.010 gegen -3.010, 7:-3.010 gegen -3.010, 15:-3.010 gegen -3.010, 16:-3.010 gegen -3.010, 31:-3.012 gegen -3.012, 64:-3.010 gegen -3.010, 127:-3.010 gegen -3.010, 128:-3.012 gegen -3.012, 333:-3.011 gegen -3.011, 512:-3.013 gegen -3.013, 1024:-3.013 gegen -3.013, 2048:-3.013 gegen -3.013, 4096:-3.013 gegen -3.013, 8192:-3.013 gegen -3.013, 12345:-3.013 gegen -3.013, 16384:-3.013 gegen -3.013]
+[ok]   sweep_folddown_within_0p25db: je Blockgroesse wurden vergleichbar viele Fenster gemittelt (Freiheitsgrade innerhalb 20 % des Medians)  [22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 23, 24, 24, 23, 23, 23, 23, 23 (Median 22)]
+90 bestanden, 1 gescheitert
+
+
+### LAUF 2 - dieselbe Manipulation, Praedikat OHNE Phasenpruefung (Exit 0)
+
+== Nakama SONDE-013 - bandweise Stereoevidenz (§40.1, §40.3) ==
+
+== M-08  mono_identity ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   das 1-kHz-Band ist im Gitter auffindbar  [Band 121]
+[ok]   es traegt eine Basis
+[ok]   bei echtem Mono ist die Korrelation exakt 1  [1.000000]
+[ok]   und der Seitenanteil liegt am Boden - es gibt keine Seitenenergie  [-120.00 dB]
+[ok]   die Kohaerenz ist 1 - zwei identische Kanaele sind vollstaendig kohaerent  [1.000000]
+[ok]   und die Phase ist 0 - kein Laufzeitunterschied  [0.000000 rad]
+[ok]   der Mono-Folddown ist 0 dB innerhalb 0,25 dB (Â§40.3) - eine Monosumme aus zwei gleichen Kanaelen verliert nichts  [0.0000 dB]
+[ok]   und die L/R-Balance ist 0 dB  [0.0000 dB]
+
+== M-08  silent_channel_has_no_bit ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   mit einem stillen Kanal faellt das Kohaerenzbit weg, statt 0 oder NaN zu senden
+[ok]   und die Phase erst recht - sie ist eine Teilmenge der Kohaerenzbits
+[ok]   die Basis steht trotzdem: ein stiller Kanal ist maximal breit (Mid und Side tragen dieselbe Energie)  [-3.01 dB]
+[ok]   der Mono-Folddown ist rund -3 dB - die halbe Energie ist im stillen Kanal  [-3.010 dB]
+[ok]   und die Balance kippt vollstaendig nach links - der Wert laeuft an die Vertragsgrenze, statt zu fehlen: 'ganz links' ist eine Aussage, kein Schweigen  [400.0 dB]
+
+== M-08  folddown_matches_real_buffer_within_0p25db ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   der gemeldete Verlust stimmt mit dem von Hand gefalteten Puffer innerhalb 0,25 dB ueberein  [gemeldet -3.010 dB, von Hand -3.010 dB]
+
+== M-11  bandwise_ms_and_correlation ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   100 Hz und 5 kHz liegen in verschiedenen Baendern  [Band 41 gegen 176]
+[ok]   beide tragen eine Basis
+[ok]   unten ist das Material mono - Korrelation nahe 1  [1.0000]
+[ok]   oben ist es dekorreliert - und GENAU DAS koennen zwei globale Skalare nicht ausdruecken  [unten 1.0000, oben -0.0002]
+[ok]   und der Seitenanteil trennt die beiden Baender ebenso  [unten -120.00 dB, oben -3.01 dB]
+
+== M-11  coherence_carries_window_and_dof ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   das Band traegt seine Freiheitsgrade - die Zahl der gemittelten gueltigen Welch-Frames (Â§40.1: 'Fensterdauer und Freiheitsgrade werden Teil der Evidenz')  [24 Frames]
+[ok]   und seine Fensterdauer in Millisekunden  [1024.0 ms]
+[ok]   mit genug Frames traegt die Kohaerenz ein Bit
+[ok]   und die Dauer ist die Summe der Hops ueber genau diese Frames  [1024.00 ms gegen 1024.00 ms]
+
+== M-11  coherence_is_null_below_eight_frames ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   es gibt wirklich Baender mit weniger als acht Frames - der Fall ist hergestellt, nicht ausgerechnet  [149 von 149 Baendern mit Basis]
+[ok]   und KEINES davon traegt ein Kohaerenzbit - unter acht Frames ist die Kohaerenz `null`, nicht 1  [0 mit Bit, 149 ohne]
+
+== M-11  phase_only_in_coherent_bands ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   es gibt Baender MIT und OHNE Phase - der Fall trennt wirklich  [2 mit Phase, 149 mit Kohaerenz]
+[ok]   kein Band traegt eine Phase ohne Kohaerenz - die Phasenbits sind eine TEILMENGE der Kohaerenzbits (das kann das Schema nicht sagen)  [0 Verletzungen]
+[ok]   und keines unterhalb der benannten Schwelle 0.80  [0 Verletzungen]
+
+== M-11  bekannte Laufzeit: die Phase folgt -2*pi*f*tau ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   mindestens zwei der drei Traegerfrequenzen tragen eine Phase  [3 von 3]
+[ok]   und jede folgt der Formel +2*pi*f*tau - die Phase ist gemessen, nicht geraten  [groesste Abweichung 0.0000 rad]
+
+== M-11  persistence_is_reported ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   ein durchgehend kohaerentes Band meldet hohe Persistenz  [1.000]
+[ok]   ein unkorreliertes Band meldet niedrige - die Zahl misst wirklich die Stabilitaet des Befundes  [0.000]
+
+== M-10  band_stereo_metrics_share_the_nyquist_cap ==
+[ok]   ein Evidenzfenster bei 22,05 kHz entsteht
+[ok]   es gibt Baender ueber der Kappe - der Fall ist hergestellt  [18 Baender ab 10.47 kHz]
+[ok]   und KEINES traegt eine Stereometrik - die neuen Bandmetriken erben die Nyquist-Kappe, es entsteht keine zweite Regel  [0 Verletzungen]
+
+== M-12  width_alone_is_never_a_defect / low_coherence_yields_no_recommendation ==
+[ok]   ein sehr breites, inkohaerentes Evidenzfenster entsteht
+[ok]   viele Baender sind maximal breit  [195 von 196]
+[ok]   und trotzdem entsteht in KEINEM eine Phase - bei niedriger Kohaerenz gibt es keine Lag- oder Polaritaetsaussage (Â§40.2), und Breite allein ist kein Befund  [0 Baender mit Phase]
+
+== §40.3  Polaritaetsinvertierung: Korrelation -1, Monosumme loescht aus ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   die Korrelation ist -1  [-1.000000]
+[ok]   die KOHAERENZ ist dabei 1 - sie misst den Zusammenhang, nicht das Vorzeichen. Wer beide verwechselt, meldet Antiphase als Rauschen  [1.000000]
+[ok]   und die Phase ist +/-pi - genau die Aussage 'invertiert'  [3.1416 rad]
+[ok]   die Monosumme loescht sich VOLLSTAENDIG aus - der Wert laeuft an die Vertragsgrenze, statt zu fehlen. Gemessen am wirklich gefalteten Puffer, nicht aus der Korrelation geschaetzt: das ist die schaerfste Stereoaussage, die es gibt, und sie darf nicht schweigen  [-400.0 dB]
+
+== §32.3  keine Stereogroesse ueberbrueckt eine Transportgrenze ==
+[ok]   vor der Grenze steht ein Evidenzfenster
+[ok]   mit hoher Korrelation und gemessenem Folddown  [Korr 1.0000, Folddown 0.000 dB]
+[ok]   nach der Grenze entsteht ein neues Evidenzfenster
+[ok]   und seine Korrelation ist die des NEUEN Materials - kein Kreuzspektrum hat die Grenze ueberbrueckt  [-0.1377]
+[ok]   auch der Folddown ist neu gemessen und nicht fortgeschrieben  [vorher 0.000 dB, nachher -3.026 dB]
+
+-----------------------------------------
+
+== NAK-181 N-21  kurzkorrelation_und_persistenz_schweigen_ohne_kurzfenster ==
+[ok]   N-21: der Fall faehrt die VORGABEkadenz  [0.250]
+[ok]   N-21: ein Evidenzfenster entsteht
+[ok]   N-21: Baender mit Basis gibt es  [149]
+[ok]   N-21: aber KEIN Band traegt korrelation_kurz - das Kurzfenster schliesst bei 0,25 s nie  [0]
+[ok]   N-21: und keines persistenz  [0]
+
+== NAK-181 N-22  praesenzbits_ueberleben_das_fensterleeren ==
+[ok]   N-22: ein Evidenzfenster bei 48 kHz
+[ok]   N-22: beide Bits stehen NACH dem Fensterleeren (48 kHz)  [1.000]
+[ok]   N-22: und die Persistenz traegt ihren Wert  [1.000]
+[ok]   N-22: ein Evidenzfenster bei 96 kHz
+[ok]   N-22: beide Bits stehen NACH dem Fensterleeren (96 kHz)  [1.000]
+[ok]   N-22: und die Persistenz traegt ihren Wert  [1.000]
+
+== NAK-181 N-23  stiller_kanal_laesst_alle_drei_bits_weg ==
+[ok]   N-23: ein Evidenzfenster entsteht
+[ok]   N-23: die Basis steht (ein stiller Kanal ist maximal breit)
+[ok]   N-23: korrelation_mittel traegt KEIN Bit - der Nenner ist null (M-08: bei stillem Kanal faellt das Praesenzbit weg)
+[ok]   N-23: korrelation_kurz ebenso
+[ok]   N-23: und persistenz ebenso - obwohl Kurzfenster geschlossen haben, hatte DIESES Band in keinem einen gueltigen Nenner
+
+== NAK-182 M-82  Blockgroessen-Sweep: fuenf Klassen und Folddown ==
+[ok]   sweep_mono_identity: bei jeder Blockgroesse aus {1, 2, 3, 7, 15, 16, 31, 64, 127, 128, 333, 512, 1024, 2048, 4096, 8192, 12345, 16384} entsteht ein Evidenzfenster  [18 von 18]
+[ok]   sweep_mono_identity: und jede traegt dieselbe analytisch bekannte Antwort  [1:1.0000/1.0000/0.0000/0.000, 2:1.0000/1.0000/0.0000/0.000, 3:1.0000/1.0000/0.0000/0.000, 7:1.0000/1.0000/0.0000/0.000, 15:1.0000/1.0000/0.0000/0.000, 16:1.0000/1.0000/0.0000/0.000, 31:1.0000/1.0000/0.0000/0.000, 64:1.0000/1.0000/0.0000/0.000, 127:1.0000/1.0000/0.0000/0.000, 128:1.0000/1.0000/0.0000/0.000, 333:1.0000/1.0000/0.0000/0.000, 512:1.0000/1.0000/0.0000/0.000, 1024:1.0000/1.0000/0.0000/0.000, 2048:1.0000/1.0000/0.0000/0.000, 4096:1.0000/1.0000/0.0000/0.000, 8192:1.0000/1.0000/0.0000/0.000, 12345:1.0000/1.0000/0.0000/0.000, 16384:1.0000/1.0000/0.0000/0.000]
+[ok]   sweep_mono_identity: je Blockgroesse wurden vergleichbar viele Fenster gemittelt (Freiheitsgrade innerhalb 20 % des Medians)  [22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 23, 24, 24, 23, 23, 23, 23, 23 (Median 22)]
+[ok]   sweep_identical_stereo: bei jeder Blockgroesse aus {1, 2, 3, 7, 15, 16, 31, 64, 127, 128, 333, 512, 1024, 2048, 4096, 8192, 12345, 16384} entsteht ein Evidenzfenster  [18 von 18]
+[ok]   sweep_identical_stereo: und jede traegt dieselbe analytisch bekannte Antwort  [1:1.0000/1.0000/0.0000/0.000, 2:1.0000/1.0000/0.0000/0.000, 3:1.0000/1.0000/0.0000/0.000, 7:1.0000/1.0000/0.0000/0.000, 15:1.0000/1.0000/0.0000/0.000, 16:1.0000/1.0000/0.0000/0.000, 31:1.0000/1.0000/0.0000/0.000, 64:1.0000/1.0000/0.0000/0.000, 127:1.0000/1.0000/0.0000/0.000, 128:1.0000/1.0000/0.0000/0.000, 333:1.0000/1.0000/0.0000/0.000, 512:1.0000/1.0000/0.0000/0.000, 1024:1.0000/1.0000/0.0000/0.000, 2048:1.0000/1.0000/0.0000/0.000, 4096:1.0000/1.0000/0.0000/0.000, 8192:1.0000/1.0000/0.0000/0.000, 12345:1.0000/1.0000/0.0000/0.000, 16384:1.0000/1.0000/0.0000/0.000]
+[ok]   sweep_identical_stereo: je Blockgroesse wurden vergleichbar viele Fenster gemittelt (Freiheitsgrade innerhalb 20 % des Medians)  [22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 23, 24, 24, 23, 23, 23, 23, 23 (Median 22)]
+[ok]   sweep_polarity_inversion: bei jeder Blockgroesse aus {1, 2, 3, 7, 15, 16, 31, 64, 127, 128, 333, 512, 1024, 2048, 4096, 8192, 12345, 16384} entsteht ein Evidenzfenster  [18 von 18]
+[ok]   sweep_polarity_inversion: und jede traegt dieselbe analytisch bekannte Antwort  [1:-1.0000/1.0000/3.142/-400, 2:-1.0000/1.0000/3.142/-400, 3:-1.0000/1.0000/3.142/-400, 7:-1.0000/1.0000/3.142/-400, 15:-1.0000/1.0000/3.142/-400, 16:-1.0000/1.0000/3.142/-400, 31:-1.0000/1.0000/3.142/-400, 64:-1.0000/1.0000/3.142/-400, 127:-1.0000/1.0000/3.142/-400, 128:-1.0000/1.0000/3.142/-400, 333:-1.0000/1.0000/3.142/-400, 512:-1.0000/1.0000/3.142/-400, 1024:-1.0000/1.0000/3.142/-400, 2048:-1.0000/1.0000/3.142/-400, 4096:-1.0000/1.0000/3.142/-400, 8192:-1.0000/1.0000/3.142/-400, 12345:-1.0000/1.0000/3.142/-400, 16384:-1.0000/1.0000/3.142/-400]
+[ok]   sweep_polarity_inversion: je Blockgroesse wurden vergleichbar viele Fenster gemittelt (Freiheitsgrade innerhalb 20 % des Medians)  [22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 23, 24, 24, 23, 23, 23, 23, 23 (Median 22)]
+[ok]   sweep_known_delay: bei jeder Blockgroesse aus {1, 2, 3, 7, 15, 16, 31, 64, 127, 128, 333, 512, 1024, 2048, 4096, 8192, 12345, 16384} entsteht ein Evidenzfenster  [18 von 18]
+[ok]   sweep_known_delay: und jede traegt dieselbe analytisch bekannte Antwort  [1:300Hz 0.3142(d=0.0000)|900Hz 0.9425(d=0.0000)|2000Hz 2.0944(d=0.0000), 2:300Hz 0.3142(d=0.0000)|900Hz 0.9425(d=0.0000)|2000Hz 2.0944(d=0.0000), 3:300Hz 0.3142(d=0.0000)|900Hz 0.9425(d=0.0000)|2000Hz 2.0944(d=0.0000), 7:300Hz 0.3142(d=0.0000)|900Hz 0.9425(d=0.0000)|2000Hz 2.0944(d=0.0000), 15:300Hz 0.3142(d=0.0000)|900Hz 0.9425(d=0.0000)|2000Hz 2.0944(d=0.0000), 16:300Hz 0.3142(d=0.0000)|900Hz 0.9425(d=0.0000)|2000Hz 2.0944(d=0.0000), 31:300Hz 0.3142(d=0.0000)|900Hz 0.9425(d=0.0000)|2000Hz 2.0944(d=0.0000), 64:300Hz 0.3142(d=0.0000)|900Hz 0.9425(d=0.0000)|2000Hz 2.0944(d=0.0000), 127:300Hz 0.3142(d=0.0000)|900Hz 0.9425(d=0.0000)|2000Hz 2.0944(d=0.0000), 128:300Hz 0.3142(d=0.0000)|900Hz 0.9425(d=0.0000)|2000Hz 2.0944(d=0.0000), 333:300Hz 0.3142(d=0.0000)|900Hz 0.9425(d=0.0000)|2000Hz 2.0944(d=0.0000), 512:300Hz 0.3142(d=0.0000)|900Hz 0.9425(d=0.0000)|2000Hz 2.0944(d=0.0000), 1024:300Hz 0.3142(d=0.0000)|900Hz 0.9425(d=0.0000)|2000Hz 2.0944(d=0.0000), 2048:300Hz 0.3142(d=0.0000)|900Hz 0.9425(d=0.0000)|2000Hz 2.0944(d=0.0000), 4096:300Hz 0.3142(d=0.0000)|900Hz 0.9425(d=0.0000)|2000Hz 2.0944(d=0.0000), 8192:300Hz 0.3142(d=0.0000)|900Hz 0.9425(d=0.0000)|2000Hz 2.0944(d=0.0000), 12345:300Hz 0.3142(d=0.0000)|900Hz 0.9425(d=0.0000)|2000Hz 2.0944(d=0.0000), 16384:300Hz 0.3142(d=0.0000)|900Hz 0.9425(d=0.0000)|2000Hz 2.0944(d=0.0000)]
+[ok]   sweep_known_delay: je Blockgroesse wurden vergleichbar viele Fenster gemittelt (Freiheitsgrade innerhalb 20 % des Medians)  [22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 23, 24, 24, 23, 23, 23, 23, 23 (Median 22)]
+[ok]   sweep_uncorrelated_channels: bei jeder Blockgroesse aus {1, 2, 3, 7, 15, 16, 31, 64, 127, 128, 333, 512, 1024, 2048, 4096, 8192, 12345, 16384} entsteht ein Evidenzfenster  [18 von 18]
+[ok]   sweep_uncorrelated_channels: und jede traegt dieselbe analytisch bekannte Antwort  [1:-0.1933/1 von 196 mit Phase, 2:-0.1933/1 von 196 mit Phase, 3:-0.1933/1 von 196 mit Phase, 7:-0.1933/1 von 196 mit Phase, 15:-0.1933/1 von 196 mit Phase, 16:-0.1933/1 von 196 mit Phase, 31:-0.1933/1 von 196 mit Phase, 64:-0.1933/1 von 196 mit Phase, 127:-0.1933/1 von 196 mit Phase, 128:-0.1933/1 von 196 mit Phase, 333:-0.1840/1 von 196 mit Phase, 512:-0.1772/1 von 196 mit Phase, 1024:-0.1772/1 von 196 mit Phase, 2048:-0.1840/1 von 196 mit Phase, 4096:-0.1840/1 von 196 mit Phase, 8192:-0.1840/1 von 196 mit Phase, 12345:-0.1840/1 von 196 mit Phase, 16384:-0.1840/1 von 196 mit Phase]
+[ok]   sweep_uncorrelated_channels: je Blockgroesse wurden vergleichbar viele Fenster gemittelt (Freiheitsgrade innerhalb 20 % des Medians)  [22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 23, 24, 24, 23, 23, 23, 23, 23 (Median 22)]
+[ok]   sweep_folddown_within_0p25db: bei jeder Blockgroesse aus {1, 2, 3, 7, 15, 16, 31, 64, 127, 128, 333, 512, 1024, 2048, 4096, 8192, 12345, 16384} entsteht ein Evidenzfenster  [18 von 18]
+[ok]   sweep_folddown_within_0p25db: und jede traegt dieselbe analytisch bekannte Antwort  [1:-3.010 gegen -3.010, 2:-3.010 gegen -3.010, 3:-3.010 gegen -3.010, 7:-3.010 gegen -3.010, 15:-3.010 gegen -3.010, 16:-3.010 gegen -3.010, 31:-3.012 gegen -3.012, 64:-3.010 gegen -3.010, 127:-3.010 gegen -3.010, 128:-3.012 gegen -3.012, 333:-3.011 gegen -3.011, 512:-3.013 gegen -3.013, 1024:-3.013 gegen -3.013, 2048:-3.013 gegen -3.013, 4096:-3.013 gegen -3.013, 8192:-3.013 gegen -3.013, 12345:-3.013 gegen -3.013, 16384:-3.013 gegen -3.013]
+[ok]   sweep_folddown_within_0p25db: je Blockgroesse wurden vergleichbar viele Fenster gemittelt (Freiheitsgrade innerhalb 20 % des Medians)  [22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 23, 24, 24, 23, 23, 23, 23, 23 (Median 22)]
+91 bestanden, 0 gescheitert

@@ -1,0 +1,23 @@
+NAK-182 Nacharbeit 1 - ROTBEWEIS N-23-fixturebyte (A8 haelt die Fixture bytegleich)
+
+N-23 sagt zu: "ein Byte der Fixture geaendert -> A8 `--pruefen` rot". Die
+Fixture hat sich in dieser Nacharbeit geaendert (NR-05: der Block `material`
+kam dazu), also wird der Beweis auf dem neuen Stand wiederholt.
+
+Manipulation: in `eq-copilot/fixtures/v3/evidenz-0p01-paar-wire-v1.json` wird
+`"signal_hz": 1000.0` zu `"signal_hz": 1001.0` - eine Ziffer, im neuen
+Materialblock. Danach zurueckgenommen; der gruene Lauf steht in
+`NAK-182-nacharbeit-1-beine-d3d9661.txt` ("bytegleich: 321 Dateien").
+
+Gewertete Zeile: A8 `--pruefen`.
+
+Erwartet und gemessen: Exit 2 mit
+"ROT: eq-copilot\fixtures\v3\evidenz-0p01-paar-wire-v1.json weicht ab". Der
+Erzeuger baut die Datei bytegleich neu und vergleicht; der neue Materialblock
+faellt damit unter dieselbe Wache wie Pegel, Aufloesung und die zwei
+Schnappschuesse.
+
+Kommando: py -3.13 tools/eq-copilot/erzeuge_v3_fixtures.py --pruefen
+
+87 gueltige, 230 ungueltige Fixtures
+  ROT: eq-copilot\fixtures\v3\evidenz-0p01-paar-wire-v1.json weicht ab

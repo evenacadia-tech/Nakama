@@ -424,7 +424,7 @@ void grenzfall (const juce::String& name, Grenzgrund erwartet,
     ausloesen (s);
 
     pruefe (keinFensterUeberbrueckt (e, s.frames, s.sr),
-            name + ": NACH der Grenze traegt kein Fenster ein Sample von davor",
+            name + ": no_window_crosses_an_epoch_boundary - NACH der Grenze traegt kein Fenster ein Sample von davor",
             fuellstaende (e) + " (erwartet je " + juce::String (s.frames) + ")");
     // Die positive Haelfte: der Akku ist GELEERT worden, nicht ohnehin leer
     // gewesen.  Ohne diesen Zaehler waere "belegte Baender == 0" auch dann
@@ -443,7 +443,7 @@ void grenzfall (const juce::String& name, Grenzgrund erwartet,
                 + " Segmente " + juce::String (e.segmentwechsel()));
     else
         pruefe (e.segmentwechsel() == segmenteVorher + 1 && e.epochenwechsel() == epochenVorher,
-                name + ": zaehlt als SEGMENT, nicht als Epoche (§32.3)",
+                name + ": drop_counts_as_segment_not_epoch - zaehlt als SEGMENT, nicht als Epoche (§32.3)",
                 "Epochen " + juce::String (e.epochenwechsel())
                 + " Segmente " + juce::String (e.segmentwechsel()));
 }
@@ -2252,6 +2252,241 @@ int main()
         pruefe (! doppelterZeitpunkt,
                 "und kein Zeitpunkt traegt ZWEI Ereignisse - die zwei Pfade erzeugen "
                 "eines mit beiden Bits, nicht zwei nebeneinander");
+
+        // ── NAK-182 M-84: impulse_time_is_stable_over_block_sizes_and_sample_rates
+        //
+        // M-84 sagt: "Bekannte Impulsereignisse bleiben ueber Blockgroessen
+        // und Sampleraten zeitlich stabil."  Gemessen war davon bisher nur
+        // die Grenzhaelfte; die ZEITLAGE eines Impulses lief bei genau einer
+        // Blockgroesse und einer Samplerate.
+        //
+        // WARUM DIE ZUSAGE SO SCHARF IST.  Das Ereignis stempelt den
+        // FENSTERANFANG (`FeatureEngine.h`, `e.stromSample =
+        // s.fensterStromStart`).  Der Fensteranker wird gesetzt, wenn der
+        // Ring LEER ist (`block.stromVon + sampleOffset`), und danach je
+        // vollem Fenster um `kHauptHop` fortgeschrieben - beides je Sample,
+        // nicht je Block.  Aus einem frisch vorbereiteten Lauf ohne Grenze
+        // ist der Anker 0, und die Fenster liegen bei
+        //
+        //     W_k = [k * 2048, k * 2048 + 4096)
+        //
+        // unabhaengig davon, in welchen Haeppchen der Host die Samples
+        // liefert.  Das Raster ist in SAMPLES definiert, nicht in Sekunden -
+        // deshalb ist es ueber Sampleraten dasselbe Raster.
+        //
+        // ⚠️ DIE SCHRANKE IST 4096, NICHT 2048.  Der Stempel ist der
+        // Fensteranfang, das Fenster ist 4096 lang; ein Impuls in der zweiten
+        // Fensterhaelfte hat einen korrekt gemeldeten Stempel und liegt
+        // trotzdem mehr als einen Hop dahinter.  Eine Schranke aus dem Hop
+        // haette richtiges Produktverhalten abgelehnt (Manifest MP1-1).
+        //
+        // ⚠️ DIE AUSWAHL KENNT t0 NICHT.  Gemessen wird das STAERKSTE
+        // Flussereignis des Laufs.  Ein Filter wie "groesstes stromSample <=
+        // t0" waere bequemer und WERTLOS: nach der Rotbeweis-Verschiebung
+        // liegen beide Impulsfenster HINTER t0, der Filter verwuerfe sie und
+        // maesse an einem alten Ereignis vorbei (Manifest MP2-1).
+        //
+        // Die Matrix hatte dafuer "das ERSTE Ereignis des Laufs" vorgesehen,
+        // mit der Erwartung, dass der Boden vor dem Impuls nichts erzeugt.
+        // Diese Voraussetzung haelt an dieser Engine NICHT, und zwar aus
+        // einem strukturellen Grund: die Schwelle ist med + 3*MAD ueber die
+        // letzten 16 Fenster, also relativ zur Streuung des Bodens selbst.
+        // Ein streuender Boden ueberschreitet sie gelegentlich, ein
+        // streuungsarmer drueckt MAD gegen null und macht sie zum
+        // Haarausloeser - gemessen wurden beide Faelle (E-d 10 von 25
+        // beziehungsweise 15 von 25, Manifest Paragraph 6).  Die Auswahl
+        // "staerkstes Flussereignis" ist ebenso t0-frei und traegt: der
+        // Impuls liegt rund 26 dB ueber dem Boden, und ein Bodenereignis
+        // ueberschreitet die Schwelle definitionsgemaess nur knapp.  Dass
+        // der Abstand wirklich gross ist, misst E-d mit dem Faktor zehn.
+        //
+        // ⚠️ DER BODEN MUSS STREUEN.  `flussAus` verlangt ausdruecklich
+        // `mad > 0.0`; ein exakt stiller oder streng periodischer Boden
+        // ergaebe MAD 0 und GAR KEIN Ereignis - der Fall waere gruen, ohne
+        // etwas gemessen zu haben.  Deshalb ein leiser Rauschboden, und
+        // deshalb ist "es gibt ueberhaupt ein Ereignis" eine eigene Zusage.
+        //
+        // ⚠️ DIE LAGE.  Die adaptive Schwelle greift erst bei voller
+        // Flusshistorie (`kFlussHistorie` = 16); das erste Fenster schliesst
+        // bei 4096, jedes weitere nach 2048 Samples, die Schwelle steht also
+        // ab Sample 34816.  t0 = 100 * 2048 + 1536 = 206336 liegt weit
+        // dahinter, und die 1536 setzen den Impuls in die ERSTE Haelfte des
+        // spaeteren der beiden enthaltenden Fenster (Hann-Gewicht 0,854
+        // gegen 0,146).
+        {
+            static constexpr int kZeitBlockgroessen[] = { 1, 333, 512, 2048, 16384 };
+            constexpr int kZeitBlockN = (int) (sizeof (kZeitBlockgroessen)
+                                               / sizeof (kZeitBlockgroessen[0]));
+            static constexpr double kZeitRaten[] =
+                { 44100.0, 48000.0, 88200.0, 96000.0, 192000.0 };
+            constexpr int kZeitRatenN = (int) (sizeof (kZeitRaten)
+                                               / sizeof (kZeitRaten[0]));
+            constexpr std::uint64_t kT0 = 100ull * 2048ull + 1536ull;   // 206336
+            constexpr std::uint64_t kImpulsLaenge = 64;
+            constexpr std::uint64_t kHauptPunkte = 4096;
+
+            struct Zeitlauf
+            {
+                int  ereignisse { 0 }, flussereignisse { 0 };
+                bool fluss { false };
+                std::uint64_t stempel { 0 };
+                float staerke { -1.0f }, zweitstaerke { -1.0f };
+            };
+
+            const auto fahreZeit = [&] (double fsLauf, int frames) -> Zeitlauf
+            {
+                auto halter = std::make_unique<FeatureEngine>();
+                auto& e = *halter;
+                e.vorbereiten (fsLauf);
+                Speiser sp { e };
+                sp.sr = fsLauf;
+                sp.frames = frames;
+                const std::uint64_t bis = kT0 + 4ull * kHauptPunkte;
+                while (sp.strom < bis)
+                {
+                    sp.sendenMit (sp.bauen(), [&] (std::uint32_t i)
+                    {
+                        const std::uint64_t n = sp.strom + (std::uint64_t) i;
+                        if (n >= kT0 && n < kT0 + kImpulsLaenge)
+                            return sp.rausch() * 3.2f;         // der Impuls, breitbandig
+                        // DER BODEN: zwei Sinus mit einer SCHWEBUNG von genau
+                        // 32768 Samples - und beide als Vielfache von fs/32768
+                        // geschrieben, also `2*pi*k*n/32768`: derselbe
+                        // Samplestrom bei JEDER Samplerate.
+                        //
+                        // ⚠️ Zwei Versuche davor sind gefallen, und beide aus
+                        // demselben Grund - die Schwelle ist med + 3*MAD ueber
+                        // die letzten 16 Fenster, und was der Boden dort
+                        // hinterlaesst, entscheidet ueber Fehlalarme:
+                        //
+                        //  1. RAUSCHboden (r0 * 0,16): stationaeres Rauschen
+                        //     ueberschreitet med + 3*MAD erwartungsgemaess in
+                        //     rund einem Prozent der Fenster, und vor dem
+                        //     Impuls liegen rund 85 davon. Gemessen: E-d 10
+                        //     von 25, erster Stempel 182272 statt 202752.
+                        //  2. EIN reiner Sinus: der Fluss wird zwischen den
+                        //     Fenstern nahezu konstant, MAD faellt gegen null,
+                        //     und die Schwelle wird zum Haarausloeser - das
+                        //     erste bewaffnete Fenster (Sample 34816) feuerte
+                        //     bei drei der fuenf Raten. Gemessen: E-d 10 von 25.
+                        //
+                        // Die Schwebung loest beides: der Fluss variiert
+                        // GLATT und PERIODISCH mit genau der Periode, die die
+                        // Historie fasst (16 Hops = 32768 Samples). Damit ist
+                        // die Historie ab dem ersten bewaffneten Fenster
+                        // repraesentativ, und der groesste Ausschlag einer
+                        // Sinusschwankung liegt bei pi/2 ~ 1,57 MAD - weit
+                        // unter den 3 MAD der Schwelle. Der Boden kann also
+                        // nicht ausloesen, der Impuls mit rund 26 dB darueber
+                        // schon.
+                        const double w = kZweiPiL * (double) n / 32768.0;
+                        return (float) (0.05 * (std::sin (w * 680.0)
+                                                + std::sin (w * 681.0)));
+                    });
+                }
+                Zeitlauf z {};
+                z.ereignisse = e.ereignisAnzahlJetzt();
+                // Die Auswahl: das STAERKSTE Flussereignis des Laufs - ohne
+                // jeden Bezug auf t0.  `staerke` ist bei einem Flussereignis
+                // (fluss - med) / mad, also dieselbe Einheit fuer alle; reine
+                // Peakereignisse tragen statt dessen einen Crest in dB und
+                // bleiben deshalb aussen vor.
+                float beste = -1.0f, zweitbeste = -1.0f;
+                for (int i = 0; i < z.ereignisse; ++i)
+                {
+                    const auto& ev = e.ereignis (i);
+                    if (! ev.qualitaetFluss) continue;
+                    ++z.flussereignisse;
+                    if (ev.staerke > beste)
+                    {
+                        zweitbeste = beste;
+                        beste = ev.staerke;
+                        z.fluss   = true;
+                        z.stempel = ev.stromSample;
+                    }
+                    else if (ev.staerke > zweitbeste)
+                        zweitbeste = ev.staerke;
+                }
+                z.staerke = beste;
+                z.zweitstaerke = zweitbeste;
+                return z;
+            };
+
+            int laeufe = 0, mitEreignis = 0, ohneUeberlauf = 0, mitFluss = 0;
+            int eindeutig = 0, inDerSchranke = 0, gleichJeRate = 0;
+            double kleinsterAbstand = 1e30;
+            juce::String bericht, schrankenText;
+            for (int r = 0; r < kZeitRatenN; ++r)
+            {
+                std::uint64_t erster = 0;
+                bool alleGleich = true;
+                for (int b = 0; b < kZeitBlockN; ++b)
+                {
+                    const Zeitlauf z = fahreZeit (kZeitRaten[r], kZeitBlockgroessen[b]);
+                    ++laeufe;
+                    if (z.ereignisse >= 1) ++mitEreignis;                       // E-a
+                    if (z.ereignisse < 64) ++ohneUeberlauf;                     // E-b
+                    if (z.fluss) ++mitFluss;                                    // E-c
+                    // E-d: das gewaehlte Ereignis ist UNZWEIFELHAFT das
+                    // staerkste - mindestens zehnmal so stark wie das
+                    // naechststaerkste Flussereignis (oder es gibt kein
+                    // zweites).  Damit ist die Auswahlregel selbst gemessen.
+                    if (z.fluss && (z.zweitstaerke <= 0.0f
+                                    || z.staerke >= 10.0f * z.zweitstaerke))
+                        ++eindeutig;
+                    if (z.fluss && z.zweitstaerke > 0.0f)
+                        kleinsterAbstand = std::min (kleinsterAbstand,
+                                                     (double) z.staerke
+                                                         / (double) z.zweitstaerke);
+                    if (z.fluss && z.stempel <= kT0
+                        && kT0 - z.stempel < kHauptPunkte)
+                        ++inDerSchranke;                                        // (b)
+                    if (b == 0) erster = z.stempel;
+                    else if (z.stempel != erster) alleGleich = false;
+                }
+                if (alleGleich) ++gleichJeRate;                                 // (a)
+                bericht << (r ? ", " : "") << (int) (kZeitRaten[r] / 100.0) / 10.0
+                        << "kHz:" << (int) erster;
+                schrankenText << (r ? ", " : "")
+                              << (int) (kT0 - erster);
+            }
+
+            pruefe (mitEreignis == laeufe,
+                    "impulse_time_is_stable_over_block_sizes_and_sample_rates E-a: "
+                    "jeder der 25 Laeufe erzeugt ueberhaupt ein Ereignis - die "
+                    "Ausloesung ist gemessen, nicht angenommen",
+                    juce::String (mitEreignis) + " von " + juce::String (laeufe));
+            pruefe (ohneUeberlauf == laeufe,
+                    "E-b: kein Ereignisring ist uebergelaufen - die Ringreihenfolge "
+                    "ist damit die Zeitreihenfolge und ereignis(0) das erste Ereignis",
+                    juce::String (ohneUeberlauf) + " von " + juce::String (laeufe));
+            pruefe (mitFluss == laeufe,
+                    "E-c: jeder Lauf traegt ein Flussereignis - gemessen wird der "
+                    "Flusspfad, nicht die rahmenphasenabhaengige Peakspur",
+                    juce::String (mitFluss) + " von " + juce::String (laeufe));
+            pruefe (eindeutig == laeufe,
+                    "E-d: das gewaehlte Ereignis ist unzweifelhaft das staerkste - "
+                    "mindestens zehnmal so stark wie das naechststaerkste "
+                    "Flussereignis. Die Auswahlregel ist damit gemessen, nicht "
+                    "angenommen",
+                    juce::String (eindeutig) + " von " + juce::String (laeufe)
+                        + "; kleinster Abstand "
+                        + (kleinsterAbstand > 1e29 ? juce::String ("kein zweites Ereignis")
+                                                   : juce::String (kleinsterAbstand, 1) + "x"));
+            pruefe (gleichJeRate == kZeitRatenN,
+                    "impulse_time_is_stable_over_block_sizes_and_sample_rates (a): der "
+                    "gemeldete stromSample ist je Samplerate ueber alle fuenf "
+                    "Blockgroessen IDENTISCH - das Fensterraster kennt die Blockgroesse "
+                    "nicht",
+                    juce::String (gleichJeRate) + " von " + juce::String (kZeitRatenN)
+                        + " Raten; erster Stempel je Rate: " + bericht);
+            pruefe (inDerSchranke == laeufe,
+                    "(b): und er liegt bei jeder Kombination innerhalb EINER "
+                    "Fensterlaenge vor t0 (0 <= t0 - stromSample < 4096) - die "
+                    "Schranke kommt aus kHauptPunkte, nicht aus dem Hop",
+                    juce::String (inDerSchranke) + " von " + juce::String (laeufe)
+                        + "; t0 - Stempel je Rate: " + schrankenText);
+        }
 
         // Gegenprobe zur Schwelle: ein Signal ohne jeden Pegelsprung erzeugt
         // KEIN reines Peakereignis. Ohne sie waere oben nur gezeigt, dass der

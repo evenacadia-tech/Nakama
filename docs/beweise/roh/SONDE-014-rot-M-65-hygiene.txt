@@ -1,0 +1,31 @@
+SONDE-014 Etappe H - Rotbeweis M-65-hygiene
+========================================================================
+
+GEWERTETE ZUSAGE
+Zweiter Rotbeweis (Hygiene): ein Fall nennt eine Quelle, deren Bezeichner in der Datei nicht woertlich steht.
+
+GEMESSEN AN  Art `erzeuger` der Kette:
+             eq-copilot/fixtures/p5-korpus (die Wahrheit jedes Falls)
+             -> broker/tests/sonde014_p5_korpus.rs (Produktpfad ueber p1)
+             -> tools/eq-copilot/pruefe_p5_korpus.py (der Vergleich)
+
+RUECKNAHME AM PRODUKTCODE  tools/eq-copilot/erzeuge_p5_korpus.py
+------------------------------------------------------------------------
+VORHER:
+    "bezeichner": "korpus_kette_laeuft_durch_den_produktpfad",
+
+NACHHER:
+    # RUECKNAHME M-65: der Bezeichner steht so nicht in der Datei.
+    "bezeichner": "korpus_kette_gibt_es_nicht",
+------------------------------------------------------------------------
+
+[1] LAUF MIT RUECKNAHME - erwartet ROT (Exitcode 1)
+========================================================================
+Bezeichner 'korpus_kette_gibt_es_nicht' steht nicht in broker/tests/sonde014_p5_korpus.rs
+
+[2] RUECKNAHME ZURUECKGENOMMEN, LAUF ERNEUT - erwartet GRUEN (Exitcode 0)
+========================================================================
+P5-Korpus: 2 Dateien, 6 Sitzungen
+bytegleich
+
+URTEIL: OK (rot=1, gruen=0)

@@ -2689,6 +2689,182 @@ Jede fährt den vollen Weg: Rücknahme setzen, Ziel neu bauen, Binary fahren.
   `proposal → preview` — dieselbe Klasse Fehler wie N-14: eine Rücknahme, die
   nichts zurücknimmt, sieht aus wie eine bestandene Prüfung.
 
+### 7.8 Etappe H — Der P5-Evaluationskorpus als Kette
+
+**Gebaut:** der Evaluationskorpus — und zwar als **Kette** (Regel R2), nicht
+als Deklarationsregister. Sechs synthetische Sitzungen laufen als
+Evidenzbestand durch `p1` und damit durch dieselbe Senke, die der echte
+Transport ruft; gelesen wird die **tatsächlich ausgegebene** Hypothese und
+gegen die Wahrheit des Falls gehalten. Eine falsche starke Produktbehauptung
+ändert die Korpusdateien nicht — sie fällt am Vergleich.
+
+Der Unterschied ist nicht theoretisch. Der Korpus hat in dieser Etappe **zwei
+echte Produktfehler** gefunden, die kein Bein dieses Tickets gesehen hatte
+(N-17 und N-18 unten). Genau dafür wurde er als Kette verlangt.
+
+| Stück | Ort |
+|---|---|
+| Die sechs Sitzungen und ihre Wahrheit | **NEU** `tools/eq-copilot/erzeuge_p5_korpus.py` → `eq-copilot/fixtures/p5-korpus/sitzungen.json`, `eq-copilot/fixtures/p5-korpus/MANIFEST.json` |
+| Der Produktpfad, der sie fährt | **NEU** `broker/tests/sonde014_p5_korpus.rs` — `korpus_kette_laeuft_durch_den_produktpfad`, schreibt `eq-copilot/build/p5-korpus-ergebnis.json` |
+| Der Vergleich, Kennzahlen und Riegel | **NEU** `tools/eq-copilot/pruefe_p5_korpus.py` — `kennzahlen()`, `riegel()`, `schwelle_suchen()`, `produktschwelle()`, `p4_luecke()` |
+| Der Selbsttest ohne Repo-Fixture | dieselbe Datei — `selbsttest()`, **38** Prüfungen, jede Erwartung mit ihrem Gegenteil |
+| Die Trennungsregel im Produkt | `broker/src/coordinator/hypothese.rs` — der Riegel gegen den **ungetrennten** ersten Platz |
+| Beine | **NEU** `A28` (Erzeuger, `--pruefen`), `A29` (Sammelbein), `A30` (Selbsttest) in `tools/beweise.ps1`; das Kettenbein läuft unter **A4** |
+
+**Die sechs Sitzungen.** Jede trägt genau eine Wahrheit und eine Obergrenze
+der erlaubten Sicherheit.
+
+| Sitzung | Wahrheit | höchstens | wofür sie da ist |
+|---|---|---|---|
+| `wahrer_kandidat` | `wahre_ursache` | `hoch` | der **positive** Fall — ohne ihn wäre jeder Riegel trivial erfüllt |
+| `korrelierter_distraktor` | `distraktor` | `mittel` | zwei Quellen laufen gleich; der Distraktor darf **Alternative** sein, nie Ursache |
+| `parent_duplikat` | `parent_duplikat` | `mittel` | zwei Sonden auf demselben Mixerkanal messen dasselbe Signal (M-22) |
+| `verschobene_passage` | `verschobene_passage` | `unklar` | das Alignmentgate reißt, der Kandidat scheidet **mit Grund** aus (M-20, M-87) |
+| `zu_kurze_passage` | `zu_kurze_passage` | `mittel` | der Fall aus D1: die vier **relativen** Gates bestehen ihn alle, nur `GATE_MINDEST_FENSTER` fängt ihn |
+| `daten_reichen_nicht` | `keine_ursache` | `unklar` | das Gegenbeispiel; die Enthaltung ist das **gewünschte** Ergebnis (M-27, §49.4) |
+
+**Gemessene Matrixzeilen.**
+
+| Zeile | Wo gemessen | Rotbeweis |
+|---|---|---|
+| **M-64** | `pruefe_p5_korpus.py` — Precision und Recall **je Ursachenklasse**, dazu Brier, Kalibrierung, Coverage und Enthaltung; die vier Riegel aus NAK-182 als eigene Funktion, die der Selbsttest synthetisch füttert. Die Rücknahme nimmt einem Riegel den Weg zu fallen | `roh/SONDE-014-rot-M-64.txt` |
+| **M-65** | die Kette selbst: die Sitzung `korrelierter_distraktor` bei **unveränderten** Korpusdateien. Die Rücknahme sitzt im Produkt, und der Vergleich meldet `1 falsche starke Behauptung` | `roh/SONDE-014-rot-M-65.txt` |
+| **M-65** (Hygiene) | `erzeuge_p5_korpus.py` — der Bezeichner des Kettenbeins steht **wörtlich** in seiner Datei; ein umbenannter Fall fällt beim Erzeuger, nicht erst dem Leser auf | `roh/SONDE-014-rot-M-65-hygiene.txt` |
+| **M-66** | `selbsttest()` — die Schwelle wird **gesucht**, nicht gesetzt; beide Richtungen (nur `hoch` hält / jede Stufe hält) | `roh/SONDE-014-rot-M-66.txt` |
+| **M-67** | die Kette: `verschobene_passage` trägt keine starke Aussage und nennt `alignment_falsch`. Ohne das Gate fehlt **beides** | `roh/SONDE-014-rot-M-67.txt` |
+| **M-68** | `selbsttest()` — die Rücknahme macht einen Riegel **immer rot**; gefallen sind ausschließlich die **GEGENTEIL**-Erwartungen. Genau das ist der Satz aus M-68, gemessen statt behauptet | `roh/SONDE-014-rot-M-68.txt` |
+| **M-69** | die Kette: das Gegenbeispiel erzwingt Enthaltung **nachweislich** — die Rücknahme lässt `enthaltung()` stark behaupten, und zwei Sitzungen fallen | `roh/SONDE-014-rot-M-69.txt` |
+| **M-70** | `p4_luecke()` — die gedruckte Lücke aus `eq-copilot/fixtures/p4-korpus/MANIFEST.json` gegen ihre P5-Messung, in **beide** Richtungen gekoppelt | `roh/SONDE-014-rot-M-70.txt` |
+| **M-31** | die Kette: handelbar (`ready_to_send`) ist genau `hoch`, nichts darunter. Die Rücknahme macht `mittel` handelbar, und fünf Befunde fallen | `roh/SONDE-014-rot-M-31.txt` |
+| **M-23** (Kalibrierung) | die Kette: `GATE_MINDEST_FENSTER` am Korpus kalibriert. Die Rücknahme senkt den Wert auf 1, und `zu_kurze_passage` trägt eine starke Aussage | `roh/SONDE-014-rot-M-23-kalibrierung.txt` |
+| **Voraussetzung** | ohne frische Ergebnisdatei meldet das Sammelbein **Exit 3**, nicht grün — der Fehler aus `tools/dirigent/pruefliste.md` Abschnitt D | `roh/SONDE-014-rot-Voraussetzung.txt` |
+
+**Läufe.** `erzeuge_p5_korpus.py --pruefen` **bytegleich** (Bein **A28**);
+`cargo test --test sonde014_p5_korpus` **1/1** (unter Bein **A4**);
+`pruefe_p5_korpus.py` **6 Sitzungen, 8 ausgegebene Befunde, grün** (Bein
+**A29**); `pruefe_p5_korpus.py --selbsttest` **38 Prüfungen, 0 Fehler** (Bein
+**A30**). Die volle Broker-Suite **616 bestanden, 0 Fehler** nach beiden
+Produktänderungen. Die Kanonzahl steigt von **57** auf **60**.
+
+**Das Ergebnis des Korpus, als Zahl.**
+
+| Kennzahl | Wert | was sie sagt |
+|---|---|---|
+| Precision / Recall | **1,000 / 1,000** je Ursachenklasse und gesamt | keine falsche starke, keine falsche schwache Behauptung |
+| Brier | **0,135** | über die **Klasse**, nicht über den Rang — siehe Entscheid unten |
+| Kalibrierung | **0,350** | das Produkt ist **unter**sicher, nicht fehlkalibriert: Nennwert 0,60 gegen gemessene Trefferquote 1,000 |
+| Zuverlässigkeit `hoch` | n=1, Trefferquote **1,000** | von dem, was das Produkt `hoch` nannte, war alles richtig |
+| Zuverlässigkeit `mittel` | n=5, Trefferquote **1,000** | dasselbe eine Stufe tiefer |
+| Coverage / Enthaltung | **0,750 / 0,250** | zwei der acht Befunde sind Enthaltungen, und das ist kein Fehlschlag |
+| Schwelle (M-31, **Ausgabe**) | niedrigste haltende Stufe = **`unklar`** | auf diesem Korpus hielte sogar jede Stufe; das Produkt handelt nur bei `hoch` und ist damit **strenger** als nötig |
+| `GATE_MINDEST_FENSTER` | 2 Passagenfälle, **0 davon stark** | der **Startwert 8 hält** |
+
+**Zwei Produktfunde des Korpus.**
+
+- **N-17 — zwei starke Behauptungen über dieselbe Ursache.** Die Sitzung
+  `korrelierter_distraktor` lieferte **beide** Kandidaten mit `hoch` und
+  `READY TO SEND`. Das ist die falsche starke Behauptung, die §36.4 Satz 1
+  verbietet, und dieselbe Klasse Fehler wie das Parent-Duplikat aus M-22.
+  Behoben in `broker/src/coordinator/hypothese.rs`: jeder **nicht führende**
+  Befund fällt auf `mittel` zurück.
+- **N-18 — der führende Platz behauptete stark, obwohl ihn nichts trug.**
+  Nach dem Fix zu N-17 blieb ein tieferer Fehler übrig, und er war schwerer zu
+  sehen: In dieser Sitzung sind die zwei Kandidaten im Material **nicht
+  unterscheidbar** — gleiches Band, gleiche Anhebung, gleiche Fenster,
+  identischer Rang. Wer führt, entschied allein der Gleichstandsschlüssel, die
+  aufsteigende `candidate_source`. Das Produkt setzte auf diesen Platz ein
+  `hoch`. Die Behauptung wäre richtig oder falsch gewesen, je nachdem wie die
+  Kennungen zufällig liegen — eine Münzwurf-Aussage mit dem Anschein von
+  Sicherheit, also genau die „überzeugende falsche Ursache" aus §49.4.
+  Behoben in derselben Datei: **ein ungetrennter erster Platz trägt keine
+  starke Aussage.** Getrennt heißt, dass der Rangabstand größer ist als
+  `RANG_QUANTUM` — dieselbe Auflösung, in der die Sortierung darüber
+  vergleicht. Zwei Kandidaten, die die Sortierung nicht trennen konnte, darf
+  die Sicherheit nicht trennen. Beide bleiben sichtbar, jeder als Alternative
+  des anderen.
+
+  ⚠️ **Der Fund traf auch den Korpus selbst.** Die Sitzung erwartete zuerst
+  `hoch`, und die wahre Ursache lag auf der **kleineren** Kennung. Der Fall
+  hätte also gemessen, ob die wahre Ursache zufällig die kleinere Kennung
+  trägt — ein Bein, das aus dem richtigen Grund grün aussieht. Die Erwartung
+  steht deshalb jetzt auf `mittel`, mit dieser Begründung im `hinweis` der
+  Sitzung. Ein Korpus darf nicht messen, was das Produkt nicht wissen kann.
+
+**Technische Entscheide dieser Etappe.**
+
+- **Brier und Kalibrierung laufen über die Sicherheits-KLASSE, nicht über den
+  `score`.** Der erste Entwurf rechnete sie über `confidence.score` und meldete
+  Brier 0,588 — eine Zahl, die schlecht aussieht und nichts sagt. Der Grund:
+  `score` ist `rang.rang()`, das quantisierte Mittel der sechs Rangkomponenten,
+  also eine **Rangzahl** und keine Trefferwahrscheinlichkeit;
+  `broker/src/coordinator/hypothese.rs` hält ausdrücklich fest, dass die Klasse
+  nie aus dem Score gerundet wird (M-15, M-20). Brier über einen Rang zu rechnen
+  ist ein Kategoriefehler. Vorhergesagt wird deshalb die Klasse über die Tabelle
+  `KLASSENNENNWERT`, und diese Tabelle lebt **im Messwerkzeug**, nicht im
+  Produkt: sie dorthin zurückzulesen wäre genau die von M-15 verbotene Rundung.
+  Der Rang bleibt als `rangmittel` sichtbar (§42.4), nur getrennt von der
+  Kalibrierung. Daneben steht die annahmefreie **Zuverlässigkeitstafel**: „von
+  dem, was das Produkt `hoch` nannte, waren X % richtig."
+- **Die Schwelle aus M-31 wird gesucht, und zusätzlich wird die des Produkts
+  gelesen.** `schwelle_suchen()` misst die niedrigste haltende Stufe.
+  `produktschwelle()` liest daneben, was das Produkt **wirklich** tut, aus dem
+  `zustand` jedes ausgegebenen Befunds. Geprüft wird eine **Äquivalenz**: jeder
+  handelnde Befund trägt `hoch`, und jeder frische `hoch`-Befund handelt. Nur
+  eine Richtung zu prüfen ließe ein Produkt durch, das gar nichts mehr handelt
+  — ein Riegel, der auf dem Weg zur Sicherheit die Zusage verliert. Ein
+  veralteter Befund ist die benannte Ausnahme.
+- **`GATE_MINDEST_FENSTER` bleibt bei 8 — E-12 Fall 3, kein Versionsschritt.**
+  Der Entscheid E-12 erlaubt genau einen `metrics_version`-Schritt in dieser
+  Etappe, und zwar dann, wenn die Kalibrierung den Wert bewegt. Sie bewegt ihn
+  nicht: beide Passagensitzungen tragen **null** starke Aussagen, der Startwert
+  hält. Der Rotbeweis `M-23-kalibrierung` zeigt, dass diese Aussage einen Weg
+  hat zu fallen — mit dem Wert 1 trägt `zu_kurze_passage` sofort eine starke
+  Aussage, und das Bein meldet wörtlich „`GATE_MINDEST_FENSTER` muss steigen".
+  Damit ist der Startwert **gemessen bestätigt**, nicht bloß unverändert.
+- **M-70 baut den Riegel, nicht die Entfernung.** Die Zeile `nicht_gemessen`
+  in `eq-copilot/fixtures/p4-korpus/MANIFEST.json` bleibt stehen. Der P5-Korpus
+  misst den Fall jetzt (die Sitzung `korrelierter_distraktor` gibt den
+  Distraktor als Alternative aus), und das Sammelbein druckt genau das:
+  „gedruckt, inzwischen gemessen — sie darf jetzt entfernt werden". Die
+  **Entfernung** selbst gehört dem P4-Korpus und seinem Erzeuger; sie hier
+  nebenbei mitzunehmen hieße, eine fremde Fixture während dieser Etappe neu zu
+  erzeugen. Gebaut ist stattdessen die **Kopplung**: verschwindet die Zeile,
+  ohne dass eine P5-Sitzung den Fall misst, ist das rot.
+- **Die Voraussetzung ist eine Messung, keine Annahme.** Fehlt die
+  Ergebnisdatei oder ist sie älter als `hypothese.rs`,
+  `hypothese_verdrahtung.rs`, `sonde014_p5_korpus.rs` oder `sitzungen.json`,
+  meldet das Sammelbein **Exit 3**. Ein Bein, das ein veraltetes Artefakt als
+  frisch bezeugt, ist derselbe Fehler, den N-14 in Etappe F an vier
+  Rotbeweisen gefunden hat.
+- **Das Kettenbein rechnet keine Kennzahlen.** Es fährt und schreibt, was
+  herauskam. Rechnete es selbst, wäre die Messung wieder im selben Prozess wie
+  das Gemessene, und ein grünes Bein hieße nur noch, dass es mit sich selbst
+  einig ist.
+
+**Abweichungen von §5, mit Begründung.**
+
+1. **Das Kettenbein läuft unter `A4`, nicht als eigenes Bein.** §5.1 verlangt
+   „ein Rust-Integrationsbein im **A4**-Bereich"; genau dort liegt es. Die drei
+   **neuen** Beine `A28`, `A29` und `A30` sind Erzeuger, Sammelbein und
+   Selbsttest — die drei, die §5.1 als anzulegen führt.
+2. **`A26` ist nicht erweitert.** Es misst den **P4**-Korpus und druckt dessen
+   Lücke. Die Kopplung zwischen der gedruckten Lücke und ihrer P5-Messung
+   gehört auf die Seite, die neu misst, und liegt deshalb in
+   `pruefe_p5_korpus.py`. `A26` um eine Zusage über P5 zu erweitern hieße, dem
+   P4-Bein eine Messung zuzuschreiben, die es nicht fährt.
+
+**Nebenbefunde.**
+
+- **N-17** und **N-18** stehen oben; beide sind behoben und mit Rotbeweis
+  belegt.
+- **N-19 (neu, im eigenen Werkzeug behoben).** Der erste Selbsttest enthielt
+  die Prüfung `k["brier"] > 0.0 or k["brier"] == 0.0` — für jede
+  nicht-negative Zahl wahr. Sie hatte **keinen Weg zu fallen** und ist damit
+  genau der Fehler, den M-68 und Risiko **R5** benennen, im Werkzeug, das ihn
+  finden soll. Ersetzt durch den echten Vergleich: derselbe Brier mit und ohne
+  Enthaltung, dazu die Gegenrichtung, dass eine **echte** zweite Behauptung ihn
+  sehr wohl bewegt.
+
 ---
 
 ---

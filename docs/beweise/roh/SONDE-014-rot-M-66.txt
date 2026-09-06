@@ -1,0 +1,108 @@
+SONDE-014 Etappe H - Rotbeweis M-66
+========================================================================
+
+GEWERTETE ZUSAGE
+Die Schwelle hoch/mittel/unklar ist AUSGABE des Beins, nicht seine Eingabe. Wer sie als Konstante hineingibt, bekommt ein Bein, das seine eigene Eingabe bestaetigt.
+
+GEMESSEN AN  Art `selbsttest` der Kette:
+             eq-copilot/fixtures/p5-korpus (die Wahrheit jedes Falls)
+             -> broker/tests/sonde014_p5_korpus.rs (Produktpfad ueber p1)
+             -> tools/eq-copilot/pruefe_p5_korpus.py (der Vergleich)
+
+RUECKNAHME AM PRODUKTCODE  tools/eq-copilot/pruefe_p5_korpus.py
+------------------------------------------------------------------------
+VORHER:
+    gewaehlt = next((s for s in (UNKLAR, MITTEL, HOCH) if ergebnis[s]["haelt"]), None)
+
+NACHHER:
+    # RUECKNAHME M-66: die Schwelle wird gesetzt statt gesucht.
+    gewaehlt = HOCH
+------------------------------------------------------------------------
+
+[1] LAUF MIT RUECKNAHME - erwartet ROT (Exitcode 2)
+========================================================================
+P5-Korpus Selbsttest (M-68)
+  ok      stark auf einer fremden Quelle ist falsch
+  ok      und der Riegel meldet sie
+  ok      GEGENTEIL: stark auf der wahren Ursache ist richtig
+  ok      und der Riegel schweigt
+  ok      stark, wo hoechstens mittel erlaubt ist, ist falsch
+  ok      GEGENTEIL: mittel, wo mittel erlaubt ist, passt
+  ok      mittel, wo nur unklar erlaubt ist, ist falsch
+  ok      GEGENTEIL: unklar, wo unklar erlaubt ist, passt
+  ok      eine Enthaltung ist keine falsche Behauptung
+  ok      sie senkt die Coverage und hebt die Enthaltungsrate
+  ok      und sie geht NICHT in den Brier Score ein
+  ok      GEGENTEIL: eine echte zweite Behauptung veraendert ihn sehr wohl
+  ok      precision zaehlt beide starken
+  ok      und der Riegel meldet die falsche
+  ok      ein leerer Satz hat weder falsche noch fehlende Behauptungen
+  ok      und meldet nichts
+  ok      precision > 1 faellt (der Riegel hat einen Weg zu fallen)
+  ok      recall > 1 ebenso
+  ok      brier > 1 ebenso
+  ok      GEGENTEIL: gueltige Kennzahlen melden nichts
+  ok      eine richtige starke Behauptung liegt genau ihren Nennwert daneben
+  ok      GEGENTEIL: eine falsche starke Behauptung traegt den vollen Fehler
+  ok      der Rang bewegt den Brier nicht (er ist keine Wahrscheinlichkeit, M-15)
+  ok      GEGENTEIL: er steht als `rangmittel` trotzdem sichtbar da (�42.4)
+  ok      die Tafel zeigt je Klasse die GEMESSENE Trefferquote
+  ok      und mittelt sie nicht mit der anderen Klasse zusammen
+  ok      GEGENTEIL: eine Klasse ohne Faelle steht nicht mit erfundener Quote da
+  ok      die Schwelle wird GESUCHT: nur `hoch` haelt hier
+  FEHLER  GEGENTEIL: haelt jede Stufe, ist die niedrigste die Antwort
+  ok      handelbar genau bei `hoch` meldet nichts
+  ok      ein handelnder `mittel`-Befund faellt (Schwelle geraten statt kalibriert)
+  ok      GEGENTEIL: ein `hoch`, das nicht handelt, faellt ebenso
+  ok      ein veralteter Befund ist die benannte Ausnahme und faellt nicht
+  ok      die Luecke verschwindet ohne P5-Messung: rot (M-70)
+  ok      GEGENTEIL: verschwunden UND gemessen ist in Ordnung
+  ok      gedruckt und ungemessen ist nie rot, nur benannt
+  ok      gedruckt und inzwischen gemessen: die Zeile darf weg
+  ok      ein fremdes Ticket haelt die Luecke NAK-190 nicht offen
+P5-Korpus Selbsttest: 1 Fehler
+
+[2] RUECKNAHME ZURUECKGENOMMEN, LAUF ERNEUT - erwartet GRUEN (Exitcode 0)
+========================================================================
+P5-Korpus Selbsttest (M-68)
+  ok      stark auf einer fremden Quelle ist falsch
+  ok      und der Riegel meldet sie
+  ok      GEGENTEIL: stark auf der wahren Ursache ist richtig
+  ok      und der Riegel schweigt
+  ok      stark, wo hoechstens mittel erlaubt ist, ist falsch
+  ok      GEGENTEIL: mittel, wo mittel erlaubt ist, passt
+  ok      mittel, wo nur unklar erlaubt ist, ist falsch
+  ok      GEGENTEIL: unklar, wo unklar erlaubt ist, passt
+  ok      eine Enthaltung ist keine falsche Behauptung
+  ok      sie senkt die Coverage und hebt die Enthaltungsrate
+  ok      und sie geht NICHT in den Brier Score ein
+  ok      GEGENTEIL: eine echte zweite Behauptung veraendert ihn sehr wohl
+  ok      precision zaehlt beide starken
+  ok      und der Riegel meldet die falsche
+  ok      ein leerer Satz hat weder falsche noch fehlende Behauptungen
+  ok      und meldet nichts
+  ok      precision > 1 faellt (der Riegel hat einen Weg zu fallen)
+  ok      recall > 1 ebenso
+  ok      brier > 1 ebenso
+  ok      GEGENTEIL: gueltige Kennzahlen melden nichts
+  ok      eine richtige starke Behauptung liegt genau ihren Nennwert daneben
+  ok      GEGENTEIL: eine falsche starke Behauptung traegt den vollen Fehler
+  ok      der Rang bewegt den Brier nicht (er ist keine Wahrscheinlichkeit, M-15)
+  ok      GEGENTEIL: er steht als `rangmittel` trotzdem sichtbar da (�42.4)
+  ok      die Tafel zeigt je Klasse die GEMESSENE Trefferquote
+  ok      und mittelt sie nicht mit der anderen Klasse zusammen
+  ok      GEGENTEIL: eine Klasse ohne Faelle steht nicht mit erfundener Quote da
+  ok      die Schwelle wird GESUCHT: nur `hoch` haelt hier
+  ok      GEGENTEIL: haelt jede Stufe, ist die niedrigste die Antwort
+  ok      handelbar genau bei `hoch` meldet nichts
+  ok      ein handelnder `mittel`-Befund faellt (Schwelle geraten statt kalibriert)
+  ok      GEGENTEIL: ein `hoch`, das nicht handelt, faellt ebenso
+  ok      ein veralteter Befund ist die benannte Ausnahme und faellt nicht
+  ok      die Luecke verschwindet ohne P5-Messung: rot (M-70)
+  ok      GEGENTEIL: verschwunden UND gemessen ist in Ordnung
+  ok      gedruckt und ungemessen ist nie rot, nur benannt
+  ok      gedruckt und inzwischen gemessen: die Zeile darf weg
+  ok      ein fremdes Ticket haelt die Luecke NAK-190 nicht offen
+P5-Korpus Selbsttest: gruen
+
+URTEIL: OK (rot=2, gruen=0)

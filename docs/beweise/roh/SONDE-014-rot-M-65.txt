@@ -1,0 +1,87 @@
+SONDE-014 Etappe H - Rotbeweis M-65
+========================================================================
+
+GEWERTETE ZUSAGE
+Bei UNVERAENDERTEN Korpus-Quellenangaben gibt der Produktpfad keine starke Ursache aus, wo ihn nichts vom Distraktor trennt. Der Korpus ist eine Kette (R2): eine falsche starke Produktbehauptung faellt am Vergleich, obwohl die Korpusdateien Byte fuer Byte dieselben bleiben.
+
+GEMESSEN AN  Art `kette` der Kette:
+             eq-copilot/fixtures/p5-korpus (die Wahrheit jedes Falls)
+             -> broker/tests/sonde014_p5_korpus.rs (Produktpfad ueber p1)
+             -> tools/eq-copilot/pruefe_p5_korpus.py (der Vergleich)
+
+RUECKNAHME AM PRODUKTCODE  broker/src/coordinator/hypothese.rs
+------------------------------------------------------------------------
+VORHER:
+    if !getrennt && befunde[0].confidence.klasse >= Sicherheitsklasse::Hoch {
+
+NACHHER:
+    // RUECKNAHME M-65: der ungetrennte erste Platz bleibt stark.
+    let _ = getrennt;
+    if false && befunde[0].confidence.klasse >= Sicherheitsklasse::Hoch {
+------------------------------------------------------------------------
+
+[1] LAUF MIT RUECKNAHME - erwartet ROT (Exitcode 2)
+========================================================================
+-- Kettenbein (cargo test --test sonde014_p5_korpus) --
+
+running 1 test
+test korpus_kette_laeuft_durch_den_produktpfad ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.67s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.13s
+     Running tests\sonde014_p5_korpus.rs (broker\target\debug\deps\sonde014_p5_korpus-b59f509449eb57a8.exe)
+
+-- Pruefer (Sammelbein A29) --
+P5-Korpus: 6 Sitzungen, 8 ausgegebene Befunde
+  daten_reichen_nicht: n=2 precision=1.000 recall=1.000 brier=0.000 kalibrierung=0.000 coverage=0.000 enthaltung=1.000 falsche_starke=0
+  quelle_resonanz: n=2 precision=1.000 recall=1.000 brier=0.085 kalibrierung=0.250 coverage=1.000 enthaltung=0.000 falsche_starke=0
+  zwei_quellen_konkurrenz: n=4 precision=0.000 recall=1.000 brier=0.323 kalibrierung=0.075 coverage=1.000 enthaltung=0.000 falsche_starke=1
+  GESAMT: n=8 precision=0.500 recall=1.000 brier=0.243 kalibrierung=0.133 coverage=0.750 enthaltung=0.250 rangmittel=0.234
+  ZUVERLAESSIGKEIT hoch: n=2 nennwert=0.90 gemessene Trefferquote=0.500
+  ZUVERLAESSIGKEIT mittel: n=4 nennwert=0.60 gemessene Trefferquote=1.000
+  Schwelle hoch: handelbar=2 davon_falsch=1 haelt=False
+  Schwelle mittel: handelbar=6 davon_falsch=1 haelt=False
+  Schwelle unklar: handelbar=8 davon_falsch=1 haelt=False
+  SCHWELLE (Ausgabe, M-31): niedrigste haltende Stufe = None
+  PRODUKTSCHWELLE (M-31): 2 von 8 Befunden handelbar, Sicherheiten ['hoch']
+  P4-LUECKE NAK-190 (M-70): gedruckt, inzwischen gemessen durch korrelierter_distraktor � sie darf jetzt entfernt werden
+  GATE_MINDEST_FENSTER: 2 Faelle aus den zwei Passagensitzungen, 0 davon stark
+  GATE_MINDEST_FENSTER: der Startwert 8 haelt � kein Versionsschritt noetig (E-12 Fall 3)
+  ROT: zwei_quellen_konkurrenz: 1 falsche starke Behauptung(en): korrelierter_distraktor
+  ROT: gesamt: 1 falsche starke Behauptung(en): korrelierter_distraktor
+  ROT: keine Sicherheitsstufe haelt die Riegel � die Schwelle aus M-31 ist nicht bestimmbar
+
+[2] RUECKNAHME ZURUECKGENOMMEN, LAUF ERNEUT - erwartet GRUEN (Exitcode 0)
+========================================================================
+-- Kettenbein (cargo test --test sonde014_p5_korpus) --
+
+running 1 test
+test korpus_kette_laeuft_durch_den_produktpfad ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.66s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.36s
+     Running tests\sonde014_p5_korpus.rs (broker\target\debug\deps\sonde014_p5_korpus-b59f509449eb57a8.exe)
+
+-- Pruefer (Sammelbein A29) --
+P5-Korpus: 6 Sitzungen, 8 ausgegebene Befunde
+  daten_reichen_nicht: n=2 precision=1.000 recall=1.000 brier=0.000 kalibrierung=0.000 coverage=0.000 enthaltung=1.000 falsche_starke=0
+  quelle_resonanz: n=2 precision=1.000 recall=1.000 brier=0.085 kalibrierung=0.250 coverage=1.000 enthaltung=0.000 falsche_starke=0
+  zwei_quellen_konkurrenz: n=4 precision=1.000 recall=1.000 brier=0.160 kalibrierung=0.400 coverage=1.000 enthaltung=0.000 falsche_starke=0
+  GESAMT: n=8 precision=1.000 recall=1.000 brier=0.135 kalibrierung=0.350 coverage=0.750 enthaltung=0.250 rangmittel=0.234
+  ZUVERLAESSIGKEIT hoch: n=1 nennwert=0.90 gemessene Trefferquote=1.000
+  ZUVERLAESSIGKEIT mittel: n=5 nennwert=0.60 gemessene Trefferquote=1.000
+  Schwelle hoch: handelbar=1 davon_falsch=0 haelt=True
+  Schwelle mittel: handelbar=6 davon_falsch=0 haelt=True
+  Schwelle unklar: handelbar=8 davon_falsch=0 haelt=True
+  SCHWELLE (Ausgabe, M-31): niedrigste haltende Stufe = unklar
+  PRODUKTSCHWELLE (M-31): 1 von 8 Befunden handelbar, Sicherheiten ['hoch']
+  P4-LUECKE NAK-190 (M-70): gedruckt, inzwischen gemessen durch korrelierter_distraktor � sie darf jetzt entfernt werden
+  GATE_MINDEST_FENSTER: 2 Faelle aus den zwei Passagensitzungen, 0 davon stark
+  GATE_MINDEST_FENSTER: der Startwert 8 haelt � kein Versionsschritt noetig (E-12 Fall 3)
+P5-Korpus: gruen
+
+URTEIL: OK (rot=2, gruen=0)

@@ -1,0 +1,89 @@
+SONDE-014 Etappe H - Rotbeweis M-67
+========================================================================
+
+GEWERTETE ZUSAGE
+Eine verschobene Passage erzeugt KEINE starke Aussage; der Kandidat verlaesst das Ranking mit dem Grund `alignment_falsch`.
+
+GEMESSEN AN  Art `kette` der Kette:
+             eq-copilot/fixtures/p5-korpus (die Wahrheit jedes Falls)
+             -> broker/tests/sonde014_p5_korpus.rs (Produktpfad ueber p1)
+             -> tools/eq-copilot/pruefe_p5_korpus.py (der Vergleich)
+
+RUECKNAHME AM PRODUKTCODE  broker/src/coordinator/hypothese.rs
+------------------------------------------------------------------------
+VORHER:
+    if !(alignment >= GATE_ZEITUEBERDECKUNG) {
+        return Gateurteil::Faellt(Ausschlussgrund::AlignmentFalsch);
+    }
+
+NACHHER:
+    // RUECKNAHME M-67: das Alignmentgate faellt weg.
+    let _ = alignment;
+------------------------------------------------------------------------
+
+[1] LAUF MIT RUECKNAHME - erwartet ROT (Exitcode 2)
+========================================================================
+-- Kettenbein (cargo test --test sonde014_p5_korpus) --
+
+running 1 test
+test korpus_kette_laeuft_durch_den_produktpfad ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.63s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.87s
+     Running tests\sonde014_p5_korpus.rs (broker\target\debug\deps\sonde014_p5_korpus-b59f509449eb57a8.exe)
+
+-- Pruefer (Sammelbein A29) --
+P5-Korpus: 6 Sitzungen, 8 ausgegebene Befunde
+  daten_reichen_nicht: n=1 precision=1.000 recall=1.000 brier=0.000 kalibrierung=0.000 coverage=0.000 enthaltung=1.000 falsche_starke=0
+  quelle_resonanz: n=3 precision=0.500 recall=1.000 brier=0.327 kalibrierung=0.133 coverage=1.000 enthaltung=0.000 falsche_starke=1
+  zwei_quellen_konkurrenz: n=4 precision=1.000 recall=1.000 brier=0.160 kalibrierung=0.400 coverage=1.000 enthaltung=0.000 falsche_starke=0
+  GESAMT: n=8 precision=0.500 recall=1.000 brier=0.231 kalibrierung=0.171 coverage=0.875 enthaltung=0.125 rangmittel=0.238
+  ZUVERLAESSIGKEIT hoch: n=2 nennwert=0.90 gemessene Trefferquote=0.500
+  ZUVERLAESSIGKEIT mittel: n=5 nennwert=0.60 gemessene Trefferquote=1.000
+  Schwelle hoch: handelbar=2 davon_falsch=1 haelt=False
+  Schwelle mittel: handelbar=7 davon_falsch=1 haelt=False
+  Schwelle unklar: handelbar=8 davon_falsch=1 haelt=False
+  SCHWELLE (Ausgabe, M-31): niedrigste haltende Stufe = None
+  PRODUKTSCHWELLE (M-31): 2 von 8 Befunden handelbar, Sicherheiten ['hoch']
+  P4-LUECKE NAK-190 (M-70): gedruckt, inzwischen gemessen durch korrelierter_distraktor � sie darf jetzt entfernt werden
+  GATE_MINDEST_FENSTER: 2 Faelle aus den zwei Passagensitzungen, 1 davon stark
+  ROT: verschobene_passage: erwarteter Ausschlussgrund 'alignment_falsch' fehlt � gefunden: keiner
+  ROT: quelle_resonanz: 1 falsche starke Behauptung(en): verschobene_passage
+  ROT: gesamt: 1 falsche starke Behauptung(en): verschobene_passage
+  ROT: keine Sicherheitsstufe haelt die Riegel � die Schwelle aus M-31 ist nicht bestimmbar
+  ROT: eine kurze oder verschobene Passage traegt eine starke Aussage � GATE_MINDEST_FENSTER muss steigen (E-12)
+
+[2] RUECKNAHME ZURUECKGENOMMEN, LAUF ERNEUT - erwartet GRUEN (Exitcode 0)
+========================================================================
+-- Kettenbein (cargo test --test sonde014_p5_korpus) --
+
+running 1 test
+test korpus_kette_laeuft_durch_den_produktpfad ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.69s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.72s
+     Running tests\sonde014_p5_korpus.rs (broker\target\debug\deps\sonde014_p5_korpus-b59f509449eb57a8.exe)
+
+-- Pruefer (Sammelbein A29) --
+P5-Korpus: 6 Sitzungen, 8 ausgegebene Befunde
+  daten_reichen_nicht: n=2 precision=1.000 recall=1.000 brier=0.000 kalibrierung=0.000 coverage=0.000 enthaltung=1.000 falsche_starke=0
+  quelle_resonanz: n=2 precision=1.000 recall=1.000 brier=0.085 kalibrierung=0.250 coverage=1.000 enthaltung=0.000 falsche_starke=0
+  zwei_quellen_konkurrenz: n=4 precision=1.000 recall=1.000 brier=0.160 kalibrierung=0.400 coverage=1.000 enthaltung=0.000 falsche_starke=0
+  GESAMT: n=8 precision=1.000 recall=1.000 brier=0.135 kalibrierung=0.350 coverage=0.750 enthaltung=0.250 rangmittel=0.234
+  ZUVERLAESSIGKEIT hoch: n=1 nennwert=0.90 gemessene Trefferquote=1.000
+  ZUVERLAESSIGKEIT mittel: n=5 nennwert=0.60 gemessene Trefferquote=1.000
+  Schwelle hoch: handelbar=1 davon_falsch=0 haelt=True
+  Schwelle mittel: handelbar=6 davon_falsch=0 haelt=True
+  Schwelle unklar: handelbar=8 davon_falsch=0 haelt=True
+  SCHWELLE (Ausgabe, M-31): niedrigste haltende Stufe = unklar
+  PRODUKTSCHWELLE (M-31): 1 von 8 Befunden handelbar, Sicherheiten ['hoch']
+  P4-LUECKE NAK-190 (M-70): gedruckt, inzwischen gemessen durch korrelierter_distraktor � sie darf jetzt entfernt werden
+  GATE_MINDEST_FENSTER: 2 Faelle aus den zwei Passagensitzungen, 0 davon stark
+  GATE_MINDEST_FENSTER: der Startwert 8 haelt � kein Versionsschritt noetig (E-12 Fall 3)
+P5-Korpus: gruen
+
+URTEIL: OK (rot=2, gruen=0)

@@ -211,6 +211,41 @@ impl NaechsterTest {
             Self::MehrDatenSammeln => "mehr_daten_sammeln",
         }
     }
+
+    pub fn aus_wire(wort: &str) -> Option<Self> {
+        NAECHSTE_TESTS
+            .iter()
+            .position(|w| *w == wort)
+            .map(|i| Self::ALLE[i])
+    }
+
+    pub const ALLE: [NaechsterTest; 6] = [
+        Self::PassageMessen,
+        Self::RoutingBestaetigen,
+        Self::PrePostPaarMessen,
+        Self::ManuellerVersuch,
+        Self::KeineAenderungEmpfohlen,
+        Self::MehrDatenSammeln,
+    ];
+
+    /// Die Zeile `SMALLEST TEST` auf Gen Flaeche 1 (M-34).
+    ///
+    /// ⚠️ Sie **bildet `next_test` ab** und ist keine Anzeigezusammenfassung.
+    /// Deshalb steht sie hier am Enum und nicht als `match` im Erzeuger: eine
+    /// zweite Stelle mit derselben Abbildung waere eine zweite Wahrheit, und
+    /// die Anzeige muesste raten, welche gilt. Die Abbildung ist **total** —
+    /// jeder der sechs Werte hat seinen Satz, keiner faellt auf einen
+    /// Sammelzweig.
+    pub fn satz(self) -> &'static str {
+        match self {
+            Self::PassageMessen => "Dieselbe Passage laenger messen.",
+            Self::RoutingBestaetigen => "Routing dieser Quelle bestaetigen.",
+            Self::PrePostPaarMessen => "PRE/POST-Paar an dieser Quelle messen.",
+            Self::ManuellerVersuch => "Die Quelle in dieser Passage kurz absenken und gegenhoeren.",
+            Self::KeineAenderungEmpfohlen => "Nichts aendern — der Befund traegt keinen Eingriff.",
+            Self::MehrDatenSammeln => "Dieselbe Passage laenger messen.",
+        }
+    }
 }
 
 /// Die ACHT Ausschlussgruende (M-87, R4). Geschlossen und beidseitig geprueft.
@@ -533,6 +568,56 @@ impl Befundzustand {
             Self::MoreData => "more_data",
             Self::Stale => "stale",
         }
+    }
+
+    pub fn aus_wire(wort: &str) -> Option<Self> {
+        Some(match wort {
+            "ready_to_send" => Self::ReadyToSend,
+            "more_data" => Self::MoreData,
+            "stale" => Self::Stale,
+            _ => return None,
+        })
+    }
+
+    /// M-30: **nur** `ready_to_send` erlaubt `HOLD TO AUDITION`.
+    ///
+    /// Die Sperre haengt am ZUSTAND und damit am Datenweg — nicht an einer
+    /// ausgegrauten Schaltflaeche, die trotzdem sendet. Beide Seiten fragen
+    /// dieselbe Funktion: hier der Broker, in `SourcesModel::Befund` das
+    /// Plugin (M-77).
+    pub fn erlaubt_audition(self) -> bool {
+        matches!(self, Self::ReadyToSend)
+    }
+
+    /// M-30: **nur** `ready_to_send` erlaubt `SEND DRAFT → EQ`.
+    pub fn erlaubt_draft(self) -> bool {
+        matches!(self, Self::ReadyToSend)
+    }
+}
+
+/// Die Abbildung Sicherheit → Zustand (M-29).
+///
+/// ── EINE FUNKTION IM DATENWEG, KEINE ANZEIGEENTSCHEIDUNG ──────────────────
+///
+/// Abnahme U21 sagt es woertlich: „SICHERHEIT wird nicht als Wert ausgegeben,
+/// sondern auf den Zustand des Befunds abgebildet". Die Anzeige liest den
+/// Zustand und raet nie — deshalb steht die Abbildung hier, an genau einer
+/// Stelle, und nicht in `baue_befund` und `enthaltung` zweimal.
+///
+/// `veraltet` kommt von aussen und nicht aus der Klasse: ein Befund wird
+/// `stale`, weil sich unter ihm etwas GEAENDERT hat (Intent-Revision gestiegen,
+/// Belege zurueckgenommen), nicht weil seine Sicherheit gesunken waere. Die
+/// beiden Gruende sind verschieden und duerfen nicht ineinander laufen.
+pub fn zustand_aus_sicherheit(klasse: Sicherheitsklasse, veraltet: bool) -> Befundzustand {
+    if veraltet {
+        return Befundzustand::Stale;
+    }
+    match klasse {
+        Sicherheitsklasse::Hoch => Befundzustand::ReadyToSend,
+        // `mittel` und `unklar` sind BEIDE nicht handelbar. Wo die numerische
+        // Grenze zwischen ihnen liegt, ist Ausgabe des Korpus (M-31, Etappe H)
+        // und steht bewusst nirgends als Konstante.
+        Sicherheitsklasse::Mittel | Sicherheitsklasse::Unklar => Befundzustand::MoreData,
     }
 }
 
@@ -1130,10 +1215,10 @@ fn enthaltung(
         alternatives: Vec::new(),
         ausschluesse,
         next_test: NaechsterTest::MehrDatenSammeln,
-        zustand: Befundzustand::MoreData,
+        zustand: zustand_aus_sicherheit(Sicherheitsklasse::Unklar, false),
         intent_revision: aufnahme.intent.as_ref().map_or(0, |i| i.revision),
         likely_cause: "Die Datenlage traegt noch keine Ursachenaussage.".into(),
-        smallest_test: "Dieselbe Passage laenger messen.".into(),
+        smallest_test: NaechsterTest::MehrDatenSammeln.satz().into(),
         listen_for: "Noch nichts — erst mehr Material sammeln.".into(),
         metrics_version: aufnahme.metrics_version,
     }
@@ -1189,10 +1274,10 @@ fn baue_befund(
     } else {
         Sicherheitsklasse::Hoch
     };
-    let zustand = match klasse {
-        Sicherheitsklasse::Hoch => Befundzustand::ReadyToSend,
-        _ => Befundzustand::MoreData,
-    };
+    // M-29: die EINE Abbildung im Datenweg. Frisch gerechnet ist ein Befund
+    // nie veraltet — `stale` entsteht erst, wenn sich unter ihm etwas aendert
+    // (Intent-Revision gestiegen, Belege zurueckgenommen).
+    let zustand = zustand_aus_sicherheit(klasse, false);
     let next_test = if !kandidat.routing_bekannt {
         NaechsterTest::RoutingBestaetigen
     } else if !kandidat.prepost_paar {
@@ -1242,12 +1327,8 @@ fn baue_befund(
             band.von,
             band.bis
         ),
-        smallest_test: match next_test {
-            NaechsterTest::RoutingBestaetigen => "Routing dieser Quelle bestaetigen.".into(),
-            NaechsterTest::PrePostPaarMessen => "PRE/POST-Paar an dieser Quelle messen.".into(),
-            NaechsterTest::PassageMessen => "Dieselbe Passage laenger messen.".into(),
-            _ => "Die Quelle in dieser Passage kurz absenken und gegenhoeren.".into(),
-        },
+        // M-34: die Zeile BILDET `next_test` ab; die Abbildung lebt am Enum.
+        smallest_test: next_test.satz().into(),
         listen_for: "Ob der Master im markierten Bereich Luft bekommt.".into(),
         metrics_version: aufnahme.metrics_version,
     }

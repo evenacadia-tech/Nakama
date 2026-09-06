@@ -16,6 +16,7 @@
 #include <map>
 #include <mutex>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace eqcop
@@ -119,6 +120,56 @@ public:
         std::string ausschluss;
     };
 
+    /// Ein Ursachenbefund aus `session_snapshot.findings` (SONDE-014 E-04).
+    ///
+    /// 🔑 Bis SONDE-014 gab es im ganzen Produktcode keinen „Befund" im Sinne
+    /// von Entwurf Paragraph 8 — nur Messungen, Vergleichsurteile und
+    /// Experimentergebnisse. Dies ist seine Modellform auf der Gen-Seite.
+    ///
+    /// ⚠️ KEINE Pixel. Der Befund traegt Zustand, Zahlen und die drei
+    /// Anzeigezeilen als FELDER; wie Flaeche 1 sie anordnet, ist eine
+    /// Designfrage und gehoert dem User (S31b).
+    struct Befund
+    {
+        std::string findingId, candidateSource, passageId;
+        /// Die drei Aussageklassen aus Paragraph 36.1.
+        std::string claimClass;
+        /// Eine der SIEBEN Ursachenklassen aus Paragraph 8.
+        std::string ursachenklasse;
+        std::string targetMetric;
+        /// Halboffenes Bandintervall `[von, bis)` im 221er-Evidenzgitter.
+        std::uint32_t bandVon = 0, bandBis = 0;
+        /// Ohne `beobachtungGueltig` ist `beobachtungWertDb` KEINE Messung.
+        double beobachtungWertDb = 0.0;
+        bool beobachtungGueltig = false;
+        /// `READY TO SEND` | `MORE DATA` | `STALE` (Abnahme U21).
+        std::string zustand;
+        /// `class` UND `score` — zwei Felder. Die Klasse wird nicht aus dem
+        /// Score gerundet, und die Anzeige rundet sie erst recht nicht.
+        std::string confidenceKlasse;
+        double confidenceScore = 0.0;
+        /// Die IDs EIGENER Befunde in derselben Liste, kein Text (U21).
+        std::vector<std::string> alternatives;
+        /// Die ausgeschiedenen Kandidaten samt Grund aus der geschlossenen
+        /// Achtermenge. Ein kommentarlos entfernter Kandidat ist ein Defekt.
+        std::vector<std::pair<std::string, std::string>> ausschluesse;
+        std::vector<std::string> evidenceIds;
+        std::string nextTest;
+        std::uint64_t intentRevision = 0;
+        /// Die drei Zeilen aus Abnahme U21, als DREI Felder — damit die
+        /// Anzeige keine davon aus mehreren Feldern zusammensetzt.
+        juce::String likelyCause, smallestTest, listenFor;
+
+        /// M-30: **nur** `READY TO SEND` erlaubt `HOLD TO AUDITION`.
+        ///
+        /// ⚠️ Die Sperre liegt HIER, im Datenweg, und nicht in einer
+        /// ausgegrauten Schaltflaeche, die trotzdem sendet. Dieselbe Regel
+        /// wie `Befundzustand::erlaubt_audition` im Broker (M-77).
+        bool darfAudition() const { return zustand == "ready_to_send"; }
+        /// M-30: **nur** `READY TO SEND` erlaubt `SEND DRAFT -> EQ`.
+        bool darfDraft() const { return zustand == "ready_to_send"; }
+    };
+
     struct Sicht
     {
         std::uint64_t revision = 0;
@@ -133,6 +184,10 @@ public:
         /// keine", nie „alle abgeschlossen".
         std::vector<Versuch> experimente;
         std::vector<Paar>    paare;
+        /// SONDE-014 Etappe D (E-04): die Ursachenbefunde dieser Sitzung.
+        /// Leer heisst „diese Sitzung fuehrt keine Befunde", nie „alle
+        /// geschlossen".
+        std::vector<Befund>  befunde;
         /// SONDE-013 Nacharbeit 2 (Befund R28): wie oft in dieser Sitzung
         /// bereits eingegangene Evidenz zurueckgenommen wurde, und warum.
         /// Leere Zeichenketten heissen "keine Ruecknahme", nie "unbekannt".
@@ -208,6 +263,8 @@ private:
     /// der Versuche und Paarurteile dieser Sitzung.
     std::vector<Versuch> experimente;
     std::vector<Paar>    paare;
+    /// SONDE-014 Etappe D: der zuletzt empfangene Befundstand dieser Sitzung.
+    std::vector<Befund>  befunde;
     /// SONDE-013 Nacharbeit 2 (Befund R28): Zaehler und letzter Anlass der
     /// Evidenzruecknahme.
     std::uint64_t evidenzRuecknahmen = 0;

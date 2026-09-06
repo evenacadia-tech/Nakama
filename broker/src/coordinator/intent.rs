@@ -382,7 +382,7 @@ impl Coordinator {
         }
 
         // ── DER EINE LOCKABSCHNITT ──────────────────────────────────────
-        let session = {
+        let (session, veraltet) = {
             let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
             let Some(link) = stand.links.get(link_id).cloned() else {
                 return Err(IntentAbweisung::KeinLink);
@@ -435,12 +435,40 @@ impl Coordinator {
                 return Err(IntentAbweisung::Zyklus);
             }
 
+            let revision_gestiegen = revision > bestand.revision;
             *bestand = kandidat;
             stand.intent_updates = stand.intent_updates.saturating_add(1);
-            session
+            // 🔑 SONDE-014 Etappe D (§37.3, M-29): eine gestiegene
+            // Bestandsrevision macht jeden Befund darunter SICHTBAR `stale`.
+            //
+            // §37.3 woertlich: „Steigt sie, geht der Befund sichtbar in
+            // `stale`, ohne dass Zahlen nachgerechnet werden." Genau das
+            // passiert hier — kein Neurechnen, nur der Zustand. Der Grund ist
+            // derselbe wie bei der Evidenzruecknahme: eine Aussage, die unter
+            // einer alten Absicht entstanden ist, darf nicht weiter als
+            // handelbar dastehen, nur weil niemand sie angefasst hat.
+            //
+            // UNTER demselben Lock wie die Uebernahme des Bestands. Laege es
+            // ausserhalb, koennte eine Neurechnung dazwischen den Befund mit
+            // der NEUEN Revision aufbauen und der Veraltungsschritt liefe ins
+            // Leere.
+            let veraltet = if revision_gestiegen {
+                Coordinator::befunde_veralten_locked(&mut stand, &session, revision)
+            } else {
+                0
+            };
+            (session, veraltet)
         };
 
-        let _ = session;
+        // Der Push liegt AUSSERHALB des Locks (M-72-Muster: der Sessiongraph
+        // wird fuer keine Zustellung angehalten).
+        if veraltet > 0 {
+            {
+                let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+                stand.dirty_sessions.insert(session.clone());
+            }
+            self.flush_session(&session, None);
+        }
         Ok(())
     }
 

@@ -117,6 +117,27 @@ bool nichtnegativeGanzzahl (const juce::var& v, std::uint64_t& aus)
     return false;
 }
 
+/*  Eine ENDLICHE Zahl innerhalb ihrer Vertragsgrenzen (SONDE-014 M-82).
+
+    🔑 NaN-Ehrlichkeit auf der Leseseite. `juce::var` traegt Zahlen als
+    `double`; ein `NaN` oder `inf` auf der Leitung wuerde jeden Vergleich
+    still verlieren lassen (`NaN <= max` ist FALSCH, `NaN >= min` ebenso) —
+    ohne `std::isfinite` haenge das Urteil davon ab, in welcher Richtung
+    verglichen wird. Deshalb steht die Endlichkeit VOR den Grenzen.
+
+    Ganzzahlen sind ausdruecklich zugelassen: JSON kennt keinen Unterschied,
+    und ein `0` fuer `wert_db` ist ein gueltiger Messwert. */
+bool endlicheZahl (const juce::var& v, double min, double max, double& aus)
+{
+    if (! v.isDouble() && ! v.isInt() && ! v.isInt64())
+        return false;
+    const auto d = static_cast<double> (v);
+    if (! std::isfinite (d) || d < min || d > max)
+        return false;
+    aus = d;
+    return true;
+}
+
 bool adresse (const juce::var& v, std::string& binding, std::string& session,
               std::string& instance, std::string& nonce)
 {
@@ -428,6 +449,10 @@ void SourcesModel::beginneSubscription (std::string binding, std::string session
     // Falschaussage ueber die neue.
     experimente.clear();
     paare.clear();
+    // Dieselbe Regel fuer die Befunde: eine Aussage der alten Sitzung ueber
+    // die neue waere eine Falschaussage, und ihre Evidenz-IDs zeigten ins
+    // Leere.
+    befunde.clear();
     evidenzRuecknahmen = 0;
     ruecknahmeGrund.clear();
     ruecknahmeUmfang.clear();
@@ -536,9 +561,21 @@ SourcesModel::SnapshotErgebnis SourcesModel::uebernehmeSessionSnapshot (
         ? exakteFelder (*o,
               { "type", "session_epoch", "broker_epoch", "fuehrendes_main", "mitglieder" },
               { "beitritt_bestaetigung_noetig", "store_degraded" })
+        : schemaMinor == 2
+        ? exakteFelder (*o,
+              { "type", "session_epoch", "broker_epoch", "fuehrendes_main", "mitglieder" },
+              { "beitritt_bestaetigung_noetig", "store_degraded", "experimente", "paare" })
+        // 🔑 SONDE-014 Etappe D: die Fassung 3 traegt `findings`.
+        //
+        // Ohne diese Zeile wies Gen JEDEN Snapshot ab, der einen Befund
+        // mitbringt — der Rueckweg waere gebaut und trotzdem tot, genau der
+        // Fehler, den SONDE-013 an `experimente` und `paare` gemacht hat. Die
+        // Etappe C baut den Produzenten; dieser Leser ist seine andere
+        // Haelfte, und die beiden gehoeren in dieselbe Zusage.
         : exakteFelder (*o,
               { "type", "session_epoch", "broker_epoch", "fuehrendes_main", "mitglieder" },
-              { "beitritt_bestaetigung_noetig", "store_degraded", "experimente", "paare" });
+              { "beitritt_bestaetigung_noetig", "store_degraded", "experimente", "paare",
+                "findings" });
     if (! wurzelFelderGueltig)
     {
         fehler = "session_snapshot has an unexpected or missing field";
@@ -705,6 +742,258 @@ SourcesModel::SnapshotErgebnis SourcesModel::uebernehmeSessionSnapshot (
                 return SnapshotErgebnis::ungueltig;
             }
             gelesenePaare.push_back (std::move (pp));
+        }
+    }
+
+    // 🔑 SONDE-014 Etappe D (E-04, M-29 bis M-35): die Ursachenbefunde.
+    //
+    // Sie reisen im `session_snapshot`, wie `experimente` und `paare` — nicht
+    // in einer eigenen Familie. Was hier nicht gelesen wird, ist im Produkt
+    // nicht angekommen, egal wie sauber der Broker es gerechnet hat.
+    //
+    // ⚠️ JEDE geschlossene Menge wird durchgesetzt, und eine Verletzung macht
+    // den GANZEN Snapshot ungueltig — dieselbe Regel wie bei `experimente`
+    // (NAK-181 R6). Ein stilles Verwerfen eines Feldes liesse „ready_to_send"
+    // dort stehen, wo der Vertrag etwas anderes sagt, und genau daran haengt
+    // die Sperre aus M-30.
+    std::vector<Befund> geleseneBefunde;
+    if (o->hasProperty ("findings"))
+    {
+        const auto* liste = o->getProperty ("findings").getArray();
+        if (liste == nullptr || liste->size() > 64)
+        {
+            fehler = "session_snapshot findings are not an array of at most 64";
+            return SnapshotErgebnis::ungueltig;
+        }
+        for (const auto& eintrag : *liste)
+        {
+            const auto* f = objekt (eintrag);
+            if (f == nullptr
+                || ! exakteFelder (*f,
+                        { "finding_id", "claim_class", "ursachenklasse",
+                          "target_metric", "candidate_source", "band_hz",
+                          "beobachtung", "rang", "confidence", "evidence_ids",
+                          "next_test", "zustand", "intent_revision",
+                          "likely_cause", "smallest_test", "listen_for" },
+                        { "pre_post", "passage_id", "alternatives",
+                          "ausschluesse", "maskierung" }))
+            {
+                fehler = "session finding has an unexpected or missing field";
+                return SnapshotErgebnis::ungueltig;
+            }
+            Befund b;
+            const auto id = f->getProperty ("finding_id");
+            const auto quelle = f->getProperty ("candidate_source");
+            if (! id.isString() || ! hex32 (id.toString())
+                || ! quelle.isString() || ! hex32 (quelle.toString()))
+            {
+                fehler = "session finding id or candidate source is invalid";
+                return SnapshotErgebnis::ungueltig;
+            }
+            b.findingId = id.toString().toStdString();
+            b.candidateSource = quelle.toString().toStdString();
+            if (f->hasProperty ("passage_id"))
+            {
+                const auto p = f->getProperty ("passage_id");
+                if (! p.isString() || ! hex32 (p.toString()))
+                {
+                    fehler = "session finding passage id is invalid";
+                    return SnapshotErgebnis::ungueltig;
+                }
+                b.passageId = p.toString().toStdString();
+            }
+            // Die sechs geschlossenen Mengen dieses Objekts, wortgleich mit
+            // `$defs/session_finding`. `pre_post` ist optional und ebenfalls
+            // geschlossen.
+            std::string prePost;
+            if (! ausMenge (f->getProperty ("claim_class"),
+                            { "zusammenhang", "wirkungsbeleg", "ursachenbeleg" },
+                            b.claimClass)
+                || ! ausMenge (f->getProperty ("ursachenklasse"),
+                               { "quelle_resonanz", "zwei_quellen_konkurrenz",
+                                 "effektkette_pre_post", "summe_auf_master",
+                                 "peak_aus_transient", "stereo_aus_quelle_oder_kette",
+                                 "daten_reichen_nicht" }, b.ursachenklasse)
+                || ! ausMenge (f->getProperty ("target_metric"),
+                               { "band_pegel_db", "band_spanne_db", "peak_ereignisrate",
+                                 "fluss_ereignisrate", "stereo_seitenanteil_db" },
+                               b.targetMetric)
+                || ! ausMenge (f->getProperty ("zustand"),
+                               { "ready_to_send", "more_data", "stale" }, b.zustand)
+                || ! ausMenge (f->getProperty ("next_test"),
+                               { "passage_messen", "routing_bestaetigen",
+                                 "pre_post_paar_messen", "manueller_versuch",
+                                 "keine_aenderung_empfohlen", "mehr_daten_sammeln" },
+                               b.nextTest)
+                || ! ausMengeOptional (*f, "pre_post", { "pre", "post" }, prePost))
+            {
+                fehler = "session finding carries a value outside its closed set";
+                return SnapshotErgebnis::ungueltig;
+            }
+            // `band_hz` traegt ein BANDINTERVALL des eingefrorenen 221er-
+            // Gitters, keine Hertzzahlen (Paragraph 36.3 nennt das Feld so).
+            // Band 0 ist gueltig, 220 das letzte, `bis` darf 221 sein.
+            const auto* band = objekt (f->getProperty ("band_hz"));
+            std::uint64_t bandVon = 0, bandBis = 0;
+            if (band == nullptr || ! exakteFelder (*band, { "von", "bis" })
+                || ! nichtnegativeGanzzahl (band->getProperty ("von"), bandVon)
+                || ! nichtnegativeGanzzahl (band->getProperty ("bis"), bandBis)
+                || bandVon > 220 || bandBis < 1 || bandBis > 221 || bandVon >= bandBis)
+            {
+                fehler = "session finding band interval is invalid";
+                return SnapshotErgebnis::ungueltig;
+            }
+            b.bandVon = static_cast<std::uint32_t> (bandVon);
+            b.bandBis = static_cast<std::uint32_t> (bandBis);
+            // Die Beobachtung traegt ihr Gueltigkeitsbit; ohne es ist die Zahl
+            // keine Messung.
+            const auto* beob = objekt (f->getProperty ("beobachtung"));
+            if (beob == nullptr || ! exakteFelder (*beob, { "wert_db", "gueltig" })
+                || ! endlicheZahl (beob->getProperty ("wert_db"), -200.0, 200.0,
+                                   b.beobachtungWertDb)
+                || ! beob->getProperty ("gueltig").isBool())
+            {
+                fehler = "session finding observation is invalid";
+                return SnapshotErgebnis::ungueltig;
+            }
+            b.beobachtungGueltig = static_cast<bool> (beob->getProperty ("gueltig"));
+            // 🔑 M-35: `confidence` ist die Sicherheit des BEFUNDS und nicht
+            // die Messqualitaet der Passage — die steht an der Quellenzeile
+            // (`Zeile::messung`) und kommt aus `konfidenz.klasse` des Belegs.
+            // Zwei Felder, zwei Quellen, nie ein gemeinsames.
+            const auto* konf = objekt (f->getProperty ("confidence"));
+            if (konf == nullptr || ! exakteFelder (*konf, { "class", "score" })
+                || ! ausMenge (konf->getProperty ("class"),
+                               { "hoch", "mittel", "unklar" }, b.confidenceKlasse)
+                || ! endlicheZahl (konf->getProperty ("score"), 0.0, 1.0,
+                                   b.confidenceScore))
+            {
+                fehler = "session finding confidence is invalid";
+                return SnapshotErgebnis::ungueltig;
+            }
+            // Die sechs Rangkomponenten stehen EINZELN im Vertrag (Paragraph
+            // 42.4: jeder angezeigte Zahlenwert ist auf ein Feld
+            // zurueckfuehrbar). Gen zeigt sie heute nicht; der Leser prueft
+            // sie trotzdem, sonst waere ein vertragswidriger Rang unsichtbar.
+            const auto* rang = objekt (f->getProperty ("rang"));
+            if (rang == nullptr
+                || ! exakteFelder (*rang, { "bandpassung", "koinzidenz", "uplift",
+                                            "intent_relevanz", "wiederholbarkeit",
+                                            "routingqualitaet" }))
+            {
+                fehler = "session finding rank has an unexpected or missing field";
+                return SnapshotErgebnis::ungueltig;
+            }
+            for (const char* k : { "bandpassung", "koinzidenz", "uplift",
+                                   "intent_relevanz", "wiederholbarkeit",
+                                   "routingqualitaet" })
+            {
+                double wert = 0.0;
+                if (! endlicheZahl (rang->getProperty (k), 0.0, 1.0, wert))
+                {
+                    fehler = "session finding rank component is out of range";
+                    return SnapshotErgebnis::ungueltig;
+                }
+            }
+            // Exit-Gate Paragraph 59 woertlich: jede sichtbare Behauptung
+            // referenziert EXISTENTE Evidenz-IDs. Ein Befund ohne sie ist
+            // keine Behauptung, sondern eine Meinung.
+            const auto* belege = f->getProperty ("evidence_ids").getArray();
+            if (belege == nullptr || belege->isEmpty() || belege->size() > 32)
+            {
+                fehler = "session finding evidence ids are not 1..32";
+                return SnapshotErgebnis::ungueltig;
+            }
+            for (const auto& e : *belege)
+            {
+                if (! e.isString() || ! hex32 (e.toString()))
+                {
+                    fehler = "session finding evidence id is not hex32";
+                    return SnapshotErgebnis::ungueltig;
+                }
+                b.evidenceIds.push_back (e.toString().toStdString());
+            }
+            // 🔑 M-32: `alternatives` traegt die IDs EIGENER Befunde, keinen
+            // Text. Ein Freitext hier waere die Zweitmeinung, die Abnahme U21
+            // ausdruecklich ausschliesst.
+            if (f->hasProperty ("alternatives"))
+            {
+                const auto* alt = f->getProperty ("alternatives").getArray();
+                if (alt == nullptr || alt->size() > 8)
+                {
+                    fehler = "session finding alternatives are not an array of at most 8";
+                    return SnapshotErgebnis::ungueltig;
+                }
+                for (const auto& a : *alt)
+                {
+                    if (! a.isString() || ! hex32 (a.toString()))
+                    {
+                        fehler = "session finding alternative is not a finding id";
+                        return SnapshotErgebnis::ungueltig;
+                    }
+                    b.alternatives.push_back (a.toString().toStdString());
+                }
+            }
+            // 🔑 M-87: die ACHT Ausschlussgruende, geschlossen. Ein Kandidat
+            // ohne Grund ist ein Defekt — hier faellt er als ungueltiges Feld.
+            if (f->hasProperty ("ausschluesse"))
+            {
+                const auto* aus = f->getProperty ("ausschluesse").getArray();
+                if (aus == nullptr || aus->size() > 32)
+                {
+                    fehler = "session finding exclusions are not an array of at most 32";
+                    return SnapshotErgebnis::ungueltig;
+                }
+                for (const auto& a : *aus)
+                {
+                    const auto* ao = objekt (a);
+                    std::string grund;
+                    if (ao == nullptr
+                        || ! exakteFelder (*ao, { "candidate_source", "grund" })
+                        || ! ao->getProperty ("candidate_source").isString()
+                        || ! hex32 (ao->getProperty ("candidate_source").toString())
+                        || ! ausMenge (ao->getProperty ("grund"),
+                                       { "coverage_fehlt", "alignment_falsch",
+                                         "passage_unvergleichbar", "passage_zu_kurz",
+                                         "intent_veto_geschuetzt",
+                                         "intent_veto_verschmolzen",
+                                         "capability_fehlt",
+                                         "evidenz_zurueckgenommen" }, grund))
+                    {
+                        fehler = "session finding exclusion is invalid";
+                        return SnapshotErgebnis::ungueltig;
+                    }
+                    b.ausschluesse.emplace_back (
+                        ao->getProperty ("candidate_source").toString().toStdString(),
+                        grund);
+                }
+            }
+            std::uint64_t intentRevision = 0;
+            if (! nichtnegativeGanzzahl (f->getProperty ("intent_revision"),
+                                         intentRevision))
+            {
+                fehler = "session finding intent revision is invalid";
+                return SnapshotErgebnis::ungueltig;
+            }
+            b.intentRevision = intentRevision;
+            // 🔑 M-34: die DREI Zeilen sind drei eigene Felder. Die Anzeige
+            // setzt keine davon aus mehreren Feldern zusammen, und eine vierte
+            // Zeile entsteht im Datenweg nicht — `exakteFelder` oben laesst
+            // gar keine zu.
+            juce::String* zeilen[3] = { &b.likelyCause, &b.smallestTest, &b.listenFor };
+            const char* namen[3] = { "likely_cause", "smallest_test", "listen_for" };
+            for (int i = 0; i < 3; ++i)
+            {
+                const auto z = f->getProperty (namen[i]);
+                if (! z.isString() || z.toString().isEmpty()
+                    || z.toString().length() > 200)
+                {
+                    fehler = "session finding display line is not 1..200 codepoints";
+                    return SnapshotErgebnis::ungueltig;
+                }
+                *zeilen[i] = z.toString();
+            }
+            geleseneBefunde.push_back (std::move (b));
         }
     }
 
@@ -881,6 +1170,7 @@ SourcesModel::SnapshotErgebnis SourcesModel::uebernehmeSessionSnapshot (
     eintraege = std::move (neu);
     experimente = std::move (geleseneVersuche);
     paare = std::move (gelesenePaare);
+    befunde = std::move (geleseneBefunde);
     subscriptionAktiv = true;
     diagnose = storeDegradiert ? Diagnose::storeDegraded
              : (bestaetigung || doppelteId) ? Diagnose::confirmationRequired
@@ -1159,6 +1449,7 @@ SourcesModel::Sicht SourcesModel::sicht() const
     // Sicht. Was das Modell empfangen hat, muss die Oberflaeche auch sehen
     // koennen - sonst waere der Pfad bis hierher gebaut und trotzdem tot.
     s.experimente = experimente;
+    s.befunde = befunde;
     s.paare = paare;
     s.evidenzRuecknahmen = evidenzRuecknahmen;
     s.ruecknahmeGrund = ruecknahmeGrund;

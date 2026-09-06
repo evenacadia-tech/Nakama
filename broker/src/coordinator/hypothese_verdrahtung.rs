@@ -529,6 +529,40 @@ impl Coordinator {
         getroffen
     }
 
+    /// Setzt jeden Befund mit älterer Intent-Revision auf `STALE` (§37.3,
+    /// M-29). Rückgabe: wie viele getroffen wurden.
+    ///
+    /// **Ohne Nachrechnen.** §37.3 sagt das wörtlich: „Steigt sie, geht der
+    /// Befund sichtbar in `stale`, **ohne dass Zahlen nachgerechnet
+    /// werden**." Die Rangkomponenten, die Beobachtung und die Evidenz-IDs
+    /// bleiben also stehen — nur der Zustand wechselt. Das ist kein
+    /// Sparbetrieb, sondern die Zusage: der User soll sehen, dass **seine**
+    /// Änderung den Befund entwertet hat, und nicht eine stillschweigend neue
+    /// Zahl.
+    ///
+    /// Ein Befund, der bereits `stale` ist, bleibt es; eine zweite
+    /// Intent-Änderung macht ihn nicht „mehr" stale.
+    pub(super) fn befunde_veralten_locked(
+        stand: &mut Stand,
+        session: &SessionKey,
+        neue_revision: i64,
+    ) -> usize {
+        let Some(befunde) = stand.befunde.get_mut(session) else {
+            return 0;
+        };
+        let mut getroffen = 0usize;
+        for befund in befunde.iter_mut() {
+            if befund.intent_revision >= neue_revision
+                || befund.zustand == Befundzustand::Stale
+            {
+                continue;
+            }
+            befund.zustand = Befundzustand::Stale;
+            getroffen += 1;
+        }
+        getroffen
+    }
+
     // ═════════════════════════════════════════════════════════════════════
     // Sichten für Beine
     // ═════════════════════════════════════════════════════════════════════

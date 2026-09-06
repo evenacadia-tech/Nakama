@@ -1,0 +1,13 @@
+NAK-181 Rotbeweis n1-nr07 - 2026-09-06 (Nacharbeit 1)
+Zuruecknahme: NR-07 (= Rotbeweis b4 wiederholt): merkmale.zuruecksetzen() beim Quarantaenebruch zurueck - die Engine sieht die Grenze dann nicht mehr
+Quelle: eq-copilot/plugin/sonde/SondeProcessor.cpp
+Bein: EqCopSonde012HostChannelContextTest
+---
+[ROT] N-32: ein Seek zieht die Transportepoche hoch (nicht 0/0)
+[ROT] N-33: ein Beweislagewechsel zieht die Epoche ebenfalls hoch
+[ROT] N-42: ein Kanalwechsel zieht die EPOCHE hoch (zeitSprung, nicht lokaleLuecke) - der Bruch ist auf dem Draht sichtbar
+[ROT] N-31: probeeq_drop_zieht_das_segment_hoch - transport_epoch bleibt, continuity_segment steigt um genau 1 [vorher 0/0, nachher 0/0]
+[ROT] N-31: kein Fenster ueberbrueckt die Grenze - getrennteFenster ist gestiegen [0]
+[ROT] N-31: und der Grundzaehler `lokaleLuecke` ebenso - nicht `zeitSprung`, nicht `neuanlauf` [0]
+---
+SONDE-012 HOST CHANNEL CONTEXT: 15 bestanden, 6 fehlgeschlagen  (Exitcode 1)

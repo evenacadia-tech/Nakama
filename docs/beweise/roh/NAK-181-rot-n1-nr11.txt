@@ -1,0 +1,12 @@
+NAK-181 Rotbeweis n1-nr11 - 2026-09-06 (Nacharbeit 1)
+Zuruecknahme: NR-11: das Retry-ACK aus bekannter_befehl traegt eine ANDERE state_revision (revision + 1)
+Quelle: broker/src/coordinator/befehl.rs
+Bein: cargo test -p eqcop-broker --test sonde013_verdrahtung
+---
+test persistierter_retry_bleibt_idempotent ... FAILED
+---- persistierter_retry_bleibt_idempotent stdout ----
+thread 'persistierter_retry_bleibt_idempotent' (15240) panicked at tests\sonde013_verdrahtung.rs:5193:5:
+assertion `left == right` failed: N-41b: mit DERSELBEN persistierten Revision
+test result: FAILED. 72 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.45s
+---
+test result: FAILED. 72 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.45s  (Exitcode 101)

@@ -1,0 +1,19 @@
+NAK-181 Rotbeweis n1-nr06 - 2026-09-06 (Nacharbeit 1)
+Zuruecknahme: NR-06: nakama::state::speichere gibt im nurLesen-Zweig nicht mehr die Originalbytes zurueck, sondern serialisiert neu
+Quelle: eq-copilot/plugin/state/NakamaState.cpp
+Bein: EqCopSonde013PassageStateTest
+---
+[ROT]  die Originalbytes gehen unveraendert zurueck
+[ROT]  Leser: keine passage_id ausserhalb hex32 → read-only, Originalbytes zurueck
+[ROT]  Leser: kein Label ueber 120 Codepoints → read-only, Originalbytes zurueck
+[ROT]  Leser: kein negativer Start → read-only, Originalbytes zurueck
+[ROT]  Leser: kein leeres Fenster → read-only, Originalbytes zurueck
+[ROT]  Leser: kein rueckwaerts laufendes Fenster → read-only, Originalbytes zurueck
+[ROT]  Leser: keine Bruchzahl als Projektsample - 44100.5 gibt es nicht → read-only, Originalbytes zurueck
+[ROT]  Leser: keine Zahl als Text - stille Umwandlung waere eine erfundene Grenze → read-only, Originalbytes zurueck
+[ROT]  Leser: keine doppelte passage_id → read-only, Originalbytes zurueck
+[ROT]  Leser: keine unvollstaendige Vierergruppe → read-only, Originalbytes zurueck
+[ROT]  N-13: der Stand kommt in der GLEICHEN Groesse zurueck  [133 gegen 207 Bytes]
+[ROT]  N-13: und BYTEGLEICH - der read-only geladene Stand reist unveraendert an den Host zurueck
+---
+319 bestanden, 12 gescheitert  (Exitcode 1)

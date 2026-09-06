@@ -1,0 +1,8 @@
+NAK-181 Rotbeweis n1-nr02b - 2026-09-06 (Nacharbeit 1)
+Zuruecknahme: NR-02b allein: BEIDE Getter fragen nicht mehr nach dem offenen Versuch; NR-02a bleibt in Kraft
+Quelle: eq-copilot/plugin/src/PluginProcessor.cpp
+Bein: EqCopSonde013PassageStateTest
+---
+(keine rote Zeile)
+---
+331 bestanden, 0 gescheitert  (Exitcode 0)

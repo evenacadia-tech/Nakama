@@ -1,0 +1,12 @@
+NAK-181 Rotbeweis n1-nr01 - 2026-09-06 (Nacharbeit 1)
+Zuruecknahme: NR-01: die isVoid()-Ausnahme in ausMengeOptional zurueck - ein vorhandenes `null` gilt wieder als "wie fehlend"
+Quelle: eq-copilot/plugin/src/SourcesModel.cpp
+Bein: EqCopSonde012SourcesModelTest
+---
+  FEHLER  N-29: ein VORHANDENES `null` ist ungueltig - nur die ABWESENHEIT heisst: das Paar traegt eine Aussage
+  FEHLER  N-29: hoerurteil als `null` ist ebenso ungueltig
+  FEHLER  N-29: blindreihenfolge als `null` ist ebenso ungueltig
+  FEHLER  N-29: vergleichbarkeit als `null` ist ebenso ungueltig
+  FEHLER  N-29: urteil als `null` ist ebenso ungueltig
+---
+SONDE-012 SourcesModel: 71/76 gruen  (Exitcode 1)

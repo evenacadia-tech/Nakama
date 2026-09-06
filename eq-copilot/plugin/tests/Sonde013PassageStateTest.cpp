@@ -3266,52 +3266,65 @@ int main()
         // Gefahren wird der Fehlweg "leeres Quellenset": ohne klassifizierte
         // Quelle liefert `versuchReferenzJson` den leeren Text, und
         // `beginneVersuch` kehrt NACH der Uebernahme zurueck.
-        auto p = mainProzessorMitBindung();          // ausdruecklich OHNE Quellen
-        p->prepareToPlay (kFs, kBlock);
-        TestPlayHead kopf;
-        p->setPlayHead (&kopf);
-        juce::AudioBuffer<float> puffer (2, kBlock);
-        fahre (*p, kopf, puffer, 20);
+        //
+        // ⚠️ MIT HOERMARKIERUNG, aus demselben Grund wie N-01 (NR-03): der
+        // eingefrorene Gain muss vom geleerten lebenden Pegel unterscheidbar
+        // sein, sonst kann die Zeile ueber `versuchMatchGainDb` nicht fallen.
+        // Der Pruefstand bringt genau das mit und traegt KEIN Quellenset.
+        nak180::Pruefstand s;
+        s.tonHz = 1000.0;                       // ausserhalb der Zone 120..300 Hz
+        s.p->markierungEinreichen (s.auftrag);
+        s.bloecke (60);
+        pruefe (s.p->markierungHoerbar(), "N-04: die Hoermarkierung faerbt");
+
         const auto a = hex32 (0xB4);
-        pruefe (p->merkeManuellePassage (a, "Refrain", 0, 4800000), "N-04: Passage gemerkt");
-        pruefe (warte (*p, kopf, puffer, [&] { return p->passagenfensterFuehrt (a); }),
+        pruefe (s.p->merkeManuellePassage (a, "Refrain", 0, 4800000), "N-04: Passage gemerkt");
+        pruefe (wartePruefstand (s, [&] { return s.p->passagenfensterFuehrt (a); }),
                 "N-04: die Engine fuehrt das Fenster");
-        pruefe (fahreBisPegel (*p, kopf, puffer), "N-04: genug Material");
-        pruefe (! p->beginneVersuch (a),
+        pruefe (fahreBisPegelPruefstand (s), "N-04: genug Material");
+        pruefe (! s.p->beginneVersuch (a),
                 "N-04: ohne Quellenset entsteht KEIN Versuch - der Fehlweg liegt "
                 "hinter der Uebernahme in den Blindvergleich");
-        pruefe (p->laufenderVersuch().isEmpty(), "N-04: und kein Versuch ist offen");
+        pruefe (s.p->laufenderVersuch().isEmpty(), "N-04: und kein Versuch ist offen");
+        // Der Pegel ist auf diesem Weg EINGEFROREN worden (`friereEin` laeuft
+        // vor dem Fehlweg), also traegt er jetzt seinen gemessenen Wert - und
+        // genau denselben Wert haelt der Blindvergleich, solange ihn niemand
+        // zuruecknimmt. Erst wenn er von 0 dB verschieden ist, kann die Zeile
+        // unten ueberhaupt fallen.
+        const double gemessen = s.p->versuchMatchGainDb();
+        pruefe (std::abs (gemessen) > 1.0,
+                "N-04: der gemessene Match-Gain ist von 0 dB unterscheidbar",
+                juce::String (gemessen, 4) + " dB");
 
         // Das zweite Binden leert den lebenden Pegel UND schaltet seine
         // Speisung wieder an. Erst damit trennen sich die zwei Quellen der
-        // Antwort: der lebende Pegel ist leer, die eingefrorene Referenz
-        // duerfte es gar nicht mehr geben.
-        pruefe (p->passagenfensterWunschFuerTest (a, 0, 4800000, 0),
+        // Antwort: der lebende Pegel ist leer (0 dB), die eingefrorene
+        // Referenz traege noch den gemessenen Wert - wenn es sie noch gaebe.
+        pruefe (s.p->passagenfensterWunschFuerTest (a, 0, 4800000, 0),
                 "N-04: dieselbe Passage wird neu gebunden");
-        pruefe (! p->versuchLautheitAbgeglichenLebendFuerTest(),
+        pruefe (! s.p->versuchLautheitAbgeglichenLebendFuerTest(),
                 "N-04: der LEBENDE Pegel ist leer");
-        pruefe (! p->versuchLautheitAbgeglichen(),
+        pruefe (! s.p->versuchLautheitAbgeglichen(),
                 "N-04: ohne offenen Versuch folgen die Getter dem LEBENDEN Pegel "
                 "(NR-02b) - vorher antwortete der haengengebliebene Gain");
-        pruefe (std::abs (p->versuchMatchGainDb()) < 1e-12,
-                "N-04: und `versuchMatchGainDb` ebenso",
-                juce::String (p->versuchMatchGainDb(), 6));
+        pruefe (std::abs (s.p->versuchMatchGainDb()) < 1e-12,
+                "N-04: und `versuchMatchGainDb` liefert die 0 dB des geleerten "
+                "Pegels, nicht den eingefrorenen Wert (NR-02b)",
+                juce::String (s.p->versuchMatchGainDb(), 6) + " gegen "
+                    + juce::String (gemessen, 4));
 
         // (a) Und derselbe Handgriff GELINGT, sobald die Voraussetzungen
         // stimmen: die Uebernahme wurde zurueckgenommen, also nimmt der
         // Blindvergleich wieder einen Pegel an.
-        p->setzeSourcesFixtureFuerTest (eineQuelle());
-        pruefe (warte (*p, kopf, puffer, [&] { return p->passagenfensterFuehrt (a); }),
+        s.p->setzeSourcesFixtureFuerTest (eineQuelle());
+        pruefe (wartePruefstand (s, [&] { return s.p->passagenfensterFuehrt (a); }),
                 "N-04: die Engine fuehrt das Fenster wieder");
-        pruefe (fahreBisPegel (*p, kopf, puffer), "N-04: und der Pegel sammelt erneut");
-        pruefe (p->beginneVersuch (a),
+        pruefe (fahreBisPegelPruefstand (s), "N-04: und der Pegel sammelt erneut");
+        pruefe (s.p->beginneVersuch (a),
                 "N-04: der zweite Beginn GELINGT (NR-02a) - ohne Ruecknahme haette "
                 "`uebernimmVergleichspegel` ihn bis zum Projektwechsel abgewiesen");
-        pruefe (p->versuchLautheitAbgeglichen(),
+        pruefe (s.p->versuchLautheitAbgeglichen(),
                 "N-04: und jetzt antwortet die eingefrorene Referenz");
-
-        p->setPlayHead (nullptr);
-        p->releaseResources();
     }
 
     abschnitt ("NAK-181 N-05  ohne_eingefrorenen_gain_entsteht_keine_referenz");

@@ -1,0 +1,11 @@
+NAK-181 Rotbeweis n1-nr09 - 2026-09-06 (Nacharbeit 1)
+Zuruecknahme: NR-09: zahl() im Hello zurueck auf std::to_string - LC_NUMERIC-abhaengig und auf sechs Nachkommastellen fixiert
+Quelle: eq-copilot/plugin/core/ipc/ControlClient.cpp
+Bein: EqCopSchemaTest
+---
+[ok]   integration_samples_null_ist_ein_senderfehler  [gesetzt auf 0: abgelehnt, nicht als 'fehlt' umgedeutet]
+[ROT]  N-17: und der HELLO-Text ebenso - bytegleich unter beiden Locales  [449 Bytes]
+[ROT]  N-17: kein Komma-Dezimaltrenner im Hello - hier faellt der Rotbeweis, wenn `zahl` durch `std::to_string` ersetzt wird
+[ROT]  N-17: juce::JSON liest die Samplerate unveraendert zurueck
+---
+128 bestanden, 3 gescheitert  (Exitcode 1)

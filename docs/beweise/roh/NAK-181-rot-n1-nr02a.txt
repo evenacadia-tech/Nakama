@@ -1,0 +1,8 @@
+NAK-181 Rotbeweis n1-nr02a - 2026-09-06 (Nacharbeit 1)
+Zuruecknahme: NR-02a allein: die Ruecknahme der Pegeluebernahme auf den Fehlwegen von beginneVersuch faellt weg (behalten=true von Anfang an); NR-02b bleibt in Kraft
+Quelle: eq-copilot/plugin/src/PluginProcessor.cpp
+Bein: EqCopSonde013PassageStateTest
+---
+[ROT]  N-04: der zweite Beginn GELINGT (NR-02a) - ohne Ruecknahme haette `uebernimmVergleichspegel` ihn bis zum Projektwechsel abgewiesen
+---
+330 bestanden, 1 gescheitert  (Exitcode 1)

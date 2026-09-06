@@ -1,0 +1,12 @@
+NAK-181 Rotbeweis n1-nr03 - 2026-09-06 (Nacharbeit 1)
+Zuruecknahme: NR-03 (= Rotbeweis b8 wiederholt): der R1-Leser in versuchReferenzJson zurueck auf den LEBENDEN Vergleichspegel
+Quelle: eq-copilot/plugin/src/PluginProcessor.cpp
+Bein: EqCopSonde013PassageStateTest
+---
+[ROT]  N-01: und traegt den EINGEFRORENEN Match-Gain  [0.0000 gegen -41.8758]
+[ROT]  N-01: also NICHT den 0-dB-Wert des geleerten lebenden Pegels - der Rotbeweis faellt an dieser Zeile (NR-03)  [0.0000 dB]
+[ROT]  N-02: und traegt den eingefrorenen Match-Gain der ALTEN Passage  [0.0000]
+[ROT]  N-02: nicht die 0 dB des frisch geleerten Pegels - hier faellt der Rotbeweis (NR-03)  [0.0000 dB]
+[ROT]  N-05: `versuchReferenzJson` liefert den LEEREN String, solange kein Gain eingefroren ist
+---
+326 bestanden, 5 gescheitert  (Exitcode 1)

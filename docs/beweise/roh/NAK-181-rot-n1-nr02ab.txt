@@ -1,0 +1,10 @@
+NAK-181 Rotbeweis n1-nr02ab - 2026-09-06 (Nacharbeit 1)
+Zuruecknahme: NR-02a UND NR-02b zusammen zurueck - erst so entsteht der Zustand "Gain eingefroren, kein Versuch offen", den (b) beantworten muss
+Quelle: eq-copilot/plugin/src/PluginProcessor.cpp
+Bein: EqCopSonde013PassageStateTest
+---
+[ROT]  N-04: ohne offenen Versuch folgen die Getter dem LEBENDEN Pegel (NR-02b) - vorher antwortete der haengengebliebene Gain
+[ROT]  N-04: und `versuchMatchGainDb` liefert die 0 dB des geleerten Pegels, nicht den eingefrorenen Wert (NR-02b)  [-41.875776 gegen -41.8758]
+[ROT]  N-04: der zweite Beginn GELINGT (NR-02a) - ohne Ruecknahme haette `uebernimmVergleichspegel` ihn bis zum Projektwechsel abgewiesen
+---
+328 bestanden, 3 gescheitert  (Exitcode 1)

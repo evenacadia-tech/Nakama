@@ -1,0 +1,8 @@
+NAK-181 Rotbeweis n1-nr05 - 2026-09-06 (Nacharbeit 1)
+Zuruecknahme: NR-05: der Riegel gegen den fehlenden eingefrorenen Gain in versuchReferenzJson faellt weg (die Referenz entsteht auch ohne Abgleich)
+Quelle: eq-copilot/plugin/src/PluginProcessor.cpp
+Bein: EqCopSonde013PassageStateTest
+---
+[ROT]  N-05: `versuchReferenzJson` liefert den LEEREN String, solange kein Gain eingefroren ist
+---
+330 bestanden, 1 gescheitert  (Exitcode 1)

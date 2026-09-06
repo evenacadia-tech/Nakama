@@ -1,0 +1,9 @@
+NAK-181 Rotbeweis n1-nr10 - 2026-09-06 (Nacharbeit 1)
+Zuruecknahme: NR-10: vertauschter Selektor - korrelation_kurz liest das Praesenzbit von korrelation_mittel
+Quelle: eq-copilot/plugin/vertrag/NakamaEvidenz.cpp
+Bein: EqCopSonde013EventWireTest
+---
+[ROT]  N-24: korrelation_kurz traegt EXAKT sein eigenes Praesenzmuster  [erstes falsches Band 0]
+[ROT]  N-24: und sie sind paarweise verschieden - vertauschte Selektoren faellt der Rotbeweis hier
+---
+126 bestanden, 2 gescheitert  (Exitcode 1)

@@ -1,0 +1,16 @@
+NAK-181 Rotbeweis n1-nr12 - 2026-09-06 (Nacharbeit 1)
+Zuruecknahme: NR-12: bekannter_befehl steht nicht mehr VOR der Sender-/Zielpruefung - der persistierte Retry aus der frischen Sitzung faellt in unauthorized
+Quelle: broker/src/coordinator/experiment_verdrahtung.rs
+Bein: cargo test -p eqcop-broker --test sonde013_verdrahtung
+---
+test experimentbefehl_und_wirkung_sind_ein_append ... FAILED
+test persistierter_retry_bleibt_idempotent ... FAILED
+---- experimentbefehl_und_wirkung_sind_ein_append stdout ----
+thread 'experimentbefehl_und_wirkung_sind_ein_append' (3956) panicked at tests\sonde013_verdrahtung.rs:2178:5:
+assertion `left == right` failed: R08: ein bereits committeter Befehl ist dieselbe Absicht, kein Konflikt: {"code":"revision_conflict","command_id":"00000000000000000000000000000970","ergebnis":"abgelehnt","state_revision":0,"type":"command_ack"}
+---- persistierter_retry_bleibt_idempotent stdout ----
+thread 'persistierter_retry_bleibt_idempotent' (3996) panicked at tests\sonde013_verdrahtung.rs:5173:5:
+assertion `left == right` failed: N-41b: `bekannter_befehl` antwortet VOR Sender- und Zielpruefung — die Reihenfolge ist die Zusage, nicht ein Nebeneffekt
+test result: FAILED. 71 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.50s
+---
+test result: FAILED. 71 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.50s  (Exitcode 101)

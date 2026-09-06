@@ -1,0 +1,10 @@
+NAK-181 Rotbeweis n1-nr04 - 2026-09-06 (Nacharbeit 1)
+Zuruecknahme: NR-04: vergleichszustandLeeren loescht wieder letzterVersuchP0 - der Zug loescht seinen eigenen Zeugen
+Quelle: eq-copilot/plugin/src/PluginProcessor.cpp
+Bein: EqCopSonde013PassageStateTest
+---
+[ROT]  N-09: aus dem Reload-Zug selbst reist kein Byte - der Mitschnitt ist BYTEGLEICH der Stand vor dem Reload  [0 Bytes]
+[ROT]  N-10: kein Befehl traegt die alte experiment_id unter der neuen Bindung - der Mitschnitt steht unveraendert auf dem Stand von davor
+[ROT]  N-14: aus dem Zug reist kein Byte - kein experiment_abort, der Vertrag verbietet ihn beim Projektwechsel ausdruecklich (gemessen am UNVERAENDERTEN Mitschnitt, NR-04)
+---
+328 bestanden, 3 gescheitert  (Exitcode 1)

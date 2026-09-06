@@ -1,0 +1,10 @@
+NAK-181 Rotbeweis n1-nr08 - 2026-09-06 (Nacharbeit 1)
+Zuruecknahme: NR-08: grenzeZiehen leert den Ereignisring mit - die Differenz zu zuruecksetzen() verschwindet
+Quelle: eq-copilot/plugin/core/analysis/FeatureEngine.h
+Bein: EqCopSonde013EventWireTest
+---
+[ROT]  N-35: der Ereignisring UEBERLEBT die Grenze  [0 gegen 6]
+[ROT]  N-35: und der Eintrag von VOR der Grenze steht unveraendert mit seinem alten Stempel darin  [Epoche 0, Segment 0]
+[ROT]  N-35: auch die Epochengrenze laesst den Ring stehen  [0]
+---
+125 bestanden, 3 gescheitert  (Exitcode 1)

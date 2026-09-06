@@ -333,6 +333,15 @@ pub(super) struct Stand {
     /// dem Standlock, eingeloest ausserhalb — die Rechnung nimmt sich ihr
     /// eigenes Lock und darf den Sessiongraphen nicht anhalten.
     pub(super) befunde_neu_bilden: bool,
+    /// SONDE-014 Etappe F: die Vorschlaege JE SITZUNG, je einer zu einem
+    /// Befund.
+    ///
+    /// FLUECHTIG wie die Befunde; die dauerhafte Form liegt in der Projektion
+    /// `proposals` (`writer.rs`:573), die bis zu diesem Ticket keinen
+    /// Produzenten hatte (§2.11 L5).
+    pub(super) vorschlaege: HashMap<SessionKey, Vec<super::proposal::Proposal>>,
+    /// Wie viele `draft_offer` der Broker zugestellt hat.
+    pub(super) draft_offers: u64,
     /// Der Experimentteil des Stores (M-40 bis M-51, Befund B18).
     ///
     /// Er liegt IM `Stand` und nicht daneben: die Terminalereignisse muessen
@@ -552,6 +561,8 @@ impl Default for Stand {
             assistent_updates: 0,
             befunde: HashMap::new(),
             befunde_neu_bilden: false,
+            vorschlaege: HashMap::new(),
+            draft_offers: 0,
             experimente: super::experiment::Experimentstore::neu(),
             invalidierungen: 0,
             evidenz_ausgeschlossen: 0,

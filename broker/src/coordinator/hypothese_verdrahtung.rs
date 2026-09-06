@@ -81,7 +81,15 @@ impl Coordinator {
         }
         for (session, befunde) in ergebnisse {
             let geaendert = self.befunde_eintragen(&session, befunde);
-            if geaendert {
+            // 🔑 SONDE-014 Etappe F: der Vorschlag entsteht MIT seinem Befund.
+            //
+            // Er haengt hier und nicht an einem eigenen Ausloeser: §42.1 bindet
+            // jedes Proposal an `evidence_ids` und `finding_id`, und ein
+            // Vorschlag ohne Befund haette weder das eine noch das andere.
+            // Die Reihenfolge ist zwingend — erst der Befund im Stand, dann
+            // der Vorschlag darauf.
+            let vorschlaege_neu = self.vorschlaege_bilden(&session);
+            if geaendert || vorschlaege_neu {
                 self.befunde_zustellen(&session);
             }
         }

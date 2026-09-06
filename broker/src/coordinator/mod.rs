@@ -44,6 +44,8 @@ mod experiment_verdrahtung;
 pub mod hypothese;
 mod hypothese_verdrahtung;
 pub mod maskierung;
+pub mod proposal;
+mod proposal_verdrahtung;
 pub mod invalidierung;
 mod invalidierung_verdrahtung;
 pub mod prepost;
@@ -65,6 +67,10 @@ pub use hypothese::{
     NaechsterTest, Sicherheitsklasse, Ursachenklasse, Zielmetrik, KANDIDATEN_DECKEL,
 };
 pub use maskierung::Maskierung;
+pub use proposal::{
+    Aktion, Ausfuehrung, Proposal, Proposallage, Rueckweg, Stopbedingung, Wirkung,
+    GENERATORVERSION,
+};
 /// Die aktive JSON-Vertragsfassung, nur fuer Beine sichtbar.
 ///
 /// Der Transport (`server_v3`) und der JSON-Leser muessen dieselbe

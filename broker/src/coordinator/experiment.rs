@@ -144,6 +144,47 @@ pub struct Passage {
     pub fingerprint: Fingerprintwerte,
 }
 
+/// Der Zielbereich, den ein VORSCHLAG benannt hat (SONDE-014 E-05, M-48).
+///
+/// ⚠️ Bis zur Fassung 3 RIET der Guardrail-Rechner das Ziel aus dem groessten
+/// Betrag der Banddeltas (NAK-168). Mit diesem Feld raet er nichts. Fehlt es —
+/// der manuelle Versuch ohne Vorschlag, der SONDE-013-Pfad —, bleibt die
+/// Heuristik, und das Resultat traegt `ziel_geraten`. Beide Pfade werden
+/// gemessen; still zwischen ihnen zu wechseln waere der teuerste Fall.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Experimentziel {
+    /// Halboffenes Bandintervall `[von, bis)` im 221-Band-Evidenzgitter.
+    pub band_von: u32,
+    pub band_bis: u32,
+    /// Bereiche, die der Eingriff NICHT bewegen darf.
+    pub geschuetzte_baender: Vec<(u32, u32)>,
+    /// Rueckverweis auf den Vorschlag. `None` heisst „kein Vorschlag genannt".
+    pub proposal_id: Option<String>,
+}
+
+impl Experimentziel {
+    pub fn gueltig(&self) -> bool {
+        self.band_von < self.band_bis
+            && self.band_bis <= 221
+            && self
+                .geschuetzte_baender
+                .iter()
+                .all(|(v, b)| v < b && *b <= 221)
+    }
+
+    /// Ob ein Band zum ZIEL gehoert.
+    pub fn ist_ziel(&self, band: usize) -> bool {
+        band >= self.band_von as usize && band < self.band_bis as usize
+    }
+
+    /// Ob ein Band ausdruecklich GESCHUETZT ist.
+    pub fn ist_geschuetzt(&self, band: usize) -> bool {
+        self.geschuetzte_baender
+            .iter()
+            .any(|(v, b)| band >= *v as usize && band < *b as usize)
+    }
+}
+
 // ── Die unveränderlichen Referenzen (M-40, M-41, M-43) ──────────────────
 
 /// `experiment_referenz` — die Baseline beziehungsweise ein Kandidat.
@@ -219,6 +260,13 @@ pub struct Achsenrechnung {
     pub guardrail_geschuetzt_db: Option<f64>,
     /// Befund B11: die Namen der Guardrails, die diese Evidenz nicht traegt.
     pub guardrail_nicht_gemessen: Vec<String>,
+    /// SONDE-014 M-48: der Zielbereich wurde GERATEN, nicht gelesen.
+    ///
+    /// `true` heisst: dieser Versuch trug kein `ziel`, und der geschuetzte
+    /// Guardrail beruht auf der Heuristik „das Band mit dem groessten Betrag
+    /// ist das Ziel". Ein Resultat, das das verschweigt, behauptet eine
+    /// Genauigkeit, die es nicht hat.
+    pub ziel_geraten: bool,
     /// 4. Effektstabilitaet: streut das Delta ueber die Teilfenster?
     ///    `None` heisst „nicht beurteilbar", nicht „stabil".
     pub effekt_stabil: Option<bool>,
@@ -277,6 +325,9 @@ pub struct Resultatmessung {
     /// auf „nicht beurteilbar". Eine Ersatzrechnung unter fremdem Namen waere
     /// schlimmer als eine fehlende Zahl.
     pub guardrail_nicht_gemessen: Vec<String>,
+    /// SONDE-014 M-48: dieser Versuch trug kein `ziel`, der geschuetzte
+    /// Guardrail beruht also auf der Heuristik.
+    pub ziel_geraten: bool,
     /// Abdeckung beider Fenster.
     pub abdeckung_baseline: f64,
     pub abdeckung_resultat: f64,
@@ -409,6 +460,9 @@ impl Resultatmessung {
             guardrail_breite_db: self.guardrail_breite_db,
             guardrail_geschuetzt_db: self.guardrail_geschuetzt_db,
             guardrail_nicht_gemessen: self.guardrail_nicht_gemessen.clone(),
+            // M-48: die Messung weiss, ob sie das Ziel gelesen oder geraten
+            // hat; die Achsenrechnung traegt es weiter.
+            ziel_geraten: self.ziel_geraten,
             effekt_stabil,
         }
     }
@@ -586,6 +640,10 @@ pub struct Experiment {
     /// Verweis auf einen Store, den der Empfaenger nicht hat.
     pub baseline_evidence_ids: Vec<String>,
     pub resultat_evidence_ids: Vec<String>,
+    /// Der vom Vorschlag benannte Zielbereich (E-05, M-48). `None` heisst
+    /// „kein Vorschlag hat ein Ziel benannt" — dann raet die Heuristik, und
+    /// das Resultat sagt das auch.
+    pub ziel: Option<Experimentziel>,
 }
 
 impl Experiment {
@@ -783,8 +841,10 @@ impl Experiment {
         begin_evidenzfolge: u64,
         baseline_evidence_ids: Vec<String>,
         resultat_evidence_ids: Vec<String>,
+        ziel: Option<Experimentziel>,
     ) -> Self {
         Self {
+            ziel,
             experiment_id,
             projektbindung,
             passage_id,
@@ -926,6 +986,7 @@ impl Experimentstore {
         passage: Passage,
         baseline: Experimentreferenz,
         begin_evidenzfolge: u64,
+        ziel: Option<Experimentziel>,
     ) -> Result<Vec<String>, Anlegefehler> {
         if !ist_hex32(experiment_id) {
             return Err(Anlegefehler::IdUngueltig);
@@ -970,6 +1031,7 @@ impl Experimentstore {
                 begin_evidenzfolge,
                 baseline_evidence_ids: Vec::new(),
                 resultat_evidence_ids: Vec::new(),
+                ziel,
             },
         );
         self.log.push(Ereignis::Begonnen {

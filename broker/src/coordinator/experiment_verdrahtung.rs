@@ -21,6 +21,7 @@
 //! rekonstruierbar; ein Log aus IDs allein waere es nicht.
 
 use super::*;
+use crate::coordinator::experiment::Experimentziel;
 use crate::coordinator::experiment::{
     Abbruchgrund, Achsenrechnung, Alignmentwert, Blindreihenfolge, Experimentreferenz, Hoerurteil,
     Passage, Resultatmessung, Ruecknahme, Terminal,
@@ -392,6 +393,44 @@ impl Coordinator {
             .unwrap_or(false)
     }
 
+    /// Der Zielbereich aus `experiment_begin.ziel` (SONDE-014 E-05, M-48).
+    ///
+    /// `None` heisst „kein Vorschlag hat ein Ziel benannt" — der manuelle
+    /// Versuch ohne Vorschlag, der SONDE-013-Pfad. Ein UNGUELTIGES Ziel ist
+    /// ebenfalls `None` und nicht etwa ein halbes: das Schema deckelt Bandwerte
+    /// bereits, aber `von < bis` ist ein Feldvergleich und gehoert dem
+    /// Consumer (`schemas/v3/README.md`).
+    fn ziel_aus_wert(wert: Option<&Value>) -> Option<Experimentziel> {
+        let w = wert?;
+        let von = u32::try_from(w.get("band_von")?.as_u64()?).ok()?;
+        let bis = u32::try_from(w.get("band_bis")?.as_u64()?).ok()?;
+        let geschuetzte = w
+            .get("geschuetzte_baender")
+            .and_then(Value::as_array)
+            .map(|liste| {
+                liste
+                    .iter()
+                    .filter_map(|b| {
+                        Some((
+                            u32::try_from(b.get("von")?.as_u64()?).ok()?,
+                            u32::try_from(b.get("bis")?.as_u64()?).ok()?,
+                        ))
+                    })
+                    .collect::<Vec<(u32, u32)>>()
+            })
+            .unwrap_or_default();
+        let ziel = Experimentziel {
+            band_von: von,
+            band_bis: bis,
+            geschuetzte_baender: geschuetzte,
+            proposal_id: w
+                .get("proposal_id")
+                .and_then(Value::as_str)
+                .map(str::to_owned),
+        };
+        ziel.gueltig().then_some(ziel)
+    }
+
     /// `experiment_begin` auf dem gehaltenen Lock (M-25/M-40, R10/R11).
     fn begin_anwenden_locked(
         stand: &mut Stand,
@@ -414,6 +453,10 @@ impl Coordinator {
                 passage,
                 baseline,
                 evidenzfolge,
+                // 🔑 SONDE-014 E-05 (M-48): der Zielbereich kommt aus dem
+                // VORSCHLAG. Fehlt er, bleibt die Heuristik — und das Resultat
+                // sagt das mit `ziel_geraten`.
+                Self::ziel_aus_wert(wert.get("ziel")),
             )
             .ok()?;
         let ruecknahme = Ruecknahme {
@@ -1066,25 +1109,50 @@ impl Coordinator {
             (Some(a), Some(b)) => Some(b - a),
             _ => None,
         };
-        // GESCHUETZTE BEREICHE: die groesste Bewegung AUSSERHALB der staerksten
-        // Zielbewegung. Das Ziel ist das Band mit dem groessten Betrag; alles
-        // andere soll stehen bleiben, und was sich dort am weitesten bewegt,
-        // ist die Zahl, die niemand ignorieren darf.
-        let mut sortiert: Vec<(usize, f64)> = messung
+        // GESCHUETZTE BEREICHE: die groesste Bewegung AUSSERHALB des Ziels.
+        // Alles ausserhalb soll stehen bleiben, und was sich dort am weitesten
+        // bewegt, ist die Zahl, die niemand ignorieren darf.
+        //
+        // 🔑 SONDE-014 E-05 (M-48, NAK-168): MIT `ziel` liest der Rechner den
+        // Zielbereich und raet nichts. OHNE `ziel` — der manuelle Versuch ohne
+        // Vorschlag, der SONDE-013-Pfad — bleibt die Heuristik „das Band mit
+        // dem groessten Betrag ist das Ziel", und das Resultat traegt
+        // `ziel_geraten`. Beide Pfade stehen hier nebeneinander; still
+        // zwischen ihnen zu wechseln waere der teuerste Fall.
+        let mut bewegungen: Vec<(usize, f64)> = messung
             .band_delta_db
             .iter()
             .enumerate()
             .filter(|(b, _)| messung.band_gueltig.get(*b).copied().unwrap_or(false))
             .map(|(b, d)| (b, d.abs()))
             .collect();
-        if sortiert.len() >= 2 {
-            sortiert.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
-            let ziel = sortiert[0].0;
-            messung.guardrail_geschuetzt_db = sortiert
-                .iter()
-                .filter(|(b, _)| *b != ziel)
-                .map(|(_, d)| *d)
-                .fold(None, |m: Option<f64>, v| Some(m.map_or(v, |x| x.max(v))));
+        match e.ziel.as_ref() {
+            Some(ziel) => {
+                messung.ziel_geraten = false;
+                // Ausserhalb des Ziels ist alles, was der Vorschlag NICHT
+                // adressiert. Ein ausdruecklich geschuetztes Band zaehlt
+                // doppelt dazu: es steht in der Liste, WEIL es stehen bleiben
+                // soll.
+                messung.guardrail_geschuetzt_db = bewegungen
+                    .iter()
+                    .filter(|(b, _)| !ziel.ist_ziel(*b) || ziel.ist_geschuetzt(*b))
+                    .map(|(_, d)| *d)
+                    .fold(None, |m: Option<f64>, v| Some(m.map_or(v, |x| x.max(v))));
+            }
+            None => {
+                messung.ziel_geraten = true;
+                if bewegungen.len() >= 2 {
+                    bewegungen.sort_by(|a, b| {
+                        b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal)
+                    });
+                    let geraten = bewegungen[0].0;
+                    messung.guardrail_geschuetzt_db = bewegungen
+                        .iter()
+                        .filter(|(b, _)| *b != geraten)
+                        .map(|(_, d)| *d)
+                        .fold(None, |m: Option<f64>, v| Some(m.map_or(v, |x| x.max(v))));
+                }
+            }
         }
 
         // ── Comparability im PRODUKTPFAD (M-46, Befund R18) ─────────────
@@ -1657,6 +1725,11 @@ impl Coordinator {
                 .unwrap_or(0),
             ids("baseline_evidence_ids"),
             ids("resultat_evidence_ids"),
+            // Der Store traegt das Ziel heute nicht: es kommt aus dem
+            // `experiment_begin` und ist nach einem Neustart nicht mehr da.
+            // Das ist eine EHRLICHE Luecke — ein restaurierter Versuch rechnet
+            // dann wieder mit der Heuristik und sagt es (`ziel_geraten`).
+            None,
         ))
     }
 
@@ -1695,6 +1768,10 @@ impl Coordinator {
             // restauriertes Terminal so aus, als waere jede Groesse gemessen
             // und stillgehalten.
             guardrail_nicht_gemessen: liste("guardrail_nicht_gemessen"),
+            ziel_geraten: a
+                .get("ziel_geraten")
+                .and_then(Value::as_bool)
+                .unwrap_or(true),
             guardrail_abdeckung_delta: a
                 .get("guardrail_abdeckung_delta")
                 .and_then(Value::as_f64),

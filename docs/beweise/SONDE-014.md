@@ -3,15 +3,16 @@
 | Merkmal | Wert |
 |---|---|
 | Ticket | S23–25, `SONDE-014` (Phase P4–P5), Leitungsname „Aus Messungen belegte Befunde und kleinste Tests ableiten" |
-| Phase | **Etappe 1 — Verhaltensmatrix** (Spezifikation vor Code). In dieser Etappe entsteht kein Produktcode. |
+| Phase | **Etappe 1b — Entscheide eingearbeitet** (2026-09-06). Davor: **Etappe 1 — Verhaltensmatrix** (Spezifikation vor Code, Commit `1f126a4`). In beiden Etappen entsteht kein Produktcode. |
+| Entscheide | E-01 bis E-10 wörtlich in `docs/beweise/roh/SONDE-014-etappe-1-entscheid-auftrag.txt`. Eingearbeitet in Etappe 1b: neun angenommene Technikentscheide (E-01 bis E-09, E-01 und E-03 mit Präzisierung, E-08 mit Autoritätenzuweisung) und **eine neue Lücke E-10** (Transport des Intents vom Main zum Broker) mit den zwei zusätzlichen Matrixzeilen **M-85** und **M-86**. Je Entscheid steht ein Block „Etappe 1b (Entscheid des Dirigenten, 06.09.2026)" unter dem zugehörigen §4-Abschnitt; der vorige Vorschlagstext bleibt als Historie stehen. |
 | Urteil | **offen** — weder Bau- noch Prüfurteil. Dieses Manifest friert die aus den verbindlichen Quellen belegbare Verhaltensgrenze ein und benennt die Stellen, an denen der spätere Bau ohne weiteren Vertragsentscheid nicht ehrlich fortfahren kann. |
 | Prüfstufe | T1+T2 gefordert (`docs/bauaufteilung-sonden.md` Zeile 394 · `docs/plan/plan.json`, Schritt S23–25, `"stufe": "T2"`). Keine Marke vergeben. |
 | Prüfmodell | Codex `gpt-6-astra`, Effort **max**, lesend — für Matrix-, Erst-, Wieder- und Abschlussprüfung. `gpt-5.6-sol` max **nur** als Gegenprüfer (User-Wort 05.09.2026, `feedback_astra-prueft-sol-gegenprueft`). |
 | Basis-SHA | `5e99a1361696be84a7174575ec7b9ad9e27e6a7f`, mit `git rev-parse HEAD` beim Start gemessen; Worktree bis auf die Auftragsdatei sauber (`git status --short`: eine Zeile `?? docs/beweise/roh/SONDE-014-etappe-1-auftrag.txt`). |
 | Kanon vorher | **GRÜN 54/54 auf `aca0f28`**, Rohausgabe `docs/beweise/roh/NAK-182-aca0f28.md`. Eigene Messung in dieser Sitzung: `git diff --stat aca0f28..5e99a13 -- broker eq-copilot tools` ist **leer**. Der Codestand von `5e99a13` ist mit dem beglaubigten Kanonstand identisch; die Commits dazwischen berühren nur `docs/` und `design/`. |
-| Änderungssatz dieser Etappe | Genau zwei Dateien: dieses Manifest `docs/beweise/SONDE-014.md` und der unveränderte Auftrag `docs/beweise/roh/SONDE-014-etappe-1-auftrag.txt`. Kein Produkt-, Test-, Schema-, Fixture- oder Werkzeugcode; kein Eingriff in `docs/plan/`, `docs/offene-punkte.md`, `docs/PLAN-STAND.md`, `docs/NEXT-SESSION.md` oder `design/`. |
-| Grenze | Etappe 2 baut ausschließlich, was §3 zusagt. Technikfragen ohne Quelle stehen in §4 als ENTSCHEIDEN-VORSCHLAG; Produktfragen werden benannt und einer Fläche zugeordnet, nie beantwortet. |
-| Ticketpfade (Vorschlag für den Prüfbereich der Etappe 2) | `broker/src/coordinator/` (neu: `intent.rs`, `hypothese.rs`, `proposal.rs`, `assistent.rs`, `maskierung.rs` — anzulegen), `broker/src/coordinator/mod.rs`, `broker/src/store/writer.rs`, `broker/src/dto.rs`, `eq-copilot/schemas/v3/eq-ipc-v3.schema.json`, `eq-copilot/schemas/v3/reservierte-nachrichten-v1.json`, `eq-copilot/schemas/state/nakama-state-v2.md`, `eq-copilot/plugin/state/NakamaState.cpp`, `eq-copilot/plugin/state/NakamaState.h`, `eq-copilot/plugin/src/SourcesModel.cpp`, `eq-copilot/plugin/src/SourcesModel.h`, `eq-copilot/plugin/src/PluginProcessor.cpp`, `eq-copilot/fixtures/p4-korpus/`, `tools/eq-copilot/`, `tools/beweise.ps1`. |
+| Änderungssatz dieser Etappe | **Etappe 1b:** dieses Manifest `docs/beweise/SONDE-014.md` und der unveränderte Entscheidauftrag `docs/beweise/roh/SONDE-014-etappe-1-entscheid-auftrag.txt`. **Etappe 1** (`1f126a4`): dieses Manifest und der unveränderte Auftrag `docs/beweise/roh/SONDE-014-etappe-1-auftrag.txt`. In beiden: kein Produkt-, Test-, Schema-, Fixture- oder Werkzeugcode; kein Eingriff in `docs/plan/`, `docs/offene-punkte.md`, `docs/PLAN-STAND.md`, `docs/NEXT-SESSION.md` oder `design/`. |
+| Grenze | Etappe 2 baut ausschließlich, was §3 zusagt. Technikfragen ohne Quelle standen in §4 als ENTSCHEIDEN-VORSCHLAG und sind seit Etappe 1b als **ENTSCHIEDEN** geführt; Produktfragen werden benannt und einer Fläche zugeordnet, nie beantwortet. |
+| Ticketpfade (Prüfbereich der Etappe 2) | Vollständig in §5.2. Kurzform: `broker/src/coordinator/` (neu: `intent.rs`, `hypothese.rs`, `proposal.rs`, `assistent.rs`, `maskierung.rs` — anzulegen), `broker/src/store/writer.rs`, `broker/src/dto.rs`, `broker/src/protokoll.rs`, `broker/src/vertrag.rs`, `eq-copilot/schemas/v3/eq-ipc-v3.schema.json`, `eq-copilot/schemas/v3/reservierte-nachrichten-v1.json`, `eq-copilot/schemas/v3/README.md`, `eq-copilot/schemas/state/nakama-state-v2.md`, `eq-copilot/plugin/state/`, `eq-copilot/plugin/src/`, `eq-copilot/plugin/core/ipc/`, `eq-copilot/fixtures/`, `tools/eq-copilot/`, `tools/beweise.ps1`. Seit Etappe 1b enthalten, weil die **Fassung 3** des Wire-Envelopes (E-04, E-05, E-09, E-10) beide Vertragshälften anfasst. |
 | Belegfeld und Urteilsmarke | **Bewusst nicht gesetzt.** Diese Etappe trägt keine `NAKAMA-URTEIL`-Marke und schreibt kein `beleg`-Feld nach `docs/plan/plan.json`; beides setzt erst Etappe 2 beziehungsweise der Abschluss. Sonst zeigte der gerechnete Planstand ein Spezifikationsmanifest als „gebaut". |
 
 **Alles unter diesem Kopf ist append-only Verlauf.** Der lebende Kopf wird beim
@@ -265,9 +266,20 @@ Alle Angaben sind in dieser Sitzung auf `5e99a13` gelesen, nicht aus Doku
 - **ENTSCHEIDEN-VORSCHLAG:** Eine aus den Quellen nicht ableitbare **Technik**frage.
   Diese Matrix trägt Vorschlag, Begründung und Alternativen ein; der Dirigent
   entscheidet. Bis dahin ist die Zeile kein Bauauftrag.
+- **ENTSCHIEDEN:** Eine zuvor nicht aus den Quellen ableitbare Technikfrage ist
+  durch den Dirigentenentscheid geschlossen — hier durch E-01 bis E-10 vom
+  06.09.2026, wörtlich in
+  `docs/beweise/roh/SONDE-014-etappe-1-entscheid-auftrag.txt` und je Entscheid
+  als Block „Etappe 1b" unter dem zugehörigen §4-Abschnitt. Eine weiterhin
+  fehlende Implementierung bleibt **zusätzlich** als BAULÜCKE markiert.
 - **OFFEN:** Mindestens ein Teil der Zusage lässt sich aus keiner Quelle
   ableiten und ist **Produkt**frage. Diese Zeile ist kein stiller Produktentscheid;
   sie wird benannt und einer Fläche zugeordnet, nie hier beantwortet.
+
+Seit Etappe 1b trägt **keine** Matrixzeile mehr die Klasse
+ENTSCHEIDEN-VORSCHLAG: alle neun Fragen sind entschieden. Die Klasse bleibt in
+dieser Liste stehen, weil §4 den vorigen Wortlaut als Historie führt und ein
+späterer Fund sie wieder brauchen kann.
 
 Jede Matrixzeile nennt ein bestehendes Prüfbein namentlich aus
 `tools/beweise.ps1` oder ein ausdrücklich mit **NEU** gekennzeichnetes. Ein
@@ -362,7 +374,7 @@ heraus. Das ist genau NAK-168.
 > als `experiment_verdrahtung.rs:934-953`. Zum Stand `5e99a13` steht dort der
 > Bandmittelblock `mittel_je_band`; die Zielheuristik liegt bei :1069–1088. Die
 > Zeilen sind seit dem 05.09.2026 durch `00fa14e` (NAK-182 B6) verrutscht. Die
-> Aussage der Registerzeile stimmt, ihre Position nicht. Notiert in §4.10 als N-01.
+> Aussage der Registerzeile stimmt, ihre Position nicht. Notiert in §4.11 als N-01.
 
 `prepost.rs` (1170 Zeilen): `Alignmentklasse` (46), `Ausschlussgrund` (63),
 `Herabstufungsgrund` (93), `Kettenbefund` (122), `Paarhaelfte` (144),
@@ -462,7 +474,7 @@ Host-Dirty: `eq-copilot/plugin/src/PluginProcessor.cpp`:2174 ruft
 > `eq-copilot/schemas/state/nakama-state-v2.md` §2 führt unter `MainProject`
 > nur `confirmed_members_v1`. Die Eigenschaft `manual_passages_v1`, die
 > `NakamaState.cpp`:36 schreibt und liest, steht dort **nicht**;
-> `grep -c "manual_passages"` auf die Schemadatei liefert `0`. Notiert in §4.10 als N-02.
+> `grep -c "manual_passages"` auf die Schemadatei liefert `0`. Notiert in §4.11 als N-02.
 
 ### 2.6 (e) v3-Nachrichten und reservierte Namen
 
@@ -472,7 +484,7 @@ Host-Dirty: `eq-copilot/plugin/src/PluginProcessor.cpp`:2174 ruft
 und **5 reservierte Felder**. Die Zahl 29 wird von `pruefe_v3_vertrag.py`
 (Bein **A5**) gegen das `oneOf` des Schemas gehalten und ist damit die
 maschinenlesbare Wahrheit; der Fließtext im Feld `zweck` rechnet noch auf 28
-und hat `experiment_candidate` nicht mitgezählt (§4.10, N-05).
+und hat `experiment_candidate` nicht mitgezählt (§4.11, N-05).
 
 **Für dieses Ticket entscheidend — zwei Namen gehören SONDE-014 bereits:**
 
@@ -683,10 +695,10 @@ neue Beine tragen **NEU** und existieren heute nicht.
 | ID | Zustand × Ereignis | Zusage samt Reihenfolge und Frist | Belegklasse | Test | Rotbeweis an der Zusage | Quelle |
 |---|---|---|---|---|---|---|
 | M-01 | Gen ist klassifiziert `main`; der User setzt eine Rolle an einer Quelle | Die Rollenmenge ist **geschlossen und hat genau fünf Werte**: führt, trägt, begleitet, geschützt, bewusst verschmolzen. Ein sechster Wert wird abgewiesen, nicht auf einen bekannten Zweig abgebildet. Die Menge lebt an genau einer Stelle im Vertrag; Leser in C++ und Rust prüfen gegen dieselbe Menge. | **BELEGT** | **NEU** `EqCopSonde014IntentTest`, Fall `rollenmenge_ist_geschlossen_und_fuenf`; **A5** erweitert um das Enum | Ein sechster Enumwert wird angenommen; oder C++- und Rust-Leser klassifizieren denselben Wert verschieden | U22 (§1.7); `docs/plan/plan.json` S23–25 Nachtrag 06.09.; Entwurf §9 Erratum (h) |
-| M-02 | Rolle steht fest; das Intent-Objekt wird gebildet | Die fünf Rollen sind die **Produktunterscheidung**, nicht das Speicherformat. Die Abbildung auf §37.1 (`prominence` `foreground\|middle\|background`, Funktionstags, geschützte Bereiche/Eigenschaften, gerichtete Beziehungen) ist Technik dieses Tickets und in §4.1 als ENTSCHEIDEN-VORSCHLAG geführt. Die Abbildung ist **total und injektiv**: jede Rolle erzeugt genau eine Belegung, und aus der Belegung ist die Rolle eindeutig zurücklesbar. | **ENTSCHEIDEN-VORSCHLAG** (§4.1) | **NEU** `EqCopSonde014IntentTest`, Fall `rolle_und_belegung_sind_umkehrbar` (Roundtrip über alle fünf) | Zwei Rollen erzeugen dieselbe Belegung, oder eine Belegung liest sich als andere Rolle zurück | U22 „die Abbildung … ist Technik von S23–25"; Entwurf §37.1:2427–2443 |
-| M-03 | Quelle hat kurze Anschläge, die erhalten bleiben sollen | **Impuls ist keine Rolle.** Der Schutz kurzer Anschläge ist eine **Schutzangabe an der Quelle** (§37.1 „geschützte … Eigenschaften wie Attack, Breite oder Ausklang") und unabhängig von der gesetzten Rolle setzbar. Eine Quelle mit Rolle `begleitet` kann Attack geschützt haben. | **BELEGT** | **NEU** `EqCopSonde014IntentTest`, Fall `attack_schutz_ist_unabhaengig_von_der_rolle` | Der Schutz lässt sich nur zusammen mit einer bestimmten Rolle setzen, oder eine Rollenänderung löscht ihn | U22 Folge Punkt 2; Entwurf §9 Erratum (h) |
-| M-04 | Zwei Quellen sollen bewusst verschmelzen | **Raum ist keine Rolle.** Die Verschmelzung ist eine gerichtete beziehungsweise ungerichtete **Erlaubnis** zwischen zwei Quellen (§37.1 „A/B dürfen verschmelzen") und wirkt als **Veto** gegen Entmaskierungsempfehlungen — nicht als Behauptung, jeder spektrale Konflikt sei gut. Die Rolle `bewusst verschmolzen` an einer Quelle und die paarweise Erlaubnis sind zwei Dinge; §4.1 entscheidet ihr Verhältnis. | **ENTSCHEIDEN-VORSCHLAG** (§4.1) | **NEU** `EqCopSonde014IntentTest`, Fall `verschmelzungserlaubnis_ist_veto_kein_gutachten` | Ein Proposal zur Entmaskierung entsteht trotz Erlaubnis; oder die Erlaubnis erzeugt selbst eine positive Aussage | Entwurf §37.2:2445–2459; U22 Folge Punkt 2 |
-| M-05 | Zwei Quellen tragen widersprüchliche Intents | Die Konfliktauflösung folgt **genau der Reihenfolge aus §37.2**: 1. Schutz-/Sicherheitsgrenze, 2. expliziter Userintent, 3. passagespezifischer vor globalem Intent, 4. bestätigte Vorlage, 5. abgeleitete Vermutung. Die Stufen sind eine geordnete Liste, kein Score; eine höhere Stufe wird von keiner Summe niedrigerer geschlagen. | **BELEGT** | **NEU** `EqCopSonde014IntentTest`, Fall `konfliktregeln_sind_eine_ordnung_kein_score` — alle zehn Paarungen der fünf Stufen | Eine Kombination aus zwei niedrigen Stufen schlägt eine hohe; oder die Reihenfolge der Auswertung ändert das Ergebnis | Entwurf §37.2:2445–2459 |
+| M-02 | Rolle steht fest; das Intent-Objekt wird gebildet | **E-01 (A) mit Präzisierung E-01a, entschieden 06.09.2026.** `rolle` ist ein geschlossenes Feld mit genau fünf Werten; eine Quelle trägt **je Scope** (global oder Passage) genau eine Rolle oder keine. Die Belegung nach §37.1 wird **abgeleitet**, nicht getrennt gesetzt: führt → (`foreground`, `lead`), trägt → (`middle`, `foundation`), begleitet → (`background`, `texture`), geschützt → (`middle`, leerer Funktionstag, Veto-Kennzeichen `schutz`), bewusst verschmolzen → (`middle`, leerer Funktionstag, Veto-Kennzeichen `verschmolzen`). Das Veto-Kennzeichen ist **Teil der Belegung**; nur so ist die Abbildung total und injektiv und der Rückweg eindeutig (§33.5: keine zweite Wahrheit). | **ENTSCHIEDEN** (E-01, §4.1) | **NEU** `EqCopSonde014IntentTest`, Fälle `rolle_und_belegung_sind_umkehrbar` (Roundtrip über alle fünf) und `zwei_belegungen_lesen_nie_dieselbe_rolle_zurueck` | Zwei verschiedene Belegungen lesen auf dieselbe Rolle zurück; oder `geschützt` beziehungsweise `bewusst verschmolzen` erzeugt eine andere `prominence` als `middle` | E-01/E-01a (§4.1); U22 „die Abbildung … ist Technik von S23–25“; Entwurf §37.1:2427–2443 |
+| M-03 | Quelle hat kurze Anschläge, die erhalten bleiben sollen | **Impuls ist keine Rolle.** Der Schutz kurzer Anschläge ist eine **Schutzangabe an der Quelle** (§37.1 „geschützte … Eigenschaften wie Attack, Breite oder Ausklang“). **E-01a:** geschützte Bereiche und Eigenschaften — Attack, Breite, Ausklang, Bandintervalle — bleiben **orthogonal zur Rolle** und unabhängig von ihr setzbar; eine Quelle mit Rolle `begleitet` kann Attack geschützt haben, und eine Rollenänderung löscht keinen Schutzbereich. Produktwirkung des Entscheids, ausdrücklich benannt: wer Position **und** Schutz will, setzt eine Positionsrolle (führt, trägt, begleitet) und dazu Schutzbereiche — die Rolle `geschützt` trägt selbst keine Prominenzposition. | **BELEGT** · **ENTSCHIEDEN** (E-01a, §4.1) | **NEU** `EqCopSonde014IntentTest`, Fälle `attack_schutz_ist_unabhaengig_von_der_rolle` und `rollenwechsel_loescht_keinen_schutzbereich` | Der Schutz lässt sich nur zusammen mit einer bestimmten Rolle setzen; oder eine Rollenänderung löscht ihn | E-01a (§4.1); U22 Folge Punkt 2; Entwurf §9 Erratum (h) |
+| M-04 | Zwei Quellen sollen bewusst verschmelzen | **Raum ist keine Rolle.** **E-02, entschieden 06.09.2026:** die Rolle `bewusst verschmolzen` ist ein **globales Veto** gegen jede Entmaskierungsempfehlung mit Beteiligung dieser Quelle; die **paarweise Erlaubnis** beziehungsweise gerichtete Beziehung aus §37.1 ist das **spezifischere** Werkzeug und gewinnt, wo sie gesetzt ist — eine ausdrückliche Beziehung „A führt vor B“ hebt das globale Veto **nur für dieses Paar** auf. Beide liegen auf Stufe 2 der Konfliktregeln (expliziter Userintent), spezifisch vor global, analog zur Regel der Stufe 3. | **ENTSCHIEDEN** (E-02, §4.2) | **NEU** `EqCopSonde014IntentTest`, drei Fälle: `nur_rolle`, `nur_beziehung`, `beides_im_widerspruch` | Ein Proposal zur Entmaskierung entsteht trotz Veto ohne gesetzte Beziehung; oder die Beziehung hebt das Veto für ein anderes Paar mit auf | E-02 (§4.2); Entwurf §37.1:2427–2443, §37.2:2445–2459; U22 Folge Punkt 2 |
+| M-05 | Zwei Quellen tragen widersprüchliche Intents | Die Konfliktauflösung folgt **genau der Reihenfolge aus §37.2**: 1. Schutz-/Sicherheitsgrenze, 2. expliziter Userintent, 3. passagespezifischer vor globalem Intent, 4. bestätigte Vorlage, 5. abgeleitete Vermutung. Die Stufen sind eine geordnete Liste, kein Score; eine höhere Stufe wird von keiner Summe niedrigerer geschlagen. **E-02:** Rolle und paarweise Beziehung liegen **beide** auf Stufe 2; innerhalb der Stufe gewinnt die spezifischere Angabe (paarweise vor global), analog zur Regel der Stufe 3. | **BELEGT** · **ENTSCHIEDEN** (Stufenzuordnung, E-02, §4.2) | **NEU** `EqCopSonde014IntentTest`, Fälle `konfliktregeln_sind_eine_ordnung_kein_score` — alle zehn Paarungen der fünf Stufen — und `innerhalb_stufe_zwei_gewinnt_das_spezifischere` | Eine Kombination aus zwei niedrigen Stufen schlägt eine hohe; die Reihenfolge der Auswertung ändert das Ergebnis; oder die globale Rolle schlägt die gesetzte Beziehung | Entwurf §37.2:2445–2459; E-02 (§4.2) |
 | M-06 | Ein gerichteter Intent-Graph wird gespeichert | **Beim Speichern** wird auf Zyklen geprüft. Ein Zyklus muss aufgelöst oder als **nicht steuerbare Gleichrangigkeit** gespeichert werden; er wird nie stillschweigend angewendet. Reihenfolge: Zyklusprüfung → Entscheidung → Persistenz → Host-Dirty. Ein Zyklus erreicht die Persistenz nie unmarkiert. | **BELEGT** | **NEU** `EqCopSonde014IntentTest`, Fälle `zyklus_wird_beim_speichern_erkannt` und `zyklus_wird_als_gleichrangigkeit_gespeichert` | Ein Dreierzyklus A→B→C→A wird gespeichert und beim Laden als gerichtet gelesen; oder die Prüfung läuft erst beim Anwenden | Entwurf §37.2:2445–2459; §37.4 „Zyklische Entmaskierungsprioritäten können nicht angewendet werden" |
 | M-07 | Intent wird geschrieben | Jedes `SourceIntent` trägt **Revision**, **Herkunft** `user\|template\|inferred` und **Konfidenz**. Eine abgeleitete Vermutung überschreibt **nie** einen Userwert; sie bleibt als abgeleitet erkennbar. | **BELEGT** | **NEU** `EqCopSonde014IntentTest`, Fall `abgeleitet_ueberschreibt_user_nie` | Ein `inferred`-Wert ersetzt einen `user`-Wert; oder die Herkunft geht beim Speichern verloren | Entwurf §37.1:2427–2443; §37.2:2445–2459 |
 | M-08 | Eine Passage ist markiert; Intent wird gesetzt | Der **Passage-Scope ist optional**. Derselbe Bus kann **ohne Datenverlust** verschiedene Rollen in zwei Passagen besitzen: Passage A führt, Passage B begleitet, und beide Werte überleben nebeneinander. | **BELEGT** | **NEU** `EqCopSonde014IntentTest`, Fall `zwei_rollen_je_bus_in_zwei_passagen`; **B14** erweitert (Roundtrip) | Das Setzen der zweiten Passagenrolle überschreibt die erste; oder ein Speichern/Laden verliert eine der beiden | Entwurf §37.1:2427–2443; §37.4:2467–2473 |
@@ -732,24 +744,24 @@ neue Beine tragen **NEU** und existieren heute nicht.
 
 | ID | Zustand × Ereignis | Zusage samt Reihenfolge und Frist | Belegklasse | Test | Rotbeweis an der Zusage | Quelle |
 |---|---|---|---|---|---|---|
-| M-36 | Ein Befund über eine Maskierung zweier Quellen entsteht | Die Maskierung **fällt aus dem Befund heraus** als **laufender, je Frequenzbereich auflösbarer Wert** — nicht nur als fertiger Satz mit Ort und Beleg. „Je Frequenzbereich auflösbar" heißt: der Wert trägt einen Bandindex beziehungsweise ein Bandintervall des bestehenden Gitters, keine neue Frequenzachse. | **BELEGT** · **BAULÜCKE** | **NEU** `EqCopSonde014MaskierungTest`, Fall `maskierungswert_benennt_einen_frequenzbereich` | Der Wert ist ein Skalar ohne Frequenzbezug; oder er führt ein eigenes Gitter | U16-Folge (§1.5); Bauaufteilung Zeile 394 (§1.3); `eq-copilot/schemas/v3/bandgitter/` |
-| M-37 | Die Sonden messen; die Maskierung soll laufend gezeigt werden | Der Wert **hält die Anzeigekadenz mit**. Gemessen wird das an der Kadenz, die ihn trägt: der Evidenzpfad läuft mit 1 bis 4 Hz (`FeatureEngine.h`:989–990), der Editor publiziert leicht mit 20 Hz und schwer mit 4 Hz (`WorkerCadence.h`). Die Zusage ist erfüllt, wenn der Wert **mindestens** mit der schweren Editorkadenz (4 Hz) neu vorliegt, ohne dass ein Takt nachgeholt wird. Paint-FPS ist nicht Datenkadenz. | **BELEGT** · **ENTSCHEIDEN-VORSCHLAG** (Trägerkadenz, §4.4) | **NEU** `EqCopSonde014MaskierungTest`, Fall `maskierungswert_haelt_die_schwere_kadenz`; **A23** `pruefe_sonde012_sources_latency.py` als Muster | Der Wert erscheint nur beim Neuberechnen eines Befunds (also seltener als 4 Hz); oder eine Pause holt mehrere Takte nach | U16-Folge (§1.5); `eq-copilot/plugin/src/WorkerCadence.h`:27–28 |
+| M-36 | Ein Befund über eine Maskierung zweier Quellen entsteht | Die Maskierung **fällt aus dem Befund heraus** als **laufender, je Frequenzbereich auflösbarer Wert** — nicht nur als fertiger Satz mit Ort und Beleg. „Je Frequenzbereich auflösbar“ heißt: der Wert trägt einen Bandindex beziehungsweise ein Bandintervall des bestehenden Gitters, keine neue Frequenzachse. **E-04:** der Wert ist ein optionales Objekt `maskierung` **am Befund** (`quelle_a`, `quelle_b`, `band_von`, `band_bis`, `wert_db`, `gueltig`, `herabgesetzt`), **keine zweite Liste** — zwei Listen könnten auseinanderlaufen. | **BELEGT** · **ENTSCHIEDEN** (E-04, §4.4) · **BAULÜCKE** | **NEU** `EqCopSonde014MaskierungTest`, Fälle `maskierungswert_benennt_einen_frequenzbereich` und `maskierung_haengt_am_finding` | Der Wert ist ein Skalar ohne Frequenzbezug; er führt ein eigenes Gitter; oder er reist in einer eigenen Liste neben den Befunden | E-04 (§4.4); U16-Folge (§1.5); Bauaufteilung Zeile 394 (§1.3); `eq-copilot/schemas/v3/bandgitter/` |
+| M-37 | Die Sonden messen; die Maskierung soll laufend gezeigt werden | **E-03, entschieden 06.09.2026.** Der Wert entsteht im Broker-Coordinator **bei jedem Evidenz-Eingang einer der beiden Quellen** und reist über den Rückweg aus E-04. Die Zusage lautet: bei jedem **schweren Editortakt (250 ms)** liegt der Wert so aktuell vor wie die jüngste Evidenz beider Quellen; im Normalbetrieb (`kEvidenzIntervallMinS` = 0,25 s) ist er **höchstens ein Evidenzintervall plus Transportlatenz** alt. Bei P1-Rückstau folgt er der bestehenden Kadenzreduktion bis 1 Hz und trägt dann das Kennzeichen `herabgesetzt` — ein Feld im Wert, **nie** ein interpolierter Zwischenwert. Paint-FPS ist nicht Datenkadenz. | **BELEGT** · **ENTSCHIEDEN** (E-03, §4.3) · **BAULÜCKE** | **NEU** `EqCopSonde014MaskierungTest`, Fall `maskierungswert_ist_hoechstens_ein_evidenzintervall_alt` — gemessen wird das **Alter relativ zur jüngsten Evidenz**, nicht eine Wallclock-Rate — sowie `rueckstau_setzt_das_kennzeichen_herabgesetzt` | Der Wert entsteht nur beim Neuberechnen eines Befunds; oder bei Rückstau wird interpoliert, statt `herabgesetzt` zu setzen | E-03 (§4.3); `eq-copilot/plugin/core/analysis/FeatureEngine.h`:989–990; `eq-copilot/plugin/src/WorkerCadence.h`:27–28 |
 | M-38 | Ein Finding ist ausgewählt | Das gewählte Finding **markiert seinen Frequenzbereich im stabilen Gesamtgraph**, ohne dessen Größe, Achsen oder Ausschnitt zu ändern. Der Datenweg liefert dafür nur den Bereich; er löst **keine** Achsen- oder Ausschnittsänderung aus. | **BELEGT** | **NEU** `EqCopSonde014MaskierungTest`, Fall `markierung_aendert_keine_achse` | Der Datenweg liefert eine Achsen- oder Zoomangabe mit | PR2-Nachtrag (§1.4); `design/abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md` („Stabile Geometrie", „Graphreaktion") |
 | M-39 | Der User zoomt auf den markierten Bereich | Ein Zoom ist **nur als bewusste und reversible Aktion** zulässig und **darf nicht aus dem Datenweg heraus ausgelöst werden**. Der Datenweg kennt kein Zoomkommando. | **BELEGT** | **NEU** `EqCopSonde014MaskierungTest`, Fall `datenweg_kennt_kein_zoomkommando` | Eine Befundänderung erzeugt eine Zoomanforderung | PR2-Nachtrag (§1.4) |
-| M-40 | Der Maskierungswert soll die Leitung erreichen | **Ob ein eigenes v3-Feld nötig ist, entscheidet der Datenweg an der Quelle.** Die Alternativen stehen in §4.4: (a) Ableitung aus der vorhandenen Bandevidenz (`evidence_snapshot.baender`, `verteilung.p50`) im Empfänger, ohne neues Feld; (b) ein neues Feld am Snapshot, das ein Fassungsschritt wäre. Fällt die Entscheidung auf ein Feld, gehört der **Name** in die v3-Vertragsrunde von S16–17, weil die vor R0 liegt. **Diese Etappe ändert kein Schema.** | **ENTSCHEIDEN-VORSCHLAG** (§4.4) | **NEU** `EqCopSonde014MaskierungTest` plus **A5** (falls ein Feld entsteht: Negativfixture und Fassungsleiter) | Ein Feld entsteht ohne `schema_minor`-Schritt; oder der Empfänger erfindet den Wert aus Anzeigedaten | U16-Folge (§1.5); `docs/plan/plan.json` S23–25 Nachtrag 30.08.; `eq-copilot/schemas/v3/reservierte-nachrichten-v1.json` (`regel`) |
-| M-41 | Die farbige Zone wird gezeichnet | Die Zone **zeigt nur, was der Befund belegt hat, und setzt keine eigene Schwelle**: sie ist keine zweite Wahrheit neben dem Befundtext und keine eigene Detektion. Die Zone selbst gehört zu **S31b**; dieses Ticket liefert ausschließlich den Datenweg. | **BELEGT** | **NEU** `EqCopSonde014MaskierungTest`, Fall `zone_hat_keine_eigene_schwelle` (der Datenweg liefert keine Schwelle) | Der Datenweg trägt eine Anzeigeschwelle; oder die Zone entsteht ohne Befund | U16-Folge (§1.5); Blueprint P5-Bedienvertrag („keine eigene Detektion und keine konkurrierende Schwelle") |
+| M-40 | Der Maskierungswert soll die Leitung erreichen | **E-04, entschieden 06.09.2026: ja, ein eigenes v3-Feld — aber am Rückweg, nie an der Sondenmessung.** Kein Feld am `evidence_snapshot`. `session_snapshot` bekommt als **Wire-Envelope-`schema_minor` 3** genau **ein** neues optionales Feld `findings`: die Befunde mit Zustand (`READY TO SEND` \| `MORE DATA` \| `STALE`), den Datenfeldern aus M-15 und M-16 (sechs Teile, drei Anzeigezeilen, `evidence_ids`, Intent-Revision) und je Befund dem optionalen Objekt `maskierung`. Der Name lautet `maskierung`, **nicht** `ueberdeckung` (Kollision, §2.12). Abwesenheit heißt „nichts“, nie `null`; ein Leser der Fassung 2 sieht das Feld nicht. Der Name wird in diesem Ticket als **belegtes Feld** in `eq-copilot/schemas/v3/reservierte-nachrichten-v1.json` eingetragen und in `eq-copilot/schemas/v3/README.md` als Fassungsschritt geführt — derselbe Weg wie `experimente` und `paare` in SONDE-013. | **ENTSCHIEDEN** (E-04, §4.4) · **BAULÜCKE** | **NEU** `EqCopSonde014MaskierungTest`; **A5** um Negativfixture und **Fassungsleiter** erweitert (ein zurückgebauter Leser der Fassung 2 lehnt `findings` ab); Cross-Language-Fixtures für C++ und Rust über **A8** | Ein Leser der Fassung 2 nimmt ein `findings` an; das Feld entsteht ohne `schema_minor`-Schritt; oder Abwesenheit wird als `null` gelesen | E-04 (§4.4); `eq-copilot/schemas/v3/reservierte-nachrichten-v1.json` (`regel`, `wire_envelope_schema_minor`) |
+| M-41 | Die farbige Zone wird gezeichnet | Die Zone **zeigt nur, was der Befund belegt hat, und setzt keine eigene Schwelle**: sie ist keine zweite Wahrheit neben dem Befundtext und keine eigene Detektion. **E-04** hält das strukturell: die Zone liest `maskierung` **am** Befund, und es gibt keine zweite Liste, von der sie abweichen könnte. Die Zone selbst gehört zu **S31b**; dieses Ticket liefert ausschließlich den Datenweg. | **BELEGT** | **NEU** `EqCopSonde014MaskierungTest`, Fall `zone_hat_keine_eigene_schwelle` (der Datenweg liefert keine Schwelle) | Der Datenweg trägt eine Anzeigeschwelle; oder eine Maskierung existiert ohne Befund | E-04 (§4.4); U16-Folge (§1.5); Blueprint P5-Bedienvertrag („keine eigene Detektion und keine konkurrierende Schwelle“) |
 
 ### 3.5 Proposal-Policy nach §42 (Gate: §59 Punkt 3, §42, NAK-168)
 
 | ID | Zustand × Ereignis | Zusage samt Reihenfolge und Frist | Belegklasse | Test | Rotbeweis an der Zusage | Quelle |
 |---|---|---|---|---|---|---|
 | M-42 | Ein Befund ist handelbar; ein Vorschlag entsteht | Eine Empfehlung ist **zuerst ein validiertes, versioniertes `Proposal`** und erst danach Text. Die Felder aus §42.1: `proposal_id`, `proposal_schema`, `target`, `base_revision`, `passage_id`, `action`, `parameters`, `allowed_bounds`, `evidence_ids`, `expected_effect`, `protected_traits`, `listen_for`, `stop_if`, `execution`, `confidence`. | **BELEGT** | **NEU** `EqCopSonde014ProposalTest`, Fall `proposal_traegt_die_fuenfzehn_felder`; **A5** Negativfixture je Feld | Ein Proposal ohne `stop_if` oder ohne `allowed_bounds` wird angenommen | Entwurf §42.1:2762–2787 |
-| M-43 | Ein Proposal wird sichtbar | Das Exit-Gate verlangt wörtlich, dass **jedes Proposal Ziel, Passage, Grenzen, Hörziel, Stopbedingung und Rückweg nennt**. Abbildung: Ziel → `target`, Passage → `passage_id`, Grenzen → `allowed_bounds`, Hörziel → `listen_for`, Stopbedingung → `stop_if`, **Rückweg** → in P5 die Rücknahme des manuellen Versuchs (`experiment_abort`) beziehungsweise die ausdrückliche Angabe „manuell, nicht automatisch wiederherstellbar" (§43.1). Der Rückweg ist ein **Feld**, kein Versprechen im Text. | **BELEGT** · **ENTSCHEIDEN-VORSCHLAG** (Feldname des Rückwegs, §4.5) | **NEU** `EqCopSonde014ProposalTest`, Fall `sechs_gate_felder_sind_pflicht` | Ein Proposal ohne Rückweg wird sichtbar; oder der Rückweg steht nur in einem Textbaustein | Entwurf §59 Exit-Gate (§1.1); §43.1:2837–2865 |
+| M-43 | Ein Proposal wird sichtbar | Das Exit-Gate verlangt wörtlich, dass **jedes Proposal Ziel, Passage, Grenzen, Hörziel, Stopbedingung und Rückweg nennt**. Abbildung: Ziel → `target`, Passage → `passage_id`, Grenzen → `allowed_bounds`, Hörziel → `listen_for`, Stopbedingung → `stop_if`, **Rückweg** → **E-06, entschieden 06.09.2026:** ein Feld `revert` mit der geschlossenen Menge `experiment_abort` \| `manual_only` \| `none_needed`. `dsp_revert` gehört P7 (`revert_transaction`, SONDE-016) und ist in P5 ein Vertragsbruch wie `execution = previewable` (M-45). Der Rückweg ist ein **Feld**, kein Versprechen im Text. | **BELEGT** · **ENTSCHIEDEN** (E-06, §4.6) · **BAULÜCKE** | **NEU** `EqCopSonde014ProposalTest`, Fälle `sechs_gate_felder_sind_pflicht` und `revert_hat_drei_werte_je_proposal_typ`; die Ablehnung eines vierten Werts beidseitig in C++ und Rust (M-77) | Ein Proposal ohne `revert` wird sichtbar; ein vierter `revert`-Wert wird von einer der beiden Seiten angenommen; oder `dsp_revert` erreicht ein P5-Proposal | E-06 (§4.6); Entwurf §59 Exit-Gate (§1.1); §43.1:2837–2865 |
 | M-44 | Ein Proposal wird erzeugt | Die Erzeugung ist **deterministisch** und läuft in genau dieser Reihenfolge (§42.2): 1. Befundtyp wählt eine geprüfte Aktionstemplate; 2. ein Constraint-Solver entfernt Aktionen, die **Intent, Capability, Headroom, Messqualität oder Schutzbereiche** verletzen; 3. für EQ eine regularisierte Zielfunktion (gewünschte Evidenzverbesserung bei möglichst wenig Bändern, Gain und spektraler Nebenwirkung); 4. **der kleinste sichere Kandidat gewinnt**, Alternativen bleiben sichtbar; 5. `execution` wird gesetzt. | **BELEGT** | **NEU** `EqCopSonde014ProposalTest`, Fälle `derselbe_eingang_erzeugt_denselben_entwurf` (100 Läufe) und `kleinster_sicherer_kandidat_gewinnt` | Zwei Läufe auf demselben Eingang liefern verschiedene Parameter; oder ein größerer Kandidat gewinnt bei gleicher erwarteter Wirkung | Entwurf §42.2:2789–2804; §42.4:2822–2833 |
 | M-45 | Eine Aktion würde eine eigene DSP-Fähigkeit brauchen | **In P5 ist jede Aktion `manual`, nichts ist `previewable`.** `previewable` setzt exakt unterstützte eigene DSP-Aktionen voraus (§42.2 Punkt 5), und der aktive Kern entsteht erst in P6 (`SONDE-015`). Ein Proposal mit `execution = previewable` ist in P5 ein Vertragsbruch, kein optimistischer Vorgriff. | **BELEGT** | **NEU** `EqCopSonde014ProposalTest`, Fall `in_p5_ist_jede_aktion_manual` | Ein erzeugtes Proposal trägt `execution = previewable` | Entwurf §42.2 Punkt 5:2802–2803; §59 „noch ohne Fernänderung" (§1.1); Bauaufteilung P6-Zeile |
 | M-46 | Kein sicherer Eingriff ist begründbar | **`Keine Änderung` ist ein gültiger Vorschlag**, ebenso **`mehr Daten`**. Beide sind reguläre Ergebnisse mit vollständigem Objekt (Ziel, Passage, Hörziel, Stopbedingung, Rückweg), nicht ein leerer Rückgabewert. | **BELEGT** | **NEU** `EqCopSonde014ProposalTest`, Fälle `keine_aenderung_ist_ein_vorschlag` und `mehr_daten_ist_ein_vorschlag` | Der Erzeuger liefert `None` statt eines Objekts; oder eines der beiden Ergebnisse trägt keine Evidenz-IDs | Entwurf §59 Lieferumfang (§1.1); §42.1:2762–2787 |
 | M-47 | Ein Proposal wird gebildet (**NAK-168, Hälfte 1**) | **Der Vorschlag benennt den Zielbereich.** Das Band beziehungsweise Bandintervall, das der Eingriff adressiert, kommt aus dem Befund (`band_hz` aus §36.3) und steht im Proposal (`parameters.frequency_hz` plus `allowed_bounds.frequency_hz`). Es wird **nicht** aus einem Messdelta geraten. | **BELEGT** · **BAULÜCKE** | **NEU** `EqCopSonde014ProposalTest`, Fall `zielbereich_kommt_aus_dem_befund_nicht_aus_dem_delta` | Der Zielbereich wird aus dem größten Betrag der Banddeltas abgeleitet | NAK-168 (§1.8); Entwurf §36.3:2388–2409; §42.1:2762–2787 |
-| M-48 | Ein Experiment liest den Zielbereich (**NAK-168, Hälfte 2**) | **Das Experiment liest Zielbereich und Schutzbereiche, statt sie zu raten.** Heute erklärt `experiment_verdrahtung.rs`:1069–1088 das Band mit dem größten absoluten Delta zum Ziel; weder `experiment_begin` noch `experiment_candidate` tragen ein Feld dafür (gemessen in §2.6). Die Vertragsfrage — welche Familie das Feld trägt und wie es heißt — steht in §4.5 als ENTSCHEIDEN-VORSCHLAG. | **BAULÜCKE** · **ENTSCHEIDEN-VORSCHLAG** (§4.5) | **NEU** `EqCopSonde014ProposalTest` plus **A4** Verdrahtungsfall; **A5** falls ein Feld entsteht | Das Experiment leitet den Zielbereich weiter aus dem Delta ab, obwohl das Proposal ihn nennt | NAK-168 (§1.8); `broker/src/coordinator/experiment_verdrahtung.rs`:1069–1088 |
+| M-48 | Ein Experiment liest den Zielbereich (**NAK-168, Hälfte 2**) | **E-05, entschieden 06.09.2026.** `experiment_begin` bekommt in derselben **Fassung 3** ein optionales Objekt `ziel` (`band_von`, `band_bis`, `geschuetzte_baender` als Liste von Bandintervallen, `proposal_id` als Rückverweis). **Mit `ziel`** liest der Guardrail-Rechner Ziel- und Schutzbereiche und rät nichts. **Ohne `ziel`** — der manuelle Versuch ohne Vorschlag, der SONDE-013-Pfad — bleibt die heutige Heuristik (`experiment_verdrahtung.rs`:1069–1088) und das **Resultat trägt das Kennzeichen `ziel_geraten`**. Beide Pfade werden gemessen. | **ENTSCHIEDEN** (E-05, §4.5) · **BAULÜCKE** | **NEU** `EqCopSonde014ProposalTest` plus **A4**-Verdrahtungsfall für beide Pfade; **A5** Negativfixture für `ziel` | Zwei Rotbeweise: die Heuristik läuft **trotz** gesetztem `ziel`; und ein Resultat **ohne** `ziel` trägt kein `ziel_geraten` | E-05 (§4.5); NAK-168 (§1.8); `broker/src/coordinator/experiment_verdrahtung.rs`:1069–1088 |
 | M-49 | Guardrails werden ausgewertet | Eine geschützte Eigenschaft erscheint als **harte Constraint** im Vorschlag (`protected_traits`) und im DSP-ACK. In P5 gibt es kein DSP-ACK — die Hälfte, die dieses Ticket bauen kann, ist die **Vorschlagsseite**; die ACK-Seite gehört S26–28/S29–31 und wird hier nicht vorgegriffen. | **BELEGT** (Vorschlagsseite) · **OFFEN für P7** | **NEU** `EqCopSonde014ProposalTest`, Fall `geschuetzte_eigenschaft_ist_harte_constraint` | Ein Proposal überschreitet einen geschützten Bereich; oder `protected_traits` bleibt leer, obwohl der Intent einen Schutz führt | Entwurf §37.4:2467–2473; §42.1:2762–2787 |
 | M-50 | Guardrail-Skalare fehlen im Vertrag | **Ein Guardrail ohne Vertragsteil ist nicht messbar und wird als „nicht gemessen" ausgewiesen, nie als „unverändert".** `guardrail_loudness_db` und `guardrail_peak_db` sind heute hart `None` (NAK-204), `seitenanteil_db` erreicht den Broker strukturell nie (NAK-193). Ein Proposal, dessen `stop_if` auf einen nicht messbaren Guardrail zeigt, ist **nicht handelbar** und meldet `MORE DATA`. | **BAULÜCKE** (fremde Registerzeilen, hier nur verkettet) | **NEU** `EqCopSonde014ProposalTest`, Fall `stop_if_auf_nicht_messbarem_guardrail_ist_nicht_handelbar`; **A4** bestehend für `guardrail_nicht_gemessen` | Ein Proposal steht auf `READY TO SEND`, obwohl seine Stopbedingung auf `guardrail_peak_db` zeigt | NAK-204, NAK-193 (§1.8); `broker/src/coordinator/experiment_verdrahtung.rs`:1039–1042 |
 | M-51 | Ein Proposal wird angezeigt | **Jeder angezeigte Zahlenwert lässt sich auf Proposal-Feld, Evidenz und Generatorversion zurückführen.** Kein Zahlenwert entsteht in der Anzeige. | **BELEGT** | **NEU** `EqCopSonde014ProposalTest`, Fall `jede_zahl_hat_feld_evidenz_und_generatorversion` | Ein angezeigter Wert hat kein Feld im Objekt; oder die Generatorversion fehlt | Entwurf §42.4:2822–2833 |
@@ -761,7 +773,7 @@ neue Beine tragen **NEU** und existieren heute nicht.
 
 | ID | Zustand × Ereignis | Zusage samt Reihenfolge und Frist | Belegklasse | Test | Rotbeweis an der Zusage | Quelle |
 |---|---|---|---|---|---|---|
-| M-55 | Ein aktives Problem wird bearbeitet | Der Assistent ist **eine deterministische Zustandsmaschine**, kein frei handelnder Chat. Die Folge aus §46.1 lautet `Coverage → Finding → Evidence → Listen → Proposal → Preview → Remeasure → Verdict`; **`Preview` entfällt in P5**, weil es keine eigene DSP-Aktion gibt (M-45). Die P5-Folge ist damit `Coverage → Finding → Evidence → Listen → Proposal → Remeasure → Verdict`. Der Wegfall ist ein Übergang, der übersprungen wird, **kein gelöschter Zustand**: der Vertrag behält den Namen für P6/P7. | **BELEGT** · **ENTSCHEIDEN-VORSCHLAG** (ob `Preview` als übersprungener Zustand oder als fehlender Wert modelliert wird, §4.6) | **NEU** `EqCopSonde014AssistentTest`, Fall `p5_folge_ueberspringt_preview_und_loescht_ihn_nicht` | Ein Schritt erreicht `Preview`; oder der Zustandsname verschwindet aus dem Vertrag | Entwurf §46.1:3172–3184 |
+| M-55 | Ein aktives Problem wird bearbeitet | Der Assistent ist **eine deterministische Zustandsmaschine**, kein frei handelnder Chat. Die Folge aus §46.1 lautet `Coverage → Finding → Evidence → Listen → Proposal → Preview → Remeasure → Verdict`. **E-07, entschieden 06.09.2026:** `Preview` **bleibt in der Zustandsmenge**, die P5-Übergangstabelle führt **keine Kante** dorthin, und ein gespeicherter `AssistantStep` mit `Preview` ist in P5 ein **Lesefehler**, kein stiller Sprung. Die P5-Folge ist damit `Coverage → Finding → Evidence → Listen → Proposal → Remeasure → Verdict`. | **BELEGT** · **ENTSCHIEDEN** (E-07, §4.7) | **NEU** `EqCopSonde014AssistentTest`, Fälle `p5_uebergangstabelle_hat_keine_kante_nach_preview` und `gespeicherter_preview_schritt_ist_ein_lesefehler` | Ein Schritt erreicht `Preview`; der Zustandsname verschwindet aus dem Vertrag; oder ein gespeicherter `Preview`-Schritt wird still auf `Proposal` oder `Remeasure` abgebildet | E-07 (§4.7); Entwurf §46.1:3172–3184 |
 | M-56 | Ein Zustand wird betreten | **Jeder Zustand besitzt Eintrittsbedingungen, Evidenz-IDs, Useraktion, Timeout und sichere Rückkante.** Fünf Angaben je Zustand, keine optional. Ein Zustand ohne Rückkante ist ein Vertragsbruch. | **BELEGT** | **NEU** `EqCopSonde014AssistentTest`, Fall `jeder_zustand_traegt_fuenf_angaben` (Tabellentest über alle sieben) | Ein Zustand ohne Timeout oder ohne Rückkante wird betreten | Entwurf §46.1:3172–3184 |
 | M-57 | Ein Versuch läuft | **Es ist immer höchstens ein klanglicher Versuch aktiv.** Der Deckel ist strukturell (ein Slot), nicht ein Zähler, der auch 2 tragen könnte. Ein zweiter Startversuch wird abgewiesen, nicht eingereiht. | **BELEGT** | **NEU** `EqCopSonde014AssistentTest`, Fall `hoechstens_ein_klanglicher_versuch`; **A4** bestehend (`experiment.rs::offene`) | Zwei Versuche sind gleichzeitig offen; oder der zweite wird still eingereiht | Entwurf §46.1:3172–3184 |
 | M-58 | Der User bricht ab, geht zurück, überspringt oder nimmt wieder auf | **Alle vier Gegenpfade existieren und sind persistent.** `Abbruch` ist terminal (`experiment_abort`, „Verwerfen ist ein terminales Ereignis, kein Löschen der Historie"), `Zurück` und `Überspringen` verändern den Zustand innerhalb desselben Schritts, `Resume` setzt an derselben belegten Stelle fort. Reihenfolge beim Abbruch: Terminalereignis anhängen → Projektion → Outbox → erst danach den Slot freigeben. | **BELEGT** | **NEU** `EqCopSonde014AssistentTest`, vier Fälle; **A4** Storefall | Ein Abbruch gibt den Slot vor dem Append frei; oder `Zurück` erzeugt ein zweites Experiment | Entwurf §46.1:3172–3184; §43.1:2837–2865 |
@@ -787,9 +799,9 @@ neue Beine tragen **NEU** und existieren heute nicht.
 
 | ID | Zustand × Ereignis | Zusage samt Reihenfolge und Frist | Belegklasse | Test | Rotbeweis an der Zusage | Quelle |
 |---|---|---|---|---|---|---|
-| M-71 | Intent, Evidenzgraph, Hypothese, Proposal und `AssistantStep` sollen einen Ort bekommen | Der Ort folgt **§33.5 wörtlich**: `SourceIntent` und `AssistantStep` gehören in den `MainProjectState` (autoritativ), mit versioniertem SQLite-Spiegel; `Evidenz, Findings, Proposals, Transaktionsereignisse, Experimente und Urteile` gehören in den **lokalen SQLite-Experimentstore mit einem Writer**, und der Main-State hält davon **nur kompakte aktuelle IDs und noch nicht bestätigte Outbox-Ereignisse**. **Kein Objekt besitzt zwei still konkurrierende Wahrheiten.** Die Rechenstelle folgt daraus: Hypothese und Proposal entstehen im Broker-Coordinator, weil dort der Evidenzbestand und der Store liegen. | **BELEGT** · **ENTSCHEIDEN-VORSCHLAG** (Modulschnitt, §4.8) | **NEU** `EqCopSonde014HypotheseTest` plus **A4**; **B14** für die Main-Seite | Ein Finding wird im Plugin gerechnet und im Broker noch einmal; oder der Main-State hält ein vollständiges Proposal statt einer ID | Entwurf §33.5:2140–2175 |
+| M-71 | Intent, Evidenzgraph, Hypothese, Proposal und `AssistantStep` sollen einen Ort bekommen | Der Ort folgt **§33.5 wörtlich**: `SourceIntent` und `AssistantStep` gehören in den `MainProjectState` (autoritativ), mit versioniertem SQLite-Spiegel; `Evidenz, Findings, Proposals, Transaktionsereignisse, Experimente und Urteile` gehören in den **lokalen SQLite-Experimentstore mit einem Writer**, und der Main-State hält davon **nur kompakte aktuelle IDs und noch nicht bestätigte Outbox-Ereignisse**. **Kein Objekt besitzt zwei still konkurrierende Wahrheiten.** **E-08, entschieden 06.09.2026 — die Autoritäten:** die autoritative **Validierung des Intents** (Rollenmenge, Zyklenprüfung, Konfliktauflösung beim Setzen — M-05, M-06, M-13) und die **Zustandsmaschine des `AssistantStep`** (M-55 bis M-62) laufen **im Main, also im Gen-Plugin in C++**, persistent im `MainProjectState`. `intent.rs` und `assistent.rs` im Broker-Coordinator sind **Spiegel und Vertragsvalidierung beim Empfang** (M-77: dieselbe Rollenmenge, dieselben Enumgrenzen beidseitig) sowie die Auswertung der Konfliktregeln beim Rechnen — **keine zweite Zustandsmaschine, keine zweite Wahrheit**. `hypothese.rs`, `proposal.rs` und `maskierung.rs` rechnen im Coordinator, weil dort Evidenzbestand und Store liegen. | **BELEGT** · **ENTSCHIEDEN** (E-08, §4.8) | **NEU** `EqCopSonde014IntentTest` und `EqCopSonde014AssistentTest` für die Main-Seite, **A4**-Verdrahtungsfälle für die Brokerseite; **B14** für die Persistenz | Der Broker führt eine eigene `AssistantStep`-Zustandsmaschine; der Broker validiert eine andere Rollenmenge als das Plugin; oder ein Finding wird im Plugin gerechnet und im Broker noch einmal | E-08 (§4.8); Entwurf §33.5:2140–2175 |
 | M-72 | Irgendein Teil dieses Tickets rechnet | **Der Audio-Thread ist nie beteiligt.** Keine Sperre, keine Allokation, kein Datei-, Pipe- oder Netzzugriff, kein Logging im Audio-Thread. Überlast verwirft **Analyseframes, nie Audio**. | **BELEGT** | **A1** `EqCopNullTest` und **B4** `EqCopQueueStressTest` bestehend; **NEU** ein Fall, der die neuen Pfade auf Audio-Thread-Freiheit prüft | Ein neuer Pfad wird aus `processBlock` gerufen; oder eine Überlast verwirft Audio | `CLAUDE.md` Grundgesetz; Entwurf §33.1 |
-| M-73 | Eine Queue läuft voll (Prüfliste A) | **Je Klasse steht die Politik bei *voll* ausdrücklich.** P0: 64er-Queue, Überlauf ⇒ Verbindung wird verworfen und der Eintrag geht an `beiP0Verworfen` — nie stillschweigend gelöscht. P1: 128 + 128 Einträge, leerer Schlüssel = Ereignis, nicht leerer Schlüssel **koalesziert Snapshots desselben Objekts**. P2 reist nicht über den ControlClient. Neue Objekte dieses Tickets bekommen **keine neue Klasse**: `draft_offer` und `user_verdict` sind P1 mit Schlüssel (Proposal- beziehungsweise Verdict-ID), Findings reisen über den bestehenden Snapshot-Pfad. | **BELEGT** · **ENTSCHEIDEN-VORSCHLAG** (Schlüsselwahl, §4.8) | **NEU** Lastfall im **A4**-Bereich plus **B10** `EqCopIpcTest` erweitert | Ein `draft_offer` wird ohne Schlüssel eingereiht und verdrängt ein anderes Objekt; oder ein Rückgabewert der Politik wird ignoriert | `tools/dirigent/pruefliste.md` A; `eq-copilot/plugin/core/ipc/ControlClient.h`:242,314,558–560 |
+| M-73 | Eine Queue läuft voll (Prüfliste A) | **Je Klasse steht die Politik bei *voll* ausdrücklich.** P0: 64er-Queue, Überlauf ⇒ Verbindung wird verworfen und der Eintrag geht an `beiP0Verworfen` — nie stillschweigend gelöscht. P1: 128 + 128 Einträge, leerer Schlüssel = Ereignis, nicht leerer Schlüssel **koalesziert Snapshots desselben Objekts**. P2 reist nicht über den ControlClient. **E-09, entschieden 06.09.2026:** `draft_offer` reist als **P1 mit Schlüssel `proposal:<proposal_id>`**; `user_verdict` als **persistenzpflichtiger P0** über `sendePersistenzP0`, mit Wiederholung unter derselben `command_id` über einen Brokerkill hinweg (A4-SI-Muster) — ein Userurteil darf **nicht** koaleszieren. Findings und Maskierungen reisen über `session_snapshot.findings` (E-04) und erben dessen Koaleszierung. Es entsteht **keine neue Klasse**. | **BELEGT** · **ENTSCHIEDEN** (E-09, §4.8) · **BAULÜCKE** | **NEU** Lastfall im **A4**-Bereich plus **B10** `EqCopIpcTest` erweitert; **A4-SI** für die Wiederholung des `user_verdict` über einen Brokerkill | Ein `draft_offer` wird ohne Schlüssel eingereiht und verdrängt ein anderes Objekt; ein `user_verdict` koalesziert; oder ein Rückgabewert der Politik wird ignoriert | E-09 (§4.8); `tools/dirigent/pruefliste.md` A; `eq-copilot/plugin/core/ipc/ControlClient.h`:242,314,556,558–560 |
 | M-74 | Ein Puffer soll später wiederholen (Prüfliste A) | Ein Puffer, der „später wiederholt", hat einen **Abflussweg ohne Reconnect**. „Nur beim Verbindungsaufbau leeren" ist ein Befund. Für dieses Ticket heißt das: die Outbox-Schuld eines Findings oder Proposals wird auch ohne Linkwechsel abgetragen. | **BELEGT** | **A4-SI** `subscription_server_integration` bestehend (koalesziert Snapshot-Schuld), erweitert um die neuen Objektschlüssel | Ein Proposal bleibt in der Outbox stehen, bis die Verbindung neu aufgebaut wird | `tools/dirigent/pruefliste.md` A; `broker/src/store/migration.rs` (`outbox`) |
 | M-75 | Verbinden und Trennen (Prüfliste B) | **Reihenfolge beim Verbinden:** anmelden → Callback „verbunden" abgeschlossen → erst dann Welcome/Freigabe nach außen. **Beim Trennen:** zuerst abmelden/entkoppeln, dann Fristen und Joins; nichts bleibt registriert, während auf einen Verbraucher gewartet wird. Jeder Join hat eine Frist. Nach dem Schließen einer Queue wird nichts mehr geliefert; das **Schließflag wird vor dem Inhalt geprüft**. Die neuen Objekte erben diese Ordnung und führen keine eigene ein. | **BELEGT** | **A4** und **A4-SI** bestehend, erweitert um die neuen Objekte | Ein Finding wird nach dem Schließen der Queue noch geliefert; oder ein neuer Subscriber wird vor dem Verbunden-Callback freigegeben | `tools/dirigent/pruefliste.md` B; `broker/src/coordinator/subscription.rs` |
 | M-76 | Der Broker startet neu, während ein Schritt offen ist | **Sessiongraph, Frische, Subscriptions und Broker-Cache sind flüchtig** und werden aus Plugin-Reports, Main-State und Store rekonstruiert. Der Broker ist **nicht berechtigt**, beim Reconnect blind seinen Cache auf die Probe zu drücken: zuerst meldet die Probe ihren Zustand, Main gleicht ab, Konflikte werden sichtbar entschieden. | **BELEGT** | **A4** bestehend (Killmatrix), erweitert um Intent und `AssistantStep` | Nach einem Brokerneustart überschreibt der Cache eine neuere Intent-Revision aus dem Plugin-State | Entwurf §33.5:2140–2175 |
@@ -807,35 +819,81 @@ neue Beine tragen **NEU** und existieren heute nicht.
 | M-83 | Irgendetwas an Identität, Class-IDs oder Replace-V2 würde berührt | **Identität bleibt eingefroren** bis NAK-30. Dieses Ticket ändert keine Class-ID, keinen Hersteller-/Plugin-Code und kein Replace-V2-Verhalten. `MainProject` ist ein bestehendes Kind; Gen führt weiterhin **null** Hostparameter. | **BELEGT** | **B1** `EqCopIdentityTest` und **A14** `pruefe_kern_identitaetsfrei.py` bestehend | Eine Class-ID ändert sich; oder Gen bekommt einen Hostparameter | `CLAUDE.md`; Entwurf §53.8:4042–4102 |
 | M-84 | Ein sichtbares Element entsteht auf Gen Fläche 1 | **Keine toten UI-Elemente.** Jedes sichtbare Element führt einen Handgriff aus oder meldet ehrlich einen Zustand. Für dieses Ticket konkret und heute messbar: `SourcesModel::findingsOffen` ist ein Feld ohne Produzenten (§2.10, L11) — es bekommt mit diesem Ticket seine Quelle **oder** es bleibt bis dahin ohne Anzeige. Ein Zähler, der immer 0 zeigt, ist ein totes Element. | **BAULÜCKE** | **B13** `EqCopSonde012SourcesModelTest` erweitert um den Produktpfadfall | `findingsOffen` wird angezeigt, ohne dass ein Produktpfad ihn setzt | `CLAUDE.md` „Keine toten UI-Elemente"; `eq-copilot/plugin/src/SourcesModel.cpp`:1210; Blueprint §4.1 |
 
-### 3.10 Zählung nach Belegklasse
+### 3.10 Transport des Intents vom Main zum Broker (E-10, Lücke vom 06.09.2026)
 
-Gezählt an den 84 Zeilen der neun Tabellen dieses Abschnitts mit einem
-escape-bewussten Parser, nicht abgeschrieben: `M-01` bis `M-84`, keine Lücke,
-keine Doppelung, jede Zeile sieben Spalten. **16 Zeilen tragen zwei Marken**
-(eine belegte Zusage mit fehlender Baukante, oder eine belegte Zusage mit einer
-offenen Technikfrage darin); die Summe der Spalte „Zeilen" ist deshalb 100 und
-nicht 84.
+Diese beiden Zeilen sind in Etappe 1b entstanden. **E-10 ist eine Lücke, die
+der Dirigent an der Matrix gefunden hat:** §3.1 legt den Intent in den
+Main-State (M-09, M-71) und §3.2/§3.5 lassen den Broker damit rechnen (M-12,
+M-20, M-44, M-54), aber keine Zeile nannte eine Nachricht dafür — und `intent`
+ist im Register frei (§2.6). Ein Veto (`geschützt`, `bewusst verschmolzen`) darf
+durch Transportverlust nie verschwinden; genau daran hängen beide Zeilen.
 
-| Belegklasse | Zeilen | IDs |
-|---|---|---|
-| **BELEGT** | 71 | M-01, M-03, M-05 bis M-20, M-23, M-25 bis M-39, M-41 bis M-47, M-49, M-51 bis M-64, M-68, M-70 bis M-83 |
-| **BAULÜCKE** | 19 | M-21, M-22, M-23, M-24, M-25, M-28, M-31, M-36, M-47, M-48, M-50, M-59, M-64, M-65, M-66, M-67, M-68, M-69, M-84 |
-| **ENTSCHEIDEN-VORSCHLAG** | 9 | M-02, M-04, M-37, M-40, M-43, M-48, M-55, M-71, M-73 |
-| **OFFEN** | 1 | M-49 (nur die DSP-ACK-Hälfte, die P7 gehört) |
+Der Familienname ist **`intent_update`**. Begründung im Muster der bestehenden
+Namen: der Vertrag benennt Familien nach *Gegenstand plus Vorgang*
+(`session_command`, `evidence_invalidate`, `experiment_begin`,
+`experiment_candidate`, `state_report`, `command_ack`). `intent_update` folgt
+demselben Schnitt, ist eindeutig gegen `state_report` (Plugin-Identität statt
+musikalischer Absicht) und gegen `session_command` (Sessiongraph statt Intent)
+abgegrenzt und sagt zugleich, dass es sich um eine **Fortschreibung mit
+Revision** handelt, nicht um eine Anfrage. Der Name wird in diesem Ticket in
+`eq-copilot/schemas/v3/reservierte-nachrichten-v1.json` reserviert **und**
+belegt — beides in derselben Fassung 3 wie `session_snapshot.findings` (E-04),
+`experiment_begin.ziel` (E-05) und die Belegung von `draft_offer` und
+`user_verdict` (E-09).
 
-Die 16 doppelt markierten Zeilen im Einzelnen:
+| ID | Zustand × Ereignis | Zusage samt Reihenfolge und Frist | Belegklasse | Test | Rotbeweis an der Zusage | Quelle |
+|---|---|---|---|---|---|---|
+| M-85 | Der User setzt oder ändert einen Intent; Main ist mit dem Broker verbunden | Der Intent reist vom Main zum Broker über die eigene Familie **`intent_update`**, Klasse **P1 mit Schlüssel `intent:<quelle_id>:<passage_id oder global>`**. Koaleszierung ist **zulässig**, weil nur die jüngste Revision wirkt (M-10); genau deshalb ist der Schlüssel je Quelle **und** Scope eigen — zwei Passagen derselben Quelle sind zwei Objekte (M-08) und dürfen sich nicht gegenseitig verdrängen. Die Revisionsordnung ist total: eine ältere Revision überschreibt nach der Koaleszierung nie eine jüngere. | **BAULÜCKE** · **ENTSCHIEDEN** (E-10, §4.9) | **NEU** **A4**-Verdrahtungsfall `intent_update_koalesziert_je_quelle_und_scope` plus **B10** `EqCopIpcTest` für die Senderseite; **A5** für Discriminator, Feldmenge und Negativfixtures | Eine ältere Revision überschreibt nach der Koaleszierung eine jüngere; oder zwei Passagenrollen derselben Quelle verdrängen sich unter demselben Schlüssel | E-10 (§4.9); `tools/dirigent/pruefliste.md` A; Entwurf §37.3:2461–2465 |
+| M-86 | Die Verbindung wird aufgebaut, oder der Broker startet neu | Main meldet seinen **vollständigen** Intent-Bestand — **auch einen leeren** — mit einer **Vollständigkeitsmarke samt Revision**, **bevor** der Broker eine Hypothese oder ein Proposal rechnet. Reihenfolge nach M-75 und M-76: anmelden → Verbunden-Callback abgeschlossen → Intent-Vollbestand mit Marke → erst dann Rechnen. **Bis die Marke vorliegt, entstehen keine Proposals; der Zustand ist `MORE DATA`** (M-29, M-30). Grund: ein Veto darf durch Transportverlust nie verschwinden — ein fehlender Intent sieht sonst aus wie „kein Schutz gewünscht". | **BAULÜCKE** · **ENTSCHIEDEN** (E-10, §4.9) | **NEU** **A4** Neustartfall `keine_rechnung_vor_der_vollstaendigkeitsmarke`; **A4-SI** für den Reconnect über einen Brokerkill | Ein Proposal entsteht vor der Marke; oder ein leerer Bestand wird gar nicht gemeldet und der Broker rechnet auf einem Rest aus seinem Cache (M-76) | E-10 (§4.9); `tools/dirigent/pruefliste.md` B; Entwurf §33.5:2140–2175 |
+
+### 3.11 Zählung nach Belegklasse
+
+Gezählt an den 86 Zeilen der zehn Tabellen dieses Abschnitts mit einem
+escape-bewussten Parser, nicht abgeschrieben: `M-01` bis `M-86`, keine Lücke,
+keine Doppelung, jede Zeile sieben Spalten. **21 Zeilen tragen mehr als eine
+Marke**; die Summe der Spalte „Zeilen“ ist deshalb 111 und nicht 86.
+
+| Belegklasse | Zeilen | Bedeutung | IDs |
+|---|---|---|---|
+| **BELEGT** | 71 | Die Zusage folgt aus einer verbindlichen Quelle. | M-01, M-03, M-05, M-06, M-07, M-08, M-09, M-10, M-11, M-12, M-13, M-14, M-15, M-16, M-17, M-18, M-19, M-20, M-23, M-25, M-26, M-27, M-28, M-29, M-30, M-31, M-32, M-33, M-34, M-35, M-36, M-37, M-38, M-39, M-41, M-42, M-43, M-44, M-45, M-46, M-47, M-49, M-51, M-52, M-53, M-54, M-55, M-56, M-57, M-58, M-59, M-60, M-61, M-62, M-63, M-64, M-68, M-70, M-71, M-72, M-73, M-74, M-75, M-76, M-77, M-78, M-79, M-80, M-81, M-82, M-83 |
+| **ENTSCHIEDEN** | 14 | Durch E-01 bis E-10 (06.09.2026) geschlossene Technikfrage. | M-02, M-03, M-04, M-05, M-36, M-37, M-40, M-43, M-48, M-55, M-71, M-73, M-85, M-86 |
+| **BAULÜCKE** | 25 | Belegt beziehungsweise entschieden, aber eine Bau- oder Testkante fehlt. | M-21, M-22, M-23, M-24, M-25, M-28, M-31, M-36, M-37, M-40, M-43, M-47, M-48, M-50, M-59, M-64, M-65, M-66, M-67, M-68, M-69, M-73, M-84, M-85, M-86 |
+| **ENTSCHEIDEN-VORSCHLAG** | 0 | Seit Etappe 1b leer — alle neun Fragen sind entschieden. | — |
+| **OFFEN** | 1 | Produktfrage, benannt und einer Fläche zugeordnet, nie hier beantwortet. | M-49 |
+
+Die 21 mehrfach markierten Zeilen im Einzelnen:
 
 | Kombination | Anzahl | IDs |
 |---|---|---|
-| BELEGT · BAULÜCKE | 9 | M-23, M-25, M-28, M-31, M-36, M-47, M-59, M-64, M-68 |
-| BELEGT · ENTSCHEIDEN-VORSCHLAG | 5 | M-37, M-43, M-55, M-71, M-73 |
+| BELEGT · BAULÜCKE | 8 | M-23, M-25, M-28, M-31, M-47, M-59, M-64, M-68 |
+| BELEGT · ENTSCHIEDEN · BAULÜCKE | 4 | M-36, M-37, M-43, M-73 |
+| ENTSCHIEDEN · BAULÜCKE | 4 | M-40, M-48, M-85, M-86 |
+| BELEGT · ENTSCHIEDEN | 4 | M-03, M-05, M-55, M-71 |
 | BELEGT · OFFEN | 1 | M-49 |
-| BAULÜCKE · ENTSCHEIDEN-VORSCHLAG | 1 | M-48 |
 
-Reine ENTSCHEIDEN-VORSCHLAG-Zeilen — die drei, für die es heute weder eine
-Quelle noch eine Baukante gibt, sondern nur einen Entscheid: **M-02**
-(Rollenabbildung, E-01), **M-04** (Verschmelzung, E-02) und **M-40**
-(v3-Feld der Maskierung, E-04).
+**Rein ENTSCHIEDEN** — die 2 Zeilen, für die es weder eine Quelle noch eine
+bestehende Baukante gab, sondern nur den Entscheid: **M-02**, **M-04**.
+Beide gehen auf E-01 beziehungsweise E-02 zurück (Abbildung der fünf Rollen,
+Verhältnis von Rolle und paarweiser Verschmelzungserlaubnis).
+
+**Bilanz gegenüber Etappe 1** (Commit `1f126a4`, 84 Zeilen), Zeile für Zeile
+gegen die dortige Zählung geprüft:
+
+- **Zwei Zeilen neu:** **M-85** und **M-86** aus der Lücke E-10.
+- **Die neun ENTSCHEIDEN-VORSCHLAG-Marken sind zu ENTSCHIEDEN geworden:**
+  M-02, M-04, M-37, M-40, M-43, M-48, M-55, M-71, M-73.
+- **Drei bereits belegte Zeilen haben zusätzlich eine ENTSCHIEDEN-Marke
+  bekommen**, weil ein Entscheid ihre Zusage präzisiert: M-03 (E-01a,
+  Schutzangaben orthogonal zur Rolle), M-05 (E-02, beide auf Stufe 2) und
+  M-36 (E-04, die Maskierung hängt am Befund).
+- **Sechs Zeilen tragen seit dem Entscheid zusätzlich eine BAULÜCKE**,
+  weil der Entscheid eine Bau- und Testkante benennt, die es heute nicht gibt:
+  M-37, M-40, M-43, M-73, M-85, M-86. BAULÜCKE steigt damit von 19 auf 25.
+- **BELEGT bleibt bei 71 Zeilen** und mit derselben Mitgliedschaft — kein
+  Entscheid hat einer Zusage ihre Quelle genommen.
+- **OFFEN bleibt bei einer Zeile** (M-49, die DSP-ACK-Hälfte für P7).
+  Die vier Produktfragen aus §4.10 sind ausdrücklich ohne Änderung
+  angenommen und bleiben Produktfragen.
 
 ---
 ## 4. Offene Punkte
@@ -890,6 +948,36 @@ konkurrierenden Wahrheiten", die §33.5 verbietet.
 erfüllt, weil die Ableitung deterministisch ist und der User weiterhin
 zusätzlich Schutzbereiche und Beziehungen setzt.
 
+
+**Etappe 1b (Entscheid des Dirigenten, 06.09.2026).** **E-01 angenommen in Fassung (A),
+mit der Präzisierung E-01a.** `rolle` ist ein geschlossenes Feld mit genau
+fünf Werten; eine Quelle trägt **je Scope** — global oder Passage — genau eine
+Rolle oder keine. Die Ableitung folgt der Tabelle oben für `führt`
+(`foreground`, `lead`), `trägt` (`middle`, `foundation`) und `begleitet`
+(`background`, `texture`).
+
+**Korrigiert gegenüber dem Vorschlag:** für `geschützt` und `bewusst
+verschmolzen` ist `prominence` **nicht** „unverändert", sondern abgeleitet auf
+den festen Neutralwert `middle` mit leerem Funktionstag und einem
+**Veto-Kennzeichen** (`schutz` beziehungsweise `verschmolzen`) als Teil der
+Belegung. Nur so ist die Abbildung total und injektiv, der Rückweg eindeutig
+und keine zweite Wahrheit nach Entwurf §33.5 möglich. Der Vorschlagstext oben
+ließ hier eine Lücke: „unverändert (orthogonal)" ist keine Belegung, aus der
+sich die Rolle zurückrechnen lässt.
+
+**Orthogonal und von der Rolle unabhängig** bleiben die geschützten Bereiche
+und Eigenschaften (Attack, Breite, Ausklang, Bandintervalle) sowie die
+paarweisen Beziehungen aus §37.1 — das sind die Schutzangabe und die
+Verschmelzungs-Erlaubnis, über die U22 Impuls und Raum abbildet (M-03, M-04).
+
+**Produktwirkung, die daraus folgt und keine neue Produktfrage ist:** eine
+Quelle mit Rolle `geschützt` trägt keine Prominenzposition; wer Position und
+Schutz zugleich will, setzt die Positionsrolle und dazu Schutzbereiche.
+
+**Test:** Roundtrip über alle fünf Rollen plus die Probe, dass zwei
+verschiedene Belegungen nie auf dieselbe Rolle zurückgelesen werden.
+Matrixzeilen: **M-02** (ENTSCHIEDEN), **M-03** (BELEGT · ENTSCHIEDEN).
+
 ### 4.2 E-02 — Verhältnis von Rolle „bewusst verschmolzen" zur paarweisen Erlaubnis (M-04)
 
 **Frage.** §37.1 kennt die gerichtete beziehungsweise ungerichtete Beziehung
@@ -911,6 +999,20 @@ gerichteten Beziehungen auf. Ein Wegfall wäre ein Vorgriff, den P8 teuer
 zurücknehmen müsste.
 
 **Empfehlung: (A).**
+
+
+**Etappe 1b (Entscheid des Dirigenten, 06.09.2026).** **E-02 angenommen in Fassung (A).**
+Die Rolle `bewusst verschmolzen` ist ein **globales Veto** gegen
+Entmaskierungsempfehlungen mit Beteiligung dieser Quelle; die paarweise
+Erlaubnis beziehungsweise gerichtete Beziehung ist das **spezifischere**
+Werkzeug und gewinnt, wo sie gesetzt ist — eine ausdrückliche Beziehung
+„A führt vor B" hebt das globale Veto **nur für dieses Paar** auf. Beide
+liegen auf Stufe 2 der Konfliktregeln, spezifisch vor global, analog zur Regel
+der Stufe 3.
+
+**Test:** drei Fälle — nur Rolle, nur Beziehung, beides im Widerspruch.
+Matrixzeilen: **M-04** (ENTSCHIEDEN), **M-05** (BELEGT · ENTSCHIEDEN,
+Stufenzuordnung).
 
 ### 4.3 E-03 — Auf welchem Takt der Maskierungswert reist (M-37)
 
@@ -945,6 +1047,24 @@ ein Vorgriff auf S16–17. Zudem müsste das Plugin eine Aussage über eine frem
 Quelle bilden — genau die zweite Wahrheit, die §33.5 verbietet.
 
 **Empfehlung: (A).**
+
+
+**Etappe 1b (Entscheid des Dirigenten, 06.09.2026).** **E-03 angenommen in Fassung (A), mit
+präziserer Zusage.** Der Wert entsteht im Broker-Coordinator **bei jedem
+Evidenz-Eingang einer der beiden Quellen** und reist über den Rückweg aus
+E-04. Die Zusage von M-37 lautet ab jetzt:
+
+1. Bei jedem **schweren Editortakt (250 ms)** liegt der Wert so aktuell vor wie
+   die jüngste Evidenz beider Quellen.
+2. Im Normalbetrieb (`kEvidenzIntervallMinS` = 0,25 s) ist er **höchstens ein
+   Evidenzintervall plus Transportlatenz** alt.
+3. Bei P1-Rückstau folgt er der bestehenden Kadenzreduktion bis 1 Hz und
+   trägt dann das Kennzeichen `herabgesetzt` — ein **Feld im Wert**, nie ein
+   interpolierter Zwischenwert.
+
+**Der Test misst das Alter des Werts relativ zur jüngsten Evidenz, nicht eine
+Wallclock-Rate.** Der Rotbeweis lässt den Wert nur beim Neuberechnen eines
+Befunds entstehen. Matrixzeile: **M-37** (BELEGT · ENTSCHIEDEN · BAULÜCKE).
 
 ### 4.4 E-04 — Ob der Maskierungswert ein eigenes v3-Feld braucht (M-40)
 
@@ -989,6 +1109,46 @@ Fassungsschritt ohne Entscheid wäre genau der Vertragsanteil, der später
 bricht. Etappe 2 baut deshalb bis zur Brokergrenze und hält vor dem Rückweg an,
 bis E-04 entschieden ist.
 
+
+**Etappe 1b (Entscheid des Dirigenten, 06.09.2026).** **E-04 entschieden: JA, ein eigenes
+v3-Feld — aber am Rückweg, nie an der Sondenmessung.** Der Vorschlag oben ist
+damit in seiner Begründung bestätigt und in seiner Schlussfolgerung
+korrigiert: kein Feld am `evidence_snapshot`, aber ein Feld am
+`session_snapshot`.
+
+**Fassung 3.** `session_snapshot` bekommt als Wire-Envelope-`schema_minor` 3 —
+ein Fassungsschritt wie Fassung 2 in SONDE-013 — genau **ein** neues optionales
+Feld `findings`:
+
+- die Liste der Befunde mit Zustand `READY TO SEND`, `MORE DATA` oder `STALE`;
+- je Befund die Datenfelder aus M-15 und M-16: die sechs Teile, die drei
+  Anzeigezeilen, `evidence_ids` und die Intent-Revision;
+- je Befund ein **optionales Objekt `maskierung`** mit `quelle_a`, `quelle_b`,
+  `band_von`, `band_bis`, `wert_db`, `gueltig` und `herabgesetzt`.
+
+**Die Maskierung hängt am Finding, nicht in einer zweiten Liste.** Der
+Blueprint nennt sie „zweite Darstellung desselben Finding-Datenwegs" (M-41),
+und zwei Listen könnten auseinanderlaufen.
+
+**Der Name lautet `maskierung`, nicht `ueberdeckung`** — die Kollision mit der
+Zeitüberdeckung ist in §2.12 gemessen.
+
+**Wie der Plantext-Satz „der Name gehört in die v3-Vertragsrunde von S16–17"
+erfüllt wird:** S16–17 ist abgenommen. Der Name wird deshalb **in diesem
+Ticket** als belegtes Feld in
+`eq-copilot/schemas/v3/reservierte-nachrichten-v1.json` eingetragen, in
+`eq-copilot/schemas/v3/README.md` als Fassungsschritt geführt und mit
+Cross-Language-Fixtures (C++ und Rust), Negativfixtures und der Fassungsleiter
+von **A5** bewacht — genau der Weg, den SONDE-013 für `experimente` und
+`paare` gegangen ist. Ein Leser der Fassung 2 sieht das Feld nicht; Abwesenheit
+heißt „nichts", nie `null`.
+
+**Damit entfällt die Sperre aus §5.4, Zeile 1:** Etappe 2 darf den Rückweg
+bauen. Die Plantexte (Überdeckung → Maskierung) zieht der Dirigent beim
+Abschluss nach; das ist nicht Auftrag dieser Etappe. Matrixzeilen: **M-36**
+(BELEGT · ENTSCHIEDEN · BAULÜCKE), **M-40** (ENTSCHIEDEN · BAULÜCKE),
+**M-41** (BELEGT).
+
 ### 4.5 E-05 — Wo Zielbereich und Schutzbereiche im Experimentvertrag stehen (M-48, NAK-168)
 
 **Frage.** NAK-168, wörtlich: „der Vorschlag benennt Zielbereich und
@@ -1023,6 +1183,24 @@ sind die Zahlen eingefroren und die Herkunft bleibt nachvollziehbar.
 Die Proposal-Hälfte (M-47) ist baubar; die Experiment-Hälfte braucht das Feld,
 sonst bleibt die Zielheuristik stehen und NAK-168 wäre nur halb geschlossen.
 
+
+**Etappe 1b (Entscheid des Dirigenten, 06.09.2026).** **E-05 angenommen in Fassung (A), mit
+`proposal_id` als Rückverweis.** `experiment_begin` bekommt in **derselben
+Fassung 3** ein optionales Objekt `ziel` mit `band_von`, `band_bis`,
+`geschuetzte_baender` (Liste von Bandintervallen) und `proposal_id`.
+
+**Beide Pfade sind vertraglich benannt und beide werden gemessen:**
+
+| Fall | Verhalten | Kennzeichen im Resultat |
+|---|---|---|
+| **mit** `ziel` | Der Guardrail-Rechner liest Ziel- und Schutzbereiche und rät nichts | keines |
+| **ohne** `ziel` (manueller Versuch ohne Vorschlag, SONDE-013-Pfad) | Die heutige Heuristik bleibt (`experiment_verdrahtung.rs`:1069–1088) | `ziel_geraten` |
+
+**Zwei Rotbeweise, je einer pro Pfad:** die Heuristik läuft trotz gesetztem
+`ziel`; und ein Resultat ohne `ziel` trägt kein `ziel_geraten`.
+Matrixzeile: **M-48** (ENTSCHIEDEN · BAULÜCKE); NAK-168 ist damit in beiden
+Hälften adressiert (M-47 für die Vorschlagsseite).
+
 ### 4.6 E-06 — Wie der Rückweg eines Proposals heißt (M-43)
 
 **Frage.** Das Exit-Gate verlangt, dass jedes Proposal einen **Rückweg** nennt.
@@ -1041,6 +1219,17 @@ wie `execution = previewable` (M-45).
 **Begründung.** Der Rückweg als Feld mit geschlossener Menge ist prüfbar; als
 Textbaustein ist er es nicht. Die drei Werte decken die P5-Fälle vollständig.
 
+
+**Etappe 1b (Entscheid des Dirigenten, 06.09.2026).** **E-06 angenommen.** Feld `revert`
+mit der geschlossenen Menge `experiment_abort`, `manual_only`, `none_needed`.
+`dsp_revert` gehört P7 (`revert_transaction`, reserviert für SONDE-016) und
+ist in P5 ein Vertragsbruch — dieselbe Klasse wie `execution = previewable`
+(M-45).
+
+**Test:** jeder der drei Werte einem Proposal-Typ zugeordnet; ein vierter Wert
+fällt **in C++ und in Rust** (M-77). Matrixzeile: **M-43**
+(BELEGT · ENTSCHIEDEN · BAULÜCKE).
+
 ### 4.7 E-07 — Ob `Preview` ein übersprungener oder ein fehlender Zustand ist (M-55)
 
 **Vorschlag.** Übersprungen, nicht gelöscht: die Zustandsmenge behält alle acht
@@ -1052,6 +1241,14 @@ P6-Ticket fügt nur Kanten hinzu statt einen Zustand.
 Nachteil: eine gespeicherte P5-Zustandsmaschine könnte einen P6-Stand nicht
 lesen, und der `AssistantStep` ist persistent — das wäre ein Migrationsschritt
 für nichts.
+
+
+**Etappe 1b (Entscheid des Dirigenten, 06.09.2026).** **E-07 angenommen.** `Preview`
+bleibt in der Zustandsmenge, die P5-Übergangstabelle führt keine Kante
+dorthin, und ein gespeicherter `AssistantStep` mit `Preview` ist in P5 ein
+**Lesefehler**, kein stiller Sprung. Der letzte Halbsatz ist die Präzisierung
+gegenüber dem Vorschlag: „übersprungen" allein ließe offen, was beim Lesen
+eines fremden Stands geschieht. Matrixzeile: **M-55** (BELEGT · ENTSCHIEDEN).
 
 ### 4.8 E-08 und E-09 — Modulschnitt und Rückstau-Schlüssel (M-71, M-73)
 
@@ -1077,7 +1274,83 @@ mit derselben `command_id` wiederholt werden muss — genau das Muster, das
 **A4-SI** heute misst. Findings reisen ohne eigene Familie über den
 `session_snapshot`-Rückweg (E-04) und erben dessen Koaleszierung.
 
-### 4.9 Produktfragen — benannt, einer Fläche zugeordnet, hier nicht beantwortet
+
+**Etappe 1b (Entscheid des Dirigenten, 06.09.2026).** **E-08 angenommen, mit Zuweisung
+der Autoritäten nach §33.5.** Der Vorschlag oben nannte fünf Module und ihre
+Verdrahtung; der Entscheid legt zusätzlich fest, **wer die Wahrheit hält**:
+
+| Gegenstand | Autoritative Stelle | Rolle des Brokers |
+|---|---|---|
+| Validierung des Intents: Rollenmenge, Zyklenprüfung, Konfliktauflösung beim Setzen (M-05, M-06, M-13) | **Main, also das Gen-Plugin in C++**, persistent im `MainProjectState` | `intent.rs` ist **Spiegel und Vertragsvalidierung beim Empfang** (M-77: dieselbe Rollenmenge, dieselben Enumgrenzen beidseitig) und wertet die Konfliktregeln beim **Rechnen** aus |
+| Zustandsmaschine des `AssistantStep`: Übergänge, Abbruch, Zurück, Überspringen, Resume, Rekonstruktion (M-55 bis M-62) | **Main**, persistent im `MainProjectState` | `assistent.rs` ist Spiegel und Vertragsvalidierung — **keine zweite Zustandsmaschine** |
+| Hypothese, Proposal, Maskierung | **Broker-Coordinator** (`hypothese.rs`, `proposal.rs`, `maskierung.rs`) | dort liegen Evidenzbestand und Store |
+
+Je Modul eine Verdrahtungsdatei nach dem SONDE-013-Muster; die Produktpfade
+werden **in der Verdrahtung** geschlossen, und Tests rufen die Verdrahtung,
+nicht das Modul (Risiko R1 in §5.3). Matrixzeile: **M-71**
+(BELEGT · ENTSCHIEDEN).
+
+**Etappe 1b (Entscheid des Dirigenten, 06.09.2026).** **E-09 angenommen.** `draft_offer`
+(reserviert, wird belegt) reist als **P1 mit Schlüssel
+`proposal:<proposal_id>`**; `user_verdict` (reserviert, wird belegt) als
+**persistenzpflichtiger P0** über `sendePersistenzP0`, mit Wiederholung unter
+derselben `command_id` über einen Brokerkill hinweg — das **A4-SI**-Muster.
+Findings und Maskierungen reisen über `session_snapshot.findings` (E-04) und
+erben dessen Koaleszierung. Es entsteht keine neue Prioritätsklasse.
+Matrixzeile: **M-73** (BELEGT · ENTSCHIEDEN · BAULÜCKE).
+
+### 4.9 E-10 — Transport des Intents vom Main zum Broker (Lücke, M-85, M-86)
+
+**Diese Lücke stammt nicht aus Etappe 1, sondern aus dem Entscheid vom
+06.09.2026.** Der Dirigent hat sie an der Matrix gefunden: §3.1 legt den Intent
+in den Main-State (M-09, M-71), §3.2 und §3.5 lassen den Broker damit rechnen
+(M-12, M-20, M-44, M-54) — aber keine Zeile nannte eine **Nachricht** dafür,
+und `intent` ist im Register frei (§2.6). Etappe 1 hatte den Ort entschieden
+und den Weg dorthin übersehen.
+
+**Etappe 1b (Entscheid des Dirigenten, 06.09.2026) — Regel:**
+
+- Der Intent reist vom Main zum Broker über eine **eigene Familie**, die dieses
+  Ticket in `eq-copilot/schemas/v3/reservierte-nachrichten-v1.json` reserviert
+  **und** belegt.
+- **Klasse P1** mit Schlüssel `intent:<quelle_id>:<passage_id oder global>`.
+  Koaleszierung ist zulässig, weil nur die jüngste Revision wirkt (M-10).
+- **Nach Verbindungsaufbau und nach jedem Brokerneustart** meldet Main seinen
+  **vollständigen** Intent-Bestand — auch einen leeren — mit einer
+  **Vollständigkeitsmarke samt Revision**, **bevor** der Broker eine Hypothese
+  oder ein Proposal rechnet (Reihenfolge nach M-75 und M-76). Bis diese Marke
+  vorliegt, entstehen **keine** Proposals; der Zustand ist `MORE DATA`.
+- **Grund:** ein Veto — `geschützt`, `bewusst verschmolzen` — darf durch
+  Transportverlust nie verschwinden. Ein fehlender Intent sähe sonst aus wie
+  „kein Schutz gewünscht".
+
+**Name der Familie: `intent_update`.** Der Entscheid gibt den Namen als
+Vorschlag und überlässt der Matrix die Begründung im Muster der bestehenden
+Familiennamen. Gemessen an `eq-copilot/schemas/v3/reservierte-nachrichten-v1.json`
+benennt der Vertrag Familien nach **Gegenstand plus Vorgang**:
+`session_command`, `evidence_invalidate`, `experiment_begin`,
+`experiment_candidate`, `experiment_abort`, `state_report`, `command_ack`,
+`preview_renew`. `intent_update` folgt demselben Schnitt, grenzt sich eindeutig
+gegen `state_report` (Plugin-Identität und bestätigter Zustand, nicht
+musikalische Absicht) und gegen `session_command` (Sessiongraph, nicht Intent)
+ab und sagt zugleich, dass es eine **Fortschreibung mit Revision** ist und
+keine Anfrage. Ein Alternativname `intent_report` wäre irreführend, weil
+`report` im Vertrag für den Zustand einer Plugininstanz steht, nicht für eine
+Useranweisung.
+
+**Beide Matrixzeilen tragen BAULÜCKE mit Entscheid:** **M-85** (Transport,
+Schlüssel, Koaleszierung, Revisionsordnung — Test **A4**-Verdrahtungsfall plus
+**B10**; Rotbeweis: eine ältere Revision überschreibt nach der Koaleszierung
+eine jüngere) und **M-86** (Vollständigkeitsmarke vor jeder Rechnung — Test
+**A4** Neustartfall; Rotbeweis: ein Proposal entsteht vor der Marke).
+
+**Die Fassung 3 ist EIN Fassungsschritt.** `session_snapshot.findings` (E-04),
+`experiment_begin.ziel` (E-05), die Belegung von `draft_offer` und
+`user_verdict` (E-09) und die Reservierung samt Belegung von `intent_update`
+(E-10) liegen zusammen in Wire-Envelope-`schema_minor` 3 und werden in **einer**
+Bauetappe gebaut, nicht in vier (§5.1, Etappe B).
+
+### 4.10 Produktfragen — benannt, einer Fläche zugeordnet, hier nicht beantwortet
 
 | Nr. | Frage | Fläche | Warum sie hier nicht beantwortet wird |
 |---|---|---|---|
@@ -1091,7 +1364,13 @@ vier Fällen beide Möglichkeiten, und keine der Zusagen aus §3 hängt an der
 Antwort. Sie gehören datiert nach `docs/offene-punkte.md`, wenn der Dirigent
 dieses Manifest abschließt — nicht von dieser Etappe geschrieben (Grenze).
 
-### 4.10 Nebenbefunde in fremden Dateien (nicht geändert)
+
+**Etappe 1b (Entscheid des Dirigenten, 06.09.2026).** **Ohne Änderung
+angenommen.** P-01 bis P-04 bleiben Produktfragen; der Dirigent zieht sie beim
+Abschluss ins Register beziehungsweise als Karten nach `docs/plan/fragen.json`
+nach. Etappe 2 baut sie nicht und beantwortet sie nicht.
+
+### 4.11 Nebenbefunde in fremden Dateien (nicht geändert)
 
 | Nr. | Befund | Ort | Warum hier nur notiert |
 |---|---|---|---|
@@ -1101,7 +1380,15 @@ dieses Manifest abschließt — nicht von dieser Etappe geschrieben (Grenze).
 | N-04 | Der Begriff „Überdeckung" trägt im Repo drei Bedeutungen (Messabdeckung, Zeitüberdeckung, spektrale Maskierung), von denen die dritte im Code nicht existiert. Der Blueprint nennt die dritte bereits **Maskierungszone**; Plan- und Bauaufteilungstext nennen sie weiter „Überdeckung". | `docs/plan/plan.json` S23–25, `docs/bauaufteilung-sonden.md`:394 gegen `design/docs/funktions-und-bedien-blueprint.md` §3.4 | Kein Widerspruch in der **Sache** — beide meinen dasselbe. Diese Matrix hält die Wörter getrennt (§2.12) und schlägt den Feldnamen entsprechend vor (E-04). Ein Angleichen der Plantexte ist Dirigentenarbeit, nicht Bauarbeit. |
 | N-05 | Das Feld `gesamt_erwartet` steht auf **29** und wird von **A5** gegen das `oneOf` geprüft; der Fließtext im Feld `zweck` derselben Datei rechnet 26 + `session_command` + `experiment_manual_result` = **28** und lässt `experiment_candidate` aus, das seit Nacharbeit 2 (Befunde R16/R21) belegt ist und in `belegte_nachrichten` steht. Nur die Prosa ist hinterher, nicht der Vertrag. | `eq-copilot/schemas/v3/reservierte-nachrichten-v1.json`, Feld `zweck` | Vertragsdatei, außerhalb des Änderungssatzes dieser Etappe. Etappe 2 fasst sie an, sobald ein Name für dieses Ticket hinzukommt (E-04, E-05), und zieht den Satz dann mit nach. |
 
-### 4.11 Widerspruch Entwurf ↔ Blueprint
+
+**Etappe 1b (Entscheid des Dirigenten, 06.09.2026).** **Ohne Änderung
+angenommen.** N-01 bis N-05 gehen beim Abschluss ins Register. **N-02**
+(`manual_passages_v1` fehlt im Zustandsbaum der Schemadatei) und **N-05**
+(die `zweck`-Prosa rechnet noch auf 28 Namen) zieht **Etappe 2 mit nach**, wie
+in diesem Manifest vorgeschlagen — sie fasst beide Dateien für die Fassung 3
+ohnehin an.
+
+### 4.12 Widerspruch Entwurf ↔ Blueprint
 
 **Kein tragender Widerspruch gefunden.** Geprüft wurden Entwurf §8, §9, §36,
 §37, §42, §43, §46 und §59 gegen Blueprint §3.4, §4.1, §11 und §12.1. Zwei
@@ -1122,31 +1409,43 @@ Funktions- und Bedienarchitektur bindet:
 Matrix von einer Spezifikation abweicht, tut sie es nur zugunsten einer
 Messung, und die Messung steht in §2.
 
+
+**Etappe 1b (Entscheid des Dirigenten, 06.09.2026).** **Ohne Änderung angenommen.**
+
 ---
 ## 5. Bauplan für Etappe 2
 
 ### 5.1 Reihenfolge der Bauetappen
 
-Die Reihenfolge folgt der Abhängigkeit, nicht der Reihenfolge der Matrix. Jede
-Etappe schließt einen **Änderungssatz** im Sinne von `CLAUDE.md`
-(speichern↔laden, starten↔stoppen, verbinden↔trennen gehören zusammen) und
-endet mit dem vollen Kanon, sobald sie Schema-, Fixture- oder Runnerdateien
-berührt.
+**Nachgezogen in Etappe 1b (06.09.2026).** Die Reihenfolge folgt der
+Abhängigkeit, nicht der Reihenfolge der Matrix. Jede Etappe schließt einen
+**Änderungssatz** im Sinne von `CLAUDE.md` (speichern↔laden, starten↔stoppen,
+verbinden↔trennen gehören zusammen) und endet mit dem vollen Kanon, sobald sie
+Schema-, Fixture- oder Runnerdateien berührt.
+
+**Die wichtigste Änderung gegenüber Etappe 1:** die **Fassung 3** des
+Wire-Envelopes ist **ein** Fassungsschritt und liegt deshalb in **einer**
+Bauetappe — nicht verteilt auf vier. Sie ist neue Etappe **B** und rückt vor
+alles, was auf ihr aufsetzt. Die früheren Etappen B bis H rücken um einen
+Buchstaben nach hinten.
 
 | Etappe | Inhalt | Matrixzeilen | Kanonbeine am Ende der Etappe |
 |---|---|---|---|
-| **A — Intent im Main-State** | `SourceIntent` als additive Eigenschaft in `MainProject`: fünf Rollen, Schutzangaben, gerichtete Beziehungen, Passage-Scope, Revision/Herkunft/Konfidenz, Zyklusprüfung beim Speichern, Host-Dirty. Writer, Reader, Migration, Goldens und Fixtures im **selben** Änderungssatz. | M-01 bis M-13 | **NEU** `EqCopSonde014IntentTest`; bestehend **B2**, **B14**, **A12**, **A11**; voller Kanon (Fixtures berührt) |
-| **B — Evidenzgraph und `CauseHypothesis`** | Kandidatenbildung Stufe A/B, sechs Rangkomponenten mit hartem Coverage-/Alignment-Gate, `CauseHypothesis` mit zehn Feldern und den sechs Teilen, Determinismus (Seed, Reduktionsreihenfolge, Quantisierung, Tie-Break-Key in `metrics_version`), deterministische Invalidierung bei Evidenzrücknahme. Produzent für `event_type = "finding"` — die Projektion existiert bereits. | M-14 bis M-28 | **NEU** `EqCopSonde014HypotheseTest`; bestehend **A4**, **A5**, **A8**; voller Kanon |
-| **C — Befundzustände** | Abbildung hoch/mittel/unklar → `READY TO SEND` / `MORE DATA` / `STALE`, Sperre von Audition und Draft im Datenweg, Alternativen als eigene Befunde, die drei Zeilen als Datenfelder, Trennung von `CONFIDENCE`. | M-29 bis M-35 | **NEU** `EqCopSonde014BefundTest`; bestehend **B13** |
-| **D — Maskierungs-Datenweg** | Rechnung aus der vorhandenen Bandevidenz, Bindung an den Befund, Kadenz, keine Zeichenanweisung. **Hält vor dem Rückweg zu Gen an**, bis E-04 entschieden ist. | M-36 bis M-41 | **NEU** `EqCopSonde014MaskierungTest`; bestehend **A6**, **A19**, **A23** |
-| **E — Proposal-Policy** | Objekt mit fünfzehn Feldern, deterministische Erzeugung in fünf Schritten, `keine Änderung` und `mehr Daten` als gültige Vorschläge, Sicherheitsbudgets als Property-Test, `execution = manual` in ganz P5, Zielbereich und Schutzbereiche aus dem Befund. Produzent für `event_type = "proposal"`. | M-42 bis M-54, M-63 | **NEU** `EqCopSonde014ProposalTest`; bestehend **A4**, **A5**; voller Kanon |
-| **F — `AssistantStep`** | Zustandsmaschine mit sieben Zuständen (Preview übersprungen), fünf Angaben je Zustand, ein Slot, vier Gegenpfade, Persistenz in `MainProject`, Rekonstruktion nach Main-Neustart, Anschluss an den bestehenden Experimentkern. | M-55 bis M-62 | **NEU** `EqCopSonde014AssistentTest`; bestehend **B14**, **B25**, **B26**, **A4**, **A4-SI**; voller Kanon |
-| **G — Evaluationskorpus** | Erzeuger und Prüfer nach dem Muster **A25**/**A26**/**A27**: Precision und Recall je **Ursachenklasse**, Kalibrierung, Brier, Coverage, Enthaltung; synthetische Sessions mit wahrem Kandidaten, korreliertem Distraktor, Parent-Duplikat und verschobener Passage; Riegel `falsche_starke`, `falsche_schwache`, `precision ≤ 1`, `recall ≤ 1`; Selbsttestbein mit Gegenteil je Erwartung. Die Schwelle aus M-31 ist **Ausgabe** dieses Beins. | M-64 bis M-70, M-31 | **NEU** Erzeuger-, Prüf- und Selbsttestbein (anzulegen); bestehend **A26** (druckt die Lücke, bis G sie misst); voller Kanon |
-| **H — Ort, Nebenläufigkeit und Invarianten** | Rückstau-Politik je Klasse für die neuen Objekte, Verbinden/Trennen, Brokerneustart mit offenem Schritt, Audio-Thread-Freiheit, NaN-Ehrlichkeit, State-Verlustfreiheit, `findingsOffen` bekommt seine Quelle. | M-71 bis M-77, M-78 bis M-84 | bestehend **A1**, **A4**, **A4-SI**, **A10**, **A21**, **A22**, **B1**, **B2**, **B3c**, **B4**, **B10**, **B13**, **A14**; voller Kanon |
+| **A — Intent im Main-State** | `SourceIntent` als additive Eigenschaft in `MainProject`: fünf Rollen als geschlossenes Feld `rolle` mit abgeleiteter §37.1-Belegung samt Veto-Kennzeichen (E-01a), orthogonale Schutzangaben, gerichtete Beziehungen, Passage-Scope, Revision/Herkunft/Konfidenz, Zyklenprüfung beim Speichern, Host-Dirty. Konfliktregeln in fünf Stufen mit „spezifisch vor global" innerhalb Stufe 2 (E-02). Writer, Reader, Migration, Goldens und Fixtures im **selben** Änderungssatz. Reine Main-Seite, **ohne** Wire. | M-01 bis M-13 | **NEU** `EqCopSonde014IntentTest`; bestehend **B2**, **B14**, **A12**, **A11**; voller Kanon (Fixtures berührt) |
+| **B — Fassung 3 des Wire-Envelopes (EIN Fassungsschritt)** | Alle vier Vertragsteile aus den Entscheiden zusammen, weil sie **einen** `schema_minor`-Schritt bilden: `session_snapshot.findings` samt eingebettetem `maskierung` (E-04), `experiment_begin.ziel` mit `proposal_id` (E-05), Belegung der reservierten Namen `draft_offer` und `user_verdict` (E-09), Reservierung **und** Belegung von `intent_update` (E-10). Dazu in **demselben** Änderungssatz: Schema, `reservierte-nachrichten-v1.json`, `eq-copilot/schemas/v3/README.md`, Cross-Language-Fixtures für C++ und Rust, Negativfixture je Feld und die **Fassungsleiter** — ein zurückgebauter Leser der Fassung 2 lehnt jede Neuerung der Fassung 3 ab. Nebenbefund **N-05** wird hier mit nachgezogen. | M-40, M-48 und M-73 (Vertragshälfte), M-85 (Transport), M-15 und M-42 (Feldmengen auf dem Draht), M-77 | **A5** (Textriegel, Fassungsleiter, Negativfixtures), **A8** (Fixture-Korpus), **A4** (Rust-Leser), **B3c** `EqCopSchemaTest` (C++-Leser), **A10**; voller Kanon |
+| **C — Evidenzgraph und `CauseHypothesis`** | Kandidatenbildung Stufe A/B, sechs Rangkomponenten mit hartem Coverage-/Alignment-Gate, `CauseHypothesis` mit zehn Feldern und den sechs Teilen, Determinismus (Seed, Reduktionsreihenfolge, Quantisierung, Tie-Break-Key in `metrics_version`), deterministische Invalidierung bei Evidenzrücknahme. Produzent für `event_type = "finding"` — die Projektion existiert bereits (§2.2). | M-14 bis M-28 | **NEU** `EqCopSonde014HypotheseTest`; bestehend **A4**, **A5**, **A8**; voller Kanon |
+| **D — Befundzustände** | Abbildung hoch/mittel/unklar → `READY TO SEND` / `MORE DATA` / `STALE`, Sperre von Audition und Draft **im Datenweg**, Alternativen als eigene Befunde, die drei Zeilen als Datenfelder, Trennung von `CONFIDENCE`. | M-29 bis M-35 | **NEU** `EqCopSonde014BefundTest`; bestehend **B13** |
+| **E — Maskierungs-Datenweg** | Rechnung aus der vorhandenen Bandevidenz im Coordinator, Bindung **an den Befund** (E-04), Alter höchstens ein Evidenzintervall plus Transportlatenz mit Kennzeichen `herabgesetzt` bei Rückstau (E-03), keine Zeichenanweisung. **Die Sperre aus Etappe 1 entfällt** — der Rückweg steht seit Etappe B. | M-36 bis M-41 | **NEU** `EqCopSonde014MaskierungTest`; bestehend **A6**, **A19**, **A23** |
+| **F — Proposal-Policy** | Objekt mit fünfzehn Feldern plus `revert` aus der geschlossenen Menge (E-06), deterministische Erzeugung in fünf Schritten, `keine Änderung` und `mehr Daten` als gültige Vorschläge, Sicherheitsbudgets als Property-Test, `execution = manual` in ganz P5, Zielbereich und Schutzbereiche aus dem Befund und **im Experiment gelesen** statt geraten (E-05, beide Pfade mit `ziel_geraten`). Produzent für `event_type = "proposal"`. | M-42 bis M-54, M-63 | **NEU** `EqCopSonde014ProposalTest`; bestehend **A4**, **A5**; voller Kanon |
+| **G — `AssistantStep`** | Zustandsmaschine im **Main** (E-08), `Preview` in der Menge und ohne P5-Kante, ein gespeicherter `Preview`-Schritt ist ein Lesefehler (E-07), fünf Angaben je Zustand, ein Slot, vier Gegenpfade, Persistenz in `MainProject`, Rekonstruktion nach Main-Neustart, Anschluss an den bestehenden Experimentkern. | M-55 bis M-62 | **NEU** `EqCopSonde014AssistentTest`; bestehend **B14**, **B25**, **B26**, **A4**, **A4-SI**; voller Kanon |
+| **H — Evaluationskorpus** | Erzeuger und Prüfer nach dem Muster **A25**/**A26**/**A27**: Precision und Recall je **Ursachenklasse**, Kalibrierung, Brier, Coverage, Enthaltung; synthetische Sessions mit wahrem Kandidaten, korreliertem Distraktor, Parent-Duplikat und verschobener Passage; Riegel `falsche_starke`, `falsche_schwache`, `precision ≤ 1`, `recall ≤ 1`; Selbsttestbein mit Gegenteil je Erwartung. Die Schwelle aus M-31 ist **Ausgabe** dieses Beins. | M-64 bis M-70, M-31 | **NEU** Erzeuger-, Prüf- und Selbsttestbein (anzulegen); bestehend **A26** (druckt die Lücke, bis H sie misst); voller Kanon |
+| **I — Ort, Nebenläufigkeit und Invarianten** | Rückstau-Politik je Klasse für die neuen Objekte (E-09: `draft_offer` P1 mit Schlüssel, `user_verdict` persistenzpflichtiger P0), Verbinden/Trennen, **Vollständigkeitsmarke des Intents vor jeder Rechnung** (E-10, M-86), Brokerneustart mit offenem Schritt, Audio-Thread-Freiheit, NaN-Ehrlichkeit, State-Verlustfreiheit, `findingsOffen` bekommt seine Quelle. | M-71 bis M-84, M-86 | bestehend **A1**, **A4**, **A4-SI**, **A10**, **A21**, **A22**, **B1**, **B2**, **B3c**, **B4**, **B10**, **B13**, **A14**; voller Kanon |
 
-**Etappe D und E hängen an einem Entscheid** (E-04 beziehungsweise E-05) und
-werden deshalb bis zu dieser Grenze gebaut und dort angehalten, nicht auf
-Verdacht durchgezogen.
+**Keine Etappe hängt mehr an einem offenen Entscheid.** Die Sperren aus
+Etappe 1 (Rückweg des Maskierungswerts, Experimentfeld für den Zielbereich)
+sind durch E-04 und E-05 aufgehoben; was bleibt, ist eine
+**Reihenfolgebedingung**: Etappe B liegt vor E, F und I, weil diese drei ihre
+Vertragsteile brauchen. §5.4 führt das im Einzelnen.
 
 ### 5.2 Ticketpfade (Prüfbereich der Etappe 2)
 
@@ -1161,15 +1460,22 @@ Alles außerhalb dieser Liste ist im Bauverlauf mit Begründung zu benennen.
 `broker/src/coordinator/sicht.rs`,
 `broker/src/coordinator/subscription.rs`,
 `broker/src/dto.rs`,
+`broker/src/protokoll.rs`,
+`broker/src/vertrag.rs`,
 `broker/src/store/writer.rs`,
 sowie die neu **anzulegenden** Module `intent.rs`, `hypothese.rs`,
 `proposal.rs`, `assistent.rs`, `maskierung.rs` und ihre Verdrahtungsdateien
-unter `broker/src/coordinator/` (E-08).
+unter `broker/src/coordinator/` (E-08). `protokoll.rs` und `vertrag.rs` sind
+seit Etappe 1b dabei: die **Fassung 3** (E-04, E-05, E-09, E-10) hebt den
+Wire-Envelope-`schema_minor`, und die Rust-Seite dieses Vertrags liegt dort.
 
 **Verträge:** `eq-copilot/schemas/v3/eq-ipc-v3.schema.json`,
 `eq-copilot/schemas/v3/reservierte-nachrichten-v1.json`,
+`eq-copilot/schemas/v3/README.md`,
 `eq-copilot/schemas/v3/metriken-v1.json`,
-`eq-copilot/schemas/state/nakama-state-v2.md`.
+`eq-copilot/schemas/state/nakama-state-v2.md`. Das v3-README kommt in
+Etappe 1b dazu, weil die Fassung 3 dort als Fassungsschritt geführt wird
+(E-04); `nakama-state-v2.md` trägt zusätzlich den Nebenbefund **N-02** nach.
 
 **Plugin:** `eq-copilot/plugin/state/NakamaState.cpp`,
 `eq-copilot/plugin/state/NakamaState.h`,
@@ -1203,18 +1509,33 @@ Installer (`eq-copilot/install/`) und `design/`.
 | R6 | **Ein Rotbeweis, der am Nebeneffekt fällt.** | Die Matrixprüfung von NAK-182 fand diesen Fehlertyp zweimal. | Die Spalte **Rotbeweis** in §3 nennt für jede Zeile, woran die Prüfung fallen muss. Ein Rotbeweis, der an einem Übersetzungsfehler, einer Rundungsphase oder einem Filter mit `t0` fällt, wird nicht angenommen. |
 | R7 | **Die Guardrail-Lücken aus NAK-193/NAK-204 schlagen durch.** | Zwei von fünf Guardrails aus **SONDE-013 M-45** sind ohne Vertragsteil nicht messbar; der Breite-Guardrail ist strukturell tot. Ein Proposal, dessen `stop_if` darauf zeigt, wäre nicht überprüfbar. | M-50 verkettet die Lücke ehrlich: ein solches Proposal ist **nicht handelbar** und meldet `MORE DATA`, statt so zu tun, als wäre der Guardrail grün. Der Skalar-Entscheid selbst gehört NAK-193/NAK-204, nicht diesem Ticket. |
 
-### 5.4 Wo der Bau ohne weiteren Vertragsentscheid nicht ehrlich fortfahren kann
+### 5.4 Reihenfolgebedingungen statt Sperren (nachgezogen in Etappe 1b)
 
-| Stelle | Zeile | Blockierender Entscheid | Was ohne ihn baubar bleibt |
+**Seit dem Entscheid vom 06.09.2026 gibt es keinen offenen Vertragsentscheid
+mehr, an dem der Bau anhalten müsste.** E-01 bis E-10 sind entschieden, und die
+Fassung 3 ist als **ein** Fassungsschritt benannt. Was von der Tabelle der
+Etappe 1 bleibt, ist keine Sperre, sondern eine **Reihenfolge**: vier
+Bauetappen brauchen einen Vertragsteil, den Etappe B liefert.
+
+| Stelle | Zeile | Braucht aus Etappe B | Was ohne Etappe B baubar bleibt |
 |---|---|---|---|
-| Rückweg des Maskierungswerts zu Gen | M-40 | **E-04** (§4.4): eigenes Feld am `session_snapshot` oder nicht; falls ja, gehört der Name in die v3-Runde von S16–17 | Rechnung, Kadenz, Befundbindung und die Zusage „keine Zeichenanweisung" (M-36 bis M-39, M-41) — alles brokerseitig |
-| Zielbereich und Schutzbereiche im Experiment | M-48 | **E-05** (§4.5): welches Feld an `experiment_begin` und wie es heißt | Die Proposal-Hälfte (M-47): der Vorschlag benennt den Zielbereich aus dem Befund |
-| Rückwegfeld des Proposals | M-43 | **E-06** (§4.6): Name und geschlossene Wertemenge | Die übrigen fünf Gate-Felder (Ziel, Passage, Grenzen, Hörziel, Stopbedingung) |
-| Abbildung der fünf Rollen | M-02 | **E-01** (§4.1): Rolle als eigenes Feld mit abgeleiteter Belegung (A) oder als Vorlage (B) | Nichts von Etappe A — die Abbildung ist ihre Grundlage. **E-01 ist deshalb der erste zu entscheidende Punkt.** |
-| Verhältnis Rolle ↔ paarweise Verschmelzungserlaubnis | M-04 | **E-02** (§4.2) | Die übrigen vier Rollen |
-| Trägerkadenz | M-37 | **E-03** (§4.3) | Der Wert selbst; nur seine Frist hängt daran |
-| `Preview` in P5 | M-55 | **E-07** (§4.7) | Die übrigen sechs Zustände |
-| Modulschnitt und Rückstau-Schlüssel | M-71, M-73 | **E-08**, **E-09** (§4.8) | Beide sind Formentscheide, kein Blocker: eine falsche Wahl kostet eine Umbenennung, keinen Vertragsbruch |
+| Rückweg des Maskierungswerts zu Gen | M-40 | `session_snapshot.findings` samt eingebettetem `maskierung` (E-04) | Rechnung, Alter, Befundbindung und die Zusage „keine Zeichenanweisung" (M-36 bis M-39, M-41) — alles brokerseitig |
+| Zielbereich und Schutzbereiche im Experiment | M-48 | `experiment_begin.ziel` mit `proposal_id` (E-05) | Die Proposal-Hälfte (M-47): der Vorschlag benennt den Zielbereich aus dem Befund |
+| Rückwegfeld des Proposals | M-43 | `revert` mit geschlossener Menge (E-06) — Wire- und Storeform | Die übrigen fünf Gate-Felder (Ziel, Passage, Grenzen, Hörziel, Stopbedingung) |
+| Rückstau-Politik der neuen Objekte | M-73 | Belegung von `draft_offer` und `user_verdict` (E-09) | Die bestehende P0/P1-Politik selbst; sie wird nicht geändert |
+| Transport des Intents | M-85, M-86 | Reservierung und Belegung von `intent_update` (E-10) | Die Main-Seite des Intents vollständig (Etappe A) |
+
+**Die eine verbleibende inhaltliche Abhängigkeit** ist keine Vertragsfrage,
+sondern eine Messung: die Schwelle hoch/mittel/unklar → handelbar (**M-31**)
+ist **Ausgabe** des Evaluationskorpus (Etappe H) und darf bis dahin nicht als
+Konstante gesetzt werden. Etappe D baut die drei Zustände und ihre Sperren, die
+Kalibrierung kommt aus H nach.
+
+**Was ausdrücklich nicht dieses Ticket entscheidet und den Bau auch nicht
+aufhält:** der Skalar-Entscheid zu `guardrail_loudness_db`, `guardrail_peak_db`
+(NAK-204) und `stereo.seitenanteil_db` (NAK-193). M-50 verkettet die Lücke
+ehrlich — ein Proposal, dessen Stopbedingung auf einen nicht messbaren
+Guardrail zeigt, ist nicht handelbar und meldet `MORE DATA`.
 
 ### 5.5 Regeln für jede neue Prüfung dieser Etappe
 
@@ -1247,17 +1568,17 @@ Zusage verankert und ihr Ort im Ist-Stand ist benannt.
 
 | Abschnitt | Zeile | Zutreffend | Wo in diesem Manifest gemessen |
 |---|---|---|---|
-| **A** | Politik bei *voll* je Klasse ausdrücklich | ja | **M-73**; Ist-Stand §2.9 (`ControlClient.h`:242,314,558–560); Entscheid **E-09** (§4.8) |
+| **A** | Politik bei *voll* je Klasse ausdrücklich | ja | **M-73**; Ist-Stand §2.9 (`ControlClient.h`:242,314,556,558–560); Entscheide **E-09** (§4.8) und **E-10** (§4.9) |
 | **A** | Puffer mit Abflussweg **ohne** Reconnect | ja | **M-74**; Bein **A4-SI** |
-| **A** | Schlüssel überleben jeden Zwischenpuffer; Koaleszierung gilt auch dort | ja | **M-73** (`proposal:<id>` als Schlüssel), **E-09** |
+| **A** | Schlüssel überleben jeden Zwischenpuffer; Koaleszierung gilt auch dort | ja | **M-73** (E-09: `proposal:<proposal_id>` für `draft_offer`; `user_verdict` koalesziert **nicht**) und **M-85** (E-10: `intent:<quelle_id>:<passage_id oder global>`, Koaleszierung zulässig, weil nur die jüngste Revision wirkt) |
 | **A** | Niedrigere Klasse blockiert, höhere wird weiter gelesen | ja | **M-73**, **M-75**; bestehender P0/P1-Vertrag aus SONDE-010 |
 | **A** | Rückgabewerte und Zähler einer Politik werden ausgewertet | ja | **M-73** (Rotbeweis: „ein Rückgabewert der Politik wird ignoriert"); Vorbild `evidenzKadenzReduktionen`/`evidenzNichtGesendet` (§2.9) |
 | **A** | Dieselbe Regel in **allen** Sprachen, Test beidseitig, einmal gebrochen | ja | **M-77** |
-| **B** | Reihenfolge beim Verbinden festgelegt und gemessen | ja | **M-75** |
+| **B** | Reihenfolge beim Verbinden festgelegt und gemessen | ja | **M-75**; seit E-10 zusätzlich **M-86**: die Vollständigkeitsmarke des Intents liegt **vor** der ersten Hypothese und dem ersten Proposal |
 | **B** | Beim Trennen zuerst abmelden, dann Fristen und Joins | ja | **M-75** |
 | **B** | Jeder Join hat eine Frist; kein Self-Join | ja | **M-75**; bestehender Vertrag aus SONDE-011/012, von dieser Etappe nicht geändert |
 | **B** | Nach dem Schließen einer Queue wird nichts geliefert; Schließflag **vor** dem Inhalt | ja | **M-75** |
-| **B** | Stopp-Fenster: Registrierung nach begonnenem Stop ist ein Test | ja | **M-75**, **M-76** (Brokerneustart mit offenem Schritt) |
+| **B** | Stopp-Fenster: Registrierung nach begonnenem Stop ist ein Test | ja | **M-75**, **M-76** (Brokerneustart mit offenem Schritt), **M-86** (nach dem Neustart rechnet der Broker erst nach der Vollständigkeitsmarke) |
 | **C** | Textfeld mit Schema-Länge im Leser gegen genau diese Länge, Negativfixture je Feld | ja | **M-15**, **M-42** (Negativfixture je Feld über **A5**); Muster: `probe_descriptor.host_bus_name` 1–120 Codepoints |
 | **C** | Objekte mit exakter Feldmenge, `additionalProperties:false` in C++ **und** Rust | ja | **M-15**, **M-42**, **M-77**; Ist-Stand §2.2/§2.6 |
 | **C** | Discriminator, Familie und Typ vor dem Inhalt geprüft, beidseitig | ja | **M-77**; §2.6 (`x-nakama-discriminator` nicht additiv) |
@@ -1267,7 +1588,7 @@ Zusage verankert und ihr Ort im Ist-Stand ist benannt.
 | **D** | Relink ändert Bundlebytes; feste Hashes gelten für eine Auslieferung | **nein** | Diese Etappe und Etappe 2 ändern kein Bundle und keinen Installer; `eq-copilot/install/` steht ausdrücklich außerhalb des Prüfbereichs (§5.2). |
 | **D** | Was der Kanon nicht baut, darf er nicht als frisch bezeugen | ja | §5.1: der volle Kanon läuft am Ende jeder Etappe, die Schema-, Fixture- oder Runnerdateien berührt |
 | **E** | Behauptung ≤ Messung, Gate-Maß in wenigen Sätzen | ja | §5.5; die Spalte **Rotbeweis** in §3 hält jede Zusage an ihrer eigenen Messung |
-| **E** | Zahlen im Manifest sind gemessen, nicht abgeschrieben | ja | §2 durchgehend: Kanon 54/54 und der leere `git diff --stat` in dieser Sitzung gemessen; Bandzahlen 221/64 aus dem Register; Korpuszahl 25 aus `MANIFEST.json`; Kadenzen aus `FeatureEngine.h`:989–990 und `WorkerCadence.h`:27–28; §3.10 aus den Matrixzeilen gezählt |
+| **E** | Zahlen im Manifest sind gemessen, nicht abgeschrieben | ja | §2 durchgehend: Kanon 54/54 und der leere `git diff --stat` in dieser Sitzung gemessen; Bandzahlen 221/64 aus dem Register; Korpuszahl 25 aus `MANIFEST.json`; Kadenzen aus `FeatureEngine.h`:989–990 und `WorkerCadence.h`:27–28; §3.11 aus den Matrixzeilen gezählt (86 Zeilen, escape-bewusster Parser) |
 | **E** | Positionen im lebenden Kopf als Symbol/Anker | ja | Kopf: Symbol- und Ankerangaben; Zeilennummern nur im Verlauf ab §1, mit dem Stand `5e99a13` benannt |
 | **E** | Lebender Kopf wird beim Abschluss nachgezogen, alles darunter append-only | ja | Kopfhinweis unter der Merkmalstabelle |
 | **E** | Jede neue Prüfung einmal absichtlich gebrochen, Rohausgabe liegt bei | ja | §5.5; Spalte **Rotbeweis** in §3 |

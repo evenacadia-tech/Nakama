@@ -59,3 +59,9 @@ eq-copilot/fixtures/state/** -text
 # normalisiert git die Zeilenenden beim Checkout, und der Vergleich gegen die
 # Neuerzeugung faellt auf jedem Rechner anders aus.
 eq-copilot/fixtures/p4-korpus/** -text
+
+# SONDE-014 M-65: der P5-Evaluationskorpus wird ebenso BYTEGLEICH geprueft
+# (Bein A28). Dieselbe Begruendung wie beim P4-Korpus darueber: ohne die Regel
+# normalisiert git die Zeilenenden beim Checkout, und `--pruefen` faellt auf
+# jedem Rechner anders aus.
+eq-copilot/fixtures/p5-korpus/** -text

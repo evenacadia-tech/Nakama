@@ -1,0 +1,74 @@
+SONDE-014 Etappe D - Rotbeweis M-29-stale
+========================================================================
+
+GEWERTETE ZUSAGE
+Eine gestiegene Intent-Revision macht den Befund sichtbar `stale` (Paragraph 37.3), ohne Zahlen nachzurechnen.
+
+GEMESSEN AN  broker/tests/sonde014_befund.rs::hoehere_intent_revision_macht_den_befund_stale
+
+RUECKNAHME AM PRODUKTCODE  broker/src/coordinator/intent.rs
+------------------------------------------------------------------------
+VORHER:
+            let veraltet = if revision_gestiegen {
+                Coordinator::befunde_veralten_locked(&mut stand, &session, revision)
+            } else {
+                0
+            };
+
+NACHHER:
+            // RUECKNAHME 37.3: die Befunde bleiben handelbar.
+            let veraltet = if revision_gestiegen { 0 } else { 0 };
+------------------------------------------------------------------------
+
+[1] LAUF MIT RUECKNAHME - erwartet ROT (Exitcode 101)
+========================================================================
+
+running 1 test
+test hoehere_intent_revision_macht_den_befund_stale ... FAILED
+
+failures:
+
+---- hoehere_intent_revision_macht_den_befund_stale stdout ----
+
+thread 'hoehere_intent_revision_macht_den_befund_stale' (19712) panicked at tests\sonde014_befund.rs:276:5:
+assertion `left == right` failed: eine gestiegene Intent-Revision entwertet den Befund sichtbar
+  left: ReadyToSend
+ right: Stale
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    hoehere_intent_revision_macht_den_befund_stale
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.29s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: associated function `befunde_veralten_locked` is never used
+   --> src\coordinator\hypothese_verdrahtung.rs:545:19
+    |
+ 60 | impl Coordinator {
+    | ---------------- associated function in this implementation
+...
+545 |     pub(super) fn befunde_veralten_locked(
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib) generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.80s
+     Running tests\sonde014_befund.rs (broker\target\debug\deps\sonde014_befund-c35ffee8c5e9641a.exe)
+error: test failed, to rerun pass `--test sonde014_befund`
+
+[2] RUECKNAHME ZURUECKGENOMMEN, LAUF ERNEUT - erwartet GRUEN (Exitcode 0)
+========================================================================
+
+running 1 test
+test hoehere_intent_revision_macht_den_befund_stale ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.30s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.92s
+     Running tests\sonde014_befund.rs (broker\target\debug\deps\sonde014_befund-c35ffee8c5e9641a.exe)
+
+URTEIL: OK (rot=101, gruen=0)

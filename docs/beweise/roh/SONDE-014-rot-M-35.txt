@@ -1,0 +1,119 @@
+SONDE-014 Etappe D - Rotbeweis M-35
+========================================================================
+
+GEWERTETE ZUSAGE
+Messqualitaet und Befundsicherheit sind zwei Felder aus zwei Quellen; die Sicherheit entscheidet NICHT ueber die Handelbarkeit.
+
+GEMESSEN AN  eq-copilot/plugin/tests/Sonde014BefundTest.cpp (Kanonbein B28)
+
+RUECKNAHME AM PRODUKTCODE  eq-copilot/plugin/src/SourcesModel.h
+------------------------------------------------------------------------
+VORHER:
+        bool darfDraft() const { return zustand == "ready_to_send"; }
+
+NACHHER:
+        // RUECKNAHME M-35: die Konfidenzklasse entscheidet statt des Zustands.
+        bool darfDraft() const { return confidenceKlasse == "hoch"; }
+------------------------------------------------------------------------
+
+[1] LAUF MIT RUECKNAHME - erwartet ROT (Exitcode 1)
+========================================================================
+SONDE-014 Etappe D - Befundzustaende (M-29 bis M-35)
+  ok      M-29: der Zustand kommt als Feld an  [ready_to_send ]
+  ok      M-29: und steht unveraendert im Modell
+  ok      M-29: der Zustand kommt als Feld an  [more_data ]
+  ok      M-29: und steht unveraendert im Modell
+  ok      M-29: der Zustand kommt als Feld an  [stale ]
+  ok      M-29: und steht unveraendert im Modell
+  ok      M-29: ein VIERTER Zustand faellt am ganzen Snapshot  [session finding carries a value outside its closed set]
+  ok      M-29: und hinterlaesst keinen halben Befund
+  ok      M-30: SEND DRAFT haengt am Zustand  [ready_to_send]
+  ok      M-30: HOLD TO AUDITION ebenso  [ready_to_send]
+  FEHLER  M-30: SEND DRAFT haengt am Zustand  [more_data]
+  ok      M-30: HOLD TO AUDITION ebenso  [more_data]
+  FEHLER  M-30: SEND DRAFT haengt am Zustand  [stale]
+  ok      M-30: HOLD TO AUDITION ebenso  [stale]
+  FEHLER  M-35: `confidence.class = hoch` macht einen `more_data`-Befund NICHT handelbar
+  ok      M-35: die Quellenzeile steht neben dem Befund
+  ok      M-35: und der Zustand kommt aus dem Befund, nicht aus der Zeile
+  ok      M-32: zwei Befunde, einer verweist auf den anderen
+  ok      M-32: beide stehen in der Liste
+  ok      M-32: die Alternative ist eine ID, kein Anhang
+  ok      M-32: und sie traegt einen EIGENEN Zustand
+  ok      M-32: ein Freitext in `alternatives` faellt  [session finding alternative is not a finding id]
+  ok      M-33: die Zone ist ein Bandintervall des eingefrorenen Gitters
+  ok      M-33: und sie nennt ihre Quelle
+  ok      M-33: ein Belegtextfeld faellt am Vertrag  [session finding has an unexpected or missing field]
+  ok      M-33: Band 0 ist ein gueltiger Index
+  ok      M-33: und 221 ein gueltiges `bis`
+  ok      M-33: ein LEERES Intervall faellt
+  ok      M-33: und eines ueber dem Gitterrand ebenso
+  ok      M-34: alle drei Zeilen stehen als eigene Felder
+  ok      M-34: SMALLEST TEST bildet `next_test` ab - der Wert reist mit
+  ok      M-34: eine VIERTE Zeile faellt am Vertrag  [session finding has an unexpected or missing field]
+  ok      M-34: eine leere Zeile faellt (minLength 1)  [session finding display line is not 1..200 codepoints]
+  ok      M-87: der Ausschluss kommt mit seinem Grund an
+  ok      M-87: ein NEUNTER Grund faellt am ganzen Snapshot  [session finding exclusion is invalid]
+  ok      M-82: score 0 ist gueltig
+  ok      M-82: score 1 ebenso
+  ok      M-82: knapp darueber faellt
+  ok      M-82: knapp darunter ebenso
+  ok      M-82: und ein String ist keine Zahl
+  ok      Fassungsleiter: ein Leser der Fassung 2 lehnt `findings` ab  [session_snapshot has an unexpected or missing field]
+  ok      Abwesenheit heisst `diese Sitzung fuehrt keine Befunde`
+  ok      und die Liste bleibt leer, nicht null
+  ok      Vorbedingung: ein Befund liegt vor
+  ok      Sitzungswechsel: die Befunde der alten Sitzung sind fort - ihre Evidenz-IDs zeigten sonst ins Leere
+SONDE-014 Befundzustaende: 42/45 gruen
+
+[2] RUECKNAHME ZURUECKGENOMMEN, LAUF ERNEUT - erwartet GRUEN (Exitcode 0)
+========================================================================
+SONDE-014 Etappe D - Befundzustaende (M-29 bis M-35)
+  ok      M-29: der Zustand kommt als Feld an  [ready_to_send ]
+  ok      M-29: und steht unveraendert im Modell
+  ok      M-29: der Zustand kommt als Feld an  [more_data ]
+  ok      M-29: und steht unveraendert im Modell
+  ok      M-29: der Zustand kommt als Feld an  [stale ]
+  ok      M-29: und steht unveraendert im Modell
+  ok      M-29: ein VIERTER Zustand faellt am ganzen Snapshot  [session finding carries a value outside its closed set]
+  ok      M-29: und hinterlaesst keinen halben Befund
+  ok      M-30: SEND DRAFT haengt am Zustand  [ready_to_send]
+  ok      M-30: HOLD TO AUDITION ebenso  [ready_to_send]
+  ok      M-30: SEND DRAFT haengt am Zustand  [more_data]
+  ok      M-30: HOLD TO AUDITION ebenso  [more_data]
+  ok      M-30: SEND DRAFT haengt am Zustand  [stale]
+  ok      M-30: HOLD TO AUDITION ebenso  [stale]
+  ok      M-35: `confidence.class = hoch` macht einen `more_data`-Befund NICHT handelbar
+  ok      M-35: die Quellenzeile steht neben dem Befund
+  ok      M-35: und der Zustand kommt aus dem Befund, nicht aus der Zeile
+  ok      M-32: zwei Befunde, einer verweist auf den anderen
+  ok      M-32: beide stehen in der Liste
+  ok      M-32: die Alternative ist eine ID, kein Anhang
+  ok      M-32: und sie traegt einen EIGENEN Zustand
+  ok      M-32: ein Freitext in `alternatives` faellt  [session finding alternative is not a finding id]
+  ok      M-33: die Zone ist ein Bandintervall des eingefrorenen Gitters
+  ok      M-33: und sie nennt ihre Quelle
+  ok      M-33: ein Belegtextfeld faellt am Vertrag  [session finding has an unexpected or missing field]
+  ok      M-33: Band 0 ist ein gueltiger Index
+  ok      M-33: und 221 ein gueltiges `bis`
+  ok      M-33: ein LEERES Intervall faellt
+  ok      M-33: und eines ueber dem Gitterrand ebenso
+  ok      M-34: alle drei Zeilen stehen als eigene Felder
+  ok      M-34: SMALLEST TEST bildet `next_test` ab - der Wert reist mit
+  ok      M-34: eine VIERTE Zeile faellt am Vertrag  [session finding has an unexpected or missing field]
+  ok      M-34: eine leere Zeile faellt (minLength 1)  [session finding display line is not 1..200 codepoints]
+  ok      M-87: der Ausschluss kommt mit seinem Grund an
+  ok      M-87: ein NEUNTER Grund faellt am ganzen Snapshot  [session finding exclusion is invalid]
+  ok      M-82: score 0 ist gueltig
+  ok      M-82: score 1 ebenso
+  ok      M-82: knapp darueber faellt
+  ok      M-82: knapp darunter ebenso
+  ok      M-82: und ein String ist keine Zahl
+  ok      Fassungsleiter: ein Leser der Fassung 2 lehnt `findings` ab  [session_snapshot has an unexpected or missing field]
+  ok      Abwesenheit heisst `diese Sitzung fuehrt keine Befunde`
+  ok      und die Liste bleibt leer, nicht null
+  ok      Vorbedingung: ein Befund liegt vor
+  ok      Sitzungswechsel: die Befunde der alten Sitzung sind fort - ihre Evidenz-IDs zeigten sonst ins Leere
+SONDE-014 Befundzustaende: 45/45 gruen
+
+URTEIL: OK (rot=1, gruen=0)

@@ -3,7 +3,7 @@
 | Merkmal | Wert |
 |---|---|
 | Ticket | S23–25, `SONDE-014` (Phase P4–P5), Leitungsname „Aus Messungen belegte Befunde und kleinste Tests ableiten" |
-| Phase | **Etappe 2 — Bau, läuft.** Fertig: **Etappe A** (`SourceIntent` im Main-State, Commit `8f030f5`), **Etappe B** (Fassung 3 des Wire-Envelopes, Commits `edea7a9`, `baa6291`, `581431a`) und **Etappe C** (Evidenzgraph und `CauseHypothesis`). Davor ohne Produktcode: **Matrixnacharbeit 1** (2026-09-06), **Etappe 1b — Entscheide E-01 bis E-10** (`fdb04e4`) und **Etappe 1 — Verhaltensmatrix** (`1f126a4`). Der Bauverlauf steht in §7. |
+| Phase | **Etappe 2 — Bau, läuft.** Fertig: **Etappe A** (`SourceIntent` im Main-State, Commit `8f030f5`), **Etappe B** (Fassung 3 des Wire-Envelopes, Commits `edea7a9`, `baa6291`, `581431a`) **Etappe C** (Evidenzgraph und `CauseHypothesis`) und **Etappe D** (Befundzustände). Davor ohne Produktcode: **Matrixnacharbeit 1** (2026-09-06), **Etappe 1b — Entscheide E-01 bis E-10** (`fdb04e4`) und **Etappe 1 — Verhaltensmatrix** (`1f126a4`). Der Bauverlauf steht in §7. |
 | Matrixprüfung 2 | Codex `gpt-6-astra`, Effort **max**, lesend, Thread `01a077a3-1411-7830-9bfd-e17d233baab1`; `HEAD` vor und nach dem Lauf `f90abf5`. **URTEIL: PASS** — D1 bis D4 geschlossen, nichts gebrochen. Auftrag `docs/beweise/roh/SONDE-014-matrixpruefung-2-auftrag.txt`, Rohurteil `docs/beweise/roh/SONDE-014-matrixpruefung-2-f90abf5.txt`. **Etappe 1 ist damit abgenommen; §3 ist ab hier die Spezifikation.** |
 | Etappe 2 | Bauauftrag `docs/beweise/roh/SONDE-014-etappe-2-auftrag.txt`, Basis `f90abf5`; Fortsetzung 1 (Etappen C bis I) `docs/beweise/roh/SONDE-014-etappe-2-fortsetzung-1-auftrag.txt`, Startstand `6b96c64`, mit **Entscheid E-12** (`GATE_MINDEST_FENSTER` in Etappe C ohne Versionsschritt; der eine erlaubte Schritt der `metrics_version` liegt in Etappe H). Neun Bauetappen A bis I nach §5.1; Bauverlauf, gemessene Matrixzeilen, Rotbeweise, Abweichungen und Nebenbefunde in **§7**. |
 | Entscheide | E-01 bis E-10 wörtlich in `docs/beweise/roh/SONDE-014-etappe-1-entscheid-auftrag.txt`. Eingearbeitet in Etappe 1b: neun angenommene Technikentscheide (E-01 bis E-09, E-01 und E-03 mit Präzisierung, E-08 mit Autoritätenzuweisung) und **eine neue Lücke E-10** (Transport des Intents vom Main zum Broker) mit den zwei zusätzlichen Matrixzeilen **M-85** und **M-86**. **Seit der Matrixnacharbeit 1 kommt E-11 dazu** (Transport und versionierter Spiegel des `AssistantStep`, Regel R3, §4.13) mit **M-88** und **M-89**. Je Entscheid steht ein Block „Etappe 1b (Entscheid des Dirigenten, 06.09.2026)" unter dem zugehörigen §4-Abschnitt; der vorige Vorschlagstext bleibt als Historie stehen. |
@@ -2276,6 +2276,114 @@ Invarianten selbst getroffen).
 - **N-10 (neu, keine Änderung).** `EqCopSonde012ProjectReloadTest` legt seine
   Prozessoren weiter im Funktionsrahmen an (N-06 aus §7.1, NAK-175). Diese
   Etappe fügt dort nichts hinzu; der Befund bleibt offen und unverändert.
+
+
+### 7.4 Etappe D — Befundzustände
+
+**Gebaut:** die Abbildung Sicherheit → Zustand als **eine** Funktion im
+Datenweg, die Sperre von Audition und Draft an **beiden** Enden, die
+`STALE`-Quelle aus §37.3, und die Gen-Hälfte des Rückwegs — ein Befundmodell
+in `SourcesModel` samt Leser für `session_snapshot.findings`.
+
+**Der Defekt, den diese Etappe zuerst geschlossen hat.** Etappe C baute den
+Produzenten; der Leser in `SourcesModel.cpp` kannte `findings` nicht. Die
+Wurzelfeldmenge für `schema_minor ≥ 2` endete bei `paare`, und
+`exakteFelder` ist fail-closed: **jeder** Snapshot mit einem Befund war
+`ungueltig`. Der Rückweg wäre gebaut und trotzdem tot gewesen — genau der
+Fehler, den SONDE-013 an `experimente` und `paare` schon einmal gemacht hat.
+Kein Bein hätte ihn gefunden: **B13** baut seine Snapshots von Hand und trägt
+keine Befunde. Er ist als **N-11** mit eigenem Rotbeweis geschlossen.
+
+| Stück | Ort |
+|---|---|
+| Abbildung Sicherheit → Zustand | `broker/src/coordinator/hypothese.rs` — `zustand_aus_sicherheit()`, **eine** Stelle; `baue_befund` und `enthaltung` rufen sie |
+| Sperre im Datenweg (Broker) | `hypothese.rs` — `Befundzustand::erlaubt_audition()`, `erlaubt_draft()`, `aus_wire()` |
+| Abbildung `next_test` → `SMALLEST TEST` | `hypothese.rs` — `NaechsterTest::satz()`, `ALLE`, `aus_wire()`; total über alle sechs Werte |
+| `STALE`-Quelle (§37.3) | `broker/src/coordinator/intent.rs` — eine gestiegene Bestandsrevision ruft unter demselben Lock `befunde_veralten_locked()`; `broker/src/coordinator/hypothese_verdrahtung.rs` — die Funktion selbst, **ohne** Nachrechnen |
+| Befundmodell (Gen) | `eq-copilot/plugin/src/SourcesModel.h` — `struct Befund` mit `darfAudition()` und `darfDraft()`, `Sicht::befunde` |
+| Leser (Gen) | `eq-copilot/plugin/src/SourcesModel.cpp` — `findings` in der Wurzelfeldmenge der **Fassung 3**, sechs geschlossene Mengen, Bandintervall, Beobachtung, Konfidenz, Rangkomponenten, Evidenz-IDs, Alternativen, Ausschlüsse, drei Anzeigezeilen; dazu der Helfer `endlicheZahl()` |
+| Bein (Gen) | **NEU** `eq-copilot/plugin/tests/Sonde014BefundTest.cpp`, Kanonbein **B28**, 45 Prüfungen |
+| Bein (Broker) | **NEU** `broker/tests/sonde014_befund.rs`, 7 Fälle, läuft unter **A4** |
+
+**Gemessene Matrixzeilen.**
+
+| Zeile | Wo gemessen | Rotbeweis |
+|---|---|---|
+| **M-29** | `sonde014_befund.rs::sicherheit_wird_auf_drei_zustaende_abgebildet` (die Abbildung ist total, und `veraltet` schlägt **jede** Stufe) und `Sonde014BefundTest.cpp` (die drei Zustände kommen als Feld an, ein vierter macht den ganzen Snapshot ungültig) | `roh/SONDE-014-rot-M-29.txt` (Gen) und `roh/SONDE-014-rot-M-29-broker.txt` |
+| **M-29** (`STALE`-Quelle) | `sonde014_befund.rs::hoehere_intent_revision_macht_den_befund_stale` — der Zustand wechselt, und Rang, Beobachtung, Evidenz-IDs und `finding_id` stehen **unverändert** (§37.3: „ohne dass Zahlen nachgerechnet werden") | `roh/SONDE-014-rot-M-29-stale.txt` |
+| **M-30** | `sonde014_befund.rs::nur_ready_to_send_erlaubt_audition_und_draft` (beide Aktionen, beide Sperrzustände, mit Gegenprobe am offenen Fall) und `Sonde014BefundTest.cpp` (dieselbe Frage am Modell, das die Aktion anbietet) | `roh/SONDE-014-rot-M-30.txt` |
+| **M-31** | *nicht in dieser Etappe* — die Schwelle hoch/mittel/unklar ist **Ausgabe** des Korpus (Etappe H) und steht bewusst nirgends als Konstante. Etappe D baut die drei Zustände und ihre Sperren; die Kalibrierung kommt aus H nach (§5.4) | — |
+| **M-32** | `sonde014_befund.rs::alternative_ist_ein_eigener_befund_mit_eigenem_zustand` (die ID zeigt auf einen Befund, der **wirklich** in der Liste steht) und `Sonde014BefundTest.cpp` (ein Freitext in `alternatives` fällt) | `roh/SONDE-014-rot-M-32.txt` |
+| **M-33** | `sonde014_befund.rs::beleg_ist_zone_und_kein_text` (Zone plus Quelle, **kein** Belegtext- und **kein** Optikfeld — das ist zugleich M-80) und `Sonde014BefundTest.cpp` (Bandrand 0 und 221 gültig, leeres Intervall und 222 nicht) | `roh/SONDE-014-rot-M-33.txt` |
+| **M-34** | `sonde014_befund.rs::drei_zeilen_sind_datenfelder` (die Abbildung `next_test` → `SMALLEST TEST` ist total; genau **eine** bewusste Doppelung) und `Sonde014BefundTest.cpp` (eine vierte oder eine leere Zeile fällt) | `roh/SONDE-014-rot-M-34.txt` |
+| **M-35** | `sonde014_befund.rs::messqualitaet_und_befundsicherheit_sind_zwei_felder` — der Beleg meldet `konfidenz.klasse = mittel`, und derselbe Befund erreicht `hoch`, weil seine Sicherheit aus den **Gates** kommt; im Snapshot reist die Messqualität nicht im Befund mit. Dazu `Sonde014BefundTest.cpp`: ein `more_data`-Befund mit `confidence.class = hoch` bleibt **nicht** handelbar | `roh/SONDE-014-rot-M-35.txt` |
+| **N-11** | `Sonde014BefundTest.cpp` — die Fassungsleiter: der Leser der Fassung 3 nimmt `findings` an, ein Leser der Fassung 2 lehnt es ab, Abwesenheit heißt „keine Befunde" | `roh/SONDE-014-rot-N-11.txt` |
+
+**Läufe.** `EqCopSonde014BefundTest` **45 Prüfungen, 0 Fehler** (neues
+Kanon-Bein **B28**); `EqCopSonde012SourcesModelTest` **76/76** (Bein **B13**,
+unverändert grün nach der Erweiterung des Lesers); `cargo test` **588
+Prüfungen, 0 Fehler** (Bein **A4**, darunter **NEU** `sonde014_befund` mit 7
+Fällen). Die Kanonzahl steigt von **55** auf **56**, weil **B28** dazukommt;
+kein Bein ist verschwunden.
+
+**Rotbeweise.** Neun Dateien
+`docs/beweise/roh/SONDE-014-rot-{M-29,M-29-broker,M-29-stale,M-30,M-32,M-33,M-34,M-35,N-11}.txt`.
+Sechs davon fallen an der **C++**-Hälfte: die Rücknahme wird gesetzt, das Ziel
+neu gebaut und das Binary gefahren — der rote Lauf ist der Lauf des echten
+Beins, nicht eine Simulation.
+
+**Abweichungen von §5, mit Begründung.**
+
+1. **Die Etappe hat zwei Beine statt einem.** §5.1 nennt „**NEU**
+   `EqCopSonde014BefundTest`; bestehend **B13**". Das C++-Bein ist gebaut und
+   trägt die Zusagen, die am Modell hängen. Die Abbildung selbst rechnet aber
+   der Broker (E-08), und eine Funktion, die nur in C++ gemessen würde, wäre
+   auf der Seite, die sie ausführt, ungeprüft. Deshalb liegt daneben ein
+   Rust-Bein unter **A4**. Beide messen dieselbe Zusage von ihrer Seite —
+   dasselbe Muster, das M-77 für jede beidseitige Regel verlangt.
+2. **M-31 liegt nicht in dieser Etappe.** §5.1 ordnet sie der Etappe D zu
+   („M-29 bis M-35"), §5.4 verlangt aber ausdrücklich, dass die Schwelle
+   „bis dahin nicht als Konstante gesetzt werden" darf. Sie ist oben als
+   offen ausgewiesen statt still übersprungen.
+
+**Technische Entscheide dieser Etappe.**
+
+- **`veraltet` ist ein eigener Eingang, kein Ergebnis der Klasse.** Ein Befund
+  wird `stale`, weil sich **unter** ihm etwas geändert hat — nicht weil seine
+  Sicherheit gesunken wäre. Beides in einen Wert zu falten hieße, dem User
+  eine gesunkene Sicherheit zu melden, wo er selbst gerade seine Absicht
+  geändert hat.
+- **Die Veraltung rechnet nicht nach.** §37.3 sagt es wörtlich. Die
+  Rangkomponenten, die Beobachtung und die Evidenz-IDs bleiben stehen; nur der
+  Zustand wechselt. Das ist kein Sparbetrieb: der User soll sehen, dass
+  **seine** Änderung den Befund entwertet hat, und nicht eine stillschweigend
+  neue Zahl.
+- **`NaechsterTest::satz()` gehört an das Enum.** Ein `match` im Erzeuger wäre
+  eine zweite Stelle mit derselben Abbildung, und die Anzeige müsste raten,
+  welche gilt. Zwei der sechs Werte teilen sich bewusst denselben Satz —
+  `passage_messen` und `mehr_daten_sammeln` heißen beide „länger messen"; das
+  Bein misst, dass es bei **genau einer** Doppelung bleibt.
+- **`endlicheZahl` prüft die Endlichkeit vor den Grenzen.** `juce::var` trägt
+  Zahlen als `double`; bei `NaN` sind `d < min` und `d > max` beide falsch,
+  und ohne `std::isfinite` hinge das Urteil davon ab, in welche Richtung
+  verglichen wird. NaN-Ehrlichkeit heißt hier: fail-closed, unabhängig von der
+  Vergleichsrichtung.
+- **Der Sitzungswechsel räumt die Befunde ab.** Dieselbe Regel wie für
+  `experimente` und `paare`: eine Aussage der alten Sitzung über die neue wäre
+  eine Falschaussage, und ihre Evidenz-IDs zeigten ins Leere. Beim bloßen
+  Trennen bleiben sie stehen — wie die Versuche auch; der Zustand ist
+  „getrennt", nicht „nie gemessen".
+
+**Nebenbefunde.**
+
+- **N-11 (neu, behoben).** Der Leser kannte `findings` nicht — siehe oben. Er
+  ist mit dieser Etappe geschlossen und trägt einen eigenen Rotbeweis.
+- **N-12 (neu, behoben, im eigenen Diff).** Der erste Entwurf des C++-Beins
+  griff in einem Fall ungeprüft auf `sicht.befunde[0]` zu. Bei einem
+  abgewiesenen Snapshot ist die Liste leer, und das Bein **stürzte ab**, statt
+  einen Fehler zu melden — ein Bein, das abstürzt, misst nichts. Jeder
+  indizierte Zugriff steht jetzt hinter seiner Größenwache, und die Ausgabe
+  läuft ungepuffert, damit ein Absturz zeigt, wo er stand.
 
 ---
 

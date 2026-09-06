@@ -2605,12 +2605,12 @@ und das deterministische Ranking mit harten Gates vor der Gewichtung.
 
 | Stück | Ort |
 |---|---|
-| Zustandsmenge, Vertrag je Zustand, Übergangstabelle | `eq-copilot/plugin/state/NakamaState.h/.cpp` — `Assistentenschritt`, `Schrittvertrag`, `schrittvertrag()`, `p5UebergangErlaubt()`, `p5Naechster()` |
+| Zustandsmenge, Vertrag je Zustand, Übergangstabelle | `eq-copilot/plugin/state/NakamaState.h` und `eq-copilot/plugin/state/NakamaState.cpp` — `Assistentenschritt`, `Schrittvertrag`, `schrittvertrag()`, `p5UebergangErlaubt()`, `p5Naechster()` |
 | Die vier Gegenpfade | `NakamaState.cpp` — `setzeAssistentenschritt()`, `assistentAbbrechen()`, `assistentZurueck()`, `assistentUeberspringen()`, `assistentResume()` |
 | Die drei benannten Ergebnisse | `NakamaState.cpp` — `Assistentenergebnis`, `setzeAssistentenergebnis()` |
 | Ranking mit harten Gates | `NakamaState.cpp` — `Schrittkandidat`, `ordneSchritte()`, `schrittrang()` |
 | Persistenz | `NakamaState.cpp` — `assistant_step_v1` als **eine** additive Eigenschaft mit Fassung im Namen; Schreiber, Leser und der Headroomriegel |
-| Produktpfad | `eq-copilot/plugin/src/PluginProcessor.h/.cpp` — `assistentStarten()`, `assistentWeiter()`, `assistentZurueck()`, `assistentUeberspringen()`, `assistentAbbrechen()`, `assistentAntwort()`, `assistentAusState()`, `assistentFortsetzen()`, `assistentVersuchStarten()`, `assistentAenderungMelden()` |
+| Produktpfad | `eq-copilot/plugin/src/PluginProcessor.h` und `eq-copilot/plugin/src/PluginProcessor.cpp` — `assistentStarten()`, `assistentWeiter()`, `assistentZurueck()`, `assistentUeberspringen()`, `assistentAbbrechen()`, `assistentAntwort()`, `assistentAusState()`, `assistentFortsetzen()`, `assistentVersuchStarten()`, `assistentAenderungMelden()` |
 | Bein | **NEU** `eq-copilot/plugin/tests/Sonde014AssistentTest.cpp`, Kanonbein **B29**, 119 Prüfungen |
 
 **Gemessene Matrixzeilen.**

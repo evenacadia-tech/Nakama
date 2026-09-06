@@ -1,0 +1,47 @@
+NAK-181 Erstpruefung 1 - 2026-09-06 - Codex gpt-6-astra, Effort max, lesend (read-only), Thread 01a07410-7d38-7672-9604-b63c6ac1ac58
+Pruefbereich: git diff 38573ed98e2d1c0d2c893cf877a1cdb89707db62...5119206919e2d8fff547bac0680599dc67e09b78 -- 25 Ticketpfade (Auftrag docs/beweise/roh/NAK-181-erstpruefung-auftrag.txt)
+HEAD vor und nach dem Lauf: 5119206919e2d8fff547bac0680599dc67e09b78 (Startlog: START 02:13:52, ENDE 02:40:08, EXIT=0)
+---
+URTEIL: NEEDS_WORK — N-04/N-29 und mehrere zugesagte Messriegel werden verletzt.
+
+Geprüft: der 25-Pfad-Diff einschließlich Aufrufern, Audio-/Reload-/Wire-Pfaden, Matrix und gelesenen Rotbeweisen; HEAD blieb vor/nach der Prüfung 5119206919e2d8fff547bac0680599dc67e09b78, die Prüfpfade unverändert.
+
+Nicht geprüft: Laufzeit, Builds, Nulltests sowie frische A5/A8-, Fixture-Bytegleichheits- und State-Hash-Läufe; historische grüne Läufe wurden nicht als eigene Messung gewertet.
+
+Full review comments:
+
+- [P2] Weise vorhandenes null in optionalen Enums zurück — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/src/SourcesModel.cpp:60-61
+  DEFEKT gegen N-29: Ein ansonsten gültiger Snapshot mit `ausschluss: null` wird hier übernommen; erforderlich ist `ungueltig`, nur Abwesenheit ist erlaubt. Dadurch wird ein vertragswidriger Ausschluss zur Aussage „kein Ausschluss“. Der neue Test kodifiziert ebenfalls die falsche Erwartung: `rg -n -B 2 'N-29: und' eq-copilot/plugin/tests/Sonde012SourcesModelTest.cpp`. Entferne die Null-Ausnahme und korrigiere den Test entsprechend dem [Schema-Vertrag](CLAUDE.md#L196-L199).
+
+- [P2] Begrenze den eingefrorenen Getter auf offene Versuche — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/src/PluginProcessor.cpp:3094-3096
+  DEFEKT gegen N-04: `beginneVersuch` kopiert den Gain bereits vor späteren Ablehnungen, beispielsweise wegen eines leeren Quellensets. Danach bleibt `laufenderVersuch()` leer; ein anschließendes `prepareToPlay` leert den lebenden Pegel, aber diese Getter liefern weiterhin den alten Abgleich. N-04 verlangt ohne offenen Versuch ausdrücklich den lebenden Pegel. Beide Getter müssen deshalb zusätzlich den aktiven Versuch berücksichtigen. Lesebeleg: `rg -n 'uebernimmVergleichspegel|gezaehlt == 0|gainDbEingefroren' eq-copilot/plugin/src/PluginProcessor.cpp`.
+
+- [P2] Verwende einen vom Resetwert unterscheidbaren Match-Gain — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/tests/Sonde013PassageStateTest.cpp:2893-2896
+  DEFEKT gegen die Messzusage N-01/N-02: Der eingefrorene Gain beträgt hier 0 dB, ebenso der gelöschte lebende Gain. Damit besteht auch der ursprüngliche fehlerhafte Wire-Leser diesen Vergleich; die separate Statusprüfung belegt nicht die Herkunft des gesendeten Werts. Der gelesene Rotbeweis bestätigt das: `Get-Content docs/beweise/roh/NAK-181-rot-b8.txt` meldet beim Rückbau beider Leser nur N-03 rot. Verwende einen eingefrorenen Gain ungleich dem späteren Live-Wert und prüfe beide ausdrücklich.
+
+- [P2] Bewahre den Sendezeugen über den Reload hinweg — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/src/PluginProcessor.cpp:2695-2697
+  DEFEKT gegen N-09/N-14: N-09 verlangt ausdrücklich, dass `letzterVersuchP0FuerTest()` beim Reload unverändert bleibt. Stattdessen löscht der geprüfte Zug hier seinen eigenen Zeugen; die anschließenden `.empty()`-Assertions können einen vorher im selben Zug eingereihten unerwünschten Befehl nicht erkennen. Lesebeleg: `rg -n 'letzterVersuchP0.clear|vorReload|aus dem Reload-Zug' eq-copilot/plugin/src/PluginProcessor.cpp eq-copilot/plugin/tests/Sonde013PassageStateTest.cpp`. Bewahre den letzten Sendetext und vergleiche ihn mit dem Vorzustand beziehungsweise beobachte die Einreichungen unabhängig.
+
+- [P2] Erreiche im N-05-Test den Referenzriegel — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/tests/Sonde013PassageStateTest.cpp:3200-3204
+  DEFEKT gegen N-05: Dieser Aufruf endet bereits am vorhandenen `versuchId.isEmpty()`-Riegel in `erfasseKandidat`; `versuchReferenzJson` wird überhaupt nicht ausgeführt. Auch `beginneVersuch` wird nicht geprüft. Der Test bleibt daher unverändert grün, wenn der neue Riegel gegen fehlenden eingefrorenen Gain entfällt. Lesebeleg: `rg -n -A 9 '^bool EqCopilotProcessor::erfasseKandidat' eq-copilot/plugin/src/PluginProcessor.cpp`. Prüfe den zugesagten leeren Referenztext direkt und anschließend die vorgesehenen Aufrufer.
+
+- [P2] Vergleiche beim Read-only-Reload die Originalbytes — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/tests/Sonde013PassageStateTest.cpp:3252-3255
+  DEFEKT gegen N-13 und [State-Verlustfreiheit](CLAUDE.md#L213-L214): `getSize() > 0` besteht auch bei einem neu serialisierten, gekürzten oder vollständig ersetzten State. Damit misst der Test nur Existenz statt der ausdrücklich zugesagten unveränderten Originalbytes. Lesebeleg: `rg -n 'zurueck.getSize|bool gleich' eq-copilot/plugin/tests/Sonde013PassageStateTest.cpp`. Prüfe den Read-only-Zustand sowie Größe und Byteinhalt gegen `bytes`; ein Bytevergleichshelfer ist im Test bereits vorhanden.
+
+- [P2] Erzwinge für N-31 einen echten Queue-Drop — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/tests/Sonde012HostChannelContextTest.cpp:314-316
+  DEFEKT gegen N-31: Hier werden lediglich normale Blöcke gefahren und ein vorhandener Frame geprüft; kein Drop wird gezielt ausgelöst, kein Folgestempel oder Lückenzähler verglichen. Deshalb bleibt N-31 sogar mit dem alten Reset grün (`Get-Content docs/beweise/roh/NAK-181-rot-b4.txt`). Gerade bei fortlaufender Hostzeit ist die Unterscheidung relevant: `grenzeZwischen` prüft den Projektzeitsprung vor der lokalen Lücke. Fahre einen echten Queue-Verlust und prüfe ausdrücklich unveränderte Epoche, Segment `s+1` und die geforderten Grenzzähler.
+
+- [P2] Prüfe bei N-35 tatsächlich Fenster und Ereignisring — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/tests/Sonde012HostChannelContextTest.cpp:339-340
+  DEFEKT gegen N-35: Die monotone Epochenprüfung misst weder geleerte Analysefenster noch einen erhaltenen Ereignisring und besteht sogar bei durchgehend 0. Der gelesene Rotbeweis zeigt genau dieses falsche Grün mit wiederhergestelltem vollständigem Reset: `Get-Content docs/beweise/roh/NAK-181-rot-b4.txt`. Befülle Fenster und Ring vor der Grenze und prüfe anschließend die zugesagten Zähler sowie den erhaltenen, weiterhin alt gestempelten Ereigniseintrag; andernfalls bleibt die zentrale Reset/Grenzziehen-Unterscheidung ungeschützt.
+
+- [P2] Prüfe unter Komma-Locale auch den echten Hello-Text — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/tests/SchemaTestMain.cpp:173-177
+  DEFEKT gegen N-17: Dieser Test serialisiert ausschließlich einen Heartbeat, der den geänderten Zahlhelfer gar nicht verwendet. Die späteren `audioGueltig`-Aufrufe erzeugen ebenfalls keinen Hello-Text. Eine versehentliche Rückkehr zu `std::to_string` allein im Hello-Schreiber bliebe somit grün. Lesebeleg: `rg -n 'heartbeatAlsJson|setlocale|audioGueltig' eq-copilot/plugin/tests/SchemaTestMain.cpp`. Vergleiche den tatsächlich erzeugten Hello mit nichtganzzahliger Samplerate unter beiden Locales; das entspricht auch der geforderten gemeinsamen Prüfung von [IPC-Writer und Vertrag](AGENTS.md#L51-L52).
+
+- [P2] Prüfe positive und negative Stereo-Präsenzbits auf dem Draht — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/tests/Sonde013EventWireTest.cpp:1218-1225
+  DEFEKT gegen N-24: Im handgebauten Bandsatz bleiben alle drei neuen Präsenzflags false; anschließend wird nur Ungleichheit zur vollständig gesetzten Mid-Bitmap geprüft. Ein Writer, der sämtliche drei Bitmaps immer löscht oder ihre Selektoren vertauscht, besteht diesen Test weiterhin. Lesebeleg: `rg -n -A 10 'baender\[i\].basisGesetzt' eq-copilot/plugin/tests/Sonde013EventWireTest.cpp`. Serialisiere die in N-21/N-22 tatsächlich publizierten Engine-Ergebnisse und vergleiche die dekodierten Bits exakt, einschließlich gesetzter Bits nach dem längeren Fenster.
+
+- [P2] Vergleiche die tatsächlich vorhandenen ACK-Felder — C:/Users/phili/Projekte/Nakama/broker/tests/sonde013_verdrahtung.rs:5136-5138
+  DEFEKT gegen N-41b: `command_ack` enthält `state_revision`, nicht `base_revision`. Beide Indexierungen liefern deshalb `Value::Null`; die Assertion besteht unabhängig von der zurückgegebenen Revision. Auch der zugesagte persistierte Hash wird nicht verglichen. Lesebeleg: `rg -n 'state_revision|state_hash' broker/src/coordinator/befehl.rs`. Prüfe vorhandene, typisierte `state_revision`- und `state_hash`-Werte vor und nach dem Retry entsprechend dem [v3-Vertrag](CLAUDE.md#L196-L199).
+
+- [P2] Fahre den persistierten Retry aus der neuen Sitzung — C:/Users/phili/Projekte/Nakama/broker/tests/sonde013_verdrahtung.rs:5129-5134
+  DEFEKT gegen N-41b: Beide `a.p0(&begin)`-Aufrufe kommen vom unveränderten Main-Link; ein Reload beziehungsweise Sitzungswechsel findet nicht statt. Damit misst der Fall normale Idempotenz, nicht die zugesagte Wiederholung mit alter Zieladresse nach dem Reload. Eine versehentlich vorgezogene Zielprüfung bliebe hier grün, obwohl sie den geforderten Retry abweisen würde. Lesebeleg: `rg -n -A 51 '^fn persistierter_retry_bleibt_idempotent' broker/tests/sonde013_verdrahtung.rs`. Wiederhole den gespeicherten Text vom neuen Link und prüfe zusätzlich die ausdrücklich verlangte unveränderte Store-Ereigniszahl.

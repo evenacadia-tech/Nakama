@@ -3375,8 +3375,12 @@ int main()
         // beruehrt.
         //
         // Die Vorbedingung wird GEMESSEN und nicht angenommen: der lebende
-        // Pegel braucht `Vergleichspegel::kMindestSekunden` Material, und
-        // genau so viel ist hier noch nicht gefahren.
+        // Pegel braucht `Vergleichspegel::kMindestSekunden` Material. Gemessen
+        // sind an dieser Stelle NULL aufgenommene Bloecke - der Pegel wird
+        // erst gespeist, seit die Passage gebunden ist, und `warte` oben
+        // brauchte dafuer nur wenige Bloecke. Die Zeile prueft trotzdem gegen
+        // die Schwelle und nicht gegen 0: sie soll die Zusage tragen, nicht
+        // den Zufall des Zeitpunkts.
         const auto bloeckeVorBeginn = p->versuchAufgenommeneBloecke();
         pruefe ((double) bloeckeVorBeginn * (double) kBlock
                     < nakama::analyse::Vergleichspegel::kMindestSekunden * kFs,

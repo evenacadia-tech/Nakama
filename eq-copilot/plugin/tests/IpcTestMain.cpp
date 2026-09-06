@@ -1630,10 +1630,39 @@ void parken_uebergeht_den_backoff()
         for (auto v : aufstieg) alleDa = alleDa && v >= 0;
         const bool gestiegen = alleDa && (aufstieg[2] - aufstieg[1]) >= 900;
 
-        // b) Erst JETZT die Sperrursache. Das Fenster bis zum naechsten
-        //    Versuch ist 2.000 ms breit; verpasst der Aufbau es doch, parkt
-        //    der Pfad eine Stufe spaeter — auch das bleibt >= 2.000 ms und
-        //    damit diskriminierend, deshalb wartet die Parkprobe grosszuegig.
+        // a2) **NAK-197 — auf den ABSCHLUSS des dritten Versuchs warten.**
+        //    `versuchsStempel` faellt, sobald `verbindungsVersuche` 3 zeigt.
+        //    Der Client zaehlt aber VOR dem Oeffnen
+        //    (`ControlClient.cpp:1668`, `TelemetryClient.cpp:554`; geoeffnet
+        //    wird erst :1725 bzw. :577) — dazwischen liegen Hello-Provider,
+        //    Adress- und Audiopruefung, alle ohne Zeitgarantie. Wer die
+        //    Sperrursache direkt nach dem Stempel anlegt, trifft unter Last
+        //    noch den DRITTEN Versuch: der parkt dann bei Versuch 3 statt der
+        //    zugesagten >= 4, und die Zeile faellt falsch rot — im Bein B10
+        //    zweimal an verschiedenen Faellen: `1bf41ed` auf
+        //    `control/access_denied`, `768737f` auf
+        //    `telemetrie/access_denied`.
+        //
+        //    Beobachtet wird deshalb `serverPruefstatus`, nicht der Zaehler:
+        //    der Eintritt setzt ihn im SELBEN Mutexblock wie den Zaehler auf
+        //    `nichtGeprueft` zurueck, und erst der Ausgang von `oeffnen()`
+        //    belegt ihn mit dem echten Urteil — gegen den noch freien Namen
+        //    ist das `nichtDa`. Ein Snapshot, der den Zaehler auf 3 sieht,
+        //    kann also kein Urteil des zweiten Versuchs mehr zeigen. Alle
+        //    drei Clients tragen genau diese Reihenfolge; `brokerPipeFehlt`
+        //    taugt nicht, das setzt nur der Controlpfad zurueck.
+        const bool dritterFertig = warteAuf (12000, [&] {
+            return pruefstatus() != ServerPruefStatus::nichtGeprueft;
+        });
+
+        // b) Erst JETZT die Sperrursache — der dritte Versuch ist durch, die
+        //    2.000-ms-Wartezeit vor dem vierten laeuft. Die Race-Richtung ist
+        //    einseitig: zu FRUEH angelegt hiesse Parken bei Versuch 3 und
+        //    damit ein falsches Rot, deshalb a2. Zu SPAET angelegt kostet
+        //    nichts — dann faellt auch Versuch 4 noch ins Leere, `backoffMs`
+        //    verdoppelt auf 8.000 und Versuch 5 parkt. Auch das ist >= 4 und
+        //    >= 4.000 ms, die Zusage der Zeile bleibt also diskriminierend;
+        //    deshalb wartet die Parkprobe darunter grosszuegig.
         const bool aufbau = f.ueberAuth ? server.starten() : fremd.anlegen (pipe);
         const bool geparkt = warteAuf (20000, [&] {
             return pruefstatus() == ServerPruefStatus::belegtAberUnverifiziert;
@@ -1675,14 +1704,16 @@ void parken_uebergeht_den_backoff()
 
         if (ueberTelemetrie) telemetrie->stop(); else control->stop();
         server.stoppen();
-        pruefe (aufbau && gestiegen && geparkt && versucheBeimParken >= 4
+        pruefe (aufbau && gestiegen && dritterFertig && geparkt
+                    && versucheBeimParken >= 4
                     && weitere == 0 && sofort && zweiter
                     && abstand >= 350 && abstand <= 1200,
                 ("parken_uebergeht_den_backoff/" + pfad + "/" + fall).c_str(),
                 "Aufstieg " + (alleDa ? std::to_string (aufstieg[1] - aufstieg[0]) + " "
                                             + std::to_string (aufstieg[2] - aufstieg[1])
                                       : std::string ("unvollstaendig"))
-                    + " ms, geparkt " + std::to_string (geparkt) + " bei Versuch "
+                    + " ms, dritter Versuch fertig " + std::to_string (dritterFertig)
+                    + ", geparkt " + std::to_string (geparkt) + " bei Versuch "
                     + std::to_string (versucheBeimParken) + ", weitere Versuche "
                     + std::to_string (weitere) + ", Neustart nach "
                     + std::to_string (verzug) + " ms, Versuch DANACH nach "

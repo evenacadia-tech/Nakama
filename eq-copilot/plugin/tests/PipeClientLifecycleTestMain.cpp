@@ -1134,9 +1134,35 @@ void pipeclient_parken_uebergeht_den_backoff()
         for (auto v : aufstieg) alleDa = alleDa && v >= 0;
         const bool gestiegen = alleDa && (aufstieg[2] - aufstieg[1]) >= 900;
 
-        // b) Erst JETZT die Sperrursache. Verpasst der Aufbau das 2.000-ms-
-        //    Fenster, parkt der Pfad eine Stufe spaeter — auch das bleibt
-        //    >= 2.000 ms und damit diskriminierend.
+        // a2) **NAK-197 — auf den ABSCHLUSS des dritten Versuchs warten.**
+        //    `versuchsStempel` faellt, sobald `verbindungsVersuche` 3 zeigt.
+        //    `PipeClient::eineVerbindung` zaehlt aber VOR dem Oeffnen
+        //    (`PipeClient.cpp:347`, `CreateFileW` erst :375). Wer die
+        //    Sperrursache direkt nach dem Stempel anlegt, trifft unter Last
+        //    noch den DRITTEN Versuch: der parkt dann bei Versuch 3 statt der
+        //    zugesagten >= 4, und die Zeile faellt falsch rot (Kanonlauf
+        //    `768737f`, Bein A4b, Fall `authfehler`).
+        //
+        //    Beobachtet wird deshalb `serverPruefstatus`, nicht der Zaehler:
+        //    der Eintritt setzt ihn im SELBEN Mutexblock wie den Zaehler auf
+        //    `nichtGeprueft` zurueck (:353), und erst der Ausgang des
+        //    Oeffnungsversuchs belegt ihn mit dem echten Urteil — gegen den
+        //    noch freien Namen `nichtDa` (:405). Ein Snapshot, der den
+        //    Zaehler auf 3 sieht, kann also kein Urteil des zweiten Versuchs
+        //    mehr zeigen. Der v3-Zwilling in `IpcTestMain.cpp` wartet auf
+        //    dasselbe Feld aus demselben Grund.
+        const bool dritterFertig = warteAuf (12000, [&] {
+            return c->snapshot().serverPruefstatus
+                != nakama::ipc::ServerPruefStatus::nichtGeprueft;
+        });
+
+        // b) Erst JETZT die Sperrursache — der dritte Versuch ist durch, die
+        //    2.000-ms-Wartezeit vor dem vierten laeuft. Die Race-Richtung ist
+        //    einseitig: zu FRUEH angelegt hiesse Parken bei Versuch 3 und
+        //    damit ein falsches Rot, deshalb a2. Zu SPAET angelegt kostet
+        //    nichts — dann faellt auch Versuch 4 ins Leere, `backoffMs`
+        //    verdoppelt auf 8.000 und Versuch 5 parkt: immer noch >= 4 und
+        //    >= 4.000 ms, die Zusage bleibt diskriminierend.
         if (ueberAuth)
         {
             server = pipeAnlegen (name);
@@ -1206,7 +1232,8 @@ void pipeclient_parken_uebergeht_den_backoff()
         c->stop();
         laeuftPeer.store (false);
         if (peer.joinable()) { wecken (name); peer.join(); }
-        pruefe (aufbau && gestiegen && geparkt && versucheBeimParken >= 4
+        pruefe (aufbau && gestiegen && dritterFertig && geparkt
+                    && versucheBeimParken >= 4
                     && weitere == 0 && sofort && zweiter
                     && abstand >= 350 && abstand <= 1200,
                 "pipeclient_parken_uebergeht_den_backoff",
@@ -1215,7 +1242,9 @@ void pipeclient_parken_uebergeht_den_backoff()
                         ? juce::String ((juce::int64) (aufstieg[1] - aufstieg[0])) + " "
                             + juce::String ((juce::int64) (aufstieg[2] - aufstieg[1]))
                         : juce::String ("unvollstaendig"))
-                    + " ms, geparkt " + juce::String ((int) geparkt)
+                    + " ms, dritter Versuch fertig "
+                    + juce::String ((int) dritterFertig)
+                    + ", geparkt " + juce::String ((int) geparkt)
                     + " bei Versuch " + juce::String (versucheBeimParken)
                     + ", weitere Versuche " + juce::String (weitere)
                     + ", Neustart nach " + juce::String ((juce::int64) verzug)

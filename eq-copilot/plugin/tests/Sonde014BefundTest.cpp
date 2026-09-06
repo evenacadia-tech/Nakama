@@ -451,7 +451,87 @@ int main()
                 "Evidenz-IDs zeigten sonst ins Leere");
     }
 
-    std::cout << "SONDE-014 Befundzustaende: " << bestanden << "/"
+
+    // ═══════════════════════════════════════════════════════════════════
+    // M-36 / M-40 · der Maskierungswert haengt AM Befund
+    // ═══════════════════════════════════════════════════════════════════
+    //
+    // Etappe E. Bis dahin stand `maskierung` zwar in der erlaubten Feldmenge,
+    // wurde aber nicht geprueft — der einzige fail-open Zweig dieses Lesers.
+    {
+        const juce::String wert =
+            juce::String ("\"maskierung\":{\"quelle_a\":\"") + juce::String (kMain)
+            + "\",\"quelle_b\":\"" + juce::String (kSonde)
+            + "\",\"band_von\":96,\"band_bis\":100,\"wert_db\":7.25,"
+            + "\"gueltig\":true,\"herabgesetzt\":false}";
+        auto m = frischesModell();
+        juce::String f;
+        pruefe (uebernimm (*m, snapshot ({ befundText (hex (0x900), "ready_to_send",
+                                                       "hoch", wert) }), f)
+                    == Model::SnapshotErgebnis::uebernommen,
+                "M-36: der Maskierungswert kommt am Befund an", f);
+        const auto sicht = m->sicht();
+        pruefe (sicht.befunde.size() == 1 && sicht.befunde[0].maskierungVorhanden
+                    && sicht.befunde[0].maskierungBandVon == 96
+                    && sicht.befunde[0].maskierungBandBis == 100,
+                "M-36: er benennt einen Frequenzbereich des bestehenden Gitters");
+        pruefe (sicht.befunde.size() == 1
+                    && sicht.befunde[0].maskierungQuelleA == kMain
+                    && sicht.befunde[0].maskierungQuelleB == kSonde,
+                "M-36: und die beiden Quellen, zwischen denen er gilt");
+        pruefe (sicht.befunde.size() == 1 && sicht.befunde[0].maskierungGueltig
+                    && ! sicht.befunde[0].maskierungHerabgesetzt,
+                "M-37: `gueltig` und `herabgesetzt` sind zwei eigene Bits");
+
+        // ⚠️ Abwesenheit ist etwas ANDERES als ein ungueltiger Wert.
+        auto ohne = frischesModell();
+        juce::String g;
+        uebernimm (*ohne, snapshot ({ befundText (hex (0x900), "ready_to_send", "hoch") }), g);
+        pruefe (ohne->sicht().befunde.size() == 1
+                    && ! ohne->sicht().befunde[0].maskierungVorhanden,
+                "M-36: Abwesenheit heisst `dieser Befund traegt keinen`");
+
+        // Ein Objekt beliebiger Form faellt jetzt — vor Etappe E ging es durch.
+        for (const char* kaputt : {
+                 "\"maskierung\":{\"quelle_a\":\"kurz\",\"quelle_b\":\"kurz\",\"band_von\":0,\"band_bis\":1,\"wert_db\":0,\"gueltig\":true,\"herabgesetzt\":false}",
+                 "\"maskierung\":{\"band_von\":0,\"band_bis\":1,\"wert_db\":0,\"gueltig\":true,\"herabgesetzt\":false}",
+                 "\"maskierung\":{\"quelle_a\":\"00000000000000000000000000000001\",\"quelle_b\":\"00000000000000000000000000000002\",\"band_von\":5,\"band_bis\":5,\"wert_db\":0,\"gueltig\":true,\"herabgesetzt\":false}",
+                 "\"maskierung\":{\"quelle_a\":\"00000000000000000000000000000001\",\"quelle_b\":\"00000000000000000000000000000002\",\"band_von\":0,\"band_bis\":1,\"wert_db\":500,\"gueltig\":true,\"herabgesetzt\":false}",
+                 "\"maskierung\":{\"quelle_a\":\"00000000000000000000000000000001\",\"quelle_b\":\"00000000000000000000000000000002\",\"band_von\":0,\"band_bis\":1,\"wert_db\":0,\"gueltig\":\"ja\",\"herabgesetzt\":false}",
+                 "\"maskierung\":{\"quelle_a\":\"00000000000000000000000000000001\",\"quelle_b\":\"00000000000000000000000000000002\",\"band_von\":0,\"band_bis\":1,\"wert_db\":0,\"gueltig\":true,\"herabgesetzt\":false,\"farbe\":\"rot\"}" })
+        {
+            auto k = frischesModell();
+            juce::String h;
+            pruefe (uebernimm (*k, snapshot ({ befundText (hex (0x900), "ready_to_send",
+                                                           "hoch", kaputt) }), h)
+                        == Model::SnapshotErgebnis::ungueltig,
+                    "M-36: ein vertragswidriger Maskierungswert faellt", h);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // M-38 / M-39 / M-80 · der Datenweg traegt keine Zeichenanweisung
+    // ═══════════════════════════════════════════════════════════════════
+    //
+    // Die Markierung aendert weder Achse noch Ausschnitt, und ein Zoom kann aus
+    // dem Datenweg gar nicht kommen: es gibt kein Feld dafuer. Das ist eine
+    // Aussage ueber den VERTRAG, nicht ueber die Absicht des Erzeugers.
+    {
+        for (const char* optik : { "\"maskierung\":{\"quelle_a\":\"00000000000000000000000000000001\",\"quelle_b\":\"00000000000000000000000000000002\",\"band_von\":0,\"band_bis\":1,\"wert_db\":0,\"gueltig\":true,\"herabgesetzt\":false,\"zoom\":true}",
+                                   "\"achse\":{\"von\":20,\"bis\":20000}",
+                                   "\"zoom\":true",
+                                   "\"farbe\":\"#ff0000\"" })
+        {
+            auto m = frischesModell();
+            juce::String f;
+            pruefe (uebernimm (*m, snapshot ({ befundText (hex (0x900), "ready_to_send",
+                                                           "hoch", optik) }), f)
+                        == Model::SnapshotErgebnis::ungueltig,
+                    "M-38/M-39/M-80: eine Zeichenanweisung faellt am Vertrag", f);
+        }
+    }
+
+    std::cout << "SONDE-014 Befund und Maskierung: " << bestanden << "/"
               << (bestanden + fehler) << " gruen\n";
     return fehler == 0 ? 0 : 1;
 }

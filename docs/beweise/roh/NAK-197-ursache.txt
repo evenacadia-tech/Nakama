@@ -1,0 +1,209 @@
+NAK-197 — Ursachenbeleg: warum die Parken-Tests unter Last falsch rot fielen
+============================================================================
+Gemessen und geschrieben am 2026-09-06. Basis d4c542a, Fix e4661ce.
+Kein Produktcode geaendert; geaendert wurden nur
+eq-copilot/plugin/tests/IpcTestMain.cpp und
+eq-copilot/plugin/tests/PipeClientLifecycleTestMain.cpp.
+
+
+1. Der Feldbefund
+-----------------
+docs/beweise/NAK-181.md Paragraph 7.5 Nr. 1. Drei verschiedene Faelle in zwei
+Kanonlaeufen, immer dieselbe Signatur — alle uebrigen Bedingungen erfuellt,
+nur die Versuchszahl zu klein:
+
+  docs/beweise/roh/NAK-181-1bf41ed.md:3808  (Bein B10, EqCopIpcTest)
+    FEHLER  parken_uebergeht_den_backoff/control/access_denied
+      [Aufstieg 519 998 ms, geparkt 1 bei Versuch 3, weitere Versuche 0,
+       Neustart nach 0 ms, Versuch DANACH nach 519 ms
+       (erwartet 350..1200, ohne Reset >= 4000)]
+
+  docs/beweise/roh/NAK-181-768737f.md:3808  (Bein B10, EqCopIpcTest)
+    FEHLER  parken_uebergeht_den_backoff/telemetrie/access_denied
+      [Aufstieg 514 986 ms, geparkt 1 bei Versuch 3, ...]
+
+  docs/beweise/roh/NAK-181-768737f.md:1125  (Bein A4b, EqCopPipeClientTest)
+    FEHLER  pipeclient_parken_uebergeht_den_backoff
+      [authfehler: Aufstieg 504 998 ms, geparkt 1 bei Versuch 3, ...]
+
+Der Auftrag nannte fuer die PipeClient-Zeile "Abschnitt B5". Das ist nicht der
+Abschnitt der Rohausgabe: Zeile 1125 liegt im Block A4b (beginnt 1091,
+"#### A4b | EqCopPipeClientTest"). B5 ist laut tools/beweise.ps1:625
+EqCopAnalysisGoldenTest. Im Beleg und in den Testkommentaren steht deshalb
+A4b.
+
+Alle drei Zeilen scheitern an genau einer Teilbedingung:
+`versucheBeimParken >= 4`. Backoff-Fenster, Reconnect und Reset waren in jedem
+der drei Faelle korrekt (`Versuch DANACH nach ~500 ms`). Der Kanon war davor
+mehrfach gruen — ein Zeitfenster, kein Produktdefekt.
+
+
+2. Der Client zaehlt VOR dem Oeffnen
+------------------------------------
+Alle drei Clients erhoehen `verbindungsVersuche` in der Eintrittssperre von
+`eineVerbindung` und oeffnen erst deutlich spaeter.
+
+  eq-copilot/plugin/core/ipc/ControlClient.cpp:1659-1668
+      {
+          std::lock_guard<std::mutex> l (zustandMutex);
+          if (sollAbbrechen (generation))
+              return false;
+          zustand.status = Status::verbindet;
+          zustand.brokerPipeFehlt = false;
+          zustand.serverPruefstatus = ServerPruefStatus::nichtGeprueft;
+          zustand.serverPrueffehler = ServerPruefFehler::keiner;
+          zustand.serverPid = 0;
+          ++zustand.verbindungsVersuche;          <-- :1668
+      }
+  ... dazwischen: helloProvider() (FREMDER Code, "darf beliebig lange
+      stehen", Kommentar :1680-1684), wireAdresseAusState,
+      adresseGueltig, audioGueltig, neueGenerationBeginnen ...
+  eq-copilot/plugin/core/ipc/ControlClient.cpp:1725
+      const bool serverGeoeffnet = verbindung.oeffnen (
+          pipeName, serverErwartung, serverBericht, fehler);   <-- :1725
+
+  eq-copilot/plugin/core/ipc/TelemetryClient.cpp:554   ++zustand.verbindungsVersuche;
+  eq-copilot/plugin/core/ipc/TelemetryClient.cpp:577   verbindung.oeffnen (...)
+      (der Telemetrie-Hello-Provider laeuft anders als beim Controlpfad
+       SCHON IN threadLauf:397, also VOR dem Zaehler; zwischen Zaehler und
+       Oeffnen bleiben adresseGueltig und neueGenerationBeginnen)
+
+  eq-copilot/plugin/src/PipeClient.cpp:347   zustand.verbindungsVersuche++;
+  eq-copilot/plugin/src/PipeClient.cpp:375   h = CreateFileW (...)
+      (dazwischen ausschliesslich Produktcode; der v2-Hello-Provider laeuft
+       erst :472, also nach dem Oeffnen)
+
+Zwischen Zaehler und Oeffnungsversuch liegt also in jedem Pfad Arbeit ohne
+Zeitgarantie. Auf einer Maschine mit fremder Grundlast (~39 % CPU beim
+Nachstellen) reicht ein Schedulingfenster von wenigen hundert Millisekunden.
+
+
+3. Der Test legte die Ursache sofort nach dem Stempel an
+--------------------------------------------------------
+Alte Fassung, d4c542a:eq-copilot/plugin/tests/IpcTestMain.cpp:1628-1638
+
+      const auto aufstieg = versuchsStempel (versuche, 3, 12000);
+      ...
+      // b) Erst JETZT die Sperrursache. Das Fenster bis zum naechsten
+      //    Versuch ist 2.000 ms breit; verpasst der Aufbau es doch, parkt
+      //    der Pfad eine Stufe spaeter — auch das bleibt >= 2.000 ms und
+      //    damit diskriminierend, deshalb wartet die Parkprobe grosszuegig.
+      const bool aufbau = f.ueberAuth ? server.starten() : fremd.anlegen (pipe);
+
+`versuchsStempel` (IpcTestMain.cpp:1011-1038) faellt, sobald der Zaehler den
+Sollstand zeigt — also im Moment des Inkrements, nicht am Ende des Versuchs.
+Der Kommentar bedachte nur das Verpassen NACH HINTEN ("parkt eine Stufe
+spaeter"). Die Richtung nach vorn — die Ursache trifft den bereits
+gestempelten, aber noch nicht abgeschlossenen dritten Versuch — war gar nicht
+betrachtet, und genau sie ist die schaedliche: sie parkt bei Versuch 3 und
+verletzt die Zusage.
+
+Derselbe Aufbau in
+d4c542a:eq-copilot/plugin/tests/PipeClientLifecycleTestMain.cpp:1132-1141.
+
+
+4. Das gewaehlte Beobachtungsfeld: serverPruefstatus
+----------------------------------------------------
+Gewaehlt wurde `snapshot().serverPruefstatus != ServerPruefStatus::nichtGeprueft`.
+
+Warum es erst nach dem Oeffnungsversuch gesetzt wird:
+  - Der Eintritt setzt es im SELBEN Mutexblock wie den Zaehler auf
+    `nichtGeprueft` zurueck (ControlClient.cpp:1665, TelemetryClient.cpp:551,
+    PipeClient.cpp:353).
+  - Belegt wird es erst aus dem Ergebnis des Oeffnungsversuchs:
+    ControlClient.cpp:1740 / TelemetryClient.cpp:592 (`serverBericht.status`
+    bzw. `verifiziert`), PipeClient.cpp:405/410/415 (Win32-Fehlerklasse) und
+    :436/:445 (Auth-Urteil).
+  - Gegen den in Schritt a) noch freien Namen ist das Urteil `nichtDa`
+    (ControlClient/Telemetry ueber `IpcVerbindung::oeffnen`, PipeClient ueber
+    ERROR_FILE_NOT_FOUND, :405).
+
+Warum es nicht stale lesen kann: Zaehler-Inkrement und Ruecksetzen auf
+`nichtGeprueft` liegen unter derselben Sperre. Ein Snapshot, der den Zaehler
+auf 3 sieht, sieht damit zwangslaeufig auch schon `nichtGeprueft`. Ein
+spaeterer Snapshot kann deshalb nur das Urteil des DRITTEN (oder eines noch
+spaeteren) Versuchs zeigen, nie mehr das des zweiten.
+
+Verworfene Alternativen:
+  - `brokerPipeFehlt` — nur ControlClient setzt es beim Eintritt zurueck
+    (:1664) und beim Ausgang (:1743); TelemetryClient hat es im
+    Ruecksetzblock gar nicht. Nicht auf allen drei Pfaden gleich verlaesslich.
+  - `status != verbindet` — traegt zwar denselben Wechsel, wird aber
+    zusaetzlich von den Vorpruefungen `adresseGueltig`/`audioGueltig` auf
+    `getrennt` gesetzt (ControlClient.cpp:1693, :1707), also OHNE dass
+    geoeffnet wurde. Genau die Verwechslung, die der Test nicht machen darf.
+  - Zeitstempel des Fehlausgangs — im Snapshot der drei Clients gibt es kein
+    solches Feld; ein neues waere Produktcode und ist ausgeschlossen.
+
+Die Wartefrist ist 12.000 ms — dieselbe Groessenordnung wie der Deckel des
+Aufstiegs; `dritterFertig` geht als eigene Bedingung in `pruefe` und in die
+Meldezeile ein, damit ein Ausbleiben gemeldet und nicht verschluckt wird.
+
+
+5. Die Race-Richtung ist nach der Aenderung einseitig
+-----------------------------------------------------
+Backoff-Folge des Clients: nach k gescheiterten Versuchen steht `backoffMs`
+auf `500 * 2^k` (ControlClient.cpp:1645 `min (backoffMs * 2, kBackoffMaxMs)`);
+der Parkversuch selbst aendert ihn nicht, weil der `authBlockiert`-Zweig mit
+`continue` vor der Verdopplung aussteigt (:1620-1632).
+
+  zu FRUEH (alte Fassung):  Ursache trifft Versuch 3   -> geparkt bei 3
+                            -> FALSCHES ROT.
+  rechtzeitig (Regelfall):  Ursache im 2.000-ms-Fenster -> Versuch 4 parkt,
+                            stale backoffMs = 4.000.
+  zu SPAET:                 Versuch 4 faellt noch ins Leere, backoffMs
+                            verdoppelt auf 8.000, Versuch 5 parkt.
+                            >= 4 und >= 4.000 — die Zusage haelt weiterhin.
+
+Die Zusage der Zeile ist unveraendert: geparkt bei Versuch >= 4, keine
+weiteren Versuche in 1.500 ms, Reconnect loest ohne Wartezeit, der Versuch
+danach liegt im Fenster 350..1200 ms (ohne Reset waeren es >= 4.000 ms).
+Punkt 2 und 3 werden von der Stufe nicht beruehrt: der Parkzweig setzt
+`backoffMs = kBackoffStartMs` beim Verlassen (:1630), unabhaengig davon, aus
+welcher Stufe geparkt wurde.
+
+
+6. Sweep: welche anderen versuchsStempel-Stellen tragen dieselbe Form?
+----------------------------------------------------------------------
+`rg 'versuchsStempel'` ueber beide Testdateien, jede Fundstelle geprueft.
+
+  IpcTestMain.cpp:1011  Definition des Helfers.
+  IpcTestMain.cpp:1370, :1395, :1420, :1459
+      Reine Folgenmessungen (backoff_folge_und_deckel_...). Die Ursache steht
+      VOR dem Stempel oder es gibt keine; nichts wird danach angelegt.
+      Nicht betroffen.
+  IpcTestMain.cpp:1504  backoff_folge.../stehende_verbindung_setzt_zurueck
+      Legt nach dem Stempel eine Ursache an (`server.starten()`), aber die
+      Zusage haengt an KEINER Versuchszahl: gemessen wird der Abstand nach
+      einer STEHENDEN Verbindung, und ein Erfolg setzt `backoffMs` in jedem
+      Fall auf 500 (ControlClient.cpp:1611-1612 `if (stand) backoffMs = ...`).
+      Ob Versuch 3 oder 4 verbindet, aendert das Urteil nicht.
+      Nicht betroffen — unveraendert gelassen.
+  IpcTestMain.cpp:1628  parken_uebergeht_den_backoff  -> BEHOBEN.
+  IpcTestMain.cpp:1837, :1860  kopplungswarte_faelscht_den_backoff_nicht
+      Nimmt nach dem Stempel die Kopplung weg. Das Kopplungstor sitzt aber in
+      TelemetryClient.cpp:406, also VOR `eineVerbindung` und damit vor dem
+      Zaehler: der Provider des dritten Versuchs ist beim Stempel schon
+      gelaufen, das Wegnehmen kann nur den VIERTEN Durchlauf treffen. Die
+      Zeile hat ausserdem keine Versuchszahl in der Zusage und wartet seit
+      SONDE-013 Nacharbeit 1 bereits auf `serverPruefstatus != nichtGeprueft`
+      (:1873) — dasselbe Feld, aus demselben Grund. Nicht betroffen.
+
+  PipeClientLifecycleTestMain.cpp:666  Definition des Helfers.
+  PipeClientLifecycleTestMain.cpp:968, :993, :1017  Folgenmessungen, Ursache
+      steht vor dem Stempel. Nicht betroffen.
+  PipeClientLifecycleTestMain.cpp:1050  v2-Zwilling von :1504, gleiche
+      Begruendung (PipeClient.cpp:303 und :318). Nicht betroffen.
+  PipeClientLifecycleTestMain.cpp:1132  pipeclient_parken_...  -> BEHOBEN.
+
+Ergebnis: genau die zwei im Auftrag genannten Faelle tragen die schaedliche
+Form. Sonst wurde nichts angefasst.
+
+
+7. Beweise
+----------
+  docs/beweise/roh/NAK-197-rot.txt        Rot/Gruen-Paarlauf mit erzwungenem
+                                          Verzug (nur Testcode).
+  docs/beweise/roh/NAK-197-zehnfach-e4661ce.txt
+                                          Zehn Laeufe je Bein auf dem
+                                          committeten Fix.

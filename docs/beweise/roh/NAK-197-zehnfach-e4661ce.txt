@@ -1,0 +1,151 @@
+NAK-197 - Zehnfachlauf beider Parken-Beine auf dem committeten Fix
+==================================================================
+Beleg zu Punkt 1 des Auftrags: EqCopIpcTest (Bein B10) und
+EqCopPipeClientTest (Bein A4b) je zehn Laeufe hintereinander, je Exitcode 0.
+Gefahren am 2026-09-06 im sichtbaren Checkout, sequentiell, mit der fremden
+Grundlast der Maschine (rund 39 % CPU) - genau der Lage, in der die Faelle in
+NAK-181 gefallen sind. Pruefbinaer-Pfad und Beinnamen nach tools/beweise.ps1
+(Funktion Pruefbinaer :404-407, Bein B10 :637, Bein A4b :472-479).
+
+Ursachenanalyse:    docs/beweise/roh/NAK-197-ursache.txt
+Rot/Gruen-Paarlauf: docs/beweise/roh/NAK-197-rot.txt
+
+Je Lauf sind die vollstaendigen Meldezeilen der geaenderten Pruefungen
+mitgeschrieben (B10 vier Faelle control/telemetrie x authfehler/access_denied,
+A4b zwei Faelle authfehler/access_denied). Ein roter Lauf haette zusaetzlich
+alle FEHLER-Zeilen ausgeworfen; es gab keine.
+
+NAK-197 Zehnfachlauf beider Parken-Beine
+Basis-Commit: e4661ce78789e1fc395404ab8560b0da173a503c
+Start: 2026-09-06 06:19:33
+Binaer EqCopIpcTest: gebaut 2026-09-06 06:18:35, SHA256 D88A0E021E3438DF
+Binaer EqCopPipeClientTest: gebaut 2026-09-06 06:18:38, SHA256 AB3A93472989CC0F
+
+## B10 | EqCopIpcTest - zehn Laeufe hintereinander
+
+Lauf  1/10  Exitcode 0    213,84 s  06:23:07
+            ok      parken_uebergeht_den_backoff/control/authfehler  [Aufstieg 496 997 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 496 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      parken_uebergeht_den_backoff/telemetrie/authfehler  [Aufstieg 498 995 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 495 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      parken_uebergeht_den_backoff/control/access_denied  [Aufstieg 497 993 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 6 ms, Versuch DANACH nach 499 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      parken_uebergeht_den_backoff/telemetrie/access_denied  [Aufstieg 495 1000 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 497 ms (erwartet 350..1200, ohne Reset >= 4000)]
+
+Lauf  2/10  Exitcode 0    213,94 s  06:26:41
+            ok      parken_uebergeht_den_backoff/control/authfehler  [Aufstieg 493 1003 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 500 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      parken_uebergeht_den_backoff/telemetrie/authfehler  [Aufstieg 501 993 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 6 ms, Versuch DANACH nach 495 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      parken_uebergeht_den_backoff/control/access_denied  [Aufstieg 494 1006 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 498 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      parken_uebergeht_den_backoff/telemetrie/access_denied  [Aufstieg 498 997 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 498 ms (erwartet 350..1200, ohne Reset >= 4000)]
+
+Lauf  3/10  Exitcode 0    214,57 s  06:30:16
+            ok      parken_uebergeht_den_backoff/control/authfehler  [Aufstieg 502 991 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 498 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      parken_uebergeht_den_backoff/telemetrie/authfehler  [Aufstieg 500 1003 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 496 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      parken_uebergeht_den_backoff/control/access_denied  [Aufstieg 494 1005 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 496 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      parken_uebergeht_den_backoff/telemetrie/access_denied  [Aufstieg 496 997 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 497 ms (erwartet 350..1200, ohne Reset >= 4000)]
+
+Lauf  4/10  Exitcode 0    214,55 s  06:33:50
+            ok      parken_uebergeht_den_backoff/control/authfehler  [Aufstieg 495 998 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 497 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      parken_uebergeht_den_backoff/telemetrie/authfehler  [Aufstieg 498 1001 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 500 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      parken_uebergeht_den_backoff/control/access_denied  [Aufstieg 496 1002 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 495 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      parken_uebergeht_den_backoff/telemetrie/access_denied  [Aufstieg 494 1006 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 6 ms, Versuch DANACH nach 499 ms (erwartet 350..1200, ohne Reset >= 4000)]
+
+Lauf  5/10  Exitcode 0     214,9 s  06:37:25
+            ok      parken_uebergeht_den_backoff/control/authfehler  [Aufstieg 500 994 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 498 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      parken_uebergeht_den_backoff/telemetrie/authfehler  [Aufstieg 500 996 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 497 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      parken_uebergeht_den_backoff/control/access_denied  [Aufstieg 492 999 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 496 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      parken_uebergeht_den_backoff/telemetrie/access_denied  [Aufstieg 500 1001 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 498 ms (erwartet 350..1200, ohne Reset >= 4000)]
+
+Lauf  6/10  Exitcode 0    214,75 s  06:41:00
+            ok      parken_uebergeht_den_backoff/control/authfehler  [Aufstieg 495 998 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 496 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      parken_uebergeht_den_backoff/telemetrie/authfehler  [Aufstieg 491 1006 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 501 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      parken_uebergeht_den_backoff/control/access_denied  [Aufstieg 493 1005 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 498 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      parken_uebergeht_den_backoff/telemetrie/access_denied  [Aufstieg 494 1001 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 500 ms (erwartet 350..1200, ohne Reset >= 4000)]
+
+Lauf  7/10  Exitcode 0    214,83 s  06:44:35
+            ok      parken_uebergeht_den_backoff/control/authfehler  [Aufstieg 500 994 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 495 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      parken_uebergeht_den_backoff/telemetrie/authfehler  [Aufstieg 498 1002 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 497 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      parken_uebergeht_den_backoff/control/access_denied  [Aufstieg 493 1000 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 495 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      parken_uebergeht_den_backoff/telemetrie/access_denied  [Aufstieg 492 1007 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 500 ms (erwartet 350..1200, ohne Reset >= 4000)]
+
+Lauf  8/10  Exitcode 0     214,3 s  06:48:09
+            ok      parken_uebergeht_den_backoff/control/authfehler  [Aufstieg 498 997 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 496 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      parken_uebergeht_den_backoff/telemetrie/authfehler  [Aufstieg 499 997 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 498 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      parken_uebergeht_den_backoff/control/access_denied  [Aufstieg 495 1006 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 498 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      parken_uebergeht_den_backoff/telemetrie/access_denied  [Aufstieg 494 1007 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 496 ms (erwartet 350..1200, ohne Reset >= 4000)]
+
+Lauf  9/10  Exitcode 0    214,45 s  06:51:44
+            ok      parken_uebergeht_den_backoff/control/authfehler  [Aufstieg 496 997 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 495 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      parken_uebergeht_den_backoff/telemetrie/authfehler  [Aufstieg 492 1000 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 495 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      parken_uebergeht_den_backoff/control/access_denied  [Aufstieg 495 998 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 500 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      parken_uebergeht_den_backoff/telemetrie/access_denied  [Aufstieg 496 1004 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 497 ms (erwartet 350..1200, ohne Reset >= 4000)]
+
+Lauf 10/10  Exitcode 0     214,7 s  06:55:18
+            ok      parken_uebergeht_den_backoff/control/authfehler  [Aufstieg 499 992 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 500 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      parken_uebergeht_den_backoff/telemetrie/authfehler  [Aufstieg 490 1007 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 497 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      parken_uebergeht_den_backoff/control/access_denied  [Aufstieg 501 996 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 498 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      parken_uebergeht_den_backoff/telemetrie/access_denied  [Aufstieg 492 1006 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 6 ms, Versuch DANACH nach 499 ms (erwartet 350..1200, ohne Reset >= 4000)]
+
+BILANZ B10 EqCopIpcTest: 10 Laeufe, 0 rot, 10 gruen
+
+## A4b | EqCopPipeClientTest - zehn Laeufe hintereinander
+
+Lauf  1/10  Exitcode 0     66,18 s  06:56:25
+            ok      pipeclient_parken_uebergeht_den_backoff  [authfehler: Aufstieg 495 999 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 10 ms, Versuch DANACH nach 497 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      pipeclient_parken_uebergeht_den_backoff  [access_denied: Aufstieg 493 1008 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 10 ms, Versuch DANACH nach 495 ms (erwartet 350..1200, ohne Reset >= 4000)]
+
+Lauf  2/10  Exitcode 0     65,67 s  06:57:30
+            ok      pipeclient_parken_uebergeht_den_backoff  [authfehler: Aufstieg 493 1001 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 10 ms, Versuch DANACH nach 491 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      pipeclient_parken_uebergeht_den_backoff  [access_denied: Aufstieg 492 1003 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 10 ms, Versuch DANACH nach 491 ms (erwartet 350..1200, ohne Reset >= 4000)]
+
+Lauf  3/10  Exitcode 0     65,66 s  06:58:36
+            ok      pipeclient_parken_uebergeht_den_backoff  [authfehler: Aufstieg 492 1001 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 10 ms, Versuch DANACH nach 489 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      pipeclient_parken_uebergeht_den_backoff  [access_denied: Aufstieg 495 1000 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 10 ms, Versuch DANACH nach 491 ms (erwartet 350..1200, ohne Reset >= 4000)]
+
+Lauf  4/10  Exitcode 0     65,72 s  06:59:42
+            ok      pipeclient_parken_uebergeht_den_backoff  [authfehler: Aufstieg 496 997 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 10 ms, Versuch DANACH nach 497 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      pipeclient_parken_uebergeht_den_backoff  [access_denied: Aufstieg 497 998 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 10 ms, Versuch DANACH nach 494 ms (erwartet 350..1200, ohne Reset >= 4000)]
+
+Lauf  5/10  Exitcode 0     65,66 s  07:00:47
+            ok      pipeclient_parken_uebergeht_den_backoff  [authfehler: Aufstieg 498 999 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 10 ms, Versuch DANACH nach 499 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      pipeclient_parken_uebergeht_den_backoff  [access_denied: Aufstieg 495 1003 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 10 ms, Versuch DANACH nach 495 ms (erwartet 350..1200, ohne Reset >= 4000)]
+
+Lauf  6/10  Exitcode 0     65,65 s  07:01:53
+            ok      pipeclient_parken_uebergeht_den_backoff  [authfehler: Aufstieg 496 1002 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 10 ms, Versuch DANACH nach 495 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      pipeclient_parken_uebergeht_den_backoff  [access_denied: Aufstieg 495 997 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 10 ms, Versuch DANACH nach 497 ms (erwartet 350..1200, ohne Reset >= 4000)]
+
+Lauf  7/10  Exitcode 0     65,64 s  07:02:59
+            ok      pipeclient_parken_uebergeht_den_backoff  [authfehler: Aufstieg 493 1002 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 10 ms, Versuch DANACH nach 495 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      pipeclient_parken_uebergeht_den_backoff  [access_denied: Aufstieg 492 1010 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 10 ms, Versuch DANACH nach 490 ms (erwartet 350..1200, ohne Reset >= 4000)]
+
+Lauf  8/10  Exitcode 0     66,16 s  07:04:05
+            ok      pipeclient_parken_uebergeht_den_backoff  [authfehler: Aufstieg 497 994 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 10 ms, Versuch DANACH nach 491 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      pipeclient_parken_uebergeht_den_backoff  [access_denied: Aufstieg 496 1004 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 10 ms, Versuch DANACH nach 493 ms (erwartet 350..1200, ohne Reset >= 4000)]
+
+Lauf  9/10  Exitcode 0     65,64 s  07:05:10
+            ok      pipeclient_parken_uebergeht_den_backoff  [authfehler: Aufstieg 501 996 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 10 ms, Versuch DANACH nach 492 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      pipeclient_parken_uebergeht_den_backoff  [access_denied: Aufstieg 491 1002 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 10 ms, Versuch DANACH nach 492 ms (erwartet 350..1200, ohne Reset >= 4000)]
+
+Lauf 10/10  Exitcode 0     66,14 s  07:06:17
+            ok      pipeclient_parken_uebergeht_den_backoff  [authfehler: Aufstieg 494 1005 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 10 ms, Versuch DANACH nach 495 ms (erwartet 350..1200, ohne Reset >= 4000)]
+            ok      pipeclient_parken_uebergeht_den_backoff  [access_denied: Aufstieg 499 994 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 10 ms, Versuch DANACH nach 496 ms (erwartet 350..1200, ohne Reset >= 4000)]
+
+BILANZ A4b EqCopPipeClientTest: 10 Laeufe, 0 rot, 10 gruen
+
+Ende: 2026-09-06 07:06:17
+
+
+Auswertung
+----------
+20 Laeufe, 20 x Exitcode 0, 0 rot.
+
+60 Parkmessungen (10 x 4 in B10, 10 x 2 in A4b):
+  versucheBeimParken   60 x "bei Versuch 4"   (verlangt >= 4)
+                        0 x "bei Versuch 3"   (die Signatur aus NAK-181)
+  Versuch DANACH       n=60, min 489 ms, max 501 ms, Mittel 496,2 ms
+                       (Fenster 350..1200 ms; ohne Reset waeren es >= 4000 ms)
+
+Die Streuung des Abstands betraegt 12 ms ueber alle 60 Messungen - der Wert
+haengt an kBackoffStartMs (500 ms), nicht an der Maschinenlast. Damit ist auch
+die Gegenprobe zu Punkt 3 der Zeile erfuellt: der Reset wird gemessen, nicht
+nur ein Ausbleiben gemeldet.
+
+Laufzeiten: B10 213,84 bis 214,90 s (Spanne 1,06 s), A4b 65,64 bis 66,18 s
+(Spanne 0,54 s) - keine Ausreisser, kein Lauf lief in einen Deckel.

@@ -1,0 +1,133 @@
+NAK-197 — Rot/Gruen-Paarlauf: der Race wird erzwungen und dann geschlossen
+==========================================================================
+Gemessen am 2026-09-06 im sichtbaren Checkout, mit der fremden Grundlast der
+Maschine (rund 39 % CPU). Bein B10 `EqCopIpcTest`, voller Lauf, 362
+Pruefungen. Ursachenanalyse: docs/beweise/roh/NAK-197-ursache.txt.
+
+
+Warum ein erzwungener statt eines erwarteten Rotlaufs
+-----------------------------------------------------
+Der Feldbefund ist ein Zeitfenster: derselbe Kanon war davor mehrfach gruen,
+und in zwei Laeufen fielen drei VERSCHIEDENE Faelle. Ein Rotlauf "auf gut
+Glueck" beweist also nichts, und sein Ausbleiben erst recht nicht. Deshalb
+wurde der Verzug, den die Last sonst zufaellig erzeugt, im TEST erzwungen und
+der Lauf zweimal gefahren — einmal mit der alten, einmal mit der neuen
+Vorbedingung, sonst byte-identisch.
+
+Die Erzwingung liegt vollstaendig im Testcode. `ControlClient` ruft den
+Hello-Provider INNERHALB `eineVerbindung`, also nach `++verbindungsVersuche`
+(:1668) und vor `oeffnen()` (:1725) — genau in dem Fenster, um das es geht.
+Ein Schlaf im Provider ist damit ein exakter Ersatz fuer die Last:
+
+    control.reset (new ControlClient (
+        [&providerAufrufe] {
+            // NAK-197 ROTBEWEIS (temporaer): genau der DRITTE Versuch
+            // haelt zwischen Zaehler und `oeffnen()` an. Das ist der
+            // Testprovider, kein Produktcode.
+            if (providerAufrufe.fetch_add (1) + 1 == 3)
+                std::this_thread::sleep_for (std::chrono::milliseconds (700));
+            return nak123ControlHello();
+        }, pipe, {}, {}, {}, {}, erwartung));
+
+Nur der DRITTE Aufruf schlaeft, nicht jeder ab dem dritten: sonst wuerde der
+Verzug auch in Punkt 3 der Zeile einfliessen (Abstand zum zweiten Versuch nach
+dem Reconnect, Fenster 350..1200 ms) und dort eine zweite, kuenstliche
+Rotquelle erzeugen.
+
+Beide Laeufe tragen diesen Provider. Der EINZIGE Unterschied ist Schritt a2.
+
+
+Lauf ROT — a2 abgeschaltet (Stand wie d4c542a)
+----------------------------------------------
+    // NAK-197 ROTBEWEIS (temporaer): a2 abgeschaltet — alte Fassung.
+    const bool dritterFertig = true;
+    (void) pruefstatus;
+
+(`dritterFertig` steht deshalb in der Meldezeile auf 1, ohne dass gewartet
+wurde — die Konstante, nicht das Ergebnis einer Messung.)
+
+Exitcode 1 — FEHLER, 362 Pruefungen, 2 Fehler.
+
+  FEHLER  parken_uebergeht_den_backoff/control/authfehler
+    [Aufstieg 494 999 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 3,
+     weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 495 ms
+     (erwartet 350..1200, ohne Reset >= 4000)]
+  ok      parken_uebergeht_den_backoff/telemetrie/authfehler
+    [Aufstieg 497 1001 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4,
+     weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 500 ms ...]
+  FEHLER  parken_uebergeht_den_backoff/control/access_denied
+    [Aufstieg 497 995 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 3,
+     weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 496 ms ...]
+  ok      parken_uebergeht_den_backoff/telemetrie/access_denied
+    [Aufstieg 496 1000 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4,
+     weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 499 ms ...]
+
+Es fielen im ganzen Lauf GENAU diese zwei Pruefungen, mit exakt der
+Feldsignatur "geparkt 1 bei Versuch 3" aus NAK-181.
+
+Dass der Telemetriepfad gruen blieb, ist kein Widerspruch, sondern die
+Bestaetigung der Diagnose: `TelemetryClient` ruft seinen Hello-Provider schon
+in `threadLauf` (:397), also VOR dem Zaehler. Der kuenstliche Verzug liegt
+dort gar nicht im fraglichen Fenster und kann den Race folglich nicht
+ausloesen. Rot wird nur, wo der Verzug wirklich zwischen Zaehler und
+`oeffnen()` sitzt.
+
+
+Lauf GRUEN — a2 aktiv, gleicher Provider, gleicher Verzug
+----------------------------------------------------------
+    const bool dritterFertig = warteAuf (12000, [&] {
+        return pruefstatus() != ServerPruefStatus::nichtGeprueft;
+    });
+
+Exitcode 0 — ALLE PRUEFUNGEN GRUEN, 362 Pruefungen, 0 Fehler.
+
+  ok      parken_uebergeht_den_backoff/control/authfehler
+    [Aufstieg 492 1007 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4,
+     weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 496 ms
+     (erwartet 350..1200, ohne Reset >= 4000)]
+  ok      parken_uebergeht_den_backoff/telemetrie/authfehler
+    [Aufstieg 496 995 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4,
+     weitere Versuche 0, Neustart nach 6 ms, Versuch DANACH nach 497 ms ...]
+  ok      parken_uebergeht_den_backoff/control/access_denied
+    [Aufstieg 498 998 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4,
+     weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 501 ms ...]
+  ok      parken_uebergeht_den_backoff/telemetrie/access_denied
+    [Aufstieg 498 998 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4,
+     weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 499 ms ...]
+
+`versucheBeimParken` geht 3 -> 4, die Zeile wird gruen, und die uebrigen
+Messwerte bleiben unveraendert: Aufstieg weiter 500/1000 ms, Neustart nach
+5 ms, der Versuch danach bei rund 500 ms — also im Fenster 350..1200 ms, nicht
+etwa auf einen unauffaelligen Wert verschoben. Die Zusage der Zeile ist
+dieselbe geblieben; nur ihre Vorbedingung ist jetzt deterministisch.
+
+
+Kein Rotbeweis fuer den v2-Pfad — Begruendung statt Behauptung
+---------------------------------------------------------------
+Fuer `pipeclient_parken_uebergeht_den_backoff` laesst sich derselbe erzwungene
+Rotlauf OHNE Produktaenderung nicht bauen: zwischen `verbindungsVersuche++`
+(PipeClient.cpp:347) und `CreateFileW` (:375) liegt ausschliesslich
+Produktcode, und der v2-Hello-Provider wird erst NACH dem Oeffnen aufgerufen
+(:472). Es gibt dort keinen Testeinstiegspunkt im fraglichen Fenster. Eine
+Produktaenderung nur fuer einen Beweis ist im Auftrag ausgeschlossen — und
+waere auch die falsche Reihenfolge.
+
+Der v2-Pfad ist stattdessen durch den ECHTEN Rotlauf belegt:
+docs/beweise/roh/NAK-181-768737f.md:1125, Bein A4b, Fall `authfehler`,
+"geparkt 1 bei Versuch 3". Die Codeform ist identisch (Zaehler vor Oeffnen,
+`serverPruefstatus` im selben Mutexblock zurueckgesetzt und erst nach dem
+Oeffnungsversuch belegt), und die Korrektur ist wortgleich dieselbe.
+
+
+Ruecknahme
+----------
+Die temporaeren Zeilen (Provider-Schlaf, `providerAufrufe`, abgeschaltetes a2)
+sind NICHT committet. Nach dem Paarlauf wurde die gesicherte Fassung
+zurueckgespielt und geprueft:
+
+    grep -c 'ROTBEWEIS\|providerAufrufe' eq-copilot/plugin/tests/IpcTestMain.cpp
+    0
+
+Committet ist ausschliesslich die Fassung mit a2 (e4661ce). Der Zehnfachlauf
+in docs/beweise/roh/NAK-197-zehnfach-e4661ce.txt laeuft auf genau dieser
+Fassung, ohne jeden kuenstlichen Verzug.

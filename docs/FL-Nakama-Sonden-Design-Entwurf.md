@@ -897,6 +897,17 @@ formulieren.
 > ist offen — Register **NAK-38**, Fragenkarte. Bis zur Entscheidung ist keine der beiden
 > Listen Oberflächenvorgabe.
 
+> **[0.5 · Erratum (h) · Entscheid 06.09.2026]** Die Rollenliste ist **entschieden: fünf Rollen** —
+> führt, trägt, begleitet, geschützt, bewusst verschmolzen. User-Auswahl auf Karte U22 in der
+> Dirigenten-Sitzung: „Fünf (Empfohlen)" (Wortlaut in
+> [`../design/abnahmen/2026-09-06-fragenrunde-rollen-u22.md`](../design/abnahmen/2026-09-06-fragenrunde-rollen-u22.md)).
+> Die sieben Rollen oben sind Verlauf. **Impuls** und **Raum** sind keine Rollen: kurze Anschläge
+> werden über die Schutzangabe an der Quelle geschützt (§37.1, geschützte Eigenschaften wie Attack),
+> Hall, Atmosphäre und Breite dürfen über die Verschmelzungs-Erlaubnis verschmelzen (§37.1, „A/B
+> dürfen verschmelzen"). Wie die fünf Rollen auf `SourceIntent` (§37.1) abgebildet werden, ist
+> Technik von `SONDE-014` (S23–25) und steht in dessen Verhaltensmatrix; die Produktzusage ist die
+> Anzahl. Register NAK-38 damit geschlossen.
+
 ### Wichtigste Regel
 
 **Die Absicht des Users schlägt die statistisch „sauberere“ Lösung.**

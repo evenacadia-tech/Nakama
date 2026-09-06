@@ -28,17 +28,6 @@
    "blockiert_durch": "NAK-57 — der Zähler analyseKontinuitaetsbrueche() hat keine Anzeige; ohne sie ist der Kurztermin nicht ablesbar (Dirigent 29.08.)"
   },
   {
-   "id": "U22",
-   "dringlichkeit": "vor S23–25",
-   "art": "Produktentscheid (eine Antwort)",
-   "titel": "Wie viele musikalische Rollen kann eine Quelle bekommen — fünf oder sieben?",
-   "was": "Eine Quelle kann eine musikalische Rolle tragen, damit Nakama weiß, wer führen und wer Platz machen soll. Es liegen zwei Listen vor: die technische Liste des Entwurfs mit sieben Rollen (Fokus, Fundament, Begleitung, Impuls, Raum, Geschützt, Bewusst verschmolzen) und die Oberflächenliste mit fünf (führt, trägt, begleitet, geschützt, bewusst verschmolzen). Es geht nicht um die Wörter, sondern um die Anzahl der Unterscheidungen, die du im Mix wirklich treffen willst.",
-   "warum": "Register NAK-38 seit dem 21.08.2026 offen; die Frage stand am 22.08. als U9.1-Folge auf der Liste und wurde nie gestellt. Der Entwurf 0.5 führt sie in §9 ausdrücklich als nicht entschieden. Die Rolle steuert, welchen Vorschlag der Advisor überhaupt macht — sie ist Produktverhalten, nicht Optik, und wird in S23–25 gebaut.",
-   "wo": "docs/FL-Nakama-Sonden-Design-Entwurf.md §9 (Erratum (h)); docs/offene-punkte.md NAK-38; design/docs/oberflaechen-spezifikation.md",
-   "seit": "02.09.",
-   "status": "offen"
-  },
-  {
    "id": "U23",
    "dringlichkeit": "wenn du dazu kommst",
    "art": "Namensentscheid (zwei Wörter)",
@@ -539,6 +528,14 @@
    "datum": "2026-09-02 13:41",
    "status": "eingearbeitet",
    "ergebnis": "Die übrigen Messlücken-Zähler aus NAK-57 (Ganzblockdrops nach Überlauf und Oversize, verworfene Frames, High-Water-Mark der Hostblockgröße, versiegelte und quarantänisierte Blöcke, Kontinuitätsbrüche, Fenster- und Epochenbuchhaltung, grenzenMitGrund) bekommen in Gen keine Fläche und keine Diagnoseansicht als Produktfläche; sie bleiben Entwicklerdiagnose in den Beweisläufen (Beine B4, B5, B9). Sichtbar bleiben Frische je Quelle, Lautheit mit Unsicherheit (U17.5) und Capability-Degradation am Zielumschalter. Register NAK-57 per User-Entscheid geschlossen; Blueprint Abschnitt 15 Punkt 4 auf [D]; für den FL-Kurztermin (U13) liest der Beweislauf die getrennten Ursachen, nicht Gen. Entscheidung 1/5 in Fünferblock 06. [design/abnahmen/2026-09-02-technische-ui-architektur-fuenferblock-06.md]"
+  },
+  "U22": {
+   "frage": "Wie viele musikalische Rollen soll eine Quelle im Mix bekommen können? Es geht um die Anzahl der Unterscheidungen, die du wirklich treffen willst, nicht um die Wörter.",
+   "wahl": "Fünf (Empfohlen)",
+   "text": "Fünf (Empfohlen) — führt · trägt · begleitet · geschützt · bewusst verschmolzen. Kurze Anschläge schützen (Drums bleiben knackig) und Hall/Atmosphäre verschmelzen lassen sind dann keine eigenen Rollen, sondern eine Schutzangabe bzw. Verschmelzungs-Erlaubnis an der Quelle. Weniger Auswahl in der Liste, der Advisor kann trotzdem beides berücksichtigen. Passt zu deinem Leitsatz vom 02.09.: weniger Angaben.",
+   "datum": "2026-09-06 16:47",
+   "status": "eingearbeitet",
+   "ergebnis": "Eine Quelle kann genau fünf musikalische Rollen bekommen (führt, trägt, begleitet, geschützt, bewusst verschmolzen); Impuls und Raum sind keine Rollen, sondern Schutzangabe bzw. Verschmelzungs-Erlaubnis an der Quelle, die der Advisor berücksichtigt. Abbildung auf das Intent-Modell (Entwurf §37.1) ist Technik von S23–25. Entwurf §9 Erratum (h) 06.09.2026, Register NAK-38 geschlossen, Plan S23–25 und Bauaufteilung nachgetragen. [design/abnahmen/2026-09-06-fragenrunde-rollen-u22.md]"
   }
  }
 }

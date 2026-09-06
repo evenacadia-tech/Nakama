@@ -68,7 +68,11 @@ noch nicht festgelegt.
 - **Vorher/Nachher-Vergleich**: Baseline gegen Änderung, level-gematcht;
   Urteil des Users: behalten / verwerfen / noch unklar.
 - **Musikalische Prioritäten**: der User kann Quellen Rollen geben
-  (führt / trägt / begleitet / geschützt / bewusst verschmolzen).
+  (führt / trägt / begleitet / geschützt / bewusst verschmolzen). Anzahl
+  entschieden am 06.09.2026 (Karte U22, „Fünf (Empfohlen)"): genau diese fünf;
+  Transientenschutz und Raum-Verschmelzung sind Schutzangabe bzw.
+  Verschmelzungs-Erlaubnis an der Quelle, keine Rollen — Wortlaut
+  [`../abnahmen/2026-09-06-fragenrunde-rollen-u22.md`](../abnahmen/2026-09-06-fragenrunde-rollen-u22.md).
 
 ### Fläche 2 (Arbeitsname „EQ-Zentrale" / „EQ Center")
 

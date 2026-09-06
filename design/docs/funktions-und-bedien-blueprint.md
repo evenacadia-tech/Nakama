@@ -1522,6 +1522,7 @@ außerhalb der Oberfläche.
 | [Suna-Stilllegung, 28.08.2026](../abnahmen/2026-08-28-suna-stilllegung-vorgezogen.md) | zwei Produktbundles plus Broker |
 | [Marktstandard-Fragen, 30.08.2026](../abnahmen/2026-08-30-fragenrunde-marktstandard.md) | Busnamen-Fallback, Maskierungszone, Spectrum Grab/Freeze/Display, kein Piano/Linear Phase, Presets und Copy |
 | [Gen nur Standardgröße, 01.09.2026](../abnahmen/2026-09-01-gen-nur-standardgroesse.md) | beide Gen-Flächen genau 950×538; Compact und Resize vertagt; UI-Scale vergrößert dieselbe Geometrie |
+| [Rollenanzahl fünf, 06.09.2026](../abnahmen/2026-09-06-fragenrunde-rollen-u22.md) | eine Quelle bekommt genau fünf Rollen (führt, trägt, begleitet, geschützt, bewusst verschmolzen); Transientenschutz und Raum-Verschmelzung sind Schutzangabe bzw. Verschmelzungs-Erlaubnis, keine Rollen |
 
 ### 16.3 Wissensarchiv
 

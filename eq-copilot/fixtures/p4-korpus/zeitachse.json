@@ -12,6 +12,10 @@
       "fall": "no_window_crosses_an_epoch_boundary",
       "hinweis": "§32.3: kein Fenster ueberbrueckt eine echte oder moegliche Grenze",
       "konfidenz": 0.99,
+      "quelle": {
+        "bezeichner": "no_window_crosses_an_epoch_boundary",
+        "datei": "eq-copilot/plugin/tests/AnalysisGoldenTestMain.cpp"
+      },
       "wahrheit": "getrennt"
     },
     {
@@ -20,7 +24,23 @@
       "fall": "drop_counts_as_segment_not_epoch",
       "hinweis": "SONDE-009 B5 §F/G1-G2, und M-53 haengt den Wiregrund daran",
       "konfidenz": 0.98,
+      "quelle": {
+        "bezeichner": "drop_counts_as_segment_not_epoch",
+        "datei": "eq-copilot/plugin/tests/AnalysisGoldenTestMain.cpp"
+      },
       "wahrheit": "segment"
+    },
+    {
+      "aussage": "stark",
+      "bein": "B5",
+      "fall": "impulse_time_is_stable_over_block_sizes_and_sample_rates",
+      "hinweis": "NAK-182: der gemeldete stromSample eines bekannten Impulses ist ueber fuenf Blockgroessen je Samplerate identisch, bei fuenf Sampleraten, und liegt innerhalb einer Fensterlaenge (4096) vor t0. Die Auswahl kennt t0 nicht - gemessen wird das staerkste Flussereignis des Laufs.",
+      "konfidenz": 0.97,
+      "quelle": {
+        "bezeichner": "impulse_time_is_stable_over_block_sizes_and_sample_rates",
+        "datei": "eq-copilot/plugin/tests/AnalysisGoldenTestMain.cpp"
+      },
+      "wahrheit": "zeitstabil"
     },
     {
       "aussage": "stark",
@@ -28,6 +48,10 @@
       "fall": "drop_produces_counter_gap_and_boundary",
       "hinweis": "ein Drop erzeugt Zaehler, sichtbare Luecke und neue Grenze",
       "konfidenz": 0.97,
+      "quelle": {
+        "bezeichner": "drop_produces_counter_gap_and_boundary",
+        "datei": "eq-copilot/plugin/tests/QueueStressTestMain.cpp"
+      },
       "wahrheit": "getrennt"
     },
     {
@@ -36,6 +60,10 @@
       "fall": "fingerprint_window_never_crosses_epoch_boundary",
       "hinweis": "auch der Fingerprint faellt unter §32.3 - Etappe E",
       "konfidenz": 0.96,
+      "quelle": {
+        "bezeichner": "fingerprint_window_never_crosses_epoch_boundary",
+        "datei": "eq-copilot/plugin/tests/Sonde013FingerprintGoldenTest.cpp"
+      },
       "wahrheit": "getrennt"
     },
     {
@@ -44,6 +72,10 @@
       "fall": "epoch_change_invalidates_open_evidence",
       "hinweis": "M-53: der Grund auf dem Draht ist je Ausloeser eindeutig",
       "konfidenz": 0.98,
+      "quelle": {
+        "bezeichner": "epoch_change_invalidates_open_evidence",
+        "datei": "broker/tests/sonde013_taint.rs"
+      },
       "wahrheit": "getrennt"
     }
   ],

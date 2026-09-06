@@ -1,7 +1,8 @@
 {
   "beine": [
     "B17",
-    "B18"
+    "B18",
+    "B9"
   ],
   "faelle": [
     {
@@ -10,6 +11,10 @@
       "fall": "true_peak_matches_ebu_test_set",
       "hinweis": "EBU Tech 3341 Faelle 15-19: fs/4, fs/6, fs/8 bei 0,50 und 1,41 FFS",
       "konfidenz": 0.98,
+      "quelle": {
+        "bezeichner": "true_peak_matches_ebu_test_set",
+        "datei": "eq-copilot/plugin/tests/Sonde013TruePeakGoldenTest.cpp"
+      },
       "wahrheit": "ueberschreitet"
     },
     {
@@ -18,30 +23,46 @@
       "fall": "eight_times_oversampling_error_bound",
       "hinweis": "die geschlossene Fehlerformel bei fs/4: -0,042 dB mit 8x",
       "konfidenz": 0.97,
+      "quelle": {
+        "bezeichner": "eight_times_oversampling_error_bound",
+        "datei": "eq-copilot/plugin/tests/Sonde013TruePeakGoldenTest.cpp"
+      },
       "wahrheit": "ueberschreitet"
     },
     {
       "aussage": "stark",
-      "bein": "B18",
+      "bein": "B9",
       "fall": "lufs_integrated_matches_reference",
-      "hinweis": "ITU-R BS.1770-5 mit EBU-R128-Gating, Toleranz +/-0,1 LU",
+      "hinweis": "Toleranz +/-0,1 LU gegen die AUSGEBAUTE Vektorrechnung - die zweite Implementierung, nicht ein externes Testset. M-81 sagt zusaetzlich 'auf Standard-Testmaterial'; das ist fuer True Peak gedeckt (B17, EBU Tech 3341), fuer LUFS-I nicht.",
       "konfidenz": 0.99,
+      "quelle": {
+        "bezeichner": "lufs_integrated_matches_reference",
+        "datei": "eq-copilot/plugin/tests/LoudnessGoldenTestMain.cpp"
+      },
       "wahrheit": "innerhalb"
     },
     {
       "aussage": "unsicher",
       "bein": "B18",
-      "fall": "lra_below_sixty_seconds_is_unstable",
+      "fall": "lra_below_sixty_seconds_is_not_a_number",
       "hinweis": "EBU Tech 3342: unter 60 s geeignetem Material kein stabiler LRA",
       "konfidenz": 0.5,
+      "quelle": {
+        "bezeichner": "lra_below_sixty_seconds_is_not_a_number",
+        "datei": "eq-copilot/plugin/tests/Sonde013DynamicsTest.cpp"
+      },
       "wahrheit": "unbekannt"
     },
     {
       "aussage": "stark",
       "bein": "B18",
-      "fall": "psr_against_true_peak_of_same_window",
+      "fall": "plr_psr_definitions_and_labels",
       "hinweis": "psr_db rechnet gegen das True-Peak-Maximum DESSELBEN 3-s-Fensters",
       "konfidenz": 0.95,
+      "quelle": {
+        "bezeichner": "plr_psr_definitions_and_labels",
+        "datei": "eq-copilot/plugin/tests/Sonde013DynamicsTest.cpp"
+      },
       "wahrheit": "innerhalb"
     }
   ],

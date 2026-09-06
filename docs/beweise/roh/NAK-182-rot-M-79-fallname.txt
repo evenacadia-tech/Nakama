@@ -1,0 +1,25 @@
+NAK-182 Etappe 2 - ROTBEWEIS M-79-fallname (der Fallname ist kein Etikett mehr)
+
+Manipulation: im committeten Korpus zeigt die `quelle` von
+`fingerprint_window_never_crosses_epoch_boundary` auf einen Bezeichner, den es
+in der genannten Datei nicht gibt. Danach neu erzeugt.
+
+Gewertete Zeile: die Quellenpruefung aus R2. Vor NAK-182 wurde nur geprueft,
+ob das BEIN im Kanon-Runner steht; von 22 Fallnamen standen 8 woertlich in
+einem Test, und ein erfundener Name fiel niemandem auf.
+
+Kommando: py -3.13 tools/eq-copilot/pruefe_p4_korpus.py
+
+P4-Referenzkorpus: 25 Faelle in 4 Klassen
+  in P4 nicht gemessen: M-85 Ziel 1 (korrelierter, nicht kausaler Distraktor) -> NAK-190
+
+[ok]  referenz    5 Faelle · 4 stark · 1 Enthaltungen · Precision 1.00 · Recall 1.00 · Brier 0.0010 · Coverage 0.80
+[ok]  stereo      6 Faelle · 6 stark · 0 Enthaltungen · Precision 1.00 · Recall 1.00 · Brier 0.0009 · Coverage 1.00
+[ok]  vergleich   8 Faelle · 2 stark · 4 Enthaltungen · Precision 1.00 · Recall 1.00 · Brier 0.0717 · Coverage 0.50
+[ok]  zeitachse   6 Faelle · 6 stark · 0 Enthaltungen · Precision 1.00 · Recall 1.00 · Brier 0.0007 · Coverage 1.00
+
+Gesamt: 25 Faelle · 0 falsche starke Behauptungen · 0 falsche schwache · Brier 0.0150 · Kalibrierung 0.0630 · Coverage 0.80 · Enthaltungsrate 0.20
+Vertrag: 5 von 5 geschlossenen Mengen gelesen, kein kausaler Bezeichner darin (G4 §8)
+
+  ROT: zeitachse: fingerprint_window_never_crosses_epoch_boundary: Bezeichner 'diesen_bezeichner_gibt_es_nicht' steht nicht in eq-copilot/plugin/tests/Sonde013FingerprintGoldenTest.cpp
+EXIT=2

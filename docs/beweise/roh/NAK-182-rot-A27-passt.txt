@@ -1,0 +1,85 @@
+NAK-182 Etappe 2 - ROTBEWEIS A27-passt (der Selbsttest faengt die alte _passt-Form)
+
+Manipulation: `_passt` in `tools/eq-copilot/pruefe_p4_korpus.py` wird auf die
+Form vom Gate-Stand zurueckgesetzt - eine einzige Menge, nur `unbekannt`.
+Danach zurueckgenommen.
+
+Gewertete Zeilen: die Selbsttestfaelle S-01 und S-02 auf den Werten, die die
+alte Form NICHT fing (`unvergleichbar`, `zeitvariabel`, `nicht_kausal`,
+`nicht_exakt`).
+
+Faellt NICHT an: A26 auf dem KORRIGIERTEN Korpus. Dort gibt es keinen Fall
+mehr, der die Luecke trifft - genau deshalb braucht der Pruefer einen
+Selbsttest und nicht nur einen Rotbeweis am Korpus (Manifest Paragraph 4.2).
+
+Kommando: py -3.13 tools/eq-copilot/pruefe_p4_korpus.py --selbsttest
+
+A27 · Selbsttest von pruefe_p4_korpus.py (NAK-182 R1, MP1-6)
+
+Korpusweg (synthetischer Korpus -> _kennzahlen -> _riegel)
+[ok]   S-01 unbekannt: eine STARKE Aussage darauf ist eine falsche Behauptung  [falsche_starke=1]
+[ok]   S-01 unbekannt Gegenteil: dieselbe Wahrheit mit `unsicher` ist keine  [falsche_starke=0]
+[ROT]  S-01 unvergleichbar: eine STARKE Aussage darauf ist eine falsche Behauptung  [falsche_starke=0]
+[ok]   S-01 unvergleichbar Gegenteil: dieselbe Wahrheit mit `unsicher` ist keine  [falsche_starke=0]
+[ROT]  S-01 zeitvariabel: eine STARKE Aussage darauf ist eine falsche Behauptung  [falsche_starke=0]
+[ok]   S-01 zeitvariabel Gegenteil: dieselbe Wahrheit mit `unsicher` ist keine  [falsche_starke=0]
+[ROT]  S-01 nicht_kausal: eine STARKE Aussage darauf ist eine falsche Behauptung  [falsche_starke=0]
+[ok]   S-01 nicht_kausal Gegenteil: dieselbe Wahrheit mit `unsicher` ist keine  [falsche_starke=0]
+[ROT]  S-01 nicht_exakt: eine STARKE Aussage darauf ist eine falsche Behauptung  [falsche_starke=0]
+[ok]   S-01 nicht_exakt Gegenteil: dieselbe Wahrheit mit `unsicher` ist keine  [falsche_starke=0]
+[ok]   S-02 unbekannt: auch eine SCHWACHE Aussage darauf ist falsch  [falsche_schwache=1]
+[ok]   S-02 unbekannt Gegenteil: mit `unsicher` ist sie keine  [falsche_schwache=0]
+[ROT]  S-02 unvergleichbar: auch eine SCHWACHE Aussage darauf ist falsch  [falsche_schwache=0]
+[ok]   S-02 unvergleichbar Gegenteil: mit `unsicher` ist sie keine  [falsche_schwache=0]
+[ROT]  S-02 zeitvariabel: auch eine SCHWACHE Aussage darauf ist falsch  [falsche_schwache=0]
+[ok]   S-02 zeitvariabel Gegenteil: mit `unsicher` ist sie keine  [falsche_schwache=0]
+[ok]   S-02 nicht_kausal: die SCHWACHE Aussage traegt diese Wahrheit - genau das trennt KEINE_STARKE von KEINE_BEHAUPTUNG  [falsche_schwache=0]
+[ROT]  S-02 nicht_kausal Gegenteil: die STARKE ist es nicht  [falsche_starke=0]
+[ok]   S-02 nicht_exakt: die SCHWACHE Aussage traegt diese Wahrheit - genau das trennt KEINE_STARKE von KEINE_BEHAUPTUNG  [falsche_schwache=0]
+[ROT]  S-02 nicht_exakt Gegenteil: die STARKE ist es nicht  [falsche_starke=0]
+[ok]   S-07: eine Wahrheit ausserhalb ERLAUBTE_WAHRHEITEN wird als solche erkannt
+[ok]   S-07 Gegenteil: ein Wert aus der Menge nicht
+
+Kennzahlweg (_riegel direkt) - der Korpus kann diese Faelle nach R1a
+nicht mehr erzeugen, die Wachen brauchen trotzdem einen Weg zu fallen
+[ok]   S-03 recall: der Riegel meldet rot und nennt Recall  [selbsttest: Recall 1.0700 > 1.0 - eine Quote kann das nicht sein]
+[ok]   S-03 recall Gegenteil: innerhalb des Gates keine rote Zeile
+[ok]   S-04 precision: der Riegel meldet rot und nennt Precision  [selbsttest: Precision 1.0200 > 1.0 - eine Quote kann das nicht sein]
+[ok]   S-04 precision Gegenteil: innerhalb des Gates keine rote Zeile
+[ok]   S-04b falsche_starke: der Riegel meldet rot und nennt starke  [selbsttest: 1 falsche starke Behauptung(en): ]
+[ok]   S-04b falsche_starke Gegenteil: innerhalb des Gates keine rote Zeile
+[ok]   S-04c falsche_schwache: der Riegel meldet rot und nennt schwache  [selbsttest: 1 falsche schwache Behauptung(en): ]
+[ok]   S-04c falsche_schwache Gegenteil: innerhalb des Gates keine rote Zeile
+[ok]   S-04d brier: der Riegel meldet rot und nennt Brier  [selbsttest: Brier Score 0.2600 >= 0.25]
+[ok]   S-04d brier Gegenteil: innerhalb des Gates keine rote Zeile
+[ok]   S-04e coverage: der Riegel meldet rot und nennt Coverage  [selbsttest: Coverage 0.49 < 0.5]
+[ok]   S-04e coverage Gegenteil: innerhalb des Gates keine rote Zeile
+[ok]   S-04e kalibrierung: der Riegel meldet rot und nennt Kalibrierung  [selbsttest: Kalibrierung 0.1600 > 0.15]
+[ok]   S-04e kalibrierung Gegenteil: innerhalb des Gates keine rote Zeile
+
+Quellenweg (_quelle_pruefen)
+[ok]   S-05 Gegenteil: ein Bezeichner, der in der Datei steht, ist gruen
+[ok]   S-05: ein erfundener Bezeichner ist rot und die Meldung nennt Datei und Bezeichner  [x: Bezeichner 'gibt_es_nicht_9f3a2b1c' steht nicht in tools/eq-copilot/pruefe_p4_korpus.py]
+[ok]   S-06: ein Pfad ins Leere ist rot  [x: Quelldatei fehlt: gibt/es/nicht.cpp]
+
+Vertragsweg (_vertragsmengen_pruefen)
+[ok]   S-08/S-09 Gegenteil: das Vertragsschema traegt alle fuenf Mengen und keinen kausalen Bezeichner  [5 Mengen]
+[ok]   S-08: fehlt eine der fuenf Mengen, ist das rot  [geschlossene Menge fehlt im Vertrag: alignment_klasse ($defs/alignment_klasse)]
+[ok]   S-09: ein Enumwert mit kausalem Bezeichner ist rot  [kausaler Bezeichner in kettenbefund: 'sicherer_ausloeser' enthaelt 'ausloeser' - P4 gibt keine Ursachenaussage ab]
+
+34 bestanden, 8 gescheitert
+  ROT: S-01 unvergleichbar: eine STARKE Aussage darauf ist eine falsche Behauptung
+  ROT: S-01 zeitvariabel: eine STARKE Aussage darauf ist eine falsche Behauptung
+  ROT: S-01 nicht_kausal: eine STARKE Aussage darauf ist eine falsche Behauptung
+  ROT: S-01 nicht_exakt: eine STARKE Aussage darauf ist eine falsche Behauptung
+  ROT: S-02 unvergleichbar: auch eine SCHWACHE Aussage darauf ist falsch
+  ROT: S-02 zeitvariabel: auch eine SCHWACHE Aussage darauf ist falsch
+  ROT: S-02 nicht_kausal Gegenteil: die STARKE ist es nicht
+  ROT: S-02 nicht_exakt Gegenteil: die STARKE ist es nicht
+EXIT=2
+
+== Gegenprobe im selben Zustand: A26 auf dem korrigierten Korpus ==
+Gesamt: 25 Faelle · 0 falsche starke Behauptungen · 0 falsche schwache · Brier 0.0150 · Kalibrierung 0.0630 · Coverage 0.80 · Enthaltungsrate 0.20
+Vertrag: 5 von 5 geschlossenen Mengen gelesen, kein kausaler Bezeichner darin (G4 §8)
+Exit-Gate P4: alle vier Klassen bestehen, keine falsche Behauptung.
+EXIT_A26=0

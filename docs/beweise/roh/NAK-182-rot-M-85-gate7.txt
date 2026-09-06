@@ -1,0 +1,29 @@
+NAK-182 Etappe 2 - ROTBEWEIS M-85-gate7 (Gate 7 im Pruefer)
+
+Manipulation: im committeten Korpus traegt `insert_probe_is_never_called_master_sum`
+`aussage: stark` statt `schwach`. Danach neu erzeugt.
+
+Gewertete Zeile: `falsche_starke` = 0. Das ist M-85 Ziel 3 / Paragraph 49.2
+Gate 7: eine Standard-Insertprobe wird NIE als exakter Mastersummenbeitrag
+bezeichnet.
+
+Faellt NICHT an: derselbe Fall als `schwach` - `nicht_exakt` steht nur in
+KEINE_STARKE, und die schwache Aussage traegt die Wahrheit. Genau deshalb ist
+die Umbenennung auf `insertprobe` abgelehnt worden (Manifest E1b).
+
+Kommando: py -3.13 tools/eq-copilot/pruefe_p4_korpus.py
+
+P4-Referenzkorpus: 25 Faelle in 4 Klassen
+  in P4 nicht gemessen: M-85 Ziel 1 (korrelierter, nicht kausaler Distraktor) -> NAK-190
+
+[ok]  referenz    5 Faelle · 4 stark · 1 Enthaltungen · Precision 1.00 · Recall 1.00 · Brier 0.0010 · Coverage 0.80
+[ok]  stereo      6 Faelle · 6 stark · 0 Enthaltungen · Precision 1.00 · Recall 1.00 · Brier 0.0009 · Coverage 1.00
+[ROT] vergleich   8 Faelle · 3 stark · 4 Enthaltungen · Precision 0.67 · Recall 1.00 · Brier 0.2666 · Coverage 0.50
+[ok]  zeitachse   6 Faelle · 6 stark · 0 Enthaltungen · Precision 1.00 · Recall 1.00 · Brier 0.0007 · Coverage 1.00
+
+Gesamt: 25 Faelle · 1 falsche starke Behauptungen · 0 falsche schwache · Brier 0.0540 · Kalibrierung 0.0020 · Coverage 0.80 · Enthaltungsrate 0.20
+Vertrag: 5 von 5 geschlossenen Mengen gelesen, kein kausaler Bezeichner darin (G4 §8)
+
+  ROT: vergleich: 1 falsche starke Behauptung(en): insert_probe_is_never_called_master_sum
+  ROT: Gesamt: 1 falsche starke Behauptung(en): insert_probe_is_never_called_master_sum
+EXIT=2

@@ -1,0 +1,26 @@
+NAK-182 Etappe 2 - ROTBEWEIS M-83-schwach (M-83 Satz 3: auch keine SCHWACHE EQ-Behauptung)
+
+Manipulation: im committeten Korpus traegt `nonlinear_chain_never_yields_static_eq_claim`
+`aussage: schwach` statt `unsicher`. Die Wahrheit `zeitvariabel` bleibt.
+Danach neu erzeugt.
+
+Gewertete Zeile: `falsche_schwache` = 0 - der Riegel, den NAK-182 neu
+einzieht. `zeitvariabel` steht in KEINE_BEHAUPTUNG: eine zeitvariable Kette
+traegt GAR KEINE statische EQ-Aussage, auch keine vorsichtige.
+
+Kommando: py -3.13 tools/eq-copilot/pruefe_p4_korpus.py
+
+P4-Referenzkorpus: 25 Faelle in 4 Klassen
+  in P4 nicht gemessen: M-85 Ziel 1 (korrelierter, nicht kausaler Distraktor) -> NAK-190
+
+[ok]  referenz    5 Faelle · 4 stark · 1 Enthaltungen · Precision 1.00 · Recall 1.00 · Brier 0.0010 · Coverage 0.80
+[ok]  stereo      6 Faelle · 6 stark · 0 Enthaltungen · Precision 1.00 · Recall 1.00 · Brier 0.0009 · Coverage 1.00
+[ROT] vergleich   8 Faelle · 2 stark · 3 Enthaltungen · Precision 1.00 · Recall 1.00 · Brier 0.1293 · Coverage 0.62
+[ok]  zeitachse   6 Faelle · 6 stark · 0 Enthaltungen · Precision 1.00 · Recall 1.00 · Brier 0.0007 · Coverage 1.00
+
+Gesamt: 25 Faelle · 0 falsche starke Behauptungen · 1 falsche schwache · Brier 0.0314 · Kalibrierung 0.0314 · Coverage 0.84 · Enthaltungsrate 0.16
+Vertrag: 5 von 5 geschlossenen Mengen gelesen, kein kausaler Bezeichner darin (G4 §8)
+
+  ROT: vergleich: 1 falsche schwache Behauptung(en): nonlinear_chain_never_yields_static_eq_claim
+  ROT: Gesamt: 1 falsche schwache Behauptung(en): nonlinear_chain_never_yields_static_eq_claim
+EXIT=2

@@ -6,45 +6,73 @@
     {
       "aussage": "stark",
       "bein": "B19",
-      "fall": "mono_identity",
+      "fall": "sweep_mono_identity",
+      "hinweis": "NAK-182: ueber die 18 Blockgroessen des Sweeps. Die tiefe Einzelmessung bei 512 steht daneben (Abschnitt mono_identity).",
       "konfidenz": 0.99,
+      "quelle": {
+        "bezeichner": "sweep_mono_identity",
+        "datei": "eq-copilot/plugin/tests/Sonde013StereoGoldenTest.cpp"
+      },
       "wahrheit": "mono"
     },
     {
       "aussage": "stark",
       "bein": "B19",
-      "fall": "identical_stereo",
+      "fall": "sweep_identical_stereo",
+      "hinweis": "breitbandiges Material, auf beiden Kanaelen bitgleich",
       "konfidenz": 0.99,
+      "quelle": {
+        "bezeichner": "sweep_identical_stereo",
+        "datei": "eq-copilot/plugin/tests/Sonde013StereoGoldenTest.cpp"
+      },
       "wahrheit": "identisch"
     },
     {
       "aussage": "stark",
       "bein": "B19",
-      "fall": "polarity_inversion",
-      "hinweis": "perfekte Antiphase: die Mid-Energie ist exakt null (Etappe C)",
+      "fall": "sweep_polarity_inversion",
+      "hinweis": "perfekte Antiphase: Korrelation -1 bei Kohaerenz 1, und die Monosumme laeuft an die Vertragsgrenze",
       "konfidenz": 0.98,
+      "quelle": {
+        "bezeichner": "sweep_polarity_inversion",
+        "datei": "eq-copilot/plugin/tests/Sonde013StereoGoldenTest.cpp"
+      },
       "wahrheit": "invertiert"
     },
     {
       "aussage": "stark",
       "bein": "B19",
-      "fall": "known_delay",
+      "fall": "sweep_known_delay",
+      "hinweis": "acht Samples Verzoegerung; die Phase folgt +2*pi*f*tau",
       "konfidenz": 0.96,
+      "quelle": {
+        "bezeichner": "sweep_known_delay",
+        "datei": "eq-copilot/plugin/tests/Sonde013StereoGoldenTest.cpp"
+      },
       "wahrheit": "laufzeit"
     },
     {
       "aussage": "stark",
       "bein": "B19",
-      "fall": "uncorrelated_channels",
+      "fall": "sweep_uncorrelated_channels",
+      "hinweis": "zwei unabhaengige Rauschstroeme",
       "konfidenz": 0.95,
+      "quelle": {
+        "bezeichner": "sweep_uncorrelated_channels",
+        "datei": "eq-copilot/plugin/tests/Sonde013StereoGoldenTest.cpp"
+      },
       "wahrheit": "unkorreliert"
     },
     {
       "aussage": "stark",
       "bein": "B19",
-      "fall": "mono_folddown_matches_folded_buffer",
-      "hinweis": "der angezeigte Monoverlust entspricht dem gefalteten Puffer, 0,25 dB",
+      "fall": "sweep_folddown_within_0p25db",
+      "hinweis": "der angezeigte Monoverlust gegen den gefalteten Puffer, 0,25 dB",
       "konfidenz": 0.97,
+      "quelle": {
+        "bezeichner": "sweep_folddown_within_0p25db",
+        "datei": "eq-copilot/plugin/tests/Sonde013StereoGoldenTest.cpp"
+      },
       "wahrheit": "innerhalb"
     }
   ],

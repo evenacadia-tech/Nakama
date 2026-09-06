@@ -1,0 +1,25 @@
+NAK-182 Etappe 2 - ROTBEWEIS M-79-unvergleichbar (Gate 6 im Pruefer)
+
+Manipulation: im committeten Korpus traegt `gate6_incomparable_never_gets_a_strong_winner`
+`aussage: stark` statt `unsicher`. Danach neu erzeugt.
+
+Gewertete Zeile: `falsche_starke` = 0. Vor NAK-182 blieb genau dieser Fall
+GRUEN, weil `_passt` nur `unbekannt` kannte - und `recall` stieg dabei auf
+1,0667, ohne dass ein Riegel reagierte (Manifest Paragraph 3.2).
+
+Kommando: py -3.13 tools/eq-copilot/pruefe_p4_korpus.py
+
+P4-Referenzkorpus: 25 Faelle in 4 Klassen
+  in P4 nicht gemessen: M-85 Ziel 1 (korrelierter, nicht kausaler Distraktor) -> NAK-190
+
+[ok]  referenz    5 Faelle · 4 stark · 1 Enthaltungen · Precision 1.00 · Recall 1.00 · Brier 0.0010 · Coverage 0.80
+[ok]  stereo      6 Faelle · 6 stark · 0 Enthaltungen · Precision 1.00 · Recall 1.00 · Brier 0.0009 · Coverage 1.00
+[ROT] vergleich   8 Faelle · 3 stark · 3 Enthaltungen · Precision 0.67 · Recall 1.00 · Brier 0.2378 · Coverage 0.62
+[ok]  zeitachse   6 Faelle · 6 stark · 0 Enthaltungen · Precision 1.00 · Recall 1.00 · Brier 0.0007 · Coverage 1.00
+
+Gesamt: 25 Faelle · 1 falsche starke Behauptungen · 0 falsche schwache · Brier 0.0573 · Kalibrierung 0.0148 · Coverage 0.84 · Enthaltungsrate 0.16
+Vertrag: 5 von 5 geschlossenen Mengen gelesen, kein kausaler Bezeichner darin (G4 §8)
+
+  ROT: vergleich: 1 falsche starke Behauptung(en): gate6_incomparable_never_gets_a_strong_winner
+  ROT: Gesamt: 1 falsche starke Behauptung(en): gate6_incomparable_never_gets_a_strong_winner
+EXIT=2

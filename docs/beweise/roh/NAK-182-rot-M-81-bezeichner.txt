@@ -1,0 +1,30 @@
+NAK-182 Etappe 2 - ROTBEWEIS M-81-bezeichner (der Korpus haengt am Bezeichner, nicht am Etikett)
+
+Manipulation: in `eq-copilot/plugin/tests/LoudnessGoldenTestMain.cpp` wird der
+Bezeichner `lufs_integrated_matches_reference` aus der Pruefzeile entfernt -
+die MESSUNG bleibt unveraendert, nur ihr Name faellt weg. Danach
+zurueckgenommen.
+
+Gewertete Zeile: die Quellenpruefung aus R2. Der Korpusfall zeigt auf B9 und
+diesen Bezeichner; ohne ihn ist der Verweis ins Leere.
+
+Faellt NICHT an: B9 selbst. Der Test misst weiter ±0,1 LU gegen die
+ausgebaute Vektorrechnung - genau das ist der Punkt von R2. Vor NAK-182 war
+`B18::lufs_integrated_matches_reference` SUBSTANZLOS (B18 fuehrt keinen
+LUFS-I-Referenzfall) und niemand merkte es.
+
+Kommando: py -3.13 tools/eq-copilot/pruefe_p4_korpus.py
+
+P4-Referenzkorpus: 25 Faelle in 4 Klassen
+  in P4 nicht gemessen: M-85 Ziel 1 (korrelierter, nicht kausaler Distraktor) -> NAK-190
+
+[ok]  referenz    5 Faelle · 4 stark · 1 Enthaltungen · Precision 1.00 · Recall 1.00 · Brier 0.0010 · Coverage 0.80
+[ok]  stereo      6 Faelle · 6 stark · 0 Enthaltungen · Precision 1.00 · Recall 1.00 · Brier 0.0009 · Coverage 1.00
+[ok]  vergleich   8 Faelle · 2 stark · 4 Enthaltungen · Precision 1.00 · Recall 1.00 · Brier 0.0717 · Coverage 0.50
+[ok]  zeitachse   6 Faelle · 6 stark · 0 Enthaltungen · Precision 1.00 · Recall 1.00 · Brier 0.0007 · Coverage 1.00
+
+Gesamt: 25 Faelle · 0 falsche starke Behauptungen · 0 falsche schwache · Brier 0.0150 · Kalibrierung 0.0630 · Coverage 0.80 · Enthaltungsrate 0.20
+Vertrag: 5 von 5 geschlossenen Mengen gelesen, kein kausaler Bezeichner darin (G4 §8)
+
+  ROT: referenz: lufs_integrated_matches_reference: Bezeichner 'lufs_integrated_matches_reference' steht nicht in eq-copilot/plugin/tests/LoudnessGoldenTestMain.cpp
+EXIT=2

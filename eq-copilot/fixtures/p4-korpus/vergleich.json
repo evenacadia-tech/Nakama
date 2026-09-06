@@ -1,6 +1,7 @@
 {
   "beine": [
     "B24",
+    "B16",
     "A4",
     "A16"
   ],
@@ -9,9 +10,37 @@
       "aussage": "unsicher",
       "bein": "B24",
       "fall": "nonlinear_chain_never_yields_static_eq_claim",
-      "hinweis": "Kompression, Modulation, Saturation und wechselnde Latenz",
+      "hinweis": "Kompression, Modulation, Saturation und wechselnde Latenz - ZEITVARIABLE Ketten DESSELBEN Quellsignals. Die Kohaerenz faellt, und deshalb entsteht keine statische EQ-Behauptung.",
       "konfidenz": 0.5,
-      "wahrheit": "nicht_kausal"
+      "quelle": {
+        "bezeichner": "nonlinear_chain_never_yields_static_eq_claim",
+        "datei": "eq-copilot/plugin/tests/Sonde013PrePostGoldenTest.cpp"
+      },
+      "wahrheit": "zeitvariabel"
+    },
+    {
+      "aussage": "stark",
+      "bein": "B16",
+      "fall": "focused_evidence_wire_carries_0p01_db_steps",
+      "hinweis": "NAK-182 M-83 Satz 2, C++-Haelfte: der echte Encoder schreibt q_db_0p01_i16, aus seinem eigenen Wire-Text kommt der Gain je Band mit Bit innerhalb +/-0,1 dB zurueck, und eine Leiter aus 20 Stufen zu 0,01 dB ergibt 20 streng monotone Ganzzahlen im Abstand 1.",
+      "konfidenz": 0.96,
+      "quelle": {
+        "bezeichner": "focused_evidence_wire_carries_0p01_db_steps",
+        "datei": "eq-copilot/plugin/tests/Sonde013EventWireTest.cpp"
+      },
+      "wahrheit": "wiedergefunden"
+    },
+    {
+      "aussage": "stark",
+      "bein": "A4",
+      "fall": "dekodierte_evidenz_findet_gain_mit_intervall",
+      "hinweis": "NAK-182 M-83 Satz 2, Rust-Haelfte: Wirepfad -> perzentil_dekodieren -> resultatmessung -> achsen. Bandweise +/-0,1 dB aus der Produktmessung, und das Bootstrap-Intervall enthaelt den Gain.",
+      "konfidenz": 0.95,
+      "quelle": {
+        "bezeichner": "dekodierte_evidenz_findet_gain_mit_intervall",
+        "datei": "broker/tests/sonde013_verdrahtung.rs"
+      },
+      "wahrheit": "wiedergefunden"
     },
     {
       "aussage": "schwach",
@@ -19,6 +48,10 @@
       "fall": "distributed_pair_never_produces_transfer_function",
       "hinweis": "verteilt gibt es Banddifferenzen, keinen Frequenzgang",
       "konfidenz": 0.6,
+      "quelle": {
+        "bezeichner": "distributed_pair_never_produces_transfer_function",
+        "datei": "broker/tests/sonde013_prepost.rs"
+      },
       "wahrheit": "nicht_kausal"
     },
     {
@@ -27,6 +60,10 @@
       "fall": "gate6_incomparable_never_gets_a_strong_winner",
       "hinweis": "harter Gate 6 aus §49.2",
       "konfidenz": 0.5,
+      "quelle": {
+        "bezeichner": "gate6_incomparable_never_gets_a_strong_winner",
+        "datei": "broker/tests/sonde013_experiment.rs"
+      },
       "wahrheit": "unvergleichbar"
     },
     {
@@ -35,6 +72,10 @@
       "fall": "comparability_needs_all_five_and_hash_alone_never_wins",
       "hinweis": "kein einzelner Hash hebt einen Widerspruch auf",
       "konfidenz": 0.5,
+      "quelle": {
+        "bezeichner": "comparability_needs_all_five_and_hash_alone_never_wins",
+        "datei": "broker/tests/sonde013_passage.rs"
+      },
       "wahrheit": "unvergleichbar"
     },
     {
@@ -43,6 +84,10 @@
       "fall": "unknown_time_path_can_never_reach_strong",
       "hinweis": "Exit-Gate M-21: kein unbekannter Zeitpfad erzeugt eine starke Aussage",
       "konfidenz": 0.5,
+      "quelle": {
+        "bezeichner": "unknown_time_path_can_never_reach_strong",
+        "datei": "broker/tests/sonde013_prepost.rs"
+      },
       "wahrheit": "unbekannt"
     },
     {
@@ -51,6 +96,10 @@
       "fall": "insert_probe_is_never_called_master_sum",
       "hinweis": "Gate 7 aus §49.2 - eine Insertprobe ist kein Mastersummenbeitrag",
       "konfidenz": 0.65,
+      "quelle": {
+        "bezeichner": "insert_probe_is_never_called_master_sum",
+        "datei": "eq-copilot/plugin/tests/SondeNullTestMain.cpp"
+      },
       "wahrheit": "nicht_exakt"
     }
   ],

@@ -1,0 +1,24 @@
+NAK-182 Etappe 2 - ROTBEWEIS M-85-ausloeser (kein P4-Datenweg benennt einen "sicheren Ausloeser")
+
+Manipulation: KEINE am Repo. Der Riegel liest die fuenf geschlossenen Mengen
+des v3-Vertrags; das Schema ist eingefrorener Vertrag und wird auch fuer einen
+Rotbeweis nicht angefasst. Die Manipulation lebt deshalb IM SPEICHER, in den
+Selbsttestfaellen S-08 und S-09 des Beins A27:
+
+  S-08  eine der fuenf Mengen wird aus einer Kopie des Schemas geloescht
+        -> "geschlossene Menge fehlt im Vertrag"
+  S-09  ein Enumwert von `kettenbefund` bekommt `sicherer_ausloeser`
+        -> "kausaler Bezeichner in kettenbefund"
+
+Gewertete Zeile: N-38. Beide Faelle laufen MIT ihrem Gegenteil (das echte
+Vertragsschema: fuenf von fuenf Mengen, kein kausaler Bezeichner).
+
+Kommando: py -3.13 tools/eq-copilot/pruefe_p4_korpus.py --selbsttest
+
+Vertragsweg (_vertragsmengen_pruefen)
+[ok]   S-08/S-09 Gegenteil: das Vertragsschema traegt alle fuenf Mengen und keinen kausalen Bezeichner  [5 Mengen]
+[ok]   S-08: fehlt eine der fuenf Mengen, ist das rot  [geschlossene Menge fehlt im Vertrag: alignment_klasse ($defs/alignment_klasse)]
+[ok]   S-09: ein Enumwert mit kausalem Bezeichner ist rot  [kausaler Bezeichner in kettenbefund: 'sicherer_ausloeser' enthaelt 'ausloeser' - P4 gibt keine Ursachenaussage ab]
+
+== und im Kanonlauf von A26, am echten Vertrag ==
+Vertrag: 5 von 5 geschlossenen Mengen gelesen, kein kausaler Bezeichner darin (G4 §8)

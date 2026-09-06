@@ -1,0 +1,57 @@
+SONDE-014 Etappe C - Rotbeweis M-23
+========================================================================
+
+GEWERTETE ZUSAGE
+Eine Passage unter GATE_MINDEST_FENSTER traegt keine Sicherheit hoch und kein READY TO SEND.
+
+GEMESSEN AN  broker/tests/sonde014_hypothese.rs::passage_zu_kurz_traegt_keine_starke_aussage
+             (Verdrahtungsebene: die Evidenz geht durch `p1`,
+              also durch dieselbe Senke wie im Produktbetrieb)
+
+RUECKNAHME AM PRODUKTCODE  broker/src/coordinator/vergleichbarkeit.rs
+------------------------------------------------------------------------
+VORHER:
+pub const GATE_MINDEST_FENSTER: usize = 8;
+
+NACHHER:
+pub const GATE_MINDEST_FENSTER: usize = 1; // RUECKNAHME M-23
+------------------------------------------------------------------------
+
+[1] LAUF MIT RUECKNAHME - erwartet ROT (Exitcode 101)
+========================================================================
+
+running 1 test
+test passage_zu_kurz_traegt_keine_starke_aussage ... FAILED
+
+failures:
+
+---- passage_zu_kurz_traegt_keine_starke_aussage stdout ----
+
+thread 'passage_zu_kurz_traegt_keine_starke_aussage' (15924) panicked at tests\sonde014_hypothese.rs:652:5:
+unter der Schwelle gibt es keine starke Aussage: Befundkonfidenz { klasse: Hoch, score: 0.26198299999999997 }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    passage_zu_kurz_traegt_keine_starke_aussage
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 16 filtered out; finished in 0.09s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.56s
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+error: test failed, to rerun pass `--test sonde014_hypothese`
+
+[2] RUECKNAHME ZURUECKGENOMMEN, LAUF ERNEUT - erwartet GRUEN (Exitcode 0)
+========================================================================
+
+running 1 test
+test passage_zu_kurz_traegt_keine_starke_aussage ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 16 filtered out; finished in 1.00s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.80s
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+
+URTEIL: OK (rot=101, gruen=0)

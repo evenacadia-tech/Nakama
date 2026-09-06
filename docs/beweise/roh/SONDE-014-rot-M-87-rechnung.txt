@@ -1,0 +1,61 @@
+SONDE-014 Etappe C - Rotbeweis M-87
+========================================================================
+
+GEWERTETE ZUSAGE
+Jeder ausgeschiedene Kandidat traegt einen Grund aus der geschlossenen Achtermenge und reist mit dem Befund.
+
+GEMESSEN AN  broker/tests/sonde014_hypothese.rs::ausschlussgruende_sind_geschlossen_und_reisen_mit
+             (Verdrahtungsebene: die Evidenz geht durch `p1`,
+              also durch dieselbe Senke wie im Produktbetrieb)
+
+RUECKNAHME AM PRODUKTCODE  broker/src/coordinator/hypothese.rs
+------------------------------------------------------------------------
+VORHER:
+            Gateurteil::Faellt(grund) => ausschluesse.push(Ausschluss {
+                candidate_source: kandidat.quelle_id.clone(),
+                grund,
+            }),
+
+NACHHER:
+            // RUECKNAHME M-87: der Kandidat verschwindet kommentarlos.
+            Gateurteil::Faellt(_grund) => {}
+------------------------------------------------------------------------
+
+[1] LAUF MIT RUECKNAHME - erwartet ROT (Exitcode 101)
+========================================================================
+
+running 1 test
+test ausschlussgruende_sind_geschlossen_und_reisen_mit ... FAILED
+
+failures:
+
+---- ausschlussgruende_sind_geschlossen_und_reisen_mit stdout ----
+
+thread 'ausschlussgruende_sind_geschlossen_und_reisen_mit' (17528) panicked at tests\sonde014_hypothese.rs:952:10:
+die Ausschluesse reisen mit dem Befund
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    ausschlussgruende_sind_geschlossen_und_reisen_mit
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 16 filtered out; finished in 0.42s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.23s
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+error: test failed, to rerun pass `--test sonde014_hypothese`
+
+[2] RUECKNAHME ZURUECKGENOMMEN, LAUF ERNEUT - erwartet GRUEN (Exitcode 0)
+========================================================================
+
+running 1 test
+test ausschlussgruende_sind_geschlossen_und_reisen_mit ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 16 filtered out; finished in 0.42s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.46s
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+
+URTEIL: OK (rot=101, gruen=0)

@@ -1,0 +1,63 @@
+SONDE-014 Etappe C - Rotbeweis M-12
+========================================================================
+
+GEWERTETE ZUSAGE
+Die Rangkomponente Intent-Relevanz folgt der Rolle; eine Rollenaenderung bewegt sie.
+
+GEMESSEN AN  broker/tests/sonde014_hypothese.rs::rollenaenderung_bewegt_die_intent_relevanz
+             (Verdrahtungsebene: die Evidenz geht durch `p1`,
+              also durch dieselbe Senke wie im Produktbetrieb)
+
+RUECKNAHME AM PRODUKTCODE  broker/src/coordinator/hypothese.rs
+------------------------------------------------------------------------
+VORHER:
+    ROLLENPRIORITAET
+        .iter()
+        .find(|(name, _)| *name == spiegel.rolle)
+        .map(|(_, wert)| *wert)
+        .unwrap_or(PRIORITAET_OHNE_ROLLE)
+
+NACHHER:
+    // RUECKNAHME M-12: die Rolle wirkt nicht mehr auf den Rang.
+    let _ = spiegel;
+    PRIORITAET_OHNE_ROLLE
+------------------------------------------------------------------------
+
+[1] LAUF MIT RUECKNAHME - erwartet ROT (Exitcode 101)
+========================================================================
+
+running 1 test
+test rollenaenderung_bewegt_die_intent_relevanz ... FAILED
+
+failures:
+
+---- rollenaenderung_bewegt_die_intent_relevanz stdout ----
+
+thread 'rollenaenderung_bewegt_die_intent_relevanz' (3944) panicked at tests\sonde014_hypothese.rs:998:5:
+fuehrt 0.5 vs begleitet 0.5
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    rollenaenderung_bewegt_die_intent_relevanz
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 16 filtered out; finished in 0.58s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.15s
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+error: test failed, to rerun pass `--test sonde014_hypothese`
+
+[2] RUECKNAHME ZURUECKGENOMMEN, LAUF ERNEUT - erwartet GRUEN (Exitcode 0)
+========================================================================
+
+running 1 test
+test rollenaenderung_bewegt_die_intent_relevanz ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 16 filtered out; finished in 0.59s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.93s
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+
+URTEIL: OK (rot=101, gruen=0)

@@ -1,0 +1,91 @@
+SONDE-014 Etappe C - Rotbeweis M-19
+========================================================================
+
+GEWERTETE ZUSAGE
+Der bedingte Uplift braucht Vergleichsfenster OHNE die Quelle; ohne sie gibt es keinen.
+
+GEMESSEN AN  broker/tests/sonde014_hypothese.rs::bedingter_uplift_braucht_fenster_ohne_die_quelle
+             (Verdrahtungsebene: die Evidenz geht durch `p1`,
+              also durch dieselbe Senke wie im Produktbetrieb)
+
+RUECKNAHME AM PRODUKTCODE  broker/src/coordinator/hypothese.rs
+------------------------------------------------------------------------
+VORHER:
+    if mit.is_empty() || ohne.is_empty() {
+        return 0.0;
+    }
+    let differenz = mittel(mit.iter().copied()) - mittel(ohne.iter().copied());
+    if !differenz.is_finite() || differenz <= 0.0 {
+        return 0.0;
+    }
+
+NACHHER:
+    // RUECKNAHME M-19: der Uplift wird OHNE Vergleichsfenster gerechnet
+    // — der blosse Pegel des Masters gilt als Wirkung.
+    let differenz = mittel(mit.iter().copied()).abs();
+    if !differenz.is_finite() || differenz <= 0.0 {
+        return 0.0;
+    }
+    return (differenz / (differenz + 1.0)).clamp(0.0, 1.0);
+------------------------------------------------------------------------
+
+[1] LAUF MIT RUECKNAHME - erwartet ROT (Exitcode 101)
+========================================================================
+
+running 1 test
+test bedingter_uplift_braucht_fenster_ohne_die_quelle ... FAILED
+
+failures:
+
+---- bedingter_uplift_braucht_fenster_ohne_die_quelle stdout ----
+
+thread 'bedingter_uplift_braucht_fenster_ohne_die_quelle' (23308) panicked at tests\sonde014_hypothese.rs:505:5:
+assertion `left == right` failed: ohne Vergleichsfenster gibt es keinen Uplift
+  left: 0.8863636372872621
+ right: 0.0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    bedingter_uplift_braucht_fenster_ohne_die_quelle
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 16 filtered out; finished in 0.58s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: unreachable statement
+   --> src\coordinator\hypothese.rs:841:5
+    |
+836 |     return (differenz / (differenz + 1.0)).clamp(0.0, 1.0);
+    |     ------------------------------------------------------ any code following this expression is unreachable
+...
+841 |     let alle: Vec<f64> = mit.iter().chain(ohne.iter()).copied().collect();
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unreachable statement
+    |
+    = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `ohne`
+   --> src\coordinator\hypothese.rs:827:20
+    |
+827 |     let Some((mit, ohne)) = reihen else {
+    |                    ^^^^ help: if this is intentional, prefix it with an underscore: `_ohne`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib) generated 2 warnings (run `cargo fix --lib -p eqcop-broker` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.61s
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+error: test failed, to rerun pass `--test sonde014_hypothese`
+
+[2] RUECKNAHME ZURUECKGENOMMEN, LAUF ERNEUT - erwartet GRUEN (Exitcode 0)
+========================================================================
+
+running 1 test
+test bedingter_uplift_braucht_fenster_ohne_die_quelle ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 16 filtered out; finished in 0.64s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.41s
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+
+URTEIL: OK (rot=101, gruen=0)

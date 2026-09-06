@@ -1,0 +1,59 @@
+SONDE-014 Etappe C - Rotbeweis M-18
+========================================================================
+
+GEWERTETE ZUSAGE
+Das Screening reicht pro Befund hoechstens fuenf Kandidaten weiter; der Deckel ist hart.
+
+GEMESSEN AN  broker/tests/sonde014_hypothese.rs::screening_reicht_hoechstens_fuenf_weiter
+             (Verdrahtungsebene: die Evidenz geht durch `p1`,
+              also durch dieselbe Senke wie im Produktbetrieb)
+
+RUECKNAHME AM PRODUKTCODE  broker/src/coordinator/hypothese.rs
+------------------------------------------------------------------------
+VORHER:
+pub const KANDIDATEN_DECKEL: usize = 5;
+
+NACHHER:
+pub const KANDIDATEN_DECKEL: usize = 6; // RUECKNAHME M-18
+------------------------------------------------------------------------
+
+[1] LAUF MIT RUECKNAHME - erwartet ROT (Exitcode 101)
+========================================================================
+
+running 1 test
+test screening_reicht_hoechstens_fuenf_weiter ... FAILED
+
+failures:
+
+---- screening_reicht_hoechstens_fuenf_weiter stdout ----
+
+thread 'screening_reicht_hoechstens_fuenf_weiter' (2696) panicked at tests\sonde014_hypothese.rs:456:5:
+assertion `left == right` failed: der Deckel aus M-18 ist hart: 6 Befunde
+  left: 6
+ right: 5
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    screening_reicht_hoechstens_fuenf_weiter
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 16 filtered out; finished in 1.35s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.71s
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+error: test failed, to rerun pass `--test sonde014_hypothese`
+
+[2] RUECKNAHME ZURUECKGENOMMEN, LAUF ERNEUT - erwartet GRUEN (Exitcode 0)
+========================================================================
+
+running 1 test
+test screening_reicht_hoechstens_fuenf_weiter ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 16 filtered out; finished in 1.28s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.67s
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+
+URTEIL: OK (rot=101, gruen=0)

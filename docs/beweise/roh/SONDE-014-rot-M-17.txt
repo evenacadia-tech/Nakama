@@ -1,0 +1,64 @@
+SONDE-014 Etappe C - Rotbeweis M-17
+========================================================================
+
+GEWERTETE ZUSAGE
+Aus paralleler Telemetrie allein entsteht nie Aussageklasse 2 oder 3.
+
+GEMESSEN AN  broker/tests/sonde014_hypothese.rs::parallele_telemetrie_bleibt_klasse_eins
+             (Verdrahtungsebene: die Evidenz geht durch `p1`,
+              also durch dieselbe Senke wie im Produktbetrieb)
+
+RUECKNAHME AM PRODUKTCODE  broker/src/coordinator/hypothese.rs
+------------------------------------------------------------------------
+VORHER:
+    let claim_class = if kandidat.prepost_paar {
+        Aussageklasse::Wirkungsbeleg
+    } else {
+        Aussageklasse::Zusammenhang
+    };
+
+NACHHER:
+    // RUECKNAHME M-17: parallele Telemetrie gilt als Wirkungsbeleg.
+    let claim_class = Aussageklasse::Wirkungsbeleg;
+------------------------------------------------------------------------
+
+[1] LAUF MIT RUECKNAHME - erwartet ROT (Exitcode 101)
+========================================================================
+
+running 1 test
+test parallele_telemetrie_bleibt_klasse_eins ... FAILED
+
+failures:
+
+---- parallele_telemetrie_bleibt_klasse_eins stdout ----
+
+thread 'parallele_telemetrie_bleibt_klasse_eins' (21120) panicked at tests\sonde014_hypothese.rs:421:9:
+assertion `left == right` failed: parallele Telemetrie darf nie Klasse 2 oder 3 erzeugen
+  left: Some("wirkungsbeleg")
+ right: Some("zusammenhang")
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    parallele_telemetrie_bleibt_klasse_eins
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 16 filtered out; finished in 0.44s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.75s
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+error: test failed, to rerun pass `--test sonde014_hypothese`
+
+[2] RUECKNAHME ZURUECKGENOMMEN, LAUF ERNEUT - erwartet GRUEN (Exitcode 0)
+========================================================================
+
+running 1 test
+test parallele_telemetrie_bleibt_klasse_eins ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 16 filtered out; finished in 0.45s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.82s
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+
+URTEIL: OK (rot=101, gruen=0)

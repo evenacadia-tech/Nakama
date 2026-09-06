@@ -1,0 +1,65 @@
+SONDE-014 Etappe C - Rotbeweis M-22
+========================================================================
+
+GEWERTETE ZUSAGE
+Parent und Child erzeugen nicht zwei starke Behauptungen; unbekanntes Routing traegt keine starke Aussage.
+
+GEMESSEN AN  broker/tests/sonde014_hypothese.rs::parent_duplikat_erzeugt_keine_zwei_starken
+             (Verdrahtungsebene: die Evidenz geht durch `p1`,
+              also durch dieselbe Senke wie im Produktbetrieb)
+
+RUECKNAHME AM PRODUKTCODE  broker/src/coordinator/hypothese.rs
+------------------------------------------------------------------------
+VORHER:
+    if !kandidat.routing_bekannt {
+        return 0.0;
+    }
+    if parent_duplikat {
+        return 0.5;
+    }
+    1.0
+
+NACHHER:
+    // RUECKNAHME M-22: die Routingqualitaet trennt nichts mehr.
+    let _ = (kandidat, parent_duplikat);
+    1.0
+------------------------------------------------------------------------
+
+[1] LAUF MIT RUECKNAHME - erwartet ROT (Exitcode 101)
+========================================================================
+
+running 1 test
+test parent_duplikat_erzeugt_keine_zwei_starken ... FAILED
+
+failures:
+
+---- parent_duplikat_erzeugt_keine_zwei_starken stdout ----
+
+thread 'parent_duplikat_erzeugt_keine_zwei_starken' (18388) panicked at tests\sonde014_hypothese.rs:613:5:
+die Routingqualitaet trennt sie
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    parent_duplikat_erzeugt_keine_zwei_starken
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 16 filtered out; finished in 0.45s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.94s
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+error: test failed, to rerun pass `--test sonde014_hypothese`
+
+[2] RUECKNAHME ZURUECKGENOMMEN, LAUF ERNEUT - erwartet GRUEN (Exitcode 0)
+========================================================================
+
+running 1 test
+test parent_duplikat_erzeugt_keine_zwei_starken ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 16 filtered out; finished in 0.76s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.87s
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+
+URTEIL: OK (rot=101, gruen=0)

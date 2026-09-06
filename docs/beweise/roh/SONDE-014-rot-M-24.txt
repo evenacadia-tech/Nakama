@@ -1,0 +1,70 @@
+SONDE-014 Etappe C - Rotbeweis M-24
+========================================================================
+
+GEWERTETE ZUSAGE
+Eine Ruecknahme invalidiert die abhaengigen Hypothesen deterministisch, unter demselben Lock.
+
+GEMESSEN AN  broker/tests/sonde014_hypothese.rs::ruecknahme_invalidiert_abhaengige_hypothesen
+             (Verdrahtungsebene: die Evidenz geht durch `p1`,
+              also durch dieselbe Senke wie im Produktbetrieb)
+
+RUECKNAHME AM PRODUKTCODE  broker/src/coordinator/invalidierung_verdrahtung.rs
+------------------------------------------------------------------------
+VORHER:
+        Self::befunde_invalidieren_locked(&mut stand, session, &genommene_ids);
+
+NACHHER:
+        // RUECKNAHME M-24: die abhaengigen Hypothesen bleiben stehen.
+        let _ = &genommene_ids;
+------------------------------------------------------------------------
+
+[1] LAUF MIT RUECKNAHME - erwartet ROT (Exitcode 101)
+========================================================================
+
+running 1 test
+test ruecknahme_invalidiert_abhaengige_hypothesen ... FAILED
+
+failures:
+
+---- ruecknahme_invalidiert_abhaengige_hypothesen stdout ----
+
+thread 'ruecknahme_invalidiert_abhaengige_hypothesen' (8568) panicked at tests\sonde014_hypothese.rs:752:5:
+ohne Beleg bleibt keine sichtbare Behauptung: [CauseHypothesis { finding_id: "ea67eed450a356c308408f022c796853", claim_class: Zusammenhang, ursachenklasse: ZweiQuellenKonkurrenz, target_metric: BandPegelDb, candidate_source: "00000000000000000000000000000002", passage_id: None, pre_post: None, band_hz: Bandintervall { von: 96, bis: 100 }, beobachtung: Beobachtung { wert_db: -3.299999952316284, gueltig: true }, rang: Rangkomponenten { bandpassung: 0.0718991053621592, koinzidenz: 0.0, uplift: 0.0, intent_relevanz: 0.5, wiederholbarkeit: 0.0, routingqualitaet: 1.0 }, confidence: Befundkonfidenz { klasse: Hoch, score: 0.26198299999999997 }, evidence_ids: ["00000000000000000000000000001064", "00000000000000000000000000001065", "00000000000000000000000000001066", "00000000000000000000000000001067", "00000000000000000000000000001068", "00000000000000000000000000001069", "0000000000000000000000000000106a", "0000000000000000000000000000106b", "0000000000000000000000000000106c", "0000000000000000000000000000106d", "0000000000000000000000000000106e", "0000000000000000000000000000106f"], alternatives: ["01a82acedd4f3a8afbc636fbcaf6441b"], ausschluesse: [], next_test: PrePostPaarMessen, zustand: ReadyToSend, intent_revision: 0, likely_cause: "00000000 draengt im Bandbereich 96..100 gegen den Master.", smallest_test: "PRE/POST-Paar an dieser Quelle messen.", listen_for: "Ob der Master im markierten Bereich Luft bekommt.", metrics_version: 20260904 }, CauseHypothesis { finding_id: "01a82acedd4f3a8afbc636fbcaf6441b", claim_class: Zusammenhang, ursachenklasse: ZweiQuellenKonkurrenz, target_metric: BandPegelDb, candidate_source: "00000000000000000000000000000003", passage_id: None, pre_post: None, band_hz: Bandintervall { von: 96, bis: 100 }, beobachtung: Beobachtung { wert_db: -3.299999952316284, gueltig: true }, rang: Rangkomponenten { bandpassung: 0.0718991053621592, koinzidenz: 0.0, uplift: 0.0, intent_relevanz: 0.5, wiederholbarkeit: 0.0, routingqualitaet: 1.0 }, confidence: Befundkonfidenz { klasse: Hoch, score: 0.26198299999999997 }, evidence_ids: ["000000000000000000000000000010c8", "000000000000000000000000000010c9", "000000000000000000000000000010ca", "000000000000000000000000000010cb", "000000000000000000000000000010cc", "000000000000000000000000000010cd", "000000000000000000000000000010ce", "000000000000000000000000000010cf", "000000000000000000000000000010d0", "000000000000000000000000000010d1", "000000000000000000000000000010d2", "000000000000000000000000000010d3"], alternatives: [], ausschluesse: [], next_test: PrePostPaarMessen, zustand: ReadyToSend, intent_revision: 0, likely_cause: "00000000 draengt im Bandbereich 96..100 gegen den Master.", smallest_test: "PRE/POST-Paar an dieser Quelle messen.", listen_for: "Ob der Master im markierten Bereich Luft bekommt.", metrics_version: 20260904 }]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    ruecknahme_invalidiert_abhaengige_hypothesen
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 16 filtered out; finished in 0.46s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: associated function `befunde_invalidieren_locked` is never used
+   --> src\coordinator\hypothese_verdrahtung.rs:488:19
+    |
+ 60 | impl Coordinator {
+    | ---------------- associated function in this implementation
+...
+488 |     pub(super) fn befunde_invalidieren_locked(
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib) generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.30s
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+error: test failed, to rerun pass `--test sonde014_hypothese`
+
+[2] RUECKNAHME ZURUECKGENOMMEN, LAUF ERNEUT - erwartet GRUEN (Exitcode 0)
+========================================================================
+
+running 1 test
+test ruecknahme_invalidiert_abhaengige_hypothesen ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 16 filtered out; finished in 0.90s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.11s
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+
+URTEIL: OK (rot=101, gruen=0)

@@ -1,0 +1,71 @@
+SONDE-014 Etappe C - Rotbeweis M-20
+========================================================================
+
+GEWERTETE ZUSAGE
+Fehlende Coverage ist ein GATE vor der Gewichtung; keine Komponente gleicht sie aus.
+
+GEMESSEN AN  broker/tests/sonde014_hypothese.rs::keine_komponente_kompensiert_coverage_oder_alignment
+             (Verdrahtungsebene: die Evidenz geht durch `p1`,
+              also durch dieselbe Senke wie im Produktbetrieb)
+
+RUECKNAHME AM PRODUKTCODE  broker/src/coordinator/hypothese.rs
+------------------------------------------------------------------------
+VORHER:
+    if !(abdeckung >= GATE_ABDECKUNG as f64) {
+        return Gateurteil::Faellt(Ausschlussgrund::CoverageFehlt);
+    }
+
+NACHHER:
+    // RUECKNAHME M-20: das Coveragegate faellt weg.
+    let _ = abdeckung;
+------------------------------------------------------------------------
+
+[1] LAUF MIT RUECKNAHME - erwartet ROT (Exitcode 101)
+========================================================================
+
+running 1 test
+test keine_komponente_kompensiert_coverage_oder_alignment ... FAILED
+
+failures:
+
+---- keine_komponente_kompensiert_coverage_oder_alignment stdout ----
+
+thread 'keine_komponente_kompensiert_coverage_oder_alignment' (14440) panicked at tests\sonde014_hypothese.rs:538:5:
+assertion `left == right` failed: ohne Kandidat bleibt nur die Enthaltung
+  left: QuelleResonanz
+ right: DatenReichenNicht
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    keine_komponente_kompensiert_coverage_oder_alignment
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 16 filtered out; finished in 0.30s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: unused import: `GATE_ABDECKUNG`
+  --> src\coordinator\hypothese.rs:46:31
+   |
+46 | use super::vergleichbarkeit::{GATE_ABDECKUNG, GATE_MINDEST_FENSTER, GATE_ZEITUEBERDECKUNG};
+   |                               ^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib) generated 1 warning (run `cargo fix --lib -p eqcop-broker` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.79s
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+error: test failed, to rerun pass `--test sonde014_hypothese`
+
+[2] RUECKNAHME ZURUECKGENOMMEN, LAUF ERNEUT - erwartet GRUEN (Exitcode 0)
+========================================================================
+
+running 1 test
+test keine_komponente_kompensiert_coverage_oder_alignment ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 16 filtered out; finished in 0.58s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.95s
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+
+URTEIL: OK (rot=101, gruen=0)

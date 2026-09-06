@@ -1,0 +1,70 @@
+SONDE-014 Etappe C - Rotbeweis M-16
+========================================================================
+
+GEWERTETE ZUSAGE
+Die sechs Teile der Ergebnisform aus §8 stehen im Datenmodell; fehlt einer, faellt genau er.
+
+GEMESSEN AN  broker/tests/sonde014_hypothese.rs::sechs_teile_im_datenmodell
+             (Verdrahtungsebene: die Evidenz geht durch `p1`,
+              also durch dieselbe Senke wie im Produktbetrieb)
+
+RUECKNAHME AM PRODUKTCODE  broker/src/coordinator/hypothese.rs
+------------------------------------------------------------------------
+VORHER:
+    let band = Bandintervall {
+        von,
+        bis: bis.min(BAENDER_FEIN as u32),
+    };
+
+NACHHER:
+    // RUECKNAHME M-16: der Ort verliert sein Bandintervall.
+    let band = Bandintervall { von, bis: von };
+------------------------------------------------------------------------
+
+[1] LAUF MIT RUECKNAHME - erwartet ROT (Exitcode 101)
+========================================================================
+
+running 1 test
+test sechs_teile_im_datenmodell ... FAILED
+
+failures:
+
+---- sechs_teile_im_datenmodell stdout ----
+
+thread 'sechs_teile_im_datenmodell' (13460) panicked at tests\sonde014_hypothese.rs:386:9:
+Teil beobachtung fehlt im Datenmodell
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    sechs_teile_im_datenmodell
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 16 filtered out; finished in 0.24s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: unused variable: `bis`
+    --> src\coordinator\hypothese.rs:1087:9
+     |
+1087 |     let bis = (((gruppe + 1) * BAENDER_FEIN / GRUPPEN_LIVE).max(von as usize + 1)) as u32;
+     |         ^^^ help: if this is intentional, prefix it with an underscore: `_bis`
+     |
+     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib) generated 1 warning (run `cargo fix --lib -p eqcop-broker` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.14s
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+error: test failed, to rerun pass `--test sonde014_hypothese`
+
+[2] RUECKNAHME ZURUECKGENOMMEN, LAUF ERNEUT - erwartet GRUEN (Exitcode 0)
+========================================================================
+
+running 1 test
+test sechs_teile_im_datenmodell ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 16 filtered out; finished in 0.27s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.06s
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+
+URTEIL: OK (rot=101, gruen=0)

@@ -1,0 +1,70 @@
+SONDE-014 Etappe C - Rotbeweis M-28
+========================================================================
+
+GEWERTETE ZUSAGE
+Eine Behauptung, deren Belege ausgeschlossen sind, wird STALE beziehungsweise unsichtbar.
+
+GEMESSEN AN  broker/tests/sonde014_hypothese.rs::behauptung_ohne_existente_evidenz_wird_nicht_sichtbar
+             (Verdrahtungsebene: die Evidenz geht durch `p1`,
+              also durch dieselbe Senke wie im Produktbetrieb)
+
+RUECKNAHME AM PRODUKTCODE  broker/src/coordinator/hypothese_verdrahtung.rs
+------------------------------------------------------------------------
+VORHER:
+            } else {
+                befund.zustand = Befundzustand::Stale;
+            }
+
+NACHHER:
+            } else {
+                // RUECKNAHME M-28: der Teilverlust bleibt unbemerkt.
+            }
+------------------------------------------------------------------------
+
+[1] LAUF MIT RUECKNAHME - erwartet ROT (Exitcode 101)
+========================================================================
+
+running 1 test
+test behauptung_ohne_existente_evidenz_wird_nicht_sichtbar ... FAILED
+
+failures:
+
+---- behauptung_ohne_existente_evidenz_wird_nicht_sichtbar stdout ----
+
+thread 'behauptung_ohne_existente_evidenz_wird_nicht_sichtbar' (16640) panicked at tests\sonde014_hypothese.rs:900:5:
+einige Belege fort heisst STALE: [ReadyToSend]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    behauptung_ohne_existente_evidenz_wird_nicht_sichtbar
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 16 filtered out; finished in 0.32s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: unused import: `Befundzustand`
+  --> src\coordinator\hypothese_verdrahtung.rs:54:27
+   |
+54 |     hypothesen, Aufnahme, Befundzustand, CauseHypothesis, Evidenzfenster, Passagenfenster,
+   |                           ^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib) generated 1 warning (run `cargo fix --lib -p eqcop-broker` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.89s
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+error: test failed, to rerun pass `--test sonde014_hypothese`
+
+[2] RUECKNAHME ZURUECKGENOMMEN, LAUF ERNEUT - erwartet GRUEN (Exitcode 0)
+========================================================================
+
+running 1 test
+test behauptung_ohne_existente_evidenz_wird_nicht_sichtbar ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 16 filtered out; finished in 0.30s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.07s
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+
+URTEIL: OK (rot=101, gruen=0)

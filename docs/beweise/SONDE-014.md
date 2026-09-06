@@ -3,9 +3,9 @@
 | Merkmal | Wert |
 |---|---|
 | Ticket | S23–25, `SONDE-014` (Phase P4–P5), Leitungsname „Aus Messungen belegte Befunde und kleinste Tests ableiten" |
-| Phase | **Etappe 2 — Bau, läuft.** Fertig: **Etappe A** (`SourceIntent` im Main-State, Commit `8f030f5`) und **Etappe B** (Fassung 3 des Wire-Envelopes, Commits `edea7a9`, `baa6291`, `581431a`). Davor ohne Produktcode: **Matrixnacharbeit 1** (2026-09-06), **Etappe 1b — Entscheide E-01 bis E-10** (`fdb04e4`) und **Etappe 1 — Verhaltensmatrix** (`1f126a4`). Der Bauverlauf steht in §7. |
+| Phase | **Etappe 2 — Bau, läuft.** Fertig: **Etappe A** (`SourceIntent` im Main-State, Commit `8f030f5`), **Etappe B** (Fassung 3 des Wire-Envelopes, Commits `edea7a9`, `baa6291`, `581431a`) und **Etappe C** (Evidenzgraph und `CauseHypothesis`). Davor ohne Produktcode: **Matrixnacharbeit 1** (2026-09-06), **Etappe 1b — Entscheide E-01 bis E-10** (`fdb04e4`) und **Etappe 1 — Verhaltensmatrix** (`1f126a4`). Der Bauverlauf steht in §7. |
 | Matrixprüfung 2 | Codex `gpt-6-astra`, Effort **max**, lesend, Thread `01a077a3-1411-7830-9bfd-e17d233baab1`; `HEAD` vor und nach dem Lauf `f90abf5`. **URTEIL: PASS** — D1 bis D4 geschlossen, nichts gebrochen. Auftrag `docs/beweise/roh/SONDE-014-matrixpruefung-2-auftrag.txt`, Rohurteil `docs/beweise/roh/SONDE-014-matrixpruefung-2-f90abf5.txt`. **Etappe 1 ist damit abgenommen; §3 ist ab hier die Spezifikation.** |
-| Etappe 2 | Bauauftrag `docs/beweise/roh/SONDE-014-etappe-2-auftrag.txt`, Basis `f90abf5`. Neun Bauetappen A bis I nach §5.1; Bauverlauf, gemessene Matrixzeilen, Rotbeweise, Abweichungen und Nebenbefunde in **§7**. |
+| Etappe 2 | Bauauftrag `docs/beweise/roh/SONDE-014-etappe-2-auftrag.txt`, Basis `f90abf5`; Fortsetzung 1 (Etappen C bis I) `docs/beweise/roh/SONDE-014-etappe-2-fortsetzung-1-auftrag.txt`, Startstand `6b96c64`, mit **Entscheid E-12** (`GATE_MINDEST_FENSTER` in Etappe C ohne Versionsschritt; der eine erlaubte Schritt der `metrics_version` liegt in Etappe H). Neun Bauetappen A bis I nach §5.1; Bauverlauf, gemessene Matrixzeilen, Rotbeweise, Abweichungen und Nebenbefunde in **§7**. |
 | Entscheide | E-01 bis E-10 wörtlich in `docs/beweise/roh/SONDE-014-etappe-1-entscheid-auftrag.txt`. Eingearbeitet in Etappe 1b: neun angenommene Technikentscheide (E-01 bis E-09, E-01 und E-03 mit Präzisierung, E-08 mit Autoritätenzuweisung) und **eine neue Lücke E-10** (Transport des Intents vom Main zum Broker) mit den zwei zusätzlichen Matrixzeilen **M-85** und **M-86**. **Seit der Matrixnacharbeit 1 kommt E-11 dazu** (Transport und versionierter Spiegel des `AssistantStep`, Regel R3, §4.13) mit **M-88** und **M-89**. Je Entscheid steht ein Block „Etappe 1b (Entscheid des Dirigenten, 06.09.2026)" unter dem zugehörigen §4-Abschnitt; der vorige Vorschlagstext bleibt als Historie stehen. |
 | Urteil | **offen** — weder Bau- noch Prüfurteil. Dieses Manifest friert die aus den verbindlichen Quellen belegbare Verhaltensgrenze ein und benennt die Stellen, an denen der spätere Bau ohne weiteren Vertragsentscheid nicht ehrlich fortfahren kann. |
 | Prüfstufe | T1+T2 gefordert (`docs/bauaufteilung-sonden.md` Zeile 394 · `docs/plan/plan.json`, Schritt S23–25, `"stufe": "T2"`). Keine Marke vergeben. |
@@ -2110,6 +2110,172 @@ keine Definition ohne Negativfixture, `enum` 50/50 und `const` 16/16 gedeckt
   `intent:vollstaendig` neben `intent:<quelle>:<scope>`: ein Vollbericht darf
   einen älteren Vollbericht verdrängen, aber nie eine Einzelfortschreibung —
   die trägt ein anderes Objekt.
+
+
+### 7.3 Etappe C — Evidenzgraph und `CauseHypothesis`
+
+**Gebaut:** die Kandidatenbildung, der Rang aus sechs Komponenten mit hartem
+Coverage-/Alignment-Gate, die `CauseHypothesis` mit den zehn Feldern aus §36.3
+und den sechs Teilen aus §8, der Determinismus (Saat, Reduktionsreihenfolge,
+Quantisierung, Tie-Break-Key), die deterministische Invalidierung bei
+Evidenzrücknahme, die geschlossene Achtermenge der Ausschlussgründe und die
+Konstante `GATE_MINDEST_FENSTER` aus R1. Der Produzent für
+`event_type = "finding"` existiert damit; die Projektion lag seit SONDE-011
+ohne ihn da (§2.11 L3).
+
+| Stück | Ort |
+|---|---|
+| Rechnung (rein, ohne Lock und Store) | **NEU** `broker/src/coordinator/hypothese.rs` — `hypothesen()`, `gate()`, `rangkomponenten()`, `masteranomalie()`, `finding_id()`, die sieben Mengen `URSACHENKLASSEN`/`AUSSCHLUSSGRUENDE`/`AUSSAGEKLASSEN`/`ZIELMETRIKEN`/`NAECHSTE_TESTS`/`BEFUNDZUSTAENDE`/`SICHERHEITSKLASSEN` |
+| Produktpfad (Auslöser, Aufnahme, Ablage, Zustellung) | **NEU** `broker/src/coordinator/hypothese_verdrahtung.rs` — `hypothesen_bilden()`, `aufnahmen_sammeln()`, `befunde_eintragen()`, `befund_persistieren()`, `befund_json()`, `befunde_invalidieren_locked()` |
+| Das Gate aus R1 | `broker/src/coordinator/vergleichbarkeit.rs` — `GATE_MINDEST_FENSTER = 8`, neben den vier bestehenden Gates und nirgendwo sonst |
+| Auslöser 1 (neue Evidenz) | `broker/src/coordinator/evidenz.rs` — `hypothesen_bilden()` direkt nach `evidenz_paare_bilden()` |
+| Auslöser 2 (Rücknahme) | `broker/src/coordinator/invalidierung_verdrahtung.rs` — `befunde_invalidieren_locked()` **unter demselben Lock** wie die Evidenzmarkierung, `befunde_nach_ruecknahme_zustellen()` danach |
+| Rückweg zu Gen | `broker/src/coordinator/sicht.rs` — `findings` im `session_snapshot`, gedeckelt auf `SNAPSHOT_BEFUNDE_MAX = 64` |
+| Flüchtiger Bestand | `broker/src/coordinator/zustand.rs` — `Stand::befunde`, `Stand::befunde_neu_bilden` |
+| Bandbezogener Schutz | `broker/src/coordinator/intent.rs` — `IntentBestand::schutz_verletzt()` (additiv; `geschuetzt()` bleibt unverändert) |
+| Passagenzugriff | `broker/src/coordinator/experiment.rs` — `Experimentstore::juengste_passage_im_projekt()` |
+| Bein (Verdrahtung) | **NEU** `broker/tests/sonde014_hypothese.rs`, 17 Fälle |
+| Bein (Modul) | `broker/src/coordinator/hypothese.rs` `#[cfg(test)] mod tests`, 13 Fälle |
+
+**Gemessene Matrixzeilen.** Zwei Ebenen je Zeile (§5.3 R1): das reine Modul
+**und** derselbe Handgriff über die Senke `p1`. Der Rotbeweis fällt jeweils an
+der Verdrahtung.
+
+| Zeile | Wo gemessen | Rotbeweis |
+|---|---|---|
+| **M-14** | `sonde014_hypothese.rs::ursachenklassen_sind_geschlossen_und_sieben` (Vertragsmenge, Rückweg jedes Worts, achte Klasse fällt, siebte ist Enthaltung) und `hypothese.rs::geschlossene_mengen_sind_rund` | `roh/SONDE-014-rot-M-14.txt` |
+| **M-15** | `sonde014_hypothese.rs::causehypothesis_traegt_die_zehn_felder` — jedes Pflichtfeld aus `$defs/session_finding.required` am **erzeugten** Objekt, `class` und `score` als zwei Felder. Die Vertragshälfte liegt in Etappe B (§7.2) | `roh/SONDE-014-rot-M-15-erzeuger.txt` |
+| **M-16** | `sonde014_hypothese.rs::sechs_teile_im_datenmodell` und `hypothese.rs::sechs_teile_sind_sechs_und_benannt` — die sechs Teile aus §8 **und** die drei Anzeigezeilen als drei eigene Felder; kein Belegtextfeld | `roh/SONDE-014-rot-M-16.txt` |
+| **M-17** | `sonde014_hypothese.rs::parallele_telemetrie_bleibt_klasse_eins` — zwei gleichzeitig gemessene Quellen bleiben `zusammenhang`, und `ursachenbeleg` ist im ganzen Pfad unerreichbar | `roh/SONDE-014-rot-M-17.txt` |
+| **M-18** | `sonde014_hypothese.rs::screening_reicht_hoechstens_fuenf_weiter` — sieben gleichwertige Kandidaten, **fünf** kommen durch; die Zahl steht als Literal, nicht als `KANDIDATEN_DECKEL` | `roh/SONDE-014-rot-M-18.txt` |
+| **M-19** | `sonde014_hypothese.rs::bedingter_uplift_braucht_fenster_ohne_die_quelle` — eine konstant laute Quelle liefert **keinen** Uplift, dieselbe Bühne mit stillen Fenstern schon | `roh/SONDE-014-rot-M-19.txt` |
+| **M-20** | `sonde014_hypothese.rs::keine_komponente_kompensiert_coverage_oder_alignment` (je ein Fall mit Maximalwert bei gerissener Coverage beziehungsweise gerissenem Alignment) und `hypothese.rs::gate_faellt_in_der_zugesagten_reihenfolge` (Kante 0,5 von beiden Seiten) | `roh/SONDE-014-rot-M-20.txt` |
+| **M-21** | *nicht in dieser Etappe* — der korrelierte Distraktor ist ein **Korpusfall** (Etappe H, `pruefe_p5_korpus.py`). Die Rangseite steht: ein zweiter Kandidat wird eigener Befund mit eigenem Zustand und erscheint als `alternatives` am führenden | — |
+| **M-22** | `sonde014_hypothese.rs::parent_duplikat_erzeugt_keine_zwei_starken` — zwei Sonden auf demselben `host_mixer_index` erreichen beide nicht `hoch`; ohne `host_mixer_index` ist die Routingqualität 0 | `roh/SONDE-014-rot-M-22.txt` |
+| **M-23** | `sonde014_hypothese.rs::passage_zu_kurz_traegt_keine_starke_aussage` — drei Fenster tragen keine starke Aussage, zwölf schon, die Kante fällt bei 7/8, und eine um 30 % verschobene Passage erreicht `hoch` nicht; `hypothese.rs::passagengates_trennen_verschoben_anders_und_zu_kurz` trennt die drei Gründe | `roh/SONDE-014-rot-M-23.txt` |
+| **M-24** | `sonde014_hypothese.rs::ruecknahme_invalidiert_abhaengige_hypothesen` — die Rücknahme über den Produktweg „Material gewechselt", und derselbe Umfang über einen anderen Auslöser trifft dieselbe Menge | `roh/SONDE-014-rot-M-24.txt` |
+| **M-25** | `sonde014_hypothese.rs::ranking_ist_bytegleich_ueber_hundert_laeufe` — hundert Bühnen aus **denselben Bytes**, bytegleiche serialisierte `findings`; `hypothese.rs::finding_id_ist_deterministisch_und_trennt` und `quantisierung_klemmt_rastet_und_ist_nan_ehrlich` | `roh/SONDE-014-rot-M-25.txt` |
+| **M-26** | `sonde014_hypothese.rs::gleichstand_zeigt_beide` — beide bleiben, der Rang ist wirklich gleich, und der Tie-Break ist die `candidate_source` aufsteigend | `roh/SONDE-014-rot-M-26.txt` |
+| **M-27** | `sonde014_hypothese.rs::mehr_daten_ist_ein_ergebnis` — ohne Kandidat entsteht ein **Befund** mit `daten_reichen_nicht`, `more_data`, `mehr_daten_sammeln` und eigenen Evidenz-IDs | `roh/SONDE-014-rot-M-27.txt` |
+| **M-28** | `sonde014_hypothese.rs::behauptung_ohne_existente_evidenz_wird_nicht_sichtbar` (Teilverlust → `stale`) und `ruecknahme_invalidiert_abhaengige_hypothesen` (Vollverlust → unsichtbar, auch im Snapshot) | `roh/SONDE-014-rot-M-28.txt` |
+| **M-87** | `sonde014_hypothese.rs::ausschlussgruende_sind_geschlossen_und_reisen_mit` — die Achtermenge gegen den Vertrag, ein neunter Grund fällt, und der ausgeschiedene Kandidat steht **mit Grund** im Snapshot. Die Vertragshälfte liegt in Etappe B (§7.2) | `roh/SONDE-014-rot-M-87-rechnung.txt` |
+| **M-12** | `sonde014_hypothese.rs::rollenaenderung_bewegt_die_intent_relevanz` — dieselbe Quelle als `fuehrt` trägt eine höhere Rangkomponente als als `begleitet`. §7.1 hatte die Zeile ausdrücklich hierher vertagt | `roh/SONDE-014-rot-M-12.txt` |
+| **M-86** (zweite Hälfte) | `sonde014_hypothese.rs::keine_hypothese_vor_der_vollstaendigkeitsmarke` und `hypothese.rs::ohne_vollstaendigkeitsmarke_rechnet_das_modul_nicht` — die Sperre aus E-10 gilt auch für die Ursachenrechnung, doppelt verriegelt | — (Rotbeweis in §7.2) |
+
+**Läufe.** `cargo test --manifest-path broker/Cargo.toml` **581 Prüfungen,
+0 Fehler**, darunter **NEU** `sonde014_hypothese` mit 17 Fällen und
+`coordinator::hypothese::tests` mit 13 (Bein **A4**). `cargo clippy
+--all-targets` meldet in beiden neuen Dateien nichts.
+
+**Rotbeweise.** Sechzehn Dateien
+`docs/beweise/roh/SONDE-014-rot-M-{12,14,15-erzeuger,16,17,18,19,20,22,23,24,25,26,27,28,87-rechnung}.txt`.
+Jede enthält die gewertete Zusage, die minimale Rücknahme am **Produktcode**
+(nie am Test) wörtlich, den roten Lauf mit Exitcode 101, die zurückgenommene
+Rücknahme und den grünen Lauf mit Exitcode 0.
+
+**Abweichungen von §5, mit Begründung.**
+
+1. **Kein neues Kanon-Bein.** §5.1 nennt für diese Etappe „**NEU**
+   `EqCopSonde014HypotheseTest`" — einen C++-Beinnamen. Entscheid **E-08**
+   (§4.8, Etappe 1b und damit später als die Matrixzeile) weist Hypothese,
+   Proposal und Maskierung ausdrücklich dem **Broker-Coordinator** zu: „dort
+   liegen Evidenzbestand und Store". Ein C++-Bein hätte hier nichts zu messen.
+   Gebaut ist deshalb ein Rust-Integrationsbein
+   (`broker/tests/sonde014_hypothese.rs`), das unter **A4** läuft; die
+   Behauptung von **A4** in `tools/beweise.ps1` ist entsprechend nachgezogen
+   (geänderte Zusage — Runnerkopf, Skriptkopf und Manifestkopf gemeinsam).
+   Ein eigenes Bein `A4-H` nach dem Muster von **A4-SI** wäre möglich gewesen
+   und ist bewusst unterblieben: es liefe dieselben 37 Sekunden ein zweites
+   Mal in jedem Kanonlauf, ohne eine Zusage zu messen, die **A4** nicht schon
+   misst. Die Kanonzahl bleibt damit **55**.
+2. **Der Tie-Break-Key steht noch nicht in `metriken-v1.json`.** M-25 nennt
+   dafür „**A5** erweitert um den Tie-Break-Key". Entscheid **E-12** des
+   Dirigenten (06.09.2026) erlaubt für dieses Ticket **genau einen**
+   Versionsschritt der `metrics_version`, und der liegt in **Etappe H** —
+   zusammen mit der Kalibrierung von `GATE_MINDEST_FENSTER` und der Schwelle
+   aus M-31. Die vier Determinismusgrößen (`BOOTSTRAP_SAAT`, `RANG_QUANTUM`,
+   `TIE_BREAK_KEY`, `RANGKOMPONENTEN` als Reduktionsreihenfolge) stehen
+   deshalb als benannte Konstanten in `hypothese.rs` und wandern in H
+   gemeinsam ins Register. Zwei Schritte für eine Sache wären zwei
+   Kalibrierungen; **A5** duldet eine Codekonstante ohne Registereintrag
+   ausdrücklich („Was er NICHT prüft: dass jede Codekonstante im Register
+   steht").
+3. **`M-21` liegt nicht in dieser Etappe.** §5.1 ordnet sie der Etappe C zu
+   („M-14 bis M-28"), ihre Zusage ist aber ein **Korpusfall**: „Ein
+   korrelierter, nicht kausaler Distraktor liegt im Korpus". Der Korpus
+   entsteht in Etappe H; die Zeile ist oben ausdrücklich als offen
+   ausgewiesen statt still übersprungen.
+4. **Zwei Dateien außerhalb der neu anzulegenden Module.**
+   `broker/src/coordinator/intent.rs` (`schutz_verletzt`) und
+   `broker/src/coordinator/experiment.rs` (`juengste_passage_im_projekt`)
+   stehen beide **in** den Ticketpfaden (§5.2). Beide Änderungen sind rein
+   additiv: kein bestehender Bezeichner wurde umbenannt, keine bestehende
+   Funktion geändert. Die Alternative — die Bandprüfung im Hypothesenmodul
+   nachzubauen — wäre eine zweite Wahrheit über den Intent gewesen.
+
+**Technische Entscheide dieser Etappe** (innerhalb von Matrix, Entscheiden und
+Invarianten selbst getroffen).
+
+- **Ausschluss ist nicht Rangschnitt.** Die geschlossene Menge aus M-87 kennt
+  keinen Wert „Rang zu niedrig", und das ist kein Versehen: die acht Gründe
+  sind **Gates**. Ein Kandidat, der ein Gate reißt, verlässt das Ranking mit
+  Grund; der harte Deckel aus M-18 schneidet **danach** und trifft nur
+  Kandidaten, die jedes Gate bestanden haben. Sie sind nicht ausgeschlossen,
+  sondern überboten, und die deterministische Rangfolge ist ihr Protokoll.
+  Ein neunter Grund „überboten" hätte die Menge geöffnet, ohne eine Zusage zu
+  tragen.
+- **Der Master ist der `main`, nicht der lauteste.** §8 erklärt einen
+  *Master*befund. Gen ist als einzige Instanz `plugin_kind = "main"` und misst
+  laut Vertrag ausschließlich am Insert. Eine Sitzung ohne Main rechnet gar
+  nicht — das ist der normale Zustand einer Sondenrunde ohne Gen und kein
+  Fehler.
+- **„Routing bekannt" ist `host_mixer_index`, und „Parent-Duplikat" ist
+  derselbe Kanal.** Der Deskriptor trägt **keine** Elternkante; der Broker
+  kennt FL's Routinggraphen nicht. M-22 verlangt zwei Dinge, und beide sind
+  mit dem messbar, was da ist: ohne `host_mixer_index` gibt es keine starke
+  Aussage, und zwei Quellen auf demselben Kanal messen dasselbe Signal und
+  erreichen beide nicht `hoch`. Eine erfundene Elternkante hätte wie Wissen
+  ausgesehen, das der Broker nicht hat.
+- **Die Sicherheit hängt nicht an der Aussageklasse.** `claim_class` sagt, wie
+  stark die **Art** des Belegs ist; `confidence` sagt, wie sicher **diese**
+  Aussage ist. Wer `hoch` an ein PRE/POST-Paar knüpfte, machte es in einer
+  rein passiven Sitzung strukturell unerreichbar — und genau dort verlangt
+  M-23 seinen Rotbeweis („dieselbe Session mit einer Passage **unter**
+  `GATE_MINDEST_FENSTER` liefert `READY TO SEND`" ist der **gebrochene**
+  Zustand, also muss dieselbe Session mit genug Fenstern ihn erreichen).
+- **Gleichgewichtete Rangkomponenten.** §36.2 nennt sechs Komponenten und
+  **keine** Gewichte. Ein erfundenes Gewicht wäre eine unkalibrierte Zahl im
+  Rechenweg — genau das, was `metriken-v1.json` verhindern soll. Der Rang ist
+  deshalb das quantisierte Mittel; die Kalibrierung gehört Etappe H.
+- **Der Uplift wird auf die eigene Spanne normiert.** Eine feste dB-Schwelle
+  wäre wieder eine unkalibrierte Konstante. Eine Erhöhung um 3 dB heißt wenig,
+  wenn der Master dort ohnehin um 20 dB schwankt, und viel, wenn er still
+  steht — die Bezugsgröße steckt damit in den Daten, nicht im Code.
+- **Terminal heißt: keine sofortige Neurechnung.** Nach einer Rücknahme wird
+  **nicht** neu gerechnet. Eine Neurechnung unmittelbar danach hätte die
+  Hypothese aus den verbliebenen Belegen frisch aufgebaut und den Zustand
+  `stale` in derselben Bewegung wieder weggeräumt — die Invalidierung wäre ein
+  Flackern gewesen, kein Zustand. Neu gerechnet wird erst, wenn **neues**
+  Material ankommt; dann ruht die Aussage auch wirklich auf neuem Material.
+  Die Gegenrichtung ist symmetrisch verdrahtet: scheitert der Store-Append,
+  nimmt `invalidierung_ruecknehmen` die Markierung zurück **und** setzt
+  `befunde_neu_bilden`, damit die Sperre nicht ohne Anlass stehen bleibt.
+- **Der Rückweg ist der bestehende Snapshotpfad.** `findings` reist wie
+  `experimente` und `paare` im `session_snapshot` (E-04). Eine eigene Familie
+  hätte eine zweite Reihenfolge und eine zweite Koaleszierung gebraucht.
+
+**Nebenbefunde.**
+
+- **N-09 (neu, behoben, im eigenen Diff).** Der erste Entwurf von
+  `screening_reicht_hoechstens_fuenf_weiter` prüfte gegen `KANDIDATEN_DECKEL`
+  — dieselbe Konstante, die der Produktpfad benutzt. Der Rotbeweis M-18
+  (Deckel auf 6) lief damit **grün**: der Test wanderte mit. Der Fall trägt
+  jetzt die **Zahl** aus M-18 („höchstens die besten fünf") und prüft die
+  Konstante daneben. Dieselbe Klasse wie ein Test, der das Modul direkt ruft:
+  er kann nicht fallen.
+- **N-10 (neu, keine Änderung).** `EqCopSonde012ProjectReloadTest` legt seine
+  Prozessoren weiter im Funktionsrahmen an (N-06 aus §7.1, NAK-175). Diese
+  Etappe fügt dort nichts hinzu; der Befund bleibt offen und unverändert.
 
 ---
 

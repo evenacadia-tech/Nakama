@@ -1,0 +1,59 @@
+SONDE-014 Etappe C - Rotbeweis M-14
+========================================================================
+
+GEWERTETE ZUSAGE
+Die sieben Ursachenklassen sind eine geschlossene Menge; eine achte wird abgewiesen, nicht auf einen bekannten Zweig abgebildet.
+
+GEMESSEN AN  broker/tests/sonde014_hypothese.rs::ursachenklassen_sind_geschlossen_und_sieben
+             (Verdrahtungsebene: die Evidenz geht durch `p1`,
+              also durch dieselbe Senke wie im Produktbetrieb)
+
+RUECKNAHME AM PRODUKTCODE  broker/src/coordinator/hypothese.rs
+------------------------------------------------------------------------
+VORHER:
+            "daten_reichen_nicht" => Self::DatenReichenNicht,
+            _ => return None,
+
+NACHHER:
+            "daten_reichen_nicht" => Self::DatenReichenNicht,
+            _ => Self::QuelleResonanz,
+------------------------------------------------------------------------
+
+[1] LAUF MIT RUECKNAHME - erwartet ROT (Exitcode 101)
+========================================================================
+
+running 1 test
+test ursachenklassen_sind_geschlossen_und_sieben ... FAILED
+
+failures:
+
+---- ursachenklassen_sind_geschlossen_und_sieben stdout ----
+
+thread 'ursachenklassen_sind_geschlossen_und_sieben' (1656) panicked at tests\sonde014_hypothese.rs:260:5:
+assertion failed: Ursachenklasse::aus_wire("achte_klasse").is_none()
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    ursachenklassen_sind_geschlossen_und_sieben
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 16 filtered out; finished in 0.00s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.02s
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+error: test failed, to rerun pass `--test sonde014_hypothese`
+
+[2] RUECKNAHME ZURUECKGENOMMEN, LAUF ERNEUT - erwartet GRUEN (Exitcode 0)
+========================================================================
+
+running 1 test
+test ursachenklassen_sind_geschlossen_und_sieben ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 16 filtered out; finished in 0.25s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.06s
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+
+URTEIL: OK (rot=101, gruen=0)

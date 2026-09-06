@@ -1,0 +1,65 @@
+SONDE-014 Etappe C - Rotbeweis M-15
+========================================================================
+
+GEWERTETE ZUSAGE
+Das Ergebnisobjekt traegt jedes Pflichtfeld aus §36.3; ohne evidence_ids gibt es kein Objekt.
+
+GEMESSEN AN  broker/tests/sonde014_hypothese.rs::causehypothesis_traegt_die_zehn_felder
+             (Verdrahtungsebene: die Evidenz geht durch `p1`,
+              also durch dieselbe Senke wie im Produktbetrieb)
+
+RUECKNAHME AM PRODUKTCODE  broker/src/coordinator/hypothese_verdrahtung.rs
+------------------------------------------------------------------------
+VORHER:
+        objekt.insert(
+            "evidence_ids".into(),
+            Value::Array(
+                b.evidence_ids
+                    .iter()
+                    .map(|id| Value::String(id.clone()))
+                    .collect(),
+            ),
+        );
+
+NACHHER:
+        // RUECKNAHME M-15: das Pflichtfeld faellt weg.
+------------------------------------------------------------------------
+
+[1] LAUF MIT RUECKNAHME - erwartet ROT (Exitcode 101)
+========================================================================
+
+running 1 test
+test causehypothesis_traegt_die_zehn_felder ... FAILED
+
+failures:
+
+---- causehypothesis_traegt_die_zehn_felder stdout ----
+
+thread 'causehypothesis_traegt_die_zehn_felder' (3188) panicked at tests\sonde014_hypothese.rs:344:9:
+Pflichtfeld evidence_ids fehlt im erzeugten Befund
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    causehypothesis_traegt_die_zehn_felder
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 16 filtered out; finished in 0.25s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.62s
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+error: test failed, to rerun pass `--test sonde014_hypothese`
+
+[2] RUECKNAHME ZURUECKGENOMMEN, LAUF ERNEUT - erwartet GRUEN (Exitcode 0)
+========================================================================
+
+running 1 test
+test causehypothesis_traegt_die_zehn_felder ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 16 filtered out; finished in 0.25s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.47s
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+
+URTEIL: OK (rot=101, gruen=0)

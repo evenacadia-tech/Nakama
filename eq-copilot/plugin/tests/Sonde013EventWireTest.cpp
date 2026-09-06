@@ -189,6 +189,33 @@ int lautestesBand (const nakama::analyse::EvidenzBaender& p50)
     }
     return bestes;
 }
+
+/** NAK-182: eine Fixture aus dem Repo lesen — vom Arbeitsverzeichnis ODER
+    vom Bauordner aus, damit das Bein auch als Artefakt laeuft. Dieselbe
+    Bauform wie `finde`/`lies` in `SchemaTestMain.cpp`. */
+juce::var liesFixture (const juce::String& relativ, bool& ok)
+{
+    auto datei = juce::File::getCurrentWorkingDirectory().getChildFile (relativ);
+    if (! datei.existsAsFile())
+    {
+        auto ordner = juce::File::getSpecialLocation (juce::File::currentExecutableFile)
+                          .getParentDirectory();
+        for (int i = 0; i < 10 && ordner.exists(); ++i)
+        {
+            auto kandidat = ordner.getChildFile (relativ);
+            if (kandidat.existsAsFile()) { datei = kandidat; break; }
+            ordner = ordner.getParentDirectory();
+        }
+    }
+    ok = false;
+    if (! datei.existsAsFile())
+        return {};
+    juce::var wert;
+    if (juce::JSON::parse (datei.loadFileAsString(), wert).failed())
+        return {};
+    ok = true;
+    return wert;
+}
 } // namespace
 
 int main()
@@ -1547,6 +1574,157 @@ int main()
                     f, testkopf(), {}, {}, json2),
                 "N-18d: mit 48000 entsteht er unveraendert");
     }
+    // ── NAK-182 M-83 Satz 2, C++-Haelfte ─────────────────────────────────
+    //
+    // focused_evidence_wire_carries_0p01_db_steps
+    //
+    // M-83 Satz 2 woertlich: "fokussierte 0,01-dB-Evidenz muss Gain innerhalb
+    // +/-0,1 dB samt statistischem Intervall wiederfinden."  Gemessen war
+    // davon bisher nichts - gebaut war die Kodierung, gemessen nur ihre
+    // Grenzwertkonsistenz zwischen Schema, C++ und Rust.
+    //
+    // DIESE HAELFTE misst den Encoder gegen die ZAHLEN der Fixture, nicht
+    // gegen ihre Bytes (Form B, Manifest E4b).  Warum nicht Bytes:
+    //
+    //   * Der Verteilungsring speichert `float`
+    //     (`FeatureEngine.h`, `evidenzVerteilung[b].schiebe ((float) db)`),
+    //     die Perzentilrechnung laeuft in `double`.
+    //   * `quantisiere16` rundet halbe Werte VON NULL WEG; ein Bandpegel auf
+    //     einem Vielfachen von 0,005 dB kippt bei einem einzigen ULP.
+    //   * Bitgleichheit ueber BINAERSTAENDE hinweg sagt dieses Repo nirgends
+    //     zu - die bestehenden Bitgleichheitszusagen gelten je EINEM Lauf
+    //     desselben Standes.
+    //   * Der ABSOLUTE Bandpegel ist ohne zweite Implementierung gar nicht
+    //     vorhersagbar (Fensterfunktion, FFT-Normierung, Bandaggregation).
+    //
+    // Die DIFFERENZ ist es sehr wohl: ein skalarer Gain g multipliziert die
+    // Energie mit g^2 und verschiebt damit JEDES Band um exakt 20*log10(g).
+    // Deshalb faehrt der Fall dasselbe Material zweimal - einmal mit
+    // Amplitude A, einmal mit A * 10^(G/20) - und misst die Differenz.
+    abschnitt ("NAK-182 M-83  focused_evidence_wire_carries_0p01_db_steps");
+    {
+        bool da = false;
+        const auto fix = liesFixture ("eq-copilot/fixtures/v3/evidenz-0p01-paar-wire-v1.json", da);
+        pruefe (da, "die Byteinstanz liegt im Korpus - keine der drei Sprachen "
+                    "erzeugt sie, alle messen dagegen");
+        if (da)
+        {
+            const auto pegel = fix.getProperty ("pegel", {});
+            const double gainDb    = (double) pegel.getProperty ("gain_db", 0.0);
+            const double toleranz  = (double) pegel.getProperty ("toleranz_db", 0.0);
+            const auto leiterVar   = fix.getProperty ("leiter", {});
+            const double startDb   = (double) leiterVar.getProperty ("start_db", 0.0);
+            const int    schritte  = (int)    leiterVar.getProperty ("schritte", 0);
+            const double schrittDb = (double) leiterVar.getProperty ("schritt_db", 0.0);
+            const auto*  ganzzahlen = leiterVar.getProperty ("ganzzahlen", {}).getArray();
+
+            pruefe (gainDb > 0.0 && toleranz > 0.0 && schritte >= 20
+                        && ganzzahlen != nullptr && ganzzahlen->size() == schritte,
+                    "die Fixture traegt Gain, Toleranz und die Leiter als ZAHLEN",
+                    "G=" + juce::String (gainDb, 2) + " dB, Toleranz "
+                        + juce::String (toleranz, 2) + " dB, "
+                        + juce::String (schritte) + " Stufen");
+
+            // ── Die GAINZEILE: der echte Encoder, zweimal ────────────────
+            const double amplitude = 0.25;
+            const double faktor = std::pow (10.0, gainDb / 20.0);
+            auto lauf = [&] (double amp, FeatureFrame& aus)
+            {
+                auto halter = std::make_unique<FeatureEngine>();
+                auto& e = *halter;
+                e.vorbereiten (48000.0);
+                Speiser s { e };
+                const bool ok = bisEvidenz (s, sinus (amp, 1000.0, 48000.0), aus, 900);
+                return ok;
+            };
+            FeatureFrame vor {}, nach {};
+            const bool kamVor  = lauf (amplitude, vor);
+            const bool kamNach = lauf (amplitude * faktor, nach);
+            pruefe (kamVor && kamNach,
+                    "beide Laeufe erzeugen einen Evidenzframe (PRE und POST)");
+
+            if (kamVor && kamNach)
+            {
+                pruefe (vor.evidenzP50.encoding == nakama::analyse::BandEncoding::q_db_0p01_i16
+                            && nach.evidenzP50.encoding
+                                   == nakama::analyse::BandEncoding::q_db_0p01_i16,
+                        "der echte Encoder schreibt die FOKUSSIERTE Aufloesung "
+                        "q_db_0p01_i16 - nicht die des Liveframes");
+
+                int mitBit = 0, daneben = 0;
+                double groessteAbweichung = 0.0, kleinsteDifferenz = 1e9, groessteDifferenz = -1e9;
+                for (int b = 0; b < nakama::analyse::Gitter::evidenzBaender; ++b)
+                {
+                    double a = 0.0, c = 0.0;
+                    if (! perzentilDb (vor.evidenzP50, b, a))  continue;
+                    if (! perzentilDb (nach.evidenzP50, b, c)) continue;
+                    ++mitBit;
+                    const double d = c - a;
+                    kleinsteDifferenz = std::min (kleinsteDifferenz, d);
+                    groessteDifferenz = std::max (groessteDifferenz, d);
+                    groessteAbweichung = std::max (groessteAbweichung, std::abs (d - gainDb));
+                    if (std::abs (d - gainDb) > toleranz)
+                        ++daneben;
+                }
+                pruefe (mitBit >= 8,
+                        "genug Baender tragen in BEIDEN Laeufen ein Praesenzbit - "
+                        "sonst haette die Zeile nichts gemessen",
+                        juce::String (mitBit) + " Baender");
+                pruefe (mitBit >= 8 && daneben == 0,
+                        "aus dem EIGENEN Wire-Text (Teiler 100) kommt der Gain je Band "
+                        "mit Bit innerhalb der Toleranz der Fixture zurueck",
+                        juce::String (daneben) + " Baender daneben, groesste Abweichung "
+                            + juce::String (groessteAbweichung, 4) + " dB; Differenzen "
+                            + juce::String (kleinsteDifferenz, 3) + " bis "
+                            + juce::String (groessteDifferenz, 3) + " dB gegen G="
+                            + juce::String (gainDb, 2));
+            }
+
+            // ── Die LEITERZEILE: die Aufloesung selbst ───────────────────
+            //
+            // ⚠️ Ein einzelnes Pegelpaar im Abstand 0,01 dB beweist sie NICHT:
+            // `quantisiere16` rundet die beiden ABSOLUTEN Pegel getrennt, und
+            // bei -30,051/-30,041 liefert sogar Skalierung 10 zwei Ganzzahlen
+            // im Abstand 1.  Zwanzig Stufen sind rundungsphasenunabhaengig.
+            if (ganzzahlen != nullptr && ganzzahlen->size() >= 2)
+            {
+                int gegenFixture = 0, monoton = 0, schrittEins = 0;
+                juce::String reihe;
+                std::int16_t vorher = 0;
+                for (int k = 0; k < ganzzahlen->size(); ++k)
+                {
+                    const double db = startDb + (double) k * schrittDb;
+                    const auto q = nakama::analyse::quantisiere16 (
+                        db, nakama::analyse::BandEncoding::q_db_0p01_i16);
+                    if (q.gueltig && ! q.saturiert
+                        && (int) q.wert == (int) (*ganzzahlen)[k])
+                        ++gegenFixture;
+                    if (k > 0)
+                    {
+                        if (q.wert > vorher) ++monoton;
+                        if ((int) q.wert - (int) vorher == 1) ++schrittEins;
+                    }
+                    if (k < 4) reihe << (k ? ", " : "") << (int) q.wert;
+                    vorher = q.wert;
+                }
+                const int paare = ganzzahlen->size() - 1;
+                pruefe (gegenFixture == ganzzahlen->size(),
+                        "die " + juce::String (ganzzahlen->size())
+                            + " Stufen der Leiter treffen die Ganzzahlen der Fixture",
+                        juce::String (gegenFixture) + " von "
+                            + juce::String (ganzzahlen->size()) + "; erste: " + reihe + ", ...");
+                pruefe (monoton == paare,
+                        "die Leiter ist STRENG MONOTON - 0,01 dB mehr sind nie "
+                        "dieselbe Ganzzahl",
+                        juce::String (monoton) + " von " + juce::String (paare));
+                pruefe (schrittEins == paare,
+                        "und benachbarte Stufen unterscheiden sich um GENAU 1 - das ist "
+                        "die Aufloesung 0,01 dB, gemessen statt angenommen",
+                        juce::String (schrittEins) + " von " + juce::String (paare));
+            }
+        }
+    }
+
     std::cout << "\n-----------------------------------------\n"
               << bestanden << " bestanden, " << fehler << " gescheitert" << std::endl;
     return fehler == 0 ? 0 : 1;

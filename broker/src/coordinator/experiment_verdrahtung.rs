@@ -1740,6 +1740,34 @@ impl Coordinator {
     // kein Bein an der fehlenden Bindung fallen. Sie hat jetzt ihren eigenen
     // Befehlszweig (`experiment_candidate`), und der ist der einzige Weg.
 
+    /// NAK-182 MN2-2: die Resultatmessung eines Versuchs, LESEND fuer Beine.
+    ///
+    /// Sie delegiert ausschliesslich auf `resultatmessung` und rechnet nichts
+    /// selbst; es gibt kein neues Feld, kein Schemafeld, keine Aenderung am
+    /// Terminal und keine Verhaltensaenderung. Dieselbe Bauform wie
+    /// `JSON_SCHEMA_MINOR_AKTIV_FUER_TEST` in `mod.rs`.
+    ///
+    /// WARUM SIE NOETIG IST: `Achsenrechnung` ist die ZUSAMMENFASSUNG - sie
+    /// traegt das Bootstrap-Intervall ueber die Fenstermittel, die Zahl der
+    /// signifikanten Baender und die Guardrails, aber keine Bandachse. Eine
+    /// bandweise Zusage (M-83 Satz 2: "Gain innerhalb +/-0,1 dB") laesst sich
+    /// daran nicht messen: Banddeltas von 2 und 4 dB ergeben denselben
+    /// Mittelwert wie zweimal 3 dB. Die Banddeltas selbst verlassen den Store
+    /// nicht (`sicht.rs`: "Rohdeltas und die Evidence-IDs bleiben im Store"),
+    /// und `resultatmessung` ist `pub(super)` mit `&SessionKey` - einem Typ,
+    /// den ein Bein nicht benennen kann. Deshalb diese eine delegierende
+    /// Auskunft, die nur oeffentlich nennbare Typen nimmt.
+    ///
+    /// Die Sitzung wird GENAU SO abgeleitet wie im Produktpfad
+    /// (`experiment_p0`): `ClientKey::aus_adresse(...).session()`.
+    pub fn resultatmessung_fuer_test(
+        &self,
+        experiment_id: &str,
+        adresse: &crate::transport::bootstrap::Adresse,
+    ) -> crate::coordinator::experiment::Resultatmessung {
+        self.resultatmessung(experiment_id, &ClientKey::aus_adresse(adresse).session())
+    }
+
     /// Der vollstaendige Export eines Versuchs (M-51).
     pub fn experiment_export(
         &self,

@@ -1,0 +1,53 @@
+NAK-182 Etappe 2 - ROTBEWEIS M-83-skala (die Rust-Haelfte misst BANDWEISE)
+
+Manipulation: in `broker/tests/sonde013_verdrahtung.rs`, Fall
+`dekodierte_evidenz_findet_gain_mit_intervall`, werden die Wirewerte der
+Verteilung gezehntelt. Der Dekoder (`perzentil_dekodieren`) teilt weiter
+durch 100 und liefert damit effektiv Teiler 10 statt 100; Produktcode bleibt
+unberuehrt. Danach zurueckgenommen; der gruene Lauf steht in der Sammeldatei.
+
+WARUM NICHT ueber das `encoding`: `q_db_0p1_i16` zu setzen waere der
+naheliegende Weg und der FALSCHE - die Wirewerte -3000 liegen ausserhalb der
+q0p1-Grenzen (`telemetrie.rs`), der Empfaenger wiese den Snapshot ab, bevor
+der Dekoder ihn sieht, und der Lauf fiele an einem NEBENEFFEKT. Gemessen:
+"die PRE-Evidenz der Fixture wird angenommen" schlug fehl, nicht die
+gewertete Zeile. Deshalb die gezehntelten Werte.
+
+Gewertete Zeile (Manifest Paragraph 4.2, Fassung Matrixnacharbeit 2):
+N-22 (a), bandweise. Erwartet und gemessen: jedes Band traegt 0,30 statt
+3,00 dB, groesste Abweichung 2,7000 dB, 221 Baender daneben.
+
+Faellt NICHT an: die C++-Haelfte. (b) und die Zusaetze a1 bis a3 fielen im
+selben Lauf mit - der Lauf bricht aber schon an (a) ab, und (b) allein haette
+den Fall "Banddeltas 2 und 4 dB bei G = 3" durchgelassen (Manifest MP2-2).
+
+Kommando: cargo test --manifest-path broker/Cargo.toml --test sonde013_verdrahtung dekodierte_evidenz
+
+
+
+
+...
+
+
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.05s
+     Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)
+
+running 1 test
+test dekodierte_evidenz_findet_gain_mit_intervall ... FAILED
+
+failures:
+
+---- dekodierte_evidenz_findet_gain_mit_intervall stdout ----
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde013-nak182-0p01-kette-15164-21b138c34a57410a945abcf28973891d\nakama-broker.sqlite3
+
+thread 'dekodierte_evidenz_findet_gain_mit_intervall' (24204) panicked at tests\sonde013_verdrahtung.rs:5605:5:
+(a) M-83 Satz 2: JEDES Band mit Bit gibt den Gain 3 dB innerhalb ±0.1 dB wieder - gelesen aus der Produktmessung, nicht von Hand gebaut. Daneben: 221 Baender, groesste Abweichung 2.7000 dB, erste Ausreisser [(0, 0.2999999523162842), (1, 0.2999999523162842), (2, 0.2999999523162842), (3, 0.2999999523162842), (4, 0.2999999523162842)]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    dekodierte_evidenz_findet_gain_mit_intervall
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 73 filtered out; finished in 1.71s
+
+error: test failed, to rerun pass `--test sonde013_verdrahtung`

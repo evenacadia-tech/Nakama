@@ -2918,6 +2918,116 @@ def zahlklassen_wire() -> bytes:
     })
 
 
+def evidenz_0p01_paar_wire() -> bytes:
+    """`evidenz-0p01-paar-wire-v1.json` — die Byteinstanz der fokussierten
+    0,01-dB-Evidenz (NAK-182 R4, Form B).
+
+    SIE HAELT ZAHLEN, NICHT DEN ENCODERAUSGANG. Das ist der Entscheid E4b:
+    eine Fixture mit Encoder-Ganzzahlen waere an eine Fliesskommakante
+    gebunden — der Verteilungsring speichert `float`, `quantisiere16` rundet
+    halbe Werte von null weg, und Bitgleichheit ueber Binaerstaende hinweg
+    sagt dieses Repo nirgends zu. Der ABSOLUTE Bandpegel ist ohne zweite
+    Implementierung ohnehin nicht vorhersagbar; die DIFFERENZ dagegen schon,
+    weil ein skalarer Gain jedes Band um exakt 20*log10(g) verschiebt.
+
+    Wer misst wogegen (M-70: ein Fixture ohne Verbraucher in BEIDEN Sprachen
+    waere ein Befund):
+
+      * C++ (B16, `Sonde013EventWireTest`): der echte Encoder erzeugt seinen
+        eigenen Wire-Text; daraus kommt `gain_db` je Band mit Bit innerhalb
+        `toleranz_db` zurueck, und die Leiter unten misst die Aufloesung.
+      * Rust (A4, `sonde013_verdrahtung`): `pre` und `post` gehen durch den
+        echten Wirepfad; die Produktmessung gibt `gain_db` je Band wieder,
+        und das Bootstrap-Intervall enthaelt ihn.
+      * A8 haelt die Datei bytegleich. `pruefe_v3_vertrag.py` liest sie
+        NICHT und wird dafuer auch nicht erweitert (NAK-182 MP1-5).
+
+    DIE LEITER (MP1-4): ein einzelnes Pegelpaar im Abstand 0,01 dB beweist
+    die Aufloesung NICHT — `quantisiere16` rundet die beiden absoluten Pegel
+    getrennt, und bei -30,051/-30,041 liefert sogar Skalierung 10 die
+    Ganzzahlen -301 und -300. Zwanzig Stufen sind rundungsphasenunabhaengig:
+    `round(x*100 + 1)` unterscheidet sich von `round(x*100)` fuer JEDES x um
+    genau 1, und bei Skalierung 10 entstehen ueber 0,19 dB Spanne hoechstens
+    drei verschiedene Ganzzahlen statt zwanzig.
+    """
+    teiler = 100
+    pre_db = -30.00
+    gain_db = 3.00
+    post_db = pre_db + gain_db
+    leiter_start = -30.004        # keine Stufe faellt auf eine 0,5-Kante
+    leiter_schritte = 20
+
+    def quant(db: float) -> int:
+        """Die Vertragsformel: halbe Werte von null weg, wie `quantisiere16`."""
+        x = db * teiler
+        return int(x + 0.5) if x >= 0.0 else -int(-x + 0.5)
+
+    leiter = [quant(leiter_start + k * 0.01) for k in range(leiter_schritte)]
+
+    def schnappschuss(db: float, evidenz_id: str, folge: int) -> dict:
+        satz = {
+            "gitter_id": FEIN,
+            "encoding": "q_db_0p01_i16",
+            "werte": [quant(db)] * 221,
+            "gueltig_bitmap": bitmap(221),
+            "saturated": False,
+        }
+        import copy
+        s = copy.deepcopy(GRUND["evidence_snapshot"])
+        s["evidence_id"] = evidenz_id
+        s["verteilung"] = {"p10": copy.deepcopy(satz),
+                           "p50": copy.deepcopy(satz),
+                           "p95": copy.deepcopy(satz)}
+        s["transport"] = copy.deepcopy(s["transport"])
+        s["transport"]["sequence"] = folge
+        return s
+
+    return als_text({
+        "_kommentar": [
+            "NAK-182 R4 (Form B) - die BYTEINSTANZ der fokussierten 0,01-dB-Evidenz.",
+            "",
+            "Sie haelt ZAHLEN, nicht den Ausgang eines Encoders: Material, Bandpegel,",
+            "Gain und Aufloesung stehen als Zahlen da, und die zwei Schnappschuesse",
+            "sind aus ihnen mit der Vertragsformel round(db*100) gebaut. Keine der",
+            "drei Sprachen erzeugt sie; C++ (B16) und Rust (A4) messen gegen sie,",
+            "A8 haelt sie bytegleich.",
+            "",
+            "Warum nicht Ganzzahl-Gleichheit mit dem echten Encoder: der",
+            "Verteilungsring speichert float, `quantisiere16` rundet halbe Werte von",
+            "null weg, und Bitgleichheit ueber Binaerstaende hinweg sagt dieses Repo",
+            "nirgends zu. Der absolute Bandpegel ist ohne zweite Implementierung",
+            "nicht vorhersagbar; die DIFFERENZ ist es, weil ein skalarer Gain jedes",
+            "Band um exakt 20*log10(g) verschiebt.",
+        ],
+        "aufloesung": {
+            "encoding": "q_db_0p01_i16",
+            "teiler": teiler,
+            "schritt_db": 0.01,
+            "rundung": "halbe Werte von null weg (BandGrid.h, quantisiere16)",
+        },
+        "pegel": {
+            "pre_band_db": pre_db,
+            "gain_db": gain_db,
+            "post_band_db": post_db,
+            "toleranz_db": 0.1,
+            "pre_ganzzahl": quant(pre_db),
+            "post_ganzzahl": quant(post_db),
+            "baender": 221,
+        },
+        "leiter": {
+            "zweck": ("Die Aufloesung selbst: zwanzig Pegel im Abstand 0,01 dB "
+                      "ergeben zwanzig streng monotone Ganzzahlen, benachbarte "
+                      "unterscheiden sich um genau 1."),
+            "start_db": leiter_start,
+            "schritte": leiter_schritte,
+            "schritt_db": 0.01,
+            "ganzzahlen": leiter,
+        },
+        "pre": schnappschuss(pre_db, "aa000000000000000000000000000001", 4001),
+        "post": schnappschuss(post_db, "aa000000000000000000000000000002", 4002),
+    })
+
+
 def main(argv: list[str]) -> int:
     nur_pruefen = "--pruefen" in argv
     manifest, dateien, rohdateien = baue()
@@ -2933,6 +3043,11 @@ def main(argv: list[str]) -> int:
         # `gueltig/`, weil sie keine v3-Nachricht ist, sondern eine Tabelle
         # ueber Zahlen - wie `handschlag-v1.json` und `heartbeat-wire-v1.json`.
         (ZIEL / "evidenz-zahlen-wire-v1.json", zahlklassen_wire()),
+        # NAK-182 R4 (Form B): die Byteinstanz der fokussierten
+        # 0,01-dB-Evidenz. Liegt aus demselben Grund NEBEN `gueltig/`
+        # wie die Zahlklassentabelle - sie ist keine einzelne
+        # v3-Nachricht, sondern eine Tabelle ueber Pegel und Aufloesung.
+        (ZIEL / "evidenz-0p01-paar-wire-v1.json", evidenz_0p01_paar_wire()),
     ]
     alle += [(ZIEL / p, als_text(d)) for p, d in sorted(dateien.items())]
     alle += [(ZIEL / p, b) for p, b in sorted(rohdateien.items())]

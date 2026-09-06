@@ -5427,3 +5427,209 @@ fn gruende_der_historie(c: &eqcop_broker::coordinator::Coordinator, instanz: &st
     aus.dedup();
     aus
 }
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-182 M-83 Satz 2 · die gekoppelte 0,01-dB-Kette, Rust-Haelfte
+// ═════════════════════════════════════════════════════════════════════════
+
+/// Die Byteinstanz der fokussierten 0,01-dB-Evidenz (NAK-182 R4, Form B).
+///
+/// Keine der drei Sprachen erzeugt sie: der Python-Erzeuger baut sie aus
+/// Zahlen, A8 haelt sie bytegleich, C++ (B16) und Rust (hier) messen dagegen.
+fn evidenz_0p01_fixture() -> Value {
+    let pfad = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../eq-copilot/fixtures/v3/evidenz-0p01-paar-wire-v1.json");
+    serde_json::from_slice(&std::fs::read(&pfad).expect("0,01-dB-Fixture liegt im Korpus"))
+        .expect("0,01-dB-Fixture ist JSON")
+}
+
+/// M-83 Satz 2: "fokussierte 0,01-dB-Evidenz muss Gain innerhalb ±0,1 dB samt
+/// statistischem Intervall wiederfinden."
+///
+/// DIE KETTE, ende-zu-ende und in EINEM Lauf:
+///
+///   `evidence_snapshot` mit `encoding: q_db_0p01_i16`
+///     → `Evidenzstand::aus_json` → `perzentil_dekodieren` (Teiler 100)
+///     → `Evidenzstand.p50_db`
+///     → `Verdrahtung::resultatmessung` (Resultat minus Baseline je Band)
+///     → `Resultatmessung::achsen` → `block_bootstrap` → `intervall`
+///
+/// Gemessen war davon bisher nichts: die Kodierung ist gebaut und ihre
+/// Grenzwerte sind zwischen Schema, Rust und C++ konsistent, aber kein Test
+/// fuehrte `perzentil_dekodieren` in dieselbe Zeile wie `intervall`. Die
+/// Huellkurven in `sonde013_prepost.rs` sind Floats direkt, und
+/// `Achsenrechnung.intervall` wurde bisher nur aus VON HAND gesetzten
+/// `Resultatmessung`-Feldern gemessen.
+///
+/// ⚠️ WARUM (a) BANDWEISE MISST UND NICHT UEBER DAS INTERVALL. `achsen()`
+/// mittelt jede Fensterzeile ueber die Baender, bevor der Bootstrap zieht:
+/// Banddeltas von 2 und 4 dB ergeben dasselbe Intervall wie zweimal 3 dB, und
+/// auch `guardrail_geschuetzt_db` (das zweitgroesste Banddelta), die
+/// Signifikanzzahl und die Bandzahl bestehen dann. Eine bandweise Zusage
+/// braucht die Bandachse selbst - deshalb die lesende Testauskunft
+/// `resultatmessung_fuer_test` (NAK-182 MN2-2).
+#[cfg(windows)]
+#[test]
+fn dekodierte_evidenz_findet_gain_mit_intervall() {
+    let fix = evidenz_0p01_fixture();
+    let gain = fix["pegel"]["gain_db"].as_f64().expect("Gain steht in der Fixture");
+    let toleranz = fix["pegel"]["toleranz_db"].as_f64().expect("Toleranz steht dort");
+    assert!(gain > 0.0 && toleranz > 0.0, "die Fixture traegt Zahlen: {fix:?}");
+
+    let h = HarnischMitStore::neu("nak182-0p01-kette");
+    let versuch = 0xd10;
+    let vorlage = experiment_begin_wert(&h.main.adresse, 0xda0, versuch);
+    let von = vorlage["passage"]["projekt_von"].as_i64().unwrap();
+    let epoche = vorlage["passage"]["transport_epoch"].as_u64().unwrap();
+
+    // EINE Quelle fuer beide Haelften: ein Quellenwechsel waere
+    // `QuellenVerschieden` und damit ein anderer Befund als der gemessene.
+    let quelle = vorlage["passage"]["aktive_quellen"][0].as_str().unwrap().to_owned();
+    let klasse = vorlage["passage"]["messpunktklassen"][0].as_str().unwrap().to_owned();
+    let mut sonde = h.main.clone();
+    sonde.plugin_kind = "passive_probe".into();
+    sonde.adresse.instance_id = quelle;
+    sonde.adresse.runtime_nonce = hex(0x51);
+    anmelden(&h.c, "s", &sonde);
+    report(&h.c, "s", &sonde.adresse);
+    assert!(h
+        .c
+        .descriptor_setzen("s", descriptor(&sonde.adresse, &klasse, &hex(0x88))));
+
+    // Die zwei Schnappschuesse der Fixture, nur um Adresse, Kennung und
+    // Transportlage ergaenzt - Bandwerte und `encoding` bleiben, wie die
+    // Fixture sie traegt.
+    let beleg = |welche: &str, nr: usize| -> Vec<u8> {
+        let mut w = fix[welche].clone();
+        w["adresse"] = serde_json::to_value(&sonde.adresse).unwrap();
+        w["evidence_id"] = json!(hex(0x2000 + nr));
+        w["transport"]["transport_epoch"] = json!(epoche);
+        w["transport"]["sequence"] = json!(nr as u64 + 1);
+        w["transport"]["project_sample_start"] = json!(von + (nr as i64) * 512);
+        serde_json::to_vec(&w).unwrap()
+    };
+
+    for nr in 0..4 {
+        assert!(
+            h.c.evidence_snapshot_json("s", &beleg("pre", nr)),
+            "die PRE-Evidenz der Fixture wird angenommen"
+        );
+    }
+    assert_eq!(
+        h.p0(&experiment_begin_wert(&h.main.adresse, 0xda1, versuch))["ergebnis"],
+        "angewandt"
+    );
+    assert_eq!(
+        h.p0(&json!({
+            "type": "experiment_candidate",
+            "kopf": {
+                "command_id": hex(0xda2),
+                "ziel": h.main.adresse,
+                "base_revision": 0,
+                "ttl_ms": 1000,
+                "schema_major": 3,
+                "schema_minor": 0
+            },
+            "experiment_id": hex(versuch),
+            "referenz": vorlage["referenz"],
+            "blindreihenfolge": "kandidat_zuerst"
+        }))["ergebnis"],
+        "angewandt"
+    );
+    for nr in 10..14 {
+        assert!(
+            h.c.evidence_snapshot_json("s", &beleg("post", nr)),
+            "die POST-Evidenz der Fixture wird angenommen"
+        );
+    }
+
+    let ack = h.p0(&json!({
+        "type": "experiment_manual_result",
+        "kopf": {
+            "command_id": hex(0xda3),
+            "ziel": h.main.adresse,
+            "base_revision": 0,
+            "ttl_ms": 1000,
+            "schema_major": 3,
+            "schema_minor": 0
+        },
+        "experiment_id": hex(versuch),
+        "hoerurteil": "kandidat",
+        "blindreihenfolge": "kandidat_zuerst",
+        "notiz": null,
+        "werkzeug": null
+    }));
+    assert_eq!(ack["ergebnis"], "angewandt", "{ack}");
+
+    // ── (a) BANDWEISE, aus der PRODUKTMESSUNG ────────────────────────────
+    let messung = h
+        .c
+        .resultatmessung_fuer_test(&hex(versuch), &h.main.adresse);
+    let mit_bit = messung.band_gueltig.iter().filter(|g| **g).count();
+    assert!(
+        mit_bit >= 200,
+        "genug Baender tragen ein Praesenzbit - sonst haette (a) nichts gemessen: \
+         {mit_bit} von {}",
+        messung.band_gueltig.len()
+    );
+    let mut daneben = Vec::new();
+    let mut groesste = 0.0f64;
+    for (b, gueltig) in messung.band_gueltig.iter().enumerate() {
+        if !*gueltig {
+            continue;
+        }
+        let d = messung.band_delta_db[b];
+        groesste = groesste.max((d - gain).abs());
+        if (d - gain).abs() > toleranz {
+            daneben.push((b, d));
+        }
+    }
+    assert!(
+        daneben.is_empty(),
+        "(a) M-83 Satz 2: JEDES Band mit Bit gibt den Gain {gain} dB innerhalb \
+         ±{toleranz} dB wieder - gelesen aus der Produktmessung, nicht von Hand \
+         gebaut. Daneben: {} Baender, groesste Abweichung {groesste:.4} dB, erste \
+         Ausreisser {:?}",
+        daneben.len(),
+        &daneben[..daneben.len().min(5)]
+    );
+
+    // ── (b) DAS INTERVALL, aus derselben Kette ───────────────────────────
+    let e = h.c.experiment_sicht(&hex(versuch)).expect("der Versuch steht");
+    use eqcop_broker::coordinator::experiment::Terminal;
+    let Some(Terminal::Ergebnis { achsen, .. }) = &e.terminal else {
+        panic!("das Terminal ist ein Ergebnis: {:?}", e.terminal);
+    };
+    let (u, o) = achsen
+        .intervall
+        .expect("(b): der Block-Bootstrap liefert ein Intervall");
+    assert!(
+        u <= gain && gain <= o && (u - gain).abs() <= toleranz && (o - gain).abs() <= toleranz,
+        "(b): das Intervall enthaelt den Gain und liegt mit beiden Grenzen innerhalb \
+         ±{toleranz} dB von {gain} dB - gemessen [{u}, {o}]"
+    );
+
+    // ── Zusatz, nicht die gewertete Zeile: die Huelle aus a1 bis a3 ──────
+    //
+    // Sie kostet nichts und haelt die Guardrail-Achse wach. Fuer sich allein
+    // truege sie die Zusage NICHT: bei Banddeltas von 2 und 4 dB neben lauter
+    // 3 dB bestuenden alle drei Zeilen, und zwei Baender verletzten trotzdem
+    // die ±0,1 dB (Manifest MP2-2).
+    assert_eq!(
+        achsen.signifikante_baender, achsen.gescannte_baender,
+        "a2: jedes gescannte Band hat sich bewegt: {} von {}",
+        achsen.signifikante_baender, achsen.gescannte_baender
+    );
+    assert!(
+        achsen.gescannte_baender >= 200,
+        "a3: die Bandzahl entspricht den Baendern mit Bit: {}",
+        achsen.gescannte_baender
+    );
+    let g = achsen
+        .guardrail_geschuetzt_db
+        .expect("a1: der Guardrail steht");
+    assert!(
+        (g - gain).abs() <= toleranz,
+        "a1: das zweitgroesste Banddelta liegt bei {gain} dB - gemessen {g}"
+    );
+}

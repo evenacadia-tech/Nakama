@@ -1,0 +1,9 @@
+NAK-181 Wiederpruefung 3 - 2026-09-06 - Codex gpt-6-astra, Effort max, lesend (read-only), Thread 01a074d9-8a20-7441-9de9-0bbd90bbc941
+Pruefbereich: git diff f2dfb66d25a7987c768f7a02ec781b9ffdd77e0b...6cb8d4df92b4bf7ee3e78bb3307ca0f07c765086 -- PluginProcessor.h Sonde013PassageStateTest.cpp (Auftrag docs/beweise/roh/NAK-181-wiederpruefung-3-auftrag.txt)
+HEAD vor und nach dem Lauf: 6cb8d4df92b4bf7ee3e78bb3307ca0f07c765086 (Startlog: START 05:53:28, ENDE 05:58:07, EXIT=0)
+---
+URTEIL: PASS — Befund geschlossen, nichts gebrochen.
+
+Geprüft: N-03/N-08 warten blockgetrieben auf exakt beide Tor-Atomics und anschließend auf tatsächlich aufgenommene Blöcke; N-03 prüft weiterhin lebendes Zählerwachstum, eingefrorenen Stand und Kandidatenwert; der Testzugang liest ausschließlich Atomics und hat keine Produktaufrufer; kein eingeführter Matrix-, Gate- oder Invariantenbruch erkennbar; HEAD blieb vorher/nachher bei 6cb8d4df92b4bf7ee3e78bb3307ca0f07c765086.
+
+Nicht geprüft: Laufzeittests, Builds und ausgeschlossene Bereiche; auftragsgemäß ausschließlich statisches Review ohne Schreibzugriffe.

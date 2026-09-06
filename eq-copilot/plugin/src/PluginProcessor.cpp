@@ -3456,6 +3456,182 @@ std::vector<nakama::state::ManuellePassage> EqCopilotProcessor::manuellePassagen
 // Projekt als ungespeichert, obwohl sich nichts geaendert hat - und ein
 // abgewiesener Wert darf erst recht nichts melden.
 
+// ═══════════════════════════════════════════════════════════════════════════
+// SONDE-014 Etappe G: der Assistentenschritt am PRODUKTPFAD (§46.1, M-55 ff.)
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// ── DIE REIHENFOLGE JEDER AENDERUNG ────────────────────────────────────────
+//
+// Zustandsmaschine unter dem Bindungsschloss → Host-Dirty → Wire. Das ist
+// dieselbe Ordnung wie beim Intent (M-13, M-85): ein Wire-Write ist kein
+// persistenter Vorgang und steht deshalb NACH dem Dirty; er laeuft ausserhalb
+// des Schlosses, weil er in den ControlClient ruft.
+
+/// Der gemeinsame Weg jeder angenommenen Schrittaenderung.
+bool EqCopilotProcessor::assistentAenderungMelden (bool veraendert)
+{
+    if (! veraendert)
+        return true;
+    meldeHostDirty();
+    v3StateRevision.fetch_add (1);
+    nakama::state::Assistentenzustand kopie {};
+    {
+        std::lock_guard<std::mutex> l (bindungMutex);
+        kopie = zustand.assistent;
+    }
+    if (! kopie.gesetzt)
+        return true;
+    // M-88: der Schritt reist unter `assistant_step:<session_epoch>` zum
+    // Broker, der ihn versioniert spiegelt. Der Spiegel ist NIE autoritativ.
+    return setzeAssistentSchritt (kopie.stepId,
+                                  juce::String (nakama::state::wort (kopie.schritt)),
+                                  kopie.offen, kopie.findingId, kopie.proposalId,
+                                  kopie.experimentId);
+}
+
+bool EqCopilotProcessor::assistentStarten (const juce::String& stepId)
+{
+    bool veraendert = false;
+    {
+        std::lock_guard<std::mutex> l (bindungMutex);
+        if (zustand.nurLesen || zustand.common.klasse != nakama::state::Klasse::main)
+            return false;
+        juce::String grund;
+        if (! nakama::state::setzeAssistentenschritt (
+                zustand, stepId, nakama::state::Assistentenschritt::coverage,
+                veraendert, grund))
+            return false;
+    }
+    return assistentAenderungMelden (veraendert);
+}
+
+bool EqCopilotProcessor::assistentWeiter (nakama::state::Assistentenschritt schritt)
+{
+    bool veraendert = false;
+    juce::String stepId;
+    {
+        std::lock_guard<std::mutex> l (bindungMutex);
+        if (zustand.nurLesen || zustand.common.klasse != nakama::state::Klasse::main)
+            return false;
+        if (! zustand.assistent.gesetzt)
+            return false;
+        stepId = zustand.assistent.stepId;
+        juce::String grund;
+        if (! nakama::state::setzeAssistentenschritt (zustand, stepId, schritt,
+                                                      veraendert, grund))
+            return false;
+    }
+    return assistentAenderungMelden (veraendert);
+}
+
+bool EqCopilotProcessor::assistentZurueck()
+{
+    bool veraendert = false;
+    {
+        std::lock_guard<std::mutex> l (bindungMutex);
+        if (zustand.nurLesen || zustand.common.klasse != nakama::state::Klasse::main)
+            return false;
+        juce::String grund;
+        if (! nakama::state::assistentZurueck (zustand, veraendert, grund))
+            return false;
+    }
+    return assistentAenderungMelden (veraendert);
+}
+
+bool EqCopilotProcessor::assistentUeberspringen()
+{
+    bool veraendert = false;
+    {
+        std::lock_guard<std::mutex> l (bindungMutex);
+        if (zustand.nurLesen || zustand.common.klasse != nakama::state::Klasse::main)
+            return false;
+        juce::String grund;
+        if (! nakama::state::assistentUeberspringen (zustand, veraendert, grund))
+            return false;
+    }
+    return assistentAenderungMelden (veraendert);
+}
+
+bool EqCopilotProcessor::assistentAbbrechen()
+{
+    bool veraendert = false;
+    bool hatVersuch = false;
+    {
+        std::lock_guard<std::mutex> l (bindungMutex);
+        if (zustand.nurLesen || zustand.common.klasse != nakama::state::Klasse::main)
+            return false;
+        juce::String grund;
+        if (! nakama::state::assistentAbbrechen (zustand, veraendert, grund))
+            return false;
+        hatVersuch = zustand.assistent.experimentId.isNotEmpty();
+    }
+    // ⚠️ REIHENFOLGE AUS M-58: Terminalereignis → Projektion → Outbox → erst
+    // DANACH den Slot freigeben. `brichVersuchAb` sendet das
+    // `experiment_abort` und raeumt `versuchIdAktiv` in genau dieser Ordnung;
+    // wer den Slot vorher freigaebe, koennte einen zweiten Versuch starten,
+    // waehrend der erste noch nicht terminal ist.
+    const bool gemeldet = assistentAenderungMelden (veraendert);
+    if (hatVersuch)
+        brichVersuchAb();
+    return gemeldet;
+}
+
+bool EqCopilotProcessor::assistentAntwort (nakama::state::Assistentenergebnis ergebnis)
+{
+    bool veraendert = false;
+    {
+        std::lock_guard<std::mutex> l (bindungMutex);
+        if (zustand.nurLesen || zustand.common.klasse != nakama::state::Klasse::main)
+            return false;
+        juce::String grund;
+        if (! nakama::state::setzeAssistentenergebnis (zustand, ergebnis, veraendert, grund))
+            return false;
+    }
+    return assistentAenderungMelden (veraendert);
+}
+
+nakama::state::Assistentenzustand EqCopilotProcessor::assistentAusState() const
+{
+    std::lock_guard<std::mutex> l (bindungMutex);
+    return zustand.assistent;
+}
+
+bool EqCopilotProcessor::assistentFortsetzen (nakama::state::Assistentenzustand& aus) const
+{
+    std::lock_guard<std::mutex> l (bindungMutex);
+    return nakama::state::assistentResume (zustand, aus);
+}
+
+bool EqCopilotProcessor::assistentVersuchStarten (const juce::String& passageId)
+{
+    // M-62: der Assistent erzeugt KEINE eigene Experimentfamilie. Er ruft den
+    // bestehenden Weg — `experiment_begin` → `experiment_candidate` →
+    // `experiment_manual_result` beziehungsweise `experiment_abort` — und
+    // schreibt nie selbst in den Experimentstore.
+    {
+        std::lock_guard<std::mutex> l (bindungMutex);
+        if (! zustand.assistent.gesetzt || ! zustand.assistent.offen)
+            return false;
+    }
+    if (! beginneVersuch (passageId))
+        return false;
+    juce::String versuchId;
+    {
+        std::lock_guard<std::mutex> l (versuchMutex);
+        versuchId = versuchIdAktiv;
+    }
+    bool veraendert = false;
+    {
+        std::lock_guard<std::mutex> l (bindungMutex);
+        if (zustand.assistent.experimentId == versuchId)
+            return true;
+        zustand.assistent.experimentId = versuchId;
+        zustand.assistent.revision += 1;
+        veraendert = true;
+    }
+    return assistentAenderungMelden (veraendert);
+}
+
 bool EqCopilotProcessor::setzeQuellenrolle (const juce::String& quelleId,
                                             const juce::String& passageId,
                                             nakama::state::Rolle rolle,

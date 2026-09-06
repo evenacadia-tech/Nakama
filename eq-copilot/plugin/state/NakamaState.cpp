@@ -45,6 +45,10 @@ const juce::Identifier kMainIntents      ("source_intents_v1");
 const juce::Identifier kMainSchutz       ("intent_protections_v1");
 const juce::Identifier kMainBeziehungen  ("intent_relations_v1");
 const juce::Identifier kMainIntentRev    ("intent_revision_v1");
+// SONDE-014 Etappe G (§46.1, M-55 bis M-62): der aktuelle Assistentenschritt.
+// EINE additive Eigenschaft mit Fassung im Namen — derselbe Weg wie der
+// Intent, und derselbe Grund: ein alter Build laesst sie unangetastet stehen.
+const juce::Identifier kMainAssistent    ("assistant_step_v1");
 // Schema 1
 const juce::Identifier kSensorId    ("sensor_id");
 const juce::Identifier kRole        ("role");
@@ -838,6 +842,31 @@ juce::ValueTree synchronisiert (const Zustand& z)
             mainProject.removeProperty (kMainIntentRev, nullptr);
         else
             mainProject.setProperty (kMainIntentRev, juce::var (z.intentBestandRevision), nullptr);
+
+        /*  SONDE-014 Etappe G: der Assistentenschritt. Acht Werte in einer
+            flachen Liste — dieselbe Form wie die drei Intentlisten daneben.
+
+            Ein NICHT GESETZTER Schritt reist gar nicht: „noch nie einen
+            Assistenten benutzt" und „einen Schritt mit leeren Feldern" waeren
+            in den Bytes sonst dasselbe, und der Broker koennte den Spiegel
+            nicht davon unterscheiden (M-88). */
+        if (! z.assistent.gesetzt)
+        {
+            mainProject.removeProperty (kMainAssistent, nullptr);
+        }
+        else
+        {
+            juce::Array<juce::var> flach;
+            flach.add (z.assistent.stepId);
+            flach.add (juce::String (wort (z.assistent.schritt)));
+            flach.add (juce::var (z.assistent.revision));
+            flach.add (juce::var (z.assistent.offen));
+            flach.add (z.assistent.findingId);
+            flach.add (z.assistent.proposalId);
+            flach.add (z.assistent.experimentId);
+            flach.add (juce::String (wort (z.assistent.ergebnis)));
+            mainProject.setProperty (kMainAssistent, juce::var (flach), nullptr);
+        }
     }
     else if (mainProject.isValid())
     {
@@ -967,6 +996,19 @@ bool hatWriterHeadroom (const Zustand& eingang, const Bundle& bundle)
         });
     }
     kandidat.intentBestandRevision = std::numeric_limits<juce::int64>::max();
+    // SONDE-014 Etappe G: der Assistentenschritt gehoert in den Headroomriegel.
+    // Er ist EIN Objekt und kostet wenig, aber „wenig" ist keine Messung.
+    kandidat.assistent = {
+        true,
+        juce::String::toHexString (0xa55e5).paddedLeft ('0', 32),
+        Assistentenschritt::verdict,
+        std::numeric_limits<juce::int64>::max(),
+        true,
+        juce::String::toHexString (0xf1d6).paddedLeft ('0', 32),
+        juce::String::toHexString (0x9005a1).paddedLeft ('0', 32),
+        juce::String::toHexString (0xe89e21).paddedLeft ('0', 32),
+        Assistentenergebnis::keineAenderungEmpfohlen
+    };
 
     // Eqcp kann zwischen main und legacy sowie allen heute erlaubten v2-
     // Positionen wechseln. Fuer Sonden ist die Menge kleiner; die Schleife
@@ -1191,6 +1233,7 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
     std::vector<Schutzangabe> mainSchutz;
     std::vector<IntentBeziehung> mainKanten;
     juce::int64 mainIntentRevision = 0;
+    Assistentenzustand mainAssistent {};
     if (istMain)
     {
         const auto mainProject = v.getChildWithName (kMainProject);
@@ -1409,6 +1452,102 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
             grund = "MainProject carries intent data without intent_revision_v1";
             return false;
         }
+
+        /*  SONDE-014 Etappe G: der Assistentenschritt (§46.1, E-07).
+
+            ⚠️ Der schaerfste Riegel dieser Etappe steht hier: ein GESPEICHERTER
+            Schritt mit `preview` ist in P5 ein LESEFEHLER — kein stiller
+            Sprung auf `proposal` oder `remeasure`. Der Zustand ist im Vertrag
+            und wird in P6 gebraucht; ihn beim Laden auf einen Nachbarn
+            abzubilden hiesse, dem User einen Zustand zu erzaehlen, den er nie
+            hatte. */
+        if (mainProject.hasProperty (kMainAssistent))
+        {
+            const auto* liste = mainProject.getProperty (kMainAssistent).getArray();
+            if (liste == nullptr || liste->size() != 8)
+            {
+                grund = "MainProject.assistant_step_v1 must be a list of eight values";
+                return false;
+            }
+            const auto stepId = (*liste)[0];
+            const auto schrittWort = (*liste)[1];
+            const auto revision = (*liste)[2];
+            const auto offen = (*liste)[3];
+            if (! stepId.isString() || ! istHex32 (stepId.toString()))
+            {
+                grund = "MainProject.assistant_step_v1 contains an invalid step id";
+                return false;
+            }
+            if (! schrittWort.isString()
+                || ! assistentenschrittAus (schrittWort.toString(), mainAssistent.schritt))
+            {
+                grund = "MainProject.assistant_step_v1 contains an unknown step";
+                return false;
+            }
+            if (mainAssistent.schritt == Assistentenschritt::preview)
+            {
+                grund = "MainProject.assistant_step_v1 carries preview, which P5 cannot reach";
+                return false;
+            }
+            if (! (revision.isInt() || revision.isInt64())
+                || static_cast<juce::int64> (revision) < 1)
+            {
+                grund = "MainProject.assistant_step_v1 revision must be at least 1";
+                return false;
+            }
+            if (! offen.isBool())
+            {
+                grund = "MainProject.assistant_step_v1 open flag must be boolean";
+                return false;
+            }
+            const char* namen[3] = { "finding id", "proposal id", "experiment id" };
+            juce::String* ziele[3] = { &mainAssistent.findingId,
+                                       &mainAssistent.proposalId,
+                                       &mainAssistent.experimentId };
+            for (int i = 0; i < 3; ++i)
+            {
+                const auto wert = (*liste)[4 + i];
+                if (! wert.isString())
+                {
+                    grund = juce::String ("MainProject.assistant_step_v1 ") + namen[i]
+                          + " must be a string";
+                    return false;
+                }
+                const auto text = wert.toString();
+                // Leer heisst „nicht gesetzt" — das ist etwas anderes als eine
+                // ungueltige Kennung und muss unterscheidbar bleiben.
+                if (text.isNotEmpty() && ! istHex32 (text))
+                {
+                    grund = juce::String ("MainProject.assistant_step_v1 ") + namen[i]
+                          + " must be 32 lowercase hex digits or empty";
+                    return false;
+                }
+                *ziele[i] = text;
+            }
+            const auto ergebnisWort = (*liste)[7];
+            bool ergebnisBekannt = false;
+            for (auto e : { Assistentenergebnis::schritt,
+                            Assistentenergebnis::passageMessen,
+                            Assistentenergebnis::routingBestaetigen,
+                            Assistentenergebnis::keineAenderungEmpfohlen })
+            {
+                if (ergebnisWort.isString() && ergebnisWort.toString() == wort (e))
+                {
+                    mainAssistent.ergebnis = e;
+                    ergebnisBekannt = true;
+                    break;
+                }
+            }
+            if (! ergebnisBekannt)
+            {
+                grund = "MainProject.assistant_step_v1 contains an unknown result";
+                return false;
+            }
+            mainAssistent.gesetzt = true;
+            mainAssistent.stepId = stepId.toString();
+            mainAssistent.revision = static_cast<juce::int64> (revision);
+            mainAssistent.offen = static_cast<bool> (offen);
+        }
     }
 
     parameter::Satz satz {};
@@ -1427,6 +1566,7 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
     aus.schutzangaben         = std::move (mainSchutz);
     aus.intentBeziehungen     = std::move (mainKanten);
     aus.intentBestandRevision = mainIntentRevision;
+    aus.assistent = mainAssistent;
     aus.hatParameters = istAktiv;
     aus.parameters = satz;
     aus.nurLesen = false;
@@ -1897,6 +2037,346 @@ bool entmaskierungErlaubt (const Zustand& z, const juce::String& quelleA,
             return true;
     }
     return false;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SONDE-014 Etappe G: der `AssistantStep` (§46.1, M-55 bis M-62)
+// ═══════════════════════════════════════════════════════════════════════════
+
+const char* wort (Assistentenschritt s) noexcept
+{
+    switch (s)
+    {
+        case Assistentenschritt::coverage:  return "coverage";
+        case Assistentenschritt::finding:   return "finding";
+        case Assistentenschritt::evidence:  return "evidence";
+        case Assistentenschritt::listen:    return "listen";
+        case Assistentenschritt::proposal:  return "proposal";
+        case Assistentenschritt::preview:   return "preview";
+        case Assistentenschritt::remeasure: return "remeasure";
+        case Assistentenschritt::verdict:   return "verdict";
+    }
+    return "coverage";
+}
+
+bool assistentenschrittAus (const juce::String& w, Assistentenschritt& aus) noexcept
+{
+    static const std::pair<const char*, Assistentenschritt> tafel[] = {
+        { "coverage",  Assistentenschritt::coverage  },
+        { "finding",   Assistentenschritt::finding   },
+        { "evidence",  Assistentenschritt::evidence  },
+        { "listen",    Assistentenschritt::listen    },
+        { "proposal",  Assistentenschritt::proposal  },
+        { "preview",   Assistentenschritt::preview   },
+        { "remeasure", Assistentenschritt::remeasure },
+        { "verdict",   Assistentenschritt::verdict   },
+    };
+    for (const auto& [name, wert] : tafel)
+        if (w == name) { aus = wert; return true; }
+    return false;
+}
+
+const char* wort (Assistentenergebnis e) noexcept
+{
+    switch (e)
+    {
+        case Assistentenergebnis::schritt:                 return "schritt";
+        case Assistentenergebnis::passageMessen:           return "passage_messen";
+        case Assistentenergebnis::routingBestaetigen:      return "routing_bestaetigen";
+        case Assistentenergebnis::keineAenderungEmpfohlen: return "keine_aenderung_empfohlen";
+    }
+    return "schritt";
+}
+
+bool Schrittvertrag::vollstaendig() const noexcept
+{
+    // Fuenf Angaben, keine optional (M-56). Ein Zustand ohne Timeout oder ohne
+    // Rueckkante ist ein Vertragsbruch — und `rueckkante` ist deshalb kein
+    // `optional`, sondern immer ein Zustand.
+    return eintritt != nullptr && *eintritt != '\0'
+        && useraktion != nullptr && *useraktion != '\0'
+        && timeoutMs > 0
+        && static_cast<int> (rueckkante) >= 0;
+}
+
+Schrittvertrag schrittvertrag (Assistentenschritt s) noexcept
+{
+    // ⚠️ Die Timeouts sind PRODUKTGRENZEN, keine Messung. Sie stehen als
+    // Zahlen hier und nicht in `metriken-v1.json`: eine Kalibrierung waere
+    // eine Entscheidung ueber Bedienung, nicht ueber Messgenauigkeit. Die
+    // Groessenordnung folgt der Handlung — hoeren dauert laenger als lesen.
+    switch (s)
+    {
+        case Assistentenschritt::coverage:
+            return { s, "sitzung hat mindestens eine bestaetigte quelle", false,
+                     "quellen bestaetigen", 60000, Assistentenschritt::coverage };
+        case Assistentenschritt::finding:
+            return { s, "coverage abgeschlossen", true,
+                     "befund waehlen", 60000, Assistentenschritt::coverage };
+        case Assistentenschritt::evidence:
+            return { s, "ein befund ist gewaehlt", true,
+                     "beleg pruefen", 60000, Assistentenschritt::finding };
+        case Assistentenschritt::listen:
+            return { s, "beleg gesichtet", true,
+                     "hoeren", 120000, Assistentenschritt::evidence };
+        case Assistentenschritt::proposal:
+            return { s, "hoereindruck liegt vor", true,
+                     "vorschlag pruefen", 60000, Assistentenschritt::listen };
+        case Assistentenschritt::preview:
+            // ⚠️ Der Zustand EXISTIERT und traegt seinen vollstaendigen
+            // Vertrag — P5 fuehrt nur keine Kante dorthin (E-07). Ihn hier
+            // leer zu lassen hiesse, ihn halb zu streichen.
+            return { s, "eigene dsp-faehigkeit vorhanden (ab P6)", true,
+                     "preview hoeren", 60000, Assistentenschritt::proposal };
+        case Assistentenschritt::remeasure:
+            return { s, "aenderung ausgefuehrt", true,
+                     "nachmessen", 120000, Assistentenschritt::proposal };
+        case Assistentenschritt::verdict:
+            return { s, "nachmessung liegt vor", true,
+                     "urteilen", 120000, Assistentenschritt::remeasure };
+    }
+    return { s, "", false, "", 0, s };
+}
+
+bool p5Naechster (Assistentenschritt von, Assistentenschritt& aus) noexcept
+{
+    // Die P5-Folge, wortgleich mit E-07:
+    //   coverage → finding → evidence → listen → proposal → remeasure → verdict
+    // OHNE `preview`. Der Zustand steht in der Menge, die Tabelle fuehrt
+    // keine Kante dorthin.
+    switch (von)
+    {
+        case Assistentenschritt::coverage:  aus = Assistentenschritt::finding;   return true;
+        case Assistentenschritt::finding:   aus = Assistentenschritt::evidence;  return true;
+        case Assistentenschritt::evidence:  aus = Assistentenschritt::listen;    return true;
+        case Assistentenschritt::listen:    aus = Assistentenschritt::proposal;  return true;
+        case Assistentenschritt::proposal:  aus = Assistentenschritt::remeasure; return true;
+        case Assistentenschritt::remeasure: aus = Assistentenschritt::verdict;   return true;
+        case Assistentenschritt::verdict:   return false;   // terminal
+        case Assistentenschritt::preview:   return false;   // in P5 unerreichbar
+    }
+    return false;
+}
+
+bool p5UebergangErlaubt (Assistentenschritt von, Assistentenschritt nach) noexcept
+{
+    // Kein Weg nach `preview` — weder vorwaerts noch als Rueckkante.
+    if (nach == Assistentenschritt::preview || von == Assistentenschritt::preview)
+        return false;
+    Assistentenschritt weiter {};
+    if (p5Naechster (von, weiter) && weiter == nach)
+        return true;
+    // Die sichere Rueckkante ist ebenfalls eine Kante der Tabelle: ohne sie
+    // waere „Zurueck" ein Sprung ausserhalb des Automaten.
+    return schrittvertrag (von).rueckkante == nach && von != nach;
+}
+
+namespace
+{
+/// Der gemeinsame Weg jeder angenommenen Aenderung am Schritt.
+///
+/// Die Revision steigt GENAU EINMAL je Aenderung; ein No-op meldet nichts
+/// (M-13: „No-op, abgewiesener Wert, Laden und read-only schweigen").
+void schrittAendern (Assistentenzustand& a, Assistentenschritt neu, bool offen,
+                     bool& veraendert)
+{
+    if (a.gesetzt && a.schritt == neu && a.offen == offen)
+    {
+        veraendert = false;
+        return;
+    }
+    a.schritt = neu;
+    a.offen = offen;
+    a.revision += 1;
+    veraendert = true;
+}
+} // namespace
+
+bool setzeAssistentenschritt (Zustand& z, const juce::String& stepId,
+                              Assistentenschritt schritt, bool& veraendert,
+                              juce::String& grund)
+{
+    veraendert = false;
+    if (! istHex32 (stepId))
+    {
+        grund = "assistant step id must be 32 lowercase hex digits";
+        return false;
+    }
+    // E-07/M-55: `preview` ist in P5 nicht erreichbar — auch nicht als
+    // Startzustand. Ein Automat, der ihn betreten koennte, haette die Kante,
+    // die die Tabelle ausdruecklich nicht fuehrt.
+    if (schritt == Assistentenschritt::preview)
+    {
+        grund = "assistant step preview has no P5 transition";
+        return false;
+    }
+
+    auto& a = z.assistent;
+    const bool neuerSchritt = ! a.gesetzt || a.stepId != stepId || ! a.offen;
+    if (neuerSchritt)
+    {
+        // M-57: EIN Slot. Ein zweiter Startversuch bei OFFENEM Schritt wird
+        // abgewiesen, nicht eingereiht.
+        if (a.gesetzt && a.offen && a.stepId != stepId)
+        {
+            grund = "another assistant step is still open";
+            return false;
+        }
+        // Ein neuer Schritt beginnt bei `coverage` — der Anfang der Folge.
+        if (schritt != Assistentenschritt::coverage)
+        {
+            grund = "a new assistant step must start at coverage";
+            return false;
+        }
+        a.gesetzt = true;
+        a.stepId = stepId;
+        a.schritt = schritt;
+        a.offen = true;
+        a.revision += 1;
+        a.ergebnis = Assistentenergebnis::schritt;
+        a.findingId.clear();
+        a.proposalId.clear();
+        a.experimentId.clear();
+        veraendert = true;
+        return true;
+    }
+
+    if (! p5UebergangErlaubt (a.schritt, schritt))
+    {
+        grund = juce::String ("no P5 transition from ") + wort (a.schritt)
+              + " to " + wort (schritt);
+        return false;
+    }
+    schrittAendern (a, schritt, true, veraendert);
+    return true;
+}
+
+bool assistentAbbrechen (Zustand& z, bool& veraendert, juce::String& grund)
+{
+    veraendert = false;
+    auto& a = z.assistent;
+    if (! a.gesetzt || ! a.offen)
+    {
+        grund = "no open assistant step to abort";
+        return false;
+    }
+    // ⚠️ TERMINAL, nicht geloescht. §46.1: „Verwerfen ist ein terminales
+    // Ereignis, kein Loeschen der Historie." Der Schritt bleibt stehen und
+    // traegt `offen = false`; wer ihn entfernte, naehme dem User die Spur
+    // seiner eigenen Entscheidung.
+    schrittAendern (a, a.schritt, false, veraendert);
+    return true;
+}
+
+bool assistentZurueck (Zustand& z, bool& veraendert, juce::String& grund)
+{
+    veraendert = false;
+    auto& a = z.assistent;
+    if (! a.gesetzt || ! a.offen)
+    {
+        grund = "no open assistant step to step back";
+        return false;
+    }
+    const auto ziel = schrittvertrag (a.schritt).rueckkante;
+    if (ziel == a.schritt)
+    {
+        // Der erste Zustand zeigt auf sich selbst — die sichere Rueckkante
+        // heisst dort „bleib, wo du bist". Das ist kein Fehler, aber auch
+        // keine Aenderung.
+        return true;
+    }
+    schrittAendern (a, ziel, true, veraendert);
+    return true;
+}
+
+bool assistentUeberspringen (Zustand& z, bool& veraendert, juce::String& grund)
+{
+    veraendert = false;
+    auto& a = z.assistent;
+    if (! a.gesetzt || ! a.offen)
+    {
+        grund = "no open assistant step to skip";
+        return false;
+    }
+    Assistentenschritt weiter {};
+    if (! p5Naechster (a.schritt, weiter))
+    {
+        grund = "the last assistant step cannot be skipped";
+        return false;
+    }
+    schrittAendern (a, weiter, true, veraendert);
+    return true;
+}
+
+bool assistentResume (const Zustand& z, Assistentenzustand& aus)
+{
+    // Resume ist eine FRAGE, keine Aenderung: es setzt nichts und hebt keine
+    // Revision. Ein terminaler Schritt wird nicht fortgesetzt — er wird neu
+    // begonnen oder bleibt Historie.
+    if (! z.assistent.gesetzt || ! z.assistent.offen)
+        return false;
+    aus = z.assistent;
+    return true;
+}
+
+bool setzeAssistentenergebnis (Zustand& z, Assistentenergebnis ergebnis,
+                               bool& veraendert, juce::String& grund)
+{
+    veraendert = false;
+    auto& a = z.assistent;
+    if (! a.gesetzt || ! a.offen)
+    {
+        grund = "no open assistant step to answer";
+        return false;
+    }
+    if (a.ergebnis == ergebnis)
+        return true;
+    // §46.2: die drei Antworten sind eigene, benannte ERGEBNISSE mit Objekt —
+    // der Schritt bleibt stehen, bekommt aber seine Antwort und eine neue
+    // Revision. Ein Leerzustand haette keine.
+    a.ergebnis = ergebnis;
+    a.revision += 1;
+    veraendert = true;
+    return true;
+}
+
+double schrittrang (const Schrittkandidat& k) noexcept
+{
+    const auto klemme = [] (double v) { return std::isfinite (v) ? std::clamp (v, 0.0, 1.0) : 0.0; };
+    // Gleichgewichtet ueber fuenf Groessen; `messkosten` invers, weil §46.2
+    // ausdruecklich mit dem KLEINSTEN hochrelevanten, reversiblen Test
+    // beginnen will. Ein erfundenes Gewicht waere eine unkalibrierte Zahl.
+    const double summe = klemme (k.erwarteterNutzen)
+                       + klemme (k.intentRelevanz)
+                       + klemme (k.konfidenz)
+                       + klemme (k.reversibilitaet)
+                       + (1.0 - klemme (k.messkosten));
+    return summe / 5.0;
+}
+
+std::vector<Schrittkandidat> ordneSchritte (const std::vector<Schrittkandidat>& kandidaten)
+{
+    std::vector<Schrittkandidat> aus;
+    aus.reserve (kandidaten.size());
+    for (const auto& k : kandidaten)
+    {
+        // ⚠️ HARTE GATES VOR DER GEWICHTUNG (M-60). Ein Kandidat mit
+        // perfektem Nutzen und gerissener Vergleichbarkeit erreicht die
+        // Gewichtung NIE — sie wird fuer ihn gar nicht gerechnet.
+        if (! k.vergleichbar || ! k.sicher || k.bereitsErfolglos)
+            continue;
+        aus.push_back (k);
+    }
+    std::sort (aus.begin(), aus.end(), [] (const auto& a, const auto& b)
+    {
+        const auto ra = schrittrang (a);
+        const auto rb = schrittrang (b);
+        if (ra != rb) return ra > rb;
+        // Bei Gleichstand die kleinere `findingId` — eine stabile Wahl, keine
+        // zufaellige.
+        return a.findingId.compare (b.findingId) < 0;
+    });
+    return aus;
 }
 
 juce::String alsText (const Zustand& z)

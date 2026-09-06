@@ -292,6 +292,32 @@ public:
                                 const juce::String& experimentId = {});
     AssistentSchritt assistentSchrittKopie() const;
 
+    // ── SONDE-014 Etappe G: die Zustandsmaschine (§46.1, M-55 bis M-62) ───
+    //
+    // ⚠️ Sie liegt im MAIN (E-08), persistent im `MainProjectState`. Der
+    // Broker spiegelt nur. Jede Aenderung geht denselben Weg: Automat unter
+    // dem Bindungsschloss → Host-Dirty → Wire.
+
+    /** Beginnt einen neuen Schritt bei `coverage`. `false`, wenn schon ein
+        OFFENER Schritt laeuft — der Deckel aus M-57 ist strukturell. */
+    bool assistentStarten (const juce::String& stepId);
+    /** Geht einen Uebergang der P5-Tabelle. `preview` ist nie erreichbar. */
+    bool assistentWeiter (nakama::state::Assistentenschritt schritt);
+    bool assistentZurueck();
+    bool assistentUeberspringen();
+    /** TERMINAL — und der Slot wird erst NACH dem Terminalereignis frei. */
+    bool assistentAbbrechen();
+    /** §46.2: eines der drei benannten Ergebnisse (M-61). */
+    bool assistentAntwort (nakama::state::Assistentenergebnis ergebnis);
+    /** Der Schritt, wie der Main-State ihn haelt — die Quelle fuer die
+        Rekonstruktion nach einem Neustart (M-59). */
+    nakama::state::Assistentenzustand assistentAusState() const;
+    /** M-58/M-59: laesst sich an derselben belegten Stelle fortsetzen? */
+    bool assistentFortsetzen (nakama::state::Assistentenzustand& aus) const;
+    /** M-62: startet einen Versuch ueber den BESTEHENDEN Experimentweg und
+        haengt seine Kennung an den Schritt. */
+    bool assistentVersuchStarten (const juce::String& passageId);
+
     std::string v3IntentUpdateFuerTest (bool vollstaendig) const
     { return v3IntentUpdateJson (vollstaendig, nullptr, nullptr, nullptr); }
     std::string v3AssistantStepFuerTest() const { return v3AssistantStepJson(); }
@@ -876,6 +902,7 @@ private:
                                     const nakama::state::Schutzangabe* nurDieserSchutz,
                                     const nakama::state::IntentBeziehung* nurDiese) const;
     std::string v3AssistantStepJson() const;
+    bool assistentAenderungMelden (bool veraendert);
     /** Meldet EIN geaendertes Intent-Objekt unter seinem eigenen
         P1-Schluessel (M-85). Ohne Verbindung ein No-op. */
     void sendeIntentFortschreibung (const juce::String& quelleId,

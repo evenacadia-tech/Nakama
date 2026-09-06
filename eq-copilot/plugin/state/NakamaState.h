@@ -297,6 +297,96 @@ struct Bundle
     static Bundle nkac()   { return { { Klasse::active_probe } }; }
 };
 
+// ═══════════════════════════════════════════════════════════════════════════
+// SONDE-014 Etappe G: der `AssistantStep` (§46.1, M-55 bis M-62)
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// ── WARUM DIE ZUSTANDSMASCHINE HIER LIEGT ──────────────────────────────────
+//
+// Entscheid E-08 (§4.8): „Zustandsmaschine des `AssistantStep`: Uebergaenge,
+// Abbruch, Zurueck, Ueberspringen, Resume, Rekonstruktion — **Main**,
+// persistent im `MainProjectState`." `assistent.rs` im Broker ist Spiegel und
+// Vertragsvalidierung, KEINE zweite Zustandsmaschine.
+//
+// ── PREVIEW BLEIBT, DIE KANTE NICHT (E-07, M-55) ───────────────────────────
+//
+// Die Zustandsmenge des Vertrags hat ACHT Werte, und `preview` ist einer
+// davon. Die P5-Uebergangstabelle fuehrt aber KEINE Kante dorthin, und ein
+// GESPEICHERTER Schritt mit `preview` ist in P5 ein **Lesefehler** — kein
+// stiller Sprung auf `proposal` oder `remeasure`. Ihn aus der Menge zu
+// streichen hiesse, ihn in P6 neu erfinden zu muessen; ihn still abzubilden
+// hiesse, einen Zustand zu behaupten, den der User nie hatte.
+
+/** §46.1: die acht Zustaende der Assistentenfolge. */
+enum class Assistentenschritt
+{
+    coverage, finding, evidence, listen, proposal, preview, remeasure, verdict
+};
+
+/** Die Wireform eines Schritts, wortgleich mit `$defs/assistant_schritt`. */
+const char* wort (Assistentenschritt s) noexcept;
+/** Fail-closed: ein unbekanntes Wort ist `false`, nie ein Zweig „sonst". */
+bool assistentenschrittAus (const juce::String& wort, Assistentenschritt& aus) noexcept;
+
+/** Die FUENF Angaben eines Zustands (M-56). Keine ist optional.
+
+    Ein Zustand ohne Rueckkante ist ein Vertragsbruch — deshalb ist
+    `rueckkante` kein `optional`, sondern immer ein Zustand: der erste seiner
+    Folge zeigt auf sich selbst, und genau das ist die sichere Rueckkante
+    „bleib, wo du bist". */
+struct Schrittvertrag
+{
+    Assistentenschritt schritt = Assistentenschritt::coverage;
+    /** Eintrittsbedingung, benannt statt beschrieben. */
+    const char*        eintritt = "";
+    /** Ob dieser Zustand Evidenz-IDs traegt. */
+    bool               traegtEvidenz = false;
+    /** Die Useraktion, die ihn verlaesst. */
+    const char*        useraktion = "";
+    /** Timeout in Millisekunden. > 0, immer. */
+    int                timeoutMs = 0;
+    /** Die sichere Rueckkante. */
+    Assistentenschritt rueckkante = Assistentenschritt::coverage;
+
+    /** M-56: sind alle fuenf Angaben belegt? */
+    bool vollstaendig() const noexcept;
+};
+
+/** Der Vertrag EINES Zustands. Tabelle, keine Rechnung — sie steht an einer
+    Stelle, damit Anzeige, Automat und Leser dieselbe lesen. */
+Schrittvertrag schrittvertrag (Assistentenschritt s) noexcept;
+
+/** M-55: fuehrt die P5-Uebergangstabelle eine Kante von `von` nach `nach`?
+
+    ⚠️ Die Folge ist `coverage → finding → evidence → listen → proposal →
+    remeasure → verdict`. Es gibt KEINE Kante nach `preview` — weder hin noch
+    zurueck. */
+bool p5UebergangErlaubt (Assistentenschritt von, Assistentenschritt nach) noexcept;
+
+/** Der naechste Zustand der P5-Folge. `false`, wenn `von` terminal ist. */
+bool p5Naechster (Assistentenschritt von, Assistentenschritt& aus) noexcept;
+
+/** §46.2: die drei benannten Ergebnisse, die der Assistent ausdruecklich
+    sagen darf (M-61). Sie sind eigene Ergebnisse mit Objekt, keine
+    Leerzustaende — deshalb ein eigener Typ und kein „kein Schritt". */
+enum class Assistentenergebnis { schritt, passageMessen, routingBestaetigen, keineAenderungEmpfohlen };
+
+const char* wort (Assistentenergebnis e) noexcept;
+
+/** Der gehaltene Schritt. EIN Slot — der Deckel aus M-57 ist strukturell und
+    kein Zaehler, der auch 2 tragen koennte. */
+struct Assistentenzustand
+{
+    bool               gesetzt = false;
+    juce::String       stepId;              ///< hex32
+    Assistentenschritt schritt = Assistentenschritt::coverage;
+    juce::int64        revision = 0;        ///< streng steigend, >= 1 wenn gesetzt
+    bool               offen = true;        ///< false = terminal (§46.1)
+    juce::String       findingId, proposalId, experimentId;
+    /** §46.2: was der Assistent sagt, wenn kein Eingriff ansteht. */
+    Assistentenergebnis ergebnis = Assistentenergebnis::schritt;
+};
+
 struct Zustand
 {
     /** Der gehaltene Baum (NakamaState). Traegt auch Eigenschaften, die dieser
@@ -319,6 +409,12 @@ struct Zustand
         koennte der Broker einen vollstaendigen leeren Bestand nicht von
         "noch nichts gehoert" unterscheiden. */
     juce::int64 intentBestandRevision = 0;
+
+    /*  SONDE-014 Etappe G: der AKTUELLE Assistentenschritt (§46.1, E-08).
+        EIN Slot — der Deckel aus M-57 ist strukturell und kein Zaehler, der
+        auch 2 tragen koennte. Ein zweiter Startversuch wird abgewiesen, nicht
+        eingereiht. */
+    Assistentenzustand assistent;
 
     bool hatParameters = false;
 
@@ -389,6 +485,70 @@ bool ausV2Rolle (const juce::String& rolle, Klasse& klasse, Messposition& positi
     - `false` mit `grund`, wenn die Quelle keine hex32 ist, die Passage keine
       hex32, die Konfidenz nicht endlich oder ausserhalb [0,1] liegt oder der
       Deckel `maxSourceIntents` erreicht ist. */
+/** Beginnt einen Schritt oder geht einen erlaubten Uebergang.
+
+    Reihenfolge und Riegel:
+      * ein TERMINALER Schritt wird nicht fortgesetzt — er wird neu begonnen;
+      * ein Uebergang, den die P5-Tabelle nicht fuehrt, wird abgewiesen;
+      * `preview` ist nie erreichbar (E-07);
+      * die Revision steigt bei jeder angenommenen Aenderung. */
+bool setzeAssistentenschritt (Zustand& z, const juce::String& stepId,
+                              Assistentenschritt schritt, bool& veraendert,
+                              juce::String& grund);
+
+/** M-58: Abbruch. TERMINAL — „Verwerfen ist ein terminales Ereignis, kein
+    Loeschen der Historie" (§46.1). Der Schritt bleibt stehen und traegt
+    `offen = false`. */
+bool assistentAbbrechen (Zustand& z, bool& veraendert, juce::String& grund);
+
+/** M-58: Zurueck. Geht auf die sichere Rueckkante des aktuellen Zustands. */
+bool assistentZurueck (Zustand& z, bool& veraendert, juce::String& grund);
+
+/** M-58: Ueberspringen. Geht auf den naechsten Zustand der Folge, ohne die
+    Useraktion des aktuellen. */
+bool assistentUeberspringen (Zustand& z, bool& veraendert, juce::String& grund);
+
+/** M-58/M-59: Resume. `true`, wenn ein OFFENER Schritt an derselben Stelle
+    fortgesetzt werden kann; `false` bei terminalem oder fehlendem Schritt.
+    Aendert nichts — Resume ist eine Frage, keine Aenderung. */
+bool assistentResume (const Zustand& z, Assistentenzustand& aus);
+
+/** §46.2: setzt eines der drei benannten Ergebnisse (M-61). */
+bool setzeAssistentenergebnis (Zustand& z, Assistentenergebnis ergebnis,
+                               bool& veraendert, juce::String& grund);
+
+/** Ein Kandidat der Assistentenpriorisierung (§46.2, M-60). */
+struct Schrittkandidat
+{
+    juce::String       findingId;
+    Assistentenschritt schritt = Assistentenschritt::finding;
+    double erwarteterNutzen = 0.0;   ///< [0,1]
+    double intentRelevanz  = 0.0;    ///< [0,1]
+    double konfidenz       = 0.0;    ///< [0,1]
+    double reversibilitaet = 0.0;    ///< [0,1]
+    double messkosten      = 0.0;    ///< [0,1], hoeher = teurer
+    bool   vergleichbar    = false;  ///< HARTES Gate
+    bool   sicher          = false;  ///< HARTES Gate
+    bool   bereitsErfolglos = false; ///< HARTES Gate
+};
+
+/** M-60: das deterministische Ranking.
+
+    ⚠️ Die HARTEN GATES greifen VOR der Gewichtung: nicht vergleichbare,
+    unsichere und bereits erfolglose Schritte verlassen die Liste, bevor
+    irgendein Gewicht gerechnet wird. Ein Kandidat mit perfektem Nutzen und
+    gerissener Vergleichbarkeit erreicht die Gewichtung nie.
+
+    Rueckgabe: die ueberlebenden Kandidaten, absteigend nach Rang; bei
+    Gleichstand aufsteigend nach `findingId` — eine stabile Wahl, keine
+    zufaellige. */
+std::vector<Schrittkandidat> ordneSchritte (const std::vector<Schrittkandidat>& kandidaten);
+
+/** Der Rang eines Kandidaten in [0,1]. Gleichgewichtet ueber die fuenf
+    Groessen; `messkosten` gehen invers ein („der kleinste hochrelevante,
+    reversible Test zuerst"). */
+double schrittrang (const Schrittkandidat& k) noexcept;
+
 bool setzeIntent (Zustand& z, const juce::String& quelleId, const juce::String& passageId,
                   Rolle rolle, IntentHerkunft herkunft, double konfidenz,
                   bool& veraendert, juce::String& grund);

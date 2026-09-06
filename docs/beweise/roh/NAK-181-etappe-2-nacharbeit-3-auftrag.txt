@@ -1,0 +1,22 @@
+NAK-181 — Etappe 2, Nacharbeit 3 (Runde 3 von 3, letzte Runde im Budget). Auftrag des Dirigenten (2026-09-06).
+
+DU BIST ein frischer Opus-Bauer (max) im sichtbaren Checkout C:/Users/phili/Projekte/Nakama, Branch master. Basis = `git rev-parse HEAD` beim Start. Aufsicht ENG. Git-Regeln: nie `git add -A`, nie `--amend`, nie fremde uncommittete Dateien anfassen, Commits nur mit explizitem Pathspec, Push nach `git pull --rebase` bei sauberem Worktree. Kein Produktcode außer einem lesenden Testzugang, keine Schemaänderung, keine Neben-Refactors. Landminen: MSVC-Stack 1 MiB (Prozessoren auf den Heap); kein Lösch-Cmdlet im eigenen Befehlstext (Logs mit `*>` überschreiben); Pipe-Zeichen in Tabellenzellen reißen den Dokuriegel. Auf dem Rechner läuft fremde Grundlast (rund 39 % CPU) — genau die Lage, in der der Fall gefallen ist; sie ist erwünscht, nicht zu beseitigen.
+
+QUELLEN, die du zuerst liest:
+1. docs/beweise/NAK-181.md — **§7.5 Nr. 2 (der Defekt und die Regel WN-04 — das ist dein Auftrag)**, §2.2 Zeile N-03, §7.1 bis §7.4 als Kontext.
+2. docs/beweise/roh/NAK-181-768737f.md — Abschnitt B23 (die rote Zeile mit `[0]`), Kontext.
+3. eq-copilot/plugin/src/PluginProcessor.cpp:818-842 (das Speisungstor: `versuchspegelSpeist` UND `pegelFensterAktiv`), `bindePassagenfensterMitEpoche` (:2593 ff.), der Analyseworker, der `pegelFensterAktiv` setzt.
+4. tools/dirigent/pruefliste.md — vor dem Commit abhaken.
+
+AUFTRAG: Schließe genau den einen Defekt aus §7.5 Nr. 2 mit der Regel WN-04. Der N-03-Fall in eq-copilot/plugin/tests/Sonde013PassageStateTest.cpp („der_lebende_zaehler_erreicht_den_kandidaten_nicht") erzwingt die Lage „Speisung an" deterministisch: nach dem Binden der zweiten Passage wartet er (mit `warte`, das Blöcke fährt, nicht mit Sleep) auf den Zustand, den das Tor in PluginProcessor.cpp:836-837 voraussetzt — `versuchspegelSpeist` und `pegelFensterAktiv` beide gesetzt, über einen lesenden Testzugang (`…FuerTest`, `noexcept`, kein Verhalten) — oder auf den ersten wachsenden Blockzähler aus `vergleichspegelZaehlerstand`; erst dann fährt er die NaN-Blöcke. Prüfe dabei, ob weitere NAK-181-Fälle in B23 dieselbe Lage voraussetzen (NaN-Blöcke oder Pegel-Speisung unmittelbar nach einem Binden) und schließe sie mit demselben Wartemuster, aber ändere sonst nichts. Nicht weniger, nicht mehr.
+
+BELEGE:
+1. Zehnfachlauf des Beins B23 `EqCopSonde013PassageStateTest` grün (zehn Läufe hintereinander, je Exitcode 0), Rohausgabe der Bilanzzeilen als docs/beweise/roh/NAK-181-nacharbeit-3-zehnfach-<sha>.txt (Präzedenz NAK-180 §7.6).
+2. Rotbeweis docs/beweise/roh/NAK-181-rot-n3-wn04.txt: die Wartebedingung entfernt und die Lage künstlich verzögert (z. B. Testzugang, der `pegelFensterAktiv` im Test erst nach n Blöcken freigibt, oder das Binden erst nach den ersten NaN-Blöcken) → die N-03-Zeile fällt; kann keine einzelne Rücknahme sie fällen, steht das im Manifest als Begründung, nicht als Behauptung.
+3. Bein B23 einmal grün nach Rücknahme aller Rotlagen; Bauziel und Aufruf stehen in tools/beweise.ps1.
+
+MANIFEST: neuer Abschnitt §7.6 „Nacharbeit 3 — was eingearbeitet wurde" (Stelle, Testzugang, Wartebedingung, Zehnfachlauf, Rotbeweis); §2.2 N-03 als datierter Nachtrag, wenn die Wartebedingung den Wortlaut präzisiert; §6.7 Prüfliste nachziehen; Kopfzeile Phase voranstellen: „Etappe 2: Nacharbeit 3 abgeschlossen (Basis <basis-sha>, Ende <end-sha>), B23 zehnfach grün, Wiederprüfung 3 offen" — Urteilsmarke `NAKAMA-URTEIL` unverändert lassen. Dokuriegel `py -3.13 tools/plan/dokuriegel.py docs/beweise/NAK-181.md` vor dem Commit.
+
+COMMIT (Test, Testzugang, Manifest, Rohdateien) mit Pathspec, `git pull --rebase`, Push. Kein Anfassen von docs/beweise/G4.md, docs/offene-punkte.md, docs/PLAN-STAND.md, docs/plan/, docs/NEXT-SESSION.md, IpcTestMain.cpp, PipeClientLifecycleTestMain.cpp (NAK-197 ist ein anderer Auftrag). Turn mit der letzten Zeile „ETAPPE 2 NACHARBEIT 3 ABGESCHLOSSEN <end-sha>" beenden. Keine Nachfrage an den User.
+
+SELBSTAUDIT: Wartet der Test auf den Zustand, den das Tor wirklich prüft, oder auf einen Nachbarn davon? Ist der Testzugang rein lesend und außerhalb des Audiothreads? Nulltest unberührt. Keine Prüfzeile trägt einen Zusagenamen, den sie nicht misst.

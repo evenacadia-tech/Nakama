@@ -1,14 +1,14 @@
 NAK-181 Nacharbeit 1 - betroffene Beine, gruener Lauf - 2026-09-06
-Quellstand der Beine: e3adef7 plus die uncommittete N-04-Nacharbeit (siehe Endstand im Manifest)
+Quellstand: b70ae7c plus die N-13-Praezisierung (nurLesen: beide Handgriffe einzeln)
 Gefahren wurden GENAU die betroffenen Beine; kein voller Kanon in dieser Runde (Auftrag).
 ---
-EqCopSonde013PassageStateTest          Exit=0  331 bestanden, 0 gescheitert
+EqCopSonde013PassageStateTest          Exit=0  332 bestanden, 0 gescheitert
 EqCopSonde012SourcesModelTest          Exit=0  SONDE-012 SourcesModel: 76/76 gruen
 EqCopSonde012HostChannelContextTest    Exit=0  SONDE-012 HOST CHANNEL CONTEXT: 21 bestanden, 0 fehlgeschlagen
 EqCopSchemaTest                        Exit=0  131 bestanden, 0 gescheitert
 EqCopSonde013EventWireTest             Exit=0  128 bestanden, 0 gescheitert
 EqCopNullTest                          Exit=0  NULLTEST OK
 EqCopProbeeqNullTest                   Exit=0  SONDE-NULLTEST OK - 87 Pruefungen ok, 0 Fehler
-cargo sonde013_verdrahtung             Exit=0  test result: ok. 73 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.61s
+cargo sonde013_verdrahtung             Exit=0  test result: ok. 73 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.42s
 ---
 Urteil: ALLE BETROFFENEN BEINE GRUEN (8/8)

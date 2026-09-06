@@ -3442,13 +3442,15 @@ int main()
                 "N-13: und BYTEGLEICH - der read-only geladene Stand reist "
                 "unveraendert an den Host zurueck");
         // Der `nurLesen`-Zustand selbst, soweit das Produkt einen Leser hat:
-        // in read-only nimmt `beginneVersuch` keinen Handgriff an
-        // (`PluginProcessor.cpp` `zustand.nurLesen`), auch mit gemerkter
-        // Passage. Das trennt „read-only geladen" von „Vollrestore eines
-        // fremden Projekts".
-        pruefe (p->merkeManuellePassage (hex32 (0xB7), "Bridge", 0, 4800000) == false
-                    || ! p->beginneVersuch (hex32 (0xB7)),
-                "N-13: der nurLesen-Zustand haelt - kein Versuch entsteht in ihm");
+        // BEIDE persistenten Handgriffe stehen unter demselben Riegel
+        // (`PluginProcessor.cpp` `zustand.nurLesen`), und beide werden
+        // einzeln gemessen — eine Oder-Verknuepfung waere hier wieder
+        // eine Zeile, die ihre Zusage nicht misst.
+        pruefe (! p->merkeManuellePassage (hex32 (0xB7), "Bridge", 0, 4800000),
+                "N-13: im nurLesen-Zustand wird keine Passage gemerkt");
+        pruefe (! p->beginneVersuch (hex32 (0xB7)),
+                "N-13: und kein Versuch beginnt - das trennt read-only geladen "
+                "vom Vollrestore eines fremden Projekts");
 
         p->setPlayHead (nullptr);
         p->releaseResources();

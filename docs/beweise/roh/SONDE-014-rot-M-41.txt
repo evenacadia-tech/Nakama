@@ -1,0 +1,63 @@
+SONDE-014 Etappe E - Rotbeweis M-41
+========================================================================
+
+GEWERTETE ZUSAGE
+Die Zone hat keine eigene Schwelle: der Datenweg liefert jeden gemessenen Wert, auch einen kleinen.
+
+GEMESSEN AN  broker/tests/sonde014_maskierung.rs::zone_hat_keine_eigene_schwelle
+             (Verdrahtungsebene: die Evidenz geht durch `p1`,
+              gelesen wird am `session_snapshot`)
+
+RUECKNAHME AM PRODUKTCODE  broker/src/coordinator/maskierung.rs
+------------------------------------------------------------------------
+VORHER:
+    Some(Maskierung {
+        quelle_a: maskiert.quelle_id.clone(),
+
+NACHHER:
+    // RUECKNAHME M-41: eine eigene Schwelle im Datenweg.
+    if gueltig && wert_db.abs() < 3.0 {
+        return None;
+    }
+    Some(Maskierung {
+        quelle_a: maskiert.quelle_id.clone(),
+------------------------------------------------------------------------
+
+[1] LAUF MIT RUECKNAHME - erwartet ROT (Exitcode 101)
+========================================================================
+
+running 1 test
+test zone_hat_keine_eigene_schwelle ... FAILED
+
+failures:
+
+---- zone_hat_keine_eigene_schwelle stdout ----
+
+thread 'zone_hat_keine_eigene_schwelle' (8608) panicked at tests\sonde014_maskierung.rs:329:44:
+auch 0 dB reist
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    zone_hat_keine_eigene_schwelle
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.30s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.69s
+     Running tests\sonde014_maskierung.rs (broker\target\debug\deps\sonde014_maskierung-36a5a296083f6ed6.exe)
+error: test failed, to rerun pass `--test sonde014_maskierung`
+
+[2] RUECKNAHME ZURUECKGENOMMEN, LAUF ERNEUT - erwartet GRUEN (Exitcode 0)
+========================================================================
+
+running 1 test
+test zone_hat_keine_eigene_schwelle ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.42s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.69s
+     Running tests\sonde014_maskierung.rs (broker\target\debug\deps\sonde014_maskierung-36a5a296083f6ed6.exe)
+
+URTEIL: OK (rot=101, gruen=0)

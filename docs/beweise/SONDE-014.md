@@ -3,7 +3,7 @@
 | Merkmal | Wert |
 |---|---|
 | Ticket | S23–25, `SONDE-014` (Phase P4–P5), Leitungsname „Aus Messungen belegte Befunde und kleinste Tests ableiten" |
-| Phase | **Etappe 2 — Bau, läuft.** Fertig: **Etappe A** (`SourceIntent` im Main-State, Commit `8f030f5`), **Etappe B** (Fassung 3 des Wire-Envelopes, Commits `edea7a9`, `baa6291`, `581431a`) **Etappe C** (Evidenzgraph und `CauseHypothesis`) und **Etappe D** (Befundzustände). Davor ohne Produktcode: **Matrixnacharbeit 1** (2026-09-06), **Etappe 1b — Entscheide E-01 bis E-10** (`fdb04e4`) und **Etappe 1 — Verhaltensmatrix** (`1f126a4`). Der Bauverlauf steht in §7. |
+| Phase | **Etappe 2 — Bau, läuft.** Fertig: **Etappe A** (`SourceIntent` im Main-State, Commit `8f030f5`), **Etappe B** (Fassung 3 des Wire-Envelopes, Commits `edea7a9`, `baa6291`, `581431a`) **Etappe C** (Evidenzgraph und `CauseHypothesis`), **Etappe D** (Befundzustände) und **Etappe E** (Maskierungs-Datenweg). Davor ohne Produktcode: **Matrixnacharbeit 1** (2026-09-06), **Etappe 1b — Entscheide E-01 bis E-10** (`fdb04e4`) und **Etappe 1 — Verhaltensmatrix** (`1f126a4`). Der Bauverlauf steht in §7. |
 | Matrixprüfung 2 | Codex `gpt-6-astra`, Effort **max**, lesend, Thread `01a077a3-1411-7830-9bfd-e17d233baab1`; `HEAD` vor und nach dem Lauf `f90abf5`. **URTEIL: PASS** — D1 bis D4 geschlossen, nichts gebrochen. Auftrag `docs/beweise/roh/SONDE-014-matrixpruefung-2-auftrag.txt`, Rohurteil `docs/beweise/roh/SONDE-014-matrixpruefung-2-f90abf5.txt`. **Etappe 1 ist damit abgenommen; §3 ist ab hier die Spezifikation.** |
 | Etappe 2 | Bauauftrag `docs/beweise/roh/SONDE-014-etappe-2-auftrag.txt`, Basis `f90abf5`; Fortsetzung 1 (Etappen C bis I) `docs/beweise/roh/SONDE-014-etappe-2-fortsetzung-1-auftrag.txt`, Startstand `6b96c64`, mit **Entscheid E-12** (`GATE_MINDEST_FENSTER` in Etappe C ohne Versionsschritt; der eine erlaubte Schritt der `metrics_version` liegt in Etappe H). Neun Bauetappen A bis I nach §5.1; Bauverlauf, gemessene Matrixzeilen, Rotbeweise, Abweichungen und Nebenbefunde in **§7**. |
 | Entscheide | E-01 bis E-10 wörtlich in `docs/beweise/roh/SONDE-014-etappe-1-entscheid-auftrag.txt`. Eingearbeitet in Etappe 1b: neun angenommene Technikentscheide (E-01 bis E-09, E-01 und E-03 mit Präzisierung, E-08 mit Autoritätenzuweisung) und **eine neue Lücke E-10** (Transport des Intents vom Main zum Broker) mit den zwei zusätzlichen Matrixzeilen **M-85** und **M-86**. **Seit der Matrixnacharbeit 1 kommt E-11 dazu** (Transport und versionierter Spiegel des `AssistantStep`, Regel R3, §4.13) mit **M-88** und **M-89**. Je Entscheid steht ein Block „Etappe 1b (Entscheid des Dirigenten, 06.09.2026)" unter dem zugehörigen §4-Abschnitt; der vorige Vorschlagstext bleibt als Historie stehen. |
@@ -2384,6 +2384,98 @@ Beins, nicht eine Simulation.
   einen Fehler zu melden — ein Bein, das abstürzt, misst nichts. Jeder
   indizierte Zugriff steht jetzt hinter seiner Größenwache, und die Ausgabe
   läuft ungepuffert, damit ein Absturz zeigt, wo er stand.
+
+
+### 7.5 Etappe E — Maskierungs-Datenweg
+
+**Gebaut:** der laufende, je Frequenzbereich auflösbare Maskierungswert aus
+Antwort U16 — als optionales Objekt **am Befund** (E-04), mit Frequenzbereich,
+Wert, Gültigkeitsbit und dem Kennzeichen `herabgesetzt`. Die farbige Zone
+selbst bleibt Anzeige und gehört S31b; dieses Ticket liefert ausschließlich
+den Datenweg.
+
+| Stück | Ort |
+|---|---|
+| Rechnung (rein) | **NEU** `broker/src/coordinator/maskierung.rs` — `maskierung()`, `bandpegel()`, `kadenz_reduziert()`, `struct Maskierung` |
+| Am Befund | `broker/src/coordinator/hypothese.rs` — `CauseHypothesis::maskierung: Option<Maskierung>`, gefüllt in `baue_befund` aus **denselben** zwei Quellen und **demselben** Bandbereich wie der Befund |
+| Auf der Leitung | `broker/src/coordinator/hypothese_verdrahtung.rs` — `befund_json` schreibt `maskierung` genau dann, wenn der Befund einen trägt |
+| Leser (Gen) | `eq-copilot/plugin/src/SourcesModel.cpp` — der Wert wird jetzt **geprüft**; `SourcesModel.h` — `maskierungVorhanden`, `maskierungQuelleA/B`, `maskierungBandVon/Bis`, `maskierungWertDb`, `maskierungGueltig`, `maskierungHerabgesetzt` |
+| Bein (Broker) | **NEU** `broker/tests/sonde014_maskierung.rs`, 5 Fälle, läuft unter **A4** |
+| Bein (Gen) | **B28** um 15 Prüfungen erweitert (45 → **60**) |
+
+**Gemessene Matrixzeilen.**
+
+| Zeile | Wo gemessen | Rotbeweis |
+|---|---|---|
+| **M-36** | `sonde014_maskierung.rs::maskierung_haengt_am_finding_und_benennt_einen_frequenzbereich` — der Wert steht **im** Befund, sein Bereich ist **derselbe** wie `band_hz`, und der Snapshot trägt **keine** zweite Liste daneben; `Sonde014BefundTest.cpp` — er kommt an, benennt beide Quellen, und Abwesenheit heißt „dieser Befund trägt keinen" | `roh/SONDE-014-rot-M-36.txt` |
+| **M-37** (Alter) | `sonde014_maskierung.rs::maskierungswert_ist_hoechstens_ein_evidenzintervall_alt` — ein einziger neuer Beleg der Sonde bewegt den Wert, und er trifft die Differenz der beiden **jüngsten** Bandpegel (nachgerechnet: 8,55 dB), nicht ein Mittel über die Historie | `roh/SONDE-014-rot-M-37.txt` |
+| **M-37** (`herabgesetzt`) | `sonde014_maskierung.rs::rueckstau_setzt_das_kennzeichen_herabgesetzt` — eine Lücke setzt das Kennzeichen, der Wert bleibt dabei eine **gültige Messung** und wird nicht interpoliert; `maskierung.rs::herabgesetzt_misst_die_luecke_und_nicht_den_seek` trennt Lücke von Epochengrenze | `roh/SONDE-014-rot-M-37-herabgesetzt.txt` |
+| **M-38 / M-39 / M-80** | `sonde014_maskierung.rs::datenweg_traegt_keine_zeichenanweisung` — der **ganze** Snapshottext enthält keines von neun Optikwörtern, und der Wert hat genau die sieben Vertragsfelder; `Sonde014BefundTest.cpp` — `zoom`, `achse`, `farbe` fallen am Vertrag; `maskierung.rs::der_wert_traegt_keine_zeichenanweisung` misst dasselbe am Typ | `roh/SONDE-014-rot-M-38.txt` |
+| **M-40** | `sonde014_maskierung.rs` (derselbe Fall wie M-36, aber die Rücknahme sitzt im **Serialisierer**: der Wert entsteht und erreicht die Leitung trotzdem nicht) und `Sonde014BefundTest.cpp` (Fassungsleiter: ein Leser der Fassung 2 lehnt `findings` samt Maskierung ab). Die **Vertragshälfte** liegt in Etappe B (§7.2) | `roh/SONDE-014-rot-M-40.txt` |
+| **M-41** | `sonde014_maskierung.rs::zone_hat_keine_eigene_schwelle` — gleiche Pegel ergeben rund 0 dB, und **auch dieser** Wert reist; kein Feld trägt eine Schwelle oder Sichtbarkeit; und eine Enthaltung trägt gar keinen Wert (keine Maskierung ohne Befund) | `roh/SONDE-014-rot-M-41.txt` |
+
+**Läufe.** `cargo test` **599 Prüfungen, 0 Fehler** (Bein **A4**, darunter
+**NEU** `sonde014_maskierung` mit 5 Fällen und `coordinator::maskierung::tests`
+mit 6); `EqCopSonde014BefundTest` **60 Prüfungen, 0 Fehler** (Bein **B28**);
+`cargo clippy --all-targets` meldet in den neuen Dateien nichts. Die Kanonzahl
+bleibt **56** — diese Etappe legt kein neues Bein an, sondern erweitert zwei.
+
+**Rotbeweise.** Sechs Dateien
+`docs/beweise/roh/SONDE-014-rot-{M-36,M-37,M-37-herabgesetzt,M-38,M-40,M-41}.txt`.
+
+**Abweichungen von §5, mit Begründung.**
+
+1. **Kein Bein `EqCopSonde014MaskierungTest`.** §5.1 nennt es; die Rechnung
+   liegt aber nach **E-08** im Broker-Coordinator („`hypothese.rs`,
+   `proposal.rs` und `maskierung.rs` rechnen im Coordinator"). Gebaut ist
+   deshalb ein Rust-Bein unter **A4** für die Rechnung und den Rückweg, und
+   die Gen-Hälfte — Leser, Trennung „nicht vorhanden" gegen „nicht gemessen" —
+   liegt in **B28**, das ohnehin die Befunde liest. Ein drittes Bein hätte
+   dieselben Snapshots ein drittes Mal geparst. Dieselbe Begründung wie in
+   §7.3 Abweichung 1.
+2. **Die genannten Beine A6, A19 und A23 sind nicht erweitert.** §5.1 führt
+   sie als „bestehend". **A6** prüft die Bandgitter auf Bytegleichheit — der
+   Maskierungswert benutzt das Gitter, ändert es aber nicht; **A19** und
+   **A23** messen Latenz und Sichtzeiten und werden von einem optionalen
+   Snapshotfeld nicht berührt. Sie laufen unverändert grün; eine Erweiterung
+   ohne neue Zusage wäre eine Behauptung über eine Messung, die es nicht gibt.
+
+**Technische Entscheide dieser Etappe.**
+
+- **Der Wert ist eine Differenz zweier Bandpegel, kein psychoakustisches
+  Modell.** Ein Modell brächte Konstanten mit, die niemand kalibriert hat, und
+  §42.4 verlangt, dass jeder angezeigte Zahlenwert auf **ein Feld und eine
+  Evidenz** zurückführbar bleibt. Zwei Bandpegel sind das; eine Modellausgabe
+  wäre es nicht.
+- **Der Bandpegel ist eine Leistungssumme, kein dB-Mittel.** dB zu mitteln ist
+  ein geometrisches Mittel und unterschätzt genau die Spitze, um die es bei
+  einer Maskierung geht: zwei Bänder mit −20 und −40 dB ergeben gemittelt
+  −30 dB, summiert aber −19,96 dB — und gehört wird die Summe. Ein eigener
+  Fall misst das.
+- **`herabgesetzt` misst die Lücke, nicht einen Zähler.** Die Kadenzreduktion
+  passiert beim Sender; der Heartbeat trägt `queue_overflows`, aber der
+  Coordinator hält ihn heute nicht, und ihn dafür einzuführen wäre eine zweite
+  Wahrheit über dieselbe Sache. Was der Broker **selbst** sieht, ist die
+  Folge: die Fenster liegen nicht mehr aneinander. Eine **Epochengrenze** ist
+  ausdrücklich keine Reduktion — sonst meldete jeder Seek eine Herabsetzung.
+- **Der Wert wird aus dem jüngsten Fenster gerechnet, nicht aus der
+  Historie.** M-37 verlangt einen **laufenden** Wert, und ein Mittelwert über
+  acht Sekunden läuft nicht. Der Fall misst das, indem er einen einzelnen
+  neuen Beleg schickt und den Sprung nachrechnet.
+- **Ohne Fenster gibt es kein Objekt, ohne Messung eine 0 mit
+  `gueltig = false`.** Das sind zwei verschiedene Aussagen — „dieser Befund
+  trägt keinen Wert" und „hier ist nichts gemessen" —, und die Anzeige braucht
+  beide getrennt. Der Rückgabetyp `Option<Maskierung>` trägt die erste, das
+  Bit die zweite.
+
+**Nebenbefunde.**
+
+- **N-13 (neu, behoben).** Etappe D hat `maskierung` in die erlaubte Feldmenge
+  des Befunds aufgenommen, damit ein Fassung-3-Snapshot nicht schon am
+  Feldnamen scheitert — den **Inhalt** prüfte niemand. Das war der einzige
+  fail-open-Zweig dieses Lesers: ein Objekt beliebiger Form wäre
+  durchgegangen, und die Anzeige hätte daraus eine Zone gebaut. Der Leser
+  prüft ihn jetzt vollständig; sechs vertragswidrige Formen fallen einzeln.
 
 ---
 

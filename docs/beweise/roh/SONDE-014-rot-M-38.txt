@@ -1,50 +1,48 @@
-SONDE-014 Etappe E - Rotbeweis M-40
+SONDE-014 Etappe E - Rotbeweis M-38
 ========================================================================
 
 GEWERTETE ZUSAGE
-Der Maskierungswert erreicht die Leitung - im `session_snapshot`, am Befund, ueber den bestehenden Rueckweg.
+Der Datenweg traegt keine Zeichenanweisung: keine Farbe, keine Achse, keinen Zoom, keinen Ausschnitt.
 
-GEMESSEN AN  broker/tests/sonde014_maskierung.rs::maskierung_haengt_am_finding_und_benennt_einen_frequenzbereich
+GEMESSEN AN  broker/tests/sonde014_maskierung.rs::datenweg_traegt_keine_zeichenanweisung
              (Verdrahtungsebene: die Evidenz geht durch `p1`,
               gelesen wird am `session_snapshot`)
 
 RUECKNAHME AM PRODUKTCODE  broker/src/coordinator/hypothese_verdrahtung.rs
 ------------------------------------------------------------------------
 VORHER:
-        if let Some(m) = b.maskierung.as_ref() {
-            objekt.insert(
-                "maskierung".into(),
+                    "herabgesetzt": m.herabgesetzt
+                }),
 
 NACHHER:
-        // RUECKNAHME M-40: der Wert bleibt im Broker.
-        if false {
-            let m = b.maskierung.as_ref().unwrap();
-            objekt.insert(
-                "maskierung".into(),
+                    "herabgesetzt": m.herabgesetzt,
+                    // RUECKNAHME M-38/M-39/M-80: eine Zeichenanweisung reist mit.
+                    "zoom": true
+                }),
 ------------------------------------------------------------------------
 
 [1] LAUF MIT RUECKNAHME - erwartet ROT (Exitcode 101)
 ========================================================================
 
 running 1 test
-test maskierung_haengt_am_finding_und_benennt_einen_frequenzbereich ... FAILED
+test datenweg_traegt_keine_zeichenanweisung ... FAILED
 
 failures:
 
----- maskierung_haengt_am_finding_und_benennt_einen_frequenzbereich stdout ----
+---- datenweg_traegt_keine_zeichenanweisung stdout ----
 
-thread 'maskierung_haengt_am_finding_und_benennt_einen_frequenzbereich' (21332) panicked at tests\sonde014_maskierung.rs:181:10:
-der Wert haengt AM Befund
+thread 'datenweg_traegt_keine_zeichenanweisung' (6660) panicked at tests\sonde014_maskierung.rs:293:9:
+der Snapshot traegt eine Zeichenanweisung: zoom
 note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 
 failures:
-    maskierung_haengt_am_finding_und_benennt_einen_frequenzbereich
+    datenweg_traegt_keine_zeichenanweisung
 
 test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.28s
 
    Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.92s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.98s
      Running tests\sonde014_maskierung.rs (broker\target\debug\deps\sonde014_maskierung-36a5a296083f6ed6.exe)
 error: test failed, to rerun pass `--test sonde014_maskierung`
 
@@ -52,12 +50,12 @@ error: test failed, to rerun pass `--test sonde014_maskierung`
 ========================================================================
 
 running 1 test
-test maskierung_haengt_am_finding_und_benennt_einen_frequenzbereich ... ok
+test datenweg_traegt_keine_zeichenanweisung ... ok
 
-test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.30s
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.29s
 
    Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.95s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.89s
      Running tests\sonde014_maskierung.rs (broker\target\debug\deps\sonde014_maskierung-36a5a296083f6ed6.exe)
 
 URTEIL: OK (rot=101, gruen=0)

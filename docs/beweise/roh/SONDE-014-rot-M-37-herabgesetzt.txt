@@ -1,0 +1,63 @@
+SONDE-014 Etappe E - Rotbeweis M-37-herabgesetzt
+========================================================================
+
+GEWERTETE ZUSAGE
+Bei reduzierter Kadenz traegt der Wert das Kennzeichen `herabgesetzt` - nie einen interpolierten Zwischenwert.
+
+GEMESSEN AN  broker/tests/sonde014_maskierung.rs::rueckstau_setzt_das_kennzeichen_herabgesetzt
+             (Verdrahtungsebene: die Evidenz geht durch `p1`,
+              gelesen wird am `session_snapshot`)
+
+RUECKNAHME AM PRODUKTCODE  broker/src/coordinator/maskierung.rs
+------------------------------------------------------------------------
+VORHER:
+    let luecke = jetzt.projekt_von.saturating_sub(vorher.projekt_bis);
+    let fensterlaenge = jetzt.projekt_bis.saturating_sub(jetzt.projekt_von).max(1);
+    luecke > fensterlaenge
+
+NACHHER:
+    // RUECKNAHME M-37: die Kadenzreduktion wird nicht mehr gemeldet.
+    let _ = (vorher, jetzt);
+    false
+------------------------------------------------------------------------
+
+[1] LAUF MIT RUECKNAHME - erwartet ROT (Exitcode 101)
+========================================================================
+
+running 1 test
+test rueckstau_setzt_das_kennzeichen_herabgesetzt ... FAILED
+
+failures:
+
+---- rueckstau_setzt_das_kennzeichen_herabgesetzt stdout ----
+
+thread 'rueckstau_setzt_das_kennzeichen_herabgesetzt' (2084) panicked at tests\sonde014_maskierung.rs:267:5:
+assertion `left == right` failed: eine Luecke ist eine Kadenzreduktion
+  left: Some(false)
+ right: Some(true)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    rueckstau_setzt_das_kennzeichen_herabgesetzt
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.64s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.73s
+     Running tests\sonde014_maskierung.rs (broker\target\debug\deps\sonde014_maskierung-36a5a296083f6ed6.exe)
+error: test failed, to rerun pass `--test sonde014_maskierung`
+
+[2] RUECKNAHME ZURUECKGENOMMEN, LAUF ERNEUT - erwartet GRUEN (Exitcode 0)
+========================================================================
+
+running 1 test
+test rueckstau_setzt_das_kennzeichen_herabgesetzt ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.59s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.60s
+     Running tests\sonde014_maskierung.rs (broker\target\debug\deps\sonde014_maskierung-36a5a296083f6ed6.exe)
+
+URTEIL: OK (rot=101, gruen=0)

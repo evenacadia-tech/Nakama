@@ -1,0 +1,58 @@
+SONDE-014 Etappe E - Rotbeweis M-37
+========================================================================
+
+GEWERTETE ZUSAGE
+Der Wert ist hoechstens ein Evidenzintervall alt: er folgt dem JUENGSTEN Fenster beider Quellen.
+
+GEMESSEN AN  broker/tests/sonde014_maskierung.rs::maskierungswert_ist_hoechstens_ein_evidenzintervall_alt
+             (Verdrahtungsebene: die Evidenz geht durch `p1`,
+              gelesen wird am `session_snapshot`)
+
+RUECKNAHME AM PRODUKTCODE  broker/src/coordinator/maskierung.rs
+------------------------------------------------------------------------
+VORHER:
+    let (Some(a), Some(b)) = (maskiert.fenster.last(), maskierer.fenster.last()) else {
+
+NACHHER:
+    // RUECKNAHME M-37: der Wert folgt dem AELTESTEN Fenster.
+    let (Some(a), Some(b)) = (maskiert.fenster.first(), maskierer.fenster.first()) else {
+------------------------------------------------------------------------
+
+[1] LAUF MIT RUECKNAHME - erwartet ROT (Exitcode 101)
+========================================================================
+
+running 1 test
+test maskierungswert_ist_hoechstens_ein_evidenzintervall_alt ... FAILED
+
+failures:
+
+---- maskierungswert_ist_hoechstens_ein_evidenzintervall_alt stdout ----
+
+thread 'maskierungswert_ist_hoechstens_ein_evidenzintervall_alt' (20108) panicked at tests\sonde014_maskierung.rs:223:5:
+der Wert folgt der juengsten Evidenz: -2.5417416949249705 -> -2.5417416949249705
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    maskierungswert_ist_hoechstens_ein_evidenzintervall_alt
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.31s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.64s
+     Running tests\sonde014_maskierung.rs (broker\target\debug\deps\sonde014_maskierung-36a5a296083f6ed6.exe)
+error: test failed, to rerun pass `--test sonde014_maskierung`
+
+[2] RUECKNAHME ZURUECKGENOMMEN, LAUF ERNEUT - erwartet GRUEN (Exitcode 0)
+========================================================================
+
+running 1 test
+test maskierungswert_ist_hoechstens_ein_evidenzintervall_alt ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.33s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.73s
+     Running tests\sonde014_maskierung.rs (broker\target\debug\deps\sonde014_maskierung-36a5a296083f6ed6.exe)
+
+URTEIL: OK (rot=101, gruen=0)

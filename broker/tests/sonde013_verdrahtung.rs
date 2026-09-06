@@ -5125,21 +5125,91 @@ fn persistierter_retry_bleibt_idempotent() {
         .c
         .passage_sicht(begin["passage"]["passage_id"].as_str().unwrap())
         .expect("N-41b: die Passage steht");
+    // 🔑 NAK-181 Nacharbeit 1 (EP-12/NR-12): die STORE-Ereigniszahl vor dem
+    // Retry. Die Matrixzeile sagt "Gemessen mit Store-Zaehlung und
+    // Experimentstand vor und nach dem Retry" zu; bis zu dieser Runde wurde
+    // nur der Experimentstand gelesen.
+    let ereignisse_vorher = a
+        ._writer
+        .handle()
+        .experiment_ereignisse_lesen()
+        .expect("N-41b: der Store liest seine Experimentereignisse")
+        .len();
+    assert!(
+        ereignisse_vorher > 0,
+        "N-41b: der erste Befehl hat ein Ereignis geschrieben"
+    );
+
+    // 🔑 NAK-181 Nacharbeit 1 (EP-12/NR-12): der Retry kommt nach einem
+    // NACHGESTELLTEN RELOAD, nicht vom unveraenderten Main-Link.
+    //
+    // N-41b sagt "wie N-41" zu, und N-41 ist der Sitzungswechsel. Zwei
+    // `a.p0(&begin)` vom selben Link massen dagegen die gewoehnliche
+    // Idempotenz: eine versehentlich vorgezogene Ziel- oder Senderpruefung
+    // waere dort gruen geblieben, obwohl sie genau diesen Retry abweisen
+    // wuerde. Die frische Sitzungsidentitaet ist dieselbe wie in
+    // `retry_an_fremde_sitzung_wird_abgewiesen`.
+    let neu = {
+        let mut h = a.main.clone();
+        h.adresse.project_binding_id = hex(0x17);
+        h.adresse.session_epoch = hex(0x18);
+        h.adresse.instance_id = hex(0x50);
+        h.adresse.runtime_nonce = hex(0x51);
+        h
+    };
+    anmelden(&a.c, "nachReload", &neu);
+    report_main(&a.c, "nachReload", &neu.adresse);
+    assert!(a
+        .c
+        .state_report_json("nachReload", &state_report_payload(&neu.adresse, 0)));
 
     // DERSELBE Text, dieselbe `command_id` — genau das, was
-    // `inFlightNachReconnect` wiederholt.
-    let zweite = a.p0(&begin);
+    // `inFlightNachReconnect` wiederholt: `sendePersistenzP0` wiederholt
+    // Bytes, nicht Absichten. Der Text traegt also weiter die ALTE
+    // Zieladresse, waehrend der Link in einer frischen Sitzung steht.
+    let zweite = a
+        .p0_von("nachReload", &begin)
+        .expect("N-41b: die Familie wird beantwortet");
     assert_eq!(
         zweite["ergebnis"], "idempotent_wiederholt",
-        "N-41b: der Broker erkennt seinen eigenen Befehl wieder"
+        "N-41b: `bekannter_befehl` antwortet VOR Sender- und Zielpruefung — \
+         die Reihenfolge ist die Zusage, nicht ein Nebeneffekt"
     );
+
+    // 🔑 NAK-181 Nacharbeit 1 (EP-11/NR-11): TYPISIERTER Vergleich der
+    // Felder, die das ACK wirklich traegt.
+    //
+    // Bis zu dieser Runde stand hier `zweite["base_revision"] ==
+    // erste["base_revision"]`. `command_ack` traegt `state_revision` und
+    // optional `state_hash`, kein `base_revision` (`befehl.rs:29-40`): beide
+    // Indexierungen lieferten `Value::Null`, und die Zusicherung bestand
+    // unabhaengig von der zurueckgegebenen Revision.
+    let revision_erste = erste["state_revision"]
+        .as_u64()
+        .expect("N-41b: das erste ACK traegt eine typisierte `state_revision`");
+    let revision_zweite = zweite["state_revision"]
+        .as_u64()
+        .expect("N-41b: das zweite ACK ebenso");
     assert_eq!(
-        zweite["base_revision"], erste["base_revision"],
-        "N-41b: mit derselben Revision"
+        revision_zweite, revision_erste,
+        "N-41b: mit DERSELBEN persistierten Revision"
+    );
+    let hash_erste = erste["state_hash"]
+        .as_str()
+        .expect("N-41b: das erste ACK traegt einen `state_hash`")
+        .to_owned();
+    let hash_zweite = zweite["state_hash"]
+        .as_str()
+        .expect("N-41b: das zweite ACK ebenso")
+        .to_owned();
+    assert_eq!(
+        hash_zweite, hash_erste,
+        "N-41b: und mit demselben Hash — die Antwort beschreibt denselben Stand"
     );
 
     // 🔑 Und KEINE zweite Wirkung: der Versuch steht wie vorher unter der
-    // alten Bindung, die Passage ebenso.
+    // alten Bindung, die Passage ebenso, und der Store hat kein Ereignis
+    // dazubekommen.
     let nachher = a
         .c
         .experiment_sicht(&hex(versuch))
@@ -5151,7 +5221,7 @@ fn persistierter_retry_bleibt_idempotent() {
     );
     assert_eq!(
         nachher.projektbindung, vorher.projektbindung,
-        "N-41b: unter DERSELBEN Projektbindung"
+        "N-41b: unter DERSELBEN Projektbindung — nicht unter der neuen"
     );
     let passage_nachher = a
         .c
@@ -5160,6 +5230,17 @@ fn persistierter_retry_bleibt_idempotent() {
     assert_eq!(
         passage_nachher.projekt_von, passage_vorher.projekt_von,
         "N-41b: und ist nicht neu angelegt worden"
+    );
+    let ereignisse_nachher = a
+        ._writer
+        .handle()
+        .experiment_ereignisse_lesen()
+        .expect("N-41b: der Store liest seine Experimentereignisse")
+        .len();
+    assert_eq!(
+        ereignisse_nachher, ereignisse_vorher,
+        "N-41b: die Store-Ereigniszahl ist vor und nach dem Retry GLEICH — \
+         kein zweites Command-Event, keine zweite fachliche Wirkung"
     );
 }
 

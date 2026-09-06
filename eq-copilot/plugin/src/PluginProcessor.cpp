@@ -2692,10 +2692,15 @@ void EqCopilotProcessor::vergleichszustandLeeren()
     versuchspegelSpeist.store (false, std::memory_order_release);
     vergleichspegel.loeschen();
     versuchNichtEndlich.store (0, std::memory_order_relaxed);
-    {
-        std::lock_guard<std::mutex> l (versuchWireMutex);
-        letzterVersuchP0.clear();
-    }
+    // 🔑 NAK-181 Nacharbeit 1 (EP-04/NR-04): `letzterVersuchP0` bleibt
+    // UNANGETASTET.
+    //
+    // Er ist der Mitschnitt dessen, was zuletzt WIRKLICH abgesetzt wurde —
+    // der Zeuge fuer „aus dem Reload-Zug reist kein Byte" (N-09). Bis zu
+    // dieser Runde loeschte der geprueft Zug seinen eigenen Zeugen: die
+    // `.empty()`-Assertions danach waren danach in JEDEM Fall wahr, auch wenn
+    // der Zug selbst einen Befehl eingereiht haette. Die Tests halten den
+    // Stand VOR dem Reload fest und vergleichen ihn danach.
 }
 
 bool EqCopilotProcessor::loesePassagenfenster (const juce::String& passageId)
@@ -2919,6 +2924,30 @@ bool EqCopilotProcessor::beginneVersuch (const juce::String& passageId)
     if (! blindvergleich.uebernimmVergleichspegel (vergleichspegel))
         return false;
 
+    // 🔑 NAK-181 Nacharbeit 1 (EP-02/NR-02a): ein eingefrorener Gain im
+    // Blindvergleich existiert NUR bei offenem Versuch.
+    //
+    // Ab hier haelt der Blindvergleich den Gain, und `versuchIdAktiv` ist noch
+    // leer. Bis zu dieser Runde fuehrten vier Fehlwege (`:2928` kein Fenster,
+    // `:2931` leere Referenz, `:2936` kein Kopf, `:2958` Sendefehler) mit
+    // genau diesem Zustand hinaus — den E1 ausschliesst. Zwei Folgen: die
+    // Getter meldeten „abgeglichen" ohne Versuch, und weil
+    // `Blindvergleich::uebernimmVergleichspegel` eine ZWEITE Uebernahme
+    // ablehnt (`Blindvergleich.h:93`), scheiterte danach JEDER weitere Beginn
+    // bis zum Projektwechsel — ein stumm totes Bedienelement.
+    //
+    // Die Ruecknahme haengt am Geltungsbereich statt an vier Zeilen: ein
+    // spaeter eingefuegter Fehlweg ist damit von selbst richtig, und genau
+    // diese Frage stellt der Selbstaudit („gibt es noch einen Weg zu Gain
+    // eingefroren, kein Versuch offen?"). Nachrichtenthread; `processBlock`
+    // nimmt keine der Sperren.
+    struct Ruecknahme
+    {
+        nakama::analyse::Blindvergleich* ziel { nullptr };
+        bool behalten { false };
+        ~Ruecknahme() { if (! behalten && ziel != nullptr) ziel->loeschen(); }
+    } ruecknahme { &blindvergleich, false };
+
     // Befund C7: EIN Zug fuer Fingerprint, Passagenepoche und Abdeckung.
     const auto abzug = engineabzugLesen();
     // Ohne gebundenes Fenster in der Engine gibt es keine Passagenmessung —
@@ -2957,6 +2986,7 @@ bool EqCopilotProcessor::beginneVersuch (const juce::String& passageId)
 
     if (! sendeVersuchP0 (json))
         return false;
+    ruecknahme.behalten = true;      // ab hier traegt der offene Versuch den Gain
     std::lock_guard<std::mutex> l (versuchMutex);
     versuchIdAktiv = versuchId;
     versuchPassageId = passageId;
@@ -3091,17 +3121,30 @@ bool EqCopilotProcessor::versuchLautheitAbgeglichen() const
     // Gain laengst haelt — dieselbe Falschaussage wie V01, nur auf der
     // Anzeigeseite. Ohne offenen Versuch bleibt der lebende Pegel die richtige
     // Antwort: dort lautet die Frage „ist schon genug Material da".
-    double unbenutzt = 0.0;
-    if (blindvergleich.gainDbEingefroren (unbenutzt))
-        return true;
+    //
+    // 🔑 NAK-181 Nacharbeit 1 (EP-02/NR-02b): „offener Versuch" wird GEFRAGT,
+    // nicht aus dem gesetzten Gain geschlossen. N-04 Satz 2 sagt woertlich
+    // „Ohne offenen Versuch lesen beide weiter den lebenden Pegel"; ein
+    // Blindvergleich mit Gain und leerer `versuchIdAktiv` ist nach NR-02a
+    // unerreichbar — dieser Riegel macht die Zusage unabhaengig davon wahr.
+    if (! laufenderVersuch().isEmpty())
+    {
+        double unbenutzt = 0.0;
+        if (blindvergleich.gainDbEingefroren (unbenutzt))
+            return true;
+    }
     return vergleichspegel.eingefroren() && vergleichspegel.gainGesetzt();
 }
 
 double EqCopilotProcessor::versuchMatchGainDb() const
 {
-    double eingefroren = 0.0;
-    if (blindvergleich.gainDbEingefroren (eingefroren))
-        return eingefroren;
+    // 🔑 NAK-181 Nacharbeit 1 (EP-02/NR-02b): dieselbe Frage wie nebenan.
+    if (! laufenderVersuch().isEmpty())
+    {
+        double eingefroren = 0.0;
+        if (blindvergleich.gainDbEingefroren (eingefroren))
+            return eingefroren;
+    }
     return vergleichspegel.gainDb();
 }
 

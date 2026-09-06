@@ -952,9 +952,35 @@ int main()
                         == Model::SnapshotErgebnis::uebernommen,
                     "N-29: FEHLT es, bleibt der Snapshot gueltig - leer heisst: "
                     "das Paar traegt eine Aussage");
+            // 🔑 NAK-181 Nacharbeit 1 (EP-01/NR-01): ein VORHANDENES `null`
+            // ist ungueltig — nicht „wie fehlend".
+            //
+            // Bis zu dieser Runde stand hier die umgekehrte Erwartung, und
+            // der Leser hatte eine `isVoid()`-Ausnahme. Das Schema kennt fuer
+            // `ausschluss` nur die zehn Enumworte (`eq-ipc-v3.schema.json`
+            // `$defs/session_paar`), und sein Kommentar sagt woertlich
+            // „Abwesenheit heisst: es traegt eine". Aus einem vertragswidrigen
+            // Feld wurde damit die Aussage „kein Ausschluss".
             pruefe (ergebnis (mitFeld ("paare", 1, "ausschluss", juce::var()))
+                        == Model::SnapshotErgebnis::ungueltig,
+                    "N-29: ein VORHANDENES `null` ist ungueltig - nur die "
+                    "ABWESENHEIT heisst: das Paar traegt eine Aussage");
+            // Dieselbe Regel in den vier optionalen Enums der Experimente:
+            // sie gehen durch DENSELBEN Helfer, und keines von ihnen fuehrt
+            // `null` im Schema.
+            for (const char* feld : { "hoerurteil", "blindreihenfolge",
+                                      "vergleichbarkeit", "urteil" })
+                pruefe (ergebnis (mitFeld ("experimente", 0, feld, juce::var()))
+                            == Model::SnapshotErgebnis::ungueltig,
+                        (juce::String ("N-29: ") + feld
+                            + " als `null` ist ebenso ungueltig").toRawUTF8());
+            // Die Gegenprobe, die den Riegel von einem Pauschalverbot trennt:
+            // `pair_id` fuehrt `["string","null"]` und bleibt gueltig — sie
+            // laeuft an ihrer eigenen Stelle, nicht ueber diesen Helfer.
+            pruefe (ergebnis (mitFeld ("paare", 0, "pair_id", juce::var()))
                         == Model::SnapshotErgebnis::uebernommen,
-                    "N-29: und `null` ist wie fehlend - kein gesetzter Wert");
+                    "N-29/N-28: und `pair_id: null` bleibt gueltig - der Riegel "
+                    "trifft die geschlossenen Enums, nicht jedes `null`");
         }
     }
     std::cout << "SONDE-012 SourcesModel: " << bestanden << "/"

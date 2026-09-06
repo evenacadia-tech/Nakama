@@ -113,7 +113,9 @@ public:
         ///
         /// 🔑 NAK-181 R6: seit diesem Ticket ist das WAHR. Ein vorhandenes
         /// `ausschluss` muss aus der geschlossenen Menge kommen; ein
-        /// Nicht-String faellt nicht mehr still weg (V10).
+        /// Nicht-String faellt nicht mehr still weg (V10). Nacharbeit 1
+        /// (NR-01): dazu zaehlt ein vorhandenes `null` — nur die
+        /// ABWESENHEIT des Feldes heisst „das Paar traegt eine Aussage".
         std::string ausschluss;
     };
 

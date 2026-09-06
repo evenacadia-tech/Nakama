@@ -48,18 +48,30 @@ bool ausMenge (const juce::var& wert, std::initializer_list<const char*> menge,
     return false;
 }
 
-/// Dasselbe fuer ein OPTIONALES Feld: fehlt es, bleibt `aus` leer und die
-/// Antwort ist `true`. Ein vorhandenes Feld muss die Menge halten — auch
-/// wenn es kein String ist (V10: der einzige fail-open-Zweig der Funktion).
+/** Dasselbe fuer ein OPTIONALES Feld: FEHLT es, bleibt `aus` leer und die
+    Antwort ist `true`. Ein VORHANDENES Feld muss die Menge halten — auch
+    wenn es kein String ist (V10: der einzige fail-open-Zweig der Funktion).
+
+    🔑 NAK-181 Nacharbeit 1 (EP-01/NR-01): ein vorhandenes `null` ist
+    UNGUELTIG, nicht „wie fehlend“.
+
+    Die Enums dieser Felder sind im Schema reine `enum`-Listen ohne `null`
+    (`eq-ipc-v3.schema.json` `$defs/session_experiment`, `$defs/session_paar`);
+    nur die ABWESENHEIT des Property ist erlaubt, und `session_paar.ausschluss`
+    sagt woertlich „Abwesenheit heisst: es traegt eine“. Ein `ausschluss: null`
+    hier durchzulassen machte aus einem vertragswidrigen Feld die Aussage
+    „kein Ausschluss“ — dieselbe Sorte stiller Umdeutung wie der
+    fail-open-Zweig, den R6 gerade geschlossen hat.
+
+    ⚠️ `pair_id` ist NICHT dieser Fall: dort steht `["string","null"]` im
+    Schema, `null` heisst dort „kein Paar“, und der Leser prueft es an seiner
+    eigenen Stelle (`:662-673`) — nie ueber diesen Helfer. */
 bool ausMengeOptional (const juce::DynamicObject& o, const char* name,
                        std::initializer_list<const char*> menge, std::string& aus)
 {
     if (! o.hasProperty (name))
         return true;
-    const auto wert = o.getProperty (name);
-    if (wert.isVoid())
-        return true;              // `null` ist im Schema kein gesetzter Wert.
-    return ausMenge (wert, menge, aus);
+    return ausMenge (o.getProperty (name), menge, aus);
 }
 
 bool exakteFelder (const juce::DynamicObject& o,

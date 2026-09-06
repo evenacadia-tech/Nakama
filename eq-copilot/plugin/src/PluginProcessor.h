@@ -322,7 +322,11 @@ public:
     /** Beendet Versuch, Passagenbindung und Vergleichspegel (NAK-181 R3).
 
         Wird von `setStateInformation` in BEIDEN Zweigen gerufen, vor dem
-        Tausch des Zustands. Laeuft auf dem Nachrichtenthread. */
+        Tausch des Zustands. Laeuft auf dem Nachrichtenthread.
+
+        🔑 NAK-181 Nacharbeit 1 (EP-04/NR-04): der Mitschnitt
+        `letzterVersuchP0` gehoert NICHT dazu — er ist der Zeuge des Zugs,
+        nicht sein Zustand. */
     void vergleichszustandLeeren();
     /** 🔑 DER Produktleser von `Vergleichspegel::nichtEndlicheSamples()`
         (Befund R06/M-07). `> 0` heisst: im Vergleichsmaterial standen
@@ -613,11 +617,30 @@ public:
     std::uint64_t v3StateRevisionFuerTest() const noexcept
     { return v3StateRevision.load(); }
 
-    /** Der zuletzt GESENDETE Versuchsbefehl, roh (Befund C5). */
+    /** Der zuletzt GESENDETE Versuchsbefehl, roh (Befund C5).
+
+        🔑 NAK-181 Nacharbeit 1 (EP-04/NR-04): `vergleichszustandLeeren`
+        loescht ihn NICHT mehr. Er ist damit ueber den Reload hinweg der
+        Zeuge dafuer, dass aus dem Zug selbst kein Byte reist — ein Wert, der
+        sich nicht aendert, statt eines Wertes, der leer wird. */
     std::string letzterVersuchP0FuerTest() const
     {
         std::lock_guard<std::mutex> l (versuchWireMutex);
         return letzterVersuchP0;
+    }
+
+    /** Die unveraenderlichen Referenzen, wie der Sender sie baut (NAK-181 N-05).
+
+        🔑 NAK-181 Nacharbeit 1 (EP-05/NR-05): der Riegel in
+        `versuchReferenzJson` gegen einen FEHLENDEN eingefrorenen Gain war bis
+        zu dieser Runde ungemessen. Beide Produktaufrufer stehen VOR ihm
+        (`erfasseKandidat` an `versuchId.isEmpty()`, `beginneVersuch` am
+        Einfrieren), also erreicht kein Bein ihn ueber sie. Dieser Zugang ruft
+        genau die Funktion, die die Matrixzeile nennt — ohne Pipe, ohne
+        zweiten Pfad im Produkt. */
+    std::string versuchReferenzJsonFuerTest() const
+    {
+        return versuchReferenzJson (engineabzugLesen());
     }
 
     /** Der Wiretext, den der naechste Eingriff im Ring WIRKLICH bekaeme.

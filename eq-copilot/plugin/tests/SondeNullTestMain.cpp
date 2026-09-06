@@ -317,7 +317,7 @@ int main()
         //    bricht an `positionErlaubt` ab, `lade()` faellt auf read-only mit
         //    Grund, und der Prozessor haelt genau diesen Zustand.
         pruefe (opfer.zustandLesen().nurLesen,
-                "der Stand kommt als read-only zurueck, nicht als eigener",
+                "insert_probe_is_never_called_master_sum: der Stand kommt als read-only zurueck, nicht als eigener",
                 opfer.zustandLesen().grund);
         pruefe (opfer.zustandLesen().grund.isNotEmpty(),
                 "read-only nennt seinen Grund");

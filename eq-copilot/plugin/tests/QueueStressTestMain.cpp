@@ -508,7 +508,8 @@ int main()
         const std::uint64_t vorher = quar.verworfeneBloecke();
         q.veroeffentliche (&t, 1, 2, 64, stempelBei (zeit + 100000));    // Seek
         while (const auto* b = q.spitze()) { quar.schiebe (q, *b); q.freigeben(); }
-        pruefe (quar.kontinuitaetsbrueche() == 1, "der Seek ist als Bruch erkannt",
+        pruefe (quar.kontinuitaetsbrueche() == 1,
+                "drop_produces_counter_gap_and_boundary: der Seek ist als Bruch erkannt",
                 std::to_string (quar.kontinuitaetsbrueche()));
         pruefe (quar.verworfeneBloecke() == vorher + 1,
                 "genau EIN Block faellt an der Grenze - der Strom laeuft weiter");

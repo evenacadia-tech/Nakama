@@ -214,7 +214,8 @@ namespace
             return 0.0;
 
         const double d = std::abs (r.akku - r.ref);
-        pruefe (d <= kToleranz, name + ": LUFS-I innerhalb ±0,1 LU",
+        pruefe (d <= kToleranz,
+                name + ": lufs_integrated_matches_reference - LUFS-I innerhalb ±0,1 LU",
                 "akku=" + zahl (r.akku, 6) + " ref=" + zahl (r.ref, 6) + " d=" + zahl (d, 9));
         pruefe (d <= r.schranke + 1e-12,
                 name + ": unsicherheitLu() deckt den Fehler",

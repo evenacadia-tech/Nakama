@@ -124,7 +124,7 @@ int main()
     // wiederfindet. Die Erwartung ist NICHT die Tabellenzahl der Norm,
     // sondern 20*log10(Amplitude) — dieselbe Zahl, aber ausgerechnet statt
     // abgelesen, und damit gegen einen Tippfehler in dieser Datei gesichert.
-    abschnitt ("EBU Tech 3341, Testfaelle 15 bis 19 (Toleranz aus §49.3: +/-0,1 dB)");
+    abschnitt ("true_peak_matches_ebu_test_set - EBU Tech 3341, Testfaelle 15 bis 19 (Toleranz aus §49.3: +/-0,1 dB)");
     {
         const struct { const char* name; double amplitude; int teiler; double phase; } faelle[] = {
             { "15  fs/4, 0,50 FFS, 0 Grad",    0.50, 4, 0.0 },
@@ -213,7 +213,7 @@ int main()
     // erste Zahl haelt die +/-0,1 dB aus §49.3, die zweite nicht. GENAU DAS
     // ist die Begruendung fuer 8-fach, und sie steht als `constexpr` im
     // Produktpfad, nicht als Kommentar.
-    abschnitt ("Die 8-fach-Entscheidung: die Schranke, die 4-fach reissen wuerde");
+    abschnitt ("eight_times_oversampling_error_bound - Die 8-fach-Entscheidung: die Schranke, die 4-fach reissen wuerde");
     {
         const double schranke8 = TruePeakDetektor::interpolationsfehlerDb (0.25);
         pruefe (std::abs (schranke8) <= 0.1,

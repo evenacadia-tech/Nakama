@@ -1,0 +1,123 @@
+NAK-181 Nacharbeit 3 - Rotbeweis zur Regel WN-04 (Bein B23 EqCopSonde013PassageStateTest)
+Datum : 2026-09-06 05:34:44   Basis: f2dfb66 + Arbeitsstand Runde 3
+Grundlast waehrend der Laeufe: rund 30 % CPU durch fremde Prozesse, 15 GB frei.
+
+================================================================
+LAGE a - N-03: Wartebedingung entfernt UND die Lage kuenstlich verzoegert
+================================================================
+Ruecknahme (zwei Teile, eine Lage - so im Auftrag beschrieben):
+  1. Die beiden neuen Wartebedingungen aus N-03 entfernt
+     (`versuchspegelTorOffenFuerTest()` und der erste wachsende Blockzaehler).
+  2. Die Lage kuenstlich verzoegert - auf Dauer: das zweite Fenster wird mit
+     einer Epoche gebunden, die die Engine ablehnt
+     (`passagenfensterWunschFuerTest (zweite, 4800000, 9600000, 1)` statt `0`).
+     Der Analyseworker setzt `pegelFensterAktiv` deshalb nie wieder auf true;
+     das Speisungstor bleibt zu, wenn die 40 NaN-Bloecke laufen.
+
+Ergebnis: GENAU EINE rote Zeile, und es ist die Zusage selbst - mit demselben
+Beleg `[0]` wie im Kanon-Lauf 2 (docs/beweise/roh/NAK-181-768737f.md, B23).
+
+Nebenbefund, den die Lage sichtbar macht: `N-03: die Engine fuehrt das zweite
+Fenster` bleibt GRUEN, obwohl das Tor zu ist. Genau das ist der Nachbar, auf
+den der Fall bis zu dieser Runde gewartet hat.
+
+== NAK-180 WN-03/N-05/M-58  nachlauffrist_ist_ein_maximum_ohne_deckel ==
+[ok]   WN-03: ein Nachlauf von zwei Stunden reist ungekuerzt in die Frist - kein 3600-s-Deckel; der Broker zaehlt `tail_samples_offen` ungekappt herunter  [7201.0 s Restfrist]
+[ok]   WN-03: ein kuerzeres `end` danach verkuerzt sie NICHT - die lokale Frist ist nie kuerzer als die des Brokers, der das Maximum haelt  [7201.0 s Restfrist]
+[ok]   WN-03: `tailSamples` am u64-Rand saettigt in `int64`-Nanosekunden, statt zu ueberlaufen - eine negative Frist waere sofort abgelaufen  [9.22337e+09 s seit Systemstart]
+[ok]   WN-03: der Marker klingt
+[ok]   WN-03: der Bericht ist offen  [1]
+[ok]   WN-03/M-58: der Bericht bleibt ueber die kurze Frist hinaus offen - das einmalige `false` reist nicht in einen laufenden Nachlauf  [1]
+== NAK-181 N-03  der_lebende_zaehler_erreicht_den_kandidaten_nicht ==
+[ok]   N-03: Passage gemerkt
+[ok]   N-03: die Engine fuehrt das Fenster
+[ok]   N-03: genug Material
+[ok]   N-03: der Versuch beginnt
+[ok]   N-03: der lebende Zaehler steht auf null  [0]
+[ok]   N-03: eine zweite Passage
+[ok]   N-03: und sie wird gebunden
+[ok]   N-03: die Engine fuehrt das zweite Fenster
+[ROT]  N-03: der LEBENDE Zaehler waechst - ohne das misst der Fall nichts  [0]
+[ok]   N-03: der eingefrorene bleibt, wo er war  [0]
+[ok]   N-03: der Kandidat wird erfasst
+[ok]   N-03: der Kandidat traegt den EINGEFRORENEN Zaehler (0), nicht den lebenden  [0 (lebend: 0)]
+339 bestanden, 1 gescheitert
+
+Exitcode: 1
+
+================================================================
+LAGE b - N-08: dieselbe Ruecknahme am zweiten Fall derselben Regel
+================================================================
+Ruecknahme:
+  1. Die beiden neuen Wartebedingungen aus N-08 entfernt.
+  2. Lage kuenstlich verzoegert: nach dem Fuehren des Fensters eine erneute
+     Bindung mit abgelehnter Epoche
+     (`passagenfensterWunschFuerTest (a, 0, 4800000, 1)`).
+
+Ergebnis: GENAU EINE rote Zeile, und es ist die Zusage selbst. Das eine
+nichtendliche Sample liegt in Block 10 von 60; faellt es bei geschlossenem
+Tor, gibt es kein zweites - der Zaehler bleibt `[0]`.
+
+Nebenbefund: die Zeile `N-08: die Speisung bleibt AUS` darunter bleibt gruen,
+ist in dieser Lage aber eine Tautologie (0 gegen 0). Im gruenen Stand misst
+sie 124 gegen 124 aufgenommene Bloecke.
+
+== NAK-181 N-08  nichtendliche_samples_bleiben_ein_endzustand ==
+[ok]   ROTLAGE b: erneute Bindung mit abgelehnter Epoche
+340 bestanden, 1 gescheitert
+[ok]   N-08: Passage gemerkt
+[ok]   N-08: die Engine fuehrt das Fenster
+[ok]   N-08: mit nichtendlichem Material entsteht kein Versuch
+[ROT]  N-08: und der Zaehler steht  [0]
+[ok]   N-08: die Speisung bleibt AUS - der Pegel dieser Passage ist nicht mehr messbar, und Weitersammeln waere der stille Handgriff  [0]
+
+Exitcode: 1
+
+================================================================
+LAGE c - die REINE Ruecknahme, ohne kuenstliche Verzoegerung
+================================================================
+Ruecknahme: nur die beiden neuen Wartebedingungen aus N-03 entfernt, sonst
+der Stand von vor dieser Runde (Epoche 0, altes `passagenfensterFuehrt`).
+
+Ergebnis: ZEHN Laeufe, zehnmal GRUEN, je 340/0 und je [80].
+
+Damit ist belegt, was der Auftrag als moeglich vorsieht: EINE einzelne
+Ruecknahme faellt die Zeile NICHT. Der Defekt ist ein Rennen, kein fester
+Zustand - im Kanon-Lauf 1 war dieselbe Zeile gruen, in Lauf 2 rot. Der
+Rotbeweis der Regel ist deshalb Lage a: sie haelt genau den Zustand fest,
+den das Rennen erzeugt (Tor zu, waehrend die Engine das Fenster fuehrt),
+und die Zeile faellt mit demselben Beleg `[0]`.
+
+Lauf 1: Exit 0  340 bestanden, 0 gescheitert  |  [ok]   N-03: der LEBENDE Zaehler waechst - ohne das misst der Fall nichts  [80]
+Lauf 2: Exit 0  340 bestanden, 0 gescheitert  |  [ok]   N-03: der LEBENDE Zaehler waechst - ohne das misst der Fall nichts  [80]
+Lauf 3: Exit 0  340 bestanden, 0 gescheitert  |  [ok]   N-03: der LEBENDE Zaehler waechst - ohne das misst der Fall nichts  [80]
+Lauf 4: Exit 0  340 bestanden, 0 gescheitert  |  [ok]   N-03: der LEBENDE Zaehler waechst - ohne das misst der Fall nichts  [80]
+Lauf 5: Exit 0  340 bestanden, 0 gescheitert  |  [ok]   N-03: der LEBENDE Zaehler waechst - ohne das misst der Fall nichts  [80]
+Lauf 6: Exit 0  340 bestanden, 0 gescheitert  |  [ok]   N-03: der LEBENDE Zaehler waechst - ohne das misst der Fall nichts  [80]
+Lauf 7: Exit 0  340 bestanden, 0 gescheitert  |  [ok]   N-03: der LEBENDE Zaehler waechst - ohne das misst der Fall nichts  [80]
+Lauf 8: Exit 0  340 bestanden, 0 gescheitert  |  [ok]   N-03: der LEBENDE Zaehler waechst - ohne das misst der Fall nichts  [80]
+Lauf 9: Exit 0  340 bestanden, 0 gescheitert  |  [ok]   N-03: der LEBENDE Zaehler waechst - ohne das misst der Fall nichts  [80]
+Lauf 10: Exit 0  340 bestanden, 0 gescheitert  |  [ok]   N-03: der LEBENDE Zaehler waechst - ohne das misst der Fall nichts  [80]
+
+
+================================================================
+RUECKNAHME ALLER ROTLAGEN - Bein B23 wieder gruen
+================================================================
+Datum : 2026-09-06 05:41:16
+  343 bestanden, 0 gescheitert   Exitcode 0
+
+[ok]   N-03: der lebende Zaehler steht auf null  [0]
+[ok]   N-03: und das Speisungstor steht offen - versuchspegelSpeist UND pegelFensterAktiv, genau die zwei Atomics des Audiopfads
+[ok]   N-03: und der Pegel nimmt im zweiten Fenster wirklich auf  [2 Bloecke]
+[ok]   N-03: bis hierher ohne ein einziges nichtendliches Sample - was gleich waechst, kommt aus den NaN-Bloecken  [0]
+[ok]   N-03: der LEBENDE Zaehler waechst - ohne das misst der Fall nichts  [80]
+[ok]   N-08: das Speisungstor steht offen - versuchspegelSpeist UND pegelFensterAktiv
+[ok]   N-08: und der Pegel nimmt wirklich auf  [4 Bloecke]
+[ok]   N-08: bis hierher ohne nichtendliches Sample  [0]
+[ok]   N-08: und der Zaehler steht  [2]
+
+Anmerkung zum Bau: `Copy-Item` uebertraegt die LastWriteTime der Quelle.
+Eine so zurueckgenommene Datei ist fuer MSBuild AELTER als das Objekt der
+Rotlage, und die Uebersetzung wird stillschweigend uebersprungen - der
+erste Lauf nach dieser Ruecknahme mass noch das Rotlage-Binary (340/0).
+Der Zeitstempel ist deshalb vor diesem Bau ausdruecklich gesetzt worden.

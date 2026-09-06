@@ -1,0 +1,85 @@
+NAK-181 Nacharbeit 3 (Regel WN-04) - Zehnfachlauf Bein B23 EqCopSonde013PassageStateTest
+Datum        : 2026-09-06 05:45:53
+Basis        : f2dfb66 + Arbeitsstand der Runde 3 (Test + lesender Testzugang)
+Quelle SHA256: Sonde013PassageStateTest.cpp = 5E462F99A1F0EE11C8BE67D0C1CA9CDF9C7373DDAE98EB788D02D9EB37F36BC6
+Binary       : C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSonde013PassageStateTest_artefacts\Release\EqCopSonde013PassageStateTest.exe
+Binary-Stand : 2026-09-06 05:45:52
+Umgebung     : rund 22 % CPU-Grundlast durch fremde Prozesse, 15479 MB frei
+Praezedenz   : NAK-180 Paragraph 7.6 / roh/NAK-180-passagestate-zehnmal-44c623d.txt
+
+Gemessen wird das Bein als Ganzes (Exitcode und Bilanz) und dazu die sechs
+Zeilen, an denen die Regel haengt: je Fall das Tor, der erste aufgenommene
+Block und die Zusage, die unter der Lage faellt.
+
+--- Lauf 1: Exitcode 0, 11,4 s --- 343 bestanden, 0 gescheitert
+  [ok]   N-03: und das Speisungstor steht offen - versuchspegelSpeist UND pegelFensterAktiv, genau die zwei Atomics des Audiopfads
+  [ok]   N-03: und der Pegel nimmt im zweiten Fenster wirklich auf  [2 Bloecke]
+  [ok]   N-03: der LEBENDE Zaehler waechst - ohne das misst der Fall nichts  [80]
+  [ok]   N-08: das Speisungstor steht offen - versuchspegelSpeist UND pegelFensterAktiv
+  [ok]   N-08: und der Pegel nimmt wirklich auf  [4 Bloecke]
+  [ok]   N-08: und der Zaehler steht  [2]
+--- Lauf 2: Exitcode 0, 11,4 s --- 343 bestanden, 0 gescheitert
+  [ok]   N-03: und das Speisungstor steht offen - versuchspegelSpeist UND pegelFensterAktiv, genau die zwei Atomics des Audiopfads
+  [ok]   N-03: und der Pegel nimmt im zweiten Fenster wirklich auf  [2 Bloecke]
+  [ok]   N-03: der LEBENDE Zaehler waechst - ohne das misst der Fall nichts  [80]
+  [ok]   N-08: das Speisungstor steht offen - versuchspegelSpeist UND pegelFensterAktiv
+  [ok]   N-08: und der Pegel nimmt wirklich auf  [4 Bloecke]
+  [ok]   N-08: und der Zaehler steht  [2]
+--- Lauf 3: Exitcode 0, 11,4 s --- 343 bestanden, 0 gescheitert
+  [ok]   N-03: und das Speisungstor steht offen - versuchspegelSpeist UND pegelFensterAktiv, genau die zwei Atomics des Audiopfads
+  [ok]   N-03: und der Pegel nimmt im zweiten Fenster wirklich auf  [2 Bloecke]
+  [ok]   N-03: der LEBENDE Zaehler waechst - ohne das misst der Fall nichts  [80]
+  [ok]   N-08: das Speisungstor steht offen - versuchspegelSpeist UND pegelFensterAktiv
+  [ok]   N-08: und der Pegel nimmt wirklich auf  [4 Bloecke]
+  [ok]   N-08: und der Zaehler steht  [2]
+--- Lauf 4: Exitcode 0, 11,4 s --- 343 bestanden, 0 gescheitert
+  [ok]   N-03: und das Speisungstor steht offen - versuchspegelSpeist UND pegelFensterAktiv, genau die zwei Atomics des Audiopfads
+  [ok]   N-03: und der Pegel nimmt im zweiten Fenster wirklich auf  [2 Bloecke]
+  [ok]   N-03: der LEBENDE Zaehler waechst - ohne das misst der Fall nichts  [80]
+  [ok]   N-08: das Speisungstor steht offen - versuchspegelSpeist UND pegelFensterAktiv
+  [ok]   N-08: und der Pegel nimmt wirklich auf  [4 Bloecke]
+  [ok]   N-08: und der Zaehler steht  [2]
+--- Lauf 5: Exitcode 0, 11,4 s --- 343 bestanden, 0 gescheitert
+  [ok]   N-03: und das Speisungstor steht offen - versuchspegelSpeist UND pegelFensterAktiv, genau die zwei Atomics des Audiopfads
+  [ok]   N-03: und der Pegel nimmt im zweiten Fenster wirklich auf  [2 Bloecke]
+  [ok]   N-03: der LEBENDE Zaehler waechst - ohne das misst der Fall nichts  [80]
+  [ok]   N-08: das Speisungstor steht offen - versuchspegelSpeist UND pegelFensterAktiv
+  [ok]   N-08: und der Pegel nimmt wirklich auf  [4 Bloecke]
+  [ok]   N-08: und der Zaehler steht  [2]
+--- Lauf 6: Exitcode 0, 11,4 s --- 343 bestanden, 0 gescheitert
+  [ok]   N-03: und das Speisungstor steht offen - versuchspegelSpeist UND pegelFensterAktiv, genau die zwei Atomics des Audiopfads
+  [ok]   N-03: und der Pegel nimmt im zweiten Fenster wirklich auf  [2 Bloecke]
+  [ok]   N-03: der LEBENDE Zaehler waechst - ohne das misst der Fall nichts  [80]
+  [ok]   N-08: das Speisungstor steht offen - versuchspegelSpeist UND pegelFensterAktiv
+  [ok]   N-08: und der Pegel nimmt wirklich auf  [4 Bloecke]
+  [ok]   N-08: und der Zaehler steht  [2]
+--- Lauf 7: Exitcode 0, 11,4 s --- 343 bestanden, 0 gescheitert
+  [ok]   N-03: und das Speisungstor steht offen - versuchspegelSpeist UND pegelFensterAktiv, genau die zwei Atomics des Audiopfads
+  [ok]   N-03: und der Pegel nimmt im zweiten Fenster wirklich auf  [2 Bloecke]
+  [ok]   N-03: der LEBENDE Zaehler waechst - ohne das misst der Fall nichts  [80]
+  [ok]   N-08: das Speisungstor steht offen - versuchspegelSpeist UND pegelFensterAktiv
+  [ok]   N-08: und der Pegel nimmt wirklich auf  [4 Bloecke]
+  [ok]   N-08: und der Zaehler steht  [2]
+--- Lauf 8: Exitcode 0, 11,4 s --- 343 bestanden, 0 gescheitert
+  [ok]   N-03: und das Speisungstor steht offen - versuchspegelSpeist UND pegelFensterAktiv, genau die zwei Atomics des Audiopfads
+  [ok]   N-03: und der Pegel nimmt im zweiten Fenster wirklich auf  [2 Bloecke]
+  [ok]   N-03: der LEBENDE Zaehler waechst - ohne das misst der Fall nichts  [80]
+  [ok]   N-08: das Speisungstor steht offen - versuchspegelSpeist UND pegelFensterAktiv
+  [ok]   N-08: und der Pegel nimmt wirklich auf  [4 Bloecke]
+  [ok]   N-08: und der Zaehler steht  [2]
+--- Lauf 9: Exitcode 0, 11,4 s --- 343 bestanden, 0 gescheitert
+  [ok]   N-03: und das Speisungstor steht offen - versuchspegelSpeist UND pegelFensterAktiv, genau die zwei Atomics des Audiopfads
+  [ok]   N-03: und der Pegel nimmt im zweiten Fenster wirklich auf  [2 Bloecke]
+  [ok]   N-03: der LEBENDE Zaehler waechst - ohne das misst der Fall nichts  [80]
+  [ok]   N-08: das Speisungstor steht offen - versuchspegelSpeist UND pegelFensterAktiv
+  [ok]   N-08: und der Pegel nimmt wirklich auf  [4 Bloecke]
+  [ok]   N-08: und der Zaehler steht  [2]
+--- Lauf 10: Exitcode 0, 11,4 s --- 343 bestanden, 0 gescheitert
+  [ok]   N-03: und das Speisungstor steht offen - versuchspegelSpeist UND pegelFensterAktiv, genau die zwei Atomics des Audiopfads
+  [ok]   N-03: und der Pegel nimmt im zweiten Fenster wirklich auf  [2 Bloecke]
+  [ok]   N-03: der LEBENDE Zaehler waechst - ohne das misst der Fall nichts  [80]
+  [ok]   N-08: das Speisungstor steht offen - versuchspegelSpeist UND pegelFensterAktiv
+  [ok]   N-08: und der Pegel nimmt wirklich auf  [4 Bloecke]
+  [ok]   N-08: und der Zaehler steht  [2]
+
+Urteil: zehn von zehn GRUEN, je Exitcode 0.

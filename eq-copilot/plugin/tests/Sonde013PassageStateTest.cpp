@@ -2985,7 +2985,56 @@ int main()
                 "N-03: und sie wird gebunden");
         pruefe (warte (*p, kopf, puffer, [&] { return p->passagenfensterFuehrt (zweite); }),
                 "N-03: die Engine fuehrt das zweite Fenster");
+
+        // 🔑 NAK-181 Nacharbeit 3 (WN-04): gewartet wird auf das TOR, nicht
+        // auf seinen Nachbarn.
+        //
+        // Bis zu dieser Runde fuhr der Fall die NaN-Bloecke, sobald die ENGINE
+        // das zweite Fenster fuehrte. Der Audiothread speist aber erst, wenn
+        // `versuchspegelSpeist` UND `pegelFensterAktiv` stehen, und das zweite
+        // ist ein PUBLIKATIONSBIT des Analyseworkers.
+        // `bindePassagenfensterMitEpoche` legt den Fensterwunsch ab und
+        // loescht das Bit erst DANACH: ein Workerzug, der dazwischen faellt,
+        // setzt das Fenster in der Engine — ab da fuehrt sie es — und sein Bit
+        // wird sofort ueberschrieben.
+        //
+        // Kanon-Lauf 2 fiel unter Last mit genau diesem Bild: 40 NaN-Bloecke,
+        // und der lebende Zaehler blieb `[0]`
+        // (`docs/beweise/roh/NAK-181-768737f.md`, B23). WELCHE Reihenfolge
+        // dort eintrat, ist nicht gemessen. Gemessen ist zweierlei: bei
+        // geschlossenem Tor faellt die Zeile mit demselben Beleg
+        // (`roh/NAK-181-rot-n3-wn04.txt`, Lage a), und die blosse Ruecknahme
+        // dieser Wartebedingung faellt sie zehnmal NICHT (Lage c) — ein
+        // Rennen, kein fester Zustand. Kein Sleep als Ordnung: `warte` faehrt
+        // Bloecke, und erst dadurch kommt der Worker ueberhaupt zum Zug.
+        pruefe (warte (*p, kopf, puffer, [&] { return p->versuchspegelTorOffenFuerTest(); }),
+                "N-03: und das Speisungstor steht offen - versuchspegelSpeist "
+                "UND pegelFensterAktiv, genau die zwei Atomics des Audiopfads");
+
         kopf.pos = 4800000;
+        // Und die Gegenprobe am Tor selbst, an der Kopfposition der NaN-
+        // Bloecke: erst wenn der Pegel im ZWEITEN Fenster wirklich einen Block
+        // aufgenommen hat, sagen sie etwas ueber den Zaehler. `vorbereiten()`
+        // im Binden hat `bloeckeAufgenommen` auf 0 gesetzt, die Zahl waechst
+        // hier also nachweislich neu. `fahre` speist dabei ENDLICHE Samples:
+        // sie heben `bloecke` und `endliche`, nie `nichtEndliche`.
+        //
+        // Das Warten steht in einer EIGENEN Anweisung: MSVC wertet die
+        // Argumente von `pruefe` von rechts nach links aus, und der Beleg
+        // truege sonst den Zaehlerstand VOR dem Warten — eine Null, die nichts
+        // mit dem Urteil daneben zu tun haette.
+        juce::uint64 bg = 0, eg = 0, ng = 0;
+        const bool nimmtAufZweite = warte (*p, kopf, puffer,
+                                           [&] { p->vergleichspegelZaehlerstand (bg, eg, ng);
+                                                 return bg > 0; });
+        pruefe (nimmtAufZweite,
+                "N-03: und der Pegel nimmt im zweiten Fenster wirklich auf",
+                juce::String ((juce::int64) bg) + " Bloecke");
+        pruefe (ng == 0,
+                "N-03: bis hierher ohne ein einziges nichtendliches Sample - "
+                "was gleich waechst, kommt aus den NaN-Bloecken",
+                juce::String ((juce::int64) ng));
+
         for (int i = 0; i < 40; ++i)
         {
             juce::MidiBuffer midi;
@@ -3074,6 +3123,29 @@ int main()
         pruefe (p->merkeManuellePassage (a, "Refrain", 0, 4800000), "N-08: Passage gemerkt");
         pruefe (warte (*p, kopf, puffer, [&] { return p->passagenfensterFuehrt (a); }),
                 "N-08: die Engine fuehrt das Fenster");
+
+        // 🔑 NAK-181 Nacharbeit 3 (WN-04): dieselbe Lage wie in N-03, deshalb
+        // dasselbe Wartemuster. Das nichtendliche Sample liegt in GENAU EINEM
+        // der 60 Bloecke (`i == 10`); faellt es bei geschlossenem Tor, gibt es
+        // kein zweites. Gewartet wird auf das Tor selbst und danach auf den
+        // ersten wirklich aufgenommenen Block — die zehn endlichen Bloecke
+        // davor sind keine Zusicherung, sondern eine Zeitannahme.
+        pruefe (warte (*p, kopf, puffer, [&] { return p->versuchspegelTorOffenFuerTest(); }),
+                "N-08: das Speisungstor steht offen - versuchspegelSpeist UND "
+                "pegelFensterAktiv");
+        // Eigene Anweisung wie in N-03: sonst truege der Beleg den Stand VOR
+        // dem Warten (MSVC wertet die Argumente von rechts nach links aus).
+        juce::uint64 bg = 0, eg = 0, ng = 0;
+        const bool nimmtAuf = warte (*p, kopf, puffer,
+                                     [&] { p->vergleichspegelZaehlerstand (bg, eg, ng);
+                                           return bg > 0; });
+        pruefe (nimmtAuf,
+                "N-08: und der Pegel nimmt wirklich auf",
+                juce::String ((juce::int64) bg) + " Bloecke");
+        pruefe (ng == 0,
+                "N-08: bis hierher ohne nichtendliches Sample",
+                juce::String ((juce::int64) ng));
+
         for (int i = 0; i < 60; ++i)
         {
             juce::MidiBuffer midi;

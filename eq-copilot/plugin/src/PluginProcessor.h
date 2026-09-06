@@ -312,6 +312,31 @@ public:
     void vergleichspegelZaehlerstand (juce::uint64& bloecke, juce::uint64& endliche,
                                       juce::uint64& nichtEndliche) const;
 
+    /** Steht das Speisungstor des Vergleichspegels offen? Nur lesend, fuer
+        Tests (NAK-181 Nacharbeit 3, Regel WN-04).
+
+        Gibt genau die zwei Atomics zurueck, die `processBlock` vor dem
+        Speisen prueft — `versuchspegelSpeist` und `pegelFensterAktiv`, in
+        derselben Leseordnung. Kein Nachbar davon, keine dritte Bedingung: die
+        uebrigen Terme des Tors (Transport, gueltige Projektzeit, Kanalzahl,
+        Fensterausschnitt) haengen am Block, nicht an einem anderen Thread.
+
+        `passagenfensterFuehrt` IST so ein Nachbar und deshalb der falsche
+        Zeuge: es sagt, dass die ENGINE das Fenster fuehrt, nicht, dass der
+        Worker das Publikationsbit gesetzt hat. `bindePassagenfensterMitEpoche`
+        legt den Fensterwunsch ab und loescht das Bit erst DANACH — ein
+        Workerzug, der dazwischen faellt, setzt Fenster und Bit, und das Bit
+        wird sofort ueberschrieben. Die Engine fuehrt das Fenster dann bereits,
+        das Tor bleibt bis zum naechsten Workerzug zu.
+
+        Kein Verhalten, keine Sperre, keine Nebenwirkung; laeuft ausserhalb des
+        Audiothreads. */
+    bool versuchspegelTorOffenFuerTest() const noexcept
+    {
+        return versuchspegelSpeist.load (std::memory_order_relaxed)
+            && pegelFensterAktiv.load (std::memory_order_acquire);
+    }
+
     /** Ist der LEBENDE Vergleichspegel abgeglichen? (NAK-181 R1, N-01.)
 
         `versuchLautheitAbgeglichen()` daneben antwortet bei offenem Versuch aus

@@ -1,0 +1,1784 @@
+NAK-182 Etappe 2 - Beine des Bauauftrags (Release-Artefakte des frischen Baus)
+Stand vor dem Commit; Basis-SHA der Etappe 1: c4290fb, HEAD beim Lauf: fef9c88
+
+======================================================================
+A25  |  py -3.13 tools/eq-copilot/erzeuge_p4_korpus.py --pruefen
+======================================================================
+P4-Korpus: 5 Dateien, 25 Faelle in 4 Klassen
+bytegleich
+ERGEBNIS A25 : EXIT=0, 0.5 s
+
+======================================================================
+A26  |  py -3.13 tools/eq-copilot/pruefe_p4_korpus.py
+======================================================================
+P4-Referenzkorpus: 25 Faelle in 4 Klassen
+  in P4 nicht gemessen: M-85 Ziel 1 (korrelierter, nicht kausaler Distraktor) -> NAK-190
+
+[ok]  referenz    5 Faelle · 4 stark · 1 Enthaltungen · Precision 1.00 · Recall 1.00 · Brier 0.0010 · Coverage 0.80
+[ok]  stereo      6 Faelle · 6 stark · 0 Enthaltungen · Precision 1.00 · Recall 1.00 · Brier 0.0009 · Coverage 1.00
+[ok]  vergleich   8 Faelle · 2 stark · 4 Enthaltungen · Precision 1.00 · Recall 1.00 · Brier 0.0717 · Coverage 0.50
+[ok]  zeitachse   6 Faelle · 6 stark · 0 Enthaltungen · Precision 1.00 · Recall 1.00 · Brier 0.0007 · Coverage 1.00
+
+Gesamt: 25 Faelle · 0 falsche starke Behauptungen · 0 falsche schwache · Brier 0.0150 · Kalibrierung 0.0630 · Coverage 0.80 · Enthaltungsrate 0.20
+Vertrag: 5 von 5 geschlossenen Mengen gelesen, kein kausaler Bezeichner darin (G4 §8)
+Exit-Gate P4: alle vier Klassen bestehen, keine falsche Behauptung.
+ERGEBNIS A26 : EXIT=0, 0.3 s
+
+======================================================================
+A27  |  py -3.13 tools/eq-copilot/pruefe_p4_korpus.py --selbsttest
+======================================================================
+A27 · Selbsttest von pruefe_p4_korpus.py (NAK-182 R1, MP1-6)
+
+Korpusweg (synthetischer Korpus -> _kennzahlen -> _riegel)
+[ok]   S-01 unbekannt: eine STARKE Aussage darauf ist eine falsche Behauptung  [falsche_starke=1]
+[ok]   S-01 unbekannt Gegenteil: dieselbe Wahrheit mit `unsicher` ist keine  [falsche_starke=0]
+[ok]   S-01 unvergleichbar: eine STARKE Aussage darauf ist eine falsche Behauptung  [falsche_starke=1]
+[ok]   S-01 unvergleichbar Gegenteil: dieselbe Wahrheit mit `unsicher` ist keine  [falsche_starke=0]
+[ok]   S-01 zeitvariabel: eine STARKE Aussage darauf ist eine falsche Behauptung  [falsche_starke=1]
+[ok]   S-01 zeitvariabel Gegenteil: dieselbe Wahrheit mit `unsicher` ist keine  [falsche_starke=0]
+[ok]   S-01 nicht_kausal: eine STARKE Aussage darauf ist eine falsche Behauptung  [falsche_starke=1]
+[ok]   S-01 nicht_kausal Gegenteil: dieselbe Wahrheit mit `unsicher` ist keine  [falsche_starke=0]
+[ok]   S-01 nicht_exakt: eine STARKE Aussage darauf ist eine falsche Behauptung  [falsche_starke=1]
+[ok]   S-01 nicht_exakt Gegenteil: dieselbe Wahrheit mit `unsicher` ist keine  [falsche_starke=0]
+[ok]   S-02 unbekannt: auch eine SCHWACHE Aussage darauf ist falsch  [falsche_schwache=1]
+[ok]   S-02 unbekannt Gegenteil: mit `unsicher` ist sie keine  [falsche_schwache=0]
+[ok]   S-02 unvergleichbar: auch eine SCHWACHE Aussage darauf ist falsch  [falsche_schwache=1]
+[ok]   S-02 unvergleichbar Gegenteil: mit `unsicher` ist sie keine  [falsche_schwache=0]
+[ok]   S-02 zeitvariabel: auch eine SCHWACHE Aussage darauf ist falsch  [falsche_schwache=1]
+[ok]   S-02 zeitvariabel Gegenteil: mit `unsicher` ist sie keine  [falsche_schwache=0]
+[ok]   S-02 nicht_kausal: die SCHWACHE Aussage traegt diese Wahrheit - genau das trennt KEINE_STARKE von KEINE_BEHAUPTUNG  [falsche_schwache=0]
+[ok]   S-02 nicht_kausal Gegenteil: die STARKE ist es nicht  [falsche_starke=1]
+[ok]   S-02 nicht_exakt: die SCHWACHE Aussage traegt diese Wahrheit - genau das trennt KEINE_STARKE von KEINE_BEHAUPTUNG  [falsche_schwache=0]
+[ok]   S-02 nicht_exakt Gegenteil: die STARKE ist es nicht  [falsche_starke=1]
+[ok]   S-07: eine Wahrheit ausserhalb ERLAUBTE_WAHRHEITEN wird als solche erkannt
+[ok]   S-07 Gegenteil: ein Wert aus der Menge nicht
+
+Kennzahlweg (_riegel direkt) - der Korpus kann diese Faelle nach R1a
+nicht mehr erzeugen, die Wachen brauchen trotzdem einen Weg zu fallen
+[ok]   S-03 recall: der Riegel meldet rot und nennt Recall  [selbsttest: Recall 1.0700 > 1.0 - eine Quote kann das nicht sein]
+[ok]   S-03 recall Gegenteil: innerhalb des Gates keine rote Zeile
+[ok]   S-04 precision: der Riegel meldet rot und nennt Precision  [selbsttest: Precision 1.0200 > 1.0 - eine Quote kann das nicht sein]
+[ok]   S-04 precision Gegenteil: innerhalb des Gates keine rote Zeile
+[ok]   S-04b falsche_starke: der Riegel meldet rot und nennt starke  [selbsttest: 1 falsche starke Behauptung(en): ]
+[ok]   S-04b falsche_starke Gegenteil: innerhalb des Gates keine rote Zeile
+[ok]   S-04c falsche_schwache: der Riegel meldet rot und nennt schwache  [selbsttest: 1 falsche schwache Behauptung(en): ]
+[ok]   S-04c falsche_schwache Gegenteil: innerhalb des Gates keine rote Zeile
+[ok]   S-04d brier: der Riegel meldet rot und nennt Brier  [selbsttest: Brier Score 0.2600 >= 0.25]
+[ok]   S-04d brier Gegenteil: innerhalb des Gates keine rote Zeile
+[ok]   S-04e coverage: der Riegel meldet rot und nennt Coverage  [selbsttest: Coverage 0.49 < 0.5]
+[ok]   S-04e coverage Gegenteil: innerhalb des Gates keine rote Zeile
+[ok]   S-04e kalibrierung: der Riegel meldet rot und nennt Kalibrierung  [selbsttest: Kalibrierung 0.1600 > 0.15]
+[ok]   S-04e kalibrierung Gegenteil: innerhalb des Gates keine rote Zeile
+
+Quellenweg (_quelle_pruefen)
+[ok]   S-05 Gegenteil: ein Bezeichner, der in der Datei steht, ist gruen
+[ok]   S-05: ein erfundener Bezeichner ist rot und die Meldung nennt Datei und Bezeichner  [x: Bezeichner 'gibt_es_nicht_9f3a2b1c' steht nicht in tools/eq-copilot/pruefe_p4_korpus.py]
+[ok]   S-06: ein Pfad ins Leere ist rot  [x: Quelldatei fehlt: gibt/es/nicht.cpp]
+
+Vertragsweg (_vertragsmengen_pruefen)
+[ok]   S-08/S-09 Gegenteil: das Vertragsschema traegt alle fuenf Mengen und keinen kausalen Bezeichner  [5 Mengen]
+[ok]   S-08: fehlt eine der fuenf Mengen, ist das rot  [geschlossene Menge fehlt im Vertrag: alignment_klasse ($defs/alignment_klasse)]
+[ok]   S-09: ein Enumwert mit kausalem Bezeichner ist rot  [kausaler Bezeichner in kettenbefund: 'sicherer_ausloeser' enthaelt 'ausloeser' - P4 gibt keine Ursachenaussage ab]
+
+42 bestanden, 0 gescheitert
+A27: der Pruefer faellt an jeder Zusage, die er behauptet.
+ERGEBNIS A27 : EXIT=0, 0.1 s
+
+======================================================================
+A8  |  py -3.13 tools/eq-copilot/erzeuge_v3_fixtures.py --pruefen
+======================================================================
+87 gueltige, 230 ungueltige Fixtures
+  bytegleich: 321 Dateien, MANIFEST sha256=e9c59184c5f193cce673ee335393e6ad753f1d26541554420399caae7525858e
+ERGEBNIS A8 : EXIT=0, 1.5 s
+
+======================================================================
+A5  |  py -3.13 tools/eq-copilot/pruefe_v3_vertrag.py
+======================================================================
+C:\Users\phili\Projekte\Nakama\tools\eq-copilot\pruefe_v3_vertrag.py:1836: DeprecationWarning: Accessing jsonschema.__version__ is deprecated and will be removed in a future release. Use importlib.metadata directly to query for jsonschema's version.
+  print(f"jsonschema {jsonschema.__version__} (draft 2020-12)")
+jsonschema 4.26.0 (draft 2020-12)
+76 Definitionen, 22 Nachrichtenfamilien, 317 Fixtures
+Pruefungen: 512 bestanden, 0 gescheitert
+ERGEBNIS A5 : EXIT=0, 3.4 s
+
+======================================================================
+B19  |  EqCopSonde013StereoGoldenTest
+======================================================================
+== Nakama SONDE-013 - bandweise Stereoevidenz (§40.1, §40.3) ==
+
+== M-08  mono_identity ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   das 1-kHz-Band ist im Gitter auffindbar  [Band 121]
+[ok]   es traegt eine Basis
+[ok]   bei echtem Mono ist die Korrelation exakt 1  [1.000000]
+[ok]   und der Seitenanteil liegt am Boden - es gibt keine Seitenenergie  [-120.00 dB]
+[ok]   die Kohaerenz ist 1 - zwei identische Kanaele sind vollstaendig kohaerent  [1.000000]
+[ok]   und die Phase ist 0 - kein Laufzeitunterschied  [0.000000 rad]
+[ok]   der Mono-Folddown ist 0 dB innerhalb 0,25 dB (Â§40.3) - eine Monosumme aus zwei gleichen Kanaelen verliert nichts  [0.0000 dB]
+[ok]   und die L/R-Balance ist 0 dB  [0.0000 dB]
+
+== M-08  silent_channel_has_no_bit ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   mit einem stillen Kanal faellt das Kohaerenzbit weg, statt 0 oder NaN zu senden
+[ok]   und die Phase erst recht - sie ist eine Teilmenge der Kohaerenzbits
+[ok]   die Basis steht trotzdem: ein stiller Kanal ist maximal breit (Mid und Side tragen dieselbe Energie)  [-3.01 dB]
+[ok]   der Mono-Folddown ist rund -3 dB - die halbe Energie ist im stillen Kanal  [-3.010 dB]
+[ok]   und die Balance kippt vollstaendig nach links - der Wert laeuft an die Vertragsgrenze, statt zu fehlen: 'ganz links' ist eine Aussage, kein Schweigen  [400.0 dB]
+
+== M-08  folddown_matches_real_buffer_within_0p25db ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   der gemeldete Verlust stimmt mit dem von Hand gefalteten Puffer innerhalb 0,25 dB ueberein  [gemeldet -3.010 dB, von Hand -3.010 dB]
+
+== M-11  bandwise_ms_and_correlation ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   100 Hz und 5 kHz liegen in verschiedenen Baendern  [Band 41 gegen 176]
+[ok]   beide tragen eine Basis
+[ok]   unten ist das Material mono - Korrelation nahe 1  [1.0000]
+[ok]   oben ist es dekorreliert - und GENAU DAS koennen zwei globale Skalare nicht ausdruecken  [unten 1.0000, oben -0.0002]
+[ok]   und der Seitenanteil trennt die beiden Baender ebenso  [unten -120.00 dB, oben -3.01 dB]
+
+== M-11  coherence_carries_window_and_dof ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   das Band traegt seine Freiheitsgrade - die Zahl der gemittelten gueltigen Welch-Frames (Â§40.1: 'Fensterdauer und Freiheitsgrade werden Teil der Evidenz')  [24 Frames]
+[ok]   und seine Fensterdauer in Millisekunden  [1024.0 ms]
+[ok]   mit genug Frames traegt die Kohaerenz ein Bit
+[ok]   und die Dauer ist die Summe der Hops ueber genau diese Frames  [1024.00 ms gegen 1024.00 ms]
+
+== M-11  coherence_is_null_below_eight_frames ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   es gibt wirklich Baender mit weniger als acht Frames - der Fall ist hergestellt, nicht ausgerechnet  [149 von 149 Baendern mit Basis]
+[ok]   und KEINES davon traegt ein Kohaerenzbit - unter acht Frames ist die Kohaerenz `null`, nicht 1  [0 mit Bit, 149 ohne]
+
+== M-11  phase_only_in_coherent_bands ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   es gibt Baender MIT und OHNE Phase - der Fall trennt wirklich  [2 mit Phase, 149 mit Kohaerenz]
+[ok]   kein Band traegt eine Phase ohne Kohaerenz - die Phasenbits sind eine TEILMENGE der Kohaerenzbits (das kann das Schema nicht sagen)  [0 Verletzungen]
+[ok]   und keines unterhalb der benannten Schwelle 0.80  [0 Verletzungen]
+
+== M-11  bekannte Laufzeit: die Phase folgt -2*pi*f*tau ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   mindestens zwei der drei Traegerfrequenzen tragen eine Phase  [3 von 3]
+[ok]   und jede folgt der Formel +2*pi*f*tau - die Phase ist gemessen, nicht geraten  [groesste Abweichung 0.0000 rad]
+
+== M-11  persistence_is_reported ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   ein durchgehend kohaerentes Band meldet hohe Persistenz  [1.000]
+[ok]   ein unkorreliertes Band meldet niedrige - die Zahl misst wirklich die Stabilitaet des Befundes  [0.000]
+
+== M-10  band_stereo_metrics_share_the_nyquist_cap ==
+[ok]   ein Evidenzfenster bei 22,05 kHz entsteht
+[ok]   es gibt Baender ueber der Kappe - der Fall ist hergestellt  [18 Baender ab 10.47 kHz]
+[ok]   und KEINES traegt eine Stereometrik - die neuen Bandmetriken erben die Nyquist-Kappe, es entsteht keine zweite Regel  [0 Verletzungen]
+
+== M-12  width_alone_is_never_a_defect / low_coherence_yields_no_recommendation ==
+[ok]   ein sehr breites, inkohaerentes Evidenzfenster entsteht
+[ok]   viele Baender sind maximal breit  [195 von 196]
+[ok]   und trotzdem entsteht in KEINEM eine Phase - bei niedriger Kohaerenz gibt es keine Lag- oder Polaritaetsaussage (Â§40.2), und Breite allein ist kein Befund  [0 Baender mit Phase]
+
+== §40.3  Polaritaetsinvertierung: Korrelation -1, Monosumme loescht aus ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   die Korrelation ist -1  [-1.000000]
+[ok]   die KOHAERENZ ist dabei 1 - sie misst den Zusammenhang, nicht das Vorzeichen. Wer beide verwechselt, meldet Antiphase als Rauschen  [1.000000]
+[ok]   und die Phase ist +/-pi - genau die Aussage 'invertiert'  [3.1416 rad]
+[ok]   die Monosumme loescht sich VOLLSTAENDIG aus - der Wert laeuft an die Vertragsgrenze, statt zu fehlen. Gemessen am wirklich gefalteten Puffer, nicht aus der Korrelation geschaetzt: das ist die schaerfste Stereoaussage, die es gibt, und sie darf nicht schweigen  [-400.0 dB]
+
+== §32.3  keine Stereogroesse ueberbrueckt eine Transportgrenze ==
+[ok]   vor der Grenze steht ein Evidenzfenster
+[ok]   mit hoher Korrelation und gemessenem Folddown  [Korr 1.0000, Folddown 0.000 dB]
+[ok]   nach der Grenze entsteht ein neues Evidenzfenster
+[ok]   und seine Korrelation ist die des NEUEN Materials - kein Kreuzspektrum hat die Grenze ueberbrueckt  [-0.1377]
+[ok]   auch der Folddown ist neu gemessen und nicht fortgeschrieben  [vorher 0.000 dB, nachher -3.026 dB]
+
+-----------------------------------------
+
+== NAK-181 N-21  kurzkorrelation_und_persistenz_schweigen_ohne_kurzfenster ==
+[ok]   N-21: der Fall faehrt die VORGABEkadenz  [0.250]
+[ok]   N-21: ein Evidenzfenster entsteht
+[ok]   N-21: Baender mit Basis gibt es  [149]
+[ok]   N-21: aber KEIN Band traegt korrelation_kurz - das Kurzfenster schliesst bei 0,25 s nie  [0]
+[ok]   N-21: und keines persistenz  [0]
+
+== NAK-181 N-22  praesenzbits_ueberleben_das_fensterleeren ==
+[ok]   N-22: ein Evidenzfenster bei 48 kHz
+[ok]   N-22: beide Bits stehen NACH dem Fensterleeren (48 kHz)  [1.000]
+[ok]   N-22: und die Persistenz traegt ihren Wert  [1.000]
+[ok]   N-22: ein Evidenzfenster bei 96 kHz
+[ok]   N-22: beide Bits stehen NACH dem Fensterleeren (96 kHz)  [1.000]
+[ok]   N-22: und die Persistenz traegt ihren Wert  [1.000]
+
+== NAK-181 N-23  stiller_kanal_laesst_alle_drei_bits_weg ==
+[ok]   N-23: ein Evidenzfenster entsteht
+[ok]   N-23: die Basis steht (ein stiller Kanal ist maximal breit)
+[ok]   N-23: korrelation_mittel traegt KEIN Bit - der Nenner ist null (M-08: bei stillem Kanal faellt das Praesenzbit weg)
+[ok]   N-23: korrelation_kurz ebenso
+[ok]   N-23: und persistenz ebenso - obwohl Kurzfenster geschlossen haben, hatte DIESES Band in keinem einen gueltigen Nenner
+
+== NAK-182 M-82  Blockgroessen-Sweep: fuenf Klassen und Folddown ==
+[ok]   sweep_mono_identity: bei jeder Blockgroesse aus {1, 2, 3, 7, 15, 16, 31, 64, 127, 128, 333, 512, 1024, 2048, 4096, 8192, 12345, 16384} entsteht ein Evidenzfenster  [18 von 18]
+[ok]   sweep_mono_identity: und jede traegt dieselbe analytisch bekannte Antwort  [1:1.0000/1.0000/0.0000/0.000, 2:1.0000/1.0000/0.0000/0.000, 3:1.0000/1.0000/0.0000/0.000, 7:1.0000/1.0000/0.0000/0.000, 15:1.0000/1.0000/0.0000/0.000, 16:1.0000/1.0000/0.0000/0.000, 31:1.0000/1.0000/0.0000/0.000, 64:1.0000/1.0000/0.0000/0.000, 127:1.0000/1.0000/0.0000/0.000, 128:1.0000/1.0000/0.0000/0.000, 333:1.0000/1.0000/0.0000/0.000, 512:1.0000/1.0000/0.0000/0.000, 1024:1.0000/1.0000/0.0000/0.000, 2048:1.0000/1.0000/0.0000/0.000, 4096:1.0000/1.0000/0.0000/0.000, 8192:1.0000/1.0000/0.0000/0.000, 12345:1.0000/1.0000/0.0000/0.000, 16384:1.0000/1.0000/0.0000/0.000]
+[ok]   sweep_mono_identity: je Blockgroesse wurden vergleichbar viele Fenster gemittelt (Freiheitsgrade innerhalb 20 % des Medians)  [22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 23, 24, 24, 23, 23, 23, 23, 23 (Median 22)]
+[ok]   sweep_identical_stereo: bei jeder Blockgroesse aus {1, 2, 3, 7, 15, 16, 31, 64, 127, 128, 333, 512, 1024, 2048, 4096, 8192, 12345, 16384} entsteht ein Evidenzfenster  [18 von 18]
+[ok]   sweep_identical_stereo: und jede traegt dieselbe analytisch bekannte Antwort  [1:1.0000/1.0000/0.0000/0.000, 2:1.0000/1.0000/0.0000/0.000, 3:1.0000/1.0000/0.0000/0.000, 7:1.0000/1.0000/0.0000/0.000, 15:1.0000/1.0000/0.0000/0.000, 16:1.0000/1.0000/0.0000/0.000, 31:1.0000/1.0000/0.0000/0.000, 64:1.0000/1.0000/0.0000/0.000, 127:1.0000/1.0000/0.0000/0.000, 128:1.0000/1.0000/0.0000/0.000, 333:1.0000/1.0000/0.0000/0.000, 512:1.0000/1.0000/0.0000/0.000, 1024:1.0000/1.0000/0.0000/0.000, 2048:1.0000/1.0000/0.0000/0.000, 4096:1.0000/1.0000/0.0000/0.000, 8192:1.0000/1.0000/0.0000/0.000, 12345:1.0000/1.0000/0.0000/0.000, 16384:1.0000/1.0000/0.0000/0.000]
+[ok]   sweep_identical_stereo: je Blockgroesse wurden vergleichbar viele Fenster gemittelt (Freiheitsgrade innerhalb 20 % des Medians)  [22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 23, 24, 24, 23, 23, 23, 23, 23 (Median 22)]
+[ok]   sweep_polarity_inversion: bei jeder Blockgroesse aus {1, 2, 3, 7, 15, 16, 31, 64, 127, 128, 333, 512, 1024, 2048, 4096, 8192, 12345, 16384} entsteht ein Evidenzfenster  [18 von 18]
+[ok]   sweep_polarity_inversion: und jede traegt dieselbe analytisch bekannte Antwort  [1:-1.0000/1.0000/3.142/-400, 2:-1.0000/1.0000/3.142/-400, 3:-1.0000/1.0000/3.142/-400, 7:-1.0000/1.0000/3.142/-400, 15:-1.0000/1.0000/3.142/-400, 16:-1.0000/1.0000/3.142/-400, 31:-1.0000/1.0000/3.142/-400, 64:-1.0000/1.0000/3.142/-400, 127:-1.0000/1.0000/3.142/-400, 128:-1.0000/1.0000/3.142/-400, 333:-1.0000/1.0000/3.142/-400, 512:-1.0000/1.0000/3.142/-400, 1024:-1.0000/1.0000/3.142/-400, 2048:-1.0000/1.0000/3.142/-400, 4096:-1.0000/1.0000/3.142/-400, 8192:-1.0000/1.0000/3.142/-400, 12345:-1.0000/1.0000/3.142/-400, 16384:-1.0000/1.0000/3.142/-400]
+[ok]   sweep_polarity_inversion: je Blockgroesse wurden vergleichbar viele Fenster gemittelt (Freiheitsgrade innerhalb 20 % des Medians)  [22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 23, 24, 24, 23, 23, 23, 23, 23 (Median 22)]
+[ok]   sweep_known_delay: bei jeder Blockgroesse aus {1, 2, 3, 7, 15, 16, 31, 64, 127, 128, 333, 512, 1024, 2048, 4096, 8192, 12345, 16384} entsteht ein Evidenzfenster  [18 von 18]
+[ok]   sweep_known_delay: und jede traegt dieselbe analytisch bekannte Antwort  [1:0.9425(d=0.0000), 2:0.9425(d=0.0000), 3:0.9425(d=0.0000), 7:0.9425(d=0.0000), 15:0.9425(d=0.0000), 16:0.9425(d=0.0000), 31:0.9425(d=0.0000), 64:0.9425(d=0.0000), 127:0.9425(d=0.0000), 128:0.9425(d=0.0000), 333:0.9425(d=0.0000), 512:0.9425(d=0.0000), 1024:0.9425(d=0.0000), 2048:0.9425(d=0.0000), 4096:0.9425(d=0.0000), 8192:0.9425(d=0.0000), 12345:0.9425(d=0.0000), 16384:0.9425(d=0.0000)]
+[ok]   sweep_known_delay: je Blockgroesse wurden vergleichbar viele Fenster gemittelt (Freiheitsgrade innerhalb 20 % des Medians)  [22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 23, 24, 24, 23, 23, 23, 23, 23 (Median 22)]
+[ok]   sweep_uncorrelated_channels: bei jeder Blockgroesse aus {1, 2, 3, 7, 15, 16, 31, 64, 127, 128, 333, 512, 1024, 2048, 4096, 8192, 12345, 16384} entsteht ein Evidenzfenster  [18 von 18]
+[ok]   sweep_uncorrelated_channels: und jede traegt dieselbe analytisch bekannte Antwort  [1:-0.1933, 2:-0.1933, 3:-0.1933, 7:-0.1933, 15:-0.1933, 16:-0.1933, 31:-0.1933, 64:-0.1933, 127:-0.1933, 128:-0.1933, 333:-0.1840, 512:-0.1772, 1024:-0.1772, 2048:-0.1840, 4096:-0.1840, 8192:-0.1840, 12345:-0.1840, 16384:-0.1840]
+[ok]   sweep_uncorrelated_channels: je Blockgroesse wurden vergleichbar viele Fenster gemittelt (Freiheitsgrade innerhalb 20 % des Medians)  [22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 23, 24, 24, 23, 23, 23, 23, 23 (Median 22)]
+[ok]   sweep_folddown_within_0p25db: bei jeder Blockgroesse aus {1, 2, 3, 7, 15, 16, 31, 64, 127, 128, 333, 512, 1024, 2048, 4096, 8192, 12345, 16384} entsteht ein Evidenzfenster  [18 von 18]
+[ok]   sweep_folddown_within_0p25db: und jede traegt dieselbe analytisch bekannte Antwort  [1:-3.010 gegen -3.010, 2:-3.010 gegen -3.010, 3:-3.010 gegen -3.010, 7:-3.010 gegen -3.010, 15:-3.010 gegen -3.010, 16:-3.010 gegen -3.010, 31:-3.012 gegen -3.012, 64:-3.010 gegen -3.010, 127:-3.010 gegen -3.010, 128:-3.012 gegen -3.012, 333:-3.011 gegen -3.011, 512:-3.013 gegen -3.013, 1024:-3.013 gegen -3.013, 2048:-3.013 gegen -3.013, 4096:-3.013 gegen -3.013, 8192:-3.013 gegen -3.013, 12345:-3.013 gegen -3.013, 16384:-3.013 gegen -3.013]
+[ok]   sweep_folddown_within_0p25db: je Blockgroesse wurden vergleichbar viele Fenster gemittelt (Freiheitsgrade innerhalb 20 % des Medians)  [22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 23, 24, 24, 23, 23, 23, 23, 23 (Median 22)]
+91 bestanden, 0 gescheitert
+ERGEBNIS B19 : EXIT=0, 1.9 s
+
+======================================================================
+B5  |  EqCopAnalysisGoldenTest
+======================================================================
+== Nakama SONDE-009 - FeatureEngine v2: Zeit, Validity, Events, Baender ==
+Gate: "Drop/Seek/Loop trennt jedes offene Fenster."
+Stufen: Bass 16384 (Hop 8192), Haupt 4096 (Hop 2048), Trennung bei 200 Hz.
+
+== A - Bandgitter: die einkompilierten Zahlen gegen die Fixtures ==
+[ok]   Evidenzgitter: band_anzahl == kEvidenzBaender  [221]
+[ok]   Livegitter: band_anzahl == kLiveBaender  [64]
+[ok]   Evidenz-Kanten BITGLEICH zur Fixture (222 Werte)  [0 Abweichungen]
+[ok]   Evidenz-Mitten BITGLEICH zur Fixture (221 Werte)  [0 Abweichungen]
+[ok]   Live-Kanten BITGLEICH zur Fixture (65 Werte)  [0 Abweichungen]
+[ok]   Live-Mitten BITGLEICH zur Fixture (64 Werte)  [0 Abweichungen]
+[ok]   Live-Gruppierung deckt die 221 Feinbaender lueckenlos und genau einmal  [0 Abweichungen, Ende bei 221]
+[ok]   Live-Kanten sind bitgleiche KOPIEN feiner Kanten, keine zweite Bank  [0 Abweichungen]
+
+== B - Quantisierung: alle Vektoren aus quantisierung-v1.json ==
+[ok]   q_db_0p1_i16: Skalierung stimmt mit der Fixture ueberein  [10]
+[ok]   q_db_0p1_i16: alle 23 Vektoren treffen
+[ok]   q_db_0p01_i16: Skalierung stimmt mit der Fixture ueberein  [100]
+[ok]   q_db_0p01_i16: alle 23 Vektoren treffen
+[ok]   float32: alle 15 Vektoren treffen bitgenau
+[ok]   Rundungsfalle: floor(|x|+0.5) waere hier 1, std::round ist 0
+[ok]   halbe Werte VON NULL WEG (0,05 -> 1), nicht zur geraden Zahl
+[ok]   und negativ genauso (-0,05 -> -1)
+
+== C - Gueltigkeitsbitmap: LSB-first, Fuellbits 0 ==
+[ok]   Band i sitzt in Byte i/8, Bit i%8 (LSB-first)  [Byte0=81 Byte1=1]
+[ok]   ein Bit loeschen laesst die Nachbarn stehen
+[ok]   Lesen und Schreiben sind dieselbe Adressierung
+[ok]   221 Baender brauchen 28 Bitmapbytes  [28]
+[ok]   die 3 Fuellbits des letzten Bytes bleiben 0 (sonst waere ein Bytevergleich sinnlos)  [letztes Byte = 1f]
+
+== D - FFT: gegen analytisch bekannte Ergebnisse ==
+[ok]   Sinus auf einer Binmitte legt >99,9 % der Leistung in genau diesen Bin  [100.0000 %]
+[ok]   Parseval haelt (Zeit- und Frequenzenergie gleich)  [rel. Fehler 0.0000000000000002]
+[ok]   Gleichanteil sitzt vollstaendig in Bin 0  [Bin0 = 1048576.0, Rest = 0.00000000000000000000]
+
+== E - K-Gewichtung: Frequenzgang gegen die BS.1770-Referenzkette ==
+[ok]   RBJ-Kette und BS.1770-Referenzkette liegen ueber 20 Hz..20 kHz unter 0,1 dB auseinander  [max 0.04312 dB bei 20000.0 Hz]
+       (gemessene Groesstabweichung, zur Ablesung: 0.043120 dB)
+[ok]   Hochpass sperrt den Gleichanteil vollstaendig  [|H(0)|Â² = 0.000000000000000000000000]
+
+== F - Zeitvertrag: Epoche, Segment, Sequenz, Zeitbasis ==
+[ok]   die Sequenz zaehlt ab 1 aufwaerts  [6]
+[ok]   mit gueltiger Projektzeit ist die Zeitbasis project_samples
+[ok]   und project_sample_start ist gesetzt
+[ok]   Gueltigkeitsbit project_time steht
+[ok]   der Frame traegt seine Metrikversion  [20260904]
+[ok]   und die Samplerate
+[ok]   Frame-Stempel spannt alle integrierten Hostbloecke auf  [0 + 5120]
+[ok]   Frame-Stempel umfasst den ueberlappenden FFT-Support  [2048 + 8192]
+[ok]   ein vorgezogener FFT-Start zieht die Continuous-Time gleich weit zurueck
+[ok]   Continuous-Time-Unterlauf laesst nur die optionale Uhr fallen
+[ok]   fehlende Continuous-Werte im FFT-Support werden nicht rueckwaerts erfunden
+[ok]   Evidenzframe vereinigt Haupt- und aelteren Basssupport  [0 + 30720, 196 Baender]
+[ok]   stille Evidenzluecke kann fehlende Continuous-Time nicht verbergen
+[ok]   stehende FL-Teilstuecke erfinden kein Projektintervall
+[ok]   ueberlaufende Host-Projektspanne wird konservativ lokal publiziert
+[ok]   Frame direkt nach Seek beschreibt nur den Nachgrenzen-Block  [104608 + 512]
+[ok]   ohne Zeitbeweis faellt die Zeitbasis auf local_monotonic (Â§32.3)
+[ok]   und dann steht WEDER das Bit NOCH ein Startwert da
+[ok]   alle SIEBEN Gueltigkeitsbits gesetzt, wenn der Host alle meldet  [0x7f]
+[ok]   eine GEMELDETE 0 ist etwas anderes als 'nie gesagt' (Â§32.3)
+[ok]   Schleifen-Samplegrenzen sind `unproven` - es gibt kein FL-Golden dafuer
+[ok]   continuous_time_samples kommt mit demselben Frameanker durch
+[ok]   unbrauchbare Cycle-Bounds werden nicht publiziert: NaN
+[ok]   unbrauchbare Cycle-Bounds werden nicht publiziert: Inf
+[ok]   unbrauchbare Cycle-Bounds werden nicht publiziert: Ende vor Start
+[ok]   ungueltiger Folge-Prepare deaktiviert; gueltiger Reprepare erholt sich
+
+== G - DAS GATE: Drop/Seek/Loop trennt JEDES offene Fenster ==
+[ok]   G1 Drop (kFlagLueckeDavor): vor der Grenze sind alle Fenster offen  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G1 Drop (kFlagLueckeDavor): und die Bandakkus tragen Inhalt - sonst prueft der Rest nichts  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G1 Drop (kFlagLueckeDavor): no_window_crosses_an_epoch_boundary - NACH der Grenze traegt kein Fenster ein Sample von davor  [Bass=512 Haupt=512 Zelle=512 Kurz=0 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=0 (erwartet je 512)]
+[ok]   G1 Drop (kFlagLueckeDavor): und die Bandakkus wurden dabei WIRKLICH verworfen  [1035 Band-Fensterbeitraege gefallen]
+[ok]   G1 Drop (kFlagLueckeDavor): Ursache ist lokaleLuecke  [Zaehler 1]
+[ok]   G1 Drop (kFlagLueckeDavor): drop_counts_as_segment_not_epoch - zaehlt als SEGMENT, nicht als Epoche (§32.3)  [Epochen 0 Segmente 1]
+[ok]   G2 Seek waehrend Wiedergabe: vor der Grenze sind alle Fenster offen  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G2 Seek waehrend Wiedergabe: und die Bandakkus tragen Inhalt - sonst prueft der Rest nichts  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G2 Seek waehrend Wiedergabe: no_window_crosses_an_epoch_boundary - NACH der Grenze traegt kein Fenster ein Sample von davor  [Bass=512 Haupt=512 Zelle=512 Kurz=0 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=0 (erwartet je 512)]
+[ok]   G2 Seek waehrend Wiedergabe: und die Bandakkus wurden dabei WIRKLICH verworfen  [1035 Band-Fensterbeitraege gefallen]
+[ok]   G2 Seek waehrend Wiedergabe: Ursache ist zeitSprung  [Zaehler 1]
+[ok]   G2 Seek waehrend Wiedergabe: zaehlt als EPOCHE, nicht als Segment  [Epochen 1 Segmente 0]
+[ok]   G3: bei gestopptem Transport laufen die Fenster normal weiter  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G3: und die Bandakkus tragen Inhalt  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G3: eine STEHENDE Zeit bei Stopp ist keine Grenze (sonst stuerbe das Vorhoeren)  [0 Epochenwechsel]
+[ok]   G3: eine SPRINGENDE Zeit bei Stopp trennt jedes Fenster  [Bass=512 Haupt=512 Zelle=512 Kurz=0 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=0]
+[ok]   G3: und die Bandakkus wurden dabei WIRKLICH verworfen  [1035 Band-Fensterbeitraege gefallen]
+[ok]   G3: und sie heisst zeitSprung, nicht lokaleLuecke
+[ok]   G4: aktive Schleife allein trennt nichts  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G4: und die Bandakkus tragen Inhalt  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G4 Loop-Wrap: jedes Fenster getrennt  [Bass=512 Haupt=512 Zelle=512 Kurz=0 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=0]
+[ok]   G4: und die Bandakkus wurden dabei WIRKLICH verworfen  [1035 Band-Fensterbeitraege gefallen]
+[ok]   G4: und die Ursache heisst loopWrap, nicht zeitSprung
+[ok]   G5: Schleife ohne erreichbare Grenze trennt nichts  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G5: und die Bandakkus tragen Inhalt  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G5 moeglicher Straddle: jedes Fenster getrennt - und WIRKLICH leer, weil der Straddle-Block auch kein neues beginnt  [Bass=0 Haupt=0 Zelle=0 Kurz=0 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=0]
+[ok]   G5: und die Bandakkus wurden dabei WIRKLICH verworfen  [1035 Band-Fensterbeitraege gefallen]
+[ok]   G5: der Straddle-Block selbst wird verworfen, nicht halb verwendet
+[ok]   G5: mit eigener Ursache moeglicherStraddle
+[ok]   G6 Transportkante (Play -> Stop): vor der Grenze sind alle Fenster offen  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G6 Transportkante (Play -> Stop): und die Bandakkus tragen Inhalt - sonst prueft der Rest nichts  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G6 Transportkante (Play -> Stop): no_window_crosses_an_epoch_boundary - NACH der Grenze traegt kein Fenster ein Sample von davor  [Bass=512 Haupt=512 Zelle=512 Kurz=0 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=0 (erwartet je 512)]
+[ok]   G6 Transportkante (Play -> Stop): und die Bandakkus wurden dabei WIRKLICH verworfen  [1035 Band-Fensterbeitraege gefallen]
+[ok]   G6 Transportkante (Play -> Stop): Ursache ist transportKante  [Zaehler 1]
+[ok]   G6 Transportkante (Play -> Stop): zaehlt als EPOCHE, nicht als Segment  [Epochen 1 Segmente 0]
+[ok]   G7 Sampleratewechsel: vor der Grenze sind alle Fenster offen  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G7 Sampleratewechsel: und die Bandakkus tragen Inhalt - sonst prueft der Rest nichts  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G7 Sampleratewechsel: no_window_crosses_an_epoch_boundary - NACH der Grenze traegt kein Fenster ein Sample von davor  [Bass=512 Haupt=512 Zelle=512 Kurz=0 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=0 (erwartet je 512)]
+[ok]   G7 Sampleratewechsel: und die Bandakkus wurden dabei WIRKLICH verworfen  [1035 Band-Fensterbeitraege gefallen]
+[ok]   G7 Sampleratewechsel: Ursache ist sampleratewechsel  [Zaehler 1]
+[ok]   G7 Sampleratewechsel: zaehlt als EPOCHE, nicht als Segment  [Epochen 1 Segmente 0]
+[ok]   G8 Neuanlauf (prepareToPlay): vor der Grenze sind alle Fenster offen  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G8 Neuanlauf (prepareToPlay): und die Bandakkus tragen Inhalt - sonst prueft der Rest nichts  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G8 Neuanlauf (prepareToPlay): no_window_crosses_an_epoch_boundary - NACH der Grenze traegt kein Fenster ein Sample von davor  [Bass=512 Haupt=512 Zelle=512 Kurz=0 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=0 (erwartet je 512)]
+[ok]   G8 Neuanlauf (prepareToPlay): und die Bandakkus wurden dabei WIRKLICH verworfen  [1035 Band-Fensterbeitraege gefallen]
+[ok]   G8 Neuanlauf (prepareToPlay): Ursache ist neuanlauf  [Zaehler 1]
+[ok]   G8 Neuanlauf (prepareToPlay): zaehlt als EPOCHE, nicht als Segment  [Epochen 1 Segmente 0]
+[ok]   G9 Beweislagewechsel (Kontext faellt weg): vor der Grenze sind alle Fenster offen  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G9 Beweislagewechsel (Kontext faellt weg): und die Bandakkus tragen Inhalt - sonst prueft der Rest nichts  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G9 Beweislagewechsel (Kontext faellt weg): no_window_crosses_an_epoch_boundary - NACH der Grenze traegt kein Fenster ein Sample von davor  [Bass=512 Haupt=512 Zelle=512 Kurz=0 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=0 (erwartet je 512)]
+[ok]   G9 Beweislagewechsel (Kontext faellt weg): und die Bandakkus wurden dabei WIRKLICH verworfen  [1035 Band-Fensterbeitraege gefallen]
+[ok]   G9 Beweislagewechsel (Kontext faellt weg): Ursache ist beweislageWechsel  [Zaehler 1]
+[ok]   G9 Beweislagewechsel (Kontext faellt weg): zaehlt als EPOCHE, nicht als Segment  [Epochen 1 Segmente 0]
+[ok]   G11: im Betrieb traegt die K-Kette einen Filterzustand  [1.392229]
+[ok]   G11: beide Laeufe brauchen gleich viele Bloecke bis zum ersten LUFS-Frame  [290 / 290]
+[ok]   G11: beide Laeufe liefern eine Kurzzeitlautheit
+[ok]   G11: LUFS-S nach der Grenze ist BITGLEICH zum frischen Lauf - der Filternachklang ueberbrueckt nicht  [A=-60.034744263 B=-60.034744263]
+[ok]   G10: FL-Teilstuecke mit stehender Projektzeit sind KEINE Grenze (NAK-56)  [0 Trennungen]
+[ok]   G10: die Fenster laufen dabei weiter  [Bass=9224 Haupt=3080 Zelle=264 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   G12: vor der Grenze tragen BEIDE Bandakkus den Ton  [Live 149 / Evidenz 149 Baender]
+[ok]   G12: der Grenzblock macht den Frame faellig - die Uhr laeuft ueber die Grenze weiter (Entscheid Â§10.1)  [liveSamples=0]
+[ok]   G12: und der Frame traegt die NEUE Epoche  [1]
+[ok]   G12: der Evidenzsatz ist in genau diesem Frame faellig - er wird also wirklich geprueft
+[ok]   G12: KEIN Live-Band im Frame - der Ton von vor der Grenze ist weg (T2-1)  [0 gesetzte Baender]
+[ok]   G12: und KEIN Evidenzband - die langsamere Kadenz reicht nicht weiter  [0 gesetzte Baender]
+[ok]   G12: auch keine Aktivitaet auf Stille - die fertigen Zellen fielen mit  [nicht gesetzt]
+[ok]   G12: die Akkus wurden GELEERT, nicht bloss leer vorgefunden  [1606 Band-Fensterbeitraege]
+[ok]   G12: der Sweep hat genug Grenzzeitpunkte wirklich bis zum Frame gefahren  [120 von 120]
+[ok]   G12: ueber 120 Grenzzeitpunkte traegt KEIN Frame etwas von davor (Pruefer-Messung: 80 / 40 / 43)  [0 mit Live-Baendern, 0 mit Evidenz, 0 mit Aktivitaet]
+
+== G13 - ZWILLINGSPROBE: strukturelle Deckung statt Feldliste (T2R2-1) ==
+[ok]   G13.0: zwei frische Frames sind gleich - der Vergleich sagt nicht pauschal ungleich
+[ok]   G13.0: ein einziger geaenderter Skalar macht sie ungleich
+[ok]   G13.0: ein einziger geaenderter Bandwert ebenso
+[ok]   G13.0: und ein einziges Bitmapbit ebenso
+[ok]   G13.0: und ein Feld im verschachtelten Transportstempel - der Vergleich reicht bis dorthin
+[ok]   G13.0: nach dem Zuruecksetzen wieder gleich - beide Richtungen vorgefuehrt
+[ok]   G13a lokaleLuecke [Zwilling]: A traegt vor der Grenze auf JEDEM Traeger etwas  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=1 LiveAkku=149 EvidAkku=196 Breite=149B/4.162e-03 RZellen=1 kFilter=8.569e-01 RAktiv=1]
+[ok]   G13a lokaleLuecke [Zwilling]: B traegt auf keinem - die zwei sind wirklich verschieden  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=1 kFilter=0.000e+00 RAktiv=0]
+[ok]   G13a lokaleLuecke [Zwilling]: beide haben die Grenze lokaleLuecke gezogen  [A 1 / B 1]
+[ok]   G13a lokaleLuecke [Zwilling]: beide bauen ihre Frames im selben Block - die Uhr haengt nicht am Inhalt (Entscheid §10.1)  [0 Bloecke auseinander]
+[ok]   G13a lokaleLuecke [Zwilling]: es wurden ueberhaupt genug Frames verglichen  [14 Frames]
+[ok]   G13a lokaleLuecke [Zwilling]: und sie tragen Messwerte - verglichen wird nicht zweimal Stille  [13 von 14 mit Live-Baendern]
+[ok]   G13a lokaleLuecke [Zwilling]: nach der Grenze ist A von B in JEDEM FELD nicht zu unterscheiden - kein Traeger hat ueberbrueckt (T2R2-1)  [14 Frames feldgleich]
+[ok]   G13a lokaleLuecke [Zwilling]: und keiner erfindet ein Ereignis in der neuen Epoche  [A 0 / B 0]
+[ok]   G13b zeitSprung [Zwilling]: A traegt vor der Grenze auf JEDEM Traeger etwas  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=1 LiveAkku=149 EvidAkku=196 Breite=149B/4.162e-03 RZellen=1 kFilter=8.569e-01 RAktiv=1]
+[ok]   G13b zeitSprung [Zwilling]: B traegt auf keinem - die zwei sind wirklich verschieden  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=1 kFilter=0.000e+00 RAktiv=0]
+[ok]   G13b zeitSprung [Zwilling]: beide haben die Grenze zeitSprung gezogen  [A 1 / B 1]
+[ok]   G13b zeitSprung [Zwilling]: beide bauen ihre Frames im selben Block - die Uhr haengt nicht am Inhalt (Entscheid §10.1)  [0 Bloecke auseinander]
+[ok]   G13b zeitSprung [Zwilling]: es wurden ueberhaupt genug Frames verglichen  [14 Frames]
+[ok]   G13b zeitSprung [Zwilling]: und sie tragen Messwerte - verglichen wird nicht zweimal Stille  [13 von 14 mit Live-Baendern]
+[ok]   G13b zeitSprung [Zwilling]: nach der Grenze ist A von B in JEDEM FELD nicht zu unterscheiden - kein Traeger hat ueberbrueckt (T2R2-1)  [14 Frames feldgleich]
+[ok]   G13b zeitSprung [Zwilling]: und keiner erfindet ein Ereignis in der neuen Epoche  [A 0 / B 0]
+[ok]   G13c transportKante [Zwilling]: A traegt vor der Grenze auf JEDEM Traeger etwas  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=1 LiveAkku=149 EvidAkku=196 Breite=149B/4.162e-03 RZellen=1 kFilter=8.569e-01 RAktiv=1]
+[ok]   G13c transportKante [Zwilling]: B traegt auf keinem - die zwei sind wirklich verschieden  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=1 kFilter=0.000e+00 RAktiv=0]
+[ok]   G13c transportKante [Zwilling]: beide haben die Grenze transportKante gezogen  [A 1 / B 1]
+[ok]   G13c transportKante [Zwilling]: beide bauen ihre Frames im selben Block - die Uhr haengt nicht am Inhalt (Entscheid §10.1)  [0 Bloecke auseinander]
+[ok]   G13c transportKante [Zwilling]: es wurden ueberhaupt genug Frames verglichen  [14 Frames]
+[ok]   G13c transportKante [Zwilling]: und sie tragen Messwerte - verglichen wird nicht zweimal Stille  [13 von 14 mit Live-Baendern]
+[ok]   G13c transportKante [Zwilling]: nach der Grenze ist A von B in JEDEM FELD nicht zu unterscheiden - kein Traeger hat ueberbrueckt (T2R2-1)  [14 Frames feldgleich]
+[ok]   G13c transportKante [Zwilling]: und keiner erfindet ein Ereignis in der neuen Epoche  [A 0 / B 0]
+[ok]   G13d sampleratewechsel [Zwilling]: A traegt vor der Grenze auf JEDEM Traeger etwas  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=1 LiveAkku=149 EvidAkku=196 Breite=149B/4.162e-03 RZellen=1 kFilter=8.569e-01 RAktiv=1]
+[ok]   G13d sampleratewechsel [Zwilling]: B traegt auf keinem - die zwei sind wirklich verschieden  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=1 kFilter=0.000e+00 RAktiv=0]
+[ok]   G13d sampleratewechsel [Zwilling]: beide haben die Grenze sampleratewechsel gezogen  [A 1 / B 1]
+[ok]   G13d sampleratewechsel [Zwilling]: beide bauen ihre Frames im selben Block - die Uhr haengt nicht am Inhalt (Entscheid §10.1)  [0 Bloecke auseinander]
+[ok]   G13d sampleratewechsel [Zwilling]: es wurden ueberhaupt genug Frames verglichen  [14 Frames]
+[ok]   G13d sampleratewechsel [Zwilling]: und sie tragen Messwerte - verglichen wird nicht zweimal Stille  [13 von 14 mit Live-Baendern]
+[ok]   G13d sampleratewechsel [Zwilling]: nach der Grenze ist A von B in JEDEM FELD nicht zu unterscheiden - kein Traeger hat ueberbrueckt (T2R2-1)  [14 Frames feldgleich]
+[ok]   G13d sampleratewechsel [Zwilling]: und keiner erfindet ein Ereignis in der neuen Epoche  [A 0 / B 0]
+[ok]   G13e neuanlauf [Zwilling]: A traegt vor der Grenze auf JEDEM Traeger etwas  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=1 LiveAkku=149 EvidAkku=196 Breite=149B/4.162e-03 RZellen=1 kFilter=8.569e-01 RAktiv=1]
+[ok]   G13e neuanlauf [Zwilling]: B traegt auf keinem - die zwei sind wirklich verschieden  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=1 kFilter=0.000e+00 RAktiv=0]
+[ok]   G13e neuanlauf [Zwilling]: beide haben die Grenze neuanlauf gezogen  [A 1 / B 1]
+[ok]   G13e neuanlauf [Zwilling]: beide bauen ihre Frames im selben Block - die Uhr haengt nicht am Inhalt (Entscheid §10.1)  [0 Bloecke auseinander]
+[ok]   G13e neuanlauf [Zwilling]: es wurden ueberhaupt genug Frames verglichen  [14 Frames]
+[ok]   G13e neuanlauf [Zwilling]: und sie tragen Messwerte - verglichen wird nicht zweimal Stille  [13 von 14 mit Live-Baendern]
+[ok]   G13e neuanlauf [Zwilling]: nach der Grenze ist A von B in JEDEM FELD nicht zu unterscheiden - kein Traeger hat ueberbrueckt (T2R2-1)  [14 Frames feldgleich]
+[ok]   G13e neuanlauf [Zwilling]: und keiner erfindet ein Ereignis in der neuen Epoche  [A 0 / B 0]
+[ok]   G13f beweislageWechsel [Zwilling]: A traegt vor der Grenze auf JEDEM Traeger etwas  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=1 LiveAkku=149 EvidAkku=196 Breite=149B/4.162e-03 RZellen=1 kFilter=8.569e-01 RAktiv=1]
+[ok]   G13f beweislageWechsel [Zwilling]: B traegt auf keinem - die zwei sind wirklich verschieden  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=1 kFilter=0.000e+00 RAktiv=0]
+[ok]   G13f beweislageWechsel [Zwilling]: beide haben die Grenze beweislageWechsel gezogen  [A 1 / B 1]
+[ok]   G13f beweislageWechsel [Zwilling]: beide bauen ihre Frames im selben Block - die Uhr haengt nicht am Inhalt (Entscheid §10.1)  [0 Bloecke auseinander]
+[ok]   G13f beweislageWechsel [Zwilling]: es wurden ueberhaupt genug Frames verglichen  [14 Frames]
+[ok]   G13f beweislageWechsel [Zwilling]: und sie tragen Messwerte - verglichen wird nicht zweimal Stille  [13 von 14 mit Live-Baendern]
+[ok]   G13f beweislageWechsel [Zwilling]: nach der Grenze ist A von B in JEDEM FELD nicht zu unterscheiden - kein Traeger hat ueberbrueckt (T2R2-1)  [14 Frames feldgleich]
+[ok]   G13f beweislageWechsel [Zwilling]: und keiner erfindet ein Ereignis in der neuen Epoche  [A 0 / B 0]
+
+== H - NAK-29: bedingte Feldpflichten des Transportstempels ==
+[ok]   ein sauberer Stempel kommt durch
+[ok]   Fall 1: project_samples + Bit, aber KEIN project_sample_start
+[ok]   Fall 1: project_samples + project_sample_start, aber KEIN project_time-Bit
+[ok]   Fall 2: local_monotonic MIT project_time-Bit (Widerspruch zu Â§32.3)
+[ok]   Fall 2: local_monotonic MIT project_sample_start (Widerspruch zu Â§32.3)
+[ok]   Fall 3: bounds_valid ohne start_ppq/end_ppq
+[ok]   Fall 4: derivation=validated_block_mapping ohne bounds_valid
+[ok]   Fall 5: cycle_bounds-Bit ohne die PPQ-Werte, auf die es sich bezieht
+[ok]   Fall 6: continuous_time-Bit ohne continuous_time_samples
+[ok]   Fall 7: das Projektintervall laeuft nicht ueber int64 hinaus
+[ok]   Fall 7: sample_count bleibt unter der Vertragsobergrenze
+[ok]   Fall 7: der Feature-Erzeuger publiziert keinen Leerframe
+[ok]   der ERZEUGER loest den Riegel nicht aus - kein verletzter Stempel entsteht im normalen, gedeckelten Betrieb  [0]
+[ok]   abgelehnte faellige Evidenz wird konsumiert und der Erzeuger erholt sich  [1]
+
+== I - Ereignisse: kein Fluss ueber eine Grenze ==
+[ok]   der spektrale Fluss hat im Betrieb einen Vorgaenger
+[ok]   nach einem Seek ist der Vorgaenger WEG - sonst meldete der Fluss einen Onset, den es nie gab
+[ok]   jedes Ereignis traegt die Epoche, in der es gesehen wurde  [1 Ereignis(se)]
+[ok]   der Ereignisring laeuft WIRKLICH ueber - der Deckel ist gemessen, nicht behauptet  [64 im Ring, 1 verworfen, nach 931 Bloecken]
+[ok]   und er waechst dabei NICHT ueber seine 64 Plaetze hinaus (Â§48.1: ein Strom, der bei Ueberlast waechst, waere ein unbegrenzter Vektor)  [64 / 64]
+[ok]   drop-oldest: beim Ueberlauf faellt das AELTESTE, nicht das neueste  [aeltestes vorher 38912, jetzt 40960]
+[ok]   und der Ring gibt sie weiter aeltestes-zuerst zurueck, auch nach dem Umlauf
+[ok]   Eventzeit ist der 4096er-Fensteranfang und unabhaengig vom 512er Hostblock
+[ok]   stehende Host-Zeit erzeugt keine extrapolierte FFT-Event-Projektzeit  [1 Ereignis(se) nach 84 Bloecken]
+
+== I2 - SONDE-013 M-86: zwei unabhaengige Ausloeser im Detektor ==
+[ok]   short_impulse_triggers_peak_path_only: ein sehr kurzer Impuls erzeugt ein Ereignis mit qualitaetPeak und OHNE qualitaetFluss - vor M-86 erzeugte er gar keines  [11 reine Peakereignisse von 24 im Ring]
+[ok]   flux_event_carries_flux_quality: ein Flussereignis traegt weiterhin qualitaetFluss  [52 von 63]
+[ok]   both_paths_yield_one_event: es gibt Ereignisse, die BEIDE Bits tragen  [9 von 9 bei 9 Ausschlaegen]
+[ok]   und kein Zeitpunkt traegt ZWEI Ereignisse - die zwei Pfade erzeugen eines mit beiden Bits, nicht zwei nebeneinander
+[ok]   impulse_time_is_stable_over_block_sizes_and_sample_rates E-a: jeder der 25 Laeufe erzeugt ueberhaupt ein Ereignis - die Ausloesung ist gemessen, nicht angenommen  [25 von 25]
+[ok]   E-b: kein Ereignisring ist uebergelaufen - die Ringreihenfolge ist damit die Zeitreihenfolge und ereignis(0) das erste Ereignis  [25 von 25]
+[ok]   E-c: jeder Lauf traegt ein Flussereignis - gemessen wird der Flusspfad, nicht die rahmenphasenabhaengige Peakspur  [25 von 25]
+[ok]   E-d: das gewaehlte Ereignis ist unzweifelhaft das staerkste - mindestens zehnmal so stark wie das naechststaerkste Flussereignis. Die Auswahlregel ist damit gemessen, nicht angenommen  [25 von 25; kleinster Abstand 123.7x]
+[ok]   impulse_time_is_stable_over_block_sizes_and_sample_rates (a): der gemeldete stromSample ist je Samplerate ueber alle fuenf Blockgroessen IDENTISCH - das Fensterraster kennt die Blockgroesse nicht  [5 von 5 Raten; erster Stempel je Rate: 44.1kHz:202752, 48kHz:202752, 88.2kHz:202752, 96kHz:202752, 192kHz:202752]
+[ok]   (b): und er liegt bei jeder Kombination innerhalb EINER Fensterlaenge vor t0 (0 <= t0 - stromSample < 4096) - die Schranke kommt aus kHauptPunkte, nicht aus dem Hop  [25 von 25; t0 - Stempel je Rate: 3584, 3584, 3584, 3584, 3584]
+[ok]   Gegenprobe: ein stehender Sinus ohne Pegelsprung erzeugt KEIN reines Peakereignis - der Pfad reagiert auf die Steigung, nicht auf den Pegel  [0 reine Peakereignisse]
+
+== J - EBU: LUFS-S gegen die analytisch gerechnete Erwartung ==
+[ok]   LUFS-S ist nach 4 s gesetzt
+[ok]   LUFS-S trifft die analytische Erwartung auf besser als 0,1 LU (Â§39.3)  [gemessen -6.0620 erwartet -6.0620 d=0.00000]
+[ok]   Peak trifft die Amplitude  [-6.021 dBFS]
+[ok]   Crest eines Sinus ist 3,01 dB  [3.0091 dB]
+[ok]   L==R ergibt Korrelation 1  [1.000000]
+[ok]   und Breite 0 (kein Seitenanteil)  [0.000000000000]
+[ok]   das Live-Band um 997 Hz ist gueltig  [Band 35]
+[ok]   und das unterste Band (30 Hz) ist es NICHT - dort ist kein Signal
+
+== K - NAK-56 Werkbankhaelfte: nakamaBlockEmpfangen am echten Prozessor ==
+[ok]   die FeatureEngine hat Bloecke aus dem echten Prozessorweg gesehen  [34 Bloecke]
+[ok]   und mindestens einen Frame gebaut  [3 Frames]
+[ok]   process_context_present kommt aus der BRUECKE durch (Â§32.3)
+[ok]   recording: Bit gesetzt, Wert false - die Bruecke kann beides sagen
+[ok]   continuous_time_samples kommt durch
+[ok]   die Schleifengrenzen kommen durch, samt `active`
+[ok]   beide Presentation-Latencies kommen durch  [3924 / 4410]
+[ok]   ueber die Bruecke stehen ALLE SIEBEN Gueltigkeitsbits  [0x7f]
+[ok]   Gegenprobe: der Playhead-Rueckfallweg erreicht NICHT alle sieben Bits  [0x3]
+[ok]   insbesondere kennt JUCEs Playhead kein Gueltigkeitsbit fuer `recording`
+[ok]   Projektblock ueber INT64_MAX wird als ungueltiges Fenster verworfen
+[ok]   Abstand INT64_MIN zu INT64_MAX wird ohne Subtraktionsueberlauf als Sprung erkannt
+[ok]   nichtendliche Sampleraten initialisieren keine Analyseengine
+
+== L - Gegenproben: kann dieses Bein ueberhaupt rot werden? ==
+[ok]   L1: OHNE Grenze meldet die Messgroesse FALSE - sie reagiert also ueberhaupt  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+[ok]   L1: MIT Grenze meldet sie TRUE - beide Richtungen vorgefuehrt
+[ok]   L2: der Gittervergleich meldet gegen die UNVERAENDERTE Zeile 0 Abweichungen  [0]
+[ok]   L2: und gegen eine um EIN Bit gekippte Zeile genau 1 - er reagiert also, und zwar nur dort  [1 Abweichung(en), Zeile 26]
+[ok]   L3: sieben Verletzungen ergeben sieben VERSCHIEDENE Nummern, nicht siebenmal 'nein'
+[ok]   L4: auf Stille ist KEIN Band gueltig - es steht nicht '0 dB' da, sondern nichts  [0 gesetzte Baender]
+[ok]   L5: drei Versuche verbrauchen drei Sequenznummern - auch der abgelehnte  [3]
+[ok]   L5: der Empfaenger sieht 1 und 3 - die LUECKE bei 2 ist die Meldung  [1, 3]
+[ok]   L5: und der Versuch nennt den FALL, nicht nur 'abgelehnt'
+[ok]   L6: ein echter Grund wird gezaehlt  [1]
+[ok]   L6: `anzahl` ist kein Grund und liefert 0, statt hinter das Array zu lesen  [gelesen: 0]
+[ok]   L6: und `keine` ebenso - getrennt wird nie ohne Grund
+
+== M - Auskunft ueber die Grenzen der Messung ==
+[ok]   die unteren Baender sind bei dieser Aufloesung NICHT messbar - und das steht da  [erstes messbares Band 2 (32.6 Hz)]
+[ok]   bei 48 kHz greift die Kappe nirgends - das oberste Band endet bei 17,96 kHz  [erstes Band ueber der Kappe 221]
+[ok]   bei 22,05 kHz greift die Nyquist-Kappe WIRKLICH und schneidet oben ab  [erstes Band ueber der Kappe 202 (10525.6 Hz)]
+[ok]   und sie sitzt genau am ersten Band, dessen Oberkante 0,95Â·Nyquist ueberschreitet  [10374.7 .. 10678.7 Hz gegen 10473.8 Hz]
+[ok]   kein Live-Band vollstaendig ueber der Kappe traegt einen Wert  [0 Baender]
+[ok]   Gegenpfad: neu vorbereiten setzt alles zurueck, auch die Zaehler
+
+Ergebnis: 248 bestanden, 0 Fehler.
+ERGEBNIS B5 : EXIT=0, 5.3 s
+
+======================================================================
+B24  |  EqCopSonde013PrePostGoldenTest
+======================================================================
+== Nakama SONDE-013 - PRE/POST auf der Audioseite (§38.3, §38.4) ==
+
+== M-18  nonlinear_chain_never_yields_static_eq_claim ==
+[ok]   genug Baender und Fenster - sonst misst der Rest nichts  [149 Baender, 8 Fenster]
+[ok]   identische Kette: die Kohaerenz liegt fast ueberall ueber 0,8  [1.0000]
+[ok]   reiner Gain (+15 dB): unveraendert kohaerent - die Kohaerenz ist pegelunabhaengig, und GENAU deshalb ist ein Transferwert hier zulaessig  [1.0000]
+[ok]   linearer Tiefpass: ebenfalls kohaerent - eine LTI-Kette DARF einen Frequenzgang tragen, so stark sie den Klang auch aendert  [0.9998]
+[ok]   und ihre PRE/POST-Relation steht still - eine LTI-Kette haelt sie ueber alle Fenster konstant  [0.001 dB Streuung]
+[ok]   Kompression: faellt an mindestens einer Wache durch  [Kohaerenz 0.834, Streuung 34.653 dB]
+[ok]   Modulation: faellt an mindestens einer Wache durch  [Kohaerenz 0.666, Streuung 0.274 dB]
+[ok]   Saturation: faellt an mindestens einer Wache durch  [Kohaerenz 0.572, Streuung 3.632 dB]
+[ok]   wechselnde Latenz: faellt an mindestens einer Wache durch  [Kohaerenz 0.236, Streuung 0.201 dB]
+[ok]   und der Befund selbst: die Kompression haelt die Kohaerenzschwelle, wandert aber in der Relation - eine Wache allein genuegt nicht  [78 % ueber 0,8, Streuung 34.65 dB]
+[ok]   die beiden Gruppen ueberlappen an der Kohaerenz nicht  [0.785 gegen 1.000]
+
+== M-20  match_gain_is_frozen_before_ab_not_tracked ==
+[ok]   ohne Material ist der Pegel NICHT gesetzt - eine gemeldete 0 dB waere die Behauptung 'gleich laut'
+[ok]   und laesst sich nicht einfrieren - ein eingefrorener Wert ohne Messung waere eine Luege
+[ok]   nach 0,5 s ist genug Material da
+[ok]   der Pegel friert ein
+[ok]   und trifft den bekannten Gain  [6.0206 dB]
+[ok]   sechs Sekunden mit +18 dB aendern ihn um kein Tausendstel - eine mitlaufende Regelung wuerde selbst zum hoerbaren Prozessor  [6.020600 dB]
+[ok]   und zwei Sekunden Stille auch nicht
+[ok]   erst ein ausdruecklicher Passagenwechsel loescht ihn
+[ok]   beide nicht-endlichen Samples JEDES Blocks sind gezaehlt  [96]
+[ok]   NaN und Inf im Material VERRIEGELN den Pegel - er friert ohne Wert ein statt eine Zahl zu liefern, die den Fehler unsichtbar macht (M-07)  [0.0000 dB]
+
+== M-24  audible_delta_locked_without_compare_routing ==
+[ok]   ohne nachgewiesenes Compare-Routing ist Delta in ALLEN vier Kombinationen gesperrt - und zwar mit genau diesem Grund
+[ok]   genau EINE der acht Kombinationen ist frei: alle drei Nachweise zusammen  [1 frei, 7 gesperrt]
+[ok]   die Gruende kommen in der Reihenfolge ihrer Haerte
+[ok]   in P4 gibt es kein Compare-Routing (Â§38.4)
+[ok]   also ist hoerbares Delta gesperrt, egal wie gut Alignment und Lag sind  [kein Compare-Routing]
+[ok]   der Zustand traegt ein Wort: kein Compare-Routing
+[ok]   der Zustand traegt ein Wort: Alignment unzureichend
+[ok]   der Zustand traegt ein Wort: Lag traegt die Gruppenlaufzeit nicht
+[ok]   der Zustand traegt ein Wort: frei
+
+30 bestanden, 0 gescheitert
+ERGEBNIS B24 : EXIT=0, 1 s
+
+======================================================================
+B18  |  EqCopSonde013DynamicsTest
+======================================================================
+== Nakama SONDE-013 - Loudnessfenster, Headroom, Dynamik ==
+
+== M-01  momentary_short_integrated_are_separate_windows ==
+[ok]   nach zwoelf Sekunden stehen beide Fenster  [M -34.01 LUFS, S -34.01 LUFS]
+[ok]   bei stehendem Pegel sind sie fast gleich - der Unterschied ist der VERLAUF, nicht die Rechnung  [Abstand 0.000 LU]
+[ok]   0,8 s nach dem Sprung tragen beide weiterhin einen Wert
+[ok]   Momentary ist dem Sprung gefolgt, Short-term noch nicht - die zwei Fenster sind wirklich verschieden lang  [M -6.06 gegen S -11.78 LUFS, Abstand 5.72 LU]
+[ok]   fuenf Sekunden spaeter sind sie wieder beieinander - der Abstand oben war der Sprung, kein Versatz  [Abstand 0.000 LU]
+
+== M-01  jedes Fenster braucht seine eigene Fuellung ==
+[ok]   nach 0,6 s traegt der Frame Momentary, aber KEIN Short-term - eine Kurzzeitlautheit ueber 0,6 s waere eine andere Zahl mit demselben Namen  [M ja, S nein]
+[ok]   nach weiteren drei Sekunden steht auch Short-term
+
+== M-09  thin_frame_after_boundary_is_recognisable ==
+[ok]   ein Rahmen im Dauerbetrieb sagt, ueber wie viel Audio er gerechnet wurde  [5120 Samples je Kanal]
+[ok]   und die Zahl passt zur Livekadenz von 10 Hz plus hoechstens einem Block  [5120 gegen 4800..5312]
+[ok]   auch der erste Rahmen nach einer Grenze traegt das Feld
+[ok]   und er sagt ehrlich, dass er ueber WENIGER Audio gerechnet wurde  [2560 gegen 5120 Samples]
+
+== M-03  plr_psr_definitions_and_labels ==
+[ok]   der Frame traegt True Peak des Rahmens UND der Passage  [Rahmen -6.021 dBTP, Passage -6.021 dBTP]
+[ok]   der True Peak liegt nie unter dem Sample-Peak desselben Rahmens  [TP -6.021 gegen SP -6.021 dB]
+[ok]   und das Passagenmaximum liegt nie unter dem Rahmenmaximum
+[ok]   PSR steht, sobald das 3-s-Fenster steht
+[ok]   im Rahmen NACH dem Impuls stehen PSR und der Rahmen-True-Peak
+[ok]   der aktuelle Rahmen ist leise - sein True Peak liegt tief  [-33.98 dBTP]
+[ok]   PSR rechnet trotzdem gegen das True-Peak-Maximum DESSELBEN 3-s-Fensters - der Impuls ist darin noch enthalten  [PSR 12.73 dB; gegen den Rahmen waeren es -20.34 dB]
+[ok]   und die Zahl passt zum Impulspegel: 20*log10(0,9) minus LUFS-S  [gemessen 12.73 dB, erwartet 12.72 dB]
+[ok]   die Engine selbst setzt KEIN PLR - LUFS-I kommt aus dem Loudness-Akkumulator und wird erst im Sondenprozessor zugemischt
+
+== M-02  impuls_am_rahmenende ==
+[ok]   der Zustand ist wirklich hergestellt: Rahmen, deren einzige Spitze in den letzten vier Samples liegt  [8 von 8 Runden, Rahmen alle 10 Bloecke]
+[ok]   in KEINEM davon liegt der True Peak unter dem Sample-Peak - der Abtastpunkt geht in den True Peak ein, weil er zur rekonstruierten Wellenform gehoert  [0 Verletzungen]
+
+== M-03  headroom_is_distribution_not_single_peak ==
+[ok]   beide tragen eine Headroomverteilung  [Fenster 46 / 47 Rahmen]
+[ok]   die drei Punkte sind geordnet - P10 <= P50 <= P95
+[ok]   beide haben nahezu dasselbe P95 - die laute Stelle ist in beiden drin  [durchgehend -6.02 dBTP, Spitze -6.02 dBTP]
+[ok]   aber ihr P50 liegt weit auseinander - GENAU das kann ein einzelner Maximalwert nicht ausdruecken  [durchgehend -6.02 dBTP, Spitze -33.98 dBTP]
+[ok]   und die Spanne der Spitzenvariante ist gross - der Headroom SCHWANKT  [Spanne 27.96 dB]
+
+== M-04  crest_multiple_windows ==
+[ok]   es gibt Rahmen ohne Impuls, in denen BEIDE Crestfenster stehen
+[ok]   und dort liegt der 3-s-Crest weit ueber dem des 100-ms-Rahmens - das ist der Unterschied, den ein einzelnes Fenster nicht sehen kann  [Rahmen 3.00 dB, 3 s 29.35 dB]
+
+== M-04  lra_below_sixty_seconds_is_not_a_number ==
+[ok]   nach 30 s gibt es KEINEN LRA-Wert - `nicht belastbar` heisst hier Abwesenheit, nicht eine Null
+[ok]   nach insgesamt 75 s steht er
+[ok]   und traegt eine Dynamikspanne, die zum wandernden Pegel passt  [18.90 LU]
+[ok]   ein Signal ohne Dynamik ergibt eine LRA nahe null - der Wert misst wirklich die Spanne und nicht die Laufzeit  [0.000 LU]
+
+== M-04  die 60-s-Schwelle zaehlt gegatetes Material, keine Wanduhr ==
+[ok]   90 s Stille ergeben KEIN LRA - eine Minute Stille ist keine Minute Material (Â§39.1: 'rund 60 s GEEIGNETEN Materials')
+
+== M-07  non_finite_never_reaches_wire_for_new_metrics ==
+[ok]   NaN und Inf im Eingang erzeugen in KEINER neuen Metrik einen nichtendlichen Wert - der Riegel liegt beim Erzeugen, nicht auf der Leitung  [alle 9 Traeger endlich]
+[ok]   der Rahmen ZAEHLT seine nicht-endlichen Eingangssamples  [10]
+[ok]   und traegt seine sampleabhaengigen Skalare NICHT - 'nicht gemessen' statt 'gemessen und sauber' (M-07)
+[ok]   ohne NaN traegt derselbe Aufbau seine Skalare - der Riegel ist ein Latch des Rahmens, kein Dauerschweigen
+
+== M-75/M-77  der verworfene Analyseblock schliesst auch die neuen Fenster ==
+[ok]   vor dem verworfenen Block stehen die neuen Fenster
+[ok]   die Luecke zieht eine Segmentgrenze - der Verlust ist sichtbar, nicht interpoliert  [Segmentwechsel 1]
+[ok]   danach tragen die 3-s-Fenster KEINEN Wert mehr - sie sind geschlossen, nicht fortgeschrieben
+[ok]   und das Passagenmaximum hat die Grenze nicht ueberbrueckt - es ist das der neuen, leisen Passage  [vorher -7.96 dBTP, danach -47.84 dBTP]
+
+== M-84  jede Grenze trennt auch die neuen Fenster, namentlich ==
+[ok]   vor der Grenze stehen Passagenmaximum und Headroomverteilung  [Passage -4.44 dBTP]
+[ok]   nach der Grenze ist das Passagenmaximum das der NEUEN Passage - der laute Peak von vorher ist weg  [vorher -4.44 dBTP, nachher -40.00 dBTP]
+[ok]   und die Headroomverteilung ist entweder leer oder ganz aus dem neuen Material - sie mischt die zwei Passagen nicht
+[ok]   die 3-s-Fenster sind nach zwei Sekunden noch nicht wieder voll - sie wurden wirklich geleert, nicht fortgeschrieben
+
+-----------------------------------------
+46 bestanden, 0 gescheitert
+ERGEBNIS B18 : EXIT=0, 4 s
+
+======================================================================
+B17  |  EqCopSonde013TruePeakGoldenTest
+======================================================================
+== Nakama SONDE-013 M-02 - True Peak nach ITU-R BS.1770-5 ==
+
+== true_peak_matches_ebu_test_set - EBU Tech 3341, Testfaelle 15 bis 19 (Toleranz aus §49.3: +/-0,1 dB) ==
+[ok]   Testfall 15  fs/4, 0,50 FFS, 0 Grad: True Peak trifft die Amplitude  [gemessen -6.021 dBTP, erwartet -6.021, Abweichung 0.0000 dB]
+[ok]   Testfall 16  fs/4, 0,50 FFS, 45 Grad: True Peak trifft die Amplitude  [gemessen -6.020 dBTP, erwartet -6.021, Abweichung 0.0004 dB]
+[ok]   Testfall 17  fs/6, 0,50 FFS, 60 Grad: True Peak trifft die Amplitude  [gemessen -6.020 dBTP, erwartet -6.021, Abweichung 0.0001 dB]
+[ok]   Testfall 18  fs/8, 0,50 FFS, 67,5 Grad: True Peak trifft die Amplitude  [gemessen -6.020 dBTP, erwartet -6.021, Abweichung 0.0005 dB]
+[ok]   Testfall 19  fs/4, 1,41 FFS, 45 Grad: True Peak trifft die Amplitude  [gemessen 2.985 dBTP, erwartet 2.984, Abweichung 0.0004 dB]
+
+== Gegenbeleg: der Sample-Peak liegt bei Testfall 16 um 3 dB darunter ==
+[ok]   Sample-Peak von Testfall 16 liegt bei -9,03 dBFS  [-9.031 dBFS]
+[ok]   der True Peak findet die drei Dezibel, die zwischen den Samples liegen  [Unterschied 3.011 dB]
+
+== Sampleraten-Sweep: dieselbe Zusage bei 44,1 / 48 / 88,2 / 96 / 192 kHz ==
+[ok]   bei 44.1 kHz halten fs/4, fs/6 und fs/8 die Toleranz  [groesste Abweichung 0.0313 dB]
+[ok]   bei 48.0 kHz halten fs/4, fs/6 und fs/8 die Toleranz  [groesste Abweichung 0.0313 dB]
+[ok]   bei 88.2 kHz halten fs/4, fs/6 und fs/8 die Toleranz  [groesste Abweichung 0.0313 dB]
+[ok]   bei 96.0 kHz halten fs/4, fs/6 und fs/8 die Toleranz  [groesste Abweichung 0.0313 dB]
+[ok]   bei 192.0 kHz halten fs/4, fs/6 und fs/8 die Toleranz  [groesste Abweichung 0.0313 dB]
+
+== eight_times_oversampling_error_bound - Die 8-fach-Entscheidung: die Schranke, die 4-fach reissen wuerde ==
+[ok]   8-fach: die ausgerechnete Schranke bei fs/4 haelt die Toleranz aus Â§49.3  [-0.0419 dB]
+[ok]   4-fach wuerde sie bei derselben Frequenz REISSEN - deshalb 8-fach  [-0.1685 dB]
+[ok]   die WIRKLICHE Abweichung bleibt innerhalb der ausgerechneten Schranke  [gemessen 0.0004 dB, Schranke -0.0419 dB]
+
+== Raender: Stille, NaN, Gleichanteil und der ungeruestete Detektor ==
+[ok]   Stille ergibt exakt 0, nicht einen Filterrest  [0.000000000000]
+[ok]   ein NaN im Eingang erzeugt keinen NaN im Ausgang  [0.500103]
+[ok]   und er bleibt nicht im Filterzustand haengen - danach misst er wieder  [0.601801]
+[ok]   ein Gleichanteil bleibt exakt er selbst - jede Phase hat DC-Verstaerkung 1  [gemessen 0.500000000000, Abweichung 0.000000000000]
+[ok]   ohne vorbereiten() misst er nicht, statt zu raten oder zu stuerzen
+
+== Der Interpolator: Faktor, Taps und die Zusage ueber den Nulldurchgang ==
+[ok]   Ueberabtastfaktor ist 8 (BS.1770-4 Annex 2 verlangt mindestens 4)
+[ok]   die Filterlaenge ist ungerade und zerlegt sich glatt in die Phasen  [193 Taps, 24 je Phase]
+[ok]   JEDE der acht Phasen summiert sich auf 1 - nicht nur die Gesamtsumme auf 8  [groesste Abweichung 0.000000000000000]
+
+-----------------------------------------
+23 bestanden, 0 gescheitert
+ERGEBNIS B17 : EXIT=0, 0.1 s
+
+======================================================================
+B9  |  EqCopLoudnessGoldenTest
+======================================================================
+== Nakama SONDE-008 - EBU-Golden der fixed-memory Loudness ==
+Referenz: die ausgebaute Rechnung (unbegrenzter Vektor + Zweitdurchgang).
+Toleranz: +-0.1 LU (Entwurf §49).
+Feingitter: 10001 Bins a 0.01 LU ueber [-70.00, 30.01) LUFS.
+Oberband:   3070 Bins a 1.00 LU ueber [30.01, 3100.01) LUFS - lautheit(DBL_MAX) = 3081,86.
+
+== A - konstante Pegel (kein Block am Gate) ==
+  ok      konstant z=1.00000: Gueltigkeit wie die Referenz  [akku=1 ref=1]
+  ok      konstant z=1.00000: kein Block faellt durch das Raster  [0]
+  ok      konstant z=1.00000: lufs_integrated_matches_reference - LUFS-I innerhalb ±0,1 LU  [akku=-0.691000 ref=-0.691000 d=0.000000000]
+  ok      konstant z=1.00000: unsicherheitLu() deckt den Fehler  [d=0.000000000 schranke=0.000000000]
+  ok      konstant z=1.00000: ohne Grenzbin nur Rundungsrest (<= 1e-9 LU)  [d=0.000000000000000]
+  ok      konstant z=1.00000: Kurz-LUFS Gueltigkeit gleich
+  ok      konstant z=1.00000: Kurz-LUFS BITGLEICH  [akku=-0.691000000000000 ref=-0.691000000000000]
+  ok      konstant z=0.01000: Gueltigkeit wie die Referenz  [akku=1 ref=1]
+  ok      konstant z=0.01000: kein Block faellt durch das Raster  [0]
+  ok      konstant z=0.01000: lufs_integrated_matches_reference - LUFS-I innerhalb ±0,1 LU  [akku=-20.691000 ref=-20.691000 d=0.000000000]
+  ok      konstant z=0.01000: unsicherheitLu() deckt den Fehler  [d=0.000000000 schranke=0.000000000]
+  ok      konstant z=0.01000: ohne Grenzbin nur Rundungsrest (<= 1e-9 LU)  [d=0.000000000000000]
+  ok      konstant z=0.01000: Kurz-LUFS Gueltigkeit gleich
+  ok      konstant z=0.01000: Kurz-LUFS BITGLEICH  [akku=-20.690999999999999 ref=-20.690999999999999]
+  ok      konstant z=0.00001: Gueltigkeit wie die Referenz  [akku=1 ref=1]
+  ok      konstant z=0.00001: kein Block faellt durch das Raster  [0]
+  ok      konstant z=0.00001: lufs_integrated_matches_reference - LUFS-I innerhalb ±0,1 LU  [akku=-50.691000 ref=-50.691000 d=0.000000000]
+  ok      konstant z=0.00001: unsicherheitLu() deckt den Fehler  [d=0.000000000 schranke=0.000000000]
+  ok      konstant z=0.00001: ohne Grenzbin nur Rundungsrest (<= 1e-9 LU)  [d=0.000000000000000]
+  ok      konstant z=0.00001: Kurz-LUFS Gueltigkeit gleich
+  ok      konstant z=0.00001: Kurz-LUFS BITGLEICH  [akku=-50.691000000000003 ref=-50.691000000000003]
+  ok      konstant z=100.00000: Gueltigkeit wie die Referenz  [akku=1 ref=1]
+  ok      konstant z=100.00000: kein Block faellt durch das Raster  [0]
+  ok      konstant z=100.00000: lufs_integrated_matches_reference - LUFS-I innerhalb ±0,1 LU  [akku=19.309000 ref=19.309000 d=0.000000000]
+  ok      konstant z=100.00000: unsicherheitLu() deckt den Fehler  [d=0.000000000 schranke=0.000000000]
+  ok      konstant z=100.00000: ohne Grenzbin nur Rundungsrest (<= 1e-9 LU)  [d=0.000000000000000]
+  ok      konstant z=100.00000: Kurz-LUFS Gueltigkeit gleich
+  ok      konstant z=100.00000: Kurz-LUFS BITGLEICH  [akku=19.309000000000001 ref=19.309000000000001]
+== B - Rampe, Rauschen, lange Laufzeit ==
+  ok      Rampe 30 dB ueber 90 s: Gueltigkeit wie die Referenz  [akku=1 ref=1]
+  ok      Rampe 30 dB ueber 90 s: kein Block faellt durch das Raster  [0]
+  ok      Rampe 30 dB ueber 90 s: lufs_integrated_matches_reference - LUFS-I innerhalb ±0,1 LU  [akku=-7.083701 ref=-7.083701 d=0.000000000]
+  ok      Rampe 30 dB ueber 90 s: unsicherheitLu() deckt den Fehler  [d=0.000000000 schranke=0.007384000]
+  ok      Rampe 30 dB ueber 90 s: Kurz-LUFS Gueltigkeit gleich
+  ok      Rampe 30 dB ueber 90 s: Kurz-LUFS BITGLEICH  [akku=-1.198087457573391 ref=-1.198087457573391]
+  ok      Pseudo-Zufall 300 s: Gueltigkeit wie die Referenz  [akku=1 ref=1]
+  ok      Pseudo-Zufall 300 s: kein Block faellt durch das Raster  [0]
+  ok      Pseudo-Zufall 300 s: lufs_integrated_matches_reference - LUFS-I innerhalb ±0,1 LU  [akku=-9.750816 ref=-9.750816 d=0.000000000]
+  ok      Pseudo-Zufall 300 s: unsicherheitLu() deckt den Fehler  [d=0.000000000 schranke=0.001599230]
+  ok      Pseudo-Zufall 300 s: Kurz-LUFS Gueltigkeit gleich
+  ok      Pseudo-Zufall 300 s: Kurz-LUFS BITGLEICH  [akku=-12.109256046331003 ref=-12.109256046331003]
+  ok      eine Stunde (36 000 Zellen): Gueltigkeit wie die Referenz  [akku=1 ref=1]
+  ok      eine Stunde (36 000 Zellen): kein Block faellt durch das Raster  [0]
+  ok      eine Stunde (36 000 Zellen): lufs_integrated_matches_reference - LUFS-I innerhalb ±0,1 LU  [akku=-15.230810 ref=-15.230810 d=0.000000000]
+  ok      eine Stunde (36 000 Zellen): unsicherheitLu() deckt den Fehler  [d=0.000000000 schranke=0.000000000]
+  ok      eine Stunde (36 000 Zellen): ohne Grenzbin nur Rundungsrest (<= 1e-9 LU)  [d=0.000000000000583]
+  ok      eine Stunde (36 000 Zellen): Kurz-LUFS Gueltigkeit gleich
+  ok      eine Stunde (36 000 Zellen): Kurz-LUFS BITGLEICH  [akku=-14.735286948147577 ref=-14.735286948147577]
+== C - Pausen unter dem absoluten Gate (-70 LUFS) ==
+  ok      Musik + echte Stille: Gueltigkeit wie die Referenz  [akku=1 ref=1]
+  ok      Musik + echte Stille: kein Block faellt durch das Raster  [0]
+  ok      Musik + echte Stille: lufs_integrated_matches_reference - LUFS-I innerhalb ±0,1 LU  [akku=-8.281644 ref=-8.281644 d=0.000000000]
+  ok      Musik + echte Stille: unsicherheitLu() deckt den Fehler  [d=0.000000000 schranke=0.000000000]
+  ok      Musik + echte Stille: ohne Grenzbin nur Rundungsrest (<= 1e-9 LU)  [d=0.000000000000027]
+  ok      Musik + echte Stille: Kurz-LUFS Gueltigkeit gleich
+  ok      Musik + echte Stille: Kurz-LUFS BITGLEICH  [akku=-12.451912590513381 ref=-12.451912590513381]
+== D - adversarial: 1000 Bloecke im Grenzbin des relativen Gates ==
+  Sweep: 201 Laeufe, groesste Abweichung 2.781360 LU bei Faktor 1.000000, groesste gemeldete Schranke 2.781412 LU
+  Groesster Sprung der REFERENZ zwischen zwei benachbarten Laeufen (Eingang aendert sich um 1e-5): 2.781403 LU
+  ok      Sweep vollstaendig gefahren  [201/201]
+  ok      Sweep hat den Grenzbin wirklich getroffen (Gegenprobe)  [sonst pruefte D nichts; schranke=2.781412]
+  ok      die selbstgemeldete Schranke deckt JEDEN Lauf  [201/201]
+  ok      wo die Schranke <= 0,1 LU meldet, liegt der Wert auch innerhalb 0,1 LU  [76/76]
+  ok      die Abweichung bleibt unter dem eigenen Sprung der Referenz (Kante, kein Fehler)  [maxD=2.781360 refSprung=2.781403]
+  (Der adversariale Fall geht NICHT in die Toleranzbilanz unten ein - er misst eine Unstetigkeit der Norm, keine Rechengenauigkeit.)
+== E - fixed memory: eine Million Zellen ==
+  Akku:     0 Allokationen, LUFS-I -8.386510, Schranke 0.000000000 LU
+  Referenz: 36 Allokationen, LUFS-I -8.386510
+  ok      1 000 000 Zellen: 0 Allokationen im Akku  [0]
+  ok      Gegenprobe: die alte Rechnung alloziert sehr wohl  [36]
+  ok      1 000 000 Zellen: LUFS-I innerhalb ±0,1 LU  [d=0.000000000]
+  Fester Bedarf laut speicherBytes(): 157122 Byte - haengt an keiner Laufzeitgroesse.
+  ok      speicherBytes() ist eine reine Compile-Time-Groesse
+== F - numerische Raender ==
+  ok      leer: kein LUFS-I (null, nie eine Zahl)
+  ok      leer: kein Kurz-LUFS
+  ok      leer: Schranke 0
+  ok      alles unter -70 LUFS: beide ungueltig (Referenz-JSON: null)
+  ok      l_j == -70,0 exakt: Gueltigkeit wie die Referenz  [akku=0 ref=0]
+  ok      NaN/Inf-Zellen sind gezaehlt  [6]
+  ok      NaN/Inf vergiften das Gating nicht  [-7.680700]
+  ok      Kurz-LUFS meldet einen nichtendlichen Ring nie als gueltig
+  ok      ueber dem Gitter: EIN Pegel bleibt wertgleich  [akku=59.309000 ref=59.309000 ueberGitter=197]
+  ok      Gegenprobe: der Korpus liegt wirklich im Oberband  [197]
+  ok      und kein Block faellt durch das Raster
+  ok      500 Zellen ergeben 497 Bloecke (400 ms, Hop 100 ms)  [500/497]
+  ok      zuruecksetzen(): 0 Allokationen  [0]
+  ok      zuruecksetzen(): der Akku ist danach wirklich leer
+== G - Oberband: zwei Pegel ueber dem Feingitter ==
+  G1: akku=49.302611 ref=49.302611 schranke=0.000000000 ueberGitter=1997
+  ok      G1: alle 1997 Bloecke liegen im Oberband (Gegenprobe)  [1997]
+  ok      zwei Pegel ueber dem Gitter (T2-1): Gueltigkeit wie die Referenz  [akku=1 ref=1]
+  ok      zwei Pegel ueber dem Gitter (T2-1): kein Block faellt durch das Raster  [0]
+  ok      zwei Pegel ueber dem Gitter (T2-1): lufs_integrated_matches_reference - LUFS-I innerhalb ±0,1 LU  [akku=49.302611 ref=49.302611 d=0.000000000]
+  ok      zwei Pegel ueber dem Gitter (T2-1): unsicherheitLu() deckt den Fehler  [d=0.000000000 schranke=0.000000000]
+  ok      zwei Pegel ueber dem Gitter (T2-1): ohne Grenzbin nur Rundungsrest (<= 1e-9 LU)  [d=0.000000000000000]
+  ok      zwei Pegel ueber dem Gitter (T2-1): Kurz-LUFS Gueltigkeit gleich
+  ok      zwei Pegel ueber dem Gitter (T2-1): Kurz-LUFS BITGLEICH  [akku=32.319299956639810 ref=32.319299956639810]
+  ok      Naht, Gamma_r im Oberband: Gueltigkeit wie die Referenz  [akku=1 ref=1]
+  ok      Naht, Gamma_r im Oberband: kein Block faellt durch das Raster  [0]
+  ok      Naht, Gamma_r im Oberband: lufs_integrated_matches_reference - LUFS-I innerhalb ±0,1 LU  [akku=49.302481 ref=49.302481 d=0.000000000]
+  ok      Naht, Gamma_r im Oberband: unsicherheitLu() deckt den Fehler  [d=0.000000000 schranke=0.000000000]
+  ok      Naht, Gamma_r im Oberband: ohne Grenzbin nur Rundungsrest (<= 1e-9 LU)  [d=0.000000000000000]
+  ok      Naht, Gamma_r im Oberband: Kurz-LUFS Gueltigkeit gleich
+  ok      Naht, Gamma_r im Oberband: Kurz-LUFS BITGLEICH  [akku=49.308999999999997 ref=49.308999999999997]
+  ok      Naht, Gamma_r im Feingitter: Gueltigkeit wie die Referenz  [akku=1 ref=1]
+  ok      Naht, Gamma_r im Feingitter: kein Block faellt durch das Raster  [0]
+  ok      Naht, Gamma_r im Feingitter: lufs_integrated_matches_reference - LUFS-I innerhalb ±0,1 LU  [akku=49.243363 ref=49.243363 d=0.000000000]
+  ok      Naht, Gamma_r im Feingitter: unsicherheitLu() deckt den Fehler  [d=0.000000000 schranke=0.000000000]
+  ok      Naht, Gamma_r im Feingitter: ohne Grenzbin nur Rundungsrest (<= 1e-9 LU)  [d=0.000000000000000]
+  ok      Naht, Gamma_r im Feingitter: Kurz-LUFS Gueltigkeit gleich
+  ok      Naht, Gamma_r im Feingitter: Kurz-LUFS BITGLEICH  [akku=49.308999999999997 ref=49.308999999999997]
+  G3-Sweep: 201 Laeufe, groesste Abweichung 2.781577 LU bei Faktor 1.001000, groesste gemeldete Schranke 2.781577 LU
+  Groesster Sprung der REFERENZ zwischen zwei benachbarten Laeufen: 2.781401 LU
+  ok      G3: Sweep vollstaendig gefahren  [201/201]
+  ok      G3: JEDER Lauf liegt wirklich im Oberband (Gegenprobe)  [1997]
+  ok      G3: der Grenzbin des Oberbands wurde wirklich getroffen (Gegenprobe)  [sonst pruefte G3 nichts; schranke=2.781577]
+  ok      G3: die selbstgemeldete Schranke deckt JEDEN Lauf auch im Oberband  [201/201]
+  ok      G3: die Abweichung bleibt unter dem eigenen Sprung der Referenz  [maxD=2.781577 refSprung=2.781401]
+  ok      G3: kein Block faellt durch das Raster  [0]
+  (Wie §D misst G3 an der Unstetigkeit der Norm, nicht an 0,1 LU - 1000 Bloecke kippen gemeinsam die Gateseite.)
+  G4: LUFS-I 3038.851, Schranke 0.000000000, ueberGitter 197, ueberOberband 0
+  ok      G4: die lauteste darstellbare Blocklautheit liefert einen endlichen Wert  [3038.851]
+  ok      G4: nichts wird faelschlich als nicht-endlich gezaehlt  [0]
+  ok      G4: auch am aeussersten Rand faellt kein Block durch das Raster  [0]
+  ok      G4: und die Schranke bleibt endlich  [0.000000000]
+
+Schlimmste gemessene Abweichung ueber alle Korpora: 0.000000000 LU (Toleranz 0.1).
+109 Pruefungen, 0 Fehler.
+LOUDNESS-GOLDEN OK
+ERGEBNIS B9 : EXIT=0, 0.1 s
+
+======================================================================
+B4  |  EqCopQueueStressTest
+======================================================================
+== Nakama SONDE-008 - StampedAudioQueue, Quarantaene, Blockgroessen ==
+Produktionsstrom GenStrom: 1 Tap(s), 131072 Frames Ring, 2048 Deskriptoren, max 16384 Frames je Block.
+
+== A - Ganzblockaufnahme: Inhalt, Stempel, Reihenfolge ==
+  ok      drei Bloecke, drei Deskriptoren  [3]
+  ok      jeder Frame kommt bitgleich und an derselben Stelle heraus
+  ok      Stempel: lokaler Strom und Projektzeit stimmen je Block
+  ok      nach dem Leeren ist die Queue leer
+  ok      kein Verlust bei Normallast
+== B - Wrap: der Ring laeuft mehrfach um ==
+  ok      der Ring ist wirklich mehrfach umgelaufen  [11 Umlaeufe]
+  ok      ueber jeden Wrap hinweg bitgleicher Inhalt
+  ok      kein Frame verloren, keiner doppelt  [12000/12000]
+== C - Ueberlauf des SAMPLE-Rings: ganz oder gar nicht ==
+  ok      vier Bloecke passen, danach ist Schluss  [4]
+  ok      beide abgewiesenen Bloecke sind gezaehlt  [2]
+  ok      verlorene Frames = 2 x 256 (keine Teilmenge)  [512]
+  ok      ein verworfener Block behauptet die noch ausstehende Luecke nicht selbst
+  ok      im Ring liegen NUR vollstaendige Bloecke  [4]
+  ok      nach dem Leeren nimmt der Ring wieder an
+  ok      die Produzentenrueckmeldung markiert genau den angenommenen Lueckenblock
+  ok      der erste Block nach dem Verlust traegt kFlagLueckeDavor
+  ok      und beginnt ein neues continuity_segment  [1]
+== D - Ueberlauf des DESKRIPTOR-Rings (der zweite Ring zaehlt) ==
+  ok      genau `deskriptorPlaetze` Bloecke passen  [8]
+  ok      die vier ueberzaehligen sind gezaehlt  [4]
+  ok      und genau so viele stehen zum Lesen bereit  [8]
+== E - Oversize: ein Block ueber der Slotkapazitaet ==
+  ok      ein Block ueber maxBlockFrames wird als GANZES abgewiesen
+  ok      und als Oversize gezaehlt, nicht als Ueberlauf  [1/0]
+  ok      der Ueberlaufzaehler bleibt sauber
+  ok      nichts Halbes im Ring
+  ok      die verlorene Zeit ist vollstaendig gemeldet  [257]
+  ok      genau maxBlockFrames passt noch (Kante, nicht Ausschluss)
+== F - Flush (numSamples == 0) ist kein Verlust ==
+  ok      ein Flush-Block wird nicht eingestellt
+  ok      und zaehlt NICHT als Verlust - er traegt keine Audiozeit
+  ok      der Folgeblock geht normal
+  ok      und traegt keine Luecke
+== G - Mono und Mehrfach-Tap ==
+  ok      Mono: R traegt das L-Duplikat (FIFO-Vertrag der Engine)
+  ok      und der Deskriptor sagt kanaele == 1
+  ok      Drei-Tap-Layout: Block angenommen
+  ok      das Bitset meldet genau die belegten Taps  [3]
+  ok      jeder Tap liegt getrennt und richtig; der inaktive liefert false
+  ok      eine falsche Tapzahl wird abgewiesen statt halb kopiert
+  ok      ein Block ohne aktiven Tap ist ein Verlust, kein leerer Deskriptor
+== H - Ein-Block-Quarantaene ==
+  ok      5 Bloecke rein, 4 versiegelt - einer bleibt in Quarantaene  [4]
+  ok      und die Quarantaene haelt ihn wirklich
+  ok      kein Bruch bei lueckenlosem Strom
+  ok      drop_produces_counter_gap_and_boundary: der Seek ist als Bruch erkannt  [1]
+  ok      genau EIN Block faellt an der Grenze - der Strom laeuft weiter
+  ok      der Block NACH der Grenze ist schon wieder in Quarantaene
+  ok      Stopp verwirft den gehaltenen Block („bleiben sie unvollstaendig“)
+  ok      stehende Projektzeit (Teilpuffer/Stop) ist kein Bruch  [0]
+  ok      und alle bis auf den juengsten sind versiegelt  [5]
+  ok      Vorlauf ohne Bruch
+  ok      Transportkante play->stop ist ein Bruch  [1]
+  ok      ohne Hostkontext traegt der lokale monotone Strom (§53.6)
+  ok      und versiegelt normal  [3]
+  ok      Projektzeit nahe INT64_MAX: Ueberlauf ist eine Grenze, keine Fortsetzung
+  ok      negative Projektzeit ist eine gueltige, fortsetzbare Zeit (HostProbe sah sie)
+== I - Blockgroessen-Fuzz auf der Queue (1 .. ueber die Kante) ==
+  20 000 Bloecke, Groessen 1..288: angenommen 17809, Ueberlauf-Drops 0, Oversize-Drops 2191, groesster Block 256, versiegelt 15872, Brueche 1936
+  ok      jeder gelesene Frame steht an der Stelle, die sein Stempel nennt
+  ok      es gab nie einen Block mit sampleCount 0
+  ok      die Oversize-Faelle sind aufgetreten UND vollstaendig gezaehlt  [2191]
+  ok      kein angenommener Block war je groesser als die Slotkapazitaet  [256]
+  ok      es wurde wirklich gelesen  [2288127 Frames]
+== J - verdrahtet: Passthrough bitgleich ueber alle Blockgroessen ==
+  ok      18 Blockgroessen von 1 bis 16 384: kein Sample veraendert
+  ok      0 Samples Latenz  [0]
+  ok      kein Tail
+  angenommen 18, groesster Block 16384, Ueberlauf 0, Oversize 0
+== K - verdrahtet: Oversize aendert das Audio nicht ==
+  ok      ein Block ueber der Slotkapazitaet laeuft unveraendert durch
+  ok      und ist als Oversize-Drop der ANALYSE gezaehlt  [1]
+  ok      der abgewiesene Oversize-Block erscheint nicht im Projektfenster
+  ok      der naechste angenommene Lueckenblock beginnt das Fenster exakt neu  [16385..16449]
+  ok      der Analyseverlust wird nicht als Seek im alten Fenster ausgegeben  [0]
+== L - verdrahtet: der Audiothread alloziert nicht ==
+  ok      als Main klassifiziert (§53.5)
+  ok      4 000 Bloecke wechselnder Groesse mit Transportkanten: 0 Allokationen  [0]
+  dabei Ueberlauf-Drops 3860 (der Worker kommt bei 4 000 Bloecken ohne Pause nicht nach - genau dafuer ist der Ganzblockdrop da)
+
+== SONDE-013 M-74: 0 Allokationen auch mit Markierung und Ring ==
+  ok      M-74: Markierungsauftrag baut
+  ok      2 000 Bloecke mit wechselnder Markierung, Ein- und Ausfade und Interventionsring: 0 Allokationen  [0]
+== M - verdrahtet: die Messung bekommt den Strom wirklich ==
+  eingespeist 287744, analysiert 287232, Drops 0, versiegelt 561, Quarantaene-Verwuerfe 0, Brueche 0
+  ok      bei Normallast kein einziger Drop
+  ok      und kein Kontinuitaetsbruch (lueckenloser Transport)
+  ok      die Engine sieht den ganzen Strom bis auf den Block in Quarantaene  [512 Frames offen]
+  ok      Kurz-LUFS steht (der fixed-memory Akku wird wirklich gefuettert)  [-8.684240]
+  ok      framesDropped im Stats-Snapshot kommt aus derselben Quelle
+== N - Gegenpfad: prepareToPlay mitten im Betrieb ==
+  ok      auch der erste Block nach prepareToPlay alloziert nicht  [0]
+  veraltete Bloecke (alter Anlauf, nicht analysiert): 40
+  ok      ein Neuanlauf ist kein Oversize
+== O - Anlaufwechsel: Altbloecke sind SOFORT erkennbar (T2-3) ==
+  ok      der Anlauf steigt sofort, nicht erst beim naechsten Audioblock  [0 -> 1]
+  Bloecke aus dem ALTEN Anlauf: als veraltet erkannt 3, als aktuell durchgelassen 0
+  ok      alle drei Bloecke des alten Anlaufs sind als veraltet erkennbar  [3/3]
+  ok      der Produzent meldet exakt den Zug, der den Neuanlauf uebernimmt
+  ok      Gegenprobe: der erste Block nach dem Neuanlauf gilt als aktuell
+  ok      und er traegt die Luecke, die der Neuanlauf gerissen hat
+  ok      der Folgezug meldet keinen bereits verbrauchten Neuanlauf erneut
+  ok      zwei Neuanlaeufe hintereinander gehen beide nicht verloren  [1 -> 3]
+  ok      zwei zusammengefallene Anforderungen ergeben eine uebernommene Endgeneration
+  ok      und der Produzent holt sich die ENDGUELTIGE Nummer, nicht die erste
+  ok      Nullframe konsumiert die wartende Generation nicht
+  ok      der naechste echte Block uebernimmt sie weiterhin
+== P - Seek bei gestopptem Transport ist eine Grenze (T2-4) ==
+  ok      Seek um 10 s bei gestopptem Transport ist EIN Bruch  [1]
+  ok      Gegenprobe: stehende Zeit bei Stopp bleibt KEIN Bruch (§4.3 Punkt 2)  [0]
+  ok      und bei laufendem Transport ist der Seek weiterhin ein Bruch  [1]
+  ok      bei Stopp ist eine LUECKENLOS fortschreitende Zeit kein Bruch  [0]
+  ok      und alle bis auf den juengsten sind versiegelt  [5]
+  ok      ohne gueltiges „spielt“ bleibt eine wandernde Zeit unbewertet  [0]
+== Q - Worker-Kadenz: monotone Deadlines statt Batchzaehler ==
+  ok      nach Start ist nur die leichte Publikation sofort faellig
+  ok      10 000 Workerzuege bei gleicher Wanduhr loesen keine Schwer-Auswertung aus
+  ok      vor 250 ms bleibt Gating/Kandidaten gesperrt
+  ok      bei 250 ms ist genau die schwere Runde faellig
+  ok      dieselbe Deadline kann nicht zweimal verbraucht werden
+  ok      nach Pause genau eine Runde, kein Catch-up-Sturm
+  ok      Reset/Generation startet die 250-ms-Deadline neu
+== R - verdrahtet: Rueckstau beschleunigt Auswertung nicht; Stop bleibt begrenzt ==
+  ok      Test hat echten Queue-Rueckstau hergestellt  [257 Bloecke bis zum ersten Drop]
+  ok      unter Rueckstau hoechstens ~1 Schwer-Auswertung je 250 ms  [1 Runden in 600 ms]
+  ok      neue Generation erbt keinen Batch-beschleunigten Schwertakt  [0 Runden in den ersten 100 ms]
+  ok      Frame-Leser wird unter Rueckstau explizit vorgelassen  [0 ms]
+  ok      Reset-Steuerer wird unter Rueckstau explizit vorgelassen  [0 ms]
+  ok      Stop/Join bleibt auch mit Queue-Rest begrenzt  [0 ms]
+== S - Projektfenster folgt der tatsaechlich uebernommenen Queue-Generation ==
+  ok      Gegenprobe: erste Generation hat ihr eigenes Projektfenster
+  ok      Testbarriere liegt deterministisch im laufenden Audiocallback
+  ok      der erste Block der neuen Queue-Generation beginnt ein frisches Projektfenster  [10000..10064]
+  ok      die Generationskante ist kein Seek innerhalb des alten Fensters  [0]
+== T - ungueltige Samplerate deaktiviert beide Analyse-Engines ==
+  ok      Gegenprobe: mit 48 kHz laufen M1 und FeatureEngine
+  ok      nichtendliche Hostrate wird fail-closed auf 0 gespiegelt
+  ok      M1 verarbeitet unter ungueltiger Rate keinen Block  [0]
+  ok      FeatureEngine verarbeitet unter ungueltiger Rate keinen Block  [0]
+  ok      ohne gueltige Analyserate behauptet auch das Projektfenster keine Messung
+  ok      eine folgende gueltige Generation aktiviert beide Engines wieder
+
+116 Pruefungen, 0 Fehler.
+QUEUE-STRESSTEST OK
+ERGEBNIS B4 : EXIT=0, 3.5 s
+
+======================================================================
+B16  |  EqCopSonde013EventWireTest
+======================================================================
+SONDE-013 M-05 | Evidenzpfad: Verteilung, Abdeckung, Konvergenz und der Ereignisstrom
+
+== A · Der erzeugte Snapshot haelt den v3-Vertrag ==
+[ok]   ein Evidenzframe wird faellig
+[ok]   Snapshot wird gebaut
+[ok]   Snapshot passiert den gemeinsamen Textriegel
+[ok]   v3-Schema laedt
+[ok]   der erzeugte Snapshot wird von derselben Engine wie B3c angenommen
+[ok]   Gegenprobe: eine Abdeckung ueber 1 faellt an derselben Engine
+
+== A2 · Der Snapshot mit Stereoevidenz haelt denselben Vertrag ==
+[ok]   ein Evidenzframe mit langer Kadenz wird faellig
+[ok]   und die Engine traegt bandweise Stereoevidenz
+[ok]   Snapshot mit Stereo wird gebaut
+[ok]   er passiert den gemeinsamen Textriegel - kein NaN, kein Inf
+[ok]   und wird von derselben Vertragsengine wie B3c angenommen - alle elf Bandsaetze, beide Metadatenlisten und die zwei Skalare
+[ok]   das `stereo`-Objekt ist da
+[ok]   und seine Bandsaetze tragen KEIN `saturated` - die Marke gehoert zur Quantisierung und waere hier ein totes Feld
+[ok]   jeder Bandsatz traegt genau 221 Werte  [221]
+[ok]   und die Freiheitsgrade ebenso - Â§40.1 verlangt sie je Band
+[ok]   ohne Stereosicht fehlt das Feld ganz - Abwesenheit ist erlaubt und billiger als 11 KiB Nullen
+[ok]   und der Snapshot ist dadurch um ein Vielfaches kleiner - die Rueckstauschwelle misst in EINTRAEGEN, nicht in Bytes  [4619 gegen 19409 Byte]
+
+== B · P10/P50/P95 unterscheiden, was ein Mittelwert gleichmacht ==
+[ok]   beide Evidenzframes sind da
+[ok]   beide Signale tragen im selben Band ein Bit  [120]
+[ok]   die Spanne P95-P10 trennt das springende vom ruhigen Signal  [ruhig 0.00 dB, springend 6.65 dB]
+[ok]   das ruhige Signal hat eine schmale Spanne  [0.00 dB]
+[ok]   in JEDEM Band mit Bit gilt P10 <= P50 <= P95  [56 Baender]
+[ok]   der Frame nennt, ueber wie viele Fenster die Verteilung geht  [4]
+
+== C · Abdeckung ist gemessenes Signal, Konvergenz ist Ruhe ==
+[ok]   beide Evidenzframes sind da
+[ok]   Dauerton deckt das Evidenzfenster fast vollstaendig ab  [1.000]
+[ok]   halbe Stille senkt die Abdeckung messbar  [0.667]
+[ok]   ein stehender Ton konvergiert  [1.000]
+[ok]   ein wandernder Pegel konvergiert schlechter als ein stehender  [0.557 < 1.000]
+
+== D · Ereignisse reisen mit beiden Qualitaetsbits und ihrem Verlust ==
+[ok]   events_travel_with_quality_and_loss_counter/alle_drei_reisen  [3]
+[ok]   events_travel_with_quality_and_loss_counter/beide_bits_getrennt  [Fluss-only, Peak-only und beide bleiben unterscheidbar]
+[ok]   events_travel_with_quality_and_loss_counter/verlustzaehler  [7]
+[ok]   fremde_epoche_reist_nicht_und_wird_gezaehlt  [1 getragen, 1 verloren]
+[ok]   ein Ereignis ausserhalb der Vertragsgrenzen faellt einzeln heraus  [1 getragen, Snapshot gueltig: ja]
+[ok]   leerer Strom ohne Verlust laesst `ereignisse` weg
+
+== E · Kein Snapshot ist besser als ein widerspruechlicher ==
+[ok]   kein Snapshot ohne faelliges Evidenzfenster
+[ok]   kein Snapshot ohne Abdeckungsbit â 0 waere eine andere Aussage
+[ok]   kein Snapshot ohne Konvergenzbit
+[ok]   kein Snapshot ohne gueltige evidence_id
+[ok]   kein Snapshot mit einer erfundenen Konfidenzklasse
+[ok]   kein Snapshot mit unmoeglicher Samplerate
+[ok]   ohne Anker reist kein Ereignis und der Verlust wird gemeldet
+
+== F · Die Evidenzkadenz bleibt zwischen 1 und 4 Hz ==
+[ok]   frisch vorbereitet laeuft die Evidenz mit 4 Hz
+[ok]   ein zu grosser Wunsch wird auf 1 Hz geklemmt, nicht abgelehnt
+[ok]   ein zu kleiner Wunsch wird auf 4 Hz geklemmt
+[ok]   ein NaN verstellt die Kadenz NICHT
+[ok]   auch mit 1 Hz entsteht ein vollstaendiger Snapshot
+[ok]   die reduzierte Kadenz braucht wirklich laenger, statt nur anders zu heissen  [30 gegen 100 Bloecke]
+
+== G · Eine Grenze trennt Verteilung, Abdeckung und Konvergenz ==
+[ok]   ein Evidenzfenster ist gelaufen
+[ok]   der Snapshot hat sein Fenster mitgenommen
+[ok]   das naechste Fenster fuellt die neuen Traeger  [112 Plaetze, 2 Fenster]
+[ok]   der Verteilungsring ist leer  [0]
+[ok]   beide Fensterzaehler der Abdeckung sind leer
+
+== N1 - B05: die Evidenz reist unter der NAK-40-WIREadresse ==
+[ok]   B05: die Ausgangs-ID ist bewusst KEIN hex32
+[ok]   B05: evidenz_reist_unter_der_wireadresse - eine Legacy-ID verhindert den Snapshot NICHT mehr
+[ok]   B05: und auf der Leitung steht der ALIAS, nicht die persistente ID  [ebd0bb1af0b846bc5c4d21ebd496671e]
+[ok]   B05: die persistente ID fliesst NICHT auf die Leitung
+[ok]   B05: die Hilfsfunktion ist idempotent - es gibt genau EINEN Weg zur Wireadresse
+
+== N1 - B06: nur eine erfolgreiche Uebergabe entnimmt den Ring ==
+[ok]   B06: `eingereiht` gilt als uebergeben
+[ok]   B06: `koalesziert` ebenso - der Platz in der Reihenfolge bleibt
+[ok]   B06: `zurWiederholung` ebenso - der Wiederholpuffer wirft nichts weg (SONDE-010)
+[ok]   B06: ring_bleibt_bei_rueckstau - `abgewiesen` ist ein echter Verlust, die Quelle bleibt stehen
+[ok]   B06: `zuGross` ebenso - an der Tuer abgewiesen ist nicht uebergeben
+[ok]   B06: der Ring traegt Ereignisse  [6]
+[ok]   B06: und behaelt sie, solange niemand sie ENTNIMMT - genau das tat der Sender bei Rueckstau trotzdem
+[ok]   B06: erst `ereignisseEntnommen()` leert ihn - die Gegenprobe, ohne die der Fall darueber nichts sagt
+
+== N1 - B07: nicht-endliche Samples werden gezaehlt und verriegeln ==
+[ok]   B07: ein sauberer Evidenzframe entsteht
+[ok]   B07: und zaehlt NULL nicht-endliche Samples - 0 heisst nachweislich keines
+[ok]   B07: seine Rahmenskalare sind gesetzt (die Gegenprobe)
+[ok]   B07: auch mit NaN/Inf entsteht ein Frame
+[ok]   B07: nicht_endliche_samples_werden_gezaehlt  [8]
+[ok]   B07: und die Zahl reist im Frame mit  [8]
+[ok]   B07: ohne Samplefehler ist die Klasse brauchbar (die Gegenprobe)
+[ok]   B07: EIN nicht-endliches Sample macht den Beleg `unbrauchbar` - nicht `schwach`: die Zahl beschreibt Stille, nicht Musik
+[ok]   B07: und `samples_nicht_endlich` steht im Snapshot
+
+== N1 - B08/B09: die Passagenmetriken haengen am Passagenfenster ==
+[ok]   B08: der laute Abschnitt setzt ein hohes Passagenmaximum  [-0.92]
+[ok]   B08: das Passagenfenster wird gesetzt
+[ok]   B08: und ist intakt
+[ok]   B08: ein Frame in der leisen Passage entsteht
+[ok]   B08: passage_metriken_haengen_am_fenster - die leise Passage erbt die Spitze des lauten Abschnitts NICHT  [-33.98 gegen -0.92]
+[ok]   B09: der Interpolator hat eine Verzoegerung, die geleert werden muss  [24]
+[ok]   B09: polyphasen_nachlauf_am_fensterende - nach dem letzten Sample steht noch Energie in der Kette, und `nachlauf()` holt sie  [0.8000]
+[ok]   B09: zusammen erreichen sie den wahren Scheitel - ohne den Nachlauf ginge er an der Grenze verloren  [0.8000]
+
+== N2 - R04: das Kurzzeitfenster faellt mit dem Passagenanfang ==
+[ok]   R04: das 3-s-Fenster ist vor der Passage gefuellt
+[ok]   R04: das Passagenfenster wird gesetzt
+[ok]   R04: nach dem Passagenanfang entsteht ein Frame
+[ok]   R04: kurzzeitfenster_faellt_mit_dem_passagenanfang - direkt nach dem Passagenanfang gibt es KEINEN 3-s-Wert mehr; er muss sich aus der Passage neu fuellen
+[ok]   R04: auch nach einer Sekunde nicht - das Fenster ist drei Sekunden lang und fuellt sich AUS DER PASSAGE  [0.00]
+[ok]   R04: das Fenster fuellt sich aus der Passage neu
+[ok]   R04: und der Crest ist der der leisen Passage, nicht der des lauten Abschnitts davor  [3.01 gegen 3.01]
+
+== N3 - R05: der Nachlauf laeuft am Index passBis, nicht nach dem Block ==
+[ok]   R05: beide Faelle liefern ein Passagenmaximum  [-2.35 / -2.35]
+[ok]   R05: nachlauf_am_index_passbis - der wahre Scheitel der letzten zwoelf Samples steht im Passagenmaximum, nicht nur ihr Samplewert  [-2.35 gegen Samplescheitel -6.11]
+[ok]   R05: und WO der Blockrand faellt, aendert das Passagenmaximum nicht  [0.000 dB Unterschied]
+
+== NAK-181 N-16  zahlen_bleiben_locale_unabhaengig ==
+[ok]   N-16: ein Evidenzframe wird faellig
+[ok]   N-16: der Snapshot entsteht unter der C-Locale
+[ok]   N-16: eine Komma-Locale ist verfuegbar â ohne sie misst der Fall nichts
+[ok]   N-16: derselbe Aufruf ist unter Komma-Locale BYTEGLEICH  [21370 Bytes]
+[ok]   N-16: und traegt keinen Komma-Dezimaltrenner
+[ok]   N-16: juce::JSON nimmt ihn an
+[ok]   N-16: der Bandsatz traegt genau 221 Werte  [221]
+[ok]   N-24: korrelation_kurz traegt EXAKT sein eigenes Praesenzmuster
+[ok]   N-24: korrelation_mittel traegt EXAKT sein eigenes Praesenzmuster
+[ok]   N-24: persistenz traegt EXAKT sein eigenes Praesenzmuster
+[ok]   N-24: und keine der drei ist die Bitmap von mid_db
+[ok]   N-24: und sie sind paarweise verschieden - vertauschte Selektoren faellt der Rotbeweis hier
+
+== NAK-181 N-35  grenze_leert_die_fenster_und_laesst_den_ereignisring ==
+[ok]   N-35: der Ereignisring traegt Ereignisse  [6]
+[ok]   N-35 Vorbedingung: das HAUPTfenster traegt Material  [2048]
+[ok]   N-35 Vorbedingung: das BASSfenster traegt Material  [14336]
+[ok]   N-35 Vorbedingung: die Loudness-ZELLE ist angefangen  [3648]
+[ok]   N-35 Vorbedingung: die KURZ-Loudness traegt fertige Zellen  [21]
+[ok]   N-35 Vorbedingung: der BANDAKKU traegt belegte Baender  [149]
+[ok]   N-35 Vorbedingung: das FINGERPRINTfenster traegt Frames  [39]
+[ok]   N-35 Vorbedingung: die STEREOevidenz traegt belegte Baender  [196]
+[ok]   N-35: `grenzeZiehen` hat GENAU EINMAL getrennt  [1]
+[ok]   N-35: und der Grund ist die lokale Luecke
+[ok]   N-35: das SEGMENT steigt, die Epoche bleibt (Paragraph 32.3)  [Epoche 0, Segment 1]
+[ok]   N-35: das HAUPTfenster traegt nur noch den Block NACH der Grenze  [512]
+[ok]   N-35: das BASSfenster ebenso  [512]
+[ok]   N-35: die Loudness-ZELLE ebenso  [512]
+[ok]   N-35: die KURZ-Loudness ist LEER - ein Block schliesst keine 100-ms-Zelle, also darf hier keine einzige stehen  [0]
+[ok]   N-35: der BANDAKKU ist leer - kein Spektrum ueberbrueckt die Grenze  [0]
+[ok]   N-35: und der Fluss hat keinen Vorgaenger aus der alten Epoche
+[ok]   N-35: das FINGERPRINTfenster ist leer (M-27)  [0]
+[ok]   N-35: und die STEREOevidenz ebenso (M-11)  [0]
+[ok]   N-35: der Ereignisring UEBERLEBT die Grenze  [6 gegen 6]
+[ok]   N-35: und der Eintrag von VOR der Grenze steht unveraendert mit seinem alten Stempel darin  [Epoche 0, Segment 0]
+[ok]   N-35: ein Zeitsprung hebt dagegen die EPOCHE und setzt das Segment zurueck - die zwei Gruende sind unterscheidbar  [Epoche 1, Segment 0]
+[ok]   N-35: auch die Epochengrenze laesst den Ring stehen  [6]
+[ok]   N-35: vor dem Reset steht die Epoche ueber 0 - sonst maesse die Gegenprobe nichts  [1]
+[ok]   N-35: `zuruecksetzen()` leert den Ring - genau die Differenz, die Probeeq beim Quarantaenebruch nicht mehr faehrt (R7)
+[ok]   N-35: und setzt Epoche wie Segment auf 0 - ein Stempel 0/0 nach einem Bruch ist auf dem Draht UNSICHTBAR  [vorher Epoche 1]
+
+== NAK-181 N-18c  ppq_ausserhalb_des_riegels_laesst_den_zyklus_entfallen ==
+[ok]   N-18c: ein Evidenzframe wird faellig
+[ok]   N-18c: der Snapshot entsteht trotz verweigerter PPQ-Werte
+[ok]   N-18c: das cycle-Objekt entfaellt GANZ â kein null in einem number
+[ok]   N-18c: und validity.cycle_bounds faellt mit ihm (das Schema koppelt sie)
+[ok]   N-18c: der Snapshot passiert den Textriegel
+[ok]   N-18c: mit gueltigen Werten traegt cycle active, bounds_valid und beide PPQ
+[ok]   N-18c: und validity.cycle_bounds steht
+
+== NAK-181 N-18d  samplerate_ausserhalb_des_riegels_erzeugt_keinen_snapshot ==
+[ok]   N-18d: ein Evidenzframe wird faellig
+[ok]   N-18d: sample_rate = 1e-308 erzeugt KEINEN Snapshot
+[ok]   N-18d: mit 48000 entsteht er unveraendert
+
+== NAK-182 M-83  focused_evidence_wire_carries_0p01_db_steps ==
+[ok]   die Byteinstanz liegt im Korpus - keine der drei Sprachen erzeugt sie, alle messen dagegen
+[ok]   die Fixture traegt Gain, Toleranz und die Leiter als ZAHLEN  [G=3.00 dB, Toleranz 0.10 dB, 20 Stufen]
+[ok]   beide Laeufe erzeugen einen Evidenzframe (PRE und POST)
+[ok]   der echte Encoder schreibt die FOKUSSIERTE Aufloesung q_db_0p01_i16 - nicht die des Liveframes
+[ok]   genug Baender tragen in BEIDEN Laeufen ein Praesenzbit - sonst haette die Zeile nichts gemessen  [56 Baender]
+[ok]   aus dem EIGENEN Wire-Text (Teiler 100) kommt der Gain je Band mit Bit innerhalb der Toleranz der Fixture zurueck  [0 Baender daneben, groesste Abweichung 0.0000 dB; Differenzen 3.000 bis 3.000 dB gegen G=3.00]
+[ok]   die 20 Stufen der Leiter treffen die Ganzzahlen der Fixture  [20 von 20; erste: -3000, -2999, -2998, -2997, ...]
+[ok]   die Leiter ist STRENG MONOTON - 0,01 dB mehr sind nie dieselbe Ganzzahl  [19 von 19]
+[ok]   und benachbarte Stufen unterscheiden sich um GENAU 1 - das ist die Aufloesung 0,01 dB, gemessen statt angenommen  [19 von 19]
+
+-----------------------------------------
+149 bestanden, 0 gescheitert
+ERGEBNIS B16 : EXIT=0, 0.4 s
+
+======================================================================
+B22  |  EqCopSonde013FingerprintGoldenTest
+======================================================================
+== Nakama SONDE-013 - Content-Fingerprint einer Passage (§32.4) ==
+
+== Der Fingerprint braucht genug Material - vorher gibt es keinen ==
+[ok]   nach acht Bloecken traegt er KEIN Bit - ein Onsetverlauf aus vier Fenstern ist keine Rhythmusaussage und eine Bandenergie aus vier Fenstern kein Klangbild
+[ok]   nach 400 Bloecken steht er
+[ok]   und sagt, ueber wie viele Analysefenster er geht  [98 Fenster]
+[ok]   die Erzeugerversion ist gefuehrt - eine spaetere Aenderung an der Quantisierung macht alte Fingerprints unvergleichbar, und das soll auffallen
+
+== M-31  material_change_mid_passage_is_detected_not_averaged ==
+[ok]   dasselbe Material zweimal ergibt BITGLEICH denselben Fingerprint - der Erzeuger ist deterministisch
+[ok]   derselbe Akkord in zwei Lautstaerken bleibt aehnlich - der Fingerprint ist pegelunabhaengig, weil jeder Verlauf auf sein EIGENES Maximum normiert wird  [0.9999]
+[ok]   ein anderer Akkord ist messbar unaehnlicher als derselbe in anderer Lautstaerke - GENAU das ist die Aufgabe aus Â§32.4  [gleich 0.9999, gewechselt 0.5210]
+[ok]   und breitbandiges Rauschen ist einem Akkord deutlich unaehnlich  [0.3648]
+
+== M-26  fingerprint_carries_no_reconstructible_pcm ==
+[ok]   ein Fingerprint liegt vor
+[ok]   76 Byte fuer 204800 Samples - weniger als ein Byte je 2600 Samples. Die Rueckrechnung ist nicht schwer, die Information ist NICHT DA  [76 Byte, 2694 Samples je Byte]
+[ok]   beide adversarialen Signale ergeben einen Fingerprint
+[ok]   ein Sinus und ein Dreieck derselben Grundfrequenz sind sich im Fingerprint AEHNLICH, obwohl sie voellig anders klingen - der Fingerprint ist bewusst NICHT injektiv  [0.6557]
+[ok]   die Verlaeufe tragen Werte - der Test misst keine leeren Felder
+[ok]   und alle drei sind ENERGIEN ohne Vorzeichen und ohne Phase: selbst bei perfekter Amplitudenkenntnis fehlt die halbe Information
+
+== M-27  fingerprint_window_never_crosses_epoch_boundary ==
+[ok]   beide Referenzen stehen
+[ok]   vor der Grenze traegt die Engine den Fingerprint von Material A  [1.0000]
+[ok]   nach der Grenze steht wieder einer
+[ok]   und er gehoert zu Material B, nicht zu einer Mischung aus beiden - das Fingerprintfenster hat die Grenze NICHT ueberbrueckt (Â§32.3)  [zu A 0.0000, zu B 1.0000]
+[ok]   er ist der von B, nicht nur naeher an B  [1.0000]
+[ok]   auch der Fensterzaehler faellt an der Grenze - er zaehlt DIESE Passage, nicht die Laufzeit. Bei einer Ueberbrueckung waeren es rund doppelt so viele  [98 vorher, 98 nachher]
+
+== Aehnlichkeit ist ein MINIMUM, kein Mittelwert (M-28-Vorgriff) ==
+[ok]   zwei gleiche Fingerprints sind maximal aehnlich
+[ok]   ein einziger auseinanderlaufender Verlauf senkt die Aehnlichkeit deutlich - der SCHWAECHSTE Beleg bestimmt sie, nicht der Durchschnitt der drei  [0.7071]
+[ok]   zwei Fingerprints OHNE Bit sind nicht aehnlich, sondern gar nichts - sonst vergliche sich eine Passage ohne Material mit jeder anderen als identisch
+[ok]   und einer mit einem ohne ebenso
+
+-----------------------------------------
+24 bestanden, 0 gescheitert
+ERGEBNIS B22 : EXIT=0, 0.9 s
+
+======================================================================
+B3c  |  EqCopSchemaTest
+======================================================================
+EqCopSchemaTest - v3-Vertrag (SONDE-005a)
+-----------------------------------------
+[ok]   Textriegel deckt die gemeinsame Falltabelle  [102 Faelle]
+[ok]   Falltabelle hat Substanz  [102 Faelle]
+[ok]   Textriegel lehnt oberhalb der gemeinsamen 16-MiB-Grenze vor dem Bytezugriff ab
+[ok]   unbekanntes Schluesselwort bricht den Ladevorgang  [unbekanntes Schluesselwort #/multipleOf]
+[ok]   oneOf ohne Discriminator bricht den Ladevorgang  [falscher Werttyp fuer #/oneOf; oneOf ohne x-nakama-discriminator bei #]
+[ok]   additives Objekt ohne maxProperties bricht den Ladevorgang  [additives Objekt # ohne maxProperties]
+[ok]   unbekanntes Muster bricht den Ladevorgang  [unbekanntes Muster #: ^S-1-.*$]
+[ok]   nicht-lokale Referenz bricht den Ladevorgang  [nicht-lokale Referenz bei #: https://fremd/schema.json]
+[ok]   haengende Referenz bricht den Ladevorgang  [haengende Referenz bei #: #/$defs/gibtsnicht hat kein Ziel]
+[ok]   maxLength als Gleitkommazahl bricht den Ladevorgang  [falscher Werttyp fuer #/maxLength]
+[ok]   type als Zahl bricht den Ladevorgang  [falscher Werttyp fuer #/type]
+[ok]   required mit Nicht-String bricht den Ladevorgang  [falscher Werttyp fuer #/required]
+[ok]   Discriminator als Zahl bricht den Ladevorgang  [falscher Werttyp fuer #/x-nakama-discriminator]
+[ok]   integer akzeptiert 1.0 (draft 2020-12)
+[ok]   integer lehnt 1.5 ab
+[ok]   Typfehler erzeugt keine Lawine  [1 Verletzung(en)]
+[ok]   unbekannter Discriminator wird abgelehnt
+[ok]   discriminator_boolean_true_false
+[ok]   discriminator_boolean_falscher_typ
+[ok]   discriminator_boolean_fehlt
+[ok]   discriminator_json_pointer_boolean
+[ok]   discriminator_json_pointer_segment_fehlt
+[ok]   Nicht-Objekt an der Wurzel meldet an der Instanz, nicht an /type
+[ok]   fehlendes Pflichtfeld zeigt auf das Elternobjekt
+[ok]   Laenge zaehlt Codepunkte, nicht Bytes
+[ok]   vier Codepunkte fallen bei maxLength 3
+[ok]   Verletzungen sind kanonisch sortiert und doppelfrei  [3]
+[ok]   objektwertiges const vergleicht reihenfolgeunabhaengig
+[ok]   objektwertiges const sieht einen Unterschied in der Tiefe
+[ok]   objektwertiges const sieht eine fehlende Eigenschaft
+[ok]   Binaerkorpus klassifiziert wie das Manifest (119 Fixtures)
+[ok]   Binaerkorpus hat Substanz  [119 Fixtures]
+[ok]   Binaer-Manifestzahlen passen zur Fixtureliste
+[ok]   kaputtes UTF-8 in der SID: 200x dasselbe Urteil, kein Absturz  [BL-1 aus T2-Runde 3]
+[ok]   Bandwertgrenzen des Lesers stimmen mit quantisierung-v1.json
+[ok]   Traegergrenzen folgen aus den dB-Werten mal Skalierung
+[ok]   JSON-Bandwertgrenzen stimmen mit quantisierung-v1.json
+[ok]   band_stereo_featureframe_to_flatbuffer
+[ok]   nak29_encoder_project_samples_ohne_project_time_bit
+[ok]   nak29_encoder_local_monotonic_mit_project_sample_start
+[ok]   integration_samples_wird_von_beiden_lesern_klassifiziert  [gesetzt: der Leser gibt Bit UND Wert zurueck]
+[ok]   integration_samples_abwesend_bleibt_gueltig_und_ist_keine_null  [abwesend: gueltig, aber ohne Bit â der Wert 0 ist hier NICHT die Aussage]
+[ok]   integration_samples_null_ist_ein_senderfehler  [gesetzt auf 0: abgelehnt, nicht als 'fehlt' umgedeutet]
+[ok]   N-18: die Byteinstanz liegt im Korpus
+[ok]   N-18: die Liste `angenommen` traegt Klassen  [9]
+[ok]   N-18: minus_null - wireZahl erzeugt GENAU den Text der Fixture  [0 gegen 0]
+[ok]   N-18: ein_zehntel - wireZahl erzeugt GENAU den Text der Fixture  [0.1 gegen 0.1]
+[ok]   N-18: ein_drittel - wireZahl erzeugt GENAU den Text der Fixture  [0.333333333333333 gegen 0.333333333333333]
+[ok]   N-18: kleinster_normaler_float - wireZahl erzeugt GENAU den Text der Fixture  [1.17549435082229e-38 gegen 1.17549435082229e-38]
+[ok]   N-18: eins_e_minus_307 - wireZahl erzeugt GENAU den Text der Fixture  [1e-307 gegen 1e-307]
+[ok]   N-18: knapp_unter_der_grenze - wireZahl erzeugt GENAU den Text der Fixture  [1e-307 gegen 1e-307]
+[ok]   N-18: sichere_ganzzahl - wireZahl erzeugt GENAU den Text der Fixture  [9007199254740991 gegen 9007199254740991]
+[ok]   N-18: nyquist_gekappter_bandwert - wireZahl erzeugt GENAU den Text der Fixture  [18000 gegen 18000]
+[ok]   N-18: samplerate - wireZahl erzeugt GENAU den Text der Fixture  [48000 gegen 48000]
+[ok]   N-18: die Liste `verweigert` traegt Klassen  [6]
+[ok]   N-18: zwei_e_minus_308 - wireZahl verweigert, wie die Fixture sagt
+[ok]   N-18: eins_e_minus_308 - wireZahl verweigert, wie die Fixture sagt
+[ok]   N-18: zwei_hoch_53 - wireZahl verweigert, wie die Fixture sagt
+[ok]   N-18: groesster_normaler_float - wireZahl verweigert, wie die Fixture sagt
+[ok]   N-18: eins_e_308 - wireZahl verweigert, wie die Fixture sagt
+[ok]   N-18: nicht_endlich - wireZahl verweigert, wie die Fixture sagt
+[ok]   v3-Schema haelt die Engine-Teilmenge ein
+[ok]   Textriegel lehnt ab: ungueltig/einsames-surrogat-im-label.json  [hohes Surrogat ohne Paar an Position 1294]
+[ok]   Textriegel lehnt ab: ungueltig/host-mixer-index-ueber-json-sicher.json  [Ganzzahl ausserhalb 2^53-1: 9007199254740992]
+[ok]   Textriegel lehnt ab: ungueltig/leerer-objektschluessel.json  [leerer Objektschluessel an Position 835]
+[ok]   Textriegel lehnt ab: ungueltig/nul-escape-im-label.json  [NUL-Escape in Zeichenkette an Position 1289]
+[ok]   Skalar-Wurzel wird schon im Parser abgelehnt: ungueltig/wurzel-ist-string.json
+[ok]   Textriegel lehnt ab: ungueltig/zahl-bruch-rundet-auf-2hoch53.json  [Zahl mit mehr als 15 signifikanten Dezimalziffern: 9007199254740992.1]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-bruch-rundet-nahe-2hoch53-ab.json  [Zahl mit mehr als 15 signifikanten Dezimalziffern: 9007199254740991.1]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-bruch-rundet-unter-2hoch53-auf.json  [Zahl mit mehr als 15 signifikanten Dezimalziffern: 4503599627370495.9]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-fuehrende-null.json  [fuehrende Null in "091" an Position 356]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-jenseits-u64.json  [Ganzzahl ausserhalb 2^53-1: 18446744073709552016]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-kleiner-bruch-rundet-auf-eins.json  [Zahl mit mehr als 15 signifikanten Dezimalziffern: 1.00000000000000001]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-nan-token.json  [unbekanntes Literal NaN an Position 1090]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-nicht-endlich.json  [Zahl ausserhalb +/-1e308: 1e400]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-ueber-2hoch53.json  [Ganzzahl ausserhalb 2^53-1: 9007199254740992]
+[ok]   Korpus klassifiziert wie das Manifest (317 Fixtures)
+[ok]   Korpus hat Substanz  [317 Fixtures]
+[ok]   Manifestzahlen passen zur Fixtureliste
+[ok]   feines Gitter hat 221 Baender
+[ok]   222 Kanten, 221 Mitten  [222/221]
+[ok]   Kanten streng monoton
+[ok]   jede Mitte liegt echt zwischen ihren Kanten
+[ok]   keine Mitte ist NaN oder unendlich
+[ok]   alle Mitten liegen in 30 Hz .. 18 kHz
+[ok]   grobes Gitter hat 64 Gruppen
+[ok]   65 grobe Kanten
+[ok]   Gruppen sind lueckenlos und ueberlappungsfrei
+[ok]   keine leere Gruppe
+[ok]   Gruppen decken genau 221 feine Baender  [221]
+[ok]   grobe Kanten sind BITGLEICHE Kopien feiner Kanten
+[ok]   Quantisierung stimmt mit den Testvektoren (61)
+[ok]   genug Vektoren  [61]
+[ok]   N-18: -0 wird 0  [0]
+[ok]   N-18: ein Zehntel  [0.1]
+[ok]   N-18: ein Drittel, auf 15 Stellen gedeckelt  [0.333333333333333]
+[ok]   N-18: kleiner Exponent  [1e-7]
+[ok]   N-18: kleinster normaler float  [1.17549435082229e-38]
+[ok]   N-18: kleinster subnormaler float  [1.40129846432482e-45]
+[ok]   N-18: weit unten, aber ueber der Grenze  [1e-300]
+[ok]   N-18: der kleinste angenommene Betrag  [1e-307]
+[ok]   N-18: 2^53-1 als EXAKTE Ganzzahl  [9007199254740991]
+[ok]   N-18: eine Samplerate  [48000]
+[ok]   N-18/R4f: die Eingabe liegt ECHT unter 1e-307 (Wertvergleich)
+[ok]   N-18/R4f: ihr gedeckelter Wiretext lautet 1e-307  [1e-307]
+[ok]   N-18/R4f: die UNGEDECKELTE Form ist eine andere und faellt am Riegel
+[ok]   N-18b: verweigert â NaN
+[ok]   N-18b: verweigert â +Inf
+[ok]   N-18b: verweigert â -Inf
+[ok]   N-18b: verweigert â 2^53 — eine Ganzzahl ueber der Grenze
+[ok]   N-18b: verweigert â 1e21 an der ES6-Schreibweisengrenze
+[ok]   N-18b: verweigert â groesster normaler float — Ganzzahl ueber 2^53
+[ok]   N-18b: verweigert â 1e300 — Ganzzahl, nicht Betragsgrenze
+[ok]   N-18b: verweigert â -1e300
+[ok]   N-18b: verweigert â 1e308 an der Betragsgrenze
+[ok]   N-18b: verweigert â 2e-308 — GROESSER als 1e-308 und trotzdem drausen
+[ok]   N-18b: verweigert â 9.99e-308 — dez = -308
+[ok]   N-18b: verweigert â 1e-308
+[ok]   N-18b: verweigert â 4.9e-324, der kleinste subnormale double
+[ok]   N-18: der Deckel laesst exakte Ganzzahlen unangetastet
+[ok]   N-19: es6Zahl bleibt ungedeckelt (der state_hash laeuft durch keinen Riegel)
+[ok]   N-17: eine Komma-Locale ist verfuegbar
+[ok]   N-17: der Rueckwechsel auf die Ausgangs-Locale gelingt - ohne ihn maesse die Zeile darunter nicht die C-Seite  [C]
+[ok]   N-17: der Hello traegt die nichtganzzahlige Samplerate mit PUNKT  [{"type":"hello","connection_kind":"control","protocol":3,"plugin_version":"0.3.0","plugin_kind":"main","adresse":{"logon_sid":"S-1-5-21-1111111111-2222222222-3333333333-1001","project_binding_id":"11111111111111111111111111111111","session_epoch":"22222222222222222222222222222222","instance_id":"33333333333333333333333333333333","runtime_nonce":"44444444444444444444444444444444"},"audio":{"samplerate":44100.5,"block_size":512,"channels":2}}]
+[ok]   N-17: dieselbe Komma-Locale laesst sich nach dem Rueckwechsel ERNEUT setzen  [de-DE]
+[ok]   N-17: der Heartbeat ist unter Komma-Locale BYTEGLEICH  [771 Bytes]
+[ok]   N-17: und der HELLO-Text ebenso - bytegleich unter beiden Locales  [444 Bytes]
+[ok]   N-17: kein Komma-Dezimaltrenner im Hello - hier faellt der Rotbeweis, wenn `zahl` durch `std::to_string` ersetzt wird
+[ok]   N-17: juce::JSON liest die Samplerate unveraendert zurueck
+[ok]   N-17: und die Ausgangs-Locale steht am Ende wieder - sonst liefe der REST dieses Beins unter Komma
+[ok]   N-18d: audioGueltig weist eine riegelwidrige Samplerate ab â der Client verbindet gar nicht erst, statt ein null in ein Pflicht-number zu senden
+[ok]   N-18d: dasselbe fuer den kleinsten subnormalen double
+[ok]   N-18d: und nimmt die gewoehnliche Samplerate an
+[ok]   N-18d: auch eine nichtganzzahlige, die der Riegel traegt
+-----------------------------------------
+134 bestanden, 0 gescheitert
+ERGEBNIS B3c : EXIT=0, 0.8 s
+
+======================================================================
+A16  |  EqCopProbeeqNullTest
+======================================================================
+SONDE-NULLTEST — nakama-sonde-testschale (Produktklasse active_probe)
+  ok      frischer Zustand traegt die Produktklasse des Bundles  [active_probe]
+  ok      der Bundlevertrag laesst die eigene Produktklasse zu
+  ok      der Bundlevertrag laesst 'main' NICHT zu
+  ok      der Bundlevertrag laesst 'legacy' NICHT zu
+  ok      das Bundle meldet dem Host keinen Parameter  [0]
+  ok      keine erfundene Oberflaeche (Gestaltung kommt aus Figma)
+  ok      frische Instanz ist neutral, trotz fester Produktklasse  [unclassified]
+  ok      eine Sonde darf den Broker nie starten
+  ok      bitgleich bei 44100 Hz, Block 1
+  ok      0 Samples Latenz bei 44100 Hz, Block 1  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 44100 Hz, Block 16
+  ok      0 Samples Latenz bei 44100 Hz, Block 16  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 44100 Hz, Block 64
+  ok      0 Samples Latenz bei 44100 Hz, Block 64  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 44100 Hz, Block 512
+  ok      0 Samples Latenz bei 44100 Hz, Block 512  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 44100 Hz, Block 4096
+  ok      0 Samples Latenz bei 44100 Hz, Block 4096  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 48000 Hz, Block 1
+  ok      0 Samples Latenz bei 48000 Hz, Block 1  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 48000 Hz, Block 16
+  ok      0 Samples Latenz bei 48000 Hz, Block 16  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 48000 Hz, Block 64
+  ok      0 Samples Latenz bei 48000 Hz, Block 64  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 48000 Hz, Block 512
+  ok      0 Samples Latenz bei 48000 Hz, Block 512  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 48000 Hz, Block 4096
+  ok      0 Samples Latenz bei 48000 Hz, Block 4096  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 96000 Hz, Block 1
+  ok      0 Samples Latenz bei 96000 Hz, Block 1  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 96000 Hz, Block 16
+  ok      0 Samples Latenz bei 96000 Hz, Block 16  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 96000 Hz, Block 64
+  ok      0 Samples Latenz bei 96000 Hz, Block 64  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 96000 Hz, Block 512
+  ok      0 Samples Latenz bei 96000 Hz, Block 512  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 96000 Hz, Block 4096
+  ok      0 Samples Latenz bei 96000 Hz, Block 4096  [0]
+  ok      kein MIDI erzeugt
+  ok      kein Tail  [0]
+  ok      Stille bleibt bitgenau still
+  ok      Zustand laesst sich speichern  [3439 Bytes]
+  ok      geladener Zustand ist derselbe (Instanz-ID, Klasse, Position, Label)
+  ok      der eigene Stand kommt NICHT als read-only zurueck
+  ok      nach gueltigem State traegt der Lebenslauf die Produktklasse  [active_probe]
+  ok      speichern -> laden -> speichern ist bytegleich  [3439 Bytes]
+  ok      Probeeq-Controlprovider erfindet keine eigene Session-Epoche
+  ok      Probeeq-Stateprovider meldet echten Parameterhash und keinen erfundenen Record-State
+  ok      Testschale belegt beide Connectoren; Probeeq besitzt keinen Startpfad
+  ok      Probeeq-ControlClient traegt seinen produktiven Statusprovider
+  ok      Probeeq startet produktiv beide v3-Connectoren, aber niemals einen Broker
+  ok      die Probebytes tragen wirklich measurement_position=post_fader_contribution  [post_fader_contribution]
+  ok      insert_probe_is_never_called_master_sum: der Stand kommt als read-only zurueck, nicht als eigener  [measurement_position post_fader_contribution is not allowed for active_probe]
+  ok      read-only nennt seinen Grund
+  ok      das Bundle FUEHRT die verbotene Position nicht  [insert]
+  ok      die Instanz klassifiziert NICHT auf die Produktklasse, sie bleibt neutral  [unclassified]
+  ok      eine read-only-Sonde darf den Broker nicht starten
+  ok      Vertrag 53.8: dieselben Originalbytes gehen unveraendert an den Host zurueck  [3456 Bytes]
+  ok      der Rueckweg waescht nichts: erneut geladen bleibt read-only  [measurement_position post_fader_contribution is not allowed for active_probe]
+  ok      und erneut geladen bleibt die Instanz neutral  [unclassified]
+  ok      Gegenprobe: derselbe Stand mit erlaubter Position laedt normal
+  ok      Gegenprobe: der geladene Common ist derselbe (Position insert)  [insert]
+  ok      Gegenprobe: nach gueltigem Stand traegt der Lebenslauf die Produktklasse  [active_probe]
+  ok      Nachreichen: die Instanz ist VOR dem verbotenen Stand klassifiziert  [active_probe]
+  ok      Nachreichen: der verbotene Stand kommt auch bei einer laufenden Instanz read-only  [measurement_position post_fader_contribution is not allowed for active_probe]
+  ok      Nachreichen: die Klassifikation faellt zurueck auf neutral, alte Rechte bleiben nicht  [unclassified]
+  ok      Nachreichen: der Host bekommt genau die Bytes zurueck, die er gab - kein stiller Tausch  [3456 Bytes]
+  ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'main'
+  ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'passive_probe'
+  ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'active_probe'
+  ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'legacy'
+  ok      Muellbytes lassen den gehaltenen Zustand unveraendert
+  ok      Nullzeiger/Laenge 0 lassen den gehaltenen Zustand unveraendert
+
+SONDE-NULLTEST OK - 87 Pruefungen ok, 0 Fehler
+ERGEBNIS A16 : EXIT=0, 0.1 s
+
+======================================================================
+A1  |  EqCopNullTest
+======================================================================
+  ok      Latenz ist 0 Samples
+  ok      Tail ist 0 s
+  ok      1000 Bloecke Rauschen: Ausgang bitgleich (Nulltest)
+  ok      kein falscher NaN-Alarm bei endlichem Signal
+  ok      NaN/Inf-Block: Ausgang bitgleich (nicht gefiltert)
+  ok      NaN/Inf wurde als Mangel registriert
+  ok      Mono-Layout wird angenommen
+  ok      5.1 wird klar abgelehnt (kein stilles Downmixen)
+  ok      Save/Load: Sensor-ID bleibt stabil
+  ok      Save/Load: Rolle und Paar-ID bleiben
+NULLTEST OK
+ERGEBNIS A1 : EXIT=0, 0.1 s
+
+======================================================================
+A4  |  cargo test --test sonde013_verdrahtung   (im Ordner broker)
+======================================================================
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+2905 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+
+3890 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+
+3937 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+
+277 | struct HarnischMitStore {
+...
+280 |     clock: Arc<ManualClock>,
+
+1904 | fn sonde_mit_evidenz(h: &HarnischMitStore, anzahl: usize) -> HelloControl {
+
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.86s
+     Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)
+
+running 74 tests
+test bestaetigter_resync_loest_das_sticky_unknown ... ok
+test ergebnis_ohne_resultatmessung_wird_abgelehnt ... ok
+test bootstrap_zieht_zeitfenster_und_rechnet_echte_p_werte ... ok
+test erste_intervention_nach_resync_wird_angenommen ... ok
+test erster_heartbeat_mit_false_loest_das_sticky_unknown ... ok
+test bandsatz_ohne_bit_ist_fail_closed ... ok
+test evidenz_faellt_mit_dem_client ... ok
+test experiment_begin_legt_passage_und_versuch_an ... ok
+test evidenz_ohne_erfolgreiche_ablage_ist_nicht_angenommen ... ok
+test beeinflusste_evidenz_wird_ausgeschlossen_und_gezaehlt ... ok
+test evidenz_historie_bleibt_und_ist_gedeckelt ... ok
+test drop_invalidiert_als_sequenzluecke ... ok
+test eviction_raeumt_das_paarurteil_und_bildet_neu ... ok
+test experimentbefehl_und_wirkung_sind_ein_append ... ok
+test evidenz_historie_haelt_ihren_deckel ... ok
+test experimenttransitionen_stehen_im_ereignisindex_mit_vollen_referenzen ... ok
+test fremdes_projekt_erreicht_den_versuch_nicht ... ok
+test invalidierung_aus_dem_produktpfad_haelt_den_vertrag ... ok
+test blindreihenfolge_wird_im_eigenen_befehlszweig_gebunden ... ok
+test invalidierung_bildet_das_paarurteil_neu ... ok
+test invalidierung_schliesst_gespeicherte_evidenz_aus ... ok
+test invalidierung_serialisiert_ihre_drei_umfaenge ... ok
+test experimentbefehl_bleibt_in_seinem_projekt ... ok
+test halbe_snapshotdichte_stuft_herab ... ok
+test gleiche_dichte_stuft_nicht_herab ... ok
+test markerinvalidierung_ohne_projektzeit_ist_fail_closed ... ok
+test markerinvalidierung_trifft_genau_ihren_bereich ... ok
+test messpunktwechsel_invalidiert_aus_dem_deskriptorvergleich ... ok
+test nachbericht_behaelt_die_sequenzbasis ... ok
+test nachbericht_greift_nicht_bei_fremdem_intervall_derselben_sitzung ... ok
+test nachlauf_laeuft_in_echtzeit_ab ... ok
+test nachlauf_rechnet_ab_seinem_start ... ok
+test gescheiterter_append_laesst_keinen_ausschluss_stehen ... ok
+test paare_bleiben_in_ihrer_sitzung ... ok
+test invalidierung_laesst_die_sessionprojektion_stehen ... ok
+test export_traegt_seine_transitionen_auch_nach_dem_neustart ... ok
+test invalidierung_projiziert_ihren_grund_in_die_evidenzzeilen ... ok
+test passage_aus_dem_wire_traegt_ihre_messpunktklassen ... ok
+test liegengebliebene_ruecknahme_wird_beim_subscribe_nachgespielt ... ok
+test genau_ein_snapshot_nach_dem_kandidaten_ist_ein_resultat ... ok
+test prepost_join_laeuft_im_produktpfad ... ok
+test dekodierte_evidenz_findet_gain_mit_intervall ... ok
+test materialwechsel_invalidiert_aus_dem_fingerprintvergleich ... ok
+test r2_backlog_ohne_replay_end_zu_end ... ok
+test persistierter_retry_bleibt_idempotent ... ok
+test replay_vor_dem_ersten_heartbeat_nimmt_ihm_den_erstling_nicht ... ok
+test prepost_filtert_ausschluss_und_rechnet_in_einer_konvention ... ok
+test evidenzreihenfolge_ueberdauert_den_neustart ... ok
+test r2_lebenszyklus_mit_verbleibender_sonde_end_zu_end ... ok
+test invalidierung_wird_dem_abonnenten_wirklich_zugestellt ... ok
+test sitzung_ist_zwischen_main_hello_und_erstem_heartbeat_gesperrt ... ok
+test sondenhello_aendert_den_taint_nicht ... ok
+test projektspanne_traegt_weiter_den_suchraum ... ok
+test taint_ist_sitzungsweit ... ok
+test spaeteres_false_loest_das_sticky_unknown_nicht ... ok
+test taintmap_haelt_ihren_deckel ... ok
+test transportbruch_invalidiert_mit_seinem_grund ... ok
+test retry_an_unbekanntes_ziel_wird_abgewiesen ... ok
+test retry_an_fremde_sitzung_wird_abgewiesen ... ok
+test preview_nimmt_die_evidenz_ihrer_sitzung_zurueck ... ok
+test wire_experimentintervall_ohne_id_wird_abgelehnt ... ok
+test wire_hoermarkierung_wird_von_keinem_experimentterminal_geschlossen ... ok
+test wire_intervention_traegt_art_und_experiment_bis_zum_terminal ... ok
+test paarurteil_entsteht_beim_neustart_aus_der_evidenz ... ok
+test ruecknahme_trifft_nur_den_eigenen_versuch ... ok
+test preview_und_ruecknahme_liegen_in_einem_append ... ok
+test passagenbelege_kommen_aus_den_vertretenen_quellen ... ok
+test verdraengung_bekommt_ihr_eigenes_terminal ... ok
+test verdraengter_taint_faellt_in_der_opfersitzung ... ok
+test paarurteil_erreicht_gen_ueber_outbox_und_push ... ok
+test terminal_traegt_die_nutzerdaten_und_ueberdauert_den_neustart ... ok
+test versuchsergebnis_erreicht_gen_ueber_outbox_und_push ... ok
+test resultatmessung_ist_an_versuch_passage_und_grenze_gebunden ... ok
+test der_snapshot_haelt_den_versuchsdeckel_des_vertrages ... ok
+
+test result: ok. 74 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.49s
+
+ERGEBNIS sonde013_verdrahtung : EXIT=0, 16.8 s
+
+======================================================================
+A4  |  cargo test --test sonde013_prepost   (im Ordner broker)
+======================================================================
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.73s
+     Running tests\sonde013_prepost.rs (broker\target\debug\deps\sonde013_prepost-b89fd89ce4865d4e.exe)
+
+running 18 tests
+test fehlender_teilfenster_lag_stuft_herab ... ok
+test duplicate_half_is_conflict_not_first_wins ... ok
+test kettenbefund_und_dreifachergebnis_haengen_nicht_am_urteil ... ok
+test hard_exclusions_each_name_their_reason ... ok
+test nicht_endliche_werte_ergeben_keine_stationaere_kette ... ok
+test peak_to_sidelobe_bleibt_endlich ... ok
+test leere_baender_erzeugen_kein_nan ... ok
+test noise_yields_unclear ... ok
+test unknown_time_path_can_never_reach_strong ... ok
+test urteil_traegt_seine_kalibrierungsfassung ... ok
+test coverage_is_saturating_and_normalised_to_shorter_window ... ok
+test distributed_pair_never_produces_transfer_function ... ok
+test each_downgrade_reason_falls_alone ... ok
+test feature_aligned_verlangt_den_presentation_nachweis ... ok
+test pairing_requires_exactly_one_pre_and_one_post ... ok
+test three_results_are_never_collapsed ... ok
+test feature_alignment_search_space_and_pdc_is_hint_only ... ok
+test alignment_class_has_four_values_and_each_criterion_falls_alone ... ok
+
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+ERGEBNIS sonde013_prepost : EXIT=0, 1 s
+
+======================================================================
+A4  |  cargo test --test sonde013_experiment   (im Ordner broker)
+======================================================================
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.63s
+     Running tests\sonde013_experiment.rs (broker\target\debug\deps\sonde013_experiment-994d32cd62e1b354.exe)
+
+running 19 tests
+test four_axes_are_reported_separately ... ok
+test gate6_incomparable_never_gets_a_strong_winner ... ok
+test experiment_survives_restart_without_silent_continuation ... ok
+test lower_reproducibility_class_is_explicit ... ok
+test manual_external_begin_locks_baseline ... ok
+test match_gain_is_frozen_in_the_immutable_reference ... ok
+test block_bootstrap_weist_nichtendliches_ab ... ok
+test passage_survives_restart_and_missing_db_degrades_gracefully ... ok
+test passage_carries_all_six_fields ... ok
+test open_cap_per_project_at_n_and_n_plus_one ... ok
+test verdict_vocabulary_is_closed_and_keep_needs_user ... ok
+test open_cap_global_at_n_and_n_plus_one ... ok
+test export_is_complete_and_delete_leaves_no_pcm ... ok
+test block_bootstrap_und_fdr_halten_ihre_zusagen ... ok
+test blind_order_is_bound_before_the_verdict_and_revealed_after ... ok
+test second_change_creates_new_candidate_not_a_new_baseline ... ok
+test abort_writes_terminal_event_for_each_trigger ... ok
+test manual_result_writes_terminal_event_and_deltas ... ok
+test manual_external_has_no_state_hash_and_no_revert ... ok
+
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+ERGEBNIS sonde013_experiment : EXIT=0, 0.8 s
+
+======================================================================
+A4  |  cargo test --test sonde013_passage   (im Ordner broker)
+======================================================================
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.66s
+     Running tests\sonde013_passage.rs (broker\target\debug\deps\sonde013_passage-1f134177ed15bbcd.exe)
+
+running 12 tests
+test coverage_is_measured_signal_not_wall_duration ... ok
+test zahlenraender_saettigen_statt_umzubrechen ... ok
+test fehlender_fingerprint_ist_keine_aehnlichkeit ... ok
+test kein_beleg_wird_still_uebergangen ... ok
+test comparability_needs_all_five_and_hash_alone_never_wins ... ok
+test messpunktklasse_wird_je_quelle_verglichen ... ok
+test suspend_counts_as_missing_coverage ... ok
+test jaccard_rechnet_ueber_mengen_nicht_ueber_listen ... ok
+test leere_quellensets_sind_nicht_identisch ... ok
+test nicht_endliche_abdeckung_ist_fail_closed ... ok
+test urteil_traegt_seine_kalibrierungsfassung ... ok
+test each_start_gate_falls_alone_at_its_threshold ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+ERGEBNIS sonde013_passage : EXIT=0, 0.9 s
+
+======================================================================
+A4  |  cargo test --test sonde013_taint   (im Ordner broker)
+======================================================================
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.72s
+     Running tests\sonde013_taint.rs (broker\target\debug\deps\sonde013_taint-8f6252999ec5716d.exe)
+
+running 14 tests
+test applied_state_segments_instead_of_tainting ... ok
+test downstream_probe_is_tainted_by_upstream_intervention ... ok
+test epoch_change_invalidates_open_evidence ... ok
+test invalidate_scope_discriminator_rejects_mismatched_payloads ... ok
+test marker_invalidates_overlapping_range_and_unknown_routing_takes_the_session ... ok
+test measurement_position_change_invalidates_dependent_evidence ... ok
+test both_experiment_terminals_close_all_intervals ... ok
+test material_change_invalidates_dependent_evidence ... ok
+test inverse_path_returns_to_zero_after_every_intervention_kind ... ok
+test unknown_routing_widens_to_whole_session ... ok
+test only_neutral_resync_clears_sticky_unknown ... ok
+test marker_end_closes_its_interval_only_after_the_tail ... ok
+test retention_abort_also_closes_intervals ... ok
+test dispatch_lock_ordering_holds_under_concurrent_begin ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+ERGEBNIS sonde013_taint : EXIT=0, 0.9 s
+
+======================================================================
+A4  |  cargo test --test contract_cross_language   (im Ordner broker)
+======================================================================
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.72s
+     Running tests\contract_cross_language.rs (broker\target\debug\deps\contract_cross_language-c8ce76809755fc6f.exe)
+
+running 10 tests
+test wirezahl_texte_halten_den_textriegel ... ok
+test quantisierung_stimmt_mit_den_testvektoren ... ok
+test bandgitter_ist_lesbar_und_in_sich_stimmig ... ok
+test textriegel_deckt_die_gemeinsame_falltabelle ... ok
+test bandwertgrenzen_stimmen_mit_dem_vertrag ... ok
+test fb_korpus_klassifiziert_wie_das_manifest ... ok
+test jcs_fixtures_stimmen_mit_manifest ... ok
+test dto_korpus_klassifiziert_wie_das_manifest ... ok
+test envelope_korpus_klassifiziert_wie_das_manifest ... ok
+test korpus_klassifiziert_wie_das_manifest ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.29s
+
+ERGEBNIS contract_cross_language : EXIT=0, 1.3 s
+
+======================================================================
+A4  |  cargo test --test coordinator_model   (im Ordner broker)
+======================================================================
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.92s
+     Running tests\coordinator_model.rs (broker\target\debug\deps\coordinator_model-c22cf73cd241058f.exe)
+
+running 51 tests
+test control_vor_welcome ... ok
+test brokerneustart_behaelt_session_epoch ... ok
+test brokerneustart_ohne_mainprojectstate_ingress_gibt_fuehrung_frei ... ok
+test brokerneustart_ohne_mainprojectstate_ingress ... ok
+test erstes_einziges_main_fuehrt_sonst_bestaetigung ... ok
+test fuehrung_exklusiv_und_uebergabe ... ok
+test fuehrung_exklusiv_und_reconnect_im_selben_lauf ... ok
+test fuehrung_stale_bis_eviction ... ok
+test alle_schemafesten_interventionsarten_sperren_dieselbe_evidenz ... ok
+test eviction_loescht_intervention_unknown_nicht ... ok
+test eviction_haelt_dauerhaften_konfliktriegel ... ok
+test eviction_haelt_phase_a_riegel ... ok
+test heartbeat_zwischen_schliessen_und_getrennt_adressiert_den_alten_link_nicht ... ok
+test abbau_des_verdraengten_links_laesst_den_geteilten_alias_stehen ... ok
+test join_reconnect_disconnect_setzt_sticky_unknown_bis_resync ... ok
+test neue_nonce_verdraengt_alte_sofort ... ok
+test hello_mit_identischer_nonce_verdraengt_den_alten_link_ohne_den_alias_zu_ziehen ... ok
+test join_nur_bei_eindeutigem_main ... ok
+test liveness_nur_instant ... ok
+test p0_ziel_ist_bei_zwei_links_derselben_adresse_deterministisch ... ok
+test p2_mutiert_erst_nach_flatbuffers_verifikation ... ok
+test konfliktriegel_ueberlebt_eviction ... ok
+test produktive_json_senken_verlangen_den_vollstaendigen_v3_vertrag ... ok
+test p2_push_haelt_den_standlock_nicht ... ok
+test reconnect_im_selben_brokerlauf_gibt_unuebergebene_fuehrung_zurueck ... ok
+test probe_ohne_eigene_epoche_uebernimmt_eindeutige_main_sitzung ... ok
+test probe_join_bleibt_reihenfolgefest_und_bei_mehreren_mains_fail_closed ... ok
+test schreiber_wartet_nicht_unbegrenzt_auf_den_peer ... ok
+test session_faellt_mit_dem_letzten_client ... ok
+test stale_konstanten_ableitung ... ok
+test senke_haelt_den_standlock_nicht_ueber_den_push ... ok
+test state_report_erreicht_liveness_ueber_produktive_p1_senke ... ok
+test stale_grenze_exklusiv_und_kontakt_setzt_zurueck ... ok
+test telemetrie_einmalig_gekoppelt ... ok
+test tombstone_grenze_entfernt_alle_fluechtigen_sichten_aber_keinen_dauerhaften_konfliktriegel ... ok
+test subnormale_samplerate_ergibt_kein_fenster ... ok
+test unverarbeitete_bytes_aendern_den_sessiongraphen_nicht ... ok
+test verdraengte_nonce_report_sperrt_beide ... ok
+test trennen_bereinigt_vor_join ... ok
+test zwei_projekte_bleiben_getrennt ... ok
+test verdraengung_flusht_den_snapshot_im_trennzyklus ... ok
+test evidenzsnapshot_fremder_adresse_wird_verworfen ... ok
+test vergifteter_stand_beendet_den_prozess_nicht ... ok
+test global_session_cap_weist_am_cap_plus_eins_ab ... ok
+test evidenzsnapshot_wird_angenommen_und_zusammengefasst ... ok
+test evidenzsnapshot_der_fassung_2_faellt_bei_einem_leser_der_fassung_1 ... ok
+test session_und_global_cap ... ok
+test evidenzsnapshot_wird_bei_offener_intervention_gesperrt ... ok
+test caps_stale_first_deterministisch ... ok
+test sichtgrenzen_und_wire_replay_null ... ok
+test kein_expect_mehr_auf_dem_standlock ... ok
+
+test result: ok. 51 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.13s
+
+ERGEBNIS coordinator_model : EXIT=0, 1.3 s
+

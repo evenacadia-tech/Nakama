@@ -53,6 +53,13 @@ Form: es meldete gruen, wo es haette rot melden muessen.
    ist deshalb eine eigene Funktion `_riegel`, die A26 auf die ECHTEN
    Kennzahlen anwendet und der Selbsttest synthetische Dicts einspeist.
 
+4. **S-07 erreichte die Validierung nicht (Nacharbeit 1, EP-04/NR-04).** Die
+   Wahrheitspruefung stand als Zeile mitten in `main`; der Selbsttest verglich
+   statt ihrer zwei Literale gegen eine lokale Testmenge und erzeugte gar
+   keinen ungueltigen Korpusfall. Sie ist jetzt `_pruefe_wahrheiten` - dieselbe
+   Bauform wie `_riegel`: A26 wendet sie auf den geladenen Korpus an, S-07 auf
+   einen synthetischen Fall und sein Gegenteil.
+
 Dazu misst das Bein den zweiten Teil des Entscheids G4 §8: keine der
 geschlossenen Mengen des v3-Vertrags benennt einen "sicheren Ausloeser".
 
@@ -167,6 +174,27 @@ def _quelle_pruefen(fall: dict) -> str | None:
         return (f"{fall['fall']}: Bezeichner {quelle['bezeichner']!r} steht nicht "
                 f"in {quelle['datei']}")
     return None
+
+
+def _pruefe_wahrheiten(faelle: list[dict], mengen: dict) -> list[str]:
+    """Jede Wahrheit steht in `ERLAUBTE_WAHRHEITEN` — als EIGENE Funktion.
+
+    NAK-182 Nacharbeit 1 (EP-04/NR-04): dieselbe Bauform wie `_riegel` und
+    `_quelle_pruefen`. A26 wendet sie auf den geladenen Korpus an, der
+    Selbsttest S-07 auf einen synthetischen Fall.
+
+    🔑 Bis hierher stand die Pruefung als Zeile mitten in `main`, und S-07
+    pruefte statt ihrer die Mitgliedschaft zweier Literale in einer lokalen
+    Testmenge. Damit erreichte der Selbsttest den Validierungsweg nie: er
+    waere auch dann gruen geblieben, wenn `main` gar nicht mehr abgewiesen
+    haette. Ein zweiter Pruefweg ist genau die Form, an der C6 hing.
+    """
+    rot: list[str] = []
+    for fall in faelle:
+        if fall["wahrheit"] not in mengen["erlaubte_wahrheiten"]:
+            rot.append(f"{fall['fall']}: Wahrheit {fall['wahrheit']!r} steht nicht "
+                       f"in ERLAUBTE_WAHRHEITEN")
+    return rot
 
 
 def _passt(fall: dict, mengen: dict) -> bool:
@@ -365,9 +393,11 @@ def main(argv: list[str]) -> int:
             befund = _quelle_pruefen(f)
             if befund:
                 rot.append(f"{name}: {befund}")
-            if f["wahrheit"] not in mengen["erlaubte_wahrheiten"]:
-                rot.append(f"{name}: {f['fall']}: Wahrheit {f['wahrheit']!r} steht "
-                           f"nicht in ERLAUBTE_WAHRHEITEN")
+
+        # NAK-182 Nacharbeit 1 (NR-04): die Wahrheiten laufen durch DIESELBE
+        # Funktion, die der Selbsttest S-07 mit einem synthetischen Fall ruft.
+        for befund in _pruefe_wahrheiten(faelle, mengen):
+            rot.append(f"{name}: {befund}")
 
         marke = "[ok] " if not (k["falsche_starke"] or k["falsche_schwache"]) else "[ROT]"
         print(f"{marke} {name:<10} {k['faelle']:>2} Faelle · "
@@ -497,11 +527,21 @@ def _selbsttest() -> int:
                f"falsche_starke={g['falsche_starke']}")
 
     # ── S-07 — eine Wahrheit ausserhalb der Menge ────────────────────────
-    aussen = "erfundene_wahrheit"
-    pruefe(aussen not in _SELBST_MENGEN["erlaubte_wahrheiten"],
-           "S-07: eine Wahrheit ausserhalb ERLAUBTE_WAHRHEITEN wird als solche erkannt")
-    pruefe("innerhalb" in _SELBST_MENGEN["erlaubte_wahrheiten"],
-           "S-07 Gegenteil: ein Wert aus der Menge nicht")
+    #
+    # 🔑 NAK-182 Nacharbeit 1 (EP-04/NR-04): gemessen wird die FUNKTION, die
+    # A26 auf den geladenen Korpus anwendet. Vorher stand hier die
+    # Mitgliedschaft zweier Literale in `_SELBST_MENGEN` - das erzeugte keinen
+    # ungueltigen Korpusfall und erreichte die tatsaechliche Ablehnung nie.
+    aussen = _pruefe_wahrheiten([fall("erfundene" + "_wahrheit", STARK)], _SELBST_MENGEN)
+    pruefe(len(aussen) == 1 and "synthetisch" in aussen[0]
+           and "ERLAUBTE_WAHRHEITEN" in aussen[0],
+           "S-07: ein Fall mit einer Wahrheit ausserhalb ERLAUBTE_WAHRHEITEN faellt an "
+           "derselben Validierung, die A26 fuehrt, und die Meldung nennt den Fall",
+           "; ".join(aussen) if aussen else "keine rote Zeile")
+    drin = _pruefe_wahrheiten([fall("innerhalb", STARK)], _SELBST_MENGEN)
+    pruefe(not drin,
+           "S-07 Gegenteil: derselbe Fall mit einem Wert AUS der Menge erzeugt keine "
+           "rote Zeile", "; ".join(drin))
 
     # ── Kennzahlweg: die Quotenwachen ────────────────────────────────────
     print()

@@ -35,6 +35,21 @@ impl Coordinator {
         .lock()
         .unwrap_or_else(|e| e.into_inner());
 
+        // 🔑 NR-04 (Nacharbeit 1, 07.09.2026), M-28: die Belege werden gegen
+        // den Store gehalten, BEVOR der Snapshot entsteht.
+        //
+        // Das ist die zweite der beiden Stellen aus M-28 — und die
+        // PRODUKTSEITIGE: `session_snapshot_json` ist die Lesesicht der Beine,
+        // der Push geht hier durch. Eine `evidence`-Zeile, die nach dem
+        // Eintragen verschwindet (Kompaktierung, externer Eingriff), wuerde
+        // sonst weiter als Beleg einer sichtbaren Behauptung reisen.
+        //
+        // Die Haertung steht VOR dem Standlock: sie nimmt ihn selbst, und der
+        // Store liest ausserhalb. Ohne Befunde in der Sitzung kehrt sie nach
+        // einem Lockdurchgang zurueck, ohne SQLite anzufassen — der
+        // Normalfall bei 1 bis 4 Hz kostet damit keine Leserunde.
+        self.befunde_gegen_store_haerten(session);
+
         let (payload, ziele) = {
             let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
             // D12-Naht (H-04): scharf gestellt panisiert der Flush hier, UNTER

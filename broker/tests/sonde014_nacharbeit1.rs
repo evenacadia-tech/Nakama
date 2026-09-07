@@ -253,6 +253,7 @@ impl Harnisch {
             .befunde_sicht(&self.master.project_binding_id, &self.master.session_epoch)
     }
 
+
     fn snapshot(&self) -> Value {
         serde_json::from_slice(
             &self
@@ -352,6 +353,61 @@ fn befund_mit_geloeschter_evidenzzeile_wird_unsichtbar() {
         leer,
         "ohne Belegzeile im Store wird nichts mehr gezeigt: {:?}",
         findings["findings"]
+    );
+}
+
+/// **NR-04, der FLUSH-Pfad.** `session_snapshot_json` ist die Lesesicht der
+/// Beine; der Push des Produkts geht durch `flush_session`.
+///
+/// Beide bauen denselben Snapshot (`snapshot_locked`), aber nur einer von
+/// beiden ist der Weg, auf dem Gen die Behauptung wirklich sieht. Ein Riegel,
+/// der nur an der Lesesicht haengt, waere genau die Sorte Beleg, die
+/// `tools/dirigent/pruefliste.md` E ausschliesst.
+///
+/// Gemessen wird ohne Evidenzaenderung: eine gestiegene Intent-Revision
+/// veraltet die Befunde und loest den Flush aus. Damit laeuft
+/// `befunde_eintragen` NICHT mit — die Haertung, die hier greift, ist die im
+/// Flush-Pfad und keine andere.
+#[test]
+fn der_flush_pfad_haelt_die_belege_ebenfalls_gegen_den_store() {
+    let h = Harnisch::neu("nr04-flush");
+    h.intent_marke(0);
+    h.belege("main", &h.master, 0, 12);
+    h.belege("sonde0", &h.sonde, 100, 12);
+    assert!(!h.befunde().is_empty(), "die Buehne traegt einen Befund");
+
+    {
+        let conn = rusqlite::Connection::open(h.ordner.db()).expect("Store oeffnen");
+        assert!(
+            conn.execute("DELETE FROM evidence", []).expect("loeschen") > 0,
+            "es gab Zeilen zu entfernen"
+        );
+    }
+    // Der Cache traegt sie noch: ohne einen Weg, der die Belege prueft, bliebe
+    // die Behauptung stehen.
+    // `befunde_sicht` liest nur den fluechtigen Stand und haertet nichts: der
+    // Befund steht noch da. Genau darum geht es - ohne einen Weg, der die
+    // Belege prueft, bliebe die Behauptung auf dem Draht.
+    assert!(
+        !h.befunde().is_empty(),
+        "der fluechtige Bestand haelt den Befund weiter"
+    );
+
+    // Eine gestiegene Bestandsrevision veraltet die Befunde und flusht die
+    // Sitzung. KEINE Evidenzaenderung, also keine Neurechnung.
+    let hoehere = json!({
+        "type": "intent_update",
+        "adresse": h.master,
+        "session_epoch": h.master.session_epoch,
+        "vollstaendig": true,
+        "bestand_revision": 1
+    });
+    h.c.p1("main", &serde_json::to_vec(&hoehere).unwrap());
+
+    assert!(
+        h.befunde().is_empty(),
+        "der Flush-Pfad haelt die Belege gegen den Store: {:?}",
+        h.befunde().iter().map(|b| b.finding_id.clone()).collect::<Vec<_>>()
     );
 }
 

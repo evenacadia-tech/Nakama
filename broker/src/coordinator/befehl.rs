@@ -177,6 +177,12 @@ impl Coordinator {
             }
         }
 
+        // 🔑 WN-03 (Nacharbeit 2): auch dieser Weg serialisiert `findings`.
+        //
+        // Der P0-Befehl baut seinen `session_snapshot` unter dem Standlock
+        // und stellt ihn den Abonnenten zu. Die Haertung steht deshalb VOR
+        // dem Lock - sie nimmt ihn selbst.
+        self.befunde_gegen_store_haerten(&session);
         let zielstand: Result<
             (u64, String, Value, Vec<SnapshotZiel>),
             (u64, Option<String>, &'static str, &'static str),
@@ -393,6 +399,11 @@ impl Coordinator {
         let session_epoch = wert.get("session_epoch")?.as_str()?;
         let ziel: Adresse = serde_json::from_value(wert.get("ziel")?.clone()).ok()?;
         let kanonischer_auftrag = serde_json_canonicalizer::to_vec(wert).ok()?;
+        // 🔑 WN-03 (Nacharbeit 2): der letzte Weg, auf dem `findings`
+        // hinausgehen. Die Sitzung des Ziels ist die des Senders - der Befehl
+        // wird sonst unten als `unauthorized` abgewiesen -, und eine Sitzung
+        // ohne Befunde kostet die Haertung nur einen Lockdurchgang.
+        self.befunde_gegen_store_haerten(&ClientKey::aus_adresse(&ziel).session());
 
         let (session, revision, hash) = {
             let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());

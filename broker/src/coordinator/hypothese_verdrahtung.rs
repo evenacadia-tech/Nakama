@@ -666,12 +666,152 @@ impl Coordinator {
         Self::befunde_invalidieren_locked(&mut stand, session, &fehlend);
     }
 
+    /// **WN-03 (Nacharbeit 2, 07.09.2026), M-28: dieselbe Existenzabfrage
+    /// fuer eine GESPEICHERTE Projektion.**
+    ///
+    /// `befunde_gegen_store_haerten` haelt den fluechtigen Cache gegen den
+    /// Store. Der Re-Subscribe sendet aber nicht den Cache, sondern den
+    /// letzten committeten Projektionsschnitt aus `session_state_lesen` -
+    /// fertige Bytes, die keine Haertung des Caches mehr erreicht. Genau
+    /// dadurch blieb EP-04 fuer erneut abonnierende Clients offen (WP1-3):
+    /// Befund bilden, Flush, `DELETE FROM evidence`, `subscribe_session` -
+    /// und der gepushte Snapshot trug die Behauptung samt fehlender IDs.
+    ///
+    /// Die Regel ist dieselbe wie im Speicher (`befunde_invalidieren_locked`):
+    /// fehlt eine ID, faellt sie aus dem Befund; fehlen alle, faellt der
+    /// Befund aus den gesendeten `findings`; ein Teilverlust macht ihn
+    /// `stale`. Ein unsichtbar gewordener Befund verschwindet auch aus den
+    /// `alternatives` der uebrigen - eine ID ohne Befund waere ein Verweis
+    /// ins Leere.
+    ///
+    /// 🔑 **Fail-SAFE, nicht fail-closed** (wie NR-04): ohne Store, bei
+    /// degradiertem Store und bei einer gescheiterten Leseabfrage bleiben die
+    /// Bytes unveraendert. Eine Abfrage, die nicht geantwortet hat, ist keine
+    /// Aussage darueber, ob die Zeile existiert.
+    pub(super) fn projektion_gegen_store_haerten(&self, payload: Vec<u8>) -> Vec<u8> {
+        let Some(store) = self.store.as_ref() else {
+            return payload;
+        };
+        if self.store_degradiert() {
+            return payload;
+        }
+        let Ok(mut wert) = serde_json::from_slice::<Value>(&payload) else {
+            return payload;
+        };
+        let Some(findings) = wert
+            .get("findings")
+            .and_then(Value::as_array)
+            .filter(|f| !f.is_empty())
+            .cloned()
+        else {
+            return payload;
+        };
+        // Alle referenzierten IDs in EINER Abfrage - dieselbe Zusage, die
+        // `evidenz_belegt` fuer den Cache haelt.
+        let mut alle: BTreeSet<String> = BTreeSet::new();
+        for befund in &findings {
+            for id in befund
+                .get("evidence_ids")
+                .and_then(Value::as_array)
+                .into_iter()
+                .flatten()
+                .filter_map(Value::as_str)
+            {
+                alle.insert(id.to_owned());
+            }
+        }
+        let ids: Vec<String> = alle.into_iter().collect();
+        if ids.is_empty() {
+            return payload;
+        }
+        let Ok(vorhanden) = store.evidenz_belegt(&ids) else {
+            return payload;
+        };
+        if ids.iter().all(|id| vorhanden.contains(id)) {
+            // Der Normalfall: nichts fehlt, die Bytes bleiben, wie sie
+            // committet wurden.
+            return payload;
+        }
+        let mut behalten: Vec<Value> = Vec::new();
+        let mut unsichtbar: Vec<String> = Vec::new();
+        for mut befund in findings {
+            let eigene: Vec<String> = befund
+                .get("evidence_ids")
+                .and_then(Value::as_array)
+                .into_iter()
+                .flatten()
+                .filter_map(Value::as_str)
+                .map(str::to_owned)
+                .collect();
+            let da: Vec<String> = eigene
+                .iter()
+                .filter(|id| vorhanden.contains(*id))
+                .cloned()
+                .collect();
+            if da.is_empty() {
+                if let Some(id) = befund.get("finding_id").and_then(Value::as_str) {
+                    unsichtbar.push(id.to_owned());
+                }
+                continue;
+            }
+            if da.len() != eigene.len() {
+                let Some(objekt) = befund.as_object_mut() else {
+                    continue;
+                };
+                objekt.insert(
+                    "evidence_ids".into(),
+                    Value::Array(da.into_iter().map(Value::String).collect()),
+                );
+                objekt.insert(
+                    "zustand".into(),
+                    Value::String(Befundzustand::Stale.wire().into()),
+                );
+            }
+            behalten.push(befund);
+        }
+        for befund in behalten.iter_mut() {
+            let Some(objekt) = befund.as_object_mut() else {
+                continue;
+            };
+            let Some(Value::Array(alternativen)) = objekt.get_mut("alternatives") else {
+                continue;
+            };
+            alternativen.retain(|a| match a.as_str() {
+                Some(id) => !unsichtbar.iter().any(|weg| weg == id),
+                None => true,
+            });
+            if alternativen.is_empty() {
+                objekt.remove("alternatives");
+            }
+        }
+        let Some(objekt) = wert.as_object_mut() else {
+            return payload;
+        };
+        if behalten.is_empty() {
+            // Der Vertrag kennt kein leeres Feld: `sicht.rs` setzt es nur,
+            // wenn es Befunde gibt.
+            objekt.remove("findings");
+        } else {
+            objekt.insert("findings".into(), Value::Array(behalten));
+        }
+        serde_json::to_vec(&wert).unwrap_or(payload)
+    }
+
     /// **NR-03: traegt der Stand das Ergebnis noch, das aus ihm entstanden
     /// ist?**
     ///
     /// Zwei Fragen, beide unter dem Lock des Aufrufers:
     ///
-    /// (a) **Revision.** Jeder Befund traegt die Intent-Revision, unter der
+    /// (a) **Generation.** Jeder Befund traegt die Bestandsgeneration, unter
+    ///     der er gerechnet wurde. Weicht sie von der aktuellen ab, ist das
+    ///     Ergebnis veraltet: es entstand unter einer anderen Absicht (M-10).
+    ///
+    ///     🔑 **E-14 / WN-02 (Nacharbeit 2):** hier stand die
+    ///     Sender-Revision. Trifft ein verspaetetes Teilupdate WAEHREND der
+    ///     Rechnung ein, stimmt sie weiterhin ueberein, und das veraltete
+    ///     Ergebnis wurde eingetragen (WP1-2, zweiter Abschnitt).
+    ///
+    /// (a, Verlauf) Jeder Befund traegt die Intent-Revision, unter der
     ///     er gerechnet wurde. Weicht sie von der aktuellen Sitzungsrevision
     ///     ab, ist das Ergebnis veraltet — es wurde unter einer anderen
     ///     Absicht gerechnet (M-10).
@@ -691,12 +831,15 @@ impl Coordinator {
         if befunde.is_empty() {
             return true;
         }
-        let aktuelle_revision = stand
+        let aktuelle_generation = stand
             .intent
             .get(session)
-            .map(|b| b.revision)
+            .map(|b| b.generation)
             .unwrap_or_default();
-        if befunde.iter().any(|b| b.intent_revision != aktuelle_revision) {
+        if befunde
+            .iter()
+            .any(|b| b.intent_generation != aktuelle_generation)
+        {
             return false;
         }
         // Die gueltigen Belege DIESER Sitzung, aus derselben Historie, aus
@@ -718,17 +861,23 @@ impl Coordinator {
             .all(|id| gueltig.contains(id.as_str()))
     }
 
+    ///
+    /// 🔑 **E-14 / WN-02 (Nacharbeit 2, 07.09.2026): gemessen wird die
+    /// BESTANDSGENERATION, nicht die Sender-Revision.** Ein verspaetetes
+    /// Teilupdate mit hartem Veto hebt die Sitzungsrevision nicht; es
+    /// aendert aber den Bestand, unter dem gerechnet wurde. An der
+    /// Sender-Zahl gemessen blieb der READY-Befund handelbar (WP1-2).
     pub(super) fn befunde_veralten_locked(
         stand: &mut Stand,
         session: &SessionKey,
-        neue_revision: i64,
+        neue_generation: i64,
     ) -> usize {
         let Some(befunde) = stand.befunde.get_mut(session) else {
             return 0;
         };
         let mut getroffen = 0usize;
         for befund in befunde.iter_mut() {
-            if befund.intent_revision >= neue_revision
+            if befund.intent_generation >= neue_generation
                 || befund.zustand == Befundzustand::Stale
             {
                 continue;
@@ -766,7 +915,45 @@ fn zahl(wert: f64, min: f64, max: f64) -> f64 {
     if !wert.is_finite() {
         return 0.0;
     }
-    wert.clamp(min, max)
+    auf_wirestellen(wert.clamp(min, max))
+}
+
+/// Rundet auf **15 signifikante Stellen** - die Zahl, die der eigene
+/// Textriegel zulaesst (`vertrag.rs`, `signifikante_stellen > 15`).
+///
+/// 🔑 **WN-03 (Nacharbeit 2, 07.09.2026): ohne sie ist der Re-Subscribe
+/// unerreichbar.** `beobachtung.wert_db` entsteht aus einem `f32`; als `f64`
+/// gedruckt hat `-3.3f32` sechzehn signifikante Stellen
+/// (`-3.2999999523162842`), und dieselbe Laenge tragen die Rangkomponenten
+/// aus der Bruchrechnung. Der Broker persistierte damit eine
+/// Sessionprojektion, die sein EIGENER Leser verwirft: jeder
+/// `resubscribe_snapshot_push` fiel an `v3_nachricht_lesen` in
+/// `routing_fail_closed`, sobald die Sitzung einen Befund trug. Ein
+/// Sendepfad, dessen Bytes niemand lesen darf, ist kein Sendepfad - und die
+/// Haertung aus WN-03 haette nichts, woran sie greifen koennte.
+///
+/// Die Rundung ist verlustfrei in dem Sinn, den der Vertrag meint: `f32`
+/// traegt rund sieben signifikante Stellen, und keine Zusage dieses Tickets
+/// haengt an der sechzehnten.
+fn auf_wirestellen(wert: f64) -> f64 {
+    if wert == 0.0 || !wert.is_finite() {
+        return wert;
+    }
+    let exponent = wert.abs().log10().floor() as i32;
+    // Ausserhalb dieses Bereichs wuerde der Faktor selbst ueberlaufen. Die
+    // Werte dieses Datenwegs sind geklemmt und erreichen ihn nie; der Zaun
+    // steht trotzdem, weil eine Rundung, die Unendlich erzeugt, schlimmer
+    // waere als eine Stelle zu viel.
+    if !(-290..=290).contains(&exponent) {
+        return wert;
+    }
+    let faktor = 10f64.powi(14 - exponent);
+    let gerundet = (wert * faktor).round() / faktor;
+    if gerundet.is_finite() {
+        gerundet
+    } else {
+        wert
+    }
 }
 
 /// Kürzt einen Anzeigetext auf die Vertragslänge (200 Zeichen), in

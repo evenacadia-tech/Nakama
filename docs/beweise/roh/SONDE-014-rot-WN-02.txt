@@ -1,0 +1,38 @@
+ROTBEWEIS WN-02 (SONDE-014 Nacharbeit 2, E-14) - die Bestandsgeneration
+
+ZUSAGE: `befunde_veralten_locked` und die Pruefung in `befunde_eintragen`
+arbeiten auf der BESTANDSGENERATION, nicht auf der vom Sender gezaehlten
+Revision. Ein verspaeteter Teilbericht mit hartem Veto entwertet den
+READY-Befund, obwohl die Sitzungsrevision nicht steigt (WP1-2).
+
+RUECKNAHME: die Generation wird aus beiden Pruefungen genommen; gemessen wird
+wieder die Sender-Revision - genau der Stand vor dieser Runde.
+
+FALLENDE ZEILE: `verspaeteter_teilbericht_entwertet_abhaengige_befunde`
+(broker/tests/sonde014_nacharbeit2.rs) - "jeder abhaengige Befund ist STALE"
+im ersten Abschnitt, "kein Ergebnis der alten Generation wird eingetragen" im
+zweiten.
+
+Kommando: cargo test --manifest-path broker/Cargo.toml --test sonde014_nacharbeit2 verspaeteter_teilbericht
+Gefahren: 2026-09-07T10:33:14
+
+=== 1. RUECKNAHME der Zusage ===
+  broker/src/coordinator/intent.rs
+  broker/src/coordinator/hypothese_verdrahtung.rs
+  broker/src/coordinator/hypothese_verdrahtung.rs
+
+=== 2. ROTER LAUF ===
+EXIT=101
+thread 'verspaeteter_teilbericht_entwertet_abhaengige_befunde' (10044) panicked at tests\sonde014_nacharbeit2.rs:508:5:
+jeder abhaengige Befund ist STALE: [(3, ReadyToSend)]
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 3 filtered out; finished in 8.28s
+error: test failed, to rerun pass `--test sonde014_nacharbeit2`
+
+=== 3. WIEDERHERSTELLUNG ===
+  zurueckgenommen
+
+=== 4. GRUENER LAUF ===
+EXIT=0
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 16.26s
+
+URTEIL: ROT bei Ruecknahme, GRUEN nach Wiederherstellung - die Zusage traegt.

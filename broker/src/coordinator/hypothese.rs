@@ -646,6 +646,17 @@ pub struct CauseHypothesis {
     pub next_test: NaechsterTest,
     pub zustand: Befundzustand,
     pub intent_revision: i64,
+    /// **E-14 / WN-02 (Nacharbeit 2, 07.09.2026): die Bestandsgeneration,
+    /// unter der dieser Befund gerechnet wurde.**
+    ///
+    /// Sie reist NICHT ueber den Draht: der Vertrag traegt weiterhin die
+    /// `intent_revision` (M-10), und die Fassung 3 wird ausserhalb ihrer
+    /// eigenen Etappe nicht angefasst. Sie ist die brokerinterne Antwort auf
+    /// die Frage, ob eine Aussage noch auf dem Bestand ruht, aus dem sie
+    /// entstanden ist: das Veralten und die Eintragungspruefung messen sie,
+    /// weil eine unveraenderte Sender-Revision einen geaenderten Bestand
+    /// nicht ausschliesst (WP1-2).
+    pub intent_generation: i64,
     pub likely_cause: String,
     pub smallest_test: String,
     pub listen_for: String,
@@ -1313,6 +1324,8 @@ fn enthaltung(
         next_test: NaechsterTest::MehrDatenSammeln,
         zustand: zustand_aus_sicherheit(Sicherheitsklasse::Unklar, false),
         intent_revision: aufnahme.intent.as_ref().map_or(0, |i| i.revision),
+        // E-14/WN-02: die Generation des Bestands, aus dem die Aufnahme kam.
+        intent_generation: aufnahme.intent.as_ref().map_or(0, |i| i.generation),
         likely_cause: "Die Datenlage traegt noch keine Ursachenaussage.".into(),
         smallest_test: NaechsterTest::MehrDatenSammeln.satz().into(),
         listen_for: "Noch nichts — erst mehr Material sammeln.".into(),
@@ -1430,6 +1443,8 @@ fn baue_befund(
         next_test,
         zustand,
         intent_revision: aufnahme.intent.as_ref().map_or(0, |i| i.revision),
+        // E-14/WN-02: die Generation des Bestands, aus dem die Aufnahme kam.
+        intent_generation: aufnahme.intent.as_ref().map_or(0, |i| i.generation),
         likely_cause: format!(
             "{} draengt im Bandbereich {}..{} gegen den Master.",
             kurz(&kandidat.quelle_id),
@@ -2195,6 +2210,7 @@ mod tests {
             next_test: NaechsterTest::PassageMessen,
             zustand: Befundzustand::MoreData,
             intent_revision: 0,
+            intent_generation: 0,
             likely_cause: "x".into(),
             smallest_test: "y".into(),
             listen_for: "z".into(),

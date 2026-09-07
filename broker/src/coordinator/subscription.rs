@@ -72,6 +72,16 @@ impl Coordinator {
     }
 
     pub(super) fn resubscribe_snapshot_push(&self, session: &SessionKey, link_id: &str) {
+        // 🔑 WN-03 (Nacharbeit 2, 07.09.2026), M-28: der ZWEITE Sendepfad.
+        //
+        // Die Haertung aus NR-04 sass an `session_snapshot_json` (Lesesicht)
+        // und in `flush_session` (Push). Der Re-Subscribe ist ein weiterer
+        // Weg nach draussen, und er ging an beiden vorbei: ein zweites
+        // `subscribe_session` ohne zwischenzeitlichen Flush genuegte, um eine
+        // Behauptung mit geloeschter `evidence`-Zeile erneut auszuliefern
+        // (WP1-3). Hier steht deshalb dieselbe Abfrage - VOR dem Standlock,
+        // weil sie ihn selbst nimmt und der Store ausserhalb liest.
+        self.befunde_gegen_store_haerten(session);
         let (live_payload, ziel) = {
             let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
             let Some(sub) = stand.subscriptions.get(link_id) else {
@@ -154,6 +164,19 @@ impl Coordinator {
             // Wirezustand austreten. Das ist Storedegradation, nicht ein
             // Anlass, einen leeren oder erfundenen Snapshot zu senden.
             self.routing_fail_closed("Sessionprojektion verletzt v3-Vertrag");
+            return;
+        }
+        // 🔑 WN-03: und die GESPEICHERTE Projektion haelt dieselbe Pruefung
+        // aus, bevor Bytes das Haus verlassen. Der Cache oben ist gehaertet,
+        // diese Bytes hier sind es auch - es gibt keinen Weg, auf dem
+        // `findings` ohne Store-Existenzpruefung reisen.
+        // 🔑 WN-03: und die GESPEICHERTE Projektion haelt dieselbe Pruefung
+        // aus, bevor Bytes das Haus verlassen. Der Cache oben ist gehaertet,
+        // diese Bytes hier sind es auch - es gibt keinen Weg, auf dem
+        // `findings` ohne Store-Existenzpruefung reisen.
+        let payload = self.projektion_gegen_store_haerten(payload);
+        if v3_nachricht_lesen(&payload, "session_snapshot").is_none() {
+            self.routing_fail_closed("Gehaertete Sessionprojektion verletzt v3-Vertrag");
             return;
         }
         let push = self.push.lock().unwrap_or_else(|e| e.into_inner()).clone();

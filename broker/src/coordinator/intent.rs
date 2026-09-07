@@ -100,6 +100,25 @@ pub struct IntentBestand {
     /// vollstaendig und ist damit der Grundstand jedes Objekts, das danach
     /// noch nicht einzeln fortgeschrieben wurde.
     pub grundrevision: i64,
+    /// **E-14 / WN-02 (Nacharbeit 2, 07.09.2026): die BESTANDSGENERATION.**
+    ///
+    /// Sie steigt bei JEDER im Broker wirksam uebernommenen Bestandsaenderung
+    /// — Vollbericht wie Teilbericht —, unabhaengig davon, welche Zahl der
+    /// Sender gezaehlt hat. Genau das ist der Unterschied, der die Luecke
+    /// WP1-2 schliesst: nach Vollbestand/0 → A/3 → Befund → verspaetetem B/2
+    /// mit `rolle=geschuetzt` bleibt die Sitzungsrevision 3, der Bestand hat
+    /// sich aber geaendert. An der Sender-Revision gemessen blieb der READY-
+    /// Befund handelbar, obwohl ein hartes Veto inzwischen uebernommen war.
+    ///
+    /// Maszgeblich ist sie fuer ZWEI Fragen: das Veralten
+    /// (`befunde_veralten_locked`) und die Eintragungspruefung
+    /// (`ergebnis_ist_noch_gueltig`, NR-03). Die Sender-Revision bleibt
+    /// allein die ORDNUNG der Uebernahme (NR-02) und die Zahl, die als
+    /// `intent_revision` am Befund ueber den Draht reist.
+    ///
+    /// Sie ist fluechtig wie der ganze Spiegel: nach einem Brokerneustart
+    /// meldet der Main seinen Vollbestand, und der ist die erste Generation.
+    pub generation: i64,
 }
 
 /// **M-86, der EINE Riegel: fail-closed.**
@@ -498,6 +517,13 @@ impl Coordinator {
                 return Err(IntentAbweisung::AeltereRevision);
             }
 
+            // 🔑 E-14 / WN-02 (Nacharbeit 2): die Generation steigt bei JEDER
+            // wirksamen Uebernahme — auch bei einem Vollbericht, der den
+            // Spiegel ersetzt. Sie ueberlebt das Ersetzen deshalb
+            // ausdruecklich: `..Default::default()` setzte sie sonst auf 0
+            // zurueck, und ein Befund der vorigen Generation truege danach
+            // dieselbe Zahl wie einer der neuen.
+            let naechste_generation = bestand.generation.saturating_add(1);
             let mut kandidat = if vollstaendig {
                 // Der vollstaendige Bestand ERSETZT den Spiegel. Ein
                 // Verschmelzen liesse ein zurueckgenommenes Veto stehen —
@@ -507,6 +533,7 @@ impl Coordinator {
                     revision,
                     vollstaendig: true,
                     grundrevision: revision,
+                    generation: naechste_generation,
                     ..Default::default()
                 }
             } else {
@@ -516,6 +543,7 @@ impl Coordinator {
                 // spaeter eintreffender alter Vollbericht nicht mehr
                 // abweisen.
                 k.revision = revision.max(bestand.revision);
+                k.generation = naechste_generation;
                 k
             };
             kandidat.intents.extend(neue_intents);
@@ -535,7 +563,6 @@ impl Coordinator {
                 return Err(IntentAbweisung::Zyklus);
             }
 
-            let revision_gestiegen = revision > bestand.revision;
             if let Some(key) = objektschluessel {
                 kandidat.teilrevisionen.insert(key, revision);
             }
@@ -576,24 +603,27 @@ impl Coordinator {
             // ausserhalb, koennte eine Neurechnung dazwischen den Befund mit
             // der NEUEN Revision aufbauen und der Veraltungsschritt liefe ins
             // Leere.
-            let veraltet = if revision_gestiegen {
-                Coordinator::befunde_veralten_locked(&mut stand, &session, revision)
-            } else {
-                // 🔑 NR-02, die Gegenrichtung: ein VERSPAETETES Teilupdate
-                // hebt die Sitzungsrevision nicht, aendert aber den Bestand,
-                // unter dem bereits gerechnet wurde.
-                //
-                // Es kommt aus der Koaleszierung — A/3 stand vor B/2 —, und
-                // die bereits ausgegebenen Befunde kennen B nicht. Sie
-                // veralten NICHT (§37.3 bindet `stale` woertlich an eine
-                // gestiegene Revision), aber die Sitzung wird als neu zu
-                // rechnen gefuehrt: beim naechsten Material ruht die Aussage
-                // dann auf dem vollstaendigen Bestand.
-                if !vollstaendig {
-                    stand.befunde_neu_bilden = true;
-                }
-                0
-            };
+            // 🔑 E-14 / WN-02 (Nacharbeit 2, 07.09.2026): das Veralten haengt
+            // an der UEBERNAHME, nicht an der Sender-Zahl.
+            //
+            // Bis hierher stand hier `if revision_gestiegen`, und der
+            // Gegenzweig hielt woertlich fest, ein verspaetetes Teilupdate
+            // veralte NICHT — §37.3 binde `stale` an eine gestiegene
+            // Revision. Genau daraus entstand WP1-2: nach Vollbestand/0 →
+            // A/3 → Befund fuer B → verspaetetem B/2 mit `rolle=geschuetzt`
+            // wurde das harte Veto uebernommen, die Sitzungsrevision blieb 3,
+            // und der READY-Befund stand weiter handelbar da.
+            //
+            // E-14 entscheidet das: maszgeblich ist JEDE wirksam uebernommene
+            // Bestandsaenderung. Die Generation ist soeben gestiegen — jeder
+            // Befund einer aelteren Generation geht sichtbar in `stale`,
+            // OHNE Nachrechnen (§37.3 woertlich). Die Sender-Revision bleibt
+            // allein die Ordnung der Uebernahme (NR-02).
+            let veraltet =
+                Coordinator::befunde_veralten_locked(&mut stand, &session, naechste_generation);
+            // Und die Sitzung wird als neu zu rechnen gefuehrt: beim naechsten
+            // Material ruht die Aussage auf dem vollstaendigen Bestand.
+            stand.befunde_neu_bilden = true;
             (session, veraltet)
         };
 

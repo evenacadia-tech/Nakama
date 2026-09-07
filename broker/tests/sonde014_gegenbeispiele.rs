@@ -12,6 +12,16 @@
 //! * **umklammernde und disjunkte** Fensterspannen (N-18, N-19),
 //! * die **Rangdifferenz am Quantum** (N-16).
 //!
+//! Seit der **Nacharbeit 1** (07.09.2026) faehrt es ausserdem **alle 15
+//! Ketteneingaben** aus §2.6 Zeile 13 bis 27 des Manifests durch den
+//! Produktpfad und **druckt** je Eingabe ihr Ergebnis. Sechs davon standen
+//! schon hier; neun kamen dazu (`[0,11)`, `f5b`, `f8`, `f8b`, `f4` mit
+//! beiden Staenden, `f4b`, `eigen3`, `eigen5`) und mit ihnen der
+//! Produktpfadfall `a4`. Faelle, die **NAK-213** oder **NAK-214** gehoeren,
+//! werden gefahren und mit **benannter, gedruckter Luecke** ausgegeben
+//! (Muster NAK-190) — nicht geloest, nicht als gruen gewertet und nicht
+//! ausgelassen (R6).
+//!
 //! Der Gate-Text von G5 nennt adversariale Gegenbeispiele **namentlich**
 //! (`docs/bauaufteilung-sonden.md`:395-400); ein namentlich geforderter
 //! Beweis, der nur in der Sammelzeile A4 steckt, ist von außen nicht als
@@ -293,12 +303,33 @@ impl Buehne {
     /// Eine benannte Passage über den PRODUKTPFAD.
     fn passage(&self, von_offset: i64, bis_offset: i64, quellen: &[&Adresse]) {
         self.state_report();
+        self.passage_versuch(0, 0x5032, von_offset, bis_offset, quellen);
+    }
+
+    /// Ein `experiment_begin` mit EIGENER Kennung — für `f5b`.
+    ///
+    /// `begin_anwenden_locked` legt eine bekannte Passage nicht neu an: „Sie
+    /// wird nur beim ERSTEN Versuch angelegt, der sie nennt." Trägt der
+    /// zweite Versuch dieselbe `passage_id` mit anderem Zeitfenster, misst
+    /// der Broker weiter gegen das alte — genau das prüft `f5b`. Der Zähler
+    /// `nr` trennt Befehl und Experiment, `passage_id` bleibt frei wählbar.
+    fn passage_versuch(
+        &self,
+        nr: usize,
+        passage_id: usize,
+        von_offset: i64,
+        bis_offset: i64,
+        quellen: &[&Adresse],
+    ) -> String {
         let mut wert = fixture("experiment_begin");
         wert["kopf"]["ziel"] = serde_json::to_value(&self.master).unwrap();
-        wert["kopf"]["command_id"] = json!(hex(0x930));
+        wert["kopf"]["command_id"] = json!(hex(0x930 + nr));
+        // ⚠ `experiment_begin` schreibt keinen DSP-State und hebt die
+        // `state_revision` deshalb NICHT. Beide Versuche nennen dieselbe
+        // Basisrevision; eine hochgezaehlte faellt mit `revision_conflict`.
         wert["kopf"]["base_revision"] = json!(0);
-        wert["experiment_id"] = json!(hex(0x940));
-        wert["passage"]["passage_id"] = json!(hex(0x5032));
+        wert["experiment_id"] = json!(hex(0x940 + nr));
+        wert["passage"]["passage_id"] = json!(hex(passage_id));
         wert["passage"]["projekt_von"] = json!(BASIS + von_offset);
         wert["passage"]["projekt_bis"] = json!(BASIS + bis_offset);
         wert["passage"]["transport_epoch"] = grundform()["transport"]["transport_epoch"].clone();
@@ -309,12 +340,102 @@ impl Buehne {
             .expect("experiment_begin wird beantwortet");
         let ack: Value = serde_json::from_slice(&antwort).unwrap();
         assert_eq!(ack["ergebnis"], "angewandt", "die Passage entsteht: {ack:?}");
+        hex(passage_id)
     }
 
     fn befunde(&self) -> Vec<CauseHypothesis> {
         self.c
             .befunde_sicht(&self.master.project_binding_id, &self.master.session_epoch)
     }
+
+    /// Der Sitzungs-Snapshot — die Sicht, die Gen wirklich bekommt.
+    fn snapshot(&self) -> Value {
+        serde_json::from_slice(
+            &self
+                .c
+                .session_snapshot_json(&self.master.project_binding_id, &self.master.session_epoch),
+        )
+        .expect("der Snapshot ist JSON")
+    }
+
+    /// Denselben Deskriptor noch einmal setzen — mit anderem Mixerkanal.
+    ///
+    /// Das ist der Kern von `f4`: der Kanal lebt im Deskriptor, nicht am
+    /// Beleg. Ein Wechsel ändert die Duplikaterkennung rückwirkend für ALLE
+    /// Fenster, ohne dass ein einziger Messwert neu entstanden wäre.
+    fn deskriptor(&self, link: &str, a: &Adresse, mixer: Option<i64>) {
+        let mut d = json!({
+            "adresse": a,
+            "plugin_kind": "passive_probe",
+            "measurement_position": "post",
+            "aussageklasse": "beobachtend",
+            "betrieb": "active",
+            "label": "Gegenbeispielquelle",
+            "capabilities": capabilities(),
+            "frische": {"letzter_kontakt_ms": 10, "stale": false}
+        });
+        if let Some(index) = mixer {
+            d["host_mixer_index"] = json!(index);
+        }
+        assert!(self.c.descriptor_setzen(link, d));
+    }
+}
+
+/// Was der Produktpfad auf eine Ketteneingabe wirklich geantwortet hat.
+///
+/// R6 verlangt, dass **jede** der 15 Ketteneingaben ihr Ergebnis ausgibt —
+/// ein Riegel, der nur `assert` sagt, zeigt dem Leser nicht, was gemessen
+/// wurde. Die Form folgt dem G5-Gegenbeispiellauf
+/// (`docs/beweise/roh/G5-gegenbeispiele-bf92891.md`).
+fn protokoll(titel: &str, befunde: &[CauseHypothesis]) {
+    println!("── {titel} ──");
+    if befunde.is_empty() {
+        println!("   (KEIN BEFUND — der Produktpfad schweigt)");
+    }
+    for b in befunde {
+        let r = b.rang;
+        println!(
+            "   quelle=..{} klasse={:?} zustand={:?} ursache={:?} score={:.6}",
+            &b.candidate_source[30..],
+            b.confidence.klasse,
+            b.zustand,
+            b.ursachenklasse,
+            b.confidence.score
+        );
+        println!(
+            "     rang: bandpassung={:.6} koinzidenz={:.6} uplift={:.6} \
+             intent={:.6} wiederholbarkeit={:.6} routing={:.6}",
+            r.bandpassung,
+            r.koinzidenz,
+            r.uplift,
+            r.intent_relevanz,
+            r.wiederholbarkeit,
+            r.routingqualitaet
+        );
+        println!(
+            "     band={:?} passage={:?} alternatives={} ausschluesse={:?}",
+            b.band_hz,
+            b.passage_id.as_deref().map(|p| p[24..].to_string()),
+            b.alternatives.len(),
+            b.ausschluesse
+                .iter()
+                .map(|a| (a.candidate_source[30..].to_string(), a.grund.wire()))
+                .collect::<Vec<_>>()
+        );
+    }
+    println!("   => starke Befunde: {}", stark(befunde));
+}
+
+/// Eine **benannte, gedruckte Lücke** (Muster NAK-190, R6).
+///
+/// Der Fall wird gefahren und sein Ergebnis ausgegeben, aber ein anderes
+/// Ticket schließt ihn. Er wird hier weder gelöst noch als grün gewertet —
+/// er ist benannt. Dasselbe Muster führt `pruefe_p5_korpus.py::offene_luecken`
+/// für die Korpussitzungen.
+fn luecke(kennung: &str, ticket: &str, zusage: &str, heute: &str) {
+    println!("   ⚠ OFFENE LUECKE {kennung} [{ticket}]");
+    println!("     zusage:          {zusage}");
+    println!("     was heute passiert: {heute}");
 }
 
 fn stark(befunde: &[CauseHypothesis]) -> usize {
@@ -359,6 +480,7 @@ fn a1_intent_rolle_trennt_identische_kandidaten_nicht() {
     b.belege_je_fenster("sonde1", &distraktor, 200, 12, 0, &muster, band);
 
     let befunde = b.befunde();
+    protokoll("A1 rolle=fuehrt auf dem Distraktor, sonst identisch", &befunde);
     assert_eq!(befunde.len(), 2, "beide bleiben sichtbar (M-26)");
     // Die Intent-Relevanz trennt die GESAMTRAENGE wirklich — sonst maesse der
     // Fall nichts.
@@ -428,10 +550,32 @@ fn d2_fuehrender_wird_gegen_jeden_geprueft() {
     // Kandidatenamplitude geht nur ueber den Median-Split ein: eine halb so
     // laute Reihe mit demselben Muster ergibt exakt denselben Uplift. Nur ein
     // anderes AKTIVITAETSMUSTER teilt die Masterfenster anders auf.
-    b.belege_je_fenster("sonde1", &m, 200, 12, 0, |i| if i % 3 == 0 { 9.0 } else { 0.0 }, band);
+    //
+    // 🔑 **NAK-212 Nacharbeit 1, NR-02.** Das Muster lautete `i % 3 == 0` —
+    // VIER laute gegen ACHT leise Fenster. Der Median von zwoelf Werten ist
+    // das Mittel der beiden mittleren, hier also der LEISE Wert; mit
+    // `k >= schwelle` landen dann ALLE Fenster in `mit`, `ohne` bleibt leer,
+    // und M-19 liefert weder Uplift noch Wiederholbarkeit. `m` rangierte
+    // damit HINTER C — der Aufbau baute A > C > M statt der zugesagten
+    // Reihenfolge A > M > C, und schon der Vergleich mit dem Zweiten C
+    // erzwang die Enthaltung. Jetzt ist `m` in SIEBEN Fenstern laut (allen
+    // sechs lauten des Masters plus dem ersten leisen): der Median liegt auf
+    // dem lauten Wert, der Split ist 7 zu 5, und sein Uplift ist positiv,
+    // aber kleiner als der von A und C — ein EIGENER Zusammenhang, der ihn
+    // zwischen die beiden setzt.
+    b.belege_je_fenster(
+        "sonde1",
+        &m,
+        200,
+        12,
+        0,
+        |i| if i % 2 == 1 || i == 0 { 9.0 } else { 0.0 },
+        band,
+    );
     b.belege_je_fenster("sonde2", &c, 300, 12, 0, &muster, band);
 
     let befunde = b.befunde();
+    protokoll("D2 drei Kandidaten: A und C identisch, M dazwischen", &befunde);
     assert_eq!(befunde.len(), 3, "alle drei bleiben sichtbar");
     let von = |id: &Adresse| {
         befunde
@@ -439,28 +583,52 @@ fn d2_fuehrender_wird_gegen_jeden_geprueft() {
             .find(|b| b.candidate_source == id.instance_id)
             .expect("jeder Kandidat hat einen Befund")
     };
-    // Der Aufbau trifft den Defekt wirklich: A und C sind im Zusammenhang
-    // identisch, der mittlere unterscheidet sich, und A fuehrt im Rang.
+    // ── Vorbedingungen, alle gemessen (NAK-212 Nacharbeit 1, NR-02) ───
+    // (a) A und C sind im Zusammenhang identisch.
     assert_eq!(
         (von(&a).rang.uplift, von(&a).rang.wiederholbarkeit),
         (von(&c).rang.uplift, von(&c).rang.wiederholbarkeit),
         "A und C sind messtechnisch identisch"
     );
+    // (b) Der mittlere traegt einen EIGENEN, belegten Zusammenhang: sein
+    //     Uplift ist positiv und von dem der beiden anderen verschieden.
+    //     Ohne diesen Riegel maesse der Fall nur eine Quelle, die an M-19
+    //     scheitert — und der Vergleich mit dem Zweitplatzierten erzwaenge
+    //     die Enthaltung schon allein.
+    assert!(
+        von(&m).rang.uplift > 0.0,
+        "der mittlere hat einen belegten Uplift: {}",
+        von(&m).rang.uplift
+    );
     assert_ne!(
         von(&a).rang.uplift,
         von(&m).rang.uplift,
-        "der mittlere unterscheidet sich wirklich"
+        "und er unterscheidet sich wirklich von A"
     );
+    // (c) Die zugesagte Reihenfolge ist A > M > C, nicht A > C > M. Nur so
+    //     steht der ununterscheidbare C wirklich HINTER dem Zweiten, und die
+    //     Enthaltung folgt nicht schon aus dem Vergleich mit ihm.
+    let reihenfolge: Vec<&str> = befunde
+        .iter()
+        .map(|b| b.candidate_source.as_str())
+        .collect();
     assert_eq!(
-        befunde[0].candidate_source,
-        a.instance_id,
-        "A fuehrt: {:?}",
+        reihenfolge,
+        vec![
+            a.instance_id.as_str(),
+            m.instance_id.as_str(),
+            c.instance_id.as_str()
+        ],
+        "A > M > C: {:?}",
         befunde.iter().map(|b| b.rang.rang()).collect::<Vec<_>>()
     );
+    // (d) A ist vom Zweiten nach BEIDEN Bedingungen aus E6 getrennt: der
+    //     Rang unterscheidet sich UND der Zusammenhang. Ohne D2 waere A
+    //     damit stark.
     assert_ne!(
         rang_quantisiert(&befunde[0].rang),
         rang_quantisiert(&befunde[1].rang),
-        "A ist vom ZWEITEN getrennt — ohne D2 wuerde A damit stark"
+        "A ist vom ZWEITEN (M) im Rang getrennt"
     );
     // Und trotzdem: A ist von C nicht getrennt, also traegt niemand `hoch`.
     assert_eq!(
@@ -469,6 +637,48 @@ fn d2_fuehrender_wird_gegen_jeden_geprueft() {
         "der Fuehrende wird gegen JEDEN geprueft: {:?}",
         befunde.iter().map(|b| b.confidence).collect::<Vec<_>>()
     );
+
+    // ── Gegenprobe: DIESELBE Buehne ohne C ────────────────────────
+    // Ohne den dritten Kandidaten ist A von jedem Ueberlebenden getrennt und
+    // wird stark. Ohne diese Haelfte waere die Zusage nicht von „niemand ist
+    // hier je stark" zu unterscheiden.
+    let o = Buehne::schlank();
+    o.anmelden("main", &o.master, "main", Some(0));
+    o.anmelden("sonde0", &a, "passive_probe", Some(3));
+    o.anmelden("sonde1", &m, "passive_probe", Some(4));
+    o.marke(
+        1,
+        json!([
+            {"quelle_id": a.instance_id, "rolle": "fuehrt",
+             "revision": 1, "herkunft": "user", "konfidenz": 1.0},
+            {"quelle_id": m.instance_id, "rolle": "traegt",
+             "revision": 1, "herkunft": "user", "konfidenz": 1.0}
+        ]),
+    );
+    o.belege_je_fenster("main", &o.master, 0, 12, 0, &muster, band);
+    o.belege_je_fenster("sonde0", &a, 100, 12, 0, &muster, band);
+    o.belege_je_fenster(
+        "sonde1",
+        &m,
+        200,
+        12,
+        0,
+        |i| if i % 2 == 1 || i == 0 { 9.0 } else { 0.0 },
+        band,
+    );
+    let ohne_c = o.befunde();
+    assert_eq!(ohne_c.len(), 2, "ohne C bleiben zwei sichtbar");
+    assert_eq!(
+        ohne_c[0].candidate_source, a.instance_id,
+        "A fuehrt auch hier"
+    );
+    assert_eq!(
+        stark(&ohne_c),
+        1,
+        "ohne den ununterscheidbaren Dritten ist A stark: {:?}",
+        ohne_c.iter().map(|b| b.confidence).collect::<Vec<_>>()
+    );
+    assert_eq!(ohne_c[0].confidence.klasse, Sicherheitsklasse::Hoch);
 }
 
 // ═════════════════════════════════════════════════════════════════════════
@@ -493,6 +703,7 @@ fn eigen4_quelle_im_falschen_band() {
     b.belege_je_fenster("sonde0", &sonde, 100, 12, 0, &muster, (30, 34));
 
     let befunde = b.befunde();
+    protokoll("EIGEN-4 Sonde hebt Band 30..34, Masterbefund liegt bei 98..102", &befunde);
     let befund = befunde.first().expect("ein Befund entsteht");
     assert_eq!(
         befund.candidate_source, sonde.instance_id,
@@ -552,6 +763,7 @@ fn f7_rangdifferenz_am_quantum() {
     }
 
     let befunde = b.befunde();
+    protokoll("F7 kleinste darstellbare Rangstoerung (0,1 dB in Band 210)", &befunde);
     assert_eq!(befunde.len(), 2, "beide bleiben sichtbar");
     assert_ne!(
         rang_quantisiert(&befunde[0].rang),
@@ -597,6 +809,7 @@ fn d4_umklammernde_und_disjunkte_spanne() {
         }
 
         let befunde = b.befunde();
+        protokoll(&format!("D4 {name}"), &befunde);
         let befund = befunde.first().expect("ein Ergebnis entsteht immer (M-27)");
         assert_eq!(
             befund.ursachenklasse,
@@ -625,9 +838,13 @@ fn d4_umklammernde_und_disjunkte_spanne() {
 #[test]
 fn f5_passagenrandwerte() {
     // (a) Zwölf Fensterlängen: alle zwölf Fenster liegen vollständig darin.
-    // (b) Acht: der Randwert `GATE_MINDEST_FENSTER` — acht sind genug.
-    // (c) Sieben: eines zu wenig.
-    for (fenster, soll_stark) in [(12i64, true), (8, true), (7, false)] {
+    // (b) Elf: GENAU EIN Fenster liegt außerhalb — elf sind immer noch genug.
+    // (c) Acht: der Randwert `GATE_MINDEST_FENSTER` — acht sind genug.
+    // (d) Sieben: eines zu wenig.
+    //
+    // 🔑 **NAK-212 Nacharbeit 1, NR-03:** die Eingabe `[0,11)` gehört zu den
+    // 15 vereinbarten Ketteneingaben (§2.6 Zeile 14) und fehlte.
+    for (fenster, soll_stark) in [(12i64, true), (11, true), (8, true), (7, false)] {
         let b = Buehne::mit_store(&format!("f5-{fenster}"));
         let sonde = adresse(2);
         b.anmelden("main", &b.master, "main", Some(0));
@@ -635,11 +852,19 @@ fn f5_passagenrandwerte() {
         b.marke(0, json!([]));
         b.passage(0, fenster * FENSTER, &[&sonde]);
         let band = (BAND_VON, BAND_BIS);
-        let muster = wechselnd(12);
+        // ⚠ Das Muster richtet sich nach der PASSAGE, nicht nach der
+        // Fensterzahl: seit E5 liest `masteranomalie` das letzte Fenster
+        // INNERHALB der Passage. Bei `[0,11)` ist das Fenster 10 — mit
+        // `wechselnd(12)` waere es leise, die Anomalie laege in einer
+        // fremden Bandgruppe (gemessen: `Bandintervall { von: 0, bis: 4 }`),
+        // und der Fall maesse nicht mehr die Passagenlaenge. `wechselnd(n)`
+        // macht genau das Fenster `n - 1` laut.
+        let muster = wechselnd(fenster as usize);
         b.belege_je_fenster("main", &b.master, 0, 12, 0, &muster, band);
         b.belege_je_fenster("sonde0", &sonde, 100, 12, 0, &muster, band);
 
         let befunde = b.befunde();
+        protokoll(&format!("F5 Passage [0,{fenster}) Fensterlaengen"), &befunde);
         let befund = befunde.first().expect("ein Ergebnis entsteht immer");
         if soll_stark {
             assert_eq!(
@@ -692,6 +917,7 @@ fn d3_passage_ohne_masterfenster_ergibt_enthaltung() {
     b.belege_je_fenster("sonde0", &sonde, 100, 12, 0, &muster, band);
 
     let befunde = b.befunde();
+    protokoll("F5 Passage [12,24) — alle Belege liegen DAVOR", &befunde);
     let befund = befunde
         .first()
         .expect("die Sitzung SCHWEIGT NICHT — M-27 verlangt ein Ergebnis");
@@ -713,5 +939,436 @@ fn d3_passage_ohne_masterfenster_ergibt_enthaltung() {
         )),
         "und jeder Kandidat faellt MIT Grund (M-87): {:?}",
         befund.ausschluesse
+    );
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// §2.6 Nr. 18 · f5b_gleiche_passage_id_verschobenes_fenster
+// ═════════════════════════════════════════════════════════════════════════
+//
+// `begin_anwenden_locked` legt eine bekannte Passage NICHT neu an: „Sie wird
+// nur beim ERSTEN Versuch angelegt, der sie nennt; ein zweiter Versuch
+// derselben Passage schreibt sie nicht um." Trägt der zweite Versuch
+// dieselbe `passage_id` mit einem ANDEREN Zeitfenster, misst der Broker
+// weiter gegen das alte — und die Belege, die im zweiten Fenster liegen,
+// verfehlen die gemerkte Passage. Das Ergebnis ist die Enthaltung mit Grund,
+// nicht eine Aussage über das falsche Fenster: **fail-closed**.
+#[test]
+fn f5b_gleiche_passage_id_verschobenes_fenster() {
+    let b = Buehne::mit_store("f5b");
+    let sonde = adresse(2);
+    b.anmelden("main", &b.master, "main", Some(0));
+    b.anmelden("sonde0", &sonde, "passive_probe", Some(3));
+    b.marke(0, json!([]));
+    b.state_report();
+    // Erst die Passage [0,12) Fensterlängen …
+    let erste = b.passage_versuch(0, 0x5032, 0, 12 * FENSTER, &[&sonde]);
+    // … dann DIESELBE Kennung mit dem Fenster [12,24).
+    let zweite = b.passage_versuch(1, 0x5032, 12 * FENSTER, 24 * FENSTER, &[&sonde]);
+    assert_eq!(erste, zweite, "beide Versuche nennen dieselbe passage_id");
+
+    // Die Belege liegen im ZWEITEN, verschobenen Fenster.
+    let band = (BAND_VON, BAND_BIS);
+    let muster = wechselnd(12);
+    b.belege_je_fenster("main", &b.master, 0, 12, 12, &muster, band);
+    b.belege_je_fenster("sonde0", &sonde, 100, 12, 12, &muster, band);
+
+    let befunde = b.befunde();
+    protokoll("F5b gleiche passage_id, Fenster verschoben [0,12) -> [12,24)", &befunde);
+    let befund = befunde.first().expect("ein Ergebnis entsteht immer (M-27)");
+    assert_eq!(
+        befund.ursachenklasse,
+        Ursachenklasse::DatenReichenNicht,
+        "fail-closed: gegen die GEMERKTE Passage misst kein Beleg"
+    );
+    assert!(
+        befund
+            .ausschluesse
+            .iter()
+            .any(|a| a.grund == Ausschlussgrund::PassageUnvergleichbar),
+        "der Kandidat faellt MIT Grund (M-87): {:?}",
+        befund.ausschluesse
+    );
+    assert_eq!(stark(&befunde), 0);
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// §2.6 Nr. 19 · f8_zwei_master_mit_widersprechendem_befundband
+// ═════════════════════════════════════════════════════════════════════════
+//
+// `aufnahmen_sammeln` schreibt `master = Some(profil)` ohne Prüfung, ob
+// schon einer da ist. Die Schlüssel sind nach `instance_id` sortiert — der
+// LETZTE `main` gewinnt, der erste verschwindet ganz.
+//
+// **Was NAK-212 hier schließt:** die Sonde trägt im Band des gewinnenden
+// Masters kaum Energie und bei konstantem Pegel keinen messbaren Uplift; R1
+// senkt sie auf `mittel`. Die falsche STARKE Behauptung ist damit weg.
+// **Was offen bleibt:** der erste Master verschwindet weiterhin lautlos.
+#[test]
+fn f8_zwei_master_mit_widersprechendem_befundband() {
+    let b = Buehne::schlank();
+    let master_a = adresse(1);
+    let master_b = adresse(9);
+    let sonde = adresse(2);
+    b.anmelden("main", &master_a, "main", Some(0));
+    b.anmelden("main2", &master_b, "main", Some(1));
+    b.anmelden("sonde0", &sonde, "passive_probe", Some(3));
+    b.marke(0, json!([]));
+    // Master A hat seine Anomalie im Band der Sonde …
+    b.belege_je_fenster("main", &master_a, 0, 12, 0, |_| 9.0, (BAND_VON, BAND_BIS));
+    // … Master B WOANDERS.
+    b.belege_je_fenster("main2", &master_b, 200, 12, 0, |_| 9.0, (150, 154));
+    // Die Sonde drueckt ausschliesslich in 98..102.
+    b.belege_je_fenster("sonde0", &sonde, 100, 12, 0, |_| 9.0, (BAND_VON, BAND_BIS));
+
+    let befunde = b.befunde();
+    protokoll("F8 zwei Master (A: Band 98..102, B: Band 150..154)", &befunde);
+    assert_eq!(
+        stark(&befunde),
+        0,
+        "im fremden Befundband traegt die Sonde keine starke Aussage (R1)"
+    );
+    // Die Luecke wird GEMESSEN, nicht behauptet: Master A ist im Snapshot als
+    // Mitglied sichtbar, taucht aber in keinem Befund auf — weder als Quelle
+    // noch als Ausschluss. Er verschwindet lautlos.
+    let a_ist_kandidat = befunde
+        .iter()
+        .any(|f| f.candidate_source == master_a.instance_id);
+    let a_ist_ausgeschlossen = befunde.iter().any(|f| {
+        f.ausschluesse
+            .iter()
+            .any(|x| x.candidate_source == master_a.instance_id)
+    });
+    assert!(
+        !a_ist_kandidat && !a_ist_ausgeschlossen,
+        "der Stand ist unveraendert: Master A ist weder Kandidat noch Ausschluss"
+    );
+    luecke(
+        "f8_zwei_master",
+        "NAK-213 R4",
+        "Zwei `main` in einer Sitzung sind ein Widerspruch und muessen benannt werden.",
+        &format!(
+            "Der letzte `main` nach `instance_id` gewinnt, der erste verschwindet \
+             lautlos: er ist als Mitglied im Snapshot sichtbar ({} Mitglieder), wird \
+             aber weder Kandidat noch Ausschluss und traegt in keinem der {} Befunde \
+             eine Spur.",
+            b.snapshot()["mitglieder"].as_array().map(Vec::len).unwrap_or(0),
+            befunde.len()
+        ),
+    );
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// §2.6 Nr. 20 · f8b_master_ohne_fenster
+// ═════════════════════════════════════════════════════════════════════════
+//
+// Der Master ist angemeldet, hat aber keinen einzigen Beleg gesendet.
+// `masteranomalie` gibt `None`, und `hypothesen()` endet vor den Gates: die
+// Sitzung SCHWEIGT. Das ist G-L4 und gehört **NAK-213 R4** — dieses Ticket
+// ändert daran nichts, und der Fall steht hier, damit das Schweigen benannt
+// ist statt unbemerkt.
+#[test]
+fn f8b_master_ohne_fenster() {
+    let b = Buehne::schlank();
+    let sonde = adresse(2);
+    b.anmelden("main", &b.master, "main", Some(0));
+    b.anmelden("sonde0", &sonde, "passive_probe", Some(3));
+    b.marke(0, json!([]));
+    b.belege_je_fenster("sonde0", &sonde, 100, 12, 0, wechselnd(12), (BAND_VON, BAND_BIS));
+
+    let befunde = b.befunde();
+    protokoll("F8b Master angemeldet, aber ohne Beleg", &befunde);
+    assert!(
+        befunde.is_empty(),
+        "unveraendert gegenueber dem Stand vor NAK-212: die Sitzung schweigt"
+    );
+    luecke(
+        "f8b_master_ohne_fenster",
+        "NAK-213 R4",
+        "Auch ohne Masterbeleg verlangt M-27 ein Ergebnis statt Schweigen.",
+        &format!(
+            "`masteranomalie` gibt `None`, `hypothesen()` endet vor den Gates. \
+             findings im Snapshot: {}",
+            b.snapshot()["findings"].as_array().map(Vec::len).unwrap_or(0)
+        ),
+    );
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// §2.6 Nr. 21 und 22 · f4_kanalwechsel_zwischen_den_fenstern
+// ═════════════════════════════════════════════════════════════════════════
+//
+// Der Mixerkanal lebt im DESKRIPTOR, nicht am Beleg. `aufnahmen_sammeln`
+// liest ihn zum Zeitpunkt der Rechnung — die Duplikaterkennung kennt deshalb
+// nur den LETZTEN Stand, nie die Kanalgeschichte der Fenster.
+//
+// **Was NAK-212 hier schließt:** bei konstantem Pegel ist kein Uplift
+// messbar, also bleibt es nach R1 in BEIDEN Ständen bei `mittel` — die
+// starke Aussage nach dem Wechsel ist weg. **Was offen bleibt:** die
+// Deskriptoränderung hebt die `routingqualitaet` rückwirkend, ohne dass eine
+// einzige neue MESSUNG dazugekommen wäre.
+#[test]
+fn f4_kanalwechsel_zwischen_den_fenstern() {
+    let b = Buehne::schlank();
+    let a = adresse(2);
+    let c = adresse(3);
+    b.anmelden("main", &b.master, "main", Some(0));
+    b.anmelden("sondeA", &a, "passive_probe", Some(7));
+    b.anmelden("sondeC", &c, "passive_probe", Some(7));
+    b.marke(0, json!([]));
+    let band = (BAND_VON, BAND_BIS);
+    b.belege_je_fenster("main", &b.master, 0, 12, 0, |_| 9.0, band);
+    // A fuehrt um 0,1 dB — sonst traennte sie nichts, und der Fall maesse nur
+    // den Gleichstandsriegel.
+    b.belege_je_fenster("sondeA", &a, 100, 12, 0, |_| 9.1, band);
+    b.belege_je_fenster("sondeC", &c, 200, 12, 0, |_| 9.0, band);
+
+    let vorher = b.befunde();
+    protokoll("F4 beide Sonden auf Mixerkanal 7", &vorher);
+    let routing_vorher: Vec<f64> = vorher.iter().map(|f| f.rang.routingqualitaet).collect();
+    assert_eq!(vorher.len(), 2, "beide bleiben sichtbar");
+    assert_eq!(stark(&vorher), 0, "geteilter Kanal: keine starke Aussage");
+
+    // Jetzt wechselt C den Kanal — ohne einen einzigen neuen MESSWERT.
+    b.deskriptor("sondeC", &c, Some(9));
+    // Ein weiterer Beleg loest die Rechnung aus. ⚠ Der Master bekommt sein
+    // dreizehntes Fenster ZEITGLEICH: seit das Alignment paarweise misst,
+    // haette ein Kandidatenfenster ohne Masterpartner den Anteil auf 12/13
+    // gedrueckt, und beide fielen mit `alignment_falsch` — der Fall maesse
+    // dann den Kanalwechsel gar nicht mehr.
+    b.belege_je_fenster("main", &b.master, 300, 1, 12, |_| 9.0, band);
+    b.belege_je_fenster("sondeA", &a, 130, 1, 12, |_| 9.1, band);
+    b.belege_je_fenster("sondeC", &c, 230, 1, 12, |_| 9.0, band);
+
+    let nachher = b.befunde();
+    protokoll("F4 nach dem Kanalwechsel von C (7 -> 9), Messwerte unveraendert", &nachher);
+    assert_eq!(nachher.len(), 2, "beide bleiben sichtbar");
+    assert_eq!(
+        stark(&nachher),
+        0,
+        "auch nach dem Wechsel traegt niemand `hoch` — bei konstantem Pegel \
+         ist kein Uplift messbar (R1): {:?}",
+        nachher.iter().map(|f| f.confidence).collect::<Vec<_>>()
+    );
+    // Die Luecke wird GEMESSEN, nicht behauptet: die Routingqualitaet STEIGT
+    // wirklich, und zwar bei BEIDEN — der geteilte Kanal war die
+    // Duplikatmarke, und ohne ihn faellt sie fuer beide weg.
+    let routing_nachher: Vec<f64> = nachher.iter().map(|f| f.rang.routingqualitaet).collect();
+    assert!(
+        routing_nachher
+            .iter()
+            .zip(routing_vorher.iter())
+            .all(|(n, v)| n > v),
+        "der Kanalwechsel hebt die Routingqualitaet ohne neue Messung: \
+         {routing_vorher:?} -> {routing_nachher:?}"
+    );
+    luecke(
+        "f4_kanalwechsel",
+        "NAK-213 R5",
+        "Eine Deskriptoraenderung ohne neue Messung darf keine Rangkomponente heben.",
+        &format!(
+            "`routingqualitaet` steigt allein durch den Kanalwechsel: {routing_vorher:?} \
+             -> {routing_nachher:?}, ohne dass ein Fenster neu gemessen worden waere."
+        ),
+    );
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// §2.6 Nr. 23 · f4b_drei_sonden_auf_einem_kanal
+// ═════════════════════════════════════════════════════════════════════════
+//
+// Die „Elternbeziehung" des Produkts ist eine flache Menge geteilter
+// Mixerkanäle: jede Quelle zeigt auf EINE andere desselben Kanals. Eine
+// zweite Ebene hat im Datenmodell keine Darstellung — ein Deskriptor trägt
+// genau einen Kanal. Gemessen wird, ob die flache Menge wenigstens transitiv
+// hält: alle drei sind einander Duplikat, keiner trägt eine starke Aussage.
+#[test]
+fn f4b_drei_sonden_auf_einem_kanal() {
+    let b = Buehne::schlank();
+    let (a, c, d) = (adresse(2), adresse(3), adresse(4));
+    b.anmelden("main", &b.master, "main", Some(0));
+    b.anmelden("sondeA", &a, "passive_probe", Some(7));
+    b.anmelden("sondeC", &c, "passive_probe", Some(7));
+    b.anmelden("sondeD", &d, "passive_probe", Some(7));
+    b.marke(0, json!([]));
+    let band = (BAND_VON, BAND_BIS);
+    b.belege_je_fenster("main", &b.master, 0, 12, 0, |_| 9.0, band);
+    b.belege_je_fenster("sondeA", &a, 100, 12, 0, |_| 9.2, band);
+    b.belege_je_fenster("sondeC", &c, 200, 12, 0, |_| 9.1, band);
+    b.belege_je_fenster("sondeD", &d, 300, 12, 0, |_| 9.0, band);
+
+    let befunde = b.befunde();
+    protokoll("F4b drei Sonden auf Mixerkanal 7", &befunde);
+    assert_eq!(befunde.len(), 3, "alle drei bleiben sichtbar");
+    assert_eq!(
+        stark(&befunde),
+        0,
+        "drei Quellen auf EINEM Kanal behaupten nicht dreimal dieselbe Ursache"
+    );
+    for f in &befunde {
+        assert!(
+            f.rang.routingqualitaet <= 0.5,
+            "jede traegt die Duplikatmarke: {}",
+            f.rang.routingqualitaet
+        );
+    }
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// N-08, N-10, §2.6 Nr. 24 · eigen3_antikorrelierte_quelle
+// ═════════════════════════════════════════════════════════════════════════
+//
+// Der schärfste Fall, den die Klassenwahl vor NAK-212 zuließ: die Quelle ist
+// im Befundband GENAU DANN laut, wenn der Master dort leise ist. Der
+// bedingte Uplift ist negativ, die Onset-Korrelation ebenfalls — und beide
+// wurden auf 0 geklemmt. Schlimmer noch: `bootstrap_p` war zweiseitig und
+// gab der stabil NEGATIVEN Reihe `wiederholbarkeit` = 0,995, den Rang
+// 0,4358 und die Klasse `hoch`.
+#[test]
+fn eigen3_antikorrelierte_quelle() {
+    let b = Buehne::schlank();
+    let sonde = adresse(2);
+    b.anmelden("main", &b.master, "main", Some(0));
+    b.anmelden("sonde0", &sonde, "passive_probe", Some(3));
+    b.marke(0, json!([]));
+    let band = (BAND_VON, BAND_BIS);
+    // Der Master braucht eine Reihe, die in BEIDEN Mengen misst — sonst
+    // waere seine Spanne null und der Uplift nicht normierbar.
+    b.belege_je_fenster("main", &b.master, 0, 12, 0,
+                        |i| if i % 2 == 1 { 12.0 } else { 6.0 }, band);
+    // Die Sonde: genau umgekehrt.
+    b.belege_je_fenster("sonde0", &sonde, 100, 12, 0,
+                        |i| if i % 2 == 1 { 6.0 } else { 12.0 }, band);
+
+    let befunde = b.befunde();
+    protokoll("EIGEN-3 antikorrelierte Quelle (laut, wenn der Master leise ist)", &befunde);
+    let befund = befunde.first().expect("ein Befund entsteht");
+    assert_eq!(
+        befund.candidate_source, sonde.instance_id,
+        "der Kandidat ist im Rennen — das hier ist keine Enthaltung"
+    );
+    assert_eq!(stark(&befunde), 0, "ein Gegenbeleg schliesst `hoch` aus (R2)");
+    assert_eq!(
+        befund.rang.wiederholbarkeit, 0.0,
+        "die EINSEITIGE Stabilitaet belohnt den Gegenbeleg nicht mehr (war 0,995)"
+    );
+    assert_eq!(befund.rang.uplift, 0.0, "und der negative Uplift traegt keinen Rang");
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// §2.6 Nr. 26 · eigen5_antikorreliert_neben_korreliert
+// ═════════════════════════════════════════════════════════════════════════
+//
+// Beide Quellen nebeneinander: eine läuft MIT dem Master, eine GEGEN ihn.
+// Das ist der Kontrollfall zu R2 und R3 zugleich — die beiden sind über den
+// Uplift getrennt (`Some(positiv)` gegen `Some(negativ)`), und genau EINER
+// darf stark sein. Vor NAK-212 waren es zwei Befunde, von denen der
+// antikorrelierte über seine geschenkte `wiederholbarkeit` mithielt.
+#[test]
+fn eigen5_antikorreliert_neben_korreliert() {
+    let b = Buehne::schlank();
+    let mit = adresse(2);
+    let gegen = adresse(3);
+    b.anmelden("main", &b.master, "main", Some(0));
+    b.anmelden("sondeM", &mit, "passive_probe", Some(3));
+    b.anmelden("sondeG", &gegen, "passive_probe", Some(4));
+    b.marke(0, json!([]));
+    let band = (BAND_VON, BAND_BIS);
+    let laut_ungerade = |i: usize| if i % 2 == 1 { 12.0 } else { 6.0 };
+    let laut_gerade = |i: usize| if i % 2 == 1 { 6.0 } else { 12.0 };
+    b.belege_je_fenster("main", &b.master, 0, 12, 0, laut_ungerade, band);
+    b.belege_je_fenster("sondeM", &mit, 100, 12, 0, laut_ungerade, band);
+    b.belege_je_fenster("sondeG", &gegen, 200, 12, 0, laut_gerade, band);
+
+    let befunde = b.befunde();
+    protokoll("EIGEN-5 korrelierte und antikorrelierte Quelle nebeneinander", &befunde);
+    assert_eq!(befunde.len(), 2, "beide bleiben sichtbar (M-26)");
+    // 🔑 D7: der quantisierte Rangabstand ist VORBEDINGUNG jeder Zeile, die
+    // einen starken Befund neben einem zweiten Kandidaten zusagt — und er
+    // wird gemessen, nicht aus der Konstruktion erschlossen.
+    assert_ne!(
+        rang_quantisiert(&befunde[0].rang),
+        rang_quantisiert(&befunde[1].rang),
+        "die Gesamtraenge trennen wirklich: {:?} gegen {:?}",
+        befunde[0].rang,
+        befunde[1].rang
+    );
+    assert_eq!(
+        befunde[0].candidate_source, mit.instance_id,
+        "die MITlaufende Quelle fuehrt"
+    );
+    assert_eq!(
+        stark(&befunde),
+        1,
+        "genau EIN starker Befund (M-21): {:?}",
+        befunde.iter().map(|f| f.confidence).collect::<Vec<_>>()
+    );
+    assert_eq!(befunde[0].confidence.klasse, Sicherheitsklasse::Hoch);
+    assert!(
+        befunde[1].confidence.klasse < Sicherheitsklasse::Hoch,
+        "und die antikorrelierte bleibt schwach"
+    );
+    assert_eq!(
+        befunde[1].rang.wiederholbarkeit, 0.0,
+        "ihre Stabilitaet ist kein Beleg mehr"
+    );
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// N-28 · a4_masteranomalie_ausserhalb_der_passage
+// ═════════════════════════════════════════════════════════════════════════
+//
+// Codex-Befund A4: `masteranomalie` las `master.fenster.last()` ohne
+// Passagenbezug. Liefert der Master ein Fenster HINTER der benannten Passage
+// — mit einer Anomalie in einem ganz anderen Band —, nannte der Befund die
+// alte Passage und behauptete deren FREMDE Anomalie, mit `hoch` und READY.
+//
+// Seit E5 wird die Anomalie aus dem letzten Fenster INNERHALB der Passage
+// bestimmt; das Außenfenster geht in nichts ein.
+#[test]
+fn a4_masteranomalie_ausserhalb_der_passage() {
+    let b = Buehne::mit_store("a4");
+    let sonde = adresse(2);
+    b.anmelden("main", &b.master, "main", Some(0));
+    b.anmelden("sonde0", &sonde, "passive_probe", Some(3));
+    b.marke(0, json!([]));
+    // Acht Fensterlängen Passage — der Randwert `GATE_MINDEST_FENSTER`.
+    b.passage(0, 8 * FENSTER, &[&sonde]);
+    let band = (BAND_VON, BAND_BIS);
+    let muster = wechselnd(8);
+    b.belege_je_fenster("main", &b.master, 0, 8, 0, &muster, band);
+    b.belege_je_fenster("sonde0", &sonde, 100, 8, 0, &muster, band);
+    // Das NEUNTE Masterfenster liegt hinter der Passage — und trägt seine
+    // Anomalie siebzig Bandindizes weiter oben.
+    b.belege_je_fenster("main", &b.master, 300, 1, 8, |_| 9.0, (150, 154));
+
+    let befunde = b.befunde();
+    protokoll("A4 Masteranomalie in einem Fenster HINTER der Passage", &befunde);
+    let befund = befunde.first().expect("ein Ergebnis entsteht immer");
+    // Die Vorbedingung: der Fall trifft den Defekt nur, wenn wirklich eine
+    // Passage wirkt und der Kandidat sie besteht.
+    assert_eq!(
+        befund.candidate_source, sonde.instance_id,
+        "der Kandidat ist im Rennen, das hier ist keine Enthaltung"
+    );
+    assert!(befund.passage_id.is_some(), "die Passage wirkt wirklich");
+    // Die Zusage: das Befundband stammt aus der PASSAGE, nicht aus dem
+    // Fenster dahinter.
+    assert!(
+        befund.band_hz.von < 150 && befund.band_hz.bis <= 150,
+        "die Anomalie kommt aus der Passage (98..102), nicht aus dem \
+         Aussenfenster (150..154): {:?}",
+        befund.band_hz
+    );
+    assert!(
+        befund.beobachtung.gueltig,
+        "und sie ist eine echte Messung: {:?}",
+        befund.beobachtung
+    );
+    assert_eq!(
+        stark(&befunde),
+        1,
+        "acht Fenster in der Passage tragen die Aussage: {:?}",
+        befund.confidence
     );
 }

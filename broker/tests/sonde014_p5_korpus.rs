@@ -366,8 +366,34 @@ fn korpus_kette_laeuft_durch_den_produktpfad() {
     for s in liste {
         let kennung = s["kennung"].as_str().expect("jede Sitzung hat eine Kennung");
         let befunde = sitzung_fahren(s, band);
-        // Die AUSGEGEBENE Hypothese, unverändert. Dieses Bein wertet nicht —
-        // es schreibt auf, was der Produktpfad wirklich gesagt hat.
+
+        // 🔑 **NAK-212 Nacharbeit 1, NR-04.** Eine Sitzung, die „NUR X
+        // trennt" zusagt, nennt ihre Vorbedingungen — und sie werden hier
+        // gemessen, nicht angenommen. Das ist die DRITTE Zusage, die dieses
+        // Bein selbst misst (die beiden anderen stehen unten): eine
+        // Konstruktion, die an einer anderen Regel faellt als der zugesagten,
+        // ist keine Gegenprobe. `g5_fenster_sieben` lief bis zur
+        // Erstpruefung GEGEN den Master — sein Uplift war negativ, der Fall
+        // blieb schon an R1/R2 `mittel`, und die Fensterzahl mass gar
+        // nichts. Der Riegel faellt sofort, wenn eine Reihe wieder in die
+        // falsche Phase geraet. Bei leerer Befundliste bleibt `beste` auf
+        // `-inf` und der Riegel faellt ebenfalls — eine Sitzung ohne Befund
+        // erfuellt keine Vorbedingung.
+        for k in s["vorbedingung"].as_array().map(Vec::as_slice).unwrap_or(&[]) {
+            let name = k.as_str().expect("Vorbedingung ist ein Name");
+            let beste = befunde
+                .iter()
+                .filter_map(|b| b["rang"][name].as_f64())
+                .fold(f64::NEG_INFINITY, f64::max);
+            assert!(
+                beste > 0.0,
+                "{kennung}: Vorbedingung `{name}` ist nicht positiv belegt ({beste}) \
+                 — der Fall faellt an einer anderen Regel und misst nicht, was er zusagt"
+            );
+        }
+
+        // Die AUSGEGEBENE Hypothese, unverändert. Dieses Bein wertet sie
+        // nicht — es schreibt auf, was der Produktpfad wirklich gesagt hat.
         let mut eintrag = Map::new();
         eintrag.insert("kennung".into(), json!(kennung));
         eintrag.insert(

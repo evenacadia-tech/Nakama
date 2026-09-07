@@ -56,6 +56,7 @@
         }
       ],
       "ursachenklasse": "quelle_resonanz",
+      "vorbedingung": null,
       "wahrheit": "wahre_ursache"
     },
     {
@@ -138,6 +139,7 @@
         }
       ],
       "ursachenklasse": "zwei_quellen_konkurrenz",
+      "vorbedingung": null,
       "wahrheit": "distraktor"
     },
     {
@@ -220,6 +222,7 @@
         }
       ],
       "ursachenklasse": "zwei_quellen_konkurrenz",
+      "vorbedingung": null,
       "wahrheit": "parent_duplikat"
     },
     {
@@ -278,6 +281,7 @@
         }
       ],
       "ursachenklasse": "quelle_resonanz",
+      "vorbedingung": null,
       "wahrheit": "verschobene_passage"
     },
     {
@@ -318,6 +322,7 @@
         }
       ],
       "ursachenklasse": "quelle_resonanz",
+      "vorbedingung": null,
       "wahrheit": "zu_kurze_passage"
     },
     {
@@ -376,6 +381,7 @@
         }
       ],
       "ursachenklasse": "quelle_resonanz",
+      "vorbedingung": null,
       "wahrheit": "wahre_ursache"
     },
     {
@@ -460,6 +466,7 @@
         }
       ],
       "ursachenklasse": "quelle_resonanz",
+      "vorbedingung": null,
       "wahrheit": "wahre_ursache"
     },
     {
@@ -518,6 +525,7 @@
         }
       ],
       "ursachenklasse": "quelle_resonanz",
+      "vorbedingung": null,
       "wahrheit": "gegenbeleg"
     },
     {
@@ -602,6 +610,7 @@
         }
       ],
       "ursachenklasse": "quelle_resonanz",
+      "vorbedingung": null,
       "wahrheit": "gegenbeleg"
     },
     {
@@ -660,6 +669,7 @@
         }
       ],
       "ursachenklasse": "quelle_resonanz",
+      "vorbedingung": null,
       "wahrheit": "routing_unbekannt"
     },
     {
@@ -742,6 +752,7 @@
         }
       ],
       "ursachenklasse": "zwei_quellen_konkurrenz",
+      "vorbedingung": null,
       "wahrheit": "wahre_ursache"
     },
     {
@@ -775,6 +786,7 @@
       "passage": null,
       "quellen": [],
       "ursachenklasse": "daten_reichen_nicht",
+      "vorbedingung": null,
       "wahrheit": "keine_ursache"
     },
     {
@@ -861,6 +873,7 @@
         }
       ],
       "ursachenklasse": "zwei_quellen_konkurrenz",
+      "vorbedingung": null,
       "wahrheit": "distraktor"
     },
     {
@@ -943,6 +956,7 @@
         }
       ],
       "ursachenklasse": "zwei_quellen_konkurrenz",
+      "vorbedingung": null,
       "wahrheit": "distraktor"
     },
     {
@@ -1031,6 +1045,7 @@
         }
       ],
       "ursachenklasse": "quelle_resonanz",
+      "vorbedingung": null,
       "wahrheit": "distraktor"
     },
     {
@@ -1089,6 +1104,7 @@
         }
       ],
       "ursachenklasse": "quelle_resonanz",
+      "vorbedingung": null,
       "wahrheit": "keine_ursache"
     },
     {
@@ -1153,6 +1169,7 @@
         }
       ],
       "ursachenklasse": "quelle_resonanz",
+      "vorbedingung": null,
       "wahrheit": "parent_duplikat"
     },
     {
@@ -1235,6 +1252,7 @@
         }
       ],
       "ursachenklasse": "quelle_resonanz",
+      "vorbedingung": null,
       "wahrheit": "parent_duplikat"
     },
     {
@@ -1307,6 +1325,7 @@
         }
       ],
       "ursachenklasse": "zwei_quellen_konkurrenz",
+      "vorbedingung": null,
       "wahrheit": "parent_duplikat"
     },
     {
@@ -1382,6 +1401,7 @@
         }
       ],
       "ursachenklasse": "quelle_resonanz",
+      "vorbedingung": null,
       "wahrheit": "parent_duplikat"
     },
     {
@@ -1390,15 +1410,27 @@
         "distraktor_ist_alternative": false,
         "sicherheit_hoechstens": "hoch"
       },
-      "hinweis": "G5 Fall 6: der Randwert. GATE_MINDEST_FENSTER = 8, die Klassenwahl prueft `fenster < 8` — acht sind genug (M-23: `mindestens acht`). Die Sitzung traegt eine Pegelreihe, sonst fiele sie an R1 und der Randwert waere nicht mehr gemessen. Das Alignment haelt, weil `paarueberdeckung` auf die KUERZERE Seite normiert (8 von 8).",
+      "hinweis": "G5 Fall 6: der Randwert. GATE_MINDEST_FENSTER = 8, die Klassenwahl prueft `fenster < 8` — acht sind genug (M-23: `mindestens acht`). Die Sitzung traegt eine Pegelreihe, sonst fiele sie an R1 und der Randwert waere nicht mehr gemessen. Das Alignment haelt, weil `paarueberdeckung` auf die KUERZERE Seite normiert (8 von 8). 🔑 **NAK-212 Nacharbeit 1, NR-04:** Reihe und Master laufen jetzt in der Phase `laut zuerst`, und die Onsets kommen dazu — dieselbe Konstruktion wie in `g5_fenster_sieben`, damit zwischen beiden wirklich NUR die Fensterzahl steht. Uplift und Koinzidenz sind Vorbedingung und werden im Kettenbein gemessen.",
       "kennung": "g5_fenster_genau_acht",
       "luecke": null,
       "master": {
         "anhebung_db": 9.0,
         "fenster": 12,
-        "onsets": null,
+        "onsets": [
+          1.0,
+          2.5,
+          4.0,
+          2.5,
+          1.0,
+          2.5,
+          4.0,
+          2.5,
+          1.0,
+          2.5,
+          4.0,
+          2.5
+        ],
         "reihe_db": [
-          0.0,
           9.0,
           0.0,
           9.0,
@@ -1409,6 +1441,7 @@
           0.0,
           9.0,
           0.0,
+          9.0,
           9.0
         ]
       },
@@ -1420,22 +1453,35 @@
           "fenster": 8,
           "instanz": 2,
           "mixer": 3,
-          "onsets": null,
+          "onsets": [
+            1.0,
+            2.5,
+            4.0,
+            2.5,
+            1.0,
+            2.5,
+            4.0,
+            2.5
+          ],
           "reihe_db": [
-            0.0,
             9.0,
             0.0,
             9.0,
             0.0,
             9.0,
             0.0,
-            9.0
+            9.0,
+            0.0
           ],
           "versatz_fenster": 0,
           "wahre_ursache": true
         }
       ],
       "ursachenklasse": "quelle_resonanz",
+      "vorbedingung": [
+        "uplift",
+        "koinzidenz"
+      ],
       "wahrheit": "wahre_ursache"
     },
     {
@@ -1444,15 +1490,27 @@
         "distraktor_ist_alternative": false,
         "sicherheit_hoechstens": "mittel"
       },
-      "hinweis": "G5 Fall 6, Gegenprobe: ein Fenster unter dem Randwert. Ohne diese Sitzung waere `< 8` von `<= 8` nicht zu unterscheiden.",
+      "hinweis": "G5 Fall 6, Gegenprobe: ein Fenster unter dem Randwert. Ohne diese Sitzung waere `< 8` von `<= 8` nicht zu unterscheiden. 🔑 **NAK-212 Nacharbeit 1, NR-04:** die Reihe lief bis hierher GEGEN den Master — die Quelle war laut, wenn er leise war, der bedingte Uplift also negativ. Der Fall blieb schon wegen R1/R2 `mittel`, unabhaengig von der Fensterzahl, und mass die zugesagte Gegenprobe nicht. Jetzt traegt er denselben positiven, gleichlaeufigen Zusammenhang wie `g5_fenster_genau_acht`; `mittel` folgt allein aus `fenster < GATE_MINDEST_FENSTER`, und Uplift wie Koinzidenz sind Vorbedingung.",
       "kennung": "g5_fenster_sieben",
       "luecke": null,
       "master": {
         "anhebung_db": 9.0,
         "fenster": 12,
-        "onsets": null,
+        "onsets": [
+          1.0,
+          2.5,
+          4.0,
+          2.5,
+          1.0,
+          2.5,
+          4.0,
+          2.5,
+          1.0,
+          2.5,
+          4.0,
+          2.5
+        ],
         "reihe_db": [
-          0.0,
           9.0,
           0.0,
           9.0,
@@ -1463,6 +1521,7 @@
           0.0,
           9.0,
           0.0,
+          9.0,
           9.0
         ]
       },
@@ -1474,7 +1533,15 @@
           "fenster": 7,
           "instanz": 2,
           "mixer": 3,
-          "onsets": null,
+          "onsets": [
+            1.0,
+            2.5,
+            4.0,
+            2.5,
+            1.0,
+            2.5,
+            4.0
+          ],
           "reihe_db": [
             9.0,
             0.0,
@@ -1489,6 +1556,10 @@
         }
       ],
       "ursachenklasse": "quelle_resonanz",
+      "vorbedingung": [
+        "uplift",
+        "koinzidenz"
+      ],
       "wahrheit": "zu_kurze_passage"
     },
     {
@@ -1673,6 +1744,7 @@
         }
       ],
       "ursachenklasse": "zwei_quellen_konkurrenz",
+      "vorbedingung": null,
       "wahrheit": "distraktor"
     },
     {
@@ -1755,6 +1827,7 @@
         }
       ],
       "ursachenklasse": "zwei_quellen_konkurrenz",
+      "vorbedingung": null,
       "wahrheit": "distraktor"
     },
     {
@@ -1816,6 +1889,7 @@
         }
       ],
       "ursachenklasse": "quelle_resonanz",
+      "vorbedingung": null,
       "wahrheit": "wahre_ursache"
     },
     {
@@ -1877,6 +1951,7 @@
         }
       ],
       "ursachenklasse": "quelle_resonanz",
+      "vorbedingung": null,
       "wahrheit": "zu_kurze_passage"
     },
     {
@@ -1938,6 +2013,7 @@
         }
       ],
       "ursachenklasse": "quelle_resonanz",
+      "vorbedingung": null,
       "wahrheit": "zu_kurze_passage"
     }
   ]

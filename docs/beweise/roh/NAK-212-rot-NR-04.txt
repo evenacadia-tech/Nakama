@@ -1,0 +1,59 @@
+NAK-212 Nacharbeit 1 — Rotbeweis NR-04 — 2026-09-07
+========================================================================
+Ruecknahme: NR-04 zurueckgenommen: der Sieben-Fenster-Kontrollfall laeuft wieder GEGEN den Master (Kandidat `[9,0,9,0,9,0,9]` gegen Master `[0,9,...]`) — genau die Lage der Fassung vor der Nacharbeit. Der bedingte Uplift ist negativ, der Fall faellt schon an R1/R2 und misst nicht die Fensterzahl.
+Datei: tools/eq-copilot/erzeuge_p5_korpus.py
+Ersetzt: 'quellen=[quelle(2, reihe_db=WECHSEL7, onsets=ONSETS[:7], fenster=7,\n                        wahre_ursache=True)],\n        master_reihe_db=WECHSEL_RANDWERT,'
+     -> : 'quellen=[quelle(2, reihe_db=WECHSEL7, onsets=ONSETS[:7], fenster=7,\n                        wahre_ursache=True)],\n        master_reihe_db=WECHSEL,'
+Gefahren: py -3.13 tools/eq-copilot/erzeuge_p5_korpus.py; cargo test --manifest-path broker/Cargo.toml --test sonde014_p5_korpus
+ERGEBNIS: ROT (der Test faellt ohne die Regel)
+Baum nach dem Lauf unveraendert (SHA-256 ad10b2bdea718959 vor und nach, Wiederherstellung unten belegt)
+========================================================================
+
+--- py -3.13 tools/eq-copilot/erzeuge_p5_korpus.py ---
+Exit 0
+P5-Korpus: 2 Dateien, 27 Sitzungen
+geschrieben
+
+
+
+--- cargo test --manifest-path broker/Cargo.toml --test sonde014_p5_korpus ---
+Exit 101
+
+running 1 test
+test korpus_kette_laeuft_durch_den_produktpfad ... FAILED
+
+failures:
+
+---- korpus_kette_laeuft_durch_den_produktpfad stdout ----
+
+thread 'korpus_kette_laeuft_durch_den_produktpfad' (19980) panicked at tests\sonde014_p5_korpus.rs:388:13:
+g5_fenster_sieben: Vorbedingung `uplift` ist nicht positiv belegt (0) — der Fall faellt an einer anderen Regel und misst nicht, was er zusagt
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    korpus_kette_laeuft_durch_den_produktpfad
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.74s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.91s
+     Running tests\sonde014_p5_korpus.rs (broker\target\debug\deps\sonde014_p5_korpus-b59f509449eb57a8.exe)
+error: test failed, to rerun pass `--test sonde014_p5_korpus`
+
+
+=== Wiederherstellung des Baums ===
+--- py -3.13 tools/eq-copilot/erzeuge_p5_korpus.py ---
+Exit 0
+P5-Korpus: 2 Dateien, 27 Sitzungen
+geschrieben
+
+
+
+--- py -3.13 tools/eq-copilot/erzeuge_p5_korpus.py --pruefen ---
+Exit 0
+P5-Korpus: 2 Dateien, 27 Sitzungen
+bytegleich
+
+

@@ -1,0 +1,40 @@
+NAK-212 Nacharbeit 1 — Rotbeweis NR-03 — 2026-09-07
+========================================================================
+Ruecknahme: R5/E5 zurueckgenommen: `masteranomalie` liest wieder `master.fenster.last()` ohne Passagenbezug — die Lage, die Codex als A4 gefunden hat. Der Rotbeweis misst, dass der NEUE Produktpfadfall `a4_masteranomalie_ausserhalb_der_passage` die Regel wirklich prueft; er fehlte im Bein, obwohl N-28 ihn nennt.
+Datei: broker/src/coordinator/hypothese.rs
+Ersetzt: 'let (letztes, gemessen) = match passage {\n        Some(p) => match fenster_ganz_in_passage(master, p).last().copied() {\n            Some(f) => (f, true),\n            None => (master.fenster.last()?, false),\n        },\n  '
+     -> : 'let (letztes, gemessen) = (master.fenster.last()?, true);\n    let _ = passage;'
+Gefahren: cargo test --manifest-path broker/Cargo.toml --test sonde014_gegenbeispiele a4_masteranomalie_ausserhalb_der_passage -- --nocapture
+ERGEBNIS: ROT (der Test faellt ohne die Regel)
+Baum nach dem Lauf unveraendert (SHA-256 11c3da3c6bac60b7 vor und nach)
+========================================================================
+
+--- cargo test --manifest-path broker/Cargo.toml --test sonde014_gegenbeispiele a4_masteranomalie_ausserhalb_der_passage -- --nocapture ---
+Exit 101
+
+running 1 test
+── A4 Masteranomalie in einem Fenster HINTER der Passage ──
+   quelle=..02 klasse=Mittel zustand=MoreData ursache=QuelleResonanz score=0.252129
+     rang: bandpassung=0.012772 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=1.000000
+     band=Bandintervall { von: 149, bis: 152 } passage=Some("00005032") alternatives=0 ausschluesse=[]
+   => starke Befunde: 0
+test a4_masteranomalie_ausserhalb_der_passage ... FAILED
+
+failures:
+
+failures:
+    a4_masteranomalie_ausserhalb_der_passage
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 14 filtered out; finished in 5.32s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.38s
+     Running tests\sonde014_gegenbeispiele.rs (broker\target\debug\deps\sonde014_gegenbeispiele-4e737afb3cd092a5.exe)
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-nak212-a4-11028\nakama-broker.sqlite3
+
+thread 'a4_masteranomalie_ausserhalb_der_passage' (26160) panicked at tests\sonde014_gegenbeispiele.rs:1351:5:
+die Anomalie kommt aus der Passage (98..102), nicht aus dem Aussenfenster (150..154): Bandintervall { von: 149, bis: 152 }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+error: test failed, to rerun pass `--test sonde014_gegenbeispiele`
+

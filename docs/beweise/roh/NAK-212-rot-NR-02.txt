@@ -1,0 +1,37 @@
+NAK-212 Nacharbeit 1 — Rotbeweis NR-02 — 2026-09-07
+========================================================================
+Ruecknahme: NR-02 zurueckgenommen: der mittlere Kandidat traegt wieder das Muster `i % 3 == 0` der Fassung vor der Nacharbeit — vier laute gegen acht leise Fenster, Median auf dem leisen Wert, `ohne` leer, kein Uplift, Reihenfolge A > C > M.
+Datei: broker/tests/sonde014_gegenbeispiele.rs
+Ersetzt: 'b.belege_je_fenster(\n        "sonde1",\n        &m,\n        200,\n        12,\n        0,\n        |i| if i % 2 == 1 || i == 0 { 9.0 } else { 0.0 },\n        band,\n    );'
+     -> : 'b.belege_je_fenster("sonde1", &m, 200, 12, 0, |i| if i % 3 == 0 { 9.0 } else { 0.0 }, band);'
+Gefahren: cargo test --manifest-path broker/Cargo.toml --test sonde014_gegenbeispiele d2_fuehrender_wird_gegen_jeden_geprueft
+ERGEBNIS: ROT (der Test faellt ohne die Regel)
+Baum nach dem Lauf unveraendert (SHA-256 aaa2c8a32a4aa229 vor und nach)
+========================================================================
+
+--- cargo test --manifest-path broker/Cargo.toml --test sonde014_gegenbeispiele d2_fuehrender_wird_gegen_jeden_geprueft ---
+Exit 101
+
+running 1 test
+test d2_fuehrender_wird_gegen_jeden_geprueft ... FAILED
+
+failures:
+
+---- d2_fuehrender_wird_gegen_jeden_geprueft stdout ----
+
+thread 'd2_fuehrender_wird_gegen_jeden_geprueft' (22276) panicked at tests\sonde014_gegenbeispiele.rs:588:5:
+der mittlere hat einen belegten Uplift: 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    d2_fuehrender_wird_gegen_jeden_geprueft
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.59s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.70s
+     Running tests\sonde014_gegenbeispiele.rs (broker\target\debug\deps\sonde014_gegenbeispiele-4e737afb3cd092a5.exe)
+error: test failed, to rerun pass `--test sonde014_gegenbeispiele`
+

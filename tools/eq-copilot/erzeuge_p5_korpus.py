@@ -117,6 +117,12 @@ AUSSCHLUSSGRUENDE = [
     "evidenz_zurueckgenommen",
 ]
 
+# Die drei Zusammenhangskomponenten aus E1 — die geschlossene Menge, aus der
+# eine Sitzung ihre Vorbedingungen nennen darf (NAK-212 Nacharbeit 1, NR-04).
+# Sie tragen dieselben Namen wie die Rangkomponenten im Snapshot, weil das
+# Kettenbein sie genau dort liest.
+ZUSAMMENHANGSKOMPONENTEN = ["uplift", "koinzidenz", "wiederholbarkeit"]
+
 # ── Das Bandfenster, in dem die Sessions ihre Anomalie tragen ────────────
 #
 # Dieselben Baender wie die Beine der Etappen C bis F; das Gitter ist
@@ -143,6 +149,7 @@ def sitzung(
     master_reihe_db: list[float] | None = None,
     master_onsets: list[float] | None = None,
     passage: dict | None = None,
+    vorbedingung: list[str] | None = None,
     erwartete_sicherheit: str,
     erwarteter_ausschluss: str | None = None,
     distraktor_ist_alternative: bool = False,
@@ -167,6 +174,13 @@ def sitzung(
         raise SystemExit(f"{kennung}: Luecke ohne gueltige `wirkung`")
     if master_reihe_db is not None and len(master_reihe_db) != master_fenster:
         raise SystemExit(f"{kennung}: Masterreihe passt nicht zur Fensterzahl")
+    # 🔑 NAK-212 Nacharbeit 1, NR-04: eine Zusage der Form „NUR X trennt"
+    # braucht den Nachweis, dass alles Uebrige wirklich gegeben ist. Die
+    # genannten Zusammenhangskomponenten muessen im Lauf positiv sein, sonst
+    # faellt der Fall an einer anderen Regel und misst etwas anderes.
+    for k in vorbedingung or []:
+        if k not in ZUSAMMENHANGSKOMPONENTEN:
+            raise SystemExit(f"{kennung}: unbekannte Vorbedingung {k!r}")
     return {
         "kennung": kennung,
         "wahrheit": wahrheit,
@@ -183,6 +197,7 @@ def sitzung(
             "onsets": master_onsets,
         },
         "passage": passage,
+        "vorbedingung": vorbedingung,
         "luecke": luecke,
         "quellen": quellen,
         "erwartet": {
@@ -254,8 +269,26 @@ GEGEN = [9.0, 0.0] * 6
 WECHSEL_MITTE = [4.0, 12.0] * 6
 ONSETS = [1.0, 2.5, 4.0, 2.5] * 3
 ONSETS_GEGEN = [4.0, 2.5, 1.0, 2.5] * 3
-# Acht Fenster fuer die Randwertfaelle; auch hier ist das letzte laut.
-WECHSEL8 = [0.0, 9.0] * 4
+# ── Die beiden Randwertfaelle (7 und 8 Fenster) ─────────────────────────
+#
+# 🔑 **NAK-212 Nacharbeit 1, NR-04.** `WECHSEL7` lief gegen `WECHSEL`
+# GEGENlaeufig: die Quelle war genau dann laut, wenn der Master leise war,
+# der bedingte Uplift also negativ. Der Fall blieb schon an R1/R2 `mittel`
+# und mass NICHT die zugesagte Gegenprobe „nur die Fensterzahl trennt".
+#
+# Gleichlaeufig UND messbar geht bei beiden Laengen nur in der Phase „laut
+# zuerst": bei `[0,9,0,9,0,9,0]` (sieben Werte, VIER leise) faellt der Median
+# auf den leisen Wert, `k >= schwelle` steckt alle Fenster in `mit`, `ohne`
+# bleibt leer, und M-19 misst gar nichts. Bei `[9,0,9,0,9,0,9]` liegt der
+# Median auf dem lauten Wert, der Split ist 4 zu 3, und der Uplift ist
+# maximal positiv — genau wie bei acht Fenstern mit dem Split 4 zu 4.
+#
+# Der Master der beiden Sitzungen laeuft deshalb in derselben Phase. Sein
+# LETZTES Fenster bleibt laut (`masteranomalie` liest genau dieses), was das
+# Alternieren einmal am Ende bricht — hinter dem letzten Kandidatenfenster,
+# also ausserhalb jeder gemessenen Groesse.
+WECHSEL_RANDWERT = [9.0, 0.0] * 5 + [9.0, 9.0]
+WECHSEL8 = [9.0, 0.0] * 4
 WECHSEL7 = [9.0, 0.0, 9.0, 0.0, 9.0, 0.0, 9.0]
 
 SITZUNGEN: list[dict] = [
@@ -598,25 +631,46 @@ SITZUNGEN: list[dict] = [
         "g5_fenster_genau_acht",
         wahrheit="wahre_ursache",
         ursachenklasse="quelle_resonanz",
-        quellen=[quelle(2, reihe_db=WECHSEL8, fenster=8, wahre_ursache=True)],
-        master_reihe_db=WECHSEL,
+        quellen=[quelle(2, reihe_db=WECHSEL8, onsets=ONSETS[:8], fenster=8,
+                        wahre_ursache=True)],
+        master_reihe_db=WECHSEL_RANDWERT,
+        master_onsets=ONSETS,
+        vorbedingung=["uplift", "koinzidenz"],
         erwartete_sicherheit="hoch",
         hinweis=("G5 Fall 6: der Randwert. GATE_MINDEST_FENSTER = 8, die "
                  "Klassenwahl prueft `fenster < 8` — acht sind genug (M-23: "
                  "`mindestens acht`). Die Sitzung traegt eine Pegelreihe, "
                  "sonst fiele sie an R1 und der Randwert waere nicht mehr "
                  "gemessen. Das Alignment haelt, weil `paarueberdeckung` auf "
-                 "die KUERZERE Seite normiert (8 von 8)."),
+                 "die KUERZERE Seite normiert (8 von 8). "
+                 "🔑 **NAK-212 Nacharbeit 1, NR-04:** Reihe und Master "
+                 "laufen jetzt in der Phase `laut zuerst`, und die Onsets "
+                 "kommen dazu — dieselbe Konstruktion wie in "
+                 "`g5_fenster_sieben`, damit zwischen beiden wirklich NUR "
+                 "die Fensterzahl steht. Uplift und Koinzidenz sind "
+                 "Vorbedingung und werden im Kettenbein gemessen."),
     ),
     sitzung(
         "g5_fenster_sieben",
         wahrheit="zu_kurze_passage",
         ursachenklasse="quelle_resonanz",
-        quellen=[quelle(2, reihe_db=WECHSEL7, fenster=7, wahre_ursache=True)],
-        master_reihe_db=WECHSEL,
+        quellen=[quelle(2, reihe_db=WECHSEL7, onsets=ONSETS[:7], fenster=7,
+                        wahre_ursache=True)],
+        master_reihe_db=WECHSEL_RANDWERT,
+        master_onsets=ONSETS,
+        vorbedingung=["uplift", "koinzidenz"],
         erwartete_sicherheit="mittel",
         hinweis=("G5 Fall 6, Gegenprobe: ein Fenster unter dem Randwert. Ohne "
-                 "diese Sitzung waere `< 8` von `<= 8` nicht zu unterscheiden."),
+                 "diese Sitzung waere `< 8` von `<= 8` nicht zu unterscheiden. "
+                 "🔑 **NAK-212 Nacharbeit 1, NR-04:** die Reihe lief bis "
+                 "hierher GEGEN den Master — die Quelle war laut, wenn er "
+                 "leise war, der bedingte Uplift also negativ. Der Fall blieb "
+                 "schon wegen R1/R2 `mittel`, unabhaengig von der "
+                 "Fensterzahl, und mass die zugesagte Gegenprobe nicht. Jetzt "
+                 "traegt er denselben positiven, gleichlaeufigen Zusammenhang "
+                 "wie `g5_fenster_genau_acht`; `mittel` folgt allein aus "
+                 "`fenster < GATE_MINDEST_FENSTER`, und Uplift wie Koinzidenz "
+                 "sind Vorbedingung."),
     ),
     sitzung(
         "g5_kandidatendeckel",

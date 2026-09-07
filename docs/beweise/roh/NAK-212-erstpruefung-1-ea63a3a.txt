@@ -1,0 +1,19 @@
+URTEIL: NEEDS_WORK — vier DEFEKTE.
+
+Geprüft: angegebener Diff, Matrix, Aufrufbezüge, Vertragsform und Kalibrierungslogik statisch; Korpus-SHA-256 stimmt, HEAD blieb ea63a3aaf2efe0bac5374f54fba583f99a66e553, Plugin/Identität/Schema sowie bootstrap_p und seine bisherigen Aufrufer sind unverändert.
+
+Nicht geprüft: Laufzeitverhalten, Cargo, Python, A28–A31, hundert Determinismusläufe und Nulltest wurden gemäß Leseauftrag nicht ausgeführt; keine Dateien wurden verändert.
+
+Full review comments:
+
+- [P2] Erhalte messbare Nullkorrelationen als Some(0.0) — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/hypothese.rs:2002-2002
+  DEFEKT (E1/E6): Die Onsetreihen `[1,1,3,3]` und `[1,3,1,3]`, jeweils dreimal wiederholt, haben beide Streuung, aber exakt Korrelation null. Hier wird daraus trotzdem `None`, entgegen [E1](docs/beweise/NAK-212.md#L59-L60). Das beeinflusst nicht nur die Vorzeichenprüfung: `zusammenhang_verschieden` unterscheidet nach E6 ausdrücklich `Some(0)` von `None`. Bei zwei Kandidaten mit gleichem positivem Uplift, verschiedenem quantisiertem Gesamtrang und diesen beziehungsweise konstanten Onsets wird deshalb ein nach E6 getrenntes Paar fälschlich ungetrennt; der Führende bleibt `mittel` statt `hoch`.
+
+- [P2] Setze den abweichenden Kandidaten im Dreierfall auf Platz zwei — C:/Users/phili/Projekte/Nakama/broker/tests/sonde014_gegenbeispiele.rs:431-432
+  DEFEKT: Die bereits im Test enthaltene Eingabefolge für `m` hat vier laute und acht leise Fenster. Ihr Median liegt auf dem leisen Wert; wegen `k >= schwelle` landen alle Fenster in `mit`, sodass Uplift und Wiederholbarkeit keinen Beitrag liefern. Damit rangiert `m` hinter C: Der Aufbau erzeugt A > C > M statt des in [N-42](docs/beweise/NAK-212.md#L347) verlangten A > M > C. Schon der Vergleich nur mit dem Zweitplatzierten C erzwingt hier Enthaltung; die zugesagte Prüfung gegen jeden Überlebenden wird somit nicht isoliert geprüft. Die Vorbedingungen müssen auch die tatsächliche Quellenreihenfolge und den unterschiedlichen Zusammenhang des Zweitplatzierten absichern.
+
+- [P2] Übernimm die noch fehlenden vereinbarten Ketteneingaben — C:/Users/phili/Projekte/Nakama/broker/tests/sonde014_gegenbeispiele.rs:626-630
+  DEFEKT: Das neue Kettenbein übernimmt nicht alle zugesagten Eingaben: Es fehlen unter anderem `[0,11)`, der zweite `experiment_begin` aus `f5b`, `f8/f8b`, `f4/f4b` und `eigen5`; auch der Produktpfadfall zur Masteranomalie außerhalb der Passage fehlt. Nachvollziehbar ist das durch Lesen des vollständigen Beins beziehungsweise `rg -n '^fn ' broker/tests/sonde014_gegenbeispiele.rs` und Abgleich mit [R6](docs/beweise/roh/NAK-212-auftrag.txt#L17) und Matrix §2.5.1/§2.6. Diese Situationen werden weder im Korpus ersetzt noch als Kettenfälle ausgeführt und ausgegeben. Verlangt ist dabei ausdrücklich keine Lösung der fremden Produktfälle, sondern ihre vereinbarte Ausführung samt benannter Lückenausgabe.
+
+- [P2] Richte den Sieben-Fenster-Kontrollfall gleichläufig aus — C:/Users/phili/Projekte/Nakama/tools/eq-copilot/erzeuge_p5_korpus.py:615-616
+  DEFEKT: `WECHSEL7` liefert `[9,0,9,0,9,0,9]`, während die zugehörigen Masterfenster `[0,9,0,9,0,9,0]` tragen. Der bedingte Uplift ist daher negativ: Die Quelle ist genau dann laut, wenn der Master leise ist. Der Fall bleibt bereits wegen R1/R2 `mittel`, unabhängig von der Mindestfensterzahl, und misst nicht die zugesagte Gegenprobe „[nur die Fensterzahl trennt](docs/beweise/NAK-212.md#L420)“. Der Sieben-Fenster-Aufbau muss einen positiven Zusammenhang tragen und diesen als Vorbedingung prüfen.

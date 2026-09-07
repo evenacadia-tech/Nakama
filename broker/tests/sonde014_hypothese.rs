@@ -1688,3 +1688,86 @@ fn materialmenge_und_bandpassung_trennen_nicht() {
         assert_eq!(b.alternatives.len(), 1, "jeder ist Alternative des anderen");
     }
 }
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-212 Nacharbeit 1, NR-01 · gemessene_nullkoinzidenz_trennt
+// ═════════════════════════════════════════════════════════════════════════
+//
+// Die Erstprüfung (Codex `gpt-6-astra`, 07.09.2026) fand die Lücke in E1:
+// `korrelation_gerichtet` bildete jede Null auf `None` ab und verlor damit
+// die MESSBARE Nullkorrelation. Ihre Folge steht in E6 — hier, am
+// Produktpfad: zwei Kandidaten mit demselben positiven Uplift, deren
+// Onsetreihen sich als „gemessen null" und „gar nicht gemessen"
+// unterscheiden, sind nach E6 **getrennt**. Ohne die Regel hielt
+// `zusammenhang_verschieden` sie für gleich, und der Führende blieb `mittel`.
+#[test]
+fn gemessene_nullkoinzidenz_trennt_zwei_kandidaten() {
+    let c = coordinator();
+    let master = adresse(1);
+    let mit_null = adresse(2);
+    let ohne_messung = adresse(3);
+    anmelden(&c, "main", &master, "main", Some(0), None);
+    intent_marke(&c, "main", &master);
+    anmelden(&c, "sonde0", &mit_null, "passive_probe", Some(3), None);
+    anmelden(&c, "sonde1", &ohne_messung, "passive_probe", Some(4), None);
+
+    let band = (ANOMALIEBAND, ANOMALIEBAND + 4);
+    let muster = wechselnd(12, 9.0, 0.0);
+    // Der Master onsettet abwechselnd 1 und 3.
+    reihe_je_fenster(&c, "main", &master, 0, 12, band, &muster, |i| {
+        Some(if i % 2 == 1 { 3.0 } else { 1.0 })
+    });
+    // Der Fuehrende: dieselbe Bandreihe (0,1 dB lauter, damit die
+    // Bandpassung die RAENGE trennt) und eine Onsetreihe [1,1,3,3]…, die
+    // gegen die des Masters exakt Korrelation NULL hat — beide Reihen
+    // streuen, sie haben nur nichts miteinander zu tun.
+    reihe_je_fenster(&c, "sonde0", &mit_null, 100, 12, band, wechselnd(12, 9.1, 0.0), |i| {
+        Some(if i % 4 >= 2 { 3.0 } else { 1.0 })
+    });
+    // Der andere: gleiche Bandreihe, aber KONSTANTE Onsets — seine
+    // Koinzidenz ist nicht messbar.
+    reihe_je_fenster(&c, "sonde1", &ohne_messung, 200, 12, band, &muster, |_| None);
+
+    let befunde = c.befunde_sicht(&hex(0x11), &hex(0x22));
+    assert_eq!(befunde.len(), 2, "beide bleiben sichtbar");
+    // ── Vorbedingungen, gemessen statt angenommen ─────────────────────
+    // (a) Die Koinzidenz bewegt KEINEN Rang: sie ist bei beiden als
+    //     Rangkomponente null (`Some(0.0)` klemmt auf 0, `None` ebenso).
+    //     Die Trennung kann also nicht über den Rang laufen.
+    assert_eq!(
+        (befunde[0].rang.koinzidenz, befunde[1].rang.koinzidenz),
+        (0.0, 0.0),
+        "die Koinzidenz traegt hier keinen Rang — sonst maesse der Fall etwas anderes"
+    );
+    // (b) Der Uplift ist bei beiden derselbe und positiv.
+    assert!(
+        befunde[0].rang.uplift > 0.0 && befunde[0].rang.uplift == befunde[1].rang.uplift,
+        "gleicher positiver Uplift: {} gegen {}",
+        befunde[0].rang.uplift,
+        befunde[1].rang.uplift
+    );
+    // (c) Die quantisierten Gesamtraenge trennen wirklich (E6, Bedingung 1).
+    assert_ne!(
+        rang_quantisiert(&befunde[0].rang),
+        rang_quantisiert(&befunde[1].rang),
+        "die Bandpassung trennt die Raenge: {:?} gegen {:?}",
+        befunde[0].rang,
+        befunde[1].rang
+    );
+    assert_eq!(
+        befunde[0].candidate_source, mit_null.instance_id,
+        "der mit der gemessenen Nullkoinzidenz fuehrt"
+    );
+    // ── Die Zusage ────────────────────────────────────────────────────
+    assert_eq!(
+        befunde[0].confidence.klasse,
+        Sicherheitsklasse::Hoch,
+        "gemessen null und nicht gemessen sind ZWEI Werte — das Paar ist getrennt: {:?}",
+        befunde.iter().map(|b| b.confidence).collect::<Vec<_>>()
+    );
+    assert_eq!(befunde[0].zustand, Befundzustand::ReadyToSend);
+    assert!(
+        befunde[1].confidence.klasse < Sicherheitsklasse::Hoch,
+        "und nur EINER ist stark (M-21)"
+    );
+}

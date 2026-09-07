@@ -1,0 +1,68 @@
+NAK-212 Nacharbeit 1 — Rotbeweis NR-01 — 2026-09-07
+========================================================================
+Ruecknahme: NR-01 zurueckgenommen: eine messbare Nullkorrelation wird wieder zu `None` — genau die Abbildung `(r != 0.0).then_some(r)` der Fassung vor der Nacharbeit.
+Datei: broker/src/coordinator/hypothese.rs
+Ersetzt: 'r.is_finite().then_some(r)\n}'
+     -> : '(r.is_finite() && r != 0.0).then_some(r)\n}'
+Gefahren: cargo test --manifest-path broker/Cargo.toml --lib korrelation_gerichtet_trennt_gemessene_null_von_nicht_messbar; cargo test --manifest-path broker/Cargo.toml --test sonde014_hypothese gemessene_nullkoinzidenz_trennt_zwei_kandidaten
+ERGEBNIS: ROT (der Test faellt ohne die Regel)
+Baum nach dem Lauf unveraendert (SHA-256 11c3da3c6bac60b7 vor und nach)
+========================================================================
+
+--- cargo test --manifest-path broker/Cargo.toml --lib korrelation_gerichtet_trennt_gemessene_null_von_nicht_messbar ---
+Exit 101
+
+running 1 test
+test coordinator::hypothese::tests::korrelation_gerichtet_trennt_gemessene_null_von_nicht_messbar ... FAILED
+
+failures:
+
+---- coordinator::hypothese::tests::korrelation_gerichtet_trennt_gemessene_null_von_nicht_messbar stdout ----
+
+thread 'coordinator::hypothese::tests::korrelation_gerichtet_trennt_gemessene_null_von_nicht_messbar' (15740) panicked at src\coordinator\hypothese.rs:2534:9:
+assertion `left == right` failed: zwei streuende Reihen ohne Zusammenhang sind GEMESSEN null
+  left: None
+ right: Some(0.0)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    coordinator::hypothese::tests::korrelation_gerichtet_trennt_gemessene_null_von_nicht_messbar
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 234 filtered out; finished in 0.00s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.92s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+error: test failed, to rerun pass `--lib`
+
+
+--- cargo test --manifest-path broker/Cargo.toml --test sonde014_hypothese gemessene_nullkoinzidenz_trennt_zwei_kandidaten ---
+Exit 101
+
+running 1 test
+test gemessene_nullkoinzidenz_trennt_zwei_kandidaten ... FAILED
+
+failures:
+
+---- gemessene_nullkoinzidenz_trennt_zwei_kandidaten stdout ----
+
+thread 'gemessene_nullkoinzidenz_trennt_zwei_kandidaten' (4028) panicked at tests\sonde014_hypothese.rs:1762:5:
+assertion `left == right` failed: gemessen null und nicht gemessen sind ZWEI Werte — das Paar ist getrennt: [Befundkonfidenz { klasse: Mittel, score: 0.592911 }, Befundkonfidenz { klasse: Mittel, score: 0.59273 }]
+  left: Mittel
+ right: Hoch
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    gemessene_nullkoinzidenz_trennt_zwei_kandidaten
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 24 filtered out; finished in 0.46s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.98s
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+error: test failed, to rerun pass `--test sonde014_hypothese`
+

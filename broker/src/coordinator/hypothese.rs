@@ -1989,34 +1989,42 @@ fn gemeinsame_reihen(
 
 /// Pearson-Korrelation MIT Vorzeichen, oder `None`.
 ///
-/// `None` heisst: die Reihen sind zu kurz oder eine von beiden hat keine
-/// Streuung. Das ist etwas anderes als „Korrelation null" — zwei Konstanten
-/// sind kein Zusammenhang, aber auch kein Gegenbeleg (R2).
+/// `None` heisst genau eine Sache: die Korrelation ist NICHT MESSBAR. Vier
+/// Lagen fuehren dorthin, und jede steht unten einzeln benannt — ungleich
+/// lange oder zu kurze Reihen, weniger als zwei ENDLICHE Paare, eine Reihe
+/// ohne Streuung, ein nicht endliches Ergebnis.
+///
+/// Eine messbare Korrelation gibt `Some(r)` zurueck, EINSCHLIESSLICH
+/// `Some(0.0)`: zwei Reihen mit Streuung, die nichts miteinander zu tun
+/// haben, sind gemessen null — weder Beleg noch Gegenbeleg (R1, R2), aber
+/// ein MESSWERT und damit von „nicht gemessen" unterscheidbar (E6).
+///
+/// 🔑 **NAK-212 Nacharbeit 1, NR-01 (07.09.2026).** Bis hierher rief diese
+/// Funktion eine `f64`-Fassung `korrelation` und bildete deren `0.0` auf
+/// `None` ab. Jene gab aber in FUENF Lagen 0,0 zurueck — den vier oben
+/// genannten und der echten Nullkorrelation; wer die vier an der Zahl
+/// wiedererkennen will, trifft zwangslaeufig auch die fuenfte. Onsetreihen
+/// wie `[1,1,3,3]` gegen `[1,3,1,3]` (beide mit Streuung, Korrelation exakt
+/// null) wurden damit zu `None`, und `zusammenhang_verschieden` (E6) hielt
+/// ein getrenntes Paar fuer ungetrennt: der Fuehrende blieb `mittel` statt
+/// `hoch`. Die Rechnung steht deshalb JETZT HIER, und die `f64`-Fassung ist
+/// ersatzlos entfallen — sie hatte im Produkt keinen Aufrufer mehr. Eine
+/// Rechnung, eine Stelle: dieselbe Lehre wie bei `ueberlappt` (E4).
 fn korrelation_gerichtet(a: &[f64], b: &[f64]) -> Option<f64> {
-    let r = korrelation(a, b);
-    // `korrelation` gibt in beiden untrennbaren Lagen exakt 0,0 zurueck. Ein
-    // echter Korrelationswert von exakt 0,0 ist bei Gleitkommazahlen kein
-    // realistischer Fall und traegt ohnehin weder Beleg noch Gegenbeleg —
-    // deshalb ist die Abbildung `0.0 -> None` hier verlustfrei fuer beide
-    // Fragen, die R1 und R2 stellen.
-    (r != 0.0).then_some(r)
-}
-
-/// Pearson-Korrelation zweier gleich langer Reihen. `0.0`, wenn eine der
-/// beiden keine Streuung hat — nicht 1,0: zwei Konstanten sind kein
-/// Zusammenhang.
-fn korrelation(a: &[f64], b: &[f64]) -> f64 {
+    // Lage 1: zu kurz oder ungleich lang.
     if a.len() != b.len() || a.len() < 2 {
-        return 0.0;
+        return None;
     }
+    // NaN und Inf nehmen ihr PAAR heraus, statt die Reihe zu vergiften.
     let paare: Vec<(f64, f64)> = a
         .iter()
         .zip(b.iter())
         .filter(|(x, y)| x.is_finite() && y.is_finite())
         .map(|(x, y)| (*x, *y))
         .collect();
+    // Lage 2: nach dem Filtern bleiben weniger als zwei Paare.
     if paare.len() < 2 {
-        return 0.0;
+        return None;
     }
     let mittel_a = paare.iter().map(|(x, _)| *x).sum::<f64>() / paare.len() as f64;
     let mittel_b = paare.iter().map(|(_, y)| *y).sum::<f64>() / paare.len() as f64;
@@ -2030,15 +2038,15 @@ fn korrelation(a: &[f64], b: &[f64]) -> f64 {
         var_a += dx * dx;
         var_b += dy * dy;
     }
+    // Lage 3: eine der beiden Reihen steht still. Zwei Konstanten sind kein
+    // Zusammenhang — und auch kein Gegenbeleg.
     if var_a <= 0.0 || var_b <= 0.0 {
-        return 0.0;
+        return None;
     }
     let r = zaehler / (var_a.sqrt() * var_b.sqrt());
-    if r.is_finite() {
-        r
-    } else {
-        0.0
-    }
+    // Lage 4: die Rechnung selbst ist nicht endlich (Ueberlauf im Zaehler
+    // oder in einer der Varianzen bei sehr grossen Werten).
+    r.is_finite().then_some(r)
 }
 
 // ═════════════════════════════════════════════════════════════════════════
@@ -2487,19 +2495,99 @@ mod tests {
 
     /// Die Korrelation ist keine Gefaelligkeit: zwei Konstanten sind kein
     /// Zusammenhang, und eine zu kurze Reihe ist keiner.
+    ///
+    /// *(NAK-212 Nacharbeit 1, NR-01: dieselbe Zusage, gemessen auf
+    /// `korrelation_gerichtet`. Der frühere `f64`-Wrapper `korrelation` ist
+    /// mit dem Fix arbeitslos geworden — er hätte „nicht messbar" und
+    /// „gemessen null" wieder unter einer Zahl zusammengefasst, und niemand
+    /// im Produkt hat noch danach gefragt.)*
     #[test]
     fn korrelation_ist_streng() {
-        assert_eq!(korrelation(&[1.0, 1.0, 1.0], &[2.0, 2.0, 2.0]), 0.0);
-        assert_eq!(korrelation(&[1.0], &[2.0]), 0.0);
-        assert_eq!(korrelation(&[], &[]), 0.0);
-        assert_eq!(korrelation(&[1.0, 2.0], &[1.0, 2.0, 3.0]), 0.0);
-        let r = korrelation(&[1.0, 2.0, 3.0], &[2.0, 4.0, 6.0]);
+        assert_eq!(korrelation_gerichtet(&[1.0, 1.0, 1.0], &[2.0, 2.0, 2.0]), None);
+        assert_eq!(korrelation_gerichtet(&[1.0], &[2.0]), None);
+        assert_eq!(korrelation_gerichtet(&[], &[]), None);
+        assert_eq!(korrelation_gerichtet(&[1.0, 2.0], &[1.0, 2.0, 3.0]), None);
+        let r = korrelation_gerichtet(&[1.0, 2.0, 3.0], &[2.0, 4.0, 6.0]).expect("messbar");
         assert!((r - 1.0).abs() < 1e-9, "{r}");
-        let g = korrelation(&[1.0, 2.0, 3.0], &[6.0, 4.0, 2.0]);
+        let g = korrelation_gerichtet(&[1.0, 2.0, 3.0], &[6.0, 4.0, 2.0]).expect("messbar");
         assert!((g + 1.0).abs() < 1e-9, "{g}");
         // NaN in einem Paar nimmt das Paar heraus, statt die Reihe zu
         // vergiften.
-        assert!(korrelation(&[1.0, 2.0, f64::NAN], &[2.0, 4.0, 8.0]).is_finite());
+        assert!(korrelation_gerichtet(&[1.0, 2.0, f64::NAN], &[2.0, 4.0, 8.0])
+            .is_some_and(f64::is_finite));
+    }
+
+    /// 🔑 **NAK-212 Nacharbeit 1, NR-01.** Eine MESSBARE Nullkorrelation ist
+    /// `Some(0.0)`, keine Enthaltung.
+    ///
+    /// `korrelation` faellt in fuenf Lagen auf 0,0 zurueck — vier davon sind
+    /// „nicht messbar", die fuenfte ist ein Messwert. Wer die Lagen an der
+    /// Zahl 0,0 wiedererkennen will, trifft zwangslaeufig auch die echte
+    /// Nullkorrelation: `zusammenhang_verschieden` (E6) haelt dann ein
+    /// getrenntes Paar fuer ungetrennt, und der Fuehrende bleibt `mittel`.
+    #[test]
+    fn korrelation_gerichtet_trennt_gemessene_null_von_nicht_messbar() {
+        // Beide Reihen STREUEN, ihre Korrelation ist exakt null. Das ist ein
+        // Messwert — der Fall aus dem Erstpruefungsurteil.
+        let a: Vec<f64> = [1.0, 1.0, 3.0, 3.0].repeat(3);
+        let b: Vec<f64> = [1.0, 3.0, 1.0, 3.0].repeat(3);
+        assert_eq!(
+            korrelation_gerichtet(&a, &b),
+            Some(0.0),
+            "zwei streuende Reihen ohne Zusammenhang sind GEMESSEN null"
+        );
+        // Und die vier Lagen, in denen wirklich nichts messbar ist.
+        assert_eq!(korrelation_gerichtet(&[1.0, 1.0, 1.0], &[2.0, 4.0, 6.0]), None,
+                   "eine Reihe ohne Streuung");
+        assert_eq!(korrelation_gerichtet(&[2.0, 4.0, 6.0], &[1.0, 1.0, 1.0]), None,
+                   "die ANDERE Reihe ohne Streuung");
+        assert_eq!(korrelation_gerichtet(&[1.0], &[2.0]), None, "Laenge 1");
+        assert_eq!(korrelation_gerichtet(&[], &[]), None, "leer");
+        assert_eq!(korrelation_gerichtet(&[1.0, 2.0], &[1.0, 2.0, 3.0]), None,
+                   "ungleich lang");
+        assert_eq!(korrelation_gerichtet(&[1.0, f64::NAN], &[2.0, 4.0]), None,
+                   "nach dem NaN-Filter bleibt EIN Paar");
+        assert_eq!(korrelation_gerichtet(&[f64::INFINITY, 1.0, 2.0],
+                                         &[1.0, f64::NAN, 3.0]), None,
+                   "Inf und NaN nehmen ihre Paare heraus — eines bleibt");
+        // Vorzeichen bleiben, wie sie waren.
+        let r = korrelation_gerichtet(&[1.0, 2.0, 3.0], &[2.0, 4.0, 6.0]).expect("messbar");
+        assert!((r - 1.0).abs() < 1e-9, "{r}");
+        let g = korrelation_gerichtet(&[1.0, 2.0, 3.0], &[6.0, 4.0, 2.0]).expect("messbar");
+        assert!((g + 1.0).abs() < 1e-9, "{g}");
+        // Fuer den RANG bleibt beides null: `koinzidenz` klemmt auf [0, 1],
+        // und `None` wie `Some(0.0)` tragen dort denselben Wert. Der
+        // Unterschied wirkt allein ueber die KLASSE und die Trennung (E6) —
+        // die Reduktionsreihenfolge aus M-25 ist unberuehrt.
+    }
+
+    /// 🔑 **NAK-212 Nacharbeit 1, NR-01, Folge in E6.** `Some(0.0)` und
+    /// `None` sind fuer die Trennung ZWEI Werte.
+    ///
+    /// Das ist die Stelle, an der die Enthaltung der Korrelation wirklich
+    /// weh tat: zwei Kandidaten mit gleichem positivem Uplift, deren einer
+    /// eine gemessene Nullkoinzidenz traegt und deren anderer gar keine,
+    /// sind im Zusammenhang unterscheidbar.
+    #[test]
+    fn gemessene_null_trennt_vom_nicht_gemessenen() {
+        let mit_null = Zusammenhangsbeleg {
+            uplift: Some(0.6),
+            koinzidenz: Some(0.0),
+            wiederholbarkeit: 0.5,
+        };
+        let ohne_messung = Zusammenhangsbeleg {
+            uplift: Some(0.6),
+            koinzidenz: None,
+            wiederholbarkeit: 0.5,
+        };
+        assert!(
+            zusammenhang_verschieden(&mit_null, &ohne_messung),
+            "gemessen null ist nicht dasselbe wie nicht gemessen"
+        );
+        // Und beide sind positiv belegt (ueber den Uplift), keiner ein
+        // Gegenbeleg — die Nullkoinzidenz aendert R1 und R2 nicht.
+        assert!(mit_null.positiv_belegt() && ohne_messung.positiv_belegt());
+        assert!(!mit_null.gegenbeleg() && !ohne_messung.gegenbeleg());
     }
 
     /// Die Projektspanne saettigt an den `i64`-Raendern, statt zu panieren

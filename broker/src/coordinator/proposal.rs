@@ -347,9 +347,16 @@ pub const GATE_FELDER: [&str; 6] = [
 impl Proposal {
     /// M-43: sind alle sechs Gate-Felder belegt?
     ///
-    /// `passage_id` ist im Vertrag optional — im **Gate** ist es das nicht.
-    /// Ein Vorschlag ohne Passage benennt nicht, wo er gilt, und genau das
+    /// `passage_id` ist seit NR-07 **Pflichtfeld des Vertrags**
+    /// (`$defs/proposal.required`) und seit WN-04 zusaetzlich Bedingung des
+    /// Erzeugers: ohne benannte Passage entsteht gar kein Objekt. Ein
+    /// Vorschlag ohne Passage benennt nicht, wo er gilt, und genau das
     /// verlangt das Exit-Gate.
+    ///
+    /// 🔑 **WN-04 (Nacharbeit 2, 07.09.2026):** hier stand bis zu dieser
+    /// Runde „im Vertrag optional“. Das war seit NR-07 falsch, und die
+    /// falsche Zusage deckte den Erzeuger, der weiterhin unvollstaendige
+    /// Proposals baute und persistierte (WP1-4).
     pub fn gate_felder_vollstaendig(&self) -> [(&'static str, bool); 6] {
         [
             ("target", !self.target.is_empty()),
@@ -625,12 +632,28 @@ fn leerer_rahmen(aktion: Aktion) -> Proposal {
     }
 }
 
-/// Der vollständige Weg: fünf Schritte, ein Objekt.
+/// Der vollständige Weg: fünf Schritte, höchstens ein Objekt.
 ///
-/// ⚠️ Es gibt **immer** ein Objekt (M-46). `keine Änderung` und `mehr Daten`
-/// sind gültige Vorschläge mit vollständigem Objekt — kein leerer
-/// Rückgabewert, kein `None`.
-pub fn proposal(befund: &CauseHypothesis, lage: &Proposallage) -> Proposal {
+/// ⚠️ `no_change` und `more_data` sind **vollständige** Vorschläge, kein
+/// leerer Rückgabewert (M-46) — sie tragen Ziel, Passage, Hörziel,
+/// Stopbedingung und Rückweg wie jeder andere.
+///
+/// 🔑 **WN-04 (Nacharbeit 2, 07.09.2026): OHNE benannte Passage entsteht
+/// KEIN Objekt.** Bis zu dieser Runde gab der Erzeuger auch dann eines
+/// zurück, wenn der Befund keine Passage trug; es landete in
+/// `stand.vorschlaege` und über `vorschlag_persistieren` als
+/// `event_type = "proposal"` im Store — ein Objekt, dem seit NR-07 ein
+/// Pflichtfeld des Vertrags fehlt. Der ausgeführte Test schrieb die
+/// Abweichung sogar fest (WP1-4).
+///
+/// Das `None` ist deshalb keine Ausnahme von M-46, sondern seine Bedingung:
+/// entweder ein VOLLSTÄNDIGES Objekt — auch für `no_change` und
+/// `more_data` — oder gar keines. Ein Vorschlag, der nicht sagen kann, WO
+/// er gilt, ist keiner.
+pub fn proposal(befund: &CauseHypothesis, lage: &Proposallage) -> Option<Proposal> {
+    // WN-04: die Bedingung steht VOR jeder Rechnung. Was hier fällt, wird
+    // nicht gebildet und dann verworfen — es entsteht nicht.
+    befund.passage_id.as_ref()?;
     // Schritt 1
     let templates = aktionstemplates(befund);
     // Schritt 2
@@ -690,7 +713,7 @@ pub fn proposal(befund: &CauseHypothesis, lage: &Proposallage) -> Proposal {
             },
         );
     let (parameters, allowed_bounds) = eingriff(aktion, befund, lage);
-    Proposal {
+    Some(Proposal {
         proposal_id: proposal_id(befund, lage, aktion),
         proposal_schema: 1,
         target: lage.ziel_instanz.clone(),
@@ -715,7 +738,7 @@ pub fn proposal(befund: &CauseHypothesis, lage: &Proposallage) -> Proposal {
         // zum Anzeigezeitpunkt.
         intent_revision: lage.intent.as_ref().map_or(0, |i| i.revision),
         generatorversion: GENERATORVERSION,
-    }
+    })
 }
 
 /// Die Parameter und Grenzen eines Eingriffs (M-47).
@@ -896,6 +919,11 @@ pub fn darf_draft_offer(befund: &CauseHypothesis, vorschlag: &Proposal, lage: &P
         // M-43: das Exit-Gate verlangt die PASSAGE woertlich. Ein Vorschlag,
         // der nicht sagen kann, WO er gilt, wird nicht angeboten — auch wenn
         // alles andere stimmt.
+        //
+        // 🔑 WN-04: seit dieser Runde entsteht ein solcher Vorschlag gar
+        // nicht mehr. Die Frage bleibt trotzdem stehen: ein Riegel, dessen
+        // Vorbedingung anderswo faellt, ist einer weniger, und dieser hier
+        // kostet nichts.
         && vorschlag.passage_id.is_some()
         && lage.capability_vorhanden
         && vorschlag.base_revision == lage.base_revision

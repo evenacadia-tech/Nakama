@@ -44,7 +44,22 @@ impl Coordinator {
             };
             (befunde, Self::proposallage_locked(&stand, session))
         };
-        let neue: Vec<Proposal> = befunde.iter().map(|b| proposal(b, &lage)).collect();
+        // 🔑 WN-04 (Nacharbeit 2, 07.09.2026): `filter_map`, nicht `map`.
+        //
+        // Ohne benannte Passage liefert der Erzeuger `None`, und dann gibt
+        // es hier auch keinen Eintrag: kein `stand.vorschlaege`, kein
+        // `vorschlag_persistieren`, kein `draft_offer`. Der Befund bleibt
+        // sichtbar — er behauptet etwas über die Ursache —, aber ein
+        // Vorschlag, der nicht sagen kann, WO er gilt, entsteht nicht.
+        //
+        // Die Paare bleiben zusammen: `angebot` unten braucht den Befund
+        // ZU seinem Vorschlag, und ein `zip` über zwei unterschiedlich
+        // lange Listen hängte den falschen an.
+        let paare: Vec<(CauseHypothesis, Proposal)> = befunde
+            .iter()
+            .filter_map(|b| proposal(b, &lage).map(|v| (b.clone(), v)))
+            .collect();
+        let neue: Vec<Proposal> = paare.iter().map(|(_, v)| v.clone()).collect();
         let geaendert = {
             let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
             if stand.vorschlaege.get(session).map(Vec::as_slice) == Some(neue.as_slice()) {
@@ -68,9 +83,8 @@ impl Coordinator {
         // nichts mehr, woran er ihn nachholen könnte — und genau das war der
         // Zustand bis hierher: der Rückgabewert von `snapshot_schreiben`
         // ging in ein `let _`, und ein nicht angenommenes Angebot war fort.
-        let angebot: Option<Proposal> = befunde
+        let angebot: Option<Proposal> = paare
             .iter()
-            .zip(neue.iter())
             .find(|(b, v)| darf_draft_offer(b, v, &lage))
             .map(|(_, v)| v.clone());
 

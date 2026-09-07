@@ -1,0 +1,36 @@
+ROTBEWEIS WN-04 (SONDE-014 Nacharbeit 2) - ohne Passage kein Proposal
+
+ZUSAGE: Der Erzeuger liefert `Option<Proposal>` und gibt ohne
+`befund.passage_id` `None` zurueck - kein Eintrag in `stand.vorschlaege`,
+kein `vorschlag_persistieren`, kein `draft_offer` (Exit-Gate, M-43/M-46,
+WP1-4).
+
+RUECKNAHME: der `None`-Zweig wird entschaerft (`let _ = ...`); der Erzeuger
+baut wieder ein Objekt ohne Passage, wie vor dieser Runde.
+
+FALLENDE ZEILE: `ohne_passage_entsteht_kein_proposal`
+(broker/tests/sonde014_nacharbeit2.rs) - "ohne Passage entsteht KEIN
+Vorschlag" und die Store-Zeile daneben.
+
+Kommando: cargo test --manifest-path broker/Cargo.toml --test sonde014_nacharbeit2 ohne_passage
+Gefahren: 2026-09-07T10:37:05
+
+=== 1. RUECKNAHME der Zusage ===
+  broker/src/coordinator/proposal.rs
+
+=== 2. ROTER LAUF ===
+EXIT=101
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde014-nacharbeit2-wn04-20740-b0d8a3ac3d9b4fb9abac91d709614857\nakama-broker.sqlite3
+thread 'ohne_passage_entsteht_kein_proposal' (1876) panicked at tests\sonde014_nacharbeit2.rs:686:5:
+ohne Passage entsteht KEIN Vorschlag: [(MoreData, None)]
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 3 filtered out; finished in 9.29s
+error: test failed, to rerun pass `--test sonde014_nacharbeit2`
+
+=== 3. WIEDERHERSTELLUNG ===
+  zurueckgenommen
+
+=== 4. GRUENER LAUF ===
+EXIT=0
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 15.81s
+
+URTEIL: ROT bei Ruecknahme, GRUEN nach Wiederherstellung - die Zusage traegt.

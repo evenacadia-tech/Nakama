@@ -58,8 +58,72 @@ fn hello(adresse: Adresse, art: &str) -> HelloControl {
     }
 }
 
-fn coordinator() -> Coordinator {
-    Coordinator::mit_uhr(Arc::new(ManualClock::default()), hex(0xbeef))
+/// **WN-04 (Nacharbeit 2, 07.09.2026): diese Buehne fuehrt jetzt eine
+/// benannte Passage - und dafuer braucht sie einen Store.**
+///
+/// Ohne Passage entsteht seit WN-04 gar kein Proposal (WP1-4), und eine
+/// benannte Passage entsteht nur aus einem persistenzpflichtigen
+/// `experiment_begin`. Die Faelle dieser Datei messen die Policy an einem
+/// VOLLSTAENDIGEN Objekt; der Fall "ohne Passage kein Objekt" liegt in
+/// `sonde014_nacharbeit2.rs`, wo er die Store-Zeile mitmisst.
+struct TestOrdner(std::path::PathBuf);
+
+impl TestOrdner {
+    fn neu() -> Self {
+        let pfad = std::env::temp_dir().join(format!(
+            "nakama-sonde014-proposal-{}-{}",
+            std::process::id(),
+            uuid::Uuid::new_v4().simple()
+        ));
+        std::fs::create_dir_all(&pfad).unwrap();
+        Self(pfad)
+    }
+}
+
+impl Drop for TestOrdner {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
+/// Der Coordinator samt Store, der ihn ueberlebt.
+///
+/// `Deref` haelt jeden bestehenden Aufruf `c.p1(..)` und `buehne(&c, ..)`
+/// unveraendert - der Umbau ist die Buehne, nicht die Messung.
+struct Buehne {
+    c: Coordinator,
+    _writer: eqcop_broker::store::StoreWriter,
+    _ordner: TestOrdner,
+}
+
+impl std::ops::Deref for Buehne {
+    type Target = Coordinator;
+    fn deref(&self) -> &Coordinator {
+        &self.c
+    }
+}
+
+fn coordinator() -> Buehne {
+    let ordner = TestOrdner::neu();
+    let mut k =
+        eqcop_broker::store::StoreKonfiguration::fuer_pfad(ordner.0.join(eqcop_broker::store::STORE_DATEINAME));
+    k.remote_volume_override = Some(false);
+    let writer = eqcop_broker::store::StoreWriter::starten(k);
+    assert!(!writer.ist_degradiert(), "{:?}", writer.handle().sicht());
+    let c = Coordinator::mit_store(Arc::new(ManualClock::default()), hex(0xbeef), &writer);
+    Buehne {
+        c,
+        _writer: writer,
+        _ordner: ordner,
+    }
+}
+
+fn fixture(name: &str) -> Value {
+    let pfad = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../eq-copilot/fixtures/v3/gueltig")
+        .join(format!("{name}.json"));
+    serde_json::from_slice(&std::fs::read(&pfad).expect("Fixture liegt im Korpus"))
+        .expect("Fixture ist JSON")
 }
 
 fn capabilities() -> Value {
@@ -90,6 +154,18 @@ fn anmelden(c: &Coordinator, link: &str, a: &Adresse, art: &str, mixer: i64) {
             "frische": {"letzter_kontakt_ms": 10, "stale": false}
         })
     ));
+    // WN-04: ohne `record_state` weist der Broker jeden persistenzpflichtigen
+    // Befehl mit `record_state_unknown` ab - und ohne `experiment_begin` gibt
+    // es keine benannte Passage.
+    let bericht = json!({
+        "type": "state_report",
+        "adresse": a,
+        "dsp_schema_version": 1,
+        "state_revision": 0,
+        "state_hash": "a".repeat(64),
+        "record_state": {"valid": true, "recording": false}
+    });
+    assert!(c.state_report_json(link, &serde_json::to_vec(&bericht).unwrap()));
 }
 
 fn evidenz_grundform() -> Value {
@@ -105,6 +181,10 @@ fn evidenz_grundform() -> Value {
 }
 
 const ANOMALIEBAND: usize = 98;
+/// Die Transportepoche der committeten Evidenzgrundform. Passage und Belege
+/// muessen dieselbe fuehren, sonst ist die Passage eine ANDERE (M-23).
+const TRANSPORT_EPOCHE: u64 = 17;
+const BASIS_SAMPLE: i64 = 44_108_200;
 
 fn evidenz(a: &Adresse, nr: usize, projekt_start: i64, anhebung_db: f64) -> Vec<u8> {
     let mut wert = evidenz_grundform();
@@ -151,12 +231,47 @@ fn buehne(c: &Coordinator, fenster: usize) -> Vec<Adresse> {
     anmelden(c, "main", &master, "main", 0);
     anmelden(c, "sonde0", &sonde, "passive_probe", 3);
     intent_marke(c, "main", &master);
+    passage_anlegen(c, &master, &[&master, &sonde], fenster as i64);
     for i in 0..fenster {
-        let zeit = 44_108_200 + (i as i64) * 512;
+        let zeit = BASIS_SAMPLE + (i as i64) * 512;
         c.p1("main", &evidenz(&master, i, zeit, 9.0));
         c.p1("sonde0", &evidenz(&sonde, 100 + i, zeit, 9.0));
     }
     vec![master, sonde]
+}
+
+/// Die benannte Passage ueber den PRODUKTPFAD: `experiment_begin` als P0.
+///
+/// **WN-04 (Nacharbeit 2):** ohne sie entsteht kein Proposal mehr. Die
+/// Passage deckt `fenster` Projektfenster ab Basis ab und traegt die
+/// Transportepoche der Evidenzgrundform - eine andere Epoche waere eine
+/// ANDERE Passage (M-23).
+fn passage_anlegen(
+    c: &Coordinator,
+    master: &Adresse,
+    quellen: &[&Adresse],
+    fenster: i64,
+) -> String {
+    let mut wert = fixture("experiment_begin");
+    wert["kopf"]["ziel"] = serde_json::to_value(master).unwrap();
+    wert["kopf"]["command_id"] = json!(hex(0x930));
+    wert["kopf"]["base_revision"] = json!(0);
+    wert["experiment_id"] = json!(hex(0xab7));
+    let passage_id = hex(0x5001);
+    wert["passage"]["passage_id"] = json!(passage_id);
+    wert["passage"]["projekt_von"] = json!(BASIS_SAMPLE);
+    wert["passage"]["projekt_bis"] = json!(BASIS_SAMPLE + fenster * 512);
+    wert["passage"]["transport_epoch"] = json!(TRANSPORT_EPOCHE);
+    wert["passage"]["aktive_quellen"] =
+        json!(quellen.iter().map(|a| a.instance_id.clone()).collect::<Vec<_>>());
+    let antwort = Senke::p0(c, "main", &serde_json::to_vec(&wert).unwrap())
+        .expect("experiment_begin wird beantwortet");
+    let ack: Value = serde_json::from_slice(&antwort).unwrap();
+    assert_eq!(
+        ack["ergebnis"], "angewandt",
+        "die Passage entsteht wirklich: {ack:?}"
+    );
+    passage_id
 }
 
 fn vertrag_schema() -> Value {
@@ -201,20 +316,13 @@ fn proposal_traegt_die_fuenfzehn_felder() {
     let wire = Coordinator::proposal_json_fuer_test(&vorschlaege[0]);
     let objekt = wire.as_object().unwrap();
     for feld in &pflicht {
-        // 🔑 NR-07: `passage_id` ist seit der Nacharbeit 1 Pflicht im
-        // Vertrag. Diese Buehne fuehrt keine benannte Passage — das Feld
-        // fehlt hier ehrlich, und genau deshalb entsteht aus diesem
-        // Vorschlag auch kein Angebot (`draft_offers_zaehler() == 0` im
-        // Gate-Fall). Das VOLLSTAENDIGE Objekt misst
-        // `sechs_gate_felder_sind_pflicht_mit_passage` in
-        // `sonde014_nacharbeit1.rs` gegen dieselbe Pflichtliste.
-        if *feld == "passage_id" {
-            assert!(
-                !objekt.contains_key(*feld),
-                "ohne Passage traegt der Writer das Feld nicht"
-            );
-            continue;
-        }
+        // 🔑 WN-04 (Nacharbeit 2, 07.09.2026): der Sprung ist FORT.
+        //
+        // Bis zu dieser Runde stand hier eine Ausnahme fuer `passage_id` —
+        // der Test schrieb damit die Vertragsabweichung fest, die er messen
+        // sollte. Seit WN-04 entsteht ohne benannte Passage gar kein Objekt,
+        // und diese Buehne fuehrt eine (`passage_anlegen`). Jedes Pflichtfeld
+        // steht deshalb am Draht, ohne Ausnahme.
         assert!(objekt.contains_key(*feld), "Pflichtfeld {feld} fehlt");
     }
     for feld in objekt.keys() {
@@ -251,31 +359,19 @@ fn sechs_gate_felder_sind_pflicht_und_revert_hat_drei_werte() {
     for vorschlag in &vorschlaege {
         let felder = vorschlag.gate_felder_vollstaendig();
         assert_eq!(felder.len(), 6, "das Exit-Gate nennt SECHS Angaben");
+        // 🔑 WN-04: alle sechs, ohne Ausnahme. Die Buehne fuehrt seit
+        // dieser Runde eine benannte Passage, und ein Vorschlag, dem eine der
+        // sechs Angaben fehlte, entstuende gar nicht erst.
         for (feld, belegt) in felder {
-            if feld == "passage_id" {
-                assert!(
-                    !belegt,
-                    "ohne `experiment_begin` gibt es keine benannte Passage"
-                );
-            } else {
-                assert!(belegt, "Gate-Feld {feld} fehlt");
-            }
+            assert!(belegt, "Gate-Feld {feld} fehlt");
         }
-        // Und die Folge ist HART: ein unvollstaendiges Gate erzeugt kein
-        // Wire-Objekt. Seit NR-07 steht `passage_id` in
-        // `$defs/proposal.required`; ein Objekt ohne sie waere ein
-        // Vertragsbruch, kein halbes Angebot.
-        assert!(
-            !vorschlag.gate_felder_vollstaendig().iter().all(|(_, b)| *b),
-            "diese Buehne traegt bewusst ein unvollstaendiges Gate"
-        );
     }
-    // Die Folge: ein Vorschlag, der nicht sagen kann, WO er gilt, wird nicht
-    // angeboten — auch wenn alles andere stimmt.
+    // In P5 geht trotzdem kein Angebot hinaus: die Capability fehlt (M-45,
+    // M-52). Das ist die zweite Sperre, nicht dieselbe.
     assert_eq!(
         c.draft_offers_zaehler(),
         0,
-        "ohne Passage kein Angebot (M-43)"
+        "in P5 gibt es keine Capability, also kein Angebot"
     );
     assert!(!befunde.is_empty());
 
@@ -381,8 +477,18 @@ fn in_p5_ist_jede_aktion_manual() {
 fn keine_aenderung_und_mehr_daten_sind_vorschlaege() {
     let c = coordinator();
     let master = adresse(1);
+    let sonde = adresse(2);
     anmelden(&c, "main", &master, "main", 0);
+    // Die Sonde ist ANGEMELDET, liefert aber keinen Beleg: der Vertrag
+    // verlangt zwei aktive Quellen an der Passage, die Rechnung braucht
+    // Evidenz. Kandidat wird sie damit keiner - genau die Lage, die dieser
+    // Fall misst.
+    anmelden(&c, "sonde0", &sonde, "passive_probe", 3);
     intent_marke(&c, "main", &master);
+    // WN-04: auch die Enthaltung braucht ihren Ort. `no_change` und
+    // `more_data` sind VOLLSTAENDIGE Objekte (M-46) — und
+    // `vollstaendig` schliesst die Passage ein.
+    passage_anlegen(&c, &master, &[&master, &sonde], 12);
     for i in 0..12 {
         c.p1(
             "main",
@@ -444,7 +550,8 @@ fn zielbereich_kommt_aus_dem_befund_nicht_aus_dem_delta() {
         session_epoch: hex(0x22),
         metrics_version: 1,
     };
-    let v = proposal(&befund, &lage);
+    let v = proposal(&befund, &lage)
+        .expect("WN-04: die Buehne fuehrt eine benannte Passage, also entsteht ein Objekt");
     assert!(
         v.action.ist_eingriff(),
         "die Gegenprobe: mit Capability entsteht wirklich ein Eingriff ({:?})",
@@ -543,14 +650,16 @@ fn geschuetzte_eigenschaft_ist_harte_constraint() {
     };
 
     // Die GEGENPROBE zuerst: ohne Schutz entsteht ein Eingriff.
-    let ohne = proposal(&befund, &lage(None));
+    let ohne = proposal(&befund, &lage(None))
+        .expect("WN-04: die Buehne fuehrt eine benannte Passage, also entsteht ein Objekt");
     assert!(
         ohne.action.ist_eingriff(),
         "ohne Schutz entsteht ein Eingriff ({:?})",
         ohne.action
     );
     // Und mit Schutz nicht mehr — das ist eine HARTE Constraint, kein Gewicht.
-    let mit = proposal(&befund, &lage(Some(json!({}))));
+    let mit = proposal(&befund, &lage(Some(json!({}))))
+        .expect("WN-04: die Buehne fuehrt eine benannte Passage, also entsteht ein Objekt");
     assert!(
         !mit.action.ist_eingriff(),
         "ein geschuetztes Band traegt keinen Eingriff: {:?}",
@@ -665,7 +774,8 @@ fn veraltet_ungueltig_capability_erreichen_keine_probe() {
     // „hier passiert ohnehin nichts" zu unterscheiden.
     let mut mit_passage = befund.clone();
     mit_passage.passage_id = Some(hex(0x501));
-    let offen = proposal(&mit_passage, &lage(true, 0));
+    let offen = proposal(&mit_passage, &lage(true, 0))
+        .expect("WN-04: die Buehne fuehrt eine benannte Passage, also entsteht ein Objekt");
     assert!(offen.action.ist_eingriff());
     assert!(
         darf_draft_offer(&mit_passage, &offen, &lage(true, 0)),
@@ -673,7 +783,8 @@ fn veraltet_ungueltig_capability_erreichen_keine_probe() {
     );
 
     // (a) CAPABILITY fehlt — in P5 immer.
-    let ohne_cap = proposal(&mit_passage, &lage(false, 0));
+    let ohne_cap = proposal(&mit_passage, &lage(false, 0))
+        .expect("WN-04: die Buehne fuehrt eine benannte Passage, also entsteht ein Objekt");
     assert!(!darf_draft_offer(&mit_passage, &ohne_cap, &lage(false, 0)));
 
     // (b) VERALTET: der Befund ist `stale`.
@@ -739,7 +850,8 @@ fn hard_caps_und_engeres_userbudget_werden_nie_ueberschritten() {
             session_epoch: hex(0x22),
             metrics_version: 1,
         };
-        let v = proposal(&befund, &lage);
+        let v = proposal(&befund, &lage)
+            .expect("WN-04: die Buehne fuehrt eine benannte Passage, also entsteht ein Objekt");
         assert!(
             v.budgets_gehalten(usergrenze),
             "Runde {runde}: Budget verletzt bei {usergrenze:?}: {:?}",
@@ -835,7 +947,8 @@ fn manueller_busvorschlag_ist_ein_proposal() {
         session_epoch: hex(0x22),
         metrics_version: 1,
     };
-    let v = proposal(&befund, &lage);
+    let v = proposal(&befund, &lage)
+        .expect("WN-04: die Buehne fuehrt eine benannte Passage, also entsteht ein Objekt");
     assert_eq!(
         v.action,
         Aktion::ManualGuidance,

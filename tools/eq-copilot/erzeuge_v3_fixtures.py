@@ -1616,6 +1616,12 @@ UNGUELTIG: list[tuple] = [
      [v("/proposal", f"{S}/proposal/required/revert", "required")],
      "E-06: der Rueckweg ist ein FELD, kein Versprechen im Text"),
 
+    ("proposal-ohne-passage", "draft_offer",
+     [loesche("proposal", "passage_id")],
+     [v("/proposal", f"{S}/proposal/required/passage_id", "required")],
+     "NR-07: das Exit-Gate verlangt die PASSAGE woertlich - auch fuer "
+     "`no_change` und `more_data`; ein Vorschlag ohne Ort ist keiner (M-43/M-46)"),
+
     ("proposal-ohne-grenzen", "draft_offer",
      [loesche("proposal", "allowed_bounds")],
      [v("/proposal", f"{S}/proposal/required/allowed_bounds", "required")],

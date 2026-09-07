@@ -268,6 +268,17 @@ impl Harnisch {
     /// Transportepoche der Evidenzgrundform — eine andere Epoche wäre eine
     /// andere Passage (M-23).
     fn passage_anlegen(&self, command: usize, experiment: usize, fenster: i64) -> String {
+        self.experiment_mit_ziel(command, experiment, fenster, None)
+    }
+
+    /// Wie `passage_anlegen`, aber mit einem ausdruecklichen `ziel` (E-05).
+    fn experiment_mit_ziel(
+        &self,
+        command: usize,
+        experiment: usize,
+        fenster: i64,
+        ziel: Option<Value>,
+    ) -> String {
         let mut wert = fixture("experiment_begin");
         wert["kopf"]["ziel"] = serde_json::to_value(&self.master).unwrap();
         wert["kopf"]["command_id"] = json!(hex(command));
@@ -280,6 +291,9 @@ impl Harnisch {
         wert["passage"]["transport_epoch"] = json!(TRANSPORT_EPOCHE);
         wert["passage"]["aktive_quellen"] =
             json!([self.master.instance_id, self.sonde.instance_id]);
+        if let Some(z) = ziel {
+            wert["ziel"] = z;
+        }
         let antwort = Senke::p0(&self.c, "main", &serde_json::to_vec(&wert).unwrap())
             .expect("experiment_begin wird beantwortet");
         let ack: Value = serde_json::from_slice(&antwort).unwrap();
@@ -391,4 +405,302 @@ fn passagengate_misst_auch_die_fenster_des_masters() {
         "mit genug Material auf BEIDEN Seiten wird derselbe Fall handelbar: {:?}",
         (befund.confidence, befund.rang)
     );
+}
+
+// =========================================================================
+// M-48 . NR-09 (Entscheid E-13) - das Experimentziel ueberlebt den Neustart
+// =========================================================================
+//
+// `experiment_json()` schrieb das Ziel nicht, und die Wiederherstellung
+// setzte es ausdruecklich auf `None`. Ein mit Ziel- und Schutzbaendern
+// begonnener Versuch rechnete nach einem Brokerneustart wieder mit der
+// Heuristik - und mit ihr aenderte sich die Guardrail-Auswertung.
+#[test]
+fn experimentziel_ueberlebt_den_brokerneustart() {
+    let mut h = Harnisch::neu("nr09");
+    let experiment_id = hex(0xab9);
+    let ziel = json!({
+        "band_von": 40,
+        "band_bis": 96,
+        "geschuetzte_baender": [{"von": 10, "bis": 20}],
+        "proposal_id": hex(0x7777)
+    });
+    h.experiment_mit_ziel(0x910, 0xab9, 8, Some(ziel.clone()));
+    let vorher = h
+        .c
+        .experiment_sicht(&experiment_id)
+        .expect("der Versuch liegt an");
+    assert_eq!(
+        vorher.ziel.as_ref().map(|z| (z.band_von, z.band_bis)),
+        Some((40, 96)),
+        "das Ziel ist angekommen"
+    );
+
+    // DER NEUSTART: derselbe Store, ein neuer Coordinator.
+    h.neustarten();
+    let nachher = h
+        .c
+        .experiment_sicht(&experiment_id)
+        .expect("der Versuch ueberlebt den Neustart (M-47)");
+    let z = nachher
+        .ziel
+        .as_ref()
+        .expect("und sein ZIEL mit ihm (E-13, NR-09)");
+    assert_eq!((z.band_von, z.band_bis), (40, 96), "die Bereiche sind dieselben");
+    assert_eq!(
+        z.geschuetzte_baender,
+        vec![(10u32, 20u32)],
+        "und die Schutzbaender ebenso"
+    );
+    assert_eq!(z.proposal_id.as_deref(), Some(hex(0x7777).as_str()));
+
+    // GEGENPROBE: ein Versuch OHNE Ziel traegt nach dem Neustart weiter
+    // keines - das ist der SONDE-013-Pfad, und er bleibt ehrlich.
+    let mut g = Harnisch::neu("nr09-ohne");
+    g.experiment_mit_ziel(0x911, 0xaba, 8, None);
+    g.neustarten();
+    assert!(
+        g.c.experiment_sicht(&hex(0xaba))
+            .expect("auch dieser Versuch ueberlebt")
+            .ziel
+            .is_none(),
+        "ohne Ziel bleibt es bei der Heuristik (`ziel_geraten`)"
+    );
+}
+
+// =========================================================================
+// M-73/E-09 . NR-10 - `user_verdict` wird persistiert und bestaetigt
+// =========================================================================
+//
+// Die Familie fiel bis zur Nacharbeit 1 in `_ => None`: der Schema-Leser
+// nahm sie an, der Coordinator kannte sie nicht, und weder Persistenz noch
+// ACK entstanden. Die Projektion `user_verdicts` hatte keinen Produzenten.
+#[test]
+fn user_verdict_wird_persistiert_und_bestaetigt() {
+    let h = Harnisch::neu("nr10");
+    let mut wert = fixture("user_verdict");
+    wert["kopf"]["ziel"] = serde_json::to_value(&h.master).unwrap();
+    wert["kopf"]["command_id"] = json!(hex(0x920));
+    wert["kopf"]["base_revision"] = json!(0);
+
+    let antwort = Senke::p0(&h.c, "main", &serde_json::to_vec(&wert).unwrap())
+        .expect("NR-10: die Familie wird BEANTWORTET - vorher fiel sie in `_ => None`");
+    let ack: Value = serde_json::from_slice(&antwort).unwrap();
+    assert_eq!(ack["type"], "command_ack");
+    assert_eq!(
+        ack["ergebnis"], "angewandt",
+        "der ACK kommt vom Coordinator, nicht von einem Testserver: {ack:?}"
+    );
+
+    // Und die Zeile steht wirklich in SQLite - der ACK kommt NACH dem Append.
+    let zeilen = zaehle(&h, "SELECT COUNT(*) FROM user_verdicts");
+    assert_eq!(zeilen, 1, "genau eine Zeile in der Projektion `user_verdicts`");
+    let id: String = {
+        let conn = rusqlite::Connection::open(h.ordner.db()).expect("Store");
+        conn.query_row("SELECT user_verdict_id FROM user_verdicts", [], |r| r.get(0))
+            .expect("die Zeile traegt ihre Kennung")
+    };
+    assert_eq!(id, wert["user_verdict_id"].as_str().unwrap());
+
+    // IDEMPOTENZ unter derselben `command_id`: eine Wiederholung erzeugt
+    // KEINE zweite Zeile. Ein Userurteil koalesziert nicht - aber es
+    // verdoppelt sich auch nicht (E-09).
+    let zweite = Senke::p0(&h.c, "main", &serde_json::to_vec(&wert).unwrap())
+        .expect("die Wiederholung wird beantwortet");
+    let ack2: Value = serde_json::from_slice(&zweite).unwrap();
+    assert_eq!(
+        ack2["ergebnis"], "idempotent_wiederholt",
+        "dieselbe command_id ist dieselbe Absicht: {ack2:?}"
+    );
+    assert_eq!(
+        zaehle(&h, "SELECT COUNT(*) FROM user_verdicts"),
+        1,
+        "und sie bleibt EINE Zeile"
+    );
+}
+
+/// **NR-10, A4-SI:** dieselbe `command_id` ueber einen BROKERNEUSTART hinweg.
+///
+/// Der Kill ist hier der Neustart auf demselben Store - der Zustand, den ein
+/// Brokerkill hinterlaesst. Der Sender wiederholt sein Urteil, weil er die
+/// Antwort nicht bekommen hat; genau eine Zeile darf entstehen.
+#[test]
+fn user_verdict_wiederholt_sich_idempotent_ueber_den_brokerkill() {
+    let mut h = Harnisch::neu("nr10-si");
+    let mut wert = fixture("user_verdict");
+    wert["kopf"]["ziel"] = serde_json::to_value(&h.master).unwrap();
+    wert["kopf"]["command_id"] = json!(hex(0x921));
+    wert["kopf"]["base_revision"] = json!(0);
+    let payload = serde_json::to_vec(&wert).unwrap();
+
+    let ack: Value =
+        serde_json::from_slice(&Senke::p0(&h.c, "main", &payload).expect("ACK")).unwrap();
+    assert_eq!(ack["ergebnis"], "angewandt");
+    assert_eq!(zaehle(&h, "SELECT COUNT(*) FROM user_verdicts"), 1);
+
+    h.neustarten();
+
+    let nach: Value =
+        serde_json::from_slice(&Senke::p0(&h.c, "main", &payload).expect("ACK nach dem Kill"))
+            .unwrap();
+    assert_eq!(
+        nach["ergebnis"], "idempotent_wiederholt",
+        "der Befehl ist committet - der Retry bekommt dieselbe Antwort: {nach:?}"
+    );
+    assert_eq!(
+        zaehle(&h, "SELECT COUNT(*) FROM user_verdicts"),
+        1,
+        "genau EINE Zeile ueber den Kill hinweg"
+    );
+}
+
+// =========================================================================
+// M-71 . NR-11 - der versionierte SQLite-Spiegel des Intents
+// =========================================================================
+//
+// Angenommene `intent_update`-Nachrichten aenderten bis zur Nacharbeit 1
+// ausschliesslich `stand.intent`. Anders als beim AssistantStep gab es keinen
+// Store-Append; nach einem Vollbericht enthielt SQLite keinen versionierten
+// SourceIntent-Spiegel fuer Suche und Crashdiagnose.
+#[test]
+fn intent_bestand_wird_versioniert_gespiegelt() {
+    let mut h = Harnisch::neu("nr11");
+    h.intent_marke(1);
+    let mit_rolle = json!({
+        "type": "intent_update",
+        "adresse": h.master,
+        "session_epoch": h.master.session_epoch,
+        "vollstaendig": true,
+        "bestand_revision": 2,
+        "intents": [{
+            "quelle_id": h.sonde.instance_id,
+            "rolle": "geschuetzt",
+            "revision": 1,
+            "herkunft": "user",
+            "konfidenz": 1.0
+        }]
+    });
+    h.c.p1("main", &serde_json::to_vec(&mit_rolle).unwrap());
+
+    let zeilen = spiegelzeilen(&h);
+    assert_eq!(zeilen.len(), 2, "zwei Ereigniszeilen, eine je Update");
+    let revisionen: Vec<i64> = zeilen
+        .iter()
+        .map(|z| z["bestand_revision"].as_i64().unwrap_or(-1))
+        .collect();
+    assert_eq!(revisionen, vec![1, 2], "mit STEIGENDER Revision");
+    assert_eq!(
+        zeilen[1]["intents"][0]["rolle"], "geschuetzt",
+        "und der Spiegel traegt die Rolle, um die es geht"
+    );
+
+    // Nach dem Neustart ueberschreibt der Spiegel den MAIN-Bestand nicht:
+    // er ist nie autoritativ (M-89-Analogie). Der Main meldet seinen
+    // Vollbestand, und der gewinnt.
+    h.neustarten();
+    assert!(
+        !h.c.darf_rechnen(&h.master.project_binding_id, &h.master.session_epoch),
+        "der Spiegel hebt die Vollstaendigkeitsmarke NICHT - der Broker rechnet nicht"
+    );
+    let neuer_bestand = json!({
+        "type": "intent_update",
+        "adresse": h.master,
+        "session_epoch": h.master.session_epoch,
+        "vollstaendig": true,
+        "bestand_revision": 3
+    });
+    h.c.p1("main", &serde_json::to_vec(&neuer_bestand).unwrap());
+    let sicht = h
+        .c
+        .intent_sicht(&h.master.project_binding_id, &h.master.session_epoch);
+    assert_eq!(sicht.revision, 3, "der MAIN-Stand gilt");
+    assert!(
+        sicht.intents.is_empty(),
+        "der aeltere Spiegel setzt die Rolle NICHT zurueck in den Bestand"
+    );
+}
+
+/// Eine Zahl aus dem Store.
+fn zaehle(h: &Harnisch, sql: &str) -> i64 {
+    let conn = rusqlite::Connection::open(h.ordner.db()).expect("Store oeffnen");
+    conn.query_row(sql, [], |r| r.get(0)).expect("Zaehlung")
+}
+
+/// Die gespiegelten Intent-Ereignisse dieser Sitzung, in Ereignisreihenfolge.
+fn spiegelzeilen(h: &Harnisch) -> Vec<Value> {
+    let conn = rusqlite::Connection::open(h.ordner.db()).expect("Store oeffnen");
+    let mut stmt = conn
+        .prepare(
+            "SELECT payload_jcs FROM event_log WHERE event_type='intent_update' \
+             AND project_binding_id=?1 AND session_epoch=?2 ORDER BY event_ord",
+        )
+        .expect("Abfrage");
+    let rows = stmt
+        .query_map(
+            [&h.master.project_binding_id, &h.master.session_epoch],
+            |r| r.get::<_, Vec<u8>>(0),
+        )
+        .expect("Zeilen");
+    rows.map(|z| serde_json::from_slice(&z.expect("Zeile")).expect("JSON"))
+        .collect()
+}
+
+// =========================================================================
+// M-43/M-46 . NR-07 - das Exit-Gate am VOLLSTAENDIGEN Proposal
+// =========================================================================
+//
+// `passage_id` fehlte in `$defs/proposal.required`: die lesende Gegenprobe
+// der Erstpruefung hat das Feld aus `draft_offer`, `draft-offer-mehr-daten`
+// und `draft-offer-keine-aenderung` entfernt, und alle drei blieben gueltig.
+// Seit der Nacharbeit 1 steht es in `required` - und dieser Fall misst, dass
+// der Erzeuger es auf einer Buehne MIT benannter Passage auch wirklich
+// liefert, fuer alle sechs Gate-Felder.
+#[test]
+fn sechs_gate_felder_sind_pflicht_mit_passage() {
+    let h = Harnisch::neu("nr07");
+    h.intent_marke(0);
+    let passage_id = h.passage_anlegen(0x930, 0xab7, 12);
+    h.belege("main", &h.master, 0, 12);
+    h.belege("sonde0", &h.sonde, 100, 12);
+
+    let vorschlaege = h
+        .c
+        .vorschlaege_sicht(&h.master.project_binding_id, &h.master.session_epoch);
+    assert!(!vorschlaege.is_empty(), "die Buehne traegt einen Vorschlag");
+    for vorschlag in &vorschlaege {
+        for (feld, belegt) in vorschlag.gate_felder_vollstaendig() {
+            assert!(belegt, "Gate-Feld {feld} fehlt - auch `passage_id` ist Pflicht");
+        }
+        assert_eq!(
+            vorschlag.passage_id.as_deref(),
+            Some(passage_id.as_str()),
+            "und es ist DIE Passage, in der gemessen wurde"
+        );
+    }
+
+    // Das Wire-Objekt traegt jede Pflichtzeile des Vertrags - gelesen aus dem
+    // Schema, nicht aus einer zweiten Liste.
+    let vertrag: Value = serde_json::from_slice(
+        &std::fs::read(
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../eq-copilot/schemas/v3/eq-ipc-v3.schema.json"),
+        )
+        .expect("Vertrag liegt im Repo"),
+    )
+    .expect("Vertrag ist JSON");
+    let pflicht: Vec<&str> = vertrag["$defs"]["proposal"]["required"]
+        .as_array()
+        .expect("die Pflichtliste steht im Vertrag")
+        .iter()
+        .map(|v| v.as_str().unwrap())
+        .collect();
+    assert!(
+        pflicht.contains(&"passage_id"),
+        "NR-07: `passage_id` steht in `$defs/proposal.required`"
+    );
+    let wire = Coordinator::proposal_json_fuer_test(&vorschlaege[0]);
+    let objekt = wire.as_object().expect("ein Objekt");
+    for feld in &pflicht {
+        assert!(objekt.contains_key(*feld), "Pflichtfeld {feld} fehlt am Draht");
+    }
 }

@@ -597,6 +597,26 @@ impl Coordinator {
             (session, veraltet)
         };
 
+        // 🔑 NR-11 (Nacharbeit 1, 07.09.2026), M-71: der versionierte
+        // SQLite-Spiegel des Intents.
+        //
+        // §33.5 sagt fuer `SourceIntent` einen „versionierten SQLite-Spiegel
+        // fuer Suche und Crashdiagnose" zu — und bis hierher gab es ihn nur
+        // fuer den AssistantStep. Eine angenommene `intent_update` aenderte
+        // ausschliesslich `stand.intent`, und nach einem Vollbericht oder
+        // einer Rollenaenderung enthielt SQLite keinen Bestandsspiegel.
+        //
+        // Derselbe Ein-Writer-Append wie `assistent.rs::schritt_spiegeln`:
+        // kein neuer Writer, keine neue Tabelle, `event_type =
+        // "intent_update"` und ausdruecklich KEINE Domaenenprojektion in
+        // `writer.rs` — es darf keinen zweiten autoritativen Ort geben. Der
+        // Spiegel ist nie autoritativ (M-89-Analogie): nach einem Neustart
+        // meldet der Main seinen Vollbestand, und der gewinnt.
+        //
+        // Er steht AUSSERHALB des Locks, wie der Push: ein Store-Append haelt
+        // sonst den ganzen Sessiongraphen an.
+        self.intent_spiegeln(&session);
+
         // Der Push liegt AUSSERHALB des Locks (M-72-Muster: der Sessiongraph
         // wird fuer keine Zustellung angehalten).
         if veraltet > 0 {
@@ -607,6 +627,79 @@ impl Coordinator {
             self.flush_session(&session, None);
         }
         Ok(())
+    }
+
+    /// **NR-11: der versionierte Spiegel des Intent-Bestands im append-only
+    /// `event_log`** (§33.5, M-71).
+    ///
+    /// Geschrieben wird der Bestand, wie er nach der Uebernahme steht —
+    /// Revision, Marke und die drei Listen. Der Spiegel dient Suche und
+    /// Crashdiagnose; er wird NIE zurueckgelesen, um den Main zu ueberstimmen.
+    fn intent_spiegeln(&self, session: &SessionKey) {
+        let Some(store) = self.store.as_ref() else {
+            return;
+        };
+        let bestand = {
+            let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+            match stand.intent.get(session) {
+                Some(b) => b.clone(),
+                None => return,
+            }
+        };
+        let payload = serde_json::json!({
+            "bestand_revision": bestand.revision,
+            "vollstaendig": bestand.vollstaendig,
+            "intents": bestand
+                .intents
+                .values()
+                .map(|s| serde_json::json!({
+                    "quelle_id": s.quelle_id,
+                    "passage_id": s.passage_id,
+                    "rolle": s.rolle,
+                    "revision": s.revision,
+                    "herkunft": s.herkunft,
+                    "konfidenz": s.konfidenz,
+                }))
+                .collect::<Vec<Value>>(),
+            "schutzangaben": bestand
+                .schutzangaben
+                .iter()
+                .map(|s| serde_json::json!({
+                    "quelle_id": s.quelle_id,
+                    "eigenschaft": s.eigenschaft,
+                    "band": s.band.map(|(von, bis)| serde_json::json!({"von": von, "bis": bis})),
+                }))
+                .collect::<Vec<Value>>(),
+            "beziehungen": bestand
+                .beziehungen
+                .iter()
+                .map(|((a, b), art)| serde_json::json!({
+                    "quelle_a": a,
+                    "quelle_b": b,
+                    "art": art,
+                }))
+                .collect::<Vec<Value>>(),
+        });
+        let Ok(payload_jcs) = serde_json_canonicalizer::to_vec(&payload) else {
+            return;
+        };
+        let sequence = self.event_sequence.fetch_add(1, Ordering::SeqCst);
+        let mut event = StoreEvent::session_snapshot(
+            &session.project_binding_id,
+            &session.session_epoch,
+            &self.broker_epoch,
+            sequence.min(i64::MAX as u64) as i64,
+            payload_jcs,
+        );
+        event.event_type = "intent_update".into();
+        if store.append(vec![event]).is_err() {
+            // Ein gescheiterter Spiegel NIMMT die Uebernahme NICHT zurueck:
+            // der Main-State ist autoritativ, und ein Spiegel, der fehlt, ist
+            // ein Diagnoseverlust, kein Datenverlust. Gezaehlt wird er
+            // trotzdem — sonst waere „nicht gespiegelt" unbeobachtbar.
+            let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+            stand.store_verweigerungen = stand.store_verweigerungen.saturating_add(1);
+        }
     }
 
     /// Der oeffentliche Weg mit der aktiven Fassung.

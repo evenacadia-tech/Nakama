@@ -307,8 +307,20 @@ public:
     bool assistentUeberspringen();
     /** TERMINAL — und der Slot wird erst NACH dem Terminalereignis frei. */
     bool assistentAbbrechen();
-    /** §46.2: eines der drei benannten Ergebnisse (M-61). */
-    bool assistentAntwort (nakama::state::Assistentenergebnis ergebnis);
+    /** §46.2: eines der drei benannten Ergebnisse (M-61).
+
+        NR-10 (Nacharbeit 1, 07.09.2026), M-73/E-09: `urteil` ist das
+        USERURTEIL zu dem Befund, an dem der Schritt haengt. Es ist optional,
+        weil nicht jede Antwort eines ist — ein `nullptr` heisst „der User hat
+        nicht geurteilt", nie „enthaltung". Liegt eines an, reist es als
+        persistenzpflichtiger P0 (`user_verdict`) und koalesziert nie: ein
+        Urteil, das ein anderes verdraengt, waere verlorene Userarbeit. Ohne
+        `finding_id` im Schritt entsteht keines — ein Urteil ohne Gegenstand
+        waere ein Objekt ohne Bezug. */
+    bool assistentAntwort (nakama::state::Assistentenergebnis ergebnis,
+                           const nakama::state::Userurteil* urteil = nullptr,
+                           const juce::String& findingId = {},
+                           const juce::String& notiz = {});
     /** Der Schritt, wie der Main-State ihn haelt — die Quelle fuer die
         Rekonstruktion nach einem Neustart (M-59). */
     nakama::state::Assistentenzustand assistentAusState() const;
@@ -321,6 +333,10 @@ public:
     std::string v3IntentUpdateFuerTest (bool vollstaendig) const
     { return v3IntentUpdateJson (vollstaendig, nullptr, nullptr, nullptr); }
     std::string v3AssistantStepFuerTest() const { return v3AssistantStepJson(); }
+    std::string v3UserVerdictFuerTest (nakama::state::Userurteil urteil,
+                                       const juce::String& findingId = {},
+                                       const juce::String& notiz = {}) const
+    { return v3UserVerdictJson (urteil, findingId, notiz); }
 
     // ── SONDE-013 M-40 bis M-51: der Experimentpfad des Plugins ────────────
     //
@@ -902,14 +918,27 @@ private:
                                     const nakama::state::Schutzangabe* nurDieserSchutz,
                                     const nakama::state::IntentBeziehung* nurDiese) const;
     std::string v3AssistantStepJson() const;
+    /** NR-10: das `user_verdict` als Wire-Objekt, aus dem Schritt des
+        Main-States. Leer, wenn kein Befund am Schritt haengt. */
+    std::string v3UserVerdictJson (nakama::state::Userurteil urteil,
+                                   const juce::String& findingId,
+                                   const juce::String& notiz) const;
     bool assistentAenderungMelden (bool veraendert);
     /** Meldet EIN geaendertes Intent-Objekt unter seinem eigenen
         P1-Schluessel (M-85). Ohne Verbindung ein No-op. */
     void sendeIntentFortschreibung (const juce::String& quelleId,
                                     const juce::String& passageId);
 
+    /*  NR-08 (Nacharbeit 1, 07.09.2026): der SCHATTEN ist fort.
+
+        Hier stand ein zweites `AssistentSchritt`-Feld mit eigener
+        Revisionszaehlung, aus dem der Sender las - waehrend
+        `setStateInformation()` ausschliesslich `zustand.assistent`
+        restauriert. Nach einem Reload blieb die Wire-Nachricht deshalb leer,
+        und im selben Prozessor konnte der VORIGE Schritt reisen. Der Sender
+        liest jetzt `zustand.assistent` unter `bindungMutex`; `assistentMutex`
+        bleibt als Schloss der Sendeseite bestehen. */
     mutable std::mutex assistentMutex;
-    AssistentSchritt   assistentSchritt;
     void v3ControlLink (bool verbunden);
     void v3Antwort (const std::string& json, std::uint8_t schemaMinor);
     void v3Frame (const std::uint8_t*, std::size_t, std::uint8_t schemaMinor);

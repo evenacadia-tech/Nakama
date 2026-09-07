@@ -373,6 +373,21 @@ enum class Assistentenergebnis { schritt, passageMessen, routingBestaetigen, kei
 
 const char* wort (Assistentenergebnis e) noexcept;
 
+/** NR-10 (Nacharbeit 1, 07.09.2026), M-73/E-09: das USERURTEIL zu einem
+    Befund oder Vorschlag.
+
+    Ausdruecklich Userdaten, keine Messung - dieselbe Trennung wie beim
+    `hoerurteil` des Experiments. Die Menge steht an EINER Vertragsstelle
+    (`$defs/user_urteil` in `eq-ipc-v3.schema.json`); diese Aufzaehlung ist
+    ihre C++-Haelfte und wird gegen dieselbe Menge geprueft (M-77).
+
+    Das Urteil liegt NICHT im Main-State: es ist ein Store-Objekt, und §33.5
+    haelt davon nur IDs im `MainProject` (M-71). Es reist als
+    persistenzpflichtiger P0 und koalesziert nie. */
+enum class Userurteil { angenommen, abgelehnt, spaeter, enthaltung };
+
+const char* wort (Userurteil u) noexcept;
+
 /** Der gehaltene Schritt. EIN Slot — der Deckel aus M-57 ist strukturell und
     kein Zaehler, der auch 2 tragen koennte. */
 struct Assistentenzustand

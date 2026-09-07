@@ -187,7 +187,10 @@ fn proposal_traegt_die_fuenfzehn_felder() {
         .iter()
         .map(|v| v.as_str().unwrap())
         .collect();
-    assert_eq!(pflicht.len(), 15, "fuenfzehn Pflichtfelder");
+    // 🔑 NR-07 (Nacharbeit 1, 07.09.2026): SECHZEHN. `passage_id` ist seit
+    // der Nacharbeit Pflicht - das Exit-Gate verlangt die Passage woertlich
+    // fuer jedes Proposal, auch fuer `no_change` und `more_data` (M-43/M-46).
+    assert_eq!(pflicht.len(), 16, "fuenfzehn Vertragsfelder plus die Passage");
     let erlaubt: Vec<&str> = vertrag["$defs"]["proposal"]["properties"]
         .as_object()
         .unwrap()
@@ -198,6 +201,20 @@ fn proposal_traegt_die_fuenfzehn_felder() {
     let wire = Coordinator::proposal_json_fuer_test(&vorschlaege[0]);
     let objekt = wire.as_object().unwrap();
     for feld in &pflicht {
+        // 🔑 NR-07: `passage_id` ist seit der Nacharbeit 1 Pflicht im
+        // Vertrag. Diese Buehne fuehrt keine benannte Passage — das Feld
+        // fehlt hier ehrlich, und genau deshalb entsteht aus diesem
+        // Vorschlag auch kein Angebot (`draft_offers_zaehler() == 0` im
+        // Gate-Fall). Das VOLLSTAENDIGE Objekt misst
+        // `sechs_gate_felder_sind_pflicht_mit_passage` in
+        // `sonde014_nacharbeit1.rs` gegen dieselbe Pflichtliste.
+        if *feld == "passage_id" {
+            assert!(
+                !objekt.contains_key(*feld),
+                "ohne Passage traegt der Writer das Feld nicht"
+            );
+            continue;
+        }
         assert!(objekt.contains_key(*feld), "Pflichtfeld {feld} fehlt");
     }
     for feld in objekt.keys() {
@@ -221,18 +238,37 @@ fn sechs_gate_felder_sind_pflicht_und_revert_hat_drei_werte() {
     let _ = buehne(&c, 12);
     let vorschlaege = c.vorschlaege_sicht(&hex(0x11), &hex(0x22));
     let befunde = c.befunde_sicht(&hex(0x11), &hex(0x22));
+    // 🔑 NR-07 (Nacharbeit 1, 07.09.2026): der Sprung ueber `passage_id` ist
+    // fort. Er stand hier, weil diese Buehne keine benannte Passage fuehrt —
+    // und er machte aus einem Pflichtfeld eine Ausnahme.
+    //
+    // Die Zusage hat seither zwei Haelften, und sie liegen an zwei Orten:
+    // HIER faellt sie an der Folge (ohne Passage entsteht kein Angebot), und
+    // mit Passage prueft `sechs_gate_felder_sind_pflicht_mit_passage` in
+    // `sonde014_nacharbeit1.rs` alle sechs Felder am vollstaendigen Objekt.
+    // Eine Passage braucht ein persistenzpflichtiges `experiment_begin` und
+    // damit einen echten Store; der Harnisch dafuer liegt dort.
     for vorschlag in &vorschlaege {
-        for (feld, belegt) in vorschlag.gate_felder_vollstaendig() {
+        let felder = vorschlag.gate_felder_vollstaendig();
+        assert_eq!(felder.len(), 6, "das Exit-Gate nennt SECHS Angaben");
+        for (feld, belegt) in felder {
             if feld == "passage_id" {
-                // ⚠️ Diese Buehne fuehrt KEINE benannte Passage — eine
-                // Passage entsteht erst mit einem `experiment_begin`. Das
-                // Gate-Feld fehlt deshalb ehrlich, und die Folge steht
-                // darunter: ohne Passage wird nichts angeboten.
-                assert!(!belegt);
-                continue;
+                assert!(
+                    !belegt,
+                    "ohne `experiment_begin` gibt es keine benannte Passage"
+                );
+            } else {
+                assert!(belegt, "Gate-Feld {feld} fehlt");
             }
-            assert!(belegt, "Gate-Feld {feld} fehlt");
         }
+        // Und die Folge ist HART: ein unvollstaendiges Gate erzeugt kein
+        // Wire-Objekt. Seit NR-07 steht `passage_id` in
+        // `$defs/proposal.required`; ein Objekt ohne sie waere ein
+        // Vertragsbruch, kein halbes Angebot.
+        assert!(
+            !vorschlag.gate_felder_vollstaendig().iter().all(|(_, b)| *b),
+            "diese Buehne traegt bewusst ein unvollstaendiges Gate"
+        );
     }
     // Die Folge: ein Vorschlag, der nicht sagen kann, WO er gilt, wird nicht
     // angeboten — auch wenn alles andere stimmt.

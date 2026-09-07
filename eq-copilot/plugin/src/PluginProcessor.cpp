@@ -1931,6 +1931,19 @@ std::string EqCopilotProcessor::v3IntentUpdateJson (bool vollstaendig,
     return aus;
 }
 
+/*  NR-08 (Nacharbeit 1, 07.09.2026), M-59/M-88/M-89: EINE Wahrheit des
+    Schritts.
+
+    Der Sender las bis hierher einen eigenen Schatten (`assistentSchritt`) mit
+    EIGENER Revisionszaehlung, waehrend `setStateInformation()` ausschliesslich
+    `zustand.assistent` restauriert. Die Folge war messbar: nach
+    `getStateInformation` -> neuer Prozessor -> `setStateInformation` lag der
+    persistente Schritt vor, die Wire-Nachricht blieb aber LEER; bei einem
+    Reload im selben Prozessor konnte statt dessen der VORIGE Schritt reisen.
+    Zwei Wahrheiten desselben Objekts sind genau das, was M-71 verbietet.
+
+    Gelesen wird deshalb `zustand.assistent` unter dem Bindungsschloss, mit
+    DESSEN Revision. Der Schatten ist fort. */
 std::string EqCopilotProcessor::v3AssistantStepJson() const
 {
     auto h = v3Hello();
@@ -1938,18 +1951,18 @@ std::string EqCopilotProcessor::v3AssistantStepJson() const
     if (h.pluginKind != "main" || ! nakama::ipc::adresseGueltig (h.adresse))
         return {};
 
-    AssistentSchritt schritt;
+    nakama::state::Assistentenzustand schritt;
     {
-        std::lock_guard<std::mutex> l (assistentMutex);
-        if (! assistentSchritt.gesetzt)
+        std::lock_guard<std::mutex> l (bindungMutex);
+        if (! zustand.assistent.gesetzt)
             return {};
-        schritt = assistentSchritt;
+        schritt = zustand.assistent;
     }
     std::string aus = "{\"type\":\"assistant_step_update\",\"adresse\":"
                     + nakama::ipc::adresseAlsJson (h.adresse)
                     + ",\"session_epoch\":\"" + h.adresse.sessionEpoch + "\""
                     + ",\"step_id\":\"" + schritt.stepId.toStdString() + "\""
-                    + ",\"schritt\":\"" + schritt.schritt.toStdString() + "\""
+                    + ",\"schritt\":\"" + std::string (nakama::state::wort (schritt.schritt)) + "\""
                     + ",\"revision\":" + std::to_string ((long long) schritt.revision)
                     + ",\"offen\":" + (schritt.offen ? "true" : "false");
     if (schritt.findingId.isNotEmpty())
@@ -1958,6 +1971,53 @@ std::string EqCopilotProcessor::v3AssistantStepJson() const
         aus += ",\"proposal_id\":\"" + schritt.proposalId.toStdString() + "\"";
     if (schritt.experimentId.isNotEmpty())
         aus += ",\"experiment_id\":\"" + schritt.experimentId.toStdString() + "\"";
+    aus += "}";
+    return aus;
+}
+
+/*  NR-10 (Nacharbeit 1, 07.09.2026), M-73/E-09: das USERURTEIL auf dem Draht.
+
+    Der Broker nahm die Familie bis zur Nacharbeit 1 nicht an (`_ => None` in
+    `befehl.rs`), und das Plugin sendete sie nie: der gruene B10-Fall bekam
+    sein ACK vom Testserver. Beide Haelften stehen jetzt - hier die Sendeseite.
+
+    Das Objekt bindet an den BEFUND, an dem der Schritt haengt. Ohne
+    `finding_id` entsteht keines: ein Urteil ohne Gegenstand waere ein Objekt
+    ohne Bezug, und ein erfundener Bezug waere schlimmer als kein Urteil. */
+std::string EqCopilotProcessor::v3UserVerdictJson (nakama::state::Userurteil urteil,
+                                                   const juce::String& findingId,
+                                                   const juce::String& notiz) const
+{
+    juce::String befund = findingId, proposalId;
+    {
+        std::lock_guard<std::mutex> l (bindungMutex);
+        if (! zustand.assistent.gesetzt)
+            return {};
+        // Der GENANNTE Befund gewinnt: der User urteilt ueber den, den er
+        // gerade sieht. Traegt der Schritt selbst einen, ist er der Rueckfall
+        // - so bleibt der Weg auch dann geschlossen, wenn die Oberflaeche den
+        // Befund nicht mitgibt.
+        if (befund.isEmpty())
+            befund = zustand.assistent.findingId;
+        proposalId = zustand.assistent.proposalId;
+    }
+    if (! nakama::ipc::istHex32 (befund.toStdString()))
+        return {};
+    const auto& findingIdGewaehlt = befund;
+    const juce::String commandId { uuidHex32() };
+    const auto kopf = versuchKopfJson (commandId);
+    if (kopf.empty())
+        return {};
+    std::string aus = "{\"type\":\"user_verdict\",\"kopf\":" + kopf;
+    aus += ",\"user_verdict_id\":\"" + uuidHex32() + "\"";
+    aus += ",\"finding_id\":\"" + findingIdGewaehlt.toStdString() + "\"";
+    if (nakama::ipc::istHex32 (proposalId.toStdString()))
+        aus += ",\"proposal_id\":\"" + proposalId.toStdString() + "\"";
+    aus += ",\"urteil\":\"" + std::string (nakama::state::wort (urteil)) + "\"";
+    // Abwesenheit heisst „keine Notiz", nie `null`. Die Schemalaenge ist 500;
+    // ein laengerer Text reist gar nicht, statt beim Empfaenger zu fallen.
+    if (notiz.isNotEmpty() && notiz.length() <= 500)
+        aus += ",\"notiz\":" + juce::JSON::toString (juce::var (notiz), true).toStdString();
     aus += "}";
     return aus;
 }
@@ -2037,22 +2097,29 @@ bool EqCopilotProcessor::setzeAssistentSchritt (const juce::String& stepId,
     if (! bekannt || ! nakama::ipc::istHex32 (stepId.toStdString()))
         return false;
 
-    {
-        std::lock_guard<std::mutex> l (assistentMutex);
-        // Die Revision ist streng steigend. Ein Schritt, dessen Revision
-        // nicht steigt, sieht fuer den Broker aus wie „nichts passiert" - und
-        // wuerde nach der Koaleszierung verschluckt (M-88).
-        if (assistentSchritt.revision >= std::numeric_limits<juce::int64>::max())
-            return false;
-        assistentSchritt.gesetzt      = true;
-        assistentSchritt.stepId       = stepId;
-        assistentSchritt.schritt      = schritt;
-        assistentSchritt.offen        = offen;
-        assistentSchritt.findingId    = findingId;
-        assistentSchritt.proposalId   = proposalId;
-        assistentSchritt.experimentId = experimentId;
-        ++assistentSchritt.revision;
-    }
+    // 🔑 NR-08: dieser Weg SCHREIBT nichts mehr. Die Zustandsmaschine des
+    // Schritts liegt im Main (E-08) und laeuft ueber `assistentStarten`,
+    // `assistentWeiter` und ihre Geschwister; ein zweiter Schreibweg waere
+    // eine zweite Zustandsmaschine, und ein Schatten mit eigener Revision war
+    // genau der Defekt EP-08.
+    //
+    // Was bleibt, ist der Vertragsriegel und die Meldung: gesendet wird der
+    // Schritt, den der MAIN-STATE haelt. Stimmen die genannten Werte nicht mit
+    // ihm ueberein, meldet dieser Weg das ehrlich mit `false`, statt eine
+    // Nachricht ueber einen Schritt zu bauen, den es nicht gibt.
+    const auto kopie = assistentAusState();
+    if (! kopie.gesetzt
+        || kopie.stepId != stepId
+        || juce::String (nakama::state::wort (kopie.schritt)) != schritt
+        || kopie.offen != offen
+        || (findingId.isNotEmpty()    && kopie.findingId    != findingId)
+        || (proposalId.isNotEmpty()   && kopie.proposalId   != proposalId)
+        || (experimentId.isNotEmpty() && kopie.experimentId != experimentId))
+        return false;
+    // Eine leere Nachricht ist KEIN Fehler: ohne gueltige Wire-Adresse gibt
+    // es nichts zu senden, und der Schritt im Main-State steht trotzdem.
+    // Genau dieser Rueckgabewert traegt `assistentStarten` und seine
+    // Geschwister nach aussen.
     const auto json = v3AssistantStepJson();
     if (! json.empty())
         controlV3.sendeP1 ("assistant_step:" + v3Hello().adresse.sessionEpoch, json);
@@ -2061,8 +2128,18 @@ bool EqCopilotProcessor::setzeAssistentSchritt (const juce::String& stepId,
 
 EqCopilotProcessor::AssistentSchritt EqCopilotProcessor::assistentSchrittKopie() const
 {
-    std::lock_guard<std::mutex> l (assistentMutex);
-    return assistentSchritt;
+    // 🔑 NR-08: ABGELEITET aus dem Main-State, nie aus einem zweiten Feld.
+    const auto z = assistentAusState();
+    AssistentSchritt aus;
+    aus.gesetzt      = z.gesetzt;
+    aus.stepId       = z.stepId;
+    aus.schritt      = juce::String (nakama::state::wort (z.schritt));
+    aus.revision     = z.revision;
+    aus.offen        = z.offen;
+    aus.findingId    = z.findingId;
+    aus.proposalId   = z.proposalId;
+    aus.experimentId = z.experimentId;
+    return aus;
 }
 
 void EqCopilotProcessor::v3ControlLink (bool verbunden)
@@ -3576,7 +3653,10 @@ bool EqCopilotProcessor::assistentAbbrechen()
     return gemeldet;
 }
 
-bool EqCopilotProcessor::assistentAntwort (nakama::state::Assistentenergebnis ergebnis)
+bool EqCopilotProcessor::assistentAntwort (nakama::state::Assistentenergebnis ergebnis,
+                                           const nakama::state::Userurteil* urteil,
+                                           const juce::String& findingId,
+                                           const juce::String& notiz)
 {
     bool veraendert = false;
     {
@@ -3587,7 +3667,22 @@ bool EqCopilotProcessor::assistentAntwort (nakama::state::Assistentenergebnis er
         if (! nakama::state::setzeAssistentenergebnis (zustand, ergebnis, veraendert, grund))
             return false;
     }
-    return assistentAenderungMelden (veraendert);
+    const bool gemeldet = assistentAenderungMelden (veraendert);
+    // 🔑 NR-10 (Nacharbeit 1), M-73/E-09: das Urteil reist ZUSAETZLICH zum
+    // `assistant_step_update` — als persistenzpflichtiger P0, der nicht
+    // koalesziert.
+    //
+    // Die Reihenfolge ist Absicht: erst der Schritt (P1, koaleszierend), dann
+    // das Urteil (P0). Der Schritt beschreibt, WO der Assistent steht; das
+    // Urteil ist die Aussage des Users darueber und darf nie von einem
+    // spaeteren Schritt ueberholt werden.
+    if (urteil != nullptr)
+    {
+        const auto json = v3UserVerdictJson (*urteil, findingId, notiz);
+        if (! json.empty())
+            controlV3.sendePersistenzP0 (json);
+    }
+    return gemeldet;
 }
 
 nakama::state::Assistentenzustand EqCopilotProcessor::assistentAusState() const

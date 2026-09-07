@@ -7,7 +7,7 @@
   "sortierung": "Verletzungen sind kanonisch nach (instanz, schema, schluessel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
   "textriegel_lehnt_ab": "Markiert ein Fixture, das der TEXTRIEGEL abweist, BEVOR ein Parser es sieht. Diese Fixtures tragen keine Verletzungsmenge, weil sie das Schema nie erreichen — eine erfundene waere eine Luege ueber den Ort der Ablehnung. Regeln und Begruendung: schemas/v3/README.md.",
   "anzahl_gueltig": 104,
-  "anzahl_ungueltig": 283,
+  "anzahl_ungueltig": 284,
   "fixtures": [
     {
       "datei": "gueltig/assistant-step-ohne-bezug.json",
@@ -3056,6 +3056,18 @@
         {
           "instanz": "/proposal",
           "schema": "#/$defs/proposal/required/allowed_bounds",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/proposal-ohne-passage.json",
+      "urteil": "ungueltig",
+      "warum": "NR-07: das Exit-Gate verlangt die PASSAGE woertlich - auch fuer `no_change` und `more_data`; ein Vorschlag ohne Ort ist keiner (M-43/M-46)",
+      "verletzungen": [
+        {
+          "instanz": "/proposal",
+          "schema": "#/$defs/proposal/required/passage_id",
           "schluessel": "required"
         }
       ]

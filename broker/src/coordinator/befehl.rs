@@ -523,6 +523,39 @@ impl Coordinator {
         Self::command_ack(command_id, "angewandt", revision, Some(&hash), None)
     }
 
+    /// **NR-10: `user_verdict` als persistenzpflichtiger P0** (M-73, E-09).
+    ///
+    /// Das Urteil KOALESZIERT NICHT — ein Userurteil, das ein anderes
+    /// verdraengt, waere verlorene Userarbeit. Es reist deshalb als P0 und
+    /// wird hier zusammen mit seinem Befehlsriegel in EINEN Append gelegt:
+    /// ein Crash zwischen Befehl und Projektion liesse den Retry sonst
+    /// `idempotent_wiederholt` melden und das Urteil fuer immer ausfallen
+    /// (dieselbe Lehre wie Befund B14 im Preview-Pfad).
+    fn user_verdict_p0(&self, link_id: &str, wert: &Value) -> Option<Vec<u8>> {
+        let user_verdict_id = wert.get("user_verdict_id")?.as_str()?.to_owned();
+        let finding_id = wert.get("finding_id")?.as_str()?.to_owned();
+        let urteil = wert.get("urteil")?.as_str()?.to_owned();
+        // Die Projektion `user_verdicts` schluesselt ueber `user_verdict_id`;
+        // ohne sie weist der Writer den Event zurueck.
+        let payload = serde_json::json!({
+            "user_verdict_id": user_verdict_id,
+            "finding_id": finding_id,
+            "proposal_id": wert.get("proposal_id").and_then(Value::as_str),
+            "urteil": urteil,
+            // User-Wort, untrusted, nie interpretiert (§59). Es reist
+            // unveraendert mit, damit ein Replay das Urteil verlustfrei
+            // wiederherstellt.
+            "notiz": wert.get("notiz").and_then(Value::as_str),
+        });
+        let domaene = vec![Domaenenereignis {
+            event_type: "user_verdict".into(),
+            payload,
+            ziele: Vec::new(),
+        }];
+        let (ack, _) = self.persistenz_p0_mit_domaene_und_ords(link_id, wert, domaene);
+        ack
+    }
+
     pub(super) fn p0_json(&self, link_id: &str, payload: &[u8]) -> Option<Vec<u8>> {
         self.p0_json_mit_minor(link_id, payload, JSON_SCHEMA_MINOR_AKTIV)
     }
@@ -799,6 +832,23 @@ impl Coordinator {
             | "experiment_candidate"
             | "experiment_abort"
             | "experiment_manual_result" => self.experiment_p0(link_id, &wert),
+            // 🔑 NR-10 (Nacharbeit 1, 07.09.2026), M-73/E-09: das USERURTEIL
+            // hat einen Produktpfad.
+            //
+            // Die Familie fiel bis hierher in `_ => None`: der Schema-Leser
+            // nahm sie an, der Coordinator kannte sie nicht, und weder
+            // Persistenz noch ACK entstanden. Der gruene B10-Fall bekam sein
+            // ACK vom Testserver, nicht vom Empfaenger — er belegte den
+            // generischen Transport, nicht das zugesagte dauerhaft
+            // wiederholbare Urteil. Die Projektion `user_verdicts`
+            // (`writer.rs`:571) hatte entsprechend keinen Produzenten.
+            //
+            // Der Weg ist derselbe wie bei den Experimentfamilien: Append mit
+            // `event_type = "user_verdict"`, Projektion ueber
+            // `user_verdict_id`, ACK erst NACH dem Append, und eine
+            // Wiederholung unter derselben `command_id` bleibt idempotent
+            // (`persistenz_p0_intern` loest sie vor jeder Wirkung auf).
+            "user_verdict" => self.user_verdict_p0(link_id, &wert),
             _ => None,
         }
     }

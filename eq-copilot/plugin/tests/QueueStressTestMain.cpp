@@ -1484,7 +1484,12 @@ int main()
                 nakama::state::Rolle::fuehrt,  nakama::state::Rolle::traegt,
                 nakama::state::Rolle::begleitet
             };
-            const char* schritte[] = { "coverage", "finding", "evidence", "listen" };
+            const nakama::state::Assistentenschritt schritte[] = {
+                nakama::state::Assistentenschritt::finding,
+                nakama::state::Assistentenschritt::evidence,
+                nakama::state::Assistentenschritt::listen,
+                nakama::state::Assistentenschritt::proposal
+            };
             std::uint64_t n = 0;
             while (laeuft.load (std::memory_order_relaxed))
             {
@@ -1494,8 +1499,17 @@ int main()
                 mitVerkehr->schuetzeQuelle (quelle,
                                             nakama::state::Schutzeigenschaft::band,
                                             (int) (n % 40), (int) (n % 40) + 4);
-                mitVerkehr->setzeAssistentSchritt (kennung (0x5000 + n),
-                                                   schritte[n % 4], true);
+                // 🔑 NR-08 (Nacharbeit 1): der PERSISTENTE Weg. Der Schritt
+                // hat seit der Nacharbeit genau eine Wahrheit im Main; der
+                // Spiegelweg `setzeAssistentSchritt` schreibt nichts mehr und
+                // erzeugte hier deshalb keinen Verkehr.
+                //
+                // Der Slot ist strukturell EINER (M-57): der Faden beginnt
+                // einen Schritt, geht die Folge durch und bricht ab, bevor er
+                // den naechsten beginnt.
+                mitVerkehr->assistentStarten (kennung (0x5000 + n));
+                mitVerkehr->assistentWeiter (schritte[n % 4]);
+                mitVerkehr->assistentAbbrechen();
                 ++n;
                 handgriffe.store (n, std::memory_order_relaxed);
             }

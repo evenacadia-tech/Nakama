@@ -2088,6 +2088,18 @@ const char* wort (Assistentenergebnis e) noexcept
     return "schritt";
 }
 
+const char* wort (Userurteil u) noexcept
+{
+    switch (u)
+    {
+        case Userurteil::angenommen: return "angenommen";
+        case Userurteil::abgelehnt:  return "abgelehnt";
+        case Userurteil::spaeter:    return "spaeter";
+        case Userurteil::enthaltung: return "enthaltung";
+    }
+    return "enthaltung";
+}
+
 bool Schrittvertrag::vollstaendig() const noexcept
 {
     // Fuenf Angaben, keine optional (M-56). Ein Zustand ohne Timeout oder ohne

@@ -801,7 +801,37 @@ impl Coordinator {
                 .map(Self::reihenfolge_wort),
             "baseline_evidence_ids": e.baseline_evidence_ids,
             "resultat_evidence_ids": e.resultat_evidence_ids,
+            // 🔑 NR-09 (Nacharbeit 1, 07.09.2026), Entscheid E-13: das ZIEL
+            // gehoert zum persistierten Experimentobjekt.
+            //
+            // M-71 ordnet „Experimente" dem lokalen SQLite-Experimentstore zu,
+            // und das meint das ganze Objekt. Bis hierher schrieb diese Stelle
+            // das Ziel nicht und `experiment_aus_gespeichertem` setzte es
+            // ausdruecklich auf `None`: ein mit Ziel- und Schutzbaendern
+            // begonnener Versuch rechnete nach einem Brokerneustart wieder mit
+            // der Heuristik, und mit ihr aenderte sich die
+            // Guardrail-Auswertung. `ziel_geraten` kennzeichnete den Verlust
+            // nur — es stellte den zugesagten Mit-Ziel-Pfad nicht her.
+            //
+            // Abwesenheit heisst „kein Ziel", nie `null`: das Feld entsteht
+            // nur, wenn es eines gibt.
+            "ziel": e.ziel.as_ref().map(Self::ziel_json),
             "terminal": terminal,
+        })
+    }
+
+    /// Das Ziel als gespeichertes Objekt — dieselbe Feldmenge, die
+    /// `ziel_aus_wert` beim `experiment_begin` liest (E-05, M-48).
+    fn ziel_json(ziel: &Experimentziel) -> Value {
+        serde_json::json!({
+            "band_von": ziel.band_von,
+            "band_bis": ziel.band_bis,
+            "geschuetzte_baender": ziel
+                .geschuetzte_baender
+                .iter()
+                .map(|(von, bis)| serde_json::json!({"von": von, "bis": bis}))
+                .collect::<Vec<Value>>(),
+            "proposal_id": ziel.proposal_id,
         })
     }
 
@@ -1725,11 +1755,14 @@ impl Coordinator {
                 .unwrap_or(0),
             ids("baseline_evidence_ids"),
             ids("resultat_evidence_ids"),
-            // Der Store traegt das Ziel heute nicht: es kommt aus dem
-            // `experiment_begin` und ist nach einem Neustart nicht mehr da.
-            // Das ist eine EHRLICHE Luecke — ein restaurierter Versuch rechnet
-            // dann wieder mit der Heuristik und sagt es (`ziel_geraten`).
-            None,
+            // 🔑 NR-09 (Nacharbeit 1), E-13: das Ziel kommt ZURUECK.
+            //
+            // Gelesen wird ueber DIESELBE Funktion wie beim
+            // `experiment_begin` — ein zweiter Leser waere eine zweite
+            // Auslegung derselben Felder. Ein ungueltiges gespeichertes Ziel
+            // ist `None` und damit der Heuristikpfad mit `ziel_geraten`; das
+            // ist ehrlich und nicht etwa ein halbes Ziel.
+            Self::ziel_aus_wert(w.get("ziel")),
         ))
     }
 

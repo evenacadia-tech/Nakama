@@ -1,0 +1,52 @@
+SONDE-014 Nacharbeit 1 - Rotbeweis NR-09 (EP-09, M-48, Entscheid E-13).
+Die Zusage: das Experimentziel ist Teil des persistierten Objekts und
+ueberlebt den Brokerneustart. Die Zeile, die sie traegt: das Ruecklesen
+`Self::ziel_aus_wert(w.get(\"ziel\"))` in
+`experiment_aus_gespeichertem` (experiment_verdrahtung.rs). Auf `None`
+zurueckgedreht rechnet der restaurierte Versuch wieder mit der Heuristik.
+
+Ruecknahme in broker/src/coordinator/experiment_verdrahtung.rs:
+--- vorher ---
+            Self::ziel_aus_wert(w.get("ziel")),
+--- nachher (die Ruecknahme) ---
+            // ROTBEWEIS NR-09: das Ruecklesen entfernt.
+            None,
+
+=== ROTER LAUF: cargo test --manifest-path broker/Cargo.toml --test sonde014_nacharbeit1 experimentziel_ueberlebt_den_brokerneustart ===
+EXIT=101
+running 1 test
+test experimentziel_ueberlebt_den_brokerneustart ... FAILED
+
+failures:
+
+---- experimentziel_ueberlebt_den_brokerneustart stdout ----
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde014-nacharbeit1-nr09-18660-c6a62fcc4c5049eabbab8052f18aa907\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde014-nacharbeit1-nr09-18660-c6a62fcc4c5049eabbab8052f18aa907\nakama-broker.sqlite3
+
+thread 'experimentziel_ueberlebt_den_brokerneustart' (4912) panicked at tests\sonde014_nacharbeit1.rs:448:10:
+und sein ZIEL mit ihm (E-13, NR-09)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    experimentziel_ueberlebt_den_brokerneustart
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.63s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.29s
+     Running tests\sonde014_nacharbeit1.rs (broker\target\debug\deps\sonde014_nacharbeit1-207edf2a5c77e38c.exe)
+error: test failed, to rerun pass `--test sonde014_nacharbeit1`
+
+=== WIEDERHERGESTELLT, GRUENER LAUF ===
+EXIT=0
+running 1 test
+test experimentziel_ueberlebt_den_brokerneustart ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 6 filtered out; finished in 1.27s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.35s
+     Running tests\sonde014_nacharbeit1.rs (broker\target\debug\deps\sonde014_nacharbeit1-207edf2a5c77e38c.exe)
+
+URTEIL: BESTANDEN - rot mit EXIT=101, erwartete Zeile gefunden: 'und sein ZIEL mit ihm'; gruen mit EXIT=0.

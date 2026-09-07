@@ -163,8 +163,11 @@ std::string steuerkopfJson (const std::string& commandId)
     Transportbein: er misst den Weg, nicht die Policy. */
 std::string kleinstesProposalJson (const std::string& proposalId)
 {
+    // NR-07 (Nacharbeit 1, 07.09.2026): `passage_id` ist PFLICHT. Auch das
+    // kleinste Proposal sagt, WO es gilt - sonst ist es keins (M-43/M-46).
     return "{\"proposal_id\":\"" + proposalId + "\",\"proposal_schema\":1,"
            "\"target\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"base_revision\":0,"
+           "\"passage_id\":\"cccccccccccccccccccccccccccccccc\","
            "\"action\":\"no_change\",\"parameters\":{},\"allowed_bounds\":{},"
            "\"evidence_ids\":[\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"],"
            "\"expected_effect\":\"none\",\"protected_traits\":[],"

@@ -183,6 +183,18 @@ std::unique_ptr<EqCopilotProcessor> prozessor()
     p->setStateInformation (block.getData(), static_cast<int> (block.getSize()));
     return p;
 }
+
+/// Wie `prozessor()`, aber MIT gueltiger Wire-Adresse.
+///
+/// NR-08 misst die SENDESEITE; ohne Klassifizierung und Bindung ist
+/// `v3AssistantStepJson()` strukturell leer, und der Fall maesse nichts.
+std::unique_ptr<EqCopilotProcessor> prozessorAmDraht()
+{
+    auto p = prozessor();
+    p->setzeEditorOffen (true);
+    p->setzeBindung ("hub", {}, {});
+    return p;
+}
 } // namespace
 
 int main()
@@ -724,6 +736,122 @@ int main()
         juce::String grund2;
         pruefe (wirdReadOnly (alsBlock (v2), grund2),
                 "M-81: ein unbekanntes KIND laedt read-only - " + grund2);
+    }
+
+    // ===================================================================
+    // NACHARBEIT 1 (07.09.2026) - NR-08: EINE Wahrheit des Schritts
+    // ===================================================================
+    //
+    // Der Sender las bis hierher einen eigenen Schatten mit EIGENER
+    // Revisionszaehlung, waehrend `setStateInformation()` ausschliesslich
+    // `zustand.assistent` restauriert. Der bestehende Recall-Test prueft
+    // Main-State und Speicherbytes - nicht diese Sendeseite.
+    abschnitt ("NR-08: der Sender liest den RESTAURIERTEN Main-State");
+    {
+        auto p = prozessorAmDraht();
+        const auto schrittId = juce::String ("00000000000000000000000000000b01");
+        pruefe (p->assistentStarten (schrittId), "NR-08: ein Schritt liegt im Main");
+        pruefe (p->assistentWeiter (state::Assistentenschritt::finding),
+                "NR-08: und geht einen Uebergang");
+        const auto vorher = p->v3AssistantStepFuerTest();
+        pruefe (vorher.find (schrittId.toStdString()) != std::string::npos,
+                "NR-08: die Wire-Nachricht traegt den Schritt");
+
+        juce::MemoryBlock gespeichert;
+        p->getStateInformation (gespeichert);
+
+        // Der NEUE Prozessor - genau die Reprofolge aus EP-08.
+        auto q = std::make_unique<EqCopilotProcessor>();
+        q->setStateInformation (gespeichert.getData(),
+                                static_cast<int> (gespeichert.getSize()));
+        q->setzeEditorOffen (true);
+        q->setzeBindung ("hub", {}, {});
+        const auto nachher = q->v3AssistantStepFuerTest();
+        pruefe (! nachher.empty(),
+                "NR-08: nach dem Reload ist die Wire-Nachricht NICHT leer");
+        pruefe (nachher.find (schrittId.toStdString()) != std::string::npos,
+                "NR-08: sie traegt die restaurierte step_id");
+        pruefe (nachher.find ("\"schritt\":\"finding\"") != std::string::npos,
+                "NR-08: und den restaurierten Schritt, nicht den Anfangszustand");
+        // Die Revision stammt aus dem MainProject, nicht aus einer zweiten
+        // Zaehlung: sie ist dieselbe wie vor dem Speichern.
+        const auto revisionAusState = q->assistentAusState().revision;
+        pruefe (nachher.find ("\"revision\":" + std::to_string ((long long) revisionAusState))
+                    != std::string::npos,
+                "NR-08: die Revision kommt aus dem MainProject - "
+                + juce::String (revisionAusState));
+        pruefe (revisionAusState == p->assistentAusState().revision,
+                "NR-08: und sie ist dieselbe wie vor dem Speichern");
+
+        // Zweiter Abschnitt: ein Reload im SELBEN Prozessor sendet nie den
+        // Vorgaengerschritt. Der Schatten haette hier den alten getragen.
+        const auto zweiteId = juce::String ("00000000000000000000000000000b02");
+        auto r = prozessorAmDraht();
+        pruefe (r->assistentStarten (zweiteId), "NR-08: der Vorgaengerschritt laeuft");
+        const auto leer = alsBlock (mainBaum());
+        r->setStateInformation (leer.getData(), static_cast<int> (leer.getSize()));
+        const auto nachLeerem = r->v3AssistantStepFuerTest();
+        pruefe (nachLeerem.find (zweiteId.toStdString()) == std::string::npos,
+                "NR-08: nach dem Reload eines Standes OHNE Schritt reist der "
+                "Vorgaenger nicht mehr");
+        pruefe (nachLeerem.empty(),
+                "NR-08: der Sender schweigt, statt einen Schritt zu erfinden");
+    }
+
+    // ===================================================================
+    // NACHARBEIT 1 - NR-10: das Userurteil auf dem Draht (M-73, E-09)
+    // ===================================================================
+    abschnitt ("NR-10: `assistentAntwort` erzeugt genau EIN `user_verdict`");
+    {
+        auto p = prozessorAmDraht();
+        const auto schrittId = juce::String ("00000000000000000000000000000c01");
+        const auto findingId = juce::String ("00000000000000000000000000000c0f");
+        pruefe (p->assistentStarten (schrittId), "NR-10: ein Schritt laeuft");
+
+        // OHNE Befund entsteht kein Urteil: ein Urteil ohne Gegenstand waere
+        // ein Objekt ohne Bezug, und ein erfundener Bezug waere schlimmer.
+        pruefe (p->v3UserVerdictFuerTest (state::Userurteil::angenommen).empty(),
+                "NR-10: ohne `finding_id` entsteht kein Urteil");
+        pruefe (p->v3UserVerdictFuerTest (state::Userurteil::angenommen, "kein hex32").empty(),
+                "NR-10: und eine Kennung ausserhalb hex32 ebenso wenig");
+
+        // MIT Befund: das Objekt traegt Kopf, Kennung, Befund und Urteil.
+        const auto urteil = p->v3UserVerdictFuerTest (state::Userurteil::angenommen,
+                                                      findingId, "klingt offener");
+        pruefe (! urteil.empty(), "NR-10: mit `finding_id` entsteht ein Objekt");
+        pruefe (urteil.find ("\"type\":\"user_verdict\"") != std::string::npos,
+                "NR-10: es ist ein `user_verdict`");
+        pruefe (urteil.find ("\"finding_id\":\"" + findingId.toStdString() + "\"")
+                    != std::string::npos,
+                "NR-10: und bindet an DEN Befund, ueber den geurteilt wurde");
+        pruefe (urteil.find ("\"urteil\":\"angenommen\"") != std::string::npos,
+                "NR-10: das Urteil steht als Vertragswort darin");
+        pruefe (urteil.find ("\"notiz\":") != std::string::npos,
+                "NR-10: die Notiz reist unveraendert mit (User-Wort, nie interpretiert)");
+        pruefe (urteil.find ("\"command_id\"") != std::string::npos,
+                "NR-10: es traegt einen Steuerkopf - es ist ein P0-Befehl (E-09)");
+        // Zwei Urteile tragen VERSCHIEDENE Kennungen: sie koalesziert nichts,
+        // und zwei Aussagen des Users sind zwei Objekte.
+        const auto zweites = p->v3UserVerdictFuerTest (state::Userurteil::abgelehnt,
+                                                       findingId);
+        pruefe (! zweites.empty() && zweites != urteil,
+                "NR-10: ein zweites Urteil ist ein EIGENES Objekt");
+        // Ohne Notiz entsteht kein Feld: Abwesenheit heisst „keine Notiz",
+        // nie `null`.
+        pruefe (zweites.find ("\"notiz\":") == std::string::npos,
+                "NR-10: ohne Notiz reist das Feld gar nicht");
+
+        // Die geschlossene Menge der vier Urteile (M-77): jedes Wort steht
+        // genau einmal, und ein fuenftes gibt es nicht.
+        const char* worte[] = { "angenommen", "abgelehnt", "spaeter", "enthaltung" };
+        const state::Userurteil werte[] = {
+            state::Userurteil::angenommen, state::Userurteil::abgelehnt,
+            state::Userurteil::spaeter, state::Userurteil::enthaltung
+        };
+        bool alleWorte = true;
+        for (size_t i = 0; i < 4; ++i)
+            alleWorte = alleWorte && juce::String (state::wort (werte[i])) == worte[i];
+        pruefe (alleWorte, "NR-10: die vier Urteile tragen ihre Vertragswoerter");
     }
 
     std::cout << std::endl << "SONDE-014 AssistantStep: " << bestanden << "/"

@@ -1984,10 +1984,10 @@
     },
 
     "proposal": {
-      "$comment": "§42.1: eine Empfehlung ist ZUERST ein validiertes, versioniertes Objekt und erst danach Text. Die fuenfzehn Felder des Entwurfs stehen hier vollstaendig, dazu `revert` aus SONDE-014 E-06. `protected_traits` traegt die geschuetzten Eigenschaften als HARTE Constraint in derselben Form wie der Intent — nicht als Wortliste, damit ein Verbraucher sie gegen den Bestand pruefen kann.",
+      "$comment": "§42.1: eine Empfehlung ist ZUERST ein validiertes, versioniertes Objekt und erst danach Text. Die fuenfzehn Felder des Entwurfs stehen hier vollstaendig, dazu `revert` aus SONDE-014 E-06. NR-07 (Nacharbeit 1, 07.09.2026): `passage_id` steht seither in `required` - das Exit-Gate verlangt die Passage woertlich fuer JEDES Proposal, auch fuer `no_change` und `more_data`, und ein Vorschlag, der nicht sagen kann WO er gilt, ist keiner (M-43, M-46). `protected_traits` traegt die geschuetzten Eigenschaften als HARTE Constraint in derselben Form wie der Intent — nicht als Wortliste, damit ein Verbraucher sie gegen den Bestand pruefen kann.",
       "type": "object",
       "required": [
-        "proposal_id", "proposal_schema", "target", "base_revision", "action",
+        "proposal_id", "proposal_schema", "target", "base_revision", "passage_id", "action",
         "parameters", "allowed_bounds", "evidence_ids", "expected_effect",
         "protected_traits", "listen_for", "stop_if", "execution", "confidence", "revert"
       ],

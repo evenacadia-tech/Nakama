@@ -1,0 +1,62 @@
+SONDE-014 Nacharbeit 1 - Rotbeweis NR-10 (EP-10, M-73/E-09).
+Die Zusage: `user_verdict` ist ein persistenzpflichtiger P0 mit Append,
+Projektion und ACK NACH dem Append. Die Zeile, die sie traegt: der Zweig
+`\"user_verdict\" => self.user_verdict_p0(...)` in `befehl.rs`. Ohne ihn
+faellt die Familie wieder in `_ => None`: kein ACK, keine Zeile.
+
+Ruecknahme in broker/src/coordinator/befehl.rs:
+--- vorher ---
+            "user_verdict" => self.user_verdict_p0(link_id, &wert),
+--- nachher (die Ruecknahme) ---
+            // ROTBEWEIS NR-10: der Zweig entfernt - die Familie faellt
+            // wieder in `_ => None`.
+
+=== ROTER LAUF: cargo test --manifest-path broker/Cargo.toml --test sonde014_nacharbeit1 user_verdict_wird_persistiert_und_bestaetigt ===
+EXIT=101
+running 1 test
+test user_verdict_wird_persistiert_und_bestaetigt ... FAILED
+
+failures:
+
+---- user_verdict_wird_persistiert_und_bestaetigt stdout ----
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde014-nacharbeit1-nr10-6612-a025c1245b944911839518fed79bad5a\nakama-broker.sqlite3
+
+thread 'user_verdict_wird_persistiert_und_bestaetigt' (18392) panicked at tests\sonde014_nacharbeit1.rs:487:10:
+NR-10: die Familie wird BEANTWORTET - vorher fiel sie in `_ => None`
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    user_verdict_wird_persistiert_und_bestaetigt
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.39s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: method `user_verdict_p0` is never used
+   --> src\coordinator\befehl.rs:534:8
+    |
+ 21 | impl Coordinator {
+    | ---------------- method in this implementation
+...
+534 |     fn user_verdict_p0(&self, link_id: &str, wert: &Value) -> Option<Vec<u8>> {
+    |        ^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib) generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.19s
+     Running tests\sonde014_nacharbeit1.rs (broker\target\debug\deps\sonde014_nacharbeit1-207edf2a5c77e38c.exe)
+error: test failed, to rerun pass `--test sonde014_nacharbeit1`
+
+=== WIEDERHERGESTELLT, GRUENER LAUF ===
+EXIT=0
+running 1 test
+test user_verdict_wird_persistiert_und_bestaetigt ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.49s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.09s
+     Running tests\sonde014_nacharbeit1.rs (broker\target\debug\deps\sonde014_nacharbeit1-207edf2a5c77e38c.exe)
+
+URTEIL: BESTANDEN - rot mit EXIT=101, erwartete Zeile gefunden: 'die Familie wird BEANTWORTET'; gruen mit EXIT=0.

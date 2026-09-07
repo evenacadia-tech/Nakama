@@ -1,0 +1,65 @@
+SONDE-014 Nacharbeit 1 - Rotbeweis NR-11 (EP-11, M-71).
+Die Zusage: nach jeder uebernommenen `intent_update` spiegelt der Broker
+den Bestand versioniert in den Store, ueber denselben Ein-Writer-Append
+wie `assistent.rs`. Die Zeile, die sie traegt: der Aufruf
+`self.intent_spiegeln(&session)` in `intent.rs`. Ohne ihn enthaelt SQLite
+keinen SourceIntent-Spiegel fuer Suche und Crashdiagnose.
+
+Ruecknahme in broker/src/coordinator/intent.rs:
+--- vorher ---
+        self.intent_spiegeln(&session);
+--- nachher (die Ruecknahme) ---
+        // ROTBEWEIS NR-11: der Append entfernt.
+        let _ = &session;
+
+=== ROTER LAUF: cargo test --manifest-path broker/Cargo.toml --test sonde014_nacharbeit1 intent_bestand_wird_versioniert_gespiegelt ===
+EXIT=101
+running 1 test
+test intent_bestand_wird_versioniert_gespiegelt ... FAILED
+
+failures:
+
+---- intent_bestand_wird_versioniert_gespiegelt stdout ----
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde014-nacharbeit1-nr11-20044-ae9a492e0aa84012aec50bf5acacf493\nakama-broker.sqlite3
+
+thread 'intent_bestand_wird_versioniert_gespiegelt' (22748) panicked at tests\sonde014_nacharbeit1.rs:586:5:
+assertion `left == right` failed: zwei Ereigniszeilen, eine je Update
+  left: 0
+ right: 2
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    intent_bestand_wird_versioniert_gespiegelt
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.45s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: method `intent_spiegeln` is never used
+   --> src\coordinator\intent.rs:639:8
+    |
+292 | impl Coordinator {
+    | ---------------- method in this implementation
+...
+639 |     fn intent_spiegeln(&self, session: &SessionKey) {
+    |        ^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib) generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.58s
+     Running tests\sonde014_nacharbeit1.rs (broker\target\debug\deps\sonde014_nacharbeit1-207edf2a5c77e38c.exe)
+error: test failed, to rerun pass `--test sonde014_nacharbeit1`
+
+=== WIEDERHERGESTELLT, GRUENER LAUF ===
+EXIT=0
+running 1 test
+test intent_bestand_wird_versioniert_gespiegelt ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.66s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.42s
+     Running tests\sonde014_nacharbeit1.rs (broker\target\debug\deps\sonde014_nacharbeit1-207edf2a5c77e38c.exe)
+
+URTEIL: BESTANDEN - rot mit EXIT=101, erwartete Zeile gefunden: 'zwei Ereigniszeilen, eine je Update'; gruen mit EXIT=0.

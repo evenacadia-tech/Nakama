@@ -824,8 +824,18 @@ int main (int argc, char* argv[])
                 juce::String (p->getParameters().size()));
         // Und auch nach dem Setzen der neuen persistenten Eigenschaften
         // bleibt es dabei - sie sind Projektzustand, kein Automationsziel.
-        p->setzeAssistentSchritt (juce::String ("00000000000000000000000000000abc"),
-                                  "coverage", true);
+        //
+        // 🔑 NR-08 (Nacharbeit 1, 07.09.2026): der PERSISTENTE Weg, nicht der
+        // Spiegelweg. `setzeAssistentSchritt` schreibt seit der Nacharbeit
+        // nichts mehr - es meldet den Schritt des Main-States dem Broker.
+        // Ein Fall, der ihn naehme, setzte gar keinen Schritt und maesse hier
+        // einen leeren Stand.
+        p->setzeEditorOffen (true);
+        p->setzeBindung ("hub", {}, {});
+        pruefe (p->holeKlassifikation() == nakama::state::Klassifikation::main,
+                "M-83: der Prozessor ist Main - nur dort gibt es einen Schritt");
+        pruefe (p->assistentStarten (juce::String ("00000000000000000000000000000abc")),
+                "M-83: ein Assistentenschritt liegt im MainProject");
         pruefe (p->getParameters().size() == 0,
                 "M-83: auch mit gesetztem Assistentenschritt bleiben es null",
                 juce::String (p->getParameters().size()));

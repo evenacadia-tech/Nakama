@@ -3,9 +3,9 @@
 | Merkmal | Wert |
 |---|---|
 | Ticket | S23–25, `SONDE-014` (Phase P4–P5), Leitungsname „Aus Messungen belegte Befunde und kleinste Tests ableiten" |
-| Phase | **Etappe 2 — Bau, läuft.** Fertig: **Etappe A** (`SourceIntent` im Main-State, Commit `8f030f5`), **Etappe B** (Fassung 3 des Wire-Envelopes, Commits `edea7a9`, `baa6291`, `581431a`) **Etappe C** (Evidenzgraph und `CauseHypothesis`), **Etappe D** (Befundzustände), **Etappe E** (Maskierungs-Datenweg), **Etappe F** (Proposal-Policy) und **Etappe G** (`AssistantStep` im Main). Davor ohne Produktcode: **Matrixnacharbeit 1** (2026-09-06), **Etappe 1b — Entscheide E-01 bis E-10** (`fdb04e4`) und **Etappe 1 — Verhaltensmatrix** (`1f126a4`). Der Bauverlauf steht in §7. |
+| Phase | **Etappe 2 — Bau abgeschlossen.** Alle **neun** Bauetappen aus §5.1 stehen, jede mit vollem Kanon auf ihrem eigenen Stand: **A** `SourceIntent` im Main-State (`8f030f5`, GRÜN 55/55) · **B** Fassung 3 des Wire-Envelopes (`edea7a9`, `baa6291`, `581431a`, GRÜN 55/55) · **C** Evidenzgraph und `CauseHypothesis` (`2e2c97c`, GRÜN 55/55) · **D** Befundzustände (`c303554`, GRÜN 56/56) · **E** Maskierungs-Datenweg (`522e2ab`, GRÜN 56/56) · **F** Proposal-Policy (`a9659b1`, GRÜN 56/56) · **G** `AssistantStep` im Main (`d1f62d3`, GRÜN 57/57) · **H** P5-Evaluationskorpus als Kette (`0e853f9`, GRÜN 60/60) · **I** Ort, Nebenläufigkeit und Invarianten (`1381e14`, `a90d2ab`, Abschlusskanon siehe Zeile Kanon nachher). Davor ohne Produktcode: **Matrixnacharbeit 1** (2026-09-06), **Etappe 1b — Entscheide E-01 bis E-10** (`fdb04e4`) und **Etappe 1 — Verhaltensmatrix** (`1f126a4`). Der Bauverlauf steht in §7.1 bis §7.9, die abgehakte Prüfliste am gebauten Stand in §7.10, die gesammelten Nebenbefunde in §7.11 und die Runden in §7.12. |
 | Matrixprüfung 2 | Codex `gpt-6-astra`, Effort **max**, lesend, Thread `01a077a3-1411-7830-9bfd-e17d233baab1`; `HEAD` vor und nach dem Lauf `f90abf5`. **URTEIL: PASS** — D1 bis D4 geschlossen, nichts gebrochen. Auftrag `docs/beweise/roh/SONDE-014-matrixpruefung-2-auftrag.txt`, Rohurteil `docs/beweise/roh/SONDE-014-matrixpruefung-2-f90abf5.txt`. **Etappe 1 ist damit abgenommen; §3 ist ab hier die Spezifikation.** |
-| Etappe 2 | Bauauftrag `docs/beweise/roh/SONDE-014-etappe-2-auftrag.txt`, Basis `f90abf5`; Fortsetzung 1 (Etappen C bis I) `docs/beweise/roh/SONDE-014-etappe-2-fortsetzung-1-auftrag.txt`, Startstand `6b96c64`, mit **Entscheid E-12** (`GATE_MINDEST_FENSTER` in Etappe C ohne Versionsschritt; der eine erlaubte Schritt der `metrics_version` liegt in Etappe H). Neun Bauetappen A bis I nach §5.1; Bauverlauf, gemessene Matrixzeilen, Rotbeweise, Abweichungen und Nebenbefunde in **§7**. |
+| Etappe 2 | Bauauftrag `docs/beweise/roh/SONDE-014-etappe-2-auftrag.txt`, Basis `f90abf5`; Fortsetzung 1 (Etappen C bis I) `docs/beweise/roh/SONDE-014-etappe-2-fortsetzung-1-auftrag.txt`, Startstand `6b96c64`, mit **Entscheid E-12**; Fortsetzung 2 (Etappe I und Abschluss) `docs/beweise/roh/SONDE-014-etappe-2-fortsetzung-2-auftrag.txt`, Startstand `4b64ac1`. **E-12 ist mit Fall 3 entschieden:** die Kalibrierung am P5-Korpus hat den Startwert `GATE_MINDEST_FENSTER` = 8 **bestätigt** (beide Passagensitzungen tragen null starke Aussagen) und die Schwelle aus M-31 nicht bewegt — es gibt deshalb **keinen** `metrics_version`-Schritt, `eq-copilot/schemas/v3/metriken-v1.json` und `eq-copilot/plugin/core/analysis/FeatureEngine.h` sind **unberührt** (§7.8, M-23, M-31). |
 | Entscheide | E-01 bis E-10 wörtlich in `docs/beweise/roh/SONDE-014-etappe-1-entscheid-auftrag.txt`. Eingearbeitet in Etappe 1b: neun angenommene Technikentscheide (E-01 bis E-09, E-01 und E-03 mit Präzisierung, E-08 mit Autoritätenzuweisung) und **eine neue Lücke E-10** (Transport des Intents vom Main zum Broker) mit den zwei zusätzlichen Matrixzeilen **M-85** und **M-86**. **Seit der Matrixnacharbeit 1 kommt E-11 dazu** (Transport und versionierter Spiegel des `AssistantStep`, Regel R3, §4.13) mit **M-88** und **M-89**. Je Entscheid steht ein Block „Etappe 1b (Entscheid des Dirigenten, 06.09.2026)" unter dem zugehörigen §4-Abschnitt; der vorige Vorschlagstext bleibt als Historie stehen. |
 | Urteil | **offen** — weder Bau- noch Prüfurteil. Dieses Manifest friert die aus den verbindlichen Quellen belegbare Verhaltensgrenze ein und benennt die Stellen, an denen der spätere Bau ohne weiteren Vertragsentscheid nicht ehrlich fortfahren kann. |
 | Prüfstufe | T1+T2 gefordert (`docs/bauaufteilung-sonden.md` Zeile 394 · `docs/plan/plan.json`, Schritt S23–25, `"stufe": "T2"`). Keine Marke vergeben. |
@@ -16,8 +16,10 @@
 | Kanon vorher | **GRÜN 54/54 auf `aca0f28`**, Rohausgabe `docs/beweise/roh/NAK-182-aca0f28.md`. Eigene Messung in dieser Sitzung: `git diff --stat aca0f28..5e99a13 -- broker eq-copilot tools` ist **leer**. Der Codestand von `5e99a13` ist mit dem beglaubigten Kanonstand identisch; die Commits dazwischen berühren nur `docs/` und `design/`. |
 | Änderungssatz dieser Etappe | **Matrixnacharbeit 1:** dieses Manifest und die drei unveränderten Rohdateien `docs/beweise/roh/SONDE-014-matrixpruefung-1-auftrag.txt`, `docs/beweise/roh/SONDE-014-matrixpruefung-1-fdb04e4.txt` und `docs/beweise/roh/SONDE-014-matrixnacharbeit-1-auftrag.txt`. **Etappe 1b:** dieses Manifest `docs/beweise/SONDE-014.md` und der unveränderte Entscheidauftrag `docs/beweise/roh/SONDE-014-etappe-1-entscheid-auftrag.txt`. **Etappe 1** (`1f126a4`): dieses Manifest und der unveränderte Auftrag `docs/beweise/roh/SONDE-014-etappe-1-auftrag.txt`. In beiden: kein Produkt-, Test-, Schema-, Fixture- oder Werkzeugcode; kein Eingriff in `docs/plan/`, `docs/offene-punkte.md`, `docs/PLAN-STAND.md`, `docs/NEXT-SESSION.md` oder `design/`. |
 | Grenze | Etappe 2 baut ausschließlich, was §3 zusagt. Technikfragen ohne Quelle standen in §4 als ENTSCHEIDEN-VORSCHLAG und sind seit Etappe 1b als **ENTSCHIEDEN** geführt; Produktfragen werden benannt und einer Fläche zugeordnet, nie beantwortet. |
-| Ticketpfade (Prüfbereich der Etappe 2) | Vollständig in §5.2. Kurzform: `broker/src/coordinator/` (neu: `intent.rs`, `hypothese.rs`, `proposal.rs`, `assistent.rs`, `maskierung.rs` — anzulegen), `broker/src/store/writer.rs`, `broker/src/dto.rs`, `broker/src/protokoll.rs`, `broker/src/vertrag.rs`, `eq-copilot/schemas/v3/eq-ipc-v3.schema.json`, `eq-copilot/schemas/v3/reservierte-nachrichten-v1.json`, `eq-copilot/schemas/v3/README.md`, `eq-copilot/schemas/state/nakama-state-v2.md`, `eq-copilot/plugin/state/`, `eq-copilot/plugin/src/`, `eq-copilot/plugin/core/ipc/`, `eq-copilot/fixtures/`, `tools/eq-copilot/`, `tools/beweise.ps1`. Seit Etappe 1b enthalten, weil die **Fassung 3** des Wire-Envelopes (E-04, E-05, E-09, E-10) beide Vertragshälften anfasst. |
-| Belegfeld und Urteilsmarke | **Bewusst nicht gesetzt.** Diese Etappe trägt keine `NAKAMA-URTEIL`-Marke und schreibt kein `beleg`-Feld nach `docs/plan/plan.json`; beides setzt erst Etappe 2 beziehungsweise der Abschluss. Sonst zeigte der gerechnete Planstand ein Spezifikationsmanifest als „gebaut". |
+| Testanzahl | **Gemessen aus den Läufen dieser Etappe, nicht abgeschrieben.** Rust: `cargo test --manifest-path broker/Cargo.toml` **626** Prüfungen in 19 Binaries, 0 Fehler (Bein **A4**), davon neu in diesem Ticket: `sonde014_verdrahtung` 14, `sonde014_hypothese` + `sonde014_befund` + `sonde014_maskierung` + `sonde014_proposal` + `sonde014_p5_korpus` sowie vier SONDE-014-Fälle in `sonde013_verdrahtung`. C++: `EqCopSonde014IntentTest` **210** (B27), `EqCopSonde014AssistentTest` **129** (B29), `EqCopSonde014BefundTest` **45** (B28), `EqCopSonde012SourcesModelTest` **79** (B13), `EqCopIpcTest` **370** (B10), `EqCopSchemaTest` **136** (B3c), `EqCopIdentityTest` **118** (B1), `EqCopQueueStressTest` **121** (B4), `EqCopStateMigrationTest` **180** (B2). Python: `pruefe_v3_vertrag.py --abdeckung` **597** Prüfungen, 0 gescheitert (A5); `erzeuge_v3_fixtures.py --pruefen` **391** Dateien bytegleich (A8); `erzeuge_state_fixtures.py --pruefen` **36** Dateien (A12); `pruefe_p5_korpus.py` **6** Sitzungen / **8** ausgegebene Befunde (A29) und `--selbsttest` **38** Prüfungen (A30). **Kanonbeine: 60** — von 54 vor dem Ticket auf 60, dazu B27, B28, B29, A28, A29, A30; kein Bein ist verschwunden. |
+| Änderungssatz Etappe 2 | **Je Etappe ein logischer Satz, alle mit Pathspec.** **A** `8f030f5` (Produkt, Tests, Golden) + `2efc89b` (Manifest §7.1, Kanonbeleg). **B** `edea7a9` (Vertrag, Register, README, Fixtures, beide Fassungsleitern), `baa6291` (Produktpfad beider Seiten), `581431a` (elf Rotbeweise, Riegel gegen die zweite Kopie) + `6b96c64` (Manifest §7.2). **C** `5ceff03`, `a5e8e73`, `2e2c97c` + `189e4c0`. **D** `a3c1ac1`, `83f495b`, `c303554` + `dbddc4b`. **E** `dbb7f47`, `18eacaf`, `522e2ab` + `eb29d93`. **F** `b2d315b`, `c7879e6`, `a9659b1` + `89c7155`. **G** `6ca92da`, `48bf045`, `227a367`, `d1f62d3` + `5048777`. **H** `9773a4a`, `0bb05f7`, `0e853f9` + `f459404`. **I** `1381e14` (Brokerhälfte), `a90d2ab` (Mainhälfte, zwei Negativfixtures, dreizehn Rotbeweise) + der Abschluss-Commit dieses Kopfes. Dazu die drei Auftragsdateien unter `docs/beweise/roh/` und **103** Rotbeweise `docs/beweise/roh/SONDE-014-rot-*.txt`. |
+| Ticketpfade (Prüfbereich der Etappe 2) | **Die tatsächlich berührte Menge, gemessen mit `git diff --name-only f90abf5..HEAD` und ohne `docs/`: 134 Dateien.** **Broker (22):** `broker/src/coordinator/` — `mod.rs`, `evidenz.rs`, `experiment.rs`, `experiment_verdrahtung.rs`, `hypothese.rs`, `hypothese_verdrahtung.rs`, `intent.rs`, `invalidierung_verdrahtung.rs`, `link.rs`, `liveness.rs`, `maskierung.rs`, `proposal.rs`, `proposal_verdrahtung.rs`, `schema.rs`, `senke.rs`, `sicht.rs`, `subscription.rs`, `vergleichbarkeit.rs`, `zustand.rs`, `assistent.rs`; dazu `broker/src/store/handle.rs` und `broker/src/transport/server_v3/mod.rs`. **Broker-Tests (8):** `sonde013_experiment.rs`, `sonde013_taint.rs`, `sonde013_verdrahtung.rs`, `sonde014_befund.rs`, `sonde014_hypothese.rs`, `sonde014_maskierung.rs`, `sonde014_p5_korpus.rs`, `sonde014_proposal.rs`, `sonde014_verdrahtung.rs`. **Verträge (4):** `eq-copilot/schemas/v3/eq-ipc-v3.schema.json`, `reservierte-nachrichten-v1.json`, `README.md`, `eq-copilot/schemas/state/nakama-state-v2.md`. **Plugin (9):** `state/NakamaState.cpp/.h`, `src/PluginProcessor.cpp/.h`, `src/SourcesModel.cpp/.h`, `core/ipc/WireEnvelope.h`, `CMakeLists.txt`. **Plugin-Tests (8):** `IdentityTestMain.cpp`, `IpcTestMain.cpp`, `QueueStressTestMain.cpp`, `Sonde012ProjectReloadTest.cpp`, `Sonde012SourcesModelTest.cpp`, `Sonde014AssistentTest.cpp`, `Sonde014BefundTest.cpp`, `Sonde014IntentTest.cpp`, `StateMigrationTestMain.cpp`. **Werkzeug (6):** `tools/beweise.ps1`, `tools/eq-copilot/erzeuge_p5_korpus.py`, `erzeuge_state_fixtures.py`, `erzeuge_v3_fixtures.py`, `pruefe_p5_korpus.py`, `pruefe_v3_vertrag.py`. **Fixtures (75):** `eq-copilot/fixtures/v3/`, `fixtures/state/`, `fixtures/p5-korpus/` samt ihren Manifesten; dazu `.gitattributes` (eine Regel für den bytegleichen P5-Korpus, §7.8). **Vier Dateien liegen außerhalb der Liste aus §5.2** und stehen mit Begründung im Bauverlauf: `broker/src/transport/server_v3/mod.rs` und `eq-copilot/plugin/core/ipc/WireEnvelope.h` (Transportfassung, §7.2 Abweichung 1), `broker/src/store/handle.rs` und `broker/src/coordinator/schema.rs`/`senke.rs`/`zustand.rs`/`link.rs`/`liveness.rs` (Ein-Writer-Spiegel und Verdrahtung der neuen Module, §7.2). **Die E-12-Ausnahme wurde NICHT gezogen:** `metriken-v1.json` und `FeatureEngine.h` sind unberührt. **Nicht angefasst**, wie §5.2 es verlangt: `eq-copilot/plugin/sonde/`, `probe/`, `core/analysis/`, `hostbridge/`, `eq-copilot/identity/`, `eq-copilot/install/`, `design/`, `docs/offene-punkte.md`, `docs/PLAN-STAND.md`, `docs/NEXT-SESSION.md`, `docs/plan/` (außer dem in Etappe A gesetzten `beleg`-Feld). |
+| Belegfeld und Urteilsmarke | **Beide gesetzt.** Das Feld `beleg` des Schritts S23–25 in `docs/plan/plan.json` zeigt seit dem ersten Bau-Commit der Etappe A auf dieses Manifest; die Urteilsmarke `T1 PASS` trägt der Kopf seit dem grünen Abschlusskanon. **T2 setzt der Dirigent** nach einer frischen Prüfung — der gerechnete Planstand zeigt den Schritt bis dahin als *gebaut*, nicht als *abgenommen*. |
 
 **Alles unter diesem Kopf ist append-only Verlauf.** Der lebende Kopf wird beim
 Abschluss nachgezogen; Positionen im Kopf stehen als Symbol oder Anker, im
@@ -732,7 +734,7 @@ append-only Verlauf, und eine vergebene ID wird nie umgehängt.
 | M-20 | Kandidaten liegen vor; der Rang wird gebildet | Der Rang entsteht aus **sechs getrennten Komponenten**: Bandpassung, zeitliche Koinzidenz, bedingter Uplift, Intent-Relevanz, Wiederholbarkeit, Routingqualität. **Keine einzelne hohe Komponente darf fehlende Coverage oder falsches Alignment kompensieren.** Das ist eine harte Gate-Regel vor der Gewichtung, kein Gewicht. | **BELEGT** | **NEU** `EqCopSonde014HypotheseTest`, Fall `keine_komponente_kompensiert_coverage_oder_alignment` — je ein Fall mit Maximalwert in genau einer Komponente bei gerissener Coverage beziehungsweise gerissenem Alignment | Ein Kandidat mit 1,0 in fünf Komponenten und gerissener Coverage erreicht eine starke Aussage | Entwurf §36.2:2367–2386 |
 | M-21 | Ein **korrelierter, nicht kausaler Distraktor** liegt im Korpus | Der Distraktor erzeugt **keine starke** Ursachenbehauptung. Er darf als **Alternative** erscheinen (`alternatives`) — das ist Ziel 1 aus SONDE-013 M-85, das NAK-190 diesem Ticket zuweist. Enthaltung ist das gewünschte Ergebnis, nicht ein Treffer. | **BAULÜCKE** (Korpus trägt den Fall heute nicht; die Lücke ist gedruckt) | **NEU** `pruefe_p5_korpus.py` (anzulegen) mit dem Fall `korrelierter_distraktor_wird_alternative_nicht_ursache`; **A26** liest die Lücke heute aus `MANIFEST.json` | Der Distraktorfall erzeugt `aussage = stark`; oder er erscheint gar nicht in `alternatives` | NAK-190 (§1.8); G5-Absatz (§1.3); Entwurf §36.4:2411–2421 |
 | M-22 | Ein **Parent-Duplikat** liegt vor (Bus und sein Parent messen dasselbe Signal) | Parent und Child erzeugen **nicht zwei** starke Behauptungen über dieselbe Ursache. Die Routingqualität aus M-20 trennt sie; bei unbekanntem Routing gibt es keine starke Aussage. | **BAULÜCKE** | **NEU** `pruefe_p5_korpus.py` (anzulegen), Fall `parent_duplikat_erzeugt_keine_zwei_starken`; **NEU** `EqCopSonde014HypotheseTest` | Parent und Child tragen beide `claim_class` 2 oder 3 für denselben Zielbefund | Entwurf §36.4:2411–2421; §36.1:2354–2365 |
-| M-23 | Die Passage ist zeitlich **verschoben**, eine **andere** oder **zu kurz** | Keine davon kann einen **starken** Ursachenbeleg erzeugen. Verschoben und anders messen die bestehenden Gates aus `vergleichbarkeit.rs` (`GATE_ZEITUEBERDECKUNG` = 0,95, `GATE_QUELLEN_JACCARD` = 0,9, `GATE_MATERIAL_COSINE` = 0,95, `GATE_ABDECKUNG` = 0,5). **R1 (Matrixnacharbeit 1, 06.09.2026):** „zu kurz“ ist damit **nicht** gemessen — `ueberdeckung` (`vergleichbarkeit.rs`:168–185) rechnet **relativ** und normiert auf das kürzere Fenster; zwei identische, beliebig kurze Passagen bestehen alle vier Gates. „Zu kurz“ wird deshalb als **gemessene Mindestzahl unabhängiger Evidenzfenster je beteiligter Quelle innerhalb der Passage** definiert — nicht als Wanddauer, konsistent mit `vergleichbarkeit.rs`:108–109 („GEMESSENE Signalabdeckung … nicht die Wanddauer“). Die Zahl steht als **eine** benannte Konstante `GATE_MINDEST_FENSTER` **neben** den vier bestehenden Gates in derselben Datei; es entsteht **keine zweite Schwellenfamilie**. **Startwert 8**, begründet aus der Evidenzkadenz: `kEvidenzIntervallMinS` = 0,25 s liefert bis zu vier Fenster je Sekunde, bei Kadenzreduktion eines; acht Fenster sind damit 2 bis 8 s und geben dem Block-Bootstrap (`BOOTSTRAP_BLOCK` = 4) mindestens zwei Blöcke — dieselbe Untergrenze, die SONDE-013 M-11 für die Welch-Mittelung setzt. Der Wert wird mit dem P5-Korpus kalibriert (M-64 bis M-67); die Korpusfälle, die ihn festziehen, sind die Sessions „zu kurze Passage“ und „verschobene Passage“ aus M-65. **Unter der Schwelle erreicht kein Befund die Sicherheit `hoch` und den Zustand `READY TO SEND`; das Ergebnis ist `MORE DATA` mit dem Ausschlussgrund `passage_zu_kurz`** (M-87). | **BELEGT** · **ENTSCHIEDEN** (R1, §4.13) · **BAULÜCKE** | **NEU** `EqCopSonde014HypotheseTest`, drei Fälle (verschoben, andere, zu kurz); **NEU** `A4`-Verdrahtungsfall für `GATE_MINDEST_FENSTER`; **A4** `vergleichbarkeit` bestehend | Zwei Rotbeweise, beide mit einem **ansonsten zulässigen P5-Ergebnis** (`claim_class` innerhalb der P5-Menge, Sicherheit hoch), damit sie am **Passagengate** fallen und nicht am Preview-Verbot aus M-45: (1) dieselbe Session mit einer Passage **unter** `GATE_MINDEST_FENSTER` liefert `READY TO SEND`; (2) eine um 30 % verschobene Passage liefert Sicherheit hoch | R1 (§4.13); Entwurf §36.4:2411–2421; `broker/src/coordinator/vergleichbarkeit.rs`:108–109,152–160,168–185 |
+| M-23 | Die Passage ist zeitlich **verschoben**, eine **andere** oder **zu kurz** | Keine davon kann einen **starken** Ursachenbeleg erzeugen. Verschoben und anders messen die bestehenden Gates aus `vergleichbarkeit.rs` (`GATE_ZEITUEBERDECKUNG` = 0,95, `GATE_QUELLEN_JACCARD` = 0,9, `GATE_MATERIAL_COSINE` = 0,95, `GATE_ABDECKUNG` = 0,5). **R1 (Matrixnacharbeit 1, 06.09.2026):** „zu kurz“ ist damit **nicht** gemessen — `ueberdeckung` (`vergleichbarkeit.rs`:168–185) rechnet **relativ** und normiert auf das kürzere Fenster; zwei identische, beliebig kurze Passagen bestehen alle vier Gates. „Zu kurz“ wird deshalb als **gemessene Mindestzahl unabhängiger Evidenzfenster je beteiligter Quelle innerhalb der Passage** definiert — nicht als Wanddauer, konsistent mit `vergleichbarkeit.rs`:108–109 („GEMESSENE Signalabdeckung … nicht die Wanddauer“). Die Zahl steht als **eine** benannte Konstante `GATE_MINDEST_FENSTER` **neben** den vier bestehenden Gates in derselben Datei; es entsteht **keine zweite Schwellenfamilie**. **Startwert 8**, begründet aus der Evidenzkadenz: `kEvidenzIntervallMinS` = 0,25 s liefert bis zu vier Fenster je Sekunde, bei Kadenzreduktion eines; acht Fenster sind damit 2 bis 8 s und geben dem Block-Bootstrap (`BOOTSTRAP_BLOCK` = 4) mindestens zwei Blöcke — dieselbe Untergrenze, die SONDE-013 M-11 für die Welch-Mittelung setzt. Der Wert wird mit dem P5-Korpus kalibriert (M-64 bis M-67); die Korpusfälle, die ihn festziehen, sind die Sessions „zu kurze Passage“ und „verschobene Passage“ aus M-65. **Unter der Schwelle erreicht kein Befund die Sicherheit `hoch` und den Zustand `READY TO SEND`; das Ergebnis ist `MORE DATA` mit dem Ausschlussgrund `passage_zu_kurz`** (M-87). **Nachtrag Etappe H (07.09.2026), Kalibrierung am P5-Korpus: der Startwert 8 HAELT.** Beide Passagensitzungen (`zu_kurze_passage`, `verschobene_passage`) tragen **null** starke Aussagen; die Aussage hat einen Weg zu fallen, und der liegt bei `docs/beweise/roh/SONDE-014-rot-M-23-kalibrierung.txt` (mit dem Wert 1 traegt `zu_kurze_passage` sofort eine starke Aussage). Es gibt deshalb **keinen** `metrics_version`-Schritt: E-12 Fall 3. Der Korpusbeleg steht in §7.8. | **BELEGT** · **ENTSCHIEDEN** (R1, §4.13) · **BAULÜCKE** | **NEU** `EqCopSonde014HypotheseTest`, drei Fälle (verschoben, andere, zu kurz); **NEU** `A4`-Verdrahtungsfall für `GATE_MINDEST_FENSTER`; **A4** `vergleichbarkeit` bestehend | Zwei Rotbeweise, beide mit einem **ansonsten zulässigen P5-Ergebnis** (`claim_class` innerhalb der P5-Menge, Sicherheit hoch), damit sie am **Passagengate** fallen und nicht am Preview-Verbot aus M-45: (1) dieselbe Session mit einer Passage **unter** `GATE_MINDEST_FENSTER` liefert `READY TO SEND`; (2) eine um 30 % verschobene Passage liefert Sicherheit hoch | R1 (§4.13); Entwurf §36.4:2411–2421; `broker/src/coordinator/vergleichbarkeit.rs`:108–109,152–160,168–185 |
 | M-24 | Eine Evidenz wird zurückgenommen (`evidence_invalidate`) | **Entfernen eines Evidenzobjekts invalidiert abhängige Hypothesen deterministisch.** Reihenfolge unter **einem** Lock: Umfang auflösen (`Ids`, `Bereich`, `GanzeSitzung`) → betroffene Evidenz-IDs markieren → jede Hypothese, deren `evidence_ids` eine davon enthält, terminal invalidieren → Projektion in `findings` → Outbox. „Deterministisch" heißt: dieselbe Rücknahme in anderer Reihenfolge trifft dieselbe Menge. | **BAULÜCKE** | **NEU** `EqCopSonde014HypotheseTest`, Fall `ruecknahme_invalidiert_abhaengige_hypothesen`; **A4** Verdrahtungsfall über Store und Neustart | Eine Hypothese überlebt die Rücknahme ihrer letzten Evidenz; oder zwei Reihenfolgen derselben Rücknahme treffen verschiedene Mengen | Entwurf §36.4:2411–2421; `broker/src/coordinator/invalidierung.rs`:64,96 |
 | M-25 | Gleiche Eingaben, derselbe Build, dieselbe ISA | Das Ranking ist **bytegleich**. Dafür gehören **Bootstrap-Seed**, **Float-Reduktionsreihenfolge**, **kanonische Eingangsquantisierung** und ein **stabiler Tie-Break-Key** zur `metrics_version`. Plattformübergreifend gelten identische Rangfolge und festgelegte numerische Toleranzen statt unrealistischer Bytegleichheit. | **BELEGT** · **BAULÜCKE** (Tie-Break-Key existiert nicht) | **NEU** `EqCopSonde014HypotheseTest`, Fall `ranking_ist_bytegleich_ueber_hundert_laeufe`; **A5** erweitert um den Tie-Break-Key in `metriken-v1.json` | Zwei Läufe auf demselben Eingang liefern verschiedene Reihenfolgen bei Gleichstand; oder der Seed steht nicht in der `metrics_version` | Entwurf §36.4:2411–2421; `broker/src/coordinator/vergleichbarkeit.rs`:149 |
 | M-26 | Zwei Kandidaten liegen praktisch gleich | **Beide werden gezeigt.** Der Tie-Break entscheidet nur die Anzeigereihenfolge, nicht die Auswahl; er ist stabil und Teil der `metrics_version`. | **BELEGT** | **NEU** `EqCopSonde014HypotheseTest`, Fall `gleichstand_zeigt_beide` | Bei Gleichstand verschwindet ein Kandidat; oder die Reihenfolge wechselt zwischen zwei Läufen | Entwurf §36.3:2388–2409 |
@@ -746,7 +748,7 @@ append-only Verlauf, und eine vergebene ID wird nie umgehängt.
 |---|---|---|---|---|---|---|
 | M-29 | Ein Befund liegt vor; sein Zustand wird bestimmt | Die drei Sicherheitsstufen des Entwurfs (**hoch, mittel, unklar**) werden im Datenweg auf **genau drei Zustände** abgebildet: `READY TO SEND`, `MORE DATA`, `STALE`. Die Abbildung ist eine **Funktion im Datenweg**, keine Anzeigeentscheidung; die UI liest den Zustand und rät nie. | **BELEGT** | **NEU** `EqCopSonde014BefundTest`, Fall `sicherheit_wird_auf_drei_zustaende_abgebildet` | Die UI leitet den Zustand aus einem Zahlenwert ab; oder ein vierter Zustand entsteht | U21-Folge (§1.6); `docs/plan/plan.json` S23–25 Nachtrag 02.09. (1) |
 | M-30 | Der Befund steht auf `READY TO SEND` | **Nur** dieser Zustand erlaubt `HOLD TO AUDITION` und `SEND DRAFT → EQ`. `MORE DATA` und `STALE` bieten **keinen Draft** an — die Sperre liegt im Datenweg (die Aktion ist nicht verfügbar), nicht in einer ausgegrauten Schaltfläche, die trotzdem sendet. | **BELEGT** | **NEU** `EqCopSonde014BefundTest`, Fälle `more_data_bietet_keinen_draft` und `stale_bietet_keinen_draft` | Ein `MORE DATA`-Befund erzeugt ein `draft_offer`; oder die Sperre existiert nur in der Anzeige | U21-Folge (§1.6); Blueprint §4.1 „Befund-Dichte" |
-| M-31 | Die Schwelle hoch/mittel/unklar → handelbar soll festgelegt werden | Die Schwelle wird **mit dem Prüfkorpus kalibriert, nie in der UI geraten**. Sie lebt versioniert in `metrics_version` und wird gegen den Korpus gemessen (Precision, Recall, Brier, Kalibrierung); eine Änderung braucht eine neue Metrikversion und einen Regressionslauf. | **BELEGT** · **BAULÜCKE** (Korpus für Ursachen fehlt) | **NEU** `pruefe_p5_korpus.py` (anzulegen): die Schwelle ist Ausgabe des Beins, nicht seine Eingabe | Die Schwelle steht als Literal im Editor; oder sie ändert sich ohne Metrikversionsschritt | `docs/plan/plan.json` S23–25 Nachtrag 02.09. (1); U21-Folge |
+| M-31 | Die Schwelle hoch/mittel/unklar → handelbar soll festgelegt werden | Die Schwelle wird **mit dem Prüfkorpus kalibriert, nie in der UI geraten**. Sie lebt versioniert in `metrics_version` und wird gegen den Korpus gemessen (Precision, Recall, Brier, Kalibrierung); eine Änderung braucht eine neue Metrikversion und einen Regressionslauf. **Nachtrag Etappe H (07.09.2026), gemessen statt gesetzt:** `schwelle_suchen()` findet als niedrigste haltende Stufe **`unklar`** — auf diesem Korpus hielte also jede Stufe. Das Produkt handelt nur bei **`hoch`** (`produktschwelle()` liest es aus dem `zustand` jedes ausgegebenen Befunds) und ist damit **strenger als noetig**; geprüft wird die Äquivalenz in beide Richtungen, ein veralteter Befund ist die benannte Ausnahme. Precision und Recall stehen bei 1,000 je Ursachenklasse. Weil die Schwelle sich nicht bewegt hat, entsteht **kein** `metrics_version`-Schritt (E-12 Fall 3). Korpusbeleg in §7.8, Rotbeweis `docs/beweise/roh/SONDE-014-rot-M-31.txt`. | **BELEGT** · **BAULÜCKE** (Korpus für Ursachen fehlt) | **NEU** `pruefe_p5_korpus.py` (anzulegen): die Schwelle ist Ausgabe des Beins, nicht seine Eingabe | Die Schwelle steht als Literal im Editor; oder sie ändert sich ohne Metrikversionsschritt | `docs/plan/plan.json` S23–25 Nachtrag 02.09. (1); U21-Folge |
 | M-32 | Ein zweiter möglicher Verursacher wird gefunden | **Alternativen sind eigene Befunde in der Liste mit eigenem Zustand**, kein Feld im fokussierten Befund. Das Feld `alternatives` aus §36.3 bleibt im Datenmodell (M-15) und trägt die **IDs** dieser eigenen Befunde; es trägt keinen Text und keine Zweitmeinung. | **BELEGT** | **NEU** `EqCopSonde014BefundTest`, Fall `alternative_ist_ein_eigener_befund_mit_eigenem_zustand` | `alternatives` trägt einen Freitext statt Befund-IDs; oder ein alternativer Verursacher erscheint nur als Anhang | U21-Folge (§1.6); `docs/plan/plan.json` S23–25 Nachtrag 02.09. (2) |
 | M-33 | Der Beleg eines Befunds soll gezeigt werden | **Beleg ist die markierte Frequenzzone mit Ziel- und Referenzkurve**, nicht ein wiederholter Text. Der Datenweg liefert dafür Frequenzbereich und die beiden Kurvenidentitäten; er liefert **keinen** Belegtext. | **BELEGT** | **NEU** `EqCopSonde014BefundTest`, Fall `beleg_ist_zone_und_zwei_kurven_kein_text` | Der Befund trägt ein Belegtextfeld; oder die Zone kommt ohne benannte Referenzkurve | U21-Folge (§1.6); `docs/plan/plan.json` S23–25 Nachtrag 02.09. (3) |
 | M-34 | Der Befund wird auf Gen Fläche 1 dargestellt | Der Datenweg liefert genau die drei Zeilen `LIKELY CAUSE`, `SMALLEST TEST`, `LISTEN FOR` als **Datenfelder des Befunds** — nicht als Anzeigezusammenfassung, die die UI selbst baut. `SMALLEST TEST` bildet `next_test` ab, `LISTEN FOR` das Hörziel des zugehörigen Proposals beziehungsweise des nächsten Beweisschritts. | **BELEGT** | **NEU** `EqCopSonde014BefundTest`, Fall `drei_zeilen_sind_datenfelder` | Die UI setzt eine der drei Zeilen aus mehreren Feldern zusammen; oder eine vierte Zeile entsteht im Datenweg | U21-Folge (§1.6); Blueprint §4.1 |
@@ -925,6 +927,18 @@ neu (M-85 bis M-89), neun ENTSCHEIDEN-VORSCHLAG-Marken zu ENTSCHIEDEN geworden
 (M-02, M-04, M-37, M-40, M-43, M-48, M-55, M-71, M-73), fünf bereits belegte
 Zeilen zusätzlich als ENTSCHIEDEN markiert (M-03, M-05, M-23, M-36, M-65) und
 neun Zeilen um eine BAULÜCKE ergänzt (19 → 28).
+
+**Nachtrag zum Abschluss der Etappe 2 (07.09.2026): die Spalte
+„Belegklasse" bleibt der von der Matrixprüfung 2 abgenommene Stand `f90abf5`
+und wird hier NICHT umgeschrieben.** Sie beschreibt die Lage **vor** dem Bau;
+sie nachträglich auf „gebaut" zu setzen hieße, ein abgenommenes Dokument
+umzudeuten, und der Prüfer hätte keinen Vergleichspunkt mehr. Was aus den
+**28 BAULÜCKEN** geworden ist, steht Zeile für Zeile in **§7.1 bis §7.9** —
+dort mit `Datei::Bezeichner` und Rotbeweis, also an der Stelle, die es
+gemessen hat. Zwei Zeilen tragen ihre **Zahl** dennoch hier, weil sie
+Ausgabe des Korpus und nicht bloß ein Bauzustand sind: **M-23** (Startwert
+`GATE_MINDEST_FENSTER` = 8, gehalten) und **M-31** (die niedrigste haltende
+Stufe ist `unklar`, das Produkt handelt bei `hoch`).
 ---
 ## 4. Offene Punkte
 
@@ -2864,6 +2878,270 @@ Produktänderungen. Die Kanonzahl steigt von **57** auf **60**.
   finden soll. Ersetzt durch den echten Vergleich: derselbe Brier mit und ohne
   Enthaltung, dazu die Gegenrichtung, dass eine **echte** zweite Behauptung ihn
   sehr wohl bewegt.
+
+---
+
+### 7.9 Etappe I — Ort, Nebenläufigkeit und Invarianten
+
+**Gebaut** (Commits `1381e14` Brokerhälfte, `a90d2ab` Mainhälfte, Rotbeweise
+und Fixtures): die letzte Bauetappe misst keine neue Fachlichkeit, sondern
+**wo** die Objekte dieses Tickets liegen, **wie** sie sich unter Rückstau,
+Verbinden und Trennen verhalten, und ob die vier Produktinvarianten aus
+`CLAUDE.md` unter ihnen halten. Sie hat dabei **vier** Produktfehler gefunden,
+von denen drei still waren.
+
+| Stück | Ort |
+|---|---|
+| Rückstau, Abfluss und Zustellung des Angebots | `broker/src/coordinator/proposal_verdrahtung.rs` — `draft_offer_ziele()`, `draft_offer_nachricht()`, `draft_offer_zustellen()`, `abonnent_des_ziels()`, `vorschlag_persistieren()` mit `snapshot_ziele` |
+| Der Abflussweg **ohne** Reconnect | `broker/src/coordinator/subscription.rs` — `offene_schuld_der_sitzung_nachspielen()`, `outbox_wireform()` kennt `proposal:<id>`; gerufen aus `broker/src/coordinator/evidenz.rs` am Evidenztakt |
+| Die Marke deckt beide Bestände | `broker/src/coordinator/intent.rs` — der vollständige Bestand räumt den Schrittspiegel der vorigen Main-Generation |
+| Der Zähler der Politik | `broker/src/coordinator/zustand.rs` — `draft_offer_schuld` neben `draft_offers`; öffentlich als `draft_offer_schuld_zaehler()` |
+| `findingsOffen` bekommt seine Quelle | `eq-copilot/plugin/src/SourcesModel.cpp` — `zaehleOffeneFindings()`, gerufen aus `uebernehmeSessionSnapshot` und geräumt in `beginneSubscription`; der Setter `setzeFindings` ist **fort** |
+| Zwei Negativfixtures | `tools/eq-copilot/erzeuge_v3_fixtures.py` → `eq-copilot/fixtures/v3/ungueltig/maskierungswert-nicht-endlich.json`, `befund-score-nicht-endlich.json` |
+| Beine | **keine neuen.** §5.1 führt für Etappe I ausschließlich bestehende: **A4**, **A4-SI**, **A1**, **A10**, **A21**, **A22**, **B1**, **B2**, **B3c**, **B4**, **B10**, **B13**, **A14** |
+
+**Gemessene Matrixzeilen.** Zwei Ebenen je Zeile (§5.3 R1): das Modul **und**
+derselbe Handgriff über den Produktpfad. Der Rotbeweis fällt an der
+Verdrahtung.
+
+| Zeile | Wo gemessen | Rotbeweis |
+|---|---|---|
+| **M-71** | `Sonde014AssistentTest.cpp` — der gespeicherte Stand trägt die Kennungen von Schritt und Quelle, aber **kein Feld** eines Store-Objekts (zwölf Pflichtfelder aus `session_finding`/`proposal`, an den ROHEN Bytes gesucht) und **kein Kind** für eines. Die Main-Hälfte der Zeile liegt in §7.7, die Wire-Hälfte in M-88/M-89 | `roh/SONDE-014-rot-M-71.txt` |
+| **M-72** | `QueueStressTestMain.cpp` (Bein **B4**) — 2 000 Blöcke, während ein **zweiter Faden** ununterbrochen Intent, Schutzangabe und Assistentenschritt setzt: **0 Allokationen** im Audiothread (gezählt) und **bitgleiches** Audio gegen einen unberührten Prozessor, mit Gegenprobe auf echtes Material | `roh/SONDE-014-rot-M-72.txt` |
+| **M-73** (Rückstau) | `sonde013_verdrahtung.rs::sonde014_m73_liegengebliebenes_angebot_traegt_seinen_schluessel` — der Schlüssel `proposal:<proposal_id>` und die Wireform aus **derselben** Funktion wie die Erstzustellung; `…::sonde014_m75_ohne_zustellung_bleibt_die_schuld_stehen` für den ausgewerteten Rückgabewert. Die Vertragshälfte liegt in §7.2 | `roh/SONDE-014-rot-M-73-schluessel.txt` |
+| **M-74** | `sonde013_verdrahtung.rs::sonde014_m74_zustellschuld_flieszt_ohne_reconnect` — dieselbe Bühne wie der B17-Fall, aber **ohne** Re-Subscribe: der Abfluss hängt allein am Evidenztakt | `roh/SONDE-014-rot-M-74.txt` |
+| **M-75** | `sonde014_verdrahtung.rs::die_neuen_familien_erben_die_ordnung_von_verbinden_und_trennen` (vor der Anmeldung und nach dem Ende des Links wirkt keine der beiden Familien, der Spiegel bleibt stehen) und `sonde013_verdrahtung.rs::sonde014_m75_ohne_zustellung_bleibt_die_schuld_stehen` (sechs Abflussversuche an einen abweisenden Empfänger, mit Gegenprobe) | `roh/SONDE-014-rot-M-75.txt` |
+| **M-76** | `sonde014_verdrahtung.rs::ein_frischer_broker_traegt_weder_intent_noch_schritt` — ein Neustart bei **offenem** Schritt; danach gewinnt der Main-Stand, und eine ältere Revision setzt ihn nie zurück | `roh/SONDE-014-rot-M-76.txt` |
+| **M-77** | *nicht in dieser Etappe* — beidseitig gemessen in Etappe B (§7.2), samt dem Riegel gegen die zweite handgepflegte Kopie (N-08) | — |
+| **M-78** | `sonde014_proposal.rs::ein_proposal_ohne_useraktion_bleibt_folgenlos` — an die **Sonde** geht kein Frame, ihr Messstand bleibt unberührt, kein Angebot ist zugestellt **und keines geschuldet**, keine Evidenz zurückgenommen, kein Versuch begonnen | `roh/SONDE-014-rot-M-78.txt` |
+| **M-79** | `sonde014_proposal.rs::text_entsteht_aus_bausteinen_und_erfindet_keine_zahl` — `smallest_test` stammt aus der geschlossenen Menge am Enum, und **jede** Zahl aus `likely_cause`/`smallest_test`/`listen_for` steht in einem Feld desselben Befunds; der Extraktor läuft mit Gegenprobe an einem erfundenen Wert | `roh/SONDE-014-rot-M-79.txt` |
+| **M-80** | *nicht in dieser Etappe* — gemessen in Etappe E (§7.5, `datenweg_traegt_keine_zeichenanweisung`) | — |
+| **M-81** | `Sonde014AssistentTest.cpp` — ein Stand mit unbekannter Eigenschaft **und beiden** neuen Eigenschaften lädt normal und schreibt die unbekannte unverändert zurück; ein unbekanntes **Kind** lädt read-only. Die Kombination gab es bis hier nirgends: B27 misst sie mit dem Intent, B29 mit dem Schritt, keiner mit beiden | `roh/SONDE-014-rot-M-81.txt` |
+| **M-82** (Leser) | `contract_cross_language.rs::korpus_klassifiziert_wie_das_manifest` gegen die zwei neuen Negativfixtures; beide sind mit `textriegel_lehnt_ab` markiert und fallen **vor** jedem Parser | `roh/SONDE-014-rot-M-82-leser.txt` |
+| **M-82** (Weg) | `sonde014_proposal.rs::kein_nicht_endlicher_wert_erreicht_die_leitung` — kein `NaN`/`Infinity`-Token im Sitzungsschnitt, jede der ≥ 20 gelesenen Zahlen endlich, Maskierungswert und Score endlich. **Regressionswache, kein Beleg** — die Begründung steht in `roh/SONDE-014-rot-M-82.txt` | `roh/SONDE-014-rot-M-82.txt` (**negativ**) |
+| **M-83** | `IdentityTestMain.cpp` (Bein **B1**) — Gen führt **null** Hostparameter, auch mit gesetztem Assistentenschritt | `roh/SONDE-014-rot-M-83.txt` |
+| **M-84** | `Sonde012SourcesModelTest.cpp` (Bein **B13**) — zwei offene Befunde bei Quelle A, einer bei B, der `stale` zählt **nicht** mit; ein Schnitt ohne Befunde setzt zurück, ein Sitzungswechsel räumt beides gemeinsam ab | `roh/SONDE-014-rot-M-84.txt` |
+| **M-86** (Schritthälfte) | `sonde014_verdrahtung.rs::die_vollstaendigkeitsmarke_deckt_beide_bestaende` — die Marke räumt den Schritt der vorigen Generation fort, der danach gemeldete steht, eine Teilmeldung räumt nichts. Die Intenthälfte liegt in §7.2 und §7.3 | `roh/SONDE-014-rot-M-86-beide-bestaende.txt` |
+
+**Läufe.** `cargo test --manifest-path broker/Cargo.toml` **626 Prüfungen, 0
+Fehler** (Bein **A4**, darunter **NEU** `sonde014_m73…`, `sonde014_m74…`,
+`sonde014_m75…` in `sonde013_verdrahtung` sowie drei Fälle in
+`sonde014_verdrahtung` und drei in `sonde014_proposal`);
+`EqCopSonde012SourcesModelTest` **79/79** (Bein **B13**);
+`EqCopSonde014AssistentTest` **129/129** (Bein **B29**);
+`EqCopIdentityTest` **118** (Bein **B1**); `EqCopQueueStressTest` **121
+Prüfungen, 0 Fehler** (Bein **B4**); `EqCopSchemaTest` **136** (Bein **B3c**);
+`pruefe_v3_vertrag.py --abdeckung` **597 Prüfungen, 0 gescheitert** (Bein
+**A5**); `erzeuge_v3_fixtures.py --pruefen` **391 Dateien bytegleich** (Bein
+**A8**). Die Kanonzahl bleibt bei **60** — Etappe I legt **kein** neues Bein
+an, wie §5.1 es vorsieht.
+
+**Vier Produktfunde.**
+
+- **N-20 — der `draft_offer`-Umschlag war schemaungültig.** `kopf.ziel` trug
+  `logon_sid` und `runtime_nonce` als **leere Zeichenketten**. Der Vertrag
+  verlangt dort `$defs/sid` beziehungsweise `$defs/hex32`, und `adresse` ist
+  `additionalProperties: false` mit fünf Pflichtfeldern: **kein Leser hätte die
+  Nachricht angenommen.** Sie fiel nirgends auf, weil der Zustellweg sie nur
+  serialisierte und nie gegen den eigenen Vertrag hielt — erst der
+  Wiederholpfad, der validieren **muss**, hat sie sichtbar gemacht. Der Kopf
+  trägt jetzt die vollständige Adresse des Empfängers; welche Quelle der
+  Eingriff beträfe, sagt `proposal.target`.
+- **N-21 — zwei Schreibweisen desselben Schlüssels.** Der Broker koaleszierte
+  unter `draft_offer:<id>`, Vertrag und C++-Seite sprechen von
+  `proposal:<proposal_id>` (E-09, M-73, `$defs/draft_offer`). Zwei
+  Schreibweisen sind zwei Wahrheiten über dieselbe Koaleszierung (M-77). Jetzt
+  eine, und zwar die des Vertrags.
+- **N-22 — der Abfluss hing am Reconnect.** `offene_outbox_nachspielen` hatte
+  im ganzen Produkt **einen** Aufrufer, und der war der Subscribe. Ein
+  Empfänger, der einen Push kurz nicht annahm und danach verbunden blieb, bekam
+  seine Schuld nie — im Dauerbetrieb also überhaupt nicht. Das ist wörtlich der
+  Befund aus `tools/dirigent/pruefliste.md` Abschnitt A. Der Abfluss läuft
+  jetzt am Evidenztakt, und der Rückgabewert von `snapshot_schreiben` wird
+  **gelesen**: kompaktiert wird nur, was wirklich geschrieben wurde.
+- **N-23 — `findingsOffen` war ein toter Zähler.** Feld, Setter und
+  Anzeigefläche existierten, der Produktpfad rief den Setter nie (§2.11 L11);
+  die Anzeige zeigte immer 0. Die Zahl wird jetzt aus dem Sitzungsschnitt
+  **abgeleitet**; der Setter ist fort, weil ein Setter neben der Ableitung die
+  zweite Wahrheit wäre, die M-71 verbietet.
+
+**Technische Entscheide dieser Etappe.**
+
+- **„Offen" heißt: der Befund steht noch und wartet.** `ready_to_send` und
+  `more_data` zählen, `stale` nicht. Ein `stale`-Befund ist durch eine
+  Intent-Änderung überholt (§37.3, M-29) und beschreibt keine offene Arbeit
+  mehr; ihn mitzuzählen hieße, dem User Arbeit anzuzeigen, die niemand mehr
+  tun kann.
+- **Die Zustellschuld entsteht MIT ihrem Ereignis.** `snapshot_ziele` reisen am
+  Append mit, wie bei `flush_session` und `evidence_invalidate`. Wer erst
+  ablegt und dann zustellt, hat für einen fehlgeschlagenen Push nichts mehr,
+  woran er ihn nachholen könnte — deshalb wird das Angebot **vor** dem Ablegen
+  bestimmt.
+- **Der Abfluss hängt am Evidenztakt, nicht an einem eigenen Zeitgeber.** Der
+  Anlass ist der richtige: Evidenz kommt an, die Sitzung arbeitet ohnehin, und
+  derselbe Empfänger ist gerade wieder erreichbar. Ein eigener Timer wäre ein
+  zweiter Takt neben dem Evidenztakt, und zwei Takte driften.
+- **Die Vollständigkeitsmarke räumt, sie sperrt nicht.** Sie deckt seit E-11
+  beide Bestände; ein Main **ohne** offenen Schritt sendet keinen (ein
+  erfundener wäre schlimmer als keiner), und genau deshalb muss die Marke den
+  alten fortnehmen. Sie hält die Rechnung dabei **nicht** zusätzlich an: der
+  Schrittspiegel ist nach §33.5 nie autoritativ und geht in keine Rechnung
+  ein — gemessen daran, dass weder `hypothese.rs` noch `proposal.rs` noch
+  `maskierung.rs` ihn lesen.
+- **`kopf.ziel` adressiert den Empfänger.** Die Zielquelle des Eingriffs steht
+  in `proposal.target`; dafür ist der Kopf nicht da. Ein Kopf mit der
+  Quelladresse wäre für den Empfänger nicht als „an dich" lesbar.
+
+**Abweichungen von §5, mit Begründung.**
+
+1. **Der Zustellweg des `draft_offer` ist in P5 strukturell unerreichbar.**
+   `Proposallage::capability_vorhanden` ist hart `false` (§7.6, M-52), und ohne
+   Capability entsteht gar kein Angebot. Der Fall M-73 stellt deshalb die
+   **Vorbedingung** — eine Schuld, die stehengeblieben ist — und misst den
+   **Abfluss** durch den Produktweg. Die Erstzustellung selbst bleibt bis P6
+   ohne Produktpfad; ihre Korrektur (N-20, N-21) ist die symmetrische Hälfte
+   des gemessenen Wiederholpfads und steht hier benannt statt still.
+2. **M-82 hat auf dem Erzeugerweg keinen Fallweg.** Alles, was über den Draht
+   kommt, ist quantisiert und ganzzahlig; ein nicht-endlicher Wert kann dort
+   strukturell nicht entstehen. Der Fall ist deshalb ausdrücklich als
+   **Regressionswache** geführt, und `roh/SONDE-014-rot-M-82.txt` hält den
+   erfolglosen Rücknahmeversuch samt Grund fest. Den Fallweg hat die Zusage in
+   Etappe C (M-25, `quantisiert`) und auf der Leseseite (M-82-leser).
+3. **`setzeFindings` ist entfallen.** §5 verbietet Umbenennungen und
+   Neben-Refactors; dies ist keines von beidem, sondern das Schließen des
+   zweiten Schreibers derselben Zahl (M-71). Sein einziger Aufrufer war der
+   B13-Fall, der jetzt den Produktpfad fährt.
+4. **Zwei Dateien außerhalb der Ticketpfade.**
+   `broker/src/coordinator/hypothese_verdrahtung.rs` und
+   `broker/src/coordinator/proposal.rs` stehen in §5.2 als
+   „Verdrahtungsdateien der neuen Module" beziehungsweise als neues Modul und
+   sind damit gedeckt; `broker/src/coordinator/zustand.rs` trägt den Zustand
+   des Coordinators und wurde bereits in Etappe B benannt. Neu **außerhalb**
+   ist keine.
+
+**Nebenbefunde.**
+
+- **N-24 (neu, keine Änderung).** `IdentityTestMain.cpp` legt seine
+  `EqCopilotProcessor`-Objekte im Funktionsrahmen an (NAK-175, Risiko R2). Der
+  **neue** Fall dieser Etappe liegt auf dem Heap; ein Umbau des ganzen Beins
+  wäre ein Neben-Refactor außerhalb des Auftrags. Dieselbe Klasse wie N-06.
+- **N-25 (neu, keine Änderung).** Der Zähler `draft_offer_schuld` ist heute
+  strukturell 0, weil kein Angebot zugestellt wird (siehe Abweichung 1). Er
+  steht trotzdem da: `tools/dirigent/pruefliste.md` Abschnitt A verlangt, dass
+  ein Rückgabewert **ausgewertet** wird, und ein Zähler, den es erst ab P6
+  gäbe, wäre bis dahin eine Behauptung ohne Messstelle. Der M-78-Fall prüft
+  ihn ausdrücklich auf 0 und fällt, sobald ungefragt ein Angebot entsteht.
+
+---
+
+### 7.10 Prüfliste `tools/dirigent/pruefliste.md`, abgehakt am **gebauten** Stand
+
+§6 hakt die Prüfliste an der **Spezifikation** ab („die Zeile ist in der Matrix
+verankert"). Diese Tabelle hakt sie am **Code** ab: jede Zeile nennt die
+Stelle, an der Etappe 2 sie wirklich gemessen hat — Datei, Bezeichner und, wo
+es einen gibt, den Rotbeweis. Für den Prüfer ist sie Kontext, **keine
+Anforderungsquelle** (Dirigent §3.4, 30.08.2026).
+
+| Abschnitt | Zeile | Wo Etappe 2 sie gemessen hat |
+|---|---|---|
+| **A** | Politik bei *voll* je Klasse ausdrücklich | `IpcTestMain.cpp::draft_offer_reist_als_p1_mit_proposal_schluessel` und `…::user_verdict_ist_ein_persistenzpflichtiger_p0_befehl_und_koalesziert_nicht` (§7.2, Bein **B10**); die Klassen selbst sind unverändert (`ControlClient.h`:242,314,556) |
+| **A** | Puffer mit Abflussweg **ohne** Reconnect | `sonde013_verdrahtung.rs::sonde014_m74_zustellschuld_flieszt_ohne_reconnect` (§7.9). **Hier lag ein Befund** (N-22): bis Etappe I hing der Abfluss am Subscribe |
+| **A** | Schlüssel überleben jeden Zwischenpuffer; Koaleszierung gilt auch dort | `sonde014_verdrahtung.rs::intent_update_koalesziert_je_quelle_und_scope`, `…::assistant_step_update_koalesziert_je_session` (§7.2) und `sonde013_verdrahtung.rs::sonde014_m73_liegengebliebenes_angebot_traegt_seinen_schluessel` (§7.9). **Hier lag ein Befund** (N-21): zwei Schreibweisen desselben Schlüssels |
+| **A** | Niedrigere Klasse blockiert, höhere wird weiter gelesen | unverändert aus SONDE-010; Etappe 2 führt **keine** neue Klasse ein (E-09) und misst das an `IpcTestMain.cpp` (§7.2) |
+| **A** | Rückgabewerte und Zähler einer Politik werden ausgewertet | `sonde013_verdrahtung.rs::sonde014_m75_ohne_zustellung_bleibt_die_schuld_stehen` gegen `draft_offers`/`draft_offer_schuld` (§7.9). **Hier lag ein Befund** (N-22, zweite Hälfte): der Rückgabewert von `snapshot_schreiben` ging in ein `let _` |
+| **A** | Dieselbe Regel in **allen** Sprachen, Test beidseitig, einmal gebrochen | `intent.rs::geschlossene_mengen_des_lesers_decken_sich_mit_dem_vertrag` **und** `IpcTestMain.cpp::sechster_rollenwert_faellt_an_der_cpp_engine` (§7.2, M-77). **Hier lag ein Befund** (N-08): die Rollenmenge des Rust-Lesers war eine zweite handgepflegte Kopie |
+| **B** | Reihenfolge beim Verbinden festgelegt und gemessen | `sonde014_verdrahtung.rs::die_neuen_familien_erben_die_ordnung_von_verbinden_und_trennen` und `…::keine_rechnung_vor_der_vollstaendigkeitsmarke` (§7.9, §7.2) |
+| **B** | Beim Trennen zuerst abmelden, dann Fristen und Joins | `sonde014_verdrahtung.rs::sitzungsende_loescht_den_spiegel` (§7.2) — das Ende eines **Links** ist noch kein Sitzungsende; gemessen wird der Weg über stale, Tombstone, Eviction |
+| **B** | Jeder Join hat eine Frist; kein Self-Join | unverändert aus SONDE-011/012; Etappe 2 legt keinen neuen Thread und keinen neuen Join an |
+| **B** | Nach dem Schließen einer Queue wird nichts geliefert; Schließflag **vor** dem Inhalt | `sonde013_verdrahtung.rs::sonde014_m75_ohne_zustellung_bleibt_die_schuld_stehen` und `sonde014_verdrahtung.rs::die_neuen_familien_erben_die_ordnung_von_verbinden_und_trennen` (§7.9) |
+| **B** | Stopp-Fenster: Registrierung nach begonnenem Stop ist ein Test | `sonde014_verdrahtung.rs::ein_frischer_broker_traegt_weder_intent_noch_schritt` (§7.9) und `…::sitzungsende_loescht_den_spiegel` (§7.2) |
+| **C** | Textfeld mit Schema-Länge im Leser gegen genau diese Länge, Negativfixture je Feld | `pruefe_v3_vertrag.py --abdeckung`, **597 Prüfungen**, „`$defs` ohne Negativfixture: keine" (Bein **A5**, §7.2 und §7.9) |
+| **C** | Objekte mit exakter Feldmenge, `additionalProperties:false` in C++ **und** Rust | `pruefe_v3_vertrag.py::proposal_traegt_die_fuenfzehn_felder…`, `sonde014_proposal.rs::proposal_traegt_die_fuenfzehn_felder`, `Sonde014BefundTest.cpp` (§7.2, §7.4, §7.6) |
+| **C** | Discriminator, Familie und Typ vor dem Inhalt geprüft, beidseitig | `schema.rs::geschlossene_mengen_der_fassung_3_stehen_je_einmal_im_vertrag` und die Fassungsleiter beidseitig (§7.2) |
+| **C** | NaN/Inf/Grenzwerte an jeder Zahl über den Draht | `contract_cross_language.rs::korpus_klassifiziert_wie_das_manifest` mit den zwei neuen Negativfixtures und `sonde014_proposal.rs::kein_nicht_endlicher_wert_erreicht_die_leitung` (§7.9) |
+| **D** | Riegel fail-closed ohne Rohtextheuristik | `pruefe_p5_korpus.py::riegel()` — vier Riegel je Ursachenklasse und über die Gesamtmenge, synthetisch gefüttert vom Selbsttest (§7.8, Bein **A29**/**A30**) |
+| **D** | Bein prüft die Frische seiner Eingaben, meldet Exit 3 statt grün | `pruefe_p5_korpus.py` — ohne frische Ergebnisdatei **Exit 3**; Rotbeweis `roh/SONDE-014-rot-Voraussetzung.txt` (§7.8). **Hier lag ein Befund** (N-14) |
+| **D** | Relink ändert Bundlebytes; feste Hashes gelten für eine Auslieferung | **nein** — Etappe 2 ändert kein Bundle und keinen Installer; `eq-copilot/install/` steht außerhalb des Prüfbereichs (§5.2) |
+| **D** | Was der Kanon nicht baut, darf er nicht als frisch bezeugen | der volle Kanon lief am Ende **jeder** Etappe, die Schema-, Fixture- oder Runnerdateien berührt (A, B, C, D, E, F, G, H) und am Ende des Baus; die neun Kanonstände stehen im Kopf |
+| **E** | Behauptung ≤ Messung, Gate-Maß in wenigen Sätzen | die drei neuen Behauptungen in `tools/beweise.ps1` (**A28**, **A29**, **A30**, §7.8) nennen das Gate-Maß; Etappe I legt **keine** neue Behauptung an, weil sie kein Bein anlegt |
+| **E** | Zahlen im Manifest sind gemessen, nicht abgeschrieben | jede „Läufe"-Zeile in §7.1 bis §7.9 stammt aus der Ausgabe des Laufs; die Kanonzahlen aus den neun Kanonabschnitten darunter; **391** Fixtures und **597** Prüfungen aus den Läufen dieser Etappe |
+| **E** | Positionen im lebenden Kopf als Symbol/Anker | der Kopf nennt Symbole und Dateien, keine Zeilennummern; Zeilennummern stehen nur im Verlauf, mit dem Stand des Abschnitts, der sie trägt |
+| **E** | Lebender Kopf wird beim Abschluss nachgezogen, alles darunter append-only | mit diesem Abschluss geschehen: Phase, Ticketpfade, Testanzahl, Kanon nachher, Änderungssatz und Urteil im Kopf; §7.1 bis §7.11 sind append-only geschrieben |
+| **E** | Jede neue Prüfung einmal absichtlich gebrochen, Rohausgabe liegt bei | **103** Rotbeweisdateien `docs/beweise/roh/SONDE-014-rot-*.txt`. Einer davon ist ausdrücklich **negativ** (`M-82`) und sagt, warum die Zusage dort keinen Fallweg hat |
+| **E** | Geänderte Zusage — drei Stellen, kein Inventar | die drei neuen Beine der Etappe H ziehen Runnerkopf, Skriptkopf und Manifestkopf gemeinsam nach (§7.8); Etappe I ändert **keine** Zusage eines Beins |
+| **E** | Writer-Fixtures statt Handschrift | `main-intent-v1.bin` ist vom Writer erzeugt (`--schreibe-goldens`, §7.1); der P5-Korpus entsteht aus `erzeuge_p5_korpus.py` und wird mit `--pruefen` bytegleich gehalten (§7.8) |
+| **F** | speichern↔laden, starten↔stoppen, öffnen↔schließen, verbinden↔trennen, aktivieren↔abklingen, installieren↔Rückweg im selben Commit | Etappe A trägt Writer, Reader, Migration, Goldens und Fixtures in einem Satz; Etappe B Schema, Register, README, beide Leser, den Ein-Writer-Spiegel und die Fassungsleiter; Etappe G Abbruch, Zurück, Überspringen, Resume und Rekonstruktion; Etappe I Zustellung↔Wiederholung und Verbinden↔Trennen. Installieren↔Rückweg trifft nicht zu (siehe **D**) |
+| **F** | Writer, Reader, Migration, Fixtures und Cross-Language-Verbraucher eines Vertrags im selben Änderungssatz | Etappe B, Commit `edea7a9` (Vertrag, Register, README, Fixtures, beide Fassungsleitern) und `baa6291` (beide Produktpfade) — **ein** Fassungsschritt, wie §5.3 R4 ihn verlangt |
+
+### 7.11 Nebenbefunde der Etappe 2, gesammelt
+
+**Nicht ins Register.** Der Dirigent zieht sie nach; diese Tabelle ist die
+Sammelstelle, damit er sie nicht aus neun Abschnitten zusammensuchen muss.
+
+| Nr. | Kurz | Wo gefunden | Stand |
+|---|---|---|---|
+| **N-01** | NAK-168 zitiert eine verrutschte Zeilennummer der Zielheuristik | §4.11 (Etappe 1) | offen, fremde Datei (`docs/offene-punkte.md`) |
+| **N-02** | `manual_passages_v1` fehlte im Zustandsbaum der Schemadatei | §4.11, geschlossen in §7.1 | **behoben** (Etappe A) |
+| **N-03** | `findingsOffen` ohne Produzenten | §4.11, als M-84 geführt | **behoben** (Etappe I, siehe N-23) |
+| **N-04** | „Überdeckung" trägt drei Bedeutungen | §4.11 | offen, Plantexte; §2.12 hält die Wörter getrennt |
+| **N-05** | Die Prosa des Namensregisters rechnete auf 28 statt 29 Namen | §7.2 | **behoben** (Etappe B, jetzt 31 mit Nachtrag) |
+| **N-06** | `EqCopSonde012ProjectReloadTest` legt Prozessoren im Rahmen an (NAK-175) | §7.1 | offen, altes Bein; neue Fälle halten sich an die Regel |
+| **N-07** | `erzeuge_v3_fixtures.py::wende_an` kopierte den eingesetzten Baustein nicht tief | §7.2 | **behoben** (Etappe B) |
+| **N-08** | Die Rollenmenge des Rust-Lesers war eine zweite handgepflegte Kopie | §7.2 | **behoben** (Etappe B) |
+| **N-09** | Erster Entwurf der Rangrechnung im eigenen Diff korrigiert | §7.3 | **behoben** (Etappe C) |
+| **N-10** | Dieselbe NAK-175-Klasse wie N-06 in einem weiteren alten Bein | §7.3 | offen, altes Bein |
+| **N-11** | Der C++-Leser kannte `findings` nicht | §7.4 | **behoben** (Etappe D) |
+| **N-12** | Erster Entwurf des C++-Beins im eigenen Diff korrigiert | §7.4 | **behoben** (Etappe D) |
+| **N-13** | `maskierung` fehlte in der erlaubten Feldmenge | §7.5 | **behoben** (Etappe E) |
+| **N-14** | Der Rotbeweistreiber bezeugte ein veraltetes Artefakt als frisch | §7.6 | **behoben** (Etappe F, Werkzeug) |
+| **N-15** | `security_vectors.rs`-Fall ohne Änderung benannt | §7.6 | offen, fremdes Bein |
+| **N-16** | Erste Fassung einer Rücknahme im Treiber korrigiert | §7.7 | **behoben** (Etappe G, Werkzeug) |
+| **N-17** | Zwei starke Behauptungen über dieselbe Ursache | §7.8 | **behoben** (Etappe H, Produkt) |
+| **N-18** | Ein ungetrennter erster Platz behauptete stark | §7.8 | **behoben** (Etappe H, Produkt; der Fund traf auch den Korpus) |
+| **N-19** | Eine Selbsttestprüfung ohne Weg zu fallen | §7.8 | **behoben** (Etappe H, Werkzeug) |
+| **N-20** | Der `draft_offer`-Umschlag trug leere Adressfelder und war schemaungültig | §7.9 | **behoben** (Etappe I, Produkt) |
+| **N-21** | Zwei Schreibweisen desselben Koaleszierungsschlüssels | §7.9 | **behoben** (Etappe I, Produkt) |
+| **N-22** | Der Outbox-Abfluss hing am Reconnect; der Rückgabewert wurde ignoriert | §7.9 | **behoben** (Etappe I, Produkt) |
+| **N-23** | `findingsOffen` war ein toter Zähler | §7.9 | **behoben** (Etappe I, Produkt; schließt N-03) |
+| **N-24** | `IdentityTestMain.cpp` legt Prozessoren im Rahmen an (NAK-175) | §7.9 | offen, altes Bein |
+| **N-25** | `draft_offer_schuld` ist bis P6 strukturell 0 | §7.9 | offen, benannt; der M-78-Fall prüft ihn auf 0 |
+
+**Zusammen 25 Zeilen: 18 behoben, 7 offen** — gezählt an der Tabelle, nicht
+geschätzt.
+
+- **Am Produkt behoben (9):** N-02, N-11, N-13, N-17, N-18, N-20, N-21, N-22,
+  N-23.
+- **Am Werkzeug oder im eigenen Diff behoben (6):** N-07, N-09, N-12, N-14,
+  N-16, N-19.
+- **Am Vertrags- oder Lesertext behoben (3):** N-05, N-08 sowie N-03, das mit
+  N-23 zusammenfällt.
+- **Offen (7):** vier alte Beine beziehungsweise fremde Dateien (N-01, N-06,
+  N-10, N-15, N-24 — davon N-01 ein Registertext), der Plantext N-04 und
+  N-25, das erst P6 auflöst.
+
+### 7.12 Die Runden dieses Tickets, kurz
+
+| Runde | Wer | Stand | Ergebnis |
+|---|---|---|---|
+| Etappe 1 — Verhaltensmatrix | Bauer (Opus) | `1f126a4` | 84 Zeilen, 9 Entscheidfragen offen |
+| Etappe 1b — Entscheide E-01 bis E-10 | Dirigent | `fdb04e4` | 86 Zeilen, alle Technikfragen entschieden |
+| **Matrixprüfung 1** | Codex `gpt-6-astra` max, lesend | `fdb04e4` | **NEEDS_WORK**, vier Defekte (D1 M-23, D2 M-65, D3 M-71/E-08, D4 Ausschlussgründe) |
+| Matrixnacharbeit 1 (R1–R4, E-11) | Bauer | `f90abf5` | 89 Zeilen, drei neu, drei nachgezogen |
+| **Matrixprüfung 2** | Codex `gpt-6-astra` max, lesend | `f90abf5` | **PASS** — D1 bis D4 geschlossen, nichts gebrochen |
+| Etappe 2 A — Intent im Main-State | Bauer | `8f030f5` | Kanon **GRÜN 55/55** |
+| Etappe 2 B — Fassung 3 des Wire-Envelopes | Bauer | `581431a` | Kanon **GRÜN 55/55** |
+| Etappe 2 C — Evidenzgraph und `CauseHypothesis` | Bauer | `2e2c97c` | Kanon **GRÜN 55/55** |
+| Etappe 2 D — Befundzustände | Bauer | `c303554` | Kanon **GRÜN 56/56** |
+| Etappe 2 E — Maskierungs-Datenweg | Bauer | `522e2ab` | Kanon **GRÜN 56/56** |
+| Etappe 2 F — Proposal-Policy | Bauer | `a9659b1` | Kanon **GRÜN 56/56** |
+| Etappe 2 G — `AssistantStep` im Main | Bauer | `d1f62d3` | Kanon **GRÜN 57/57** |
+| Etappe 2 H — P5-Evaluationskorpus als Kette | Bauer | `0e853f9` | Kanon **GRÜN 60/60**, zwei Produktfunde |
+| Etappe 2 I — Ort, Nebenläufigkeit, Invarianten | Bauer | *siehe Kopf* | Abschlusskanon, vier Produktfunde |
+
+**Zwei Prüfrunden, eine Nacharbeit, neun Bauetappen.** Die Erstprüfung der
+Etappe 2 hat noch nicht stattgefunden; das Urteil im Kopf ist **T1** — der
+Selbstaudit des Erbauers. **T2** setzt der Dirigent nach einer frischen
+Prüfung.
 
 ---
 

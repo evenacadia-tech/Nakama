@@ -3,23 +3,23 @@
 | Merkmal | Wert |
 |---|---|
 | Ticket | S23–25, `SONDE-014` (Phase P4–P5), Leitungsname „Aus Messungen belegte Befunde und kleinste Tests ableiten" |
-| Phase | **Etappe 2: Nacharbeit 2 abgeschlossen, Wiederprüfung 2 offen.** Die Wiederprüfung 1 (Astra max, `f30ac47`) fand **5 Befunde**; die Nacharbeit 2 hat sie als **WN-01 bis WN-05** geschlossen — Einordnung, Entscheid **E-14**, das Sendepfad-Inventar, die gemessenen Beine und die Matrixnachträge stehen in **§9**. Davor: die Erstprüfung 1 (Astra max, `dce6970`) fand **14 Befunde**; die Nacharbeit 1 hat sie als **NR-01 bis NR-14** geschlossen — Einordnung, Zuordnung, gemessene Beine und die neu gemessene Kalibrierung stehen in **§8**. Davor: **Bau abgeschlossen.** Alle **neun** Bauetappen aus §5.1 stehen, jede mit vollem Kanon auf ihrem eigenen Stand: **A** `SourceIntent` im Main-State (`8f030f5`, GRÜN 55/55) · **B** Fassung 3 des Wire-Envelopes (`edea7a9`, `baa6291`, `581431a`, GRÜN 55/55) · **C** Evidenzgraph und `CauseHypothesis` (`2e2c97c`, GRÜN 55/55) · **D** Befundzustände (`c303554`, GRÜN 56/56) · **E** Maskierungs-Datenweg (`522e2ab`, GRÜN 56/56) · **F** Proposal-Policy (`a9659b1`, GRÜN 56/56) · **G** `AssistantStep` im Main (`d1f62d3`, GRÜN 57/57) · **H** P5-Evaluationskorpus als Kette (`0e853f9`, GRÜN 60/60) · **I** Ort, Nebenläufigkeit und Invarianten (`1381e14`, `a90d2ab`, Abschlusskanon siehe Zeile Kanon nachher). Davor ohne Produktcode: **Matrixnacharbeit 1** (2026-09-06), **Etappe 1b — Entscheide E-01 bis E-10** (`fdb04e4`) und **Etappe 1 — Verhaltensmatrix** (`1f126a4`). Der Bauverlauf steht in §7.1 bis §7.9, die abgehakte Prüfliste am gebauten Stand in §7.10, die gesammelten Nebenbefunde in §7.11 und die Runden in §7.12. |
+| Phase | **Etappe 2: Nacharbeit 3 abgeschlossen, Wiederprüfung 3 offen.** Die Wiederprüfung 2 (Astra max, `d09a6d7`) fand **2 Befunde**; die Nacharbeit 3 hat sie als **WN3-01 und WN3-02** geschlossen — Einordnung, Zuordnung, das f64-Feldinventar, die gemessenen Beine und die Matrixnachträge stehen in **§10**. **WP1-2 bis WP1-5 hat der Prüfer als geschlossen bestätigt.** Davor: die Wiederprüfung 1 (Astra max, `f30ac47`) fand **5 Befunde**; die Nacharbeit 2 hat sie als **WN-01 bis WN-05** geschlossen — Einordnung, Entscheid **E-14**, das Sendepfad-Inventar, die gemessenen Beine und die Matrixnachträge stehen in **§9**. Davor: die Erstprüfung 1 (Astra max, `dce6970`) fand **14 Befunde**; die Nacharbeit 1 hat sie als **NR-01 bis NR-14** geschlossen — Einordnung, Zuordnung, gemessene Beine und die neu gemessene Kalibrierung stehen in **§8**. Davor: **Bau abgeschlossen.** Alle **neun** Bauetappen aus §5.1 stehen, jede mit vollem Kanon auf ihrem eigenen Stand: **A** `SourceIntent` im Main-State (`8f030f5`, GRÜN 55/55) · **B** Fassung 3 des Wire-Envelopes (`edea7a9`, `baa6291`, `581431a`, GRÜN 55/55) · **C** Evidenzgraph und `CauseHypothesis` (`2e2c97c`, GRÜN 55/55) · **D** Befundzustände (`c303554`, GRÜN 56/56) · **E** Maskierungs-Datenweg (`522e2ab`, GRÜN 56/56) · **F** Proposal-Policy (`a9659b1`, GRÜN 56/56) · **G** `AssistantStep` im Main (`d1f62d3`, GRÜN 57/57) · **H** P5-Evaluationskorpus als Kette (`0e853f9`, GRÜN 60/60) · **I** Ort, Nebenläufigkeit und Invarianten (`1381e14`, `a90d2ab`, Abschlusskanon siehe Zeile Kanon nachher). Davor ohne Produktcode: **Matrixnacharbeit 1** (2026-09-06), **Etappe 1b — Entscheide E-01 bis E-10** (`fdb04e4`) und **Etappe 1 — Verhaltensmatrix** (`1f126a4`). Der Bauverlauf steht in §7.1 bis §7.9, die abgehakte Prüfliste am gebauten Stand in §7.10, die gesammelten Nebenbefunde in §7.11 und die Runden in §7.12. |
 | Matrixprüfung 2 | Codex `gpt-6-astra`, Effort **max**, lesend, Thread `01a077a3-1411-7830-9bfd-e17d233baab1`; `HEAD` vor und nach dem Lauf `f90abf5`. **URTEIL: PASS** — D1 bis D4 geschlossen, nichts gebrochen. Auftrag `docs/beweise/roh/SONDE-014-matrixpruefung-2-auftrag.txt`, Rohurteil `docs/beweise/roh/SONDE-014-matrixpruefung-2-f90abf5.txt`. **Etappe 1 ist damit abgenommen; §3 ist ab hier die Spezifikation.** |
 | Etappe 2 | Bauauftrag `docs/beweise/roh/SONDE-014-etappe-2-auftrag.txt`, Basis `f90abf5`; Fortsetzung 1 (Etappen C bis I) `docs/beweise/roh/SONDE-014-etappe-2-fortsetzung-1-auftrag.txt`, Startstand `6b96c64`, mit **Entscheid E-12**; Fortsetzung 2 (Etappe I und Abschluss) `docs/beweise/roh/SONDE-014-etappe-2-fortsetzung-2-auftrag.txt`, Startstand `4b64ac1`. **E-12 ist mit Fall 3 entschieden:** die Kalibrierung am P5-Korpus hat den Startwert `GATE_MINDEST_FENSTER` = 8 **bestätigt** (beide Passagensitzungen tragen null starke Aussagen) und die Schwelle aus M-31 nicht bewegt — es gibt deshalb **keinen** `metrics_version`-Schritt. **Nachtrag Nacharbeit 1 (07.09.2026):** beide Aussagen halten auch nach NR-05 und NR-12; die Schwellensuche findet seither `hoch` statt `unklar` als niedrigste haltende Stufe, und genau dort handelt das Produkt (§8.5), `eq-copilot/schemas/v3/metriken-v1.json` und `eq-copilot/plugin/core/analysis/FeatureEngine.h` sind **unberührt** (§7.8, M-23, M-31). |
 | Entscheide | E-01 bis E-10 wörtlich in `docs/beweise/roh/SONDE-014-etappe-1-entscheid-auftrag.txt`. Eingearbeitet in Etappe 1b: neun angenommene Technikentscheide (E-01 bis E-09, E-01 und E-03 mit Präzisierung, E-08 mit Autoritätenzuweisung) und **eine neue Lücke E-10** (Transport des Intents vom Main zum Broker) mit den zwei zusätzlichen Matrixzeilen **M-85** und **M-86**. **Seit der Nacharbeit 2 (07.09.2026) kommt E-14 dazu** (Bestandsgeneration statt Sender-Revision für `STALE` und Eintragung, §9.2, Matrixzeile M-10). **Seit der Nacharbeit 1 E-13** (das Experimentziel überlebt den Brokerneustart, §8.2). **Seit der Matrixnacharbeit 1 kommt E-11 dazu** (Transport und versionierter Spiegel des `AssistantStep`, Regel R3, §4.13) mit **M-88** und **M-89**. Je Entscheid steht ein Block „Etappe 1b (Entscheid des Dirigenten, 06.09.2026)" unter dem zugehörigen §4-Abschnitt; der vorige Vorschlagstext bleibt als Historie stehen. |
-| Urteil | **Wiederprüfung 1 (Codex `gpt-6-astra`, Effort max, lesend, `HEAD` vor und nach dem Lauf `f30ac47`): NEEDS_WORK, 5 Befunde — 4 Defekte, 1 Lücke (E-14).** Rohurteil `docs/beweise/roh/SONDE-014-wiederpruefung-1-f30ac47.txt`, Nacharbeitsauftrag `docs/beweise/roh/SONDE-014-nacharbeit-2-auftrag.txt`; alle fünf sind in der **Nacharbeit 2** (07.09.2026, §9) geschlossen, jede mit eigenem Rotbeweis unter `docs/beweise/roh/` (`SONDE-014-rot-WN-01.txt` bis `-WN-05.txt`, fünf Dateien), und die betroffenen Beine sind auf dem Endstand `b49dc69` **alle grün** (§9.5). — **Erstprüfung 1 (Codex `gpt-6-astra`, Effort max, lesend, `HEAD` vor und nach dem Lauf `dce6970`): NEEDS_WORK, 14 Befunde — 13 Defekte, 1 Lücke (E-13).** Rohurteil `docs/beweise/roh/SONDE-014-erstpruefung-1-dce6970.txt`, Nacharbeitsauftrag `docs/beweise/roh/SONDE-014-nacharbeit-1-auftrag.txt`; alle vierzehn sind in der **Nacharbeit 1** (07.09.2026, §8) geschlossen, jede mit eigenem Rotbeweis unter `docs/beweise/roh/` (Muster `SONDE-014-rot-NR-01.txt` bis `-NR-14.txt`, vierzehn Dateien). — **T1 PASS (Erbauer), 2026-09-07.** Selbstaudit des Bauers auf dem Abschlussstand `c053be8`: alle neun Bauetappen gebaut, voller Kanon **GRÜN 60/60** auf sauberem Baum, Rohausgabe `docs/beweise/roh/SONDE-014-c053be8.md`. **T2 steht aus** - die Erstprüfung der Etappe 2 durch einen frischen, lesenden Codex-Thread hat noch nicht stattgefunden; sie setzt der Dirigent. Was T1 NICHT sagt: dass ein zweiter Leser die Zusagen gegen Gate-Text und Matrix gehalten hätte. |
+| Urteil | **Wiederprüfung 2 (Codex `gpt-6-astra`, Effort max, lesend, `HEAD` vor und nach dem Lauf `d09a6d7`): NEEDS_WORK, 2 Befunde — 2 Defekte.** Rohurteil `docs/beweise/roh/SONDE-014-wiederpruefung-2-d09a6d7.txt`, Nacharbeitsauftrag `docs/beweise/roh/SONDE-014-nacharbeit-3-auftrag.txt`; beide sind in der **Nacharbeit 3** (07.09.2026, §10) geschlossen, jede mit eigenem Rotbeweis unter `docs/beweise/roh/` (`SONDE-014-rot-WN3-01.txt` und `-WN3-02.txt`), und die betroffenen Beine sind auf dem Endstand `1c736ab` **alle grün** (§10.5). **WP1-2 bis WP1-5 sind vom Prüfer als geschlossen bestätigt.** — **Wiederprüfung 1 (Codex `gpt-6-astra`, Effort max, lesend, `HEAD` vor und nach dem Lauf `f30ac47`): NEEDS_WORK, 5 Befunde — 4 Defekte, 1 Lücke (E-14).** Rohurteil `docs/beweise/roh/SONDE-014-wiederpruefung-1-f30ac47.txt`, Nacharbeitsauftrag `docs/beweise/roh/SONDE-014-nacharbeit-2-auftrag.txt`; alle fünf sind in der **Nacharbeit 2** (07.09.2026, §9) geschlossen, jede mit eigenem Rotbeweis unter `docs/beweise/roh/` (`SONDE-014-rot-WN-01.txt` bis `-WN-05.txt`, fünf Dateien), und die betroffenen Beine sind auf dem Endstand `b49dc69` **alle grün** (§9.5). — **Erstprüfung 1 (Codex `gpt-6-astra`, Effort max, lesend, `HEAD` vor und nach dem Lauf `dce6970`): NEEDS_WORK, 14 Befunde — 13 Defekte, 1 Lücke (E-13).** Rohurteil `docs/beweise/roh/SONDE-014-erstpruefung-1-dce6970.txt`, Nacharbeitsauftrag `docs/beweise/roh/SONDE-014-nacharbeit-1-auftrag.txt`; alle vierzehn sind in der **Nacharbeit 1** (07.09.2026, §8) geschlossen, jede mit eigenem Rotbeweis unter `docs/beweise/roh/` (Muster `SONDE-014-rot-NR-01.txt` bis `-NR-14.txt`, vierzehn Dateien). — **T1 PASS (Erbauer), 2026-09-07.** Selbstaudit des Bauers auf dem Abschlussstand `c053be8`: alle neun Bauetappen gebaut, voller Kanon **GRÜN 60/60** auf sauberem Baum, Rohausgabe `docs/beweise/roh/SONDE-014-c053be8.md`. **T2 steht aus** - die Erstprüfung der Etappe 2 durch einen frischen, lesenden Codex-Thread hat noch nicht stattgefunden; sie setzt der Dirigent. Was T1 NICHT sagt: dass ein zweiter Leser die Zusagen gegen Gate-Text und Matrix gehalten hätte. |
 | Prüfstufe | T1+T2 gefordert (`docs/bauaufteilung-sonden.md` Zeile 394 · `docs/plan/plan.json`, Schritt S23–25, `"stufe": "T2"`). **T1 vergeben** (Selbstaudit des Erbauers, Zeile Urteil), **T2 offen**. |
 | Prüfmodell | Codex `gpt-6-astra`, Effort **max**, lesend — für Matrix-, Erst-, Wieder- und Abschlussprüfung. `gpt-5.6-sol` max **nur** als Gegenprüfer (User-Wort 05.09.2026, `feedback_astra-prueft-sol-gegenprueft`). |
 | Matrixprüfung 1 | Codex `gpt-6-astra`, Effort **max**, lesend, Thread `01a0776e-ed49-7fd2-afaa-992997f6bf3e`; `HEAD` vor und nach der Prüfung `fdb04e4`. Urteil **NEEDS_WORK**, vier Defekte (D1 M-23, D2 M-65, D3 M-71/E-08, D4 Ausschlussgründe), alle an der Quelle bestätigt. Rohurteil `docs/beweise/roh/SONDE-014-matrixpruefung-1-fdb04e4.txt`, Auftrag `docs/beweise/roh/SONDE-014-matrixpruefung-1-auftrag.txt`; Wortlaut, Regel und geänderte Zeilen in §4.13. |
 | Matrixnacharbeit 1 | Regeln R1 bis R4 wörtlich in `docs/beweise/roh/SONDE-014-matrixnacharbeit-1-auftrag.txt`. Eingearbeitet am 06.09.2026: **M-23**, **M-65** und **M-71** nachgezogen, drei neue Zeilen **M-87** (Ausschlussgründe, R4), **M-88** und **M-89** (Assistentenschritt, R3 → Entscheid **E-11**). §3.11, §5.1, §5.2, §5.4 und §6 nachgezogen. |
 | Basis-SHA | `5e99a1361696be84a7174575ec7b9ad9e27e6a7f`, mit `git rev-parse HEAD` beim Start gemessen; Worktree bis auf die Auftragsdatei sauber (`git status --short`: eine Zeile `?? docs/beweise/roh/SONDE-014-etappe-1-auftrag.txt`). |
 | Kanon vorher | **GRÜN 54/54 auf `aca0f28`**, Rohausgabe `docs/beweise/roh/NAK-182-aca0f28.md`. Eigene Messung in dieser Sitzung: `git diff --stat aca0f28..5e99a13 -- broker eq-copilot tools` ist **leer**. Der Codestand von `5e99a13` ist mit dem beglaubigten Kanonstand identisch; die Commits dazwischen berühren nur `docs/` und `design/`. |
-| Kanon nachher | **GRÜN 60/60 auf `c053be8`**, Rohausgabe `docs/beweise/roh/SONDE-014-c053be8.md`, Kanonabschnitt am Ende dieses Manifests. ⚠️ Dieser Kanonstand liegt **vor** der Nacharbeit 1 **und der Nacharbeit 2**: beide haben Produktcode geändert, und ihr Beleg sind die betroffenen Beine in §8.4 (`docs/beweise/roh/SONDE-014-nacharbeit-1-25460cd.txt`) beziehungsweise §9.5 (`docs/beweise/roh/SONDE-014-nacharbeit-2-b49dc69.txt`, vierzehn Beine, alle grün). Der nächste volle Kanon läuft beim Ticketabschluss. Der Lauf ist abgekoppelt auf einem **sauberen** Baum gefahren und hat mit `-Bauen` unmittelbar davor gebaut; die Zahl steigt von **54** vor dem Ticket, weil B27, B28, B29, A28, A29 und A30 dazugekommen sind und kein Bein verschwunden ist. |
+| Kanon nachher | **GRÜN 60/60 auf `c053be8`**, Rohausgabe `docs/beweise/roh/SONDE-014-c053be8.md`, Kanonabschnitt am Ende dieses Manifests. ⚠️ Dieser Kanonstand liegt **vor** den Nacharbeiten 1, 2 und 3: alle drei haben Produktcode geändert, und ihr Beleg sind die betroffenen Beine in §8.4 (`docs/beweise/roh/SONDE-014-nacharbeit-1-25460cd.txt`), §9.5 (`docs/beweise/roh/SONDE-014-nacharbeit-2-b49dc69.txt`, vierzehn Beine) beziehungsweise §10.5 (`docs/beweise/roh/SONDE-014-nacharbeit-3-1c736ab.txt`, neunzehn Beine, alle grün). Der nächste volle Kanon läuft beim Ticketabschluss. Der Lauf ist abgekoppelt auf einem **sauberen** Baum gefahren und hat mit `-Bauen` unmittelbar davor gebaut; die Zahl steigt von **54** vor dem Ticket, weil B27, B28, B29, A28, A29 und A30 dazugekommen sind und kein Bein verschwunden ist. |
 | Änderungssatz dieser Etappe | **Matrixnacharbeit 1:** dieses Manifest und die drei unveränderten Rohdateien `docs/beweise/roh/SONDE-014-matrixpruefung-1-auftrag.txt`, `docs/beweise/roh/SONDE-014-matrixpruefung-1-fdb04e4.txt` und `docs/beweise/roh/SONDE-014-matrixnacharbeit-1-auftrag.txt`. **Etappe 1b:** dieses Manifest `docs/beweise/SONDE-014.md` und der unveränderte Entscheidauftrag `docs/beweise/roh/SONDE-014-etappe-1-entscheid-auftrag.txt`. **Etappe 1** (`1f126a4`): dieses Manifest und der unveränderte Auftrag `docs/beweise/roh/SONDE-014-etappe-1-auftrag.txt`. In beiden: kein Produkt-, Test-, Schema-, Fixture- oder Werkzeugcode; kein Eingriff in `docs/plan/`, `docs/offene-punkte.md`, `docs/PLAN-STAND.md`, `docs/NEXT-SESSION.md` oder `design/`. |
 | Grenze | Etappe 2 baut ausschließlich, was §3 zusagt. Technikfragen ohne Quelle standen in §4 als ENTSCHEIDEN-VORSCHLAG und sind seit Etappe 1b als **ENTSCHIEDEN** geführt; Produktfragen werden benannt und einer Fläche zugeordnet, nie beantwortet. |
-| Testanzahl | **Gemessen aus den Läufen, nicht abgeschrieben. Nach der Nacharbeit 2 (07.09.2026, §9.5): A4 642 Prüfungen in 27 Binaries, B10 372, B29 167; A4-SI 22, A5 598, A8 392 Dateien, B1 120, B2 180, B3c 136, B4 121, B13 79, B14 12, B27 210, B28 60 — alle anderen unverändert.** Der Stand nach der Nacharbeit 1 (§8.4): A4 638 Prüfungen in 26 Binaries, A5 598, A8 392 Dateien, A30 52, B29 152, B1 120. Der Stand der Etappe 2 davor: Rust: `cargo test --manifest-path broker/Cargo.toml` **626** Prüfungen in 19 Binaries, 0 Fehler (Bein **A4**), davon neu in diesem Ticket: `sonde014_verdrahtung` 14, `sonde014_hypothese` + `sonde014_befund` + `sonde014_maskierung` + `sonde014_proposal` + `sonde014_p5_korpus` sowie vier SONDE-014-Fälle in `sonde013_verdrahtung`. C++: `EqCopSonde014IntentTest` **210** (B27), `EqCopSonde014AssistentTest` **129** (B29), `EqCopSonde014BefundTest` **45** (B28), `EqCopSonde012SourcesModelTest` **79** (B13), `EqCopIpcTest` **370** (B10), `EqCopSchemaTest` **136** (B3c), `EqCopIdentityTest` **118** (B1), `EqCopQueueStressTest` **121** (B4), `EqCopStateMigrationTest` **180** (B2). Python: `pruefe_v3_vertrag.py --abdeckung` **597** Prüfungen, 0 gescheitert (A5); `erzeuge_v3_fixtures.py --pruefen` **391** Dateien bytegleich (A8); `erzeuge_state_fixtures.py --pruefen` **36** Dateien (A12); `pruefe_p5_korpus.py` **6** Sitzungen / **8** ausgegebene Befunde (A29) und `--selbsttest` **38** Prüfungen (A30). **Kanonbeine: 60** — von 54 vor dem Ticket auf 60, dazu B27, B28, B29, A28, A29, A30; kein Bein ist verschwunden. |
-| Änderungssatz Etappe 2 | **Je Etappe ein logischer Satz, alle mit Pathspec.** **A** `8f030f5` (Produkt, Tests, Golden) + `2efc89b` (Manifest §7.1, Kanonbeleg). **B** `edea7a9` (Vertrag, Register, README, Fixtures, beide Fassungsleitern), `baa6291` (Produktpfad beider Seiten), `581431a` (elf Rotbeweise, Riegel gegen die zweite Kopie) + `6b96c64` (Manifest §7.2). **C** `5ceff03`, `a5e8e73`, `2e2c97c` + `189e4c0`. **D** `a3c1ac1`, `83f495b`, `c303554` + `dbddc4b`. **E** `dbb7f47`, `18eacaf`, `522e2ab` + `eb29d93`. **F** `b2d315b`, `c7879e6`, `a9659b1` + `89c7155`. **G** `6ca92da`, `48bf045`, `227a367`, `d1f62d3` + `5048777`. **H** `9773a4a`, `0bb05f7`, `0e853f9` + `f459404`. **I** `1381e14` (Brokerhälfte), `a90d2ab` (Mainhälfte, zwei Negativfixtures, dreizehn Rotbeweise) + der Abschluss-Commit dieses Kopfes. Dazu die drei Auftragsdateien unter `docs/beweise/roh/` und **103** Rotbeweise `docs/beweise/roh/SONDE-014-rot-*.txt`. **Nacharbeit 1 (07.09.2026, §8):** `d119c1b` (Ursache 1 — Sperr- und Revisionslogik, NR-01 bis NR-03), `ef1eebf` (Store-Existenzprüfung und die zwei Rechenfehler, NR-04 bis NR-06), `348d15c` (Vertrag, Store-Anbindung, zweite Wahrheit im Main, NR-07 bis NR-11), `cba0573` (die drei Riegel des Prüfwerkzeugs, NR-12 bis NR-14) und der Manifest-Commit dieses Kopfes; dazu **14** weitere Rotbeweise von `SONDE-014-rot-NR-01.txt` bis `SONDE-014-rot-NR-14.txt`, das Beinprotokoll `SONDE-014-nacharbeit-1-cba0573.txt` und die zwei Prüfungsdateien `SONDE-014-erstpruefung-1-dce6970.txt` und `SONDE-014-nacharbeit-1-auftrag.txt`. **Nacharbeit 2 (07.09.2026, §9):** `75f0ece` (Ursache 4 — ohne Passage kein Proposal, WN-04), `e70cd86` (Ursachen 2 und 3 — Bestandsgeneration und der zweite Sendepfad, WN-02 mit E-14 und WN-03), `434b2c7` (Ursache 1 — das Userurteil am Verbindungszustand, WN-01 und WN-05), `7e8a651` und `b49dc69` (zwei Selbstaudit-Funde: der Doc-Kommentar riss den Doctest, und `p0.ueberlauf()` stand unter dem falschen Mutex) und der Manifest-Commit dieses Kopfes; dazu **5** weitere Rotbeweise `SONDE-014-rot-WN-01.txt` bis `-WN-05.txt`, das Beinprotokoll `SONDE-014-nacharbeit-2-b49dc69.txt` und die zwei Prüfungsdateien `SONDE-014-wiederpruefung-1-f30ac47.txt` und `SONDE-014-nacharbeit-2-auftrag.txt`. |
-| Ticketpfade (Prüfbereich der Etappe 2) | **Die tatsächlich berührte Menge, gemessen mit `git diff --name-only f90abf5..HEAD` und ohne `docs/`: 134 Dateien.** **Broker (22):** `broker/src/coordinator/` — `mod.rs`, `evidenz.rs`, `experiment.rs`, `experiment_verdrahtung.rs`, `hypothese.rs`, `hypothese_verdrahtung.rs`, `intent.rs`, `invalidierung_verdrahtung.rs`, `link.rs`, `liveness.rs`, `maskierung.rs`, `proposal.rs`, `proposal_verdrahtung.rs`, `schema.rs`, `senke.rs`, `sicht.rs`, `subscription.rs`, `vergleichbarkeit.rs`, `zustand.rs`, `assistent.rs`; dazu `broker/src/store/handle.rs` und `broker/src/transport/server_v3/mod.rs`. **Broker-Tests (10 seit der Nacharbeit 2):** `sonde013_experiment.rs`, `sonde013_taint.rs`, `sonde013_verdrahtung.rs`, `sonde014_befund.rs`, `sonde014_hypothese.rs`, `sonde014_maskierung.rs`, `sonde014_p5_korpus.rs`, `sonde014_proposal.rs`, `sonde014_verdrahtung.rs` `sonde014_nacharbeit1.rs` (die Storefälle NR-04, NR-05, NR-07, NR-09, NR-10, NR-11) und **neu seit der Nacharbeit 2** `sonde014_nacharbeit2.rs` (WN-01 bis WN-04 am echten Store). **Verträge (4):** `eq-copilot/schemas/v3/eq-ipc-v3.schema.json`, `reservierte-nachrichten-v1.json`, `README.md`, `eq-copilot/schemas/state/nakama-state-v2.md`. **Plugin (9):** `state/NakamaState.cpp/.h`, `src/PluginProcessor.cpp/.h`, `src/SourcesModel.cpp/.h`, `core/ipc/WireEnvelope.h`, `CMakeLists.txt`. **Plugin-Tests (8):** `IdentityTestMain.cpp`, `IpcTestMain.cpp`, `QueueStressTestMain.cpp`, `Sonde012ProjectReloadTest.cpp`, `Sonde012SourcesModelTest.cpp`, `Sonde014AssistentTest.cpp`, `Sonde014BefundTest.cpp`, `Sonde014IntentTest.cpp`, `StateMigrationTestMain.cpp`. **Werkzeug (6):** `tools/beweise.ps1`, `tools/eq-copilot/erzeuge_p5_korpus.py`, `erzeuge_state_fixtures.py`, `erzeuge_v3_fixtures.py`, `pruefe_p5_korpus.py`, `pruefe_v3_vertrag.py`. **Fixtures (75):** `eq-copilot/fixtures/v3/`, `fixtures/state/`, `fixtures/p5-korpus/` samt ihren Manifesten; dazu `.gitattributes` (eine Regel für den bytegleichen P5-Korpus, §7.8). **Vier Dateien liegen außerhalb der Liste aus §5.2** und stehen mit Begründung im Bauverlauf: `broker/src/transport/server_v3/mod.rs` und `eq-copilot/plugin/core/ipc/WireEnvelope.h` (Transportfassung, §7.2 Abweichung 1), `broker/src/store/handle.rs` und `broker/src/coordinator/schema.rs`/`senke.rs`/`zustand.rs`/`link.rs`/`liveness.rs` (Ein-Writer-Spiegel und Verdrahtung der neuen Module, §7.2). **Die E-12-Ausnahme wurde NICHT gezogen:** `metriken-v1.json` und `FeatureEngine.h` sind unberührt. **Nicht angefasst**, wie §5.2 es verlangt: `eq-copilot/plugin/sonde/`, `probe/`, `core/analysis/`, `hostbridge/`, `eq-copilot/identity/`, `eq-copilot/install/`, `design/`, `docs/offene-punkte.md`, `docs/PLAN-STAND.md`, `docs/NEXT-SESSION.md`, `docs/plan/` (außer dem in Etappe A gesetzten `beleg`-Feld). |
+| Testanzahl | **Gemessen aus den Läufen, nicht abgeschrieben. Nach der Nacharbeit 3 (07.09.2026, §10.5): A4 645 Prüfungen in 28 Binaries, 0 Fehler (von 642 in 27); B3c 141, B10 374, B29 183; A5 598, A8 392 Dateien, B1 120, B2 180, B4 121, B13 79, B14 12, B27 210, B28 60 — alle anderen unverändert.** Der Stand nach der Nacharbeit 2 (§9.5): A4 642 Prüfungen in 27 Binaries, B10 372, B29 167; A4-SI 22, A5 598, A8 392 Dateien, B1 120, B2 180, B3c 136, B4 121, B13 79, B14 12, B27 210, B28 60 — alle anderen unverändert.** Der Stand nach der Nacharbeit 1 (§8.4): A4 638 Prüfungen in 26 Binaries, A5 598, A8 392 Dateien, A30 52, B29 152, B1 120. Der Stand der Etappe 2 davor: Rust: `cargo test --manifest-path broker/Cargo.toml` **626** Prüfungen in 19 Binaries, 0 Fehler (Bein **A4**), davon neu in diesem Ticket: `sonde014_verdrahtung` 14, `sonde014_hypothese` + `sonde014_befund` + `sonde014_maskierung` + `sonde014_proposal` + `sonde014_p5_korpus` sowie vier SONDE-014-Fälle in `sonde013_verdrahtung`. C++: `EqCopSonde014IntentTest` **210** (B27), `EqCopSonde014AssistentTest` **129** (B29), `EqCopSonde014BefundTest` **45** (B28), `EqCopSonde012SourcesModelTest` **79** (B13), `EqCopIpcTest` **370** (B10), `EqCopSchemaTest` **136** (B3c), `EqCopIdentityTest` **118** (B1), `EqCopQueueStressTest` **121** (B4), `EqCopStateMigrationTest` **180** (B2). Python: `pruefe_v3_vertrag.py --abdeckung` **597** Prüfungen, 0 gescheitert (A5); `erzeuge_v3_fixtures.py --pruefen` **391** Dateien bytegleich (A8); `erzeuge_state_fixtures.py --pruefen` **36** Dateien (A12); `pruefe_p5_korpus.py` **6** Sitzungen / **8** ausgegebene Befunde (A29) und `--selbsttest` **38** Prüfungen (A30). **Kanonbeine: 60** — von 54 vor dem Ticket auf 60, dazu B27, B28, B29, A28, A29, A30; kein Bein ist verschwunden. |
+| Änderungssatz Etappe 2 | **Je Etappe ein logischer Satz, alle mit Pathspec.** **A** `8f030f5` (Produkt, Tests, Golden) + `2efc89b` (Manifest §7.1, Kanonbeleg). **B** `edea7a9` (Vertrag, Register, README, Fixtures, beide Fassungsleitern), `baa6291` (Produktpfad beider Seiten), `581431a` (elf Rotbeweise, Riegel gegen die zweite Kopie) + `6b96c64` (Manifest §7.2). **C** `5ceff03`, `a5e8e73`, `2e2c97c` + `189e4c0`. **D** `a3c1ac1`, `83f495b`, `c303554` + `dbddc4b`. **E** `dbb7f47`, `18eacaf`, `522e2ab` + `eb29d93`. **F** `b2d315b`, `c7879e6`, `a9659b1` + `89c7155`. **G** `6ca92da`, `48bf045`, `227a367`, `d1f62d3` + `5048777`. **H** `9773a4a`, `0bb05f7`, `0e853f9` + `f459404`. **I** `1381e14` (Brokerhälfte), `a90d2ab` (Mainhälfte, zwei Negativfixtures, dreizehn Rotbeweise) + der Abschluss-Commit dieses Kopfes. Dazu die drei Auftragsdateien unter `docs/beweise/roh/` und **103** Rotbeweise `docs/beweise/roh/SONDE-014-rot-*.txt`. **Nacharbeit 1 (07.09.2026, §8):** `d119c1b` (Ursache 1 — Sperr- und Revisionslogik, NR-01 bis NR-03), `ef1eebf` (Store-Existenzprüfung und die zwei Rechenfehler, NR-04 bis NR-06), `348d15c` (Vertrag, Store-Anbindung, zweite Wahrheit im Main, NR-07 bis NR-11), `cba0573` (die drei Riegel des Prüfwerkzeugs, NR-12 bis NR-14) und der Manifest-Commit dieses Kopfes; dazu **14** weitere Rotbeweise von `SONDE-014-rot-NR-01.txt` bis `SONDE-014-rot-NR-14.txt`, das Beinprotokoll `SONDE-014-nacharbeit-1-cba0573.txt` und die zwei Prüfungsdateien `SONDE-014-erstpruefung-1-dce6970.txt` und `SONDE-014-nacharbeit-1-auftrag.txt`. **Nacharbeit 2 (07.09.2026, §9):** `75f0ece` (Ursache 4 — ohne Passage kein Proposal, WN-04), `e70cd86` (Ursachen 2 und 3 — Bestandsgeneration und der zweite Sendepfad, WN-02 mit E-14 und WN-03), `434b2c7` (Ursache 1 — das Userurteil am Verbindungszustand, WN-01 und WN-05), `7e8a651` und `b49dc69` (zwei Selbstaudit-Funde: der Doc-Kommentar riss den Doctest, und `p0.ueberlauf()` stand unter dem falschen Mutex) und der Manifest-Commit dieses Kopfes; dazu **5** weitere Rotbeweise `SONDE-014-rot-WN-01.txt` bis `-WN-05.txt`, das Beinprotokoll `SONDE-014-nacharbeit-2-b49dc69.txt` und die zwei Prüfungsdateien `SONDE-014-wiederpruefung-1-f30ac47.txt` und `SONDE-014-nacharbeit-2-auftrag.txt`.. **Nacharbeit 3 (07.09.2026, §10):** `79fb91f` (WP2-2/WN3-02 — der Wire-Deckel am TEXT: `vertrag.rs`, beide `zahl()`-Fassungen, `sonde014_nacharbeit3.rs`, `contract_cross_language.rs`, fünf neue Klassen in `evidenz-zahlen-wire-v1.json`, `erzeuge_v3_fixtures.py`) und `1c736ab` (WP2-1/WN3-01 — der Urteilmitschnitt je `command_id`: `PluginProcessor.cpp/.h`, `ControlClient.cpp/.h`, `IpcTestMain.cpp`, `Sonde014AssistentTest.cpp`) sowie der Manifest-Commit dieses Kopfes; dazu **2** weitere Rotbeweise `SONDE-014-rot-WN3-01.txt` und `-WN3-02.txt`, das Beinprotokoll `SONDE-014-nacharbeit-3-1c736ab.txt` und die zwei Prüfungsdateien `SONDE-014-wiederpruefung-2-d09a6d7.txt` und `SONDE-014-nacharbeit-3-auftrag.txt`. |
+| Ticketpfade (Prüfbereich der Etappe 2) | **Die tatsächlich berührte Menge, gemessen mit `git diff --name-only f90abf5..HEAD` und ohne `docs/`: 134 Dateien.** **Broker (22):** `broker/src/coordinator/` — `mod.rs`, `evidenz.rs`, `experiment.rs`, `experiment_verdrahtung.rs`, `hypothese.rs`, `hypothese_verdrahtung.rs`, `intent.rs`, `invalidierung_verdrahtung.rs`, `link.rs`, `liveness.rs`, `maskierung.rs`, `proposal.rs`, `proposal_verdrahtung.rs`, `schema.rs`, `senke.rs`, `sicht.rs`, `subscription.rs`, `vergleichbarkeit.rs`, `zustand.rs`, `assistent.rs`; dazu `broker/src/store/handle.rs` und `broker/src/transport/server_v3/mod.rs`. **Broker-Tests (10 seit der Nacharbeit 2):** `sonde013_experiment.rs`, `sonde013_taint.rs`, `sonde013_verdrahtung.rs`, `sonde014_befund.rs`, `sonde014_hypothese.rs`, `sonde014_maskierung.rs`, `sonde014_p5_korpus.rs`, `sonde014_proposal.rs`, `sonde014_verdrahtung.rs` `sonde014_nacharbeit1.rs` (die Storefälle NR-04, NR-05, NR-07, NR-09, NR-10, NR-11) und **neu seit der Nacharbeit 2** `sonde014_nacharbeit2.rs` (WN-01 bis WN-04 am echten Store), **neu seit der Nacharbeit 3** `sonde014_nacharbeit3.rs` (WN3-02: Eigenschaftstest, Wertetabelle und Re-Subscribe am echten Store). Ebenfalls seit der Nacharbeit 3 berührt: `broker/src/vertrag.rs` (der Deckel `wire_zahl` neben dem Riegel). **Verträge (4):** `eq-copilot/schemas/v3/eq-ipc-v3.schema.json`, `reservierte-nachrichten-v1.json`, `README.md`, `eq-copilot/schemas/state/nakama-state-v2.md`. **Plugin (9):** `state/NakamaState.cpp/.h`, `src/PluginProcessor.cpp/.h`, `src/SourcesModel.cpp/.h`, `core/ipc/WireEnvelope.h`, `CMakeLists.txt`. **Plugin-Tests (8):** `IdentityTestMain.cpp`, `IpcTestMain.cpp`, `QueueStressTestMain.cpp`, `Sonde012ProjectReloadTest.cpp`, `Sonde012SourcesModelTest.cpp`, `Sonde014AssistentTest.cpp`, `Sonde014BefundTest.cpp`, `Sonde014IntentTest.cpp`, `StateMigrationTestMain.cpp`. **Werkzeug (6):** `tools/beweise.ps1`, `tools/eq-copilot/erzeuge_p5_korpus.py`, `erzeuge_state_fixtures.py`, `erzeuge_v3_fixtures.py`, `pruefe_p5_korpus.py`, `pruefe_v3_vertrag.py`. **Fixtures (75):** `eq-copilot/fixtures/v3/`, `fixtures/state/`, `fixtures/p5-korpus/` samt ihren Manifesten; dazu `.gitattributes` (eine Regel für den bytegleichen P5-Korpus, §7.8). **Vier Dateien liegen außerhalb der Liste aus §5.2** und stehen mit Begründung im Bauverlauf: `broker/src/transport/server_v3/mod.rs` und `eq-copilot/plugin/core/ipc/WireEnvelope.h` (Transportfassung, §7.2 Abweichung 1), `broker/src/store/handle.rs` und `broker/src/coordinator/schema.rs`/`senke.rs`/`zustand.rs`/`link.rs`/`liveness.rs` (Ein-Writer-Spiegel und Verdrahtung der neuen Module, §7.2). **Die E-12-Ausnahme wurde NICHT gezogen:** `metriken-v1.json` und `FeatureEngine.h` sind unberührt. **Nicht angefasst**, wie §5.2 es verlangt: `eq-copilot/plugin/sonde/`, `probe/`, `core/analysis/`, `hostbridge/`, `eq-copilot/identity/`, `eq-copilot/install/`, `design/`, `docs/offene-punkte.md`, `docs/PLAN-STAND.md`, `docs/NEXT-SESSION.md`, `docs/plan/` (außer dem in Etappe A gesetzten `beleg`-Feld). |
 | Belegfeld und Urteilsmarke | **Beide gesetzt.** Das Feld `beleg` des Schritts S23–25 in `docs/plan/plan.json` zeigt seit dem ersten Bau-Commit der Etappe A auf dieses Manifest; die Urteilsmarke `T1 PASS` trägt der Kopf seit dem grünen Abschlusskanon. **T2 setzt der Dirigent** nach einer frischen Prüfung — der gerechnete Planstand zeigt den Schritt bis dahin als *gebaut*, nicht als *abgenommen*. |
 
 <!-- NAKAMA-URTEIL: T1 PASS 2026-09-07 -->
@@ -3112,8 +3112,9 @@ Sammelstelle, damit er sie nicht aus neun Abschnitten zusammensuchen muss.
 | **N-27** | `security_vectors::zwei_listener_plus_96_worker_erhalten_cap_und_namensbesitz` flackert | §8 (Nacharbeit 1) | offen, ticketfremd; dieselbe Klasse wie N-15 und N-26 |
 | **N-28** | `finding_id` am `AssistentSchritt` hat im Main **keinen Produktschreiber** | §8 (Nacharbeit 1) | offen, benannt; `assistentAntwort` nimmt den Befund deshalb als Parameter (§8, Abweichung 3) |
 | **N-29** | `cmake` liegt nicht im Bash-`PATH` dieses Rechners | §8 (Nacharbeit 1) | offen, Werkzeuglandmine; ein `cmake --build` aus Bash endet still in `command not found`, und ein danach gefahrenes Bein misst ein **altes** Binary. Der Runner `tools/beweise.ps1` sucht cmake selbst (`Finde-CMake`) und prüft den Exitcode — ein Handlauf muss dasselbe tun |
-| **N-30** | Der persistierte `session_snapshot` trug Zahlen mit **sechzehn** signifikanten Stellen, die der **eigene** Textriegel verwirft | §9.4 (Nacharbeit 2) | **behoben** (WN-03): `beobachtung.wert_db` entsteht aus einem `f32` (`-3.3f32` → `-3.2999999523162842`), und `vertrag.rs` lehnt `signifikante_stellen > 15` ab. Jeder `resubscribe_snapshot_push` fiel damit in `routing_fail_closed`, sobald die Sitzung einen Befund trug. `zahl()` rundet seither auf 15 Stellen (`auf_wirestellen`). **Offen bleibt die Frage nach weiteren Zahlenwegen:** geprüft und gerundet ist der Befundpfad; andere Schreiber im Snapshot (Versuche, Maskierungen in eigenen Objekten) sind in dieser Runde nicht durchgesehen worden |
+| **N-30** | Der persistierte `session_snapshot` trug Zahlen mit **sechzehn** signifikanten Stellen, die der **eigene** Textriegel verwirft | §9.4 (Nacharbeit 2) | **behoben** (WN-03): `beobachtung.wert_db` entsteht aus einem `f32` (`-3.3f32` → `-3.2999999523162842`), und `vertrag.rs` lehnt `signifikante_stellen > 15` ab. Jeder `resubscribe_snapshot_push` fiel damit in `routing_fail_closed`, sobald die Sitzung einen Befund trug. `zahl()` rundete seither auf 15 Stellen (`auf_wirestellen`). **Nacharbeit 3 (WN3-02):** diese Rundung war NUMERISCH und hielt die Zusage für Kleinwerte nicht — sie ist durch `vertrag::wire_zahl` am serialisierten TEXT ersetzt. Die damals offen gelassene Frage nach weiteren Zahlenwegen ist mit dem **f64-Feldinventar in §10.4** beantwortet: neunzehn Felder aus Befund, Maskierung und Proposal laufen durch den Deckel; Bandindizes sind ganzzahlig, `f32`-Felder tragen höchstens neun Stellen, und vom Draht gelesene `f64` trugen den Deckel bereits |
 | **N-31** | Der Testharnisch der Nacharbeit 1 baut `capabilities` mit Namen, die der Vertrag nicht kennt | §9.5 (Nacharbeit 2) | offen, Testcode: `descriptor_setzen` nimmt sie an (H-17 prüft den Deskriptor, aber nicht diese Feldmenge), und erst die **Sessionprojektion** fällt gegen `$defs/probe_descriptor_post` — sichtbar nur, wenn ein Abonnent sie liest. `sonde014_nacharbeit2.rs` führt deshalb die Vertragsmenge; `sonde014_nacharbeit1.rs` bleibt unverändert, weil keiner seiner Fälle pusht. Der Dirigent entscheidet, ob `descriptor_setzen` die Feldmenge selbst halten soll |
+| **N-32** | Der WN-03-Kommentarblock steht in `subscription.rs` **zweimal** (vier Zeilen, unmittelbar hintereinander) | §10.7 (Nacharbeit 3) | offen, ticketfremd: reiner Kommentar aus der Vorrunde, kein Verhalten. Nicht angefasst, weil `subscription.rs` außerhalb der beiden Punkte dieses Auftrags liegt |
 
 **Zusammen 29 Zeilen: 18 behoben, 11 offen** — gezählt an der Tabelle, nicht
 geschätzt.
@@ -3124,10 +3125,11 @@ geschätzt.
   N-16, N-19.
 - **Am Vertrags- oder Lesertext behoben (3):** N-05, N-08 sowie N-03, das mit
   N-23 zusammenfällt.
-- **Offen (11):** alte oder fremde Beine und Dateien (N-01, N-06, N-10,
+- **Offen (13):** alte oder fremde Beine und Dateien (N-01, N-06, N-10,
   N-15, N-24, N-26, N-27 — davon N-01 ein Registertext), der Plantext N-04,
-  N-25 (löst erst P6 auf), N-28 (benannte Produktlücke der Nacharbeit 1) und
-  N-29 (Werkzeuglandmine).
+  N-25 (löst erst P6 auf), N-28 (benannte Produktlücke der Nacharbeit 1),
+  N-29 (Werkzeuglandmine), N-31 (Testharnisch der Nacharbeit 1) und N-32
+  (Kommentardoppel in `subscription.rs`).
 
 ### 7.12 Die Runden dieses Tickets, kurz
 
@@ -3151,13 +3153,15 @@ geschätzt.
 | Nacharbeit 1 (NR-01 bis NR-14, E-13) | Bauer | `d119c1b`, `ef1eebf`, `348d15c`, `cba0573` | Alle 14 geschlossen, 14 Rotbeweise, betroffene Beine grün (§8) |
 | **Wiederprüfung 1 (Etappe 2)** | Codex `gpt-6-astra` max, lesend | `f30ac47` | **NEEDS_WORK**, 5 Befunde — 4 Defekte, 1 Lücke (E-14) |
 | Nacharbeit 2 (WN-01 bis WN-05, E-14) | Bauer | `75f0ece`, `e70cd86`, `434b2c7`, `7e8a651`, `b49dc69` | Alle 5 geschlossen, 5 Rotbeweise, betroffene Beine grün auf `b49dc69` (§9) |
+| **Wiederprüfung 2 (Etappe 2)** | Codex `gpt-6-astra` max, lesend | `d09a6d7` | **NEEDS_WORK**, 2 Befunde — 2 Defekte; WP1-2 bis WP1-5 bestätigt geschlossen |
+| Nacharbeit 3 (WN3-01, WN3-02) | Bauer | `79fb91f`, `1c736ab` | Beide geschlossen, 2 Rotbeweise, betroffene Beine grün auf `1c736ab` (§10) |
 
-**Zwei Matrixprüfungen, zwei Prüfrunden der Etappe 2, zwei Nacharbeiten,
+**Zwei Matrixprüfungen, drei Prüfrunden der Etappe 2, drei Nacharbeiten,
 neun Bauetappen** — die Erstprüfung 1 und ihre Nacharbeit 1 stehen in §8,
-die **Wiederprüfung 1 und die Nacharbeit 2** in §9 (beide 07.09.2026). Das
-Urteil im Kopf ist weiterhin **T1**, der Selbstaudit des Erbauers; **T2**
-setzt der Dirigent nach einer frischen Prüfung. Die **Wiederprüfung 2** steht
-aus.
+die Wiederprüfung 1 und die Nacharbeit 2 in §9, die **Wiederprüfung 2 und
+die Nacharbeit 3** in §10 (alle 07.09.2026). Das Urteil im Kopf ist
+weiterhin **T1**, der Selbstaudit des Erbauers; **T2** setzt der Dirigent
+nach einer frischen Prüfung. Die **Wiederprüfung 3** steht aus.
 
 ---
 
@@ -3541,6 +3545,190 @@ ist als **Nacharbeit 2** markiert.
 | **D** Bau- und Prüfriegel | N-29 bleibt die benannte Landmine: die C++-Beine dieser Runde sind nach einem `cmake --build` mit **geprüftem Exitcode** gefahren, nicht nach einem stillen `command not found` |
 | **E** Behauptung ≤ Messung | Jede der fünf Regeln hat ihren Rotbeweis, und jeder fällt an der Zeile, die die Zusage trägt: WN-01 an „der Kopf trägt die GEMELDETE Revision", WN-02 an „jeder abhängige Befund ist STALE", WN-03 an „kein Befund ohne existente Evidenz verlässt das Haus", WN-04 an „ohne Passage entsteht KEIN Vorschlag", WN-05 an „bei voller Queue meldet `assistentAntwort` KEINEN Erfolg". Der erste Anlauf der C++-Rotbeweise war **ungültig** und ist verworfen worden: der Testaufruf scheiterte an einem Pfadtrenner, nicht an der Zusage — rot aus dem falschen Grund ist kein Beweis |
 | **F** Änderungssatz | Einreihen und Wiederholen liegen in einem Satz (WN-05: die Politik und ihr Rückweg); Sender, Empfänger und beide Beine des Urteils ebenfalls (WN-01: `ControlClient`, `PluginProcessor`, B10, B29) |
+
+---
+
+## 10. Wiederprüfung 2 und Nacharbeit 3 (07.09.2026)
+
+### 10.1 Die Prüfung
+
+| Merkmal | Wert |
+|---|---|
+| Prüfer | Codex `gpt-6-astra`, Effort **max**, **lesend** |
+| Thread | `01a07b4a-c459-7363-83c9-b8ece4f1d006` |
+| `HEAD` vor und nach dem Lauf | `d09a6d72606db2eaed2735cbdc27b3c9c10cb15d` (unverändert, keine eigenen Dateiänderungen) |
+| Dauer | 14 min (2026-09-07T11:54:52 bis 12:08:22), `EXIT=0` |
+| Geprüfter Diff | `1a9ccbd...d09a6d7` (Variante B, die Fixe der Nacharbeit 2) |
+| **Urteil** | **NEEDS_WORK** — WP1-1 bleibt bei mehreren ausstehenden Urteilen offen; zusätzlich verletzt die Zahlenrundung den Wirevertrag. **2 Befunde** |
+| Geschlossen bestätigt | **WP1-2 bis WP1-5** (Bestandsgeneration, Re-Subscribe-Härtung, „ohne Passage kein Proposal", Auswertung der Queue-Politik) |
+| Rohurteil | `docs/beweise/roh/SONDE-014-wiederpruefung-2-d09a6d7.txt` |
+| Auftrag | `docs/beweise/roh/SONDE-014-wiederpruefung-2-auftrag.txt` |
+| Nacharbeitsauftrag | `docs/beweise/roh/SONDE-014-nacharbeit-3-auftrag.txt` |
+| Startstand der Nacharbeit | `38ef05fa4a00a951abb2f1cd356239fd1827550b`, Worktree sauber |
+
+**Was der Prüfer nicht gemessen hat** (wörtlich aus seinem Urteil): erfolgreiche
+Cargo-/Storeläufe wegen Schreibschutz, gekoppelte neue Gegenbeispiele im
+Produkt, frischer Nulltest und vollständiger Kanon; die bestehenden
+Nulltest-Binaries sind älter als der Fix. Beide Befunde sind **lesend
+hergeleitet** — die Nacharbeit 3 hat beide an der Quelle nachvollzogen.
+
+### 10.2 Einordnung des Dirigenten
+
+**Zwei Defekte, keine Lücke.** Beide sind an der Quelle geprüft: WP2-1 ist der
+unerzwungene Einzelwert im Prozessor, WP2-2 ein Rechenfehler in der Rundung
+der Vorrunde. Der Dirigent hat WP2-2 in Rust nachgerechnet:
+`10f64.powi(14 - exponent)` ist ab `exponent <= -9` selbst ungenau —
+`2.7e-11` und `5.55e-12` ergeben je 17 Stellen, und von 100 000 vorher
+gültigen Kleinwerten aus `1e-15…1e-9` werden **34 535** vertragswidrig. Der
+Wortlaut beider Regeln WN3-01 und WN3-02 steht in
+`docs/beweise/roh/SONDE-014-nacharbeit-3-auftrag.txt`.
+
+### 10.3 Zuordnung: Befund → Regel → geänderte Stelle → Rotbeweis
+
+| Befund | Zusage | Regel und was gebaut wurde | Gemessen an | Rotbeweis |
+|---|---|---|---|---|
+| **WP2-1** | M-73, §9.6 (M-73 „Nacharbeit 2") | **WN3-01** — der Wiederholungsinhalt eines `user_verdict` liegt **je `command_id`** vor, gedeckelt auf `nakama::ipc::kCapP0` (64). Die Vorrunde hielt einen Einzelwert mit der Begründung „zwei gleichzeitig offene gibt es nicht"; erzwungen war das nirgends. Zwei `assistentAntwort(…, &urteil, …)` vor dem ersten ACK überschrieben den ersten Mitschnitt, `urteilMitFrischemKopf` lieferte danach wegen der abweichenden Kennung einen leeren Text, und `ControlClient.cpp` entfernte das unpersistierte Urteil endgültig. Ein Eintrag entsteht beim Erzeugen und fällt erst, wenn der Auftrag das In-Flight-Register verlässt: der neue `setzeAuftragAbgeschlossenHook` meldet `angewandt`, `idempotent_wiederholt` und den endgültigen Fehlschlag — eine **Wiederholung** meldet nichts | `Sonde014AssistentTest.cpp` Abschnitt „WN3-01" (**B29**, am echten Hookrumpf `urteilMitFrischemKopf`: zwei ausstehende Urteile, Kennung/Befund/Revision/Urteil des ersten, Freigabe durch den Abschluss, Deckel und Verdrängung des ältesten) und `IpcTestMain.cpp::zwei_ausstehende_urteile_melden_ihren_abschluss_je_kennung` sowie `::ein_angewandter_auftrag_meldet_seinen_abschluss_genau_einmal` (**B10**, am echten Draht) | `roh/SONDE-014-rot-WN3-01.txt` |
+| **WP2-2** | M-77, §9.4 (N-30), Exit-Gate | **WN3-02** — die 15-Stellen-Grenze greift an der **serialisierten Dezimaldarstellung**. `eqcop_broker::vertrag::wire_zahl` (Spiegel von `nakama::wire::wireZahl`) formatiert mit höchstens 15 signifikanten Stellen und parst zurück; die letzte Entscheidung fällt `textriegel_bytes` **selbst**, auf genau den Bytes, die `serde_json` schreiben wird — zwei Regelsätze für dieselbe Grenze waren die Ursache. `auf_wirestellen` entfällt; `zahl()` in `hypothese_verdrahtung.rs` **und** in `proposal_verdrahtung.rs` laufen durch dieselbe Funktion. Das Proposal hatte bis hierher **gar keinen** Deckel | `sonde014_nacharbeit3.rs` (**A4**): Eigenschaftstest über 30 000 Werte aus drei Bändern, die Wertetabelle mit Gegenprobe der alten Rundung, und der Produktpfad mit Re-Subscribe samt Gegenprobe. Dreisprachig an der Byteinstanz `evidenz-zahlen-wire-v1.json`: **B3c** (141, von 136), **A5** (598) und `contract_cross_language.rs`, das seit dieser Runde auch den **Erzeuger** hält | `roh/SONDE-014-rot-WN3-02.txt` |
+
+### 10.4 Das f64-Feldinventar (WN3-02)
+
+Erhoben mit `rg 'zahl\(|as_f64|f64'` über `hypothese_verdrahtung.rs`,
+`sicht.rs`, `proposal_verdrahtung.rs` und `maskierung.rs`. **Neunzehn** Felder
+gehen als `f64` auf den Draht; jedes läuft durch `wire_zahl`:
+
+| Objekt | Felder | Weg |
+|---|---|---|
+| **Befund** (`befund_json`) | `beobachtung.wert_db`, `rang.bandpassung`, `.koinzidenz`, `.uplift`, `.intent_relevanz`, `.wiederholbarkeit`, `.routingqualitaet`, `confidence.score` (8) | `hypothese_verdrahtung.rs::zahl` → `wire_zahl` |
+| **Maskierung** (am Befund, M-36/M-40) | `maskierung.wert_db` (1) | derselbe Weg |
+| **Proposal** (`proposal_json`) | `confidence.score`, `parameters.frequency_hz`, `.q`, `.max_gain_db`, `allowed_bounds.{frequency_hz,q,gain_db}.{von,bis}` (10) | `proposal_verdrahtung.rs::zahl`/`zahl_wert` → `wire_zahl` |
+
+**Was bewusst nicht durch `wire_zahl` läuft, und warum** — das ist die Antwort
+auf die offene Hälfte von N-30:
+
+* **Bandindizes und Revisionen** (`band_hz.von/bis`, `maskierung.band_von/bis`,
+  `intent_revision`) sind `u32`/`i64`. Eine Ganzzahl trifft Regel 4 nie.
+* **`f32`-Felder** (`passage.abdeckung`, die Fingerprintreihen, `lufs_*`)
+  serialisiert `serde_json` mit dem `f32`-Ryu — höchstens **neun**
+  signifikante Stellen. Der Deckel wäre wirkungslos.
+* **Vom Draht gelesene `f64`** (`match_gain_db`, die Guardrailwerte des
+  Experiments) kamen aus einem Text, den der Riegel bereits angenommen hat;
+  ihre kürzeste Rückschreibform ist damit ebenfalls höchstens 15-stellig. Sie
+  werden durchgereicht, nicht gerechnet — der Unterschied ist der Grund,
+  warum Befund, Maskierung und Proposal die drei Familien sind.
+* **`MessframeSicht.sample_rate`/`fenster_ms`** sind Felder einer
+  **Rust-Lesesicht** ohne `Serialize`; sie erreichen keinen Wire-Pfad.
+
+### 10.5 Die Beine, gemessen
+
+Nur die **betroffenen** Beine — kein voller Kanon; der läuft beim
+Ticketabschluss. Betroffen ist, was der Diff dieser Runde berührt:
+`broker/src` (`vertrag.rs`, `hypothese_verdrahtung.rs`,
+`proposal_verdrahtung.rs`), die v3-Fixtures sowie `ControlClient` und
+`PluginProcessor` — und damit **jedes** C++-Bein, das sie baut. Rohprotokoll:
+`docs/beweise/roh/SONDE-014-nacharbeit-3-1c736ab.txt`, gefahren auf sauberem
+Baum auf dem Endstand `1c736ab`, **alle grün**. Alle C++-Binaries sind
+unmittelbar davor mit geprüftem Exitcode gebaut worden (N-29).
+
+**Die Menge ist gegenüber der Vorrunde größer.** `git grep -n
+'src/PluginProcessor.cpp' eq-copilot/plugin/CMakeLists.txt` nennt vierzehn
+Ziele; die Nacharbeit 2 hatte davon fünf nicht gefahren. Dazu gehört der
+**Nulltest**, den der Prüfer in seinem „Nicht geprüft" ausdrücklich benannt
+hat. A1, A3, B5, B8 und B23 laufen deshalb in dieser Runde mit.
+
+**Was diese Auswahl NICHT sagt.** `core/ipc/ControlClient.cpp` liegt in
+`NakamaKern`, und die Bibliothek bindet jedes Plugin-Bein über
+`nakama_kern_anbinden` — formal baut ihn also der ganze Kanon. Gefahren sind
+hier die Beine, die den Prozessor oder den v3-Steuerpfad wirklich **benutzen**;
+der vollständige Kanon läuft beim Ticketabschluss, wie der Auftrag es
+vorsieht.
+
+| Bein | Was | Zahl |
+|---|---|---|
+| **A1** | `EqCopNullTest` | `NULLTEST OK` — der Prüfer hatte ihn ausdrücklich als **nicht gemessen** benannt („die bestehenden Nulltest-Binaries sind älter als der Fix"); er ist neu gebaut und gefahren |
+| **A3** | `EqCopMarkierungTest` | `MARKIERUNGSTEST OK` |
+| **A4** | `cargo test --manifest-path broker/Cargo.toml` | **645** Prüfungen in **28** Binaries, 0 Fehler (von 642 in 27) |
+| **A4-SI** | `store_crash_matrix -- --ignored` | 22 Prüfungen, 0 Fehler |
+| **A5** | `pruefe_v3_vertrag.py --abdeckung` | 598 Prüfungen, 0 gescheitert |
+| **A8** | `erzeuge_v3_fixtures.py --pruefen` | 392 Dateien bytegleich, MANIFEST `sha256=3af1831…` |
+| **B1** | `EqCopIdentityTest` | 120 Prüfungen, 0 Fehler |
+| **B2** | `EqCopStateMigrationTest` | 180 Prüfungen, 0 Fehler |
+| **B3c** | `EqCopSchemaTest` | **141** bestanden, 0 gescheitert (von 136 — die fünf neuen Zahlklassen) |
+| **B4** | `EqCopQueueStressTest` | 121 Prüfungen, 0 Fehler |
+| **B5** | `EqCopAnalysisGoldenTest` | 248 bestanden, 0 Fehler |
+| **B8** | `EqCopLebenslaufTest` | 79 Prüfungen, 0 Fehler |
+| **B10** | `EqCopIpcTest` | **374** Prüfungen, 0 Fehler (von 372 — die zwei neuen Fälle am echten Draht) |
+| **B13** | `EqCopSonde012SourcesModelTest` | 79/79 grün |
+| **B14** | `EqCopSonde012ProjectReloadTest` | 12/12 grün |
+| **B23** | `EqCopSonde013PassageStateTest` | 343 bestanden, 0 gescheitert |
+| **B27** | `EqCopSonde014IntentTest` | 210 Prüfungen, 0 Fehler |
+| **B28** | `EqCopSonde014BefundTest` | 60/60 grün |
+| **B29** | `EqCopSonde014AssistentTest` | **183/183** grün (von 167 — der Abschnitt WN3-01) |
+
+Neu in dieser Runde: `broker/tests/sonde014_nacharbeit3.rs` mit **3** Fällen
+(einer davon dreiteilig), fünf Klassen in `evidenz-zahlen-wire-v1.json` und
+die Erzeugerhälfte in `contract_cross_language.rs`.
+
+### 10.6 Matrixzeilen, in dieser Runde nachgezogen
+
+Die alte Fassung bleibt als Verlauf stehen; der Nachtrag steht darunter und
+ist als **Nacharbeit 3** markiert.
+
+| Zeile | Nachtrag |
+|---|---|
+| **M-73** | **Nacharbeit 3 (WN3-01):** der Mitschnitt für die Konfliktwiederholung liegt **je `command_id`** vor, nicht als Einzelwert — gedeckelt auf die 64 P0-Plätze, eingetragen beim Erzeugen, freigegeben erst bei `angewandt`, `idempotent_wiederholt` oder endgültigem Fehlschlag. Der Nachtrag der Vorrunde („ein `konflikt`-ACK ist kein endgültiger Verlust") gilt damit für **jedes** ausstehende Urteil, nicht nur für das zuletzt abgesetzte. Der Rückweg dafür ist `ControlClient::setzeAuftragAbgeschlossenHook`; eine Wiederholung meldet nichts, denn der Auftrag läuft dann noch |
+| **M-77** | **Nacharbeit 3 (WN3-02):** dieselbe Grenze, **eine** Regel — und sie gilt dem TEXT. C++ (`nakama::wire::wireZahl`) und Python (`erzeuge_v3_fixtures.py::wire_zahl`) deckelten die serialisierte Dezimaldarstellung, Rust rundete numerisch: dieselbe Zusage in zwei Auslegungen, und die Rustfassung hielt sie für Kleinwerte nicht. `eqcop_broker::vertrag::wire_zahl` ist die dritte Hälfte; sie entscheidet am fertigen Text und gegen `textriegel_bytes` selbst. Die Sprachparität wird seit dieser Runde auch am **Erzeuger** gemessen, nicht nur am Leser |
+
+Fortgeschrieben wird außerdem **N-30** in §7.11: die dort offen gelassene
+Frage nach weiteren Zahlenwegen ist mit dem Inventar in §10.4 beantwortet.
+
+### 10.7 Abweichungen dieser Runde, benannt
+
+1. **Der B10-Fall fährt den Prozessorhook nicht selbst.** Der Auftrag verlangt
+   den Fall „über den echten Hook (`urteilMitFrischemKopf`, nicht eine
+   Test-Lambda)". `EqCopIpcTest` linkt `juce_core` und `NakamaKern` — **keinen
+   Prozessor**; ihn dort verfügbar zu machen hieße, das CMake-Ziel um
+   `juce_audio_utils`, `juce_dsp`, `PluginEditor` und `AnalyseEngine` zu
+   erweitern, also genau den Neben-Refactor, den der Auftrag verbietet. Der
+   echte Hookrumpf läuft deshalb in **B29** (dort lebt der Prozessor), und B10
+   misst die Hälfte, die nur er messen kann: dass der ControlClient den
+   Abschluss **je Kennung** meldet und eine Wiederholung nicht. Beide Hälften
+   zusammen tragen die Regel; keine allein.
+2. **Der Kleinwertfall (c) setzt seine Zahlen in die gespeicherte Projektion,
+   statt sie zu rechnen.** Die Bandwerte des Wire-Encodings `q_db_0p1_i16`
+   sind geklemmt, und `bandpassung` hat deshalb in **jeder** Bühne dieses
+   Korpus einen Boden bei `1/217` ≈ `4,6e-3` — gemessen über Breitbandsockel
+   bis 120 dB und Anomaliehübe bis −150 dB. Die Größenordnung `1e-11` entsteht
+   am echten Rechenweg erst mit einer Dynamik, die dieser Korpus nicht trägt.
+   Der Fall setzt sie deshalb ein, **mit genau der Funktion, die die Zusage
+   trägt**, und sagt das an Ort und Stelle. Abschnitt A desselben Falls misst
+   den vollen Produktpfad an dem, was die Bühne wirklich liefert: eine
+   gerechnete `bandpassung` mit **sechzehn** signifikanten Stellen, die ohne
+   Deckel am Riegel fällt. Abschnitt C ist die Gegenprobe — dieselbe
+   Projektion mit der alten Rundung wird **nicht** ausgeliefert.
+3. **`wire_zahl` liegt in `broker/src/vertrag.rs`, nicht in einer eigenen
+   Datei.** Der Auftrag sagt „Ort neben `vertrag.rs`, damit Vertrag und Deckel
+   beieinander liegen". Dieselbe Datei ist das Maximum an „beieinander": die
+   Funktion entscheidet ihren letzten Schritt gegen `textriegel_bytes`, und
+   ein zweites Modul hätte diese Bindung nur verlängert.
+4. **Der Deckel gilt jetzt auch dem Proposal.** WN3-02 nennt „`zahl()` und
+   ALLE f64-Felder des Befunds, der Maskierung und des Proposals";
+   `proposal_verdrahtung.rs` führte ein **eigenes** `zahl()` ohne jeden
+   Stellendeckel. Das ist kein zusätzlicher Punkt, sondern dieselbe Ursache an
+   der zweiten Stelle — beide Funktionen rufen jetzt dieselbe.
+5. **`textriegel_bytes` prüft `signifikante_stellen > MAX_SIGNIFIKANT` statt
+   `> 15`.** Eine Konstante statt einer Ziffer, weil Deckel und Riegel nun in
+   derselben Datei stehen und dieselbe Zahl meinen. Kein Verhaltenswechsel.
+
+### 10.8 Prüfliste `tools/dirigent/pruefliste.md`, abgehakt für diese Runde
+
+| Abschnitt | Wo in dieser Runde gemessen |
+|---|---|
+| **A** Rückstau und Prioritätsklassen | **WN3-01** ist die Fortsetzung der WN-05-Zeile: der abgewiesene oder konfliktbehaftete Auftrag bleibt im Register — und sein Wiederholungsinhalt jetzt auch. Der Deckel des Mitschnitts ist dieselbe Zahl wie die Kapazität der Queue, nicht eine zweite Politik |
+| **B** Lebenszyklus | **WN3-01**: `erzeugen ↔ freigeben` liegen in einem Satz. Ein Eintrag entsteht mit dem Urteil und fällt mit dem ACK, das den Auftrag abschließt; eine Wiederholung schließt ihn nicht ab, und der Test misst genau diesen Unterschied (B10, „genau einmal") |
+| **C** Verträge und Längen | **WN3-02**: „NaN/Inf/Grenzwerte an jeder Zahl, die über den Draht geht" — hier die vierte Regel des Textriegels an **jedem** der 19 f64-Felder, und die Byteinstanz misst sie in allen drei Sprachen |
+| **D** Bau- und Prüfriegel | N-29 bleibt die benannte Landmine: alle C++-Beine dieser Runde sind nach einem `cmake --build` mit **geprüftem Exitcode** gefahren, und das Rohprotokoll trägt je Bein den Zeitstempel des gemessenen Binaries |
+| **E** Behauptung ≤ Messung | Beide Regeln haben ihren Rotbeweis, und jeder fällt an der Zeile, die die Zusage trägt: WN3-01 an „das ERSTE Urteil ist nach dem zweiten noch wiederholbar", WN3-02 an „`2.6999999999999997e-11` trägt 17 signifikante Stellen" und „eine Projektion mit Rangkomponenten um 1e-11 wird ausgeliefert". Der WN3-01-Beweis benennt ausdrücklich die Zeilen, die **grün bleiben** — sie sind Wachen, kein Beleg |
+| **F** Änderungssatz | Sender und Rückweg in einem Satz (WN3-01: `ControlClient`, `PluginProcessor`, B10, B29); Erzeuger, Riegel, Fixture und alle drei Sprachverbraucher ebenfalls (WN3-02: `vertrag.rs`, beide Verdrahtungen, `erzeuge_v3_fixtures.py`, A5, B3c, `contract_cross_language.rs`) |
 
 ---
 

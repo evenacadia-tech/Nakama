@@ -1,0 +1,51 @@
+NAK-212 Rotbeweis N-10-R2-bootstrap — 2026-09-07
+========================================================================
+Ruecknahme: R2 zurueckgenommen: der Bootstrap misst wieder zweiseitig.
+Datei: broker/src/coordinator/hypothese.rs
+Entfernt/ersetzt: 'let p = super::experiment::bootstrap_p_positiv(' -> 'let p = super::experiment::bootstrap_p('
+Gefahren: cargo test --lib und --test sonde014_hypothese, Filter: gegenbeleg_schliesst_hoch_aus bootstrap_einseitig_trennt_die_richtung
+ERGEBNIS: ROT (der Test faellt ohne die Regel)
+========================================================================
+
+--- cargo test --lib ---
+Exit 0
+
+running 1 test
+test coordinator::hypothese::tests::bootstrap_einseitig_trennt_die_richtung ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 230 filtered out; finished in 0.00s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.10s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+
+--- cargo test --test sonde014_hypothese ---
+Exit 101
+
+running 1 test
+test gegenbeleg_schliesst_hoch_aus ... FAILED
+
+failures:
+
+---- gegenbeleg_schliesst_hoch_aus stdout ----
+
+thread 'gegenbeleg_schliesst_hoch_aus' (20444) panicked at tests\sonde014_hypothese.rs:1578:5:
+assertion `left == right` failed: einseitig gemessen: die Stabilitaet eines Gegenbelegs zaehlt nicht
+  left: 0.9950124688279302
+ right: 0.0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    gegenbeleg_schliesst_hoch_aus
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 23 filtered out; finished in 0.29s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.80s
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+error: test failed, to rerun pass `--test sonde014_hypothese`
+

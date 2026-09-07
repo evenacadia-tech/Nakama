@@ -541,6 +541,69 @@ impl Rangkomponenten {
     }
 }
 
+/// Der gemessene Zusammenhang zwischen Kandidat und Master — MIT Vorzeichen.
+///
+/// 🔑 **NAK-212 R1/R2/E1 (07.09.2026).** Bis hierher lasen Rang und Klasse
+/// DISJUNKTE Groessen: die sechs Rangkomponenten messen den Zusammenhang und
+/// fliessen ausschliesslich in `confidence.score`, also nur in die
+/// REIHENFOLGE; die Klassenwahl las davon keine einzige. Ein Kandidat mit
+/// `koinzidenz = uplift = wiederholbarkeit = 0` — also ohne jeden Beleg fuer
+/// einen Zusammenhang — erreichte deshalb `hoch`/READY (G5-Befunde G-D1,
+/// E-L3, `g5_unbeteiligte_quelle`, `eigen4`).
+///
+/// ⚠️ **`Option` und nicht 0,0.** `uplift()` gab bisher in DREI verschiedenen
+/// Lagen 0,0 zurueck: „kein Vergleichsfenster" (M-19), „Differenz nicht
+/// positiv" und „Master steht still". Drei Bedeutungen unter einer Zahl sind
+/// genau der Fehler, den SONDE-013 M-07 an anderer Stelle schon verboten hat
+/// („ein Band ohne Bit hat keinen Wert — nie 0, nie NaN"). R1 braucht „nicht
+/// messbar" getrennt von „gemessen 0", R2 braucht es getrennt von „negativ".
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub struct Zusammenhangsbeleg {
+    /// Bedingter Uplift MIT Vorzeichen, normiert wie die Rangkomponente,
+    /// in [-1, 1]. `None` heisst „nicht messbar" (M-19).
+    pub uplift: Option<f64>,
+    /// Onset-Korrelation MIT Vorzeichen, in [-1, 1]. `None` heisst „keine
+    /// Streuung in einer der beiden Reihen" — zwei Konstanten sind kein
+    /// Zusammenhang, aber auch kein Gegenbeleg.
+    pub koinzidenz: Option<f64>,
+    /// Stabilitaet eines POSITIVEN Uplifts, EINSEITIG gemessen, in [0, 1].
+    pub wiederholbarkeit: f64,
+}
+
+impl Zusammenhangsbeleg {
+    /// R1: ist mindestens eine Komponente POSITIV belegt?
+    ///
+    /// Das ist eine Vorzeichenfrage, keine Groessenfrage — die Grenze null
+    /// ist die Definition von „positiv" und keine kalibrierte Schwelle. Sie
+    /// steht deshalb nicht in `metriken-v1.json` und ist nicht abstimmbar
+    /// (M-15, M-31 bleiben unberuehrt).
+    pub fn positiv_belegt(&self) -> bool {
+        self.uplift.is_some_and(|u| u > 0.0) || self.koinzidenz.is_some_and(|k| k > 0.0)
+    }
+
+    /// R2: ist mindestens eine Komponente ein GEGENBELEG?
+    pub fn gegenbeleg(&self) -> bool {
+        self.uplift.is_some_and(|u| u < 0.0) || self.koinzidenz.is_some_and(|k| k < 0.0)
+    }
+
+    /// Die drei Groessen, quantisiert auf `RANG_QUANTUM` — die Form, in der
+    /// zwei Belege verglichen werden (E6). `None` ist ein eigener Wert und
+    /// gleich nur sich selbst.
+    fn vergleichsform(&self) -> (Option<i64>, Option<i64>, i64) {
+        let q = |w: Option<f64>| w.map(|x| (x.clamp(-1.0, 1.0) / RANG_QUANTUM).round() as i64);
+        (
+            q(self.uplift),
+            q(self.koinzidenz),
+            (quantisiert(self.wiederholbarkeit) / RANG_QUANTUM).round() as i64,
+        )
+    }
+}
+
+/// Sind zwei Kandidaten in ihrem ZUSAMMENHANG unterscheidbar? (R3, E6)
+pub fn zusammenhang_verschieden(a: &Zusammenhangsbeleg, b: &Zusammenhangsbeleg) -> bool {
+    a.vergleichsform() != b.vergleichsform()
+}
+
 /// Ein ausgeschiedener Kandidat samt Grund (M-87).
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Ausschluss {
@@ -821,9 +884,16 @@ pub fn gate(
     }
 
     // 3. Alignment (M-20): liegen die Fenster des Kandidaten wirklich dort,
-    //    wo der Master seinen Befund hat? Gemessen als Zeitueberdeckung der
-    //    beiden Fensterspannen, mit demselben Gate wie §43.2.
-    let alignment = zeitueberdeckung(spanne(&kandidat.fenster), spanne(&aufnahme.master.fenster));
+    //    wo der Master seinen Befund hat?
+    //
+    // 🔑 **NAK-212 R4/E4 (07.09.2026).** Gemessen wird die PAARWEISE
+    // Ueberlappung, nicht die Ueberdeckung der beiden SPANNEN. `spanne` ist
+    // ein lueckenblindes min/max: Sondenfenster 20 000 Samples VOR und 40 000
+    // Samples NACH den Masterfenstern umklammern deren Spanne vollstaendig,
+    // `zeitueberdeckung` meldete 1,0 — und das Gate hielt, obwohl KEIN
+    // einziges Fenster ein gemeinsames Sample mit dem Master hat (G5-Befund
+    // E-D4). Die Schwelle bleibt dieselbe.
+    let alignment = paarueberdeckung(&kandidat.fenster, &aufnahme.master.fenster);
     if !(alignment >= GATE_ZEITUEBERDECKUNG) {
         return Gateurteil::Faellt(Ausschlussgrund::AlignmentFalsch);
     }
@@ -897,14 +967,32 @@ pub fn rangkomponenten(
     band: Bandintervall,
     parent_duplikat: bool,
 ) -> Rangkomponenten {
-    Rangkomponenten {
+    rang_und_beleg(kandidat, aufnahme, band, parent_duplikat).0
+}
+
+/// Rang UND Zusammenhangsbeleg aus EINER Rechnung (E1).
+///
+/// ⚠️ Die Rangkomponenten `koinzidenz` und `uplift` bleiben in [0, 1]: ein
+/// Gegenbeleg wird fuer den RANG auf 0 geklemmt und wirkt ausschliesslich
+/// ueber die Klasse (R2). Damit bleiben Zahl, Name, Wertebereich und
+/// Reduktionsreihenfolge der sechs Komponenten unveraendert — M-25 und der
+/// Vertrag sind unberuehrt.
+pub fn rang_und_beleg(
+    kandidat: &Quellprofil,
+    aufnahme: &Aufnahme,
+    band: Bandintervall,
+    parent_duplikat: bool,
+) -> (Rangkomponenten, Zusammenhangsbeleg) {
+    let beleg = zusammenhang(kandidat, &aufnahme.master, band);
+    let rang = Rangkomponenten {
         bandpassung: bandpassung(kandidat, band),
-        koinzidenz: koinzidenz(kandidat, &aufnahme.master),
-        uplift: uplift(kandidat, &aufnahme.master, band),
+        koinzidenz: beleg.koinzidenz.unwrap_or(0.0).max(0.0),
+        uplift: beleg.uplift.unwrap_or(0.0).max(0.0),
         intent_relevanz: intent_relevanz(kandidat, aufnahme),
-        wiederholbarkeit: wiederholbarkeit(kandidat, &aufnahme.master, band),
+        wiederholbarkeit: beleg.wiederholbarkeit,
         routingqualitaet: routingqualitaet(kandidat, parent_duplikat),
-    }
+    };
+    (rang, beleg)
 }
 
 /// Wie gut die Energie des Kandidaten im Befundband sitzt.
@@ -936,15 +1024,22 @@ fn bandpassung(kandidat: &Quellprofil, band: Bandintervall) -> f64 {
     im_band / gesamt
 }
 
-/// Zeitliche Koinzidenz der Onsetspuren von Kandidat und Master.
+/// Zeitliche Koinzidenz der Onsetspuren von Kandidat und Master, MIT
+/// Vorzeichen.
 ///
 /// Die Pearson-Korrelation der beiden Onsetreihen ueber die gemeinsamen
-/// Fenster, negativ auf 0 geklemmt: eine gegenlaeufige Spur ist KEIN
-/// Zusammenhang, sondern ein Gegenbeleg — und ein Gegenbeleg darf keinen Rang
-/// erzeugen.
-fn koinzidenz(kandidat: &Quellprofil, master: &Quellprofil) -> f64 {
+/// Fenster. `None`, wenn eine der beiden Reihen keine Streuung hat — zwei
+/// Konstanten sind kein Zusammenhang, aber auch kein Gegenbeleg, und die
+/// beiden Lagen muessen fuer R1 und R2 unterscheidbar bleiben.
+///
+/// ⚠️ Die RANGKOMPONENTE klemmt den negativen Zweig weiterhin auf 0
+/// (`rang_und_beleg`): ein Gegenbeleg darf keinen Rang erzeugen. Er wirkt
+/// ueber die KLASSE (R2), nicht ueber die Reihenfolge — sonst aenderte sich
+/// der Wertebereich einer Rangkomponente und mit ihm die Reduktionsreihen-
+/// folge aus M-25.
+fn koinzidenz_gerichtet(kandidat: &Quellprofil, master: &Quellprofil) -> Option<f64> {
     let (a, b) = gemeinsame_reihen(kandidat, master, |f| f.onset as f64);
-    korrelation(&a, &b).max(0.0)
+    korrelation_gerichtet(&a, &b)
 }
 
 /// Der BEDINGTE Uplift (M-19): die Zielmetrik des Masters in Fenstern MIT
@@ -953,17 +1048,24 @@ fn koinzidenz(kandidat: &Quellprofil, master: &Quellprofil) -> f64 {
 /// ⚠️ Ohne Vergleichsfenster gibt es keinen Uplift — nicht 0, sondern gar
 /// keinen. Genau daran faellt der Rotbeweis von M-19: wer den Uplift ohne die
 /// Menge „ohne die Quelle" rechnet, misst nur den Pegel des Masters.
-fn uplift(kandidat: &Quellprofil, master: &Quellprofil, band: Bandintervall) -> f64 {
-    let reihen = upliftreihe(kandidat, master, band);
-    let Some((mit, ohne)) = reihen else {
-        return 0.0;
-    };
+fn uplift_gerichtet(
+    kandidat: &Quellprofil,
+    master: &Quellprofil,
+    band: Bandintervall,
+) -> Option<f64> {
+    // Lage 1 und 2 (M-19): weniger als zwei gemeinsame Fenster, oder kein
+    // Band mit Gueltigkeitsbit im Befundintervall.
+    let (mit, ohne) = upliftreihe(kandidat, master, band)?;
+    // Lage 3: alle Fenster liegen auf EINER Seite des eigenen Medians — es
+    // gibt keine Vergleichsmenge „ohne die Quelle". Genau daran faellt der
+    // Rotbeweis von M-19: wer den Uplift ohne diese Menge rechnet, misst nur
+    // den Pegel des Masters.
     if mit.is_empty() || ohne.is_empty() {
-        return 0.0;
+        return None;
     }
     let differenz = mittel(mit.iter().copied()) - mittel(ohne.iter().copied());
-    if !differenz.is_finite() || differenz <= 0.0 {
-        return 0.0;
+    if !differenz.is_finite() {
+        return None;
     }
     // Normiert auf die eigene Spanne des Masters in diesem Band: eine
     // Erhoehung um 3 dB heisst wenig, wenn der Master dort ohnehin um 20 dB
@@ -972,9 +1074,11 @@ fn uplift(kandidat: &Quellprofil, master: &Quellprofil, band: Bandintervall) -> 
     let alle: Vec<f64> = mit.iter().chain(ohne.iter()).copied().collect();
     let spanne = spannweite(&alle);
     if spanne <= 0.0 {
-        return 0.0;
+        // Der Master steht in beiden Mengen still. Die Differenz ist dann
+        // nicht normierbar — das ist keine Null, sondern keine Messung.
+        return None;
     }
-    (differenz / spanne).clamp(0.0, 1.0)
+    Some((differenz / spanne).clamp(-1.0, 1.0))
 }
 
 /// Die beiden Messreihen des Masters, aufgeteilt danach, ob der Kandidat im
@@ -1047,13 +1151,34 @@ fn wiederholbarkeit(kandidat: &Quellprofil, master: &Quellprofil, band: Bandinte
         return 0.0;
     }
     let reihe: Vec<f64> = mit.iter().map(|x| x - basis).collect();
-    let p = super::experiment::bootstrap_p(
+    // 🔑 NAK-212 R2: EINSEITIG. `bootstrap_p` nimmt das Minimum aus beiden
+    // Seiten und gibt einer stabil NEGATIVEN Reihe denselben kleinen p-Wert
+    // wie einer stabil positiven — der Gegenbeleg wurde nicht ignoriert,
+    // sondern BELOHNT (G-D5: `eigen3` erreichte 0,995 und Rang 0,4358).
+    let p = super::experiment::bootstrap_p_positiv(
         &reihe,
         super::experiment::BOOTSTRAP_BLOCK,
         super::experiment::BOOTSTRAP_ZIEHUNGEN,
         BOOTSTRAP_SAAT,
     );
     (1.0 - p).clamp(0.0, 1.0)
+}
+
+/// Der vollstaendige Zusammenhangsbeleg eines Kandidaten (R1, R2, E1).
+///
+/// EINE Rechnung fuer drei Verwendungen: die Rangkomponenten (geklemmt), die
+/// Klassenwahl (Vorzeichen) und die Trennung (E6). Drei getrennte Aufrufe
+/// waeren drei Gelegenheiten, dieselbe Groesse verschieden zu rechnen.
+pub fn zusammenhang(
+    kandidat: &Quellprofil,
+    master: &Quellprofil,
+    band: Bandintervall,
+) -> Zusammenhangsbeleg {
+    Zusammenhangsbeleg {
+        uplift: uplift_gerichtet(kandidat, master, band),
+        koinzidenz: koinzidenz_gerichtet(kandidat, master),
+        wiederholbarkeit: wiederholbarkeit(kandidat, master, band),
+    }
 }
 
 /// Routingqualitaet (M-20, M-22).
@@ -1102,7 +1227,8 @@ pub fn hypothesen(aufnahme: &Aufnahme) -> Rechenergebnis {
     if !super::intent::darf_gerechnet_werden(aufnahme.intent.as_ref()) {
         return Rechenergebnis::default();
     }
-    let Some((metrik, band, beobachtung)) = masteranomalie(&aufnahme.master) else {
+    let Some((metrik, band, beobachtung)) = masteranomalie(&aufnahme.master, aufnahme.passage.as_ref())
+    else {
         return Rechenergebnis::default();
     };
 
@@ -1120,7 +1246,10 @@ pub fn hypothesen(aufnahme: &Aufnahme) -> Rechenergebnis {
     };
 
     let mut ausschluesse: Vec<Ausschluss> = Vec::new();
-    let mut ueberlebende: Vec<(Rangkomponenten, &Quellprofil, bool)> = Vec::new();
+    // 🔑 NAK-212 E1: der Zusammenhangsbeleg reist MIT. Klassenwahl (R1, R2)
+    // und Trennung (R3, E6) lesen ihn; er wird EINMAL gerechnet.
+    let mut ueberlebende: Vec<(Rangkomponenten, Zusammenhangsbeleg, &Quellprofil, bool)> =
+        Vec::new();
     for kandidat in &aufnahme.kandidaten {
         match gate(kandidat, aufnahme, metrik, band) {
             Gateurteil::Faellt(grund) => ausschluesse.push(Ausschluss {
@@ -1136,8 +1265,8 @@ pub fn hypothesen(aufnahme: &Aufnahme) -> Rechenergebnis {
                         .parent
                         .as_deref()
                         .is_some_and(|p| ids.contains(p));
-                let rang = rangkomponenten(kandidat, aufnahme, band, duplikat);
-                ueberlebende.push((rang, kandidat, duplikat));
+                let (rang, beleg) = rang_und_beleg(kandidat, aufnahme, band, duplikat);
+                ueberlebende.push((rang, beleg, kandidat, duplikat));
             }
         }
     }
@@ -1147,9 +1276,9 @@ pub fn hypothesen(aufnahme: &Aufnahme) -> Rechenergebnis {
     // Deterministische Rangfolge (M-25): quantisierter Rang absteigend, dann
     // `candidate_source` aufsteigend. Erst DANACH der harte Deckel aus M-18.
     ueberlebende.sort_by(|a, b| {
-        let ra = (quantisiert(a.0.rang()) / RANG_QUANTUM).round() as i64;
-        let rb = (quantisiert(b.0.rang()) / RANG_QUANTUM).round() as i64;
-        rb.cmp(&ra).then_with(|| a.1.quelle_id.cmp(&b.1.quelle_id))
+        let ra = rang_quantisiert(&a.0);
+        let rb = rang_quantisiert(&b.0);
+        rb.cmp(&ra).then_with(|| a.2.quelle_id.cmp(&b.2.quelle_id))
     });
     ueberlebende.truncate(KANDIDATEN_DECKEL);
 
@@ -1165,10 +1294,58 @@ pub fn hypothesen(aufnahme: &Aufnahme) -> Rechenergebnis {
     }
 
     let mehrere = ueberlebende.len() > 1;
+
+    // ⚠️ GETRENNT HEISST BEIDES ZUGLEICH — UND GEGEN JEDEN (NAK-212 E6).
+    //
+    // (1) Der quantisierte GESAMTRANG muss verschieden sein. Verschiedene
+    //     quantisierte Komponenten koennen denselben Rang ergeben, weil
+    //     `rang()` durch sechs teilt und ERNEUT quantisiert: Koinzidenz
+    //     0,500000 gegen 0,500001 liefert beide Male 0,35. Ohne diese
+    //     Bedingung entschiede der Tie-Break (aufsteigende
+    //     `candidate_source`) darueber, WELCHER Kandidat stark wird — und
+    //     M-26 sagt ausdruecklich, er entscheide „nur die Anzeigereihenfolge,
+    //     nicht die Auswahl".
+    //
+    // (2) Mindestens eine ZUSAMMENHANGSKOMPONENTE muss verschieden sein.
+    //     Bandpassung und Intent-Relevanz gehen in den Rang ein, tragen aber
+    //     keine Ursachenbehauptung: 0,1 dB in einem Band weit ausserhalb des
+    //     Befundintervalls trennten zwei Kandidaten um 321 Quanten (G-H3),
+    //     und `rolle = fuehrt` auf dem Distraktor erklaerte messtechnisch
+    //     identische Quellen fuer getrennt (A1).
+    //
+    // (3) Der Fuehrende wird gegen JEDEN anderen Ueberlebenden geprueft, nicht
+    //     nur gegen den Zweitplatzierten. Ein Kandidat mit abweichender
+    //     Intent-Relevanz kann sich zwischen zwei messtechnisch identische
+    //     schieben; der Vergleich nur mit dem Nachbarn uebersieht das.
+    //
+    // Ein EINZIGER Ueberlebender bleibt getrennt — er hat niemanden, von dem
+    // er sich abheben muesste. Die Lage „allein im Rennen neben einem
+    // Messausschluss" ist ein eigener Befund und gehoert NAK-213.
+    let getrennt = match ueberlebende.split_first() {
+        Some((erster, weitere)) => weitere
+            .iter()
+            .all(|anderer| getrennt((&erster.0, &erster.1), (&anderer.0, &anderer.1))),
+        None => true,
+    };
+
     let mut befunde: Vec<CauseHypothesis> = ueberlebende
         .iter()
-        .map(|(rang, kandidat, duplikat)| {
-            baue_befund(aufnahme, kandidat, *rang, metrik, band, beobachtung, *duplikat, mehrere)
+        .enumerate()
+        .map(|(platz, (rang, beleg, kandidat, duplikat))| {
+            baue_befund(
+                aufnahme,
+                kandidat,
+                *rang,
+                beleg,
+                metrik,
+                band,
+                beobachtung,
+                *duplikat,
+                mehrere,
+                // Nur der FUEHRENDE traegt die Trennungsfrage; die uebrigen
+                // fallen ohnehin am Riegel darunter auf `mittel` (M-21).
+                platz == 0 && getrennt,
+            )
         })
         .collect();
 
@@ -1191,43 +1368,21 @@ pub fn hypothesen(aufnahme: &Aufnahme) -> Rechenergebnis {
         }
     }
 
-    // ⚠️ EIN UNGETRENNTER ERSTER PLATZ TRAEGT AUCH KEINE STARKE AUSSAGE.
-    //
-    // Der Riegel darueber allein reicht nicht, und der P5-Korpus hat genau
-    // das gezeigt: in `korrelierter_distraktor` sind zwei Kandidaten im
-    // Material NICHT unterscheidbar — gleiches Band, gleiche Anhebung,
-    // gleiche Fenster. Wer dann fuehrt, entscheidet der Gleichstands-
-    // schluessel, die aufsteigende `candidate_source`. Eine starke Aussage
-    // auf diesem Platz behauptet eine Unterscheidung, die die Messung nicht
-    // hergibt; sie waere richtig oder falsch, je nachdem wie die Kennungen
-    // zufaellig liegen. Das ist die „ueberzeugende falsche Ursache" aus
-    // §49.4 und die falsche starke Behauptung aus §36.4 Satz 1.
-    //
-    // GETRENNT heisst: der Abstand ist groesser als das Quantum, in dem
-    // Raenge ueberhaupt verglichen werden (`RANG_QUANTUM`, M-25) — dieselbe
-    // Aufloesung, die auch die Sortierung oben benutzt. Zwei Kandidaten, die
-    // die Sortierung nicht trennen konnte, darf die Sicherheit nicht trennen.
-    // Faellt der Abstand, faellt auch der fuehrende Befund auf `mittel`;
-    // beide bleiben sichtbar, jeder als Alternative des anderen.
-    let getrennt = match ueberlebende.as_slice() {
-        [erster, zweiter, ..] => {
-            let a = (quantisiert(erster.0.rang()) / RANG_QUANTUM).round() as i64;
-            let b = (quantisiert(zweiter.0.rang()) / RANG_QUANTUM).round() as i64;
-            a > b
-        }
-        // Ein einziger Kandidat hat niemanden, von dem er sich abheben muesste.
-        _ => true,
-    };
-    if !getrennt && befunde[0].confidence.klasse >= Sicherheitsklasse::Hoch {
-        befunde[0].confidence.klasse = Sicherheitsklasse::Mittel;
-        befunde[0].zustand = zustand_aus_sicherheit(Sicherheitsklasse::Mittel, false);
-    }
-
     // Der fuehrende Befund traegt die IDs der uebrigen als Alternativen und
     // die Ausschluesse (M-21, M-87). Die uebrigen sind EIGENE Befunde mit
     // eigenem Zustand — nicht sein Anhang.
-    let weitere: Vec<String> = befunde[1..].iter().map(|b| b.finding_id.clone()).collect();
-    befunde[0].alternatives = weitere;
+    let alle_ids: Vec<String> = befunde.iter().map(|b| b.finding_id.clone()).collect();
+    // 🔑 NAK-212 R3: „jeder Alternative des anderen". Bis hierher trug NUR der
+    // fuehrende Befund Alternativen; ein ungetrennter zweiter Platz zeigte auf
+    // niemanden und sah aus wie ein Befund ohne Konkurrenz.
+    for (platz, befund) in befunde.iter_mut().enumerate() {
+        befund.alternatives = alle_ids
+            .iter()
+            .enumerate()
+            .filter(|(i, _)| *i != platz)
+            .map(|(_, id)| id.clone())
+            .collect();
+    }
     befunde[0].ausschluesse = ausschluesse.clone();
 
     Rechenergebnis {
@@ -1236,14 +1391,76 @@ pub fn hypothesen(aufnahme: &Aufnahme) -> Rechenergebnis {
     }
 }
 
+/// Sind zwei Kandidaten GETRENNT? (R3, E6 — beides zugleich.)
+///
+/// (1) Der quantisierte GESAMTRANG muss verschieden sein. Verschiedene
+///     quantisierte Komponenten koennen denselben Rang ergeben, weil `rang()`
+///     durch sechs teilt und ERNEUT quantisiert: Koinzidenz 0,500000 gegen
+///     0,500001 liefert beide Male 0,35, und ein Uplift von 0,000001 gegen
+///     `None` beide Male 0,266667. Ohne diese Bedingung entschiede der
+///     Tie-Break (aufsteigende `candidate_source`) darueber, WELCHER Kandidat
+///     stark wird — und M-26 sagt, er entscheide „nur die Anzeigereihenfolge,
+///     nicht die Auswahl".
+///
+/// (2) Mindestens eine ZUSAMMENHANGSKOMPONENTE muss verschieden sein.
+///     Bandpassung, Routingqualitaet und Intent-Relevanz gehen in den Rang
+///     ein, tragen aber keine Ursachenbehauptung: 0,1 dB in einem Band weit
+///     ausserhalb des Befundintervalls trennten zwei Kandidaten um 321
+///     Quanten (G-H3), und `rolle = fuehrt` auf dem Distraktor erklaerte
+///     messtechnisch identische Quellen fuer getrennt (A1).
+///
+/// Die Funktion steht BENANNT und nicht als Ausdruck in `hypothesen`, weil
+/// eine Regel, die nur inline existiert, keinen isolierten Rotbeweis hat:
+/// beide Bedingungen muessen einzeln zuruecknehmbar und einzeln messbar sein.
+pub fn getrennt(
+    a: (&Rangkomponenten, &Zusammenhangsbeleg),
+    b: (&Rangkomponenten, &Zusammenhangsbeleg),
+) -> bool {
+    rang_quantisiert(a.0) != rang_quantisiert(b.0) && zusammenhang_verschieden(a.1, b.1)
+}
+
+/// Der quantisierte Gesamtrang als ganze Zahl von Quanten (M-25).
+///
+/// Die Form, in der Raenge ueberhaupt verglichen werden — von der Sortierung
+/// und von der Trennungsfrage (E6) gemeinsam benutzt. Zwei Aufrufstellen mit
+/// derselben Rechnung waeren zwei Gelegenheiten, sie verschieden zu runden.
+pub fn rang_quantisiert(rang: &Rangkomponenten) -> i64 {
+    (quantisiert(rang.rang()) / RANG_QUANTUM).round() as i64
+}
+
 /// Die Anomalie des Masters: welche Metrik, welches Band, welcher Wert.
 ///
 /// Gemessen wird auf den **64 Gruppen** des Livegitters (M-18) — die Gruppe
 /// mit der groessten Abweichung vom eigenen Bandmedian. Die Rueckgabe traegt
 /// das FEINE Intervall dieser Gruppe, weil Stufe B auf dem 221er-Verlauf
 /// rechnet (M-19).
-pub fn masteranomalie(master: &Quellprofil) -> Option<(Zielmetrik, Bandintervall, Beobachtung)> {
-    let letztes = master.fenster.last()?;
+pub fn masteranomalie(
+    master: &Quellprofil,
+    passage: Option<&Passagenfenster>,
+) -> Option<(Zielmetrik, Bandintervall, Beobachtung)> {
+    // 🔑 **NAK-212 R5/E5 (07.09.2026).** Fuehrt die Sitzung eine Passage,
+    // wird die Anomalie aus dem letzten Fenster INNERHALB der Passage
+    // bestimmt. Bis hierher las die Funktion `fenster.last()` ohne
+    // Passagenbezug: lieferte der Master ein Fenster HINTER der Passage mit
+    // einer Anomalie in einem anderen Band, nannte der Befund die alte
+    // Passage und behauptete deren fremde Anomalie mit `hoch`/READY
+    // (G5-Befund A4).
+    //
+    // ⚠️ Gibt es kein Fenster in der Passage, faellt die Funktion auf das
+    // juengste Fenster UEBERHAUPT zurueck — mit UNGUELTIGER Beobachtung. Ein
+    // `None` beendete die Rechnung VOR den Gates (`hypothesen`), und die
+    // Sitzung schwiege; M-27 verlangt aber ein Ergebnis. Mit dem Rueckfall
+    // laufen die Gates: `fenster_in_passage(master)` ist dann 0, also faellt
+    // jeder Kandidat am Passagenmaterial, und das Ergebnis ist die Enthaltung
+    // mit Grund. Ein BEFUND mit ungueltiger Beobachtung kann so nicht
+    // entstehen.
+    let (letztes, gemessen) = match passage {
+        Some(p) => match fenster_ganz_in_passage(master, p).last().copied() {
+            Some(f) => (f, true),
+            None => (master.fenster.last()?, false),
+        },
+        None => (master.fenster.last()?, true),
+    };
     let werte: Vec<(usize, f64)> = (0..BAENDER_FEIN)
         .filter_map(|i| letztes.band(i).map(|w| (i, w)))
         .collect();
@@ -1283,7 +1500,9 @@ pub fn masteranomalie(master: &Quellprofil) -> Option<(Zielmetrik, Bandintervall
     );
     let beobachtung = Beobachtung {
         wert_db: basis + abweichung,
-        gueltig: true,
+        // `gueltig: false` heisst: die Zahl steht ausserhalb der benannten
+        // Passage und ist deshalb keine Messung ueber sie (M-07-Muster).
+        gueltig: gemessen,
     };
     Some((Zielmetrik::BandPegelDb, band, beobachtung))
 }
@@ -1341,11 +1560,13 @@ fn baue_befund(
     aufnahme: &Aufnahme,
     kandidat: &Quellprofil,
     rang: Rangkomponenten,
+    zusammenhang: &Zusammenhangsbeleg,
     metrik: Zielmetrik,
     band: Bandintervall,
     beobachtung: Beobachtung,
     parent_duplikat: bool,
     mehrere_kandidaten: bool,
+    getrennt: bool,
 ) -> CauseHypothesis {
     // M-17: aus paralleler Telemetrie allein entsteht NIE Klasse 2 oder 3.
     // `Ursachenbeleg` verlangt eine kontrollierte Preview — die es in P5
@@ -1386,9 +1607,36 @@ fn baue_befund(
     // Rotbeweis: „dieselbe Session mit einer Passage UNTER
     // `GATE_MINDEST_FENSTER` liefert READY TO SEND" ist der gebrochene
     // Zustand, also muss dieselbe Session MIT genug Fenstern ihn erreichen.
+    //
+    // 🔑 NAK-212 R1/R2/R3 (07.09.2026): vier Terme kommen dazu, und alle vier
+    // sind PRAEDIKATE UEBER EINE BENANNTE STRUKTUR, kein Vergleich gegen eine
+    // kalibrierte Zahl. `positiv_belegt()` fragt „ist eine Komponente UEBER
+    // NULL", nicht „ueber 0,3"; die Vorzeichengrenze null ist die Definition
+    // von „positiv" und steht deshalb nirgends als abstimmbarer Wert. M-15
+    // („die Klasse wird nicht aus dem Score gerundet") und M-31 („Schwelle
+    // kalibriert, nie geraten") bleiben unberuehrt — dieselbe Lesart, die
+    // schon `parent_duplikat` und `routing_bekannt` tragen.
+    let bandpassung_ist_null = !(rang.bandpassung > 0.0);
     let klasse = if fenster < GATE_MINDEST_FENSTER
         || !kandidat.routing_bekannt
         || parent_duplikat
+        // R1 (a): keine gemessene Energie im Befundband. Gemeint ist ein
+        // Kandidat, dessen Baender im Intervall KEIN Gueltigkeitsbit tragen —
+        // nicht einer mit wenig Energie. Fail-closed gegen NaN, dieselbe
+        // negierte Form wie in `gate`.
+        || bandpassung_ist_null
+        // R1 (b): kein Beleg fuer einen Zusammenhang. Entwurf §36.1 Klasse 1
+        // verlangt „Quelle und Masterproblem treten im selben Bereich UND
+        // Zeitfenster auf" — ohne bedingten Uplift (M-19) und ohne
+        // Onset-Koinzidenz ist davon nichts gemessen.
+        || !zusammenhang.positiv_belegt()
+        // R2: ein Gegenbeleg schliesst `hoch` aus. Der Kandidat bleibt
+        // sichtbar und wird als Alternative gefuehrt — er ist nicht
+        // widerlegt, er spricht dagegen.
+        || zusammenhang.gegenbeleg()
+        // R3/E6: ein ungetrennter erster Platz behauptet eine Unterscheidung,
+        // die die Messung nicht hergibt.
+        || !getrennt
     {
         // M-22/M-23: unbekanntes Routing, ein Parent-Duplikat oder zu wenig
         // Material tragen keine STARKE Aussage.
@@ -1573,6 +1821,56 @@ fn spanne(fenster: &[Evidenzfenster]) -> (i64, i64) {
     (von, bis)
 }
 
+/// Ueberlappen zwei Fenster wirklich? (NAK-212 R4/E4)
+///
+/// Dieselbe Zeitachse UND eine gemeinsame Spanne GROESSER NULL. Die zweite
+/// Haelfte ist nicht selbstverstaendlich: `sample_count` hat vertraglich
+/// `minimum: 0`, ein Fenster kann also leer sein. Die naheliegende Form
+/// `f.bis > g.von && f.von < g.bis` haelt fuer `f = [5, 5)` gegen
+/// `g = [0, 10)` BEIDSEITIG, obwohl kein einziges Sample gemeinsam ist.
+///
+/// ⚠️ Maximum-Minimum statt Subtraktion: die Form vergleicht und rechnet
+/// nicht, kann also auf `i64` nicht ueberlaufen.
+///
+/// Das Praedikat steht an EINER Stelle — `paarueberdeckung` und
+/// `gemeinsame_reihen` lesen dieselbe Definition. Zwei Kopien waeren zwei
+/// Gelegenheiten, sie verschieden zu formulieren (Lehre NR-01).
+fn ueberlappt(f: &Evidenzfenster, g: &Evidenzfenster) -> bool {
+    f.transport_epoch == g.transport_epoch
+        && f.projekt_von.max(g.projekt_von) < f.projekt_bis.min(g.projekt_bis)
+}
+
+/// Der Anteil der Fenster der KUERZEREN Seite, die einen Partner haben (R4).
+///
+/// Normiert wird auf die kuerzere Seite — dieselbe Entscheidung, die
+/// `zeitueberdeckung` fuer Intervalle trifft. „Anteil der MASTERfenster"
+/// waere zu streng und braeche eine bestehende Zusage: acht Kandidatenfenster
+/// gegen zwoelf Masterfenster ergaeben 0,667 und fielen am Gate — dabei ist
+/// genau das der gemessene Randwert von M-23 („mindestens acht"). Schlimmer:
+/// eine Quelle, die nur in EINEM TEIL der Zeit aktiv ist, ist der Normalfall
+/// und zugleich die Voraussetzung des bedingten Uplifts aus M-19, der Fenster
+/// OHNE die Quelle braucht. Ein Gate, das Teilaktivitaet bestraft, machte R1
+/// unerfuellbar.
+///
+/// ⚠️ LEERE Fenster zaehlen weder im Zaehler noch im Nenner. Sie haben nie
+/// einen Partner; als „Fenster ohne Partner" gezaehlt senkten sie den Anteil,
+/// obwohl sie gar keine Messung sind.
+fn paarueberdeckung(a: &[Evidenzfenster], b: &[Evidenzfenster]) -> f64 {
+    let anteil = |x: &[Evidenzfenster], y: &[Evidenzfenster]| {
+        let zaehlbar: Vec<&Evidenzfenster> =
+            x.iter().filter(|f| f.projekt_bis > f.projekt_von).collect();
+        if zaehlbar.is_empty() {
+            return 0.0;
+        }
+        let mit_partner = zaehlbar
+            .iter()
+            .filter(|f| y.iter().any(|g| ueberlappt(f, g)))
+            .count();
+        mit_partner as f64 / zaehlbar.len() as f64
+    };
+    anteil(a, b).max(anteil(b, a))
+}
+
 /// Zeitueberdeckung zweier Projektfenster, normiert auf das KUERZERE.
 ///
 /// Dieselbe Rechnung wie `vergleichbarkeit::ueberdeckung`; sie steht dort
@@ -1610,16 +1908,36 @@ fn zeitueberdeckung(a: (i64, i64), b: (i64, i64)) -> f64 {
 /// Projektfenster — dieselbe Bedingung, mit der `gate` die Kandidatenfenster
 /// auswaehlt.
 pub fn fenster_in_passage(profil: &Quellprofil, passage: &Passagenfenster) -> usize {
-    let drin: Vec<&Evidenzfenster> = profil
+    unabhaengige_fenster(&fenster_ganz_in_passage(profil, passage))
+}
+
+/// Die Fenster einer Quelle, die VOLLSTAENDIG in der Passage liegen (R5, E5).
+///
+/// 🔑 **NAK-212 R5 (07.09.2026).** M-23 sagt woertlich „innerhalb der
+/// Passage". Bis hierher zaehlte jede Beruehrung ab EINEM Sample: vier
+/// Fenster weit vor der Passage plus zehn mit je einem Sample Ueberlappung
+/// ergaben `hoch`/READY (G5-Befund E-D3). Ein Fenster, das zu 99,98 %
+/// draussen liegt, ist nicht innerhalb.
+///
+/// Die Passage ist halboffen `[von, bis)` — wie jedes Evidenzfenster. Ein
+/// Fenster, das exakt am Passagenende endet, liegt drin; eines, das exakt am
+/// Passagenanfang endet, nicht.
+///
+/// Die Definition steht an EINER Stelle: `fenster_in_passage` und
+/// `masteranomalie` lesen sie beide.
+fn fenster_ganz_in_passage<'a>(
+    profil: &'a Quellprofil,
+    passage: &Passagenfenster,
+) -> Vec<&'a Evidenzfenster> {
+    profil
         .fenster
         .iter()
         .filter(|f| {
             f.transport_epoch == passage.transport_epoch
-                && f.projekt_bis > passage.projekt_von
-                && f.projekt_von < passage.projekt_bis
+                && f.projekt_von >= passage.projekt_von
+                && f.projekt_bis <= passage.projekt_bis
         })
-        .collect();
-    unabhaengige_fenster(&drin)
+        .collect()
 }
 
 /// Das Passagenmaterial, das ZAEHLT: das Minimum ueber Kandidat und Master.
@@ -1657,17 +1975,31 @@ fn gemeinsame_reihen(
     let mut a = Vec::new();
     let mut b = Vec::new();
     for kf in &kandidat.fenster {
-        let Some(mf) = master.fenster.iter().find(|m| {
-            m.transport_epoch == kf.transport_epoch
-                && m.projekt_bis > kf.projekt_von
-                && m.projekt_von < kf.projekt_bis
-        }) else {
+        // 🔑 NAK-212 E4: DASSELBE Praedikat wie `paarueberdeckung`. Bis
+        // hierher stand die Bedingung hier ein zweites Mal ausgeschrieben —
+        // und liess leere Fenster als Partner durchgehen.
+        let Some(mf) = master.fenster.iter().find(|m| ueberlappt(m, kf)) else {
             continue;
         };
         a.push(hole(kf));
         b.push(hole(mf));
     }
     (a, b)
+}
+
+/// Pearson-Korrelation MIT Vorzeichen, oder `None`.
+///
+/// `None` heisst: die Reihen sind zu kurz oder eine von beiden hat keine
+/// Streuung. Das ist etwas anderes als „Korrelation null" — zwei Konstanten
+/// sind kein Zusammenhang, aber auch kein Gegenbeleg (R2).
+fn korrelation_gerichtet(a: &[f64], b: &[f64]) -> Option<f64> {
+    let r = korrelation(a, b);
+    // `korrelation` gibt in beiden untrennbaren Lagen exakt 0,0 zurueck. Ein
+    // echter Korrelationswert von exakt 0,0 ist bei Gleitkommazahlen kein
+    // realistischer Fall und traegt ohnehin weder Beleg noch Gegenbeleg —
+    // deshalb ist die Abbildung `0.0 -> None` hier verlustfrei fuer beide
+    // Fragen, die R1 und R2 stellen.
+    (r != 0.0).then_some(r)
 }
 
 /// Pearson-Korrelation zweier gleich langer Reihen. `0.0`, wenn eine der
@@ -1739,6 +2071,281 @@ mod tests {
             hat_verteilung: true,
             hat_stereo: false,
         }
+    }
+
+    /// Ein Rangkomponentensatz aus den sechs Zahlen, in Vertragsreihenfolge.
+    fn rang(bp: f64, koinz: f64, upl: f64, intent: f64, wdh: f64, routing: f64) -> Rangkomponenten {
+        Rangkomponenten {
+            bandpassung: bp,
+            koinzidenz: koinz,
+            uplift: upl,
+            intent_relevanz: intent,
+            wiederholbarkeit: wdh,
+            routingqualitaet: routing,
+        }
+    }
+
+    fn beleg(upl: Option<f64>, koinz: Option<f64>, wdh: f64) -> Zusammenhangsbeleg {
+        Zusammenhangsbeleg {
+            uplift: upl,
+            koinzidenz: koinz,
+            wiederholbarkeit: wdh,
+        }
+    }
+
+    /// **N-41 und N-47 (NAK-212 D1, D7).** Getrennt heisst BEIDES zugleich:
+    /// verschiedener quantisierter Gesamtrang UND verschiedener Zusammenhang.
+    ///
+    /// Der Grund ist eine Eigenschaft von `rang()`: es mittelt sechs
+    /// Komponenten und quantisiert ERNEUT, sechstelt also jede
+    /// Komponentendifferenz. Zwei Kandidaten koennen sich in einer Komponente
+    /// unterscheiden und trotzdem denselben Rang tragen — dann entschiede die
+    /// Sortierung ueber die aufsteigende `candidate_source`, WELCHER von
+    /// beiden stark wird, und M-26 sagt ausdruecklich, der Tie-Break
+    /// entscheide „nur die Anzeigereihenfolge, nicht die Auswahl".
+    #[test]
+    fn getrennt_verlangt_rang_und_zusammenhang() {
+        // N-41: Koinzidenz 0,500000 gegen 0,500001 — quantisiert VERSCHIEDEN,
+        // im Gesamtrang identisch.
+        let a = rang(0.1, 0.500000, 0.0, 0.5, 0.0, 1.0);
+        let b = rang(0.1, 0.500001, 0.0, 0.5, 0.0, 1.0);
+        assert_ne!(
+            (quantisiert(0.500000) / RANG_QUANTUM).round() as i64,
+            (quantisiert(0.500001) / RANG_QUANTUM).round() as i64,
+            "die Komponenten sind quantisiert verschieden"
+        );
+        assert_eq!(
+            rang_quantisiert(&a),
+            rang_quantisiert(&b),
+            "der Gesamtrang ist trotzdem gleich — das ist der Kern von D1"
+        );
+        assert!(
+            zusammenhang_verschieden(
+                &beleg(None, Some(0.500000), 0.0),
+                &beleg(None, Some(0.500001), 0.0)
+            ),
+            "die zweite Bedingung allein haelt — und genuegt deshalb nicht"
+        );
+        assert!(
+            !getrennt(
+                (&a, &beleg(None, Some(0.500000), 0.0)),
+                (&b, &beleg(None, Some(0.500001), 0.0))
+            ),
+            "und `getrennt` sagt deshalb NEIN — das ist D1"
+        );
+
+        // N-47: `Some(0,000001)` gegen `None`. Der Zusammenhang ist
+        // verschieden UND nach R1 positiv belegt, der Gesamtrang aber gleich.
+        let mit = rang(0.1, 0.0, 0.000001, 0.5, 0.0, 1.0);
+        let ohne = rang(0.1, 0.0, 0.0, 0.5, 0.0, 1.0);
+        assert_eq!(
+            rang_quantisiert(&mit),
+            rang_quantisiert(&ohne),
+            "ein Uplift unterhalb der Sichtbarkeitsgrenze bewegt den Rang nicht"
+        );
+        assert!(beleg(Some(0.000001), None, 0.0).positiv_belegt());
+        assert!(zusammenhang_verschieden(
+            &beleg(Some(0.000001), None, 0.0),
+            &beleg(None, None, 0.0)
+        ));
+        assert!(
+            !getrennt(
+                (&mit, &beleg(Some(0.000001), None, 0.0)),
+                (&ohne, &beleg(None, None, 0.0))
+            ),
+            "positiv belegt, aber nicht getrennt — das ist D7"
+        );
+
+        // Gegenprobe N-17: ein Uplift in der Groessenordnung 0,6 bewegt den
+        // Rang sichtbar — 100 000 Quanten.
+        let stark = rang(0.1, 0.0, 0.6, 0.5, 0.0, 1.0);
+        assert_eq!(rang_quantisiert(&stark) - rang_quantisiert(&ohne), 100_000);
+        assert!(
+            getrennt(
+                (&stark, &beleg(Some(0.6), None, 0.9)),
+                (&ohne, &beleg(None, None, 0.0))
+            ),
+            "N-17: beide Bedingungen halten, also getrennt"
+        );
+
+        // Und die andere Richtung: gleicher Zusammenhang, verschiedener Rang
+        // (Bandpassung, Routing oder Intent-Relevanz allein) trennt NICHT.
+        let laut = rang(0.2, 0.0, 0.6, 0.5, 0.0, 1.0);
+        assert_ne!(rang_quantisiert(&laut), rang_quantisiert(&stark));
+        assert!(
+            !getrennt(
+                (&laut, &beleg(Some(0.6), None, 0.9)),
+                (&stark, &beleg(Some(0.6), None, 0.9))
+            ),
+            "R3: die Bandpassung allein trennt nicht"
+        );
+    }
+
+    /// **R1/R2 (NAK-212).** Die beiden Praedikate des Zusammenhangsbelegs
+    /// lesen VORZEICHEN, nicht Groessen.
+    #[test]
+    fn belegpraedikate_lesen_vorzeichen() {
+        assert!(beleg(Some(0.000001), None, 0.0).positiv_belegt());
+        assert!(!beleg(Some(0.000001), None, 0.0).gegenbeleg());
+        assert!(beleg(Some(-0.000001), None, 0.0).gegenbeleg());
+        assert!(!beleg(Some(-0.000001), None, 0.0).positiv_belegt());
+        // „Nicht messbar" ist weder das eine noch das andere.
+        assert!(!beleg(None, None, 1.0).positiv_belegt());
+        assert!(!beleg(None, None, 1.0).gegenbeleg());
+        // Exakt null ist ein gemessener Wert ohne Richtung.
+        assert!(!beleg(Some(0.0), Some(0.0), 0.0).positiv_belegt());
+        assert!(!beleg(Some(0.0), Some(0.0), 0.0).gegenbeleg());
+        // Eine positive Koinzidenz genuegt — R1 verlangt „mindestens eine".
+        assert!(beleg(None, Some(0.4), 0.0).positiv_belegt());
+        // Ein Gegenbeleg in EINER Komponente genuegt fuer R2.
+        assert!(beleg(Some(0.9), Some(-0.4), 0.99).gegenbeleg());
+    }
+
+    /// **N-10 und N-11 (NAK-212 R2).** Der einseitige Bootstrap misst die
+    /// Stabilitaet eines POSITIVEN Effekts — und kostet den richtigen Fall
+    /// nichts.
+    #[test]
+    fn bootstrap_einseitig_trennt_die_richtung() {
+        use crate::coordinator::experiment::{
+            bootstrap_p, bootstrap_p_positiv, BOOTSTRAP_BLOCK, BOOTSTRAP_ZIEHUNGEN,
+        };
+        let positiv: Vec<f64> = (0..24).map(|i| 3.0 + (i % 3) as f64 * 0.1).collect();
+        let negativ: Vec<f64> = positiv.iter().map(|x| -x).collect();
+
+        // Zweiseitig sind beide Reihen gleich „stabil" — genau das belohnte
+        // den Gegenbeleg (G-D5).
+        let zwei_pos = bootstrap_p(&positiv, BOOTSTRAP_BLOCK, BOOTSTRAP_ZIEHUNGEN, BOOTSTRAP_SAAT);
+        let zwei_neg = bootstrap_p(&negativ, BOOTSTRAP_BLOCK, BOOTSTRAP_ZIEHUNGEN, BOOTSTRAP_SAAT);
+        assert_eq!(zwei_pos, zwei_neg, "zweiseitig ist die Richtung unsichtbar");
+        assert!(1.0 - zwei_neg > 0.9, "und die Stabilitaet waere hoch");
+
+        // Einseitig: die positive Reihe behaelt ihren Wert, die negative
+        // faellt auf „kein Beleg".
+        let ein_pos =
+            bootstrap_p_positiv(&positiv, BOOTSTRAP_BLOCK, BOOTSTRAP_ZIEHUNGEN, BOOTSTRAP_SAAT);
+        let ein_neg =
+            bootstrap_p_positiv(&negativ, BOOTSTRAP_BLOCK, BOOTSTRAP_ZIEHUNGEN, BOOTSTRAP_SAAT);
+        assert_eq!(ein_pos, zwei_pos, "der richtige Fall kostet nichts (N-11)");
+        assert_eq!(ein_neg, 1.0, "ein Gegenbeleg traegt keine Wiederholbarkeit (N-10)");
+        assert_eq!((1.0f64 - ein_neg).clamp(0.0, 1.0), 0.0);
+
+        // Leere und nicht-endliche Eingaben: „kein Beleg", nie 0.
+        assert_eq!(bootstrap_p_positiv(&[], 4, 400, 7), 1.0);
+        assert_eq!(bootstrap_p_positiv(&[f64::NAN, 1.0], 4, 400, 7), 1.0);
+        assert_eq!(bootstrap_p_positiv(&positiv, 0, 400, 7), 1.0);
+        assert_eq!(bootstrap_p_positiv(&positiv, 4, 0, 7), 1.0);
+    }
+
+    /// **N-18, N-19, N-20 bis N-22, N-44 (NAK-212 R4).** Das Alignment misst
+    /// die PAARWEISE Ueberlappung, nicht die Ueberdeckung zweier Spannen.
+    #[test]
+    fn alignment_misst_paarweise_ueberlappung() {
+        let reihe = |ab: i64, n: i64, epoche: u64| -> Vec<Evidenzfenster> {
+            (0..n).map(|i| fenster(ab + i * 512, ab + (i + 1) * 512, epoche)).collect()
+        };
+
+        // N-18: die Sondenspanne UMKLAMMERT die des Masters, null Fenster
+        // ueberlappen paarweise. `zeitueberdeckung` der Spannen meldet 1,0.
+        let master = reihe(0, 4, 1);
+        let umklammernd = [reihe(-20_000, 1, 1), reihe(40_000, 1, 1)].concat();
+        assert_eq!(
+            zeitueberdeckung(spanne(&umklammernd), spanne(&master)),
+            1.0,
+            "die alte Groesse haelt — genau das ist der Befund E-D4"
+        );
+        assert_eq!(
+            paarueberdeckung(&umklammernd, &master),
+            0.0,
+            "paarweise ueberlappt nichts"
+        );
+
+        // N-19: disjunkt, ohne Umklammerung.
+        assert_eq!(paarueberdeckung(&reihe(-40_000, 4, 1), &master), 0.0);
+
+        // N-20: Teilaktivitaet HAELT — normiert auf die kuerzere Seite.
+        // Mit „Anteil der Masterfenster" waere der Wert 8/12 = 0,667 und der
+        // Randwert 8 aus M-23 nicht mehr messbar.
+        let acht = reihe(0, 8, 1);
+        let zwoelf = reihe(0, 12, 1);
+        assert_eq!(paarueberdeckung(&acht, &zwoelf), 1.0);
+        assert!(paarueberdeckung(&acht, &zwoelf) >= GATE_ZEITUEBERDECKUNG);
+
+        // N-21: Versatz um die halbe Reihe faellt.
+        assert!(paarueberdeckung(&reihe(6 * 512, 12, 1), &zwoelf) < GATE_ZEITUEBERDECKUNG);
+
+        // N-22: fremde Transportepoche hat keinen Partner.
+        assert_eq!(paarueberdeckung(&reihe(0, 12, 9), &zwoelf), 0.0);
+
+        // N-44: ein LEERES Fenster hat keinen Partner und zaehlt in keiner
+        // Richtung. `f = [5, 5)` gegen `g = [0, 10)`: die naheliegende Form
+        // `f.bis > g.von && f.von < g.bis` haelt beidseitig.
+        let leer = vec![fenster(5, 5, 1)];
+        let voll = vec![fenster(0, 10, 1)];
+        assert!(leer[0].projekt_bis > voll[0].projekt_von && leer[0].projekt_von < voll[0].projekt_bis);
+        assert!(!ueberlappt(&leer[0], &voll[0]), "kein gemeinsames Sample");
+        assert_eq!(paarueberdeckung(&leer, &voll), 0.0, "nicht 1,0");
+        // Und ein leeres Fenster NEBEN echten senkt den Anteil nicht.
+        let mit_leerem = [reihe(0, 8, 1), vec![fenster(5, 5, 1)]].concat();
+        assert_eq!(paarueberdeckung(&mit_leerem, &zwoelf), 1.0);
+    }
+
+    /// **N-26 bis N-29 (NAK-212 R5).** Passagenmaterial zaehlt nur Fenster,
+    /// die VOLLSTAENDIG innerhalb liegen — und die Masteranomalie liest nur
+    /// solche Fenster.
+    #[test]
+    fn passagenmaterial_zaehlt_nur_ganz_innenliegende_fenster() {
+        let passage = Passagenfenster {
+            projekt_von: 1000,
+            projekt_bis: 5000,
+            transport_epoch: 1,
+        };
+        let profil = |f: Vec<Evidenzfenster>| Quellprofil {
+            quelle_id: "k".into(),
+            fenster: f,
+            routing_bekannt: true,
+            ..Default::default()
+        };
+
+        // Ganz innen — beide Raender halboffen wie das Fenster selbst.
+        assert_eq!(fenster_in_passage(&profil(vec![fenster(1000, 1500, 1)]), &passage), 1);
+        assert_eq!(fenster_in_passage(&profil(vec![fenster(4500, 5000, 1)]), &passage), 1,
+                   "exakt am Passagenende endend liegt INNERHALB");
+
+        // N-26: ragt am Anfang hinaus. N-27: ragt am Ende hinaus.
+        assert_eq!(fenster_in_passage(&profil(vec![fenster(900, 1500, 1)]), &passage), 0);
+        assert_eq!(fenster_in_passage(&profil(vec![fenster(4500, 5100, 1)]), &passage), 0);
+        // Ein Sample Beruehrung — die alte Regel zaehlte es.
+        assert_eq!(fenster_in_passage(&profil(vec![fenster(999, 1001, 1)]), &passage), 0);
+        // Fremde Epoche zaehlt nie.
+        assert_eq!(fenster_in_passage(&profil(vec![fenster(1000, 1500, 9)]), &passage), 0);
+
+        // N-28: die Masteranomalie liest nur Fenster IN der Passage. Das
+        // Aussenfenster traegt eine Anomalie in einem anderen Band.
+        let mut innen = fenster(1000, 1500, 1);
+        innen.p50_db[100] = 20.0;
+        let mut aussen = fenster(5000, 5500, 1);
+        aussen.p50_db[200] = 40.0;
+        let master = profil(vec![innen.clone(), aussen.clone()]);
+        let (_, band_mit, beob_mit) =
+            masteranomalie(&master, Some(&passage)).expect("eine Anomalie");
+        assert!(
+            (band_mit.von..band_mit.bis).contains(&100),
+            "das Band stammt aus dem Fenster IN der Passage: {band_mit:?}"
+        );
+        assert!(beob_mit.gueltig);
+        // Ohne Passage bleibt es beim juengsten Fenster — unveraendert.
+        let (_, band_ohne, _) = masteranomalie(&master, None).expect("eine Anomalie");
+        assert!((band_ohne.von..band_ohne.bis).contains(&200));
+
+        // N-29: kein Fenster in der Passage → Rueckfall auf das juengste,
+        // aber die Beobachtung ist UNGUELTIG. Kein `None`, sonst schwiege die
+        // Sitzung vor den Gates (M-27).
+        let nur_aussen = profil(vec![aussen]);
+        let (_, _, beob) = masteranomalie(&nur_aussen, Some(&passage)).expect("ein Rueckfall");
+        assert!(!beob.gueltig, "ausserhalb der Passage gemessen ist keine Messung ueber sie");
+        assert_eq!(fenster_in_passage(&nur_aussen, &passage), 0);
+        // Gar keine Fenster bleibt `None` — das ist NAK-213 R4.
+        assert!(masteranomalie(&profil(vec![]), Some(&passage)).is_none());
     }
 
     /// Die Quantisierung ist die Klammer um jede Rangkomponente. Sie klemmt,
@@ -2168,6 +2775,16 @@ mod tests {
         );
 
         // ANDERE Epoche: unvergleichbar, nicht „zu kurz".
+        //
+        // 🔑 **NAK-212 R4 (07.09.2026).** Kandidat UND Master liegen auf
+        // Epoche 9, die Passage auf Epoche 1. Bis hierher lag nur der
+        // Kandidat auf einer fremden Epoche — seit das Alignment paarweise
+        // misst (`ueberlappt` prueft die Epoche mit), faellt so ein Kandidat
+        // schon an Schritt 3 mit `AlignmentFalsch`, und der Fall maesse das
+        // Passagengate gar nicht mehr. Beide Gruende stehen in der
+        // geschlossenen Menge (M-87), die Zusage aus M-23 („eine ANDERE
+        // Passage traegt keine starke Aussage") haelt in beiden Formen — der
+        // Aufbau hier isoliert sie am richtigen Gate.
         let andere = Quellprofil {
             quelle_id: "k".into(),
             fenster: (0..12)
@@ -2176,9 +2793,27 @@ mod tests {
             routing_bekannt: true,
             ..Default::default()
         };
+        let fremde_passage = Aufnahme {
+            master: Quellprofil {
+                fenster: andere.fenster.clone(),
+                ..master.clone()
+            },
+            passage: Some(passage),
+            passage_id: Some("p".into()),
+            metrics_version: 1,
+            ..Default::default()
+        };
+        assert_eq!(
+            gate(&andere, &fremde_passage, Zielmetrik::BandPegelDb, band),
+            Gateurteil::Faellt(Ausschlussgrund::PassageUnvergleichbar)
+        );
+
+        // Und die Gegenprobe zu R4: liegt NUR der Kandidat auf einer fremden
+        // Epoche, hat er mit dem Master kein gemeinsames Zeitfenster — das
+        // ist falsches Alignment, nicht eine andere Passage (N-22).
         assert_eq!(
             gate(&andere, &mit_passage, Zielmetrik::BandPegelDb, band),
-            Gateurteil::Faellt(Ausschlussgrund::PassageUnvergleichbar)
+            Gateurteil::Faellt(Ausschlussgrund::AlignmentFalsch)
         );
     }
 

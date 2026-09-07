@@ -1,0 +1,48 @@
+NAK-212 Rotbeweis N-08-R2 — 2026-09-07
+========================================================================
+Ruecknahme: R2 zurueckgenommen: ein Gegenbeleg schliesst hoch nicht mehr aus.
+Datei: broker/src/coordinator/hypothese.rs
+Entfernt/ersetzt: '|| zusammenhang.gegenbeleg()' -> ''
+Gefahren: cargo test --lib und --test sonde014_hypothese, Filter: gegenbeleg_schliesst_hoch_aus
+ERGEBNIS: ROT (der Test faellt ohne die Regel)
+========================================================================
+
+--- cargo test --lib ---
+Exit 0
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 231 filtered out; finished in 0.00s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.88s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+
+--- cargo test --test sonde014_hypothese ---
+Exit 101
+
+running 1 test
+test gegenbeleg_schliesst_hoch_aus ... FAILED
+
+failures:
+
+---- gegenbeleg_schliesst_hoch_aus stdout ----
+
+thread 'gegenbeleg_schliesst_hoch_aus' (25180) panicked at tests\sonde014_hypothese.rs:1629:5:
+R2 allein haelt den Befund zurueck, obwohl R1 erfuellt ist: (Befundkonfidenz { klasse: Hoch, score: 0.59273 }, Rangkomponenten { bandpassung: 0.06136972602155545, koinzidenz: 0.0, uplift: 1.0, intent_relevanz: 0.5, wiederholbarkeit: 0.9950124688279302, routingqualitaet: 1.0 })
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    gegenbeleg_schliesst_hoch_aus
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 23 filtered out; finished in 0.82s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.82s
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+error: test failed, to rerun pass `--test sonde014_hypothese`
+

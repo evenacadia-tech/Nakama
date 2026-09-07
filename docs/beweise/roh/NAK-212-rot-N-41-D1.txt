@@ -1,0 +1,49 @@
+NAK-212 Rotbeweis N-41-D1 — 2026-09-07
+========================================================================
+Ruecknahme: D1 zurueckgenommen: der Gesamtrang geht nicht mehr in die Trennung ein.
+Datei: broker/src/coordinator/hypothese.rs
+Entfernt/ersetzt: 'rang_quantisiert(a.0) != rang_quantisiert(b.0) &&' -> ''
+Gefahren: cargo test --lib und --test sonde014_hypothese, Filter: getrennt_verlangt_rang_und_zusammenhang ungetrennter_erster_platz_ist_nicht_stark
+ERGEBNIS: ROT (der Test faellt ohne die Regel)
+========================================================================
+
+--- cargo test --lib ---
+Exit 101
+
+running 1 test
+test coordinator::hypothese::tests::getrennt_verlangt_rang_und_zusammenhang ... FAILED
+
+failures:
+
+---- coordinator::hypothese::tests::getrennt_verlangt_rang_und_zusammenhang stdout ----
+
+thread 'coordinator::hypothese::tests::getrennt_verlangt_rang_und_zusammenhang' (27120) panicked at src\coordinator\hypothese.rs:2025:9:
+und `getrennt` sagt deshalb NEIN — das ist D1
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    coordinator::hypothese::tests::getrennt_verlangt_rang_und_zusammenhang
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 230 filtered out; finished in 0.00s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.88s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+error: test failed, to rerun pass `--lib`
+
+
+--- cargo test --test sonde014_hypothese ---
+Exit 0
+
+running 1 test
+test ungetrennter_erster_platz_ist_nicht_stark ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 23 filtered out; finished in 1.28s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.73s
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+

@@ -1552,6 +1552,64 @@ pub fn bootstrap_p(reihe: &[f64], blocklaenge: usize, ziehungen: usize, saat: u6
     (2.0 * (kleiner + 1.0) / (ziehungen as f64 + 1.0)).min(1.0)
 }
 
+/// Der EINSEITIGE p-Wert derselben Bootstrapverteilung: wie oft liegt das
+/// Bootstrapmittel NICHT ueber null?
+///
+/// 🔑 **NAK-212 R2/E2 (07.09.2026).** `bootstrap_p` ist zweiseitig und nimmt
+/// das Minimum aus `nicht_positiv` und `nicht_negativ`. Fuer die
+/// Bandsignifikanz aus M-45 ist das richtig: ein Band, das sich in BEIDE
+/// Richtungen stabil bewegt hat, ist veraendert. Fuer die `wiederholbarkeit`
+/// einer Ursachenhypothese ist es falsch — dort belohnte es einen
+/// GEGENBELEG: eine Quelle, die im Befundband gegenlaeufig zum Master
+/// schwingt, erreichte `1 - p` = 0,995 und damit einen hoeheren Rang als
+/// jede korrekt gemessene Ursache (G5-Befund G-D5, `eigen3`).
+///
+/// Zwei benannte Funktionen statt eines Parameters mit Vorgabewert: an der
+/// Aufrufstelle soll stehen, WELCHE Frage gestellt wird. `bootstrap_p` bleibt
+/// Zeile fuer Zeile unveraendert, und beide teilen denselben `Wuerfel`,
+/// dieselbe Blockbildung und dieselbe `+1/+1`-Korrektur.
+///
+/// `1.0` heisst weiterhin „kein Beleg" — nie 0. Eine stabil NEGATIVE Reihe
+/// hat `nicht_positiv == ziehungen`, ergibt also rund 2,0 und wird auf 1,0
+/// geklemmt: `wiederholbarkeit` = 0.
+pub fn bootstrap_p_positiv(
+    reihe: &[f64],
+    blocklaenge: usize,
+    ziehungen: usize,
+    saat: u64,
+) -> f64 {
+    let n = reihe.len();
+    if n == 0 || blocklaenge == 0 || ziehungen == 0 || reihe.iter().any(|x| !x.is_finite()) {
+        return 1.0;
+    }
+    let bl = blocklaenge.min(n);
+    let bloecke = n - bl + 1;
+    let mut w = Wuerfel::neu(saat);
+    let mut nicht_positiv = 0usize;
+    for _ in 0..ziehungen {
+        let mut summe = 0.0;
+        let mut gezogen = 0usize;
+        while gezogen < n {
+            let start = w.naechste(bloecke);
+            for k in 0..bl {
+                if gezogen >= n {
+                    break;
+                }
+                summe += reihe[start + k];
+                gezogen += 1;
+            }
+        }
+        let mittel = summe / n as f64;
+        // ⚠️ `!(x > 0.0)` und nicht `x <= 0.0`: NaN kann hier nicht auftreten
+        // (die Eingabe ist oben geprueft), aber die Form ist dieselbe
+        // fail-closed-Richtung wie in `bootstrap_p` und in `gate`.
+        if !(mittel > 0.0) {
+            nicht_positiv += 1;
+        }
+    }
+    (2.0 * (nicht_positiv as f64 + 1.0) / (ziehungen as f64 + 1.0)).min(1.0)
+}
+
 /// Benjamini-Hochberg-Korrektur für viele gleichzeitige Tests (M-45).
 ///
 /// Bei 221 gleichzeitig gescannten Bändern sind bei α = 0,05 rund elf

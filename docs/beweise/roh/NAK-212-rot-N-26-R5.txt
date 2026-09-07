@@ -1,0 +1,35 @@
+NAK-212 Rotbeweis N-26-R5 — 2026-09-07
+========================================================================
+Ruecknahme: R5 zurueckgenommen: jede Beruehrung ab einem Sample zaehlt wieder als Passagenmaterial.
+Datei: broker/src/coordinator/hypothese.rs
+Gefahren: cargo test --lib, Filter: passagenmaterial_zaehlt_nur_ganz_innenliegende_fenster
+ERGEBNIS: ROT (der Test faellt ohne die Regel)
+========================================================================
+
+Exit 101
+
+running 1 test
+test coordinator::hypothese::tests::passagenmaterial_zaehlt_nur_ganz_innenliegende_fenster ... FAILED
+
+failures:
+
+---- coordinator::hypothese::tests::passagenmaterial_zaehlt_nur_ganz_innenliegende_fenster stdout ----
+
+thread 'coordinator::hypothese::tests::passagenmaterial_zaehlt_nur_ganz_innenliegende_fenster' (20428) panicked at src\coordinator\hypothese.rs:2315:9:
+assertion `left == right` failed
+  left: 1
+ right: 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    coordinator::hypothese::tests::passagenmaterial_zaehlt_nur_ganz_innenliegende_fenster
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 232 filtered out; finished in 0.00s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.16s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+error: test failed, to rerun pass `--lib`
+

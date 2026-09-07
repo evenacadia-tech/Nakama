@@ -1,0 +1,33 @@
+NAK-212 Rotbeweis N-44-R4-leer — 2026-09-07
+========================================================================
+Ruecknahme: D4 zurueckgenommen: das Partnerpraedikat laesst leere Fenster durch.
+Datei: broker/src/coordinator/hypothese.rs
+Gefahren: cargo test --lib, Filter: alignment_misst_paarweise_ueberlappung
+ERGEBNIS: ROT (der Test faellt ohne die Regel)
+========================================================================
+
+Exit 101
+
+running 1 test
+test coordinator::hypothese::tests::alignment_misst_paarweise_ueberlappung ... FAILED
+
+failures:
+
+---- coordinator::hypothese::tests::alignment_misst_paarweise_ueberlappung stdout ----
+
+thread 'coordinator::hypothese::tests::alignment_misst_paarweise_ueberlappung' (26776) panicked at src\coordinator\hypothese.rs:2286:9:
+kein gemeinsames Sample
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    coordinator::hypothese::tests::alignment_misst_paarweise_ueberlappung
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 232 filtered out; finished in 0.00s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.02s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+error: test failed, to rerun pass `--lib`
+

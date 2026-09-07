@@ -1,0 +1,37 @@
+NAK-212 Rotbeweis N-18-R4 — 2026-09-07
+========================================================================
+Ruecknahme: R4 zurueckgenommen: das Gate misst wieder die Ueberdeckung der SPANNEN.
+Datei: broker/src/coordinator/hypothese.rs
+Gefahren: cargo test --lib, Filter: alignment_misst_paarweise_ueberlappung gate_faellt_in_der_zugesagten_reihenfolge passagengates_trennen_verschoben_anders_und_zu_kurz
+ERGEBNIS: ROT (der Test faellt ohne die Regel)
+========================================================================
+
+Exit 101
+
+running 3 tests
+test coordinator::hypothese::tests::alignment_misst_paarweise_ueberlappung ... ok
+test coordinator::hypothese::tests::gate_faellt_in_der_zugesagten_reihenfolge ... ok
+test coordinator::hypothese::tests::passagengates_trennen_verschoben_anders_und_zu_kurz ... FAILED
+
+failures:
+
+---- coordinator::hypothese::tests::passagengates_trennen_verschoben_anders_und_zu_kurz stdout ----
+
+thread 'coordinator::hypothese::tests::passagengates_trennen_verschoben_anders_und_zu_kurz' (18556) panicked at src\coordinator\hypothese.rs:2814:9:
+assertion `left == right` failed
+  left: Faellt(PassageUnvergleichbar)
+ right: Faellt(AlignmentFalsch)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    coordinator::hypothese::tests::passagengates_trennen_verschoben_anders_und_zu_kurz
+
+test result: FAILED. 2 passed; 1 failed; 0 ignored; 0 measured; 230 filtered out; finished in 0.00s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.12s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+error: test failed, to rerun pass `--lib`
+

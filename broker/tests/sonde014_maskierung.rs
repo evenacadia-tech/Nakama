@@ -283,11 +283,19 @@ fn rueckstau_setzt_das_kennzeichen_herabgesetzt() {
 
     // Dieselbe Buehne, aber die Sonde laesst zwischen den beiden juengsten
     // Fenstern eine Luecke von mehr als einer Fensterlaenge.
+    //
+    // 🔑 **NAK-212 R4 (07.09.2026).** Das nachgeschobene MASTER-Fenster liegt
+    // auf derselben Zeit wie das der Sonde. Seit das Alignment paarweise
+    // misst, haette ein Masterfenster ohne Sondenpartner (und umgekehrt) den
+    // Anteil auf 12/13 = 0,923 gedrueckt — unter `GATE_ZEITUEBERDECKUNG` —,
+    // der Kandidat waere mit `alignment_falsch` ausgeschieden und der Fall
+    // maesse die Kadenz gar nicht mehr. Die LUECKE in der Reihe bleibt
+    // dieselbe; nur die beiden juengsten Fenster liegen jetzt zeitgleich.
     let d = coordinator();
     let adressen = buehne(&d, 12, 0.0, 6.0);
-    let zeit = 44_108_200 + 12 * 512;
+    let zeit = 44_108_200 + 20 * 512;
     d.p1("main", &evidenz(&adressen[0], 12, zeit, 0.0));
-    d.p1("sonde0", &evidenz(&adressen[1], 200, zeit + 8 * 512, 6.0));
+    d.p1("sonde0", &evidenz(&adressen[1], 200, zeit, 6.0));
     let m = &findings(&d)[0]["maskierung"];
     assert_eq!(
         m["herabgesetzt"].as_bool(),

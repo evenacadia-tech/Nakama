@@ -110,6 +110,18 @@ fn evidenz_grundform() -> Value {
 const ANOMALIEBAND: usize = 98;
 
 fn evidenz(a: &Adresse, nr: usize, projekt_start: i64) -> Vec<u8> {
+    evidenz_mit_anhebung(a, nr, projekt_start, 90)
+}
+
+/// Wie `evidenz`, aber mit waehlbarer Anhebung im Anomalieband (Zehntel-dB).
+///
+/// 🔑 **NAK-212 (07.09.2026).** Ohne sie traegt jede Buehne dieser Datei einen
+/// KONSTANTEN Pegel — dann liegt jedes Fenster auf oder ueber dem eigenen
+/// Median, die Vergleichsmenge „ohne die Quelle" bleibt leer, und der
+/// bedingte Uplift ist nach M-19 nicht messbar. Nach R1 ist das korrekt
+/// `mittel`; die drei Tests, die `hoch` messen, brauchen deshalb eine Buehne
+/// mit einem BELEGTEN Zusammenhang (`buehne_mit_zusammenhang`).
+fn evidenz_mit_anhebung(a: &Adresse, nr: usize, projekt_start: i64, anhebung: i64) -> Vec<u8> {
     let mut wert = evidenz_grundform();
     wert["adresse"] = serde_json::to_value(a).unwrap();
     wert["evidence_id"] = json!(hex(0x1000 + nr));
@@ -124,7 +136,7 @@ fn evidenz(a: &Adresse, nr: usize, projekt_start: i64) -> Vec<u8> {
         if let Some(Value::Array(werte)) = wert.pointer_mut(pfad) {
             for index in ANOMALIEBAND..(ANOMALIEBAND + 4).min(werte.len()) {
                 let alt = werte[index].as_i64().unwrap_or(0);
-                werte[index] = json!(alt + 90);
+                werte[index] = json!(alt + anhebung);
             }
         }
     }
@@ -164,7 +176,43 @@ fn intent_marke(c: &Coordinator, link: &str, a: &Adresse) {
     c.p1(link, &serde_json::to_vec(&wert).unwrap());
 }
 
+/// Ein Master und eine Sonde mit einem BELEGTEN Zusammenhang (R1, M-19).
+///
+/// Master und Sonde sind in jedem zweiten Fenster laut und sonst leise —
+/// gleichlaeufig. Damit teilt `upliftreihe` die Masterfenster in eine Menge
+/// MIT und eine OHNE aktive Quelle, der bedingte Uplift ist messbar und
+/// positiv, und die Sicherheit `hoch` ist nach R1 erreichbar.
+///
+/// ⚠️ Das LETZTE Fenster ist laut. `masteranomalie` liest das juengste
+/// Masterfenster; waere es leise, faende sie eine andere Bandgruppe, und der
+/// Befund zeigte auf ein Band, in dem die Sonde nichts tut.
+fn buehne_mit_zusammenhang(c: &Coordinator, fenster: usize) -> Vec<Adresse> {
+    let master = adresse(1);
+    let sonde = adresse(2);
+    anmelden(c, "main", &master, "main", Some(0));
+    anmelden(c, "sonde0", &sonde, "passive_probe", Some(3));
+    intent_marke(c, "main", &master);
+    let laut = |i: usize| if (fenster - 1 - i) % 2 == 0 { 90 } else { 0 };
+    for i in 0..fenster {
+        c.p1(
+            "main",
+            &evidenz_mit_anhebung(&master, i, 44_108_200 + (i as i64) * 512, laut(i)),
+        );
+    }
+    for i in 0..fenster {
+        c.p1(
+            "sonde0",
+            &evidenz_mit_anhebung(&sonde, 100 + i, 44_108_200 + (i as i64) * 512, laut(i)),
+        );
+    }
+    vec![master, sonde]
+}
+
 /// Ein Master und eine Sonde, beide angemeldet, mit `fenster` Belegen je Seite.
+///
+/// ⚠️ KONSTANTER Pegel, also nach M-19 kein messbarer Uplift und nach R1
+/// hoechstens `mittel`. Wer `hoch` messen will, nimmt
+/// `buehne_mit_zusammenhang`.
 fn buehne(c: &Coordinator, fenster: usize) -> Vec<Adresse> {
     let master = adresse(1);
     let sonde = adresse(2);
@@ -253,7 +301,7 @@ fn nur_ready_to_send_erlaubt_audition_und_draft() {
     // Gegenprobe: mit genug Fenstern ist derselbe Weg offen. Ohne sie waere
     // die Sperre eine Regressionswache und kein Beleg.
     let d = coordinator();
-    let _ = buehne(&d, 12);
+    let _ = buehne_mit_zusammenhang(&d, 12);
     let offen = d.befunde_sicht(&hex(0x11), &hex(0x22));
     assert_eq!(offen[0].zustand, Befundzustand::ReadyToSend);
     assert!(offen[0].zustand.erlaubt_draft());
@@ -269,7 +317,7 @@ fn nur_ready_to_send_erlaubt_audition_und_draft() {
 #[test]
 fn hoehere_intent_revision_macht_den_befund_stale() {
     let c = coordinator();
-    let adressen = buehne(&c, 12);
+    let adressen = buehne_mit_zusammenhang(&c, 12);
     let vorher = c.befunde_sicht(&hex(0x11), &hex(0x22));
     let befund = vorher.first().expect("ein Befund").clone();
     assert_eq!(befund.zustand, Befundzustand::ReadyToSend);
@@ -420,7 +468,7 @@ fn drei_zeilen_sind_datenfelder() {
 #[test]
 fn messqualitaet_und_befundsicherheit_sind_zwei_felder() {
     let c = coordinator();
-    let _ = buehne(&c, 12);
+    let _ = buehne_mit_zusammenhang(&c, 12);
     let befunde = c.befunde_sicht(&hex(0x11), &hex(0x22));
     let befund = befunde.first().expect("ein Befund");
     // Die Fixture meldet `konfidenz.klasse = mittel`.

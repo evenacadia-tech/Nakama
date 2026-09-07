@@ -1,0 +1,63 @@
+NAK-212 Rotbeweis N-14-R3 — 2026-09-07
+========================================================================
+Ruecknahme: R3 zurueckgenommen: getrennt heisst wieder nur anderer Rang.
+Datei: broker/src/coordinator/hypothese.rs
+Entfernt/ersetzt: '&& zusammenhang_verschieden(a.1, b.1)' -> ''
+Gefahren: cargo test --lib und --test sonde014_hypothese, Filter: materialmenge_und_bandpassung_trennen_nicht ungetrennter_erster_platz_ist_nicht_stark getrennt_verlangt_rang_und_zusammenhang
+ERGEBNIS: ROT (der Test faellt ohne die Regel)
+========================================================================
+
+--- cargo test --lib ---
+Exit 101
+
+running 1 test
+test coordinator::hypothese::tests::getrennt_verlangt_rang_und_zusammenhang ... FAILED
+
+failures:
+
+---- coordinator::hypothese::tests::getrennt_verlangt_rang_und_zusammenhang stdout ----
+
+thread 'coordinator::hypothese::tests::getrennt_verlangt_rang_und_zusammenhang' (26372) panicked at src\coordinator\hypothese.rs:2071:9:
+R3: die Bandpassung allein trennt nicht
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    coordinator::hypothese::tests::getrennt_verlangt_rang_und_zusammenhang
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 230 filtered out; finished in 0.00s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.05s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+error: test failed, to rerun pass `--lib`
+
+
+--- cargo test --test sonde014_hypothese ---
+Exit 101
+
+running 2 tests
+test materialmenge_und_bandpassung_trennen_nicht ... FAILED
+test ungetrennter_erster_platz_ist_nicht_stark ... ok
+
+failures:
+
+---- materialmenge_und_bandpassung_trennen_nicht stdout ----
+
+thread 'materialmenge_und_bandpassung_trennen_nicht' (24712) panicked at tests\sonde014_hypothese.rs:1682:9:
+Kandidat 0 traegt Hoch, obwohl nur die Bandpassung sie trennt
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    materialmenge_und_bandpassung_trennen_nicht
+
+test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 22 filtered out; finished in 1.40s
+
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.77s
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+error: test failed, to rerun pass `--test sonde014_hypothese`
+

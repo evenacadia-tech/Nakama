@@ -99,7 +99,14 @@ const ANOMALIEBAND: usize = 98;
 const TRANSPORT_EPOCHE: u64 = 17;
 const BASIS_SAMPLE: i64 = 44_108_200;
 
-fn evidenz(a: &Adresse, nr: usize, projekt_start: i64) -> Vec<u8> {
+/// Ein Beleg mit waehlbarer Anhebung im Anomalieband (Zehntel-dB).
+///
+/// 🔑 **NAK-212 R1 (07.09.2026).** Mit KONSTANTER Anhebung liegt jeder Wert
+/// auf oder ueber dem eigenen Median, die Vergleichsmenge „ohne die Quelle"
+/// bleibt leer, und der bedingte Uplift ist nach M-19 nicht messbar — der
+/// Befund erreicht dann zu Recht nur `mittel`, und jeder Fall, der einen
+/// handelbaren Befund braucht, misst nichts mehr.
+fn evidenz(a: &Adresse, nr: usize, projekt_start: i64, anhebung: i64) -> Vec<u8> {
     static ROH: std::sync::OnceLock<Value> = std::sync::OnceLock::new();
     let mut wert = ROH
         .get_or_init(|| fixture("evidence-snapshot-mit-ereignissen-und-stereo"))
@@ -117,7 +124,7 @@ fn evidenz(a: &Adresse, nr: usize, projekt_start: i64) -> Vec<u8> {
         if let Some(Value::Array(werte)) = wert.pointer_mut(pfad) {
             for index in ANOMALIEBAND..(ANOMALIEBAND + 4).min(werte.len()) {
                 let alt = werte[index].as_i64().unwrap_or(0);
-                werte[index] = json!(alt + 90);
+                werte[index] = json!(alt + anhebung);
             }
         }
     }
@@ -325,10 +332,21 @@ impl Harnisch {
             .intent_update_json("main", &serde_json::to_vec(&wert).unwrap())
     }
 
+    /// Belege mit wechselndem Pegel — die Form, in der ein bedingter Uplift
+    /// (M-19) ueberhaupt messbar ist.
+    ///
+    /// ⚠️ BEIDE Stufen heben das Anomalieband an (9,0 und 4,0 dB), nicht
+    /// „laut gegen null". So findet `masteranomalie` dasselbe Band in JEDEM
+    /// Fenster — unabhaengig davon, ob das juengste gerade laut oder leise
+    /// ist —, und Master und Kandidat laufen gleich, auch wenn sie
+    /// verschieden viele Fenster tragen.
     fn belege(&self, link: &str, a: &Adresse, ab_nr: usize, anzahl: usize) {
         for i in 0..anzahl {
-            self.c
-                .p1(link, &evidenz(a, ab_nr + i, BASIS_SAMPLE + (i as i64) * 512));
+            let anhebung = if i % 2 == 0 { 90 } else { 40 };
+            self.c.p1(
+                link,
+                &evidenz(a, ab_nr + i, BASIS_SAMPLE + (i as i64) * 512, anhebung),
+            );
         }
     }
 

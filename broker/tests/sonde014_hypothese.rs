@@ -23,8 +23,8 @@
 //! (Bandwerte, Projektzeit, Abdeckung), nie die Form.
 
 use eqcop_broker::coordinator::{
-    Ausschlussgrund, Aussageklasse, Befundzustand, Coordinator, ManualClock, Sicherheitsklasse,
-    Ursachenklasse, KANDIDATEN_DECKEL,
+    rang_quantisiert, Ausschlussgrund, Aussageklasse, Befundzustand, Coordinator, ManualClock,
+    Sicherheitsklasse, Ursachenklasse, KANDIDATEN_DECKEL,
 };
 use eqcop_broker::transport::bootstrap::{Adresse, AudioLage, HelloControl, HostAngabe};
 use eqcop_broker::transport::server_v3::Senke;
@@ -196,6 +196,111 @@ fn reihe(
         );
         c.p1(link, &payload);
     }
+}
+
+/// Eine Fensterreihe mit Anhebung und Onsetstaerke JE FENSTER.
+///
+/// 🔑 **NAK-212 R1/E7 (07.09.2026).** `reihe` hebt jedes Fenster gleich an.
+/// Dann liegt jeder Wert auf oder ueber dem eigenen Median, die
+/// Vergleichsmenge „ohne die Quelle" bleibt leer, und der bedingte Uplift ist
+/// nach M-19 nicht messbar — im ganzen Bestand war deshalb keine einzige
+/// Zusammenhangskomponente von null verschieden. Diese Form ist die
+/// Voraussetzung dafuer, dass R1 ueberhaupt eine erfuellbare Regel ist.
+///
+/// `onset` setzt die Summe der `staerke_mad` in `/ereignisse/liste` — genau
+/// die Groesse, aus der `Evidenzstand::onset` entsteht.
+fn reihe_je_fenster(
+    c: &Coordinator,
+    link: &str,
+    a: &Adresse,
+    ab_nr: usize,
+    anzahl: usize,
+    band: (usize, usize),
+    db: impl Fn(usize) -> f64,
+    onset: impl Fn(usize) -> Option<f64>,
+) {
+    for i in 0..anzahl {
+        let staerke = onset(i);
+        let payload = evidenz(
+            a,
+            ab_nr + i,
+            44_108_200 + (i as i64) * 512,
+            Some((band.0, band.1, db(i))),
+            |wert| {
+                let Some(s) = staerke else { return };
+                if let Some(Value::Array(liste)) = wert.pointer_mut("/ereignisse/liste") {
+                    // Die Summe der `staerke_mad` IST der Onset. Ein einziger
+                    // Eintrag genuegt, damit die Reihe streut.
+                    liste.truncate(1);
+                    if let Some(e) = liste.first_mut() {
+                        e["staerke_mad"] = json!(s);
+                    }
+                }
+            },
+        );
+        c.p1(link, &payload);
+    }
+}
+
+/// Die Anhebung eines gleichlaeufigen Musters: jedes zweite Fenster laut,
+/// das LETZTE immer.
+///
+/// Das letzte Fenster bestimmt `masteranomalie`; waere es leise, faende sie
+/// eine andere Bandgruppe und der Befund zeigte auf ein Band, in dem die
+/// Sonde nichts tut.
+fn wechselnd(anzahl: usize, laut: f64, leise: f64) -> impl Fn(usize) -> f64 {
+    // ⚠️ Ueber die Paritaet, nicht ueber `anzahl - 1 - i`: die Reihe wird auch
+    // fuer `i >= anzahl` gebraucht (ein Kandidat mit MEHR Fenstern als der
+    // Master, N-13), und die Subtraktion liefe dort auf einem `usize` unter
+    // null. Die Zusage ist dieselbe: das Fenster `anzahl - 1` ist laut.
+    let laut_bei = (anzahl.max(1) - 1) % 2;
+    move |i| if i % 2 == laut_bei { laut } else { leise }
+}
+
+/// Ein Gueltigkeitsbitmap ueber alle Baender, in dem `ohne` KEIN Bit traegt
+/// (Base64, LSB-first je Byte — die Ordnung des Vertrags).
+///
+/// 🔑 **NAK-212 N-01.** „Keine gemessene Energie im Befundband" heisst: die
+/// Baender des Intervalls tragen kein Gueltigkeitsbit — nicht, dass die
+/// Quelle nichts misst. Ein LEERES Bitmap waere etwas anderes: der Beleg
+/// faellt dann am Vertrag, die Quelle wird gar nicht erst Kandidat, und der
+/// Fall maesse die Klassenwahl nie (gefunden beim Rotbeweis, §7.2).
+fn bitmap_ohne(ohne: (usize, usize)) -> String {
+    use eqcop_broker::coordinator::hypothese::BAENDER_FEIN;
+    const A: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut bytes = vec![0u8; BAENDER_FEIN.div_ceil(8)];
+    for i in 0..BAENDER_FEIN {
+        if i >= ohne.0 && i < ohne.1 {
+            continue;
+        }
+        bytes[i / 8] |= 1 << (i % 8);
+    }
+    let mut aus = String::new();
+    let mut i = 0;
+    while i + 3 <= bytes.len() {
+        let w = ((bytes[i] as u32) << 16) | ((bytes[i + 1] as u32) << 8) | bytes[i + 2] as u32;
+        for s in [18, 12, 6, 0] {
+            aus.push(A[((w >> s) & 0x3f) as usize] as char);
+        }
+        i += 3;
+    }
+    match bytes.len() - i {
+        1 => {
+            let w = (bytes[i] as u32) << 16;
+            aus.push(A[((w >> 18) & 0x3f) as usize] as char);
+            aus.push(A[((w >> 12) & 0x3f) as usize] as char);
+            aus.push_str("==");
+        }
+        2 => {
+            let w = ((bytes[i] as u32) << 16) | ((bytes[i + 1] as u32) << 8);
+            for s in [18, 12, 6] {
+                aus.push(A[((w >> s) & 0x3f) as usize] as char);
+            }
+            aus.push('=');
+        }
+        _ => {}
+    }
+    aus
 }
 
 /// Der Snapshot, wie Gen ihn sieht.
@@ -683,13 +788,20 @@ fn passage_zu_kurz_traegt_keine_starke_aussage() {
         "und damit kein READY TO SEND"
     );
 
-    // Zwoelf Fenster, sonst IDENTISCH: dieselbe Sitzung wird handelbar. Ohne
-    // diese Gegenprobe waere der Riegel eine Regressionswache und kein Beleg
+    // Zwoelf Fenster: dieselbe Sitzung wird handelbar. Ohne diese Gegenprobe
+    // waere der Riegel eine Regressionswache und kein Beleg
     // (`tools/dirigent/pruefliste.md` E).
+    //
+    // 🔑 NAK-212 R1: die Gegenprobe traegt jetzt einen BELEGTEN Zusammenhang.
+    // Mit konstanter Anhebung gibt es kein Fenster ohne die Quelle, der
+    // bedingte Uplift ist nach M-19 nicht messbar, und `hoch` ist zu Recht
+    // unerreichbar — der Fall maesse dann nicht mehr die Fensterzahl.
     let d = coordinator();
     let adressen = buehne(&d, 1, Some(3));
-    reihe(&d, "main", &adressen[0], 0, 12, anhebung);
-    reihe(&d, "sonde0", &adressen[1], 100, 12, anhebung);
+    let band = (ANOMALIEBAND, ANOMALIEBAND + 4);
+    let muster = wechselnd(12, 9.0, 0.0);
+    reihe_je_fenster(&d, "main", &adressen[0], 0, 12, band, &muster, |_| None);
+    reihe_je_fenster(&d, "sonde0", &adressen[1], 100, 12, band, &muster, |_| None);
     let lang = d.befunde_sicht(&hex(0x11), &hex(0x22));
     let befund = lang.first().expect("ein Befund entsteht");
     assert_eq!(
@@ -705,8 +817,11 @@ fn passage_zu_kurz_traegt_keine_starke_aussage() {
     for (anzahl, erwartet) in [(7usize, Sicherheitsklasse::Mittel), (8, Sicherheitsklasse::Hoch)] {
         let e = coordinator();
         let adressen = buehne(&e, 1, Some(3));
-        reihe(&e, "main", &adressen[0], 0, anzahl, anhebung);
-        reihe(&e, "sonde0", &adressen[1], 100, anzahl, anhebung);
+        // Auch die Kante braucht einen belegten Zusammenhang (R1) — sonst
+        // waeren BEIDE Seiten `mittel` und die Schwelle unsichtbar.
+        let kante = wechselnd(anzahl, 9.0, 0.0);
+        reihe_je_fenster(&e, "main", &adressen[0], 0, anzahl, band, &kante, |_| None);
+        reihe_je_fenster(&e, "sonde0", &adressen[1], 100, anzahl, band, &kante, |_| None);
         let f = e.befunde_sicht(&hex(0x11), &hex(0x22));
         assert_eq!(
             f.first().map(|b| b.confidence.klasse),
@@ -912,36 +1027,87 @@ fn ungetrennter_erster_platz_ist_nicht_stark() {
         assert_ne!(b.zustand, Befundzustand::ReadyToSend);
     }
 
-    // (2) GEGENPROBE: ein Kandidat mit unbekanntem Routing rangiert
-    //     schlechter. Jetzt TRENNT die Messung, und der erste darf stark
-    //     sein — sonst waere (1) trivial erfuellt.
+    // (2) 🔑 NAK-212 R3/E6: ein RANGUNTERSCHIED ALLEIN TRENNT NICHT.
+    //     Ein Kandidat mit unbekanntem Routing rangiert schlechter — das war
+    //     bis hierher die Gegenprobe. Routingqualitaet ist aber keine
+    //     Zusammenhangskomponente: sie sagt, wie gut die Quelle VERORTET ist,
+    //     nicht ob sie mit dem Masterbefund zusammenhaengt. Beide bleiben
+    //     `mittel`.
     let c = coordinator();
     let master = adresse(1);
-    let stark = adresse(2);
-    let schwach = adresse(3);
+    let bekannt = adresse(2);
+    let unbekannt = adresse(3);
     anmelden(&c, "main", &master, "main", Some(0), None);
     intent_marke(&c, "main", &master);
-    anmelden(&c, "sonde0", &stark, "passive_probe", Some(3), None);
-    anmelden(&c, "sonde1", &schwach, "passive_probe", None, None);
+    anmelden(&c, "sonde0", &bekannt, "passive_probe", Some(3), None);
+    anmelden(&c, "sonde1", &unbekannt, "passive_probe", None, None);
     reihe(&c, "main", &master, 0, 12, anhebung);
-    reihe(&c, "sonde0", &stark, 100, 12, anhebung);
-    reihe(&c, "sonde1", &schwach, 200, 12, anhebung);
+    reihe(&c, "sonde0", &bekannt, 100, 12, anhebung);
+    reihe(&c, "sonde1", &unbekannt, 200, 12, anhebung);
     let befunde = c.befunde_sicht(&hex(0x11), &hex(0x22));
     assert_eq!(befunde.len(), 2, "auch hier verschwindet keiner");
     assert!(
         befunde[0].rang.rang() > befunde[1].rang.rang(),
-        "die Gegenprobe trennt wirklich: {} gegen {}",
+        "die Raenge unterscheiden sich wirklich: {} gegen {}",
         befunde[0].rang.rang(),
         befunde[1].rang.rang()
+    );
+    for (i, b) in befunde.iter().enumerate() {
+        assert!(
+            b.confidence.klasse < Sicherheitsklasse::Hoch,
+            "Kandidat {i} traegt {:?}, obwohl nur das Routing sie trennt",
+            b.confidence.klasse
+        );
+    }
+
+    // (3) GEGENPROBE (N-17): jetzt trennt der ZUSAMMENHANG. Nur eine der
+    //     beiden Quellen ist abwechselnd aktiv, der Master folgt ihr — ihr
+    //     bedingter Uplift ist messbar und positiv, der der anderen nicht.
+    //     Ohne diesen Fall waere (1) und (2) trivial erfuellt.
+    let c = coordinator();
+    let master = adresse(1);
+    let ursache = adresse(2);
+    let mitlaeufer = adresse(3);
+    anmelden(&c, "main", &master, "main", Some(0), None);
+    intent_marke(&c, "main", &master);
+    anmelden(&c, "sonde0", &ursache, "passive_probe", Some(3), None);
+    anmelden(&c, "sonde1", &mitlaeufer, "passive_probe", Some(4), None);
+    let band = (ANOMALIEBAND, ANOMALIEBAND + 4);
+    let muster = wechselnd(12, 9.0, 0.0);
+    reihe_je_fenster(&c, "main", &master, 0, 12, band, &muster, |_| None);
+    reihe_je_fenster(&c, "sonde0", &ursache, 100, 12, band, &muster, |_| None);
+    // Der Mitlaeufer draengt konstant: gleiche Bandenergie, aber kein Fenster
+    // ohne ihn — sein Uplift ist nach M-19 nicht messbar.
+    reihe(&c, "sonde1", &mitlaeufer, 200, 12, anhebung);
+    let befunde = c.befunde_sicht(&hex(0x11), &hex(0x22));
+    assert_eq!(befunde.len(), 2, "beide bleiben sichtbar");
+    // 🔑 NAK-212 D7: der Rangabstand ist VORBEDINGUNG und wird gemessen,
+    // nicht angenommen. Ein positiver Uplift garantiert ihn nicht — `rang()`
+    // mittelt und quantisiert erneut, sechstelt also jede Differenz.
+    assert_ne!(
+        rang_quantisiert(&befunde[0].rang),
+        rang_quantisiert(&befunde[1].rang),
+        "die quantisierten Gesamtraenge trennen wirklich: {:?} gegen {:?}",
+        befunde[0].rang,
+        befunde[1].rang
+    );
+    assert!(
+        befunde[0].rang.uplift > 0.0 && befunde[1].rang.uplift == 0.0,
+        "und der Zusammenhang trennt: {} gegen {}",
+        befunde[0].rang.uplift,
+        befunde[1].rang.uplift
     );
     assert_eq!(
         befunde[0].confidence.klasse,
         Sicherheitsklasse::Hoch,
-        "ein getrennter erster Platz darf stark sein"
+        "ein wirklich getrennter erster Platz darf stark sein"
     );
     assert_eq!(befunde[0].zustand, Befundzustand::ReadyToSend);
     // Und der zweite bleibt trotzdem schwach (M-21).
     assert!(befunde[1].confidence.klasse < Sicherheitsklasse::Hoch);
+    // Beide nennen einander als Alternative (R3).
+    assert_eq!(befunde[0].alternatives, vec![befunde[1].finding_id.clone()]);
+    assert_eq!(befunde[1].alternatives, vec![befunde[0].finding_id.clone()]);
 }
 
 // ═════════════════════════════════════════════════════════════════════════
@@ -1191,4 +1357,334 @@ fn keine_hypothese_vor_der_vollstaendigkeitsmarke() {
         "ohne Vollstaendigkeitsmarke rechnet der Broker nicht"
     );
     assert!(!c.darf_rechnen(&hex(0x11), &hex(0x22)));
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-212 R1 · hoch_verlangt_energie_im_befundband  (N-01)
+// ═════════════════════════════════════════════════════════════════════════
+//
+// Der erste der beiden R1-Terme. Eine Quelle, deren Baender im Befundintervall
+// KEIN Gueltigkeitsbit tragen, hat dort keine gemessene Energie — sie kann
+// den Befund nicht erklaeren, egal wie viele Fenster sie liefert.
+#[test]
+fn hoch_verlangt_energie_im_befundband() {
+    let c = coordinator();
+    let adressen = buehne(&c, 1, Some(3));
+    let band = (ANOMALIEBAND, ANOMALIEBAND + 4);
+    let muster = wechselnd(12, 9.0, 0.0);
+    reihe_je_fenster(&c, "main", &adressen[0], 0, 12, band, &muster, |_| None);
+    // Die Sonde meldet in KEINEM Band ein Gueltigkeitsbit.
+    for i in 0..12 {
+        let payload = evidenz(
+            &adressen[1],
+            100 + i,
+            44_108_200 + (i as i64) * 512,
+            None,
+            |wert| {
+                // Ausgenommen sind GENAU die vier Baender des
+                // Befundintervalls; der Rest misst normal weiter
+                // (`evidenz.rs`:365-372).
+                // ⚠️ Das Befundintervall ist die BANDGRUPPE des Livegitters,
+                // nicht das hier angehobene Viererfenster: `masteranomalie`
+                // gibt `bandintervall_der_gruppe(gruppe_von_band(98))`, also
+                // [97, 101) zurueck. Wer nur 98..102 ausnimmt, laesst Band 97
+                // gueltig — die Bandpassung stuende dann bei 0,0046 statt 0.
+                let leer = bitmap_ohne((band.0 - 8, band.1 + 8));
+                for satz in ["/baender", "/verteilung/p10", "/verteilung/p50", "/verteilung/p95"] {
+                    if let Some(feld) = wert.pointer_mut(&format!("{satz}/gueltig_bitmap")) {
+                        *feld = json!(leer);
+                    }
+                }
+            },
+        );
+        c.p1("sonde0", &payload);
+    }
+    let befunde = c.befunde_sicht(&hex(0x11), &hex(0x22));
+    let befund = befunde.first().expect("ein Befund entsteht");
+    // ⚠️ Der Befund muss dem KANDIDATEN gehoeren. Eine Enthaltung traegt
+    // `Rangkomponenten::default()` — alle sechs Werte null — und erfuellte
+    // jede Erwartung dieses Tests, ohne etwas zu messen.
+    assert_eq!(
+        befund.candidate_source, adressen[1].instance_id,
+        "der Kandidat ist im Rennen, das hier ist keine Enthaltung"
+    );
+    assert_eq!(befund.rang.bandpassung, 0.0, "keine gemessene Energie im Band");
+    assert!(
+        befund.confidence.klasse < Sicherheitsklasse::Hoch,
+        "ohne Energie im Befundband keine starke Aussage: {:?}",
+        befund.confidence
+    );
+    assert_ne!(befund.zustand, Befundzustand::ReadyToSend);
+
+    // ⚠️ ISOLIERT: der Fall oben faellt DOPPELT — ohne gueltige Baender ist
+    // auch der Uplift unmessbar, also greift R1 (b) mit. Um R1 (a) allein zu
+    // messen, braucht der Kandidat einen belegten Zusammenhang OHNE
+    // Bandenergie. Das geht: die Onsets leben in `/ereignisse/liste`, nicht
+    // in den Baendern — eine Quelle kann also gleichlaeufige Ereignisse und
+    // trotzdem kein einziges gueltiges Band haben.
+    let d = coordinator();
+    let adressen = buehne(&d, 1, Some(3));
+    let onset = |i: usize| Some(1.0 + (i % 4) as f64 * 1.5);
+    reihe_je_fenster(&d, "main", &adressen[0], 0, 12, band, &muster, onset);
+    for i in 0..12 {
+        let staerke = onset(i).unwrap();
+        let payload = evidenz(
+            &adressen[1],
+            100 + i,
+            44_108_200 + (i as i64) * 512,
+            None,
+            |wert| {
+                // ⚠️ Das Befundintervall ist die BANDGRUPPE des Livegitters,
+                // nicht das hier angehobene Viererfenster: `masteranomalie`
+                // gibt `bandintervall_der_gruppe(gruppe_von_band(98))`, also
+                // [97, 101) zurueck. Wer nur 98..102 ausnimmt, laesst Band 97
+                // gueltig — die Bandpassung stuende dann bei 0,0046 statt 0.
+                let leer = bitmap_ohne((band.0 - 8, band.1 + 8));
+                for satz in ["/baender", "/verteilung/p10", "/verteilung/p50", "/verteilung/p95"] {
+                    if let Some(feld) = wert.pointer_mut(&format!("{satz}/gueltig_bitmap")) {
+                        *feld = json!(leer);
+                    }
+                }
+                if let Some(Value::Array(liste)) = wert.pointer_mut("/ereignisse/liste") {
+                    liste.truncate(1);
+                    if let Some(e) = liste.first_mut() {
+                        e["staerke_mad"] = json!(staerke);
+                    }
+                }
+            },
+        );
+        d.p1("sonde0", &payload);
+    }
+    let befunde = d.befunde_sicht(&hex(0x11), &hex(0x22));
+    let befund = befunde.first().expect("ein Befund entsteht");
+    assert_eq!(
+        befund.candidate_source, adressen[1].instance_id,
+        "der Kandidat ist im Rennen, das hier ist keine Enthaltung"
+    );
+    assert_eq!(befund.rang.bandpassung, 0.0, "immer noch keine Bandenergie");
+    assert!(
+        befund.rang.koinzidenz > 0.0,
+        "aber ein belegter Zusammenhang: {:?}",
+        befund.rang
+    );
+    assert!(
+        befund.confidence.klasse < Sicherheitsklasse::Hoch,
+        "R1 (a) allein haelt den Befund zurueck: {:?}",
+        (befund.confidence, befund.rang)
+    );
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-212 R1 · hoch_verlangt_einen_belegten_zusammenhang  (N-03, N-06)
+// ═════════════════════════════════════════════════════════════════════════
+//
+// Der zweite R1-Term, mit seiner Gegenprobe. BEIDE Sitzungen sind bis auf die
+// Pegelform identisch: zwoelf Fenster, bekanntes Routing, dieselbe Bandenergie
+// im Mittel. Getrennt werden sie allein dadurch, ob es Fenster OHNE die Quelle
+// gibt — das ist die Zusage von M-19.
+#[test]
+fn hoch_verlangt_einen_belegten_zusammenhang() {
+    let band = (ANOMALIEBAND, ANOMALIEBAND + 4);
+
+    // (a) N-03: konstanter Pegel. Jedes Fenster liegt auf oder ueber dem
+    //     eigenen Median, die Menge „ohne die Quelle" bleibt leer.
+    let c = coordinator();
+    let adressen = buehne(&c, 1, Some(3));
+    let anhebung = Some((band.0, band.1, 9.0));
+    reihe(&c, "main", &adressen[0], 0, 12, anhebung);
+    reihe(&c, "sonde0", &adressen[1], 100, 12, anhebung);
+    let ohne = c.befunde_sicht(&hex(0x11), &hex(0x22));
+    let befund = ohne.first().expect("ein Befund entsteht");
+    assert_eq!(befund.rang.uplift, 0.0, "kein Vergleichsfenster (M-19)");
+    assert_eq!(befund.rang.koinzidenz, 0.0, "konstante Onsetreihe");
+    assert_eq!(befund.rang.wiederholbarkeit, 0.0);
+    assert!(
+        befund.confidence.klasse < Sicherheitsklasse::Hoch,
+        "ohne Zusammenhangsbeleg keine starke Aussage: {:?}",
+        (befund.confidence, befund.rang)
+    );
+
+    // (b) N-06: dieselbe Sitzung, aber die Quelle ist abwechselnd aktiv und
+    //     der Master folgt ihr. Jetzt gibt es Fenster OHNE die Quelle.
+    let d = coordinator();
+    let adressen = buehne(&d, 1, Some(3));
+    let muster = wechselnd(12, 9.0, 0.0);
+    reihe_je_fenster(&d, "main", &adressen[0], 0, 12, band, &muster, |_| None);
+    reihe_je_fenster(&d, "sonde0", &adressen[1], 100, 12, band, &muster, |_| None);
+    let mit = d.befunde_sicht(&hex(0x11), &hex(0x22));
+    let befund = mit.first().expect("ein Befund entsteht");
+    assert!(befund.rang.uplift > 0.0, "der bedingte Uplift ist messbar");
+    assert_eq!(
+        befund.confidence.klasse,
+        Sicherheitsklasse::Hoch,
+        "mit Zusammenhangsbeleg wird derselbe Aufbau handelbar: {:?}",
+        (befund.confidence, befund.rang)
+    );
+    assert_eq!(befund.zustand, Befundzustand::ReadyToSend);
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-212 R1 · koinzidenz_allein_traegt_den_zusammenhang  (N-07)
+// ═════════════════════════════════════════════════════════════════════════
+//
+// R1 verlangt „MINDESTENS EINE" Komponente. Ohne diesen Fall waere die Regel
+// von „beide noetig" nicht zu unterscheiden — und `hoch` in jeder Sitzung
+// ohne Onsetereignisse unerreichbar.
+#[test]
+fn koinzidenz_allein_traegt_den_zusammenhang() {
+    let c = coordinator();
+    let adressen = buehne(&c, 1, Some(3));
+    let band = (ANOMALIEBAND, ANOMALIEBAND + 4);
+    // Konstanter Pegel: der Uplift bleibt unmessbar. Die ONSETS laufen
+    // gleich — Master und Sonde sind in denselben Fenstern ereignisreich.
+    let onset = |i: usize| Some(1.0 + (i % 4) as f64 * 1.5);
+    reihe_je_fenster(&c, "main", &adressen[0], 0, 12, band, |_| 9.0, onset);
+    reihe_je_fenster(&c, "sonde0", &adressen[1], 100, 12, band, |_| 9.0, onset);
+    let befunde = c.befunde_sicht(&hex(0x11), &hex(0x22));
+    let befund = befunde.first().expect("ein Befund entsteht");
+    assert_eq!(befund.rang.uplift, 0.0, "der Uplift bleibt unmessbar");
+    assert!(befund.rang.koinzidenz > 0.0, "aber die Onsets laufen gleich");
+    assert_eq!(
+        befund.confidence.klasse,
+        Sicherheitsklasse::Hoch,
+        "eine Komponente genuegt (R1): {:?}",
+        (befund.confidence, befund.rang)
+    );
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-212 R2 · gegenbeleg_schliesst_hoch_aus  (N-08, N-09, N-10)
+// ═════════════════════════════════════════════════════════════════════════
+//
+// Ein Gegenbeleg ist kein fehlender Beleg: die Quelle ist laut, WENN der
+// Master leise ist. Bis zu diesem Ticket kostete das exakt so viel wie „keine
+// Angabe" — nichts — und der zweiseitige Bootstrap belohnte die Stabilitaet
+// des Gegenlaufs sogar (G-D5, `eigen3`: Rang 0,4358).
+#[test]
+fn gegenbeleg_schliesst_hoch_aus() {
+    let band = (ANOMALIEBAND, ANOMALIEBAND + 4);
+
+    // (a) N-08: gegenlaeufiger PEGEL.
+    let c = coordinator();
+    let adressen = buehne(&c, 1, Some(3));
+    let master_muster = wechselnd(12, 12.0, 6.0);
+    let gegen = wechselnd(12, 6.0, 12.0);
+    reihe_je_fenster(&c, "main", &adressen[0], 0, 12, band, &master_muster, |_| None);
+    reihe_je_fenster(&c, "sonde0", &adressen[1], 100, 12, band, &gegen, |_| None);
+    let befunde = c.befunde_sicht(&hex(0x11), &hex(0x22));
+    let befund = befunde.first().expect("ein Befund entsteht");
+    assert_eq!(befund.rang.uplift, 0.0, "der Gegenbeleg erzeugt keinen Rang");
+    // N-10: und er traegt auch keine Wiederholbarkeit mehr.
+    assert_eq!(
+        befund.rang.wiederholbarkeit, 0.0,
+        "einseitig gemessen: die Stabilitaet eines Gegenbelegs zaehlt nicht"
+    );
+    assert!(
+        befund.confidence.klasse < Sicherheitsklasse::Hoch,
+        "ein Gegenbeleg schliesst `hoch` aus: {:?}",
+        (befund.confidence, befund.rang)
+    );
+    assert_ne!(befund.zustand, Befundzustand::ReadyToSend);
+
+    // (b) N-09: gegenlaeufige ONSETREIHE bei konstantem Pegel.
+    let d = coordinator();
+    let adressen = buehne(&d, 1, Some(3));
+    reihe_je_fenster(&d, "main", &adressen[0], 0, 12, band, |_| 9.0, |i| {
+        Some(1.0 + (i % 4) as f64 * 1.5)
+    });
+    reihe_je_fenster(&d, "sonde0", &adressen[1], 100, 12, band, |_| 9.0, |i| {
+        Some(1.0 + (3 - (i % 4)) as f64 * 1.5)
+    });
+    let befunde = d.befunde_sicht(&hex(0x11), &hex(0x22));
+    let befund = befunde.first().expect("ein Befund entsteht");
+    assert_eq!(befund.rang.koinzidenz, 0.0, "negativ geklemmt fuer den Rang");
+    assert!(
+        befund.confidence.klasse < Sicherheitsklasse::Hoch,
+        "auch eine gegenlaeufige Onsetspur ist ein Gegenbeleg: {:?}",
+        (befund.confidence, befund.rang)
+    );
+
+    // (c) ⚠️ ISOLIERT: (a) und (b) fallen DOPPELT — ein Kandidat mit
+    //     negativem Uplift ist auch nicht positiv belegt, also greift R1 (b)
+    //     mit. Um R2 allein zu messen, braucht es einen Kandidaten, der
+    //     BEIDES ist: positiv belegt in einer Komponente und Gegenbeleg in
+    //     der anderen. Der Pegel laeuft gleich (Uplift positiv), die Onsets
+    //     laufen gegen (Koinzidenz negativ).
+    let e = coordinator();
+    let adressen = buehne(&e, 1, Some(3));
+    let muster = wechselnd(12, 9.0, 0.0);
+    reihe_je_fenster(&e, "main", &adressen[0], 0, 12, band, &muster, |i| {
+        Some(1.0 + (i % 4) as f64 * 1.5)
+    });
+    reihe_je_fenster(&e, "sonde0", &adressen[1], 100, 12, band, &muster, |i| {
+        Some(1.0 + (3 - (i % 4)) as f64 * 1.5)
+    });
+    let befunde = e.befunde_sicht(&hex(0x11), &hex(0x22));
+    let befund = befunde.first().expect("ein Befund entsteht");
+    assert!(
+        befund.rang.uplift > 0.0,
+        "der Pegel belegt einen Zusammenhang: {:?}",
+        befund.rang
+    );
+    assert!(
+        befund.confidence.klasse < Sicherheitsklasse::Hoch,
+        "R2 allein haelt den Befund zurueck, obwohl R1 erfuellt ist: {:?}",
+        (befund.confidence, befund.rang)
+    );
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-212 R3 · materialmenge_und_bandpassung_trennen_nicht  (N-13, N-14)
+// ═════════════════════════════════════════════════════════════════════════
+//
+// Zwei Kandidaten mit demselben belegten Zusammenhang. Weder MEHR Fenster noch
+// eine hoehere Bandpassung machen einen von ihnen zur Ursache: beides sagt,
+// WO und WIE VIEL eine Quelle misst, nicht OB sie den Befund erklaert.
+#[test]
+fn materialmenge_und_bandpassung_trennen_nicht() {
+    let band = (ANOMALIEBAND, ANOMALIEBAND + 4);
+
+    // (a) N-13: 12 gegen 16 Fenster bei identischem Verlauf.
+    let c = coordinator();
+    let adressen = buehne(&c, 2, Some(3));
+    let muster = wechselnd(12, 9.0, 0.0);
+    reihe_je_fenster(&c, "main", &adressen[0], 0, 12, band, &muster, |_| None);
+    reihe_je_fenster(&c, "sonde0", &adressen[1], 100, 12, band, &muster, |_| None);
+    // Die ersten zwoelf Fenster sind dieselben; die vier ueberzaehligen haben
+    // keinen Masterpartner und gehen in keine der drei Groessen ein.
+    reihe_je_fenster(&c, "sonde1", &adressen[2], 200, 16, band, &muster, |_| None);
+    let befunde = c.befunde_sicht(&hex(0x11), &hex(0x22));
+    assert_eq!(befunde.len(), 2, "beide bleiben sichtbar");
+    for (i, b) in befunde.iter().enumerate() {
+        assert!(
+            b.confidence.klasse < Sicherheitsklasse::Hoch,
+            "Kandidat {i} traegt {:?}, obwohl nur die Fensterzahl sie trennt",
+            b.confidence.klasse
+        );
+    }
+
+    // (b) N-14: identischer Zusammenhang, aber ein Kandidat ist 0,1 dB lauter.
+    let d = coordinator();
+    let adressen = buehne(&d, 2, Some(3));
+    reihe_je_fenster(&d, "main", &adressen[0], 0, 12, band, &muster, |_| None);
+    reihe_je_fenster(&d, "sonde0", &adressen[1], 100, 12, band, &muster, |_| None);
+    reihe_je_fenster(&d, "sonde1", &adressen[2], 200, 12, band, wechselnd(12, 9.1, 0.0), |_| {
+        None
+    });
+    let befunde = d.befunde_sicht(&hex(0x11), &hex(0x22));
+    assert_eq!(befunde.len(), 2);
+    assert_ne!(
+        rang_quantisiert(&befunde[0].rang),
+        rang_quantisiert(&befunde[1].rang),
+        "die Raenge unterscheiden sich wirklich — sonst misst der Fall nichts"
+    );
+    for (i, b) in befunde.iter().enumerate() {
+        assert!(
+            b.confidence.klasse < Sicherheitsklasse::Hoch,
+            "Kandidat {i} traegt {:?}, obwohl nur die Bandpassung sie trennt",
+            b.confidence.klasse
+        );
+        // Und beide nennen einander als Alternative (R3).
+        assert_eq!(b.alternatives.len(), 1, "jeder ist Alternative des anderen");
+    }
 }

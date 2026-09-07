@@ -232,10 +232,18 @@ fn buehne(c: &Coordinator, fenster: usize) -> Vec<Adresse> {
     anmelden(c, "sonde0", &sonde, "passive_probe", 3);
     intent_marke(c, "main", &master);
     passage_anlegen(c, &master, &[&master, &sonde], fenster as i64);
+    // 🔑 **NAK-212 R1 (07.09.2026).** Jedes zweite Fenster ist laut, das
+    // LETZTE immer. Mit konstanter Anhebung liegt jeder Wert auf oder ueber
+    // dem eigenen Median, die Vergleichsmenge „ohne die Quelle" bleibt leer,
+    // und der bedingte Uplift ist nach M-19 nicht messbar — der Befund
+    // erreichte dann zu Recht nur `mittel`, und die Proposal-Faelle, die
+    // einen handelbaren Befund brauchen, maessen nichts mehr. Das letzte
+    // Fenster ist laut, damit `masteranomalie` dasselbe Band findet.
+    let laut = |i: usize| if i % 2 == (fenster.max(1) - 1) % 2 { 9.0 } else { 0.0 };
     for i in 0..fenster {
         let zeit = BASIS_SAMPLE + (i as i64) * 512;
-        c.p1("main", &evidenz(&master, i, zeit, 9.0));
-        c.p1("sonde0", &evidenz(&sonde, 100 + i, zeit, 9.0));
+        c.p1("main", &evidenz(&master, i, zeit, laut(i)));
+        c.p1("sonde0", &evidenz(&sonde, 100 + i, zeit, laut(i)));
     }
     vec![master, sonde]
 }

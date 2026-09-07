@@ -639,6 +639,11 @@ struct ControlClient::Laufzeit
     /// unter `sendeMutex`, liest und formt nur.
     std::function<std::string (const std::string&, const std::string&, std::uint64_t)>
         hookKonfliktWiederholung;
+    /// SONDE-014 WN3-01: der Auftrag ist ABGESCHLOSSEN - angewandt,
+    /// idempotent wiederholt oder endgueltig ohne Erfolg. Wer sich zu einer
+    /// `command_id` etwas gemerkt hat, gibt es hier frei. Laeuft OHNE
+    /// `sendeMutex`, wie `beiP0Verworfen`.
+    std::function<void (const std::string&)> hookAuftragAbgeschlossen;
     /// SONDE-014 WN-01: die Revision des zuletzt EINGEREIHTEN `state_report`
     /// und die des zuletzt auf den Draht GESCHRIEBENEN. Erst der Draht zaehlt:
     /// ein eingereihter Bericht steht hinter jedem P0, das vor ihm entnommen
@@ -915,6 +920,14 @@ void ControlClient::setzeKonfliktWiederholungHook (
     // Wie die uebrigen Rueckwege: vor dem `start()` gesetzt und danach
     // unveraendert.
     k->hookKonfliktWiederholung = std::move (hook);
+}
+
+void ControlClient::setzeAuftragAbgeschlossenHook (
+    std::function<void (const std::string&)> hook)
+{
+    // Wie die uebrigen Rueckwege: vor dem `start()` gesetzt und danach
+    // unveraendert.
+    k->hookAuftragAbgeschlossen = std::move (hook);
 }
 
 void ControlClient::setzeP0Rueckmeldung (
@@ -1358,6 +1371,18 @@ void ControlClient::Laufzeit::inFlightAck (const std::string& json)
 
     if (verworfeneMarke != 0 && beiP0Verworfen)
         beiP0Verworfen (verworfeneMarke);
+
+    // 🔑 SONDE-014 WN3-01 (Nacharbeit 3, 07.09.2026): der Auftrag ist FORT.
+    //
+    // Wer sich zu dieser `command_id` etwas gemerkt hat - der Prozessor haelt
+    // je ausstehendem Urteil einen Mitschnitt -, gibt ihn hier frei. Ohne
+    // diesen Rueckweg wuechse das Register des Prozessors mit jedem Urteil,
+    // und ein Deckel muesste raten, welcher Eintrag noch gebraucht wird.
+    //
+    // NICHT unter `sendeMutex`: der Hook nimmt den Sendezustand des
+    // Prozessors, und die Ordnung ist sendeMutex VOR Sendezustand.
+    if (! wiederholt && hookAuftragAbgeschlossen)
+        hookAuftragAbgeschlossen (commandId);
 
     std::lock_guard<std::mutex> z (zustandMutex);
     zustand.inFlight = anzahl;

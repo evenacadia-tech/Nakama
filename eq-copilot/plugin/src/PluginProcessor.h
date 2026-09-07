@@ -342,6 +342,16 @@ public:
     std::string urteilMitFrischemKopfFuerTest (const juce::String& commandId,
                                                std::uint64_t brokerRevision) const
     { return urteilMitFrischemKopf (commandId, brokerRevision); }
+    /// WN3-01: wie viele Urteile stehen aus? Ein Bein misst daran, dass der
+    /// Abschluss wirklich freigibt und der Deckel wirklich deckelt.
+    std::size_t urteilMitschnitteFuerTest() const
+    {
+        std::lock_guard<std::mutex> l (urteilMutex);
+        return urteilMitschnitte.size();
+    }
+    /// WN3-01: den Abschlussweg des ControlClients OHNE Draht fahren.
+    void urteilAbgeschlossenFuerTest (const juce::String& commandId) const
+    { urteilAbgeschlossen (commandId); }
 
     // ── SONDE-013 M-40 bis M-51: der Experimentpfad des Plugins ────────────
     //
@@ -937,6 +947,14 @@ private:
         Userurteil, und der Client laesst den Auftrag fallen wie bisher. */
     std::string urteilMitFrischemKopf (const juce::String& commandId,
                                        std::uint64_t brokerRevision) const;
+    /** SONDE-014 WN3-01: der Auftrag ist abgeschlossen - sein Mitschnitt geht.
+
+        Gerufen aus `setzeAuftragAbgeschlossenHook` bei `angewandt`,
+        `idempotent_wiederholt` oder endgueltigem Fehlschlag. Eine unbekannte
+        Kennung ist kein Fehler: derselbe Hook gilt fuer JEDEN
+        persistenzpflichtigen P0, und die Experimentfamilien merken sich hier
+        nichts. */
+    void urteilAbgeschlossen (const juce::String& commandId) const;
     bool assistentAenderungMelden (bool veraendert);
     /** Meldet EIN geaendertes Intent-Objekt unter seinem eigenen
         P1-Schluessel (M-85). Ohne Verbindung ein No-op. */
@@ -1224,26 +1242,39 @@ private:
     mutable std::mutex versuchWireMutex;
     std::string        letzterVersuchP0;
 
-    /** SONDE-014 WN-01: der Mitschnitt des zuletzt abgesetzten Userurteils.
+    /** SONDE-014 WN-01/WN3-01: die Mitschnitte der AUSSTEHENDEN Userurteile.
 
-        Er traegt nur, was den Kopf NEU baut - Urteil, Befund, Notiz -, nie
-        den Wiretext selbst: der alte Text enthaelt genau die Revision, die
-        der Broker abgelehnt hat. Eine Wiederholung baut ihn frisch und
-        behaelt allein die `command_id` (idempotent, NR-10).
+        Ein Mitschnitt traegt nur, was den Kopf NEU baut - Urteil, Befund,
+        Notiz -, nie den Wiretext selbst: der alte Text enthaelt genau die
+        Revision, die der Broker abgelehnt hat. Eine Wiederholung baut ihn
+        frisch und behaelt allein die `command_id` (idempotent, NR-10).
 
-        Genau EIN Eintrag: das Urteil ist ein Handgriff des Users, und zwei
-        gleichzeitig offene gibt es nicht. Waeren es je mehr, waere hier eine
-        kleine Abbildung noetig - kein zweiter Weg. */
+        🔑 **WN3-01 (Nacharbeit 3, 07.09.2026): JE Kennung, nicht EIN Wert.**
+        Bis zur Runde 3 stand hier ein Einzelwert mit der Begruendung, „zwei
+        gleichzeitig offene gibt es nicht". Erzwungen war das nirgends:
+        `setzeAssistentenergebnis` laesst den Schritt offen, der P0 geht
+        unabhaengig davon, und schon zwei `assistentAntwort(..., &urteil, ...)`
+        vor dem ersten ACK ueberschrieben den ersten Mitschnitt. Kam dann
+        dessen `konflikt`-ACK, lieferte `urteilMitFrischemKopf` wegen der
+        abweichenden Kennung einen leeren Text, und `ControlClient.cpp`
+        entfernte das unpersistierte Urteil endgueltig - ein Bruch von M-73
+        (WP2-1). Ein zweiter Weg dorthin: ein nach WN-05 bei voller Queue
+        zurueckgehaltenes Urteil plus ein zweites vor dem Reconnect.
+
+        Der Deckel ist `nakama::ipc::kCapP0`: mehr ausstehende
+        persistenzpflichtige P0 kann es nicht geben, weil die Queue sie gar
+        nicht erst annimmt. Ein Eintrag entsteht beim Erzeugen des Urteils und
+        faellt erst bei `angewandt`, `idempotent_wiederholt` oder endgueltigem
+        Fehlschlag (`setzeAuftragAbgeschlossenHook`) - nie auf Verdacht. */
     struct Urteilmitschnitt
     {
         juce::String                commandId;
         juce::String                findingId;
         juce::String                notiz;
         nakama::state::Userurteil   urteil { nakama::state::Userurteil::angenommen };
-        bool                        gesetzt { false };
     };
     mutable std::mutex urteilMutex;
-    mutable Urteilmitschnitt letztesUrteil;
+    mutable std::vector<Urteilmitschnitt> urteilMitschnitte;
 
     nakama::analyse::Vergleichspegel vergleichspegel;
     nakama::analyse::Blindvergleich  blindvergleich;

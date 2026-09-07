@@ -937,6 +937,108 @@ int main()
         p->leereP0QueueFuerTest();
     }
 
+    // ===================================================================
+    // NACHARBEIT 3 - WN3-01: der Mitschnitt haengt an der `command_id`
+    // ===================================================================
+    //
+    // Die Runde 2 hielt GENAU EINEN Mitschnitt, mit der Begruendung „zwei
+    // gleichzeitig offene gibt es nicht". Erzwungen war das nirgends: schon
+    // zwei Urteile vor dem ersten ACK ueberschrieben den ersten Auftrag, und
+    // sein `konflikt`-ACK lief danach in einen leeren Text - der
+    // ControlClient entfernte das unpersistierte Urteil endgueltig (WP2-1,
+    // Bruch von M-73). Dieser Abschnitt misst den ECHTEN Weg:
+    // `urteilMitFrischemKopf` ist der Rumpf des Hooks, den der Prozessor im
+    // Konstruktor an `setzeKonfliktWiederholungHook` gibt.
+    abschnitt ("WN3-01: zwei ausstehende Urteile, zwei Mitschnitte");
+    {
+        auto p = prozessorAmDraht();
+        pruefe (p->assistentStarten ("00000000000000000000000000000f01"),
+                "WN3-01: ein Schritt laeuft");
+
+        const auto ersterBefund  = juce::String ("00000000000000000000000000000fa1");
+        const auto zweiterBefund = juce::String ("00000000000000000000000000000fb2");
+        const auto kennung = [] (const std::string& urteil) -> std::string
+        {
+            const auto anfang = urteil.find ("\"command_id\":\"");
+            return anfang == std::string::npos ? std::string {}
+                                               : urteil.substr (anfang + 14, 32);
+        };
+
+        // ZWEI Urteile, keines quittiert - genau die Lage aus WP2-1.
+        const auto ersteres = p->v3UserVerdictFuerTest (state::Userurteil::angenommen,
+                                                        ersterBefund, "erstes");
+        const auto zweiteres = p->v3UserVerdictFuerTest (state::Userurteil::abgelehnt,
+                                                         zweiterBefund, "zweites");
+        const auto id1 = kennung (ersteres);
+        const auto id2 = kennung (zweiteres);
+        pruefe (id1.size() == 32 && id2.size() == 32 && id1 != id2,
+                "WN3-01: beide Urteile tragen ihre eigene Kennung");
+        pruefe (p->urteilMitschnitteFuerTest() == 2,
+                "WN3-01: und beide stehen im Register");
+
+        // 🔑 Die Zusage: der `konflikt`-ACK auf das ERSTE Urteil wiederholt
+        // das ERSTE - unter seiner eigenen Kennung und mit seinem eigenen
+        // Befund. Vor WN3-01 war der Mitschnitt hier vom zweiten
+        // ueberschrieben, und diese Zeile lieferte einen leeren Text.
+        const auto wiederholt1 = p->urteilMitFrischemKopfFuerTest (juce::String (id1), 11);
+        pruefe (! wiederholt1.empty(),
+                "WN3-01: das ERSTE Urteil ist nach dem zweiten noch wiederholbar");
+        pruefe (wiederholt1.find ("\"command_id\":\"" + id1 + "\"") != std::string::npos,
+                "WN3-01: unter DERSELBEN `command_id`");
+        pruefe (wiederholt1.find ("\"finding_id\":\"" + ersterBefund.toStdString() + "\"")
+                    != std::string::npos,
+                "WN3-01: und mit SEINEM Befund, nicht dem des zweiten");
+        pruefe (wiederholt1.find ("\"base_revision\":11") != std::string::npos,
+                "WN3-01: mit der Revision aus dem ACK");
+        pruefe (wiederholt1.find ("\"urteil\":\"angenommen\"") != std::string::npos
+                    && wiederholt1.find ("\"urteil\":\"abgelehnt\"") == std::string::npos,
+                "WN3-01: und mit SEINEM Urteil, nicht dem des zweiten");
+
+        // Das zweite bleibt davon unberuehrt - eine Wiederholung ist kein
+        // Verbrauch.
+        const auto wiederholt2 = p->urteilMitFrischemKopfFuerTest (juce::String (id2), 12);
+        pruefe (! wiederholt2.empty() && wiederholt2.find (zweiterBefund.toStdString())
+                                             != std::string::npos,
+                "WN3-01: das zweite Urteil bleibt unberuehrt");
+        pruefe (p->urteilMitschnitteFuerTest() == 2,
+                "WN3-01: und das Register haelt weiter genau zwei");
+
+        // ── Die GEGENPROBE: erst der Abschluss gibt frei ─────────────────
+        //
+        // `angewandt`, `idempotent_wiederholt` oder endgueltiger Fehlschlag -
+        // der ControlClient ruft dann `setzeAuftragAbgeschlossenHook`, und
+        // genau dieser Weg laeuft hier ohne Draht.
+        p->urteilAbgeschlossenFuerTest (juce::String (id1));
+        pruefe (p->urteilMitschnitteFuerTest() == 1,
+                "WN3-01: der Abschluss gibt den Mitschnitt frei");
+        pruefe (p->urteilMitFrischemKopfFuerTest (juce::String (id1), 13).empty(),
+                "WN3-01: ein abgeschlossener Auftrag wird nicht mehr wiederholt");
+        pruefe (! p->urteilMitFrischemKopfFuerTest (juce::String (id2), 13).empty(),
+                "WN3-01: und der andere ist davon unberuehrt");
+        p->urteilAbgeschlossenFuerTest ("00000000000000000000000000000fff");
+        pruefe (p->urteilMitschnitteFuerTest() == 1,
+                "WN3-01: eine fremde Kennung raeumt nichts weg - derselbe Hook "
+                "gilt fuer JEDEN persistenzpflichtigen P0");
+
+        // ── Der DECKEL: so viele Plaetze wie die P0-Queue ────────────────
+        //
+        // Mehr ausstehende persistenzpflichtige Auftraege kann es nicht
+        // geben; faellt der Deckel doch, geht der AELTESTE - der, dessen ACK
+        // am laengsten aussteht.
+        std::string aeltester;
+        for (std::size_t i = 0; i < nakama::ipc::kCapP0 + 4; ++i)
+        {
+            const auto text = p->v3UserVerdictFuerTest (state::Userurteil::angenommen,
+                                                        ersterBefund);
+            if (aeltester.empty())
+                aeltester = kennung (text);
+        }
+        pruefe (p->urteilMitschnitteFuerTest() == nakama::ipc::kCapP0,
+                "WN3-01: das Register waechst nie ueber die P0-Kapazitaet");
+        pruefe (p->urteilMitFrischemKopfFuerTest (juce::String (aeltester), 14).empty(),
+                "WN3-01: verdraengt wird der AELTESTE");
+    }
+
     std::cout << std::endl << "SONDE-014 AssistantStep: " << bestanden << "/"
               << (bestanden + fehler) << " gruen" << std::endl;
     return fehler == 0 ? 0 : 1;

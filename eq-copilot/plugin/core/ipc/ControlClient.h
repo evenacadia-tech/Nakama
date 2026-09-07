@@ -588,6 +588,19 @@ public:
                                    const std::string& json,
                                    std::uint64_t brokerRevision)> hook);
 
+    /** SONDE-014 WN3-01: ein persistenzpflichtiger P0 ist ABGESCHLOSSEN.
+
+        Gerufen genau dann, wenn der Eintrag das In-Flight-Register verlaesst:
+        `angewandt`, `idempotent_wiederholt` oder endgueltig ohne Erfolg -
+        also auch nach dem letzten Konfliktversuch. Eine Wiederholung ruft
+        ihn NICHT: der Auftrag laeuft dann noch.
+
+        Wer sich zu einer `command_id` etwas merkt, gibt es hier frei. Der
+        Hook laeuft OHNE `sendeMutex` und darf den Sendezustand des
+        Prozessors nehmen - dieselbe Ordnung wie `beiP0Verworfen`. */
+    void setzeAuftragAbgeschlossenHook (
+        std::function<void (const std::string& commandId)> hook);
+
     /// P1 einreihen. Leerer `schluessel` = Ereignis; ein nicht leerer
     /// Schluessel koalesziert Snapshots desselben Objekts.
     P1Ergebnis sendeP1 (const std::string& schluessel, const std::string& json);

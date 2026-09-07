@@ -293,6 +293,14 @@ EqCopilotProcessor::EqCopilotProcessor()
         {
             return urteilMitFrischemKopf (juce::String (commandId), brokerRevision);
         });
+    // 🔑 SONDE-014 WN3-01 (Nacharbeit 3): und die Gegenrichtung. Ohne sie
+    // waechst das Register der Mitschnitte mit jedem Urteil, und der Deckel
+    // muesste raten, welcher Eintrag noch gebraucht wird.
+    controlV3.setzeAuftragAbgeschlossenHook (
+        [this] (const std::string& commandId)
+        {
+            urteilAbgeschlossen (juce::String (commandId));
+        });
 
     queue.vorbereiten();
 
@@ -2027,8 +2035,25 @@ std::string EqCopilotProcessor::v3UserVerdictJson (nakama::state::Userurteil urt
     {
         // Der Mitschnitt traegt, was den Kopf NEU baut - nicht den Text: der
         // alte Text enthaelt genau die Revision, die der Broker ablehnt.
+        //
+        // 🔑 WN3-01: JE Kennung. Eine Wiederholung findet ihren eigenen
+        // Eintrag und ersetzt ihn; ein neues Urteil kommt hinten dazu. Der
+        // Deckel ist die P0-Kapazitaet - mehr ausstehende
+        // persistenzpflichtige Auftraege nimmt die Queue nicht an. Faellt er
+        // trotzdem, geht der AELTESTE: er ist der, dessen ACK am laengsten
+        // aussteht.
         std::lock_guard<std::mutex> l (urteilMutex);
-        letztesUrteil = Urteilmitschnitt { commandId, findingIdGewaehlt, notiz, urteil, true };
+        const auto treffer = std::find_if (urteilMitschnitte.begin(), urteilMitschnitte.end(),
+            [&] (const Urteilmitschnitt& m) { return m.commandId == commandId; });
+        if (treffer != urteilMitschnitte.end())
+            *treffer = Urteilmitschnitt { commandId, findingIdGewaehlt, notiz, urteil };
+        else
+        {
+            if (urteilMitschnitte.size() >= nakama::ipc::kCapP0)
+                urteilMitschnitte.erase (urteilMitschnitte.begin());
+            urteilMitschnitte.push_back (
+                Urteilmitschnitt { commandId, findingIdGewaehlt, notiz, urteil });
+        }
     }
     std::string aus = "{\"type\":\"user_verdict\",\"kopf\":" + kopf;
     aus += ",\"user_verdict_id\":\"" + uuidHex32() + "\"";
@@ -2060,12 +2085,34 @@ std::string EqCopilotProcessor::urteilMitFrischemKopf (const juce::String& comma
     Urteilmitschnitt mitschnitt;
     {
         std::lock_guard<std::mutex> l (urteilMutex);
-        mitschnitt = letztesUrteil;
+        const auto treffer = std::find_if (urteilMitschnitte.begin(), urteilMitschnitte.end(),
+            [&] (const Urteilmitschnitt& m) { return m.commandId == commandId; });
+        if (treffer == urteilMitschnitte.end())
+            return {};   // kein Userurteil unter dieser Kennung - nichts erfinden
+        mitschnitt = *treffer;
     }
-    if (! mitschnitt.gesetzt || mitschnitt.commandId != commandId)
-        return {};
     return v3UserVerdictJson (mitschnitt.urteil, mitschnitt.findingId, mitschnitt.notiz,
                               commandId, brokerRevision);
+}
+
+/*  SONDE-014 WN3-01 (Nacharbeit 3): der Auftrag ist fort, der Mitschnitt auch.
+
+    Der ControlClient ruft diesen Weg genau dann, wenn der Eintrag sein
+    In-Flight-Register verlaesst: `angewandt`, `idempotent_wiederholt` oder
+    endgueltig ohne Erfolg - auch nach dem letzten Konfliktversuch. Eine
+    WIEDERHOLUNG ruft ihn nicht; der Auftrag laeuft dann noch.
+
+    Eine unbekannte Kennung ist kein Fehler: derselbe Hook gilt fuer jeden
+    persistenzpflichtigen P0, und die Experimentfamilien merken sich hier
+    nichts. Ohne diesen Rueckweg waere der Deckel eine Verdraengung auf
+    Verdacht statt einer Freigabe. */
+void EqCopilotProcessor::urteilAbgeschlossen (const juce::String& commandId) const
+{
+    std::lock_guard<std::mutex> l (urteilMutex);
+    const auto treffer = std::find_if (urteilMitschnitte.begin(), urteilMitschnitte.end(),
+        [&] (const Urteilmitschnitt& m) { return m.commandId == commandId; });
+    if (treffer != urteilMitschnitte.end())
+        urteilMitschnitte.erase (treffer);
 }
 
 /*  M-86: die Vollstaendigkeitsmarke, BEVOR der Broker rechnet.

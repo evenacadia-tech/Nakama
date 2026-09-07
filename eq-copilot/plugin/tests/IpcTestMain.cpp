@@ -5755,6 +5755,131 @@ int main (int argc, char** argv)
         control.stop();
         server.stoppen();
     }
+    {
+        // -- WN3-01: ZWEI ausstehende Auftraege, und der Rueckweg je Kennung
+        //
+        // Die Runde 2 hielt im Prozessor genau EINEN Mitschnitt; zwei Urteile
+        // vor dem ersten ACK ueberschrieben ihn, und der `konflikt`-ACK des
+        // ersten lief in einen leeren Text (WP2-1). Der Prozessor haelt seither
+        // je `command_id` einen Mitschnitt - und braucht dafuer den Rueckweg,
+        // den dieser Fall misst: `setzeAuftragAbgeschlossenHook` meldet GENAU
+        // die Kennung, deren Auftrag das In-Flight-Register verlaesst, und
+        // eine WIEDERHOLUNG meldet nichts.
+        TestServer server (testPipeName ("sonde014-wn3-01"));
+        server.commandAckArt.store (3);   // konflikt
+        server.starten();
+        ControlClient control ([&] {
+            ControlHello h;
+            h.adresse = testAdresse (hex32 ('f'));
+            return h;
+        }, server.pipeName());
+
+        const auto id1 = hex32 ('1');
+        const auto id2 = hex32 ('2');
+        std::mutex protokollMutex;
+        std::vector<std::string> abgeschlossen;
+        std::atomic<int> hookRufe { 0 };
+        std::atomic<bool> fremdeKennung { false };
+        // Der Hook wiederholt NUR den ersten Auftrag, und den genau einmal -
+        // so trennt der Fall die Wiederholung vom Abschluss.
+        control.setzeKonfliktWiederholungHook (
+            [&] (const std::string& commandId, const std::string& json,
+                 std::uint64_t brokerRevision) -> std::string
+            {
+                if (commandId != id1 && commandId != id2)
+                    fremdeKennung.store (true);
+                if (commandId != id1 || hookRufe.fetch_add (1) != 0)
+                    return {};
+                std::string frisch = json;
+                const std::string alt = "\"base_revision\":0";
+                const auto stelle = frisch.find (alt);
+                if (stelle != std::string::npos)
+                    frisch.replace (stelle, alt.size(),
+                                    "\"base_revision\":" + std::to_string (brokerRevision + 1));
+                return frisch;
+            });
+        control.setzeAuftragAbgeschlossenHook (
+            [&] (const std::string& commandId)
+            {
+                std::lock_guard<std::mutex> l (protokollMutex);
+                abgeschlossen.push_back (commandId);
+            });
+        control.start();
+        const bool verbunden = warteAuf (5000, [&] {
+            return control.snapshot().status == ControlClient::Status::verbunden;
+        });
+        // ZWEI Urteile vor jedem ACK - genau die Lage aus WP2-1.
+        const bool gesendet = verbunden
+                           && control.sendePersistenzP0 (userVerdictBefehl (id1))
+                           && control.sendePersistenzP0 (userVerdictBefehl (id2));
+        // Beide laufen aus: der erste ueber eine Wiederholung, der zweite
+        // sofort endgueltig. Erst dann ist das Register leer.
+        const bool ausgelaufen = gesendet && warteAuf (10000, [&] {
+            const auto s = control.snapshot();
+            return s.inFlight == 0 && s.inFlightWiederholungen >= 1
+                && s.inFlightEndgueltigOhneErfolg >= 2;
+        });
+        std::vector<std::string> gemeldet;
+        {
+            std::lock_guard<std::mutex> l (protokollMutex);
+            gemeldet = abgeschlossen;
+        }
+        // 🔑 Die Zusage: BEIDE Kennungen sind gemeldet, jede GENAU EINMAL -
+        // die Wiederholung des ersten hat nichts gemeldet, sonst stuende
+        // seine Kennung zweimal hier.
+        const bool beide = ausgelaufen && gemeldet.size() == 2
+                        && std::count (gemeldet.begin(), gemeldet.end(), id1) == 1
+                        && std::count (gemeldet.begin(), gemeldet.end(), id2) == 1;
+        pruefe (beide && ! fremdeKennung.load(),
+                "zwei_ausstehende_urteile_melden_ihren_abschluss_je_kennung",
+                std::to_string (gemeldet.size()) + " gemeldet, "
+                    + std::to_string (hookRufe.load()) + " Hookrufe");
+        control.stop();
+        server.stoppen();
+    }
+    {
+        // -- WN3-01 (b): `angewandt` gibt sofort frei ---------------------
+        //
+        // Die Gegenprobe zum Konfliktweg: ohne Wiederholung meldet der
+        // Abschluss unmittelbar, und der Prozessor gibt seinen Mitschnitt
+        // frei, statt ihn bis zum Deckel zu halten.
+        TestServer server (testPipeName ("sonde014-wn3-01b"));
+        server.commandAckArt.store (1);   // angewandt
+        server.starten();
+        ControlClient control ([&] {
+            ControlHello h;
+            h.adresse = testAdresse (hex32 ('a'));
+            return h;
+        }, server.pipeName());
+        const auto id = hex32 ('3');
+        std::mutex protokollMutex;
+        std::vector<std::string> abgeschlossen;
+        control.setzeAuftragAbgeschlossenHook (
+            [&] (const std::string& commandId)
+            {
+                std::lock_guard<std::mutex> l (protokollMutex);
+                abgeschlossen.push_back (commandId);
+            });
+        control.start();
+        const bool verbunden = warteAuf (5000, [&] {
+            return control.snapshot().status == ControlClient::Status::verbunden;
+        });
+        const bool gesendet = verbunden && control.sendePersistenzP0 (userVerdictBefehl (id));
+        const bool angewandt = gesendet && warteAuf (5000, [&] {
+            const auto s = control.snapshot();
+            return s.inFlight == 0 && s.inFlightErfolg >= 1;
+        });
+        std::vector<std::string> gemeldet;
+        {
+            std::lock_guard<std::mutex> l (protokollMutex);
+            gemeldet = abgeschlossen;
+        }
+        pruefe (angewandt && gemeldet.size() == 1 && gemeldet[0] == id,
+                "ein_angewandter_auftrag_meldet_seinen_abschluss_genau_einmal",
+                std::to_string (gemeldet.size()) + " gemeldet");
+        control.stop();
+        server.stoppen();
+    }
 
     // ── NAK-180 R7/R10/R12/R13: die P0-Queue trägt Klasse, Generation und
     //    Marke (Matrix N-25 bis N-27, N-35 bis N-37) ─────────────────────────

@@ -1,0 +1,64 @@
+ROTBEWEIS WN3-01 (SONDE-014 Nacharbeit 3) - der Mitschnitt JE `command_id`
+
+ZUSAGE: der Prozessor haelt den Wiederholungsinhalt eines `user_verdict` je
+ausstehender `command_id` (kleine Abbildung, gedeckelt auf die 64 P0-Plaetze;
+Eintrag beim Erzeugen, Loeschung erst bei `angewandt`,
+`idempotent_wiederholt` oder endgueltigem Fehlschlag). Kein Einzelwert, keine
+Annahme ueber die Zahl gleichzeitig offener Urteile. Der Nachtrag zu M-73
+(Paragraph 9.6, "ein `konflikt`-ACK ist kein endgueltiger Verlust") gilt fuer
+JEDES ausstehende Urteil (WP2-1).
+
+RUECKNAHME: `v3UserVerdictJson` haelt wieder GENAU EINEN Mitschnitt - der
+Stand der Nacharbeit 2, woertlich (`urteilMitschnitte.clear()` vor dem
+Eintrag).
+
+FALLENDE ZEILE (eq-copilot/plugin/tests/Sonde014AssistentTest.cpp,
+Abschnitt "WN3-01: zwei ausstehende Urteile, zwei Mitschnitte"):
+"WN3-01: das ERSTE Urteil ist nach dem zweiten noch wiederholbar" - und mit
+ihr die vier Zeilen, die seinen Inhalt pruefen (Kennung, Befund, Revision,
+Urteil) sowie "und beide stehen im Register".
+
+Kommando: cmake --build eq-copilot/build --config Release --target EqCopSonde014AssistentTest
+          eq-copilot\build\plugin\EqCopSonde014AssistentTest_artefacts\Release\EqCopSonde014AssistentTest.exe
+Gefahren: 2026-09-07T13:20
+
+=== 1. RUECKNAHME der Zusage ===
+  eq-copilot/plugin/src/PluginProcessor.cpp - `v3UserVerdictJson` haelt wieder
+  einen Einzelwert
+
+=== 2. ROTER LAUF ===
+BAU EXIT=0   (das gemessene Binary ist juenger als die Ruecknahme)
+LAUF EXIT=1
+
+== WN3-01: zwei ausstehende Urteile, zwei Mitschnitte ==
+  ok      WN3-01: ein Schritt laeuft
+  ok      WN3-01: beide Urteile tragen ihre eigene Kennung
+  FEHLER  WN3-01: und beide stehen im Register
+  FEHLER  WN3-01: das ERSTE Urteil ist nach dem zweiten noch wiederholbar
+  FEHLER  WN3-01: unter DERSELBEN `command_id`
+  FEHLER  WN3-01: und mit SEINEM Befund, nicht dem des zweiten
+  FEHLER  WN3-01: mit der Revision aus dem ACK
+  FEHLER  WN3-01: und mit SEINEM Urteil, nicht dem des zweiten
+  ok      WN3-01: das zweite Urteil bleibt unberuehrt
+  FEHLER  WN3-01: und das Register haelt weiter genau zwei
+  ok      WN3-01: der Abschluss gibt den Mitschnitt frei
+  ok      WN3-01: ein abgeschlossener Auftrag wird nicht mehr wiederholt
+  ok      WN3-01: und der andere ist davon unberuehrt
+  ok      WN3-01: eine fremde Kennung raeumt nichts weg
+  FEHLER  WN3-01: das Register waechst nie ueber die P0-Kapazitaet
+  ok      WN3-01: verdraengt wird der AELTESTE
+SONDE-014 AssistantStep: 175/183 gruen
+
+=== 3. WIEDERHERSTELLUNG ===
+  zurueckgenommen
+
+=== 4. GRUENER LAUF ===
+BAU EXIT=0
+LAUF EXIT=0
+SONDE-014 AssistantStep: 183/183 gruen
+
+URTEIL: ROT bei Ruecknahme, GRUEN nach Wiederherstellung - die Zusage traegt.
+Die acht fallenden Zeilen sind genau die, die "je Kennung" behaupten; die
+gruen bleibenden (Abschluss, fremde Kennung, Verdraengung des aeltesten)
+messen Wege, die auch ein Einzelwert zufaellig haelt - sie sind Wachen, nicht
+der Beleg.

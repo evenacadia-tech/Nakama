@@ -1294,6 +1294,10 @@ void ControlClient::Laufzeit::inFlightAck (const std::string& json)
     bool wiederholt = false;
     std::uint64_t anzahl = 0;
     std::uint64_t verworfeneMarke = 0;
+    // Der Fuellstand wird UNTER `sendeMutex` gelesen: `zustandMutex` schuetzt
+    // den Snapshot, nicht die Queue - ein `p0.ueberlauf()` dort waere ein
+    // Datenrennen auf der Deque, auch wenn das Ergebnis nur eine Zahl ist.
+    std::uint64_t ueberlaeufe = 0;
     {
         std::lock_guard<std::mutex> l (sendeMutex);
         const auto eintrag = std::find_if (inFlight.begin(), inFlight.end(),
@@ -1347,6 +1351,7 @@ void ControlClient::Laufzeit::inFlightAck (const std::string& json)
                 inFlight.erase (eintrag);
         }
         anzahl = static_cast<std::uint64_t> (inFlight.size());
+        ueberlaeufe = p0.ueberlauf();
     }
     if (! gefunden)
         return;
@@ -1356,7 +1361,7 @@ void ControlClient::Laufzeit::inFlightAck (const std::string& json)
 
     std::lock_guard<std::mutex> z (zustandMutex);
     zustand.inFlight = anzahl;
-    zustand.p0Ueberlaeufe = p0.ueberlauf();
+    zustand.p0Ueberlaeufe = ueberlaeufe;
     if (wiederholt)
     {
         // Weder Erfolg noch endgueltiger Fehlschlag: der Auftrag laeuft noch.

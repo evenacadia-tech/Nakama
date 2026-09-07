@@ -15,6 +15,7 @@
       "quellen": [
         {
           "anhebung_db": 9.0,
+          "distraktor": false,
           "fenster": 12,
           "instanz": 2,
           "mixer": 3,
@@ -40,6 +41,7 @@
       "quellen": [
         {
           "anhebung_db": 9.0,
+          "distraktor": false,
           "fenster": 12,
           "instanz": 2,
           "mixer": 3,
@@ -48,6 +50,7 @@
         },
         {
           "anhebung_db": 9.0,
+          "distraktor": true,
           "fenster": 12,
           "instanz": 3,
           "mixer": 4,
@@ -73,6 +76,7 @@
       "quellen": [
         {
           "anhebung_db": 9.0,
+          "distraktor": false,
           "fenster": 12,
           "instanz": 2,
           "mixer": 7,
@@ -81,6 +85,7 @@
         },
         {
           "anhebung_db": 9.0,
+          "distraktor": false,
           "fenster": 12,
           "instanz": 3,
           "mixer": 7,
@@ -106,6 +111,7 @@
       "quellen": [
         {
           "anhebung_db": 9.0,
+          "distraktor": false,
           "fenster": 12,
           "instanz": 2,
           "mixer": 3,
@@ -131,6 +137,7 @@
       "quellen": [
         {
           "anhebung_db": 9.0,
+          "distraktor": false,
           "fenster": 3,
           "instanz": 2,
           "mixer": 3,

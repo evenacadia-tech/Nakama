@@ -1,0 +1,151 @@
+SONDE-014 Nacharbeit 1 - Rotbeweis NR-14 (EP-14, M-65/NAK-190).
+Die Zusage: der NAK-190-Nachweis gilt nur, wenn jede `alternatives`-ID
+auf einen existenten ANDEREN Befund desselben Sitzungslaufs aufloest und
+dessen `candidate_source` die im Korpus deklarierte Distraktorquelle ist.
+Die Zeile, die sie traegt: die Aufloesung je `alt_id` in `_faelle_bilden`
+(pruefe_p5_korpus.py). Zaehlt man wieder nur die LAENGE der Liste, bleibt
+`'f' * 32` als Verweis ungeprueft - genau die Reproduktion aus EP-14.
+
+Ruecknahme in tools/eq-copilot/pruefe_p5_korpus.py:
+--- vorher ---
+            for alt_id in b.get("alternatives", []):
+                gefundene_alternativen += 1
+                if alt_id not in eigene_ids:
+                    probleme.append(
+                        f"{kennung}: die Alternative {alt_id!r} loest auf KEINEN "
+                        "Befund dieses Laufs auf (NR-14, M-65/NAK-190)"
+                    )
+                elif alt_id == b["finding_id"]:
+                    probleme.append(
+                        f"{kennung}: ein Befund nennt sich SELBST als Alternative "
+                        f"({alt_id!r}) — das ist keine (NR-14)"
+                    )
+                elif distraktoren and quelle_je_id[alt_id] not in distraktoren:
+                    probleme.append(
+                        f"{kennung}: die Alternative {alt_id!r} gehoert der Quelle "
+                        f"{quelle_je_id[alt_id]!r}, nicht der deklarierten "
+                        "Distraktorquelle (NR-14, NAK-190)"
+                    )
+                elif distraktoren:
+                    aufgeloeste_distraktoren += 1
+--- nachher (die Ruecknahme) ---
+            # ROTBEWEIS NR-14: nur die LAENGE der Liste zaehlt, keine
+            # Aufloesung - der Zustand vor der Nacharbeit 1.
+            gefundene_alternativen += len(b.get("alternatives", []))
+            aufgeloeste_distraktoren += len(b.get("alternatives", []))
+
+=== ROTER LAUF: py -3.13 tools/eq-copilot/pruefe_p5_korpus.py --selbsttest ===
+EXIT=2
+P5-Korpus Selbsttest (M-68)
+  ok      stark auf einer fremden Quelle ist falsch
+  ok      und der Riegel meldet sie
+  ok      GEGENTEIL: stark auf der wahren Ursache ist richtig
+  ok      und der Riegel schweigt
+  ok      stark, wo hoechstens mittel erlaubt ist, ist falsch
+  ok      GEGENTEIL: mittel, wo mittel erlaubt ist, passt
+  ok      mittel, wo nur unklar erlaubt ist, ist falsch
+  ok      GEGENTEIL: unklar, wo unklar erlaubt ist, passt
+  ok      eine Enthaltung ist keine falsche Behauptung
+  ok      sie senkt die Coverage und hebt die Enthaltungsrate
+  ok      und sie geht NICHT in den Brier Score ein
+  ok      GEGENTEIL: eine echte zweite Behauptung veraendert ihn sehr wohl
+  ok      precision zaehlt beide starken
+  ok      und der Riegel meldet die falsche
+  ok      ein leerer Satz hat weder falsche noch fehlende Behauptungen
+  ok      und meldet nichts
+  ok      precision > 1 faellt (der Riegel hat einen Weg zu fallen)
+  ok      recall > 1 ebenso
+  ok      brier > 1 ebenso
+  ok      GEGENTEIL: gueltige Kennzahlen melden nichts
+  ok      eine richtige starke Behauptung liegt genau ihren Nennwert daneben
+  ok      GEGENTEIL: eine falsche starke Behauptung traegt den vollen Fehler
+  ok      der Rang bewegt den Brier nicht (er ist keine Wahrscheinlichkeit, M-15)
+  ok      GEGENTEIL: er steht als `rangmittel` trotzdem sichtbar da (§42.4)
+  ok      die Tafel zeigt je Klasse die GEMESSENE Trefferquote
+  ok      und mittelt sie nicht mit der anderen Klasse zusammen
+  ok      GEGENTEIL: eine Klasse ohne Faelle steht nicht mit erfundener Quote da
+  ok      die Schwelle wird GESUCHT: nur `hoch` haelt hier
+  ok      GEGENTEIL: haelt jede Stufe, ist die niedrigste die Antwort
+  ok      handelbar genau bei `hoch` meldet nichts
+  ok      ein handelnder `mittel`-Befund faellt (Schwelle geraten statt kalibriert)
+  ok      GEGENTEIL: ein `hoch`, das nicht handelt, faellt ebenso
+  ok      ein veralteter Befund ist die benannte Ausnahme und faellt nicht
+  ok      die Luecke verschwindet ohne P5-Messung: rot (M-70)
+  ok      GEGENTEIL: verschwunden UND gemessen ist in Ordnung
+  ok      gedruckt und ungemessen ist nie rot, nur benannt
+  ok      gedruckt und inzwischen gemessen: die Zeile darf weg
+  ok      ein fremdes Ticket haelt die Luecke NAK-190 nicht offen
+  ok      NR-12: ein falscher Distraktor haelt die Stufe `mittel` NICHT
+  ok      NR-12: und er wird beim Namen genannt
+  ok      NR-12: die niedrigste haltende Stufe ist deshalb `hoch`
+  ok      NR-12 GEGENTEIL: dieselbe Stufe haelt, wenn der Handelbare die wahre Ursache ist
+  ok      NR-12: eine Enthaltung macht keine Stufe unhaltbar
+  ok      NR-13: die passende Klasse meldet nichts, und der Sollnenner ist 1
+  ok      NR-13: eine vertauschte Klasse ist GENAU EINE rote Zeile mit Sitzungsname
+  ok      NR-13 GEGENTEIL: eine Enthaltung ist die benannte Ausnahme
+  ok      NR-13: ein ausgelassener Sollbefund senkt den Recall auf 0
+  ok      NR-13 GEGENTEIL: aus den AUSGEGEBENEN Befunden gerechnet bliebe er 1
+  ok      NR-14: ein Verweis auf den echten Distraktorbefund ist gruen und zaehlt
+  FEHLER  NR-14: eine nicht aufloesbare ID ist rot und zaehlt NICHT als Nachweis
+  FEHLER  NR-14: ein Verweis auf eine FREMDE Quelle ist kein NAK-190-Nachweis
+  FEHLER  NR-14: ein Befund, der sich SELBST als Alternative nennt, faellt
+P5-Korpus Selbsttest: 3 Fehler
+
+=== WIEDERHERGESTELLT, GRUENER LAUF ===
+EXIT=0
+P5-Korpus Selbsttest (M-68)
+  ok      stark auf einer fremden Quelle ist falsch
+  ok      und der Riegel meldet sie
+  ok      GEGENTEIL: stark auf der wahren Ursache ist richtig
+  ok      und der Riegel schweigt
+  ok      stark, wo hoechstens mittel erlaubt ist, ist falsch
+  ok      GEGENTEIL: mittel, wo mittel erlaubt ist, passt
+  ok      mittel, wo nur unklar erlaubt ist, ist falsch
+  ok      GEGENTEIL: unklar, wo unklar erlaubt ist, passt
+  ok      eine Enthaltung ist keine falsche Behauptung
+  ok      sie senkt die Coverage und hebt die Enthaltungsrate
+  ok      und sie geht NICHT in den Brier Score ein
+  ok      GEGENTEIL: eine echte zweite Behauptung veraendert ihn sehr wohl
+  ok      precision zaehlt beide starken
+  ok      und der Riegel meldet die falsche
+  ok      ein leerer Satz hat weder falsche noch fehlende Behauptungen
+  ok      und meldet nichts
+  ok      precision > 1 faellt (der Riegel hat einen Weg zu fallen)
+  ok      recall > 1 ebenso
+  ok      brier > 1 ebenso
+  ok      GEGENTEIL: gueltige Kennzahlen melden nichts
+  ok      eine richtige starke Behauptung liegt genau ihren Nennwert daneben
+  ok      GEGENTEIL: eine falsche starke Behauptung traegt den vollen Fehler
+  ok      der Rang bewegt den Brier nicht (er ist keine Wahrscheinlichkeit, M-15)
+  ok      GEGENTEIL: er steht als `rangmittel` trotzdem sichtbar da (§42.4)
+  ok      die Tafel zeigt je Klasse die GEMESSENE Trefferquote
+  ok      und mittelt sie nicht mit der anderen Klasse zusammen
+  ok      GEGENTEIL: eine Klasse ohne Faelle steht nicht mit erfundener Quote da
+  ok      die Schwelle wird GESUCHT: nur `hoch` haelt hier
+  ok      GEGENTEIL: haelt jede Stufe, ist die niedrigste die Antwort
+  ok      handelbar genau bei `hoch` meldet nichts
+  ok      ein handelnder `mittel`-Befund faellt (Schwelle geraten statt kalibriert)
+  ok      GEGENTEIL: ein `hoch`, das nicht handelt, faellt ebenso
+  ok      ein veralteter Befund ist die benannte Ausnahme und faellt nicht
+  ok      die Luecke verschwindet ohne P5-Messung: rot (M-70)
+  ok      GEGENTEIL: verschwunden UND gemessen ist in Ordnung
+  ok      gedruckt und ungemessen ist nie rot, nur benannt
+  ok      gedruckt und inzwischen gemessen: die Zeile darf weg
+  ok      ein fremdes Ticket haelt die Luecke NAK-190 nicht offen
+  ok      NR-12: ein falscher Distraktor haelt die Stufe `mittel` NICHT
+  ok      NR-12: und er wird beim Namen genannt
+  ok      NR-12: die niedrigste haltende Stufe ist deshalb `hoch`
+  ok      NR-12 GEGENTEIL: dieselbe Stufe haelt, wenn der Handelbare die wahre Ursache ist
+  ok      NR-12: eine Enthaltung macht keine Stufe unhaltbar
+  ok      NR-13: die passende Klasse meldet nichts, und der Sollnenner ist 1
+  ok      NR-13: eine vertauschte Klasse ist GENAU EINE rote Zeile mit Sitzungsname
+  ok      NR-13 GEGENTEIL: eine Enthaltung ist die benannte Ausnahme
+  ok      NR-13: ein ausgelassener Sollbefund senkt den Recall auf 0
+  ok      NR-13 GEGENTEIL: aus den AUSGEGEBENEN Befunden gerechnet bliebe er 1
+  ok      NR-14: ein Verweis auf den echten Distraktorbefund ist gruen und zaehlt
+  ok      NR-14: eine nicht aufloesbare ID ist rot und zaehlt NICHT als Nachweis
+  ok      NR-14: ein Verweis auf eine FREMDE Quelle ist kein NAK-190-Nachweis
+  ok      NR-14: ein Befund, der sich SELBST als Alternative nennt, faellt
+P5-Korpus Selbsttest: gruen
+
+URTEIL: BESTANDEN - rot mit EXIT=2, erwartete Zeile gefunden: 'NR-14: eine nicht aufloesbare ID ist rot und zaehlt NICHT als Nachweis'; gruen mit EXIT=0.

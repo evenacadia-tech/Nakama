@@ -169,6 +169,7 @@ def quelle(
     mixer: int | None = 3,
     versatz_fenster: int = 0,
     wahre_ursache: bool = False,
+    distraktor: bool = False,
 ) -> dict:
     """Eine Quelle der Sitzung.
 
@@ -183,6 +184,11 @@ def quelle(
         "mixer": mixer,
         "versatz_fenster": versatz_fenster,
         "wahre_ursache": wahre_ursache,
+        # NR-14 (Nacharbeit 1, 07.09.2026): die Distraktorquelle steht
+        # AUSDRUECKLICH im Korpus. Der NAK-190-Nachweis gilt nur, wenn eine
+        # `alternatives`-ID auf einen existenten Befund GENAU dieser Quelle
+        # aufloest; "irgendeine andere" waere kein Nachweis.
+        "distraktor": distraktor,
     }
 
 
@@ -204,7 +210,7 @@ SITZUNGEN: list[dict] = [
         ursachenklasse="zwei_quellen_konkurrenz",
         quellen=[
             quelle(2, anhebung_db=9.0, wahre_ursache=True),
-            quelle(3, anhebung_db=9.0, mixer=4),
+            quelle(3, anhebung_db=9.0, mixer=4, distraktor=True),
         ],
         erwartete_sicherheit="mittel",
         distraktor_ist_alternative=True,

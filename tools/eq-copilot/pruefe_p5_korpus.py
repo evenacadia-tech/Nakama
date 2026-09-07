@@ -81,8 +81,14 @@ KLASSENNENNWERT = {HOCH: 0.9, MITTEL: 0.6, UNKLAR: 0.3}
 # ═════════════════════════════════════════════════════════════════════════
 
 
-def kennzahlen(faelle: list[dict]) -> dict:
+def kennzahlen(faelle: list[dict], soll_starke: int | None = None) -> dict:
     """Precision, Recall, Brier, Kalibrierung, Coverage, Enthaltung.
+
+    🔑 NR-13 (Nacharbeit 1, 07.09.2026): `soll_starke` ist der Recall-Nenner
+    aus dem KORPUS — die Zahl der Sitzungen, die eine starke Aussage tragen
+    duerfen. Ohne ihn entstand er aus den AUSGEGEBENEN Befunden, und ein
+    ausgelassener Sollbefund verschwand aus Zaehler und Nenner zugleich: der
+    Recall blieb 1,000, obwohl das Produkt geschwiegen hatte.
 
     Ein `fall` traegt: `wahrheit`, `sicherheit_hoechstens`, `ist_wahre_ursache`,
     `sicherheit` (die AUSGEGEBENE), `score` und `ist_enthaltung`.
@@ -117,11 +123,17 @@ def kennzahlen(faelle: list[dict]) -> dict:
 
     richtige_starke = len(stark) - len(falsche_starke)
     # Zaehler und Nenner lesen DIESELBE Menge — die Lehre aus NAK-182 C6.
-    moegliche_starke = len([
-        f for f in faelle
-        if f["ist_wahre_ursache"] and ORDNUNG[f["sicherheit_hoechstens"]] >= ORDNUNG[HOCH]
-    ])
+    moegliche_starke = (
+        soll_starke
+        if soll_starke is not None
+        else len([
+            f for f in faelle
+            if f["ist_wahre_ursache"] and ORDNUNG[f["sicherheit_hoechstens"]] >= ORDNUNG[HOCH]
+        ])
+    )
     precision = richtige_starke / len(stark) if stark else 1.0
+    # Ein Recall ueber 1 waere ein Zaehlfehler, kein Erfolg: er faellt am
+    # Riegel und wird nicht stillschweigend gekappt.
     recall = richtige_starke / moegliche_starke if moegliche_starke else 1.0
 
     # Brier und Kalibrierung NUR ueber die Behauptungen. Eine Enthaltung ist
@@ -166,6 +178,7 @@ def kennzahlen(faelle: list[dict]) -> dict:
         "recall": recall,
         "brier": brier,
         "kalibrierung": abs(mittlere - trefferquote),
+        "soll_starke": moegliche_starke,
         "namen_falscher_starker": [f.get("kennung", "?") for f in falsche_starke],
         "namen_falscher_schwacher": [f.get("kennung", "?") for f in falsche_schwache],
     }
@@ -218,11 +231,31 @@ def schwelle_suchen(faelle: list[dict]) -> dict:
     ergebnis = {}
     for stufe in (HOCH, MITTEL, UNKLAR):
         handelbar = [f for f in faelle if ORDNUNG[f["sicherheit"]] >= ORDNUNG[stufe]]
-        falsch = [f for f in handelbar if not _passt(f)]
+        # 🔑 NR-12 (Nacharbeit 1, 07.09.2026): bewertet wird die NEU
+        # ZUGELASSENE HANDLUNG, nicht die urspruengliche Sicherheitsklasse.
+        #
+        # `_passt()` fragt „traegt die Wahrheit die AUSGEGEBENE Sicherheit?"
+        # — und beim Absenken der Schwelle ist das die falsche Frage. Ein
+        # Distraktor mit `mittel`, dessen Fall hoechstens `mittel` erlaubt,
+        # passt in diesem Sinn immer; er wurde aber gerade HANDELBAR gemacht,
+        # und handelbar ist nur die wahre Ursache. Auf diesem Korpus erklaerte
+        # die Stufe `mittel` deshalb sechs Befunde einschliesslich Distraktor
+        # und Parent-Duplikat fuer handelbar und meldete trotzdem
+        # `davon_falsch=0`.
+        #
+        # Enthaltungen sind ausgenommen: sie behaupten nichts und werden
+        # deshalb auch nicht handelbar (M-27, §49.4).
+        falsch = [
+            f for f in handelbar
+            if not f["ist_enthaltung"]
+            and (not f["ist_wahre_ursache"]
+                 or ORDNUNG[f["sicherheit"]] > ORDNUNG[f["sicherheit_hoechstens"]])
+        ]
         ergebnis[stufe] = {
             "handelbar": len(handelbar),
             "davon_falsch": len(falsch),
             "haelt": len(falsch) == 0,
+            "namen_falscher": [f.get("kennung", "?") for f in falsch],
         }
     gewaehlt = next((s for s in (UNKLAR, MITTEL, HOCH) if ergebnis[s]["haelt"]), None)
     return {"je_stufe": ergebnis, "niedrigste_haltende": gewaehlt}
@@ -324,18 +357,26 @@ def _voraussetzung() -> tuple[dict, dict, list[str]]:
     return {"manifest": manifest, "sitzungen": sitzungen}, ergebnis, []
 
 
-def _faelle_bilden(korpus: dict, ergebnis: dict) -> tuple[list[dict], list[str], list[str]]:
+def _faelle_bilden(
+    korpus: dict, ergebnis: dict
+) -> tuple[list[dict], list[str], list[str], dict[str, int]]:
     """Ein `fall` je AUSGEGEBENEM Befund, gehalten gegen die Wahrheit.
 
     Dritter Rueckgabewert: die Sitzungen, die den korrelierten Distraktor
-    **wirklich** als Alternative gemessen haben (M-70). „Wirklich" heisst:
-    der Fall sagt es zu UND der Lauf hat mindestens eine Alternative
-    ausgegeben — eine Zusage ohne Ausgabe misst nichts.
+    **wirklich** als Alternative gemessen haben (M-70). „Wirklich" heisst
+    seit NR-14: jede `alternatives`-ID loest auf einen EXISTENTEN anderen
+    Befund desselben Sitzungslaufs auf, und dessen `candidate_source` ist die
+    im Korpus als Distraktor deklarierte Quelle.
+
+    Vierter Rueckgabewert (NR-13): je SOLL-Ursachenklasse die Zahl der
+    Sitzungen, die eine starke Aussage tragen duerfen — der Recall-Nenner aus
+    dem Korpus, nicht aus der Ausgabe.
     """
     befunde_je_sitzung = {e["kennung"]: e["befunde"] for e in ergebnis["ergebnisse"]}
     faelle: list[dict] = []
     probleme: list[str] = []
     messende: list[str] = []
+    soll_starke: dict[str, int] = {}
     for s in korpus["sitzungen"]["sitzungen"]:
         kennung = s["kennung"]
         if kennung not in befunde_je_sitzung:
@@ -344,16 +385,65 @@ def _faelle_bilden(korpus: dict, ergebnis: dict) -> tuple[list[dict], list[str],
         wahre = {
             f"{q['instanz']:032x}" for q in s["quellen"] if q.get("wahre_ursache")
         }
+        # 🔑 NR-14: die im Korpus AUSDRUECKLICH deklarierte Distraktorquelle.
+        # Sie ist die Wahrheit, gegen die eine `alternatives`-ID gehalten
+        # wird — nicht „irgendeine andere Quelle".
+        distraktoren = {
+            f"{q['instanz']:032x}" for q in s["quellen"] if q.get("distraktor")
+        }
         erwartet = s["erwartet"]
+        # 🔑 NR-13: die Sollklasse des Falls, unabhaengig von der Ausgabe.
+        soll_klasse = s["ursachenklasse"]
+        if ORDNUNG[erwartet["sicherheit_hoechstens"]] >= ORDNUNG[HOCH] and wahre:
+            soll_starke[soll_klasse] = soll_starke.get(soll_klasse, 0) + 1
+        else:
+            soll_starke.setdefault(soll_klasse, 0)
         gefundene_gruende: set[str] = set()
         gefundene_alternativen = 0
+        # Die Kennungen ALLER Befunde dieses Sitzungslaufs — eine
+        # Alternativ-ID muss auf einen von ihnen zeigen (NR-14).
+        eigene_ids = {b["finding_id"] for b in befunde_je_sitzung[kennung]}
+        quelle_je_id = {
+            b["finding_id"]: b["candidate_source"] for b in befunde_je_sitzung[kennung]
+        }
+        aufgeloeste_distraktoren = 0
         for b in befunde_je_sitzung[kennung]:
             quelle = b["candidate_source"]
             gefundene_gruende |= {a["grund"] for a in b.get("ausschluesse", [])}
-            gefundene_alternativen += len(b.get("alternatives", []))
+            for alt_id in b.get("alternatives", []):
+                gefundene_alternativen += 1
+                if alt_id not in eigene_ids:
+                    probleme.append(
+                        f"{kennung}: die Alternative {alt_id!r} loest auf KEINEN "
+                        "Befund dieses Laufs auf (NR-14, M-65/NAK-190)"
+                    )
+                elif alt_id == b["finding_id"]:
+                    probleme.append(
+                        f"{kennung}: ein Befund nennt sich SELBST als Alternative "
+                        f"({alt_id!r}) — das ist keine (NR-14)"
+                    )
+                elif distraktoren and quelle_je_id[alt_id] not in distraktoren:
+                    probleme.append(
+                        f"{kennung}: die Alternative {alt_id!r} gehoert der Quelle "
+                        f"{quelle_je_id[alt_id]!r}, nicht der deklarierten "
+                        "Distraktorquelle (NR-14, NAK-190)"
+                    )
+                elif distraktoren:
+                    aufgeloeste_distraktoren += 1
+            # 🔑 NR-13: die Ursachenklasse wird gegen die UNABHAENGIGE
+            # Wahrheit des Korpus gehalten, nicht aus der Ausgabe uebernommen.
+            # Eine Enthaltung ist die benannte Ausnahme: sie behauptet keine
+            # Klasse, sie sagt „reicht nicht".
+            if (b["ursachenklasse"] != soll_klasse
+                    and b["ursachenklasse"] != "daten_reichen_nicht"):
+                probleme.append(
+                    f"{kennung}: Ursachenklasse {b['ursachenklasse']!r} weicht von "
+                    f"der Korpuswahrheit {soll_klasse!r} ab (NR-13, M-64)"
+                )
             faelle.append({
                 "kennung": kennung,
                 "ursachenklasse": b["ursachenklasse"],
+                "soll_klasse": soll_klasse,
                 "wahrheit": s["wahrheit"],
                 "sicherheit_hoechstens": erwartet["sicherheit_hoechstens"],
                 # ⚠️ Eine Enthaltung hat KEINE wahre Ursache und ist trotzdem
@@ -380,9 +470,24 @@ def _faelle_bilden(korpus: dict, ergebnis: dict) -> tuple[list[dict], list[str],
                     f"{kennung}: der Distraktor erscheint nicht als Alternative "
                     "(NAK-190, SONDE-013 M-85 Ziel 1)"
                 )
+            elif not distraktoren:
+                probleme.append(
+                    f"{kennung}: der Fall sagt `distraktor_ist_alternative` zu, "
+                    "nennt aber KEINE Distraktorquelle (NR-14)"
+                )
+            elif aufgeloeste_distraktoren == 0:
+                probleme.append(
+                    f"{kennung}: keine Alternative loest auf die deklarierte "
+                    "Distraktorquelle auf — der NAK-190-Nachweis misst nichts "
+                    "(NR-14)"
+                )
             else:
+                # 🔑 NR-14: `messende` wird NUR gesetzt, wenn eine Alternative
+                # wirklich auf den Distraktorbefund auflaest. Die blosse
+                # LAENGE der Liste sagte nichts: `'f' * 32` als Verweis blieb
+                # ungeprueft, und die Sitzung galt weiter als Nachweis.
                 messende.append(kennung)
-    return faelle, probleme, messende
+    return faelle, probleme, messende, soll_starke
 
 
 def main(argv: list[str]) -> int:
@@ -396,7 +501,7 @@ def main(argv: list[str]) -> int:
             print(f"  {f}")
         return 3
 
-    faelle, probleme, messende = _faelle_bilden(korpus, ergebnis)
+    faelle, probleme, messende, soll_starke = _faelle_bilden(korpus, ergebnis)
     print(f"P5-Korpus: {len(korpus['sitzungen']['sitzungen'])} Sitzungen, "
           f"{len(faelle)} ausgegebene Befunde")
 
@@ -406,17 +511,30 @@ def main(argv: list[str]) -> int:
     # Ursachenklasse — den sieben Klassen aus §8, nicht den vier Messklassen
     # des P4-Korpus".
     befunde: list[str] = list(probleme)
-    klassen = sorted({f["ursachenklasse"] for f in faelle})
+    # 🔑 NR-13: gruppiert wird nach der SOLL-Ursachenklasse des Korpus, nicht
+    # nach der ausgegebenen. Wer nach der Ausgabe gruppiert, misst das
+    # Produkt gegen sich selbst — eine vertauschte Klasse verschiebt dann
+    # einfach die Zeile und faellt nirgends.
+    klassen = sorted({f["soll_klasse"] for f in faelle} | set(soll_starke))
     for klasse in klassen:
-        k = kennzahlen([f for f in faelle if f["ursachenklasse"] == klasse])
+        dieser = [f for f in faelle if f["soll_klasse"] == klasse]
+        k = kennzahlen(dieser, soll_starke.get(klasse))
         print(f"  {klasse}: n={k['faelle']} precision={k['precision']:.3f} "
-              f"recall={k['recall']:.3f} brier={k['brier']:.3f} "
+              f"recall={k['recall']:.3f} (soll_starke={k['soll_starke']}) "
+              f"brier={k['brier']:.3f} "
               f"kalibrierung={k['kalibrierung']:.3f} coverage={k['coverage']:.3f} "
               f"enthaltung={k['enthaltungsrate']:.3f} "
               f"falsche_starke={k['falsche_starke']}")
         befunde += riegel(k, klasse)
+        # Recall unter 1 heisst: ein Sollbefund ist ausgelassen worden. Die
+        # Zeile faellt HIER und nicht erst in einer Gesamtzahl.
+        if k["recall"] < 1.0:
+            befunde.append(
+                f"{klasse}: recall {k['recall']:.3f} < 1 — von {k['soll_starke']} "
+                "erwarteten starken Aussagen fehlt mindestens eine (NR-13, M-64)"
+            )
 
-    gesamt = kennzahlen(faelle)
+    gesamt = kennzahlen(faelle, sum(soll_starke.values()))
     print(f"  GESAMT: n={gesamt['faelle']} precision={gesamt['precision']:.3f} "
           f"recall={gesamt['recall']:.3f} brier={gesamt['brier']:.3f} "
           f"kalibrierung={gesamt['kalibrierung']:.3f} "
@@ -434,7 +552,9 @@ def main(argv: list[str]) -> int:
     schwelle = schwelle_suchen(faelle)
     for stufe, wert in schwelle["je_stufe"].items():
         print(f"  Schwelle {stufe}: handelbar={wert['handelbar']} "
-              f"davon_falsch={wert['davon_falsch']} haelt={wert['haelt']}")
+              f"davon_falsch={wert['davon_falsch']} haelt={wert['haelt']}"
+              + (f" ({', '.join(wert['namen_falscher'])})"
+                 if wert["namen_falscher"] else ""))
     print(f"  SCHWELLE (Ausgabe, M-31): niedrigste haltende Stufe = "
           f"{schwelle['niedrigste_haltende']}")
     if schwelle["niedrigste_haltende"] is None:
@@ -650,6 +770,143 @@ def selbsttest() -> int:
            "gedruckt und inzwischen gemessen: die Zeile darf weg")
     pruefe(p4_luecke([{"ticket": "NAK-999"}], [])[0] != [],
            "ein fremdes Ticket haelt die Luecke NAK-190 nicht offen")
+
+    # -- NR-12: die Schwellensuche bewertet die NEUE HANDLUNG --------------
+    #
+    # Ein Distraktor mit `sicherheit == sicherheit_hoechstens == mittel` passt
+    # in jeder Lesart der ausgegebenen Klasse — er ist aber nicht die wahre
+    # Ursache, und die Stufe `mittel` macht ihn HANDELBAR. Genau das hat die
+    # alte `_passt`-Logik durchgelassen.
+    s = schwelle_suchen([
+        fall(HOCH, HOCH, True, 0.9),
+        fall(MITTEL, MITTEL, False, 0.5, kennung="distraktor"),
+    ])
+    pruefe(s["je_stufe"][MITTEL]["haelt"] is False,
+           "NR-12: ein falscher Distraktor haelt die Stufe `mittel` NICHT")
+    pruefe(s["je_stufe"][MITTEL]["namen_falscher"] == ["distraktor"],
+           "NR-12: und er wird beim Namen genannt")
+    pruefe(s["niedrigste_haltende"] == HOCH,
+           "NR-12: die niedrigste haltende Stufe ist deshalb `hoch`")
+    s = schwelle_suchen([
+        fall(HOCH, HOCH, True, 0.9),
+        fall(MITTEL, MITTEL, True, 0.5, kennung="wahr"),
+    ])
+    pruefe(s["je_stufe"][MITTEL]["haelt"] is True,
+           "NR-12 GEGENTEIL: dieselbe Stufe haelt, wenn der Handelbare die "
+           "wahre Ursache ist")
+    # Eine Enthaltung wird nie handelbar - sie behauptet nichts (M-27).
+    s = schwelle_suchen([
+        fall(UNKLAR, UNKLAR, True, 0.1, enthaltung=True, kennung="enthalten"),
+    ])
+    pruefe(s["niedrigste_haltende"] == UNKLAR,
+           "NR-12: eine Enthaltung macht keine Stufe unhaltbar")
+
+    # -- NR-13: die Klassenmetrik rechnet gegen die KORPUSWAHRHEIT ---------
+    #
+    # Gruppiert und gemessen wird gegen `soll_klasse` aus `sitzungen.json`;
+    # eine Abweichung ist ein eigener roter Riegel mit Sitzungsname, und der
+    # Recall-Nenner kommt aus den Sollsitzungen.
+    korpus = {
+        "sitzungen": {"sitzungen": [{
+            "kennung": "wahr",
+            "wahrheit": "wahre_ursache",
+            "ursachenklasse": "quelle_resonanz",
+            "quellen": [{"instanz": 2, "wahre_ursache": True}],
+            "erwartet": {"sicherheit_hoechstens": HOCH,
+                         "ausschlussgrund": None,
+                         "distraktor_ist_alternative": False},
+        }]}
+    }
+    def lauf(befunde: list[dict]) -> dict:
+        return {"ergebnisse": [{"kennung": "wahr", "befunde": befunde}]}
+    def befund(**felder) -> dict:
+        grund = {
+            "finding_id": "a" * 32,
+            "candidate_source": f"{2:032x}",
+            "ursachenklasse": "quelle_resonanz",
+            "claim_class": "zusammenhang",
+            "confidence_class": HOCH,
+            "confidence_score": 0.9,
+            "zustand": "ready_to_send",
+            "alternatives": [],
+            "ausschluesse": [],
+        }
+        grund.update(felder)
+        return grund
+
+    _, probleme, _, soll = _faelle_bilden(korpus, lauf([befund()]))
+    pruefe(probleme == [] and soll == {"quelle_resonanz": 1},
+           "NR-13: die passende Klasse meldet nichts, und der Sollnenner ist 1")
+    _, probleme, _, _ = _faelle_bilden(
+        korpus, lauf([befund(ursachenklasse="peak_aus_transient")]))
+    pruefe(len(probleme) == 1 and "wahr" in probleme[0],
+           "NR-13: eine vertauschte Klasse ist GENAU EINE rote Zeile mit "
+           "Sitzungsname")
+    _, probleme, _, _ = _faelle_bilden(
+        korpus, lauf([befund(ursachenklasse="daten_reichen_nicht")]))
+    pruefe(probleme == [],
+           "NR-13 GEGENTEIL: eine Enthaltung ist die benannte Ausnahme")
+    # Ein AUSGELASSENER Sollbefund senkt den Recall - ohne den Korpusnenner
+    # waere er unsichtbar gewesen.
+    #
+    # Der Lauf gibt hier eine starke Aussage ueber eine FREMDE Quelle aus. Aus
+    # den ausgegebenen Befunden gerechnet ist der Nenner dann 0 (keiner von
+    # ihnen ist die wahre Ursache), und der Recall bliebe 1,000 - obwohl die
+    # eine erwartete starke Aussage fehlt. Der Korpusnenner sieht sie.
+    faelle, _, _, soll = _faelle_bilden(
+        korpus, lauf([befund(candidate_source=f"{9:032x}")]))
+    k = kennzahlen(faelle, soll["quelle_resonanz"])
+    pruefe(k["recall"] == 0.0 and k["soll_starke"] == 1,
+           "NR-13: ein ausgelassener Sollbefund senkt den Recall auf 0")
+    ohne_nenner = kennzahlen(faelle)
+    pruefe(ohne_nenner["recall"] == 1.0,
+           "NR-13 GEGENTEIL: aus den AUSGEGEBENEN Befunden gerechnet bliebe er 1")
+
+    # -- NR-14: Alternativ-IDs loesen auf einen echten Distraktorbefund auf -
+    korpus2 = {
+        "sitzungen": {"sitzungen": [{
+            "kennung": "distraktorfall",
+            "wahrheit": "distraktor",
+            "ursachenklasse": "zwei_quellen_konkurrenz",
+            "quellen": [
+                {"instanz": 2, "wahre_ursache": True},
+                {"instanz": 3, "wahre_ursache": False, "distraktor": True},
+            ],
+            "erwartet": {"sicherheit_hoechstens": MITTEL,
+                         "ausschlussgrund": None,
+                         "distraktor_ist_alternative": True},
+        }]}
+    }
+    fuehrend = {
+        "finding_id": "a" * 32, "candidate_source": f"{2:032x}",
+        "ursachenklasse": "zwei_quellen_konkurrenz", "claim_class": "zusammenhang",
+        "confidence_class": MITTEL, "confidence_score": 0.5, "zustand": "more_data",
+        "alternatives": ["b" * 32], "ausschluesse": [],
+    }
+    alternative = dict(fuehrend, finding_id="b" * 32,
+                       candidate_source=f"{3:032x}", alternatives=[])
+    def lauf2(befunde: list[dict]) -> dict:
+        return {"ergebnisse": [{"kennung": "distraktorfall", "befunde": befunde}]}
+
+    _, probleme, messende, _ = _faelle_bilden(korpus2, lauf2([fuehrend, alternative]))
+    pruefe(probleme == [] and messende == ["distraktorfall"],
+           "NR-14: ein Verweis auf den echten Distraktorbefund ist gruen und zaehlt")
+    # Eine ID, die auf NICHTS aufloest - genau die Reproduktion aus EP-14.
+    ins_leere = dict(fuehrend, alternatives=["f" * 32])
+    _, probleme, messende, _ = _faelle_bilden(korpus2, lauf2([ins_leere, alternative]))
+    pruefe(len(probleme) >= 1 and messende == [],
+           "NR-14: eine nicht aufloesbare ID ist rot und zaehlt NICHT als Nachweis")
+    # Eine ID, die auf einen Befund einer FREMDEN Quelle zeigt.
+    fremde = dict(alternative, finding_id="c" * 32, candidate_source=f"{9:032x}")
+    auf_fremde = dict(fuehrend, alternatives=["c" * 32])
+    _, probleme, messende, _ = _faelle_bilden(korpus2, lauf2([auf_fremde, fremde]))
+    pruefe(len(probleme) >= 1 and messende == [],
+           "NR-14: ein Verweis auf eine FREMDE Quelle ist kein NAK-190-Nachweis")
+    # Und ein Befund, der sich selbst nennt.
+    selbst = dict(fuehrend, alternatives=["a" * 32])
+    _, probleme, _, _ = _faelle_bilden(korpus2, lauf2([selbst, alternative]))
+    pruefe(len(probleme) >= 1,
+           "NR-14: ein Befund, der sich SELBST als Alternative nennt, faellt")
 
     print(f"P5-Korpus Selbsttest: {'gruen' if fehler == 0 else f'{fehler} Fehler'}")
     return 0 if fehler == 0 else 2

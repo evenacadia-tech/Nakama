@@ -6,8 +6,8 @@
   },
   "dateien": {
     "sitzungen.json": {
-      "bytes": 5258,
-      "sha256": "6f847fcbdfe559a368ddc14c68a3dd3c817e0d85cdcd7c42080545adb588bc6a"
+      "bytes": 5474,
+      "sha256": "4b8100f84a2decd2adcd4e3fc06ae1d48df815c2cb38f0fdfb4f93f4030762ec"
     }
   },
   "ergebnisdatei": "eq-copilot/build/p5-korpus-ergebnis.json",

@@ -437,6 +437,27 @@ impl Coordinator {
 
             let revision_gestiegen = revision > bestand.revision;
             *bestand = kandidat;
+            // 🔑 SONDE-014 Etappe I (M-86 seit E-11): die Vollstaendigkeitsmarke
+            // deckt BEIDE Bestaende — Intent UND aktuellen Schritt.
+            //
+            // Bis hierher deckte sie nur den Intent, und das riss ein Loch
+            // derselben Klasse, die M-86 fuer den Intent schliesst: laedt der
+            // Main ein anderes Projekt oder startet er neu, meldet er seinen
+            // Vollbestand samt Marke — und hat er KEINEN offenen
+            // Assistentenschritt, sendet er auch keinen. Der Spiegel trug dann
+            // weiter den Schritt der VORIGEN Main-Generation, und eine Suche
+            // oder Crashdiagnose haette einen Schritt gefunden, den es nicht
+            // mehr gibt. Genau die Aussage, die §33.5 mit „der Spiegel ist nie
+            // autoritativ" verbietet.
+            //
+            // Die Reihenfolge traegt das: der Main sendet den Vollbestand
+            // ZUERST und den Schritt unmittelbar danach
+            // (`PluginProcessor::sendeIntentVollbestand`), beide als P1 auf
+            // demselben Link. Was nach der Marke kommt, gehoert dieser
+            // Generation; was davor stand, ist fort.
+            if vollstaendig {
+                stand.assistent.remove(&session);
+            }
             stand.intent_updates = stand.intent_updates.saturating_add(1);
             // 🔑 SONDE-014 Etappe D (§37.3, M-29): eine gestiegene
             // Bestandsrevision macht jeden Befund darunter SICHTBAR `stale`.

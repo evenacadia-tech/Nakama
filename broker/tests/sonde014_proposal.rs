@@ -14,7 +14,7 @@
 //! `sonde013_verdrahtung.rs`, wo der Experimentpfad samt Store schon steht.
 
 use eqcop_broker::coordinator::{
-    Aktion, Ausfuehrung, Coordinator, ManualClock, Rueckweg, Stopbedingung,
+    Aktion, Ausfuehrung, Coordinator, ManualClock, NaechsterTest, Rueckweg, Stopbedingung,
 };
 use eqcop_broker::transport::bootstrap::{Adresse, AudioLage, HelloControl, HostAngabe};
 use eqcop_broker::transport::server_v3::Senke;
@@ -848,4 +848,244 @@ fn rollenaenderung_macht_den_vorschlag_stale() {
         "und damit ist der Vorschlag nicht mehr handelbar"
     );
     assert_eq!(c.draft_offers_zaehler(), 0);
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// SONDE-014 ETAPPE I · die Produktinvarianten am Vorschlagspfad
+// ═════════════════════════════════════════════════════════════════════════
+
+/// Sammelt, was der Broker an wen geschrieben hätte.
+///
+/// Sie steht hier, weil M-78 eine **Abwesenheit** misst: an die Sonde geht
+/// nichts. Eine Abwesenheit ohne Gegenprobe ist wertlos — deshalb hält
+/// dieselbe Probe fest, dass der Main sehr wohl beliefert wird.
+#[derive(Default)]
+struct Pushprobe {
+    geschrieben: std::sync::Mutex<Vec<(String, Value)>>,
+}
+
+impl eqcop_broker::coordinator::SessionPush for Pushprobe {
+    fn snapshot_schreiben(&self, link_id: &str, payload: &[u8]) -> bool {
+        let wert: Value = serde_json::from_slice(payload).unwrap_or(Value::Null);
+        self.geschrieben
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .push((link_id.to_owned(), wert));
+        true
+    }
+}
+
+/// **M-78** — nichts Ungefragtes: ein Proposal bleibt ohne Useraktion
+/// folgenlos.
+///
+/// Gemessen an dem, was die **Sonde** erlebt. Der Advisor bildet auf dieser
+/// Bühne Befunde und Vorschläge; an der Probe darf davon nichts ankommen und
+/// nichts sich ändern. Die Gegenprobe steht daneben: der Main, der die
+/// Sitzung abonniert, bekommt sehr wohl seine Schnitte — der Pushweg ist also
+/// offen, und das Schweigen zur Sonde hin ist echt.
+#[test]
+fn ein_proposal_ohne_useraktion_bleibt_folgenlos() {
+    let c = coordinator();
+    let push = Arc::new(Pushprobe::default());
+    c.session_push_setzen(push.clone());
+    let adressen = buehne(&c, 12);
+    let sonde = &adressen[1];
+
+    assert!(
+        !c.befunde_sicht(&hex(0x11), &hex(0x22)).is_empty(),
+        "die Bühne trägt Befunde - sonst misst der Fall nichts"
+    );
+    assert!(
+        !c.vorschlaege_sicht(&hex(0x11), &hex(0x22)).is_empty(),
+        "und Vorschläge"
+    );
+
+    let evidenz_vorher = c.evidenz_sicht(&sonde.instance_id);
+    assert!(evidenz_vorher.is_some(), "die Sonde hat gemessen");
+
+    // 1. Kein Angebot ist hinausgegangen, und keines ist auch nur geschuldet.
+    assert_eq!(c.draft_offers_zaehler(), 0, "kein `draft_offer` in P5");
+    assert_eq!(c.draft_offer_schuld_zaehler(), 0);
+    // 2. Keine Evidenz wurde zurückgenommen oder gesperrt.
+    assert_eq!(c.invalidierungen_zaehler(), 0);
+    assert_eq!(c.evidenz_ausgeschlossen_zaehler(), 0);
+    // 3. Kein Experiment ist begonnen worden.
+    assert!(
+        c.experiment_sicht(&hex(0xdead)).is_none(),
+        "der Advisor beginnt keinen Versuch"
+    );
+    // 4. An die SONDE ging kein einziger Frame.
+    let geschrieben = push
+        .geschrieben
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .clone();
+    assert!(
+        !geschrieben.iter().any(|(link, _)| link == "sonde0"),
+        "ein_proposal_ohne_useraktion_bleibt_folgenlos - an die Probe geht nichts"
+    );
+    // 5. Und der Messstand der Sonde ist unverändert - kein Eingriff, keine
+    //    Markierung, keine Zustandsänderung.
+    let evidenz_nachher = c.evidenz_sicht(&sonde.instance_id);
+    assert_eq!(
+        evidenz_vorher.map(|e| e.evidence_id.clone()),
+        evidenz_nachher.map(|e| e.evidence_id.clone()),
+        "der Advisor fasst die Evidenz der Probe nicht an"
+    );
+}
+
+/// **M-79** — keine KI-Erklärschicht: jeder Text entsteht aus festen
+/// Bausteinen, und **keine Zahl darin ist erfunden**.
+///
+/// Der Rotbeweis der Zeile lautet wörtlich „ein Textbaustein trägt eine Zahl,
+/// die in keinem Feld steht". Genau das misst der Fall: jede Zahl, die in
+/// `likely_cause`, `smallest_test` oder `listen_for` vorkommt, muss in einem
+/// **Feld desselben Befunds** stehen. Der Extraktor läuft daneben gegen einen
+/// mutierten Text — sonst wäre er auch dann grün, wenn er gar nichts fände.
+#[test]
+fn text_entsteht_aus_bausteinen_und_erfindet_keine_zahl() {
+    /// Jede zusammenhängende Ziffernfolge eines Textes.
+    fn zahlen(text: &str) -> Vec<String> {
+        let mut aus = Vec::new();
+        let mut laufend = String::new();
+        for z in text.chars() {
+            if z.is_ascii_digit() {
+                laufend.push(z);
+            } else if !laufend.is_empty() {
+                aus.push(std::mem::take(&mut laufend));
+            }
+        }
+        if !laufend.is_empty() {
+            aus.push(laufend);
+        }
+        aus
+    }
+
+    let c = coordinator();
+    let _ = buehne(&c, 12);
+    let befunde = c.befunde_sicht(&hex(0x11), &hex(0x22));
+    assert!(!befunde.is_empty());
+
+    // Die geschlossene Menge der `smallest_test`-Sätze: sie kommt aus der
+    // Abbildung am Enum, nicht aus einer zweiten Liste hier.
+    let saetze: Vec<&'static str> = NaechsterTest::ALLE.iter().map(|n| n.satz()).collect();
+
+    let mut geprueft = 0usize;
+    for b in &befunde {
+        assert!(
+            saetze.contains(&b.smallest_test.as_str()),
+            "`smallest_test` steht nicht in der geschlossenen Menge: {}",
+            b.smallest_test
+        );
+        // Die Felder, in denen eine Zahl dieses Befunds stehen darf. Die
+        // Kennung der Quelle steht abgekuerzt im Satz — deshalb zaehlt fuer
+        // sie der TEILSTRING von `candidate_source`, fuer die Bandraender die
+        // exakte Zahl.
+        let felder: Vec<String> = vec![
+            b.band_hz.von.to_string(),
+            b.band_hz.bis.to_string(),
+            b.intent_revision.to_string(),
+        ];
+        for text in [&b.likely_cause, &b.smallest_test, &b.listen_for] {
+            for zahl in zahlen(text) {
+                geprueft += 1;
+                let steht_im_feld = felder.contains(&zahl)
+                    || b.candidate_source.contains(&zahl)
+                    || b.passage_id.as_deref().is_some_and(|p| p.contains(&zahl));
+                assert!(
+                    steht_im_feld,
+                    "text_entsteht_aus_bausteinen_und_erfindet_keine_zahl - die Zahl {zahl} aus {text:?} steht in keinem Feld"
+                );
+            }
+        }
+    }
+    assert!(
+        geprueft > 0,
+        "die Texte tragen wirklich Zahlen - sonst waere der Riegel trivial"
+    );
+
+    // Die Gegenprobe: derselbe Extraktor an einem erfundenen Wert.
+    let erfunden = "Der Master verliert 7,5 dB im Bandbereich 40..96.";
+    let quelle = befunde[0].candidate_source.clone();
+    let felder = ["40".to_string(), "96".to_string()];
+    let erfundene: Vec<String> = zahlen(erfunden)
+        .into_iter()
+        .filter(|z| !felder.contains(z) && !quelle.contains(z))
+        .collect();
+    assert_eq!(
+        erfundene,
+        vec!["7".to_string(), "5".to_string()],
+        "der Extraktor findet GENAU die erfundene Zahl - sonst misst er nichts"
+    );
+}
+
+/// **M-82** — NaN-Ehrlichkeit über den ganzen Weg: kein nicht-endlicher Wert
+/// erreicht die Leitung.
+///
+/// Die Zusage steht am ERZEUGER („nicht-endliche Werte werden beim Erzeugen
+/// verriegelt und gezählt, nie sanitisiert auf die Leitung gelassen"), und
+/// deshalb wird am Ausgang gemessen: der serialisierte Sitzungsschnitt trägt
+/// weder `NaN` noch `Infinity` noch ein `e`-Exponentenungetüm, und jede
+/// gelesene Zahl ist endlich. Die Gegenprobe hält fest, dass wirklich Zahlen
+/// darin stehen.
+#[test]
+fn kein_nicht_endlicher_wert_erreicht_die_leitung() {
+    fn zahlen_sammeln(wert: &Value, aus: &mut Vec<f64>) {
+        match wert {
+            Value::Number(n) => {
+                aus.push(n.as_f64().unwrap_or(f64::NAN));
+            }
+            Value::Array(a) => a.iter().for_each(|w| zahlen_sammeln(w, aus)),
+            Value::Object(o) => o.values().for_each(|w| zahlen_sammeln(w, aus)),
+            _ => {}
+        }
+    }
+
+    let c = coordinator();
+    let _ = buehne(&c, 12);
+    let befunde = c.befunde_sicht(&hex(0x11), &hex(0x22));
+    assert!(!befunde.is_empty());
+
+    let schnitt = c.session_snapshot_json(&hex(0x11), &hex(0x22));
+    let text = String::from_utf8(schnitt.clone()).expect("der Schnitt ist UTF-8");
+    // Genau die drei Token, die ein Serialisierer fuer nicht-endliche Zahlen
+    // schreibt. Eine Suche nach `nan` oder `inf` als Teilwort faende jeden
+    // Bezeichner, der sie zufaellig enthaelt, und waere damit keine Messung,
+    // sondern ein Zufallstreffer.
+    for wort in ["NaN", "Infinity", "-Infinity"] {
+        assert!(
+            !text.contains(wort),
+            "kein_nicht_endlicher_wert_erreicht_die_leitung - {wort} steht im Sitzungsschnitt"
+        );
+    }
+    let wert: Value = serde_json::from_slice(&schnitt).expect("der Schnitt ist JSON");
+    // Der Schnitt traegt die Befunde wirklich - sonst pruefte der Riegel
+    // einen Text, in dem gar keine Befundzahl vorkommen kann.
+    assert!(
+        wert["findings"].as_array().is_some_and(|f| !f.is_empty()),
+        "der Sitzungsschnitt traegt die Befunde"
+    );
+    let mut alle = Vec::new();
+    zahlen_sammeln(&wert, &mut alle);
+    assert!(
+        alle.len() >= 20,
+        "der Schnitt traegt wirklich Zahlen ({}) - sonst waere der Riegel trivial",
+        alle.len()
+    );
+    for z in &alle {
+        assert!(z.is_finite(), "eine nicht-endliche Zahl auf der Leitung: {z}");
+    }
+
+    // Und die zweite Haelfte der Zeile: ein Band ohne Messung traegt 0 mit
+    // `gueltig = false`, nie NaN.
+    for b in &befunde {
+        if let Some(m) = &b.maskierung {
+            assert!(m.wert_db.is_finite(), "der Maskierungswert ist endlich");
+            if !m.gueltig {
+                assert_eq!(m.wert_db, 0.0, "ohne Messung steht 0, nicht NaN");
+            }
+        }
+        assert!(b.confidence.score.is_finite());
+        assert!((0.0..=1.0).contains(&b.confidence.score));
+    }
 }

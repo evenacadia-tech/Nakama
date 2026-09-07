@@ -394,7 +394,7 @@ impl Coordinator {
     }
 
     /// Der Link, ueber den ein Abonnent dieses Ziels erreichbar ist.
-    fn link_des_abonnenten(&self, ziel: &SnapshotZiel) -> Option<String> {
+    pub(super) fn link_des_abonnenten(&self, ziel: &SnapshotZiel) -> Option<String> {
         let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         stand
             .subscriptions

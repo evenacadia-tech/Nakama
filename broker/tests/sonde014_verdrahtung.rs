@@ -633,3 +633,211 @@ fn angenommene_und_abgewiesene_meldungen_sind_zaehlbar() {
     assert_eq!(c.intent_updates(), 1);
     assert!(c.dispatch_fuer_link_erlaubt("link-a"), "der Link lebt weiter");
 }
+
+// ═════════════════════════════════════════════════════════════════════════
+// SONDE-014 ETAPPE I · Ort, Nebenläufigkeit und Invarianten
+// ═════════════════════════════════════════════════════════════════════════
+
+/// **M-86 seit E-11** — die Vollständigkeitsmarke deckt **beide** Bestände.
+///
+/// 🔑 Der Fund dieser Etappe. Bis hierher deckte die Marke nur den Intent,
+/// und das riss ein Loch derselben Klasse, die M-86 für den Intent schließt:
+/// lädt der Main ein anderes Projekt oder startet er neu, meldet er seinen
+/// Vollbestand samt Marke — und hat er **keinen** offenen Assistentenschritt,
+/// sendet er auch keinen (`PluginProcessor::sendeIntentVollbestand`: „ein
+/// erfundener wäre schlimmer als keiner"). Der Spiegel trug dann weiter den
+/// Schritt der VORIGEN Main-Generation, und Suche wie Crashdiagnose fänden
+/// einen Schritt, den es nicht mehr gibt — genau die Aussage, die §33.5 mit
+/// „der Spiegel ist nie autoritativ" verbietet.
+///
+/// Beide Richtungen fallen einzeln: die Marke räumt einen alten Schritt fort,
+/// und der unmittelbar danach gemeldete Schritt steht.
+#[test]
+fn die_vollstaendigkeitsmarke_deckt_beide_bestaende() {
+    let c = coordinator();
+    let a = adresse(1, 2, 3, 4);
+    anmelden(&c, "link-a", &hello(a.clone()));
+
+    let voll = |revision: i64| {
+        let mut w = mit_adresse(fixture("intent-update-leerer-bestand-mit-marke"), &a);
+        w["bestand_revision"] = json!(revision);
+        w
+    };
+    let schritt = |name: &str, revision: i64| {
+        let mut w = mit_adresse(fixture("assistant_step_update"), &a);
+        w["schritt"] = Value::String(name.into());
+        w["revision"] = json!(revision);
+        w
+    };
+
+    // Die erste Main-Generation: Vollbestand mit Marke, danach ihr Schritt.
+    ueber_senke(&c, "link-a", &voll(1));
+    ueber_senke(&c, "link-a", &schritt("finding", 1));
+    assert_eq!(
+        c.assistent_sicht(&a.project_binding_id, &a.session_epoch)
+            .map(|s| s.schritt),
+        Some("finding".to_string()),
+        "der Schritt der ersten Generation steht"
+    );
+
+    // Die zweite Generation meldet ihren Vollbestand — und hat KEINEN
+    // Schritt. Der alte darf sie nicht überleben.
+    ueber_senke(&c, "link-a", &voll(2));
+    assert!(
+        c.assistent_sicht(&a.project_binding_id, &a.session_epoch)
+            .is_none(),
+        "die_vollstaendigkeitsmarke_deckt_beide_bestaende - die Marke raeumt den Schritt der vorigen Generation fort"
+    );
+    assert!(
+        c.darf_rechnen(&a.project_binding_id, &a.session_epoch),
+        "und die Rechnung ist frei: ein leerer Schrittbestand ist eine Aussage"
+    );
+
+    // Die Gegenprobe: meldet die zweite Generation einen Schritt, steht er.
+    ueber_senke(&c, "link-a", &schritt("evidence", 2));
+    assert_eq!(
+        c.assistent_sicht(&a.project_binding_id, &a.session_epoch)
+            .map(|s| s.schritt),
+        Some("evidence".to_string()),
+        "die Marke raeumt nur, sie sperrt nicht"
+    );
+
+    // Eine TEILmeldung raeumt dagegen NICHTS - sie ist keine Marke.
+    let mut teil = mit_adresse(fixture("intent-update-einzelne-fortschreibung"), &a);
+    teil["vollstaendig"] = Value::Bool(false);
+    teil["bestand_revision"] = json!(3);
+    ueber_senke(&c, "link-a", &teil);
+    assert_eq!(
+        c.assistent_sicht(&a.project_binding_id, &a.session_epoch)
+            .map(|s| s.schritt),
+        Some("evidence".to_string()),
+        "ein Ausschnitt sagt nichts ueber den Schrittbestand"
+    );
+}
+
+/// **M-76** — ein frischer Broker rechnet nicht auf seinem Cache.
+///
+/// „Sessiongraph, Frische, Subscriptions und Broker-Cache sind flüchtig und
+/// werden aus Plugin-Reports, Main-State und Store rekonstruiert. Der Broker
+/// ist **nicht berechtigt**, beim Reconnect blind seinen Cache auf die Probe
+/// zu drücken." Für Intent und Schritt heißt das: nach dem Neustart trägt er
+/// **nichts**, und er rechnet erst, wenn der Main seinen Bestand gemeldet
+/// hat — auch dann, wenn im Main gerade ein Schritt **offen** ist.
+#[test]
+fn ein_frischer_broker_traegt_weder_intent_noch_schritt() {
+    let alt = coordinator();
+    let a = adresse(1, 2, 3, 4);
+    anmelden(&alt, "link-a", &hello(a.clone()));
+    ueber_senke(
+        &alt,
+        "link-a",
+        &mit_adresse(fixture("intent-update-leerer-bestand-mit-marke"), &a),
+    );
+    let mut offener_schritt = mit_adresse(fixture("assistant_step_update"), &a);
+    offener_schritt["schritt"] = Value::String("evidence".into());
+    offener_schritt["revision"] = json!(7);
+    offener_schritt["offen"] = Value::Bool(true);
+    ueber_senke(&alt, "link-a", &offener_schritt);
+    assert!(alt.darf_rechnen(&a.project_binding_id, &a.session_epoch));
+    assert!(alt
+        .assistent_sicht(&a.project_binding_id, &a.session_epoch)
+        .is_some());
+
+    // Der Neustart: ein frischer Coordinator, dieselbe Sitzung, derselbe
+    // Main. Ein Brokerneustart ist genau das - der Spiegel ist fluechtig.
+    let neu = coordinator();
+    anmelden(&neu, "link-a", &hello(a.clone()));
+    assert!(
+        !neu.darf_rechnen(&a.project_binding_id, &a.session_epoch),
+        "ein_frischer_broker_traegt_weder_intent_noch_schritt - er rechnet nicht, bevor der Main gemeldet hat"
+    );
+    assert!(
+        neu.assistent_sicht(&a.project_binding_id, &a.session_epoch)
+            .is_none(),
+        "und er traegt keinen Schritt aus einem Cache, den es nicht gibt"
+    );
+
+    // Der Main meldet erneut - und seine Zahlen gewinnen. Eine AELTERE
+    // Revision als die des Mains koennte den Spiegel nie zuruecksetzen: sie
+    // wird abgewiesen.
+    ueber_senke(
+        &neu,
+        "link-a",
+        &mit_adresse(fixture("intent-update-leerer-bestand-mit-marke"), &a),
+    );
+    ueber_senke(&neu, "link-a", &offener_schritt);
+    assert_eq!(
+        neu.assistent_sicht(&a.project_binding_id, &a.session_epoch)
+            .map(|s| s.revision),
+        Some(7),
+        "der Main-Stand steht wieder, unveraendert"
+    );
+    let mut aelter = offener_schritt.clone();
+    aelter["revision"] = json!(3);
+    aelter["schritt"] = Value::String("coverage".into());
+    assert_eq!(
+        neu.assistant_step_update_grund_fuer_test("link-a", &bytes(&aelter)),
+        Err(SchrittAbweisung::AeltereRevision),
+        "ein aelterer Stand setzt den neueren Main-Schritt NIE zurueck"
+    );
+}
+
+/// **M-75** — die neuen Familien erben die Ordnung von Verbinden und Trennen.
+///
+/// Prüfliste B: „Reihenfolge beim Verbinden ist festgelegt und gemessen:
+/// anmelden → Callback ‚verbunden‘ abgeschlossen → erst dann Freigabe nach
+/// außen" und „Nach dem Schließen einer Queue wird nichts mehr geliefert; das
+/// Schließflag wird VOR dem Inhalt geprüft."
+///
+/// Für `intent_update` und `assistant_step_update` heißt das: vor der
+/// Anmeldung wirkt keine der beiden, nach dem Ende des Links ebenso wenig —
+/// und in beiden Fällen bleibt der Spiegel unverändert statt still zu
+/// verschwinden.
+#[test]
+fn die_neuen_familien_erben_die_ordnung_von_verbinden_und_trennen() {
+    let c = coordinator();
+    let a = adresse(1, 2, 3, 4);
+
+    // VOR der Anmeldung: der Link ist unbekannt, beide Familien wirken nicht.
+    let voll = mit_adresse(fixture("intent-update-leerer-bestand-mit-marke"), &a);
+    let schritt = mit_adresse(fixture("assistant_step_update"), &a);
+    assert_eq!(
+        c.intent_update_json_grund_fuer_test("link-a", &bytes(&voll)),
+        Err(IntentAbweisung::KeinLink),
+        "ohne Anmeldung wirkt kein Intent"
+    );
+    assert_eq!(
+        c.assistant_step_update_grund_fuer_test("link-a", &bytes(&schritt)),
+        Err(SchrittAbweisung::KeinLink),
+        "und kein Schritt"
+    );
+    assert!(!c.darf_rechnen(&a.project_binding_id, &a.session_epoch));
+
+    // NACH der Anmeldung wirken beide - das ist die Gegenprobe, ohne die die
+    // Abweisung oben auch von einem kaputten Leser kommen koennte.
+    anmelden(&c, "link-a", &hello(a.clone()));
+    ueber_senke(&c, "link-a", &voll);
+    ueber_senke(&c, "link-a", &schritt);
+    assert!(c.darf_rechnen(&a.project_binding_id, &a.session_epoch));
+    let stand = c
+        .assistent_sicht(&a.project_binding_id, &a.session_epoch)
+        .expect("der Schritt steht");
+
+    // NACH dem Ende des Links wirkt wieder keine von beiden, und der Spiegel
+    // bleibt, wie er war: ein Reconnect faende sonst einen leeren Bestand vor.
+    c.control_ende("link-a");
+    let mut spaeter = schritt.clone();
+    spaeter["schritt"] = Value::String("verdict".into());
+    spaeter["revision"] = json!(99);
+    assert_eq!(
+        c.assistant_step_update_grund_fuer_test("link-a", &bytes(&spaeter)),
+        Err(SchrittAbweisung::KeinLink),
+        "die_neuen_familien_erben_die_ordnung_von_verbinden_und_trennen - an einem beendeten Link wird nichts mehr angenommen"
+    );
+    assert_eq!(
+        c.assistent_sicht(&a.project_binding_id, &a.session_epoch)
+            .map(|s| s.schritt),
+        Some(stand.schritt.clone()),
+        "und der Spiegel steht unveraendert"
+    );
+}

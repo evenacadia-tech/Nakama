@@ -340,8 +340,15 @@ pub(super) struct Stand {
     /// `proposals` (`writer.rs`:573), die bis zu diesem Ticket keinen
     /// Produzenten hatte (§2.11 L5).
     pub(super) vorschlaege: HashMap<SessionKey, Vec<super::proposal::Proposal>>,
-    /// Wie viele `draft_offer` der Broker zugestellt hat.
+    /// Wie viele `draft_offer` der Broker WIRKLICH zugestellt hat
+    /// (SONDE-014 Etappe I: der Rueckgabewert des Pushs wird gelesen, ein
+    /// nicht angenommenes Angebot zaehlt hier NICHT mit).
     pub(super) draft_offers: u64,
+    /// Wie oft ein Angebot seinen Abonnenten nicht erreicht hat und als
+    /// Outbox-Schuld stehen geblieben ist (M-73, M-74). Ein Zaehler, der
+    /// strukturell 0 sein muesste, waere eine Wache mit Test; dieser ist es
+    /// nicht, und deshalb steht er hier.
+    pub(super) draft_offer_schuld: u64,
     /// Der Experimentteil des Stores (M-40 bis M-51, Befund B18).
     ///
     /// Er liegt IM `Stand` und nicht daneben: die Terminalereignisse muessen
@@ -563,6 +570,7 @@ impl Default for Stand {
             befunde_neu_bilden: false,
             vorschlaege: HashMap::new(),
             draft_offers: 0,
+            draft_offer_schuld: 0,
             experimente: super::experiment::Experimentstore::neu(),
             invalidierungen: 0,
             evidenz_ausgeschlossen: 0,

@@ -186,7 +186,7 @@ impl Coordinator {
     /// uebersprungen. Ein Schluessel, dessen Wireform dieser Broker nicht
     /// kennt, bleibt als Schuld STEHEN — sie zu kompaktieren, ohne sie
     /// zugestellt zu haben, waere die stille Loeschung einer Zusage.
-    fn offene_outbox_nachspielen(&self, link_id: &str, ziel: &SnapshotZiel) {
+    pub(super) fn offene_outbox_nachspielen(&self, link_id: &str, ziel: &SnapshotZiel) {
         let Some(store) = self.store.as_ref() else {
             return;
         };
@@ -211,7 +211,10 @@ impl Coordinator {
             let Ok(Some(gespeichert)) = store.event_payload_lesen(ord) else {
                 continue;
             };
-            let Some(payload) = Self::outbox_wireform(&schuld.object_key, &gespeichert) else {
+            let empfaenger = self.abonnent_des_ziels(&schuld).map(|(_, a)| a);
+            let Some(payload) =
+                Self::outbox_wireform(&schuld, empfaenger.as_ref(), &gespeichert)
+            else {
                 continue;               // Unbekannter Schluessel: Schuld bleibt.
             };
             if !self.push_ziel_noch_gueltig(link_id, &schuld) {
@@ -229,18 +232,74 @@ impl Coordinator {
         }
     }
 
+    /// Spielt die offene Schuld einer SITZUNG nach — ohne Linkwechsel
+    /// (SONDE-014 Etappe I, M-74).
+    ///
+    /// 🔑 Bis hierher hatte `offene_outbox_nachspielen` genau einen Aufrufer,
+    /// und der war der Subscribe. Ein Puffer, der „spaeter wiederholt", aber
+    /// nur beim Verbindungsaufbau leert, ist der Befund aus
+    /// `tools/dirigent/pruefliste.md` Abschnitt A — buchstaeblich: „ein
+    /// Puffer, der ‚spaeter wiederholt‘, hat einen Abflussweg OHNE
+    /// Reconnect". Diesen Weg faehrt seit Etappe I jede Neubildung von
+    /// Vorschlaegen: sie laeuft aus dem Evidenzpfad, nicht aus dem
+    /// Verbindungsaufbau.
+    pub(super) fn offene_schuld_der_sitzung_nachspielen(&self, session: &SessionKey) {
+        let abonnenten: Vec<(String, String)> = {
+            let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+            stand
+                .subscriptions
+                .iter()
+                .filter(|(_, sub)| {
+                    sub.session_epoch == session.session_epoch
+                        && sub.adresse.project_binding_id == session.project_binding_id
+                })
+                .map(|(link_id, sub)| (link_id.clone(), sub.adresse.instance_id.clone()))
+                .collect()
+        };
+        for (link_id, instanz) in abonnenten {
+            let ziel = SnapshotZiel {
+                project_binding_id: session.project_binding_id.clone(),
+                session_epoch: session.session_epoch.clone(),
+                instance_id: instanz,
+                // Der Schluessel adressiert hier NICHTS: `offene_outbox_nachspielen`
+                // liest jede offene Zeile dieses Ziels und nimmt den Schluessel
+                // jeder Zeile einzeln. Er steht nur, weil `SnapshotZiel` ihn fuehrt.
+                object_key: String::new(),
+            };
+            self.offene_outbox_nachspielen(&link_id, &ziel);
+        }
+    }
+
     /// Die WIREFORM einer gespeicherten Schuld (Befund B17).
     ///
     /// Das Store-Ereignis traegt die Nachricht plus Aussagen ueber sie; auf
     /// die Leitung geht nur die Nachricht. Ein Schluessel, den diese Funktion
     /// nicht kennt, liefert `None` — und die Schuld bleibt stehen.
-    fn outbox_wireform(object_key: &str, gespeichert: &[u8]) -> Option<Vec<u8>> {
-        match object_key {
+    fn outbox_wireform(
+        ziel: &SnapshotZiel,
+        empfaenger: Option<&Adresse>,
+        gespeichert: &[u8],
+    ) -> Option<Vec<u8>> {
+        match ziel.object_key.as_str() {
             "evidence_invalidate" => {
                 let wert: Value = serde_json::from_slice(gespeichert).ok()?;
                 let nachricht = wert.get("nachricht")?;
                 let payload = serde_json::to_vec(nachricht).ok()?;
                 v3_nachricht_lesen(&payload, "evidence_invalidate").is_some().then_some(payload)
+            }
+            // SONDE-014 Etappe I (M-73/M-74): ein nicht zugestelltes Angebot.
+            //
+            // Gespeichert ist der VORSCHLAG in kanonischer Form — die
+            // Projektion `proposals` lebt davon. Auf die Leitung geht die
+            // Familie `draft_offer`; ihre Huelle entsteht deshalb aus
+            // DERSELBEN Funktion wie bei der Erstzustellung, mit Projekt und
+            // Sitzung aus dem Ziel und der Zielinstanz aus dem Vorschlag.
+            // Eine zweite Bauform waere eine zweite Wahrheit.
+            key if key.starts_with("proposal:") => {
+                let proposal: Value = serde_json::from_slice(gespeichert).ok()?;
+                let nachricht = Self::draft_offer_nachricht(empfaenger?, &proposal);
+                let payload = serde_json::to_vec(&nachricht).ok()?;
+                v3_nachricht_lesen(&payload, "draft_offer").is_some().then_some(payload)
             }
             _ => None,
         }

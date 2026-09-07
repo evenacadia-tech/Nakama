@@ -5787,3 +5787,296 @@ fn sonde014_m48_gelesenes_ziel_schlaegt_die_heuristik() {
         "die beiden Pfade laufen wirklich auseinander: {mit} gegen {ohne}"
     );
 }
+
+// ═════════════════════════════════════════════════════════════════════════
+// SONDE-014 ETAPPE I · Ort, Nebenläufigkeit und Invarianten
+// ═════════════════════════════════════════════════════════════════════════
+//
+// Die drei Fälle hier brauchen Store UND Pushprobe und liegen deshalb in
+// diesem Harnisch — dasselbe Muster wie M-48 (Etappe F) darüber.
+
+/// **M-74** — eine Zustellschuld fließt **ohne Reconnect** ab.
+///
+/// 🔑 `tools/dirigent/pruefliste.md` Abschnitt A wörtlich: „Ein Puffer, der
+/// ‚später wiederholt‘, hat einen Abflussweg OHNE Reconnect; ‚nur beim
+/// Verbindungsaufbau leeren‘ ist ein Befund." Genau dieser Befund stand hier:
+/// `offene_outbox_nachspielen` hatte bis Etappe I **einen** Aufrufer, und der
+/// war der Subscribe. Ein Empfänger, der einen Push kurz nicht annahm und
+/// danach verbunden blieb, bekam seine Schuld nie — im Dauerbetrieb also
+/// überhaupt nicht.
+///
+/// Der Fall unterscheidet sich vom B17-Fall darüber in genau einem Punkt: es
+/// wird **nicht** neu abonniert. Der Link bleibt derselbe, und der Abfluss
+/// hängt allein am Evidenztakt.
+#[cfg(windows)]
+#[test]
+fn sonde014_m74_zustellschuld_flieszt_ohne_reconnect() {
+    let h = HarnischMitStore::neu("m74-abfluss-ohne-reconnect");
+    h.abonniert();
+    let sonde = {
+        let mut s = h.main.clone();
+        s.plugin_kind = "passive_probe".into();
+        s.adresse.instance_id = hex(0x20);
+        s.adresse.runtime_nonce = hex(0x21);
+        s
+    };
+    anmelden(&h.c, "sonde", &sonde);
+    report(&h.c, "sonde", &sonde.adresse);
+    for nr in 0..3 {
+        assert!(h
+            .c
+            .evidence_snapshot_json("sonde", &evidenz_payload(&sonde.adresse, nr, |_| {})));
+    }
+
+    // Der Empfänger nimmt gerade nichts an — die Schuld entsteht.
+    h.push.lehnt_ab(true);
+    let ack = h.p0(&json!({
+        "type": "preview_begin",
+        "kopf": {
+            "command_id": hex(0x9f0),
+            "ziel": h.main.adresse,
+            "base_revision": 0,
+            "ttl_ms": 1000,
+            "schema_major": 3,
+            "schema_minor": 0
+        },
+        "lease_duration_ms": 400,
+        "renew_id": hex(0x9f1)
+    }));
+    assert_eq!(ack["ergebnis"], "angewandt", "{ack}");
+    assert!(
+        h.outbox()
+            .iter()
+            .any(|(schluessel, _)| schluessel == "evidence_invalidate"),
+        "die Rücknahme steht als SCHULD in der Outbox"
+    );
+
+    // Der Empfänger ist wieder da — aber er abonniert NICHT neu. Nur der
+    // Evidenztakt läuft weiter.
+    h.push.lehnt_ab(false);
+    for nr in 3..6 {
+        assert!(h
+            .c
+            .evidence_snapshot_json("sonde", &evidenz_payload(&sonde.adresse, nr, |_| {})));
+    }
+
+    assert!(
+        h.push
+            .payloads()
+            .iter()
+            .any(|(_, w)| w["type"] == "evidence_invalidate" && w["grund"] == "intervention"),
+        "sonde014_m74_zustellschuld_flieszt_ohne_reconnect - die Rücknahme kommt OHNE Linkwechsel an"
+    );
+    assert!(
+        !h.outbox()
+            .iter()
+            .any(|(schluessel, _)| schluessel == "evidence_invalidate"),
+        "und die Schuld ist getilgt"
+    );
+}
+
+/// **M-73/M-74** — ein liegengebliebenes **Angebot** trägt seinen Schlüssel
+/// `proposal:<proposal_id>` und wird als `draft_offer` nachgespielt.
+///
+/// ⚠️ **Warum die Schuld hier gestellt und nicht erzeugt wird.** Der
+/// Zustellweg des Angebots ist in P5 strukturell unerreichbar:
+/// `Proposallage::capability_vorhanden` ist hart `false` (§7.6), und ohne
+/// Capability entsteht gar kein Angebot. Gestellt ist deshalb genau die
+/// VORBEDINGUNG — eine Schuld, die stehengeblieben ist —, und gemessen ist
+/// der **Abfluss** samt Wireform durch den Produktweg: derselbe Takt wie
+/// oben, dieselbe Funktion, die auch die Erstzustellung baut.
+///
+/// Fällt der Schlüssel oder die Wireform, bleibt die Schuld stumm stehen:
+/// `outbox_wireform` liefert dann `None`, und genau das ist der Zustand, den
+/// M-74 „ein Proposal bleibt in der Outbox stehen" nennt.
+#[cfg(windows)]
+#[test]
+fn sonde014_m73_liegengebliebenes_angebot_traegt_seinen_schluessel() {
+    use eqcop_broker::store::{SnapshotZiel, StoreEvent};
+
+    let h = HarnischMitStore::neu("m73-angebotsschluessel");
+    h.abonniert();
+    let sonde = {
+        let mut s = h.main.clone();
+        s.plugin_kind = "passive_probe".into();
+        s.adresse.instance_id = hex(0x20);
+        s.adresse.runtime_nonce = hex(0x21);
+        s
+    };
+    anmelden(&h.c, "sonde", &sonde);
+    report(&h.c, "sonde", &sonde.adresse);
+
+    // Ein Vorschlag in der Form, die der Erzeuger schreibt — aus dem
+    // committeten Fixturekorpus, nicht von Hand (§5.5).
+    let proposal: Value = {
+        let pfad = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../eq-copilot/fixtures/v3/gueltig/draft_offer.json");
+        let wert: Value = serde_json::from_slice(&std::fs::read(&pfad).expect("Fixture liegt"))
+            .expect("Fixture ist JSON");
+        wert["proposal"].clone()
+    };
+    let proposal_id = proposal["proposal_id"].as_str().unwrap().to_owned();
+    let ziel = SnapshotZiel {
+        project_binding_id: h.main.adresse.project_binding_id.clone(),
+        session_epoch: h.main.adresse.session_epoch.clone(),
+        instance_id: h.main.adresse.instance_id.clone(),
+        object_key: format!("proposal:{proposal_id}"),
+    };
+    let mut event = StoreEvent::session_snapshot(
+        &h.main.adresse.project_binding_id,
+        &h.main.adresse.session_epoch,
+        &hex(0xbeef),
+        9_000,
+        serde_json_canonicalizer::to_vec(&proposal).unwrap(),
+    );
+    event.event_type = "proposal".into();
+    event.snapshot_ziele = vec![ziel];
+    assert!(h._writer.handle().append(vec![event]).is_ok());
+    assert!(
+        h.outbox()
+            .iter()
+            .any(|(schluessel, _)| *schluessel == format!("proposal:{proposal_id}")),
+        "die Schuld steht unter dem Schlüssel aus E-09/M-73"
+    );
+
+    // Der Abfluss läuft über den Evidenztakt — kein Reconnect.
+    for nr in 0..3 {
+        assert!(h
+            .c
+            .evidence_snapshot_json("sonde", &evidenz_payload(&sonde.adresse, nr, |_| {})));
+    }
+
+    let angebot = h
+        .push
+        .payloads()
+        .into_iter()
+        .find(|(_, w)| w["type"] == "draft_offer")
+        .map(|(_, w)| w)
+        .expect(
+            "sonde014_m73_liegengebliebenes_angebot_traegt_seinen_schluessel - das Angebot erreicht seinen Abonnenten",
+        );
+    assert_eq!(angebot["kopf"]["command_id"], json!(proposal_id));
+    // Der Kopf adressiert den EMPFAENGER, vollstaendig und schemagueltig.
+    // Welche Quelle der Eingriff betraefe, sagt `proposal.target` — dafuer ist
+    // der Kopf nicht da. Bis Etappe I standen hier zwei leere Zeichenketten,
+    // und die Nachricht war damit vertragswidrig (N-20).
+    assert_eq!(
+        angebot["kopf"]["ziel"],
+        serde_json::to_value(&h.main.adresse).unwrap(),
+        "der Kopf traegt die vollstaendige Adresse des Abonnenten"
+    );
+    assert!(
+        angebot["kopf"]["ziel"]["logon_sid"].as_str().is_some_and(|s| !s.is_empty())
+            && angebot["kopf"]["ziel"]["runtime_nonce"]
+                .as_str()
+                .is_some_and(|s| s.len() == 32),
+        "und keine leeren Platzhalter"
+    );
+    assert_eq!(
+        angebot["proposal"]["target"], proposal["target"],
+        "die Zielquelle des Eingriffs steht im Vorschlag"
+    );
+    // Der Vorschlag reist so, wie der Store ihn haelt: in KANONISCHER Form
+    // (RFC 8785). `700.0` und `700` sind dieselbe Zahl, und die Kanonisierung
+    // schreibt genau eine davon — deshalb wird gegen den kanonisierten
+    // Roundtrip verglichen und nicht gegen die Fixturebytes.
+    let kanonisch: Value =
+        serde_json::from_slice(&serde_json_canonicalizer::to_vec(&proposal).unwrap()).unwrap();
+    assert_eq!(
+        angebot["proposal"], kanonisch,
+        "der Vorschlag reist unveraendert"
+    );
+    assert!(
+        !h.outbox()
+            .iter()
+            .any(|(schluessel, _)| *schluessel == format!("proposal:{proposal_id}")),
+        "und die Schuld ist getilgt"
+    );
+}
+
+/// **M-73/M-75** — solange der Empfänger nichts annimmt, bleibt die Schuld
+/// STEHEN, und der Zähler sagt es.
+///
+/// Die Gegenrichtung zu M-74 und die härtere Hälfte: der Abfluss läuft jetzt
+/// bei JEDEM Evidenztakt. Ein Abfluss, der eine Schuld kompaktiert, ohne sie
+/// zugestellt zu haben, wäre die lautlose Löschung einer Zusage — genau das
+/// verhindert die Auswertung des Rückgabewerts von `snapshot_schreiben`
+/// (`tools/dirigent/pruefliste.md` Abschnitt A: „Rückgabewerte und Zähler
+/// einer Politik werden ausgewertet, nicht ignoriert").
+#[cfg(windows)]
+#[test]
+fn sonde014_m75_ohne_zustellung_bleibt_die_schuld_stehen() {
+    let h = HarnischMitStore::neu("m75-schuld-bleibt");
+    h.abonniert();
+    let sonde = {
+        let mut s = h.main.clone();
+        s.plugin_kind = "passive_probe".into();
+        s.adresse.instance_id = hex(0x20);
+        s.adresse.runtime_nonce = hex(0x21);
+        s
+    };
+    anmelden(&h.c, "sonde", &sonde);
+    report(&h.c, "sonde", &sonde.adresse);
+    for nr in 0..3 {
+        assert!(h
+            .c
+            .evidence_snapshot_json("sonde", &evidenz_payload(&sonde.adresse, nr, |_| {})));
+    }
+
+    h.push.lehnt_ab(true);
+    assert_eq!(
+        h.p0(&json!({
+            "type": "preview_begin",
+            "kopf": {
+                "command_id": hex(0x9f0),
+                "ziel": h.main.adresse,
+                "base_revision": 0,
+                "ttl_ms": 1000,
+                "schema_major": 3,
+                "schema_minor": 0
+            },
+            "lease_duration_ms": 400,
+            "renew_id": hex(0x9f1)
+        }))["ergebnis"],
+        "angewandt"
+    );
+    assert!(
+        h.outbox()
+            .iter()
+            .any(|(schluessel, _)| schluessel == "evidence_invalidate"),
+        "die Schuld entsteht"
+    );
+    let vorher = h.push.payloads().len();
+
+    // Sechs weitere Evidenztakte — der Abfluss läuft, der Empfänger nimmt
+    // weiter nichts an.
+    for nr in 3..9 {
+        assert!(h
+            .c
+            .evidence_snapshot_json("sonde", &evidenz_payload(&sonde.adresse, nr, |_| {})));
+    }
+
+    assert_eq!(
+        h.push.payloads().len(),
+        vorher,
+        "sonde014_m75_ohne_zustellung_bleibt_die_schuld_stehen - ein abweisender Empfaenger bekommt nichts"
+    );
+    assert!(
+        h.outbox()
+            .iter()
+            .any(|(schluessel, _)| schluessel == "evidence_invalidate"),
+        "und die Schuld steht nach sechs Abflussversuchen unveraendert - nicht still kompaktiert"
+    );
+
+    // Gegenprobe: sobald er wieder annimmt, ist sie beim naechsten Takt fort.
+    h.push.lehnt_ab(false);
+    assert!(h
+        .c
+        .evidence_snapshot_json("sonde", &evidenz_payload(&sonde.adresse, 9, |_| {})));
+    assert!(
+        !h.outbox()
+            .iter()
+            .any(|(schluessel, _)| schluessel == "evidence_invalidate"),
+        "die Gegenprobe: der Abfluss FUNKTIONIERT, er hat nur nicht gelogen"
+    );
+}

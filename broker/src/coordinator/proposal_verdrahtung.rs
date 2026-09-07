@@ -57,17 +57,34 @@ impl Coordinator {
             }
             true
         };
-        for vorschlag in &neue {
-            self.vorschlag_persistieren(session, vorschlag);
-        }
         // M-57/§42.3: HÖCHSTENS EIN Angebot je Sitzung — das des führenden
         // Befunds. Der Deckel ist strukturell und kein Zähler.
-        if let Some((befund, vorschlag)) = befunde
+        //
+        // 🔑 SONDE-014 Etappe I (M-73/M-74): das Angebot wird BESTIMMT, bevor
+        // irgendetwas abgelegt wird. Grund ist die Outbox: eine Zustellschuld
+        // entsteht nur ZUSAMMEN mit ihrem Ereignis (`snapshot_ziele` am
+        // Append, wie `flush_session` und `evidence_invalidate`). Wer erst
+        // ablegt und dann zustellt, hat für einen fehlgeschlagenen Push
+        // nichts mehr, woran er ihn nachholen könnte — und genau das war der
+        // Zustand bis hierher: der Rückgabewert von `snapshot_schreiben`
+        // ging in ein `let _`, und ein nicht angenommenes Angebot war fort.
+        let angebot: Option<Proposal> = befunde
             .iter()
             .zip(neue.iter())
             .find(|(b, v)| darf_draft_offer(b, v, &lage))
-        {
-            self.draft_offer_zustellen(session, befund, vorschlag);
+            .map(|(_, v)| v.clone());
+
+        for vorschlag in &neue {
+            let ziele = match &angebot {
+                Some(a) if a.proposal_id == vorschlag.proposal_id => {
+                    self.draft_offer_ziele(session, vorschlag)
+                }
+                _ => Vec::new(),
+            };
+            let ord = self.vorschlag_persistieren(session, vorschlag, &ziele);
+            if !ziele.is_empty() {
+                self.draft_offer_zustellen(vorschlag, &ziele, ord);
+            }
         }
         geaendert
     }
@@ -113,14 +130,21 @@ impl Coordinator {
     ///
     /// Die Projektion `proposals` existiert seit SONDE-011 (`writer.rs`:573)
     /// und hatte bis hier keinen Produzenten (§2.11 L5).
-    fn vorschlag_persistieren(&self, session: &SessionKey, vorschlag: &Proposal) {
-        let Some(store) = self.store.as_ref() else {
-            return;
-        };
-        let Ok(payload_jcs) = serde_json_canonicalizer::to_vec(&Self::proposal_json(vorschlag))
-        else {
-            return;
-        };
+    ///
+    /// `ziele` sind die Zustellziele des Angebots (leer: dieser Vorschlag
+    /// wird nicht zugestellt). Sie reisen als `snapshot_ziele` MIT dem
+    /// Append — so entsteht die Outbox-Schuld im selben Commit wie das
+    /// Ereignis, und ein Push, der nicht ankommt, bleibt nachholbar
+    /// (M-74). Rückgabe ist die `event_ord`, gegen die kompaktiert wird.
+    fn vorschlag_persistieren(
+        &self,
+        session: &SessionKey,
+        vorschlag: &Proposal,
+        ziele: &[SnapshotZiel],
+    ) -> Option<i64> {
+        let store = self.store.as_ref()?;
+        let payload_jcs =
+            serde_json_canonicalizer::to_vec(&Self::proposal_json(vorschlag)).ok()?;
         let sequence = self.event_sequence.fetch_add(1, Ordering::SeqCst);
         let mut event = StoreEvent::session_snapshot(
             &session.project_binding_id,
@@ -130,78 +154,139 @@ impl Coordinator {
             payload_jcs,
         );
         event.event_type = "proposal".into();
-        if store.append(vec![event]).is_err() {
-            let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
-            stand.store_verweigerungen = stand.store_verweigerungen.saturating_add(1);
+        event.snapshot_ziele = ziele.to_vec();
+        match store.append(vec![event]) {
+            Ok(ausgaenge) => ausgaenge.first().map(|a| a.event_ord()),
+            Err(_) => {
+                let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+                stand.store_verweigerungen = stand.store_verweigerungen.saturating_add(1);
+                None
+            }
         }
     }
 
-    /// Stellt **ein** `draft_offer` zu — über denselben Weg wie
-    /// `evidence_invalidate`.
-    fn draft_offer_zustellen(
-        &self,
-        session: &SessionKey,
-        befund: &CauseHypothesis,
-        vorschlag: &Proposal,
-    ) {
-        let nachricht = serde_json::json!({
+    /// Die Zustellziele EINES Angebots: die Abonnenten genau dieser Sitzung.
+    ///
+    /// 🔑 Der `object_key` ist `proposal:<proposal_id>` — der Wortlaut aus
+    /// **E-09/M-73**, und seit Etappe I dieselbe Zeichenkette wie auf der
+    /// C++-Seite (`IpcTestMain.cpp`). Zwei Schreibweisen desselben
+    /// Schlüssels wären zwei Wahrheiten über dieselbe Koaleszierung (M-77).
+    /// Ein neuer Entwurf DESSELBEN Vorschlags darf den älteren verdrängen,
+    /// ein fremder nie.
+    fn draft_offer_ziele(&self, session: &SessionKey, vorschlag: &Proposal) -> Vec<SnapshotZiel> {
+        let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+        stand
+            .subscriptions
+            .values()
+            .filter(|sub| {
+                sub.session_epoch == session.session_epoch
+                    && sub.adresse.project_binding_id == session.project_binding_id
+            })
+            .map(|sub| SnapshotZiel {
+                project_binding_id: session.project_binding_id.clone(),
+                session_epoch: session.session_epoch.clone(),
+                instance_id: sub.adresse.instance_id.clone(),
+                object_key: format!("proposal:{}", vorschlag.proposal_id),
+            })
+            .collect()
+    }
+
+    /// Die WIRE-Nachricht eines Angebots — an EINER Stelle.
+    ///
+    /// 🔑 Etappe I: Zustellung und Nachspielen aus der Outbox bilden dieselbe
+    /// Nachricht aus derselben Funktion. Zwei Bauplätze für dieselbe Form
+    /// wären zwei Wahrheiten, und die Wiederholung nach einem
+    /// fehlgeschlagenen Push hieße dann „fast dasselbe".
+    ///
+    /// ⚠️ **`kopf.ziel` ist die vollständige Adresse des EMPFÄNGERS.** Bis
+    /// Etappe I standen dort `logon_sid` und `runtime_nonce` als leere
+    /// Zeichenketten — der Vertrag verlangt an beiden Stellen `$defs/sid`
+    /// beziehungsweise `$defs/hex32`, und `adresse` ist
+    /// `additionalProperties: false` mit fünf Pflichtfeldern. Die Nachricht
+    /// war damit schemaungültig; kein Leser hätte sie angenommen, und weil
+    /// der Zustellweg sie nie gegen den Vertrag hielt, fiel es nirgends auf.
+    /// Welche Quelle der Eingriff beträfe, sagt `proposal.target` — dafür ist
+    /// der Kopf nicht da.
+    pub(super) fn draft_offer_nachricht(empfaenger: &Adresse, proposal: &Value) -> Value {
+        serde_json::json!({
             "type": "draft_offer",
             "kopf": {
-                "command_id": vorschlag.proposal_id,
-                "ziel": {
-                    "logon_sid": "",
-                    "project_binding_id": session.project_binding_id,
-                    "session_epoch": session.session_epoch,
-                    "instance_id": vorschlag.target,
-                    "runtime_nonce": ""
-                },
-                "base_revision": vorschlag.base_revision,
+                "command_id": proposal.get("proposal_id").cloned().unwrap_or(Value::Null),
+                "ziel": empfaenger,
+                "base_revision": proposal.get("base_revision").cloned().unwrap_or(Value::Null),
                 "ttl_ms": DRAFT_OFFER_TTL_MS,
                 "schema_major": 3,
                 "schema_minor": JSON_SCHEMA_MINOR_AKTIV
             },
-            "proposal": Self::proposal_json(vorschlag)
-        });
-        let _ = befund;
-        let Ok(payload) = serde_json::to_vec(&nachricht) else {
-            return;
-        };
-        let ziele: Vec<(String, SnapshotZiel)> = {
-            let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
-            stand
-                .subscriptions
-                .iter()
-                .filter(|(_, sub)| {
-                    sub.session_epoch == session.session_epoch
-                        && sub.adresse.project_binding_id == session.project_binding_id
-                })
-                .map(|(link_id, sub)| {
-                    (
-                        link_id.clone(),
-                        SnapshotZiel {
-                            project_binding_id: session.project_binding_id.clone(),
-                            session_epoch: session.session_epoch.clone(),
-                            instance_id: sub.adresse.instance_id.clone(),
-                            // E-09: der Schlüssel trägt die `proposal_id`. Ein
-                            // neuer Entwurf DESSELBEN Vorschlags darf den
-                            // älteren verdrängen, ein fremder nie.
-                            object_key: format!("draft_offer:{}", vorschlag.proposal_id),
-                        },
-                    )
-                })
-                .collect()
-        };
+            "proposal": proposal
+        })
+    }
+
+    /// Link und vollständige Adresse des Abonnenten eines Zustellziels.
+    ///
+    /// `SnapshotZiel` trägt nur Projekt, Sitzung und Instanz — die
+    /// Steueradresse braucht zusätzlich `logon_sid` und `runtime_nonce`.
+    /// Beide stehen in der Subscription und nirgendwo sonst; sie zu erfinden
+    /// wäre eine zweite Adressquelle.
+    pub(super) fn abonnent_des_ziels(&self, ziel: &SnapshotZiel) -> Option<(String, Adresse)> {
+        let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+        stand
+            .subscriptions
+            .iter()
+            .find(|(_, sub)| {
+                sub.adresse.instance_id == ziel.instance_id
+                    && sub.session_epoch == ziel.session_epoch
+                    && sub.adresse.project_binding_id == ziel.project_binding_id
+            })
+            .map(|(link_id, sub)| (link_id.clone(), sub.adresse.clone()))
+    }
+
+    /// Stellt **ein** `draft_offer` zu — über denselben Weg wie
+    /// `evidence_invalidate`.
+    ///
+    /// 🔑 Etappe I (M-73, Prüfliste A „Rückgabewerte und Zähler einer Politik
+    /// werden ausgewertet"): der Rückgabewert von `snapshot_schreiben` wird
+    /// GELESEN. Nur ein wirklich geschriebenes Angebot kompaktiert seine
+    /// Schuld; was nicht ankam, bleibt in der Outbox stehen und wird von der
+    /// nächsten Befundbildung oder vom nächsten Subscribe nachgespielt. Der
+    /// Zähler `draft_offers` zählt seitdem ZUSTELLUNGEN, nicht Versuche —
+    /// ein Zähler, der auch das Verworfene mitzählt, sagt nichts.
+    fn draft_offer_zustellen(
+        &self,
+        vorschlag: &Proposal,
+        ziele: &[SnapshotZiel],
+        event_ord: Option<i64>,
+    ) {
+        let proposal = Self::proposal_json(vorschlag);
         let push = self.push.lock().unwrap_or_else(|e| e.into_inner()).clone();
-        for (link_id, ziel) in &ziele {
-            if !self.push_ziel_noch_gueltig(link_id, ziel) {
+        let mut zugestellt = 0u64;
+        let mut offen = 0u64;
+        for ziel in ziele {
+            let Some((link_id, empfaenger)) = self.abonnent_des_ziels(ziel) else {
+                offen += 1;
                 continue;
+            };
+            let nachricht = Self::draft_offer_nachricht(&empfaenger, &proposal);
+            let Ok(payload) = serde_json::to_vec(&nachricht) else {
+                offen += 1;
+                continue;
+            };
+            let geschrieben = self.push_ziel_noch_gueltig(&link_id, ziel)
+                && push
+                    .as_ref()
+                    .is_some_and(|p| p.snapshot_schreiben(&link_id, &payload));
+            if geschrieben {
+                zugestellt += 1;
+                if let (Some(store), Some(ord)) = (self.store.as_ref(), event_ord) {
+                    let _ = store.snapshot_schuld_kompaktieren(ziel.clone(), ord);
+                }
+            } else {
+                offen += 1;
             }
-            let _ = push
-                .as_ref()
-                .is_some_and(|p| p.snapshot_schreiben(link_id, &payload));
         }
         let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
-        stand.draft_offers = stand.draft_offers.saturating_add(1);
+        stand.draft_offers = stand.draft_offers.saturating_add(zugestellt);
+        stand.draft_offer_schuld = stand.draft_offer_schuld.saturating_add(offen);
     }
 
     /// Ein Vorschlag in der Form von `$defs/proposal`.
@@ -341,6 +426,19 @@ impl Coordinator {
             .lock()
             .unwrap_or_else(|e| e.into_inner())
             .draft_offers
+    }
+
+    /// Wie oft ein Angebot seinen Abonnenten NICHT erreicht hat (M-73).
+    ///
+    /// Der Gegenzaehler zu `draft_offers_zaehler`. Ohne ihn waere „zugestellt"
+    /// von „eingereiht" nicht zu unterscheiden — genau die Verwechslung, die
+    /// `tools/dirigent/pruefliste.md` Abschnitt A meint, wenn sie verlangt,
+    /// dass der Rueckgabewert einer Politik ausgewertet wird.
+    pub fn draft_offer_schuld_zaehler(&self) -> u64 {
+        self.stand
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .draft_offer_schuld
     }
 }
 

@@ -230,6 +230,21 @@ impl Coordinator {
         // dem Join gebildet wuerde, saehe das Paar dieses Belegs nie. Die
         // Rechnung nimmt sich ihr eigenes Lock und haelt hier keines.
         self.hypothesen_bilden();
+        // 🔑 SONDE-014 Etappe I (M-74): der Abflussweg OHNE Reconnect.
+        //
+        // `tools/dirigent/pruefliste.md` Abschnitt A woertlich: „Ein Puffer,
+        // der ‚spaeter wiederholt‘, hat einen Abflussweg OHNE Reconnect; ‚nur
+        // beim Verbindungsaufbau leeren‘ ist ein Befund." Genau dieser Befund
+        // stand hier: `offene_outbox_nachspielen` hatte EINEN Aufrufer, und
+        // der war der Subscribe. Ein Empfaenger, der einen Push kurz nicht
+        // annahm und danach verbunden blieb, bekam seine Schuld nie.
+        //
+        // Der Anlass ist der richtige: Evidenz kommt an, die Sitzung arbeitet
+        // ohnehin, und derselbe Empfaenger ist gerade wieder erreichbar. Ein
+        // eigener Zeitgeber waere ein zweiter Takt neben dem Evidenztakt.
+        // Nimmt der Empfaenger weiterhin nichts an, BLEIBT die Schuld stehen —
+        // kompaktiert wird nur, was wirklich geschrieben wurde.
+        self.offene_schuld_der_sitzung_nachspielen(&client_key.session());
         self.heartbeat_kontakt(link_id, None)
     }
 

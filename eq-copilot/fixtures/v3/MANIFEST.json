@@ -7,7 +7,7 @@
   "sortierung": "Verletzungen sind kanonisch nach (instanz, schema, schluessel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
   "textriegel_lehnt_ab": "Markiert ein Fixture, das der TEXTRIEGEL abweist, BEVOR ein Parser es sieht. Diese Fixtures tragen keine Verletzungsmenge, weil sie das Schema nie erreichen — eine erfundene waere eine Luege ueber den Ort der Ablehnung. Regeln und Begruendung: schemas/v3/README.md.",
   "anzahl_gueltig": 104,
-  "anzahl_ungueltig": 281,
+  "anzahl_ungueltig": 283,
   "fixtures": [
     {
       "datei": "gueltig/assistant-step-ohne-bezug.json",
@@ -944,6 +944,13 @@
           "schluessel": "maxItems"
         }
       ]
+    },
+    {
+      "datei": "ungueltig/befund-score-nicht-endlich.json",
+      "urteil": "ungueltig",
+      "warum": "SONDE-014 M-82: dasselbe am Konfidenzscore. Er ist im Vertrag auf [0,1] beschraenkt; eine nicht-endliche Sicherheit ist keine Sicherheit, und ein Leser, der sie klemmt, machte aus Unendlichkeit eine 1",
+      "verletzungen": [],
+      "textriegel_lehnt_ab": true
     },
     {
       "datei": "ungueltig/beitrag-ohne-contribution-aux.json",
@@ -2766,6 +2773,13 @@
           "schluessel": "minLength"
         }
       ]
+    },
+    {
+      "datei": "ungueltig/maskierungswert-nicht-endlich.json",
+      "urteil": "ungueltig",
+      "warum": "SONDE-014 M-82: 1e400 ist als binary64 unendlich. Der Maskierungswert traegt eine MESSUNG - ein Band ohne Messung traegt 0 mit gueltig=false, nie NaN und nie Unendlichkeit. Der Riegel faellt VOR jedem Parser, damit keine der drei Engines sie erst deuten muss",
+      "verletzungen": [],
+      "textriegel_lehnt_ab": true
     },
     {
       "datei": "ungueltig/mehrfach-gebrochen.json",

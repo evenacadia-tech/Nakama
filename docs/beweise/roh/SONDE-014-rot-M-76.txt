@@ -1,0 +1,62 @@
+SONDE-014 Etappe I - Rotbeweis M-76
+========================================================================
+
+GEWERTETE ZUSAGE
+Ein frischer Broker rechnet NICHT auf seinem Cache. Sessiongraph, Frische und Spiegel sind fluechtig; nach dem Neustart rechnet er erst, wenn der Main seinen Bestand mit Marke gemeldet hat.
+
+GEMESSEN AN  broker/tests/sonde014_verdrahtung.rs::ein_frischer_broker_traegt_weder_intent_noch_schritt
+
+RUECKNAHME AM PRODUKTCODE  broker/src/coordinator/intent.rs
+------------------------------------------------------------------------
+VORHER:
+                .is_some_and(|b| b.vollstaendig)
+        }
+
+NACHHER:
+                // RUECKNAHME M-76: der Broker rechnet auch ohne Meldung.
+                .is_some_and(|b| b.vollstaendig)
+                || true
+        }
+------------------------------------------------------------------------
+
+[1] LAUF MIT RUECKNAHME - erwartet ROT
+========================================================================
+
+running 1 test
+test ein_frischer_broker_traegt_weder_intent_noch_schritt ... FAILED
+
+failures:
+
+---- ein_frischer_broker_traegt_weder_intent_noch_schritt stdout ----
+
+thread 'ein_frischer_broker_traegt_weder_intent_noch_schritt' (12936) panicked at tests\sonde014_verdrahtung.rs:750:5:
+ein_frischer_broker_traegt_weder_intent_noch_schritt - er rechnet nicht, bevor der Main gemeldet hat
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    ein_frischer_broker_traegt_weder_intent_noch_schritt
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 13 filtered out; finished in 0.01s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.95s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+error: test failed, to rerun pass `--test sonde014_verdrahtung`
+
+EXITCODE 101
+
+[2] RUECKNAHME ZURUECKGENOMMEN - erwartet GRUEN
+========================================================================
+
+running 1 test
+test ein_frischer_broker_traegt_weder_intent_noch_schritt ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 0.01s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.92s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+
+EXITCODE 0
+

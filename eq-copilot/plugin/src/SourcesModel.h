@@ -264,7 +264,6 @@ public:
     bool waehleHauptziel (const std::string& instanceId);
     std::string aktuellesHauptziel() const;
     bool istAktuellesHauptziel (const std::string& instanceId) const;
-    void setzeFindings (const std::string& instanceId, int offen);
     void setzeCapabilityEvidenz (const std::string& instanceId,
                                  CapabilityEvidenz evidenz);
     void setzeDiagnoseFuerSichtbeweis (Diagnose diagnose, bool echterHandgriff);
@@ -278,6 +277,13 @@ public:
     static std::uint64_t messStaleFristMs (double fensterDauerMs) noexcept;
 
 private:
+    /// SONDE-014 Etappe I (M-84): die Zahl offener Befunde je Quelle,
+    /// ABGELEITET aus `befunde` nach jedem Sitzungsschnitt.
+    ///
+    /// Sie hat keinen Setter. Ein Setter neben der Ableitung waere eine
+    /// zweite Wahrheit ueber dieselbe Zahl (M-71); bis Etappe I gab es genau
+    /// den - mit einem einzigen Aufrufer, und der war ein Test.
+    void zaehleOffeneFindings();
     /// SONDE-013 Nacharbeit 2 (Befunde R14/R32): der zuletzt empfangene Stand
     /// der Versuche und Paarurteile dieser Sitzung.
     std::vector<Versuch> experimente;

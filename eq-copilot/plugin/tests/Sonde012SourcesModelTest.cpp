@@ -124,19 +124,49 @@ std::string mitgliedJson (const Mitglied& m, const std::string& binding,
     return aus + "}";
 }
 
+/// Ein vertragsgueltiger Befund einer Quelle (SONDE-014 Etappe D/I).
+///
+/// Alle Pflichtfelder aus `$defs/session_finding`; veraendert wird von Fall zu
+/// Fall genau eines - Quelle und Zustand.
+std::string befundJson (const std::string& id, const std::string& quelle,
+                        const std::string& zustand)
+{
+    return R"({"finding_id":")" + id
+         + R"(","claim_class":"zusammenhang","ursachenklasse":"quelle_resonanz",)"
+           R"("target_metric":"band_pegel_db","candidate_source":")" + quelle
+         + R"(","band_hz":{"von":96,"bis":100},)"
+           R"("beobachtung":{"wert_db":-3.5,"gueltig":true},)"
+           R"("rang":{"bandpassung":0.4,"koinzidenz":0.0,"uplift":0.2,)"
+           R"("intent_relevanz":0.5,"wiederholbarkeit":0.8,"routingqualitaet":1.0},)"
+           R"("confidence":{"class":"mittel","score":0.65},)"
+           R"("evidence_ids":[")" + hex (0x1000)
+         + R"("],"next_test":"manueller_versuch","zustand":")" + zustand
+         + R"(","intent_revision":3,)"
+           R"("likely_cause":"Die Quelle draengt im markierten Bereich.",)"
+           R"("smallest_test":"Die Quelle kurz absenken und gegenhoeren.",)"
+           R"("listen_for":"Ob der Master im markierten Bereich Luft bekommt."})";
+}
+
 std::string snapshot (const std::vector<Mitglied>& mitglieder,
                       const std::string& binding = hex (1),
                       const std::string& session = hex (2),
                       const std::string& broker = hex (8),
                       const std::string& fuehrend = hex (10),
                       bool bestaetigung = false,
-                      int storeDegraded = 0)
+                      int storeDegraded = 0,
+                      const std::vector<std::string>& befunde = {})
 {
     std::string liste;
     for (const auto& m : mitglieder)
     {
         if (! liste.empty()) liste += ',';
         liste += mitgliedJson (m, binding, session);
+    }
+    std::string befundliste;
+    for (const auto& b : befunde)
+    {
+        if (! befundliste.empty()) befundliste += ',';
+        befundliste += b;
     }
     return R"({"type":"session_snapshot","session_epoch":")" + session
          + R"(","broker_epoch":")" + broker + R"(","fuehrendes_main":")"
@@ -146,7 +176,9 @@ std::string snapshot (const std::vector<Mitglied>& mitglieder,
                                       ? ",\"store_degraded\":true"
                                       : ",\"store_degraded\":false")
          + R"(,"mitglieder":[)"
-         + liste + "]}";
+         + liste + "]"
+         + (befundliste.empty() ? "" : R"(,"findings":[)" + befundliste + "]")
+         + "}";
 }
 
 std::string snapshotMinor0 (const Mitglied& m,
@@ -461,20 +493,59 @@ int main()
                     && ! unverifiziert.diagnoseHatHandgriff,
                 "belegt_nicht_erreicht_zeigt_broker_unavailable_mit_handgriff");
     }
+    // ═══════════════════════════════════════════════════════════════════
+    // SONDE-014 M-84 - `findingsOffen` bekommt seine QUELLE
+    // ═══════════════════════════════════════════════════════════════════
+    //
+    // Bis Etappe I war das Feld ein toter Zaehler: `setzeFindings` hatte im
+    // ganzen Repo genau einen Aufrufer, und der war GENAU DIESER FALL. Die
+    // Anzeige zeigte im Produkt immer 0 - das sinnlose tote Element, das
+    // CLAUDE.md ausschliesst. Der Setter ist fort; die Zahl wird aus dem
+    // Sitzungsschnitt ABGELEITET, und gemessen wird sie am Produktpfad.
     {
         Model m;
-        Model::Sicht f;
-        f.quellen = { sichtZeile (hex (20), "A"), sichtZeile (hex (21), "B") };
-        m.setzeFixtureFuerTest (f);
-        m.setzeFindings (hex (20), 3);
+        m.beginneSubscription (hex (1), hex (2), hex (10));
+        Mitglied a; a.id = hex (20); a.nonce = hex (200);
+        Mitglied b; b.id = hex (21); b.nonce = hex (201);
+        const bool ok = uebernehme (m, snapshot ({ a, b }, hex (1), hex (2), hex (8),
+                                                 hex (10), false, 0,
+                                                 { befundJson (hex (0x901), hex (20), "ready_to_send"),
+                                                   befundJson (hex (0x902), hex (20), "more_data"),
+                                                   befundJson (hex (0x903), hex (20), "stale"),
+                                                   befundJson (hex (0x904), hex (21), "ready_to_send") }),
+                                    t0);
         const auto s = m.sicht();
-        const auto a = std::find_if (s.quellen.begin(), s.quellen.end(),
-                                     [] (const auto& q) { return q.instanceId == hex (20); });
-        const auto b = std::find_if (s.quellen.begin(), s.quellen.end(),
-                                     [] (const auto& q) { return q.instanceId == hex (21); });
-        pruefe (a != s.quellen.end() && b != s.quellen.end()
-                && a->findingsOffen == 3 && b->findingsOffen == 0,
+        const auto za = std::find_if (s.quellen.begin(), s.quellen.end(),
+                                      [] (const auto& q) { return q.instanceId == hex (20); });
+        const auto zb = std::find_if (s.quellen.begin(), s.quellen.end(),
+                                      [] (const auto& q) { return q.instanceId == hex (21); });
+        // Zwei offene je Quelle A - `ready_to_send` und `more_data` -, und der
+        // `stale` zaehlt NICHT mit: er ist durch eine Intent-Aenderung
+        // ueberholt und beschreibt keine offene Arbeit.
+        pruefe (ok && za != s.quellen.end() && zb != s.quellen.end()
+                && za->findingsOffen == 2 && zb->findingsOffen == 1
+                && s.befunde.size() == 4,
                 "findings_count_tracks_only_open_findings_of_its_source");
+
+        // Ein Schnitt OHNE Befunde setzt die Zahl zurueck - ein
+        // stehengebliebener Zaehler behauptete Arbeit, die es nicht gibt.
+        uebernehme (m, snapshot ({ a, b }), t0 + std::chrono::milliseconds (1));
+        const auto leer = m.sicht();
+        pruefe (leer.befunde.empty()
+                && std::all_of (leer.quellen.begin(), leer.quellen.end(),
+                                [] (const auto& q) { return q.findingsOffen == 0; }),
+                "findings_count_faellt_mit_seiner_quelle");
+
+        // Und ein SITZUNGSWECHSEL raeumt beides gemeinsam ab.
+        uebernehme (m, snapshot ({ a, b }, hex (1), hex (2), hex (8), hex (10),
+                                 false, 0, { befundJson (hex (0x905), hex (20), "ready_to_send") }),
+                    t0 + std::chrono::milliseconds (2));
+        pruefe (m.sicht().quellen.front().findingsOffen >= 0, "Zwischenstand steht");
+        m.beginneSubscription (hex (1), hex (3), hex (10));
+        const auto neueSitzung = m.sicht();
+        pruefe (std::all_of (neueSitzung.quellen.begin(), neueSitzung.quellen.end(),
+                             [] (const auto& q) { return q.findingsOffen == 0; }),
+                "findings_count_ueberlebt_keinen_sitzungswechsel");
     }
     {
         Model m;

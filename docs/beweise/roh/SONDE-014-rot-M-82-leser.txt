@@ -1,0 +1,78 @@
+SONDE-014 Etappe I - Rotbeweis M-82-leser
+========================================================================
+
+GEWERTETE ZUSAGE
+Eine nicht-endliche Zahl faellt am gemeinsamen TEXTRIEGEL - vor jedem Parser und in allen drei Beinen gleich. Die zwei neuen Negativfixtures tragen sie am Maskierungswert und am Konfidenzscore.
+
+HINWEIS ZUR RUECKNAHME: die Zusage haengt an ZWEI Zeilen derselben Funktion - der Endlichkeitsgrenze und der 2^53-Grenze als Rueckfall. `1e400` ist mathematisch eine Ganzzahl und faellt an beiden; eine Ruecknahme an nur einer fiele am NACHBARN statt an der Zusage. Zurueckgenommen ist deshalb genau der Riegelsatz, der die Zahlengrenze traegt, und nichts sonst.
+
+GEMESSEN AN  broker/tests/contract_cross_language.rs::korpus_klassifiziert_wie_das_manifest gegen eq-copilot/fixtures/v3/MANIFEST.json (`textriegel_lehnt_ab`)
+
+RUECKNAHME AM PRODUKTCODE  broker/src/vertrag.rs
+------------------------------------------------------------------------
+VORHER:
+        if dez >= DEZ_GRENZE || dez <= -DEZ_GRENZE {
+            return Err(format!("Zahl ausserhalb +/-1e{DEZ_GRENZE}: {}", kurz(lit)));
+        }
+    
+        if ganzzahl_zu_gross {
+            return Err(format!("Ganzzahl ausserhalb 2^53-1: {lit}"));
+        }
+
+NACHHER:
+        // RUECKNAHME M-82: die Endlichkeitsgrenze faellt weg.
+        let _ = dez;
+        if false {
+            return Err(format!("Zahl ausserhalb +/-1e{DEZ_GRENZE}: {}", kurz(lit)));
+        }
+    
+        // RUECKNAHME M-82: und die 2^53-Grenze als Rueckfall.
+        if false && ganzzahl_zu_gross {
+            return Err(format!("Ganzzahl ausserhalb 2^53-1: {lit}"));
+        }
+------------------------------------------------------------------------
+
+[1] LAUF MIT RUECKNAHME - erwartet ROT
+========================================================================
+
+running 1 test
+test korpus_klassifiziert_wie_das_manifest ... FAILED
+
+failures:
+
+---- korpus_klassifiziert_wie_das_manifest stdout ----
+
+thread 'korpus_klassifiziert_wie_das_manifest' (22252) panicked at tests\contract_cross_language.rs:119:5:
+3 von 387 Fixtures weichen ab:
+ungueltig/befund-score-nicht-endlich.json: Textriegel laesst es durch, soll ablehnen
+ungueltig/maskierungswert-nicht-endlich.json: Textriegel laesst es durch, soll ablehnen
+ungueltig/zahl-nicht-endlich.json: Textriegel laesst es durch, soll ablehnen
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    korpus_klassifiziert_wie_das_manifest
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 9 filtered out; finished in 0.29s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.96s
+     Running tests\contract_cross_language.rs (broker\target\debug\deps\contract_cross_language-c8ce76809755fc6f.exe)
+error: test failed, to rerun pass `--test contract_cross_language`
+
+EXITCODE 101
+
+[2] RUECKNAHME ZURUECKGENOMMEN - erwartet GRUEN
+========================================================================
+
+running 1 test
+test korpus_klassifiziert_wie_das_manifest ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 0.29s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.23s
+     Running tests\contract_cross_language.rs (broker\target\debug\deps\contract_cross_language-c8ce76809755fc6f.exe)
+
+EXITCODE 0
+

@@ -3109,6 +3109,11 @@ def rohtext_faelle() -> list[tuple[str, bytes, str]]:
     float32["baender"] = baender(221, "nakama_1_24_oct_30_18k_v1", "float32")
     float32["baender"]["werte"][0] = 0.5
 
+    # SONDE-014 Etappe I (M-82): ein Sitzungsschnitt MIT Befund - nur dort
+    # stehen Maskierungswert und Konfidenzscore.
+    befund_zahlen = copy.deepcopy(GRUND["session_snapshot"])
+    befund_zahlen["findings"] = [SESSION_FINDING]
+
     host_index = copy.deepcopy(GRUND["heartbeat"])
     host_index["runtime"] = {
         "messpunkt": "insert", "betrieb": "active", "host_mixer_index": 1,
@@ -3165,6 +3170,19 @@ def rohtext_faelle() -> list[tuple[str, bytes, str]]:
          aus_daten(float32, '"werte": [0.5,', '"werte": [NaN,'),
          "GEMESSEN: Pythons json.loads akzeptiert rohes NaN als nicht-endliche "
          "float32-Bandzahl, waehrend JUCE und serde_json schon im Parser ablehnen"),
+
+        ("maskierungswert-nicht-endlich",
+         aus_daten(befund_zahlen, '"wert_db": -3.25', '"wert_db": 1e400'),
+         "SONDE-014 M-82: 1e400 ist als binary64 unendlich. Der Maskierungswert "
+         "traegt eine MESSUNG - ein Band ohne Messung traegt 0 mit "
+         "gueltig=false, nie NaN und nie Unendlichkeit. Der Riegel faellt VOR "
+         "jedem Parser, damit keine der drei Engines sie erst deuten muss"),
+
+        ("befund-score-nicht-endlich",
+         aus_daten(befund_zahlen, '"score": 0.68', '"score": 1e400'),
+         "SONDE-014 M-82: dasselbe am Konfidenzscore. Er ist im Vertrag auf "
+         "[0,1] beschraenkt; eine nicht-endliche Sicherheit ist keine Sicherheit, "
+         "und ein Leser, der sie klemmt, machte aus Unendlichkeit eine 1"),
 
         ("nul-escape-im-label",
          aus("session_snapshot", '"label": "Klavier-Bus"', '"label": "a' + BS + 'u0000b"'),

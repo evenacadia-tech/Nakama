@@ -1,0 +1,59 @@
+SONDE-014 Etappe I - Rotbeweis M-79
+========================================================================
+
+GEWERTETE ZUSAGE
+Keine KI-Erklaerschicht: die Empfehlungssprache entsteht aus festen Bausteinen, und kein Text erfindet eine Zahl. Jede Zahl in einem Satz steht in einem FELD desselben Befunds.
+
+GEMESSEN AN  broker/tests/sonde014_proposal.rs::text_entsteht_aus_bausteinen_und_erfindet_keine_zahl
+
+RUECKNAHME AM PRODUKTCODE  broker/src/coordinator/hypothese.rs
+------------------------------------------------------------------------
+VORHER:
+                "{} draengt im Bandbereich {}..{} gegen den Master.",
+
+NACHHER:
+                // RUECKNAHME M-79: der Satz traegt eine Zahl, die in keinem Feld steht.
+                "{} draengt im Bandbereich {}..{} gegen den Master (etwa 7 dB).",
+------------------------------------------------------------------------
+
+[1] LAUF MIT RUECKNAHME - erwartet ROT
+========================================================================
+
+running 1 test
+test text_entsteht_aus_bausteinen_und_erfindet_keine_zahl ... FAILED
+
+failures:
+
+---- text_entsteht_aus_bausteinen_und_erfindet_keine_zahl stdout ----
+
+thread 'text_entsteht_aus_bausteinen_und_erfindet_keine_zahl' (12580) panicked at tests\sonde014_proposal.rs:995:17:
+text_entsteht_aus_bausteinen_und_erfindet_keine_zahl - die Zahl 7 aus "00000000 draengt im Bandbereich 96..100 gegen den Master (etwa 7 dB)." steht in keinem Feld
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    text_entsteht_aus_bausteinen_und_erfindet_keine_zahl
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 17 filtered out; finished in 0.29s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.81s
+     Running tests\sonde014_proposal.rs (broker\target\debug\deps\sonde014_proposal-7c92fc847c987d9d.exe)
+error: test failed, to rerun pass `--test sonde014_proposal`
+
+EXITCODE 101
+
+[2] RUECKNAHME ZURUECKGENOMMEN - erwartet GRUEN
+========================================================================
+
+running 1 test
+test text_entsteht_aus_bausteinen_und_erfindet_keine_zahl ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 17 filtered out; finished in 0.29s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.85s
+     Running tests\sonde014_proposal.rs (broker\target\debug\deps\sonde014_proposal-7c92fc847c987d9d.exe)
+
+EXITCODE 0
+

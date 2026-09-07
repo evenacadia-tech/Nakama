@@ -1,0 +1,63 @@
+SONDE-014 Etappe I - Rotbeweis M-86
+========================================================================
+
+GEWERTETE ZUSAGE
+Die Vollstaendigkeitsmarke deckt BEIDE Bestaende: Intent UND aktuellen Schritt (E-11). Ein Schritt der vorigen Main-Generation darf sie nicht ueberleben - der Spiegel ist nie autoritativ (Paragraph 33.5).
+
+GEMESSEN AN  broker/tests/sonde014_verdrahtung.rs::die_vollstaendigkeitsmarke_deckt_beide_bestaende, durch p1 und damit durch dieselbe Senke wie der echte Transport
+
+RUECKNAHME AM PRODUKTCODE  broker/src/coordinator/intent.rs
+------------------------------------------------------------------------
+VORHER:
+                if vollstaendig {
+                    stand.assistent.remove(&session);
+                }
+
+NACHHER:
+                // RUECKNAHME M-86: die Marke deckt nur noch den Intent.
+                if false {
+                    stand.assistent.remove(&session);
+                }
+------------------------------------------------------------------------
+
+[1] LAUF MIT RUECKNAHME - erwartet ROT
+========================================================================
+
+running 1 test
+test die_vollstaendigkeitsmarke_deckt_beide_bestaende ... FAILED
+
+failures:
+
+---- die_vollstaendigkeitsmarke_deckt_beide_bestaende stdout ----
+
+thread 'die_vollstaendigkeitsmarke_deckt_beide_bestaende' (5188) panicked at tests\sonde014_verdrahtung.rs:686:5:
+die_vollstaendigkeitsmarke_deckt_beide_bestaende - die Marke raeumt den Schritt der vorigen Generation fort
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    die_vollstaendigkeitsmarke_deckt_beide_bestaende
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 13 filtered out; finished in 0.01s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.96s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+error: test failed, to rerun pass `--test sonde014_verdrahtung`
+
+EXITCODE 101
+
+[2] RUECKNAHME ZURUECKGENOMMEN - erwartet GRUEN
+========================================================================
+
+running 1 test
+test die_vollstaendigkeitsmarke_deckt_beide_bestaende ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 0.01s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.06s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+
+EXITCODE 0
+

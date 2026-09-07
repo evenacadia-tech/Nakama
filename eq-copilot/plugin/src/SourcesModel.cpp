@@ -453,6 +453,14 @@ void SourcesModel::beginneSubscription (std::string binding, std::string session
     // die neue waere eine Falschaussage, und ihre Evidenz-IDs zeigten ins
     // Leere.
     befunde.clear();
+    // Die abgeleitete Zahl faellt MIT ihrer Quelle. Ein stehengebliebener
+    // Zaehler behauptete offene Arbeit in einer Sitzung, die es nicht mehr
+    // gibt (M-84).
+    for (auto& [id, e] : eintraege)
+    {
+        juce::ignoreUnused (id);
+        e.zeile.findingsOffen = 0;
+    }
     evidenzRuecknahmen = 0;
     ruecknahmeGrund.clear();
     ruecknahmeUmfang.clear();
@@ -1212,6 +1220,22 @@ SourcesModel::SnapshotErgebnis SourcesModel::uebernehmeSessionSnapshot (
     experimente = std::move (geleseneVersuche);
     paare = std::move (gelesenePaare);
     befunde = std::move (geleseneBefunde);
+    // 🔑 SONDE-014 Etappe I (M-84): `findingsOffen` bekommt seine QUELLE.
+    //
+    // Bis hierher war das Feld ein toter Zaehler: `setzeFindings` hatte im
+    // ganzen Repo genau einen Aufrufer, und der war ein Test (Manifest
+    // Paragraph 2.10, L11). Die Anzeige zeigte damit immer 0 - genau das
+    // sinnlose tote Element, das CLAUDE.md ausschliesst.
+    //
+    // Die Zahl wird ABGELEITET, nicht gesetzt. Ein Setter neben der Ableitung
+    // waere eine zweite Wahrheit ueber dieselbe Zahl (M-71); deshalb ist er
+    // mit dieser Etappe fort.
+    //
+    // OFFEN heisst: der Befund steht noch und wartet auf einen Handgriff.
+    // `stale` zaehlt NICHT mit - er ist durch eine Intent-Aenderung
+    // ueberholt und beschreibt keine offene Arbeit mehr (Paragraph 37.3).
+    // `more_data` zaehlt sehr wohl: er wartet auf Material.
+    zaehleOffeneFindings();
     subscriptionAktiv = true;
     diagnose = storeDegradiert ? Diagnose::storeDegraded
              : (bestaetigung || doppelteId) ? Diagnose::confirmationRequired
@@ -1539,15 +1563,25 @@ bool SourcesModel::istAktuellesHauptziel (const std::string& instanceId) const
         && eintraege.count (instanceId) != 0;
 }
 
-void SourcesModel::setzeFindings (const std::string& instanceId, int offen)
+void SourcesModel::zaehleOffeneFindings()
 {
-    std::lock_guard<std::mutex> l (mutex);
-    const auto it = eintraege.find (instanceId);
-    if (it == eintraege.end()) return;
-    const int n = std::max (0, offen);
-    if (it->second.zeile.findingsOffen == n) return;
-    it->second.zeile.findingsOffen = n;
-    revidiere();
+    for (auto& [id, e] : eintraege)
+    {
+        juce::ignoreUnused (id);
+        e.zeile.findingsOffen = 0;
+    }
+    for (const auto& b : befunde)
+    {
+        // `stale` ist kein offener Befund: die Absicht hat sich geaendert,
+        // und die Aussage darunter ist ueberholt (Paragraph 37.3, M-29).
+        if (b.zustand == "stale") continue;
+        const auto it = eintraege.find (b.candidateSource);
+        if (it == eintraege.end()) continue;
+        // Der Deckel ist derselbe wie der des Snapshots; ein Ueberlauf des
+        // Zaehlers waere eine Zahl, die kleiner wird, je mehr es gibt.
+        if (it->second.zeile.findingsOffen < std::numeric_limits<int>::max())
+            ++it->second.zeile.findingsOffen;
+    }
 }
 
 void SourcesModel::setzeCapabilityEvidenz (const std::string& instanceId,

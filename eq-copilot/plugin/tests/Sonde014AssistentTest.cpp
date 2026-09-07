@@ -34,6 +34,7 @@
 #include <algorithm>
 #include <initializer_list>
 #include <iostream>
+#include <string_view>
 #include <memory>
 #include <set>
 #include <string>
@@ -607,6 +608,122 @@ int main()
         const auto baum = juce::ValueTree::readFromStream (ein);
         pruefe (! baum.getChildWithName ("MainProject").hasProperty ("assistant_step_v1"),
                 "Rand: ein nicht gesetzter Schritt reist gar nicht");
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // SONDE-014 ETAPPE I · M-71 und M-81 am gespeicherten Stand
+    // ═══════════════════════════════════════════════════════════════════
+
+    abschnitt ("M-71: der Main-State haelt von Store-Objekten NUR IDs");
+    {
+        // §33.5 woertlich: `Evidenz, Findings, Proposals,
+        // Transaktionsereignisse, Experimente und Urteile` gehoeren in den
+        // lokalen SQLite-Experimentstore, und der Main-State haelt davon
+        // `nur kompakte aktuelle IDs`. Der Assistentenschritt zeigt auf drei
+        // solche Objekte - Befund, Vorschlag, Versuch -, und genau deshalb
+        // faellt die Zeile hier: ein Schritt, der die OBJEKTE mitnaehme,
+        // waere die zweite Wahrheit, die §33.5 verbietet.
+        auto p = prozessor();
+        const auto schrittId = juce::String ("00000000000000000000000000000a01");
+        const auto quelleId  = juce::String ("000000000000000000000000000000a1");
+        // Der PERSISTENTE Weg, nicht der Wire-Weg: `assistentStarten` faehrt
+        // die Zustandsmaschine unter dem Bindungsschloss und schreibt in
+        // `MainProject`. `setzeAssistentSchritt` daneben ist der Spiegelweg
+        // zum Broker und persistiert nichts - ein Fall, der IHN naehme,
+        // maesse einen leeren Stand.
+        pruefe (p->assistentStarten (schrittId),
+                "M-71: ein Schritt liegt im Main-State");
+        pruefe (p->setzeQuellenrolle (quelleId, {}, state::Rolle::fuehrt,
+                                      state::IntentHerkunft::user, 1.0),
+                "M-71: und die Sitzung traegt einen Intent");
+
+        juce::MemoryBlock gespeichert;
+        p->getStateInformation (gespeichert);
+        // ⚠️ ROHE Bytes, kein `juce::String`. Der serialisierte `ValueTree`
+        // traegt Laengenpraefixe und NUL-Bytes; eine Zeichenkette daraus
+        // endete am ersten NUL, und jede Suche darin waere gruen, weil sie
+        // nach dem ersten Kilobyte nichts mehr sieht.
+        const std::string_view bytes (static_cast<const char*> (gespeichert.getData()),
+                                      static_cast<size_t> (gespeichert.getSize()));
+        const auto enthaelt = [&bytes] (const juce::String& wort)
+        {
+            return bytes.find (wort.toRawUTF8()) != std::string_view::npos;
+        };
+
+        // Die Gegenprobe ZUERST: die drei Kennungen stehen wirklich drin.
+        // Ohne sie waere der Riegel darunter auch an einem leeren Stand gruen.
+        pruefe (enthaelt (schrittId) && enthaelt (quelleId),
+                "M-71: beide Kennungen stehen im gespeicherten Stand");
+
+        // Und KEIN Feld eines Store-Objekts. Die Woerter sind die
+        // Pflichtfelder aus `$defs/session_finding` und `$defs/proposal` -
+        // taeuchte eines davon auf, laege ein ganzes Objekt im Main-State.
+        const char* fremdfelder[] = {
+            "claim_class", "ursachenklasse", "likely_cause", "smallest_test",
+            "evidence_ids", "band_hz", "allowed_bounds", "expected_effect",
+            "stop_if", "protected_traits", "beobachtung", "confidence"
+        };
+        bool sauber = true;
+        juce::String getroffen;
+        for (const auto* w : fremdfelder)
+            if (enthaelt (juce::String (w))) { sauber = false; getroffen = w; }
+        pruefe (sauber,
+                "M-71: kein Feld eines Store-Objekts liegt im Main-State - "
+                + (getroffen.isEmpty() ? juce::String ("keins gefunden") : getroffen));
+
+        // Und der Baum traegt keine Kinder fuer Store-Objekte.
+        juce::MemoryInputStream ein (gespeichert, false);
+        const auto baum = juce::ValueTree::readFromStream (ein);
+        const auto mp = baum.getChildWithName ("MainProject");
+        bool eigeneKinder = true;
+        for (const char* k : { "Findings", "Proposals", "Evidence", "Experiments" })
+            eigeneKinder = eigeneKinder && ! mp.getChildWithName (k).isValid();
+        pruefe (eigeneKinder && mp.isValid(),
+                "M-71: `MainProject` hat kein Kind fuer ein Store-Objekt");
+    }
+
+    abschnitt ("M-81: State bleibt verlustfrei, auch mit den neuen Eigenschaften");
+    {
+        // Eine unbekannte EIGENSCHAFT in einem bekannten Kind desselben
+        // Majors ist additiv und wird erhalten - neben den beiden neuen
+        // Eigenschaften dieses Tickets, nicht statt ihrer. Genau diese
+        // Kombination gab es bis Etappe I nirgends: B27 misst sie mit dem
+        // Intent, B29 mit dem Schritt, keiner mit beiden.
+        auto v = mainBaum();
+        auto mp = v.getChildWithName ("MainProject");
+        mp.setProperty ("eine_spaetere_fassung_v9", "unbekannt, aber meins", nullptr);
+        mp.setProperty ("assistant_step_v1",
+                        schrittListe ("00000000000000000000000000000b01", "listen", 4, true),
+                        nullptr);
+        const auto block = alsBlock (v);
+
+        state::Zustand z;
+        juce::String grund;
+        pruefe (laedtNormal (block, z, grund),
+                "M-81: ein Stand mit unbekannter Eigenschaft UND beiden neuen laedt normal - "
+                + grund);
+        pruefe (z.assistent.gesetzt
+                    && z.assistent.schritt == state::Assistentenschritt::listen,
+                "M-81: der Schritt kommt an");
+
+        juce::MemoryBlock zurueck;
+        state::speichere (z, zurueck);
+        juce::MemoryInputStream ein (zurueck, false);
+        const auto neu = juce::ValueTree::readFromStream (ein);
+        const auto neuMp = neu.getChildWithName ("MainProject");
+        pruefe (neuMp.getProperty ("eine_spaetere_fassung_v9").toString()
+                    == "unbekannt, aber meins",
+                "M-81: und die unbekannte Eigenschaft ueberlebt das Speichern");
+        pruefe (neuMp.hasProperty ("assistant_step_v1"),
+                "M-81: der Schritt daneben ebenso");
+
+        // Ein unbekanntes KIND ist etwas anderes: read-only mit
+        // Originalbytes. Die Trennung ist die Zusage.
+        auto v2 = mainBaum();
+        v2.appendChild (juce::ValueTree ("EinGanzNeuesKind"), nullptr);
+        juce::String grund2;
+        pruefe (wirdReadOnly (alsBlock (v2), grund2),
+                "M-81: ein unbekanntes KIND laedt read-only - " + grund2);
     }
 
     std::cout << std::endl << "SONDE-014 AssistantStep: " << bestanden << "/"

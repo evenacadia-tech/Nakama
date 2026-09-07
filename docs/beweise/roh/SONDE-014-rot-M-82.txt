@@ -1,0 +1,43 @@
+SONDE-014 Etappe I - Rotbeweis M-82 (Erzeugerhaelfte): NEGATIVES ERGEBNIS
+========================================================================
+
+GEWERTETE ZUSAGE
+Nicht-endliche Werte werden BEIM ERZEUGEN verriegelt und gezaehlt, nie
+sanitisiert auf die Leitung gelassen; ein Band ohne Messung traegt 0 mit
+`gueltig = false`, nie NaN.
+
+WAS DIESE DATEI FESTHAELT
+Die Erzeugerhaelfte von M-82 hat in Etappe I KEINEN eigenen Rotbeweis
+bekommen, und das steht hier, statt zu fehlen. Der Versuch und sein
+Ergebnis:
+
+  Ruecknahme  broker/src/coordinator/maskierung.rs
+              `_ => (0.0, false)`  ->  `_ => (f64::NAN, false)`
+  Lauf        cargo test --test sonde014_proposal
+              kein_nicht_endlicher_wert_erreicht_die_leitung
+  Ergebnis    GRUEN mit Ruecknahme (Exitcode 0) - der Fall faellt NICHT.
+
+WARUM ER NICHT FAELLT
+Der Zweig ist auf dieser Buehne nicht erreichbar. Alles, was ueber den
+Draht kommt, ist quantisiert und ganzzahlig (`p50_db` ist ein Integer,
+`wert.is_finite()` an dieser Stelle strukturell wahr); ein nicht-endlicher
+Wert kann auf dem gemessenen Weg gar nicht erst entstehen. Eine Probe, die
+auch ohne den Fix gruen ist, heisst nach `tools/dirigent/pruefliste.md`
+Abschnitt E Regressionswache, nicht Beleg - und genau als solche ist der
+Fall `kein_nicht_endlicher_wert_erreicht_die_leitung` gefuehrt: er misst
+eine INVARIANTE ueber den ganzen Weg (jede Zahl im Sitzungsschnitt ist
+endlich, mit Gegenprobe, dass ueberhaupt Zahlen darin stehen), nicht einen
+Fix mit eigenem Fallweg.
+
+WO DIE ZUSAGE IHREN FALLWEG HAT
+  * Die Verriegelung beim Erzeugen: `hypothese.rs::quantisiert` klemmt
+    nicht-endliche Werte auf 0. Ihr Rotbeweis liegt in Etappe C:
+    docs/beweise/roh/SONDE-014-rot-M-25.txt
+    (`quantisierung_klemmt_rastet_und_ist_nan_ehrlich`).
+  * Die Leseseite: docs/beweise/roh/SONDE-014-rot-M-82-leser.txt - eine
+    nicht-endliche Zahl faellt am gemeinsamen Textriegel, vor jedem Parser,
+    mit den zwei neuen Negativfixtures `maskierungswert-nicht-endlich` und
+    `befund-score-nicht-endlich`.
+
+Beide zusammen decken die Zeile; diese Datei sagt, welcher Teil davon in
+Etappe I NICHT neu bewiesen wurde.

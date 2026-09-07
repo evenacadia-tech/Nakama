@@ -1,0 +1,53 @@
+SONDE-014 Etappe I - Rotbeweis M-78
+========================================================================
+
+GEWERTETE ZUSAGE
+Nichts Ungefragtes: die Sperre liegt IM DATENWEG, nicht in der Anzeige. Ein veralteter, ungueltiger oder capability-loser Vorschlag wird gar nicht erst als Angebot gebildet - in P5 geht deshalb kein einziges `draft_offer` hinaus, und keines ist auch nur geschuldet.
+
+GEMESSEN AN  broker/tests/sonde014_proposal.rs::ein_proposal_ohne_useraktion_bleibt_folgenlos - gemessen an den Zaehlern `draft_offers` und `draft_offer_schuld` sowie am Messstand der Sonde
+
+RUECKNAHME AM PRODUKTCODE  broker/src/coordinator/proposal.rs
+------------------------------------------------------------------------
+VORHER:
+    pub fn darf_draft_offer(befund: &CauseHypothesis, vorschlag: &Proposal, lage: &Proposallage) -> bool {
+        befund.zustand.erlaubt_draft()
+
+NACHHER:
+    pub fn darf_draft_offer(befund: &CauseHypothesis, vorschlag: &Proposal, lage: &Proposallage) -> bool {
+        // RUECKNAHME M-78: die Sperre im Datenweg faellt weg - jeder
+        // Vorschlag wird ungefragt zum Angebot.
+        if true { return true; }
+        #[allow(unreachable_code)]
+        befund.zustand.erlaubt_draft()
+------------------------------------------------------------------------
+
+[1] LAUF MIT RUECKNAHME - erwartet ROT
+========================================================================
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+error[E0658]: attributes on expressions are experimental
+   --> src\coordinator\proposal.rs:897:5
+    |
+897 |     #[allow(unreachable_code)]
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: see issue #15701 <https://github.com/rust-lang/rust/issues/15701> for more information
+
+For more information about this error, try `rustc --explain E0658`.
+error: could not compile `eqcop-broker` (lib) due to 1 previous error
+
+EXITCODE 101
+
+[2] RUECKNAHME ZURUECKGENOMMEN - erwartet GRUEN
+========================================================================
+
+running 1 test
+test ein_proposal_ohne_useraktion_bleibt_folgenlos ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 17 filtered out; finished in 0.29s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.49s
+     Running tests\sonde014_proposal.rs (broker\target\debug\deps\sonde014_proposal-7c92fc847c987d9d.exe)
+
+EXITCODE 0
+

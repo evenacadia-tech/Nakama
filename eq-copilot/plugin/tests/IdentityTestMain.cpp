@@ -19,6 +19,7 @@
 
 #include <cstring>
 #include <iostream>
+#include <memory>
 
 using namespace eqcop;
 
@@ -802,6 +803,32 @@ int main (int argc, char* argv[])
         const char muell[] = { 'n', 'i', 'c', 'h', 't', 's' };
         p.setStateInformation (muell, (int) sizeof (muell));
         pruefe (p.holeSensorId() == vorher, "Muellbytes aendern den Zustand nicht");
+    }
+
+    // -- SONDE-014 M-83: Gen fuehrt NULL Hostparameter --------------------
+    //
+    // Die Identitaet bleibt eingefroren, bis NAK-30 sie bewusst migriert -
+    // und dazu gehoert die Hostsicht. Ein Parameter ist fuer den Host ein
+    // Automationsziel mit Index; kommt einer dazu, verschieben sich die
+    // Indizes bestehender Projekte. SONDE-014 legt zwei neue persistente
+    // Eigenschaften in `MainProject` (Intent und Assistentenschritt); keine
+    // davon ist ein Hostparameter, und genau das steht hier als Messung.
+    //
+    // Die Sondenschale misst dasselbe an ihrer Stelle (`SondeNullTestMain`);
+    // fuer Gen gab es die Zeile bis Etappe I NICHT.
+    {
+        // HEAP, nicht Rahmen: NAK-175, der MSVC-Standardstack ist 1 MiB.
+        auto p = std::make_unique<EqCopilotProcessor>();
+        pruefe (p->getParameters().size() == 0,
+                "M-83: Gen fuehrt null Hostparameter",
+                juce::String (p->getParameters().size()));
+        // Und auch nach dem Setzen der neuen persistenten Eigenschaften
+        // bleibt es dabei - sie sind Projektzustand, kein Automationsziel.
+        p->setzeAssistentSchritt (juce::String ("00000000000000000000000000000abc"),
+                                  "coverage", true);
+        pruefe (p->getParameters().size() == 0,
+                "M-83: auch mit gesetztem Assistentenschritt bleiben es null",
+                juce::String (p->getParameters().size()));
     }
 
     std::cout << std::endl

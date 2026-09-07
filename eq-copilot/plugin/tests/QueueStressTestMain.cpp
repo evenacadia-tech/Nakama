@@ -1404,6 +1404,146 @@ int main()
     }
 
     //==========================================================================
+    // SONDE-014 Etappe I, M-72: DER AUDIOTHREAD IST NIE BETEILIGT.
+    //
+    // Die neuen Pfade dieses Tickets - musikalischer Intent, Schutzangaben und
+    // der Assistentenschritt - leben im Main-State und reisen als P1 zum
+    // Broker. Keiner von ihnen darf den Audiothread beruehren, und keiner darf
+    // das Audio veraendern.
+    //
+    // Gemessen wird beides zusammen und im ECHTEN Nebeneinander: ein zweiter
+    // Faden fasst waehrend des Laufs unablaessig Intent und Schritt an,
+    // waehrend der Audiothread rechnet. Ein Fall, der die Aufrufe VOR dem
+    // Lauf machte, koennte eine Sperre im Blockpfad nicht sehen - genau die
+    // Sperre, um die es geht.
+    //
+    //   (a) 0 Allokationen im Audiothread, gezaehlt statt behauptet;
+    //   (b) das Ergebnis ist BITGLEICH zu einem Prozessor, den niemand
+    //       anfasst. Ohne (b) waere (a) nur die Aussage, dass keine
+    //       Speicheranforderung stattfand - nicht, dass das Audio unberuehrt
+    //       blieb.
+    std::cout << std::endl
+              << "== SONDE-014 M-72: 0 Allokationen und bitgleiches Audio, waehrend "
+                 "Intent und Schritt laufen ==" << std::endl;
+    {
+        constexpr double fs = 48000.0;
+        constexpr int bs = 512;
+        // NAK-175: der MSVC-Standardstack ist 1 MiB, und ein
+        // `EqCopilotProcessor` traegt eine `FeatureEngine`. Beide liegen auf
+        // dem HEAP.
+        auto mitVerkehr = std::make_unique<EqCopilotProcessor>();
+        auto ruhig      = std::make_unique<EqCopilotProcessor>();
+        for (auto* p : { mitVerkehr.get(), ruhig.get() })
+        {
+            p->setPlayConfigDetails (2, 2, fs, bs);
+            p->prepareToPlay (fs, bs);
+        }
+        TestPlayHead kopfA; kopfA.spielt = true;
+        TestPlayHead kopfB; kopfB.spielt = true;
+        mitVerkehr->setPlayHead (&kopfA);
+        ruhig->setPlayHead (&kopfB);
+        pruefe (alsMainKlassifizieren (*mitVerkehr) && alsMainKlassifizieren (*ruhig),
+                "M-72: beide Prozessoren sind Main (nur dort gibt es Intent und Schritt)");
+
+        juce::MidiBuffer midi;
+        auto welle = [] (juce::AudioBuffer<float>& b, double& phase)
+        {
+            for (int i = 0; i < b.getNumSamples(); ++i)
+            {
+                const float v = 0.35f * (float) std::sin (phase);
+                phase += 2.0 * juce::MathConstants<double>::pi * 220.0 / fs;
+                b.setSample (0, i, v);
+                b.setSample (1, i, v);
+            }
+        };
+
+        // Ein Block vor dem Zaehlen: was `prepareToPlay` offen laesst, gehoert
+        // nicht in die Messung.
+        {
+            juce::AudioBuffer<float> a (2, bs), b (2, bs);
+            double pa = 0.0, pb = 0.0;
+            welle (a, pa); welle (b, pb);
+            mitVerkehr->processBlock (a, midi);
+            ruhig->processBlock (b, midi);
+            kopfA.pos += bs; kopfB.pos += bs;
+        }
+
+        // Eine 32-stellige Hexkennung, wie der Vertrag sie verlangt.
+        auto kennung = [] (unsigned long long wert)
+        {
+            std::ostringstream o;
+            o << std::hex << std::setfill ('0') << std::setw (32) << wert;
+            return juce::String (o.str());
+        };
+
+        std::atomic<bool> laeuft { true };
+        std::atomic<std::uint64_t> handgriffe { 0 };
+        std::thread verkehr ([&]
+        {
+            const nakama::state::Rolle rollen[] = {
+                nakama::state::Rolle::fuehrt,  nakama::state::Rolle::traegt,
+                nakama::state::Rolle::begleitet
+            };
+            const char* schritte[] = { "coverage", "finding", "evidence", "listen" };
+            std::uint64_t n = 0;
+            while (laeuft.load (std::memory_order_relaxed))
+            {
+                const auto quelle = kennung (0xa0 + (n % 7));
+                mitVerkehr->setzeQuellenrolle (quelle, {}, rollen[n % 3],
+                                               nakama::state::IntentHerkunft::user, 1.0);
+                mitVerkehr->schuetzeQuelle (quelle,
+                                            nakama::state::Schutzeigenschaft::band,
+                                            (int) (n % 40), (int) (n % 40) + 4);
+                mitVerkehr->setzeAssistentSchritt (kennung (0x5000 + n),
+                                                   schritte[n % 4], true);
+                ++n;
+                handgriffe.store (n, std::memory_order_relaxed);
+            }
+        });
+
+        // Warten, bis der zweite Faden wirklich laeuft - sonst maesse der
+        // Lauf ein Nebeneinander, das es nicht gab.
+        for (int i = 0; i < 500 && handgriffe.load() == 0; ++i)
+            std::this_thread::sleep_for (std::chrono::milliseconds (1));
+        const bool verkehrLaeuft = handgriffe.load() > 0;
+
+        juce::AudioBuffer<float> a (2, bs), b (2, bs);
+        double pa = 0.0, pb = 0.0;
+        bool bitgleich = true;
+        allokationen = 0;
+        zaehleAllokationen = true;
+        for (int i = 0; i < 2000; ++i)
+        {
+            welle (a, pa);
+            welle (b, pb);
+            mitVerkehr->processBlock (a, midi);
+            ruhig->processBlock (b, midi);
+            for (int k = 0; k < 2 && bitgleich; ++k)
+                bitgleich = std::memcmp (a.getReadPointer (k), b.getReadPointer (k),
+                                         sizeof (float) * (size_t) bs) == 0;
+            kopfA.pos += bs; kopfB.pos += bs;
+        }
+        zaehleAllokationen = false;
+        laeuft.store (false);
+        verkehr.join();
+
+        pruefe (verkehrLaeuft,
+                "M-72: der zweite Faden hat wirklich gearbeitet",
+                std::to_string (handgriffe.load()));
+        pruefe (allokationen == 0,
+                "M-72: 2 000 Bloecke, waehrend Intent, Schutz und Schritt laufen: "
+                "0 Allokationen im Audiothread",
+                std::to_string (allokationen));
+        pruefe (bitgleich,
+                "M-72: und das Audio ist BITGLEICH zum unberuehrten Prozessor");
+        // Die Gegenprobe: der Strom war wirklich einer, kein Schweigen.
+        pruefe (a.getMagnitude (0, bs) > 0.1f,
+                "M-72: der Vergleich lief auf echtem Material, nicht auf Stille");
+        mitVerkehr->setPlayHead (nullptr);
+        ruhig->setPlayHead (nullptr);
+    }
+
+    //==========================================================================
     std::cout << std::endl << geprueft << " Pruefungen, " << fehler << " Fehler." << std::endl;
     std::cout << (fehler == 0 ? "QUEUE-STRESSTEST OK" : "QUEUE-STRESSTEST FEHLGESCHLAGEN")
               << std::endl;

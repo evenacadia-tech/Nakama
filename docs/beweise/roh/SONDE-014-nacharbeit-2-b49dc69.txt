@@ -1,0 +1,153 @@
+SONDE-014 / S23-25 - Etappe 2, NACHARBEIT 2: Beinlauf auf dem Endstand
+
+HEAD: b49dc6909b00e45789d40e1ea8002f62a6664bb1
+Gefahren: 2026-09-07T11:31:55
+Worktree beim Lauf: sauber (git status --short leer)
+URTEIL: ALLE BETROFFENEN BEINE GRUEN
+
+
+Nur die BETROFFENEN Beine - kein voller Kanon; der laeuft beim
+Ticketabschluss. Betroffen ist, was der Diff dieser Runde beruehrt:
+der Broker-Coordinator (A4, A4-SI), der ControlClient und der
+PluginProcessor (jedes C++-Bein, das sie baut).
+
+======================================================================
+BEIN A4  |  cargo test --manifest-path broker/Cargo.toml
+EXIT=0  GRUEN  642 Pruefungen in 27 Binaries
+----------------------------------------------------------------------
+test result: ok. 228 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.76s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 60.43s
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.36s
+test result: ok. 51 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.52s
+test result: ok. 26 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test gescheiterter_append_laesst_keinen_ausschluss_stehen ... ok
+test resultatmessung_ist_an_versuch_passage_und_grenze_gebunden ... ok
+test result: ok. 78 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.52s
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.63s
+test ausschlussgruende_sind_geschlossen_und_reisen_mit ... ok
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 42.24s
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.83s
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 8.49s
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 16.96s
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.89s
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 765.50s
+test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.61s
+test gescheiterter_leerlauf_checkpoint_wird_wiederholt ... ok
+test result: ok. 67 passed; 0 failed; 22 ignored; 0 measured; 0 filtered out; finished in 1.57s
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.20s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+======================================================================
+BEIN A4-SI  |  cargo test --manifest-path broker/Cargo.toml --test store_crash_matrix -- --ignored
+EXIT=0  GRUEN  22 Pruefungen in 1 Binaries
+----------------------------------------------------------------------
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 67 filtered out; finished in 5.07s
+
+======================================================================
+BEIN A5  |  py -3.13 tools/eq-copilot/pruefe_v3_vertrag.py --abdeckung
+EXIT=0  GRUEN  598
+----------------------------------------------------------------------
+Pruefungen: 598 bestanden, 0 gescheitert
+
+======================================================================
+BEIN A8  |  py -3.13 tools/eq-copilot/erzeuge_v3_fixtures.py --pruefen
+EXIT=0  GRUEN  392
+----------------------------------------------------------------------
+  bytegleich: 392 Dateien, MANIFEST sha256=3af183102421575acfa054e0f0b384c13879b750226f0b8dbf70d6f636d3a89d
+
+======================================================================
+BEIN B1  |  eq-copilot\build\plugin\EqCopIdentityTest_artefacts\Release\EqCopIdentityTest.exe
+EXIT=0  GRUEN  120
+----------------------------------------------------------------------
+IDENTITY-TEST OK - 120 Pruefungen ok, 0 Fehler
+
+======================================================================
+BEIN B2  |  eq-copilot\build\plugin\EqCopStateMigrationTest_artefacts\Release\EqCopStateMigrationTest.exe
+EXIT=0  GRUEN  180
+----------------------------------------------------------------------
+STATE-MIGRATION-TEST OK - 180 Pruefungen ok, 0 Fehler
+
+======================================================================
+BEIN B3c  |  eq-copilot\build\plugin\EqCopSchemaTest_artefacts\Release\EqCopSchemaTest.exe
+EXIT=0  GRUEN  136
+----------------------------------------------------------------------
+136 bestanden, 0 gescheitert
+
+======================================================================
+BEIN B4  |  eq-copilot\build\plugin\EqCopQueueStressTest_artefacts\Release\EqCopQueueStressTest.exe
+EXIT=0  GRUEN  ('121', '0')
+----------------------------------------------------------------------
+121 Pruefungen, 0 Fehler.
+
+======================================================================
+BEIN B10  |  eq-copilot\build\plugin\EqCopIpcTest_artefacts\Release\EqCopIpcTest.exe
+EXIT=0  GRUEN  ('372', '0')
+----------------------------------------------------------------------
+  ok      der gescheiterte Write legt ihn zurueck; die Queue traegt wieder genau 64  [64 Eintraege]
+  ok      ein gescheiterter Write legt das Ereignis an seinen Platz zurueck
+== G6 · ein P1-Ereignis ueberlebt einen gescheiterten Write ==
+== G9 · ein P0-Befehl ueberlebt einen gescheiterten Write bei voller Queue ==
+  ok      kopplungswarte_faelscht_den_backoff_nicht  [Aufstieg 500 997 ms, Versuche in der Kopplungswarte 0, Rueckkehr nach 26 ms, Abstand danach 4001 ms (erwartet 3600..5800 — die Stufe vor der Warte), Status 1, Pruefungen 0]
+  ok      abbruch_vor_und_nach_createfile/control/stop_nach_open  [an der Barriere 1, kein Hello 1, Pruefungen 0 (unveraendert 0)]
+  ok      abbruch_vor_und_nach_createfile/telemetrie/stop_nach_open  [an der Barriere 1, kein Hello 1, Pruefungen 0 (unveraendert 0)]
+  ok      abbruch_vor_und_nach_createfile/control/reconnect_nach_open  [an der Barriere 1, kein Hello 1, Pruefungen 0 (unveraendert 0)]
+  ok      abbruch_vor_und_nach_createfile/telemetrie/reconnect_nach_open  [an der Barriere 1, kein Hello 1, Pruefungen 0 (unveraendert 0)]
+ALLE PRUEFUNGEN GRUEN — 372 Pruefungen, 0 Fehler
+
+======================================================================
+BEIN B13  |  eq-copilot\build\plugin\EqCopSonde012SourcesModelTest_artefacts\Release\EqCopSonde012SourcesModelTest.exe
+EXIT=0  GRUEN  ('79', '79')
+----------------------------------------------------------------------
+  ok      unclassified_is_visible_not_error_or_role
+SONDE-012 SourcesModel: 79/79 gruen
+
+======================================================================
+BEIN B14  |  eq-copilot\build\plugin\EqCopSonde012ProjectReloadTest_artefacts\Release\EqCopSonde012ProjectReloadTest.exe
+EXIT=0  GRUEN  ('12', '12')
+----------------------------------------------------------------------
+SONDE-012 ProjectReload: 12/12 gruen
+
+======================================================================
+BEIN B27  |  eq-copilot\build\plugin\EqCopSonde014IntentTest_artefacts\Release\EqCopSonde014IntentTest.exe
+EXIT=0  GRUEN  210
+----------------------------------------------------------------------
+SONDE-014-INTENT-TEST OK - 210 Pruefungen ok, 0 Fehler
+
+======================================================================
+BEIN B28  |  eq-copilot\build\plugin\EqCopSonde014BefundTest_artefacts\Release\EqCopSonde014BefundTest.exe
+EXIT=0  GRUEN  ('60', '60')
+----------------------------------------------------------------------
+SONDE-014 Befund und Maskierung: 60/60 gruen
+
+======================================================================
+BEIN B29  |  eq-copilot\build\plugin\EqCopSonde014AssistentTest_artefacts\Release\EqCopSonde014AssistentTest.exe
+EXIT=0  GRUEN  ('167', '167')
+----------------------------------------------------------------------
+SONDE-014 AssistantStep: 167/167 gruen
+
+======================================================================
+UEBERSICHT
+  A4     GRUEN 642 Pruefungen in 27 Binaries
+  A4-SI  GRUEN 22 Pruefungen in 1 Binaries
+  A5     GRUEN 598
+  A8     GRUEN 392
+  B1     GRUEN 120
+  B2     GRUEN 180
+  B3c    GRUEN 136
+  B4     GRUEN ('121', '0')
+  B10    GRUEN ('372', '0')
+  B13    GRUEN ('79', '79')
+  B14    GRUEN ('12', '12')
+  B27    GRUEN 210
+  B28    GRUEN ('60', '60')
+  B29    GRUEN ('167', '167')

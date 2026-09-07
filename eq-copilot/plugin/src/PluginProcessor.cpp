@@ -284,6 +284,15 @@ EqCopilotProcessor::EqCopilotProcessor()
             }
             return json;
         });
+    // 🔑 SONDE-014 WN-01 (Nacharbeit 2): der Weg zurueck aus einem
+    // `konflikt`-ACK. Er liest und formt nur - das Einreihen macht der
+    // Client, unter derselben Sperre, die er ohnehin haelt.
+    controlV3.setzeKonfliktWiederholungHook (
+        [this] (const std::string& commandId, const std::string&,
+                std::uint64_t brokerRevision) -> std::string
+        {
+            return urteilMitFrischemKopf (juce::String (commandId), brokerRevision);
+        });
 
     queue.vorbereiten();
 
@@ -1986,7 +1995,9 @@ std::string EqCopilotProcessor::v3AssistantStepJson() const
     ohne Bezug, und ein erfundener Bezug waere schlimmer als kein Urteil. */
 std::string EqCopilotProcessor::v3UserVerdictJson (nakama::state::Userurteil urteil,
                                                    const juce::String& findingId,
-                                                   const juce::String& notiz) const
+                                                   const juce::String& notiz,
+                                                   const juce::String& commandIdVorgabe,
+                                                   std::optional<std::uint64_t> baseRevision) const
 {
     juce::String befund = findingId, proposalId;
     {
@@ -2004,10 +2015,21 @@ std::string EqCopilotProcessor::v3UserVerdictJson (nakama::state::Userurteil urt
     if (! nakama::ipc::istHex32 (befund.toStdString()))
         return {};
     const auto& findingIdGewaehlt = befund;
-    const juce::String commandId { uuidHex32() };
-    const auto kopf = versuchKopfJson (commandId);
+    // 🔑 WN-01: eine Wiederholung behaelt ihre `command_id`. Der Broker
+    // erkennt sie idempotent (NR-10) - eine frische ID waere ein zweites
+    // Urteil, kein zweiter Versuch.
+    const juce::String commandId {
+        commandIdVorgabe.isNotEmpty() ? commandIdVorgabe : juce::String (uuidHex32())
+    };
+    const auto kopf = versuchKopfJson (commandId, baseRevision);
     if (kopf.empty())
         return {};
+    {
+        // Der Mitschnitt traegt, was den Kopf NEU baut - nicht den Text: der
+        // alte Text enthaelt genau die Revision, die der Broker ablehnt.
+        std::lock_guard<std::mutex> l (urteilMutex);
+        letztesUrteil = Urteilmitschnitt { commandId, findingIdGewaehlt, notiz, urteil, true };
+    }
     std::string aus = "{\"type\":\"user_verdict\",\"kopf\":" + kopf;
     aus += ",\"user_verdict_id\":\"" + uuidHex32() + "\"";
     aus += ",\"finding_id\":\"" + findingIdGewaehlt.toStdString() + "\"";
@@ -2020,6 +2042,30 @@ std::string EqCopilotProcessor::v3UserVerdictJson (nakama::state::Userurteil urt
         aus += ",\"notiz\":" + juce::JSON::toString (juce::var (notiz), true).toStdString();
     aus += "}";
     return aus;
+}
+
+/*  SONDE-014 WN-01 (Nacharbeit 2): derselbe Auftrag, frischer Kopf.
+
+    Der Broker hat mit `konflikt` geantwortet und dabei die Revision genannt,
+    die er kennt. Das Urteil selbst war richtig - nur sein Kopf trug eine
+    Zahl, die der Broker noch nicht gesehen hatte. Der Text entsteht deshalb
+    NEU, mit derselben `command_id` und der Revision aus dem ACK; `angewandt`
+    schliesst den Auftrag ab, nicht der erste Versuch.
+
+    Laeuft unter `sendeMutex` des ControlClients (Ordnung: sendeMutex VOR
+    Bindungsschloss, wie der Replay-Hook). Er liest und formt nur. */
+std::string EqCopilotProcessor::urteilMitFrischemKopf (const juce::String& commandId,
+                                                       std::uint64_t brokerRevision) const
+{
+    Urteilmitschnitt mitschnitt;
+    {
+        std::lock_guard<std::mutex> l (urteilMutex);
+        mitschnitt = letztesUrteil;
+    }
+    if (! mitschnitt.gesetzt || mitschnitt.commandId != commandId)
+        return {};
+    return v3UserVerdictJson (mitschnitt.urteil, mitschnitt.findingId, mitschnitt.notiz,
+                              commandId, brokerRevision);
 }
 
 /*  M-86: die Vollstaendigkeitsmarke, BEVOR der Broker rechnet.
@@ -3162,7 +3208,8 @@ std::string EqCopilotProcessor::versuchReferenzJson (const Engineabzug& abzug) c
     return s;
 }
 
-std::string EqCopilotProcessor::versuchKopfJson (const juce::String& commandId) const
+std::string EqCopilotProcessor::versuchKopfJson (const juce::String& commandId,
+                                                 std::optional<std::uint64_t> baseRevision) const
 {
     auto h = v3Hello();
     h.adresse = nakama::ipc::wireAdresseAusState (h.adresse);
@@ -3170,7 +3217,19 @@ std::string EqCopilotProcessor::versuchKopfJson (const juce::String& commandId) 
         return {};
     std::string s = "{\"command_id\":\"" + commandId.toStdString() + "\"";
     s += ",\"ziel\":" + nakama::ipc::adresseAlsJson (h.adresse);
-    s += ",\"base_revision\":" + std::to_string (v3StateRevision.load());
+    // 🔑 SONDE-014 WN-01 (Nacharbeit 2, 07.09.2026): die GEMELDETE Revision.
+    //
+    // Hier stand `v3StateRevision.load()` - der lokale Zaehler, den
+    // `assistentAenderungMelden` unmittelbar davor erhoeht. Der `state_report`
+    // reist als P1 im 1-Hz-Takt, der Befehl als P0; der P0 ueberholt den
+    // Bericht strukturell, und `befehl.rs` antwortet auf einen Kopf mit einer
+    // Zahl, die der Broker nicht kennt, mit `revision_conflict`. Der Konflikt
+    // war damit der Regelfall, nicht ein Zeitfenster (WP1-1).
+    //
+    // `baseRevision` setzt die Zahl ausdruecklich: die Wiederholung nach einem
+    // `konflikt`-ACK nimmt die, die der Broker selbst genannt hat.
+    s += ",\"base_revision\":"
+       + std::to_string (baseRevision.value_or (controlV3.gemeldeteStateRevision()));
     s += ",\"ttl_ms\":2000,\"schema_major\":3,\"schema_minor\":0}";
     return s;
 }
@@ -3678,9 +3737,23 @@ bool EqCopilotProcessor::assistentAntwort (nakama::state::Assistentenergebnis er
     // spaeteren Schritt ueberholt werden.
     if (urteil != nullptr)
     {
+        // 🔑 WN-05 (Nacharbeit 2, 07.09.2026), M-73: der Rueckgabewert der
+        // Queue-Politik wird AUSGEWERTET.
+        //
+        // Bis hierher ging er in den Abgrund: bei voller 64er-P0-Queue liefert
+        // `sendePersistenzP0` false, und diese Methode meldete trotzdem
+        // Erfolg. Das Urteil war weder persistiert noch beim Reconnect
+        // wiederholbar - genau das, was M-73 mit "nie stillschweigend
+        // geloescht" ausschliesst (WP1-5).
+        //
+        // Seit WN-05 bleibt der abgewiesene Auftrag im In-Flight-Register und
+        // geht an `beiP0Verworfen`; hier faellt nur noch die ehrliche Antwort:
+        // eingereiht oder nicht.
         const auto json = v3UserVerdictJson (*urteil, findingId, notiz);
-        if (! json.empty())
-            controlV3.sendePersistenzP0 (json);
+        if (json.empty())
+            return false;
+        if (! controlV3.sendePersistenzP0 (json))
+            return false;
     }
     return gemeldet;
 }

@@ -1,0 +1,66 @@
+ROTBEWEIS WN-01 (SONDE-014 Nacharbeit 2) - der Kopf traegt die GEMELDETE Revision
+
+ZUSAGE: Der Kopf eines `user_verdict` traegt als `base_revision` die zuletzt
+AN DEN BROKER GEMELDETE State-Revision (die des zuletzt gesendeten
+`state_report`), nie den lokalen Zaehler, der soeben erhoeht wurde (WP1-1,
+M-73/EP-10).
+
+RUECKNAHME: der Kopf liest wieder `v3StateRevision` - genau der Stand, den
+die Wiederpruefung 1 gefunden hat.
+
+FALLENDE ZEILE: Abschnitt "WN-01" in
+eq-copilot/plugin/tests/Sonde014AssistentTest.cpp - "der Kopf traegt die
+GEMELDETE Revision (0), nicht den Zaehler".
+
+Kommando: "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/bin/cmake.exe" --build eq-copilot/build --config Release --target EqCopSonde014AssistentTest && eq-copilot\build\plugin\EqCopSonde014AssistentTest_artefacts\Release\EqCopSonde014AssistentTest.exe
+Gefahren: 2026-09-07T10:40:01
+
+=== 1. RUECKNAHME der Zusage ===
+  eq-copilot/plugin/src/PluginProcessor.cpp
+
+=== 2. ROTER LAUF ===
+EXIT=1
+== WN-01: `base_revision` kommt aus dem Draht, nicht aus dem Zaehler ==
+  ok      WN-01: ein Schritt laeuft
+  ok      WN-01: der lokale Zaehler ist gestiegen
+  ok      WN-01: das Urteil entsteht
+  FEHLER  WN-01: der Kopf traegt die GEMELDETE Revision (0), nicht den Zaehler
+  FEHLER  WN-01: und ausdruecklich NICHT den soeben erhoehten lokalen Stand
+  ok      WN-01: das Urteil traegt seine Kennung
+  ok      WN-01: ein `konflikt` ist kein Verlust - der Auftrag entsteht neu
+  ok      WN-01: unter DERSELBEN `command_id`
+  ok      WN-01: und mit der Revision, die der Broker genannt hat
+  ok      WN-01: der Gegenstand bleibt derselbe Befund
+  ok      WN-01: eine fremde `command_id` erzeugt kein Urteil
+== WN-05: der Rueckgabewert der Queue-Politik wird ausgewertet ==
+  ok      WN-05: ein Schritt laeuft
+  ok      WN-05: mit Platz in der Queue meldet `assistentAntwort` Erfolg
+  ok      WN-05: die P0-Queue ist wirklich voll
+  ok      WN-05: bei voller Queue meldet `assistentAntwort` KEINEN Erfolg
+SONDE-014 AssistantStep: 165/167 gruen
+
+=== 3. WIEDERHERSTELLUNG ===
+  zurueckgenommen
+
+=== 4. GRUENER LAUF ===
+EXIT=0
+== WN-01: `base_revision` kommt aus dem Draht, nicht aus dem Zaehler ==
+  ok      WN-01: ein Schritt laeuft
+  ok      WN-01: der lokale Zaehler ist gestiegen
+  ok      WN-01: das Urteil entsteht
+  ok      WN-01: der Kopf traegt die GEMELDETE Revision (0), nicht den Zaehler
+  ok      WN-01: und ausdruecklich NICHT den soeben erhoehten lokalen Stand
+  ok      WN-01: das Urteil traegt seine Kennung
+  ok      WN-01: ein `konflikt` ist kein Verlust - der Auftrag entsteht neu
+  ok      WN-01: unter DERSELBEN `command_id`
+  ok      WN-01: und mit der Revision, die der Broker genannt hat
+  ok      WN-01: der Gegenstand bleibt derselbe Befund
+  ok      WN-01: eine fremde `command_id` erzeugt kein Urteil
+== WN-05: der Rueckgabewert der Queue-Politik wird ausgewertet ==
+  ok      WN-05: ein Schritt laeuft
+  ok      WN-05: mit Platz in der Queue meldet `assistentAntwort` Erfolg
+  ok      WN-05: die P0-Queue ist wirklich voll
+  ok      WN-05: bei voller Queue meldet `assistentAntwort` KEINEN Erfolg
+SONDE-014 AssistantStep: 167/167 gruen
+
+URTEIL: ROT bei Ruecknahme, GRUEN nach Wiederherstellung - die Zusage traegt.

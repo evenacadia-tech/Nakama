@@ -5649,6 +5649,113 @@ int main (int argc, char** argv)
         server.stoppen();
     }
 
+    // ── SONDE-014 Nacharbeit 2: WN-05 und WN-01 an der Queue-Politik ──────
+    //
+    // Die Wiederpruefung 1 fand zwei Wege, auf denen ein Userurteil
+    // stillschweigend verschwand: die volle P0-Queue nahm den Auftrag wieder
+    // aus dem Register (WP1-5), und ein `konflikt`-ACK loeschte ihn
+    // endgueltig, obwohl nur sein Kopf eine Revision trug, die der Broker
+    // nicht kannte (WP1-1). Beide Wege werden hier am ECHTEN Client gemessen,
+    // mit Draht und Server.
+    {
+        // -- WN-05: abgewiesen ist nicht geloescht ------------------------
+        TestServer server (testPipeName ("sonde014-wn05"));
+        server.commandAckArt.store (1);   // angewandt
+        server.starten();
+        ControlClient control ([&] {
+            ControlHello h;
+            h.adresse = testAdresse (hex32 ('7'));
+            return h;
+        }, server.pipeName());
+        std::atomic<int> verworfen { 0 };
+        control.setzeP0Rueckmeldung ([] (std::uint64_t, std::uint64_t) {},
+                                     [&] (std::uint64_t marke)
+                                     {
+                                         if (marke != 0)
+                                             verworfen.fetch_add (1);
+                                     });
+        control.start();
+        const bool verbunden = warteAuf (5000, [&] {
+            return control.snapshot().status == ControlClient::Status::verbunden;
+        });
+        // Die 64 Plaetze sind belegt: der naechste Auftrag wird ABGEWIESEN.
+        const auto gefuellt = verbunden ? control.fuelleP0QueueFuerTest() : 0u;
+        const bool abgewiesen = gefuellt > 0
+                             && ! control.sendePersistenzP0 (userVerdictBefehl (hex32 ('7')));
+        // M-73 woertlich: der Eintrag geht an `beiP0Verworfen` und bleibt im
+        // Register - nie stillschweigend geloescht.
+        const bool gemeldet = abgewiesen && warteAuf (3000, [&] {
+            return verworfen.load() >= 1;
+        });
+        const bool gehalten = gemeldet && control.snapshot().inFlight >= 1;
+        // Und er kommt zurueck: der Ueberlauf hat die Verbindung verworfen,
+        // der naechste Link reiht ihn unter DERSELBEN `command_id` erneut ein,
+        // und erst der ACK des Servers schliesst ihn ab.
+        const bool wiederholt = gehalten && warteAuf (20000, [&] {
+            const auto s = control.snapshot();
+            return s.inFlight == 0 && s.inFlightErfolg >= 1;
+        });
+        pruefe (wiederholt,
+                "user_verdict_ueberlebt_die_volle_p0_queue_und_wird_nach_dem_reconnect_angewandt");
+        control.stop();
+        server.stoppen();
+    }
+    {
+        // -- WN-01: ein `konflikt` ist kein Verlust ----------------------
+        TestServer server (testPipeName ("sonde014-wn01"));
+        server.commandAckArt.store (3);   // konflikt
+        server.starten();
+        ControlClient control ([&] {
+            ControlHello h;
+            h.adresse = testAdresse (hex32 ('e'));
+            return h;
+        }, server.pipeName());
+        std::atomic<int> hookRufe { 0 };
+        std::atomic<bool> idGehalten { true };
+        const auto id = hex32 ('7');
+        control.setzeKonfliktWiederholungHook (
+            [&] (const std::string& commandId, const std::string&,
+                 std::uint64_t brokerRevision) -> std::string
+            {
+                if (commandId != id)
+                    idGehalten.store (false);
+                // Beim ersten Konflikt baut der Prozessor den Kopf NEU - mit
+                // der Revision, die der Broker genannt hat, und derselben
+                // `command_id`. Danach gibt er auf; der Server antwortet hier
+                // immer `konflikt`.
+                if (hookRufe.fetch_add (1) != 0)
+                    return {};
+                std::string frisch = userVerdictBefehl (commandId);
+                const std::string alt = "\"base_revision\":0";
+                const auto stelle = frisch.find (alt);
+                if (stelle != std::string::npos)
+                    frisch.replace (stelle, alt.size(),
+                                    "\"base_revision\":" + std::to_string (brokerRevision + 1));
+                return frisch;
+            });
+        control.start();
+        const bool verbunden = warteAuf (5000, [&] {
+            return control.snapshot().status == ControlClient::Status::verbunden;
+        });
+        const bool gesendet = verbunden && control.sendePersistenzP0 (userVerdictBefehl (id));
+        // Der Hook faellt, der Auftrag wird ERNEUT gesendet - der Zaehler der
+        // Wiederholungen steigt, und `inFlight` bleibt belegt.
+        const bool wiederholt = gesendet && warteAuf (5000, [&] {
+            const auto s = control.snapshot();
+            return hookRufe.load() >= 1 && s.inFlightWiederholungen >= 1;
+        });
+        // Erst als der Hook aufgibt, ist der Auftrag endgueltig ohne Erfolg -
+        // und nicht schon beim ersten `konflikt`.
+        const bool erstDanachFrei = wiederholt && warteAuf (5000, [&] {
+            const auto s = control.snapshot();
+            return s.inFlight == 0 && s.inFlightEndgueltigOhneErfolg >= 1;
+        });
+        pruefe (erstDanachFrei && idGehalten.load(),
+                "ein_konflikt_ack_wiederholt_das_urteil_unter_derselben_command_id");
+        control.stop();
+        server.stoppen();
+    }
+
     // ── NAK-180 R7/R10/R12/R13: die P0-Queue trägt Klasse, Generation und
     //    Marke (Matrix N-25 bis N-27, N-35 bis N-37) ─────────────────────────
     //

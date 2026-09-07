@@ -854,6 +854,89 @@ int main()
         pruefe (alleWorte, "NR-10: die vier Urteile tragen ihre Vertragswoerter");
     }
 
+    // ===================================================================
+    // NACHARBEIT 2 - WN-01: der Kopf traegt die GEMELDETE Revision
+    // ===================================================================
+    //
+    // `assistentAenderungMelden` erhoeht `v3StateRevision`, und der Kopf des
+    // unmittelbar danach gesendeten `user_verdict` uebernahm die NEUE Zahl.
+    // Der Broker kennt bis zum naechsten `state_report` aber noch die alte:
+    // das Urteil reist als P0 und ueberholt den Bericht (P1) strukturell,
+    // `befehl.rs` antwortet `revision_conflict`, und das unpersistierte
+    // Urteil war fort. Der Kopf nimmt seither die zuletzt GEMELDETE Revision.
+    abschnitt ("WN-01: `base_revision` kommt aus dem Draht, nicht aus dem Zaehler");
+    {
+        auto p = prozessorAmDraht();
+        const auto schrittId = juce::String ("00000000000000000000000000000d01");
+        const auto findingId = juce::String ("00000000000000000000000000000d0f");
+        pruefe (p->assistentStarten (schrittId), "WN-01: ein Schritt laeuft");
+        // Der Schritt hat den lokalen Zaehler bewegt - ohne Verbindung ist
+        // aber NICHTS gemeldet worden.
+        const auto lokal = p->v3StateRevisionFuerTest();
+        pruefe (lokal > 0, "WN-01: der lokale Zaehler ist gestiegen");
+        const auto urteil = p->v3UserVerdictFuerTest (state::Userurteil::angenommen, findingId);
+        pruefe (! urteil.empty(), "WN-01: das Urteil entsteht");
+        pruefe (urteil.find ("\"base_revision\":0") != std::string::npos,
+                "WN-01: der Kopf traegt die GEMELDETE Revision (0), nicht den Zaehler");
+        pruefe (urteil.find ("\"base_revision\":" + std::to_string (lokal)) == std::string::npos,
+                "WN-01: und ausdruecklich NICHT den soeben erhoehten lokalen Stand");
+
+        // Der Weg zurueck aus einem `konflikt`-ACK: derselbe Auftrag, frischer
+        // Kopf, DIESELBE `command_id` (idempotent, NR-10).
+        const auto anfang = urteil.find ("\"command_id\":\"");
+        const auto commandId = anfang == std::string::npos
+            ? std::string {}
+            : urteil.substr (anfang + 14, 32);
+        pruefe (commandId.size() == 32, "WN-01: das Urteil traegt seine Kennung");
+        const auto wiederholt = p->urteilMitFrischemKopfFuerTest (juce::String (commandId), 7);
+        pruefe (! wiederholt.empty(),
+                "WN-01: ein `konflikt` ist kein Verlust - der Auftrag entsteht neu");
+        pruefe (wiederholt.find ("\"command_id\":\"" + commandId + "\"") != std::string::npos,
+                "WN-01: unter DERSELBEN `command_id`");
+        pruefe (wiederholt.find ("\"base_revision\":7") != std::string::npos,
+                "WN-01: und mit der Revision, die der Broker genannt hat");
+        pruefe (wiederholt.find ("\"finding_id\":\"" + findingId.toStdString() + "\"")
+                    != std::string::npos,
+                "WN-01: der Gegenstand bleibt derselbe Befund");
+        // Eine fremde Kennung kennt der Mitschnitt nicht - er erfindet nichts.
+        pruefe (p->urteilMitFrischemKopfFuerTest ("00000000000000000000000000000fff", 7).empty(),
+                "WN-01: eine fremde `command_id` erzeugt kein Urteil");
+    }
+
+    // ===================================================================
+    // NACHARBEIT 2 - WN-05: eine abgewiesene Einreihung meldet FALSE
+    // ===================================================================
+    //
+    // Bei voller 64er-P0-Queue liefert `sendePersistenzP0` false und die
+    // Verbindung wird verworfen (M-73). `assistentAntwort` ignorierte den
+    // Rueckgabewert und meldete weiter Erfolg - das Urteil war weder
+    // persistiert noch wiederholt (WP1-5).
+    abschnitt ("WN-05: der Rueckgabewert der Queue-Politik wird ausgewertet");
+    {
+        auto p = prozessorAmDraht();
+        const auto schrittId = juce::String ("00000000000000000000000000000e01");
+        const auto findingId = juce::String ("00000000000000000000000000000e0f");
+        pruefe (p->assistentStarten (schrittId), "WN-05: ein Schritt laeuft");
+        const auto urteil = state::Userurteil::angenommen;
+
+        // Die GEGENPROBE zuerst: mit Platz in der Queue meldet die Methode
+        // Erfolg. Ohne sie waere das `false` unten nicht von "hier geht
+        // ohnehin nichts" zu unterscheiden.
+        p->leereP0QueueFuerTest();
+        pruefe (p->assistentAntwort (state::Assistentenergebnis::schritt,
+                                     &urteil, findingId),
+                "WN-05: mit Platz in der Queue meldet `assistentAntwort` Erfolg");
+
+        // Und jetzt voll: die Einreihung wird abgewiesen, und die Methode
+        // sagt es.
+        const auto gefuellt = p->fuelleP0QueueFuerTest();
+        pruefe (gefuellt > 0, "WN-05: die P0-Queue ist wirklich voll");
+        pruefe (! p->assistentAntwort (state::Assistentenergebnis::passageMessen,
+                                       &urteil, findingId),
+                "WN-05: bei voller Queue meldet `assistentAntwort` KEINEN Erfolg");
+        p->leereP0QueueFuerTest();
+    }
+
     std::cout << std::endl << "SONDE-014 AssistantStep: " << bestanden << "/"
               << (bestanden + fehler) << " gruen" << std::endl;
     return fehler == 0 ? 0 : 1;

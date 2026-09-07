@@ -18,6 +18,11 @@ namespace nakama::ipc
 {
 namespace
 {
+/// SONDE-014 WN-01: der Koaleszierungsschluessel des produktiven
+/// `state_report`. Er steht an EINER Stelle, weil zwei Schreibweisen
+/// desselben Schluessels zwei Wahrheiten ueber dieselbe Koaleszierung waeren.
+constexpr const char* kSchluesselStateReport = "produkt-state-report";
+
 /// Wie lange der Lesevorgang je Runde wartet, bevor die Sendequeues wieder
 /// drankommen. Kurz genug, dass ein P0-Befehl nicht hinter Stille wartet.
 constexpr int kLeseTaktMs = 20;
@@ -149,7 +154,8 @@ bool commandIdAusAuftrag (const std::string& text, std::string& commandId)
     return gefunden == 1;
 }
 
-CommandAckArt commandAckArtLesen (const std::string& text, std::string& commandId)
+CommandAckArt commandAckArtLesen (const std::string& text, std::string& commandId,
+                                  std::uint64_t* revisionAus = nullptr)
 {
     std::vector<JsonFeld> felder;
     std::string typ, ergebnis, revision;
@@ -177,6 +183,21 @@ CommandAckArt commandAckArtLesen (const std::string& text, std::string& commandI
             stateHash = &feld;
         else if (feld.name == "code")
             code = &feld;
+    }
+
+    // SONDE-014 WN-01: der Broker nennt im ACK die Revision, die er KENNT.
+    // Genau sie traegt der frische Kopf einer Wiederholung - keine geratene
+    // und keine lokal hochgezaehlte.
+    if (revisionAus != nullptr)
+    {
+        try
+        {
+            *revisionAus = std::stoull (revision);
+        }
+        catch (...)
+        {
+            *revisionAus = 0;
+        }
     }
 
     CommandAckArt art = CommandAckArt::keinAck;
@@ -614,6 +635,16 @@ struct ControlClient::Laufzeit
     /// Phase 0 vor dem Anfordern von `sendeMutex`, Phase 1 nach der Uebernahme.
     std::function<void (int)> aufbauZugHakenFuerTest;
     std::function<std::string (std::uint64_t, std::uint64_t)> hookReplayBegin;
+    /// SONDE-014 WN-01: der Weg zurueck aus einem `konflikt`-ACK. Laeuft
+    /// unter `sendeMutex`, liest und formt nur.
+    std::function<std::string (const std::string&, const std::string&, std::uint64_t)>
+        hookKonfliktWiederholung;
+    /// SONDE-014 WN-01: die Revision des zuletzt EINGEREIHTEN `state_report`
+    /// und die des zuletzt auf den Draht GESCHRIEBENEN. Erst der Draht zaehlt:
+    /// ein eingereihter Bericht steht hinter jedem P0, das vor ihm entnommen
+    /// wird.
+    std::atomic<std::uint64_t> stateReportRevisionEingereiht { 0 };
+    std::atomic<std::uint64_t> stateReportRevisionGemeldet { 0 };
 
     // 🔑 NAK-180 R1/R10/R13: die Aussage des Aufbaus - als GENERATIONSZAHL,
     // nicht als Bit.
@@ -726,7 +757,13 @@ struct ControlClient::Laufzeit
         std::string json;
         std::uint64_t gesendetInGeneration = 0;
         bool inQueue = true;
+        /// SONDE-014 WN-01: wie oft dieser Auftrag nach einem `konflikt`-ACK
+        /// mit frischem Kopf wiederholt wurde. Ohne Deckel waere die
+        /// Wiederholung eine Schleife.
+        int konfliktWiederholungen = 0;
     };
+    /// SONDE-014 WN-01: hoechstens so viele frische Koepfe je Auftrag.
+    static constexpr int kKonfliktWiederholungenMax = 3;
     std::vector<InFlightEintrag> inFlight;
 
     void inFlightNachReconnect (std::uint64_t generation);
@@ -865,6 +902,19 @@ bool ControlClient::statusProviderGesetzt() const noexcept
 bool ControlClient::sendeP0 (const std::string& json, P0Klasse klasse, std::uint64_t marke)
 {
     return k->sendeP0 (json, klasse, marke);
+}
+
+std::uint64_t ControlClient::gemeldeteStateRevision() const noexcept
+{
+    return k->stateReportRevisionGemeldet.load();
+}
+
+void ControlClient::setzeKonfliktWiederholungHook (
+    std::function<std::string (const std::string&, const std::string&, std::uint64_t)> hook)
+{
+    // Wie die uebrigen Rueckwege: vor dem `start()` gesetzt und danach
+    // unveraendert.
+    k->hookKonfliktWiederholung = std::move (hook);
 }
 
 void ControlClient::setzeP0Rueckmeldung (
@@ -1134,6 +1184,7 @@ bool ControlClient::Laufzeit::sendePersistenzP0 (const std::string& json)
     }
 
     bool ueberlauf = false;
+    std::uint64_t verworfeneMarke = 0;
     {
         std::lock_guard<std::mutex> l (sendeMutex);
         const auto bekannt = std::find_if (inFlight.begin(), inFlight.end(),
@@ -1148,9 +1199,27 @@ bool ControlClient::Laufzeit::sendePersistenzP0 (const std::string& json)
         inFlight.push_back (InFlightEintrag { commandId, json, 0, true });
         // Persistenzpflichtige Befehle sind EREIGNISSE: sie ueberleben jeden
         // Linkwechsel und werden nie verworfen (§53.9).
-        if (! p0.einreihen (P0Eintrag { json, P0Klasse::ereignis, wireGeneration.load(), 0 }))
+        //
+        // 🔑 SONDE-014 WN-05 (Nacharbeit 2, 07.09.2026), M-73 woertlich: der
+        // abgewiesene Auftrag wird NICHT stillschweigend geloescht.
+        //
+        // Bis hierher nahm der Ueberlauf den Eintrag per `pop_back` wieder aus
+        // `inFlight` - der Auftrag war fort, `beiP0Verworfen` erfuhr nichts
+        // davon, und ein Aufrufer, der den Rueckgabewert ignorierte, meldete
+        // Erfolg (WP1-5). M-73 sagt fuer P0 aber woertlich: "Ueberlauf =>
+        // Verbindung wird verworfen und der Eintrag geht an `beiP0Verworfen` -
+        // nie stillschweigend geloescht."
+        //
+        // Der Eintrag BLEIBT deshalb im Register, nur nicht mehr in der
+        // Queue: `inFlightNachReconnect` reiht ihn nach dem naechsten
+        // Verbindungsaufbau unter DERSELBEN `command_id` erneut ein
+        // (idempotent, NR-10). Die Marke kommt aus dem gemeinsamen
+        // Markenraum, damit die Verwurfmeldung eine echte Kennung traegt.
+        const auto marke = p0MarkenFolge.fetch_add (1) + 1;
+        if (! p0.einreihen (P0Eintrag { json, P0Klasse::ereignis, wireGeneration.load(), marke }))
         {
-            inFlight.pop_back();
+            inFlight.back().inQueue = false;
+            verworfeneMarke = marke;
             ueberlauf = true;
             p0UeberlaufZaehler.fetch_add (1);
         }
@@ -1161,6 +1230,13 @@ bool ControlClient::Laufzeit::sendePersistenzP0 (const std::string& json)
     }
     if (ueberlauf)
     {
+        // Erst die Meldung, dann der Abbruch: der Aufrufer soll erfahren, DASS
+        // sein Auftrag den Draht nicht gesehen hat, bevor die Verbindung
+        // faellt. Beides ausserhalb von `sendeMutex` - ein Rueckruf darf den
+        // Sendezustand des Prozessors nehmen (Ordnung: sendeMutex VOR
+        // Sendezustand), und diese Reihenfolge haelt sie ein.
+        if (beiP0Verworfen && verworfeneMarke != 0)
+            beiP0Verworfen (verworfeneMarke);
         aktuelleVerbindung()->ioAbbrechen();
         return false;
     }
@@ -1209,28 +1285,84 @@ void ControlClient::Laufzeit::inFlightNachWireWrite (const std::string& json,
 void ControlClient::Laufzeit::inFlightAck (const std::string& json)
 {
     std::string commandId;
-    const auto art = commandAckArtLesen (json, commandId);
+    std::uint64_t brokerRevision = 0;
+    const auto art = commandAckArtLesen (json, commandId, &brokerRevision);
     if (art == CommandAckArt::keinAck)
         return;
 
     bool gefunden = false;
+    bool wiederholt = false;
     std::uint64_t anzahl = 0;
+    std::uint64_t verworfeneMarke = 0;
     {
         std::lock_guard<std::mutex> l (sendeMutex);
         const auto eintrag = std::find_if (inFlight.begin(), inFlight.end(),
             [&] (const InFlightEintrag& e) { return e.commandId == commandId; });
         if (eintrag != inFlight.end())
         {
-            inFlight.erase (eintrag);
             gefunden = true;
+            // 🔑 SONDE-014 WN-01 (Nacharbeit 2, 07.09.2026): ein
+            // `konflikt`-ACK ist kein endgueltiger Verlust.
+            //
+            // Bis hierher loeschte JEDES ACK den Eintrag - auch das, das nur
+            // sagt "dein Kopf trug eine Revision, die ich nicht kenne". Das
+            // Urteil war damit weder persistiert noch wiederholbar, obwohl
+            // der Auftrag selbst richtig war (WP1-1, M-73).
+            //
+            // Der Hook baut den Kopf mit der Revision NEU, die der Broker
+            // soeben genannt hat, und behaelt die `command_id` - der Broker
+            // erkennt die Wiederholung idempotent (NR-10). Erst `angewandt`
+            // schliesst den Auftrag ab.
+            if (art == CommandAckArt::konflikt
+                && hookKonfliktWiederholung
+                && eintrag->konfliktWiederholungen < kKonfliktWiederholungenMax)
+            {
+                const auto frisch =
+                    hookKonfliktWiederholung (commandId, eintrag->json, brokerRevision);
+                if (! frisch.empty())
+                {
+                    ++eintrag->konfliktWiederholungen;
+                    eintrag->json = frisch;
+                    eintrag->gesendetInGeneration = 0;
+                    eintrag->inQueue = true;
+                    const auto marke = p0MarkenFolge.fetch_add (1) + 1;
+                    if (p0.einreihen (P0Eintrag { frisch, P0Klasse::ereignis,
+                                                  wireGeneration.load(), marke }))
+                    {
+                        wiederholt = true;
+                    }
+                    else
+                    {
+                        // Dieselbe Politik wie beim Einreihen (WN-05): der
+                        // Auftrag bleibt im Register und geht an den
+                        // Verwurfweg, statt still zu verschwinden.
+                        eintrag->inQueue = false;
+                        verworfeneMarke = marke;
+                        p0UeberlaufZaehler.fetch_add (1);
+                        wiederholt = true;
+                    }
+                }
+            }
+            if (! wiederholt)
+                inFlight.erase (eintrag);
         }
         anzahl = static_cast<std::uint64_t> (inFlight.size());
     }
     if (! gefunden)
         return;
 
+    if (verworfeneMarke != 0 && beiP0Verworfen)
+        beiP0Verworfen (verworfeneMarke);
+
     std::lock_guard<std::mutex> z (zustandMutex);
     zustand.inFlight = anzahl;
+    zustand.p0Ueberlaeufe = p0.ueberlauf();
+    if (wiederholt)
+    {
+        // Weder Erfolg noch endgueltiger Fehlschlag: der Auftrag laeuft noch.
+        ++zustand.inFlightWiederholungen;
+        return;
+    }
     if (art == CommandAckArt::angewandt
         || art == CommandAckArt::idempotentWiederholt)
         ++zustand.inFlightErfolg;
@@ -2017,7 +2149,13 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
             const auto report = stateReportJson (hello.adresse, status);
             if (report != letzterStateReport)
             {
-                sendeP1 ("produkt-state-report", report);
+                // 🔑 SONDE-014 WN-01: die Revision, die MIT DIESEM Bericht
+                // reist. Sie wird erst am Wire-Commit unten gemeldet - ein
+                // eingereihter Bericht steht hinter jedem P0, das vor ihm
+                // entnommen wird, und genau diese Ueberholung ist der Kern
+                // von WP1-1.
+                stateReportRevisionEingereiht.store (status.stateRevision);
+                sendeP1 (kSchluesselStateReport, report);
                 letzterStateReport = report;
             }
 
@@ -2153,7 +2291,18 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
                         beiP0Zugestellt (p0Eintrag.marke, dieseWireGeneration);
                 }
                 else
+                {
                     p1.bestaetigen();
+                    // 🔑 SONDE-014 WN-01: JETZT kennt der Broker diesen Stand.
+                    //
+                    // Der Schluessel ist die Identitaet des
+                    // Koaleszierungsobjekts, kein Rohtextfund: die P1-Queue
+                    // ersetzt einen Bericht an seiner Position, der zuletzt
+                    // eingereihte ist also der, der hier hinausgeht.
+                    if (schluessel == kSchluesselStateReport)
+                        stateReportRevisionGemeldet.store (
+                            stateReportRevisionEingereiht.load());
+                }
             }
             if (istP0)
             {

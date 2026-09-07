@@ -555,6 +555,39 @@ public:
     /// dieselbe ID erneut eingereiht.
     bool sendePersistenzP0 (const std::string& json);
 
+    /** SONDE-014 WN-01 (Nacharbeit 2): die zuletzt AN DEN BROKER GEMELDETE
+        State-Revision - die des zuletzt auf den Draht geschriebenen
+        `state_report`.
+
+        Ein P0-Befehl traegt sie als `base_revision`. Der lokale Zaehler des
+        Prozessors taugt dafuer NICHT: er steigt mit jeder Zustandsaenderung,
+        der `state_report` reist als P1 im 1-Hz-Takt, und ein P0 ueberholt ihn
+        strukturell. Der Broker vergleicht gegen den Stand, den er kennt, und
+        antwortet sonst `revision_conflict` (WP1-1).
+
+        `0` heisst "noch nichts gemeldet" - genau der Stand, den ein frischer
+        Broker ebenfalls fuehrt. */
+    std::uint64_t gemeldeteStateRevision() const noexcept;
+
+    /** SONDE-014 WN-01: was tun, wenn ein persistenzpflichtiger P0 mit
+        `konflikt` beantwortet wird?
+
+        Ein `konflikt`-ACK ist KEIN endgueltiger Verlust: der Auftrag war
+        richtig, nur sein Kopf trug eine Revision, die der Broker nicht
+        kannte. Der Hook bekommt `command_id`, den bisherigen Wiretext und die
+        Revision, die der Broker im ACK genannt hat; er liefert den NEU
+        gebauten Text unter DERSELBEN `command_id` (idempotent, NR-10) oder
+        einen leeren Text, wenn dieser Auftrag nicht wiederholt werden soll.
+
+        Er laeuft unter `sendeMutex`: er darf lesen und formen, aber NIE
+        selbst senden. Das Einreihen macht der Client. Nach
+        `kKonfliktWiederholungenMax` Versuchen gibt er auf - eine Wiederholung
+        ohne Deckel waere eine Schleife, keine Zusage. */
+    void setzeKonfliktWiederholungHook (
+        std::function<std::string (const std::string& commandId,
+                                   const std::string& json,
+                                   std::uint64_t brokerRevision)> hook);
+
     /// P1 einreihen. Leerer `schluessel` = Ereignis; ein nicht leerer
     /// Schluessel koalesziert Snapshots desselben Objekts.
     P1Ergebnis sendeP1 (const std::string& schluessel, const std::string& json);

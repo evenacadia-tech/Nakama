@@ -30,6 +30,7 @@
 #include "BrokerLifecycle.h"
 #include <chrono>
 #include <deque>
+#include <optional>
 #include <thread>
 #include "ControlClient.h"
 // NAK-180 Nacharbeit 2 (WN-08): DER Riegel des Probe-Namensraums steht im
@@ -337,6 +338,10 @@ public:
                                        const juce::String& findingId = {},
                                        const juce::String& notiz = {}) const
     { return v3UserVerdictJson (urteil, findingId, notiz); }
+    /// WN-01: der Weg zurueck aus einem `konflikt`-ACK, fuer ein Bein.
+    std::string urteilMitFrischemKopfFuerTest (const juce::String& commandId,
+                                               std::uint64_t brokerRevision) const
+    { return urteilMitFrischemKopf (commandId, brokerRevision); }
 
     // ── SONDE-013 M-40 bis M-51: der Experimentpfad des Plugins ────────────
     //
@@ -922,7 +927,16 @@ private:
         Main-States. Leer, wenn kein Befund am Schritt haengt. */
     std::string v3UserVerdictJson (nakama::state::Userurteil urteil,
                                    const juce::String& findingId,
-                                   const juce::String& notiz) const;
+                                   const juce::String& notiz,
+                                   const juce::String& commandId = {},
+                                   std::optional<std::uint64_t> baseRevision = {}) const;
+    /** SONDE-014 WN-01: derselbe Wiretext unter DERSELBEN `command_id`, mit
+        der Revision, die der Broker im `konflikt`-ACK genannt hat.
+
+        Leer, wenn der Mitschnitt diese ID nicht kennt - dann war es kein
+        Userurteil, und der Client laesst den Auftrag fallen wie bisher. */
+    std::string urteilMitFrischemKopf (const juce::String& commandId,
+                                       std::uint64_t brokerRevision) const;
     bool assistentAenderungMelden (bool veraendert);
     /** Meldet EIN geaendertes Intent-Objekt unter seinem eigenen
         P1-Schluessel (M-85). Ohne Verbindung ein No-op. */
@@ -1188,8 +1202,17 @@ private:
 
     /// Baut die unveraenderlichen Referenzen eines Versuchs (Paragraph 43.1).
     std::string versuchReferenzJson (const Engineabzug& abzug) const;
-    /// Baut den Steuerkopf eines persistenzpflichtigen P0-Befehls.
-    std::string versuchKopfJson (const juce::String& commandId) const;
+    /** Baut den Steuerkopf eines persistenzpflichtigen P0-Befehls.
+
+        🔑 **SONDE-014 WN-01 (Nacharbeit 2):** `base_revision` ist die zuletzt
+        AN DEN BROKER GEMELDETE State-Revision, nicht der lokale Zaehler. Wer
+        den lokalen nimmt, schickt einen Kopf mit einer Zahl, die der Broker
+        noch nicht kennt - und bekommt `revision_conflict` (WP1-1).
+
+        `baseRevision` setzt sie ausdruecklich; das braucht die Wiederholung
+        nach einem `konflikt`-ACK, die die Zahl aus dem ACK nimmt. */
+    std::string versuchKopfJson (const juce::String& commandId,
+                                 std::optional<std::uint64_t> baseRevision = {}) const;
 
     /** Reicht einen Versuchsbefehl weiter und MERKT sich, was gesendet wurde.
 
@@ -1200,6 +1223,27 @@ private:
     bool sendeVersuchP0 (const std::string& json);
     mutable std::mutex versuchWireMutex;
     std::string        letzterVersuchP0;
+
+    /** SONDE-014 WN-01: der Mitschnitt des zuletzt abgesetzten Userurteils.
+
+        Er traegt nur, was den Kopf NEU baut - Urteil, Befund, Notiz -, nie
+        den Wiretext selbst: der alte Text enthaelt genau die Revision, die
+        der Broker abgelehnt hat. Eine Wiederholung baut ihn frisch und
+        behaelt allein die `command_id` (idempotent, NR-10).
+
+        Genau EIN Eintrag: das Urteil ist ein Handgriff des Users, und zwei
+        gleichzeitig offene gibt es nicht. Waeren es je mehr, waere hier eine
+        kleine Abbildung noetig - kein zweiter Weg. */
+    struct Urteilmitschnitt
+    {
+        juce::String                commandId;
+        juce::String                findingId;
+        juce::String                notiz;
+        nakama::state::Userurteil   urteil { nakama::state::Userurteil::angenommen };
+        bool                        gesetzt { false };
+    };
+    mutable std::mutex urteilMutex;
+    mutable Urteilmitschnitt letztesUrteil;
 
     nakama::analyse::Vergleichspegel vergleichspegel;
     nakama::analyse::Blindvergleich  blindvergleich;

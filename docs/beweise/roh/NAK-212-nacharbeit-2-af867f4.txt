@@ -1,0 +1,245 @@
+NAK-212 Nacharbeit 2 - Beinlauf
+Datum:   2026-09-08
+Stand:   af867f4187b5d9165862b03b0816122da2618e81
+         Lauf auf dem COMMITTETEN Stand; Worktree waehrend des Laufs sauber,
+         HEAD vor und nach dem Lauf af867f4.
+Beine:   A31, zweimal - einmal ueber die Aufrufkette des Runners
+         (Start-Process + Argument-Quoten, stdout/stderr getrennt), einmal
+         blank. Der Runner bietet keine Beinauswahl, deshalb die
+         Nachbildung statt eines Teilkanons. Kein voller Kanon in dieser
+         Runde - er laeuft beim Ticketabschluss.
+Befunde: WN-01 (Ausgabefreigabe im A31-Aufruf), WN-02 (benannte Luecke fuer f4b)
+========================================================================
+A31 - Form des Runners
+========================================================================
+$ Start-Process cargo -ArgumentList (Argument-Quoten je Element von:
+    @('test', '--manifest-path', 'broker/Cargo.toml', '--test',
+      'sonde014_gegenbeispiele', '--color', 'never', '--', '--nocapture',
+      '--test-threads=1'))
+
+Quotiert an Start-Process uebergeben (jedes Element unveraendert, da ohne
+Leerzeichen): test | --manifest-path | broker/Cargo.toml | --test |
+sonde014_gegenbeispiele | --color | never | -- | --nocapture | --test-threads=1
+
+Exitcode: 0
+Dauer:    55,71 s
+stdout:   157 Zeilen
+stderr:   9 Zeilen
+Protokollbloecke (Marke '──'):    20
+Rangzeilen ('rang: bandpassung'): 28
+Gedruckte Luecken:                4
+  ⚠ OFFENE LUECKE f4_kanalwechsel [NAK-213 R5]
+  ⚠ OFFENE LUECKE f4b_drei_sonden_auf_einem_kanal [NAK-213 R3]
+  ⚠ OFFENE LUECKE f8_zwei_master [NAK-213 R4]
+  ⚠ OFFENE LUECKE f8b_master_ohne_fenster [NAK-213 R4]
+
+--- stdout, vollstaendig ---
+
+running 15 tests
+test a1_intent_rolle_trennt_identische_kandidaten_nicht ... ── A1 rolle=fuehrt auf dem Distraktor, sonst identisch ──
+   quelle=..03 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.676064
+     rang: bandpassung=0.061370 koinzidenz=0.000000 uplift=1.000000 intent=1.000000 wiederholbarkeit=0.995012 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=1 ausschluesse=[]
+   quelle=..02 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.592730
+     rang: bandpassung=0.061370 koinzidenz=0.000000 uplift=1.000000 intent=0.500000 wiederholbarkeit=0.995012 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=1 ausschluesse=[]
+   => starke Befunde: 0
+ok
+test a4_masteranomalie_ausserhalb_der_passage ... ── A4 Masteranomalie in einem Fenster HINTER der Passage ──
+   quelle=..02 klasse=Hoch zustand=ReadyToSend ursache=QuelleResonanz score=0.592730
+     rang: bandpassung=0.061370 koinzidenz=0.000000 uplift=1.000000 intent=0.500000 wiederholbarkeit=0.995012 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=Some("00005032") alternatives=0 ausschluesse=[]
+   => starke Befunde: 1
+ok
+test d2_fuehrender_wird_gegen_jeden_geprueft ... ── D2 drei Kandidaten: A und C identisch, M dazwischen ──
+   quelle=..02 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.676064
+     rang: bandpassung=0.061370 koinzidenz=0.000000 uplift=1.000000 intent=1.000000 wiederholbarkeit=0.995012 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=2 ausschluesse=[]
+   quelle=..03 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.611707
+     rang: bandpassung=0.068089 koinzidenz=0.000000 uplift=0.857143 intent=0.750000 wiederholbarkeit=0.995012 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=2 ausschluesse=[]
+   quelle=..04 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.592730
+     rang: bandpassung=0.061370 koinzidenz=0.000000 uplift=1.000000 intent=0.500000 wiederholbarkeit=0.995012 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=2 ausschluesse=[]
+   => starke Befunde: 0
+ok
+test d3_passage_ohne_masterfenster_ergibt_enthaltung ... ── F5 Passage [12,24) — alle Belege liegen DAVOR ──
+   quelle=..01 klasse=Unklar zustand=MoreData ursache=DatenReichenNicht score=0.000000
+     rang: bandpassung=0.000000 koinzidenz=0.000000 uplift=0.000000 intent=0.000000 wiederholbarkeit=0.000000 routing=0.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=Some("00005032") alternatives=0 ausschluesse=[("02", "passage_unvergleichbar")]
+   => starke Befunde: 0
+ok
+test d4_umklammernde_und_disjunkte_spanne ... ── D4 umklammernd ──
+   quelle=..01 klasse=Unklar zustand=MoreData ursache=DatenReichenNicht score=0.000000
+     rang: bandpassung=0.000000 koinzidenz=0.000000 uplift=0.000000 intent=0.000000 wiederholbarkeit=0.000000 routing=0.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=0 ausschluesse=[("02", "alignment_falsch")]
+   => starke Befunde: 0
+── D4 disjunkt ──
+   quelle=..01 klasse=Unklar zustand=MoreData ursache=DatenReichenNicht score=0.000000
+     rang: bandpassung=0.000000 koinzidenz=0.000000 uplift=0.000000 intent=0.000000 wiederholbarkeit=0.000000 routing=0.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=0 ausschluesse=[("02", "alignment_falsch")]
+   => starke Befunde: 0
+ok
+test eigen3_antikorrelierte_quelle ... ── EIGEN-3 antikorrelierte Quelle (laut, wenn der Master leise ist) ──
+   quelle=..02 klasse=Mittel zustand=MoreData ursache=QuelleResonanz score=0.269965
+     rang: bandpassung=0.119789 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=0 ausschluesse=[]
+   => starke Befunde: 0
+ok
+test eigen4_quelle_im_falschen_band ... ── EIGEN-4 Sonde hebt Band 30..34, Masterbefund liegt bei 98..102 ──
+   quelle=..02 klasse=Mittel zustand=MoreData ursache=QuelleResonanz score=0.252838
+     rang: bandpassung=0.017029 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=0 ausschluesse=[]
+   => starke Befunde: 0
+ok
+test eigen5_antikorreliert_neben_korreliert ... ── EIGEN-5 korrelierte und antikorrelierte Quelle nebeneinander ──
+   quelle=..02 klasse=Hoch zustand=ReadyToSend ursache=ZweiQuellenKonkurrenz score=0.602467
+     rang: bandpassung=0.119789 koinzidenz=0.000000 uplift=1.000000 intent=0.500000 wiederholbarkeit=0.995012 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=1 ausschluesse=[]
+   quelle=..03 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.269965
+     rang: bandpassung=0.119789 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=1 ausschluesse=[]
+   => starke Befunde: 1
+ok
+test f4_kanalwechsel_zwischen_den_fenstern ... ── F4 beide Sonden auf Mixerkanal 7 ──
+   quelle=..02 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.183623
+     rang: bandpassung=0.101738 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=1 ausschluesse=[]
+   quelle=..03 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.183302
+     rang: bandpassung=0.099809 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=1 ausschluesse=[]
+   => starke Befunde: 0
+── F4 nach dem Kanalwechsel von C (7 -> 9), Messwerte unveraendert ──
+   quelle=..02 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.266956
+     rang: bandpassung=0.101738 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=1 ausschluesse=[]
+   quelle=..03 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.266635
+     rang: bandpassung=0.099809 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=1 ausschluesse=[]
+   => starke Befunde: 0
+   ⚠ OFFENE LUECKE f4_kanalwechsel [NAK-213 R5]
+     zusage:          Eine Deskriptoraenderung ohne neue Messung darf keine Rangkomponente heben.
+     was heute passiert: `routingqualitaet` steigt allein durch den Kanalwechsel: [0.5, 0.5] -> [1.0, 1.0], ohne dass ein Fenster neu gemessen worden waere.
+ok
+test f4b_drei_sonden_auf_einem_kanal ... ── F4b drei Sonden auf Mixerkanal 7 ──
+   quelle=..02 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.183950
+     rang: bandpassung=0.103699 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=2 ausschluesse=[]
+   quelle=..03 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.183623
+     rang: bandpassung=0.101738 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=2 ausschluesse=[]
+   quelle=..04 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.183302
+     rang: bandpassung=0.099809 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=2 ausschluesse=[]
+   => starke Befunde: 0
+   ⚠ OFFENE LUECKE f4b_drei_sonden_auf_einem_kanal [NAK-213 R3]
+     zusage:          Parent-Duplikate werden ueber ALLE Quellen der Sitzung erkannt - einschliesslich Master, zurueckgenommener und stummer Quellen (M-22).
+     was heute passiert: Die Ausgabe ist korrekt: 3 Befunde, davon 0 starke, jeder mit der Duplikatmarke [0.5, 0.5, 0.5]. Enger als die Zusage ist der ERKENNUNGSSATZ: die Kanalkarte entsteht ueber `stand.evidenz`, eine angemeldete Quelle ohne einen einzigen Beleg betritt sie also nie; und `parent` wird nur an Kandidaten geschrieben, waehrend auch die Suche nach dem Kind nur ueber die Kandidaten laeuft - der Master ist eines der 4 Mitglieder dieser Sitzung und traegt trotzdem nie eine Duplikatmarke.
+ok
+test f5_passagenrandwerte ... ── F5 Passage [0,12) Fensterlaengen ──
+   quelle=..02 klasse=Hoch zustand=ReadyToSend ursache=QuelleResonanz score=0.592730
+     rang: bandpassung=0.061370 koinzidenz=0.000000 uplift=1.000000 intent=0.500000 wiederholbarkeit=0.995012 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=Some("00005032") alternatives=0 ausschluesse=[]
+   => starke Befunde: 1
+── F5 Passage [0,11) Fensterlaengen ──
+   quelle=..02 klasse=Hoch zustand=ReadyToSend ursache=QuelleResonanz score=0.592730
+     rang: bandpassung=0.061370 koinzidenz=0.000000 uplift=1.000000 intent=0.500000 wiederholbarkeit=0.995012 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=Some("00005032") alternatives=0 ausschluesse=[]
+   => starke Befunde: 1
+── F5 Passage [0,8) Fensterlaengen ──
+   quelle=..02 klasse=Hoch zustand=ReadyToSend ursache=QuelleResonanz score=0.592730
+     rang: bandpassung=0.061370 koinzidenz=0.000000 uplift=1.000000 intent=0.500000 wiederholbarkeit=0.995012 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=Some("00005032") alternatives=0 ausschluesse=[]
+   => starke Befunde: 1
+── F5 Passage [0,7) Fensterlaengen ──
+   quelle=..01 klasse=Unklar zustand=MoreData ursache=DatenReichenNicht score=0.000000
+     rang: bandpassung=0.000000 koinzidenz=0.000000 uplift=0.000000 intent=0.000000 wiederholbarkeit=0.000000 routing=0.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=Some("00005032") alternatives=0 ausschluesse=[("02", "passage_zu_kurz")]
+   => starke Befunde: 0
+ok
+test f5b_gleiche_passage_id_verschobenes_fenster ... ── F5b gleiche passage_id, Fenster verschoben [0,12) -> [12,24) ──
+   quelle=..01 klasse=Unklar zustand=MoreData ursache=DatenReichenNicht score=0.000000
+     rang: bandpassung=0.000000 koinzidenz=0.000000 uplift=0.000000 intent=0.000000 wiederholbarkeit=0.000000 routing=0.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=Some("00005032") alternatives=0 ausschluesse=[("02", "passage_unvergleichbar")]
+   => starke Befunde: 0
+ok
+test f7_rangdifferenz_am_quantum ... ── F7 kleinste darstellbare Rangstoerung (0,1 dB in Band 210) ──
+   quelle=..02 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.592730
+     rang: bandpassung=0.061370 koinzidenz=0.000000 uplift=1.000000 intent=0.500000 wiederholbarkeit=0.995012 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=1 ausschluesse=[]
+   quelle=..03 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.592729
+     rang: bandpassung=0.061364 koinzidenz=0.000000 uplift=1.000000 intent=0.500000 wiederholbarkeit=0.995012 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=1 ausschluesse=[]
+   => starke Befunde: 0
+ok
+test f8_zwei_master_mit_widersprechendem_befundband ... ── F8 zwei Master (A: Band 98..102, B: Band 150..154) ──
+   quelle=..02 klasse=Mittel zustand=MoreData ursache=QuelleResonanz score=0.252010
+     rang: bandpassung=0.012059 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=1.000000
+     band=Bandintervall { von: 149, bis: 152 } passage=None alternatives=0 ausschluesse=[]
+   => starke Befunde: 0
+   ⚠ OFFENE LUECKE f8_zwei_master [NAK-213 R4]
+     zusage:          Zwei `main` in einer Sitzung sind ein Widerspruch und muessen benannt werden.
+     was heute passiert: Der letzte `main` nach `instance_id` gewinnt, der erste verschwindet lautlos: er ist als Mitglied im Snapshot sichtbar (3 Mitglieder), wird aber weder Kandidat noch Ausschluss und traegt in keinem der 1 Befunde eine Spur.
+ok
+test f8b_master_ohne_fenster ... ── F8b Master angemeldet, aber ohne Beleg ──
+   (KEIN BEFUND — der Produktpfad schweigt)
+   => starke Befunde: 0
+   ⚠ OFFENE LUECKE f8b_master_ohne_fenster [NAK-213 R4]
+     zusage:          Auch ohne Masterbeleg verlangt M-27 ein Ergebnis statt Schweigen.
+     was heute passiert: `masteranomalie` gibt `None`, `hypothesen()` endet vor den Gates. findings im Snapshot: 0
+ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 55.51s
+
+
+--- stderr, vollstaendig ---
+(Die Store-Zeilen kommen aus dem Produktcode, broker/src/store/writer.rs:50,
+ ueber eprintln!; sie tragen Prozess-Id und Temp-Pfad und sind keine Zusage
+ dieses Beins. Der Runner legt stdout und stderr in getrennte Bloecke.)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.07s
+     Running tests\sonde014_gegenbeispiele.rs (broker\target\debug\deps\sonde014_gegenbeispiele-4e737afb3cd092a5.exe)
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-nak212-a4-6772\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-nak212-d3-ohne-master-6772\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-nak212-f5-12-6772\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-nak212-f5-11-6772\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-nak212-f5-8-6772\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-nak212-f5-7-6772\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-nak212-f5b-6772\nakama-broker.sqlite3
+
+========================================================================
+A31 - blank
+========================================================================
+$ cargo test --manifest-path broker/Cargo.toml --test sonde014_gegenbeispiele
+Exitcode: 0
+Dauer:    31,42 s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.06s
+     Running tests\sonde014_gegenbeispiele.rs (broker\target\debug\deps\sonde014_gegenbeispiele-4e737afb3cd092a5.exe)
+
+running 15 tests
+test eigen4_quelle_im_falschen_band ... ok
+test eigen3_antikorrelierte_quelle ... ok
+test a1_intent_rolle_trennt_identische_kandidaten_nicht ... ok
+test eigen5_antikorreliert_neben_korreliert ... ok
+test f4_kanalwechsel_zwischen_den_fenstern ... ok
+test d4_umklammernde_und_disjunkte_spanne ... ok
+test f8b_master_ohne_fenster ... ok
+test f4b_drei_sonden_auf_einem_kanal ... ok
+test f7_rangdifferenz_am_quantum ... ok
+test f8_zwei_master_mit_widersprechendem_befundband ... ok
+test d2_fuehrender_wird_gegen_jeden_geprueft ... ok
+test a4_masteranomalie_ausserhalb_der_passage ... ok
+test d3_passage_ohne_masterfenster_ergibt_enthaltung ... ok
+test f5b_gleiche_passage_id_verschobenes_fenster ... ok
+test f5_passagenrandwerte ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 31.42s
+
+
+========================================================================
+URTEIL
+========================================================================
+Beide Aufrufe gruen, Exit 0, 15 passed. Der Unterschied ist allein die
+Ausgabefreigabe: 157 stdout-Zeilen mit 20 Protokollbloecken, 28 Rangzeilen
+und 4 benannten Luecken gegen 22 Zeilen ohne einen Messwert (Rotbeweis
+docs/beweise/roh/NAK-212-rot-WN-01.txt). Die Reihenfolge ist einthreadig
+alphabetisch und damit zwischen Laeufen vergleichbar.

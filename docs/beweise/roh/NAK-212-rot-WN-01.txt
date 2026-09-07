@@ -120,7 +120,8 @@ URTEIL
 =========================================================================
 Der alte Aufruf ist gruen und BLIND: 22 Zeilen, kein einziger Messwert, keine
 benannte Luecke. Der neue Aufruf ist gruen und BELEGT: 163 Zeilen mit 20
-Protokollbloecken und 45 Rangzeilen. Dieselbe Testdatei, derselbe Exitcode --
+Protokollbloecken und 28 Rangzeilen (163 = stdout und stderr zusammen,
+weil dieser Lauf beide Stroeme in EINE Datei umleitete). Dieselbe Testdatei, derselbe Exitcode --
 allein die Ausgabefreigabe trennt sie. Die Reihenfolge ist einthreadig
 alphabetisch und damit zwischen Laeufen vergleichbar.
 

@@ -805,7 +805,6 @@ impl Coordinator {
     /// (a) **Generation.** Jeder Befund traegt die Bestandsgeneration, unter
     ///     der er gerechnet wurde. Weicht sie von der aktuellen ab, ist das
     ///     Ergebnis veraltet: es entstand unter einer anderen Absicht (M-10).
-    ///
     ///     🔑 **E-14 / WN-02 (Nacharbeit 2):** hier stand die
     ///     Sender-Revision. Trifft ein verspaetetes Teilupdate WAEHREND der
     ///     Rechnung ein, stimmt sie weiterhin ueberein, und das veraltete

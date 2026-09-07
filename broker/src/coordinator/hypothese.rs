@@ -741,6 +741,37 @@ pub fn gruppe_von_band(band: usize) -> usize {
     (band * GRUPPEN_LIVE / BAENDER_FEIN).min(GRUPPEN_LIVE - 1)
 }
 
+/// Das feine Bandintervall EINER Gruppe — die echte Umkehrung von
+/// `gruppe_von_band`.
+///
+/// 🔑 **NR-06 (Nacharbeit 1, 07.09.2026).** Bis hierher rechnete die
+/// Rueckabbildung `g * 221 / 64` mit derselben abrundenden Division wie die
+/// Gruppierung. Das ist keine Umkehrung: `gruppe_von_band` rundet ab, also
+/// gilt `g <= b*64/221 < g+1` und damit `g*221/64 <= b < (g+1)*221/64` — die
+/// UNTERE Grenze muss deshalb AUFrunden. Mit der abrundenden Form lagen
+/// **63 der 221 Baender** ausserhalb des Intervalls ihrer eigenen Gruppe;
+/// Band 100 etwa bekam `[96, 100)`, ein halboffenes Intervall, das genau
+/// dieses Band ausschliesst. Die Beobachtung stammte dann aus Band 100,
+/// waehrend Rang, Maskierung und Proposal-Zielbereich andere Baender lasen —
+/// ein Bruch an §1.5 („Die Zone zeigt nur, was der Befund belegt hat") und
+/// an M-16 (Ort und Beobachtung).
+///
+/// `ceil(x/y)` steht als `(x + y - 1) / y`; beide Grenzen rechnen so, und
+/// damit gilt fuer JEDES Band `von(gruppe_von_band(b)) <= b < bis(...)`.
+pub fn bandintervall_der_gruppe(gruppe: usize) -> Bandintervall {
+    let ceil_div = |zaehler: usize| (zaehler + GRUPPEN_LIVE - 1) / GRUPPEN_LIVE;
+    let von = ceil_div(gruppe * BAENDER_FEIN);
+    let bis = ceil_div((gruppe + 1) * BAENDER_FEIN).min(BAENDER_FEIN);
+    // 221/64 ist groesser als 3: zwischen zwei Gruppengrenzen liegen immer
+    // mindestens drei Baender. Die Wache steht trotzdem — ein leeres
+    // Intervall waere ein Ort ohne Ausdehnung.
+    debug_assert!(von < bis, "Gruppe {gruppe} haette ein leeres Intervall");
+    Bandintervall {
+        von: von as u32,
+        bis: bis.max(von + 1) as u32,
+    }
+}
+
 /// Prueft die harten Gates eines Kandidaten — VOR jeder Gewichtung (M-20).
 ///
 /// Reihenfolge ist Absicht und wird gemessen: erst die Belege, dann die
@@ -790,15 +821,6 @@ pub fn gate(
     if let Some(p) = aufnahme.passage {
         // 4a. VERSCHOBEN oder ANDERS: eine andere Transportepoche ist eine
         //     andere Passage, und eine verschobene reisst die Zeitueberdeckung.
-        let in_passage: Vec<&Evidenzfenster> = kandidat
-            .fenster
-            .iter()
-            .filter(|f| {
-                f.transport_epoch == p.transport_epoch
-                    && f.projekt_bis > p.projekt_von
-                    && f.projekt_von < p.projekt_bis
-            })
-            .collect();
         let ueberdeckung = zeitueberdeckung(
             spanne(&kandidat.fenster),
             (p.projekt_von, p.projekt_bis),
@@ -811,7 +833,13 @@ pub fn gate(
         // 4b. ZU KURZ (R1): die absolute Groesse, die die vier relativen
         //     Gates nicht messen koennen. Gezaehlt werden UNABHAENGIGE
         //     Fenster — zwei Belege desselben Projektfensters sind einer.
-        if unabhaengige_fenster(&in_passage) < GATE_MINDEST_FENSTER {
+        //
+        // 🔑 NR-05 (Nacharbeit 1): JE BETEILIGTER Quelle, also auch fuer den
+        // Master. Bis hierher zaehlte nur der Kandidat; acht seiner Fenster
+        // gegen ein einziges ueberlappendes Masterfenster bestanden alle vier
+        // relativen Gates, weil `ueberdeckung` auf das kuerzere Intervall
+        // normiert — und ein einzelner Kandidat erreichte `hoch`/READY.
+        if passagenmaterial(kandidat, &aufnahme.master, &p) < GATE_MINDEST_FENSTER {
             return Gateurteil::Faellt(Ausschlussgrund::PassageZuKurz);
         }
     }
@@ -1222,7 +1250,7 @@ pub fn masteranomalie(master: &Quellprofil) -> Option<(Zielmetrik, Bandintervall
     }
     // Die staerkste Gruppe. Bei Gleichstand die kleinere Gruppennummer — eine
     // stabile Wahl, keine zufaellige (M-25).
-    let (gruppe, (abweichung, _)) = je_gruppe
+    let (gruppe, (abweichung, beobachtetes_band)) = je_gruppe
         .iter()
         .enumerate()
         .filter(|(_, (a, _))| a.is_finite())
@@ -1232,12 +1260,16 @@ pub fn masteranomalie(master: &Quellprofil) -> Option<(Zielmetrik, Bandintervall
                 .unwrap_or(std::cmp::Ordering::Equal)
                 .then(b.0.cmp(&a.0))
         })?;
-    let von = (gruppe * BAENDER_FEIN / GRUPPEN_LIVE) as u32;
-    let bis = (((gruppe + 1) * BAENDER_FEIN / GRUPPEN_LIVE).max(von as usize + 1)) as u32;
-    let band = Bandintervall {
-        von,
-        bis: bis.min(BAENDER_FEIN as u32),
-    };
+    let band = bandintervall_der_gruppe(gruppe);
+    // 🔑 NR-06: das Band der BEOBACHTUNG liegt im zurueckgegebenen Intervall.
+    // Der Ort und die Zahl, die ihn belegt, gehoeren zusammen (M-16); fielen
+    // sie auseinander, zeigte die Zone etwas anderes als der Befund misst.
+    debug_assert!(
+        (band.von as usize) <= *beobachtetes_band && *beobachtetes_band < band.bis as usize,
+        "Band {beobachtetes_band} liegt nicht in [{}, {})",
+        band.von,
+        band.bis
+    );
     let beobachtung = Beobachtung {
         wert_db: basis + abweichung,
         gueltig: true,
@@ -1317,7 +1349,17 @@ fn baue_befund(
     } else {
         Ursachenklasse::QuelleResonanz
     };
-    let fenster = unabhaengige_fenster(&kandidat.fenster.iter().collect::<Vec<_>>());
+    // 🔑 NR-05 (Nacharbeit 1, 07.09.2026): fuehrt die Sitzung eine Passage,
+    // zaehlt das Material BEIDER beteiligter Quellen darin — sonst das des
+    // Kandidaten ueber seine ganze Historie.
+    //
+    // Ohne die Passagenform stuende hier eine Zahl, die das Passagengate
+    // bereits als zu duenn verworfen haette, und die Sicherheit `hoch` haette
+    // eine andere Grundlage als der Ausschlussgrund `passage_zu_kurz`.
+    let fenster = match aufnahme.passage.as_ref() {
+        Some(p) => passagenmaterial(kandidat, &aufnahme.master, p),
+        None => unabhaengige_fenster(&kandidat.fenster.iter().collect::<Vec<_>>()),
+    };
     // Die Klasse entsteht STRUKTURELL, nicht aus dem Score (M-15). Die
     // numerische Schwelle hoch/mittel/unklar ist Ausgabe des Korpus
     // (M-31, Etappe H) und steht bewusst nirgends als Konstante.
@@ -1539,6 +1581,45 @@ fn zeitueberdeckung(a: (i64, i64), b: (i64, i64)) -> f64 {
 /// Zwei Belege, die dasselbe Projektfenster beschreiben, sind EINER. Ohne
 /// diese Verdichtung liesse sich das Gate durch blosses Nachsenden desselben
 /// Fensters ueberlisten — und genau das waere wieder ein relativer Riegel.
+/// **NR-05 (Nacharbeit 1, 07.09.2026): das Passagenmaterial EINER Quelle.**
+///
+/// M-23 verlangt woertlich „mindestens acht unabhaengige Fenster **je
+/// beteiligter Quelle** innerhalb der Passage". Gezaehlt wurde bis hierher
+/// nur der Kandidat — und weil `ueberdeckung` relativ rechnet und auf das
+/// kuerzere Intervall normiert, bestanden acht Kandidatenfenster gegen ein
+/// EINZIGES ueberlappendes Masterfenster alle vier relativen Gates und
+/// erreichten `hoch`/READY. Die absolute Zahl ist das einzige Mittel gegen
+/// diesen Fall, und sie muss deshalb fuer beide Seiten gelten.
+///
+/// „In der Passage" heisst: dieselbe Transportepoche und ein ueberlappendes
+/// Projektfenster — dieselbe Bedingung, mit der `gate` die Kandidatenfenster
+/// auswaehlt.
+pub fn fenster_in_passage(profil: &Quellprofil, passage: &Passagenfenster) -> usize {
+    let drin: Vec<&Evidenzfenster> = profil
+        .fenster
+        .iter()
+        .filter(|f| {
+            f.transport_epoch == passage.transport_epoch
+                && f.projekt_bis > passage.projekt_von
+                && f.projekt_von < passage.projekt_bis
+        })
+        .collect();
+    unabhaengige_fenster(&drin)
+}
+
+/// Das Passagenmaterial, das ZAEHLT: das Minimum ueber Kandidat und Master.
+///
+/// Eine Passage ist nur so lang wie ihre duennste beteiligte Quelle. Der
+/// Master gehoert dazu — er traegt die Anomalie, die erklaert werden soll
+/// (§8).
+pub fn passagenmaterial(
+    kandidat: &Quellprofil,
+    master: &Quellprofil,
+    passage: &Passagenfenster,
+) -> usize {
+    fenster_in_passage(kandidat, passage).min(fenster_in_passage(master, passage))
+}
+
 pub fn unabhaengige_fenster(fenster: &[&Evidenzfenster]) -> usize {
     let mut gesehen: std::collections::BTreeSet<(u64, i64, i64)> = Default::default();
     for f in fenster {

@@ -343,6 +343,9 @@ impl Coordinator {
         for befund in &neue {
             self.befund_persistieren(session, befund);
         }
+        // 🔑 NR-04: „beim Eintragen eines Befunds" — die zweite der beiden
+        // Stellen, an denen M-28 die Existenz gegen den Store haelt.
+        self.befunde_gegen_store_haerten(session);
         true
     }
 
@@ -608,6 +611,61 @@ impl Coordinator {
     ///
     /// Ein Befund, der bereits `stale` ist, bleibt es; eine zweite
     /// Intent-Änderung macht ihn nicht „mehr" stale.
+    /// **NR-04 (Nacharbeit 1, 07.09.2026), M-28: die Belege der sichtbaren
+    /// Befunde gegen den STORE haerten.**
+    ///
+    /// M-28 sagt woertlich zu, dass „existent" eine Pruefung gegen den Store
+    /// ist, nicht gegen den Speicher. Bis zur Nacharbeit 1 filterte die
+    /// Erzeugung nur den `ausschlussgrund` des Caches, und
+    /// `session_snapshot_json` serialisierte, was dort stand — eine im Store
+    /// geloeschte `evidence`-Zeile aenderte an der sichtbaren Behauptung
+    /// nichts.
+    ///
+    /// Die Abfrage laeuft AUSSERHALB des Standlocks (eine SQLite-Leserunde
+    /// haelt sonst den ganzen Sessiongraphen an); ihr Ergebnis wird unter dem
+    /// Lock angewandt, ueber denselben Weg wie eine Ruecknahme: fehlt eine
+    /// ID, faellt sie aus dem Befund; fehlen alle, verschwindet er.
+    ///
+    /// ⚠️ **Ohne Store gilt ausdruecklich die Speicherpruefung als
+    /// Fallback.** Der Testkoordinator `mit_uhr` haelt seinen Bestand
+    /// ausschliesslich fluechtig; dort gibt es keine zweite Wahrheit, von der
+    /// er abweichen koennte. Dasselbe gilt fuer einen degradierten Store —
+    /// eine gescheiterte Leseabfrage darf keine Behauptung loeschen, die noch
+    /// belegt ist.
+    pub(super) fn befunde_gegen_store_haerten(&self, session: &SessionKey) {
+        let Some(store) = self.store.as_ref() else {
+            return;
+        };
+        let ids: Vec<String> = {
+            let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+            let Some(befunde) = stand.befunde.get(session) else {
+                return;
+            };
+            let mut alle: BTreeSet<String> = BTreeSet::new();
+            for befund in befunde {
+                alle.extend(befund.evidence_ids.iter().cloned());
+            }
+            alle.into_iter().collect()
+        };
+        if ids.is_empty() {
+            return;
+        }
+        let Ok(vorhanden) = store.evidenz_belegt(&ids) else {
+            // Fail-SAFE, nicht fail-closed: der Store hat nicht geantwortet.
+            // Das ist keine Aussage darueber, ob die Zeilen existieren.
+            return;
+        };
+        let fehlend: BTreeSet<String> = ids
+            .into_iter()
+            .filter(|id| !vorhanden.contains(id))
+            .collect();
+        if fehlend.is_empty() {
+            return;
+        }
+        let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+        Self::befunde_invalidieren_locked(&mut stand, session, &fehlend);
+    }
+
     /// **NR-03: traegt der Stand das Ergebnis noch, das aus ihm entstanden
     /// ist?**
     ///

@@ -245,13 +245,21 @@ fn maskierungswert_ist_hoechstens_ein_evidenzintervall_alt() {
     // eines bei 18 dB ergaeben gemittelt kaum mehr als der Ausgangswert; der
     // Wert springt stattdessen auf die Differenz der beiden JUENGSTEN Fenster.
     //
-    // Nachgerechnet: die Basis ist −12,3 dB, angehoben werden die Baender 98
-    // und 99 innerhalb des Bereichs [96, 100). Master: 2·10^−1,23 + 2·10^−0,33
-    // = 1,053 → +0,23 dB. Sonde bei +18: 2·10^−1,23 + 2·10^0,57 = 7,549
-    // → +8,78 dB. Die Differenz ist rund 8,55 dB.
+    // 🔑 NR-06 (Nacharbeit 1, 07.09.2026): die Zahl hat sich mit der
+    // Rueckabbildung geaendert, und das ist der Punkt. Die Anomaliegruppe ist
+    // dieselbe; ihr feines Intervall lautet seit der echten Umkehrung
+    // [97, 101) statt [96, 100) — und NUR das neue enthaelt das Band 100, aus
+    // dem die Beobachtung stammt. Die Maskierung liest `band.von..band.bis`
+    // und rechnet deshalb jetzt ueber drei angehobene Baender (98, 99, 100)
+    // statt ueber zwei.
+    //
+    // Nachgerechnet: die Basis ist −12,3 dB, angehoben sind 98 bis 101.
+    // Master: 1·10^−1,23 + 3·10^−0,33 = 1,462 → +1,65 dB. Sonde bei +18:
+    // 1·10^−1,23 + 3·10^0,57 = 11,205 → +10,49 dB. Die Differenz ist rund
+    // 8,84 dB.
     assert!(
-        (nachher - 8.55).abs() < 0.2,
-        "die Differenz der beiden juengsten Bandpegel ist rund 8,55 dB, gemessen {nachher}"
+        (nachher - 8.84).abs() < 0.2,
+        "die Differenz der drei juengsten Bandpegel ist rund 8,84 dB, gemessen {nachher}"
     );
 }
 

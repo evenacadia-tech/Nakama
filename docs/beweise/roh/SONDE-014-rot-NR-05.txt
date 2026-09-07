@@ -1,0 +1,97 @@
+SONDE-014 Nacharbeit 1 - Rotbeweis NR-05 (EP-05, M-23).
+Die Zusage: Passagengate und Klassenbildung halten
+`min(unabhaengige_fenster(kandidat), unabhaengige_fenster(master))` gegen
+`GATE_MINDEST_FENSTER`. Die Zeile, die sie traegt: das Minimum in
+`passagenmaterial` (hypothese.rs). Nimmt man den Master heraus, erreicht
+ein einzelner Kandidat mit acht Fenstern gegen ein einziges
+Masterfenster wieder `hoch`/READY.
+
+Ruecknahme in broker/src/coordinator/hypothese.rs:
+--- vorher ---
+    fenster_in_passage(kandidat, passage).min(fenster_in_passage(master, passage))
+--- nachher (die Ruecknahme) ---
+    // ROTBEWEIS NR-05: der Master faellt aus dem Minimum.
+    let _ = master;
+    fenster_in_passage(kandidat, passage)
+
+=== ROTER LAUF: cargo test --manifest-path broker/Cargo.toml --test sonde014_nacharbeit1 passagengate_misst_auch_die_fenster_des_masters ===
+EXIT=101
+running 1 test
+test passagengate_misst_auch_die_fenster_des_masters ... FAILED
+
+failures:
+
+---- passagengate_misst_auch_die_fenster_des_masters stdout ----
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde014-nacharbeit1-nr05-duenn-16788-9c9bcd9a085c493997fa18a1d5c4c534\nakama-broker.sqlite3
+
+thread 'passagengate_misst_auch_die_fenster_des_masters' (2124) panicked at tests\sonde014_nacharbeit1.rs:364:5:
+assertion `left != right` failed: ein einziges Masterfenster traegt keine starke Aussage: (Befundkonfidenz { klasse: Hoch, score: 0.266635 }, ReadyToSend)
+  left: ReadyToSend
+ right: ReadyToSend
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    passagengate_misst_auch_die_fenster_des_masters
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 1 filtered out; finished in 2.26s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: field `writer` is never read
+   --> tests\sonde014_nacharbeit1.rs:151:5
+    |
+147 | struct Harnisch {
+    |        -------- field in this struct
+...
+151 |     writer: eqcop_broker::store::StoreWriter,
+    |     ^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: method `neustarten` is never used
+   --> tests\sonde014_nacharbeit1.rs:187:8
+    |
+155 | impl Harnisch {
+    | ------------- method in this implementation
+...
+187 |     fn neustarten(&mut self) {
+    |        ^^^^^^^^^^
+
+warning: `eqcop-broker` (test "sonde014_nacharbeit1") generated 2 warnings
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.06s
+     Running tests\sonde014_nacharbeit1.rs (broker\target\debug\deps\sonde014_nacharbeit1-207edf2a5c77e38c.exe)
+error: test failed, to rerun pass `--test sonde014_nacharbeit1`
+
+=== WIEDERHERGESTELLT, GRUENER LAUF ===
+EXIT=0
+running 1 test
+test passagengate_misst_auch_die_fenster_des_masters ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 6.73s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: field `writer` is never read
+   --> tests\sonde014_nacharbeit1.rs:151:5
+    |
+147 | struct Harnisch {
+    |        -------- field in this struct
+...
+151 |     writer: eqcop_broker::store::StoreWriter,
+    |     ^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: method `neustarten` is never used
+   --> tests\sonde014_nacharbeit1.rs:187:8
+    |
+155 | impl Harnisch {
+    | ------------- method in this implementation
+...
+187 |     fn neustarten(&mut self) {
+    |        ^^^^^^^^^^
+
+warning: `eqcop-broker` (test "sonde014_nacharbeit1") generated 2 warnings
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.04s
+     Running tests\sonde014_nacharbeit1.rs (broker\target\debug\deps\sonde014_nacharbeit1-207edf2a5c77e38c.exe)
+
+URTEIL: BESTANDEN - rot mit EXIT=101, erwartete Zeile gefunden: 'ein einziges Masterfenster traegt keine starke Aussage'; gruen mit EXIT=0.

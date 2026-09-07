@@ -1,0 +1,51 @@
+SONDE-014 Nacharbeit 1 - Rotbeweis NR-06 (EP-06, M-18/M-19, M-16).
+Die Zusage: die Rueckabbildung Gruppe -> feines Bandintervall ist die
+echte Umkehrung der Gruppierung `band * 64 / 221`, also
+`von = ceil(g*221/64)`, `bis = ceil((g+1)*221/64)`. Die Zeile, die sie
+traegt: `ceil_div` in `bandintervall_der_gruppe` (hypothese.rs). Mit der
+abrundenden Form liegen 63 der 221 Baender ausserhalb des Intervalls
+ihrer eigenen Gruppe.
+
+Ruecknahme in broker/src/coordinator/hypothese.rs:
+--- vorher ---
+    let ceil_div = |zaehler: usize| (zaehler + GRUPPEN_LIVE - 1) / GRUPPEN_LIVE;
+--- nachher (die Ruecknahme) ---
+    // ROTBEWEIS NR-06: die abrundende (falsche) Inverse.
+    let ceil_div = |zaehler: usize| zaehler / GRUPPEN_LIVE;
+
+=== ROTER LAUF: cargo test --manifest-path broker/Cargo.toml --test sonde014_hypothese jedes_band_liegt_im_intervall_seiner_gruppe ===
+EXIT=101
+running 1 test
+test jedes_band_liegt_im_intervall_seiner_gruppe ... FAILED
+
+failures:
+
+---- jedes_band_liegt_im_intervall_seiner_gruppe stdout ----
+
+thread 'jedes_band_liegt_im_intervall_seiner_gruppe' (5660) panicked at tests\sonde014_hypothese.rs:1128:5:
+63 Baender liegen ausserhalb des Intervalls ihrer eigenen Gruppe, zuerst Some((3, 0, 3))
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    jedes_band_liegt_im_intervall_seiner_gruppe
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 18 filtered out; finished in 0.00s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.97s
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+error: test failed, to rerun pass `--test sonde014_hypothese`
+
+=== WIEDERHERGESTELLT, GRUENER LAUF ===
+EXIT=0
+running 1 test
+test jedes_band_liegt_im_intervall_seiner_gruppe ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 18 filtered out; finished in 0.00s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.71s
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+
+URTEIL: BESTANDEN - rot mit EXIT=101, erwartete Zeile gefunden: 'Baender liegen ausserhalb des Intervalls ihrer eigenen Gruppe'; gruen mit EXIT=0.

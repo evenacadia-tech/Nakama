@@ -318,6 +318,59 @@ impl StoreHandle {
         })
     }
 
+    /// **NR-04 (SONDE-014 Nacharbeit 1, 07.09.2026), M-28: welche der
+    /// genannten Belege traegt der STORE noch?**
+    ///
+    /// M-28 sagt woertlich zu, dass „existent" eine Pruefung **gegen den
+    /// Store** ist, nicht gegen den Speicher. Bis zur Nacharbeit 1 gab es
+    /// dafuer keinen Leser: der sichtbare Snapshot serialisierte
+    /// ausschliesslich den Cache, und eine `evidence`-Zeile, die im Store
+    /// fehlte oder ausgeschlossen war, blieb in jeder Behauptung stehen.
+    ///
+    /// Zurueck kommen genau die IDs, die eine Zeile haben UND keinen
+    /// `ausschlussgrund` tragen — beides ist derselbe Verlust: eine
+    /// Behauptung ohne gueltigen Beleg (Exit-Gate §59).
+    ///
+    /// EINE Abfrage fuer die ganze Menge. Sie laeuft ausserhalb des
+    /// Standlocks; ihr Ergebnis wird unter dem Lock angewandt.
+    pub fn evidenz_belegt(
+        &self,
+        ids: &[String],
+    ) -> Result<std::collections::BTreeSet<String>, StoreFehler> {
+        if ids.is_empty() {
+            return Ok(Default::default());
+        }
+        kurze_leseconnection(&self.db_pfad, |conn| {
+            // Die Platzhalter entstehen aus der ANZAHL, nie aus dem Inhalt:
+            // die IDs reisen als gebundene Parameter, nie als Text im SQL.
+            let platzhalter = std::iter::repeat_n("?", ids.len())
+                .collect::<Vec<_>>()
+                .join(",");
+            let sql = format!(
+                "SELECT evidence_id, state_jcs FROM evidence WHERE evidence_id IN ({platzhalter})"
+            );
+            let mut stmt = conn.prepare(&sql)?;
+            let parameter: Vec<&dyn rusqlite::ToSql> =
+                ids.iter().map(|i| i as &dyn rusqlite::ToSql).collect();
+            let rows = stmt.query_map(parameter.as_slice(), |row| {
+                Ok((row.get::<_, String>(0)?, row.get::<_, Vec<u8>>(1)?))
+            })?;
+            let mut aus: std::collections::BTreeSet<String> = Default::default();
+            for zeile in rows {
+                let (id, bytes) = zeile?;
+                // Der Ausschlussgrund steht NEBEN dem Snapshot, nicht darin
+                // (`writer.rs::evidence_ausschluss_projizieren`).
+                let ausgeschlossen = serde_json::from_slice::<serde_json::Value>(&bytes)
+                    .map(|w| w.get("ausschlussgrund").is_some())
+                    .unwrap_or(true);
+                if !ausgeschlossen {
+                    aus.insert(id);
+                }
+            }
+            Ok(aus)
+        })
+    }
+
     /// Die Payloads ALLER Experimenttransitionen in Ereignisreihenfolge
     /// (Befund B5, M-51).
     ///

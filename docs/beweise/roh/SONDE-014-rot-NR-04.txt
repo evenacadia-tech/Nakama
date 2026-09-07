@@ -1,0 +1,104 @@
+SONDE-014 Nacharbeit 1 - Rotbeweis NR-04 (EP-04, M-28).
+Die Zusage: `existent` ist eine Pruefung gegen die Tabelle `evidence` des
+Stores, nicht gegen den Speicher - beim Eintragen UND vor jeder
+Serialisierung. Die Zeile, die sie traegt: die Store-Abfrage in
+`befunde_gegen_store_haerten` (hypothese_verdrahtung.rs). Entfernt man
+sie, bleibt ein Befund sichtbar, dessen Belegzeilen in SQLite geloescht
+sind.
+
+Ruecknahme in broker/src/coordinator/hypothese_verdrahtung.rs:
+--- vorher ---
+        let Ok(vorhanden) = store.evidenz_belegt(&ids) else {
+--- nachher (die Ruecknahme) ---
+        // ROTBEWEIS NR-04: die Store-Abfrage entfernt, alles gilt als belegt.
+        let vorhanden: BTreeSet<String> = ids.iter().cloned().collect();
+        let Ok(()) = Ok::<(), ()>(()) else {
+
+=== ROTER LAUF: cargo test --manifest-path broker/Cargo.toml --test sonde014_nacharbeit1 befund_mit_geloeschter_evidenzzeile_wird_unsichtbar ===
+EXIT=101
+running 1 test
+test befund_mit_geloeschter_evidenzzeile_wird_unsichtbar ... FAILED
+
+failures:
+
+---- befund_mit_geloeschter_evidenzzeile_wird_unsichtbar stdout ----
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde014-nacharbeit1-nr04-22556-10ef586f339a444899f65ef2332c39e2\nakama-broker.sqlite3
+
+thread 'befund_mit_geloeschter_evidenzzeile_wird_unsichtbar' (16068) panicked at tests\sonde014_nacharbeit1.rs:337:5:
+ohne Belegzeile im Store wird nichts mehr gezeigt: Array [Object {"band_hz": Object {"bis": Number(101), "von": Number(97)}, "beobachtung": Object {"gueltig": Bool(true), "wert_db": Number(-3.299999952316284)}, "candidate_source": String("00000000000000000000000000000002"), "claim_class": String("zusammenhang"), "confidence": Object {"class": String("hoch"), "score": Number(0.266635)}, "evidence_ids": Array [String("00000000000000000000000000001064"), String("00000000000000000000000000001065"), String("00000000000000000000000000001066"), String("00000000000000000000000000001067"), String("00000000000000000000000000001068"), String("00000000000000000000000000001069"), String("0000000000000000000000000000106a"), String("0000000000000000000000000000106b"), String("0000000000000000000000000000106c"), String("0000000000000000000000000000106d"), String("0000000000000000000000000000106e"), String("0000000000000000000000000000106f")], "finding_id": String("131d403dbf1a21e06c851c690d43b430"), "intent_revision": Number(0), "likely_cause": String("00000000 draengt im Bandbereich 97..101 gegen den Master."), "listen_for": String("Ob der Master im markierten Bereich Luft bekommt."), "maskierung": Object {"band_bis": Number(101), "band_von": Number(97), "gueltig": Bool(true), "herabgesetzt": Bool(false), "quelle_a": String("00000000000000000000000000000001"), "quelle_b": String("00000000000000000000000000000002"), "wert_db": Number(0.0)}, "next_test": String("pre_post_paar_messen"), "rang": Object {"bandpassung": Number(0.09980920462281039), "intent_relevanz": Number(0.5), "koinzidenz": Number(0.0), "routingqualitaet": Number(1.0), "uplift": Number(0.0), "wiederholbarkeit": Number(0.0)}, "smallest_test": String("PRE/POST-Paar an dieser Quelle messen."), "target_metric": String("band_pegel_db"), "ursachenklasse": String("quelle_resonanz"), "zustand": String("ready_to_send")}]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    befund_mit_geloeschter_evidenzzeile_wird_unsichtbar
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 1 filtered out; finished in 8.30s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: unused variable: `store`
+   --> src\coordinator\hypothese_verdrahtung.rs:636:18
+    |
+636 |         let Some(store) = self.store.as_ref() else {
+    |                  ^^^^^ help: if this is intentional, prefix it with an underscore: `_store`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib) generated 1 warning (run `cargo fix --lib -p eqcop-broker` to apply 1 suggestion)
+warning: field `writer` is never read
+   --> tests\sonde014_nacharbeit1.rs:151:5
+    |
+147 | struct Harnisch {
+    |        -------- field in this struct
+...
+151 |     writer: eqcop_broker::store::StoreWriter,
+    |     ^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: method `neustarten` is never used
+   --> tests\sonde014_nacharbeit1.rs:187:8
+    |
+155 | impl Harnisch {
+    | ------------- method in this implementation
+...
+187 |     fn neustarten(&mut self) {
+    |        ^^^^^^^^^^
+
+warning: `eqcop-broker` (test "sonde014_nacharbeit1") generated 2 warnings
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.78s
+     Running tests\sonde014_nacharbeit1.rs (broker\target\debug\deps\sonde014_nacharbeit1-207edf2a5c77e38c.exe)
+error: test failed, to rerun pass `--test sonde014_nacharbeit1`
+
+=== WIEDERHERGESTELLT, GRUENER LAUF ===
+EXIT=0
+running 1 test
+test befund_mit_geloeschter_evidenzzeile_wird_unsichtbar ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 8.59s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: field `writer` is never read
+   --> tests\sonde014_nacharbeit1.rs:151:5
+    |
+147 | struct Harnisch {
+    |        -------- field in this struct
+...
+151 |     writer: eqcop_broker::store::StoreWriter,
+    |     ^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: method `neustarten` is never used
+   --> tests\sonde014_nacharbeit1.rs:187:8
+    |
+155 | impl Harnisch {
+    | ------------- method in this implementation
+...
+187 |     fn neustarten(&mut self) {
+    |        ^^^^^^^^^^
+
+warning: `eqcop-broker` (test "sonde014_nacharbeit1") generated 2 warnings
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.65s
+     Running tests\sonde014_nacharbeit1.rs (broker\target\debug\deps\sonde014_nacharbeit1-207edf2a5c77e38c.exe)
+
+URTEIL: BESTANDEN - rot mit EXIT=101, erwartete Zeile gefunden: 'ohne Belegzeile im Store wird nichts mehr gezeigt'; gruen mit EXIT=0.

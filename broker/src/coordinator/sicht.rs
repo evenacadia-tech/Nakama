@@ -343,6 +343,18 @@ impl Coordinator {
     }
 
     pub fn session_snapshot_json(&self, project_binding_id: &str, session_epoch: &str) -> Vec<u8> {
+        // 🔑 NR-04 (Nacharbeit 1, 07.09.2026), M-28: VOR jeder Serialisierung
+        // werden die Belege der Befunde gegen den Store gehalten.
+        //
+        // Der Snapshot ist die Stelle, an der eine Behauptung SICHTBAR wird —
+        // und genau dort verlangt das Exit-Gate existente Evidenz-IDs. Die
+        // Abfrage nimmt ihr eigenes Lock und steht deshalb hier, vor dem
+        // Standlock unten; ohne Store tut sie nichts (Fallback: die
+        // Speicherpruefung).
+        self.befunde_gegen_store_haerten(&SessionKey {
+            project_binding_id: project_binding_id.into(),
+            session_epoch: session_epoch.into(),
+        });
         let session = SessionKey {
             project_binding_id: project_binding_id.into(),
             session_epoch: session_epoch.into(),

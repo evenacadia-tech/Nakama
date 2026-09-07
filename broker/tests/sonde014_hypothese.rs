@@ -1093,8 +1093,64 @@ fn rollenaenderung_bewegt_die_intent_relevanz() {
     assert!(fuehrt > begleitet, "fuehrt {fuehrt} vs begleitet {begleitet}");
 }
 
-// ═════════════════════════════════════════════════════════════════════════
-// M-86 · keine_rechnung_vor_der_vollstaendigkeitsmarke
+// =========================================================================
+// M-18/M-19 . NR-06 (Nacharbeit 1, 07.09.2026) - die echte Umkehrung
+// =========================================================================
+//
+// Die Rueckabbildung Gruppe -> feines Bandintervall rechnete mit derselben
+// ABRUNDENDEN Division wie die Gruppierung: `g * 221 / 64`. Das ist keine
+// Umkehrung. Band 100 liegt in Gruppe `100*64/221 = 28`, und die alte Form
+// gab dafuer `[96, 100)` zurueck - ein halboffenes Intervall, das genau
+// dieses Band ausschliesst. 63 der 221 Baender lagen so ausserhalb des
+// Intervalls ihrer eigenen Gruppe.
+//
+// Der Fall laeuft ueber ALLE 221 Baender, nicht ueber Stichproben: die
+// Verstoesse sind ueber das Gitter verstreut, und drei geratene Baender
+// haetten sie verfehlt.
+#[test]
+fn jedes_band_liegt_im_intervall_seiner_gruppe() {
+    use eqcop_broker::coordinator::hypothese::{
+        bandintervall_der_gruppe, gruppe_von_band, BAENDER_FEIN,
+    };
+    let mut verstoesse: Vec<(usize, u32, u32)> = Vec::new();
+    for band in 0..BAENDER_FEIN {
+        let intervall = bandintervall_der_gruppe(gruppe_von_band(band));
+        assert!(
+            intervall.gueltig(),
+            "Band {band}: Intervall [{}, {}) ist nicht gueltig",
+            intervall.von,
+            intervall.bis
+        );
+        if !((intervall.von as usize) <= band && band < intervall.bis as usize) {
+            verstoesse.push((band, intervall.von, intervall.bis));
+        }
+    }
+    assert!(
+        verstoesse.is_empty(),
+        "{} Baender liegen ausserhalb des Intervalls ihrer eigenen Gruppe, \
+         zuerst {:?}",
+        verstoesse.len(),
+        verstoesse.first()
+    );
+
+    // Und die Partition ist LUECKENLOS und ueberschneidungsfrei: die
+    // Intervalle der 64 Gruppen decken 0..221 genau einmal ab. Ohne diese
+    // Haelfte waere die Zusage auch mit einem Intervall erfuellt, das zu
+    // gross ist und in die Nachbargruppe hineinreicht.
+    let mut grenze = 0u32;
+    for gruppe in 0..64 {
+        let intervall = bandintervall_der_gruppe(gruppe);
+        assert_eq!(
+            intervall.von, grenze,
+            "Gruppe {gruppe} beginnt nicht, wo die vorige endet"
+        );
+        grenze = intervall.bis;
+    }
+    assert_eq!(grenze, BAENDER_FEIN as u32, "die Partition endet bei 221");
+}
+
+// =========================================================================
+// M-86 . keine_rechnung_vor_der_vollstaendigkeitsmarke
 // ═════════════════════════════════════════════════════════════════════════
 //
 // Die Sperre aus E-10 gilt auch fuer die Hypothese: ein Intent OHNE

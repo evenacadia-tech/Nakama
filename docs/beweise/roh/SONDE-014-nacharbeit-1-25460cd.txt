@@ -1,0 +1,175 @@
+SONDE-014 / S23-25 - Nacharbeit 1 (Runde 1 von 3), Beinlauf.
+Stand: 25460cdd13f4f0f0a90b1a244301104970058e94
+Gefahren am 2026-09-07T08:26:20 auf sauberem Baum.
+Nur die betroffenen Beine - kein voller Kanon (der laeuft beim Ticketabschluss).
+
+=== A4 - cargo test broker ===
+Kommando: cargo test --manifest-path broker/Cargo.toml --color never
+  test ein_kaputter_frame_im_strom_beendet_den_strom ... ok
+  test feindliche_laengen_enden_in_der_erwarteten_fehlerklasse ... ok
+  test ingress_bytebudget_verwirft_p2_zuerst ... ok
+  test ratengrenze_haelt_unter_flut ... ok
+  test ingress_bytebudget_greift_am_produktionskonstruktor_vor_der_slotgrenze ... ok
+  test zufallsbytes_bringen_den_pruefer_nie_aus_dem_tritt ... ok
+  test jedes_gekippte_payloadbit_eines_p2_frames_faellt_an_der_crc ... ok
+  test payload_an_der_paketgrenze_wird_angenommen_darueber_nicht ... ok
+  test fragmentierung_aendert_das_ergebnis_nie ... ok
+  test schreiben_und_pruefen_sind_zueinander_invers ... ok
+  test einzelne_gekippte_bytes_werden_nie_still_angenommen ... ok
+  test panik_im_verbindungsthread_wird_gezaehlt ... ok
+  test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.20s
+  test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+EXIT=0
+
+=== A4-SI - store_crash_matrix --ignored ===
+Kommando: cargo test --manifest-path broker/Cargo.toml --color never --test store_crash_matrix -- --ignored --test-threads=1
+  test konfliktriegel_deckel_gilt_auch_im_reportpfad_des_verdraengten_links ... ok
+  test nonce_verdraengung_cleanup_vor_altem_report ... ok
+  test p1_snapshot_abfluss_ohne_reconnect_aber_writefehler_liefert_aktuellen_snapshot ... ok
+  test persistenter_p0_trifft_den_lebenden_link_derselben_adresse ... ok
+  test phase_b_hat_keinen_wire_consumer_fuer_nicht_koaleszierbare_events ... ok
+  test reconnect_snapshot_enthaelt_committete_wirkung_genau_einmal ... ok
+  test session_snapshot_koalesziert_nach_objektschluessel ... ok
+  test session_snapshot_zeigt_join_kandidat_ohne_neue_familie ... ok
+  test session_subscription_hat_nur_snapshot_push ... ok
+  test session_subscription_sendet_nur_aktuellen_absoluten_snapshot ... ok
+  ok
+  ok
+  test wiederholter_snapshot_letzter_gewinnt_idempotent ... ok
+  test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 67 filtered out; finished in 12.75s
+EXIT=0
+
+=== A5 - pruefe_v3_vertrag.py --abdeckung ===
+Kommando: py -3.13 tools/eq-copilot/pruefe_v3_vertrag.py --abdeckung
+  Pruefungen: 598 bestanden, 0 gescheitert
+EXIT=0
+
+=== A8 - erzeuge_v3_fixtures.py --pruefen ===
+Kommando: py -3.13 tools/eq-copilot/erzeuge_v3_fixtures.py --pruefen
+    bytegleich: 392 Dateien, MANIFEST sha256=3af183102421575acfa054e0f0b384c13879b750226f0b8dbf70d6f636d3a89d
+EXIT=0
+
+=== A28 - erzeuge_p5_korpus.py --pruefen ===
+Kommando: py -3.13 tools/eq-copilot/erzeuge_p5_korpus.py --pruefen
+  P5-Korpus: 2 Dateien, 6 Sitzungen
+  bytegleich
+EXIT=0
+
+=== A29 - pruefe_p5_korpus.py ===
+Kommando: py -3.13 tools/eq-copilot/pruefe_p5_korpus.py
+  P5-Korpus: 6 Sitzungen, 8 ausgegebene Befunde
+    Schwelle hoch: handelbar=1 davon_falsch=0 haelt=True
+    Schwelle mittel: handelbar=6 davon_falsch=2 haelt=False (korrelierter_distraktor, parent_duplikat)
+    Schwelle unklar: handelbar=8 davon_falsch=2 haelt=False (korrelierter_distraktor, parent_duplikat)
+    SCHWELLE (Ausgabe, M-31): niedrigste haltende Stufe = hoch
+    PRODUKTSCHWELLE (M-31): 1 von 8 Befunden handelbar, Sicherheiten ['hoch']
+    GATE_MINDEST_FENSTER: 2 Faelle aus den zwei Passagensitzungen, 0 davon stark
+    GATE_MINDEST_FENSTER: der Startwert 8 haelt — kein Versionsschritt noetig (E-12 Fall 3)
+  P5-Korpus: gruen
+EXIT=0
+
+=== A30 - pruefe_p5_korpus.py --selbsttest ===
+Kommando: py -3.13 tools/eq-copilot/pruefe_p5_korpus.py --selbsttest
+    ok      GEGENTEIL: eine falsche starke Behauptung traegt den vollen Fehler
+    ok      die Schwelle wird GESUCHT: nur `hoch` haelt hier
+    ok      ein handelnder `mittel`-Befund faellt (Schwelle geraten statt kalibriert)
+    ok      NR-14: ein Verweis auf den echten Distraktorbefund ist gruen und zaehlt
+  P5-Korpus Selbsttest: gruen
+EXIT=0
+
+=== C++-Bau (Release) ===
+EXIT=0
+
+=== B3c - EqCopSchemaTest ===
+Kommando: eq-copilot\build\plugin\EqCopSchemaTest_artefacts\Release\EqCopSchemaTest.exe 
+  [ok]   Typfehler erzeugt keine Lawine  [1 Verletzung(en)]
+  [ok]   integration_samples_null_ist_ein_senderfehler  [gesetzt auf 0: abgelehnt, nicht als 'fehlt' umgedeutet]
+  [ok]   N-17: der Heartbeat ist unter Komma-Locale BYTEGLEICH  [771 Bytes]
+  [ok]   N-17: und der HELLO-Text ebenso - bytegleich unter beiden Locales  [444 Bytes]
+  136 bestanden, 0 gescheitert
+EXIT=0
+
+=== B10 - EqCopIpcTest ===
+Kommando: eq-copilot\build\plugin\EqCopIpcTest_artefacts\Release\EqCopIpcTest.exe 
+    ok      zaehlervertrag_verbindungsversuche_und_serverpruefungen/access_denied  [1 Versuche, 1 Serverpruefungen]
+    ok      zaehlervertrag_verbindungsversuche_und_serverpruefungen/telemetrie_pipe_busy  [2 Versuche, 0 Serverpruefungen]
+    ok      kopplungswarte_faelscht_den_backoff_nicht  [Aufstieg 499 992 ms, Versuche in der Kopplungswarte 0, Rueckkehr nach 22 ms, Abstand danach 4001 ms (erwartet 3600..5800 — die Stufe vor der Warte), Status 1, Pruefungen 0]
+    ok      parken_uebergeht_den_backoff/control/authfehler  [Aufstieg 490 1006 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 499 ms (erwartet 350..1200, ohne Reset >= 4000)]
+    ok      parken_uebergeht_den_backoff/telemetrie/authfehler  [Aufstieg 499 997 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 499 ms (erwartet 350..1200, ohne Reset >= 4000)]
+    ok      abbruchsignal_gehoert_der_generation/gegenpfad_neue_generation  [geoeffnet 1, Bericht 2, kein Fehler]
+    ok      abbruch_vor_und_nach_createfile/control/stop_nach_open  [an der Barriere 1, kein Hello 1, Pruefungen 0 (unveraendert 0)]
+    ok      abbruch_vor_und_nach_createfile/telemetrie/stop_nach_open  [an der Barriere 1, kein Hello 1, Pruefungen 0 (unveraendert 0)]
+    ok      abbruch_vor_und_nach_createfile/control/reconnect_nach_open  [an der Barriere 1, kein Hello 1, Pruefungen 0 (unveraendert 0)]
+    ok      abbruch_vor_und_nach_createfile/telemetrie/reconnect_nach_open  [an der Barriere 1, kein Hello 1, Pruefungen 0 (unveraendert 0)]
+    ok      verifiziert_ohne_welcome_setzt_backoff_nicht_zurueck/control  [Stempel 10 5510 11509 ms, pruefungen 3]
+    ok      verifiziert_ohne_welcome_setzt_backoff_nicht_zurueck/telemetrie  [Stempel 10 5507 11512 ms, pruefungen 3]
+    ok      NAK-180 R7: bericht_wird_beim_write_fehler_fallen_gelassen - er geht NICHT zurueck in die Queue, und der Platz wird frei  [0/0]
+  ALLE PRUEFUNGEN GRUEN — 370 Pruefungen, 0 Fehler
+EXIT=0
+
+=== B13 - EqCopSonde012SourcesModelTest ===
+Kommando: eq-copilot\build\plugin\EqCopSonde012SourcesModelTest_artefacts\Release\EqCopSonde012SourcesModelTest.exe 
+  SONDE-012 SourcesModel: 79/79 gruen
+EXIT=0
+
+=== B14 - EqCopSonde012ProjectReloadTest ===
+Kommando: eq-copilot\build\plugin\EqCopSonde012ProjectReloadTest_artefacts\Release\EqCopSonde012ProjectReloadTest.exe 
+  SONDE-012 ProjectReload: 12/12 gruen
+EXIT=0
+
+=== B27 - EqCopSonde014IntentTest ===
+Kommando: eq-copilot\build\plugin\EqCopSonde014IntentTest_artefacts\Release\EqCopSonde014IntentTest.exe 
+    ok      eine abgeleitete Vermutung wird angenommen - das ist kein Fehler
+    ok      und Save nach Load ist BYTEGLEICH
+    ok      Save nach Recall ist bytegleich
+    ok      sein Save ist bytegleich - eine leere Liste reist NICHT als leeres Array
+    ok      und ist bytegleich reproduzierbar
+  SONDE-014-INTENT-TEST OK - 210 Pruefungen ok, 0 Fehler
+EXIT=0
+
+=== B28 - EqCopSonde014BefundTest ===
+Kommando: eq-copilot\build\plugin\EqCopSonde014BefundTest_artefacts\Release\EqCopSonde014BefundTest.exe 
+  SONDE-014 Befund und Maskierung: 60/60 gruen
+EXIT=0
+
+=== B29 - EqCopSonde014AssistentTest ===
+Kommando: eq-copilot\build\plugin\EqCopSonde014AssistentTest_artefacts\Release\EqCopSonde014AssistentTest.exe 
+  == M-55: ein gespeicherter preview-Schritt ist ein Lesefehler ==
+    ok      M-59: Save/Load ist bytegleich
+  SONDE-014 AssistantStep: 152/152 gruen
+EXIT=0
+
+=== B2 - EqCopStateMigrationTest ===
+Kommando: eq-copilot\build\plugin\EqCopStateMigrationTest_artefacts\Release\EqCopStateMigrationTest.exe 
+    ok      Matrix Klasse=main, Position=post: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post is not allowed for main', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+    ok      Matrix Klasse=main, Position=post_fader_contribution: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post_fader_contribution is not allowed for main', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+    ok      Matrix Klasse=legacy, Position=post_fader_contribution: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post_fader_contribution is not allowed for legacy', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+    ok      Matrix Klasse=passive_probe, Position=post_fader_contribution: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post_fader_contribution is not allowed for passive_probe', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+    ok      Matrix Klasse=active_probe, Position=post_fader_contribution: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post_fader_contribution is not allowed for active_probe', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+    ok      legacy_instance_id_save_load_bytegleich
+    ok      State ohne konkreten Writer-Headroom bleibt read-only bytegleich
+    ok      vollstaendiger bekannter State exakt bei 16 MiB bleibt read-only bytegleich
+    ok      nicht verlustfrei lesbarer Variantenmarker bleibt read-only bytegleich  [9]
+    ok      nicht verlustfrei lesbarer Variantenmarker bleibt read-only bytegleich  [10]
+    ok      additive Binaer- und Array-Properties bleiben bytegleich lesbar
+    ok      == Unbekanntes Major: 21 Faelle read-only, Originalbytes bytegleich zurueck
+    ok      Recall: Save nach Recall ist bytegleich zum Golden
+  STATE-MIGRATION-TEST OK - 180 Pruefungen ok, 0 Fehler
+EXIT=0
+
+=== B1 - EqCopIdentityTest ===
+Kommando: eq-copilot\build\plugin\EqCopIdentityTest_artefacts\Release\EqCopIdentityTest.exe 
+    ok      Schema-1-Saat 'sensor' ist bytegleich zum eingefrorenen Golden  [128 Bytes]
+    ok      Schema-1-Saat 'hub' ist bytegleich zum eingefrorenen Golden  [125 Bytes]
+    ok      Schema-1-Saat 'pre' ist bytegleich zum eingefrorenen Golden  [133 Bytes]
+    ok      Schema-1-Saat 'post' ist bytegleich zum eingefrorenen Golden  [135 Bytes]
+  IDENTITY-TEST OK - 120 Pruefungen ok, 0 Fehler
+EXIT=0
+
+=== B4 - EqCopQueueStressTest ===
+Kommando: eq-copilot\build\plugin\EqCopQueueStressTest_artefacts\Release\EqCopQueueStressTest.exe 
+  121 Pruefungen, 0 Fehler.
+  QUEUE-STRESSTEST OK
+EXIT=0
+
+URTEIL: ALLE BETROFFENEN BEINE GRUEN

@@ -292,3 +292,15 @@ State-Migrationsstand und den letzten Installationsbeweis prüfen.
   SONDE-013 dreimal, jedes Mal an einem neuen Feld unter 2 KiB. Engines in
   Tests auf den Heap (`std::unique_ptr`); der Fund zeigt sich erst im vollen
   Kanon, das betroffene Bein allein läuft grün (Register NAK-175).
+- `cmake` liegt nicht im Bash-`PATH` dieses Rechners: ein `cmake --build` aus Bash
+  endet still in `command not found`, und ein danach gefahrenes Bein misst ein
+  altes Binary. C++-Beine aus pwsh bauen und den Zeitstempel des Binaries gegen
+  den Fix prüfen (SONDE-014 §7.11 N-29). Der Runner `tools/beweise.ps1` sucht
+  cmake selbst.
+- Im PowerShell-Werkzeug der Session geht in einem Befehlstext alles verloren,
+  was in einer Zeichenkettenverkettung hinter einem Backtick-n-Umbruch steht
+  (SONDE-014-Abschluss 07.09.2026: drei Manifestzeilen fehlten still).
+  Mehrzeilige Einfügungen zeilenweise über `List[string].Insert` oder aus einer
+  Datei, nie per Backtick-Umbruch im Befehl. Ebenso blockt der Sandbox-Filter
+  jeden Befehl, dessen TEXT den Namen des PowerShell-Lösch-Cmdlets enthält —
+  auch in einem Prompt, der nur an einen Worker durchgereicht wird.

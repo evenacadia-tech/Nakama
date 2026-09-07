@@ -136,6 +136,50 @@
    "wo": "docs/beweise/SONDE-013.md §4.2; design/docs/funktions-und-bedien-blueprint.md; docs/offene-punkte.md NAK-179",
    "seit": "05.09.",
    "status": "offen"
+  },
+  {
+   "id": "U34",
+   "dringlichkeit": "vor dem Gen-UI-Ticket (S31b)",
+   "art": "Produktentscheid (Bedienung)",
+   "titel": "Braucht ein Befund eine vom User markierte Passage, oder arbeitet der Advisor auch auf dem laufenden Fenster?",
+   "was": "Die Technik kann beides: Der Datenweg (SONDE-014, M-61) erlaubt dem Assistenten ausdrücklich den Schritt „erst Passage messen\"; er kann aber auch auf dem laufenden Fenster rechnen. Die Frage ist, ob „erst Passage markieren\" der Normalfall oder die Ausnahme sein soll.",
+   "warum": "SONDE-014 §4.10 P-01. Es ist eine Bedienentscheidung über die erste Handlung des Users; sie berührt Karte U28 (Passagengeste), die offen bleibt.",
+   "wo": "docs/beweise/SONDE-014.md §4.10 P-01; design/docs/funktions-und-bedien-blueprint.md",
+   "seit": "07.09.",
+   "status": "offen"
+  },
+  {
+   "id": "U35",
+   "dringlichkeit": "vor dem Gen-UI-Ticket (S31b)",
+   "art": "Produktentscheid (Priorität)",
+   "titel": "Wie viele Befunde dürfen gleichzeitig offen sein, bevor die Liste selbst ein Problem wird?",
+   "was": "Der Datenweg liefert beliebig viele Befunde je Sitzung (Alternativen sind eigene Befunde, U21). Ein Deckel oder eine Rangordnung in der Liste ALL FINDINGS wäre eine sichtbare Priorität und damit Produktentscheid.",
+   "warum": "SONDE-014 §4.10 P-02. Der Blueprint entscheidet Scrollliste und Filter für Quellen (§4.1), nicht für Befunde.",
+   "wo": "docs/beweise/SONDE-014.md §4.10 P-02; design/docs/funktions-und-bedien-blueprint.md §4.1",
+   "seit": "07.09.",
+   "status": "offen"
+  },
+  {
+   "id": "U36",
+   "dringlichkeit": "vor dem Gen-UI-Ticket (S31b)",
+   "art": "Produktentscheid (Anzeige)",
+   "titel": "Verschwindet ein Befund, dessen Evidenz zurückgenommen wurde, aus der Liste, oder bleibt er als STALE stehen?",
+   "was": "Der Datenweg invalidiert deterministisch (M-24) und kann beides liefern: den Befund aus der Liste nehmen oder ihn sichtbar als STALE ohne Draft stehen lassen. Welche Anzeige der User will, ist Priorität der Fläche.",
+   "warum": "SONDE-014 §4.10 P-03. M-24 legt fest, DASS invalidiert wird; ob der Befund sichtbar bleibt, ist Anzeigeentscheid.",
+   "wo": "docs/beweise/SONDE-014.md §4.10 P-03 und §3.3 (Befundzustände)",
+   "seit": "07.09.",
+   "status": "offen"
+  },
+  {
+   "id": "U37",
+   "dringlichkeit": "vor dem Gen-UI-Ticket (S31b)",
+   "art": "Produktentscheid (Grundgesetz)",
+   "titel": "Darf der Advisor von sich aus einen neuen, sicheren Befund in den Fokus ziehen?",
+   "was": "Normal ist genau ein Finding im Fokus (Abnahme 31.08.). Entsteht ein neuer sicherer Befund, kann der Advisor ihn still in die Liste stellen oder den Fokus wechseln. Ein Fokuswechsel von sich aus grenzt an das Grundgesetz „nichts Ungefragtes\" (M-78).",
+   "warum": "SONDE-014 §4.10 P-04. Wer den Fokus wechselt, steht in keiner Abnahme; deshalb Produktfrage, keine Technikfrage.",
+   "wo": "docs/beweise/SONDE-014.md §4.10 P-04; design/abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md",
+   "seit": "07.09.",
+   "status": "offen"
   }
  ],
  "beantwortet": {

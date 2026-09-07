@@ -1,0 +1,5 @@
+Codex gpt-5.6-sol max, Gegenpruefung G5, Thread 01a07c39-858f-7433-b797-1fc8d380e834
+Abgebrochen durch den Dirigenten am 2026-09-07 18:37 nach 2 h 22 min ohne Urteil: 646 Lesekommandos (620 eindeutig, keine Schleife), keine Urteilsphase erreicht. JSONL 21,5 MB im Temp-Ordner, nicht ins Repo uebernommen.
+Startlog:
+START 2026-09-07T16:15:39.4048568+02:00 HEAD=bf92891b17b0b6f216dcf1b10a50ac2d9b756dc4 PID=10864 MODEL=gpt-5.6-sol EFFORT=max
+ABBRUCH 2026-09-07T18:37:52.7615936+02:00 durch Dirigent nach 2h20 ohne Urteil (646 Lesekommandos, keine Urteilsphase); EXIT=ABGEBROCHEN

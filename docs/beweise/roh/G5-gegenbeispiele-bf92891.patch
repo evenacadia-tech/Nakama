@@ -1,0 +1,1426 @@
+diff --git a/broker/tests/g5_gegenbeispiele.rs b/broker/tests/g5_gegenbeispiele.rs
+new file mode 100644
+index 0000000..41e3b41
+--- /dev/null
++++ b/broker/tests/g5_gegenbeispiele.rs
+@@ -0,0 +1,783 @@
++//! **G5 — adversariale Gegenbeispiele (Phasengate G5, 07.09.2026).**
++//!
++//! Dieses Bein ist KEINE Produktzusage und keine Regression. Es ist der
++//! Angriff, den der Gate-Text von G5 ausdrücklich verlangt
++//! (`docs/bauaufteilung-sonden.md`:397–400):
++//!
++//! > „Der Prüfer soll **eine falsche starke Ursachenbehauptung provozieren**
++//! > — korrelierter Distraktor, Parent-Duplikat, verschobene Passage.
++//! > Enthaltung („mehr Daten nötig") ist das gewünschte Ergebnis, nicht ein
++//! > Treffer."
++//!
++//! Es trägt genau die Fälle, die das **Korpusformat nicht ausdrücken kann**
++//! (`eq-copilot/fixtures/p5-korpus/sitzungen.json` kennt je Quelle nur
++//! Anhebung, Fensterzahl, Mixerkanal und Versatz):
++//!
++//! * eine **echte Passage** samt ihrer Randwerte (`experiment_begin` ist ein
++//!   persistenzpflichtiger P0 und braucht einen Store),
++//! * **zwei Master** in einer Sitzung,
++//! * ein **Kanalwechsel zwischen den Fenstern**,
++//! * eine **antikorrelierte** Quelle (Pegel je Fenster),
++//! * **Rücknahme und Intent-Änderung** nach der Rechnung.
++//!
++//! Jeder Fall fährt durch DENSELBEN Produktpfad wie `sonde014_p5_korpus.rs`:
++//! `Coordinator` → `anmelden` → Vollständigkeitsmarke → `c.p1(...)` →
++//! `session_snapshot_json` beziehungsweise `befunde_sicht`. Ein Bein, das
++//! `hypothesen()` direkt riefe, könnte grün sein, während die Verdrahtung
++//! fehlt.
++//!
++//! ⚠️ Die Zusicherungen hier sind **beobachtend**: sie halten fest, was der
++//! Produktpfad heute tut, und markieren im Text, welche davon eine falsche
++//! starke Behauptung ist. Ein `assert`, das die falsche Behauptung als
++//! richtig festschriebe, wäre die zweite Wahrheit.
++
++#![cfg(windows)]
++
++use eqcop_broker::coordinator::{Befundzustand, CauseHypothesis, Coordinator, ManualClock,
++                                Sicherheitsklasse};
++use eqcop_broker::transport::bootstrap::{Adresse, AudioLage, HelloControl, HostAngabe};
++use eqcop_broker::transport::server_v3::Senke;
++use serde_json::{json, Value};
++use std::sync::Arc;
++
++// ── Werkzeug (eigene Kopie, wie in sonde014_nacharbeit1.rs) ──────────────
++
++fn hex(n: usize) -> String {
++    format!("{n:032x}")
++}
++
++fn adresse(instanz: usize) -> Adresse {
++    Adresse {
++        logon_sid: "S-1-5-21-1-2-3-1001".into(),
++        project_binding_id: hex(0x11),
++        session_epoch: hex(0x22),
++        instance_id: hex(instanz),
++        runtime_nonce: hex(0x40 + instanz),
++    }
++}
++
++fn hello(adresse: Adresse, art: &str) -> HelloControl {
++    HelloControl {
++        typ: "hello".into(),
++        connection_kind: "control".into(),
++        protocol: 3,
++        plugin_version: "test".into(),
++        plugin_kind: art.into(),
++        adresse,
++        host: Some(HostAngabe {
++            pid: 4711,
++            name: Some("FL Studio".into()),
++            version: None,
++        }),
++        audio: AudioLage {
++            samplerate: 48_000.0,
++            block_size: 512,
++            channels: 2,
++        },
++    }
++}
++
++fn capabilities() -> Value {
++    json!({
++        "host_context": true, "project_time": true, "fine_automation": false,
++        "double_precision": false, "latency_report": false, "aux_send": false,
++        "aux_return": false, "compare_routing": false, "sidechain": false,
++        "offline_render": false
++    })
++}
++
++fn wurzel() -> std::path::PathBuf {
++    std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
++        .parent()
++        .expect("das Repo liegt ueber broker/")
++        .to_path_buf()
++}
++
++fn fixture(name: &str) -> Value {
++    let pfad = wurzel()
++        .join("eq-copilot/fixtures/v3/gueltig")
++        .join(format!("{name}.json"));
++    serde_json::from_slice(&std::fs::read(&pfad).expect("Fixture liegt im Korpus"))
++        .expect("Fixture ist JSON")
++}
++
++/// Dieselben Bänder wie der Korpus (`MANIFEST.json`:`bandfenster`).
++const BAND_VON: usize = 98;
++const BAND_BIS: usize = 102;
++/// Die Transportepoche der committeten Evidenzgrundform.
++const TRANSPORT_EPOCHE: u64 = 17;
++const BASIS: i64 = 44_108_200;
++const FENSTER: i64 = 512;
++
++fn grundform() -> Value {
++    static ROH: std::sync::OnceLock<Value> = std::sync::OnceLock::new();
++    ROH.get_or_init(|| fixture("evidence-snapshot-mit-ereignissen-und-stereo"))
++        .clone()
++}
++
++/// Ein Beleg mit gesetzter Adresse, Projektzeit und Bandanhebung in
++/// `[band.0, band.1)`.
++fn evidenz(a: &Adresse, nr: usize, projekt_start: i64, anhebung_db: f64,
++           band: (usize, usize)) -> Vec<u8> {
++    let mut wert = grundform();
++    wert["adresse"] = serde_json::to_value(a).unwrap();
++    wert["evidence_id"] = json!(hex(0x10000 + nr));
++    wert["transport"]["sequence"] = json!(nr as u64 + 1);
++    wert["transport"]["project_sample_start"] = json!(projekt_start);
++    for pfad in [
++        "/baender/werte",
++        "/verteilung/p10/werte",
++        "/verteilung/p50/werte",
++        "/verteilung/p95/werte",
++    ] {
++        if let Some(Value::Array(werte)) = wert.pointer_mut(pfad) {
++            for index in band.0..band.1.min(werte.len()) {
++                let alt = werte[index].as_i64().unwrap_or(0);
++                werte[index] = json!(alt + (anhebung_db * 10.0).round() as i64);
++            }
++        }
++    }
++    serde_json::to_vec(&wert).unwrap()
++}
++
++struct TestOrdner(std::path::PathBuf);
++
++impl TestOrdner {
++    fn neu(name: &str) -> Self {
++        let pfad = std::env::temp_dir().join(format!(
++            "nakama-g5-{name}-{}-{}",
++            std::process::id(),
++            uuid::Uuid::new_v4().simple()
++        ));
++        std::fs::create_dir_all(&pfad).unwrap();
++        Self(pfad)
++    }
++
++    fn db(&self) -> std::path::PathBuf {
++        self.0.join(eqcop_broker::store::STORE_DATEINAME)
++    }
++}
++
++impl Drop for TestOrdner {
++    fn drop(&mut self) {
++        let _ = std::fs::remove_dir_all(&self.0);
++    }
++}
++
++/// Der gemeinsame Harnisch: ein `Coordinator` (auf Wunsch mit Store) und
++/// beliebig viele angemeldete Instanzen.
++struct Buehne {
++    c: Arc<Coordinator>,
++    master: Adresse,
++    #[allow(dead_code)]
++    writer: Option<eqcop_broker::store::StoreWriter>,
++    #[allow(dead_code)]
++    ordner: Option<TestOrdner>,
++}
++
++impl Buehne {
++    /// Ohne Store — genügt für alles ausser `experiment_begin`.
++    fn schlank() -> Self {
++        Self {
++            c: Arc::new(Coordinator::mit_uhr(
++                Arc::new(ManualClock::default()),
++                hex(0xbeef),
++            )),
++            master: adresse(1),
++            writer: None,
++            ordner: None,
++        }
++    }
++
++    /// Mit echtem Store — `experiment_begin` ist ein persistenzpflichtiger P0.
++    fn mit_store(name: &str) -> Self {
++        let ordner = TestOrdner::neu(name);
++        let mut k = eqcop_broker::store::StoreKonfiguration::fuer_pfad(ordner.db());
++        k.remote_volume_override = Some(false);
++        let writer = eqcop_broker::store::StoreWriter::starten(k);
++        assert!(!writer.ist_degradiert(), "{:?}", writer.handle().sicht());
++        let c = Coordinator::mit_store(Arc::new(ManualClock::default()), hex(0xbeef), &writer);
++        Self {
++            c: Arc::new(c),
++            master: adresse(1),
++            writer: Some(writer),
++            ordner: Some(ordner),
++        }
++    }
++
++    fn anmelden(&self, link: &str, a: &Adresse, art: &str, mixer: Option<i64>) {
++        let h = hello(a.clone(), art);
++        let ausgang = self.c.control_hello_registrieren(link, &h);
++        assert!(ausgang.angenommen, "{:?}", ausgang.grund);
++        let _ = self.c.resync_bestaetigen(link, 0);
++        self.deskriptor(link, a, art, mixer);
++        // Ohne `record_state` nimmt der Broker keinen persistenzpflichtigen
++        // Befehl an - `experiment_begin` waere `record_state_unknown`.
++        let bericht = json!({
++            "type": "state_report",
++            "adresse": a,
++            "dsp_schema_version": 1,
++            "state_revision": 0,
++            "state_hash": "a".repeat(64),
++            "record_state": {"valid": true, "recording": false}
++        });
++        assert!(self
++            .c
++            .state_report_json(link, &serde_json::to_vec(&bericht).unwrap()));
++    }
++
++    /// Setzt (oder ändert) den Deskriptor — der Mixerkanal lebt hier, nicht
++    /// am Beleg. Genau das ist der Hebel des Kanalwechsels.
++    fn deskriptor(&self, link: &str, a: &Adresse, art: &str, mixer: Option<i64>) {
++        let position = if art == "main" { "insert" } else { "post" };
++        let mut d = json!({
++            "adresse": a,
++            "plugin_kind": art,
++            "measurement_position": position,
++            "aussageklasse": "beobachtend",
++            "betrieb": "active",
++            "label": "G5-Quelle",
++            "capabilities": capabilities(),
++            "frische": {"letzter_kontakt_ms": 10, "stale": false}
++        });
++        if let Some(index) = mixer {
++            d["host_mixer_index"] = json!(index);
++        }
++        assert!(self.c.descriptor_setzen(link, d));
++    }
++
++    /// M-86/NR-01: der Vollbestand MIT Marke, bevor gerechnet wird.
++    fn marke(&self, revision: i64) {
++        let wert = json!({
++            "type": "intent_update",
++            "adresse": self.master,
++            "session_epoch": self.master.session_epoch,
++            "vollstaendig": true,
++            "bestand_revision": revision
++        });
++        self.c.p1("main", &serde_json::to_vec(&wert).unwrap());
++    }
++
++    /// Belege mit konstanter Anhebung, ein Projektfenster je Beleg.
++    fn belege(&self, link: &str, a: &Adresse, ab_nr: usize, anzahl: usize,
++              anhebung_db: f64, ab_fenster: i64) {
++        self.belege_je_fenster(link, a, ab_nr, anzahl, ab_fenster, |_| anhebung_db,
++                               (BAND_VON, BAND_BIS));
++    }
++
++    /// Belege mit einer Anhebung, die vom Fensterindex abhängt.
++    fn belege_je_fenster(
++        &self,
++        link: &str,
++        a: &Adresse,
++        ab_nr: usize,
++        anzahl: usize,
++        ab_fenster: i64,
++        anhebung: impl Fn(usize) -> f64,
++        band: (usize, usize),
++    ) {
++        for i in 0..anzahl {
++            let zeit = BASIS + (ab_fenster + i as i64) * FENSTER;
++            self.c
++                .p1(link, &evidenz(a, ab_nr + i, zeit, anhebung(i), band));
++        }
++    }
++
++    fn befunde(&self) -> Vec<CauseHypothesis> {
++        self.c
++            .befunde_sicht(&self.master.project_binding_id, &self.master.session_epoch)
++    }
++
++    fn snapshot(&self) -> Value {
++        serde_json::from_slice(
++            &self
++                .c
++                .session_snapshot_json(&self.master.project_binding_id,
++                                       &self.master.session_epoch),
++        )
++        .expect("Snapshot ist JSON")
++    }
++
++    /// Eine benannte Passage über den PRODUKTPFAD (`experiment_begin`, P0).
++    ///
++    /// `von_fenster`/`bis_fenster` sind Fensterindizes ab `BASIS`.
++    fn passage(&self, command: usize, experiment: usize, passage_nr: usize,
++               von_fenster: i64, bis_fenster: i64, quellen: &[&Adresse]) -> String {
++        let mut wert = fixture("experiment_begin");
++        wert["kopf"]["ziel"] = serde_json::to_value(&self.master).unwrap();
++        wert["kopf"]["command_id"] = json!(hex(command));
++        wert["kopf"]["base_revision"] = json!(0);
++        wert["experiment_id"] = json!(hex(experiment));
++        let passage_id = hex(0x5000 + passage_nr);
++        wert["passage"]["passage_id"] = json!(passage_id);
++        wert["passage"]["projekt_von"] = json!(BASIS + von_fenster * FENSTER);
++        wert["passage"]["projekt_bis"] = json!(BASIS + bis_fenster * FENSTER);
++        wert["passage"]["transport_epoch"] = json!(TRANSPORT_EPOCHE);
++        let ids: Vec<String> = quellen.iter().map(|a| a.instance_id.clone()).collect();
++        let klassen: Vec<String> = quellen.iter().map(|_| "insert".to_string()).collect();
++        wert["passage"]["aktive_quellen"] = json!(ids);
++        wert["passage"]["messpunktklassen"] = json!(klassen);
++        let antwort = Senke::p0(&*self.c, "main", &serde_json::to_vec(&wert).unwrap())
++            .expect("experiment_begin wird beantwortet");
++        let ack: Value = serde_json::from_slice(&antwort).unwrap();
++        assert_eq!(ack["ergebnis"], "angewandt",
++                   "die Passage entsteht wirklich: {ack:?}");
++        passage_id
++    }
++}
++
++/// Eine Zeile je Befund — das Protokoll, aus dem der Bericht liest.
++fn protokoll(titel: &str, befunde: &[CauseHypothesis]) {
++    println!("── {titel} ──");
++    if befunde.is_empty() {
++        println!("   (KEIN BEFUND — der Produktpfad schweigt)");
++    }
++    for b in befunde {
++        let r = b.rang;
++        println!(
++            "   quelle=..{} klasse={:?} zustand={:?} ursache={:?} claim={:?} score={:.6}",
++            &b.candidate_source[30..],
++            b.confidence.klasse,
++            b.zustand,
++            b.ursachenklasse,
++            b.claim_class,
++            b.confidence.score
++        );
++        println!(
++            "     rang: bandpassung={:.6} koinzidenz={:.6} uplift={:.6} \
++             intent={:.6} wiederholbarkeit={:.6} routing={:.6}",
++            r.bandpassung, r.koinzidenz, r.uplift, r.intent_relevanz,
++            r.wiederholbarkeit, r.routingqualitaet
++        );
++        println!(
++            "     passage={:?} evidence_ids={} alternatives={:?} ausschluesse={:?}",
++            b.passage_id,
++            b.evidence_ids.len(),
++            b.alternatives.iter().map(|a| a[26..].to_string()).collect::<Vec<_>>(),
++            b.ausschluesse
++                .iter()
++                .map(|a| (a.candidate_source[30..].to_string(), a.grund.wire()))
++                .collect::<Vec<_>>()
++        );
++        println!("     likely_cause={:?}", b.likely_cause);
++    }
++}
++
++fn stark(befunde: &[CauseHypothesis]) -> usize {
++    befunde
++        .iter()
++        .filter(|b| b.confidence.klasse == Sicherheitsklasse::Hoch
++            && b.zustand == Befundzustand::ReadyToSend)
++        .count()
++}
++
++// =========================================================================
++// G5-F5 — die ECHTE Passage und ihre Randwerte (Fall 5, M-23, M-67)
++// =========================================================================
++//
++// Der P5-Korpus fährt seine Sitzungen OHNE Passage: `aufnahmen_sammeln`
++// liest sie aus `stand.experimente.juengste_passage_im_projekt`
++// (hypothese_verdrahtung.rs:237), und ohne `experiment_begin` gibt es
++// keine. Damit steht der Passagenriegel (`gate()` :838–854) im ganzen
++// Korpus NIE unter Last — auch nicht in der Sitzung `verschobene_passage`,
++// die am Alignment gegen den MASTER fällt (gate :828) und nicht an der
++// Passage.
++#[test]
++fn f5_passagenrandwerte() {
++    // `bis_fenster` der Passage, dazu was wir erwarten.
++    for (bis, was) in [
++        (12i64, "Passage deckt alle zwoelf Fenster"),
++        (11, "GENAU EIN Fenster liegt ausserhalb"),
++        (8, "Randwert: genau GATE_MINDEST_FENSTER Fenster in der Passage"),
++        (7, "ein Fenster UNTER dem Randwert"),
++    ] {
++        let b = Buehne::mit_store(&format!("f5-{bis}"));
++        let sonde = adresse(2);
++        b.anmelden("main", &b.master, "main", Some(0));
++        b.anmelden("sonde0", &sonde, "passive_probe", Some(3));
++        b.marke(0);
++        b.passage(0x900 + bis as usize, 0x910 + bis as usize, bis as usize,
++                  0, bis, &[&b.master, &sonde]);
++        b.belege("main", &b.master, 0, 12, 9.0, 0);
++        b.belege("sonde0", &sonde, 100, 12, 9.0, 0);
++        let befunde = b.befunde();
++        protokoll(&format!("F5 Passage [0,{bis}) — {was}"), &befunde);
++        println!("   => starke Befunde: {}", stark(&befunde));
++    }
++
++    // Die Passage liegt VOLLSTAENDIG hinter den Belegen: ein Fenster, das
++    // exakt am Anfang der Passage endet, zaehlt NICHT (halboffen).
++    let b = Buehne::mit_store("f5-daneben");
++    let sonde = adresse(2);
++    b.anmelden("main", &b.master, "main", Some(0));
++    b.anmelden("sonde0", &sonde, "passive_probe", Some(3));
++    b.marke(0);
++    b.passage(0x940, 0x941, 40, 12, 24, &[&b.master, &sonde]);
++    b.belege("main", &b.master, 0, 12, 9.0, 0);
++    b.belege("sonde0", &sonde, 100, 12, 9.0, 0);
++    let befunde = b.befunde();
++    protokoll("F5 Passage [12,24) — Belege enden exakt am Passagenanfang", &befunde);
++    println!("   => starke Befunde: {}", stark(&befunde));
++}
++
++// =========================================================================
++// G5-F5b — GLEICHE passage_id, verschobenes Zeitfenster (Fall 5)
++// =========================================================================
++//
++// `begin_anwenden_locked` (experiment_verdrahtung.rs:445–476) legt eine
++// bekannte Passage NICHT neu an: „Sie wird nur beim ERSTEN Versuch angelegt,
++// der sie nennt; ein zweiter Versuch derselben Passage schreibt sie nicht
++// um." Trägt der zweite Versuch dieselbe `passage_id` mit ANDEREM Fenster,
++// misst der Broker weiter gegen das alte.
++#[test]
++fn f5b_gleiche_passage_id_verschobenes_fenster() {
++    let b = Buehne::mit_store("f5b");
++    let sonde = adresse(2);
++    b.anmelden("main", &b.master, "main", Some(0));
++    b.anmelden("sonde0", &sonde, "passive_probe", Some(3));
++    b.marke(0);
++    // Erst die Passage [0,12).
++    let p1 = b.passage(0x950, 0x951, 50, 0, 12, &[&b.master, &sonde]);
++    // Dann DIESELBE Kennung mit dem Fenster [12,24).
++    let p2 = b.passage(0x952, 0x953, 50, 12, 24, &[&b.master, &sonde]);
++    assert_eq!(p1, p2, "beide Versuche nennen dieselbe passage_id");
++    // Die Belege liegen im ZWEITEN, verschobenen Fenster.
++    b.belege("main", &b.master, 0, 12, 9.0, 12);
++    b.belege("sonde0", &sonde, 100, 12, 9.0, 12);
++    let befunde = b.befunde();
++    protokoll("F5b gleiche passage_id, Fenster verschoben von [0,12) auf [12,24)",
++              &befunde);
++    println!("   => starke Befunde: {}", stark(&befunde));
++    println!("   => sichtbare passage_id: {:?}",
++             befunde.first().and_then(|f| f.passage_id.clone()));
++}
++
++// =========================================================================
++// G5-F8 — ZWEI MASTER in einer Sitzung (Fall 8)
++// =========================================================================
++//
++// `aufnahmen_sammeln` (hypothese_verdrahtung.rs:216) schreibt
++// `master = Some(profil)` ohne Prüfung, ob schon einer da ist. Die
++// Schlüssel sind nach `instance_id` sortiert — der LETZTE `main` gewinnt,
++// der erste verschwindet ganz: er wird auch nicht Kandidat.
++#[test]
++fn f8_zwei_master_mit_widersprechendem_befundband() {
++    let b = Buehne::schlank();
++    let master_a = adresse(1);
++    let master_b = adresse(9);
++    let sonde = adresse(2);
++    b.anmelden("main", &master_a, "main", Some(0));
++    b.anmelden("main2", &master_b, "main", Some(1));
++    b.anmelden("sonde0", &sonde, "passive_probe", Some(3));
++    b.marke(0);
++    // Master A hat seine Anomalie im Band der Sonde (98..102).
++    b.belege("main", &master_a, 0, 12, 9.0, 0);
++    // Master B hat sie WOANDERS — Band 150..154.
++    b.belege_je_fenster("main2", &master_b, 200, 12, 0, |_| 9.0, (150, 154));
++    // Die Sonde drueckt ausschliesslich in 98..102.
++    b.belege("sonde0", &sonde, 100, 12, 9.0, 0);
++    let befunde = b.befunde();
++    protokoll("F8 zwei Master (A: Band 98..102, B: Band 150..154)", &befunde);
++    println!("   => starke Befunde: {}", stark(&befunde));
++    let sichtbar = b.snapshot();
++    println!("   => sources im Snapshot: {}",
++             sichtbar["sources"].as_array().map(Vec::len).unwrap_or(0));
++}
++
++// =========================================================================
++// G5-F8b — MASTER OHNE FENSTER (Fall 8)
++// =========================================================================
++#[test]
++fn f8b_master_ohne_fenster() {
++    let b = Buehne::schlank();
++    let sonde = adresse(2);
++    b.anmelden("main", &b.master, "main", Some(0));
++    b.anmelden("sonde0", &sonde, "passive_probe", Some(3));
++    b.marke(0);
++    // NUR die Sonde sendet. Der Master ist angemeldet, hat aber keinen Beleg.
++    b.belege("sonde0", &sonde, 100, 12, 9.0, 0);
++    let befunde = b.befunde();
++    protokoll("F8b Master angemeldet, aber ohne Beleg", &befunde);
++    println!("   => starke Befunde: {}", stark(&befunde));
++    println!("   => findings im Snapshot: {}",
++             b.snapshot()["findings"].as_array().map(Vec::len).unwrap_or(0));
++}
++
++// =========================================================================
++// G5-F4 — KANALWECHSEL ZWISCHEN DEN FENSTERN (Fall 4)
++// =========================================================================
++//
++// Der Mixerkanal lebt im Deskriptor, nicht am Beleg
++// (hypothese_verdrahtung.rs:176–187). `aufnahmen_sammeln` liest ihn zum
++// Zeitpunkt der Rechnung — die Duplikaterkennung kennt deshalb nur den
++// LETZTEN Stand, nie die Kanalgeschichte der Fenster.
++#[test]
++fn f4_kanalwechsel_zwischen_den_fenstern() {
++    let b = Buehne::schlank();
++    let a = adresse(2);
++    let c = adresse(3);
++    b.anmelden("main", &b.master, "main", Some(0));
++    b.anmelden("sondeA", &a, "passive_probe", Some(7));
++    b.anmelden("sondeC", &c, "passive_probe", Some(7));
++    b.marke(0);
++    b.belege("main", &b.master, 0, 12, 9.0, 0);
++    // A fuehrt um 0,1 dB — sonst traennte sie nichts, und der Fall maesse
++    // nur den Gleichstandsriegel.
++    b.belege("sondeA", &a, 100, 12, 9.1, 0);
++    b.belege("sondeC", &c, 200, 12, 9.0, 0);
++    let vorher = b.befunde();
++    protokoll("F4 beide Sonden auf Mixerkanal 7", &vorher);
++    println!("   => starke Befunde: {}", stark(&vorher));
++
++    // Jetzt wechselt C den Kanal — ohne einen einzigen neuen MESSWERT.
++    b.deskriptor("sondeC", &c, "passive_probe", Some(9));
++    // Ein weiterer Beleg loest die Rechnung aus.
++    b.belege("sondeA", &a, 130, 1, 9.1, 12);
++    b.belege("sondeC", &c, 230, 1, 9.0, 12);
++    let nachher = b.befunde();
++    protokoll("F4 nach dem Kanalwechsel von C (7 -> 9), Messwerte unveraendert",
++              &nachher);
++    println!("   => starke Befunde: {}", stark(&nachher));
++}
++
++// =========================================================================
++// G5-F4b — DREI Sonden auf EINEM Kanal (Fall 4, zwei Ebenen)
++// =========================================================================
++//
++// Die „Elternbeziehung" des Produkts ist eine flache Menge geteilter
++// Mixerkanäle (hypothese_verdrahtung.rs:226–233): jede Quelle zeigt auf
++// EINE andere desselben Kanals. Eine zweite Ebene (Großeltern) hat im
++// Datenmodell keine Darstellung — ein Deskriptor trägt genau einen Kanal.
++// Gemessen wird deshalb, ob die flache Menge wenigstens transitiv hält.
++#[test]
++fn f4b_drei_sonden_auf_einem_kanal() {
++    let b = Buehne::schlank();
++    let (a, c, d) = (adresse(2), adresse(3), adresse(4));
++    b.anmelden("main", &b.master, "main", Some(0));
++    b.anmelden("sondeA", &a, "passive_probe", Some(7));
++    b.anmelden("sondeC", &c, "passive_probe", Some(7));
++    b.anmelden("sondeD", &d, "passive_probe", Some(7));
++    b.marke(0);
++    b.belege("main", &b.master, 0, 12, 9.0, 0);
++    b.belege("sondeA", &a, 100, 12, 9.2, 0);
++    b.belege("sondeC", &c, 200, 12, 9.1, 0);
++    b.belege("sondeD", &d, 300, 12, 9.0, 0);
++    let befunde = b.befunde();
++    protokoll("F4b drei Sonden auf Mixerkanal 7", &befunde);
++    println!("   => starke Befunde: {}", stark(&befunde));
++}
++
++// =========================================================================
++// G5-EIGEN-3 — die ANTIKORRELIERTE Quelle
++// =========================================================================
++//
++// Der schärfste Fall, den die Klassenwahl (hypothese.rs:1387–1396) zulässt:
++// die Quelle ist im Befundband GENAU DANN laut, wenn der Master dort leise
++// ist. Der bedingte Uplift aus M-19 ist damit NEGATIV — und `uplift()`
++// (:962–967) klemmt ihn auf 0, `koinzidenz()` (:947) klemmt die negative
++// Korrelation ebenfalls auf 0. Ein Gegenbeleg kostet damit genau so viel wie
++// „keine Angabe": nichts.
++#[test]
++fn eigen3_antikorrelierte_quelle() {
++    let b = Buehne::schlank();
++    let sonde = adresse(2);
++    b.anmelden("main", &b.master, "main", Some(0));
++    b.anmelden("sonde0", &sonde, "passive_probe", Some(3));
++    b.marke(0);
++    // Master: ungerade Fenster laut (12 dB), gerade leise (6 dB). Das LETZTE
++    // Fenster (11) ist laut — `masteranomalie` liest nur dieses.
++    b.belege_je_fenster("main", &b.master, 0, 12, 0,
++                        |i| if i % 2 == 1 { 12.0 } else { 6.0 },
++                        (BAND_VON, BAND_BIS));
++    // Sonde: genau umgekehrt.
++    b.belege_je_fenster("sonde0", &sonde, 100, 12, 0,
++                        |i| if i % 2 == 1 { 6.0 } else { 12.0 },
++                        (BAND_VON, BAND_BIS));
++    let befunde = b.befunde();
++    protokoll("EIGEN-3 antikorrelierte Quelle (laut, wenn der Master leise ist)",
++              &befunde);
++    println!("   => starke Befunde: {}", stark(&befunde));
++}
++
++// =========================================================================
++// G5-EIGEN-4 — die Quelle im FALSCHEN BAND
++// =========================================================================
++//
++// `gate()` prüft Rücknahme, Capability, Coverage, Alignment, Passage und
++// Intent — es prüft NIE, ob der Kandidat im Befundband überhaupt Energie
++// trägt. Die Bandpassung ist eine RANGkomponente, und der Rang entscheidet
++// die Klasse nicht (M-15).
++#[test]
++fn eigen4_quelle_im_falschen_band() {
++    let b = Buehne::schlank();
++    let sonde = adresse(2);
++    b.anmelden("main", &b.master, "main", Some(0));
++    b.anmelden("sonde0", &sonde, "passive_probe", Some(3));
++    b.marke(0);
++    b.belege("main", &b.master, 0, 12, 9.0, 0);
++    // Die Sonde hebt ein ganz anderes Band an — 30..34 statt 98..102.
++    b.belege_je_fenster("sonde0", &sonde, 100, 12, 0, |_| 9.0, (30, 34));
++    let befunde = b.befunde();
++    protokoll("EIGEN-4 Sonde hebt Band 30..34, Masterbefund liegt bei 98..102",
++              &befunde);
++    println!("   => starke Befunde: {}", stark(&befunde));
++}
++
++// =========================================================================
++// G5-F9 — INTENT-AENDERUNG und RUECKNAHME NACH der Zustellung (Fall 9)
++// =========================================================================
++//
++// Das Interleaving WAEHREND der Rechnung misst bereits
++// `sonde014_verdrahtung.rs::intent_und_ruecknahme_waehrend_der_rechnung`.
++// Hier steht die andere Reihenfolge: der Befund ist schon zugestellt und
++// steht auf READY TO SEND, DANN erst kommt das Veto beziehungsweise die
++// Rücknahme — ohne dass ein neuer Beleg eine Rechnung auslöst.
++#[test]
++fn f9_veto_und_ruecknahme_nach_der_zustellung() {
++    // ── (a) Intent-Veto nach der Zustellung ────────────────────────────
++    let b = Buehne::schlank();
++    let sonde = adresse(2);
++    b.anmelden("main", &b.master, "main", Some(0));
++    b.anmelden("sonde0", &sonde, "passive_probe", Some(3));
++    b.marke(0);
++    b.belege("main", &b.master, 0, 12, 9.0, 0);
++    b.belege("sonde0", &sonde, 100, 12, 9.0, 0);
++    let vorher = b.befunde();
++    protokoll("F9a vor dem Veto", &vorher);
++    assert_eq!(stark(&vorher), 1, "die Buehne traegt wirklich einen READY-Befund");
++
++    // Der User schuetzt die Quelle — ohne neuen Beleg.
++    let veto = json!({
++        "type": "intent_update",
++        "adresse": b.master,
++        "session_epoch": b.master.session_epoch,
++        "vollstaendig": true,
++        "bestand_revision": 1,
++        "intents": [{
++            "quelle_id": sonde.instance_id,
++            "rolle": "geschuetzt",
++            "revision": 1,
++            "herkunft": "user",
++            "konfidenz": 1.0
++        }]
++    });
++    assert!(b.c.intent_update_json("main", &serde_json::to_vec(&veto).unwrap()));
++    let nachher = b.befunde();
++    protokoll("F9a nach dem Veto `geschuetzt` (kein neuer Beleg)", &nachher);
++    println!("   => starke Befunde: {}", stark(&nachher));
++    let sicht = b.snapshot();
++    println!("   => findings im Snapshot: {}",
++             sicht["findings"].as_array().map(Vec::len).unwrap_or(0));
++    for f in sicht["findings"].as_array().cloned().unwrap_or_default() {
++        println!("      snapshot: quelle=..{} klasse={} zustand={}",
++                 &f["candidate_source"].as_str().unwrap_or("")[30..],
++                 f["confidence"]["class"], f["zustand"]);
++    }
++
++    // ── (b) Ruecknahme einer Evidenz nach der Zustellung ───────────────
++    let d = Buehne::schlank();
++    let sonde = adresse(2);
++    d.anmelden("main", &d.master, "main", Some(0));
++    d.anmelden("sonde0", &sonde, "passive_probe", Some(3));
++    d.marke(0);
++    d.belege("main", &d.master, 0, 12, 9.0, 0);
++    d.belege("sonde0", &sonde, 100, 12, 9.0, 0);
++    let vorher = d.befunde();
++    assert_eq!(stark(&vorher), 1, "auch hier steht ein READY-Befund");
++    let getroffen = d.c.invalidierung_wegen_intervention_fuer_link(
++        "sonde0",
++        BASIS + 5 * FENSTER,
++        BASIS + 5 * FENSTER + 1,
++    );
++    println!("   => zurueckgenommene Belege: {getroffen}");
++    let nachher = d.befunde();
++    protokoll("F9b nach der Ruecknahme eines Belegs", &nachher);
++    println!("   => starke Befunde: {}", stark(&nachher));
++}
++
++// =========================================================================
++// G5-EIGEN-5 — antikorreliert NEBEN korreliert
++// =========================================================================
++//
++// `bootstrap_p` (experiment.rs:1518–1553) ist ZWEISEITIG: es zaehlt
++// `nicht_positiv` und `nicht_negativ` und nimmt das Minimum. Eine stabil
++// NEGATIVE Reihe bekommt damit denselben kleinen p-Wert wie eine stabil
++// positive — und `wiederholbarkeit = 1 - p` belohnt den Gegenbeleg genauso
++// wie den Beleg. `uplift()` klemmt die negative Differenz zusaetzlich auf 0,
++// statt sie als Gegenbeleg zu fuehren.
++#[test]
++fn eigen5_antikorreliert_neben_korreliert() {
++    let b = Buehne::schlank();
++    let mit = adresse(2);   // laeuft MIT dem Master
++    let gegen = adresse(3); // laeuft GEGEN den Master
++    b.anmelden("main", &b.master, "main", Some(0));
++    b.anmelden("sondeM", &mit, "passive_probe", Some(3));
++    b.anmelden("sondeG", &gegen, "passive_probe", Some(4));
++    b.marke(0);
++    b.belege_je_fenster("main", &b.master, 0, 12, 0,
++                        |i| if i % 2 == 1 { 12.0 } else { 6.0 },
++                        (BAND_VON, BAND_BIS));
++    b.belege_je_fenster("sondeM", &mit, 100, 12, 0,
++                        |i| if i % 2 == 1 { 12.0 } else { 6.0 },
++                        (BAND_VON, BAND_BIS));
++    b.belege_je_fenster("sondeG", &gegen, 200, 12, 0,
++                        |i| if i % 2 == 1 { 6.0 } else { 12.0 },
++                        (BAND_VON, BAND_BIS));
++    let befunde = b.befunde();
++    protokoll("EIGEN-5 korrelierte und antikorrelierte Quelle nebeneinander",
++              &befunde);
++    println!("   => starke Befunde: {}", stark(&befunde));
++}
++
++// =========================================================================
++// G5-F7 — die Rangdifferenz AM Quantum (Fall 7, M-25, M-26)
++// =========================================================================
++//
++// `getrennt` (hypothese.rs:1210–1228) vergleicht die auf `RANG_QUANTUM`
++// quantisierten Raenge mit `>`. Eine Differenz UNTER dem Quantum ist nach der
++// Quantisierung exakt null — sie trennt nicht. Der Korpus kann das nur mit
++// EXAKT gleichen Eingaben zeigen (sein Gitter ist 0,1 dB und damit rund
++// 300 Quanten grob); dieser Fall setzt die kleinste Stoerung, die ueberhaupt
++// darstellbar ist: 0,1 dB in EINEM weit entfernten Band.
++#[test]
++fn f7_rangdifferenz_am_quantum() {
++    let b = Buehne::schlank();
++    let a = adresse(2);
++    let c = adresse(3);
++    b.anmelden("main", &b.master, "main", Some(0));
++    b.anmelden("sondeA", &a, "passive_probe", Some(3));
++    b.anmelden("sondeC", &c, "passive_probe", Some(4));
++    b.marke(0);
++    b.belege("main", &b.master, 0, 12, 9.0, 0);
++    b.belege("sondeA", &a, 100, 12, 9.0, 0);
++    // C traegt DIESELBE Anhebung im Befundband — plus 0,1 dB in Band 210.
++    // Das senkt seine Bandpassung um wenige Quanten, mehr nicht.
++    for i in 0..12usize {
++        let zeit = BASIS + (i as i64) * FENSTER;
++        let mut wert = grundform();
++        wert["adresse"] = serde_json::to_value(&c).unwrap();
++        wert["evidence_id"] = json!(hex(0x10000 + 200 + i));
++        wert["transport"]["sequence"] = json!(i as u64 + 1);
++        wert["transport"]["project_sample_start"] = json!(zeit);
++        for pfad in ["/baender/werte", "/verteilung/p10/werte",
++                     "/verteilung/p50/werte", "/verteilung/p95/werte"] {
++            if let Some(Value::Array(werte)) = wert.pointer_mut(pfad) {
++                for index in BAND_VON..BAND_BIS {
++                    let alt = werte[index].as_i64().unwrap_or(0);
++                    werte[index] = json!(alt + 90);
++                }
++                let alt = werte[210].as_i64().unwrap_or(0);
++                werte[210] = json!(alt + 1);
++            }
++        }
++        b.c.p1("sondeC", &serde_json::to_vec(&wert).unwrap());
++    }
++    let befunde = b.befunde();
++    protokoll("F7 kleinste darstellbare Rangstoerung (0,1 dB in Band 210)",
++              &befunde);
++    println!("   => starke Befunde: {}", stark(&befunde));
++    if befunde.len() >= 2 {
++        let d = befunde[0].confidence.score - befunde[1].confidence.score;
++        println!("   => Rangdifferenz = {d:.9} = {:.1} RANG_QUANTUM", d / 1e-6);
++    }
++}
+diff --git a/eq-copilot/fixtures/p5-korpus/MANIFEST.json b/eq-copilot/fixtures/p5-korpus/MANIFEST.json
+index e075025..2d085df 100644
+--- a/eq-copilot/fixtures/p5-korpus/MANIFEST.json
++++ b/eq-copilot/fixtures/p5-korpus/MANIFEST.json
+@@ -6,8 +6,8 @@
+   },
+   "dateien": {
+     "sitzungen.json": {
+-      "bytes": 5474,
+-      "sha256": "4b8100f84a2decd2adcd4e3fc06ae1d48df815c2cb38f0fdfb4f93f4030762ec"
++      "bytes": 17859,
++      "sha256": "5db9f6b8f0ef43e2dc7c64c6b07b9a47007b6cf7ef3c41fb4d82c36f1cc0b8cb"
+     }
+   },
+   "ergebnisdatei": "eq-copilot/build/p5-korpus-ergebnis.json",
+@@ -50,7 +50,7 @@
+     ]
+   },
+   "pruefer": "tools/eq-copilot/pruefe_p5_korpus.py",
+-  "sitzungen_gesamt": 6,
++  "sitzungen_gesamt": 18,
+   "titel": "P5-Evaluationskorpus (SONDE-014 M-64 bis M-70, R2)",
+   "zweck": "Eine KETTE, kein Register: jede Sitzung laeuft als Evidenzbestand durch den Produktpfad, und gelesen wird die TATSAECHLICH ausgegebene Hypothese gegen die Wahrheit des Falls. Eine falsche starke Produktbehauptung aendert diese Datei nicht — sie faellt am Vergleich."
+ }
+diff --git a/eq-copilot/fixtures/p5-korpus/sitzungen.json b/eq-copilot/fixtures/p5-korpus/sitzungen.json
+index d87d4f1..68eeae7 100644
+--- a/eq-copilot/fixtures/p5-korpus/sitzungen.json
++++ b/eq-copilot/fixtures/p5-korpus/sitzungen.json
+@@ -163,6 +163,426 @@
+       "quellen": [],
+       "ursachenklasse": "daten_reichen_nicht",
+       "wahrheit": "keine_ursache"
++    },
++    {
++      "erwartet": {
++        "ausschlussgrund": null,
++        "distraktor_ist_alternative": true,
++        "sicherheit_hoechstens": "mittel"
++      },
++      "hinweis": "G5 Fall 1: derselbe Spektralverlauf, aber der Distraktor traegt MEHR Fenster als der Verursacher. Der Riegel darf sich nicht durch Materialmenge trennen lassen.",
++      "kennung": "g5_distraktor_mehr_fenster",
++      "master": {
++        "anhebung_db": 9.0,
++        "fenster": 12
++      },
++      "quellen": [
++        {
++          "anhebung_db": 9.0,
++          "distraktor": false,
++          "fenster": 12,
++          "instanz": 2,
++          "mixer": 3,
++          "versatz_fenster": 0,
++          "wahre_ursache": true
++        },
++        {
++          "anhebung_db": 9.0,
++          "distraktor": true,
++          "fenster": 16,
++          "instanz": 3,
++          "mixer": 4,
++          "versatz_fenster": 0,
++          "wahre_ursache": false
++        }
++      ],
++      "ursachenklasse": "zwei_quellen_konkurrenz",
++      "wahrheit": "distraktor"
++    },
++    {
++      "erwartet": {
++        "ausschlussgrund": null,
++        "distraktor_ist_alternative": true,
++        "sicherheit_hoechstens": "mittel"
++      },
++      "hinweis": "G5 Fall 7: die KLEINSTE im Gitter darstellbare Trennung (0,1 dB) liegt weit ueber RANG_QUANTUM. Fuehrt der Distraktor, traegt er die starke Aussage.",
++      "kennung": "g5_distraktor_lauter",
++      "master": {
++        "anhebung_db": 9.0,
++        "fenster": 12
++      },
++      "quellen": [
++        {
++          "anhebung_db": 9.0,
++          "distraktor": false,
++          "fenster": 12,
++          "instanz": 2,
++          "mixer": 3,
++          "versatz_fenster": 0,
++          "wahre_ursache": true
++        },
++        {
++          "anhebung_db": 9.1,
++          "distraktor": true,
++          "fenster": 12,
++          "instanz": 3,
++          "mixer": 4,
++          "versatz_fenster": 0,
++          "wahre_ursache": false
++        }
++      ],
++      "ursachenklasse": "zwei_quellen_konkurrenz",
++      "wahrheit": "distraktor"
++    },
++    {
++      "erwartet": {
++        "ausschlussgrund": "alignment_falsch",
++        "distraktor_ist_alternative": false,
++        "sicherheit_hoechstens": "mittel"
++      },
++      "hinweis": "G5 Fall 2: der wahre Verursacher faellt am Alignment, der Distraktor bleibt ALLEIN im Rennen und ist damit trivial `getrennt`. Ein Ausschluss mit Grund heisst: die Datenlage ist nachweislich unvollstaendig.",
++      "kennung": "g5_distraktor_allein_im_rennen",
++      "master": {
++        "anhebung_db": 9.0,
++        "fenster": 12
++      },
++      "quellen": [
++        {
++          "anhebung_db": 9.0,
++          "distraktor": false,
++          "fenster": 12,
++          "instanz": 2,
++          "mixer": 3,
++          "versatz_fenster": 6,
++          "wahre_ursache": true
++        },
++        {
++          "anhebung_db": 9.0,
++          "distraktor": true,
++          "fenster": 12,
++          "instanz": 3,
++          "mixer": 4,
++          "versatz_fenster": 0,
++          "wahre_ursache": false
++        }
++      ],
++      "ursachenklasse": "quelle_resonanz",
++      "wahrheit": "distraktor"
++    },
++    {
++      "erwartet": {
++        "ausschlussgrund": null,
++        "distraktor_ist_alternative": false,
++        "sicherheit_hoechstens": "unklar"
++      },
++      "hinweis": "G5 eigene Angriffsidee 1: die Quelle traegt im Befundband GAR KEINE Anhebung. Bedingter Uplift, Koinzidenz und Wiederholbarkeit sind 0 — es gibt keinen Beleg fuer einen Zusammenhang. Die Klassenwahl (hypothese.rs:1387-1396) liest aber nur Fensterzahl, Routing und Duplikat.",
++      "kennung": "g5_unbeteiligte_quelle",
++      "master": {
++        "anhebung_db": 9.0,
++        "fenster": 12
++      },
++      "quellen": [
++        {
++          "anhebung_db": 0.0,
++          "distraktor": false,
++          "fenster": 12,
++          "instanz": 2,
++          "mixer": 3,
++          "versatz_fenster": 0,
++          "wahre_ursache": false
++        }
++      ],
++      "ursachenklasse": "daten_reichen_nicht",
++      "wahrheit": "keine_ursache"
++    },
++    {
++      "erwartet": {
++        "ausschlussgrund": null,
++        "distraktor_ist_alternative": false,
++        "sicherheit_hoechstens": "mittel"
++      },
++      "hinweis": "G5 eigene Angriffsidee 2: die Sonde misst DENSELBEN Mixerkanal wie der Master (Kanal 0). Sie ist damit das schaerfste Parent-Duplikat, das es gibt. `ist_parent` und `ids` in hypothese.rs:1108-1141 sehen aber nur die KANDIDATEN — der Master steht in keiner der beiden Mengen.",
++      "kennung": "g5_sonde_auf_masterkanal",
++      "master": {
++        "anhebung_db": 9.0,
++        "fenster": 12
++      },
++      "quellen": [
++        {
++          "anhebung_db": 9.0,
++          "distraktor": false,
++          "fenster": 12,
++          "instanz": 2,
++          "mixer": 0,
++          "versatz_fenster": 0,
++          "wahre_ursache": false
++        }
++      ],
++      "ursachenklasse": "quelle_resonanz",
++      "wahrheit": "parent_duplikat"
++    },
++    {
++      "erwartet": {
++        "ausschlussgrund": "alignment_falsch",
++        "distraktor_ist_alternative": false,
++        "sicherheit_hoechstens": "mittel"
++      },
++      "hinweis": "G5 Fall 3: der Partner desselben Mixerkanals faellt am Alignment aus dem Rennen. Bleibt das Kind trotzdem ein Duplikat?",
++      "kennung": "g5_parent_partner_faellt_aus",
++      "master": {
++        "anhebung_db": 9.0,
++        "fenster": 12
++      },
++      "quellen": [
++        {
++          "anhebung_db": 9.0,
++          "distraktor": false,
++          "fenster": 12,
++          "instanz": 2,
++          "mixer": 7,
++          "versatz_fenster": 0,
++          "wahre_ursache": true
++        },
++        {
++          "anhebung_db": 9.0,
++          "distraktor": false,
++          "fenster": 12,
++          "instanz": 3,
++          "mixer": 7,
++          "versatz_fenster": 6,
++          "wahre_ursache": false
++        }
++      ],
++      "ursachenklasse": "quelle_resonanz",
++      "wahrheit": "parent_duplikat"
++    },
++    {
++      "erwartet": {
++        "ausschlussgrund": null,
++        "distraktor_ist_alternative": false,
++        "sicherheit_hoechstens": "mittel"
++      },
++      "hinweis": "G5 Fall 3: der Partner traegt zwei Fenster — zu wenig fuer eine starke Aussage, aber genug, um im Rennen zu bleiben.",
++      "kennung": "g5_parent_partner_zu_wenig_fenster",
++      "master": {
++        "anhebung_db": 9.0,
++        "fenster": 12
++      },
++      "quellen": [
++        {
++          "anhebung_db": 9.0,
++          "distraktor": false,
++          "fenster": 12,
++          "instanz": 2,
++          "mixer": 7,
++          "versatz_fenster": 0,
++          "wahre_ursache": true
++        },
++        {
++          "anhebung_db": 9.0,
++          "distraktor": false,
++          "fenster": 2,
++          "instanz": 3,
++          "mixer": 7,
++          "versatz_fenster": 0,
++          "wahre_ursache": false
++        }
++      ],
++      "ursachenklasse": "zwei_quellen_konkurrenz",
++      "wahrheit": "parent_duplikat"
++    },
++    {
++      "erwartet": {
++        "ausschlussgrund": null,
++        "distraktor_ist_alternative": false,
++        "sicherheit_hoechstens": "mittel"
++      },
++      "hinweis": "G5 Fall 3: der Partner ist angemeldet und traegt denselben Mixerkanal, hat aber noch keinen Beleg gesendet. Die Kanaltafel `je_kanal` entsteht in hypothese_verdrahtung.rs:164 aus den EVIDENZ-Schluesseln — eine stumme Sonde steht nicht darin.",
++      "kennung": "g5_parent_partner_ohne_evidenz",
++      "master": {
++        "anhebung_db": 9.0,
++        "fenster": 12
++      },
++      "quellen": [
++        {
++          "anhebung_db": 9.0,
++          "distraktor": false,
++          "fenster": 12,
++          "instanz": 2,
++          "mixer": 7,
++          "versatz_fenster": 0,
++          "wahre_ursache": true
++        },
++        {
++          "anhebung_db": 9.0,
++          "distraktor": false,
++          "fenster": 0,
++          "instanz": 3,
++          "mixer": 7,
++          "versatz_fenster": 0,
++          "wahre_ursache": false
++        }
++      ],
++      "ursachenklasse": "quelle_resonanz",
++      "wahrheit": "parent_duplikat"
++    },
++    {
++      "erwartet": {
++        "ausschlussgrund": null,
++        "distraktor_ist_alternative": false,
++        "sicherheit_hoechstens": "hoch"
++      },
++      "hinweis": "G5 Fall 6: der Randwert. GATE_MINDEST_FENSTER = 8, die Klassenwahl prueft `fenster < 8` — acht Fenster sind also genug. M-23 sagt `mindestens acht`; das ist die Zusage.",
++      "kennung": "g5_fenster_genau_acht",
++      "master": {
++        "anhebung_db": 9.0,
++        "fenster": 12
++      },
++      "quellen": [
++        {
++          "anhebung_db": 9.0,
++          "distraktor": false,
++          "fenster": 8,
++          "instanz": 2,
++          "mixer": 3,
++          "versatz_fenster": 0,
++          "wahre_ursache": true
++        }
++      ],
++      "ursachenklasse": "quelle_resonanz",
++      "wahrheit": "wahre_ursache"
++    },
++    {
++      "erwartet": {
++        "ausschlussgrund": null,
++        "distraktor_ist_alternative": false,
++        "sicherheit_hoechstens": "mittel"
++      },
++      "hinweis": "G5 Fall 6, Gegenprobe: ein Fenster unter dem Randwert. Ohne diese Sitzung waere `< 8` von `<= 8` nicht zu unterscheiden.",
++      "kennung": "g5_fenster_sieben",
++      "master": {
++        "anhebung_db": 9.0,
++        "fenster": 12
++      },
++      "quellen": [
++        {
++          "anhebung_db": 9.0,
++          "distraktor": false,
++          "fenster": 7,
++          "instanz": 2,
++          "mixer": 3,
++          "versatz_fenster": 0,
++          "wahre_ursache": true
++        }
++      ],
++      "ursachenklasse": "quelle_resonanz",
++      "wahrheit": "zu_kurze_passage"
++    },
++    {
++      "erwartet": {
++        "ausschlussgrund": null,
++        "distraktor_ist_alternative": true,
++        "sicherheit_hoechstens": "mittel"
++      },
++      "hinweis": "G5 Fall 2 / M-18: sechs Kandidaten, der wahre Verursacher ist der leiseste. Der harte Deckel (hypothese.rs:1154) schneidet ihn nach der Sortierung ab — traegt er dabei einen Ausschlussgrund (M-87)?",
++      "kennung": "g5_kandidatendeckel",
++      "master": {
++        "anhebung_db": 9.0,
++        "fenster": 12
++      },
++      "quellen": [
++        {
++          "anhebung_db": 8.0,
++          "distraktor": false,
++          "fenster": 12,
++          "instanz": 2,
++          "mixer": 3,
++          "versatz_fenster": 0,
++          "wahre_ursache": true
++        },
++        {
++          "anhebung_db": 9.0,
++          "distraktor": true,
++          "fenster": 12,
++          "instanz": 3,
++          "mixer": 4,
++          "versatz_fenster": 0,
++          "wahre_ursache": false
++        },
++        {
++          "anhebung_db": 9.1,
++          "distraktor": true,
++          "fenster": 12,
++          "instanz": 4,
++          "mixer": 5,
++          "versatz_fenster": 0,
++          "wahre_ursache": false
++        },
++        {
++          "anhebung_db": 9.2,
++          "distraktor": true,
++          "fenster": 12,
++          "instanz": 5,
++          "mixer": 6,
++          "versatz_fenster": 0,
++          "wahre_ursache": false
++        },
++        {
++          "anhebung_db": 9.3,
++          "distraktor": true,
++          "fenster": 12,
++          "instanz": 6,
++          "mixer": 8,
++          "versatz_fenster": 0,
++          "wahre_ursache": false
++        },
++        {
++          "anhebung_db": 9.4,
++          "distraktor": true,
++          "fenster": 12,
++          "instanz": 7,
++          "mixer": 9,
++          "versatz_fenster": 0,
++          "wahre_ursache": false
++        }
++      ],
++      "ursachenklasse": "zwei_quellen_konkurrenz",
++      "wahrheit": "distraktor"
++    },
++    {
++      "erwartet": {
++        "ausschlussgrund": null,
++        "distraktor_ist_alternative": true,
++        "sicherheit_hoechstens": "hoch"
++      },
++      "hinweis": "G5 Fall 7, Gegenprobe ueber RANG_QUANTUM: der Verursacher fuehrt um 0,1 dB. Genau EIN starker Befund darf entstehen (M-21), der zweite faellt auf `mittel`.",
++      "kennung": "g5_gleichstand_verursacher_fuehrt",
++      "master": {
++        "anhebung_db": 9.0,
++        "fenster": 12
++      },
++      "quellen": [
++        {
++          "anhebung_db": 9.1,
++          "distraktor": false,
++          "fenster": 12,
++          "instanz": 2,
++          "mixer": 3,
++          "versatz_fenster": 0,
++          "wahre_ursache": true
++        },
++        {
++          "anhebung_db": 9.0,
++          "distraktor": true,
++          "fenster": 12,
++          "instanz": 3,
++          "mixer": 4,
++          "versatz_fenster": 0,
++          "wahre_ursache": false
++        }
++      ],
++      "ursachenklasse": "zwei_quellen_konkurrenz",
++      "wahrheit": "wahre_ursache"
+     }
+   ]
+ }
+diff --git a/tools/eq-copilot/erzeuge_p5_korpus.py b/tools/eq-copilot/erzeuge_p5_korpus.py
+index ac8cf19..4240df9 100644
+--- a/tools/eq-copilot/erzeuge_p5_korpus.py
++++ b/tools/eq-copilot/erzeuge_p5_korpus.py
+@@ -271,6 +271,177 @@ SITZUNGEN: list[dict] = [
+                  "konservatives unsicher ist besser als eine ueberzeugende "
+                  "falsche Ursache.')."),
+     ),
++    # ═════════════════════════════════════════════════════════════════════
++    # G5-GEGENBEISPIELE (Phasengate G5, adversarialer Lauf 07.09.2026)
++    # ═════════════════════════════════════════════════════════════════════
++    #
++    # Sie stehen NICHT als Produktzusage hier, sondern als Angriff: jede
++    # Sitzung ist so gebaut, dass der jeweils zu pruefende Riegel — Distraktor,
++    # Parent-Duplikat, Passage, Deckel, Randwert — wirklich unter Last steht
++    # und nicht ein trivialer Vorriegel (zu wenig Fenster, Routing unbekannt)
++    # vorher greift.
++    sitzung(
++        "g5_distraktor_mehr_fenster",
++        wahrheit="distraktor",
++        ursachenklasse="zwei_quellen_konkurrenz",
++        quellen=[
++            quelle(2, anhebung_db=9.0, fenster=12, wahre_ursache=True),
++            quelle(3, anhebung_db=9.0, fenster=16, mixer=4, distraktor=True),
++        ],
++        erwartete_sicherheit="mittel",
++        distraktor_ist_alternative=True,
++        hinweis=("G5 Fall 1: derselbe Spektralverlauf, aber der Distraktor "
++                 "traegt MEHR Fenster als der Verursacher. Der Riegel darf "
++                 "sich nicht durch Materialmenge trennen lassen."),
++    ),
++    sitzung(
++        "g5_distraktor_lauter",
++        wahrheit="distraktor",
++        ursachenklasse="zwei_quellen_konkurrenz",
++        quellen=[
++            quelle(2, anhebung_db=9.0, fenster=12, wahre_ursache=True),
++            quelle(3, anhebung_db=9.1, fenster=12, mixer=4, distraktor=True),
++        ],
++        erwartete_sicherheit="mittel",
++        distraktor_ist_alternative=True,
++        hinweis=("G5 Fall 7: die KLEINSTE im Gitter darstellbare Trennung "
++                 "(0,1 dB) liegt weit ueber RANG_QUANTUM. Fuehrt der "
++                 "Distraktor, traegt er die starke Aussage."),
++    ),
++    sitzung(
++        "g5_distraktor_allein_im_rennen",
++        wahrheit="distraktor",
++        ursachenklasse="quelle_resonanz",
++        quellen=[
++            quelle(2, anhebung_db=9.0, fenster=12, versatz_fenster=6,
++                   wahre_ursache=True),
++            quelle(3, anhebung_db=9.0, fenster=12, mixer=4, distraktor=True),
++        ],
++        erwartete_sicherheit="mittel",
++        erwarteter_ausschluss="alignment_falsch",
++        hinweis=("G5 Fall 2: der wahre Verursacher faellt am Alignment, der "
++                 "Distraktor bleibt ALLEIN im Rennen und ist damit trivial "
++                 "`getrennt`. Ein Ausschluss mit Grund heisst: die Datenlage "
++                 "ist nachweislich unvollstaendig."),
++    ),
++    sitzung(
++        "g5_unbeteiligte_quelle",
++        wahrheit="keine_ursache",
++        ursachenklasse="daten_reichen_nicht",
++        quellen=[quelle(2, anhebung_db=0.0, fenster=12)],
++        erwartete_sicherheit="unklar",
++        hinweis=("G5 eigene Angriffsidee 1: die Quelle traegt im Befundband "
++                 "GAR KEINE Anhebung. Bedingter Uplift, Koinzidenz und "
++                 "Wiederholbarkeit sind 0 — es gibt keinen Beleg fuer einen "
++                 "Zusammenhang. Die Klassenwahl (hypothese.rs:1387-1396) liest "
++                 "aber nur Fensterzahl, Routing und Duplikat."),
++    ),
++    sitzung(
++        "g5_sonde_auf_masterkanal",
++        wahrheit="parent_duplikat",
++        ursachenklasse="quelle_resonanz",
++        quellen=[quelle(2, anhebung_db=9.0, fenster=12, mixer=0)],
++        erwartete_sicherheit="mittel",
++        hinweis=("G5 eigene Angriffsidee 2: die Sonde misst DENSELBEN "
++                 "Mixerkanal wie der Master (Kanal 0). Sie ist damit das "
++                 "schaerfste Parent-Duplikat, das es gibt. `ist_parent` und "
++                 "`ids` in hypothese.rs:1108-1141 sehen aber nur die "
++                 "KANDIDATEN — der Master steht in keiner der beiden Mengen."),
++    ),
++    sitzung(
++        "g5_parent_partner_faellt_aus",
++        wahrheit="parent_duplikat",
++        ursachenklasse="quelle_resonanz",
++        quellen=[
++            quelle(2, anhebung_db=9.0, fenster=12, mixer=7, wahre_ursache=True),
++            quelle(3, anhebung_db=9.0, fenster=12, mixer=7, versatz_fenster=6),
++        ],
++        erwartete_sicherheit="mittel",
++        erwarteter_ausschluss="alignment_falsch",
++        hinweis=("G5 Fall 3: der Partner desselben Mixerkanals faellt am "
++                 "Alignment aus dem Rennen. Bleibt das Kind trotzdem ein "
++                 "Duplikat?"),
++    ),
++    sitzung(
++        "g5_parent_partner_zu_wenig_fenster",
++        wahrheit="parent_duplikat",
++        ursachenklasse="zwei_quellen_konkurrenz",
++        quellen=[
++            quelle(2, anhebung_db=9.0, fenster=12, mixer=7, wahre_ursache=True),
++            quelle(3, anhebung_db=9.0, fenster=2, mixer=7),
++        ],
++        erwartete_sicherheit="mittel",
++        hinweis=("G5 Fall 3: der Partner traegt zwei Fenster — zu wenig fuer "
++                 "eine starke Aussage, aber genug, um im Rennen zu bleiben."),
++    ),
++    sitzung(
++        "g5_parent_partner_ohne_evidenz",
++        wahrheit="parent_duplikat",
++        ursachenklasse="quelle_resonanz",
++        quellen=[
++            quelle(2, anhebung_db=9.0, fenster=12, mixer=7, wahre_ursache=True),
++            quelle(3, anhebung_db=9.0, fenster=0, mixer=7),
++        ],
++        erwartete_sicherheit="mittel",
++        hinweis=("G5 Fall 3: der Partner ist angemeldet und traegt denselben "
++                 "Mixerkanal, hat aber noch keinen Beleg gesendet. Die "
++                 "Kanaltafel `je_kanal` entsteht in "
++                 "hypothese_verdrahtung.rs:164 aus den EVIDENZ-Schluesseln — "
++                 "eine stumme Sonde steht nicht darin."),
++    ),
++    sitzung(
++        "g5_fenster_genau_acht",
++        wahrheit="wahre_ursache",
++        ursachenklasse="quelle_resonanz",
++        quellen=[quelle(2, anhebung_db=9.0, fenster=8, wahre_ursache=True)],
++        erwartete_sicherheit="hoch",
++        hinweis=("G5 Fall 6: der Randwert. GATE_MINDEST_FENSTER = 8, die "
++                 "Klassenwahl prueft `fenster < 8` — acht Fenster sind also "
++                 "genug. M-23 sagt `mindestens acht`; das ist die Zusage."),
++    ),
++    sitzung(
++        "g5_fenster_sieben",
++        wahrheit="zu_kurze_passage",
++        ursachenklasse="quelle_resonanz",
++        quellen=[quelle(2, anhebung_db=9.0, fenster=7, wahre_ursache=True)],
++        erwartete_sicherheit="mittel",
++        hinweis=("G5 Fall 6, Gegenprobe: ein Fenster unter dem Randwert. "
++                 "Ohne diese Sitzung waere `< 8` von `<= 8` nicht zu "
++                 "unterscheiden."),
++    ),
++    sitzung(
++        "g5_kandidatendeckel",
++        wahrheit="distraktor",
++        ursachenklasse="zwei_quellen_konkurrenz",
++        quellen=[
++            quelle(2, anhebung_db=8.0, fenster=12, wahre_ursache=True),
++            quelle(3, anhebung_db=9.0, fenster=12, mixer=4, distraktor=True),
++            quelle(4, anhebung_db=9.1, fenster=12, mixer=5, distraktor=True),
++            quelle(5, anhebung_db=9.2, fenster=12, mixer=6, distraktor=True),
++            quelle(6, anhebung_db=9.3, fenster=12, mixer=8, distraktor=True),
++            quelle(7, anhebung_db=9.4, fenster=12, mixer=9, distraktor=True),
++        ],
++        erwartete_sicherheit="mittel",
++        distraktor_ist_alternative=True,
++        hinweis=("G5 Fall 2 / M-18: sechs Kandidaten, der wahre Verursacher "
++                 "ist der leiseste. Der harte Deckel (hypothese.rs:1154) "
++                 "schneidet ihn nach der Sortierung ab — traegt er dabei "
++                 "einen Ausschlussgrund (M-87)?"),
++    ),
++    sitzung(
++        "g5_gleichstand_verursacher_fuehrt",
++        wahrheit="wahre_ursache",
++        ursachenklasse="zwei_quellen_konkurrenz",
++        quellen=[
++            quelle(2, anhebung_db=9.1, fenster=12, wahre_ursache=True),
++            quelle(3, anhebung_db=9.0, fenster=12, mixer=4, distraktor=True),
++        ],
++        erwartete_sicherheit="hoch",
++        distraktor_ist_alternative=True,
++        hinweis=("G5 Fall 7, Gegenprobe ueber RANG_QUANTUM: der Verursacher "
++                 "fuehrt um 0,1 dB. Genau EIN starker Befund darf entstehen "
++                 "(M-21), der zweite faellt auf `mittel`."),
++    ),
+ ]
+ 
+ 

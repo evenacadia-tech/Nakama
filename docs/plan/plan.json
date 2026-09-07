@@ -279,7 +279,7 @@
      "leitungsname": "Zu starke Ursachenbehauptungen gezielt provozieren und abweisen",
      "ticket": "Gate",
      "text": "Codex + Gegenbeispiele: der Prüfer soll eine falsche starke Ursachenbehauptung provozieren.",
-     "beleg": "",
+     "beleg": "docs/beweise/G5.md",
      "stufe": "T3"
     }
    ]

@@ -1,0 +1,436 @@
+{
+  "ergebnisse": [
+    {
+      "befunde": [
+        {
+          "alternatives": [],
+          "ausschluesse": [],
+          "candidate_source": "00000000000000000000000000000002",
+          "claim_class": "zusammenhang",
+          "confidence_class": "hoch",
+          "confidence_score": 0.266635,
+          "finding_id": "131d403dbf1a21e06c851c690d43b430",
+          "ursachenklasse": "quelle_resonanz",
+          "zustand": "ready_to_send"
+        }
+      ],
+      "kennung": "wahrer_kandidat"
+    },
+    {
+      "befunde": [
+        {
+          "alternatives": [
+            "4cba9163dbe0e7a6f7d4bfcf9869ef4d"
+          ],
+          "ausschluesse": [],
+          "candidate_source": "00000000000000000000000000000002",
+          "claim_class": "zusammenhang",
+          "confidence_class": "mittel",
+          "confidence_score": 0.266635,
+          "finding_id": "131d403dbf1a21e06c851c690d43b430",
+          "ursachenklasse": "zwei_quellen_konkurrenz",
+          "zustand": "more_data"
+        },
+        {
+          "alternatives": [],
+          "ausschluesse": [],
+          "candidate_source": "00000000000000000000000000000003",
+          "claim_class": "zusammenhang",
+          "confidence_class": "mittel",
+          "confidence_score": 0.266635,
+          "finding_id": "4cba9163dbe0e7a6f7d4bfcf9869ef4d",
+          "ursachenklasse": "zwei_quellen_konkurrenz",
+          "zustand": "more_data"
+        }
+      ],
+      "kennung": "korrelierter_distraktor"
+    },
+    {
+      "befunde": [
+        {
+          "alternatives": [
+            "4cba9163dbe0e7a6f7d4bfcf9869ef4d"
+          ],
+          "ausschluesse": [],
+          "candidate_source": "00000000000000000000000000000002",
+          "claim_class": "zusammenhang",
+          "confidence_class": "mittel",
+          "confidence_score": 0.183302,
+          "finding_id": "131d403dbf1a21e06c851c690d43b430",
+          "ursachenklasse": "zwei_quellen_konkurrenz",
+          "zustand": "more_data"
+        },
+        {
+          "alternatives": [],
+          "ausschluesse": [],
+          "candidate_source": "00000000000000000000000000000003",
+          "claim_class": "zusammenhang",
+          "confidence_class": "mittel",
+          "confidence_score": 0.183302,
+          "finding_id": "4cba9163dbe0e7a6f7d4bfcf9869ef4d",
+          "ursachenklasse": "zwei_quellen_konkurrenz",
+          "zustand": "more_data"
+        }
+      ],
+      "kennung": "parent_duplikat"
+    },
+    {
+      "befunde": [
+        {
+          "alternatives": [],
+          "ausschluesse": [
+            {
+              "candidate_source": "00000000000000000000000000000002",
+              "grund": "alignment_falsch"
+            }
+          ],
+          "candidate_source": "00000000000000000000000000000001",
+          "claim_class": "zusammenhang",
+          "confidence_class": "unklar",
+          "confidence_score": 0.0,
+          "finding_id": "9a532b85e00ba1fea5943b69b91e5dee",
+          "ursachenklasse": "daten_reichen_nicht",
+          "zustand": "more_data"
+        }
+      ],
+      "kennung": "verschobene_passage"
+    },
+    {
+      "befunde": [
+        {
+          "alternatives": [],
+          "ausschluesse": [],
+          "candidate_source": "00000000000000000000000000000002",
+          "claim_class": "zusammenhang",
+          "confidence_class": "mittel",
+          "confidence_score": 0.266635,
+          "finding_id": "131d403dbf1a21e06c851c690d43b430",
+          "ursachenklasse": "quelle_resonanz",
+          "zustand": "more_data"
+        }
+      ],
+      "kennung": "zu_kurze_passage"
+    },
+    {
+      "befunde": [
+        {
+          "alternatives": [],
+          "ausschluesse": [],
+          "candidate_source": "00000000000000000000000000000001",
+          "claim_class": "zusammenhang",
+          "confidence_class": "unklar",
+          "confidence_score": 0.0,
+          "finding_id": "9a532b85e00ba1fea5943b69b91e5dee",
+          "ursachenklasse": "daten_reichen_nicht",
+          "zustand": "more_data"
+        }
+      ],
+      "kennung": "daten_reichen_nicht"
+    },
+    {
+      "befunde": [
+        {
+          "alternatives": [
+            "4cba9163dbe0e7a6f7d4bfcf9869ef4d"
+          ],
+          "ausschluesse": [],
+          "candidate_source": "00000000000000000000000000000002",
+          "claim_class": "zusammenhang",
+          "confidence_class": "mittel",
+          "confidence_score": 0.266635,
+          "finding_id": "131d403dbf1a21e06c851c690d43b430",
+          "ursachenklasse": "zwei_quellen_konkurrenz",
+          "zustand": "more_data"
+        },
+        {
+          "alternatives": [],
+          "ausschluesse": [],
+          "candidate_source": "00000000000000000000000000000003",
+          "claim_class": "zusammenhang",
+          "confidence_class": "mittel",
+          "confidence_score": 0.266635,
+          "finding_id": "4cba9163dbe0e7a6f7d4bfcf9869ef4d",
+          "ursachenklasse": "zwei_quellen_konkurrenz",
+          "zustand": "more_data"
+        }
+      ],
+      "kennung": "g5_distraktor_mehr_fenster"
+    },
+    {
+      "befunde": [
+        {
+          "alternatives": [
+            "131d403dbf1a21e06c851c690d43b430"
+          ],
+          "ausschluesse": [],
+          "candidate_source": "00000000000000000000000000000003",
+          "claim_class": "zusammenhang",
+          "confidence_class": "hoch",
+          "confidence_score": 0.266956,
+          "finding_id": "4cba9163dbe0e7a6f7d4bfcf9869ef4d",
+          "ursachenklasse": "zwei_quellen_konkurrenz",
+          "zustand": "ready_to_send"
+        },
+        {
+          "alternatives": [],
+          "ausschluesse": [],
+          "candidate_source": "00000000000000000000000000000002",
+          "claim_class": "zusammenhang",
+          "confidence_class": "mittel",
+          "confidence_score": 0.266635,
+          "finding_id": "131d403dbf1a21e06c851c690d43b430",
+          "ursachenklasse": "zwei_quellen_konkurrenz",
+          "zustand": "more_data"
+        }
+      ],
+      "kennung": "g5_distraktor_lauter"
+    },
+    {
+      "befunde": [
+        {
+          "alternatives": [],
+          "ausschluesse": [
+            {
+              "candidate_source": "00000000000000000000000000000002",
+              "grund": "alignment_falsch"
+            }
+          ],
+          "candidate_source": "00000000000000000000000000000003",
+          "claim_class": "zusammenhang",
+          "confidence_class": "hoch",
+          "confidence_score": 0.266635,
+          "finding_id": "4cba9163dbe0e7a6f7d4bfcf9869ef4d",
+          "ursachenklasse": "quelle_resonanz",
+          "zustand": "ready_to_send"
+        }
+      ],
+      "kennung": "g5_distraktor_allein_im_rennen"
+    },
+    {
+      "befunde": [
+        {
+          "alternatives": [],
+          "ausschluesse": [],
+          "candidate_source": "00000000000000000000000000000002",
+          "claim_class": "zusammenhang",
+          "confidence_class": "hoch",
+          "confidence_score": 0.253017,
+          "finding_id": "131d403dbf1a21e06c851c690d43b430",
+          "ursachenklasse": "quelle_resonanz",
+          "zustand": "ready_to_send"
+        }
+      ],
+      "kennung": "g5_unbeteiligte_quelle"
+    },
+    {
+      "befunde": [
+        {
+          "alternatives": [],
+          "ausschluesse": [],
+          "candidate_source": "00000000000000000000000000000002",
+          "claim_class": "zusammenhang",
+          "confidence_class": "hoch",
+          "confidence_score": 0.266635,
+          "finding_id": "131d403dbf1a21e06c851c690d43b430",
+          "ursachenklasse": "quelle_resonanz",
+          "zustand": "ready_to_send"
+        }
+      ],
+      "kennung": "g5_sonde_auf_masterkanal"
+    },
+    {
+      "befunde": [
+        {
+          "alternatives": [],
+          "ausschluesse": [
+            {
+              "candidate_source": "00000000000000000000000000000003",
+              "grund": "alignment_falsch"
+            }
+          ],
+          "candidate_source": "00000000000000000000000000000002",
+          "claim_class": "zusammenhang",
+          "confidence_class": "mittel",
+          "confidence_score": 0.183302,
+          "finding_id": "131d403dbf1a21e06c851c690d43b430",
+          "ursachenklasse": "quelle_resonanz",
+          "zustand": "more_data"
+        }
+      ],
+      "kennung": "g5_parent_partner_faellt_aus"
+    },
+    {
+      "befunde": [
+        {
+          "alternatives": [
+            "4cba9163dbe0e7a6f7d4bfcf9869ef4d"
+          ],
+          "ausschluesse": [],
+          "candidate_source": "00000000000000000000000000000002",
+          "claim_class": "zusammenhang",
+          "confidence_class": "mittel",
+          "confidence_score": 0.183302,
+          "finding_id": "131d403dbf1a21e06c851c690d43b430",
+          "ursachenklasse": "zwei_quellen_konkurrenz",
+          "zustand": "more_data"
+        },
+        {
+          "alternatives": [],
+          "ausschluesse": [],
+          "candidate_source": "00000000000000000000000000000003",
+          "claim_class": "zusammenhang",
+          "confidence_class": "mittel",
+          "confidence_score": 0.183302,
+          "finding_id": "4cba9163dbe0e7a6f7d4bfcf9869ef4d",
+          "ursachenklasse": "zwei_quellen_konkurrenz",
+          "zustand": "more_data"
+        }
+      ],
+      "kennung": "g5_parent_partner_zu_wenig_fenster"
+    },
+    {
+      "befunde": [
+        {
+          "alternatives": [],
+          "ausschluesse": [],
+          "candidate_source": "00000000000000000000000000000002",
+          "claim_class": "zusammenhang",
+          "confidence_class": "hoch",
+          "confidence_score": 0.266635,
+          "finding_id": "131d403dbf1a21e06c851c690d43b430",
+          "ursachenklasse": "quelle_resonanz",
+          "zustand": "ready_to_send"
+        }
+      ],
+      "kennung": "g5_parent_partner_ohne_evidenz"
+    },
+    {
+      "befunde": [
+        {
+          "alternatives": [],
+          "ausschluesse": [],
+          "candidate_source": "00000000000000000000000000000002",
+          "claim_class": "zusammenhang",
+          "confidence_class": "hoch",
+          "confidence_score": 0.266635,
+          "finding_id": "131d403dbf1a21e06c851c690d43b430",
+          "ursachenklasse": "quelle_resonanz",
+          "zustand": "ready_to_send"
+        }
+      ],
+      "kennung": "g5_fenster_genau_acht"
+    },
+    {
+      "befunde": [
+        {
+          "alternatives": [],
+          "ausschluesse": [],
+          "candidate_source": "00000000000000000000000000000002",
+          "claim_class": "zusammenhang",
+          "confidence_class": "mittel",
+          "confidence_score": 0.266635,
+          "finding_id": "131d403dbf1a21e06c851c690d43b430",
+          "ursachenklasse": "quelle_resonanz",
+          "zustand": "more_data"
+        }
+      ],
+      "kennung": "g5_fenster_sieben"
+    },
+    {
+      "befunde": [
+        {
+          "alternatives": [
+            "feea2527f27e2b053993c1ab0edff604",
+            "14f0b81ec18b8b1de4b3a7c708782dd4",
+            "c35e44d3010f32b55fc536e08717a045",
+            "4cba9163dbe0e7a6f7d4bfcf9869ef4d"
+          ],
+          "ausschluesse": [],
+          "candidate_source": "00000000000000000000000000000007",
+          "claim_class": "zusammenhang",
+          "confidence_class": "hoch",
+          "confidence_score": 0.267954,
+          "finding_id": "efced98b15422e7a4a42ea30a75beb0c",
+          "ursachenklasse": "zwei_quellen_konkurrenz",
+          "zustand": "ready_to_send"
+        },
+        {
+          "alternatives": [],
+          "ausschluesse": [],
+          "candidate_source": "00000000000000000000000000000006",
+          "claim_class": "zusammenhang",
+          "confidence_class": "mittel",
+          "confidence_score": 0.267616,
+          "finding_id": "feea2527f27e2b053993c1ab0edff604",
+          "ursachenklasse": "zwei_quellen_konkurrenz",
+          "zustand": "more_data"
+        },
+        {
+          "alternatives": [],
+          "ausschluesse": [],
+          "candidate_source": "00000000000000000000000000000005",
+          "claim_class": "zusammenhang",
+          "confidence_class": "mittel",
+          "confidence_score": 0.267283,
+          "finding_id": "14f0b81ec18b8b1de4b3a7c708782dd4",
+          "ursachenklasse": "zwei_quellen_konkurrenz",
+          "zustand": "more_data"
+        },
+        {
+          "alternatives": [],
+          "ausschluesse": [],
+          "candidate_source": "00000000000000000000000000000004",
+          "claim_class": "zusammenhang",
+          "confidence_class": "mittel",
+          "confidence_score": 0.266956,
+          "finding_id": "c35e44d3010f32b55fc536e08717a045",
+          "ursachenklasse": "zwei_quellen_konkurrenz",
+          "zustand": "more_data"
+        },
+        {
+          "alternatives": [],
+          "ausschluesse": [],
+          "candidate_source": "00000000000000000000000000000003",
+          "claim_class": "zusammenhang",
+          "confidence_class": "mittel",
+          "confidence_score": 0.266635,
+          "finding_id": "4cba9163dbe0e7a6f7d4bfcf9869ef4d",
+          "ursachenklasse": "zwei_quellen_konkurrenz",
+          "zustand": "more_data"
+        }
+      ],
+      "kennung": "g5_kandidatendeckel"
+    },
+    {
+      "befunde": [
+        {
+          "alternatives": [
+            "4cba9163dbe0e7a6f7d4bfcf9869ef4d"
+          ],
+          "ausschluesse": [],
+          "candidate_source": "00000000000000000000000000000002",
+          "claim_class": "zusammenhang",
+          "confidence_class": "hoch",
+          "confidence_score": 0.266956,
+          "finding_id": "131d403dbf1a21e06c851c690d43b430",
+          "ursachenklasse": "zwei_quellen_konkurrenz",
+          "zustand": "ready_to_send"
+        },
+        {
+          "alternatives": [],
+          "ausschluesse": [],
+          "candidate_source": "00000000000000000000000000000003",
+          "claim_class": "zusammenhang",
+          "confidence_class": "mittel",
+          "confidence_score": 0.266635,
+          "finding_id": "4cba9163dbe0e7a6f7d4bfcf9869ef4d",
+          "ursachenklasse": "zwei_quellen_konkurrenz",
+          "zustand": "more_data"
+        }
+      ],
+      "kennung": "g5_gleichstand_verursacher_fuehrt"
+    }
+  ],
+  "erzeugt_von": "broker/tests/sonde014_p5_korpus.rs",
+  "korpus_manifest_sha256": "5db9f6b8f0ef43e2dc7c64c6b07b9a47007b6cf7ef3c41fb4d82c36f1cc0b8cb"
+}

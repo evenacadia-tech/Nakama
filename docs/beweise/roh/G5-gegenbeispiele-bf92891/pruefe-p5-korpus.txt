@@ -1,0 +1,23 @@
+P5-Korpus: 18 Sitzungen, 28 ausgegebene Befunde
+  daten_reichen_nicht: n=2 precision=0.000 recall=1.000 (soll_starke=0) brier=0.810 kalibrierung=0.900 coverage=0.500 enthaltung=0.500 falsche_starke=1
+  quelle_resonanz: n=9 precision=0.400 recall=1.000 (soll_starke=2) brier=0.366 kalibrierung=0.162 coverage=0.889 enthaltung=0.111 falsche_starke=3
+  zwei_quellen_konkurrenz: n=17 precision=0.333 recall=1.000 (soll_starke=1) brier=0.228 kalibrierung=0.229 coverage=1.000 enthaltung=0.000 falsche_starke=2
+  GESAMT: n=28 precision=0.333 recall=1.000 brier=0.293 kalibrierung=0.065 coverage=0.929 enthaltung=0.071 rangmittel=0.250
+  ZUVERLAESSIGKEIT hoch: n=9 nennwert=0.90 gemessene Trefferquote=0.333
+  ZUVERLAESSIGKEIT mittel: n=17 nennwert=0.60 gemessene Trefferquote=1.000
+  Schwelle hoch: handelbar=9 davon_falsch=6 haelt=False (g5_distraktor_lauter, g5_distraktor_allein_im_rennen, g5_unbeteiligte_quelle, g5_sonde_auf_masterkanal, g5_parent_partner_ohne_evidenz, g5_kandidatendeckel)
+  Schwelle mittel: handelbar=26 davon_falsch=15 haelt=False (korrelierter_distraktor, parent_duplikat, g5_distraktor_mehr_fenster, g5_distraktor_lauter, g5_distraktor_allein_im_rennen, g5_unbeteiligte_quelle, g5_sonde_auf_masterkanal, g5_parent_partner_zu_wenig_fenster, g5_parent_partner_ohne_evidenz, g5_kandidatendeckel, g5_kandidatendeckel, g5_kandidatendeckel, g5_kandidatendeckel, g5_kandidatendeckel, g5_gleichstand_verursacher_fuehrt)
+  Schwelle unklar: handelbar=28 davon_falsch=15 haelt=False (korrelierter_distraktor, parent_duplikat, g5_distraktor_mehr_fenster, g5_distraktor_lauter, g5_distraktor_allein_im_rennen, g5_unbeteiligte_quelle, g5_sonde_auf_masterkanal, g5_parent_partner_zu_wenig_fenster, g5_parent_partner_ohne_evidenz, g5_kandidatendeckel, g5_kandidatendeckel, g5_kandidatendeckel, g5_kandidatendeckel, g5_kandidatendeckel, g5_gleichstand_verursacher_fuehrt)
+  SCHWELLE (Ausgabe, M-31): niedrigste haltende Stufe = None
+  PRODUKTSCHWELLE (M-31): 9 von 28 Befunden handelbar, Sicherheiten ['hoch']
+  P4-LUECKE NAK-190 (M-70): gedruckt, inzwischen gemessen durch korrelierter_distraktor, g5_distraktor_mehr_fenster, g5_kandidatendeckel, g5_gleichstand_verursacher_fuehrt — sie darf jetzt entfernt werden
+  GATE_MINDEST_FENSTER: 3 Faelle aus den zwei Passagensitzungen, 0 davon stark
+  GATE_MINDEST_FENSTER: der Startwert 8 haelt — kein Versionsschritt noetig (E-12 Fall 3)
+  ROT: g5_distraktor_lauter: die Alternative '131d403dbf1a21e06c851c690d43b430' gehoert der Quelle '00000000000000000000000000000002', nicht der deklarierten Distraktorquelle (NR-14, NAK-190)
+  ROT: g5_distraktor_lauter: keine Alternative loest auf die deklarierte Distraktorquelle auf — der NAK-190-Nachweis misst nichts (NR-14)
+  ROT: g5_unbeteiligte_quelle: Ursachenklasse 'quelle_resonanz' weicht von der Korpuswahrheit 'daten_reichen_nicht' ab (NR-13, M-64)
+  ROT: daten_reichen_nicht: 1 falsche starke Behauptung(en): g5_unbeteiligte_quelle
+  ROT: quelle_resonanz: 3 falsche starke Behauptung(en): g5_distraktor_allein_im_rennen, g5_sonde_auf_masterkanal, g5_parent_partner_ohne_evidenz
+  ROT: zwei_quellen_konkurrenz: 2 falsche starke Behauptung(en): g5_distraktor_lauter, g5_kandidatendeckel
+  ROT: gesamt: 6 falsche starke Behauptung(en): g5_distraktor_lauter, g5_distraktor_allein_im_rennen, g5_unbeteiligte_quelle, g5_sonde_auf_masterkanal, g5_parent_partner_ohne_evidenz, g5_kandidatendeckel
+  ROT: keine Sicherheitsstufe haelt die Riegel — die Schwelle aus M-31 ist nicht bestimmbar

@@ -1,0 +1,160 @@
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\nk-g5\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.04s
+     Running tests\g5_gegenbeispiele.rs (broker\target\debug\deps\g5_gegenbeispiele-87a87c80a853356c.exe)
+
+running 11 tests
+test eigen3_antikorrelierte_quelle ... ── EIGEN-3 antikorrelierte Quelle (laut, wenn der Master leise ist) ──
+   quelle=..02 klasse=Hoch zustand=ReadyToSend ursache=QuelleResonanz claim=Zusammenhang score=0.435800
+     rang: bandpassung=0.119789 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.995012 routing=1.000000
+     passage=None evidence_ids=12 alternatives=[] ausschluesse=[]
+     likely_cause="00000000 draengt im Bandbereich 97..101 gegen den Master."
+   => starke Befunde: 1
+ok
+test eigen4_quelle_im_falschen_band ... ── EIGEN-4 Sonde hebt Band 30..34, Masterbefund liegt bei 98..102 ──
+   quelle=..02 klasse=Hoch zustand=ReadyToSend ursache=QuelleResonanz claim=Zusammenhang score=0.252680
+     rang: bandpassung=0.016079 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=1.000000
+     passage=None evidence_ids=12 alternatives=[] ausschluesse=[]
+     likely_cause="00000000 draengt im Bandbereich 97..101 gegen den Master."
+   => starke Befunde: 1
+ok
+test eigen5_antikorreliert_neben_korreliert ... ── EIGEN-5 korrelierte und antikorrelierte Quelle nebeneinander ──
+   quelle=..02 klasse=Hoch zustand=ReadyToSend ursache=ZweiQuellenKonkurrenz claim=Zusammenhang score=0.602467
+     rang: bandpassung=0.119789 koinzidenz=0.000000 uplift=1.000000 intent=0.500000 wiederholbarkeit=0.995012 routing=1.000000
+     passage=None evidence_ids=12 alternatives=["69ef4d"] ausschluesse=[]
+     likely_cause="00000000 draengt im Bandbereich 97..101 gegen den Master."
+   quelle=..03 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz claim=Zusammenhang score=0.435800
+     rang: bandpassung=0.119789 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.995012 routing=1.000000
+     passage=None evidence_ids=12 alternatives=[] ausschluesse=[]
+     likely_cause="00000000 draengt im Bandbereich 97..101 gegen den Master."
+   => starke Befunde: 1
+ok
+test f4_kanalwechsel_zwischen_den_fenstern ... ── F4 beide Sonden auf Mixerkanal 7 ──
+   quelle=..02 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz claim=Zusammenhang score=0.183623
+     rang: bandpassung=0.101738 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     passage=None evidence_ids=12 alternatives=["69ef4d"] ausschluesse=[]
+     likely_cause="00000000 draengt im Bandbereich 97..101 gegen den Master."
+   quelle=..03 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz claim=Zusammenhang score=0.183302
+     rang: bandpassung=0.099809 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     passage=None evidence_ids=12 alternatives=[] ausschluesse=[]
+     likely_cause="00000000 draengt im Bandbereich 97..101 gegen den Master."
+   => starke Befunde: 0
+── F4 nach dem Kanalwechsel von C (7 -> 9), Messwerte unveraendert ──
+   quelle=..02 klasse=Hoch zustand=ReadyToSend ursache=ZweiQuellenKonkurrenz claim=Zusammenhang score=0.266956
+     rang: bandpassung=0.101738 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=1.000000
+     passage=None evidence_ids=13 alternatives=["69ef4d"] ausschluesse=[]
+     likely_cause="00000000 draengt im Bandbereich 97..101 gegen den Master."
+   quelle=..03 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz claim=Zusammenhang score=0.266635
+     rang: bandpassung=0.099809 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=1.000000
+     passage=None evidence_ids=13 alternatives=[] ausschluesse=[]
+     likely_cause="00000000 draengt im Bandbereich 97..101 gegen den Master."
+   => starke Befunde: 1
+ok
+test f4b_drei_sonden_auf_einem_kanal ... ── F4b drei Sonden auf Mixerkanal 7 ──
+   quelle=..02 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz claim=Zusammenhang score=0.183950
+     rang: bandpassung=0.103699 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     passage=None evidence_ids=12 alternatives=["69ef4d", "17a045"] ausschluesse=[]
+     likely_cause="00000000 draengt im Bandbereich 97..101 gegen den Master."
+   quelle=..03 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz claim=Zusammenhang score=0.183623
+     rang: bandpassung=0.101738 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     passage=None evidence_ids=12 alternatives=[] ausschluesse=[]
+     likely_cause="00000000 draengt im Bandbereich 97..101 gegen den Master."
+   quelle=..04 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz claim=Zusammenhang score=0.183302
+     rang: bandpassung=0.099809 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     passage=None evidence_ids=12 alternatives=[] ausschluesse=[]
+     likely_cause="00000000 draengt im Bandbereich 97..101 gegen den Master."
+   => starke Befunde: 0
+ok
+test f5_passagenrandwerte ... Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-g5-f5-12-468-cdfe9e0e48534335897c3ef673c145e5\nakama-broker.sqlite3
+── F5 Passage [0,12) — Passage deckt alle zwoelf Fenster ──
+   quelle=..02 klasse=Hoch zustand=ReadyToSend ursache=QuelleResonanz claim=Zusammenhang score=0.266635
+     rang: bandpassung=0.099809 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=1.000000
+     passage=Some("0000000000000000000000000000500c") evidence_ids=12 alternatives=[] ausschluesse=[]
+     likely_cause="00000000 draengt im Bandbereich 97..101 gegen den Master."
+   => starke Befunde: 1
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-g5-f5-11-468-8b081c1796e14ef88a81e4175f49e959\nakama-broker.sqlite3
+── F5 Passage [0,11) — GENAU EIN Fenster liegt ausserhalb ──
+   quelle=..02 klasse=Hoch zustand=ReadyToSend ursache=QuelleResonanz claim=Zusammenhang score=0.266635
+     rang: bandpassung=0.099809 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=1.000000
+     passage=Some("0000000000000000000000000000500b") evidence_ids=12 alternatives=[] ausschluesse=[]
+     likely_cause="00000000 draengt im Bandbereich 97..101 gegen den Master."
+   => starke Befunde: 1
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-g5-f5-8-468-77dade5290114aa6b93bc8dd0e2e091c\nakama-broker.sqlite3
+── F5 Passage [0,8) — Randwert: genau GATE_MINDEST_FENSTER Fenster in der Passage ──
+   quelle=..02 klasse=Hoch zustand=ReadyToSend ursache=QuelleResonanz claim=Zusammenhang score=0.266635
+     rang: bandpassung=0.099809 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=1.000000
+     passage=Some("00000000000000000000000000005008") evidence_ids=12 alternatives=[] ausschluesse=[]
+     likely_cause="00000000 draengt im Bandbereich 97..101 gegen den Master."
+   => starke Befunde: 1
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-g5-f5-7-468-7dad22dfc5e94d1da34c5bfb5e947598\nakama-broker.sqlite3
+── F5 Passage [0,7) — ein Fenster UNTER dem Randwert ──
+   quelle=..01 klasse=Unklar zustand=MoreData ursache=DatenReichenNicht claim=Zusammenhang score=0.000000
+     rang: bandpassung=0.000000 koinzidenz=0.000000 uplift=0.000000 intent=0.000000 wiederholbarkeit=0.000000 routing=0.000000
+     passage=Some("00000000000000000000000000005007") evidence_ids=12 alternatives=[] ausschluesse=[("02", "passage_zu_kurz")]
+     likely_cause="Die Datenlage traegt noch keine Ursachenaussage."
+   => starke Befunde: 0
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-g5-f5-daneben-468-3714204cae1d45a381056e1219576987\nakama-broker.sqlite3
+── F5 Passage [12,24) — Belege enden exakt am Passagenanfang ──
+   quelle=..01 klasse=Unklar zustand=MoreData ursache=DatenReichenNicht claim=Zusammenhang score=0.000000
+     rang: bandpassung=0.000000 koinzidenz=0.000000 uplift=0.000000 intent=0.000000 wiederholbarkeit=0.000000 routing=0.000000
+     passage=Some("00000000000000000000000000005028") evidence_ids=12 alternatives=[] ausschluesse=[("02", "passage_unvergleichbar")]
+     likely_cause="Die Datenlage traegt noch keine Ursachenaussage."
+   => starke Befunde: 0
+ok
+test f5b_gleiche_passage_id_verschobenes_fenster ... Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-g5-f5b-468-155b7b37992b4dadb64b6b3d7a3c55ca\nakama-broker.sqlite3
+── F5b gleiche passage_id, Fenster verschoben von [0,12) auf [12,24) ──
+   quelle=..01 klasse=Unklar zustand=MoreData ursache=DatenReichenNicht claim=Zusammenhang score=0.000000
+     rang: bandpassung=0.000000 koinzidenz=0.000000 uplift=0.000000 intent=0.000000 wiederholbarkeit=0.000000 routing=0.000000
+     passage=Some("00000000000000000000000000005032") evidence_ids=12 alternatives=[] ausschluesse=[("02", "passage_unvergleichbar")]
+     likely_cause="Die Datenlage traegt noch keine Ursachenaussage."
+   => starke Befunde: 0
+   => sichtbare passage_id: Some("00000000000000000000000000005032")
+ok
+test f7_rangdifferenz_am_quantum ... ── F7 kleinste darstellbare Rangstoerung (0,1 dB in Band 210) ──
+   quelle=..02 klasse=Hoch zustand=ReadyToSend ursache=ZweiQuellenKonkurrenz claim=Zusammenhang score=0.266635
+     rang: bandpassung=0.099809 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=1.000000
+     passage=None evidence_ids=12 alternatives=["69ef4d"] ausschluesse=[]
+     likely_cause="00000000 draengt im Bandbereich 97..101 gegen den Master."
+   quelle=..03 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz claim=Zusammenhang score=0.266633
+     rang: bandpassung=0.099800 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=1.000000
+     passage=None evidence_ids=12 alternatives=[] ausschluesse=[]
+     likely_cause="00000000 draengt im Bandbereich 97..101 gegen den Master."
+   => starke Befunde: 1
+   => Rangdifferenz = 0.000002000 = 2.0 RANG_QUANTUM
+ok
+test f8_zwei_master_mit_widersprechendem_befundband ... ── F8 zwei Master (A: Band 98..102, B: Band 150..154) ──
+   quelle=..02 klasse=Hoch zustand=ReadyToSend ursache=QuelleResonanz claim=Zusammenhang score=0.252010
+     rang: bandpassung=0.012059 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=1.000000
+     passage=None evidence_ids=12 alternatives=[] ausschluesse=[]
+     likely_cause="00000000 draengt im Bandbereich 149..152 gegen den Master."
+   => starke Befunde: 1
+   => sources im Snapshot: 0
+ok
+test f8b_master_ohne_fenster ... ── F8b Master angemeldet, aber ohne Beleg ──
+   (KEIN BEFUND — der Produktpfad schweigt)
+   => starke Befunde: 0
+   => findings im Snapshot: 0
+ok
+test f9_veto_und_ruecknahme_nach_der_zustellung ... ── F9a vor dem Veto ──
+   quelle=..02 klasse=Hoch zustand=ReadyToSend ursache=QuelleResonanz claim=Zusammenhang score=0.266635
+     rang: bandpassung=0.099809 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=1.000000
+     passage=None evidence_ids=12 alternatives=[] ausschluesse=[]
+     likely_cause="00000000 draengt im Bandbereich 97..101 gegen den Master."
+── F9a nach dem Veto `geschuetzt` (kein neuer Beleg) ──
+   quelle=..02 klasse=Hoch zustand=Stale ursache=QuelleResonanz claim=Zusammenhang score=0.266635
+     rang: bandpassung=0.099809 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=1.000000
+     passage=None evidence_ids=12 alternatives=[] ausschluesse=[]
+     likely_cause="00000000 draengt im Bandbereich 97..101 gegen den Master."
+   => starke Befunde: 0
+   => findings im Snapshot: 1
+      snapshot: quelle=..02 klasse="hoch" zustand="stale"
+   => zurueckgenommene Belege: 2
+── F9b nach der Ruecknahme eines Belegs ──
+   quelle=..02 klasse=Hoch zustand=Stale ursache=QuelleResonanz claim=Zusammenhang score=0.266635
+     rang: bandpassung=0.099809 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=1.000000
+     passage=None evidence_ids=11 alternatives=[] ausschluesse=[]
+     likely_cause="00000000 draengt im Bandbereich 97..101 gegen den Master."
+   => starke Befunde: 0
+ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 51.87s
+

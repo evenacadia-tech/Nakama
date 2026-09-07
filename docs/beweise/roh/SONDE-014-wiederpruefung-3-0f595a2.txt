@@ -1,0 +1,12 @@
+Wiederprüfung 3 SONDE-014 — Codex gpt-6-astra, Effort max, lesend, Thread 01a07ba0-5ab5-7f93-8cc3-f6ce2289bf81; HEAD vor und nach dem Lauf 0f595a2e5f56797d86de3d5dcf21e2ba74680bf4; Start 2026-09-07T13:28:21, Ende 13:37:46 (9 min), EXIT=0. Auftrag: docs/beweise/roh/SONDE-014-wiederpruefung-3-auftrag.txt (Variante B, Fixdiff 38ef05f...0f595a2). Rohurteil unverändert:
+
+URTEIL: NEEDS_WORK — WP2-1: nein, trotz funktionierender Zuordnung und Abschlussfreigabe (`PluginProcessor.cpp:2045–2055,2082–2115`; B29:968–1019 und B10:5811–5834) bleibt der beschriebene Sättigungsfall offen; WP2-2: ja, der Textdeckel (`broker/src/vertrag.rs:179–218`, Aufrufer in `hypothese_verdrahtung.rs:927` und `proposal_verdrahtung.rs:482`) besteht die Tests `sonde014_nacharbeit3.rs:475,515` und `contract_cross_language.rs:675`.
+
+Geprüft: 43 Rust-Tests über vorhandene Binaries, B10 374/374, B29 183/183, Schema-, Identitäts-, State-/Golden-, Null- und Audio-/Queue-Tests erfolgreich; A5 598 Prüfungen und A8 392 Dateien bytegleich unter Python 3.14; die Python-Spiegelprobe erhält 99 977 zuvor vertragsgültige Werte unverändert, weitere Brüche wurden nicht festgestellt.
+
+Nicht geprüft: erfolgreicher Cargo-/SQLite-Re-Subscribe-Lauf wegen Schreibschutz, Python 3.13 wegen Startfehler, gekoppelter Sättigungs-/ACK-Gegenbeweis und vollständiger Kanon/G5/FL-Lauf; HEAD blieb vor und nach der Prüfung unverändert 0f595a2e5f56797d86de3d5dcf21e2ba74680bf4, ebenso der Worktree.
+
+Review comment:
+
+- [P2] Verdränge am Mitschnittdeckel keine offenen Urteile — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/src/PluginProcessor.cpp:2052-2053
+  WP2-1 bleibt bei Sättigung offen: Nach 65 `assistentAntwort(..., &urteil, ...)` ohne ACK wird der erste Mitschnitt gelöscht, obwohl dessen Auftrag weiter aussteht. Die 64 Queueplätze begrenzen nicht `inFlight`: Geschriebene Aufträge bleiben bis zum ACK registriert, und selbst bei Queueüberlauf hält `sendePersistenzP0()` den zusätzlichen Auftrag (`ControlClient.cpp:1212–1234`). Ein späteres `konflikt`-ACK der ersten Kennung bekommt deshalb einen leeren Wiederholungstext und entfernt das unpersistierte Urteil endgültig (`ControlClient.cpp:1333–1364`). Das verletzt M-73/WN3-01 „Freigabe erst nach Abschluss“. Der ausgeführte B29-Test bestätigt diese vorzeitige Löschung sogar als Sollverhalten (`Sonde014AssistentTest.cpp:1029–1039`). Zulassung und Mitschnitt müssen gemeinsam begrenzt werden, ohne offene Aufträge ihrer Wiederholungsdaten zu berauben ([AGENTS.md:48–52](AGENTS.md#L48-L52)).

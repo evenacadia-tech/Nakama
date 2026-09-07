@@ -1,0 +1,24 @@
+Wiederprüfung 1 SONDE-014 — Codex gpt-6-astra, Effort max, lesend, Thread 01a07a94-57c2-7282-bdc5-30f03182c866; HEAD vor und nach dem Lauf f30ac475284d9f5965a3dfc29e4841390e179c69; Start 2026-09-07T08:35:37, Ende 08:55:51 (20 min), EXIT=0. Auftrag: docs/beweise/roh/SONDE-014-wiederpruefung-1-auftrag.txt (Variante B, Fixdiff a319b2d...f30ac47). Rohurteil unverändert:
+
+URTEIL: NEEDS_WORK — EP-04, EP-07 und EP-10 bleiben offen; hinzu kommt die Veraltungsregression bei verspäteten Teilupdates.
+
+Geprüft: gebundener Diff, Aufrufwege und die oben ausgewiesenen erfolgreichen Prüfungen; HEAD und Worktree blieben unverändert.
+
+Nicht geprüft: erfolgreiche Store-/Cargo-Läufe, Brokerkill-E2E, frische P5-Ergebniserzeugung und vollständiger Kanon; die neuen Gegenbeispiele sind lesend hergeleitet.
+
+Full review comments:
+
+- [P1] Synchronisiere die Revision vor dem Versand des Userurteils — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/src/PluginProcessor.cpp:3670-3670
+  Wenn `assistentAntwort()` ein anderes Ergebnis setzt, erhöht `assistentAenderungMelden()` zunächst `v3StateRevision`; der anschließend erzeugte Urteilskopf übernimmt diese neue Revision. Der Broker kennt bis zum nächsten `state_report` jedoch noch den alten Stand. Repro: unmittelbar nach einem angekommenen State-Report eine geänderte Assistentenantwort mit Urteil senden. P0 überholt den P1-Bericht, `befehl.rs:259–260` antwortet mit `revision_conflict`, und `inFlightAck()` entfernt das unpersistierte Urteil endgültig. Damit bleibt EP-10/M-73 offen; der neue B29-Abschnitt prüft nur den JSON-Erzeuger, nicht diesen gekoppelten Versand ([AGENTS.md:51–52](AGENTS.md#L51-L52)).
+
+- [P1] Invalidiere Befunde auch bei verspäteten Teilupdates — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/intent.rs:592-595
+  Nach Vollbestand/0 → Teilupdate A/3 → Befundbildung für B → verspätetem B/2 mit `rolle=geschuetzt` wird das Schutzveto zwar übernommen, die Sitzungsrevision bleibt aber 3. Dieser Zweig markiert den bisherigen READY-Befund nicht als STALE. Trifft B/2 während der Rechnung ein, akzeptiert auch die neue Eintragungsprüfung das veraltete Ergebnis, weil dessen numerische Intent-Revision weiterhin übereinstimmt. Damit bleibt entgegen M-05/M-10 ein Befund trotz inzwischen übernommenem hartem Veto handelbar. Jeder wirksame Bestandswechsel muss die abhängigen Befunde und laufenden Aufnahmen entwerten, ohne verspätete Fremdobjekte wieder global abzuweisen.
+
+- [P1] Prüfe Evidenzreferenzen auch in der Re-Subscribe-Projektion — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/flush.rs:51-51
+  EP-04 bleibt für erneut abonnierende Clients offen: Nach Befundbildung und `DELETE FROM evidence` im isolierten Storetest genügt ein weiteres `subscribe_session` ohne zwischenzeitlichen Flush. `resubscribe_snapshot_push()` in `subscription.rs:75–164` umgeht diesen neuen Riegel, liest die gespeicherte Sessionprojektion und versendet deren `findings` unverändert. Auch eine zuvor gehärtete Speicheransicht korrigiert diese gespeicherten Bytes nicht. Der Client erhält deshalb weiterhin Behauptungen mit fehlenden Evidenz-IDs, entgegen M-28 und dem Exit-Gate; geprüft werden muss die tatsächlich versandte Re-Subscribe-Projektion ([AGENTS.md:48–50](AGENTS.md#L48-L50)).
+
+- [P2] Verhindere Proposals ohne Passage bereits beim Erzeugen — C:/Users/phili/Projekte/Nakama/broker/tests/sonde014_proposal.rs:211-216
+  Bei einer Sitzung ohne benannte Passage erzeugt der Broker weiterhin unvollständige Proposals. Der ausgeführte Test bestätigt jetzt ausdrücklich, dass `proposal_json_fuer_test()` das neue Pflichtfeld nicht liefert, und überspringt anschließend dessen Prüfung. Dieselbe Serialisierung wird von `vorschlag_persistieren()` gespeichert. Damit ist nur die Schemahälfte von EP-07 geschlossen: `draft_offers_zaehler()==0` erfüllt nicht das Exit-Gate, das jedes Proposal einschließlich `more_data` und `no_change` vollständig verlangt. Der Erzeuger muss ohne Passage auf das Proposal verzichten, statt die Vertragsabweichung im Test festzuschreiben ([AGENTS.md:51–52](AGENTS.md#L51-L52)).
+
+- [P2] Werte eine abgewiesene P0-Einreihung aus — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/src/PluginProcessor.cpp:3681-3685
+  Bei voller 64er-P0-Queue liefert `sendePersistenzP0()` false und entfernt den neuen Auftrag wieder aus `inFlight` (`ControlClient.cpp:1151–1165`). Dieser neue Aufrufer ignoriert das Ergebnis und gibt weiterhin `gemeldet` zurück. Repro: bei angehaltenem Abfluss die Queue füllen und anschließend ein gültiges Userurteil über `assistentAntwort()` senden; die Methode meldet Erfolg, das Urteil wird aber weder persistiert noch beim Reconnect wiederholt. Das verletzt M-73 ausdrücklich. Die Abweisung muss zurückgemeldet oder der Auftrag verlustfrei zur Wiederholung gehalten werden; der aktuelle B29-JSON-Test erfasst diesen Versandfehler nicht.

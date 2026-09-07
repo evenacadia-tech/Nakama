@@ -1205,6 +1205,7 @@ fn f4b_drei_sonden_auf_einem_kanal() {
         0,
         "drei Quellen auf EINEM Kanal behaupten nicht dreimal dieselbe Ursache"
     );
+    let routing: Vec<f64> = befunde.iter().map(|f| f.rang.routingqualitaet).collect();
     for f in &befunde {
         assert!(
             f.rang.routingqualitaet <= 0.5,
@@ -1212,6 +1213,30 @@ fn f4b_drei_sonden_auf_einem_kanal() {
             f.rang.routingqualitaet
         );
     }
+    // 🔑 Nacharbeit 2 (08.09.2026, WN-02): die AUSGABE ist nach §2.6 Nr. 23
+    // korrekt und bleibt unverändert — die Erwartung `mittel` wird hier NICHT
+    // angefasst. Was fehlte, ist die benannte Lücke: R6/NR-03 nennt `f4b`
+    // ausdrücklich unter den Fällen, die mit gedruckter Lücke ausgegeben
+    // werden, weil **NAK-213 R3** die Parent-Erkennung neu regelt. Ohne diese
+    // Zeile las der Beleg wie ein rundum geschlossener Fall.
+    luecke(
+        "f4b_drei_sonden_auf_einem_kanal",
+        "NAK-213 R3",
+        "Parent-Duplikate werden ueber ALLE Quellen der Sitzung erkannt - \
+         einschliesslich Master, zurueckgenommener und stummer Quellen (M-22).",
+        &format!(
+            "Die Ausgabe ist korrekt: {} Befunde, davon {} starke, jeder mit der \
+             Duplikatmarke {routing:?}. Enger als die Zusage ist der ERKENNUNGSSATZ: \
+             die Kanalkarte entsteht ueber `stand.evidenz`, eine angemeldete Quelle \
+             ohne einen einzigen Beleg betritt sie also nie; und `parent` wird nur an \
+             Kandidaten geschrieben, waehrend auch die Suche nach dem Kind nur ueber \
+             die Kandidaten laeuft - der Master ist eines der {} Mitglieder dieser \
+             Sitzung und traegt trotzdem nie eine Duplikatmarke.",
+            befunde.len(),
+            stark(&befunde),
+            b.snapshot()["mitglieder"].as_array().map(Vec::len).unwrap_or(0),
+        ),
+    );
 }
 
 // ═════════════════════════════════════════════════════════════════════════

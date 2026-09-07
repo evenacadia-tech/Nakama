@@ -1,0 +1,132 @@
+NAK-212 Nacharbeit 2 — ROTBEWEIS WN-01
+Datum:     2026-09-08
+Basis-SHA: b36d9e6c53c6b9e965b9b3db27bc0466e259f540 (Worktree sauber ausser den drei Auftragsdateien)
+Befund:    tools/beweise.ps1:587, Bein A31. Der deklarierte Aufruf unterdrueckt die
+           println!-Ausgaben erfolgreicher Tests; im kanonischen Rohbeleg fehlen damit
+           alle Eingabeprotokolle und die benannten NAK-213-/NAK-214-Luecken, die
+           Regel NR-03 der Nacharbeit 1 ausdruecklich verlangt.
+Regel:     Der A31-Aufruf gibt die Testausgabe frei (-- --nocapture --test-threads=1),
+           sodass jede der 15 Eingaben mit ihrer Ausgabe und jede benannte Luecke im
+           Rohbeleg des Kanons steht; das Bein bleibt gruen und deterministisch.
+Mechanik:  libtest faengt stdout/stderr bestehender Tests ab und verwirft sie; nur ein
+           FEHLGESCHLAGENER Test bekommt seinen Puffer nachgedruckt. Ein gruenes Bein,
+           dessen Beweiswert in println! steckt, liefert deshalb null Messwerte.
+
+=========================================================================
+TEIL 1 — ROT: der Aufruf aus Zeile 587 WOERTLICH (alte Form)
+=========================================================================
+Befehl: cargo test --manifest-path broker/Cargo.toml --test sonde014_gegenbeispiele --color never
+Exit:   0
+Zeilen: 22
+Protokollzeilen (Marke '──'):        0   <-- NULL
+Lueckenzeilen ('OFFENE LUECKE'):     0   <-- NULL
+Rangzeilen ('rang: bandpassung'):    0   <-- NULL
+
+--- vollstaendige Ausgabe (alle 22 Zeilen) ---
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.07s
+     Running tests\sonde014_gegenbeispiele.rs (broker\target\debug\deps\sonde014_gegenbeispiele-4e737afb3cd092a5.exe)
+
+running 15 tests
+test eigen4_quelle_im_falschen_band ... ok
+test eigen3_antikorrelierte_quelle ... ok
+test a1_intent_rolle_trennt_identische_kandidaten_nicht ... ok
+test eigen5_antikorreliert_neben_korreliert ... ok
+test f4_kanalwechsel_zwischen_den_fenstern ... ok
+test d4_umklammernde_und_disjunkte_spanne ... ok
+test f8b_master_ohne_fenster ... ok
+test f4b_drei_sonden_auf_einem_kanal ... ok
+test f7_rangdifferenz_am_quantum ... ok
+test f8_zwei_master_mit_widersprechendem_befundband ... ok
+test d2_fuehrender_wird_gegen_jeden_geprueft ... ok
+test a4_masteranomalie_ausserhalb_der_passage ... ok
+test d3_passage_ohne_masterfenster_ergibt_enthaltung ... ok
+test f5b_gleiche_passage_id_verschobenes_fenster ... ok
+test f5_passagenrandwerte ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 31.26s
+
+
+=========================================================================
+TEIL 2 — GRUEN: dieselbe Testdatei, die neue Form des Aufrufs
+=========================================================================
+Befehl: cargo test --manifest-path broker/Cargo.toml --test sonde014_gegenbeispiele --color never -- --nocapture --test-threads=1
+Exit:   0
+Zeilen: 163
+Protokollzeilen (Marke '──'):        20
+Lueckenzeilen ('OFFENE LUECKE'):     3   (Stand VOR WN-02: f4 f8 f8b)
+Rangzeilen ('rang: bandpassung'):    28
+Testreihenfolge einthreadig (alphabetisch, deterministisch):
+  test a1_intent_rolle_trennt_identische_kandidaten_nicht 
+  test a4_masteranomalie_ausserhalb_der_passage 
+  test d2_fuehrender_wird_gegen_jeden_geprueft 
+  test d3_passage_ohne_masterfenster_ergibt_enthaltung 
+  test d4_umklammernde_und_disjunkte_spanne 
+  test eigen3_antikorrelierte_quelle 
+  test eigen4_quelle_im_falschen_band 
+  test eigen5_antikorreliert_neben_korreliert 
+  test f4_kanalwechsel_zwischen_den_fenstern 
+  test f4b_drei_sonden_auf_einem_kanal 
+  test f5_passagenrandwerte 
+  test f5b_gleiche_passage_id_verschobenes_fenster 
+  test f7_rangdifferenz_am_quantum 
+  test f8_zwei_master_mit_widersprechendem_befundband 
+  test f8b_master_ohne_fenster 
+  test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 55.20s
+
+--- Auszug: die ersten 40 Zeilen ---
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.05s
+     Running tests\sonde014_gegenbeispiele.rs (broker\target\debug\deps\sonde014_gegenbeispiele-4e737afb3cd092a5.exe)
+
+running 15 tests
+test a1_intent_rolle_trennt_identische_kandidaten_nicht ... ── A1 rolle=fuehrt auf dem Distraktor, sonst identisch ──
+   quelle=..03 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.676064
+     rang: bandpassung=0.061370 koinzidenz=0.000000 uplift=1.000000 intent=1.000000 wiederholbarkeit=0.995012 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=1 ausschluesse=[]
+   quelle=..02 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.592730
+     rang: bandpassung=0.061370 koinzidenz=0.000000 uplift=1.000000 intent=0.500000 wiederholbarkeit=0.995012 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=1 ausschluesse=[]
+   => starke Befunde: 0
+ok
+test a4_masteranomalie_ausserhalb_der_passage ... Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-nak212-a4-5096\nakama-broker.sqlite3
+── A4 Masteranomalie in einem Fenster HINTER der Passage ──
+   quelle=..02 klasse=Hoch zustand=ReadyToSend ursache=QuelleResonanz score=0.592730
+     rang: bandpassung=0.061370 koinzidenz=0.000000 uplift=1.000000 intent=0.500000 wiederholbarkeit=0.995012 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=Some("00005032") alternatives=0 ausschluesse=[]
+   => starke Befunde: 1
+ok
+test d2_fuehrender_wird_gegen_jeden_geprueft ... ── D2 drei Kandidaten: A und C identisch, M dazwischen ──
+   quelle=..02 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.676064
+     rang: bandpassung=0.061370 koinzidenz=0.000000 uplift=1.000000 intent=1.000000 wiederholbarkeit=0.995012 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=2 ausschluesse=[]
+   quelle=..03 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.611707
+     rang: bandpassung=0.068089 koinzidenz=0.000000 uplift=0.857143 intent=0.750000 wiederholbarkeit=0.995012 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=2 ausschluesse=[]
+   quelle=..04 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.592730
+     rang: bandpassung=0.061370 koinzidenz=0.000000 uplift=1.000000 intent=0.500000 wiederholbarkeit=0.995012 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=2 ausschluesse=[]
+   => starke Befunde: 0
+ok
+test d3_passage_ohne_masterfenster_ergibt_enthaltung ... Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-nak212-d3-ohne-master-5096\nakama-broker.sqlite3
+── F5 Passage [12,24) — alle Belege liegen DAVOR ──
+   quelle=..01 klasse=Unklar zustand=MoreData ursache=DatenReichenNicht score=0.000000
+     rang: bandpassung=0.000000 koinzidenz=0.000000 uplift=0.000000 intent=0.000000 wiederholbarkeit=0.000000 routing=0.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=Some("00005032") alternatives=0 ausschluesse=[("02", "passage_unvergleichbar")]
+   => starke Befunde: 0
+ok
+test d4_umklammernde_und_disjunkte_spanne ... ── D4 umklammernd ──
+
+=========================================================================
+URTEIL
+=========================================================================
+Der alte Aufruf ist gruen und BLIND: 22 Zeilen, kein einziger Messwert, keine
+benannte Luecke. Der neue Aufruf ist gruen und BELEGT: 163 Zeilen mit 20
+Protokollbloecken und 45 Rangzeilen. Dieselbe Testdatei, derselbe Exitcode --
+allein die Ausgabefreigabe trennt sie. Die Reihenfolge ist einthreadig
+alphabetisch und damit zwischen Laeufen vergleichbar.
+
+Nicht deterministisch bleibt EINE Zeilensorte, die nicht aus diesem Bein
+stammt: der Store schreibt bei den store-gestuetzten Faellen ueber eprintln!
+(broker/src/store/writer.rs:50) seinen Banner samt Prozess-Id und Temp-Pfad
+nach stderr. Das ist Produktcode und liegt ausserhalb der Ticketgrenze; die
+Zeile traegt keine Zusage dieses Beins. Derselbe Banner steht bereits im
+abgenommenen Beinlauf der Nacharbeit 1.

@@ -1,0 +1,78 @@
+NAK-212 Nacharbeit 2 — ROTBEWEIS WN-02
+Datum:     2026-09-08
+Basis-SHA: b36d9e6c53c6b9e965b9b3db27bc0466e259f540
+Befund:    broker/tests/sonde014_gegenbeispiele.rs, Fall f4b "drei Sonden auf einem
+           Kanal". Die drei mittel-Befunde werden protokolliert, aber der Test endet
+           ohne Lueckenkennzeichnung. Die Ausgabe ist nach Matrix 2.6 Nr. 23 korrekt;
+           Regel NR-03 nennt f4b jedoch ausdruecklich unter den Faellen, die mit
+           benannter NAK-213-Luecke ausgegeben werden (Parent-Erkennung: NAK-213 R3).
+Regel:     f4b gibt wie f4 die benannte Luecke aus - ohne den fremden Produktfall zu
+           loesen und ohne die Erwartung `mittel` zu aendern.
+Sichtbar:  Beide Teile mit -- --nocapture --test-threads=1 gefahren; ohne die
+           Ausgabefreigabe waere der Unterschied gar nicht messbar (siehe WN-01).
+
+=========================================================================
+TEIL 1 — ROT: f4b VOR der Aenderung
+=========================================================================
+test f4b_drei_sonden_auf_einem_kanal ... ── F4b drei Sonden auf Mixerkanal 7 ──
+   quelle=..02 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.183950
+     rang: bandpassung=0.103699 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=2 ausschluesse=[]
+   quelle=..03 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.183623
+     rang: bandpassung=0.101738 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=2 ausschluesse=[]
+   quelle=..04 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.183302
+     rang: bandpassung=0.099809 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=2 ausschluesse=[]
+   => starke Befunde: 0
+ok
+
+Lueckenzeilen im f4b-Block: 0   <-- NULL
+Lueckenzeilen im ganzen Bein: 3   (f4, f8, f8b)
+
+Der Block endet nach "=> starke Befunde: 0" mit `ok`. Fuer einen Leser des
+Kanonbelegs ist f4b damit ein rundum geschlossener Fall - obwohl die
+Parent-Erkennung, die ihn traegt, in NAK-213 R3 neu geregelt wird.
+
+=========================================================================
+TEIL 2 — GRUEN: f4b NACH der Aenderung
+=========================================================================
+test f4b_drei_sonden_auf_einem_kanal ... ── F4b drei Sonden auf Mixerkanal 7 ──
+   quelle=..02 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.183950
+     rang: bandpassung=0.103699 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=2 ausschluesse=[]
+   quelle=..03 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.183623
+     rang: bandpassung=0.101738 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=2 ausschluesse=[]
+   quelle=..04 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.183302
+     rang: bandpassung=0.099809 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=2 ausschluesse=[]
+   => starke Befunde: 0
+   ⚠ OFFENE LUECKE f4b_drei_sonden_auf_einem_kanal [NAK-213 R3]
+     zusage:          Parent-Duplikate werden ueber ALLE Quellen der Sitzung erkannt - einschliesslich Master, zurueckgenommener und stummer Quellen (M-22).
+     was heute passiert: Die Ausgabe ist korrekt: 3 Befunde, davon 0 starke, jeder mit der Duplikatmarke [0.5, 0.5, 0.5]. Enger als die Zusage ist der ERKENNUNGSSATZ: die Kanalkarte entsteht ueber `stand.evidenz`, eine angemeldete Quelle ohne einen einzigen Beleg betritt sie also nie; und `parent` wird nur an Kandidaten geschrieben, waehrend auch die Suche nach dem Kind nur ueber die Kandidaten laeuft - der Master ist eines der 4 Mitglieder dieser Sitzung und traegt trotzdem nie eine Duplikatmarke.
+ok
+
+Lueckenzeilen im f4b-Block: 1
+Lueckenzeilen im ganzen Bein: 4   (f4, f4b, f8, f8b)
+
+=========================================================================
+URTEIL
+=========================================================================
+Unveraendert: die drei Befunde, ihre Klasse `Mittel`, ihre Ursachenklasse, ihre
+Scores, ihre Rangkomponenten und alle vier Zusicherungen des Tests. Kein
+Produktcode angefasst, kein Korpus angefasst, die Erwartung nicht bewegt.
+Neu ist genau eine benannte Luecke mit GEMESSENEN Zahlen: 3 Befunde, 0 starke,
+Duplikatmarke [0.5, 0.5, 0.5], 4 Mitglieder im Sitzungs-Snapshot.
+
+Die Aussage der Luecke ist an der Quelle geprueft:
+- broker/src/coordinator/hypothese_verdrahtung.rs:164-188 - die Kanalkarte
+  `je_kanal` entsteht ueber `stand.evidenz.keys()`; eine angemeldete Quelle
+  ohne einen einzigen Beleg hat dort keinen Eintrag (evidenz.rs:179 legt ihn
+  erst beim ersten Beleg an) und betritt die Karte nie.
+- broker/src/coordinator/hypothese_verdrahtung.rs:224-235 - `parent` wird nur
+  an `kandidaten` geschrieben; der Master bekommt nie einen.
+- broker/src/coordinator/hypothese.rs:1236-1248 - `ids` und `ist_parent` lesen
+  ausschliesslich `aufnahme.kandidaten`; der Master ist dort nicht enthalten.
+Das ist genau die Menge, die NAK-213 R3 auf "alle Quellen der Sitzung
+einschliesslich Master, zurueckgenommener und stummer Quellen (M-22)" erweitert.

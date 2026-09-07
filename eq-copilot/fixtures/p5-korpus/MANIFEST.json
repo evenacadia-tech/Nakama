@@ -6,8 +6,8 @@
   },
   "dateien": {
     "sitzungen.json": {
-      "bytes": 5474,
-      "sha256": "4b8100f84a2decd2adcd4e3fc06ae1d48df815c2cb38f0fdfb4f93f4030762ec"
+      "bytes": 46809,
+      "sha256": "2217921ef755369d64b585b61ceb868c1224a7e676379e2dda6b6fad0d98adb9"
     }
   },
   "ergebnisdatei": "eq-copilot/build/p5-korpus-ergebnis.json",
@@ -32,7 +32,9 @@
       "parent_duplikat",
       "verschobene_passage",
       "zu_kurze_passage",
-      "keine_ursache"
+      "keine_ursache",
+      "gegenbeleg",
+      "routing_unbekannt"
     ],
     "sicherheiten": [
       "hoch",
@@ -50,7 +52,7 @@
     ]
   },
   "pruefer": "tools/eq-copilot/pruefe_p5_korpus.py",
-  "sitzungen_gesamt": 6,
+  "sitzungen_gesamt": 27,
   "titel": "P5-Evaluationskorpus (SONDE-014 M-64 bis M-70, R2)",
   "zweck": "Eine KETTE, kein Register: jede Sitzung laeuft als Evidenzbestand durch den Produktpfad, und gelesen wird die TATSAECHLICH ausgegebene Hypothese gegen die Wahrheit des Falls. Eine falsche starke Produktbehauptung aendert diese Datei nicht — sie faellt am Vergleich."
 }

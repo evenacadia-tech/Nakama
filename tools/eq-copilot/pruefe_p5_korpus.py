@@ -221,6 +221,40 @@ def riegel(k: dict, wo: str) -> list[str]:
     return befunde
 
 
+def gegenbeispiele(faelle: list[dict], keine_starke: list[str]) -> tuple[list[str], dict]:
+    """**M-69 (NAK-212 N-35):** „Gegenbeispiele erzwingen nachweislich Enthaltung."
+
+    „Nachweislich" heisst: der Lauf zeigt, dass auf JEDEM Gegenbeispiel die
+    Aussage unsicher ist — nicht, dass sie zufaellig ausblieb. Gegenbeispiel
+    ist jede Sitzung, deren Wahrheit in `KEINE_STARKE` steht.
+
+    ⚠️ ZWEI Bedingungen, und die zweite ist der Riegel gegen die leere Menge:
+    „auf jedem Gegenbeispiel unsicher" ist ohne ein einziges Gegenbeispiel
+    wahr und wertlos. Ohne sie waere der Abschnitt gruen, wenn kein
+    Gegenbeispiel geladen wuerde.
+    """
+    # Die Menge kommt aus dem MANIFEST des Korpus, nicht aus einer zweiten
+    # Liste hier — sonst gaebe es sie zweimal (M-67, geschlossene Menge).
+    gegen = [f for f in faelle if f["wahrheit"] in keine_starke]
+    stark = [f for f in gegen if f["sicherheit"] == HOCH]
+    befunde: list[str] = []
+    if not gegen:
+        befunde.append(
+            "M-69: KEIN Gegenbeispiel im Lauf — „auf jedem Gegenbeispiel unsicher\" "
+            "ist auf der leeren Menge wahr und misst nichts"
+        )
+    if stark:
+        namen = ", ".join(sorted({f["kennung"] for f in stark}))
+        befunde.append(
+            f"M-69: {len(stark)} starke Aussage(n) auf einem Gegenbeispiel: {namen}"
+        )
+    return befunde, {
+        "gegenbeispiele": len(gegen),
+        "sitzungen": len({f["kennung"] for f in gegen}),
+        "starke": len(stark),
+    }
+
+
 def schwelle_suchen(faelle: list[dict]) -> dict:
     """M-31/M-66: die Schwelle ist AUSGABE, nicht Eingabe.
 
@@ -293,6 +327,57 @@ def produktschwelle(faelle: list[dict]) -> list[str]:
             + " — dann traegt `hoch` seine Zusage nicht mehr (M-31)"
         )
     return befunde
+
+
+def offene_luecken(korpus: dict, faelle: list[dict]) -> tuple[list[str], list[str], set[str]]:
+    """**NAK-212 N-37 (07.09.2026):** die gedruckten Luecken des Korpus.
+
+    Faelle, die dieses Ticket nicht schliesst, weil sie NAK-213 oder NAK-214
+    gehoeren, werden GEFAHREN und GEDRUCKT — nicht als gruener Fall und nicht
+    ausgelassen (R6). Jede Sitzung traegt dafuer ein Feld `luecke` mit einer
+    `wirkung`:
+
+    * ``ausgenommen`` — die Sitzung liefert BEWUSST weiter eine falsche starke
+      Behauptung, weil erst ein anderes Ticket sie schliesst. Sie verlaesst
+      `falsche_starke` und die Kennzahlen und wird stattdessen als offene
+      Luecke gemeldet. Ohne diese Ausnahme waere der Kanon auf einem Korpus,
+      der die offenen Faelle absichtlich scharf haelt, dauerhaft rot, und der
+      Bau muesste die Faelle entschaerfen oder weglassen — beides verbietet R6.
+    * ``benannt`` — die Sitzung ist in ihrer SICHERHEIT korrekt, aber eine
+      ANDERE Zusage bleibt ungemessen (etwa M-87 beim Kandidatendeckel). Sie
+      zaehlt normal in allen Kennzahlen mit und wird zusaetzlich gedruckt.
+
+    Rueckgabe: (Befunde, Druckzeilen, Kennungen der ausgenommenen Sitzungen).
+    """
+    befunde: list[str] = []
+    zeilen: list[str] = []
+    ausgenommen: set[str] = set()
+    je_kennung = {f["kennung"]: f for f in faelle}
+    for s in korpus["sitzungen"]["sitzungen"]:
+        luecke = s.get("luecke")
+        if not luecke:
+            continue
+        kennung = s["kennung"]
+        wirkung = luecke.get("wirkung")
+        ticket = luecke.get("ticket", "?")
+        if not ticket or ticket == "?":
+            befunde.append(f"{kennung}: gedruckte Luecke ohne Ticket (N-37)")
+        if wirkung == "ausgenommen":
+            ausgenommen.add(kennung)
+        # (b) Liefert eine ausgenommene Sitzung inzwischen ein Ergebnis
+        #     INNERHALB ihrer Wahrheit, ist die Luecke geschlossen und die
+        #     Zeile darf weg. Ohne diese Meldung bliebe sie stumm stehen.
+        fall = je_kennung.get(kennung)
+        geschlossen = (
+            wirkung == "ausgenommen"
+            and fall is not None
+            and ORDNUNG[fall["sicherheit"]] <= ORDNUNG[fall["sicherheit_hoechstens"]]
+        )
+        zeilen.append(
+            f"{kennung}: {ticket} {luecke.get('regel', '')} [{wirkung}]"
+            + (" — INZWISCHEN GEMESSEN, die Zeile darf entfernt werden" if geschlossen else "")
+        )
+    return befunde, zeilen, ausgenommen
 
 
 def p4_luecke(nicht_gemessen: list[dict], messende: list[str]) -> tuple[list[str], str]:
@@ -400,6 +485,17 @@ def _faelle_bilden(
             soll_starke.setdefault(soll_klasse, 0)
         gefundene_gruende: set[str] = set()
         gefundene_alternativen = 0
+        # 🔑 **NAK-212 E9/N-46 (07.09.2026).** Die NR-14-Pruefung ist eine
+        # EXISTENZ-, keine Allaussage: „der korrelierte Distraktor MUSS in
+        # `alternatives` erscheinen" (M-65 woertlich). Seit R3 nennen sich
+        # ungetrennte Kandidaten WECHSELSEITIG als Alternative — dann verweist
+        # auch der Distraktorbefund auf die wahre Quelle, und das ist richtig,
+        # kein Fehlschlag. Die Fassung davor verlangte, dass JEDE
+        # Alternativ-ID der Distraktorquelle gehoert; damit waere schon
+        # `g5_distraktor_mehr_fenster` bei zwei voellig richtigen
+        # `mittel`-Befunden rot geworden. Die beiden anderen Riegel derselben
+        # Stelle bleiben unveraendert: eine Alternativ-ID muss auf einen
+        # Befund DESSELBEN Laufs aufloesen, und kein Befund nennt sich selbst.
         # Die Kennungen ALLER Befunde dieses Sitzungslaufs — eine
         # Alternativ-ID muss auf einen von ihnen zeigen (NR-14).
         eigene_ids = {b["finding_id"] for b in befunde_je_sitzung[kennung]}
@@ -422,13 +518,7 @@ def _faelle_bilden(
                         f"{kennung}: ein Befund nennt sich SELBST als Alternative "
                         f"({alt_id!r}) — das ist keine (NR-14)"
                     )
-                elif distraktoren and quelle_je_id[alt_id] not in distraktoren:
-                    probleme.append(
-                        f"{kennung}: die Alternative {alt_id!r} gehoert der Quelle "
-                        f"{quelle_je_id[alt_id]!r}, nicht der deklarierten "
-                        "Distraktorquelle (NR-14, NAK-190)"
-                    )
-                elif distraktoren:
+                elif distraktoren and quelle_je_id[alt_id] in distraktoren:
                     aufgeloeste_distraktoren += 1
             # 🔑 NR-13: die Ursachenklasse wird gegen die UNABHAENGIGE
             # Wahrheit des Korpus gehalten, nicht aus der Ausgabe uebernommen.
@@ -501,9 +591,23 @@ def main(argv: list[str]) -> int:
             print(f"  {f}")
         return 3
 
-    faelle, probleme, messende, soll_starke = _faelle_bilden(korpus, ergebnis)
+    alle_faelle, probleme, messende, soll_starke = _faelle_bilden(korpus, ergebnis)
+
+    # ── Gedruckte Luecken (NAK-212 N-37) ────────────────────────────────
+    #
+    # ZUERST, weil die ausgenommenen Sitzungen aus allen folgenden Kennzahlen
+    # herausfallen. Sie liefern bewusst weiter eine falsche starke Behauptung,
+    # weil erst NAK-213 sie schliesst — als gruener Fall waeren sie eine Luege,
+    # als roter blockierten sie den Kanon dauerhaft (R6: „gedruckt, nicht als
+    # gruener Fall und nicht ausgelassen").
+    luecken_befunde, luecken_zeilen, ausgenommen = offene_luecken(korpus, alle_faelle)
+    probleme += luecken_befunde
+    faelle = [f for f in alle_faelle if f["kennung"] not in ausgenommen]
+
     print(f"P5-Korpus: {len(korpus['sitzungen']['sitzungen'])} Sitzungen, "
-          f"{len(faelle)} ausgegebene Befunde")
+          f"{len(faelle)} ausgegebene Befunde"
+          + (f" ({len(alle_faelle) - len(faelle)} aus gedruckten Luecken ausgenommen)"
+             if ausgenommen else ""))
 
     # ── Kennzahlen JE URSACHENKLASSE (M-64) ─────────────────────────────
     #
@@ -515,6 +619,20 @@ def main(argv: list[str]) -> int:
     # nach der ausgegebenen. Wer nach der Ausgabe gruppiert, misst das
     # Produkt gegen sich selbst — eine vertauschte Klasse verschiebt dann
     # einfach die Zeile und faellt nirgends.
+    # Auch der Recall-NENNER verliert die ausgenommenen Sitzungen — sonst
+    # fehlte eine Sollstarke, die gar nicht mehr gezaehlt wird (die Lehre aus
+    # NAK-182 C6: Zaehler und Nenner lesen DIESELBE Menge).
+    if ausgenommen:
+        soll_starke = dict(soll_starke)
+        for s in korpus["sitzungen"]["sitzungen"]:
+            if s["kennung"] not in ausgenommen:
+                continue
+            if ORDNUNG[s["erwartet"]["sicherheit_hoechstens"]] >= ORDNUNG[HOCH] and any(
+                q.get("wahre_ursache") for q in s["quellen"]
+            ):
+                soll_starke[s["ursachenklasse"]] = max(
+                    0, soll_starke.get(s["ursachenklasse"], 0) - 1
+                )
     klassen = sorted({f["soll_klasse"] for f in faelle} | set(soll_starke))
     for klasse in klassen:
         dieser = [f for f in faelle if f["soll_klasse"] == klasse]
@@ -567,6 +685,23 @@ def main(argv: list[str]) -> int:
           f"handelbar, Sicherheiten "
           f"{sorted({f['sicherheit'] for f in handelnde}) or ['keine']}")
     befunde += produktschwelle(faelle)
+
+    # ── Gegenbeispiele (M-69, NAK-212 N-35) ─────────────────────────────
+    g_befunde, g_zahlen = gegenbeispiele(
+        faelle, korpus["manifest"]["mengen"]["keine_starke"]
+    )
+    befunde += g_befunde
+    print(f"  GEGENBEISPIELE (M-69): {g_zahlen['sitzungen']} Sitzungen, "
+          f"{g_zahlen['gegenbeispiele']} Befunde, {g_zahlen['starke']} davon stark "
+          f"— „auf jedem Gegenbeispiel unsicher\" "
+          f"{'HAELT' if not g_befunde else 'FAELLT'}")
+
+    # ── Offene Luecken, benannt (NAK-212 N-37) ──────────────────────────
+    if luecken_zeilen:
+        print(f"  OFFENE LUECKEN (N-37): {len(luecken_zeilen)} gedruckt, "
+              f"{len(ausgenommen)} aus den Kennzahlen ausgenommen")
+        for zeile in luecken_zeilen:
+            print(f"    - {zeile}")
 
     # ── Die gedruckte Luecke des P4-Korpus (M-70) ───────────────────────
     p4 = WURZEL / "eq-copilot" / "fixtures" / "p4-korpus" / "MANIFEST.json"
@@ -899,14 +1034,90 @@ def selbsttest() -> int:
     # Eine ID, die auf einen Befund einer FREMDEN Quelle zeigt.
     fremde = dict(alternative, finding_id="c" * 32, candidate_source=f"{9:032x}")
     auf_fremde = dict(fuehrend, alternatives=["c" * 32])
-    _, probleme, messende, _ = _faelle_bilden(korpus2, lauf2([auf_fremde, fremde]))
-    pruefe(len(probleme) >= 1 and messende == [],
+    _, _, messende, _ = _faelle_bilden(korpus2, lauf2([auf_fremde, fremde]))
+    pruefe(messende == [],
            "NR-14: ein Verweis auf eine FREMDE Quelle ist kein NAK-190-Nachweis")
     # Und ein Befund, der sich selbst nennt.
     selbst = dict(fuehrend, alternatives=["a" * 32])
     _, probleme, _, _ = _faelle_bilden(korpus2, lauf2([selbst, alternative]))
     pruefe(len(probleme) >= 1,
            "NR-14: ein Befund, der sich SELBST als Alternative nennt, faellt")
+
+    # ── NAK-212 E9/N-46: WECHSELSEITIGE Alternativen sind der Normalfall ─
+    #
+    # Seit R3 nennen sich ungetrennte Kandidaten gegenseitig. Die Fassung
+    # davor verlangte, dass JEDE Alternativ-ID der Distraktorquelle gehoert —
+    # damit waere `g5_distraktor_mehr_fenster` bei zwei voellig richtigen
+    # `mittel`-Befunden rot geworden.
+    wechsel_a = dict(fuehrend, alternatives=["b" * 32])
+    wechsel_b = dict(alternative, alternatives=["a" * 32])
+    _, probleme, messende, _ = _faelle_bilden(korpus2, lauf2([wechsel_a, wechsel_b]))
+    pruefe(not probleme and messende == ["distraktorfall"],
+           "N-46 (a): wechselseitige Alternativen zweier `mittel`-Befunde sind gruen "
+           "und zaehlen als NAK-190-Nachweis")
+    # (b) DASSELBE mit einem `hoch` auf dem Distraktor: rot.
+    stark_b = dict(wechsel_b, confidence_class=HOCH, zustand="ready_to_send")
+    f_stark, _, _, soll_s = _faelle_bilden(korpus2, lauf2([wechsel_a, stark_b]))
+    k_stark = kennzahlen(f_stark, soll_s.get("zwei_quellen_konkurrenz"))
+    pruefe(k_stark["falsche_starke"] == 1,
+           "N-46 (b) GEGENTEIL: ein `hoch` auf dem Distraktor faellt weiterhin")
+    # (c) KEINE Alternative auf der Distraktorquelle: kein Nachweis.
+    ohne_verweis = dict(fuehrend, alternatives=[])
+    _, _, messende, _ = _faelle_bilden(korpus2, lauf2([ohne_verweis, alternative]))
+    pruefe(messende == [],
+           "N-46 (c) GEGENTEIL: ohne Verweis auf die Distraktorquelle gibt es "
+           "keinen NAK-190-Nachweis")
+
+    # ── NAK-212 N-35: der Gegenbeispielabschnitt (M-69), beide Richtungen ─
+    menge = ["distraktor", "keine_ursache"]
+    def gegenfall(sicherheit: str, wahrheit: str) -> dict:
+        f = fall(sicherheit, MITTEL, False, 0.5, kennung=f"g_{wahrheit}")
+        f["wahrheit"] = wahrheit
+        return f
+    sauber = [gegenfall(MITTEL, "distraktor"), gegenfall(UNKLAR, "keine_ursache")]
+    b_sauber, z_sauber = gegenbeispiele(sauber, menge)
+    pruefe(not b_sauber and z_sauber["gegenbeispiele"] == 2 and z_sauber["starke"] == 0,
+           "N-35: zwei unsichere Gegenbeispiele halten")
+    b_stark, z_stark = gegenbeispiele(sauber + [gegenfall(HOCH, "distraktor")], menge)
+    pruefe(len(b_stark) == 1 and z_stark["starke"] == 1,
+           "N-35 GEGENTEIL: eine starke Aussage auf einem Gegenbeispiel faellt")
+    b_leer, z_leer = gegenbeispiele([], menge)
+    pruefe(len(b_leer) == 1 and z_leer["gegenbeispiele"] == 0,
+           "N-35 GEGENTEIL: die LEERE Menge faellt — „auf jedem Gegenbeispiel "
+           "unsicher\" ist ohne Gegenbeispiel wahr und wertlos")
+    # Und ein Fall, dessen Wahrheit NICHT in der Menge steht, zaehlt nicht mit.
+    _, z_fremd = gegenbeispiele([fall(HOCH, HOCH, True, 0.9)], menge)
+    pruefe(z_fremd["gegenbeispiele"] == 0,
+           "N-35: `wahre_ursache` ist kein Gegenbeispiel")
+
+    # ── NAK-212 N-37: die gedruckten Luecken, beide Wirkungen ────────────
+    def luecken_korpus(wirkung: str, ticket: str = "NAK-213") -> dict:
+        return {"sitzungen": {"sitzungen": [{
+            "kennung": "offen",
+            "wahrheit": "distraktor",
+            "ursachenklasse": "quelle_resonanz",
+            "quellen": [{"instanz": 2, "wahre_ursache": True}],
+            "erwartet": {"sicherheit_hoechstens": MITTEL, "ausschlussgrund": None,
+                         "distraktor_ist_alternative": False},
+            "luecke": {"ticket": ticket, "regel": "R2", "wirkung": wirkung,
+                       "zusage": "z", "was_heute_passiert": "w"},
+        }]}}
+    offener_fall = fall(HOCH, MITTEL, False, 0.9, kennung="offen")
+    b, zeilen, aus = offene_luecken(luecken_korpus("ausgenommen"), [offener_fall])
+    pruefe(not b and aus == {"offen"} and len(zeilen) == 1,
+           "N-37 (a): eine Luecke mit `wirkung: ausgenommen` verlaesst die Kennzahlen")
+    b, zeilen, aus = offene_luecken(luecken_korpus("benannt"), [offener_fall])
+    pruefe(not b and aus == set() and len(zeilen) == 1,
+           "N-37 GEGENTEIL: `wirkung: benannt` zaehlt normal mit und wird nur gedruckt")
+    b, _, _ = offene_luecken(luecken_korpus("ausgenommen", ticket="?"), [offener_fall])
+    pruefe(len(b) == 1,
+           "N-37 (b): eine gedruckte Luecke OHNE Ticket faellt")
+    # (c) Die Luecke ist geschlossen: die Zeile sagt es.
+    _, zeilen, _ = offene_luecken(
+        luecken_korpus("ausgenommen"), [fall(MITTEL, MITTEL, False, 0.5, kennung="offen")]
+    )
+    pruefe("INZWISCHEN GEMESSEN" in zeilen[0],
+           "N-37 (c): eine inzwischen geschlossene Luecke wird als solche gemeldet")
 
     print(f"P5-Korpus Selbsttest: {'gruen' if fehler == 0 else f'{fehler} Fehler'}")
     return 0 if fehler == 0 else 2

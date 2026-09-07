@@ -4,14 +4,31 @@
       "erwartet": {
         "ausschlussgrund": null,
         "distraktor_ist_alternative": false,
-        "sicherheit_hoechstens": "hoch"
+        "sicherheit_hoechstens": "mittel"
       },
-      "hinweis": "Eine Quelle mit bekanntem Routing, zwoelf zusammenhaengenden Fenstern und derselben Bandanhebung wie der Master. Der Fall, auf dem eine starke Aussage ERLAUBT ist — ohne ihn waere jeder Riegel unten trivial erfuellt.",
+      "hinweis": "Eine Quelle mit bekanntem Routing, zwoelf zusammenhaengenden Fenstern und KONSTANTER Bandanhebung. 🔑 **NAK-212 R1/E7 (07.09.2026): die Erwartung sinkt von `hoch` auf `mittel`.** Sie IST die wahre Ursache — aber es gibt kein Fenster OHNE sie, also ist der bedingte Uplift nach M-19 nicht messbar, und die Onsetreihe ist konstant. Ohne einen einzigen Zusammenhangsbeleg traegt der Fall keine starke Aussage. Das ist die vom Gate-Text gewollte Verschaerfung — die Faelle, auf denen `hoch` ERLAUBT ist, heissen seit NAK-212 `zusammenhang_uplift`, `zusammenhang_koinzidenz`, `getrennt_durch_zusammenhang`, `g5_fenster_genau_acht` und `passage_traegt`.",
       "kennung": "wahrer_kandidat",
+      "luecke": null,
       "master": {
         "anhebung_db": 9.0,
-        "fenster": 12
+        "fenster": 12,
+        "onsets": null,
+        "reihe_db": [
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0
+        ]
       },
+      "passage": null,
       "quellen": [
         {
           "anhebung_db": 9.0,
@@ -19,6 +36,21 @@
           "fenster": 12,
           "instanz": 2,
           "mixer": 3,
+          "onsets": null,
+          "reihe_db": [
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0
+          ],
           "versatz_fenster": 0,
           "wahre_ursache": true
         }
@@ -34,10 +66,27 @@
       },
       "hinweis": "Zwei Quellen laufen im selben Band gleich. Der Distraktor darf als ALTERNATIVE erscheinen (NAK-190, SONDE-013 M-85 Ziel 1), aber nie als Ursache mit eigener starker Aussage. Hoechstens MITTEL, und zwar fuer BEIDE: im Material ist hier nichts, was sie trennt — wer fuehrt, entscheidet sonst nur der Gleichstandsschluessel. Eine starke Aussage auf diesem Platz waere richtig oder falsch je nach Lage der Kennungen, und genau diese Muenzwurf-Behauptung verbietet §36.4 Satz 1. Die Erwartung steht bewusst NICHT auf `hoch`: sonst maesse der Fall, ob die wahre Ursache die kleinere Kennung hat.",
       "kennung": "korrelierter_distraktor",
+      "luecke": null,
       "master": {
         "anhebung_db": 9.0,
-        "fenster": 12
+        "fenster": 12,
+        "onsets": null,
+        "reihe_db": [
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0
+        ]
       },
+      "passage": null,
       "quellen": [
         {
           "anhebung_db": 9.0,
@@ -45,6 +94,21 @@
           "fenster": 12,
           "instanz": 2,
           "mixer": 3,
+          "onsets": null,
+          "reihe_db": [
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0
+          ],
           "versatz_fenster": 0,
           "wahre_ursache": true
         },
@@ -54,6 +118,21 @@
           "fenster": 12,
           "instanz": 3,
           "mixer": 4,
+          "onsets": null,
+          "reihe_db": [
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0
+          ],
           "versatz_fenster": 0,
           "wahre_ursache": false
         }
@@ -69,10 +148,27 @@
       },
       "hinweis": "Zwei Sonden auf DEMSELBEN Mixerkanal messen dasselbe Signal. Keine von beiden traegt eine starke Aussage (M-22).",
       "kennung": "parent_duplikat",
+      "luecke": null,
       "master": {
         "anhebung_db": 9.0,
-        "fenster": 12
+        "fenster": 12,
+        "onsets": null,
+        "reihe_db": [
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0
+        ]
       },
+      "passage": null,
       "quellen": [
         {
           "anhebung_db": 9.0,
@@ -80,6 +176,21 @@
           "fenster": 12,
           "instanz": 2,
           "mixer": 7,
+          "onsets": null,
+          "reihe_db": [
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0
+          ],
           "versatz_fenster": 0,
           "wahre_ursache": true
         },
@@ -89,6 +200,21 @@
           "fenster": 12,
           "instanz": 3,
           "mixer": 7,
+          "onsets": null,
+          "reihe_db": [
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0
+          ],
           "versatz_fenster": 0,
           "wahre_ursache": false
         }
@@ -104,10 +230,27 @@
       },
       "hinweis": "Die Quelle misst ein um sechs Fenster verschobenes Zeitfenster. Das Alignment reisst, und der Kandidat verlaesst das Ranking MIT Grund (M-20, M-87).",
       "kennung": "verschobene_passage",
+      "luecke": null,
       "master": {
         "anhebung_db": 9.0,
-        "fenster": 12
+        "fenster": 12,
+        "onsets": null,
+        "reihe_db": [
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0
+        ]
       },
+      "passage": null,
       "quellen": [
         {
           "anhebung_db": 9.0,
@@ -115,6 +258,21 @@
           "fenster": 12,
           "instanz": 2,
           "mixer": 3,
+          "onsets": null,
+          "reihe_db": [
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0
+          ],
           "versatz_fenster": 6,
           "wahre_ursache": true
         }
@@ -130,10 +288,18 @@
       },
       "hinweis": "Drei unabhaengige Fenster — unter `GATE_MINDEST_FENSTER`. Der Fall, den D1 aufgedeckt hat: die vier relativen Gates bestehen ihn alle, weil `ueberdeckung` auf das kuerzere Fenster normiert. Nur die absolute Zahl faengt ihn.",
       "kennung": "zu_kurze_passage",
+      "luecke": null,
       "master": {
         "anhebung_db": 9.0,
-        "fenster": 3
+        "fenster": 3,
+        "onsets": null,
+        "reihe_db": [
+          9.0,
+          9.0,
+          9.0
+        ]
       },
+      "passage": null,
       "quellen": [
         {
           "anhebung_db": 9.0,
@@ -141,6 +307,12 @@
           "fenster": 3,
           "instanz": 2,
           "mixer": 3,
+          "onsets": null,
+          "reihe_db": [
+            9.0,
+            9.0,
+            9.0
+          ],
           "versatz_fenster": 0,
           "wahre_ursache": true
         }
@@ -152,17 +324,1621 @@
       "erwartet": {
         "ausschlussgrund": null,
         "distraktor_ist_alternative": false,
+        "sicherheit_hoechstens": "hoch"
+      },
+      "hinweis": "Quelle und Master sind in denselben Fenstern laut und sonst leise. Damit teilt `upliftreihe` die Masterfenster in eine Menge MIT und eine OHNE aktive Quelle — der bedingte Uplift aus M-19 ist messbar und positiv. Das LETZTE Fenster ist laut, damit `masteranomalie` dasselbe Band findet.",
+      "kennung": "zusammenhang_uplift",
+      "luecke": null,
+      "master": {
+        "anhebung_db": 9.0,
+        "fenster": 12,
+        "onsets": null,
+        "reihe_db": [
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0
+        ]
+      },
+      "passage": null,
+      "quellen": [
+        {
+          "anhebung_db": 9.0,
+          "distraktor": false,
+          "fenster": 12,
+          "instanz": 2,
+          "mixer": 3,
+          "onsets": null,
+          "reihe_db": [
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0
+          ],
+          "versatz_fenster": 0,
+          "wahre_ursache": true
+        }
+      ],
+      "ursachenklasse": "quelle_resonanz",
+      "wahrheit": "wahre_ursache"
+    },
+    {
+      "erwartet": {
+        "ausschlussgrund": null,
+        "distraktor_ist_alternative": false,
+        "sicherheit_hoechstens": "hoch"
+      },
+      "hinweis": "Konstanter Pegel, aber die ONSETS laufen gleich. R1 verlangt MINDESTENS EINE Komponente; ohne diesen Fall waere die Regel von `beide noetig` nicht zu unterscheiden — und `hoch` in jeder Sitzung ohne Onsetereignisse unerreichbar.",
+      "kennung": "zusammenhang_koinzidenz",
+      "luecke": null,
+      "master": {
+        "anhebung_db": 9.0,
+        "fenster": 12,
+        "onsets": [
+          1.0,
+          2.5,
+          4.0,
+          2.5,
+          1.0,
+          2.5,
+          4.0,
+          2.5,
+          1.0,
+          2.5,
+          4.0,
+          2.5
+        ],
+        "reihe_db": [
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0
+        ]
+      },
+      "passage": null,
+      "quellen": [
+        {
+          "anhebung_db": 9.0,
+          "distraktor": false,
+          "fenster": 12,
+          "instanz": 2,
+          "mixer": 3,
+          "onsets": [
+            1.0,
+            2.5,
+            4.0,
+            2.5,
+            1.0,
+            2.5,
+            4.0,
+            2.5,
+            1.0,
+            2.5,
+            4.0,
+            2.5
+          ],
+          "reihe_db": [
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0
+          ],
+          "versatz_fenster": 0,
+          "wahre_ursache": true
+        }
+      ],
+      "ursachenklasse": "quelle_resonanz",
+      "wahrheit": "wahre_ursache"
+    },
+    {
+      "erwartet": {
+        "ausschlussgrund": null,
+        "distraktor_ist_alternative": false,
+        "sicherheit_hoechstens": "mittel"
+      },
+      "hinweis": "Die Quelle ist laut, WENN der Master leise ist. Bis NAK-212 kostete das exakt so viel wie `keine Angabe` — nichts —, und der zweiseitige Bootstrap belohnte die Stabilitaet des Gegenlaufs sogar (G-D5: Rang 0,4358).",
+      "kennung": "gegenbeleg_uplift",
+      "luecke": null,
+      "master": {
+        "anhebung_db": 9.0,
+        "fenster": 12,
+        "onsets": null,
+        "reihe_db": [
+          4.0,
+          12.0,
+          4.0,
+          12.0,
+          4.0,
+          12.0,
+          4.0,
+          12.0,
+          4.0,
+          12.0,
+          4.0,
+          12.0
+        ]
+      },
+      "passage": null,
+      "quellen": [
+        {
+          "anhebung_db": 9.0,
+          "distraktor": false,
+          "fenster": 12,
+          "instanz": 2,
+          "mixer": 3,
+          "onsets": null,
+          "reihe_db": [
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0
+          ],
+          "versatz_fenster": 0,
+          "wahre_ursache": false
+        }
+      ],
+      "ursachenklasse": "quelle_resonanz",
+      "wahrheit": "gegenbeleg"
+    },
+    {
+      "erwartet": {
+        "ausschlussgrund": null,
+        "distraktor_ist_alternative": false,
+        "sicherheit_hoechstens": "mittel"
+      },
+      "hinweis": "Dasselbe in der Onsetspur: eine gegenlaeufige Spur ist ein Gegenbeleg (R2).",
+      "kennung": "gegenbeleg_koinzidenz",
+      "luecke": null,
+      "master": {
+        "anhebung_db": 9.0,
+        "fenster": 12,
+        "onsets": [
+          1.0,
+          2.5,
+          4.0,
+          2.5,
+          1.0,
+          2.5,
+          4.0,
+          2.5,
+          1.0,
+          2.5,
+          4.0,
+          2.5
+        ],
+        "reihe_db": [
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0
+        ]
+      },
+      "passage": null,
+      "quellen": [
+        {
+          "anhebung_db": 9.0,
+          "distraktor": false,
+          "fenster": 12,
+          "instanz": 2,
+          "mixer": 3,
+          "onsets": [
+            4.0,
+            2.5,
+            1.0,
+            2.5,
+            4.0,
+            2.5,
+            1.0,
+            2.5,
+            4.0,
+            2.5,
+            1.0,
+            2.5
+          ],
+          "reihe_db": [
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0
+          ],
+          "versatz_fenster": 0,
+          "wahre_ursache": false
+        }
+      ],
+      "ursachenklasse": "quelle_resonanz",
+      "wahrheit": "gegenbeleg"
+    },
+    {
+      "erwartet": {
+        "ausschlussgrund": null,
+        "distraktor_ist_alternative": false,
+        "sicherheit_hoechstens": "mittel"
+      },
+      "hinweis": "`mixer: null` heisst `Routing unbekannt` (M-22) — die Routingqualitaet ist 0 und die Aussage gedeckelt. Der Fall war im Korpus nie vertreten, obwohl der Erzeuger ihn vorsieht (G5-Befund E-H3): `Routing unbekannt` war nur im Rustbein gemessen, nie in der Kalibrierung.",
+      "kennung": "routing_unbekannt",
+      "luecke": null,
+      "master": {
+        "anhebung_db": 9.0,
+        "fenster": 12,
+        "onsets": null,
+        "reihe_db": [
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0
+        ]
+      },
+      "passage": null,
+      "quellen": [
+        {
+          "anhebung_db": 9.0,
+          "distraktor": false,
+          "fenster": 12,
+          "instanz": 2,
+          "mixer": null,
+          "onsets": null,
+          "reihe_db": [
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0
+          ],
+          "versatz_fenster": 0,
+          "wahre_ursache": false
+        }
+      ],
+      "ursachenklasse": "quelle_resonanz",
+      "wahrheit": "routing_unbekannt"
+    },
+    {
+      "erwartet": {
+        "ausschlussgrund": null,
+        "distraktor_ist_alternative": true,
+        "sicherheit_hoechstens": "hoch"
+      },
+      "hinweis": "Nur EINE der beiden Quellen traegt einen belegten Uplift. Der Abstand ist gross genug, dass sich auch die quantisierten GESAMTRAENGE unterscheiden — beide Bedingungen aus E6 halten, und genau EIN Befund darf stark sein (M-21).",
+      "kennung": "getrennt_durch_zusammenhang",
+      "luecke": null,
+      "master": {
+        "anhebung_db": 9.0,
+        "fenster": 12,
+        "onsets": null,
+        "reihe_db": [
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0
+        ]
+      },
+      "passage": null,
+      "quellen": [
+        {
+          "anhebung_db": 9.0,
+          "distraktor": false,
+          "fenster": 12,
+          "instanz": 2,
+          "mixer": 3,
+          "onsets": null,
+          "reihe_db": [
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0
+          ],
+          "versatz_fenster": 0,
+          "wahre_ursache": true
+        },
+        {
+          "anhebung_db": 9.0,
+          "distraktor": true,
+          "fenster": 12,
+          "instanz": 3,
+          "mixer": 4,
+          "onsets": null,
+          "reihe_db": [
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0
+          ],
+          "versatz_fenster": 0,
+          "wahre_ursache": false
+        }
+      ],
+      "ursachenklasse": "zwei_quellen_konkurrenz",
+      "wahrheit": "wahre_ursache"
+    },
+    {
+      "erwartet": {
+        "ausschlussgrund": null,
+        "distraktor_ist_alternative": false,
         "sicherheit_hoechstens": "unklar"
       },
       "hinweis": "Kein Kandidat. Die Enthaltung ist das GEWUENSCHTE Ergebnis und zaehlt nicht als Fehlschlag (M-27, §49.4: 'Ein konservatives unsicher ist besser als eine ueberzeugende falsche Ursache.').",
       "kennung": "daten_reichen_nicht",
+      "luecke": null,
       "master": {
         "anhebung_db": 9.0,
-        "fenster": 12
+        "fenster": 12,
+        "onsets": null,
+        "reihe_db": [
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0
+        ]
       },
+      "passage": null,
       "quellen": [],
       "ursachenklasse": "daten_reichen_nicht",
       "wahrheit": "keine_ursache"
+    },
+    {
+      "erwartet": {
+        "ausschlussgrund": null,
+        "distraktor_ist_alternative": true,
+        "sicherheit_hoechstens": "mittel"
+      },
+      "hinweis": "G5 Fall 1: derselbe Verlauf, aber der Distraktor traegt MEHR Fenster. `gemeinsame_reihen` iteriert ueber die Kandidaten- fenster und ueberspringt jedes ohne Masterpartner — die vier ueberzaehligen gehen in keine der drei Zusammenhangsgroessen ein. Materialmenge trennt nicht (R3).",
+      "kennung": "g5_distraktor_mehr_fenster",
+      "luecke": null,
+      "master": {
+        "anhebung_db": 9.0,
+        "fenster": 12,
+        "onsets": null,
+        "reihe_db": [
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0
+        ]
+      },
+      "passage": null,
+      "quellen": [
+        {
+          "anhebung_db": 9.0,
+          "distraktor": false,
+          "fenster": 12,
+          "instanz": 2,
+          "mixer": 3,
+          "onsets": null,
+          "reihe_db": [
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0
+          ],
+          "versatz_fenster": 0,
+          "wahre_ursache": true
+        },
+        {
+          "anhebung_db": 9.0,
+          "distraktor": true,
+          "fenster": 16,
+          "instanz": 3,
+          "mixer": 4,
+          "onsets": null,
+          "reihe_db": [
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0
+          ],
+          "versatz_fenster": 0,
+          "wahre_ursache": false
+        }
+      ],
+      "ursachenklasse": "zwei_quellen_konkurrenz",
+      "wahrheit": "distraktor"
+    },
+    {
+      "erwartet": {
+        "ausschlussgrund": null,
+        "distraktor_ist_alternative": true,
+        "sicherheit_hoechstens": "mittel"
+      },
+      "hinweis": "G5 Fall 7: die kleinste im Gitter darstellbare Trennung (0,1 dB) liegt weit ueber RANG_QUANTUM und trennt die GESAMTRAENGE. Die Zusammenhangskomponenten trennt sie nicht — die Bandpassung sagt, WO eine Quelle Energie hat, nicht OB sie die Ursache ist (G-H3).",
+      "kennung": "g5_distraktor_lauter",
+      "luecke": null,
+      "master": {
+        "anhebung_db": 9.0,
+        "fenster": 12,
+        "onsets": null,
+        "reihe_db": [
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0
+        ]
+      },
+      "passage": null,
+      "quellen": [
+        {
+          "anhebung_db": 9.0,
+          "distraktor": false,
+          "fenster": 12,
+          "instanz": 2,
+          "mixer": 3,
+          "onsets": null,
+          "reihe_db": [
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0
+          ],
+          "versatz_fenster": 0,
+          "wahre_ursache": true
+        },
+        {
+          "anhebung_db": 9.0,
+          "distraktor": true,
+          "fenster": 12,
+          "instanz": 3,
+          "mixer": 4,
+          "onsets": null,
+          "reihe_db": [
+            0.1,
+            9.1,
+            0.1,
+            9.1,
+            0.1,
+            9.1,
+            0.1,
+            9.1,
+            0.1,
+            9.1,
+            0.1,
+            9.1
+          ],
+          "versatz_fenster": 0,
+          "wahre_ursache": false
+        }
+      ],
+      "ursachenklasse": "zwei_quellen_konkurrenz",
+      "wahrheit": "distraktor"
+    },
+    {
+      "erwartet": {
+        "ausschlussgrund": "alignment_falsch",
+        "distraktor_ist_alternative": false,
+        "sicherheit_hoechstens": "mittel"
+      },
+      "hinweis": "G5 Fall 2: der wahre Verursacher faellt am Alignment. Die Sitzung traegt bewusst eine Pegelreihe, damit der Distraktor einen belegten Zusammenhang hat und die Luecke wirklich beisst — R1 wuerde ihn sonst schon senken.",
+      "kennung": "g5_distraktor_allein_im_rennen",
+      "luecke": {
+        "regel": "R2",
+        "ticket": "NAK-213",
+        "was_heute_passiert": "Der Distraktor bleibt allein im Rennen und traegt `hoch`, obwohl der Ausschluss im selben Befund belegt, dass die Datenlage nachweislich unvollstaendig ist.",
+        "wirkung": "ausgenommen",
+        "zusage": "Ein einziger Ueberlebender ist nicht `getrennt`, wenn ein Konkurrent aus einem MESSGRUND ausgeschieden ist."
+      },
+      "master": {
+        "anhebung_db": 9.0,
+        "fenster": 12,
+        "onsets": null,
+        "reihe_db": [
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0
+        ]
+      },
+      "passage": null,
+      "quellen": [
+        {
+          "anhebung_db": 9.0,
+          "distraktor": false,
+          "fenster": 12,
+          "instanz": 2,
+          "mixer": 3,
+          "onsets": null,
+          "reihe_db": [
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0
+          ],
+          "versatz_fenster": 6,
+          "wahre_ursache": true
+        },
+        {
+          "anhebung_db": 9.0,
+          "distraktor": true,
+          "fenster": 12,
+          "instanz": 3,
+          "mixer": 4,
+          "onsets": null,
+          "reihe_db": [
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0
+          ],
+          "versatz_fenster": 0,
+          "wahre_ursache": false
+        }
+      ],
+      "ursachenklasse": "quelle_resonanz",
+      "wahrheit": "distraktor"
+    },
+    {
+      "erwartet": {
+        "ausschlussgrund": null,
+        "distraktor_ist_alternative": false,
+        "sicherheit_hoechstens": "mittel"
+      },
+      "hinweis": "G5 eigene Angriffsidee 1: die Quelle traegt im Befundband GAR KEINE Anhebung. Uplift, Koinzidenz und Wiederholbarkeit sind null — es gibt keinen Beleg fuer einen Zusammenhang. ⚠️ Die Erwartung ist `mittel`, NICHT `unklar`: die Quelle passiert alle fuenf Gates, also ueberlebt ein Kandidat, und `unklar` ist im Datenweg ausschliesslich die Klasse von `enthaltung()`.",
+      "kennung": "g5_unbeteiligte_quelle",
+      "luecke": null,
+      "master": {
+        "anhebung_db": 9.0,
+        "fenster": 12,
+        "onsets": null,
+        "reihe_db": [
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0
+        ]
+      },
+      "passage": null,
+      "quellen": [
+        {
+          "anhebung_db": 0.0,
+          "distraktor": false,
+          "fenster": 12,
+          "instanz": 2,
+          "mixer": 3,
+          "onsets": null,
+          "reihe_db": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "versatz_fenster": 0,
+          "wahre_ursache": false
+        }
+      ],
+      "ursachenklasse": "quelle_resonanz",
+      "wahrheit": "keine_ursache"
+    },
+    {
+      "erwartet": {
+        "ausschlussgrund": null,
+        "distraktor_ist_alternative": false,
+        "sicherheit_hoechstens": "mittel"
+      },
+      "hinweis": "G5 eigene Angriffsidee 2: die Sonde misst denselben Mixerkanal wie der Master. Mit Pegelreihe ist ihr Uplift gegen den Master perfekt belegt — R1 greift nicht, und die Luecke bleibt scharf.",
+      "kennung": "g5_sonde_auf_masterkanal",
+      "luecke": {
+        "regel": "R3",
+        "ticket": "NAK-213",
+        "was_heute_passiert": "`ids` und `ist_parent` lesen nur die KANDIDATEN — der Master steht in keiner der beiden Mengen, `duplikat` bleibt falsch, und die Sonde wird `hoch`.",
+        "wirkung": "ausgenommen",
+        "zusage": "Eine Quelle auf dem Mixerkanal des Masters misst das Mastersignal; sie ist dessen Duplikat, nie seine Ursache."
+      },
+      "master": {
+        "anhebung_db": 9.0,
+        "fenster": 12,
+        "onsets": null,
+        "reihe_db": [
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0
+        ]
+      },
+      "passage": null,
+      "quellen": [
+        {
+          "anhebung_db": 9.0,
+          "distraktor": false,
+          "fenster": 12,
+          "instanz": 2,
+          "mixer": 0,
+          "onsets": null,
+          "reihe_db": [
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0
+          ],
+          "versatz_fenster": 0,
+          "wahre_ursache": false
+        }
+      ],
+      "ursachenklasse": "quelle_resonanz",
+      "wahrheit": "parent_duplikat"
+    },
+    {
+      "erwartet": {
+        "ausschlussgrund": "alignment_falsch",
+        "distraktor_ist_alternative": false,
+        "sicherheit_hoechstens": "mittel"
+      },
+      "hinweis": "G5 Fall 3: der Partner desselben Mixerkanals faellt am Alignment. Die Duplikatmarke haelt trotzdem — `ids` und `ist_parent` lesen ALLE Kandidaten, nicht nur die Ueberlebenden.",
+      "kennung": "g5_parent_partner_faellt_aus",
+      "luecke": null,
+      "master": {
+        "anhebung_db": 9.0,
+        "fenster": 12,
+        "onsets": null,
+        "reihe_db": [
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0
+        ]
+      },
+      "passage": null,
+      "quellen": [
+        {
+          "anhebung_db": 9.0,
+          "distraktor": false,
+          "fenster": 12,
+          "instanz": 2,
+          "mixer": 7,
+          "onsets": null,
+          "reihe_db": [
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0
+          ],
+          "versatz_fenster": 0,
+          "wahre_ursache": true
+        },
+        {
+          "anhebung_db": 9.0,
+          "distraktor": false,
+          "fenster": 12,
+          "instanz": 3,
+          "mixer": 7,
+          "onsets": null,
+          "reihe_db": [
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0
+          ],
+          "versatz_fenster": 6,
+          "wahre_ursache": false
+        }
+      ],
+      "ursachenklasse": "quelle_resonanz",
+      "wahrheit": "parent_duplikat"
+    },
+    {
+      "erwartet": {
+        "ausschlussgrund": null,
+        "distraktor_ist_alternative": false,
+        "sicherheit_hoechstens": "mittel"
+      },
+      "hinweis": "G5 Fall 3: der Partner traegt zwei Fenster — zu wenig fuer eine starke Aussage.",
+      "kennung": "g5_parent_partner_zu_wenig_fenster",
+      "luecke": null,
+      "master": {
+        "anhebung_db": 9.0,
+        "fenster": 12,
+        "onsets": null,
+        "reihe_db": [
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0
+        ]
+      },
+      "passage": null,
+      "quellen": [
+        {
+          "anhebung_db": 9.0,
+          "distraktor": false,
+          "fenster": 12,
+          "instanz": 2,
+          "mixer": 7,
+          "onsets": null,
+          "reihe_db": [
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0
+          ],
+          "versatz_fenster": 0,
+          "wahre_ursache": true
+        },
+        {
+          "anhebung_db": 9.0,
+          "distraktor": false,
+          "fenster": 2,
+          "instanz": 3,
+          "mixer": 7,
+          "onsets": null,
+          "reihe_db": [
+            0.0,
+            9.0
+          ],
+          "versatz_fenster": 0,
+          "wahre_ursache": false
+        }
+      ],
+      "ursachenklasse": "zwei_quellen_konkurrenz",
+      "wahrheit": "parent_duplikat"
+    },
+    {
+      "erwartet": {
+        "ausschlussgrund": null,
+        "distraktor_ist_alternative": false,
+        "sicherheit_hoechstens": "mittel"
+      },
+      "hinweis": "G5 Fall 3: der Partner ist angemeldet, traegt denselben Mixerkanal, hat aber nie gesendet.",
+      "kennung": "g5_parent_partner_ohne_evidenz",
+      "luecke": {
+        "regel": "R2",
+        "ticket": "NAK-213",
+        "was_heute_passiert": "Die Kanaltafel `je_kanal` entsteht aus den EVIDENZ-Schluesseln; eine stumme Sonde steht in keiner Kanalgruppe und setzt die Duplikatmarke des Partners nicht.",
+        "wirkung": "ausgenommen",
+        "zusage": "Eine angemeldete aktive Quelle ohne Evidenz macht den Ueberlebenden nicht `getrennt`."
+      },
+      "master": {
+        "anhebung_db": 9.0,
+        "fenster": 12,
+        "onsets": null,
+        "reihe_db": [
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0
+        ]
+      },
+      "passage": null,
+      "quellen": [
+        {
+          "anhebung_db": 9.0,
+          "distraktor": false,
+          "fenster": 12,
+          "instanz": 2,
+          "mixer": 7,
+          "onsets": null,
+          "reihe_db": [
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0
+          ],
+          "versatz_fenster": 0,
+          "wahre_ursache": true
+        },
+        {
+          "anhebung_db": 9.0,
+          "distraktor": false,
+          "fenster": 0,
+          "instanz": 3,
+          "mixer": 7,
+          "onsets": null,
+          "reihe_db": [],
+          "versatz_fenster": 0,
+          "wahre_ursache": false
+        }
+      ],
+      "ursachenklasse": "quelle_resonanz",
+      "wahrheit": "parent_duplikat"
+    },
+    {
+      "erwartet": {
+        "ausschlussgrund": null,
+        "distraktor_ist_alternative": false,
+        "sicherheit_hoechstens": "hoch"
+      },
+      "hinweis": "G5 Fall 6: der Randwert. GATE_MINDEST_FENSTER = 8, die Klassenwahl prueft `fenster < 8` — acht sind genug (M-23: `mindestens acht`). Die Sitzung traegt eine Pegelreihe, sonst fiele sie an R1 und der Randwert waere nicht mehr gemessen. Das Alignment haelt, weil `paarueberdeckung` auf die KUERZERE Seite normiert (8 von 8).",
+      "kennung": "g5_fenster_genau_acht",
+      "luecke": null,
+      "master": {
+        "anhebung_db": 9.0,
+        "fenster": 12,
+        "onsets": null,
+        "reihe_db": [
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0
+        ]
+      },
+      "passage": null,
+      "quellen": [
+        {
+          "anhebung_db": 9.0,
+          "distraktor": false,
+          "fenster": 8,
+          "instanz": 2,
+          "mixer": 3,
+          "onsets": null,
+          "reihe_db": [
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0
+          ],
+          "versatz_fenster": 0,
+          "wahre_ursache": true
+        }
+      ],
+      "ursachenklasse": "quelle_resonanz",
+      "wahrheit": "wahre_ursache"
+    },
+    {
+      "erwartet": {
+        "ausschlussgrund": null,
+        "distraktor_ist_alternative": false,
+        "sicherheit_hoechstens": "mittel"
+      },
+      "hinweis": "G5 Fall 6, Gegenprobe: ein Fenster unter dem Randwert. Ohne diese Sitzung waere `< 8` von `<= 8` nicht zu unterscheiden.",
+      "kennung": "g5_fenster_sieben",
+      "luecke": null,
+      "master": {
+        "anhebung_db": 9.0,
+        "fenster": 12,
+        "onsets": null,
+        "reihe_db": [
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0
+        ]
+      },
+      "passage": null,
+      "quellen": [
+        {
+          "anhebung_db": 9.0,
+          "distraktor": false,
+          "fenster": 7,
+          "instanz": 2,
+          "mixer": 3,
+          "onsets": null,
+          "reihe_db": [
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0
+          ],
+          "versatz_fenster": 0,
+          "wahre_ursache": true
+        }
+      ],
+      "ursachenklasse": "quelle_resonanz",
+      "wahrheit": "zu_kurze_passage"
+    },
+    {
+      "erwartet": {
+        "ausschlussgrund": null,
+        "distraktor_ist_alternative": true,
+        "sicherheit_hoechstens": "mittel"
+      },
+      "hinweis": "G5 Fall 2 / M-18: sechs Kandidaten, der wahre Verursacher ist der leiseste. Die SICHERHEIT ist seit R3 korrekt `mittel` (alle fuenf sind ungetrennt) — die Luecke ist die fehlende Spur des sechsten, und die zaehlt normal in allen Kennzahlen mit (`wirkung: benannt`).",
+      "kennung": "g5_kandidatendeckel",
+      "luecke": {
+        "regel": "R1",
+        "ticket": "NAK-213",
+        "was_heute_passiert": "`truncate(KANDIDATEN_DECKEL)` schneidet nach der Sortierung und ohne Eintrag in `ausschluesse`; Instanz 02 erscheint weder als Befund noch als Alternative noch als Ausschluss.",
+        "wirkung": "benannt",
+        "zusage": "Jeder Kandidat, der ausscheidet, traegt einen Grund aus der geschlossenen Menge (M-87) — auch der am Deckel abgeschnittene."
+      },
+      "master": {
+        "anhebung_db": 9.0,
+        "fenster": 12,
+        "onsets": null,
+        "reihe_db": [
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0
+        ]
+      },
+      "passage": null,
+      "quellen": [
+        {
+          "anhebung_db": 8.0,
+          "distraktor": false,
+          "fenster": 12,
+          "instanz": 2,
+          "mixer": 3,
+          "onsets": null,
+          "reihe_db": [
+            8.0,
+            8.0,
+            8.0,
+            8.0,
+            8.0,
+            8.0,
+            8.0,
+            8.0,
+            8.0,
+            8.0,
+            8.0,
+            8.0
+          ],
+          "versatz_fenster": 0,
+          "wahre_ursache": true
+        },
+        {
+          "anhebung_db": 9.0,
+          "distraktor": true,
+          "fenster": 12,
+          "instanz": 3,
+          "mixer": 4,
+          "onsets": null,
+          "reihe_db": [
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0
+          ],
+          "versatz_fenster": 0,
+          "wahre_ursache": false
+        },
+        {
+          "anhebung_db": 9.1,
+          "distraktor": true,
+          "fenster": 12,
+          "instanz": 4,
+          "mixer": 5,
+          "onsets": null,
+          "reihe_db": [
+            9.1,
+            9.1,
+            9.1,
+            9.1,
+            9.1,
+            9.1,
+            9.1,
+            9.1,
+            9.1,
+            9.1,
+            9.1,
+            9.1
+          ],
+          "versatz_fenster": 0,
+          "wahre_ursache": false
+        },
+        {
+          "anhebung_db": 9.2,
+          "distraktor": true,
+          "fenster": 12,
+          "instanz": 5,
+          "mixer": 6,
+          "onsets": null,
+          "reihe_db": [
+            9.2,
+            9.2,
+            9.2,
+            9.2,
+            9.2,
+            9.2,
+            9.2,
+            9.2,
+            9.2,
+            9.2,
+            9.2,
+            9.2
+          ],
+          "versatz_fenster": 0,
+          "wahre_ursache": false
+        },
+        {
+          "anhebung_db": 9.3,
+          "distraktor": true,
+          "fenster": 12,
+          "instanz": 6,
+          "mixer": 8,
+          "onsets": null,
+          "reihe_db": [
+            9.3,
+            9.3,
+            9.3,
+            9.3,
+            9.3,
+            9.3,
+            9.3,
+            9.3,
+            9.3,
+            9.3,
+            9.3,
+            9.3
+          ],
+          "versatz_fenster": 0,
+          "wahre_ursache": false
+        },
+        {
+          "anhebung_db": 9.4,
+          "distraktor": true,
+          "fenster": 12,
+          "instanz": 7,
+          "mixer": 9,
+          "onsets": null,
+          "reihe_db": [
+            9.4,
+            9.4,
+            9.4,
+            9.4,
+            9.4,
+            9.4,
+            9.4,
+            9.4,
+            9.4,
+            9.4,
+            9.4,
+            9.4
+          ],
+          "versatz_fenster": 0,
+          "wahre_ursache": false
+        }
+      ],
+      "ursachenklasse": "zwei_quellen_konkurrenz",
+      "wahrheit": "distraktor"
+    },
+    {
+      "erwartet": {
+        "ausschlussgrund": null,
+        "distraktor_ist_alternative": true,
+        "sicherheit_hoechstens": "mittel"
+      },
+      "hinweis": "G5 Fall 7, Gegenprobe: der Verursacher fuehrt um 0,1 dB. Im G5-Lauf galt das als ZULAESSIGE starke Aussage; seit R3 ist es keine — die Trennung war reine Bandpassung, und beide fallen auf `mittel`. Das ist die vom Gate-Text gewollte Verschaerfung.",
+      "kennung": "g5_gleichstand_verursacher_fuehrt",
+      "luecke": null,
+      "master": {
+        "anhebung_db": 9.0,
+        "fenster": 12,
+        "onsets": null,
+        "reihe_db": [
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0
+        ]
+      },
+      "passage": null,
+      "quellen": [
+        {
+          "anhebung_db": 9.1,
+          "distraktor": false,
+          "fenster": 12,
+          "instanz": 2,
+          "mixer": 3,
+          "onsets": null,
+          "reihe_db": [
+            9.1,
+            9.1,
+            9.1,
+            9.1,
+            9.1,
+            9.1,
+            9.1,
+            9.1,
+            9.1,
+            9.1,
+            9.1,
+            9.1
+          ],
+          "versatz_fenster": 0,
+          "wahre_ursache": true
+        },
+        {
+          "anhebung_db": 9.0,
+          "distraktor": true,
+          "fenster": 12,
+          "instanz": 3,
+          "mixer": 4,
+          "onsets": null,
+          "reihe_db": [
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0,
+            9.0
+          ],
+          "versatz_fenster": 0,
+          "wahre_ursache": false
+        }
+      ],
+      "ursachenklasse": "zwei_quellen_konkurrenz",
+      "wahrheit": "distraktor"
+    },
+    {
+      "erwartet": {
+        "ausschlussgrund": null,
+        "distraktor_ist_alternative": false,
+        "sicherheit_hoechstens": "hoch"
+      },
+      "hinweis": "Zwoelf Fensterlaengen, alle Fenster vollstaendig innerhalb. Der Kontrollfall — ohne ihn waere jede Passagenzeile trivial erfuellt.",
+      "kennung": "passage_traegt",
+      "luecke": null,
+      "master": {
+        "anhebung_db": 9.0,
+        "fenster": 12,
+        "onsets": null,
+        "reihe_db": [
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0
+        ]
+      },
+      "passage": {
+        "bis_offset": 6144,
+        "von_offset": 0
+      },
+      "quellen": [
+        {
+          "anhebung_db": 9.0,
+          "distraktor": false,
+          "fenster": 12,
+          "instanz": 2,
+          "mixer": 3,
+          "onsets": null,
+          "reihe_db": [
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0
+          ],
+          "versatz_fenster": 0,
+          "wahre_ursache": true
+        }
+      ],
+      "ursachenklasse": "quelle_resonanz",
+      "wahrheit": "wahre_ursache"
+    },
+    {
+      "erwartet": {
+        "ausschlussgrund": "passage_zu_kurz",
+        "distraktor_ist_alternative": false,
+        "sicherheit_hoechstens": "unklar"
+      },
+      "hinweis": "Sieben Fensterlaengen: das Passagenmaterial ist 7 < 8, jeder Kandidat faellt mit Grund, und das Ergebnis ist die Enthaltung.",
+      "kennung": "passage_zu_kurz_echt",
+      "luecke": null,
+      "master": {
+        "anhebung_db": 9.0,
+        "fenster": 12,
+        "onsets": null,
+        "reihe_db": [
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0
+        ]
+      },
+      "passage": {
+        "bis_offset": 3584,
+        "von_offset": 0
+      },
+      "quellen": [
+        {
+          "anhebung_db": 9.0,
+          "distraktor": false,
+          "fenster": 12,
+          "instanz": 2,
+          "mixer": 3,
+          "onsets": null,
+          "reihe_db": [
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0
+          ],
+          "versatz_fenster": 0,
+          "wahre_ursache": true
+        }
+      ],
+      "ursachenklasse": "quelle_resonanz",
+      "wahrheit": "zu_kurze_passage"
+    },
+    {
+      "erwartet": {
+        "ausschlussgrund": "passage_zu_kurz",
+        "distraktor_ist_alternative": false,
+        "sicherheit_hoechstens": "unklar"
+      },
+      "hinweis": "Acht Fensterlaengen, um einen HALBEN Fensterschritt versetzt. Vollstaendig innerhalb liegen die Fenster 1..7 — Material 7 < 8. Nach der alten Beruehrungsregel waeren es 0..8, also 9 ≥ 8, und der Fall hielte (G5-Befund E-D3). Gate 3 und Gate 4a halten in beiden Faellen; NUR das Materialgate trennt.",
+      "kennung": "passage_teilweise_innerhalb",
+      "luecke": null,
+      "master": {
+        "anhebung_db": 9.0,
+        "fenster": 12,
+        "onsets": null,
+        "reihe_db": [
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0,
+          0.0,
+          9.0
+        ]
+      },
+      "passage": {
+        "bis_offset": 4352,
+        "von_offset": 256
+      },
+      "quellen": [
+        {
+          "anhebung_db": 9.0,
+          "distraktor": false,
+          "fenster": 12,
+          "instanz": 2,
+          "mixer": 3,
+          "onsets": null,
+          "reihe_db": [
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0,
+            0.0,
+            9.0
+          ],
+          "versatz_fenster": 0,
+          "wahre_ursache": true
+        }
+      ],
+      "ursachenklasse": "quelle_resonanz",
+      "wahrheit": "zu_kurze_passage"
     }
   ]
 }

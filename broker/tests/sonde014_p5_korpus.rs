@@ -99,6 +99,13 @@ fn wurzel() -> std::path::PathBuf {
         .to_path_buf()
 }
 
+/// Eine v3-Fixture aus dem eingefrorenen Korpus.
+fn fixture(name: &str) -> Value {
+    let pfad = wurzel().join(format!("eq-copilot/fixtures/v3/gueltig/{name}.json"));
+    serde_json::from_slice(&std::fs::read(&pfad).expect("Fixture liegt im Korpus"))
+        .expect("Fixture ist JSON")
+}
+
 fn evidenz_grundform() -> Value {
     static ROH: std::sync::OnceLock<Value> = std::sync::OnceLock::new();
     ROH.get_or_init(|| {
@@ -115,7 +122,7 @@ fn evidenz_grundform() -> Value {
 /// Die Bandgrenzen kommen aus dem **Manifest** des Korpus, nicht aus einer
 /// Zahl hier — sonst gäbe es das Fenster zweimal.
 fn evidenz(a: &Adresse, nr: usize, projekt_start: i64, anhebung_db: f64,
-           band: (usize, usize)) -> Vec<u8> {
+           band: (usize, usize), onset: Option<f64>) -> Vec<u8> {
     let mut wert = evidenz_grundform();
     wert["adresse"] = serde_json::to_value(a).unwrap();
     wert["evidence_id"] = json!(hex(0x10000 + nr));
@@ -134,13 +141,87 @@ fn evidenz(a: &Adresse, nr: usize, projekt_start: i64, anhebung_db: f64,
             }
         }
     }
+    // 🔑 NAK-212 E7: die Onsetstaerke je Fenster. `Evidenzstand::onset` ist
+    // die SUMME der `staerke_mad` in `/ereignisse/liste` (`evidenz.rs`:305);
+    // ein einziger Eintrag genuegt, damit die Reihe streut und die
+    // Onset-Koinzidenz ueberhaupt messbar wird.
+    if let Some(s) = onset {
+        if let Some(Value::Array(liste)) = wert.pointer_mut("/ereignisse/liste") {
+            liste.truncate(1);
+            if let Some(e) = liste.first_mut() {
+                e["staerke_mad"] = json!(s);
+            }
+        }
+    }
     serde_json::to_vec(&wert).unwrap()
+}
+
+/// Der Testordner fuer Sitzungen mit Passage — `experiment_begin` ist ein
+/// persistenzpflichtiger P0 und braucht einen echten Store.
+struct TestOrdner(std::path::PathBuf);
+
+impl TestOrdner {
+    fn neu(name: &str) -> Self {
+        let pfad = std::env::temp_dir().join(format!(
+            "nakama-p5korpus-{name}-{}",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&pfad);
+        std::fs::create_dir_all(&pfad).unwrap();
+        Self(pfad)
+    }
+
+    fn db(&self) -> std::path::PathBuf {
+        self.0.join(eqcop_broker::store::STORE_DATEINAME)
+    }
+}
+
+impl Drop for TestOrdner {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
+/// Die Reihe einer Quelle als Vektor: `reihe_db` steht ausgeschrieben in der
+/// Fixture (NAK-212 E7), `anhebung_db` ist nur die Kurzform des Erzeugers.
+fn reihe_db(wert: &Value, fenster: usize) -> Vec<f64> {
+    match wert.get("reihe_db").and_then(Value::as_array) {
+        Some(r) if r.len() == fenster => r.iter().map(|x| x.as_f64().unwrap_or(0.0)).collect(),
+        _ => vec![wert["anhebung_db"].as_f64().unwrap_or(0.0); fenster],
+    }
+}
+
+/// Die Onsetreihe, falls die Sitzung eine fuehrt.
+fn onsets(wert: &Value, fenster: usize) -> Vec<Option<f64>> {
+    match wert.get("onsets").and_then(Value::as_array) {
+        Some(r) if r.len() == fenster => r.iter().map(Value::as_f64).collect(),
+        _ => vec![None; fenster],
+    }
 }
 
 /// Fährt EINE Sitzung durch den Produktpfad und gibt die ausgegebenen
 /// Befunde zurück.
 fn sitzung_fahren(s: &Value, band: (usize, usize)) -> Vec<Value> {
-    let c = Coordinator::mit_uhr(Arc::new(ManualClock::default()), hex(0xbeef));
+    // 🔑 **NAK-212 N-32/G-L1 (07.09.2026).** Sitzungen MIT Passage brauchen
+    // einen echten Store: `experiment_begin` ist ein persistenzpflichtiger P0.
+    // Ohne ihn legte das Bein nie eine Passage an, `aufnahmen_sammeln` las
+    // `juengste_passage_im_projekt` als `None`, und `gate()` Schritt 4 lief im
+    // GESAMTEN Korpuslauf nicht — auch nicht in `verschobene_passage`, die
+    // nachweislich am Master-Alignment faellt. Sitzungen ohne Passage laufen
+    // unveraendert ohne Store.
+    let kennung = s["kennung"].as_str().unwrap_or("?");
+    let ordner = s.get("passage").filter(|p| !p.is_null()).map(|_| TestOrdner::neu(kennung));
+    let writer = ordner.as_ref().map(|o| {
+        let mut k = eqcop_broker::store::StoreKonfiguration::fuer_pfad(o.db());
+        k.remote_volume_override = Some(false);
+        let w = eqcop_broker::store::StoreWriter::starten(k);
+        assert!(!w.ist_degradiert(), "{kennung}: {:?}", w.handle().sicht());
+        w
+    });
+    let c = match writer.as_ref() {
+        Some(w) => Coordinator::mit_store(Arc::new(ManualClock::default()), hex(0xbeef), w),
+        None => Coordinator::mit_uhr(Arc::new(ManualClock::default()), hex(0xbeef)),
+    };
     let master = adresse(1);
     anmelden(&c, "main", &master, "main", Some(0));
     // 🔑 M-86/NR-01 (Nacharbeit 1, 07.09.2026): der Vollbestand MIT Marke,
@@ -159,8 +240,9 @@ fn sitzung_fahren(s: &Value, band: (usize, usize)) -> Vec<Value> {
         c.p1("main", &serde_json::to_vec(&marke).unwrap());
     }
 
-    let master_db = s["master"]["anhebung_db"].as_f64().unwrap_or(0.0);
     let master_fenster = s["master"]["fenster"].as_u64().unwrap_or(0) as usize;
+    let master_reihe = reihe_db(&s["master"], master_fenster);
+    let master_onsets = onsets(&s["master"], master_fenster);
 
     let quellen = s["quellen"].as_array().cloned().unwrap_or_default();
     for (i, q) in quellen.iter().enumerate() {
@@ -178,20 +260,66 @@ fn sitzung_fahren(s: &Value, band: (usize, usize)) -> Vec<Value> {
     // Transport ruft. Ein Bein, das `hypothesen()` direkt riefe, koennte
     // gruen sein, waehrend die Verdrahtung fehlt (Risiko R1).
     let basis: i64 = 44_108_200;
+
+    // Die Passage VOR der Evidenz: `aufnahmen_sammeln` liest sie zum
+    // Rechenzeitpunkt, und die Rechnung laeuft mit jedem Beleg.
+    if let Some(pass) = s.get("passage").filter(|p| !p.is_null()) {
+        // WN-04: ohne `record_state` weist der Broker jeden
+        // persistenzpflichtigen Befehl mit `record_state_unknown` ab — und
+        // ohne `experiment_begin` gibt es keine benannte Passage.
+        let bericht = json!({
+            "type": "state_report",
+            "adresse": master,
+            "dsp_schema_version": 1,
+            "state_revision": 0,
+            "state_hash": "a".repeat(64),
+            "record_state": {"valid": true, "recording": false}
+        });
+        assert!(c.state_report_json("main", &serde_json::to_vec(&bericht).unwrap()));
+
+        let mut wert = fixture("experiment_begin");
+        wert["kopf"]["ziel"] = serde_json::to_value(&master).unwrap();
+        wert["kopf"]["command_id"] = json!(hex(0x930));
+        wert["kopf"]["base_revision"] = json!(0);
+        wert["experiment_id"] = json!(hex(0x940));
+        wert["passage"]["passage_id"] = json!(hex(0x5032));
+        wert["passage"]["projekt_von"] = json!(basis + pass["von_offset"].as_i64().unwrap_or(0));
+        wert["passage"]["projekt_bis"] = json!(basis + pass["bis_offset"].as_i64().unwrap_or(0));
+        wert["passage"]["transport_epoch"] =
+            evidenz_grundform()["transport"]["transport_epoch"].clone();
+        let mut ids: Vec<String> = vec![master.instance_id.clone()];
+        for q in &quellen {
+            ids.push(adresse(q["instanz"].as_u64().unwrap() as usize).instance_id);
+        }
+        wert["passage"]["aktive_quellen"] = json!(ids);
+        let antwort = Senke::p0(&c, "main", &serde_json::to_vec(&wert).unwrap())
+            .expect("experiment_begin wird beantwortet");
+        let ack: Value = serde_json::from_slice(&antwort).unwrap();
+        assert_eq!(
+            ack["ergebnis"], "angewandt",
+            "{kennung}: die Passage entsteht wirklich: {ack:?}"
+        );
+    }
+
     for i in 0..master_fenster {
-        c.p1("main", &evidenz(&master, i, basis + (i as i64) * 512, master_db, band));
+        c.p1(
+            "main",
+            &evidenz(&master, i, basis + (i as i64) * 512, master_reihe[i], band,
+                     master_onsets[i]),
+        );
     }
     for (n, q) in quellen.iter().enumerate() {
         let instanz = q["instanz"].as_u64().unwrap() as usize;
         let a = adresse(instanz);
-        let db = q["anhebung_db"].as_f64().unwrap_or(0.0);
         let fenster = q["fenster"].as_u64().unwrap_or(0) as usize;
+        let reihe = reihe_db(q, fenster);
+        let onsetreihe = onsets(q, fenster);
         let versatz = q["versatz_fenster"].as_i64().unwrap_or(0);
         for i in 0..fenster {
             let zeit = basis + (i as i64 + versatz) * 512;
             c.p1(
                 &format!("sonde{n}"),
-                &evidenz(&a, 1000 + n * 100 + i, zeit, db, band),
+                &evidenz(&a, 1000 + n * 100 + i, zeit, reihe[i], band, onsetreihe[i]),
             );
         }
     }

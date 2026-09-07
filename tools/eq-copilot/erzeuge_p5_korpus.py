@@ -92,7 +92,18 @@ KEINE_STARKE = [
     "verschobene_passage",
     "zu_kurze_passage",
     "keine_ursache",
+    # 🔑 NAK-212 N-34 (07.09.2026): die Menge waechst um GENAU ZWEI Werte und
+    # bleibt geschlossen (M-67). KEIN Wert `kein_zusammenhang` — eine Quelle
+    # ohne belegten Zusammenhang ist entweder `keine_ursache` (sie draengt
+    # nicht) oder `distraktor` (sie draengt, ist aber nicht kausal); ein
+    # dritter Name fuer dieselben zwei Lagen waere eine Wahrheit ohne Fall.
+    "gegenbeleg",
+    "routing_unbekannt",
 ]
+
+# Die vollstaendige Wahrheitsmenge: `keine_starke` plus die eine Wahrheit, auf
+# der eine starke Aussage ZULAESSIG ist. Ohne sie waere jeder Riegel trivial.
+WAHRHEITEN = KEINE_STARKE + ["wahre_ursache"]
 
 # Die acht Ausschlussgruende aus M-87.
 AUSSCHLUSSGRUENDE = [
@@ -129,9 +140,13 @@ def sitzung(
     *,
     master_db: float = 9.0,
     master_fenster: int = 12,
+    master_reihe_db: list[float] | None = None,
+    master_onsets: list[float] | None = None,
+    passage: dict | None = None,
     erwartete_sicherheit: str,
     erwarteter_ausschluss: str | None = None,
     distraktor_ist_alternative: bool = False,
+    luecke: dict | None = None,
     hinweis: str = "",
 ) -> dict:
     """Eine synthetische Sitzung.
@@ -146,11 +161,29 @@ def sitzung(
         raise SystemExit(f"{kennung}: unbekannte Sicherheit {erwartete_sicherheit!r}")
     if erwarteter_ausschluss is not None and erwarteter_ausschluss not in AUSSCHLUSSGRUENDE:
         raise SystemExit(f"{kennung}: unbekannter Ausschlussgrund {erwarteter_ausschluss!r}")
+    if wahrheit not in WAHRHEITEN:
+        raise SystemExit(f"{kennung}: unbekannte Wahrheit {wahrheit!r}")
+    if luecke is not None and luecke.get("wirkung") not in ("ausgenommen", "benannt"):
+        raise SystemExit(f"{kennung}: Luecke ohne gueltige `wirkung`")
+    if master_reihe_db is not None and len(master_reihe_db) != master_fenster:
+        raise SystemExit(f"{kennung}: Masterreihe passt nicht zur Fensterzahl")
     return {
         "kennung": kennung,
         "wahrheit": wahrheit,
         "ursachenklasse": ursachenklasse,
-        "master": {"anhebung_db": master_db, "fenster": master_fenster},
+        # 🔑 NAK-212 E7: die Reihe steht IMMER ausgeschrieben in der Datei.
+        # `anhebung_db` ist nur die Kurzform des Erzeugers; eine Kurzform in
+        # der Fixture liesse sich von zwei Lesern verschieden aufloesen.
+        "master": {
+            "anhebung_db": master_db,
+            "fenster": master_fenster,
+            "reihe_db": master_reihe_db
+            if master_reihe_db is not None
+            else [master_db] * master_fenster,
+            "onsets": master_onsets,
+        },
+        "passage": passage,
+        "luecke": luecke,
         "quellen": quellen,
         "erwartet": {
             "sicherheit_hoechstens": erwartete_sicherheit,
@@ -164,10 +197,12 @@ def sitzung(
 def quelle(
     instanz: int,
     *,
-    anhebung_db: float,
+    anhebung_db: float = 9.0,
     fenster: int = 12,
     mixer: int | None = 3,
     versatz_fenster: int = 0,
+    reihe_db: list[float] | None = None,
+    onsets: list[float] | None = None,
     wahre_ursache: bool = False,
     distraktor: bool = False,
 ) -> dict:
@@ -177,12 +212,26 @@ def quelle(
     entsteht die verschobene Passage aus M-23, ohne eine zweite Zeitachse zu
     erfinden. `mixer = None` heisst „Routing unbekannt" (M-22).
     """
+    if reihe_db is not None and len(reihe_db) != fenster:
+        raise SystemExit(f"Instanz {instanz}: Reihe passt nicht zur Fensterzahl")
+    if onsets is not None and len(onsets) != fenster:
+        raise SystemExit(f"Instanz {instanz}: Onsetreihe passt nicht zur Fensterzahl")
     return {
         "instanz": instanz,
         "anhebung_db": anhebung_db,
         "fenster": fenster,
         "mixer": mixer,
         "versatz_fenster": versatz_fenster,
+        # 🔑 NAK-212 E7 — der Grund, warum es diese Felder gibt:
+        # mit KONSTANTER Anhebung liegt jedes Fenster auf oder ueber dem
+        # eigenen Median, die Vergleichsmenge „ohne die Quelle" bleibt leer,
+        # und der bedingte Uplift ist nach M-19 nicht messbar. Im ganzen
+        # bisherigen Korpus war deshalb KEINE Zusammenhangskomponente von null
+        # verschieden — auch nicht bei der wahren Ursache. Ohne diese Form ist
+        # R1 keine erfuellbare Regel und die Sicherheit `hoch` ein totes
+        # Element im Datenweg.
+        "reihe_db": reihe_db if reihe_db is not None else [anhebung_db] * fenster,
+        "onsets": onsets,
         "wahre_ursache": wahre_ursache,
         # NR-14 (Nacharbeit 1, 07.09.2026): die Distraktorquelle steht
         # AUSDRUECKLICH im Korpus. Der NAK-190-Nachweis gilt nur, wenn eine
@@ -192,17 +241,42 @@ def quelle(
     }
 
 
+# ── Die Pegel- und Onsetreihen (NAK-212 E7) ─────────────────────────────
+#
+# ⚠️ Das LETZTE Fenster ist in `WECHSEL` immer laut. `masteranomalie` liest
+# das juengste Masterfenster INNERHALB der Passage beziehungsweise das
+# juengste ueberhaupt; waere es leise, faende sie eine andere Bandgruppe, und
+# der Befund zeigte auf ein Band, in dem die Quelle nichts tut.
+WECHSEL = [0.0, 9.0] * 6
+GEGEN = [9.0, 0.0] * 6
+# Fuer den Gegenbeleg braucht der Master eine Reihe, die in BEIDEN Mengen
+# misst — sonst waere seine Spanne null und der Uplift nicht normierbar.
+WECHSEL_MITTE = [4.0, 12.0] * 6
+ONSETS = [1.0, 2.5, 4.0, 2.5] * 3
+ONSETS_GEGEN = [4.0, 2.5, 1.0, 2.5] * 3
+# Acht Fenster fuer die Randwertfaelle; auch hier ist das letzte laut.
+WECHSEL8 = [0.0, 9.0] * 4
+WECHSEL7 = [9.0, 0.0, 9.0, 0.0, 9.0, 0.0, 9.0]
+
 SITZUNGEN: list[dict] = [
     sitzung(
         "wahrer_kandidat",
         wahrheit="wahre_ursache",
         ursachenklasse="quelle_resonanz",
         quellen=[quelle(2, anhebung_db=9.0, wahre_ursache=True)],
-        erwartete_sicherheit="hoch",
+        erwartete_sicherheit="mittel",
         hinweis=("Eine Quelle mit bekanntem Routing, zwoelf zusammenhaengenden "
-                 "Fenstern und derselben Bandanhebung wie der Master. Der Fall, "
-                 "auf dem eine starke Aussage ERLAUBT ist — ohne ihn waere jeder "
-                 "Riegel unten trivial erfuellt."),
+                 "Fenstern und KONSTANTER Bandanhebung. "
+                 "🔑 **NAK-212 R1/E7 (07.09.2026): die Erwartung sinkt von "
+                 "`hoch` auf `mittel`.** Sie IST die wahre Ursache — aber es "
+                 "gibt kein Fenster OHNE sie, also ist der bedingte Uplift "
+                 "nach M-19 nicht messbar, und die Onsetreihe ist konstant. "
+                 "Ohne einen einzigen Zusammenhangsbeleg traegt der Fall keine "
+                 "starke Aussage. Das ist die vom Gate-Text gewollte "
+                 "Verschaerfung — die Faelle, auf denen `hoch` ERLAUBT ist, "
+                 "heissen seit NAK-212 `zusammenhang_uplift`, "
+                 "`zusammenhang_koinzidenz`, `getrennt_durch_zusammenhang`, "
+                 "`g5_fenster_genau_acht` und `passage_traegt`."),
     ),
     sitzung(
         "korrelierter_distraktor",
@@ -260,6 +334,90 @@ SITZUNGEN: list[dict] = [
                  "bestehen ihn alle, weil `ueberdeckung` auf das kuerzere "
                  "Fenster normiert. Nur die absolute Zahl faengt ihn."),
     ),
+    # ═════════════════════════════════════════════════════════════════════
+    # NAK-212 (07.09.2026): ZUSAMMENHANG — die Faelle, auf denen `hoch`
+    # ueberhaupt erreichbar ist
+    # ═════════════════════════════════════════════════════════════════════
+    #
+    # Ohne sie waere R1 keine erfuellbare Regel: im Bestandskorpus ist keine
+    # einzige Zusammenhangskomponente von null verschieden, auch nicht bei
+    # `wahrer_kandidat`. Ein Produkt, das NIE `hoch` sagt, erfuellt jeden
+    # Riegel trivial — und die Kalibrierung maesse nichts.
+    sitzung(
+        "zusammenhang_uplift",
+        wahrheit="wahre_ursache",
+        ursachenklasse="quelle_resonanz",
+        quellen=[quelle(2, reihe_db=WECHSEL, wahre_ursache=True)],
+        master_reihe_db=WECHSEL,
+        erwartete_sicherheit="hoch",
+        hinweis=("Quelle und Master sind in denselben Fenstern laut und sonst "
+                 "leise. Damit teilt `upliftreihe` die Masterfenster in eine "
+                 "Menge MIT und eine OHNE aktive Quelle — der bedingte Uplift "
+                 "aus M-19 ist messbar und positiv. Das LETZTE Fenster ist "
+                 "laut, damit `masteranomalie` dasselbe Band findet."),
+    ),
+    sitzung(
+        "zusammenhang_koinzidenz",
+        wahrheit="wahre_ursache",
+        ursachenklasse="quelle_resonanz",
+        quellen=[quelle(2, anhebung_db=9.0, onsets=ONSETS, wahre_ursache=True)],
+        master_onsets=ONSETS,
+        erwartete_sicherheit="hoch",
+        hinweis=("Konstanter Pegel, aber die ONSETS laufen gleich. R1 verlangt "
+                 "MINDESTENS EINE Komponente; ohne diesen Fall waere die Regel "
+                 "von `beide noetig` nicht zu unterscheiden — und `hoch` in "
+                 "jeder Sitzung ohne Onsetereignisse unerreichbar."),
+    ),
+    sitzung(
+        "gegenbeleg_uplift",
+        wahrheit="gegenbeleg",
+        ursachenklasse="quelle_resonanz",
+        quellen=[quelle(2, reihe_db=GEGEN)],
+        master_reihe_db=WECHSEL_MITTE,
+        erwartete_sicherheit="mittel",
+        hinweis=("Die Quelle ist laut, WENN der Master leise ist. Bis NAK-212 "
+                 "kostete das exakt so viel wie `keine Angabe` — nichts —, und "
+                 "der zweiseitige Bootstrap belohnte die Stabilitaet des "
+                 "Gegenlaufs sogar (G-D5: Rang 0,4358)."),
+    ),
+    sitzung(
+        "gegenbeleg_koinzidenz",
+        wahrheit="gegenbeleg",
+        ursachenklasse="quelle_resonanz",
+        quellen=[quelle(2, anhebung_db=9.0, onsets=ONSETS_GEGEN)],
+        master_onsets=ONSETS,
+        erwartete_sicherheit="mittel",
+        hinweis="Dasselbe in der Onsetspur: eine gegenlaeufige Spur ist ein Gegenbeleg (R2).",
+    ),
+    sitzung(
+        "routing_unbekannt",
+        wahrheit="routing_unbekannt",
+        ursachenklasse="quelle_resonanz",
+        quellen=[quelle(2, reihe_db=WECHSEL, mixer=None)],
+        master_reihe_db=WECHSEL,
+        erwartete_sicherheit="mittel",
+        hinweis=("`mixer: null` heisst `Routing unbekannt` (M-22) — die "
+                 "Routingqualitaet ist 0 und die Aussage gedeckelt. Der Fall "
+                 "war im Korpus nie vertreten, obwohl der Erzeuger ihn "
+                 "vorsieht (G5-Befund E-H3): `Routing unbekannt` war nur im "
+                 "Rustbein gemessen, nie in der Kalibrierung."),
+    ),
+    sitzung(
+        "getrennt_durch_zusammenhang",
+        wahrheit="wahre_ursache",
+        ursachenklasse="zwei_quellen_konkurrenz",
+        quellen=[
+            quelle(2, reihe_db=WECHSEL, wahre_ursache=True),
+            quelle(3, anhebung_db=9.0, mixer=4, distraktor=True),
+        ],
+        master_reihe_db=WECHSEL,
+        erwartete_sicherheit="hoch",
+        distraktor_ist_alternative=True,
+        hinweis=("Nur EINE der beiden Quellen traegt einen belegten Uplift. "
+                 "Der Abstand ist gross genug, dass sich auch die "
+                 "quantisierten GESAMTRAENGE unterscheiden — beide Bedingungen "
+                 "aus E6 halten, und genau EIN Befund darf stark sein (M-21)."),
+    ),
     sitzung(
         "daten_reichen_nicht",
         wahrheit="keine_ursache",
@@ -270,6 +428,290 @@ SITZUNGEN: list[dict] = [
                  "und zaehlt nicht als Fehlschlag (M-27, §49.4: 'Ein "
                  "konservatives unsicher ist besser als eine ueberzeugende "
                  "falsche Ursache.')."),
+    ),
+    # ═════════════════════════════════════════════════════════════════════
+    # G5-GEGENBEISPIELE (Phasengate G5, adversarialer Lauf 07.09.2026,
+    # uebernommen mit NAK-212 R6)
+    # ═════════════════════════════════════════════════════════════════════
+    #
+    # Sie stehen NICHT als Produktzusage hier, sondern als Angriff: jede
+    # Sitzung ist so gebaut, dass der zu pruefende Riegel wirklich unter Last
+    # steht und nicht ein trivialer Vorriegel (zu wenig Fenster, Routing
+    # unbekannt) vorher greift. Drei von ihnen tragen eine GEDRUCKTE LUECKE
+    # (`luecke`) — sie liefern bewusst weiter eine falsche starke Behauptung,
+    # weil erst NAK-213 sie schliesst. Der Pruefer nimmt sie aus den
+    # Kennzahlen und meldet sie als offene Luecke: nicht gruen, nicht rot,
+    # BENANNT (Muster NAK-190).
+    sitzung(
+        "g5_distraktor_mehr_fenster",
+        wahrheit="distraktor",
+        ursachenklasse="zwei_quellen_konkurrenz",
+        quellen=[
+            quelle(2, reihe_db=WECHSEL, wahre_ursache=True),
+            quelle(3, reihe_db=WECHSEL + WECHSEL[:4], fenster=16, mixer=4, distraktor=True),
+        ],
+        master_reihe_db=WECHSEL,
+        erwartete_sicherheit="mittel",
+        distraktor_ist_alternative=True,
+        hinweis=("G5 Fall 1: derselbe Verlauf, aber der Distraktor traegt MEHR "
+                 "Fenster. `gemeinsame_reihen` iteriert ueber die Kandidaten- "
+                 "fenster und ueberspringt jedes ohne Masterpartner — die vier "
+                 "ueberzaehligen gehen in keine der drei Zusammenhangsgroessen "
+                 "ein. Materialmenge trennt nicht (R3)."),
+    ),
+    sitzung(
+        "g5_distraktor_lauter",
+        wahrheit="distraktor",
+        ursachenklasse="zwei_quellen_konkurrenz",
+        quellen=[
+            quelle(2, reihe_db=WECHSEL, wahre_ursache=True),
+            quelle(3, reihe_db=[x + 0.1 if x > 0 else 0.1 for x in WECHSEL],
+                   mixer=4, distraktor=True),
+        ],
+        master_reihe_db=WECHSEL,
+        erwartete_sicherheit="mittel",
+        distraktor_ist_alternative=True,
+        hinweis=("G5 Fall 7: die kleinste im Gitter darstellbare Trennung "
+                 "(0,1 dB) liegt weit ueber RANG_QUANTUM und trennt die "
+                 "GESAMTRAENGE. Die Zusammenhangskomponenten trennt sie nicht "
+                 "— die Bandpassung sagt, WO eine Quelle Energie hat, nicht OB "
+                 "sie die Ursache ist (G-H3)."),
+    ),
+    sitzung(
+        "g5_distraktor_allein_im_rennen",
+        wahrheit="distraktor",
+        ursachenklasse="quelle_resonanz",
+        quellen=[
+            quelle(2, reihe_db=WECHSEL, versatz_fenster=6, wahre_ursache=True),
+            quelle(3, reihe_db=WECHSEL, mixer=4, distraktor=True),
+        ],
+        master_reihe_db=WECHSEL,
+        erwartete_sicherheit="mittel",
+        erwarteter_ausschluss="alignment_falsch",
+        luecke={
+            "ticket": "NAK-213",
+            "regel": "R2",
+            "wirkung": "ausgenommen",
+            "zusage": ("Ein einziger Ueberlebender ist nicht `getrennt`, wenn "
+                       "ein Konkurrent aus einem MESSGRUND ausgeschieden ist."),
+            "was_heute_passiert": ("Der Distraktor bleibt allein im Rennen und "
+                                   "traegt `hoch`, obwohl der Ausschluss im "
+                                   "selben Befund belegt, dass die Datenlage "
+                                   "nachweislich unvollstaendig ist."),
+        },
+        hinweis=("G5 Fall 2: der wahre Verursacher faellt am Alignment. Die "
+                 "Sitzung traegt bewusst eine Pegelreihe, damit der Distraktor "
+                 "einen belegten Zusammenhang hat und die Luecke wirklich "
+                 "beisst — R1 wuerde ihn sonst schon senken."),
+    ),
+    sitzung(
+        "g5_unbeteiligte_quelle",
+        wahrheit="keine_ursache",
+        ursachenklasse="quelle_resonanz",
+        quellen=[quelle(2, anhebung_db=0.0)],
+        erwartete_sicherheit="mittel",
+        hinweis=("G5 eigene Angriffsidee 1: die Quelle traegt im Befundband "
+                 "GAR KEINE Anhebung. Uplift, Koinzidenz und Wiederholbarkeit "
+                 "sind null — es gibt keinen Beleg fuer einen Zusammenhang. "
+                 "⚠️ Die Erwartung ist `mittel`, NICHT `unklar`: die Quelle "
+                 "passiert alle fuenf Gates, also ueberlebt ein Kandidat, und "
+                 "`unklar` ist im Datenweg ausschliesslich die Klasse von "
+                 "`enthaltung()`."),
+    ),
+    sitzung(
+        "g5_sonde_auf_masterkanal",
+        wahrheit="parent_duplikat",
+        ursachenklasse="quelle_resonanz",
+        quellen=[quelle(2, reihe_db=WECHSEL, mixer=0)],
+        master_reihe_db=WECHSEL,
+        erwartete_sicherheit="mittel",
+        luecke={
+            "ticket": "NAK-213",
+            "regel": "R3",
+            "wirkung": "ausgenommen",
+            "zusage": ("Eine Quelle auf dem Mixerkanal des Masters misst das "
+                       "Mastersignal; sie ist dessen Duplikat, nie seine "
+                       "Ursache."),
+            "was_heute_passiert": ("`ids` und `ist_parent` lesen nur die "
+                                   "KANDIDATEN — der Master steht in keiner "
+                                   "der beiden Mengen, `duplikat` bleibt "
+                                   "falsch, und die Sonde wird `hoch`."),
+        },
+        hinweis=("G5 eigene Angriffsidee 2: die Sonde misst denselben "
+                 "Mixerkanal wie der Master. Mit Pegelreihe ist ihr Uplift "
+                 "gegen den Master perfekt belegt — R1 greift nicht, und die "
+                 "Luecke bleibt scharf."),
+    ),
+    sitzung(
+        "g5_parent_partner_faellt_aus",
+        wahrheit="parent_duplikat",
+        ursachenklasse="quelle_resonanz",
+        quellen=[
+            quelle(2, reihe_db=WECHSEL, mixer=7, wahre_ursache=True),
+            quelle(3, reihe_db=WECHSEL, mixer=7, versatz_fenster=6),
+        ],
+        master_reihe_db=WECHSEL,
+        erwartete_sicherheit="mittel",
+        erwarteter_ausschluss="alignment_falsch",
+        hinweis=("G5 Fall 3: der Partner desselben Mixerkanals faellt am "
+                 "Alignment. Die Duplikatmarke haelt trotzdem — `ids` und "
+                 "`ist_parent` lesen ALLE Kandidaten, nicht nur die "
+                 "Ueberlebenden."),
+    ),
+    sitzung(
+        "g5_parent_partner_zu_wenig_fenster",
+        wahrheit="parent_duplikat",
+        ursachenklasse="zwei_quellen_konkurrenz",
+        quellen=[
+            quelle(2, reihe_db=WECHSEL, mixer=7, wahre_ursache=True),
+            quelle(3, reihe_db=[0.0, 9.0], fenster=2, mixer=7),
+        ],
+        master_reihe_db=WECHSEL,
+        erwartete_sicherheit="mittel",
+        hinweis="G5 Fall 3: der Partner traegt zwei Fenster — zu wenig fuer eine starke Aussage.",
+    ),
+    sitzung(
+        "g5_parent_partner_ohne_evidenz",
+        wahrheit="parent_duplikat",
+        ursachenklasse="quelle_resonanz",
+        quellen=[
+            quelle(2, reihe_db=WECHSEL, mixer=7, wahre_ursache=True),
+            quelle(3, reihe_db=[], fenster=0, mixer=7),
+        ],
+        master_reihe_db=WECHSEL,
+        erwartete_sicherheit="mittel",
+        luecke={
+            "ticket": "NAK-213",
+            "regel": "R2",
+            "wirkung": "ausgenommen",
+            "zusage": ("Eine angemeldete aktive Quelle ohne Evidenz macht den "
+                       "Ueberlebenden nicht `getrennt`."),
+            "was_heute_passiert": ("Die Kanaltafel `je_kanal` entsteht aus den "
+                                   "EVIDENZ-Schluesseln; eine stumme Sonde "
+                                   "steht in keiner Kanalgruppe und setzt die "
+                                   "Duplikatmarke des Partners nicht."),
+        },
+        hinweis=("G5 Fall 3: der Partner ist angemeldet, traegt denselben "
+                 "Mixerkanal, hat aber nie gesendet."),
+    ),
+    sitzung(
+        "g5_fenster_genau_acht",
+        wahrheit="wahre_ursache",
+        ursachenklasse="quelle_resonanz",
+        quellen=[quelle(2, reihe_db=WECHSEL8, fenster=8, wahre_ursache=True)],
+        master_reihe_db=WECHSEL,
+        erwartete_sicherheit="hoch",
+        hinweis=("G5 Fall 6: der Randwert. GATE_MINDEST_FENSTER = 8, die "
+                 "Klassenwahl prueft `fenster < 8` — acht sind genug (M-23: "
+                 "`mindestens acht`). Die Sitzung traegt eine Pegelreihe, "
+                 "sonst fiele sie an R1 und der Randwert waere nicht mehr "
+                 "gemessen. Das Alignment haelt, weil `paarueberdeckung` auf "
+                 "die KUERZERE Seite normiert (8 von 8)."),
+    ),
+    sitzung(
+        "g5_fenster_sieben",
+        wahrheit="zu_kurze_passage",
+        ursachenklasse="quelle_resonanz",
+        quellen=[quelle(2, reihe_db=WECHSEL7, fenster=7, wahre_ursache=True)],
+        master_reihe_db=WECHSEL,
+        erwartete_sicherheit="mittel",
+        hinweis=("G5 Fall 6, Gegenprobe: ein Fenster unter dem Randwert. Ohne "
+                 "diese Sitzung waere `< 8` von `<= 8` nicht zu unterscheiden."),
+    ),
+    sitzung(
+        "g5_kandidatendeckel",
+        wahrheit="distraktor",
+        ursachenklasse="zwei_quellen_konkurrenz",
+        quellen=[
+            quelle(2, anhebung_db=8.0, wahre_ursache=True),
+            quelle(3, anhebung_db=9.0, mixer=4, distraktor=True),
+            quelle(4, anhebung_db=9.1, mixer=5, distraktor=True),
+            quelle(5, anhebung_db=9.2, mixer=6, distraktor=True),
+            quelle(6, anhebung_db=9.3, mixer=8, distraktor=True),
+            quelle(7, anhebung_db=9.4, mixer=9, distraktor=True),
+        ],
+        erwartete_sicherheit="mittel",
+        distraktor_ist_alternative=True,
+        luecke={
+            "ticket": "NAK-213",
+            "regel": "R1",
+            "wirkung": "benannt",
+            "zusage": ("Jeder Kandidat, der ausscheidet, traegt einen Grund "
+                       "aus der geschlossenen Menge (M-87) — auch der am "
+                       "Deckel abgeschnittene."),
+            "was_heute_passiert": ("`truncate(KANDIDATEN_DECKEL)` schneidet "
+                                   "nach der Sortierung und ohne Eintrag in "
+                                   "`ausschluesse`; Instanz 02 erscheint weder "
+                                   "als Befund noch als Alternative noch als "
+                                   "Ausschluss."),
+        },
+        hinweis=("G5 Fall 2 / M-18: sechs Kandidaten, der wahre Verursacher ist "
+                 "der leiseste. Die SICHERHEIT ist seit R3 korrekt `mittel` "
+                 "(alle fuenf sind ungetrennt) — die Luecke ist die fehlende "
+                 "Spur des sechsten, und die zaehlt normal in allen "
+                 "Kennzahlen mit (`wirkung: benannt`)."),
+    ),
+    sitzung(
+        "g5_gleichstand_verursacher_fuehrt",
+        wahrheit="distraktor",
+        ursachenklasse="zwei_quellen_konkurrenz",
+        quellen=[
+            quelle(2, anhebung_db=9.1, wahre_ursache=True),
+            quelle(3, anhebung_db=9.0, mixer=4, distraktor=True),
+        ],
+        erwartete_sicherheit="mittel",
+        distraktor_ist_alternative=True,
+        hinweis=("G5 Fall 7, Gegenprobe: der Verursacher fuehrt um 0,1 dB. Im "
+                 "G5-Lauf galt das als ZULAESSIGE starke Aussage; seit R3 ist "
+                 "es keine — die Trennung war reine Bandpassung, und beide "
+                 "fallen auf `mittel`. Das ist die vom Gate-Text gewollte "
+                 "Verschaerfung."),
+    ),
+    # ═════════════════════════════════════════════════════════════════════
+    # PASSAGE (NAK-212 R6/G-L1): der Passagenriegel stand im Korpus NIE unter
+    # Last — `sitzung_fahren` legte keine Passage an, und `gate()` Schritt 4
+    # lief im ganzen Lauf nicht. `verschobene_passage` faellt am
+    # Master-Alignment, nicht an der Passage.
+    # ═════════════════════════════════════════════════════════════════════
+    sitzung(
+        "passage_traegt",
+        wahrheit="wahre_ursache",
+        ursachenklasse="quelle_resonanz",
+        quellen=[quelle(2, reihe_db=WECHSEL, wahre_ursache=True)],
+        master_reihe_db=WECHSEL,
+        passage={"von_offset": 0, "bis_offset": 6144},
+        erwartete_sicherheit="hoch",
+        hinweis=("Zwoelf Fensterlaengen, alle Fenster vollstaendig innerhalb. "
+                 "Der Kontrollfall — ohne ihn waere jede Passagenzeile trivial "
+                 "erfuellt."),
+    ),
+    sitzung(
+        "passage_zu_kurz_echt",
+        wahrheit="zu_kurze_passage",
+        ursachenklasse="quelle_resonanz",
+        quellen=[quelle(2, reihe_db=WECHSEL, wahre_ursache=True)],
+        master_reihe_db=WECHSEL,
+        passage={"von_offset": 0, "bis_offset": 3584},
+        erwartete_sicherheit="unklar",
+        erwarteter_ausschluss="passage_zu_kurz",
+        hinweis=("Sieben Fensterlaengen: das Passagenmaterial ist 7 < 8, jeder "
+                 "Kandidat faellt mit Grund, und das Ergebnis ist die "
+                 "Enthaltung."),
+    ),
+    sitzung(
+        "passage_teilweise_innerhalb",
+        wahrheit="zu_kurze_passage",
+        ursachenklasse="quelle_resonanz",
+        quellen=[quelle(2, reihe_db=WECHSEL, wahre_ursache=True)],
+        master_reihe_db=WECHSEL,
+        passage={"von_offset": 256, "bis_offset": 4352},
+        erwartete_sicherheit="unklar",
+        erwarteter_ausschluss="passage_zu_kurz",
+        hinweis=("Acht Fensterlaengen, um einen HALBEN Fensterschritt versetzt. "
+                 "Vollstaendig innerhalb liegen die Fenster 1..7 — Material 7 "
+                 "< 8. Nach der alten Beruehrungsregel waeren es 0..8, also 9 "
+                 "≥ 8, und der Fall hielte (G5-Befund E-D3). Gate 3 und Gate "
+                 "4a halten in beiden Faellen; NUR das Materialgate trennt."),
     ),
 ]
 

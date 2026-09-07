@@ -1,0 +1,124 @@
+ROTBEWEIS SONDE-014 KR-01 (Entscheid E-15, Konvergenzrunde 2026-09-07)
+
+Absichtlicher Bruch: der alte Deckel mit Verdraengung, an BEIDEN Stellen wieder
+eingesetzt, auf dem Fixstand 2ef235e.
+
+  (A) eq-copilot/plugin/src/PluginProcessor.cpp und .h - ein ZWEITES,
+      gedeckeltes Register der ausstehenden Kennungen (`rotKennungen`, Deckel
+      `nakama::ipc::kCapP0`, Verdraengung des AELTESTEN beim Erzeugen);
+      `urteilMitFrischemKopf` liefert leer, wenn die Kennung dort nicht mehr
+      steht. Das ist die Fassung der Nacharbeit 3, reduziert auf genau das,
+      was die Zusage traegt.
+  (B) eq-copilot/plugin/core/ipc/ControlClient.cpp, `sendePersistenzP0` -
+      derselbe Deckel auf das EINE Register angewandt: bei `kCapP0` wird der
+      aelteste OFFENE In-Flight-Eintrag verdraengt.
+
+Erwartung: (A) laesst den B29-Fall (a) an der Zeile fallen, die die
+Wiederholbarkeit des ersten von `kCapP0 + 4` Urteilen behauptet; (B) laesst den
+B10-Fall (b) an der Zeile fallen, die `kCapP0 + 1` gleichzeitig ausstehende
+Auftraege und die Wiederholung des ERSTEN behauptet.
+
+Gebaut mit cmake --build eq-copilot/build --config Release --target
+EqCopIpcTest EqCopSonde014AssistentTest, BAU EXIT=0.
+
+============================================================================
+(A) B29 EqCopSonde014AssistentTest - die KR-01-Zeilen und das Urteil
+============================================================================
+== KR-01: jedes ausstehende Urteil bleibt wiederholbar ==
+  ok      KR-01: beide Urteile tragen ihre eigene Kennung
+  ok      KR-01: das ERSTE Urteil ist nach dem zweiten noch wiederholbar
+  ok      KR-01: unter DERSELBEN `command_id`
+  ok      KR-01: und mit SEINEM Befund, nicht dem des zweiten
+  ok      KR-01: mit der Revision aus dem ACK
+  ok      KR-01: und mit SEINEM Urteil, nicht dem des zweiten
+  ok      KR-01: der Auftrag ist bytegleich - nur `base_revision` wechselt
+  ok      KR-01: das zweite Urteil bleibt unberuehrt
+  ok      KR-01: zweimal derselbe Auftrag, zweimal dasselbe Ergebnis
+  ok      KR-01: `kCapP0 + 4` Urteile sind entstanden, keines leer
+  FEHLER  KR-01: das ERSTE von `kCapP0 + 4` ist noch wiederholbar - nichts wurde verdraengt
+  ok      KR-01: und das LETZTE ebenso
+  FEHLER  KR-01: jedes unter SEINER eigenen `command_id`
+  FEHLER  KR-01: ALLE `kCapP0 + 4` ausstehenden Auftraege sind wiederholbar (64 von 68)
+  FEHLER  KR-01: auch das aelteste offene Urteil ueberlebt die Saettigung
+SONDE-014 AssistantStep: 181/185 gruen
+
+B29 EXIT=1
+
+============================================================================
+(B) B10 EqCopIpcTest - die kr01-Zeilen und das Urteil
+============================================================================
+  ok      command_ack_endgueltige_fehler_geben_ohne_erfolg_frei
+  ok      serverauth_fremde_sid_und_tokenabfragefehler_senden_null_bytes
+  ok      autostart_parallel_startet_genau_einen_prozess  [haelt=1 pipe=1 spawns=1 mutexVerloren=1 reconnect=1 pruefungen=0 spawnVersuche=0]
+  ok      oeffnungsausgaenge_sind_liveness_oder_sicherheit/control/pipe_busy  [klass 1, 4014 ms, weitere Versuche 1 (erwartet >=1), pruefungen 0 (erwartet 0)]
+  ok      oeffnungsausgaenge_sind_liveness_oder_sicherheit/telemetrie/pipe_busy  [klass 1, weitere Versuche 1 (erwartet >=1), pruefungen 0]
+  ok      oeffnungsausgaenge_sind_liveness_oder_sicherheit/control/file_not_found  [klass 1, 5 ms, weitere Versuche 2 (erwartet >=1), pruefungen 0 (erwartet 0)]
+  ok      oeffnungsausgaenge_sind_liveness_oder_sicherheit/telemetrie/file_not_found  [klass 1, weitere Versuche 2 (erwartet >=1), pruefungen 0]
+  ok      oeffnungsausgaenge_sind_liveness_oder_sicherheit/control/access_denied  [klass 1, 5 ms, weitere Versuche 0 (erwartet 0), pruefungen 1 (erwartet 1)]
+  ok      oeffnungsausgaenge_sind_liveness_oder_sicherheit/telemetrie/access_denied  [klass 1, weitere Versuche 0 (erwartet 0), pruefungen 1]
+  ok      oeffnungsausgaenge_sind_liveness_oder_sicherheit/control/sonstiger_fehler  [klass 1, 6 ms, weitere Versuche 0 (erwartet 0), pruefungen 1 (erwartet 1)]
+  ok      oeffnungsausgaenge_sind_liveness_oder_sicherheit/telemetrie/sonstiger_fehler  [klass 1, weitere Versuche 0 (erwartet 0), pruefungen 1]
+  ok      authausgaenge_erwartung_und_serverpid_bleiben_sicherheit/control/erwartung_ungueltig  [fiel 1, weitere Versuche 0, Fehler 0]
+  ok      authausgaenge_erwartung_und_serverpid_bleiben_sicherheit/telemetrie/erwartung_ungueltig  [fiel 1, weitere Versuche 0, Fehler 0]
+  ok      authausgaenge_erwartung_und_serverpid_bleiben_sicherheit/control/server_pid_nicht_ermittelbar  [fiel 1, weitere Versuche 0, Fehler 0]
+  ok      authausgaenge_erwartung_und_serverpid_bleiben_sicherheit/telemetrie/server_pid_nicht_ermittelbar  [fiel 1, weitere Versuche 0, Fehler 0]
+  ok      telemetrie_authfehler_parkt_wie_control  [fiel 1, weitere Versuche 0]
+  ok      ressourcenfehler_nach_authbeweis_ist_liveness  [Codepruefung an IpcVerbindung.cpp — CreateEventW ist ohne Testhaken im Oeffnungspfad nicht injizierbar (Regressionswache durch Lesen)]
+  ok      zaehlervertrag_verbindungsversuche_und_serverpruefungen/pipe_busy  [2 Versuche, 0 Serverpruefungen (erwartet 0)]
+  ok      zaehlervertrag_verbindungsversuche_und_serverpruefungen/access_denied  [1 Versuche, 1 Serverpruefungen]
+  ok      zaehlervertrag_verbindungsversuche_und_serverpruefungen/telemetrie_pipe_busy  [2 Versuche, 0 Serverpruefungen]
+  ok      kopplungswarte_faelscht_den_backoff_nicht  [Aufstieg 493 1008 ms, Versuche in der Kopplungswarte 0, Rueckkehr nach 24 ms, Abstand danach 3996 ms (erwartet 3600..5800 — die Stufe vor der Warte), Status 1, Pruefungen 0]
+  ok      parken_uebergeht_den_backoff/control/authfehler  [Aufstieg 492 1008 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 500 ms (erwartet 350..1200, ohne Reset >= 4000)]
+  ok      parken_uebergeht_den_backoff/telemetrie/authfehler  [Aufstieg 498 995 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 499 ms (erwartet 350..1200, ohne Reset >= 4000)]
+  ok      abbruchsignal_gehoert_der_generation/gegenpfad_neue_generation  [geoeffnet 1, Bericht 2, kein Fehler]
+  ok      abbruch_vor_und_nach_createfile/control/stop_nach_open  [an der Barriere 1, kein Hello 1, Pruefungen 0 (unveraendert 0)]
+  ok      abbruch_vor_und_nach_createfile/telemetrie/stop_nach_open  [an der Barriere 1, kein Hello 1, Pruefungen 0 (unveraendert 0)]
+  ok      abbruch_vor_und_nach_createfile/control/reconnect_nach_open  [an der Barriere 1, kein Hello 1, Pruefungen 0 (unveraendert 0)]
+  ok      abbruch_vor_und_nach_createfile/telemetrie/reconnect_nach_open  [an der Barriere 1, kein Hello 1, Pruefungen 0 (unveraendert 0)]
+  ok      verifiziert_ohne_welcome_setzt_backoff_nicht_zurueck/control  [Stempel 10 5508 11513 ms, pruefungen 3]
+  ok      verifiziert_ohne_welcome_setzt_backoff_nicht_zurueck/telemetrie  [Stempel 10 5504 11506 ms, pruefungen 3]
+  ok      kr01_wire_nur_die_basisrevision_wechselt  [523 statt 520 Bytes]
+  ok      kr01_wire_die_ersetzung_ist_umkehrbar
+  ok      kr01_wire_faellt_fail_closed_auf_jedem_rand  [8 Raender]
+  FEHLER  kr01_kcap_plus_eins_auftraege_stehen_gleichzeitig_aus  [64 im Register]
+  FEHLER  kr01_der_erste_auftrag_wird_mit_frischem_kopf_wiederholt  [leerer Wiederholungstext]
+  FEHLER  kr01_erst_angewandt_gibt_den_ersten_auftrag_frei  [0 gemeldet, 64 bleiben]
+  FEHLER  kr01_die_uebrigen_auftraege_bleiben_unberuehrt  [64 im Register, 0 endgueltig ohne Erfolg]
+  ok      NAK-180 R7: bericht_wird_beim_write_fehler_fallen_gelassen - er geht NICHT zurueck in die Queue, und der Platz wird frei  [0/0]
+FEHLER — 381 Pruefungen, 4 Fehler
+
+B10 EXIT=1
+
+============================================================================
+URTEIL
+============================================================================
+Beide Beine fallen, und zwar an genau den Zeilen, die die Zusage tragen.
+
+(A) B29 181/185 - vier Zeilen rot:
+      "das ERSTE von kCapP0 + 4 ist noch wiederholbar - nichts wurde
+       verdraengt"
+      "jedes unter SEINER eigenen command_id"
+      "ALLE kCapP0 + 4 ausstehenden Auftraege sind wiederholbar (64 von 68)"
+      "auch das aelteste offene Urteil ueberlebt die Saettigung"
+    Die Zahl benennt den Bruch: der Deckel hat GENAU die vier aeltesten
+    verdraengt, 64 von 68 bleiben. Das ist das Verhalten aus WP3-1.
+
+(B) B10 fallen vier Zeilen:
+      "kr01_kcap_plus_eins_auftraege_stehen_gleichzeitig_aus  [64 im Register]"
+      "kr01_der_erste_auftrag_wird_mit_frischem_kopf_wiederholt
+       [leerer Wiederholungstext]"
+      "kr01_erst_angewandt_gibt_den_ersten_auftrag_frei  [0 gemeldet]"
+      "kr01_die_uebrigen_auftraege_bleiben_unberuehrt"
+    Der erste Auftrag ist beim 65. Einreihen aus dem Register geflogen; sein
+    konflikt-ACK findet keinen Eintrag, der Hook bekommt keinen Text.
+
+WAS GRUEN BLEIBT - und warum das kein Beleg ist:
+  Die drei kr01_wire_*-Zeilen in B10 messen die Textfunktion
+  auftragMitBasisRevision selbst, nicht das Register. Sie sind
+  Regressionswachen, kein Rotbeweis.
+  In B29 bleiben die Zeilen des ZWEI-Urteil-Falls gruen, ebenso "und das
+  LETZTE ebenso": zwei Auftraege reissen keinen 64er-Deckel, und der letzte
+  ist der, den der Deckel gerade NICHT verdraengt. Auch sie sind Wachen.
+
+Danach zurueckgesetzt mit git checkout -- auf die drei Dateien; der Fixstand
+2ef235e ist unveraendert wiederhergestellt.

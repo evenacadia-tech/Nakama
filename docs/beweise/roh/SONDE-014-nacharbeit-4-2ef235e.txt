@@ -1,0 +1,107 @@
+BEINLAUF SONDE-014 Konvergenzrunde (Nacharbeit 4) - Endstand 2ef235e43829fe89fcb08225106f65749e7e0522
+Gefahren: 2026-09-07T14:24:56, Worktree bis auf die neuen Beweisdateien sauber
+Betroffen ist, was der Diff dieser Runde beruehrt: ControlClient und
+PluginProcessor - und damit jedes C++-Bein, das den v3-Steuerpfad baut oder
+benutzt. Kein Rust-, Schema- oder Fixturediff, also kein A4/A5/A8.
+Alle Binaries sind unmittelbar vor diesem Lauf mit geprueftem Exitcode
+gebaut worden (Landmine N-29); je Bein steht der Zeitstempel des gemessenen
+Binaries.
+
+=== A1  EqCopNullTest ===
+Kommando: eq-copilot\build\plugin\EqCopNullTest_artefacts\Release\EqCopNullTest.exe
+Binary:   2026-09-07T14:23:04
+  ok      Save/Load: Rolle und Paar-ID bleiben
+NULLTEST OK
+EXIT=0
+
+=== A3  EqCopMarkierungTest ===
+Kommando: eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe
+Binary:   2026-09-07T14:23:12
+  ok      T11: Gegenprobe - mit laufendem Transport faerbt genau dieser Aufbau
+MARKIERUNGSTEST OK
+EXIT=0
+
+=== B1  EqCopIdentityTest ===
+Kommando: eq-copilot\build\plugin\EqCopIdentityTest_artefacts\Release\EqCopIdentityTest.exe
+Binary:   2026-09-07T14:23:19
+  ok      M-83: auch mit gesetztem Assistentenschritt bleiben es null  [0]
+IDENTITY-TEST OK - 120 Pruefungen ok, 0 Fehler
+EXIT=0
+
+=== B2  EqCopStateMigrationTest ===
+Kommando: eq-copilot\build\plugin\EqCopStateMigrationTest_artefacts\Release\EqCopStateMigrationTest.exe
+Binary:   2026-09-07T14:23:28
+  ok      == Frisch/Recall: Herkunft frisch, Recall in frische Instanz feldgleich
+STATE-MIGRATION-TEST OK - 180 Pruefungen ok, 0 Fehler
+EXIT=0
+
+=== B4  EqCopQueueStressTest ===
+Kommando: eq-copilot\build\plugin\EqCopQueueStressTest_artefacts\Release\EqCopQueueStressTest.exe
+Binary:   2026-09-07T14:23:37
+121 Pruefungen, 0 Fehler.
+QUEUE-STRESSTEST OK
+EXIT=0
+
+=== B5  EqCopAnalysisGoldenTest ===
+Kommando: eq-copilot\build\plugin\EqCopAnalysisGoldenTest_artefacts\Release\EqCopAnalysisGoldenTest.exe
+Binary:   2026-09-07T14:23:48
+[ok]   Gegenpfad: neu vorbereiten setzt alles zurueck, auch die Zaehler
+Ergebnis: 248 bestanden, 0 Fehler.
+EXIT=0
+
+=== B8  EqCopLebenslaufTest ===
+Kommando: eq-copilot\build\plugin\EqCopLebenslaufTest_artefacts\Release\EqCopLebenslaufTest.exe
+Binary:   2026-09-07T14:23:55
+  ok      NAK-180 N-20: stop_kehrt_in_gemessener_frist_zurueck - auch wenn ein Tick gerade in `namedPipeErreichbar` steht, kehrt `stop()` unter 1 s zurueck; mit der Serverfrist stuende er bis zu 49,7 Tage  [0 ms]
+LEBENSLAUF-TEST OK - 79 Pruefungen ok, 0 Fehler
+EXIT=0
+
+=== B10  EqCopIpcTest ===
+Kommando: eq-copilot\build\plugin\EqCopIpcTest_artefacts\Release\EqCopIpcTest.exe
+Binary:   2026-09-07T14:23:56
+  ok      NAK-180 R6: ein nicht existierender Name bleibt nicht erreichbar und kehrt sofort zurueck  [0 ms]
+ALLE PRUEFUNGEN GRUEN — 381 Pruefungen, 0 Fehler
+EXIT=0
+
+=== B13  EqCopSonde012SourcesModelTest ===
+Kommando: eq-copilot\build\plugin\EqCopSonde012SourcesModelTest_artefacts\Release\EqCopSonde012SourcesModelTest.exe
+Binary:   2026-09-07T14:24:02
+  ok      N-29/N-28: und `pair_id: null` bleibt gueltig - der Riegel trifft die geschlossenen Enums, nicht jedes `null`
+SONDE-012 SourcesModel: 79/79 gruen
+EXIT=0
+
+=== B14  EqCopSonde012ProjectReloadTest ===
+Kommando: eq-copilot\build\plugin\EqCopSonde012ProjectReloadTest_artefacts\Release\EqCopSonde012ProjectReloadTest.exe
+Binary:   2026-09-07T14:24:09
+  ok      intent_survives_project_recall_and_load_marks_no_dirty  [0]
+SONDE-012 ProjectReload: 12/12 gruen
+EXIT=0
+
+=== B23  EqCopSonde013PassageStateTest ===
+Kommando: eq-copilot\build\plugin\EqCopSonde013PassageStateTest_artefacts\Release\EqCopSonde013PassageStateTest.exe
+Binary:   2026-09-07T14:24:18
+[ok]   N-13: und kein Versuch beginnt - das trennt read-only geladen vom Vollrestore eines fremden Projekts
+343 bestanden, 0 gescheitert
+EXIT=0
+
+=== B27  EqCopSonde014IntentTest ===
+Kommando: eq-copilot\build\plugin\EqCopSonde014IntentTest_artefacts\Release\EqCopSonde014IntentTest.exe
+Binary:   2026-09-07T14:24:25
+  ok      Gegenprobe: 70 Evidenzbaender tragen wirklich einen Wert
+SONDE-014-INTENT-TEST OK - 210 Pruefungen ok, 0 Fehler
+EXIT=0
+
+=== B28  EqCopSonde014BefundTest ===
+Kommando: eq-copilot\build\plugin\EqCopSonde014BefundTest_artefacts\Release\EqCopSonde014BefundTest.exe
+Binary:   2026-09-07T14:24:30
+  ok      M-38/M-39/M-80: eine Zeichenanweisung faellt am Vertrag  [session finding has an unexpected or missing field]
+SONDE-014 Befund und Maskierung: 60/60 gruen
+EXIT=0
+
+=== B29  EqCopSonde014AssistentTest ===
+Kommando: eq-copilot\build\plugin\EqCopSonde014AssistentTest_artefacts\Release\EqCopSonde014AssistentTest.exe
+Binary:   2026-09-07T14:24:37
+  ok      KR-01: auch das aelteste offene Urteil ueberlebt die Saettigung
+SONDE-014 AssistantStep: 185/185 gruen
+EXIT=0
+

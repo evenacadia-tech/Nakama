@@ -1054,7 +1054,13 @@ pub fn hypothesen(aufnahme: &Aufnahme) -> Rechenergebnis {
     // M-86: ohne Vollstaendigkeitsmarke wird nicht gerechnet. Ein fehlender
     // Intent saehe aus wie „kein Schutz gewuenscht" — der teuerste Irrtum,
     // den dieser Datenweg machen kann.
-    if aufnahme.intent.as_ref().is_some_and(|i| !i.vollstaendig) {
+    //
+    // 🔑 NR-01 (Nacharbeit 1, 07.09.2026): derselbe Riegel wie in
+    // `aufnahmen_sammeln`, aus DERSELBEN Funktion. Zwei Kopien einer
+    // Bedingung sind zwei Gelegenheiten, sie verschieden zu formulieren —
+    // und genau das war passiert: `None` sperrte an keiner der beiden
+    // Stellen.
+    if !super::intent::darf_gerechnet_werden(aufnahme.intent.as_ref()) {
         return Rechenergebnis::default();
     }
     let Some((metrik, band, beobachtung)) = masteranomalie(&aufnahme.master) else {

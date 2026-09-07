@@ -128,12 +128,29 @@ fn evidenz(a: &Adresse, nr: usize, projekt_start: i64, anhebung_db: f64) -> Vec<
     serde_json::to_vec(&wert).unwrap()
 }
 
+/// **M-86, NR-01:** der leere Vollbestand MIT Marke, bevor gerechnet wird.
+///
+/// Seit der Nacharbeit 1 (07.09.2026) sperrt `intent == None` genauso wie ein
+/// unvollstaendiger Bestand. Jede Buehne, die einen Befund erwartet, meldet
+/// deshalb zuerst den Bestand — wie der Main es tut.
+fn intent_marke(c: &Coordinator, link: &str, a: &Adresse) {
+    let wert = json!({
+        "type": "intent_update",
+        "adresse": a,
+        "session_epoch": a.session_epoch,
+        "vollstaendig": true,
+        "bestand_revision": 0
+    });
+    c.p1(link, &serde_json::to_vec(&wert).unwrap());
+}
+
 /// Master und Sonde, `fenster` Belege je Seite. Rückgabe: die Adressen.
 fn buehne(c: &Coordinator, fenster: usize) -> Vec<Adresse> {
     let master = adresse(1);
     let sonde = adresse(2);
     anmelden(c, "main", &master, "main", 0);
     anmelden(c, "sonde0", &sonde, "passive_probe", 3);
+    intent_marke(c, "main", &master);
     for i in 0..fenster {
         let zeit = 44_108_200 + (i as i64) * 512;
         c.p1("main", &evidenz(&master, i, zeit, 9.0));
@@ -329,6 +346,7 @@ fn keine_aenderung_und_mehr_daten_sind_vorschlaege() {
     let c = coordinator();
     let master = adresse(1);
     anmelden(&c, "main", &master, "main", 0);
+    intent_marke(&c, "main", &master);
     for i in 0..12 {
         c.p1(
             "main",

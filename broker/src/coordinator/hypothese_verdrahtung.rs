@@ -79,6 +79,16 @@ impl Coordinator {
             let ergebnis = hypothesen(&aufnahme);
             ergebnisse.push((session, ergebnis.befunde));
         }
+        // 🔑 NR-03 (Nacharbeit 1, 07.09.2026): der Testhaken sitzt GENAU
+        // hier — zwischen der Rechnung ohne Lock und der Eintragung unter
+        // dem Lock.
+        //
+        // Er ist das einzige Mittel, mit dem sich das Interleaving aus EP-03
+        // deterministisch messen laesst: waehrend der Rechnung steigt die
+        // Intent-Revision oder eine Evidenz wird zurueckgenommen. Zwei
+        // Threads mit Barriere maessen dasselbe, aber nicht reproduzierbar —
+        // und eine Zusage, deren Beweis flackert, ist keine.
+        self.rechen_test_haken_ausloesen();
         for (session, befunde) in ergebnisse {
             let geaendert = self.befunde_eintragen(&session, befunde);
             // 🔑 SONDE-014 Etappe F: der Vorschlag entsteht MIT seinem Befund.
@@ -136,8 +146,15 @@ impl Coordinator {
             // Riegel steht HIER und nicht erst im Modul: eine Aufnahme, die
             // gar nicht erst entsteht, kann auch nicht versehentlich
             // gerechnet werden.
+            //
+            // 🔑 NR-01 (Nacharbeit 1, 07.09.2026): FAIL-CLOSED. Bis hierher
+            // lautete die Bedingung `is_some_and(|i| !i.vollstaendig)` — bei
+            // `intent == None` ist sie FALSCH, und ohne jede
+            // Vollstaendigkeitsmeldung entstanden Findings und Proposals.
+            // Die Frage steht jetzt an EINER Stelle
+            // (`intent::darf_gerechnet_werden`) und `None` sperrt.
             let intent = stand.intent.get(&session).cloned();
-            if intent.as_ref().is_some_and(|i| !i.vollstaendig) {
+            if !super::intent::darf_gerechnet_werden(intent.as_ref()) {
                 continue;
             }
             let mut master: Option<Quellprofil> = None;
@@ -290,6 +307,27 @@ impl Coordinator {
     fn befunde_eintragen(&self, session: &SessionKey, befunde: Vec<CauseHypothesis>) -> bool {
         let neue: Vec<CauseHypothesis> = {
             let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+            // 🔑 NR-03 (Nacharbeit 1, 07.09.2026): das Ergebnis wird UNTER
+            // DEMSELBEN LOCK gegen den Stand geprueft, aus dem es entstanden
+            // ist — VOR dem Einsetzen.
+            //
+            // `hypothesen_bilden` sammelt unter dem Lock, rechnet ausserhalb
+            // und trug bis hierher bedingungslos ein. Das Interleaving
+            // „Aufnahme mit Intent-Revision 1 gesammelt → waehrend der
+            // Rechnung Revision 2 empfangen und die Befunde auf `stale`
+            // gesetzt → altes Ergebnis eingetragen" ueberschrieb damit einen
+            // bereits sichtbar veralteten Bestand mit einem READY-Befund der
+            // ALTEN Revision. Dieselbe Naht traegt die zurueckgenommene
+            // Evidenz: eine `evidence_id`, die zwischen Sammeln und Eintragen
+            // ausgeschlossen wurde, waere wieder veroeffentlicht worden.
+            //
+            // Verworfen heisst NICHT verloren: die Sitzung bleibt dirty und
+            // wird neu gerechnet. Ein halb uebernommenes Ergebnis gibt es
+            // nicht — entweder alle Befunde oder keiner.
+            if !Self::ergebnis_ist_noch_gueltig(&stand, session, &befunde) {
+                stand.befunde_neu_bilden = true;
+                return false;
+            }
             let alt = stand.befunde.get(session);
             if alt.map(Vec::as_slice) == Some(befunde.as_slice()) {
                 return false;
@@ -570,6 +608,58 @@ impl Coordinator {
     ///
     /// Ein Befund, der bereits `stale` ist, bleibt es; eine zweite
     /// Intent-Änderung macht ihn nicht „mehr" stale.
+    /// **NR-03: traegt der Stand das Ergebnis noch, das aus ihm entstanden
+    /// ist?**
+    ///
+    /// Zwei Fragen, beide unter dem Lock des Aufrufers:
+    ///
+    /// (a) **Revision.** Jeder Befund traegt die Intent-Revision, unter der
+    ///     er gerechnet wurde. Weicht sie von der aktuellen Sitzungsrevision
+    ///     ab, ist das Ergebnis veraltet — es wurde unter einer anderen
+    ///     Absicht gerechnet (M-10).
+    ///
+    /// (b) **Evidenz.** Jede referenzierte `evidence_id` steht in der
+    ///     aktuellen Historie und ist nicht ausgeschlossen. Eine waehrend der
+    ///     Rechnung zurueckgenommene ID darf nie wieder sichtbar werden
+    ///     (M-24, M-28).
+    ///
+    /// Ein LEERES Ergebnis ist immer gueltig: es behauptet nichts, und es
+    /// ist der Weg, auf dem eine Ruecknahme ihre Befunde raeumt.
+    fn ergebnis_ist_noch_gueltig(
+        stand: &Stand,
+        session: &SessionKey,
+        befunde: &[CauseHypothesis],
+    ) -> bool {
+        if befunde.is_empty() {
+            return true;
+        }
+        let aktuelle_revision = stand
+            .intent
+            .get(session)
+            .map(|b| b.revision)
+            .unwrap_or_default();
+        if befunde.iter().any(|b| b.intent_revision != aktuelle_revision) {
+            return false;
+        }
+        // Die gueltigen Belege DIESER Sitzung, aus derselben Historie, aus
+        // der `aufnahmen_sammeln` sie genommen hat.
+        let mut gueltig: BTreeSet<&str> = BTreeSet::new();
+        for (key, historie) in stand.evidenz.iter() {
+            if key.session() != *session {
+                continue;
+            }
+            for eintrag in historie.iter() {
+                if eintrag.ausschlussgrund.is_none() {
+                    gueltig.insert(eintrag.evidence_id.as_str());
+                }
+            }
+        }
+        befunde
+            .iter()
+            .flat_map(|b| b.evidence_ids.iter())
+            .all(|id| gueltig.contains(id.as_str()))
+    }
+
     pub(super) fn befunde_veralten_locked(
         stand: &mut Stand,
         session: &SessionKey,

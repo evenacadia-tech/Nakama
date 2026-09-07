@@ -147,12 +147,32 @@ fn findings(c: &Coordinator) -> Vec<Value> {
         .unwrap_or_default()
 }
 
+/// **M-86, NR-01:** der leere Vollbestand MIT Marke, bevor gerechnet wird.
+///
+/// Seit der Nacharbeit 1 (07.09.2026) ist die Sperre fail-closed: ohne Marke
+/// rechnet der Broker gar nicht — auch nicht bei `intent == None`. Jede
+/// Buehne, die einen Befund erwartet, meldet deshalb zuerst den Bestand, so
+/// wie der Main es tut (`sendeIntentVollbestand`).
+fn intent_marke(c: &Coordinator, link: &str, a: &Adresse) {
+    let wert = json!({
+        "type": "intent_update",
+        "adresse": a,
+        "session_epoch": a.session_epoch,
+        "vollstaendig": true,
+        "bestand_revision": 0
+    });
+    c.p1(link, &serde_json::to_vec(&wert).unwrap());
+}
+
 /// Ein Master und eine Sonde, beide angemeldet, mit `fenster` Belegen je Seite.
 fn buehne(c: &Coordinator, fenster: usize) -> Vec<Adresse> {
     let master = adresse(1);
     let sonde = adresse(2);
     anmelden(c, "main", &master, "main", Some(0));
     anmelden(c, "sonde0", &sonde, "passive_probe", Some(3));
+    // Reihenfolge aus M-86: anmelden -> Vollbestand mit Marke -> erst dann
+    // Evidenz und Rechnung.
+    intent_marke(c, "main", &master);
     reihe(c, "main", &master, 0, fenster);
     reihe(c, "sonde0", &sonde, 100, fenster);
     vec![master, sonde]
@@ -306,6 +326,7 @@ fn alternative_ist_ein_eigener_befund_mit_eigenem_zustand() {
     // Die zweite Sonde teilt sich den Kanal mit der ersten: sie bleibt im
     // Rennen, traegt aber keine starke Aussage (M-22).
     anmelden(&c, "sonde1", &b, "passive_probe", Some(3));
+    intent_marke(&c, "main", &master);
     reihe(&c, "main", &master, 0, 12);
     reihe(&c, "sonde0", &a, 100, 12);
     reihe(&c, "sonde1", &b, 200, 12);

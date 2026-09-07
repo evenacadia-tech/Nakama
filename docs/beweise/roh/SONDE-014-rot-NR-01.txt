@@ -1,0 +1,55 @@
+SONDE-014 Nacharbeit 1 - Rotbeweis NR-01 (EP-01, M-86).
+Die Zusage: ohne Vollstaendigkeitsmarke rechnet der Broker weder
+Hypothese noch Proposal - AUCH bei `intent == None` (fail-closed).
+Die Zeile, die sie traegt: `intent::darf_gerechnet_werden`, eingesetzt in
+`aufnahmen_sammeln` (hypothese_verdrahtung.rs) und `hypothesen()`
+(hypothese.rs). Zurueckgedreht auf die alte Formulierung
+`is_some_and(|i| !i.vollstaendig)` faellt der neue Abschnitt.
+
+Ruecknahme in broker/src/coordinator/intent.rs:
+--- vorher ---
+pub fn darf_gerechnet_werden(intent: Option<&IntentBestand>) -> bool {
+    intent.is_some_and(|b| b.vollstaendig)
+}
+--- nachher (die Ruecknahme) ---
+pub fn darf_gerechnet_werden(intent: Option<&IntentBestand>) -> bool {
+    // ROTBEWEIS NR-01: die alte, fail-OPEN Formulierung.
+    !intent.is_some_and(|b| !b.vollstaendig)
+}
+
+=== ROTER LAUF: cargo test --manifest-path broker/Cargo.toml --test sonde014_verdrahtung keine_rechnung_ohne_jede_intentmeldung ===
+EXIT=101
+running 1 test
+test keine_rechnung_ohne_jede_intentmeldung ... FAILED
+
+failures:
+
+---- keine_rechnung_ohne_jede_intentmeldung stdout ----
+
+thread 'keine_rechnung_ohne_jede_intentmeldung' (9324) panicked at tests\sonde014_verdrahtung.rs:361:5:
+ohne jede Vollstaendigkeitsmeldung entsteht KEIN Befund
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    keine_rechnung_ohne_jede_intentmeldung
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 16 filtered out; finished in 0.32s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.12s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+error: test failed, to rerun pass `--test sonde014_verdrahtung`
+
+=== WIEDERHERGESTELLT, GRUENER LAUF ===
+EXIT=0
+running 1 test
+test keine_rechnung_ohne_jede_intentmeldung ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 16 filtered out; finished in 0.28s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.17s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+
+URTEIL: BESTANDEN - rot mit EXIT=101, erwartete Zeile gefunden: 'ohne jede Vollstaendigkeitsmeldung entsteht KEIN Befund'; gruen mit EXIT=0.

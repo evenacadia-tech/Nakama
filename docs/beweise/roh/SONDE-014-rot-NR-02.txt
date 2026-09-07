@@ -1,0 +1,59 @@
+SONDE-014 Nacharbeit 1 - Rotbeweis NR-02 (EP-02, M-85).
+Die Zusage: die Revisionsordnung gilt JE KOALESZIERUNGSOBJEKT
+`(quelle_id, scope)`. Die Zeile, die sie traegt: die Wahl von `zuletzt`
+in `intent_update_json_mit_minor` (intent.rs). Wieder global gemessen,
+faellt das Teilupdate der FREMDEN Quelle an der juengeren Revision der
+eigenen - genau der Verlust, den EP-02 beschreibt.
+
+Ruecknahme in broker/src/coordinator/intent.rs:
+--- vorher ---
+            let zuletzt = match objektschluessel.as_deref() {
+                None => bestand.revision,
+                Some(key) => bestand
+                    .teilrevisionen
+                    .get(key)
+                    .copied()
+                    .unwrap_or(bestand.grundrevision),
+            };
+--- nachher (die Ruecknahme) ---
+            // ROTBEWEIS NR-02: die Ordnung wieder GLOBAL.
+            let zuletzt = bestand.revision;
+
+=== ROTER LAUF: cargo test --manifest-path broker/Cargo.toml --test sonde014_verdrahtung teilupdate_fremden_schluessels_ueberlebt_eine_koaleszierung ===
+EXIT=101
+running 1 test
+test teilupdate_fremden_schluessels_ueberlebt_eine_koaleszierung ... FAILED
+
+failures:
+
+---- teilupdate_fremden_schluessels_ueberlebt_eine_koaleszierung stdout ----
+
+thread 'teilupdate_fremden_schluessels_ueberlebt_eine_koaleszierung' (8620) panicked at tests\sonde014_verdrahtung.rs:444:5:
+assertion `left == right` failed: und B ueberlebt die Koaleszierung von A - sonst fehlte ein VETO
+  left: None
+ right: Some("geschuetzt")
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    teilupdate_fremden_schluessels_ueberlebt_eine_koaleszierung
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 16 filtered out; finished in 0.01s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.49s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+error: test failed, to rerun pass `--test sonde014_verdrahtung`
+
+=== WIEDERHERGESTELLT, GRUENER LAUF ===
+EXIT=0
+running 1 test
+test teilupdate_fremden_schluessels_ueberlebt_eine_koaleszierung ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 16 filtered out; finished in 0.01s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.64s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+
+URTEIL: BESTANDEN - rot mit EXIT=101, erwartete Zeile gefunden: 'und B ueberlebt die Koaleszierung von A'; gruen mit EXIT=0.

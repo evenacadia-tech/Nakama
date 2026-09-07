@@ -64,6 +64,11 @@ pub struct SchutzangabeSpiegel {
 #[derive(Debug, Clone, Default)]
 pub struct IntentBestand {
     /// Revision des GANZEN Bestands. 0 heisst „nie etwas gesetzt".
+    ///
+    /// Sie wird als MAXIMUM fortgeschrieben (Nacharbeit 1, NR-02): ein
+    /// Teilupdate, das nach der Koaleszierung verspaetet ankommt, senkt sie
+    /// nicht. Sie ordnet Vollberichte; Teilberichte ordnet
+    /// `teilrevisionen`.
     pub revision: i64,
     /// Die Vollstaendigkeitsmarke aus M-86. Solange sie fehlt, rechnet der
     /// Broker nicht.
@@ -74,6 +79,43 @@ pub struct IntentBestand {
     pub schutzangaben: BTreeSet<SchutzangabeSpiegel>,
     /// Schluessel: das GEORDNETE Paar. Je Paar genau eine Art.
     pub beziehungen: BTreeMap<(String, String), String>,
+    /// **NR-02 (Nacharbeit 1, 07.09.2026): die Revisionsordnung JE
+    /// KOALESZIERUNGSOBJEKT.**
+    ///
+    /// Die Groesse ist gedeckelt, ohne einen eigenen Deckel zu brauchen:
+    /// jeder Schluessel gehoert genau einem Objekt aus `intents`,
+    /// `schutzangaben` oder `beziehungen`, und alle drei stehen unter
+    /// `INTENT_DECKEL`. Ein Vollbericht leert sie.
+    ///
+    /// Der Sender koalesziert je `(quelle_id, scope)` — `intent:<quelle>:
+    /// <scope>` in `PluginProcessor::sendeIntentFortschreibung`. Wer die
+    /// Ablehnung an der GLOBALEN Bestandsrevision festmacht, verwirft ein
+    /// fremdes Objekt vollstaendig: Ankunft A/1, B/2, A/3 laesst B/2 an
+    /// A/3 scheitern, und die geschuetzte Rolle einer anderen Quelle fehlt
+    /// dauerhaft. Deshalb steht hier die zuletzt UEBERNOMMENE Revision je
+    /// Objekt; ein Objekt ohne eigenen Eintrag misst sich an
+    /// `grundrevision`.
+    pub teilrevisionen: BTreeMap<String, i64>,
+    /// Die Revision des letzten VOLLBERICHTS. Er ersetzt den Bestand
+    /// vollstaendig und ist damit der Grundstand jedes Objekts, das danach
+    /// noch nicht einzeln fortgeschrieben wurde.
+    pub grundrevision: i64,
+}
+
+/// **M-86, der EINE Riegel: fail-closed.**
+///
+/// `None` sperrt genauso wie ein unvollstaendiger Bestand. Bis zur
+/// Nacharbeit 1 stand die Bedingung zweimal im Code — je einmal in
+/// `aufnahmen_sammeln` und in `hypothesen()` — und beide lauteten
+/// `is_some_and(|i| !i.vollstaendig)`: bei `intent == None` ist das FALSCH,
+/// und ohne jede Vollstaendigkeitsmeldung entstanden Findings und
+/// Proposals. Genau der Irrtum, den E-10 als den teuersten dieses Datenwegs
+/// benennt — ein fehlender Intent sieht aus wie „kein Schutz gewuenscht".
+///
+/// Die Frage steht deshalb an EINER Stelle, und jeder Rechner stellt sie
+/// ueber diese Funktion.
+pub fn darf_gerechnet_werden(intent: Option<&IntentBestand>) -> bool {
+    intent.is_some_and(|b| b.vollstaendig)
 }
 
 /// Die fuenf Rollen, die dieser Leser kennt. Sie stehen hier NICHT als zweite
@@ -381,6 +423,31 @@ impl Coordinator {
             }
         }
 
+        // 🔑 NR-02 (Nacharbeit 1, 07.09.2026): der KOALESZIERUNGSSCHLUESSEL
+        // einer Teilmeldung, aus dem einen Objekt abgeleitet, das sie traegt.
+        //
+        // Er bildet nach, was der Sender tut: `intent:<quelle>:<scope>` in
+        // `PluginProcessor::sendeIntentFortschreibung`. Schutzangabe und
+        // Beziehung reisen heute nur im Vollbestand; ihr Schluessel steht
+        // trotzdem hier, weil Regel 5 sie als Teilmeldung ausdruecklich
+        // zulaesst und ein Objekt ohne Schluessel sich sonst still an einem
+        // fremden messen wuerde.
+        let objektschluessel: Option<String> = if vollstaendig {
+            None
+        } else if let Some((quelle_id, passage_id)) = neue_intents.keys().next() {
+            let scope = if passage_id.is_empty() { "global" } else { passage_id.as_str() };
+            Some(format!("intent:{quelle_id}:{scope}"))
+        } else if let Some(s) = neue_schutzangaben.iter().next() {
+            Some(format!("schutz:{}:{}", s.quelle_id, s.eigenschaft))
+        } else if let Some((a, b)) = neue_beziehungen.keys().next() {
+            Some(format!("beziehung:{a}:{b}"))
+        } else {
+            // Regel 5 hat bereits genau EIN Objekt verlangt; hier anzukommen
+            // hiesse, dass die Zaehlung und der Aufbau auseinanderlaufen.
+            // Fail-closed: ohne Schluessel wird nichts uebernommen.
+            return Err(IntentAbweisung::TeilmeldungNichtEinzeln);
+        };
+
         // ── DER EINE LOCKABSCHNITT ──────────────────────────────────────
         let (session, veraltet) = {
             let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
@@ -401,21 +468,54 @@ impl Coordinator {
             // ueberschreibt nach der Koaleszierung nie eine juengere - das
             // ist der Kern dessen, was die Koaleszierung ueberhaupt zulaessig
             // macht.
-            if revision < bestand.revision {
+            //
+            // 🔑 NR-02 (Nacharbeit 1): die Ordnung gilt JE
+            // KOALESZIERUNGSOBJEKT, nicht global. Der Sender koalesziert je
+            // `(quelle_id, scope)`, und `P1Warteschlange::einreihen()`
+            // ersetzt einen Eintrag AN SEINER POSITION — die Ankunft A/1,
+            // B/2, A/3 ist damit normal. An der globalen Bestandsrevision
+            // gemessen scheiterte B/2 an A/3 und die geschuetzte Rolle einer
+            // FREMDEN Quelle fehlte dauerhaft im Broker.
+            //
+            // ⚠️ Fuer ein Objekt zaehlt GLEICH als nicht neuer. Dieselbe
+            // Bestandsrevision zweimal fuer dasselbe Objekt ist entweder eine
+            // Wiederholung (dann aendert das Verwerfen nichts) oder ein
+            // Widerspruch (dann darf sie den uebernommenen Wert nicht
+            // ersetzen). Der bestehende M-85-Fall misst genau diesen Rand.
+            let zuletzt = match objektschluessel.as_deref() {
+                None => bestand.revision,
+                Some(key) => bestand
+                    .teilrevisionen
+                    .get(key)
+                    .copied()
+                    .unwrap_or(bestand.grundrevision),
+            };
+            let zu_alt = match objektschluessel {
+                None => revision < zuletzt,
+                Some(_) => revision <= zuletzt,
+            };
+            if zu_alt {
                 return Err(IntentAbweisung::AeltereRevision);
             }
 
             let mut kandidat = if vollstaendig {
                 // Der vollstaendige Bestand ERSETZT den Spiegel. Ein
-                // Verschmelzen liesse ein zurueckgenommenes Veto stehen.
+                // Verschmelzen liesse ein zurueckgenommenes Veto stehen —
+                // und mit ihm faellt die ganze Revisionsbuchhaltung der
+                // Teilobjekte: der Vollbericht ist ihr neuer Grundstand.
                 IntentBestand {
                     revision,
                     vollstaendig: true,
+                    grundrevision: revision,
                     ..Default::default()
                 }
             } else {
                 let mut k = bestand.clone();
-                k.revision = revision;
+                // Die Sitzungsrevision ist das MAXIMUM. Ein verspaetetes
+                // Teilupdate darf sie nicht senken; sonst liesse sich ein
+                // spaeter eintreffender alter Vollbericht nicht mehr
+                // abweisen.
+                k.revision = revision.max(bestand.revision);
                 k
             };
             kandidat.intents.extend(neue_intents);
@@ -436,6 +536,9 @@ impl Coordinator {
             }
 
             let revision_gestiegen = revision > bestand.revision;
+            if let Some(key) = objektschluessel {
+                kandidat.teilrevisionen.insert(key, revision);
+            }
             *bestand = kandidat;
             // 🔑 SONDE-014 Etappe I (M-86 seit E-11): die Vollstaendigkeitsmarke
             // deckt BEIDE Bestaende — Intent UND aktuellen Schritt.
@@ -476,6 +579,19 @@ impl Coordinator {
             let veraltet = if revision_gestiegen {
                 Coordinator::befunde_veralten_locked(&mut stand, &session, revision)
             } else {
+                // 🔑 NR-02, die Gegenrichtung: ein VERSPAETETES Teilupdate
+                // hebt die Sitzungsrevision nicht, aendert aber den Bestand,
+                // unter dem bereits gerechnet wurde.
+                //
+                // Es kommt aus der Koaleszierung — A/3 stand vor B/2 —, und
+                // die bereits ausgegebenen Befunde kennen B nicht. Sie
+                // veralten NICHT (§37.3 bindet `stale` woertlich an eine
+                // gestiegene Revision), aber die Sitzung wird als neu zu
+                // rechnen gefuehrt: beim naechsten Material ruht die Aussage
+                // dann auf dem vollstaendigen Bestand.
+                if !vollstaendig {
+                    stand.befunde_neu_bilden = true;
+                }
                 0
             };
             (session, veraltet)
@@ -540,13 +656,13 @@ impl Coordinator {
     /// vergessen zu koennen.
     pub fn darf_rechnen(&self, project_binding_id: &str, session_epoch: &str) -> bool {
         let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
-        stand
-            .intent
-            .get(&SessionKey {
-                project_binding_id: project_binding_id.into(),
-                session_epoch: session_epoch.into(),
-            })
-            .is_some_and(|b| b.vollstaendig)
+        // 🔑 NR-02/NR-01 (Nacharbeit 1): DIESELBE Funktion, die auch
+        // `aufnahmen_sammeln` und `hypothesen()` stellen. Eine zweite
+        // Formulierung derselben Frage war der Defekt EP-01.
+        darf_gerechnet_werden(stand.intent.get(&SessionKey {
+            project_binding_id: project_binding_id.into(),
+            session_epoch: session_epoch.into(),
+        }))
     }
 
     /// Wie viele `intent_update` angenommen wurden. Ein Zaehler, keine

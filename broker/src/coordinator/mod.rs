@@ -205,6 +205,17 @@ pub struct Coordinator {
     /// Zahl war oder die Division nicht endlich blieb. NaN-Ehrlichkeit heisst
     /// verriegeln UND zaehlen, nicht still `inf` ausliefern.
     fenster_nicht_endlich: AtomicU64,
+    /// **NR-03 (Nacharbeit 1, 07.09.2026): die Naht zwischen Rechnung und
+    /// Veroeffentlichung.**
+    ///
+    /// `hypothesen_bilden` sammelt unter dem Standlock, rechnet ausserhalb
+    /// und traegt danach ein. Genau in dieser Luecke sitzt das Interleaving
+    /// aus EP-03 — und ohne einen scharf gestellten Haken laesst es sich nur
+    /// mit zwei Threads und einer Barriere treffen, also nicht
+    /// reproduzierbar. Der Haken faellt genau EINMAL: er nimmt sich selbst
+    /// heraus, bevor er laeuft, damit die Neurechnung, die er ausloest, ihn
+    /// nicht erneut zieht.
+    rechen_test_haken: Mutex<Option<Box<dyn Fn() + Send + Sync>>>,
     /// Monotone ANKUNFTSREIHENFOLGE angenommener Evidenzsnapshots.
     ///
     /// 🔑 SONDE-013 Nacharbeit 2 (Befund R17): sie ist die einzige Groesse, an
@@ -242,6 +253,7 @@ impl Coordinator {
             flush_test_haken: Mutex::new(None),
             test_panik_unter_standlock: AtomicBool::new(false),
             fenster_nicht_endlich: AtomicU64::new(0),
+            rechen_test_haken: Mutex::new(None),
             evidenz_folge: AtomicU64::new(0),
         }
     }
@@ -285,6 +297,7 @@ impl Coordinator {
             flush_test_haken: Mutex::new(None),
             test_panik_unter_standlock: AtomicBool::new(false),
             fenster_nicht_endlich: AtomicU64::new(0),
+            rechen_test_haken: Mutex::new(None),
             evidenz_folge: AtomicU64::new(evidenz_folge_start),
         };
         // 🔑 Nacharbeit 3 (Befund B19, M-13/M-22): die Paarurteile ENTSTEHEN
@@ -310,6 +323,32 @@ impl Coordinator {
 
     pub fn session_push_setzen(&self, push: Arc<dyn SessionPush>) {
         *self.push.lock().unwrap_or_else(|e| e.into_inner()) = Some(push);
+    }
+
+    /// **NR-03:** stellt den Haken scharf, der GENAU EINMAL zwischen
+    /// `aufnahmen_sammeln` und `befunde_eintragen` laeuft.
+    #[doc(hidden)]
+    pub fn rechen_test_haken_setzen(&self, haken: Box<dyn Fn() + Send + Sync>) {
+        *self
+            .rechen_test_haken
+            .lock()
+            .unwrap_or_else(|e| e.into_inner()) = Some(haken);
+    }
+
+    /// Zieht den Haken, falls einer scharf ist — und entschaerft ihn dabei.
+    ///
+    /// Die Reihenfolge ist Absicht: erst herausnehmen, dann laufen lassen.
+    /// Was der Haken tut, loest fast sicher eine Neurechnung aus; liefe er
+    /// dann erneut, entstuende eine Endlosschleife statt einer Messung.
+    pub(super) fn rechen_test_haken_ausloesen(&self) {
+        let haken = self
+            .rechen_test_haken
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .take();
+        if let Some(f) = haken {
+            f();
+        }
     }
 
     #[doc(hidden)]

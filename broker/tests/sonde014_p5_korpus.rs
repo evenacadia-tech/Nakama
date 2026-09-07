@@ -143,6 +143,21 @@ fn sitzung_fahren(s: &Value, band: (usize, usize)) -> Vec<Value> {
     let c = Coordinator::mit_uhr(Arc::new(ManualClock::default()), hex(0xbeef));
     let master = adresse(1);
     anmelden(&c, "main", &master, "main", Some(0));
+    // 🔑 M-86/NR-01 (Nacharbeit 1, 07.09.2026): der Vollbestand MIT Marke,
+    // bevor gerechnet wird. Die Sperre ist seither fail-closed — `intent ==
+    // None` sperrt genauso wie ein unvollstaendiger Bestand -, und ein
+    // Korpuslauf ohne Marke maesse nur noch das Schweigen des Riegels.
+    // Die Reihenfolge ist die des Mains: anmelden -> Marke -> Evidenz.
+    {
+        let marke = json!({
+            "type": "intent_update",
+            "adresse": master,
+            "session_epoch": master.session_epoch,
+            "vollstaendig": true,
+            "bestand_revision": 0
+        });
+        c.p1("main", &serde_json::to_vec(&marke).unwrap());
+    }
 
     let master_db = s["master"]["anhebung_db"].as_f64().unwrap_or(0.0);
     let master_fenster = s["master"]["fenster"].as_u64().unwrap_or(0) as usize;

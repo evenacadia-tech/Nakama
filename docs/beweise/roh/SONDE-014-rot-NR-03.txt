@@ -1,0 +1,53 @@
+SONDE-014 Nacharbeit 1 - Rotbeweis NR-03 (EP-03, M-10/M-24).
+Die Zusage: `befunde_eintragen` prueft das Rechenergebnis UNTER DEMSELBEN
+LOCK gegen den aktuellen Stand, bevor es einsetzt - (a) Intent-Revision,
+(b) Existenz und Ausschluss jeder Evidenz-ID. Die Zeile, die sie traegt:
+die Revisionspruefung in `ergebnis_ist_noch_gueltig`
+(hypothese_verdrahtung.rs). Ohne (a) ueberschreibt ein Ergebnis der ALTEN
+Revision den bereits auf `stale` gesetzten Bestand.
+
+Ruecknahme in broker/src/coordinator/hypothese_verdrahtung.rs:
+--- vorher ---
+        if befunde.iter().any(|b| b.intent_revision != aktuelle_revision) {
+            return false;
+        }
+--- nachher (die Ruecknahme) ---
+        // ROTBEWEIS NR-03: Pruefung (a) entfernt.
+        let _ = aktuelle_revision;
+
+=== ROTER LAUF: cargo test --manifest-path broker/Cargo.toml --test sonde014_verdrahtung veraltetes_rechenergebnis_wird_nicht_veroeffentlicht ===
+EXIT=101
+running 1 test
+test veraltetes_rechenergebnis_wird_nicht_veroeffentlicht ... FAILED
+
+failures:
+
+---- veraltetes_rechenergebnis_wird_nicht_veroeffentlicht stdout ----
+
+thread 'veraltetes_rechenergebnis_wird_nicht_veroeffentlicht' (19680) panicked at tests\sonde014_verdrahtung.rs:544:5:
+kein READY-Befund der ALTEN Revision im Snapshot: [(1, ReadyToSend)]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    veraltetes_rechenergebnis_wird_nicht_veroeffentlicht
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 16 filtered out; finished in 0.29s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.12s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+error: test failed, to rerun pass `--test sonde014_verdrahtung`
+
+=== WIEDERHERGESTELLT, GRUENER LAUF ===
+EXIT=0
+running 1 test
+test veraltetes_rechenergebnis_wird_nicht_veroeffentlicht ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 16 filtered out; finished in 0.56s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.17s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+
+URTEIL: BESTANDEN - rot mit EXIT=101, erwartete Zeile gefunden: 'kein READY-Befund der ALTEN Revision im Snapshot'; gruen mit EXIT=0.

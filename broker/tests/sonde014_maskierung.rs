@@ -138,6 +138,22 @@ fn findings(c: &Coordinator) -> Vec<Value> {
         .unwrap_or_default()
 }
 
+/// **M-86, NR-01:** der leere Vollbestand MIT Marke, bevor gerechnet wird.
+///
+/// Seit der Nacharbeit 1 (07.09.2026) sperrt `intent == None` genauso wie ein
+/// unvollstaendiger Bestand. Jede Buehne, die einen Befund erwartet, meldet
+/// deshalb zuerst den Bestand — wie der Main es tut.
+fn intent_marke(c: &Coordinator, link: &str, a: &Adresse) {
+    let wert = json!({
+        "type": "intent_update",
+        "adresse": a,
+        "session_epoch": a.session_epoch,
+        "vollstaendig": true,
+        "bestand_revision": 0
+    });
+    c.p1(link, &serde_json::to_vec(&wert).unwrap());
+}
+
 /// Master und Sonde, `fenster` zusammenhängende Belege je Seite. Der Master
 /// hebt seine Anomaliebänder um `master_db`, die Sonde um `sonde_db`.
 fn buehne(c: &Coordinator, fenster: usize, master_db: f64, sonde_db: f64) -> Vec<Adresse> {
@@ -145,6 +161,7 @@ fn buehne(c: &Coordinator, fenster: usize, master_db: f64, sonde_db: f64) -> Vec
     let sonde = adresse(2);
     anmelden(c, "main", &master, "main", 0);
     anmelden(c, "sonde0", &sonde, "passive_probe", 3);
+    intent_marke(c, "main", &master);
     for i in 0..fenster {
         let zeit = 44_108_200 + (i as i64) * 512;
         c.p1("main", &evidenz(&master, i, zeit, master_db));
@@ -340,6 +357,7 @@ fn zone_hat_keine_eigene_schwelle() {
     let d = coordinator();
     let master = adresse(1);
     anmelden(&d, "main", &master, "main", 0);
+    intent_marke(&d, "main", &master);
     for i in 0..12 {
         d.p1(
             "main",

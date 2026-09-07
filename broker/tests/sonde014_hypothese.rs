@@ -212,12 +212,30 @@ fn findings(c: &Coordinator) -> Vec<Value> {
         .unwrap_or_default()
 }
 
+/// **M-86, NR-01:** der leere Vollbestand MIT Marke, bevor gerechnet wird.
+///
+/// Seit der Nacharbeit 1 (07.09.2026) ist die Sperre fail-closed: `intent ==
+/// None` sperrt genauso wie ein unvollstaendiger Bestand. Jede Buehne, die
+/// einen Befund erwartet, meldet deshalb zuerst den Bestand — genau in der
+/// Reihenfolge, die M-86 verlangt.
+fn intent_marke(c: &Coordinator, link: &str, a: &Adresse) {
+    let wert = json!({
+        "type": "intent_update",
+        "adresse": a,
+        "session_epoch": a.session_epoch,
+        "vollstaendig": true,
+        "bestand_revision": 0
+    });
+    c.p1(link, &serde_json::to_vec(&wert).unwrap());
+}
+
 /// Ein Master und `n` Sonden, alle angemeldet und mit Deskriptor.
 ///
 /// Rueckgabe: die Adressen in der Reihenfolge Master, Sonde 1, Sonde 2, ...
 fn buehne(c: &Coordinator, sonden: usize, mixer_ab: Option<i64>) -> Vec<Adresse> {
     let mut aus = vec![adresse(1)];
     anmelden(c, "main", &aus[0], "main", Some(0), None);
+    intent_marke(c, "main", &aus[0]);
     for i in 0..sonden {
         let a = adresse(2 + i);
         anmelden(
@@ -598,6 +616,7 @@ fn parent_duplikat_erzeugt_keine_zwei_starken() {
     let c = coordinator();
     let master = adresse(1);
     anmelden(&c, "main", &master, "main", Some(0), None);
+    intent_marke(&c, "main", &master);
     let a = adresse(2);
     let b = adresse(3);
     anmelden(&c, "sonde0", &a, "passive_probe", Some(7), None);
@@ -622,6 +641,7 @@ fn parent_duplikat_erzeugt_keine_zwei_starken() {
     let d = coordinator();
     let master = adresse(1);
     anmelden(&d, "main", &master, "main", Some(0), None);
+    intent_marke(&d, "main", &master);
     let e = adresse(2);
     anmelden(&d, "sonde0", &e, "passive_probe", None, None);
     reihe(&d, "main", &master, 0, 12, anhebung);
@@ -811,6 +831,7 @@ fn ranking_ist_bytegleich_ueber_hundert_laeufe() {
     let lauf = || {
         let c = coordinator();
         anmelden(&c, "main", &master, "main", Some(0), None);
+        intent_marke(&c, "main", &master);
         for (n, a) in sonden.iter().enumerate() {
             anmelden(&c, &format!("sonde{n}"), a, "passive_probe", Some(3 + n as i64), None);
         }
@@ -899,6 +920,7 @@ fn ungetrennter_erster_platz_ist_nicht_stark() {
     let stark = adresse(2);
     let schwach = adresse(3);
     anmelden(&c, "main", &master, "main", Some(0), None);
+    intent_marke(&c, "main", &master);
     anmelden(&c, "sonde0", &stark, "passive_probe", Some(3), None);
     anmelden(&c, "sonde1", &schwach, "passive_probe", None, None);
     reihe(&c, "main", &master, 0, 12, anhebung);
@@ -933,6 +955,7 @@ fn mehr_daten_ist_ein_ergebnis() {
     let c = coordinator();
     let master = adresse(1);
     anmelden(&c, "main", &master, "main", Some(0), None);
+    intent_marke(&c, "main", &master);
     reihe(&c, "main", &master, 0, 12, Some((ANOMALIEBAND, ANOMALIEBAND + 4, 9.0)));
 
     let f = findings(&c);
@@ -1082,7 +1105,13 @@ fn rollenaenderung_bewegt_die_intent_relevanz() {
 fn keine_hypothese_vor_der_vollstaendigkeitsmarke() {
     let anhebung = Some((ANOMALIEBAND, ANOMALIEBAND + 4, 9.0));
     let c = coordinator();
-    let adressen = buehne(&c, 1, Some(3));
+    // ⚠️ NICHT ueber `buehne`: die meldet seit der Nacharbeit 1 den
+    // Vollbestand mit Marke, und dieser Fall misst gerade den Zustand DAVOR.
+    let master = adresse(1);
+    let sonde = adresse(2);
+    anmelden(&c, "main", &master, "main", Some(0), None);
+    anmelden(&c, "sonde0", &sonde, "passive_probe", Some(3), None);
+    let adressen = vec![master, sonde];
     // Eine TEILMELDUNG ohne Vollbestand: der Spiegel ist unvollstaendig.
     let teil = json!({
         "type": "intent_update",

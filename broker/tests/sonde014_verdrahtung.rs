@@ -15,7 +15,9 @@
 //! Wire-Form von Hand waere eine zweite Wahrheit neben dem Korpus — dieselbe
 //! Regel wie in `coordinator_model.rs` und `sonde013_verdrahtung.rs`.
 
-use eqcop_broker::coordinator::{Coordinator, IntentAbweisung, ManualClock, SchrittAbweisung};
+use eqcop_broker::coordinator::{
+    Befundzustand, Coordinator, IntentAbweisung, ManualClock, SchrittAbweisung,
+};
 use eqcop_broker::transport::bootstrap::{Adresse, AudioLage, HelloControl, HostAngabe};
 use eqcop_broker::transport::server_v3::Senke;
 use serde_json::{json, Value};
@@ -90,6 +92,92 @@ fn bytes(wert: &Value) -> Vec<u8> {
 /// Der PRODUKTWEG: durch die Senke, nicht am Modul vorbei.
 fn ueber_senke(c: &Coordinator, link: &str, wert: &Value) {
     c.p1(link, &bytes(wert));
+}
+
+// ── Evidenzbuehne fuer die Nacharbeit 1 (NR-01, NR-03) ───────────────────
+//
+// Die Faelle dieser Runde messen nicht mehr nur den Spiegel, sondern was der
+// Riegel VERHINDERT: einen Befund und einen Vorschlag. Dafuer braucht dieses
+// Bein echte Evidenz — dieselbe committete Grundform, die `sonde014_befund`
+// faehrt, damit nicht zwei Wire-Wahrheiten nebeneinander stehen.
+
+const ANOMALIEBAND: usize = 98;
+
+fn capabilities() -> Value {
+    json!({
+        "host_context": true, "project_time": true, "fine_automation": false,
+        "double_precision": false, "latency_report": false, "aux_send": false,
+        "aux_return": false, "compare_routing": false, "sidechain": false,
+        "offline_render": false
+    })
+}
+
+/// Anmelden MIT Deskriptor — ohne ihn kennt der Broker weder Messposition
+/// noch Mixerkanal, und `routing_bekannt` waere strukturell falsch.
+fn anmelden_mit_deskriptor(
+    c: &Coordinator,
+    link: &str,
+    a: &Adresse,
+    art: &str,
+    mixer: Option<i64>,
+) {
+    let mut h = hello(a.clone());
+    h.plugin_kind = art.into();
+    let ausgang = c.control_hello_registrieren(link, &h);
+    assert!(ausgang.angenommen, "{:?}", ausgang.grund);
+    let _ = c.resync_bestaetigen(link, 0);
+    let position = if art == "main" { "insert" } else { "post" };
+    let mut d = json!({
+        "adresse": a,
+        "plugin_kind": art,
+        "measurement_position": position,
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Testquelle",
+        "capabilities": capabilities(),
+        "frische": {"letzter_kontakt_ms": 10, "stale": false}
+    });
+    if let Some(index) = mixer {
+        d["host_mixer_index"] = json!(index);
+    }
+    assert!(c.descriptor_setzen(link, d));
+}
+
+fn evidenz(a: &Adresse, nr: usize, projekt_start: i64) -> Vec<u8> {
+    static ROH: std::sync::OnceLock<Value> = std::sync::OnceLock::new();
+    let mut wert = ROH
+        .get_or_init(|| {
+            let pfad = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(
+                "../eq-copilot/fixtures/v3/gueltig/evidence-snapshot-mit-ereignissen-und-stereo.json",
+            );
+            serde_json::from_slice::<Value>(&std::fs::read(&pfad).expect("Evidenzfixture"))
+                .expect("Evidenzfixture ist JSON")
+        })
+        .clone();
+    wert["adresse"] = serde_json::to_value(a).unwrap();
+    wert["evidence_id"] = json!(hex(0x1000 + nr));
+    wert["transport"]["sequence"] = json!(nr as u64 + 1);
+    wert["transport"]["project_sample_start"] = json!(projekt_start);
+    for pfad in [
+        "/baender/werte",
+        "/verteilung/p10/werte",
+        "/verteilung/p50/werte",
+        "/verteilung/p95/werte",
+    ] {
+        if let Some(Value::Array(werte)) = wert.pointer_mut(pfad) {
+            for index in ANOMALIEBAND..(ANOMALIEBAND + 4).min(werte.len()) {
+                let alt = werte[index].as_i64().unwrap_or(0);
+                werte[index] = json!(alt + 90);
+            }
+        }
+    }
+    serde_json::to_vec(&wert).unwrap()
+}
+
+fn reihe(c: &Coordinator, link: &str, a: &Adresse, ab_nr: usize, anzahl: usize) {
+    for i in 0..anzahl {
+        c.p1(link, &evidenz(a, ab_nr + i, 44_108_200 + (i as i64) * 512));
+    }
 }
 
 // ═════════════════════════════════════════════════════════════════════════
@@ -243,6 +331,277 @@ fn keine_rechnung_vor_der_vollstaendigkeitsmarke() {
             .intents
             .is_empty(),
         "und der Bestand ist wirklich leer, nicht der Rest der Teilmeldung"
+    );
+}
+
+// =========================================================================
+// M-86 . NR-01 (Nacharbeit 1, 07.09.2026) - die Sperre ist FAIL-CLOSED
+// =========================================================================
+//
+// Der Fall darueber misst `darf_rechnen`. Diese Frage hatte bis zur
+// Nacharbeit 1 keinen Produktaufrufer - und die zwei Bedingungen, die den
+// Riegel im Produkt trugen, lauteten `is_some_and(|i| !i.vollstaendig)`. Bei
+// `intent == None` ist das FALSCH: ohne JEDE Vollstaendigkeitsmeldung
+// entstanden Findings und Proposals.
+//
+// Dieser Fall misst deshalb nicht die Frage, sondern ihre WIRKUNG, und er
+// beginnt mit dem Zustand, den EP-01 gefunden hat: gar keine
+// `intent_update`-Nachricht.
+#[test]
+fn keine_rechnung_ohne_jede_intentmeldung() {
+    let c = coordinator();
+    let master = adresse(0x11, 0x22, 1, 0x41);
+    let sonde = adresse(0x11, 0x22, 2, 0x42);
+    anmelden_mit_deskriptor(&c, "main", &master, "main", Some(0));
+    anmelden_mit_deskriptor(&c, "sonde0", &sonde, "passive_probe", Some(3));
+
+    // -- (1) OHNE jede Meldung: Evidenz reist, aber nichts entsteht -------
+    reihe(&c, "main", &master, 0, 12);
+    reihe(&c, "sonde0", &sonde, 100, 12);
+    assert!(
+        c.befunde_sicht(&master.project_binding_id, &master.session_epoch)
+            .is_empty(),
+        "ohne jede Vollstaendigkeitsmeldung entsteht KEIN Befund"
+    );
+    assert_eq!(
+        c.draft_offers_zaehler(),
+        0,
+        "und kein Proposal - ein fehlendes Veto saehe aus wie `kein Schutz gewuenscht`"
+    );
+
+    // -- (2) GEGENPROBE: mit dem Vollbestand samt Marke entsteht einer ----
+    //
+    // Ohne sie waere (1) auch dann gruen, wenn die Buehne gar keinen Befund
+    // tragen KANN - und der Riegel haette keinen Weg zu fallen.
+    let marke = json!({
+        "type": "intent_update",
+        "adresse": master,
+        "session_epoch": master.session_epoch,
+        "vollstaendig": true,
+        "bestand_revision": 0
+    });
+    ueber_senke(&c, "main", &marke);
+    // Der Ausloeser ist die Evidenzaenderung (Paragraph 33.5 kennt keinen
+    // zweiten); ein weiterer Beleg laesst den Broker rechnen.
+    reihe(&c, "sonde0", &sonde, 200, 1);
+    assert!(
+        !c.befunde_sicht(&master.project_binding_id, &master.session_epoch)
+            .is_empty(),
+        "nach dem Vollbestand mit Marke entsteht der Befund"
+    );
+}
+
+// =========================================================================
+// M-85 . NR-02 (Nacharbeit 1, 07.09.2026) - die Ordnung gilt JE OBJEKT
+// =========================================================================
+//
+// Der Sender koalesziert je `(quelle_id, scope)`, und
+// `P1Warteschlange::einreihen()` ersetzt einen Eintrag AN SEINER POSITION.
+// Die Ankunft A/1, B/2, A/3 ist damit normal. An der GLOBALEN
+// Bestandsrevision gemessen scheiterte B/2 an A/3 - und die Rolle einer
+// fremden Quelle fehlte dauerhaft im Broker.
+#[test]
+fn teilupdate_fremden_schluessels_ueberlebt_eine_koaleszierung() {
+    let c = coordinator();
+    let a = adresse(1, 2, 3, 4);
+    anmelden(&c, "link-a", &hello(a.clone()));
+
+    let quelle_a = hex(0xa1);
+    let quelle_b = hex(0xb2);
+
+    let einzeln = |quelle_id: &str, rolle: &str, bestand: i64| {
+        let mut w = mit_adresse(fixture("intent-update-einzelne-fortschreibung"), &a);
+        w["vollstaendig"] = Value::Bool(false);
+        w["bestand_revision"] = json!(bestand);
+        w["intents"] = json!([{
+            "quelle_id": quelle_id,
+            "rolle": rolle,
+            "revision": bestand,
+            "herkunft": "user",
+            "konfidenz": 1.0
+        }]);
+        w
+    };
+
+    // Die Reprofolge aus EP-02 des Prueferurteils, in der Reihenfolge, in der
+    // sie beim BROKER ankommt.
+    //
+    // Der Sender reiht A/1, B/2 und A/3 ein.
+    // `P1Warteschlange::einreihen()` koalesziert je Schluessel und ersetzt A
+    // AN SEINER BISHERIGEN POSITION (`IpcQueues.h`:349-360) - A/3 steht damit
+    // vor B/2, und der Broker sieht zuerst die Revision 3 und danach die 2.
+    // Genau das ist der Fall, in dem eine globale Ordnung das fremde Objekt
+    // vollstaendig verwirft.
+    ueber_senke(&c, "link-a", &einzeln(&quelle_a, "traegt", 3));
+    ueber_senke(&c, "link-a", &einzeln(&quelle_b, "geschuetzt", 2));
+
+    let bestand = c.intent_sicht(&a.project_binding_id, &a.session_epoch);
+    assert_eq!(
+        bestand.wirkend(&quelle_a, "").map(|s| s.rolle.as_str()),
+        Some("traegt"),
+        "A traegt seine juengste Rolle"
+    );
+    assert_eq!(
+        bestand.wirkend(&quelle_b, "").map(|s| s.rolle.as_str()),
+        Some("geschuetzt"),
+        "und B ueberlebt die Koaleszierung von A - sonst fehlte ein VETO"
+    );
+
+    // Und die Ordnung bleibt total: A/2 nach A/3 wird abgewiesen.
+    assert_eq!(
+        c.intent_update_json_grund_fuer_test("link-a", &bytes(&einzeln(&quelle_a, "begleitet", 2))),
+        Err(IntentAbweisung::AeltereRevision),
+        "eine aeltere Revision DESSELBEN Objekts faellt weiterhin"
+    );
+    assert_eq!(
+        c.intent_sicht(&a.project_binding_id, &a.session_epoch)
+            .wirkend(&quelle_a, "")
+            .map(|s| s.rolle.as_str()),
+        Some("traegt"),
+        "der juengere Wert steht weiter"
+    );
+    // Ein VOLLBERICHT ordnet sich weiter an der Sitzungsrevision, und die ist
+    // das Maximum: ein Vollbericht mit Revision 2 kaeme nach A/3 zu spaet.
+    let mut alt_voll = mit_adresse(fixture("intent-update-leerer-bestand-mit-marke"), &a);
+    alt_voll["bestand_revision"] = json!(2);
+    assert_eq!(
+        c.intent_update_json_grund_fuer_test("link-a", &bytes(&alt_voll)),
+        Err(IntentAbweisung::AeltereRevision),
+        "die Sitzungsrevision wird als MAXIMUM fortgeschrieben"
+    );
+}
+
+// =========================================================================
+// M-10/M-24 . NR-03 (Nacharbeit 1, 07.09.2026) - geprueft VOR dem Einsetzen
+// =========================================================================
+//
+// `hypothesen_bilden` sammelt unter dem Lock, rechnet ausserhalb und trug
+// bis zur Nacharbeit 1 bedingungslos ein. Zwei Interleavings brachen damit
+// eine Zusage, und beide stehen hier - jedes ueber den Testhaken, der GENAU
+// zwischen Sammeln und Eintragen faellt.
+//
+// Der Coordinator liegt dafuer in einem `Arc`, und der Haken haelt nur einen
+// `Weak` darauf: ein starker Verweis waere ein Zyklus (der Coordinator haelt
+// den Haken), und ein roher Zeiger waere `unsafe` fuer nichts.
+#[test]
+fn veraltetes_rechenergebnis_wird_nicht_veroeffentlicht() {
+    // -- (a) die Intent-Revision steigt WAEHREND der Rechnung ------------
+    let c = Arc::new(coordinator());
+    let master = adresse(0x11, 0x22, 1, 0x41);
+    let sonde = adresse(0x11, 0x22, 2, 0x42);
+    anmelden_mit_deskriptor(&c, "main", &master, "main", Some(0));
+    anmelden_mit_deskriptor(&c, "sonde0", &sonde, "passive_probe", Some(3));
+    let marke = json!({
+        "type": "intent_update",
+        "adresse": master,
+        "session_epoch": master.session_epoch,
+        "vollstaendig": true,
+        "bestand_revision": 1
+    });
+    ueber_senke(&c, "main", &marke);
+    reihe(&c, "main", &master, 0, 12);
+    reihe(&c, "sonde0", &sonde, 100, 11);
+    let vorher = c.befunde_sicht(&master.project_binding_id, &master.session_epoch);
+    assert!(
+        vorher.iter().any(|b| b.intent_revision == 1),
+        "die Buehne traegt einen Befund unter der Revision 1 - sonst maesse der Fall nichts"
+    );
+
+    // Der Haken faellt EINMAL, zwischen `aufnahmen_sammeln` und
+    // `befunde_eintragen`: der User setzt in diesem Augenblick eine Rolle,
+    // und die Bestandsrevision steigt auf 2.
+    let hoehere = json!({
+        "type": "intent_update",
+        "adresse": master,
+        "session_epoch": master.session_epoch,
+        "vollstaendig": true,
+        "bestand_revision": 2,
+        "intents": [{
+            "quelle_id": sonde.instance_id,
+            "rolle": "traegt",
+            "revision": 1,
+            "herkunft": "user",
+            "konfidenz": 1.0
+        }]
+    });
+    let bytes_hoehere = bytes(&hoehere);
+    let schwach = Arc::downgrade(&c);
+    c.rechen_test_haken_setzen(Box::new(move || {
+        if let Some(k) = schwach.upgrade() {
+            assert!(k.intent_update_json("main", &bytes_hoehere));
+        }
+    }));
+    // Der letzte Beleg loest die Rechnung aus.
+    reihe(&c, "sonde0", &sonde, 111, 1);
+
+    assert_eq!(
+        c.intent_sicht(&master.project_binding_id, &master.session_epoch)
+            .revision,
+        2,
+        "der Haken ist wirklich gefallen - sonst maesse der Fall gar nichts"
+    );
+    let befunde = c.befunde_sicht(&master.project_binding_id, &master.session_epoch);
+    assert!(
+        befunde
+            .iter()
+            .all(|b| !(b.intent_revision == 1 && b.zustand == Befundzustand::ReadyToSend)),
+        "kein READY-Befund der ALTEN Revision im Snapshot: {:?}",
+        befunde
+            .iter()
+            .map(|b| (b.intent_revision, b.zustand))
+            .collect::<Vec<_>>()
+    );
+    assert!(
+        befunde.iter().any(|b| b.zustand == Befundzustand::Stale),
+        "der bereits veraltete Bestand steht weiter - er wurde nicht ueberschrieben"
+    );
+
+    // -- (b) eine Evidenz wird WAEHREND der Rechnung zurueckgenommen -----
+    let d = Arc::new(coordinator());
+    anmelden_mit_deskriptor(&d, "main", &master, "main", Some(0));
+    anmelden_mit_deskriptor(&d, "sonde0", &sonde, "passive_probe", Some(3));
+    let marke_d = json!({
+        "type": "intent_update",
+        "adresse": master,
+        "session_epoch": master.session_epoch,
+        "vollstaendig": true,
+        "bestand_revision": 0
+    });
+    ueber_senke(&d, "main", &marke_d);
+    reihe(&d, "main", &master, 0, 12);
+    reihe(&d, "sonde0", &sonde, 100, 11);
+
+    // Der Beleg Nummer 105 der Sonde liegt im sechsten Projektfenster; er ist
+    // der, den der Haken gleich zurueckzieht.
+    let zurueckgenommen = hex(0x1000 + 105);
+    let fenster_von = 44_108_200 + 5 * 512;
+    assert!(
+        d.befunde_sicht(&master.project_binding_id, &master.session_epoch)
+            .iter()
+            .any(|b| b.evidence_ids.contains(&zurueckgenommen)),
+        "die Buehne traegt die spaeter zurueckgenommene ID - sonst maesse der Fall nichts"
+    );
+    let schwach_d = Arc::downgrade(&d);
+    d.rechen_test_haken_setzen(Box::new(move || {
+        if let Some(k) = schwach_d.upgrade() {
+            // Der Produktweg einer Ruecknahme: ein hoerbarer Eingriff nimmt
+            // die Evidenz SEINES Bereichs zurueck (M-52).
+            let getroffen = k.invalidierung_wegen_intervention_fuer_link(
+                "sonde0",
+                fenster_von,
+                fenster_von + 1,
+            );
+            assert!(getroffen > 0, "die Ruecknahme trifft wirklich Evidenz");
+        }
+    }));
+    reihe(&d, "sonde0", &sonde, 111, 1);
+
+    let befunde = d.befunde_sicht(&master.project_binding_id, &master.session_epoch);
+    assert!(
+        befunde
+            .iter()
+            .all(|b| !b.evidence_ids.contains(&zurueckgenommen)),
+        "eine waehrend der Rechnung zurueckgenommene ID darf nie wieder sichtbar werden"
     );
 }
 

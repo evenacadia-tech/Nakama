@@ -1,0 +1,15 @@
+Wiederprüfung 2 SONDE-014 — Codex gpt-6-astra, Effort max, lesend, Thread 01a07b4a-c459-7363-83c9-b8ece4f1d006; HEAD vor und nach dem Lauf d09a6d72606db2eaed2735cbdc27b3c9c10cb15d; Start 2026-09-07T11:54:52, Ende 12:08:22 (14 min), EXIT=0. Auftrag: docs/beweise/roh/SONDE-014-wiederpruefung-2-auftrag.txt (Variante B, Fixdiff 1a9ccbd...d09a6d7). Rohurteil unverändert:
+
+URTEIL: NEEDS_WORK — WP1-1 bleibt offen; zusätzlich verletzt die Zahlenrundung den Wirevertrag.
+
+Geprüft: gebundener Fixdiff, fünf Schließungsregeln, verfügbare C++-Beine, speicherbasierte Rust-Tests und Vertragsprüfungen; HEAD blieb d09a6d72606db2eaed2735cbdc27b3c9c10cb15d.
+
+Nicht geprüft: erfolgreiche Cargo-/Storeläufe wegen Schreibschutz, gekoppelte neue Gegenbeispiele im Produkt, frischer Nulltest und vollständiger Kanon; die bestehenden Nulltest-Binaries sind älter als der Fix.
+
+Full review comments:
+
+- [P1] Halte jedes ausstehende Urteil für Konfliktwiederholungen vor — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/src/PluginProcessor.cpp:2030-2031
+  WP1-1/WN-01 bleibt bei mehreren ausstehenden Urteilen offen: Zwei `assistentAntwort(..., &urteil, ...)` vor dem ersten ACK überschreiben hier den Mitschnitt des ersten Auftrags; der Assistentenschritt bleibt dabei offen. Kommt anschließend dessen `konflikt`-ACK, liefert `urteilMitFrischemKopf()` wegen der abweichenden Kennung einen leeren Text und `ControlClient.cpp:1350–1351` entfernt das unpersistierte Urteil endgültig. Das verletzt M-73 trotz unveränderter `command_id`-Politik. Die neuen B29/B10-Fälle prüfen diesen gekoppelten Ablauf nicht. Halte den Wiederholungsinhalt pro ausstehender Kennung oder verwende den bereits gespeicherten Auftrag ([AGENTS.md:51–52](AGENTS.md#L51-L52)).
+
+- [P2] Begrenze die Stellen im Zahlentext statt nur numerisch zu runden — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/hypothese_verdrahtung.rs:949-952
+  Die neue Rundung garantiert keinen vertragsgültigen Wiretext für kleine Rangkomponenten: Für `2.7e-11` wird der Faktor `1e25`; `round(2.7e-11 * 1e25) / 1e25` ergibt `2.6999999999999997e-11`. Diese arithmetische Gegenprobe wurde ausgeführt; der echte Referenz-Textriegel nimmt den ursprünglichen Text an und verwirft das Ergebnis. Auch Rust und C++ begrenzen echte Brüche auf 15 signifikante Stellen. Über `befund_json()` gelangt das Ergebnis in den Snapshot, dessen Re-Subscribe deshalb wieder `routing_fail_closed()` auslöst. Damit bleibt die ausdrücklich mitbeauftragte Voraussetzung aus §9.4 verletzt; erforderlich ist eine Begrenzung der tatsächlich serialisierten Dezimaldarstellung ([AGENTS.md:51–52](AGENTS.md#L51-L52)).

@@ -1,0 +1,25 @@
+URTEIL: NEEDS_WORK — die Matrix enthält Verhaltenswidersprüche und unvollständig spezifizierte Kopplungen.
+
+Geprüft: ausschließlich §2 mit R1–R6, E1–E8, N-01–N-40 und allen 27 Gegenbeispieleingaben gegen Quellen und Verträge; HEAD blieb vor und nach der Prüfung 2e05a955774ac732edf790b77e8a0814c3c9fc60.
+
+Nicht geprüft: Produktläufe, Builds und Tests; auftragsgemäß ausschließlich gelesen und nichts verändert.
+
+Full review comments:
+
+- [P2] Verhindere eine starke Auswahl durch den Tie-Break — C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-212.md:191-194
+  DEFEKT (E6, M-26): Unterschiedliche quantisierte Komponenten können denselben Gesamtrang ergeben: Bei Bandpassung 0,1, Intent-Relevanz 0,5, Routingqualität 1 und sonst null ergeben Koinzidenzen von 0,500000 und 0,500001 beide den Rang 0,35 (`broker/src/coordinator/hypothese.rs:535–540`). E6 erklärt sie trotzdem für getrennt. Die unveränderte Sortierung wählt dann anhand der Quellen-ID den einzigen starken Befund. Damit entscheidet der Tie-Break entgegen `docs/beweise/SONDE-014.md:745` über die Auswahl, nicht nur die Anzeige. Dieser Fall braucht eine explizite Enthaltungsregel samt Test.
+
+- [P2] Vergleiche den Führenden mit allen sichtbaren Konkurrenten — C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-212.md:188-188
+  DEFEKT (E6, R3): Bei drei sichtbaren Kandidaten können A und C identische Zusammenhangskomponenten besitzen, während ein abweichender Kandidat B durch Intent-Relevanz zwischen ihnen rangiert. Der vorgeschriebene Vergleich ausschließlich von A und B liefert dann `getrennt=true`; A wird stark, obwohl C messtechnisch ungetrennt bleibt. Das widerspricht R3 (`docs/beweise/roh/NAK-212-auftrag.txt:14`: solche Kandidaten beide höchstens `mittel`). Hier fehlt kein Kandidat durch einen Messausschluss oder Deckel; NAK-213 trägt diesen Fall deshalb nicht. Die Matrix benötigt den Vergleich gegen sämtliche sichtbaren Konkurrenten und einen Dreier-Gegenbeweis.
+
+- [P2] Erhalte die Enthaltung bei vollständig verschobener Passage — C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-212.md:297-297
+  DEFEKT (E5/N-29): Bereits §2.6 Nr. 17 trifft diesen Rückgabepfad: Alle zwölf Masterfenster liegen vor der Passage `[12,24)` (`docs/beweise/roh/G5-gegenbeispiele-bf92891.patch:421–423`). Nach E5 liefert `masteranomalie` daher `None`, und `hypothesen()` beendet sich vor den Gates (`broker/src/coordinator/hypothese.rs:1105–1106`). Die weiterhin zugesagte Enthaltung mit `passage_unvergleichbar` kann nicht entstehen. Das widerspricht auch M-27 (`docs/beweise/SONDE-014.md:746`); die neue Regression lässt sich nicht als bereits bestehende Main-ohne-Evidenz-Lücke behandeln.
+
+- [P2] Schließe leere Intervalle vom Partnerprädikat aus — C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-212.md:147-147
+  DEFEKT (E4, R4): Für `f=[5,5)` und `g=[0,10)` sind beide angegebenen Vergleiche wahr; `paarueberdeckung` liefert somit 1,0, obwohl kein gemeinsames Sample existiert. Solche Fenster sind erreichbar, weil `sample_count=0` vertraglich zulässig ist (`eq-copilot/schemas/v3/eq-ipc-v3.schema.json:361`). Das bisherige Alignment verwirft diesen Einzelfensterfall wegen seiner Länge null (`broker/src/coordinator/hypothese.rs:1581–1586`). E4 würde ihn neu passieren lassen und damit R4s tatsächliche paarweise Überlappung verletzen. Positive Intervalllängen und dieser Rotbeweis müssen ausdrücklich spezifiziert werden.
+
+- [P2] Vervollständige den gekoppelten Metrikversionsschritt — C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-212.md:234-236
+  DEFEKT (E8/N-40): Der beschriebene Schritt lässt `kFeatureMetricsVersion` in `eq-copilot/plugin/core/analysis/FeatureEngine.h:783` auf 20260904. A5 prüft jedoch zusätzlich ausdrücklich diese Plugin-Konstante gegen `metriken-v1.json.aktuell` (`tools/eq-copilot/pruefe_v3_vertrag.py:1857–1860`). Nur Broker und Register anzuheben macht den zugesagten Vertragslauf daher zwingend rot. E8 muss den gekoppelten Erzeugerschritt einschließlich betroffener Fixtures und Regressionen aufnehmen; die repositoryweite Writer-/Reader-Kopplung verlangt ebenfalls [AGENTS.md:51–52](C:/Users/phili/Projekte/Nakama/AGENTS.md#L51-L52).
+
+- [P2] Spezifiziere die Prüfung wechselseitiger Alternativen — C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-212.md:267-267
+  DEFEKT (N-13, R3/R6): Sobald jeder Kandidat Alternative des anderen ist, verweist auch der Distraktorbefund auf die wahre Quelle. `_faelle_bilden` verwirft diesen korrekten Rückverweis jedoch, weil es bei deklarierter Distraktorquelle sämtliche Alternativ-IDs ausschließlich dieser Quelle zuordnet (`tools/eq-copilot/pruefe_p5_korpus.py:425–429`). Damit wird bereits `g5_distraktor_mehr_fenster` trotz zweier korrekter `mittel`-Befunde in A29 rot. Die Matrix muss die entsprechende Prüferanpassung samt A30-Gegenprobe festlegen, statt nur die neue Ausgabe zu verlangen; siehe die gekoppelte Behandlung von Writer und Reader in [AGENTS.md:51–52](C:/Users/phili/Projekte/Nakama/AGENTS.md#L51-L52).

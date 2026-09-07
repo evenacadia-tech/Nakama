@@ -100,6 +100,23 @@ public:
     /// 1..5 entsprechen der schemafesten Reihenfolge angewandt, abgelehnt,
     /// konflikt, abgelaufen, idempotent_wiederholt.
     std::atomic<int> commandAckArt { 0 };
+    /// SONDE-014 KR-01: nur DIESE `command_id` bekommt eine Antwort; leer =
+    /// alle. Der Saettigungsfall braucht viele ausstehende Auftraege - und
+    /// „ausstehend" heisst genau: ohne ACK. Ohne diesen Filter quittiert der
+    /// Server jeden Auftrag sofort, und es steht nie mehr als einer aus.
+    std::mutex ackFilterMutex;
+    std::string commandAckNurFuer;
+    void ackNurFuer (const std::string& commandId)
+    {
+        std::lock_guard<std::mutex> l (ackFilterMutex);
+        commandAckNurFuer = commandId;
+    }
+    /// SONDE-014 KR-01: einen bereits empfangenen Auftrag NACHTRAEGLICH
+    /// quittieren. Der Saettigungsfall braucht `kCapP0 + 1` ausstehende
+    /// Auftraege, BEVOR der erste sein `konflikt` bekommt - der Server
+    /// antwortet sonst auf jeden sofort, und es steht nie mehr als einer aus.
+    std::atomic<bool> ackNachtragenFlag { false };
+    void ackNachtragen() { ackNachtragenFlag.store (true); }
     std::atomic<int> commandAckVerzoegerungMs { 0 };
     std::atomic<bool> commandVorAckSchliessen { false };
     std::atomic<bool> commandAckMitEventUuid { false };
@@ -529,6 +546,60 @@ private:
                 schliessen (h);
                 return;
             }
+            // 🔑 SONDE-014 KR-01: der nachtraegliche ACK auf einen bereits
+            // empfangenen Auftrag. Er quittiert aus `p0Texte`, gefiltert nach
+            // `commandAckNurFuer` und je Kennung genau einmal.
+            if (! istTelemetry && ackNachtragenFlag.exchange (false))
+            {
+                const int art = commandAckArt.load();
+                std::string nur;
+                {
+                    std::lock_guard<std::mutex> l (ackFilterMutex);
+                    nur = commandAckNurFuer;
+                }
+                std::vector<std::string> kennungen;
+                {
+                    std::lock_guard<std::mutex> l (textMutex);
+                    for (const auto& t : p0Texte)
+                    {
+                        const auto id = commandIdAusJson (t);
+                        if (id.empty() || (! nur.empty() && nur != id))
+                            continue;
+                        // Je Kennung genau einmal - ein wiederholter Auftrag
+                        // steht zweimal in `p0Texte`, ist aber EIN Auftrag.
+                        bool schon = false;
+                        for (const auto& k : kennungen)
+                            schon = schon || k == id;
+                        if (! schon)
+                            kennungen.push_back (id);
+                    }
+                }
+                if (art >= 1 && art <= 5)
+                {
+                    static constexpr const char* nachtragErgebnisse[] = {
+                        "", "angewandt", "abgelehnt", "konflikt",
+                        "abgelaufen", "idempotent_wiederholt"
+                    };
+                    for (const auto& id : kennungen)
+                    {
+                        std::string ack = "{\"type\":\"command_ack\",\"command_id\":\""
+                            + id + "\",\"ergebnis\":\"" + nachtragErgebnisse[art]
+                            + "\",\"state_revision\":7";
+                        if (art == 1 || art == 5)
+                            ack += ",\"state_hash\":\"" + std::string (64, 'd') + "\"";
+                        ack += "}";
+                        std::vector<std::uint8_t> antwort;
+                        envelopeSchreiben (Familie::p0, 0,
+                            reinterpret_cast<const std::uint8_t*> (ack.data()),
+                            ack.size(), antwort);
+                        if (! schreiben (h, antwort.data(), antwort.size()))
+                        {
+                            schliessen (h);
+                            return;
+                        }
+                    }
+                }
+            }
             bool weiter = true;
             while (weiter)
             {
@@ -583,7 +654,13 @@ private:
                             return;
                         }
 
-                        const int art = commandAckArt.load();
+                        bool gefiltert = false;
+                        {
+                            std::lock_guard<std::mutex> l (ackFilterMutex);
+                            gefiltert = ! commandAckNurFuer.empty()
+                                     && commandAckNurFuer != commandId;
+                        }
+                        const int art = gefiltert ? 0 : commandAckArt.load();
                         if (art >= 1 && art <= 5)
                         {
                             if (const int pause = commandAckVerzoegerungMs.load(); pause > 0)

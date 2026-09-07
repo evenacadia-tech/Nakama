@@ -411,6 +411,79 @@ bool commandAckHaeltVertrag (const std::string& text, GelesenesCommandAck& geles
     return true;
 }
 
+/*  SONDE-014 KR-01 (Entscheid E-15, Konvergenzrunde 07.09.2026).
+
+    Der Text wird NICHT geparst und neu geschrieben, sondern an genau einer
+    Stelle ersetzt: alles andere bleibt bytegleich. Ein Neuaufbau haette die
+    Zusage "derselbe Auftrag" nur behauptet - hier traegt sie der Speicher.
+
+    Fail-closed nach demselben Muster wie `commandIdAusAuftrag`: Strings
+    werden als Token konsumiert, damit ein `base_revision` INNERHALB einer
+    Notiz nie getroffen wird; genau EIN `kopf` und genau EINE
+    `base_revision` duerfen vorkommen, und die Zahl muss hinter dem Kopf
+    stehen. Alles andere liefert leer - dann wiederholt der Client nicht. */
+std::string auftragMitBasisRevision (const std::string& auftragJson,
+                                     std::uint64_t basisRevision)
+{
+    std::size_t position = 0;
+    std::size_t kopfStelle = std::string::npos;
+    std::size_t zahlVon = std::string::npos, zahlBis = std::string::npos;
+    unsigned kopfGefunden = 0, revisionGefunden = 0;
+
+    while (position < auftragJson.size())
+    {
+        if (auftragJson[position] != '"')
+        {
+            ++position;
+            continue;
+        }
+
+        const std::size_t tokenBeginn = position;
+        std::string token;
+        bool escape = false;
+        if (! jsonStringToken (auftragJson, position, token, escape))
+            return {};
+        std::size_t nachToken = position;
+        while (nachToken < auftragJson.size()
+               && std::isspace (static_cast<unsigned char> (auftragJson[nachToken])) != 0)
+            ++nachToken;
+        // Ohne folgenden Doppelpunkt ist das ein WERT, kein Feldname.
+        if (escape || nachToken >= auftragJson.size() || auftragJson[nachToken] != ':')
+            continue;
+
+        if (token == "kopf")
+        {
+            if (++kopfGefunden > 1)
+                return {};
+            kopfStelle = tokenBeginn;
+            continue;
+        }
+        if (token != "base_revision")
+            continue;
+        if (++revisionGefunden > 1)
+            return {};
+
+        std::size_t ziffer = nachToken + 1;
+        while (ziffer < auftragJson.size()
+               && std::isspace (static_cast<unsigned char> (auftragJson[ziffer])) != 0)
+            ++ziffer;
+        zahlVon = ziffer;
+        while (ziffer < auftragJson.size()
+               && auftragJson[ziffer] >= '0' && auftragJson[ziffer] <= '9')
+            ++ziffer;
+        zahlBis = ziffer;
+        position = ziffer;
+    }
+
+    if (kopfGefunden != 1 || revisionGefunden != 1
+        || zahlBis <= zahlVon || zahlVon < kopfStelle)
+        return {};
+
+    std::string aus = auftragJson;
+    aus.replace (zahlVon, zahlBis - zahlVon, std::to_string (basisRevision));
+    return aus;
+}
+
 /*  Der Bootstrap-`hello`-Text (NAK-181 Nacharbeit 1, EP-09/NR-09).
 
     🔑 Er stand bis zu dieser Runde inline im Verbindungsaufbau — hinter

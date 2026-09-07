@@ -888,19 +888,34 @@ int main()
             ? std::string {}
             : urteil.substr (anfang + 14, 32);
         pruefe (commandId.size() == 32, "WN-01: das Urteil traegt seine Kennung");
-        const auto wiederholt = p->urteilMitFrischemKopfFuerTest (juce::String (commandId), 7);
+        // 🔑 KR-01: der Auftrag SELBST geht herein - so, wie ihn das
+        // In-Flight-Register des ControlClients haelt.
+        const auto wiederholt =
+            p->urteilMitFrischemKopfFuerTest (juce::String (commandId), urteil, 7);
         pruefe (! wiederholt.empty(),
                 "WN-01: ein `konflikt` ist kein Verlust - der Auftrag entsteht neu");
         pruefe (wiederholt.find ("\"command_id\":\"" + commandId + "\"") != std::string::npos,
                 "WN-01: unter DERSELBEN `command_id`");
         pruefe (wiederholt.find ("\"base_revision\":7") != std::string::npos,
                 "WN-01: und mit der Revision, die der Broker genannt hat");
+        pruefe (wiederholt.find ("\"base_revision\":0") == std::string::npos,
+                "WN-01: die alte Zahl ist WEG, nicht bloss ergaenzt");
         pruefe (wiederholt.find ("\"finding_id\":\"" + findingId.toStdString() + "\"")
                     != std::string::npos,
                 "WN-01: der Gegenstand bleibt derselbe Befund");
-        // Eine fremde Kennung kennt der Mitschnitt nicht - er erfindet nichts.
-        pruefe (p->urteilMitFrischemKopfFuerTest ("00000000000000000000000000000fff", 7).empty(),
+        // Eine fremde Kennung passt nicht zu diesem Auftrag - er erfindet
+        // nichts.
+        pruefe (p->urteilMitFrischemKopfFuerTest ("00000000000000000000000000000fff",
+                                                  urteil, 7).empty(),
                 "WN-01: eine fremde `command_id` erzeugt kein Urteil");
+        // Und ein Auftrag, der KEIN Userurteil ist, wird nicht wiederholt:
+        // die Politik haengt an der Familie, nicht am Register.
+        pruefe (p->urteilMitFrischemKopfFuerTest (juce::String (commandId),
+                                                  "{\"type\":\"preview_begin\",\"kopf\":{"
+                                                  "\"command_id\":\"" + commandId
+                                                      + "\",\"base_revision\":0}}",
+                                                  7).empty(),
+                "WN-01: ein fremder Befehlstyp wird nicht mit frischem Kopf wiederholt");
     }
 
     // ===================================================================
@@ -938,18 +953,27 @@ int main()
     }
 
     // ===================================================================
-    // NACHARBEIT 3 - WN3-01: der Mitschnitt haengt an der `command_id`
+    // KONVERGENZRUNDE - KR-01 (E-15): EIN Register, kein Verdraengen
     // ===================================================================
     //
     // Die Runde 2 hielt GENAU EINEN Mitschnitt, mit der Begruendung „zwei
     // gleichzeitig offene gibt es nicht". Erzwungen war das nirgends: schon
     // zwei Urteile vor dem ersten ACK ueberschrieben den ersten Auftrag, und
-    // sein `konflikt`-ACK lief danach in einen leeren Text - der
-    // ControlClient entfernte das unpersistierte Urteil endgueltig (WP2-1,
-    // Bruch von M-73). Dieser Abschnitt misst den ECHTEN Weg:
+    // sein `konflikt`-ACK lief danach in einen leeren Text (WP2-1). Die
+    // Runde 3 machte daraus eine Abbildung je `command_id` - aber gedeckelt
+    // auf `kCapP0` und mit Verdraengung des aeltesten Eintrags. Der Deckel
+    // war falsch begruendet: die 64 P0-Plaetze begrenzen die QUEUE, nicht die
+    // Zahl der ausstehenden Auftraege. Nach 65 Urteilen ohne ACK verlor das
+    // erste seine Wiederholungsdaten, obwohl sein Auftrag weiterlief (WP3-1,
+    // Bruch von M-73/WN3-01 „Freigabe erst nach Abschluss").
+    //
+    // E-15 loest die Ursache auf, nicht das Symptom: es gibt genau EIN
+    // Register fuer ausstehende persistenzpflichtige Auftraege - das des
+    // ControlClients -, und der Wiederholungsinhalt kommt aus dem Auftrag,
+    // den es ohnehin haelt. Dieser Abschnitt misst den ECHTEN Weg:
     // `urteilMitFrischemKopf` ist der Rumpf des Hooks, den der Prozessor im
     // Konstruktor an `setzeKonfliktWiederholungHook` gibt.
-    abschnitt ("WN3-01: zwei ausstehende Urteile, zwei Mitschnitte");
+    abschnitt ("KR-01: jedes ausstehende Urteil bleibt wiederholbar");
     {
         auto p = prozessorAmDraht();
         pruefe (p->assistentStarten ("00000000000000000000000000000f01"),
@@ -972,71 +996,123 @@ int main()
         const auto id1 = kennung (ersteres);
         const auto id2 = kennung (zweiteres);
         pruefe (id1.size() == 32 && id2.size() == 32 && id1 != id2,
-                "WN3-01: beide Urteile tragen ihre eigene Kennung");
-        pruefe (p->urteilMitschnitteFuerTest() == 2,
-                "WN3-01: und beide stehen im Register");
+                "KR-01: beide Urteile tragen ihre eigene Kennung");
 
         // 🔑 Die Zusage: der `konflikt`-ACK auf das ERSTE Urteil wiederholt
         // das ERSTE - unter seiner eigenen Kennung und mit seinem eigenen
         // Befund. Vor WN3-01 war der Mitschnitt hier vom zweiten
         // ueberschrieben, und diese Zeile lieferte einen leeren Text.
-        const auto wiederholt1 = p->urteilMitFrischemKopfFuerTest (juce::String (id1), 11);
+        const auto wiederholt1 =
+            p->urteilMitFrischemKopfFuerTest (juce::String (id1), ersteres, 11);
         pruefe (! wiederholt1.empty(),
-                "WN3-01: das ERSTE Urteil ist nach dem zweiten noch wiederholbar");
+                "KR-01: das ERSTE Urteil ist nach dem zweiten noch wiederholbar");
         pruefe (wiederholt1.find ("\"command_id\":\"" + id1 + "\"") != std::string::npos,
-                "WN3-01: unter DERSELBEN `command_id`");
+                "KR-01: unter DERSELBEN `command_id`");
         pruefe (wiederholt1.find ("\"finding_id\":\"" + ersterBefund.toStdString() + "\"")
                     != std::string::npos,
-                "WN3-01: und mit SEINEM Befund, nicht dem des zweiten");
+                "KR-01: und mit SEINEM Befund, nicht dem des zweiten");
         pruefe (wiederholt1.find ("\"base_revision\":11") != std::string::npos,
-                "WN3-01: mit der Revision aus dem ACK");
+                "KR-01: mit der Revision aus dem ACK");
         pruefe (wiederholt1.find ("\"urteil\":\"angenommen\"") != std::string::npos
                     && wiederholt1.find ("\"urteil\":\"abgelehnt\"") == std::string::npos,
-                "WN3-01: und mit SEINEM Urteil, nicht dem des zweiten");
+                "KR-01: und mit SEINEM Urteil, nicht dem des zweiten");
+
+        // 🔑 E-15 im Detail: NUR die Revision wechselt. Ein Neubau haette
+        // eine frische `user_verdict_id` erzeugt und den Befund aus dem
+        // AKTUELLEN Schritt gezogen - also aus einem Zustand, der sich seit
+        // dem Absenden geaendert haben kann. Der Beweis ist der Text selbst:
+        // vor und nach der Ersetzung bytegleich, bis auf die eine Zahl.
+        {
+            auto erwartet = ersteres;
+            const std::string alt = "\"base_revision\":0";
+            const auto stelle = erwartet.find (alt);
+            if (stelle != std::string::npos)
+                erwartet.replace (stelle, alt.size(), "\"base_revision\":11");
+            pruefe (wiederholt1 == erwartet,
+                    "KR-01: der Auftrag ist bytegleich - nur `base_revision` wechselt");
+        }
 
         // Das zweite bleibt davon unberuehrt - eine Wiederholung ist kein
         // Verbrauch.
-        const auto wiederholt2 = p->urteilMitFrischemKopfFuerTest (juce::String (id2), 12);
+        const auto wiederholt2 =
+            p->urteilMitFrischemKopfFuerTest (juce::String (id2), zweiteres, 12);
         pruefe (! wiederholt2.empty() && wiederholt2.find (zweiterBefund.toStdString())
                                              != std::string::npos,
-                "WN3-01: das zweite Urteil bleibt unberuehrt");
-        pruefe (p->urteilMitschnitteFuerTest() == 2,
-                "WN3-01: und das Register haelt weiter genau zwei");
+                "KR-01: das zweite Urteil bleibt unberuehrt");
+        // Und noch einmal dasselbe erste: der Auftrag wird nicht verbraucht.
+        pruefe (p->urteilMitFrischemKopfFuerTest (juce::String (id1), ersteres, 13)
+                    == [&] { auto t = ersteres;
+                             const std::string alt = "\"base_revision\":0";
+                             const auto s = t.find (alt);
+                             if (s != std::string::npos)
+                                 t.replace (s, alt.size(), "\"base_revision\":13");
+                             return t; }(),
+                "KR-01: zweimal derselbe Auftrag, zweimal dasselbe Ergebnis");
 
-        // ── Die GEGENPROBE: erst der Abschluss gibt frei ─────────────────
+        // ── Die SAETTIGUNG: `kCapP0 + 4` ausstehende Urteile ─────────────
         //
-        // `angewandt`, `idempotent_wiederholt` oder endgueltiger Fehlschlag -
-        // der ControlClient ruft dann `setzeAuftragAbgeschlossenHook`, und
-        // genau dieser Weg laeuft hier ohne Draht.
-        p->urteilAbgeschlossenFuerTest (juce::String (id1));
-        pruefe (p->urteilMitschnitteFuerTest() == 1,
-                "WN3-01: der Abschluss gibt den Mitschnitt frei");
-        pruefe (p->urteilMitFrischemKopfFuerTest (juce::String (id1), 13).empty(),
-                "WN3-01: ein abgeschlossener Auftrag wird nicht mehr wiederholt");
-        pruefe (! p->urteilMitFrischemKopfFuerTest (juce::String (id2), 13).empty(),
-                "WN3-01: und der andere ist davon unberuehrt");
-        p->urteilAbgeschlossenFuerTest ("00000000000000000000000000000fff");
-        pruefe (p->urteilMitschnitteFuerTest() == 1,
-                "WN3-01: eine fremde Kennung raeumt nichts weg - derselbe Hook "
-                "gilt fuer JEDEN persistenzpflichtigen P0");
-
-        // ── Der DECKEL: so viele Plaetze wie die P0-Queue ────────────────
-        //
-        // Mehr ausstehende persistenzpflichtige Auftraege kann es nicht
-        // geben; faellt der Deckel doch, geht der AELTESTE - der, dessen ACK
-        // am laengsten aussteht.
-        std::string aeltester;
+        // 🔑 Der Fall, an dem WP3-1 haengt. Die Runde 3 deckelte ihr Register
+        // auf `kCapP0` und verdraengte den aeltesten Eintrag - obwohl dessen
+        // Auftrag im In-Flight-Register weiterlief. Seit E-15 gibt es dieses
+        // Register nicht mehr, also kann auch nichts verdraengt werden:
+        // JEDER dieser Auftraege bleibt wiederholbar, der erste wie der
+        // letzte.
+        std::vector<std::string> auftraege;
         for (std::size_t i = 0; i < nakama::ipc::kCapP0 + 4; ++i)
         {
-            const auto text = p->v3UserVerdictFuerTest (state::Userurteil::angenommen,
-                                                        ersterBefund);
-            if (aeltester.empty())
-                aeltester = kennung (text);
+            const auto befund = juce::String ("000000000000000000000000000")
+                              + juce::String::formatted ("%05x", static_cast<int> (i) + 0x10000);
+            auftraege.push_back (
+                p->v3UserVerdictFuerTest (state::Userurteil::angenommen, befund,
+                                          juce::String ("Urteil ") + juce::String ((int) i)));
         }
-        pruefe (p->urteilMitschnitteFuerTest() == nakama::ipc::kCapP0,
-                "WN3-01: das Register waechst nie ueber die P0-Kapazitaet");
-        pruefe (p->urteilMitFrischemKopfFuerTest (juce::String (aeltester), 14).empty(),
-                "WN3-01: verdraengt wird der AELTESTE");
+        pruefe (auftraege.size() == nakama::ipc::kCapP0 + 4
+                    && ! auftraege.front().empty() && ! auftraege.back().empty(),
+                "KR-01: `kCapP0 + 4` Urteile sind entstanden, keines leer");
+
+        const auto& erster = auftraege.front();
+        const auto& letzter = auftraege.back();
+        const auto erstesWieder =
+            p->urteilMitFrischemKopfFuerTest (juce::String (kennung (erster)), erster, 21);
+        const auto letztesWieder =
+            p->urteilMitFrischemKopfFuerTest (juce::String (kennung (letzter)), letzter, 21);
+        pruefe (! erstesWieder.empty(),
+                "KR-01: das ERSTE von `kCapP0 + 4` ist noch wiederholbar - nichts "
+                "wurde verdraengt");
+        pruefe (! letztesWieder.empty(),
+                "KR-01: und das LETZTE ebenso");
+        pruefe (erstesWieder.find ("\"command_id\":\"" + kennung (erster) + "\"")
+                        != std::string::npos
+                    && letztesWieder.find ("\"command_id\":\"" + kennung (letzter) + "\"")
+                        != std::string::npos,
+                "KR-01: jedes unter SEINER eigenen `command_id`");
+
+        // Und nicht nur die beiden Raender: KEINER der Auftraege hat seine
+        // Wiederholungsdaten verloren. Die Zahl ist die Messung, nicht die
+        // Behauptung.
+        std::size_t wiederholbar = 0;
+        for (const auto& auftrag : auftraege)
+        {
+            const auto id = kennung (auftrag);
+            const auto frisch = p->urteilMitFrischemKopfFuerTest (juce::String (id),
+                                                                  auftrag, 22);
+            if (! frisch.empty()
+                && frisch.find ("\"command_id\":\"" + id + "\"") != std::string::npos
+                && frisch.find ("\"base_revision\":22") != std::string::npos)
+                ++wiederholbar;
+        }
+        pruefe (wiederholbar == nakama::ipc::kCapP0 + 4,
+                juce::String ("KR-01: ALLE `kCapP0 + 4` ausstehenden Auftraege sind "
+                              "wiederholbar (")
+                    + juce::String ((int) wiederholbar) + " von "
+                    + juce::String ((int) (nakama::ipc::kCapP0 + 4)) + ")");
+
+        // Die GEGENPROBE zum Deckel, den es nicht mehr gibt: auch das erste
+        // der beiden Urteile von oben - laengst ueberholt von 68 weiteren -
+        // ist unveraendert wiederholbar. Genau diese Zeile fiel unter dem
+        // alten Deckel.
+        pruefe (! p->urteilMitFrischemKopfFuerTest (juce::String (id1), ersteres, 23).empty(),
+                "KR-01: auch das aelteste offene Urteil ueberlebt die Saettigung");
     }
 
     std::cout << std::endl << "SONDE-014 AssistantStep: " << bestanden << "/"

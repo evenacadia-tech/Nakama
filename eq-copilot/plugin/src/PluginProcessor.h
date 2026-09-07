@@ -338,20 +338,15 @@ public:
                                        const juce::String& findingId = {},
                                        const juce::String& notiz = {}) const
     { return v3UserVerdictJson (urteil, findingId, notiz); }
-    /// WN-01: der Weg zurueck aus einem `konflikt`-ACK, fuer ein Bein.
+    /** WN-01/KR-01: der Weg zurueck aus einem `konflikt`-ACK, fuer ein Bein.
+
+        Der Auftragstext ist ein PARAMETER, kein Zustand des Prozessors - genau
+        das ist die Zusage aus E-15. Ein Bein reicht denselben Text herein, den
+        das In-Flight-Register des ControlClients haelt. */
     std::string urteilMitFrischemKopfFuerTest (const juce::String& commandId,
+                                               const std::string& auftragJson,
                                                std::uint64_t brokerRevision) const
-    { return urteilMitFrischemKopf (commandId, brokerRevision); }
-    /// WN3-01: wie viele Urteile stehen aus? Ein Bein misst daran, dass der
-    /// Abschluss wirklich freigibt und der Deckel wirklich deckelt.
-    std::size_t urteilMitschnitteFuerTest() const
-    {
-        std::lock_guard<std::mutex> l (urteilMutex);
-        return urteilMitschnitte.size();
-    }
-    /// WN3-01: den Abschlussweg des ControlClients OHNE Draht fahren.
-    void urteilAbgeschlossenFuerTest (const juce::String& commandId) const
-    { urteilAbgeschlossen (commandId); }
+    { return urteilMitFrischemKopf (commandId, auftragJson, brokerRevision); }
 
     // ── SONDE-013 M-40 bis M-51: der Experimentpfad des Plugins ────────────
     //
@@ -934,27 +929,27 @@ private:
                                     const nakama::state::IntentBeziehung* nurDiese) const;
     std::string v3AssistantStepJson() const;
     /** NR-10: das `user_verdict` als Wire-Objekt, aus dem Schritt des
-        Main-States. Leer, wenn kein Befund am Schritt haengt. */
+        Main-States. Leer, wenn kein Befund am Schritt haengt.
+
+        🔑 **KR-01 (E-15):** diese Funktion erzeugt IMMER ein neues Urteil mit
+        frischer `command_id`. Bis zur Runde 3 nahm sie zusaetzlich eine
+        `commandId`- und eine `baseRevision`-Vorgabe, mit denen die
+        Wiederholung nach einem `konflikt`-ACK ihren Text neu baute - und dabei
+        Befund und Proposal aus dem AKTUELLEN Schritt zog. Die Wiederholung
+        geht seither gar nicht mehr durch sie hindurch. */
     std::string v3UserVerdictJson (nakama::state::Userurteil urteil,
                                    const juce::String& findingId,
-                                   const juce::String& notiz,
-                                   const juce::String& commandId = {},
-                                   std::optional<std::uint64_t> baseRevision = {}) const;
-    /** SONDE-014 WN-01: derselbe Wiretext unter DERSELBEN `command_id`, mit
-        der Revision, die der Broker im `konflikt`-ACK genannt hat.
+                                   const juce::String& notiz) const;
+    /** SONDE-014 WN-01/KR-01: derselbe Wiretext unter DERSELBEN `command_id`,
+        mit der Revision, die der Broker im `konflikt`-ACK genannt hat.
 
-        Leer, wenn der Mitschnitt diese ID nicht kennt - dann war es kein
-        Userurteil, und der Client laesst den Auftrag fallen wie bisher. */
+        `auftragJson` ist der Text, den das In-Flight-Register des
+        ControlClients haelt - die EINZIGE Quelle des Wiederholungsinhalts
+        (E-15). Leer, wenn er kein `user_verdict` unter dieser Kennung ist:
+        dann laesst der Client den Auftrag fallen wie bisher. */
     std::string urteilMitFrischemKopf (const juce::String& commandId,
+                                       const std::string& auftragJson,
                                        std::uint64_t brokerRevision) const;
-    /** SONDE-014 WN3-01: der Auftrag ist abgeschlossen - sein Mitschnitt geht.
-
-        Gerufen aus `setzeAuftragAbgeschlossenHook` bei `angewandt`,
-        `idempotent_wiederholt` oder endgueltigem Fehlschlag. Eine unbekannte
-        Kennung ist kein Fehler: derselbe Hook gilt fuer JEDEN
-        persistenzpflichtigen P0, und die Experimentfamilien merken sich hier
-        nichts. */
-    void urteilAbgeschlossen (const juce::String& commandId) const;
     bool assistentAenderungMelden (bool veraendert);
     /** Meldet EIN geaendertes Intent-Objekt unter seinem eigenen
         P1-Schluessel (M-85). Ohne Verbindung ein No-op. */
@@ -1227,10 +1222,12 @@ private:
         den lokalen nimmt, schickt einen Kopf mit einer Zahl, die der Broker
         noch nicht kennt - und bekommt `revision_conflict` (WP1-1).
 
-        `baseRevision` setzt sie ausdruecklich; das braucht die Wiederholung
-        nach einem `konflikt`-ACK, die die Zahl aus dem ACK nimmt. */
-    std::string versuchKopfJson (const juce::String& commandId,
-                                 std::optional<std::uint64_t> baseRevision = {}) const;
+        🔑 **KR-01 (E-15, Konvergenzrunde):** hier stand ein optionales
+        `baseRevision`, mit dem die Wiederholung nach einem `konflikt`-ACK
+        ihre Zahl setzte. Sie baut den Kopf nicht mehr neu, sondern ersetzt
+        die Zahl im gesendeten Auftrag - der Parameter hatte danach keinen
+        Aufrufer mehr. */
+    std::string versuchKopfJson (const juce::String& commandId) const;
 
     /** Reicht einen Versuchsbefehl weiter und MERKT sich, was gesendet wurde.
 
@@ -1242,39 +1239,33 @@ private:
     mutable std::mutex versuchWireMutex;
     std::string        letzterVersuchP0;
 
-    /** SONDE-014 WN-01/WN3-01: die Mitschnitte der AUSSTEHENDEN Userurteile.
+    /*  SONDE-014 KR-01 (Entscheid E-15, Konvergenzrunde 07.09.2026): HIER
+        stand das zweite Register.
 
-        Ein Mitschnitt traegt nur, was den Kopf NEU baut - Urteil, Befund,
-        Notiz -, nie den Wiretext selbst: der alte Text enthaelt genau die
-        Revision, die der Broker abgelehnt hat. Eine Wiederholung baut ihn
-        frisch und behaelt allein die `command_id` (idempotent, NR-10).
+        Die Runde 2 hielt genau EINEN `Urteilmitschnitt` (Urteil, Befund,
+        Notiz) mit der Begruendung, zwei gleichzeitig offene Urteile gebe es
+        nicht - erzwungen war das nirgends. Die Runde 3 machte daraus eine
+        Abbildung je `command_id`, gedeckelt auf `nakama::ipc::kCapP0`, mit
+        Verdraengung des aeltesten Eintrags und einem Freigabeweg
+        (`urteilAbgeschlossen`) am `setzeAuftragAbgeschlossenHook`.
 
-        🔑 **WN3-01 (Nacharbeit 3, 07.09.2026): JE Kennung, nicht EIN Wert.**
-        Bis zur Runde 3 stand hier ein Einzelwert mit der Begruendung, „zwei
-        gleichzeitig offene gibt es nicht". Erzwungen war das nirgends:
-        `setzeAssistentenergebnis` laesst den Schritt offen, der P0 geht
-        unabhaengig davon, und schon zwei `assistentAntwort(..., &urteil, ...)`
-        vor dem ersten ACK ueberschrieben den ersten Mitschnitt. Kam dann
-        dessen `konflikt`-ACK, lieferte `urteilMitFrischemKopf` wegen der
-        abweichenden Kennung einen leeren Text, und `ControlClient.cpp`
-        entfernte das unpersistierte Urteil endgueltig - ein Bruch von M-73
-        (WP2-1). Ein zweiter Weg dorthin: ein nach WN-05 bei voller Queue
-        zurueckgehaltenes Urteil plus ein zweites vor dem Reconnect.
+        Der Deckel war falsch begruendet, und das war der Kern von WP3-1: die
+        64 P0-Plaetze begrenzen die QUEUE, nicht die Zahl der ausstehenden
+        Auftraege. Geschriebene Auftraege bleiben bis zum ACK registriert, und
+        selbst bei Queueueberlauf haelt `sendePersistenzP0()` den zusaetzlichen
+        Auftrag (WN-05). Nach 65 Urteilen ohne ACK verdraengte der Prozessor
+        deshalb den aeltesten Mitschnitt, waehrend dessen Auftrag im
+        In-Flight-Register weiterlief - und ein spaeteres `konflikt`-ACK
+        loeschte das unpersistierte Urteil endgueltig.
 
-        Der Deckel ist `nakama::ipc::kCapP0`: mehr ausstehende
-        persistenzpflichtige P0 kann es nicht geben, weil die Queue sie gar
-        nicht erst annimmt. Ein Eintrag entsteht beim Erzeugen des Urteils und
-        faellt erst bei `angewandt`, `idempotent_wiederholt` oder endgueltigem
-        Fehlschlag (`setzeAuftragAbgeschlossenHook`) - nie auf Verdacht. */
-    struct Urteilmitschnitt
-    {
-        juce::String                commandId;
-        juce::String                findingId;
-        juce::String                notiz;
-        nakama::state::Userurteil   urteil { nakama::state::Userurteil::angenommen };
-    };
-    mutable std::mutex urteilMutex;
-    mutable std::vector<Urteilmitschnitt> urteilMitschnitte;
+        Die Ursache war nicht der Deckelwert, sondern das zweite Register
+        selbst: derselbe ausstehende Auftrag lebte an zwei Orten mit
+        getrennten Lebenszyklen - die "zweite still konkurrierende Wahrheit",
+        die M-71 verbietet. E-15 loest sie auf. Der ControlClient haelt den
+        Auftragstext ohnehin; `urteilMitFrischemKopf` bekommt ihn als
+        Parameter und ersetzt darin genau die Zahl, die der Broker abgelehnt
+        hat. Der Prozessor merkt sich zu einem laufenden Auftrag nichts mehr,
+        also gibt es auch nichts freizugeben und nichts zu deckeln. */
 
     nakama::analyse::Vergleichspegel vergleichspegel;
     nakama::analyse::Blindvergleich  blindvergleich;

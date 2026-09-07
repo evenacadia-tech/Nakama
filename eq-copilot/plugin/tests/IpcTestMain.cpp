@@ -5714,24 +5714,21 @@ int main (int argc, char** argv)
         std::atomic<bool> idGehalten { true };
         const auto id = hex32 ('7');
         control.setzeKonfliktWiederholungHook (
-            [&] (const std::string& commandId, const std::string&,
+            [&] (const std::string& commandId, const std::string& json,
                  std::uint64_t brokerRevision) -> std::string
             {
                 if (commandId != id)
                     idGehalten.store (false);
-                // Beim ersten Konflikt baut der Prozessor den Kopf NEU - mit
-                // der Revision, die der Broker genannt hat, und derselben
-                // `command_id`. Danach gibt er auf; der Server antwortet hier
-                // immer `konflikt`.
+                // Beim ersten Konflikt bekommt der Auftrag einen frischen
+                // Kopf - mit der Revision, die der Broker genannt hat, und
+                // derselben `command_id`. Danach gibt der Hook auf; der
+                // Server antwortet hier immer `konflikt`.
+                //
+                // 🔑 KR-01: die ECHTE Funktion, nicht eine Nachbildung. Sie
+                // ist dieselbe, die der Prozessor im Produkt ruft.
                 if (hookRufe.fetch_add (1) != 0)
                     return {};
-                std::string frisch = userVerdictBefehl (commandId);
-                const std::string alt = "\"base_revision\":0";
-                const auto stelle = frisch.find (alt);
-                if (stelle != std::string::npos)
-                    frisch.replace (stelle, alt.size(),
-                                    "\"base_revision\":" + std::to_string (brokerRevision + 1));
-                return frisch;
+                return auftragMitBasisRevision (json, brokerRevision + 1);
             });
         control.start();
         const bool verbunden = warteAuf (5000, [&] {
@@ -5790,13 +5787,7 @@ int main (int argc, char** argv)
                     fremdeKennung.store (true);
                 if (commandId != id1 || hookRufe.fetch_add (1) != 0)
                     return {};
-                std::string frisch = json;
-                const std::string alt = "\"base_revision\":0";
-                const auto stelle = frisch.find (alt);
-                if (stelle != std::string::npos)
-                    frisch.replace (stelle, alt.size(),
-                                    "\"base_revision\":" + std::to_string (brokerRevision + 1));
-                return frisch;
+                return auftragMitBasisRevision (json, brokerRevision + 1);
             });
         control.setzeAuftragAbgeschlossenHook (
             [&] (const std::string& commandId)
@@ -5877,6 +5868,205 @@ int main (int argc, char** argv)
         pruefe (angewandt && gemeldet.size() == 1 && gemeldet[0] == id,
                 "ein_angewandter_auftrag_meldet_seinen_abschluss_genau_einmal",
                 std::to_string (gemeldet.size()) + " gemeldet");
+        control.stop();
+        server.stoppen();
+    }
+    {
+        // -- KR-01 (E-15): die Raender von `auftragMitBasisRevision` -------
+        //
+        // Sie IST der Wiederholungsinhalt - was sie faelschlich annimmt,
+        // reist als Auftrag auf den Draht. Fail-closed heisst hier: ein Text,
+        // der nicht genau EINEN Kopf mit genau EINER `base_revision` traegt,
+        // liefert leer, und der Client wiederholt dann gar nicht.
+        const std::string gut = userVerdictBefehl (hex32 ('5'));
+        const auto ersetzt = auftragMitBasisRevision (gut, 4711);
+        pruefe (! ersetzt.empty()
+                    && ersetzt.find ("\"base_revision\":4711") != std::string::npos
+                    && ersetzt.find ("\"base_revision\":0") == std::string::npos
+                    && ersetzt.size() == gut.size() + 3,
+                "kr01_wire_nur_die_basisrevision_wechselt",
+                std::to_string (ersetzt.size()) + " statt " + std::to_string (gut.size())
+                    + " Bytes");
+        // Mehrstellig zurueck auf einstellig: die Ersetzung kennt die Laenge
+        // der ALTEN Zahl, nicht eine feste.
+        pruefe (auftragMitBasisRevision (ersetzt, 0)
+                    == gut,
+                "kr01_wire_die_ersetzung_ist_umkehrbar");
+        struct Randfall { const char* was; std::string text; };
+        const std::string kopflos =
+            "{\"type\":\"user_verdict\",\"base_revision\":0,\"finding_id\":\"x\"}";
+        const Randfall raender[] = {
+            { "leerer Text",              std::string {} },
+            { "kein `kopf`",              kopflos },
+            { "kein `base_revision`",
+              "{\"type\":\"user_verdict\",\"kopf\":{\"command_id\":\"" + hex32 ('5') + "\"}}" },
+            { "zwei `kopf`",
+              "{\"kopf\":{\"base_revision\":1},\"kopf\":{\"base_revision\":2}}" },
+            { "zwei `base_revision`",
+              "{\"kopf\":{\"base_revision\":1,\"base_revision\":2}}" },
+            { "`base_revision` VOR dem Kopf",
+              "{\"base_revision\":1,\"kopf\":{\"ttl_ms\":2000}}" },
+            { "keine Ziffer nach dem Doppelpunkt",
+              "{\"kopf\":{\"base_revision\":-1}}" },
+            { "`base_revision` nur als TEXTWERT",
+              "{\"kopf\":{\"ttl_ms\":2000},\"notiz\":\"base_revision\"}" },
+        };
+        bool alleLeer = true;
+        std::string ersterTreffer;
+        for (const auto& fall : raender)
+            if (! auftragMitBasisRevision (fall.text, 9).empty())
+            {
+                alleLeer = false;
+                if (ersterTreffer.empty())
+                    ersterTreffer = fall.was;
+            }
+        pruefe (alleLeer, "kr01_wire_faellt_fail_closed_auf_jedem_rand",
+                alleLeer ? "8 Raender" : ("angenommen: " + ersterTreffer));
+    }
+    {
+        // -- KR-01 (E-15): SAETTIGUNG am echten Draht ---------------------
+        //
+        // 🔑 Der Fall, an dem WP3-1 haengt. Die Runde 3 hielt den
+        // Wiederholungsinhalt in einem ZWEITEN Register des Prozessors,
+        // gedeckelt auf `kCapP0` und mit Verdraengung des aeltesten Eintrags.
+        // Der Deckel war falsch begruendet: die 64 P0-Plaetze begrenzen die
+        // QUEUE, nicht die Zahl der ausstehenden Auftraege - geschriebene
+        // Auftraege bleiben bis zum ACK registriert. Nach 65 Urteilen ohne
+        // ACK verlor das erste seine Wiederholungsdaten, und sein spaeteres
+        // `konflikt`-ACK loeschte das unpersistierte Urteil endgueltig.
+        //
+        // E-15: es gibt genau EIN Register, und der Wiederholungstext kommt
+        // aus dem Auftrag, den es haelt. Dieser Fall misst das am echten
+        // Draht: `kCapP0 + 1` Auftraege stehen aus, der ERSTE bekommt sein
+        // `konflikt`, wird mit frischem Kopf wiederholt, und erst `angewandt`
+        // gibt ihn frei. Die uebrigen 64 bleiben unberuehrt.
+        TestServer server (testPipeName ("sonde014-kr01"));
+        server.commandAckArt.store (0);   // zunaechst KEINE Antwort
+        const auto id1 = hex32 ('4');
+        server.ackNurFuer (id1);
+        server.starten();
+        ControlClient control ([&] {
+            ControlHello h;
+            h.adresse = testAdresse (hex32 ('b'));
+            return h;
+        }, server.pipeName());
+
+        std::mutex protokollMutex;
+        std::vector<std::string> abgeschlossen;
+        std::string wiederholterText;
+        std::atomic<int> hookRufe { 0 };
+        control.setzeKonfliktWiederholungHook (
+            [&] (const std::string& commandId, const std::string& json,
+                 std::uint64_t brokerRevision) -> std::string
+            {
+                if (commandId != id1 || hookRufe.fetch_add (1) != 0)
+                    return {};
+                // Die ECHTE Funktion auf den Text, den das Register haelt.
+                auto frisch = auftragMitBasisRevision (json, brokerRevision);
+                {
+                    std::lock_guard<std::mutex> l (protokollMutex);
+                    wiederholterText = frisch;
+                }
+                // Der naechste ACK auf dieselbe Kennung schliesst ab.
+                server.commandAckArt.store (1);   // angewandt
+                return frisch;
+            });
+        control.setzeAuftragAbgeschlossenHook (
+            [&] (const std::string& commandId)
+            {
+                std::lock_guard<std::mutex> l (protokollMutex);
+                abgeschlossen.push_back (commandId);
+            });
+        control.start();
+        bool alleGesendet = warteAuf (5000, [&] {
+            return control.snapshot().status == ControlClient::Status::verbunden;
+        });
+        // Hat der Server diesen Auftrag WIRKLICH gesehen? Nach jedem Send
+        // darauf warten: sonst laeuft die 64er-Queue voll, der Client bricht
+        // die Verbindung ab (WN-05), und der Fall maesse einen Ueberlauf
+        // statt der Saettigung des Registers.
+        auto serverHat = [&] (const std::string& kennung)
+        {
+            std::lock_guard<std::mutex> l (server.textMutex);
+            for (const auto& t : server.p0Texte)
+                if (t.find ("\"command_id\":\"" + kennung + "\"") != std::string::npos)
+                    return true;
+            return false;
+        };
+        // Der ERSTE zuerst - er ist der, dessen ACK am laengsten aussteht.
+        alleGesendet = alleGesendet && control.sendePersistenzP0 (userVerdictBefehl (id1))
+                    && warteAuf (5000, [&] { return serverHat (id1); });
+        for (std::size_t i = 1; alleGesendet && i <= nakama::ipc::kCapP0; ++i)
+        {
+            std::string kennung (32, '0');
+            const char* hex = "0123456789abcdef";
+            for (int z = 0; z < 6; ++z)
+                kennung[26 + static_cast<std::size_t> (z)] =
+                    hex[(i >> ((5 - z) * 4)) & 0xf];
+            alleGesendet = control.sendePersistenzP0 (userVerdictBefehl (kennung))
+                        && warteAuf (5000, [&] { return serverHat (kennung); });
+        }
+        const bool ausstehend = alleGesendet && warteAuf (10000, [&] {
+            return control.snapshot().inFlight == nakama::ipc::kCapP0 + 1;
+        });
+        pruefe (ausstehend,
+                "kr01_kcap_plus_eins_auftraege_stehen_gleichzeitig_aus",
+                std::to_string (control.snapshot().inFlight) + " im Register");
+
+        // Jetzt erst das `konflikt` auf den ERSTEN - nachtraeglich, damit
+        // wirklich alle 65 ausstehen, wenn es kommt.
+        server.commandAckArt.store (3);   // konflikt
+        server.ackNachtragen();
+        const bool wiederholt = ausstehend && warteAuf (10000, [&] {
+            return control.snapshot().inFlightWiederholungen >= 1;
+        });
+        // 🔑 Die Zusage: der Eintrag ist NICHT verschwunden, und sein Text
+        // ist der eigene - nicht leer, nicht der eines anderen Auftrags.
+        std::string frisch;
+        {
+            std::lock_guard<std::mutex> l (protokollMutex);
+            frisch = wiederholterText;
+        }
+        const bool eigenerText =
+            wiederholt && ! frisch.empty()
+            && frisch.find ("\"command_id\":\"" + id1 + "\"") != std::string::npos
+            && frisch.find ("\"base_revision\":7") != std::string::npos
+            && frisch == [&] {
+                   auto t = userVerdictBefehl (id1);
+                   const std::string alt = "\"base_revision\":0";
+                   const auto s = t.find (alt);
+                   if (s != std::string::npos)
+                       t.replace (s, alt.size(), "\"base_revision\":7");
+                   return t;
+               }();
+        pruefe (eigenerText,
+                "kr01_der_erste_auftrag_wird_mit_frischem_kopf_wiederholt",
+                frisch.empty() ? "leerer Wiederholungstext" : "Text steht");
+
+        // Erst `angewandt` schliesst ab - und genau dann faellt der Eintrag.
+        const bool abgeschlossenNachAngewandt = eigenerText && warteAuf (10000, [&] {
+            const auto s = control.snapshot();
+            return s.inFlightErfolg >= 1 && s.inFlight == nakama::ipc::kCapP0;
+        });
+        std::vector<std::string> gemeldet2;
+        {
+            std::lock_guard<std::mutex> l (protokollMutex);
+            gemeldet2 = abgeschlossen;
+        }
+        pruefe (abgeschlossenNachAngewandt && gemeldet2.size() == 1
+                    && gemeldet2[0] == id1,
+                "kr01_erst_angewandt_gibt_den_ersten_auftrag_frei",
+                std::to_string (gemeldet2.size()) + " gemeldet, "
+                    + std::to_string (control.snapshot().inFlight) + " bleiben");
+        // Und die uebrigen 64 sind unberuehrt: keiner von ihnen ist gemeldet,
+        // und das Register haelt sie weiter.
+        pruefe (abgeschlossenNachAngewandt
+                    && control.snapshot().inFlight == nakama::ipc::kCapP0
+                    && control.snapshot().inFlightEndgueltigOhneErfolg == 0,
+                "kr01_die_uebrigen_auftraege_bleiben_unberuehrt",
+                std::to_string (control.snapshot().inFlight) + " im Register, "
+                    + std::to_string (control.snapshot().inFlightEndgueltigOhneErfolg)
+                    + " endgueltig ohne Erfolg");
         control.stop();
         server.stoppen();
     }

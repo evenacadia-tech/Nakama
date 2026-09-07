@@ -284,22 +284,23 @@ EqCopilotProcessor::EqCopilotProcessor()
             }
             return json;
         });
-    // 🔑 SONDE-014 WN-01 (Nacharbeit 2): der Weg zurueck aus einem
-    // `konflikt`-ACK. Er liest und formt nur - das Einreihen macht der
-    // Client, unter derselben Sperre, die er ohnehin haelt.
+    // 🔑 SONDE-014 WN-01 (Nacharbeit 2) / KR-01 (E-15, Konvergenzrunde): der
+    // Weg zurueck aus einem `konflikt`-ACK. Er liest und formt nur - das
+    // Einreihen macht der Client, unter derselben Sperre, die er ohnehin
+    // haelt.
+    //
+    // Der zweite Parameter ist der AUFTRAG selbst. Bis zur Runde 3 stand hier
+    // ein `_`, und der Prozessor baute den Text aus einem eigenen,
+    // gedeckelten Register neu; die Gegenrichtung dazu war ein
+    // `setzeAuftragAbgeschlossenHook`, der dieses Register wieder freigab.
+    // Beides ist mit E-15 fort: der ControlClient haelt den Auftrag, also
+    // haelt er auch den Wiederholungsinhalt.
     controlV3.setzeKonfliktWiederholungHook (
-        [this] (const std::string& commandId, const std::string&,
+        [this] (const std::string& commandId, const std::string& auftragJson,
                 std::uint64_t brokerRevision) -> std::string
         {
-            return urteilMitFrischemKopf (juce::String (commandId), brokerRevision);
-        });
-    // 🔑 SONDE-014 WN3-01 (Nacharbeit 3): und die Gegenrichtung. Ohne sie
-    // waechst das Register der Mitschnitte mit jedem Urteil, und der Deckel
-    // muesste raten, welcher Eintrag noch gebraucht wird.
-    controlV3.setzeAuftragAbgeschlossenHook (
-        [this] (const std::string& commandId)
-        {
-            urteilAbgeschlossen (juce::String (commandId));
+            return urteilMitFrischemKopf (juce::String (commandId), auftragJson,
+                                          brokerRevision);
         });
 
     queue.vorbereiten();
@@ -2003,9 +2004,7 @@ std::string EqCopilotProcessor::v3AssistantStepJson() const
     ohne Bezug, und ein erfundener Bezug waere schlimmer als kein Urteil. */
 std::string EqCopilotProcessor::v3UserVerdictJson (nakama::state::Userurteil urteil,
                                                    const juce::String& findingId,
-                                                   const juce::String& notiz,
-                                                   const juce::String& commandIdVorgabe,
-                                                   std::optional<std::uint64_t> baseRevision) const
+                                                   const juce::String& notiz) const
 {
     juce::String befund = findingId, proposalId;
     {
@@ -2023,38 +2022,32 @@ std::string EqCopilotProcessor::v3UserVerdictJson (nakama::state::Userurteil urt
     if (! nakama::ipc::istHex32 (befund.toStdString()))
         return {};
     const auto& findingIdGewaehlt = befund;
-    // 🔑 WN-01: eine Wiederholung behaelt ihre `command_id`. Der Broker
+    // 🔑 WN-01/KR-01: eine Wiederholung behaelt ihre `command_id`. Der Broker
     // erkennt sie idempotent (NR-10) - eine frische ID waere ein zweites
-    // Urteil, kein zweiter Versuch.
-    const juce::String commandId {
-        commandIdVorgabe.isNotEmpty() ? commandIdVorgabe : juce::String (uuidHex32())
-    };
-    const auto kopf = versuchKopfJson (commandId, baseRevision);
+    // Urteil, kein zweiter Versuch. Diese Funktion erzeugt deshalb IMMER ein
+    // neues Urteil; die Wiederholung geht seit E-15 gar nicht mehr durch sie
+    // hindurch, sondern ersetzt im gesendeten Auftrag genau die abgelehnte
+    // `base_revision` (`urteilMitFrischemKopf`). Bis zur Runde 3 stand hier
+    // eine `commandIdVorgabe` - der Neubau zog Befund und Proposal dabei aus
+    // dem AKTUELLEN Schritt, also aus einem Zustand, der sich seit dem
+    // Absenden geaendert haben kann.
+    const juce::String commandId { juce::String (uuidHex32()) };
+    const auto kopf = versuchKopfJson (commandId);
     if (kopf.empty())
         return {};
-    {
-        // Der Mitschnitt traegt, was den Kopf NEU baut - nicht den Text: der
-        // alte Text enthaelt genau die Revision, die der Broker ablehnt.
-        //
-        // 🔑 WN3-01: JE Kennung. Eine Wiederholung findet ihren eigenen
-        // Eintrag und ersetzt ihn; ein neues Urteil kommt hinten dazu. Der
-        // Deckel ist die P0-Kapazitaet - mehr ausstehende
-        // persistenzpflichtige Auftraege nimmt die Queue nicht an. Faellt er
-        // trotzdem, geht der AELTESTE: er ist der, dessen ACK am laengsten
-        // aussteht.
-        std::lock_guard<std::mutex> l (urteilMutex);
-        const auto treffer = std::find_if (urteilMitschnitte.begin(), urteilMitschnitte.end(),
-            [&] (const Urteilmitschnitt& m) { return m.commandId == commandId; });
-        if (treffer != urteilMitschnitte.end())
-            *treffer = Urteilmitschnitt { commandId, findingIdGewaehlt, notiz, urteil };
-        else
-        {
-            if (urteilMitschnitte.size() >= nakama::ipc::kCapP0)
-                urteilMitschnitte.erase (urteilMitschnitte.begin());
-            urteilMitschnitte.push_back (
-                Urteilmitschnitt { commandId, findingIdGewaehlt, notiz, urteil });
-        }
-    }
+    // 🔑 SONDE-014 KR-01 (E-15, Konvergenzrunde 07.09.2026): hier stand ein
+    // ZWEITES Register. Der Prozessor hielt je `command_id` einen Mitschnitt
+    // - Urteil, Befund, Notiz - und deckelte ihn auf `kCapP0`, damit er nicht
+    // waechst. Der Deckel war falsch begruendet: die 64 P0-Plaetze begrenzen
+    // die QUEUE, nicht die Zahl der ausstehenden Auftraege. Nach 65 Urteilen
+    // ohne ACK verdraengte er den aeltesten, obwohl dessen Auftrag im
+    // In-Flight-Register des ControlClients weiterlief; ein spaeteres
+    // `konflikt`-ACK fand dann keinen Text mehr und loeschte das
+    // unpersistierte Urteil endgueltig (WP3-1, Bruch von M-73).
+    //
+    // Es gibt seither genau EIN Register: das des ControlClients. Der Text,
+    // den diese Funktion zurueckgibt, IST der Wiederholungsinhalt - er reist
+    // mit dem Auftrag und kommt bei einem `konflikt` unveraendert zurueck.
     std::string aus = "{\"type\":\"user_verdict\",\"kopf\":" + kopf;
     aus += ",\"user_verdict_id\":\"" + uuidHex32() + "\"";
     aus += ",\"finding_id\":\"" + findingIdGewaehlt.toStdString() + "\"";
@@ -2069,50 +2062,43 @@ std::string EqCopilotProcessor::v3UserVerdictJson (nakama::state::Userurteil urt
     return aus;
 }
 
-/*  SONDE-014 WN-01 (Nacharbeit 2): derselbe Auftrag, frischer Kopf.
+/*  SONDE-014 WN-01 (Nacharbeit 2) / KR-01 (E-15, Konvergenzrunde): derselbe
+    Auftrag, frischer Kopf.
 
     Der Broker hat mit `konflikt` geantwortet und dabei die Revision genannt,
     die er kennt. Das Urteil selbst war richtig - nur sein Kopf trug eine
-    Zahl, die der Broker noch nicht gesehen hatte. Der Text entsteht deshalb
-    NEU, mit derselben `command_id` und der Revision aus dem ACK; `angewandt`
-    schliesst den Auftrag ab, nicht der erste Versuch.
+    Zahl, die der Broker noch nicht gesehen hatte.
+
+    🔑 KR-01: der Wiederholungsinhalt kommt aus dem AUFTRAG, den der
+    ControlClient ohnehin haelt. Bis zur Runde 3 baute diese Funktion den Text
+    aus einem zweiten, gedeckelten Register des Prozessors neu; das Register
+    verlor bei Saettigung den aeltesten offenen Auftrag (WP3-1). Ersetzt wird
+    jetzt genau die eine Zahl, die der Broker abgelehnt hat - `user_verdict_id`,
+    `finding_id`, `proposal_id`, Urteil und Notiz bleiben bytegleich.
+
+    Die POLITIK bleibt hier: wiederholt wird ein `user_verdict`, weil ein
+    Userurteil nicht verloren gehen darf (M-73/E-09). Ein Experimentbefehl
+    unter derselben Schiene bekommt keinen frischen Kopf; er ist an sein
+    Zeitfenster gebunden, und eine spaete Wiederholung waere ein zweiter
+    Eingriff, kein zweiter Versuch.
 
     Laeuft unter `sendeMutex` des ControlClients (Ordnung: sendeMutex VOR
     Bindungsschloss, wie der Replay-Hook). Er liest und formt nur. */
 std::string EqCopilotProcessor::urteilMitFrischemKopf (const juce::String& commandId,
+                                                       const std::string& auftragJson,
                                                        std::uint64_t brokerRevision) const
 {
-    Urteilmitschnitt mitschnitt;
-    {
-        std::lock_guard<std::mutex> l (urteilMutex);
-        const auto treffer = std::find_if (urteilMitschnitte.begin(), urteilMitschnitte.end(),
-            [&] (const Urteilmitschnitt& m) { return m.commandId == commandId; });
-        if (treffer == urteilMitschnitte.end())
-            return {};   // kein Userurteil unter dieser Kennung - nichts erfinden
-        mitschnitt = *treffer;
-    }
-    return v3UserVerdictJson (mitschnitt.urteil, mitschnitt.findingId, mitschnitt.notiz,
-                              commandId, brokerRevision);
-}
-
-/*  SONDE-014 WN3-01 (Nacharbeit 3): der Auftrag ist fort, der Mitschnitt auch.
-
-    Der ControlClient ruft diesen Weg genau dann, wenn der Eintrag sein
-    In-Flight-Register verlaesst: `angewandt`, `idempotent_wiederholt` oder
-    endgueltig ohne Erfolg - auch nach dem letzten Konfliktversuch. Eine
-    WIEDERHOLUNG ruft ihn nicht; der Auftrag laeuft dann noch.
-
-    Eine unbekannte Kennung ist kein Fehler: derselbe Hook gilt fuer jeden
-    persistenzpflichtigen P0, und die Experimentfamilien merken sich hier
-    nichts. Ohne diesen Rueckweg waere der Deckel eine Verdraengung auf
-    Verdacht statt einer Freigabe. */
-void EqCopilotProcessor::urteilAbgeschlossen (const juce::String& commandId) const
-{
-    std::lock_guard<std::mutex> l (urteilMutex);
-    const auto treffer = std::find_if (urteilMitschnitte.begin(), urteilMitschnitte.end(),
-        [&] (const Urteilmitschnitt& m) { return m.commandId == commandId; });
-    if (treffer != urteilMitschnitte.end())
-        urteilMitschnitte.erase (treffer);
+    // Nichts erfinden: nur ein Auftrag, der wirklich unter DIESER Kennung
+    // steht und wirklich ein `user_verdict` ist, wird wiederholt. Beides sind
+    // Wachen gegen eine falsche Verdrahtung, keine zweite Zuordnung - die
+    // leistet das In-Flight-Register, das den Eintrag ueber seine
+    // `command_id` findet und genau dessen Text uebergibt.
+    const auto kennung = commandId.toStdString();
+    if (! nakama::ipc::istHex32 (kennung)
+        || auftragJson.find ("\"type\":\"user_verdict\"") == std::string::npos
+        || auftragJson.find ("\"command_id\":\"" + kennung + "\"") == std::string::npos)
+        return {};
+    return nakama::ipc::auftragMitBasisRevision (auftragJson, brokerRevision);
 }
 
 /*  M-86: die Vollstaendigkeitsmarke, BEVOR der Broker rechnet.
@@ -3255,8 +3241,7 @@ std::string EqCopilotProcessor::versuchReferenzJson (const Engineabzug& abzug) c
     return s;
 }
 
-std::string EqCopilotProcessor::versuchKopfJson (const juce::String& commandId,
-                                                 std::optional<std::uint64_t> baseRevision) const
+std::string EqCopilotProcessor::versuchKopfJson (const juce::String& commandId) const
 {
     auto h = v3Hello();
     h.adresse = nakama::ipc::wireAdresseAusState (h.adresse);
@@ -3273,10 +3258,12 @@ std::string EqCopilotProcessor::versuchKopfJson (const juce::String& commandId,
     // Zahl, die der Broker nicht kennt, mit `revision_conflict`. Der Konflikt
     // war damit der Regelfall, nicht ein Zeitfenster (WP1-1).
     //
-    // `baseRevision` setzt die Zahl ausdruecklich: die Wiederholung nach einem
-    // `konflikt`-ACK nimmt die, die der Broker selbst genannt hat.
-    s += ",\"base_revision\":"
-       + std::to_string (baseRevision.value_or (controlV3.gemeldeteStateRevision()));
+    // 🔑 KR-01 (E-15): hier stand bis zur Runde 3 ein `baseRevision`-Parameter,
+    // mit dem die Wiederholung nach einem `konflikt`-ACK ihre Zahl setzte. Sie
+    // baut den Kopf nicht mehr neu, sondern ersetzt die Zahl im gesendeten
+    // Auftrag (`nakama::ipc::auftragMitBasisRevision`) - ein Neubau haette
+    // jedes andere Feld aus dem aktuellen Zustand gezogen.
+    s += ",\"base_revision\":" + std::to_string (controlV3.gemeldeteStateRevision());
     s += ",\"ttl_ms\":2000,\"schema_major\":3,\"schema_minor\":0}";
     return s;
 }

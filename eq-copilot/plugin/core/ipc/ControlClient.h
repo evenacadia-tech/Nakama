@@ -211,6 +211,31 @@ struct GelesenesCommandAck
 /// unterscheidet angewandt/idempotent von allen fail-closed Endzustaenden.
 bool commandAckHaeltVertrag (const std::string&, GelesenesCommandAck&);
 
+/** SONDE-014 KR-01 (Entscheid E-15): derselbe Auftrag, frische Basisrevision.
+
+    Ein `konflikt`-ACK sagt genau EINES: der Kopf trug eine `base_revision`,
+    die der Broker nicht kennt. Der Auftrag selbst war richtig - jedes andere
+    Feld gilt weiter. Diese Funktion nimmt deshalb den WIRETEXT, den das
+    In-Flight-Register ohnehin haelt, und ersetzt darin genau die eine Zahl.
+
+    🔑 Warum das der ganze Wiederholungsinhalt ist. Bis zur Runde 3 baute der
+    Prozessor den Text aus einem ZWEITEN Register neu (`urteilMitschnitte`,
+    gedeckelt auf `kCapP0`). Zwei Register mit getrennten Deckeln heissen
+    zwangslaeufig, dass eines das andere ueberlebt: nach 65 ausstehenden
+    Urteilen verlor das erste seine Wiederholungsdaten, obwohl sein Auftrag
+    noch lief (WP3-1). Es gibt seither genau EIN Register - das des
+    ControlClients -, und der Wiederholungstext kommt aus ihm.
+
+    Der Nebeneffekt ist eine Zusage mehr, keine weniger: `user_verdict_id`,
+    `finding_id`, `proposal_id`, Urteil und Notiz bleiben BYTEGLEICH. Ein
+    Neubau haette sie aus dem aktuellen Schritt gezogen - also aus einem
+    Zustand, der sich seit dem Absenden geaendert haben kann.
+
+    Leer, wenn der Text keinen `kopf` mit genau einer `base_revision` traegt.
+    Nichts erfinden: ein Auftrag ohne Kopf wird nicht wiederholt. */
+std::string auftragMitBasisRevision (const std::string& auftragJson,
+                                     std::uint64_t basisRevision);
+
 class ControlClient
 {
 public:
@@ -575,9 +600,17 @@ public:
         Ein `konflikt`-ACK ist KEIN endgueltiger Verlust: der Auftrag war
         richtig, nur sein Kopf trug eine Revision, die der Broker nicht
         kannte. Der Hook bekommt `command_id`, den bisherigen Wiretext und die
-        Revision, die der Broker im ACK genannt hat; er liefert den NEU
-        gebauten Text unter DERSELBEN `command_id` (idempotent, NR-10) oder
-        einen leeren Text, wenn dieser Auftrag nicht wiederholt werden soll.
+        Revision, die der Broker im ACK genannt hat; er liefert den Text unter
+        DERSELBEN `command_id` (idempotent, NR-10) oder einen leeren Text,
+        wenn dieser Auftrag nicht wiederholt werden soll.
+
+        🔑 SONDE-014 KR-01 (E-15, Konvergenzrunde): der zweite Parameter IST
+        der Wiederholungsinhalt. Bis zur Runde 3 ignorierte der Prozessor ihn
+        und baute den Text aus einem eigenen, gedeckelten Register neu - ein
+        zweites Register fuer denselben ausstehenden Auftrag, das bei
+        Saettigung das erste Urteil verlor (WP3-1). Der Hook nimmt seither
+        `nakama::ipc::auftragMitBasisRevision` auf genau diesen Text; die
+        Entscheidung, ob wiederholt wird, bleibt beim Aufrufer.
 
         Er laeuft unter `sendeMutex`: er darf lesen und formen, aber NIE
         selbst senden. Das Einreihen macht der Client. Nach
@@ -595,9 +628,16 @@ public:
         also auch nach dem letzten Konfliktversuch. Eine Wiederholung ruft
         ihn NICHT: der Auftrag laeuft dann noch.
 
-        Wer sich zu einer `command_id` etwas merkt, gibt es hier frei. Der
-        Hook laeuft OHNE `sendeMutex` und darf den Sendezustand des
-        Prozessors nehmen - dieselbe Ordnung wie `beiP0Verworfen`. */
+        Der Hook laeuft OHNE `sendeMutex` und darf den Sendezustand des
+        Prozessors nehmen - dieselbe Ordnung wie `beiP0Verworfen`.
+
+        🔑 SONDE-014 KR-01 (E-15, Konvergenzrunde): sein bisheriger Zweck
+        ("wer sich zu einer `command_id` etwas merkt, gibt es hier frei") ist
+        entfallen, weil sich niemand mehr etwas merkt - `inFlight` IST das
+        Register. Er bleibt die Meldeschiene, an der die Zusage "ein Eintrag
+        lebt bis `angewandt`, `idempotent_wiederholt` oder endgueltigem
+        Fehlschlag" JE KENNUNG messbar ist (B10); das Produkt abonniert ihn
+        derzeit nicht (Nebenbefund N-33). */
     void setzeAuftragAbgeschlossenHook (
         std::function<void (const std::string& commandId)> hook);
 

@@ -82,6 +82,41 @@
       "warum": "die gewoehnliche Samplerate",
       "angenommen": true,
       "wire": "48000"
+    },
+    {
+      "klasse": "rangkomponente_2p7e_minus_11",
+      "eingabe_hex64": "0x3dbdafd309fd7afd",
+      "warum": "WP2-2: der Wert des Urteils - die alte Rundung machte 17 Stellen daraus",
+      "angenommen": true,
+      "wire": "2.7e-11"
+    },
+    {
+      "klasse": "rangkomponente_5p55e_minus_12",
+      "eingabe_hex64": "0x3d9868be966fb4c5",
+      "warum": "eine Dekade tiefer, derselbe Bruch der alten Rundung",
+      "angenommen": true,
+      "wire": "5.55e-12"
+    },
+    {
+      "klasse": "rangkomponente_lang",
+      "eingabe_hex64": "0x3dd8d7fc9d397d8c",
+      "warum": "eine gerechnete Rangkomponente in voller Laenge",
+      "angenommen": true,
+      "wire": "9.03808480367243e-11"
+    },
+    {
+      "klasse": "float_minus_3p3",
+      "eingabe_hex64": "0xc00a666660000000",
+      "warum": "N-30: `beobachtung.wert_db` entsteht aus einem float und traegt als double 16 Stellen",
+      "angenommen": true,
+      "wire": "-3.29999995231628"
+    },
+    {
+      "klasse": "null_komma_eins_plus_null_komma_zwei",
+      "eingabe_hex64": "0x3fd3333333333334",
+      "warum": "der klassische Bruch: 0.30000000000000004 kuerzt sich auf 0.3",
+      "angenommen": true,
+      "wire": "0.3"
     }
   ],
   "verweigert": [

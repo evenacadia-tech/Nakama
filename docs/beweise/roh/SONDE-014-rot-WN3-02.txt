@@ -1,0 +1,59 @@
+ROTBEWEIS WN3-02 (SONDE-014 Nacharbeit 3) - der Deckel gilt dem TEXT
+
+ZUSAGE: die 15-Stellen-Grenze des Vertrags greift an der SERIALISIERTEN
+Dezimaldarstellung (`eqcop_broker::vertrag::wire_zahl`, Spiegel von
+`nakama::wire::wireZahl`), nicht an einer numerischen Rundung. `zahl()` in
+`hypothese_verdrahtung.rs` und in `proposal_verdrahtung.rs` laeuft durch sie,
+und damit jedes f64-Feld von Befund, Maskierung und Proposal (WP2-2).
+
+RUECKNAHME: `wire_zahl` wird durch `auf_wirestellen` der Nacharbeit 2 ersetzt -
+woertlich, samt Faktor `10f64.powi(14 - exponent)`. Genau der ist ab
+`exponent <= -9` selbst ungenau.
+
+FALLENDE ZEILEN (broker/tests/sonde014_nacharbeit3.rs):
+  * `die_wertetabelle_der_kleinen_zahlen_haelt_den_riegel` - Zeile 531,
+    "2.7e-11: `2.6999999999999997e-11` traegt 17 signifikante Stellen";
+  * `ein_befund_kleiner_rangkomponenten_wird_ausgeliefert` - Zeile 658,
+    "eine Projektion mit Rangkomponenten um 1e-11 wird ausgeliefert" (der
+    Re-Subscribe faellt in `routing_fail_closed`);
+  * `wire_zahl_haelt_den_textriegel_ueber_drei_baender` - der
+    Eigenschaftstest ueber das Dekadenband `1e-15..1e-9`.
+
+Kommando: cargo test --manifest-path broker/Cargo.toml --test sonde014_nacharbeit3
+Gefahren: 2026-09-07T13:05
+
+=== 1. RUECKNAHME der Zusage ===
+  broker/src/vertrag.rs - `wire_zahl` traegt wieder die numerische Rundung
+
+=== 2. ROTER LAUF ===
+EXIT=101
+
+thread 'die_wertetabelle_der_kleinen_zahlen_haelt_den_riegel' (16760) panicked at tests\sonde014_nacharbeit3.rs:531:9:
+2.7e-11: `2.6999999999999997e-11` traegt 17 signifikante Stellen
+
+thread 'ein_befund_kleiner_rangkomponenten_wird_ausgeliefert' (15232) panicked at tests\sonde014_nacharbeit3.rs:658:5:
+eine Projektion mit Rangkomponenten um 1e-11 wird ausgeliefert
+
+failures:
+    die_wertetabelle_der_kleinen_zahlen_haelt_den_riegel
+    ein_befund_kleiner_rangkomponenten_wird_ausgeliefert
+    wire_zahl_haelt_den_textriegel_ueber_drei_baender
+
+test result: FAILED. 0 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 17.05s
+error: test failed, to rerun pass `--test sonde014_nacharbeit3`
+
+=== 3. WIEDERHERSTELLUNG ===
+  zurueckgenommen
+
+=== 4. GRUENER LAUF ===
+EXIT=0
+running 3 tests
+test die_wertetabelle_der_kleinen_zahlen_haelt_den_riegel ... ok
+test wire_zahl_haelt_den_textriegel_ueber_drei_baender ... ok
+test ein_befund_kleiner_rangkomponenten_wird_ausgeliefert ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 25.14s
+
+URTEIL: ROT bei Ruecknahme, GRUEN nach Wiederherstellung - die Zusage traegt.
+Der Rotbeweis faellt an genau den Zeilen, die sie tragen: die Stellenzahl des
+serialisierten Textes und der Re-Subscribe, der ihn ausliefert.

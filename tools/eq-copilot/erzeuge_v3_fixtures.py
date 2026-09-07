@@ -3467,6 +3467,24 @@ def zahlklassen_wire() -> bytes:
                 "2^53-1 reist EXAKT; der Deckel trifft nie eine Ganzzahl"),
         eintrag("nyquist_gekappter_bandwert", 18000.0, "eine Bandmitte an der Kappe"),
         eintrag("samplerate", 48000.0, "die gewoehnliche Samplerate"),
+        # ── WN3-02 (Nacharbeit 3, 07.09.2026): die Kleinwerte aus WP2-2.
+        #
+        # Die numerische Rundung der Nacharbeit 2 bildete den Faktor
+        # `10 ** (14 - exponent)`, und der ist ab `exponent <= -9` selbst
+        # ungenau: `round(2.7e-11 * 1e25) / 1e25` ist `2.6999999999999997e-11`
+        # - SIEBZEHN signifikante Stellen, und der eigene Textriegel verwirft
+        # sie. Diese fuenf Klassen halten die Grenze in allen drei Sprachen an
+        # derselben Byteinstanz fest.
+        eintrag("rangkomponente_2p7e_minus_11", 2.7e-11,
+                "WP2-2: der Wert des Urteils - die alte Rundung machte 17 Stellen daraus"),
+        eintrag("rangkomponente_5p55e_minus_12", 5.55e-12,
+                "eine Dekade tiefer, derselbe Bruch der alten Rundung"),
+        eintrag("rangkomponente_lang", 9.038084803672431e-11,
+                "eine gerechnete Rangkomponente in voller Laenge"),
+        eintrag("float_minus_3p3", float(struct.unpack("f", struct.pack("f", -3.3))[0]),
+                "N-30: `beobachtung.wert_db` entsteht aus einem float und traegt als double 16 Stellen"),
+        eintrag("null_komma_eins_plus_null_komma_zwei", 0.1 + 0.2,
+                "der klassische Bruch: 0.30000000000000004 kuerzt sich auf 0.3"),
     ]
     verweigert = [
         eintrag("zwei_e_minus_308", 2e-308,

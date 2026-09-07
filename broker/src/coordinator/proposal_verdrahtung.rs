@@ -463,11 +463,23 @@ impl Coordinator {
 /// deshalb eine **Produktgrenze** und keine Messung.
 pub const DRAFT_OFFER_TTL_MS: u64 = 10_000;
 
+/// Klemmt eine Zahl in die Vertragsgrenzen, macht aus Nicht-Endlichem eine
+/// **0** und deckelt ihre SERIALISIERTE Dezimaldarstellung.
+///
+/// 🔑 **WN3-02 (Nacharbeit 3, 07.09.2026): auch das Proposal reist im
+/// Snapshot.** Der Deckel fehlte hier ganz — die Nacharbeit 2 hatte ihn nur
+/// am Befund. `confidence.score` entsteht aus derselben Bruchrechnung wie die
+/// Rangkomponenten, und `frequency_hz`, `q` und `max_gain_db` kommen aus
+/// `bandmitte_hz` beziehungsweise der Kostenrechnung; jeder von ihnen kann
+/// siebzehn signifikante Stellen tragen und den `session_snapshot` fuer den
+/// eigenen Leser unlesbar machen. Eine Grenze, zwei Regeln war die Ursache
+/// des Befunds; jetzt ist es dieselbe Funktion wie am Befund
+/// (`crate::vertrag::wire_zahl`).
 fn zahl(wert: f64, min: f64, max: f64) -> f64 {
     if !wert.is_finite() {
         return 0.0;
     }
-    wert.clamp(min, max)
+    crate::vertrag::wire_zahl(wert.clamp(min, max))
 }
 
 fn zahl_wert(wert: f64, min: f64, max: f64) -> Value {

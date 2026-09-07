@@ -719,6 +719,35 @@ fn wirezahl_texte_halten_den_textriegel() {
                 "{klasse}: `{text}` liest sich als {wert}, erwartet {erwartet}"
             );
         }
+
+        // 3. 🔑 WN3-02 (Nacharbeit 3): und der RUST-ERZEUGER kommt auf
+        //    denselben Wert. Bis zu dieser Runde mass diese Datei nur den
+        //    Riegel — die Sprachparitaet aus M-77 galt fuer den LESER, und
+        //    genau daran fiel WP2-2: C++ und Python deckelten den TEXT,
+        //    Rust rundete numerisch. `wire_zahl` ist die dritte Haelfte.
+        let erzeugt = eqcop_broker::vertrag::wire_zahl(erwartet);
+        assert_eq!(
+            erzeugt, zurueck,
+            "{klasse}: Rusts `wire_zahl` liefert {erzeugt:?}, C++ schreibt `{text}`"
+        );
+        let rust_text = serde_json::to_string(&erzeugt).unwrap();
+        assert!(
+            eqcop_broker::vertrag::textriegel_bytes(
+                format!("{{\"a\":{rust_text}}}").as_bytes()
+            )
+            .is_ok(),
+            "{klasse}: was `wire_zahl` liefert, muss der EIGENE Riegel tragen: `{rust_text}`"
+        );
+        // Regel 4 gilt nur NICHTGANZZAHLIGEN Werten: `9007199254740991.0`
+        // traegt sechzehn Ziffern und reist trotzdem, weil Regel 3 die
+        // weitere Grenze setzt (WireZahl.h, Kopf).
+        if erzeugt != erzeugt.trunc() {
+            assert!(
+                signifikante_stellen(&rust_text) <= 15,
+                "{klasse}: `{rust_text}` traegt {} signifikante Stellen",
+                signifikante_stellen(&rust_text)
+            );
+        }
     }
 
     let verweigert = f["verweigert"].as_array().expect("Liste `verweigert`");
@@ -751,6 +780,15 @@ fn wirezahl_texte_halten_den_textriegel() {
             "{klasse}: `{kandidat}` wird vom Riegel angenommen — dann duerfte \
              `wireZahl` ihn nicht verweigern"
         );
+        // Und die Rusthaelfte nimmt den Ersatzweg, den `wireZahl` seinem
+        // Aufrufer nennt (0 ohne Praesenzbit), statt an der Grenze zu
+        // saettigen — eine Saettigung waere die Behauptung, der Grenzwert
+        // sei gemessen worden.
+        assert_eq!(
+            eqcop_broker::vertrag::wire_zahl(wert),
+            0.0,
+            "{klasse}: `wire_zahl` muss den Ersatzweg nehmen, nicht saettigen"
+        );
     }
 
     println!(
@@ -758,4 +796,16 @@ fn wirezahl_texte_halten_den_textriegel() {
         angenommen.len(),
         verweigert.len()
     );
+}
+
+/// Signifikante Dezimalziffern GENAU SO gezaehlt, wie `vertrag.rs` es tut:
+/// fuehrende und abschliessende Nullen tragen nichts.
+fn signifikante_stellen(text: &str) -> usize {
+    let ohne_vorzeichen = text.trim_start_matches('-');
+    let mantisse = ohne_vorzeichen
+        .split(['e', 'E'])
+        .next()
+        .unwrap_or(ohne_vorzeichen);
+    let ziffern: String = mantisse.chars().filter(char::is_ascii_digit).collect();
+    ziffern.trim_start_matches('0').trim_end_matches('0').len()
 }

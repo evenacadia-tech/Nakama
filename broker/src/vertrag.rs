@@ -129,6 +129,95 @@ pub const SICHERE_GANZZAHL: u64 = 9_007_199_254_740_991;
 /// Betragsgrenze der Gleitkommazahlen des Vertrags: |x| < 1e308.
 pub const DEZ_GRENZE: i64 = 308;
 
+/// Signifikante Dezimalziffern, die der Riegel einem NICHTGANZZAHLIGEN Wert
+/// zugesteht. Spiegel von `nakama::wire::kMaxSignifikant`.
+pub const MAX_SIGNIFIKANT: usize = 15;
+
+/// Die Zahl, die der eigene Textriegel traegt — Spiegel von
+/// `nakama::wire::wireZahl` (`eq-copilot/plugin/core/ipc/WireZahl.h`).
+///
+/// 🔑 **WN3-02 (Nacharbeit 3, 07.09.2026): der Deckel gilt dem TEXT, nicht
+/// dem `double`.** Die Nacharbeit 2 rundete numerisch
+/// (`(x * 10^(14-exp)).round() / 10^(14-exp)`) und hielt die Zusage damit
+/// nicht: `10f64.powi(14 - exponent)` ist ab `exponent <= -9` selbst
+/// ungenau. `2.7e-11` kam als `2.6999999999999997e-11` heraus — SIEBZEHN
+/// signifikante Stellen —, und von 100 000 Werten des Bandes `1e-15..1e-9`
+/// wurden 34 535 vertragswidrig. Kleinstwerte sind auf diesem Rechenweg
+/// normal (`bandpassung` ueber lineare Leistungen, Pearson-`koinzidenz`,
+/// `uplift`); ueber `befund_json` erreichen sie den Snapshot, und dessen
+/// Re-Subscribe faellt daran in `routing_fail_closed`.
+///
+/// Der Weg ist deshalb derselbe wie in C++ und Python: FORMATIEREN mit
+/// hoechstens 15 signifikanten Stellen und zurueckparsen. Der so entstandene
+/// `double` hat damit eine 15-stellige Dezimaldarstellung, die ihn eindeutig
+/// bezeichnet; `serde_json` (Ryu) waehlt die KUERZESTE solche Darstellung und
+/// bleibt deshalb bei hoechstens 15 Stellen.
+///
+/// Die drei uebrigen Regeln entscheidet der Riegel am fertigen Text, und
+/// genau so stehen sie hier:
+///
+/// * **Ganzzahligkeit** — ein exakt ganzzahliger Wert reist in seiner exakten
+///   Form. Gedeckelt wuerde `9007199254740991` zu `9.00719925474099e15`, ein
+///   ANDERER Wert.
+/// * **`+/-(2^53 - 1)`** — darueber ist JEDER `double` ganzzahlig, und genau
+///   die faengt der Riegel.
+/// * **Exponentbereich** — `|dez| < 308`, beurteilt am gedeckelten Text.
+///
+/// Die letzte Entscheidung faellt nicht gegen einen nachgebauten Regelsatz,
+/// sondern gegen `textriegel_bytes` selbst, angewandt auf genau die Bytes,
+/// die `serde_json` schreiben wird. Zwei Regelsaetze fuer dieselbe Grenze
+/// waren die Ursache dieses Befunds; einer bleibt.
+///
+/// Traegt der Riegel den Wert unter keiner Schreibweise, liefert diese
+/// Funktion **0.0** — dieselbe Politik wie fuer Nicht-Endliches und genau der
+/// Ersatzweg, den `wireZahl` seinem Aufrufer nennt („0 ohne Praesenzbit").
+/// Eine Saettigung an der Grenze waere die Behauptung, der Grenzwert sei
+/// gemessen worden.
+///
+/// Nicht fuer den Audio-Thread: die Funktion formatiert und allokiert. Sie
+/// laeuft im Broker, auf dem Serialisierungsweg eines Snapshots.
+pub fn wire_zahl(x: f64) -> f64 {
+    // NaN und +/-Inf reisen nie als Zahl: `serde_json` schriebe `null`, und
+    // `null` ist an keiner dieser Stellen ein gueltiger Wert.
+    if !x.is_finite() {
+        return 0.0;
+    }
+    if x == 0.0 {
+        return 0.0; // deckt +0 und -0 ab
+    }
+
+    let betrag = x.abs();
+    if betrag == betrag.floor() {
+        // Regel 3: exakt ganzzahlig reist exakt — bis zur sicheren Grenze.
+        return if betrag <= SICHERE_GANZZAHL as f64 { x } else { 0.0 };
+    }
+
+    // Regel 4: gedeckelt wird NUR, was einen Nachkommaanteil hat.
+    let Ok(gedeckelt) = format!("{:.*e}", MAX_SIGNIFIKANT - 1, x).parse::<f64>() else {
+        return 0.0;
+    };
+    if !gedeckelt.is_finite() {
+        return 0.0;
+    }
+    if traegt_der_riegel(gedeckelt) {
+        gedeckelt
+    } else {
+        0.0
+    }
+}
+
+/// Haelt einen Wert gegen den Riegel in der Form, in der er wirklich reist.
+///
+/// `serde_json::to_string` schreibt hier dieselben Bytes wie spaeter
+/// `serde_json::to_vec` am Snapshot — die Pruefung misst also den echten Text
+/// und nicht seine Beschreibung.
+fn traegt_der_riegel(wert: f64) -> bool {
+    match serde_json::to_string(&wert) {
+        Ok(text) => textriegel_bytes(format!("{{\"a\":{text}}}").as_bytes()).is_ok(),
+        Err(_) => false,
+    }
+}
+
 fn ist_hexziffer(c: char) -> bool {
     c.is_ascii_digit() || ('a'..='f').contains(&c) || ('A'..='F').contains(&c)
 }
@@ -220,7 +309,7 @@ fn zahl_pruefen(ganz: &str, bruch: &str, exp_ziffern: &str, exp_negativ: bool,
     // nichtganzzahlige Eingabe auf eine Ganzzahl runden. Exakte Integer haben
     // oben bewusst die weitere 2^53-Grenze.
     let signifikante_stellen = signifikant.trim_end_matches('0').len();
-    if schema_ganzzahl_sichern && !ist_ganzzahl && signifikante_stellen > 15 {
+    if schema_ganzzahl_sichern && !ist_ganzzahl && signifikante_stellen > MAX_SIGNIFIKANT {
         return Err(format!(
             "Zahl mit mehr als 15 signifikanten Dezimalziffern: {}",
             kurz(lit)

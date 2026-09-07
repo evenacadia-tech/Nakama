@@ -910,49 +910,21 @@ impl Coordinator {
 /// Leser verwürfe den ganzen Snapshot. Der Ort, an dem eine nicht gerechnete
 /// Zahl ehrlich wird, ist ihr Gültigkeitsbit (`beobachtung.gueltig`), nicht
 /// eine stille Sonderform der Zahl selbst.
+/// 🔑 **WN3-02 (Nacharbeit 3, 07.09.2026): der Deckel sitzt im Vertrag, nicht
+/// hier.** Bis zur Runde 3 stand daneben ein `auf_wirestellen`, das NUMERISCH
+/// rundete (`(x * 10^(14-exp)).round() / 10^(14-exp)`). Der Faktor ist ab
+/// `exponent <= -9` selbst ungenau: `2.7e-11` kam mit siebzehn signifikanten
+/// Stellen heraus, und von 100 000 Werten des Bandes `1e-15..1e-9` wurden
+/// 34 535 vertragswidrig — genau die Groessenordnung, die `bandpassung`,
+/// `koinzidenz` und `uplift` erzeugen. Der Deckel gilt seither der
+/// SERIALISIERTEN Dezimaldarstellung und liegt neben dem Riegel, der sie
+/// beurteilt (`crate::vertrag::wire_zahl`, Spiegel von
+/// `nakama::wire::wireZahl`).
 fn zahl(wert: f64, min: f64, max: f64) -> f64 {
     if !wert.is_finite() {
         return 0.0;
     }
-    auf_wirestellen(wert.clamp(min, max))
-}
-
-/// Rundet auf **15 signifikante Stellen** - die Zahl, die der eigene
-/// Textriegel zulaesst (`vertrag.rs`, `signifikante_stellen > 15`).
-///
-/// 🔑 **WN-03 (Nacharbeit 2, 07.09.2026): ohne sie ist der Re-Subscribe
-/// unerreichbar.** `beobachtung.wert_db` entsteht aus einem `f32`; als `f64`
-/// gedruckt hat `-3.3f32` sechzehn signifikante Stellen
-/// (`-3.2999999523162842`), und dieselbe Laenge tragen die Rangkomponenten
-/// aus der Bruchrechnung. Der Broker persistierte damit eine
-/// Sessionprojektion, die sein EIGENER Leser verwirft: jeder
-/// `resubscribe_snapshot_push` fiel an `v3_nachricht_lesen` in
-/// `routing_fail_closed`, sobald die Sitzung einen Befund trug. Ein
-/// Sendepfad, dessen Bytes niemand lesen darf, ist kein Sendepfad - und die
-/// Haertung aus WN-03 haette nichts, woran sie greifen koennte.
-///
-/// Die Rundung ist verlustfrei in dem Sinn, den der Vertrag meint: `f32`
-/// traegt rund sieben signifikante Stellen, und keine Zusage dieses Tickets
-/// haengt an der sechzehnten.
-fn auf_wirestellen(wert: f64) -> f64 {
-    if wert == 0.0 || !wert.is_finite() {
-        return wert;
-    }
-    let exponent = wert.abs().log10().floor() as i32;
-    // Ausserhalb dieses Bereichs wuerde der Faktor selbst ueberlaufen. Die
-    // Werte dieses Datenwegs sind geklemmt und erreichen ihn nie; der Zaun
-    // steht trotzdem, weil eine Rundung, die Unendlich erzeugt, schlimmer
-    // waere als eine Stelle zu viel.
-    if !(-290..=290).contains(&exponent) {
-        return wert;
-    }
-    let faktor = 10f64.powi(14 - exponent);
-    let gerundet = (wert * faktor).round() / faktor;
-    if gerundet.is_finite() {
-        gerundet
-    } else {
-        wert
-    }
+    crate::vertrag::wire_zahl(wert.clamp(min, max))
 }
 
 /// Kürzt einen Anzeigetext auf die Vertragslänge (200 Zeichen), in

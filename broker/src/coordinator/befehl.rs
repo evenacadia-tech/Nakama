@@ -18,6 +18,25 @@ pub(super) struct Domaenenereignis {
     pub(super) ziele: Vec<SnapshotZiel>,
 }
 
+/// **NAK-214 R4/E8: eine Vorbedingung, die NACH dem Idempotenzblock und VOR
+/// dem Append ausgewertet wird.**
+///
+/// Die Reihenfolge ist die ganze Zusage. `persistenz_p0_intern` loest die
+/// Idempotenz VOR jeder Zustandsfrage auf — „ein bereits committeter Befehl
+/// bleibt auch nach Reconnect dieselbe Wirkung". Eine Vorbedingung davor
+/// braeche das: ein Urteil zu Befund F wird angenommen, F wird
+/// zurueckgenommen, der Client wiederholt seinen Befehl — und bekaeme
+/// `abgelehnt` auf einen Befehl, der bereits angewandt IST.
+pub(super) enum P0Vorbedingung<'a> {
+    Keine,
+    /// Die Zielsitzung muss einen Befund mit dieser `finding_id` fuehren.
+    ///
+    /// Der ZUSTAND des Befunds ist keine Bedingung: `stale` und `more_data`
+    /// sind existente Befunde, und ein Urteil ueber einen Befund, den der
+    /// User gesehen hat, ist gueltige Userarbeit.
+    BefundExistiert(&'a str),
+}
+
 impl Coordinator {
     pub(super) fn command_ack(
         command_id: &str,
@@ -114,8 +133,25 @@ impl Coordinator {
         domaene: Vec<Domaenenereignis>,
     ) -> (Option<Vec<u8>>, Vec<i64>) {
         let mut ords = Vec::new();
-        let ack = self.persistenz_p0_intern(link_id, wert, domaene, &mut ords);
+        let ack =
+            self.persistenz_p0_intern(link_id, wert, domaene, P0Vorbedingung::Keine, &mut ords);
         (ack, ords)
+    }
+
+    /// Derselbe Weg MIT einer Vorbedingung (NAK-214 R4).
+    ///
+    /// Sie steht als eigener Einstieg da, damit die Signatur des bestehenden
+    /// buchstaeblich unveraendert bleibt: `user_verdict_p0` ist der einzige
+    /// Aufrufer, der eine Vorbedingung mitgibt.
+    pub(super) fn persistenz_p0_mit_vorbedingung(
+        &self,
+        link_id: &str,
+        wert: &Value,
+        domaene: Vec<Domaenenereignis>,
+        vorbedingung: P0Vorbedingung<'_>,
+    ) -> Option<Vec<u8>> {
+        let mut ords = Vec::new();
+        self.persistenz_p0_intern(link_id, wert, domaene, vorbedingung, &mut ords)
     }
 
     fn persistenz_p0_intern(
@@ -123,6 +159,7 @@ impl Coordinator {
         link_id: &str,
         wert: &Value,
         domaene: Vec<Domaenenereignis>,
+        vorbedingung: P0Vorbedingung<'_>,
         ords: &mut Vec<i64>,
     ) -> Option<Vec<u8>> {
         let kopf = wert.get("kopf")?;
@@ -183,6 +220,47 @@ impl Coordinator {
         // und stellt ihn den Abonnenten zu. Die Haertung steht deshalb VOR
         // dem Lock - sie nimmt ihn selbst.
         self.befunde_gegen_store_haerten(&session);
+
+        // 🔑 **NAK-214 R4 (08.09.2026): DER VORBEDINGUNGSRIEGEL.**
+        //
+        // Er steht HINTER dem Idempotenzblock, und die Reihenfolge ist die
+        // ganze Zusage: ein bereits committeter Befehl bleibt auch nach
+        // Reconnect dieselbe Wirkung. Ein Riegel DAVOR braeche genau das —
+        // ein Urteil zu Befund F wird angenommen, F wird zurueckgenommen,
+        // der Client wiederholt seinen Befehl, und bekaeme
+        // `abgelehnt/unknown_target` auf einen Befehl, der bereits angewandt
+        // ist. Zwei verschiedene Antworten auf denselben `command_id`, und
+        // das persistierte Urteil laege trotzdem im Store.
+        //
+        // Er steht zugleich HINTER `befunde_gegen_store_haerten`: die
+        // Haertung laeuft im P0-Pfad ohnehin und bleibt unveraendert, und
+        // der Riegel liest danach den Bestand, aus dem der Snapshot entsteht
+        // — den, den der User gesehen hat.
+        if let P0Vorbedingung::BefundExistiert(finding_id) = vorbedingung {
+            let existiert = {
+                let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+                stand.befunde.get(&session).is_some_and(|liste| {
+                    liste.iter().any(|b| b.finding_id == finding_id)
+                })
+            };
+            if !existiert {
+                // `unknown_target` und KEIN neuer Code: er bedeutet im
+                // gebauten Broker bereits „das im Befehl adressierte
+                // Domaenenobjekt existiert nicht" — dieselbe Antwort geben
+                // die drei Experimentzweige fuer eine unbekannte
+                // `experiment_id`. Ein eigener Code waere ein
+                // Fassungsschritt fuer eine Unterscheidung, die der Vertrag
+                // schon trifft, und der C++-Leser wiese ihn ab (NB-3).
+                return Self::command_ack(
+                    command_id,
+                    "abgelehnt",
+                    base_revision,
+                    None,
+                    Some("unknown_target"),
+                );
+            }
+        }
+
         let zielstand: Result<
             (u64, String, Value, Vec<SnapshotZiel>),
             (u64, Option<String>, &'static str, &'static str),
@@ -563,8 +641,18 @@ impl Coordinator {
             payload,
             ziele: Vec::new(),
         }];
-        let (ack, _) = self.persistenz_p0_mit_domaene_und_ords(link_id, wert, domaene);
-        ack
+        // 🔑 **NAK-214 R4:** das Urteil wird nur angenommen, wenn die
+        // Sitzung diesen Befund WIRKLICH fuehrt. Der ZUSTAND des Befunds
+        // spielt dabei keine Rolle — `stale` und `more_data` sind existente
+        // Befunde, und das Urteil des Users ueber einen Befund, den er
+        // gesehen hat, ist gueltige Userarbeit. R4 nennt ausschliesslich die
+        // Existenz.
+        self.persistenz_p0_mit_vorbedingung(
+            link_id,
+            wert,
+            domaene,
+            P0Vorbedingung::BefundExistiert(&finding_id),
+        )
     }
 
     pub(super) fn p0_json(&self, link_id: &str, payload: &[u8]) -> Option<Vec<u8>> {

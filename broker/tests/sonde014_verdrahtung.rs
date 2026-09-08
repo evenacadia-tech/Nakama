@@ -3300,3 +3300,186 @@ fn besseres_paar_hebt_die_klasse() {
         "es ist derselbe Befund - nur seine Aussagekraft ist gewachsen"
     );
 }
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-214 R4 · der `user_verdict`-Riegel (V-30 bis V-36)
+// ═════════════════════════════════════════════════════════════════════════
+//
+// `user_verdict_p0` legte das Urteil bisher ab, ohne dass der Befund
+// existieren musste (G5-Befund E-L5). Der Riegel prüft die EXISTENZ und
+// nichts sonst — der Zustand des Befunds ist keine Bedingung (E8).
+
+/// Ein `user_verdict` als P0-Nachricht, aus dem committeten Korpus.
+fn user_verdict_wert(ziel: &Adresse, command: usize, finding_id: &str) -> Value {
+    let mut wert = fixture("user_verdict");
+    wert["kopf"]["ziel"] = serde_json::to_value(ziel).unwrap();
+    wert["kopf"]["command_id"] = json!(hex(command));
+    wert["kopf"]["base_revision"] = json!(0);
+    wert["finding_id"] = json!(finding_id);
+    wert["user_verdict_id"] = json!(hex(0xc0c0 + command));
+    wert
+}
+
+/// Die Antwort auf ein `user_verdict`, über den echten P0-Weg.
+fn urteil_senden(c: &Coordinator, wert: &Value) -> Value {
+    let antwort = Senke::p0(c, "main", &bytes(wert)).expect("user_verdict wird beantwortet");
+    serde_json::from_slice(&antwort).expect("das Ack ist JSON")
+}
+
+/// **V-30, V-31, V-32 (Kontrollfälle) und V-33, V-34 (der Befund E-L5).**
+///
+/// Ein Urteil auf einen existenten Befund wird angenommen und persistiert —
+/// gleich, in welchem Zustand er ist. Eines auf eine `finding_id` mit 32
+/// gültigen Hexzeichen, die kein Befund trägt, wird abgewiesen, und es liegt
+/// danach NICHTS im Store.
+///
+/// Rotbeweis `NAK-214-rot-V-33.txt`.
+#[test]
+#[cfg(windows)]
+fn user_verdict_ohne_befund_wird_abgewiesen() {
+    let (c, writer, _ordner) = coordinator_mit_store("nak214-v33");
+    let (a, _passage_id) = buehne_mit_passage(&c, 1, 12);
+    let befunde = befunde_der_sitzung(&c);
+    assert!(!befunde.is_empty(), "die Buehne traegt Befunde");
+    let existent = befunde[0].finding_id.clone();
+
+    // V-30 — der Kontrollfall: ein existenter Befund.
+    let ack = urteil_senden(&c, &user_verdict_wert(&a[0], 0x9401, &existent));
+    assert_eq!(
+        ack["ergebnis"], "angewandt",
+        "V-30: ein Urteil auf einen existenten Befund wird angewandt: {ack:?}"
+    );
+    assert!(
+        ack["state_hash"].is_string(),
+        "und traegt seinen state_hash: {ack:?}"
+    );
+    assert!(
+        writer
+            .handle()
+            .command_event_lesen(&hex(0x9401))
+            .expect("Store ist lesbar")
+            .is_some(),
+        "der Befehl liegt im Store"
+    );
+
+    // V-33 — 32 gueltige Hexzeichen, die kein Befund traegt.
+    let unbekannt = hex(0xdead);
+    assert_eq!(unbekannt.len(), 32, "der Zahlenrand: gueltige Form, unbekannt");
+    assert!(
+        !befunde.iter().any(|b| b.finding_id == unbekannt),
+        "Vorbedingung: die Sitzung fuehrt diesen Befund nicht"
+    );
+    let ack = urteil_senden(&c, &user_verdict_wert(&a[0], 0x9402, &unbekannt));
+    assert_eq!(
+        ack["ergebnis"], "abgelehnt",
+        "V-33: ein Urteil ohne Befund wird abgewiesen: {ack:?}"
+    );
+    assert_eq!(
+        ack["code"], "unknown_target",
+        "und zwar mit dem Code, den der C++-Leser kennt (E7): {ack:?}"
+    );
+    assert!(
+        writer
+            .handle()
+            .command_event_lesen(&hex(0x9402))
+            .expect("Store ist lesbar")
+            .is_none(),
+        "V-33: NICHTS wird persistiert - kein command_event"
+    );
+
+    // V-36 — dieselbe Abweisung noch einmal: stabil, weil nichts committet
+    // wurde. Idempotenz auch im Abweisungszweig.
+    let wieder = urteil_senden(&c, &user_verdict_wert(&a[0], 0x9402, &unbekannt));
+    assert_eq!(wieder["ergebnis"], "abgelehnt");
+    assert_eq!(wieder["code"], "unknown_target");
+    assert_eq!(
+        wieder["state_revision"], ack["state_revision"],
+        "V-36: dieselbe Antwort mit derselben Revision"
+    );
+}
+
+/// **V-31 und V-32.** `more_data` und `stale` sind existente Befunde — der
+/// Riegel greift NICHT zu weit. R4 nennt ausschließlich die Existenz (E8).
+///
+/// Die Zustände kommen aus dem Broker selbst: `zustand_aus_sicherheit`
+/// bildet sie, und die Bühne trägt beide Klassen.
+#[test]
+#[cfg(windows)]
+fn user_verdict_auf_more_data_und_stale_wird_angenommen() {
+    let (c, writer, _ordner) = coordinator_mit_store("nak214-v31");
+    let (a, _passage_id) = buehne_mit_passage(&c, 2, 12);
+    let befunde = befunde_der_sitzung(&c);
+    assert!(!befunde.is_empty());
+
+    let nicht_ready: Vec<_> = befunde
+        .iter()
+        .filter(|b| b.zustand != eqcop_broker::coordinator::Befundzustand::ReadyToSend)
+        .collect();
+    assert!(
+        !nicht_ready.is_empty(),
+        "Vorbedingung: die Buehne traegt mindestens einen Befund, der NICHT \
+         handelbar ist: {:?}",
+        befunde.iter().map(|b| b.zustand).collect::<Vec<_>>()
+    );
+    for (i, b) in nicht_ready.iter().enumerate() {
+        let command = 0x9410 + i;
+        let ack = urteil_senden(&c, &user_verdict_wert(&a[0], command, &b.finding_id));
+        assert_eq!(
+            ack["ergebnis"], "angewandt",
+            "V-31/V-32: der Zustand {:?} ist keine Bedingung: {ack:?}",
+            b.zustand
+        );
+        assert!(
+            writer
+                .handle()
+                .command_event_lesen(&hex(command))
+                .expect("Store ist lesbar")
+                .is_some(),
+            "und das Urteil liegt im Store"
+        );
+    }
+}
+
+/// **V-35.** Der Riegel steht HINTER dem Idempotenzblock: ein bereits
+/// angewandter Befehl bleibt dieselbe Wirkung, auch wenn sein Befund
+/// inzwischen fort ist.
+///
+/// Ohne diese Reihenfolge bekäme derselbe `command_id` zwei verschiedene
+/// Antworten, und das persistierte Urteil bliebe trotzdem liegen.
+///
+/// Rotbeweis `NAK-214-rot-V-35.txt`.
+#[test]
+#[cfg(windows)]
+fn wiederholtes_urteil_bleibt_idempotent_auch_ohne_befund() {
+    let (c, _writer, _ordner) = coordinator_mit_store("nak214-v35");
+    let (a, _passage_id) = buehne_mit_passage(&c, 1, 12);
+    let befunde = befunde_der_sitzung(&c);
+    let id = befunde[0].finding_id.clone();
+    let wert = user_verdict_wert(&a[0], 0x9420, &id);
+
+    let erste = urteil_senden(&c, &wert);
+    assert_eq!(erste["ergebnis"], "angewandt", "{erste:?}");
+
+    // Der Befund faellt: das fuehrende Main zieht sich zurueck, die Rechnung
+    // laeuft neu, und die Sitzung fuehrt ihn nicht mehr unter dieser ID.
+    assert!(c.beitritt_aufheben(&hex(0x11), &hex(0x22), &a[0].instance_id));
+    reihe_wechselnd(&c, "sonde0", &a[1].clone(), 300, 2);
+    assert!(
+        !befunde_der_sitzung(&c).iter().any(|b| b.finding_id == id),
+        "Vorbedingung: der Befund ist fort: {:?}",
+        befunde_der_sitzung(&c)
+            .iter()
+            .map(|b| b.finding_id.clone())
+            .collect::<Vec<_>>()
+    );
+
+    let wieder = urteil_senden(&c, &wert);
+    assert_eq!(
+        wieder["ergebnis"], "idempotent_wiederholt",
+        "V-35: ein bereits angewandter Befehl bleibt dieselbe Wirkung: {wieder:?}"
+    );
+    assert_eq!(
+        wieder["state_hash"], erste["state_hash"],
+        "mit demselben state_hash"
+    );
+}

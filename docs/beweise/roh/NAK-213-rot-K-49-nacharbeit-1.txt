@@ -1,0 +1,89 @@
+NAK-213 Rotbeweis K-49 - der Broker laeuft mit Store, und die Zeile misst das auch (R5, E8)
+Datum: 2026-09-08 (Nacharbeit 1, Erstpruefungsbefund 3)
+
+Zurueckgenommen: `invalidierung_alleine_persistieren` kehrt sofort mit
+`Ok(None)` zurueck (`invalidierung_verdrahtung.rs`, eine Zeile:
+`if true { return Ok(None); }` hinter dem Store-Riegel). Das ist GENAU der
+Zustand, den die bisherige Fassung dieser Zeile hatte: `coordinator()` erzeugt
+`Coordinator::mit_uhr` OHNE Store, und die Invalidierung erreicht dann
+ausschliesslich den `Ok(None)`-Zweig - weder ihre Persistierung noch ihre
+Zustellung.
+
+Erwartete Wirkung - und genau die Aussage des Pruefers: die BISHERIGEN
+Pruefungen dieser Zeile bleiben GRUEN. Der Invalidierungszaehler steht auf
+`vorher + 1`, und der Befund ueber die Sonde ist entfernt. Erst die neuen
+Pruefungen fallen:
+
+    "die acht Belege sind IM STORE ausgeschlossen - nicht nur im
+     fluechtigen Bestand"
+
+K-49 verlangt woertlich „Der Broker laeuft mit Store". Ohne ihn konnte die
+Zeile gruen sein, waehrend genau der produktive Teil fehlerhaft war.
+
+K-55 faellt in diesem Rotzustand mit - folgerichtig: ohne Persistierung gibt
+es kein `Err(())`, der Kanalwechsel wird angenommen, und die Sonde traegt
+danach keinen Befund mehr.
+
+========================================================================
+Rotlauf (Zeile K-49, Test `kanalwechsel_ueber_den_heartbeat_befehl`)
+Befehl: cargo test --no-fail-fast --manifest-path broker/Cargo.toml --color never --test sonde014_verdrahtung
+Exitcode: 101
+========================================================================
+running 35 tests
+test fremde_adresse_wird_abgewiesen ... ok
+test entmaskierungsveto_wirkt_im_spiegel_wie_im_main ... ok
+test die_neuen_familien_erben_die_ordnung_von_verbinden_und_trennen ... ok
+test assistant_step_update_koalesziert_je_session ... ok
+test ein_frischer_broker_traegt_weder_intent_noch_schritt ... ok
+test angenommene_und_abgewiesene_meldungen_sind_zaehlbar ... ok
+test intent_update_koalesziert_je_quelle_und_scope ... ok
+test die_vollstaendigkeitsmarke_deckt_beide_bestaende ... ok
+test keine_rechnung_vor_der_vollstaendigkeitsmarke ... ok
+test consumerregeln_des_intents_fallen_einzeln ... ok
+test ohne_jeden_beleg_entsteht_keine_aufnahme ... ok
+test intent_update_unter_der_fassung_zwei_wird_abgewiesen ... ok
+test sitzungsende_loescht_den_spiegel ... ok
+test gleicher_kanal_nimmt_nichts_zurueck ... ok
+test kanalwechsel_ohne_belege_sendet_nichts ... ok
+test master_ist_das_gefuehrte_main_nicht_das_letzte ... ok
+test beitritt_nach_der_rechnung_ersetzt_die_befunde ... ok
+test rueckzug_und_bestaetigung_geben_die_rechnung_frei ... ok
+test teilmeldung_mit_mehreren_objekten_wird_abgewiesen ... ok
+test teilupdate_fremden_schluessels_ueberlebt_eine_koaleszierung ... ok
+test keine_rechnung_ohne_jede_intentmeldung ... ok
+test spaeter_beitritt_deckelt_ab_der_bestaetigung ... ok
+test spiegel_weicht_dem_neueren_main_schritt ... ok
+test partner_ohne_routing_ist_kein_duplikat ... ok
+test stale_quelle_deckelt_nicht ... ok
+test zweites_main_ohne_sonden_enthaelt_sich_mit_den_belegen_des_ersten ... ok
+test sitzung_ohne_gueltige_evidenz_erzeugt_keinen_befund ... ok
+test stumme_quelle_ist_sichtbarer_kandidat ... ok
+test stumme_quelle_setzt_die_duplikatmarke ... ok
+test zweites_main_hebt_bestaetigte_fuehrung_nicht_auf ... ok
+test zurueckgenommener_partner_bleibt_duplikat ... ok
+test kanalwechsel_invalidiert_nur_diese_quelle ... ok
+test veraltetes_rechenergebnis_wird_nicht_veroeffentlicht ... ok
+test kanalwechsel_ueber_den_heartbeat_befehl ... FAILED
+test kanalwechsel_ohne_store_append_bleibt_beim_alten_kanal ... FAILED
+
+failures:
+
+---- kanalwechsel_ueber_den_heartbeat_befehl stdout ----
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde014-k49-heartbeat-befehl-16576-468c66309c224001bd36a9c77972e903\nakama-broker.sqlite3
+
+thread 'kanalwechsel_ueber_den_heartbeat_befehl' (27292) panicked at tests\sonde014_verdrahtung.rs:2011:5:
+die acht Belege sind IM STORE ausgeschlossen — nicht nur im fluechtigen Bestand
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- kanalwechsel_ohne_store_append_bleibt_beim_alten_kanal stdout ----
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde014-k55-kanal-rueckweg-16576-cd934b8ff22d436b8bd2e60021173238\nakama-broker.sqlite3
+
+thread 'kanalwechsel_ohne_store_append_bleibt_beim_alten_kanal' (24128) panicked at tests\sonde014_verdrahtung.rs:2125:40:
+die Sonde traegt weiterhin einen Befund
+
+
+failures:
+    kanalwechsel_ohne_store_append_bleibt_beim_alten_kanal
+    kanalwechsel_ueber_den_heartbeat_befehl
+
+test result: FAILED. 33 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 9.85s

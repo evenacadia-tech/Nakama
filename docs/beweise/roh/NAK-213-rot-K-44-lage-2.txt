@@ -1,0 +1,91 @@
+NAK-213 Rotbeweis K-44 Lage 2 - nur die zweite Lage misst die Konkurrenzregel (R2, K-14)
+Datum: 2026-09-08 (Nacharbeit 1, Erstpruefungsbefund 4)
+
+Zurueckgenommen: `evidenz_zurueckgenommen` gilt nicht mehr als Messgrund
+(`hypothese.rs`, `Ausschlussgrund::ist_messgrund`, eine Zeile entfernt). Damit
+senkt der Ausschluss eines Konkurrenten die Klasse des Fuehrenden nicht mehr -
+die Konkurrenzlage bleibt `Vollstaendig`, obwohl C ausgeschieden ist.
+
+Erwartete Wirkung - und genau die Aussage des Pruefers:
+
+  LAGE 1 bleibt GRUEN. Ihr Protokoll meldet weiter „=> starke Befunde: 0",
+  denn bei konstantem Pegel ist ohnehin kein Uplift messbar (NAK-212 R1).
+  Die bisherige Pruefung `stark(&nachher) == 0` haette diesen Eingriff also
+  NICHT bemerkt - sie war schon aus einem anderen Grund erfuellt.
+
+  LAGE 2 faellt:
+      konkurrenzlage(...) left: Vollstaendig  right: Messausschluss
+      Ausschluss { candidate_source: "...0003", grund: EvidenzZurueckgenommen }
+
+Der ausgeschiedene Konkurrent steht sichtbar in der Liste (M-87), aber seine
+WIRKUNG auf die Klasse ist fort. Genau diese zusaetzliche Regel belegt nur die
+zweite Lage, und genau sie fehlte.
+
+========================================================================
+Rotlauf (Zeile K-44 Lage 2, Test `f4_kanalwechsel_zwischen_den_fenstern`)
+Befehl: cargo test --no-fail-fast --manifest-path broker/Cargo.toml --color never --test sonde014_gegenbeispiele
+Exitcode: 101
+========================================================================
+running 17 tests
+test eigen3_antikorrelierte_quelle ... ok
+test eigen4_quelle_im_falschen_band ... ok
+test a1_intent_rolle_trennt_identische_kandidaten_nicht ... ok
+test eigen5_antikorreliert_neben_korreliert ... ok
+test d4_umklammernde_und_disjunkte_spanne ... ok
+test f4b_drei_sonden_auf_einem_kanal ... ok
+test f8b_master_ohne_fenster ... ok
+test a3_sonde_auf_masterkanal ... ok
+test f7_rangdifferenz_am_quantum ... ok
+test f8_zwei_master_mit_widersprechendem_befundband ... ok
+test f4_kanalwechsel_zwischen_den_fenstern ... FAILED
+test d2_fuehrender_wird_gegen_jeden_geprueft ... ok
+test a4_masteranomalie_ausserhalb_der_passage ... ok
+test d3_passage_ohne_masterfenster_ergibt_enthaltung ... ok
+test f5b_gleiche_passage_id_verschobenes_fenster ... ok
+test einzelueberlebender_neben_passagenausschluss ... ok
+test f5_passagenrandwerte ... ok
+
+failures:
+
+---- f4_kanalwechsel_zwischen_den_fenstern stdout ----
+── F4 Lage 1: beide Sonden auf Mixerkanal 7 ──
+   quelle=..02 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.183623
+     rang: bandpassung=0.101738 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=1 ausschluesse=[]
+   quelle=..03 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.183302
+     rang: bandpassung=0.099809 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=1 ausschluesse=[]
+   => starke Befunde: 0
+── F4 Lage 1: nach dem Kanalwechsel von C (7 -> 9), C misst weiter ──
+   quelle=..02 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.266956
+     rang: bandpassung=0.101738 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=1 ausschluesse=[]
+   quelle=..03 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.266635
+     rang: bandpassung=0.099809 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=1 ausschluesse=[]
+   => starke Befunde: 0
+── F4 Lage 2: beide Sonden auf Mixerkanal 7 ──
+   quelle=..02 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.183623
+     rang: bandpassung=0.101738 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=1 ausschluesse=[]
+   quelle=..03 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.183302
+     rang: bandpassung=0.099809 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=1 ausschluesse=[]
+   => starke Befunde: 0
+── F4 Lage 2: nach dem Kanalwechsel von C (7 -> 9), C misst NICHT mehr ──
+   quelle=..02 klasse=Mittel zustand=MoreData ursache=QuelleResonanz score=0.266956
+     rang: bandpassung=0.101738 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=0 ausschluesse=[("03", "evidenz_zurueckgenommen")]
+   => starke Befunde: 0
+
+thread 'f4_kanalwechsel_zwischen_den_fenstern' (17560) panicked at tests\sonde014_gegenbeispiele.rs:1330:9:
+assertion `left == right` failed: und das ist der GEMESSENE Grund der Senkung — nicht nur `stark == 0`: [Ausschluss { candidate_source: "00000000000000000000000000000003", grund: EvidenzZurueckgenommen }]
+  left: Vollstaendig
+ right: Messausschluss
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    f4_kanalwechsel_zwischen_den_fenstern
+
+test result: FAILED. 16 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 31.66s

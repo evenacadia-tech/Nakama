@@ -717,6 +717,44 @@ impl Coordinator {
         Some(descriptor)
     }
 
+    /// Nimmt den KANALTEIL eines Deskriptorersatzes zurueck (R5, E8 —
+    /// Rueckweg; Erstpruefungsbefund 2, Nacharbeit 1, 08.09.2026).
+    ///
+    /// 🔑 Beide Ingresse ersetzen den Deskriptor, bevor die Invalidierung des
+    /// Kanalwechsels laeuft. Verweigert der Store ihren Append, war der
+    /// Wechsel dennoch schon sichtbar: `aufnahmen_sammeln` las den NEUEN
+    /// Kanal, und der Fehlerzweig rechnete die alten Fenster unter ihm neu.
+    /// Diese Funktion stellt den Stand von VOR dem Wechsel wieder her — nur
+    /// den Kanal, denn nur er ist an die Invalidierung gebunden. Der
+    /// Positionswechsel hat seinen eigenen, unveraenderten Weg (SONDE-013
+    /// R24, §2.9 Nr. 4).
+    ///
+    /// ⚠️ `alt` ist die VERTRAGSGEFILTERTE Sicht (`>= 1`, sonst `None`, E6/
+    /// K-24). Stand im alten Deskriptor ein Wert unter 1, faellt das Feld
+    /// beim Rueckweg ganz weg — dieselbe Aussage („nicht geliefert") in der
+    /// vertragsgueltigen Form. Ein dritter Zustand entsteht dabei nicht.
+    pub(super) fn kanal_im_deskriptor_zuruecksetzen(&self, key: &ClientKey, alt: Option<i64>) {
+        let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+        let Some(client) = stand.clients.get_mut(key) else {
+            return;
+        };
+        let Some(objekt) = client
+            .descriptor
+            .as_mut()
+            .and_then(|d| d.as_object_mut())
+        else {
+            return;
+        };
+        match alt {
+            Some(index) => {
+                objekt.insert("host_mixer_index".into(), Value::from(index));
+            }
+            None => {
+                objekt.remove("host_mixer_index");
+            }
+        }
+    }
+
     pub fn descriptor_setzen(&self, link_id: &str, mut descriptor: Value) -> bool {
         // H-17: der Setter prueft den Deskriptor gegen den v3-Vertrag, bevor er
         // ihn uebernimmt - nicht nur die Adresse. Damit gilt fuer JEDEN Weg

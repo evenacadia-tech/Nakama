@@ -56,6 +56,35 @@ impl Coordinator {
         session: &SessionKey,
         invalidierung: &Invalidierung,
     ) -> Result<usize, ()> {
+        // Kein Ausloeser ohne eigenen Rueckweg: die Bedeutung ist unveraendert.
+        self.invalidierung_anwenden_mit_rueckweg(session, invalidierung, |_| {})
+    }
+
+    /// Derselbe Weg — mit dem RUECKWEG DES AUSLOESERS (Erstpruefungsbefund 2,
+    /// Nacharbeit 1, 08.09.2026).
+    ///
+    /// 🔑 **Der Fehlerzweig rechnet neu. Wer VOR dieser Invalidierung schon
+    /// etwas veraendert hat, muss es VORHER zuruecknehmen.**
+    ///
+    /// Der Kanalwechsel ist genau so ein Ausloeser: `heartbeat_kontakt`
+    /// ersetzt den Deskriptor UNTER dem Lock (`liveness.rs`:431), die
+    /// Invalidierung laeuft wie der Positionsvergleich NACH dem Lock.
+    /// Verweigert der Store den Append, nahm der Fehlerzweig bis hierher nur
+    /// die Evidenzausschluesse zurueck und rechnete sofort neu — mit dem
+    /// BEREITS gewechselten Kanal. Die alten Fenster zaehlten dann unter dem
+    /// neuen Kanal, bis hin zu `hoch`, und das anschliessende
+    /// `link.trennen = true` verhinderte diese Neuberechnung nicht mehr: sie
+    /// war gelaufen. Genau das verbietet R5.
+    ///
+    /// `rueckweg` laeuft AUSSCHLIESSLICH im `Err`-Fall und als ERSTES —
+    /// vor der Ruecknahme der Ausschluesse und vor der Neubildung. Er laeuft
+    /// OHNE gehaltenen Standlock; er darf ihn selbst nehmen.
+    pub(super) fn invalidierung_anwenden_mit_rueckweg(
+        &self,
+        session: &SessionKey,
+        invalidierung: &Invalidierung,
+        rueckweg: impl FnOnce(&Self),
+    ) -> Result<usize, ()> {
         let Some(wirkung) = self.invalidierung_vorbereiten(session, invalidierung) else {
             return Ok(0);
         };
@@ -76,6 +105,10 @@ impl Coordinator {
                 Ok(betroffen)
             }
             Err(()) => {
+                // ZUERST der Rueckweg des Ausloesers: was diese Invalidierung
+                // begleitet hat, gilt erst, wenn sie selbst gilt. Erst danach
+                // darf gerechnet werden.
+                rueckweg(self);
                 self.invalidierung_ruecknehmen(wirkung);
                 // Die Ruecknahme hat die Befunde als neu zu bilden markiert;
                 // eingeloest wird sie HIER und nicht erst beim naechsten
@@ -479,7 +512,21 @@ impl Coordinator {
         if !invalidierung.gueltig() {
             return Ok(0);
         }
-        self.invalidierung_anwenden(session, &invalidierung)
+        // 🔑 **Nacharbeit 1 (08.09.2026, Erstpruefungsbefund 2): der
+        // Kanalwechsel wird erst wirksam, wenn seine Invalidierung ANGENOMMEN
+        // ist.**
+        //
+        // Beide Ingresse ersetzen den Deskriptor, BEVOR sie hierher kommen —
+        // `heartbeat_kontakt` unter dem Lock (`liveness.rs`:431),
+        // `descriptor_setzen` ebenso. Scheitert der Store-Append, rechnet der
+        // Fehlerzweig neu; ohne diesen Rueckweg taete er das mit dem NEUEN
+        // Kanal, und Cs zwoelf alte Fenster zaehlten unter Kanal 9 — bis hin
+        // zu `hoch`. Der Rueckweg steht HIER und nicht an den zwei
+        // Aufrufstellen: eine Regel an nur einer von ihnen waere an der
+        // anderen still ausser Kraft (dieselbe Lehre wie E8).
+        self.invalidierung_anwenden_mit_rueckweg(session, &invalidierung, |koordinator| {
+            koordinator.kanal_im_deskriptor_zuruecksetzen(key, alt);
+        })
     }
 
     /// Derselbe Ausloeser OHNE bekannten Bereich (M-52, Befund R25).

@@ -63,6 +63,11 @@ pub use intent::{IntentAbweisung, IntentBestand, SchutzangabeSpiegel, SourceInte
                  INTENT_DECKEL};
 pub use prepost_verdrahtung::PAARURTEIL_DECKEL;
 pub use hypothese::{
+    // `konkurrenzlage` reist mit: eine Zeile, die den GRUND einer
+    // Klassensenkung misst (K-44 Lage 2), soll die Produktfunktion fragen und
+    // ihre Regel nicht im Bein nachbauen — zwei Fassungen derselben
+    // Praezedenz waeren zwei Gelegenheiten, sie verschieden zu formulieren.
+    konkurrenzlage,
     rang_quantisiert, Ausschluss, Ausschlussgrund, Aussageklasse, Befundkonfidenz, Befundzustand,
     CauseHypothesis, Konkurrenzlage, NaechsterTest, Sicherheitsklasse, Ursachenklasse, Zielmetrik,
     stufe_b_max_je_rechnung, stufe_b_zaehler_zuruecksetzen, Zusammenhangsbeleg,

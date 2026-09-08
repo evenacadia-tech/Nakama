@@ -165,6 +165,16 @@ fn anmelden_mit_deskriptor_und_host(
 }
 
 fn evidenz(a: &Adresse, nr: usize, projekt_start: i64) -> Vec<u8> {
+    evidenz_mit_anhebung(a, nr, projekt_start, 90)
+}
+
+/// Dieselbe Fixture mit STEUERBARER Anhebung im Anomalieband.
+///
+/// Eine konstante Anhebung ist kein messbarer Uplift (NAK-212 R1): jede Reihe
+/// aus `reihe` bleibt deshalb bei `mittel`. Wo eine Zeile den POSITIVEN
+/// Zusammenhang braucht — und damit die Lage, in der `hoch` ueberhaupt
+/// erreichbar ist —, wechselt die Anhebung von Fenster zu Fenster.
+fn evidenz_mit_anhebung(a: &Adresse, nr: usize, projekt_start: i64, anhebung: i64) -> Vec<u8> {
     static ROH: std::sync::OnceLock<Value> = std::sync::OnceLock::new();
     let mut wert = ROH
         .get_or_init(|| {
@@ -188,7 +198,7 @@ fn evidenz(a: &Adresse, nr: usize, projekt_start: i64) -> Vec<u8> {
         if let Some(Value::Array(werte)) = wert.pointer_mut(pfad) {
             for index in ANOMALIEBAND..(ANOMALIEBAND + 4).min(werte.len()) {
                 let alt = werte[index].as_i64().unwrap_or(0);
-                werte[index] = json!(alt + 90);
+                werte[index] = json!(alt + anhebung);
             }
         }
     }
@@ -198,6 +208,21 @@ fn evidenz(a: &Adresse, nr: usize, projekt_start: i64) -> Vec<u8> {
 fn reihe(c: &Coordinator, link: &str, a: &Adresse, ab_nr: usize, anzahl: usize) {
     for i in 0..anzahl {
         c.p1(link, &evidenz(a, ab_nr + i, 44_108_200 + (i as i64) * 512));
+    }
+}
+
+/// Dieselbe Reihe mit WECHSELNDER Anhebung — die Lage mit positivem
+/// Zusammenhang. Das letzte Fenster ist laut, damit `masteranomalie` dieselbe
+/// Bandgruppe findet wie die Reihe (Muster `wechselnd` aus
+/// `sonde014_gegenbeispiele.rs`).
+fn reihe_wechselnd(c: &Coordinator, link: &str, a: &Adresse, ab_nr: usize, anzahl: usize) {
+    let laut_bei = (anzahl.max(1) - 1) % 2;
+    for i in 0..anzahl {
+        let anhebung = if i % 2 == laut_bei { 90 } else { 0 };
+        c.p1(
+            link,
+            &evidenz_mit_anhebung(a, ab_nr + i, 44_108_200 + (i as i64) * 512, anhebung),
+        );
     }
 }
 
@@ -905,6 +930,31 @@ impl Drop for TestOrdner {
     fn drop(&mut self) {
         let _ = std::fs::remove_dir_all(&self.0);
     }
+}
+
+/// Ein Coordinator MIT echtem Store — derselbe Aufbau wie in
+/// `spiegel_weicht_dem_neueren_main_schritt`, hier als Helfer.
+///
+/// 🔑 **Nacharbeit 1 (08.09.2026, Erstprüfungsbefund 3):** `coordinator()`
+/// erzeugt `Coordinator::mit_uhr` OHNE Store. Eine Invalidierung erreicht dort
+/// ausschließlich den `Ok(None)`-Zweig von `invalidierung_anwenden` — den
+/// Zweig für „ein Broker ohne Store hält seinen Bestand rein flüchtig". Weder
+/// die Persistierung noch die Zustellung über den Store werden dabei
+/// gefahren, obwohl K-49 wörtlich „Der Broker läuft mit Store" verlangt. Der
+/// Rückgabewert trägt den Writer mit: fällt er, schließt der Store.
+///
+/// ⚠️ `TestOrdner` löscht seinen Pfad im `Drop`. Beide Rückgabewerte müssen
+/// deshalb bis zum Testende leben.
+fn coordinator_mit_store(
+    name: &str,
+) -> (Coordinator, eqcop_broker::store::StoreWriter, TestOrdner) {
+    let ordner = TestOrdner::neu(name);
+    let mut k = eqcop_broker::store::StoreKonfiguration::fuer_pfad(ordner.db());
+    k.remote_volume_override = Some(false);
+    let writer = eqcop_broker::store::StoreWriter::starten(k);
+    assert!(!writer.ist_degradiert(), "{:?}", writer.handle().sicht());
+    let c = Coordinator::mit_store(Arc::new(ManualClock::default()), hex(0xbeef), &writer);
+    (c, writer, ordner)
 }
 
 /// Der Schritt reist in den append-only `event_log` — und der Spiegel ist
@@ -1723,6 +1773,100 @@ fn sitzung_ohne_gueltige_evidenz_erzeugt_keinen_befund() {
     );
 }
 
+/// **K-54 (Nacharbeit 1, Erstprüfungsbefund 1).** Die Eingabefolge des
+/// Prüfers, Schritt für Schritt: Vollständigkeitsmarke, Main A liefert
+/// gültige Fenster, ein zweites Main derselben Sitzung tritt automatisch bei,
+/// A misst erneut — **und die Sonden liefern nichts.**
+///
+/// 🔑 Genau hier schwieg die Sitzung. `aufnahmen_sammeln` legte ein
+/// Main-Profil nur ab, wenn es das FÜHRENDE war; bei `fuehrendes_main = None`
+/// verschwanden alle Main-Profile samt ihren Fenstern. `enthaltung_ohne_ort`
+/// sammelte danach nur über Kandidaten und Master, fand ohne Sonde keinen
+/// einzigen Beleg und gab nach R8 `None` zurück — obwohl A zwölf gültige
+/// Fenster gemessen hatte. R8 sagt „ohne gültigen Beleg der Sitzung kein
+/// Befund", nicht „ohne Sonde kein Befund": die Belegsammlung aus E7 gilt der
+/// SITZUNG, und wer in ihr misst, gehört hinein — unabhängig davon, wer sie
+/// führt.
+#[test]
+fn zweites_main_ohne_sonden_enthaelt_sich_mit_den_belegen_des_ersten() {
+    let c = coordinator();
+    // KEINE Sonde: `buehne_nak213(&c, 0)` meldet nur das Main an und setzt
+    // die Vollstaendigkeitsmarke.
+    let a = buehne_nak213(&c, 0);
+    reihe(&c, "main", &a[0], 0, 12);
+    let ausgang = befunde_der_sitzung(&c);
+    assert_eq!(
+        ausgang.len(),
+        1,
+        "Ausgangslage: ein fuehrendes Main allein, keine Kandidaten — die          BESTEHENDE Enthaltung MIT Ort (das Masterband ist gemessen): {ausgang:?}"
+    );
+    assert!(
+        ausgang[0].beobachtung.gueltig && ausgang[0].band_hz.von > 0,
+        "sie traegt einen Ort und einen gueltigen Wert — genau das          unterscheidet sie von der Enthaltung OHNE Ort: {:?}",
+        ausgang[0]
+    );
+
+    // Das zweite Main tritt bei — beide verlieren die Bestaetigung, und
+    // `fuehrung_neu_bewerten_locked` setzt `fuehrendes_main` auf `None`.
+    let zweites = zweites_main(&c, "main2", 8);
+    assert!(
+        zweites.instance_id > a[0].instance_id,
+        "Vorbedingung: das zweite Main ist nach `instance_id` groesser"
+    );
+    // A misst erneut und stoesst damit die Rechnung an. Die Sonden schweigen
+    // weiter.
+    reihe(&c, "main", &a[0], 100, 1);
+
+    let befunde = befunde_der_sitzung(&c);
+    assert_eq!(
+        befunde.len(),
+        1,
+        "eine Enthaltung ohne Ort statt SCHWEIGEN: {befunde:?}"
+    );
+    let enthaltung = &befunde[0];
+    assert_eq!(
+        enthaltung.ursachenklasse,
+        eqcop_broker::coordinator::Ursachenklasse::DatenReichenNicht
+    );
+    assert_eq!(
+        enthaltung.likely_cause,
+        "Zwei Instanzen fuehren diese Sitzung — bis eine von ihnen fuehrt, wird nicht gerechnet.",
+        "der Grund ist `KeineEindeutigeFuehrung`, nicht `KeinMasterbeleg` — A \
+         hat sehr wohl gemessen"
+    );
+    assert_eq!(
+        enthaltung.candidate_source, a[0].instance_id,
+        "die deterministische Adresse ist die lexikographisch kleinste \
+         `instance_id` der Mains; sie behauptet KEINE Fuehrung"
+    );
+    assert!(
+        !enthaltung.evidence_ids.is_empty(),
+        "und die Pflichtliste traegt As Belege — ohne sie fiele der Befund an \
+         `minItems: 1` und die Sitzung schwiege wieder"
+    );
+    assert!(
+        enthaltung.evidence_ids.len() <= 32,
+        "gekappt am alten Ende, wie im Befund: {}",
+        enthaltung.evidence_ids.len()
+    );
+    // Die IDs sind die von A — die einzige Quelle, die ueberhaupt gemessen
+    // hat. Ohne die Profile ALLER Mains gaebe es sie in der Aufnahme nicht
+    // mehr.
+    let ids_von_a: std::collections::BTreeSet<String> = c
+        .evidenz_historie(&a[0].instance_id)
+        .iter()
+        .filter(|e| e.ausschlussgrund.is_none())
+        .map(|e| e.evidence_id.clone())
+        .collect();
+    assert!(
+        enthaltung
+            .evidence_ids
+            .iter()
+            .all(|id| ids_von_a.contains(id)),
+        "jede genannte ID ist ein GUELTIGER Beleg von A: {:?} gegen {ids_von_a:?}",
+        enthaltung.evidence_ids
+    );
+}
 
 // ═════════════════════════════════════════════════════════════════════════
 // NAK-213 R5/E8 · der Kanalwechsel als Messpunktwechsel
@@ -1800,16 +1944,50 @@ fn heartbeat_mit_kanal(
 /// diesen Lauf unverändert: null Invalidierungen, die acht alten Fenster
 /// gälten weiter unter dem neuen Kanal — und alle Settertests wären dabei
 /// grün. Gemessen wird der ZÄHLER, nicht die Zeit.
+///
+/// 🔑 **Nacharbeit 1 (08.09.2026, Erstprüfungsbefund 3): der Broker läuft
+/// MIT Store.** Bis hierher benutzte diese Zeile `coordinator()` —
+/// `Coordinator::mit_uhr` ohne Store. Die Invalidierung erreichte damit
+/// ausschließlich den `Ok(None)`-Zweig („ein Broker ohne Store hält seinen
+/// Bestand rein flüchtig"), nie ihre Persistierung und nie ihre Zustellung.
+/// Zähler und Befundentfernung konnten grün sein, während genau der
+/// produktive Teil fehlerhaft war, den K-49 wörtlich verlangt: „Der Broker
+/// läuft mit Store". Gemessen wird jetzt beides — die acht Belege tragen
+/// `messpunkt_wechsel` IM STORE, und die `evidence_invalidate`-Nachricht ist
+/// dem Abonnenten wirklich geschrieben worden.
 #[test]
+#[cfg(windows)]
 fn kanalwechsel_ueber_den_heartbeat_befehl() {
-    let c = coordinator();
+    let (c, writer, _ordner) = coordinator_mit_store("k49-heartbeat-befehl");
     let a = buehne_nak213(&c, 1);
+    // Ohne Abonnent hat die Zustellung kein Ziel — und eine Zusage über sie
+    // wäre nicht gemessen, sondern nur nicht widerlegt.
+    assert!(c.subscribe_json(
+        "main",
+        &bytes(&json!({
+            "type": "subscribe_session",
+            "adresse": a[0],
+            "session_epoch": a[0].session_epoch
+        }))
+    ));
     reihe(&c, "main", &a[0], 0, 12);
     reihe(&c, "sonde0", &a[1], 100, 8);
     let vorher = c.invalidierungen_zaehler();
     assert!(
         !befunde_der_sitzung(&c).is_empty(),
         "Vorbedingung: die Sonde traegt einen Befund"
+    );
+    // Die acht Belege der Sonde — dieselben IDs, die `reihe` vergibt.
+    let acht: Vec<String> = (0..8).map(|i| hex(0x1000 + 100 + i)).collect();
+    assert_eq!(
+        writer
+            .handle()
+            .evidenz_belegt(&acht)
+            .expect("der Store ist lesbar")
+            .len(),
+        8,
+        "Vorbedingung: alle acht Belege liegen GUELTIG im Store — ohne Store \
+         waere diese Zeile gar nicht messbar"
     );
 
     // Der Kanalwechsel 3 -> 9 ueber den ECHTEN Befehlsweg.
@@ -1827,6 +2005,179 @@ fn kanalwechsel_ueber_den_heartbeat_befehl() {
         "der Befund ueber die Sonde ist ENTFERNT, nicht `stale`: er \
          referenziert ausschliesslich ihre eigenen Fenster, und der \
          Kanalwechsel nimmt ALLE davon zurueck (M-28)"
+    );
+
+    // 1. PERSISTIERT: keiner der acht Belege gilt im Store noch als gueltig.
+    assert!(
+        writer
+            .handle()
+            .evidenz_belegt(&acht)
+            .expect("der Store ist lesbar")
+            .is_empty(),
+        "die acht Belege sind IM STORE ausgeschlossen — nicht nur im \
+         fluechtigen Bestand"
+    );
+    // Und zwar mit dem zugesagten Grund, nicht irgendeinem.
+    let zeilen: Vec<Value> = writer
+        .handle()
+        .domaene_lesen(eqcop_broker::store::Domaenentabelle::Evidence)
+        .expect("die Evidenztabelle ist lesbar")
+        .iter()
+        .filter_map(|roh| serde_json::from_slice::<Value>(roh).ok())
+        .filter(|z| {
+            z["evidence_id"]
+                .as_str()
+                .is_some_and(|id| acht.iter().any(|a| a == id))
+        })
+        .collect();
+    assert_eq!(zeilen.len(), 8, "alle acht Zeilen stehen im Store: {zeilen:?}");
+    assert!(
+        zeilen
+            .iter()
+            .all(|z| z["ausschlussgrund"] == json!("messpunkt_wechsel")),
+        "jede traegt `messpunkt_wechsel` — der Kanalwechsel IST ein \
+         Messpunktwechsel, kein dritter Grund: {zeilen:?}"
+    );
+
+    // 2. ZUGESTELLT: die Ruecknahme ist fuer den Abonnenten der Sitzung
+    //    EINGEREIHT — mit einer `event_ord` aus dem Log. Genau das ist der
+    //    Store-Weg der Zustellung (Modulkopf `invalidierung_verdrahtung.rs`,
+    //    Punkt 3); ohne Store endet die Invalidierung in `Ok(None)`, es gibt
+    //    weder eine `event_ord` noch eine Outbox, und dieser Zweig laeuft nie.
+    let outbox = writer.handle().outbox_lesen().expect("die Outbox ist lesbar");
+    let unsere: Vec<&(eqcop_broker::store::SnapshotZiel, i64, i64)> = outbox
+        .iter()
+        .filter(|(ziel, _, _)| {
+            ziel.object_key == "evidence_invalidate"
+                && ziel.session_epoch == a[0].session_epoch
+                && ziel.instance_id == a[0].instance_id
+        })
+        .collect();
+    assert_eq!(
+        unsere.len(),
+        1,
+        "genau eine Zustellschuld `evidence_invalidate` fuer den Abonnenten          dieser Sitzung: {outbox:?}"
+    );
+    assert!(
+        unsere[0].1 > 0,
+        "sie traegt die `event_ord` ihres Logeintrags — der Beweis, dass der          Zweig `Ok(Some(event_ord))` gelaufen ist und nicht `Ok(None)`: {:?}",
+        unsere[0]
+    );
+}
+
+/// **K-55 (Nacharbeit 1, Erstprüfungsbefund 2).** Der Kanalwechsel wird erst
+/// wirksam, wenn seine Invalidierung ANGENOMMEN ist.
+///
+/// Die Eingabefolge des Prüfers: Main und Sonde liefern zwölf gedeckte,
+/// ausgerichtete Fenster mit positivem Zusammenhang, die Sonde zunächst OHNE
+/// Mixerindex; danach wird der Store gestoppt und ein Heartbeat mit Kanal 9
+/// gesendet.
+///
+/// 🔑 Der Deskriptor ist bereits ersetzt, wenn `invalidierung_anwenden`
+/// scheitert. Ihr Fehlerzweig nahm bis hierher nur die Evidenzausschlüsse
+/// zurück und rechnete SOFORT neu — mit dem schon gewechselten Kanal: die
+/// zwölf alten Fenster zählten damit unter Kanal 9, und das anschließende
+/// `link.trennen = true` verhinderte diese Neuberechnung nicht mehr, weil sie
+/// gelaufen war. Genau das verbietet R5. Der Rückweg nimmt den Kanalteil des
+/// Deskriptorersatzes zurück, BEVOR der Fehlerzweig rechnet.
+#[test]
+#[cfg(windows)]
+fn kanalwechsel_ohne_store_append_bleibt_beim_alten_kanal() {
+    let (c, writer, _ordner) = coordinator_mit_store("k55-kanal-rueckweg");
+    let main = adresse(0x11, 0x22, 1, 0x40);
+    anmelden_mit_deskriptor(&c, "main", &main, "main", Some(1));
+    let marke = json!({
+        "type": "intent_update", "adresse": main,
+        "session_epoch": main.session_epoch,
+        "vollstaendig": true, "bestand_revision": 0
+    });
+    c.p1("main", &bytes(&marke));
+    // Die Sonde meldet ZUNAECHST keinen Mixerindex.
+    let sonde = adresse(0x11, 0x22, 2, 0x50);
+    anmelden_mit_deskriptor(&c, "sonde0", &sonde, "passive_probe", None);
+    reihe_wechselnd(&c, "main", &main, 0, 12);
+    reihe_wechselnd(&c, "sonde0", &sonde, 100, 12);
+
+    let befund_der_sonde = |c: &Coordinator| {
+        befunde_der_sitzung(c)
+            .into_iter()
+            .find(|b| b.candidate_source == sonde.instance_id)
+    };
+    let vorher = befund_der_sonde(&c).expect("Vorbedingung: die Sonde traegt einen Befund");
+    assert_eq!(
+        vorher.next_test,
+        eqcop_broker::coordinator::NaechsterTest::RoutingBestaetigen,
+        "Vorbedingung: das Routing der Sonde ist UNBEKANNT — genau der \
+         Zustand, den ein Kanalwechsel beenden wuerde: {vorher:?}"
+    );
+    let ausgeschlossen_vorher = c.evidenz_ausgeschlossen_zaehler();
+    let invalidierungen_vorher = c.invalidierungen_zaehler();
+    let verweigerungen_vorher = c.store_verweigerungen();
+
+    // Der Store verweigert ab hier JEDEN Append.
+    writer.handle().append_naht_setzen(true);
+    assert!(heartbeat_mit_kanal(&c, "sonde0", &sonde, 1, Some(9)));
+
+    // (1) Die Wirkung, um die es R5 geht: der Befund ueber die Sonde zaehlt
+    //     weiterhin unter „Routing unbekannt". Kein Fenster von vor dem
+    //     Wechsel zaehlt je unter dem neuen Kanal. Diese Pruefung steht
+    //     VORNE, weil sie die PRODUKTWIRKUNG misst und nicht ihre Ursache.
+    let nachher = befund_der_sonde(&c).expect("die Sonde traegt weiterhin einen Befund");
+    assert_eq!(
+        nachher.next_test,
+        eqcop_broker::coordinator::NaechsterTest::RoutingBestaetigen,
+        "der Kanalwechsel ist NICHT wirksam geworden: {nachher:?}"
+    );
+    assert_eq!(
+        nachher.rang.routingqualitaet, vorher.rang.routingqualitaet,
+        "und die Routingqualitaet ist unveraendert — sie steigt nie ohne          angenommene Ruecknahme"
+    );
+    assert!(
+        nachher.confidence.klasse < Sicherheitsklasse::Hoch,
+        "und die Aussage wird nicht STARK: {:?}",
+        nachher.confidence
+    );
+
+    // (2) Die Ursache dahinter: der Deskriptor traegt wieder KEINEN Kanal —
+    //     der Ersatz ist zurueckgenommen, nicht nur seine Invalidierung.
+    let snapshot: Value = serde_json::from_slice(&c.session_snapshot_json(&hex(0x11), &hex(0x22)))
+        .expect("der Snapshot ist JSON");
+    let sonde_im_snapshot = snapshot["mitglieder"]
+        .as_array()
+        .expect("die Mitglieder sind eine Liste")
+        .iter()
+        .find(|m| m["adresse"]["instance_id"] == json!(sonde.instance_id))
+        .expect("die Sonde steht im Snapshot")
+        .clone();
+    assert_eq!(
+        sonde_im_snapshot["probe_descriptor"].get("host_mixer_index"),
+        None,
+        "der ALTE Stand steht wieder im Deskriptor: kein Kanal. Sonst zaehlten          die zwoelf Fenster von vor dem Wechsel unter Kanal 9: {sonde_im_snapshot}"
+    );
+
+    // (3) Kein Beleg der Sonde traegt einen Ausschlussgrund — die Ruecknahme
+    //     der Ausschluesse ist der bestehende B16-Weg und bleibt unberuehrt.
+    assert!(
+        c.evidenz_historie(&sonde.instance_id)
+            .iter()
+            .all(|e| e.ausschlussgrund.is_none()),
+        "B16: ein gescheiterter Append laesst keinen lokalen Ausschluss stehen"
+    );
+    assert_eq!(
+        c.evidenz_ausgeschlossen_zaehler(),
+        ausgeschlossen_vorher,
+        "und der Zaehler der ausgeschlossenen Belege steht still"
+    );
+    assert_eq!(
+        c.invalidierungen_zaehler(),
+        invalidierungen_vorher,
+        "es kommt KEINE Invalidierung ins Log"
+    );
+
+    // (4) Der Link gilt als storeverweigert.
+    assert!(
+        c.store_verweigerungen() > verweigerungen_vorher,
+        "der verweigerte Append ist gezaehlt"
     );
 }
 

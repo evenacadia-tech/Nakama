@@ -1,0 +1,85 @@
+NAK-213 Rotbeweis K-55 - der Kanalwechsel wird erst wirksam, wenn seine Invalidierung angenommen ist (R5, E8 - Rueckweg)
+Datum: 2026-09-08 (Nacharbeit 1, Erstpruefungsbefund 2)
+
+Zurueckgenommen: der Rueckweg des Ausloesers im Fehlerzweig von
+`invalidierung_anwenden_mit_rueckweg` (`invalidierung_verdrahtung.rs`, eine
+Zeile: `rueckweg(self);` -> `let _ = rueckweg;`). Der Deskriptorersatz bleibt
+damit stehen, waehrend der gescheiterte Append nur die Evidenzausschluesse
+zuruecknimmt und sofort neu rechnet.
+
+Eingabefolge (die des Pruefers): Main und Sonde liefern zwoelf gedeckte,
+ausgerichtete Fenster mit positivem Zusammenhang, die Sonde zunaechst OHNE
+Mixerindex; danach Store stoppen (`append_naht_setzen(true)`) und einen
+Heartbeat mit Kanal 9 senden.
+
+Gemessene Wirkung ohne Rueckweg - woertlich die Behauptung des Pruefers:
+Die zwoelf Belege von VOR dem Wechsel (`...1064` bis `...106f`) tragen den
+Befund weiter, jetzt unter Kanal 9:
+
+    rang.routingqualitaet: 1.0   (vorher: Routing unbekannt)
+    confidence.klasse:     Hoch  ("bis hin zu `hoch`")
+    zustand:               ReadyToSend
+    next_test:             PrePostPaarMessen  (statt RoutingBestaetigen)
+
+Kein einziges Fenster ist dabei neu gemessen worden, und der Store hat den
+Wechsel nie angenommen. Das anschliessende `link.trennen = true` verhindert
+diese Neuberechnung nicht: sie ist bereits gelaufen.
+
+========================================================================
+Rotlauf (Zeile K-55, Test `kanalwechsel_ohne_store_append_bleibt_beim_alten_kanal`)
+Befehl: cargo test --no-fail-fast --manifest-path broker/Cargo.toml --color never --test sonde014_verdrahtung
+Exitcode: 101
+========================================================================
+running 35 tests
+test fremde_adresse_wird_abgewiesen ... ok
+test entmaskierungsveto_wirkt_im_spiegel_wie_im_main ... ok
+test die_neuen_familien_erben_die_ordnung_von_verbinden_und_trennen ... ok
+test angenommene_und_abgewiesene_meldungen_sind_zaehlbar ... ok
+test assistant_step_update_koalesziert_je_session ... ok
+test ein_frischer_broker_traegt_weder_intent_noch_schritt ... ok
+test die_vollstaendigkeitsmarke_deckt_beide_bestaende ... ok
+test intent_update_koalesziert_je_quelle_und_scope ... ok
+test keine_rechnung_vor_der_vollstaendigkeitsmarke ... ok
+test ohne_jeden_beleg_entsteht_keine_aufnahme ... ok
+test consumerregeln_des_intents_fallen_einzeln ... ok
+test intent_update_unter_der_fassung_zwei_wird_abgewiesen ... ok
+test sitzungsende_loescht_den_spiegel ... ok
+test kanalwechsel_ueber_den_heartbeat_befehl ... ok
+test gleicher_kanal_nimmt_nichts_zurueck ... ok
+test kanalwechsel_ohne_belege_sendet_nichts ... ok
+test keine_rechnung_ohne_jede_intentmeldung ... ok
+test rueckzug_und_bestaetigung_geben_die_rechnung_frei ... ok
+test teilmeldung_mit_mehreren_objekten_wird_abgewiesen ... ok
+test teilupdate_fremden_schluessels_ueberlebt_eine_koaleszierung ... ok
+test master_ist_das_gefuehrte_main_nicht_das_letzte ... ok
+test spaeter_beitritt_deckelt_ab_der_bestaetigung ... ok
+test beitritt_nach_der_rechnung_ersetzt_die_befunde ... ok
+test spiegel_weicht_dem_neueren_main_schritt ... ok
+test partner_ohne_routing_ist_kein_duplikat ... ok
+test zweites_main_ohne_sonden_enthaelt_sich_mit_den_belegen_des_ersten ... ok
+test stale_quelle_deckelt_nicht ... ok
+test stumme_quelle_ist_sichtbarer_kandidat ... ok
+test sitzung_ohne_gueltige_evidenz_erzeugt_keinen_befund ... ok
+test stumme_quelle_setzt_die_duplikatmarke ... ok
+test zweites_main_hebt_bestaetigte_fuehrung_nicht_auf ... ok
+test zurueckgenommener_partner_bleibt_duplikat ... ok
+test kanalwechsel_invalidiert_nur_diese_quelle ... ok
+test veraltetes_rechenergebnis_wird_nicht_veroeffentlicht ... ok
+test kanalwechsel_ohne_store_append_bleibt_beim_alten_kanal ... FAILED
+
+failures:
+
+---- kanalwechsel_ohne_store_append_bleibt_beim_alten_kanal stdout ----
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde014-k55-kanal-rueckweg-21952-3a0441bebf664341933ed8dda6435c41\nakama-broker.sqlite3
+
+thread 'kanalwechsel_ohne_store_append_bleibt_beim_alten_kanal' (13120) panicked at tests\sonde014_verdrahtung.rs:2035:5:
+assertion `left == right` failed: der Kanalwechsel ist NICHT wirksam geworden: CauseHypothesis { finding_id: "131d403dbf1a21e06c851c690d43b430", claim_class: Zusammenhang, ursachenklasse: QuelleResonanz, target_metric: BandPegelDb, candidate_source: "00000000000000000000000000000002", passage_id: None, pre_post: None, band_hz: Bandintervall { von: 97, bis: 101 }, beobachtung: Beobachtung { wert_db: -3.299999952316284, gueltig: true }, rang: Rangkomponenten { bandpassung: 0.06136972602155545, koinzidenz: 0.0, uplift: 1.0, intent_relevanz: 0.5, wiederholbarkeit: 0.9950124688279302, routingqualitaet: 1.0 }, confidence: Befundkonfidenz { klasse: Hoch, score: 0.59273 }, evidence_ids: ["00000000000000000000000000001064", "00000000000000000000000000001065", "00000000000000000000000000001066", "00000000000000000000000000001067", "00000000000000000000000000001068", "00000000000000000000000000001069", "0000000000000000000000000000106a", "0000000000000000000000000000106b", "0000000000000000000000000000106c", "0000000000000000000000000000106d", "0000000000000000000000000000106e", "0000000000000000000000000000106f"], alternatives: [], ausschluesse: [], next_test: PrePostPaarMessen, zustand: ReadyToSend, intent_revision: 0, intent_generation: 1, likely_cause: "00000000 draengt im Bandbereich 97..101 gegen den Master.", smallest_test: "PRE/POST-Paar an dieser Quelle messen.", listen_for: "Ob der Master im markierten Bereich Luft bekommt.", maskierung: Some(Maskierung { quelle_a: "00000000000000000000000000000001", quelle_b: "00000000000000000000000000000002", band_von: 97, band_bis: 101, wert_db: 0.0, gueltig: true, herabgesetzt: false }), metrics_version: 20260904 }
+  left: PrePostPaarMessen
+ right: RoutingBestaetigen
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    kanalwechsel_ohne_store_append_bleibt_beim_alten_kanal
+
+test result: FAILED. 34 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 7.58s

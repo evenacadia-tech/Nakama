@@ -44,8 +44,8 @@
 //! sein, während die Verdrahtung fehlt.
 
 use eqcop_broker::coordinator::{
-    rang_quantisiert, Ausschlussgrund, Befundzustand, CauseHypothesis, Coordinator, ManualClock,
-    Sicherheitsklasse, Ursachenklasse,
+    konkurrenzlage, rang_quantisiert, Ausschlussgrund, Befundzustand, CauseHypothesis, Coordinator,
+    Konkurrenzlage, ManualClock, Sicherheitsklasse, Ursachenklasse,
 };
 use eqcop_broker::transport::bootstrap::{Adresse, AudioLage, HelloControl, HostAngabe};
 use eqcop_broker::transport::server_v3::Senke;
@@ -1147,93 +1147,200 @@ fn f8b_master_ohne_fenster() {
 // starke Aussage nach dem Wechsel ist weg. **Was offen bleibt:** die
 // Deskriptoränderung hebt die `routingqualitaet` rückwirkend, ohne dass eine
 // einzige neue MESSUNG dazugekommen wäre.
-#[test]
-fn f4_kanalwechsel_zwischen_den_fenstern() {
+/// Der gemeinsame Aufbau beider Lagen: Sonden A und C auf Kanal 7, der Master
+/// auf **Kanal 1** (dem kleinsten vertragsgültigen Index, E6), je zwölf
+/// Fenster bei konstantem Pegel. A führt um 0,1 dB — sonst tränte sie nichts,
+/// und der Fall mäße nur den Gleichstandsriegel.
+fn f4_aufbau(lage: &str) -> (Buehne, Adresse, Adresse, Vec<f64>) {
     let b = Buehne::schlank();
     let a = adresse(2);
     let c = adresse(3);
-    b.anmelden("main", &b.master, "main", Some(0));
+    b.anmelden("main", &b.master, "main", Some(1));
     b.anmelden("sondeA", &a, "passive_probe", Some(7));
     b.anmelden("sondeC", &c, "passive_probe", Some(7));
     b.marke(0, json!([]));
     let band = (BAND_VON, BAND_BIS);
     b.belege_je_fenster("main", &b.master, 0, 12, 0, |_| 9.0, band);
-    // A fuehrt um 0,1 dB — sonst traennte sie nichts, und der Fall maesse nur
-    // den Gleichstandsriegel.
     b.belege_je_fenster("sondeA", &a, 100, 12, 0, |_| 9.1, band);
     b.belege_je_fenster("sondeC", &c, 200, 12, 0, |_| 9.0, band);
 
     let vorher = b.befunde();
-    protokoll("F4 beide Sonden auf Mixerkanal 7", &vorher);
+    protokoll(&format!("F4 {lage}: beide Sonden auf Mixerkanal 7"), &vorher);
     let routing_vorher: Vec<f64> = vorher.iter().map(|f| f.rang.routingqualitaet).collect();
     assert_eq!(vorher.len(), 2, "beide bleiben sichtbar");
     assert_eq!(stark(&vorher), 0, "geteilter Kanal: keine starke Aussage");
+    (b, a, c, routing_vorher)
+}
 
-    // Jetzt wechselt C den Kanal — ohne einen einzigen neuen MESSWERT.
+/// Der Kanalwechsel selbst — ohne einen einzigen neuen MESSWERT.
+///
+/// Er nimmt Cs zwölf alte Belege mit `messpunkt_wechsel` zurück; A und der
+/// Master bleiben unberührt, weil der Umfang `Ids` ist und nicht die Sitzung.
+fn f4_kanalwechsel(b: &Buehne, c: &Adresse) {
     let ausgeschlossen_vorher = b.c.evidenz_ausgeschlossen_zaehler();
-    b.deskriptor("sondeC", &c, Some(9));
-    let genommen_durch_wechsel =
-        b.c.evidenz_ausgeschlossen_zaehler() - ausgeschlossen_vorher;
-    // Ein weiterer Beleg loest die Rechnung aus. ⚠ Der Master bekommt sein
-    // dreizehntes Fenster ZEITGLEICH: seit das Alignment paarweise misst,
-    // haette ein Kandidatenfenster ohne Masterpartner den Anteil auf 12/13
-    // gedrueckt, und beide fielen mit `alignment_falsch` — der Fall maesse
-    // dann den Kanalwechsel gar nicht mehr.
-    b.belege_je_fenster("main", &b.master, 300, 1, 12, |_| 9.0, band);
-    b.belege_je_fenster("sondeA", &a, 130, 1, 12, |_| 9.1, band);
-    b.belege_je_fenster("sondeC", &c, 230, 1, 12, |_| 9.0, band);
-
-    let nachher = b.befunde();
-    protokoll("F4 nach dem Kanalwechsel von C (7 -> 9), Messwerte unveraendert", &nachher);
-
-    // 🔑 **NAK-213 R5 (K-44).** Bis hierher blieben Cs zwoelf alte Belege
-    // gueltig, und `routingqualitaet` stieg fuer BEIDE Sonden — ohne dass ein
-    // einziges Fenster neu gemessen worden waere (Gate-Befund G-L2).
-    //
-    // (a) Cs alte Belege sind zurueckgenommen, und ihr Befund ist damit
-    //     ENTFERNT, nicht `stale`: er referenziert ausschliesslich ihre
-    //     eigenen Fenster (`hypothese.rs`), der Kanalwechsel nimmt ALLE davon
-    //     zurueck, und `Stale` wird nur gesetzt, wenn gueltige IDs uebrig
-    //     bleiben — sonst ist der Befund fort (M-28, „Unsichtbar heisst
-    //     wirklich fort").
+    b.deskriptor("sondeC", c, Some(9));
+    let genommen = b.c.evidenz_ausgeschlossen_zaehler() - ausgeschlossen_vorher;
     assert_eq!(
-        genommen_durch_wechsel, 12,
+        genommen, 12,
         "genau Cs zwoelf alte Belege tragen `messpunkt_wechsel`"
     );
-    // (b) C hat danach GENAU das nach dem Wechsel gemessene Fenster. Eines
-    //     ist weniger als `GATE_MINDEST_FENSTER`; sie traegt deshalb
-    //     hoechstens `mittel`, wenn sie ueberhaupt einen Befund traegt.
-    let c_befund = nachher
-        .iter()
-        .find(|f| f.candidate_source == c.instance_id);
-    if let Some(f) = c_befund {
+}
+
+#[test]
+fn f4_kanalwechsel_zwischen_den_fenstern() {
+    let band = (BAND_VON, BAND_BIS);
+
+    // ══ LAGE 1: C misst nach dem Wechsel WEITER ═══════════════════════════
+    {
+        let (b, a, c, routing_vorher) = f4_aufbau("Lage 1");
+        f4_kanalwechsel(&b, &c);
+        // Ein weiterer Beleg loest die Rechnung aus. ⚠ Der Master bekommt sein
+        // dreizehntes Fenster ZEITGLEICH: seit das Alignment paarweise misst,
+        // haette ein Kandidatenfenster ohne Masterpartner den Anteil auf 12/13
+        // gedrueckt, und beide fielen mit `alignment_falsch` — der Fall maesse
+        // dann den Kanalwechsel gar nicht mehr.
+        b.belege_je_fenster("main", &b.master, 300, 1, 12, |_| 9.0, band);
+        b.belege_je_fenster("sondeA", &a, 130, 1, 12, |_| 9.1, band);
+        b.belege_je_fenster("sondeC", &c, 230, 1, 12, |_| 9.0, band);
+
+        let nachher = b.befunde();
+        protokoll(
+            "F4 Lage 1: nach dem Kanalwechsel von C (7 -> 9), C misst weiter",
+            &nachher,
+        );
+
+        // 🔑 **NAK-213 R5 (K-44).** Bis zum Bau blieben Cs zwoelf alte Belege
+        // gueltig, und `routingqualitaet` stieg fuer BEIDE Sonden — ohne dass
+        // ein einziges Fenster neu gemessen worden waere (Gate-Befund G-L2).
+        //
+        // (a) Cs alte Belege sind zurueckgenommen (in `f4_kanalwechsel`
+        //     gemessen), und ihr Befund ist damit ENTFERNT, nicht `stale`: er
+        //     referenziert ausschliesslich ihre eigenen Fenster
+        //     (`hypothese.rs`), der Kanalwechsel nimmt ALLE davon zurueck, und
+        //     `Stale` wird nur gesetzt, wenn gueltige IDs uebrig bleiben —
+        //     sonst ist der Befund fort (M-28, „Unsichtbar heisst wirklich
+        //     fort").
+        //
+        // (b) C hat danach GENAU das nach dem Wechsel gemessene Fenster. Eines
+        //     ist weniger als `GATE_MINDEST_FENSTER`; sie traegt deshalb
+        //     hoechstens `mittel`.
+        //
+        // 🔑 **Nacharbeit 1 (08.09.2026, Erstpruefungsbefund 4):** die
+        // Pruefung ist eine AUSSAGE, keine Bedingung mehr. `if let Some(f)`
+        // war auch dann gruen, wenn C gar keinen Befund trug — der Fall, den
+        // Lage 2 misst, waere hier still durchgegangen.
+        let c_befund = nachher
+            .iter()
+            .find(|f| f.candidate_source == c.instance_id)
+            .expect("C misst nach dem Wechsel weiter und traegt einen Befund");
         assert!(
-            f.confidence.klasse < Sicherheitsklasse::Hoch,
-            "C traegt nach dem Wechsel hoechstens `mittel`: {:?}",
-            f.confidence
+            c_befund.confidence.klasse < Sicherheitsklasse::Hoch,
+            "C traegt nach dem Wechsel hoechstens `mittel` — ein Fenster ist \
+             weniger als `GATE_MINDEST_FENSTER`: {:?}",
+            c_befund.confidence
+        );
+
+        // (c) A ist allein auf Kanal 7; ihre Routingqualitaet steigt — jetzt
+        //     aber MIT einer Messwirkung dahinter: die Belege, die den
+        //     geteilten Kanal belegten, sind zurueckgenommen. Genau das war
+        //     die Luecke.
+        let a_nachher = nachher
+            .iter()
+            .find(|f| f.candidate_source == a.instance_id)
+            .expect("A bleibt sichtbar");
+        assert!(
+            a_nachher.rang.routingqualitaet > routing_vorher[0].min(routing_vorher[1]),
+            "die Routingqualitaet steigt: {routing_vorher:?} -> {}",
+            a_nachher.rang.routingqualitaet
+        );
+
+        // (d) A traegt hoechstens `mittel` — und der Test misst WELCHER Grund
+        //     das bewirkt. In Lage 1 ist es NAK-212 R1: bei konstantem Pegel
+        //     ist kein Uplift messbar. Die Konkurrenz ist dabei VOLLSTAENDIG —
+        //     C ist nicht ausgeschieden, sondern nur schwach. Ohne diese
+        //     Unterscheidung saehe ein gruener Lauf der Lage 1 wie ein
+        //     R2-Beleg aus, obwohl R2 hier gar nicht wirkt.
+        assert_eq!(
+            stark(&nachher),
+            0,
+            "auch nach dem Wechsel traegt niemand `hoch`: {:?}",
+            nachher.iter().map(|f| f.confidence).collect::<Vec<_>>()
+        );
+        assert_eq!(
+            a_nachher.rang.uplift, 0.0,
+            "der GRUND ist der fehlende Uplift (NAK-212 R1, `uplift = None` \
+             bei konstantem Pegel): {a_nachher:?}"
+        );
+        assert_eq!(
+            konkurrenzlage(&nachher[0].ausschluesse, false),
+            Konkurrenzlage::Vollstaendig,
+            "und NICHT die Konkurrenzlage: kein Konkurrent ist aus einem \
+             Messgrund ausgeschieden — C misst ja weiter: {:?}",
+            nachher[0].ausschluesse
         );
     }
-    // (c) A ist allein auf Kanal 7; ihre Routingqualitaet steigt — jetzt aber
-    //     MIT einer Messwirkung dahinter: die Belege, die den geteilten Kanal
-    //     belegten, sind zurueckgenommen. Genau das war die Luecke.
-    let a_nachher = nachher
-        .iter()
-        .find(|f| f.candidate_source == a.instance_id)
-        .expect("A bleibt sichtbar");
-    assert!(
-        a_nachher.rang.routingqualitaet > routing_vorher[0].min(routing_vorher[1]),
-        "die Routingqualitaet steigt: {routing_vorher:?} -> {}",
-        a_nachher.rang.routingqualitaet
-    );
-    // (d) A traegt trotzdem hoechstens `mittel` — bei konstantem Pegel ist
-    //     kein Uplift messbar (NAK-212 R1), und `evidenz_zurueckgenommen` bei
-    //     C setzt zusaetzlich `Konkurrenzlage::Messausschluss` (K-14).
-    assert_eq!(
-        stark(&nachher),
-        0,
-        "auch nach dem Wechsel traegt niemand `hoch`: {:?}",
-        nachher.iter().map(|f| f.confidence).collect::<Vec<_>>()
-    );
+
+    // ══ LAGE 2: C misst nach dem Wechsel NICHT mehr ═══════════════════════
+    //
+    // 🔑 **Nacharbeit 1 (08.09.2026, Erstpruefungsbefund 4).** Diese Lage
+    // fehlte. K-44 verlangt sie ausdruecklich — „derselbe Aufbau, aber C misst
+    // nach dem Wechsel nicht mehr" —, und nur SIE misst die zusaetzliche
+    // Konkurrenzregel: `stark(&nachher) == 0` ist in Lage 1 bereits wegen der
+    // konstanten Pegel durch NAK-212 R1 erfuellt und belegt R2 nicht.
+    {
+        let (b, a, c, _routing_vorher) = f4_aufbau("Lage 2");
+        f4_kanalwechsel(&b, &c);
+        // NUR Main und A messen weiter. C bleibt ohne gueltiges Fenster.
+        b.belege_je_fenster("main", &b.master, 300, 1, 12, |_| 9.0, band);
+        b.belege_je_fenster("sondeA", &a, 130, 1, 12, |_| 9.1, band);
+
+        let nachher = b.befunde();
+        protokoll(
+            "F4 Lage 2: nach dem Kanalwechsel von C (7 -> 9), C misst NICHT mehr",
+            &nachher,
+        );
+
+        // (b) C traegt KEINEN eigenen Befund: `gate()` Schritt 0 faellt vor
+        //     allem anderen, weil ihre Fensterfolge nach der Ruecknahme leer
+        //     ist.
+        assert!(
+            !nachher
+                .iter()
+                .any(|f| f.candidate_source == c.instance_id),
+            "C ist ohne gueltiges Fenster und traegt keinen eigenen Befund: {nachher:?}"
+        );
+
+        // (d) A traegt hoechstens `mittel` — und hier ist der GRUND ein
+        //     anderer als in Lage 1: ein Konkurrent ist aus einem MESSGRUND
+        //     ausgeschieden (R2, K-14). Der fuehrende Befund traegt ihn
+        //     SICHTBAR, mit Quelle und Grund (M-87).
+        let fuehrend = nachher.first().expect("A traegt den fuehrenden Befund");
+        assert_eq!(
+            fuehrend.candidate_source, a.instance_id,
+            "A ist die einzige verbliebene Quelle: {nachher:?}"
+        );
+        assert!(
+            fuehrend.ausschluesse.iter().any(|x| x.candidate_source
+                == c.instance_id
+                && x.grund == Ausschlussgrund::EvidenzZurueckgenommen),
+            "C steht als `evidenz_zurueckgenommen` in der Ausschlussliste — \
+             jeder ausgeschiedene Kandidat traegt seinen Grund (M-87): {:?}",
+            fuehrend.ausschluesse
+        );
+        assert_eq!(
+            konkurrenzlage(&fuehrend.ausschluesse, false),
+            Konkurrenzlage::Messausschluss,
+            "und das ist der GEMESSENE Grund der Senkung — nicht nur \
+             `stark == 0`: {:?}",
+            fuehrend.ausschluesse
+        );
+        assert!(
+            fuehrend.confidence.klasse < Sicherheitsklasse::Hoch,
+            "A behauptet sich nicht gegen die Konkurrenz, sie ueberlebt sie \
+             nur: {:?}",
+            fuehrend.confidence
+        );
+    }
 
     // ── Gegenprobe zu (a): TEILrücknahme ergibt `stale`, nicht Entfernung ──
     //

@@ -523,16 +523,32 @@ pub struct Aufnahme {
     /// ANDEREN Masters (Gate-Befund G-D4). Entwurf `:1669` sagt „genau ein
     /// fuehrendes Main pro aktiver Sitzung"; ohne das rechnet die Kette
     /// nicht, sondern enthaelt sich MIT GRUND.
+    ///
+    /// ⚠️ Ist er `Some`, ist er ein KLON eines Eintrags aus `mains` — dieselbe
+    /// Wahrheit in einer zweiten Sicht, an EINER Stelle gebildet
+    /// (`aufnahmen_sammeln`). Wer hier liest, liest nie einen Master, der
+    /// nicht auch unter `mains` steht.
     pub master: Option<Quellprofil>,
-    /// Die `instance_id` aller `main`-Clients der Sitzung, aufsteigend
-    /// sortiert und dedupliziert.
+    /// Die Profile ALLER `main`-Clients der Sitzung, aufsteigend nach
+    /// `quelle_id` sortiert und darueber dedupliziert.
     ///
     /// Sie traegt die Adresse der Enthaltung ohne Ort: `candidate_source` ist
-    /// die lexikographisch KLEINSTE — dieselbe stabile Wahl, die
+    /// die `quelle_id` des ERSTEN — dieselbe stabile Wahl, die
     /// `fuehrung_neu_bewerten_locked` trifft (`mains.sort(); mains[0]`). Sie
     /// behauptet KEINE Fuehrung, sie ist die deterministische Adresse der
     /// Sitzung (M-25).
-    pub mains: Vec<String>,
+    ///
+    /// 🔑 **Nacharbeit 1 (08.09.2026, Erstpruefungsbefund 1): sie traegt die
+    /// PROFILE, nicht nur die IDs.** Bis hierher hiess das Feld
+    /// `Vec<String>`, und `aufnahmen_sammeln` legte ein Main-Profil nur ab,
+    /// wenn es das FUEHRENDE war. Bei `fuehrendes_main = None` verschwanden
+    /// damit saemtliche Main-Belege aus der Aufnahme: `enthaltung_ohne_ort`
+    /// sammelte anschliessend nur ueber Kandidaten und Master und lieferte
+    /// trotz gueltiger Sitzungsbelege `None` — die Sitzung SCHWIEG, genau in
+    /// der Lage, fuer die R4 die Enthaltung erfunden hat. Die Belegsammlung
+    /// aus E7 gilt der SITZUNG; wer in ihr misst, gehoert hinein, unabhaengig
+    /// davon, wer sie fuehrt.
+    pub mains: Vec<Quellprofil>,
     pub kandidaten: Vec<Quellprofil>,
     pub passage: Option<Passagenfenster>,
     pub passage_id: Option<String>,
@@ -1908,15 +1924,23 @@ pub fn masteranomalie(
 fn enthaltung_ohne_ort(aufnahme: &Aufnahme, grund: Enthaltungsgrund) -> Option<CauseHypothesis> {
     // Die deterministische Adresse der Sitzung: die lexikographisch kleinste
     // `instance_id` der `main`-Clients. Sie behauptet KEINE Fuehrung.
-    let quelle = aufnahme.mains.first()?.clone();
+    let quelle = aufnahme.mains.first()?.quelle_id.clone();
 
-    // Die juengsten GUELTIGEN Belege der Sitzung, ueber alle Quellen. Die
+    // Die juengsten GUELTIGEN Belege der Sitzung, ueber ALLE Quellen. Die
     // Fensterfolgen sind bereits um zurueckgenommene Belege bereinigt
     // (`fenster_aus_historie`), und `empfangsfolge` ordnet sie.
+    //
+    // 🔑 **Nacharbeit 1 (08.09.2026, Erstpruefungsbefund 1):** gesammelt wird
+    // ueber `mains`, nicht ueber `master`. In der Lage, fuer die
+    // `KeineEindeutigeFuehrung` steht, ist `master` per Definition `None` —
+    // eine Sammlung ueber ihn kann dort gar nichts finden, und eine Sitzung
+    // mit gueltig messendem Main schwieg. `mains` traegt die Profile ALLER
+    // Main-Clients und schliesst den Master ein, wenn es einen gibt (er ist
+    // ein Klon daraus); doppelte IDs faengt der `dedup_by` unten.
     let mut belege: Vec<(u64, &str)> = aufnahme
         .kandidaten
         .iter()
-        .chain(aufnahme.master.iter())
+        .chain(aufnahme.mains.iter())
         .flat_map(|q| {
             q.fenster
                 .iter()
@@ -2640,7 +2664,7 @@ mod tests {
 
     fn aufnahme_mit(master: Quellprofil, kandidaten: Vec<Quellprofil>) -> Aufnahme {
         Aufnahme {
-            mains: vec![master.quelle_id.clone()],
+            mains: vec![master.clone()],
             master: Some(master),
             kandidaten,
             passage: None,
@@ -3537,14 +3561,15 @@ mod tests {
     /// Riegel steht doppelt — hier und in der Verdrahtung.
     #[test]
     fn ohne_vollstaendigkeitsmarke_rechnet_das_modul_nicht() {
+        let main = Quellprofil {
+            quelle_id: "m".into(),
+            fenster: vec![fenster(0, 512, 1)],
+            routing_bekannt: true,
+            ..Default::default()
+        };
         let aufnahme = Aufnahme {
-            mains: vec!["m".into()],
-            master: Some(Quellprofil {
-                quelle_id: "m".into(),
-                fenster: vec![fenster(0, 512, 1)],
-                routing_bekannt: true,
-                ..Default::default()
-            }),
+            mains: vec![main.clone()],
+            master: Some(main),
             intent: Some(IntentBestand {
                 vollstaendig: false,
                 revision: 1,
@@ -3573,7 +3598,7 @@ mod tests {
     fn gate_faellt_in_der_zugesagten_reihenfolge() {
         let master = masterprofil();
         let aufnahme = Aufnahme {
-            mains: vec![master.quelle_id.clone()],
+            mains: vec![master.clone()],
             master: Some(master.clone()),
             metrics_version: 1,
             ..Default::default()
@@ -3604,12 +3629,13 @@ mod tests {
 
         // 🔑 **NAK-213 K-22 (R3/E6):** der Mixerkanal des Masters steht an
         // Position 1 — NACH der Evidenz, VOR der Capability.
+        let master_auf_kanal_1 = Quellprofil {
+            mixerkanal: Some(1),
+            ..master.clone()
+        };
         let mut auf_dem_masterkanal = Aufnahme {
-            mains: vec![master.quelle_id.clone()],
-            master: Some(Quellprofil {
-                mixerkanal: Some(1),
-                ..master.clone()
-            }),
+            mains: vec![master_auf_kanal_1.clone()],
+            master: Some(master_auf_kanal_1),
             metrics_version: 1,
             ..Default::default()
         };
@@ -3730,7 +3756,7 @@ mod tests {
             band: Some((0, 4)),
         });
         let mit_schutz = Aufnahme {
-            mains: vec![master.quelle_id.clone()],
+            mains: vec![master.clone()],
             master: Some(master.clone()),
             intent: Some(intent),
             metrics_version: 1,
@@ -3753,7 +3779,7 @@ mod tests {
             band: Some((100, 120)),
         });
         let mit_fernem_schutz = Aufnahme {
-            mains: vec![master.quelle_id.clone()],
+            mains: vec![master.clone()],
             master: Some(master),
             intent: Some(daneben),
             metrics_version: 1,
@@ -3783,7 +3809,7 @@ mod tests {
             transport_epoch: 1,
         };
         let mit_passage = Aufnahme {
-            mains: vec![master.quelle_id.clone()],
+            mains: vec![master.clone()],
             master: Some(master.clone()),
             passage: Some(passage),
             passage_id: Some("p".into()),
@@ -3809,7 +3835,7 @@ mod tests {
             ..master.clone()
         };
         let kurze_passage = Aufnahme {
-            mains: vec![master_kurz.quelle_id.clone()],
+            mains: vec![master_kurz.clone()],
             master: Some(master_kurz),
             passage: Some(Passagenfenster {
                 projekt_von: 0,
@@ -3845,12 +3871,13 @@ mod tests {
             routing_bekannt: true,
             ..Default::default()
         };
+        let master_fremde_epoche = Quellprofil {
+            fenster: andere.fenster.clone(),
+            ..master.clone()
+        };
         let fremde_passage = Aufnahme {
-            mains: vec![master.quelle_id.clone()],
-            master: Some(Quellprofil {
-                fenster: andere.fenster.clone(),
-                ..master.clone()
-            }),
+            mains: vec![master_fremde_epoche.clone()],
+            master: Some(master_fremde_epoche),
             passage: Some(passage),
             passage_id: Some("p".into()),
             metrics_version: 1,

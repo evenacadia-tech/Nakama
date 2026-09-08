@@ -164,8 +164,7 @@ impl Coordinator {
                 .sessions
                 .get(&session)
                 .and_then(|s| s.fuehrendes_main.clone());
-            let mut master: Option<Quellprofil> = None;
-            let mut mains: Vec<String> = Vec::new();
+            let mut mains: Vec<Quellprofil> = Vec::new();
             let mut kandidaten: Vec<Quellprofil> = Vec::new();
             // Wer misst welchen Mixerkanal? Zwei Quellen auf demselben Kanal
             // sind Duplikate (M-22); eine Sonde auf dem Kanal des Masters ist
@@ -268,7 +267,6 @@ impl Coordinator {
                         .is_none_or(|h| h.iter().all(|e| e.ausschlussgrund.is_some())),
                 };
                 if client.plugin_kind == "main" {
-                    mains.push(key.instance_id.clone());
                     // 🔑 **NAK-213 E7/R4:** der Master ist das FUEHRENDE Main,
                     // nicht „der letzte". Bis hierher stand hier
                     // `master = Some(profil)` fuer JEDEN `main`-Client in
@@ -279,9 +277,17 @@ impl Coordinator {
                     // bestaetigten Main auf `None` gesetzt; dieses Ticket
                     // LIEST es und erfindet keinen zweiten Fuehrungsbegriff
                     // (§2.9 Nr. 9).
-                    if fuehrendes_main.as_deref() == Some(key.instance_id.as_str()) {
-                        master = Some(profil);
-                    }
+                    //
+                    // 🔑 **Nacharbeit 1 (08.09.2026, Erstpruefungsbefund 1):
+                    // das PROFIL wird IMMER abgelegt, die Fuehrung waehlt nur
+                    // den Master daraus.** Bis hierher stand das Ablegen
+                    // INNERHALB der Fuehrungsbedingung: bei
+                    // `fuehrendes_main = None` verschwanden alle Main-Profile
+                    // samt ihren Fenstern, und die Enthaltung ohne Ort fand
+                    // keinen einzigen Beleg mehr — die Sitzung schwieg
+                    // (R4, R8, E7). Die Fuehrungswahl entscheidet, WER der
+                    // Master ist; sie entscheidet nicht, WER gemessen hat.
+                    mains.push(profil);
                 } else {
                     kandidaten.push(profil);
                 }
@@ -292,20 +298,22 @@ impl Coordinator {
             if mains.is_empty() {
                 continue;
             }
-            mains.sort();
-            mains.dedup();
+            mains.sort_by(|a, b| a.quelle_id.cmp(&b.quelle_id));
+            mains.dedup_by(|a, b| a.quelle_id == b.quelle_id);
             // Duplikate eintragen: jede Quelle, die sich einen Mixerkanal mit
             // einer anderen teilt, zeigt auf die andere.
             //
-            // 🔑 **NAK-213 E6:** die Schleife laeuft ueber den MASTER UND die
+            // 🔑 **NAK-213 E6:** die Schleife laeuft ueber die MAINS UND die
             // Kandidaten. Bis hierher wurde `parent` nur an Kandidaten
             // geschrieben; eine Sonde auf dem Masterkanal blieb unmarkiert.
-            let mut master_und_kandidaten: Vec<&mut Quellprofil> = master
-                .iter_mut()
-                .chain(kandidaten.iter_mut())
-                .collect();
+            // Seit der Nacharbeit 1 stehen hier ALLE Mains statt nur des
+            // fuehrenden — dieselbe Menge, ueber die `je_kanal` oben schon
+            // gebildet wurde. Ein nicht fuehrendes Main blieb sonst als
+            // einziger Eintrag der Kanaltafel ohne seine eigene Marke.
+            let mut alle_quellen: Vec<&mut Quellprofil> =
+                mains.iter_mut().chain(kandidaten.iter_mut()).collect();
             for (_, geteilt) in je_kanal.iter().filter(|(_, v)| v.len() > 1) {
-                for quelle in master_und_kandidaten.iter_mut() {
+                for quelle in alle_quellen.iter_mut() {
                     if geteilt.contains(&quelle.quelle_id) {
                         quelle.parent = geteilt
                             .iter()
@@ -314,6 +322,16 @@ impl Coordinator {
                     }
                 }
             }
+            // Der Master ist das FUEHRENDE Main — ausgewaehlt, NACHDEM alle
+            // Profile fertig sind, damit er dieselben Marken traegt wie sein
+            // Eintrag in `mains` (E6). Ohne eindeutige Fuehrung bleibt er
+            // `None`; die Belege der Sitzung bleiben trotzdem erhalten.
+            let master: Option<Quellprofil> = fuehrendes_main.as_deref().and_then(|id| {
+                mains
+                    .iter()
+                    .find(|profil| profil.quelle_id == id)
+                    .cloned()
+            });
             let passage = stand
                 .experimente
                 .juengste_passage_im_projekt(&session.project_binding_id);

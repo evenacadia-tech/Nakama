@@ -5,7 +5,25 @@
 
 use super::*;
 
-pub(super) const JSON_SCHEMA_MINOR_AKTIV: u8 = 3;
+pub(super) const JSON_SCHEMA_MINOR_AKTIV: u8 = 4;
+
+/// Die zwei Ausschlussgruende, die die **Fassung 4** ausmachen (NAK-213 R1/R3).
+///
+/// Sie stehen hier als DATEN, nicht als Kommentar: `v3_schema_minor_3_wurzel`
+/// baut daraus zurueck, und der Register-Riegel haelt dieselbe Liste gegen
+/// `wire_envelope_schema_minor.fassungen."4".ausschlussgrund_erweitert`. Ein
+/// Rueckbau, der nur als Kommentar existiert, ist keine Fassung.
+const FASSUNG_4_GRUENDE: [&str; 2] = ["screening_ueberboten", "master_duplikat"];
+
+/// Die Laengengrenze der Ausschlussliste in der **Fassung 3** (NAK-213 R6).
+///
+/// 🔑 Der Rueckbau nimmt nicht nur die zwei Enumwerte zurueck, sondern AUCH
+/// diese Zahl. M-77 verlangt dieselbe Regel in beiden Sprachen ausdruecklich
+/// fuer „jede Laengen- oder Enumgrenze"; ohne den zweiten Griff wiese der
+/// Leser der Fassung 3 einen Befund mit 33 Ausschluessen NICHT ab, obwohl das
+/// Fassung-3-Schema und der C++-Leser ihn abweisen — und die Regel haenge
+/// wieder an nur einer Seite.
+const FASSUNG_3_AUSSCHLUSS_MAX: u64 = 32;
 
 /// Die Familien, die die **Fassung 3** ausmachen (SONDE-014/P5).
 ///
@@ -146,8 +164,37 @@ const FASSUNG_2_FEHLERCODES: [&str; 6] = [
 /// Derselbe Grund wie eine Fassung tiefer: ein Leser der alten Fassung muss
 /// jede Neuerung ABLEHNEN, statt sie still auf einen bekannten Zweig
 /// abzubilden — und das kann er nur, wenn seine Fassung wirklich existiert.
-pub(super) fn v3_schema_minor_2_wurzel() -> Value {
+/// Baut aus der committeten **Fassung 4** die **Fassung 3** zurueck.
+///
+/// Zwei Griffe, beide aus NAK-213: die zwei neuen Ausschlussgruende fallen aus
+/// der geschlossenen Menge, und `session_finding.ausschluesse.maxItems` faellt
+/// von `SESSION_CLIENT_CAP` (64) auf 32 zurueck. Ein Leser der Fassung 3 muss
+/// BEIDES ablehnen — den unbekannten Grund wie die zu lange Liste —, statt sie
+/// still durchzulassen (M-77: „jede Laengen- oder Enumgrenze").
+pub(super) fn v3_schema_minor_3_wurzel() -> Value {
     let mut wurzel = v3_schema_wurzel();
+    {
+        let defs = wurzel["$defs"]
+            .as_object_mut()
+            .expect("v3-$defs ist ein Objekt");
+        defs["ausschlussgrund"]["enum"]
+            .as_array_mut()
+            .expect("ausschlussgrund-enum ist ein Array")
+            .retain(|wert| {
+                wert.as_str()
+                    .is_none_or(|g| !FASSUNG_4_GRUENDE.contains(&g))
+            });
+        defs["session_finding"]["properties"]["ausschluesse"]["maxItems"] =
+            Value::from(FASSUNG_3_AUSSCHLUSS_MAX);
+    }
+    wurzel
+}
+
+pub(super) fn v3_schema_minor_2_wurzel() -> Value {
+    // Die Rueckbauten sind eine KETTE (siehe `v3_schema_minor_0_wurzel`):
+    // stuende hier `v3_schema_wurzel()`, truege der Leser der Fassung 2 die
+    // zwei Ausschlussgruende und die gehobene Laengengrenze der Fassung 4 mit.
+    let mut wurzel = v3_schema_minor_3_wurzel();
     {
         let defs = wurzel["$defs"]
             .as_object_mut()
@@ -298,6 +345,7 @@ pub(super) fn v3_schema(schema_minor: u8) -> Option<&'static crate::vertrag::Sch
     static MINOR_1: OnceLock<crate::vertrag::Schema> = OnceLock::new();
     static MINOR_2: OnceLock<crate::vertrag::Schema> = OnceLock::new();
     static MINOR_3: OnceLock<crate::vertrag::Schema> = OnceLock::new();
+    static MINOR_4: OnceLock<crate::vertrag::Schema> = OnceLock::new();
     match schema_minor {
         0 => Some(MINOR_0.get_or_init(|| {
             crate::vertrag::Schema::laden(v3_schema_minor_0_wurzel())
@@ -311,9 +359,13 @@ pub(super) fn v3_schema(schema_minor: u8) -> Option<&'static crate::vertrag::Sch
             crate::vertrag::Schema::laden(v3_schema_minor_2_wurzel())
                 .expect("eingefrorenes v3-Minor-2-Schema ist unterstuetzt")
         })),
-        JSON_SCHEMA_MINOR_AKTIV => Some(MINOR_3.get_or_init(|| {
-            crate::vertrag::Schema::laden(v3_schema_wurzel())
+        3 => Some(MINOR_3.get_or_init(|| {
+            crate::vertrag::Schema::laden(v3_schema_minor_3_wurzel())
                 .expect("eingefrorenes v3-Minor-3-Schema ist unterstuetzt")
+        })),
+        JSON_SCHEMA_MINOR_AKTIV => Some(MINOR_4.get_or_init(|| {
+            crate::vertrag::Schema::laden(v3_schema_wurzel())
+                .expect("eingefrorenes v3-Minor-4-Schema ist unterstuetzt")
         })),
         _ => None,
     }
@@ -395,7 +447,10 @@ mod fassungsleiter_tests {
             Some(u64::from(JSON_SCHEMA_MINOR_AKTIV)),
             "das Register muss dieselbe aktive Fassung fuehren wie der Leser"
         );
-        assert_eq!(version["vorher"].as_u64(), Some(2));
+        // NAK-213: der Fassungsschritt 4 hebt beide Zahlen um eins. Sie stehen
+        // hier, damit ein STILLES Heben faellt — nicht, weil 2/3 richtiger
+        // waere als 3/4.
+        assert_eq!(version["vorher"].as_u64(), Some(3));
 
         let fassung = &version["fassungen"]["3"];
         for familie in FASSUNG_3_FAMILIEN {
@@ -427,7 +482,11 @@ mod fassungsleiter_tests {
     #[test]
     fn minor_2_leser_lehnt_die_fassung_3_ab() {
         let alt = v3_schema(2).expect("Minor 2 ist bekannt");
-        let neu = v3_schema(JSON_SCHEMA_MINOR_AKTIV).expect("Minor 3 ist bekannt");
+        // NAK-213: hier steht ausdruecklich `v3_schema(3)` und nicht die
+        // aktive Fassung. Die Zusage lautet „Fassung 2 lehnt die Neuerungen
+        // der Fassung 3 ab" — sie gegen die jeweils NEUESTE Fassung zu messen
+        // waere derselbe Fehler, den SONDE-013 an `MINOR_1` gefunden hat.
+        let neu = v3_schema(3).expect("Minor 3 ist bekannt");
 
         for familie in FASSUNG_3_FAMILIEN {
             let wert = fixture(familie);
@@ -453,6 +512,79 @@ mod fassungsleiter_tests {
             assert!(alt.gueltig(&wert), "{name} muss in Fassung 2 weiter gelten");
             assert!(neu.gueltig(&wert));
         }
+    }
+
+    /// NAK-213 K-46/K-50, R6/R7: der ECHTE Leser der Fassung 3 lehnt BEIDE
+    /// Neuerungen der Fassung 4 ab — den unbekannten Grund wie die zu lange
+    /// Ausschlussliste. M-77 verlangt dieselbe Regel in beiden Sprachen
+    /// ausdruecklich fuer „jede Laengen- oder Enumgrenze"; die C++-Haelfte
+    /// misst B28 (`Sonde014BefundTest`).
+    #[test]
+    fn fassung_3_kennt_die_neuen_gruende_nicht() {
+        let alt = v3_schema(3).expect("Minor 3 ist bekannt");
+        let neu = v3_schema(JSON_SCHEMA_MINOR_AKTIV).expect("Minor 4 ist bekannt");
+
+        for name in [
+            "finding-ausschlussgrund-screening-ueberboten-in-fassung-3",
+            "finding-ausschlussgrund-master-duplikat-in-fassung-3",
+        ] {
+            let wert = fixture(name);
+            assert!(neu.gueltig(&wert), "{name} muss in Fassung 4 gelten");
+            assert!(
+                !alt.gueltig(&wert),
+                "{name} darf in Fassung 3 NICHT gelten — sonst urteilen Rust und C++ verschieden"
+            );
+        }
+
+        // Die Laengengrenze ist der zweite Griff desselben Rueckbaus (R6).
+        // 33 ist der kleinste Ueberlauf ueber die Grenze der Fassung 3.
+        let dreiunddreissig = fixture("finding-33-ausschluesse");
+        assert!(
+            neu.gueltig(&dreiunddreissig),
+            "33 Ausschluesse muessen in Fassung 4 gelten"
+        );
+        assert!(
+            !alt.gueltig(&dreiunddreissig),
+            "33 Ausschluesse duerfen in Fassung 3 NICHT gelten"
+        );
+
+        // Gegenprobe: der Rueckbau ist nicht einfach kaputt. Was schon in
+        // Fassung 3 galt, gilt dort weiter — ein zerstoerter Rueckbau saehe
+        // sonst wie eine erfuellte Zusage aus.
+        for name in ["session-snapshot-mit-findings", "session_snapshot"] {
+            let wert = fixture(name);
+            assert!(alt.gueltig(&wert), "{name} muss in Fassung 3 weiter gelten");
+            assert!(neu.gueltig(&wert));
+        }
+    }
+
+    /// Die Rueckbauliste der Fassung 4 ist eine KOPIE der Wahrheit aus dem
+    /// Register. Laufen sie auseinander, faellt es hier — nicht an einem
+    /// Fixture, das zufaellig darauf zielt.
+    #[test]
+    fn fassung_4_liste_deckt_sich_mit_dem_register() {
+        let reg = register();
+        let fassung = &reg["wire_envelope_schema_minor"]["fassungen"]["4"];
+        let gruende: Vec<&str> = fassung["ausschlussgrund_erweitert"]
+            .as_array()
+            .expect("Gruendeliste ist ein Array")
+            .iter()
+            .filter_map(Value::as_str)
+            .collect();
+        assert_eq!(gruende, FASSUNG_4_GRUENDE.to_vec());
+        assert_eq!(
+            fassung["session_finding_ausschluesse_max"].as_u64(),
+            Some(64),
+            "R6: das Register fuehrt dieselbe Grenze wie das Schema"
+        );
+        // Und der Rueckbau setzt sie wirklich zurueck — sonst waere
+        // `FASSUNG_3_AUSSCHLUSS_MAX` eine Konstante ohne Wirkung.
+        assert_eq!(
+            v3_schema_minor_3_wurzel()["$defs"]["session_finding"]["properties"]["ausschluesse"]
+                ["maxItems"]
+                .as_u64(),
+            Some(FASSUNG_3_AUSSCHLUSS_MAX)
+        );
     }
 
     /// Die Kette reicht bis nach unten: der Leser der Fassung 1 und der
@@ -495,9 +627,21 @@ mod fassungsleiter_tests {
             .iter()
             .filter_map(Value::as_str)
             .collect();
-        assert_eq!(gruende.len(), 8, "R4: acht Ausschlussgruende");
+        assert_eq!(
+            gruende.len(),
+            10,
+            "R4 plus NAK-213 R1/R3: zehn Ausschlussgruende"
+        );
         assert!(gruende.contains(&"passage_zu_kurz"));
         assert!(gruende.contains(&"evidenz_zurueckgenommen"));
+        // Die zwei neuen stehen AM ENDE, in derselben Reihenfolge wie in
+        // `AUSSCHLUSSGRUENDE` — `wire()`/`aus_wire()` gehen ueber den Index.
+        assert_eq!(&gruende[8..], &["screening_ueberboten", "master_duplikat"]);
+        assert_eq!(
+            defs["session_finding"]["properties"]["ausschluesse"]["maxItems"].as_u64(),
+            Some(64),
+            "R6: die Ausschlussliste wird nie gekappt, ihre Grenze ist SESSION_CLIENT_CAP"
+        );
 
         assert_eq!(
             defs["ursachenklasse"]["enum"].as_array().unwrap().len(),

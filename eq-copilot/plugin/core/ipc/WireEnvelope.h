@@ -60,12 +60,25 @@ inline constexpr std::uint8_t kSchemaMajor = 3u;
 /// zwei neuen Familien `intent_update` und `assistant_step_update`, die zwei
 /// belegten Reservierungen `draft_offer` und `user_verdict`, das Feld
 /// `session_snapshot.findings` samt eingebettetem `maskierung` und den
-/// Ausschlussgruenden sowie `experiment_begin.ziel`. Ein Fassungsschritt ist
-/// erst vollstaendig, wenn BEIDE Seiten und der Transport dazwischen ihn
-/// kennen — die Zahl steht deshalb hier, in `P0_SCHEMA_MINOR`/`P1_SCHEMA_MINOR`
-/// des Rust-Servers und in `JSON_SCHEMA_MINOR_AKTIV` des Coordinators, und ein
-/// Rust-Bein misst, dass die drei uebereinstimmen.
-inline constexpr std::uint8_t kJsonSchemaMinor = 3u;
+/// Ausschlussgruenden sowie `experiment_begin.ziel`.
+///
+/// Seit NAK-213 (08.09.2026) steht sie auf **4**: die Fassung 4 haengt die
+/// zwei Ausschlussgruende `screening_ueberboten` und `master_duplikat` an die
+/// geschlossene Menge und hebt `session_finding.ausschluesse.maxItems` von 32
+/// auf `SESSION_CLIENT_CAP` = 64. Beides ist an die EINGEHENDE Fassung
+/// gebunden: ein Snapshot mit `schema_minor <= 3` traegt keinen der zwei
+/// Gruende und hoechstens 32 Ausschluesse (M-77, R6/R7).
+///
+/// Ein Fassungsschritt ist erst vollstaendig, wenn BEIDE Seiten und der
+/// Transport dazwischen ihn kennen — die Zahl steht deshalb hier, in
+/// `P0_SCHEMA_MINOR`/`P1_SCHEMA_MINOR` des Rust-Servers und in
+/// `JSON_SCHEMA_MINOR_AKTIV` des Coordinators. Ein Rust-Bein misst, dass die
+/// zwei Rust-Zahlen uebereinstimmen; seit NAK-213 haelt der Textriegel
+/// `wire_envelope_minor_bindet_den_cpp_leser` in `pruefe_v3_vertrag.py`
+/// AUSSERDEM diese Zahl gegen `wire_envelope_schema_minor.aktuell` im Register
+/// (Muster `metrics_version_bindet_schwellen`) — bis dahin war die C++-Zahl
+/// von keinem Bein gegen die Rust-Zahl gemessen (NB-3).
+inline constexpr std::uint8_t kJsonSchemaMinor = 4u;
 
 /// Die Fassung, die die MITGLIEDSHUELLE des `session_snapshot` eingefuehrt hat
 /// (SONDE-012, Minor 1).

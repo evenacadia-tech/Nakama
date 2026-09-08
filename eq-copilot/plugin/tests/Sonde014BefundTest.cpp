@@ -113,10 +113,19 @@ juce::String snapshot (const juce::StringArray& befunde,
     return t;
 }
 
+/// Nimmt einen Snapshot mit AUSDRUECKLICH vorgegebener eingehender Fassung an.
+///
+/// NAK-213 (Befund 7 der Matrixpruefung 1): der Overload OHNE
+/// Fassungsparameter setzt `kJsonSchemaMinor` selbst als eingehende Fassung
+/// ein (`SourcesModel.h`). Ein Rotbeweis, der die Konstante zuruecksetzt,
+/// senkte damit Eingangsminor UND Leserobergrenze gemeinsam, und der Vergleich
+/// in `SourcesModel.cpp` saehe keine Abweichung. Deshalb steht die Zahl hier
+/// als Parameter - die Faelle unten geben sie einzeln vor.
 Model::SnapshotErgebnis uebernimm (Model& m, const juce::String& json,
-                                   juce::String& fehlertext)
+                                   juce::String& fehlertext,
+                                   std::uint8_t schemaMinor = 3)
 {
-    return m.uebernehmeSessionSnapshot (json.toStdString(), 3,
+    return m.uebernehmeSessionSnapshot (json.toStdString(), schemaMinor,
                                         Model::Uhr::now(), fehlertext);
 }
 
@@ -383,6 +392,121 @@ int main()
                            g)
                     == Model::SnapshotErgebnis::ungueltig,
                 "M-87: ein NEUNTER Grund faellt am ganzen Snapshot", g);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // NAK-213 K-46 · fassung_3_kennt_die_neuen_ausschlussgruende_nicht
+    // ═══════════════════════════════════════════════════════════════════
+    //
+    // 🔑 R7/M-77: der Leser waehlt die Fassung, er prueft nicht nur seine
+    // eigene Fassungsobergrenze. Wuechse allein die Gruendeliste, naehme er
+    // `screening_ueberboten` und `master_duplikat` auch in einem ausdruecklich
+    // als Fassung 3 eingehenden Snapshot an - waehrend der Rust-Rueckbau
+    // `v3_schema_minor_3_wurzel` denselben Snapshot abweist. Genau diese
+    // Einseitigkeit verbietet M-77.
+    {
+        for (const char* grund : { "screening_ueberboten", "master_duplikat" })
+        {
+            const juce::String aus =
+                juce::String ("\"ausschluesse\":[{\"candidate_source\":\"")
+                + juce::String (hex (3)) + "\",\"grund\":\"" + grund + "\"}]";
+            const auto text = snapshot ({ befundText (hex (0x900), "ready_to_send",
+                                                      "hoch", aus) });
+            // Die Namen stehen als eigene Variablen: `pruefe` nimmt einen
+            // `const char*`, und ein temporaerer `juce::String` im Aufruf
+            // waere ein Zeiger, dessen Lebensdauer man nachrechnen muesste.
+            const std::string nameDrei = std::string ("K-46: ") + grund
+                                       + " faellt in Fassung 3";
+            const std::string nameVier = std::string ("K-46: ") + grund
+                                       + " gilt in Fassung 4 und kommt an";
+            auto drei = frischesModell();
+            juce::String f;
+            pruefe (uebernimm (*drei, text, f, 3) == Model::SnapshotErgebnis::ungueltig,
+                    nameDrei.c_str(), f);
+            auto vier = frischesModell();
+            juce::String g;
+            pruefe (uebernimm (*vier, text, g, 4) == Model::SnapshotErgebnis::uebernommen
+                        && vier->sicht().befunde.size() == 1
+                        && vier->sicht().befunde[0].ausschluesse.size() == 1
+                        && vier->sicht().befunde[0].ausschluesse[0].second == grund,
+                    nameVier.c_str(), g);
+        }
+        // Gegenprobe: der Fassung-3-Leser ist nicht einfach kaputt. Ein
+        // BEKANNTER Grund gilt dort weiter.
+        const juce::String bekannt =
+            juce::String ("\"ausschluesse\":[{\"candidate_source\":\"")
+            + juce::String (hex (3)) + "\",\"grund\":\"coverage_fehlt\"}]";
+        auto drei = frischesModell();
+        juce::String h;
+        pruefe (uebernimm (*drei, snapshot ({ befundText (hex (0x900), "ready_to_send",
+                                                          "hoch", bekannt) }), h, 3)
+                    == Model::SnapshotErgebnis::uebernommen,
+                "K-46 Gegenprobe: ein bekannter Grund gilt in Fassung 3 weiter", h);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // NAK-213 K-50 · ausschlusslaenge_ist_an_die_fassung_gebunden
+    // ═══════════════════════════════════════════════════════════════════
+    //
+    // 🔑 R6 mit der Praezisierung vom 08.09.2026: M-77 nennt "jede LAENGEN-
+    // oder Enumgrenze". Bliebe die C++-Grenze unbedingt bei 64, naehme der
+    // Leser einen Fassung-3-Snapshot mit 33 Ausschluessen an, den das
+    // Fassung-3-Schema und der Rust-Rueckbau abweisen. Fuenf Raender, jeder
+    // einzeln gemessen.
+    {
+        auto mitAusschluessen = [] (int anzahl) {
+            juce::StringArray eintraege;
+            for (int i = 0; i < anzahl; ++i)
+                eintraege.add (juce::String ("{\"candidate_source\":\"")
+                               + juce::String (hex (static_cast<unsigned long long> (0x2000 + i)))
+                               + "\",\"grund\":\"coverage_fehlt\"}");
+            return snapshot ({ befundText (
+                hex (0x900), "ready_to_send", "hoch",
+                juce::String ("\"ausschluesse\":[") + eintraege.joinIntoString (",") + "]") });
+        };
+        struct Rand { int anzahl; std::uint8_t minor; bool gueltig; const char* name; };
+        const Rand raender[] = {
+            { 32, 3, true,  "K-50: Fassung 3 nimmt 32 an (Altstand liest weiter)" },
+            { 33, 3, false, "K-50: Fassung 3 weist 33 ab" },
+            { 33, 4, true,  "K-50: Fassung 4 nimmt 33 an" },
+            { 64, 4, true,  "K-50: Fassung 4 nimmt 64 an (SESSION_CLIENT_CAP)" },
+            { 65, 4, false, "K-50: Fassung 4 weist 65 ab" },
+        };
+        for (const auto& r : raender)
+        {
+            auto m = frischesModell();
+            juce::String f;
+            const auto ergebnis = uebernimm (*m, mitAusschluessen (r.anzahl), f, r.minor);
+            pruefe (ergebnis == (r.gueltig ? Model::SnapshotErgebnis::uebernommen
+                                           : Model::SnapshotErgebnis::ungueltig),
+                    r.name, f);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // NAK-213 K-47 · fremder_fassung_4_rahmen_faellt_am_leser
+    // ═══════════════════════════════════════════════════════════════════
+    //
+    // 🔑 Der messende Rotbeweis fuer `kJsonSchemaMinor` (NB-3). Der Rahmen
+    // gibt die 4 UNABHAENGIG vor; bliebe die Konstante auf 3, faellt der
+    // Snapshot an der Fassungsobergrenze des Lesers - waehrend der
+    // Aufnahmehelfer ohne Fassungsparameter dieselbe Konstante auf BEIDEN
+    // Seiten einsetzte und die Abweichung nie sah.
+    {
+        auto m = frischesModell();
+        juce::String f;
+        pruefe (uebernimm (*m, snapshot ({ befundText (hex (0x900), "ready_to_send", "hoch") }),
+                           f, 4)
+                    == Model::SnapshotErgebnis::uebernommen,
+                "K-47: ein Rahmen der Fassung 4 passiert den Leser", f);
+        auto n = frischesModell();
+        juce::String g;
+        pruefe (uebernimm (*n, snapshot ({ befundText (hex (0x900), "ready_to_send", "hoch") }),
+                           g, 5)
+                    == Model::SnapshotErgebnis::ungueltig,
+                "K-47 Gegenprobe nach oben: die Fassung 5 gibt es nicht", g);
+        pruefe (nakama::ipc::kJsonSchemaMinor == 4u,
+                "K-47: die C++-Fassungszahl steht auf 4 (Textriegel A5 haelt sie gegen das Register)");
     }
 
     // ═══════════════════════════════════════════════════════════════════

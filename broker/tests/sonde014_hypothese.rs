@@ -1183,11 +1183,14 @@ fn ausschlussgruende_sind_geschlossen_und_reisen_mit() {
         .iter()
         .map(|v| v.as_str().unwrap().to_string())
         .collect();
-    assert_eq!(menge.len(), 8, "genau acht Ausschlussgruende");
+    // NAK-213 (Fassung 4, R1/R3): die Menge waechst um `screening_ueberboten`
+    // und `master_duplikat` — beide AM ENDE, weil Rust ueber den Index geht.
+    assert_eq!(menge.len(), 10, "genau zehn Ausschlussgruende");
+    assert_eq!(&menge[8..], &["screening_ueberboten", "master_duplikat"]);
     for wort in &menge {
         assert!(Ausschlussgrund::aus_wire(wort).is_some(), "{wort}");
     }
-    assert!(Ausschlussgrund::aus_wire("neunter_grund").is_none());
+    assert!(Ausschlussgrund::aus_wire("elfter_grund").is_none());
 
     // Der Produktpfad: ein Kandidat, der an der Coverage faellt, steht mit
     // Grund im Snapshot — nicht kommentarlos entfernt.

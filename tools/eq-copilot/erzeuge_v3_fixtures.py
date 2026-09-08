@@ -1303,6 +1303,46 @@ def zusatz_gueltig() -> list[tuple[str, dict, str]]:
     faelle.append(("session-snapshot-mit-findings", ss,
                    "E-04: die Befunde reisen im Sessionsnapshot, je Befund mit eingebettetem maskierung"))
 
+    # ── NAK-213 (Fassung 4): die zwei neuen Ausschlussgruende ────────────
+    #
+    # Diese drei Faelle sind GUELTIG in der Fassung 4 und werden vom Leser
+    # der Fassung 3 ABGEWIESEN. Genau das misst der Abschnitt "Rueckbau auf
+    # Fassung 3" in pruefe_v3_vertrag.py (A5) und der Modultest
+    # `fassung_3_kennt_die_neuen_gruende_nicht` in broker schema.rs; der
+    # Fixture-Korpus selbst kennt nur die AKTUELLE Fassung und klassifiziert
+    # jede Datei gegen sie - deshalb steht ein Dokument, das erst eine
+    # Fassung tiefer faellt, hier bei den gueltigen (K-46, K-50).
+    for grund in ("screening_ueberboten", "master_duplikat"):
+        ss = copy.deepcopy(GRUND["session_snapshot"])
+        befund = copy.deepcopy(SESSION_FINDING)
+        befund["ausschluesse"] = [{"candidate_source": QUELLE_B, "grund": grund}]
+        ss["findings"] = [befund]
+        faelle.append((f"finding-ausschlussgrund-{grund.replace('_', '-')}-in-fassung-3", ss,
+                       f"NAK-213 R1/R3 (K-46): `{grund}` gilt AB Fassung 4. Ein Leser der "
+                       "Fassung 3 muss dieses Dokument ABLEHNEN, statt den Grund still auf "
+                       "einen bekannten abzubilden - gemessen im Rueckbau (A5) und in "
+                       "SourcesModel (B28)"))
+
+    ss = copy.deepcopy(GRUND["session_snapshot"])
+    befund = copy.deepcopy(SESSION_FINDING)
+    befund["ausschluesse"] = [{"candidate_source": f"{0x3000 + i:032x}", "grund": "coverage_fehlt"}
+                              for i in range(33)]
+    ss["findings"] = [befund]
+    faelle.append(("finding-33-ausschluesse", ss,
+                   "NAK-213 R6 (K-50): 33 ist der kleinste Ueberlauf ueber die Grenze der "
+                   "Fassung 3 und produktiv erreichbar (38 gate-faehige Sonden). In Fassung 4 "
+                   "gueltig, in Fassung 3 ungueltig - die Ausschlussliste wird nie gekappt (M-87)"))
+
+    ss = copy.deepcopy(GRUND["session_snapshot"])
+    befund = copy.deepcopy(SESSION_FINDING)
+    befund["ausschluesse"] = [{"candidate_source": f"{0x3000 + i:032x}", "grund": "coverage_fehlt"}
+                              for i in range(64)]
+    ss["findings"] = [befund]
+    faelle.append(("finding-64-ausschluesse", ss,
+                   "NAK-213 R6 (K-50): der obere Rand SESSION_CLIENT_CAP = 64. Mehr Ausschluesse "
+                   "als Quellen der Sitzung kann es nicht geben; die Grenze ist damit selbst "
+                   "gebunden und nicht geraten"))
+
     ss = copy.deepcopy(GRUND["session_snapshot"])
     befund = copy.deepcopy(SESSION_FINDING)
     befund.pop("maskierung")
@@ -1519,6 +1559,17 @@ UNGUELTIG: list[tuple] = [
      [v("/findings/0/ausschluesse/0/text",
         f"{S}/finding_ausschluss/additionalProperties", "additionalProperties")],
      "Ein Ausschluss traegt Kandidat und Grund, keinen Freitext"),
+
+    ("finding-65-ausschluesse", "session_snapshot",
+     [setze("findings", [SESSION_FINDING]),
+      setze("findings", 0, "ausschluesse",
+            [{"candidate_source": f"{0x3000 + i:032x}", "grund": "coverage_fehlt"}
+             for i in range(65)])],
+     [v("/findings/0/ausschluesse",
+        f"{S}/session_finding/properties/ausschluesse/maxItems", "maxItems")],
+     "NAK-213 R6 (K-50): 65 faellt in BEIDEN Fassungen. Die Grenze ist SESSION_CLIENT_CAP = 64 "
+     "- ein Main und bis zu 63 Sonden -, also kann kein Befund mehr Ausschluesse tragen als die "
+     "Sitzung Quellen hat"),
 
     ("finding-pre-post-unbekannt", "session_snapshot",
      [setze("findings", [SESSION_FINDING]),

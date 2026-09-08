@@ -751,8 +751,9 @@ def pruefe_probe_descriptor(lauf: Lauf, schema: dict, reserviert: dict) -> None:
               # SONDE-014: der Fassungsschritt 3 hebt `vorher`/`aktuell` um
               # eins. Die Zahlen stehen hier, damit ein STILLES Heben faellt -
               # nicht, weil 1/2 richtiger waere als 2/3.
-              and version.get("vorher") == 2
-              and version.get("aktuell") == 3
+              # NAK-213: der Fassungsschritt 4 hebt beide Zahlen um eins.
+              and version.get("vorher") == 3
+              and version.get("aktuell") == 4
               and fassungen.get("0", {}).get("probe_descriptor_hostfelder") == []
               and set(fassungen.get("1", {}).get("probe_descriptor_hostfelder", []))
                   == HOST_DESCRIPTOR_FELDER
@@ -901,7 +902,10 @@ def fassung_2_schema(schema: dict) -> dict:
     existiert - eine Konstante, die in Wahrheit das neueste Schema laedt,
     waere das Gegenteil der Zusage (die Lehre aus SONDE-013).
     """
-    alt = copy.deepcopy(schema)
+    # NAK-213: die Kette beginnt eine Fassung hoeher. Stuende hier
+    # `copy.deepcopy(schema)`, truege der Leser der Fassung 2 die zwei
+    # Ausschlussgruende und die gehobene Laengengrenze der Fassung 4 mit.
+    alt = fassung_3_schema(schema)
     alt["oneOf"] = [r for r in alt["oneOf"]
                     if r.get("$ref", "").removeprefix("#/$defs/") not in FASSUNG_3_FAMILIEN]
     for name in FASSUNG_3_FAMILIEN | FASSUNG_3_HILFSDEFS:
@@ -1080,13 +1084,16 @@ def pruefe_sonde014_fassung_3(lauf: Lauf, schema: dict, reserviert: dict) -> Non
               and pruefer_2.is_valid(lade("session_snapshot"))
               and pruefer_2.is_valid(lade("evidence_snapshot")))
 
-    # M-87: die acht Ausschlussgruende leben an EINER Stelle im Vertrag.
-    lauf.wahr("ausschlussgruende_sind_eine_geschlossene_achtermenge",
+    # M-87: die Ausschlussgruende leben an EINER Stelle im Vertrag. NAK-213
+    # (Fassung 4) haengt zwei Werte AN DAS ENDE an - die Reihenfolge ist
+    # bindend, weil `wire()`/`aus_wire()` in Rust ueber den Index gehen.
+    lauf.wahr("ausschlussgruende_sind_eine_geschlossene_zehnermenge",
               schema["$defs"]["ausschlussgrund"]["enum"] == [
                   "coverage_fehlt", "alignment_falsch", "passage_unvergleichbar",
                   "passage_zu_kurz", "intent_veto_geschuetzt",
                   "intent_veto_verschmolzen", "capability_fehlt",
-                  "evidenz_zurueckgenommen"]
+                  "evidenz_zurueckgenommen", "screening_ueberboten",
+                  "master_duplikat"]
               and schema["$defs"]["finding_ausschluss"]["properties"]["grund"]
                   == {"$ref": "#/$defs/ausschlussgrund"}
               and schema["$defs"]["session_finding"]["properties"]["ausschluesse"]["items"]
@@ -1120,6 +1127,110 @@ def pruefe_sonde014_fassung_3(lauf: Lauf, schema: dict, reserviert: dict) -> Non
                    "listen_for", "stop_if", "execution", "confidence",
                    "revert"} <= set(proposal["properties"])
               and "revert" in proposal["required"])
+
+
+# NAK-213 (Fassung 4): die zwei Ausschlussgruende und die gehobene
+# Laengengrenze. Sie stehen hier als DATEN, nicht als Kommentar - der Rueckbau
+# baut daraus zurueck, und der Registereintrag
+# `wire_envelope_schema_minor.fassungen."4"` wird gegen dieselbe Liste
+# gehalten. Dieselbe Bauform wie FASSUNG_3_FAMILIEN eine Fassung tiefer.
+FASSUNG_4_GRUENDE = ["screening_ueberboten", "master_duplikat"]
+FASSUNG_3_AUSSCHLUSS_MAX = 32
+
+
+def fassung_3_schema(schema: dict) -> dict:
+    """Baut die Fassung 3 des P1-Vertrags aus der committeten Fassung 4 zurueck.
+
+    ZWEI Griffe, nicht einer: die zwei neuen Ausschlussgruende fallen aus der
+    geschlossenen Menge, und `session_finding.ausschluesse.maxItems` faellt von
+    SESSION_CLIENT_CAP (64) auf 32 zurueck. M-77 verlangt dieselbe Regel in
+    beiden Sprachen ausdruecklich fuer "jede Laengen- ODER Enumgrenze" - ohne
+    den zweiten Griff naehme der Leser der Fassung 3 einen Befund mit 33
+    Ausschluessen an, den der C++-Leser abweist, und die Regel haenge wieder
+    an nur einer Seite (R6/R7, Praezisierung 08.09.2026).
+    """
+    alt = copy.deepcopy(schema)
+    grund = alt["$defs"]["ausschlussgrund"]
+    grund["enum"] = [g for g in grund["enum"] if g not in FASSUNG_4_GRUENDE]
+    alt["$defs"]["session_finding"]["properties"]["ausschluesse"]["maxItems"] = \
+        FASSUNG_3_AUSSCHLUSS_MAX
+    return alt
+
+
+def pruefe_nak213_fassung_4(lauf: Lauf, schema: dict, reserviert: dict) -> None:
+    """NAK-213 R1/R3/R6/R7 - der Rueckbau auf die Fassung 3.
+
+    Derselbe Riegel wie SONDE-013 und SONDE-014, eine Fassung weiter: EIN
+    Fassungsschritt traegt alle P1-Vertragsaenderungen dieses Tickets, und ein
+    Leser der Fassung 3 LEHNT jede von ihnen AB, statt sie still auf einen
+    bekannten Wert oder eine bekannte Laenge abzubilden.
+    """
+    fassung = reserviert.get("wire_envelope_schema_minor", {}).get("fassungen", {}).get("4", {})
+    lauf.wahr("fassung_4_nennt_jede_neuerung_dieses_tickets",
+              fassung.get("ausschlussgrund_erweitert") == FASSUNG_4_GRUENDE
+              and fassung.get("session_finding_ausschluesse_max") == 64
+              and isinstance(fassung.get("hinweis"), str)
+              and isinstance(fassung.get("begruendung"), str))
+
+    lauf.wahr("fassung_4_hebt_die_ausschlussgrenze_auf_SESSION_CLIENT_CAP",
+              schema["$defs"]["session_finding"]["properties"]["ausschluesse"]["maxItems"] == 64
+              # Die Nachbarlisten bleiben unberuehrt: sie zaehlen Befunde
+              # beziehungsweise Belege, nicht Kandidaten.
+              and schema["$defs"]["session_finding"]["properties"]["alternatives"]["maxItems"] == 8
+              and schema["$defs"]["session_finding"]["properties"]["evidence_ids"]["maxItems"] == 32
+              and schema["$defs"]["session_finding"]["properties"]["evidence_ids"]["minItems"] == 1)
+
+    pruefer_4 = jsonschema.Draft202012Validator(schema)
+    pruefer_3 = jsonschema.Draft202012Validator(fassung_3_schema(schema))
+
+    def lade(name: str) -> dict:
+        return json_laden_strikt((FIXTURES / f"gueltig/{name}.json").read_text(encoding="utf-8"))
+
+    # Rueckbau auf Fassung 3, Haelfte 1: die zwei neuen Gruende (K-46).
+    for grund in FASSUNG_4_GRUENDE:
+        name = f"finding-ausschlussgrund-{grund.replace('_', '-')}-in-fassung-3"
+        daten = lade(name)
+        lauf.wahr(f"fassung_3_leser_lehnt_{grund}_ab",
+                  pruefer_4.is_valid(daten) and not pruefer_3.is_valid(daten))
+
+    # Rueckbau auf Fassung 3, Haelfte 2: die Laengengrenze (K-50). Vier
+    # Raender, jeder einzeln - 32 gilt in beiden, 33 und 64 nur in Fassung 4,
+    # 65 in keiner.
+    zweiunddreissig = lade("session-snapshot-mit-findings")
+    lauf.wahr("fassung_3_leser_nimmt_eine_kurze_ausschlussliste_weiter_an",
+              pruefer_4.is_valid(zweiunddreissig) and pruefer_3.is_valid(zweiunddreissig))
+    for name in ("finding-33-ausschluesse", "finding-64-ausschluesse"):
+        daten = lade(name)
+        lauf.wahr(f"fassung_3_leser_lehnt_{name.replace('-', '_')}_ab",
+                  pruefer_4.is_valid(daten) and not pruefer_3.is_valid(daten))
+    fuenfundsechzig = json_laden_strikt(
+        (FIXTURES / "ungueltig/finding-65-ausschluesse.json").read_text(encoding="utf-8"))
+    lauf.wahr("65_ausschluesse_fallen_in_BEIDEN_fassungen",
+              not pruefer_4.is_valid(fuenfundsechzig)
+              and not pruefer_3.is_valid(fuenfundsechzig))
+
+    # Gegenprobe zum Rueckbau selbst: er muss etwas aendern UND darf nicht
+    # mehr entfernen als seine Liste. Ein Rueckbau, der das Schema zerstoert,
+    # saehe sonst wie eine erfuellte Zusage aus (Muster Fassung 2).
+    lauf.wahr("Gegenprobe: der Rueckbau auf Fassung 3 aendert das Schema wirklich",
+              fassung_3_schema(schema) != schema
+              and pruefer_3.is_valid(lade("session_snapshot"))
+              and pruefer_3.is_valid(lade("session-snapshot-mit-findings"))
+              and pruefer_3.is_valid(lade("evidence_snapshot")))
+
+    # NB-3 (Befund 7 der Matrixpruefung 1): die C++-Fassungszahl war von
+    # KEINEM Bein gegen die Rust-Zahl gemessen. Dieser Textriegel liest sie aus
+    # dem Header und haelt sie gegen `aktuell` im Register - dasselbe Muster
+    # wie `metrics_version_bindet_schwellen`.
+    header = WURZEL / "eq-copilot/plugin/core/ipc/WireEnvelope.h"
+    treffer = re.search(
+        r"^inline\s+constexpr\s+std::uint8_t\s+kJsonSchemaMinor\s*=\s*(\d+)u?\s*;",
+        header.read_text(encoding="utf-8"), re.MULTILINE)
+    aktuell = reserviert.get("wire_envelope_schema_minor", {}).get("aktuell")
+    lauf.wahr("wire_envelope_minor_bindet_den_cpp_leser",
+              treffer is not None and int(treffer.group(1)) == aktuell,
+              f"Header {treffer.group(1) if treffer else 'nicht gefunden'!r}, "
+              f"Register {aktuell!r}")
 
 
 def pruefe_runtime_und_p2_reject(lauf: Lauf, schema: dict) -> None:
@@ -2008,6 +2119,7 @@ def main(argv: list[str]) -> int:
     pruefe_namen(lauf, schema, reserviert)
     pruefe_sonde013_fassung_2(lauf, schema, reserviert)
     pruefe_sonde014_fassung_3(lauf, schema, reserviert)
+    pruefe_nak213_fassung_4(lauf, schema, reserviert)
     pruefe_probe_descriptor(lauf, schema, reserviert)
     pruefe_runtime_und_p2_reject(lauf, schema)
     pruefe_session_command_und_store(lauf, schema)

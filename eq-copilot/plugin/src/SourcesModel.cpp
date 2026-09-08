@@ -942,31 +942,53 @@ SourcesModel::SnapshotErgebnis SourcesModel::uebernehmeSessionSnapshot (
                     b.alternatives.push_back (a.toString().toStdString());
                 }
             }
-            // 🔑 M-87: die ACHT Ausschlussgruende, geschlossen. Ein Kandidat
-            // ohne Grund ist ein Defekt — hier faellt er als ungueltiges Feld.
+            // 🔑 M-87: die Ausschlussgruende, geschlossen. Ein Kandidat ohne
+            // Grund ist ein Defekt — hier faellt er als ungueltiges Feld.
+            //
+            // 🔑 NAK-213 (R6/R7, M-77): DREI Grenzen heissen hier verschieden
+            // und werden nicht vermischt — die Fassungsobergrenze des Lesers
+            // (`kJsonSchemaMinor`, oben bei :532), die Fassungszahl des
+            // eingehenden Rahmens (`schemaMinor`) und die Laengengrenze dieser
+            // Liste. Die letzten beiden haengen zusammen: `schemaMinor <= 3`
+            // laesst hoechstens 32 Ausschluesse zu und KEINEN der zwei Gruende
+            // aus der Fassung 4, `schemaMinor >= 4` bis zu SESSION_CLIENT_CAP
+            // = 64 und beide Gruende. Genau dieselbe Regel setzen das Schema
+            // und der Rust-Rueckbau `v3_schema_minor_3_wurzel` durch; eine
+            // unbedingte Grenze hier nahme Snapshots an, die dort fallen — der
+            // einseitige Riegel, den M-77 fuer „jede Laengen- oder Enumgrenze"
+            // verbietet.
             if (f->hasProperty ("ausschluesse"))
             {
+                const bool fassung4 = schemaMinor >= 4;
+                const int hoechstens = fassung4 ? 64 : 32;
                 const auto* aus = f->getProperty ("ausschluesse").getArray();
-                if (aus == nullptr || aus->size() > 32)
+                if (aus == nullptr || aus->size() > hoechstens)
                 {
-                    fehler = "session finding exclusions are not an array of at most 32";
+                    fehler = "session finding exclusions exceed the limit of the incoming schema_minor";
                     return SnapshotErgebnis::ungueltig;
                 }
                 for (const auto& a : *aus)
                 {
                     const auto* ao = objekt (a);
                     std::string grund;
+                    const bool grundBekannt =
+                        ao != nullptr
+                        && (ausMenge (ao->getProperty ("grund"),
+                                      { "coverage_fehlt", "alignment_falsch",
+                                        "passage_unvergleichbar", "passage_zu_kurz",
+                                        "intent_veto_geschuetzt",
+                                        "intent_veto_verschmolzen",
+                                        "capability_fehlt",
+                                        "evidenz_zurueckgenommen" }, grund)
+                            || (fassung4
+                                && ausMenge (ao->getProperty ("grund"),
+                                             { "screening_ueberboten",
+                                               "master_duplikat" }, grund)));
                     if (ao == nullptr
                         || ! exakteFelder (*ao, { "candidate_source", "grund" })
                         || ! ao->getProperty ("candidate_source").isString()
                         || ! hex32 (ao->getProperty ("candidate_source").toString())
-                        || ! ausMenge (ao->getProperty ("grund"),
-                                       { "coverage_fehlt", "alignment_falsch",
-                                         "passage_unvergleichbar", "passage_zu_kurz",
-                                         "intent_veto_geschuetzt",
-                                         "intent_veto_verschmolzen",
-                                         "capability_fehlt",
-                                         "evidenz_zurueckgenommen" }, grund))
+                        || ! grundBekannt)
                     {
                         fehler = "session finding exclusion is invalid";
                         return SnapshotErgebnis::ungueltig;

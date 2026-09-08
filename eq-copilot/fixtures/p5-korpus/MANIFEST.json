@@ -25,7 +25,9 @@
       "intent_veto_geschuetzt",
       "intent_veto_verschmolzen",
       "capability_fehlt",
-      "evidenz_zurueckgenommen"
+      "evidenz_zurueckgenommen",
+      "screening_ueberboten",
+      "master_duplikat"
     ],
     "keine_starke": [
       "distraktor",

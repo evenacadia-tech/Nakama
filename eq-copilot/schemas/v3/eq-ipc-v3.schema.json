@@ -1785,7 +1785,7 @@
     },
 
     "ausschlussgrund": {
-      "$comment": "SONDE-014 R4 (M-87): Entwurf §59 Lieferumfang Punkt 2 verlangt AUSSCHLUSSGRUENDE. Jeder Kandidat, der aus dem Ranking ausscheidet, traegt einen Grund aus dieser geschlossenen Menge; ein kommentarlos entfernter Kandidat ist ein Defekt. Jeder Wert ist an eine Matrixzeile gebunden: coverage_fehlt und alignment_falsch an M-20, passage_unvergleichbar und passage_zu_kurz an M-23, die beiden Vetos an M-03/M-04, capability_fehlt an M-44/M-52, evidenz_zurueckgenommen an M-24.",
+      "$comment": "SONDE-014 R4 (M-87): Entwurf §59 Lieferumfang Punkt 2 verlangt AUSSCHLUSSGRUENDE. Jeder Kandidat, der aus dem Ranking ausscheidet, traegt einen Grund aus dieser geschlossenen Menge; ein kommentarlos entfernter Kandidat ist ein Defekt. Jeder Wert ist an eine Matrixzeile gebunden: coverage_fehlt und alignment_falsch an M-20, passage_unvergleichbar und passage_zu_kurz an M-23, die beiden Vetos an M-03/M-04, capability_fehlt an M-44/M-52, evidenz_zurueckgenommen an M-24. NAK-213 (Fassung 4, R1/R3) haengt ZWEI Werte an: `screening_ueberboten` traegt den Kandidaten, der jedes Gate bestanden, den Deckel aus M-18 aber nicht erreicht hat - bis hierher verschwand er kommentarlos, was M-87 ausdruecklich verbietet; `master_duplikat` traegt die Quelle auf dem Mixerkanal des fuehrenden Mains, die das Mastersignal selbst misst und deshalb nie dessen Ursache sein kann. Ein Leser der Fassung 3 lehnt BEIDE ab, statt sie still auf einen bekannten Grund abzubilden.",
       "enum": [
         "coverage_fehlt",
         "alignment_falsch",
@@ -1794,7 +1794,9 @@
         "intent_veto_geschuetzt",
         "intent_veto_verschmolzen",
         "capability_fehlt",
-        "evidenz_zurueckgenommen"
+        "evidenz_zurueckgenommen",
+        "screening_ueberboten",
+        "master_duplikat"
       ]
     },
 
@@ -1898,9 +1900,10 @@
           "items": { "$ref": "#/$defs/hex32" }
         },
         "ausschluesse": {
+          "$comment": "NAK-213 R6 (Fassung 4): die Obergrenze ist SESSION_CLIENT_CAP = 64 - die Zahl, die die Sitzungsgroesse ohnehin bindet (ein Main und bis zu 63 Sonden), keine geratene. Bis Fassung 3 stand sie auf 32. Der Deckelschnitt aus R1 erzeugt zum ersten Mal mehr als 32 Ausschluesse an EINEM Befund, und M-87 laesst kein stilles Kappen zu: jeder Kandidat, der ausscheidet, traegt seinen Grund. Mehr Ausschluesse als Quellen der Sitzung kann es nicht geben. Ein Leser der Fassung 3 laesst weiterhin hoechstens 32 zu - dieselbe Regel in Schema, Rust-Rueckbau und C++-Leser (M-77).",
           "type": "array",
           "minItems": 0,
-          "maxItems": 32,
+          "maxItems": 64,
           "items": { "$ref": "#/$defs/finding_ausschluss" }
         },
         "maskierung": { "$ref": "#/$defs/maskierung" },

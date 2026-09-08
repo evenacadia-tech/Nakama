@@ -248,7 +248,11 @@ impl NaechsterTest {
     }
 }
 
-/// Die ACHT Ausschlussgruende (M-87, R4). Geschlossen und beidseitig geprueft.
+/// Die ZEHN Ausschlussgruende (M-87, R4). Geschlossen und beidseitig geprueft.
+///
+/// NAK-213 (Fassung 4) haengt die letzten zwei an — ANS ENDE, weil `wire()`
+/// und `aus_wire()` ueber den Index gehen (`ausschlussgruende_sind_index_treu`)
+/// und ein Einschub jede bestehende Zahl verschoebe.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Ausschlussgrund {
     CoverageFehlt,
@@ -259,9 +263,16 @@ pub enum Ausschlussgrund {
     IntentVetoVerschmolzen,
     CapabilityFehlt,
     EvidenzZurueckgenommen,
+    /// R1 (NAK-213): jedes Gate bestanden, den Deckel aus M-18 nicht erreicht.
+    /// Der Kandidat ist nicht widerlegt, sondern UEBERBOTEN — und er
+    /// verschwindet nicht mehr kommentarlos (M-87).
+    ScreeningUeberboten,
+    /// R3 (NAK-213): der Kandidat misst den Mixerkanal des fuehrenden Mains.
+    /// Wer das Mastersignal misst, ist nie dessen Ursache.
+    MasterDuplikat,
 }
 
-pub const AUSSCHLUSSGRUENDE: [&str; 8] = [
+pub const AUSSCHLUSSGRUENDE: [&str; 10] = [
     "coverage_fehlt",
     "alignment_falsch",
     "passage_unvergleichbar",
@@ -270,6 +281,8 @@ pub const AUSSCHLUSSGRUENDE: [&str; 8] = [
     "intent_veto_verschmolzen",
     "capability_fehlt",
     "evidenz_zurueckgenommen",
+    "screening_ueberboten",
+    "master_duplikat",
 ];
 
 impl Ausschlussgrund {
@@ -284,7 +297,7 @@ impl Ausschlussgrund {
             .map(|i| Self::ALLE[i])
     }
 
-    pub const ALLE: [Ausschlussgrund; 8] = [
+    pub const ALLE: [Ausschlussgrund; 10] = [
         Self::CoverageFehlt,
         Self::AlignmentFalsch,
         Self::PassageUnvergleichbar,
@@ -293,6 +306,8 @@ impl Ausschlussgrund {
         Self::IntentVetoVerschmolzen,
         Self::CapabilityFehlt,
         Self::EvidenzZurueckgenommen,
+        Self::ScreeningUeberboten,
+        Self::MasterDuplikat,
     ];
 }
 
@@ -2413,7 +2428,12 @@ mod tests {
     #[test]
     fn geschlossene_mengen_sind_rund() {
         assert_eq!(URSACHENKLASSEN.len(), 7);
-        assert_eq!(AUSSCHLUSSGRUENDE.len(), 8);
+        // NAK-213 (Fassung 4): zwei Gruende kommen dazu, AM ENDE.
+        assert_eq!(AUSSCHLUSSGRUENDE.len(), 10);
+        assert_eq!(
+            &AUSSCHLUSSGRUENDE[8..],
+            &["screening_ueberboten", "master_duplikat"]
+        );
         assert_eq!(AUSSAGEKLASSEN.len(), 3);
         assert_eq!(ZIELMETRIKEN.len(), 5);
         assert_eq!(NAECHSTE_TESTS.len(), 6);

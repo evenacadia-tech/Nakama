@@ -1,0 +1,68 @@
+NAK-213 Rotbeweis K-45 — die gewachsene Gruendemenge steht in FUENF Spiegeln (M-77)
+Datum: 2026-09-08
+
+Zurueckgenommen: der RUST-Spiegel. `AUSSCHLUSSGRUENDE[9]` traegt statt
+`master_duplikat` noch einmal `screening_ueberboten` — genau die Drift, gegen
+die M-77 den beidseitigen Test verlangt. Laenge und Indexordnung bleiben
+formal gueltig; nur der Wert weicht vom Vertrag ab.
+
+Erwartet: das Bein faellt an der Stelle, die Rust gegen den Vertrag haelt.
+Ohne diese Wache liefe die Abweichung still bis zum ersten Snapshot, den ein
+C++-Leser abweist.
+
+========================================================================
+Rotlauf: Integrationsbein (Vertragsmenge gegen Rust-Menge)
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never --test sonde014_hypothese ausschlussgruende
+Exitcode: 101
+========================================================================
+running 1 test
+test ausschlussgruende_sind_geschlossen_und_reisen_mit ... FAILED
+
+failures:
+
+---- ausschlussgruende_sind_geschlossen_und_reisen_mit stdout ----
+
+thread 'ausschlussgruende_sind_geschlossen_und_reisen_mit' (24604) panicked at tests\sonde014_hypothese.rs:1191:9:
+master_duplikat
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    ausschlussgruende_sind_geschlossen_und_reisen_mit
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 24 filtered out; finished in 0.00s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.86s
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+error: test failed, to rerun pass `--test sonde014_hypothese`
+
+========================================================================
+Rotlauf: Modulebene (Index-Treue der Wireform)
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never --lib geschlossene_mengen_sind_rund
+Exitcode: 101
+========================================================================
+running 1 test
+test coordinator::hypothese::tests::geschlossene_mengen_sind_rund ... FAILED
+
+failures:
+
+---- coordinator::hypothese::tests::geschlossene_mengen_sind_rund stdout ----
+
+thread 'coordinator::hypothese::tests::geschlossene_mengen_sind_rund' (20188) panicked at src\coordinator\hypothese.rs:2433:9:
+assertion `left == right` failed
+  left: ["screening_ueberboten", "screening_ueberboten"]
+ right: ["screening_ueberboten", "master_duplikat"]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    coordinator::hypothese::tests::geschlossene_mengen_sind_rund
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 236 filtered out; finished in 0.00s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.87s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+error: test failed, to rerun pass `--lib`
+

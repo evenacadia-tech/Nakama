@@ -1,0 +1,70 @@
+NAK-213 Rotbeweis K-46 — der Leser waehlt die FASSUNG, nicht nur seine Obergrenze (R7, M-77)
+Datum: 2026-09-08
+
+Zurueckgenommen, in BEIDEN Sprachen:
+  (a) C++ (`SourcesModel.cpp`): die Gruendeliste waechst auf zehn, aber OHNE
+      Fassungsbindung — `screening_ueberboten` und `master_duplikat` werden in
+      JEDER eingehenden Fassung angenommen.
+  (b) Rust (`schema.rs`): `v3_schema_minor_3_wurzel` entfernt die zwei neuen
+      Enumwerte NICHT mehr; der Rueckbau kennt sie also weiter.
+
+Erwartet: (a) der C++-Fall `K-46 ... faellt in Fassung 3` schlaegt fehl — der
+Leser nimmt einen Fassung-3-Snapshot mit einem Grund an, den Schema und
+Rust-Rueckbau abweisen; (b) der Rust-Modultest
+`fassung_3_kennt_die_neuen_gruende_nicht` faellt, weil die Fixture in der
+Fassung 3 gueltig bleibt. Genau diese Asymmetrie verbietet M-77.
+
+========================================================================
+Rotlauf (b): Rust-Rueckbau ohne Entfernen der zwei Gruende
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never --lib fassung_3_kennt_die_neuen_gruende_nicht
+Exitcode: 101
+========================================================================
+running 1 test
+test coordinator::schema::fassungsleiter_tests::fassung_3_kennt_die_neuen_gruende_nicht ... FAILED
+
+failures:
+
+---- coordinator::schema::fassungsleiter_tests::fassung_3_kennt_die_neuen_gruende_nicht stdout ----
+
+thread 'coordinator::schema::fassungsleiter_tests::fassung_3_kennt_die_neuen_gruende_nicht' (2924) panicked at src\coordinator\schema.rs:527:13:
+finding-ausschlussgrund-screening-ueberboten-in-fassung-3 darf in Fassung 3 NICHT gelten — sonst urteilen Rust und C++ verschieden
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    coordinator::schema::fassungsleiter_tests::fassung_3_kennt_die_neuen_gruende_nicht
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 236 filtered out; finished in 0.01s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.66s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+error: test failed, to rerun pass `--lib`
+
+========================================================================
+Rotlauf: Bau von B28
+Befehl: C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe --build eq-copilot/build --config Release --target EqCopSonde014BefundTest
+Exitcode: 0
+========================================================================
+EqCopSonde014BefundTest.vcxproj -> C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSonde014BefundTest_artefacts\Release\EqCopSonde014BefundTest.exe
+
+========================================================================
+Rotlauf: B28 EqCopSonde014BefundTest (gefiltert auf die NAK-213-Zeilen)
+Befehl: eq-copilot\build\plugin\EqCopSonde014BefundTest_artefacts\Release\EqCopSonde014BefundTest.exe
+Exitcode: 1
+========================================================================
+FEHLER  K-46: screening_ueberboten faellt in Fassung 3
+  ok      K-46: screening_ueberboten gilt in Fassung 4 und kommt an
+  FEHLER  K-46: master_duplikat faellt in Fassung 3
+  ok      K-46: master_duplikat gilt in Fassung 4 und kommt an
+  ok      K-46 Gegenprobe: ein bekannter Grund gilt in Fassung 3 weiter
+  ok      K-50: Fassung 3 nimmt 32 an (Altstand liest weiter)
+  ok      K-50: Fassung 3 weist 33 ab  [session finding exclusions exceed the limit of the incoming schema_minor]
+  ok      K-50: Fassung 4 nimmt 33 an
+  ok      K-50: Fassung 4 nimmt 64 an (SESSION_CLIENT_CAP)
+  ok      K-50: Fassung 4 weist 65 ab  [session finding exclusions exceed the limit of the incoming schema_minor]
+  ok      K-47: ein Rahmen der Fassung 4 passiert den Leser
+  ok      K-47 Gegenprobe nach oben: die Fassung 5 gibt es nicht  [session_snapshot schema_minor is newer than this Main reader]
+  ok      K-47: die C++-Fassungszahl steht auf 4 (Textriegel A5 haelt sie gegen das Register)
+SONDE-014 Befund und Maskierung: 71/73 gruen
+

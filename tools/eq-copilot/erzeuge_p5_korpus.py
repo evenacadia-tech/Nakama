@@ -105,7 +105,11 @@ KEINE_STARKE = [
 # der eine starke Aussage ZULAESSIG ist. Ohne sie waere jeder Riegel trivial.
 WAHRHEITEN = KEINE_STARKE + ["wahre_ursache"]
 
-# Die acht Ausschlussgruende aus M-87.
+# Die zehn Ausschlussgruende aus M-87. Der fuenfte Spiegel der geschlossenen
+# Menge: er riegelt jede Sitzungserwartung gegen sie und schreibt sie als
+# `mengen.ausschlussgruende` in das Korpus-MANIFEST. NAK-213 (Fassung 4)
+# haengt die letzten zwei AN DAS ENDE - dieselbe Reihenfolge wie in Vertrag,
+# Rust und C++, weil `wire()`/`aus_wire()` ueber den Index gehen.
 AUSSCHLUSSGRUENDE = [
     "coverage_fehlt",
     "alignment_falsch",
@@ -115,6 +119,8 @@ AUSSCHLUSSGRUENDE = [
     "intent_veto_verschmolzen",
     "capability_fehlt",
     "evidenz_zurueckgenommen",
+    "screening_ueberboten",
+    "master_duplikat",
 ]
 
 # Die drei Zusammenhangskomponenten aus E1 — die geschlossene Menge, aus der

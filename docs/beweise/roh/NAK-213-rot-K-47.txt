@@ -1,0 +1,54 @@
+NAK-213 Rotbeweis K-47 — die FUENFTE Fassungszahl (`kJsonSchemaMinor`) ist gemessen, nicht behauptet
+Datum: 2026-09-08
+
+Zurueckgenommen: `WireEnvelope.h` steht wieder auf 3, waehrend Register,
+`JSON_SCHEMA_MINOR_AKTIV`, `P0_SCHEMA_MINOR` und `P1_SCHEMA_MINOR` auf 4
+stehen — genau die Lage, gegen die der Kommentar im Header bis NAK-213 ein
+Bein BEHAUPTET hat, das es nicht gab (Nebenbefund NB-3).
+
+Zwei Messungen, beide neu:
+  (i)  B28-Fall `K-47: ein Rahmen der Fassung 4 passiert den Leser`. Der
+       Rahmen gibt die 4 UNABHAENGIG vor (Overload MIT Fassungsparameter);
+       mit `kJsonSchemaMinor = 3` faellt er an der Fassungsobergrenze des
+       Lesers. Der frueher zugesagte Rotbeweis trat NICHT ein: der
+       Aufnahmehelfer benutzte den Overload OHNE Fassungsparameter, der
+       dieselbe Konstante auf beiden Seiten des Vergleichs einsetzt.
+  (ii) Textriegel `wire_envelope_minor_bindet_den_cpp_leser` in
+       `pruefe_v3_vertrag.py` (A5): er liest die Zahl aus dem Header und haelt
+       sie gegen `wire_envelope_schema_minor.aktuell` im Register.
+
+========================================================================
+Rotlauf (ii): A5 pruefe_v3_vertrag.py (gefiltert)
+Befehl: py -3.13 tools/eq-copilot/pruefe_v3_vertrag.py --abdeckung
+Exitcode: 2
+========================================================================
+Pruefungen: 612 bestanden, 1 gescheitert
+  ROT: wire_envelope_minor_bindet_den_cpp_leser — Header '3', Register 4
+
+========================================================================
+Rotlauf (i): Bau von B28
+Befehl: C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe --build eq-copilot/build --config Release --target EqCopSonde014BefundTest
+Exitcode: 0
+========================================================================
+EqCopSonde014BefundTest.vcxproj -> C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSonde014BefundTest_artefacts\Release\EqCopSonde014BefundTest.exe
+
+========================================================================
+Rotlauf (i): B28 (gefiltert auf die NAK-213-Zeilen)
+Befehl: eq-copilot\build\plugin\EqCopSonde014BefundTest_artefacts\Release\EqCopSonde014BefundTest.exe
+Exitcode: 1
+========================================================================
+ok      K-46: screening_ueberboten faellt in Fassung 3  [session finding exclusion is invalid]
+  FEHLER  K-46: screening_ueberboten gilt in Fassung 4 und kommt an  [session_snapshot schema_minor is newer than this Main reader]
+  ok      K-46: master_duplikat faellt in Fassung 3  [session finding exclusion is invalid]
+  FEHLER  K-46: master_duplikat gilt in Fassung 4 und kommt an  [session_snapshot schema_minor is newer than this Main reader]
+  ok      K-46 Gegenprobe: ein bekannter Grund gilt in Fassung 3 weiter
+  ok      K-50: Fassung 3 nimmt 32 an (Altstand liest weiter)
+  ok      K-50: Fassung 3 weist 33 ab  [session finding exclusions exceed the limit of the incoming schema_minor]
+  FEHLER  K-50: Fassung 4 nimmt 33 an  [session_snapshot schema_minor is newer than this Main reader]
+  FEHLER  K-50: Fassung 4 nimmt 64 an (SESSION_CLIENT_CAP)  [session_snapshot schema_minor is newer than this Main reader]
+  ok      K-50: Fassung 4 weist 65 ab  [session_snapshot schema_minor is newer than this Main reader]
+  FEHLER  K-47: ein Rahmen der Fassung 4 passiert den Leser  [session_snapshot schema_minor is newer than this Main reader]
+  ok      K-47 Gegenprobe nach oben: die Fassung 5 gibt es nicht  [session_snapshot schema_minor is newer than this Main reader]
+  FEHLER  K-47: die C++-Fassungszahl steht auf 4 (Textriegel A5 haelt sie gegen das Register)
+SONDE-014 Befund und Maskierung: 67/73 gruen
+

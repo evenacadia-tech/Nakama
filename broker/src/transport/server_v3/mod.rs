@@ -167,8 +167,11 @@ pub const CAP_WRITER: usize = 256;
 /// vier `eqcop-store-crash-worker` warteten 17 Minuten ohne CPU-Last auf ein
 /// `command_ack`, das nie kam. Ein Fassungsschritt ist erst vollstaendig,
 /// wenn BEIDE Seiten und der Transport dazwischen ihn kennen.
-const P0_SCHEMA_MINOR: u8 = 3;
-const P1_SCHEMA_MINOR: u8 = 3;
+/// NAK-213 (08.09.2026) hebt **P0 und P1** auf 4: die zwei neuen
+/// Ausschlussgruende `screening_ueberboten` und `master_duplikat` und die von
+/// 32 auf `SESSION_CLIENT_CAP` gehobene Laenge der Ausschlussliste reisen dort.
+const P0_SCHEMA_MINOR: u8 = 4;
+const P1_SCHEMA_MINOR: u8 = 4;
 const P2_SCHEMA_MINOR: u8 = 1;
 
 fn schema_minor_bekannt(familie: Familie, schema_minor: u8) -> bool {
@@ -718,14 +721,18 @@ mod tests {
         assert!(schema_minor_bekannt(Familie::P1, 2));
         assert!(schema_minor_bekannt(Familie::P0, 3));
         assert!(schema_minor_bekannt(Familie::P1, 3));
+        // NAK-213: die Fassung 4 ist ab hier bekannt, die 3 bleibt lesbar.
+        assert!(schema_minor_bekannt(Familie::P0, 4));
+        assert!(schema_minor_bekannt(Familie::P1, 4));
         // P2 nicht: dort ist seit SONDE-013 nichts hinzugekommen, was eine
         // Fassung braeuchte - `integration_samples` ist ein optionales
         // FlatBuffers-Feld und damit der additive Fall, den das Format traegt.
         assert!(!schema_minor_bekannt(Familie::P2, 2));
         // Und die Gegenprobe nach oben: eine Fassung, die es nicht gibt,
         // wird auch bei P0/P1 abgewiesen.
+        // NAK-213: derselbe Randwert eine Fassung weiter — aus 4 wird 5.
         for familie in [Familie::P0, Familie::P1, Familie::P2] {
-            assert!(!schema_minor_bekannt(familie, 4));
+            assert!(!schema_minor_bekannt(familie, 5));
             assert!(!schema_minor_bekannt(familie, 200));
         }
     }

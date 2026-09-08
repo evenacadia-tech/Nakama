@@ -6,8 +6,8 @@
   "pruefung": "pruefe_v3_vertrag.py prueft, dass sich reservierte, belegte und definierte Namen konsistent verhalten, dass alle reservierten Namen ohne Nutzlast bleiben und dass die Summe 31 ergibt.",
   "wire_envelope_schema_minor": {
     "familie": "P1",
-    "vorher": 2,
-    "aktuell": 3,
+    "vorher": 3,
+    "aktuell": 4,
     "auswahlregel": "Der Empfaenger waehlt die JSON-Schemafassung anhand von message_family und schema_minor im Wire-Envelope; im Payload entsteht kein weiteres Versionsfeld.",
     "fassungen": {
       "0": {
@@ -71,6 +71,15 @@
           "proposal_parameter", "proposal_grenzen", "proposal",
           "draft_offer", "user_urteil", "user_verdict", "experiment_ziel"
         ]
+      },
+      "4": {
+        "hinweis": "NAK-213 (G5-Nacharbeit 2) hebt den Minor GENAU EINMAL. Beide P1-Vertragsaenderungen dieses Tickets liegen in dieser einen Fassung; ein Leser der Fassung 3 lehnt sie ab, statt sie still auf einen bekannten Wert oder eine bekannte Laenge abzubilden. Zwei Teilschritte an demselben schema_minor haetten zwei Zwischenstaende ergeben, von denen jeder eine eigene Fassungsleiter braeuchte.",
+        "ausschlussgrund_erweitert": [
+          "screening_ueberboten",
+          "master_duplikat"
+        ],
+        "session_finding_ausschluesse_max": 64,
+        "begruendung": "R1 (M-18/M-87): der Kandidatendeckel schneidet seit NAK-213 VOR Stufe B, und jeder am Deckel Ausgeschiedene traegt `screening_ueberboten` - vorher verschwand er kommentarlos. R3: eine Quelle auf dem Mixerkanal des fuehrenden Mains misst das Mastersignal und faellt mit `master_duplikat`, statt zur starken Ursache des Masters zu werden. R6: weil die Ausschlussliste NIE gekappt wird, steigt `session_finding.ausschluesse.maxItems` in DERSELBEN Fassung von 32 auf SESSION_CLIENT_CAP = 64 - ein Main und bis zu 63 Sonden, also nie mehr Ausschluesse als Quellen der Sitzung. R6/R7: Enumwerte UND Laengengrenze sind an die eingehende Fassung gebunden, in Schema, Rust-Rueckbau, C++-Leser und Python-Pruefer (M-77)."
       }
     }
   },

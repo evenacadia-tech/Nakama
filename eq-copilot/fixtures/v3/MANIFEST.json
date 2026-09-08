@@ -6,8 +6,8 @@
   "wurzel_skalar": "Markiert ein Fixture, dessen Wurzel weder Objekt noch Array ist. JUCEs JSON-Leser folgt RFC 4627 und lehnt es schon im PARSER ab; serde_json und Python folgen RFC 8259 und lehnen es erst am Schema ab. Beide Wege sind eine Ablehnung, nur an verschiedenen Stellen - die Verletzungsmenge gilt daher nur fuer die Beine mit RFC-8259-Parser.",
   "sortierung": "Verletzungen sind kanonisch nach (instanz, schema, schluessel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
   "textriegel_lehnt_ab": "Markiert ein Fixture, das der TEXTRIEGEL abweist, BEVOR ein Parser es sieht. Diese Fixtures tragen keine Verletzungsmenge, weil sie das Schema nie erreichen — eine erfundene waere eine Luege ueber den Ort der Ablehnung. Regeln und Begruendung: schemas/v3/README.md.",
-  "anzahl_gueltig": 104,
-  "anzahl_ungueltig": 284,
+  "anzahl_gueltig": 108,
+  "anzahl_ungueltig": 285,
   "fixtures": [
     {
       "datei": "gueltig/assistant-step-ohne-bezug.json",
@@ -307,6 +307,30 @@
       "datei": "gueltig/experiment_manual_result.json",
       "urteil": "gueltig",
       "warum": "Grundform der Familie",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/finding-33-ausschluesse.json",
+      "urteil": "gueltig",
+      "warum": "NAK-213 R6 (K-50): 33 ist der kleinste Ueberlauf ueber die Grenze der Fassung 3 und produktiv erreichbar (38 gate-faehige Sonden). In Fassung 4 gueltig, in Fassung 3 ungueltig - die Ausschlussliste wird nie gekappt (M-87)",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/finding-64-ausschluesse.json",
+      "urteil": "gueltig",
+      "warum": "NAK-213 R6 (K-50): der obere Rand SESSION_CLIENT_CAP = 64. Mehr Ausschluesse als Quellen der Sitzung kann es nicht geben; die Grenze ist damit selbst gebunden und nicht geraten",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/finding-ausschlussgrund-master-duplikat-in-fassung-3.json",
+      "urteil": "gueltig",
+      "warum": "NAK-213 R1/R3 (K-46): `master_duplikat` gilt AB Fassung 4. Ein Leser der Fassung 3 muss dieses Dokument ABLEHNEN, statt den Grund still auf einen bekannten abzubilden - gemessen im Rueckbau (A5) und in SourcesModel (B28)",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/finding-ausschlussgrund-screening-ueberboten-in-fassung-3.json",
+      "urteil": "gueltig",
+      "warum": "NAK-213 R1/R3 (K-46): `screening_ueberboten` gilt AB Fassung 4. Ein Leser der Fassung 3 muss dieses Dokument ABLEHNEN, statt den Grund still auf einen bekannten abzubilden - gemessen im Rueckbau (A5) und in SourcesModel (B28)",
       "verletzungen": []
     },
     {
@@ -1885,6 +1909,18 @@
           "instanz": "/code",
           "schema": "#/$defs/fehlercode/enum",
           "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/finding-65-ausschluesse.json",
+      "urteil": "ungueltig",
+      "warum": "NAK-213 R6 (K-50): 65 faellt in BEIDEN Fassungen. Die Grenze ist SESSION_CLIENT_CAP = 64 - ein Main und bis zu 63 Sonden -, also kann kein Befund mehr Ausschluesse tragen als die Sitzung Quellen hat",
+      "verletzungen": [
+        {
+          "instanz": "/findings/0/ausschluesse",
+          "schema": "#/$defs/session_finding/properties/ausschluesse/maxItems",
+          "schluessel": "maxItems"
         }
       ]
     },

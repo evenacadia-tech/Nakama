@@ -549,13 +549,36 @@ fn experimentziel_ueberlebt_den_brokerneustart() {
 // Die Familie fiel bis zur Nacharbeit 1 in `_ => None`: der Schema-Leser
 // nahm sie an, der Coordinator kannte sie nicht, und weder Persistenz noch
 // ACK entstanden. Die Projektion `user_verdicts` hatte keinen Produzenten.
+/// **NAK-214 R4 (08.09.2026): die Buehne traegt jetzt einen echten Befund.**
+///
+/// Bis dahin ging das Urteil auf die feste `finding_id` der Fixture, und die
+/// trug in dieser Sitzung kein Befund. Der Fall schrieb damit genau die
+/// Abweichung fest, die der G5-Befund E-L5 benennt — dieselbe Sorte, die
+/// WN-04 am Proposal gefunden hat. Seit R4 weist der Broker ein Urteil ohne
+/// Befund mit `abgelehnt/unknown_target` ab; die Zusage DIESES Falles —
+/// Persistenz und Idempotenz eines `user_verdict` — bleibt unveraendert und
+/// wird jetzt auf einer Lage gemessen, die es wirklich gibt.
+fn buehne_mit_befund(h: &Harnisch) -> String {
+    h.intent_marke(0);
+    h.belege("main", &h.master, 0, 12);
+    h.belege("sonde0", &h.sonde, 100, 12);
+    let befunde = h.befunde();
+    assert!(
+        !befunde.is_empty(),
+        "Vorbedingung: die Sitzung traegt einen Befund - sonst weist R4 das Urteil ab"
+    );
+    befunde[0].finding_id.clone()
+}
+
 #[test]
 fn user_verdict_wird_persistiert_und_bestaetigt() {
     let h = Harnisch::neu("nr10");
+    let finding_id = buehne_mit_befund(&h);
     let mut wert = fixture("user_verdict");
     wert["kopf"]["ziel"] = serde_json::to_value(&h.master).unwrap();
     wert["kopf"]["command_id"] = json!(hex(0x920));
     wert["kopf"]["base_revision"] = json!(0);
+    wert["finding_id"] = json!(finding_id);
 
     let antwort = Senke::p0(&h.c, "main", &serde_json::to_vec(&wert).unwrap())
         .expect("NR-10: die Familie wird BEANTWORTET - vorher fiel sie in `_ => None`");
@@ -601,10 +624,12 @@ fn user_verdict_wird_persistiert_und_bestaetigt() {
 #[test]
 fn user_verdict_wiederholt_sich_idempotent_ueber_den_brokerkill() {
     let mut h = Harnisch::neu("nr10-si");
+    let finding_id = buehne_mit_befund(&h);
     let mut wert = fixture("user_verdict");
     wert["kopf"]["ziel"] = serde_json::to_value(&h.master).unwrap();
     wert["kopf"]["command_id"] = json!(hex(0x921));
     wert["kopf"]["base_revision"] = json!(0);
+    wert["finding_id"] = json!(finding_id);
     let payload = serde_json::to_vec(&wert).unwrap();
 
     let ack: Value =

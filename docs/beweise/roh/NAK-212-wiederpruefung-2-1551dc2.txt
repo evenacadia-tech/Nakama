@@ -1,0 +1,10 @@
+URTEIL: NEEDS_WORK — WN-01 nein, WN-02 ja.
+
+Geprüft: WN-01 gibt die Ausgabe frei und übernimmt die Threadform von A4-SI (`tools/beweise.ps1:594`, Rotbeweis `docs/beweise/roh/NAK-212-rot-WN-01.txt:18–56`); der gelesene Beinlauf enthält alle 15 Ketteneingaben, 20 Protokollblöcke, vier benannte Lücken und 15 bestandene Tests; WN-02 ergänzt NAK-213 R3 ohne Änderung der drei mittel-Befunde oder der Parent-Erkennung (`broker/tests/sonde014_gegenbeispiele.rs:1222–1239`, Rotbeweis `docs/beweise/roh/NAK-212-rot-WN-02.txt:17–54`); statisch null Parserfehler, unverändert 64 Kanoneinträge und 60 Minuten Zeitlimit, kein weiterer Bruch von Runner, Matrix, R1–R6 oder CLAUDE-Invarianten erkennbar.
+
+Nicht geprüft: keine Laufzeitprüfung, kein Cargo, Python oder Produktprozess; vorhandene Belege nur gelesen, beide geprüften Quellen gegenüber deren Laufstand af867f4 blobgleich, nichts geschrieben und HEAD vor/nach identisch 1551dc2db2ca99eb3f9de3648695cae657b9a78a; übriger Ticketbereich und docs/** nicht bewertet.
+
+Review comment:
+
+- [P2] Vermeide laufabhängige Store-Pfade in der A31-Ausgabe — C:/Users/phili/Projekte/Nakama/tools/beweise.ps1:594-594
+  Der neue Aufruf `cargo test --manifest-path broker/Cargo.toml --test sonde014_gegenbeispiele --color never -- --nocapture --test-threads=1` gibt auch sieben Store-Banner mit absoluten Temp-Pfaden und wechselnder Prozess-ID frei: belegt in `docs/beweise/roh/NAK-212-nacharbeit-2-af867f4.txt:201–207`, bereits sichtbar im Rotbeweis WN-01:90/109. `Fuehre-Aus` übernimmt stderr unverändert; der Rohblock enthält es weiterhin vollständig, entsprechend [CLAUDE.md:228–229](CLAUDE.md#L228-L229). Getrennte stdout/stderr-Blöcke beseitigen diese laufabhängigen Ausgaben nicht. Damit bleibt WN-01 hinsichtlich der ausdrücklich verlangten deterministischen Ausgabe ohne Laufwerkspfade offen ([Nacharbeitsauftrag:15](docs/beweise/roh/NAK-212-nacharbeit-2-auftrag.txt#L15)).

@@ -1722,3 +1722,220 @@ fn sitzung_ohne_gueltige_evidenz_erzeugt_keinen_befund() {
         "und S2 rechnet unberuehrt weiter"
     );
 }
+
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-213 R5/E8 · der Kanalwechsel als Messpunktwechsel
+// (K-40, K-41, K-42, K-43, K-49)
+// ═════════════════════════════════════════════════════════════════════════
+//
+// Der Mixerkanal lebt im DESKRIPTOR, nicht am Beleg. `aufnahmen_sammeln` liest
+// ihn zum Zeitpunkt der Rechnung; die Fenster von vorher blieben unverändert
+// gültig, und `routingqualitaet` stieg rückwirkend — ohne dass ein einziges
+// Fenster neu gemessen worden wäre (Gate-Befund G-L2).
+//
+// 🔑 Der produktive Ingress ist der HEARTBEAT, nicht der Setter. Die
+// Matrixprüfung 1 hat das belegt: `descriptor_setzen` hat unter `broker/src`
+// keinen Aufrufer. Jede Zeile hier fährt deshalb `Senke::p0` mit einem echten
+// `heartbeat` — denselben Weg, den `befehl.rs` ruft.
+
+/// Der VERTRAGSGUELTIGE Faehigkeitssatz — alle zehn Namen aus §53.6.
+///
+/// ⚠️ Der Helfer `capabilities()` dieses Beins traegt noch die Namen vor
+/// SONDE-012 (`host_context` statt `host_context_presence` und so weiter).
+/// `descriptor_setzen` laesst sie durch, weil `descriptor_vertrag_erfuellt`
+/// die Capabilities nicht gegen das Schema haelt — ein `heartbeat` dagegen
+/// laeuft durch `v3_nachricht_lesen` und faellt daran (Nebenbefund NB-7).
+/// Die Faelle unten fahren deshalb DIESEN Satz; der alte Helfer bleibt
+/// unangetastet, weil seine Berichtigung SONDE-012-Testflaeche ist und
+/// ausserhalb dieser Ticketgrenze liegt.
+fn capabilities_vertragsgueltig() -> Value {
+    json!({
+        "host_context_presence": "supported",
+        "project_time_samples": "supported",
+        "sample_accurate_automation": "supported",
+        "presentation_latency": "supported",
+        "aux_compare_pre": "unsupported",
+        "aux_priority_sidechain": "unsupported",
+        "contribution_aux": "unsupported",
+        "float64_processing": "supported",
+        "binary_telemetry": "supported",
+        "remote_control": "supported"
+    })
+}
+
+fn runtime_block(mixer: Option<i64>) -> Value {
+    let mut wert = json!({"messpunkt": "post", "betrieb": "active"});
+    if let Some(index) = mixer {
+        wert["host_mixer_index"] = json!(index);
+    }
+    wert
+}
+
+/// Ein echter Heartbeat über den Produktweg, mit `runtime`-Block.
+fn heartbeat_mit_kanal(
+    c: &Coordinator,
+    link: &str,
+    a: &Adresse,
+    sequence: u64,
+    mixer: Option<i64>,
+) -> bool {
+    let wert = json!({
+        "type": "heartbeat",
+        "adresse": a,
+        "sequence": sequence,
+        "state_revision": 0,
+        "capabilities": capabilities_vertragsgueltig(),
+        "zaehler": {"frames_dropped": 0, "parse_errors": 0, "queue_overflows": 0},
+        "runtime": runtime_block(mixer)
+    });
+    Senke::p0(c, link, &bytes(&wert)).is_some()
+}
+
+/// **K-49 · der tragende Rotbeweis von R5.** Der Kanalwechsel wird auf dem
+/// PRODUKTIVEN Weg erkannt: `p0` → `befehl.rs` „heartbeat" →
+/// `heartbeat_kontakt` → Deskriptorersatz.
+///
+/// Eine Fassung, die den Vergleich nur in `descriptor_setzen` einbaut, ließe
+/// diesen Lauf unverändert: null Invalidierungen, die acht alten Fenster
+/// gälten weiter unter dem neuen Kanal — und alle Settertests wären dabei
+/// grün. Gemessen wird der ZÄHLER, nicht die Zeit.
+#[test]
+fn kanalwechsel_ueber_den_heartbeat_befehl() {
+    let c = coordinator();
+    let a = buehne_nak213(&c, 1);
+    reihe(&c, "main", &a[0], 0, 12);
+    reihe(&c, "sonde0", &a[1], 100, 8);
+    let vorher = c.invalidierungen_zaehler();
+    assert!(
+        !befunde_der_sitzung(&c).is_empty(),
+        "Vorbedingung: die Sonde traegt einen Befund"
+    );
+
+    // Der Kanalwechsel 3 -> 9 ueber den ECHTEN Befehlsweg.
+    assert!(heartbeat_mit_kanal(&c, "sonde0", &a[1], 1, Some(9)));
+
+    assert_eq!(
+        c.invalidierungen_zaehler(),
+        vorher + 1,
+        "genau EINE Invalidierung — auf dem produktiven Weg, nicht am Setter"
+    );
+    assert!(
+        !befunde_der_sitzung(&c)
+            .iter()
+            .any(|b| b.candidate_source == a[1].instance_id),
+        "der Befund ueber die Sonde ist ENTFERNT, nicht `stale`: er \
+         referenziert ausschliesslich ihre eigenen Fenster, und der \
+         Kanalwechsel nimmt ALLE davon zurueck (M-28)"
+    );
+}
+
+/// **K-40.** Derselbe Kanal nimmt nichts zurück. Ohne den Vergleich löste
+/// JEDER Heartbeat mit `runtime` eine Rücknahme aus — und der kommt in der
+/// Kadenz der Liveness, nicht nur beim Wechsel; keine Sonde käme je auf acht
+/// Fenster.
+#[test]
+fn gleicher_kanal_nimmt_nichts_zurueck() {
+    let c = coordinator();
+    let a = buehne_nak213(&c, 1);
+    reihe(&c, "main", &a[0], 0, 12);
+    reihe(&c, "sonde0", &a[1], 100, 8);
+    let vorher = c.invalidierungen_zaehler();
+    for sequence in 1..=3 {
+        assert!(heartbeat_mit_kanal(&c, "sonde0", &a[1], sequence, Some(3)));
+    }
+    assert_eq!(
+        c.invalidierungen_zaehler(),
+        vorher,
+        "drei Heartbeats auf DEMSELBEN Kanal bewegen den Zaehler nicht"
+    );
+}
+
+/// **K-41 und K-42.** Beide Richtungen sind ein Wechsel — eine einseitige
+/// Prüfung (`nur wenn beide Some`) ließe genau diesen Weg offen, dieselbe
+/// Lücke, die der Positionsvergleich heute hat (NB-4).
+#[test]
+fn kanalwechsel_invalidiert_nur_diese_quelle() {
+    // ── K-41: `None` -> `Some(9)` ────────────────────────────────────────
+    {
+        let c = coordinator();
+        let main = adresse(0x11, 0x22, 1, 0x40);
+        anmelden_mit_deskriptor(&c, "main", &main, "main", Some(1));
+        let marke = json!({
+            "type": "intent_update", "adresse": main,
+            "session_epoch": main.session_epoch,
+            "vollstaendig": true, "bestand_revision": 0
+        });
+        c.p1("main", &bytes(&marke));
+        let ohne = adresse(0x11, 0x22, 2, 0x50);
+        anmelden_mit_deskriptor(&c, "sonde0", &ohne, "passive_probe", None);
+        reihe(&c, "main", &main, 0, 12);
+        reihe(&c, "sonde0", &ohne, 100, 8);
+        let vorher = c.invalidierungen_zaehler();
+        assert!(heartbeat_mit_kanal(&c, "sonde0", &ohne, 1, Some(9)));
+        assert_eq!(
+            c.invalidierungen_zaehler(),
+            vorher + 1,
+            "aus „Routing unbekannt“ wird ein Messpunkt: die Belege davor sind \
+             keinem Kanal zuzuordnen"
+        );
+    }
+
+    // ── K-42: `Some(7)` -> `None` ────────────────────────────────────────
+    {
+        let c = coordinator();
+        let a = buehne_nak213(&c, 1);
+        reihe(&c, "main", &a[0], 0, 12);
+        reihe(&c, "sonde0", &a[1], 100, 8);
+        let vorher = c.invalidierungen_zaehler();
+        // Der Deskriptor wird bei gesetztem `runtime` VOLLSTAENDIG ersetzt —
+        // das Feld faellt damit wirklich weg.
+        assert!(heartbeat_mit_kanal(&c, "sonde0", &a[1], 1, None));
+        assert_eq!(
+            c.invalidierungen_zaehler(),
+            vorher + 1,
+            "der Messpunkt ist unbekannt geworden: die alten Belege gehoeren \
+             zu einem Kanal, den die Quelle nicht mehr meldet"
+        );
+    }
+
+    // ── Und der Umfang: NUR diese Quelle ─────────────────────────────────
+    {
+        let c = coordinator();
+        let a = buehne_nak213(&c, 2);
+        reihe(&c, "main", &a[0], 0, 12);
+        reihe(&c, "sonde0", &a[1], 100, 8);
+        reihe(&c, "sonde1", &a[2], 300, 8);
+        assert!(heartbeat_mit_kanal(&c, "sonde1", &a[2], 1, Some(9)));
+        // Die andere Sonde misst weiter — ihre Belege sind unberuehrt.
+        reihe(&c, "sonde0", &a[1], 200, 1);
+        let befunde = befunde_der_sitzung(&c);
+        assert!(
+            befunde
+                .iter()
+                .any(|b| b.candidate_source == a[1].instance_id),
+            "R5 sagt „Befunde, DIE DIE QUELLE TRAGEN“ — der Umfang ist \
+             `Ids`, nicht die Sitzung: {befunde:?}"
+        );
+    }
+}
+
+/// **K-43.** Eine Quelle OHNE einen einzigen Beleg wechselt den Kanal: die
+/// ID-Menge ist leer, und eine leere Menge ist KEINE Invalidierung. Eine
+/// Rücknahme, die nichts zurücknimmt, ließe den Empfänger glauben, es sei
+/// aufgeräumt (M-57).
+#[test]
+fn kanalwechsel_ohne_belege_sendet_nichts() {
+    let c = coordinator();
+    let a = buehne_nak213(&c, 2);
+    reihe(&c, "main", &a[0], 0, 12);
+    reihe(&c, "sonde0", &a[1], 100, 8);
+    // Sonde 1 hat nie gesendet.
+    let vorher = c.invalidierungen_zaehler();
+    assert!(heartbeat_mit_kanal(&c, "sonde1", &a[2], 1, Some(9)));
+    assert_eq!(
+        c.invalidierungen_zaehler(),
+        vorher,
+        "kein `evidence_invalidate` ohne Inhalt auf der Leitung"
+    );
+}

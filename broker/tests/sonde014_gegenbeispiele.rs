@@ -437,10 +437,18 @@ fn protokoll(titel: &str, befunde: &[CauseHypothesis]) {
 
 /// Eine **benannte, gedruckte Lücke** (Muster NAK-190, R6).
 ///
+/// 🔑 **Seit NAK-213 ruft sie niemand mehr:** alle sieben NAK-213-Lücken sind
+/// zur Zusage geworden (§2.7 des Manifests). Der Helfer bleibt trotzdem
+/// stehen — die Lückenmechanik ist das WERKZEUG, mit dem ein späteres Ticket
+/// seine eigenen offenen Fälle benennt, und NAK-214 wird es brauchen
+/// (NAK-212 N-37, „abgeschlossen für dieses Ticket"). Ihn zu löschen hieße,
+/// das Muster mit seinem letzten Aufrufer zu verlieren.
+///
 /// Der Fall wird gefahren und sein Ergebnis ausgegeben, aber ein anderes
 /// Ticket schließt ihn. Er wird hier weder gelöst noch als grün gewertet —
 /// er ist benannt. Dasselbe Muster führt `pruefe_p5_korpus.py::offene_luecken`
 /// für die Korpussitzungen.
+#[allow(dead_code)]
 fn luecke(kennung: &str, ticket: &str, zusage: &str, heute: &str) {
     println!("   ⚠ OFFENE LUECKE {kennung} [{ticket}]");
     println!("     zusage:          {zusage}");
@@ -1152,7 +1160,10 @@ fn f4_kanalwechsel_zwischen_den_fenstern() {
     assert_eq!(stark(&vorher), 0, "geteilter Kanal: keine starke Aussage");
 
     // Jetzt wechselt C den Kanal — ohne einen einzigen neuen MESSWERT.
+    let ausgeschlossen_vorher = b.c.evidenz_ausgeschlossen_zaehler();
     b.deskriptor("sondeC", &c, Some(9));
+    let genommen_durch_wechsel =
+        b.c.evidenz_ausgeschlossen_zaehler() - ausgeschlossen_vorher;
     // Ein weiterer Beleg loest die Rechnung aus. ⚠ Der Master bekommt sein
     // dreizehntes Fenster ZEITGLEICH: seit das Alignment paarweise misst,
     // haette ein Kandidatenfenster ohne Masterpartner den Anteil auf 12/13
@@ -1164,35 +1175,96 @@ fn f4_kanalwechsel_zwischen_den_fenstern() {
 
     let nachher = b.befunde();
     protokoll("F4 nach dem Kanalwechsel von C (7 -> 9), Messwerte unveraendert", &nachher);
-    assert_eq!(nachher.len(), 2, "beide bleiben sichtbar");
+
+    // 🔑 **NAK-213 R5 (K-44).** Bis hierher blieben Cs zwoelf alte Belege
+    // gueltig, und `routingqualitaet` stieg fuer BEIDE Sonden — ohne dass ein
+    // einziges Fenster neu gemessen worden waere (Gate-Befund G-L2).
+    //
+    // (a) Cs alte Belege sind zurueckgenommen, und ihr Befund ist damit
+    //     ENTFERNT, nicht `stale`: er referenziert ausschliesslich ihre
+    //     eigenen Fenster (`hypothese.rs`), der Kanalwechsel nimmt ALLE davon
+    //     zurueck, und `Stale` wird nur gesetzt, wenn gueltige IDs uebrig
+    //     bleiben — sonst ist der Befund fort (M-28, „Unsichtbar heisst
+    //     wirklich fort").
+    assert_eq!(
+        genommen_durch_wechsel, 12,
+        "genau Cs zwoelf alte Belege tragen `messpunkt_wechsel`"
+    );
+    // (b) C hat danach GENAU das nach dem Wechsel gemessene Fenster. Eines
+    //     ist weniger als `GATE_MINDEST_FENSTER`; sie traegt deshalb
+    //     hoechstens `mittel`, wenn sie ueberhaupt einen Befund traegt.
+    let c_befund = nachher
+        .iter()
+        .find(|f| f.candidate_source == c.instance_id);
+    if let Some(f) = c_befund {
+        assert!(
+            f.confidence.klasse < Sicherheitsklasse::Hoch,
+            "C traegt nach dem Wechsel hoechstens `mittel`: {:?}",
+            f.confidence
+        );
+    }
+    // (c) A ist allein auf Kanal 7; ihre Routingqualitaet steigt — jetzt aber
+    //     MIT einer Messwirkung dahinter: die Belege, die den geteilten Kanal
+    //     belegten, sind zurueckgenommen. Genau das war die Luecke.
+    let a_nachher = nachher
+        .iter()
+        .find(|f| f.candidate_source == a.instance_id)
+        .expect("A bleibt sichtbar");
+    assert!(
+        a_nachher.rang.routingqualitaet > routing_vorher[0].min(routing_vorher[1]),
+        "die Routingqualitaet steigt: {routing_vorher:?} -> {}",
+        a_nachher.rang.routingqualitaet
+    );
+    // (d) A traegt trotzdem hoechstens `mittel` — bei konstantem Pegel ist
+    //     kein Uplift messbar (NAK-212 R1), und `evidenz_zurueckgenommen` bei
+    //     C setzt zusaetzlich `Konkurrenzlage::Messausschluss` (K-14).
     assert_eq!(
         stark(&nachher),
         0,
-        "auch nach dem Wechsel traegt niemand `hoch` — bei konstantem Pegel \
-         ist kein Uplift messbar (R1): {:?}",
+        "auch nach dem Wechsel traegt niemand `hoch`: {:?}",
         nachher.iter().map(|f| f.confidence).collect::<Vec<_>>()
     );
-    // Die Luecke wird GEMESSEN, nicht behauptet: die Routingqualitaet STEIGT
-    // wirklich, und zwar bei BEIDEN — der geteilte Kanal war die
-    // Duplikatmarke, und ohne ihn faellt sie fuer beide weg.
-    let routing_nachher: Vec<f64> = nachher.iter().map(|f| f.rang.routingqualitaet).collect();
-    assert!(
-        routing_nachher
+
+    // ── Gegenprobe zu (a): TEILrücknahme ergibt `stale`, nicht Entfernung ──
+    //
+    // Derselbe M-24-Weg, nur eine andere Ausgabe: bleibt mindestens eine
+    // gueltige ID uebrig, geht der Befund auf `stale`. Beim Kanalwechsel
+    // bleibt nie etwas uebrig — deshalb ist dort die Entfernung die einzig
+    // moegliche Ausgabe.
+    {
+        let g = Buehne::schlank();
+        let sonde = adresse(2);
+        g.anmelden("main", &g.master, "main", Some(1));
+        g.anmelden("sonde0", &sonde, "passive_probe", Some(7));
+        g.marke(0, json!([]));
+        g.belege_je_fenster("main", &g.master, 0, 12, 0, |_| 9.0, band);
+        g.belege_je_fenster("sonde0", &sonde, 100, 12, 0, |_| 9.0, band);
+        assert!(
+            !g.befunde().is_empty(),
+            "Vorbedingung: die Sonde traegt einen Befund"
+        );
+        // Nur die ERSTEN sechs Fenster zuruecknehmen.
+        //
+        // ⚠️ `Umfang::Bereich` gilt der GANZEN Sitzung (SONDE-013 R24): der
+        // Zaehler meldet deshalb zwoelf — sechs des Masters und sechs der
+        // Sonde. Genau darin liegt der Unterschied zum Kanalwechsel, dessen
+        // Umfang `Ids` ist und nur die wechselnde Quelle trifft.
+        let genommen = g.c.invalidierung_wegen_intervention_fuer_link(
+            "sonde0",
+            BASIS - 1,
+            BASIS + 6 * FENSTER - 1,
+        );
+        assert_eq!(genommen, 12, "je sechs Belege von Master und Sonde");
+        let teil = g.befunde();
+        protokoll("F4 Gegenprobe: Teilruecknahme statt Kanalwechsel", &teil);
+        let ueberlebt = teil
             .iter()
-            .zip(routing_vorher.iter())
-            .all(|(n, v)| n > v),
-        "der Kanalwechsel hebt die Routingqualitaet ohne neue Messung: \
-         {routing_vorher:?} -> {routing_nachher:?}"
-    );
-    luecke(
-        "f4_kanalwechsel",
-        "NAK-213 R5",
-        "Eine Deskriptoraenderung ohne neue Messung darf keine Rangkomponente heben.",
-        &format!(
-            "`routingqualitaet` steigt allein durch den Kanalwechsel: {routing_vorher:?} \
-             -> {routing_nachher:?}, ohne dass ein Fenster neu gemessen worden waere."
-        ),
-    );
+            .find(|f| f.candidate_source == sonde.instance_id);
+        assert!(
+            ueberlebt.is_some_and(|f| f.zustand == Befundzustand::Stale),
+            "bei verbleibenden gueltigen IDs geht derselbe Befund auf `stale`: {teil:?}"
+        );
+    }
 }
 
 // ═════════════════════════════════════════════════════════════════════════
@@ -1235,29 +1307,43 @@ fn f4b_drei_sonden_auf_einem_kanal() {
             f.rang.routingqualitaet
         );
     }
-    // 🔑 Nacharbeit 2 (08.09.2026, WN-02): die AUSGABE ist nach §2.6 Nr. 23
-    // korrekt und bleibt unverändert — die Erwartung `mittel` wird hier NICHT
-    // angefasst. Was fehlte, ist die benannte Lücke: R6/NR-03 nennt `f4b`
-    // ausdrücklich unter den Fällen, die mit gedruckter Lücke ausgegeben
-    // werden, weil **NAK-213 R3** die Parent-Erkennung neu regelt. Ohne diese
-    // Zeile las der Beleg wie ein rundum geschlossener Fall.
-    luecke(
-        "f4b_drei_sonden_auf_einem_kanal",
-        "NAK-213 R3",
-        "Parent-Duplikate werden ueber ALLE Quellen der Sitzung erkannt - \
-         einschliesslich Master, zurueckgenommener und stummer Quellen (M-22).",
-        &format!(
-            "Die Ausgabe ist korrekt: {} Befunde, davon {} starke, jeder mit der \
-             Duplikatmarke {routing:?}. Enger als die Zusage ist der ERKENNUNGSSATZ: \
-             die Kanalkarte entsteht ueber `stand.evidenz`, eine angemeldete Quelle \
-             ohne einen einzigen Beleg betritt sie also nie; und `parent` wird nur an \
-             Kandidaten geschrieben, waehrend auch die Suche nach dem Kind nur ueber \
-             die Kandidaten laeuft - der Master ist eines der {} Mitglieder dieser \
-             Sitzung und traegt trotzdem nie eine Duplikatmarke.",
-            befunde.len(),
-            stark(&befunde),
-            b.snapshot()["mitglieder"].as_array().map(Vec::len).unwrap_or(0),
-        ),
+    // 🔑 **NAK-213 R3 (K-28).** Die AUSGABE war schon vor diesem Ticket
+    // richtig — sie bleibt unverändert. Was fehlte, war der
+    // ERKENNUNGSSATZ: die Kanaltafel entstand über `stand.evidenz`, eine
+    // angemeldete Quelle ohne einen einzigen Beleg betrat sie also nie, und
+    // `parent` wurde nur an Kandidaten geschrieben.
+    //
+    // Deshalb misst diese Zeile ab hier die Erkennung selbst: eine VIERTE,
+    // stumme Sonde auf demselben Kanal 7 betritt die Gruppe — und die drei
+    // messenden tragen ihre Duplikatmarke weiter. Die gedruckte Lücke
+    // entfällt.
+    let stumm = adresse(5);
+    b.anmelden("sondeStumm", &stumm, "passive_probe", Some(7));
+    // Eine neue Evidenz stößt die Rechnung an; die stumme Sonde sendet nie.
+    b.belege_je_fenster("sondeA", &a, 400, 1, 12, |_| 9.2, band);
+    let mit_stummer = b.befunde();
+    protokoll("F4b vierte, STUMME Sonde auf demselben Kanal 7", &mit_stummer);
+    for f in &mit_stummer {
+        assert!(
+            f.rang.routingqualitaet <= 0.5,
+            "die Duplikatmarke haelt auch gegen die stumme Quelle: {} ({routing:?} vorher)",
+            f.rang.routingqualitaet
+        );
+    }
+    let fuehrend = mit_stummer.first().expect("ein Befund entsteht");
+    assert!(
+        fuehrend
+            .ausschluesse
+            .iter()
+            .any(|x| x.candidate_source == stumm.instance_id
+                && x.grund == Ausschlussgrund::EvidenzZurueckgenommen),
+        "und sie steht als Ausschluss im Befund (M-87, E5): {:?}",
+        fuehrend.ausschluesse
+    );
+    assert_eq!(
+        stark(&mit_stummer),
+        0,
+        "vier Quellen auf EINEM Kanal behaupten erst recht nicht dieselbe Ursache"
     );
 }
 

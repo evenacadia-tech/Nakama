@@ -1,0 +1,93 @@
+NAK-213 Rotbeweis K-44 — der Kanalwechsel invalidiert die Belege GENAU DIESER Quelle (R5, E8)
+Datum: 2026-09-08
+
+Zurueckgenommen: `invalidierung_wegen_kanalwechsel` nimmt gar nichts mehr
+zurueck — der Stand vor NAK-213 (Gate-Befund G-L2).
+
+Erwartete Wirkung: Cs zwoelf alte Belege bleiben gueltig, ihr Befund bleibt
+bestehen, und `routingqualitaet` steigt fuer BEIDE Sonden — ohne dass ein
+einziges Fenster neu gemessen worden waere. Genau das war die gedruckte Luecke
+`f4_kanalwechsel`.
+
+========================================================================
+Rotlauf (Zeile K-44, Test `f4_kanalwechsel_zwischen_den_fenstern`)
+Befehl: cargo test --no-fail-fast --manifest-path broker/Cargo.toml --color never --test sonde014_gegenbeispiele
+Exitcode: 101
+========================================================================
+test eigen3_antikorrelierte_quelle ... ok
+test eigen4_quelle_im_falschen_band ... ok
+test a1_intent_rolle_trennt_identische_kandidaten_nicht ... ok
+test eigen5_antikorreliert_neben_korreliert ... ok
+test f4_kanalwechsel_zwischen_den_fenstern ... FAILED
+test d4_umklammernde_und_disjunkte_spanne ... ok
+test f8b_master_ohne_fenster ... ok
+test f4b_drei_sonden_auf_einem_kanal ... ok
+test a3_sonde_auf_masterkanal ... ok
+test f7_rangdifferenz_am_quantum ... ok
+test f8_zwei_master_mit_widersprechendem_befundband ... ok
+test d2_fuehrender_wird_gegen_jeden_geprueft ... ok
+test a4_masteranomalie_ausserhalb_der_passage ... ok
+test d3_passage_ohne_masterfenster_ergibt_enthaltung ... ok
+test f5b_gleiche_passage_id_verschobenes_fenster ... ok
+test einzelueberlebender_neben_passagenausschluss ... ok
+test f5_passagenrandwerte ... ok
+test result: FAILED. 16 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 31.35s
+
+---- f4_kanalwechsel_zwischen_den_fenstern stdout ----
+── F4 beide Sonden auf Mixerkanal 7 ──
+   quelle=..02 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.183623
+     rang: bandpassung=0.101738 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=1 ausschluesse=[]
+   quelle=..03 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.183302
+     rang: bandpassung=0.099809 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=1 ausschluesse=[]
+   => starke Befunde: 0
+── F4 nach dem Kanalwechsel von C (7 -> 9), Messwerte unveraendert ──
+   quelle=..02 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.266956
+     rang: bandpassung=0.101738 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=1 ausschluesse=[]
+   quelle=..03 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.266635
+     rang: bandpassung=0.099809 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=1 ausschluesse=[]
+   => starke Befunde: 0
+
+thread 'f4_kanalwechsel_zwischen_den_fenstern' (8940) panicked at tests\sonde014_gegenbeispiele.rs:1189:5:
+assertion `left == right` failed: genau Cs zwoelf alte Belege tragen `messpunkt_wechsel`
+  left: 0
+ right: 12
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    f4_kanalwechsel_zwischen_den_fenstern
+
+test result: FAILED. 16 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 31.35s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: unused variable: `session`
+   --> src\coordinator\invalidierung_verdrahtung.rs:453:9
+    |
+453 |         session: &SessionKey,
+    |         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_session`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib) generated 1 warning (run `cargo fix --lib -p eqcop-broker` to apply 1 suggestion)
+warning: method `snapshot` is never used
+   --> tests\sonde014_gegenbeispiele.rs:361:8
+    |
+207 | impl Buehne {
+    | ----------- method in this implementation
+...
+361 |     fn snapshot(&self) -> Value {
+    |        ^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (test "sonde014_gegenbeispiele") generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.12s
+     Running tests\sonde014_gegenbeispiele.rs (broker\target\debug\deps\sonde014_gegenbeispiele-4e737afb3cd092a5.exe)
+error: test failed, to rerun pass `--test sonde014_gegenbeispiele`
+error: 1 target failed:
+    `--test sonde014_gegenbeispiele`
+

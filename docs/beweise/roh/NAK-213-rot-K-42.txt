@@ -1,0 +1,63 @@
+NAK-213 Rotbeweis K-42 — der produktive Ingress des Kanalwechsels ist der HEARTBEAT (R5, E8)
+Datum: 2026-09-08
+
+Zurueckgenommen: der Kanalvergleich sitzt NUR noch in `descriptor_setzen` —
+und die Funktion hat unter `broker/src` KEINEN Aufrufer (`liveness.rs`, ihr
+eigener Kommentar: „von einer Integrationstestdatei gerufen"). Genau diese
+Fassung hatte die Matrix bis zur Nacharbeit 1 zugesagt; die Matrixpruefung 1
+hat sie widerlegt.
+
+Erwartete Wirkung auf K-42: Dasselbe fuer den Weg `Some(7)` → `None`.
+
+Das ist der TRAGENDE Rotbeweis von R5: eine Regel, die nur an der
+aufruferlosen Testflaeche sitzt, laeuft im Produkt ins Leere — und der
+Settertest bliebe trotzdem gruen.
+
+========================================================================
+Rotlauf (Zeile K-42, Test `kanalwechsel_invalidiert_nur_diese_quelle`)
+Befehl: cargo test --no-fail-fast --manifest-path broker/Cargo.toml --color never --test sonde014_verdrahtung
+Exitcode: 101
+========================================================================
+test fremde_adresse_wird_abgewiesen ... ok
+test entmaskierungsveto_wirkt_im_spiegel_wie_im_main ... ok
+test angenommene_und_abgewiesene_meldungen_sind_zaehlbar ... ok
+test die_neuen_familien_erben_die_ordnung_von_verbinden_und_trennen ... ok
+test assistant_step_update_koalesziert_je_session ... ok
+test ein_frischer_broker_traegt_weder_intent_noch_schritt ... ok
+test die_vollstaendigkeitsmarke_deckt_beide_bestaende ... ok
+test intent_update_koalesziert_je_quelle_und_scope ... ok
+test keine_rechnung_vor_der_vollstaendigkeitsmarke ... ok
+test ohne_jeden_beleg_entsteht_keine_aufnahme ... ok
+test consumerregeln_des_intents_fallen_einzeln ... ok
+test intent_update_unter_der_fassung_zwei_wird_abgewiesen ... ok
+test sitzungsende_loescht_den_spiegel ... ok
+test spiegel_weicht_dem_neueren_main_schritt ... ok
+test kanalwechsel_invalidiert_nur_diese_quelle ... FAILED
+test kanalwechsel_ohne_belege_sendet_nichts ... ok
+test gleicher_kanal_nimmt_nichts_zurueck ... ok
+test kanalwechsel_ueber_den_heartbeat_befehl ... FAILED
+test teilmeldung_mit_mehreren_objekten_wird_abgewiesen ... ok
+test teilupdate_fremden_schluessels_ueberlebt_eine_koaleszierung ... ok
+test spaeter_beitritt_deckelt_ab_der_bestaetigung ... ok
+test master_ist_das_gefuehrte_main_nicht_das_letzte ... ok
+test keine_rechnung_ohne_jede_intentmeldung ... ok
+test rueckzug_und_bestaetigung_geben_die_rechnung_frei ... ok
+test beitritt_nach_der_rechnung_ersetzt_die_befunde ... ok
+test partner_ohne_routing_ist_kein_duplikat ... ok
+test stale_quelle_deckelt_nicht ... ok
+test stumme_quelle_ist_sichtbarer_kandidat ... ok
+test stumme_quelle_setzt_die_duplikatmarke ... ok
+test zweites_main_hebt_bestaetigte_fuehrung_nicht_auf ... ok
+test sitzung_ohne_gueltige_evidenz_erzeugt_keinen_befund ... ok
+test zurueckgenommener_partner_bleibt_duplikat ... ok
+test veraltetes_rechenergebnis_wird_nicht_veroeffentlicht ... ok
+test result: FAILED. 31 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.11s
+
+---- kanalwechsel_invalidiert_nur_diese_quelle stdout ----
+
+thread 'kanalwechsel_invalidiert_nur_diese_quelle' (13032) panicked at tests\sonde014_verdrahtung.rs:1876:9:
+assertion `left == right` failed: aus „Routing unbekannt“ wird ein Messpunkt: die Belege davor sind keinem Kanal zuzuordnen
+  left: 0
+ right: 1
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+

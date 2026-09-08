@@ -1,0 +1,79 @@
+NAK-213 Rotbeweis K-43 — eine LEERE ID-Menge ist keine Invalidierung (R5, E8, M-57)
+Datum: 2026-09-08
+
+Zurueckgenommen: der Gueltigkeitsriegel `Umfang::gueltig` an BEIDEN Stellen —
+in `invalidierung_wegen_kanalwechsel` selbst und im gemeinsamen
+`invalidierung_vorbereiten`.
+
+⚠️ Warum beide: der Riegel in der neuen Funktion ist eine frueh gezogene
+Kopie des gemeinsamen; mit nur einer Ruecknahme blieb die Zeile gruen
+(gemessen: die erste Fassung dieses Rotbeweises lief mit Exit 0 durch). Der
+gemeinsame Riegel gehoert SONDE-013 und wird hier NUR fuer den Rotlauf
+angefasst.
+
+Erwartete Wirkung: eine Quelle OHNE einen einzigen Beleg loest beim
+Kanalwechsel eine Invalidierung mit leerer Menge aus — ein leeres
+`evidence_invalidate` auf der Leitung. Eine Ruecknahme, die nichts
+zurueckninmt, liesse den Empfaenger glauben, es sei aufgeraeumt (M-57).
+
+========================================================================
+Rotlauf (Zeile K-43, Test `kanalwechsel_ohne_belege_sendet_nichts`)
+Befehl: cargo test --no-fail-fast --manifest-path broker/Cargo.toml --color never --test sonde014_verdrahtung
+Exitcode: 101
+========================================================================
+test fremde_adresse_wird_abgewiesen ... ok
+test entmaskierungsveto_wirkt_im_spiegel_wie_im_main ... ok
+test assistant_step_update_koalesziert_je_session ... ok
+test angenommene_und_abgewiesene_meldungen_sind_zaehlbar ... ok
+test ein_frischer_broker_traegt_weder_intent_noch_schritt ... ok
+test die_vollstaendigkeitsmarke_deckt_beide_bestaende ... ok
+test intent_update_koalesziert_je_quelle_und_scope ... ok
+test die_neuen_familien_erben_die_ordnung_von_verbinden_und_trennen ... ok
+test ohne_jeden_beleg_entsteht_keine_aufnahme ... ok
+test consumerregeln_des_intents_fallen_einzeln ... ok
+test keine_rechnung_vor_der_vollstaendigkeitsmarke ... ok
+test sitzungsende_loescht_den_spiegel ... ok
+test intent_update_unter_der_fassung_zwei_wird_abgewiesen ... ok
+test spiegel_weicht_dem_neueren_main_schritt ... ok
+test gleicher_kanal_nimmt_nichts_zurueck ... ok
+test kanalwechsel_ueber_den_heartbeat_befehl ... ok
+test kanalwechsel_ohne_belege_sendet_nichts ... FAILED
+test teilmeldung_mit_mehreren_objekten_wird_abgewiesen ... ok
+test teilupdate_fremden_schluessels_ueberlebt_eine_koaleszierung ... ok
+test master_ist_das_gefuehrte_main_nicht_das_letzte ... ok
+test beitritt_nach_der_rechnung_ersetzt_die_befunde ... ok
+test keine_rechnung_ohne_jede_intentmeldung ... ok
+test rueckzug_und_bestaetigung_geben_die_rechnung_frei ... ok
+test spaeter_beitritt_deckelt_ab_der_bestaetigung ... ok
+test partner_ohne_routing_ist_kein_duplikat ... ok
+test stale_quelle_deckelt_nicht ... ok
+test stumme_quelle_ist_sichtbarer_kandidat ... ok
+test stumme_quelle_setzt_die_duplikatmarke ... ok
+test zweites_main_hebt_bestaetigte_fuehrung_nicht_auf ... ok
+test sitzung_ohne_gueltige_evidenz_erzeugt_keinen_befund ... ok
+test zurueckgenommener_partner_bleibt_duplikat ... ok
+test kanalwechsel_invalidiert_nur_diese_quelle ... ok
+test veraltetes_rechenergebnis_wird_nicht_veroeffentlicht ... ok
+test result: FAILED. 32 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.27s
+
+---- kanalwechsel_ohne_belege_sendet_nichts stdout ----
+
+thread 'kanalwechsel_ohne_belege_sendet_nichts' (9788) panicked at tests\sonde014_verdrahtung.rs:1936:5:
+assertion `left == right` failed: kein `evidence_invalidate` ohne Inhalt auf der Leitung
+  left: 4
+ right: 3
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    kanalwechsel_ohne_belege_sendet_nichts
+
+test result: FAILED. 32 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.27s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.12s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+error: test failed, to rerun pass `--test sonde014_verdrahtung`
+error: 1 target failed:
+    `--test sonde014_verdrahtung`
+

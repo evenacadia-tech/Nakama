@@ -322,6 +322,11 @@ impl Coordinator {
         // laufende Sonde ihre Messposition meldet — ein Wechsel dort ist
         // derselbe Gate-7-Fall wie ueber `descriptor_setzen`.
         let mut messpunktwechsel: Option<(SessionKey, String, String)> = None;
+        // NAK-213 R5/E8: der Kanalwechsel reist neben dem Positionswechsel —
+        // er ERSETZT ihn nicht. Die zwei Umfaenge sind verschieden: die
+        // Position gilt der ganzen Sitzung (SONDE-013 R24), der Kanal genau
+        // dieser einen Quelle.
+        let mut kanalwechsel: Option<(SessionKey, ClientKey, Option<i64>, Option<i64>)> = None;
         let (aktiv, dirty_sessions) = {
             let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
             let Some(link) = stand.links.get(link_id).cloned() else {
@@ -418,6 +423,42 @@ impl Coordinator {
                     if let (Some(a), Some(n)) = (alt, neu) {
                         messpunktwechsel = Some((session.clone(), a, n));
                     }
+                    // 🔑 **NAK-213 R5/E8: der Mixerkanal ist Teil des
+                    // Messpunkts — und DIES ist sein produktiver Ingress.**
+                    //
+                    // Die Matrixpruefung 1 hat den frueheren Entscheid
+                    // widerlegt: `descriptor_setzen` hat unter `broker/src`
+                    // keinen Aufrufer. Produktive Kanalaenderungen kommen
+                    // ueber `befehl.rs` hierher, und bei gesetztem `runtime`
+                    // wird der Deskriptor unten VOLLSTAENDIG ersetzt. Der
+                    // Vergleich steht deshalb genau hier, unmittelbar davor —
+                    // an derselben Stelle, an der `measurement_position`
+                    // schon verglichen wird.
+                    //
+                    // ⚠️ Beide Seiten werden gegen den Vertrag gefiltert: ein
+                    // Hostindex unter 1 gilt als NICHT GELIEFERT und ist
+                    // damit dasselbe wie sein Fehlen (E6/K-24). Ohne den
+                    // Filter waere „0 statt keiner" ein Wechsel.
+                    let kanal_von = |wert: Option<&Value>| -> Option<i64> {
+                        wert.and_then(|d| d.get("host_mixer_index"))
+                            .and_then(Value::as_i64)
+                            .filter(|index| *index >= 1)
+                    };
+                    let alt_kanal = kanal_von(
+                        stand
+                            .clients
+                            .get(&link.client_key)
+                            .and_then(|c| c.descriptor.as_ref()),
+                    );
+                    let neu_kanal = kanal_von(descriptor.as_ref());
+                    if alt_kanal != neu_kanal {
+                        kanalwechsel = Some((
+                            session.clone(),
+                            link.client_key.clone(),
+                            alt_kanal,
+                            neu_kanal,
+                        ));
+                    }
                 }
                 if let Some(client) = stand.clients.get_mut(&link.client_key) {
                     if client.current_link.as_deref() != Some(link_id) {
@@ -467,6 +508,16 @@ impl Coordinator {
             }
         };
         self.guards_persistieren(guards);
+        // NAK-213 R5: die Invalidierung laeuft NACH dem Lock, wie der
+        // Positionsvergleich — kein zweiter Lock, kein neuer Pfad.
+        if let Some((session, key, alt, neu)) = kanalwechsel {
+            if self
+                .invalidierung_wegen_kanalwechsel(&session, &key, alt, neu)
+                .is_err()
+            {
+                self.store_verweigert_fuer_link(link_id);
+            }
+        }
         if let Some((session, alt, neu)) = messpunktwechsel {
             // `invalidierung_wegen_messpunkt` entscheidet selbst, ob der
             // Wechsel einer ist; ein gleicher Messpunkt nimmt nichts zurueck.
@@ -714,6 +765,25 @@ impl Coordinator {
                 .get("measurement_position")
                 .and_then(Value::as_str)
                 .map(str::to_owned);
+            // 🔑 **NAK-213 R5/E8:** derselbe Vergleich fuer den MIXERKANAL.
+            //
+            // Er steht ZUSAETZLICH hier, damit Testflaeche und Produktweg
+            // nicht auseinanderlaufen: der produktive Ingress ist der
+            // Heartbeat (`heartbeat_kontakt`), diese Funktion hat unter
+            // `broker/src` keinen Aufrufer. Eine Regel, die nur an einer der
+            // beiden Stellen sitzt, waere an der anderen still ausser Kraft.
+            let kanal_von = |wert: Option<&Value>| -> Option<i64> {
+                wert.and_then(|d| d.get("host_mixer_index"))
+                    .and_then(Value::as_i64)
+                    .filter(|index| *index >= 1)
+            };
+            let alter_kanal = kanal_von(
+                stand
+                    .clients
+                    .get(&link.client_key)
+                    .and_then(|c| c.descriptor.as_ref()),
+            );
+            let neuer_kanal = kanal_von(Some(&descriptor));
             if let Some(client) = stand.clients.get_mut(&link.client_key) {
                 client.descriptor = Some(descriptor);
                 client.join_kandidat = true;
@@ -721,9 +791,16 @@ impl Coordinator {
             Self::auto_join_locked(&mut stand, &link.client_key);
             let session = link.client_key.session();
             stand.dirty_sessions.insert(session.clone());
-            (session, alte_klasse, neue_klasse)
+            (session, alte_klasse, neue_klasse, alter_kanal, neuer_kanal, link.client_key.clone())
         };
-        let (session, alte_klasse, neue_klasse) = session;
+        let (session, alte_klasse, neue_klasse, alter_kanal, neuer_kanal, client_key) = session;
+        // NAK-213 R5: wie der Positionsvergleich NACH dem Lock.
+        if self
+            .invalidierung_wegen_kanalwechsel(&session, &client_key, alter_kanal, neuer_kanal)
+            .is_err()
+        {
+            self.store_verweigert_fuer_link(link_id);
+        }
         if let (Some(alt), Some(neu)) = (alte_klasse, neue_klasse) {
             // `invalidierung_wegen_messpunkt` entscheidet selbst, ob der
             // Wechsel einer ist; ein gleicher Messpunkt nimmt nichts zurueck.

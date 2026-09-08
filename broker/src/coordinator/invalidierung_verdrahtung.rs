@@ -427,6 +427,61 @@ impl Coordinator {
         )
     }
 
+    /// Der Mixerkanal ist Teil des Messpunkts (NAK-213 R5).
+    ///
+    /// Eine Quelle, die den Kanal wechselt, misst danach etwas anderes als
+    /// davor. Ihre Belege werden zurueckgenommen — die der ANDEREN Quellen
+    /// nicht: R5 sagt woertlich „Befunde, DIE DIE QUELLE TRAGEN", und der
+    /// Mixerkanal ist eine Eigenschaft dieser einen Quelle. Der bestehende
+    /// Positionswechsel (`measurement_position`) behaelt seinen Umfang
+    /// `GanzeSitzung`; er ist SONDE-013 R24 und wird hier nicht angefasst.
+    ///
+    /// ⚠️ KEIN neuer Invalidierungsgrund. `Grund` ist eine eigene geschlossene
+    /// Menge des Vertrags, und ein Kanalwechsel IST ein Messpunktwechsel —
+    /// genau die Aussage, die R5 trifft. Ein dritter Wert waere ein zweiter
+    /// Fassungsschritt fuer dieselbe Sache.
+    ///
+    /// Zahlenraender: `alt == neu` ist kein Wechsel. `None -> Some(k)` ist
+    /// einer (aus „Routing unbekannt" wird ein Messpunkt), `Some(k) -> None`
+    /// ebenfalls (der Messpunkt ist unbekannt geworden). Eine Quelle OHNE
+    /// Belege ergibt eine leere ID-Menge, und eine leere Menge ist KEINE
+    /// Invalidierung (`Umfang::gueltig`) — es wird nichts gesendet. Eine
+    /// Ruecknahme, die nichts zurueckninmt, liesse den Empfaenger glauben, es
+    /// sei aufgeraeumt (M-57).
+    pub(super) fn invalidierung_wegen_kanalwechsel(
+        &self,
+        session: &SessionKey,
+        key: &ClientKey,
+        alt: Option<i64>,
+        neu: Option<i64>,
+    ) -> Result<usize, ()> {
+        if alt == neu {
+            return Ok(0);
+        }
+        let ids: std::collections::BTreeSet<String> = {
+            let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+            stand
+                .evidenz
+                .get(key)
+                .map(|historie| {
+                    historie
+                        .iter()
+                        .filter(|e| e.ausschlussgrund.is_none())
+                        .map(|e| e.evidence_id.clone())
+                        .collect()
+                })
+                .unwrap_or_default()
+        };
+        let invalidierung = Invalidierung {
+            grund: Grund::MesspunktWechsel,
+            umfang: Umfang::Ids(ids),
+        };
+        if !invalidierung.gueltig() {
+            return Ok(0);
+        }
+        self.invalidierung_anwenden(session, &invalidierung)
+    }
+
     /// Derselbe Ausloeser OHNE bekannten Bereich (M-52, Befund R25).
     ///
     /// Ein Hoermarker, dessen Beginn oder Ende keine Projektzeit trug, hat

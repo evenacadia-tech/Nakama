@@ -3326,12 +3326,59 @@ fn urteil_senden(c: &Coordinator, wert: &Value) -> Value {
     serde_json::from_slice(&antwort).expect("das Ack ist JSON")
 }
 
-/// **V-30, V-31, V-32 (Kontrollfälle) und V-33, V-34 (der Befund E-L5).**
+/// Die `user_verdict_id`s der Projektion `user_verdicts` (`writer.rs`:576) —
+/// also das persistierte DOMAENENEREIGNIS, nicht der Befehlsriegel.
 ///
-/// Ein Urteil auf einen existenten Befund wird angenommen und persistiert —
-/// gleich, in welchem Zustand er ist. Eines auf eine `finding_id` mit 32
-/// gültigen Hexzeichen, die kein Befund trägt, wird abgewiesen, und es liegt
-/// danach NICHTS im Store.
+/// Gelesen wie `proposals_im_store`: an der Projektion selbst, nicht an einem
+/// Zaehler. Der Append liegt vor dem Ack (`befehl.rs`:437), was nach dem Ack
+/// nicht in der Tabelle steht, ist also nicht geschrieben worden.
+fn user_verdict_ids_im_store(writer: &eqcop_broker::store::StoreWriter) -> Vec<String> {
+    let conn = rusqlite::Connection::open(writer.handle().db_pfad()).expect("Store ist lesbar");
+    let mut stmt = conn
+        .prepare("SELECT user_verdict_id FROM user_verdicts ORDER BY last_event_ord")
+        .expect("die Projektion `user_verdicts` existiert");
+    let rows = stmt
+        .query_map([], |row| row.get::<_, String>(0))
+        .expect("Zeilen lesbar");
+    rows.map(|r| r.expect("Zeile")).collect()
+}
+
+/// Wie viele Zeilen dieser `event_type` im append-only `event_log` traegt.
+fn ereignisse_im_log(writer: &eqcop_broker::store::StoreWriter, event_type: &str) -> i64 {
+    let conn = rusqlite::Connection::open(writer.handle().db_pfad()).expect("Store ist lesbar");
+    conn.query_row(
+        "SELECT COUNT(*) FROM event_log WHERE event_type = ?1",
+        [event_type],
+        |row| row.get(0),
+    )
+    .expect("das event_log ist lesbar")
+}
+
+/// Wie viele Zeilen des `event_log` diesen Text in ihrer Nutzlast tragen.
+///
+/// Die zweite Haelfte zu `ereignisse_im_log`: `internal_p0_command` ist der
+/// NUTZLASTtyp des Befehlsriegels, nicht sein `event_type` (`befehl.rs`:394).
+fn zeilen_mit_nutzlast(writer: &eqcop_broker::store::StoreWriter, text: &str) -> i64 {
+    let conn = rusqlite::Connection::open(writer.handle().db_pfad()).expect("Store ist lesbar");
+    conn.query_row(
+        "SELECT COUNT(*) FROM event_log WHERE payload_jcs LIKE '%' || ?1 || '%'",
+        [text],
+        |row| row.get(0),
+    )
+    .expect("das event_log ist lesbar")
+}
+
+/// **V-30 (Kontrollfall), V-33, V-34 (erster Teilfall) und V-36 — der Befund
+/// E-L5.**
+///
+/// Ein Urteil auf einen existenten Befund wird angenommen und persistiert.
+/// Eines auf eine `finding_id` mit 32 gültigen Hexzeichen, die kein Befund
+/// trägt, wird abgewiesen, und es liegt danach NICHTS im Store.
+///
+/// ⚠️ Diese Bühne führt Befunde; gemessen wird also der Zweig „Liste
+/// vorhanden, ID unbekannt". Der zweite Teilfall von V-34 — die Sitzung ohne
+/// jeden Eintrag in `stand.befunde` — liegt seit der Nacharbeit 1
+/// (08.09.2026) in `user_verdict_ohne_sitzungsbefunde_wird_abgewiesen`.
 ///
 /// Rotbeweis `NAK-214-rot-V-33.txt`.
 #[test]
@@ -3398,14 +3445,120 @@ fn user_verdict_ohne_befund_wird_abgewiesen() {
     );
 }
 
-/// **V-31 und V-32.** `more_data` und `stale` sind existente Befunde — der
-/// Riegel greift NICHT zu weit. R4 nennt ausschließlich die Existenz (E8).
+/// **V-34, zweiter Teilfall (Nacharbeit 1, 08.09.2026).** Eine Sitzung, die
+/// **gar keine** Befunde führt, weist dasselbe Urteil mit derselben Antwort
+/// ab — und persistiert nichts.
 ///
-/// Die Zustände kommen aus dem Broker selbst: `zustand_aus_sicherheit`
-/// bildet sie, und die Bühne trägt beide Klassen.
+/// 🔑 **Gemessen wird der `None`-Zweig des Existenzriegels.**
+/// `stand.befunde.get(&session).is_some_and(..)` (`befehl.rs`:242) hat zwei
+/// Wege zu `false`: eine vorhandene Liste ohne die ID (V-33, der Nachbarfall)
+/// und ein **fehlender Sitzungseintrag**. Dieser Fall fährt den zweiten. Die
+/// Bühne führt ihn über den Produktweg herbei: ein Main meldet sich an und
+/// meldet seinen State — sonst **nichts**. Ohne Evidenz sammelt
+/// `aufnahmen_sammeln` keine Aufnahme, `befunde_eintragen` läuft nie, und im
+/// Produktivcode entsteht ein Eintrag in `stand.befunde` ausschließlich dort
+/// und nie leer (`hypothese_verdrahtung.rs`:475; beide Räumstellen `remove`n
+/// den Schlüssel, `:472` und `:732`; der einzige weitere `insert` liegt im
+/// `#[cfg(test)]`-Modul von `proposal_verdrahtung.rs`).
+///
+/// ⚠️ **Nicht dieselbe Lage wie V-35.** Dort existierte der Befund, wurde
+/// angenommen und fiel danach; hier hat die Sitzung nie einen getragen. Und
+/// nicht „leere Liste nach Rücknahme": die gibt es im gebauten Broker nicht.
+///
+/// Der Sender ist vollwertig — angemeldet, bestätigt, führendes Main, mit
+/// gültigem Record-State. Ohne den Riegel bekäme dieses Urteil `angewandt`,
+/// nicht etwa `unauthorized`; genau das zeigt der Rotbeweis.
+///
+/// Rotbeweis `NAK-214-rot-V-34.txt`: dem `None`-Zweig „existent" beigebracht
+/// (`map_or(true, ..)`). Der Fall fällt; V-33 bleibt grün, weil seine Sitzung
+/// eine Liste führt — die Mutation trifft ausschließlich den fehlenden
+/// Eintrag.
 #[test]
 #[cfg(windows)]
-fn user_verdict_auf_more_data_und_stale_wird_angenommen() {
+fn user_verdict_ohne_sitzungsbefunde_wird_abgewiesen() {
+    let (c, writer, _ordner) = coordinator_mit_store("nak214-v34");
+    // Ein Main, angemeldet und mit gemeldetem State. Keine Sonde, keine
+    // Passage, keine Reihe, kein Beleg.
+    let main = adresse(0x11, 0x22, 1, 0x40);
+    anmelden_fuer_passage(&c, "main", &main, "main", Some(1));
+
+    assert!(
+        c.evidenz_sicht(&main.instance_id).is_none(),
+        "Vorbedingung: es ist KEINE Evidenz entstanden"
+    );
+    assert!(
+        befunde_der_sitzung(&c).is_empty(),
+        "Vorbedingung: die Sitzung fuehrt keinen Befund - und weil ein \
+         Eintrag nur mit nichtleerer Liste entsteht, hat `stand.befunde` \
+         fuer sie keinen"
+    );
+
+    // Wohlgeformt und unbekannt: 32 gueltige Hexzeichen.
+    let unbekannt = hex(0xbeeb);
+    assert_eq!(unbekannt.len(), 32, "der Zahlenrand: gueltige Form, unbekannt");
+    let command = 0x9440;
+    let wert = user_verdict_wert(&main, command, &unbekannt);
+    let ack = urteil_senden(&c, &wert);
+    assert_eq!(
+        ack["ergebnis"], "abgelehnt",
+        "V-34: eine Sitzung ohne Befunde fuehrt auch diesen nicht: {ack:?}"
+    );
+    assert_eq!(
+        ack["code"], "unknown_target",
+        "und zwar mit demselben Code wie V-33 (E7) - kein dritter Zustand: {ack:?}"
+    );
+
+    // Und es liegt NICHTS im Store: kein Befehlsriegel, kein
+    // Domaenenereignis, keine Wirkungszeile.
+    assert!(
+        writer
+            .handle()
+            .command_event_lesen(&hex(command))
+            .expect("Store ist lesbar")
+            .is_none(),
+        "kein command_event"
+    );
+    assert!(
+        user_verdict_ids_im_store(&writer).is_empty(),
+        "keine Zeile in der Projektion `user_verdicts`"
+    );
+    assert_eq!(
+        ereignisse_im_log(&writer, "user_verdict"),
+        0,
+        "kein `user_verdict`-Domaenenereignis im append-only Log"
+    );
+    // Die Zeile des Befehlsriegels traegt `event_type = "command"` und in
+    // ihrer Nutzlast `internal_p0_command` (`befehl.rs`:394). Gemessen sind
+    // beide Haelften, damit die Zusage „gar nichts committet" nicht an einer
+    // Spalte haengt.
+    assert_eq!(
+        ereignisse_im_log(&writer, "command"),
+        0,
+        "keine `command`-Zeile im Log"
+    );
+    assert_eq!(
+        zeilen_mit_nutzlast(&writer, "internal_p0_command"),
+        0,
+        "und keine Nutzlast `internal_p0_command` - der Abweisungszweig \
+         committet gar nichts"
+    );
+}
+
+/// **V-31.** `more_data` ist ein existenter Befund — der Riegel greift NICHT
+/// zu weit. R4 nennt ausschließlich die Existenz (E8).
+///
+/// Der Zustand kommt aus dem Broker selbst: `zustand_aus_sicherheit` bildet
+/// ihn aus der Sicherheitsklasse der frisch gerechneten Bühne.
+///
+/// ⚠️ **Nacharbeit 1 (08.09.2026): dieser Fall trägt V-31 und NUR V-31.**
+/// Die Bühne ruft `zustand_aus_sicherheit(..., false)`, und dieser Zweig
+/// bildet `ready_to_send` und `more_data` — `stale` NIE (`hypothese.rs`:786).
+/// Der Filter unten sah deshalb nie einen veralteten Befund. V-32 hat seit
+/// der Nacharbeit 1 einen eigenen Fall über den produktiven Veraltungsweg:
+/// `user_verdict_auf_stale_wird_angenommen`.
+#[test]
+#[cfg(windows)]
+fn user_verdict_auf_more_data_wird_angenommen() {
     let (c, writer, _ordner) = coordinator_mit_store("nak214-v31");
     let (a, _passage_id) = buehne_mit_passage(&c, 2, 12);
     let befunde = befunde_der_sitzung(&c);
@@ -3421,12 +3574,22 @@ fn user_verdict_auf_more_data_und_stale_wird_angenommen() {
          handelbar ist: {:?}",
         befunde.iter().map(|b| b.zustand).collect::<Vec<_>>()
     );
+    // Und sie sind ALLE `more_data`: die frisch gerechnete Buehne bildet
+    // keinen veralteten Befund. Ohne diese Zeile behauptete der Fall einen
+    // Zustandsbereich, den er nicht faehrt.
+    assert!(
+        nicht_ready
+            .iter()
+            .all(|b| b.zustand == eqcop_broker::coordinator::Befundzustand::MoreData),
+        "Vorbedingung: die frische Buehne bildet ausschliesslich `more_data`: {:?}",
+        nicht_ready.iter().map(|b| b.zustand).collect::<Vec<_>>()
+    );
     for (i, b) in nicht_ready.iter().enumerate() {
         let command = 0x9410 + i;
         let ack = urteil_senden(&c, &user_verdict_wert(&a[0], command, &b.finding_id));
         assert_eq!(
             ack["ergebnis"], "angewandt",
-            "V-31/V-32: der Zustand {:?} ist keine Bedingung: {ack:?}",
+            "V-31: der Zustand {:?} ist keine Bedingung: {ack:?}",
             b.zustand
         );
         assert!(
@@ -3438,6 +3601,123 @@ fn user_verdict_auf_more_data_und_stale_wird_angenommen() {
             "und das Urteil liegt im Store"
         );
     }
+}
+
+/// **V-32 (Nacharbeit 1, 08.09.2026).** Ein Urteil auf einen **veralteten**
+/// Befund wird angenommen und persistiert — dieselbe Begründung wie V-31: R4
+/// nennt ausschließlich die Existenz (E8).
+///
+/// 🔑 **Der Zustand entsteht über den PRODUKTIVEN Weg, nicht per Konstruktor.**
+/// `zustand_aus_sicherheit(..., false)` bildet `stale` nie; im gebauten Broker
+/// kommt er aus `befunde_veralten_locked` (`hypothese_verdrahtung.rs`:1005),
+/// und der einzige Auslöser ist eine wirksam übernommene Bestandsänderung
+/// (`intent.rs`:623). Genau diese Folge fährt der Fall — Muster
+/// `sonde014_proposal.rs::rollenaenderung_macht_den_vorschlag_stale`: ein
+/// `intent_update` mit gestiegener Bestandsrevision, **ohne** Folge-Evidenz,
+/// damit nichts nachrechnet und der Befund sichtbar veraltet stehenbleibt.
+///
+/// Der Fall misst drei Dinge und nicht mehr: den Zustandswechsel, die Annahme
+/// (`angewandt` mit `state_hash`) und die **Persistenz** — den Befehlsriegel
+/// im `event_log` UND das Domänenereignis in der Projektion `user_verdicts`.
+///
+/// Rotbeweis `NAK-214-rot-V-32.txt`: dem Existenzriegel eine
+/// Zustandsbedingung eingezogen (`stale` gilt als nicht existent). Der Fall
+/// fällt; V-30, V-31 und V-33 bleiben grün, weil ihre Bühnen kein `stale`
+/// führen.
+#[test]
+#[cfg(windows)]
+fn user_verdict_auf_stale_wird_angenommen() {
+    let (c, writer, _ordner) = coordinator_mit_store("nak214-v32");
+    let (a, _passage_id) = buehne_mit_passage(&c, 1, 12);
+    let vorher = befunde_der_sitzung(&c);
+    assert!(!vorher.is_empty(), "die Buehne traegt Befunde");
+    let id = vorher[0].finding_id.clone();
+    assert_ne!(
+        vorher[0].zustand,
+        eqcop_broker::coordinator::Befundzustand::Stale,
+        "Vorbedingung: der Befund ist NOCH nicht veraltet - sonst maesse der \
+         Fall keinen Uebergang"
+    );
+
+    // Der produktive Veraltungsweg: eine gestiegene Bestandsrevision mit
+    // einer Rollenangabe. KEINE Folge-Evidenz und keine zurueckgenommene
+    // Invalidierung — das sind die beiden Stellen, die neu rechnen
+    // (`evidenz.rs`:232, `invalidierung_verdrahtung.rs`:118). Der Befund
+    // bleibt also stehen und wird sichtbar `stale` (§37.3, M-29).
+    let intent = json!({
+        "type": "intent_update",
+        "adresse": a[0],
+        "session_epoch": a[0].session_epoch,
+        "vollstaendig": true,
+        "bestand_revision": 3,
+        "intents": [{
+            "quelle_id": a[1].instance_id,
+            "rolle": "traegt",
+            "revision": 1,
+            "herkunft": "user",
+            "konfidenz": 1.0
+        }]
+    });
+    c.p1("main", &bytes(&intent));
+
+    let nachher = befunde_der_sitzung(&c);
+    let befund = nachher
+        .iter()
+        .find(|b| b.finding_id == id)
+        .expect("der Befund steht weiter in der Sitzung - er veraltet, er faellt nicht");
+    assert_eq!(
+        befund.zustand,
+        eqcop_broker::coordinator::Befundzustand::Stale,
+        "V-32 Vorbedingung: der Befund ist SICHTBAR veraltet: {:?}",
+        befund.zustand
+    );
+    assert!(
+        !befund.zustand.erlaubt_draft(),
+        "und damit nicht mehr handelbar - der Zustand, in dem der Riegel \
+         trotzdem annehmen muss"
+    );
+
+    // Und genau darauf faellt das Urteil des Users.
+    let command = 0x9430;
+    let wert = user_verdict_wert(&a[0], command, &id);
+    let ack = urteil_senden(&c, &wert);
+    assert_eq!(
+        ack["ergebnis"], "angewandt",
+        "V-32: `stale` ist keine Bedingung - der Riegel nennt nur die \
+         Existenz (E8): {ack:?}"
+    );
+    assert!(
+        ack["state_hash"].is_string(),
+        "und das Ack traegt seinen state_hash: {ack:?}"
+    );
+    assert!(
+        writer
+            .handle()
+            .command_event_lesen(&hex(command))
+            .expect("Store ist lesbar")
+            .is_some(),
+        "der Befehlsriegel liegt im Store"
+    );
+    // Das DOMAENENEREIGNIS, nicht nur der Riegel: `user_verdict_p0` legt
+    // beide in EINEN Append (Befund R08), und die Projektion ist der Ort, an
+    // dem das Urteil wiederfindbar ist.
+    assert_eq!(
+        user_verdict_ids_im_store(&writer),
+        vec![wert["user_verdict_id"].as_str().unwrap().to_owned()],
+        "genau ein Urteil in der Projektion `user_verdicts`, und zwar dieses"
+    );
+    assert_eq!(
+        ereignisse_im_log(&writer, "user_verdict"),
+        1,
+        "und genau eine `user_verdict`-Zeile im append-only Log"
+    );
+    // Die GEGENPROBE zur Abwesenheit, die V-34 misst: derselbe Ausdruck
+    // findet die Nutzlast des Befehlsriegels, wenn sie da ist. Ohne sie
+    // waere die Null dort eine Abwesenheit ohne Beweis.
+    assert!(
+        zeilen_mit_nutzlast(&writer, "internal_p0_command") >= 1,
+        "die Nutzlast des Befehlsriegels ist ueber diesen Weg auffindbar"
+    );
 }
 
 /// **V-35.** Der Riegel steht HINTER dem Idempotenzblock: ein bereits

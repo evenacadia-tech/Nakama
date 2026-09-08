@@ -1,0 +1,73 @@
+ROTBEWEIS NAK-214 — V-32 — ein Urteil auf einen VERALTETEN Befund wird angenommen
+========================================================================
+
+Erzeugt am 08.09.2026 in der Nacharbeit 1 nach der Erstpruefung (NEEDS_WORK,
+Defekt „der stale-Kontrollfall ist ungemessen"). Der Stand ist danach
+zurueckgenommen; die Mutation liegt in KEINEM Commit. Die Ruecknahme ist am
+TESTERGEBNIS verifiziert (Abschnitt GRUEN NACH DER RUECKNAHME), nicht am
+Kopiervorgang.
+
+MUTATION — dem Existenzriegel eine Zustandsbedingung eingezogen.
+
+`befehl.rs`:242 — `persistenz_p0_intern`, der Vorbedingungsriegel aus R4:
+
+    -   liste.iter().any(|b| b.finding_id == finding_id)
+    +   liste
+    +       .iter()
+    +       .any(|b| b.finding_id == finding_id && b.zustand != Befundzustand::Stale)
+
+Damit gilt ein veralteter Befund als nicht existent — genau das Zuweitgreifen,
+gegen das E8 den Riegel auf die reine Existenz festlegt.
+
+WAS FAELLT
+------------------------------------------------------------------------
+Gemessen: `user_verdict_auf_stale_wird_angenommen` faellt — das Ack meldet
+`abgelehnt/unknown_target` fuer einen Befund, den die Sitzung fuehrt und den der
+User gesehen hat.
+
+Die drei Nachbarfaelle bleiben GRUEN, und das ist die Trennschaerfe dieses
+Beweises: `user_verdict_auf_more_data_wird_angenommen` (V-31),
+`user_verdict_ohne_befund_wird_abgewiesen` (V-30/V-33/V-34 erster Teilfall/V-36)
+und `user_verdict_ohne_sitzungsbefunde_wird_abgewiesen` (V-34 zweiter Teilfall)
+fahren keinen veralteten Befund. Vor dieser Nacharbeit gab es keinen Fall, den
+die Mutation getroffen haette — das war der Defekt.
+
+ROHAUSGABE
+------------------------------------------------------------------------
+running 4 tests
+test user_verdict_ohne_sitzungsbefunde_wird_abgewiesen ... ok
+test user_verdict_ohne_befund_wird_abgewiesen ... ok
+test user_verdict_auf_stale_wird_angenommen ... FAILED
+test user_verdict_auf_more_data_wird_angenommen ... ok
+
+failures:
+
+---- user_verdict_auf_stale_wird_angenommen stdout ----
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde014-nak214-v32-10176-8fe35e6ce6da411abbc6c46d5eb13ba1\nakama-broker.sqlite3
+
+thread 'user_verdict_auf_stale_wird_angenommen' (19584) panicked at tests\sonde014_verdrahtung.rs:3682:5:
+assertion `left == right` failed: V-32: `stale` ist keine Bedingung - der Riegel nennt nur die Existenz (E8): Object {"code": String("unknown_target"), "command_id": String("00000000000000000000000000009430"), "ergebnis": String("abgelehnt"), "state_revision": Number(0), "type": String("command_ack")}
+  left: String("abgelehnt")
+ right: "angewandt"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    user_verdict_auf_stale_wird_angenommen
+
+test result: FAILED. 3 passed; 1 failed; 0 ignored; 0 measured; 53 filtered out; finished in 12.94s
+
+error: test failed, to rerun pass `--test sonde014_verdrahtung`
+
+GRUEN NACH DER RUECKNAHME
+------------------------------------------------------------------------
+`git diff --stat -- broker/src` ist nach der Ruecknahme LEER, und derselbe
+Befehl laeuft gruen:
+
+running 4 tests
+test user_verdict_ohne_sitzungsbefunde_wird_abgewiesen ... ok
+test user_verdict_auf_stale_wird_angenommen ... ok
+test user_verdict_ohne_befund_wird_abgewiesen ... ok
+test user_verdict_auf_more_data_wird_angenommen ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 53 filtered out; finished in 12.72s

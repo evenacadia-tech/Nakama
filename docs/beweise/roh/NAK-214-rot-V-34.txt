@@ -1,0 +1,74 @@
+ROTBEWEIS NAK-214 — V-34 (zweiter Teilfall) — eine Sitzung OHNE Befunde
+========================================================================
+
+Erzeugt am 08.09.2026 in der Nacharbeit 1 nach der Erstpruefung (NEEDS_WORK,
+Defekt „der Teilfall mit fehlendem Sitzungseintrag fehlt"). Der Stand ist danach
+zurueckgenommen; die Mutation liegt in KEINEM Commit. Die Ruecknahme ist am
+TESTERGEBNIS verifiziert (Abschnitt GRUEN NACH DER RUECKNAHME), nicht am
+Kopiervorgang.
+
+MUTATION — dem `None`-Zweig „existent" beigebracht.
+
+`befehl.rs`:242 — `persistenz_p0_intern`, der Vorbedingungsriegel aus R4:
+
+    -   stand.befunde.get(&session).is_some_and(|liste| {
+    +   stand.befunde.get(&session).map_or(true, |liste| {
+            liste.iter().any(|b| b.finding_id == finding_id)
+        })
+
+Damit gilt eine Sitzung, die GAR KEINEN Eintrag in `stand.befunde` hat, als
+Traegerin jedes Befunds. Die vorhandene Liste ohne die ID (V-33) bleibt
+unberuehrt — die Mutation trifft ausschliesslich den fehlenden Eintrag.
+
+WAS FAELLT
+------------------------------------------------------------------------
+Gemessen: `user_verdict_ohne_sitzungsbefunde_wird_abgewiesen` faellt — das Ack
+meldet `angewandt` samt `state_hash` fuer eine wohlgeformte, im Broker
+unbekannte `finding_id`, und der Befehl waere persistiert.
+
+Die Rohausgabe belegt zugleich zwei Zusagen des Falles: der Sender ist
+VOLLWERTIG (angemeldet, bestaetigt, fuehrendes Main, gueltiger Record-State) —
+ohne den Riegel bekaeme das Urteil `angewandt` und nicht etwa `unauthorized`;
+und `user_verdict_ohne_befund_wird_abgewiesen` (V-33) bleibt GRUEN, weil seine
+Sitzung eine Liste fuehrt. Damit misst der neue Fall wirklich den `None`-Zweig
+und nicht noch einmal V-33.
+
+ROHAUSGABE
+------------------------------------------------------------------------
+running 4 tests
+test user_verdict_ohne_sitzungsbefunde_wird_abgewiesen ... FAILED
+test user_verdict_ohne_befund_wird_abgewiesen ... ok
+test user_verdict_auf_stale_wird_angenommen ... ok
+test user_verdict_auf_more_data_wird_angenommen ... ok
+
+failures:
+
+---- user_verdict_ohne_sitzungsbefunde_wird_abgewiesen stdout ----
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde014-nak214-v34-20060-54eebadde9c247859ac50889eb34d6a0\nakama-broker.sqlite3
+
+thread 'user_verdict_ohne_sitzungsbefunde_wird_abgewiesen' (21868) panicked at tests\sonde014_verdrahtung.rs:3501:5:
+assertion `left == right` failed: V-34: eine Sitzung ohne Befunde fuehrt auch diesen nicht: Object {"command_id": String("00000000000000000000000000009440"), "ergebnis": String("angewandt"), "state_hash": String("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), "state_revision": Number(0), "type": String("command_ack")}
+  left: String("angewandt")
+ right: "abgelehnt"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    user_verdict_ohne_sitzungsbefunde_wird_abgewiesen
+
+test result: FAILED. 3 passed; 1 failed; 0 ignored; 0 measured; 53 filtered out; finished in 12.96s
+
+error: test failed, to rerun pass `--test sonde014_verdrahtung`
+
+GRUEN NACH DER RUECKNAHME
+------------------------------------------------------------------------
+`git diff --stat -- broker/src` ist nach der Ruecknahme LEER, und derselbe
+Befehl laeuft gruen:
+
+running 4 tests
+test user_verdict_ohne_sitzungsbefunde_wird_abgewiesen ... ok
+test user_verdict_auf_stale_wird_angenommen ... ok
+test user_verdict_ohne_befund_wird_abgewiesen ... ok
+test user_verdict_auf_more_data_wird_angenommen ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 53 filtered out; finished in 12.72s

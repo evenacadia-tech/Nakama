@@ -160,26 +160,69 @@ impl Coordinator {
             let mut master: Option<Quellprofil> = None;
             let mut kandidaten: Vec<Quellprofil> = Vec::new();
             // Wer misst welchen Mixerkanal? Zwei Quellen auf demselben Kanal
-            // sind Duplikate (M-22).
+            // sind Duplikate (M-22); eine Sonde auf dem Kanal des Masters ist
+            // sein Duplikat und nie seine Ursache (NAK-213 R3).
             let mut je_kanal: BTreeMap<i64, Vec<String>> = BTreeMap::new();
+            // 🔑 **NAK-213 E5/E6:** iteriert werden die CLIENTS der Sitzung,
+            // nicht die Evidenzschluessel.
+            //
+            // Bis hierher lief die Schleife ueber `stand.evidenz.keys()`. Eine
+            // Quelle, die angemeldet und bestaetigt ist, aber noch nie einen
+            // Beleg gesendet hat, betrat damit weder die Kandidatenliste noch
+            // die Kanaltafel: der einzige Ueberlebende sah aus, als sei er
+            // allein, und wurde `hoch` (Gate-Befunde G-D2, G-H1, E-L4).
+            //
+            // ⚠️ Die SITZUNGSMENGE kommt weiter aus den Evidenzschluesseln
+            // (oben). Ohne einen einzigen Beleg gibt es nichts zu rechnen und
+            // nichts zu melden — das ist keine verschwiegene Aussage, sondern
+            // die Abwesenheit einer Messung (K-19).
             let mut keys: Vec<&ClientKey> = stand
-                .evidenz
-                .keys()
-                .filter(|k| k.session() == session)
+                .clients
+                .iter()
+                .filter(|(key, client)| {
+                    key.session() == session
+                        && (client.plugin_kind == "main"
+                            // „Angemeldet" heisst fuer eine QUELLE:
+                            // bestaetigtes Mitglied der Sitzung (E5). Ein
+                            // Join-Kandidat ohne Bestaetigung ist noch keines
+                            // und deckelt nichts.
+                            //
+                            // ⚠️ Fuer das `main` gilt die Bedingung
+                            // ausdruecklich NICHT: die Fuehrungsfrage
+                            // beantwortet `fuehrendes_main`, und zwei
+                            // unbestaetigte `main` sind kein Grund, die
+                            // Sitzung aus der Rechnung zu nehmen — sie sind
+                            // der Fall aus R4.
+                            || (client.bestaetigt
+                                // „Liefert nie" ist strukturell beantwortet,
+                                // ohne Zahl: faellt der Client auf `stale`,
+                                // ist er kein Mitglied mehr. Eine
+                                // Kadenzgrenze waere eine geratene Zahl
+                                // (M-31).
+                                && !client.stale))
+                })
+                .map(|(key, _)| key)
                 .collect();
             keys.sort_by(|a, b| a.instance_id.cmp(&b.instance_id));
             for key in &keys {
                 let Some(client) = stand.clients.get(*key) else {
                     continue;
                 };
-                let Some(historie) = stand.evidenz.get(*key) else {
-                    continue;
-                };
+                // Eine Quelle OHNE Historie ist zulaessig: sie wird Kandidat
+                // mit LEERER Fensterfolge und faellt in `gate()` Schritt 0 mit
+                // `evidenz_zurueckgenommen` — dem Grund, den der Bestand fuer
+                // „alles zurueckgenommen ODER nie angekommen" schon fuehrt.
+                let historie = stand.evidenz.get(*key);
                 let kanal = client
                     .descriptor
                     .as_ref()
                     .and_then(|d| d.get("host_mixer_index"))
-                    .and_then(Value::as_i64);
+                    .and_then(Value::as_i64)
+                    // Der Vertrag laesst den Hostindex erst ab 1 zu; darunter
+                    // gilt er als NICHT GELIEFERT (`eq-ipc-v3.schema.json`
+                    // `minimum: 1`). Er ist damit dasselbe Fehlen, kein
+                    // dritter Zustand.
+                    .filter(|index| *index >= 1);
                 if let Some(index) = kanal {
                     je_kanal
                         .entry(index)
@@ -203,14 +246,18 @@ impl Coordinator {
                     });
                 let profil = Quellprofil {
                     quelle_id: key.instance_id.clone(),
-                    fenster: Self::fenster_aus_historie(historie),
+                    fenster: historie.map(Self::fenster_aus_historie).unwrap_or_default(),
                     routing_bekannt: kanal.is_some(),
+                    mixerkanal: kanal,
                     parent: None,
                     prepost_paar,
                     // Ein Profil OHNE gültiges Fenster hat keine Belege mehr:
                     // entweder ist alles zurückgenommen oder nie angekommen.
-                    // Beides trägt denselben Grund (M-24).
-                    zurueckgenommen: historie.iter().all(|e| e.ausschlussgrund.is_some()),
+                    // Beides trägt denselben Grund (M-24) — und seit NAK-213
+                    // E5 zählt „nie angekommen" ausdrücklich dazu: eine
+                    // Quelle ohne Historie ist `zurueckgenommen`.
+                    zurueckgenommen: historie
+                        .is_none_or(|h| h.iter().all(|e| e.ausschlussgrund.is_some())),
                 };
                 if client.plugin_kind == "main" {
                     master = Some(profil);
@@ -218,17 +265,24 @@ impl Coordinator {
                     kandidaten.push(profil);
                 }
             }
-            let Some(master) = master else {
+            let Some(mut master) = master else {
                 continue;
             };
             // Duplikate eintragen: jede Quelle, die sich einen Mixerkanal mit
             // einer anderen teilt, zeigt auf die andere.
+            //
+            // 🔑 **NAK-213 E6:** die Schleife laeuft ueber den MASTER UND die
+            // Kandidaten. Bis hierher wurde `parent` nur an Kandidaten
+            // geschrieben; eine Sonde auf dem Masterkanal blieb unmarkiert.
+            let mut master_und_kandidaten: Vec<&mut Quellprofil> = std::iter::once(&mut master)
+                .chain(kandidaten.iter_mut())
+                .collect();
             for (_, geteilt) in je_kanal.iter().filter(|(_, v)| v.len() > 1) {
-                for kandidat in kandidaten.iter_mut() {
-                    if geteilt.contains(&kandidat.quelle_id) {
-                        kandidat.parent = geteilt
+                for quelle in master_und_kandidaten.iter_mut() {
+                    if geteilt.contains(&quelle.quelle_id) {
+                        quelle.parent = geteilt
                             .iter()
-                            .find(|id| **id != kandidat.quelle_id)
+                            .find(|id| **id != quelle.quelle_id)
                             .cloned();
                     }
                 }

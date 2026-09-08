@@ -485,6 +485,15 @@ pub struct Quellprofil {
     /// Ob das Routing dieser Quelle bekannt ist. `false` heisst „unbekannt"
     /// und deckelt die Aussage (M-22) — es heisst nie „kein Routing".
     pub routing_bekannt: bool,
+    /// Der gemeldete Mixerkanal, falls die Quelle einen nennt (NAK-213 R3).
+    ///
+    /// 🔑 Der Vertrag laesst ihn erst ab **1** zu (`eq-ipc-v3.schema.json`
+    /// `minimum: 1`, „Ausserhalb gilt der Hostwert als nicht geliefert").
+    /// `None` heisst deshalb GENAU EINES: die Quelle nennt keinen Messpunkt.
+    /// Es gibt keinen dritten Zustand und keinen Zahlenwert, der „unbekannt"
+    /// bedeutet — `routing_bekannt` bleibt daneben stehen, weil es die
+    /// benannte Frage ist, die M-22 stellt.
+    pub mixerkanal: Option<i64>,
     /// Die Quelle, in die diese hineinlaeuft, falls bekannt. Sie traegt das
     /// Parent-Duplikat aus M-22.
     pub parent: Option<String>,
@@ -1073,19 +1082,39 @@ pub fn gate(
         return Gateurteil::Faellt(Ausschlussgrund::EvidenzZurueckgenommen);
     }
 
-    // 1. Capability: traegt der Beleg ueberhaupt die Datenklasse der Metrik?
+    // 1. Der Mixerkanal des fuehrenden Mains (NAK-213 R3).
+    //
+    // 🔑 Eine Quelle, die den Mixerkanal des Masters misst, misst dessen
+    // SIGNAL. Der Befundsatz lautet „X draengt im Bandbereich a..b GEGEN den
+    // Master" — ueber sie ist er nicht schwaecher wahr, sondern FALSCH.
+    // Deshalb faellt sie aus dem Ranking, statt nur gedeckelt zu werden; ein
+    // `mittel`-Befund waere genau die irrefuehrende Behauptung, die der
+    // Gate-Text auf jedem Gegenbeispiel verbietet (M-69).
+    //
+    // ⚠️ Die Stelle ist Absicht und wird gemessen: NACH der Evidenz, VOR der
+    // Capability. Eine STUMME Sonde auf dem Masterkanal faellt weiter mit
+    // `evidenz_zurueckgenommen` — sie dupliziert nichts. Dass eine Quelle das
+    // Mastersignal misst, ist danach eine Frage ueber die Quelle selbst und
+    // braucht keine Messguete-Pruefung.
+    if let (Some(kanal), Some(master_kanal)) = (kandidat.mixerkanal, aufnahme.master.mixerkanal) {
+        if kanal == master_kanal {
+            return Gateurteil::Faellt(Ausschlussgrund::MasterDuplikat);
+        }
+    }
+
+    // 2. Capability: traegt der Beleg ueberhaupt die Datenklasse der Metrik?
     if !kandidat.fenster.iter().any(|f| metrik.braucht(f)) {
         return Gateurteil::Faellt(Ausschlussgrund::CapabilityFehlt);
     }
 
-    // 2. Coverage (M-20). Das MITTEL ueber die Fenster, nicht das Maximum:
+    // 3. Coverage (M-20). Das MITTEL ueber die Fenster, nicht das Maximum:
     //    ein einziges dichtes Fenster macht eine duenne Messung nicht dicht.
     let abdeckung = mittel(kandidat.fenster.iter().map(|f| f.abdeckung));
     if !(abdeckung >= GATE_ABDECKUNG as f64) {
         return Gateurteil::Faellt(Ausschlussgrund::CoverageFehlt);
     }
 
-    // 3. Alignment (M-20): liegen die Fenster des Kandidaten wirklich dort,
+    // 4. Alignment (M-20): liegen die Fenster des Kandidaten wirklich dort,
     //    wo der Master seinen Befund hat?
     //
     // 🔑 **NAK-212 R4/E4 (07.09.2026).** Gemessen wird die PAARWEISE
@@ -1100,9 +1129,9 @@ pub fn gate(
         return Gateurteil::Faellt(Ausschlussgrund::AlignmentFalsch);
     }
 
-    // 4. Die Passage, falls die Sitzung eine fuehrt (M-23).
+    // 5. Die Passage, falls die Sitzung eine fuehrt (M-23).
     if let Some(p) = aufnahme.passage {
-        // 4a. VERSCHOBEN oder ANDERS: eine andere Transportepoche ist eine
+        // 5a. VERSCHOBEN oder ANDERS: eine andere Transportepoche ist eine
         //     andere Passage, und eine verschobene reisst die Zeitueberdeckung.
         let ueberdeckung = zeitueberdeckung(
             spanne(&kandidat.fenster),
@@ -1113,7 +1142,7 @@ pub fn gate(
         {
             return Gateurteil::Faellt(Ausschlussgrund::PassageUnvergleichbar);
         }
-        // 4b. ZU KURZ (R1): die absolute Groesse, die die vier relativen
+        // 5b. ZU KURZ (R1): die absolute Groesse, die die vier relativen
         //     Gates nicht messen koennen. Gezaehlt werden UNABHAENGIGE
         //     Fenster — zwei Belege desselben Projektfensters sind einer.
         //
@@ -1127,7 +1156,7 @@ pub fn gate(
         }
     }
 
-    // 5. Der Wille des Users (M-03, M-04). Er steht am Ende, weil er die
+    // 6. Der Wille des Users (M-03, M-04). Er steht am Ende, weil er die
     //    Rechnung nicht braucht — aber er ueberstimmt sie vollstaendig.
     if let Some(intent) = aufnahme.intent.as_ref() {
         let passage_id = aufnahme.passage_id.clone().unwrap_or_default();
@@ -1439,15 +1468,22 @@ pub fn hypothesen(aufnahme: &Aufnahme) -> Rechenergebnis {
     };
 
     // Parent-Duplikate erkennen, BEVOR gerangt wird (M-22).
+    //
+    // 🔑 **NAK-213 E6:** die Mengen tragen den MASTER mit. Bis hierher lasen
+    // beide ausschliesslich `aufnahme.kandidaten` — eine Sonde, deren Parent
+    // der Master ist, bekam deshalb `duplikat = false`, volle
+    // Routingqualitaet und `hoch` (Gate-Befund E-D1/A3).
     let ids: std::collections::BTreeSet<&str> = aufnahme
         .kandidaten
         .iter()
+        .chain(std::iter::once(&aufnahme.master))
         .map(|k| k.quelle_id.as_str())
         .collect();
     let ist_parent = |k: &Quellprofil| {
         aufnahme
             .kandidaten
             .iter()
+            .chain(std::iter::once(&aufnahme.master))
             .any(|anderer| anderer.parent.as_deref() == Some(k.quelle_id.as_str()))
     };
 
@@ -3385,6 +3421,76 @@ mod tests {
         assert_eq!(
             gate(&kandidat, &aufnahme, Zielmetrik::StereoSeitenanteilDb, band),
             Gateurteil::Faellt(Ausschlussgrund::CapabilityFehlt)
+        );
+
+        // 🔑 **NAK-213 K-22 (R3/E6):** der Mixerkanal des Masters steht an
+        // Position 1 — NACH der Evidenz, VOR der Capability.
+        let mut auf_dem_masterkanal = Aufnahme {
+            master: Quellprofil {
+                mixerkanal: Some(1),
+                ..master.clone()
+            },
+            metrics_version: 1,
+            ..Default::default()
+        };
+        let sonde_auf_master = Quellprofil {
+            mixerkanal: Some(1),
+            ..kandidat.clone()
+        };
+        assert_eq!(
+            gate(
+                &sonde_auf_master,
+                &auf_dem_masterkanal,
+                // Selbst mit einer Metrik, deren Capability FEHLT, faellt sie
+                // zuerst am Masterkanal: die Reihenfolge ist Absicht.
+                Zielmetrik::StereoSeitenanteilDb,
+                band
+            ),
+            Gateurteil::Faellt(Ausschlussgrund::MasterDuplikat)
+        );
+        // Aber Schritt 0 bleibt VORN: eine STUMME Sonde auf dem Masterkanal
+        // faellt weiter mit `evidenz_zurueckgenommen` — sie dupliziert nichts.
+        let stumm_auf_master = Quellprofil {
+            mixerkanal: Some(1),
+            fenster: Vec::new(),
+            ..kandidat.clone()
+        };
+        assert_eq!(
+            gate(
+                &stumm_auf_master,
+                &auf_dem_masterkanal,
+                Zielmetrik::BandPegelDb,
+                band
+            ),
+            Gateurteil::Faellt(Ausschlussgrund::EvidenzZurueckgenommen)
+        );
+        // **K-24:** Kanal 1 IST ein Kanal — der kleinste, den der Vertrag
+        // kennt. Eine Sonde auf einem anderen bleibt.
+        let anderer_kanal = Quellprofil {
+            mixerkanal: Some(2),
+            ..kandidat.clone()
+        };
+        assert_eq!(
+            gate(&anderer_kanal, &auf_dem_masterkanal, Zielmetrik::BandPegelDb, band),
+            Gateurteil::Bleibt
+        );
+        // **K-25:** ohne Masterkanal gibt es keine Masterkanalgruppe. Ein
+        // Rueckfall auf einen Standardkanal erklaerte jede Sonde ohne Not zum
+        // Duplikat.
+        auf_dem_masterkanal.master.mixerkanal = None;
+        assert_eq!(
+            gate(&sonde_auf_master, &auf_dem_masterkanal, Zielmetrik::BandPegelDb, band),
+            Gateurteil::Bleibt
+        );
+        // Und umgekehrt: eine Sonde OHNE Kanal teilt keinen.
+        auf_dem_masterkanal.master.mixerkanal = Some(1);
+        let ohne_kanal = Quellprofil {
+            mixerkanal: None,
+            ..kandidat.clone()
+        };
+        assert_eq!(
+            gate(&ohne_kanal, &auf_dem_masterkanal, Zielmetrik::BandPegelDb, band),
+            Gateurteil::Bleibt
         );
 
         // Duenne Messung: Coverage.

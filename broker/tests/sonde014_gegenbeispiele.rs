@@ -1531,3 +1531,98 @@ fn einzelueberlebender_neben_passagenausschluss() {
         );
     }
 }
+
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-213 R3/E6 · a3_sonde_auf_masterkanal   (K-22, K-23)
+// ═════════════════════════════════════════════════════════════════════════
+//
+// Gate-Befund E-D1 = A3: eine Sonde auf dem Mixerkanal des Masters misst
+// dessen SIGNAL. Bis NAK-213 lasen `ids` und `ist_parent` nur die Kandidaten,
+// die Kanaltafel entstand aus den Evidenzschlüsseln, und `parent` wurde nie
+// an den Master geschrieben — die Sonde bekam `duplikat = false`, volle
+// Routingqualität und `hoch`/`ready_to_send`.
+//
+// G5 §8 wörtlich: „eine Quelle, die das Mastersignal misst, ist nie dessen
+// Ursache". Deshalb ein AUSSCHLUSS und kein Deckel: der Befundsatz „X drängt
+// im Bandbereich a..b gegen den Master" ist über sie nicht schwächer wahr,
+// sondern falsch (M-69).
+#[test]
+fn a3_sonde_auf_masterkanal() {
+    let band = (BAND_VON, BAND_BIS);
+    let muster = wechselnd(12);
+
+    // ── K-22: die Sonde auf dem Masterkanal fällt mit Grund ──────────────
+    {
+        let b = Buehne::schlank();
+        let sonde = adresse(2);
+        // Kanal 1 ist der kleinste vertragsgültige Index (`minimum: 1`).
+        b.anmelden("main", &b.master, "main", Some(1));
+        b.anmelden("sonde0", &sonde, "passive_probe", Some(1));
+        b.marke(0, json!([]));
+        b.belege_je_fenster("main", &b.master, 0, 12, 0, &muster, band);
+        b.belege_je_fenster("sonde0", &sonde, 100, 12, 0, &muster, band);
+
+        let befunde = b.befunde();
+        protokoll("A3 Sonde auf dem Masterkanal (beide Kanal 1)", &befunde);
+        assert!(
+            !befunde
+                .iter()
+                .any(|f| f.candidate_source == sonde.instance_id),
+            "kein Befund ueber sie — weder `hoch` noch `mittel`: {befunde:?}"
+        );
+        let enthaltung = befunde.first().expect("die Enthaltung entsteht");
+        assert_eq!(
+            enthaltung.ursachenklasse,
+            Ursachenklasse::DatenReichenNicht,
+            "die Sitzung enthaelt sich: {:?}",
+            enthaltung.ursachenklasse
+        );
+        assert!(
+            enthaltung
+                .ausschluesse
+                .iter()
+                .any(|x| x.candidate_source == sonde.instance_id
+                    && x.grund == Ausschlussgrund::MasterDuplikat),
+            "und sie steht MIT Grund in der Enthaltung: {:?}",
+            enthaltung.ausschluesse
+        );
+    }
+
+    // ── K-23: `master_duplikat` ist KEIN Messgrund ───────────────────────
+    //
+    // Gegenprobe: zählte er als Messausschluss, senkte eine Doppelmessung am
+    // Master jede andere Aussage der Sitzung.
+    {
+        let b = Buehne::schlank();
+        let auf_master = adresse(2);
+        let eigene = adresse(3);
+        b.anmelden("main", &b.master, "main", Some(1));
+        b.anmelden("sonde0", &auf_master, "passive_probe", Some(1));
+        b.anmelden("sonde1", &eigene, "passive_probe", Some(4));
+        b.marke(0, json!([]));
+        b.belege_je_fenster("main", &b.master, 0, 12, 0, &muster, band);
+        b.belege_je_fenster("sonde0", &auf_master, 100, 12, 0, &muster, band);
+        b.belege_je_fenster("sonde1", &eigene, 300, 12, 0, &muster, band);
+
+        let befunde = b.befunde();
+        protokoll("A3 zweite Sonde auf eigenem Kanal", &befunde);
+        let fuehrend = befunde.first().expect("ein Befund entsteht");
+        assert_eq!(
+            fuehrend.candidate_source, eigene.instance_id,
+            "die zweite Sonde bleibt und fuehrt"
+        );
+        // Vorbedingung: sie erfuellt die `hoch`-Bedingungen aus NAK-212.
+        assert_eq!(fuehrend.rang.routingqualitaet, 1.0, "eigener Kanal, kein Duplikat");
+        assert!(fuehrend.rang.bandpassung > 0.0, "Energie im Befundband");
+        assert!(fuehrend.rang.uplift > 0.0, "belegter Zusammenhang");
+        assert_eq!(
+            stark(&befunde),
+            1,
+            "`master_duplikat` ist KEIN Messgrund — der Ausschluss belegt keine \
+             fehlende Messung, sondern eine Quelle, die per Konstruktion keine \
+             Ursache sein kann: {:?}",
+            fuehrend.confidence
+        );
+    }
+}

@@ -1,0 +1,64 @@
+NAK-213 Rotbeweis K-26 — KONTROLLFALL: ein zurueckgenommener Partner bleibt Duplikat
+Datum: 2026-09-08
+
+⚠️ **Diese Zeile hat KEINEN eintretenden Rotbeweis, und das ist ein Befund
+ueber die Matrix, keine ausgelassene Arbeit.**
+
+Die Matrix nennt als Rotbeweis: „die Kanaltafel liest die Evidenzschluessel,
+eine Quelle ohne gueltigen Beleg steht in keiner Gruppe, und das Child bleibt
+unmarkiert". Das trifft fuer eine Quelle zu, die NIE gesendet hat — nicht fuer
+eine, deren Belege ZURUECKGENOMMEN sind: die Ruecknahme setzt den
+`ausschlussgrund` AM EINTRAG (`invalidierung_verdrahtung.rs`:138), der
+Sitzungsschluessel bleibt erhalten, und die Quelle stand deshalb auch vor
+NAK-213 in `stand.evidenz` und damit in der Kanaltafel.
+
+GEMESSEN, nicht vermutet: der Lauf unten ist derselbe E5-Rotlauf, der K-17,
+K-20 und K-29 zu Fall bringt (`aufnahmen_sammeln` iteriert wieder
+`stand.evidenz.keys()`). `zurueckgenommener_partner_bleibt_duplikat` bleibt
+darin GRUEN.
+
+Die Lage, die E-L4 wirklich beschreibt — der Partner hat NIE gesendet —, misst
+**K-29** (`stumme_quelle_setzt_die_duplikatmarke`), und dort tritt der
+Rotbeweis ein: `routingqualitaet` steht auf 1,0 statt 0,5.
+
+K-26 bleibt damit eine gemessene Zusage und eine Regressionswache: sie faellt,
+sobald jemand die Kanaltafel auf die GUELTIGEN Belege statt auf die Clients
+stellt.
+
+========================================================================
+Rotlauf (Zeile K-17, Test `stumme_quelle_ist_sichtbarer_kandidat`)
+Befehl: cargo test --no-fail-fast --manifest-path broker/Cargo.toml --color never --test sonde014_verdrahtung
+Exitcode: 101
+========================================================================
+test keine_rechnung_vor_der_vollstaendigkeitsmarke ... ok
+test fremde_adresse_wird_abgewiesen ... ok
+test angenommene_und_abgewiesene_meldungen_sind_zaehlbar ... ok
+test entmaskierungsveto_wirkt_im_spiegel_wie_im_main ... ok
+test assistant_step_update_koalesziert_je_session ... ok
+test ein_frischer_broker_traegt_weder_intent_noch_schritt ... ok
+test die_neuen_familien_erben_die_ordnung_von_verbinden_und_trennen ... ok
+test intent_update_koalesziert_je_quelle_und_scope ... ok
+test die_vollstaendigkeitsmarke_deckt_beide_bestaende ... ok
+test sitzungsende_loescht_den_spiegel ... ok
+test ohne_jeden_beleg_entsteht_keine_aufnahme ... ok
+test teilmeldung_mit_mehreren_objekten_wird_abgewiesen ... ok
+test consumerregeln_des_intents_fallen_einzeln ... ok
+test teilupdate_fremden_schluessels_ueberlebt_eine_koaleszierung ... ok
+test intent_update_unter_der_fassung_zwei_wird_abgewiesen ... ok
+test spiegel_weicht_dem_neueren_main_schritt ... ok
+test keine_rechnung_ohne_jede_intentmeldung ... ok
+test stumme_quelle_ist_sichtbarer_kandidat ... FAILED
+test stale_quelle_deckelt_nicht ... ok
+test spaeter_beitritt_deckelt_ab_der_bestaetigung ... FAILED
+test stumme_quelle_setzt_die_duplikatmarke ... FAILED
+test partner_ohne_routing_ist_kein_duplikat ... ok
+test zurueckgenommener_partner_bleibt_duplikat ... ok
+test veraltetes_rechenergebnis_wird_nicht_veroeffentlicht ... ok
+test result: FAILED. 21 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.69s
+
+---- stumme_quelle_ist_sichtbarer_kandidat stdout ----
+
+thread 'stumme_quelle_ist_sichtbarer_kandidat' (21308) panicked at tests\sonde014_verdrahtung.rs:1258:5:
+die stumme Quelle steht als Ausschluss im Befund (M-87): []
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+

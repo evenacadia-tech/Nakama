@@ -16,7 +16,8 @@
 //! Regel wie in `coordinator_model.rs` und `sonde013_verdrahtung.rs`.
 
 use eqcop_broker::coordinator::{
-    Befundzustand, Coordinator, IntentAbweisung, ManualClock, SchrittAbweisung,
+    Ausschlussgrund, Befundzustand, Coordinator, IntentAbweisung, ManualClock,
+    SchrittAbweisung, Sicherheitsklasse,
 };
 use eqcop_broker::transport::bootstrap::{Adresse, AudioLage, HelloControl, HostAngabe};
 use eqcop_broker::transport::server_v3::Senke;
@@ -1198,5 +1199,291 @@ fn die_neuen_familien_erben_die_ordnung_von_verbinden_und_trennen() {
             .map(|s| s.schritt),
         Some(stand.schritt.clone()),
         "und der Spiegel steht unveraendert"
+    );
+}
+
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-213 R2/E5 · die STUMME Quelle   (K-17, K-18, K-19, K-20)
+// ═════════════════════════════════════════════════════════════════════════
+//
+// Bis NAK-213 lief `aufnahmen_sammeln` ueber `stand.evidenz.keys()`. Eine
+// Quelle, die angemeldet und bestaetigt ist, aber noch nie einen Beleg
+// gesendet hat, betrat damit weder die Kandidatenliste noch die Kanaltafel:
+// der einzige Ueberlebende sah aus, als sei er allein, und wurde `hoch`
+// (Gate-Befunde G-D2, G-H1).
+
+/// Eine Buehne mit Main und `sonden` Sonden, jede auf eigenem Mixerkanal.
+fn buehne_nak213(c: &Coordinator, sonden: usize) -> Vec<Adresse> {
+    let main = adresse(0x11, 0x22, 1, 0x40);
+    anmelden_mit_deskriptor(c, "main", &main, "main", Some(1));
+    let marke = json!({
+        "type": "intent_update",
+        "adresse": main,
+        "session_epoch": main.session_epoch,
+        "vollstaendig": true,
+        "bestand_revision": 0
+    });
+    c.p1("main", &bytes(&marke));
+    let mut aus = vec![main];
+    for i in 0..sonden {
+        let a = adresse(0x11, 0x22, 2 + i, 0x50 + i);
+        anmelden_mit_deskriptor(c, &format!("sonde{i}"), &a, "passive_probe", Some(3 + i as i64));
+        aus.push(a);
+    }
+    aus
+}
+
+fn befunde_der_sitzung(c: &Coordinator) -> Vec<eqcop_broker::coordinator::CauseHypothesis> {
+    c.befunde_sicht(&hex(0x11), &hex(0x22))
+}
+
+/// **K-17.** Eine angemeldete, bestaetigte, lebende Quelle OHNE Beleg wird
+/// Kandidat mit leerer Fensterfolge, faellt mit `evidenz_zurueckgenommen` und
+/// macht die Konkurrenz unvollstaendig.
+///
+/// ⚠️ Sie liegt auf einem EIGENEN Mixerkanal — sonst maesse die Zeile
+/// zugleich die Duplikatmarke aus R3, und ein gruener Lauf bewiese nicht,
+/// welche der beiden Regeln gewirkt hat.
+#[test]
+fn stumme_quelle_ist_sichtbarer_kandidat() {
+    let c = coordinator();
+    let a = buehne_nak213(&c, 2);
+    reihe(&c, "main", &a[0], 0, 12);
+    reihe(&c, "sonde0", &a[1], 100, 12);
+    // Sonde 1 ist angemeldet und schweigt.
+    let befunde = befunde_der_sitzung(&c);
+    assert_eq!(befunde.len(), 1, "nur die messende Quelle traegt einen Befund");
+    let fuehrend = &befunde[0];
+    assert!(
+        fuehrend
+            .ausschluesse
+            .iter()
+            .any(|x| x.candidate_source == a[2].instance_id
+                && x.grund == Ausschlussgrund::EvidenzZurueckgenommen),
+        "die stumme Quelle steht als Ausschluss im Befund (M-87): {:?}",
+        fuehrend.ausschluesse
+    );
+    assert_eq!(
+        fuehrend.rang.routingqualitaet, 1.0,
+        "der Term `parent_duplikat` greift hier ausdruecklich NICHT — sonst \
+         bewiese der gruene Lauf nur R3"
+    );
+    assert!(
+        fuehrend.confidence.klasse < Sicherheitsklasse::Hoch,
+        "hoechstens `mittel` — heutiger Stand: die stumme Quelle existiert \
+         fuer die Rechnung nicht und der Ueberlebende traegt `hoch`: {:?}",
+        fuehrend.confidence
+    );
+}
+
+/// **K-18.** Dieselbe Quelle, aber ABGEMELDET: sie ist kein bestaetigtes
+/// Mitglied mehr und deckelt nichts. „Liefert nie" ist damit strukturell
+/// beantwortet, OHNE Zahl — die Liveness beantwortet dieselbe Frage bereits,
+/// und eine Kadenzgrenze waere eine geratene (M-31).
+///
+/// ⚠️ Gemessen wird der ABMELDEWEG, nicht der Ablauf der Liveness. Ein
+/// Liveness-Tick machte JEDEN Client der Sitzung `stale` — auch Main und
+/// Ueberlebenden —, und die Zeile maesse dann nichts ueber die stumme Quelle.
+/// Beide Wege enden in derselben Bedingung (`bestaetigt && !stale`).
+#[test]
+fn stale_quelle_deckelt_nicht() {
+    let c = coordinator();
+    let a = buehne_nak213(&c, 2);
+    reihe(&c, "main", &a[0], 0, 12);
+    reihe(&c, "sonde0", &a[1], 100, 12);
+    // Vorbedingung: mit der stummen Quelle ist die Aussage gedeckelt.
+    assert!(
+        befunde_der_sitzung(&c)
+            .first()
+            .is_some_and(|b| b.confidence.klasse < Sicherheitsklasse::Hoch),
+        "Vorbedingung: die lebende stumme Quelle deckelt"
+    );
+    // Die stumme Quelle meldet sich ab.
+    assert!(c.beitritt_aufheben(&hex(0x11), &hex(0x22), &a[2].instance_id));
+    // Eine neue Evidenz stoesst die Rechnung an.
+    reihe(&c, "sonde0", &a[1], 200, 1);
+    let befunde = befunde_der_sitzung(&c);
+    let fuehrend = befunde.first().expect("ein Befund entsteht");
+    assert!(
+        !fuehrend
+            .ausschluesse
+            .iter()
+            .any(|x| x.candidate_source == a[2].instance_id),
+        "eine `stale` Quelle ist weder Kandidat noch Ausschluss: {:?}",
+        fuehrend.ausschluesse
+    );
+}
+
+/// **K-20.** Es gibt KEINEN Sonderfall „nach der Vollstaendigkeitsmarke": die
+/// Aufnahme entsteht bei jeder Rechnung frisch aus dem Stand.
+#[test]
+fn spaeter_beitritt_deckelt_ab_der_bestaetigung() {
+    let c = coordinator();
+    let a = buehne_nak213(&c, 1);
+    reihe(&c, "main", &a[0], 0, 12);
+    reihe(&c, "sonde0", &a[1], 100, 12);
+    assert_eq!(
+        befunde_der_sitzung(&c)
+            .first()
+            .map(|b| b.ausschluesse.len()),
+        Some(0),
+        "Vorbedingung: vor dem Beitritt gibt es keinen Ausschluss"
+    );
+
+    // Jetzt meldet sich eine weitere Sonde an — nach der Marke.
+    let spaet = adresse(0x11, 0x22, 9, 0x59);
+    anmelden_mit_deskriptor(&c, "sonde_spaet", &spaet, "passive_probe", Some(9));
+    reihe(&c, "sonde0", &a[1], 200, 1);
+    let befunde = befunde_der_sitzung(&c);
+    let fuehrend = befunde.first().expect("ein Befund entsteht");
+    assert!(
+        fuehrend
+            .ausschluesse
+            .iter()
+            .any(|x| x.candidate_source == spaet.instance_id),
+        "ab ihrer Bestaetigung deckelt sie: {:?}",
+        fuehrend.ausschluesse
+    );
+}
+
+/// **K-19 (erster Fall).** Ohne einen einzigen Beleg entsteht gar keine
+/// Aufnahme — kein Ergebnis und keine Enthaltung. Das ist die Abwesenheit
+/// einer Messung, kein verschwiegenes Ergebnis.
+#[test]
+fn ohne_jeden_beleg_entsteht_keine_aufnahme() {
+    let c = coordinator();
+    let _ = buehne_nak213(&c, 2);
+    assert!(
+        befunde_der_sitzung(&c).is_empty(),
+        "eine Sitzung ohne jeden Beleg meldet nichts"
+    );
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-213 R3/E6 · Kanaltafel ueber ALLE Quellen   (K-26, K-27, K-29)
+// ═════════════════════════════════════════════════════════════════════════
+
+/// **K-26.** Zwei Sonden auf einem Kanal, die Belege der einen vollstaendig
+/// zurueckgenommen: BEIDE tragen weiterhin die Duplikatmarke, weil die
+/// Kanaltafel aus den CLIENTS entsteht.
+#[test]
+fn zurueckgenommener_partner_bleibt_duplikat() {
+    let c = coordinator();
+    let main = adresse(0x11, 0x22, 1, 0x40);
+    anmelden_mit_deskriptor(&c, "main", &main, "main", Some(1));
+    let marke = json!({
+        "type": "intent_update", "adresse": main,
+        "session_epoch": main.session_epoch,
+        "vollstaendig": true, "bestand_revision": 0
+    });
+    c.p1("main", &bytes(&marke));
+    let eins = adresse(0x11, 0x22, 2, 0x50);
+    let zwei = adresse(0x11, 0x22, 3, 0x51);
+    // BEIDE auf Kanal 7.
+    anmelden_mit_deskriptor(&c, "sonde0", &eins, "passive_probe", Some(7));
+    anmelden_mit_deskriptor(&c, "sonde1", &zwei, "passive_probe", Some(7));
+    reihe(&c, "main", &main, 0, 12);
+    reihe(&c, "sonde0", &eins, 100, 12);
+    for i in 0..12 {
+        c.p1("sonde1", &evidenz(&zwei, 300 + i, 44_108_200 + 400 * 512 + (i as i64) * 512));
+    }
+    let genommen = c.invalidierung_wegen_intervention_fuer_link(
+        "sonde1",
+        44_108_200 + 400 * 512 - 1,
+        44_108_200 + 412 * 512 + 1,
+    );
+    assert_eq!(genommen, 12, "genau die Belege der zweiten Sonde");
+    reihe(&c, "sonde0", &eins, 200, 1);
+    let befunde = befunde_der_sitzung(&c);
+    let fuehrend = befunde.first().expect("ein Befund entsteht");
+    assert_eq!(
+        fuehrend.rang.routingqualitaet, 0.5,
+        "die verbliebene Sonde traegt weiter die Duplikatmarke — heutiger \
+         Stand: die Kanaltafel liest die Evidenzschluessel, und eine Quelle \
+         ohne gueltigen Beleg steht in keiner Gruppe: {:?}",
+        fuehrend.rang
+    );
+}
+
+/// **K-27.** Eine Quelle OHNE gemeldeten Kanal teilt keinen — sie ist kein
+/// Duplikat. Machte ein fehlender Kanal sie zum Duplikat aller anderen, waere
+/// „Routing unbekannt" ein Ausschluss statt eines Deckels; M-22 sagt
+/// ausdruecklich das Gegenteil.
+#[test]
+fn partner_ohne_routing_ist_kein_duplikat() {
+    let c = coordinator();
+    let main = adresse(0x11, 0x22, 1, 0x40);
+    anmelden_mit_deskriptor(&c, "main", &main, "main", Some(1));
+    let marke = json!({
+        "type": "intent_update", "adresse": main,
+        "session_epoch": main.session_epoch,
+        "vollstaendig": true, "bestand_revision": 0
+    });
+    c.p1("main", &bytes(&marke));
+    let mit = adresse(0x11, 0x22, 2, 0x50);
+    let ohne = adresse(0x11, 0x22, 3, 0x51);
+    anmelden_mit_deskriptor(&c, "sonde0", &mit, "passive_probe", Some(7));
+    anmelden_mit_deskriptor(&c, "sonde1", &ohne, "passive_probe", None);
+    reihe(&c, "main", &main, 0, 12);
+    reihe(&c, "sonde0", &mit, 100, 12);
+    reihe(&c, "sonde1", &ohne, 300, 12);
+    let befunde = befunde_der_sitzung(&c);
+    assert_eq!(befunde.len(), 2, "beide bleiben sichtbar");
+    let mit_kanal = befunde
+        .iter()
+        .find(|b| b.candidate_source == mit.instance_id)
+        .expect("die Quelle mit Kanal");
+    let ohne_kanal = befunde
+        .iter()
+        .find(|b| b.candidate_source == ohne.instance_id)
+        .expect("die Quelle ohne Kanal");
+    assert_eq!(
+        mit_kanal.rang.routingqualitaet, 1.0,
+        "ein fehlender Kanal ist keine Kanalgleichheit"
+    );
+    assert_eq!(
+        ohne_kanal.rang.routingqualitaet, 0.0,
+        "und die Quelle ohne Kanal traegt `routing_bekannt = false` (M-22)"
+    );
+}
+
+/// **K-29.** Eine angemeldete, STUMME Sonde auf demselben Kanal setzt die
+/// Duplikatmarke der messenden — die Kanaltafel entsteht aus den Clients.
+/// Beide Wirkungen (Duplikat aus R3, Deckel aus R2) sind unabhaengig.
+#[test]
+fn stumme_quelle_setzt_die_duplikatmarke() {
+    let c = coordinator();
+    let main = adresse(0x11, 0x22, 1, 0x40);
+    anmelden_mit_deskriptor(&c, "main", &main, "main", Some(1));
+    let marke = json!({
+        "type": "intent_update", "adresse": main,
+        "session_epoch": main.session_epoch,
+        "vollstaendig": true, "bestand_revision": 0
+    });
+    c.p1("main", &bytes(&marke));
+    let messend = adresse(0x11, 0x22, 2, 0x50);
+    let stumm = adresse(0x11, 0x22, 3, 0x51);
+    anmelden_mit_deskriptor(&c, "sonde0", &messend, "passive_probe", Some(7));
+    anmelden_mit_deskriptor(&c, "sonde1", &stumm, "passive_probe", Some(7));
+    reihe(&c, "main", &main, 0, 12);
+    reihe(&c, "sonde0", &messend, 100, 12);
+    let befunde = befunde_der_sitzung(&c);
+    let fuehrend = befunde.first().expect("ein Befund entsteht");
+    assert_eq!(
+        fuehrend.rang.routingqualitaet, 0.5,
+        "die messende Sonde traegt die Duplikatmarke — heutiger Stand \
+         (G-H1): „Duplikatpartner ohne Evidenz unsichtbar“, volle \
+         Routingqualitaet und `hoch`: {:?}",
+        fuehrend.rang
+    );
+    assert!(
+        fuehrend
+            .ausschluesse
+            .iter()
+            .any(|x| x.candidate_source == stumm.instance_id
+                && x.grund == Ausschlussgrund::EvidenzZurueckgenommen),
+        "und zusaetzlich, unabhaengig davon, den Deckel aus R2: {:?}",
+        fuehrend.ausschluesse
     );
 }

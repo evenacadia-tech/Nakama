@@ -1,0 +1,50 @@
+NAK-213 Rotbeweis K-17 — die Aufnahme entsteht aus den CLIENTS der Sitzung, nicht aus den Evidenzschluesseln (E5)
+Datum: 2026-09-08
+
+Zurueckgenommen: `aufnahmen_sammeln` iteriert wieder `stand.evidenz.keys()`.
+Eine Quelle, die angemeldet und bestaetigt ist, aber noch nie einen Beleg
+gesendet hat, betritt damit weder die Kandidatenliste noch die Kanaltafel —
+Zeile fuer Zeile der Stand vor NAK-213.
+
+Erwartete Wirkung auf K-17: Die angemeldete, bestaetigte, lebende Quelle OHNE Beleg existiert fuer die Rechnung nicht: sie steht in keinem Ausschluss, und der einzige Ueberlebende traegt `hoch`.
+
+Die Gegenprobe `stale_quelle_deckelt_nicht` (K-18) bleibt dabei gruen: eine
+abgemeldete Quelle deckelt in BEIDEN Faellen nicht.
+
+========================================================================
+Rotlauf (Zeile K-17, Test `stumme_quelle_ist_sichtbarer_kandidat`)
+Befehl: cargo test --no-fail-fast --manifest-path broker/Cargo.toml --color never --test sonde014_verdrahtung
+Exitcode: 101
+========================================================================
+test keine_rechnung_vor_der_vollstaendigkeitsmarke ... ok
+test fremde_adresse_wird_abgewiesen ... ok
+test angenommene_und_abgewiesene_meldungen_sind_zaehlbar ... ok
+test entmaskierungsveto_wirkt_im_spiegel_wie_im_main ... ok
+test assistant_step_update_koalesziert_je_session ... ok
+test ein_frischer_broker_traegt_weder_intent_noch_schritt ... ok
+test die_neuen_familien_erben_die_ordnung_von_verbinden_und_trennen ... ok
+test intent_update_koalesziert_je_quelle_und_scope ... ok
+test die_vollstaendigkeitsmarke_deckt_beide_bestaende ... ok
+test sitzungsende_loescht_den_spiegel ... ok
+test ohne_jeden_beleg_entsteht_keine_aufnahme ... ok
+test teilmeldung_mit_mehreren_objekten_wird_abgewiesen ... ok
+test consumerregeln_des_intents_fallen_einzeln ... ok
+test teilupdate_fremden_schluessels_ueberlebt_eine_koaleszierung ... ok
+test intent_update_unter_der_fassung_zwei_wird_abgewiesen ... ok
+test spiegel_weicht_dem_neueren_main_schritt ... ok
+test keine_rechnung_ohne_jede_intentmeldung ... ok
+test stumme_quelle_ist_sichtbarer_kandidat ... FAILED
+test stale_quelle_deckelt_nicht ... ok
+test spaeter_beitritt_deckelt_ab_der_bestaetigung ... FAILED
+test stumme_quelle_setzt_die_duplikatmarke ... FAILED
+test partner_ohne_routing_ist_kein_duplikat ... ok
+test zurueckgenommener_partner_bleibt_duplikat ... ok
+test veraltetes_rechenergebnis_wird_nicht_veroeffentlicht ... ok
+test result: FAILED. 21 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.69s
+
+---- stumme_quelle_ist_sichtbarer_kandidat stdout ----
+
+thread 'stumme_quelle_ist_sichtbarer_kandidat' (21308) panicked at tests\sonde014_verdrahtung.rs:1258:5:
+die stumme Quelle steht als Ausschluss im Befund (M-87): []
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+

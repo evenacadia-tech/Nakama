@@ -1,0 +1,7 @@
+Thread 01a0803a-2d9d-78f2-a16e-9f9801d1b56f · Codex gpt-6-astra · Effort max · read-only · HEAD vor/nach c8831443b69022a6f8a0b1f8b4a5d5be2cd87426 · Lauf 2026-09-08 10:54:51 bis 11:00:29
+
+URTEIL: PASS — Befund 1: ja, Push und Sitzungsabonnement sind registriert (`broker/tests/sonde014_verdrahtung.rs:2072–2073,2112–2119`), der empfangene Payload wird auf genau acht IDs, `messpunkt_wechsel` und Umfang `Ids`/`evidence_ids` geprüft, zusätzlich Outbox-`event_ord` und Schuldabbau (`:2197–2282`); Befund 2: ja, BEIDE Lagen (`broker/tests/sonde014_gegenbeispiele.rs:1225,1321`) verwenden den Heartbeat mit Runtime-Kanal 9 (`:404–415,1207–1215`) über `Senke::p0` → `befehl.rs:669` → `heartbeat_kontakt`, bei unveränderten Folgeprüfungen.
+
+Geprüft: ausschließlich Fixdiff und notwendige Referenzen statisch; kein Bruch und keine Abschwächung von K-44/K-49, Entscheiden, Gate-Text, R1–R8 oder fortgeltenden Referenzzusagen gefunden; die NB-9-Umgehung betrifft nur den Aufbau vor Evidenzlieferung, mit Invalidierungszähler 0 (`broker/tests/sonde014_verdrahtung.rs:2095–2121`); `broker/src`, `eq-copilot/` und `tools/` sind VORHER/ZIEL tree-identisch, zwischen 91ad6f2 und d9effdb liegen ausschließlich drei neue Rohdateien, HEAD blieb vor/nach auf `c8831443b69022a6f8a0b1f8b4a5d5be2cd87426`, keine eigenen Änderungen.
+
+Nicht geprüft: Testausführung, Produktprozesse und übriger Ticketbereich einschließlich Ausschlüssen; gemeldete Grünläufe und Rotprotokolle wurden ausschließlich gelesen, nicht nachgemessen.

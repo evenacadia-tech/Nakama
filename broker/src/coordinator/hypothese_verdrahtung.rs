@@ -344,9 +344,33 @@ impl Coordinator {
                     .find(|profil| profil.quelle_id == id)
                     .cloned()
             });
+            // 🔑 **NAK-214 R5/R7: die Taintmenge wird HIER gebildet.**
+            //
+            // Der Taint liegt je SITZUNG (`Stand::taint`, M-62), die
+            // Passagenwahl laeuft je PROJEKTBINDUNG — die Menge entsteht
+            // deshalb ueber ALLE Taintstaende, nicht nur ueber den der
+            // rechnenden Sitzung: ein Experiment einer anderen Sitzung
+            // desselben Projekts liefert seine Passage genauso, und sein
+            // Taint gehoert dazu.
+            //
+            // Zwei Quellen, und beide sind noetig: die OFFENEN
+            // Interventionen und die geretteten NACHLAUFzuordnungen. Ein
+            // Filter, der nur die erste laese, gaebe die Experimentpassage
+            // in genau dem Fenster wieder frei, in dem der Filterhall des
+            // Eingriffs noch in die Messung laeuft (M-58).
+            let getaintet: std::collections::BTreeSet<String> = stand
+                .taint
+                .values()
+                .flat_map(|t| {
+                    t.interventionen
+                        .values()
+                        .filter_map(|i| i.experiment_id.clone())
+                        .chain(t.nachlauf_fuer_experimente.iter().cloned())
+                })
+                .collect();
             let passage = stand
                 .experimente
-                .juengste_passage_im_projekt(&session.project_binding_id);
+                .juengste_passage_im_projekt(&session.project_binding_id, &getaintet);
             aus.push((
                 session.clone(),
                 Aufnahme {

@@ -459,6 +459,9 @@ impl Coordinator {
             taint.interventionen.clear();
             taint.tail_samples_offen = 0;
             taint.unknown = false;
+            // NAK-214 R7: der bestaetigte Nachbericht leert Intervalle,
+            // Nachlauf und die Zuordnung gemeinsam - wie der Resync.
+            taint.nachlauf_fuer_experimente.clear();
         }
         Self::taint_mut(&mut stand, &SessionKey::unbekannt()).unknown = false;
         true

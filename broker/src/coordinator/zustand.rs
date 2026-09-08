@@ -189,6 +189,28 @@ pub(super) struct Taintstand {
     /// Wie lang der Nachlauf beim Start war. Aus ihm und `tail_seit` folgt der
     /// Rest — unabhaengig davon, wann und wie oft der Tick laeuft.
     pub(super) tail_samples_gesamt: u64,
+    /// 🔑 **NAK-214 R7 (08.09.2026): fuer WELCHE Experimente laeuft gerade
+    /// ein Nachlauf?**
+    ///
+    /// Der Taintstand traegt eine `experiment_id` sonst AUSSCHLIESSLICH in
+    /// `interventionen`. `intervention_end_mit_beginn` entfernt den Eintrag
+    /// und zieht im selben Zug `tail_samples_offen` hoch — danach ist aus
+    /// dem Stand nicht mehr ableitbar, welches Experiment den laufenden
+    /// Nachlauf verursacht hat. Der Passagenfilter braucht genau das: M-58
+    /// sagt „das Ende allein genuegt nicht", und ein Filter, der nur die
+    /// offenen Interventionen liest, gaebe die Experimentpassage in genau
+    /// dem Fenster wieder frei, in dem der Filterhall des Eingriffs noch in
+    /// die Messung laeuft.
+    ///
+    /// ⚠️ **Internes Zustandsfeld.** Es erreicht weder `Interventionssicht`
+    /// noch eine Leitung noch den Vertrag; `Stand` wird nicht serialisiert.
+    ///
+    /// Geleert wird die Menge aus GENAU ZWEI Gruenden — Nachlaufende
+    /// (`tail_samples_offen` faellt auf 0) und bestaetigter Resync (M-61).
+    /// Ein **Terminal** des Experiments leert sie NICHT: es entfernt nur
+    /// Intervalle und laesst den Nachlauf stehen, also bleibt auch die
+    /// Zuordnung stehen (R7-Praezisierung).
+    pub(super) nachlauf_fuer_experimente: std::collections::BTreeSet<String>,
 }
 
 impl Taintstand {

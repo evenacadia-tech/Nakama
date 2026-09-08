@@ -898,3 +898,177 @@ fn block_bootstrap_weist_nichtendliches_ab() {
         "und ein nichtendliches Alpha ebenso"
     );
 }
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-214 R5 · die Passage der Aufnahme (V-37, V-38, V-40 bis V-42, V-48)
+// ═════════════════════════════════════════════════════════════════════════
+//
+// Drei Ausschlussgründe, drei Strukturen — gemessen an `juengste_passage_im_
+// projekt` selbst. Die Taintmenge reist als Parameter herein, weil der Taint
+// am `Stand` hängt und nicht am Experimentstore; ihre zwei Quellen misst
+// `sonde013_taint.rs`.
+
+use std::collections::BTreeSet;
+
+fn ohne_taint() -> BTreeSet<String> {
+    BTreeSet::new()
+}
+
+/// Eine Resultatmessung mit steuerbarem Vergleichbarkeitsurteil.
+fn messung_mit_vergleichbarkeit(urteil: Option<&str>) -> Resultatmessung {
+    let mut m = messung();
+    m.vergleichbarkeit = urteil.map(str::to_string);
+    m
+}
+
+/// Zwei Experimente derselben Projektbindung: das jüngere (`folge` = 1) und
+/// ein älteres (`folge` = 0) mit eigener Passage.
+fn zwei_experimente() -> (Experimentstore, String, String, String, String) {
+    let mut s = Experimentstore::neu();
+    let alt = hex32(1);
+    let jung = hex32(2);
+    s.beginne(&alt, "projekt-a", passage(1), referenz(-2.5), 0, None)
+        .expect("das aeltere");
+    s.beginne(&jung, "projekt-a", passage(2), referenz(-2.5), 0, None)
+        .expect("das juengere");
+    assert!(
+        s.experiment(&jung).unwrap().folge > s.experiment(&alt).unwrap().folge,
+        "Vorbedingung: `folge` ist monoton je Anlage"
+    );
+    let p_alt = s.experiment(&alt).unwrap().passage_id.clone();
+    let p_jung = s.experiment(&jung).unwrap().passage_id.clone();
+    (s, alt, jung, p_alt, p_jung)
+}
+
+/// **V-37 (Kontrollfall) und V-42.** Ein offenes Experiment ist tauglich, und
+/// die Wahl ist deterministisch: `folge` ist je Anlage monoton, ein
+/// Gleichstand strukturell ausgeschlossen.
+#[test]
+fn offenes_experiment_liefert_seine_passage() {
+    let (s, _alt, _jung, _p_alt, p_jung) = zwei_experimente();
+    let gewaehlt = s
+        .juengste_passage_im_projekt("projekt-a", &ohne_taint())
+        .expect("eine Passage");
+    assert_eq!(
+        gewaehlt.passage_id, p_jung,
+        "V-37: das juengste OFFENE Experiment liefert seine Passage"
+    );
+    // V-42: hundert Laeufe ueber denselben Bestand liefern dieselbe Wahl.
+    for _ in 0..100 {
+        assert_eq!(
+            s.juengste_passage_im_projekt("projekt-a", &ohne_taint())
+                .map(|p| p.passage_id.clone()),
+            Some(p_jung.clone()),
+            "V-42: die Passagenwahl ist deterministisch (M-25)"
+        );
+    }
+    // Und ein fremdes Projekt bekommt nichts.
+    assert!(s
+        .juengste_passage_im_projekt("projekt-b", &ohne_taint())
+        .is_none());
+}
+
+/// **V-38 und V-48.** Ein zurückgenommenes Experiment liefert nie eine
+/// Passage — beide Abbruchgründe, und auch nach geschlossenem Taint.
+///
+/// R5 nennt „nicht zurückgenommen" als **eigenen** Ausschlussgrund neben dem
+/// Taint; er kennt keinen Rückweg. Ein Rückweg über V-44 wäre ein
+/// Widerspruch zwischen zwei Zeilen derselben Matrix.
+///
+/// Rotbeweis `NAK-214-rot-V-38.txt`.
+#[test]
+fn zurueckgenommenes_experiment_liefert_keine_passage() {
+    for grund in [Abbruchgrund::UserAbbruch, Abbruchgrund::Verdraengt] {
+        let (mut s, _alt, jung, p_alt, _p_jung) = zwei_experimente();
+        s.schliesse(&jung, grund).expect("Abbruch");
+        assert_eq!(
+            s.juengste_passage_im_projekt("projekt-a", &ohne_taint())
+                .map(|p| p.passage_id.clone()),
+            Some(p_alt.clone()),
+            "V-38 ({grund:?}): das AELTERE, taugliche wird gewaehlt"
+        );
+
+        // V-48 — der Kontrollfall zu V-38: auch OHNE jeden Taint bleibt es
+        // ausgeschlossen. Ein abgelaufener Nachlauf gibt es nicht frei.
+        let mut taint = BTreeSet::new();
+        taint.insert(jung.clone());
+        assert_eq!(
+            s.juengste_passage_im_projekt("projekt-a", &taint)
+                .map(|p| p.passage_id.clone()),
+            Some(p_alt.clone()),
+            "V-48: mit Taint dasselbe Ergebnis - der Grund ist der Abbruch"
+        );
+        assert_eq!(
+            s.juengste_passage_im_projekt("projekt-a", &ohne_taint())
+                .map(|p| p.passage_id.clone()),
+            Some(p_alt.clone()),
+            "V-48: und OHNE Taint ebenfalls - dauerhaft, nicht abklingend"
+        );
+    }
+}
+
+/// **V-40.** Ein Ergebnis, dessen Vergleichbarkeit nicht gerechnet werden
+/// konnte, fällt: `None` heißt „nicht gemessen".
+///
+/// Rotbeweis `NAK-214-rot-V-40.txt`.
+#[test]
+fn unbekannte_vergleichbarkeit_liefert_keine_passage() {
+    let (mut s, _alt, jung, p_alt, _p_jung) = zwei_experimente();
+    s.neuer_kandidat(&jung, referenz(-2.5), 100).expect("Kandidat");
+    s.binde_reihenfolge(&jung, Blindreihenfolge::BaselineZuerst)
+        .expect("Reihenfolge");
+    let achsen = s
+        .ergebnis(
+            &jung,
+            Hoerurteil::Kandidat,
+            None,
+            None,
+            &messung_mit_vergleichbarkeit(None),
+        )
+        .expect("Ergebnis");
+    assert_eq!(
+        achsen.vergleichbarkeit, None,
+        "Vorbedingung: die Vergleichbarkeit ist NICHT gemessen"
+    );
+    assert_eq!(
+        s.juengste_passage_im_projekt("projekt-a", &ohne_taint())
+            .map(|p| p.passage_id.clone()),
+        Some(p_alt),
+        "V-40: das naechsttaugliche wird gewaehlt"
+    );
+}
+
+/// **V-41.** `unvergleichbar` ist NICHT `unbekannt`: ein gemessenes Urteil
+/// über zwei Passagen sagt nichts über die Tauglichkeit der Passage als
+/// Rechenrahmen. Die Kette hat für den unvergleichbaren Fall ihren eigenen,
+/// gemessenen Ausschluss (`passage_unvergleichbar`, NAK-212 N-43); ihn hier
+/// ein zweites Mal zu treffen hieße zwei Wahrheiten über denselben Fall.
+///
+/// Der Fall misst, dass der Filter **nicht zu weit greift**.
+#[test]
+fn unvergleichbar_ist_nicht_unbekannt() {
+    let (mut s, _alt, jung, _p_alt, p_jung) = zwei_experimente();
+    s.neuer_kandidat(&jung, referenz(-2.5), 100).expect("Kandidat");
+    s.binde_reihenfolge(&jung, Blindreihenfolge::BaselineZuerst)
+        .expect("Reihenfolge");
+    let achsen = s
+        .ergebnis(
+            &jung,
+            Hoerurteil::Kandidat,
+            None,
+            None,
+            &messung_mit_vergleichbarkeit(Some("unvergleichbar")),
+        )
+        .expect("Ergebnis");
+    assert_eq!(
+        achsen.vergleichbarkeit.as_deref(),
+        Some("unvergleichbar"),
+        "Vorbedingung: das Urteil ist GEMESSEN"
+    );
+    assert_eq!(
+        s.juengste_passage_im_projekt("projekt-a", &ohne_taint())
+            .map(|p| p.passage_id.clone()),
+        Some(p_jung),
+        "V-41: es bleibt tauglich und liefert seine Passage"
+    );
+}

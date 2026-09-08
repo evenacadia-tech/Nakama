@@ -3483,3 +3483,400 @@ fn wiederholtes_urteil_bleibt_idempotent_auch_ohne_befund() {
         "mit demselben state_hash"
     );
 }
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-214 R5/R7 · Taint, Nachlauf und die Passagenwahl (V-39, V-43, V-44,
+// V-46, V-47, V-49)
+// ═════════════════════════════════════════════════════════════════════════
+//
+// Diese Zeilen messen eine WIRKUNG AUF DIE PASSAGENWAHL, und die ist nur an
+// einer Bühne mit Store, Passage und Befunden sichtbar. Die drei
+// Ausschlussgründe am `Experiment` selbst misst `sonde013_experiment.rs` an
+// `juengste_passage_im_projekt`; hier fällt die zweite Hälfte: dass die
+// Taintmenge des Aufrufers wirklich beide Quellen führt — die offenen
+// Interventionen UND die gerettete Nachlaufzuordnung.
+
+/// Main plus Sonde, ZWEI Passagen: ein älteres und ein jüngeres Experiment
+/// derselben Projektbindung. Rückgabe: Adressen, alte und junge Passage-ID
+/// samt der `experiment_id` des jüngeren.
+fn buehne_mit_zwei_passagen(c: &Coordinator, fenster: usize) -> (Vec<Adresse>, String, String, String) {
+    let main = adresse(0x11, 0x22, 1, 0x40);
+    anmelden_fuer_passage(c, "main", &main, "main", Some(1));
+    let marke = json!({
+        "type": "intent_update",
+        "adresse": main,
+        "session_epoch": main.session_epoch,
+        "vollstaendig": true,
+        "bestand_revision": 0
+    });
+    c.p1("main", &bytes(&marke));
+    let sonde = adresse(0x11, 0x22, 2, 0x50);
+    anmelden_fuer_passage(c, "sonde0", &sonde, "passive_probe", Some(3));
+    let quellen: Vec<&Adresse> = vec![&main, &sonde];
+    let alt = passage_anlegen(c, &main, &quellen, fenster as i64, 0x931, 0xab8, 0x5002);
+    let jung = passage_anlegen(c, &main, &quellen, fenster as i64, 0x932, 0xab9, 0x5003);
+    reihe_wechselnd(c, "main", &main.clone(), 0, fenster);
+    reihe_wechselnd(c, "sonde0", &sonde.clone(), 100, fenster);
+    (vec![main, sonde], alt, jung, hex(0xab9))
+}
+
+/// Eine ZWEITE Sitzung desselben Projekts, auf eigenem Host.
+///
+/// ⚠️ Sie ist nicht Bequemlichkeit, sondern Notwendigkeit UND Zusage: eine
+/// offene Intervention sperrt den Evidenzpfad IHRER Sitzung
+/// (`evidence_dispatch_fuer_link`), und ohne neue Evidenz rechnet die
+/// Aufnahme gar nicht neu — der Befund bliebe mit seiner alten Passage
+/// stehen, und der Fall maesse nichts. Zugleich misst die Trennung genau
+/// das, was E9 zusagt: die Taintmenge entsteht ueber ALLE `Stand::taint`-
+/// Eintraege, nicht nur ueber den der rechnenden Sitzung. Ein Experiment
+/// einer anderen Sitzung desselben Projekts liefert seine Passage genauso,
+/// und sein Taint gehoert dazu.
+///
+/// `auto_join_locked` bestaetigt eine Mitgliedschaft nur, wenn die
+/// `main`-Clients DESSELBEN Hosts in genau EINER Sitzung liegen — die zweite
+/// Sitzung braucht deshalb eine eigene Host-PID.
+fn zweite_sitzung(c: &Coordinator) -> Adresse {
+    let a = adresse(0x11, 0x33, 5, 0x60);
+    anmelden_mit_deskriptor_und_host(c, "main2", &a, "main", Some(1), 4712);
+    a
+}
+
+/// Welche Passage rechnet die Aufnahme gerade? Gelesen am Befund — dem
+/// einzigen Ort, an dem die Wahl nach außen sichtbar wird.
+fn gewaehlte_passage(c: &Coordinator) -> Option<String> {
+    befunde_der_sitzung(c)
+        .first()
+        .and_then(|b| b.passage_id.clone())
+}
+
+/// **V-39, V-46, V-44 und V-49 — die vier Zustände der Taintmenge in EINEM
+/// Lauf, weil sie vier Zeitpunkte desselben Vorgangs sind.**
+///
+/// Der Rückweg gehört in denselben Änderungssatz (aktivieren ↔ abklingen):
+/// eine offene Intervention sperrt, ihr Ende sperrt weiter (der Nachlauf
+/// läuft), das Nachlaufende gibt frei — und ein Terminal dazwischen ändert
+/// daran nichts.
+///
+/// Rotbeweise `NAK-214-rot-V-39.txt` (Filter entfernt) und
+/// `NAK-214-rot-V-46.txt` (nur die offenen Interventionen gelesen).
+#[test]
+#[cfg(windows)]
+fn getaintetes_experiment_liefert_keine_passage() {
+    let (c, _writer, _ordner) = coordinator_mit_store("nak214-v39");
+    let (a, alt, jung, experiment) = buehne_mit_zwei_passagen(&c, 12);
+    let fremd = zweite_sitzung(&c);
+    assert_eq!(
+        gewaehlte_passage(&c),
+        Some(jung.clone()),
+        "Vorbedingung: ohne Taint rechnet die JUENGSTE Passage"
+    );
+
+    // V-39 — eine OFFENE Intervention mit der `experiment_id` des jüngsten.
+    let marker = hex(0x600);
+    assert!(c.intervention_begin_mit_art(
+        "main2",
+        &fremd,
+        &marker,
+        1,
+        "experiment",
+        Some(&experiment),
+        Some(44_108_200),
+    ));
+    reihe_wechselnd(&c, "sonde0", &a[1].clone(), 300, 12);
+    assert_eq!(
+        gewaehlte_passage(&c),
+        Some(alt.clone()),
+        "V-39: das getaintete faellt, das aeltere rechnet"
+    );
+
+    // V-46 — das Ende meldet EINEN Sample Nachlauf. Die Intervention ist fort,
+    // `Taintstand::erlaubt()` bleibt falsch, und ohne die gerettete Zuordnung
+    // waere die Passage genau hier wieder frei (M-58).
+    assert!(c.intervention_end("main2", &fremd, &marker, 2, 1));
+    assert_eq!(
+        c.interventionssicht().aktive,
+        0,
+        "die aktive Intervention ist weg"
+    );
+    assert_eq!(
+        c.interventionssicht().tail_samples_offen,
+        1,
+        "aber der Nachlauf steht - der Zahlenrand 1 gegen 0"
+    );
+    reihe_wechselnd(&c, "sonde0", &a[1].clone(), 400, 12);
+    assert_eq!(
+        gewaehlte_passage(&c),
+        Some(alt.clone()),
+        "V-46: der laufende Nachlauf haelt die Experimentpassage gesperrt"
+    );
+
+    // V-44 (b) — der Nachlauf laeuft ab: die Passage ist WIEDER waehlbar.
+    c.tail_fortschritt(1);
+    assert_eq!(c.interventionssicht().tail_samples_offen, 0);
+    reihe_wechselnd(&c, "sonde0", &a[1].clone(), 500, 12);
+    assert_eq!(
+        gewaehlte_passage(&c),
+        Some(jung.clone()),
+        "V-44: mit dem Nachlaufende ist die Passage wieder waehlbar"
+    );
+}
+
+/// **V-44 (c) — der Zahlenrand: ein Ende mit `tail_samples = 0` erzeugt gar
+/// keine Sperre.** Ohne fremden Nachlauf kommt die `experiment_id` erst gar
+/// nicht in die Menge.
+#[test]
+#[cfg(windows)]
+fn interventionsende_ohne_nachlauf_sperrt_nicht() {
+    let (c, _writer, _ordner) = coordinator_mit_store("nak214-v44c");
+    let (a, _alt, jung, experiment) = buehne_mit_zwei_passagen(&c, 12);
+    let fremd = zweite_sitzung(&c);
+    let marker = hex(0x601);
+    assert!(c.intervention_begin_mit_art(
+        "main2",
+        &fremd,
+        &marker,
+        1,
+        "experiment",
+        Some(&experiment),
+        Some(44_108_200),
+    ));
+    assert!(c.intervention_end("main2", &fremd, &marker, 2, 0));
+    assert_eq!(c.interventionssicht().tail_samples_offen, 0);
+    reihe_wechselnd(&c, "sonde0", &a[1].clone(), 300, 12);
+    assert_eq!(
+        gewaehlte_passage(&c),
+        Some(jung),
+        "V-44 (c): ohne Nachlauf entsteht keine Sperre"
+    );
+}
+
+/// **V-44 (a) — ein bestätigter Resync leert Intervalle, Nachlauf und
+/// Zuordnung gemeinsam** (M-61).
+#[test]
+#[cfg(windows)]
+fn resync_gibt_die_passage_frei() {
+    let (c, _writer, _ordner) = coordinator_mit_store("nak214-v44a");
+    let (a, alt, jung, experiment) = buehne_mit_zwei_passagen(&c, 12);
+    let fremd = zweite_sitzung(&c);
+    let marker = hex(0x602);
+    assert!(c.intervention_begin_mit_art(
+        "main2",
+        &fremd,
+        &marker,
+        1,
+        "experiment",
+        Some(&experiment),
+        Some(44_108_200),
+    ));
+    assert!(c.intervention_end("main2", &fremd, &marker, 2, 480_000));
+    reihe_wechselnd(&c, "sonde0", &a[1].clone(), 300, 12);
+    assert_eq!(
+        gewaehlte_passage(&c),
+        Some(alt),
+        "Vorbedingung: der lange Nachlauf sperrt"
+    );
+
+    assert!(c.neutral_resync("main2", 3), "der Resync wird bestaetigt");
+    assert_eq!(c.interventionssicht().tail_samples_offen, 0);
+    reihe_wechselnd(&c, "sonde0", &a[1].clone(), 400, 12);
+    assert_eq!(
+        gewaehlte_passage(&c),
+        Some(jung),
+        "V-44 (a): der Resync gibt die Passage frei"
+    );
+}
+
+/// **V-47 — der Kontrollfall zur Lücke: `unknown` sperrt das MATERIAL, nicht
+/// den ZEITRAHMEN.**
+///
+/// `Taintstand::unknown` ist sitzungsweit und trägt keine `experiment_id`; es
+/// entsteht aus unbekannter Adresse oder einem Ende ohne bekannten Beginn.
+/// Eine Passage ist ein Zeitrahmen und wird durch einen Resync-Verlust nicht
+/// falsch. Was währenddessen falsch wäre, ist das Material — und das ist über
+/// den bestehenden Taint bereits gesperrt (M-61/M-62).
+#[test]
+#[cfg(windows)]
+fn unknown_sperrt_das_material_nicht_die_passage() {
+    let (c, _writer, _ordner) = coordinator_mit_store("nak214-v47");
+    let (a, _alt, jung, _experiment) = buehne_mit_zwei_passagen(&c, 12);
+    let fremd = zweite_sitzung(&c);
+    // Ein Ende OHNE bekannten Beginn setzt `unknown` - ohne jede
+    // `experiment_id` und ohne Nachlauf.
+    assert!(!c.intervention_end("main2", &fremd, &hex(0x603), 1, 0));
+    let fremde_sicht = c.interventionssicht_fuer_link("main2");
+    assert!(fremde_sicht.unknown, "Vorbedingung: `unknown` steht");
+    assert_eq!(fremde_sicht.aktive, 0, "ohne offene Intervention");
+    assert_eq!(fremde_sicht.tail_samples_offen, 0, "und ohne Nachlauf");
+    assert!(
+        !fremde_sicht.starke_evidenz_erlaubt,
+        "das MATERIAL SEINER Sitzung ist gesperrt - der bestehende Weg (M-61/M-62),          hier nur genutzt"
+    );
+    // Und die rechnende Sitzung ist davon unberuehrt: `unknown` ist
+    // sitzungsweit.
+    assert!(
+        c.interventionssicht_fuer_link("sonde0").starke_evidenz_erlaubt,
+        "die rechnende Sitzung traegt keinen Taint"
+    );
+
+    reihe_wechselnd(&c, "sonde0", &a[1].clone(), 300, 12);
+    assert_eq!(
+        gewaehlte_passage(&c),
+        Some(jung),
+        "V-47: die Passagenwahl bleibt unveraendert - `unknown` traegt keine experiment_id"
+    );
+}
+
+/// **V-49 — ein Terminal lässt die gerettete Nachlaufzuordnung unberührt.**
+///
+/// `taint_intervalle_des_experiments_schliessen` entfernt beim Terminal nur
+/// Einträge aus `interventionen` und lässt `tail_samples_offen` stehen —
+/// also bleibt auch die Zuordnung stehen. Zwei Messpunkte desselben Laufs:
+/// während des Nachlaufs gesperrt (a), mit seinem Ende frei (b).
+///
+/// Rotbeweis `NAK-214-rot-V-49.txt`.
+#[test]
+#[cfg(windows)]
+fn terminal_laesst_die_nachlaufzuordnung_stehen() {
+    let (c, _writer, _ordner) = coordinator_mit_store("nak214-v49");
+    let (a, alt, jung, experiment) = buehne_mit_zwei_passagen(&c, 12);
+    let fremd = zweite_sitzung(&c);
+    let marker = hex(0x604);
+    assert!(c.intervention_begin_mit_art(
+        "main2",
+        &fremd,
+        &marker,
+        1,
+        "experiment",
+        Some(&experiment),
+        Some(44_108_200),
+    ));
+    assert!(c.intervention_end("main2", &fremd, &marker, 2, 1));
+    assert_eq!(c.interventionssicht().tail_samples_offen, 1);
+
+    assert_eq!(
+        c.nachlauf_fuer_experimente_fuer_test("main2"),
+        vec![experiment.clone()],
+        "Vorbedingung: die Zuordnung Nachlauf → Experiment ist gerettet"
+    );
+
+    // DANACH das Terminal, über den ECHTEN Produktpfad: `experiment_abort`
+    // ist ein Terminal, und jede Terminalart außer `experiment_begin` ruft
+    // `taint_von_experiment_schliessen` (`experiment_verdrahtung.rs`:338–339).
+    let abbruch = json!({
+        "type": "experiment_abort",
+        "kopf": {
+            "command_id": hex(0x933),
+            "ziel": a[0],
+            "base_revision": 0,
+            "ttl_ms": 1000,
+            "schema_major": 3,
+            "schema_minor": 0
+        },
+        "experiment_id": experiment,
+        "grund": "user_abbruch"
+    });
+    let ack: Value = serde_json::from_slice(
+        &Senke::p0(&c, "main", &bytes(&abbruch)).expect("abort wird beantwortet"),
+    )
+    .unwrap();
+    assert_eq!(ack["ergebnis"], "angewandt", "das Terminal: {ack:?}");
+    assert!(
+        !c.experiment_sicht(&experiment)
+            .expect("der Versuch steht im Stand")
+            .offen(),
+        "Vorbedingung: der Versuch traegt sein Terminal"
+    );
+
+    // 🔑 **V-49 (a): das Terminal laesst BEIDES stehen** — den Nachlauf und
+    // seine Zuordnung. `taint_intervalle_des_experiments_schliessen` entfernt
+    // nur Eintraege aus `interventionen` und ruehrt `tail_samples_offen`
+    // nicht an; `Taintstand::erlaubt()` bleibt falsch, solange der Nachlauf
+    // laeuft (M-58).
+    assert_eq!(
+        c.interventionssicht().tail_samples_offen,
+        1,
+        "V-49 (a): der Nachlauf steht nach dem Terminal unveraendert"
+    );
+    assert_eq!(
+        c.nachlauf_fuer_experimente_fuer_test("main2"),
+        vec![experiment.clone()],
+        "V-49 (a): und die gerettete Zuordnung ebenso - das Terminal leert sie NICHT"
+    );
+    reihe_wechselnd(&c, "sonde0", &a[1].clone(), 300, 12);
+    assert_eq!(
+        gewaehlte_passage(&c),
+        Some(alt.clone()),
+        "V-49 (a): die Passage bleibt gesperrt (hier zugleich durch V-48)"
+    );
+
+    // 🔑 **V-49 (b): mit dem Nachlaufende faellt die Zuordnung** — das
+    // Terminal selbst hat sie nicht freigegeben, der abgelaufene Nachlauf tut
+    // es (aktivieren ↔ abklingen).
+    c.tail_fortschritt(1);
+    assert_eq!(c.interventionssicht().tail_samples_offen, 0);
+    assert!(
+        c.nachlauf_fuer_experimente_fuer_test("main2").is_empty(),
+        "V-49 (b): die Menge ist leer, sobald der Nachlauf abgelaufen ist"
+    );
+    reihe_wechselnd(&c, "sonde0", &a[1].clone(), 400, 12);
+    // ⚠️ Und die Passage bleibt trotzdem gesperrt: `Terminal::Abgebrochen`
+    // ist ein EIGENER, dauerhafter Ausschlussgrund (V-48). Genau deshalb
+    // misst dieser Fall die Zuordnung an der Menge und nicht an der
+    // Passagenwahl — dort wuerde sie von V-48 verdeckt.
+    assert_eq!(
+        gewaehlte_passage(&c),
+        Some(alt),
+        "V-48: ein abgebrochener Versuch bleibt dauerhaft ausgeschlossen"
+    );
+    let _ = jung;
+}
+
+/// **V-43 — ohne taugliche Passage rechnet die Aufnahme OHNE Passage.**
+///
+/// Beide Folgen im selben Fall: die Kette läuft über `unabhaengige_fenster`
+/// statt `passagenmaterial`, und **ohne Passage entsteht kein Proposal**
+/// (WN-04).
+///
+/// Rotbeweis `NAK-214-rot-V-43.txt`.
+#[test]
+#[cfg(windows)]
+fn ohne_taugliche_passage_rechnet_die_aufnahme_ohne_passage() {
+    let (c, _writer, _ordner) = coordinator_mit_store("nak214-v43");
+    let (a, _alt, _jung, _experiment) = buehne_mit_zwei_passagen(&c, 12);
+    assert!(
+        gewaehlte_passage(&c).is_some(),
+        "Vorbedingung: die Buehne rechnet MIT Passage"
+    );
+    assert!(
+        !c.vorschlaege_sicht(&hex(0x11), &hex(0x22)).is_empty(),
+        "Vorbedingung: und traegt einen Vorschlag"
+    );
+
+    // BEIDE Experimente taintet eine offene Intervention.
+    let fremd = zweite_sitzung(&c);
+    for (i, id) in [hex(0xab8), hex(0xab9)].iter().enumerate() {
+        assert!(c.intervention_begin_mit_art(
+            "main2",
+            &fremd,
+            &hex(0x610 + i),
+            1 + i as u64,
+            "experiment",
+            Some(id),
+            Some(44_108_200),
+        ));
+    }
+    reihe_wechselnd(&c, "sonde0", &a[1].clone(), 300, 12);
+
+    let befunde = befunde_der_sitzung(&c);
+    assert!(!befunde.is_empty(), "die Sitzung rechnet weiter");
+    for b in &befunde {
+        assert_eq!(
+            b.passage_id, None,
+            "V-43: kein taugliches Experiment - die Aufnahme rechnet ohne Passage"
+        );
+    }
+    assert!(
+        c.vorschlaege_sicht(&hex(0x11), &hex(0x22)).is_empty(),
+        "V-43: und ohne Passage entsteht kein Proposal (WN-04)"
+    );
+}

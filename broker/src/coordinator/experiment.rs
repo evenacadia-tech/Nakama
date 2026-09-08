@@ -916,10 +916,64 @@ impl Experimentstore {
     /// „Juengste" ist die groesste `folge`, also die Anlegereihenfolge des
     /// Brokers — nicht die groesste Projektzeit. Wer nach Projektzeit
     /// sortierte, holte nach einem Sprung an den Songanfang die falsche.
-    pub fn juengste_passage_im_projekt(&self, bindung: &str) -> Option<&Passage> {
+    ///
+    /// 🔑 **NAK-214 R5 (08.09.2026): DIE PASSAGE MUSS TAUGEN.**
+    ///
+    /// Drei Ausschlussgruende, und sie liegen in drei verschiedenen
+    /// Strukturen — keiner ist ein Flag am `Experiment`:
+    ///
+    /// 1. **zurueckgenommen** — `Terminal::Abgebrochen`, beide Gruende.
+    ///    Er kennt keinen Rueckweg: ein Taint klingt ab, eine Ruecknahme
+    ///    nicht.
+    /// 2. **getaintet** — die `experiment_id` steht in `getaintet`. Der
+    ///    Aufrufer bildet die Menge, weil der Taint am `Stand` haengt und
+    ///    nicht am Experimentstore; sie umfasst die offenen Interventionen
+    ///    UND die geretteten Nachlaufzuordnungen (R7).
+    /// 3. **Vergleichbarkeit unbekannt** — `Terminal::Ergebnis` mit
+    ///    `achsen.vergleichbarkeit == None`. „Nicht gemessen" ist etwas
+    ///    anderes als „unvergleichbar": ein Ergebnis MIT bekannter
+    ///    Vergleichbarkeit bleibt tauglich, auch mit dem Urteil
+    ///    `unvergleichbar` — dafuer hat die Kette ihren eigenen, gemessenen
+    ///    Ausschluss `passage_unvergleichbar` (NAK-212 N-43), und ihn hier
+    ///    ein zweites Mal zu treffen hiesse zwei Wahrheiten ueber denselben
+    ///    Fall.
+    ///
+    /// **Ein OFFENES Experiment ist tauglich** — das ist der Normalfall und
+    /// die tragende Abgrenzung: `experiment_begin` legt die Passage an,
+    /// danach laeuft die Messung, und genau diese Passage soll die Aufnahme
+    /// rechnen. Ein noch nicht beurteiltes Experiment mit einem
+    /// unbeurteilbaren gleichzusetzen machte die Passagenwahl praktisch
+    /// immer leer.
+    ///
+    /// ⚠️ **Gefiltert wird VOR dem Maximum, nicht danach.** „Das juengste,
+    /// falls es taugt" liesse bei einem untauglichen juengsten die Aufnahme
+    /// ohne Passage rechnen, obwohl ein taugliches aelteres existiert. R5
+    /// sagt „die juengste Passage, DEREN Experiment …" — das Praedikat
+    /// gehoert in die Auswahl.
+    pub fn juengste_passage_im_projekt(
+        &self,
+        bindung: &str,
+        getaintet: &std::collections::BTreeSet<String>,
+    ) -> Option<&Passage> {
         self.alle_im_projekt(bindung)
+            .filter(|e| Self::passage_taugt(e, getaintet))
             .max_by_key(|e| e.folge)
             .and_then(|e| self.passagen.get(&e.passage_id))
+    }
+
+    /// Die drei Ausschlussgruende aus R5, an EINER Stelle.
+    fn passage_taugt(e: &Experiment, getaintet: &std::collections::BTreeSet<String>) -> bool {
+        if getaintet.contains(&e.experiment_id) {
+            return false;
+        }
+        match &e.terminal {
+            // Offen: der Normalfall, tauglich.
+            None => true,
+            // Zurueckgenommen: dauerhaft ausgeschlossen.
+            Some(Terminal::Abgebrochen { .. }) => false,
+            // Ergebnis: nur mit BEKANNTER Vergleichbarkeit.
+            Some(Terminal::Ergebnis { achsen, .. }) => achsen.vergleichbarkeit.is_some(),
+        }
     }
 
     pub fn passage(&self, id: &str) -> Option<&Passage> {

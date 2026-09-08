@@ -1,0 +1,47 @@
+ROTBEWEIS NAK-214 — V-40 — unbekannte Vergleichbarkeit faellt
+========================================================================
+
+Erzeugt am 08.09.2026 in der Etappe 2 (Bau), Bauetappe E (die Passage der
+Aufnahme; R5 und R7). Der Stand ist danach zurueckgenommen; die Mutation liegt
+in KEINEM Commit.
+
+MUTATION — der Filter ist ENTFERNT.
+
+`juengste_passage_im_projekt` nimmt wieder das juengste Experiment ohne jede
+Pruefung; `passage_taugt` bleibt ungenutzt.
+
+WAS FAELLT
+------------------------------------------------------------------------
+Gemessen an zwei Beinen. `sonde013_experiment.rs`: `zurueckgenommenes_experiment_liefert_keine_passage` (beide Abbruchgruende, V-38
+und V-48) und `unbekannte_vergleichbarkeit_liefert_keine_passage` (V-40) fallen;
+`unvergleichbar_ist_nicht_unbekannt` und `offenes_experiment_liefert_seine_passage`
+bleiben gruen — der Filter greift dort auch ohne Mutation nicht.
+`sonde014_verdrahtung.rs`: `getaintetes_experiment_liefert_keine_passage` (V-39),
+`terminal_laesst_die_nachlaufzuordnung_stehen` (V-49),
+`resync_gibt_die_passage_frei` (V-44 a) und
+`ohne_taugliche_passage_rechnet_die_aufnahme_ohne_passage` (V-43) fallen.
+
+ROHAUSGABE
+------------------------------------------------------------------------
+
+thread 'zurueckgenommenes_experiment_liefert_keine_passage' (9484) panicked at tests\sonde013_experiment.rs:984:9:
+assertion `left == right` failed: V-38 (UserAbbruch): das AELTERE, taugliche wird gewaehlt
+  left: Some("000000000000000000000000000003ea")
+ right: Some("000000000000000000000000000003e9")
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- unbekannte_vergleichbarkeit_liefert_keine_passage stdout ----
+
+thread 'unbekannte_vergleichbarkeit_liefert_keine_passage' (6516) panicked at tests\sonde013_experiment.rs:1033:5:
+assertion `left == right` failed: V-40: das naechsttaugliche wird gewaehlt
+  left: Some("000000000000000000000000000003ea")
+ right: Some("000000000000000000000000000003e9")
+
+
+failures:
+    unbekannte_vergleichbarkeit_liefert_keine_passage
+    zurueckgenommenes_experiment_liefert_keine_passage
+
+test result: FAILED. 2 passed; 2 failed; 0 ignored; 0 measured; 19 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test sonde013_experiment`

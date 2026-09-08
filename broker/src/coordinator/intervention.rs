@@ -227,8 +227,26 @@ impl Coordinator {
             Self::bericht_verwirken(&mut stand, link_id);
             return (false, None);
         }
+        // 🔑 **NAK-214 R7: die Zuordnung Nachlauf → Experiment wird HIER
+        // gerettet.** Nach dem `remove` traegt der Stand die `experiment_id`
+        // nirgends mehr, und der laufende Nachlauf waere keinem Versuch mehr
+        // zuzuordnen (M-58). Die Bedingung haengt am BESTAND
+        // `tail_samples_offen` und nicht am gemeldeten `tail_samples`: die
+        // Zahl ist EINE je Sitzung, `max` gilt, und genau sie entscheidet
+        // ueber `erlaubt()`. Wer die ID an das gemeldete `tail_samples` band,
+        // liesse ein Experiment mit `tail_samples = 0` frei, waehrend in
+        // derselben Sitzung noch ein laengerer fremder Nachlauf laeuft.
+        let experiment_des_endes = taint
+            .interventionen
+            .get(intervention_id)
+            .and_then(|i| i.experiment_id.clone());
         taint.interventionen.remove(intervention_id);
         taint.tail_samples_offen = taint.tail_samples_offen.max(tail_samples);
+        if taint.tail_samples_offen > 0 {
+            if let Some(id) = experiment_des_endes {
+                taint.nachlauf_fuer_experimente.insert(id);
+            }
+        }
         // 🔑 Nacharbeit 3 (Befund B1): der Nachlauf startet HIER, und der Tick
         // rechnet ab hier. `max` gilt weiter: ein laengerer Nachlauf verdraengt
         // einen kuerzeren, und die Uhr beginnt mit ihm von vorn.
@@ -320,6 +338,8 @@ impl Coordinator {
             taint.tail_samples_gesamt = taint.tail_samples_offen;
             if taint.tail_samples_offen == 0 {
                 taint.tail_seit = None;
+                // NAK-214 R7: mit dem Nachlauf faellt seine Zuordnung.
+                taint.nachlauf_fuer_experimente.clear();
             }
         }
     }
@@ -367,6 +387,8 @@ impl Coordinator {
             if taint.tail_samples_offen == 0 {
                 taint.tail_seit = None;
                 taint.tail_samples_gesamt = 0;
+                // NAK-214 R7: dieselbe Kopplung wie im Samplepfad.
+                taint.nachlauf_fuer_experimente.clear();
             }
         }
     }
@@ -390,6 +412,9 @@ impl Coordinator {
             taint.interventionen.clear();
             taint.tail_samples_offen = 0;
             taint.unknown = false;
+            // NAK-214 R7: der Resync leert Intervalle, Nachlauf UND die
+            // Zuordnung gemeinsam (M-61).
+            taint.nachlauf_fuer_experimente.clear();
         }
         // ⚠️ Der PLATZHALTER faellt mit.
         //
@@ -558,6 +583,27 @@ impl Coordinator {
             unknown,
             starke_evidenz_erlaubt: !unknown && aktive == 0 && tail == 0,
         }
+    }
+
+    /// **NAK-214 R7: die geretteten Nachlaufzuordnungen einer Sitzung — nur
+    /// fuer Beine.**
+    ///
+    /// Die Menge ist internes Zustandsfeld: sie erreicht weder
+    /// `Interventionssicht` noch eine Leitung noch den Vertrag. Ein Bein
+    /// muss sie trotzdem lesen koennen, weil ihre Wirkung auf die
+    /// Passagenwahl beim Terminal `Abgebrochen` von einem ZWEITEN
+    /// Ausschlussgrund verdeckt wird (V-48): dort ist die Passage ohnehin
+    /// dauerhaft gesperrt, und ein Fall an der Passagenwahl koennte nicht
+    /// zeigen, ob die Zuordnung noch steht. Dasselbe Muster wie
+    /// `resultatmessung_fuer_test` und `paarhaelfte_fuer_test`.
+    pub fn nachlauf_fuer_experimente_fuer_test(&self, link_id: &str) -> Vec<String> {
+        let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+        let session = Self::session_des_links(&stand, link_id).unwrap_or_else(SessionKey::unbekannt);
+        stand
+            .taint
+            .get(&session)
+            .map(|t| t.nachlauf_fuer_experimente.iter().cloned().collect())
+            .unwrap_or_default()
     }
 
     /// Dieselbe Sicht FUER EINE Sitzung, ueber ihren Link adressiert.

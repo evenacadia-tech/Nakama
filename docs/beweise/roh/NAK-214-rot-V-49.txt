@@ -1,0 +1,41 @@
+ROTBEWEIS NAK-214 — V-49 — ein Terminal laesst die gerettete Nachlaufzuordnung stehen (R7-Praezisierung)
+========================================================================
+
+Erzeugt am 08.09.2026 in der Etappe 2 (Bau), Bauetappe E (die Passage der
+Aufnahme; R5 und R7). Der Stand ist danach zurueckgenommen; die Mutation liegt
+in KEINEM Commit.
+
+MUTATION — `taint_intervalle_des_experiments_schliessen` leert die Menge MIT.
+
+Ein `remove(experiment_id)` neben dem `retain` auf `interventionen` — also genau die
+dritte Leerungsstelle, die §2.9 Nr. 11 ausschliesst.
+
+WAS FAELLT
+------------------------------------------------------------------------
+Gemessen: `terminal_laesst_die_nachlaufzuordnung_stehen` faellt an "V-49 (a): und die
+gerettete Zuordnung ebenso - das Terminal leert sie NICHT" — die Menge ist nach dem
+Terminal leer, waehrend `tail_samples_offen` weiter auf 1 steht. Die drei
+Nachbarfaelle bleiben gruen: die Mutation trifft genau den Terminaluebergang.
+
+ROHAUSGABE
+------------------------------------------------------------------------
+test getaintetes_experiment_liefert_keine_passage ... ok
+
+failures:
+
+---- terminal_laesst_die_nachlaufzuordnung_stehen stdout ----
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde014-nak214-v49-26860-520c280e213c435a8329e58eb89fde1c\nakama-broker.sqlite3
+
+thread 'terminal_laesst_die_nachlaufzuordnung_stehen' (9460) panicked at tests\sonde014_verdrahtung.rs:3800:5:
+assertion `left == right` failed: V-49 (a): und die gerettete Zuordnung ebenso - das Terminal leert sie NICHT
+  left: []
+ right: ["00000000000000000000000000000ab9"]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    terminal_laesst_die_nachlaufzuordnung_stehen
+
+test result: FAILED. 3 passed; 1 failed; 0 ignored; 0 measured; 51 filtered out; finished in 25.08s
+
+error: test failed, to rerun pass `--test sonde014_verdrahtung`

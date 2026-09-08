@@ -1,0 +1,47 @@
+ROTBEWEIS NAK-214 — V-46 — der Nachlauf haelt die Experimentpassage gesperrt (R7)
+========================================================================
+
+Erzeugt am 08.09.2026 in der Etappe 2 (Bau), Bauetappe E (die Passage der
+Aufnahme; R5 und R7). Der Stand ist danach zurueckgenommen; die Mutation liegt
+in KEINEM Commit.
+
+MUTATION — die Taintmenge liest NUR die offenen Interventionen.
+
+In `hypothese_verdrahtung.rs` faellt `.chain(t.nachlauf_fuer_experimente.iter()
+.cloned())` fort. Die gerettete Zuordnung bleibt im Stand stehen, aber der Filter
+sieht sie nicht mehr — genau der Zustand vor R7.
+
+WAS FAELLT
+------------------------------------------------------------------------
+Gemessen: `getaintetes_experiment_liefert_keine_passage` faellt am Teilfall V-46
+("der laufende Nachlauf haelt die Experimentpassage gesperrt") und NICHT frueher:
+V-39 mit der offenen Intervention bleibt bis dahin gruen. Dazu fallen
+`terminal_laesst_die_nachlaufzuordnung_stehen` und `resync_gibt_die_passage_frei`,
+die beide auf demselben Nachlauf stehen. `ohne_taugliche_passage_rechnet_die_aufnahme_ohne_passage` bleibt gruen — dort sind die Interventionen offen.
+
+ROHAUSGABE
+------------------------------------------------------------------------
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde014-nak214-v44a-21492-c50f75b310a64587be8c768fd37d1df6\nakama-broker.sqlite3
+
+thread 'resync_gibt_die_passage_frei' (13840) panicked at tests\sonde014_verdrahtung.rs:3673:5:
+assertion `left == right` failed: Vorbedingung: der lange Nachlauf sperrt
+  left: Some("00000000000000000000000000005003")
+ right: Some("00000000000000000000000000005002")
+
+---- getaintetes_experiment_liefert_keine_passage stdout ----
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde014-nak214-v39-21492-96e95a66485d4114b5c7a56f69bc5f81\nakama-broker.sqlite3
+
+thread 'getaintetes_experiment_liefert_keine_passage' (16276) panicked at tests\sonde014_verdrahtung.rs:3607:5:
+assertion `left == right` failed: V-46: der laufende Nachlauf haelt die Experimentpassage gesperrt
+  left: Some("00000000000000000000000000005003")
+ right: Some("00000000000000000000000000005002")
+
+
+failures:
+    getaintetes_experiment_liefert_keine_passage
+    resync_gibt_die_passage_frei
+    terminal_laesst_die_nachlaufzuordnung_stehen
+
+test result: FAILED. 1 passed; 3 failed; 0 ignored; 0 measured; 51 filtered out; finished in 31.11s
+
+error: test failed, to rerun pass `--test sonde014_verdrahtung`

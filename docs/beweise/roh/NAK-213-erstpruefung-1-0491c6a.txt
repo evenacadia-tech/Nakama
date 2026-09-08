@@ -1,0 +1,21 @@
+Thread 01a07fb5-4029-7602-a198-e1a0d3561661 · Codex gpt-6-astra · Effort max · read-only · HEAD vor/nach 0491c6a0263a74ca2e3e61edca86d131f3b42a3e · Lauf 2026-09-08 08:29:39 bis 08:50:50
+
+URTEIL: NEEDS_WORK — zwei Produktdefekte und zwei nicht vollständig umgesetzte Prüfzusagen.
+
+Geprüft: Scope-Diff, Aufrufpfade, Vertragsgrenzen und Matrix statisch; HEAD vor und nach dem Lauf unverändert auf 0491c6a0263a74ca2e3e61edca86d131f3b42a3e, keine eigenen Änderungen und keine Audio-/State-Pfadänderungen im Plugin-Diff.
+
+Nicht geprüft: Testausführung, Fixture-Neuerzeugung und Laufzeitreproduktion; Kanon 61/61 sowie Kalibrierung hoch/8 bei metrics_version 20260904 wurden nur gelesen und mit dem Code abgeglichen, nicht selbst nachgemessen.
+
+Full review comments:
+
+- [P2] Bewahre Main-Belege auch ohne eindeutige Führung — broker/src/coordinator/hypothese_verdrahtung.rs:282-284
+  DEFEKT: Vollständigkeitsmarke setzen, Main A gültige Fenster liefern lassen, anschließend ein zweites Main derselben Sitzung automatisch beitreten lassen und A erneut messen lassen; Sonden liefern noch nichts. Bei `fuehrendes_main = None` werden hier sämtliche Main-Profile verworfen. `enthaltung_ohne_ort` sammelt anschließend nur Kandidaten- und Masterfenster und liefert trotz gültiger Sitzungsbelege `None`: Die Sitzung schweigt. Das verletzt [R4](docs/beweise/roh/NAK-213-auftrag.txt#L16) und die sitzungsweite Belegsammlung aus [E7](docs/beweise/NAK-213.md#L276). Die Main-Belege müssen unabhängig von der Führungswahl erhalten bleiben.
+
+- [P2] Halte Kanalwechsel bei Store-Fehlern konsistent — broker/src/coordinator/liveness.rs:513-518
+  DEFEKT bei verweigertem Store-Append: Main und Sonde liefern zwölf gedeckte, ausgerichtete Fenster mit positivem Zusammenhang, die Sonde zunächst ohne Mixerindex; danach Store stoppen und einen Heartbeat mit Kanal 9 senden. Der Deskriptor ist bereits ersetzt, wenn `invalidierung_anwenden` scheitert. Dessen Fehlerzweig nimmt die Evidenzausschlüsse zurück und berechnet sofort neue Befunde: Die alten Fenster zählen nun unter Kanal 9, bis hin zu `hoch`. Das anschließende Setzen von `link.trennen` verhindert diese Neuberechnung nicht. Damit bricht [R5](docs/beweise/roh/NAK-213-auftrag.txt#L17): Fenster vor dem Wechsel dürfen nicht zum Routing danach zählen. Deskriptorwechsel und fehlgeschlagene Invalidierung benötigen einen konsistenten Rückweg.
+
+- [P2] Fahre K-49 mit einem echten Store — broker/tests/sonde014_verdrahtung.rs:1805-1808
+  DEFEKT im zugesagten Prüfaufbau: `coordinator()` erzeugt `Coordinator::mit_uhr` ohne Store. Dieser Test erreicht deshalb ausschließlich den `Ok(None)`-Zweig der Invalidierung, nicht deren Persistierung und Zustellung über den Store. [K-49](docs/beweise/NAK-213.md#L453) verlangt ausdrücklich „Der Broker läuft mit Store“. Die vorhandenen Zähler- und Entfernungsprüfungen können somit erfüllt sein, obwohl dieser produktive Teil fehlerhaft ist. Der Test muss einen Store verwenden und die Invalidierung der acht Belege mit `messpunkt_wechsel` auf diesem Weg bestätigen.
+
+- [P2] Prüfe F4 auch ohne weitere Messung der gewechselten Quelle — broker/tests/sonde014_gegenbeispiele.rs:1231-1235
+  DEFEKT gegenüber [K-44](docs/beweise/NAK-213.md#L452): Die Kanalwechselfolge sendet anschließend immer auch ein neues Fenster von C. Der ausdrücklich verlangte zweite Ablauf fehlt: C wechselt per Heartbeat von Kanal 7 auf 9, danach messen nur Main und A weiter. Die Prüfung `stark(&nachher) == 0` ist bereits wegen der konstanten Pegel durch NAK-212 R1 erfüllt und belegt die zusätzliche Konkurrenzregel nicht. Ergänzt werden muss der zweite Ablauf mit dem sichtbaren Ausschluss von C als `evidenz_zurueckgenommen` und der zugesagten Begrenzung von A.

@@ -480,6 +480,17 @@ void SourcesModel::controlEnde()
         if (e.hatMessZeit && e.zeile.messung != Messung::invalid)
             e.zeile.messung = Messung::stale;
     }
+    // 🔑 **NAK-214 R3 (08.09.2026): das Verbindungsende macht JEDEN Befund
+    // `stale`.**
+    //
+    // Bis hierher blieb ein `ready_to_send`-Befund nach dem Verbindungsende
+    // handelbar: `darfAudition()` und `darfDraft()` lasen weiter
+    // `zustand == "ready_to_send"`, obwohl der Broker, der ihn gemeldet hat,
+    // nicht mehr erreichbar ist. Die Liste BLEIBT stehen - sie war zuletzt
+    // wahr -, aber keiner ihrer Befunde ist noch handelbar (R8 zieht die
+    // abgeleitete Zahl mit). Der Rueckweg ist der naechste vollstaendige
+    // Snapshot, der die Liste als Ganzes ersetzt (`uebernehmeSnapshot`).
+    setzeAlleBefundeStale();
     if (diagnose != Diagnose::incompatible
         && diagnose != Diagnose::storeDegraded
         && diagnose != Diagnose::serverUnverified)
@@ -1411,6 +1422,17 @@ SourcesModel::RuecknahmeErgebnis SourcesModel::uebernehmeEvidenzruecknahme (
     for (auto& [_, e] : eintraege)
         if (e.zeile.messung != Messung::missing)
             e.zeile.messung = Messung::invalid;
+    // 🔑 **NAK-214 R3 (08.09.2026): eine Ruecknahme laesst keinen READY-Befund
+    // stehen** (G5-Befund A5).
+    //
+    // Dieselbe Fail-closed-Richtung wie die Messachse zwei Zeilen darueber
+    // und aus demselben Grund: Gen fuehrt keine Evidenz-IDs und kann nicht
+    // sagen, WELCHER Befund die zurueckgenommene Evidenz getragen hat. Kommt
+    // danach kein Folge-Snapshot - etwa weil die Pipe abbricht -, bliebe
+    // sonst ein handelbarer Befund stehen, dessen Beleg zurueckgenommen ist.
+    // Der Befundzustand ist die SECHSTE, eigene Wirkung neben den fuenf
+    // Achsen; die abgeleitete Zahl ist keine siebte, sondern ihre Folge (R8).
+    setzeAlleBefundeStale();
     evidenzRuecknahmen = evidenzRuecknahmen + 1;
     ruecknahmeGrund = grund;
     ruecknahmeUmfang = umfang;
@@ -1604,6 +1626,21 @@ void SourcesModel::zaehleOffeneFindings()
         if (it->second.zeile.findingsOffen < std::numeric_limits<int>::max())
             ++it->second.zeile.findingsOffen;
     }
+}
+
+void SourcesModel::setzeAlleBefundeStale()
+{
+    for (auto& b : befunde)
+        b.zustand = "stale";
+    // Die abgeleitete Zahl faellt MIT ihrer Quelle (M-84, dieselbe Kopplung
+    // wie in `uebernehmeSnapshot` und `beginneSubscription`). Ohne diesen
+    // Aufruf zeigte `PluginEditor` weiter „Findings: N open", waehrend jeder
+    // Befund `stale` ist - dasselbe tote Element in der Gegenrichtung: nicht
+    // „zeigt immer 0", sondern „behauptet Arbeit, die es nicht gibt".
+    //
+    // Weil `stale` nicht mitzaehlt, ist die Zahl danach fuer JEDE Quelle 0.
+    // Das ist keine zweite Rechnung, sondern die Folge derselben Ableitung.
+    zaehleOffeneFindings();
 }
 
 void SourcesModel::setzeCapabilityEvidenz (const std::string& instanceId,

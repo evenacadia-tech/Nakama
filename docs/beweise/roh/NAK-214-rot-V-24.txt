@@ -1,0 +1,72 @@
+ROTBEWEIS NAK-214 — V-24 — eine Ruecknahme ohne Folge-Snapshot laesst keinen READY-Befund stehen (G5-Befund A5)
+========================================================================
+
+Erzeugt am 08.09.2026 in der Etappe 2 (Bau), Bauetappe C (Gen: Verbindungsende,
+Ruecknahme, Befundzaehler; R3 und R8). Der Stand ist danach zurueckgenommen;
+die Mutation liegt in KEINEM Commit. Gebaut aus pwsh mit dem cmake aus
+Visual Studio 2022 BuildTools (cmake fehlt im Bash-PATH, CLAUDE.md).
+
+WAS FAELLT
+------------------------------------------------------------------------
+Gemessen in `Sonde012SourcesModelTest.cpp` (B13), mit denselben zwei Haelften wie V-23 — es ist derselbe Aufruf an einer zweiten Stelle. Die Messachse bleibt in beiden Haelften `invalid`: die fuenf Achsen sind getrennt, der Befundzustand ist die sechste, eigene Wirkung.
+
+MUTATION 1 — der stale-Uebergang ist ENTFERNT.
+
+In `SourcesModel::setzeAlleBefundeStale()` faellt
+
+    for (auto& b : befunde)
+        b.zustand = "stale";
+
+fort; `zaehleOffeneFindings()` bleibt. Erwartung: der READY-Befund bleibt
+handelbar, und weil er weiter mitzaehlt, faellt auch die Zaehlerzusage.
+
+ROHAUSGABE HAELFTE 1
+------------------------------------------------------------------------
+--- B28 (EqCopSonde014BefundTest) ---
+  ok      NAK-214 V-23: Vorbedingung - zwei offene Befunde, einer handelbar
+  FEHLER  NAK-214 V-23: controlEnde macht JEDEN Befund stale - die Liste bleibt
+  FEHLER  NAK-214 V-23: und nullt den Zaehler (R8)
+  ok      NAK-214 V-26: der Folge-Snapshot hebt den stale-Zustand auf
+  ok      NAK-214 V-28: ein fremder Snapshot laesst die Befunde stehen
+  ok      NAK-214 V-29: Vorbedingung - die Sicht fuehrt keine Befunde
+  ok      NAK-214 V-29: controlEnde ohne Befunde ist folgenlos
+SONDE-014 Befund und Maskierung: 78/80 gruen   (EXIT=1)
+
+--- B13 (EqCopSonde012SourcesModelTest) ---
+  ok      NAK214_V24_vorbedingung_zwei_offene_befunde_einer_handelbar
+  FEHLER  NAK214_V24_ruecknahme_ohne_folgesnapshot_laesst_keinen_ready_befund
+  FEHLER  NAK214_V24_und_der_zaehler_faellt_mit_seiner_quelle
+  ok      NAK214_V24_die_messachse_bleibt_ihre_eigene_wirkung
+  ok      NAK214_V25_reconnect_raeumt_die_befunde_bei_gleicher_epoche
+  ok      NAK214_V27_reconnect_ohne_snapshot_laesst_nichts_handelbares
+SONDE-012 SourcesModel: 83/85 gruen   (EXIT=1)
+
+MUTATION 2 — nur die NEUBERECHNUNG ist entfernt.
+
+In `SourcesModel::setzeAlleBefundeStale()` faellt der Aufruf
+`zaehleOffeneFindings()` fort; der stale-Uebergang bleibt. Erwartung: die
+Befunde sind `stale` und nicht mehr handelbar, aber `findingsOffen` steht
+weiter auf 2 — `PluginEditor.cpp`:1318-1321 zeigte dann „Findings: 2 open"
+ueber einer Liste, in der kein Befund mehr offen ist (M-84 in der
+Gegenrichtung).
+
+ROHAUSGABE HAELFTE 2
+------------------------------------------------------------------------
+--- B28 (EqCopSonde014BefundTest) ---
+  ok      NAK-214 V-23: Vorbedingung - zwei offene Befunde, einer handelbar
+  ok      NAK-214 V-23: controlEnde macht JEDEN Befund stale - die Liste bleibt
+  FEHLER  NAK-214 V-23: und nullt den Zaehler (R8)
+  ok      NAK-214 V-26: der Folge-Snapshot hebt den stale-Zustand auf
+  ok      NAK-214 V-28: ein fremder Snapshot laesst die Befunde stehen
+  ok      NAK-214 V-29: Vorbedingung - die Sicht fuehrt keine Befunde
+  ok      NAK-214 V-29: controlEnde ohne Befunde ist folgenlos
+SONDE-014 Befund und Maskierung: 79/80 gruen   (EXIT=1)
+
+--- B13 (EqCopSonde012SourcesModelTest) ---
+  ok      NAK214_V24_vorbedingung_zwei_offene_befunde_einer_handelbar
+  ok      NAK214_V24_ruecknahme_ohne_folgesnapshot_laesst_keinen_ready_befund
+  FEHLER  NAK214_V24_und_der_zaehler_faellt_mit_seiner_quelle
+  ok      NAK214_V24_die_messachse_bleibt_ihre_eigene_wirkung
+  ok      NAK214_V25_reconnect_raeumt_die_befunde_bei_gleicher_epoche
+  ok      NAK214_V27_reconnect_ohne_snapshot_laesst_nichts_handelbares
+SONDE-012 SourcesModel: 84/85 gruen   (EXIT=1)

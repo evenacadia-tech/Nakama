@@ -284,6 +284,18 @@ private:
     /// zweite Wahrheit ueber dieselbe Zahl (M-71); bis Etappe I gab es genau
     /// den - mit einem einzigen Aufrufer, und der war ein Test.
     void zaehleOffeneFindings();
+    /// NAK-214 R3/R8: jeder Befund dieser Sitzung wird `stale`, und die
+    /// abgeleitete Zahl faellt MIT ihm.
+    ///
+    /// Zwei lokale Anlaesse rufen sie: das Verbindungsende (`controlEnde`)
+    /// und eine Evidenzruecknahme ohne Folge-Snapshot. Beide sind Ereignisse,
+    /// die der Broker nicht mehr melden kann — die Liste bleibt sichtbar, sie
+    /// war zuletzt wahr, aber KEINER ihrer Befunde ist noch handelbar (M-30:
+    /// die Sperre haengt am `zustand`, nicht an einem zweiten Flag).
+    ///
+    /// ⚠️ Der Aufrufer haelt den `mutex` bereits, wie bei
+    /// `zaehleOffeneFindings()` auch.
+    void setzeAlleBefundeStale();
     /// SONDE-013 Nacharbeit 2 (Befunde R14/R32): der zuletzt empfangene Stand
     /// der Versuche und Paarurteile dieser Sitzung.
     std::vector<Versuch> experimente;

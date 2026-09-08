@@ -655,6 +655,91 @@ int main()
         }
     }
 
+    // ═══════════════════════════════════════════════════════════════════
+    // NAK-214 R3/R8 · das Verbindungsende (V-23, V-26, V-28, V-29)
+    // ═══════════════════════════════════════════════════════════════════
+    //
+    // R3 Satz 1: `controlEnde` setzt JEDEN Befund auf `stale`. Die Liste
+    // bleibt stehen - sie war zuletzt wahr -, aber keiner ihrer Befunde ist
+    // noch handelbar, und `findingsOffen` faellt mit (R8, M-84). Der Rueckweg
+    // ist der naechste vollstaendige Snapshot (verbinden ↔ trennen).
+    {
+        // V-23 — zwei offene Befunde derselben Quelle, einer handelbar.
+        auto m = frischesModell();
+        juce::String f;
+        const auto ergebnis =
+            uebernimm (*m, snapshot ({ befundText (hex (0x921), "ready_to_send", "hoch"),
+                                       befundText (hex (0x922), "more_data", "mittel") }), f);
+        const auto vorher = m->sicht();
+        pruefe (ergebnis == Model::SnapshotErgebnis::uebernommen
+                    && vorher.befunde.size() == 2
+                    && vorher.befunde[0].darfDraft()
+                    && ! vorher.quellen.empty()
+                    && vorher.quellen.front().findingsOffen == 2,
+                "NAK-214 V-23: Vorbedingung - zwei offene Befunde, einer handelbar", f);
+
+        m->controlEnde();
+        const auto nachher = m->sicht();
+        const bool alleStale =
+            std::all_of (nachher.befunde.begin(), nachher.befunde.end(),
+                         [] (const auto& b) {
+                             return b.zustand == "stale" && ! b.darfDraft()
+                                 && ! b.darfAudition();
+                         });
+        pruefe (nachher.befunde.size() == 2 && alleStale,
+                "NAK-214 V-23: controlEnde macht JEDEN Befund stale - die Liste bleibt");
+        pruefe (std::all_of (nachher.quellen.begin(), nachher.quellen.end(),
+                             [] (const auto& q) { return q.findingsOffen == 0; }),
+                "NAK-214 V-23: und nullt den Zaehler (R8)");
+
+        // V-26 — der Rueckweg: ein vollstaendiger Folge-Snapshot ersetzt die
+        // Liste als Ganzes, und JEDER Zustand kommt vom Broker.
+        juce::String g;
+        const auto zurueck =
+            uebernimm (*m, snapshot ({ befundText (hex (0x921), "ready_to_send", "hoch") }), g);
+        const auto danach = m->sicht();
+        pruefe (zurueck == Model::SnapshotErgebnis::uebernommen
+                    && danach.befunde.size() == 1
+                    && danach.befunde[0].zustand == "ready_to_send"
+                    && danach.befunde[0].darfDraft()
+                    && danach.quellen.front().findingsOffen == 1,
+                "NAK-214 V-26: der Folge-Snapshot hebt den stale-Zustand auf", g);
+    }
+    {
+        // V-28 — ein Snapshot mit FREMDER Sitzungsepoche wird verworfen; die
+        // Befunde der eigenen Sitzung bleiben unveraendert, nicht stale. Ein
+        // fremder Snapshot ist kein Ereignis der eigenen Sitzung.
+        auto m = frischesModell();
+        juce::String f;
+        uebernimm (*m, snapshot ({ befundText (hex (0x931), "ready_to_send", "hoch") }), f);
+        juce::String fremd = snapshot ({ befundText (hex (0x932), "more_data", "mittel") });
+        fremd = fremd.replace ("\"session_epoch\":\"" + juce::String (kSession) + "\"",
+                               "\"session_epoch\":\"" + juce::String (hex (0x99)) + "\"");
+        juce::String g;
+        const auto ergebnis = uebernimm (*m, fremd, g);
+        const auto s = m->sicht();
+        pruefe (ergebnis != Model::SnapshotErgebnis::uebernommen
+                    && s.befunde.size() == 1
+                    && s.befunde[0].zustand == "ready_to_send"
+                    && s.befunde[0].darfDraft(),
+                "NAK-214 V-28: ein fremder Snapshot laesst die Befunde stehen", g);
+    }
+    {
+        // V-29 — der Zahlenrand der leeren Liste: `controlEnde` ohne Befunde
+        // ist folgenlos, und die Neuberechnung aus R8 laeuft ins Leere.
+        auto m = frischesModell();
+        juce::String f;
+        uebernimm (*m, snapshot ({}), f);
+        pruefe (m->sicht().befunde.empty(),
+                "NAK-214 V-29: Vorbedingung - die Sicht fuehrt keine Befunde", f);
+        m->controlEnde();
+        const auto s = m->sicht();
+        pruefe (s.befunde.empty()
+                    && std::all_of (s.quellen.begin(), s.quellen.end(),
+                                    [] (const auto& q) { return q.findingsOffen == 0; }),
+                "NAK-214 V-29: controlEnde ohne Befunde ist folgenlos");
+    }
+
     std::cout << "SONDE-014 Befund und Maskierung: " << bestanden << "/"
               << (bestanden + fehler) << " gruen\n";
     return fehler == 0 ? 0 : 1;

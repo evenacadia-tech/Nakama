@@ -1,0 +1,40 @@
+ROTBEWEIS NAK-214 — V-26: der Folge-Snapshot hebt den stale-Zustand auf
+========================================================================
+
+Erzeugt am 08.09.2026 in der Etappe 2 (Bau), Bauetappe C (Gen: Verbindungsende,
+Ruecknahme, Befundzaehler; R3 und R8). Der Stand ist danach zurueckgenommen;
+die Mutation liegt in KEINEM Commit. Gebaut aus pwsh mit dem cmake aus
+Visual Studio 2022 BuildTools (cmake fehlt im Bash-PATH, CLAUDE.md).
+
+WAS FAELLT
+------------------------------------------------------------------------
+Gemessen in `Sonde014BefundTest.cpp` (B28). Der Rueckweg aus `stale` ist der naechste
+vollstaendige Snapshot: `uebernehmeSnapshot` ersetzt die Liste ALS GANZES, und jeder
+Zustand kommt vom Broker. Die Mutation laesst stattdessen Gens Gedaechtnis gewinnen —
+genau die Verwechslung, die den Rueckweg unmoeglich machte.
+
+MUTATION — Gens Gedaechtnis ueberschreibt den neuen Zustand.
+
+In `SourcesModel::uebernehmeSessionSnapshot`, unmittelbar vor
+`befunde = std::move (geleseneBefunde)`:
+
+    for (auto& neuerBefund : geleseneBefunde)
+        for (const auto& alt : befunde)
+            if (alt.findingId == neuerBefund.findingId && alt.zustand == "stale")
+                neuerBefund.zustand = "stale";
+
+Die Mutation ist ABSICHTLICH eng: ein pauschales „alles stale" nach dem Snapshot risse
+neun weitere Faelle mit und zeigte nicht mehr, dass GENAU der Rueckweg faellt. So faellt
+nur V-26; die uebrigen 79 Faelle bleiben gruen.
+
+ROHAUSGABE
+------------------------------------------------------------------------
+--- B28 (EqCopSonde014BefundTest) ---
+  ok      NAK-214 V-23: Vorbedingung - zwei offene Befunde, einer handelbar
+  ok      NAK-214 V-23: controlEnde macht JEDEN Befund stale - die Liste bleibt
+  ok      NAK-214 V-23: und nullt den Zaehler (R8)
+  FEHLER  NAK-214 V-26: der Folge-Snapshot hebt den stale-Zustand auf
+  ok      NAK-214 V-28: ein fremder Snapshot laesst die Befunde stehen
+  ok      NAK-214 V-29: Vorbedingung - die Sicht fuehrt keine Befunde
+  ok      NAK-214 V-29: controlEnde ohne Befunde ist folgenlos
+SONDE-014 Befund und Maskierung: 79/80 gruen   (EXIT=1)

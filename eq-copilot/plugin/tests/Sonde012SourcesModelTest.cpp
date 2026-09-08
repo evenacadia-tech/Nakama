@@ -890,6 +890,84 @@ int main()
                 "invalidate_scope_discriminator_is_not_a_label", grund);
     }
 
+    // ═══════════════════════════════════════════════════════════════════
+    // NAK-214 R3/R8 · Ruecknahme und Reconnect (V-24, V-25, V-27)
+    // ═══════════════════════════════════════════════════════════════════
+    //
+    // Der G5-Befund A5: eine Evidenzruecknahme OHNE Folge-Snapshot liess
+    // einen `ready_to_send`-Befund handelbar stehen. Gen fuehrt keine
+    // Evidenz-IDs und kann nicht sagen, WELCHER Befund die zurueckgenommene
+    // Evidenz trug - fail-closed heisst deshalb: JEDER wird `stale`, und die
+    // abgeleitete Zahl faellt mit (R8, M-84).
+    {
+        // Die Buehne traegt eine ECHTE Messung (P2), damit die Messachse in
+        // dieser Zeile wirklich etwas zu verlieren hat - sonst stuende sie
+        // auf `missing`, und die Zusage „die fuenf Achsen bleiben getrennt"
+        // waere an nichts gemessen.
+        Model m;
+        initialisiereFuer (m, pair, t0);
+        const bool frisch = p2InModell (m, pair, t0)
+                         && m.sicht().quellen.front().messung == Model::Messung::fresh;
+        Mitglied a; a.id = pair.frame.instanceId; a.nonce = pair.frame.runtimeNonce;
+        const bool angekommen =
+            uebernehme (m, snapshot ({ a }, pair.frame.projectBindingId,
+                                     pair.frame.sessionEpoch, hex (8), hex (10), false, 0,
+                                     { befundJson (hex (0x911), pair.frame.instanceId,
+                                                   "ready_to_send"),
+                                       befundJson (hex (0x912), pair.frame.instanceId,
+                                                   "more_data") }),
+                        t0 + std::chrono::milliseconds (1));
+        const auto vorher = m.sicht();
+        pruefe (frisch && angekommen && vorher.befunde.size() == 2
+                    && vorher.befunde[0].darfDraft()
+                    && vorher.quellen.front().findingsOffen == 2,
+                "NAK214_V24_vorbedingung_zwei_offene_befunde_einer_handelbar");
+
+        // V-24 - die Ruecknahme, OHNE Folge-Snapshot.
+        juce::String grund;
+        const auto ruecknahme = fixture ("gueltig/invalidate-ganze-sitzung.json");
+        const bool uebernommen = m.uebernehmeEvidenzruecknahme (ruecknahme, 2, grund)
+                                  == Model::RuecknahmeErgebnis::uebernommen;
+        const auto nachher = m.sicht();
+        const bool alleStale =
+            std::all_of (nachher.befunde.begin(), nachher.befunde.end(),
+                         [] (const auto& b) {
+                             return b.zustand == "stale" && ! b.darfDraft()
+                                 && ! b.darfAudition();
+                         });
+        pruefe (uebernommen && nachher.befunde.size() == 2 && alleStale,
+                "NAK214_V24_ruecknahme_ohne_folgesnapshot_laesst_keinen_ready_befund", grund);
+        pruefe (std::all_of (nachher.quellen.begin(), nachher.quellen.end(),
+                             [] (const auto& q) { return q.findingsOffen == 0; }),
+                "NAK214_V24_und_der_zaehler_faellt_mit_seiner_quelle");
+        // Die Messachse bleibt daneben, wie bisher - die fuenf Achsen sind
+        // getrennt, der Befundzustand ist die sechste, eigene Wirkung.
+        pruefe (nachher.quellen.front().messung == Model::Messung::invalid
+                    && nachher.evidenzRuecknahmen == 1,
+                "NAK214_V24_die_messachse_bleibt_ihre_eigene_wirkung");
+
+        // V-25 (Regressionswache) - der Reconnect raeumt bei JEDER Epoche.
+        // `beginneSubscription` leert `befunde` unbedingt; einen
+        // Epochenvergleich gibt es weder davor noch darin, und dieses Ticket
+        // baut ihm keinen. Der Teilfall mit NEUER Epoche steht als
+        // `findings_count_ueberlebt_keinen_sitzungswechsel` schon oben; hier
+        // faellt der Teilfall mit DERSELBEN Epoche.
+        m.beginneSubscription (pair.frame.projectBindingId, pair.frame.sessionEpoch,
+                               hex (10));
+        const auto nachReconnect = m.sicht();
+        pruefe (nachReconnect.befunde.empty() && nachReconnect.experimente.empty()
+                    && nachReconnect.paare.empty()
+                    && std::all_of (nachReconnect.quellen.begin(),
+                                    nachReconnect.quellen.end(),
+                                    [] (const auto& q) { return q.findingsOffen == 0; }),
+                "NAK214_V25_reconnect_raeumt_die_befunde_bei_gleicher_epoche");
+
+        // V-27 (Regressionswache) - und danach, OHNE Snapshot, bleibt die
+        // Liste leer: nichts ist handelbar, und nichts wird behauptet.
+        pruefe (m.sicht().befunde.empty(),
+                "NAK214_V27_reconnect_ohne_snapshot_laesst_nichts_handelbares");
+    }
+
 
     // ═══════════════════════════════════════════════════════════════════
     // NAK-181 R6 · geschlossene Mengen im Gen-Empfaenger (V09, V10)

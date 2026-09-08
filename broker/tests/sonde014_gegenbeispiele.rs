@@ -1032,38 +1032,46 @@ fn f8_zwei_master_mit_widersprechendem_befundband() {
 
     let befunde = b.befunde();
     protokoll("F8 zwei Master (A: Band 98..102, B: Band 150..154)", &befunde);
+
+    // 🔑 **NAK-213 R4 (K-31).** Bis hierher nahm `aufnahmen_sammeln` den
+    // letzten `main` nach `instance_id`: Master A verschwand lautlos, und die
+    // Sonde trug einen Befund im Band des ANDEREN Masters. Jetzt entsteht
+    // eine ENTHALTUNG OHNE ORT — kein Befund ueber eine Quelle, kein stiller
+    // Gewinner.
+    assert_eq!(befunde.len(), 1, "genau ein Ergebnis: die Enthaltung");
+    let enthaltung = &befunde[0];
+    assert_eq!(
+        enthaltung.ursachenklasse,
+        Ursachenklasse::DatenReichenNicht,
+        "die siebte Ursachenklasse ist ein regulaeres Ergebnis (M-27)"
+    );
+    assert_eq!(enthaltung.confidence.klasse, Sicherheitsklasse::Unklar);
+    assert_eq!(
+        (enthaltung.band_hz.von, enthaltung.band_hz.bis),
+        (0, 221),
+        "das VOLLE Gitter heisst „nicht eingegrenzt“, nicht „ueberall“"
+    );
+    assert!(
+        !enthaltung.beobachtung.gueltig && enthaltung.beobachtung.wert_db == 0.0,
+        "ohne das Bit ist die Zahl keine Messung: {:?}",
+        enthaltung.beobachtung
+    );
+    assert_eq!(
+        enthaltung.candidate_source,
+        std::cmp::min(master_a.instance_id.clone(), master_b.instance_id.clone()),
+        "die lexikographisch kleinste `instance_id` der `main`-Clients — sie \
+         behauptet KEINE Fuehrung, sie ist die deterministische Adresse"
+    );
+    assert!(
+        !befunde
+            .iter()
+            .any(|f| f.candidate_source == sonde.instance_id),
+        "kein Befund ueber die Sonde: es hat keine Rechnung stattgefunden"
+    );
     assert_eq!(
         stark(&befunde),
         0,
-        "im fremden Befundband traegt die Sonde keine starke Aussage (R1)"
-    );
-    // Die Luecke wird GEMESSEN, nicht behauptet: Master A ist im Snapshot als
-    // Mitglied sichtbar, taucht aber in keinem Befund auf — weder als Quelle
-    // noch als Ausschluss. Er verschwindet lautlos.
-    let a_ist_kandidat = befunde
-        .iter()
-        .any(|f| f.candidate_source == master_a.instance_id);
-    let a_ist_ausgeschlossen = befunde.iter().any(|f| {
-        f.ausschluesse
-            .iter()
-            .any(|x| x.candidate_source == master_a.instance_id)
-    });
-    assert!(
-        !a_ist_kandidat && !a_ist_ausgeschlossen,
-        "der Stand ist unveraendert: Master A ist weder Kandidat noch Ausschluss"
-    );
-    luecke(
-        "f8_zwei_master",
-        "NAK-213 R4",
-        "Zwei `main` in einer Sitzung sind ein Widerspruch und muessen benannt werden.",
-        &format!(
-            "Der letzte `main` nach `instance_id` gewinnt, der erste verschwindet \
-             lautlos: er ist als Mitglied im Snapshot sichtbar ({} Mitglieder), wird \
-             aber weder Kandidat noch Ausschluss und traegt in keinem der {} Befunde \
-             eine Spur.",
-            b.snapshot()["mitglieder"].as_array().map(Vec::len).unwrap_or(0),
-            befunde.len()
-        ),
+        "und erst recht keine starke Aussage"
     );
 }
 
@@ -1087,19 +1095,24 @@ fn f8b_master_ohne_fenster() {
 
     let befunde = b.befunde();
     protokoll("F8b Master angemeldet, aber ohne Beleg", &befunde);
+
+    // 🔑 **NAK-213 R4 (K-35).** Bis hierher gab `masteranomalie` `None`,
+    // `hypothesen()` endete vor den Gates, und im Snapshot standen NULL
+    // findings — die Sitzung schwieg. M-27 verlangt ein Ergebnis.
+    assert_eq!(befunde.len(), 1, "eine Enthaltung statt Schweigen");
+    let enthaltung = &befunde[0];
+    assert_eq!(enthaltung.ursachenklasse, Ursachenklasse::DatenReichenNicht);
+    assert_eq!(enthaltung.confidence.klasse, Sicherheitsklasse::Unklar);
+    assert_eq!(enthaltung.candidate_source, b.master.instance_id);
     assert!(
-        befunde.is_empty(),
-        "unveraendert gegenueber dem Stand vor NAK-212: die Sitzung schweigt"
+        !enthaltung.evidence_ids.is_empty(),
+        "R8: die Pflichtliste traegt die Belege der SONDE — das Exit-Gate \
+         verlangt EXISTENTE IDs, nicht IDs des Masters"
     );
-    luecke(
-        "f8b_master_ohne_fenster",
-        "NAK-213 R4",
-        "Auch ohne Masterbeleg verlangt M-27 ein Ergebnis statt Schweigen.",
-        &format!(
-            "`masteranomalie` gibt `None`, `hypothesen()` endet vor den Gates. \
-             findings im Snapshot: {}",
-            b.snapshot()["findings"].as_array().map(Vec::len).unwrap_or(0)
-        ),
+    assert!(
+        enthaltung.evidence_ids.len() <= 32,
+        "und sie bleibt unter dem Vertragsdeckel: {}",
+        enthaltung.evidence_ids.len()
     );
 }
 

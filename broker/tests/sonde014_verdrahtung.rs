@@ -122,8 +122,28 @@ fn anmelden_mit_deskriptor(
     art: &str,
     mixer: Option<i64>,
 ) {
+    anmelden_mit_deskriptor_und_host(c, link, a, art, mixer, 4711);
+}
+
+/// Wie `anmelden_mit_deskriptor`, aber mit eigener Host-PID.
+///
+/// ⚠️ `auto_join_locked` bestätigt eine Mitgliedschaft nur, wenn die
+/// `main`-Clients DESSELBEN Hosts in GENAU EINER Sitzung liegen. Zwei
+/// Sitzungen auf derselben PID lassen deshalb beide unbestätigt — wer eine
+/// zweite, unabhängige Sitzung baut, braucht einen zweiten Host.
+fn anmelden_mit_deskriptor_und_host(
+    c: &Coordinator,
+    link: &str,
+    a: &Adresse,
+    art: &str,
+    mixer: Option<i64>,
+    host_pid: u32,
+) {
     let mut h = hello(a.clone());
     h.plugin_kind = art.into();
+    if let Some(host) = h.host.as_mut() {
+        host.pid = host_pid;
+    }
     let ausgang = c.control_hello_registrieren(link, &h);
     assert!(ausgang.angenommen, "{:?}", ausgang.grund);
     let _ = c.resync_bestaetigen(link, 0);
@@ -1485,5 +1505,220 @@ fn stumme_quelle_setzt_die_duplikatmarke() {
                 && x.grund == Ausschlussgrund::EvidenzZurueckgenommen),
         "und zusaetzlich, unabhaengig davon, den Deckel aus R2: {:?}",
         fuehrend.ausschluesse
+    );
+}
+
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-213 R4/E7 · das FUEHRENDE Main   (K-32, K-33, K-34, K-37, K-53)
+// ═════════════════════════════════════════════════════════════════════════
+//
+// Entwurf `:1669`: „genau ein führendes Main pro aktiver Sitzung". Bis
+// NAK-213 las `aufnahmen_sammeln` `fuehrendes_main` NIE — es nahm den letzten
+// `main` nach `instance_id`, und der erste verschwand spurlos (G-D4).
+
+/// Meldet ein zweites `main` an, ohne die Sitzung sonst zu ändern.
+fn zweites_main(c: &Coordinator, link: &str, instanz: usize) -> Adresse {
+    let a = adresse(0x11, 0x22, instanz, 0x70 + instanz);
+    anmelden_mit_deskriptor(c, link, &a, "main", Some(2));
+    a
+}
+
+/// **K-37.** Der Master ist das BENANNTE führende Main, nicht der letzte der
+/// Iteration. Die Zeile misst ausdrücklich den Fall, in dem sich beide Regeln
+/// unterscheiden: `fuehrendes_main` zeigt auf den nach `instance_id`
+/// KLEINEREN.
+#[test]
+fn master_ist_das_gefuehrte_main_nicht_das_letzte() {
+    let c = coordinator();
+    let a = buehne_nak213(&c, 1);
+    // Das zweite `main` tritt bei — beide verlieren die Bestätigung, und
+    // `fuehrung_neu_bewerten_locked` setzt `fuehrendes_main` auf `None`.
+    let zweites = zweites_main(&c, "main2", 8);
+    assert!(
+        zweites.instance_id > a[0].instance_id,
+        "Vorbedingung: das zweite `main` ist nach `instance_id` GROESSER — \
+         die alte Regel („der letzte gewinnt“) waehlte also IHN"
+    );
+    reihe(&c, "main", &a[0], 0, 12);
+    reihe(&c, "sonde0", &a[1], 100, 12);
+    let befunde = befunde_der_sitzung(&c);
+    assert_eq!(befunde.len(), 1, "eine Enthaltung ohne Ort");
+    assert_eq!(
+        befunde[0].ursachenklasse,
+        eqcop_broker::coordinator::Ursachenklasse::DatenReichenNicht
+    );
+    assert_eq!(
+        befunde[0].candidate_source, a[0].instance_id,
+        "die lexikographisch KLEINSTE `instance_id` der `main`-Clients — \
+         nicht die groesste, die die alte Regel genommen haette"
+    );
+
+    // Und die Gegenprobe: mit eindeutiger Führung rechnet die Kette wieder.
+    assert!(c.beitritt_aufheben(&hex(0x11), &hex(0x22), &zweites.instance_id));
+    assert!(c.beitritt_bestaetigen(&hex(0x11), &hex(0x22), &a[0].instance_id));
+    reihe(&c, "sonde0", &a[1], 200, 1);
+    let danach = befunde_der_sitzung(&c);
+    assert_eq!(
+        danach.first().map(|b| b.candidate_source.clone()),
+        Some(a[1].instance_id.clone()),
+        "der Befund nennt wieder die SONDE als Ursache: {danach:?}"
+    );
+}
+
+/// **K-32.** Ein zweites `main` hebt eine AUSDRÜCKLICH bestätigte Führung
+/// nicht auf. „Eindeutig führend" heisst genau, was `mitgliedschaft.rs`
+/// darunter versteht; dieses Ticket erfindet keinen zweiten Führungsbegriff.
+#[test]
+fn zweites_main_hebt_bestaetigte_fuehrung_nicht_auf() {
+    let c = coordinator();
+    let a = buehne_nak213(&c, 1);
+    // Das erste Main wird EXPLIZIT bestätigt.
+    //
+    // ⚠️ Der Rückgabewert meldet nur, OB sich die Mitgliedschaft geändert hat
+    // (`geaendert = !client.bestaetigt`). Als einziges Main ist es über
+    // `auto_join_locked` bereits bestätigt; gesetzt wird hier `explizit_bestaetigt`,
+    // und genau das hält gegen den Beitritt des zweiten Mains.
+    let _ = c.beitritt_bestaetigen(&hex(0x11), &hex(0x22), &a[0].instance_id);
+    let _zweites = zweites_main(&c, "main2", 8);
+    reihe(&c, "main", &a[0], 0, 12);
+    reihe(&c, "sonde0", &a[1], 100, 12);
+    let befunde = befunde_der_sitzung(&c);
+    assert_eq!(
+        befunde.first().map(|b| b.candidate_source.clone()),
+        Some(a[1].instance_id.clone()),
+        "die Kette rechnet weiter, mit dem ersten Main als Master: {befunde:?}"
+    );
+}
+
+/// **K-33.** Der Rückzug des zweiten Mains ALLEIN stellt die Führung nicht
+/// her — `beitritt_aufheben` bestätigt das verbleibende Main nicht, und die
+/// Führungswahl zählt nur BESTÄTIGTE Mains. Erst die Bestätigung gibt die
+/// Rechnung frei. Anmelden ↔ abmelden liegen damit im selben Änderungssatz.
+#[test]
+fn rueckzug_und_bestaetigung_geben_die_rechnung_frei() {
+    let c = coordinator();
+    let a = buehne_nak213(&c, 1);
+    let zweites = zweites_main(&c, "main2", 8);
+    reihe(&c, "main", &a[0], 0, 12);
+    reihe(&c, "sonde0", &a[1], 100, 12);
+    assert_eq!(
+        befunde_der_sitzung(&c)
+            .first()
+            .map(|b| b.ursachenklasse),
+        Some(eqcop_broker::coordinator::Ursachenklasse::DatenReichenNicht),
+        "Ausgangslage: zwei unbestaetigte Mains, Enthaltung ohne Ort"
+    );
+
+    // (1) Nur der Rückzug.
+    assert!(c.beitritt_aufheben(&hex(0x11), &hex(0x22), &zweites.instance_id));
+    reihe(&c, "sonde0", &a[1], 200, 1);
+    assert_eq!(
+        befunde_der_sitzung(&c)
+            .first()
+            .map(|b| b.ursachenklasse),
+        Some(eqcop_broker::coordinator::Ursachenklasse::DatenReichenNicht),
+        "der Zwischenstand: `beitritt_aufheben` setzt NUR die Mitgliedschaft \
+         des Zurueckgezogenen zurueck, das verbleibende Main bleibt \
+         unbestaetigt, und `fuehrendes_main` bleibt `None`"
+    );
+
+    // (2) Erst die Bestätigung.
+    assert!(c.beitritt_bestaetigen(&hex(0x11), &hex(0x22), &a[0].instance_id));
+    reihe(&c, "sonde0", &a[1], 300, 1);
+    assert_eq!(
+        befunde_der_sitzung(&c)
+            .first()
+            .map(|b| b.candidate_source.clone()),
+        Some(a[1].instance_id.clone()),
+        "danach liefert die naechste Rechnung wieder Befunde — die Enthaltung \
+         ist ein Zustand mit Rueckweg, kein Endzustand"
+    );
+}
+
+/// **K-34.** Der Beitritt NACH einer gelaufenen Rechnung ersetzt die
+/// bestehenden Befunde durch die Enthaltung — auf demselben Weg, auf dem jede
+/// Neurechnung sie ersetzt. Es entsteht kein Mischstand.
+#[test]
+fn beitritt_nach_der_rechnung_ersetzt_die_befunde() {
+    let c = coordinator();
+    let a = buehne_nak213(&c, 1);
+    reihe(&c, "main", &a[0], 0, 12);
+    reihe(&c, "sonde0", &a[1], 100, 12);
+    assert_eq!(
+        befunde_der_sitzung(&c)
+            .first()
+            .map(|b| b.candidate_source.clone()),
+        Some(a[1].instance_id.clone()),
+        "Vorbedingung: ein Befund ueber die Sonde steht im Bestand"
+    );
+
+    let _zweites = zweites_main(&c, "main2", 8);
+    reihe(&c, "sonde0", &a[1], 200, 1);
+    let befunde = befunde_der_sitzung(&c);
+    assert_eq!(befunde.len(), 1, "kein Mischstand aus altem Befund und Enthaltung");
+    assert_eq!(
+        befunde[0].ursachenklasse,
+        eqcop_broker::coordinator::Ursachenklasse::DatenReichenNicht
+    );
+    assert_ne!(
+        befunde[0].zustand,
+        Befundzustand::ReadyToSend,
+        "und kein `ready_to_send`-Befund bleibt sichtbar, waehrend die Sitzung \
+         schon keine Fuehrung mehr hat"
+    );
+}
+
+/// **K-53 (R8).** Eine Sitzung, deren Belege VOLLSTÄNDIG zurückgenommen sind,
+/// erzeugt keinen Befund — auch keine Enthaltung ohne Ort.
+///
+/// Die Sitzungsschlüssel bleiben erhalten (die Rücknahme setzt den
+/// `ausschlussgrund` am Eintrag, sie löscht ihn nicht), und eine später durch
+/// eine ANDERE Sitzung angestossene Rechnung sammelt sie wieder ein. Ihre
+/// Pflichtliste `evidence_ids` liesse sich dann nicht gültig füllen: eine
+/// leere Liste fällt an `minItems: 1`, eine zurückgenommene ID am
+/// Eintragungsriegel. Deshalb entsteht gar kein Befund.
+#[test]
+fn sitzung_ohne_gueltige_evidenz_erzeugt_keinen_befund() {
+    let c = coordinator();
+    let a = buehne_nak213(&c, 1);
+    reihe(&c, "main", &a[0], 0, 12);
+    reihe(&c, "sonde0", &a[1], 100, 12);
+    assert!(
+        !befunde_der_sitzung(&c).is_empty(),
+        "Vorbedingung: die Sitzung traegt Befunde"
+    );
+
+    // ALLE Belege der Sitzung zurücknehmen.
+    let genommen = c.invalidierung_wegen_intervention_fuer_link(
+        "main",
+        44_108_200 - 1,
+        44_108_200 + 24 * 512 + 1,
+    );
+    assert_eq!(genommen, 24, "die zwoelf Master- und zwoelf Sondenbelege");
+
+    // Eine ZWEITE Sitzung stösst die Rechnung an; `aufnahmen_sammeln` sammelt
+    // die erste dabei erneut ein.
+    let main2 = adresse(0x33, 0x44, 1, 0x80);
+    anmelden_mit_deskriptor_und_host(&c, "main_s2", &main2, "main", Some(1), 4712);
+    let marke2 = json!({
+        "type": "intent_update", "adresse": main2,
+        "session_epoch": main2.session_epoch,
+        "vollstaendig": true, "bestand_revision": 0
+    });
+    c.p1("main_s2", &bytes(&marke2));
+    let sonde2 = adresse(0x33, 0x44, 2, 0x81);
+    anmelden_mit_deskriptor_und_host(&c, "sonde_s2", &sonde2, "passive_probe", Some(3), 4712);
+    reihe(&c, "main_s2", &main2, 500, 12);
+    reihe(&c, "sonde_s2", &sonde2, 600, 12);
+
+    assert!(
+        befunde_der_sitzung(&c).is_empty(),
+        "fuer S1 entsteht KEIN Befund — auch keine Enthaltung ohne Ort (R8): {:?}",
+        befunde_der_sitzung(&c)
+    );
+    assert!(
+        !c.befunde_sicht(&hex(0x33), &hex(0x44)).is_empty(),
+        "und S2 rechnet unberuehrt weiter"
     );
 }

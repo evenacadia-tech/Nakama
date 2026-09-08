@@ -2480,3 +2480,143 @@ fn ausschluesse_bleiben_unter_dem_sitzungsdeckel() {
         "der Befund mit {alle} Ausschluessen ist vertragsgueltig"
     );
 }
+
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-213 R4/E7 · die Enthaltung OHNE ORT   (K-36, K-38, K-39)
+// ═════════════════════════════════════════════════════════════════════════
+
+/// Eine Buehne, deren Master zwar Fenster hat, aber KEIN Band mit
+/// Gueltigkeitsbit — `masteranomalie` findet dort keine Anomalie.
+fn buehne_ohne_masterband(c: &Coordinator) -> Vec<Adresse> {
+    let adressen = buehne(c, 1, Some(3));
+    let band = (ANOMALIEBAND, ANOMALIEBAND + 4);
+    for i in 0..12 {
+        c.p1(
+            "main",
+            &evidenz(
+                &adressen[0],
+                i,
+                44_108_200 + (i as i64) * 512,
+                Some((band.0, band.1, 9.0)),
+                |w| {
+                    // KEIN Band traegt ein Gueltigkeitsbit: `masteranomalie`
+                    // findet dann keine Anomalie und gibt `None`.
+                    let leer = bitmap_ohne((0, 221));
+                    for satz in ["/baender", "/verteilung/p10", "/verteilung/p50",
+                                 "/verteilung/p95"] {
+                        if let Some(feld) = w.pointer_mut(&format!("{satz}/gueltig_bitmap")) {
+                            *feld = json!(leer);
+                        }
+                    }
+                },
+            ),
+        );
+    }
+    reihe(c, "sonde0", &adressen[1], 100, 12, Some((band.0, band.1, 9.0)));
+    adressen
+}
+
+/// **K-36.** Der Master hat Fenster, aber keines traegt ein verwertbares
+/// Band. Die Unterscheidung „gar keine Fenster" gegen „Fenster ohne
+/// verwertbares Band" ist fuer das ERGEBNIS keine: in beiden Lagen gibt es
+/// keine Anomalie. Der Grund heisst deshalb `KeinMasterbeleg`.
+#[test]
+fn master_ohne_verwertbares_band_ergibt_enthaltung() {
+    let c = coordinator();
+    let adressen = buehne_ohne_masterband(&c);
+    let befunde = c.befunde_sicht(&hex(0x11), &hex(0x22));
+    assert_eq!(befunde.len(), 1, "eine Enthaltung statt Schweigen");
+    let e = &befunde[0];
+    assert_eq!(e.ursachenklasse, Ursachenklasse::DatenReichenNicht);
+    assert_eq!(e.confidence.klasse, Sicherheitsklasse::Unklar);
+    assert_eq!(e.candidate_source, adressen[0].instance_id);
+    assert_eq!((e.band_hz.von, e.band_hz.bis), (0, 221));
+    assert!(!e.beobachtung.gueltig);
+    assert!(
+        e.likely_cause.contains("verwertbaren Beleg"),
+        "der Grund reist im festen Satz von `likely_cause`: {}",
+        e.likely_cause
+    );
+}
+
+/// **K-38.** Die Pflichtliste `evidence_ids` traegt MINDESTENS EINE und
+/// HOECHSTENS 32 gueltige ID, gekappt am ALTEN Ende.
+///
+/// Das Exit-Gate verlangt EXISTENTE IDs, nicht IDs des Masters: hier hat der
+/// Master gar keine verwertbare Messung, und die Liste kommt aus den Belegen
+/// der Sonde.
+#[test]
+fn enthaltung_ohne_ort_traegt_existente_evidenz_ids() {
+    let c = coordinator();
+    let adressen = buehne(&c, 1, Some(3));
+    let band = (ANOMALIEBAND, ANOMALIEBAND + 4);
+    for i in 0..12 {
+        c.p1(
+            "main",
+            &evidenz(&adressen[0], i, 44_108_200 + (i as i64) * 512,
+                     Some((band.0, band.1, 9.0)),
+                     |w| {
+                         let leer = bitmap_ohne((0, 221));
+                         for satz in ["/baender", "/verteilung/p10", "/verteilung/p50",
+                                      "/verteilung/p95"] {
+                             if let Some(feld) = w.pointer_mut(&format!("{satz}/gueltig_bitmap")) {
+                                 *feld = json!(leer);
+                             }
+                         }
+                     }),
+        );
+    }
+    // 41 gueltige Belege der Sonde — deutlich ueber dem Vertragsdeckel 32.
+    reihe(&c, "sonde0", &adressen[1], 100, 41, Some((band.0, band.1, 9.0)));
+    let befunde = c.befunde_sicht(&hex(0x11), &hex(0x22));
+    let e = befunde.first().expect("die Enthaltung entsteht");
+    assert!(
+        !e.evidence_ids.is_empty(),
+        "`minItems: 1` ist Vertragspflicht"
+    );
+    assert_eq!(
+        e.evidence_ids.len(),
+        32,
+        "und `maxItems: 32` die andere Grenze: {}",
+        e.evidence_ids.len()
+    );
+    // Gekappt wird am ALTEN Ende: die juengsten Belege sind die, um die es
+    // geht. Beleg 100 (der aelteste der Sonde) ist deshalb NICHT dabei,
+    // Beleg 140 (der juengste) schon.
+    assert!(
+        !e.evidence_ids.contains(&hex(0x1000 + 100)),
+        "der aelteste Beleg faellt weg"
+    );
+    assert!(
+        e.evidence_ids.contains(&hex(0x1000 + 140)),
+        "der juengste bleibt"
+    );
+    // Und jede ID existiert wirklich — keine erfundene.
+    for id in &e.evidence_ids {
+        assert!(
+            id.len() == 32 && id.chars().all(|z| z.is_ascii_hexdigit()),
+            "{id} ist keine hex32"
+        );
+    }
+}
+
+/// **K-39.** Die Enthaltung ohne Ort ist deterministisch: dieselbe
+/// `candidate_source` und damit dieselbe `finding_id` ueber hundert Laeufe.
+///
+/// Eine Wahl ueber die Iterationsreihenfolge einer `HashMap` ergaebe zwischen
+/// zwei Laeufen verschiedene IDs — genau der Fehler, den `aufnahmen_sammeln`
+/// mit seiner `BTreeSet`-Ordnung schon einmal vermieden hat.
+#[test]
+fn enthaltung_ohne_ort_ist_deterministisch() {
+    let lauf = || {
+        let c = coordinator();
+        let _ = buehne_ohne_masterband(&c);
+        serde_json::to_vec(&findings(&c)).unwrap()
+    };
+    let referenz = lauf();
+    assert!(!referenz.is_empty());
+    for runde in 0..100 {
+        assert_eq!(lauf(), referenz, "Lauf {runde} weicht ab");
+    }
+}

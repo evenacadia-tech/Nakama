@@ -515,7 +515,24 @@ pub struct Passagenfenster {
 #[derive(Debug, Clone, Default)]
 pub struct Aufnahme {
     /// Der Master — die Quelle, deren Befund erklaert werden soll (§8).
-    pub master: Quellprofil,
+    ///
+    /// 🔑 **NAK-213 E7/R4:** `None` heisst „die Sitzung hat kein EINDEUTIG
+    /// fuehrendes Main". Bis hierher nahm `aufnahmen_sammeln` bei zwei
+    /// `main`-Clients schlicht den letzten nach `instance_id` — der erste
+    /// verschwand spurlos, und eine Sonde trug einen Befund im Band des
+    /// ANDEREN Masters (Gate-Befund G-D4). Entwurf `:1669` sagt „genau ein
+    /// fuehrendes Main pro aktiver Sitzung"; ohne das rechnet die Kette
+    /// nicht, sondern enthaelt sich MIT GRUND.
+    pub master: Option<Quellprofil>,
+    /// Die `instance_id` aller `main`-Clients der Sitzung, aufsteigend
+    /// sortiert und dedupliziert.
+    ///
+    /// Sie traegt die Adresse der Enthaltung ohne Ort: `candidate_source` ist
+    /// die lexikographisch KLEINSTE — dieselbe stabile Wahl, die
+    /// `fuehrung_neu_bewerten_locked` trifft (`mains.sort(); mains[0]`). Sie
+    /// behauptet KEINE Fuehrung, sie ist die deterministische Adresse der
+    /// Sitzung (M-25).
+    pub mains: Vec<String>,
     pub kandidaten: Vec<Quellprofil>,
     pub passage: Option<Passagenfenster>,
     pub passage_id: Option<String>,
@@ -952,17 +969,20 @@ impl Screeningrang {
 }
 
 /// Bildet den Screeningrang EINES Kandidaten in der Befundgruppe.
-pub fn screeningrang(kandidat: &Quellprofil, aufnahme: &Aufnahme, gruppe: usize) -> Screeningrang {
+pub fn screeningrang(
+    kandidat: &Quellprofil,
+    aufnahme: &Aufnahme,
+    master: &Quellprofil,
+    gruppe: usize,
+) -> Screeningrang {
     Screeningrang {
         // Dieselbe Rechnung wie `bandpassung`, aber auf dem Intervall der
         // GRUPPE. Sie ein zweites Mal auszuschreiben waeren zwei
         // Gelegenheiten, sie verschieden zu runden.
         gruppenenergie: bandpassung(kandidat, bandintervall_der_gruppe(gruppe)),
-        alignment: paarueberdeckung(&kandidat.fenster, &aufnahme.master.fenster),
+        alignment: paarueberdeckung(&kandidat.fenster, &master.fenster),
         intent_relevanz: intent_relevanz(kandidat, aufnahme),
-        koinzidenz: koinzidenz_gerichtet(kandidat, &aufnahme.master)
-            .unwrap_or(0.0)
-            .max(0.0),
+        koinzidenz: koinzidenz_gerichtet(kandidat, master).unwrap_or(0.0).max(0.0),
     }
 }
 
@@ -979,6 +999,35 @@ pub fn screening_quantisiert(rang: &Screeningrang) -> i64 {
         summe += quantisiert(wert);
     }
     (quantisiert(summe / werte.len() as f64) / RANG_QUANTUM).round() as i64
+}
+
+/// Warum die Rechnung GAR NICHT ERST laufen kann (R4).
+///
+/// ⚠️ Der Grund reist im festen Satz von `likely_cause` — dem Feld, das
+/// §36.3 fuer genau diese Zeile vorsieht. Ein eigenes Vertragsfeld
+/// `enthaltungsgrund` waere eine neue geschlossene Menge mit einem Consumer,
+/// den dieses Ticket nicht bauen darf (§2.9 Nr. 8); ob und wie Gen ihn zeigt,
+/// ist S31b.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Enthaltungsgrund {
+    /// `fuehrendes_main = None` — kein oder mehr als ein fuehrendes Main (R4).
+    KeineEindeutigeFuehrung,
+    /// Das fuehrende Main hat keinen verwertbaren Beleg (R4).
+    KeinMasterbeleg,
+}
+
+impl Enthaltungsgrund {
+    /// Der feste Satz. Regelbasiert, keine Erklaerschicht.
+    pub fn satz(self) -> &'static str {
+        match self {
+            Self::KeineEindeutigeFuehrung => {
+                "Zwei Instanzen fuehren diese Sitzung — bis eine von ihnen fuehrt, wird nicht gerechnet."
+            }
+            Self::KeinMasterbeleg => {
+                "Das fuehrende Main hat noch keinen verwertbaren Beleg gesendet."
+            }
+        }
+    }
 }
 
 /// Warum die Konkurrenz dieser Rechnung UNVOLLSTAENDIG ist (R1, R2).
@@ -1072,6 +1121,7 @@ pub fn stufe_b_aufrufe() -> usize {
 pub fn gate(
     kandidat: &Quellprofil,
     aufnahme: &Aufnahme,
+    master: &Quellprofil,
     metrik: Zielmetrik,
     band: Bandintervall,
 ) -> Gateurteil {
@@ -1096,7 +1146,7 @@ pub fn gate(
     // `evidenz_zurueckgenommen` — sie dupliziert nichts. Dass eine Quelle das
     // Mastersignal misst, ist danach eine Frage ueber die Quelle selbst und
     // braucht keine Messguete-Pruefung.
-    if let (Some(kanal), Some(master_kanal)) = (kandidat.mixerkanal, aufnahme.master.mixerkanal) {
+    if let (Some(kanal), Some(master_kanal)) = (kandidat.mixerkanal, master.mixerkanal) {
         if kanal == master_kanal {
             return Gateurteil::Faellt(Ausschlussgrund::MasterDuplikat);
         }
@@ -1124,7 +1174,7 @@ pub fn gate(
     // `zeitueberdeckung` meldete 1,0 — und das Gate hielt, obwohl KEIN
     // einziges Fenster ein gemeinsames Sample mit dem Master hat (G5-Befund
     // E-D4). Die Schwelle bleibt dieselbe.
-    let alignment = paarueberdeckung(&kandidat.fenster, &aufnahme.master.fenster);
+    let alignment = paarueberdeckung(&kandidat.fenster, &master.fenster);
     if !(alignment >= GATE_ZEITUEBERDECKUNG) {
         return Gateurteil::Faellt(Ausschlussgrund::AlignmentFalsch);
     }
@@ -1151,7 +1201,7 @@ pub fn gate(
         // gegen ein einziges ueberlappendes Masterfenster bestanden alle vier
         // relativen Gates, weil `ueberdeckung` auf das kuerzere Intervall
         // normiert — und ein einzelner Kandidat erreichte `hoch`/READY.
-        if passagenmaterial(kandidat, &aufnahme.master, &p) < GATE_MINDEST_FENSTER {
+        if passagenmaterial(kandidat, master, &p) < GATE_MINDEST_FENSTER {
             return Gateurteil::Faellt(Ausschlussgrund::PassageZuKurz);
         }
     }
@@ -1169,7 +1219,7 @@ pub fn gate(
         {
             return Gateurteil::Faellt(Ausschlussgrund::IntentVetoGeschuetzt);
         }
-        if !intent.entmaskierung_erlaubt(&aufnahme.master.quelle_id, &kandidat.quelle_id, &passage_id)
+        if !intent.entmaskierung_erlaubt(&master.quelle_id, &kandidat.quelle_id, &passage_id)
         {
             return Gateurteil::Faellt(Ausschlussgrund::IntentVetoVerschmolzen);
         }
@@ -1195,10 +1245,11 @@ pub fn gate(
 pub fn rangkomponenten(
     kandidat: &Quellprofil,
     aufnahme: &Aufnahme,
+    master: &Quellprofil,
     band: Bandintervall,
     parent_duplikat: bool,
 ) -> Rangkomponenten {
-    rang_und_beleg(kandidat, aufnahme, band, parent_duplikat).0
+    rang_und_beleg(kandidat, aufnahme, master, band, parent_duplikat).0
 }
 
 /// Rang UND Zusammenhangsbeleg aus EINER Rechnung (E1).
@@ -1211,13 +1262,14 @@ pub fn rangkomponenten(
 pub fn rang_und_beleg(
     kandidat: &Quellprofil,
     aufnahme: &Aufnahme,
+    master: &Quellprofil,
     band: Bandintervall,
     parent_duplikat: bool,
 ) -> (Rangkomponenten, Zusammenhangsbeleg) {
     // M-18/K-07: der Nachweis, dass Stufe B hoechstens `KANDIDATEN_DECKEL`-mal
     // je Rechnung laeuft, ist eine ZAHL — hier entsteht sie.
     STUFE_B_AUFRUFE.with(|z| z.set(z.get().saturating_add(1)));
-    let beleg = zusammenhang(kandidat, &aufnahme.master, band);
+    let beleg = zusammenhang(kandidat, master, band);
     let rang = Rangkomponenten {
         bandpassung: bandpassung(kandidat, band),
         koinzidenz: beleg.koinzidenz.unwrap_or(0.0).max(0.0),
@@ -1461,10 +1513,38 @@ pub fn hypothesen(aufnahme: &Aufnahme) -> Rechenergebnis {
     if !super::intent::darf_gerechnet_werden(aufnahme.intent.as_ref()) {
         return Rechenergebnis::default();
     }
+
+    // 🔑 **NAK-213 E7/R4: DREI Lagen statt zwei.**
+    //
+    // (1) Kein eindeutig fuehrendes Main → Enthaltung OHNE ORT. Bis hierher
+    //     nahm die Aufnahme den letzten `main` nach `instance_id`, und der
+    //     erste verschwand spurlos (G-D4).
+    // (2) Fuehrendes Main ohne verwertbaren Beleg → ebenfalls Enthaltung ohne
+    //     Ort. Bis hierher gab `masteranomalie` `None`, die Rechnung endete
+    //     vor den Gates, und die Sitzung SCHWIEG (G-L4) — M-27 verlangt aber
+    //     ein Ergebnis.
+    // (3) Sonst: die Kette rechnet wie bisher, Zeile fuer Zeile.
+    //
+    // ⚠️ Beide Enthaltungen setzen nach R8 mindestens EINEN gueltigen Beleg
+    // der Sitzung voraus; `enthaltung_ohne_ort` gibt sonst `None`, und dann
+    // entsteht gar kein Befund.
+    let Some(master) = aufnahme.master.as_ref() else {
+        return Rechenergebnis {
+            befunde: enthaltung_ohne_ort(aufnahme, Enthaltungsgrund::KeineEindeutigeFuehrung)
+                .into_iter()
+                .collect(),
+            ausschluesse: Vec::new(),
+        };
+    };
     let Some((metrik, band, beobachtung, gruppe)) =
-        masteranomalie(&aufnahme.master, aufnahme.passage.as_ref())
+        masteranomalie(master, aufnahme.passage.as_ref())
     else {
-        return Rechenergebnis::default();
+        return Rechenergebnis {
+            befunde: enthaltung_ohne_ort(aufnahme, Enthaltungsgrund::KeinMasterbeleg)
+                .into_iter()
+                .collect(),
+            ausschluesse: Vec::new(),
+        };
     };
 
     // Parent-Duplikate erkennen, BEVOR gerangt wird (M-22).
@@ -1476,14 +1556,14 @@ pub fn hypothesen(aufnahme: &Aufnahme) -> Rechenergebnis {
     let ids: std::collections::BTreeSet<&str> = aufnahme
         .kandidaten
         .iter()
-        .chain(std::iter::once(&aufnahme.master))
+        .chain(std::iter::once(master))
         .map(|k| k.quelle_id.as_str())
         .collect();
     let ist_parent = |k: &Quellprofil| {
         aufnahme
             .kandidaten
             .iter()
-            .chain(std::iter::once(&aufnahme.master))
+            .chain(std::iter::once(master))
             .any(|anderer| anderer.parent.as_deref() == Some(k.quelle_id.as_str()))
     };
 
@@ -1496,7 +1576,7 @@ pub fn hypothesen(aufnahme: &Aufnahme) -> Rechenergebnis {
     // darueber, WER ueberhaupt gerechnet wird.
     let mut gate_ueberlebende: Vec<(&Quellprofil, bool)> = Vec::new();
     for kandidat in &aufnahme.kandidaten {
-        match gate(kandidat, aufnahme, metrik, band) {
+        match gate(kandidat, aufnahme, master, metrik, band) {
             Gateurteil::Faellt(grund) => ausschluesse.push(Ausschluss {
                 candidate_source: kandidat.quelle_id.clone(),
                 grund,
@@ -1524,7 +1604,7 @@ pub fn hypothesen(aufnahme: &Aufnahme) -> Rechenergebnis {
         .iter()
         .map(|(kandidat, duplikat)| {
             (
-                screening_quantisiert(&screeningrang(kandidat, aufnahme, gruppe)),
+                screening_quantisiert(&screeningrang(kandidat, aufnahme, master, gruppe)),
                 *kandidat,
                 *duplikat,
             )
@@ -1559,7 +1639,7 @@ pub fn hypothesen(aufnahme: &Aufnahme) -> Rechenergebnis {
         gescreent
             .iter()
             .map(|(_, kandidat, duplikat)| {
-                let (rang, beleg) = rang_und_beleg(kandidat, aufnahme, band, *duplikat);
+                let (rang, beleg) = rang_und_beleg(kandidat, aufnahme, master, band, *duplikat);
                 (rang, beleg, *kandidat, *duplikat)
             })
             .collect();
@@ -1581,7 +1661,7 @@ pub fn hypothesen(aufnahme: &Aufnahme) -> Rechenergebnis {
         // M-27: kein Kandidat ist ein ERGEBNIS. Der Befund traegt die siebte
         // Ursachenklasse, keinen Fehlercode — und er bleibt sichtbar, damit
         // der User sieht, dass gerechnet wurde.
-        let befund = enthaltung(aufnahme, metrik, band, beobachtung, ausschluesse.clone());
+        let befund = enthaltung(aufnahme, master, metrik, band, beobachtung, ausschluesse.clone());
         return Rechenergebnis {
             befunde: vec![befund],
             ausschluesse,
@@ -1629,6 +1709,7 @@ pub fn hypothesen(aufnahme: &Aufnahme) -> Rechenergebnis {
         .map(|(platz, (rang, beleg, kandidat, duplikat))| {
             baue_befund(
                 aufnahme,
+                master,
                 kandidat,
                 *rang,
                 beleg,
@@ -1807,15 +1888,107 @@ pub fn masteranomalie(
     Some((Zielmetrik::BandPegelDb, band, beobachtung, gruppe))
 }
 
+/// Die Enthaltung, wenn die Rechnung gar nicht erst laufen kann (R4).
+///
+/// Sie behauptet KEINEN Ort und KEINEN Wert — und schweigt trotzdem nicht.
+/// M-27 nennt „mehr Daten noetig" ein regulaeres Ergebnis; bis NAK-213 endete
+/// `hypothesen()` in dieser Lage vor den Gates, und die Sitzung SCHWIEG
+/// (Gate-Befunde G-D4, G-L4).
+///
+/// 🔑 **R8 (Dirigent, 08.09.2026):** sie setzt MINDESTENS EINEN gueltigen
+/// Beleg der Sitzung voraus. `evidence_ids` traegt `minItems: 1`
+/// (`eq-ipc-v3.schema.json`:1889), und der Eintragungsriegel laesst nur nicht
+/// zurueckgenommene IDs zu (M-28). Ohne einen solchen Beleg kann die
+/// Pflichtliste gar nicht gueltig gefuellt werden — dann entsteht KEIN
+/// Befund, auch keine Enthaltung. Die bestehenden Befunde der Sitzung sind zu
+/// diesem Zeitpunkt ueber den unveraenderten M-24-Weg schon fort.
+///
+/// `None` heisst deshalb: die Sitzung ist still, weil nichts gemessen ist —
+/// nicht, weil etwas verschwiegen wuerde.
+fn enthaltung_ohne_ort(aufnahme: &Aufnahme, grund: Enthaltungsgrund) -> Option<CauseHypothesis> {
+    // Die deterministische Adresse der Sitzung: die lexikographisch kleinste
+    // `instance_id` der `main`-Clients. Sie behauptet KEINE Fuehrung.
+    let quelle = aufnahme.mains.first()?.clone();
+
+    // Die juengsten GUELTIGEN Belege der Sitzung, ueber alle Quellen. Die
+    // Fensterfolgen sind bereits um zurueckgenommene Belege bereinigt
+    // (`fenster_aus_historie`), und `empfangsfolge` ordnet sie.
+    let mut belege: Vec<(u64, &str)> = aufnahme
+        .kandidaten
+        .iter()
+        .chain(aufnahme.master.iter())
+        .flat_map(|q| {
+            q.fenster
+                .iter()
+                .map(|f| (f.empfangsfolge, f.evidence_id.as_str()))
+        })
+        .collect();
+    belege.sort();
+    belege.dedup_by(|a, b| a.1 == b.1);
+    // Der Vertrag deckelt bei 32. Gekappt wird am ALTEN Ende, wie im Befund:
+    // die juengsten Belege sind die, um die es geht.
+    if belege.len() > 32 {
+        let ab = belege.len() - 32;
+        belege.drain(..ab);
+    }
+    let evidence_ids: Vec<String> = belege.iter().map(|(_, id)| (*id).to_string()).collect();
+    // R8: ohne einen einzigen gueltigen Beleg entsteht kein Befund.
+    if evidence_ids.is_empty() {
+        return None;
+    }
+
+    let metrik = Zielmetrik::BandPegelDb;
+    // Das VOLLE Gitter heisst „nicht eingegrenzt", nicht „ueberall". Ein
+    // Teilintervall waere eine Ortsbehauptung ohne Messung.
+    let band = Bandintervall {
+        von: 0,
+        bis: BAENDER_FEIN as u32,
+    };
+    Some(CauseHypothesis {
+        finding_id: finding_id(aufnahme, metrik, band, &quelle),
+        claim_class: Aussageklasse::Zusammenhang,
+        ursachenklasse: Ursachenklasse::DatenReichenNicht,
+        target_metric: metrik,
+        candidate_source: quelle,
+        passage_id: aufnahme.passage_id.clone(),
+        pre_post: None,
+        band_hz: band,
+        // Dasselbe Muster wie NAK-212 E5/N-29: ohne das Bit ist die Zahl keine
+        // Messung. Erst BEIDE Felder zusammen sind eindeutig.
+        beobachtung: Beobachtung {
+            wert_db: 0.0,
+            gueltig: false,
+        },
+        rang: Rangkomponenten::default(),
+        confidence: Befundkonfidenz {
+            klasse: Sicherheitsklasse::Unklar,
+            score: 0.0,
+        },
+        evidence_ids,
+        alternatives: Vec::new(),
+        ausschluesse: Vec::new(),
+        next_test: NaechsterTest::MehrDatenSammeln,
+        zustand: zustand_aus_sicherheit(Sicherheitsklasse::Unklar, false),
+        intent_revision: aufnahme.intent.as_ref().map_or(0, |i| i.revision),
+        intent_generation: aufnahme.intent.as_ref().map_or(0, |i| i.generation),
+        likely_cause: grund.satz().into(),
+        smallest_test: NaechsterTest::MehrDatenSammeln.satz().into(),
+        listen_for: "Noch nichts — erst mehr Material sammeln.".into(),
+        maskierung: None,
+        metrics_version: aufnahme.metrics_version,
+    })
+}
+
 /// Der Befund, wenn kein Kandidat ueberlebt hat (M-27).
 fn enthaltung(
     aufnahme: &Aufnahme,
+    master: &Quellprofil,
     metrik: Zielmetrik,
     band: Bandintervall,
     beobachtung: Beobachtung,
     ausschluesse: Vec<Ausschluss>,
 ) -> CauseHypothesis {
-    let quelle = aufnahme.master.quelle_id.clone();
+    let quelle = master.quelle_id.clone();
     let finding_id = finding_id(aufnahme, metrik, band, &quelle);
     CauseHypothesis {
         finding_id,
@@ -1832,8 +2005,7 @@ fn enthaltung(
             klasse: Sicherheitsklasse::Unklar,
             score: 0.0,
         },
-        evidence_ids: aufnahme
-            .master
+        evidence_ids: master
             .fenster
             .iter()
             .map(|f| f.evidence_id.clone())
@@ -1858,6 +2030,7 @@ fn enthaltung(
 #[allow(clippy::too_many_arguments)]
 fn baue_befund(
     aufnahme: &Aufnahme,
+    master: &Quellprofil,
     kandidat: &Quellprofil,
     rang: Rangkomponenten,
     zusammenhang: &Zusammenhangsbeleg,
@@ -1892,7 +2065,7 @@ fn baue_befund(
     // bereits als zu duenn verworfen haette, und die Sicherheit `hoch` haette
     // eine andere Grundlage als der Ausschlussgrund `passage_zu_kurz`.
     let fenster = match aufnahme.passage.as_ref() {
-        Some(p) => passagenmaterial(kandidat, &aufnahme.master, p),
+        Some(p) => passagenmaterial(kandidat, master, p),
         None => unabhaengige_fenster(&kandidat.fenster.iter().collect::<Vec<_>>()),
     };
     // Die Klasse entsteht STRUKTURELL, nicht aus dem Score (M-15). Die
@@ -2013,7 +2186,7 @@ fn baue_befund(
         // M-36/M-41: der Wert faellt AUS dem Befund heraus — er entsteht mit
         // ihm, aus denselben zwei Quellen und demselben Bandbereich, und es
         // gibt keinen Weg, ihn ohne Befund zu bekommen.
-        maskierung: super::maskierung::maskierung(&aufnahme.master, kandidat, band),
+        maskierung: super::maskierung::maskierung(master, kandidat, band),
         metrics_version: aufnahme.metrics_version,
     }
 }
@@ -2467,7 +2640,8 @@ mod tests {
 
     fn aufnahme_mit(master: Quellprofil, kandidaten: Vec<Quellprofil>) -> Aufnahme {
         Aufnahme {
-            master,
+            mains: vec![master.quelle_id.clone()],
+            master: Some(master),
             kandidaten,
             passage: None,
             passage_id: None,
@@ -2522,8 +2696,9 @@ mod tests {
         );
 
         let aufnahme = aufnahme_mit(master, vec![drin.clone(), daneben.clone()]);
-        let rang_drin = screeningrang(&drin, &aufnahme, gruppe);
-        let rang_daneben = screeningrang(&daneben, &aufnahme, gruppe);
+        let master_ref = aufnahme.master.as_ref().expect("die Aufnahme traegt einen Master");
+        let rang_drin = screeningrang(&drin, &aufnahme, master_ref, gruppe);
+        let rang_daneben = screeningrang(&daneben, &aufnahme, master_ref, gruppe);
         assert!(
             rang_drin.gruppenenergie > rang_daneben.gruppenenergie,
             "die Gruppenenergie misst auf der BEFUNDGRUPPE: {} gegen {}",
@@ -2557,9 +2732,10 @@ mod tests {
             master.clone(),
             vec![gleich.clone(), gegen.clone(), flach.clone()],
         );
-        let r_gleich = screeningrang(&gleich, &aufnahme, gruppe);
-        let r_gegen = screeningrang(&gegen, &aufnahme, gruppe);
-        let r_flach = screeningrang(&flach, &aufnahme, gruppe);
+        let master_ref = aufnahme.master.as_ref().expect("die Aufnahme traegt einen Master");
+        let r_gleich = screeningrang(&gleich, &aufnahme, master_ref, gruppe);
+        let r_gegen = screeningrang(&gegen, &aufnahme, master_ref, gruppe);
+        let r_flach = screeningrang(&flach, &aufnahme, master_ref, gruppe);
 
         assert!(
             r_gleich.koinzidenz > 0.0,
@@ -2763,16 +2939,17 @@ mod tests {
 
             // Vorbedingung: OHNE den Konkurrenten haelt der Ueberlebende
             // jedes Gate — sonst maesse der Fall etwas anderes.
-            let (metrik, band, _, _) = masteranomalie(&aufnahme.master, aufnahme.passage.as_ref())
+            let master_ref = aufnahme.master.as_ref().expect("die Aufnahme traegt einen Master");
+            let (metrik, band, _, _) = masteranomalie(master_ref, aufnahme.passage.as_ref())
                 .expect("der Master traegt eine Anomalie");
             assert_eq!(
-                gate(&ueberlebender, &aufnahme, metrik, band),
+                gate(&ueberlebender, &aufnahme, master_ref, metrik, band),
                 Gateurteil::Bleibt,
                 "Fall {fall}: der Ueberlebende besteht jedes Gate"
             );
             // Und der Konkurrent faellt mit GENAU dem benannten Grund.
             assert_eq!(
-                gate(&konkurrent, &aufnahme, metrik, band),
+                gate(&konkurrent, &aufnahme, master_ref, metrik, band),
                 Gateurteil::Faellt(grund),
                 "Fall {fall}: der Konkurrent faellt mit {grund:?}"
             );
@@ -3361,12 +3538,13 @@ mod tests {
     #[test]
     fn ohne_vollstaendigkeitsmarke_rechnet_das_modul_nicht() {
         let aufnahme = Aufnahme {
-            master: Quellprofil {
+            mains: vec!["m".into()],
+            master: Some(Quellprofil {
                 quelle_id: "m".into(),
                 fenster: vec![fenster(0, 512, 1)],
                 routing_bekannt: true,
                 ..Default::default()
-            },
+            }),
             intent: Some(IntentBestand {
                 vollstaendig: false,
                 revision: 1,
@@ -3395,7 +3573,8 @@ mod tests {
     fn gate_faellt_in_der_zugesagten_reihenfolge() {
         let master = masterprofil();
         let aufnahme = Aufnahme {
-            master: master.clone(),
+            mains: vec![master.quelle_id.clone()],
+            master: Some(master.clone()),
             metrics_version: 1,
             ..Default::default()
         };
@@ -3407,7 +3586,7 @@ mod tests {
             ..Default::default()
         };
         assert_eq!(
-            gate(&leer, &aufnahme, Zielmetrik::BandPegelDb, band),
+            gate(&leer, &aufnahme, &master, Zielmetrik::BandPegelDb, band),
             Gateurteil::Faellt(Ausschlussgrund::EvidenzZurueckgenommen)
         );
 
@@ -3419,20 +3598,23 @@ mod tests {
             ..Default::default()
         };
         assert_eq!(
-            gate(&kandidat, &aufnahme, Zielmetrik::StereoSeitenanteilDb, band),
+            gate(&kandidat, &aufnahme, &master, Zielmetrik::StereoSeitenanteilDb, band),
             Gateurteil::Faellt(Ausschlussgrund::CapabilityFehlt)
         );
 
         // 🔑 **NAK-213 K-22 (R3/E6):** der Mixerkanal des Masters steht an
         // Position 1 — NACH der Evidenz, VOR der Capability.
         let mut auf_dem_masterkanal = Aufnahme {
-            master: Quellprofil {
+            mains: vec![master.quelle_id.clone()],
+            master: Some(Quellprofil {
                 mixerkanal: Some(1),
                 ..master.clone()
-            },
+            }),
             metrics_version: 1,
             ..Default::default()
         };
+        let masterkanal_ref =
+            |a: &Aufnahme| a.master.clone().expect("die Aufnahme traegt einen Master");
         let sonde_auf_master = Quellprofil {
             mixerkanal: Some(1),
             ..kandidat.clone()
@@ -3441,6 +3623,7 @@ mod tests {
             gate(
                 &sonde_auf_master,
                 &auf_dem_masterkanal,
+                &masterkanal_ref(&auf_dem_masterkanal),
                 // Selbst mit einer Metrik, deren Capability FEHLT, faellt sie
                 // zuerst am Masterkanal: die Reihenfolge ist Absicht.
                 Zielmetrik::StereoSeitenanteilDb,
@@ -3459,6 +3642,7 @@ mod tests {
             gate(
                 &stumm_auf_master,
                 &auf_dem_masterkanal,
+                &masterkanal_ref(&auf_dem_masterkanal),
                 Zielmetrik::BandPegelDb,
                 band
             ),
@@ -3471,25 +3655,28 @@ mod tests {
             ..kandidat.clone()
         };
         assert_eq!(
-            gate(&anderer_kanal, &auf_dem_masterkanal, Zielmetrik::BandPegelDb, band),
+            gate(&anderer_kanal, &auf_dem_masterkanal, &masterkanal_ref(&auf_dem_masterkanal),
+                 Zielmetrik::BandPegelDb, band),
             Gateurteil::Bleibt
         );
         // **K-25:** ohne Masterkanal gibt es keine Masterkanalgruppe. Ein
         // Rueckfall auf einen Standardkanal erklaerte jede Sonde ohne Not zum
         // Duplikat.
-        auf_dem_masterkanal.master.mixerkanal = None;
+        auf_dem_masterkanal.master.as_mut().expect("Master").mixerkanal = None;
         assert_eq!(
-            gate(&sonde_auf_master, &auf_dem_masterkanal, Zielmetrik::BandPegelDb, band),
+            gate(&sonde_auf_master, &auf_dem_masterkanal, &masterkanal_ref(&auf_dem_masterkanal),
+                 Zielmetrik::BandPegelDb, band),
             Gateurteil::Bleibt
         );
         // Und umgekehrt: eine Sonde OHNE Kanal teilt keinen.
-        auf_dem_masterkanal.master.mixerkanal = Some(1);
+        auf_dem_masterkanal.master.as_mut().expect("Master").mixerkanal = Some(1);
         let ohne_kanal = Quellprofil {
             mixerkanal: None,
             ..kandidat.clone()
         };
         assert_eq!(
-            gate(&ohne_kanal, &auf_dem_masterkanal, Zielmetrik::BandPegelDb, band),
+            gate(&ohne_kanal, &auf_dem_masterkanal, &masterkanal_ref(&auf_dem_masterkanal),
+                 Zielmetrik::BandPegelDb, band),
             Gateurteil::Bleibt
         );
 
@@ -3499,7 +3686,7 @@ mod tests {
             f.abdeckung = 0.1;
         }
         assert_eq!(
-            gate(&duenn, &aufnahme, Zielmetrik::BandPegelDb, band),
+            gate(&duenn, &aufnahme, &master, Zielmetrik::BandPegelDb, band),
             Gateurteil::Faellt(Ausschlussgrund::CoverageFehlt)
         );
 
@@ -3509,14 +3696,14 @@ mod tests {
             f.abdeckung = GATE_ABDECKUNG as f64;
         }
         assert_eq!(
-            gate(&kante, &aufnahme, Zielmetrik::BandPegelDb, band),
+            gate(&kante, &aufnahme, &master, Zielmetrik::BandPegelDb, band),
             Gateurteil::Bleibt
         );
         for f in kante.fenster.iter_mut() {
             f.abdeckung = GATE_ABDECKUNG as f64 - 1e-6;
         }
         assert_eq!(
-            gate(&kante, &aufnahme, Zielmetrik::BandPegelDb, band),
+            gate(&kante, &aufnahme, &master, Zielmetrik::BandPegelDb, band),
             Gateurteil::Faellt(Ausschlussgrund::CoverageFehlt)
         );
 
@@ -3527,7 +3714,7 @@ mod tests {
             f.projekt_bis += 1_000_000;
         }
         assert_eq!(
-            gate(&verschoben, &aufnahme, Zielmetrik::BandPegelDb, band),
+            gate(&verschoben, &aufnahme, &master, Zielmetrik::BandPegelDb, band),
             Gateurteil::Faellt(Ausschlussgrund::AlignmentFalsch)
         );
 
@@ -3543,13 +3730,14 @@ mod tests {
             band: Some((0, 4)),
         });
         let mit_schutz = Aufnahme {
-            master: master.clone(),
+            mains: vec![master.quelle_id.clone()],
+            master: Some(master.clone()),
             intent: Some(intent),
             metrics_version: 1,
             ..Default::default()
         };
         assert_eq!(
-            gate(&kandidat, &mit_schutz, Zielmetrik::BandPegelDb, band),
+            gate(&kandidat, &mit_schutz, mit_schutz.master.as_ref().expect("die Aufnahme traegt einen Master"), Zielmetrik::BandPegelDb, band),
             Gateurteil::Faellt(Ausschlussgrund::IntentVetoGeschuetzt)
         );
 
@@ -3565,13 +3753,14 @@ mod tests {
             band: Some((100, 120)),
         });
         let mit_fernem_schutz = Aufnahme {
-            master,
+            mains: vec![master.quelle_id.clone()],
+            master: Some(master),
             intent: Some(daneben),
             metrics_version: 1,
             ..Default::default()
         };
         assert_eq!(
-            gate(&kandidat, &mit_fernem_schutz, Zielmetrik::BandPegelDb, band),
+            gate(&kandidat, &mit_fernem_schutz, mit_fernem_schutz.master.as_ref().expect("die Aufnahme traegt einen Master"), Zielmetrik::BandPegelDb, band),
             Gateurteil::Bleibt
         );
     }
@@ -3594,14 +3783,15 @@ mod tests {
             transport_epoch: 1,
         };
         let mit_passage = Aufnahme {
-            master: master.clone(),
+            mains: vec![master.quelle_id.clone()],
+            master: Some(master.clone()),
             passage: Some(passage),
             passage_id: Some("p".into()),
             metrics_version: 1,
             ..Default::default()
         };
         assert_eq!(
-            gate(&kandidat, &mit_passage, Zielmetrik::BandPegelDb, band),
+            gate(&kandidat, &mit_passage, mit_passage.master.as_ref().expect("die Aufnahme traegt einen Master"), Zielmetrik::BandPegelDb, band),
             Gateurteil::Bleibt
         );
 
@@ -3619,7 +3809,8 @@ mod tests {
             ..master.clone()
         };
         let kurze_passage = Aufnahme {
-            master: master_kurz,
+            mains: vec![master_kurz.quelle_id.clone()],
+            master: Some(master_kurz),
             passage: Some(Passagenfenster {
                 projekt_von: 0,
                 projekt_bis: 3 * 512,
@@ -3630,7 +3821,7 @@ mod tests {
             ..Default::default()
         };
         assert_eq!(
-            gate(&kurz, &kurze_passage, Zielmetrik::BandPegelDb, band),
+            gate(&kurz, &kurze_passage, kurze_passage.master.as_ref().expect("die Aufnahme traegt einen Master"), Zielmetrik::BandPegelDb, band),
             Gateurteil::Faellt(Ausschlussgrund::PassageZuKurz),
             "drei identisch kurze Fenster bestehen alle vier relativen Gates"
         );
@@ -3655,17 +3846,18 @@ mod tests {
             ..Default::default()
         };
         let fremde_passage = Aufnahme {
-            master: Quellprofil {
+            mains: vec![master.quelle_id.clone()],
+            master: Some(Quellprofil {
                 fenster: andere.fenster.clone(),
                 ..master.clone()
-            },
+            }),
             passage: Some(passage),
             passage_id: Some("p".into()),
             metrics_version: 1,
             ..Default::default()
         };
         assert_eq!(
-            gate(&andere, &fremde_passage, Zielmetrik::BandPegelDb, band),
+            gate(&andere, &fremde_passage, fremde_passage.master.as_ref().expect("die Aufnahme traegt einen Master"), Zielmetrik::BandPegelDb, band),
             Gateurteil::Faellt(Ausschlussgrund::PassageUnvergleichbar)
         );
 
@@ -3673,7 +3865,7 @@ mod tests {
         // Epoche, hat er mit dem Master kein gemeinsames Zeitfenster — das
         // ist falsches Alignment, nicht eine andere Passage (N-22).
         assert_eq!(
-            gate(&andere, &mit_passage, Zielmetrik::BandPegelDb, band),
+            gate(&andere, &mit_passage, mit_passage.master.as_ref().expect("die Aufnahme traegt einen Master"), Zielmetrik::BandPegelDb, band),
             Gateurteil::Faellt(Ausschlussgrund::AlignmentFalsch)
         );
     }

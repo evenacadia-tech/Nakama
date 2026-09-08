@@ -1,0 +1,87 @@
+NAK-213 Rotbeweis K-34 — der Beitritt eines zweiten Mains ERSETZT die Befunde (R4, E7)
+Datum: 2026-09-08
+
+Zurueckgenommen: BEIDE Enthaltungszweige. `hypothesen()` gibt sowohl ohne
+eindeutige Fuehrung als auch ohne Masterbeleg wieder `Rechenergebnis::default()`
+zurueck — die Sitzung schweigt in jeder Lage, Zeile fuer Zeile der Stand vor
+NAK-213 (Gate-Befunde G-D4 und G-L4).
+
+⚠️ Warum BEIDE: die zwei Zweige fangen einander gegenseitig auf. Nimmt man nur
+einen zurueck, entsteht in diesem Aufbau immer noch eine Enthaltung — ueber den
+jeweils anderen Weg. Gemessen: mit nur einem Zweig blieb `K-34` gruen
+(`rot-K-31.txt` beziehungsweise der E7b-Lauf), und genau deshalb steht hier
+die vollstaendige Ruecknahme.
+
+Erwartete Wirkung: nach dem Beitritt des zweiten Mains entsteht gar kein
+Ergebnis mehr. `befunde_eintragen` ersetzt die alten Befunde durch eine LEERE
+Liste — und die Zeile faellt daran, dass ueberhaupt kein Befund mehr steht,
+statt an einem Mischstand. Beides ist der Fehler, den K-34 ausschliesst: es
+gibt kein Ergebnis, das die alte Behauptung ablöst.
+
+========================================================================
+Rotlauf (Zeile K-34, Test `beitritt_nach_der_rechnung_ersetzt_die_befunde`)
+Befehl: cargo test --no-fail-fast --manifest-path broker/Cargo.toml --color never --test sonde014_verdrahtung
+Exitcode: 101
+========================================================================
+test fremde_adresse_wird_abgewiesen ... ok
+test entmaskierungsveto_wirkt_im_spiegel_wie_im_main ... ok
+test angenommene_und_abgewiesene_meldungen_sind_zaehlbar ... ok
+test assistant_step_update_koalesziert_je_session ... ok
+test die_neuen_familien_erben_die_ordnung_von_verbinden_und_trennen ... ok
+test ein_frischer_broker_traegt_weder_intent_noch_schritt ... ok
+test die_vollstaendigkeitsmarke_deckt_beide_bestaende ... ok
+test keine_rechnung_vor_der_vollstaendigkeitsmarke ... ok
+test intent_update_koalesziert_je_quelle_und_scope ... ok
+test ohne_jeden_beleg_entsteht_keine_aufnahme ... ok
+test sitzungsende_loescht_den_spiegel ... ok
+test consumerregeln_des_intents_fallen_einzeln ... ok
+test intent_update_unter_der_fassung_zwei_wird_abgewiesen ... ok
+test teilmeldung_mit_mehreren_objekten_wird_abgewiesen ... ok
+test teilupdate_fremden_schluessels_ueberlebt_eine_koaleszierung ... ok
+test spiegel_weicht_dem_neueren_main_schritt ... ok
+test master_ist_das_gefuehrte_main_nicht_das_letzte ... FAILED
+test spaeter_beitritt_deckelt_ab_der_bestaetigung ... ok
+test rueckzug_und_bestaetigung_geben_die_rechnung_frei ... FAILED
+test keine_rechnung_ohne_jede_intentmeldung ... ok
+test stumme_quelle_setzt_die_duplikatmarke ... ok
+test stumme_quelle_ist_sichtbarer_kandidat ... ok
+test beitritt_nach_der_rechnung_ersetzt_die_befunde ... FAILED
+test stale_quelle_deckelt_nicht ... ok
+test partner_ohne_routing_ist_kein_duplikat ... ok
+test veraltetes_rechenergebnis_wird_nicht_veroeffentlicht ... ok
+test zweites_main_hebt_bestaetigte_fuehrung_nicht_auf ... ok
+test sitzung_ohne_gueltige_evidenz_erzeugt_keinen_befund ... ok
+test zurueckgenommener_partner_bleibt_duplikat ... ok
+test result: FAILED. 26 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.86s
+
+---- beitritt_nach_der_rechnung_ersetzt_die_befunde stdout ----
+
+thread 'beitritt_nach_der_rechnung_ersetzt_die_befunde' (27088) panicked at tests\sonde014_verdrahtung.rs:1659:5:
+assertion `left == right` failed: kein Mischstand aus altem Befund und Enthaltung
+  left: 0
+ right: 1
+
+
+failures:
+    beitritt_nach_der_rechnung_ersetzt_die_befunde
+    master_ist_das_gefuehrte_main_nicht_das_letzte
+    rueckzug_und_bestaetigung_geben_die_rechnung_frei
+
+test result: FAILED. 26 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.86s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: function `enthaltung_ohne_ort` is never used
+    --> src\coordinator\hypothese.rs:1900:4
+     |
+1900 | fn enthaltung_ohne_ort(aufnahme: &Aufnahme, grund: Enthaltungsgrund) -> Option<CauseHypothesis> {
+     |    ^^^^^^^^^^^^^^^^^^^
+     |
+     = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib) generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.43s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+error: test failed, to rerun pass `--test sonde014_verdrahtung`
+error: 1 target failed:
+    `--test sonde014_verdrahtung`
+

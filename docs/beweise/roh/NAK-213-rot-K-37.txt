@@ -1,0 +1,81 @@
+NAK-213 Rotbeweis K-37 — der Master ist das FUEHRENDE Main, nicht „der letzte“ (R4, E7)
+Datum: 2026-09-08
+
+Zurueckgenommen: `aufnahmen_sammeln` liest `fuehrendes_main` nicht mehr und
+setzt `master = Some(profil)` fuer JEDEN `main`-Client — in einer nach
+`instance_id` sortierten Schleife. Das ist Zeile fuer Zeile der Stand vor
+NAK-213; Entwurf `:1669` verlangt „genau ein fuehrendes Main pro aktiver
+Sitzung“.
+
+Erwartete Wirkung auf K-37: Der Master ist der nach `instance_id` GROESSTE `main`, nicht der benannte. Genau dieser Fall trennt beide Regeln (Gate-Befund G-D4).
+
+⚠️ GEMESSEN, nicht angenommen: unter dieser Ruecknahme faellt AUCH die
+Gegenprobe K-32 (`zweites_main_hebt_bestaetigte_fuehrung_nicht_auf`). Das ist
+richtig so und war beim Schreiben dieses Rotbeweises anders erwartet worden:
+ohne die Fuehrungsregel wird der zuletzt beigetretene `main` zum Master, und
+der traegt in diesem Aufbau keinen Beleg. Die Zeile K-34
+(`beitritt_nach_der_rechnung_ersetzt_die_befunde`) bleibt dagegen GRUEN — sie
+haengt an der Enthaltung selbst und hat ihren Rotbeweis in E7b.
+
+========================================================================
+Rotlauf (Zeile K-37, Test `master_ist_das_gefuehrte_main_nicht_das_letzte`)
+Befehl: cargo test --no-fail-fast --manifest-path broker/Cargo.toml --color never --test sonde014_verdrahtung --test sonde014_gegenbeispiele
+Exitcode: 101
+========================================================================
+test eigen4_quelle_im_falschen_band ... ok
+test eigen3_antikorrelierte_quelle ... ok
+test a1_intent_rolle_trennt_identische_kandidaten_nicht ... ok
+test eigen5_antikorreliert_neben_korreliert ... ok
+test f4_kanalwechsel_zwischen_den_fenstern ... ok
+test d4_umklammernde_und_disjunkte_spanne ... ok
+test f4b_drei_sonden_auf_einem_kanal ... ok
+test f8b_master_ohne_fenster ... ok
+test a3_sonde_auf_masterkanal ... ok
+test f7_rangdifferenz_am_quantum ... ok
+test f8_zwei_master_mit_widersprechendem_befundband ... FAILED
+test d2_fuehrender_wird_gegen_jeden_geprueft ... ok
+test a4_masteranomalie_ausserhalb_der_passage ... ok
+test d3_passage_ohne_masterfenster_ergibt_enthaltung ... ok
+test f5b_gleiche_passage_id_verschobenes_fenster ... ok
+test einzelueberlebender_neben_passagenausschluss ... ok
+test f5_passagenrandwerte ... ok
+test result: FAILED. 16 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 31.73s
+test fremde_adresse_wird_abgewiesen ... ok
+test entmaskierungsveto_wirkt_im_spiegel_wie_im_main ... ok
+test angenommene_und_abgewiesene_meldungen_sind_zaehlbar ... ok
+test die_neuen_familien_erben_die_ordnung_von_verbinden_und_trennen ... ok
+test assistant_step_update_koalesziert_je_session ... ok
+test ein_frischer_broker_traegt_weder_intent_noch_schritt ... ok
+test intent_update_koalesziert_je_quelle_und_scope ... ok
+test die_vollstaendigkeitsmarke_deckt_beide_bestaende ... ok
+test keine_rechnung_vor_der_vollstaendigkeitsmarke ... ok
+test ohne_jeden_beleg_entsteht_keine_aufnahme ... ok
+test sitzungsende_loescht_den_spiegel ... ok
+test consumerregeln_des_intents_fallen_einzeln ... ok
+test intent_update_unter_der_fassung_zwei_wird_abgewiesen ... ok
+test teilmeldung_mit_mehreren_objekten_wird_abgewiesen ... ok
+test teilupdate_fremden_schluessels_ueberlebt_eine_koaleszierung ... ok
+test spiegel_weicht_dem_neueren_main_schritt ... ok
+test keine_rechnung_ohne_jede_intentmeldung ... ok
+test stumme_quelle_setzt_die_duplikatmarke ... ok
+test beitritt_nach_der_rechnung_ersetzt_die_befunde ... ok
+test master_ist_das_gefuehrte_main_nicht_das_letzte ... FAILED
+test spaeter_beitritt_deckelt_ab_der_bestaetigung ... ok
+test stale_quelle_deckelt_nicht ... ok
+test stumme_quelle_ist_sichtbarer_kandidat ... ok
+test rueckzug_und_bestaetigung_geben_die_rechnung_frei ... FAILED
+test partner_ohne_routing_ist_kein_duplikat ... ok
+test zweites_main_hebt_bestaetigte_fuehrung_nicht_auf ... FAILED
+test sitzung_ohne_gueltige_evidenz_erzeugt_keinen_befund ... ok
+test zurueckgenommener_partner_bleibt_duplikat ... ok
+test veraltetes_rechenergebnis_wird_nicht_veroeffentlicht ... ok
+test result: FAILED. 26 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.87s
+
+---- master_ist_das_gefuehrte_main_nicht_das_letzte stdout ----
+
+thread 'master_ist_das_gefuehrte_main_nicht_das_letzte' (24348) panicked at tests\sonde014_verdrahtung.rs:1562:5:
+assertion `left == right` failed: der Befund nennt wieder die SONDE als Ursache: [CauseHypothesis { finding_id: "0e93170917aedf73fcf57fb53b9995d3", claim_class: Zusammenhang, ursachenklasse: DatenReichenNicht, target_metric: BandPegelDb, candidate_source: "00000000000000000000000000000001", passage_id: None, pre_post: None, band_hz: Bandintervall { von: 0, bis: 221 }, beobachtung: Beobachtung { wert_db: 0.0, gueltig: false }, rang: Rangkomponenten { bandpassung: 0.0, koinzidenz: 0.0, uplift: 0.0, intent_relevanz: 0.0, wiederholbarkeit: 0.0, routingqualitaet: 0.0 }, confidence: Befundkonfidenz { klasse: Unklar, score: 0.0 }, evidence_ids: ["00000000000000000000000000001064", "00000000000000000000000000001065", "00000000000000000000000000001066", "00000000000000000000000000001067", "00000000000000000000000000001068", "00000000000000000000000000001069", "0000000000000000000000000000106a", "0000000000000000000000000000106b", "0000000000000000000000000000106c", "0000000000000000000000000000106d", "0000000000000000000000000000106e", "0000000000000000000000000000106f", "000000000000000000000000000010c8"], alternatives: [], ausschluesse: [], next_test: MehrDatenSammeln, zustand: MoreData, intent_revision: 0, intent_generation: 1, likely_cause: "Das fuehrende Main hat noch keinen verwertbaren Beleg gesendet.", smallest_test: "Dieselbe Passage laenger messen.", listen_for: "Noch nichts — erst mehr Material sammeln.", maskierung: None, metrics_version: 20260904 }]
+  left: Some("00000000000000000000000000000001")
+ right: Some("00000000000000000000000000000002")
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+

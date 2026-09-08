@@ -1,0 +1,68 @@
+NAK-213 Rotbeweis K-53 — eine Enthaltung ohne Ort setzt MINDESTENS EINEN gueltigen Beleg voraus (R8)
+Datum: 2026-09-08
+
+Zurueckgenommen: `enthaltung_ohne_ort` gibt auch dann einen Befund zurueck,
+wenn die Sitzung keinen einzigen gueltigen Beleg mehr hat.
+
+Erwartete Wirkung: fuer eine Sitzung, deren Belege VOLLSTAENDIG zurueckgenommen
+sind, entsteht wieder eine Enthaltung — mit LEERER `evidence_ids`. Die faellt
+am Vertrag (`minItems: 1`, `eq-ipc-v3.schema.json`:1889), und eine mit
+zurueckgenommenen IDs faellt am Eintragungsriegel (M-28). Genau deshalb
+entsteht nach R8 gar kein Befund: die Sitzung ist still, weil nichts gemessen
+ist — nicht, weil etwas verschwiegen wuerde.
+
+========================================================================
+Rotlauf (Zeile K-53, Test `sitzung_ohne_gueltige_evidenz_erzeugt_keinen_befund`)
+Befehl: cargo test --no-fail-fast --manifest-path broker/Cargo.toml --color never --test sonde014_verdrahtung
+Exitcode: 101
+========================================================================
+test fremde_adresse_wird_abgewiesen ... ok
+test entmaskierungsveto_wirkt_im_spiegel_wie_im_main ... ok
+test angenommene_und_abgewiesene_meldungen_sind_zaehlbar ... ok
+test assistant_step_update_koalesziert_je_session ... ok
+test ein_frischer_broker_traegt_weder_intent_noch_schritt ... ok
+test die_neuen_familien_erben_die_ordnung_von_verbinden_und_trennen ... ok
+test die_vollstaendigkeitsmarke_deckt_beide_bestaende ... ok
+test keine_rechnung_vor_der_vollstaendigkeitsmarke ... ok
+test intent_update_koalesziert_je_quelle_und_scope ... ok
+test ohne_jeden_beleg_entsteht_keine_aufnahme ... ok
+test sitzungsende_loescht_den_spiegel ... ok
+test consumerregeln_des_intents_fallen_einzeln ... ok
+test intent_update_unter_der_fassung_zwei_wird_abgewiesen ... ok
+test teilmeldung_mit_mehreren_objekten_wird_abgewiesen ... ok
+test teilupdate_fremden_schluessels_ueberlebt_eine_koaleszierung ... ok
+test spiegel_weicht_dem_neueren_main_schritt ... ok
+test keine_rechnung_ohne_jede_intentmeldung ... ok
+test stumme_quelle_ist_sichtbarer_kandidat ... ok
+test stumme_quelle_setzt_die_duplikatmarke ... ok
+test beitritt_nach_der_rechnung_ersetzt_die_befunde ... ok
+test rueckzug_und_bestaetigung_geben_die_rechnung_frei ... ok
+test master_ist_das_gefuehrte_main_nicht_das_letzte ... ok
+test spaeter_beitritt_deckelt_ab_der_bestaetigung ... ok
+test stale_quelle_deckelt_nicht ... ok
+test partner_ohne_routing_ist_kein_duplikat ... ok
+test zweites_main_hebt_bestaetigte_fuehrung_nicht_auf ... ok
+test veraltetes_rechenergebnis_wird_nicht_veroeffentlicht ... ok
+test sitzung_ohne_gueltige_evidenz_erzeugt_keinen_befund ... FAILED
+test zurueckgenommener_partner_bleibt_duplikat ... ok
+test result: FAILED. 28 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.90s
+
+---- sitzung_ohne_gueltige_evidenz_erzeugt_keinen_befund stdout ----
+
+thread 'sitzung_ohne_gueltige_evidenz_erzeugt_keinen_befund' (26880) panicked at tests\sonde014_verdrahtung.rs:1715:5:
+fuer S1 entsteht KEIN Befund — auch keine Enthaltung ohne Ort (R8): [CauseHypothesis { finding_id: "0e93170917aedf73fcf57fb53b9995d3", claim_class: Zusammenhang, ursachenklasse: DatenReichenNicht, target_metric: BandPegelDb, candidate_source: "00000000000000000000000000000001", passage_id: None, pre_post: None, band_hz: Bandintervall { von: 0, bis: 221 }, beobachtung: Beobachtung { wert_db: 0.0, gueltig: false }, rang: Rangkomponenten { bandpassung: 0.0, koinzidenz: 0.0, uplift: 0.0, intent_relevanz: 0.0, wiederholbarkeit: 0.0, routingqualitaet: 0.0 }, confidence: Befundkonfidenz { klasse: Unklar, score: 0.0 }, evidence_ids: [], alternatives: [], ausschluesse: [], next_test: MehrDatenSammeln, zustand: MoreData, intent_revision: 0, intent_generation: 1, likely_cause: "Das fuehrende Main hat noch keinen verwertbaren Beleg gesendet.", smallest_test: "Dieselbe Passage laenger messen.", listen_for: "Noch nichts — erst mehr Material sammeln.", maskierung: None, metrics_version: 20260904 }]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    sitzung_ohne_gueltige_evidenz_erzeugt_keinen_befund
+
+test result: FAILED. 28 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.90s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.89s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+error: test failed, to rerun pass `--test sonde014_verdrahtung`
+error: 1 target failed:
+    `--test sonde014_verdrahtung`
+

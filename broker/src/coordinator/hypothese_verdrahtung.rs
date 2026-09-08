@@ -157,7 +157,15 @@ impl Coordinator {
             if !super::intent::darf_gerechnet_werden(intent.as_ref()) {
                 continue;
             }
+            // Die Fuehrungsfrage beantwortet ausschliesslich
+            // `mitgliedschaft.rs`: `None` heisst „kein oder mehr als ein
+            // bestaetigtes Main" (`fuehrung_neu_bewerten_locked`).
+            let fuehrendes_main = stand
+                .sessions
+                .get(&session)
+                .and_then(|s| s.fuehrendes_main.clone());
             let mut master: Option<Quellprofil> = None;
+            let mut mains: Vec<String> = Vec::new();
             let mut kandidaten: Vec<Quellprofil> = Vec::new();
             // Wer misst welchen Mixerkanal? Zwei Quellen auf demselben Kanal
             // sind Duplikate (M-22); eine Sonde auf dem Kanal des Masters ist
@@ -260,21 +268,40 @@ impl Coordinator {
                         .is_none_or(|h| h.iter().all(|e| e.ausschlussgrund.is_some())),
                 };
                 if client.plugin_kind == "main" {
-                    master = Some(profil);
+                    mains.push(key.instance_id.clone());
+                    // 🔑 **NAK-213 E7/R4:** der Master ist das FUEHRENDE Main,
+                    // nicht „der letzte". Bis hierher stand hier
+                    // `master = Some(profil)` fuer JEDEN `main`-Client in
+                    // einer nach `instance_id` sortierten Schleife — der
+                    // letzte gewann immer, und der erste verschwand spurlos
+                    // (Gate-Befund G-D4). `fuehrendes_main` wird von
+                    // `mitgliedschaft.rs` gepflegt und bei mehr als einem
+                    // bestaetigten Main auf `None` gesetzt; dieses Ticket
+                    // LIEST es und erfindet keinen zweiten Fuehrungsbegriff
+                    // (§2.9 Nr. 9).
+                    if fuehrendes_main.as_deref() == Some(key.instance_id.as_str()) {
+                        master = Some(profil);
+                    }
                 } else {
                     kandidaten.push(profil);
                 }
             }
-            let Some(mut master) = master else {
+            // Gibt es gar keinen `main`-Client, entsteht keine Aufnahme: die
+            // Sitzung hat keinen Master und rechnet nicht (K-19). Das ist kein
+            // Fehler, sondern der normale Zustand einer Sondenrunde ohne Gen.
+            if mains.is_empty() {
                 continue;
-            };
+            }
+            mains.sort();
+            mains.dedup();
             // Duplikate eintragen: jede Quelle, die sich einen Mixerkanal mit
             // einer anderen teilt, zeigt auf die andere.
             //
             // 🔑 **NAK-213 E6:** die Schleife laeuft ueber den MASTER UND die
             // Kandidaten. Bis hierher wurde `parent` nur an Kandidaten
             // geschrieben; eine Sonde auf dem Masterkanal blieb unmarkiert.
-            let mut master_und_kandidaten: Vec<&mut Quellprofil> = std::iter::once(&mut master)
+            let mut master_und_kandidaten: Vec<&mut Quellprofil> = master
+                .iter_mut()
                 .chain(kandidaten.iter_mut())
                 .collect();
             for (_, geteilt) in je_kanal.iter().filter(|(_, v)| v.len() > 1) {
@@ -301,6 +328,7 @@ impl Coordinator {
                         transport_epoch: p.transport_epoch,
                     }),
                     passage_id: passage.map(|p| p.passage_id.clone()),
+                    mains,
                     intent,
                     metrics_version: super::vergleichbarkeit::METRICS_VERSION,
                     session_epoch: session.session_epoch.clone(),

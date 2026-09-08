@@ -1,0 +1,72 @@
+NAK-213 Rotbeweis K-39 — ohne Masterbeleg entsteht eine ENTHALTUNG, kein Schweigen (R4, E7, M-27)
+Datum: 2026-09-08
+
+Zurueckgenommen: `hypothesen()` gibt bei fehlender Masteranomalie wieder
+`Rechenergebnis::default()` zurueck — die Rechnung endet vor den Gates, und
+die Sitzung meldet gar nichts. Das ist der Stand vor NAK-213 (Gate-Befund
+G-L4); M-27 nennt „mehr Daten noetig" ein REGULAERES Ergebnis.
+
+Erwartete Wirkung auf K-39: Ebenso: ohne Enthaltung gibt es nichts, was ueber hundert Laeufe bytegleich sein koennte.
+
+========================================================================
+Rotlauf (Zeile K-39, Test `enthaltung_ohne_ort_ist_deterministisch`)
+Befehl: cargo test --no-fail-fast --manifest-path broker/Cargo.toml --color never --test sonde014_hypothese --test sonde014_gegenbeispiele
+Exitcode: 101
+========================================================================
+test eigen3_antikorrelierte_quelle ... ok
+test eigen4_quelle_im_falschen_band ... ok
+test a1_intent_rolle_trennt_identische_kandidaten_nicht ... ok
+test eigen5_antikorreliert_neben_korreliert ... ok
+test f4_kanalwechsel_zwischen_den_fenstern ... ok
+test d4_umklammernde_und_disjunkte_spanne ... ok
+test f4b_drei_sonden_auf_einem_kanal ... ok
+test f8b_master_ohne_fenster ... FAILED
+test a3_sonde_auf_masterkanal ... ok
+test f7_rangdifferenz_am_quantum ... ok
+test f8_zwei_master_mit_widersprechendem_befundband ... ok
+test d2_fuehrender_wird_gegen_jeden_geprueft ... ok
+test a4_masteranomalie_ausserhalb_der_passage ... ok
+test d3_passage_ohne_masterfenster_ergibt_enthaltung ... ok
+test f5b_gleiche_passage_id_verschobenes_fenster ... ok
+test einzelueberlebender_neben_passagenausschluss ... ok
+test f5_passagenrandwerte ... ok
+test result: FAILED. 16 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 31.74s
+test causehypothesis_traegt_die_zehn_felder ... ok
+test behauptung_ohne_existente_evidenz_wird_nicht_sichtbar ... ok
+test ausschlussgruende_sind_geschlossen_und_reisen_mit ... ok
+test bedingter_uplift_braucht_fenster_ohne_die_quelle ... ok
+test enthaltung_ohne_ort_traegt_existente_evidenz_ids ... FAILED
+test gemessene_nullkoinzidenz_trennt_zwei_kandidaten ... ok
+test gleichstand_zeigt_beide ... ok
+test jedes_band_liegt_im_intervall_seiner_gruppe ... ok
+test gegenbeleg_schliesst_hoch_aus ... ok
+test keine_hypothese_vor_der_vollstaendigkeitsmarke ... ok
+test hoch_verlangt_einen_belegten_zusammenhang ... ok
+test intent_veto_ist_kein_messausschluss ... ok
+test deckel_mit_abstand_erlaubt_weiter_hoch ... ok
+test hoch_verlangt_energie_im_befundband ... ok
+test koinzidenz_allein_traegt_den_zusammenhang ... ok
+test mehr_daten_ist_ein_ergebnis ... ok
+test deckel_ohne_abstand_senkt_die_klasse ... ok
+test master_ohne_verwertbares_band_ergibt_enthaltung ... FAILED
+test keine_komponente_kompensiert_coverage_oder_alignment ... ok
+test einzelueberlebender_neben_messausschluss ... ok
+test parallele_telemetrie_bleibt_klasse_eins ... ok
+test messausschluss_wirkt_auf_jeden_befund ... ok
+test rollenaenderung_bewegt_die_intent_relevanz ... ok
+test parent_duplikat_erzeugt_keine_zwei_starken ... ok
+test materialmenge_und_bandpassung_trennen_nicht ... ok
+test sechs_teile_im_datenmodell ... ok
+test ruecknahme_invalidiert_abhaengige_hypothesen ... ok
+test passage_zu_kurz_traegt_keine_starke_aussage ... ok
+test ursachenklassen_sind_geschlossen_und_sieben ... ok
+test screening_bezieht_die_koinzidenz_ein ... ok
+test screening_reicht_hoechstens_fuenf_weiter ... ok
+test ausschluesse_bleiben_unter_dem_sitzungsdeckel ... ok
+test ungetrennter_erster_platz_ist_nicht_stark ... ok
+test deckel_greift_vor_stufe_b ... ok
+test enthaltung_ohne_ort_ist_deterministisch ... ok
+test ranking_ist_bytegleich_ueber_hundert_laeufe ... ok
+test screening_ist_deterministisch ... ok
+test result: FAILED. 35 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 140.18s
+

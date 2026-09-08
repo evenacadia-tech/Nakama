@@ -1,0 +1,13 @@
+URTEIL: NEEDS_WORK — zwei DEFEKTE in der vorgeschriebenen R4-Testabdeckung, keine nachgewiesene Produktfehlantwort.
+
+Geprüft: gebundener 22-Dateien-Diff, Aufrufketten R1–R8, Tests, Riegel, Abweichungsbegründungen und historische Belege; per Git bestätigt wurden unverändertes HEAD 184fe645a4404b6f4aeb7c20ca11d5a9a8da9598, die angegebenen Codegleichheiten sowie unveränderte Schema-, Vertragswerkzeug-, Audio- und State-Pfade.
+
+Nicht geprüft: neue Laufzeit-, Rotbeweis- oder Kanonläufe, da ausschließlich lesende Kommandos erlaubt waren; GRÜN 61/61 wurde nur als historischer Beleg gelesen.
+
+Full review comments:
+
+- [P2] Erzeuge im V-32-Kontrollfall einen tatsächlichen STALE-Befund — C:\Users\phili\Projekte\Nakama\broker\tests\sonde014_verdrahtung.rs:3414-3417
+  DEFEKT: Die Bühne liefert frisch berechnete Befunde über `zustand_aus_sicherheit(..., false)`; dieser Filter erfasst daher nur `MoreData`, niemals `Stale`. Damit bleibt der vorgeschriebene Kontrollfall [V-32](docs/beweise/NAK-214.md#L383) ungemessen: Ein versehentliches Zurückweisen ausschließlich veralteter Befunde würde nicht auffallen. Der Zustand ist produktiv erreichbar: Befund F erzeugen → wirksames `intent_update` ohne Folge-Evidenz → `Stale` ausdrücklich prüfen → `user_verdict` mit neuer `command_id` senden und Annahme samt Persistenz prüfen. Der bestehende Test `rollenaenderung_macht_den_vorschlag_stale` zeigt bereits diesen Zustandswechsel; die Abweichungsbegründung trägt deshalb nicht.
+
+- [P2] Ergänze den V-34-Fall ohne Befunde in der Sitzung — C:\Users\phili\Projekte\Nakama\broker\tests\sonde014_verdrahtung.rs:3339-3343
+  DEFEKT: Dieser Negativtest setzt ausdrücklich vorhandene Befunde voraus und prüft anschließend nur eine darin unbekannte ID. Der in [V-34](docs/beweise/NAK-214.md#L385) verlangte zweite Teilfall mit fehlendem Sitzungseintrag fehlt. V-35 ersetzt ihn nicht: Dort kehrt ein bereits angenommener Befehl vor dem Existenzriegel idempotent zurück. Die fehlende Eingabefolge lautet: Main anmelden und State melden, ohne Befunde zu erzeugen → neue `command_id` mit wohlgeformter unbekannter `finding_id` senden → `abgelehnt/unknown_target` und keinerlei Persistenz prüfen. Ohne diesen Teilfall bleibt eine Regression im `None`-Zweig der Existenzprüfung unentdeckt.

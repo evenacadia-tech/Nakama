@@ -27,10 +27,18 @@
 //! wechselnden Quelle** zurueck und entfernt ihren Befund (R5); die
 //! Duplikaterkennung laeuft ueber **alle** Quellen der Sitzung, Master und
 //! stumme eingeschlossen (R3); der Deckel schneidet vor Stufe B und traegt
-//! einen Grund (R1). Faelle, die **NAK-214** gehoeren, werden weiterhin
-//! gefahren und mit **benannter, gedruckter Luecke** ausgegeben (Muster
-//! NAK-190) — nicht geloest, nicht als gruen gewertet und nicht ausgelassen
-//! (R6).
+//! einen Grund (R1).
+//!
+//! 🔑 **NAK-214 (08.09.2026): GEAENDERTE ZUSAGE.** Bis hierher stand hier,
+//! Faelle dieses Tickets wuerden „weiterhin gefahren und mit benannter,
+//! gedruckter Luecke ausgegeben". Gemessen war das nicht: `luecke()` hatte
+//! im ganzen Bein **keinen Aufrufer** — es lief also gar kein
+//! NAK-214-Fall, und es wurde keine Luecke gedruckt. Seit diesem Ticket
+//! fahren **drei** solche Faelle (`nak214_zwei_mains_erzeugen_keinen_vorschlag`,
+//! `nak214_probables_paar_bleibt_klasse_eins`,
+//! `nak214_juengste_passage_untauglich`), und keiner traegt eine Luecke:
+//! sie drucken ihr Ergebnis wie jeder andere Fall hier. Der Helfer
+//! `luecke()` ist mit seinem letzten Aufrufer gegangen.
 //!
 //! Der Gate-Text von G5 nennt adversariale Gegenbeispiele **namentlich**
 //! (`docs/bauaufteilung-sonden.md`:395-400); ein namentlich geforderter
@@ -265,6 +273,36 @@ impl Buehne {
         assert!(self.c.descriptor_setzen(link, d));
     }
 
+    /// Anmelden MIT `pair_id` und ausdruecklichem Messpunkt (NAK-214 §2.6
+    /// Fall 2) — ohne beides gibt es keine Rolle und damit keine Paarhaelfte.
+    fn anmelden_mit_paar(
+        &self,
+        link: &str,
+        a: &Adresse,
+        position: &str,
+        pair_id: &str,
+        mixer: Option<i64>,
+    ) {
+        let h = hello(a.clone(), "passive_probe");
+        assert!(self.c.control_hello_registrieren(link, &h).angenommen);
+        let _ = self.c.resync_bestaetigen(link, 0);
+        let mut d = json!({
+            "adresse": a,
+            "plugin_kind": "passive_probe",
+            "measurement_position": position,
+            "aussageklasse": "beobachtend",
+            "betrieb": "active",
+            "label": "Gegenbeispielquelle",
+            "pair_id": pair_id,
+            "capabilities": capabilities(),
+            "frische": {"letzter_kontakt_ms": 10, "stale": false}
+        });
+        if let Some(index) = mixer {
+            d["host_mixer_index"] = json!(index);
+        }
+        assert!(self.c.descriptor_setzen(link, d));
+    }
+
     /// M-86: der Vollbestand MIT Marke, bevor gerechnet wird.
     fn marke(&self, revision: i64, intents: Value) {
         let wert = json!({
@@ -462,25 +500,18 @@ fn protokoll(titel: &str, befunde: &[CauseHypothesis]) {
     println!("   => starke Befunde: {}", stark(befunde));
 }
 
-/// Eine **benannte, gedruckte Lücke** (Muster NAK-190, R6).
-///
-/// 🔑 **Seit NAK-213 ruft sie niemand mehr:** alle sieben NAK-213-Lücken sind
-/// zur Zusage geworden (§2.7 des Manifests). Der Helfer bleibt trotzdem
-/// stehen — die Lückenmechanik ist das WERKZEUG, mit dem ein späteres Ticket
-/// seine eigenen offenen Fälle benennt, und NAK-214 wird es brauchen
-/// (NAK-212 N-37, „abgeschlossen für dieses Ticket"). Ihn zu löschen hieße,
-/// das Muster mit seinem letzten Aufrufer zu verlieren.
-///
-/// Der Fall wird gefahren und sein Ergebnis ausgegeben, aber ein anderes
-/// Ticket schließt ihn. Er wird hier weder gelöst noch als grün gewertet —
-/// er ist benannt. Dasselbe Muster führt `pruefe_p5_korpus.py::offene_luecken`
-/// für die Korpussitzungen.
-#[allow(dead_code)]
-fn luecke(kennung: &str, ticket: &str, zusage: &str, heute: &str) {
-    println!("   ⚠ OFFENE LUECKE {kennung} [{ticket}]");
-    println!("     zusage:          {zusage}");
-    println!("     was heute passiert: {heute}");
-}
+// 🔑 **NAK-214 (08.09.2026): der Helfer `luecke()` ist FORT.**
+//
+// Er stand hier seit NAK-213 ohne Aufrufer, mit `#[allow(dead_code)]` und
+// der Begruendung „NAK-214 wird es brauchen". Dieses Ticket hat seine drei
+// Faelle gebaut (unten, `nak214_*`) — und keiner traegt eine Luecke: sie
+// laufen durch den Produktpfad und drucken ihr Ergebnis. Ein Helfer, den
+// niemand ruft und den ein Kommentar begruendet, ist genau das tote Element,
+// das CLAUDE.md ausschliesst; er geht deshalb mit seinem letzten Aufrufer.
+//
+// Die Lueckenmechanik selbst ist damit nicht verloren: sie steht als Muster
+// in `tools/eq-copilot/pruefe_p5_korpus.py::offene_luecken` (NAK-212 N-37),
+// wo sie einen Produktivaufrufer HAT.
 
 fn stark(befunde: &[CauseHypothesis]) -> usize {
     befunde
@@ -1870,4 +1901,225 @@ fn a3_sonde_auf_masterkanal() {
             fuehrend.confidence
         );
     }
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-214 §2.6 · die drei Fälle, die bis hierher als LÜCKE angekündigt waren
+// ═════════════════════════════════════════════════════════════════════════
+//
+// Der Modulkopf und die A31-Behauptung sagten bis zu diesem Ticket zu, Fälle
+// dieses Tickets würden „weiterhin gefahren und mit benannter, gedruckter
+// Lücke ausgegeben". Gemessen war das nicht: `luecke()` hatte im ganzen Bein
+// **keinen Aufrufer** — es wurde also gar kein NAK-214-Fall gefahren und
+// keine Lücke gedruckt. Der Unterschied ist der ganze Punkt: „keine Lücke
+// gedruckt" heißt entweder „der Fall läuft und liefert die zugesagte
+// Ausgabe" oder „der Fall läuft gar nicht". Nur das erste ist ein Beweis.
+//
+// Diese drei Fälle machen aus der Ankündigung eine Messung. Sie laufen durch
+// denselben Produktpfad wie jeder andere Fall hier und drucken ihr Ergebnis.
+
+/// Wie viele Vorschläge trägt die Sitzung — und wie viele `proposal`-Zeilen
+/// liegen im Store? Beides gedruckt, nicht nur behauptet.
+fn protokoll_vorschlaege(b: &Buehne, titel: &str) -> (usize, usize) {
+    let vorschlaege = b
+        .c
+        .vorschlaege_sicht(&b.master.project_binding_id, &b.master.session_epoch);
+    let im_store = match b.writer.as_ref() {
+        Some(w) => {
+            let conn =
+                rusqlite::Connection::open(w.handle().db_pfad()).expect("der Store ist lesbar");
+            conn.query_row("SELECT COUNT(*) FROM proposals", [], |r| r.get::<_, i64>(0))
+                .expect("die Projektion `proposals` existiert") as usize
+        }
+        None => 0,
+    };
+    println!("── {titel} ──");
+    println!("   Vorschlaege: {}", vorschlaege.len());
+    for v in &vorschlaege {
+        println!(
+            "     target={} passage={:?} finding={:?}",
+            v.target, v.passage_id, v.finding_id
+        );
+    }
+    println!("   proposal-Zeilen im Store: {im_store}");
+    (vorschlaege.len(), im_store)
+}
+
+/// **§2.6 Fall 1 (V-02).** Zwei bestätigte Mains: die Enthaltung ohne Ort
+/// bleibt wie seit NAK-213 — **und es entsteht kein Vorschlag**, weder im
+/// Stand noch im Store.
+#[test]
+#[cfg(windows)]
+fn nak214_zwei_mains_erzeugen_keinen_vorschlag() {
+    let b = Buehne::mit_store("nak214-zwei-mains");
+    let master_a = b.master.clone();
+    let sonde = adresse(2);
+    b.anmelden("main", &master_a, "main", Some(0));
+    b.anmelden("sonde0", &sonde, "passive_probe", Some(3));
+    b.marke(0, json!([]));
+    // Erst MIT eindeutiger Führung und benannter Passage - sonst entstünde
+    // schon aus WN-04 kein Vorschlag, und der Fall mäße die falsche Kante.
+    b.passage(0, 12 * FENSTER, &[&sonde]);
+    b.belege_je_fenster("main", &master_a, 0, 12, 0, wechselnd(12), (BAND_VON, BAND_BIS));
+    b.belege_je_fenster("sonde0", &sonde, 100, 12, 0, wechselnd(12), (BAND_VON, BAND_BIS));
+    let (vorher, store_vorher) = protokoll_vorschlaege(&b, "NAK-214 Fall 1: EIN Main (Kontrolle)");
+    assert!(vorher > 0, "Vorbedingung: mit einem Main entsteht ein Vorschlag");
+    assert!(store_vorher > 0, "und er liegt im Store");
+
+    // Das ZWEITE Main tritt bei: beide verlieren die Bestätigung,
+    // `fuehrendes_main` fällt auf `None`.
+    let master_b = adresse(9);
+    b.anmelden("main2", &master_b, "main", Some(1));
+    b.belege_je_fenster("sonde0", &sonde, 300, 4, 0, wechselnd(4), (BAND_VON, BAND_BIS));
+
+    let befunde = b.befunde();
+    protokoll("NAK-214 Fall 1: zwei Mains", &befunde);
+    let (nachher, store_nachher) =
+        protokoll_vorschlaege(&b, "NAK-214 Fall 1: zwei Mains (R1)");
+    assert_eq!(befunde.len(), 1, "die Enthaltung ohne Ort, wie seit NAK-213");
+    assert_eq!(befunde[0].ursachenklasse, Ursachenklasse::DatenReichenNicht);
+    assert_eq!(nachher, 0, "R1: ohne fuehrendes Main entsteht KEIN Vorschlag");
+    assert_eq!(
+        store_nachher, store_vorher,
+        "und keine weitere `proposal`-Zeile erreicht den Store"
+    );
+}
+
+/// **§2.6 Fall 2 (V-17).** Ein PRE/POST-Paar unterhalb der Schwelle trägt ein
+/// `ergebnis` — und trotzdem bleibt der Befund Klasse 1.
+#[test]
+fn nak214_probables_paar_bleibt_klasse_eins() {
+    let b = Buehne::schlank();
+    let master = b.master.clone();
+    let pre = adresse(2);
+    let post = adresse(3);
+    b.anmelden("main", &master, "main", Some(0));
+    b.anmelden_mit_paar("pre", &pre, "pre", &hex(0x77), Some(3));
+    b.anmelden_mit_paar("post", &post, "post", &hex(0x77), Some(4));
+    b.marke(0, json!([]));
+    // ⚠️ Die Fenster liegen 24 000 Samples auseinander: `beurteile_paar`
+    // bildet den Lag-Suchraum aus der PROJEKTSPANNE, und zwölf Fenster im
+    // 512-Sample-Abstand ergeben null Suchframes — jedes Paar bliebe
+    // `Unclear`, und der Fall mäße eine andere Kante.
+    let mut x: u64 = 0x9E37_79B9_7F4A_7C15;
+    let anhebungen: Vec<f64> = (0..12)
+        .map(|_| {
+            x = x
+                .wrapping_mul(6_364_136_223_846_793_005)
+                .wrapping_add(1_442_695_040_888_963_407);
+            ((x >> 33) % 120) as f64 / 10.0
+        })
+        .collect();
+    for (i, db) in anhebungen.iter().enumerate() {
+        let zeit = BASIS + (i as i64) * 24_000;
+        b.c.p1("main", &evidenz(&master, i, zeit, *db, (BAND_VON, BAND_BIS)));
+        b.c.p1("pre", &evidenz(&pre, 100 + i, zeit, *db, (BAND_VON, BAND_BIS)));
+        b.c.p1("post", &evidenz(&post, 200 + i, zeit, *db, (BAND_VON, BAND_BIS)));
+    }
+
+    let urteil = b.c.paarurteil(&hex(0x77)).expect("ein Paarurteil entsteht");
+    println!("── NAK-214 Fall 2: Paar unter der Schwelle ──");
+    println!(
+        "   Klasse: {:?}   Ergebnis vorhanden: {}   ausgerichtetes Delta: {}",
+        urteil.klasse,
+        urteil.ergebnis.is_some(),
+        urteil
+            .ergebnis
+            .as_ref()
+            .map(|e| e.ausgerichtet_db.is_some())
+            .unwrap_or(false)
+    );
+    assert!(
+        urteil.klasse < eqcop_broker::coordinator::prepost::Alignmentklasse::AudioAligned,
+        "Vorbedingung: am Produktpfad bleibt es unter der Schwelle (M-21)"
+    );
+    assert!(
+        urteil.ergebnis.is_some(),
+        "Vorbedingung: und traegt TROTZDEM ein Ergebnis - das ist E-D6"
+    );
+
+    let befunde = b.befunde();
+    protokoll("NAK-214 Fall 2: Paar unter der Schwelle (R2)", &befunde);
+    let mit_paar: Vec<_> = befunde
+        .iter()
+        .filter(|f| f.pre_post == Some("post"))
+        .collect();
+    assert!(!mit_paar.is_empty(), "eine Quelle des Paares traegt einen Befund");
+    for f in &mit_paar {
+        assert_eq!(
+            f.claim_class,
+            eqcop_broker::coordinator::Aussageklasse::Zusammenhang,
+            "R2: ein Paar unterhalb der Schwelle bleibt Klasse 1"
+        );
+        assert_eq!(
+            f.next_test,
+            eqcop_broker::coordinator::NaechsterTest::PrePostPaarMessen,
+            "und `next_test` verlangt das Paar weiterhin"
+        );
+        assert_eq!(f.pre_post, Some("post"), "die Ortsangabe bleibt (E4)");
+    }
+}
+
+/// **§2.6 Fall 3 (V-38).** Die jüngste Passage taugt nicht — das ältere
+/// Experiment liefert seine. Beide IDs werden gedruckt.
+#[test]
+#[cfg(windows)]
+fn nak214_juengste_passage_untauglich() {
+    let b = Buehne::mit_store("nak214-passagenwahl");
+    let master = b.master.clone();
+    let sonde = adresse(2);
+    b.anmelden("main", &master, "main", Some(0));
+    b.anmelden("sonde0", &sonde, "passive_probe", Some(3));
+    b.marke(0, json!([]));
+    b.state_report();
+    let alt = b.passage_versuch(1, 0x5033, 0, 12 * FENSTER, &[&sonde]);
+    let jung = b.passage_versuch(2, 0x5034, 0, 12 * FENSTER, &[&sonde]);
+    b.belege_je_fenster("main", &master, 0, 12, 0, wechselnd(12), (BAND_VON, BAND_BIS));
+    b.belege_je_fenster("sonde0", &sonde, 100, 12, 0, wechselnd(12), (BAND_VON, BAND_BIS));
+
+    let vorher = b.befunde();
+    protokoll("NAK-214 Fall 3: beide Passagen tauglich (Kontrolle)", &vorher);
+    println!("   aeltere Passage: {alt}");
+    println!("   juengere Passage: {jung}");
+    println!("   gerechnet mit: {:?}", vorher.first().and_then(|f| f.passage_id.clone()));
+    assert_eq!(
+        vorher.first().and_then(|f| f.passage_id.clone()),
+        Some(jung.clone()),
+        "Vorbedingung: ohne Ausschluss rechnet die JUENGSTE"
+    );
+
+    // Der jüngste Versuch wird abgebrochen — `experiment_abort` als P0, also
+    // derselbe Weg, den der User nimmt.
+    let abbruch = json!({
+        "type": "experiment_abort",
+        "kopf": {
+            "command_id": hex(0x935),
+            "ziel": master,
+            "base_revision": 0,
+            "ttl_ms": 1000,
+            "schema_major": 3,
+            "schema_minor": 0
+        },
+        "experiment_id": hex(0x942),
+        "grund": "user_abbruch"
+    });
+    let ack: Value = serde_json::from_slice(
+        &Senke::p0(&*b.c, "main", &serde_json::to_vec(&abbruch).unwrap())
+            .expect("abort wird beantwortet"),
+    )
+    .unwrap();
+    assert_eq!(ack["ergebnis"], "angewandt", "der Abbruch: {ack:?}");
+    b.belege_je_fenster("sonde0", &sonde, 300, 4, 0, wechselnd(4), (BAND_VON, BAND_BIS));
+
+    let nachher = b.befunde();
+    protokoll("NAK-214 Fall 3: juengste Passage zurueckgenommen (R5)", &nachher);
+    println!(
+        "   gerechnet mit: {:?}   (erwartet: die AELTERE {alt})",
+        nachher.first().and_then(|f| f.passage_id.clone())
+    );
+    assert_eq!(
+        nachher.first().and_then(|f| f.passage_id.clone()),
+        Some(alt),
+        "R5: die juengste Passage taugt nicht - das aeltere Experiment liefert seine"
+    );
 }

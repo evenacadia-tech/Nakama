@@ -1,0 +1,22 @@
+Wiederprüfung 2 NAK-214 / G5-Nacharbeit 3 (Ticket NAK-214, Etappe 2), Runde 2 — gebundener Prüfauftrag des Dirigenten (2026-09-08)
+
+Du bist der frische, lesende Prüfer dieser Runde. Prüfbereich ist ausschließlich der Fixdiff der Runde:
+`git diff 8178602b0a40960d7946e5552b68f34ce31b4815...3b744695ea92ed74f444b8ba62e69b5dacc2616e -- broker/src broker/tests/sonde014_verdrahtung.rs`
+(ZIEL = 3b744695ea92ed74f444b8ba62e69b5dacc2616e = HEAD, vor und nach deinem Lauf identisch; VORHER = 8178602b, der Stand vor der Runde — er enthält gegenüber dem geprüften Stand 8261bc17 nur drei Rohdateien unter docs/beweise/roh/, keinen Code). Der übrige Ticketbereich wurde in der Erstprüfung (Thread 01a081dd) und der Wiederprüfung 1 (Thread 01a08217-48f9-76e1-bd02-055ce6e596da, docs/beweise/roh/NAK-214-wiederpruefung-1-8261bc1.txt) bereits geprüft und ist hier nicht Prüfgegenstand. Du liest und fährst nur lesende Kommandos (rg, git diff, git show, cat); kein cargo, kein cmake, kein Python-Interpreter; du schreibst nichts.
+
+DER BEFUND, den diese Runde schließen sollte — wörtlich aus dem Urteil der Wiederprüfung 1, mit der Regel des Dirigenten (docs/beweise/roh/NAK-214-nacharbeit-2-auftrag.txt):
+DEFEKT V-34: „In `user_verdict_ohne_sitzungsbefunde_wird_abgewiesen` unterscheidet diese Vorbedingung nicht zwischen fehlendem Eintrag und vorhandener leerer Liste: `befunde_der_sitzung` ruft `befunde_sicht` auf, dessen `unwrap_or_default()` beide Fälle zusammenführt (`hypothese_verdrahtung.rs:1037`). Auch `Some(vec![])` würde die Assertion erfüllen. Der aktuelle Aufbau erreicht zwar den richtigen Zweig, aber die bindende Nacharbeitsregel verlangt ausdrücklich die Prüfung des fehlenden Sitzungseintrags im Test." Regel: Die unterscheidende Zusicherung liegt als Unit-Test im Crate (`#[cfg(test)] mod tests` des Moduls, das `Coordinator` und `stand` erreicht; Muster `proposal_verdrahtung.rs:526`), baut dieselbe Lage, prüft VOR dem Urteil ausdrücklich `stand.befunde.get(&session).is_none()`, sendet `user_verdict` mit neuer `command_id` und wohlgeformter unbekannter `finding_id`, prüft `abgelehnt`/`unknown_target` und keine Persistenz; der Integrationstest bleibt als Produktpfad-Lauf; V-34 nennt beide Tests; keine öffentliche Testauskunft, kein neues `pub`, `befunde_sicht` unverändert; Rotbeweis `NAK-214-rot-V-34.txt` um den Unit-Test (Mutation des `None`-Zweigs → rot) und die Gegenprobe (`Some(vec![])` erfüllt die Vorbedingung NICHT) erweitert.
+
+GATE-TEXT, wörtlich (docs/bauaufteilung-sonden.md:395-400): „**Gate:** Codex + adversariale Gegenbeispiele. Falsifikation: Gate 6, 7, 8". Regel R4 (docs/beweise/G5.md §11 Nr. 3): „`user_verdict` mit einer `finding_id`, die im Broker nicht existiert, wird abgewiesen (`reject`), nicht persistiert." Entscheid E8 (docs/beweise/NAK-214.md §2.0), Matrixzeilen V-30 bis V-36 (§2.4).
+
+Du beantwortest genau zwei Fragen:
+1. Ist der Befund am Zielstand geschlossen — ja/nein, mit Beleg (Modul und Testname, die Zeile mit `stand.befunde.get(&session).is_none()`, die Zusicherungen zu Antwort und Persistenz; Datei:Zeile)? Liegt die Zusicherung im Crate ohne neue öffentliche Fläche und ohne Änderung an `befunde_sicht`? Hält der Test die Sperre auf `stand` nicht während des `user_verdict`-Aufrufs? Dokumentiert der Rotbeweis Mutation und Gegenprobe?
+2. Hat der Fixdiff etwas gebrochen — Produktcode außerhalb eines `#[cfg(test)]`-Moduls, einen bestehenden Test, eine Matrixzeile V-30 bis V-36, E8, R4, den Gate-Text oder eine Invariante aus CLAUDE.md?
+
+Neue Befunde außerhalb dieser zwei Fragen erhebst du nicht. Befundklassen wie in der Erstprüfung (DEFEKT / LÜCKE / HÄRTUNG); Ausschlüsse wie dort: docs/**, CLAUDE.md und .claude/** kein Prüfgegenstand; Register NAK-191 bis NAK-211 und NAK-215 bis NAK-227; Sabotage-Szenarien gegen Prüfwerkzeuge = Härtung; tools/dirigent/pruefliste.md keine Anforderungsquelle; Kosmetik, Stil: nein.
+
+URTEIL — genau eine der drei Formen, als erste Zeile:
+URTEIL: PASS — der Befund ist geschlossen, nichts gebrochen (Lücken und Härtungen dürfen benannt sein).
+URTEIL: NEEDS_WORK — je offenem Befund oder Bruch: Datei:Zeile, Reproduktion, welcher Satz von Gate, Matrix oder Regel bricht.
+URTEIL: BLOCKED — Prüfbereich nicht lesbar.
+Danach: geprüft / nicht geprüft, je ein Absatz.

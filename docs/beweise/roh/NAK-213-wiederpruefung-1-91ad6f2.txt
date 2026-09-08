@@ -1,0 +1,15 @@
+Thread 01a07fff-7d05-7512-9cfd-088e11e041d1 · Codex gpt-6-astra · Effort max · read-only · HEAD vor/nach 91ad6f2058642bcc0c69c4dd6c469674dddb7255 · Lauf 2026-09-08 09:50:45 bis 09:58:32
+
+URTEIL: NEEDS_WORK — Befund 1: ja, einschließlich Dirigentenregel, alle Main-Profile bleiben erhalten (`broker/src/coordinator/hypothese_verdrahtung.rs:290`) und liefern Enthaltungsbelege (`broker/src/coordinator/hypothese.rs:1940–1961`), Prüferfolge in `broker/tests/sonde014_verdrahtung.rs:1791–1868`, Rotbeleg `docs/beweise/roh/NAK-213-rot-K-54.txt:64–76`; Befund 2: ja, einschließlich Dirigentenregel, Kanalrückweg vor Ausschlussrücknahme und Neuberechnung (`broker/src/coordinator/invalidierung_verdrahtung.rs:107–118`, `:527–529`), Link-Trennung weiterhin in `broker/src/coordinator/liveness.rs:513–518`, Prüferfolge in `broker/tests/sonde014_verdrahtung.rs:2086–2181`, Rotbeleg `docs/beweise/roh/NAK-213-rot-K-55.txt:75–85`; Befunde 3 und 4: nein, die oben genannten Prüfzusagen bleiben teilweise offen.
+
+Geprüft: ausschließlich Fixdiff und notwendige Referenzen statisch; darüber hinaus kein neuer Produkt-, Regel- oder Invariantenbruch erkannt, Belegsammlung deterministisch sortiert, Rückweg ohne verschachtelten Standlock, wiederholte Heartbeats ohne zusätzliche dauerhafte Evidenzausschlüsse, Positionswechsel unverändert, Vertrag und Fassung-3-Consumer sowie ganz `eq-copilot/` unberührt, HEAD vor/nach identisch auf `91ad6f2058642bcc0c69c4dd6c469674dddb7255` und keine eigenen Änderungen.
+
+Nicht geprüft: Testausführung, Laufzeitreproduktion oder Produktprozesse; Rotprotokolle und gemeldete grüne Läufe wurden ausschließlich gelesen, nicht nachgemessen, der übrige Ticketbereich und die benannten Ausschlüsse nicht erneut geprüft.
+
+Full review comments:
+
+- [P2] Weise in K-49 die tatsächliche Zustellung nach — broker/tests/sonde014_verdrahtung.rs:2056-2059
+  Im neuen Store-Aufbau wird kein `SessionPush` registriert; `Coordinator::mit_store` initialisiert ihn mit `None`, sodass `invalidierung_zustellen` keine Nachricht an den Abonnenten schreiben kann. Die hier erwartete offene Outbox-Schuld belegt nur Einreihung, nicht die in [Auftrag Nr. 3](docs/beweise/roh/NAK-213-nacharbeit-1-auftrag.txt#L13) verlangte Zusage „persistiert und zugestellt“. Befund 3 bleibt teilweise offen: Der Test muss zusätzlich den empfangenen `evidence_invalidate`-Payload mit den acht IDs und `messpunkt_wechsel` prüfen.
+
+- [P2] Fahre die F4-Lagen über den zugesagten Heartbeat-Ingress — broker/tests/sonde014_gegenbeispiele.rs:1179-1182
+  Auch die neu ergänzte Lage 2 führt den Kanalwechsel über `Buehne::deskriptor` aus, das direkt `descriptor_setzen` aufruft; ein Heartbeat mit `runtime` wird nicht gesendet. Damit fehlt weiterhin die in [K-44](docs/beweise/NAK-213.md#L454) und Befund 4 verlangte Prüferfolge über den produktiven Ingress. Die neuen Aussagen zu Cs Ausschluss und As Konkurrenzlage sind vorhanden, prüfen aber ausschließlich den Setterpfad. Beide Lagen müssen den Wechsel über den Heartbeat auslösen.

@@ -297,6 +297,17 @@ State-Migrationsstand und den letzten Installationsbeweis prüfen.
   altes Binary. C++-Beine aus pwsh bauen und den Zeitstempel des Binaries gegen
   den Fix prüfen (SONDE-014 §7.11 N-29). Der Runner `tools/beweise.ps1` sucht
   cmake selbst.
+- In einem Bash-Befehlstext werden Backticks als Kommandosubstitution
+  ausgewertet — auch in einer `git commit -m`-Nachricht. Am 08.09.2026
+  verschluckte das in NAK-213 fünf Bezeichner aus einer Commitnachricht
+  (`aufnahmen_sammeln`, `parent`, `ids`, `ist_parent`, `main`), und `--amend`
+  ist hier verboten. Mehrzeilige Commitnachrichten mit Bezeichnern gehen über
+  `git commit -F <datei>`, nie über `-m` mit Backticks.
+- Typografische Anführungszeichen in Rust-Strings: `„…"` schließt mit einem
+  ASCII-`"` den String vorzeitig. In Rust-Quelltext gehört das schließende
+  Zeichen als `“` (U+201C) geschrieben; in Kommentaren ist beides harmlos.
+  Der Compiler meldet dann „unknown start of token" an einer ganz anderen
+  Zeile (NAK-213, 08.09.2026, dreimal).
 - Im PowerShell-Werkzeug der Session geht in einem Befehlstext alles verloren,
   was in einer Zeichenkettenverkettung hinter einem Backtick-n-Umbruch steht
   (SONDE-014-Abschluss 07.09.2026: drei Manifestzeilen fehlten still).

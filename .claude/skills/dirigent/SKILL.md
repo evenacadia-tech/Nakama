@@ -18,9 +18,8 @@ Der Starter öffnet das lokale Windows-Terminal-Profil
 Fable 5.1/xhigh, Auto-Modus und `/dirigent` auf. Das Modell steht als voller
 Name `claude-fable-5-1[1m]` im Starter und in jedem Aufruf unten, nicht als
 Alias `fable`: User-Wort 01.09.2026 „dirigent soll fable 5.1 nicht fable 5
-sein". Der Alias löste am 01.09. zwar bereits auf 5.1 auf (vom User
-bestätigt), würde aber bei einem neueren Fable still wechseln; der volle Name
-hält die Entscheidung fest. Das Suffix `[1m]` hält das 1M-Kontextfenster, auf
+sein". Ein Alias würde bei einem neueren Fable still wechseln; der volle Name hält
+die Entscheidung fest. Das Suffix `[1m]` hält das 1M-Kontextfenster, auf
 dem die 600k-Grenze aus §5 beruht. Fehlt das Profil oder scheitert die
 Terminal-Aktivierung, öffnet er ein normales lokales PowerShell-Fenster. Endet
 Claude, bleibt das Fenster der Ort der Fortsetzung (seit 01.09.2026): liegt die
@@ -157,11 +156,14 @@ und `claude attach` bei Bedarf den Verlauf.
 Nebenläufigkeit, Verträge, Lebenszyklen oder Rückstau, schreibt der Worker
 zuerst eine **Verhaltensmatrix** ins Ticketmanifest — Zustände × Ereignisse ×
 Zusage, Callback-Reihenfolge, Fristen, je Zeile der Test, der sie misst — und
-ein lesender Codex-Thread (`high`) prüft nur diese Matrix gegen Entwurf und
-Gate-Text. Erst danach wird gebaut; die Matrix ist ab dann die Referenz für
+ein lesender Codex-Thread (Astra, max, §3.4) prüft nur diese Matrix gegen
+Entwurf und Gate-Text. Erst danach wird gebaut; die Matrix ist ab dann die
+Referenz für
 Worker und Prüfer. Der Auftrag verweist außerdem auf
 `tools/dirigent/pruefliste.md`; der Worker hakt sie vor jedem Commit ab und
-nennt im Manifest, wo er jede Zeile gemessen hat. Der Ticketauftrag darf den
+nennt im Manifest, wo er jede Zeile gemessen hat. Je Zeile fällt der Rotbeweis
+an der Zeile, die die Zusage trägt, nicht an einem Nebeneffekt; dieser Satz
+steht wörtlich in jedem Matrix-, Bau- und Nacharbeitsauftrag. Der Ticketauftrag darf den
 Worker nicht auf Punktkorrekturen beschränken, wenn die Befunde eine
 gemeinsame Ursache haben; dann ist die Ursache der Auftrag.
 
@@ -176,7 +178,11 @@ pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -WatchWorker `
 
 Der Helfer meldet nur Zustandsänderungen, HEAD-/Worktree-Drift und eine alte
 oder kritische Telemetriequelle; er schreibt kein Log und keine Projektdatei
-und endet mit dem Worker. Zusätzlich genau einen nativen Kontrollloop im
+und endet mit dem Worker. Der Monitor läuft mit `persistent: true` (kein
+Stundenlimit). Eine einmalige Meldung „Statusquelle unbekannt" unter Bau- oder
+Kanonlast ist ein bekannter Fehlalarm ohne Folgebefund; endet der Beobachter
+durch Speichermangel eines parallelen MSVC-Builds, wird er neu gesetzt — ein
+toter Beobachter ist kein toter Worker. Zusätzlich genau einen nativen Kontrollloop im
 Intervall der Aufsicht setzen und die Task-ID im Sitzungskontext merken:
 
 ```text
@@ -190,7 +196,9 @@ Der Monitor ist der schnelle Weg, der Loop das zeitliche Sicherheitsnetz: solang
 Worker-Ende oder Halt: Beobachter beenden, `CronDelete` auf genau diese Task
 und mit `CronList` belegen, dass beides weg ist.
 
-Meldet Agent View `needs input`: zuerst `claude logs <worker-id>`. Der User
+Meldet Agent View `needs input`: zuerst `claude logs <worker-id>`. Der Dump
+ist oft über 200 KB; nur die letzten wenigen KB nach Bereinigung der
+Escape-Sequenzen lesen. Der User
 wird nicht gefragt — es gibt keine Berechtigungsfragen, außer es geht
 technisch nicht anders (User-Wort 30.08.2026: „keine berechtigungsfragen
 generell ebenfalls, außer es geht nicht anders. notfalls werden andere
@@ -211,6 +219,10 @@ Kein Selbstbericht zählt; gemessen wird am Repo:
 
 - Diff vom Basis-SHA bis HEAD (zuerst `--stat`, dann nur relevante Hunks),
 - das Ticketmanifest, die gezielten Tests, unberührte fremde Pfade,
+- die Messabdeckung: jede Matrixzeile mit Test und Rotbeweis ist gelaufen. Ein
+  Bauer meldet „fertig" auch mit ungemessenen Zeilen (SONDE-014: 16 von 37);
+  fehlt Abdeckung, erzwingt ein Fortsetzungsauftrag den Messlauf vor der
+  Erstprüfung,
 - die **Rundenbilanz** (seit 30.08.2026): `py -3.13
   tools/dirigent/rundenbilanz.py <vorher>..HEAD` je Runde und
   `--runden <basis> <r1> <r2> …` kumuliert. Sie zählt Produkt-, Test-,
@@ -218,14 +230,17 @@ Kein Selbstbericht zählt; gemessen wird am Repo:
   Dirigentenstand. Zwei Runden in Folge **ohne Produktfortschritt**
   (Produkt + Tests = 0 Zeilen) lösen den Konvergenzentscheid aus (§3.4) —
   auch vor dem Rundenbudget. S8 hatte zwölf solche Runden in Folge, und
-  niemand hat sie gezählt.
+  niemand hat sie gezählt. Das gilt für Bau- und Nacharbeitsrunden;
+  Matrixrunden vor dem Bau zählen strukturell null und lösen nichts aus.
 
 Beendet heißt: Arbeitsbaum sauber, Basis-SHA ist Vorfahr des gemessenen HEAD,
 und genau dieser HEAD liegt auf `origin/master`. Fremde Commits → Halt.
 Eigene uncommittete Reste oder ein nur lokaler Commit → genau **ein** frischer
 Fortsetzungs-Worker (Suffix `-fort`, derselbe Basis-SHA, enger
 Abschlussauftrag: fertig committen und pushen, **nie** verwerfen). Gelingt auch
-das nicht → Halt. Unerwarteter HEAD- oder Worktree-Drift → Halt, keine
+das nicht → Halt. Ein Worker-Thread wird nach rund drei Stunden oder ~30
+Kompaktierungen fehleranfällig; Restarbeit geht in enge Einzelaufträge statt in
+einen langen Thread. Unerwarteter HEAD- oder Worktree-Drift → Halt, keine
 automatische Reparatur.
 
 ### 3.4 Prüfen und nacharbeiten (Codex)
@@ -264,6 +279,8 @@ Git-Prozesse blockiert.
 Vor und nach dem Lauf muss HEAD `$headSha` sein, sonst ist das Urteil ungültig.
 Die Thread-ID kommt aus dem JSONL; fehlt sie → `BLOCKED`. Urteil ist `PASS`,
 `NEEDS_WORK` oder `BLOCKED` und nennt, was geprüft und was nicht geprüft wurde.
+Fehlt die `URTEIL:`-Zeile, aber der Kopf sagt „bleiben offen", ist das
+`NEEDS_WORK`, nicht `BLOCKED`.
 
 **Prüfmodell und Effort** (bei Review-Beginn im Manifest vermerken, seit
 05.09.2026): Prüfer ist `gpt-6-astra` für **alle** Urteilsläufe — Erst-,
@@ -271,7 +288,9 @@ Wieder- und Abschlussprüfung, Matrixprüfung, Gate-Falsifikation — mit Effort
 `max`; `ultra` ist ausgeschlossen (delegiert automatisch an Unteragenten,
 für eine lesende Prüfung ungeeignet). `gpt-5.6-sol` (max) ist nur noch
 **Gegenprüfer**: zweites unabhängiges Modell bei Gate-Läufen und Fallback,
-wenn Astra mit Kapazitäts- oder Versionsfehler antwortet. User-Wort
+wenn Astra mit Kapazitäts- oder Versionsfehler antwortet. Bricht ein Lauf an
+der Kapazität ab, geht zuerst `resume` desselben Threads (Worktree und
+Threadkontext bleiben), erst dann der Modellwechsel. User-Wort
 05.09.2026: „gtp 6 astra ist draussen, wesentlich stärkeres model als SOL, das
 sollten wir logischerweise in kombination mit SOL benutzen" → nach Vorlage der
 Arbeitsteilung „ok, dann astra für alle prüfungen, sol nur gegenprüfer".
@@ -287,7 +306,10 @@ bis `EXIT=`; Urteil in `-last.txt`, Thread-ID im JSONL.
 berühren (critical: Daten-/State-Verlust, Sicherheitsbruch, Audio-/Nulltest;
 high: Vertrag/Gate/normaler Pfad gebrochen; medium: konkreter Funktionsfehler,
 der die Abnahme verhindert). Kosmetik, Stil, optionale Härtung, theoretische
-Randfälle und Ticketfremdes: nein. Jeden Befund an der Quelle validieren.
+Randfälle und Ticketfremdes: nein. Jeden Befund an der Quelle validieren. Dafür je Runde ein lesender
+Opus-Agent (general-purpose): er liefert je Befund Quellzeilen mit Zitat,
+Matrixzeile und Einordnung; das spart dem Dirigenten über 100k Kontext je
+Runde, die Einordnung bleibt Dirigentensache.
 
 **Befundklassen (seit 29.08.2026).** Der Prüfer ordnet jeden Befund ein und
 der Dirigent prüft die Einordnung an der Quelle:
@@ -314,23 +336,11 @@ Anforderungsquelle, und dass §2.4 des Codex-Skills `sondenplan-audit`
 Worker die bestätigten Defekte wörtlich, je Defekt die Regel, die ihn
 schließt, und die Prüfliste — sonst nichts. Er erweitert keinen Befund um
 eigene Wünsche (Inventare, Klassifizierer, zusätzliche Wachen, Muster,
-Trefferzahlen): S8 Runde 10–19 zeigte, dass genau solche „Regeln des
-Dirigenten" die nächste Runde erzeugen. Was der Prüfer nicht als Defekt
+Trefferzahlen) — genau solche „Regeln des Dirigenten" erzeugten in S8 die
+nächste Runde, ebenso eine Regel mit unbelegter technischer Annahme (SONDE-014:
+Deckel „64 P0-Plätze"); Deckel und Grenzen kommen nur aus der Quelle. Was der Prüfer nicht als Defekt
 erhoben hat, kommt nicht in den Auftrag; Ideen des Dirigenten gehen datiert
 ins Register.
-
-Bestätigte Befunde behebt **derselbe** Thread:
-
-```powershell
-$fixJsonl = Join-Path $env:TEMP "nakama-$headSha-fix.jsonl"
-$fixLast = Join-Path $env:TEMP "nakama-$headSha-fix-last.txt"
-
-$fixPrompt | codex -a never exec --ignore-user-config `
-  -m $pruefModell -c "model_reasoning_effort=`"$pruefEffort`"" `
-  -c 'windows.sandbox="elevated"' `
-  -C . -s workspace-write resume <thread-id> --json -o $fixLast - |
-  Tee-Object -FilePath $fixJsonl
-```
 
 Codex stagt, committet und pusht **nie**. Die Codex-Sandbox fährt auf diesem
 Rechner weder Bau noch Kanon (Präzedenz S8/S9/S9b/S14–15); bestätigte
@@ -351,9 +361,7 @@ Runde 1–19).** Nur die **Erstprüfung** und die **Abschlussprüfung** gehen
 dazwischen sieht ausschließlich den Fixdiff der Runde
 (`stand-vor-der-runde...HEAD`), die Befundliste, die sie schließen soll, und
 den Gate-Text; sie urteilt, ob die Befunde geschlossen sind und ob der Fix
-etwas gebrochen hat — nichts sonst. S8 lief 19 Runden, weil jeder Prüfer den
-vollen, um die Manifeste der Vorrunden angewachsenen Bereich neu las: 79
-Commits, 14 Stunden, 17 Kommentarzeilen Produktcode.
+etwas gebrochen hat — nichts sonst.
 
 **Manifeste sind kein Prüfgegenstand.** `docs/**` gehört nicht zur
 Befundfläche; der Review-Prompt schließt es ausdrücklich aus. Der Prüfer
@@ -399,7 +407,9 @@ sich.
 Kanon auf dem End-Stand. Der Kanon läuft **nie** als sitzungsgebundener
 Hintergrundbefehl der Dirigenten-Session: endet die Session, stirbt er mit
 (01.09.2026: Lauf 3 zu NAK-123 nach 33 von 42 Beinen ohne Manifest verloren).
-Er wird abgekoppelt gestartet und über seine Logdatei gelesen:
+Während er läuft, kommt nichts in den Worktree — der Runner vermerkt einen
+unsauberen Baum als „beweist NICHT allein den Commit". Er wird abgekoppelt
+gestartet und über seine Logdatei gelesen:
 
 ```powershell
 $log = Join-Path $env:TEMP 'nakama-<ticket>-kanon.log'
@@ -428,7 +438,26 @@ Beweise ins **vorhandene** Manifest; Planstand neu rechnen; die geänderten
 Plandokumente durch `py -3.13 tools/plan/dokuriegel.py <dateien>` fahren
 (Tabellen- und Verweisriegel, seit PR2 02.09.2026; ein Befund wird vor dem
 Commit behoben); nur diese
-Abschlussdateien mit explizitem Pathspec committen und pushen. Dann: temporäre
+Abschlussdateien mit explizitem Pathspec committen und pushen.
+
+**Kontext- und Codebase-Hygiene (seit 08.09.2026; User-Wort: Pflege ist
+Planbestandteil, keine Nebentätigkeit — Register NAK-223).** Im selben
+Abschlussfenster misst der Dirigent per Kommando, nie aus dem Gedächtnis:
+(a) Bytes von `MEMORY.md` (≤ 22 KB), Root-`CLAUDE.md` (≤ 24 KB) und dieses
+Skills (≤ 36 KB), Index-Zeilen über 250 Zeichen, Memory-Dateien ohne
+Index-Link, `dokuriegel.py` auf CLAUDE.md und Skill; (b) die
+Codebase-Schwellen mit `py -3.13 tools/plan/gesundheit.py` (bis NAK-223
+gebaut ist: größte Quelldateien unter `broker/src`, `eq-copilot/plugin/src`
+und `eq-copilot/plugin/core` per `Measure-Object -Line`, Grenze 2 000
+Zeilen). Ein gerissener Wert wird ein datierter Registerpunkt der Klasse
+[Planarbeit · <Pflegeschritt>] oder [Werkzeug], nie stilles Nachbessern. Bei
+jedem Phasengate läuft zusätzlich der volle `/freshen`-Lauf nach
+`docs/context-hygiene-playbook.md`: Drift in Memory, CLAUDE.md, Skill und
+Playbook wird mechanisch gefixt, User-Zitate bleiben wörtlich. Übergaben
+gehören ins Manifest, in Planstand und Register; `docs/NEXT-SESSION.md` ist
+nur ein Zeiger und wird nicht fortgeschrieben.
+
+Dann: temporäre
 Codex-Dateien und alle exakt zur Dirigenten-Session gehörenden
 `$env:TEMP\nakama-dirigent-<session-id>-*.json`-Caches löschen,
 `claude rm <worker-id>`, und mit beendetem Beobachter, `CronList` plus
@@ -461,14 +490,6 @@ committet den Codex-Stand nach eigenem Kanonlauf als benannten Zwischenstand
 User-Fallback vom 31.08. weiter („falls Codex iwann an die Nutzungsgrenze
 stoßen sollte, mit Opus weitermachen"): stößt Codex als Prüfer an seine
 Grenze, prüft ein frischer Opus-Thread, nie der Bauer-Thread.
-
-Verlauf 30.08.–01.09.2026 (Codex-first, aufgehoben): User-Wort 30.08.2026:
-„wir müssen wochennutzung sparen, schon bei 50 %. codex könnte nächste
-session das bauen übernehmen». Regeln damals: Bau als Codex-Thread
-`workspace-write`; Codex stagt, committet und pusht nie; ein schlanker
-Claude-Schritt fährt Kanon, Commit und Push; Opus nur für Skills,
-Subagenten, Fragenflüsse und Orchestrierung; keine Opus-Fan-outs bei
-knappem Fenster.
 
 ## 4. Haltgründe
 
@@ -529,7 +550,10 @@ ist endlich. Der Lauf endet planmäßig an dieser Grenze, nicht an einem Fehler:
   vom User genannte Zahl. Der `<total_tokens>`-Restwert im Kontext ist ein
   Sitzungsbudget und kein Kontextmaß; die Größe des Session-Transkripts ist es
   ebenso wenig (30.08.2026: Fable meldete „rund 70k“, real waren es 385k).
-  Liegt keine Messung vor, heißt die Antwort „nicht gemessen“, nie eine Schätzung.
+  Liegt keine Messung vor, heißt die Antwort „nicht gemessen“, nie eine Schätzung. Ist die
+  Statuszeile nicht abrufbar, trägt der Cockpit-Cache unter `$env:TEMP`
+  (`nakama-dirigent-<session-id>-telemetry.json`, Feld `ContextPercent`)
+  dieselbe Messung.
   Nach einer Compaction bleibt der Arbeitsanker unbestätigt, bis Planstand,
   Ticketquelle und HEAD erneut gelesen und abgeglichen sind.
 - Für Claude- und Codex-Kontingente gilt: ab 85 % warnen, ab 95 % keine neue

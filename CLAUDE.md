@@ -96,7 +96,8 @@ Commits gehen ohne Rückfrage raus.
   `docs/offene-punkte.md` geführt, nie kaschiert. Der aktuelle, aus dem Repo
   gerechnete Stand und die nächste Arbeit liegen in `docs/PLAN-STAND.md`.
   Danach werden nur Gate-Text, Fachquellen und Manifest des konkreten Tickets
-  gelesen. Die frühere Briefing-Seite ist abgeschafft.
+  gelesen. Die frühere Briefing-Seite ist abgeschafft; `docs/NEXT-SESSION.md`
+  ist seit 08.09.2026 nur ein Zeiger auf Planstand und Manifeste.
 <!-- WAHRHEITSKERN:ENDE -->
 
 ## Arbeitsregeln
@@ -116,6 +117,23 @@ Commits gehen ohne Rückfrage raus.
   installieren↔Rückweg gehören jeweils in denselben Änderungssatz.
 - Keine Neben-Refactors und keine Legacy-Umbenennung nebenbei. Fixbare Fehler
   im beauftragten Bereich werden behoben und geprüft, nicht nur aufgelistet.
+- **Codebase-Gesundheit ist Planbestandteil** (User-Wort 08.09.2026: „das
+  projekt muss nachhaltig funktionieren und wartbar bleiben. das geht nur wenn
+  die codebase regelmäßig in perfektem shape bleibt. nicht immer nur dann wenn
+  hart an der grenze ist … ich will nicht dass das eine kleine nebentätigkeit
+  ist, sondern bestandteil vom plan"; vollständig in Register NAK-223). Je
+  Phase steht ein eigener Pflegeschritt im Plan (S25b–S25d, S31c, S35b), dazu
+  Schwellen, die sofort ein Pflegeticket auslösen, gemessen mit
+  `py -3.13 tools/plan/gesundheit.py` (Ticket NAK-223; bis es gebaut ist, von
+  Hand: keine Quelldatei über 2 000 Zeilen). Pflege läuft nie im
+  Feature-Ticket, sondern als eigenes verhaltensneutrales Ticket mit vollem
+  Kanon vorher und nachher als Beweis (Muster S19b).
+- **Kontexthygiene ist Teil jedes Ticketabschlusses.** Der Dirigent misst im
+  Abschlussfenster die Always-on-Fläche (diese Datei, Dirigenten-Skill,
+  `MEMORY.md`) und fährt bei Phasengates den vollen `/freshen`-Lauf nach
+  `docs/context-hygiene-playbook.md`; die Grenzen stehen dort. Übergaben
+  stehen im Manifest, im Planstand und im Register, nie in einem
+  Sessionprotokoll; `docs/NEXT-SESSION.md` ist seit 08.09.2026 nur ein Zeiger.
 - Fortschritt erst nach einem Beleg aus der laufenden Session behaupten.
   Danach Diff adversarial gegen Zahlenränder, NaN/Inf, stale Closures,
   Save/Load-Symmetrie und irreführende UI-Texte lesen.
@@ -315,3 +333,10 @@ State-Migrationsstand und den letzten Installationsbeweis prüfen.
   Datei, nie per Backtick-Umbruch im Befehl. Ebenso blockt der Sandbox-Filter
   jeden Befehl, dessen TEXT den Namen des PowerShell-Lösch-Cmdlets enthält —
   auch in einem Prompt, der nur an einen Worker durchgereicht wird.
+- Ein frisch gebauter Kanon kann einmalig mit zwei `flatc`-Beinen „Voraussetzung
+  fehlt" enden, weil die Bauartefakte noch nicht sichtbar sind; der
+  Wiederholungslauf auf demselben Stand war grün. Vor einem Befund gegen den
+  Runner einmal wiederholen (SONDE-014, 07.09.2026).
+- Ein Pipe-Zeichen in einer Markdown-Tabellenzelle reißt
+  `tools/plan/dokuriegel.py`; Zellinhalte mit `|` umschreiben, bevor der Riegel
+  läuft (NAK-181, 06.09.2026).

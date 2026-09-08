@@ -30,12 +30,15 @@ Trigger: sofort `/freshen`, vor allem anderen.
 
 **Die weitere Always-on-Fläche** (jede Session vor dem ersten Tool-Call
 geladen): globales `~/.claude/CLAUDE.md` (~5 KB, User-Besitz — nie
-auto-editieren) + Repo-`CLAUDE.md` (~15 KB seit 21.08. — von Claude gepflegt, Drift
-wird hier GEFIXT, Wachstum wird gemeldet) + `MEMORY.md` (Hebel). Gesamt
-~20 KB (Stand 20.08.2026) — jede Runde neu messen und im Report nennen.
+auto-editieren) + Repo-`CLAUDE.md` (~21 KB am 08.09.2026, Ziel ≤ 24 KB — von Claude gepflegt, Drift
+wird hier GEFIXT, Wachstum wird gemeldet) + `MEMORY.md` (Hebel). Dazu die
+Dirigenten-Fläche, die jeder `/dirigent`-Aufruf lädt:
+`.claude/skills/dirigent/SKILL.md` (~36 KB am 08.09.2026, Grenze ≤ 36 KB) mit
+`tools/dirigent/pruefliste.md` und `pruefauftrag-vorlage.md`. Jede Runde neu
+messen und im Report nennen.
 
 **Der Korpus** (die Memory-*Dateien* auf Platte) ist die dritte Fläche —
-Recall-Qualität, nicht Kontextkosten. Stand 20.08.2026: ~10 Dateien
+Recall-Qualität, nicht Kontextkosten. Stand 08.09.2026: 17 Dateien
 (junges Repo; die Sonifold-Marke „80–90 gesund" gilt hier NICHT als Ziel).
 Wächst nur die Klasse der datierten `project_session_*`-Memos — deren
 **Cap ist 6** (CLAUDE.md „Arbeitsweise": eine Lehre pro Datei, mit dem
@@ -53,8 +56,8 @@ Kandidat für Eviction. Nein → tragend, behalten.
 | Produktwahrheit, User-Entscheide (mit Zitat) | `CLAUDE.md` (Wahrheitskern + Register) |
 | Plugin-/Broker-Sessions (Architektur, Datenfluss, IPC) | `docs/plugin-wissen.md` + `eq-copilot/docs/M*-BEFUND.md` + git log |
 | Offene Punkte / NAK-IDs | `docs/offene-punkte.md` (durabel; schließen NUR mit ID + Commit-SHA, nie still löschen) |
-| Nächste Schritte | `docs/NEXT-SESSION.md` |
-| Session-Übergaben | `docs/PLAN-STAND.md` — **gerechnet**, nicht gepflegt (seit 23.08.; Quelle `docs/plan/` + die Urteilsmarken in `docs/beweise/`); `docs/NEXT-SESSION.md` für den einen nächsten Schritt. Zwei Vorgänger sind entfallen, beide aus demselben Grund — sie kosteten Handarbeit, die jemand vergaß: die Auto-Handoffs unter `docs/handoffs/` (22.08., `ef1efee`, geschrieben aber nie gelesen) und `docs/hub/hub.json` + Briefing-Seite (23.08., NAK-50, gepflegt aber nie automatisch) |
+| Nächste Schritte | `docs/PLAN-STAND.md` („Als Nächstes", gerechnet) und das dort genannte Manifest unter `docs/beweise/` |
+| Session-Übergaben | `docs/PLAN-STAND.md` — **gerechnet**, nicht gepflegt (seit 23.08.; Quelle `docs/plan/` + die Urteilsmarken in `docs/beweise/`); `docs/NEXT-SESSION.md` ist seit 08.09.2026 nur ein Zeiger (Kontexthygiene, User-Wort). Zwei Vorgänger sind entfallen, beide aus demselben Grund — sie kosteten Handarbeit, die jemand vergaß: die Auto-Handoffs unter `docs/handoffs/` (22.08., `ef1efee`, geschrieben aber nie gelesen) und `docs/hub/hub.json` + Briefing-Seite (23.08., NAK-50, gepflegt aber nie automatisch) |
 | Verworfene Wege (nie neu vorschlagen) | CLAUDE.md „Was NICHT mehr gilt" + `eq-copilot/design/archive/LIES-MICH.md` + `docs/archiv/LIES-MICH.md` |
 
 ## Phasen
@@ -86,14 +89,15 @@ selben Lauf reparieren.
 | Build-Targets (EqCop*) | `grep -oE 'EqCop[A-Za-z_]+' eq-copilot/plugin/CMakeLists.txt \| sort -u` |
 | Broker-Binärnamen | `broker/Cargo.toml` (`name =`) + `ls broker/src/bin/` |
 | Pipe-Namen (v1 / m2probe) | `grep -rl 'evenacadia\.eq-copilot' broker/src eq-copilot/plugin/src` |
-| NAK-IDs in MEMORY.md/NEXT-SESSION | gegen `docs/offene-punkte.md` (offen vs. geschlossen) |
-| „Stand DD.MM."-Zeilen im CLAUDE.md | gegen `docs/NEXT-SESSION.md`; der Wahrheitskern trägt sein Datum selbst |
+| NAK-IDs in MEMORY.md/Skill | gegen `docs/offene-punkte.md` (offen vs. geschlossen) |
+| „Stand DD.MM."-Zeilen im CLAUDE.md | gegen `docs/PLAN-STAND.md` und das jüngste Manifest; der Wahrheitskern trägt sein Datum selbst |
+| Skill-Regel ↔ Memory | gleicher Fakt darf nur im Skill stehen; Memory trägt Warum, User-Zitat und Rechnerlokales |
 | Remote-/Repo-Claims | `git remote -v` |
 | Schema-Versionen (eq-ipc v2, eq-snapshot v3 …) | `eq-copilot/schemas/` |
 
 Cross-Doc-Regel: Ein in einem Doc gefixter Wert ist in den anderen noch
 alt — den WERT repo-weit greppen (`git grep`), jede lebende Kopie
-abgleichen (NEXT-SESSION.md, plugin-wissen.md, design/abnahmen,
+abgleichen (Dirigenten-Skill, plugin-wissen.md, design/abnahmen,
 offene-punkte.md). Historische/datierte Zeilen (Handoffs, Befund-Docs mit
 Datum) sind als Zeitpunkt-Aussagen korrekt — nur als AKTUELL präsentierte
 Altwerte sind Drift.
@@ -116,7 +120,7 @@ endet netto kleiner. Dann:
 
 ### Phase D — Lücken-Erkennung
 
-`git log --oneline -20` gegen CLAUDE.md-/NEXT-SESSION.md-Abdeckung. Für
+`git log --oneline -20` gegen CLAUDE.md-/Skill-Abdeckung. Für
 jeden Kandidaten erst `ls`/`grep`, ob das Genannte im Code existiert
 (Commit-Messages können Phantome nennen). Mechanische Lücke (Zahl, Pfad,
 Zeile) → fixen. Architektur-Prosa oder Design-Urteil → dem User
@@ -168,8 +172,9 @@ vorlegen (Surface ≠ Menü).
 - **Nur MEMORY.md wird frei umgeschrieben.** Globales `~/.claude/CLAUDE.md`
   nie anfassen; Repo-CLAUDE.md: mechanischen Drift fixen, strukturelles
   Wachstum melden.
-- **`feedback_*.md` nie auto-editieren** (Ausnahme: fehlende Why/How-Zeile
-  ergänzen). Das Entscheide-Register in CLAUDE.md (wörtliche User-Urteile) und
+- **`feedback_*.md` nie auto-editieren** (Ausnahmen: fehlende Why/How-Zeile
+  ergänzen; ausdrücklicher User-Auftrag zur Auffrischung wie am 08.09.2026 —
+  dann Drift im How-to-apply fixen, User-Zitate bleiben wörtlich). Das Entscheide-Register in CLAUDE.md (wörtliche User-Urteile) und
   `.claude/kreativ-freigabe.md` (Schleusen-Marker) sind ebenso tabu.
 - **Nie eine Memory-Datei löschen ohne ls-bestätigtes kanonisches
   Artefakt.** Index komprimieren, nicht die Dateien.
@@ -185,6 +190,11 @@ vorlegen (Surface ≠ Menü).
 ## Wann laufen lassen
 
 - Sofort bei der SessionStart-Warnung `MEMORY.md is X KB (limit: 24.4KB)`.
+- Nach jedem Ticketabschluss ein Kurzlauf durch den Dirigenten (Phase A,
+  B-Stichprobe, F: Bytes, Index-Zeilen, Waisen, `dokuriegel.py` auf CLAUDE.md
+  und Skill); bei jedem Phasengate der Volllauf (Dirigenten-Skill §3.5, seit
+  08.09.2026, User-Wort: Kontexthygiene „sollte übrigens auch regelmäßig
+  automatisch geschehen und teil des dirigentenskills sein").
 - Wöchentlich; nach großen Schüben (≥3 Commits in einem Subsystem); nach
   Löschen/Umbenennen von Modulen, Blättern oder Docs; wenn eine
   CLAUDE.md-Behauptung beim ersten Lesen falsch wirkt; wenn

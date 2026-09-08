@@ -377,26 +377,43 @@ impl Buehne {
         .expect("der Snapshot ist JSON")
     }
 
-    /// Denselben Deskriptor noch einmal setzen — mit anderem Mixerkanal.
+    /// Ein echter Heartbeat über den PRODUKTIVEN Ingress (E8).
     ///
-    /// Das ist der Kern von `f4`: der Kanal lebt im Deskriptor, nicht am
-    /// Beleg. Ein Wechsel ändert die Duplikaterkennung rückwirkend für ALLE
-    /// Fenster, ohne dass ein einziger Messwert neu entstanden wäre.
-    fn deskriptor(&self, link: &str, a: &Adresse, mixer: Option<i64>) {
-        let mut d = json!({
-            "adresse": a,
-            "plugin_kind": "passive_probe",
-            "measurement_position": "post",
-            "aussageklasse": "beobachtend",
-            "betrieb": "active",
-            "label": "Gegenbeispielquelle",
-            "capabilities": capabilities(),
-            "frische": {"letzter_kontakt_ms": 10, "stale": false}
-        });
+    /// `Senke::p0` → `befehl.rs` „heartbeat“ → `heartbeat_kontakt` →
+    /// Deskriptorersatz: derselbe Weg, den der Transport fährt.
+    /// `descriptor_setzen` daneben hat unter `broker/src` KEINEN Aufrufer
+    /// (Matrixprüfung 1) — ein Wechsel, der nur dort ausgelöst wird, misst
+    /// die Testfläche und nicht das Produkt.
+    ///
+    /// Die Nutzlast kommt aus dem committeten Korpus
+    /// (`heartbeat-runtime-vollstaendig`): der vertragsgültige
+    /// Fähigkeitssatz steht dort und nicht ein zweites Mal von Hand hier —
+    /// dieselbe Regel wie bei `grundform()`. Ein `heartbeat` läuft durch
+    /// `v3_nachricht_lesen` und fiele am Fähigkeitssatz des Helfers
+    /// `capabilities()` dieses Beins, der noch die Namen vor SONDE-012 trägt
+    /// (Nebenbefund NB-7).
+    ///
+    /// Überschrieben wird genau, was dieser Fall setzt: Adresse, Sequenz und
+    /// der `runtime`-Block. Ein Heartbeat mit `runtime` ersetzt den Deskriptor
+    /// VOLLSTÄNDIG (`liveness.rs`:472); der Block trägt deshalb `post`/`active`
+    /// wie die Anmeldung und KEIN `host_bus_name`, damit von allem, was die
+    /// Rechnung liest, nur der MIXERKANAL ein anderer ist — sonst mäße der Fall
+    /// einen Sammelwechsel. `label` und `capabilities` wechseln mit; beide
+    /// liest die Hypothesenrechnung nicht (`hypothese*.rs` kennt keines von
+    /// beiden), und der Vertragsriegel `descriptor_vertrag_erfuellt` hält sie.
+    fn heartbeat(&self, link: &str, a: &Adresse, sequence: u64, mixer: Option<i64>) {
+        let mut wert = fixture("heartbeat-runtime-vollstaendig");
+        wert["adresse"] = serde_json::to_value(a).expect("die Adresse ist JSON");
+        wert["sequence"] = json!(sequence);
+        let mut runtime = json!({"messpunkt": "post", "betrieb": "active"});
         if let Some(index) = mixer {
-            d["host_mixer_index"] = json!(index);
+            runtime["host_mixer_index"] = json!(index);
         }
-        assert!(self.c.descriptor_setzen(link, d));
+        wert["runtime"] = runtime;
+        assert!(
+            Senke::p0(&*self.c, link, &serde_json::to_vec(&wert).unwrap()).is_some(),
+            "der Heartbeat wird angenommen — ein abgewiesener maesse gar nichts"
+        );
     }
 }
 
@@ -1176,13 +1193,25 @@ fn f4_aufbau(lage: &str) -> (Buehne, Adresse, Adresse, Vec<f64>) {
 ///
 /// Er nimmt Cs zwölf alte Belege mit `messpunkt_wechsel` zurück; A und der
 /// Master bleiben unberührt, weil der Umfang `Ids` ist und nicht die Sitzung.
+///
+/// 🔑 **Nacharbeit 2 (08.09.2026, Wiederprüfungsbefund zu K-44/E8): der
+/// Wechsel läuft über den HEARTBEAT, nicht über den Setter.** Bis hierher rief
+/// diese Stelle `Buehne::deskriptor` und damit `descriptor_setzen` — eine
+/// Funktion, die unter `broker/src` keinen Aufrufer hat. Beide Lagen prüften
+/// deshalb ausschließlich die Testfläche; eine Fassung, die den Vergleich nur
+/// dort hätte, wäre grün geblieben, obwohl der produktive Weg nichts
+/// invalidiert. K-44 sagt den Ingress wörtlich zu: „Heartbeat mit `runtime`
+/// (produktiver Ingress, E8), dann Evidenz". Die ANLAGE der Ausgangslage
+/// bleibt beim Setter (`Buehne::anmelden`) — gemessen wird der Wechsel, nicht
+/// die Anmeldung.
 fn f4_kanalwechsel(b: &Buehne, c: &Adresse) {
     let ausgeschlossen_vorher = b.c.evidenz_ausgeschlossen_zaehler();
-    b.deskriptor("sondeC", c, Some(9));
+    b.heartbeat("sondeC", c, 1, Some(9));
     let genommen = b.c.evidenz_ausgeschlossen_zaehler() - ausgeschlossen_vorher;
     assert_eq!(
         genommen, 12,
-        "genau Cs zwoelf alte Belege tragen `messpunkt_wechsel`"
+        "genau Cs zwoelf alte Belege tragen `messpunkt_wechsel` — auf dem \
+         PRODUKTIVEN Weg, nicht am aufruferlosen Setter"
     );
 }
 

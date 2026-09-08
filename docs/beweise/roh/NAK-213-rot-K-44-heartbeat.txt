@@ -1,0 +1,94 @@
+NAK-213 Rotbeweis K-44 Heartbeat - beide Lagen fahren den PRODUKTIVEN Ingress (E8)
+Datum: 2026-09-08 (Nacharbeit 2, Wiederpruefungsbefund zu K-44)
+
+Zurueckgenommen: der Kanalvergleich im Heartbeatweg
+(`liveness.rs`:454, `if alt_kanal != neu_kanal` auf `if false && ...`). Damit
+sitzt der Vergleich NUR NOCH in `descriptor_setzen` - genau die Fassung, die
+die Matrixpruefung 1 widerlegt hat: eine Funktion ohne Aufrufer unter
+`broker/src`. Produktiv wechselt dann kein einziger Beleg seinen Zustand.
+
+Erwartete Wirkung - und genau die Aussage des Pruefers:
+
+  Die alte Fassung von `f4_kanalwechsel` rief `Buehne::deskriptor` und damit
+  `descriptor_setzen`. Sie waere unter diesem Eingriff GRUEN geblieben: der
+  Setter behaelt seinen Vergleich, die zwoelf Belege werden dort weiter
+  zurueckgenommen, und beide Lagen haetten den produktiven Weg nie beruehrt.
+
+  Die neue Fassung faellt sofort, in BEIDEN Lagen am selben Helfer:
+      genau Cs zwoelf alte Belege tragen `messpunkt_wechsel` - auf dem
+      PRODUKTIVEN Weg, nicht am aufruferlosen Setter
+        left: 0   right: 12
+
+  Alle 16 uebrigen Faelle des Beins bleiben GRUEN. Genau dieses Gruenbleiben
+  zeigt, dass der Befund vorher nicht auffallen KONNTE: kein anderer Fall
+  dieses Beins beruehrt den Kanalwechsel.
+
+========================================================================
+Rotlauf (Zeile K-44, Test `f4_kanalwechsel_zwischen_den_fenstern`)
+Befehl: cargo test --no-fail-fast --manifest-path broker/Cargo.toml --color never --test sonde014_gegenbeispiele -- --test-threads=1
+Exitcode: 101
+========================================================================
+warning: methods `snapshot` and `deskriptor` are never used
+   --> tests\sonde014_gegenbeispiele.rs:371:8
+    |
+217 | impl Buehne {
+    | ----------- methods in this implementation
+...
+371 |     fn snapshot(&self) -> Value {
+    |        ^^^^^^^^
+...
+385 |     fn deskriptor(&self, link: &str, a: &Adresse, mixer: Option<i64>) {
+    |        ^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (test "sonde014_gegenbeispiele") generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.06s
+     Running tests\sonde014_gegenbeispiele.rs (broker\target\debug\deps\sonde014_gegenbeispiele-4e737afb3cd092a5.exe)
+
+running 17 tests
+test a1_intent_rolle_trennt_identische_kandidaten_nicht ... ok
+test a3_sonde_auf_masterkanal ... ok
+test a4_masteranomalie_ausserhalb_der_passage ... ok
+test d2_fuehrender_wird_gegen_jeden_geprueft ... ok
+test d3_passage_ohne_masterfenster_ergibt_enthaltung ... ok
+test d4_umklammernde_und_disjunkte_spanne ... ok
+test eigen3_antikorrelierte_quelle ... ok
+test eigen4_quelle_im_falschen_band ... ok
+test eigen5_antikorreliert_neben_korreliert ... ok
+test einzelueberlebender_neben_passagenausschluss ... ok
+test f4_kanalwechsel_zwischen_den_fenstern ... FAILED
+test f4b_drei_sonden_auf_einem_kanal ... ok
+test f5_passagenrandwerte ... ok
+test f5b_gleiche_passage_id_verschobenes_fenster ... ok
+test f7_rangdifferenz_am_quantum ... ok
+test f8_zwei_master_mit_widersprechendem_befundband ... ok
+test f8b_master_ohne_fenster ... ok
+
+failures:
+
+---- f4_kanalwechsel_zwischen_den_fenstern stdout ----
+── F4 Lage 1: beide Sonden auf Mixerkanal 7 ──
+   quelle=..02 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.183623
+     rang: bandpassung=0.101738 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=1 ausschluesse=[]
+   quelle=..03 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.183302
+     rang: bandpassung=0.099809 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=1 ausschluesse=[]
+   => starke Befunde: 0
+
+thread 'f4_kanalwechsel_zwischen_den_fenstern' (27360) panicked at tests\sonde014_gegenbeispiele.rs:1229:5:
+assertion `left == right` failed: genau Cs zwoelf alte Belege tragen `messpunkt_wechsel` — auf dem PRODUKTIVEN Weg, nicht am aufruferlosen Setter
+  left: 0
+ right: 12
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    f4_kanalwechsel_zwischen_den_fenstern
+
+test result: FAILED. 16 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 83.93s
+
+error: test failed, to rerun pass `--test sonde014_gegenbeispiele`
+error: 1 target failed:
+    `--test sonde014_gegenbeispiele`

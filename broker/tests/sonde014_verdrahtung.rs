@@ -1916,13 +1916,13 @@ fn runtime_block(mixer: Option<i64>) -> Value {
     wert
 }
 
-/// Ein echter Heartbeat über den Produktweg, mit `runtime`-Block.
-fn heartbeat_mit_kanal(
+/// Ein echter Heartbeat über den Produktweg, mit beliebigem `runtime`-Block.
+fn heartbeat_mit_runtime(
     c: &Coordinator,
     link: &str,
     a: &Adresse,
     sequence: u64,
-    mixer: Option<i64>,
+    runtime: Value,
 ) -> bool {
     let wert = json!({
         "type": "heartbeat",
@@ -1931,9 +1931,106 @@ fn heartbeat_mit_kanal(
         "state_revision": 0,
         "capabilities": capabilities_vertragsgueltig(),
         "zaehler": {"frames_dropped": 0, "parse_errors": 0, "queue_overflows": 0},
-        "runtime": runtime_block(mixer)
+        "runtime": runtime
     });
     Senke::p0(c, link, &bytes(&wert)).is_some()
+}
+
+/// Derselbe Heartbeat für eine SONDE — Messpunkt `post`.
+fn heartbeat_mit_kanal(
+    c: &Coordinator,
+    link: &str,
+    a: &Adresse,
+    sequence: u64,
+    mixer: Option<i64>,
+) -> bool {
+    heartbeat_mit_runtime(c, link, a, sequence, runtime_block(mixer))
+}
+
+/// Und für den MAIN — `descriptor_aus_heartbeat` weist ein `main` mit einem
+/// anderen Messpunkt als `insert` ab (`liveness.rs`:683–685).
+fn heartbeat_main_mit_kanal(
+    c: &Coordinator,
+    link: &str,
+    a: &Adresse,
+    sequence: u64,
+    mixer: Option<i64>,
+) -> bool {
+    let mut runtime = runtime_block(mixer);
+    runtime["messpunkt"] = json!("insert");
+    heartbeat_mit_runtime(c, link, a, sequence, runtime)
+}
+
+/// Der Abonnent, den die Zustellung braucht — und der Blick auf die Outbox
+/// GENAU im Moment der Zustellung.
+///
+/// 🔑 **Nacharbeit 2 (08.09.2026, Wiederprüfungsbefund zu K-49).** Bis hierher
+/// registrierte K-49 zwar eine Subscription, aber keinen `SessionPush`:
+/// `Coordinator::mit_store` setzt ihn mit `None`, und `invalidierung_zustellen`
+/// hat dann kein Ziel, dem es schreiben könnte. Gemessen war damit nur die
+/// EINREIHUNG in die Outbox, nicht die zugesagte Zustellung.
+///
+/// ⚠️ Beide Hälften sind nur hier zugleich sichtbar. Der Broker trägt eine
+/// angenommene Zustellschuld sofort ab (`snapshot_schuld_kompaktieren`,
+/// „was zugestellt wurde, wird kompaktiert"); nach dem Lauf ist die Zeile
+/// deshalb fort. Diese Probe liest die Outbox im Callback — zwischen Append
+/// und Kompaktierung —, und der Test prüft danach BEIDES: die Schuld mit ihrer
+/// `event_ord` und ihre Abtragung.
+///
+/// Der Aufruf läuft synchron auf dem Testfaden (`Senke::p0` →
+/// `heartbeat_kontakt` → `invalidierung_zustellen`), und der Coordinator hält
+/// dabei keinen Standlock; das Lesen ist eine gewöhnliche kurze
+/// Leseverbindung.
+struct PushProbe {
+    empfangen: std::sync::Mutex<Vec<(String, Value)>>,
+    schuld_bei_zustellung: std::sync::Mutex<Vec<(eqcop_broker::store::SnapshotZiel, i64, i64)>>,
+    store: eqcop_broker::store::StoreHandle,
+}
+
+impl PushProbe {
+    fn neu(store: eqcop_broker::store::StoreHandle) -> Self {
+        Self {
+            empfangen: std::sync::Mutex::new(Vec::new()),
+            schuld_bei_zustellung: std::sync::Mutex::new(Vec::new()),
+            store,
+        }
+    }
+
+    fn empfangen(&self) -> Vec<(String, Value)> {
+        self.empfangen
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .clone()
+    }
+
+    fn schuld_bei_zustellung(&self) -> Vec<(eqcop_broker::store::SnapshotZiel, i64, i64)> {
+        self.schuld_bei_zustellung
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .clone()
+    }
+}
+
+impl eqcop_broker::coordinator::SessionPush for PushProbe {
+    fn snapshot_schreiben(&self, link_id: &str, payload: &[u8]) -> bool {
+        let wert: Value = serde_json::from_slice(payload).expect("der Push ist JSON");
+        if wert["type"] == json!("evidence_invalidate") {
+            if let Ok(outbox) = self.store.outbox_lesen() {
+                *self
+                    .schuld_bei_zustellung
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner()) = outbox;
+            }
+        }
+        self.empfangen
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .push((link_id.into(), wert));
+        // `true` heisst hier genau das, was der Vertrag sagt: der volle
+        // Payload ist geschrieben. Erst damit traegt der Broker die Schuld ab
+        // — und erst damit ist „zugestellt" gemessen statt nur eingereiht.
+        true
+    }
 }
 
 /// **K-49 · der tragende Rotbeweis von R5.** Der Kanalwechsel wird auf dem
@@ -1952,14 +2049,64 @@ fn heartbeat_mit_kanal(
 /// Bestand rein flüchtig"), nie ihre Persistierung und nie ihre Zustellung.
 /// Zähler und Befundentfernung konnten grün sein, während genau der
 /// produktive Teil fehlerhaft war, den K-49 wörtlich verlangt: „Der Broker
-/// läuft mit Store". Gemessen wird jetzt beides — die acht Belege tragen
-/// `messpunkt_wechsel` IM STORE, und die `evidence_invalidate`-Nachricht ist
-/// dem Abonnenten wirklich geschrieben worden.
+/// läuft mit Store".
+///
+/// 🔑 **Nacharbeit 2 (08.09.2026, Wiederprüfungsbefund zu K-49): der Abonnent
+/// bekommt die Nachricht wirklich.** Die Nacharbeit 1 mass die EINREIHUNG in
+/// die Outbox und schrieb daneben, die `evidence_invalidate`-Nachricht sei
+/// „dem Abonnenten wirklich geschrieben worden". Gemessen war das nicht: ohne
+/// registrierten `SessionPush` — `Coordinator::mit_store` legt ihn mit `None`
+/// an — hatte `invalidierung_zustellen` gar kein Ziel. Gemessen wird jetzt die
+/// ganze Kette: die acht Belege tragen `messpunkt_wechsel` IM STORE (1), der
+/// Abonnent hält den `evidence_invalidate`-Payload mit genau diesen acht IDs,
+/// Grund `messpunkt_wechsel` und Umfang `evidence_ids` (2), die Schuld stand
+/// dabei mit ihrer `event_ord` in der Outbox (3), und die angenommene
+/// Zustellung hat sie abgetragen (4).
 #[test]
 #[cfg(windows)]
 fn kanalwechsel_ueber_den_heartbeat_befehl() {
     let (c, writer, _ordner) = coordinator_mit_store("k49-heartbeat-befehl");
+    // 🔑 Nacharbeit 2: die Senke, an die zugestellt wird. `Coordinator::mit_store`
+    // legt sie mit `None` an; ohne diese Zeile schreibt `invalidierung_zustellen`
+    // niemandem, und „zugestellt" wäre nur nicht widerlegt.
+    let push = Arc::new(PushProbe::neu(writer.handle()));
+    c.session_push_setzen(push.clone());
     let a = buehne_nak213(&c, 1);
+
+    // 🔑 Nacharbeit 2: die Bühne wird über den PRODUKTIVEN Ingress
+    // vertragsgültig gemacht, BEVOR abonniert wird — und die Sonde dabei auf
+    // den Kanal 7 gestellt, den K-49 wörtlich nennt.
+    //
+    // ⚠️ Der Grund ist NB-7 und trifft härter als dort notiert.
+    // `anmelden_mit_deskriptor` setzt den Deskriptor über
+    // `descriptor_setzen`, und der hält die Capabilities NICHT gegen das
+    // Schema; die Bühne trägt deshalb die Namen vor SONDE-012. Der daraus
+    // gebaute `session_snapshot` verletzt den v3-Vertrag, und
+    // `subscribe_session` reagiert genau so, wie er soll: `routing_fail_closed`
+    // (`subscription.rs`:162–167). Ab da ist `routing_bereit` falsch, jeder
+    // Link steht auf `trennen`, und `push_ziel_noch_gueltig` gibt für IMMER
+    // `false` — die Zustellung dieser Zeile wäre selbst mit registrierter
+    // Senke unerreichbar gewesen. Ein Heartbeat trägt den vertragsgültigen
+    // Satz und ersetzt den Deskriptor vollständig (`liveness.rs`:472).
+    //
+    // Diese beiden Heartbeats sind KEIN gemessener Kanalwechsel: es liegt noch
+    // kein einziger Beleg vor, `invalidierung_vorbereiten` nimmt nichts
+    // zurück, und der Zähler steht danach unverändert bei 0.
+    assert!(heartbeat_main_mit_kanal(&c, "main", &a[0], 1, Some(1)));
+    assert!(heartbeat_mit_kanal(&c, "sonde0", &a[1], 1, Some(7)));
+    assert_eq!(
+        c.invalidierungen_zaehler(),
+        0,
+        "die Anlage der Buehne ist KEIN gemessener Wechsel: es liegt noch \r
+         kein Beleg vor, und `invalidierung_vorbereiten` nimmt nichts zurueck"
+    );
+    assert!(
+        c.routing_bereit(),
+        "die Bühne ist vertragsgültig — sonst faellt das Routing beim \
+         Abonnieren fail-closed, und keine Zustellung dieser Zeile waere \
+         erreichbar"
+    );
+
     // Ohne Abonnent hat die Zustellung kein Ziel — und eine Zusage über sie
     // wäre nicht gemessen, sondern nur nicht widerlegt.
     assert!(c.subscribe_json(
@@ -1990,8 +2137,9 @@ fn kanalwechsel_ueber_den_heartbeat_befehl() {
          waere diese Zeile gar nicht messbar"
     );
 
-    // Der Kanalwechsel 3 -> 9 ueber den ECHTEN Befehlsweg.
-    assert!(heartbeat_mit_kanal(&c, "sonde0", &a[1], 1, Some(9)));
+    // Der Kanalwechsel 7 -> 9 ueber den ECHTEN Befehlsweg. Die Sequenz laeuft
+    // auf diesem Link fort (1 war die Anlage der Buehne).
+    assert!(heartbeat_mit_kanal(&c, "sonde0", &a[1], 2, Some(9)));
 
     assert_eq!(
         c.invalidierungen_zaehler(),
@@ -2039,13 +2187,66 @@ fn kanalwechsel_ueber_den_heartbeat_befehl() {
          Messpunktwechsel, kein dritter Grund: {zeilen:?}"
     );
 
-    // 2. ZUGESTELLT: die Ruecknahme ist fuer den Abonnenten der Sitzung
-    //    EINGEREIHT — mit einer `event_ord` aus dem Log. Genau das ist der
-    //    Store-Weg der Zustellung (Modulkopf `invalidierung_verdrahtung.rs`,
-    //    Punkt 3); ohne Store endet die Invalidierung in `Ok(None)`, es gibt
-    //    weder eine `event_ord` noch eine Outbox, und dieser Zweig laeuft nie.
-    let outbox = writer.handle().outbox_lesen().expect("die Outbox ist lesbar");
-    let unsere: Vec<&(eqcop_broker::store::SnapshotZiel, i64, i64)> = outbox
+    // 2. ZUGESTELLT: der Abonnent hat die Nachricht WIRKLICH bekommen.
+    //
+    // 🔑 Nacharbeit 2. Die Outbox allein belegte nur die EINREIHUNG. Hier
+    // steht, was beim Abonnenten ankam — und `invalidierung_zustellen` wird
+    // ausschliesslich im Zweig `Ok(Some(event_ord))` gerufen: eine empfangene
+    // Nachricht ist deshalb zugleich der Beleg, dass der Append gelaufen ist
+    // und nicht der `Ok(None)`-Zweig eines Brokers ohne Store.
+    let empfangen: Vec<(String, Value)> = push
+        .empfangen()
+        .into_iter()
+        .filter(|(_, wert)| wert["type"] == json!("evidence_invalidate"))
+        .collect();
+    assert_eq!(
+        empfangen.len(),
+        1,
+        "genau EINE `evidence_invalidate`-Nachricht beim Abonnenten: {empfangen:?}"
+    );
+    let (link_der_zustellung, nachricht) = &empfangen[0];
+    assert_eq!(
+        link_der_zustellung, "main",
+        "ueber den Link des Abonnenten, nicht den der wechselnden Sonde: \
+         {empfangen:?}"
+    );
+    assert_eq!(
+        nachricht["grund"],
+        json!("messpunkt_wechsel"),
+        "mit dem zugesagten Grund: {nachricht}"
+    );
+    assert_eq!(
+        nachricht["umfang"]["art"],
+        json!("evidence_ids"),
+        "und dem Umfang `Ids` — die Belege DIESER Quelle, nicht die ganze \
+         Sitzung: {nachricht}"
+    );
+    let mut zugestellt: Vec<String> = nachricht["umfang"]["evidence_ids"]
+        .as_array()
+        .expect("`evidence_ids` ist eine Liste")
+        .iter()
+        .map(|wert| {
+            wert.as_str()
+                .expect("jede Evidenz-ID ist eine Zeichenkette")
+                .to_owned()
+        })
+        .collect();
+    zugestellt.sort();
+    let mut erwartet = acht.clone();
+    erwartet.sort();
+    assert_eq!(
+        zugestellt, erwartet,
+        "genau die acht Belege der Sonde — keiner mehr, keiner weniger: \
+         {nachricht}"
+    );
+
+    // 3. PERSISTIERT: im Moment der Zustellung stand die Schuld mit ihrer
+    //    `event_ord` aus dem Log in der Outbox. Das ist der Store-Weg
+    //    (Modulkopf `invalidierung_verdrahtung.rs`, Punkt 3); ohne Store endet
+    //    die Invalidierung in `Ok(None)`, es gibt weder eine `event_ord` noch
+    //    eine Outbox, und dieser Zweig laeuft nie.
+    let schuld = push.schuld_bei_zustellung();
+    let unsere: Vec<&(eqcop_broker::store::SnapshotZiel, i64, i64)> = schuld
         .iter()
         .filter(|(ziel, _, _)| {
             ziel.object_key == "evidence_invalidate"
@@ -2056,12 +2257,28 @@ fn kanalwechsel_ueber_den_heartbeat_befehl() {
     assert_eq!(
         unsere.len(),
         1,
-        "genau eine Zustellschuld `evidence_invalidate` fuer den Abonnenten          dieser Sitzung: {outbox:?}"
+        "genau eine Zustellschuld `evidence_invalidate` fuer den Abonnenten \
+         dieser Sitzung: {schuld:?}"
     );
     assert!(
         unsere[0].1 > 0,
-        "sie traegt die `event_ord` ihres Logeintrags — der Beweis, dass der          Zweig `Ok(Some(event_ord))` gelaufen ist und nicht `Ok(None)`: {:?}",
+        "sie traegt die `event_ord` ihres Logeintrags — der Beweis, dass der \
+         Zweig `Ok(Some(event_ord))` gelaufen ist und nicht `Ok(None)`: {:?}",
         unsere[0]
+    );
+
+    // 4. Und die angenommene Zustellung TRAEGT sie ab: „was zugestellt wurde,
+    //    wird kompaktiert" (`invalidierung_zustellen`). Eine Schuld, die nach
+    //    einer geglueckten Zustellung stehen bliebe, waere die Zusage von
+    //    Punkt 2 ohne ihre Gegenrichtung — der Empfaenger bekaeme sie beim
+    //    naechsten Subscribe ein zweites Mal.
+    let outbox = writer.handle().outbox_lesen().expect("die Outbox ist lesbar");
+    assert!(
+        !outbox
+            .iter()
+            .any(|(ziel, _, _)| ziel.object_key == "evidence_invalidate"),
+        "nach der angenommenen Zustellung steht keine `evidence_invalidate`-Schuld \
+         mehr offen: {outbox:?}"
     );
 }
 

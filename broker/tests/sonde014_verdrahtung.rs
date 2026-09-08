@@ -2507,3 +2507,347 @@ fn kanalwechsel_ohne_belege_sendet_nichts() {
         "kein `evidence_invalidate` ohne Inhalt auf der Leitung"
     );
 }
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-214 R1 · der Proposal-Riegel am PRODUKTPFAD (V-01 bis V-04, V-11, V-12 b)
+// ═════════════════════════════════════════════════════════════════════════
+//
+// Die Bühne braucht dreierlei, das die Bühnen darüber nicht führen: einen
+// Store (`experiment_begin` ist ein persistenzpflichtiger P0), eine benannte
+// Passage (ohne sie entsteht seit WN-04 gar kein Proposal) und ein
+// eindeutiges führendes Main (ohne das ist `target` leer — genau der Befund
+// E-D5 = A6).
+
+const NAK214_BASIS_SAMPLE: i64 = 44_108_200;
+const NAK214_TRANSPORT_EPOCHE: u64 = 17;
+
+/// Anmelden mit Deskriptor UND `record_state` — ohne den Bericht weist der
+/// Broker jeden persistenzpflichtigen Befehl mit `record_state_unknown` ab,
+/// und ohne `experiment_begin` gibt es keine benannte Passage.
+fn anmelden_fuer_passage(c: &Coordinator, link: &str, a: &Adresse, art: &str, mixer: Option<i64>) {
+    anmelden_mit_deskriptor(c, link, a, art, mixer);
+    let bericht = json!({
+        "type": "state_report",
+        "adresse": a,
+        "dsp_schema_version": 1,
+        "state_revision": 0,
+        "state_hash": "a".repeat(64),
+        "record_state": {"valid": true, "recording": false}
+    });
+    assert!(c.state_report_json(link, &bytes(&bericht)));
+}
+
+/// Die benannte Passage über den PRODUKTPFAD: `experiment_begin` als P0.
+fn passage_anlegen(
+    c: &Coordinator,
+    master: &Adresse,
+    quellen: &[&Adresse],
+    fenster: i64,
+    command: usize,
+    experiment: usize,
+    passage: usize,
+) -> String {
+    let mut wert = fixture("experiment_begin");
+    wert["kopf"]["ziel"] = serde_json::to_value(master).unwrap();
+    wert["kopf"]["command_id"] = json!(hex(command));
+    wert["kopf"]["base_revision"] = json!(0);
+    wert["experiment_id"] = json!(hex(experiment));
+    let passage_id = hex(passage);
+    wert["passage"]["passage_id"] = json!(passage_id);
+    wert["passage"]["projekt_von"] = json!(NAK214_BASIS_SAMPLE);
+    wert["passage"]["projekt_bis"] = json!(NAK214_BASIS_SAMPLE + fenster * 512);
+    wert["passage"]["transport_epoch"] = json!(NAK214_TRANSPORT_EPOCHE);
+    wert["passage"]["aktive_quellen"] = json!(quellen
+        .iter()
+        .map(|a| a.instance_id.clone())
+        .collect::<Vec<_>>());
+    // Der Vertrag verlangt `messpunktklassen` in DERSELBEN Reihenfolge und
+    // Laenge wie `aktive_quellen` - die Zuordnung Quelle/Messpunkt ist Teil
+    // des Belegs (M-28/M-55). Der Master steht vorn und misst `insert`.
+    wert["passage"]["messpunktklassen"] = json!(quellen
+        .iter()
+        .enumerate()
+        .map(|(i, _)| if i == 0 { "insert" } else { "post" })
+        .collect::<Vec<_>>());
+    let antwort = Senke::p0(c, "main", &bytes(&wert)).expect("experiment_begin wird beantwortet");
+    let ack: Value = serde_json::from_slice(&antwort).unwrap();
+    assert_eq!(
+        ack["ergebnis"], "angewandt",
+        "die Passage entsteht wirklich: {ack:?}"
+    );
+    passage_id
+}
+
+/// Main plus `sonden` Sonden, benannte Passage, wechselnde Reihen — die
+/// Lage, in der ein VOLLSTÄNDIGER Vorschlag entsteht.
+fn buehne_mit_passage(c: &Coordinator, sonden: usize, fenster: usize) -> (Vec<Adresse>, String) {
+    let main = adresse(0x11, 0x22, 1, 0x40);
+    anmelden_fuer_passage(c, "main", &main, "main", Some(1));
+    let marke = json!({
+        "type": "intent_update",
+        "adresse": main,
+        "session_epoch": main.session_epoch,
+        "vollstaendig": true,
+        "bestand_revision": 0
+    });
+    c.p1("main", &bytes(&marke));
+    let mut aus = vec![main];
+    for i in 0..sonden {
+        let a = adresse(0x11, 0x22, 2 + i, 0x50 + i);
+        anmelden_fuer_passage(
+            c,
+            &format!("sonde{i}"),
+            &a,
+            "passive_probe",
+            Some(3 + i as i64),
+        );
+        aus.push(a);
+    }
+    let quellen: Vec<&Adresse> = aus.iter().collect();
+    let passage_id = passage_anlegen(c, &aus[0], &quellen, fenster as i64, 0x930, 0xab7, 0x5001);
+    reihe_wechselnd(c, "main", &aus[0].clone(), 0, fenster);
+    for i in 0..sonden {
+        let a = aus[1 + i].clone();
+        reihe_wechselnd(c, &format!("sonde{i}"), &a, 100 + i * 100, fenster);
+    }
+    (aus, passage_id)
+}
+
+/// Wie viele `event_type = "proposal"`-Zeilen liegen im Store?
+///
+/// Gelesen an der Projektion `proposals` (`writer.rs`:573), also an dem, was
+/// `vorschlag_persistieren` wirklich abgelegt hat — nicht an einem Zähler.
+fn proposals_im_store(writer: &eqcop_broker::store::StoreWriter) -> Vec<Value> {
+    let conn = rusqlite::Connection::open(writer.handle().db_pfad()).expect("Store ist lesbar");
+    let mut stmt = conn
+        .prepare("SELECT state_jcs FROM proposals ORDER BY last_event_ord")
+        .expect("die Projektion `proposals` existiert");
+    let rows = stmt
+        .query_map([], |row| row.get::<_, Vec<u8>>(0))
+        .expect("Zeilen lesbar");
+    rows.map(|r| serde_json::from_slice(&r.expect("Zeile")).expect("JCS ist JSON"))
+        .collect()
+}
+
+/// **V-01 (Kontrollfall) und V-02 (der Befund E-D5 = A6, geschlossen).**
+///
+/// Mit eindeutigem führenden Main entsteht ein Vorschlag, dessen `target`
+/// die hex32-ID dieses Mains ist und der alle sechs Gate-Felder trägt. Tritt
+/// ein ZWEITES Main derselben Sitzung bei, fällt die Führung auf `None` —
+/// und damit entsteht KEIN Vorschlag mehr: nicht im Stand, nicht im Store,
+/// nicht als Angebot. Der Befund bleibt, als Enthaltung ohne Ort.
+///
+/// Rotbeweis `NAK-214-rot-V-02.txt`: der Schlussriegel aus E1 entfernt — ein
+/// Proposal mit `target: ""` erscheint in `vorschlaege_sicht` UND im Store.
+#[test]
+#[cfg(windows)]
+fn proposal_traegt_das_fuehrende_main_als_ziel_und_zwei_mains_erzeugen_keinen() {
+    let (c, writer, _ordner) = coordinator_mit_store("nak214-v02");
+    let (a, passage_id) = buehne_mit_passage(&c, 1, 12);
+
+    // V-01 — der Kontrollfall.
+    let vorschlaege = c.vorschlaege_sicht(&hex(0x11), &hex(0x22));
+    assert!(
+        !vorschlaege.is_empty(),
+        "mit eindeutiger Fuehrung entsteht ein Vorschlag"
+    );
+    for vorschlag in &vorschlaege {
+        assert_eq!(
+            vorschlag.target, a[0].instance_id,
+            "das Ziel ist die hex32-ID des fuehrenden Mains"
+        );
+        assert_eq!(vorschlag.target.len(), 32, "hex32, nicht der leere String");
+        assert_eq!(vorschlag.passage_id.as_deref(), Some(passage_id.as_str()));
+        for (feld, belegt) in vorschlag.gate_felder_vollstaendig() {
+            assert!(belegt, "Gate-Feld {feld} fehlt am erzeugten Objekt");
+        }
+    }
+    let im_store = proposals_im_store(&writer);
+    assert!(
+        !im_store.is_empty(),
+        "der Kontrollfall legt sein Objekt wirklich ab"
+    );
+    for objekt in &im_store {
+        assert_eq!(
+            objekt["target"], a[0].instance_id,
+            "und im Store steht dasselbe Ziel"
+        );
+    }
+    let store_vorher = im_store.len();
+
+    // V-02 — ein ZWEITES Main tritt bei: beide verlieren die Bestätigung,
+    // und `fuehrung_neu_bewerten_locked` setzt `fuehrendes_main` auf `None`
+    // (`mitgliedschaft.rs`, FUEHRENDE_MAINS_PRO_SESSION = 1). Genau dieser
+    // Zustand füllte `target` bisher mit dem leeren String.
+    let zweites = zweites_main(&c, "main2", 8);
+    // Weitere Evidenz loest `hypothesen_bilden` -> `vorschlaege_bilden` aus.
+    reihe_wechselnd(&c, "sonde0", &a[1].clone(), 300, 2);
+
+    assert!(
+        c.vorschlaege_sicht(&hex(0x11), &hex(0x22)).is_empty(),
+        "ohne fuehrendes Main entsteht KEIN Vorschlag"
+    );
+    assert_eq!(
+        proposals_im_store(&writer).len(),
+        store_vorher,
+        "und es kommt keine `proposal`-Zeile mehr in den Store"
+    );
+    assert_eq!(
+        c.draft_offers_zaehler(),
+        0,
+        "auch kein Angebot - in P5 ohnehin nie"
+    );
+
+    // Der Befund BLEIBT: seit NAK-213 die Enthaltung ohne Ort, mit
+    // `next_test` und `listen_for` unveraendert.
+    let befunde = befunde_der_sitzung(&c);
+    assert_eq!(befunde.len(), 1, "die Enthaltung ohne Ort: {befunde:?}");
+    assert_eq!(
+        befunde[0].ursachenklasse,
+        eqcop_broker::coordinator::Ursachenklasse::DatenReichenNicht
+    );
+    assert!(
+        !befunde[0].listen_for.is_empty(),
+        "das Hoerziel steht am Befund - die Anzeige verliert nichts"
+    );
+
+    // V-03 — der Rückweg im selben Änderungssatz: zieht sich das zweite Main
+    // zurück und wird das erste wieder bestätigt, entsteht der Vorschlag
+    // wieder, mit dem Ziel des verbleibenden Mains.
+    assert!(c.beitritt_aufheben(&hex(0x11), &hex(0x22), &zweites.instance_id));
+    assert!(c.beitritt_bestaetigen(&hex(0x11), &hex(0x22), &a[0].instance_id));
+    reihe_wechselnd(&c, "sonde0", &a[1].clone(), 400, 2);
+    let wieder = c.vorschlaege_sicht(&hex(0x11), &hex(0x22));
+    assert!(
+        !wieder.is_empty(),
+        "mit wieder eindeutiger Fuehrung entsteht der Vorschlag erneut"
+    );
+    for vorschlag in &wieder {
+        assert_eq!(vorschlag.target, a[0].instance_id);
+    }
+}
+
+/// **V-04.** Zieht sich das führende Main zurück, verschwindet der Eintrag
+/// beim nächsten `vorschlaege_bilden` aus dem Stand — ein BEREITS
+/// persistiertes Proposal bleibt im Store, weil der Store append-only ist
+/// und ein gültig entstandenes Ereignis nicht rückwirkend unwahr wird.
+///
+/// Rotbeweis `NAK-214-rot-V-04.txt`: ohne den Riegel bleibt der Vorschlag mit
+/// leerem Ziel im Stand und wird erneut persistiert.
+#[test]
+#[cfg(windows)]
+fn main_rueckzug_zwischen_befund_und_vorschlag() {
+    let (c, writer, _ordner) = coordinator_mit_store("nak214-v04");
+    let (a, _passage_id) = buehne_mit_passage(&c, 1, 12);
+    assert!(
+        !c.vorschlaege_sicht(&hex(0x11), &hex(0x22)).is_empty(),
+        "Vorbedingung: ein Vorschlag existiert"
+    );
+    let vorher = proposals_im_store(&writer);
+    assert!(!vorher.is_empty());
+
+    // Das führende Main zieht sich zurück.
+    assert!(c.beitritt_aufheben(&hex(0x11), &hex(0x22), &a[0].instance_id));
+    reihe_wechselnd(&c, "sonde0", &a[1].clone(), 300, 2);
+
+    assert!(
+        c.vorschlaege_sicht(&hex(0x11), &hex(0x22)).is_empty(),
+        "der Eintrag verschwindet aus dem Stand"
+    );
+    let nachher = proposals_im_store(&writer);
+    assert_eq!(
+        nachher.len(),
+        vorher.len(),
+        "kein NEUES Objekt - und die alten bleiben, der Store ist append-only"
+    );
+    for objekt in &nachher {
+        assert_ne!(
+            objekt["target"], "",
+            "keine Zeile mit leerem Ziel - weder alt noch neu"
+        );
+    }
+}
+
+/// **V-11.** Fällt der Riegel, wird nichts persistiert und nichts zugestellt
+/// — gemessen an den BESTÄNDEN: Storeinhalt, Outbox-Schuld und
+/// `vorschlaege_sicht`. Ein neuer Zähler entsteht dafür nicht (§2.9 Nr. 2).
+///
+/// Rotbeweis `NAK-214-rot-V-11.txt`.
+#[test]
+#[cfg(windows)]
+fn unvollstaendiger_vorschlag_erreicht_weder_store_noch_outbox() {
+    let (c, writer, _ordner) = coordinator_mit_store("nak214-v11");
+    let (a, _passage_id) = buehne_mit_passage(&c, 1, 12);
+    let vorher = proposals_im_store(&writer).len();
+    assert!(vorher > 0, "Vorbedingung: der vollstaendige Weg legt ab");
+
+    // Zwei Mains: ab hier faellt der Riegel an `target`.
+    let _zweites = zweites_main(&c, "main2", 8);
+    reihe_wechselnd(&c, "sonde0", &a[1].clone(), 300, 2);
+
+    assert!(c.vorschlaege_sicht(&hex(0x11), &hex(0x22)).is_empty());
+    assert_eq!(
+        proposals_im_store(&writer).len(),
+        vorher,
+        "`vorschlag_persistieren` wird nicht gerufen"
+    );
+    assert_eq!(
+        c.draft_offer_schuld_zaehler(),
+        0,
+        "und die Outbox traegt keine Zustellschuld"
+    );
+    let outbox = writer.handle().outbox_lesen().expect("Outbox ist lesbar");
+    for (ziel, _, _) in &outbox {
+        assert!(
+            !ziel.object_key.starts_with("proposal:"),
+            "keine Proposal-Schuld in der Outbox: {:?}",
+            ziel.object_key
+        );
+    }
+}
+
+/// **V-12 (b), Kontrollfall am echten Produktpfad.** Mehrere Befunde einer
+/// Sitzung entstehen aus Evidenz, keiner mit leerem Gate-Feld: jeder trägt
+/// seinen Vorschlag, und kein Vorschlag steht ohne Befund.
+///
+/// Die selektive Hälfte (a) liegt als Unit-Fall in
+/// `broker/src/coordinator/proposal_verdrahtung.rs` — der Zustand „genau
+/// einem Befund fehlt sein `listen_for`" ist von außen strukturell nicht
+/// herstellbar.
+#[test]
+#[cfg(windows)]
+fn vorschlaege_bleiben_ihren_befunden_zugeordnet() {
+    let (c, _writer, _ordner) = coordinator_mit_store("nak214-v12b");
+    let (_a, _passage_id) = buehne_mit_passage(&c, 2, 12);
+    let befunde = befunde_der_sitzung(&c);
+    let vorschlaege = c.vorschlaege_sicht(&hex(0x11), &hex(0x22));
+    assert!(
+        !vorschlaege.is_empty(),
+        "die Buehne traegt Vorschlaege: {befunde:?}"
+    );
+    assert_eq!(
+        vorschlaege.len(),
+        befunde.len(),
+        "so viele Vorschlaege wie Befunde - keiner faellt heraus"
+    );
+    for vorschlag in &vorschlaege {
+        let id = vorschlag
+            .finding_id
+            .as_deref()
+            .expect("jeder Vorschlag nennt seinen Befund");
+        assert!(
+            befunde.iter().any(|b| b.finding_id == id),
+            "kein Vorschlag ohne Befund: {id}"
+        );
+    }
+    for befund in &befunde {
+        assert!(
+            vorschlaege
+                .iter()
+                .any(|v| v.finding_id.as_deref() == Some(befund.finding_id.as_str())),
+            "und kein Befund ohne Vorschlag: {}",
+            befund.finding_id
+        );
+    }
+    assert_eq!(c.draft_offer_schuld_zaehler(), 0, "keine Zustellschuld in P5");
+}

@@ -44,21 +44,7 @@ impl Coordinator {
             };
             (befunde, Self::proposallage_locked(&stand, session))
         };
-        // 🔑 WN-04 (Nacharbeit 2, 07.09.2026): `filter_map`, nicht `map`.
-        //
-        // Ohne benannte Passage liefert der Erzeuger `None`, und dann gibt
-        // es hier auch keinen Eintrag: kein `stand.vorschlaege`, kein
-        // `vorschlag_persistieren`, kein `draft_offer`. Der Befund bleibt
-        // sichtbar — er behauptet etwas über die Ursache —, aber ein
-        // Vorschlag, der nicht sagen kann, WO er gilt, entsteht nicht.
-        //
-        // Die Paare bleiben zusammen: `angebot` unten braucht den Befund
-        // ZU seinem Vorschlag, und ein `zip` über zwei unterschiedlich
-        // lange Listen hängte den falschen an.
-        let paare: Vec<(CauseHypothesis, Proposal)> = befunde
-            .iter()
-            .filter_map(|b| proposal(b, &lage).map(|v| (b.clone(), v)))
-            .collect();
+        let paare = paare_bilden(&befunde, &lage);
         let neue: Vec<Proposal> = paare.iter().map(|(_, v)| v.clone()).collect();
         let geaendert = {
             let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
@@ -456,6 +442,40 @@ impl Coordinator {
     }
 }
 
+/// Die `(Befund, Vorschlag)`-Paare einer Sitzung — die eine Zusammenführung.
+///
+/// 🔑 WN-04 (Nacharbeit 2, 07.09.2026): `filter_map`, nicht `map`.
+///
+/// Ohne benannte Passage liefert der Erzeuger `None`, und dann gibt es hier
+/// auch keinen Eintrag: kein `stand.vorschlaege`, kein
+/// `vorschlag_persistieren`, kein `draft_offer`. Der Befund bleibt sichtbar —
+/// er behauptet etwas über die Ursache —, aber ein Vorschlag, der nicht sagen
+/// kann, WO er gilt, entsteht nicht. Seit NAK-214 fällt hier auch, wem eines
+/// der sechs Gate-Felder fehlt (R1, der Schlussriegel in `proposal()`).
+///
+/// Die Paare bleiben zusammen: `angebot` in `vorschlaege_bilden` braucht den
+/// Befund ZU seinem Vorschlag, und ein `zip` über zwei unterschiedlich lange
+/// Listen hängte den falschen an.
+///
+/// 🔑 **NAK-214 (08.09.2026): warum das eine eigene Funktion ist.** `paare`
+/// war eine lokale Variable von `vorschlaege_bilden` und damit an keinem
+/// Bestand beobachtbar: `neue` übernimmt nur die Vorschlagshälfte, und
+/// `angebot` — die einzige Auswertung, die BEIDE Hälften liest — ist in P5
+/// immer `None`, weil `capability_vorhanden` fest falsch ist. Die Zusage
+/// „die Paare bleiben zusammen" war deshalb seit SONDE-014 Nacharbeit 2
+/// zugesagt und nicht gemessen. Die Funktion verschiebt die bestehenden
+/// Zeilen unverändert und bleibt modulprivat; sie gibt der Zusage einen
+/// Rückgabewert, den ein Test lesen kann.
+fn paare_bilden(
+    befunde: &[CauseHypothesis],
+    lage: &Proposallage,
+) -> Vec<(CauseHypothesis, Proposal)> {
+    befunde
+        .iter()
+        .filter_map(|b| proposal(b, lage).map(|v| (b.clone(), v)))
+        .collect()
+}
+
 /// Wie lange ein Angebot gilt (§33.3 `steuerkopf.ttl_ms`).
 ///
 /// Zehn Sekunden: lang genug, dass ein User den Vorschlag liest, kurz genug,
@@ -484,4 +504,233 @@ fn zahl(wert: f64, min: f64, max: f64) -> f64 {
 
 fn zahl_wert(wert: f64, min: f64, max: f64) -> Value {
     Value::from(zahl(wert, min, max))
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-214 V-12 (a) — die Paarbildung, von innen gemessen
+// ═════════════════════════════════════════════════════════════════════════
+//
+// Beide Fälle liegen HIER und nicht in `broker/tests/`, weil der Zustand,
+// den sie brauchen, von außen strukturell unerreichbar ist: `listen_for` ist
+// das einzige BEFUNDEIGENE Gate-Feld — `passage_id` kommt aus der Aufnahme
+// und ist für alle Befunde einer Sitzung gleich, `target` aus der EINEN
+// `Proposallage` je Sitzung —, am Produktpfad wird es nie leer gesetzt, und
+// `Stand`, `SessionKey` und `vorschlaege_bilden` sind `pub(super)`.
+//
+// ZWEI Fälle, nicht einer: ihre Rotbeweise treffen verschiedene Stellen.
+// Der Bestandsfall fällt unter dem entfernten Schlussriegel (drei Vorschläge
+// statt zwei), der Ausrichtungsfall unter einer `zip`-Paarbildung. Läge
+// beides in einem Fall, machte ihn jede der beiden Mutationen rot, und dass
+// die Bestandsprüfung unter der `zip`-Mutation grün bleibt, wäre an keinem
+// Lauf mehr abzulesen.
+#[cfg(test)]
+mod tests {
+    use super::super::hypothese::{Bandintervall, Beobachtung, Rangkomponenten};
+    use super::super::zustand::SessionStand;
+    use super::*;
+    use std::sync::Arc;
+
+    fn hex(n: usize) -> String {
+        format!("{n:032x}")
+    }
+
+    fn session() -> SessionKey {
+        SessionKey {
+            project_binding_id: hex(0x11),
+            session_epoch: hex(0x22),
+        }
+    }
+
+    /// Ein vollständiger Befund mit Passage — die Form, aus der ein Vorschlag
+    /// entsteht. `listen_for` reist als Parameter herein: es ist das eine
+    /// Gate-Feld, das der Befund selbst trägt.
+    fn befund(nr: usize, listen_for: &str) -> CauseHypothesis {
+        CauseHypothesis {
+            finding_id: hex(0x100 + nr),
+            claim_class: Aussageklasse::Zusammenhang,
+            ursachenklasse: Ursachenklasse::QuelleResonanz,
+            target_metric: Zielmetrik::BandPegelDb,
+            candidate_source: hex(0x200 + nr),
+            passage_id: Some(hex(0x5001)),
+            pre_post: None,
+            band_hz: Bandintervall { von: 98, bis: 102 },
+            beobachtung: Beobachtung {
+                wert_db: 4.0,
+                gueltig: true,
+            },
+            rang: Rangkomponenten {
+                bandpassung: 0.8,
+                koinzidenz: 0.7,
+                uplift: 0.6,
+                intent_relevanz: 0.5,
+                wiederholbarkeit: 0.9,
+                routingqualitaet: 1.0,
+            },
+            confidence: Befundkonfidenz {
+                klasse: Sicherheitsklasse::Hoch,
+                score: 0.75,
+            },
+            evidence_ids: vec![hex(0x1000 + nr)],
+            alternatives: Vec::new(),
+            ausschluesse: Vec::new(),
+            next_test: NaechsterTest::ManuellerVersuch,
+            zustand: Befundzustand::ReadyToSend,
+            intent_revision: 0,
+            intent_generation: 0,
+            likely_cause: "Testbefund".into(),
+            smallest_test: "Testschritt".into(),
+            listen_for: listen_for.into(),
+            maskierung: None,
+            metrics_version: super::super::vergleichbarkeit::METRICS_VERSION,
+        }
+    }
+
+    /// Die Lage, wie `proposallage_locked` sie für eine Sitzung mit
+    /// eindeutigem führenden Main bildet — dieselben `messbare_guardrails`,
+    /// dieselbe feste `capability_vorhanden = false`.
+    fn lage() -> Proposallage {
+        Proposallage {
+            ziel_instanz: hex(1),
+            base_revision: 0,
+            intent: None,
+            capability_vorhanden: false,
+            messbare_guardrails: vec![
+                Stopbedingung::GuardrailAbdeckung,
+                Stopbedingung::GuardrailGeschuetzt,
+                Stopbedingung::KeineWiederholbareMasteraenderung,
+            ],
+            usergrenze_db: None,
+            session_epoch: hex(0x22),
+            metrics_version: super::super::vergleichbarkeit::METRICS_VERSION,
+        }
+    }
+
+    /// **V-12 (a), Bestandshälfte.** Drei Befunde einer Sitzung, genau einer
+    /// ohne `listen_for`: der Riegel trifft GENAU ihn.
+    ///
+    /// Gemessen an den Beständen, die der Coordinator wirklich führt —
+    /// `stand.vorschlaege` und `vorschlaege_sicht` —, nicht an einer
+    /// Behauptung. Der Rotbeweis ist der entfernte Schlussriegel: dann
+    /// entstehen DREI Vorschläge statt zwei, und der Befund ohne `listen_for`
+    /// bekommt seinen (`NAK-214-rot-V-05b.txt`).
+    #[test]
+    fn riegel_trifft_nur_den_unvollstaendigen() {
+        let c = Coordinator::mit_uhr(Arc::new(ManualClock::default()), hex(0xbeef));
+        let session = session();
+        {
+            let mut stand = c.stand.lock().unwrap();
+            stand.sessions.insert(
+                session.clone(),
+                SessionStand {
+                    fuehrendes_main: Some(hex(1)),
+                },
+            );
+            stand.befunde.insert(
+                session.clone(),
+                vec![
+                    befund(0, "Band 3 kHz"),
+                    befund(1, ""),
+                    befund(2, "Band 5 kHz"),
+                ],
+            );
+        }
+        assert!(c.vorschlaege_bilden(&session));
+
+        let sicht = c.vorschlaege_sicht(&session.project_binding_id, &session.session_epoch);
+        assert_eq!(
+            sicht.len(),
+            2,
+            "zwei von drei Befunden tragen einen Vorschlag"
+        );
+        let ohne_feld = hex(0x101);
+        for vorschlag in &sicht {
+            assert_ne!(
+                vorschlag.finding_id.as_deref(),
+                Some(ohne_feld.as_str()),
+                "der Befund ohne `listen_for` bekommt keinen Vorschlag"
+            );
+            // Kein Vorschlag ohne Befund - die andere Richtung derselben
+            // Zuordnung.
+            assert!(vorschlag.finding_id.is_some());
+        }
+        {
+            let stand = c.stand.lock().unwrap();
+            let gehalten = stand
+                .vorschlaege
+                .get(&session)
+                .expect("die Sitzung traegt Vorschlaege");
+            assert_eq!(gehalten.len(), 2, "derselbe Bestand im Stand");
+        }
+        // `angebot` laeuft wirklich mit und ist in P5 `None`: die Zusage
+        // "das Angebot gehoert zu einem Befund, der einen Vorschlag hat" ist
+        // hier LEER erfuellt, und genau das wird gemessen (M-52, V-13).
+        assert_eq!(
+            c.draft_offers_zaehler(),
+            0,
+            "in P5 gibt es kein Angebot - die Capability fehlt"
+        );
+    }
+
+    /// **V-12 (a), Ausrichtungshälfte.** Jedes Tupel trägt den Vorschlag
+    /// SEINES Befunds — mit dem herausgefilterten Befund an erster,
+    /// mittlerer und letzter Position.
+    ///
+    /// Der Rotbeweis (`NAK-214-rot-V-12.txt`) fährt die Paarbildung als `zip`
+    /// über die Befunde und die gefilterte Vorschlagsliste. Er fällt an den
+    /// Teilfällen ERSTE und MITTLERE Position; LETZTE bleibt grün — `zip`
+    /// kürzt auf die kürzere Liste, und fällt der letzte Befund heraus,
+    /// stehen die übrigen zwei noch an ihrem Platz. Der dritte Teilfall ist
+    /// damit der Kontrollteilfall, der zeigt, dass die Prüfung nicht pauschal
+    /// rot wird. Die LÄNGE bleibt unter derselben Mutation in allen drei
+    /// grün: sie hält eine ausgefallene Filterung, nicht die Verschiebung.
+    #[test]
+    fn paare_bleiben_bei_ihrem_befund() {
+        // 🔑 Die drei Positionen werden GESAMMELT und erst danach gemeinsam
+        // geprueft. Bräche der Fall an der ersten Abweichung ab, zeigte der
+        // Rotbeweis nur sie — und die Zusage „die LETZTE Position bleibt
+        // unter derselben Mutation gruen" waere an keinem Lauf abzulesen.
+        let mut laengen: Vec<(usize, usize)> = Vec::new();
+        let mut verschoben: Vec<String> = Vec::new();
+        let mut mitgelaufen: Vec<String> = Vec::new();
+        for position in 0..3usize {
+            let befunde: Vec<CauseHypothesis> = (0..3)
+                .map(|i| befund(i, if i == position { "" } else { "Band 3 kHz" }))
+                .collect();
+            let paare = paare_bilden(&befunde, &lage());
+            laengen.push((position, paare.len()));
+            for (b, v) in &paare {
+                if v.finding_id.as_deref() != Some(b.finding_id.as_str()) {
+                    verschoben.push(format!(
+                        "Position {position}: Befund {} traegt den Vorschlag von {:?}",
+                        b.finding_id, v.finding_id
+                    ));
+                }
+                if b.finding_id == hex(0x100 + position) {
+                    mitgelaufen.push(format!(
+                        "Position {position}: der Befund ohne `listen_for` ist im Paar"
+                    ));
+                }
+            }
+        }
+        // Die LAENGE haelt eine ausgefallene oder zu weit greifende
+        // Filterung — nicht die Verschiebung: unter einer `zip`-Mutation
+        // bleibt sie in allen drei Positionen gruen, weil `zip` auf die
+        // kuerzere Liste kuerzt. Das trennt die Zeile ausdruecklich.
+        assert_eq!(
+            laengen,
+            vec![(0, 2), (1, 2), (2, 2)],
+            "je Position tragen zwei von drei Befunden einen Vorschlag"
+        );
+        let getroffene: Vec<usize> = (0..3usize)
+            .filter(|i| {
+                let marke = format!("Position {i}:");
+                verschoben.iter().chain(mitgelaufen.iter()).any(|z| z.starts_with(&marke))
+            })
+            .collect();
+        assert!(
+            verschoben.is_empty() && mitgelaufen.is_empty(),
+            "{} Abweichungen an den Positionen {getroffene:?} von drei geprueften:              {verschoben:?} {mitgelaufen:?}",
+            verschoben.len() + mitgelaufen.len()
+        );
+    }
 }

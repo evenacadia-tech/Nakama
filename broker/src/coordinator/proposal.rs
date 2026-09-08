@@ -713,7 +713,7 @@ pub fn proposal(befund: &CauseHypothesis, lage: &Proposallage) -> Option<Proposa
             },
         );
     let (parameters, allowed_bounds) = eingriff(aktion, befund, lage);
-    Some(Proposal {
+    let vorschlag = Proposal {
         proposal_id: proposal_id(befund, lage, aktion),
         proposal_schema: 1,
         target: lage.ziel_instanz.clone(),
@@ -738,7 +738,33 @@ pub fn proposal(befund: &CauseHypothesis, lage: &Proposallage) -> Option<Proposa
         // zum Anzeigezeitpunkt.
         intent_revision: lage.intent.as_ref().map_or(0, |i| i.revision),
         generatorversion: GENERATORVERSION,
-    })
+    };
+    // 🔑 **NAK-214 R1 (08.09.2026): DER SCHLUSSRIEGEL.**
+    //
+    // `gate_felder_vollstaendig` prüfte die sechs Angaben des Exit-Gates
+    // schon vorher — sie hatte nur keinen Produktivaufrufer (G5 E-D5 = A6).
+    // Ein Proposal mit `target: ""` entstand deshalb bei zwei bestätigten
+    // Mains (`fuehrendes_main = None` → `unwrap_or_default()`) und ging als
+    // `event_type = "proposal"` in den Store, obwohl `$defs/proposal` für
+    // `target` `hex32` mit `minLength: 32` verlangt.
+    //
+    // Der Riegel steht am ENDE des Erzeugers, weil alle drei Wirkungen
+    // — Zustandshaltung, Persistenz und Zustellung — durch diese eine
+    // Stelle laufen: `paare_bilden` sammelt nur, was hier `Some` ist.
+    // Ein zweiter Riegel davor (etwa eine Zielvorbedingung) deckte diesen
+    // hier und machte jeden einzelnen Rotbeweis unmöglich.
+    //
+    // Das `None` ist keine Ausnahme von M-46, sondern seine Durchsetzung:
+    // entweder ein VOLLSTÄNDIGES Objekt — auch für `no_change` und
+    // `more_data` — oder gar keines.
+    if vorschlag
+        .gate_felder_vollstaendig()
+        .iter()
+        .any(|(_, belegt)| !belegt)
+    {
+        return None;
+    }
+    Some(vorschlag)
 }
 
 /// Die Parameter und Grenzen eines Eingriffs (M-47).

@@ -13,8 +13,10 @@
 //! M-48 — der gelesene gegen den geratenen Zielbereich — liegt in
 //! `sonde013_verdrahtung.rs`, wo der Experimentpfad samt Store schon steht.
 
+use eqcop_broker::coordinator::proposal::{proposal, Grenzen};
 use eqcop_broker::coordinator::{
-    Aktion, Ausfuehrung, Coordinator, ManualClock, NaechsterTest, Rueckweg, Stopbedingung,
+    Aktion, Ausfuehrung, Coordinator, ManualClock, NaechsterTest, Proposallage, Rueckweg,
+    Stopbedingung,
 };
 use eqcop_broker::transport::bootstrap::{Adresse, AudioLage, HelloControl, HostAngabe};
 use eqcop_broker::transport::server_v3::Senke;
@@ -1263,4 +1265,225 @@ fn kein_nicht_endlicher_wert_erreicht_die_leitung() {
         assert!(b.confidence.score.is_finite());
         assert!((0.0..=1.0).contains(&b.confidence.score));
     }
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-214 R1 · gate_riegel_faellt_je_feld / gate_riegel_greift_im_erzeuger
+// ═════════════════════════════════════════════════════════════════════════
+//
+// ZWEI Messstellen, und jede misst etwas anderes:
+//
+// (a) AN DER FUNKTION — `gate_felder_vollstaendig` auf einem vollständig
+//     erzeugten Objekt, dem genau EIN Feld geleert wurde. Das misst die
+//     Sechserprüfung, nicht ihren produktiven Aufruf.
+// (b) AM ERZEUGER — `proposal()` mit einer Eingabe, die eines der zwei
+//     erreichbaren Felder leert. Das misst den AUFRUF, den G5 E-D5 = A6
+//     heute vermisst.
+//
+// Vier der sechs Felder bildet `proposal()` selbst und können den
+// Schlussriegel gar nicht falsch erreichen; die Zeilen sagen das je Feld
+// ehrlich, statt eine Erreichbarkeit zu behaupten, die es nicht gibt.
+
+/// Die Lage einer Sitzung mit eindeutigem führenden Main, wie
+/// `proposallage_locked` sie bildet — `ziel_instanz` reist als Parameter
+/// herein, weil genau dieses Feld die Zeile misst.
+fn lage_mit_ziel(ziel: &str, metrics_version: u32) -> Proposallage {
+    Proposallage {
+        ziel_instanz: ziel.into(),
+        base_revision: 0,
+        intent: None,
+        capability_vorhanden: false,
+        messbare_guardrails: vec![
+            Stopbedingung::GuardrailAbdeckung,
+            Stopbedingung::GuardrailGeschuetzt,
+            Stopbedingung::KeineWiederholbareMasteraenderung,
+        ],
+        usergrenze_db: None,
+        session_epoch: hex(0x22),
+        metrics_version,
+    }
+}
+
+/// **V-05 (a) bis V-10 (a).** Sechs Teilfälle: fünf erwarten `(feld, false)`,
+/// `revert` erwartet `(revert, true)` und ist der Kontrollteilfall.
+///
+/// Rotbeweis `NAK-214-rot-V-05a.txt`: `gate_felder_vollstaendig` liefert
+/// konstant wahr — die FÜNF werden rot, `revert` nicht. Ihn hält die Anzahl
+/// (`sechs_gate_felder_sind_pflicht_und_revert_hat_drei_werte`).
+#[test]
+fn gate_riegel_faellt_je_feld() {
+    let c = coordinator();
+    let _ = buehne(&c, 12);
+    let vorschlaege = c.vorschlaege_sicht(&hex(0x11), &hex(0x22));
+    let vollstaendig = vorschlaege
+        .first()
+        .expect("die Buehne traegt einen vollstaendigen Vorschlag")
+        .clone();
+    for (feld, belegt) in vollstaendig.gate_felder_vollstaendig() {
+        assert!(belegt, "Vorbedingung: {feld} ist am erzeugten Objekt belegt");
+    }
+
+    // Je Teilfall: Index im Sechserfeld, das geleerte Feld, die Erwartung.
+    //
+    // 🔑 Die Teilfaelle werden GESAMMELT und erst danach gemeinsam geprueft.
+    // Bräche der Fall am ersten Assert ab, zeigte der Rotbeweis genau EINEN
+    // gefallenen Teilfall — und die Zusage „die FUENF fallen, `revert` nicht"
+    // waere an keinem Lauf abzulesen.
+    let mut gemessen: Vec<(&str, bool, bool)> = Vec::new();
+
+    // V-05 (a) — `target` leer. Das EINZIGE Gate-Feld, das auch am
+    // Produktpfad falsch ankommt (zwei bestaetigte Mains).
+    let mut p = vollstaendig.clone();
+    p.target = String::new();
+    gemessen.push(("target", p.gate_felder_vollstaendig()[0].1, false));
+
+    // V-06 (a) — `passage_id` fort. Am Erzeuger nicht erreichbar: die
+    // WN-04-Vorbedingung (`proposal.rs`:656) faengt den Fall vor jeder
+    // Rechnung.
+    let mut p = vollstaendig.clone();
+    p.passage_id = None;
+    gemessen.push(("passage_id", p.gate_felder_vollstaendig()[1].1, false));
+
+    // V-07 (a) — `allowed_bounds` leer BEI EINEM EINGRIFF. `eingriff()`
+    // bildet die Grenzen intern und liefert bei jedem Eingriff drei `Some`;
+    // die Zeile misst deshalb die Regel, nicht einen erreichbaren Zustand.
+    let mut p = vollstaendig.clone();
+    p.action = Aktion::StaticEqCut;
+    p.allowed_bounds = Grenzen::default();
+    gemessen.push(("allowed_bounds", p.gate_felder_vollstaendig()[2].1, false));
+
+    // V-08 (a) — `listen_for` leer. Ueber den Erzeuger erreichbar (der Wert
+    // reist von aussen herein), am Produktpfad nie.
+    let mut p = vollstaendig.clone();
+    p.listen_for = String::new();
+    gemessen.push(("listen_for", p.gate_felder_vollstaendig()[3].1, false));
+
+    // V-09 (a) — `stop_if` leer. `stopbedingungen` beginnt immer mit
+    // `GuardrailAbdeckung` und liefert nie eine leere Liste.
+    let mut p = vollstaendig.clone();
+    p.stop_if = Vec::new();
+    gemessen.push(("stop_if", p.gate_felder_vollstaendig()[4].1, false));
+
+    // V-10 (a) — `revert` ist KONSTANT WAHR, und das steht hier
+    // ausdruecklich: `Rueckweg` ist ein dreiwertiges Enum ohne Leerwert.
+    // Was diesen Teilfall haelt, ist die ANZAHL — `felder.len() == 6` gegen
+    // `GATE_FELDER` in `sechs_gate_felder_sind_pflicht_und_revert_hat_drei_werte`.
+    for aktion in Aktion::ALLE {
+        let mut p = vollstaendig.clone();
+        p.action = aktion;
+        p.revert = rueckweg_fuer(aktion);
+        gemessen.push(("revert", p.gate_felder_vollstaendig()[5].1, true));
+    }
+
+    let abweichungen: Vec<String> = gemessen
+        .iter()
+        .filter(|(_, ist, soll)| ist != soll)
+        .map(|(feld, ist, soll)| format!("{feld}: gemessen {ist}, erwartet {soll}"))
+        .collect();
+    assert!(
+        abweichungen.is_empty(),
+        "V-05 (a) bis V-10 (a) - {} von {} Teilfaellen weichen ab: {abweichungen:?}",
+        abweichungen.len(),
+        gemessen.len()
+    );
+
+    // Die Gegenprobe zu V-07: fuer `more_data` bleibt `{}` „genannt" — die
+    // ausdrueckliche Lesart von M-46, unveraendert (Luecke E-L6 gehoert
+    // NAK-217).
+    let mut p = vollstaendig.clone();
+    p.action = Aktion::MoreData;
+    p.allowed_bounds = Grenzen::default();
+    assert_eq!(
+        p.gate_felder_vollstaendig()[2],
+        ("allowed_bounds", true),
+        "V-07 (a) Gegenprobe: `more_data` greift nicht ein und traegt keine Grenzen"
+    );
+
+    // Und das Objekt, dem NICHTS fehlt, passiert vollstaendig.
+    for (feld, belegt) in vollstaendig.gate_felder_vollstaendig() {
+        assert!(belegt, "das unveraenderte Objekt traegt {feld}");
+    }
+}
+
+/// **V-05 (b) und V-08 (b).** Der produktive Aufruf: `proposal()` gibt
+/// `None`, sobald eines der zwei erreichbaren Gate-Felder leer ist.
+///
+/// Rotbeweis `NAK-214-rot-V-05b.txt`: den Riegelaufruf am Ende von
+/// `proposal()` entfernt — das Objekt entsteht.
+#[test]
+fn gate_riegel_greift_im_erzeuger() {
+    let c = coordinator();
+    let _ = buehne(&c, 12);
+    let befunde = c.befunde_sicht(&hex(0x11), &hex(0x22));
+    let befund = befunde
+        .first()
+        .expect("die Buehne traegt einen Befund")
+        .clone();
+    assert!(
+        befund.passage_id.is_some(),
+        "Vorbedingung: der Befund traegt seine Passage - sonst faellt die WN-04-Zeile davor"
+    );
+    let metrics_version = befund.metrics_version;
+
+    // Kontrollfall: mit eindeutigem Ziel entsteht ein vollstaendiges Objekt.
+    let gut = proposal(&befund, &lage_mit_ziel(&hex(1), metrics_version))
+        .expect("mit Ziel und Passage entsteht ein Vorschlag");
+    assert_eq!(gut.target, hex(1));
+    assert_eq!(gut.finding_id.as_deref(), Some(befund.finding_id.as_str()));
+
+    // V-05 (b): leeres Ziel - genau der Zustand, den `unwrap_or_default()`
+    // bei zwei bestaetigten Mains erzeugt.
+    assert!(
+        proposal(&befund, &lage_mit_ziel("", metrics_version)).is_none(),
+        "V-05 (b): ohne Ziel entsteht KEIN Objekt"
+    );
+
+    // V-08 (b): leeres Hoerziel am Befund.
+    let mut ohne_hoerziel = befund.clone();
+    ohne_hoerziel.listen_for = String::new();
+    assert!(
+        proposal(&ohne_hoerziel, &lage_mit_ziel(&hex(1), metrics_version)).is_none(),
+        "V-08 (b): ohne Hoerziel entsteht KEIN Objekt"
+    );
+
+    // Die WN-04-Zeile daneben, unveraendert: ohne Passage faellt es davor.
+    let mut ohne_passage = befund.clone();
+    ohne_passage.passage_id = None;
+    assert!(
+        proposal(&ohne_passage, &lage_mit_ziel(&hex(1), metrics_version)).is_none(),
+        "WN-04, unveraendert: ohne Passage entsteht KEIN Objekt"
+    );
+}
+
+/// **V-13 — Regressionswache.** Der Riegel weicht die P5-Zustellsperre
+/// nicht auf: `capability_vorhanden` ist fest `false` und `alle_messbar`
+/// strukturell falsch, also bleibt `draft_offers` in jeder Bühne 0.
+///
+/// Sie ist auch ohne den Fix grün und heißt deshalb nicht Beleg.
+#[test]
+fn p5_bietet_weiterhin_keinen_draft_an() {
+    let c = coordinator();
+    let _ = buehne(&c, 12);
+    let vorschlaege = c.vorschlaege_sicht(&hex(0x11), &hex(0x22));
+    assert!(
+        !vorschlaege.is_empty(),
+        "die Buehne traegt Vorschlaege - sonst misst die Wache nichts"
+    );
+    for vorschlag in &vorschlaege {
+        assert_eq!(
+            vorschlag.action,
+            Aktion::MoreData,
+            "M-50: `GuardrailLoudness` ist nicht messbar, also ist jede Aktion `more_data`"
+        );
+    }
+    assert_eq!(
+        c.draft_offers_zaehler(),
+        0,
+        "V-13: in P5 geht kein Angebot hinaus"
+    );
+    assert_eq!(
+        c.draft_offer_schuld_zaehler(),
+        0,
+        "V-13: und es entsteht auch keine Zustellschuld"
+    );
 }

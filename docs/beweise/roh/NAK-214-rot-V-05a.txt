@@ -1,0 +1,40 @@
+ROTBEWEIS NAK-214 — V-05 (a) bis V-10 (a) — die Sechserpruefung an der Funktion
+========================================================================
+
+Erzeugt am 08.09.2026 in der Etappe 2 (Bau), Bauetappe A (der Proposal-Riegel, R1).
+Der Stand ist danach zurueckgenommen; die Mutation liegt in KEINEM Commit.
+
+MUTATION B — `gate_felder_vollstaendig` liefert KONSTANT WAHR.
+
+Die fuenf pruefenden Teilausdruecke sind durch `true` ersetzt; `revert` war
+schon vorher konstant wahr. Erwartung nach E1/V-10: die FUENF Teilfaelle
+fallen, `revert` nicht.
+
+WAS FAELLT
+------------------------------------------------------------------------
+Gemessen: `sonde014_proposal.rs::gate_riegel_faellt_je_feld` meldet "5 Abweichungen" — target, passage_id, allowed_bounds, listen_for und stop_if. Die sechs `revert`-Teilfaelle bleiben gruen: ein Teilfall, der `true` erwartet, wird von einem konstant wahren Riegel nicht rot (V-10, Kontrollteilfall). Was ihn haelt, ist die ANZAHL — `sechs_gate_felder_sind_pflicht_und_revert_hat_drei_werte` laeuft im selben Lauf gruen und misst `felder.len() == 6` gegen `GATE_FELDER`.
+
+ROHAUSGABE
+------------------------------------------------------------------------
+     Running tests\sonde014_proposal.rs (broker\target\debug\deps\sonde014_proposal-7c92fc847c987d9d.exe)
+
+running 2 tests
+test gate_riegel_faellt_je_feld ... FAILED
+test sechs_gate_felder_sind_pflicht_und_revert_hat_drei_werte ... ok
+
+failures:
+
+---- gate_riegel_faellt_je_feld stdout ----
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde014-proposal-14640-63c121b9413e4068986b4d6636dd4b97\nakama-broker.sqlite3
+
+thread 'gate_riegel_faellt_je_feld' (8432) panicked at tests\sonde014_proposal.rs:1383:5:
+V-05 (a) bis V-10 (a) - 5 von 11 Teilfaellen weichen ab: ["target: gemessen true, erwartet false", "passage_id: gemessen true, erwartet false", "allowed_bounds: gemessen true, erwartet false", "listen_for: gemessen true, erwartet false", "stop_if: gemessen true, erwartet false"]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    gate_riegel_faellt_je_feld
+
+test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 19 filtered out; finished in 8.37s
+
+error: test failed, to rerun pass `--test sonde014_proposal`

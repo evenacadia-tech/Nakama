@@ -1,0 +1,40 @@
+ROTBEWEIS NAK-214 — V-12 — die Paare bleiben bei ihrem Befund
+========================================================================
+
+Erzeugt am 08.09.2026 in der Etappe 2 (Bau), Bauetappe A (der Proposal-Riegel, R1).
+Der Stand ist danach zurueckgenommen; die Mutation liegt in KEINEM Commit.
+
+MUTATION C — `paare_bilden` als `zip` ueber die Befunde und die GEFILTERTE
+Vorschlagsliste.
+
+    let vorschlaege: Vec<Proposal> = befunde.iter().filter_map(|b| proposal(b, lage)).collect();
+    befunde.iter().cloned().zip(vorschlaege).collect()
+
+Erwartung nach V-12: die Zuordnung verschiebt sich bei ERSTER und MITTLERER
+Filterposition; die LETZTE bleibt gruen (`zip` kuerzt auf die kuerzere Liste),
+und die Laengenzusage bleibt in allen drei gruen.
+
+WAS FAELLT
+------------------------------------------------------------------------
+Gemessen: `proposal_verdrahtung.rs::tests::paare_bleiben_bei_ihrem_befund` meldet "5 Abweichungen an den Positionen [0, 1] von drei geprueften". Position 2 bleibt gruen — der Kontrollteilfall. Die Laengenzusage `[(0,2),(1,2),(2,2)]` bleibt unter derselben Mutation in allen drei gruen und faellt deshalb NICHT: sie haelt eine ausgefallene Filterung, nicht die Verschiebung. Und die Bestandspruefung `riegel_trifft_nur_den_unvollstaendigen` bleibt vollstaendig gruen — genau deshalb liegen die zwei Messungen in ZWEI Faellen statt in einem.
+
+ROHAUSGABE
+------------------------------------------------------------------------
+test coordinator::proposal_verdrahtung::tests::riegel_trifft_nur_den_unvollstaendigen ... ok
+test coordinator::proposal_verdrahtung::tests::paare_bleiben_bei_ihrem_befund ... FAILED
+
+failures:
+
+---- coordinator::proposal_verdrahtung::tests::paare_bleiben_bei_ihrem_befund stdout ----
+
+thread 'coordinator::proposal_verdrahtung::tests::paare_bleiben_bei_ihrem_befund' (27468) panicked at src\coordinator\proposal_verdrahtung.rs:730:9:
+5 Abweichungen an den Positionen [0, 1] von drei geprueften:              ["Position 0: Befund 00000000000000000000000000000100 traegt den Vorschlag von Some(\"00000000000000000000000000000101\")", "Position 0: Befund 00000000000000000000000000000101 traegt den Vorschlag von Some(\"00000000000000000000000000000102\")", "Position 1: Befund 00000000000000000000000000000101 traegt den Vorschlag von Some(\"00000000000000000000000000000102\")"] ["Position 0: der Befund ohne `listen_for` ist im Paar", "Position 1: der Befund ohne `listen_for` ist im Paar"]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    coordinator::proposal_verdrahtung::tests::paare_bleiben_bei_ihrem_befund
+
+test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 242 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`

@@ -1,0 +1,63 @@
+ROTBEWEIS NAK-214 — V-02 — zwei bestaetigte Mains erzeugen keinen Vorschlag
+========================================================================
+
+Erzeugt am 08.09.2026 in der Etappe 2 (Bau), Bauetappe A (der Proposal-Riegel, R1).
+Der Stand ist danach zurueckgenommen; die Mutation liegt in KEINEM Commit.
+
+MUTATION A — der Schlussriegel am Ende von `proposal()` ist ENTFERNT.
+
+Der Block
+
+    if vorschlag.gate_felder_vollstaendig().iter().any(|(_, belegt)| !belegt) {
+        return None;
+    }
+
+ist durch ein blankes `Some(vorschlag)` ersetzt. Es gibt keinen zweiten
+Riegel, der ihn deckt (E1: EIN Riegel, bewusst).
+
+WAS FAELLT
+------------------------------------------------------------------------
+Gemessen: `sonde014_verdrahtung.rs::proposal_traegt_das_fuehrende_main_als_ziel_und_zwei_mains_erzeugen_keinen` faellt an der Zusage "ohne fuehrendes Main entsteht KEIN Vorschlag" — ohne den Riegel erscheint ein Proposal mit `target: ""` in `vorschlaege_sicht` und im Store.
+
+ROHAUSGABE
+------------------------------------------------------------------------
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.07s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+
+running 4 tests
+test main_rueckzug_zwischen_befund_und_vorschlag ... FAILED
+test unvollstaendiger_vorschlag_erreicht_weder_store_noch_outbox ... FAILED
+test proposal_traegt_das_fuehrende_main_als_ziel_und_zwei_mains_erzeugen_keinen ... FAILED
+test vorschlaege_bleiben_ihren_befunden_zugeordnet ... ok
+
+failures:
+
+---- main_rueckzug_zwischen_befund_und_vorschlag stdout ----
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde014-nak214-v04-25268-e1087941f51f42d989e04e9d92f7e453\nakama-broker.sqlite3
+
+thread 'main_rueckzug_zwischen_befund_und_vorschlag' (16216) panicked at tests\sonde014_verdrahtung.rs:2753:5:
+der Eintrag verschwindet aus dem Stand
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- unvollstaendiger_vorschlag_erreicht_weder_store_noch_outbox stdout ----
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde014-nak214-v11-25268-d9ce3da413d24086b664781f57f49e91\nakama-broker.sqlite3
+
+thread 'unvollstaendiger_vorschlag_erreicht_weder_store_noch_outbox' (26972) panicked at tests\sonde014_verdrahtung.rs:2788:5:
+assertion failed: c.vorschlaege_sicht(&hex(0x11), &hex(0x22)).is_empty()
+
+---- proposal_traegt_das_fuehrende_main_als_ziel_und_zwei_mains_erzeugen_keinen stdout ----
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde014-nak214-v02-25268-c42d17fb8c7649bc85db4e3d38bc3582\nakama-broker.sqlite3
+
+thread 'proposal_traegt_das_fuehrende_main_als_ziel_und_zwei_mains_erzeugen_keinen' (27212) panicked at tests\sonde014_verdrahtung.rs:2686:5:
+ohne fuehrendes Main entsteht KEIN Vorschlag
+
+
+failures:
+    main_rueckzug_zwischen_befund_und_vorschlag
+    proposal_traegt_das_fuehrende_main_als_ziel_und_zwei_mains_erzeugen_keinen
+    unvollstaendiger_vorschlag_erreicht_weder_store_noch_outbox
+
+test result: FAILED. 1 passed; 3 failed; 0 ignored; 0 measured; 35 filtered out; finished in 12.88s
+
+error: test failed, to rerun pass `--test sonde014_verdrahtung`

@@ -1,0 +1,61 @@
+ROTBEWEIS NAK-214 — V-05 (b) und V-08 (b) — der PRODUKTIVE Aufruf des Riegels; zugleich der Bestandsteil von V-12 (a)
+========================================================================
+
+Erzeugt am 08.09.2026 in der Etappe 2 (Bau), Bauetappe A (der Proposal-Riegel, R1).
+Der Stand ist danach zurueckgenommen; die Mutation liegt in KEINEM Commit.
+
+MUTATION A — der Schlussriegel am Ende von `proposal()` ist ENTFERNT.
+
+Der Block
+
+    if vorschlag.gate_felder_vollstaendig().iter().any(|(_, belegt)| !belegt) {
+        return None;
+    }
+
+ist durch ein blankes `Some(vorschlag)` ersetzt. Es gibt keinen zweiten
+Riegel, der ihn deckt (E1: EIN Riegel, bewusst).
+
+WAS FAELLT
+------------------------------------------------------------------------
+Gemessen an zwei Stellen. (1) `sonde014_proposal.rs::gate_riegel_greift_im_erzeuger` faellt an "V-05 (b): ohne Ziel entsteht KEIN Objekt". (2) Das Unit-Testmodul in `proposal_verdrahtung.rs`: `riegel_trifft_nur_den_unvollstaendigen` misst DREI Vorschlaege statt zwei — der Befund ohne `listen_for` bekommt seinen. Damit faellt auch der Laengenteil von `paare_bleiben_bei_ihrem_befund`.
+
+ROHAUSGABE
+------------------------------------------------------------------------
+assertion `left == right` failed: Position 0: zwei von drei Befunden tragen einen Vorschlag
+  left: 3
+ right: 2
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- coordinator::proposal_verdrahtung::tests::riegel_trifft_nur_den_unvollstaendigen stdout ----
+
+thread 'coordinator::proposal_verdrahtung::tests::riegel_trifft_nur_den_unvollstaendigen' (6624) panicked at src\coordinator\proposal_verdrahtung.rs:640:9:
+assertion `left == right` failed: zwei von drei Befunden tragen einen Vorschlag
+  left: 3
+ right: 2
+
+
+failures:
+    coordinator::proposal_verdrahtung::tests::paare_bleiben_bei_ihrem_befund
+    coordinator::proposal_verdrahtung::tests::riegel_trifft_nur_den_unvollstaendigen
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 242 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`
+
+------------------------------------------------------------------------
+
+
+---- gate_riegel_greift_im_erzeuger stdout ----
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde014-proposal-20404-17d521b93b1d4728b68317fa149b9117\nakama-broker.sqlite3
+
+thread 'gate_riegel_greift_im_erzeuger' (1664) panicked at tests\sonde014_proposal.rs:1439:5:
+V-05 (b): ohne Ziel entsteht KEIN Objekt
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    gate_riegel_greift_im_erzeuger
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 20 filtered out; finished in 8.03s
+
+error: test failed, to rerun pass `--test sonde014_proposal`

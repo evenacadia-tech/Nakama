@@ -33,14 +33,26 @@
 //!    Versionsschritt, und der liegt in Etappe H zusammen mit der
 //!    Kalibrierung. Zwei Schritte fuer eine Sache waeren zwei Kalibrierungen.
 //!
-//! ── AUSSCHLUSS IST NICHT RANGSCHNITT ──────────────────────────────────────
+//! ── JEDER AUSGESCHIEDENE TRAEGT EINEN GRUND (M-87) ────────────────────────
 //!
-//! Die geschlossene Menge in `Ausschlussgrund` kennt bewusst keinen Wert
-//! „Rang zu niedrig". Ein Kandidat scheidet AUS DEM RANKING aus, wenn er ein
-//! Gate reisst; das ist ein Befund und traegt einen Grund. Der harte Deckel
-//! aus M-18 (hoechstens fuenf je Befund) schneidet DANACH und trifft nur
-//! Kandidaten, die jedes Gate bestanden haben — sie sind nicht ausgeschlossen,
-//! sondern ueberboten, und die deterministische Rangfolge ist ihr Protokoll.
+//! 🔑 **NAK-213 (08.09.2026).** Bis hierher stand hier das Gegenteil: der
+//! harte Deckel aus M-18 schneide „DANACH" — nach der Gewichtung —, und die
+//! Abgeschnittenen seien „nicht ausgeschlossen, sondern ueberboten, und die
+//! deterministische Rangfolge ist ihr Protokoll". Genau diese Lesart war der
+//! Gate-Befund G-D3/A7: eine Rangfolge, in der ein Kandidat gar nicht
+//! auftaucht, ist kein Protokoll ueber ihn, sondern sein spurloses
+//! Verschwinden — und M-87 sagt woertlich „JEDER Kandidat, der ausscheidet,
+//! traegt einen Grund aus einer geschlossenen Menge; ein kommentarlos
+//! entfernter Kandidat ist ein Defekt".
+//!
+//! Deshalb schneidet der Deckel jetzt **vor** Stufe B, auf einer eigenen
+//! Screeningordnung aus Stufe-A-Groessen (M-18: 64 Gruppen, paarweise
+//! Ueberlappung, Onset-/Peak-Koinzidenz, musikalische Prioritaet), und jeder
+//! Abgeschnittene traegt `screening_ueberboten`. „Ueberboten" bleibt die
+//! richtige Beschreibung seiner LAGE — sie ist jetzt nur ein Grund im
+//! Vertrag statt einer Luecke im Protokoll. Die Liste dieser Gruende wird
+//! nie gekappt (R6): ihre Obergrenze ist `SESSION_CLIENT_CAP`, also die Zahl
+//! der Quellen, die eine Sitzung ueberhaupt tragen kann.
 
 use super::intent::IntentBestand;
 use super::vergleichbarkeit::{GATE_ABDECKUNG, GATE_MINDEST_FENSTER, GATE_ZEITUEBERDECKUNG};
@@ -295,6 +307,33 @@ impl Ausschlussgrund {
             .iter()
             .position(|w| *w == wort)
             .map(|i| Self::ALLE[i])
+    }
+
+    /// Ist dieser Grund ein MESSGRUND im Sinne von R2?
+    ///
+    /// R2 (NAK-213) nennt woertlich fuenf: `coverage_fehlt`,
+    /// `alignment_falsch`, `passage_unvergleichbar`, `passage_zu_kurz`,
+    /// `evidenz_zurueckgenommen`. Ein Konkurrent, der an einem von ihnen
+    /// faellt, macht die KONKURRENZ unvollstaendig — ueber ihn liegt keine
+    /// verwertbare Messung vor, und der Ueberlebende hat sich gegen ihn nicht
+    /// behauptet, sondern nur ueberlebt.
+    ///
+    /// NICHT dabei sind die zwei Vetos: sie sind der ausdrueckliche Wille des
+    /// Users (M-03, M-04) und machen nicht die Messung unvollstaendig,
+    /// sondern die Frage unzulaessig. Ebenfalls nicht dabei ist
+    /// `capability_fehlt` — die Regel nennt ihn nicht (Nebenbefund NB-1 im
+    /// Manifest). `screening_ueberboten` ist ueber E2 geregelt, und
+    /// `master_duplikat` ist gerade der Nachweis, dass der Kandidat keine
+    /// Ursache sein KANN.
+    pub fn ist_messgrund(self) -> bool {
+        matches!(
+            self,
+            Self::CoverageFehlt
+                | Self::AlignmentFalsch
+                | Self::PassageUnvergleichbar
+                | Self::PassageZuKurz
+                | Self::EvidenzZurueckgenommen
+        )
     }
 
     pub const ALLE: [Ausschlussgrund; 10] = [
@@ -861,6 +900,154 @@ pub fn bandintervall_der_gruppe(gruppe: usize) -> Bandintervall {
     }
 }
 
+/// Der Screeningrang aus Stufe-A-Groessen (M-18) — das GUENSTIGE Mass, das
+/// entscheidet, WER Stufe B erreicht. Es entscheidet nie eine Klasse.
+///
+/// 🔑 **NAK-213 E1 (08.09.2026).** Bis hierher lief `rang_und_beleg` fuer
+/// JEDEN Gate-Ueberlebenden, und der Deckel schnitt danach — spurlos (M-87
+/// gebrochen, Gate-Befund G-D3/A7). M-18 nennt woertlich vier Groessen fuer
+/// das Screening, und Entwurf §36.2 (`:2371–2373`) nennt dieselben: die
+/// Energie in den **64 Gruppen** des Livegitters, die paarweise Ueberlappung,
+/// die Onset-/Peak-Koinzidenz und die musikalische Prioritaet.
+///
+/// ⚠️ Das ist KEINE siebte Rangkomponente. Die Ordnung entscheidet die
+/// AUSWAHL vor Stufe B; `RANGKOMPONENTEN`, `confidence.score` und die
+/// Reduktionsreihenfolge bleiben unberuehrt (M-25, Manifest §2.9 Nr. 3).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Screeningrang {
+    /// Anteil der Leistung des Kandidaten in der BEFUNDGRUPPE des 64er-
+    /// Livegitters. M-18 woertlich: „64 Baender" — deshalb das Intervall der
+    /// GRUPPE (`bandintervall_der_gruppe`) und nicht ein feineres.
+    pub gruppenenergie: f64,
+    /// Die im Gate bereits gerechnete paarweise Ueberlappung (NAK-212 E4).
+    pub alignment: f64,
+    /// Die musikalische Prioritaet aus der Rollentafel (M-18).
+    pub intent_relevanz: f64,
+    /// Die gerichtete Onset-/Peak-Koinzidenz gegen den Master, aus
+    /// `koinzidenz_gerichtet` — DERSELBEN Funktion, die die Rangkomponente
+    /// bildet, auf DENSELBEN Reihen. `None` (keine Streuung) und der negative
+    /// Zweig zaehlen hier wie dort als 0: das Screening ordnet, es widerlegt
+    /// nicht.
+    pub koinzidenz: f64,
+}
+
+impl Screeningrang {
+    fn werte(&self) -> [f64; 4] {
+        [
+            self.gruppenenergie,
+            self.alignment,
+            self.intent_relevanz,
+            self.koinzidenz,
+        ]
+    }
+}
+
+/// Bildet den Screeningrang EINES Kandidaten in der Befundgruppe.
+pub fn screeningrang(kandidat: &Quellprofil, aufnahme: &Aufnahme, gruppe: usize) -> Screeningrang {
+    Screeningrang {
+        // Dieselbe Rechnung wie `bandpassung`, aber auf dem Intervall der
+        // GRUPPE. Sie ein zweites Mal auszuschreiben waeren zwei
+        // Gelegenheiten, sie verschieden zu runden.
+        gruppenenergie: bandpassung(kandidat, bandintervall_der_gruppe(gruppe)),
+        alignment: paarueberdeckung(&kandidat.fenster, &aufnahme.master.fenster),
+        intent_relevanz: intent_relevanz(kandidat, aufnahme),
+        koinzidenz: koinzidenz_gerichtet(kandidat, &aufnahme.master)
+            .unwrap_or(0.0)
+            .max(0.0),
+    }
+}
+
+/// Der Vergleichswert, quantisiert auf `RANG_QUANTUM` (M-25).
+///
+/// Dieselbe Aufloesung wie der Gesamtrang und dieselbe fail-closed Behandlung
+/// nicht-endlicher Werte (`quantisiert`): ein unquantisierter Vergleich
+/// liesse die letzte Bitstelle einer Gleitkommasumme entscheiden, wer Stufe B
+/// erreicht.
+pub fn screening_quantisiert(rang: &Screeningrang) -> i64 {
+    let werte = rang.werte();
+    let mut summe = 0.0;
+    for wert in werte {
+        summe += quantisiert(wert);
+    }
+    (quantisiert(summe / werte.len() as f64) / RANG_QUANTUM).round() as i64
+}
+
+/// Warum die Konkurrenz dieser Rechnung UNVOLLSTAENDIG ist (R1, R2).
+///
+/// Jede Variante ist eine benannte Struktur, keine Zahl: M-15 („die Klasse
+/// wird nicht aus dem Score gerundet") und M-31 („Schwelle kalibriert, nie
+/// geraten") bleiben unberuehrt — dieselbe Lesart, die schon
+/// `parent_duplikat` und `routing_bekannt` tragen.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Konkurrenzlage {
+    /// Jeder Kandidat der Sitzung wurde vollstaendig gerechnet.
+    Vollstaendig,
+    /// Am Deckel wurde geschnitten, wo der Screeningrang nicht trennt (E2).
+    DeckelOhneAbstand,
+    /// Ein Konkurrent ist aus einem MESSGRUND ausgeschieden (R2).
+    Messausschluss,
+}
+
+/// Bildet die Konkurrenzlage EINER Rechnung — an genau EINER Stelle.
+///
+/// ⚠️ Die Praezedenz steht hier als eine Zeile und nicht an zwei
+/// Aufrufstellen (K-21): `Messausschluss` schlaegt `DeckelOhneAbstand`. Fuer
+/// die Klasse ist das gleichgueltig — beide senken auf `mittel` —, fuer den
+/// Leser nicht: ein gefallener Konkurrent ist die konkretere Aussage ueber
+/// die Datenlage als ein willkuerlicher Schnitt.
+pub fn konkurrenzlage(ausschluesse: &[Ausschluss], deckel_ohne_abstand: bool) -> Konkurrenzlage {
+    if ausschluesse.iter().any(|a| a.grund.ist_messgrund()) {
+        Konkurrenzlage::Messausschluss
+    } else if deckel_ohne_abstand {
+        Konkurrenzlage::DeckelOhneAbstand
+    } else {
+        Konkurrenzlage::Vollstaendig
+    }
+}
+
+// ── Der Nachweis, dass der Deckel VOR Stufe B schneidet (M-18, K-07) ──────
+//
+// 🔑 M-18 verlangt den Nachweis woertlich als ZAHL: „Ein sechster Kandidat
+// erreicht Stufe B" ist der Rotbeweis, und eine Behauptung ohne Zaehler waere
+// nicht gemessen (Pruefliste §E). Der Zaehler steht deshalb im Produktcode
+// und nicht hinter `cfg(test)`: die messende Zeile K-01 ist ein
+// INTEGRATIONSTEST, und der sieht nur, was die Bibliothek auch produktiv
+// traegt.
+//
+// ⚠️ THREAD-LOKAL, nicht global. `cargo test` faehrt die Faelle eines Beins
+// PARALLEL im selben Prozess; ein globaler Zaehler zaehlte fremde Rechnungen
+// mit und meldete beim ersten Lauf sechs Aufrufe fuer fuenf Kandidaten. Die
+// Rechnung laeuft synchron auf dem Thread, der die Evidenz eingereicht hat
+// (`evidenz.rs` ruft `hypothesen_bilden` direkt) — die Zahl gehoert deshalb
+// diesem Thread. Ein `Cell` ist ausserdem billiger als ein Atomic.
+thread_local! {
+    static STUFE_B_AUFRUFE: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    /// Die groesste Zahl von Stufe-B-Aufrufen INNERHALB EINER Rechnung.
+    ///
+    /// Die Zusage gilt je RECHNUNG, nicht je Anlass: ein einziger
+    /// Evidenzeingang loest im Produktpfad mehrere Rechnungen aus (Paarjoin,
+    /// Zustellung, Vorschlaege), und eine absolute Summe waere nicht deutbar.
+    static STUFE_B_MAX: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+/// Setzt beide Zaehler dieses Threads zurueck (K-01, K-07).
+pub fn stufe_b_zaehler_zuruecksetzen() {
+    STUFE_B_AUFRUFE.with(|z| z.set(0));
+    STUFE_B_MAX.with(|z| z.set(0));
+}
+
+/// Die groesste Zahl von Stufe-B-Aufrufen einer einzelnen Rechnung seit dem
+/// Zuruecksetzen — gemessen an den ECHTEN Aufrufen, nicht an der Laenge der
+/// Schleife, die sie selbst behauptet.
+pub fn stufe_b_max_je_rechnung() -> usize {
+    STUFE_B_MAX.with(|z| z.get())
+}
+
+/// Die Gesamtzahl der Stufe-B-Aufrufe dieses Threads seit dem Zuruecksetzen.
+pub fn stufe_b_aufrufe() -> usize {
+    STUFE_B_AUFRUFE.with(|z| z.get())
+}
+
 /// Prueft die harten Gates eines Kandidaten — VOR jeder Gewichtung (M-20).
 ///
 /// Reihenfolge ist Absicht und wird gemessen: erst die Belege, dann die
@@ -998,6 +1185,9 @@ pub fn rang_und_beleg(
     band: Bandintervall,
     parent_duplikat: bool,
 ) -> (Rangkomponenten, Zusammenhangsbeleg) {
+    // M-18/K-07: der Nachweis, dass Stufe B hoechstens `KANDIDATEN_DECKEL`-mal
+    // je Rechnung laeuft, ist eine ZAHL — hier entsteht sie.
+    STUFE_B_AUFRUFE.with(|z| z.set(z.get().saturating_add(1)));
     let beleg = zusammenhang(kandidat, &aufnahme.master, band);
     let rang = Rangkomponenten {
         bandpassung: bandpassung(kandidat, band),
@@ -1242,7 +1432,8 @@ pub fn hypothesen(aufnahme: &Aufnahme) -> Rechenergebnis {
     if !super::intent::darf_gerechnet_werden(aufnahme.intent.as_ref()) {
         return Rechenergebnis::default();
     }
-    let Some((metrik, band, beobachtung)) = masteranomalie(&aufnahme.master, aufnahme.passage.as_ref())
+    let Some((metrik, band, beobachtung, gruppe)) =
+        masteranomalie(&aufnahme.master, aufnahme.passage.as_ref())
     else {
         return Rechenergebnis::default();
     };
@@ -1261,10 +1452,13 @@ pub fn hypothesen(aufnahme: &Aufnahme) -> Rechenergebnis {
     };
 
     let mut ausschluesse: Vec<Ausschluss> = Vec::new();
-    // 🔑 NAK-212 E1: der Zusammenhangsbeleg reist MIT. Klassenwahl (R1, R2)
-    // und Trennung (R3, E6) lesen ihn; er wird EINMAL gerechnet.
-    let mut ueberlebende: Vec<(Rangkomponenten, Zusammenhangsbeleg, &Quellprofil, bool)> =
-        Vec::new();
+    // Schritt 1: die Gates. Wer faellt, faellt mit Grund (M-87).
+    //
+    // ⚠️ Die Duplikatmarke steht VOR dem Screening und geht NICHT in es ein:
+    // sie wirkt ueber `routingqualitaet` in Stufe B, und wuerde sie die
+    // Screeningordnung verschieben, entschiede eine Aussage ueber das Routing
+    // darueber, WER ueberhaupt gerechnet wird.
+    let mut gate_ueberlebende: Vec<(&Quellprofil, bool)> = Vec::new();
     for kandidat in &aufnahme.kandidaten {
         match gate(kandidat, aufnahme, metrik, band) {
             Gateurteil::Faellt(grund) => ausschluesse.push(Ausschluss {
@@ -1280,22 +1474,72 @@ pub fn hypothesen(aufnahme: &Aufnahme) -> Rechenergebnis {
                         .parent
                         .as_deref()
                         .is_some_and(|p| ids.contains(p));
-                let (rang, beleg) = rang_und_beleg(kandidat, aufnahme, band, duplikat);
-                ueberlebende.push((rang, beleg, kandidat, duplikat));
+                gate_ueberlebende.push((kandidat, duplikat));
             }
         }
     }
+
+    // 🔑 Schritt 2: das SCREENING (M-18, NAK-213 E1). Der Deckel schneidet
+    // HIER — vor Stufe B — und jeder Abgeschnittene traegt
+    // `screening_ueberboten`. Die Ordnung ist deterministisch: quantisierter
+    // Screeningrang absteigend, dann `candidate_source` aufsteigend
+    // (derselbe `TIE_BREAK_KEY` wie die Anzeigeordnung).
+    let mut gescreent: Vec<(i64, &Quellprofil, bool)> = gate_ueberlebende
+        .iter()
+        .map(|(kandidat, duplikat)| {
+            (
+                screening_quantisiert(&screeningrang(kandidat, aufnahme, gruppe)),
+                *kandidat,
+                *duplikat,
+            )
+        })
+        .collect();
+    gescreent.sort_by(|a, b| b.0.cmp(&a.0).then_with(|| a.1.quelle_id.cmp(&b.1.quelle_id)));
+
+    // E2: verglichen wird der FUENFTE mit dem SECHSTEN — nicht der Fuehrende
+    // mit dem Sechsten. Sind sie quantengleich, entschiede der Tie-Break, WER
+    // gar nicht erst gerechnet wird; M-18 laesst den Deckel trotzdem hart
+    // schneiden, aber M-26 verbietet, dass daraus eine starke Aussage wird.
+    let deckel_ohne_abstand = gescreent.len() > KANDIDATEN_DECKEL
+        && gescreent[KANDIDATEN_DECKEL - 1].0 == gescreent[KANDIDATEN_DECKEL].0;
+    for (_, kandidat, _) in gescreent.iter().skip(KANDIDATEN_DECKEL) {
+        ausschluesse.push(Ausschluss {
+            candidate_source: kandidat.quelle_id.clone(),
+            grund: Ausschlussgrund::ScreeningUeberboten,
+        });
+    }
+    gescreent.truncate(KANDIDATEN_DECKEL);
+
     ausschluesse.sort();
     ausschluesse.dedup();
+    let lage = konkurrenzlage(&ausschluesse, deckel_ohne_abstand);
 
-    // Deterministische Rangfolge (M-25): quantisierter Rang absteigend, dann
-    // `candidate_source` aufsteigend. Erst DANACH der harte Deckel aus M-18.
+    // 🔑 NAK-212 E1: der Zusammenhangsbeleg reist MIT. Klassenwahl (R1, R2)
+    // und Trennung (R3, E6) lesen ihn; er wird EINMAL gerechnet.
+    //
+    // Schritt 3: Stufe B, fuer die verbliebenen hoechstens fuenf.
+    let vor_stufe_b = STUFE_B_AUFRUFE.with(|z| z.get());
+    let mut ueberlebende: Vec<(Rangkomponenten, Zusammenhangsbeleg, &Quellprofil, bool)> =
+        gescreent
+            .iter()
+            .map(|(_, kandidat, duplikat)| {
+                let (rang, beleg) = rang_und_beleg(kandidat, aufnahme, band, *duplikat);
+                (rang, beleg, *kandidat, *duplikat)
+            })
+            .collect();
+    // M-18/K-07: die Aufrufe DIESER Rechnung, gemessen an den echten
+    // Aufrufen des Zaehlers — nicht an der Laenge der Schleife.
+    let dieser_lauf = STUFE_B_AUFRUFE.with(|z| z.get()).saturating_sub(vor_stufe_b);
+    STUFE_B_MAX.with(|z| z.set(z.get().max(dieser_lauf)));
+
+    // Schritt 4: die ANZEIGEORDNUNG (M-25) — quantisierter Gesamtrang
+    // absteigend, dann `candidate_source` aufsteigend. Die AUSWAHL hat das
+    // Screening getroffen; hier wird nichts mehr abgeschnitten.
     ueberlebende.sort_by(|a, b| {
         let ra = rang_quantisiert(&a.0);
         let rb = rang_quantisiert(&b.0);
         rb.cmp(&ra).then_with(|| a.2.quelle_id.cmp(&b.2.quelle_id))
     });
-    ueberlebende.truncate(KANDIDATEN_DECKEL);
 
     if ueberlebende.is_empty() {
         // M-27: kein Kandidat ist ein ERGEBNIS. Der Befund traegt die siebte
@@ -1357,6 +1601,7 @@ pub fn hypothesen(aufnahme: &Aufnahme) -> Rechenergebnis {
                 beobachtung,
                 *duplikat,
                 mehrere,
+                lage,
                 // Nur der FUEHRENDE traegt die Trennungsfrage; die uebrigen
                 // fallen ohnehin am Riegel darunter auf `mittel` (M-21).
                 platz == 0 && getrennt,
@@ -1449,10 +1694,14 @@ pub fn rang_quantisiert(rang: &Rangkomponenten) -> i64 {
 /// mit der groessten Abweichung vom eigenen Bandmedian. Die Rueckgabe traegt
 /// das FEINE Intervall dieser Gruppe, weil Stufe B auf dem 221er-Verlauf
 /// rechnet (M-19).
+/// 🔑 **NAK-213 E1:** die Rueckgabe traegt zusaetzlich die GRUPPENNUMMER.
+/// Sie wird hier ohnehin bestimmt (die staerkste der 64), und das Screening
+/// braucht sie. Sie ein zweites Mal zu suchen waeren zwei Gelegenheiten, sie
+/// verschieden zu runden — dieselbe Lehre wie bei `rang_quantisiert`.
 pub fn masteranomalie(
     master: &Quellprofil,
     passage: Option<&Passagenfenster>,
-) -> Option<(Zielmetrik, Bandintervall, Beobachtung)> {
+) -> Option<(Zielmetrik, Bandintervall, Beobachtung, usize)> {
     // 🔑 **NAK-212 R5/E5 (07.09.2026).** Fuehrt die Sitzung eine Passage,
     // wird die Anomalie aus dem letzten Fenster INNERHALB der Passage
     // bestimmt. Bis hierher las die Funktion `fenster.last()` ohne
@@ -1519,7 +1768,7 @@ pub fn masteranomalie(
         // Passage und ist deshalb keine Messung ueber sie (M-07-Muster).
         gueltig: gemessen,
     };
-    Some((Zielmetrik::BandPegelDb, band, beobachtung))
+    Some((Zielmetrik::BandPegelDb, band, beobachtung, gruppe))
 }
 
 /// Der Befund, wenn kein Kandidat ueberlebt hat (M-27).
@@ -1581,6 +1830,7 @@ fn baue_befund(
     beobachtung: Beobachtung,
     parent_duplikat: bool,
     mehrere_kandidaten: bool,
+    lage: Konkurrenzlage,
     getrennt: bool,
 ) -> CauseHypothesis {
     // M-17: aus paralleler Telemetrie allein entsteht NIE Klasse 2 oder 3.
@@ -1652,6 +1902,13 @@ fn baue_befund(
         // R3/E6: ein ungetrennter erster Platz behauptet eine Unterscheidung,
         // die die Messung nicht hergibt.
         || !getrennt
+        // 🔑 NAK-213 R1 (E2) und R2 (E4): die Konkurrenz dieser Rechnung ist
+        // unvollstaendig. Entweder wurde am Deckel ohne Abstand geschnitten,
+        // oder ein Konkurrent ist aus einem MESSGRUND ausgeschieden — in
+        // beiden Lagen hat sich der Fuehrende nicht gegen die Konkurrenz
+        // behauptet, sondern sie nur ueberlebt. Die Lage gilt der RECHNUNG
+        // und damit jedem Befund aus ihr (K-21).
+        || lage != Konkurrenzlage::Vollstaendig
     {
         // M-22/M-23: unbekanntes Routing, ein Parent-Duplikat oder zu wenig
         // Material tragen keine STARKE Aussage.
@@ -2116,6 +2373,391 @@ mod tests {
         }
     }
 
+    // ═════════════════════════════════════════════════════════════════════
+    // NAK-213 · die Screeningordnung (E1, E2)
+    // ═════════════════════════════════════════════════════════════════════
+
+    /// Ein Quellprofil mit gesetzten Baendern in `band` und der Onsetreihe
+    /// `onsets`. Die uebrigen Baender bleiben auf dem Grundpegel.
+    fn quelle(
+        id: &str,
+        anzahl: usize,
+        band: (usize, usize),
+        db: f32,
+        onsets: &[f32],
+    ) -> Quellprofil {
+        let mut fenster_liste = Vec::new();
+        for i in 0..anzahl {
+            let von = 1000 + (i as i64) * 500;
+            let mut f = fenster(von, von + 500, 1);
+            for index in band.0..band.1.min(BAENDER_FEIN) {
+                f.p50_db[index] = -20.0 + db;
+            }
+            f.onset = onsets.get(i).copied().unwrap_or(1.0);
+            fenster_liste.push(f);
+        }
+        Quellprofil {
+            quelle_id: id.into(),
+            fenster: fenster_liste,
+            routing_bekannt: true,
+            ..Default::default()
+        }
+    }
+
+    /// Wie `quelle`, aber ab einem gegebenen Fensterindex und ohne Onsetreihe.
+    fn quelle_ab(
+        id: &str,
+        ab: usize,
+        anzahl: usize,
+        band: (usize, usize),
+        db: f32,
+    ) -> Quellprofil {
+        let mut fenster_liste = Vec::new();
+        for i in ab..ab + anzahl {
+            let von = 1000 + (i as i64) * 500;
+            let mut f = fenster(von, von + 500, 1);
+            for index in band.0..band.1.min(BAENDER_FEIN) {
+                f.p50_db[index] = -20.0 + db;
+            }
+            fenster_liste.push(f);
+        }
+        Quellprofil {
+            quelle_id: id.into(),
+            fenster: fenster_liste,
+            routing_bekannt: true,
+            ..Default::default()
+        }
+    }
+
+    fn aufnahme_mit(master: Quellprofil, kandidaten: Vec<Quellprofil>) -> Aufnahme {
+        Aufnahme {
+            master,
+            kandidaten,
+            passage: None,
+            passage_id: None,
+            // M-86 ist fail-closed: ohne Vollstaendigkeitsmarke rechnet gar
+            // nichts (`darf_gerechnet_werden`). Die Marke gehoert deshalb in
+            // die Grundform jeder Aufnahme dieses Abschnitts.
+            intent: Some(crate::coordinator::intent::IntentBestand {
+                vollstaendig: true,
+                ..Default::default()
+            }),
+            metrics_version: 1,
+            session_epoch: "e".repeat(32),
+        }
+    }
+
+    /// **K-06.** Der Screeningrang misst auf der GRUPPE, nicht auf einem
+    /// feineren Intervall.
+    ///
+    /// M-18 nennt fuer das Screening ausdruecklich die 64 Gruppen und fuehrt
+    /// „das Screening nutzt das 221er-Gitter statt der 64 Gruppen" als
+    /// eigenen Rotbeweis. Zwei Kandidaten mit derselben FEINEN Bandpassung in
+    /// IHREM jeweiligen Band rangieren deshalb verschieden, sobald das eine
+    /// Band in der Befundgruppe liegt und das andere in der Nachbargruppe.
+    #[test]
+    fn screeningrang_misst_auf_der_gruppe() {
+        let gruppe = gruppe_von_band(100);
+        let eigen = bandintervall_der_gruppe(gruppe);
+        let nachbar = bandintervall_der_gruppe(gruppe + 1);
+        assert_ne!(eigen, nachbar, "Vorbedingung: zwei verschiedene Gruppen");
+
+        let master = quelle("m", 4, (eigen.von as usize, eigen.bis as usize), 12.0, &[]);
+        let drin = quelle("a", 4, (eigen.von as usize, eigen.bis as usize), 12.0, &[]);
+        let daneben = quelle(
+            "b",
+            4,
+            (nachbar.von as usize, nachbar.bis as usize),
+            12.0,
+            &[],
+        );
+        // Vorbedingung, ausdruecklich: BEIDE tragen in IHREM eigenen Band
+        // dieselbe Energie — die Aufbauten unterscheiden sich allein in der
+        // GRUPPE. Ein exakt gleicher Anteil ist nicht zu haben: die Gruppen
+        // des 64er-Gitters sind drei oder vier Baender breit, und
+        // `bandpassung` normiert auf die Gesamtleistung.
+        assert!(
+            bandpassung(&drin, eigen) > 0.0 && bandpassung(&daneben, nachbar) > 0.0,
+            "Vorbedingung: beide tragen Energie in ihrem eigenen Band"
+        );
+        assert!(
+            bandpassung(&daneben, eigen) < bandpassung(&daneben, nachbar),
+            "Vorbedingung: der Nachbar traegt seine Energie NICHT in der Befundgruppe"
+        );
+
+        let aufnahme = aufnahme_mit(master, vec![drin.clone(), daneben.clone()]);
+        let rang_drin = screeningrang(&drin, &aufnahme, gruppe);
+        let rang_daneben = screeningrang(&daneben, &aufnahme, gruppe);
+        assert!(
+            rang_drin.gruppenenergie > rang_daneben.gruppenenergie,
+            "die Gruppenenergie misst auf der BEFUNDGRUPPE: {} gegen {}",
+            rang_drin.gruppenenergie,
+            rang_daneben.gruppenenergie
+        );
+        assert!(
+            screening_quantisiert(&rang_drin) > screening_quantisiert(&rang_daneben),
+            "und entscheidet damit die Ordnung"
+        );
+    }
+
+    /// **K-52 (Modulebene).** Die Onset-/Peak-Koinzidenz ist eine der vier
+    /// Screeninggroessen — aus DERSELBEN Funktion wie die Rangkomponente.
+    #[test]
+    fn screeningrang_traegt_die_koinzidenz() {
+        let gruppe = gruppe_von_band(100);
+        let band = bandintervall_der_gruppe(gruppe);
+        let spanne = (band.von as usize, band.bis as usize);
+        let onsets_master = [1.0, 4.0, 1.0, 4.0, 1.0, 4.0];
+        let master = quelle("m", 6, spanne, 12.0, &onsets_master);
+        // Gleichlaeufig: die Koinzidenz ist positiv.
+        let gleich = quelle("a", 6, spanne, 12.0, &onsets_master);
+        // Gegenlaeufig: `koinzidenz_gerichtet` ist negativ und zaehlt im
+        // Screening wie in der Rangkomponente als 0.
+        let gegen = quelle("b", 6, spanne, 12.0, &[4.0, 1.0, 4.0, 1.0, 4.0, 1.0]);
+        // Konstant: keine Streuung, also `None` — ebenfalls 0.
+        let flach = quelle("c", 6, spanne, 12.0, &[2.0; 6]);
+
+        let aufnahme = aufnahme_mit(
+            master.clone(),
+            vec![gleich.clone(), gegen.clone(), flach.clone()],
+        );
+        let r_gleich = screeningrang(&gleich, &aufnahme, gruppe);
+        let r_gegen = screeningrang(&gegen, &aufnahme, gruppe);
+        let r_flach = screeningrang(&flach, &aufnahme, gruppe);
+
+        assert!(
+            r_gleich.koinzidenz > 0.0,
+            "gleichlaeufig traegt eine positive Koinzidenz: {}",
+            r_gleich.koinzidenz
+        );
+        assert_eq!(r_gegen.koinzidenz, 0.0, "der negative Zweig zaehlt als 0");
+        assert_eq!(r_flach.koinzidenz, 0.0, "und `None` ebenfalls");
+        // Dieselbe Funktion, dieselben Reihen wie die Rangkomponente.
+        assert_eq!(
+            r_gleich.koinzidenz,
+            koinzidenz_gerichtet(&gleich, &master).unwrap_or(0.0).max(0.0),
+            "das Screening ruft `koinzidenz_gerichtet` — keine zweite Definition"
+        );
+        // Die drei unterscheiden sich in KEINER anderen Screeninggroesse.
+        assert_eq!(r_gleich.gruppenenergie, r_gegen.gruppenenergie);
+        assert_eq!(r_gleich.alignment, r_gegen.alignment);
+        assert_eq!(r_gleich.intent_relevanz, r_gegen.intent_relevanz);
+        assert!(screening_quantisiert(&r_gleich) > screening_quantisiert(&r_gegen));
+    }
+
+    /// **K-07.** Stufe B laeuft hoechstens `KANDIDATEN_DECKEL`-mal je
+    /// Rechnung — gemessen mit einem ZAEHLER, nicht behauptet.
+    ///
+    /// M-18 verlangt den Nachweis woertlich: „Ein sechster Kandidat erreicht
+    /// Stufe B" ist der Rotbeweis. Ohne den Zaehler waere die Zusage nicht
+    /// gemessen (Pruefliste §E).
+    #[test]
+    fn stufe_b_laeuft_hoechstens_fuenfmal() {
+        let gruppe = gruppe_von_band(100);
+        let band = bandintervall_der_gruppe(gruppe);
+        let spanne = (band.von as usize, band.bis as usize);
+        let master = quelle("m", 8, spanne, 12.0, &[]);
+
+        for anzahl in [6usize, 9] {
+            let kandidaten: Vec<Quellprofil> = (0..anzahl)
+                // Paarweise verschiedene Gruppenenergie ueber den Pegel.
+                .map(|i| quelle(&format!("{i:032x}"), 8, spanne, 8.0 + i as f32 * 0.7, &[]))
+                .collect();
+            let aufnahme = aufnahme_mit(master.clone(), kandidaten);
+            stufe_b_zaehler_zuruecksetzen();
+            let ergebnis = hypothesen(&aufnahme);
+            let laeufe = stufe_b_aufrufe();
+            assert_eq!(
+                stufe_b_max_je_rechnung(),
+                laeufe,
+                "auf der Modulebene ist der Anlass EINE Rechnung"
+            );
+            assert!(
+                laeufe <= KANDIDATEN_DECKEL,
+                "{anzahl} Kandidaten: Stufe B lief {laeufe}-mal, erlaubt sind hoechstens \
+                 {KANDIDATEN_DECKEL} (heutiger Stand vor NAK-213: {anzahl})"
+            );
+            assert_eq!(
+                ergebnis.befunde.len(),
+                KANDIDATEN_DECKEL,
+                "und genau fuenf Befunde bleiben sichtbar"
+            );
+            // M-87: die Abgeschnittenen verschwinden nicht — sie tragen ihren
+            // Grund. Die Liste wird NICHT gekappt (R6).
+            let ueberboten = ergebnis
+                .ausschluesse
+                .iter()
+                .filter(|a| a.grund == Ausschlussgrund::ScreeningUeberboten)
+                .count();
+            assert_eq!(ueberboten, anzahl - KANDIDATEN_DECKEL);
+        }
+    }
+
+    /// **K-10 bis K-16 (R2/E4), geschlossene Menge.** Genau FUENF der zehn
+    /// Ausschlussgruende sind Messgruende — und die `Konkurrenzlage` liest
+    /// genau sie.
+    ///
+    /// Die drei Faelle, die auf dem Produktpfad erreichbar sind
+    /// (`coverage_fehlt`, `alignment_falsch`, `evidenz_zurueckgenommen`),
+    /// misst `sonde014_hypothese.rs::einzelueberlebender_neben_messausschluss`;
+    /// die zwei Passagengruende brauchen eine benannte Passage und liegen im
+    /// Passagenharnisch von `sonde014_gegenbeispiele.rs`. HIER faellt die
+    /// Zuordnung selbst — eine Zeile, die nur an drei Beispielen gemessen
+    /// waere, liesse die anderen sieben Werte offen.
+    #[test]
+    fn messgruende_sind_genau_die_fuenf_aus_r2() {
+        let messgruende: Vec<Ausschlussgrund> = Ausschlussgrund::ALLE
+            .into_iter()
+            .filter(|g| g.ist_messgrund())
+            .collect();
+        assert_eq!(
+            messgruende,
+            vec![
+                Ausschlussgrund::CoverageFehlt,
+                Ausschlussgrund::AlignmentFalsch,
+                Ausschlussgrund::PassageUnvergleichbar,
+                Ausschlussgrund::PassageZuKurz,
+                Ausschlussgrund::EvidenzZurueckgenommen,
+            ],
+            "R2 nennt woertlich diese fuenf"
+        );
+
+        let aus = |grund: Ausschlussgrund| {
+            vec![Ausschluss {
+                candidate_source: "a".repeat(32),
+                grund,
+            }]
+        };
+
+        // Jeder der fuenf setzt `Messausschluss` — einzeln gemessen.
+        for grund in messgruende {
+            assert_eq!(
+                konkurrenzlage(&aus(grund), false),
+                Konkurrenzlage::Messausschluss,
+                "{grund:?} ist ein Messgrund"
+            );
+        }
+        // Und keiner der uebrigen fuenf.
+        for grund in [
+            Ausschlussgrund::IntentVetoGeschuetzt,
+            Ausschlussgrund::IntentVetoVerschmolzen,
+            // NB-1: R2 nennt ihn nicht. NB-6: auf dem Produktpfad ist er
+            // ohnehin unerreichbar, weil `masteranomalie` nur
+            // `band_pegel_db` liefert und `baender` ein Pflichtfeld ist.
+            Ausschlussgrund::CapabilityFehlt,
+            // Ueber E2 geregelt.
+            Ausschlussgrund::ScreeningUeberboten,
+            // Gerade der Nachweis, dass der Kandidat keine Ursache sein KANN.
+            Ausschlussgrund::MasterDuplikat,
+        ] {
+            assert_eq!(
+                konkurrenzlage(&aus(grund), false),
+                Konkurrenzlage::Vollstaendig,
+                "{grund:?} macht die Konkurrenz nicht unvollstaendig"
+            );
+        }
+
+        // Die Praezedenz steht an EINER Stelle (K-21): `Messausschluss`
+        // schlaegt `DeckelOhneAbstand`.
+        assert_eq!(
+            konkurrenzlage(&[], true),
+            Konkurrenzlage::DeckelOhneAbstand
+        );
+        assert_eq!(
+            konkurrenzlage(&aus(Ausschlussgrund::CoverageFehlt), true),
+            Konkurrenzlage::Messausschluss,
+            "beide Lagen zugleich: der gefallene Konkurrent ist die konkretere Aussage"
+        );
+        assert_eq!(konkurrenzlage(&[], false), Konkurrenzlage::Vollstaendig);
+    }
+
+    /// **K-12, K-13 (R2/E4).** Ein einziger Ueberlebender neben einem
+    /// PASSAGENausschluss traegt hoechstens `mittel`.
+    ///
+    /// Beide Gruende brauchen eine benannte Passage. `passage_zu_kurz` misst
+    /// zusaetzlich `sonde014_gegenbeispiele.rs` am Produktpfad;
+    /// `passage_unvergleichbar` ist dort nicht sauber zu bauen, weil Gate 3
+    /// (Alignment) dieselbe Schwelle prueft und DAVOR steht — der verbleibende
+    /// Hebel ist die fremde Transportepoche, und die loest auf dem Produktweg
+    /// zuerst die Materialinvalidierung aus. HIER faellt sie an `gate()`
+    /// selbst.
+    #[test]
+    fn einzelueberlebender_neben_passagenausschluss() {
+        let gruppe = gruppe_von_band(100);
+        let intervall = bandintervall_der_gruppe(gruppe);
+        let spanne = (intervall.von as usize, intervall.bis as usize);
+        // 🔑 Die Passage ist DOPPELT so lang wie die Masterfenster: nur
+        // dann kann ein Kandidat, der jedes Masterfenster deckt, die
+        // PASSAGE trotzdem verfehlen. `zeitueberdeckung` normiert auf das
+        // KUERZERE Intervall — liegt eines ganz im anderen, ist das
+        // Verhaeltnis immer 1,0, und Gate 4a waere unerreichbar.
+        let passage = Passagenfenster {
+            projekt_von: 1000,
+            projekt_bis: 1000 + 20 * 500,
+            transport_epoch: 1,
+        };
+
+        // Master und Ueberlebender liegen in der ZWEITEN Haelfte der Passage.
+        let master = quelle_ab("m", 10, 10, spanne, 12.0);
+        let ueberlebender = quelle_ab(&"a".repeat(32), 10, 10, spanne, 12.0);
+
+        // ── Fall c: der Konkurrent deckt JEDES Masterfenster, ragt aber am
+        //    Ende ueber die Passage hinaus → `passage_unvergleichbar`.
+        //
+        // 🔑 Der Aufbau ist enger, als er aussieht. Eine fremde
+        // Transportepoche reisst schon `ueberlappt` und damit Gate 3
+        // (Alignment), das VOR dem Passagengate steht — der Kandidat fiele
+        // dann mit `alignment_falsch`, und die Zeile maesse einen anderen
+        // Grund als den benannten (im ersten Aufbau genau so gemessen).
+        // `paarueberdeckung` nimmt das MAXIMUM beider Richtungen: solange
+        // jedes MASTERfenster einen Partner hat, bleibt das Alignment 1,0.
+        // Die SPANNE des Kandidaten ueberlappt die Passage dann nur zur
+        // Haelfte — und genau die liest Gate 4a.
+        let fremd = quelle_ab(&"b".repeat(32), 10, 20, spanne, 12.0);
+        // ── Fall d: nur vier Fenster in der Passage → `passage_zu_kurz`.
+        let kurz = quelle_ab(&"c".repeat(32), 10, 4, spanne, 12.0);
+
+        for (fall, konkurrent, grund) in [
+            ("c", fremd.clone(), Ausschlussgrund::PassageUnvergleichbar),
+            ("d", kurz.clone(), Ausschlussgrund::PassageZuKurz),
+        ] {
+            let mut aufnahme = aufnahme_mit(master.clone(), vec![ueberlebender.clone()]);
+            aufnahme.passage = Some(passage);
+            aufnahme.passage_id = Some("p".repeat(32));
+
+            // Vorbedingung: OHNE den Konkurrenten haelt der Ueberlebende
+            // jedes Gate — sonst maesse der Fall etwas anderes.
+            let (metrik, band, _, _) = masteranomalie(&aufnahme.master, aufnahme.passage.as_ref())
+                .expect("der Master traegt eine Anomalie");
+            assert_eq!(
+                gate(&ueberlebender, &aufnahme, metrik, band),
+                Gateurteil::Bleibt,
+                "Fall {fall}: der Ueberlebende besteht jedes Gate"
+            );
+            // Und der Konkurrent faellt mit GENAU dem benannten Grund.
+            assert_eq!(
+                gate(&konkurrent, &aufnahme, metrik, band),
+                Gateurteil::Faellt(grund),
+                "Fall {fall}: der Konkurrent faellt mit {grund:?}"
+            );
+
+            aufnahme.kandidaten.push(konkurrent);
+            let ergebnis = hypothesen(&aufnahme);
+            let fuehrend = ergebnis.befunde.first().expect("ein Befund entsteht");
+            assert!(
+                ergebnis.ausschluesse.iter().any(|a| a.grund == grund),
+                "Fall {fall}: der Ausschluss bleibt sichtbar (M-87)"
+            );
+            assert!(
+                fuehrend.confidence.klasse < Sicherheitsklasse::Hoch,
+                "Fall {fall}: hoechstens `mittel` neben einem Messausschluss — \
+                 heutiger Stand: `getrennt` ist bei einem einzigen \
+                 Ueberlebenden trivial wahr: {:?}",
+                fuehrend.confidence
+            );
+        }
+    }
+
     /// **N-41 und N-47 (NAK-212 D1, D7).** Getrennt heisst BEIDES zugleich:
     /// verschiedener quantisierter Gesamtrang UND verschiedener Zusammenhang.
     ///
@@ -2349,22 +2991,27 @@ mod tests {
         let mut aussen = fenster(5000, 5500, 1);
         aussen.p50_db[200] = 40.0;
         let master = profil(vec![innen.clone(), aussen.clone()]);
-        let (_, band_mit, beob_mit) =
+        let (_, band_mit, beob_mit, gruppe_mit) =
             masteranomalie(&master, Some(&passage)).expect("eine Anomalie");
         assert!(
             (band_mit.von..band_mit.bis).contains(&100),
             "das Band stammt aus dem Fenster IN der Passage: {band_mit:?}"
         );
         assert!(beob_mit.gueltig);
+        // 🔑 NAK-213 E1: die Gruppe reist MIT, und sie ist genau die des
+        // zurueckgegebenen Intervalls. Sie zweimal zu suchen waeren zwei
+        // Gelegenheiten, sie verschieden zu runden.
+        assert_eq!(gruppe_mit, gruppe_von_band(100));
+        assert_eq!(bandintervall_der_gruppe(gruppe_mit), band_mit);
         // Ohne Passage bleibt es beim juengsten Fenster — unveraendert.
-        let (_, band_ohne, _) = masteranomalie(&master, None).expect("eine Anomalie");
+        let (_, band_ohne, _, _) = masteranomalie(&master, None).expect("eine Anomalie");
         assert!((band_ohne.von..band_ohne.bis).contains(&200));
 
         // N-29: kein Fenster in der Passage → Rueckfall auf das juengste,
         // aber die Beobachtung ist UNGUELTIG. Kein `None`, sonst schwiege die
         // Sitzung vor den Gates (M-27).
         let nur_aussen = profil(vec![aussen]);
-        let (_, _, beob) = masteranomalie(&nur_aussen, Some(&passage)).expect("ein Rueckfall");
+        let (_, _, beob, _) = masteranomalie(&nur_aussen, Some(&passage)).expect("ein Rueckfall");
         assert!(!beob.gueltig, "ausserhalb der Passage gemessen ist keine Messung ueber sie");
         assert_eq!(fenster_in_passage(&nur_aussen, &passage), 0);
         // Gar keine Fenster bleibt `None` — das ist NAK-213 R4.

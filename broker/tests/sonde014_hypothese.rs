@@ -24,7 +24,8 @@
 
 use eqcop_broker::coordinator::{
     rang_quantisiert, Ausschlussgrund, Aussageklasse, Befundzustand, Coordinator, ManualClock,
-    Sicherheitsklasse, Ursachenklasse, KANDIDATEN_DECKEL,
+    stufe_b_max_je_rechnung, stufe_b_zaehler_zuruecksetzen, Sicherheitsklasse,
+    Ursachenklasse, KANDIDATEN_DECKEL, SESSION_CLIENT_CAP,
 };
 use eqcop_broker::transport::bootstrap::{Adresse, AudioLage, HelloControl, HostAngabe};
 use eqcop_broker::transport::server_v3::Senke;
@@ -1772,5 +1773,710 @@ fn gemessene_nullkoinzidenz_trennt_zwei_kandidaten() {
     assert!(
         befunde[1].confidence.klasse < Sicherheitsklasse::Hoch,
         "und nur EINER ist stark (M-21)"
+    );
+}
+
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-213 R1 · deckel_greift_vor_stufe_b   (K-01, K-02, K-03)
+// ═════════════════════════════════════════════════════════════════════════
+//
+// M-18 woertlich: das Screening „reicht pro Befund hoechstens die besten fuenf
+// Kandidaten weiter", und der Rotbeweis lautet „Ein sechster Kandidat erreicht
+// Stufe B". Bis NAK-213 erreichten ihn ALLE: `hypothesen()` rief
+// `rang_und_beleg` fuer jeden Gate-Ueberlebenden und schnitt erst danach —
+// spurlos, also ohne Grund (M-87 gebrochen).
+//
+// Gemessen wird die AUFRUFZAHL von Stufe B, nicht eine Zeit. Der Zaehler wird
+// unmittelbar vor der letzten Evidenz zurueckgesetzt; jede angenommene Evidenz
+// loest genau EINE Rechnung aus (`evidenz.rs`).
+
+/// Eine Buehne mit `sonden` Sonden, deren Bandenergie paarweise verschieden
+/// ist — damit die Screeningraenge sich unterscheiden.
+///
+/// `db(i)` ist die konstante Anhebung der Sonde `i`. Der Master hebt dasselbe
+/// Band an, damit `masteranomalie` dort ihre Gruppe findet.
+fn buehne_mit_screeningabstand(
+    c: &Coordinator,
+    sonden: usize,
+    db: impl Fn(usize) -> f64,
+) -> Vec<Adresse> {
+    let adressen = buehne(c, sonden, Some(3));
+    let band = (ANOMALIEBAND, ANOMALIEBAND + 4);
+    reihe(c, "main", &adressen[0], 0, 12, Some((band.0, band.1, 9.0)));
+    for i in 0..sonden {
+        reihe(
+            c,
+            &format!("sonde{i}"),
+            &adressen[1 + i],
+            100 + i * 20,
+            12,
+            Some((band.0, band.1, db(i))),
+        );
+    }
+    adressen
+}
+
+/// Die groesste Zahl von Stufe-B-Aufrufen INNERHALB einer Rechnung.
+///
+/// Der Zaehler wird zurueckgesetzt, dann loest ein einziges zusaetzliches
+/// Masterfenster die Neurechnung aus. Ein Anlass loest im Produktpfad
+/// mehrere Rechnungen aus (Paarjoin, Zustellung, Vorschlaege) — gemessen wird
+/// deshalb das MAXIMUM je Rechnung, genau die Zusage aus M-18.
+fn stufe_b_aufrufe_je_rechnung(c: &Coordinator, master: &Adresse) -> usize {
+    stufe_b_zaehler_zuruecksetzen();
+    let band = (ANOMALIEBAND, ANOMALIEBAND + 4);
+    c.p1(
+        "main",
+        &evidenz(master, 900, 44_108_200 + 12 * 512, Some((band.0, band.1, 9.0)), |_| {}),
+    );
+    stufe_b_max_je_rechnung()
+}
+
+/// Eine Onsetreihe, die dem Master in allen bis auf `flips` Fenstern folgt.
+///
+/// Je mehr Flips, desto schwaecher die gerichtete Koinzidenz — eine
+/// deterministische Leiter, mit der sich Kandidaten in GENAU dieser
+/// Screeninggroesse unterscheiden lassen.
+fn onsetleiter(flips: usize) -> impl Fn(usize) -> Option<f64> {
+    move |j| {
+        let folgt = (j % 2 == 1) != (j < flips);
+        Some(if folgt { 4.0 } else { 1.0 })
+    }
+}
+
+/// Die Onsetreihe des Masters — die Bezugsreihe der Leiter.
+fn master_onset(j: usize) -> Option<f64> {
+    Some(if j % 2 == 1 { 4.0 } else { 1.0 })
+}
+
+fn ausschluesse_mit(f: &[Value], grund: &str) -> Vec<String> {
+    f.first()
+        .and_then(|b| b["ausschluesse"].as_array())
+        .map(|liste| {
+            liste
+                .iter()
+                .filter(|a| a["grund"].as_str() == Some(grund))
+                .filter_map(|a| a["candidate_source"].as_str().map(str::to_string))
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+#[test]
+fn deckel_greift_vor_stufe_b() {
+    // ── Fall „genau fuenf" (K-03): der Randwert. Kein Deckelausschluss.
+    let c = coordinator();
+    let adressen = buehne_mit_screeningabstand(&c, 5, |i| 12.0 - i as f64);
+    let laeufe = stufe_b_aufrufe_je_rechnung(&c, &adressen[0]);
+    let f = findings(&c);
+    assert_eq!(f.len(), 5, "fuenf Kandidaten ergeben fuenf Befunde");
+    assert_eq!(laeufe, 5, "und Stufe B laeuft genau fuenfmal je Rechnung");
+    assert!(
+        ausschluesse_mit(&f, "screening_ueberboten").is_empty(),
+        "am Randwert wird NICHT geschnitten — ein `>=` statt `>` machte ihn unerreichbar"
+    );
+
+    // ── Fall „sechs" (K-01): genau EINER wird ueberboten.
+    let c = coordinator();
+    let adressen = buehne_mit_screeningabstand(&c, 6, |i| 12.0 - i as f64);
+    let laeufe = stufe_b_aufrufe_je_rechnung(&c, &adressen[0]);
+    let f = findings(&c);
+    assert_eq!(f.len(), KANDIDATEN_DECKEL, "genau fuenf Befunde");
+    assert_eq!(
+        laeufe, KANDIDATEN_DECKEL,
+        "Stufe B laeuft fuenfmal je Rechnung — heutiger Stand vor NAK-213: sechsmal"
+    );
+    let ueberboten = ausschluesse_mit(&f, "screening_ueberboten");
+    assert_eq!(ueberboten.len(), 1, "genau ein Deckelausschluss");
+    assert_eq!(
+        ueberboten[0],
+        adressen[6].instance_id,
+        "und zwar die Sonde mit der geringsten Bandenergie — nicht die mit der groessten ID"
+    );
+    // Die Anzeigereihenfolge folgt dem GESAMTRANG, nicht dem Screeningrang.
+    let raenge: Vec<i64> = c
+        .befunde_sicht(&hex(0x11), &hex(0x22))
+        .iter()
+        .map(|b| rang_quantisiert(&b.rang))
+        .collect();
+    assert!(
+        raenge.windows(2).all(|p| p[0] >= p[1]),
+        "die fuenf sichtbaren stehen absteigend nach Gesamtrang: {raenge:?}"
+    );
+
+    // ── Fall „sieben" (K-02): ZWEI Deckelausschluesse, sortiert und
+    //    dedupliziert wie jede andere Ausschlussliste.
+    let c = coordinator();
+    let adressen = buehne_mit_screeningabstand(&c, 7, |i| 12.0 - i as f64);
+    let laeufe = stufe_b_aufrufe_je_rechnung(&c, &adressen[0]);
+    let f = findings(&c);
+    assert_eq!(f.len(), KANDIDATEN_DECKEL);
+    assert_eq!(laeufe, KANDIDATEN_DECKEL, "auch bei sieben nur fuenfmal je Rechnung");
+    let mut ueberboten = ausschluesse_mit(&f, "screening_ueberboten");
+    assert_eq!(ueberboten.len(), 2, "zwei Deckelausschluesse");
+    let sortiert = {
+        let mut k = ueberboten.clone();
+        k.sort();
+        k
+    };
+    ueberboten.dedup();
+    assert_eq!(ueberboten.len(), 2, "jeder steht genau einmal");
+    assert_eq!(sortiert, ueberboten, "aufsteigend nach candidate_source");
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-213 R1/E2 · deckel_ohne_abstand_senkt_die_klasse   (K-04)
+// ═════════════════════════════════════════════════════════════════════════
+//
+// M-18 macht den Deckel hart, M-26 verbietet, dass der Tie-Break „die
+// Auswahl" entscheidet. Bei quantengleichem fuenften und sechstem Kandidaten
+// kollidieren beide Saetze: geschnitten wird trotzdem, aber die Rechnung
+// traegt keine starke Aussage mehr.
+#[test]
+fn deckel_ohne_abstand_senkt_die_klasse() {
+    let c = coordinator();
+    let adressen = buehne(&c, 6, Some(3));
+    let band = (ANOMALIEBAND, ANOMALIEBAND + 4);
+    let muster = wechselnd(12, 9.0, 0.0);
+    reihe_je_fenster(&c, "main", &adressen[0], 0, 12, band, &muster, master_onset);
+    // Vier Kandidaten mit BELEGTEM Zusammenhang, paarweise verschiedener
+    // Energie UND paarweise verschiedener Koinzidenz — der erste von ihnen
+    // ist der Fuehrende. Die Koinzidenzleiter ist noetig, weil `getrennt`
+    // BEIDES verlangt (NAK-212 E6): verschiedenen Gesamtrang und
+    // verschiedenen Zusammenhang.
+    for i in 0..4 {
+        let eigenes = wechselnd(12, 9.0 - i as f64 * 1.5, 0.0);
+        reihe_je_fenster(
+            &c,
+            &format!("sonde{i}"),
+            &adressen[1 + i],
+            100 + i * 20,
+            12,
+            band,
+            &eigenes,
+            onsetleiter(i),
+        );
+    }
+    // Der fuenfte und der sechste sind in JEDER Screeninggroesse gleich:
+    // dieselbe Anhebung, dieselbe Fensterlage, dieselbe Onsetreihe.
+    for i in 4..6 {
+        reihe_je_fenster(
+            &c,
+            &format!("sonde{i}"),
+            &adressen[1 + i],
+            100 + i * 20,
+            12,
+            band,
+            |_| 2.0,
+            onsetleiter(4),
+        );
+    }
+    let befunde = c.befunde_sicht(&hex(0x11), &hex(0x22));
+    assert_eq!(befunde.len(), KANDIDATEN_DECKEL, "fuenf sichtbare Befunde");
+    let f = findings(&c);
+    let ueberboten = ausschluesse_mit(&f, "screening_ueberboten");
+    assert_eq!(ueberboten.len(), 1, "genau einer wird ueberboten");
+    assert!(
+        ueberboten[0] == adressen[5].instance_id || ueberboten[0] == adressen[6].instance_id,
+        "und zwar einer der beiden quantengleichen: {ueberboten:?}"
+    );
+
+    // 🔑 Vorbedingung, ausdruecklich (Vorbedingungsregel §2.1): der Fuehrende
+    // erfuellt alle sieben `hoch`-Bedingungen aus NAK-212. Ohne diesen
+    // Vorriegel bewiese ein gruener Lauf nur, dass IRGENDEINE von ihnen
+    // gefallen ist.
+    let erster = &befunde[0];
+    assert_eq!(erster.rang.routingqualitaet, 1.0, "Routing bekannt, kein Parent-Duplikat");
+    assert!(erster.rang.bandpassung > 0.0, "Energie im Befundband");
+    assert!(erster.rang.uplift > 0.0, "belegter Zusammenhang ohne Gegenbeleg");
+    for anderer in &befunde[1..] {
+        assert_ne!(
+            rang_quantisiert(&erster.rang),
+            rang_quantisiert(&anderer.rang),
+            "getrennt von JEDEM Sichtbaren"
+        );
+    }
+
+    // Die Zusage: `DeckelOhneAbstand` senkt trotzdem auf hoechstens `mittel`.
+    assert!(
+        erster.confidence.klasse < Sicherheitsklasse::Hoch,
+        "der willkuerliche Schnitt nimmt die starke Aussage: {:?}",
+        erster.confidence
+    );
+    assert_ne!(erster.zustand, Befundzustand::ReadyToSend);
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-213 R1/E2 · deckel_mit_abstand_erlaubt_weiter_hoch   (K-08)
+// ═════════════════════════════════════════════════════════════════════════
+//
+// Der Kontrollfall zu K-04: E2 trifft NUR den willkuerlichen Schnitt. Ohne
+// diese Zeile waere `hoch` bei mehr als fuenf Quellen strukturell
+// unerreichbar — genau das tote Element, das NAK-212 E7 an anderer Stelle
+// benennt.
+#[test]
+fn deckel_mit_abstand_erlaubt_weiter_hoch() {
+    let c = coordinator();
+    let adressen = buehne(&c, 6, Some(3));
+    let band = (ANOMALIEBAND, ANOMALIEBAND + 4);
+    let muster = wechselnd(12, 9.0, 0.0);
+    reihe_je_fenster(&c, "main", &adressen[0], 0, 12, band, &muster, master_onset);
+    for i in 0..4 {
+        let eigenes = wechselnd(12, 9.0 - i as f64 * 1.5, 0.0);
+        reihe_je_fenster(
+            &c,
+            &format!("sonde{i}"),
+            &adressen[1 + i],
+            100 + i * 20,
+            12,
+            band,
+            &eigenes,
+            onsetleiter(i),
+        );
+    }
+    // Der fuenfte und der sechste haben ECHTEN Screeningabstand — in der
+    // Energie UND in der Koinzidenz.
+    for (i, db, flips) in [(4usize, 2.5f64, 4usize), (5, 0.4, 6)] {
+        reihe_je_fenster(
+            &c,
+            &format!("sonde{i}"),
+            &adressen[1 + i],
+            100 + i * 20,
+            12,
+            band,
+            |_| db,
+            onsetleiter(flips),
+        );
+    }
+    let befunde = c.befunde_sicht(&hex(0x11), &hex(0x22));
+    assert_eq!(befunde.len(), KANDIDATEN_DECKEL);
+    let f = findings(&c);
+    assert_eq!(
+        ausschluesse_mit(&f, "screening_ueberboten").len(),
+        1,
+        "ein Deckelausschluss — und er ist KEIN Messgrund"
+    );
+    let erster = &befunde[0];
+    for anderer in &befunde[1..] {
+        assert_ne!(
+            rang_quantisiert(&erster.rang),
+            rang_quantisiert(&anderer.rang)
+        );
+    }
+    assert_eq!(
+        erster.confidence.klasse,
+        Sicherheitsklasse::Hoch,
+        "mit Abstand bleibt die starke Aussage erlaubt: {:?}",
+        (erster.confidence, erster.rang)
+    );
+    assert_eq!(erster.zustand, Befundzustand::ReadyToSend);
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-213 M-25 · screening_ist_deterministisch   (K-09)
+// ═════════════════════════════════════════════════════════════════════════
+//
+// Ein unquantisierter Vergleich liesse die letzte Bitstelle einer
+// Gleitkommasumme entscheiden, wer Stufe B erreicht.
+#[test]
+fn screening_ist_deterministisch() {
+    let lauf = || {
+        let c = coordinator();
+        let _ = buehne_mit_screeningabstand(&c, 7, |i| 12.0 - i as f64 * 0.5);
+        serde_json::to_vec(&findings(&c)).unwrap()
+    };
+    let referenz = lauf();
+    assert!(!referenz.is_empty());
+    for runde in 0..100 {
+        assert_eq!(lauf(), referenz, "Lauf {runde} weicht ab");
+    }
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-213 E1 · screening_bezieht_die_koinzidenz_ein   (K-52)
+// ═════════════════════════════════════════════════════════════════════════
+//
+// Entwurf §36.2 und M-18 nennen die Onset-/Peak-Koinzidenz ausdruecklich als
+// Screeninggroesse. Ohne sie waeren die sechs Kandidaten hier quantengleich,
+// und DIE ID entschiede den Schnitt.
+#[test]
+fn screening_bezieht_die_koinzidenz_ein() {
+    let c = coordinator();
+    let adressen = buehne(&c, 6, Some(3));
+    let band = (ANOMALIEBAND, ANOMALIEBAND + 4);
+    let muster = wechselnd(12, 9.0, 0.0);
+    // Der Master traegt eine streuende Onsetreihe — sonst gaebe es nichts,
+    // womit die Kandidaten koinzidieren koennten.
+    reihe_je_fenster(&c, "main", &adressen[0], 0, 12, band, &muster, |i| {
+        Some(if i % 2 == 1 { 4.0 } else { 1.0 })
+    });
+    // Alle sechs: identische Anhebung, identische Fensterlage, identisches
+    // Alignment und identische Intent-Relevanz. Sie unterscheiden sich ALLEIN
+    // in der Onsetreihe — und zwar so, dass die SCHWAECHSTE Koinzidenz bei
+    // der KLEINSTEN `candidate_source` liegt. Sonst koennte die Zeile nicht
+    // unterscheiden, welche Ordnung den Schnitt entschieden hat: der
+    // Tie-Break schnitte die groesste ID ab.
+    for i in 0..6 {
+        reihe_je_fenster(
+            &c,
+            &format!("sonde{i}"),
+            &adressen[1 + i],
+            100 + i * 20,
+            12,
+            band,
+            |_| 6.0,
+            onsetleiter(5 - i),
+        );
+    }
+    let f = findings(&c);
+    let ueberboten = ausschluesse_mit(&f, "screening_ueberboten");
+    assert_eq!(ueberboten.len(), 1, "genau einer wird ueberboten");
+    let groesste_id = adressen[1..]
+        .iter()
+        .map(|a| a.instance_id.clone())
+        .max()
+        .expect("sechs Sonden");
+    assert_eq!(
+        ueberboten[0], adressen[1].instance_id,
+        "abgeschnitten wird der koinzidenzschwaechste (Sonde 0)"
+    );
+    assert_ne!(
+        ueberboten[0], groesste_id,
+        "und NICHT die groesste `candidate_source` — die Koinzidenz entscheidet, nicht die ID"
+    );
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-213 R2/E4 · einzelueberlebender_neben_messausschluss   (K-10, K-11, K-14)
+// ═════════════════════════════════════════════════════════════════════════
+//
+// Bis NAK-213 war `getrennt` bei einem einzigen Ueberlebenden trivial wahr
+// (`None => true`), und der Ueberlebende trug `hoch` — MIT dem Ausschluss im
+// selben Befund, der die Unvollstaendigkeit belegt (G5-Befund G-D2/G-H1).
+//
+// Die Faelle c (`passage_unvergleichbar`) und d (`passage_zu_kurz`) brauchen
+// eine benannte Passage und liegen deshalb im Passagenharnisch von
+// `sonde014_gegenbeispiele.rs`; die geschlossene Fuenfermenge selbst misst
+// der Modultest `messgruende_sind_genau_die_fuenf_aus_r2`.
+#[test]
+fn einzelueberlebender_neben_messausschluss() {
+    let band = (ANOMALIEBAND, ANOMALIEBAND + 4);
+
+    // Die gemeinsame Vorbedingung: EIN Kandidat allein, mit belegtem
+    // Zusammenhang, traegt `hoch`. Ohne diesen Kontrollfall maesse keiner der
+    // drei Faelle unten, dass der AUSSCHLUSS die Klasse senkt.
+    let c = coordinator();
+    let adressen = buehne(&c, 1, Some(3));
+    let muster = wechselnd(12, 9.0, 0.0);
+    reihe_je_fenster(&c, "main", &adressen[0], 0, 12, band, &muster, |_| None);
+    reihe_je_fenster(&c, "sonde0", &adressen[1], 100, 12, band, &muster, |_| None);
+    let allein = c.befunde_sicht(&hex(0x11), &hex(0x22));
+    assert_eq!(
+        allein.first().map(|b| b.confidence.klasse),
+        Some(Sicherheitsklasse::Hoch),
+        "Vorbedingung: derselbe Ueberlebende OHNE Konkurrenten ist `hoch`"
+    );
+
+    // ── Fall a: `coverage_fehlt` ─────────────────────────────────────────
+    let c = coordinator();
+    let adressen = buehne(&c, 2, Some(3));
+    reihe_je_fenster(&c, "main", &adressen[0], 0, 12, band, &muster, |_| None);
+    reihe_je_fenster(&c, "sonde0", &adressen[1], 100, 12, band, &muster, |_| None);
+    for i in 0..12 {
+        c.p1(
+            "sonde1",
+            &evidenz(
+                &adressen[2],
+                300 + i,
+                44_108_200 + (i as i64) * 512,
+                Some((band.0, band.1, 9.0)),
+                |w| w["abdeckung"] = json!(0.1),
+            ),
+        );
+    }
+    let a = c.befunde_sicht(&hex(0x11), &hex(0x22));
+    assert_eq!(a.len(), 1, "nur einer ueberlebt");
+    assert_eq!(
+        ausschluesse_mit(&findings(&c), "coverage_fehlt").len(),
+        1,
+        "der Konkurrent bleibt als Ausschluss sichtbar"
+    );
+    assert!(
+        a[0].confidence.klasse < Sicherheitsklasse::Hoch,
+        "Fall a: hoechstens `mittel` — heutiger Stand: `hoch`, {:?}",
+        a[0].confidence
+    );
+
+    // ── Fall b: `alignment_falsch` ───────────────────────────────────────
+    let c = coordinator();
+    let adressen = buehne(&c, 2, Some(3));
+    reihe_je_fenster(&c, "main", &adressen[0], 0, 12, band, &muster, |_| None);
+    reihe_je_fenster(&c, "sonde0", &adressen[1], 100, 12, band, &muster, |_| None);
+    for i in 0..12 {
+        // Weit hinter den Masterfenstern: kein gemeinsames Sample.
+        c.p1(
+            "sonde1",
+            &evidenz(
+                &adressen[2],
+                300 + i,
+                44_108_200 + 100 * 512 + (i as i64) * 512,
+                Some((band.0, band.1, 9.0)),
+                |_| {},
+            ),
+        );
+    }
+    let b = c.befunde_sicht(&hex(0x11), &hex(0x22));
+    assert_eq!(b.len(), 1);
+    assert_eq!(
+        ausschluesse_mit(&findings(&c), "alignment_falsch").len(),
+        1,
+        "der verschobene Konkurrent faellt am Alignment"
+    );
+    assert!(
+        b[0].confidence.klasse < Sicherheitsklasse::Hoch,
+        "Fall b: hoechstens `mittel`, {:?}",
+        b[0].confidence
+    );
+
+    // ── Fall e: `evidenz_zurueckgenommen` ────────────────────────────────
+    //
+    // Die Belege des Konkurrenten liegen in einem eigenen Projektbereich,
+    // damit die Ruecknahme GENAU ihn trifft (`Umfang::Bereich`) und nicht
+    // Master oder Ueberlebenden. Der Weg ist der unveraenderte M-24-Pfad.
+    let c = coordinator();
+    let adressen = buehne(&c, 2, Some(3));
+    reihe_je_fenster(&c, "main", &adressen[0], 0, 12, band, &muster, |_| None);
+    reihe_je_fenster(&c, "sonde0", &adressen[1], 100, 12, band, &muster, |_| None);
+    let eigener_bereich = 44_108_200 + 400 * 512;
+    for i in 0..12 {
+        c.p1(
+            "sonde1",
+            &evidenz(
+                &adressen[2],
+                300 + i,
+                eigener_bereich + (i as i64) * 512,
+                Some((band.0, band.1, 9.0)),
+                |_| {},
+            ),
+        );
+    }
+    let genommen = c.invalidierung_wegen_intervention_fuer_link(
+        "sonde1",
+        eigener_bereich - 1,
+        eigener_bereich + 12 * 512 + 1,
+    );
+    assert_eq!(genommen, 12, "genau die zwoelf Belege des Konkurrenten");
+    // Der M-24-Weg ENTFERNT den abhaengigen Befund; die Hypothesen bildet er
+    // nicht neu. Erst der naechste Evidenzeingang rechnet — und dort steht
+    // der Konkurrent dann als Ausschluss.
+    reihe_je_fenster(&c, "main", &adressen[0], 800, 1, band, |_| 9.0, |_| None);
+    let e = c.befunde_sicht(&hex(0x11), &hex(0x22));
+    assert_eq!(e.len(), 1, "der zurueckgenommene Konkurrent ist kein Befund mehr");
+    assert_eq!(
+        e[0].ausschluesse
+            .iter()
+            .filter(|a| a.grund == Ausschlussgrund::EvidenzZurueckgenommen)
+            .count(),
+        1,
+        "er bleibt als Ausschluss sichtbar (M-87)"
+    );
+    assert!(
+        e[0].confidence.klasse < Sicherheitsklasse::Hoch,
+        "Fall e: hoechstens `mittel`, {:?}",
+        e[0].confidence
+    );
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-213 R2/E4 · intent_veto_ist_kein_messausschluss   (K-15, K-16)
+// ═════════════════════════════════════════════════════════════════════════
+//
+// R2 nennt fuenf Gruende. Die zwei Vetos sind NICHT dabei: sie sind der
+// ausdrueckliche Wille des Users (M-03, M-04) und machen nicht die Messung
+// unvollstaendig, sondern die Frage unzulaessig. `capability_fehlt` nennt die
+// Regel ebenfalls nicht — siehe NB-1 im Manifest.
+#[test]
+fn intent_veto_ist_kein_messausschluss() {
+    let band = (ANOMALIEBAND, ANOMALIEBAND + 4);
+    let muster = wechselnd(12, 9.0, 0.0);
+
+    // ── Fall a: `intent_veto_geschuetzt` ─────────────────────────────────
+    let c = coordinator();
+    let adressen = buehne(&c, 2, Some(3));
+    let intent = json!({
+        "type": "intent_update",
+        "adresse": adressen[0],
+        "session_epoch": adressen[0].session_epoch,
+        "vollstaendig": true,
+        "bestand_revision": 1,
+        "intents": [{
+            "quelle_id": adressen[2].instance_id,
+            "rolle": "geschuetzt",
+            "revision": 1,
+            "herkunft": "user",
+            "konfidenz": 1.0
+        }]
+    });
+    c.p1("main", &serde_json::to_vec(&intent).unwrap());
+    reihe_je_fenster(&c, "main", &adressen[0], 0, 12, band, &muster, |_| None);
+    reihe_je_fenster(&c, "sonde0", &adressen[1], 100, 12, band, &muster, |_| None);
+    reihe_je_fenster(&c, "sonde1", &adressen[2], 300, 12, band, &muster, |_| None);
+    let a = c.befunde_sicht(&hex(0x11), &hex(0x22));
+    assert_eq!(a.len(), 1, "der geschuetzte Konkurrent faellt am Veto");
+    assert_eq!(
+        ausschluesse_mit(&findings(&c), "intent_veto_geschuetzt").len(),
+        1
+    );
+    assert_eq!(
+        a[0].confidence.klasse,
+        Sicherheitsklasse::Hoch,
+        "ein Veto ist kein Messmangel — sonst bestrafte der User sich fuer \
+         seinen eigenen Willen: {:?}",
+        (a[0].confidence, a[0].rang)
+    );
+
+    // ── Fall b: `capability_fehlt` — siehe NB-6 ─────────────────────────
+    //
+    // Er ist auf dem PRODUKTPFAD nicht erreichbar: `masteranomalie` gibt als
+    // einzige Zielmetrik `band_pegel_db` zurueck, deren Bedarf `hat_baender`
+    // ist — und `baender` ist im Vertrag ein PFLICHTFELD des
+    // `evidence_snapshot`. Ein Beleg ohne Baender existiert nicht. Die
+    // Gegenprobe zum Wortlaut von R2 liegt deshalb auf der Modulebene
+    // (`messgruende_sind_genau_die_fuenf_aus_r2`), wo sie gegen die
+    // geschlossene Menge selbst misst statt gegen einen unbaubaren Aufbau.
+    // Nebenbefund NB-6 im Manifest.
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-213 R2/E4 · messausschluss_wirkt_auf_jeden_befund   (K-21)
+// ═════════════════════════════════════════════════════════════════════════
+//
+// Die Lage gilt der RECHNUNG, nicht einem Befund. Wirkte sie nur auf den
+// Fuehrenden, traete derselbe Fehler eine Position weiter unten wieder auf,
+// sobald M-21 den zweiten Platz nicht mehr deckelte.
+#[test]
+fn messausschluss_wirkt_auf_jeden_befund() {
+    let band = (ANOMALIEBAND, ANOMALIEBAND + 4);
+    let muster = wechselnd(12, 9.0, 0.0);
+    let c = coordinator();
+    let adressen = buehne(&c, 3, Some(3));
+    reihe_je_fenster(&c, "main", &adressen[0], 0, 12, band, &muster, |_| None);
+    reihe_je_fenster(&c, "sonde0", &adressen[1], 100, 12, band, &muster, |_| None);
+    let zweites = wechselnd(12, 6.0, 0.0);
+    reihe_je_fenster(&c, "sonde1", &adressen[2], 300, 12, band, &zweites, |_| None);
+    // Der dritte faellt am Alignment.
+    for i in 0..12 {
+        c.p1(
+            "sonde2",
+            &evidenz(
+                &adressen[3],
+                500 + i,
+                44_108_200 + 100 * 512 + (i as i64) * 512,
+                Some((band.0, band.1, 9.0)),
+                |_| {},
+            ),
+        );
+    }
+    let befunde = c.befunde_sicht(&hex(0x11), &hex(0x22));
+    assert_eq!(befunde.len(), 2, "zwei Ueberlebende bleiben sichtbar");
+    assert_eq!(
+        ausschluesse_mit(&findings(&c), "alignment_falsch").len(),
+        1
+    );
+    for (platz, b) in befunde.iter().enumerate() {
+        assert!(
+            b.confidence.klasse < Sicherheitsklasse::Hoch,
+            "Platz {platz} traegt hoechstens `mittel`: {:?}",
+            b.confidence
+        );
+    }
+    // Und jeder bleibt Alternative des anderen (NAK-212 R3).
+    assert_eq!(befunde[0].alternatives, vec![befunde[1].finding_id.clone()]);
+    assert_eq!(befunde[1].alternatives, vec![befunde[0].finding_id.clone()]);
+}
+
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-213 R6 · ausschluesse_bleiben_unter_dem_sitzungsdeckel   (K-51)
+// ═════════════════════════════════════════════════════════════════════════
+//
+// M-87 woertlich: „JEDER Kandidat, der ausscheidet, traegt einen Grund." R6
+// zieht daraus die Laenge: die Ausschlussliste wird NIE gekappt. Ihre
+// Obergrenze ist deshalb keine gewaehlte Zahl, sondern `SESSION_CLIENT_CAP` —
+// ein Main und bis zu 63 Sonden. Mehr Ausschluesse als Quellen der Sitzung
+// kann es nicht geben.
+//
+// Der Rand wird GEFAHREN, nicht gerechnet: 63 Sonden, davon erreichen fuenf
+// Stufe B, 58 tragen `screening_ueberboten` — und der erzeugte Snapshot
+// haelt den Vertrag der Fassung 4 (maxItems 64).
+#[test]
+fn ausschluesse_bleiben_unter_dem_sitzungsdeckel() {
+    let sonden = SESSION_CLIENT_CAP - 1;
+    let c = coordinator();
+    let adressen = buehne(&c, sonden, Some(3));
+    assert_eq!(adressen.len(), SESSION_CLIENT_CAP, "ein Main und 63 Sonden");
+    let band = (ANOMALIEBAND, ANOMALIEBAND + 4);
+    // Zwei Fenster je Quelle genuegen: ohne benannte Passage gibt es kein
+    // Passagengate, und Coverage, Alignment und Capability halten. Mehr
+    // Fenster maessen dieselbe Zusage teurer.
+    reihe(&c, "main", &adressen[0], 0, 2, Some((band.0, band.1, 9.0)));
+    for i in 0..sonden {
+        reihe(
+            &c,
+            &format!("sonde{i}"),
+            &adressen[1 + i],
+            1000 + i * 4,
+            2,
+            // Paarweise verschiedene Bandenergie — sonst entschiede der
+            // Tie-Break, und die Zeile maesse etwas anderes.
+            Some((band.0, band.1, 2.0 + i as f64 * 0.1)),
+        );
+    }
+    let f = findings(&c);
+    assert_eq!(f.len(), KANDIDATEN_DECKEL, "fuenf erreichen Stufe B");
+    let ueberboten = ausschluesse_mit(&f, "screening_ueberboten");
+    assert_eq!(
+        ueberboten.len(),
+        sonden - KANDIDATEN_DECKEL,
+        "58 Ausgeschiedene, KEINER ohne Grund — heutiger Stand vor NAK-213: \
+         der Schnitt liegt nach Stufe B und traegt gar keinen"
+    );
+    let mut eindeutig = ueberboten.clone();
+    eindeutig.sort();
+    eindeutig.dedup();
+    assert_eq!(eindeutig, {
+        let mut sortiert = ueberboten.clone();
+        sortiert.sort();
+        sortiert
+    }, "jeder steht genau einmal, aufsteigend nach candidate_source");
+
+    // Der Writer erzeugt NIE mehr Ausschluesse als Quellen der Sitzung — die
+    // Zahl ist durch `SESSION_CLIENT_CAP` gebunden und deshalb vom
+    // Vertragsrand 64 gedeckt (K-50).
+    let alle = f[0]["ausschluesse"].as_array().expect("Ausschlussliste").len();
+    assert!(
+        alle <= SESSION_CLIENT_CAP,
+        "{alle} Ausschluesse sprengten den Sitzungsdeckel"
+    );
+
+    // Und der ERZEUGTE Befund haelt den Vertrag der Fassung 4 — ohne diese
+    // Haelfte waere die gehobene Grenze eine Behauptung ueber ein Dokument,
+    // das niemand gegen das Schema gelesen hat.
+    //
+    // ⚠️ Geprueft wird der `session_finding`, nicht der ganze Snapshot: die
+    // Testdeskriptoren dieses Beins erfuellen den strengen
+    // `probe_descriptor`-`oneOf` nicht (veraltete `capabilities`-Namen im
+    // Harnisch, Nebenbefund NB-7). Das ist SONDE-012-Testflaeche und liegt
+    // ausserhalb dieser Ticketgrenze; die Zusage von R6 haengt an der
+    // Ausschlussliste, und die steht hier.
+    let mut wurzel = vertrag_schema();
+    wurzel["$ref"] = json!("#/$defs/session_finding");
+    wurzel.as_object_mut().expect("Schemawurzel").remove("oneOf");
+    let schema = eqcop_broker::vertrag::Schema::laden(wurzel)
+        .expect("das eingefrorene v3-Schema ist unterstuetzt");
+    assert!(
+        schema.gueltig(&f[0]),
+        "der Befund mit {alle} Ausschluessen ist vertragsgueltig"
     );
 }

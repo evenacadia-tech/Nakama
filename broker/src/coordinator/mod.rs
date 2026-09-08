@@ -64,8 +64,9 @@ pub use intent::{IntentAbweisung, IntentBestand, SchutzangabeSpiegel, SourceInte
 pub use prepost_verdrahtung::PAARURTEIL_DECKEL;
 pub use hypothese::{
     rang_quantisiert, Ausschluss, Ausschlussgrund, Aussageklasse, Befundkonfidenz, Befundzustand,
-    CauseHypothesis, NaechsterTest, Sicherheitsklasse, Ursachenklasse, Zielmetrik,
-    Zusammenhangsbeleg, KANDIDATEN_DECKEL,
+    CauseHypothesis, Konkurrenzlage, NaechsterTest, Sicherheitsklasse, Ursachenklasse, Zielmetrik,
+    stufe_b_max_je_rechnung, stufe_b_zaehler_zuruecksetzen, Zusammenhangsbeleg,
+    KANDIDATEN_DECKEL,
 };
 pub use maskierung::Maskierung;
 pub use proposal::{

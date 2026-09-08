@@ -335,7 +335,16 @@ impl Buehne {
         wert["passage"]["transport_epoch"] = grundform()["transport"]["transport_epoch"].clone();
         let mut ids: Vec<String> = vec![self.master.instance_id.clone()];
         ids.extend(quellen.iter().map(|a| a.instance_id.clone()));
+        // 🔑 Die Messpunktklassen reisen PARALLEL zu `aktive_quellen` und in
+        // DERSELBEN Reihenfolge; `passage_aus_wert` weist eine andere Laenge
+        // fail-closed ab (Befund R23). Bis NAK-213 stand die Liste fest bei
+        // zwei Eintraegen aus der Fixture — jede Passage mit mehr als einer
+        // Sonde fiel deshalb mit `schema_violation`, ohne dass der Aufbau
+        // etwas Falsches getan haette.
+        let mut klassen: Vec<String> = vec!["insert".into()];
+        klassen.extend(quellen.iter().map(|_| "post".to_string()));
         wert["passage"]["aktive_quellen"] = json!(ids);
+        wert["passage"]["messpunktklassen"] = json!(klassen);
         let antwort = Senke::p0(&*self.c, "main", &serde_json::to_vec(&wert).unwrap())
             .expect("experiment_begin wird beantwortet");
         let ack: Value = serde_json::from_slice(&antwort).unwrap();
@@ -1396,4 +1405,129 @@ fn a4_masteranomalie_ausserhalb_der_passage() {
         "acht Fenster in der Passage tragen die Aussage: {:?}",
         befund.confidence
     );
+}
+
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-213 R2/E4 · einzelueberlebender_neben_passagenausschluss  (K-12, K-13)
+// ═════════════════════════════════════════════════════════════════════════
+//
+// R2 nennt fuenf Messgruende. Drei von ihnen misst
+// `sonde014_hypothese.rs::einzelueberlebender_neben_messausschluss` am
+// Produktpfad; die zwei PASSAGENgruende brauchen eine benannte Passage und
+// liegen deshalb hier, wo der Harnisch sie ueber `experiment_begin` samt
+// Store anlegt. Eine zweite Passagenflaeche im Nachbarbein waere eine zweite
+// Wahrheit.
+//
+// Die Zusage ist in beiden Faellen dieselbe: der EINZIGE Ueberlebende ist
+// nicht „getrennt", solange ein Konkurrent aus einem MESSGRUND ausgeschieden
+// ist. Er hat sich nicht behauptet, er hat nur ueberlebt.
+#[test]
+fn einzelueberlebender_neben_passagenausschluss() {
+    let band = (BAND_VON, BAND_BIS);
+
+    // ── Vorbedingung: DERSELBE Aufbau ohne Konkurrenten traegt `hoch`.
+    {
+        let b = Buehne::mit_store("k12-vorbedingung");
+        let sonde = adresse(2);
+        b.anmelden("main", &b.master, "main", Some(0));
+        b.anmelden("sonde0", &sonde, "passive_probe", Some(3));
+        b.marke(0, json!([]));
+        b.passage(0, 12 * FENSTER, &[&sonde]);
+        let muster = wechselnd(12);
+        b.belege_je_fenster("main", &b.master, 0, 12, 0, &muster, band);
+        b.belege_je_fenster("sonde0", &sonde, 100, 12, 0, &muster, band);
+        let befunde = b.befunde();
+        protokoll("K-12/K-13 Vorbedingung: allein in der Passage", &befunde);
+        assert_eq!(
+            stark(&befunde),
+            1,
+            "Vorbedingung: ohne Konkurrenten ist der Ueberlebende stark"
+        );
+    }
+
+    // ── Fall c: `passage_unvergleichbar` ─────────────────────────────────
+    //
+    // 🔑 Der Aufbau ist enger, als er aussieht. Gate 3 (Alignment) steht VOR
+    // dem Passagengate; eine verschobene oder epochenfremde Fensterreihe
+    // faellt deshalb mit `alignment_falsch`, und die Zeile maesse einen
+    // anderen Grund als den benannten (im ersten Aufbau genau so gemessen).
+    // Der Kandidat traegt hier alle zwoelf Fenster AUF den Masterfenstern —
+    // `paarueberdeckung` nimmt das Maximum beider Richtungen, also bleibt das
+    // Alignment 1,0 — plus EIN Fenster weit hinter der Passage. Damit waechst
+    // seine SPANNE ueber die Passage hinaus, und genau die liest Gate 4a.
+    {
+        let b = Buehne::mit_store("k12-unvergleichbar");
+        let sonde = adresse(2);
+        let konkurrent = adresse(3);
+        b.anmelden("main", &b.master, "main", Some(0));
+        b.anmelden("sonde0", &sonde, "passive_probe", Some(3));
+        b.anmelden("sonde1", &konkurrent, "passive_probe", Some(4));
+        b.marke(0, json!([]));
+        // Die Passage ist DOPPELT so lang wie die Masterfenster: nur dann
+        // kann ein Kandidat, der jedes Masterfenster deckt, die PASSAGE
+        // trotzdem verfehlen — `zeitueberdeckung` normiert auf das KUERZERE
+        // Intervall, und liegt eines ganz im anderen, ist das Verhaeltnis
+        // immer 1,0.
+        b.passage(0, 20 * FENSTER, &[&sonde, &konkurrent]);
+        let muster = wechselnd(20);
+        b.belege_je_fenster("main", &b.master, 0, 10, 10, &muster, band);
+        b.belege_je_fenster("sonde0", &sonde, 100, 10, 10, &muster, band);
+        b.belege_je_fenster("sonde1", &konkurrent, 300, 20, 10, &muster, band);
+        let befunde = b.befunde();
+        protokoll("K-12 Konkurrent faellt an `passage_unvergleichbar`", &befunde);
+        let fuehrend = befunde.first().expect("ein Ergebnis entsteht immer");
+        assert!(
+            fuehrend
+                .ausschluesse
+                .iter()
+                .any(|a| a.grund == Ausschlussgrund::PassageUnvergleichbar),
+            "Vorbedingung: der Konkurrent faellt MIT diesem Grund: {:?}",
+            fuehrend.ausschluesse
+        );
+        assert_eq!(
+            stark(&befunde),
+            0,
+            "K-12: hoechstens `mittel` neben einem Messausschluss — heutiger \
+             Stand: `getrennt` ist trivial wahr und der Ueberlebende traegt \
+             `hoch`: {:?}",
+            fuehrend.confidence
+        );
+    }
+
+    // ── Fall d: `passage_zu_kurz` ────────────────────────────────────────
+    //
+    // Der Konkurrent liegt IN der Passage, traegt darin aber nur vier
+    // unabhaengige Fenster — unter `GATE_MINDEST_FENSTER`.
+    {
+        let b = Buehne::mit_store("k13-zu-kurz");
+        let sonde = adresse(2);
+        let konkurrent = adresse(3);
+        b.anmelden("main", &b.master, "main", Some(1));
+        b.anmelden("sonde0", &sonde, "passive_probe", Some(3));
+        b.anmelden("sonde1", &konkurrent, "passive_probe", Some(4));
+        b.marke(0, json!([]));
+        b.passage(0, 12 * FENSTER, &[&sonde, &konkurrent]);
+        let muster = wechselnd(12);
+        b.belege_je_fenster("main", &b.master, 0, 12, 0, &muster, band);
+        b.belege_je_fenster("sonde0", &sonde, 100, 12, 0, &muster, band);
+        b.belege_je_fenster("sonde1", &konkurrent, 300, 4, 0, &muster, band);
+        let befunde = b.befunde();
+        protokoll("K-13 Konkurrent faellt an `passage_zu_kurz`", &befunde);
+        let fuehrend = befunde.first().expect("ein Ergebnis entsteht immer");
+        assert!(
+            fuehrend
+                .ausschluesse
+                .iter()
+                .any(|a| a.grund == Ausschlussgrund::PassageZuKurz),
+            "Vorbedingung: der Konkurrent faellt MIT diesem Grund: {:?}",
+            fuehrend.ausschluesse
+        );
+        assert_eq!(
+            stark(&befunde),
+            0,
+            "K-13: hoechstens `mittel` neben einem Messausschluss: {:?}",
+            fuehrend.confidence
+        );
+    }
 }

@@ -1,0 +1,36 @@
+Thread 01a07e85-64c7-7ab2-9e51-da2565fb0a61 · Codex gpt-6-astra · Effort max · read-only · HEAD vor/nach 8e6ce55e20748de6d7c40e78af9b81c9a410830e · Lauf 2026-09-08 02:57:46 bis 03:32:17
+
+URTEIL: NEEDS_WORK — neun DEFEKTE in der Verhaltensmatrix.
+
+Geprüft: §1/§2 gegen Regeln, Quellen und Verträge; HEAD blieb vor und nach dem Lauf 8e6ce55e20748de6d7c40e78af9b81c9a410830e, die Produktpfade an BASIS und ZIEL entsprechen unverändert 1551dc2.
+
+Nicht geprüft: dynamische Tests, Builds und Produktläufe; ausschließlich lesende Kommandos ausgeführt, keine Dateien verändert.
+
+Full review comments:
+
+- [P1] Decke den produktiven Heartbeat-Pfad in E8 ab — docs/beweise/NAK-213.md:267-267
+  DEFEKT E8/K-40–K-44: Der bezeichnete Ingress ist `descriptor_setzen`, der unter `broker/src` keinen Produktaufrufer hat. Produktive Kanaländerungen erreichen dagegen über `befehl.rs:669` den getrennten Pfad `heartbeat_kontakt`, der den Deskriptor direkt ersetzt (`broker/src/coordinator/liveness.rs:405–431`). Eine ausschließlich wie hier spezifizierte Änderung ließe dort alte Fenster weiterhin unter dem neuen Kanal gelten; R5 bliebe im Produkt verletzt, obwohl Setter-Tests bestehen könnten. Die Matrix muss auch diesen Heartbeat-Pfad mit einem messenden Fall und Rotbeweis einschließen.
+
+- [P2] Definiere eine vertragskonforme Ausgabe für über 32 Ausschlüsse — docs/beweise/NAK-213.md:73-73
+  DEFEKT E1/K-07: Ein Main mit 38 gate-fähigen Sonden liegt innerhalb von `SESSION_CLIENT_CAP = 64` (`broker/src/coordinator/mod.rs:112`). Der neue Schnitt erzeugt dafür 33 verschiedene Ausschlüsse am führenden Befund. `session_finding.ausschluesse` erlaubt aber höchstens 32 (`eq-copilot/schemas/v3/eq-ipc-v3.schema.json:1900–1904`); `SourcesModel.cpp:950–953` verwirft andernfalls den Snapshot. Dieser zuvor bei ausschließlich gate-fähigen Kandidaten nicht vorhandene Überlauf braucht eine festgelegte Ausgabe und einen Grenztest. Bloßes Abschneiden der Ausschlussliste würde wiederum R1/M-87 brechen.
+
+- [P2] Behalte Onset-/Peak-Koinzidenz im Screening bei — docs/beweise/NAK-213.md:79-79
+  DEFEKT E1: Bei sechs Kandidaten gleicher Gruppenenergie, Überlappung und Priorität, aber unterschiedlicher Onset-Koinzidenz entscheidet die neue Ordnung allein anhand der ID über den Schnitt. Entwurf §36.2 (`docs/FL-Nakama-Sonden-Design-Entwurf.md:2371–2373`) und M-18 (`docs/beweise/SONDE-014.md:737`) verlangen ausdrücklich, diese Koinzidenz bereits im Screening einzubeziehen. Ihr vollständiges Weglassen ist keine widerspruchsfreie Präzisierung. Die angeführte technische Begründung trägt nicht: `broker/src/coordinator/hypothese.rs:1040–1042` berechnet die Onset-Korrelation ohne Uplift oder Bootstrap; gemeinsame Eingangsreihen erfordern keine zweite, abweichende Messdefinition.
+
+- [P2] Verwende vertragsgültige Mixerkanalindizes — docs/beweise/NAK-213.md:373-373
+  DEFEKT E6/K-24: `host_mixer_index = 0` ist im bestehenden Vertrag ausdrücklich ungültig: Der rohe Hostindex beginnt bei 1 (`eq-copilot/schemas/v3/eq-ipc-v3.schema.json:731–735`). Auch `SourcesModel.cpp:310–314` weist 0 ab, während `ControlClient.cpp:364–366` diesen Wert gar nicht sendet. Der permissive Testsetter und der bisherige Korpusaufbau belegen deshalb keinen gültigen Produktzustand. K-24 muss vertragskonforme Indizes verwenden oder einen vollständigen Vertragsschritt benennen; maßgeblich ist hier ausdrücklich der gebaute Vertrag, nicht die widersprechende Spezifikation ([CLAUDE.md:93–95](CLAUDE.md#L93-L95)).
+
+- [P2] Setze für K-33 eine tatsächlich bestätigte Führung voraus — docs/beweise/NAK-213.md:388-388
+  DEFEKT K-33: In der ausdrücklich übernommenen Ausgangslage K-31 sind beide Mains unbestätigt. `beitritt_aufheben` setzt ausschließlich die Mitgliedschaft des zurückgezogenen Clients zurück (`broker/src/coordinator/mitgliedschaft.rs:168–175`); es bestätigt das verbleibende Main nicht. Die Führungswahl berücksichtigt aber nur bestätigte Mains (`:74–87`), sodass `fuehrendes_main` weiterhin `None` bleibt. Die zugesagte Wiederaufnahme widerspricht damit R4 und dem unverändert zu lesenden Mitgliedschaftsmodell. Der Rückweg braucht beispielsweise die explizite Bestätigung des verbleibenden Mains als Ereignis im Testaufbau.
+
+- [P2] Berücksichtige Fassung 3 auch im C++-Enum-Leser — docs/beweise/NAK-213.md:319-319
+  DEFEKT E9/K-46: Werden ausschließlich die Enum-Liste und die maximale Fassungszahl erweitert, akzeptiert der neue C++-Leser die beiden neuen Gründe auch in einem ausdrücklich als Fassung 3 eingehenden Snapshot: `SourcesModel.cpp:532–535` prüft nur die Obergrenze, die Liste in `:963–969` ist fassungsunabhängig. Der vorgesehene Rust-Rückbau würde denselben Snapshot abweisen. Das verletzt die Fassungswahl aus `reservierte-nachrichten-v1.json:11` und M-77 (`docs/beweise/SONDE-014.md:827`). E9 muss eine fassungsabhängige C++-Prüfung samt Gegenprobe zulassen, statt diesen notwendigen Consumer-Anteil auszuschließen ([AGENTS.md:51–52](AGENTS.md#L51-L52)).
+
+- [P2] Hinterlege für K-47 einen unabhängigen C++-Fassungscheck — docs/beweise/NAK-213.md:416-416
+  DEFEKT K-47: Der ausdrücklich zugesagte Rotbeweis für `kJsonSchemaMinor` wird durch B13 nicht gemessen. Dessen Aufnahmehelfer (`eq-copilot/plugin/tests/Sonde012SourcesModelTest.cpp:205–209`) verwendet den Overload, der dieselbe Konstante als eingehende Fassung einsetzt (`SourcesModel.h:235–240`). Beim Rücksetzen auf 3 sinken daher Eingangsminor und Leserobergrenze gemeinsam; der Vergleich in `SourcesModel.cpp:532` entdeckt die Abweichung zu Fassung 4 nicht. Die Matrix braucht einen unabhängig vorgegebenen Fassung-4-Rahmen oder einen expliziten Vergleich der C++-Konstante mit dem Register, damit dieser neue gekoppelte Vertragsschritt tatsächlich den behaupteten Rotbeweis besitzt.
+
+- [P2] Erwarte bei vollständiger Rücknahme das Entfernen des Befunds — docs/beweise/NAK-213.md:406-406
+  DEFEKT K-44(a): Im genannten Aufbau referenziert Cs Befund ausschließlich Cs zwölf Fenster (`broker/src/coordinator/hypothese.rs:1660–1664`). Werden sämtliche IDs zurückgenommen, entfernt der unverändert zugesagte Invalidierungsweg diesen Befund vollständig; `Stale` wird nur gesetzt, wenn gültige IDs verbleiben (`broker/src/coordinator/hypothese_verdrahtung.rs:579–588`). Vor dem nächsten Fenster kann deshalb kein alter C-Befund mit Zustand `stale` beobachtet werden. Die Matrix muss vollständige Entfernung und partielle Rücknahme unterscheiden, statt für den bestehenden M-24-Weg einen nicht eintretenden Zustand als Testausgabe festzulegen.
+
+- [P2] Definiere den Fall ohne verbliebene gültige Evidenz — docs/beweise/NAK-213.md:250-250
+  DEFEKT E7/K-38: Nach vollständiger Evidenzrücknahme bleiben die Sitzungsschlüssel erhalten; eine später durch eine andere Sitzung angestoßene Rechnung sammelt auch diese Sitzung erneut (`broker/src/coordinator/hypothese_verdrahtung.rs:72–80,135–137`). K-19 greift nicht, denn früher wurden Belege geliefert. E7 verlangt nun eine Enthaltung ohne Masterbeleg, kann deren Pflichtliste aber nicht gültig füllen: Zurückgenommene IDs werden beim Eintragen abgewiesen (`:844–860`, außerdem SONDE-014 M-28), eine leere Liste verletzt `eq-ipc-v3.schema.json:1889`. Die Matrix braucht für diesen erreichbaren Zustand eine ausdrückliche, vertragskonforme Ausgabe samt Test; bloß existente IDs reichen nicht.

@@ -1,0 +1,46 @@
+ROTBEWEIS NAK-214 — V-45 — das Nullpaar traegt keinen Wirkungsbeleg (R6)
+========================================================================
+
+Erzeugt am 08.09.2026 in der Etappe 2 (Bau), Bauetappe B (der Wirkungsbeleg;
+R2 und R6). Der Stand ist danach zurueckgenommen; die Mutation liegt in
+KEINEM Commit.
+
+MUTATION — Punkt 4 aus E3 entfernt.
+
+In `Paarurteil::wirkungsbeleg` (`prepost.rs`) liefert der Schluss statt
+
+    gueltige.iter().any(|wert| *wert != 0.0)
+        || ergebnis.match_gain_db.is_some_and(|gain| gain != 0.0)
+
+ein blankes `true`: die Punkte 1 bis 3 bleiben, die Frage „wurde ueberhaupt
+etwas gemessen" faellt fort.
+
+WAS FAELLT
+------------------------------------------------------------------------
+Gemessen: `sonde013_prepost.rs::identisches_paar_liefert_delta_und_gain_exakt_null`
+faellt an „R6: ein Paar ohne jede gemessene Veraenderung traegt keinen
+Wirkungsbeleg". Die drei Nachbarfaelle bleiben gruen — die Mutation trifft genau
+den vierten Punkt und nicht die Schwelle daneben.
+
+ROHAUSGABE
+------------------------------------------------------------------------
+test paar_unter_der_schwelle_traegt_keinen_wirkungsbeleg ... ok
+test flaches_delta_mit_gain_traegt_den_wirkungsbeleg ... ok
+test identisches_paar_liefert_delta_und_gain_exakt_null ... FAILED
+test feature_aligned_mit_bandwirkung_traegt_den_wirkungsbeleg ... ok
+
+failures:
+
+---- identisches_paar_liefert_delta_und_gain_exakt_null stdout ----
+
+thread 'identisches_paar_liefert_delta_und_gain_exakt_null' (19104) panicked at tests\sonde013_prepost.rs:1088:5:
+R6: ein Paar ohne jede gemessene Veraenderung traegt keinen Wirkungsbeleg
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    identisches_paar_liefert_delta_und_gain_exakt_null
+
+test result: FAILED. 3 passed; 1 failed; 0 ignored; 0 measured; 18 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `--test sonde013_prepost`

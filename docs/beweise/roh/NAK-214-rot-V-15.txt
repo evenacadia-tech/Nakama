@@ -1,0 +1,42 @@
+ROTBEWEIS NAK-214 — V-15 — die NaN-Ehrlichkeit der Paarnaht
+========================================================================
+
+Erzeugt am 08.09.2026 in der Etappe 2 (Bau), Bauetappe B (der Wirkungsbeleg;
+R2 und R6). Der Stand ist danach zurueckgenommen; die Mutation liegt in
+KEINEM Commit.
+
+MUTATION — nur Bedingung 1 aus E3 geprueft.
+
+In `Paarurteil::wirkungsbeleg` folgt auf den Klassenvergleich sofort ein
+`return true`; die Punkte 2, 3 und 4 sind unerreichbar.
+
+WAS FAELLT
+------------------------------------------------------------------------
+Gemessen: `sonde013_prepost.rs::jeder_punkt_des_wirkungspraedikats_faellt_fuer_sich`
+faellt an „V-15: ein Delta ohne gemessenes Band traegt keine Wirkung", und
+`identisches_paar_liefert_delta_und_gain_exakt_null` faellt mit. Der Fall misst die
+vier Punkte an einem von Hand gebauten `Paarurteil`: Punkt 2 — ausgerichtete Klasse
+OHNE ein einziges gueltiges Band — ist aus `bilde_paare` strukturell nicht
+herstellbar, denn ohne endliche Baender gibt es auch keinen Lag, und die Klasse
+faellt schon vorher auf `Unclear`.
+
+ROHAUSGABE
+------------------------------------------------------------------------
+
+thread 'jeder_punkt_des_wirkungspraedikats_faellt_fuer_sich' (11704) panicked at tests\sonde013_prepost.rs:1271:5:
+V-15: ein Delta ohne gemessenes Band traegt keine Wirkung
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- identisches_paar_liefert_delta_und_gain_exakt_null stdout ----
+
+thread 'identisches_paar_liefert_delta_und_gain_exakt_null' (14092) panicked at tests\sonde013_prepost.rs:1088:5:
+R6: ein Paar ohne jede gemessene Veraenderung traegt keinen Wirkungsbeleg
+
+
+failures:
+    identisches_paar_liefert_delta_und_gain_exakt_null
+    jeder_punkt_des_wirkungspraedikats_faellt_fuer_sich
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 21 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test sonde013_prepost`

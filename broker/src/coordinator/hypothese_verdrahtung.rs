@@ -240,17 +240,28 @@ impl Coordinator {
                 // Die Zuordnung Quelle → Paar steht im Deskriptor (`pair_id`);
                 // das Urteil liegt in `paarurteile`. Ein Paar OHNE Ergebnis
                 // ist keine staerkere Evidenz, sondern eine offene Messung.
-                let prepost_paar = client
+                //
+                // 🔑 **NAK-214 R2/E4 (08.09.2026): ZWEI Marken aus EINEM
+                // Urteil.** `prepost_paar` behaelt seine Bedeutung und traegt
+                // die Ortsangabe `pre_post`; `prepost_wirkungsbeleg` ist neu
+                // und traegt die STAERKE — Aussageklasse, Ursachenklasse und
+                // `next_test`. Bis hierher setzte `ergebnis.is_some()` beide
+                // Aussagen zugleich, und `beurteile_paar` gibt `Some` auch
+                // fuer `Probable` zurueck: der Befund trug dann
+                // `claim_class = wirkungsbeleg`, obwohl das Paar weder ein
+                // ausgerichtetes Delta noch eine Wirkung trug (G5-Befund
+                // E-D6). Das Praedikat rechnet `prepost.rs` und nicht dieses
+                // Modul — hier wird es nur GELESEN.
+                let urteil = client
                     .descriptor
                     .as_ref()
                     .and_then(|d| d.get("pair_id"))
                     .and_then(Value::as_str)
-                    .is_some_and(|pair_id| {
-                        stand
-                            .paarurteile
-                            .get(&(session.clone(), pair_id.to_string()))
-                            .is_some_and(|urteil| urteil.ergebnis.is_some())
+                    .and_then(|pair_id| {
+                        stand.paarurteile.get(&(session.clone(), pair_id.to_string()))
                     });
+                let prepost_paar = urteil.is_some_and(|u| u.ergebnis.is_some());
+                let prepost_wirkungsbeleg = urteil.is_some_and(|u| u.wirkungsbeleg());
                 let profil = Quellprofil {
                     quelle_id: key.instance_id.clone(),
                     fenster: historie.map(Self::fenster_aus_historie).unwrap_or_default(),
@@ -258,6 +269,7 @@ impl Coordinator {
                     mixerkanal: kanal,
                     parent: None,
                     prepost_paar,
+                    prepost_wirkungsbeleg,
                     // Ein Profil OHNE gültiges Fenster hat keine Belege mehr:
                     // entweder ist alles zurückgenommen oder nie angekommen.
                     // Beides trägt denselben Grund (M-24) — und seit NAK-213

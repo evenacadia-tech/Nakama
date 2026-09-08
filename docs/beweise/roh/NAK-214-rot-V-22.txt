@@ -1,0 +1,44 @@
+ROTBEWEIS NAK-214 — V-22 — `next_test` folgt der Wirkungsmarke (E5)
+========================================================================
+
+Erzeugt am 08.09.2026 in der Etappe 2 (Bau), Bauetappe B (der Wirkungsbeleg;
+R2 und R6). Der Stand ist danach zurueckgenommen; die Mutation liegt in
+KEINEM Commit.
+
+MUTATION — `next_test` folgt wieder der ALTEN Marke.
+
+In `hypothese.rs` liest die Kette `!kandidat.prepost_paar` statt
+`!kandidat.prepost_wirkungsbeleg`. Die Aussageklasse bleibt dabei richtig — nur der
+naechste Beweisschritt verlangt das Paar nicht mehr.
+
+WAS FAELLT
+------------------------------------------------------------------------
+Gemessen: `besseres_paar_hebt_die_klasse`, `paar_ohne_gemessene_wirkung_bleibt_klasse_eins` und `probables_paar_bleibt_klasse_eins` fallen — jeder an der
+`next_test`-Zusage, keiner an der Klasse. Genau das trennt E5 von E4:
+`ManuellerVersuch` statt `PrePostPaarMessen` waere eine Aufforderung, die den
+einzigen Weg aus Klasse 1 heraus nicht mehr nennt.
+
+ROHAUSGABE
+------------------------------------------------------------------------
+
+thread 'besseres_paar_hebt_die_klasse' (26604) panicked at tests\sonde014_verdrahtung.rs:3285:5:
+assertion `left == right` failed
+  left: ManuellerVersuch
+ right: PrePostPaarMessen
+
+---- probables_paar_bleibt_klasse_eins stdout ----
+
+thread 'probables_paar_bleibt_klasse_eins' (25580) panicked at tests\sonde014_verdrahtung.rs:3004:9:
+assertion `left == right` failed: V-17: `next_test` verlangt das Paar weiterhin (R2 woertlich)
+  left: ManuellerVersuch
+ right: PrePostPaarMessen
+
+
+failures:
+    besseres_paar_hebt_die_klasse
+    paar_ohne_gemessene_wirkung_bleibt_klasse_eins
+    probables_paar_bleibt_klasse_eins
+
+test result: FAILED. 1 passed; 3 failed; 0 ignored; 0 measured; 42 filtered out; finished in 0.66s
+
+error: test failed, to rerun pass `--test sonde014_verdrahtung`

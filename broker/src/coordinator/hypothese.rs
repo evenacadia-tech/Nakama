@@ -497,8 +497,24 @@ pub struct Quellprofil {
     /// Die Quelle, in die diese hineinlaeuft, falls bekannt. Sie traegt das
     /// Parent-Duplikat aus M-22.
     pub parent: Option<String>,
-    /// Ob fuer diese Quelle ein PRE/POST-Paarurteil vorliegt (§36.1 Klasse 2).
+    /// Ob fuer diese Quelle ein PRE/POST-Paarurteil MIT Ergebnis vorliegt.
+    ///
+    /// 🔑 **NAK-214 E4 (08.09.2026): diese Marke traegt seit dem Ticket nur
+    /// noch die ORTSANGABE.** Sie setzt `pre_post = "post"` — die Stelle, an
+    /// der gemessen wurde (§8 Teil 1) — und sonst nichts. Eine Quelle misst
+    /// an einem POST-Punkt, auch wenn ihr Paar nur `Probable` erreicht; das
+    /// zu verschweigen waere eine Falschaussage in die Gegenrichtung.
     pub prepost_paar: bool,
+    /// **NAK-214 R2/R6: traegt das Paar dieser Quelle einen GEMESSENEN
+    /// Wirkungsbeleg?** (`Paarurteil::wirkungsbeleg`, `prepost.rs`.)
+    ///
+    /// Die STAERKE der Aussage haengt an dieser Marke, nicht an
+    /// `prepost_paar`: `claim_class`, die Ursachenklasse
+    /// `EffektkettePrePost` und `next_test` lesen sie. Ein einziges,
+    /// strenger gemachtes Feld haette `pre_post` mitgerissen und damit eine
+    /// Zusage geaendert, die R2 nicht nennt — zwei Felder halten „Begriffe
+    /// nicht vermischen" ein, und der Name sagt jeweils, was er misst.
+    pub prepost_wirkungsbeleg: bool,
     /// Ob ALLE Belege dieser Quelle zurueckgenommen wurden (M-24).
     pub zurueckgenommen: bool,
 }
@@ -2069,14 +2085,22 @@ fn baue_befund(
     // M-17: aus paralleler Telemetrie allein entsteht NIE Klasse 2 oder 3.
     // `Ursachenbeleg` verlangt eine kontrollierte Preview — die es in P5
     // nicht gibt; dieses Modul kann den Wert deshalb gar nicht erzeugen.
-    let claim_class = if kandidat.prepost_paar {
+    //
+    // 🔑 **NAK-214 R2/R6:** die Aussageklasse haengt an der WIRKUNGSmarke,
+    // nicht an der blossen Paarexistenz. `Probable`-Paare, Paare ohne ein
+    // einziges gemessenes Band und identische PRE/POST-Paare tragen sie
+    // nicht — sie bleiben Klasse 1.
+    let claim_class = if kandidat.prepost_wirkungsbeleg {
         Aussageklasse::Wirkungsbeleg
     } else {
         Aussageklasse::Zusammenhang
     };
     let ursachenklasse = if mehrere_kandidaten {
         Ursachenklasse::ZweiQuellenKonkurrenz
-    } else if kandidat.prepost_paar {
+    } else if kandidat.prepost_wirkungsbeleg {
+        // Dieselbe Aussage in der Ursachenachse: „die Ursache ist die KETTE
+        // dieser Quelle". Sie ohne Wirkungsbeleg zu behaupten waere derselbe
+        // Bruch wie bei der Aussageklasse (NAK-214 E4).
         Ursachenklasse::EffektkettePrePost
     } else {
         Ursachenklasse::QuelleResonanz
@@ -2155,7 +2179,11 @@ fn baue_befund(
     let zustand = zustand_aus_sicherheit(klasse, false);
     let next_test = if !kandidat.routing_bekannt {
         NaechsterTest::RoutingBestaetigen
-    } else if !kandidat.prepost_paar {
+    } else if !kandidat.prepost_wirkungsbeleg {
+        // NAK-214 R2 woertlich: „`next_test` verlangt das Paar weiterhin".
+        // Das gilt bei fehlendem Paar, bei einem Paar unterhalb der Schwelle
+        // UND bei einem Paar ohne gemessene Veraenderung — der naechste
+        // Beweisschritt ist in allen dreien derselbe (E5, NB-2).
         NaechsterTest::PrePostPaarMessen
     } else if fenster < GATE_MINDEST_FENSTER {
         NaechsterTest::PassageMessen

@@ -329,6 +329,84 @@ pub struct Paarurteil {
     pub metrics_version: u32,
 }
 
+impl Paarurteil {
+    /// **NAK-214 R2/R6: trägt dieses Paar einen gemessenen Wirkungsbeleg?**
+    ///
+    /// Die Klassenmeldung dieses Moduls — sie **liest** nur, was
+    /// `beurteile_paar` und `dreifachergebnis` ohnehin gerechnet haben, und
+    /// ändert an beiden keine Zeile. Vier Punkte, alle strukturell und ohne
+    /// geratene Zahl (M-31):
+    ///
+    /// 1. Die Alignmentklasse liegt **auf oder über** `AudioAligned`. Das ist
+    ///    dieselbe Schwelle, mit der `dreifachergebnis` das ausgerichtete
+    ///    Delta überhaupt erst bildet (`:811`) — R2 und der Code meinen
+    ///    dieselbe Kante. Als GLEICHHEIT gelesen wäre `wirkungsbeleg` in P5
+    ///    unerreichbar: `AudioAligned` wird im ganzen Broker nirgends
+    ///    gesetzt, `beurteile_paar` vergibt nur `FeatureAligned` (Rang 3,
+    ///    darüber) oder `Probable` (Rang 1, darunter).
+    /// 2. Das ausgerichtete Delta existiert und trägt **mindestens ein**
+    ///    gültiges Band. Das ist die NaN-Ehrlichkeit dieser Naht:
+    ///    `dreifachergebnis` gibt `(None, Vec::new(), None)` zurück, sobald
+    ///    kein endliches Band übrigbleibt (`:821–822`) — ein Delta ohne ein
+    ///    einziges gemessenes Band wäre eine Wirkung ohne Messung.
+    /// 3. Eine benannte Wirkung liegt vor. Sie folgt aus 1 und 2 und steht
+    ///    trotzdem hier: ein Riegel, dessen Vorbedingung anderswo fällt, ist
+    ///    einer weniger, und er kostet nichts.
+    /// 4. **Mindestens eine der beiden gemessenen Zahlen ist von exakt `0.0`
+    ///    verschieden** — ein gültiges Band des Deltas oder `match_gain_db`.
+    ///
+    /// 🔑 **Warum Punkt 4 (R6).** Die Punkte 1 bis 3 sind ein
+    /// **Struktur**prädikat: sie messen, dass ein ausgerichtetes Delta
+    /// entstanden ist, nicht, dass es etwas anzeigt. Zwei vollständig
+    /// identische PRE/POST-Signale erfüllen alle drei — `relation_db` rechnet
+    /// `20·log10(y/x)`, und bei `y == x` ist das in IEEE-754 **exakt** `0.0`;
+    /// der Median ist null, jedes Delta ist null, `match_gain_db` ist
+    /// `Some(0.0)`, und die Kette gilt als stationär mit dem Wort „wirkt
+    /// breitbandig gleichmäßig". §36.1 und M-17 verlangen für Klasse 2 eine
+    /// „reproduzierbare **Veränderung**"; ein Paar, das exakt nichts
+    /// verändert, trägt sie nicht.
+    ///
+    /// ⚠️ Der Vergleich läuft gegen **exakt `0.0`** und ist keine Schwelle:
+    /// er fragt `!= 0.0`, nicht `> ε`. Der Fall, den er trifft, entsteht aus
+    /// **Identität** und liefert deshalb bitgenaue Nullen; ein Paar mit auch
+    /// nur einem veränderten Frame in einem Band passiert. Ein `ε` wäre die
+    /// geratene Zahl, die M-31 verbietet — und die falsche Frage: „wie klein
+    /// ist zu klein" ist eine Produktentscheidung über Relevanz, `!= 0.0` die
+    /// Feststellung, ob überhaupt gemessen wurde.
+    ///
+    /// ⚠️ Gelesen werden **ausschließlich gültige** Bänder. Ein Band mit
+    /// `ausgerichtet_gueltig = false` trägt in `ausgerichtet_db` mit Absicht
+    /// ebenfalls `0.0` (`:834`: „ein Band OHNE Messung bleibt auch nach dem
+    /// Abzug ohne Messung"). Läse Punkt 4 alle, wäre ein Paar mit einem
+    /// einzigen ungültigen Band nicht von einem Nullpaar zu unterscheiden.
+    ///
+    /// Nicht-endliche Werte kommen hier strukturell nicht an: ein Band ist
+    /// nur gültig, wenn sein Mittel endlich ist (`mittlere_relation`), und
+    /// das Delta entsteht als Differenz zweier endlicher Zahlen.
+    pub fn wirkungsbeleg(&self) -> bool {
+        if self.klasse < Alignmentklasse::AudioAligned {
+            return false;
+        }
+        let Some(ergebnis) = self.ergebnis.as_ref() else {
+            return false;
+        };
+        let Some(delta) = ergebnis.ausgerichtet_db.as_ref() else {
+            return false;
+        };
+        let gueltige: Vec<f64> = delta
+            .iter()
+            .zip(ergebnis.ausgerichtet_gueltig.iter())
+            .filter(|(_, gueltig)| **gueltig)
+            .map(|(wert, _)| *wert)
+            .collect();
+        if gueltige.is_empty() || ergebnis.wirkung.is_none() {
+            return false;
+        }
+        gueltige.iter().any(|wert| *wert != 0.0)
+            || ergebnis.match_gain_db.is_some_and(|gain| gain != 0.0)
+    }
+}
+
 // ── Die Rechnungen ───────────────────────────────────────────────────────
 
 /// Überlappung zweier Projektfenster, normiert auf das KÜRZERE (M-17).

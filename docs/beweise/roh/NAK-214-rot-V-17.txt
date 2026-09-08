@@ -1,0 +1,45 @@
+ROTBEWEIS NAK-214 — V-17 — der Befund E-D6, geschlossen (der tragende Rotbeweis von R2)
+========================================================================
+
+Erzeugt am 08.09.2026 in der Etappe 2 (Bau), Bauetappe B (der Wirkungsbeleg;
+R2 und R6). Der Stand ist danach zurueckgenommen; die Mutation liegt in
+KEINEM Commit.
+
+MUTATION — die Wirkungsmarke wieder aus `ergebnis.is_some()`.
+
+In `hypothese_verdrahtung.rs`:
+
+    let prepost_wirkungsbeleg = urteil.is_some_and(|u| u.ergebnis.is_some());
+
+statt aus dem Strukturpraedikat `u.wirkungsbeleg()`. NICHT `prepost_paar`:
+diese Marke laesst E4 ausdruecklich unveraendert, und sie „wiederherzustellen"
+aenderte nach dem Bau nichts — der Rotbeweis bliebe gruen.
+
+WAS FAELLT
+------------------------------------------------------------------------
+Gemessen: `sonde014_verdrahtung.rs::probables_paar_bleibt_klasse_eins` faellt an
+„V-17: ein Paar unterhalb der Schwelle bleibt Klasse 1" — die Klasse springt auf
+`Wirkungsbeleg`. Der Fall laeuft am ECHTEN Produktpfad: der PRE/POST-Join des
+Coordinators bildet ein `Probable`-Urteil MIT Ergebnis, weil
+`presentation_validiert` dort fest `false` ist (M-21). `paar_id_ohne_urteil_setzt_keine_marke` bleibt gruen — die Mutation trifft genau die Paare MIT Urteil.
+
+ROHAUSGABE
+------------------------------------------------------------------------
+
+failures:
+
+---- probables_paar_bleibt_klasse_eins stdout ----
+
+thread 'probables_paar_bleibt_klasse_eins' (14076) panicked at tests\sonde014_verdrahtung.rs:2994:9:
+assertion `left == right` failed: V-17: ein Paar unterhalb der Schwelle bleibt Klasse 1
+  left: Wirkungsbeleg
+ right: Zusammenhang
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    probables_paar_bleibt_klasse_eins
+
+test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 44 filtered out; finished in 0.58s
+
+error: test failed, to rerun pass `--test sonde014_verdrahtung`

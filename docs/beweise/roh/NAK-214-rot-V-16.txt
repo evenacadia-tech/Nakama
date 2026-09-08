@@ -1,0 +1,46 @@
+ROTBEWEIS NAK-214 — V-16 — die Rangschwelle, nicht die Gleichheit (E2)
+========================================================================
+
+Erzeugt am 08.09.2026 in der Etappe 2 (Bau), Bauetappe B (der Wirkungsbeleg;
+R2 und R6). Der Stand ist danach zurueckgenommen; die Mutation liegt in
+KEINEM Commit.
+
+MUTATION — `==` statt `>=`.
+
+In `Paarurteil::wirkungsbeleg`:
+
+    if self.klasse != Alignmentklasse::AudioAligned { return false; }
+
+Damit traegt nur noch die Klasse `AudioAligned` selbst den Beleg — und die wird im
+ganzen Broker nirgends gesetzt (`git grep Alignmentklasse::AudioAligned broker/src`:
+drei Treffer, alle lesend). `wirkungsbeleg` waere ein Wert der geschlossenen
+Vertragsmenge, den kein Pfad je erzeugt.
+
+WAS FAELLT
+------------------------------------------------------------------------
+Gemessen: `feature_aligned_mit_bandwirkung_traegt_den_wirkungsbeleg` und
+`flaches_delta_mit_gain_traegt_den_wirkungsbeleg` fallen, dazu der Kontrollfall in
+`jeder_punkt_des_wirkungspraedikats_faellt_fuer_sich`.
+
+ROHAUSGABE
+------------------------------------------------------------------------
+
+---- feature_aligned_mit_bandwirkung_traegt_den_wirkungsbeleg stdout ----
+
+thread 'feature_aligned_mit_bandwirkung_traegt_den_wirkungsbeleg' (26740) panicked at tests\sonde013_prepost.rs:1166:5:
+V-16: FeatureAligned traegt den Wirkungsbeleg
+
+---- flaches_delta_mit_gain_traegt_den_wirkungsbeleg stdout ----
+
+thread 'flaches_delta_mit_gain_traegt_den_wirkungsbeleg' (15384) panicked at tests\sonde013_prepost.rs:1125:5:
+V-14: der gemessene Gain traegt den Wirkungsbeleg
+
+
+failures:
+    feature_aligned_mit_bandwirkung_traegt_den_wirkungsbeleg
+    flaches_delta_mit_gain_traegt_den_wirkungsbeleg
+    jeder_punkt_des_wirkungspraedikats_faellt_fuer_sich
+
+test result: FAILED. 0 passed; 3 failed; 0 ignored; 0 measured; 20 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test sonde013_prepost`

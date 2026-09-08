@@ -17,9 +17,9 @@
 
 use eqcop_broker::coordinator::prepost::{
     beurteile_paar, bilde_paare, dreifachergebnis, frameschluessel, kettenbefund, schaetze_restlag,
-    suchraum_frames, ueberlappung, Alignmentklasse, Ausschlussgrund, Frameschluessel,
-    Herabstufungsgrund, Kettenbefund, Paarhaelfte, Rolle, FEATURE_HOP_MS, GATE_UEBERLAPPUNG,
-    METRICS_VERSION,
+    suchraum_frames, ueberlappung, Alignmentklasse, Ausschlussgrund, Dreifachergebnis,
+    Frameschluessel, Herabstufungsgrund, Kettenbefund, Paarhaelfte, Paarurteil, Rolle,
+    FEATURE_HOP_MS, GATE_UEBERLAPPUNG, METRICS_VERSION,
 };
 
 const RATE: f64 = 48_000.0;
@@ -1014,5 +1014,322 @@ fn peak_to_sidelobe_bleibt_endlich() {
         (lag.peak_to_sidelobe - eqcop_broker::coordinator::prepost::PSR_DECKEL).abs() < 1e-9,
         "im gedeckelten Fall steht der Deckel: {}",
         lag.peak_to_sidelobe
+    );
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-214 R2/R6 · das Wirkungsprädikat, an seiner Quelle gemessen
+// ═════════════════════════════════════════════════════════════════════════
+//
+// `Paarurteil::wirkungsbeleg()` liest vier Punkte aus dem `Dreifachergebnis`.
+// Die Fälle hier messen sie einzeln — und vor allem die VORBEDINGUNG von
+// V-45: dass ein identisches PRE/POST-Paar Delta und `match_gain_db` **exakt**
+// `0.0` liefert, nicht „nahe null". Ohne diese Messung wäre der vierte Punkt
+// eine Behauptung über eine Zahl, die niemand gemessen hat.
+
+/// Dieselbe Hälfte mit einem konstanten Faktor auf ALLEN Bändern — ein reiner
+/// Breitbandgain, der das Spektrum nicht verbiegt.
+fn skaliert(h: &Paarhaelfte, faktor: f32) -> Paarhaelfte {
+    let mut aus = h.clone();
+    aus.huellkurven = h
+        .huellkurven
+        .iter()
+        .map(|b| b.iter().map(|v| v * faktor).collect())
+        .collect();
+    aus
+}
+
+/// **V-45, die Vorbedingung an der Quelle.** Zwei identische Hälften liefern
+/// in JEDEM gültigen Band exakt `0.0` und `match_gain_db == Some(0.0)`.
+///
+/// `relation_db` rechnet `20·log10(y/x)`; bei `y == x` ist das in IEEE-754
+/// exakt null — kein Rundungsrest. Der Median über lauter Nullen ist null,
+/// das Delta `v − g` in jedem gültigen Band ebenfalls. Genau darauf stützt
+/// sich der vierte Punkt aus E3/R6, und genau deshalb steht dort `!= 0.0`
+/// und kein `ε`.
+#[test]
+fn identisches_paar_liefert_delta_und_gain_exakt_null() {
+    let (pre, post) = perfekt();
+    let urteil = bilde_paare(&[
+        ("paar-null".into(), Rolle::Pre, pre),
+        ("paar-null".into(), Rolle::Post, post),
+    ])
+    .pop()
+    .expect("ein Urteil");
+    assert_eq!(
+        urteil.klasse,
+        Alignmentklasse::FeatureAligned,
+        "Vorbedingung: das Paar ist ausgerichtet - sonst misst der Fall die falsche Kante"
+    );
+    let e = urteil.ergebnis.as_ref().expect("ein Dreifachergebnis");
+    let delta = e
+        .ausgerichtet_db
+        .as_ref()
+        .expect("ein ausgerichtetes Delta");
+    assert!(
+        e.ausgerichtet_gueltig.iter().any(|g| *g),
+        "Vorbedingung: mindestens ein Band ist gueltig"
+    );
+    for (wert, gueltig) in delta.iter().zip(e.ausgerichtet_gueltig.iter()) {
+        if *gueltig {
+            assert_eq!(*wert, 0.0, "EXAKT null, nicht nahe null: {wert}");
+        }
+    }
+    assert_eq!(
+        e.match_gain_db,
+        Some(0.0),
+        "und der Breitbandgain ist exakt null"
+    );
+    assert!(
+        e.wirkung.is_some(),
+        "die Punkte 1 bis 3 aus E3 sind erfuellt - genau deshalb braucht es den vierten"
+    );
+    // Und das Prädikat sagt trotzdem NEIN: hier wurde nichts veraendert.
+    assert!(
+        !urteil.wirkungsbeleg(),
+        "R6: ein Paar ohne jede gemessene Veraenderung traegt keinen Wirkungsbeleg"
+    );
+}
+
+/// **V-14 an der Quelle.** Ein flaches Spektrum MIT gemessenem Breitbandgain
+/// trägt den Wirkungsbeleg — der Gain **ist** die gemessene Veränderung.
+///
+/// Der Fall ist die Gegenrichtung zu V-45 und fällt, sobald jemand Punkt 4
+/// auf das Delta allein verkürzt.
+#[test]
+fn flaches_delta_mit_gain_traegt_den_wirkungsbeleg() {
+    let (pre, post) = perfekt();
+    let lauter = skaliert(&post, 2.0);
+    let urteil = bilde_paare(&[
+        ("paar-gain".into(), Rolle::Pre, pre),
+        ("paar-gain".into(), Rolle::Post, lauter),
+    ])
+    .pop()
+    .expect("ein Urteil");
+    assert_eq!(urteil.klasse, Alignmentklasse::FeatureAligned);
+    let e = urteil.ergebnis.as_ref().expect("ein Dreifachergebnis");
+    let gain = e.match_gain_db.expect("ein Breitbandgain");
+    assert!(
+        (gain - 6.0206).abs() < 0.01,
+        "der Faktor 2 sind rund +6 dB: {gain}"
+    );
+    let delta = e.ausgerichtet_db.as_ref().expect("ein Delta");
+    for (wert, gueltig) in delta.iter().zip(e.ausgerichtet_gueltig.iter()) {
+        if *gueltig {
+            assert!(
+                wert.abs() < 1e-9,
+                "das Spektrum ist flach - der Gain steckt im Median: {wert}"
+            );
+        }
+    }
+    assert!(
+        urteil.wirkungsbeleg(),
+        "V-14: der gemessene Gain traegt den Wirkungsbeleg"
+    );
+}
+
+/// **V-16 an der Quelle.** Ein Paar, das ALLE vier Punkte erfüllt — mit einem
+/// von exakt `0.0` verschiedenen Bandwert im Delta.
+///
+/// Der Fall misst die Schwelle aus E2: `FeatureAligned` (Rang 3) liegt ÜBER
+/// `AudioAligned` (Rang 2) und trägt den Beleg. Er wird rot, sobald jemand
+/// `==` statt `>=` schreibt.
+#[test]
+fn feature_aligned_mit_bandwirkung_traegt_den_wirkungsbeleg() {
+    let (pre, post) = perfekt();
+    let mut verbogen = post.clone();
+    // NUR das erste Band lauter: der Median über die vier Bänder bleibt bei
+    // den unveränderten, und das erste trägt ein Delta ungleich null.
+    verbogen.huellkurven[0] = verbogen.huellkurven[0].iter().map(|v| v * 4.0).collect();
+    let urteil = bilde_paare(&[
+        ("paar-band".into(), Rolle::Pre, pre),
+        ("paar-band".into(), Rolle::Post, verbogen),
+    ])
+    .pop()
+    .expect("ein Urteil");
+    assert_eq!(
+        urteil.klasse,
+        Alignmentklasse::FeatureAligned,
+        "Rang 3 - UEBER AudioAligned (Rang 2), nicht gleich"
+    );
+    assert!(
+        Alignmentklasse::FeatureAligned > Alignmentklasse::AudioAligned,
+        "die Enum-Ordnung IST die Rangfolge (E2)"
+    );
+    let e = urteil.ergebnis.as_ref().expect("ein Dreifachergebnis");
+    let delta = e.ausgerichtet_db.as_ref().expect("ein Delta");
+    let mit_wirkung = delta
+        .iter()
+        .zip(e.ausgerichtet_gueltig.iter())
+        .any(|(wert, gueltig)| *gueltig && *wert != 0.0);
+    assert!(mit_wirkung, "mindestens ein gueltiges Band ist von null verschieden");
+    assert!(
+        urteil.wirkungsbeleg(),
+        "V-16: FeatureAligned traegt den Wirkungsbeleg"
+    );
+}
+
+/// **V-17 und V-18 an der Quelle.** Ein Paar unterhalb der Schwelle trägt
+/// keinen Wirkungsbeleg — gleich, ob es ein `ergebnis` führt oder nicht.
+///
+/// `Probable` entsteht am Produktpfad IMMER (`presentation_validiert` ist
+/// dort fest `false`, M-21), und `beurteile_paar` gibt für `Probable`
+/// trotzdem `ergebnis: Some(..)` zurück. Genau daraus entstand der G5-Befund
+/// E-D6.
+#[test]
+fn paar_unter_der_schwelle_traegt_keinen_wirkungsbeleg() {
+    let (pre, post) = perfekt();
+    let mut ohne_nachweis = pre.clone();
+    ohne_nachweis.presentation_validiert = false;
+    let mut post_ohne = post.clone();
+    post_ohne.presentation_validiert = false;
+    let urteil = bilde_paare(&[
+        ("paar-probable".into(), Rolle::Pre, ohne_nachweis),
+        ("paar-probable".into(), Rolle::Post, post_ohne),
+    ])
+    .pop()
+    .expect("ein Urteil");
+    assert_eq!(
+        urteil.klasse,
+        Alignmentklasse::Probable,
+        "ohne Presentation-Nachweis bleibt es Probable (M-21)"
+    );
+    assert!(
+        urteil.ergebnis.is_some(),
+        "und es traegt TROTZDEM ein Ergebnis - das ist der Befund E-D6"
+    );
+    assert!(
+        urteil
+            .ergebnis
+            .as_ref()
+            .is_some_and(|e| e.ausgerichtet_db.is_none()),
+        "aber kein ausgerichtetes Delta"
+    );
+    assert!(
+        !urteil.wirkungsbeleg(),
+        "V-17: ein Paar unterhalb der Schwelle bleibt Klasse 1"
+    );
+}
+
+/// **V-15 und die vier Punkte einzeln.** Jeder Punkt aus E3/R6 faellt fuer
+/// sich — gemessen an einem von Hand gebauten `Paarurteil`, weil `Punkt 2`
+/// (kein einziges gueltiges Band bei ausgerichteter Klasse) aus `bilde_paare`
+/// strukturell nicht herstellbar ist: ohne endliche Baender gibt es auch
+/// keinen Lag, und die Klasse faellt schon vorher auf `Unclear`.
+///
+/// Rotbeweis `NAK-214-rot-V-15.txt`: nur Bedingung 1 geprueft — dann traegt
+/// auch ein Paar ohne gemessenes Band den Beleg.
+#[test]
+fn jeder_punkt_des_wirkungspraedikats_faellt_fuer_sich() {
+    let voll = |klasse: Alignmentklasse,
+                delta: Option<Vec<f64>>,
+                gueltig: Vec<bool>,
+                gain: Option<f64>,
+                wirkung: Option<&str>| Paarurteil {
+        pair_id: "p".into(),
+        klasse,
+        ausschluss: None,
+        herabstufungen: Vec::new(),
+        kettenbefund: Kettenbefund::Stationaer,
+        restlag: None,
+        ueberlappung: 1.0,
+        ergebnis: Some(Dreifachergebnis {
+            roh_db: vec![0.0; 4],
+            roh_gueltig: vec![true; 4],
+            ausgerichtet_gueltig: gueltig,
+            baender_ohne_messung: 0,
+            ausgerichtet_db: delta,
+            match_gain_db: gain,
+            wirkung: wirkung.map(str::to_string),
+        }),
+        metrics_version: METRICS_VERSION,
+    };
+
+    // Der Kontrollfall: alle vier Punkte erfuellt.
+    let gut = voll(
+        Alignmentklasse::FeatureAligned,
+        Some(vec![0.0, 2.5, 0.0, 0.0]),
+        vec![true; 4],
+        Some(0.0),
+        Some("Kette wirkt breitbandig gleichmaessig"),
+    );
+    assert!(gut.wirkungsbeleg(), "Kontrollfall: alle vier Punkte");
+
+    // Punkt 1 — unterhalb der Schwelle.
+    let mut p1 = gut.clone();
+    p1.klasse = Alignmentklasse::Probable;
+    assert!(!p1.wirkungsbeleg(), "Punkt 1: Probable liegt unter AudioAligned");
+
+    // Punkt 2a — gar kein ausgerichtetes Delta (V-15, `prepost.rs`:821).
+    let ohne_delta = voll(
+        Alignmentklasse::FeatureAligned,
+        None,
+        Vec::new(),
+        None,
+        Some("Kette wirkt breitbandig gleichmaessig"),
+    );
+    assert!(
+        !ohne_delta.wirkungsbeleg(),
+        "V-15: ein Delta ohne gemessenes Band traegt keine Wirkung"
+    );
+
+    // Punkt 2b — ein Delta, aber KEIN gueltiges Band. Ein ungueltiges Band
+    // traegt mit Absicht 0.0; laese Punkt 4 alle, waere dieser Fall von
+    // einem Nullpaar nicht zu unterscheiden.
+    let ohne_gueltiges = voll(
+        Alignmentklasse::FeatureAligned,
+        Some(vec![3.0, 4.0, 5.0, 6.0]),
+        vec![false; 4],
+        Some(2.0),
+        Some("Kette wirkt breitbandig gleichmaessig"),
+    );
+    assert!(
+        !ohne_gueltiges.wirkungsbeleg(),
+        "kein GUELTIGES Band: die Zahlen daneben sind keine Messung"
+    );
+
+    // Punkt 3 — keine benannte Wirkung.
+    let mut p3 = gut.clone();
+    if let Some(e) = p3.ergebnis.as_mut() {
+        e.wirkung = None;
+    }
+    assert!(!p3.wirkungsbeleg(), "Punkt 3: ohne benannte Wirkung kein Beleg");
+
+    // Punkt 4 — alles exakt null (R6, das Nullpaar).
+    let null = voll(
+        Alignmentklasse::FeatureAligned,
+        Some(vec![0.0; 4]),
+        vec![true; 4],
+        Some(0.0),
+        Some("Kette wirkt breitbandig gleichmaessig"),
+    );
+    assert!(
+        !null.wirkungsbeleg(),
+        "R6: gueltige Baender UND match_gain_db saemtlich exakt null"
+    );
+    // Und die Gegenrichtung: der Gain ALLEIN genuegt (V-14).
+    let nur_gain = voll(
+        Alignmentklasse::FeatureAligned,
+        Some(vec![0.0; 4]),
+        vec![true; 4],
+        Some(-6.0),
+        Some("Kette wirkt breitbandig gleichmaessig"),
+    );
+    assert!(
+        nur_gain.wirkungsbeleg(),
+        "V-14: ein gemessener Breitbandgain IST die Veraenderung"
+    );
+    // Der Zahlenrand daneben: ein UNGUELTIGES Band traegt ebenfalls 0.0 und
+    // darf den Nullfall nicht retten.
+    let null_mit_ungueltigem = voll(
+        Alignmentklasse::FeatureAligned,
+        Some(vec![0.0, 0.0, 7.5, 0.0]),
+        vec![true, true, false, true],
+        Some(0.0),
+        Some("Kette wirkt breitbandig gleichmaessig"),
+    );
+    assert!(
+        !null_mit_ungueltigem.wirkungsbeleg(),
+        "ein ungueltiges Band mit einer Zahl darin ist keine gemessene Wirkung"
     );
 }

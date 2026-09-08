@@ -2851,3 +2851,452 @@ fn vorschlaege_bleiben_ihren_befunden_zugeordnet() {
     }
     assert_eq!(c.draft_offer_schuld_zaehler(), 0, "keine Zustellschuld in P5");
 }
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-214 R2/R6 · der Wirkungsbeleg (V-14 bis V-22, V-45)
+// ═════════════════════════════════════════════════════════════════════════
+//
+// ZWEI Ebenen, und die Trennung ist gemessen, nicht gewählt:
+//
+// (1) AM COORDINATOR — V-17, V-18, V-20. Das ist der Weg, den G5 E-D6
+//     gebrochen hat, und der einzige, den P5 wirklich fährt: die
+//     Paarhälften tragen dort `presentation_validiert = false` (M-21,
+//     `prepost_verdrahtung.rs`:305), also erreicht das Urteil nie mehr als
+//     `Probable`.
+// (2) AN `hypothesen()` — V-14, V-15, V-16, V-21, V-22, V-45. Sie brauchen
+//     ein Paar OBERHALB der Schwelle, und das ist am Produktpfad
+//     strukturell unerreichbar (siehe (1)). `hypothesen()` ist `pub`, die
+//     `Aufnahme` und das `Quellprofil` ebenso — die Wirkung der Marke auf
+//     `claim_class`, `ursachenklasse` und `next_test` ist dort direkt
+//     messbar, ohne eine Lage zu behaupten, die es in P5 nicht gibt.
+//
+// Das Prädikat SELBST — die vier Punkte aus E3/R6 — misst
+// `broker/tests/sonde013_prepost.rs` an `bilde_paare`.
+
+/// Anmelden mit `pair_id` und ausdrücklichem Messpunkt — ohne beides gibt es
+/// keine Rolle und damit keine Paarhälfte.
+fn anmelden_mit_paar(
+    c: &Coordinator,
+    link: &str,
+    a: &Adresse,
+    position: &str,
+    pair_id: &str,
+    mixer: Option<i64>,
+) {
+    let mut h = hello(a.clone());
+    h.plugin_kind = "passive_probe".into();
+    let ausgang = c.control_hello_registrieren(link, &h);
+    assert!(ausgang.angenommen, "{:?}", ausgang.grund);
+    let _ = c.resync_bestaetigen(link, 0);
+    let mut d = json!({
+        "adresse": a,
+        "plugin_kind": "passive_probe",
+        "measurement_position": position,
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Testquelle",
+        "pair_id": pair_id,
+        "capabilities": capabilities(),
+        "frische": {"letzter_kontakt_ms": 10, "stale": false}
+    });
+    if let Some(index) = mixer {
+        d["host_mixer_index"] = json!(index);
+    }
+    assert!(c.descriptor_setzen(link, d), "der Deskriptor ist vertragsgueltig");
+}
+
+/// Main plus PRE/POST-Paar einer `pair_id`, mit Evidenz auf beiden Hälften.
+fn buehne_mit_paar(c: &Coordinator, pair_id: &str) -> Vec<Adresse> {
+    let main = adresse(0x11, 0x22, 1, 0x40);
+    anmelden_mit_deskriptor(c, "main", &main, "main", Some(1));
+    let marke = json!({
+        "type": "intent_update",
+        "adresse": main,
+        "session_epoch": main.session_epoch,
+        "vollstaendig": true,
+        "bestand_revision": 0
+    });
+    c.p1("main", &bytes(&marke));
+    let pre = adresse(0x11, 0x22, 2, 0x50);
+    let post = adresse(0x11, 0x22, 3, 0x51);
+    anmelden_mit_paar(c, "pre", &pre, "pre", pair_id, Some(3));
+    anmelden_mit_paar(c, "post", &post, "post", pair_id, Some(4));
+    // ⚠️ Zwei Eigenschaften dieser Reihe sind TRAGEND, und beide sind an der
+    // Quelle nachgerechnet:
+    //
+    // (1) Die PROJEKTSPANNE. `beurteile_paar` bildet den Suchraum aus
+    //     `spanne_s`, und `suchraum_frames` liefert unterhalb weniger
+    //     Zehntelsekunden NULL Frames — `schaetze_restlag` gaebe dann
+    //     grundsaetzlich `None`, und JEDES Paar bliebe `Unclear`, egal wie
+    //     sauber das Material ist. Zwoelf Fenster im 512-Sample-Abstand sind
+    //     0,128 s; hier liegen sie 24 000 Samples auseinander, also gut 6 s.
+    // (2) APERIODIZITAET. Der Restlagschaetzer korreliert die Huellkurven;
+    //     eine konstante oder periodische Kurve hat kein EINDEUTIGES Maximum.
+    let mut x: u64 = 0x9E3779B97F4A7C15;
+    let anhebungen: Vec<i64> = (0..12)
+        .map(|_| {
+            x = x
+                .wrapping_mul(6_364_136_223_846_793_005)
+                .wrapping_add(1_442_695_040_888_963_407);
+            ((x >> 33) % 120) as i64
+        })
+        .collect();
+    for (i, anhebung) in anhebungen.iter().enumerate() {
+        let zeit = 44_108_200 + (i as i64) * 24_000;
+        c.p1("main", &evidenz_mit_anhebung(&main, i, zeit, *anhebung));
+        c.p1("pre", &evidenz_mit_anhebung(&pre, 100 + i, zeit, *anhebung));
+        // DIESELBE Folge fuer die POST-Haelfte: ein Paar mit Lag 0.
+        c.p1("post", &evidenz_mit_anhebung(&post, 200 + i, zeit, *anhebung));
+    }
+    vec![main, pre, post]
+}
+
+/// **V-17 — der Befund E-D6, geschlossen; der tragende Fall von R2.**
+///
+/// Am Produktpfad entsteht IMMER ein `Probable`-Urteil, und `beurteile_paar`
+/// gibt dafür `ergebnis: Some(..)` zurück. Bis zu diesem Ticket trug der
+/// Befund daraus `claim_class = wirkungsbeleg`, `ursachenklasse =
+/// effektkette_pre_post` und ein `next_test`, das kein Paar mehr verlangte —
+/// obwohl das Paar weder ein ausgerichtetes Delta noch eine Wirkung trug.
+///
+/// Rotbeweis `NAK-214-rot-V-17.txt`: `prepost_wirkungsbeleg` wieder aus
+/// `ergebnis.is_some()` gesetzt.
+#[test]
+fn probables_paar_bleibt_klasse_eins() {
+    let c = coordinator();
+    let paar = hex(0x77);
+    let _a = buehne_mit_paar(&c, &paar);
+
+    let urteil = c
+        .paarurteil(&paar)
+        .expect("der PRE/POST-Join liefert ein Urteil");
+    assert!(
+        urteil.klasse < eqcop_broker::coordinator::prepost::Alignmentklasse::AudioAligned,
+        "Vorbedingung: am Produktpfad bleibt es unter der Schwelle (M-21): {:?}",
+        urteil.klasse
+    );
+    assert!(
+        urteil.ergebnis.is_some(),
+        "Vorbedingung: und es traegt TROTZDEM ein Ergebnis - genau daraus entstand E-D6: {urteil:?}"
+    );
+
+    let befunde = befunde_der_sitzung(&c);
+    assert!(!befunde.is_empty(), "die Buehne traegt Befunde");
+    let mit_paar: Vec<_> = befunde
+        .iter()
+        .filter(|b| b.pre_post == Some("post"))
+        .collect();
+    assert!(
+        !mit_paar.is_empty(),
+        "mindestens ein Befund gehoert zu einer Quelle des Paares: {befunde:?}"
+    );
+    for b in &mit_paar {
+        assert_eq!(
+            b.claim_class,
+            eqcop_broker::coordinator::Aussageklasse::Zusammenhang,
+            "V-17: ein Paar unterhalb der Schwelle bleibt Klasse 1"
+        );
+        assert_ne!(
+            b.ursachenklasse,
+            eqcop_broker::coordinator::Ursachenklasse::EffektkettePrePost,
+            "V-17: und die Ursachenklasse behauptet keine Kette"
+        );
+        assert_eq!(
+            b.next_test,
+            eqcop_broker::coordinator::NaechsterTest::PrePostPaarMessen,
+            "V-17: `next_test` verlangt das Paar weiterhin (R2 woertlich)"
+        );
+        // E4: die ORTSANGABE bleibt - eine Quelle misst an einem POST-Punkt,
+        // auch wenn ihr Paar nur `Probable` erreicht.
+        assert_eq!(b.pre_post, Some("post"));
+    }
+}
+
+/// **V-20 — eine `pair_id` ohne Urteil setzt keine der beiden Marken.**
+#[test]
+fn paar_id_ohne_urteil_setzt_keine_marke() {
+    let c = coordinator();
+    let paar = hex(0x78);
+    let main = adresse(0x11, 0x22, 1, 0x40);
+    anmelden_mit_deskriptor(&c, "main", &main, "main", Some(1));
+    let marke = json!({
+        "type": "intent_update",
+        "adresse": main,
+        "session_epoch": main.session_epoch,
+        "vollstaendig": true,
+        "bestand_revision": 0
+    });
+    c.p1("main", &bytes(&marke));
+    // NUR die POST-Haelfte: ohne Gegenstueck entsteht kein Urteil mit
+    // Ergebnis, und beide Marken bleiben falsch.
+    let post = adresse(0x11, 0x22, 3, 0x51);
+    anmelden_mit_paar(&c, "post", &post, "post", &paar, Some(4));
+    reihe_wechselnd(&c, "main", &main, 0, 12);
+    reihe_wechselnd(&c, "post", &post, 200, 12);
+
+    let befunde = befunde_der_sitzung(&c);
+    assert!(!befunde.is_empty());
+    for b in &befunde {
+        assert_eq!(
+            b.claim_class,
+            eqcop_broker::coordinator::Aussageklasse::Zusammenhang
+        );
+        assert_eq!(b.pre_post, None, "ohne Urteil MIT Ergebnis auch keine Ortsangabe");
+        assert_eq!(
+            b.next_test,
+            eqcop_broker::coordinator::NaechsterTest::PrePostPaarMessen
+        );
+    }
+}
+
+// ── Die Modulebene: die Wirkung der Marke auf Klasse und `next_test` ──────
+//
+// V-14, V-15, V-16, V-21, V-22 und V-45 brauchen ein Paar OBERHALB der
+// Schwelle. Am Produktpfad ist das strukturell unerreichbar (M-21, siehe
+// `probables_paar_bleibt_klasse_eins`), und eine Bühne, die es behauptete,
+// behauptete eine Lage, die es in P5 nicht gibt. Gemessen wird deshalb an
+// `hypothesen()` — derselben Funktion, die der Coordinator ruft —, mit der
+// Marke als Eingabe. Das PRÄDIKAT, aus dem die Marke entsteht, misst
+// `sonde013_prepost.rs` an `bilde_paare`.
+
+use eqcop_broker::coordinator::hypothese::{
+    bandintervall_der_gruppe, gruppe_von_band, hypothesen, Aufnahme, Evidenzfenster, Quellprofil,
+    BAENDER_FEIN,
+};
+
+/// Ein Evidenzfenster mit angehobener Gruppe — dieselbe Form wie im
+/// Modultestmodul von `hypothese.rs`.
+fn nak214_fenster(von: i64, spanne: (usize, usize), db: f32) -> Evidenzfenster {
+    let mut f = Evidenzfenster {
+        evidence_id: format!("{von:032x}"),
+        empfangsfolge: von.unsigned_abs(),
+        projekt_von: von,
+        projekt_bis: von + 500,
+        transport_epoch: 1,
+        abdeckung: 0.9,
+        p50_db: vec![-20.0; BAENDER_FEIN],
+        p50_gueltig: vec![true; BAENDER_FEIN],
+        onset: 1.0,
+        seitenanteil_db: None,
+        hat_baender: true,
+        hat_verteilung: true,
+        hat_stereo: false,
+    };
+    for index in spanne.0..spanne.1.min(BAENDER_FEIN) {
+        f.p50_db[index] = -20.0 + db;
+    }
+    f
+}
+
+/// Ein Quellprofil mit acht Fenstern, bekanntem Routing und den beiden
+/// Paarmarken.
+fn nak214_quelle(
+    id: &str,
+    spanne: (usize, usize),
+    db: f32,
+    kanal: i64,
+    prepost_paar: bool,
+    prepost_wirkungsbeleg: bool,
+) -> Quellprofil {
+    Quellprofil {
+        quelle_id: id.into(),
+        fenster: (0..8)
+            .map(|i| nak214_fenster(1000 + (i as i64) * 500, spanne, db))
+            .collect(),
+        routing_bekannt: true,
+        mixerkanal: Some(kanal),
+        parent: None,
+        prepost_paar,
+        prepost_wirkungsbeleg,
+        zurueckgenommen: false,
+    }
+}
+
+fn nak214_aufnahme(master: Quellprofil, kandidaten: Vec<Quellprofil>) -> Aufnahme {
+    Aufnahme {
+        mains: vec![master.clone()],
+        master: Some(master),
+        kandidaten,
+        passage: None,
+        passage_id: None,
+        intent: Some(eqcop_broker::coordinator::IntentBestand {
+            vollstaendig: true,
+            ..Default::default()
+        }),
+        metrics_version: 1,
+        session_epoch: "e".repeat(32),
+    }
+}
+
+/// Die Grundlage der Modulfälle: ein Master und ein Kandidat im selben Band,
+/// die Marken als Parameter.
+fn nak214_befunde(
+    prepost_paar: bool,
+    prepost_wirkungsbeleg: bool,
+) -> Vec<eqcop_broker::coordinator::CauseHypothesis> {
+    let spanne = {
+        let b = bandintervall_der_gruppe(gruppe_von_band(100));
+        (b.von as usize, b.bis as usize)
+    };
+    let master = nak214_quelle("m", spanne, 12.0, 1, false, false);
+    let kandidat = nak214_quelle(
+        &format!("{:032x}", 0x20),
+        spanne,
+        9.0,
+        2,
+        prepost_paar,
+        prepost_wirkungsbeleg,
+    );
+    hypothesen(&nak214_aufnahme(master, vec![kandidat])).befunde
+}
+
+/// **V-14 und V-16.** Trägt das Paar einen gemessenen Wirkungsbeleg, entsteht
+/// Klasse 2 — mit der Ursachenklasse der Kette und einem `next_test`, der das
+/// Paar nicht mehr verlangt.
+///
+/// Rotbeweis `NAK-214-rot-V-16.txt`: die Schwelle in
+/// `Paarurteil::wirkungsbeleg` von `>=` auf `==` gesetzt — dann trägt kein
+/// Paar in P5 je einen Wirkungsbeleg, und dieser Fall fällt.
+#[test]
+fn wirkungsbeleg_aus_ausgerichtetem_paar() {
+    let befunde = nak214_befunde(true, true);
+    assert!(!befunde.is_empty(), "die Aufnahme traegt einen Befund");
+    let b = &befunde[0];
+    assert_eq!(
+        b.claim_class,
+        eqcop_broker::coordinator::Aussageklasse::Wirkungsbeleg,
+        "V-14/V-16: ein Paar MIT gemessener Wirkung traegt Klasse 2"
+    );
+    assert_eq!(
+        b.ursachenklasse,
+        eqcop_broker::coordinator::Ursachenklasse::EffektkettePrePost,
+        "und die Ursache ist die Kette dieser Quelle"
+    );
+    assert_ne!(
+        b.next_test,
+        eqcop_broker::coordinator::NaechsterTest::PrePostPaarMessen,
+        "der naechste Beweisschritt verlangt das Paar nicht mehr"
+    );
+    assert_eq!(b.pre_post, Some("post"), "die Ortsangabe steht (E4)");
+}
+
+/// **V-45 und V-15.** Ein Paar OHNE gemessene Wirkung — gleich, ob es an
+/// Punkt 2 (kein gültiges Band) oder an Punkt 4 (alles exakt null) scheitert
+/// — bleibt Klasse 1, und `next_test` verlangt das Paar weiterhin.
+///
+/// Die ORTSANGABE bleibt trotzdem gesetzt: `prepost_paar` ist unberührt
+/// (E4). Rotbeweis `NAK-214-rot-V-45.txt`.
+#[test]
+fn paar_ohne_gemessene_wirkung_bleibt_klasse_eins() {
+    let befunde = nak214_befunde(true, false);
+    assert!(!befunde.is_empty());
+    let b = &befunde[0];
+    assert_eq!(
+        b.claim_class,
+        eqcop_broker::coordinator::Aussageklasse::Zusammenhang,
+        "V-45/V-15: ohne gemessene Wirkung bleibt es Klasse 1"
+    );
+    assert_ne!(
+        b.ursachenklasse,
+        eqcop_broker::coordinator::Ursachenklasse::EffektkettePrePost
+    );
+    assert_eq!(
+        b.next_test,
+        eqcop_broker::coordinator::NaechsterTest::PrePostPaarMessen,
+        "R2 woertlich: `next_test` verlangt das Paar weiterhin"
+    );
+    assert_eq!(
+        b.pre_post,
+        Some("post"),
+        "E4: die Ortsangabe haengt an `prepost_paar` und bleibt"
+    );
+}
+
+/// **V-18.** Ohne Paarurteil mit Ergebnis ist auch die Ortsangabe fort.
+#[test]
+fn ausgeschlossenes_paar_setzt_keine_marke() {
+    let befunde = nak214_befunde(false, false);
+    assert!(!befunde.is_empty());
+    let b = &befunde[0];
+    assert_eq!(
+        b.claim_class,
+        eqcop_broker::coordinator::Aussageklasse::Zusammenhang
+    );
+    assert_eq!(b.pre_post, None);
+    assert_eq!(
+        b.next_test,
+        eqcop_broker::coordinator::NaechsterTest::PrePostPaarMessen
+    );
+}
+
+/// **V-21.** Die Marke wirkt JE KANDIDAT, nicht je Aufnahme — und sie
+/// berührt die Sicherheitsklasse nicht. Beides sind zwei Achsen
+/// (`hypothese.rs`, unverändert seit SONDE-014).
+#[test]
+fn wirkungsbeleg_wirkt_je_kandidat() {
+    let spanne = {
+        let b = bandintervall_der_gruppe(gruppe_von_band(100));
+        (b.von as usize, b.bis as usize)
+    };
+    let master = nak214_quelle("m", spanne, 12.0, 1, false, false);
+    let mit = nak214_quelle(&format!("{:032x}", 0x20), spanne, 9.0, 2, true, true);
+    let ohne = nak214_quelle(&format!("{:032x}", 0x21), spanne, 8.5, 3, true, false);
+    let befunde = hypothesen(&nak214_aufnahme(master, vec![mit, ohne])).befunde;
+    assert!(befunde.len() >= 2, "zwei Kandidaten, zwei Befunde: {befunde:?}");
+    let a = befunde
+        .iter()
+        .find(|b| b.candidate_source == format!("{:032x}", 0x20))
+        .expect("der Kandidat MIT Wirkungsbeleg");
+    let b = befunde
+        .iter()
+        .find(|b| b.candidate_source == format!("{:032x}", 0x21))
+        .expect("der Kandidat OHNE");
+    assert_eq!(
+        a.claim_class,
+        eqcop_broker::coordinator::Aussageklasse::Wirkungsbeleg
+    );
+    assert_eq!(
+        b.claim_class,
+        eqcop_broker::coordinator::Aussageklasse::Zusammenhang,
+        "nur der EINE traegt den Beleg"
+    );
+    // Die Sicherheitsklasse bleibt unberuehrt - sie haengt ausdruecklich
+    // nicht an der Aussageklasse.
+    assert_eq!(
+        a.confidence.klasse, b.confidence.klasse,
+        "die Aussageklasse bewegt keine Sicherheitsklasse: {:?} gegen {:?}",
+        a.confidence, b.confidence
+    );
+}
+
+/// **V-22.** Der Weg aus Klasse 1 heraus existiert: dasselbe Paar, später mit
+/// gemessener Wirkung, hebt Klasse und `next_test`.
+///
+/// Ohne ihn wäre `next_test = PrePostPaarMessen` eine Aufforderung ohne Ziel
+/// (aktivieren ↔ abklingen).
+#[test]
+fn besseres_paar_hebt_die_klasse() {
+    let vorher = nak214_befunde(true, false);
+    let nachher = nak214_befunde(true, true);
+    assert_eq!(
+        vorher[0].claim_class,
+        eqcop_broker::coordinator::Aussageklasse::Zusammenhang
+    );
+    assert_eq!(
+        vorher[0].next_test,
+        eqcop_broker::coordinator::NaechsterTest::PrePostPaarMessen
+    );
+    assert_eq!(
+        nachher[0].claim_class,
+        eqcop_broker::coordinator::Aussageklasse::Wirkungsbeleg,
+        "V-22: der Weg aus Klasse 1 heraus existiert"
+    );
+    assert_ne!(
+        nachher[0].next_test,
+        eqcop_broker::coordinator::NaechsterTest::PrePostPaarMessen
+    );
+    assert_eq!(
+        vorher[0].finding_id, nachher[0].finding_id,
+        "es ist derselbe Befund - nur seine Aussagekraft ist gewachsen"
+    );
+}

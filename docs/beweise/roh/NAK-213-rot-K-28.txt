@@ -1,0 +1,93 @@
+NAK-213 Rotbeweis K-28 — die Duplikaterkennung laeuft ueber ALLE Quellen der Sitzung (R3, E5/E6)
+Datum: 2026-09-08
+
+Zurueckgenommen: `aufnahmen_sammeln` iteriert wieder `stand.evidenz.keys()`.
+
+⚠️ Die AUSGABE von `f4b_drei_sonden_auf_einem_kanal` war schon vor NAK-213
+richtig — drei Sonden auf einem Kanal tragen alle die Duplikatmarke und keine
+eine starke Aussage. Enger war der ERKENNUNGSSATZ, und genau den misst die
+Zeile ab jetzt: eine VIERTE, STUMME Sonde desselben Kanals betritt die
+Kanaltafel.
+
+Erwartete Wirkung: mit der alten Tafel steht sie in keiner Kanalgruppe, sie
+setzt keine Duplikatmarke und erscheint in keinem Ausschluss — der Fall las
+sich wie ein rundum geschlossener, obwohl der Satz „ueber ALLE Quellen der
+Sitzung" nirgends gemessen war.
+
+========================================================================
+Rotlauf (Zeile K-28, Test `f4b_drei_sonden_auf_einem_kanal`)
+Befehl: cargo test --no-fail-fast --manifest-path broker/Cargo.toml --color never --test sonde014_gegenbeispiele
+Exitcode: 101
+========================================================================
+test eigen3_antikorrelierte_quelle ... ok
+test eigen4_quelle_im_falschen_band ... ok
+test a1_intent_rolle_trennt_identische_kandidaten_nicht ... ok
+test eigen5_antikorreliert_neben_korreliert ... ok
+test d4_umklammernde_und_disjunkte_spanne ... ok
+test f8b_master_ohne_fenster ... FAILED
+test f4b_drei_sonden_auf_einem_kanal ... FAILED
+test a3_sonde_auf_masterkanal ... ok
+test f4_kanalwechsel_zwischen_den_fenstern ... ok
+test f7_rangdifferenz_am_quantum ... ok
+test f8_zwei_master_mit_widersprechendem_befundband ... ok
+test d2_fuehrender_wird_gegen_jeden_geprueft ... ok
+test a4_masteranomalie_ausserhalb_der_passage ... ok
+test d3_passage_ohne_masterfenster_ergibt_enthaltung ... ok
+test f5b_gleiche_passage_id_verschobenes_fenster ... ok
+test einzelueberlebender_neben_passagenausschluss ... ok
+test f5_passagenrandwerte ... ok
+test result: FAILED. 15 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 31.75s
+
+---- f4b_drei_sonden_auf_einem_kanal stdout ----
+── F4b drei Sonden auf Mixerkanal 7 ──
+   quelle=..02 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.183950
+     rang: bandpassung=0.103699 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=2 ausschluesse=[]
+   quelle=..03 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.183623
+     rang: bandpassung=0.101738 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=2 ausschluesse=[]
+   quelle=..04 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.183302
+     rang: bandpassung=0.099809 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=2 ausschluesse=[]
+   => starke Befunde: 0
+── F4b vierte, STUMME Sonde auf demselben Kanal 7 ──
+   quelle=..02 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.183950
+     rang: bandpassung=0.103699 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=2 ausschluesse=[]
+   quelle=..03 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.183623
+     rang: bandpassung=0.101738 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=2 ausschluesse=[]
+   quelle=..04 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.183302
+     rang: bandpassung=0.099809 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=2 ausschluesse=[]
+   => starke Befunde: 0
+
+thread 'f4b_drei_sonden_auf_einem_kanal' (27036) panicked at tests\sonde014_gegenbeispiele.rs:1344:5:
+und sie steht als Ausschluss im Befund (M-87, E5): []
+
+
+failures:
+    f4b_drei_sonden_auf_einem_kanal
+    f8b_master_ohne_fenster
+
+test result: FAILED. 15 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 31.75s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: method `snapshot` is never used
+   --> tests\sonde014_gegenbeispiele.rs:371:8
+    |
+217 | impl Buehne {
+    | ----------- method in this implementation
+...
+371 |     fn snapshot(&self) -> Value {
+    |        ^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (test "sonde014_gegenbeispiele") generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.00s
+     Running tests\sonde014_gegenbeispiele.rs (broker\target\debug\deps\sonde014_gegenbeispiele-4e737afb3cd092a5.exe)
+error: test failed, to rerun pass `--test sonde014_gegenbeispiele`
+error: 1 target failed:
+    `--test sonde014_gegenbeispiele`
+

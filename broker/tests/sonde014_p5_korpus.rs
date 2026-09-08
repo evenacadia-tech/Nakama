@@ -223,7 +223,12 @@ fn sitzung_fahren(s: &Value, band: (usize, usize)) -> Vec<Value> {
         None => Coordinator::mit_uhr(Arc::new(ManualClock::default()), hex(0xbeef)),
     };
     let master = adresse(1);
-    anmelden(&c, "main", &master, "main", Some(0));
+    // 🔑 **NAK-213 E6/K-24:** Kanal **1** statt 0. Der Vertrag laesst
+    // `host_mixer_index` erst ab 1 zu (`minimum: 1`); nur der permissive
+    // Testsetter liess die 0 durch, und ein Produktzustand mit 0 entsteht auf
+    // keinem Weg. Die Kanaele 1 und 2 sind im uebrigen Korpus frei, die
+    // Erwartung jeder anderen Sitzung bleibt damit unberuehrt.
+    anmelden(&c, "main", &master, "main", Some(1));
     // 🔑 M-86/NR-01 (Nacharbeit 1, 07.09.2026): der Vollbestand MIT Marke,
     // bevor gerechnet wird. Die Sperre ist seither fail-closed — `intent ==
     // None` sperrt genauso wie ein unvollstaendiger Bestand -, und ein

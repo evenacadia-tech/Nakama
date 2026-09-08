@@ -17,10 +17,20 @@
 //! Produktpfad und **druckt** je Eingabe ihr Ergebnis. Sechs davon standen
 //! schon hier; neun kamen dazu (`[0,11)`, `f5b`, `f8`, `f8b`, `f4` mit
 //! beiden Staenden, `f4b`, `eigen3`, `eigen5`) und mit ihnen der
-//! Produktpfadfall `a4`. Faelle, die **NAK-213** oder **NAK-214** gehoeren,
-//! werden gefahren und mit **benannter, gedruckter Luecke** ausgegeben
-//! (Muster NAK-190) — nicht geloest, nicht als gruen gewertet und nicht
-//! ausgelassen (R6).
+//! Produktpfadfall `a4`.
+//!
+//! 🔑 **Seit NAK-213 (08.09.2026) traegt keine dieser Eingaben mehr eine
+//! NAK-213-Luecke.** Die sieben, die es bis dahin taten, sind zur Zusage
+//! geworden: zwei Master und ein Master ohne Fenster ergeben eine
+//! **Enthaltung ohne Ort** statt eines stillen Gewinners beziehungsweise
+//! statt Schweigen (R4); der Kanalwechsel nimmt die Belege **genau der
+//! wechselnden Quelle** zurueck und entfernt ihren Befund (R5); die
+//! Duplikaterkennung laeuft ueber **alle** Quellen der Sitzung, Master und
+//! stumme eingeschlossen (R3); der Deckel schneidet vor Stufe B und traegt
+//! einen Grund (R1). Faelle, die **NAK-214** gehoeren, werden weiterhin
+//! gefahren und mit **benannter, gedruckter Luecke** ausgegeben (Muster
+//! NAK-190) — nicht geloest, nicht als gruen gewertet und nicht ausgelassen
+//! (R6).
 //!
 //! Der Gate-Text von G5 nennt adversariale Gegenbeispiele **namentlich**
 //! (`docs/bauaufteilung-sonden.md`:395-400); ein namentlich geforderter

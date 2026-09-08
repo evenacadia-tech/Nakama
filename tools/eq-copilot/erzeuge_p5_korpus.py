@@ -527,21 +527,15 @@ SITZUNGEN: list[dict] = [
         master_reihe_db=WECHSEL,
         erwartete_sicherheit="mittel",
         erwarteter_ausschluss="alignment_falsch",
-        luecke={
-            "ticket": "NAK-213",
-            "regel": "R2",
-            "wirkung": "ausgenommen",
-            "zusage": ("Ein einziger Ueberlebender ist nicht `getrennt`, wenn "
-                       "ein Konkurrent aus einem MESSGRUND ausgeschieden ist."),
-            "was_heute_passiert": ("Der Distraktor bleibt allein im Rennen und "
-                                   "traegt `hoch`, obwohl der Ausschluss im "
-                                   "selben Befund belegt, dass die Datenlage "
-                                   "nachweislich unvollstaendig ist."),
-        },
         hinweis=("G5 Fall 2: der wahre Verursacher faellt am Alignment. Die "
                  "Sitzung traegt bewusst eine Pegelreihe, damit der Distraktor "
-                 "einen belegten Zusammenhang hat und die Luecke wirklich "
-                 "beisst — R1 wuerde ihn sonst schon senken."),
+                 "einen belegten Zusammenhang hat und die Zusage wirklich "
+                 "beisst — R1 wuerde ihn sonst schon senken. "
+                 "🔑 **NAK-213 R2:** `alignment_falsch` ist einer der fuenf "
+                 "MESSgruende; der einzige Ueberlebende ist deshalb nicht "
+                 "`getrennt`, sondern hoechstens `mittel`. Bis NAK-213 war "
+                 "diese Sitzung als Luecke AUSGENOMMEN — sie zaehlt wieder in "
+                 "allen Kennzahlen mit."),
     ),
     sitzung(
         "g5_unbeteiligte_quelle",
@@ -560,26 +554,23 @@ SITZUNGEN: list[dict] = [
     sitzung(
         "g5_sonde_auf_masterkanal",
         wahrheit="parent_duplikat",
-        ursachenklasse="quelle_resonanz",
-        quellen=[quelle(2, reihe_db=WECHSEL, mixer=0)],
+        ursachenklasse="daten_reichen_nicht",
+        quellen=[quelle(2, reihe_db=WECHSEL, mixer=1)],
         master_reihe_db=WECHSEL,
-        erwartete_sicherheit="mittel",
-        luecke={
-            "ticket": "NAK-213",
-            "regel": "R3",
-            "wirkung": "ausgenommen",
-            "zusage": ("Eine Quelle auf dem Mixerkanal des Masters misst das "
-                       "Mastersignal; sie ist dessen Duplikat, nie seine "
-                       "Ursache."),
-            "was_heute_passiert": ("`ids` und `ist_parent` lesen nur die "
-                                   "KANDIDATEN — der Master steht in keiner "
-                                   "der beiden Mengen, `duplikat` bleibt "
-                                   "falsch, und die Sonde wird `hoch`."),
-        },
+        erwartete_sicherheit="unklar",
+        erwarteter_ausschluss="master_duplikat",
         hinweis=("G5 eigene Angriffsidee 2: die Sonde misst denselben "
                  "Mixerkanal wie der Master. Mit Pegelreihe ist ihr Uplift "
                  "gegen den Master perfekt belegt — R1 greift nicht, und die "
-                 "Luecke bleibt scharf."),
+                 "Zusage bleibt scharf. "
+                 "🔑 **NAK-213 R3:** sie faellt mit `master_duplikat` aus dem "
+                 "Ranking; kein Kandidat ueberlebt, und die Sitzung enthaelt "
+                 "sich mit `daten_reichen_nicht`/`unklar`. "
+                 "⚠️ Kanal **1** und nicht 0: der Vertrag laesst "
+                 "`host_mixer_index` erst ab 1 zu (`minimum: 1`, „Ausserhalb "
+                 "gilt der Hostwert als nicht geliefert“), und nur der "
+                 "permissive Testsetter liess die 0 durch. Die Kanaele 1 und 2 "
+                 "sind im uebrigen Korpus frei."),
     ),
     sitzung(
         "g5_parent_partner_faellt_aus",
@@ -619,19 +610,15 @@ SITZUNGEN: list[dict] = [
         ],
         master_reihe_db=WECHSEL,
         erwartete_sicherheit="mittel",
-        luecke={
-            "ticket": "NAK-213",
-            "regel": "R2",
-            "wirkung": "ausgenommen",
-            "zusage": ("Eine angemeldete aktive Quelle ohne Evidenz macht den "
-                       "Ueberlebenden nicht `getrennt`."),
-            "was_heute_passiert": ("Die Kanaltafel `je_kanal` entsteht aus den "
-                                   "EVIDENZ-Schluesseln; eine stumme Sonde "
-                                   "steht in keiner Kanalgruppe und setzt die "
-                                   "Duplikatmarke des Partners nicht."),
-        },
+        erwarteter_ausschluss="evidenz_zurueckgenommen",
         hinweis=("G5 Fall 3: der Partner ist angemeldet, traegt denselben "
-                 "Mixerkanal, hat aber nie gesendet."),
+                 "Mixerkanal, hat aber nie gesendet. "
+                 "🔑 **NAK-213 R2/R3:** er wird Kandidat mit LEERER "
+                 "Fensterfolge, faellt mit `evidenz_zurueckgenommen` und steht "
+                 "als Ausschluss im Befund; zugleich setzt er die Duplikatmarke "
+                 "des Partners, weil die Kanaltafel aus den CLIENTS entsteht. "
+                 "Beide Wirkungen sind unabhaengig und werden im Kettenbein "
+                 "einzeln gemessen (K-17, K-29)."),
     ),
     sitzung(
         "g5_fenster_genau_acht",
@@ -691,25 +678,18 @@ SITZUNGEN: list[dict] = [
             quelle(7, anhebung_db=9.4, mixer=9, distraktor=True),
         ],
         erwartete_sicherheit="mittel",
+        erwarteter_ausschluss="screening_ueberboten",
         distraktor_ist_alternative=True,
-        luecke={
-            "ticket": "NAK-213",
-            "regel": "R1",
-            "wirkung": "benannt",
-            "zusage": ("Jeder Kandidat, der ausscheidet, traegt einen Grund "
-                       "aus der geschlossenen Menge (M-87) — auch der am "
-                       "Deckel abgeschnittene."),
-            "was_heute_passiert": ("`truncate(KANDIDATEN_DECKEL)` schneidet "
-                                   "nach der Sortierung und ohne Eintrag in "
-                                   "`ausschluesse`; Instanz 02 erscheint weder "
-                                   "als Befund noch als Alternative noch als "
-                                   "Ausschluss."),
-        },
         hinweis=("G5 Fall 2 / M-18: sechs Kandidaten, der wahre Verursacher ist "
                  "der leiseste. Die SICHERHEIT ist seit R3 korrekt `mittel` "
-                 "(alle fuenf sind ungetrennt) — die Luecke ist die fehlende "
-                 "Spur des sechsten, und die zaehlt normal in allen "
-                 "Kennzahlen mit (`wirkung: benannt`)."),
+                 "(alle fuenf sind ungetrennt). "
+                 "🔑 **NAK-213 R1:** der Deckel schneidet VOR Stufe B, und der "
+                 "abgeschnittene Sechste traegt `screening_ueberboten` — die "
+                 "fehlende Spur, die M-87 verbietet, ist geschlossen. Die sechs "
+                 "Quellen tragen konstante Anhebungen 8,0 bis 9,4 dB und keine "
+                 "eigene Onsetreihe; ihre Screeningraenge sind also paarweise "
+                 "verschieden, der Fuenfte ist vom Sechsten getrennt, und E2 "
+                 "greift hier nicht."),
     ),
     sitzung(
         "g5_gleichstand_verursacher_fuehrt",

@@ -72,3 +72,139 @@ test user_verdict_ohne_befund_wird_abgewiesen ... ok
 test user_verdict_auf_more_data_wird_angenommen ... ok
 
 test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 53 filtered out; finished in 12.72s
+
+========================================================================
+ZWEITER ABSCHNITT — die Vorbedingung UNTERSCHEIDEND gemessen (Nacharbeit 2)
+========================================================================
+
+Erzeugt am 08.09.2026 in der Nacharbeit 2 nach der Wiederpruefung 1
+(NEEDS_WORK, Restbefund: „In `user_verdict_ohne_sitzungsbefunde_wird_abgewiesen`
+unterscheidet diese Vorbedingung nicht zwischen fehlendem Eintrag und
+vorhandener leerer Liste: `befunde_der_sitzung` ruft `befunde_sicht` auf, dessen
+`unwrap_or_default()` beide Faelle zusammenfuehrt“). Die unterscheidende
+Zusicherung liegt seither als Unit-Test IM CRATE:
+
+    broker/src/coordinator/befehl.rs
+    ::tests::ohne_sitzungseintrag_wird_das_urteil_abgewiesen
+
+Er prueft VOR dem Urteil `stand.befunde.get(&session).is_none()` — am Bestand
+selbst, nicht an einer Sicht. Von aussen ist das strukturell unmoeglich:
+`Stand` ist `pub(super)` (zustand.rs:286) und `Coordinator.stand` privat
+(mod.rs:193). Dasselbe Muster traegt seit der Matrixnacharbeit 3 V-12 (a) in
+proposal_verdrahtung.rs:526.
+
+Beide Proben laufen auf dem COMMITTETEN Stand des Testfalls und sind danach
+zurueckgenommen; keine Mutation liegt in einem Commit. Die Ruecknahme ist am
+TESTERGEBNIS verifiziert (Abschnitt GRUEN NACH DER RUECKNAHME), nicht am
+Kopiervorgang.
+
+
+MUTATION A — dem `None`-Zweig „existent“ beigebracht (PRODUKTCODE)
+------------------------------------------------------------------------
+
+`befehl.rs`:242 — `persistenz_p0_intern`, der Vorbedingungsriegel aus R4,
+dieselbe Mutation wie im ersten Abschnitt:
+
+    -   stand.befunde.get(&session).is_some_and(|liste| {
+    +   stand.befunde.get(&session).map_or(true, |liste| {
+            liste.iter().any(|b| b.finding_id == finding_id)
+        })
+
+WAS FAELLT: der Unit-Test faellt — das Ack meldet `angewandt` samt
+`state_hash` fuer eine wohlgeformte, im Broker unbekannte `finding_id`. Damit
+misst er wirklich den Riegel. Die Rohausgabe belegt zugleich, dass der Sender
+VOLLWERTIG ist (angemeldet, bestaetigt, fuehrendes Main, gueltiger
+Record-State): ohne den Riegel lautet die Antwort `angewandt` und nicht etwa
+`unauthorized`.
+
+ROHAUSGABE
+------------------------------------------------------------------------
+cargo test --manifest-path broker/Cargo.toml --lib coordinator::befehl
+
+running 1 test
+test coordinator::befehl::tests::ohne_sitzungseintrag_wird_das_urteil_abgewiesen ... FAILED
+
+failures:
+
+---- coordinator::befehl::tests::ohne_sitzungseintrag_wird_das_urteil_abgewiesen stdout ----
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-befehl-nak214-v34-none-5640-befb521a75de41e2a9c57fe68173bbdd\nakama-broker.sqlite3
+
+thread 'coordinator::befehl::tests::ohne_sitzungseintrag_wird_das_urteil_abgewiesen' (10776) panicked at src\coordinator\befehl.rs:1165:9:
+assertion `left == right` failed: V-34: eine Sitzung OHNE Eintrag fuehrt diesen Befund nicht: Object {"command_id": String("00000000000000000000000000009450"), "ergebnis": String("angewandt"), "state_hash": String("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), "state_revision": Number(0), "type": String("command_ack")}
+  left: String("angewandt")
+ right: "abgelehnt"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    coordinator::befehl::tests::ohne_sitzungseintrag_wird_das_urteil_abgewiesen
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 244 filtered out; finished in 0.23s
+
+error: test failed, to rerun pass `--lib`
+
+
+GEGENPROBE B — ein `Some(vec![])` von Hand eingetragen (TESTCODE)
+------------------------------------------------------------------------
+
+Mutation A allein zeigt nur, DASS der Fall den Riegel misst — nicht, dass
+seine Vorbedingung die beiden Faelle trennt. Genau das ist der Restbefund.
+Deshalb die zweite Probe, am UNVERAENDERTEN Produktcode: unmittelbar vor der
+Zusicherung wird der leere Eintrag von Hand gesetzt, den die Sitzung im
+gebauten Broker nie bekommt.
+
+`befehl.rs`, im Unit-Test, nach `let session = ...`:
+
+    +   {
+    +       let mut stand = c.stand.lock().unwrap_or_else(|e| e.into_inner());
+    +       stand.befunde.insert(session.clone(), Vec::new());
+    +   }
+
+WAS FAELLT: die Vorbedingung SCHLAEGT AN. Damit ist belegt, dass
+`stand.befunde.get(&session).is_none()` `Some(vec![])` zurueckweist. Die
+Zusicherung ist also die unterscheidende, nicht nur eine strengere Schreibweise.
+
+Die Gegenprobe laeuft NUR hier, und das ist keine Bequemlichkeit: im
+Integrationstest ist dieselbe Einfuegung nicht moeglich, weil `stand` von
+aussen unerreichbar ist. Dass `befunde_der_sitzung(&c).is_empty()` unter einem
+`Some(vec![])` gruen bliebe, ist deshalb ABGELEITET aus `unwrap_or_default()`
+(hypothese_verdrahtung.rs:1037) und ausdruecklich NICHT gefahren — genau
+diese Nichtmessbarkeit ist der Grund, warum die Zusicherung in den Crate
+gewandert ist.
+
+ROHAUSGABE
+------------------------------------------------------------------------
+cargo test --manifest-path broker/Cargo.toml --lib coordinator::befehl
+
+running 1 test
+test coordinator::befehl::tests::ohne_sitzungseintrag_wird_das_urteil_abgewiesen ... FAILED
+
+failures:
+
+---- coordinator::befehl::tests::ohne_sitzungseintrag_wird_das_urteil_abgewiesen stdout ----
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-befehl-nak214-v34-none-10088-5a19205f690a43c3a95cfeb91ddcc654\nakama-broker.sqlite3
+
+thread 'coordinator::befehl::tests::ohne_sitzungseintrag_wird_das_urteil_abgewiesen' (16848) panicked at src\coordinator\befehl.rs:1150:13:
+Vorbedingung: die Sitzung hat GAR KEINEN Eintrag in `stand.befunde` - nicht einen mit leerer Liste
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    coordinator::befehl::tests::ohne_sitzungseintrag_wird_das_urteil_abgewiesen
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 244 filtered out; finished in 0.17s
+
+error: test failed, to rerun pass `--lib`
+
+
+GRUEN NACH DER RUECKNAHME
+------------------------------------------------------------------------
+Nach der Ruecknahme BEIDER Proben ist `git diff --numstat -- broker/src` genau
+`268  0  broker/src/coordinator/befehl.rs` — 268 Zeilen hinzugefuegt, KEINE
+geaendert und KEINE entfernt; der Produktpfad dieser Runde ist unberuehrt.
+Derselbe Befehl laeuft gruen:
+
+running 1 test
+test coordinator::befehl::tests::ohne_sitzungseintrag_wird_das_urteil_abgewiesen ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 244 filtered out; finished in 0.27s

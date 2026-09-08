@@ -3465,6 +3465,19 @@ fn user_verdict_ohne_befund_wird_abgewiesen() {
 /// angenommen und fiel danach; hier hat die Sitzung nie einen getragen. Und
 /// nicht „leere Liste nach Rücknahme": die gibt es im gebauten Broker nicht.
 ///
+/// 🔑 **Nacharbeit 2 (08.09.2026): dieser Fall ist der LAUF über den
+/// Produktpfad, nicht die unterscheidende Zusicherung.** Die Vorbedingung
+/// unten prüft `befunde_der_sitzung(&c).is_empty()`, und diese Sicht führt
+/// über `unwrap_or_default()` (`hypothese_verdrahtung.rs`:1037) den fehlenden
+/// Eintrag und ein `Some(vec![])` zu derselben leeren Liste zusammen — von
+/// außen ist die Unterscheidung strukturell nicht messbar, weil `Stand`
+/// `pub(super)` (`zustand.rs`:286) und `Coordinator.stand` privat
+/// (`mod.rs`:193) ist. Die Zusicherung `stand.befunde.get(&session).is_none()`
+/// liegt deshalb als Unit-Test IM Crate:
+/// `befehl.rs::tests::ohne_sitzungseintrag_wird_das_urteil_abgewiesen`.
+/// Dieser Fall hier trägt dafür, was der Unit-Test nicht sieht: den vollen
+/// Produktweg samt Store-Projektionen.
+///
 /// Der Sender ist vollwertig — angemeldet, bestätigt, führendes Main, mit
 /// gültigem Record-State. Ohne den Riegel bekäme dieses Urteil `angewandt`,
 /// nicht etwa `unauthorized`; genau das zeigt der Rotbeweis.
@@ -3472,7 +3485,13 @@ fn user_verdict_ohne_befund_wird_abgewiesen() {
 /// Rotbeweis `NAK-214-rot-V-34.txt`: dem `None`-Zweig „existent" beigebracht
 /// (`map_or(true, ..)`). Der Fall fällt; V-33 bleibt grün, weil seine Sitzung
 /// eine Liste führt — die Mutation trifft ausschließlich den fehlenden
-/// Eintrag.
+/// Eintrag. Der **zweite Abschnitt** desselben Beweises trägt die Gegenprobe
+/// zur Unterscheidung: ein von Hand eingetragenes `Some(vec![])` lässt die
+/// Zusicherung des Unit-Tests anschlagen. Diese Zeile hier kann denselben
+/// Unterschied nicht sehen — `befunde_sicht` bildet `None` und `Some(vec![])`
+/// über `unwrap_or_default()` auf dieselbe leere Liste ab —, und sie kann ihn
+/// auch nicht fahren: von außen ist der Eintrag nicht setzbar. Das ist eine
+/// Ableitung aus der Quelle, kein gefahrener Lauf.
 #[test]
 #[cfg(windows)]
 fn user_verdict_ohne_sitzungsbefunde_wird_abgewiesen() {
@@ -3488,9 +3507,10 @@ fn user_verdict_ohne_sitzungsbefunde_wird_abgewiesen() {
     );
     assert!(
         befunde_der_sitzung(&c).is_empty(),
-        "Vorbedingung: die Sitzung fuehrt keinen Befund - und weil ein \
-         Eintrag nur mit nichtleerer Liste entsteht, hat `stand.befunde` \
-         fuer sie keinen"
+        "Vorbedingung: die Sitzung fuehrt keinen Befund. Diese SICHT \
+         unterscheidet `None` und `Some(vec![])` nicht - die unterscheidende \
+         Zusicherung traegt `befehl.rs::tests::\
+         ohne_sitzungseintrag_wird_das_urteil_abgewiesen`"
     );
 
     // Wohlgeformt und unbekannt: 32 gueltige Hexzeichen.

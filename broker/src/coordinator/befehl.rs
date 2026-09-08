@@ -952,3 +952,271 @@ impl Coordinator {
         }
     }
 }
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-214 V-34 (zweiter Teilfall) — der fehlende Sitzungseintrag, von INNEN
+// ═════════════════════════════════════════════════════════════════════════
+//
+// Der Fall liegt HIER und nicht nur in `broker/tests/`, weil die
+// Unterscheidung, die V-34 verlangt, von außen strukturell unerreichbar ist:
+// die einzige öffentliche Sicht auf den Bestand ist `befunde_sicht`, und ihr
+// `unwrap_or_default()` (`hypothese_verdrahtung.rs`:1037) führt „kein
+// Eintrag“ und „Eintrag mit leerer Liste“ zu derselben leeren Liste
+// zusammen. `Stand` ist `pub(super)` (`zustand.rs`:286) und
+// `Coordinator.stand` privat (`mod.rs`:193); ein Integrationstest kann
+// `stand.befunde.get(&session)` deshalb nicht lesen und misst mit
+// `is_empty()` auf einer Sicht beide Fälle gleich. Dasselbe Muster trägt
+// seit der Matrixnacharbeit 3 V-12 (a) in `proposal_verdrahtung.rs`:526.
+//
+// Der Integrationstest
+// `sonde014_verdrahtung.rs::user_verdict_ohne_sitzungsbefunde_wird_abgewiesen`
+// bleibt und fährt denselben Fall über den vollen Produktpfad samt
+// Projektionen; er trägt die Abwesenheit im Store. GEMESSEN wird die
+// Unterscheidung `None` gegen `Some(vec![])` allein hier.
+#[cfg(all(test, windows))]
+mod tests {
+    use super::*;
+    use crate::store::{StoreKonfiguration, StoreWriter, STORE_DATEINAME};
+    use crate::transport::bootstrap::HostAngabe;
+    use crate::transport::server_v3::Senke;
+    use serde_json::json;
+
+    fn hex(n: usize) -> String {
+        format!("{n:032x}")
+    }
+
+    /// ⚠️ Löscht seinen Pfad im `Drop` — der Rückgabewert muss bis zum
+    /// Testende leben (dieselbe Falle wie in `sonde014_verdrahtung.rs`:911).
+    struct TestOrdner(std::path::PathBuf);
+
+    impl TestOrdner {
+        fn neu(name: &str) -> Self {
+            let pfad = std::env::temp_dir().join(format!(
+                "nakama-befehl-{name}-{}-{}",
+                std::process::id(),
+                uuid::Uuid::new_v4().simple()
+            ));
+            std::fs::create_dir_all(&pfad).unwrap();
+            Self(pfad)
+        }
+
+        fn db(&self) -> std::path::PathBuf {
+            self.0.join(STORE_DATEINAME)
+        }
+    }
+
+    impl Drop for TestOrdner {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+
+    fn adresse() -> Adresse {
+        Adresse {
+            logon_sid: "S-1-5-21-1-2-3-1001".into(),
+            project_binding_id: hex(0x11),
+            session_epoch: hex(0x22),
+            instance_id: hex(1),
+            runtime_nonce: hex(0x40),
+        }
+    }
+
+    /// Ein Coordinator MIT echtem Store. Ohne Store kehrt
+    /// `persistenz_p0_intern` schon VOR dem Riegel mit `abgelehnt/internal`
+    /// zurück (`befehl.rs`:175) — der Fall mäße dann nicht den Riegel,
+    /// sondern seine Abwesenheit.
+    fn coordinator_mit_store(name: &str) -> (Coordinator, StoreWriter, TestOrdner) {
+        let ordner = TestOrdner::neu(name);
+        let mut k = StoreKonfiguration::fuer_pfad(ordner.db());
+        k.remote_volume_override = Some(false);
+        let writer = StoreWriter::starten(k);
+        assert!(!writer.ist_degradiert(), "{:?}", writer.handle().sicht());
+        let c = Coordinator::mit_store(Arc::new(ManualClock::default()), hex(0xbeef), &writer);
+        (c, writer, ordner)
+    }
+
+    /// Ein vollwertiger Sender: angemeldet, bestätigt, führendes Main, mit
+    /// gemeldetem `record_state`. Derselbe Weg wie
+    /// `sonde014_verdrahtung.rs::anmelden_fuer_passage` — ohne den Bericht
+    /// wiese der Broker jeden persistenzpflichtigen Befehl mit
+    /// `record_state_unknown` ab, und der Fall mäße nicht den Riegel.
+    fn main_anmelden(c: &Coordinator, link: &str, a: &Adresse) {
+        let hello = HelloControl {
+            typ: "hello".into(),
+            connection_kind: "control".into(),
+            protocol: 3,
+            plugin_version: "test".into(),
+            plugin_kind: "main".into(),
+            adresse: a.clone(),
+            host: Some(HostAngabe {
+                pid: 4711,
+                name: Some("FL Studio".into()),
+                version: None,
+            }),
+            audio: AudioLage {
+                samplerate: 48_000.0,
+                block_size: 512,
+                channels: 2,
+            },
+        };
+        let ausgang = c.control_hello_registrieren(link, &hello);
+        assert!(ausgang.angenommen, "{:?}", ausgang.grund);
+        let _ = c.resync_bestaetigen(link, 0);
+        assert!(c.descriptor_setzen(
+            link,
+            json!({
+                "adresse": a,
+                "plugin_kind": "main",
+                "measurement_position": "insert",
+                "aussageklasse": "beobachtend",
+                "betrieb": "active",
+                "label": "Testquelle",
+                "capabilities": {
+                    "host_context": true, "project_time": true, "fine_automation": false,
+                    "double_precision": false, "latency_report": false, "aux_send": false,
+                    "aux_return": false, "compare_routing": false, "sidechain": false,
+                    "offline_render": false
+                },
+                "frische": {"letzter_kontakt_ms": 10, "stale": false}
+            })
+        ));
+        let bericht = json!({
+            "type": "state_report",
+            "adresse": a,
+            "dsp_schema_version": 1,
+            "state_revision": 0,
+            "state_hash": "a".repeat(64),
+            "record_state": {"valid": true, "recording": false}
+        });
+        assert!(c.state_report_json(link, &serde_json::to_vec(&bericht).unwrap()));
+    }
+
+    /// Ein `user_verdict` aus dem committeten Korpus — dieselbe Grundform,
+    /// die der Integrationstest fährt, damit nicht zwei Wire-Wahrheiten
+    /// nebeneinander stehen.
+    fn user_verdict_wert(ziel: &Adresse, command: usize, finding_id: &str) -> Value {
+        let mut wert: Value = serde_json::from_str(include_str!(
+            "../../../eq-copilot/fixtures/v3/gueltig/user_verdict.json"
+        ))
+        .expect("Fixture ist JSON");
+        wert["kopf"]["ziel"] = serde_json::to_value(ziel).unwrap();
+        wert["kopf"]["command_id"] = json!(hex(command));
+        wert["kopf"]["base_revision"] = json!(0);
+        wert["finding_id"] = json!(finding_id);
+        wert["user_verdict_id"] = json!(hex(0xd0d0 + command));
+        wert
+    }
+
+    /// **V-34, zweiter Teilfall — die Vorbedingung UNTERSCHEIDEND gemessen.**
+    ///
+    /// Die Lage: ein Main meldet sich an und meldet State; keine Sonde, keine
+    /// Evidenz, kein Befund. `befunde_eintragen` läuft nie, und weil seine
+    /// einzige `insert`-Stelle nur eine NICHTLEERE Liste einträgt
+    /// (`hypothese_verdrahtung.rs`:471–476; beide Räumstellen `remove`n den
+    /// Schlüssel, `:472` und `:732`), hat `stand.befunde` für diese Sitzung
+    /// keinen Eintrag.
+    ///
+    /// Das wird hier VOR dem Urteil ausdrücklich geprüft — an
+    /// `stand.befunde.get(&session)`, nicht an einer Sicht: `befunde_sicht`
+    /// macht aus `None` und `Some(vec![])` dieselbe leere Liste, und
+    /// `is_empty()` auf ihr wäre auch dann grün, wenn der `None`-Zweig nie
+    /// gefahren würde.
+    ///
+    /// Dann fällt das Urteil auf eine wohlgeformte, unbekannte `finding_id`:
+    /// `abgelehnt` mit `unknown_target` — derselbe Code wie V-33, kein
+    /// dritter Zustand — und im Store liegt nichts.
+    ///
+    /// Rotbeweis `NAK-214-rot-V-34.txt`, zweiter Abschnitt: dem `None`-Zweig
+    /// „existent“ beigebracht (`map_or(true, ..)`) — der Fall fällt. Die
+    /// Gegenprobe im selben Beweis trägt ein `Some(vec![])` von Hand ein: die
+    /// Vorbedingung schlägt an, und damit ist belegt, dass diese Zusicherung
+    /// die beiden Fälle wirklich trennt.
+    #[test]
+    fn ohne_sitzungseintrag_wird_das_urteil_abgewiesen() {
+        let (c, writer, _ordner) = coordinator_mit_store("nak214-v34-none");
+        let main = adresse();
+        main_anmelden(&c, "main", &main);
+        let session = ClientKey::aus_adresse(&main).session();
+
+        // 🔑 DIE unterscheidende Zusicherung. Sie liest den Bestand selbst
+        // und haelt ihr Lock nur fuer diese eine Frage: `Senke::p0` nimmt
+        // dasselbe Lock, ein gehaltenes waere ein Deadlock.
+        {
+            let stand = c.stand.lock().unwrap_or_else(|e| e.into_inner());
+            assert!(
+                stand.befunde.get(&session).is_none(),
+                "Vorbedingung: die Sitzung hat GAR KEINEN Eintrag in `stand.befunde` - \
+                 nicht einen mit leerer Liste"
+            );
+        }
+
+        // Wohlgeformt und unbekannt: 32 gueltige Hexzeichen.
+        let unbekannt = hex(0xbeec);
+        assert_eq!(
+            unbekannt.len(),
+            32,
+            "der Zahlenrand: gueltige Form, unbekannt"
+        );
+        let command = 0x9450;
+        let wert = user_verdict_wert(&main, command, &unbekannt);
+        let antwort = Senke::p0(&c, "main", &serde_json::to_vec(&wert).unwrap())
+            .expect("das Urteil wird beantwortet");
+        let ack: Value = serde_json::from_slice(&antwort).expect("das Ack ist JSON");
+        assert_eq!(
+            ack["ergebnis"], "abgelehnt",
+            "V-34: eine Sitzung OHNE Eintrag fuehrt diesen Befund nicht: {ack:?}"
+        );
+        assert_eq!(
+            ack["code"], "unknown_target",
+            "und zwar mit demselben Code wie V-33 (E7) - kein dritter Zustand: {ack:?}"
+        );
+
+        // Der Abweisungszweig committet nichts - weder den Befehlsriegel noch
+        // das Domaenenereignis.
+        assert!(
+            writer
+                .handle()
+                .command_event_lesen(&hex(command))
+                .expect("Store ist lesbar")
+                .is_none(),
+            "kein command_event"
+        );
+        let conn = rusqlite::Connection::open(writer.handle().db_pfad()).expect("Store ist lesbar");
+        let urteile: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM event_log WHERE event_type = ?1",
+                ["user_verdict"],
+                |row| row.get(0),
+            )
+            .expect("das event_log ist lesbar");
+        assert_eq!(
+            urteile, 0,
+            "kein `user_verdict`-Domaenenereignis im append-only Log"
+        );
+        // Gegenprobe zur Abwesenheit (Pruefliste E) - in zwei Haelften, weil
+        // eine Abwesenheit ohne sie nichts beweist:
+        //   (1) HIER: derselbe Ausdruck ueber dieselbe Tabelle findet Zeilen,
+        //       wenn welche da sind - die Anmeldung dieser Buehne hat
+        //       geschrieben.
+        //   (2) Der Wert `user_verdict` ist der richtige `event_type`: der
+        //       V-32-Fall in `sonde014_verdrahtung.rs` findet mit demselben
+        //       Ausdruck GENAU EINE Zeile, wenn das Urteil angenommen wird.
+        let gesamt: i64 = conn
+            .query_row("SELECT COUNT(*) FROM event_log", [], |row| row.get(0))
+            .expect("das event_log ist lesbar");
+        assert!(
+            gesamt > 0,
+            "Gegenprobe: der Ausdruck findet die Zeilen der Anmeldung, zaehlt aber              0 - dann bewiese die Zeile darueber nichts"
+        );
+
+        // Und die Sitzung hat auch NACH der Abweisung keinen Eintrag: der
+        // Riegel legt keinen an.
+        {
+            let stand = c.stand.lock().unwrap_or_else(|e| e.into_inner());
+            assert!(
+                stand.befunde.get(&session).is_none(),
+                "der Riegel traegt nichts ein"
+            );
+        }
+    }
+}

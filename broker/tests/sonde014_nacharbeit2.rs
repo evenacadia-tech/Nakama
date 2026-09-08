@@ -412,6 +412,25 @@ impl Harnisch {
 fn user_verdict_haelt_sich_an_die_gemeldete_revision() {
     let h = Harnisch::neu("wn01");
 
+    // 🔑 **NAK-214 R4 (08.09.2026): die Buehne traegt einen echten Befund.**
+    //
+    // Bis dahin ging das Urteil auf die feste `finding_id` der Fixture, und
+    // die trug in dieser Sitzung kein Befund — der Fall schrieb damit die
+    // Abweichung fest, die der Gate-Befund E-L5 benennt. Seit R4 weist der
+    // Broker ein Urteil ohne Befund mit `abgelehnt/unknown_target` ab. Die
+    // Zusage DIESES Falles — `base_revision` muss die GEMELDETE Revision
+    // sein — bleibt unveraendert und wird jetzt auf einer Lage gemessen, die
+    // es wirklich gibt.
+    h.intent_marke(0);
+    h.belege("main", &h.master, 0, 12);
+    h.belege("sonde0", &h.sonde, 100, 12);
+    let befunde = h.befunde();
+    assert!(
+        !befunde.is_empty(),
+        "Vorbedingung: die Sitzung traegt einen Befund - sonst weist R4 das Urteil ab"
+    );
+    let finding_id = befunde[0].finding_id.clone();
+
     // Der Broker kennt die Revision 0 - so hat sie der `state_report` der
     // Anmeldung gemeldet. Das Urteil kommt aus der committeten Fixture; nur
     // der Kopf wechselt, denn genau er traegt die Zusage.
@@ -421,6 +440,7 @@ fn user_verdict_haelt_sich_an_die_gemeldete_revision() {
         wert["kopf"]["command_id"] = json!(hex(command));
         wert["kopf"]["base_revision"] = json!(base);
         wert["user_verdict_id"] = json!(hex(0x7000 + command));
+        wert["finding_id"] = json!(finding_id);
         wert
     };
 

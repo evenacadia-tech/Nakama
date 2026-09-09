@@ -2051,3 +2051,15 @@ hörbar verschiedene Zustände könnten denselben Hash melden — gegen §44.5.
 | **D** Bau- und Prüfriegel | B-12 nennt die Fassungsleiter und das Codegen-Ziel, ohne die A9 und M-102 nicht fail-closed wären. |
 | **E** Behauptung ≤ Messung | **Die tragende Zeile dieser Runde.** B-08, B-09 und B-10 waren alle drei derselbe Fehlertyp: eine Prüfung, die ihre Zusage nicht treffen kann und deshalb auch ohne den Fix grün bleibt. B-01 und B-06 ergänzen fehlende Einspritz- beziehungsweise Invalidierungspunkte. §3.15 ist neu **gezählt**, nicht fortgeschrieben. |
 | **F** Änderungssatz | B-12 stellt genau das her: `schema.rs` gehört zu M-102, das Rust-Codegen-Ziel zu M-109, und das Presetschema zu dem Bein, das es tatsächlich liest. |
+
+### 7.3 Matrixprüfung 2 — NEEDS_WORK (Dirigent, 2026-09-10)
+
+| Merkmal | Wert |
+|---|---|
+| Prüfer | Codex `gpt-6-astra`, Effort max, lesend; Thread `01a08871-cc40-7e51-a554-a055b60212c7`; Lauf 01:12–01:21 |
+| Prüfbereich | Wiederprüfung (Vorlage B) über den Fixdiff `git diff e5a1cb20...59dbcaaf -- docs/beweise/SONDE-015.md`; HEAD während des Laufs `c0f7afca` (trägt nur den Prüfauftrag), vorher und nachher identisch |
+| Auftrag und Urteil | `docs/beweise/roh/SONDE-015-matrixpruefung-2-auftrag.txt`; Urteil wörtlich `docs/beweise/roh/SONDE-015-matrixpruefung-2-59dbcaa.txt` |
+| Urteil | **NEEDS_WORK** — B-01 bis B-04, B-06 bis B-08, B-10 bis B-12 **geschlossen** (zehn von zwölf, je mit Beleg); **B-05** und **B-09** offen; §3.15 stimmt mit 123 IDs und 15 MN1-Zeilen überein; kein weiterer Bruch |
+| Quellencheck des Dirigenten | direkt an M-74 (`:1145`), M-123 (`:1148`), §5.11.2 Punkt 2 (`:1771`) und M-15 (`:1050`): beide Befunde bestätigt, beide **DEFEKT** — B-05: Zonenriegel steht vor der Transaktions-ID-Prüfung, M-123 verspricht „dasselbe Ergebnis"; B-09: der Rotbeweis „beide Reihenfolgen liefern verschiedene Ergebnisse" trennt 0→7 nicht von 7→0 |
+| Rundenbilanz | `e5a1cb20..59dbcaaf: Doku 1 Datei(en) +167/-47 → OHNE PRODUKTFORTSCHRITT (Produkt+Tests = 0 Zeilen)` — Matrixrunde, strukturell null |
+| Nacharbeit | Matrix-Nacharbeit 2: `docs/beweise/roh/SONDE-015-matrix-nacharbeit-2-auftrag.txt` (nur B-05 und B-09; Regeln: Wiederholungserkennung als erste Stufe vor jedem zustandsabhängigen Riegel, gespeichertes Ergebnis auch für abgewiesene Transaktionen; Richtungsbeweis gegen ein unabhängig gerechnetes geordnetes Golden mit Rückwärtslauf-Mutant) |

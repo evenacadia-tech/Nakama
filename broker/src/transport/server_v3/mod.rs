@@ -86,8 +86,6 @@ use crate::transport::v3::{
 use crate::transport::warteschlange::CAP_INGRESS;
 use crate::transport::warteschlange::{IngressErgebnis, IngressWarteschlange};
 
-/// Hoechstens so viele gleichzeitige Verbindungen. Zwei je Instanz (Control +
-/// Telemetry) mal 32 Sonden plus Reserve.
 mod auth;
 mod griff;
 mod listener;
@@ -142,6 +140,8 @@ pub use listener::{
     V3StartTestFehler, V3TotesHandleNaht, V3UebergabeBarriere,
 };
 
+/// Hoechstens so viele gleichzeitige Verbindungen. Zwei je Instanz (Control +
+/// Telemetry) mal 32 Sonden plus Reserve.
 pub const MAX_VERBINDUNGEN: usize = 96;
 
 /// 96 Worker plus zwei jederzeit bewaffnete Besitzlistener. Windows erlaubt

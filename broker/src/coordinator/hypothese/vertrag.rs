@@ -1,10 +1,13 @@
 //! Die geschlossenen Mengen des Produzenten (SONDE-014 Etappe C).
 //!
 //! Jede dieser sechs Mengen lebt an EINER Stelle im Vertrag
-//! (`eq-ipc-v3.schema.json`), und
-//! `geschlossene_mengen_des_produzenten_decken_sich_mit_dem_vertrag` haelt
-//! jede Liste gegen das eingefrorene Schema (M-77). Sie sind hier keine
-//! zweite Wahrheit, sondern die Rust-Haelfte derselben.
+//! (`eq-ipc-v3.schema.json`). Sie sind hier keine zweite Wahrheit, sondern
+//! die Rust-Haelfte derselben, und zwei Tests halten beide Haelften
+//! gegeneinander (M-77): `geschlossene_mengen_sind_rund` unten in dieser
+//! Datei prueft die Rust-Seite auf Rundlauf und Indextreue,
+//! `geschlossene_mengen_der_fassung_3_stehen_je_einmal_im_vertrag` in
+//! `coordinator/schema.rs` haelt dieselben Listen gegen das eingefrorene
+//! Schema.
 //!
 //! ── JEDER AUSGESCHIEDENE TRAEGT EINEN GRUND (M-87) ────────────────────────
 //!
@@ -12,8 +15,10 @@
 //! nimmt: „JEDER Kandidat, der ausscheidet, traegt einen Grund aus einer
 //! geschlossenen Menge; ein kommentarlos entfernter Kandidat ist ein Defekt".
 //! Wer hier eine Variante anhaengt, haengt sie ANS ENDE — `wire()` und
-//! `aus_wire()` gehen ueber den Index (`ausschlussgruende_sind_index_treu`),
-//! und ein Einschub verschoebe jede bestehende Zahl.
+//! `aus_wire()` gehen ueber den Index, und ein Einschub verschoebe jede
+//! bestehende Zahl. Beide Seiten messen das: `geschlossene_mengen_sind_rund`
+//! die Rust-Liste, `geschlossene_mengen_der_fassung_3_stehen_je_einmal_im_vertrag`
+//! die Schemaliste.
 //!
 //! Welche dieser Gruende die KONKURRENZ unvollstaendig machen, entscheidet
 //! nicht diese Datei, sondern `ist_messgrund` zusammen mit `konkurrenzlage`
@@ -218,8 +223,8 @@ impl NaechsterTest {
 /// Die ZEHN Ausschlussgruende (M-87, R4). Geschlossen und beidseitig geprueft.
 ///
 /// NAK-213 (Fassung 4) haengt die letzten zwei an — ANS ENDE, weil `wire()`
-/// und `aus_wire()` ueber den Index gehen (`ausschlussgruende_sind_index_treu`)
-/// und ein Einschub jede bestehende Zahl verschoebe.
+/// und `aus_wire()` ueber den Index gehen (`geschlossene_mengen_sind_rund`
+/// prueft es) und ein Einschub jede bestehende Zahl verschoebe.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Ausschlussgrund {
     CoverageFehlt,

@@ -329,10 +329,10 @@ pub(super) struct BlockSenke {
 }
 
 impl BlockSenke {
-    /// Blockiert hoechstens `kBlockFrist`. Eine Senke, die WIRKLICH ewig
-    /// haengt, wuerde einen roten Test in einen Hang verwandeln — und ein
-    /// Hang sagt nichts. Die Frist ist um Groessenordnungen laenger als
-    /// jede Wartezeit im Test.
+    /// Blockiert hoechstens die 20 Sekunden, die unten stehen. Eine Senke,
+    /// die WIRKLICH ewig haengt, wuerde einen roten Test in einen Hang
+    /// verwandeln — und ein Hang sagt nichts. Die Frist ist um
+    /// Groessenordnungen laenger als jede Wartezeit im Test.
     fn warten(&self) {
         self.in_senke.store(true, Ordering::SeqCst);
         let bis = Instant::now() + Duration::from_secs(20);

@@ -316,3 +316,59 @@ pub(super) fn frame_roh_lesen(c: &Testclient) -> Option<crate::transport::v3::Ra
     }
     None
 }
+
+/// Eine Senke, die in `p1`/`p2` blockiert — der Gegenspieler, ohne den
+/// "der Leser haengt nicht an der Senke" keine pruefbare Aussage ist.
+#[derive(Default)]
+pub(super) struct BlockSenke {
+    pub(super) zaehl: ZaehlSenke,
+    pub(super) blockiert: AtomicBool,
+    /// Steht gerade ein Aufruf IN der Senke? Ohne diese Zahl misst ein
+    /// Test ueber den Senkenhang nur seine eigene Hoffnung.
+    pub(super) in_senke: AtomicBool,
+}
+
+impl BlockSenke {
+    /// Blockiert hoechstens `kBlockFrist`. Eine Senke, die WIRKLICH ewig
+    /// haengt, wuerde einen roten Test in einen Hang verwandeln — und ein
+    /// Hang sagt nichts. Die Frist ist um Groessenordnungen laenger als
+    /// jede Wartezeit im Test.
+    fn warten(&self) {
+        self.in_senke.store(true, Ordering::SeqCst);
+        let bis = Instant::now() + Duration::from_secs(20);
+        while self.blockiert.load(Ordering::SeqCst) && Instant::now() < bis {
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        self.in_senke.store(false, Ordering::SeqCst);
+    }
+}
+
+impl Senke for BlockSenke {
+    fn control_verbunden(&self, l: &str, h: &HelloControl) -> ControlAnmeldung {
+        self.zaehl.control_verbunden(l, h)
+    }
+    fn control_getrennt(&self, l: &str) {
+        self.zaehl.control_getrennt(l);
+    }
+    fn telemetrie_gekoppelt(&self, l: &str) {
+        self.zaehl.telemetrie_gekoppelt(l);
+    }
+    fn telemetrie_getrennt(&self, l: &str) {
+        self.zaehl.telemetrie_getrennt(l);
+    }
+    fn p0(&self, l: &str, p: &[u8]) -> Option<Vec<u8>> {
+        self.warten();
+        self.zaehl.p0(l, p)
+    }
+    fn p1(&self, l: &str, p: &[u8]) {
+        self.warten();
+        self.zaehl.p1(l, p);
+    }
+    fn p2(&self, l: &str, p: &[u8]) {
+        self.warten();
+        self.zaehl.p2(l, p);
+    }
+    fn abgewiesen(&self, g: &str) {
+        self.zaehl.abgewiesen(g);
+    }
+}

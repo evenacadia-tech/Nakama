@@ -22,6 +22,10 @@ pub mod telemetrie;
 pub mod transport;
 pub mod vertrag;
 
+mod zeit;
+
+pub use zeit::*;
+
 use protokoll::{HeartbeatStats, Hello, MessStand};
 use serde::Serialize;
 use std::collections::HashMap;
@@ -48,37 +52,6 @@ pub const SENSOR_ID_RUECKGABE_MS: u64 = BROKER_IDLE_ENDE_MS;
 /// markiert, nie still entfernt (Plan §11 M2-Abnahme).
 pub const STALE_MS: u64 = 5000;
 const MAX_MARKIERUNGS_NONCES_PRO_SENSOR: usize = 64;
-
-pub fn jetzt_ms() -> u64 {
-    std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_millis() as u64)
-        .unwrap_or(0)
-}
-
-static MONOTONER_START: OnceLock<std::time::Instant> = OnceLock::new();
-
-fn monoton_ms() -> u64 {
-    MONOTONER_START
-        .get_or_init(std::time::Instant::now)
-        .elapsed()
-        .as_millis() as u64
-}
-
-#[derive(Debug, Clone, Copy)]
-struct Zeitstempel {
-    utc_ms: u64,
-    monoton_ms: u64,
-}
-
-impl Zeitstempel {
-    fn jetzt() -> Self {
-        Self {
-            utc_ms: jetzt_ms(),
-            monoton_ms: monoton_ms(),
-        }
-    }
-}
 
 #[derive(Debug, Clone)]
 struct VerbindungsMetadaten {

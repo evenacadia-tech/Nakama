@@ -88,6 +88,30 @@ file(MAKE_DIRECTORY "${NAKAMA_BROKER_BINDING_DIR}")
 configure_file(core/ipc/BrokerInstallBinding.h.in
                "${NAKAMA_BROKER_BINDING_DIR}/BrokerInstallBinding.h" @ONLY)
 
+# ---- NAK-225/S25d: die Quellen des Prozessors als EINE Liste ---------------
+# Bis 09.09.2026 stand `src/PluginProcessor.cpp` an VIERZEHN Stellen woertlich
+# in dieser Datei (Hauptziel plus dreizehn Testziele). Solange die Datei EINE
+# Uebersetzungseinheit war, war das nur redundant. Mit der Aufteilung des
+# Prozessors nach Fachbereich (Hostbruecke, State, IPC-Anbindung,
+# Analyse-Anstoss) waere es eine Fehlerquelle: ein neuer Teil muesste an
+# vierzehn Stellen nachgetragen werden, und ein vergessenes Ziel linkte
+# stillschweigend gegen fehlende Symbole - oder schlimmer, gegen eine aeltere
+# Teilmenge des Prozessors.
+#
+# Deshalb steht hier EINE Liste. Jedes Ziel, das vorher die Wurzeldatei
+# uebersetzte, uebersetzt danach dieselbe Menge Teile; ein neuer Teil kommt an
+# genau einer Stelle hinzu. Die Wurzel `src/PluginProcessor.cpp` bleibt
+# bestehen und behaelt Aufbau, Abbau und den Audio-Pfad.
+#
+# Nicht in dieser Liste: `src/PluginEditor.cpp`, `src/PipeClient.cpp`,
+# `src/PluginFactory.cpp`, `src/AnalyseEngine.cpp`, `src/Diagnose.cpp` und
+# `src/SourcesModel.cpp`. Sie haengen an jeweils eigenen Zielmengen; wer sie
+# braucht, nennt sie weiterhin selbst. Diese Liste ist der Prozessor, nicht
+# der Produktcode.
+set(NAKAMA_PROZESSOR_QUELLEN
+    src/PluginProcessor.cpp
+)
+
 juce_add_plugin(EqCopilot
     COMPANY_NAME "${NAKAMA_MAIN_HERSTELLER}"
     PRODUCT_NAME "${NAKAMA_MAIN_PRODUKTNAME}"
@@ -104,7 +128,7 @@ juce_add_plugin(EqCopilot
 )
 
 target_sources(EqCopilot PRIVATE
-    src/PluginProcessor.cpp
+    ${NAKAMA_PROZESSOR_QUELLEN}
     src/PluginEditor.cpp
     src/PipeClient.cpp
     src/PluginFactory.cpp
@@ -457,7 +481,7 @@ juce_add_console_app(EqCopSonde014AssistentTest
                      PRODUCT_NAME "eqcop-sonde014-assistenttest")
 target_sources(EqCopSonde014AssistentTest PRIVATE
     tests/Sonde014AssistentTest.cpp
-    src/PluginProcessor.cpp
+    ${NAKAMA_PROZESSOR_QUELLEN}
     src/PluginEditor.cpp
     src/PipeClient.cpp
     src/AnalyseEngine.cpp
@@ -491,7 +515,7 @@ juce_add_console_app(EqCopSonde012ProjectReloadTest
                      PRODUCT_NAME "eqcop-sonde012-projectreloadtest")
 target_sources(EqCopSonde012ProjectReloadTest PRIVATE
     tests/Sonde012ProjectReloadTest.cpp
-    src/PluginProcessor.cpp
+    ${NAKAMA_PROZESSOR_QUELLEN}
     src/PluginEditor.cpp
     src/PipeClient.cpp
     src/AnalyseEngine.cpp
@@ -554,7 +578,7 @@ nakama_kern_anbinden(EqCopPipeClientTest)
 juce_add_console_app(EqCopNullTest PRODUCT_NAME "eqcop-nulltest")
 target_sources(EqCopNullTest PRIVATE
     tests/NullTestMain.cpp
-    src/PluginProcessor.cpp
+    ${NAKAMA_PROZESSOR_QUELLEN}
     src/PluginEditor.cpp
     src/PipeClient.cpp
     src/AnalyseEngine.cpp
@@ -583,7 +607,7 @@ target_link_libraries(EqCopGoldenTest PRIVATE
 juce_add_console_app(EqCopMarkierungTest PRODUCT_NAME "eqcop-markierungtest")
 target_sources(EqCopMarkierungTest PRIVATE
     tests/MarkierungTestMain.cpp
-    src/PluginProcessor.cpp
+    ${NAKAMA_PROZESSOR_QUELLEN}
     src/PluginEditor.cpp
     src/PipeClient.cpp
     src/AnalyseEngine.cpp
@@ -602,7 +626,7 @@ nakama_kern_anbinden(EqCopMarkierungTest)
 juce_add_console_app(EqCopShot PRODUCT_NAME "eqcop-shot")
 target_sources(EqCopShot PRIVATE
     tests/ShotTestMain.cpp
-    src/PluginProcessor.cpp
+    ${NAKAMA_PROZESSOR_QUELLEN}
     src/PluginEditor.cpp
     src/PipeClient.cpp
     src/AnalyseEngine.cpp
@@ -618,7 +642,7 @@ nakama_kern_anbinden(EqCopShot)
 juce_add_console_app(EqCopPaintBench PRODUCT_NAME "eqcop-paintbench")
 target_sources(EqCopPaintBench PRIVATE
     tests/PaintBenchMain.cpp
-    src/PluginProcessor.cpp
+    ${NAKAMA_PROZESSOR_QUELLEN}
     src/PluginEditor.cpp
     src/PipeClient.cpp
     src/AnalyseEngine.cpp
@@ -682,7 +706,7 @@ target_link_libraries(EqCopAuxSpikeTest PRIVATE juce::juce_audio_utils
 juce_add_console_app(EqCopIdentityTest PRODUCT_NAME "eqcop-identitytest")
 target_sources(EqCopIdentityTest PRIVATE
     tests/IdentityTestMain.cpp
-    src/PluginProcessor.cpp
+    ${NAKAMA_PROZESSOR_QUELLEN}
     src/PluginEditor.cpp
     src/PipeClient.cpp
     src/AnalyseEngine.cpp
@@ -702,7 +726,7 @@ nakama_kern_anbinden(EqCopIdentityTest)
 juce_add_console_app(EqCopStateMigrationTest PRODUCT_NAME "eqcop-statemigrationtest")
 target_sources(EqCopStateMigrationTest PRIVATE
     tests/StateMigrationTestMain.cpp
-    src/PluginProcessor.cpp
+    ${NAKAMA_PROZESSOR_QUELLEN}
     src/PluginEditor.cpp
     src/PipeClient.cpp
     src/AnalyseEngine.cpp
@@ -765,7 +789,7 @@ nakama_kern_anbinden(EqCopSonde013PrePostGoldenTest)
 juce_add_console_app(EqCopSonde013PassageStateTest PRODUCT_NAME "eqcop-sonde013passagestatetest")
 target_sources(EqCopSonde013PassageStateTest PRIVATE
     tests/Sonde013PassageStateTest.cpp
-    src/PluginProcessor.cpp
+    ${NAKAMA_PROZESSOR_QUELLEN}
     src/PluginEditor.cpp
     src/PipeClient.cpp
     src/AnalyseEngine.cpp
@@ -799,7 +823,7 @@ nakama_kern_anbinden(EqCopSonde013PassageStateTest)
 juce_add_console_app(EqCopSonde014IntentTest PRODUCT_NAME "eqcop-sonde014intenttest")
 target_sources(EqCopSonde014IntentTest PRIVATE
     tests/Sonde014IntentTest.cpp
-    src/PluginProcessor.cpp
+    ${NAKAMA_PROZESSOR_QUELLEN}
     src/PluginEditor.cpp
     src/PipeClient.cpp
     src/AnalyseEngine.cpp
@@ -830,7 +854,7 @@ nakama_kern_anbinden(EqCopSonde014IntentTest)
 juce_add_console_app(EqCopLebenslaufTest PRODUCT_NAME "eqcop-lebenslauftest")
 target_sources(EqCopLebenslaufTest PRIVATE
     tests/LebenslaufTestMain.cpp
-    src/PluginProcessor.cpp
+    ${NAKAMA_PROZESSOR_QUELLEN}
     src/PluginEditor.cpp
     src/PipeClient.cpp
     src/AnalyseEngine.cpp
@@ -858,7 +882,7 @@ nakama_kern_anbinden(EqCopLebenslaufTest)
 juce_add_console_app(EqCopQueueStressTest PRODUCT_NAME "eqcop-queuestresstest")
 target_sources(EqCopQueueStressTest PRIVATE
     tests/QueueStressTestMain.cpp
-    src/PluginProcessor.cpp
+    ${NAKAMA_PROZESSOR_QUELLEN}
     src/PluginEditor.cpp
     src/PipeClient.cpp
     src/AnalyseEngine.cpp
@@ -1036,7 +1060,7 @@ target_link_libraries(EqCopLoudnessGoldenTest PRIVATE juce::juce_core
 juce_add_console_app(EqCopAnalysisGoldenTest PRODUCT_NAME "eqcop-analysisgoldentest")
 target_sources(EqCopAnalysisGoldenTest PRIVATE
     tests/AnalysisGoldenTestMain.cpp
-    src/PluginProcessor.cpp
+    ${NAKAMA_PROZESSOR_QUELLEN}
     src/PluginEditor.cpp
     src/PipeClient.cpp
     src/AnalyseEngine.cpp

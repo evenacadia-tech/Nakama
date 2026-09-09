@@ -638,9 +638,9 @@ std::string EqCopilotProcessor::v3IntentUpdateJson (bool vollstaendig,
 /*  NR-08 (Nacharbeit 1, 07.09.2026), M-59/M-88/M-89: EINE Wahrheit des
     Schritts.
 
-    Der Sender las bis hierher einen eigenen Schatten (`assistentSchritt`) mit
-    EIGENER Revisionszaehlung, waehrend `setStateInformation()` ausschliesslich
-    `zustand.assistent` restauriert. Die Folge war messbar: nach
+    Der Sender las bis hierher einen eigenen Schatten (`assistentSchritt`,
+    mit NR-08 entfernt) mit EIGENER Revisionszaehlung, waehrend
+    `setStateInformation()` ausschliesslich `zustand.assistent` restauriert. Die Folge war messbar: nach
     `getStateInformation` -> neuer Prozessor -> `setStateInformation` lag der
     persistente Schritt vor, die Wire-Nachricht blieb aber LEER; bei einem
     Reload im selben Prozessor konnte statt dessen der VORIGE Schritt reisen.
@@ -716,9 +716,9 @@ std::string EqCopilotProcessor::v3UserVerdictJson (nakama::state::Userurteil urt
     // neues Urteil; die Wiederholung geht seit E-15 gar nicht mehr durch sie
     // hindurch, sondern ersetzt im gesendeten Auftrag genau die abgelehnte
     // `base_revision` (`urteilMitFrischemKopf`). Bis zur Runde 3 stand hier
-    // eine `commandIdVorgabe` - der Neubau zog Befund und Proposal dabei aus
-    // dem AKTUELLEN Schritt, also aus einem Zustand, der sich seit dem
-    // Absenden geaendert haben kann.
+    // eine `commandIdVorgabe`, seither entfernt - der Neubau zog Befund und
+    // Proposal dabei aus dem AKTUELLEN Schritt, also aus einem Zustand, der
+    // sich seit dem Absenden geaendert haben kann.
     const juce::String commandId { juce::String (uuidHex32()) };
     const auto kopf = versuchKopfJson (commandId);
     if (kopf.empty())

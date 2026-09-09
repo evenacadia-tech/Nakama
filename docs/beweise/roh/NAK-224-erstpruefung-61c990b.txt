@@ -1,0 +1,13 @@
+URTEIL: NEEDS_WORK — zwei DEFEKTE.
+
+Geprüft: 336 verschobene Items nach erlaubter Normalisierung unverändert, 774 Testnamen und 1.098 öffentliche Deklarationen erhalten, Historie vorhanden, P5-Hash identisch, A28 im Speicher bytegleich und A29 grün; vorhandene aktuelle Binaries bestehen 37 Hypothesentests einschließlich M-25, 25 Inline-Tests, sieben M-29-Tests und beide Pfadprüfungen; Gesundheit unter Python 3.14 misst 28/32 und drei NAK-225-Dateien, NB-2/NB-3 sind nicht schnittverursacht, HEAD und Arbeitsbaumstatus bleiben unverändert.
+
+Nicht neu ausgeführt: vollständiger Kanon, Commitbauten, P5-Produkterzeugung, Gesundheitsselbsttest und Audio-/State-Läufe wegen Schreibverbot; Cargo scheitert am Lockzugriff, Python 3.13 am Start und das Linux-Target fehlt.
+
+Full review comments:
+
+- [P2] Ziehe A29s Quellliste beim Modulschnitt mit — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/hypothese/mod.rs:50-53
+  DEFEKT gegen R2/A29: Nach einer gewöhnlichen Änderung an einem neuen Hypothesenmodul akzeptiert A29 weiterhin alte P5-Ergebnisse. `tools/eq-copilot/pruefe_p5_korpus.py::QUELLEN` nennt noch die gelöschte `hypothese.rs`; `_voraussetzung()` überspringt sie mittels `is_file()`. Die lesende Zeitstempel-Gegenprobe bestätigt: Eine neuere ursprüngliche Datei wird abgewiesen, eine neuere `hypothese/befund.rs` nicht. Reproduktion der verlorenen Abhängigkeit: `python -B -c "import runpy; m=runpy.run_path('tools/eq-copilot/pruefe_p5_korpus.py'); assert all(p.is_file() for p in m['QUELLEN'])"`. Die Quellenliste muss alle neuen Rechenmodule berücksichtigen, damit der Nachweis weiterhin den aktuellen Stand betrifft ([AGENTS.md:84–85](AGENTS.md#L84-L85)).
+
+- [P2] Schütze die neuen server-Imports mit cfg(windows) — C:/Users/phili/Projekte/Nakama/broker/src/lebenslauf.rs:21-21
+  DEFEKT gegen den verhaltensneutralen Schnitt: Auf Nicht-Windows-Zielen wird jetzt bedingungslos `crate::server` importiert, obwohl `lib.rs` dieses Modul ausschließlich unter `#[cfg(windows)]` deklariert. Derselbe Fehler steht in `probe.rs:14`. Damit scheitert bereits der Bibliotheksbau mit E0432, statt den vorhandenen Nicht-Windows-Rückweg von `broker_starten` bereitzustellen. Reproduktion mit installiertem Linux-Target: `cargo check --manifest-path broker/Cargo.toml --lib --target x86_64-unknown-linux-gnu`. Beide `server`-Imports benötigen dieselbe Windows-Bedingung wie zuvor ihre Verwendungen; der Fehler wurde hier statisch geprüft, nicht cross-kompiliert.

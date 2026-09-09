@@ -1,0 +1,595 @@
+=== NAK-224 ROTBEWEIS D2 — use crate::server ohne cfg(windows) ===
+Stand vor der Runde: c892648f3a11cac0d25971bb2f93da06c5748e0d
+Datum: 2026-09-09 16:14:51
+Toolchain: rustc 1.93.1 (01f6ddf75 2026-02-11)
+Targets: x86_64-pc-windows-msvc x86_64-unknown-linux-gnu 
+
+--- (a) VOR dem Fix: cargo check --lib --target x86_64-unknown-linux-gnu ---
+   Compiling version_check v0.9.5
+   Compiling proc-macro2 v1.0.107
+   Compiling quote v1.0.47
+   Compiling unicode-ident v1.0.24
+   Compiling serde_core v1.0.229
+   Compiling find-msvc-tools v0.1.10
+   Compiling shlex v2.0.1
+    Checking typenum v1.20.1
+   Compiling zmij v1.0.23
+   Compiling vcpkg v0.2.15
+   Compiling libc v0.2.189
+   Compiling windows_x86_64_gnu v0.53.1
+   Compiling semver v1.0.28
+   Compiling pkg-config v0.3.33
+   Compiling generic-array v0.14.7
+   Compiling cc v1.4.2
+   Compiling rustc_version v0.4.1
+   Compiling serde_json v1.0.151
+   Compiling serde v1.0.229
+   Compiling getrandom v0.4.3
+    Checking cfg-if v1.0.4
+   Compiling flatbuffers v25.12.19
+    Checking bitflags v2.13.1
+    Checking itoa v1.0.18
+    Checking crypto-common v0.1.7
+   Compiling syn v3.0.3
+    Checking block-buffer v0.10.4
+    Checking memchr v2.8.3
+    Checking windows-targets v0.53.5
+    Checking cpufeatures v0.2.17
+    Checking fallible-iterator v0.3.0
+    Checking fallible-streaming-iterator v0.1.9
+    Checking digest v0.10.7
+    Checking ryu-js v1.0.3
+    Checking smallvec v1.15.2
+    Checking windows-sys v0.60.2
+    Checking sha2 v0.10.9
+   Compiling libsqlite3-sys v0.38.2
+    Checking uuid v1.24.1
+warning: libsqlite3-sys@0.38.2: Compiler family detection failed due to error: ToolNotFound: failed to find tool "x86_64-linux-gnu-gcc": program not found (see https://docs.rs/cc/latest/cc/#compile-time-requirements for help)
+warning: libsqlite3-sys@0.38.2: Compiler family detection failed due to error: ToolNotFound: failed to find tool "x86_64-linux-gnu-gcc": program not found (see https://docs.rs/cc/latest/cc/#compile-time-requirements for help)
+error: failed to run custom build command for `libsqlite3-sys v0.38.2`
+
+Caused by:
+  process didn't exit successfully: `C:\Users\phili\Projekte\Nakama\broker\target\debug\build\libsqlite3-sys-7f457ed5d880bb98\build-script-build` (exit code: 1)
+  --- stdout
+  cargo:rerun-if-env-changed=LIBSQLITE3_SYS_USE_PKG_CONFIG
+  cargo:include=C:\Users\phili\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\libsqlite3-sys-0.38.2/sqlite3
+  cargo:rerun-if-changed=sqlite3/sqlite3.c
+  cargo:rerun-if-changed=sqlite3/wasm32-wasi-vfs.c
+  cargo:rerun-if-env-changed=SQLITE_MAX_VARIABLE_NUMBER
+  cargo:rerun-if-env-changed=SQLITE_MAX_EXPR_DEPTH
+  cargo:rerun-if-env-changed=SQLITE_MAX_COLUMN
+  cargo:rerun-if-env-changed=LIBSQLITE3_FLAGS
+  cargo:rerun-if-env-changed=CC_FORCE_DISABLE
+  CC_FORCE_DISABLE = None
+  cargo:rerun-if-env-changed=CC_x86_64-unknown-linux-gnu
+  CC_x86_64-unknown-linux-gnu = None
+  cargo:rerun-if-env-changed=CC_x86_64_unknown_linux_gnu
+  CC_x86_64_unknown_linux_gnu = None
+  cargo:rerun-if-env-changed=TARGET_CC
+  TARGET_CC = None
+  cargo:rerun-if-env-changed=CC
+  CC = None
+  cargo:rerun-if-env-changed=CROSS_COMPILE
+  CROSS_COMPILE = None
+  PATH = Some(C:\Users\phili\Projekte\Nakama\broker\target\debug\deps;C:\Users\phili\.rustup\toolchains\stable-x86_64-pc-windows-msvc\lib\rustlib\x86_64-pc-windows-msvc\lib;C;C:\Program Files\Git\Users\phili\.local\bin;C:\Users\phili\bin;C:\Program Files\Git\mingw64\bin;C:\Program Files\Git\usr\local\bin;C:\Program Files\Git\usr\bin;C:\Program Files\Git\usr\bin;C:\Program Files\Git\mingw64\bin;C:\Program Files\Git\usr\bin;C:\Users\phili\bin;C:\Program Files\PowerShell\7;C:\Program Files (x86)\Common Files\Intel\Shared Files\cpp\bin\Intel64;C:\Python314\Scripts;C:\Python314;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0;C:\WINDOWS\System32\OpenSSH;C:\Program Files\dotnet;C:\Program Files\eSpeak NG;C:\ProgramData\Beatsurfing\RANDOM;C:\Program Files (x86)\Heavyocity\Heavyocity Portal;C:\Program Files\nodejs;C:\ProgramData\chocolatey\bin;C:\Program Files\GitHub CLI;C:\Program Files\Git\cmd;C:\Program Files\Antelope Audio\Antelope Launcher;C:\Program Files\Common Files\PACE\Fusion\6\lib;C:\Program Files\Docker\Docker\resources\bin;C:\Program Files\PowerShell\7;C:\Users\phili\AppData\Local\agy\bin;C:\Users\phili\scoop\shims;C:\Users\phili\.cargo\bin;C:\Users\phili\AppData\Local\Microsoft\WindowsApps;C:\Users\phili\AppData\Local\Programs\Ollama;C:\Users\phili\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\phili\AppData\Roaming\npm;C:\Users\phili\.local\bin;C:\Users\phili\AppData\Local\GitHubDesktop\bin;C:\Users\phili\AppData\Local\Programs\codebase-memory-mcp;C:\Users\phili\AppData\Local\Microsoft\WinGet\Packages\oschwartz10612.Poppler_Microsoft.Winget.Source_8wekyb3d8bbwe\poppler-25.07.0\Library\bin;C:\Users\phili\AppData\Local\Microsoft\WinGet\Packages\Microsoft.Sysinternals.Handle_Microsoft.Winget.Source_8wekyb3d8bbwe;C:\Users\phili\AppData\Local\Microsoft\WinGet\Packages\LibreHardwareMonitor.LibreHardwareMonitor_Microsoft.Winget.Source_8wekyb3d8bbwe;C:\Users\phili\AppData\Local\Microsoft\WinGet\Packages\LLVM.clangd_Microsoft.Winget.Source_8wekyb3d8bbwe\clangd_22.1.6\bin;C:\Program Files\Git\usr\bin\vendor_perl;C:\Program Files\Git\usr\bin\core_perl;C:\Users\phili\.claude\plugins\cache\claude-plugins-official\feature-dev\517b2fcd1b60\bin;C:\Users\phili\.claude\plugins\cache\claude-plugins-official\claude-md-management\1.0.0\bin;C:\Users\phili\.claude\plugins\cache\claude-plugins-official\explanatory-output-style\1.0.0\bin;C:\Users\phili\.claude\plugins\cache\openai-codex\codex\1.0.4\bin;C:\Users\phili\.claude\local-plugins\superplan\bin;C:\Users\phili\.claude\plugins\cache\claude-plugins-official\playwright\517b2fcd1b60\bin;C:\Users\phili\.claude\plugins\cache\claude-plugins-official\clangd-lsp\1.0.0\bin;C:\Users\phili\.claude\plugins\cache\trailofbits\c-review\2.0.1\bin;C:\Users\phili\.claude\plugins\cache\trailofbits\rust-review\1.1.0\bin;C:\Users\phili\.rustup\toolchains\stable-x86_64-pc-windows-msvc\bin)
+  cargo:rerun-if-env-changed=CC_ENABLE_DEBUG_OUTPUT
+  cargo:warning=Compiler family detection failed due to error: ToolNotFound: failed to find tool "x86_64-linux-gnu-gcc": program not found (see https://docs.rs/cc/latest/cc/#compile-time-requirements for help)
+  cargo:rerun-if-env-changed=CRATE_CC_NO_DEFAULTS
+  CRATE_CC_NO_DEFAULTS = None
+  cargo:rerun-if-env-changed=CC_ENABLE_DEBUG_OUTPUT
+  cargo:warning=Compiler family detection failed due to error: ToolNotFound: failed to find tool "x86_64-linux-gnu-gcc": program not found (see https://docs.rs/cc/latest/cc/#compile-time-requirements for help)
+  cargo:rerun-if-env-changed=CRATE_CC_NO_DEFAULTS
+  CRATE_CC_NO_DEFAULTS = None
+  cargo:rerun-if-env-changed=CFLAGS
+  CFLAGS = None
+  cargo:rerun-if-env-changed=TARGET_CFLAGS
+  TARGET_CFLAGS = None
+  cargo:rerun-if-env-changed=CFLAGS_x86_64_unknown_linux_gnu
+  CFLAGS_x86_64_unknown_linux_gnu = None
+  cargo:rerun-if-env-changed=CFLAGS_x86_64-unknown-linux-gnu
+  CFLAGS_x86_64-unknown-linux-gnu = None
+  cargo:rerun-if-env-changed=CFLAGS
+  CFLAGS = None
+  cargo:rerun-if-env-changed=TARGET_CFLAGS
+  TARGET_CFLAGS = None
+  cargo:rerun-if-env-changed=CFLAGS_x86_64_unknown_linux_gnu
+  CFLAGS_x86_64_unknown_linux_gnu = None
+  cargo:rerun-if-env-changed=CFLAGS_x86_64-unknown-linux-gnu
+  CFLAGS_x86_64-unknown-linux-gnu = None
+
+  --- stderr
+
+
+  error occurred in cc-rs: failed to find tool "x86_64-linux-gnu-gcc": program not found (see https://docs.rs/cc/latest/cc/#compile-time-requirements for help)
+
+
+warning: build failed, waiting for other jobs to finish...
+
+HINWEIS: Der Bau scheitert am Basis-SHA wie am Endstand VOR dem eigenen Crate:
+rusqlite ist mit Feature bundled gepinnt, also wird sqlite3.c fuer das ZIEL kompiliert;
+x86_64-linux-gnu-gcc gibt es auf diesem Rechner nicht. Der Defekt liegt dahinter und
+wird so nie sichtbar. Deshalb der Lauf in einer WEGWERFKOPIE des Repos (C:/nk224lx,
+git clone --local, nie committet), in der NUR das Feature bundled abgeschaltet ist:
+cargo check LINKT nicht, es braucht die SQLite-Bibliothek also gar nicht.
+
+Wegwerfkopie steht auf a28b1010204d3d9c90974bdc4087b59262e53e09 (= HEAD nach dem D1-Commit;
+gegenueber dem Stand vor der Runde c892648f ist broker/ unveraendert, Nachweis:
+$ git diff --stat c892648f..a28b101 -- broker/
+(leer = identisch)
+
+--- (a) VOR dem Fix, Wegwerfkopie, vollstaendige Rohausgabe ---
+$ cargo check --manifest-path broker/Cargo.toml --lib --target x86_64-unknown-linux-gnu
+    Checking eqcop-broker v0.1.0 (C:\nk224lx\broker)
+error[E0432]: unresolved import `crate::server`
+  --> src\lebenslauf.rs:21:46
+   |
+21 | use crate::{bindung, coordinator, protokoll, server, store, transport};
+   |                                              ^^^^^^ no `server` in the root
+   |
+note: found an item that was configured out
+  --> src\lib.rs:38:5
+   |
+37 | #[cfg(windows)]
+   |       ------- the item is gated here
+38 | mod server;
+   |     ^^^^^^
+
+error[E0432]: unresolved import `crate::server`
+  --> src\probe.rs:14:43
+   |
+14 | use crate::{aggregat, bindung, protokoll, server};
+   |                                           ^^^^^^ no `server` in the root
+   |
+note: found an item that was configured out
+  --> src\lib.rs:38:5
+   |
+37 | #[cfg(windows)]
+   |       ------- the item is gated here
+38 | mod server;
+   |     ^^^^^^
+
+warning: unused import: `super::*`
+ --> src\coordinator\senke.rs:6:5
+  |
+6 | use super::*;
+  |     ^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `LiveMessframe`
+  --> src\coordinator\mod.rs:92:5
+   |
+92 |     LiveMessframe, P2RejectGrund, SessionCommandWirkung, SessionKey, Stand, Subscription,
+   |     ^^^^^^^^^^^^^
+
+warning: unused imports: `bindung`, `coordinator`, and `transport`
+  --> src\lebenslauf.rs:21:13
+   |
+21 | use crate::{bindung, coordinator, protokoll, server, store, transport};
+   |             ^^^^^^^  ^^^^^^^^^^^                            ^^^^^^^^^
+
+warning: unused import: `BrokerStatus`
+ --> src\probe.rs:9:41
+  |
+9 | use crate::lebenslauf::{broker_version, BrokerStatus, BROKER};
+  |                                         ^^^^^^^^^^^^
+
+warning: unused import: `paare_auswerten`
+  --> src\probe.rs:10:40
+   |
+10 | use crate::paar::{aggregat_sperrgrund, paare_auswerten};
+   |                                        ^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::register::Register`
+  --> src\probe.rs:11:5
+   |
+11 | use crate::register::Register;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::sitzung::sessions_bilden`
+  --> src\probe.rs:12:5
+   |
+12 | use crate::sitzung::sessions_bilden;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `protokoll`
+  --> src\probe.rs:14:32
+   |
+14 | use crate::{aggregat, bindung, protokoll, server};
+   |                                ^^^^^^^^^
+
+warning: unused imports: `Arc` and `Mutex`
+  --> src\probe.rs:16:17
+   |
+16 | use std::sync::{Arc, Mutex};
+   |                 ^^^  ^^^^^
+
+For more information about this error, try `rustc --explain E0432`.
+warning: `eqcop-broker` (lib) generated 9 warnings
+error: could not compile `eqcop-broker` (lib) due to 2 previous errors; 9 warnings emitted
+EXIT=101
+
+════════ NACH DEM FIX ════════
+Die beiden gefixten Dateien in die Wegwerfkopie uebernommen (nur diese zwei).
+$ cargo check --manifest-path broker/Cargo.toml --lib --target x86_64-unknown-linux-gnu
+    Checking eqcop-broker v0.1.0 (C:\nk224lx\broker)
+warning: unused import: `super::*`
+ --> src\coordinator\senke.rs:6:5
+  |
+6 | use super::*;
+  |     ^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `LiveMessframe`
+  --> src\coordinator\mod.rs:92:5
+   |
+92 |     LiveMessframe, P2RejectGrund, SessionCommandWirkung, SessionKey, Stand, Subscription,
+   |     ^^^^^^^^^^^^^
+
+warning: unused imports: `bindung`, `coordinator`, and `transport`
+  --> src\lebenslauf.rs:21:13
+   |
+21 | use crate::{bindung, coordinator, protokoll, store, transport};
+   |             ^^^^^^^  ^^^^^^^^^^^                    ^^^^^^^^^
+
+warning: unused import: `BrokerStatus`
+ --> src\probe.rs:9:41
+  |
+9 | use crate::lebenslauf::{broker_version, BrokerStatus, BROKER};
+  |                                         ^^^^^^^^^^^^
+
+warning: unused import: `paare_auswerten`
+  --> src\probe.rs:10:40
+   |
+10 | use crate::paar::{aggregat_sperrgrund, paare_auswerten};
+   |                                        ^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::register::Register`
+  --> src\probe.rs:11:5
+   |
+11 | use crate::register::Register;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::sitzung::sessions_bilden`
+  --> src\probe.rs:12:5
+   |
+12 | use crate::sitzung::sessions_bilden;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `protokoll`
+  --> src\probe.rs:14:32
+   |
+14 | use crate::{aggregat, bindung, protokoll};
+   |                                ^^^^^^^^^
+
+warning: unused imports: `Arc` and `Mutex`
+  --> src\probe.rs:20:17
+   |
+20 | use std::sync::{Arc, Mutex};
+   |                 ^^^  ^^^^^
+
+warning: constant `SESSION_COMMAND_REGISTER_MAX` is never used
+   --> src\coordinator\mod.rs:129:7
+    |
+129 | const SESSION_COMMAND_REGISTER_MAX: usize = SESSION_CLIENT_CAP * SESSION_CLIENT_CAP;
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: struct `Domaenenereignis` is never constructed
+  --> src\coordinator\befehl.rs:15:19
+   |
+15 | pub(super) struct Domaenenereignis {
+   |                   ^^^^^^^^^^^^^^^^
+
+warning: enum `P0Vorbedingung` is never used
+  --> src\coordinator\befehl.rs:30:17
+   |
+30 | pub(super) enum P0Vorbedingung<'a> {
+   |                 ^^^^^^^^^^^^^^
+
+warning: multiple associated items are never used
+   --> src\coordinator\befehl.rs:41:19
+    |
+ 40 | impl Coordinator {
+    | ---------------- associated items in this implementation
+ 41 |     pub(super) fn command_ack(
+    |                   ^^^^^^^^^^^
+...
+ 66 |     pub(super) fn persistierte_command_wirkung(payload: &[u8]) -> Option<(Value, u64, String)> {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+ 85 |     pub(super) fn bekannter_befehl(&self, wert: &Value) -> Option<Vec<u8>> {
+    |                   ^^^^^^^^^^^^^^^^
+...
+111 |     pub(super) fn ack_ist_angewandt_p0(ack: &[u8]) -> bool {
+    |                   ^^^^^^^^^^^^^^^^^^^^
+...
+129 |     pub(super) fn persistenz_p0_mit_domaene_und_ords(
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+146 |     pub(super) fn persistenz_p0_mit_vorbedingung(
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+157 |     fn persistenz_p0_intern(
+    |        ^^^^^^^^^^^^^^^^^^^^
+...
+474 |     pub(super) fn session_command(&self, link_id: &str, wert: &Value) -> Option<Vec<u8>> {
+    |                   ^^^^^^^^^^^^^^^
+...
+623 |     fn user_verdict_p0(&self, link_id: &str, wert: &Value) -> Option<Vec<u8>> {
+    |        ^^^^^^^^^^^^^^^
+...
+658 |     pub(super) fn p0_json(&self, link_id: &str, payload: &[u8]) -> Option<Vec<u8>> {
+    |                   ^^^^^^^
+...
+662 |     pub(super) fn p0_json_mit_minor(
+    |                   ^^^^^^^^^^^^^^^^^
+
+warning: method `alias_quarantaenisiert` is never used
+   --> src\coordinator\flush.rs:233:19
+    |
+  9 | impl Coordinator {
+    | ---------------- method in this implementation
+...
+233 |     pub(super) fn alias_quarantaenisiert(&self, link_id: &str) -> bool {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: associated function `taint_intervalle_des_experiments_schliessen` is never used
+   --> src\coordinator\intervention.rs:471:19
+    |
+ 37 | impl Coordinator {
+    | ---------------- associated function in this implementation
+...
+471 |     pub(super) fn taint_intervalle_des_experiments_schliessen(
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: associated items `neuaufbau_bericht_oeffnen`, `ersten_heartbeat_markieren`, `nachbericht_abschliessen_und_bestaetigen`, and `aktueller_telemetrie_client_locked` are never used
+   --> src\coordinator\link.rs:360:19
+    |
+  9 | impl Coordinator {
+    | ---------------- associated items in this implementation
+...
+360 |     pub(super) fn neuaufbau_bericht_oeffnen(&self, link_id: &str, ist_erster: bool) {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+380 |     pub(super) fn ersten_heartbeat_markieren(&self, link_id: &str) -> bool {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+427 |     pub(super) fn nachbericht_abschliessen_und_bestaetigen(&self, link_id: &str) -> bool {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+631 |     pub(super) fn aktueller_telemetrie_client_locked(stand: &Stand, link_id: &str) -> Option<ClientKey> {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `fenster_ms_bilden` is never used
+   --> src\coordinator\sicht.rs:218:19
+    |
+110 | impl Coordinator {
+    | ---------------- method in this implementation
+...
+218 |     pub(super) fn fenster_ms_bilden(&self, sample_count: u32, sample_rate: f64) -> Option<f64> {
+    |                   ^^^^^^^^^^^^^^^^^
+
+warning: associated items `messframe_abweisen_locked` and `messframe_abweisen` are never used
+   --> src\coordinator\subscription.rs:427:19
+    |
+  8 | impl Coordinator {
+    | ---------------- associated items in this implementation
+...
+427 |     pub(super) fn messframe_abweisen_locked(
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+444 |     pub(super) fn messframe_abweisen(&self, link_id: &str, grund: P2RejectGrund) {
+    |                   ^^^^^^^^^^^^^^^^^^
+
+warning: multiple associated items are never used
+    --> src\coordinator\experiment_verdrahtung.rs:39:19
+     |
+  32 | impl Coordinator {
+     | ---------------- associated items in this implementation
+...
+  39 |     pub(super) fn experiment_p0(&self, link_id: &str, wert: &Value) -> Option<Vec<u8>> {
+     |                   ^^^^^^^^^^^^^
+...
+ 206 |     fn experiment_p0_weiter(
+     |        ^^^^^^^^^^^^^^^^^^^^
+...
+ 372 |     fn materialwechsel_erkennen_locked(
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+ 385 |     fn ack_ist_angewandt(ack: &[u8]) -> bool {
+     |        ^^^^^^^^^^^^^^^^^
+...
+ 435 |     fn begin_anwenden_locked(
+     |        ^^^^^^^^^^^^^^^^^^^^^
+...
+ 521 |     fn kandidat_anwenden_locked(
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^
+...
+ 556 |     fn abbruch_anwenden_locked(
+     |        ^^^^^^^^^^^^^^^^^^^^^^^
+...
+ 577 |     fn ergebnis_anwenden_locked(
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^
+...
+ 622 |     fn ruecknahme_fuer(stand: &Stand, experiment_id: &str) -> Ruecknahme {
+     |        ^^^^^^^^^^^^^^^
+...
+ 639 |     fn taint_von_experiment_schliessen(&self, experiment_id: &str) {
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+ 659 |     pub(super) fn fingerprint_json(f: &Fingerprintwerte) -> Value {
+     |                   ^^^^^^^^^^^^^^^^
+...
+ 668 |     pub(super) fn passage_json(p: &Passage) -> Value {
+     |                   ^^^^^^^^^^^^
+...
+ 682 |     fn referenz_json(r: &Experimentreferenz) -> Value {
+     |        ^^^^^^^^^^^^^
+...
+ 694 |     fn alignment_wort(a: Alignmentwert) -> &'static str {
+     |        ^^^^^^^^^^^^^^
+...
+ 703 |     fn hoerurteil_wort(h: Hoerurteil) -> &'static str {
+     |        ^^^^^^^^^^^^^^^
+...
+ 712 |     fn reihenfolge_wort(r: Blindreihenfolge) -> &'static str {
+     |        ^^^^^^^^^^^^^^^^
+...
+ 719 |     fn achsen_json(a: &Achsenrechnung) -> Value {
+     |        ^^^^^^^^^^^
+...
+ 743 |     pub(super) fn experiment_json(
+     |                   ^^^^^^^^^^^^^^^
+...
+ 825 |     fn ziel_json(ziel: &Experimentziel) -> Value {
+     |        ^^^^^^^^^
+...
+1258 |     pub(super) fn passage_aus_wert(wert: &Value) -> Option<Passage> {
+     |                   ^^^^^^^^^^^^^^^^
+...
+1302 |     fn referenz_aus_wert(wert: Option<&Value>) -> Option<Experimentreferenz> {
+     |        ^^^^^^^^^^^^^^^^^
+
+warning: methods `invalidierung_als_domaenenereignis`, `invalidierung_wegen_intervention_ganze_sitzung`, `preview_invalidierung_vorbereiten`, and `invalidierung_wegen_material_vorbereiten` are never used
+   --> src\coordinator\invalidierung_verdrahtung.rs:272:19
+    |
+ 46 | impl Coordinator {
+    | ---------------- methods in this implementation
+...
+272 |     pub(super) fn invalidierung_als_domaenenereignis(
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+537 |     pub(super) fn invalidierung_wegen_intervention_ganze_sitzung(
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+564 |     pub(super) fn preview_invalidierung_vorbereiten(
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+660 |     pub(super) fn invalidierung_wegen_material_vorbereiten(
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: field `erster_heartbeat_gesehen` is never read
+   --> src\coordinator\zustand.rs:126:16
+    |
+ 92 | pub(super) struct LinkStand {
+    |                   --------- field in this struct
+...
+126 |     pub(super) erster_heartbeat_gesehen: bool,
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `LinkStand` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: variants `FeatureBatchUngueltig`, `QuellframeAnzahlUngueltig`, `RoutingNichtFreigegeben`, `QuelladresseAbweichend`, and `LautheitUngueltig` are never constructed
+   --> src\coordinator\zustand.rs:248:5
+    |
+247 | pub(super) enum P2RejectGrund {
+    |                 ------------- variants in this enum
+248 |     FeatureBatchUngueltig,
+    |     ^^^^^^^^^^^^^^^^^^^^^
+249 |     QuellframeAnzahlUngueltig,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+250 |     RoutingNichtFreigegeben,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^
+251 |     QuelladresseAbweichend,
+    |     ^^^^^^^^^^^^^^^^^^^^^^
+252 |     LautheitUngueltig,
+    |     ^^^^^^^^^^^^^^^^^
+    |
+    = note: `P2RejectGrund` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: constant `JSON_SAFE_INTEGER_MAX` is never used
+   --> src\coordinator\zustand.rs:267:18
+    |
+267 | pub(super) const JSON_SAFE_INTEGER_MAX: u64 = 9_007_199_254_740_991;
+    |                  ^^^^^^^^^^^^^^^^^^^^^
+
+warning: fields `session_commands` and `session_command_reihenfolge` are never read
+   --> src\coordinator\zustand.rs:415:16
+    |
+286 | pub(super) struct Stand {
+    |                   ----- fields in this struct
+...
+415 |     pub(super) session_commands: HashMap<String, SessionCommandWirkung>,
+    |                ^^^^^^^^^^^^^^^^
+416 |     pub(super) session_command_reihenfolge: VecDeque<String>,
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `Stand` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: fields `kanonischer_auftrag`, `state_revision`, and `state_hash` are never read
+   --> src\coordinator\zustand.rs:421:16
+    |
+420 | pub(super) struct SessionCommandWirkung {
+    |                   --------------------- fields in this struct
+421 |     pub(super) kanonischer_auftrag: Vec<u8>,
+    |                ^^^^^^^^^^^^^^^^^^^
+422 |     pub(super) state_revision: u64,
+    |                ^^^^^^^^^^^^^^
+423 |     pub(super) state_hash: String,
+    |                ^^^^^^^^^^
+    |
+    = note: `SessionCommandWirkung` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: struct `BrokerSupervisor` is never constructed
+  --> src\lebenslauf.rs:67:19
+   |
+67 | pub(crate) struct BrokerSupervisor {
+   |                   ^^^^^^^^^^^^^^^^
+
+warning: methods `verbindung_ist_lebend` and `messung_verwerfen_von` are never used
+   --> src\register.rs:360:19
+    |
+139 | impl Register {
+    | ------------- methods in this implementation
+...
+360 |     pub(crate) fn verbindung_ist_lebend(&self, sensor_id: &str, nonce: &str) -> bool {
+    |                   ^^^^^^^^^^^^^^^^^^^^^
+...
+368 |     pub(crate) fn messung_verwerfen_von(&mut self, sensor_id: &str, nonce: &str) {
+    |                   ^^^^^^^^^^^^^^^^^^^^^
+
+warning: `eqcop-broker` (lib) generated 27 warnings (run `cargo fix --lib -p eqcop-broker` to apply 9 suggestions)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.23s
+EXIT=0
+
+--- Betroffene Beine auf Windows nach dem Fix ---
+$ cargo build --manifest-path broker/Cargo.toml
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3.85s
+EXIT=0   warnungen=0
+$ cargo test --manifest-path broker/Cargo.toml --lib
+test transport::server_v3::tests_kopplung::abgeloestes_telemetrie_getrennt_haelt_control_getrennt_nicht_auf ... ok
+test transport::server_v3::tests_lebenszyklus::stoppen_endet_auch_bei_haengendem_lebenszyklusaufruf ... ok
+test transport::server_v3::tests_lebenszyklus::stoppen_endet_auch_bei_haengender_senke ... ok
+
+test result: ok. 245 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.96s
+
+EXIT=0   warnungen=0
+
+--- Ergaenzende Pruefung: weitere use-Zeilen auf cfg-bedingte Items ---
+In broker/src/lib.rs stehen genau ZWEI Moduldeklarationen unter einer cfg-Bedingung:
+  :37-38  #[cfg(windows)] mod server;
+  :50-51  #[cfg(test)]    mod testhilfe;
+Alles andere ist unbedingt. Der Linux-Check oben ist der erschoepfende Nachweis fuer
+cfg(windows) (0 Fehler = kein weiterer ungeschuetzter Import); cargo test --lib deckt
+cfg(test). Zusaetzlich statisch, ueber alle neuen Modulwurzeln des Tickets:
+
+$ git grep -n "use crate::server\|crate::{.*server" -- broker/src/
+broker/src/lebenslauf.rs:28:use crate::server;
+broker/src/probe.rs:18:use crate::server;
+$ git grep -n "testhilfe" -- broker/src/
+broker/src/coordinator/hypothese/eingang.rs:165:    use super::super::testhilfe::fenster;
+broker/src/coordinator/hypothese/messung.rs:324:    use super::super::testhilfe::fenster;
+broker/src/coordinator/hypothese/mod.rs:61:mod testhilfe;
+broker/src/coordinator/hypothese/rechnung.rs:409:    use super::super::testhilfe::*;
+broker/src/coordinator/hypothese/screening.rs:337:    use super::super::testhilfe::*;
+broker/src/coordinator/hypothese/zusammenhang.rs:425:    use super::super::testhilfe::*;
+broker/src/lib.rs:51:mod testhilfe;
+broker/src/paar.rs:270:    use crate::testhilfe::*;
+broker/src/register.rs:514:    use crate::testhilfe::*;
+broker/src/sitzung.rs:54:    use crate::testhilfe::*;
+
+=== ENDE ROTBEWEIS D2 ===

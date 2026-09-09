@@ -18,7 +18,14 @@ use crate::paar::{paare_auswerten, PaarStatus};
 use crate::register::{Register, SensorEintrag};
 use crate::sitzung::{sessions_bilden, SessionInfo};
 use crate::zeit::jetzt_ms;
-use crate::{bindung, coordinator, protokoll, server, store, transport};
+use crate::{bindung, coordinator, protokoll, store, transport};
+// `server` ist in `lib.rs` unter `#[cfg(windows)]` deklariert; der Import
+// traegt deshalb dieselbe Bedingung, die vor dem Modulschnitt jede
+// `server::`-Verwendung trug. Ohne sie bricht schon der Bibliotheksbau auf
+// Nicht-Windows mit E0432, statt den `#[cfg(not(windows))]`-Rueckweg
+// weiter unten anzubieten (NAK-224 D2).
+#[cfg(windows)]
+use crate::server;
 use serde::Serialize;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};

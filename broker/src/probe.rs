@@ -11,7 +11,11 @@ use crate::paar::{aggregat_sperrgrund, paare_auswerten};
 use crate::register::Register;
 use crate::sitzung::sessions_bilden;
 use crate::zeit::jetzt_ms;
-use crate::{aggregat, bindung, protokoll, server};
+use crate::{aggregat, bindung, protokoll};
+// Dieselbe Bedingung wie in `lebenslauf.rs`: `server` gibt es nur unter
+// `#[cfg(windows)]`, und `probe_lauf` als einzige Verwendung ebenso.
+#[cfg(windows)]
+use crate::server;
 use std::sync::atomic::Ordering;
 use std::sync::{Arc, Mutex};
 

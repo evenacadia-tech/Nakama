@@ -124,8 +124,9 @@ Commits gehen ohne Rückfrage raus.
   ist, sondern bestandteil vom plan"; vollständig in Register NAK-223). Je
   Phase steht ein eigener Pflegeschritt im Plan (S25b–S25d, S31c, S35b), dazu
   Schwellen, die sofort ein Pflegeticket auslösen, gemessen mit
-  `py -3.13 tools/plan/gesundheit.py` (Ticket NAK-223; bis es gebaut ist, von
-  Hand: keine Quelldatei über 2 000 Zeilen). Pflege läuft nie im
+  `py -3.13 tools/plan/gesundheit.py` (NAK-223, abgenommen 09.09.2026; Exit 4 =
+  Schwelle gerissen, Exit 2 = Werkzeugfehler; im Kanon Bein A32, nicht
+  blockierend). Pflege läuft nie im
   Feature-Ticket, sondern als eigenes verhaltensneutrales Ticket mit vollem
   Kanon vorher und nachher als Beweis (Muster S19b).
 - **Kontexthygiene ist Teil jedes Ticketabschlusses.** Der Dirigent misst im

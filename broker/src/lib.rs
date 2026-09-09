@@ -23,6 +23,8 @@ pub mod transport;
 pub mod vertrag;
 
 mod zeit;
+#[cfg(test)]
+mod testhilfe;
 
 pub use zeit::*;
 
@@ -1263,47 +1265,9 @@ pub fn aggregat_schreiben(
 
 #[cfg(test)]
 mod register_tests {
-    use super::protokoll::{AudioAngabe, ProjektFenster, SensorAngabe};
+    use super::protokoll::AudioAngabe;
+    use super::testhilfe::*;
     use super::*;
-
-    fn hello(id: &str, role: &str, label: &str, pair: Option<&str>, pid: u32) -> Hello {
-        Hello {
-            protocol_version: 2,
-            plugin_version: "0.2.0".into(),
-            host_pid: pid,
-            sensor: SensorAngabe {
-                sensor_id: id.into(),
-                instance_nonce: None,
-                role: role.into(),
-                label: label.into(),
-                pair_id: pair.map(|s| s.to_string()),
-            },
-            audio: AudioAngabe {
-                samplerate: 48000.0,
-                block_size: 512,
-                channels: 2,
-            },
-        }
-    }
-
-    fn messbereit(fenster: Option<ProjektFenster>, aktiv_s: f64) -> MessStand {
-        MessStand {
-            zustand: "messbereit".into(),
-            metrics_version: "m1-2026-08-13".into(),
-            aktiv_s,
-            gesamt_s: aktiv_s,
-            projekt_fenster: fenster,
-            ..Default::default()
-        }
-    }
-
-    fn fenster(von: i64, bis: i64, spruenge: u32) -> ProjektFenster {
-        ProjektFenster {
-            von_samples: von,
-            bis_samples: bis,
-            spruenge,
-        }
-    }
 
     #[test]
     fn sechzehn_sensoren_werden_korrekt_benannt() {

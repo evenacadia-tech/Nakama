@@ -186,7 +186,7 @@ fn echter_brokerprozess_beendet_sich_nach_letztem_client_selbst() {
 /// Entnahmen, und genau die ist im Quelltext eindeutig ablesbar.
 #[test]
 fn geordneter_stopp_schliesst_den_store() {
-    let quelle = include_str!("../src/lib.rs");
+    let quelle = include_str!("../src/lebenslauf.rs");
     let anfang = quelle
         .find("pub fn broker_geordnet_stoppen")
         .expect("broker_geordnet_stoppen im Quelltext");

@@ -1329,7 +1329,7 @@ fn ").unwrap_or(rest.len());
 
     #[test]
     fn produktiver_v2_server_speist_den_gemeinsamen_coordinator_interventionsriegel() {
-        let produktquelle = include_str!("lib.rs")
+        let produktquelle = include_str!("lebenslauf.rs")
             .split_whitespace()
             .collect::<Vec<_>>()
             .join(" ");

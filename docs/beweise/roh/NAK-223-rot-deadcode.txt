@@ -135,3 +135,81 @@ Vor der Nacharbeit lieferte derselbe Befehl `[]`. Jetzt steht dort genau ein
 Treffer mit dem Namen `helfer`.
 
 URTEIL: BESTANDEN
+
+---
+
+## 4. Nacharbeit 2 (09.09.2026) — Elementname an der Namensposition
+
+Wiederpruefung 1 Codex `gpt-6-astra` (Effort max, read-only, Thread
+`01a08551-373e-7792-bd0e-9983ad9e9ebc`, Stand `afc2d699`), Restbefund: beim
+gueltigen Rust-Typnamen `union` uebersprang die Wiederholung den tatsaechlichen
+Namen und erfasste stattdessen `where`. Die FREMDE `where`-Klausel im Crate galt
+danach als Verwendung, der Befund verschwand ganz, und der virtuelle Gesamtlauf
+kippte von Exit 4 auf 0 — derselbe stumme Ausfall wie bei Defekt 1, nur aus der
+anderen Richtung.
+
+Ursache: die Qualifizierer-Wiederholung sass HINTER dem Schluesselwort und
+enthielt die Schluesselwoerter selbst. Regel R-D1b setzt sie DAVOR — die
+Grammatik ist `[Qualifizierer]* Schluesselwort [mut]? Name`, und das erste Wort
+nach dem Schluesselwort ist ausnahmslos der Name, auch wenn es `union`,
+`default` oder `where` heisst.
+
+Der Beweis faellt an derselben Zeile wie in §3: der Namenswahl in `ELEMENT`
+(`tools/plan/gesundheit.py`). Die Mutation ist diesmal chirurgisch — sie setzt
+NUR die alte Wiederholung hinter dem Schluesselwort wieder ein und laesst die
+Qualifizierer davor unangetastet. Alle acht Formen der Nacharbeit 1 bleiben
+deshalb gruen; rot werden genau die vier Zusagen dieser Runde. Der Selbsttest
+fuehrt jetzt 116 Faelle (vorher 96): sechs weitere Quellformen je ohne
+Verwendung, Name und mit Verwendung, dazu die Reproduktion des Pruefers als
+eigenes Paar.
+
+Werkzeug: `py -3.13 tools/plan/gesundheit.py --selbsttest`
+
+### Mutation C — alte Wiederholung wieder HINTER dem Schluesselwort
+
+Exitcode: 2   (erwartet 2 — ein roter Selbsttest ist Werkzeugfehler)
+
+```text
+  ROT  dead_code `struct union where u8: Copy;` meldet den Namen   ist='where' soll='union'
+  ROT  dead_code `struct union where u8: Copy;` mit Verwendung ist kein Befund   ist=1 soll=0
+  ROT  dead_code `struct union where` bleibt trotz fremder where-Klausel ein Befund   ist=0 soll=1
+  ROT  dead_code `struct union where` meldet den Namen neben der fremden where-Klausel   ist='' soll='union'
+
+Selbsttest: 112/116 bestanden
+(die uebrigen Faelle blieben gruen und sind hier weggelassen; ihre Zahl steht in der Summenzeile)
+```
+
+**Mutation zurueckgenommen — Stand des Tickets:**
+
+Exitcode: 0   (erwartet 0)
+
+```text
+(keine ROT-Zeile)
+Selbsttest: 116/116 bestanden
+```
+
+Die Quelle ist nach der Ruecknahme bytegleich (SHA256 `09ab5684…` vor und nach
+der Mutation, gegen eine Kopie geprueft). `struct union where u8: Copy;` faellt
+zweifach: der gemeldete Name ist `where` statt `union`, und der Gebrauchsfall
+`let a: union;` loescht den Befund nicht mehr. Die beiden Faelle der
+Pruefer-Reproduktion fallen ganz — dort steht die fremde `where`-Klausel in
+b.rs, und der Treffer verschwindet.
+
+### Reproduktion des Pruefers, auf dem Stand des Tickets
+
+```text
+py -3.13 -B -c "import runpy; g=runpy.run_path('tools/plan/gesundheit.py'); print(g['finde_dead_code']([('t.rs',None)], {'t.rs':'#[allow(dead_code)]\nstruct union where u8: Copy;\nfn x<T>() where T: Copy {}\n'}))"
+
+[('t.rs', 1, 'union')]
+EXIT=0
+```
+
+Vor der Nacharbeit lieferte derselbe Befehl `[]`; unter Mutation C wieder `[]`.
+Jetzt steht dort genau ein Treffer mit dem Namen `union`.
+
+Gegenprobe an den Formen, die keine Elemente dieses Maasses sind: `ELEMENT`
+trifft `unsafe impl Trait for X {}`, `impl Trait for X {}` und
+`impl<T> Helfer for T {}` gar nicht — es meldet dort insbesondere nicht `Trait`
+als Namen.
+
+URTEIL: BESTANDEN

@@ -556,22 +556,28 @@ def miss_clippy(wurzel: pathlib.Path):
 # -------------------------------------------------------- Maass 4: dead_code
 
 DEADCODE_ATTR = re.compile(r"#\[\s*allow\s*\(([^)]*)\)\s*\]")
-# Der Bezeichner steht NICHT immer unmittelbar hinter dem ersten Schluesselwort.
-# Qualifizierer VOR dem Schluesselwort (`pub`, `pub(crate)`, `pub(in …)`,
-# `unsafe`, `async`, `extern "C"`, `default`) sind selbst keine Schluesselwoerter
-# und werden von der Suche uebergangen. Zwischen Schluesselwort und Namen stehen
-# koennen dagegen `const fn name` (Schluesselwort ist `fn`, `const` ist hier
-# Qualifizierer), `const extern "C" fn name` und `static mut NAME`. Wer stumpf
-# hinter dem ERSTEN Treffer liest, erfasst bei `pub const fn helfer` das Wort
-# `fn` als Namen; danach gilt jede andere Funktionsdefinition im Crate als
-# dessen Verwendung, und der aufruferlose Helfer bleibt strukturell ungemeldet
-# (Erstpruefung 09.09.2026, Defekt 1). `const NAME: T` bleibt unterscheidbar:
-# dort folgt kein zweites Schluesselwort, also ist NAME der Bezeichner —
-# ebenso `unsafe trait Name` gegen `const fn name`.
+# Der Bezeichner steht NICHT immer hinter dem ersten Schluesselwort, aber er
+# steht IMMER unmittelbar hinter dem ELEMENTschluesselwort. Die Grammatik ist
+# `[Qualifizierer]* Schluesselwort [mut]? Name`: Qualifizierer (`pub`,
+# `pub(crate)`, `pub(in …)`, `const`, `unsafe`, `async`, `default`,
+# `extern "C"`) stehen nur DAVOR und werden nur uebersprungen, wenn ein
+# Schluesselwort folgt; `mut` nur unmittelbar nach `static`. Wer stumpf hinter
+# dem ERSTEN Treffer liest, erfasst bei `pub const fn helfer` das Wort `fn` als
+# Namen (Erstpruefung 09.09.2026, Defekt 1). Wer die Wiederholung stattdessen
+# HINTER das Schluesselwort legt, ueberspringt bei `struct union where` den
+# echten Namen `union` und liest die fremde `where`-Klausel als Bezeichner
+# (Wiederpruefung 1, 09.09.2026). Beide Male gilt danach jede andere Definition
+# im Crate als Verwendung, und der aufruferlose Helfer bleibt strukturell
+# ungemeldet — das Maass ist stumm. Das erste Wort nach dem Schluesselwort ist
+# deshalb ausnahmslos der Name, auch wenn es `union`, `default` oder `where`
+# heisst. `const` ist Qualifizierer, solange ein Schluesselwort folgt
+# (`const fn name`), sonst selbst das Schluesselwort (`const NAME: T`); das
+# Zurueckfallen erledigt die Wiederholung durch Backtracking.
 SCHLUESSELWORT = r"fn|struct|enum|trait|type|const|static|union|mod"
-ZWISCHENWORT = (rf"(?:{SCHLUESSELWORT}|mut|unsafe|async|default)\b"
-                r"|extern\b(?:\s*\"[^\"\n]*\")?")
-ELEMENT = re.compile(rf"\b(?:{SCHLUESSELWORT})\b(?:\s+(?:{ZWISCHENWORT}))*"
+QUALIFIZIERER = (r"pub\b(?:\s*\([^)\n]*\))?|const\b|unsafe\b|async\b"
+                 r"|default\b|extern\b(?:\s*\"[^\"\n]*\")?")
+ELEMENT = re.compile(rf"\b(?:(?:{QUALIFIZIERER})\s+)*"
+                     rf"(?:static\s+mut|{SCHLUESSELWORT})\b"
                      r"\s+([A-Za-z_][A-Za-z0-9_]*)")
 WORT = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 
@@ -1096,11 +1102,13 @@ def selbsttest() -> int:
     pruefe("inline-Attribut mit verwendetem Typ ist kein Befund",
            len(finde_dead_code(q, inline)), 0)
 
-    # Qualifizierer: der Name ist der Bezeichner hinter dem ELEMENT, nicht das
-    # naechste Wort. Sonst erfasst `pub const fn helfer` das Wort `fn`, jede
-    # Funktionsdefinition im Crate gilt als dessen Verwendung und kein Helfer
-    # wird je gemeldet (Erstpruefung 09.09.2026, Defekt 1). Jeder Fall einmal
-    # ohne und einmal mit Verwendung - die Erwartung mit ihrem Gegenteil.
+    # Namenswahl: der Name ist das erste Wort hinter dem ELEMENTschluesselwort,
+    # nicht das naechste Wort und nicht das uebernaechste. Sonst erfasst
+    # `pub const fn helfer` das Wort `fn` (Erstpruefung 09.09.2026, Defekt 1)
+    # oder `struct union where` das Wort `where` (Wiederpruefung 1, 09.09.2026);
+    # beide Male gilt jede andere Definition im Crate als Verwendung und kein
+    # Helfer wird je gemeldet. Jeder Fall einmal ohne und einmal mit Verwendung
+    # - die Erwartung mit ihrem Gegenteil.
     for quelle, erwartet, gebrauch in (
             ("pub const fn helfer() {}", "helfer", "helfer();"),
             ("pub(crate) unsafe fn helfer() {}", "helfer", "unsafe { helfer(); }"),
@@ -1110,6 +1118,17 @@ def selbsttest() -> int:
             ("pub const HELFER: u8 = 1;", "HELFER", "let a = HELFER;"),
             ("static mut ZAEHLER: u8 = 0;", "ZAEHLER", "unsafe { ZAEHLER = 1; }"),
             ("pub unsafe trait Helfer {}", "Helfer", "fn y<T: Helfer>() {}"),
+            # Ein Wort, das zugleich Schluesselwort und gueltiger Bezeichner
+            # ist, an Namensposition: uebersprungen werden duerfen nur echte
+            # Qualifizierer VOR dem Schluesselwort.
+            ("struct union where u8: Copy;", "union", "let a: union;"),
+            ("union Foo { a: u8 }", "Foo", "let f: Foo;"),
+            ("fn default() -> u8 { 1 }", "default", "let a = default();"),
+            ("default fn helfer() {}", "helfer", "helfer();"),
+            # `const` ist Qualifizierer, solange ein Schluesselwort folgt,
+            # sonst selbst das Schluesselwort.
+            ("const fn name() {}", "name", "name();"),
+            ("const NAME: u8 = 1;", "NAME", "let a = NAME;"),
     ):
         kopf = "#[allow(dead_code)]\n" + quelle + "\n"
         d = finde_dead_code(q, {"a.rs": kopf, "b.rs": "fn x() { }\n"})
@@ -1118,6 +1137,18 @@ def selbsttest() -> int:
         pruefe(f"dead_code `{quelle}` mit Verwendung ist kein Befund",
                len(finde_dead_code(q, {"a.rs": kopf,
                                        "b.rs": "fn x() { " + gebrauch + " }\n"})), 0)
+
+    # Reproduktion der Wiederpruefung 1 woertlich: Wird beim gueltigen Typnamen
+    # `union` stattdessen `where` erfasst, zaehlt die FREMDE `where`-Klausel in
+    # b.rs als Verwendung und der Befund verschwindet ganz - der Gesamtlauf
+    # kippte damit von Exit 4 auf 0, ohne dass eine Zeile daneben auffiele.
+    fremd = {"a.rs": "#[allow(dead_code)]\nstruct union where u8: Copy;\n",
+             "b.rs": "fn x<T>() where T: Copy {}\n"}
+    d = finde_dead_code(q, fremd)
+    pruefe("dead_code `struct union where` bleibt trotz fremder where-Klausel "
+           "ein Befund", len(d), 1)
+    pruefe("dead_code `struct union where` meldet den Namen neben der fremden "
+           "where-Klausel", d[0][2] if d else "", "union")
 
     # --- Clippy: abgebrochener Prozess ist ein Werkzeugfehler ---------------
     # Ohne jede Cargo-Ausfuehrung: ersetzt wird nur der Prozessaufruf. Ein

@@ -1,10 +1,10 @@
 // FeatureEngine — der Vertrag: was die Engine liefert, unabhaengig davon, wie.
 //
 // NAK-225/S25d (09.09.2026), herausgeloest aus core/analysis/FeatureEngine.h.
-// Dieser Teilkopf traegt die Typen und Konstanten, die ZWISCHEN Engine und
-// Verbrauchern stehen — Prozessor, Sonde, Broker-Wire, Goldens:
+// Dieser Teilkopf traegt die Typen, die ZWISCHEN Engine und Verbrauchern
+// stehen — Prozessor, Sonde, Broker-Wire, Goldens:
 //
-//   Grenzgrund, kG*-Beweismaske, Zeitbasis, Herleitung, Transportstempel,
+//   Grenzgrund, kG-Beweismaske, Zeitbasis, Herleitung, Transportstempel,
 //   nak29Verstoss        Der Zeitvertrag: warum eine Grenze gezogen wurde und
 //                        welche Beweisstuecke der Host geliefert hat.
 //   Frameversuch, frameversuch
@@ -16,14 +16,22 @@
 //                        Die Stereosicht je Band und im Ganzen.
 //   Bandsatz, LiveBaender, EvidenzBaender
 //                        Die beiden Bandaufloesungen.
-//   FeatureFrame, kFeatureMetricsVersion und die Schwellenkonstanten
-//                        Der Messrahmen, den die Engine veroeffentlicht.
-//   VerteilungsRing      Der Ring, aus dem die Perzentile entstehen.
+//   FeatureFrame         Der Messrahmen, den die Engine veroeffentlicht.
 //
-// WARUM GETRENNT: Die Engine kennt keine Optik (CLAUDE.md), aber ihre
-// Verbraucher kennen diesen Vertrag. Er hier zu haben macht sichtbar, was sich
-// nicht aendern darf, ohne dass ein Golden es merkt — die metrics_version ganz
-// unten ist genau dieser Riegel.
+// WAS HIER BEWUSST NICHT STEHT: kFeatureMetricsVersion, die kalibrierbaren
+// Schwellen (kKonvergenzSpanneDb, kPeakSteigungSchwelleDb,
+// kPeakCrestSchwelleDb, kWelchMindestFrames, kKohaerenzSchwellePhase,
+// kKorrelationKurzFrames), kVerteilungPlaetze und VerteilungsRing. Sie sind in
+// FeatureEngine.h geblieben, weil das Metrikregister
+// eq-copilot/schemas/v3/metriken-v1.json je Schwelle die DATEI nennt, in der
+// sie steht, und Bein A5 (pruefe_v3_vertrag.py) genau das prueft. Ein Umzug
+// haette das Register auf eine Stelle zeigen lassen, an der die Zahl nicht
+// steht — der Riegel, den M-06 gerade bauen sollte, waere still geworden. Der
+// Schnitt endet deshalb vor der Versionszeile, nicht hinter ihr.
+//
+// WARUM ES DEN TEILKOPF UEBERHAUPT GIBT: Die Engine kennt keine Optik
+// (CLAUDE.md), aber ihre Verbraucher kennen diesen Vertrag. Ihn hier zu haben
+// macht sichtbar, was sich nicht aendern darf, ohne dass ein Golden es merkt.
 //
 // Der Teilkopf wird VOR der Klasse eingebunden; ohne ihn gaebe es keine
 // Feldtypen. Er ist nicht eigenstaendig einbindbar: FeatureEngine.h ist die
@@ -747,148 +755,6 @@ struct FeatureFrame
         Fehler, §"NaN-Ehrlichkeit"), und `-0.0 == +0.0`. */
     bool operator== (const FeatureFrame&) const = default;
 };
-
-//==============================================================================
-/** Versionierte Startwerte.  Aenderung nur ueber eine neue Zahl, nie still —
-    dieselbe Regel wie `kMetricsVersion` in `AnalyseEngine`, nur maschinenlesbar,
-    weil `table Frame` ein `uint` verlangt. */
-inline constexpr std::uint32_t kFeatureMetricsVersion = 20260904u;
-
-/*  ⚠️ WARUM DIE ZAHL MIT SONDE-013 STEIGT — und warum sie es MUSS.
-
-    Zwei Gruende, und beide waeren ohne diesen Schritt still:
-
-    1. Vier neue kalibrierbare Schwellen (Peaksteigung, Peakcrest,
-       Kohaerenzschwelle der Phase, die zwei Konfidenzgates).
-    2. `psrDb` rechnet seit diesem Ticket gegen das True-Peak-Maximum des
-       3-s-Fensters statt gegen den Sample-Peak des 100-ms-Rahmens. Dasselbe
-       Feld, dieselbe Feld-ID, ANDERE Bedeutung — ohne die Version haette ein
-       Empfaenger kein Mittel, die zwei Faelle zu unterscheiden.
-
-    Die Schwellen dieser Fassung stehen in
-    `eq-copilot/schemas/v3/metriken-v1.json`; **A5**
-    (`metrics_version_bindet_schwellen`) haelt Register und Code
-    gegeneinander und faellt, wenn eine Zahl ohne Versionsschritt wandert. */
-
-/** Wie viele Analysefenster hoechstens in P10/P50/P95 eines Bandes eingehen.
-
-    SONDE-013 M-05. Der Wert ist eine RESSOURCENGRENZE, keine Messaussage:
-    er deckelt den festen Speicher (221 Baender x 64 float = rund 57 KiB je
-    Instanz) und damit den Sortieraufwand am Rahmenende. Wie viele Fenster
-    wirklich eingegangen sind, sagt `FeatureFrame::evidenzFenster` — deshalb
-    kann diese Zahl steigen oder fallen, ohne dass ein Empfaenger sie kennen
-    muss.
-
-    Er gehoert bewusst NICHT zu `kFeatureMetricsVersion`: eine
-    Ressourcengrenze veraendert keine Schwelle und kein Gewicht. */
-inline constexpr int kVerteilungPlaetze = 64;
-
-/** Spanne, ueber die aus der Medianabweichung eine Konvergenz in [0, 1] wird.
-
-    12 dB ist ein Startwert und ausdruecklich am Korpus kalibrierbar (§5.3,
-    Risiko 5). Er lebt deshalb HIER neben `kFeatureMetricsVersion` und nicht
-    als Literal im Rechenpfad: eine Kalibrierung ist dann eine neue
-    Metrikversion, kein stiller Bruch. */
-inline constexpr double kKonvergenzSpanneDb = 12.0;
-
-/** Ab welchem Anstieg des Rahmenpeaks gegenueber dem Vorrahmen der EIGENE
-    Peakpfad des Ereignisdetektors ausloest (SONDE-013 M-86, §39.1: Detektor
-    aus spektralem Fluss, Peaksteigung UND Crest).
-
-    12 dB ist ein Faktor 4 im Pegel. Die Wahl ist begruendet, nicht geraten:
-    unter 6 dB liegt die normale Pegelschwankung zwischen zwei
-    100-ms-Rahmen eines durchlaufenden Arrangements, und ein Detektor, der
-    dort ausloest, feuert dauernd. 12 dB trennt einen wirklichen Einsatz von
-    einer Lautstaerkebewegung.
-
-    Startwert, am Korpus kalibrierbar (§5.3, Risiko 5) — deshalb steht er
-    HIER neben `kFeatureMetricsVersion` und nicht als Literal im Rechenpfad. */
-inline constexpr double kPeakSteigungSchwelleDb = 12.0;
-
-/** Ab welchem Crest im Rahmen das Peak-Qualitaetsbit gilt.
-
-    Dieselbe 12 dB, aber eine ANDERE Groesse: hier Peak gegen RMS INNERHALB
-    eines Rahmens, oben Peak gegen Peak ZWISCHEN zwei Rahmen. Der Wert stand
-    bis SONDE-013 als nacktes Literal im Detektor; er ist damit dieselbe
-    Kalibrierungsfalle gewesen, die §5.3 Risiko 5 beschreibt. */
-inline constexpr double kPeakCrestSchwelleDb = 12.0;
-
-/** Wie viele gueltige Welch-Frames ein Band mindestens braucht, damit seine
-    Kohaerenz ueberhaupt einen Wert bekommt (SONDE-013 M-11, §40.1 woertlich:
-    "Auto- und Cross-Spektren werden ueber mindestens ACHT gueltige
-    ueberlappende Welch-Frames gemittelt").
-
-    Der Grund ist nicht Geschmack, sondern Statistik: die Magnitude-Squared
-    Coherence aus EINEM Frame ist identisch 1, ganz gleich wie unkorreliert
-    die zwei Kanaele sind — |L·conj(R)|² = |L|²·|R|² gilt fuer jedes einzelne
-    Bin exakt. Erst die Mittelung ueber mehrere Frames macht daraus eine
-    Aussage. Acht ist der Startwert aus §40.1; er lebt hier neben
-    `kFeatureMetricsVersion` und nicht als Literal im Rechenpfad. */
-inline constexpr int kWelchMindestFrames = 8;
-
-/*  ⚠️ WAS DIESE ZAHL FUER DIE BASSSTUFE BEDEUTET, gemessen beim Bau.
-
-    Die Bassstufe hat bei 48 kHz einen Hop von 8192 Samples, also 170,7 ms je
-    Frame. Acht davon sind 1,37 s — laenger als das laengste Evidenzfenster
-    (`kEvidenzIntervallMaxS` = 1 s). Baender unter `kTrennungHz` tragen damit
-    im heutigen Kadenzrahmen NIE eine Kohaerenz und nie eine Phase.
-
-    Das ist fail-closed und kein Fehler: die Kohaerenz aus fuenf Frames waere
-    unbrauchbar, und §40.1 verlangt genau dieses Schweigen. Der Empfaenger
-    sieht den Grund an den `freiheitsgrade` des Bandes. Aber es ist auch keine
-    gute Produkteigenschaft — Phasenprobleme im Bass sind musikalisch die
-    wichtigsten. Der Punkt steht als Nebenbefund im Manifest §10.4; ihn zu
-    beheben hiesse, der Bassstufe fuer die Stereoanalyse ein eigenes,
-    kuerzeres Fenster zu geben, und das ist mehr als eine Zeile. */
-
-/** Ab welcher Kohaerenz die Interchannel-Phase eines Bandes ueberhaupt
-    ausgewertet wird (M-11, §40.1: "Interchannel-Phase wird nur in ausreichend
-    kohaerenten Baendern interpretiert").
-
-    0,8 ist dieselbe Schwelle, die §38.3 fuer einen zulaessigen Transferwert
-    nennt — die Frage ist dieselbe: ab wann beschreibt das Kreuzspektrum eine
-    Beziehung und nicht zwei unabhaengige Zufallszeiger. Startwert, am Korpus
-    kalibrierbar (§5.3, Risiko 5). */
-inline constexpr double kKohaerenzSchwellePhase = 0.8;
-
-/** Laenge des KURZEN Korrelationsfensters in Welch-Frames.
-
-    §40.1 verlangt die bandweise Korrelation "in kurzen und mittleren
-    Fenstern". Das mittlere ist das ganze Evidenzfenster; das kurze sind
-    `kKorrelationKurzFrames` Frames, also bei 4096 Punkten und 50 % Ueberlappung
-    rund 340 ms. Es ist zugleich das Fenster, ueber dem die Persistenz gezaehlt
-    wird: „in wie vielen dieser Abschnitte war das Band kohaerent". */
-inline constexpr int kKorrelationKurzFrames = 8;
-
-/** Fester Ring der letzten Bandwerte EINES Bandes im Evidenzfenster.
-
-    Warum ein Ring und kein Histogramm: P10/P50/P95 sollen exakt sein,
-    nicht binquantisiert. Ein Histogramm braeuchte je Band Hunderte Bins,
-    um unter 0,1 dB zu bleiben, und selbst dann waere der Wert eine
-    Interpolation — eine Genauigkeit, die man behaupten, aber nicht
-    messen kann. Bei 0,25 s Evidenzfenster und 50 % Ueberlappung liegen
-    typisch deutlich weniger als `kVerteilungPlaetze` Fenster darin, also
-    ist der Ring in der Praxis vollstaendig und das Perzentil exakt.
-
-    Laeuft er doch ueber, behaelt er die JUENGSTEN Werte und `gefuellt`
-    bleibt bei `kVerteilungPlaetze` stehen. Der Frame traegt diese Zahl
-    als `evidenzFenster` mit — ein Empfaenger sieht damit, ueber wie
-    viele Fenster die Verteilung wirklich geht, statt es zu raten. */
-struct VerteilungsRing
-{
-    float werte[kVerteilungPlaetze] {};
-    int   stand { 0 };       ///< naechster Schreibplatz
-    int   gefuellt { 0 };    ///< belegte Plaetze, hoechstens kVerteilungPlaetze
-
-    void schiebe (float db) noexcept
-    {
-        werte[(std::size_t) stand] = db;
-        stand = (stand + 1) % kVerteilungPlaetze;
-        if (gefuellt < kVerteilungPlaetze) ++gefuellt;
-    }
-    void leeren() noexcept { stand = 0; gefuellt = 0; }
-};
-
 
 
 } // namespace nakama::analyse

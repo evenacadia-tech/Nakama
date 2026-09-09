@@ -20,8 +20,11 @@ R7 ok     eq-copilot/plugin/src/prozessor/Hostbruecke.cpp            187 Zeilen 
 R7 ok     eq-copilot/plugin/src/prozessor/State.cpp                  586 Zeilen | HIER 34 | VERWEIS  0 | LEER 0
 R7 ok     eq-copilot/plugin/src/prozessor/Ipc.cpp                   1386 Zeilen | HIER 25 | VERWEIS  0 | LEER 0
 R7 ok     eq-copilot/plugin/src/prozessor/Analyse.cpp               1449 Zeilen | HIER 36 | VERWEIS  0 | LEER 0
-R7 ok     eq-copilot/plugin/core/analysis/FeatureEngine.h           1172 Zeilen | HIER  2 | VERWEIS  0 | LEER 0
-R7 ok     eq-copilot/plugin/core/analysis/featureengine/Vertrag.h    894 Zeilen | HIER  5 | VERWEIS  0 | LEER 0
+R7 ok     eq-copilot/plugin/core/analysis/FeatureEngine.h           1314 Zeilen | HIER  2 | VERWEIS  0 | LEER 0
+R7 ok     eq-copilot/plugin/core/analysis/featureengine/Vertrag.h    760 Zeilen | HIER  9 | VERWEIS  3 | LEER 0
+            VERWEIS: kKonvergenzSpanneDb                    -> FeatureEngine.h
+            VERWEIS: kPeakCrestSchwelleDb                   -> FeatureEngine.h
+            VERWEIS: kPeakSteigungSchwelleDb                -> FeatureEngine.h
 R7 ok     eq-copilot/plugin/core/analysis/featureengine/Zeit.h       601 Zeilen | HIER 14 | VERWEIS  0 | LEER 0
 R7 ok     eq-copilot/plugin/core/analysis/featureengine/Spektrum.h   650 Zeilen | HIER  7 | VERWEIS  0 | LEER 0
 R7 ok     eq-copilot/plugin/core/analysis/featureengine/Stereo.h     318 Zeilen | HIER  4 | VERWEIS  0 | LEER 0

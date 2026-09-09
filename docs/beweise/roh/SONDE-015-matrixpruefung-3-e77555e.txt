@@ -1,0 +1,13 @@
+URTEIL: NEEDS_WORK — die beiden ursprünglichen Befunde sind gezielt geschlossen, der Fix erzeugt jedoch die zwei genannten Transaktionswidersprüche.
+
+Geprüft: Fixdiff c37ab19b…e77555ed und betroffene Zusagen; B-05 Runde 2: ja — §5.11.4 verlangt „als erste Stufe“ vor Validierung, Zonenriegel und base_revision, M-124 speichert „jedes terminale Ergebnis“ einschließlich Abweisungen, B7/M-123 trägt 1000 Hz → T 1050 Hz → 500 Hz → T wiederholt mit Originalergebnis statt „User-Schutz“; B-09 Runde 2: ja — M-15 verlangt ein „unabhängig gerechnetes, geordnetes Referenzergebnis“, B6 prüft 0→7 dagegen und den daran fallenden Rückwärtslauf-Mutanten; §3.15 stimmt mit 124 eindeutigen IDs und den Belegklassen überein.
+
+Nicht geprüft: Produktlaufzeit, Builds, Testausführung und übriger Matrixbereich als eigenständiger Prüfgegenstand; ausschließlich lesend gearbeitet, keine Produktprozesse oder Python gestartet, HEAD vorher/nachher identisch bei 522c5f9c472e8429f1e2a864de692ade1320adde, vorhandene .claude/settings.local.json unangetastet.
+
+Full review comments:
+
+- [P2] Erhalte die revisionsbezogene Dauer des Wiederholungsfensters — C:/Users/phili/Projekte/Nakama/docs/beweise/SONDE-015.md:1148-1148
+  DEFEKT M-123/§5.11.4: Werden ohne Schutz-Zonen T und danach U angewandt und anschließend 31 verschiedene Transaktionen wegen veralteter `base_revision` abgewiesen, verdrängen deren ebenfalls gespeicherte Ergebnisse T aus dem 32-Einträge-Ring. Seit T ist aber erst eine Revision vergangen; Undo kann T weiterhin wiederherstellen. T erhält beim Wiederholen nun Konflikt statt seines ursprünglichen Ergebnisses. Damit widerspricht der neue Ring der weiterhin zugesagten Spanne „über die ein alter Zustand per Undo noch erreichbar ist“ und verkürzt das [B-05-Fenster](roh/SONDE-015-matrix-nacharbeit-1-auftrag.txt#L25). Die Speicherung negativer Ergebnisse muss diese Vorhaltegarantie erhalten; B7 sollte diesen Mischfall abdecken.
+
+- [P2] Definiere einen ausführbaren Retry nach busy_retry — C:/Users/phili/Projekte/Nakama/docs/beweise/SONDE-015.md:1149-1149
+  DEFEKT M-124 gegen M-44 (:1094): Erhält T bei belegtem Bankpool `busy_retry` und gibt anschließend ein Audio-ACK eine Bank frei, liefert jede Wiederholung derselben ID weiterhin das gespeicherte `busy_retry`; gemäß §5.11.4 erreicht sie den Programmbau nicht mehr. Der in M-44 zugesagte Weg „Der Aufrufer wiederholt“ kann damit trotz beseitigter Ressourcenknappheit nicht fortfahren ([R9](roh/SONDE-015-auftrag.txt#L49)). Entweder muss `busy_retry` als nichtterminal behandelt oder der erneute Versuch ausdrücklich mit einer neuen Transaktions-ID festgelegt werden; der entsprechende B7-Fall muss die Wiederholung nach Freigabe einschließen.

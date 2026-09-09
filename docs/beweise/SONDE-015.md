@@ -2133,3 +2133,15 @@ und M-124 hat keine ID übernommen, die es schon gab.
 | **D** Bau- und Prüfriegel | Nicht berührt. |
 | **E** Behauptung ≤ Messung | **Die tragende Zeile.** B-09 war genau dieser Fehler: eine Probe, die auch bei verletzter Zusage grün bleibt. Der neue Rotbeweis ist ein benannter Mutant (Bank läuft 7 → 0), der an einem unabhängig gerechneten Golden fällt — kein Nebeneffekt. §3.15 ist neu **gezählt**. |
 | **F** Änderungssatz | B-05 hält Original und Wiederholung im selben Satz zusammen: wer ein terminales Urteil ablegt, legt auch das abgewiesene ab (M-124), sonst zerfällt das Paar. |
+
+### 7.5 Matrixprüfung 3 — NEEDS_WORK (Dirigent, 2026-09-10)
+
+| Merkmal | Wert |
+|---|---|
+| Prüfer | Codex `gpt-6-astra`, Effort max, lesend; Thread `01a08883-33e0-7211-9c6d-f8bc440e4b8e`; Lauf 01:31–01:38 |
+| Prüfbereich | Wiederprüfung (Vorlage B) über den Fixdiff `git diff c37ab19b...e77555ed -- docs/beweise/SONDE-015.md`; HEAD während des Laufs `522c5f9c` (trägt nur den Prüfauftrag), vorher und nachher identisch |
+| Auftrag und Urteil | `docs/beweise/roh/SONDE-015-matrixpruefung-3-auftrag.txt`; Urteil wörtlich `docs/beweise/roh/SONDE-015-matrixpruefung-3-e77555e.txt` |
+| Urteil | **NEEDS_WORK** — B-05 (Runde 2) und B-09 (Runde 2) **geschlossen**; §3.15 stimmt mit 124 IDs; der Fix erzeugt zwei Folgewidersprüche: D-1 (Abweisungen verdrängen committete Einträge aus dem 32er-Wiederholungsregister, obwohl Undo den Zustand noch erreicht) und D-2 (gemerktes `busy_retry` macht den in M-44 zugesagten Wiederholungsweg unausführbar) |
+| Quellencheck des Dirigenten | direkt an M-123 (`:1148`), M-124 (`:1149`), M-44 (`:1094`), §5.11.4: beide **DEFEKT** — innere Widersprüche, die die MN2-Regel „gespeichertes Ergebnis auch für abgewiesene Transaktionen" erzeugt hat; der Dirigent nimmt diese Regel zurück |
+| Rundenbilanz | `c37ab19b..e77555ed: Doku 1 Datei(en) +89/-19 → OHNE PRODUKTFORTSCHRITT (Produkt+Tests = 0 Zeilen)` — Matrixrunde, strukturell null |
+| Nacharbeit | Matrix-Nacharbeit 3 (dritte und letzte Runde vor dem Konvergenzentscheid): `docs/beweise/roh/SONDE-015-matrix-nacharbeit-3-auftrag.txt` — eine gemeinsame Regel: gemerkt wird nur, was eine Revision erzeugt hat, Fenster in Revisionen (32 = Undo-Tiefe), nicht-committete Ausgänge (Validierung, Konflikt, User-Schutz, `busy_retry`) werden nicht gemerkt und sind mit derselben ID neu ausführbar |

@@ -1899,3 +1899,35 @@ noch `docs/PLAN-STAND.md` noch `design/` an. Der `dokuriegel` läuft sauber; die
 sechs benannten Verweise sind Zielpfade aus §4.0, die die Bauetappen anlegen.
 Die 120 Matrix-IDs sind lückenlos von M-01 bis M-120 vergeben, jede genau
 einmal, und jede Zeile trägt sieben Spalten.
+
+---
+
+## 7. Matrixprüfung 1 — NEEDS_WORK (Dirigent, 2026-09-10)
+
+| Merkmal | Wert |
+|---|---|
+| Prüfer | Codex `gpt-6-astra`, Effort max, lesend (`codex exec review`, Sandbox read-only); Thread `01a08848-73c2-7d20-a765-733d79fac37b`; Lauf 00:27–00:43 |
+| Prüfbereich | `git diff e9dbf4b9...047b4dc5 -- docs/beweise/SONDE-015.md` (Vorlage: Matrixprüfung nach Variante A); HEAD während des Laufs `68310869` (trägt nur den Prüfauftrag), vorher und nachher identisch |
+| Auftrag und Urteil | `docs/beweise/roh/SONDE-015-matrixpruefung-1-auftrag.txt`; Urteil wörtlich `docs/beweise/roh/SONDE-015-matrixpruefung-1-047b4dc.txt` |
+| Urteil | **NEEDS_WORK** — zwölf Befunde [P2], vom Prüfer als DEFEKT eingeordnet |
+| Quellencheck des Dirigenten | lesender Opus-Agent, jede zitierte Zeile geöffnet: alle zwölf Zeilenangaben stimmen, alle zwölf Befunde sind **DEFEKT** (keine erfundene Anforderung; Präzisierung zu B-07: `README.md:132-138` erlaubt den Wert auf dem DTO-Weg, der Befund trägt, weil die Nutzlast über den Schemaweg mit `schema.rs:383-386` reist) |
+| Rundenbilanz | `e9dbf4b9..047b4dc5: Doku 1 Datei(en) +1901/-0 → OHNE PRODUKTFORTSCHRITT (Produkt+Tests = 0 Zeilen)` — Matrixrunde vor dem Bau, zählt strukturell null und löst keinen Konvergenzentscheid aus (Dirigent §3.3) |
+| Nacharbeit | Matrix-Nacharbeit 1 als Zusatzauftrag an den Bauer: `docs/beweise/roh/SONDE-015-matrix-nacharbeit-1-auftrag.txt` (nur die zwölf Defekte, je Defekt die schließende Regel) |
+| Prozessentscheid | User-Wort 10.09.2026 (während dieses Laufs): „codex immer astra mit xhigh oder max effort. kein Sol mehr" — eingetragen im Dirigenten-Skill §3.4, Commit `a026c44f` |
+
+| Befund | Kurzform | Einordnung | Ansatzpunkt |
+|---|---|---|---|
+| B-01 | Hash und Undo liegen hinter dem Commit-Punkt (§5.11.2, M-74/M-75 ohne Einspritzpunkt an Hash/Undo) | DEFEKT (R11 „Hash unverändert"; §5.11.2 widerspricht M-74) | §5.11.2, M-74, M-75 |
+| B-02 | Undo nach Remove unter einer Zone würde vom Zonenriegel abgewiesen | DEFEKT (Fünferblock-02 `:139-141`, M-61) | M-61, §5.6.3, §5.11.2 |
+| B-03 | Prädikat prüft die Zonenmenge, nicht die einzelne Zone (Band von Zone A nach Zone B) | DEFEKT (R6, Interview 23.08. `:132-133`) | §5.6.3, M-67 |
+| B-04 | Auto-Gain-Faltung multipliziert Mid und Side in beide Seiten (H² statt H) | DEFEKT (R4, Abnahme 24.08. `:54`) | §5.4.3, M-37 |
+| B-05 | In-Flight-Register des ControlClient ist kein lokaler Transaktionsriegel | DEFEKT (R11, §44.5; Code `Nachrichten.cpp:157-184, 301-304, 335-336`) | §5.11.4, M-76 |
+| B-06 | Kein Rotbeweis gegen veraltete Dynamic-Telemetrie | DEFEKT (Gate §1.1 „gegen stale … abgesichert") | §3.13, neue Zeile |
+| B-07 | 15-Ziffern-Textriegel des Schemawegs trifft die DTO-Nutzlast | DEFEKT (bestehender Vertrag `README.md:132-138`, `schema.rs:383-386`) | M-103, §5.13 |
+| B-08 | Neutraler Active-Nulltest läuft mit `eq_enabled=false` | DEFEKT (NAK-81 b, `nakama-parameter-v1.json:15`) | M-02 |
+| B-09 | Slot-Kaskaden-Rotbeweis unterscheidet Kaskade nicht von Parallelsumme | DEFEKT (Rotbeweis-Regel des Auftrags `:3`) | M-15 |
+| B-10 | Kein echt paralleler Lauf am neuen Bankpool; B4 fährt Gens Prozessor | DEFEKT (Entwurf §44.5 `:3092-3093`) | §3.5, neue Zeile |
+| B-11 | M-88 (APVTS) in der Pflichtmenge der Etappe 2, obwohl die APVTS erst in Etappe 4 entsteht | DEFEKT (innerer Widerspruch §4.2 gegen §4.1/§4.4) | §4.2 |
+| B-12 | Ticketpfade ohne `schema.rs`, Rust-Codegen-Ziel und `pruefe_v2_schemas.py`; A11 prüft kein Presetschema | DEFEKT (M-102, M-109, M-95 nicht erfüllbar) | §4.5, M-95 |
+
+Lücken, die der Dirigent in derselben Runde entschieden hat (Technik, in den Regeln des Nacharbeitsauftrags): Zonenriegel bewacht Bedienänderungen, nicht Ganzzustands-Wiederherstellungen (B-02); `state_report.dsp` trägt das DTO als die gehashte RFC-8785-Zeichenkette, hashverifizierbar in beiden Lesern (B-07); äquivalenter Stresslauf gilt, wo die Toolchain keinen ThreadSanitizer trägt (B-10). Härtungen: keine.

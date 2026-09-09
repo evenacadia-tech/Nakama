@@ -10,7 +10,6 @@
 //! Nur unter `cfg(test)` gebaut; kein Produktpfad ruft hier etwas.
 
 use super::*;
-use crate::coordinator::intent::SchutzangabeSpiegel;
 
 pub(super) fn fenster(von: i64, bis: i64, epoche: u64) -> Evidenzfenster {
     Evidenzfenster {

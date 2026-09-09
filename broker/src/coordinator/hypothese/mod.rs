@@ -49,162 +49,17 @@
 //! nie gekappt (R6): ihre Obergrenze ist `SESSION_CLIENT_CAP`, also die Zahl
 //! der Quellen, die eine Sitzung ueberhaupt tragen kann.
 
-use super::intent::IntentBestand;
 use super::vergleichbarkeit::{GATE_ABDECKUNG, GATE_MINDEST_FENSTER, GATE_ZEITUEBERDECKUNG};
 
 mod determinismus;
+mod eingang;
+mod vertrag;
 #[cfg(test)]
 mod testhilfe;
-mod vertrag;
 
 pub use determinismus::*;
+pub use eingang::*;
 pub use vertrag::*;
-
-// ═════════════════════════════════════════════════════════════════════════
-// Die Eingangsformen
-// ═════════════════════════════════════════════════════════════════════════
-
-/// Ein einzelnes Evidenzfenster, so wie der Empfaenger es abgelegt hat.
-///
-/// Das ist eine SICHT auf `evidenz::Evidenzstand`, keine zweite Ablage: die
-/// Verdrahtung baut sie unter dem Lock und gibt sie hier hinein, damit dieses
-/// Modul den Sessiongraphen nicht anhaelt.
-#[derive(Debug, Clone, Default, PartialEq)]
-pub struct Evidenzfenster {
-    pub evidence_id: String,
-    /// Die Ankunftsreihenfolge des Brokers — die einzige Ordnung, die ueber
-    /// Quellen hinweg vergleichbar ist (M-49-Muster aus SONDE-013).
-    pub empfangsfolge: u64,
-    pub projekt_von: i64,
-    pub projekt_bis: i64,
-    pub transport_epoch: u64,
-    pub abdeckung: f64,
-    pub p50_db: Vec<f32>,
-    pub p50_gueltig: Vec<bool>,
-    pub onset: f32,
-    pub seitenanteil_db: Option<f64>,
-    pub hat_baender: bool,
-    pub hat_verteilung: bool,
-    pub hat_stereo: bool,
-}
-
-impl Evidenzfenster {
-    /// Der P50 eines Bandes, falls er GEMESSEN ist. Ein Band ohne Bit hat
-    /// keinen Wert — nie 0, nie NaN (SONDE-013 M-07).
-    pub fn band(&self, index: usize) -> Option<f64> {
-        let gueltig = *self.p50_gueltig.get(index)?;
-        if !gueltig {
-            return None;
-        }
-        let wert = *self.p50_db.get(index)? as f64;
-        wert.is_finite().then_some(wert)
-    }
-}
-
-/// Alles, was der Rechner ueber EINE Quelle weiss.
-#[derive(Debug, Clone, Default, PartialEq)]
-pub struct Quellprofil {
-    /// `instance_id` als hex32 — die `candidate_source` des Vertrags.
-    pub quelle_id: String,
-    /// Aufsteigend nach `empfangsfolge`. Die Verdrahtung sortiert; dieses
-    /// Modul verlaesst sich darauf und misst es (M-25, Reduktionsreihenfolge).
-    pub fenster: Vec<Evidenzfenster>,
-    /// Ob das Routing dieser Quelle bekannt ist. `false` heisst „unbekannt"
-    /// und deckelt die Aussage (M-22) — es heisst nie „kein Routing".
-    pub routing_bekannt: bool,
-    /// Der gemeldete Mixerkanal, falls die Quelle einen nennt (NAK-213 R3).
-    ///
-    /// 🔑 Der Vertrag laesst ihn erst ab **1** zu (`eq-ipc-v3.schema.json`
-    /// `minimum: 1`, „Ausserhalb gilt der Hostwert als nicht geliefert").
-    /// `None` heisst deshalb GENAU EINES: die Quelle nennt keinen Messpunkt.
-    /// Es gibt keinen dritten Zustand und keinen Zahlenwert, der „unbekannt"
-    /// bedeutet — `routing_bekannt` bleibt daneben stehen, weil es die
-    /// benannte Frage ist, die M-22 stellt.
-    pub mixerkanal: Option<i64>,
-    /// Die Quelle, in die diese hineinlaeuft, falls bekannt. Sie traegt das
-    /// Parent-Duplikat aus M-22.
-    pub parent: Option<String>,
-    /// Ob fuer diese Quelle ein PRE/POST-Paarurteil MIT Ergebnis vorliegt.
-    ///
-    /// 🔑 **NAK-214 E4 (08.09.2026): diese Marke traegt seit dem Ticket nur
-    /// noch die ORTSANGABE.** Sie setzt `pre_post = "post"` — die Stelle, an
-    /// der gemessen wurde (§8 Teil 1) — und sonst nichts. Eine Quelle misst
-    /// an einem POST-Punkt, auch wenn ihr Paar nur `Probable` erreicht; das
-    /// zu verschweigen waere eine Falschaussage in die Gegenrichtung.
-    pub prepost_paar: bool,
-    /// **NAK-214 R2/R6: traegt das Paar dieser Quelle einen GEMESSENEN
-    /// Wirkungsbeleg?** (`Paarurteil::wirkungsbeleg`, `prepost.rs`.)
-    ///
-    /// Die STAERKE der Aussage haengt an dieser Marke, nicht an
-    /// `prepost_paar`: `claim_class`, die Ursachenklasse
-    /// `EffektkettePrePost` und `next_test` lesen sie. Ein einziges,
-    /// strenger gemachtes Feld haette `pre_post` mitgerissen und damit eine
-    /// Zusage geaendert, die R2 nicht nennt — zwei Felder halten „Begriffe
-    /// nicht vermischen" ein, und der Name sagt jeweils, was er misst.
-    pub prepost_wirkungsbeleg: bool,
-    /// Ob ALLE Belege dieser Quelle zurueckgenommen wurden (M-24).
-    pub zurueckgenommen: bool,
-}
-
-/// Das Fenster der benannten Passage, falls die Sitzung eine fuehrt.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Passagenfenster {
-    pub projekt_von: i64,
-    pub projekt_bis: i64,
-    pub transport_epoch: u64,
-}
-
-/// Der vollstaendige Eingang einer Rechnung.
-#[derive(Debug, Clone, Default)]
-pub struct Aufnahme {
-    /// Der Master — die Quelle, deren Befund erklaert werden soll (§8).
-    ///
-    /// 🔑 **NAK-213 E7/R4:** `None` heisst „die Sitzung hat kein EINDEUTIG
-    /// fuehrendes Main". Bis hierher nahm `aufnahmen_sammeln` bei zwei
-    /// `main`-Clients schlicht den letzten nach `instance_id` — der erste
-    /// verschwand spurlos, und eine Sonde trug einen Befund im Band des
-    /// ANDEREN Masters (Gate-Befund G-D4). Entwurf `:1669` sagt „genau ein
-    /// fuehrendes Main pro aktiver Sitzung"; ohne das rechnet die Kette
-    /// nicht, sondern enthaelt sich MIT GRUND.
-    ///
-    /// ⚠️ Ist er `Some`, ist er ein KLON eines Eintrags aus `mains` — dieselbe
-    /// Wahrheit in einer zweiten Sicht, an EINER Stelle gebildet
-    /// (`aufnahmen_sammeln`). Wer hier liest, liest nie einen Master, der
-    /// nicht auch unter `mains` steht.
-    pub master: Option<Quellprofil>,
-    /// Die Profile ALLER `main`-Clients der Sitzung, aufsteigend nach
-    /// `quelle_id` sortiert und darueber dedupliziert.
-    ///
-    /// Sie traegt die Adresse der Enthaltung ohne Ort: `candidate_source` ist
-    /// die `quelle_id` des ERSTEN — dieselbe stabile Wahl, die
-    /// `fuehrung_neu_bewerten_locked` trifft (`mains.sort(); mains[0]`). Sie
-    /// behauptet KEINE Fuehrung, sie ist die deterministische Adresse der
-    /// Sitzung (M-25).
-    ///
-    /// 🔑 **Nacharbeit 1 (08.09.2026, Erstpruefungsbefund 1): sie traegt die
-    /// PROFILE, nicht nur die IDs.** Bis hierher hiess das Feld
-    /// `Vec<String>`, und `aufnahmen_sammeln` legte ein Main-Profil nur ab,
-    /// wenn es das FUEHRENDE war. Bei `fuehrendes_main = None` verschwanden
-    /// damit saemtliche Main-Belege aus der Aufnahme: `enthaltung_ohne_ort`
-    /// sammelte anschliessend nur ueber Kandidaten und Master und lieferte
-    /// trotz gueltiger Sitzungsbelege `None` — die Sitzung SCHWIEG, genau in
-    /// der Lage, fuer die R4 die Enthaltung erfunden hat. Die Belegsammlung
-    /// aus E7 gilt der SITZUNG; wer in ihr misst, gehoert hinein, unabhaengig
-    /// davon, wer sie fuehrt.
-    pub mains: Vec<Quellprofil>,
-    pub kandidaten: Vec<Quellprofil>,
-    pub passage: Option<Passagenfenster>,
-    pub passage_id: Option<String>,
-    /// Der gespiegelte Intent. `None` heisst „noch keine
-    /// Vollstaendigkeitsmarke" — dann rechnet gar nichts (M-86); die Sperre
-    /// liegt in der Verdrahtung, dieses Modul misst sie mit.
-    pub intent: Option<IntentBestand>,
-    /// Die Kalibrierungsfassung, unter der DIESE Rechnung entsteht.
-    pub metrics_version: u32,
-    /// Die Sitzungsepoche — Teil des Schluessels, aus dem die `finding_id`
-    /// entsteht. Zwei Sitzungen erzeugen nie dieselbe ID.
-    pub session_epoch: String,
-}
 
 // ═════════════════════════════════════════════════════════════════════════
 // Die Ausgangsformen
@@ -2222,6 +2077,7 @@ fn korrelation_gerichtet(a: &[f64], b: &[f64]) -> Option<f64> {
 mod tests {
     use super::testhilfe::*;
     use super::*;
+    use crate::coordinator::intent::IntentBestand;
     use crate::coordinator::intent::SchutzangabeSpiegel;
 
     /// **K-06.** Der Screeningrang misst auf der GRUPPE, nicht auf einem
@@ -2868,18 +2724,6 @@ mod tests {
             unabhaengige_fenster(&acht.iter().collect::<Vec<_>>()),
             GATE_MINDEST_FENSTER
         );
-    }
-
-    /// Ein Band ohne Bit hat KEINEN Wert — nie 0, nie NaN.
-    #[test]
-    fn band_ohne_bit_traegt_keinen_wert() {
-        let mut f = fenster(0, 512, 1);
-        f.p50_gueltig[3] = false;
-        f.p50_db[7] = f32::NAN;
-        assert_eq!(f.band(0), Some(-20.0));
-        assert_eq!(f.band(3), None, "ohne Bit gibt es keinen Wert");
-        assert_eq!(f.band(7), None, "und NaN ist auch keiner");
-        assert_eq!(f.band(BAENDER_FEIN), None, "und ausserhalb erst recht");
     }
 
     /// Die Korrelation ist keine Gefaelligkeit: zwei Konstanten sind kein

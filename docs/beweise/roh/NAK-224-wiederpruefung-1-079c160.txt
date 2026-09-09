@@ -1,0 +1,5 @@
+URTEIL: PASS — beide Befunde geschlossen; im gebundenen Fixdiff kein neuer Bruch festgestellt.
+
+Geprüft: D1 ja (`pruefe_p5_korpus.py:69–72,458–473`), alle 14 Quellen erfasst, Gegenproben „jünger/fehlend“ jeweils Exit 3 mit Pfad und unveränderter Frischegrenze; D2 ja (`lebenslauf.rs:27–28`, `probe.rs:17–18`), beide Importe geschützt und keine weiteren ungeschützten Importe in den angefragten Modulwurzeln gefunden; A28/A29/A30 Exit 0, P5-Referenzhash unverändert, A29-Behauptung messungsgerecht, kein erkennbarer Diff-Verstoß gegen R1–R10/Gate/CLAUDE, HEAD vorher/nachher unverändert `079c1604700ddc6f2c5ba0f01262427d90637524`.
+
+Nicht geprüft: Windows-Warnungsfreiheit und Linux-Kompilation, da beide Cargo-Versuche vor dem Compiler am Sandbox-Schreibschutz von `broker/target/debug/.cargo-lock` scheiterten; vollständiger Kanon und übriger Ticketbereich wurden nicht erneut geprüft.

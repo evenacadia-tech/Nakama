@@ -1,0 +1,13 @@
+URTEIL: NEEDS_WORK — zwei reproduzierte DEFEKTE.
+
+Geprüft: ZIEL-Diff und Schwellen, zwölf Rotbelege lesend, virtuelle Grenzproben, 58/58 reine Selbsttestfälle unter Python 3.14, isolierte Runner-Auswertung (0/4 wortgleich; Fehlercodes 1/2/5/42/124 → ROT), Skill −31 Bytes, leerer Produktdiff sowie zwei bytegleiche Messläufe in 4,77/4,24 Sekunden; HEAD und Arbeitsbaum blieben unverändert.
+
+Nicht geprüft: echte Clippy-, Kanon- und Produktläufe; der vollständige Selbsttest war umgebungsbedingt nicht ausführbar (Python 3.13 startet nicht, Python 3.14 scheitert am gesperrten Temp-Dateisystem).
+
+Full review comments:
+
+- [P2] Erfasse bei const fn den tatsächlichen Helfernamen — C:/Users/phili/Projekte/Nakama/tools/plan/gesundheit.py:532-533
+  DEFEKT: Bei einem unbenutzten `pub const fn helfer()` erfasst `ELEMENT` das Schlüsselwort `fn` als Namen. Jede andere Funktionsdefinition gilt anschließend als Verwendung; der aufruferlose Helfer bleibt ungemeldet. Lesende Reproduktion: `py -3.14 -B -c "import runpy; g=runpy.run_path('tools/plan/gesundheit.py'); print(g['finde_dead_code']([('t.rs',None)], {'t.rs':'#[allow(dead_code)]\npub const fn helfer() {}\nfn main() {}\n'}))"` liefert `[]` statt eines Treffers. Auch der virtuelle Gesamtmesslauf liefert damit 0/OK und Exit 0 statt 4. Das verletzt das Gate-Maß „aufruferlose `#[allow(dead_code)]`-Helfer“ und unterdrückt die vorgesehene Pflegemeldung ([CLAUDE.md:125–128](C:/Users/phili/Projekte/Nakama/CLAUDE.md#L125-L128)). Funktionsqualifizierer müssen vor der Namensauswahl berücksichtigt werden.
+
+- [P2] Verwirf Clippy-Ergebnisse eines fehlgeschlagenen Prozesses — C:/Users/phili/Projekte/Nakama/tools/plan/gesundheit.py:522-526
+  DEFEKT: Bricht Clippy beispielsweise mit Compilerfehler E0308 und Exit 101 ab, steht die Fehlerdiagnose bereits in `fund`; dadurch überspringt `not fund` die Fehlerbehandlung. Die unvollständige Messung erscheint als gültige Warnungszahl. Reproduktion ohne Cargo-Ausführung: `py -3.14 -B -c "import runpy,pathlib,subprocess,shutil,json; g=runpy.run_path('tools/plan/gesundheit.py'); shutil.which=lambda _: 'cargo'; subprocess.run=lambda *a,**k: subprocess.CompletedProcess([],101,json.dumps(dict(reason='compiler-message',message=dict(level='error',code=dict(code='E0308')))),''); print(g['miss_clippy'](pathlib.Path.cwd()))"` liefert `(1, ['?:0:0 E0308'], '')`; der virtuelle Gesamtmesslauf endet damit sogar mit Exit 0. Das verletzt die zugesagte Messung der „cargo clippy-Warnungen“, auf der die Pflegeentscheidung beruht ([CLAUDE.md:125–128](C:/Users/phili/Projekte/Nakama/CLAUDE.md#L125-L128)). Ein Prozessfehler muss unabhängig von vorhandenen Diagnosen als Messfehler weitergegeben werden.

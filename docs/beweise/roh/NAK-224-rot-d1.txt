@@ -143,3 +143,13 @@ tools/eq-copilot/pruefe_p5_korpus.py:319:    in `hypothese/klassenwahl.rs`:112�
 (die dritte Stelle, der lebende Manifestkopf docs/beweise/NAK-224.md, folgt im Manifest-Commit)
 
 === ENDE ROTBEWEIS D1 ===
+
+--- Nachtrag: die ZWEITE Wache aus D1 (Modulverzeichnis) an ihrer Zeile gemessen ---
+Das Manifest behauptet in 6.1: fehlt das Modulverzeichnis oder traegt es keine
+Rust-Quelle, faellt das Bein schon in der Voraussetzung. Beleg:
+$ py -3.13 -B -c "... HYPOTHESE_MODUL bzw. QUELLEN verbiegen, _voraussetzung() rufen"
+rglob auf fehlendem Verzeichnis wirft nicht, sondern liefert leer: []
+(a) Verzeichnis fehlt  : ['Rechenmodul fehlt: broker\\src\\coordinator\\gibtsnicht — ohne es haelt die Frischepruefung den Rechenweg nicht mehr']
+(b) keine Rust-Quelle  : ['Rechenmodul ohne Rust-Quelle: broker\\src\\coordinator\\hypothese — eine leere Quellliste prueft nichts']
+BEIDE WACHEN GREIFEN — die Luecke entsteht nicht eine Ebene hoeher neu.
+EXIT=0

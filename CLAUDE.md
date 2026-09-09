@@ -288,7 +288,12 @@ State-Migrationsstand und den letzten Installationsbeweis prüfen.
 ## Maschinen-Landminen
 
 - PowerShell `Start-Process -ArgumentList` quotiert Argumente mit Leerzeichen
-  nicht automatisch.
+  nicht automatisch. Doppelte Anführungszeichen im Befehlstext eines
+  `-Command`-Arguments schluckt die Windows-Argumentzerlegung:
+  `Add-Content $log ("EXIT=" + $LASTEXITCODE)` wird zum Aufruf eines
+  Kommandos `EXIT=`, der Rest läuft, die Marke fehlt still und ein Monitor
+  auf `EXIT=` wartet ewig (NAK-214-Abschlusskanon, 08.09.2026). Zeichenketten
+  im Befehlstext einfach quotieren, wie im Dirigenten-Skill §3.5.
 - Bash-Heredocs können Backslashes in Windows-Pfaden verändern; Pipes können
   Exitcodes verdecken.
 - Bytegleich geprüfte Fixtures und Patches brauchen passende

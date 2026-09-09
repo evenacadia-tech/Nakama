@@ -8,6 +8,7 @@
 //! Nur unter `cfg(test)` gebaut.
 
 use crate::protokoll::{AudioAngabe, Hello, MessStand, ProjektFenster, SensorAngabe};
+use crate::register::Register;
 
 pub(super) fn hello(id: &str, role: &str, label: &str, pair: Option<&str>, pid: u32) -> Hello {
     Hello {
@@ -46,4 +47,15 @@ pub(super) fn fenster(von: i64, bis: i64, spruenge: u32) -> ProjektFenster {
         bis_samples: bis,
         spruenge,
     }
+}
+
+pub(super) fn paar_basis(r: &mut Register) {
+    r.sensor_verbinden(
+        &hello("s-pre", "pre", "PIANO VORHER", Some("paar-1"), 1),
+        "n-p",
+    );
+    r.sensor_verbinden(
+        &hello("s-post", "post", "PIANO NACHHER", Some("paar-1"), 1),
+        "n-q",
+    );
 }

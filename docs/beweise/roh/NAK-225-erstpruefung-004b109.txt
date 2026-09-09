@@ -1,0 +1,5 @@
+URTEIL: PASS — kein DEFEKT.
+
+Geprüft: gebundener Diff, Funktionsgleichheit, Bindungen, Deklarationsreihenfolge, Audio/State, CMake-Zielmengen und Testwachen; A5-Metrikriegel 6/6, Gesundheit Exit 0, A14-Artefaktprüfung 24/24 und 25 Shot-Hashes unverändert; HEAD vor/nach identisch mit 004b10997d9eaef716aed611838ed8830301fc84.
+
+Nicht erneut ausgeführt: Builds, vollständiger Kanon, C++-Tests, Rendering und vollständige Selbsttests gemäß Schreib-/Bauverbot; Kanon 62/62 und Selbsttest 121/121 nur aus Rohbelegen gelesen, lesende Python-Prüfungen mit 3.14.2 statt nicht startbarem 3.13, A14 ohne Neubau korrekt Exit 3 ohne Frischeurteil.

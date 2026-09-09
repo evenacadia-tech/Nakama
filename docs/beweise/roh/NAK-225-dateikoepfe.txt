@@ -1,0 +1,41 @@
+R7 ok     eq-copilot/plugin/src/PluginProcessor.cpp                  993 Zeilen | HIER  9 | VERWEIS  4 | LEER 0
+            VERWEIS: createEditor                           -> Hostbruecke.cpp
+            VERWEIS: isBusesLayoutSupported                 -> Hostbruecke.cpp
+            VERWEIS: meldeHostDirty                         -> Hostbruecke.cpp
+            VERWEIS: setzeEditorOffen                       -> Hostbruecke.cpp
+R7 ok     eq-copilot/plugin/src/prozessor/Intern.h                    49 Zeilen | HIER  1 | VERWEIS  8 | LEER 0
+            VERWEIS: alsHex32                               -> Ipc.cpp
+            VERWEIS: brokerServerErwartung                  -> PluginProcessor.cpp
+            VERWEIS: brokerStartMutexName                   -> PluginProcessor.cpp
+            VERWEIS: fingerprintJson                        -> Analyse.cpp
+            VERWEIS: jsonText                               -> Analyse.cpp
+            VERWEIS: projektAbstandGroesserAls64            -> PluginProcessor.cpp
+            VERWEIS: projektEnde                            -> PluginProcessor.cpp
+            VERWEIS: wireZahl                               -> Ipc.cpp
+R7 ok     eq-copilot/plugin/src/prozessor/Hostbruecke.cpp            187 Zeilen | HIER  5 | VERWEIS  4 | LEER 0
+            VERWEIS: getStateInformation                    -> State.cpp
+            VERWEIS: nakamaBlockEmpfangen                   -> PluginProcessor.cpp
+            VERWEIS: processBlock                           -> PluginProcessor.cpp
+            VERWEIS: setStateInformation                    -> PluginProcessor.cpp
+R7 ok     eq-copilot/plugin/src/prozessor/State.cpp                  586 Zeilen | HIER 34 | VERWEIS  0 | LEER 0
+R7 ok     eq-copilot/plugin/src/prozessor/Ipc.cpp                   1386 Zeilen | HIER 25 | VERWEIS  0 | LEER 0
+R7 ok     eq-copilot/plugin/src/prozessor/Analyse.cpp               1449 Zeilen | HIER 36 | VERWEIS  0 | LEER 0
+R7 ok     eq-copilot/plugin/core/analysis/FeatureEngine.h           1172 Zeilen | HIER  2 | VERWEIS  0 | LEER 0
+R7 ok     eq-copilot/plugin/core/analysis/featureengine/Vertrag.h    894 Zeilen | HIER  5 | VERWEIS  0 | LEER 0
+R7 ok     eq-copilot/plugin/core/analysis/featureengine/Zeit.h       601 Zeilen | HIER 14 | VERWEIS  0 | LEER 0
+R7 ok     eq-copilot/plugin/core/analysis/featureengine/Spektrum.h   650 Zeilen | HIER  7 | VERWEIS  0 | LEER 0
+R7 ok     eq-copilot/plugin/core/analysis/featureengine/Stereo.h     318 Zeilen | HIER  4 | VERWEIS  0 | LEER 0
+R7 ok     eq-copilot/plugin/core/analysis/featureengine/Fingerprint.h   199 Zeilen | HIER  3 | VERWEIS  1 | LEER 0
+            VERWEIS: fingerprintAehnlichkeit                -> Vertrag.h
+R7 ok     eq-copilot/plugin/core/analysis/featureengine/Lautheit.h   239 Zeilen | HIER  9 | VERWEIS  0 | LEER 0
+R7 ok     eq-copilot/plugin/core/analysis/featureengine/Frame.h      668 Zeilen | HIER 10 | VERWEIS  0 | LEER 0
+R7 ok     eq-copilot/plugin/core/ipc/ControlClient.cpp               247 Zeilen | HIER  7 | VERWEIS  0 | LEER 0
+R7 ok     eq-copilot/plugin/core/ipc/controlclient/Intern.h          420 Zeilen | HIER  7 | VERWEIS  3 | LEER 0
+            VERWEIS: heartbeatAlsJson                       -> Vertrag.cpp
+            VERWEIS: helloAlsJson                           -> Vertrag.cpp
+            VERWEIS: welcomeHaeltVertrag                    -> Vertrag.cpp
+R7 ok     eq-copilot/plugin/core/ipc/controlclient/Laufzeit.h        225 Zeilen | HIER  0 | VERWEIS  0 | LEER 0
+R7 ok     eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp       312 Zeilen | HIER 13 | VERWEIS  0 | LEER 0
+R7 ok     eq-copilot/plugin/core/ipc/controlclient/Nachrichten.cpp   452 Zeilen | HIER 12 | VERWEIS  0 | LEER 0
+R7 ok     eq-copilot/plugin/core/ipc/controlclient/Verbindung.cpp   1080 Zeilen | HIER 17 | VERWEIS  0 | LEER 0
+R7: 20 Dateien, 0 Bezeichner ohne Entsprechung

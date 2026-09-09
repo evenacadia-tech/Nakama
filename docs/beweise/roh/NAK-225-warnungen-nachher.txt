@@ -1,0 +1,94 @@
+# MSVC-Warnungen am Endstand (Riegel R10) und der Vergleich mit dem Basisstand
+#
+# Gemessen gleich: alle geteilten Quellen angefasst (touch), dann
+# cmake --build eq-copilot/build --config Release --target <40 Kanonziele>.
+# Exit 0 in beiden Laeufen.
+#
+# ROHZAHL   vorher 72, nachher 124.
+# PAARE     (Ziel, Datei, Warncode): vorher 30, nachher 30.
+# WARNCODES vorher ['C4244', 'C4456', 'C4457', 'C4458'], nachher ['C4244', 'C4456', 'C4457', 'C4458'] - dieselbe Menge.
+#
+# WORAN DIE ROHZAHL LIEGT: es gibt in beiden Laeufen GENAU EINE eigene
+# Warnstelle, und es ist dieselbe Codezeile:
+#
+#   vorher   core/analysis/FeatureEngine.h(2914,30): C4458 Deklaration von "sr"
+#            blendet Klassenmember aus
+#   nachher  core/analysis/featureengine/Stereo.h(70,26): dieselbe Meldung,
+#            dieselbe Zeile in `stereoSchritt`, nur in ihrem neuen Teilkopf
+#
+# MSVC meldet eine Kopfwarnung EINMAL JE UEBERSETZUNGSEINHEIT, die den Kopf
+# einbindet. Der Prozessor ist seit S25d fuenf Uebersetzungseinheiten statt
+# einer; damit steigt die Rohzahl je Ziel von 3 auf 7, ohne dass eine neue
+# Warnung entstanden waere. Die drei Warnungen ausserhalb der Engine
+# (C4456 IpcTestMain x2, C4457 MarkierungTestMain x1, C4244
+# Sonde012HostChannelContextTest x10) sind in beiden Laeufen identisch.
+#
+# Spalten: Anzahl | Ziel | Quelldatei | Warncode.
+
+## VORHER
+
+3	EqCopAnalysisGoldenTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+3	EqCopIdentityTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+1	EqCopIpcTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+2	EqCopIpcTest	eq-copilot/plugin/tests/IpcTestMain.cpp	C4456
+3	EqCopLebenslaufTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+3	EqCopMarkierungTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+1	EqCopMarkierungTest	eq-copilot/plugin/tests/MarkierungTestMain.cpp	C4457
+3	EqCopNullTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+2	EqCopProbeeqNullTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+3	EqCopQueueStressTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+1	EqCopSchemaTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+2	EqCopSessionSoak	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+3	EqCopShot	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+2	EqCopSonde012HostChannelContextTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+10	EqCopSonde012HostChannelContextTest	eq-copilot/plugin/tests/Sonde012HostChannelContextTest.cpp	C4244
+2	EqCopSonde012LoudnessSourceTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+3	EqCopSonde012ProjectReloadTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+1	EqCopSonde012SourcesLatencyTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+1	EqCopSonde013DynamicsTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+1	EqCopSonde013EventWireTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+1	EqCopSonde013FingerprintGoldenTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+3	EqCopSonde013PassageStateTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+1	EqCopSonde013PrePostGoldenTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+1	EqCopSonde013StereoGoldenTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+3	EqCopSonde014AssistentTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+3	EqCopSonde014IntentTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+3	EqCopStateMigrationTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+3	EqCopilot	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+2	NakamaKern	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+2	NakamaProbeeq	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+
+## NACHHER
+
+7	EqCopAnalysisGoldenTest	eq-copilot/plugin/core/analysis/featureengine/Stereo.h	C4458
+7	EqCopIdentityTest	eq-copilot/plugin/core/analysis/featureengine/Stereo.h	C4458
+1	EqCopIpcTest	eq-copilot/plugin/core/analysis/featureengine/Stereo.h	C4458
+2	EqCopIpcTest	eq-copilot/plugin/tests/IpcTestMain.cpp	C4456
+7	EqCopLebenslaufTest	eq-copilot/plugin/core/analysis/featureengine/Stereo.h	C4458
+7	EqCopMarkierungTest	eq-copilot/plugin/core/analysis/featureengine/Stereo.h	C4458
+1	EqCopMarkierungTest	eq-copilot/plugin/tests/MarkierungTestMain.cpp	C4457
+7	EqCopNullTest	eq-copilot/plugin/core/analysis/featureengine/Stereo.h	C4458
+2	EqCopProbeeqNullTest	eq-copilot/plugin/core/analysis/featureengine/Stereo.h	C4458
+7	EqCopQueueStressTest	eq-copilot/plugin/core/analysis/featureengine/Stereo.h	C4458
+1	EqCopSchemaTest	eq-copilot/plugin/core/analysis/featureengine/Stereo.h	C4458
+2	EqCopSessionSoak	eq-copilot/plugin/core/analysis/featureengine/Stereo.h	C4458
+7	EqCopShot	eq-copilot/plugin/core/analysis/featureengine/Stereo.h	C4458
+2	EqCopSonde012HostChannelContextTest	eq-copilot/plugin/core/analysis/featureengine/Stereo.h	C4458
+10	EqCopSonde012HostChannelContextTest	eq-copilot/plugin/tests/Sonde012HostChannelContextTest.cpp	C4244
+2	EqCopSonde012LoudnessSourceTest	eq-copilot/plugin/core/analysis/featureengine/Stereo.h	C4458
+7	EqCopSonde012ProjectReloadTest	eq-copilot/plugin/core/analysis/featureengine/Stereo.h	C4458
+1	EqCopSonde012SourcesLatencyTest	eq-copilot/plugin/core/analysis/featureengine/Stereo.h	C4458
+1	EqCopSonde013DynamicsTest	eq-copilot/plugin/core/analysis/featureengine/Stereo.h	C4458
+1	EqCopSonde013EventWireTest	eq-copilot/plugin/core/analysis/featureengine/Stereo.h	C4458
+1	EqCopSonde013FingerprintGoldenTest	eq-copilot/plugin/core/analysis/featureengine/Stereo.h	C4458
+7	EqCopSonde013PassageStateTest	eq-copilot/plugin/core/analysis/featureengine/Stereo.h	C4458
+1	EqCopSonde013PrePostGoldenTest	eq-copilot/plugin/core/analysis/featureengine/Stereo.h	C4458
+1	EqCopSonde013StereoGoldenTest	eq-copilot/plugin/core/analysis/featureengine/Stereo.h	C4458
+7	EqCopSonde014AssistentTest	eq-copilot/plugin/core/analysis/featureengine/Stereo.h	C4458
+7	EqCopSonde014IntentTest	eq-copilot/plugin/core/analysis/featureengine/Stereo.h	C4458
+7	EqCopStateMigrationTest	eq-copilot/plugin/core/analysis/featureengine/Stereo.h	C4458
+7	EqCopilot	eq-copilot/plugin/core/analysis/featureengine/Stereo.h	C4458
+2	NakamaKern	eq-copilot/plugin/core/analysis/featureengine/Stereo.h	C4458
+2	NakamaProbeeq	eq-copilot/plugin/core/analysis/featureengine/Stereo.h	C4458
+
+SUMME vorher = 72 | SUMME nachher = 124

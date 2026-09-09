@@ -1,0 +1,18 @@
+# Riegel R5: git diff --stat <Basis>..HEAD je verbotenem Bereich
+# Basis 0ca392b52b484bc3d7463586719d111c3f8bcda9, HEAD b64337053e6dfff2ee8ff2154d94c0b688782fa3
+
+eq-copilot/plugin/tests: 1 geaenderte Datei(en)
+     eq-copilot/plugin/tests/IpcTestMain.cpp | 10 ++++++++--
+     1 file changed, 8 insertions(+), 2 deletions(-)
+eq-copilot/identity: 0 geaenderte Datei(en)
+eq-copilot/schemas: 0 geaenderte Datei(en)
+eq-copilot/fixtures: 0 geaenderte Datei(en)
+eq-copilot/plugin/hostbridge: 0 geaenderte Datei(en)
+third_party: 0 geaenderte Datei(en)
+broker: 0 geaenderte Datei(en)
+docs/plan: 0 geaenderte Datei(en)
+docs/offene-punkte.md: 0 geaenderte Datei(en)
+docs/PLAN-STAND.md: 0 geaenderte Datei(en)
+CLAUDE.md: 0 geaenderte Datei(en)
+design: 0 geaenderte Datei(en)
+.claude: 0 geaenderte Datei(en)

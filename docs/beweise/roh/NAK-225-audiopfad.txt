@@ -1,0 +1,12 @@
+R8 ok: projektEnde                          7 Zeilen -> PluginProcessor.cpp:54
+R8 ok: projektAbstandGroesserAls64          9 Zeilen -> PluginProcessor.cpp:62
+R8 ok: nachlaufFristSetzen                 41 Zeilen -> PluginProcessor.cpp:371
+R8 ok: nachlaufAbgelaufen                  16 Zeilen -> PluginProcessor.cpp:413
+R8 ok: mitschnittZustellen                 17 Zeilen -> PluginProcessor.cpp:430
+R8 ok: mitschnittVerwerfen                 14 Zeilen -> PluginProcessor.cpp:448
+R8 ok: prepareToPlay                      114 Zeilen -> prozessor/Hostbruecke.cpp:34
+R8 ok: isBusesLayoutSupported              10 Zeilen -> prozessor/Hostbruecke.cpp:149
+R8 ok: processBlock                       406 Zeilen -> PluginProcessor.cpp:463
+R8 ok: nakamaBlockEmpfangen                59 Zeilen -> PluginProcessor.cpp:870
+R8 ok: lebenszeichen                       62 Zeilen -> PluginProcessor.cpp:930
+R8: 11 Funktionen, 0 Abweichungen

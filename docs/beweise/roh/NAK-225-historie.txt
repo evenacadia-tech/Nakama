@@ -1,0 +1,35 @@
+# Riegel R6: Historie
+
+## Die drei Wurzeldateien behalten Namen und Pfad (git log --follow trivial)
+### eq-copilot/plugin/src/PluginProcessor.cpp
+  Commits gesamt (--follow): 45
+  davon vor dem Basis-SHA:   41
+  Umbenennungen im Ticket:   0
+### eq-copilot/plugin/core/analysis/FeatureEngine.h
+  Commits gesamt (--follow): 29
+  davon vor dem Basis-SHA:   22
+  Umbenennungen im Ticket:   0
+### eq-copilot/plugin/core/ipc/ControlClient.cpp
+  Commits gesamt (--follow): 34
+  davon vor dem Basis-SHA:   31
+  Umbenennungen im Ticket:   0
+
+## Ein eigener Commit je herausgeloestem Teil
+b6433705 NAK-225 (S25d) Schritt g: gesundheit.py nachgezogen, A32-Behauptung dazu
+3dba7f38 NAK-225 (S25d) Schritt f: zwei Kommentare in den Ticketpfaden wahr gemacht
+2faf21a5 NAK-225 (S25d) Schritt e3: Verbindung aus ControlClient.cpp herausgeloest
+c447fc4e NAK-225 (S25d) Schritt e2: Nachrichten aus ControlClient.cpp herausgeloest
+053ff7f8 NAK-225 (S25d) Schritt e1: Vertrag und Fehlercodes aus ControlClient.cpp herausgeloest
+3683d716 NAK-225 (S25d) Schritt d6: Merkmalsfamilie Frame aus FeatureEngine.h herausgeloest
+94f46e8f NAK-225 (S25d) Schritt d5: Merkmalsfamilie Lautheit aus FeatureEngine.h herausgeloest
+ccd0eee9 NAK-225 (S25d) Schritt d4: Merkmalsfamilie Fingerprint aus FeatureEngine.h herausgeloest
+1bc89a7c NAK-225 (S25d) Schritt d3: Merkmalsfamilie Stereo aus FeatureEngine.h herausgeloest
+08bb29b2 NAK-225 (S25d) Schritt d2: Merkmalsfamilie Spektrum aus FeatureEngine.h herausgeloest
+1412ae60 NAK-225 (S25d) Schritt d1: Merkmalsfamilie Zeit aus FeatureEngine.h herausgeloest
+baa63898 NAK-225 (S25d) Schritt d0: Vertrag aus FeatureEngine.h herausgeloest
+84226d46 NAK-225 (S25d) Schritt c4: Analyse-Anstoss aus PluginProcessor.cpp herausgeloest
+7e2780aa NAK-225 (S25d) Schritt c3: IPC-Anbindung aus PluginProcessor.cpp herausgeloest
+048dae92 NAK-225 (S25d) Schritt c2: State aus PluginProcessor.cpp herausgeloest
+c59a9187 NAK-225 (S25d) Schritt c1: Hostbruecke aus PluginProcessor.cpp herausgeloest
+ac76a8fe NAK-225 (S25d) Schritt b: eine Quellliste NAKAMA_PROZESSOR_QUELLEN statt 14 Literale
+9684760b NAK-225 (S25d) Schritt a: Iststand gemessen, Schnittplan geschrieben

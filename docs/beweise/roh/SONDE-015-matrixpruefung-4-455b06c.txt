@@ -1,0 +1,13 @@
+URTEIL: NEEDS_WORK — D-1: nein, die Fensterzusage bleibt widersprüchlich; D-2: ja, M-44/B7 verlangt „Pool belegt → busy_retry → Audio-ACK gibt eine Bank frei → dieselbe ID erneut → genau eine neue Revision“.
+
+Geprüft: ausschließlich der gebundene Fixdiff und seine betroffenen Zusagen; M-123/B7 spezifiziert T → U → 31 Abweisungen → Wiederholung mit Revision und Hash von T; die zurückgenommene MN2-Speicherregel besteht in den verlangten Stellen nicht mehr als geltende Zusage und ist in §5.17 ausdrücklich zurückgenommen; §3.15 stimmt mit 124 eindeutigen IDs und den Belegklassen überein.
+
+Nicht geprüft: Produktlaufzeit, Builds, Testausführung und übriger Matrixbereich als eigenständiger Prüfgegenstand; keine Schreiboperationen, Produktprozesse oder Python-Interpreter gestartet; HEAD vorher/nachher identisch bei bdc89d04ced08bc112ca3f0648878642dce35c4f, vorhandene .claude/settings.local.json unangetastet.
+
+Full review comments:
+
+- [P2] Berücksichtige den inklusiven Fensterrand bei der Kapazität — C:/Users/phili/Projekte/Nakama/docs/beweise/SONDE-015.md:1149-1149
+  DEFEKT M-123/§5.11.4: Nach 33 erfolgreichen Transaktionen liegen die Revisionen 1 bis 33 jeweils höchstens 32 Revisionen hinter der aktuellen Revision 33; das zugesagte Fenster benötigt deshalb 33 Einträge einschließlich des aktuellen Ergebnisses. „Nie mehr als 32 Einträge“ ist damit unvereinbar. Wird dieser Höchstwert eingehalten, erhält die Wiederholung der ersten Transaktion bereits Konflikt, obwohl ihr Ergebnis laut Fensterregel noch vorzuhalten ist. Die widersprüchlichen Aussagen werden zwar wörtlich aus der [D-Regel 1](roh/SONDE-015-matrix-nacharbeit-3-auftrag.txt#L14) übernommen, ergeben aber weiterhin keine ausführbare Zusage. Kapazität und inklusive Vorhaltegarantie müssen übereinstimmen; B7 sollte diesen Grenzfall zusätzlich zum Abweisungs-Mischfall prüfen.
+
+- [P2] Beachte die Basisrevision beim Retry nach einer Zonenänderung — C:/Users/phili/Projekte/Nakama/docs/beweise/SONDE-015.md:1150-1150
+  DEFEKT M-124/§5.11.4: Wird T mit `base_revision=r` wegen User-Schutz abgewiesen und anschließend die Zone gelöst, erzeugt das gemäß M-71 eine Revision `r+1`. Die unveränderte Wiederholung von T passiert nun den Zonenriegel, muss aber gemäß M-76/§5.11.4 mit Konflikt enden. Der neue Rotbeweis „eine Wiederholung nach behobenem Zonenkonflikt wird weiter abgewiesen“ würde somit korrektes Verhalten als Fehler werten. Die [D-Regel 2](roh/SONDE-015-matrix-nacharbeit-3-auftrag.txt#L15) verlangt ausdrücklich die volle Prüfung gegen den aktuellen Zustand, nicht garantierten Erfolg. Für den erfolgreichen Zonen-Retry muss eine aktualisierte `base_revision` vorausgesetzt werden; andernfalls bleibt Konflikt das erwartete Ergebnis.

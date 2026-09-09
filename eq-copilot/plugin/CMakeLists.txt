@@ -112,6 +112,7 @@ set(NAKAMA_PROZESSOR_QUELLEN
     src/PluginProcessor.cpp
     src/prozessor/Hostbruecke.cpp
     src/prozessor/State.cpp
+    src/prozessor/Ipc.cpp
 )
 
 juce_add_plugin(EqCopilot

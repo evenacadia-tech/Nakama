@@ -1,0 +1,912 @@
+warning: method `snapshot` is never used
+   --> tests\sonde014_gegenbeispiele.rs:409:8
+    |
+225 | impl Buehne {
+    | ----------- method in this implementation
+...
+409 |     fn snapshot(&self) -> Value {
+    |        ^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (test "sonde014_gegenbeispiele") generated 1 warning
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:2908:9
+     |
+2908 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+     |
+     = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:3893:9
+     |
+3893 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:3940:9
+     |
+3940 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: field `clock` is never read
+   --> tests\sonde013_verdrahtung.rs:280:5
+    |
+277 | struct HarnischMitStore {
+    |        ---------------- field in this struct
+...
+280 |     clock: Arc<ManualClock>,
+    |     ^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `sonde_mit_evidenz` is never used
+    --> tests\sonde013_verdrahtung.rs:1907:4
+     |
+1907 | fn sonde_mit_evidenz(h: &HarnischMitStore, anzahl: usize) -> HelloControl {
+     |    ^^^^^^^^^^^^^^^^^
+
+warning: `eqcop-broker` (test "sonde013_verdrahtung") generated 5 warnings (run `cargo fix --test "sonde013_verdrahtung" -p eqcop-broker` to apply 3 suggestions)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.10s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+aggregat::tests::alte_temp_restdatei_blockiert_snapshot_nicht: test
+aggregat::tests::filter_trennt_prozesse_und_v1_bekommt_warnung: test
+aggregat::tests::gleicher_zeitstempel_ueberschreibt_keinen_snapshot: test
+aggregat::tests::parallele_snapshots_gleicher_millisekunde_bleiben_alle_erhalten: test
+aggregat::tests::profilfilter_laesst_fremde_sensoren_nie_still_hinein: test
+aggregat::tests::schnittfenster_und_paare_im_dokument: test
+aggregat::tests::schreiben_erzeugt_haltbare_datei: test
+bindung::tests::beschaedigte_datei_ist_sichtbarer_fehler: test
+bindung::tests::fremde_temp_restdatei_wird_weder_benutzt_noch_ueberschrieben: test
+bindung::tests::parallele_schreiber_hinterlassen_genau_einen_intakten_stand: test
+bindung::tests::runde_laden_schreiben_laden: test
+bindung::tests::wiederholtes_schreiben_ersetzt_den_vollstaendigen_stand: test
+coordinator::befehl::tests::ohne_sitzungseintrag_wird_das_urteil_abgewiesen: test
+coordinator::hypothese::tests::alignment_misst_paarweise_ueberlappung: test
+coordinator::hypothese::tests::band_ohne_bit_traegt_keinen_wert: test
+coordinator::hypothese::tests::bandraender_fallen_von_beiden_seiten: test
+coordinator::hypothese::tests::belegpraedikate_lesen_vorzeichen: test
+coordinator::hypothese::tests::bootstrap_einseitig_trennt_die_richtung: test
+coordinator::hypothese::tests::einzelueberlebender_neben_passagenausschluss: test
+coordinator::hypothese::tests::finding_id_ist_deterministisch_und_trennt: test
+coordinator::hypothese::tests::gate_faellt_in_der_zugesagten_reihenfolge: test
+coordinator::hypothese::tests::gemessene_null_trennt_vom_nicht_gemessenen: test
+coordinator::hypothese::tests::geschlossene_mengen_sind_rund: test
+coordinator::hypothese::tests::getrennt_verlangt_rang_und_zusammenhang: test
+coordinator::hypothese::tests::korrelation_gerichtet_trennt_gemessene_null_von_nicht_messbar: test
+coordinator::hypothese::tests::korrelation_ist_streng: test
+coordinator::hypothese::tests::messgruende_sind_genau_die_fuenf_aus_r2: test
+coordinator::hypothese::tests::ohne_vollstaendigkeitsmarke_rechnet_das_modul_nicht: test
+coordinator::hypothese::tests::passagengates_trennen_verschoben_anders_und_zu_kurz: test
+coordinator::hypothese::tests::passagenmaterial_zaehlt_nur_ganz_innenliegende_fenster: test
+coordinator::hypothese::tests::quantisierung_klemmt_rastet_und_ist_nan_ehrlich: test
+coordinator::hypothese::tests::rang_ist_das_quantisierte_mittel_der_sechs: test
+coordinator::hypothese::tests::screeningrang_misst_auf_der_gruppe: test
+coordinator::hypothese::tests::screeningrang_traegt_die_koinzidenz: test
+coordinator::hypothese::tests::sechs_teile_sind_sechs_und_benannt: test
+coordinator::hypothese::tests::spanne_saettigt_an_den_raendern: test
+coordinator::hypothese::tests::stufe_b_laeuft_hoechstens_fuenfmal: test
+coordinator::hypothese::tests::unabhaengige_fenster_verdichten_wiederholungen: test
+coordinator::intent::tests::geschlossene_mengen_des_lesers_decken_sich_mit_dem_vertrag: test
+coordinator::intent::tests::zyklenriegel_trennt_kette_runde_und_gleichrangigkeit: test
+coordinator::maskierung::tests::bandpegel_summiert_leistung_statt_dezibel_zu_mitteln: test
+coordinator::maskierung::tests::der_wert_traegt_keine_zeichenanweisung: test
+coordinator::maskierung::tests::herabgesetzt_misst_die_luecke_und_nicht_den_seek: test
+coordinator::maskierung::tests::ohne_fenster_gibt_es_kein_objekt: test
+coordinator::maskierung::tests::ohne_messung_null_mit_gueltig_falsch: test
+coordinator::maskierung::tests::wert_ist_die_differenz_und_benennt_den_bereich: test
+coordinator::proposal_verdrahtung::tests::paare_bleiben_bei_ihrem_befund: test
+coordinator::proposal_verdrahtung::tests::riegel_trifft_nur_den_unvollstaendigen: test
+coordinator::schema::fassungsleiter_tests::fassung_1_und_0_erben_den_rueckbau_der_fassung_3: test
+coordinator::schema::fassungsleiter_tests::fassung_2_liste_deckt_sich_mit_dem_register: test
+coordinator::schema::fassungsleiter_tests::fassung_3_kennt_die_neuen_gruende_nicht: test
+coordinator::schema::fassungsleiter_tests::fassung_3_liste_deckt_sich_mit_dem_register: test
+coordinator::schema::fassungsleiter_tests::fassung_4_liste_deckt_sich_mit_dem_register: test
+coordinator::schema::fassungsleiter_tests::geschlossene_mengen_der_fassung_3_stehen_je_einmal_im_vertrag: test
+coordinator::schema::fassungsleiter_tests::minor_0_erbt_den_rueckbau_der_fassung_1: test
+coordinator::schema::fassungsleiter_tests::minor_1_leser_lehnt_die_fassung_2_ab: test
+coordinator::schema::fassungsleiter_tests::minor_2_leser_lehnt_die_fassung_3_ab: test
+coordinator::schema::fassungsleiter_tests::unbekannte_fassung_hat_keinen_leser: test
+coordinator::tests::heartbeat_ack_meldet_alias_quarantaene_fuer_beide_links: test
+coordinator::tests::hoermarkierung_tail_sperrt_bis_ende: test
+coordinator::tests::hoermarkierung_v2_v3_gleicher_zustand: test
+coordinator::tests::hoermarkierung_vor_evidence_dispatch: test
+coordinator::tests::instance_alias_gleiche_id_in_verschiedenen_sitzungsadressraeumen_kollidiert_nicht: test
+coordinator::tests::intervention_control_disconnect_setzt_sticky_unknown: test
+coordinator::tests::intervention_falsche_end_id_bleibt_gesperrt: test
+coordinator::tests::intervention_neutral_resync_entsperrt: test
+coordinator::tests::intervention_overflow_setzt_sticky_unknown: test
+coordinator::tests::intervention_sequenzluecke_setzt_sticky_unknown: test
+coordinator::tests::intervention_ueberlappung_bleibt_bis_alle_end: test
+coordinator::tests::intervention_unbekanntes_erstes_end_setzt_sticky_unknown: test
+coordinator::tests::p2_reject_katalog_stimmt_mit_dem_strikten_wire_schema: test
+coordinator::tests::subscription_cleanup_vor_weiterem_push: test
+coordinator::zustand::h21_tests::konfliktriegel_greift_auch_bei_anderer_sid_schreibweise: test
+dto::tests::as_f64_liefert_fuer_jede_number_einen_wert: test
+dto::tests::bestand_kommt_aus_dem_vertrag_und_hat_109_eintraege: test
+dto::tests::doppelter_schluessel_wird_nicht_still_ueberschrieben: test
+dto::tests::geschachtelter_doppelter_schluessel_faellt_ebenfalls: test
+framing::tests::abbruch_mitten_im_frame: test
+framing::tests::hin_und_zurueck: test
+framing::tests::kein_utf8_wird_verworfen: test
+framing::tests::laengengrenze_beidseitig: test
+instance_alias::tests::instance_address_alias_vectors: test
+instance_alias::tests::instance_address_empty_uses_fresh_uuid: test
+instance_alias::tests::instance_alias_collision_abgeleitet_dann_native_quarantaenisiert_beide: test
+instance_alias::tests::instance_alias_collision_native_dann_abgeleitet_quarantaenisiert_beide: test
+instance_alias::tests::instance_alias_collision_zwei_ableitungen_quarantaenisiert_beide: test
+instance_alias::tests::instance_alias_target_recomputed_and_matched: test
+instance_alias::tests::instance_alias_unknown_fail_closed: test
+protokoll::tests::fehlende_hoermarkierung_bleibt_fuer_alte_v2_sender_false: test
+protokoll::tests::feindliches_ltas_array_faellt_am_guard: test
+protokoll::tests::gemeinsame_floatbreiten_akzeptieren_maximum_aber_keinen_overflow: test
+protokoll::tests::gemeinsame_integerbreiten_urteilen_an_den_wire_kanten_exakt: test
+protokoll::tests::heartbeat_session_token_hat_dieselbe_codepunktgrenze_wie_das_schema: test
+protokoll::tests::heartbeat_v1_ohne_measurement_parst_weiter: test
+protokoll::tests::heartbeat_v2_mit_messstand_und_fenster: test
+protokoll::tests::hello_enum_und_audiofelder_werden_semantisch_begrenzt: test
+protokoll::tests::hello_textfelder_haben_codepunktgenaue_harte_grenzen: test
+protokoll::tests::messstand_guard_prueft_minima_endlichkeit_und_textcap: test
+protokoll::tests::option_felder_akzeptieren_explizites_null_wie_das_schema: test
+protokoll::tests::unbekannte_felder_werden_auf_jeder_vertragsebene_abgelehnt: test
+protokoll::tests::unbekannter_typ_ist_parsefehler_kein_absturz: test
+protokoll::tests::v1_hello_bleibt_angenommen_und_welcome_spiegelt_v1: test
+protokoll::tests::v2_hello_mit_nonce_wird_angenommen: test
+protokoll::tests::version_3_bekommt_reject_mit_spanne: test
+register_tests::hoermarkierung_sperrt_fremde_evidenz_bis_reset_nach_beobachtetem_false: test
+register_tests::konflikt_kommt_und_geht_mit_der_zweiten_verbindung: test
+register_tests::marker_disconnect_bleibt_fail_closed_bis_reconnect_false_und_neuem_reset: test
+register_tests::owner_wechsel_stellt_die_vollstaendigen_hello_metadaten_und_rechte_wieder_her: test
+register_tests::paar_ausgerichtet_bei_deckungsgleichen_fenstern: test
+register_tests::paar_in_verschiedenen_prozessen_hoechstens_wahrscheinlich: test
+register_tests::paar_mit_v1_partner_bleibt_unklar_mit_klarem_grund: test
+register_tests::paar_ohne_partner_ist_unvollstaendig: test
+register_tests::paar_wird_bei_spruengen_herabgestuft: test
+register_tests::paar_wird_bei_teilueberdeckung_herabgestuft_und_ohne_ueberlappung_unklar: test
+register_tests::paarfenster_an_i64_raendern_bleiben_unklar_statt_ueberzulaufen: test
+register_tests::profilbindung_haelt_ueber_reconnect: test
+register_tests::sechzehn_sensoren_werden_korrekt_benannt: test
+register_tests::snapshot_sortiert_gleiche_labels_stabil_nach_sensor_id: test
+register_tests::stale_nutzt_monotone_zeit_und_ignoriert_wallclock_spruenge: test
+register_tests::unbestaetigte_marker_nonces_wachsen_nicht_unbegrenzt: test
+register_tests::v2_sensorpool_gibt_getrennte_ids_zurueck: test
+register_tests::zwei_fl_prozesse_bleiben_getrennte_sessions: test
+server::tests::acceptor_stop_und_sofortiger_neustart_verlieren_keinen_wakeup: test
+server::tests::bye_braucht_exakt_das_ausgegebene_session_token: test
+server::tests::connection_und_pipe_instanzzahl_bleiben_hart_begrenzt: test
+server::tests::doppelte_sensor_id_wird_als_konflikt_sichtbar: test
+server::tests::falsche_protokollversion_bekommt_reject: test
+server::tests::feindliches_laengenpraefix_beendet_nur_diese_verbindung: test
+server::tests::fremdes_session_token_beendet_established_statt_acklos_zu_haengen: test
+server::tests::handshake_heartbeat_und_geordneter_abschied: test
+server::tests::panische_senke_verlaesst_den_v2_destruktor_nicht: test
+server::tests::produktiver_v2_server_speist_den_gemeinsamen_coordinator_interventionsriegel: test
+server::tests::sensor_register_hat_harte_grenze_aber_bekannte_id_darf_reconnecten: test
+server::tests::sequenzruecklauf_und_duplikat_beenden_jeweils_die_verbindung: test
+server::tests::stoppen_bricht_stille_connection_ohne_client_weckhilfe_ab: test
+server::tests::ungelesenes_reject_haelt_den_flush_nur_bis_zur_harten_frist: test
+server::tests::ungelesenes_welcome_blockiert_connection_ende_nicht: test
+server::tests::ungueltige_messstaende_beenden_ohne_ack_und_entwerten_alte_evidenz: test
+server::tests::user_sid_ist_wohlgeformt: test
+server::tests::v1_heartbeat_mit_measurement_ist_protokollbruch: test
+server::tests::v2_abbau_flusht_die_letzte_antwort: test
+server::tests::v2_heartbeat_bekommt_ack_und_messstand_landet_im_register: test
+server::tests::vorhandene_leere_instance_nonce_wird_nicht_als_uuid_umgedeutet: test
+server::tests::zweite_lebende_gleiche_nonce_wird_abgelehnt_ohne_die_erste_zu_trennen: test
+server::tests::zweiter_broker_auf_demselben_namen_scheitert_sichtbar: test
+server::tests::zweites_hello_kann_die_established_bindung_nicht_umschreiben: test
+store::tests::konstante_trigger_haben_exakte_grenzen: test
+store::tests::rusqlite_version_0_40_2_ist_exakt_gepinnt: test
+store::tests::rust_version_boden_ist_exakt_gepinnt: test
+store::tests::rust_version_deckt_alle_gesperrten_abhaengigkeiten: test
+store::writer::tests::group_commit_batchcap_hat_keinen_einzel_fsync_je_event: test
+transport::bootstrap::tests::binaerframe_statt_hello_wird_abgelehnt: test
+transport::bootstrap::tests::hello_ueber_16_kib_faellt_vor_dem_parser: test
+transport::bootstrap::tests::hex32_riegel: test
+transport::bootstrap::tests::host_haelt_die_laengen_des_vertrags: test
+transport::bootstrap::tests::koppeln_und_entkoppeln_sind_symmetrisch: test
+transport::bootstrap::tests::kopplung_verlangt_alle_drei_merkmale: test
+transport::bootstrap::tests::offene_kopplungen_sind_gedeckelt: test
+transport::bootstrap::tests::unbekanntes_feld_im_hello_faellt: test
+transport::bootstrap::tests::v2_hello_bleibt_v2: test
+transport::bootstrap::tests::v3_control_wird_vollstaendig_validiert: test
+transport::legacy_v2::tests::echtes_v2_json_geht_weiterhin_durch: test
+transport::legacy_v2::tests::v2_json_ist_kein_gueltiger_v3_envelope: test
+transport::legacy_v2::tests::v3_binaerframe_wird_nie_als_v2_json_gedeutet: test
+transport::pipetoken::tests::base32_gegen_rfc_4648: test
+transport::pipetoken::tests::golden_aus_dem_entwurf: test
+transport::pipetoken::tests::probe_namensraum_laesst_nur_probe_namen_durch: test
+transport::pipetoken::tests::probe_riegel_ist_unempfindlich_gegen_schreibweise_und_praefixform: test
+transport::pipetoken::tests::schreibweise_der_sid_ist_egal: test
+transport::pipetoken::tests::tokenform_ist_stabil: test
+transport::pipetoken::tests::verschiedene_sids_verschiedene_token: test
+transport::server_v3::queues::tests::writerqueue_cap_und_cap_plus_eins: test
+transport::server_v3::queues::tests::writerqueue_messframe_ersetzt_nur_dieselbe_quelle: test
+transport::server_v3::queues::tests::writerqueue_p0_ueberholt_snapshot_ohne_snapshotverlust: test
+transport::server_v3::queues::tests::writerqueue_snapshot_koalesziert_nach_objektschluessel: test
+transport::server_v3::tests::abgeloestes_telemetrie_gekoppelt_laesst_control_getrennt_nicht_warten: test
+transport::server_v3::tests::abgeloestes_telemetrie_getrennt_haelt_control_getrennt_nicht_auf: test
+transport::server_v3::tests::acceptor_ueberlebt_die_verbindungsgrenze: test
+transport::server_v3::tests::beendete_verbindungen_werden_geerntet: test
+transport::server_v3::tests::blockierende_senke_haelt_den_leser_nicht_auf: test
+transport::server_v3::tests::bootstrap_und_senkenfrist_minus_eins_und_exakt_sind_inklusive: test
+transport::server_v3::tests::broker_p2_push_nutzt_subscriber_telemetriepipe_und_aktive_minors: test
+transport::server_v3::tests::connect_callbacks_je_kopplung_genau_einmal: test
+transport::server_v3::tests::control_ende_beendet_die_telemetrie: test
+transport::server_v3::tests::geschlossener_eingang_liefert_nichts_mehr: test
+transport::server_v3::tests::io_worker_uebergibt_validierte_bytes_ausschliesslich_an_den_coordinator: test
+transport::server_v3::tests::join_kandidat_laeuft_ueber_probe_pipe_ohne_join_candidate_nachrichtenfamilie: test
+transport::server_v3::tests::kopplung_faellt_mit_dem_leserende_nicht_erst_nach_den_joins: test
+transport::server_v3::tests::p0_auf_der_telemetriepipe_wird_abgewiesen: test
+transport::server_v3::tests::p0_ueberlauf_trennt_die_verbindung: test
+transport::server_v3::tests::p0_wird_beantwortet_waehrend_p1_die_senke_blockiert: test
+transport::server_v3::tests::p2_auf_der_controlpipe_wird_abgewiesen: test
+transport::server_v3::tests::stop_im_fenster_vor_der_bedienung_haengt_nicht: test
+transport::server_v3::tests::stoppen_endet_auch_bei_haengendem_lebenszyklusaufruf: test
+transport::server_v3::tests::stoppen_endet_auch_bei_haengender_senke: test
+transport::server_v3::tests::subscription_cleanup_vor_weiterem_push: test
+transport::server_v3::tests::subscription_ist_an_eigenen_control_link_gebunden: test
+transport::server_v3::tests::telemetrie_endet_zuerst_control_getrennt_folgt_trotzdem: test
+transport::server_v3::tests::transportfassung_und_json_leser_stimmen_ueberein: test
+transport::server_v3::tests::trennreihenfolge_haelt_im_kopplungs_callback_fenster: test
+transport::server_v3::tests::trennreihenfolge_je_callback_genau_einmal: test
+transport::server_v3::tests::unbekannter_schema_minor_wird_vor_der_senke_abgewiesen: test
+transport::server_v3::tests::welcome_folgt_dem_abgeschlossenen_control_verbunden: test
+transport::server_v3::win_handles::d11_tests::stopp_und_verbindungsende_zaehlen_unerwartete_cancel_fehler: test
+transport::v3::tests::crc32c_gegen_bekannte_vektoren: test
+transport::v3::tests::grenzen_des_rahmens: test
+transport::v3::tests::jeder_regelname_ist_rueckuebersetzbar: test
+transport::v3::tests::json_rundlauf: test
+transport::v3::tests::p2_traegt_pflicht_crc: test
+transport::v3::tests::ratengrenze_haelt_das_fenster: test
+transport::v3::tests::stromleser_vertraegt_byteweise_zustellung: test
+transport::v3::tests::stufe_drei_sammelt_und_sortiert: test
+transport::v3::tests::u32_ueberlauf_wird_nicht_akzeptiert: test
+transport::warteschlange::tests::ingress_droppt_p2_zuerst_und_trennt_bei_p0: test
+transport::warteschlange::tests::ingress_liefert_p0_getrennt_vom_rest: test
+transport::warteschlange::tests::ingress_voll_ohne_p2_trennt_auch_bei_p1: test
+transport::warteschlange::tests::p0_verwirft_nie_und_meldet_ueberlauf: test
+transport::warteschlange::tests::p1_haelt_ereignisse_fuer_den_reconnect_vor: test
+transport::warteschlange::tests::p1_koalesziert_snapshots_an_ihrer_position: test
+transport::warteschlange::tests::p1_neuzugang_ueberholt_keine_wiederholung: test
+transport::warteschlange::tests::p1_wiederholpuffer_fliesst_ohne_reconnect_ab: test
+transport::warteschlange::tests::p1_wiederholpuffer_haelt_den_schluessel: test
+transport::warteschlange::tests::p2_ersetzt_den_aeltesten_ungesendeten: test
+transport::warteschlange::tests::p2_flut_hungert_p0_nicht_aus: test
+vertrag::tests::additiv_ohne_maxproperties_bricht_das_laden: test
+vertrag::tests::discriminator_als_zahl_bricht_das_laden: test
+vertrag::tests::discriminator_boolean_falscher_typ: test
+vertrag::tests::discriminator_boolean_fehlt: test
+vertrag::tests::discriminator_boolean_true_false: test
+vertrag::tests::discriminator_json_pointer_boolean: test
+vertrag::tests::discriminator_json_pointer_segment_fehlt: test
+vertrag::tests::fehlendes_pflichtfeld_zeigt_auf_das_elternobjekt: test
+vertrag::tests::haengende_referenz_bricht_das_laden: test
+vertrag::tests::integer_akzeptiert_1punkt0: test
+vertrag::tests::laenge_zaehlt_codepunkte_nicht_bytes: test
+vertrag::tests::maxlength_als_gleitkommazahl_bricht_das_laden: test
+vertrag::tests::oneof_ohne_discriminator_bricht_das_laden: test
+vertrag::tests::required_mit_nicht_string_bricht_das_laden: test
+vertrag::tests::textriegel_hat_dieselbe_dokumentgrenze_wie_cpp_und_python: test
+vertrag::tests::type_als_zahl_bricht_das_laden: test
+vertrag::tests::typfehler_erzeugt_keine_lawine: test
+vertrag::tests::unbekannter_discriminator_wird_abgelehnt: test
+vertrag::tests::unbekanntes_schluesselwort_bricht_das_laden: test
+vertrag::tests::verletzungen_sind_kanonisch_sortiert_und_doppelfrei: test
+vertrag::tests::zahlengleichheit_ist_numerisch: test
+
+245 tests, 0 benchmarks
+     Running unittests src\main.rs (broker\target\debug\deps\eqcop_broker-ca9e718cafceb3fd.exe)
+0 tests, 0 benchmarks
+     Running unittests src\bin\eqcop-broker-probe.rs (broker\target\debug\deps\eqcop_broker_probe-b88c4dea11911cba.exe)
+0 tests, 0 benchmarks
+     Running unittests src\bin\eqcop-broker-sonde012-probe.rs (broker\target\debug\deps\eqcop_broker_sonde012_probe-c5b5f2436e1f9b1a.exe)
+0 tests, 0 benchmarks
+     Running unittests src\bin\eqcop-broker-v3probe.rs (broker\target\debug\deps\eqcop_broker_v3probe-68d798019699ad16.exe)
+0 tests, 0 benchmarks
+     Running unittests src\bin\eqcop-store-crash-worker.rs (broker\target\debug\deps\eqcop_store_crash_worker-59d4e14b92d5bd67.exe)
+0 tests, 0 benchmarks
+     Running tests\broker_idle.rs (broker\target\debug\deps\broker_idle-335b469e8f1e1607.exe)
+aktiver_fremdclient_verhindert_stop: test
+client_resetet_idlefrist: test
+echter_brokerprozess_beendet_sich_nach_letztem_client_selbst: test
+geordneter_stopp_schliesst_den_store: test
+letzter_client_idle_stop_an_grenze: test
+
+5 tests, 0 benchmarks
+     Running tests\contract_cross_language.rs (broker\target\debug\deps\contract_cross_language-c8ce76809755fc6f.exe)
+bandgitter_ist_lesbar_und_in_sich_stimmig: test
+bandwertgrenzen_stimmen_mit_dem_vertrag: test
+dto_korpus_klassifiziert_wie_das_manifest: test
+envelope_korpus_klassifiziert_wie_das_manifest: test
+fb_korpus_klassifiziert_wie_das_manifest: test
+jcs_fixtures_stimmen_mit_manifest: test
+korpus_klassifiziert_wie_das_manifest: test
+quantisierung_stimmt_mit_den_testvektoren: test
+textriegel_deckt_die_gemeinsame_falltabelle: test
+wirezahl_texte_halten_den_textriegel: test
+
+10 tests, 0 benchmarks
+     Running tests\coordinator_model.rs (broker\target\debug\deps\coordinator_model-c22cf73cd241058f.exe)
+abbau_des_verdraengten_links_laesst_den_geteilten_alias_stehen: test
+alle_schemafesten_interventionsarten_sperren_dieselbe_evidenz: test
+brokerneustart_behaelt_session_epoch: test
+brokerneustart_ohne_mainprojectstate_ingress: test
+brokerneustart_ohne_mainprojectstate_ingress_gibt_fuehrung_frei: test
+caps_stale_first_deterministisch: test
+control_vor_welcome: test
+erstes_einziges_main_fuehrt_sonst_bestaetigung: test
+eviction_haelt_dauerhaften_konfliktriegel: test
+eviction_haelt_phase_a_riegel: test
+eviction_loescht_intervention_unknown_nicht: test
+evidenzsnapshot_der_fassung_2_faellt_bei_einem_leser_der_fassung_1: test
+evidenzsnapshot_fremder_adresse_wird_verworfen: test
+evidenzsnapshot_wird_angenommen_und_zusammengefasst: test
+evidenzsnapshot_wird_bei_offener_intervention_gesperrt: test
+fuehrung_exklusiv_und_reconnect_im_selben_lauf: test
+fuehrung_exklusiv_und_uebergabe: test
+fuehrung_stale_bis_eviction: test
+global_session_cap_weist_am_cap_plus_eins_ab: test
+heartbeat_zwischen_schliessen_und_getrennt_adressiert_den_alten_link_nicht: test
+hello_mit_identischer_nonce_verdraengt_den_alten_link_ohne_den_alias_zu_ziehen: test
+join_nur_bei_eindeutigem_main: test
+join_reconnect_disconnect_setzt_sticky_unknown_bis_resync: test
+kein_expect_mehr_auf_dem_standlock: test
+konfliktriegel_ueberlebt_eviction: test
+liveness_nur_instant: test
+neue_nonce_verdraengt_alte_sofort: test
+p0_ziel_ist_bei_zwei_links_derselben_adresse_deterministisch: test
+p2_mutiert_erst_nach_flatbuffers_verifikation: test
+p2_push_haelt_den_standlock_nicht: test
+probe_join_bleibt_reihenfolgefest_und_bei_mehreren_mains_fail_closed: test
+probe_ohne_eigene_epoche_uebernimmt_eindeutige_main_sitzung: test
+produktive_json_senken_verlangen_den_vollstaendigen_v3_vertrag: test
+reconnect_im_selben_brokerlauf_gibt_unuebergebene_fuehrung_zurueck: test
+schreiber_wartet_nicht_unbegrenzt_auf_den_peer: test
+senke_haelt_den_standlock_nicht_ueber_den_push: test
+session_faellt_mit_dem_letzten_client: test
+session_und_global_cap: test
+sichtgrenzen_und_wire_replay_null: test
+stale_grenze_exklusiv_und_kontakt_setzt_zurueck: test
+stale_konstanten_ableitung: test
+state_report_erreicht_liveness_ueber_produktive_p1_senke: test
+subnormale_samplerate_ergibt_kein_fenster: test
+telemetrie_einmalig_gekoppelt: test
+tombstone_grenze_entfernt_alle_fluechtigen_sichten_aber_keinen_dauerhaften_konfliktriegel: test
+trennen_bereinigt_vor_join: test
+unverarbeitete_bytes_aendern_den_sessiongraphen_nicht: test
+verdraengte_nonce_report_sperrt_beide: test
+verdraengung_flusht_den_snapshot_im_trennzyklus: test
+vergifteter_stand_beendet_den_prozess_nicht: test
+zwei_projekte_bleiben_getrennt: test
+
+51 tests, 0 benchmarks
+     Running tests\security_vectors.rs (broker\target\debug\deps\security_vectors-4a68d58de2e43d5b.exe)
+abfluss_vor_dem_schliessen_erreicht_den_peer: test
+accept_bewaffnet_nachfolger_vor_worker_uebergabe_bei_zwei_listenern: test
+bootstrap_timeout_und_lesefehler_revertieren_jeweils_ohne_serverweiterlauf: test
+control_und_telemetry_durchlaufen_die_identische_sid_kette: test
+ersatzlistener_fehler_behaelt_besitz_und_meldet_nicht_bereit: test
+freigabe_gegen_reserve_laesst_den_lebenden_worker_stehen: test
+fremde_sid_revertiert_und_erreicht_keinen_coordinator: test
+gleiche_sid_wird_erst_nach_revert_angenommen: test
+impersonation_fehlschlag_schliesst_ohne_serverkontext: test
+jeder_unsafe_block_traegt_einen_safety_kommentar: test
+nach_revert_bleiben_envelope_und_trennpfade_im_self_kontext: test
+neustart_besetzt_name_vor_bereit: test
+prozesskill_gibt_name_frei: test
+revert_fehlschlag_beendet_testbrokerprozess_fail_fast: test
+start_belegter_name_scheitert_ohne_zweiten_broker: test
+start_freier_name_bewaffnet_zwei_listener_vor_veroeffentlichung: test
+startfehler_nach_erstem_handle_raeumt_handles_threads_und_namen_vor_publish: test
+stoppen_schliesst_besitzlistener_zuletzt_und_neustart_ist_sofort_moeglich: test
+tokenabfragefehler_revertiert_und_schliesst_ohne_senke: test
+verbindungsgriff_besitzt_handle_und_registereintrag: test
+vollstaendiges_abzulehnendes_hello_impersoniert_prueft_sid_und_revertiert_vor_reject: test
+zwei_listener_plus_96_worker_erhalten_cap_und_namensbesitz: test
+zwei_verschraenkte_freigaben_lassen_aktive_worker_auf_null: test
+
+23 tests, 0 benchmarks
+     Running tests\sonde012_sources_slice.rs (broker\target\debug\deps\sonde012_sources_slice-9ed9a59636c4c334.exe)
+betrieb_suspended_and_offline_reach_snapshot: test
+bridge_pid_change_preserves_membership_but_never_old_control_address: test
+confirm_join_and_unbind_full_roundtrip: test
+control_end_is_atomic_and_no_push_uses_old_link_after_unlock: test
+every_loudness_contract_violation_is_removed_without_losing_the_rest: test
+eviction_removes_volatile_measurement_projection: test
+first_valid_p2_changes_only_measurement_axis: test
+foreign_main_command_is_rejected: test
+handover_snapshot_revokes_old_main_before_new_write: test
+invalid_frame_keeps_last_valid_but_marks_measurement_invalid: test
+join_is_connected_but_measurement_missing: test
+json_minor_selects_runtime_contract_and_label_reaches_descriptor: test
+latest_per_source_no_cross_gap_interpolation: test
+loudness_pair_reaches_only_its_source: test
+main_link_end_cleans_subscription_before_push: test
+main_subscribe_pushes_absolute_snapshot_and_reconnect_resubscribes: test
+missing_messpunkt_yields_member_without_descriptor: test
+nonfinite_loudness_counts_per_source_but_keeps_rest_of_frame: test
+p2_does_not_revive_control_and_heartbeat_does_not_refresh_measurement: test
+p2_reject_reason_reaches_subscriber_and_keeps_last_valid_frame: test
+probe_control_end_disconnects_before_next_push: test
+restart_has_no_old_live_or_measurement_truth: test
+runtime_block_sets_and_updates_descriptor: test
+store_degraded_travels_only_as_true: test
+telemetry_silence_does_not_change_control_liveness: test
+unbind_removes_confirmed_membership_from_next_absolute_snapshot: test
+
+26 tests, 0 benchmarks
+     Running tests\sonde013_experiment.rs (broker\target\debug\deps\sonde013_experiment-994d32cd62e1b354.exe)
+abort_writes_terminal_event_for_each_trigger: test
+blind_order_is_bound_before_the_verdict_and_revealed_after: test
+block_bootstrap_und_fdr_halten_ihre_zusagen: test
+block_bootstrap_weist_nichtendliches_ab: test
+experiment_survives_restart_without_silent_continuation: test
+export_is_complete_and_delete_leaves_no_pcm: test
+four_axes_are_reported_separately: test
+gate6_incomparable_never_gets_a_strong_winner: test
+lower_reproducibility_class_is_explicit: test
+manual_external_begin_locks_baseline: test
+manual_external_has_no_state_hash_and_no_revert: test
+manual_result_writes_terminal_event_and_deltas: test
+match_gain_is_frozen_in_the_immutable_reference: test
+offenes_experiment_liefert_seine_passage: test
+open_cap_global_at_n_and_n_plus_one: test
+open_cap_per_project_at_n_and_n_plus_one: test
+passage_carries_all_six_fields: test
+passage_survives_restart_and_missing_db_degrades_gracefully: test
+second_change_creates_new_candidate_not_a_new_baseline: test
+unbekannte_vergleichbarkeit_liefert_keine_passage: test
+unvergleichbar_ist_nicht_unbekannt: test
+verdict_vocabulary_is_closed_and_keep_needs_user: test
+zurueckgenommenes_experiment_liefert_keine_passage: test
+
+23 tests, 0 benchmarks
+     Running tests\sonde013_passage.rs (broker\target\debug\deps\sonde013_passage-1f134177ed15bbcd.exe)
+comparability_needs_all_five_and_hash_alone_never_wins: test
+coverage_is_measured_signal_not_wall_duration: test
+each_start_gate_falls_alone_at_its_threshold: test
+fehlender_fingerprint_ist_keine_aehnlichkeit: test
+jaccard_rechnet_ueber_mengen_nicht_ueber_listen: test
+kein_beleg_wird_still_uebergangen: test
+leere_quellensets_sind_nicht_identisch: test
+messpunktklasse_wird_je_quelle_verglichen: test
+nicht_endliche_abdeckung_ist_fail_closed: test
+suspend_counts_as_missing_coverage: test
+urteil_traegt_seine_kalibrierungsfassung: test
+zahlenraender_saettigen_statt_umzubrechen: test
+
+12 tests, 0 benchmarks
+     Running tests\sonde013_prepost.rs (broker\target\debug\deps\sonde013_prepost-b89fd89ce4865d4e.exe)
+alignment_class_has_four_values_and_each_criterion_falls_alone: test
+coverage_is_saturating_and_normalised_to_shorter_window: test
+distributed_pair_never_produces_transfer_function: test
+duplicate_half_is_conflict_not_first_wins: test
+each_downgrade_reason_falls_alone: test
+feature_aligned_mit_bandwirkung_traegt_den_wirkungsbeleg: test
+feature_aligned_verlangt_den_presentation_nachweis: test
+feature_alignment_search_space_and_pdc_is_hint_only: test
+fehlender_teilfenster_lag_stuft_herab: test
+flaches_delta_mit_gain_traegt_den_wirkungsbeleg: test
+hard_exclusions_each_name_their_reason: test
+identisches_paar_liefert_delta_und_gain_exakt_null: test
+jeder_punkt_des_wirkungspraedikats_faellt_fuer_sich: test
+kettenbefund_und_dreifachergebnis_haengen_nicht_am_urteil: test
+leere_baender_erzeugen_kein_nan: test
+nicht_endliche_werte_ergeben_keine_stationaere_kette: test
+noise_yields_unclear: test
+paar_unter_der_schwelle_traegt_keinen_wirkungsbeleg: test
+pairing_requires_exactly_one_pre_and_one_post: test
+peak_to_sidelobe_bleibt_endlich: test
+three_results_are_never_collapsed: test
+unknown_time_path_can_never_reach_strong: test
+urteil_traegt_seine_kalibrierungsfassung: test
+
+23 tests, 0 benchmarks
+     Running tests\sonde013_taint.rs (broker\target\debug\deps\sonde013_taint-8f6252999ec5716d.exe)
+applied_state_segments_instead_of_tainting: test
+both_experiment_terminals_close_all_intervals: test
+dispatch_lock_ordering_holds_under_concurrent_begin: test
+downstream_probe_is_tainted_by_upstream_intervention: test
+epoch_change_invalidates_open_evidence: test
+invalidate_scope_discriminator_rejects_mismatched_payloads: test
+inverse_path_returns_to_zero_after_every_intervention_kind: test
+marker_end_closes_its_interval_only_after_the_tail: test
+marker_invalidates_overlapping_range_and_unknown_routing_takes_the_session: test
+material_change_invalidates_dependent_evidence: test
+measurement_position_change_invalidates_dependent_evidence: test
+only_neutral_resync_clears_sticky_unknown: test
+retention_abort_also_closes_intervals: test
+unknown_routing_widens_to_whole_session: test
+
+14 tests, 0 benchmarks
+     Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)
+bandsatz_ohne_bit_ist_fail_closed: test
+beeinflusste_evidenz_wird_ausgeschlossen_und_gezaehlt: test
+bestaetigter_resync_loest_das_sticky_unknown: test
+blindreihenfolge_wird_im_eigenen_befehlszweig_gebunden: test
+bootstrap_zieht_zeitfenster_und_rechnet_echte_p_werte: test
+dekodierte_evidenz_findet_gain_mit_intervall: test
+der_snapshot_haelt_den_versuchsdeckel_des_vertrages: test
+drop_invalidiert_als_sequenzluecke: test
+ergebnis_ohne_resultatmessung_wird_abgelehnt: test
+erste_intervention_nach_resync_wird_angenommen: test
+erster_heartbeat_mit_false_loest_das_sticky_unknown: test
+eviction_raeumt_das_paarurteil_und_bildet_neu: test
+evidenz_faellt_mit_dem_client: test
+evidenz_historie_bleibt_und_ist_gedeckelt: test
+evidenz_historie_haelt_ihren_deckel: test
+evidenz_ohne_erfolgreiche_ablage_ist_nicht_angenommen: test
+evidenzreihenfolge_ueberdauert_den_neustart: test
+experiment_begin_legt_passage_und_versuch_an: test
+experimentbefehl_bleibt_in_seinem_projekt: test
+experimentbefehl_und_wirkung_sind_ein_append: test
+experimenttransitionen_stehen_im_ereignisindex_mit_vollen_referenzen: test
+export_traegt_seine_transitionen_auch_nach_dem_neustart: test
+fremdes_projekt_erreicht_den_versuch_nicht: test
+genau_ein_snapshot_nach_dem_kandidaten_ist_ein_resultat: test
+gescheiterter_append_laesst_keinen_ausschluss_stehen: test
+gleiche_dichte_stuft_nicht_herab: test
+halbe_snapshotdichte_stuft_herab: test
+invalidierung_aus_dem_produktpfad_haelt_den_vertrag: test
+invalidierung_bildet_das_paarurteil_neu: test
+invalidierung_laesst_die_sessionprojektion_stehen: test
+invalidierung_projiziert_ihren_grund_in_die_evidenzzeilen: test
+invalidierung_schliesst_gespeicherte_evidenz_aus: test
+invalidierung_serialisiert_ihre_drei_umfaenge: test
+invalidierung_wird_dem_abonnenten_wirklich_zugestellt: test
+liegengebliebene_ruecknahme_wird_beim_subscribe_nachgespielt: test
+markerinvalidierung_ohne_projektzeit_ist_fail_closed: test
+markerinvalidierung_trifft_genau_ihren_bereich: test
+materialwechsel_invalidiert_aus_dem_fingerprintvergleich: test
+messpunktwechsel_invalidiert_aus_dem_deskriptorvergleich: test
+nachbericht_behaelt_die_sequenzbasis: test
+nachbericht_greift_nicht_bei_fremdem_intervall_derselben_sitzung: test
+nachlauf_laeuft_in_echtzeit_ab: test
+nachlauf_rechnet_ab_seinem_start: test
+paare_bleiben_in_ihrer_sitzung: test
+paarurteil_entsteht_beim_neustart_aus_der_evidenz: test
+paarurteil_erreicht_gen_ueber_outbox_und_push: test
+passage_aus_dem_wire_traegt_ihre_messpunktklassen: test
+passagenbelege_kommen_aus_den_vertretenen_quellen: test
+persistierter_retry_bleibt_idempotent: test
+prepost_filtert_ausschluss_und_rechnet_in_einer_konvention: test
+prepost_join_laeuft_im_produktpfad: test
+preview_nimmt_die_evidenz_ihrer_sitzung_zurueck: test
+preview_und_ruecknahme_liegen_in_einem_append: test
+projektspanne_traegt_weiter_den_suchraum: test
+r2_backlog_ohne_replay_end_zu_end: test
+r2_lebenszyklus_mit_verbleibender_sonde_end_zu_end: test
+replay_vor_dem_ersten_heartbeat_nimmt_ihm_den_erstling_nicht: test
+resultatmessung_ist_an_versuch_passage_und_grenze_gebunden: test
+retry_an_fremde_sitzung_wird_abgewiesen: test
+retry_an_unbekanntes_ziel_wird_abgewiesen: test
+ruecknahme_trifft_nur_den_eigenen_versuch: test
+sitzung_ist_zwischen_main_hello_und_erstem_heartbeat_gesperrt: test
+sonde014_m48_gelesenes_ziel_schlaegt_die_heuristik: test
+sonde014_m73_liegengebliebenes_angebot_traegt_seinen_schluessel: test
+sonde014_m74_zustellschuld_flieszt_ohne_reconnect: test
+sonde014_m75_ohne_zustellung_bleibt_die_schuld_stehen: test
+sondenhello_aendert_den_taint_nicht: test
+spaeteres_false_loest_das_sticky_unknown_nicht: test
+taint_ist_sitzungsweit: test
+taintmap_haelt_ihren_deckel: test
+terminal_traegt_die_nutzerdaten_und_ueberdauert_den_neustart: test
+transportbruch_invalidiert_mit_seinem_grund: test
+verdraengter_taint_faellt_in_der_opfersitzung: test
+verdraengung_bekommt_ihr_eigenes_terminal: test
+versuchsergebnis_erreicht_gen_ueber_outbox_und_push: test
+wire_experimentintervall_ohne_id_wird_abgelehnt: test
+wire_hoermarkierung_wird_von_keinem_experimentterminal_geschlossen: test
+wire_intervention_traegt_art_und_experiment_bis_zum_terminal: test
+
+78 tests, 0 benchmarks
+     Running tests\sonde014_befund.rs (broker\target\debug\deps\sonde014_befund-c35ffee8c5e9641a.exe)
+alternative_ist_ein_eigener_befund_mit_eigenem_zustand: test
+beleg_ist_zone_und_kein_text: test
+drei_zeilen_sind_datenfelder: test
+hoehere_intent_revision_macht_den_befund_stale: test
+messqualitaet_und_befundsicherheit_sind_zwei_felder: test
+nur_ready_to_send_erlaubt_audition_und_draft: test
+sicherheit_wird_auf_drei_zustaende_abgebildet: test
+
+7 tests, 0 benchmarks
+     Running tests\sonde014_gegenbeispiele.rs (broker\target\debug\deps\sonde014_gegenbeispiele-4e737afb3cd092a5.exe)
+a1_intent_rolle_trennt_identische_kandidaten_nicht: test
+a3_sonde_auf_masterkanal: test
+a4_masteranomalie_ausserhalb_der_passage: test
+d2_fuehrender_wird_gegen_jeden_geprueft: test
+d3_passage_ohne_masterfenster_ergibt_enthaltung: test
+d4_umklammernde_und_disjunkte_spanne: test
+eigen3_antikorrelierte_quelle: test
+eigen4_quelle_im_falschen_band: test
+eigen5_antikorreliert_neben_korreliert: test
+einzelueberlebender_neben_passagenausschluss: test
+f4_kanalwechsel_zwischen_den_fenstern: test
+f4b_drei_sonden_auf_einem_kanal: test
+f5_passagenrandwerte: test
+f5b_gleiche_passage_id_verschobenes_fenster: test
+f7_rangdifferenz_am_quantum: test
+f8_zwei_master_mit_widersprechendem_befundband: test
+f8b_master_ohne_fenster: test
+nak214_juengste_passage_untauglich: test
+nak214_probables_paar_bleibt_klasse_eins: test
+nak214_zwei_mains_erzeugen_keinen_vorschlag: test
+
+20 tests, 0 benchmarks
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+ausschluesse_bleiben_unter_dem_sitzungsdeckel: test
+ausschlussgruende_sind_geschlossen_und_reisen_mit: test
+bedingter_uplift_braucht_fenster_ohne_die_quelle: test
+behauptung_ohne_existente_evidenz_wird_nicht_sichtbar: test
+causehypothesis_traegt_die_zehn_felder: test
+deckel_greift_vor_stufe_b: test
+deckel_mit_abstand_erlaubt_weiter_hoch: test
+deckel_ohne_abstand_senkt_die_klasse: test
+einzelueberlebender_neben_messausschluss: test
+enthaltung_ohne_ort_ist_deterministisch: test
+enthaltung_ohne_ort_traegt_existente_evidenz_ids: test
+gegenbeleg_schliesst_hoch_aus: test
+gemessene_nullkoinzidenz_trennt_zwei_kandidaten: test
+gleichstand_zeigt_beide: test
+hoch_verlangt_einen_belegten_zusammenhang: test
+hoch_verlangt_energie_im_befundband: test
+intent_veto_ist_kein_messausschluss: test
+jedes_band_liegt_im_intervall_seiner_gruppe: test
+keine_hypothese_vor_der_vollstaendigkeitsmarke: test
+keine_komponente_kompensiert_coverage_oder_alignment: test
+koinzidenz_allein_traegt_den_zusammenhang: test
+master_ohne_verwertbares_band_ergibt_enthaltung: test
+materialmenge_und_bandpassung_trennen_nicht: test
+mehr_daten_ist_ein_ergebnis: test
+messausschluss_wirkt_auf_jeden_befund: test
+parallele_telemetrie_bleibt_klasse_eins: test
+parent_duplikat_erzeugt_keine_zwei_starken: test
+passage_zu_kurz_traegt_keine_starke_aussage: test
+ranking_ist_bytegleich_ueber_hundert_laeufe: test
+rollenaenderung_bewegt_die_intent_relevanz: test
+ruecknahme_invalidiert_abhaengige_hypothesen: test
+screening_bezieht_die_koinzidenz_ein: test
+screening_ist_deterministisch: test
+screening_reicht_hoechstens_fuenf_weiter: test
+sechs_teile_im_datenmodell: test
+ungetrennter_erster_platz_ist_nicht_stark: test
+ursachenklassen_sind_geschlossen_und_sieben: test
+
+37 tests, 0 benchmarks
+     Running tests\sonde014_maskierung.rs (broker\target\debug\deps\sonde014_maskierung-36a5a296083f6ed6.exe)
+datenweg_traegt_keine_zeichenanweisung: test
+maskierung_haengt_am_finding_und_benennt_einen_frequenzbereich: test
+maskierungswert_ist_hoechstens_ein_evidenzintervall_alt: test
+rueckstau_setzt_das_kennzeichen_herabgesetzt: test
+zone_hat_keine_eigene_schwelle: test
+
+5 tests, 0 benchmarks
+     Running tests\sonde014_nacharbeit1.rs (broker\target\debug\deps\sonde014_nacharbeit1-207edf2a5c77e38c.exe)
+befund_mit_geloeschter_evidenzzeile_wird_unsichtbar: test
+der_flush_pfad_haelt_die_belege_ebenfalls_gegen_den_store: test
+experimentziel_ueberlebt_den_brokerneustart: test
+intent_bestand_wird_versioniert_gespiegelt: test
+passagengate_misst_auch_die_fenster_des_masters: test
+sechs_gate_felder_sind_pflicht_mit_passage: test
+user_verdict_wiederholt_sich_idempotent_ueber_den_brokerkill: test
+user_verdict_wird_persistiert_und_bestaetigt: test
+
+8 tests, 0 benchmarks
+     Running tests\sonde014_nacharbeit2.rs (broker\target\debug\deps\sonde014_nacharbeit2-f8f5227563a8d0ca.exe)
+ohne_passage_entsteht_kein_proposal: test
+re_subscribe_haelt_die_belege_gegen_den_store: test
+user_verdict_haelt_sich_an_die_gemeldete_revision: test
+verspaeteter_teilbericht_entwertet_abhaengige_befunde: test
+
+4 tests, 0 benchmarks
+     Running tests\sonde014_nacharbeit3.rs (broker\target\debug\deps\sonde014_nacharbeit3-ef08965e24e527e8.exe)
+die_wertetabelle_der_kleinen_zahlen_haelt_den_riegel: test
+ein_befund_kleiner_rangkomponenten_wird_ausgeliefert: test
+wire_zahl_haelt_den_textriegel_ueber_drei_baender: test
+
+3 tests, 0 benchmarks
+     Running tests\sonde014_p5_korpus.rs (broker\target\debug\deps\sonde014_p5_korpus-b59f509449eb57a8.exe)
+korpus_kette_laeuft_durch_den_produktpfad: test
+
+1 test, 0 benchmarks
+     Running tests\sonde014_proposal.rs (broker\target\debug\deps\sonde014_proposal-7c92fc847c987d9d.exe)
+bandmitte_folgt_dem_eingefrorenen_gitter: test
+derselbe_eingang_erzeugt_denselben_entwurf: test
+ein_proposal_ohne_useraktion_bleibt_folgenlos: test
+evidenz_ids_und_intent_revision_sind_pflicht: test
+gate_riegel_faellt_je_feld: test
+gate_riegel_greift_im_erzeuger: test
+geschuetzte_eigenschaft_ist_harte_constraint: test
+hard_caps_und_engeres_userbudget_werden_nie_ueberschritten: test
+in_p5_ist_jede_aktion_manual: test
+jede_zahl_hat_feld_evidenz_und_generatorversion: test
+kein_nicht_endlicher_wert_erreicht_die_leitung: test
+keine_aenderung_und_mehr_daten_sind_vorschlaege: test
+manueller_busvorschlag_ist_ein_proposal: test
+p5_bietet_weiterhin_keinen_draft_an: test
+proposal_traegt_die_fuenfzehn_felder: test
+rollenaenderung_macht_den_vorschlag_stale: test
+sechs_gate_felder_sind_pflicht_und_revert_hat_drei_werte: test
+stop_if_auf_nicht_messbarem_guardrail_ist_nicht_handelbar: test
+text_entsteht_aus_bausteinen_und_erfindet_keine_zahl: test
+veraltet_ungueltig_capability_erreichen_keine_probe: test
+zielbereich_kommt_aus_dem_befund_nicht_aus_dem_delta: test
+
+21 tests, 0 benchmarks
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+angenommene_und_abgewiesene_meldungen_sind_zaehlbar: test
+assistant_step_update_koalesziert_je_session: test
+ausgeschlossenes_paar_setzt_keine_marke: test
+beitritt_nach_der_rechnung_ersetzt_die_befunde: test
+besseres_paar_hebt_die_klasse: test
+consumerregeln_des_intents_fallen_einzeln: test
+die_neuen_familien_erben_die_ordnung_von_verbinden_und_trennen: test
+die_vollstaendigkeitsmarke_deckt_beide_bestaende: test
+ein_frischer_broker_traegt_weder_intent_noch_schritt: test
+entmaskierungsveto_wirkt_im_spiegel_wie_im_main: test
+fremde_adresse_wird_abgewiesen: test
+getaintetes_experiment_liefert_keine_passage: test
+gleicher_kanal_nimmt_nichts_zurueck: test
+intent_update_koalesziert_je_quelle_und_scope: test
+intent_update_unter_der_fassung_zwei_wird_abgewiesen: test
+interventionsende_ohne_nachlauf_sperrt_nicht: test
+kanalwechsel_invalidiert_nur_diese_quelle: test
+kanalwechsel_ohne_belege_sendet_nichts: test
+kanalwechsel_ohne_store_append_bleibt_beim_alten_kanal: test
+kanalwechsel_ueber_den_heartbeat_befehl: test
+keine_rechnung_ohne_jede_intentmeldung: test
+keine_rechnung_vor_der_vollstaendigkeitsmarke: test
+main_rueckzug_zwischen_befund_und_vorschlag: test
+master_ist_das_gefuehrte_main_nicht_das_letzte: test
+ohne_jeden_beleg_entsteht_keine_aufnahme: test
+ohne_taugliche_passage_rechnet_die_aufnahme_ohne_passage: test
+paar_id_ohne_urteil_setzt_keine_marke: test
+paar_ohne_gemessene_wirkung_bleibt_klasse_eins: test
+partner_ohne_routing_ist_kein_duplikat: test
+probables_paar_bleibt_klasse_eins: test
+proposal_traegt_das_fuehrende_main_als_ziel_und_zwei_mains_erzeugen_keinen: test
+resync_gibt_die_passage_frei: test
+rueckzug_und_bestaetigung_geben_die_rechnung_frei: test
+sitzung_ohne_gueltige_evidenz_erzeugt_keinen_befund: test
+sitzungsende_loescht_den_spiegel: test
+spaeter_beitritt_deckelt_ab_der_bestaetigung: test
+spiegel_weicht_dem_neueren_main_schritt: test
+stale_quelle_deckelt_nicht: test
+stumme_quelle_ist_sichtbarer_kandidat: test
+stumme_quelle_setzt_die_duplikatmarke: test
+teilmeldung_mit_mehreren_objekten_wird_abgewiesen: test
+teilupdate_fremden_schluessels_ueberlebt_eine_koaleszierung: test
+terminal_laesst_die_nachlaufzuordnung_stehen: test
+unknown_sperrt_das_material_nicht_die_passage: test
+unvollstaendiger_vorschlag_erreicht_weder_store_noch_outbox: test
+user_verdict_auf_more_data_wird_angenommen: test
+user_verdict_auf_stale_wird_angenommen: test
+user_verdict_ohne_befund_wird_abgewiesen: test
+user_verdict_ohne_sitzungsbefunde_wird_abgewiesen: test
+veraltetes_rechenergebnis_wird_nicht_veroeffentlicht: test
+vorschlaege_bleiben_ihren_befunden_zugeordnet: test
+wiederholtes_urteil_bleibt_idempotent_auch_ohne_befund: test
+wirkungsbeleg_aus_ausgerichtetem_paar: test
+wirkungsbeleg_wirkt_je_kandidat: test
+zurueckgenommener_partner_bleibt_duplikat: test
+zweites_main_hebt_bestaetigte_fuehrung_nicht_auf: test
+zweites_main_ohne_sonden_enthaelt_sich_mit_den_belegen_des_ersten: test
+
+57 tests, 0 benchmarks
+     Running tests\store_crash_matrix.rs (broker\target\debug\deps\store_crash_matrix-4ebee0ee77644d63.exe)
+alias_deckel_weist_das_hello_ab_statt_ein_welcome_zu_senden: test
+alter_store_ueberschreibt_plugin_state_nicht: test
+blockierter_store_writer_bestaetigt_nichts_und_p2_laeuft: test
+blockierter_writer_haelt_coordinator_und_store_nicht: test
+brokerneustart_sendet_keine_laufgebundenen_felder_der_alten_projektion: test
+busy_timeout_grenze: test
+checkpoint_oder_guard_loest_offenes_append_fenster_nicht_aus: test
+cleanup_zwischen_zielermittlung_und_write_verhindert_den_alten_push: test
+command_id_mappt_intern_auf_eine_event_uuid: test
+command_id_mappt_intern_auf_genau_eine_event_uuid: test
+commit_bei_fenster_oder_batch: test
+degradierter_store_verweigert_annahme_und_tick_trennt_verursacher: test
+descriptor_setzen_verlangt_jedes_pflichtfeld: test
+descriptor_setzen_weist_beitragsklasse_ab: test
+disk_full_io_kaputt_neues_schema_degradieren_ohne_brokerstop: test
+domain_event_ueberschreibt_session_snapshot_auch_beim_reconnect_nicht: test
+domainprojektionen_spalten_keys_und_rebuild: test
+event_log_append_only_und_sequence_eindeutig: test
+event_log_keys_und_append_only: test
+event_projection_snapshotschuld_command_id_atomare_transaktion: test
+event_uuid_bleibt_aus_ack_und_session_snapshot_wire_fern: test
+eviction_bewahrt_domainzustand_und_konfliktriegel_bei_vollstaendigem_cleanup: test
+eviction_cleanup_vor_push: test
+experiment_events_composite_key_und_fks: test
+gescheiterter_leerlauf_checkpoint_wird_wiederholt: test
+group_commit_faehrt_echten_batch_bis_commitgrenze: test
+guard_aufloesung_faltet_die_sid_schreibweise_wie_der_speicherindex: test
+guard_aufloesung_ohne_treffer_meldet_fehler: test
+guard_aufloesung_raeumt_den_aliaseintrag: test
+guard_aufloesung_wirkt_auch_ohne_lebende_links: test
+guard_restore_vor_routing: test
+jeder_group_commit_bleibt_bei_hoechstens_64_events: test
+jeder_resubscribe_liefert_aktuellen_absoluten_snapshot: test
+kill_nach_commit_vor_command_ack_retry_antwortet_idempotent_wiederholt_ohne_wire_uuid: test
+kill_nach_snapshot_outbox_kompaktierung_snapshot_traegt_wirkung: test
+kill_nach_store_commit_vor_snapshot_push: test
+kill_vor_persist_mit_echtem_cpp_client_antwortet_angewandt_ohne_wire_uuid: test
+kill_vor_snapshot_outbox_kompaktierung: test
+kill_waehrend_commit_mit_echtem_cpp_client_antwortet_angewandt: test
+kill_waehrend_migration_1: test
+kill_waehrend_wal_replay: test
+konfliktriegel_deckel_gilt_auch_im_reportpfad_des_verdraengten_links: test
+konfliktriegel_ueberlebt_neustart_mit_nur_einem_partner: test
+leser_haelt_keine_transaktion_ueber_externe_arbeit: test
+migration_1_frisch_und_idempotent: test
+migration_1_spalten_und_schluessel_exakt: test
+nonce_verdraengung_cleanup_vor_altem_report: test
+outbox_koalesziert_letzten_snapshotstand_pro_ziel_und_objekt: test
+p1_snapshot_abfluss_ohne_reconnect_aber_writefehler_liefert_aktuellen_snapshot: test
+passive_checkpoint_an_dualer_grenze: test
+persistenter_p0_trifft_den_lebenden_link_derselben_adresse: test
+pfadwandlung_haelt_ein_ungepaartes_surrogat: test
+phase_b_hat_keinen_wire_consumer_fuer_nicht_koaleszierbare_events: test
+pragmas_exakt: test
+produkt_coordinator_ackt_keine_wirkung_die_nicht_stattfindet: test
+produkt_coordinator_committet_alle_persistenten_p0_befehle_und_ackt_retries: test
+produkt_coordinator_legt_passage_und_experiment_aus_dem_wire_an: test
+projects_projection_rebuild_und_fk: test
+projektion_rebuild_ist_deterministisch_und_unter_testgrenze: test
+projektion_rebuild_nach_neustart_unter_testgrenze: test
+projektionslesefehler_haelt_subscription_sichtbar_fail_closed: test
+pruefsumme_entscheidet_vor_der_migration: test
+quarantaene_deckel_weist_ab_statt_zu_wachsen: test
+reconnect_snapshot_enthaelt_committete_wirkung_genau_einmal: test
+recovery_unter_testgrenze: test
+remote_volume_degradiert_ohne_db_oder_wal: test
+resubscribe_uebernimmt_live_bestaetigungsbedarf_waehrend_store_flush_blockiert: test
+routing_bleibt_zu_bis_konfliktriegel_restauriert: test
+schema_major_1_schreibt_und_major_plus_1_degradiert_read_only: test
+session_snapshot_koalesziert_nach_objektschluessel: test
+session_snapshot_zeigt_join_kandidat_ohne_neue_familie: test
+session_subscription_hat_keinen_event_uuid_wire_traeger: test
+session_subscription_hat_nur_snapshot_push: test
+session_subscription_sendet_nur_aktuellen_absoluten_snapshot: test
+sessions_projection_composite_key_ohne_fuehrungsrestore: test
+snapshot_commit_bleibt_bei_konkurrierenden_flushes_monoton: test
+snapshot_outbox_kompaktierung_verliert_committete_wirkung_nicht: test
+store_kanal_cap_und_naechster_trennt: test
+store_pfad_bleibt_bei_nicht_utf8_zeichen_unveraendert: test
+store_pfad_nutzt_folderid_localappdata: test
+store_start_protokolliert_sqlite_version: test
+store_weist_reparse_punkt_im_pfad_ab: test
+store_writer_ist_alleiniger_write_connection_besitzer: test
+subscriberkill_vor_und_nach_snapshot_anwendung_bleibt_idempotent: test
+truncate_nur_in_ruhelage: test
+verlorenes_command_ack_retry_liefert_idempotent_wiederholt_ohne_wire_uuid: test
+volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen: test
+volumenklassifikation_faellt_am_geoeffneten_objekt: test
+wiederholter_snapshot_letzter_gewinnt_idempotent: test
+
+89 tests, 0 benchmarks
+     Running tests\transport_fuzz.rs (broker\target\debug\deps\transport_fuzz-e68c0b23ba7390d0.exe)
+ein_kaputter_frame_im_strom_beendet_den_strom: test
+einzelne_gekippte_bytes_werden_nie_still_angenommen: test
+feindliche_laengen_enden_in_der_erwarteten_fehlerklasse: test
+fragmentierung_aendert_das_ergebnis_nie: test
+ingress_bytebudget_greift_am_produktionskonstruktor_vor_der_slotgrenze: test
+ingress_bytebudget_verwirft_p2_zuerst: test
+jedes_gekippte_payloadbit_eines_p2_frames_faellt_an_der_crc: test
+panik_im_verbindungsthread_wird_gezaehlt: test
+payload_an_der_paketgrenze_wird_angenommen_darueber_nicht: test
+ratengrenze_haelt_unter_flut: test
+schreiben_und_pruefen_sind_zueinander_invers: test
+zufallsbytes_bringen_den_pruefer_nie_aus_dem_tritt: test
+
+12 tests, 0 benchmarks
+   Doc-tests eqcop_broker
+0 tests, 0 benchmarks

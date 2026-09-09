@@ -1,0 +1,95 @@
+NAKAMA-GESUNDHEIT
+Wurzel : C:\Users\phili\Projekte\Nakama
+Memory : C:\Users\phili\.claude\projects\C--Users-phili-Projekte-Nakama\memory
+
+Maass                                Ist    Ziel   Grenze  Status       
+-----------------------------------  -----  -----  ------  -------------
+Quelldateien ueber 2000 Zeilen       5      0      0       GRENZE       
+Quelldateien ueber Ziel 1500 Zeilen  7      0      -       ZIEL         
+Funktionen ueber 200 Zeilen          28     0      28      ZIEL         
+Clippy-Fundstellen (broker)          -      0      91      NICHT MESSBAR
+allow(dead_code) ohne Aufrufer       0      0      0       OK           
+Kommentar-Bezeichner ohne Code       35     0      35      ZIEL         
+MEMORY.md (Bytes)                    3251   22528  24986   OK           
+CLAUDE.md (Bytes)                    22902  -      24576   OK           
+Dirigenten-Skill (Bytes)             35654  -      36864   OK           
+MEMORY.md: Zeilen ueber 250 Zeichen  0      0      0       OK           
+Memory-Dateien ohne Index-Link       0      0      0       OK           
+
+nicht messbar: Clippy-Fundstellen (broker) - nicht angefordert (Schalter --clippy)
+
+GRENZE gerissen: Quelldateien ueber 2000 Zeilen (5 von hoechstens 0)
+  eq-copilot/plugin/core/analysis/FeatureEngine.h: 4390 Zeilen [NAK-225]
+  eq-copilot/plugin/src/PluginProcessor.cpp: 4389 Zeilen [NAK-225]
+  broker/src/coordinator/hypothese.rs: 3986 Zeilen [NAK-224]
+  eq-copilot/plugin/core/ipc/ControlClient.cpp: 2475 Zeilen [NAK-225]
+  broker/src/transport/server_v3/mod.rs: 2169 Zeilen [NAK-234]
+
+Ziel verfehlt: Quelldateien ueber Ziel 1500 Zeilen (7 von hoechstens -)
+  broker/src/lib.rs: 1998 Zeilen
+  broker/src/coordinator/experiment_verdrahtung.rs: 1892 Zeilen
+  eq-copilot/plugin/src/SourcesModel.cpp: 1864 Zeilen
+  broker/src/server.rs: 1841 Zeilen
+  broker/src/coordinator/experiment.rs: 1727 Zeilen
+  eq-copilot/plugin/src/PluginEditor.cpp: 1665 Zeilen
+  eq-copilot/plugin/src/PluginProcessor.h: 1524 Zeilen
+
+Ziel verfehlt: Funktionen ueber 200 Zeilen (28 von hoechstens 28)
+  broker/src/transport/server_v3/verbindung.rs:147 verbindung_bedienen - 744 Zeilen
+  eq-copilot/plugin/src/SourcesModel.cpp:538 SourcesModel::uebernehmeSessionSnapshot - 744 Zeilen
+  eq-copilot/plugin/core/ipc/ControlClient.cpp:1890 ControlClient::Laufzeit::eineVerbindung - 580 Zeilen
+  broker/src/transport/server_v3/listener.rs:265 v3_server_starten_intern - 439 Zeilen
+  broker/src/coordinator/experiment_verdrahtung.rs:860 resultatmessung - 394 Zeilen
+  eq-copilot/plugin/src/PluginProcessor.cpp:581 EqCopilotProcessor::processBlock - 394 Zeilen
+  broker/src/coordinator/intent.rs:317 intent_update_json_mit_minor - 344 Zeilen
+  eq-copilot/plugin/src/PluginProcessor.cpp:1416 EqCopilotProcessor::interventionenSenden - 341 Zeilen
+  eq-copilot/plugin/src/PluginEditor.cpp:1331 EqCopilotEditor::paint - 333 Zeilen
+  broker/src/coordinator/befehl.rs:157 persistenz_p0_intern - 316 Zeilen
+  eq-copilot/plugin/src/PipeClient.cpp:340 PipeClient::eineVerbindung - 298 Zeilen
+  broker/src/coordinator/befehl.rs:662 p0_json_mit_minor - 292 Zeilen
+  broker/src/coordinator/hypothese.rs:1535 hypothesen - 267 Zeilen
+  eq-copilot/plugin/core/ipc/TelemetryClient.cpp:541 TelemetryClient::Laufzeit::eineVerbindung - 266 Zeilen
+  broker/src/coordinator/hypothese_verdrahtung.rs:130 aufnahmen_sammeln - 264 Zeilen
+  broker/src/coordinator/link.rs:80 control_hello_registrieren - 255 Zeilen
+  eq-copilot/plugin/src/PluginProcessor.cpp:1109 EqCopilotProcessor::workerLauf - 251 Zeilen
+  broker/src/server.rs:663 verbindung_bedienen - 249 Zeilen
+  broker/src/store/writer.rs:176 writer_lauf - 229 Zeilen
+  eq-copilot/plugin/src/PluginEditor.cpp:1101 EqCopilotEditor::paintMainFlaeche - 229 Zeilen
+  eq-copilot/plugin/core/analysis/FeatureEngine.h:2251 verarbeiteSamples - 226 Zeilen
+  broker/src/coordinator/liveness.rs:317 heartbeat_kontakt - 223 Zeilen
+  eq-copilot/plugin/src/HoerMarkierung.h:342 verarbeite - 219 Zeilen
+  eq-copilot/plugin/core/ipc/BrokerLifecycle.cpp:722 BrokerLifecycle::tick - 218 Zeilen
+  eq-copilot/plugin/src/PluginProcessor.cpp:4168 EqCopilotProcessor::schreibeSnapshotDatei - 215 Zeilen
+  ... und 3 weitere
+
+Ziel verfehlt: Kommentar-Bezeichner ohne Code (35 von hoechstens 35)
+  broker/src/coordinator/befehl.rs:10 `persistenz_p0`
+  broker/src/coordinator/befehl.rs:866 `persistenz_p0`
+  broker/src/coordinator/evidenz.rs:4 `ed9bbf7`
+  broker/src/coordinator/experiment.rs:1468 `Behalten`
+  broker/src/coordinator/experiment.rs:1619 `eigen3`
+  broker/src/coordinator/experiment_verdrahtung.rs:61 `persistenz_p0`
+  broker/src/coordinator/experiment_verdrahtung.rs:346 `domaene_persistieren`
+  broker/src/coordinator/experiment_verdrahtung.rs:1847 `binde_blindreihenfolge_fuer_test`
+  broker/src/coordinator/hypothese.rs:65 `geschlossene_mengen_des_produzenten_decken_sich_mit_dem_vertrag`
+  broker/src/coordinator/hypothese.rs:266 `ausschlussgruende_sind_index_treu`
+  broker/src/coordinator/hypothese.rs:664 `eigen4`
+  broker/src/coordinator/hypothese.rs:1475 `eigen3`
+  broker/src/coordinator/intervention.rs:630 `_locked`
+  broker/src/coordinator/invalidierung_verdrahtung.rs:298 `bis_sample`
+  broker/src/coordinator/invalidierung_verdrahtung.rs:298 `von_sample`
+  broker/src/coordinator/invalidierung_verdrahtung.rs:559 `persistenz_p0`
+  broker/src/coordinator/link.rs:470 `link_ohne_ereignissequenz`
+  broker/src/store/handle.rs:399 `assistant_steps`
+  broker/src/transport/server_v3/listener.rs:582 `HandleEintrag`
+  broker/src/transport/server_v3/mod.rs:520 `kBlockFrist`
+  broker/src/transport/server_v3/win_handles.rs:368 `HandleEintrag`
+  eq-copilot/plugin/core/analysis/FeatureEngine.h:4330 `STATUS_STACK_OVERFLOW`
+  eq-copilot/plugin/core/analysis/TruePeak.h:33 `interpolationsfehler_folgt_der_formel`
+  eq-copilot/plugin/core/analysis/TruePeak.h:121 `STATUS_STACK_OVERFLOW`
+  eq-copilot/plugin/core/ipc/ControlClient.h:423 `nichtNeutral`
+  ... und 10 weitere
+Hinweis: 79 C++-Lambda(s) bewusst nicht als eigene Funktion gezaehlt
+Hinweis: 12 weitere(r) Verweis(e) auf fehlende Bezeichner sind als Historie markiert und nicht gezaehlt
+
+URTEIL: GRENZE GERISSEN - 1 Maass(e): Quelldateien ueber 2000 Zeilen

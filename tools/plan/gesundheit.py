@@ -40,21 +40,26 @@ HERKUNFT JEDER SCHWELLE (Stand 09.09.2026, Basis-SHA 274d3ff8)
 --------------------------------------------------------------
   Zeilen je Quelldatei   Grenze 2 000 / Ziel 1 500 — gesetzt durch Plan S25b
                          und CLAUDE.md („bis es gebaut ist, von Hand: keine
-                         Quelldatei ueber 2 000 Zeilen"). REISST HEUTE, und
-                         zwar bei genau den fuenf Dateien mit Pflegeticket
-                         (NAK-224/225/234). Ein sechster Treffer traegt
-                         „OHNE PFLEGETICKET" und ist neue Schuld.
+                         Quelldatei ueber 2 000 Zeilen"). HAELT seit NAK-225
+                         (S25d, 09.09.2026): keine Quelldatei liegt mehr ueber
+                         der Grenze, die Pflegeticket-Zuordnung ist leer. Der
+                         naechste Treffer traegt „OHNE PFLEGETICKET" und ist
+                         damit sichtbar neue Schuld; ein Eintrag, dessen Datei
+                         die Grenze nicht mehr reisst, beendet den Lauf als
+                         WERKZEUGFEHLER.
   Funktionen ueber 200   Massstab 200 Zeilen aus Plan S25b; Grenze fuer die
                          ANZAHL ist die Ratsche 28 = Iststand, Ziel 0.
   Clippy-Fundstellen     Grenze 91 = Iststand (Ratsche), Ziel 0.
   dead_code ohne Aufrufer Grenze 0 = Iststand 0.
-  Kommentar-Bezeichner   Grenze 35 = Iststand (Ratsche), Ziel 0.
+  Kommentar-Bezeichner   Grenze 30 = Iststand (Ratsche), Ziel 0.
   Kontextflaechen        woertlich aus docs/context-hygiene-playbook.md und
                          Dirigenten-Skill Paragraph 3.5; alle fuenf halten
                          heute.
 
-Damit ist heute genau EIN Maass rot, und es ist das, fuer das Pflegetickets
-offenstehen. Jede weitere Rotmeldung ist echte Verschlechterung.
+Seit NAK-225 (S25d, 09.09.2026) ist KEIN Maass mehr rot: die Zeilengrenze war
+das letzte, und die drei Dateien, die sie rissen, sind geteilt. Jede Rotmeldung
+ab hier ist echte Verschlechterung — es gibt keinen bekannten Rest mehr, hinter
+dem sie sich verstecken koennte.
 
 WAS GEMESSEN WIRD — CODEBASE
 ----------------------------
@@ -192,6 +197,14 @@ FUNKTION_GRENZE = 200
 # S25c teilt Dateien und zerlegt bewusst keine Funktion (NAK-235 ist ein eigener
 # Schritt).
 #
+# Stand 09.09.2026 nach NAK-225 (S25d, Aufteilung PluginProcessor.cpp,
+# FeatureEngine.h, ControlClient.cpp): Kommentar-Bezeichner von 32 auf 30
+# gesenkt — zwei Kommentare der Ticketdateien nannten entfallene Namen
+# (`assistentSchritt`, `commandIdVorgabe`) ohne Historienmarker im eigenen
+# Umfeld und tragen ihn jetzt. Funktionen ueber 200 Zeilen und Clippy wieder
+# unveraendert, aus demselben Grund. Die Zeilengrenze reisst seit S25d KEINE
+# Datei mehr; die Pflegeticket-Zuordnung ist leer.
+#
 # Warum die Anzahl langer Funktionen eine Ratsche ist und keine 0: 200 Zeilen
 # je Funktion ist der Massstab (Plan S25b), aber die 28 heutigen Treffer haben
 # kein Pflegeticket. Eine 0 stuende dauerhaft rot und saehe nach Normalzustand
@@ -201,7 +214,7 @@ FUNKTION_ANZAHL_GRENZE = 28
 CLIPPY_GRENZE = 91
 CLIPPY_ZIEL = 0
 DEADCODE_GRENZE = 0
-KOMMENTAR_GRENZE = 32
+KOMMENTAR_GRENZE = 30
 KOMMENTAR_ZIEL = 0
 
 # Woertlich aus docs/context-hygiene-playbook.md und Dirigenten-Skill 3.5.
@@ -220,11 +233,15 @@ SKILL_PFAD = ".claude/skills/dirigent/SKILL.md"
 # `broker/src/transport/server_v3/mod.rs` aufgeteilt; beide liegen nicht mehr
 # ueber der Grenze und stehen deshalb nicht mehr hier. Ein Eintrag fuer eine
 # Datei, die die Grenze nicht mehr reisst, waere eine Schuld, die es nicht gibt.
-PFLEGETICKETS = {
-    "eq-copilot/plugin/src/PluginProcessor.cpp": "NAK-225",
-    "eq-copilot/plugin/core/analysis/FeatureEngine.h": "NAK-225",
-    "eq-copilot/plugin/core/ipc/ControlClient.cpp": "NAK-225",
-}
+#
+# NAK-225 (S25d, 09.09.2026) hat `PluginProcessor.cpp`, `FeatureEngine.h` und
+# `ControlClient.cpp` aufgeteilt. Damit reisst KEINE Datei die Grenze mehr, und
+# die Zuordnung ist leer. Leer heisst hier nicht „vergessen": `veraltete_tickets`
+# unten sorgt dafuer, dass ein Eintrag, dessen Datei die Grenze nicht mehr
+# reisst, den Lauf als WERKZEUGFEHLER beendet — die Liste kann also gar nicht
+# still veralten. Der naechste Treffer ueber der Grenze traegt
+# „OHNE PFLEGETICKET" und ist damit sichtbar neue Schuld.
+PFLEGETICKETS: dict[str, str] = {}
 
 TREFFER_ZEIGEN = 25   # laengere Listen werden gekappt, mit Restzahl
 
@@ -359,6 +376,19 @@ def maskiere(text: str, rust: bool):
 
 
 # ------------------------------------------------------- Maass 1: Dateizeilen
+
+
+def veraltete_tickets(ueber_grenze: list[str], tickets: dict[str, str]) -> list[str]:
+    """Pflegeticket-Eintraege, deren Datei die Grenze nicht mehr reisst.
+
+    Die Zuordnung oben behauptet: wer die Grenze reisst, hat ein Ticket. Bleibt
+    ein Eintrag stehen, nachdem die Datei geteilt wurde, behauptet sie eine
+    Schuld, die es nicht gibt — und der naechste Leser glaubt sie. Ein solcher
+    Eintrag ist deshalb ein WERKZEUGfehler, kein Befund: nicht die Codebase ist
+    schlechter geworden, das Mass stimmt nicht mehr.
+    """
+    ueber = set(ueber_grenze)
+    return sorted(p for p in tickets if p not in ueber)
 
 
 def zeilen_zaehlen(text: str) -> int:
@@ -943,6 +973,14 @@ def miss(wurzel: pathlib.Path, memory: pathlib.Path, mit_clippy: bool):
         elif n > ZEILEN_ZIEL:
             ueber_ziel.append((n, f"{rel}: {n} Zeilen"))
     ohne_ticket = sum(1 for _, t in ueber_grenze if "OHNE PFLEGETICKET" in t)
+    veraltet = veraltete_tickets([rel for rel, _ in quellen
+                                  if zeilen_zaehlen(texte[rel]) > ZEILEN_GRENZE],
+                                 PFLEGETICKETS)
+    if veraltet:
+        raise RuntimeError(
+            "Pflegeticket-Zuordnung veraltet - diese Datei(en) reissen die "
+            "Grenze nicht mehr und duerfen keine Schuld mehr tragen: "
+            + ", ".join(veraltet))
     maasse.append(dict(
         name=f"Quelldateien ueber {ZEILEN_GRENZE} Zeilen", ist=len(ueber_grenze),
         ziel=0, grenze=0,
@@ -1028,6 +1066,21 @@ def selbsttest() -> int:
     # --- BOM wird verworfen -------------------------------------------------
     pruefe("BOM zaehlt nicht als Zeile",
            zeilen_zaehlen("﻿a\nb\n".encode("utf-8").decode("utf-8-sig")), 2)
+
+    # --- Pflegeticket-Zuordnung: veraltet = Werkzeugfehler ------------------
+    # NAK-225 (S25d, 09.09.2026): die Zuordnung ist seit dem Schnitt leer. Leer
+    # darf nicht heissen „unbeobachtet", also faellt hier beides — der Eintrag,
+    # der ins Leere zeigt, UND die Datei, die kein Ticket hat.
+    pruefe("leere Zuordnung ist nie veraltet", veraltete_tickets(["a.cpp"], {}), [])
+    pruefe("Eintrag zu einer Datei ueber der Grenze ist aktuell",
+           veraltete_tickets(["a.cpp"], {"a.cpp": "NAK-1"}), [])
+    pruefe("Eintrag zu einer geteilten Datei ist veraltet",
+           veraltete_tickets([], {"a.cpp": "NAK-1"}), ["a.cpp"])
+    pruefe("zwei veraltete Eintraege kommen sortiert",
+           veraltete_tickets(["c.cpp"], {"b.cpp": "NAK-1", "a.cpp": "NAK-2"}),
+           ["a.cpp", "b.cpp"])
+    pruefe("Datei ueber der Grenze ohne Eintrag ist kein Werkzeugfehler",
+           veraltete_tickets(["a.cpp", "b.cpp"], {"a.cpp": "NAK-1"}), [])
 
     # --- Bewertung: Ziel ist kein Rot --------------------------------------
     pruefe("Ziel verfehlt heisst ZIEL", bewerte(5, 0, 10), "ZIEL")

@@ -1,0 +1,15 @@
+# Rotbeweis zur neuen Wache in tools/plan/gesundheit.py (NAK-225/S25d)
+#
+# Absichtlich gebrochen: PFLEGETICKETS traegt wieder den Eintrag fuer
+# eq-copilot/plugin/src/PluginProcessor.cpp, obwohl die Datei seit dem
+# Schnitt 993 Zeilen hat und die Grenze 2 000 nicht mehr reisst.
+#
+# Erwartet: Exit 2 (WERKZEUGfehler), nicht Exit 4 (Befund) - nicht die
+# Codebase ist schlechter geworden, die Zuordnung stimmt nicht mehr.
+
+Exit = 2
+
+stderr:
+Werkzeugfehler: Pflegeticket-Zuordnung veraltet - diese Datei(en) reissen die Grenze nicht mehr und duerfen keine Schuld mehr tragen: eq-copilot/plugin/src/PluginProcessor.cpp
+stdout (Ende):
+

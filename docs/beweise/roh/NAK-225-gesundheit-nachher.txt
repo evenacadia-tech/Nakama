@@ -1,0 +1,212 @@
+SELBSTTEST
+  ok   leere Datei = 0
+  ok   eine Zeile ohne Umbruch = 1
+  ok   eine Zeile mit Umbruch = 1
+  ok   zwei Zeilen LF
+  ok   zwei Zeilen ohne Schlussumbruch
+  ok   zwei Zeilen CRLF
+  ok   nur Umbruch = 1
+  ok   2000 Zeilen halten
+  ok   2001 Zeilen reissen
+  ok   BOM zaehlt nicht als Zeile
+  ok   leere Zuordnung ist nie veraltet
+  ok   Eintrag zu einer Datei ueber der Grenze ist aktuell
+  ok   Eintrag zu einer geteilten Datei ist veraltet
+  ok   zwei veraltete Eintraege kommen sortiert
+  ok   Datei ueber der Grenze ohne Eintrag ist kein Werkzeugfehler
+  ok   Ziel verfehlt heisst ZIEL
+  ok   Grenze gehalten heisst OK
+  ok   Grenze gerissen heisst GRENZE
+  ok   Grenze exakt getroffen reisst nicht
+  ok   Grenze getroffen, Ziel verfehlt heisst ZIEL
+  ok   nicht messbar ist nie rot
+  ok   Ratsche 91 haelt
+  ok   Ratsche 92 reisst
+  ok   Klammern im String verschwinden
+  ok   Klammern im Zeilenkommentar verschwinden
+  ok   Klammern im Blockkommentar verschwinden
+  ok   Rust-Blockkommentar verschachtelt
+  ok   Rust-Rohstring maskiert
+  ok   C++-Rohstring maskiert
+  ok   Lebensdauer bricht die Maskierung nicht
+  ok   Ziffernstrenner bricht die Maskierung nicht
+  ok   Zeichenliteral maskiert
+  ok   Maskierung erhaelt Zeilenzahl
+  ok   Kommentarspanne gefunden
+  ok   Rust-Funktion mit exakt 200 Zeilen haelt
+  ok   Rust-Funktion mit 201 Zeilen reisst
+  ok   gemeldete Laenge stimmt
+  ok   gemeldeter Name stimmt
+  ok   C++-Funktion mit exakt 200 Zeilen haelt
+  ok   C++-Funktion mit 201 Zeilen reisst
+  ok   if-Block ist keine eigene Funktion
+  ok   Lambda zaehlt nicht als Funktion
+  ok   Lambda wird gezaehlt und gemeldet
+  ok   Initialisiererliste ist eine Funktion
+  ok   Trait-Methode ohne Rumpf ist keine Funktion
+  ok   Klassenrumpf ist keine Funktion
+  ok   dead_code mit Aufrufer ist kein Befund
+  ok   dead_code ohne Aufrufer ist ein Befund
+  ok   dead_code meldet den Namen
+  ok   anderes allow ist kein Befund
+  ok   inline-Attribut mit verwendetem Typ ist kein Befund
+  ok   dead_code `pub const fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `pub const fn helfer() {}` meldet den Namen
+  ok   dead_code `pub const fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `pub(crate) unsafe fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `pub(crate) unsafe fn helfer() {}` meldet den Namen
+  ok   dead_code `pub(crate) unsafe fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `pub async fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `pub async fn helfer() {}` meldet den Namen
+  ok   dead_code `pub async fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `unsafe fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `unsafe fn helfer() {}` meldet den Namen
+  ok   dead_code `unsafe fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `pub const extern "C" fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `pub const extern "C" fn helfer() {}` meldet den Namen
+  ok   dead_code `pub const extern "C" fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `pub const HELFER: u8 = 1;` ohne Verwendung ist ein Befund
+  ok   dead_code `pub const HELFER: u8 = 1;` meldet den Namen
+  ok   dead_code `pub const HELFER: u8 = 1;` mit Verwendung ist kein Befund
+  ok   dead_code `static mut ZAEHLER: u8 = 0;` ohne Verwendung ist ein Befund
+  ok   dead_code `static mut ZAEHLER: u8 = 0;` meldet den Namen
+  ok   dead_code `static mut ZAEHLER: u8 = 0;` mit Verwendung ist kein Befund
+  ok   dead_code `pub unsafe trait Helfer {}` ohne Verwendung ist ein Befund
+  ok   dead_code `pub unsafe trait Helfer {}` meldet den Namen
+  ok   dead_code `pub unsafe trait Helfer {}` mit Verwendung ist kein Befund
+  ok   dead_code `struct union where u8: Copy;` ohne Verwendung ist ein Befund
+  ok   dead_code `struct union where u8: Copy;` meldet den Namen
+  ok   dead_code `struct union where u8: Copy;` mit Verwendung ist kein Befund
+  ok   dead_code `union Foo { a: u8 }` ohne Verwendung ist ein Befund
+  ok   dead_code `union Foo { a: u8 }` meldet den Namen
+  ok   dead_code `union Foo { a: u8 }` mit Verwendung ist kein Befund
+  ok   dead_code `fn default() -> u8 { 1 }` ohne Verwendung ist ein Befund
+  ok   dead_code `fn default() -> u8 { 1 }` meldet den Namen
+  ok   dead_code `fn default() -> u8 { 1 }` mit Verwendung ist kein Befund
+  ok   dead_code `default fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `default fn helfer() {}` meldet den Namen
+  ok   dead_code `default fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `const fn name() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `const fn name() {}` meldet den Namen
+  ok   dead_code `const fn name() {}` mit Verwendung ist kein Befund
+  ok   dead_code `const NAME: u8 = 1;` ohne Verwendung ist ein Befund
+  ok   dead_code `const NAME: u8 = 1;` meldet den Namen
+  ok   dead_code `const NAME: u8 = 1;` mit Verwendung ist kein Befund
+  ok   dead_code `struct union where` bleibt trotz fremder where-Klausel ein Befund
+  ok   dead_code `struct union where` meldet den Namen neben der fremden where-Klausel
+  ok   clippy: Abbruch MIT Diagnosen ist ein Werkzeugfehler
+  ok   clippy: Abbruch MIT Diagnosen liefert keine Zahl
+  ok   clippy: Abbruch OHNE Diagnosen ist ein Werkzeugfehler
+  ok   clippy: Abbruch ohne stderr sagt genau das
+  ok   clippy: sauberer Lauf mit 3 Warnungen zaehlt 3
+  ok   clippy: sauberer Lauf ohne Diagnosen zaehlt 0
+  ok   clippy: Gesamtlauf erbt den Werkzeugfehler (Weg zu Exit 2)
+  ok   clippy: ohne Schalter bleibt derselbe Baum unberuehrt
+  ok   clippy: fehlender Messort ist ein Werkzeugfehler
+  ok   clippy: fehlendes cargo bleibt NICHT MESSBAR
+  ok   existenter Bezeichner ist kein Befund
+  ok   fehlender Bezeichner ist ein Befund
+  ok   Befund nennt den Namen
+  ok   ohne Historienmarker wird nichts ausgenommen
+  ok   zu kurzer Kandidat wird uebergangen
+  ok   Stoppwort wird uebergangen
+  ok   Backtick im String ist kein Kandidat
+  ok   markierte Historie ist kein Befund
+  ok   markierte Historie wird gezaehlt
+  ok   dieselbe Luecke als Gegenwart ist ein Befund
+  ok   Indexzeile mit 250 Zeichen haelt
+  ok   Indexzeile mit 251 Zeichen reisst
+  ok   vollstaendige Messorte liefern Dateien
+  ok   fehlender Messort wirft statt still 0 zu messen
+  ok   eingespeister Wert wird im Kopf angesagt
+  ok   ohne Einspeisung keine Warnzeile
+
+Selbsttest: 121/121 bestanden
+
+NAKAMA-GESUNDHEIT
+Wurzel : C:\Users\phili\Projekte\Nakama
+Memory : C:\Users\phili\.claude\projects\C--Users-phili-Projekte-Nakama\memory
+
+Maass                                Ist    Ziel   Grenze  Status       
+-----------------------------------  -----  -----  ------  -------------
+Quelldateien ueber 2000 Zeilen       0      0      0       OK           
+Quelldateien ueber Ziel 1500 Zeilen  6      0      -       ZIEL         
+Funktionen ueber 200 Zeilen          28     0      28      ZIEL         
+Clippy-Fundstellen (broker)          -      0      91      NICHT MESSBAR
+allow(dead_code) ohne Aufrufer       0      0      0       OK           
+Kommentar-Bezeichner ohne Code       30     0      30      ZIEL         
+MEMORY.md (Bytes)                    3251   22528  24986   OK           
+CLAUDE.md (Bytes)                    22902  -      24576   OK           
+Dirigenten-Skill (Bytes)             35654  -      36864   OK           
+MEMORY.md: Zeilen ueber 250 Zeichen  0      0      0       OK           
+Memory-Dateien ohne Index-Link       0      0      0       OK           
+
+nicht messbar: Clippy-Fundstellen (broker) - nicht angefordert (Schalter --clippy)
+
+Ziel verfehlt: Quelldateien ueber Ziel 1500 Zeilen (6 von hoechstens -)
+  broker/src/coordinator/experiment_verdrahtung.rs: 1892 Zeilen
+  eq-copilot/plugin/src/SourcesModel.cpp: 1864 Zeilen
+  broker/src/server.rs: 1841 Zeilen
+  broker/src/coordinator/experiment.rs: 1727 Zeilen
+  eq-copilot/plugin/src/PluginEditor.cpp: 1665 Zeilen
+  eq-copilot/plugin/src/PluginProcessor.h: 1524 Zeilen
+
+Ziel verfehlt: Funktionen ueber 200 Zeilen (28 von hoechstens 28)
+  broker/src/transport/server_v3/verbindung.rs:147 verbindung_bedienen - 744 Zeilen
+  eq-copilot/plugin/src/SourcesModel.cpp:538 SourcesModel::uebernehmeSessionSnapshot - 744 Zeilen
+  eq-copilot/plugin/core/ipc/controlclient/Verbindung.cpp:495 ControlClient::Laufzeit::eineVerbindung - 580 Zeilen
+  broker/src/transport/server_v3/listener.rs:265 v3_server_starten_intern - 439 Zeilen
+  broker/src/coordinator/experiment_verdrahtung.rs:860 resultatmessung - 394 Zeilen
+  eq-copilot/plugin/src/PluginProcessor.cpp:463 EqCopilotProcessor::processBlock - 394 Zeilen
+  broker/src/coordinator/intent.rs:317 intent_update_json_mit_minor - 344 Zeilen
+  eq-copilot/plugin/src/prozessor/Ipc.cpp:115 EqCopilotProcessor::interventionenSenden - 341 Zeilen
+  eq-copilot/plugin/src/PluginEditor.cpp:1331 EqCopilotEditor::paint - 333 Zeilen
+  broker/src/coordinator/befehl.rs:157 persistenz_p0_intern - 316 Zeilen
+  eq-copilot/plugin/src/PipeClient.cpp:340 PipeClient::eineVerbindung - 298 Zeilen
+  broker/src/coordinator/befehl.rs:662 p0_json_mit_minor - 292 Zeilen
+  broker/src/coordinator/hypothese/rechnung.rs:56 hypothesen - 267 Zeilen
+  eq-copilot/plugin/core/ipc/TelemetryClient.cpp:541 TelemetryClient::Laufzeit::eineVerbindung - 266 Zeilen
+  broker/src/coordinator/hypothese_verdrahtung.rs:130 aufnahmen_sammeln - 264 Zeilen
+  broker/src/coordinator/link.rs:80 control_hello_registrieren - 255 Zeilen
+  eq-copilot/plugin/src/prozessor/Analyse.cpp:91 EqCopilotProcessor::workerLauf - 251 Zeilen
+  broker/src/server.rs:663 verbindung_bedienen - 249 Zeilen
+  broker/src/store/writer.rs:176 writer_lauf - 229 Zeilen
+  eq-copilot/plugin/src/PluginEditor.cpp:1101 EqCopilotEditor::paintMainFlaeche - 229 Zeilen
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:31 FeatureEngine::verarbeiteSamples - 226 Zeilen
+  broker/src/coordinator/liveness.rs:317 heartbeat_kontakt - 223 Zeilen
+  eq-copilot/plugin/src/HoerMarkierung.h:342 verarbeite - 219 Zeilen
+  eq-copilot/plugin/core/ipc/BrokerLifecycle.cpp:722 BrokerLifecycle::tick - 218 Zeilen
+  eq-copilot/plugin/src/prozessor/Ipc.cpp:848 EqCopilotProcessor::v3ControlLink - 211 Zeilen
+  ... und 3 weitere
+
+Ziel verfehlt: Kommentar-Bezeichner ohne Code (30 von hoechstens 30)
+  broker/src/coordinator/befehl.rs:10 `persistenz_p0`
+  broker/src/coordinator/befehl.rs:866 `persistenz_p0`
+  broker/src/coordinator/evidenz.rs:4 `ed9bbf7`
+  broker/src/coordinator/experiment.rs:1468 `Behalten`
+  broker/src/coordinator/experiment.rs:1619 `eigen3`
+  broker/src/coordinator/experiment_verdrahtung.rs:61 `persistenz_p0`
+  broker/src/coordinator/experiment_verdrahtung.rs:346 `domaene_persistieren`
+  broker/src/coordinator/experiment_verdrahtung.rs:1847 `binde_blindreihenfolge_fuer_test`
+  broker/src/coordinator/hypothese/zusammenhang.rs:81 `eigen4`
+  broker/src/coordinator/hypothese/zusammenhang.rs:344 `eigen3`
+  broker/src/coordinator/intervention.rs:630 `_locked`
+  broker/src/coordinator/invalidierung_verdrahtung.rs:298 `bis_sample`
+  broker/src/coordinator/invalidierung_verdrahtung.rs:298 `von_sample`
+  broker/src/coordinator/invalidierung_verdrahtung.rs:559 `persistenz_p0`
+  broker/src/coordinator/link.rs:470 `link_ohne_ereignissequenz`
+  broker/src/store/handle.rs:399 `assistant_steps`
+  broker/src/transport/server_v3/listener.rs:582 `HandleEintrag`
+  broker/src/transport/server_v3/win_handles.rs:368 `HandleEintrag`
+  eq-copilot/plugin/core/analysis/FeatureEngine.h:1099 `STATUS_STACK_OVERFLOW`
+  eq-copilot/plugin/core/analysis/TruePeak.h:33 `interpolationsfehler_folgt_der_formel`
+  eq-copilot/plugin/core/analysis/TruePeak.h:121 `STATUS_STACK_OVERFLOW`
+  eq-copilot/plugin/core/ipc/ControlClient.h:423 `nichtNeutral`
+  eq-copilot/plugin/core/ipc/IpcQueues.h:72 `_end`
+  eq-copilot/plugin/core/ipc/IpcQueues.h:77 `hatEreignisAelterAls`
+  eq-copilot/plugin/core/ipc/IpcVerbindung.cpp:29 `NMPWAIT_USE_DEFAULT_WAIT`
+  ... und 5 weitere
+Hinweis: 79 C++-Lambda(s) bewusst nicht als eigene Funktion gezaehlt
+Hinweis: 12 weitere(r) Verweis(e) auf fehlende Bezeichner sind als Historie markiert und nicht gezaehlt
+
+URTEIL: alle Grenzen gehalten (3 Ziel(e) verfehlt)

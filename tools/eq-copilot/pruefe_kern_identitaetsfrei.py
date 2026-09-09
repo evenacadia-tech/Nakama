@@ -101,6 +101,7 @@ ERWARTETE_OBJEKTE = {
     # faellt [S6] beim naechsten Lauf.
     "Vertrag.obj",
     "Nachrichten.obj",
+    "Verbindung.obj",
     "TelemetryClient.obj",
 }
 

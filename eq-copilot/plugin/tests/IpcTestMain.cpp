@@ -2209,7 +2209,13 @@ void abbruchsignal_gehoert_der_generation()
                 "abbruchsignal_gehoert_der_generation/oeffnen_loescht_nie",
                 "Codepruefung an IpcVerbindung.cpp");
 
-        for (const char* datei : { "ControlClient.cpp", "TelemetryClient.cpp" })
+        // NAK-225/S25d (09.09.2026): der Verbindungsaufbau des ControlClient
+        // steht seit der Aufteilung nach Fachbereich in
+        // core/ipc/controlclient/Verbindung.cpp. Diese Wache liest QUELLTEXT;
+        // ihr Pfad muss der Quelle folgen, sonst laese sie eine Datei, in der
+        // das Muster gar nicht mehr vorkommt, und waere ab da still gruen oder
+        // still rot. Der Pruefname bleibt unveraendert `.../control`.
+        for (const char* datei : { "controlclient/Verbindung.cpp", "TelemetryClient.cpp" })
         {
             const auto quelle = wurzel().getChildFile (
                 std::string ("eq-copilot/plugin/core/ipc/") + datei).loadFileAsString();
@@ -2222,7 +2228,7 @@ void abbruchsignal_gehoert_der_generation()
             pruefe (zone.isNotEmpty() && zone.contains ("sollAbbrechen (generation)")
                         && ! zone.contains ("oeffnen ("),
                     (std::string ("abbruchsignal_gehoert_der_generation/")
-                     + (std::string (datei) == "ControlClient.cpp" ? "control" : "telemetrie")).c_str(),
+                     + (std::string (datei) == "TelemetryClient.cpp" ? "telemetrie" : "control")).c_str(),
                     "Regressionswache durch Lesen: loesen, Generation erneut pruefen, "
                     "dann oeffnen");
         }

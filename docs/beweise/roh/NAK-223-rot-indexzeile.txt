@@ -1,6 +1,6 @@
 # NAK-223 Rotbeweis — MEMORY.md-Zeile ueber 250 Zeichen (251 reisst, 250 haelt)
 
-Werkzeug: py -3.13 tools/plan/gesundheit.py --wurzel C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\indexzeile --memory C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\indexzeile-ordner
+Werkzeug: py -3.13 tools/plan/gesundheit.py --wurzel C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume4\indexzeile --memory C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume4\indexzeile-ordner
 
 ## 1. Mit synthetischer Verletzung
 
@@ -8,8 +8,8 @@ Exitcode: 4   (erwartet 4)
 
 ```text
 NAKAMA-GESUNDHEIT
-Wurzel : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\indexzeile  (UEBERSCHRIEBEN)
-Memory : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\indexzeile-ordner
+Wurzel : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume4\indexzeile  (UEBERSCHRIEBEN)
+Memory : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume4\indexzeile-ordner
 
 Maass                                Ist  Ziel   Grenze  Status       
 -----------------------------------  ---  -----  ------  -------------
@@ -41,8 +41,8 @@ Exitcode: 0   (erwartet 0)
 
 ```text
 NAKAMA-GESUNDHEIT
-Wurzel : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\indexzeile  (UEBERSCHRIEBEN)
-Memory : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\indexzeile-ordner
+Wurzel : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume4\indexzeile  (UEBERSCHRIEBEN)
+Memory : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume4\indexzeile-ordner
 
 Maass                                Ist  Ziel   Grenze  Status       
 -----------------------------------  ---  -----  ------  -------------

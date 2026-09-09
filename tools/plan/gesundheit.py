@@ -107,7 +107,10 @@ Zeilen sind kein Wartungsaufwand (Ticketnachtrag 08.09.2026).
       hinter dem Attribut ein Typname, gilt dieser). Befund, wenn der Name
       ausserhalb seiner Definitionszeile nirgends im Crate vorkommt. Ein
       Attribut ohne erkennbaren Bezeichner wird gezaehlt und benannt, nicht
-      verschwiegen.
+      verschwiegen. FEHLERKLASSEN: ein in `#[cfg_attr(…, allow(dead_code))]`
+      verpacktes Attribut wird NICHT gesehen (die Form beginnt nicht mit
+      `#[allow`), und ein Typ, der nur noch in `impl Foo` vorkommt, gilt als
+      verwendet.
 
   (5) KOMMENTARE MIT NICHT EXISTENTEN BEZEICHNERN. Kandidat ist eine
       Backtick-Spanne in einem Kommentar der Quellorte, die genau wie ein
@@ -352,12 +355,24 @@ def lies_text(pfad: pathlib.Path) -> str:
 
 
 def sammle_quellen(wurzel: pathlib.Path):
-    """Alle Quelldateien der Messorte, sortiert, ohne die Ausnahmen."""
+    """Alle Quelldateien der Messorte, sortiert, ohne die Ausnahmen.
+
+    Ein FEHLENDER Messort ist ein Werkzeugfehler, kein leeres Ergebnis. Das
+    Kontext-Hygiene-Playbook nennt die Klasse beim Namen: „Ein Prüfkommando auf
+    einen verschobenen Pfad liefert still 0 und lässt Veraltetes verifiziert
+    aussehen." Wird `eq-copilot/plugin/core` umbenannt, faellt ohne diese
+    Wache ein Drittel der Codebase unbemerkt aus der Messung — und das Werkzeug
+    meldete gruen.
+    """
+    fehlend = [ort for ort in QUELLORTE if not (wurzel / ort).is_dir()]
+    if fehlend:
+        raise RuntimeError(
+            "Messort fehlt: " + ", ".join(fehlend)
+            + f" (unter {wurzel}). Umbenannt oder verschoben? "
+              "Die Ortsliste QUELLORTE gehoert nachgezogen.")
     treffer = []
     for ort in QUELLORTE:
         basis = wurzel / ort
-        if not basis.is_dir():
-            continue
         for pfad in basis.rglob("*"):
             if not pfad.is_file() or pfad.suffix not in QUELLENDUNGEN:
                 continue
@@ -809,6 +824,15 @@ def drucke_bericht(maasse, wurzel, memory, ueberschrieben):
     print("NAKAMA-GESUNDHEIT")
     print(f"Wurzel : {wurzel}" + ("  (UEBERSCHRIEBEN)" if ueberschrieben else ""))
     print(f"Memory : {memory}")
+    # Ein eingespeister Wert steht zwar mit seiner Marke in der Zeile, aber die
+    # Urteilszeile unten spraeche sonst von „allen Grenzen" und meinte eine
+    # Messung, die es nicht gab. Der Kopf sagt es deshalb zuerst.
+    gesetzt = [m["name"] for m in maasse if m.get("eingespeist")]
+    if gesetzt:
+        print("")
+        print("ACHTUNG: dieser Bericht ist KEINE vollstaendige Messung - "
+              f"{len(gesetzt)} Maass(e) per --einspeisen gesetzt: "
+              + ", ".join(gesetzt))
     print("")
     for z in tabelle(maasse):
         print(z)
@@ -1063,6 +1087,44 @@ def selbsttest() -> int:
     # --- Index-Zeilen: 250 haelt, 251 reisst --------------------------------
     pruefe("Indexzeile mit 250 Zeichen haelt", len("x" * 250) > INDEXZEILE_GRENZE, False)
     pruefe("Indexzeile mit 251 Zeichen reisst", len("x" * 251) > INDEXZEILE_GRENZE, True)
+
+    # --- Fehlender Messort ist ein Werkzeugfehler, kein leeres Ergebnis -----
+    # Die Wache laeuft gegen einen temporaeren Baum: mit allen drei Orten
+    # liefert sie eine Dateiliste, ohne einen davon wirft sie.
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        w = pathlib.Path(tmp)
+        for ort in QUELLORTE:
+            (w / ort).mkdir(parents=True)
+        (w / QUELLORTE[0] / "a.rs").write_text("fn a() {}\n", encoding="utf-8")
+        pruefe("vollstaendige Messorte liefern Dateien", len(sammle_quellen(w)), 1)
+        # Einen Ort umbenennen - genau der Fall „Pfad verschoben".
+        (w / QUELLORTE[2]).rename(w / QUELLORTE[2].replace("core", "kern"))
+        geworfen = False
+        try:
+            sammle_quellen(w)
+        except RuntimeError as e:
+            geworfen = "Messort fehlt" in str(e)
+        pruefe("fehlender Messort wirft statt still 0 zu messen", geworfen, True)
+
+    # --- Eingespeister Wert wird im Kopf angesagt ---------------------------
+    # Die Marke an der Zeile allein genuegt nicht: die Urteilszeile spraeche
+    # sonst von „allen Grenzen" und meinte eine Messung, die es nicht gab.
+    import io
+    import contextlib
+    probe = [dict(name="Probe", ist=1, ziel=0, grenze=9, status="ZIEL",
+                  treffer=[], eingespeist=True)]
+    puffer = io.StringIO()
+    with contextlib.redirect_stdout(puffer):
+        drucke_bericht(probe, pathlib.Path("."), pathlib.Path("."), False)
+    pruefe("eingespeister Wert wird im Kopf angesagt",
+           "KEINE vollstaendige Messung" in puffer.getvalue(), True)
+    probe[0]["eingespeist"] = False
+    puffer = io.StringIO()
+    with contextlib.redirect_stdout(puffer):
+        drucke_bericht(probe, pathlib.Path("."), pathlib.Path("."), False)
+    pruefe("ohne Einspeisung keine Warnzeile",
+           "KEINE vollstaendige Messung" in puffer.getvalue(), False)
 
     rot = [(n, t) for n, ok, t in faelle if not ok]
     for n, ok, t in faelle:

@@ -1,6 +1,6 @@
 # NAK-223 Rotbeweis — allow(dead_code) ohne Aufrufer (ohne Aufrufer reisst, mit haelt)
 
-Werkzeug: py -3.13 tools/plan/gesundheit.py --wurzel C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\deadcode --memory C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\deadcode\kein-memory
+Werkzeug: py -3.13 tools/plan/gesundheit.py --wurzel C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume4\deadcode --memory C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume4\deadcode\kein-memory
 
 ## 1. Mit synthetischer Verletzung
 
@@ -8,8 +8,8 @@ Exitcode: 4   (erwartet 4)
 
 ```text
 NAKAMA-GESUNDHEIT
-Wurzel : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\deadcode  (UEBERSCHRIEBEN)
-Memory : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\deadcode\kein-memory
+Wurzel : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume4\deadcode  (UEBERSCHRIEBEN)
+Memory : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume4\deadcode\kein-memory
 
 Maass                                Ist  Ziel   Grenze  Status       
 -----------------------------------  ---  -----  ------  -------------
@@ -26,11 +26,11 @@ MEMORY.md: Zeilen ueber 250 Zeichen  -    0      0       NICHT MESSBAR
 Memory-Dateien ohne Index-Link       -    0      0       NICHT MESSBAR
 
 nicht messbar: Clippy-Fundstellen (broker) - nicht angefordert (Schalter --clippy)
-nicht messbar: MEMORY.md (Bytes) - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\deadcode\kein-memory\MEMORY.md
+nicht messbar: MEMORY.md (Bytes) - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume4\deadcode\kein-memory\MEMORY.md
 nicht messbar: CLAUDE.md (Bytes) - CLAUDE.md
 nicht messbar: Dirigenten-Skill (Bytes) - .claude/skills/dirigent/SKILL.md
-nicht messbar: MEMORY.md: Zeilen ueber 250 Zeichen - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\deadcode\kein-memory\MEMORY.md
-nicht messbar: Memory-Dateien ohne Index-Link - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\deadcode\kein-memory
+nicht messbar: MEMORY.md: Zeilen ueber 250 Zeichen - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume4\deadcode\kein-memory\MEMORY.md
+nicht messbar: Memory-Dateien ohne Index-Link - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume4\deadcode\kein-memory
 
 GRENZE gerissen: allow(dead_code) ohne Aufrufer (1 von hoechstens 0)
   broker/src/tot.rs:1 nie_gerufen
@@ -44,8 +44,8 @@ Exitcode: 0   (erwartet 0)
 
 ```text
 NAKAMA-GESUNDHEIT
-Wurzel : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\deadcode  (UEBERSCHRIEBEN)
-Memory : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\deadcode\kein-memory
+Wurzel : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume4\deadcode  (UEBERSCHRIEBEN)
+Memory : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume4\deadcode\kein-memory
 
 Maass                                Ist  Ziel   Grenze  Status       
 -----------------------------------  ---  -----  ------  -------------
@@ -62,11 +62,11 @@ MEMORY.md: Zeilen ueber 250 Zeichen  -    0      0       NICHT MESSBAR
 Memory-Dateien ohne Index-Link       -    0      0       NICHT MESSBAR
 
 nicht messbar: Clippy-Fundstellen (broker) - nicht angefordert (Schalter --clippy)
-nicht messbar: MEMORY.md (Bytes) - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\deadcode\kein-memory\MEMORY.md
+nicht messbar: MEMORY.md (Bytes) - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume4\deadcode\kein-memory\MEMORY.md
 nicht messbar: CLAUDE.md (Bytes) - CLAUDE.md
 nicht messbar: Dirigenten-Skill (Bytes) - .claude/skills/dirigent/SKILL.md
-nicht messbar: MEMORY.md: Zeilen ueber 250 Zeichen - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\deadcode\kein-memory\MEMORY.md
-nicht messbar: Memory-Dateien ohne Index-Link - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\deadcode\kein-memory
+nicht messbar: MEMORY.md: Zeilen ueber 250 Zeichen - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume4\deadcode\kein-memory\MEMORY.md
+nicht messbar: Memory-Dateien ohne Index-Link - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume4\deadcode\kein-memory
 
 URTEIL: alle Grenzen gehalten (0 Ziel(e) verfehlt)
 ```

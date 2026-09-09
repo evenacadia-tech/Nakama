@@ -13,8 +13,10 @@ Exitcode: 4   (erwartet 4)
 
 ```text
 NAKAMA-GESUNDHEIT
-Wurzel : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\clippy  (UEBERSCHRIEBEN)
-Memory : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\clippy\kein-memory
+Wurzel : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume4\clippy  (UEBERSCHRIEBEN)
+Memory : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume4\clippy\kein-memory
+
+ACHTUNG: dieser Bericht ist KEINE vollstaendige Messung - 1 Maass(e) per --einspeisen gesetzt: Clippy-Fundstellen (broker)
 
 Maass                                Ist  Ziel   Grenze  Status              
 -----------------------------------  ---  -----  ------  --------------------
@@ -30,11 +32,11 @@ Dirigenten-Skill (Bytes)             -    -      36864   NICHT MESSBAR
 MEMORY.md: Zeilen ueber 250 Zeichen  -    0      0       NICHT MESSBAR       
 Memory-Dateien ohne Index-Link       -    0      0       NICHT MESSBAR       
 
-nicht messbar: MEMORY.md (Bytes) - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\clippy\kein-memory\MEMORY.md
+nicht messbar: MEMORY.md (Bytes) - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume4\clippy\kein-memory\MEMORY.md
 nicht messbar: CLAUDE.md (Bytes) - CLAUDE.md
 nicht messbar: Dirigenten-Skill (Bytes) - .claude/skills/dirigent/SKILL.md
-nicht messbar: MEMORY.md: Zeilen ueber 250 Zeichen - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\clippy\kein-memory\MEMORY.md
-nicht messbar: Memory-Dateien ohne Index-Link - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\clippy\kein-memory
+nicht messbar: MEMORY.md: Zeilen ueber 250 Zeichen - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume4\clippy\kein-memory\MEMORY.md
+nicht messbar: Memory-Dateien ohne Index-Link - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume4\clippy\kein-memory
 
 GRENZE gerissen: Clippy-Fundstellen (broker) (92 von hoechstens 91)
   (eingespeist - keine Messung)
@@ -48,8 +50,10 @@ Exitcode: 0   (erwartet 0)
 
 ```text
 NAKAMA-GESUNDHEIT
-Wurzel : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\clippy  (UEBERSCHRIEBEN)
-Memory : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\clippy\kein-memory
+Wurzel : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume4\clippy  (UEBERSCHRIEBEN)
+Memory : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume4\clippy\kein-memory
+
+ACHTUNG: dieser Bericht ist KEINE vollstaendige Messung - 1 Maass(e) per --einspeisen gesetzt: Clippy-Fundstellen (broker)
 
 Maass                                Ist  Ziel   Grenze  Status            
 -----------------------------------  ---  -----  ------  ------------------
@@ -65,11 +69,11 @@ Dirigenten-Skill (Bytes)             -    -      36864   NICHT MESSBAR
 MEMORY.md: Zeilen ueber 250 Zeichen  -    0      0       NICHT MESSBAR     
 Memory-Dateien ohne Index-Link       -    0      0       NICHT MESSBAR     
 
-nicht messbar: MEMORY.md (Bytes) - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\clippy\kein-memory\MEMORY.md
+nicht messbar: MEMORY.md (Bytes) - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume4\clippy\kein-memory\MEMORY.md
 nicht messbar: CLAUDE.md (Bytes) - CLAUDE.md
 nicht messbar: Dirigenten-Skill (Bytes) - .claude/skills/dirigent/SKILL.md
-nicht messbar: MEMORY.md: Zeilen ueber 250 Zeichen - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\clippy\kein-memory\MEMORY.md
-nicht messbar: Memory-Dateien ohne Index-Link - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\clippy\kein-memory
+nicht messbar: MEMORY.md: Zeilen ueber 250 Zeichen - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume4\clippy\kein-memory\MEMORY.md
+nicht messbar: Memory-Dateien ohne Index-Link - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume4\clippy\kein-memory
 
 Ziel verfehlt: Clippy-Fundstellen (broker) (91 von hoechstens 91)
   (eingespeist - keine Messung)

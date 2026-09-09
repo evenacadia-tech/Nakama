@@ -346,3 +346,8 @@ State-Migrationsstand und den letzten Installationsbeweis prüfen.
 - Ein Pipe-Zeichen in einer Markdown-Tabellenzelle reißt
   `tools/plan/dokuriegel.py`; Zellinhalte mit `|` umschreiben, bevor der Riegel
   läuft (NAK-181, 06.09.2026).
+- `Copy-Item` überträgt `LastWriteTime`: eine zurückgespielte Quelldatei kann
+  ÄLTER sein als ihr Objektfile, MSBuild übersetzt dann nicht neu, meldet
+  Exit 0, und der Lauf misst das alte Binary (NAK-230, 09.09.2026: fünf
+  Fehler als „grüner Lauf“). Vor dem Neubau `(Get-Item <datei>).LastWriteTime
+  = Get-Date` setzen und den Zeitstempel des Binaries gegen die Quelle prüfen.

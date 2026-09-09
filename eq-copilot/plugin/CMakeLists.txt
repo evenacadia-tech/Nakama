@@ -110,6 +110,7 @@ configure_file(core/ipc/BrokerInstallBinding.h.in
 # der Produktcode.
 set(NAKAMA_PROZESSOR_QUELLEN
     src/PluginProcessor.cpp
+    src/prozessor/Hostbruecke.cpp
 )
 
 juce_add_plugin(EqCopilot

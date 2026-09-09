@@ -1,10 +1,46 @@
+// EqCopilotProcessor — Wurzel: Aufbau, Abbau und der Audio-Pfad.
+//
+// Diese Datei behaelt Namen und Pfad, damit die Historie des Audio-Pfads auf
+// ihr bleibt (NAK-225/S25d, 09.09.2026). Sie traegt:
+//
+//   Konstruktor, Destruktor   Aufbau und Abbau der Instanz samt Pipe, Control,
+//                             Telemetrie und Brokerlebenszyklus.
+//   prepareToPlay             steht in prozessor/Hostbruecke.cpp.
+//   processBlock              DER Audio-Block.
+//   nakamaBlockEmpfangen      Der Rueckruf der Hostbruecke, auf demselben
+//                             Thread wie processBlock.
+//   lebenszeichen             Wird aus processBlock gerufen.
+//   nachlaufFristSetzen, nachlaufAbgelaufen, mitschnittZustellen,
+//   mitschnittVerwerfen       Der Quarantaene-Nachlauf der Hoermarkierung; er
+//                             haengt am Blocktakt.
+//
+// AUDIO-THREAD (CLAUDE.md, Grundgesetz): keine Sperren, keine Allokationen,
+// keine Datei-, Pipe- oder Netzzugriffe, kein Logging. Bei Ueberlast werden
+// Analyseframes verworfen, nie Audio. Ausgeschaltet ist der Pfad im Nulltest
+// bitidentisch; eingeschaltet ist der Passthrough sampleidentisch, ohne
+// Latenz und ohne Tail. A1 (EqCopNullTest), A16 (EqCopProbeeqNullTest) und
+// B3b (EqCopHostProbeTest, Allokationszaehler) messen genau das.
+//
+// Die uebrigen Fachbereiche liegen unter src/prozessor/:
+//
+//   Hostbruecke.cpp   prepareToPlay, isBusesLayoutSupported, setzeEditorOffen,
+//                     meldeHostDirty, createEditor.
+//   State.cpp         speichern, laden, Migration, Bindung, Quellenintent.
+//   Ipc.cpp           Broker, Control, Telemetrie, Interventionen.
+//   Analyse.cpp       Worker, Snapshots, Assistent, Versuch.
+//   Intern.h          der eine Helfer, den mehrere Teile brauchen.
+//
+// Die anonymen Helfer, die HIER stehen, gehoeren zu genau dieser Datei:
+// projektEnde und projektAbstandGroesserAls64 rechnen im Block, die beiden
+// Broker-Helfer nur im Konstruktor.
+
 #include "PluginProcessor.h"
-#include "PluginEditor.h"
 #include "EqCopilotIds.h"
 #include "Diagnose.h"
 #include "WorkerCadence.h"
 #include "BrokerInstallBinding.h"
 #include "PipeToken.h"
+#include "prozessor/Intern.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -17,6 +53,8 @@
 
 namespace eqcop
 {
+
+using prozessor_intern::uuidHex32;
 
 namespace
 {
@@ -36,18 +74,6 @@ bool projektAbstandGroesserAls64 (juce::int64 a, juce::int64 b) noexcept
     const auto ua = static_cast<std::uint64_t> (a) ^ bias;
     const auto ub = static_cast<std::uint64_t> (b) ^ bias;
     return (ua >= ub ? ua - ub : ub - ua) > 64u;
-}
-
-std::string uuidHex32()
-{
-    std::string roh = juce::Uuid().toString().toStdString();
-    std::string aus;
-    aus.reserve (32);
-    for (char c : roh)
-        if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'))
-            aus.push_back (c);
-    return aus.size() == 32 ? aus
-                            : nakama::ipc::instanceAdresseAusState ("runtime:" + roh);
 }
 
 std::string alsHex32 (const juce::String& wert, const char* domain)
@@ -75,6 +101,52 @@ nakama::ipc::ServerErwartung brokerServerErwartung()
     return { nakama::ipc::installbindung::brokerPfad,
              nakama::ipc::installbindung::brokerSha256,
              nakama::ipc::installbindung::authenticodeThumbprint };
+}
+
+/// Eine endliche Zahl in Wire-Form. NaN und Inf entstehen hier gar nicht
+/// erst: der Aufrufer hat sie beim Setzen schon abgewiesen (M-82).
+std::string wireZahl (double x)
+{
+    if (! std::isfinite (x))
+        return "0";
+    return juce::String (x, 6).toStdString();
+}
+
+/** Ein Fingerprint als JSON-Objekt des v3-Vertrags. */
+std::string fingerprintJson (const nakama::analyse::Fingerprint& f)
+{
+    auto liste = [] (const std::uint8_t* werte, int n)
+    {
+        std::string s = "[";
+        for (int i = 0; i < n; ++i)
+        {
+            if (i > 0) s += ",";
+            s += std::to_string ((int) werte[(std::size_t) i]);
+        }
+        return s + "]";
+    };
+    std::string s = "{\"version\":";
+    s += std::to_string (f.version);
+    s += ",\"band_energie\":" + liste (f.bandEnergie, nakama::analyse::Fingerprint::kBaender);
+    s += ",\"chroma\":"       + liste (f.chroma,      nakama::analyse::Fingerprint::kChroma);
+    s += ",\"onset\":"        + liste (f.onset,       nakama::analyse::Fingerprint::kOnsets);
+    return s + "}";
+}
+
+/** Eine Zahl in der Form, die der Textriegel und beide Leser annehmen. */
+std::string zahl (double x)
+{
+    if (! std::isfinite (x))
+        return "0";
+    std::ostringstream aus;
+    aus.imbue (std::locale::classic());
+    aus << std::setprecision (10) << x;
+    return aus.str();
+}
+
+std::string jsonText (const juce::String& s)
+{
+    return juce::JSON::toString (juce::var (s), true).toStdString();
 }
 } // namespace
 
@@ -361,6 +433,7 @@ EqCopilotProcessor::~EqCopilotProcessor()
     Gesaettigt wird deshalb nur noch am ZAHLENRAND (`int64`-Nanosekunden),
     nicht an einer erfundenen Stunde, und eine offene Frist wird nur
     verlaengert, nie gekuerzt. */
+
 void EqCopilotProcessor::nachlaufFristSetzen (std::uint64_t tailSamples)
 {
     double rate = letzteGueltigeSamplerate.load (std::memory_order_relaxed);
@@ -419,6 +492,7 @@ bool EqCopilotProcessor::nachlaufAbgelaufen() const
     Passage-Tests ernteten ihn dann meist ohne `zustelleAllesFuerTest` und
     blieben gruen, obwohl ein Write scheiterte oder der Aufbaufilter den
     Eintrag verwarf — sie massen das Einreihen und nannten es Senden. */
+
 void EqCopilotProcessor::mitschnittZustellen (std::uint64_t marke)
 {
     if (marke == 0)
@@ -450,132 +524,6 @@ void EqCopilotProcessor::mitschnittVerwerfen (std::uint64_t marke)
             return;
         }
     }
-}
-
-void EqCopilotProcessor::prepareToPlay (double samplerate, int maxBlock)
-{
-    const double sichereSamplerate = std::isfinite (samplerate)
-                                  && samplerate > 0.0 && samplerate <= 768000.0
-        ? samplerate : 0.0;
-    // NAK-180 R5: NUR eine geprueft gueltige Rate wird gemerkt. Eine
-    // nicht-endliche Hostrate laesst die letzte gute stehen, statt den
-    // Quarantaene-Tail auf ein Sample zu kuerzen.
-    if (sichereSamplerate > 0.0)
-        letzteGueltigeSamplerate.store (sichereSamplerate, std::memory_order_relaxed);
-    // Jeder Prepare-Aufruf ist eine Queue-Generation. Der Audiothread setzt
-    // sein Projektfenster exakt dann zurueck, wenn `veroeffentliche()` diese
-    // Generation wirklich uebernimmt - auch bei unveraenderter Samplerate.
-    {
-        auto l = externerAnalyseSteuerZug();
-        samplerateAtomic.store (sichereSamplerate);
-        // Samplerate und Generation werden unter EINER Steuerkante sichtbar.
-        // Der Worker kann daher nie alte Bloecke mit der neuen Binzuordnung
-        // auswerten.
-        queue.neustartAnfordern();
-    }
-    blockSizeAtomic.store (maxBlock);
-    kanaeleAtomic.store (getTotalNumInputChannels());
-    // SONDE-008: KEIN Reset von hier aus. Bis 23.08. rief diese Zeile
-    // `fifo.reset()` — der Nachrichtenthread verstellte damit beide Enden eines
-    // SPSC-Rings mitten in einen laufenden Leser hinein. Stattdessen ein
-    // Wunsch, den der Audiothread als Einziger einlöst; der Worker erkennt die
-    // Reste des alten Anlaufs an ihrer kleineren `startFolge`.
-    // Hör-Markierung: Puffer/Zustände neu, Echtzeit-Beweis verfällt — nach
-    // jedem prepareToPlay (auch Render-Vorlauf) gilt wieder „neutral, bis
-    // Echtzeit bewiesen" (Konzept v2 §4).
-    // 🔑 NAK-180 Nacharbeit 1 (EP-08/N-10): der faellige Uebergang wird VOR
-    // dem Reset erfasst, mit der GEZAEHLTEN Hoerdauer.
-    //
-    // Beide Vorbereiter loeschten `warHoerbar` und `hoerbareSamples`, und der
-    // Prozessor versuchte danach, das `end` aus seinem Sendezustand zu
-    // rekonstruieren. Lag das Begin noch im RT-Ring, war `offenesBegin`
-    // ungueltig und es entstand gar kein `end`; war es entnommen, trug die
-    // Kopie des BEGINS `dauerSamples == 0`, und der Nachlauf verlor die
-    // gezaehlte Dauer. Beides bricht N-10.
-    const auto uebergangA = markierung.setzeSamplerate (sichereSamplerate);
-    const auto uebergangB = markierung.vorbereiten (maxBlock);
-    const bool markerAbgebrochen = uebergangA.endete || uebergangB.endete;
-    const std::uint64_t abgebrocheneDauer =
-        std::max (uebergangA.dauerSamples, uebergangB.dauerSamples);
-    // Befund R06: die Trockenkopie des Vergleichspegels wird HIER allokiert —
-    // im Audiothread nie. Zwei Kanaele reichen dem Vertrag dieses Plugins.
-    versuchTrocken.assign ((std::size_t) std::max (1, maxBlock) * 2u, 0.0f);
-    vergleichspegel.vorbereiten (sichereSamplerate);
-    echtzeitOk.store (false);
-    lzBestanden = 0;
-    lzLetzterNs = 0;
-    lzBucketStartNs = 0;
-    lzBucketSamples = 0;
-    // 🔑 NAK-180 N-10: der Marker ist hart aus, sein `end` kommt NIE.
-    //
-    // `markierung.vorbereiten()` und `setzeSamplerate()` setzen `warHoerbar`
-    // zurueck und loeschen den Fade, ohne den faelligen Uebergang zu melden —
-    // der Audiothread erzeugt fuer dieses Intervall also kein `endete` mehr.
-    // Ohne diese Markierung bliebe das Begin beim Broker fuer immer offen und
-    // die Sitzung dauerhaft gesperrt. Der Sender bildet das `end` stattdessen
-    // selbst, mit `project_sample_end: null` (die Endprojektzeit ist hier
-    // ehrlich unbekannt) und dem Tail der letzten gueltigen Rate.
-    if (markerAbgebrochen)
-    {
-        std::lock_guard<std::mutex> l (sendeZustandMutex);
-        // Ein LEBENDES offenes Begin nimmt das Ende direkt; sonst wartet der
-        // Uebergang auf das Begin, das noch im Ring liegt. Steht schon ein
-        // Wartender, gaebe es zwei zu schliessende Intervalle und nur einen
-        // Platz — dann sagt der Ueberlauf die Wahrheit (fail-closed, §34.2).
-        const bool anLebendes = offenesBegin.gueltig && ! offenesBegin.tot;
-        const bool alsWartender = ! anLebendes && ! ausstehenderTotUebergang.gueltig;
-        if (! anLebendes && ! alsWartender)
-        {
-            interventionsRingUeberlauf.store (true, std::memory_order_relaxed);
-        }
-        // 🔑 Die Sequenz wird NUR gezogen, wenn sie auch reist. Eine
-        // verbrauchte, nie gesendete Nummer waere beim Broker eine Luecke -
-        // genau das Signal, das ein verlorenes Ereignis meldet.
-        const auto sequenz = (anLebendes || alsWartender)
-            ? interventionsSequenz.fetch_add (1, std::memory_order_relaxed) + 1
-            : 0;
-        const auto tail = nakama::ipc::tailSamplesFuer (
-            abgebrocheneDauer,
-            letzteGueltigeSamplerate.load (std::memory_order_relaxed));
-        if (anLebendes)
-        {
-            offenesBegin.tot = true;
-            auto ende = offenesBegin.ereignis;
-            ende.beginn = false;
-            ende.projektzeitGesetzt = false;   // die Endzeit ist ehrlich unbekannt
-            ende.sequenz = sequenz;
-            // 🔑 EP-08: die Dauer kommt aus dem UEBERGANG, nicht aus der Kopie
-            // des Begins - dort steht sie nie.
-            ende.dauerSamples = abgebrocheneDauer;
-            ende.tailSamples = tail;
-            offenesBegin.totesEnde = ende;
-        }
-        else if (alsWartender)
-        {
-            // 🔑 EP-08, zweiter Fall: das Begin liegt noch im RT-Ring. Der
-            // Prozessor darf ihn hier nicht lesen — er hat genau EINEN
-            // Konsumenten, den Worker (§6.6). Der Uebergang wartet deshalb
-            // mit seiner Sequenz, bis der Sender das Begin entnommen hat, und
-            // wird dann genau davor eingereiht.
-            ausstehenderTotUebergang = TotUebergang { true, sequenz,
-                                                      abgebrocheneDauer, tail };
-        }
-    }
-
-    // Der v3-Hello-Provider liest Samplerate/Block/Kanaele erst beim Aufbau.
-    // Prepare laeuft auf dem Host-/Nachrichtenthread, nie im Audiocallback.
-    controlV3.reconnect();
-}
-
-bool EqCopilotProcessor::isBusesLayoutSupported (const BusesLayout& layout) const
-{
-    // V1: Mono und Stereo, Eingang == Ausgang. Anderes wird nicht still
-    // heruntergemischt (Plan §9.4) — der Host bekommt ein klares Nein.
-    const auto ein = layout.getMainInputChannelSet();
-    const auto aus = layout.getMainOutputChannelSet();
-    if (ein != aus)
-        return false;
-    return ein == juce::AudioChannelSet::mono() || ein == juce::AudioChannelSet::stereo();
 }
 
 void EqCopilotProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
@@ -984,6 +932,7 @@ void EqCopilotProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::M
 // wird. Deshalb ein `frisch`-Bit statt einer Annahme: `processBlock`
 // VERBRAUCHT es, und ein Befund ohne Folgeblock wird schlicht vom nächsten
 // überschrieben.
+
 void EqCopilotProcessor::nakamaBlockEmpfangen (const eqcop::hostbruecke::Blockbefund& befund) noexcept
 {
     const auto& k = befund.kontext;
@@ -1043,6 +992,7 @@ void EqCopilotProcessor::nakamaBlockEmpfangen (const eqcop::hostbruecke::Blockbe
 // lücke setzt den Beweis zurück; Freilauf (Verhältnis > 1,5) löscht ihn und
 // meldet den Latch-Fall an den Editor. Ein Offline-Render besteht den Beweis
 // nie — Fenster schließen dort nach Audiozeit, nicht nach Wanduhr.
+
 void EqCopilotProcessor::lebenszeichen (int samples, bool spielt)
 {
     using namespace std::chrono;
@@ -1369,6 +1319,7 @@ void EqCopilotProcessor::workerLauf()
     Coordinator an, ohne dass ein zusaetzliches Feld noetig waere. Der
     Zaehler hier ist die lokale Gegenprobe dazu.
 */
+
 std::string EqCopilotProcessor::interventionsWireJson (
     const nakama::ipc::Interventionsereignis& e, const std::string& adresseJson) const
 {
@@ -1843,19 +1794,6 @@ std::string EqCopilotProcessor::v3SubscribeJson() const
 // JSON-Zahl faellt beim Textriegel des Empfaengers. Derselbe Grund wie beim
 // Evidenzserialisierer (NAK-181 N-16).
 
-namespace
-{
-/// Eine endliche Zahl in Wire-Form. NaN und Inf entstehen hier gar nicht
-/// erst: der Aufrufer hat sie beim Setzen schon abgewiesen (M-82).
-std::string wireZahl (double x)
-{
-    if (! std::isfinite (x))
-        return "0";
-    return juce::String (x, 6).toStdString();
-}
-
-} // namespace
-
 std::string EqCopilotProcessor::v3IntentUpdateJson (bool vollstaendig,
                                                     const nakama::state::SourceIntent* nurDieser,
                                                     const nakama::state::Schutzangabe* nurDieserSchutz,
@@ -1962,6 +1900,7 @@ std::string EqCopilotProcessor::v3IntentUpdateJson (bool vollstaendig,
 
     Gelesen wird deshalb `zustand.assistent` unter dem Bindungsschloss, mit
     DESSEN Revision. Der Schatten ist fort. */
+
 std::string EqCopilotProcessor::v3AssistantStepJson() const
 {
     auto h = v3Hello();
@@ -2002,6 +1941,7 @@ std::string EqCopilotProcessor::v3AssistantStepJson() const
     Das Objekt bindet an den BEFUND, an dem der Schritt haengt. Ohne
     `finding_id` entsteht keines: ein Urteil ohne Gegenstand waere ein Objekt
     ohne Bezug, und ein erfundener Bezug waere schlimmer als kein Urteil. */
+
 std::string EqCopilotProcessor::v3UserVerdictJson (nakama::state::Userurteil urteil,
                                                    const juce::String& findingId,
                                                    const juce::String& notiz) const
@@ -2084,6 +2024,7 @@ std::string EqCopilotProcessor::v3UserVerdictJson (nakama::state::Userurteil urt
 
     Laeuft unter `sendeMutex` des ControlClients (Ordnung: sendeMutex VOR
     Bindungsschloss, wie der Replay-Hook). Er liest und formt nur. */
+
 std::string EqCopilotProcessor::urteilMitFrischemKopf (const juce::String& commandId,
                                                        const std::string& auftragJson,
                                                        std::uint64_t brokerRevision) const
@@ -2113,6 +2054,7 @@ std::string EqCopilotProcessor::urteilMitFrischemKopf (const juce::String& comma
     ein Vollbericht darf einen aelteren Vollbericht verdraengen, aber nie eine
     Einzelfortschreibung unter `intent:<quelle>:<scope>` — die traegt ein
     anderes Objekt. */
+
 bool EqCopilotProcessor::sendeIntentVollbestand()
 {
     const auto json = v3IntentUpdateJson (true, nullptr, nullptr, nullptr);
@@ -2519,6 +2461,7 @@ StatsSnapshot EqCopilotProcessor::statsSnapshot() const
 // eq-ipc.schema.json). Läuft 1×/s im Pipe-Thread; engine.snapshot() ist die
 // threadsichere Kopie. LTAS wird auf 0,1 dB gerundet — die volle Auflösung
 // bleibt der lokalen Snapshot-Datei vorbehalten.
+
 MessKompakt EqCopilotProcessor::messKompakt() const
 {
     const auto m = engine.snapshot();
@@ -2568,6 +2511,7 @@ MessKompakt EqCopilotProcessor::messKompakt() const
 // bekommt eine frische persistente ID und meldet sich neu an. Der Host
 // speichert sie mit dem nächsten Projekt-Save (getStateInformation) — dafür
 // MUSS er die Änderung kennen: Host-Dirty (Vertrag nakama-state-v2.md §6).
+
 bool EqCopilotProcessor::neueSensorId()
 {
     {
@@ -2583,15 +2527,6 @@ bool EqCopilotProcessor::neueSensorId()
     return true;
 }
 
-void EqCopilotProcessor::meldeHostDirty()
-{
-    updateHostDisplay (juce::AudioProcessorListener::ChangeDetails().withNonParameterStateChanged (true));
-}
-
-// ── State: Schema 2 `NakamaState` (SONDE-006) ─────────────────────────────
-// Vertrag: eq-copilot/schemas/state/nakama-state-v2.md. Schema 1 wird rein
-// und deterministisch migriert; ein Stand, den dieser Build nicht
-// interpretieren darf, wird read-only gehalten und bytegleich zurueckgegeben.
 void EqCopilotProcessor::getStateInformation (juce::MemoryBlock& ziel)
 {
     std::lock_guard<std::mutex> l (bindungMutex);
@@ -2723,18 +2658,6 @@ bool EqCopilotProcessor::darfBrokerStarten() const
 {
     std::lock_guard<std::mutex> l (bindungMutex);
     return lebenslauf.darfBrokerStarten();
-}
-
-void EqCopilotProcessor::setzeEditorOffen (bool offen)
-{
-    // Zwei Verbraucher, ein Ereignis: der Audiothread-Term der Markierungs-
-    // Verriegelung und die Editor-Haelfte der Brokerstart-Bedingung.
-    editorOffen.store (offen);
-    std::lock_guard<std::mutex> l (bindungMutex);
-    lebenslauf.editorOffen (offen);
-    // Kein spiegleKlassifikation(): der Editor allein klassifiziert nichts
-    // (§53.5 verlangt Editor UND explizite Initialisierung). Die
-    // Markierungs-Verriegelung traegt `editorOffen` ohnehin als eigenen Term.
 }
 
 bool EqCopilotProcessor::setzeBindung (const juce::String& r, const juce::String& lbl, const juce::String& p)
@@ -2942,46 +2865,6 @@ bool EqCopilotProcessor::vergissManuellePassage (const juce::String& passageId)
 //
 // Diese Schicht ist MODELL und Nachrichtenweg, kein sichtbares Element: die
 // Bedienfragen P-01 bis P-06 gehoeren dem User (§4.2).
-
-namespace
-{
-/** Ein Fingerprint als JSON-Objekt des v3-Vertrags. */
-std::string fingerprintJson (const nakama::analyse::Fingerprint& f)
-{
-    auto liste = [] (const std::uint8_t* werte, int n)
-    {
-        std::string s = "[";
-        for (int i = 0; i < n; ++i)
-        {
-            if (i > 0) s += ",";
-            s += std::to_string ((int) werte[(std::size_t) i]);
-        }
-        return s + "]";
-    };
-    std::string s = "{\"version\":";
-    s += std::to_string (f.version);
-    s += ",\"band_energie\":" + liste (f.bandEnergie, nakama::analyse::Fingerprint::kBaender);
-    s += ",\"chroma\":"       + liste (f.chroma,      nakama::analyse::Fingerprint::kChroma);
-    s += ",\"onset\":"        + liste (f.onset,       nakama::analyse::Fingerprint::kOnsets);
-    return s + "}";
-}
-
-/** Eine Zahl in der Form, die der Textriegel und beide Leser annehmen. */
-std::string zahl (double x)
-{
-    if (! std::isfinite (x))
-        return "0";
-    std::ostringstream aus;
-    aus.imbue (std::locale::classic());
-    aus << std::setprecision (10) << x;
-    return aus.str();
-}
-
-std::string jsonText (const juce::String& s)
-{
-    return juce::JSON::toString (juce::var (s), true).toStdString();
-}
-} // namespace
 
 bool EqCopilotProcessor::bindePassagenfenster (const juce::String& passageId,
                                                std::int64_t projektStart,
@@ -3638,6 +3521,7 @@ std::vector<nakama::state::ManuellePassage> EqCopilotProcessor::manuellePassagen
 // des Schlosses, weil er in den ControlClient ruft.
 
 /// Der gemeinsame Weg jeder angenommenen Schrittaenderung.
+
 bool EqCopilotProcessor::assistentAenderungMelden (bool veraendert)
 {
     if (! veraendert)
@@ -4159,6 +4043,7 @@ void EqCopilotProcessor::wendeBestaetigteSourcesCommandsAn()
 }
 
 #if defined(NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+
 std::string EqCopilotProcessor::ausstehenderSourcesCommandFuerTest() const
 {
     std::lock_guard<std::mutex> l (sourcesCommandMutex);
@@ -4170,6 +4055,7 @@ std::string EqCopilotProcessor::ausstehenderSourcesCommandFuerTest() const
 // ── Lokaler Mess-Snapshot als Datei (M1 §11: "lokale Snapshot-Erfassung") ──
 // Kein Roh-Audio, keine Historie im Plugin-State — nur der Messstand.
 // NaN/±inf werden als JSON-null geschrieben (juce::JSON kennt kein NaN).
+
 bool EqCopilotProcessor::schreibeSnapshotDatei (juce::String& pfadOderFehler)
 {
     const auto m = engine.snapshot();
@@ -4379,11 +4265,6 @@ bool EqCopilotProcessor::schreibeSnapshotDatei (juce::String& pfadOderFehler)
     }
     pfadOderFehler = datei.getFullPathName();
     return true;
-}
-
-juce::AudioProcessorEditor* EqCopilotProcessor::createEditor()
-{
-    return new EqCopilotEditor (*this);
 }
 
 } // namespace eqcop

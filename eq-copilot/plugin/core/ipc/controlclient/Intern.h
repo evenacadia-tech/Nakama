@@ -29,6 +29,7 @@
 
 #include <cstdint>
 #include <string>
+#include <string_view>
 
 namespace nakama::ipc::controlclient_intern
 {
@@ -89,14 +90,43 @@ inline bool nichtnegativeJsonGanzzahl (const std::string& s) noexcept
     return true;
 }
 
-inline bool fehlercodeHaeltVertrag (const std::string& code) noexcept
+/// Die achtzehn Fehlercodes des Vertrags — `$defs/fehlercode` in
+/// `eq-copilot/schemas/v3/eq-ipc-v3.schema.json` (Enum Zeilen 817-834):
+/// zwoelf der Fassung 1 und sechs der Fassung 2 (SONDE-013 Nacharbeit 1
+/// und 2). Das ist die EINZIGE Stelle, an der der C++-Leser sie fuehrt;
+/// `IpcTestMain.cpp` haelt sie als Menge gegen die Enum-Liste des Schemas,
+/// damit die naechste Vertragsfassung im TEST faellt und nicht im Feld
+/// (NAK-230, Riegel R3).
+inline constexpr std::string_view kFehlercodes[] = {
+    // Fassung 1
+    "protocol_mismatch", "unknown_message", "schema_violation",
+    "unauthorized", "unknown_target", "revision_conflict",
+    "capability_missing", "record_state_unknown", "recording_active",
+    "lease_expired", "rate_limited", "internal",
+    // Fassung 2 - die Produktregeln der Experimentfamilien
+    "abdeckung_zu_gering", "schon_terminal", "ohne_lautheitsabgleich",
+    "ohne_resultatmessung", "blindreihenfolge_widerspruch",
+    "reihenfolge_nicht_gebunden"
+};
+
+/// Kennt der Leser diesen Code?
+///
+/// 🔑 NAK-230 (09.09.2026): das Wort ist BEKANNT, nicht "gueltig". Bis zu
+/// diesem Ticket hiess die Funktion `fehlercodeHaeltVertrag` und war ein
+/// Gueltigkeitsriegel - ein `command_ack` mit einem anderen Code fiel ganz.
+/// Der Vertrag sagt aber woertlich "ein unbekannter Code wird als
+/// generischer Fehler behandelt, nie als Erfolg", nicht "die Nachricht wird
+/// verworfen". Ein Leser, der sie verwirft, ist STRENGER als sein Vertrag:
+/// er laesst den Auftrag im In-Flight-Register stehen, obwohl der Broker ihn
+/// final beantwortet hat. Die Antwort dieser Funktion entscheidet deshalb
+/// nur noch die DEUTUNG des Codes, nie die Gueltigkeit der Nachricht.
+inline bool fehlercodeIstBekannt (const std::string& code) noexcept
 {
-    return code == "protocol_mismatch" || code == "unknown_message"
-        || code == "schema_violation" || code == "unauthorized"
-        || code == "unknown_target" || code == "revision_conflict"
-        || code == "capability_missing" || code == "record_state_unknown"
-        || code == "recording_active" || code == "lease_expired"
-        || code == "rate_limited" || code == "internal";
+    const std::string_view sicht (code);
+    for (const auto bekannt : kFehlercodes)
+        if (sicht == bekannt)
+            return true;
+    return false;
 }
 
 // Liest einen JSON-String nur so weit, wie es fuer die eindeutige
@@ -243,9 +273,26 @@ inline CommandAckArt commandAckArtLesen (const std::string& text, std::string& c
         return CommandAckArt::keinAck;
     }
 
-    if (code != nullptr
-        && (! code->istString || ! fehlercodeHaeltVertrag (code->wert)))
+    // 🔑 NAK-230: der Leser ist genau so streng wie der Vertrag.
+    //
+    // Ein `code`, der KEINE Zeichenkette ist, bleibt ein Strukturfehler der
+    // Nachricht - der Vertrag deutet unbekannte Codes, er erlaubt keine
+    // falschen Typen.
+    if (code != nullptr && ! code->istString)
         return CommandAckArt::keinAck;
+
+    // Ein Zeichenketten-`code` macht die Nachricht dagegen NIE ungueltig:
+    // "ein unbekannter Code wird als generischer Fehler behandelt, nie als
+    // Erfolg" (`eq-ipc-v3.schema.json`, `$defs/fehlercode`). Bekannte Codes
+    // laufen unveraendert weiter; ein unbekannter waere allein mit einem
+    // Erfolgsergebnis widerspruechlich - dann wuerde sein `state_hash` als
+    // bestaetigter Wirkungsschnitt gebucht, obwohl der Leser den mitgelieferten
+    // Grund nicht versteht. Der Ausgang ist deshalb ein ENDGUELTIGER FEHLER:
+    // der Auftrag ist beendet und das Register frei, aber nie erfolgreich.
+    // Der Wortlaut des Codes bleibt unangetastet - er reist ohnehin im
+    // Rohtext der Antwort an Anzeige und Log (`Verbindung.cpp`, `beiAntwort`).
+    if (code != nullptr && erfolg && ! fehlercodeIstBekannt (code->wert))
+        return CommandAckArt::abgelehnt;
     return art;
 }
 

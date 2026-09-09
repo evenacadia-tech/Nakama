@@ -18,6 +18,11 @@
 #include "PipeToken.h"
 #include "TelemetryClient.h"
 #include "WireEnvelope.h"
+// NAK-230: die Fehlercodezeilen werden AN DER FUNKTION gemessen, die die
+// Zusage traegt (`commandAckArtLesen`), nicht an einem Nebeneffekt. Der
+// interne Kopf des ControlClient ist seit NAK-225 ein benannter Namensraum
+// mit lauter `inline`-Helfern; er kostet dem Test nichts als diese Zeile.
+#include "controlclient/Intern.h"
 #include "../core/analysis/FeatureEngine.h"
 #include "../vertrag/NakamaVertrag.h"
 
@@ -29,6 +34,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <iterator>
 #include <limits>
 #include <condition_variable>
 #include <functional>
@@ -4957,10 +4963,17 @@ int main (int argc, char** argv)
                 char commandZeichen;
                 const char* name;
             };
+            // 🔑 NAK-230 (09.09.2026): der Bruch 3 ("unbekannter Fehlercode")
+            // stand bis hierher in dieser Liste und schrieb damit die
+            // vertragswidrige Zusage fest, ein `command_ack` mit unbekanntem
+            // `code` sei ungueltig. Der Vertrag deutet einen unbekannten Code
+            // als generischen Fehler, statt die Nachricht zu verwerfen - der
+            // Fall steht jetzt mit seiner richtigen Erwartung im Abschnitt I2
+            // (`nak230_unbekannter_fehlercode_gibt_inflight_endgueltig_ohne_erfolg_frei`)
+            // und benutzt DENSELBEN Bruch 3 des Testservers.
             const VertragsbruchFall faelle[] = {
                 { 1, 1, 'e', "revision-mit-fuehrender-null" },
                 { 2, 2, 'f', "state-hash-mit-falschem-typ" },
-                { 3, 2, 'a', "unbekannter-fehlercode" },
                 { 4, 1, 'b', "erfolg-ohne-pflicht-hash" },
             };
             bool alleAbgewiesen = true;
@@ -5001,6 +5014,240 @@ int main (int argc, char** argv)
             }
             pruefe (alleAbgewiesen,
                     "nur_schemafestes_command_ack_gibt_inflight_frei");
+        }
+    }
+
+    // ── NAK-230 · der Fehlercode-Leser ist genau so streng wie der Vertrag ──
+    //
+    // `$defs/fehlercode` (`eq-copilot/schemas/v3/eq-ipc-v3.schema.json`:815)
+    // sagt woertlich: "ein unbekannter Code wird als generischer Fehler
+    // behandelt, nie als Erfolg". Das ist eine Aussage ueber die DEUTUNG des
+    // Codes, nicht ueber die Gueltigkeit der Nachricht. Bis NAK-230 verwarf
+    // der Leser jedes `command_ack`, dessen `code` nicht zu den zwoelf Codes
+    // der Fassung 1 gehoerte - also auch die sechs, die der Broker seit
+    // SONDE-013 sendet. Der Auftrag blieb dann im In-Flight-Register stehen,
+    // bis seine Frist lief, obwohl der Broker ihn final beantwortet hatte.
+    //
+    // Sechs Zeilen der Verhaltensmatrix (`docs/beweise/NAK-230.md` §2), jede
+    // an `commandAckArtLesen` selbst gemessen und nicht an einem Nebeneffekt:
+    // `code` fehlt, `code` ist keine Zeichenkette, Fassung-1-Code,
+    // Fassung-2-Code, unbekannte Zeichenkette, leere Zeichenkette.
+    abschnitt ("I2 · NAK-230: der `code` im command_ack");
+    {
+        using controlclient_intern::CommandAckArt;
+        const std::string id = hex32 ('a');
+        const std::string hash (64, 'd');
+
+        // Baut ein ansonsten schemafestes ACK. `codeTeil` ist ROHES JSON und
+        // kein Zeichenkettenwert: nur so laesst sich auch ein `code` bauen,
+        // der gar keine Zeichenkette ist (Zeile 2 der Matrix).
+        const auto ack = [&] (const std::string& ergebnis, const std::string& codeTeil)
+        {
+            const bool erfolg = ergebnis == "angewandt"
+                             || ergebnis == "idempotent_wiederholt";
+            std::string text = "{\"type\":\"command_ack\",\"command_id\":\"" + id
+                             + "\",\"ergebnis\":\"" + ergebnis
+                             + "\",\"state_revision\":7";
+            if (erfolg)
+                text += ",\"state_hash\":\"" + hash + "\"";
+            return text + codeTeil + "}";
+        };
+        const auto liesArt = [&] (const std::string& text)
+        {
+            std::string gelesen;
+            return controlclient_intern::commandAckArtLesen (text, gelesen);
+        };
+        const auto codeFeld = [] (const std::string& wert)
+        {
+            return ",\"code\":\"" + wert + "\"";
+        };
+
+        // ── Zeile 1: `code` fehlt ─────────────────────────────────────────
+        pruefe (liesArt (ack ("angewandt", "")) == CommandAckArt::angewandt
+                    && liesArt (ack ("idempotent_wiederholt", ""))
+                           == CommandAckArt::idempotentWiederholt
+                    && liesArt (ack ("abgelehnt", "")) == CommandAckArt::abgelehnt
+                    && liesArt (ack ("konflikt", "")) == CommandAckArt::konflikt
+                    && liesArt (ack ("abgelaufen", "")) == CommandAckArt::abgelaufen,
+                "nak230_ack_ohne_code_bleibt_wie_bisher");
+
+        // ── Zeile 2: `code` ist keine Zeichenkette ────────────────────────
+        // Ein Strukturfehler der Nachricht bleibt einer. Der Vertrag deutet
+        // unbekannte CODES, er erlaubt keine falschen TYPEN.
+        pruefe (liesArt (ack ("abgelehnt", ",\"code\":17")) == CommandAckArt::keinAck
+                    && liesArt (ack ("abgelehnt", ",\"code\":null"))
+                           == CommandAckArt::keinAck
+                    && liesArt (ack ("abgelehnt", ",\"code\":true"))
+                           == CommandAckArt::keinAck
+                    && liesArt (ack ("angewandt", ",\"code\":17"))
+                           == CommandAckArt::keinAck,
+                "nak230_code_ohne_zeichenkette_bleibt_strukturfehler");
+
+        // ── Zeile 3: die zwoelf Codes der Fassung 1 ───────────────────────
+        // Keine einzige aendert ihr Verhalten. `unknown_target` ist die
+        // Zeile, die NAK-214 fuer E7 gewaehlt hat, WEIL der Leser sie kennt.
+        static constexpr const char* fassung1[] = {
+            "protocol_mismatch", "unknown_message", "schema_violation",
+            "unauthorized", "unknown_target", "revision_conflict",
+            "capability_missing", "record_state_unknown", "recording_active",
+            "lease_expired", "rate_limited", "internal" };
+        bool alleFassung1 = true;
+        std::string ersterFassung1Fehler;
+        for (const char* code : fassung1)
+        {
+            const auto teil = codeFeld (code);
+            const bool haelt =
+                   controlclient_intern::fehlercodeIstBekannt (code)
+                && liesArt (ack ("abgelehnt", teil)) == CommandAckArt::abgelehnt
+                && liesArt (ack ("konflikt", teil)) == CommandAckArt::konflikt
+                && liesArt (ack ("abgelaufen", teil)) == CommandAckArt::abgelaufen
+                // Erst diese beiden Zeilen messen die KENNTNIS: nur ein
+                // bekannter Code laesst ein Erfolgsergebnis stehen. Ohne sie
+                // bliebe die Zeile gruen, auch wenn der Code aus der Liste
+                // faellt - ein Fehlerergebnis ist ja ohnehin gueltig.
+                && liesArt (ack ("angewandt", teil)) == CommandAckArt::angewandt
+                && liesArt (ack ("idempotent_wiederholt", teil))
+                       == CommandAckArt::idempotentWiederholt;
+            if (! haelt && ersterFassung1Fehler.empty())
+                ersterFassung1Fehler = code;
+            alleFassung1 = alleFassung1 && haelt;
+        }
+        pruefe (alleFassung1, "nak230_fassung_1_code_bleibt_unveraendert",
+                ersterFassung1Fehler);
+
+        // ── Zeile 4: die sechs Codes der Fassung 2 ────────────────────────
+        // Der Broker sendet sie seit SONDE-013; bis NAK-230 fielen sie hier.
+        static constexpr const char* fassung2[] = {
+            "abdeckung_zu_gering", "schon_terminal", "ohne_lautheitsabgleich",
+            "ohne_resultatmessung", "blindreihenfolge_widerspruch",
+            "reihenfolge_nicht_gebunden" };
+        bool alleFassung2 = true;
+        std::string ersterFassung2Fehler;
+        for (const char* code : fassung2)
+        {
+            const auto teil = codeFeld (code);
+            const bool haelt =
+                   controlclient_intern::fehlercodeIstBekannt (code)
+                && liesArt (ack ("abgelehnt", teil)) == CommandAckArt::abgelehnt
+                && liesArt (ack ("konflikt", teil)) == CommandAckArt::konflikt
+                && liesArt (ack ("abgelaufen", teil)) == CommandAckArt::abgelaufen
+                // Dieselbe Kenntnisprobe wie in Zeile 3 - ein bekannter Code
+                // stuft ein Erfolgsergebnis NICHT herab.
+                && liesArt (ack ("angewandt", teil)) == CommandAckArt::angewandt
+                && liesArt (ack ("idempotent_wiederholt", teil))
+                       == CommandAckArt::idempotentWiederholt;
+            if (! haelt && ersterFassung2Fehler.empty())
+                ersterFassung2Fehler = code;
+            alleFassung2 = alleFassung2 && haelt;
+        }
+        pruefe (alleFassung2, "nak230_fassung_2_codes_sind_dem_leser_bekannt",
+                ersterFassung2Fehler);
+
+        // ── Zeile 5: unbekannte Zeichenkette ──────────────────────────────
+        // Gueltig, aber NIE Erfolg: ein ACK, das Erfolg meldet UND einen Code
+        // traegt, den der Leser nicht versteht, wuerde sonst seinen
+        // `state_hash` als bestaetigten Wirkungsschnitt buchen. Der Leser
+        // stuft auf einen endgueltigen Fehler herab - final beendet, ohne
+        // Erfolg. Der Broker sendet bei Erfolg ohnehin nie einen `code`
+        // (`broker/src/coordinator/befehl.rs`).
+        const auto unbekannt = codeFeld ("nicht_im_schema");
+        pruefe (! controlclient_intern::fehlercodeIstBekannt ("nicht_im_schema")
+                    && liesArt (ack ("abgelehnt", unbekannt)) == CommandAckArt::abgelehnt
+                    && liesArt (ack ("konflikt", unbekannt)) == CommandAckArt::konflikt
+                    && liesArt (ack ("abgelaufen", unbekannt))
+                           == CommandAckArt::abgelaufen
+                    && liesArt (ack ("angewandt", unbekannt))
+                           == CommandAckArt::abgelehnt
+                    && liesArt (ack ("idempotent_wiederholt", unbekannt))
+                           == CommandAckArt::abgelehnt,
+                "nak230_unbekannter_code_ist_generischer_fehler_nie_erfolg");
+
+        // ── Zeile 6: leere Zeichenkette ───────────────────────────────────
+        // Eine Zeichenkette ist sie, ein bekannter Code nicht - also genau
+        // wie Zeile 5 und nicht wie Zeile 2.
+        const auto leer = codeFeld ("");
+        pruefe (! controlclient_intern::fehlercodeIstBekannt ("")
+                    && liesArt (ack ("abgelehnt", leer)) == CommandAckArt::abgelehnt
+                    && liesArt (ack ("konflikt", leer)) == CommandAckArt::konflikt
+                    && liesArt (ack ("angewandt", leer)) == CommandAckArt::abgelehnt
+                    && liesArt (ack ("idempotent_wiederholt", leer))
+                           == CommandAckArt::abgelehnt,
+                "nak230_leerer_code_ist_generischer_fehler_und_gueltig");
+
+        // ── Der Riegel gegen die naechste Vertragsfassung ─────────────────
+        //
+        // Die achtzehn Codes stehen im C++-Leser an genau EINER Stelle
+        // (`controlclient/Intern.h`), und diese Zeile haelt sie gegen die
+        // Enum-Liste des Schemas IM REPO - in beide Richtungen. Ein Code, den
+        // das Schema fuehrt und der Leser nicht kennt, waere der Defekt
+        // NAK-230 von vorn; ein Code im Leser, den das Schema nicht fuehrt,
+        // waere eine erfundene Zusage. Die naechste Fassung faellt damit
+        // HIER statt im Feld.
+        {
+            const auto schemaDatei = wurzel()
+                .getChildFile ("eq-copilot/schemas/v3/eq-ipc-v3.schema.json");
+            const auto schema = juce::JSON::parse (schemaDatei);
+            juce::var enumWert;
+            if (auto* wurzelObjekt = schema.getDynamicObject())
+                if (auto* defs = wurzelObjekt->getProperty ("$defs").getDynamicObject())
+                    if (auto* fehlercode = defs->getProperty ("fehlercode").getDynamicObject())
+                        enumWert = fehlercode->getProperty ("enum");
+
+            std::set<std::string> ausSchema;
+            if (auto* liste = enumWert.getArray())
+                for (const auto& wert : *liste)
+                    ausSchema.insert (wert.toString().toStdString());
+
+            std::set<std::string> imLeser;
+            for (const auto bekannt : controlclient_intern::kFehlercodes)
+                imLeser.emplace (bekannt);
+
+            std::vector<std::string> nurEinseitig;
+            std::set_symmetric_difference (ausSchema.begin(), ausSchema.end(),
+                                           imLeser.begin(), imLeser.end(),
+                                           std::back_inserter (nurEinseitig));
+            std::string abweichung;
+            for (const auto& name : nurEinseitig)
+                abweichung += (abweichung.empty() ? "" : ", ") + name;
+
+            pruefe (ausSchema.size() == 18 && nurEinseitig.empty(),
+                    "nak230_bekannte_fehlercodes_decken_die_schema_enum_genau",
+                    abweichung.empty() ? std::to_string (ausSchema.size()) + " Enumworte"
+                                       : abweichung);
+        }
+
+        // ── Dieselbe Zeile am ECHTEN Client ───────────────────────────────
+        // Die sechs Zeilen oben messen den Leser. Diese misst, was daraus im
+        // Produkt wird: derselbe unbekannte Code gibt den In-Flight-Eintrag
+        // endgueltig OHNE Erfolg frei, statt ihn in seine Frist laufen zu
+        // lassen. `commandAckVertragsbruch == 3` haengt genau diesen Code an
+        // (`tests/V3TestServer.h`) - bis NAK-230 war er dort ein
+        // "Vertragsbruch", jetzt traegt er die neue Zusage.
+        {
+            TestServer server (testPipeName ("nak230-unbekannter-code"));
+            server.commandAckArt.store (2);             // abgelehnt
+            server.commandAckVertragsbruch.store (3);   // code: nicht_im_schema
+            server.starten();
+            ControlClient control ([&] {
+                ControlHello h;
+                h.adresse = testAdresse (hex32 ('c'));
+                return h;
+            }, server.pipeName());
+            control.start();
+            const bool verbunden = warteAuf (5000, [&] {
+                return control.snapshot().status == ControlClient::Status::verbunden;
+            });
+            const bool gesendet = verbunden && control.sendePersistenzP0 (
+                persistenzBefehl (hex32 ('c')));
+            const bool frei = gesendet && warteAuf (5000, [&] {
+                const auto s = control.snapshot();
+                return s.inFlight == 0 && s.inFlightErfolg == 0
+                    && s.inFlightEndgueltigOhneErfolg == 1;
+            });
+            pruefe (frei,
+                    "nak230_unbekannter_fehlercode_gibt_inflight_endgueltig_ohne_erfolg_frei");
+            control.stop();
+            server.stoppen();
         }
     }
 

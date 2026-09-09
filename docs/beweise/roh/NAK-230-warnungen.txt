@@ -1,0 +1,38 @@
+# NAK-230 — Riegel R5: MSVC-Warnungen der beiden Ziele des Ticketbereichs
+#
+# Gemessen in dieser Session, 09.09.2026, mit
+#   cmake --build eq-copilot/build --config Release --target <Ziel>
+# (cmake aus Visual Studio 2022 BuildTools; nicht im Bash-PATH, deshalb pwsh).
+
+## EqCopilot_VST3 — Endstand
+EXIT=0
+warning C: 0
+
+## EqCopIpcTest — Endstand (Binary 2026-09-09 22:27:00)
+EXIT=0
+warning C: 3, alle drei im BESTAND und keine in einer von NAK-230 geaenderten Zeile:
+
+  core\analysis\featureengine\Stereo.h(70,26): warning C4458
+      Deklaration von "sr" blendet Klassenmember aus
+      -> Datei von NAK-230 nicht angefasst. Belegt als Bestandswarnung in
+         docs/beweise/roh/NAK-225-warnungen-nachher.txt (dort woertlich als
+         die EINE eigene Warnstelle des Baums gefuehrt, C4458 in
+         `stereoSchritt`).
+
+  tests\IpcTestMain.cpp(2959,25): warning C4456
+      Deklaration von "weg" blendet vorherige lokale Deklaration aus
+      (Vordeklaration :2866)
+  tests\IpcTestMain.cpp(3241,26): warning C4456
+      Deklaration von "ziel" blendet vorherige lokale Deklaration aus
+      (Vordeklaration :3054)
+      -> beide Stellen liegen im Bestandscode WEIT VOR dem neuen Abschnitt I2
+         (ab Zeile ~4990). Ihre Zeilennummern stiegen um 1, weil NAK-230 im
+         Includeblock `<iterator>` ergaenzt hat; der Code an diesen Stellen ist
+         unveraendert (`git diff` beruehrt keine Zeile unter 4900 ausser dem
+         Includeblock und der Fallliste bei :4965).
+
+## Warncodemenge
+C4456 und C4458 stehen beide in der am Basisstand belegten Menge
+['C4244', 'C4456', 'C4457', 'C4458'] (NAK-225 R10). NAK-230 fuegt keinen
+neuen Warncode und keine neue Warnstelle hinzu; `controlclient/Intern.h`
+erscheint in keiner Warnzeile.

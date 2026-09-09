@@ -1,0 +1,145 @@
+=== NAK-224 ROTBEWEIS D1 — A29-Quellliste nennt geloeschte hypothese.rs ===
+Stand vor der Runde: c892648f3a11cac0d25971bb2f93da06c5748e0d
+Datum: 2026-09-09 16:16:47
+
+--- (c-vor) Reproduktionsbefehl des Pruefers VOR dem Fix (muss AssertionError werfen) ---
+$ py -3.13 -B -c "import runpy; m=runpy.run_path(...); assert all(p.is_file() for p in m[QUELLEN])"
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import runpy; m=runpy.run_path('tools/eq-copilot/pruefe_p5_korpus.py'); assert all(p.is_file() for p in m['QUELLEN'])
+                                                                                   ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
+EXIT=1
+
+--- QUELLEN-Liste VOR dem Fix, mit Existenz ---
+FEHLT C:\Users\phili\Projekte\Nakama\broker\src\coordinator\hypothese.rs
+DA    C:\Users\phili\Projekte\Nakama\broker\src\coordinator\hypothese_verdrahtung.rs
+DA    C:\Users\phili\Projekte\Nakama\broker\tests\sonde014_p5_korpus.rs
+
+--- (b) VERHALTEN VOR DEM FIX ---
+Schritt 1: Ergebnisdatei frisch erzeugen
+$ cargo test --manifest-path broker/Cargo.toml --test sonde014_p5_korpus
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.05s
+     Running tests\sonde014_p5_korpus.rs (broker\target\debug\deps\sonde014_p5_korpus-b59f509449eb57a8.exe)
+
+running 1 test
+test korpus_kette_laeuft_durch_den_produktpfad ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 30.89s
+
+
+Schritt 2: A29 muss GRUEN sein (frisches Ergebnis)
+$ py -3.13 tools/eq-copilot/pruefe_p5_korpus.py
+  PRODUKTSCHWELLE (M-31): 5 von 38 Befunden handelbar, Sicherheiten ['hoch']
+  GEGENBEISPIELE (M-69): 21 Sitzungen, 31 Befunde, 0 davon stark — „auf jedem Gegenbeispiel unsicher" HAELT
+  P4-LUECKE NAK-190 (M-70): gedruckt, inzwischen gemessen durch korrelierter_distraktor, getrennt_durch_zusammenhang, g5_distraktor_mehr_fenster, g5_distraktor_lauter, g5_kandidatendeckel, g5_gleichstand_verursacher_fuehrt — sie darf jetzt entfernt werden
+  GATE_MINDEST_FENSTER: 5 Faelle aus den zwei Passagensitzungen, 0 davon stark
+  GATE_MINDEST_FENSTER: der Startwert 8 haelt — kein Versionsschritt noetig (E-12 Fall 3)
+P5-Korpus: gruen
+EXIT=0
+
+Schritt 3: Zeitstempel von broker/src/coordinator/hypothese/befund.rs auf jetzt (keine Inhaltsaenderung)
+$ (Get-Item ...befund.rs).LastWriteTime = Get-Date
+  befund.rs mtime = 2026-09-09T16:17:43   >   ergebnis mtime = 2026-09-09T16:17:27
+Schritt 4: A29 erneut — ERWARTET Exit 3, GEMESSEN:
+$ py -3.13 tools/eq-copilot/pruefe_p5_korpus.py
+  GATE_MINDEST_FENSTER: 5 Faelle aus den zwei Passagensitzungen, 0 davon stark
+  GATE_MINDEST_FENSTER: der Startwert 8 haelt — kein Versionsschritt noetig (E-12 Fall 3)
+P5-Korpus: gruen
+EXIT=0   <<< FEHLVERHALTEN: gruen trotz juengerer Quelle
+
+Schritt 5 (Gegenprobe): eine in QUELLEN GENANNTE Datei juenger machen — hypothese_verdrahtung.rs
+$ py -3.13 tools/eq-copilot/pruefe_p5_korpus.py
+P5-Korpus: VORAUSSETZUNG FEHLT
+  Ergebnis ist AELTER als broker\src\coordinator\hypothese_verdrahtung.rs — der Lauf misst ein veraltetes Artefakt
+EXIT=3   <<< Mechanismus greift bei GENANNTER Quelle; nur die Liste war falsch
+
+════════ NACH DEM FIX ════════
+--- (c) Reproduktionsbefehl des Pruefers NACH dem Fix (kein AssertionError) ---
+OK — alle 14 Quellen existieren
+EXIT=0
+
+--- QUELLEN-Liste NACH dem Fix ---
+DA    broker\src\coordinator\hypothese\befund.rs
+DA    broker\src\coordinator\hypothese\determinismus.rs
+DA    broker\src\coordinator\hypothese\eingang.rs
+DA    broker\src\coordinator\hypothese\enthaltung.rs
+DA    broker\src\coordinator\hypothese\klassenwahl.rs
+DA    broker\src\coordinator\hypothese\messung.rs
+DA    broker\src\coordinator\hypothese\mod.rs
+DA    broker\src\coordinator\hypothese\rechnung.rs
+DA    broker\src\coordinator\hypothese\screening.rs
+DA    broker\src\coordinator\hypothese\testhilfe.rs
+DA    broker\src\coordinator\hypothese\vertrag.rs
+DA    broker\src\coordinator\hypothese\zusammenhang.rs
+DA    broker\src\coordinator\hypothese_verdrahtung.rs
+DA    broker\tests\sonde014_p5_korpus.rs
+
+--- (a) VERHALTEN NACH DEM FIX ---
+Schritt 1: Ergebnisdatei frisch erzeugen
+$ cargo test --manifest-path broker/Cargo.toml --test sonde014_p5_korpus
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.86s
+     Running tests\sonde014_p5_korpus.rs (broker\target\debug\deps\sonde014_p5_korpus-b59f509449eb57a8.exe)
+
+running 1 test
+test korpus_kette_laeuft_durch_den_produktpfad ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 30.88s
+
+
+Schritt 2: A29 muss GRUEN sein
+$ py -3.13 tools/eq-copilot/pruefe_p5_korpus.py
+  GATE_MINDEST_FENSTER: 5 Faelle aus den zwei Passagensitzungen, 0 davon stark
+  GATE_MINDEST_FENSTER: der Startwert 8 haelt — kein Versionsschritt noetig (E-12 Fall 3)
+P5-Korpus: gruen
+EXIT=0
+
+Schritt 3: Zeitstempel von broker/src/coordinator/hypothese/befund.rs auf jetzt (keine Inhaltsaenderung)
+$ (Get-Item ...befund.rs).LastWriteTime = Get-Date
+  befund.rs mtime = 2026-09-09T16:22:00   >   ergebnis mtime = 2026-09-09T16:21:49
+Schritt 4: A29 erneut — ERWARTET Exit 3, GEMESSEN:
+$ py -3.13 tools/eq-copilot/pruefe_p5_korpus.py
+P5-Korpus: VORAUSSETZUNG FEHLT
+  Ergebnis ist AELTER als broker\src\coordinator\hypothese\befund.rs — der Lauf misst ein veraltetes Artefakt
+EXIT=3   <<< GRUEN->ROT: die Frischepruefung greift jetzt auf jedem neuen Rechenmodul
+
+Schritt 5: Ergebnisdatei erneut erzeugen -> A29 wieder gruen
+$ cargo test --manifest-path broker/Cargo.toml --test sonde014_p5_korpus
+test korpus_kette_laeuft_durch_den_produktpfad ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 30.75s
+
+$ py -3.13 tools/eq-copilot/pruefe_p5_korpus.py
+  GATE_MINDEST_FENSTER: 5 Faelle aus den zwei Passagensitzungen, 0 davon stark
+  GATE_MINDEST_FENSTER: der Startwert 8 haelt — kein Versionsschritt noetig (E-12 Fall 3)
+P5-Korpus: gruen
+EXIT=0
+
+Schritt 6: die ZWEITE neue Zusage — eine genannte, aber FEHLENDE Quelle ist Exit 3 mit Pfad,
+kein stilles Ueberspringen. Gemessen an der Zeile selbst, ohne Eingriff ins Repo:
+$ py -3.13 -B -c "... QUELLEN um einen nicht existenten Pfad ergaenzen, _voraussetzung() rufen"
+ohne Eingriff        : keine fehlende Voraussetzung (gruen)
+mit fehlender Quelle : ['Quelle fehlt: broker\\src\\coordinator\\hypothese\\geloescht.rs — sie steht in QUELLEN, also haengt das Ergebnis an ihr; ein stilles Ueberspringen wuerde genau die verlorene Abhaengigkeit verdecken']
+ROT wie zugesagt: der Pfad ist genannt, der Lauf haelt an.
+EXIT=0
+
+--- Betroffene Beine nach dem Fix ---
+$ py -3.13 tools/eq-copilot/erzeuge_p5_korpus.py --pruefen   (A28)
+P5-Korpus: 2 Dateien, 27 Sitzungen
+bytegleich
+EXIT=0
+$ py -3.13 tools/eq-copilot/pruefe_p5_korpus.py --selbsttest   (A30)
+  ok      N-37 (b): eine gedruckte Luecke OHNE Ticket faellt
+  ok      N-37 (c): eine inzwischen geschlossene Luecke wird als solche gemeldet
+P5-Korpus Selbsttest: gruen
+EXIT=0
+
+--- Pruefliste E, geaenderte Zusage an DREI Stellen (Runnerkopf, Skriptkopf, Manifestkopf) ---
+$ git grep -n "hypothese/" -- tools/
+tools/beweise.ps1:610:    [pscustomobject]@{ Kuerzel='A29'; Name='pruefe_p5_korpus.py'; Art='python'; Argumente=@(); AbPhase='P5'; Behauptung='Das Sammelbein des P5-Exit-Gates (59 Punkt 6, 36.4, M-64 bis M-70, R2). Es ist das dritte Glied einer KETTE: der Korpus traegt die Wahrheit, broker/tests/sonde014_p5_korpus.rs faehrt jede Sitzung durch p1 und schreibt die TATSAECHLICH ausgegebene Hypothese, und dieses Bein haelt beides gegeneinander - eine falsche starke Produktbehauptung aendert den Korpus nicht, sie faellt am Vergleich. Precision und Recall stehen JE URSACHENKLASSE, dazu Brier, Kalibrierung, Coverage und Enthaltungsrate; die vier Riegel (falsche_starke, falsche_schwache, precision und recall in [0,1]) laufen je Klasse und ueber die Gesamtmenge. Die Schwelle aus M-31 ist AUSGABE: gesucht wird die niedrigste Sicherheitsstufe, deren Riegel halten. Der Startwert von GATE_MINDEST_FENSTER wird an den zwei Passagensitzungen kalibriert. Ohne frische Ergebnisdatei meldet das Bein Voraussetzung-fehlt (Exit 3) statt gruen. Die Frischepruefung zaehlt das Rechenmodul broker/src/coordinator/hypothese/ zur LAUFZEIT auf (rekursiv), und eine genannte, aber fehlende Quelle ist ebenfalls Exit 3 mit Nennung des Pfads - kein stilles Ueberspringen (NAK-224 D1).' }
+tools/eq-copilot/pruefe_p5_korpus.py:58:# `hypothese/befund.rs` durch: A29 bezeugte ein Ergebnis, das den geaenderten
+tools/eq-copilot/pruefe_p5_korpus.py:81:# `Befundkonfidenz` traegt `klasse` UND `score`, und `hypothese/klassenwahl.rs`:24–26
+tools/eq-copilot/pruefe_p5_korpus.py:319:    in `hypothese/klassenwahl.rs`:112–123 — und die Kette liest sie hier zurueck:
+(die dritte Stelle, der lebende Manifestkopf docs/beweise/NAK-224.md, folgt im Manifest-Commit)
+
+=== ENDE ROTBEWEIS D1 ===

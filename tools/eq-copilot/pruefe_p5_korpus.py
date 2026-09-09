@@ -48,9 +48,25 @@ import sys
 WURZEL = pathlib.Path(__file__).resolve().parents[2]
 KORPUS = WURZEL / "eq-copilot" / "fixtures" / "p5-korpus"
 ERGEBNIS = WURZEL / "eq-copilot" / "build" / "p5-korpus-ergebnis.json"
-# Die Quellen, deren Aenderung das Ergebnis veralten laesst.
-QUELLEN = [
-    WURZEL / "broker" / "src" / "coordinator" / "hypothese.rs",
+# ── DIE QUELLEN, DEREN AENDERUNG DAS ERGEBNIS VERALTEN LAESST ─────────────
+#
+# ⚠️ Der Rechenweg ist seit NAK-224 ein VERZEICHNIS, keine einzelne Datei.
+# Eine handgepflegte Dateiliste veraltet beim naechsten Modulschnitt STILL —
+# genau das ist am 09.09.2026 geschehen: hier stand die per `git mv`
+# verschwundene `hypothese.rs`, und `_voraussetzung()` uebersprang sie ueber
+# ein `is_file()`. Damit liess die Frischepruefung eine juengere
+# `hypothese/befund.rs` durch: A29 bezeugte ein Ergebnis, das den geaenderten
+# Rechenweg nie gefahren war (Erstpruefung NAK-224, Defekt D1).
+#
+# Beide Lehren stehen im CODE, nicht bloss in diesem Kommentar:
+#   1. Das Rechenmodul wird zur LAUFZEIT aufgezaehlt (rekursiv, sortiert).
+#      Der naechste Modulschnitt zieht die Liste mit, ohne dass jemand daran
+#      denken muss.
+#   2. Eine genannte, aber FEHLENDE Quelle ist ab jetzt eine fehlende
+#      Voraussetzung (Exit 3) mit Nennung des Pfads. Das stille Ueberspringen
+#      war der Mechanismus, der den Verlust verdeckt hat.
+HYPOTHESE_MODUL = WURZEL / "broker" / "src" / "coordinator" / "hypothese"
+QUELLEN = sorted(HYPOTHESE_MODUL.rglob("*.rs")) + [
     WURZEL / "broker" / "src" / "coordinator" / "hypothese_verdrahtung.rs",
     WURZEL / "broker" / "tests" / "sonde014_p5_korpus.rs",
 ]
@@ -62,7 +78,7 @@ ORDNUNG = {UNKLAR: 0, MITTEL: 1, HOCH: 2}
 #
 # §59 verlangt Brier Score und Kalibrierung. Beide brauchen eine
 # Wahrscheinlichkeitsvorhersage — und das Produkt hat bewusst keine:
-# `Befundkonfidenz` traegt `klasse` UND `score`, und `hypothese.rs`:495–497
+# `Befundkonfidenz` traegt `klasse` UND `score`, und `hypothese/klassenwahl.rs`:24–26
 # haelt ausdruecklich fest, dass die Klasse NIE aus dem Score gerundet wird
 # (M-15/M-20). Der `score` ist `rang.rang()`, das quantisierte Mittel der
 # sechs Rangkomponenten — eine RANGZAHL, keine Trefferwahrscheinlichkeit.
@@ -300,7 +316,7 @@ def produktschwelle(faelle: list[dict]) -> list[str]:
 
     M-31 faellt, wenn die Schwelle „als Literal im Editor" steht. Das Produkt
     trifft die Entscheidung an genau EINER Stelle — `zustand_aus_sicherheit`
-    in `hypothese.rs`:611–622 — und die Kette liest sie hier zurueck:
+    in `hypothese/klassenwahl.rs`:112–123 — und die Kette liest sie hier zurueck:
     handelbar (`ready_to_send`) ist genau `hoch`, nichts darunter.
 
     ⚠️ Geprueft wird eine AEQUIVALENZ, nicht eine Richtung. Nur „kein
@@ -420,6 +436,16 @@ def _voraussetzung() -> tuple[dict, dict, list[str]]:
     for pfad in (KORPUS / "MANIFEST.json", KORPUS / "sitzungen.json"):
         if not pfad.is_file():
             fehlt.append(f"Korpusdatei fehlt: {pfad.relative_to(WURZEL)}")
+    if not HYPOTHESE_MODUL.is_dir():
+        fehlt.append(
+            f"Rechenmodul fehlt: {HYPOTHESE_MODUL.relative_to(WURZEL)} — ohne es "
+            "haelt die Frischepruefung den Rechenweg nicht mehr"
+        )
+    elif not any(q.is_relative_to(HYPOTHESE_MODUL) for q in QUELLEN):
+        fehlt.append(
+            f"Rechenmodul ohne Rust-Quelle: {HYPOTHESE_MODUL.relative_to(WURZEL)} — "
+            "eine leere Quellliste prueft nichts"
+        )
     if not ERGEBNIS.is_file():
         fehlt.append(
             f"Ergebnisdatei fehlt: {ERGEBNIS.relative_to(WURZEL)} — sie entsteht in "
@@ -429,7 +455,16 @@ def _voraussetzung() -> tuple[dict, dict, list[str]]:
         return {}, {}, fehlt
     stand = ERGEBNIS.stat().st_mtime
     for quelle in QUELLEN + [KORPUS / "sitzungen.json"]:
-        if quelle.is_file() and quelle.stat().st_mtime > stand:
+        if not quelle.is_file():
+            # NAK-224 D1: NICHT ueberspringen. Wer in QUELLEN steht, traegt das
+            # Ergebnis; fehlt er, ist die Frischezusage unhaltbar, nicht erfuellt.
+            fehlt.append(
+                f"Quelle fehlt: {quelle.relative_to(WURZEL)} — sie steht in QUELLEN, "
+                "also haengt das Ergebnis an ihr; ein stilles Ueberspringen wuerde "
+                "genau die verlorene Abhaengigkeit verdecken"
+            )
+            continue
+        if quelle.stat().st_mtime > stand:
             fehlt.append(
                 f"Ergebnis ist AELTER als {quelle.relative_to(WURZEL)} — der Lauf "
                 "misst ein veraltetes Artefakt"

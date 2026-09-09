@@ -1,0 +1,82 @@
+# Pruefungszahlen je Kanon-Bein (Riegel R1b): vorher = nachher.
+#
+# Herkunft: die Rohausgabe eines Kanonlaufs wird an ihren Beinueberschriften
+# (Zeilen, die mit "#### " beginnen) in Abschnitte geschnitten. Je Abschnitt
+# stehen zwei Groessen:
+#   ok-Zeilen  Anzahl der Zeilen, die mit "ok" beginnen (Einzelpruefungen).
+#   Summen     Alle Zahlen, die das Bein selbst als Pruefungssumme meldet:
+#              "N Pruefungen ok", "Pruefungen: N bestanden",
+#              "N/M Pruefungen bestanden", "N Pruefungen, K Fehler",
+#              "N Faelle", "test result: ok. N passed", "N ok, K Fehler".
+# Beides ist nachrechenbar; das Skript dazu urteilt nicht.
+
+## VORHER - docs/beweise/roh/NAK-224-41f4984.md (GRUEN 62/62, Abschlusskanon NAK-224)
+## Der Codestand dieses Laufs ist mit dem Basis-SHA 0ca392b5 identisch
+## (git diff --stat 41f4984..0ca392b5 -- eq-copilot broker tools ist leer).
+
+Bein	ok-Zeilen	Summen
+A1 | EqCopNullTest	10	[]
+A2 | EqCopGoldenTest	0	[4, 4, 5, 7, 7, 8, 8, 8, 9, 10, 10, 10, 12, 25, 32, 39, 41, 239]
+A3 | EqCopMarkierungTest	98	[]
+A4 | broker	0	[0, 0, 0, 0, 0, 0, 1, 3, 4, 5, 5, 7, 8, 10, 12, 12, 14, 20, 21, 23, 23, 23, 26, 37, 51, 57, 67, 78, 245]
+A4-SI | subscription_server_integration	5	[22]
+A4b | EqCopPipeClientTest	36	[]
+A5 | pruefe_v3_vertrag.py	0	[613]
+A6 | erzeuge_bandgitter.py	0	[26]
+A7 | erzeuge_quantisierung.py	0	[]
+A8 | erzeuge_v3_fixtures.py	0	[]
+A9 | pruefe_flatc_drift.py	2	[]
+A10 | erzeuge_fb_fixtures.py	0	[]
+A11 | pruefe_v2_schemas.py	0	[]
+A12 | erzeuge_state_fixtures.py	0	[]
+A13 | pruefe_host_capabilities.py	66	[66]
+A14 | pruefe_kern_identitaetsfrei.py	25	[25]
+A17 | pruefe_installer_manifest.py	99	[99]
+A18 | pruefe_installer_gegenpfad.py	131	[127]
+A19 | erzeuge_bandgitter_header.py	0	[]
+A20 | erzeuge_envelope_fixtures.py	0	[]
+A21 | transport_fuzz	0	[12]
+A22 | pruefe_ipc_last.py	20	[]
+A24 | pruefe_session_soak.py	52	[]
+A28 | erzeuge_p5_korpus.py	0	[]
+A29 | pruefe_p5_korpus.py	0	[5]
+A30 | pruefe_p5_korpus.py	63	[]
+A31 | sonde014_gegenbeispiele	20	[20]
+A25 | erzeuge_p4_korpus.py	0	[25]
+A26 | pruefe_p4_korpus.py	0	[5, 6, 6, 8, 25, 25]
+A27 | pruefe_p4_korpus.py	0	[]
+A23 | pruefe_sonde012_sources_latency.py	7	[]
+A16 | EqCopProbeeqNullTest	87	[87]
+B1 | EqCopIdentityTest	120	[120]
+B2 | EqCopStateMigrationTest	180	[21, 21, 180]
+B3 | EqCopHostContextTest	91	[91]
+B3b | EqCopHostProbeTest	85	[85]
+B3c | EqCopSchemaTest	0	[102, 102]
+B4 | EqCopQueueStressTest	121	[121]
+B9 | EqCopLoudnessGoldenTest	109	[109]
+B5 | EqCopAnalysisGoldenTest	0	[]
+B10 | EqCopIpcTest	381	[381]
+B11 | EqCopSonde012HostChannelContextTest	0	[]
+B12 | EqCopSonde012LoudnessSourceTest	0	[]
+B13 | EqCopSonde012SourcesModelTest	85	[]
+B14 | EqCopSonde012ProjectReloadTest	12	[]
+B15 | EqCopShot	0	[]
+B20 | EqCopSonde013QualityClassTest	0	[]
+B22 | EqCopSonde013FingerprintGoldenTest	0	[]
+B23 | EqCopSonde013PassageStateTest	0	[]
+B24 | EqCopSonde013PrePostGoldenTest	0	[]
+B25 | EqCopSonde013ExperimentGoldenTest	0	[]
+B26 | EqCopSonde013ExperimentUiTest	0	[]
+B21 | EqCopSonde013InterventionRingTest	0	[]
+B19 | EqCopSonde013StereoGoldenTest	0	[]
+B17 | EqCopSonde013TruePeakGoldenTest	0	[]
+B18 | EqCopSonde013DynamicsTest	0	[]
+B16 | EqCopSonde013EventWireTest	0	[]
+B27 | EqCopSonde014IntentTest	210	[210]
+B29 | EqCopSonde014AssistentTest	185	[]
+B28 | EqCopSonde014BefundTest	80	[]
+B8 | EqCopLebenslaufTest	79	[79]
+A32 | gesundheit.py	116	[]
+
+SUMME ok-Zeilen vorher = 2575
+Beine = 62

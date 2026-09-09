@@ -1,0 +1,37 @@
+# MSVC-Warnungen beim Neubau der drei Wurzeldateien und aller Abhaengigen
+# Gemessen am Basis-SHA 0ca392b5 (touch der drei Wurzeldateien, dann cmake --build --target <40 Kanonziele>). Exit 0.
+# Spalten: Anzahl | Ziel | Quelldatei | Warncode. Zeilennummern sind bewusst
+# weggelassen - sie verschieben sich beim Schnitt, der Warncode je Datei nicht.
+
+3	EqCopAnalysisGoldenTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+3	EqCopIdentityTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+1	EqCopIpcTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+2	EqCopIpcTest	eq-copilot/plugin/tests/IpcTestMain.cpp	C4456
+3	EqCopLebenslaufTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+3	EqCopMarkierungTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+1	EqCopMarkierungTest	eq-copilot/plugin/tests/MarkierungTestMain.cpp	C4457
+3	EqCopNullTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+2	EqCopProbeeqNullTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+3	EqCopQueueStressTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+1	EqCopSchemaTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+2	EqCopSessionSoak	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+3	EqCopShot	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+2	EqCopSonde012HostChannelContextTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+10	EqCopSonde012HostChannelContextTest	eq-copilot/plugin/tests/Sonde012HostChannelContextTest.cpp	C4244
+2	EqCopSonde012LoudnessSourceTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+3	EqCopSonde012ProjectReloadTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+1	EqCopSonde012SourcesLatencyTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+1	EqCopSonde013DynamicsTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+1	EqCopSonde013EventWireTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+1	EqCopSonde013FingerprintGoldenTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+3	EqCopSonde013PassageStateTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+1	EqCopSonde013PrePostGoldenTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+1	EqCopSonde013StereoGoldenTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+3	EqCopSonde014AssistentTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+3	EqCopSonde014IntentTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+3	EqCopStateMigrationTest	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+3	EqCopilot	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+2	NakamaKern	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+2	NakamaProbeeq	eq-copilot/plugin/core/analysis/FeatureEngine.h	C4458
+
+SUMME	72

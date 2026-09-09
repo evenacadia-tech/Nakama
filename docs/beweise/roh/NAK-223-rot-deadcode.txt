@@ -72,3 +72,66 @@ URTEIL: alle Grenzen gehalten (0 Ziel(e) verfehlt)
 ```
 
 URTEIL: BESTANDEN
+
+---
+
+## 3. Nacharbeit 1 (09.09.2026) — Qualifizierer vor dem Bezeichner
+
+Erstpruefung Codex `gpt-6-astra` (Effort max, read-only, Thread
+`01a08530-2bfd-7162-a0c8-d3ff058cc551`, Stand `d6a0bfda`), Defekt 1: bei einem
+unbenutzten `pub const fn helfer()` erfasste `ELEMENT` das Schluesselwort `fn`
+als Namen. Danach galt jede andere Funktionsdefinition im Crate als dessen
+Verwendung, und ein aufruferloser Helfer konnte strukturell nie gemeldet
+werden — das Maass war in dieser Form stumm.
+
+Der Beweis faellt an der Zeile, die die Zusage traegt: die Namenswahl in
+`ELEMENT` (`tools/plan/gesundheit.py`), nicht an der Tabelle. Gemessen wird er
+deshalb am Selbsttest, der acht Quellformen fuehrt — je einmal ohne und einmal
+mit Verwendung, dazu den gemeldeten Namen.
+
+Werkzeug: `py -3.13 tools/plan/gesundheit.py --selbsttest`
+
+### Mutation A — Qualifizierer-Ueberspringen zurueckgenommen (`ELEMENT` woertlich wie vor der Nacharbeit)
+
+Exitcode: 2   (erwartet 2 — ein roter Selbsttest ist Werkzeugfehler)
+
+```text
+  ROT  dead_code `pub const fn helfer() {}` ohne Verwendung ist ein Befund   ist=0 soll=1
+  ROT  dead_code `pub const fn helfer() {}` meldet den Namen   ist='' soll='helfer'
+  ROT  dead_code `pub const extern "C" fn helfer() {}` meldet den Namen   ist='extern' soll='helfer'
+  ROT  dead_code `pub const extern "C" fn helfer() {}` mit Verwendung ist kein Befund   ist=1 soll=0
+  ROT  dead_code `static mut ZAEHLER: u8 = 0;` meldet den Namen   ist='mut' soll='ZAEHLER'
+  ROT  dead_code `static mut ZAEHLER: u8 = 0;` mit Verwendung ist kein Befund   ist=1 soll=0
+
+Selbsttest: 90/96 bestanden
+(die uebrigen Faelle blieben gruen und sind hier weggelassen; ihre Zahl steht in der Summenzeile)
+```
+
+**Mutation zurueckgenommen — Stand des Tickets:**
+
+Exitcode: 0   (erwartet 0)
+
+```text
+(keine ROT-Zeile)
+Selbsttest: 96/96 bestanden
+```
+
+Vier der acht Formen (`pub(crate) unsafe fn`, `pub async fn`, `unsafe fn`,
+`pub const HELFER: u8`) bleiben unter der Mutation gruen: die alte Namenswahl
+traf sie zufaellig richtig. Rot werden genau die drei, bei denen ein
+Qualifizierer zwischen Schluesselwort und Bezeichner steht — `const fn`,
+`const extern "C" fn` und `static mut`.
+
+### Reproduktion des Pruefers, auf dem Stand des Tickets
+
+```text
+py -3.13 -B -c "import runpy; g=runpy.run_path('tools/plan/gesundheit.py'); print(g['finde_dead_code']([('t.rs',None)], {'t.rs':'#[allow(dead_code)]\npub const fn helfer() {}\nfn main() {}\n'}))"
+
+[('t.rs', 1, 'helfer')]
+EXIT=0
+```
+
+Vor der Nacharbeit lieferte derselbe Befehl `[]`. Jetzt steht dort genau ein
+Treffer mit dem Namen `helfer`.
+
+URTEIL: BESTANDEN

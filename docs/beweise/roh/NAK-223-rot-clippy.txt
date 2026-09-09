@@ -82,3 +82,72 @@ URTEIL: alle Grenzen gehalten (1 Ziel(e) verfehlt)
 ```
 
 URTEIL: BESTANDEN
+
+---
+
+## 3. Nacharbeit 1 (09.09.2026) — abgebrochener Clippy-Prozess
+
+Erstpruefung Codex `gpt-6-astra` (Effort max, read-only, Thread
+`01a08530-2bfd-7162-a0c8-d3ff058cc551`, Stand `d6a0bfda`), Defekt 2: brach
+clippy mit einem Compilerfehler ab (E0308, Exit 101), stand dessen Diagnose
+bereits in `fund`. Die Bedingung `not fund and lauf.returncode != 0` uebersprang
+damit die Fehlerbehandlung genau dann, wenn der Fehler selbst eine Diagnose
+geschrieben hatte, und die Teilmessung erschien als gueltige Warnungszahl —
+der Gesamtlauf endete mit 0.
+
+Der Beweis faellt an der Zeile, die die Zusage traegt: die Exitcodepruefung in
+`miss_clippy`. Auf der Tabelle ist er nicht sichtbar (sie fuehrt nur Zahlen),
+deshalb misst ihn der Selbsttest — vier Faelle ohne jede Cargo-Ausfuehrung
+(Exit 101 mit Diagnosen, Exit 101 ohne, Exit 0 mit drei Warnungen, Exit 0 ohne)
+plus der Gesamtlauf, der den Fehler erbt und auf demselben Weg wie ein
+fehlender Messort mit Exit 2 endet.
+
+Werkzeug: `py -3.13 tools/plan/gesundheit.py --selbsttest`
+
+### Mutation B — Exitcodepruefung zurueck auf `not fund and lauf.returncode != 0`, hinter die Diagnosen (woertlich wie vor der Nacharbeit)
+
+Exitcode: 2   (erwartet 2 — ein roter Selbsttest ist Werkzeugfehler)
+
+```text
+  ROT  clippy: Abbruch MIT Diagnosen ist ein Werkzeugfehler   ist=False soll=True
+  ROT  clippy: Abbruch MIT Diagnosen liefert keine Zahl   ist=True soll=False
+  ROT  clippy: Abbruch OHNE Diagnosen ist ein Werkzeugfehler   ist=(None, [], 'cargo clippy fehlgeschlagen: error: could not compile eqcop-broker') soll='WERKZEUGFEHLER: cargo clippy Exit 101 - error: could not compile eqcop-broker'
+  ROT  clippy: Abbruch ohne stderr sagt genau das   ist=(None, [], 'cargo clippy fehlgeschlagen: ohne Ausgabe') soll='WERKZEUGFEHLER: cargo clippy Exit 101 - ohne Ausgabe auf stderr'
+  ROT  clippy: Gesamtlauf erbt den Werkzeugfehler (Weg zu Exit 2)   ist='(nicht geworfen)' soll='cargo clippy Exit 101 - error: linker failed'
+
+Selbsttest: 91/96 bestanden
+(die uebrigen Faelle blieben gruen und sind hier weggelassen; ihre Zahl steht in der Summenzeile)
+```
+
+**Mutation zurueckgenommen — Stand des Tickets:**
+
+Exitcode: 0   (erwartet 0)
+
+```text
+(keine ROT-Zeile)
+Selbsttest: 96/96 bestanden
+```
+
+Die beiden Faelle des sauberen Laufs (drei Warnungen, keine Warnung) bleiben
+unter der Mutation gruen: gebrochen ist ausschliesslich die Behandlung des
+abgebrochenen Prozesses.
+
+### Reproduktion des Pruefers, auf dem Stand des Tickets
+
+```text
+py -3.13 -B -c "import runpy,pathlib,subprocess,shutil,json; g=runpy.run_path('tools/plan/gesundheit.py'); shutil.which=lambda _: 'cargo'; subprocess.run=lambda *a,**k: subprocess.CompletedProcess([],101,json.dumps(dict(reason='compiler-message',message=dict(level='error',code=dict(code='E0308')))),''); print(g['miss_clippy'](pathlib.Path.cwd()))"
+
+RuntimeError: cargo clippy Exit 101 - ohne Ausgabe auf stderr
+EXIT=1
+```
+
+Vor der Nacharbeit lieferte derselbe Befehl `(1, ['?:0:0 E0308'], '')` — eine
+Zahl aus einem abgebrochenen Lauf. Jetzt liefert er keine Zahl mehr, sondern
+den Fehler mit Exitcode und letzter stderr-Zeile; im Hauptlauf wird daraus
+`Werkzeugfehler: cargo clippy Exit 101 - …` und Exit 2.
+
+Der echte Messlauf ist davon unberuehrt: `--cap-lints warn` haelt den
+Prozess-Exitcode bei 0, gemessen am 09.09.2026 mit 91 Fundstellen in 5,02 s
+(Manifest §5.5).
+
+URTEIL: BESTANDEN

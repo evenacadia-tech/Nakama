@@ -6,7 +6,8 @@ Aufruf vom Workspace-Root:
     py -3.13 tools/plan/gesundheit.py [--clippy] [--json] [--selbsttest]
 
 Exitcode 0 = keine Grenze gerissen · 4 = mindestens eine Grenze gerissen ·
-2 = das Werkzeug selbst ist kaputt (Messort fehlt, Selbsttest rot) ·
+2 = das Werkzeug selbst ist kaputt (Messort fehlt, cargo clippy bricht ab,
+Selbsttest rot) ·
 3 = eine ausdruecklich angeforderte Voraussetzung fehlt (nur bei --clippy ohne
 cargo). Nur Standardbibliothek.
 
@@ -99,12 +100,21 @@ Zeilen sind kein Wartungsaufwand (Ticketnachtrag 08.09.2026).
       Funde (gemessen 09.09.2026: 36 gemeldet statt 91). Gezaehlt werden
       EINDEUTIGE Fundstellen ueber (Datei, Zeile, Spalte, Lint-Code) — ohne
       Dedup zaehlte dieselbe Diagnose fuer `lib` und `lib test` doppelt.
+      Ein Exitcode != 0 des Prozesses ist ein WERKZEUGFEHLER (Exit 2), auch
+      wenn der Strom schon Diagnosen trug — ein Compilerfehler schreibt selbst
+      eine, und die Teilmessung eines abgebrochenen Laufs waere keine
+      Warnungszahl. „Nicht messbar" bleibt allein dem Lauf OHNE `--clippy` und
+      der Umgebung ohne cargo.
 
   (4) AUFRUFERLOSE `#[allow(dead_code)]`-HELFER. Zum Attribut wird der erste
       folgende Bezeichner gesucht (`fn`, `struct`, `enum`, `trait`, `type`,
       `const`, `static`, `union`, `mod` — auf derselben oder einer der
       naechsten Zeilen, Attribute und Kommentare uebersprungen; steht direkt
-      hinter dem Attribut ein Typname, gilt dieser). Befund, wenn der Name
+      hinter dem Attribut ein Typname, gilt dieser). Qualifizierer zaehlen
+      nicht als Name: `pub`, `pub(crate)`, `unsafe`, `async`, `extern "C"`
+      und `default` stehen vor dem Schluesselwort, `const fn name` und
+      `static mut NAME` zwischen Schluesselwort und Bezeichner. `const NAME`
+      bleibt davon unterschieden. Befund, wenn der Name
       ausserhalb seiner Definitionszeile nirgends im Crate vorkommt. Ein
       Attribut ohne erkennbaren Bezeichner wird gezaehlt und benannt, nicht
       verschwiegen. FEHLERKLASSEN: ein in `#[cfg_attr(…, allow(dead_code))]`
@@ -477,10 +487,20 @@ def finde_lange_funktionen(rel: str, text: str, rust: bool, grenze: int):
 
 
 def miss_clippy(wurzel: pathlib.Path):
-    """Eindeutige clippy-Fundstellen des Brokers. Liefert (zahl, treffer, fehler)."""
+    """Eindeutige clippy-Fundstellen des Brokers. Liefert (zahl, treffer, fehler).
+
+    `fehler` traegt ausschliesslich den Umgebungsgrund „cargo nicht gefunden";
+    nur dann ist das Mass NICHT MESSBAR. Jeder WERKZEUGfehler — fehlender
+    Messort, abgebrochener Prozess — wirft `RuntimeError` und endet im
+    Hauptlauf als „Werkzeugfehler" mit Exit 2, genau wie ein fehlender
+    Quellort (Selbstaudit 092db4de).
+    """
     manifest = wurzel / "broker" / "Cargo.toml"
     if not manifest.is_file():
-        return None, [], "broker/Cargo.toml fehlt"
+        # Derselbe Fall wie ein verschobener Quellort: wer --clippy anfordert
+        # und den Messort nicht findet, hat ein kaputtes Werkzeug vor sich,
+        # keine Umgebung ohne cargo. NICHT MESSBAR waere hier ein stilles Null.
+        raise RuntimeError(f"Messort fuer clippy fehlt: {manifest}")
     if shutil.which("cargo") is None:
         return None, [], "cargo nicht gefunden"
     befehl = [
@@ -493,6 +513,16 @@ def miss_clippy(wurzel: pathlib.Path):
     ]
     lauf = subprocess.run(befehl, cwd=str(wurzel), capture_output=True, text=True,
                           encoding="utf-8", errors="replace")
+    # Der Exitcode wird VOR den Diagnosen gelesen und ohne jede Bedingung.
+    # Ein abgebrochener Lauf hat nicht zu Ende gemessen — auch dann nicht, wenn
+    # der Strom schon Diagnosen trug: ein Compilerfehler (E0308, Exit 101)
+    # schreibt selbst eine. Wer erst zaehlt und den Exitcode nur bei LEERER
+    # Fundmenge ansieht, reicht eine Teilmessung als gueltige Warnungszahl
+    # durch und der Gesamtlauf endet mit 0 (Erstpruefung 09.09.2026, Defekt 2).
+    if lauf.returncode != 0:
+        kurz = (lauf.stderr or "").strip().splitlines()
+        raise RuntimeError(f"cargo clippy Exit {lauf.returncode} - "
+                           + (kurz[-1] if kurz else "ohne Ausgabe auf stderr"))
     fund = {}
     for zeile in (lauf.stdout or "").splitlines():
         zeile = zeile.strip()
@@ -519,9 +549,6 @@ def miss_clippy(wurzel: pathlib.Path):
         else:
             ort = ("?", 0, 0)
         fund[(ort, code)] = m.get("message", "")
-    if not fund and lauf.returncode != 0:
-        kurz = (lauf.stderr or "").strip().splitlines()
-        return None, [], "cargo clippy fehlgeschlagen: " + (kurz[-1] if kurz else "ohne Ausgabe")
     treffer = sorted(f"{o[0]}:{o[1]}:{o[2]} {c}" for (o, c) in fund)
     return len(fund), treffer, ""
 
@@ -529,8 +556,23 @@ def miss_clippy(wurzel: pathlib.Path):
 # -------------------------------------------------------- Maass 4: dead_code
 
 DEADCODE_ATTR = re.compile(r"#\[\s*allow\s*\(([^)]*)\)\s*\]")
-ELEMENT = re.compile(
-    r"\b(?:fn|struct|enum|trait|type|const|static|union|mod)\s+([A-Za-z_][A-Za-z0-9_]*)")
+# Der Bezeichner steht NICHT immer unmittelbar hinter dem ersten Schluesselwort.
+# Qualifizierer VOR dem Schluesselwort (`pub`, `pub(crate)`, `pub(in …)`,
+# `unsafe`, `async`, `extern "C"`, `default`) sind selbst keine Schluesselwoerter
+# und werden von der Suche uebergangen. Zwischen Schluesselwort und Namen stehen
+# koennen dagegen `const fn name` (Schluesselwort ist `fn`, `const` ist hier
+# Qualifizierer), `const extern "C" fn name` und `static mut NAME`. Wer stumpf
+# hinter dem ERSTEN Treffer liest, erfasst bei `pub const fn helfer` das Wort
+# `fn` als Namen; danach gilt jede andere Funktionsdefinition im Crate als
+# dessen Verwendung, und der aufruferlose Helfer bleibt strukturell ungemeldet
+# (Erstpruefung 09.09.2026, Defekt 1). `const NAME: T` bleibt unterscheidbar:
+# dort folgt kein zweites Schluesselwort, also ist NAME der Bezeichner —
+# ebenso `unsafe trait Name` gegen `const fn name`.
+SCHLUESSELWORT = r"fn|struct|enum|trait|type|const|static|union|mod"
+ZWISCHENWORT = (rf"(?:{SCHLUESSELWORT}|mut|unsafe|async|default)\b"
+                r"|extern\b(?:\s*\"[^\"\n]*\")?")
+ELEMENT = re.compile(rf"\b(?:{SCHLUESSELWORT})\b(?:\s+(?:{ZWISCHENWORT}))*"
+                     r"\s+([A-Za-z_][A-Za-z0-9_]*)")
 WORT = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 
 
@@ -1053,6 +1095,123 @@ def selbsttest() -> int:
     inline = {"a.rs": "struct P(#[allow(dead_code)] Platz);\n", "b.rs": "fn x(p: Platz) {}\n"}
     pruefe("inline-Attribut mit verwendetem Typ ist kein Befund",
            len(finde_dead_code(q, inline)), 0)
+
+    # Qualifizierer: der Name ist der Bezeichner hinter dem ELEMENT, nicht das
+    # naechste Wort. Sonst erfasst `pub const fn helfer` das Wort `fn`, jede
+    # Funktionsdefinition im Crate gilt als dessen Verwendung und kein Helfer
+    # wird je gemeldet (Erstpruefung 09.09.2026, Defekt 1). Jeder Fall einmal
+    # ohne und einmal mit Verwendung - die Erwartung mit ihrem Gegenteil.
+    for quelle, erwartet, gebrauch in (
+            ("pub const fn helfer() {}", "helfer", "helfer();"),
+            ("pub(crate) unsafe fn helfer() {}", "helfer", "unsafe { helfer(); }"),
+            ("pub async fn helfer() {}", "helfer", "helfer();"),
+            ("unsafe fn helfer() {}", "helfer", "unsafe { helfer(); }"),
+            ('pub const extern "C" fn helfer() {}', "helfer", "helfer();"),
+            ("pub const HELFER: u8 = 1;", "HELFER", "let a = HELFER;"),
+            ("static mut ZAEHLER: u8 = 0;", "ZAEHLER", "unsafe { ZAEHLER = 1; }"),
+            ("pub unsafe trait Helfer {}", "Helfer", "fn y<T: Helfer>() {}"),
+    ):
+        kopf = "#[allow(dead_code)]\n" + quelle + "\n"
+        d = finde_dead_code(q, {"a.rs": kopf, "b.rs": "fn x() { }\n"})
+        pruefe(f"dead_code `{quelle}` ohne Verwendung ist ein Befund", len(d), 1)
+        pruefe(f"dead_code `{quelle}` meldet den Namen", d[0][2] if d else "", erwartet)
+        pruefe(f"dead_code `{quelle}` mit Verwendung ist kein Befund",
+               len(finde_dead_code(q, {"a.rs": kopf,
+                                       "b.rs": "fn x() { " + gebrauch + " }\n"})), 0)
+
+    # --- Clippy: abgebrochener Prozess ist ein Werkzeugfehler ---------------
+    # Ohne jede Cargo-Ausfuehrung: ersetzt wird nur der Prozessaufruf. Ein
+    # Exitcode != 0 ist ein Werkzeugfehler, EGAL ob schon Diagnosen gelesen
+    # wurden - sonst erscheint die Teilmessung eines abgebrochenen Laufs als
+    # gueltige Warnungszahl (Erstpruefung 09.09.2026, Defekt 2).
+    import tempfile
+
+    def clippy_probe(wurzel, rc, diagnosen, fehlerstrom=""):
+        """miss_clippy mit ersetztem Prozess. Liefert Ergebnis ODER Fehlertext."""
+        antwort = subprocess.CompletedProcess(
+            [], rc, "\n".join(json.dumps(d) for d in diagnosen), fehlerstrom)
+        echt_run, echt_which = subprocess.run, shutil.which
+        subprocess.run = lambda *a, **k: antwort
+        shutil.which = lambda _: "cargo"
+        try:
+            return miss_clippy(wurzel)
+        except RuntimeError as e:
+            return f"WERKZEUGFEHLER: {e}"
+        finally:
+            subprocess.run, shutil.which = echt_run, echt_which
+
+    def diagnose(stufe, code):
+        return dict(reason="compiler-message",
+                    message=dict(level=stufe, code=dict(code=code),
+                                 message="x", spans=[]))
+
+    def clippy_zahl(x):
+        return x[0] if isinstance(x, tuple) else x
+
+    with tempfile.TemporaryDirectory() as tmp:
+        w = pathlib.Path(tmp)
+        (w / "broker").mkdir(parents=True)
+        (w / "broker" / "Cargo.toml").write_text("[package]\n", encoding="utf-8")
+
+        mit_diag = clippy_probe(w, 101, [diagnose("error", "E0308")])
+        pruefe("clippy: Abbruch MIT Diagnosen ist ein Werkzeugfehler",
+               str(mit_diag).startswith("WERKZEUGFEHLER: cargo clippy Exit 101"), True)
+        pruefe("clippy: Abbruch MIT Diagnosen liefert keine Zahl",
+               isinstance(mit_diag, tuple), False)
+        ohne_diag = clippy_probe(w, 101, [], "error: could not compile eqcop-broker")
+        pruefe("clippy: Abbruch OHNE Diagnosen ist ein Werkzeugfehler",
+               ohne_diag,
+               "WERKZEUGFEHLER: cargo clippy Exit 101 - "
+               "error: could not compile eqcop-broker")
+        pruefe("clippy: Abbruch ohne stderr sagt genau das",
+               clippy_probe(w, 101, []),
+               "WERKZEUGFEHLER: cargo clippy Exit 101 - ohne Ausgabe auf stderr")
+        drei = clippy_probe(w, 0, [diagnose("warning", f"clippy::l{i}") for i in range(3)])
+        pruefe("clippy: sauberer Lauf mit 3 Warnungen zaehlt 3", clippy_zahl(drei), 3)
+        pruefe("clippy: sauberer Lauf ohne Diagnosen zaehlt 0",
+               clippy_zahl(clippy_probe(w, 0, [])), 0)
+
+        # Der Gesamtlauf erbt den Fehler: miss() reicht ihn durch, main() macht
+        # daraus „Werkzeugfehler" und Exit 2 - derselbe Weg wie beim fehlenden
+        # Messort, nie 0 und nie 4.
+        for ort in QUELLORTE:
+            (w / ort).mkdir(parents=True)
+        (w / QUELLORTE[0] / "a.rs").write_text("fn a() {}\n", encoding="utf-8")
+        kein_memory = w / "kein-memory"
+        antwort = subprocess.CompletedProcess([], 101, "", "error: linker failed")
+        echt_run, echt_which = subprocess.run, shutil.which
+        subprocess.run = lambda *a, **k: antwort
+        shutil.which = lambda _: "cargo"
+        try:
+            miss(w, kein_memory, True)
+            geerbt = "(nicht geworfen)"
+        except RuntimeError as e:
+            geerbt = str(e)
+        finally:
+            subprocess.run, shutil.which = echt_run, echt_which
+        pruefe("clippy: Gesamtlauf erbt den Werkzeugfehler (Weg zu Exit 2)",
+               geerbt, "cargo clippy Exit 101 - error: linker failed")
+        pruefe("clippy: ohne Schalter bleibt derselbe Baum unberuehrt",
+               [m.get("nicht_messbar") for m in miss(w, kein_memory, False)
+                if m["name"].startswith("Clippy")],
+               ["nicht angefordert (Schalter --clippy)"])
+
+    with tempfile.TemporaryDirectory() as tmp:
+        w = pathlib.Path(tmp)
+        pruefe("clippy: fehlender Messort ist ein Werkzeugfehler",
+               str(clippy_probe(w, 0, [])).startswith(
+                   "WERKZEUGFEHLER: Messort fuer clippy fehlt"), True)
+        # Gegenteil: fehlendes cargo ist Umgebung, kein Werkzeugfehler.
+        (w / "broker").mkdir(parents=True)
+        (w / "broker" / "Cargo.toml").write_text("[package]\n", encoding="utf-8")
+        echt_which = shutil.which
+        shutil.which = lambda _: None
+        try:
+            umgebung = miss_clippy(w)
+        finally:
+            shutil.which = echt_which
+        pruefe("clippy: fehlendes cargo bleibt NICHT MESSBAR",
+               umgebung, (None, [], "cargo nicht gefunden"))
 
     # --- Kommentar-Bezeichner ----------------------------------------------
     q2 = [("a.rs", None)]

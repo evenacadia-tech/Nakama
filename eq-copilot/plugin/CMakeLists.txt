@@ -201,6 +201,7 @@ set(NAKAMA_KERN_QUELLEN
     core/ipc/BrokerLifecycle.cpp
     core/ipc/ControlClient.cpp
     core/ipc/controlclient/Vertrag.cpp
+    core/ipc/controlclient/Nachrichten.cpp
     core/ipc/TelemetryClient.cpp
 )
 

@@ -100,6 +100,7 @@ ERWARTETE_OBJEKTE = {
     # Quellliste und Objektliste gehoeren in denselben Aenderungssatz, sonst
     # faellt [S6] beim naechsten Lauf.
     "Vertrag.obj",
+    "Nachrichten.obj",
     "TelemetryClient.obj",
 }
 

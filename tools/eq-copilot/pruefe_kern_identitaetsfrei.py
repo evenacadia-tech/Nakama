@@ -95,6 +95,11 @@ ERWARTETE_OBJEKTE = {
     "IpcVerbindung.obj",
     "BrokerLifecycle.obj",
     "ControlClient.obj",
+    # NAK-225/S25d (09.09.2026): ControlClient.cpp ist nach Fachbereich
+    # geteilt. Die Teile stehen in NAKAMA_KERN_QUELLEN und damit im Archiv;
+    # Quellliste und Objektliste gehoeren in denselben Aenderungssatz, sonst
+    # faellt [S6] beim naechsten Lauf.
+    "Vertrag.obj",
     "TelemetryClient.obj",
 }
 

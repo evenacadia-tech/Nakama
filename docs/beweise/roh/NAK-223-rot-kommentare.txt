@@ -1,0 +1,127 @@
+# NAK-223 Rotbeweis — Kommentar-Bezeichner ohne Code, Ratsche 35 (36 reisst, 35 haelt)
+
+Werkzeug: py -3.13 tools/plan/gesundheit.py --wurzel C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\kommentare --memory C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\kommentare\kein-memory
+
+## 1. Mit synthetischer Verletzung
+
+Exitcode: 4   (erwartet 4)
+
+```text
+NAKAMA-GESUNDHEIT
+Wurzel : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\kommentare  (UEBERSCHRIEBEN)
+Memory : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\kommentare\kein-memory
+
+Maass                                Ist  Ziel   Grenze  Status       
+-----------------------------------  ---  -----  ------  -------------
+Quelldateien ueber 2000 Zeilen       0    0      0       OK           
+Quelldateien ueber Ziel 1500 Zeilen  0    0      -       OK           
+Funktionen ueber 200 Zeilen          0    0      28      OK           
+Clippy-Fundstellen (broker)          -    0      91      NICHT MESSBAR
+allow(dead_code) ohne Aufrufer       0    0      0       OK           
+Kommentar-Bezeichner ohne Code       36   0      35      GRENZE       
+MEMORY.md (Bytes)                    -    22528  24986   NICHT MESSBAR
+CLAUDE.md (Bytes)                    -    -      24576   NICHT MESSBAR
+Dirigenten-Skill (Bytes)             -    -      36864   NICHT MESSBAR
+MEMORY.md: Zeilen ueber 250 Zeichen  -    0      0       NICHT MESSBAR
+Memory-Dateien ohne Index-Link       -    0      0       NICHT MESSBAR
+
+nicht messbar: Clippy-Fundstellen (broker) - nicht angefordert (Schalter --clippy)
+nicht messbar: MEMORY.md (Bytes) - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\kommentare\kein-memory\MEMORY.md
+nicht messbar: CLAUDE.md (Bytes) - CLAUDE.md
+nicht messbar: Dirigenten-Skill (Bytes) - .claude/skills/dirigent/SKILL.md
+nicht messbar: MEMORY.md: Zeilen ueber 250 Zeichen - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\kommentare\kein-memory\MEMORY.md
+nicht messbar: Memory-Dateien ohne Index-Link - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\kommentare\kein-memory
+
+GRENZE gerissen: Kommentar-Bezeichner ohne Code (36 von hoechstens 35)
+  broker/src/komm.rs:1 `GibtEsNichtGarantiert000`
+  broker/src/komm.rs:2 `GibtEsNichtGarantiert001`
+  broker/src/komm.rs:3 `GibtEsNichtGarantiert002`
+  broker/src/komm.rs:4 `GibtEsNichtGarantiert003`
+  broker/src/komm.rs:5 `GibtEsNichtGarantiert004`
+  broker/src/komm.rs:6 `GibtEsNichtGarantiert005`
+  broker/src/komm.rs:7 `GibtEsNichtGarantiert006`
+  broker/src/komm.rs:8 `GibtEsNichtGarantiert007`
+  broker/src/komm.rs:9 `GibtEsNichtGarantiert008`
+  broker/src/komm.rs:10 `GibtEsNichtGarantiert009`
+  broker/src/komm.rs:11 `GibtEsNichtGarantiert010`
+  broker/src/komm.rs:12 `GibtEsNichtGarantiert011`
+  broker/src/komm.rs:13 `GibtEsNichtGarantiert012`
+  broker/src/komm.rs:14 `GibtEsNichtGarantiert013`
+  broker/src/komm.rs:15 `GibtEsNichtGarantiert014`
+  broker/src/komm.rs:16 `GibtEsNichtGarantiert015`
+  broker/src/komm.rs:17 `GibtEsNichtGarantiert016`
+  broker/src/komm.rs:18 `GibtEsNichtGarantiert017`
+  broker/src/komm.rs:19 `GibtEsNichtGarantiert018`
+  broker/src/komm.rs:20 `GibtEsNichtGarantiert019`
+  broker/src/komm.rs:21 `GibtEsNichtGarantiert020`
+  broker/src/komm.rs:22 `GibtEsNichtGarantiert021`
+  broker/src/komm.rs:23 `GibtEsNichtGarantiert022`
+  broker/src/komm.rs:24 `GibtEsNichtGarantiert023`
+  broker/src/komm.rs:25 `GibtEsNichtGarantiert024`
+  ... und 11 weitere
+
+URTEIL: GRENZE GERISSEN - 1 Maass(e): Kommentar-Bezeichner ohne Code
+```
+
+## 2. Verletzung zurueckgenommen
+
+Exitcode: 0   (erwartet 0)
+
+```text
+NAKAMA-GESUNDHEIT
+Wurzel : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\kommentare  (UEBERSCHRIEBEN)
+Memory : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\kommentare\kein-memory
+
+Maass                                Ist  Ziel   Grenze  Status       
+-----------------------------------  ---  -----  ------  -------------
+Quelldateien ueber 2000 Zeilen       0    0      0       OK           
+Quelldateien ueber Ziel 1500 Zeilen  0    0      -       OK           
+Funktionen ueber 200 Zeilen          0    0      28      OK           
+Clippy-Fundstellen (broker)          -    0      91      NICHT MESSBAR
+allow(dead_code) ohne Aufrufer       0    0      0       OK           
+Kommentar-Bezeichner ohne Code       35   0      35      ZIEL         
+MEMORY.md (Bytes)                    -    22528  24986   NICHT MESSBAR
+CLAUDE.md (Bytes)                    -    -      24576   NICHT MESSBAR
+Dirigenten-Skill (Bytes)             -    -      36864   NICHT MESSBAR
+MEMORY.md: Zeilen ueber 250 Zeichen  -    0      0       NICHT MESSBAR
+Memory-Dateien ohne Index-Link       -    0      0       NICHT MESSBAR
+
+nicht messbar: Clippy-Fundstellen (broker) - nicht angefordert (Schalter --clippy)
+nicht messbar: MEMORY.md (Bytes) - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\kommentare\kein-memory\MEMORY.md
+nicht messbar: CLAUDE.md (Bytes) - CLAUDE.md
+nicht messbar: Dirigenten-Skill (Bytes) - .claude/skills/dirigent/SKILL.md
+nicht messbar: MEMORY.md: Zeilen ueber 250 Zeichen - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\kommentare\kein-memory\MEMORY.md
+nicht messbar: Memory-Dateien ohne Index-Link - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\kommentare\kein-memory
+
+Ziel verfehlt: Kommentar-Bezeichner ohne Code (35 von hoechstens 35)
+  broker/src/komm.rs:1 `GibtEsNichtGarantiert000`
+  broker/src/komm.rs:2 `GibtEsNichtGarantiert001`
+  broker/src/komm.rs:3 `GibtEsNichtGarantiert002`
+  broker/src/komm.rs:4 `GibtEsNichtGarantiert003`
+  broker/src/komm.rs:5 `GibtEsNichtGarantiert004`
+  broker/src/komm.rs:6 `GibtEsNichtGarantiert005`
+  broker/src/komm.rs:7 `GibtEsNichtGarantiert006`
+  broker/src/komm.rs:8 `GibtEsNichtGarantiert007`
+  broker/src/komm.rs:9 `GibtEsNichtGarantiert008`
+  broker/src/komm.rs:10 `GibtEsNichtGarantiert009`
+  broker/src/komm.rs:11 `GibtEsNichtGarantiert010`
+  broker/src/komm.rs:12 `GibtEsNichtGarantiert011`
+  broker/src/komm.rs:13 `GibtEsNichtGarantiert012`
+  broker/src/komm.rs:14 `GibtEsNichtGarantiert013`
+  broker/src/komm.rs:15 `GibtEsNichtGarantiert014`
+  broker/src/komm.rs:16 `GibtEsNichtGarantiert015`
+  broker/src/komm.rs:17 `GibtEsNichtGarantiert016`
+  broker/src/komm.rs:18 `GibtEsNichtGarantiert017`
+  broker/src/komm.rs:19 `GibtEsNichtGarantiert018`
+  broker/src/komm.rs:20 `GibtEsNichtGarantiert019`
+  broker/src/komm.rs:21 `GibtEsNichtGarantiert020`
+  broker/src/komm.rs:22 `GibtEsNichtGarantiert021`
+  broker/src/komm.rs:23 `GibtEsNichtGarantiert022`
+  broker/src/komm.rs:24 `GibtEsNichtGarantiert023`
+  broker/src/komm.rs:25 `GibtEsNichtGarantiert024`
+  ... und 10 weitere
+
+URTEIL: alle Grenzen gehalten (1 Ziel(e) verfehlt)
+```
+
+URTEIL: BESTANDEN

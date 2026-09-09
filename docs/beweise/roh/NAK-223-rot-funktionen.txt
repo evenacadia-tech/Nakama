@@ -1,0 +1,137 @@
+# NAK-223 Rotbeweis — Funktionen ueber 200 Zeilen, Ratsche 28 (29 reisst, 28 haelt)
+
+Werkzeug: py -3.13 tools/plan/gesundheit.py --wurzel C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\funktionen --memory C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\funktionen\kein-memory
+
+## 1. Mit synthetischer Verletzung
+
+Exitcode: 4   (erwartet 4)
+
+```text
+NAKAMA-GESUNDHEIT
+Wurzel : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\funktionen  (UEBERSCHRIEBEN)
+Memory : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\funktionen\kein-memory
+
+Maass                                Ist  Ziel   Grenze  Status       
+-----------------------------------  ---  -----  ------  -------------
+Quelldateien ueber 2000 Zeilen       0    0      0       OK           
+Quelldateien ueber Ziel 1500 Zeilen  3    0      -       ZIEL         
+Funktionen ueber 200 Zeilen          29   0      28      GRENZE       
+Clippy-Fundstellen (broker)          -    0      91      NICHT MESSBAR
+allow(dead_code) ohne Aufrufer       0    0      0       OK           
+Kommentar-Bezeichner ohne Code       0    0      35      OK           
+MEMORY.md (Bytes)                    -    22528  24986   NICHT MESSBAR
+CLAUDE.md (Bytes)                    -    -      24576   NICHT MESSBAR
+Dirigenten-Skill (Bytes)             -    -      36864   NICHT MESSBAR
+MEMORY.md: Zeilen ueber 250 Zeichen  -    0      0       NICHT MESSBAR
+Memory-Dateien ohne Index-Link       -    0      0       NICHT MESSBAR
+
+nicht messbar: Clippy-Fundstellen (broker) - nicht angefordert (Schalter --clippy)
+nicht messbar: MEMORY.md (Bytes) - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\funktionen\kein-memory\MEMORY.md
+nicht messbar: CLAUDE.md (Bytes) - CLAUDE.md
+nicht messbar: Dirigenten-Skill (Bytes) - .claude/skills/dirigent/SKILL.md
+nicht messbar: MEMORY.md: Zeilen ueber 250 Zeichen - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\funktionen\kein-memory\MEMORY.md
+nicht messbar: Memory-Dateien ohne Index-Link - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\funktionen\kein-memory
+
+GRENZE gerissen: Funktionen ueber 200 Zeilen (29 von hoechstens 28)
+  broker/src/viele0.rs:1 f0 - 202 Zeilen
+  broker/src/viele0.rs:203 f1 - 202 Zeilen
+  broker/src/viele0.rs:405 f2 - 202 Zeilen
+  broker/src/viele0.rs:607 f3 - 202 Zeilen
+  broker/src/viele0.rs:809 f4 - 202 Zeilen
+  broker/src/viele0.rs:1011 f5 - 202 Zeilen
+  broker/src/viele0.rs:1213 f6 - 202 Zeilen
+  broker/src/viele0.rs:1415 f7 - 202 Zeilen
+  broker/src/viele0.rs:1617 f8 - 202 Zeilen
+  broker/src/viele1.rs:1 f9 - 202 Zeilen
+  broker/src/viele1.rs:203 f10 - 202 Zeilen
+  broker/src/viele1.rs:405 f11 - 202 Zeilen
+  broker/src/viele1.rs:607 f12 - 202 Zeilen
+  broker/src/viele1.rs:809 f13 - 202 Zeilen
+  broker/src/viele1.rs:1011 f14 - 202 Zeilen
+  broker/src/viele1.rs:1213 f15 - 202 Zeilen
+  broker/src/viele1.rs:1415 f16 - 202 Zeilen
+  broker/src/viele1.rs:1617 f17 - 202 Zeilen
+  broker/src/viele2.rs:1 f18 - 202 Zeilen
+  broker/src/viele2.rs:203 f19 - 202 Zeilen
+  broker/src/viele2.rs:405 f20 - 202 Zeilen
+  broker/src/viele2.rs:607 f21 - 202 Zeilen
+  broker/src/viele2.rs:809 f22 - 202 Zeilen
+  broker/src/viele2.rs:1011 f23 - 202 Zeilen
+  broker/src/viele2.rs:1213 f24 - 202 Zeilen
+  ... und 4 weitere
+
+Ziel verfehlt: Quelldateien ueber Ziel 1500 Zeilen (3 von hoechstens -)
+  broker/src/viele2.rs: 1818 Zeilen
+  broker/src/viele1.rs: 1818 Zeilen
+  broker/src/viele0.rs: 1818 Zeilen
+
+URTEIL: GRENZE GERISSEN - 1 Maass(e): Funktionen ueber 200 Zeilen
+```
+
+## 2. Verletzung zurueckgenommen
+
+Exitcode: 0   (erwartet 0)
+
+```text
+NAKAMA-GESUNDHEIT
+Wurzel : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\funktionen  (UEBERSCHRIEBEN)
+Memory : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\funktionen\kein-memory
+
+Maass                                Ist  Ziel   Grenze  Status       
+-----------------------------------  ---  -----  ------  -------------
+Quelldateien ueber 2000 Zeilen       0    0      0       OK           
+Quelldateien ueber Ziel 1500 Zeilen  3    0      -       ZIEL         
+Funktionen ueber 200 Zeilen          28   0      28      ZIEL         
+Clippy-Fundstellen (broker)          -    0      91      NICHT MESSBAR
+allow(dead_code) ohne Aufrufer       0    0      0       OK           
+Kommentar-Bezeichner ohne Code       0    0      35      OK           
+MEMORY.md (Bytes)                    -    22528  24986   NICHT MESSBAR
+CLAUDE.md (Bytes)                    -    -      24576   NICHT MESSBAR
+Dirigenten-Skill (Bytes)             -    -      36864   NICHT MESSBAR
+MEMORY.md: Zeilen ueber 250 Zeichen  -    0      0       NICHT MESSBAR
+Memory-Dateien ohne Index-Link       -    0      0       NICHT MESSBAR
+
+nicht messbar: Clippy-Fundstellen (broker) - nicht angefordert (Schalter --clippy)
+nicht messbar: MEMORY.md (Bytes) - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\funktionen\kein-memory\MEMORY.md
+nicht messbar: CLAUDE.md (Bytes) - CLAUDE.md
+nicht messbar: Dirigenten-Skill (Bytes) - .claude/skills/dirigent/SKILL.md
+nicht messbar: MEMORY.md: Zeilen ueber 250 Zeichen - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\funktionen\kein-memory\MEMORY.md
+nicht messbar: Memory-Dateien ohne Index-Link - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\funktionen\kein-memory
+
+Ziel verfehlt: Quelldateien ueber Ziel 1500 Zeilen (3 von hoechstens -)
+  broker/src/viele2.rs: 1818 Zeilen
+  broker/src/viele1.rs: 1818 Zeilen
+  broker/src/viele0.rs: 1818 Zeilen
+
+Ziel verfehlt: Funktionen ueber 200 Zeilen (28 von hoechstens 28)
+  broker/src/viele0.rs:1 f0 - 202 Zeilen
+  broker/src/viele0.rs:203 f1 - 202 Zeilen
+  broker/src/viele0.rs:405 f2 - 202 Zeilen
+  broker/src/viele0.rs:607 f3 - 202 Zeilen
+  broker/src/viele0.rs:809 f4 - 202 Zeilen
+  broker/src/viele0.rs:1011 f5 - 202 Zeilen
+  broker/src/viele0.rs:1213 f6 - 202 Zeilen
+  broker/src/viele0.rs:1415 f7 - 202 Zeilen
+  broker/src/viele0.rs:1617 f8 - 202 Zeilen
+  broker/src/viele1.rs:1 f9 - 202 Zeilen
+  broker/src/viele1.rs:203 f10 - 202 Zeilen
+  broker/src/viele1.rs:405 f11 - 202 Zeilen
+  broker/src/viele1.rs:607 f12 - 202 Zeilen
+  broker/src/viele1.rs:809 f13 - 202 Zeilen
+  broker/src/viele1.rs:1011 f14 - 202 Zeilen
+  broker/src/viele1.rs:1213 f15 - 202 Zeilen
+  broker/src/viele1.rs:1415 f16 - 202 Zeilen
+  broker/src/viele1.rs:1617 f17 - 202 Zeilen
+  broker/src/viele2.rs:1 f18 - 202 Zeilen
+  broker/src/viele2.rs:203 f19 - 202 Zeilen
+  broker/src/viele2.rs:405 f20 - 202 Zeilen
+  broker/src/viele2.rs:607 f21 - 202 Zeilen
+  broker/src/viele2.rs:809 f22 - 202 Zeilen
+  broker/src/viele2.rs:1011 f23 - 202 Zeilen
+  broker/src/viele2.rs:1213 f24 - 202 Zeilen
+  ... und 3 weitere
+
+URTEIL: alle Grenzen gehalten (2 Ziel(e) verfehlt)
+```
+
+URTEIL: BESTANDEN

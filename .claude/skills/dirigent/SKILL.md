@@ -445,11 +445,11 @@ Planbestandteil, keine Nebentätigkeit — Register NAK-223).** Im selben
 Abschlussfenster misst der Dirigent per Kommando, nie aus dem Gedächtnis:
 (a) Bytes von `MEMORY.md` (≤ 22 KB), Root-`CLAUDE.md` (≤ 24 KB) und dieses
 Skills (≤ 36 KB), Index-Zeilen über 250 Zeichen, Memory-Dateien ohne
-Index-Link, `dokuriegel.py` auf CLAUDE.md und Skill; (b) die
-Codebase-Schwellen mit `py -3.13 tools/plan/gesundheit.py` (bis NAK-223
-gebaut ist: größte Quelldateien unter `broker/src`, `eq-copilot/plugin/src`
-und `eq-copilot/plugin/core` per `Measure-Object -Line`, Grenze 2 000
-Zeilen). Ein gerissener Wert wird ein datierter Registerpunkt der Klasse
+Index-Link, `dokuriegel.py` auf CLAUDE.md und Skill; (b) alles davon plus
+die Codebase-Schwellen in EINEM Lauf mit
+`py -3.13 tools/plan/gesundheit.py` (Exit 4 = Schwelle gerissen; im Kanon
+dasselbe Werkzeug als nicht blockierendes Bein A32; `--clippy` baut).
+Ein gerissener Wert wird ein datierter Registerpunkt der Klasse
 [Planarbeit · <Pflegeschritt>] oder [Werkzeug], nie stilles Nachbessern. Bei
 jedem Phasengate läuft zusätzlich der volle `/freshen`-Lauf nach
 `docs/context-hygiene-playbook.md`: Drift in Memory, CLAUDE.md, Skill und

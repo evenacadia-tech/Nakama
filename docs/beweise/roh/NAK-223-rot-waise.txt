@@ -1,0 +1,68 @@
+# NAK-223 Rotbeweis — Memory-Datei ohne Index-Link (unverlinkt reisst, verlinkt haelt)
+
+Werkzeug: py -3.13 tools/plan/gesundheit.py --wurzel C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\waise --memory C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\waise-ordner
+
+## 1. Mit synthetischer Verletzung
+
+Exitcode: 4   (erwartet 4)
+
+```text
+NAKAMA-GESUNDHEIT
+Wurzel : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\waise  (UEBERSCHRIEBEN)
+Memory : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\waise-ordner
+
+Maass                                Ist  Ziel   Grenze  Status       
+-----------------------------------  ---  -----  ------  -------------
+Quelldateien ueber 2000 Zeilen       0    0      0       OK           
+Quelldateien ueber Ziel 1500 Zeilen  0    0      -       OK           
+Funktionen ueber 200 Zeilen          0    0      28      OK           
+Clippy-Fundstellen (broker)          -    0      91      NICHT MESSBAR
+allow(dead_code) ohne Aufrufer       0    0      0       OK           
+Kommentar-Bezeichner ohne Code       0    0      35      OK           
+MEMORY.md (Bytes)                    27   22528  24986   OK           
+CLAUDE.md (Bytes)                    -    -      24576   NICHT MESSBAR
+Dirigenten-Skill (Bytes)             -    -      36864   NICHT MESSBAR
+MEMORY.md: Zeilen ueber 250 Zeichen  0    0      0       OK           
+Memory-Dateien ohne Index-Link       1    0      0       GRENZE       
+
+nicht messbar: Clippy-Fundstellen (broker) - nicht angefordert (Schalter --clippy)
+nicht messbar: CLAUDE.md (Bytes) - CLAUDE.md
+nicht messbar: Dirigenten-Skill (Bytes) - .claude/skills/dirigent/SKILL.md
+
+GRENZE gerissen: Memory-Dateien ohne Index-Link (1 von hoechstens 0)
+  feedback_probe.md
+
+URTEIL: GRENZE GERISSEN - 1 Maass(e): Memory-Dateien ohne Index-Link
+```
+
+## 2. Verletzung zurueckgenommen
+
+Exitcode: 0   (erwartet 0)
+
+```text
+NAKAMA-GESUNDHEIT
+Wurzel : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\waise  (UEBERSCHRIEBEN)
+Memory : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\waise-ordner
+
+Maass                                Ist  Ziel   Grenze  Status       
+-----------------------------------  ---  -----  ------  -------------
+Quelldateien ueber 2000 Zeilen       0    0      0       OK           
+Quelldateien ueber Ziel 1500 Zeilen  0    0      -       OK           
+Funktionen ueber 200 Zeilen          0    0      28      OK           
+Clippy-Fundstellen (broker)          -    0      91      NICHT MESSBAR
+allow(dead_code) ohne Aufrufer       0    0      0       OK           
+Kommentar-Bezeichner ohne Code       0    0      35      OK           
+MEMORY.md (Bytes)                    38   22528  24986   OK           
+CLAUDE.md (Bytes)                    -    -      24576   NICHT MESSBAR
+Dirigenten-Skill (Bytes)             -    -      36864   NICHT MESSBAR
+MEMORY.md: Zeilen ueber 250 Zeichen  0    0      0       OK           
+Memory-Dateien ohne Index-Link       0    0      0       OK           
+
+nicht messbar: Clippy-Fundstellen (broker) - nicht angefordert (Schalter --clippy)
+nicht messbar: CLAUDE.md (Bytes) - CLAUDE.md
+nicht messbar: Dirigenten-Skill (Bytes) - .claude/skills/dirigent/SKILL.md
+
+URTEIL: alle Grenzen gehalten (0 Ziel(e) verfehlt)
+```
+
+URTEIL: BESTANDEN

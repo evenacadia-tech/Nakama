@@ -28,6 +28,14 @@ Trigger: sofort `/freshen`, vor allem anderen.
   wc -c ~/.claude/projects/C--Users-phili-Projekte-Nakama/memory/MEMORY.md
   ```
 
+**Messquelle für Phase A und F ist seit NAK-223 (09.09.2026)
+`py -3.13 tools/plan/gesundheit.py`**: derselbe Lauf misst alle drei
+Flächenbytes, die Index-Zeilen über 250 Zeichen und die Memory-Dateien ohne
+Index-Link gegen genau die Grenzen dieses Playbooks — dazu die
+Codebase-Schwellen — und gibt Exit 4, sobald eine Grenze reißt. Fehlt der
+rechnerlokale Memory-Ordner, melden die Memory-Maße „nicht messbar" statt rot.
+Die Einzelkommandos unten bleiben als Gegenprobe gültig.
+
 **Die weitere Always-on-Fläche** (jede Session vor dem ersten Tool-Call
 geladen): globales `~/.claude/CLAUDE.md` (~5 KB, User-Besitz — nie
 auto-editieren) + Repo-`CLAUDE.md` (~23 KB am 09.09.2026, Ziel ≤ 24 KB — von Claude gepflegt, Drift

@@ -428,6 +428,39 @@ function Ist-Stillgelegt($eintrag) {
     return $null -ne $eintrag.PSObject.Properties['Stillgelegt']
 }
 
+<# Optionales Feld eines Kanoneintrags, mit demselben PSObject-Zugriff wie
+   oben - unter `Set-StrictMode -Version Latest` wuerfe der Punktzugriff bei
+   jedem Eintrag, der das Feld nicht traegt. (NAK-223, 09.09.2026) #>
+function Feldwert($eintrag, [string] $Name, $Standard) {
+    if ($null -eq $eintrag.PSObject.Properties[$Name]) { return $Standard }
+    return $eintrag.PSObject.Properties[$Name].Value
+}
+
+<# Nicht blockierendes Bein: ein Exitcode aus `HinweisExits` wird zu [HINWEIS]
+   statt [ROT] und zaehlt wie ein bestandener Lauf.
+
+   Warum das so und nicht anders (NAK-223, 09.09.2026): das Gesundheitsmass
+   MISST die Codebase, es bewacht sie nicht. Ein gerissener Schwellwert ist
+   Pflegearbeit fuer den Plan, kein widerlegter Vertrag - er darf den Kanon
+   nicht rot faerben und keinen Ticketabschluss blockieren. Er muss aber
+   sichtbar sein, und das ist er zweifach: das Symbol [HINWEIS] steht in der
+   Uebersichtstabelle JEDES Manifests, und die volle Trefferliste steht in der
+   Rohausgabe des Beins.
+
+   Die Zaehlung als bestanden ist Absicht und nicht Schoenung: nur so ist die
+   Urteilszeile mit und ohne gerissene Schwelle WORTGLEICH ("GRUEN - N/N"),
+   also unabhaengig vom Befund - genau das fordert der Ticketauftrag. Ein
+   eigener Zaehler ergaebe "GRUEN - 61/62" und damit ein Urteil, das der
+   Befund doch bewegt.
+
+   Was NICHT hierunter faellt: jeder andere Exitcode. Ein abgestuerztes oder
+   fehlendes Werkzeug bleibt ROT beziehungsweise [FEHLT] - ein Messwerkzeug,
+   das nicht laeuft, ist ein echter Befund. #>
+function Ist-Hinweisexit($eintrag, [int] $Code) {
+    $liste = Feldwert $eintrag 'HinweisExits' @()
+    return ($liste -contains $Code)
+}
+
 $kanon = @(
     [pscustomobject]@{
         Kuerzel    = 'A1'
@@ -687,6 +720,16 @@ $kanon = @(
     [pscustomobject]@{ Kuerzel='B29'; Name='EqCopSonde014AssistentTest'; Art='plugin'; Argumente=@(); AbPhase='P5'; Behauptung='Die Zustandsmaschine des AssistantStep im Main (46.1, E-07/E-08, M-55 bis M-62). Die Zustandsmenge hat ACHT Werte, jeder kommt ueber seinen eigenen Rueckweg zurueck, ein neunter faellt. Nach preview fuehrt KEINE Kante - weder hin noch zurueck -, ein gespeicherter preview-Schritt ist ein Lesefehler statt eines stillen Sprungs, und die Produkt-API setzt ihn nicht; die Gegenprobe mit proposal laedt normal. Jeder der acht Zustaende traegt fuenf Angaben (Eintritt, Evidenz, Useraktion, Timeout ueber 0, sichere Rueckkante), auch preview - der erste Zustand ist seine eigene Rueckkante. Der Deckel ist STRUKTURELL: ein zweiter Startversuch bei offenem Schritt wird abgewiesen, nicht eingereiht, und erst nach dem terminalen Abbruch beginnt ein neuer. Die vier Gegenpfade laufen einzeln: Zurueck geht auf die Rueckkante, Ueberspringen auf den naechsten Zustand, Resume ist eine FRAGE ohne Revisionssprung, und Verwerfen ist terminal statt geloescht - danach gibt es kein Resume mehr. Die drei benannten Ergebnisse aus 46.2 sind eigene Ergebnisse mit Objekt; dasselbe zweimal hebt keine Revision. Die harten Gates greifen VOR der Gewichtung: drei Kandidaten mit perfektem Rang und je einem gerissenen Gate verlassen die Liste, ein bescheidener bleibt. Verdrahtet am echten Prozessor mit Host-Dirty genau einmal je echter Aenderung, Rekonstruktion aus dem gespeicherten MainProject und bytegleichem Save/Load; jede Grenze faellt von beiden Seiten, und ein Altstand ohne die Eigenschaft laedt normal und schreibt sie nicht.' }
     [pscustomobject]@{ Kuerzel='B28'; Name='EqCopSonde014BefundTest'; Art='plugin'; Argumente=@(); AbPhase='P5'; Behauptung='Die Befundzustaende auf der Gen-Seite (Abnahme U21, M-29 bis M-35). Die drei Sicherheitsstufen sind auf GENAU DREI Zustaende abgebildet, und die Abbildung ist ein FELD: ein vierter Wert macht den ganzen Snapshot ungueltig, statt still auf einen bekannten zu fallen. Nur READY TO SEND erlaubt HOLD TO AUDITION und SEND DRAFT - die Sperre liegt am Befund im Modell, nicht an einer ausgegrauten Schaltflaeche. Messqualitaet der Passage und Sicherheit des Befunds bleiben zwei Felder aus zwei Quellen: ein Befund mit confidence.class hoch, dessen Zustand more_data sagt, bleibt nicht handelbar. Alternativen sind EIGENE Befunde mit eigenem Zustand und reisen als IDs; ein Freitext faellt. Der Beleg ist die markierte Zone - Bandrand 0 und 221 gueltig, leeres Intervall und 222 nicht -, und ein Belegtextfeld gibt es nicht. Die drei Anzeigezeilen sind drei eigene Felder; eine vierte oder eine leere faellt. Die acht Ausschlussgruende kommen mit ihrem Grund an, ein neunter faellt. Jede Zahl faellt an ihrer Grenze und nicht erst danach. Zuletzt die Fassungsleiter: ein Leser der Fassung 2 lehnt findings ab, Abwesenheit heisst keine Befunde, und ein Sitzungswechsel raeumt sie ab. Seit Etappe E dazu der Maskierungswert AM Befund: er benennt Frequenzbereich und beide Quellen, gueltig und herabgesetzt sind zwei eigene Bits, Abwesenheit ist etwas anderes als ein ungueltiger Wert, und ein Objekt beliebiger Form faellt - sechs Formen einzeln geprueft. Eine Zeichenanweisung (Achse, Zoom, Farbe) faellt am Vertrag, auch im Maskierungswert.' }
     [pscustomobject]@{ Kuerzel='B8'; Name='EqCopLebenslaufTest';     Art='plugin'; Argumente=@(); AbPhase='P1'; Behauptung='Lifecycle-Klassifikation §53.5 bleibt erhalten; SONDE-011 startet den Broker nur ueber state::Lebenslauf::darfBrokerStarten() bei Main plus offenem Editor. Alle Negativzustaende lassen den Launcher unberuehrt, und die instrumentierte Gegenprobe misst null Broker-Lifecycle-Aufrufe aus processBlock beziehungsweise dem Audiothread.' }
+
+    # S25b/NAK-223: das einzige NICHT BLOCKIERENDE Bein des Kanons. Es misst
+    # keine Zusage des Produkts, sondern die Wartbarkeit der Codebase und die
+    # Groesse der Always-on-Kontextflaeche - Pflege ist seit dem User-Wort vom
+    # 08.09.2026 Planbestandteil und keine Nebentaetigkeit. Exit 4 (Schwelle
+    # gerissen) wird deshalb zu [HINWEIS] und laesst Urteil und Exitcode des
+    # Runners unveraendert; Exit 2 (Werkzeug kaputt, Selbsttest rot) bleibt ROT.
+    # Der Selbsttest laeuft im selben Aufruf voran: ein Mass, dessen Werkzeug
+    # nicht mehr misst, waere gefaehrlicher als gar keines.
+    [pscustomobject]@{ Kuerzel='A32'; Name='gesundheit.py'; Art='python'; Ordner='tools\plan'; Argumente=@('--mit-selbsttest'); AbPhase='jetzt'; HinweisExits=@(4); Behauptung='Codebase- und Kontextgesundheit gegen die Schwellen aus Plan S25b und dem Kontext-Hygiene-Playbook: Zeilen je Quelldatei (Grenze 2 000, Ziel 1 500, `broker/src/generiert/` ausgenommen), Anzahl Funktionen ueber 200 Zeilen, aufruferlose allow(dead_code)-Helfer, Backtick-Bezeichner in Kommentaren ohne Entsprechung im Repo, sowie Bytes von MEMORY.md, CLAUDE.md und Dirigenten-Skill, Index-Zeilen ueber 250 Zeichen und Memory-Dateien ohne Index-Link. Die Ratschen (Funktionen 28, Kommentar-Bezeichner 35, clippy 91) stehen auf dem Iststand vom 09.09.2026 und reissen bei der ersten Verschlechterung; die Zeilengrenze reisst heute bei genau den fuenf Dateien mit Pflegeticket NAK-224/225/234 und meldet jeden weiteren Treffer als OHNE PFLEGETICKET. Vorangestellt laeuft der Selbsttest: Faelle im Speicher durch dieselben Funktionen, jede Erwartung mit ihrem Gegenteil (Zahlenraender 2 000/2 001, 200/201, 250/251, CRLF, BOM, fehlender Schlussumbruch, Rust-Lebensdauer und C++-Ziffernstrenner gegen die Literalmaskierung). Der clippy-Teil laeuft NICHT mit (Schalter --clippy, er baut) und meldet sich als nicht messbar. Nicht blockierend: Exit 4 ist ein Hinweis, Exit 2 waere ein roter Werkzeugbefund.' }
 )
 
 # Ziele, die nicht selbst im Kanon laufen, aber von einem Kanon-Lauf GEMESSEN
@@ -996,7 +1039,10 @@ foreach ($eintrag in $kanon) {
         $lauf = Fuehre-Aus -Datei 'cargo' -Argumente $eintrag.Argumente
     }
     elseif ($eintrag.Art -eq 'python') {
-        $skript = Join-Path $Wurzel ('tools\eq-copilot\' + $eintrag.Name)
+        # Standardort ist tools\eq-copilot; ein Eintrag darf mit `Ordner` einen
+        # anderen nennen (NAK-223: tools\plan).
+        $ordner = Feldwert $eintrag 'Ordner' 'tools\eq-copilot'
+        $skript = Join-Path $Wurzel ($ordner + '\' + $eintrag.Name)
         $argumente = @('-3.13', $skript) + $eintrag.Argumente
         $zeile.Befehl = 'py -3.13 ' + (RelativZurWurzel $skript) + $(if ($eintrag.Argumente.Count -gt 0) { ' ' + ($eintrag.Argumente -join ' ') } else { '' })
 
@@ -1087,6 +1133,11 @@ foreach ($eintrag in $kanon) {
         $zeile.Status = 'Exit 0'
         Write-Host ('[OK] {0} - Exit 0 ({1})' -f $zeile.Name, (Dauertext $zeile.Sekunden)) -ForegroundColor Green
     }
+    elseif (Ist-Hinweisexit $eintrag $lauf.ExitCode) {
+        $zeile.Symbol = '[HINWEIS]'
+        $zeile.Status = ('Exit {0} - Befund, nicht blockierend (siehe Rohausgabe)' -f $lauf.ExitCode)
+        Write-Host ('[HINWEIS] {0} - Exit {1}, nicht blockierend ({2})' -f $zeile.Name, $lauf.ExitCode, (Dauertext $zeile.Sekunden)) -ForegroundColor Yellow
+    }
     else {
         $zeile.Symbol = '[ROT]'
         $zeile.Status = ('Exit {0}' -f $lauf.ExitCode)
@@ -1100,7 +1151,10 @@ foreach ($eintrag in $kanon) {
 # -------------------------------------------------------------------- Urteil
 
 $gelaufen = @($ergebnisse | Where-Object { $_.Gelaufen })
-$gruen = @($gelaufen | Where-Object { $_.ExitCode -eq 0 })
+# [HINWEIS] zaehlt als bestanden - siehe Begruendung an `Ist-Hinweisexit`:
+# nur so ist die Urteilszeile mit und ohne Befund eines nicht blockierenden
+# Beins wortgleich. Der Befund selbst steht in Uebersicht und Rohausgabe.
+$gruen = @($gelaufen | Where-Object { $_.ExitCode -eq 0 -or $_.Symbol -eq '[HINWEIS]' })
 $geplant = @($ergebnisse | Where-Object { $_.Symbol -eq '[GEPLANT]' })
 $stillgelegt = @($ergebnisse | Where-Object { $_.Symbol -eq '[STILLGELEGT]' })
 # Ein "4/4 gruen" waere geschoenigt, solange sieben Kanon-Eintraege nur geplant sind.

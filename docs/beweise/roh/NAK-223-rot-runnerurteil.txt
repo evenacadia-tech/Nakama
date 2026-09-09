@@ -1,0 +1,51 @@
+# NAK-223 Rotbeweis - Runner-Urteil unbewegt vom Befund
+
+Gefahren wird die ECHTE Urteilslogik aus tools/beweise.ps1, extrahiert
+zwischen den Kopfzeilen Urteil und Manifest, mit zwei Ergebnismengen:
+61 gruene Beine plus das neue Bein A32 einmal auf [OK]/Exit 0 und einmal
+auf [HINWEIS]/Exit 4.
+
+```text
+Ausgefuehrter Block aus tools/beweise.ps1:
+----------------------------------------------------------------
+# -------------------------------------------------------------------- Urteil
+
+$gelaufen = @($ergebnisse | Where-Object { $_.Gelaufen })
+# [HINWEIS] zaehlt als bestanden - siehe Begruendung an `Ist-Hinweisexit`:
+# nur so ist die Urteilszeile mit und ohne Befund eines nicht blockierenden
+# Beins wortgleich. Der Befund selbst steht in Uebersicht und Rohausgabe.
+$gruen = @($gelaufen | Where-Object { $_.ExitCode -eq 0 -or $_.Symbol -eq '[HINWEIS]' })
+$geplant = @($ergebnisse | Where-Object { $_.Symbol -eq '[GEPLANT]' })
+$stillgelegt = @($ergebnisse | Where-Object { $_.Symbol -eq '[STILLGELEGT]' })
+# Ein "4/4 gruen" waere geschoenigt, solange sieben Kanon-Eintraege nur geplant sind.
+$nachsatz = if ($geplant.Count -gt 0) { " | $($geplant.Count) geplante Pruefung(en) noch nicht gebaut" } else { '' }
+# Und eine gesunkene Zahl ohne Erklaerung waere die andere Schoenung: das
+# Urteil sagt selbst, wie viele Beine stillgelegt sind (S9b/SONDE-007c).
+if ($stillgelegt.Count -gt 0) { $nachsatz += " | $($stillgelegt.Count) stillgelegte(s) Bein(e), siehe Uebersicht" }
+
+$exitcode = 0
+if ($rot -gt 0) {
+    $exitcode = 2
+    $urteil = "ROT - $rot von $($gelaufen.Count) Kanon-Laeufen fehlgeschlagen$nachsatz"
+}
+elseif ($fehlendeVoraussetzung -gt 0) {
+    $exitcode = 3
+    $urteil = "UNVOLLSTAENDIG - $($gruen.Count) gruen, $fehlendeVoraussetzung Voraussetzung(en) fehlen$nachsatz"
+}
+elseif ($veraltet) {
+    $exitcode = 4
+    $urteil = "NICHT BEGLAUBIGT - $($gruen.Count)/$($gelaufen.Count) gruen, aber Pruefbinaries sind aelter als die Quellen$nachsatz"
+}
+else {
+    $urteil = "GRUEN - $($gruen.Count)/$($gelaufen.Count) Kanon-Laeufe bestanden$nachsatz"
+}
+----------------------------------------------------------------
+
+Bein auf [OK]      (Exit 0): Urteil=GRUEN - 62/62 Kanon-Laeufe bestanden | Exitcode=0
+Bein auf [HINWEIS] (Exit 4): Urteil=GRUEN - 62/62 Kanon-Laeufe bestanden | Exitcode=0
+
+URTEIL: BESTANDEN - Urteilszeile und Exitcode sind zeichengleich.
+```
+
+Exitcode der Probe: 0   (erwartet 0)
+

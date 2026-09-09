@@ -1,0 +1,80 @@
+# NAK-223 Rotbeweis — Clippy-Ratsche 91
+
+Eine echte 92. Fundstelle entstuende nur durch eine Aenderung am
+Produktcode; die ist in NAK-223 verboten. Geprueft wird deshalb die
+Bewertung der Zahl ueber den Pruefschalter --einspeisen, sichtbar als
+[EINGESPEIST] in der Tabelle. Dass die Zahl selbst richtig GEMESSEN wird,
+zeigt der Lauf `--clippy` im Manifest (91, deckungsgleich mit der
+Handmessung ueber cargo clippy --message-format=json).
+
+## 1. Ist 92 (eine Fundstelle mehr als heute)
+
+Exitcode: 4   (erwartet 4)
+
+```text
+NAKAMA-GESUNDHEIT
+Wurzel : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\clippy  (UEBERSCHRIEBEN)
+Memory : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\clippy\kein-memory
+
+Maass                                Ist  Ziel   Grenze  Status              
+-----------------------------------  ---  -----  ------  --------------------
+Quelldateien ueber 2000 Zeilen       0    0      0       OK                  
+Quelldateien ueber Ziel 1500 Zeilen  0    0      -       OK                  
+Funktionen ueber 200 Zeilen          0    0      28      OK                  
+Clippy-Fundstellen (broker)          92   0      91      GRENZE [EINGESPEIST]
+allow(dead_code) ohne Aufrufer       0    0      0       OK                  
+Kommentar-Bezeichner ohne Code       0    0      35      OK                  
+MEMORY.md (Bytes)                    -    22528  24986   NICHT MESSBAR       
+CLAUDE.md (Bytes)                    -    -      24576   NICHT MESSBAR       
+Dirigenten-Skill (Bytes)             -    -      36864   NICHT MESSBAR       
+MEMORY.md: Zeilen ueber 250 Zeichen  -    0      0       NICHT MESSBAR       
+Memory-Dateien ohne Index-Link       -    0      0       NICHT MESSBAR       
+
+nicht messbar: MEMORY.md (Bytes) - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\clippy\kein-memory\MEMORY.md
+nicht messbar: CLAUDE.md (Bytes) - CLAUDE.md
+nicht messbar: Dirigenten-Skill (Bytes) - .claude/skills/dirigent/SKILL.md
+nicht messbar: MEMORY.md: Zeilen ueber 250 Zeichen - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\clippy\kein-memory\MEMORY.md
+nicht messbar: Memory-Dateien ohne Index-Link - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\clippy\kein-memory
+
+GRENZE gerissen: Clippy-Fundstellen (broker) (92 von hoechstens 91)
+  (eingespeist - keine Messung)
+
+URTEIL: GRENZE GERISSEN - 1 Maass(e): Clippy-Fundstellen (broker)
+```
+
+## 2. Ist 91 (Iststand)
+
+Exitcode: 0   (erwartet 0)
+
+```text
+NAKAMA-GESUNDHEIT
+Wurzel : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\clippy  (UEBERSCHRIEBEN)
+Memory : C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\clippy\kein-memory
+
+Maass                                Ist  Ziel   Grenze  Status            
+-----------------------------------  ---  -----  ------  ------------------
+Quelldateien ueber 2000 Zeilen       0    0      0       OK                
+Quelldateien ueber Ziel 1500 Zeilen  0    0      -       OK                
+Funktionen ueber 200 Zeilen          0    0      28      OK                
+Clippy-Fundstellen (broker)          91   0      91      ZIEL [EINGESPEIST]
+allow(dead_code) ohne Aufrufer       0    0      0       OK                
+Kommentar-Bezeichner ohne Code       0    0      35      OK                
+MEMORY.md (Bytes)                    -    22528  24986   NICHT MESSBAR     
+CLAUDE.md (Bytes)                    -    -      24576   NICHT MESSBAR     
+Dirigenten-Skill (Bytes)             -    -      36864   NICHT MESSBAR     
+MEMORY.md: Zeilen ueber 250 Zeichen  -    0      0       NICHT MESSBAR     
+Memory-Dateien ohne Index-Link       -    0      0       NICHT MESSBAR     
+
+nicht messbar: MEMORY.md (Bytes) - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\clippy\kein-memory\MEMORY.md
+nicht messbar: CLAUDE.md (Bytes) - CLAUDE.md
+nicht messbar: Dirigenten-Skill (Bytes) - .claude/skills/dirigent/SKILL.md
+nicht messbar: MEMORY.md: Zeilen ueber 250 Zeichen - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\clippy\kein-memory\MEMORY.md
+nicht messbar: Memory-Dateien ohne Index-Link - C:\Users\phili\.claude\jobs\9720d68e\tmp\rotbaeume3\clippy\kein-memory
+
+Ziel verfehlt: Clippy-Fundstellen (broker) (91 von hoechstens 91)
+  (eingespeist - keine Messung)
+
+URTEIL: alle Grenzen gehalten (1 Ziel(e) verfehlt)
+```
+
+URTEIL: BESTANDEN

@@ -30,10 +30,10 @@ Trigger: sofort `/freshen`, vor allem anderen.
 
 **Die weitere Always-on-Fläche** (jede Session vor dem ersten Tool-Call
 geladen): globales `~/.claude/CLAUDE.md` (~5 KB, User-Besitz — nie
-auto-editieren) + Repo-`CLAUDE.md` (~21 KB am 08.09.2026, Ziel ≤ 24 KB — von Claude gepflegt, Drift
+auto-editieren) + Repo-`CLAUDE.md` (~23 KB am 09.09.2026, Ziel ≤ 24 KB — von Claude gepflegt, Drift
 wird hier GEFIXT, Wachstum wird gemeldet) + `MEMORY.md` (Hebel). Dazu die
 Dirigenten-Fläche, die jeder `/dirigent`-Aufruf lädt:
-`.claude/skills/dirigent/SKILL.md` (~36 KB am 08.09.2026, Grenze ≤ 36 KB) mit
+`.claude/skills/dirigent/SKILL.md` (~35,7 KB am 09.09.2026, Grenze ≤ 36 KB) mit
 `tools/dirigent/pruefliste.md` und `pruefauftrag-vorlage.md`. Jede Runde neu
 messen und im Report nennen.
 

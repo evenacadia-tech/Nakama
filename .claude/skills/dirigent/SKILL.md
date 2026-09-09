@@ -252,7 +252,7 @@ und zerstört die JSONL-Weiterverarbeitung). Temp nur unter `$env:TEMP`.
 ```powershell
 $baseSha = '<Stand vor dem Ticket>'
 $headSha = git rev-parse HEAD
-$pruefModell = 'gpt-6-astra' # Astra prüft, Sol nur Gegenprüfer (User-Wort 05.09.2026, Regel unten)
+$pruefModell = 'gpt-6-astra' # immer Astra, kein Sol mehr (User-Wort 10.09.2026, Regel unten)
 $pruefEffort = 'max'         # nie 'ultra'
 $reviewJsonl = Join-Path $env:TEMP "nakama-$headSha-review.jsonl"
 $reviewLast = Join-Path $env:TEMP "nakama-$headSha-review-last.txt"
@@ -283,17 +283,20 @@ Fehlt die `URTEIL:`-Zeile, aber der Kopf sagt „bleiben offen", ist das
 `NEEDS_WORK`, nicht `BLOCKED`.
 
 **Prüfmodell und Effort** (bei Review-Beginn im Manifest vermerken, seit
-05.09.2026): Prüfer ist `gpt-6-astra` für **alle** Urteilsläufe — Erst-,
-Wieder- und Abschlussprüfung, Matrixprüfung, Gate-Falsifikation — mit Effort
-`max`; `ultra` ist ausgeschlossen (delegiert automatisch an Unteragenten,
-für eine lesende Prüfung ungeeignet). `gpt-5.6-sol` (max) ist nur noch
-**Gegenprüfer**: zweites unabhängiges Modell bei Gate-Läufen und Fallback,
-wenn Astra mit Kapazitäts- oder Versionsfehler antwortet. Bricht ein Lauf an
-der Kapazität ab, geht zuerst `resume` desselben Threads (Worktree und
-Threadkontext bleiben), erst dann der Modellwechsel. User-Wort
-05.09.2026: „gtp 6 astra ist draussen, wesentlich stärkeres model als SOL, das
-sollten wir logischerweise in kombination mit SOL benutzen" → nach Vorlage der
-Arbeitsteilung „ok, dann astra für alle prüfungen, sol nur gegenprüfer".
+10.09.2026): **Jede** Codex-Aufgabe — Erst-, Wieder- und Abschlussprüfung,
+Matrixprüfung, Gate-Falsifikation, Gegenprobe, Codex als Bauer-Fallback —
+läuft mit `gpt-6-astra` und Effort `max` oder `xhigh`; `ultra` bleibt
+ausgeschlossen (delegiert automatisch an Unteragenten, für eine lesende
+Prüfung ungeeignet). `gpt-5.6-sol` wird **nicht mehr** verwendet, auch nicht
+als Gegenprüfer oder Fallback. User-Wort 10.09.2026: „codex immer astra mit
+xhigh oder max effort. kein Sol mehr. ich habe das codex nutzungsfenster die
+letzten tage beobachtet und es reicht locker aus. astra is wesentlich besser
+als Sol, kein grund nicht immer astra bei codex aufgaben zu nutzen" (löst die
+Arbeitsteilung vom 05.09.2026 „astra für alle prüfungen, sol nur
+gegenprüfer" ab). Bricht ein Lauf an der Kapazität ab, geht zuerst `resume`
+desselben Threads (Worktree und Threadkontext bleiben), dann ein neuer
+Astra-Thread; antwortet Codex wiederholt mit Kapazitäts- oder API-Fehlern,
+prüft ein frischer Opus-Thread (§3.6, User-Fallback 31.08.), nie Sol.
 Voraussetzung ist Codex-CLI ≥ 0.153.4; 0.149.1 antwortete „The 'gpt-6-astra'
 model requires a newer version of Codex" → `codex update`. Nacharbeit behält
 Modell und Effort; eine Wiederprüfung senkt nie ab. Läufe über zehn Minuten
@@ -474,10 +477,10 @@ anfang, habe genug wochen kontigent". Damit gilt wieder die Grundform aus
 - Der Bauer ist ein frischer Opus-Worker (max) im sichtbaren Checkout. Er
   kompiliert, fährt die Tests seines Tickets und den Kanon selbst (§3.5,
   abgekoppelt) und übergibt keinen Stand mit Laufstatus `NOT RUN`.
-- Der Prüfer ist ein frischer, lesender Codex-Thread (seit 05.09.2026
-  `gpt-6-astra`, Effort max — User-Wort „astra für alle prüfungen, sol nur
-  gegenprüfer"; davor Sol max nach User-Wort 30.08. «Sol auf max»); Bauer- und
-  Prüfer-Thread sind nie derselbe (§6).
+- Der Prüfer ist ein frischer, lesender Codex-Thread (`gpt-6-astra`, Effort
+  max oder xhigh — User-Wort 10.09.2026 „codex immer astra … kein Sol mehr";
+  davor 05.09. Astra mit Sol als Gegenprüfer, davor Sol max nach User-Wort
+  30.08. «Sol auf max»); Bauer- und Prüfer-Thread sind nie derselbe (§6).
 - Grund neben dem Kontingent: Ein Bauer ohne Compiler übergibt ungelaufenen
   Code. NAK-123 lieferte am 01.09. rund 2 800 Zeilen Sicherheitscode mit
   `NOT RUN` in den Worktree, und der externe Kanonlauf dazu ging verloren.

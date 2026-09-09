@@ -5,7 +5,7 @@ param(
     [Parameter(Mandatory)][string]$Prompt,
     [Parameter(Mandatory)][string]$HeadSha,
     [string]$Repo = 'C:\Users\phili\Projekte\Nakama',
-    [string]$Model = 'gpt-6-astra',   # Astra prueft, Sol (gpt-5.6-sol) nur Gegenpruefer - User-Wort 05.09.2026
+    [string]$Model = 'gpt-6-astra',   # immer Astra, Effort max oder xhigh, kein Sol mehr - User-Wort 10.09.2026
     [string]$Effort = 'max',           # nie 'ultra'
     [string]$Sandbox = 'read-only'
 )

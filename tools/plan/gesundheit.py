@@ -180,10 +180,17 @@ ZEILEN_GRENZE = 2000
 ZEILEN_ZIEL = 1500
 FUNKTION_GRENZE = 200
 
-# Ratschen auf dem Iststand vom 09.09.2026 (Basis-SHA 274d3ff8). Sie halten
-# heute und reissen bei der ERSTEN Verschlechterung. Sinkt eine Zahl durch ein
-# Pflegeticket, wird die Ratsche im selben Ticket nachgezogen — sonst deckt sie
-# stillschweigend wieder Platz fuer neue Funde.
+# Ratschen auf dem Iststand. Sie halten heute und reissen bei der ERSTEN
+# Verschlechterung. Sinkt eine Zahl durch ein Pflegeticket, wird die Ratsche im
+# selben Ticket nachgezogen — sonst deckt sie stillschweigend wieder Platz fuer
+# neue Funde. Eine Ratsche wird nur GESENKT, nie erhoeht.
+#
+# Stand 09.09.2026 nach NAK-224 (S25c, Aufteilung hypothese.rs, server_v3/mod.rs
+# und lib.rs): Kommentar-Bezeichner von 35 auf 32 gesenkt — drei Kommentare der
+# drei Ticketdateien nannten Bezeichner, die es nicht gibt, und sind auf den
+# wahren Namen gesetzt. Funktionen ueber 200 Zeilen und Clippy sind unveraendert:
+# S25c teilt Dateien und zerlegt bewusst keine Funktion (NAK-235 ist ein eigener
+# Schritt).
 #
 # Warum die Anzahl langer Funktionen eine Ratsche ist und keine 0: 200 Zeilen
 # je Funktion ist der Massstab (Plan S25b), aber die 28 heutigen Treffer haben
@@ -194,7 +201,7 @@ FUNKTION_ANZAHL_GRENZE = 28
 CLIPPY_GRENZE = 91
 CLIPPY_ZIEL = 0
 DEADCODE_GRENZE = 0
-KOMMENTAR_GRENZE = 35
+KOMMENTAR_GRENZE = 32
 KOMMENTAR_ZIEL = 0
 
 # Woertlich aus docs/context-hygiene-playbook.md und Dirigenten-Skill 3.5.
@@ -208,12 +215,15 @@ SKILL_PFAD = ".claude/skills/dirigent/SKILL.md"
 # Wer die 2 000er-Grenze heute reisst, hat ein Pflegeticket. Die Zuordnung
 # steht hier, damit die Trefferliste einen Treffer OHNE Ticket sofort sichtbar
 # macht — das ist der Unterschied zwischen bekannter Schuld und neuer.
+#
+# NAK-224 (S25c, 09.09.2026) hat `broker/src/coordinator/hypothese.rs` und
+# `broker/src/transport/server_v3/mod.rs` aufgeteilt; beide liegen nicht mehr
+# ueber der Grenze und stehen deshalb nicht mehr hier. Ein Eintrag fuer eine
+# Datei, die die Grenze nicht mehr reisst, waere eine Schuld, die es nicht gibt.
 PFLEGETICKETS = {
-    "broker/src/coordinator/hypothese.rs": "NAK-224",
     "eq-copilot/plugin/src/PluginProcessor.cpp": "NAK-225",
     "eq-copilot/plugin/core/analysis/FeatureEngine.h": "NAK-225",
     "eq-copilot/plugin/core/ipc/ControlClient.cpp": "NAK-225",
-    "broker/src/transport/server_v3/mod.rs": "NAK-234",
 }
 
 TREFFER_ZEIGEN = 25   # laengere Listen werden gekappt, mit Restzahl

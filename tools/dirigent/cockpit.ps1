@@ -595,7 +595,7 @@ function Get-TranscriptEvidence {
                     $workerNameMatch = if ($nameMatch.Success) {
                         [regex]::Match($nameMatch.Groups[1].Value, '^nakama-(.+)-([0-9a-fA-F]{7,40})-(bau|fort)$')
                     } else { $null }
-                    if ($null -ne $workerNameMatch -and $workerNameMatch.Success -and $normal -match '--permission-mode\s+auto') {
+                    if ($null -ne $workerNameMatch -and $workerNameMatch.Success -and $normal -match '--permission-mode\s+(auto|dontAsk)') {
                         [void]$contracts.Add([pscustomobject]@{
                             Name = $nameMatch.Groups[1].Value
                             Model = $modelMatch.Groups[1].Value.Trim('"', "'")

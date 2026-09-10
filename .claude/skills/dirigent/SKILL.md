@@ -58,8 +58,11 @@ gleiche Konstruktion werden zuerst geprüft.
 
 ## 1. Rolle
 
-- Der ausdrückliche Auto-Modus verhindert, dass ein globaler
-  `bypassPermissions`-Default geerbt wird.
+- **Keine Berechtigungsfragen** (User-Wort 11.09.2026: „garkeine permissions
+  mehr … dann steht alles still"): Dirigent und Worker laufen mit
+  `--permission-mode dontAsk`; `.claude/settings.json` erlaubt alles Nötige
+  und lehnt Destruktives per `deny` ab (Vorlage
+  `tools/dirigent/settings.dontask.json`) — nie `ask`, nie `bypassPermissions`.
 - Der Dirigent entscheidet und misst. Er baut **nie**; solange ein Worker
   läuft, bleibt er auch bei Repo-Dateien strikt lesend.
 - Technische Wege innerhalb von Ticket, Produktinvarianten und freigegebener
@@ -133,7 +136,7 @@ weil kein Worker ihn anfassen durfte.
 Der Worker ist ein frischer Opus-Hintergrundprozess im **sichtbaren** Checkout:
 
 ```powershell
-claude --model opus --effort max --permission-mode auto `
+claude --model opus --effort max --permission-mode dontAsk `
   --name "nakama-<ticket>-<basis-kurz>-bau" `
   --bg "<selbsttragender Ticketauftrag>"
 ```
@@ -147,8 +150,8 @@ zum Werkzeugeintrag, und der Worker startet ohne Auftrag („idle — send a
 prompt to start"). Der Auftrag steht deshalb als **erstes Positionsargument**
 (`claude "<Auftrag>" --model opus … --allowed-tools <liste> --bg`); direkt nach
 dem Start belegt `claude agents --json` den Zustand `working`, `idle/blocked`
-heißt „kein Auftrag angekommen". `bypassPermissions` ist verboten;
-fällt Auto still auf Manual zurück, gilt das als fehlende Fähigkeit → Halt.
+heißt „kein Auftrag angekommen". Eine `ask`-Regel oder ein Prompt ist ein
+Befund gegen die Einstellungen, nie ein Grund zu warten.
 Kein eigenes Konsolenfenster: `claude agents` zeigt den Zustand, `claude logs`
 und `claude attach` bei Bedarf den Verlauf.
 
@@ -206,8 +209,8 @@ Aufgaben vorgezogen. voranschreiten ist das wichtigste"). Eine erwartete,
 nicht destruktive Ticketaktion gibt der Dirigent selbst frei: Worker stoppen,
 volle Session-ID aus `claude agents --json --all` lesen und mit Zusatzauftrag
 fortsetzen (`claude "<Zusatz>" --resume <session-id> --model opus --effort max
---permission-mode auto --name <gleicher Name> --allowed-tools … --bg`); die
-Ask-Regel in `.claude/settings.json` bleibt, der Zusatz nennt den zulässigen
+--permission-mode dontAsk --name <gleicher Name> --allowed-tools … --bg`); die
+`deny`-Regel in `.claude/settings.json` bleibt, der Zusatz nennt den zulässigen
 Ersatzweg (z. B. `[System.IO.File]::Delete` auf exakte, selbst angelegte
 Pfade). Ein Produktentscheid → Frage an den User stellen und sofort ein
 anderes Ticket ohne Haltgrund vorziehen. Destruktives, Ticketfremdes oder
@@ -499,15 +502,12 @@ Grenze, prüft ein frischer Opus-Thread, nie der Bauer-Thread.
 User-Wort 10.09.2026: „okay dann bau das in den plan ein, dass fable
 dirigent mich zum richtigen zeitpunkt automatisch daran erinnert".
 `/code-review ultra` ist die dritte, unabhängige Prüfspur (Claude-Cloud,
-mehrere Agenten, nur vom User startbar, nie über Bash). Der richtige
-Zeitpunkt ist an jedem Gate G6–G9 (Plan-Nachtrag) und nach dem Abschluss von
-NAK-246: Stand sauber, kanongrün, gepusht. Dann schreibt der Dirigent die
+nur vom User startbar). Zeitpunkt: jedes Gate G6–G9 und der Abschluss von
+NAK-246, jeweils sauber, kanongrün, gepusht. Dann schreibt der Dirigent die
 Erinnerung als User-Handgriff in die Session UND als `PushNotification`,
 startet auf diesem Stand keinen Codex-Audit und keinen Worker und wartet.
-Das Ergebnis behandelt er wie einen externen Audit: Befunde durch einen
-lesenden Opus-Agenten am Snapshot validieren, als Defekt/Lücke/Härtung
-einordnen, Defekte als Ticket oder Nacharbeit, Rest datiert ins Register
-(Muster NAK-246, `docs/audits/`).
+Das Ergebnis behandelt er wie einen externen Audit (Muster NAK-246,
+`docs/audits/`): validieren, einordnen, Defekte als Ticket oder Nacharbeit.
 
 ## 4. Haltgründe
 
@@ -603,8 +603,8 @@ Nach Absturz oder Neustart: Fortsetzung über den Picker oder deterministisch
 über die Session-ID; beide Wege setzen den Rollenvertrag erneut ausdrücklich:
 
 ```powershell
-claude --resume nakama-dirigent --model claude-fable-5-1[1m] --effort xhigh --permission-mode auto
-claude --resume <session-id> --model claude-fable-5-1[1m] --effort xhigh --permission-mode auto
+claude --resume nakama-dirigent --model claude-fable-5-1[1m] --effort xhigh --permission-mode dontAsk
+claude --resume <session-id> --model claude-fable-5-1[1m] --effort xhigh --permission-mode dontAsk
 ```
 
 Die fortgesetzte Sitzung beginnt mit `claude agents --json`, `CronList`,
@@ -621,7 +621,7 @@ Recovery-Datei bauen.
 - Prüfen lassen, was derselbe Thread gebaut hat: die Wiederprüfung ist immer
   ein frischer Thread.
 - `git add -A`, `--amend`, fremde uncommittete Dateien anfassen.
-- `bypassPermissions` nutzen oder einen stillen Moduswechsel hinnehmen.
+- `bypassPermissions` oder `ask`-Regeln nutzen, einen Moduswechsel hinnehmen.
 - Ein zweites Protokoll, eine Statusdatei oder einen Ersatzkanal bauen.
 - Ein Manifest zum Prüfgegenstand machen, eine Wiederprüfung über den ganzen
   Ticketbereich fahren oder eine vierte Nacharbeitsrunde ohne

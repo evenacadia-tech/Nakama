@@ -39,7 +39,7 @@ $claudeArguments = @(
     '--remote-control', 'nakama-dirigent',
     '--model', 'claude-fable-5-1[1m]',
     '--effort', 'xhigh',
-    '--permission-mode', 'auto',
+    '--permission-mode', 'dontAsk',   # keine Berechtigungsfragen (User-Wort 11.09.2026); allow/deny in .claude/settings.json (Vorlage tools/dirigent/settings.dontask.json)
     '--name', 'nakama-dirigent',
     '/dirigent'
 )

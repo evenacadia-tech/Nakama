@@ -153,6 +153,14 @@ Commits gehen ohne Rückfrage raus.
   mit Pathspec und pusht nach origin; der sichtbare Checkout holt den Stand
   beim nächsten Pull des Dirigenten. Screenshots und andere temporäre
   Dateien nie in den Repo-Root legen.
+- **Keine Berechtigungsfragen** (User-Wort 11.09.2026: „garkeine permissions
+  mehr … wenn um halb 2 morgens eine permission anfrage kommt, dann steht
+  alles still"): `.claude/settings.json` hält `defaultMode: dontAsk`, `allow`
+  für alles Nötige und `deny` statt `ask` für Destruktives (Vorlage
+  `tools/dirigent/settings.dontask.json`; die Datei selbst kann nur der User
+  ändern, der Klassifikator blockt Claude dort); Dirigent und Worker starten
+  mit `--permission-mode dontAsk`. Eine `ask`-Regel oder ein Prompt ist ein
+  Befund gegen die Einstellungen.
 - Sicherheitsarbeit (Reviews, Audits, Härtung an Pipes, Impersonation,
   Signaturen) wird nie im Gesprächs- oder Dirigentenkontext selbst
   ausgeführt, sondern an Worker, Codex oder Review-Skills delegiert

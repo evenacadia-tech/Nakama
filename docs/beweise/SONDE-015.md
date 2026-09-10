@@ -1094,7 +1094,7 @@ Der Candidate-Pfad ist derselbe Aufbau auf einer zweiten Bank; sein Tap heißt
 | M-41 | Der Pool wird angelegt | **Vier** Bänke, alle vorallokiert, je mit Double-Buffer für Committed und Candidate. Nach `prepareToPlay` findet keine weitere Allokation statt — auch nicht beim ersten Programmwechsel. | **BELEGT** · BAULÜCKE | **NEU** **B6**, Fall `vier_baenke_vorallokiert_und_null_allokationen_danach` | Der Allokationszähler steigt beim ersten Programmwechsel | §44.2; §60 „vier festen Ownership-Bänken" |
 | M-42 | Ein Programm wird vorbereitet | Der Ownership-Automat läuft genau die Kette `free → preparing → ready(generation) → audio_active/fading → retired → free`. Der Control-Worker schreibt **ausschließlich** `free`-Slots und veröffentlicht Index plus Generation mit Release-Semantik; der Audiothread übernimmt nur am Blockrand. | **BELEGT** · BAULÜCKE | **NEU** **B6**, Fall `ownership_automat_je_uebergang` (jeder der sechs Übergänge einzeln) | Ein Übergang ist im Automaten möglich, den der Vertrag nicht nennt; oder der Worker schreibt einen Slot, der nicht `free` ist | §44.2 wörtlich |
 | M-43 | Der Audiothread hat eine Bank ausgedient | Er meldet die ausgediente Generation über einen **vorallokierten Audio→Control-SPSC-Ring** zurück. **Erst nach diesem ACK** darf der Worker Filterzustand oder Koeffizienten überschreiben. Es gibt kein In-place-Überschreiben, keinen Heap-Reclaim, keinen `shared_ptr`-Destruktor und keine Deallokation im Callback. | **BELEGT** · BAULÜCKE | **NEU** **B6**, Fall `reclaim_erst_nach_ack` | Der Worker überschreibt eine Bank, die der Audiothread noch liest; oder ein Destruktor läuft im Callback | §44.2 wörtlich |
-| M-44 | Kein Slot ist `free`, ein Programm soll gebaut werden | Der Befehl erhält **`busy_retry`** — er wird nicht gepuffert, nicht verworfen und nicht mit Gewalt durchgesetzt. **Der Aufrufer wiederholt mit derselben Transaktions-ID, und die Wiederholung kommt durch:** `busy_retry` ist §5.11.4 **T5** — kein Commit, keine Revision, **nicht memoisiert**. Weil `r` dabei unverändert bleibt, ist die alte `base_revision` weiterhin gültig, und der nächste Versuch erreicht S5 (§5.11.4 **T7**). Eine neue ID braucht der Aufrufer **nicht**. **MK:** die Zeile zitiert die Tabelle und rechnet nicht selbst. | **BELEGT** · **ENTSCHIEDEN (§5.11.4 T5, T7)** · BAULÜCKE · **MN3** · **MK** | **NEU** **B6**, Fall `busy_retry_wenn_kein_slot_frei`; **NEU** **B7**, Fälle `busy_retry_wird_nicht_gemerkt` (T5) und `wiederholung_nach_bankfreigabe_committet` (T7) | Ein fünfter Programmwunsch verdrängt eine aktive Bank; oder er wird still verworfen und die Transaktion meldet Erfolg; oder die Wiederholung nach der Freigabe bekommt erneut `busy_retry` aus dem Register statt gebaut zu werden | §44.2 wörtlich; R9; §5.11.4 T5 und T7; Matrixprüfung 3 D-2 |
+| M-44 | Kein Slot ist `free`, ein Programm soll gebaut werden | Der Befehl erhält **`busy_retry`** — er wird nicht gepuffert, nicht verworfen und nicht mit Gewalt durchgesetzt. **Der Aufrufer wiederholt mit derselben Transaktions-ID:** `busy_retry` ist §5.11.4 **T5** — kein Commit, keine Revision, **nicht memoisiert**. Weil `r` dabei unverändert bleibt, ist die alte `base_revision` weiterhin gültig, und der nächste Versuch durchläuft die Stufen erneut; wann er committet, sagt §5.11.4 **T7**. Eine neue ID braucht der Aufrufer **nicht**. **MK:** die Zeile zitiert die Tabelle und rechnet nicht selbst. **MR:** bis zur NAK-245-Runde hieß es hier „die Wiederholung kommt durch“ — ohne die Bedingung, unter der T7 committet (Matrixprüfung 5). | **BELEGT** · **ENTSCHIEDEN (§5.11.4 T5, T7)** · BAULÜCKE · **MN3** · **MK** · **MR** | **NEU** **B6**, Fall `busy_retry_wenn_kein_slot_frei`; **NEU** **B7**, Fälle `busy_retry_wird_nicht_gemerkt` (T5) und `wiederholung_nach_bankfreigabe_committet` (T7) | Ein fünfter Programmwunsch verdrängt eine aktive Bank; oder er wird still verworfen und die Transaktion meldet Erfolg; oder die Wiederholung nach der Freigabe bekommt erneut `busy_retry` aus dem Register statt gebaut zu werden | §44.2 wörtlich; R9; §5.11.4 T5 und T7; Matrixprüfung 3 D-2; Matrixprüfung 5 |
 | M-45 | Der ACK-Ring läuft trotz Überkapazität über | Der Ring **fasst mehr Einträge als es Slots gibt und droppt nie**. Ein dennoch erkannter Overflow setzt zusätzlich eine atomare `reclaim_pending_mask`; der betroffene Slot bleibt **dauerhaft nicht frei**, bis der Worker ihn bestätigt. Reclaim-Sicherheit gewinnt über Verfügbarkeit. | **BELEGT** · BAULÜCKE | **NEU** **B6**, Fall `reclaim_pending_mask_haelt_den_slot` | Nach einem erzwungenen Overflow wird der Slot wieder `free`, ohne dass der Worker ihn bestätigt hat | §44.2 wörtlich |
 | M-46 | Gleichzeitiger Topologiewechsel auf Committed und Candidate | Der Fall braucht für die begrenzte Fadezeit drei, im schlechtesten Fall vier Bänke. Reicht das Budget nicht, wird **Candidate vor dem Wechsel neutral beendet** — nie eine Bank und nie ein Filterzustand zwischen beiden Pfaden geteilt. | **BELEGT** · BAULÜCKE | **NEU** **B6**, Fall `vier_baenke_im_schlimmsten_fall_und_candidate_endet_neutral` | Committed und Candidate teilen sich eine Bank; oder der Wechsel scheitert statt Candidate zu beenden | §44.2 wörtlich |
 | M-47 | Ein voller Audioblock läuft | Im Callback gibt es **keine Sperre, keine Allokation, keinen Datei-, Pipe- oder Netzzugriff, kein Logging und keine geworfene Ausnahme**. Gemessen wird mit einem thread-lokalen Allokations- und einem Sperrzähler über mindestens 4000 Blöcke wechselnder Größe mit Transportkanten und Programmwechseln. | **BELEGT** · BAULÜCKE | **NEU** **B6**, Fall `null_allokationen_null_sperren_im_callback`; **B4** unverändert als Gegenprobe | Der Zähler steht auf 1; oder der Zähler ist global statt thread-lokal und kann Worker und Audiothread nicht trennen | §44.5; §49.2 Gate 2; `CLAUDE.md` |
@@ -1122,7 +1122,7 @@ Der Candidate-Pfad ist derselbe Aufbau auf einer zweiten Bank; sein Tap heißt
 | M-58 | Ein Slot hat `occupied` = false | Er **verarbeitet nichts**, gleichgültig was seine dreizehn v1-Werte sagen: kein Filter, kein Detektor, kein Beitrag zur Auto-Gain-Ableitung, kein Eintrag im dynamischen Telemetriewert. | **ENTSCHIEDEN (R5)** · BAULÜCKE | **NEU** **B6**, Fall `freier_slot_verarbeitet_nichts` | Ein freier Slot mit `enabled` = true und `gain_db` = 12 färbt den Klang | R5; Fünferblock 02 `:117-121` |
 | M-59 | Ein Slot ist belegt und `enabled` wird false | Der Slot bleibt **belegt**: Slot-ID, alle Werte und die Band-ID bleiben erhalten, und erneutes Einschalten verwendet denselben Slot und dieselben Werte. Ausschalten gibt **keinen** der acht Plätze frei. | **BELEGT** · BAULÜCKE | **NEU** **B7**, Fall `ausschalten_gibt_keinen_slot_frei` | Nach `enabled=false` meldet der Kern den Slot als frei; oder die Werte fallen auf Default | Fünferblock 02 `:117-121`; Arbeitsmodus `:229-231` |
 | M-60 | Remove auf einem belegten Slot | **Eine** Transaktion mit **genau einer** neuen `state_revision`: `occupied` wird false **und** alle dreizehn v1-Werte des Slots gehen auf ihren Vertragsdefault. Andere Slot-IDs werden **niemals** umnummeriert. | **ENTSCHIEDEN (R5)** · BAULÜCKE | **NEU** **B7**, Fälle `remove_ist_eine_transaktion_und_eine_revision` und `remove_nummeriert_nicht_um` | Remove erzeugt zwei Revisionen (Freigabe und Defaultsetzen); oder Slot 5 rutscht nach dem Entfernen von Slot 3 auf Position 3 | R5; Fünferblock 02 `:136-150` |
-| M-61 | Direkt nach dem Remove — auch wenn das Band unter einer nachträglich eingeschalteten Zone lag | Der Undo-Ring trägt **ein** Objekt mit Slot-ID, Typ, `channel_mode`, Dynamic-Zustand und **sämtlichen** Werten. Undo stellt es als **ein** Objekt in **einer** Transaktion wieder her — Slot-ID und Band-ID sind dieselben wie vorher. **Der Zonenriegel hält Undo nicht auf:** eine Wiederherstellung eines ganzen, bereits bestätigten Zustands ist keine Bedienänderung (§5.6.3, §5.11.2). Der Pflichtweg der Zeile ist deshalb: Band einschalten → Zone darüber einschalten (M-68 erlaubt das) → Remove → **unmittelbar** Undo → das Band liegt wieder da, gilt als **verletzt** und wird so gemeldet. **MN1 (B-02):** vor der Nacharbeit hätte der für jede Transaktion vorgeschriebene Riegel genau diesen zugesagten Rückweg abgewiesen. | **BELEGT** · **ENTSCHIEDEN (B-02-Regel, §5.6.3)** · BAULÜCKE · **MN1** | **NEU** **B7**, Fälle `undo_stellt_das_entfernte_band_als_ein_objekt_her` und `undo_unter_einer_zone_wird_nicht_abgewiesen_sondern_meldet_verletzung` | Undo stellt die Werte her, aber nicht `channel_mode`; oder es braucht zwei Schritte; oder das Band landet auf einem anderen Slot; oder der Zonenriegel weist das Undo ab und der zugesagte unmittelbare Rückweg fehlt | Fünferblock 02 `:136-150`, besonders `:139-141`; R5; Matrixprüfung 1 B-02 |
+| M-61 | Direkt nach dem Remove — auch wenn das Band unter einer nachträglich eingeschalteten Zone lag | Der Undo-Ring trägt **ein** Objekt mit Slot-ID, Typ, `channel_mode`, Dynamic-Zustand und **sämtlichen** Werten. Undo stellt es als **ein** Objekt in **einer** Transaktion wieder her — Slot-ID und Band-ID sind dieselben wie vorher. **Der Zonenriegel hält Undo nicht auf:** eine Wiederherstellung eines ganzen, bereits bestätigten Zustands ist keine Bedienänderung (§5.6.3 Feinheit 3, Ausnahme); der Ausgang ist §5.11.4 **T16**. Der Pflichtweg der Zeile ist deshalb: Band einschalten → Zone darüber einschalten (M-68 erlaubt das) → Remove → **unmittelbar** Undo → das Band liegt wieder da, gilt als **verletzt** und wird so gemeldet. **MN1 (B-02):** vor der Nacharbeit hätte der für jede Transaktion vorgeschriebene Riegel genau diesen zugesagten Rückweg abgewiesen. **MR:** dieselbe Lücke stand bis zur NAK-245-Runde noch in der Falltabelle — T4 verlangte für diesen Weg User-Schutz (Matrixprüfung 5); T4 gilt jetzt nur für Bedienänderungen, T16 trägt den Weg, und Redo und Preset-Laden trägt M-126. | **BELEGT** · **ENTSCHIEDEN (B-02-Regel, §5.6.3, §5.11.4 T16)** · BAULÜCKE · **MN1** · **MR** | **NEU** **B7**, Fälle `undo_stellt_das_entfernte_band_als_ein_objekt_her` und `undo_unter_einer_zone_wird_nicht_abgewiesen_sondern_meldet_verletzung` (T16) | Undo stellt die Werte her, aber nicht `channel_mode`; oder es braucht zwei Schritte; oder das Band landet auf einem anderen Slot; oder der Zonenriegel weist das Undo ab und der zugesagte unmittelbare Rückweg fehlt; oder das Undo committet, aber die Verletzung wird nicht gemeldet | Fünferblock 02 `:136-150`, besonders `:139-141`; R5; Matrixprüfung 1 B-02; §5.11.4 T16; Matrixprüfung 5 |
 | M-62 | Alle acht Slots sind belegt, ein neuntes Band wird verlangt | Der Kern **überschreibt nichts** und meldet den Zustand „alle Slots belegt" als eigenen, unterscheidbaren Fehler. Er wählt nicht selbst ein Opfer. | **BELEGT** · BAULÜCKE | **NEU** **B7**, Fall `acht_belegte_slots_ueberschreiben_nichts` | Der Kern räumt den ältesten Slot; oder er meldet einen generischen Fehler, aus dem die Oberfläche nicht ableiten kann, was zu tun ist | Arbeitsmodus `:204-205` |
 | M-63 | Host-Automation schreibt auf einen Parameter eines **freien** Slots | Der Wert **ändert sich** — Automation ist instanzgebunden und wird nicht blockiert —, aber weder die Belegung noch der Klang ändern sich. Gemessen wird beides: der Parameter trägt den neuen Wert, der Audioausgang ist bitgleich zum Lauf ohne die Automation. | **ENTSCHIEDEN (R5)** · BAULÜCKE | **NEU** **B7**, Fall `automation_auf_freien_slot_aendert_werte_nicht_klang` | Der Slot wird durch Automation belegt; oder die Automation wird abgewiesen und der Host sieht einen Parameter, der nicht folgt | R5; Erratum (n) „Host-Automation ist instanzgebunden" |
 | M-64 | `occupied` soll automatisiert werden | `v2.band.<slot>.occupied` ist **kein Host-Parameter**: es steht nur im Kind `Dsp`, taucht nicht in der APVTS auf und ist damit von außen nicht automatisierbar. Belegung entsteht ausschließlich durch eine Transaktion. | **ENTSCHIEDEN (R5-Feinheit, §5.5)** · BAULÜCKE | **NEU** **B7**, Fall `occupied_ist_kein_hostparameter`; **B2** über den Save-Weg | `occupied` erscheint in der Hostparameterliste; oder eine Automationskurve gibt einen Slot frei und der Undo-Ring hat nichts davon | R5; §5.5 |
@@ -1140,17 +1140,18 @@ Der Candidate-Pfad ist derselbe Aufbau auf einer zweiten Bank; sein Tap heißt
 | M-71 | Eine Zone wird gelöst | „Lösen" ist entweder `enabled` = false **oder** das Entfernen des Eintrags, **beides** als Transaktion mit genau einer Revision. Nach dem Lösen ist kein Band mehr verletzt, und der Weg in den Bereich ist wieder frei. | **BELEGT** · BAULÜCKE | **NEU** **B7**, Fälle `zone_deaktivieren_ist_eine_transaktion` und `zone_entfernen_ist_eine_transaktion` | Das Entfernen läuft ohne Revision und der Hash bleibt stehen; oder nach dem Lösen gilt ein Band weiter als verletzt | Interview `:252-263`; R6 |
 | M-72 | Der Zustand wird gespeichert oder berichtet | Zonen sind Teil des **DTO**, des **`state_hash`**, des **Presets** und von **`state_report.dsp`**. Vier Orte, eine Quelle: es gibt keine zweite Zonenliste. | **ENTSCHIEDEN (R6)** · BAULÜCKE | **B2**, **NEU** **B7**, **A12**, **A8** je einen Fall | Zwei Stände mit verschiedenen Zonen liefern denselben Hash; oder das Preset trägt Zonen, die der Bericht nicht kennt | R6 wörtlich |
 | M-73 | Neun Zonen sollen angelegt werden | Der Kern **weist ab** — die Liste ist auf acht begrenzt, und die Begrenzung wird im DTO geprüft, nicht erst in der Oberfläche. Doppelte `id` werden ebenfalls abgewiesen. | **ENTSCHIEDEN (R6)** · BAULÜCKE | **NEU** **B7**, Fälle `neunte_zone_wird_abgewiesen` und `doppelte_zonen_id_wird_abgewiesen`; **A12** Negativfixtures | Die neunte Zone wird stillschweigend verworfen und der Aufrufer glaubt, sie sei angelegt | R6 |
+| M-126 | Redo oder Preset-Laden lässt ein Band **neu** in eine eingeschaltete Zone eintreten (etwa: ein Preset legt ein Band in eine eingeschaltete Zone → Undo → Redo) | Beide sind **Ganzzustands-Wiederherstellungen** und passieren den Zonenriegel nicht (§5.6.3 Feinheit 3, Ausnahme): die Transaktion committet mit genau einer Revision, das Band gilt als **verletzt** und wird wie in M-68 gemeldet. Der Ausgang ist §5.11.4 **T16** — dieselbe Zeile, die M-61 für Undo zitiert; scheitert eine andere Stufe, gilt nach **I6** deren Zeile. **MR, neu:** die Ausnahme stand für Redo und Preset-Laden bis zur NAK-245-Runde nur in §5.6.3, ohne Matrixzeile und ohne Test; der Pflichtweg aus M-61 deckt nur Undo. | **ENTSCHIEDEN (B-02-Regel, §5.6.3 Feinheit 3, §5.11.4 T16)** · BAULÜCKE · **MR** | **NEU** **B7**, Fälle `redo_in_eine_zone_wird_nicht_abgewiesen_sondern_meldet_verletzung` und `preset_laden_in_eine_zone_wird_nicht_abgewiesen_sondern_meldet_verletzung` (T16) | Redo oder Preset-Laden wird mit User-Schutz abgewiesen; oder es committet, aber die Verletzung wird nicht gemeldet | §5.6.3 Feinheit 3 (Ausnahme, Dirigent-Entscheid 10.09.2026); R6; R11; M-68; Matrixprüfung 5 |
 
 ### 3.9 Transaktion, Revision, Hash, Undo-Ring und Automation (Gate: R11, §44.3, §44.4, §44.5, §53.8)
 
 | ID | Zustand × Ereignis | Zusage samt Reihenfolge und Frist | Belegklasse | Test | Rotbeweis an der Zusage | Quelle |
 |---|---|---|---|---|---|---|
-| M-74 | Apply, Revert, Neutralisieren, Remove, Undo, Redo oder Preset-Laden | Jede dieser sieben Handlungen ist **eine atomare Transaktion mit genau einer neuen `state_revision`** — nicht null, nicht zwei; `r` steigt um 1 und sinkt nie, auch bei Undo und Redo nicht. Die **Stufenfolge S0 bis S8** und der Commit-Punkt stehen in §5.11.4 Teil 2; diese Zeile wiederholt sie **nicht**, sie misst sie. Zugesagt sind hier: genau eine Revision je Handlung (§5.11.4 **T6**), alle fehlbaren und allozierenden Stufen **vor** dem Commit-Punkt, und ein Registereintrag **ausschließlich** in S8 für eine committete Transaktion (Invariante **I4**). **MK:** bis zur Konvergenzrunde trug diese Zeile die Stufenliste ein zweites Mal — in drei Runden ist sie dabei dreimal von §5.11.4 abgewichen (§7.8). | **BELEGT** · **ENTSCHIEDEN (§5.11.4 Teil 2, T6, I4)** · BAULÜCKE · **MN1** · **MN2** · **MN3** · **MK** | **NEU** **B7**, sieben Fälle `<handlung>_erzeugt_genau_eine_revision`, dazu `commit_erzeugt_genau_eine_revision_und_einen_eintrag` (T6) und `alle_fehlbaren_stufen_liegen_vor_dem_commit_punkt` | Neutralisieren zählt zwei Revisionen; oder Undo zählt gar keine; oder eine Stufe hinter dem Commit-Punkt kann fehlschlagen; oder ein Ausgang ohne Commit legt einen Registereintrag an (I4) | §44.3; §44.4 „`Neutralisieren` ist selbst eine versionierte Transaktion"; R11; §5.11.4 |
-| M-75 | Ein Fehler tritt in **irgendeiner** fehlbaren Stufe eines Apply auf | Der bestätigte Zustand bleibt **unverändert**, der `state_hash` bleibt **unverändert**, `r` steigt **nicht**, der Undo-Ring bekommt **keinen** Eintrag — **und das Register auch nicht** (§5.11.4 **I4**; die Ausgänge **T2** bis **T5** sind sämtlich „nicht memoisiert"). Gemessen wird mit **je einem Einspritzpunkt pro fehlbarer Stufe** nach §5.11.4 Teil 2: **S1** bis **S7**, also `base_revision`, Validierung, Zonenriegel, Kandidaten-DTO, Programmbau, Hashbildung und Undo-Vorbereitung — **sieben** Punkte, alle vor dem Commit-Punkt. **S0 ist bewusst nicht darunter:** der Nachschlag liest ein vorallokiertes Register fester Größe, allokiert nicht und kann nicht fehlschlagen — ein Treffer ist ein Ergebnis, ein Fehltreffer der Normalfall. Ein Einspritzpunkt dort wäre ein Fehler, den es nicht geben kann, und er stünde vor allen anderen. **MK:** die Stufennamen kommen aus §5.11.4 Teil 2, nicht aus dieser Zeile. | **BELEGT** · **ENTSCHIEDEN (§5.11.4 Teil 2, I4)** · BAULÜCKE · **MN1** · **MN2** · **MN3** · **MK** | **NEU** **B7**, sieben Fälle `fehler_in_S<n>_laesst_committed_und_hash_unveraendert`, dazu `fehler_hinterlaesst_keinen_registereintrag` und `nachschlag_allokiert_nicht_und_schlaegt_nicht_fehl` (Allokationszähler über 10.000 Nachschläge) | Nach einem Fehler in S6 ist `r` erhöht und der Committed-Zustand getauscht; oder ein Fehler in S7 hinterlässt einen halben Ringeintrag; oder ein abgewiesener Ausgang landet im Register und blockiert die Wiederholung; oder der Nachschlag allokiert | R11; §44.3; §5.11.4 |
-| M-76 | 10.000 doppelte, vertauschte und veraltete Transaktionen, **fernsteuerungsfrei** gegen den lokalen Transaktionskern | Sie erzeugen **höchstens eine** gültige Revision und **niemals** einen Mischzustand. Der Kern entscheidet jede Eingabe nach der Falltabelle in §5.11.4 Teil 4 — und **nur** danach. Unter den 10.000 Aufrufen sind deshalb beide Sorten: Wiederholungen **committeter** Transaktionen, die im Fenster ihr altes Ergebnis bekommen (**T1**), und Wiederholungen **nicht-committeter** Ausgänge, die neu beurteilt werden (**T2** bis **T5**, **T7** bis **T9**). Eine veraltete `base_revision` ergibt Konflikt, gleichgültig ob die Nutzlast gültig wäre (**T2**, Stufenfolge S1 vor S2). **MK:** die Zeile nennt keine Zahl selbst; Fenster und Kapazität stehen in §5.11.4 Teil 1. | **BELEGT** · **ENTSCHIEDEN (§5.11.4 Teil 4)** · BAULÜCKE · **MN1** · **MN2** · **MN3** · **MK** | **NEU** **B7**, Fall `zehntausend_transaktionen_erzeugen_hoechstens_eine_revision`, gefahren als **tabellengetriebener** Lauf über T1 bis T12 (M-125) | Zwei Revisionen entstehen; oder ein vertauschtes Paar hinterlässt Werte aus beiden Transaktionen; oder der Beweis läuft über den Fernweg-ACK statt gegen den lokalen Kern und ist damit in P6 nicht fahrbar | §44.5 wörtlich; `CLAUDE.md` „Zustands- und Parameterhoheit bleibt in der Audio führenden Instanz"; §5.11.4 |
-| M-123 | Eine **committete** Transaktion wird nach ihrem Abschluss erneut angeboten | Liegt ihre `tid` im Fenster, liefert **S0** sofort das gespeicherte Ergebnis — dieselbe Revision `e`, denselben Hash — **ohne** zweite Revision und ohne eine weitere Stufe (§5.11.4 **T1**). Das Fenster ist `0 ≤ r − e ≤ 31`, also die letzten **32** committeten Transaktionen; Kapazität und Fensterrand sind dieselbe Zahl und stammen aus der Undo-Tiefe (§5.11.4 Teil 1, **I1** bis **I3**). Jenseits davon ist die `tid` unbekannt und die veraltete `base_revision` ergibt **Konflikt** (**T10**). Drei Pflichtfälle: der **Fensterrand als Paar** (T10 und T11 — bei `r = 33` ist `e = 1` draußen, `e = 2` drinnen), der **Mischfall** (T12 — 31 Abweisungen verdrängen T nicht) und der **Zonenablauf** aus MN2 (1000 Hz → T auf 1050 Hz → 500 Hz → T wiederholt → T's Ergebnis, kein „User-Schutz"). **MK:** die Zeile sagte bis zur Konvergenzrunde „höchstens 32 Revisionen hinter" **und** „nie mehr als 32 Einträge" — das ergab 33 gegen 32 und war K-1. | **ENTSCHIEDEN (§5.11.4 Teil 1, T1, T10, T11, T12)** · BAULÜCKE · **MN1** · **MN2** · **MN3** · **MK** | **NEU** **B7**, Fälle `wiederholung_im_fenster_liefert_dasselbe_ergebnis` (T1), `fensterrand_erste_transaktion_ist_draussen` (T10), `fensterrand_zweite_transaktion_ist_drinnen` (T11), `abweisungen_verdraengen_keinen_committeten_eintrag` (T12) und `wiederholung_unter_einer_zone_bekommt_nicht_user_schutz` | Die Wiederholung erzeugt eine zweite Revision; oder **bei `r = 33` liegt `e = 1` noch im Register** (dann ist die Kapazität 33 und I1 verletzt); oder **`e = 2` ist verdrängt** (dann ist das Fenster kleiner als die Undo-Tiefe); oder der Mischfall endet mit Konflikt; oder die Wiederholung läuft in den Zonenriegel | `eq-copilot/schemas/v3/eq-ipc-v3.schema.json:2321`; §44.5; §5.11.4; Matrixprüfung 4 K-1 |
-| M-124 | Eine Transaktion endete **ohne Commit** und wird mit derselben `tid` erneut angeboten | Sie ist ein **neuer Versuch**: nichts wurde memoisiert (**I4**), also findet **S0** nichts, und die Eingabe durchläuft die volle Stufenfolge und erhält das Urteil des **aktuellen** Zustands. **Der Ausgang hängt davon ab, ob sich `r` zwischenzeitlich bewegt hat** — und genau hier liegt der Unterschied, den die Konvergenzrunde festgeschrieben hat. Nach **`busy_retry`** hat sich nichts bewegt: die Bankfreigabe ist ein Audio-ACK und **keine** Transaktion, die alte `base_revision` gilt weiter, die Wiederholung committet (**T7**). Nach **User-Schutz** dagegen ist das Lösen der Zone **selbst eine Transaktion** und hat `r + 1` erzeugt (M-71): dieselbe `tid` mit der **alten** `base_revision` ergibt **Konflikt** — und das ist **richtiges** Verhalten nach M-76 (**T8**); erst mit **aktualisierter** `base_revision` committet sie (**T9**). **MK:** der MN3-Rotbeweis „eine Wiederholung nach behobenem Zonenkonflikt wird weiter abgewiesen" hätte T8 als Fehler gewertet, obwohl T8 korrekt ist — das war K-2. Er ist auf T9 eingegrenzt, und T8 ist als eigener Fall dazugekommen. | **ENTSCHIEDEN (§5.11.4 T7, T8, T9, I4)** · BAULÜCKE · **MN2** · **MN3** · **MK** | **NEU** **B7**, Fälle `wiederholung_nach_bankfreigabe_committet` (T7), `retry_nach_zonenloesung_mit_alter_base_revision_ist_konflikt` (T8), `retry_nach_zonenloesung_mit_aktueller_base_revision_committet` (T9) und `register_ist_nicht_teil_des_zustands` (I5: Save/Load lässt es unberührt, der Hash ändert sich nicht) | Eine Wiederholung nach `busy_retry` bekommt das gespeicherte `busy_retry` zurück; oder **T8 committet trotz veralteter `base_revision`** und umgeht M-76; oder T9 wird weiter mit User-Schutz abgewiesen; oder das Register taucht im gespeicherten Zustand auf | §5.11.4 T7 bis T9; M-71; M-76; Matrixprüfung 4 K-2 |
-| M-125 | Der Transaktionskern wird gegen die **ganze** Falltabelle gefahren | Für **jede** Zeile T1 bis T12 aus §5.11.4 Teil 4 stellt der Test den beschriebenen Zustand her, gibt die beschriebene Eingabe und prüft **alle vier** Spalten: Ausgang, `r` danach, memoisiert ja/nein und — bei einem Treffer — die zurückgegebene Revision und den Hash. Dazu die drei Invarianten als Wachen über den ganzen Lauf: `\|R\| = min(r, 32)` (**I1**), Fensterzugehörigkeit ⇔ `0 ≤ r − e ≤ 31` (**I2**) und „kein Registereintrag ohne Commit" (**I4**). Der Lauf ist **tabellengetrieben**: fällt eine Zeile aus der Tabelle, fällt der Test, und eine neue Zeile ohne Fall ist ein Übersetzungsfehler. **MK, neu:** ohne diese Zeile wäre die Tabelle eine Beschreibung; mit ihr ist sie eine Zusage. | **ENTSCHIEDEN (§5.11.4 Teil 4)** · BAULÜCKE · **MK** | **NEU** **B7**, Fall `falltabelle_vollstaendig_gefahren` (zwölf Zeilen, vier Spalten je Zeile, drei Invariantenwachen) | Eine Tabellenzeile hat keinen Fall; oder ein Fall prüft nur den Ausgang und nicht `memoisiert`, sodass I4 unbemerkt brechen kann; oder die Invariantenwachen laufen nur am Ende statt nach jeder Eingabe | §5.11.4 Teil 3 und Teil 4; `tools/dirigent/pruefliste.md` E |
+| M-74 | Apply, Revert, Neutralisieren, Remove, Undo, Redo oder Preset-Laden | Jede dieser sieben Handlungen ist **eine atomare Transaktion mit genau einer neuen `state_revision`** — nicht null, nicht zwei; wie sich `r` dabei bewegt, steht in §5.11.4 Teil 1. Die **Stufenfolge S0 bis S8** und der Commit-Punkt stehen in §5.11.4 Teil 2; diese Zeile wiederholt sie **nicht**, sie misst sie. Zugesagt sind hier: genau eine Revision je Handlung (§5.11.4 **T6**; für eine Ganzzustands-Wiederherstellung, die ein Band in eine Zone führt, **T16**), alle fehlbaren und allozierenden Stufen **vor** dem Commit-Punkt, und ein Registereintrag **ausschließlich** in S8 für eine committete Transaktion (Invariante **I4**). **MK:** bis zur Konvergenzrunde trug diese Zeile die Stufenliste ein zweites Mal — in drei Runden ist sie dabei dreimal von §5.11.4 abgewichen (§7.8). **MR:** der Satz „`r` steigt um 1 und sinkt nie“ stand hier als eigene Arithmetik; seit dem Ladestart `r0` gilt „sinkt nie“ nur innerhalb einer Sitzung, und die Zeile zitiert Teil 1. | **BELEGT** · **ENTSCHIEDEN (§5.11.4 Teil 1, Teil 2, T6, T16, I4)** · BAULÜCKE · **MN1** · **MN2** · **MN3** · **MK** · **MR** | **NEU** **B7**, sieben Fälle `<handlung>_erzeugt_genau_eine_revision`, dazu `commit_erzeugt_genau_eine_revision_und_einen_eintrag` (T6) und `alle_fehlbaren_stufen_liegen_vor_dem_commit_punkt` | Neutralisieren zählt zwei Revisionen; oder Undo zählt gar keine; oder eine Stufe hinter dem Commit-Punkt kann fehlschlagen; oder ein Ausgang ohne Commit legt einen Registereintrag an (I4) | §44.3; §44.4 „`Neutralisieren` ist selbst eine versionierte Transaktion"; R11; §5.11.4; Matrixprüfung 5 |
+| M-75 | Ein Fehler tritt in **irgendeiner** fehlbaren Stufe eines Apply auf | Der bestätigte Zustand bleibt **unverändert**, der `state_hash` bleibt **unverändert**, `r` steigt **nicht**, der Undo-Ring bekommt **keinen** Eintrag — **und das Register auch nicht** (§5.11.4 **I4**; die Fehlerausgänge der Falltabelle sind sämtlich „nicht memoisiert"). Gemessen wird mit **je einem Einspritzpunkt pro fehlbarer Stufe** aus §5.11.4 Teil 2, alle vor dem Commit-Punkt. Welchen Ausgang jeder Einspritzfall hat, sagt die Tabelle und nicht diese Zeile: **T2**, **T3**, **T4**, **T13**, **T5**, **T14** und **T15**, in der Reihenfolge der Stufen. **S0 ist bewusst nicht darunter:** der Nachschlag liest ein vorallokiertes Register fester Größe, allokiert nicht und kann nicht fehlschlagen — ein Treffer ist ein Ergebnis, ein Fehltreffer der Normalfall. Ein Einspritzpunkt dort wäre ein Fehler, den es nicht geben kann, und er stünde vor allen anderen. **MK:** die Stufennamen kommen aus §5.11.4 Teil 2, nicht aus dieser Zeile. **MR:** bis zur NAK-245-Runde zählte die Zeile die Stufen noch selbst auf, und für Fehler in S4, S6 und S7 hatte die Tabelle keine Zeile (Matrixprüfung 5); jetzt zitiert sie die Zeilen. | **BELEGT** · **ENTSCHIEDEN (§5.11.4 Teil 2, I4, T13, T14, T15)** · BAULÜCKE · **MN1** · **MN2** · **MN3** · **MK** · **MR** | **NEU** **B7**, sieben Fälle `fehler_in_S<n>_laesst_committed_und_hash_unveraendert` (je einer an der Tabellenzeile seiner Stufe), dazu `fehler_hinterlaesst_keinen_registereintrag` und `nachschlag_allokiert_nicht_und_schlaegt_nicht_fehl` (Allokationszähler über 10.000 Nachschläge) | Nach einem Fehler in S6 ist `r` erhöht und der Committed-Zustand getauscht; oder ein Fehler in S7 hinterlässt einen halben Ringeintrag; oder ein abgewiesener Ausgang landet im Register und blockiert die Wiederholung; oder der Nachschlag allokiert | R11; §44.3; §5.11.4; Matrixprüfung 5 |
+| M-76 | 10.000 doppelte, vertauschte und veraltete Transaktionen, **fernsteuerungsfrei** gegen den lokalen Transaktionskern | Sie erzeugen **höchstens eine** gültige Revision und **niemals** einen Mischzustand — und diese Zeile misst **nur** diesen Satz aus §44.5. Alle 10.000 Eingaben stammen aus **einer** logischen Transaktion T mit fester Nutzlast: dieselbe `tid` wiederholt (doppelt), in vertauschter Ankunftsreihenfolge (vertauscht), mit veralteter oder aktueller `base_revision` (veraltet). Der Lauf beginnt unmittelbar nach dem Ladestart eines Standes mit `r0 ≥ 1` (§5.11.4 Teil 1), damit es ältere Revisionen gibt, und für T bestehen S2 bis S7. Per Konstruktion kann der Lauf höchstens **einen** Commit erzeugen. Zugesagt ist: `r − r0 ≤ 1` am Ende, und der bestätigte Zustand ist entweder der Ausgangszustand oder genau der Zustand nach T, nie eine Mischung. Im Lauf kommen nur die Ausgänge dreier Tabellenzeilen vor: **T2** (veraltete `base_revision` vor dem Commit), **T6** (der eine Commit) und **T1** (jede Eingabe danach). Die Zeile fährt die Falltabelle **nicht**; die vollständige, tabellengetriebene Prüfung ist allein **M-125**. **MK:** die Zeile nennt keine Zahl selbst; Fenster und Kapazität stehen in §5.11.4 Teil 1. **MR:** bis zur NAK-245-Runde sollte dieser Lauf die ganze Falltabelle fahren und zugleich höchstens eine Revision erzeugen — T6, T7 und T9 committen aber je einmal, und ein korrekter Kern wäre am Rotbeweis dieser Zeile gefallen (Matrixprüfung 5). | **BELEGT** · **ENTSCHIEDEN (§5.11.4 T1, T2, T6)** · BAULÜCKE · **MN1** · **MN2** · **MN3** · **MK** · **MR** | **NEU** **B7**, Fall `zehntausend_transaktionen_erzeugen_hoechstens_eine_revision` (alle Eingaben aus einer logischen Transaktion; kein Tabellenlauf) | Zwei Revisionen entstehen; oder der bestätigte Zustand trägt Werte aus dem Ausgangszustand und aus T zugleich; oder der Beweis läuft über den Fernweg-ACK statt gegen den lokalen Kern und ist damit in P6 nicht fahrbar | §44.5 wörtlich; `CLAUDE.md` „Zustands- und Parameterhoheit bleibt in der Audio führenden Instanz"; §5.11.4; Matrixprüfung 5 |
+| M-123 | Eine **committete** Transaktion wird nach ihrem Abschluss erneut angeboten | Liegt ihre `tid` im Fenster, liefert **S0** sofort das gespeicherte Ergebnis — dieselbe Revision `e`, denselben Hash — **ohne** zweite Revision und ohne eine weitere Stufe (§5.11.4 **T1**). Fenster, Kapazität und Belegung stehen in §5.11.4 Teil 1 und in **I1** bis **I3**; die Zeile rechnet nicht selbst. Jenseits des Fensters ist die `tid` unbekannt, und die veraltete `base_revision` ergibt **Konflikt** (**T10**). Nach einem **Ladestart** ist das Register leer, die geladene Revision bleibt (`r0`, §5.11.4 Teil 1), und eine Wiederholung aus der vorigen Sitzung ist ein **neuer Versuch** (**T17**) — die Konsequenz aus I5, kein Fehler. Vier Pflichtfälle: der **Fensterrand als Paar** (T10 und T11), der **Mischfall** (T12 — Abweisungen verdrängen T nicht), die **Sitzungsgrenze** (Ladestart und T17) und der **Zonenablauf** aus MN2 (1000 Hz → T auf 1050 Hz → 500 Hz → T wiederholt → T's Ergebnis, kein „User-Schutz"). **MK:** die Zeile sagte bis zur Konvergenzrunde „höchstens 32 Revisionen hinter" **und** „nie mehr als 32 Einträge" — das ergab 33 gegen 32 und war K-1. **MR:** I1 und I2 zählten bis zur NAK-245-Runde ab Revision 0; ein geladener Stand mit hoher `state_revision` hätte sofort volle Belegung verlangt, obwohl das Register nach I5 leer ist (Matrixprüfung 5). Die Zeile zitiert beide jetzt in ihrer Fassung mit `r0`. | **ENTSCHIEDEN (§5.11.4 Teil 1, I1, I2, T1, T10, T11, T12, T17)** · BAULÜCKE · **MN1** · **MN2** · **MN3** · **MK** · **MR** | **NEU** **B7**, Fälle `wiederholung_im_fenster_liefert_dasselbe_ergebnis` (T1), `fensterrand_erste_transaktion_ist_draussen` (T10), `fensterrand_zweite_transaktion_ist_drinnen` (T11), `abweisungen_verdraengen_keinen_committeten_eintrag` (T12), `wiederholung_unter_einer_zone_bekommt_nicht_user_schutz`, `ladestart_hat_leeres_register_und_haelt_die_revision` (I1 mit `r0`, M-93) und `wiederholung_ueber_sitzungsgrenze_ist_neuer_versuch` (T17) | Die Wiederholung erzeugt eine zweite Revision; oder **am Fensterrand liegt die erste Transaktion der Sitzung noch im Register** (T10 — dann ist die Kapazität größer als die Undo-Tiefe und I1 verletzt); oder **die zweite ist verdrängt** (T11 — dann ist das Fenster kleiner als die Undo-Tiefe); oder der Mischfall endet mit Konflikt; oder die Wiederholung läuft in den Zonenriegel; oder **nach dem Laden liegen Einträge im Register** (es wurde mitgespeichert, I5 gebrochen); oder **das Laden setzt `r` auf 0 zurück** (M-93 gebrochen) | `eq-copilot/schemas/v3/eq-ipc-v3.schema.json:2372`; §44.5; §5.11.4; Matrixprüfung 4 K-1; Matrixprüfung 5 |
+| M-124 | Eine Transaktion endete **ohne Commit** und wird mit derselben `tid` erneut angeboten | Sie ist ein **neuer Versuch**: nichts wurde memoisiert (**I4**), also findet **S0** nichts, und die Eingabe durchläuft die volle Stufenfolge und erhält das Urteil des **aktuellen** Zustands; nach **I6** entscheidet die erste Stufe, die nicht besteht. **Der Ausgang hängt davon ab, ob sich `r` zwischenzeitlich bewegt hat** — und genau hier liegt der Unterschied, den die Konvergenzrunde festgeschrieben hat. Nach **`busy_retry`** hat sich nichts bewegt: die Bankfreigabe ist ein Audio-ACK und **keine** Transaktion, die alte `base_revision` gilt weiter, und die Wiederholung committet unter den Bedingungen von **T7**. Nach **User-Schutz** dagegen ist das Lösen der Zone **selbst eine Transaktion** und hat `r + 1` erzeugt (M-71): dieselbe `tid` mit der **alten** `base_revision` ergibt **Konflikt** — und das ist **richtiges** Verhalten nach M-76 (**T8**); mit **aktualisierter** `base_revision` committet sie unter den Bedingungen von **T9** — ist der Pool dann voll, ist der Ausgang **T5**. **MK:** der MN3-Rotbeweis „eine Wiederholung nach behobenem Zonenkonflikt wird weiter abgewiesen" hätte T8 als Fehler gewertet, obwohl T8 korrekt ist — das war K-2. Er ist auf T9 eingegrenzt, und T8 ist als eigener Fall dazugekommen. **MR:** T9 verlangte bis zur NAK-245-Runde nur die aktualisierte `base_revision` und widersprach bei vollem Pool T5 (Matrixprüfung 5); die Abgrenzung ist jetzt ein eigener Fall. | **ENTSCHIEDEN (§5.11.4 T5, T7, T8, T9, I4, I6)** · BAULÜCKE · **MN2** · **MN3** · **MK** · **MR** | **NEU** **B7**, Fälle `wiederholung_nach_bankfreigabe_committet` (T7), `retry_nach_zonenloesung_mit_alter_base_revision_ist_konflikt` (T8), `retry_nach_zonenloesung_mit_aktueller_base_revision_committet` (T9), `retry_nach_zonenloesung_bei_vollem_pool_ist_busy_retry` (Abgrenzung T9 gegen T5) und `register_ist_nicht_teil_des_zustands` (I5: Speichern schreibt es nicht, der Ladestart leert es, der Hash ändert sich nicht) | Eine Wiederholung nach `busy_retry` bekommt das gespeicherte `busy_retry` zurück; oder **T8 committet trotz veralteter `base_revision`** und umgeht M-76; oder T9 wird weiter mit User-Schutz abgewiesen; oder **T9 committet bei vollem Pool statt `busy_retry`**; oder das Register taucht im gespeicherten Zustand auf | §5.11.4 T5, T7 bis T9; M-71; M-76; Matrixprüfung 4 K-2; Matrixprüfung 5 |
+| M-125 | Der Transaktionskern wird gegen die **ganze** Falltabelle gefahren | Für **jede** Zeile der Falltabelle aus §5.11.4 Teil 4 — ihre Zahl steht dort und nur dort — stellt der Test den beschriebenen Zustand her, gibt die beschriebene Eingabe und prüft **alle vier** Spalten: Ausgang, `r` danach, memoisiert ja/nein und — bei einem Treffer — die zurückgegebene Revision und den Hash. Dazu drei Invarianten aus §5.11.4 Teil 3 als Wachen **nach jeder Eingabe und nach jedem Ladestart**, in ihrer Fassung mit `r0`: die Belegung (**I1**), die Fensterzugehörigkeit (**I2**) und „kein Registereintrag ohne Commit" (**I4**). Der Lauf ist **tabellengetrieben**: fällt eine Zeile aus der Tabelle, fällt der Test, und eine neue Zeile ohne Fall ist ein Übersetzungsfehler. Jede Commit-Zeile erzeugt dabei genau eine Revision; die Zusage „höchstens eine Revision“ aus §44.5 misst dieser Lauf **nicht**, sie gehört M-76. **MK, neu:** ohne diese Zeile wäre die Tabelle eine Beschreibung; mit ihr ist sie eine Zusage. **MR:** bis zur NAK-245-Runde nannte die Zeile die Zeilenzahl und die Formeln von I1 und I2 selbst, und M-76 sollte dieselbe Tabelle fahren; jetzt zitiert sie beides nur (Matrixprüfung 5). | **ENTSCHIEDEN (§5.11.4 Teil 3, Teil 4)** · BAULÜCKE · **MK** · **MR** | **NEU** **B7**, Fall `falltabelle_vollstaendig_gefahren` (jede Zeile der Tabelle, vier Spalten je Zeile, drei Invariantenwachen) | Eine Tabellenzeile hat keinen Fall; oder ein Fall prüft nur den Ausgang und nicht `memoisiert`, sodass I4 unbemerkt brechen kann; oder die Invariantenwachen laufen nur am Ende statt nach jeder Eingabe; oder **die Wache I1 rechnet ohne `r0`** und verlangt nach dem Laden eines Standes volle Belegung, obwohl das Register nach I5 leer ist | §5.11.4 Teil 3 und Teil 4; `tools/dirigent/pruefliste.md` E; Matrixprüfung 5 |
 | M-77 | `state_hash` wird gebildet | SHA-256 über die **RFC-8785-Form des validierten DTO**, gebildet mit der bestehenden Implementierung aus SONDE-006 — nicht neu geschrieben. Die JCS-Zahlen- und Dokumentvektoren aus `eq-copilot/fixtures/state/jcs/` bleiben unverändert gültig, und die drei Sprachen bilden weiterhin denselben Hash über denselben Text. | **BELEGT** · **ENTSCHIEDEN (R11)** · BAULÜCKE | **A12**, **B2**, **A4** (Rust) gegen dieselben Fixtures; **NEU** **B7**, Fall `hash_kommt_aus_dem_bestandskanon` | Der Kanon wird für v2 neu geschrieben und ein RFC-Vektor kippt; oder C++ und Rust liefern für dasselbe DTO verschiedene Hashes | R11; `nakama-state-v2.md:170-176` |
 | M-78 | Der Undo-Ring wächst | Tiefe **höchstens 32** (Vertragsgrenze `undo_tiefe`), persistiert im Kind `Dsp`. Beim 33. Eintrag fällt der älteste heraus; der Ring wächst nie über seine Grenze und die Bytegrenzen des State-Lesers bleiben eingehalten. | **BELEGT** · BAULÜCKE | **NEU** **B7**, Fall `undo_ring_haelt_tiefe_32`; **B2** über den Save-Weg mit vollem Ring | Der 33. Eintrag verdrängt keinen und der State wächst; oder der volle Ring reißt die 16-MiB-Grenze und der Stand wird beim nächsten Laden read-only | `eq-ipc-v3.schema.json:2321` (`maximum: 32`); `nakama-state-v2.md:188-191` |
 | M-79 | Undo, dann eine neue Transaktion | Der Redo-Zweig wird **abgeschnitten**: nach einer neuen Transaktion gibt es kein Redo mehr auf den verworfenen Ast. Undo und Redo bewegen einen Cursor im selben Ring; sie legen keinen zweiten Ring an. | **ENTSCHIEDEN (R11-Feinheit, §5.11)** · BAULÜCKE | **NEU** **B7**, Fall `neue_transaktion_schneidet_den_redo_zweig_ab` | Ein Redo nach einer neuen Transaktion stellt einen Zustand her, den es nie gab | §5.11; R11 |
@@ -1224,21 +1225,22 @@ Der Candidate-Pfad ist derselbe Aufbau auf einer zweiten Bank; sein Tap heißt
 
 ### 3.15 Zählung nach Belegklasse
 
-Gezählt nach der Matrix-Konvergenzrunde (10.09.2026), aus den Zeilen selbst, nicht abgeschrieben:
+Gezählt nach der NAK-245-Runde (10.09.2026), aus den Zeilen selbst, nicht abgeschrieben:
 
 | Klasse | Zeilen | Anteil |
 |---|---:|---:|
-| **BELEGT** (aus verbindlicher Quelle, ganz oder teilweise) | 76 | 61 % |
-| **ENTSCHIEDEN** (R1 bis R15, die Regeln B-01 bis B-12, D-1, D-2 und die Protokollspezifikation §5.11.4) | 81 | 65 % |
-| davon **allein** durch einen Entscheid getragen | 49 | 39 % |
-| **BAULÜCKE** | 125 | 100 % |
+| **BELEGT** (aus verbindlicher Quelle, ganz oder teilweise) | 76 | 60 % |
+| **ENTSCHIEDEN** (R1 bis R15, die Regeln B-01 bis B-12, D-1, D-2 und die Protokollspezifikation §5.11.4) | 82 | 65 % |
+| davon **allein** durch einen Entscheid getragen | 50 | 40 % |
+| **BAULÜCKE** | 126 | 100 % |
 | **OFFEN** (Produktfrage) | 0 | 0 % |
 | davon mit der Marke **MN1** (Nacharbeit 1) | 15 | 12 % |
 | davon mit der Marke **MN2** (Nacharbeit 2) | 6 | 5 % |
 | davon mit der Marke **MN3** (Nacharbeit 3) | 6 | 5 % |
 | davon mit der Marke **MK** (Konvergenzrunde) | 7 | 6 % |
+| davon mit der Marke **MR** (NAK-245-Runde) | 9 | 7 % |
 
-Mehrfachmarken sind normal: M-74, M-75, M-76 und M-123 tragen alle vier; M-124 trägt MN2, MN3 und MK; M-44 trägt MN3 und MK; M-15 trägt MN1 und MN2; M-125 nur MK. Der Verlauf der Zeilenzahl: **120** nach Etappe 1 (BELEGT 73, ENTSCHIEDEN 72, nur entschieden 47) → **123** nach der Nacharbeit 1 (76 / 78 / 47) → **124** nach der Nacharbeit 2 (76 / 79 / 48) → **124** nach der Nacharbeit 3 (76 / 80 / 48) → **125** heute (76 / 81 / 49). Die Konvergenzrunde fügt genau eine Zeile hinzu — **M-125**, die die Falltabelle aus §5.11.4 als ganze misst; ohne sie wäre die Tabelle eine Beschreibung und keine Zusage.
+Mehrfachmarken sind normal: M-74, M-75, M-76 und M-123 tragen alle fünf; M-124 trägt MN2, MN3, MK und MR; M-44 trägt MN3, MK und MR; M-61 trägt MN1 und MR; M-125 trägt MK und MR; M-15 trägt MN1 und MN2; M-126 nur MR. Der Verlauf der Zeilenzahl: **120** nach Etappe 1 (BELEGT 73, ENTSCHIEDEN 72, nur entschieden 47) → **123** nach der Nacharbeit 1 (76 / 78 / 47) → **124** nach der Nacharbeit 2 (76 / 79 / 48) → **124** nach der Nacharbeit 3 (76 / 80 / 48) → **125** nach der Konvergenzrunde (76 / 81 / 49) → **126** nach NAK-245 (76 / 82 / 50). Die Konvergenzrunde fügte genau eine Zeile hinzu — **M-125**, die die Falltabelle aus §5.11.4 als ganze misst; ohne sie wäre die Tabelle eine Beschreibung und keine Zusage. Die NAK-245-Runde fügt ebenfalls genau eine hinzu — **M-126**, die die Zonenausnahme für Redo und Preset-Laden an T16 bindet; bis dahin trug nur Undo sie als Matrixzeile (M-61).
 
 Die Prozentsätze summieren sich nicht auf 100, weil eine Zeile beide Klassen
 tragen kann: **BELEGT · ENTSCHIEDEN** heißt, dass die Quelle die Zusage
@@ -1379,8 +1381,8 @@ Gens Lesetoleranz, `band_dynamic_gain_db` im `TelemetryClient` und Save/Load des
 Kinds `Dsp` im Prozessor.
 
 **Bein: B7 `EqCopTransactionTest`**, im Runner scharf: Transaktionen und
-Revisionen (M-74 bis M-85, M-123), Belegung und Remove/Undo (M-58 bis M-65),
-Zonen (M-66 bis M-73), Preset (M-95 bis M-100).
+Revisionen (M-74 bis M-85, M-123 bis M-125), Belegung und Remove/Undo (M-58 bis M-65),
+Zonen (M-66 bis M-73, M-126), Preset (M-95 bis M-100).
 
 **MN1 (B-11): diese Etappe trägt zusätzlich die Prozessorseite des Layouts.**
 **M-88** (112 tatsächlich exponierte APVTS-Parameter und ihre Reihenfolge) und
@@ -1802,58 +1804,76 @@ Nummer 6 in der Matrix-Nacharbeit 3. Sie stehen jeweils unter ihrer Regel
 6. **Die DTO-Form wächst additiv.** `{"dsp_schema_version": 2, "parameters": {…120 IDs…}, "schutz_zonen": [ … ]}`. RFC 8785 sortiert die drei Schlüssel nach UTF-16-Code-Units, also `dsp_schema_version` < `parameters` < `schutz_zonen`; die Zonenliste wird nach `id` aufsteigend geschrieben, damit dieselbe Menge immer denselben Text ergibt.
 
 
-#### 5.11.4 Protokollspezifikation der Transaktion (geschlossen, Konvergenzrunde 10.09.2026)
+#### 5.11.4 Protokollspezifikation der Transaktion (geschlossen, Konvergenzrunde und NAK-245-Runde 10.09.2026)
 
 Diese Spezifikation ersetzt die Prosa der Runden MN1 bis MN3. Sie ist die
 **einzige** Stelle, an der die Transaktionsarithmetik definiert wird. **M-44,
 M-74, M-75, M-76, M-123, M-124 und M-125 leiten sich aus ihr ab** — sie
-zitieren, sie definieren nicht. Jede Zahl steht genau einmal: hier.
+zitieren, sie definieren nicht. Jede Zahl steht genau einmal: hier. Die
+NAK-245-Runde hat in derselben Spezifikation fünf innere Widersprüche
+geschlossen (§7.10); M-61 und M-126 zitieren zusätzlich T16 für die
+Zonenausnahme, tragen aber keine Arithmetik.
 
 ##### Teil 1 — Definitionen und Arithmetik
 
 | Zeichen | Bedeutung |
 |---|---|
-| `r` | Aktuelle `state_revision` des bestätigten Zustands. Frischer Zustand: `r = 0`. Jede committete Transaktion erhöht `r` um genau 1 (M-74). `r` sinkt **nie** — auch Undo und Redo sind committete Transaktionen und zählen vorwärts. |
-| `e` | Die von einer committeten Transaktion erzeugte Revision. Die erste Transaktion hat `e = 1`. |
+| `r` | Aktuelle `state_revision` des bestätigten Zustands. Frischer Zustand: `r = 0`; nach dem Ladestart `r = r0`. Jede committete Transaktion erhöht `r` um genau 1 (M-74); sonst ändert sich `r` nur beim Ladestart. `state_revision` zählt „ausschließlich diskrete Änderungen des bestätigten Basiszustands" (§44.3), und jede davon ist eine committete Transaktion — auch der abgeschlossene manuelle Parametergestus (§5.11 Feinheit 1, M-82). Innerhalb einer Sitzung sinkt `r` **nie** — auch Undo und Redo sind committete Transaktionen und zählen vorwärts. |
+| `r0` | Revision beim **Sitzungs- oder Ladestart**. Frischer Zustand: `r0 = 0`. Nach dem Projekt-Laden ist `r0` die geladene `state_revision` — sie steht im Kind `Dsp` (`eq-copilot/schemas/state/nakama-state-v2.md:36`, M-89), und M-93 hält sie beim Byte-Roundtrip bytegleich —, und `R` wird geleert (I5). Eine **Sitzung** reicht von einem Sitzungs- oder Ladestart bis zum nächsten. Das Projekt-Laden selbst ist **keine** Transaktion: es trägt keine `tid`, erzeugt keine Revision und durchläuft keine Stufe aus Teil 2; eine dabei entstehende Lage in einer Zone wird als Verletzung gemeldet (§5.6.3 Feinheit 3, Ausnahme). Deshalb steht es hier und nicht in Teil 4. |
+| `e` | Die von einer committeten Transaktion erzeugte Revision. Die erste Transaktion einer Sitzung hat `e = r0 + 1`. |
 | `tid` | Transaktions-ID, vom Aufrufer vergeben, je logischem Auftrag genau eine. |
 | `base_revision` | Die Revision, gegen die der Aufrufer seine Transaktion gebildet hat. |
-| `R` | Wiederholungsregister: eine Menge von Tripeln `(tid, e, state_hash)`, genau ein Tripel je committeter Transaktion im Fenster. |
+| `R` | Wiederholungsregister: eine Menge von Tripeln `(tid, e, state_hash)`, genau ein Tripel je **in dieser Sitzung** committeter Transaktion im Fenster. |
 
 **Fenster.** Ein Tripel `(tid, e, hash)` ist **im Fenster** genau dann, wenn
 
-> `0 ≤ r − e ≤ 31`
+> `e > r0` ∧ `0 ≤ r − e ≤ 31`
 
-also für die Revisionen `r−31 … r` — die **letzten 32** committeten
-Transaktionen. Der Rand ist **inklusiv** an beiden Enden.
+also für die Revisionen `max(r0 + 1, r − 31) … r` — die **letzten 32** in dieser
+Sitzung committeten Transaktionen, oder alle, solange es weniger sind. Der Rand
+ist **inklusiv** an beiden Enden.
 
 **Kapazität.** `R` hat **genau 32** vorallokierte Plätze. Weil jede committete
-Transaktion genau eine Revision erzeugt und das Fenster genau 32 Revisionen
+Transaktion genau eine Revision erzeugt und das Fenster höchstens 32 Revisionen
 umfasst, sind **Kapazität und Fensterrand dieselbe Zahl**. Es gibt keinen
 zweiten, unabhängig gezählten Deckel — genau dieser Widerspruch war K-1.
 
 **Woher die 32 kommt.** Aus der Tiefe des Undo-Rings
-(`eq-copilot/schemas/v3/eq-ipc-v3.schema.json:2321`, `undo_tiefe`,
+(`eq-copilot/schemas/v3/eq-ipc-v3.schema.json:2372`, `undo_tiefe`,
 `maximum: 32`). Der Undo-Ring kann die Revisionen `r … r−31` rückgängig machen —
 **dieselbe** Menge. Ein Ergebnis wird also genau so lange vorgehalten, wie der
-Zustand, auf den es sich bezieht, noch erreichbar ist. Eine Zahl, zwei
-Verwendungen, kein erfundener Deckel.
+Zustand, auf den es sich bezieht, noch erreichbar ist — **innerhalb einer
+Sitzung**. Über den Ladestart hinaus reicht nur der Ring: er ist persistent und
+steht im Kind `Dsp` (M-89); das Register ist transient und beginnt leer (I5).
+Beide tragen dieselbe Zahl 32, keine zweite: nach dem Ladestart ist das Register
+nur **leerer**, nicht kleiner. Eine Zahl, zwei Verwendungen, kein erfundener
+Deckel.
 
-**Belegung, ausgerechnet.** `|R| = min(r, 32)`.
+**Belegung, ausgerechnet.** `|R| = min(r − r0, 32)`.
 
-| `r` | `\|R\|` | ältestes `e` im Fenster | jüngstes `e` |
-|---:|---:|---:|---:|
-| 1 | 1 | 1 | 1 |
-| 32 | 32 | 1 | 32 |
-| 33 | 32 | 2 | 33 |
-| 34 | 32 | 3 | 34 |
-| 100 | 32 | 69 | 100 |
+| `r0` | `r` | `\|R\|` | ältestes `e` im Fenster | jüngstes `e` |
+|---:|---:|---:|---:|---:|
+| 0 | 1 | 1 | 1 | 1 |
+| 0 | 32 | 32 | 1 | 32 |
+| 0 | 33 | 32 | 2 | 33 |
+| 0 | 34 | 32 | 3 | 34 |
+| 0 | 100 | 32 | 69 | 100 |
+| 33 | 33 | 0 | — | — |
+| 33 | 34 | 1 | 34 | 34 |
+| 33 | 65 | 32 | 34 | 65 |
+| 33 | 66 | 32 | 35 | 66 |
+
+Die unteren vier Zeilen sind der Ladestart eines Standes mit
+`state_revision = 33`: unmittelbar danach ist `R` leer, obwohl `r = 33` ist, und
+das Fenster füllt sich von dort aus genauso wie im frischen Zustand von 0 aus.
 
 **Verdrängung.** Sie geschieht **ausschließlich am Commit-Punkt**, betrifft
-**genau einen** Eintrag und nur, wenn `r` nach dem Commit größer als 32 ist:
+**genau einen** Eintrag und nur, wenn `r − r0` nach dem Commit größer als 32 ist:
 der Eintrag mit dem kleinsten `e` fällt heraus, weil für ihn `r − e = 32` gilt.
-Bei `r = 33` verlässt `e = 1` das Fenster, `e = 2` bleibt (`33 − 2 = 31`).
-Nicht-committete Ausgänge verdrängen **nichts**, denn sie legen nichts ab —
-genau das war D-1.
+Bei `r0 = 0` und `r = 33` verlässt `e = 1` das Fenster, `e = 2` bleibt
+(`33 − 2 = 31`). Nicht-committete Ausgänge verdrängen **nichts**, denn sie legen
+nichts ab — genau das war D-1. Das Leeren beim Ladestart ist **keine**
+Verdrängung, sondern der Beginn einer neuen Sitzung (I5).
 
 ##### Teil 2 — Die Stufenfolge
 
@@ -1864,13 +1884,13 @@ Genau eine Reihenfolge, hier definiert und nirgends sonst:
 | **S0** | `tid` in `R` nachschlagen. Treffer ⇒ Ausgang T1, **keine** weitere Stufe. | nein | nein |
 | **S1** | `base_revision` gegen `r` prüfen. | ja (Konflikt) | nein |
 | **S2** | DTO validieren (Typ, Bereich, Enum, Endlichkeit; Reihenfolge nach `nakama-state-v2.md:171`). | ja | ja |
-| **S3** | Zonenriegel, nur bei Bedienänderungen (§5.6.3). | ja (User-Schutz) | nein |
+| **S3** | Zonenriegel, nur bei **Bedienänderungen** (§5.6.3 Feinheit 3). Ganzzustands-Wiederherstellungen — Undo, Redo, Preset-Laden — durchlaufen ihn nicht (Ausnahme dort; T16). | ja (User-Schutz) | nein |
 | **S4** | Kandidaten-DTO vollständig bauen. | ja | ja |
-| **S5** | Programm bauen; kein freier Slot ⇒ `busy_retry` (M-44). | ja | ja |
+| **S5** | Programm bauen, **ohne** eine Bank zu belegen; braucht das Programm eine Bank und ist keine frei ⇒ `busy_retry` (M-44). Ein Zustand mit `eq_enabled = false` braucht keine (E-18). | ja (**nur** `busy_retry`) | nein |
 | **S6** | `state_hash` über das Kandidaten-DTO bilden. | ja | ja |
 | **S7** | Undo-Eintrag vorbereiten (Schnappschuss des **noch** bestätigten Zustands). | ja | ja |
 | **— COMMIT-PUNKT —** | Ab hier kann nichts mehr fehlschlagen und nichts mehr allozieren. | — | — |
-| **S8** | `r` erhöhen, Committed tauschen, Hash und Undo-Eintrag übernehmen, Host-Dirty melden, `state_report` senden, **Registereintrag anlegen**, gegebenenfalls einen Eintrag verdrängen. | nein | nein |
+| **S8** | `r` erhöhen, Committed tauschen — dabei das Programm aus S5 in eine freie Bank legen und publizieren —, Hash und Undo-Eintrag übernehmen, Host-Dirty melden, `state_report` senden, **Registereintrag anlegen**, gegebenenfalls einen Eintrag verdrängen. | nein | nein |
 
 **Warum `base_revision` (S1) vor der Validierung (S2) steht.** Eine veraltete
 `base_revision` heißt, dass die ganze Nutzlast gegen einen Zustand gebildet
@@ -1882,41 +1902,76 @@ beiden Fälle überlappten. An B-01 ändert das nichts: S1 ist weder fehlbar im
 Sinne einer Allokation noch teuer, und alle allozierenden Stufen liegen
 unverändert vor dem Commit-Punkt.
 
+**Warum S5 keine Bank belegt und nur einen Fehlerausgang hat (NAK-245).** Der
+gebaute Kern kennt beim Programmbau genau ein Scheitern: keine Bank frei.
+`DspKern::uebernehmeZustand` reserviert, baut und publiziert in einem Zug und
+liefert `false` nur dann (`eq-copilot/plugin/dsp/DspKern.cpp:179-196`); ein
+Zustand mit `eq_enabled = false` belegt keine Bank (`:170-177`). `baueProgramm`
+gibt nichts zurück und schreibt in ein `DspProgramm` fester Größe
+(`eq-copilot/plugin/dsp/DspProgramm.h:158`, `:183-184`). Einen zweiten
+Fehlerausgang bei freier Bank gibt es also nicht; S5 bekommt neben T5 keine
+eigene Fehlerzeile. Belegte S5 aber schon eine Bank, überlebte die Reservierung
+einen Fehler in S6 oder S7: der Pool führt einen Slot aus `vorbereitend` nur
+nach `bereit` (`eq-copilot/plugin/dsp/DspBankPool.cpp:143`), außer beim
+Zurücksetzen des ganzen Pools. Nach einigen solchen Fehlern wäre der Pool voll,
+ohne dass ein Audio-ACK ihn je leerte, und T7 wäre unerreichbar. Deshalb baut S5
+ohne Bank, und die Bank wird erst in S8 belegt. Dort kann das nicht mehr
+scheitern: Bänke belegt nur der Control-Worker (§44.2), und zwischen S5 und S8
+belegt er keine.
+
 ##### Teil 3 — Invarianten
 
 | Nr. | Invariante |
 |---|---|
-| **I1** | `\|R\| = min(r, 32)`, immer. |
-| **I2** | `(tid, e, hash) ∈ R` ⇔ `0 ≤ r − e ≤ 31`. |
+| **I1** | `\|R\| = min(r − r0, 32)`, immer — auch unmittelbar nach dem Ladestart (`r = r0`, `R` leer). |
+| **I2** | `(tid, e, hash) ∈ R` ⇔ `e > r0` ∧ `0 ≤ r − e ≤ 31`. |
 | **I3** | Kapazität von `R` = Fensterspanne = Tiefe des Undo-Rings = **32**. Eine Zahl. |
 | **I4** | Ein Registereintrag entsteht **ausschließlich** in S8 und nur für eine committete Transaktion. Kein Ausgang vor dem Commit-Punkt legt einen an. |
-| **I5** | `R` ist **transient**: es lebt im Prozessor, stirbt mit ihm, steht nicht im Kind `Dsp`, nicht im DTO und nicht im `state_hash`. Begründung: eine Wiederholung kann nur von einem Aufrufer kommen, der die Transaktion noch für offen hält — und der stirbt mit derselben Sitzung. |
-| **I6** | Genau ein Ausgang je Eingabe: die Zeilen T1 bis T12 sind vollständig und paarweise unvereinbar, weil S0 bis S5 in fester Reihenfolge geprüft werden und die erste zutreffende Stufe entscheidet. |
+| **I5** | `R` ist **transient**: es lebt im Prozessor, stirbt mit ihm, **wird beim Ladestart geleert**, steht nicht im Kind `Dsp`, nicht im DTO und nicht im `state_hash`. Begründung: eine Wiederholung kann nur von einem Aufrufer kommen, der die Transaktion noch für offen hält — und der stirbt mit derselben Sitzung. Kommt sie nach dem Ladestart trotzdem, ist sie ein neuer Versuch (T17). |
+| **I6** | Genau ein Ausgang je Eingabe. Die Stufen **S0 bis S7** werden in fester Reihenfolge geprüft; die **erste Stufe, die entscheidet**, bestimmt den Ausgang — S0 durch einen Treffer, S1 bis S7, indem sie nicht bestehen —, und entscheidet keine, committet **S8**. Jede Zeile in Teil 4 hat genau einen Ausgang und setzt voraus, dass keine Stufe vor ihrer ersten Stufe entscheidet; entscheidet in einem beschriebenen Ablauf eine frühere Stufe, gilt die Zeile dieser Stufe (T9 bei vollem Pool endet in T5). Jede fehlbare Stufe S1 bis S7 ist in mindestens einer Zeile erste Stufe. Zeilen mit derselben ersten Stufe tragen denselben Ausgang und unterscheiden sich nur im Vorlauf oder in der Art der Transaktion, die sie messen — zwei Zeilen, deren Bedingungen dieselbe Eingabe zulassen, haben deshalb nie verschiedene Ausgänge. |
 
 ##### Teil 4 — Falltabelle: Zustand × Eingabe → Ausgang
 
 Eingabe ist stets `(tid, base_revision, Nutzlast)`. „Erste Stufe" nennt die
-Stufe, die den Ausgang bestimmt.
+Stufe, die den Ausgang bestimmt; wie die Zeilen zusammen zu lesen sind, sagt
+**I6**. Die Tabelle hat **17 Zeilen**, T1 bis T17 — die Zeilenzahl steht nur
+hier. Die Fehlerausgänge von S4, S6 und S7 heißen wie in T3 „Fehler" mit der
+Stufe als Grund; ein Wire-Code entsteht dafür nicht (§5.6.3 Feinheit 4 gilt
+sinngemäß). Die Einspritzfälle aus M-75 stehen als B7-Fall an der Zeile ihrer
+Stufe.
 
 | Nr. | Zustand | Eingabe | Erste Stufe | Ausgang | `r` danach | memoisiert | Test (B7) | Rotbeweis an der Zusage |
 |---|---|---|---|---|---|---|---|---|
-| **T1** | `tid` liegt in `R` (`r − e ≤ 31`) | dieselbe `tid`, beliebige `base_revision`, beliebige Nutzlast | **S0** | **Gespeichertes Ergebnis**: Revision `e`, Hash aus `R` | `r` (unverändert) | bleibt | `wiederholung_im_fenster_liefert_dasselbe_ergebnis` | Es entsteht eine zweite Revision; oder die Eingabe durchläuft S1 bis S5 und bekommt ein Urteil des heutigen Zustands |
-| **T2** | `tid` unbekannt | `base_revision ≠ r` | **S1** | **Konflikt** | `r` | nein | `veraltete_base_revision_ist_konflikt_ohne_wirkung` | Die Transaktion wird angewandt; oder der Konflikt landet in `R` und blockiert spätere Versuche |
-| **T3** | `tid` unbekannt | `base_revision = r`, Nutzlast ungültig | **S2** | **Fehler** (Grund aus dem DTO-Vertrag) | `r` | nein | `ungueltige_nutzlast_faellt_und_wird_nicht_gemerkt` | Ein Bereichs- oder Enumfehler wird geklemmt statt abgelehnt; oder der Fehler wird memoisiert |
-| **T4** | `tid` unbekannt, Band würde neu in eine eingeschaltete Zone eintreten | `base_revision = r`, Nutzlast gültig | **S3** | **User-Schutz** | `r` | nein | `zonenriegel_weist_ab_und_merkt_nichts` | Das Band landet in der Zone; oder die Abweisung wird memoisiert und sperrt jeden späteren Versuch |
-| **T5** | `tid` unbekannt, alle vier Bänke belegt | `base_revision = r`, Nutzlast gültig, Zone frei | **S5** | **`busy_retry`** (M-44) | `r` | nein | `busy_retry_wird_nicht_gemerkt` | Eine aktive Bank wird verdrängt; oder `busy_retry` wird memoisiert und kommt für immer zurück |
+| **T1** | `tid` liegt in `R` (I2) | dieselbe `tid`, beliebige `base_revision`, beliebige Nutzlast | **S0** | **Gespeichertes Ergebnis**: Revision `e`, Hash aus `R` | `r` (unverändert) | bleibt | `wiederholung_im_fenster_liefert_dasselbe_ergebnis` | Es entsteht eine zweite Revision; oder die Eingabe durchläuft die Stufen ab S1 und bekommt ein Urteil des heutigen Zustands |
+| **T2** | `tid` unbekannt | `base_revision ≠ r` | **S1** | **Konflikt** | `r` | nein | `veraltete_base_revision_ist_konflikt_ohne_wirkung`; `fehler_in_S1_laesst_committed_und_hash_unveraendert` (M-75) | Die Transaktion wird angewandt; oder der Konflikt landet in `R` und blockiert spätere Versuche |
+| **T3** | `tid` unbekannt | `base_revision = r`, Nutzlast ungültig | **S2** | **Fehler** (Grund aus dem DTO-Vertrag) | `r` | nein | `ungueltige_nutzlast_faellt_und_wird_nicht_gemerkt`; `fehler_in_S2_laesst_committed_und_hash_unveraendert` (M-75) | Ein Bereichs- oder Enumfehler wird geklemmt statt abgelehnt; oder der Fehler wird memoisiert |
+| **T4** | `tid` unbekannt; die Transaktion ist eine **Bedienänderung** nach §5.6.3 Feinheit 3: sie ändert `occupied`, `enabled` oder `freq_hz` eines Slots, und `P` kippt für ein Paar (Slot, Z) dieses Slots von falsch auf wahr | `base_revision = r`, Nutzlast gültig | **S3** | **User-Schutz** | `r` | nein | `zonenriegel_weist_ab_und_merkt_nichts`; `fehler_in_S3_laesst_committed_und_hash_unveraendert` (M-75) | Das Band landet in der Zone; oder die Abweisung wird memoisiert und sperrt jeden späteren Versuch |
+| **T5** | `tid` unbekannt, alle vier Bänke belegt, das Programm braucht eine (S5) | `base_revision = r`, Nutzlast gültig, Zone frei | **S5** | **`busy_retry`** (M-44) | `r` | nein | `busy_retry_wird_nicht_gemerkt`; `fehler_in_S5_laesst_committed_und_hash_unveraendert` (M-75) | Eine aktive Bank wird verdrängt; oder `busy_retry` wird memoisiert und kommt für immer zurück |
 | **T6** | `tid` unbekannt, alle Stufen bestanden | `base_revision = r`, Nutzlast gültig | **S8** | **Commit** | `r + 1` | **ja** (`tid`, `e = r+1`, Hash) | `commit_erzeugt_genau_eine_revision_und_einen_eintrag` | Zwei Revisionen; oder der Eintrag fehlt und die Wiederholung committet erneut |
-| **T7** | wie T5, danach hat ein Audio-ACK eine Bank freigegeben (**keine** Revision) | **dieselbe** `tid`, `base_revision = r` — unverändert gültig, weil T5 keine Revision erzeugte | **S8** | **Commit** | `r + 1` | **ja** | `wiederholung_nach_bankfreigabe_committet` | Die Wiederholung bekommt erneut `busy_retry` aus dem Register und erreicht S5 nie |
+| **T7** | wie T5, danach hat ein Audio-ACK eine Bank freigegeben (**keine** Revision); alle übrigen Stufen **S2 bis S7** bestehen | **dieselbe** `tid`, `base_revision = r` — unverändert gültig, weil T5 keine Revision erzeugte | **S8** | **Commit** | `r + 1` | **ja** | `wiederholung_nach_bankfreigabe_committet` | Die Wiederholung bekommt erneut `busy_retry` aus dem Register und erreicht S5 nie |
 | **T8** | wie T4, danach wurde die Zone gelöst — **das ist selbst eine Transaktion** und hat `r + 1` erzeugt (M-71) | **dieselbe** `tid`, **alte** `base_revision = r` | **S1** | **Konflikt** — und das ist **richtig** | `r + 1` | nein | `retry_nach_zonenloesung_mit_alter_base_revision_ist_konflikt` | Die Transaktion committet trotz veralteter `base_revision` und umgeht damit M-76 |
-| **T9** | wie T8 | **dieselbe** `tid`, **aktualisierte** `base_revision = r + 1` | **S8** | **Commit** | `r + 2` | **ja** | `retry_nach_zonenloesung_mit_aktueller_base_revision_committet` | Die Wiederholung wird weiter mit User-Schutz abgewiesen, obwohl die Zone gelöst ist |
-| **T10** | 33 committete Transaktionen, `r = 33` | Wiederholung der **ersten** (`e = 1`, `r − e = 32`) | **S1** (S0 findet nichts) | **Konflikt** | `r` | nein | `fensterrand_erste_transaktion_ist_draussen` | Die erste Transaktion liegt noch in `R` — dann wäre die Kapazität 33 und I1 verletzt |
-| **T11** | dieselbe Lage wie T10 | Wiederholung der **zweiten** (`e = 2`, `r − e = 31`) | **S0** | **Gespeichertes Ergebnis** | `r` | bleibt | `fensterrand_zweite_transaktion_ist_drinnen` | Die zweite Transaktion ist verdrängt — dann ist das Fenster kleiner als die Undo-Tiefe und die Vorhaltegarantie gebrochen |
-| **T12** | T committet (`e`), U committet (`e+1`, also `r = e+1`), danach **31 Abweisungen** wegen veralteter `base_revision` | Wiederholung von **T** | **S0** | **Gespeichertes Ergebnis von T** | `r` | bleibt | `abweisungen_verdraengen_keinen_committeten_eintrag` | T ist verdrängt und die Wiederholung endet mit Konflikt, obwohl seit T nur **eine** Revision vergangen ist und Undo T noch erreicht |
+| **T9** | wie T8; alle übrigen Stufen **S2 bis S7** bestehen — S3, weil die Zone gelöst ist, und S5, weil eine Bank frei ist | **dieselbe** `tid`, **aktualisierte** `base_revision = r + 1` | **S8** | **Commit** | `r + 2` | **ja** | `retry_nach_zonenloesung_mit_aktueller_base_revision_committet`; Abgrenzung `retry_nach_zonenloesung_bei_vollem_pool_ist_busy_retry` (dieselbe Wiederholung bei vollem Pool endet nach I6 in T5, nicht memoisiert, danach der Weg aus T7) | Die Wiederholung wird weiter mit User-Schutz abgewiesen, obwohl die Zone gelöst ist; oder **T9 committet bei vollem Pool statt `busy_retry`** |
+| **T10** | 33 **in dieser Sitzung** committete Transaktionen (`r − r0 = 33`) | Wiederholung der **ersten** dieser Sitzung (`e = r0 + 1`, `r − e = 32`) | **S1** (S0 findet nichts) | **Konflikt** | `r` | nein | `fensterrand_erste_transaktion_ist_draussen` | Die erste Transaktion liegt noch in `R` — dann wäre die Kapazität 33 und I1 verletzt |
+| **T11** | dieselbe Lage wie T10 | Wiederholung der **zweiten** (`e = r0 + 2`, `r − e = 31`) | **S0** | **Gespeichertes Ergebnis** | `r` | bleibt | `fensterrand_zweite_transaktion_ist_drinnen` | Die zweite Transaktion ist verdrängt — dann ist das Fenster kleiner als die Undo-Tiefe und die Vorhaltegarantie gebrochen |
+| **T12** | T committet in dieser Sitzung (`e`), U committet (`e+1`, also `r = e+1`), danach **31 Abweisungen** wegen veralteter `base_revision` | Wiederholung von **T** | **S0** | **Gespeichertes Ergebnis von T** | `r` | bleibt | `abweisungen_verdraengen_keinen_committeten_eintrag` | T ist verdrängt und die Wiederholung endet mit Konflikt, obwohl seit T nur **eine** Revision vergangen ist und Undo T noch erreicht |
+| **T13** | `tid` unbekannt; S1 bis S3 bestehen; das Kandidaten-DTO lässt sich nicht vollständig bauen | `base_revision = r`, Nutzlast gültig | **S4** | **Fehler** (Grund: Stufe S4) — bestätigter Zustand und `state_hash` unverändert, kein Ring- und kein Registereintrag | `r` | nein | `fehler_in_S4_laesst_committed_und_hash_unveraendert` (M-75) | Nach einem Fehler in S4 ist `r` erhöht, oder der bestätigte Zustand trägt einen Teil des Kandidaten; oder der Fehler wird memoisiert und sperrt die Wiederholung |
+| **T14** | `tid` unbekannt; S1 bis S5 bestehen; der `state_hash` über das Kandidaten-DTO lässt sich nicht bilden (`nakama::parameter::stateHash` liefert `false`, §5.11 Feinheit 2) | `base_revision = r`, Nutzlast gültig | **S6** | **Fehler** (Grund: Stufe S6) — bestätigter Zustand und `state_hash` unverändert, kein Ring- und kein Registereintrag | `r` | nein | `fehler_in_S6_laesst_committed_und_hash_unveraendert` (M-75) | Nach einem Fehler in S6 ist `r` erhöht und der bestätigte Zustand getauscht — eine Revision ohne Hash; oder der Fehler wird memoisiert |
+| **T15** | `tid` unbekannt; S1 bis S6 bestehen; der Undo-Eintrag lässt sich nicht vorbereiten | `base_revision = r`, Nutzlast gültig | **S7** | **Fehler** (Grund: Stufe S7) — bestätigter Zustand und `state_hash` unverändert, kein Ring- und kein Registereintrag | `r` | nein | `fehler_in_S7_laesst_committed_und_hash_unveraendert` (M-75) | Nach einem Fehler in S7 ist `r` erhöht, oder ein halber Ringeintrag liegt vor — eine Revision ohne Rückweg; oder der Fehler wird memoisiert |
+| **T16** | `tid` unbekannt; die Transaktion ist eine **Ganzzustands-Wiederherstellung** — Undo, Redo oder Preset-Laden (§5.6.3 Feinheit 3, Ausnahme) —, und dabei tritt ein Band neu in eine eingeschaltete Zone ein; S2 und S4 bis S7 bestehen | `base_revision = r`, Nutzlast gültig | **S8** (S3 gilt nicht) | **Commit** — das Band gilt als **verletzt** und wird gemeldet (M-61, M-68) | `r + 1` | **ja** | `undo_unter_einer_zone_wird_nicht_abgewiesen_sondern_meldet_verletzung` (M-61), `redo_in_eine_zone_wird_nicht_abgewiesen_sondern_meldet_verletzung` und `preset_laden_in_eine_zone_wird_nicht_abgewiesen_sondern_meldet_verletzung` (M-126) | Die Wiederherstellung wird mit User-Schutz abgewiesen; oder sie committet, aber die Verletzung wird nicht gemeldet |
+| **T17** | Ladestart eines Standes mit `state_revision = 33`: `r0 = r = 33`, `R` leer; S2 bis S7 bestehen | eine `tid`, die in der **vorigen** Sitzung committet wurde, `base_revision = 33`, Nutzlast gültig | **S8** (S0 findet nichts, S1 besteht) | **Commit** — ein neuer Versuch; die Konsequenz aus I5, kein Fehler | `r + 1` (= 34) | **ja** | `wiederholung_ueber_sitzungsgrenze_ist_neuer_versuch` | Die Wiederholung bekommt ein gespeichertes Ergebnis aus der vorigen Sitzung — das Register wurde mitgespeichert, I5 ist gebrochen; oder das Laden hat `r` auf 0 zurückgesetzt, und S1 meldet Konflikt — M-93 ist gebrochen |
 
 **T10 und T11 sind ein Paar** und messen beide Seiten desselben Randes; einzeln
 belegt keiner von beiden, dass der Rand an der richtigen Stelle liegt. Dasselbe
 gilt für **T8 und T9**: erst zusammen zeigen sie, dass nach einer gelösten Zone
 nicht der Zonenriegel, sondern die `base_revision` über den Ausgang entscheidet.
+Seit der NAK-245-Runde kommen zwei Paare hinzu. **T4 und T16** zeigen erst
+zusammen, dass der Zonenriegel nach der Art der Transaktion unterscheidet:
+dieselbe Lage in einer Zone wird bei einer Bedienänderung abgewiesen und bei
+einer Ganzzustands-Wiederherstellung committet und gemeldet. **T1 und T17**
+zeigen erst zusammen, dass das Register an die Sitzung gebunden ist: dieselbe
+Wiederholung bekommt innerhalb der Sitzung das gespeicherte Ergebnis und nach
+dem Ladestart einen neuen Versuch. T9 hat dazu eine Abgrenzung statt eines
+Partners: bei vollem Pool gilt nach I6 T5.
 
 **Was die Tabelle nicht sagt.** Sie regelt den lokalen Transaktionskern. Das
 In-Flight-Register des `ControlClient` registriert **ausgehende**
@@ -1926,6 +1981,8 @@ Idempotenz ausdrücklich vom **Broker**
 `:301-304`, `:332-336`). Es ist der **Fernweg-Anteil** und gehört S29–31; der
 10.000-Befehle-Beweis aus §44.5 muss in P6 **fernsteuerungsfrei** fahrbar sein,
 und die Zustandshoheit bleibt nach `CLAUDE.md` in der Audio führenden Instanz.
+Ebenso wenig steht das **Projekt-Laden** in der Tabelle: es ist keine
+Transaktion und setzt nur den Ausgangspunkt `r0` einer Sitzung (Teil 1).
 
 
 ### 5.12 R12 — Preset
@@ -2047,17 +2104,20 @@ sie in Etappe 2 bis 4 beiläufig beantwortet.
 
 ### 5.17 Abweichungen vom Wortlaut der Regeln, gesammelt
 
-Sieben Stellen bauen etwas anderes, als der Wortlaut einer Regel sagt; **zwei
+Acht Stellen bauen etwas anderes, als der Wortlaut einer Regel sagt; **zwei
 sind zurückgenommen** — Nummer 3 seit der Matrix-Nacharbeit 1, Nummer 6 seit
 der Matrix-Nacharbeit 3. Beide bleiben als Verlauf stehen, damit die
-Wiederprüfung die Kehre sieht. Heute wirksam sind also **fünf**. Jede steht mit
+Wiederprüfung die Kehre sieht. Heute wirksam sind also **sechs**. Jede steht mit
 ihrer Begründung auch unter ihrer Regel; hier stehen sie zusammen, damit die
-Prüfung sie an einer Stelle findet. Zwei fallen aus dem Muster: **Nummer 6**
+Prüfung sie an einer Stelle findet. Drei fallen aus dem Muster: **Nummer 6**
 weicht nicht vom Wortlaut einer R-Regel ab, sondern von einer früheren Regel
 des Dirigenten — er hat sie in der Nacharbeit 3 selbst zurückgenommen. **Nummer
 7** weicht von keiner Regel ab, sondern von der bis dahin gewählten **Form**;
 sie ist der Wegwechsel der Konvergenzrunde und steht hier, weil eine
 Formänderung dieser Größe genauso begründungspflichtig ist wie eine inhaltliche.
+**Nummer 8** weicht vom Wortlaut der Protokollspezifikation ab, die Nummer 7
+geschaffen hat: die NAK-245-Runde schließt fünf innere Widersprüche ihrer
+Tabelle, bevor Etappe 4 gegen sie baut.
 
 | Nr. | Regel und Wortlaut | Was gebaut wird | Begründung |
 |---|---|---|---|
@@ -2068,6 +2128,7 @@ Formänderung dieser Größe genauso begründungspflichtig ist wie eine inhaltli
 | 5 | **R4:** der Ausgleich folgt der „pink-gewichteten mittleren **Betragsantwort**" | Gemittelt wird die **Energie** `\|H\|²` über dieselben 121 Gitterstellen, danach `−10 · log₁₀`. | Beide von R4 genannten Proben halten in beiden Lesarten exakt; sie trennen sich erst bei schmalen Merkmalen. Ein +12-dB-Bell mit Q 12 ergibt im Betragsmittel −0,28 dB, im Energiemittel −0,95 dB. Wahrgenommene Lautheit folgt der Energie in den Frequenzgruppen; das Betragsmittel unterkompensierte eine schmale Anhebung hörbar. |
 | 6 | **MN2-Regel zu B-05:** „Das gespeicherte Ergebnis umfasst deshalb auch abgewiesene Transaktionen (Konflikt, User-Schutz)" | **ZURÜCKGENOMMEN in MN3 (D-Regel des Dirigenten).** Gemerkt wird ausschließlich, was eine Revision erzeugt hat; ein Ausgang ohne Commit hinterlässt keinen Eintrag, und dieselbe ID darf danach erneut laufen. Das Fenster ist in **Revisionen** definiert (höchstens 32 hinter der aktuellen), nicht in Einträgen. | Die zurückgenommene Fassung erzeugte zwei Widersprüche, die die Matrixprüfung 3 gefunden hat. **D-1:** ein Ring fester Eintragszahl, der auch Abweisungen aufnahm, verdrängte eine committete Transaktion T schon nach 31 Abweisungen — obwohl seit T erst **eine** Revision vergangen war und Undo T noch erreichte. Die zugesagte Spanne „über die ein alter Zustand per Undo noch erreichbar ist" war damit gebrochen. **D-2:** ein gemerktes `busy_retry` kam bei jeder Wiederholung derselben ID zurück, auch nachdem ein Audio-ACK längst eine Bank freigegeben hatte — der in M-44 zugesagte Weg „Der Aufrufer wiederholt" war unausführbar. Die neue Regel löst beides mit **einem** Satz, weil beide Widersprüche denselben Ursprung hatten: gemerkt wurde etwas, das gar keinen Zustand erzeugt hat. |
 | 7 | **Die Arbeitsweise selbst:** Transaktionssemantik als Prosa in den Feinheiten von §5.11 | **Eine geschlossene Protokollspezifikation** (§5.11.4) mit Arithmetik, Stufenfolge, sechs Invarianten und einer vollständigen Falltabelle T1 bis T12. Die Matrixzeilen M-44, M-74, M-75, M-76, M-123, M-124 und M-125 werden daraus **abgeleitet** und zitieren sie; jede Zahl steht genau einmal. | Konvergenzentscheid des Dirigenten (10.09.2026, §7.7) nach drei Wiederprüfungen ohne PASS. Die Ursache war nicht ein einzelner falscher Satz, sondern die **Form**: drei Runden zogen Prosa nach, und jede schloss einen Satz und öffnete den nächsten Randfall (Verdrängung → `busy_retry` → inklusiver Fensterrand → `base_revision` beim Retry). Eine Reihenfolge, die an zwei Stellen steht, läuft auseinander; eine Zahl, die an zwei Stellen steht, widerspricht sich. Deshalb ist §5.11.4 ab hier die einzige Quelle, und die Zeilen tragen keine eigene Arithmetik mehr. |
+| 8 | **§5.11.4 in der Fassung der Konvergenzrunde:** „die Zeilen T1 bis T12 sind vollständig und paarweise unvereinbar, weil S0 bis S5 in fester Reihenfolge geprüft werden“ (I6); „`\|R\| = min(r, 32)`, immer“ (I1); T4 „User-Schutz“ für jede Transaktion, die ein Band neu in eine Zone führt; T9 „Commit“ allein wegen der aktualisierten `base_revision`; M-76 „gefahren als tabellengetriebener Lauf über T1 bis T12“ | **Die NAK-245-Runde** (§7.10) hält die Form aus Nummer 7 und schließt fünf innere Widersprüche derselben Tabelle: eigene Zeilen für Fehler in S4, S6 und S7 (T13 bis T15), während S5 an der Quelle nur `busy_retry` kennt und keine Bank vor dem Commit-Punkt belegt; T4 nur für Bedienänderungen, Ganzzustands-Wiederherstellungen als eigene Zeile (T16, neue Matrixzeile M-126); T7 und T9 committen nur, wenn S2 bis S7 bestehen; der Ladestart `r0` in I1 und I2 samt der Wiederholung über die Sitzungsgrenze (T17); M-76 misst nur noch den Ein-Revisions-Satz aus §44.5, den Tabellenlauf trägt allein M-125. | Matrixprüfung 5 (§7.9) fand die fünf Widersprüche; der Dirigent hat sie als DEFEKT eingeordnet und als NAK-245 vor dem Bau der Etappe 4 in derselben Tabelle schließen lassen, weil der Transaktionskern (B7) gegen genau diese Tabelle gebaut und von M-125 gegen sie gefahren wird. Die Vollständigkeit aus Nummer 7 galt für die zwölf beschriebenen Fälle, nicht für jede Eingabe: ein Fehler in S7 hatte keine Zeile, ein korrektes Undo unter einer Zone wäre an T4 gefallen und ein korrekter Kern am Rotbeweis von M-76. |
 
 ---
 
@@ -2513,6 +2574,102 @@ M-125 fällt genau daran, weil ein Fall ohne Tabellenzeile dort keinen Test hat.
 | Urteil | **NEEDS_WORK** — **K-1 und K-2 geschlossen** (§5.11.4 „0 ≤ r − e ≤ 31", 32 Plätze, T10/T11 mit beidseitigen Rotbeweisen; T8 Konflikt, T9 Commit); §3.15 stimmt mit 125 IDs. Fünf neue Widersprüche in der neuen Tabelle: Fehler in S4/S6/S7 ohne Zeile; T4 nicht auf Bedienänderungen begrenzt (gegen M-61); T9 gegen T5 (`busy_retry`); I1 gegen Ladestart (M-89/M-93/I5); M-76 mischt Tabellenlauf und Ein-Revisions-Stresstest |
 | Rundenbilanz | `73bc10b6..f636a09f: Doku 1 Datei(en) +282/-35 → OHNE PRODUKTFORTSCHRITT (Produkt+Tests = 0 Zeilen)` — Matrixrunde, strukturell null; kumuliert Etappe 1: `e9dbf4b9..f636a09f` nur Doku |
 | **Entscheid** | Die Ursachenrunde nach dem Konvergenzentscheid (§7.7) hat K-1/K-2 geschlossen; die fünf Restbefunde sind alle DEFEKT (innere Widersprüche der neuen Tabelle), betreffen ausschließlich §5.11.4/M-76/M-125 — den Transaktionskern der **Etappe 4** — und keine Zusage der Etappen 2 und 3. Nach Dirigent §3.4 wird die Ursache als eigener Registerpunkt ausgegliedert: **NAK-245** (`docs/offene-punkte.md`, Klasse [Planarbeit · S26–28]); die fünf Punkte werden vor dem Bau der Etappe 4 in derselben Tabelle geschlossen und von der Erstprüfung der Etappe 4 mitgeprüft. Die Matrix ist damit Referenz für **Etappe 2 (Verträge in drei Sprachen)**, die jetzt beginnt (User-Wort 30.08.2026: „voranschreiten ist das wichtigste"). Matrixrunden gesamt: fünf Prüfungen, vier Nacharbeiten, Konvergenzentscheid nach der dritten Wiederprüfung |
+
+### 7.10 NAK-245-Runde — was eingearbeitet wurde (10.09.2026)
+
+Auftrag wörtlich: `docs/beweise/roh/SONDE-015-nak245-auftrag.txt`; Anlass ist das
+Urteil der Matrixprüfung 5 (`docs/beweise/roh/SONDE-015-matrixpruefung-5-f636a09.txt`,
+§7.9). Startstand `4d769e43`, Worktree sauber. **Kein Produkt-, Test-, Schema-,
+Fixture- oder Werkzeugcode**; einzige geänderte Datei ist dieses Manifest. Die
+abgenommenen Etappen 2 und 3 und ihre Zusagen bleiben unberührt; ihr Code und
+ihre Verträge sind nur als Quelle gelesen worden (Stufe S5, `state_revision`,
+`undo_tiefe`).
+
+**Der Grundsatz der Runde.** §5.11.4 bleibt die einzige Stelle der
+Transaktionsarithmetik. Die fünf Widersprüche lagen **in** der Tabelle der
+Konvergenzrunde, nicht zwischen ihr und einer anderen Stelle; geschlossen sind
+sie deshalb dort, und die abgeleiteten Matrixzeilen zitieren danach nur. Neue
+Tabellenzeilen laufen ab T13, keine bestehende ist umnummeriert oder umgewidmet;
+geänderte Matrixzeilen tragen die Marke **MR**.
+
+| Defekt | Regel des Dirigenten, kurz | Geänderte Stellen |
+|---|---|---|
+| **D-245-1** — Fehler in S4, S6 und S7 hatten keine Zeile (I6) | Jede fehlbare Stufe hat mindestens eine Zeile mit genau einem Ausgang; eigene Zeilen für S4, S6 und S7; eine zweite S5-Zeile nur, wenn S5 neben `busy_retry` scheitern kann; I6 nennt S0 bis S7; M-75 zitiert die Zeilen | §5.11.4 Teil 2 (**S5**, **S8**, neuer Absatz „Warum S5 keine Bank belegt“), Teil 3 (**I6**), Teil 4 (neue Zeilen **T13** für S4, **T14** für S6, **T15** für S7; die Einspritzfälle aus M-75 an **T2** bis **T5**); **M-75** |
+| **D-245-2** — T4 verlangte User-Schutz auch für das Undo aus M-61 | T4 nur für Bedienänderungen nach §5.6.3 Feinheit 3; eine eigene Zeile für Ganzzustands-Wiederherstellungen, die eine Transaktion sind; Projekt-Laden ist keine | §5.11.4 Teil 1 (`r0`: Projekt-Laden), Teil 2 (**S3**), Teil 4 (**T4** eingegrenzt, neue Zeile **T16**, Paar T4 und T16); **M-61**, **M-74**, neue Matrixzeile **M-126** |
+| **D-245-3** — T9 und T5 gaben bei vollem Pool zwei Ausgänge | T7 und T9 setzen S2 bis S7 ausdrücklich voraus; der volle Pool ist ein eigener B7-Fall und Rotbeweis an T9; die Reihenfolge aus Teil 2 entscheidet | §5.11.4 Teil 3 (**I6**), Teil 4 (**T7**, **T9**, Satz zur Abgrenzung unter der Tabelle); **M-44**, **M-124** |
+| **D-245-4** — I1 verlangte nach dem Laden volle Belegung (gegen M-89, M-93, I5) | `r0` als Revision beim Sitzungs- oder Ladestart; I1 und I2 mit `r0`; Belegung mit Ladestart; T10 und T11 in dieser Sitzung; die Vorhaltegarantie gilt innerhalb der Sitzung; eine Zeile für die Wiederholung über die Sitzungsgrenze | §5.11.4 Teil 1 (`r`, neu `r0`, `e`, `R`, Fenster, Kapazität, „Woher die 32 kommt“, Belegung, Verdrängung), Teil 3 (**I1**, **I2**, **I5**), Teil 4 (**T1**, **T10**, **T11**, **T12**, neue Zeile **T17**, Paar T1 und T17, „Was die Tabelle nicht sagt“); **M-123**, **M-124**, **M-125** |
+| **D-245-5** — M-76 mischte den Tabellenlauf mit dem Ein-Revisions-Stresstest | M-76 misst nur den Satz aus §44.5, mit Eingaben aus einer logischen Transaktion, und zitiert T1, T2 und T6; den Tabellenlauf trägt allein M-125; die Zeilenzahl steht nur in der Tabelle | **M-76**, **M-125**, §5.11.4 Teil 4 (Vorspann mit der Zeilenzahl) |
+
+Dazu: §3.15 neu gezählt, §5.17 Abweichung 8, die B7-Liste in §4.4 (sie nennt
+jetzt M-123 bis M-125 und M-126) und die Kopfzeile von §5.11.4.
+
+**Entscheidungen innerhalb der Regeln, begründet.**
+
+1. **S5 hat keinen zweiten Fehlerausgang.** Die Regel zu D-245-1 macht eine zweite S5-Zeile davon abhängig, ob S5 bei freier Bank scheitern kann. An der Quelle kann es das nicht: `DspKern::uebernehmeZustand` liefert `false` nur ohne freie Bank (`eq-copilot/plugin/dsp/DspKern.cpp:179-180`), und `baueProgramm` gibt nichts zurück und schreibt in ein `DspProgramm` fester Größe (`eq-copilot/plugin/dsp/DspProgramm.h:158`, `:183-184`). Der Einspritzfall `fehler_in_S5_laesst_committed_und_hash_unveraendert` ist deshalb der Fall „keine Bank frei“ und steht an T5. Teil 2 führt S5 jetzt als „fehlbar: nur `busy_retry`“ und „allokiert: nein“; die Konvergenzrunde hatte beides mit „ja“ eingetragen, bevor der Kern gebaut war.
+2. **S5 belegt keine Bank, erst S8 legt das Programm hinein.** Eine in S5 reservierte Bank überlebte einen Fehler in S6 oder S7: der Pool führt einen Slot aus `vorbereitend` nur nach `bereit` (`eq-copilot/plugin/dsp/DspBankPool.cpp:143`). T14 und T15 hätten „ohne Commit“ zugesagt, während eine Bank belegt bleibt, und nach einigen solchen Fehlern wäre T7 unerreichbar. Die Reihenfolge der Stufen bleibt, wie Teil 2 sie festlegt; nur die Belegung liegt jetzt ausdrücklich in S8. Feststellen, dass eine Bank frei ist, ohne sie zu belegen, kann S5 schon mit dem gebauten Kern (`DspKern::pool()`, `eq-copilot/plugin/dsp/DspKern.h:124-125`; `DspBankPool::freieSlots()`, `eq-copilot/plugin/dsp/DspBankPool.h:238`), und weil nur der Control-Worker Bänke belegt (§44.2), scheitert das Belegen in S8 danach nicht mehr.
+3. **E-18 steht in S5 und T5.** Ein Zustand mit `eq_enabled = false` braucht keine Bank (Entscheid E-18, `eq-copilot/plugin/dsp/DspKern.cpp:170-177`). T5 sagte „alle vier Bänke belegt ⇒ `busy_retry`“ ohne diese Ausnahme; weil die Regel zu D-245-3 die Wiederholung bei vollem Pool nach T5 schickt, muss T5 für genau die Eingaben stimmen, die dort ankommen.
+4. **I6 sagt nicht mehr „paarweise unvereinbar“.** Wörtlich stimmte das schon in der Konvergenzfassung nicht — T2 und T10 lassen dieselbe Eingabe zu —, und die neuen Zeilen T16 und T17 liegen ebenso innerhalb von T6. Wahr und ausreichend ist: die erste entscheidende Stufe einer Eingabe ist eindeutig, und Zeilen mit derselben ersten Stufe tragen denselben Ausgang. I6 sagt jetzt genau das, nennt S0 bis S7 und sagt, dass S0 durch einen Treffer entscheidet und S1 bis S7, indem sie nicht bestehen.
+5. **Redo und Preset-Laden bekommen eine eigene Matrixzeile (M-126).** Die Regel zu D-245-2 verlangt je einen Fall für Redo und Preset-Laden, falls M-61 sie nicht schon trägt. M-61 trägt sie nicht, und ihr Ereignis heißt „direkt nach dem Remove“: ein Redo- oder Preset-Fall dort fiele an einer Zeile, die seine Zusage nicht trägt. M-126 steht deshalb in §3.8 bei den Zonen.
+6. **Der abgeschlossene Parametergestus ist eine committete Transaktion.** I1 mit `r0` hält nur, wenn `r` zwischen zwei Ladestarts ausschließlich in S8 steigt. §44.3 zählt die Revision „ausschließlich“ für diskrete Änderungen, und der Gestus ist eine davon (§5.11 Feinheit 1, M-82); Teil 1 sagt das jetzt ausdrücklich, damit I1 keine Revision ohne Registereintrag kennt.
+7. **M-76 beginnt nach einem Ladestart mit `r0 ≥ 1`.** Im frischen Zustand gibt es keine ältere `base_revision`, und „veraltete Befehle“ wären nicht bildbar. Die Zusage bleibt `r − r0 ≤ 1`, wie die Regel sie nennt.
+8. **Die Zeile der Undo-Tiefe ist nachgemessen.** `undo_tiefe` steht am Basis-SHA in `eq-copilot/schemas/v3/eq-ipc-v3.schema.json:2372`, nicht mehr bei `:2321`, weil Etappe 2 das Schema davor erweitert hat. §5.11.4 und M-123 tragen die neue Zeile; M-78 und der Verlauf ab §7.8 gehören nicht zu dieser Runde und bleiben stehen.
+
+**Die Arithmetik ist gerechnet, nicht behauptet.** Vor dem Schreiben ist ein
+Modell der Stufen S0, S1 und S8 mit Ladestart in dieser Sitzung durchgerechnet
+worden, mit `|R| = min(r − r0, 32)` als Wache nach jedem Commit: die Belegung für
+`r0 = 0` und `r` = 1, 32, 33, 34, 100 sowie für `r0 = 33` und `r` = 33, 34, 65, 66
+ergibt genau die Werte der Tabelle in Teil 1; T10 und T11 liefern bei `r0 = 0` und
+bei `r0 = 33` Konflikt für die erste und das gespeicherte Ergebnis für die zweite
+Transaktion; T12 liefert bei `r − e = 1` das gespeicherte Ergebnis; T17 committet
+bei 34, danach ist `|R| = 1`; und 10.000 Eingaben einer einzigen Transaktion nach
+einem Ladestart bei 33 ergeben einen Commit, sonst nur Konflikt und gespeichertes
+Ergebnis, und `r − r0 = 1`.
+
+**Zählung nach der Runde** (§3.15, aus den Zeilen gemessen): **126**
+Matrixzeilen, lückenlos M-01 bis M-126, jede mit sieben Spalten; 76 BELEGT,
+82 ENTSCHIEDEN (davon 50 allein), 126 BAULÜCKE, 0 OFFEN; 15 MN1, 6 MN2, 6 MN3,
+7 MK, **9 MR** (M-44, M-61, M-74, M-75, M-76, M-123, M-124, M-125, M-126). Alle
+Tabellen in §5.11.4 tragen je Zeile gleich viele Spalten.
+
+**Was diese Runde nicht getan hat.** Sie hat keinen Befund bestritten, keine Zahl
+erfunden, keine Zeile umnummeriert oder umgewidmet und nichts außerhalb der
+Transaktionssemantik angefasst. §8, §9, der lebende Kopf und
+`docs/offene-punkte.md` sind unberührt; das Register schließt der Dirigent nach
+der Prüfung. §5.6.3 bleibt wörtlich: seine Ausnahme nennt Projekt-Laden neben
+Undo und Redo, und das bleibt richtig — Projekt-Laden durchläuft den Riegel
+nicht, weil es gar keine Transaktion ist (Teil 1, `r0`).
+
+**Selbstaudit dieser Runde.** Alle fünf Befunde sind vor dem Ändern an der
+Konvergenzfassung nachvollzogen: ein Fehler in S7 traf keine Zeile; T4 hätte das
+Undo aus M-61 abgewiesen; T9 und T5 gaben bei vollem Pool zwei Ausgänge; I1
+verlangte nach dem Laden eines Standes mit Revision 33 sofort volle Belegung;
+M-76 verlangte drei Commits und höchstens eine Revision zugleich. Die
+Matrixzeilen sind zellweise geändert, und der Wortdiff über §3 zeigt nur die
+beabsichtigten Stellen. Die Zeilenzahl der Falltabelle steht nur in deren
+Vorspann; M-125 nennt sie nicht. `git grep` nach den alten Formeln
+(`min(r, 32)`, „T1 bis T12“, „S0 bis S5“) trifft außerhalb dieses Abschnitts nur
+noch Verlauf und Zitat: §7.8 sowie die Nummern 7 und 8 in §5.17. Ein Scan auf
+doppelte Zeilen findet nur die Standardsätze und Tabellenköpfe, die die
+Rundenabschnitte teilen. Keine Zeile behauptet ein gemessenes Produktverhalten —
+B7 entsteht erst in Etappe 4. Der `dokuriegel` läuft sauber.
+
+**Was auch nach dieser Runde offen bleibt — ehrlich benannt.** Die
+Vollständigkeit der Tabelle ist weiterhin konstruiert und nicht bewiesen: jede
+Eingabe trifft die erste entscheidende Stufe, und jede fehlbare Stufe hat eine
+Zeile. Fällt in Etappe 4 ein Fall auf, den keine Zeile trägt, fällt M-125 daran.
+Dass S5 die Bank nur feststellt und S8 sie belegt, ist Bauarbeit der Etappe 4
+gegen T5, T7, T14 und T15 — der gebaute Kern bietet beides schon an (Punkt 2).
+
+**Prüfliste `tools/dirigent/pruefliste.md`, abgehakt für diese Runde.**
+
+| Zeile | Wo gemessen |
+|---|---|
+| **A** Rückstau und Prioritätsklassen | `busy_retry` bleibt die Politik bei vollem Pool; sein Abflussweg hängt jetzt ausdrücklich an den übrigen Stufen (T7, T9 mit Abgrenzung). An der Quelle gemessen: eine Reservierung vor S6 und S7 hätte den Abflussweg ohne ACK verstopft, deshalb belegt erst S8 die Bank (§5.11.4 Teil 2; `eq-copilot/plugin/dsp/DspBankPool.cpp:143`). |
+| **B** Lebenszyklus | speichern↔laden steht als Paar in der Spezifikation: gespeichert wird `state_revision` (M-89), der Ladestart übernimmt sie als `r0` und leert das Register (Teil 1, I5); `ladestart_hat_leeres_register_und_haelt_die_revision` und T17 messen beide Seiten. |
+| **C** Verträge und Längen | Die 32 kommt weiter aus `undo_tiefe` (`eq-copilot/schemas/v3/eq-ipc-v3.schema.json:2372`), `state_revision` aus `eq-copilot/schemas/state/nakama-state-v2.md:36`. Kein neuer Wire-Code für die Fehlerausgänge (§5.6.3 Feinheit 4 sinngemäß). |
+| **D** Bau- und Prüfriegel | Nicht berührt. |
+| **E** Behauptung ≤ Messung | Die tragende Zeile. Jede neue Tabellenzeile trägt ihren B7-Fall und einen Rotbeweis an der eigenen Zusage; M-76 behauptet nur noch, was sein Lauf misst, und M-125 nur, was die Tabelle trägt. Die Arithmetik ist gerechnet, §3.15 gezählt. |
+| **F** Änderungssatz | Die neuen Paare stehen beieinander: T4↔T16 (Bedienänderung gegen Ganzzustands-Wiederherstellung) und T1↔T17 (Wiederholung innerhalb der Sitzung gegen über die Sitzungsgrenze), dazu T9 mit seiner Abgrenzung gegen T5. M-76 und M-125 sind im selben Änderungssatz getrennt worden, damit keine von beiden allein wandert. |
 
 ---
 

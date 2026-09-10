@@ -1,0 +1,26 @@
+SONDE-015 Etappe 3, Nacharbeit 1 - Rotbeweis B-18 (M-39)
+Stand:  2026-09-10 12:56
+Zusage: Die Auto-Gain-Ableitung laeuft nie im Audiopfad.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+          const auto& pn = bankNeu.programm;
+nachher:
+          const auto& pn = bankNeu.programm; (void) leiteAutoGainAb (pn);
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+227 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  auto_gain_wird_nicht_im_audiothread_gerechnet (M-39, B-18)  [Ableitungen ausserhalb 2, im Audiopfad 2]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: auto_gain_wird_nicht_im_audiothread_gerechnet
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+227 geprueft, 0 Fehler
+DSP-GOLDEN OK

@@ -1,0 +1,26 @@
+SONDE-015 Etappe 3, Nacharbeit 1 - Rotbeweis B-11 (M-25, R9)
+Stand:  2026-09-10 12:52
+Zusage: Die Programmuebernahme laeuft genau einmal je aeusserem verarbeite-Aufruf.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+          if ((size_t) numSamples > dryL.size()) { letzteKanaele = numKanaele; return; }   // nur bei freigegebenem Kern
+nachher:
+          blockrand (Pfad::committed); if ((size_t) numSamples > dryL.size()) { letzteKanaele = numKanaele; return; }
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+227 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  uebernahme_nur_am_aeusseren_blockrand (M-25, R9, B-11)  [Haken 3 mal, Uebernahmen im Aufruf 1, groesste Abweichung im Block 0.739278458, naechster Aufruf endet bei 0.106444]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: uebernahme_nur_am_aeusseren_blockrand
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+227 geprueft, 0 Fehler
+DSP-GOLDEN OK

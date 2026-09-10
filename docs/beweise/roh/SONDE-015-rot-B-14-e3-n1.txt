@@ -1,0 +1,33 @@
+SONDE-015 Etappe 3, Nacharbeit 1 - Rotbeweis B-14 (M-18)
+Stand:  2026-09-10 12:54
+Zusage: Die Kennlinie ist im Knie linear - gemessen an Auslenkung und Wirkung im Audiopfad.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspFilter.h
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+          const double u = ueber >= kKniebreiteDb ? 1.0 : ueber / kKniebreiteDb;
+nachher:
+          const double u = ueber >= kKniebreiteDb ? 1.0 : (ueber / kKniebreiteDb) * (ueber / kKniebreiteDb);
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+227 geprueft, 3 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  kennlinie_im_knie_wirkt_im_audiopfad (M-18, B-14)  [6 dB ueber Threshold: Auslenkung -2.2500 (soll -4.50), Wirkung 0.7500 dB (soll -1.50)]
+  FEHLER  attack_hold_release_als_sprungantwort_bei_vier_raten (M-26, B-15)  [soll A 20 H 30 R 50 ms +/- 1 ms; 44.1 kHz: A 31.38 H 30.20 R 27.57 ms; 48.0 kHz: A 31.33 H 30.17 R 27.67 ms; 96.0 kHz: A 31.25 H 30.08 R 27.75 ms; 192.0 kHz: A 31.25 H 30.08 R 27.71 ms; ]
+  FEHLER  input_trim_liegt_vor_der_bank_der_detektor_hoert_ihn (M-31, B-16)  [Eingang -33 dBFS, Trim +6 dB, Threshold -30: Auslenkung -0.7500 dB (soll -3)]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: kennlinie_im_knie_wirkt_im_audiopfad
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt):
+  ok      plateau_wirkt_zusaetzlich_zu_gain_db_im_audiopfad (M-18, B-14)  [24 dB ueber Threshold: Auslenkung -9.0000, Wirkung -6.0000 dB (soll -6.00)]
+
+Hinweis: B-15 und B-16a benutzen das lineare Knie als Messinstrument (1 dB Leistung = 1 dB Auslenkung); dass sie unter derselben Mutation mitfallen, folgt aus ihrem deklarierten Messaufbau und ist kein zweiter Befund.
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+227 geprueft, 0 Fehler
+DSP-GOLDEN OK

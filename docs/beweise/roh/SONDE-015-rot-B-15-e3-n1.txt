@@ -1,0 +1,27 @@
+SONDE-015 Etappe 3, Nacharbeit 1 - Rotbeweis B-15 (M-26)
+Stand:  2026-09-10 12:54
+Zusage: Attack und Release werden je Samplerate aus Millisekunden umgerechnet.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspFilter.h
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+          return std::exp (-1.0 / (samplerate * tau));
+nachher:
+          return std::exp (-1.0 / (48000.0 * tau));
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+227 geprueft, 2 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  attack_hold_release_als_sprungantwort_bei_vier_raten (M-26, B-15)  [soll A 20 H 30 R 50 ms +/- 1 ms; 44.1 kHz: A 22.13 H 30.20 R 54.24 ms; 48.0 kHz: A 20.33 H 30.17 R 49.83 ms; 96.0 kHz: A 10.33 H 30.08 R 24.92 ms; 192.0 kHz: A 5.38 H 29.92 R 12.46 ms; ]
+  FEHLER  dieselbe_ms_angabe_ergibt_bei_jeder_rate_dieselbe_zeit (M-26, B-15)  [Spanne je Stufe ueber vier Raten <= 1 ms]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: attack_hold_release_als_sprungantwort_bei_vier_raten
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+227 geprueft, 0 Fehler
+DSP-GOLDEN OK

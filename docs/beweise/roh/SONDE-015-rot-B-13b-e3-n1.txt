@@ -1,0 +1,27 @@
+SONDE-015 Etappe 3, Nacharbeit 1 - Rotbeweis B-13b (M-47)
+Stand:  2026-09-10 12:53
+Zusage: Im Kern gibt es keine Sperre am Wrapper vorbei (Vollstaendigkeit, Textriegel).
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+      namespace param = nakama::parameter;
+nachher:
+      namespace param = nakama::parameter;
+      static std::atomic_flag nakamaRotSpinSperre {};
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+227 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  keine_sperre_am_wrapper_vorbei_im_kern (M-47, B-13)  [9 Dateien unter C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp, Treffer: DspKern.cpp: atomic_flag; ]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: keine_sperre_am_wrapper_vorbei_im_kern
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+227 geprueft, 0 Fehler
+DSP-GOLDEN OK

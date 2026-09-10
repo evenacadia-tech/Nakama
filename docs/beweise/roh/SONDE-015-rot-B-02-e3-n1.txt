@@ -1,0 +1,35 @@
+SONDE-015 Etappe 3, Nacharbeit 1 - Rotbeweis B-02 (M-19, U15)
+Stand:  2026-09-10 12:50
+Zusage: Die Ruheantwort des dynamischen High-Shelf ist die des statischen Zustands (Mischterm k*(1-A)*A).
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspSvf.h
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+          c.m1 = k * (1.0 - A) * A;
+nachher:
+          c.m1 = k * (A - 1.0) * A;
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+227 geprueft, 9 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @44100  [typisch 5.2244 dB, Rand 0.0114 dB, 243 Stellen]
+  FEHLER  dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) -12 dB @44100  [typisch 47.2283 dB, Rand 0.0103 dB, 243 Stellen]
+  FEHLER  dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @48000  [typisch 5.2244 dB, Rand 0.0114 dB, 244 Stellen]
+  FEHLER  dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) -12 dB @48000  [typisch 51.6368 dB, Rand 0.0248 dB, 244 Stellen]
+  FEHLER  dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @96000  [typisch 5.2245 dB, Rand 0.0260 dB, 244 Stellen]
+  FEHLER  dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) -12 dB @96000  [typisch 33.9541 dB, Rand 0.1500 dB, 244 Stellen]
+  FEHLER  dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @192000  [typisch 5.2245 dB, Rand 0.0332 dB, 244 Stellen]
+  FEHLER  dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) -12 dB @192000  [typisch 32.1756 dB, Rand 0.1933 dB, 244 Stellen]
+  FEHLER  dynamischer_high_shelf_bei_minus_24_db_gegen_rbj (M-19, U15, B-2)  [250 Hz: -0.363 gegen -0.259 dB; 1000 Hz: -13.908 gegen -12.000 dB; 4000 Hz: -25.560 gegen -23.761 dB; ]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: dynamisches_high_shelf_ruhe_gegen_rbj
+  erwartet: dynamischer_high_shelf_bei_minus_24_db_gegen_rbj
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+227 geprueft, 0 Fehler
+DSP-GOLDEN OK

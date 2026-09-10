@@ -1,0 +1,26 @@
+SONDE-015 Etappe 3, Nacharbeit 1 - Rotbeweis B-09 (M-27, R14)
+Stand:  2026-09-10 12:52
+Zusage: Die Auslenkungen liegen je Pfad getrennt; der Candidate nullt den Committed-Wert nicht.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+                  z.auslenkungen[(size_t) i].store (0.0, std::memory_order_relaxed);
+nachher:
+                  pfade[0].auslenkungen[(size_t) i].store (0.0, std::memory_order_relaxed);
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+227 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  auslenkungen_liegen_je_pfad_getrennt (M-27, R14, B-9)  [Committed bei freiem Candidate-Slot 0.0000 dB; mit Candidate-Range -12: Committed -3.0000 dB, Candidate -12.0000 dB]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: auslenkungen_liegen_je_pfad_getrennt
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+227 geprueft, 0 Fehler
+DSP-GOLDEN OK

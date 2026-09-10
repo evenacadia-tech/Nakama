@@ -1,0 +1,26 @@
+SONDE-015 Etappe 3, Nacharbeit 1 - Rotbeweis B-17 (M-45)
+Stand:  2026-09-10 12:55
+Zusage: Ein ACK-Ueberlauf setzt die reclaim_pending_mask und haelt den Slot bis zur Bestaetigung.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspBankPool.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+              reclaimMaske.fetch_or ((std::uint64_t) (1ull << slot), std::memory_order_acq_rel);
+nachher:
+              // reclaimMaske.fetch_or ((std::uint64_t) (1ull << slot), std::memory_order_acq_rel);
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+227 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  erzwungener_ueberlauf_verriegelt_den_slot_bis_zur_bestaetigung (M-45, B-17)  [verriegelt=nein, geerntet=2, haelt=ja, bestaetigt=nein, danach frei=nein]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: erzwungener_ueberlauf_verriegelt_den_slot_bis_zur_bestaetigung
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+227 geprueft, 0 Fehler
+DSP-GOLDEN OK

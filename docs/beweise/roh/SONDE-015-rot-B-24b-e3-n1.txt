@@ -1,0 +1,35 @@
+SONDE-015 Etappe 3, Nacharbeit 1 - Rotbeweis B-24b (M-10, R15 Feinheit 3)
+Stand:  2026-09-10 12:58
+Zusage: Der schmale Bell (Q 12, 1 kHz) trifft auch am exakten Scheitel die analytische Antwort.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspFilter.h
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+      inline Biquad entwurfBell (double samplerate, double freqHz, double q, double gainDb) noexcept
+      {
+          const double A     = std::pow (10.0, gainDb / 40.0);
+nachher:
+      inline Biquad entwurfBell (double samplerate, double freqHz, double q, double gainDb) noexcept
+      {
+          const double A     = std::pow (10.0, (gainDb + (q >= 12.0 ? 0.11 : 0.0)) / 40.0);
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+227 geprueft, 4 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  bell_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0362 dB bei 931.6 Hz, Rand 0.1100 dB, 241 Stellen]
+  FEHLER  bell_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0362 dB bei 931.6 Hz, Rand 0.1100 dB, 242 Stellen]
+  FEHLER  bell_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0363 dB bei 931.6 Hz, Rand 0.1100 dB, 242 Stellen]
+  FEHLER  bell_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0363 dB bei 931.6 Hz, Rand 0.1100 dB, 242 Stellen]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: bell_gegen_analytische_antwort
+
+Hinweis: +0,11 dB auf den Gain nur bei Q >= 12: am 1/24-Oktav-Gitter allein bliebe das Golden gruen (typisch 0,036 dB, Rand 0,093 dB); nur die exakte Mittenfrequenz reisst 0,1 dB.
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+227 geprueft, 0 Fehler
+DSP-GOLDEN OK

@@ -1,0 +1,27 @@
+SONDE-015 Etappe 3, Nacharbeit 1 - Rotbeweis B-07 (§44.2)
+Stand:  2026-09-10 12:51
+Zusage: Ein Candidate-Wechsel blendet von der bisherigen Candidate-Bank, nicht vom Eingang.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+              if (z.quelle >= 0 && ! istPassthrough (z.quelle))
+nachher:
+              if (p == Pfad::committed && z.quelle >= 0 && ! istPassthrough (z.quelle))
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+227 geprueft, 2 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  candidate_wechsel_blendet_aus_der_bisherigen_candidate_bank (§44.2, B-7)  [dieselbe Kurve: max Sprung 0.5455149 (aus Dry waeren es 0.5455); andere Kurve: 0.5455149 gegen Fadeschritt 0.0021309]
+  FEHLER  candidate_ende_blendet_aus_und_gibt_beide_baenke_frei (M-46, B-8)  [geerntet 2, belegt 1, Candidate-Slots -1/-1, max Sprung 0.1935560 gegen Fadeschritt 0.0019224, danach gleich Processed: ja]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: candidate_wechsel_blendet_aus_der_bisherigen_candidate_bank
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+227 geprueft, 0 Fehler
+DSP-GOLDEN OK

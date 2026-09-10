@@ -1,0 +1,31 @@
+SONDE-015 Etappe 3, Nacharbeit 1 - Rotbeweis B-19a (M-30)
+Stand:  2026-09-10 12:56
+Zusage: Bei width 1,0 und mono_bass 0 wird die M/S-Stufe nicht gerechnet (Unity-Kurzschluss).
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+          if (r.width.ruhtBei (1.0) && ! monoBass)
+nachher:
+          if (false && r.width.ruhtBei (1.0) && ! monoBass)
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+227 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  width_eins_rechnet_die_ms_stufe_nicht (M-30, B-19)  [M/S-Laeufe=14]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: width_eins_rechnet_die_ms_stufe_nicht
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt):
+  ok      width_eins_ist_bitidentisch (M-30)  [Ein- und Ausgang bitgleich ueber 10 Bloecke]
+
+Hinweis: Die Bitgleichheit bei width 1,0 haelt in double auch ohne Kurzschluss - genau deshalb ist der Kurzschluss eine eigene Zusage mit eigenem Zaehler (Nebenbefund zur Rotbeweisspalte von M-30).
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+227 geprueft, 0 Fehler
+DSP-GOLDEN OK

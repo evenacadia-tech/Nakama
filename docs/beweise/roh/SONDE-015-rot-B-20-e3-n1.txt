@@ -1,0 +1,26 @@
+SONDE-015 Etappe 3, Nacharbeit 1 - Rotbeweis B-20 (M-49)
+Stand:  2026-09-10 12:56
+Zusage: Ein nicht-endlicher Filterzustand wird am Blockrand genullt und gezaehlt.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+              if (! z.istEndlich())
+nachher:
+              if (false && ! z.istEndlich())
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+227 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  nichtendlicher_filterzustand_wird_am_blockrand_geheilt (M-49, B-20)  [geheilt +0, Eingangszaehler +0, Ausgang endlich: nein]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: nichtendlicher_filterzustand_wird_am_blockrand_geheilt
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+227 geprueft, 0 Fehler
+DSP-GOLDEN OK

@@ -1,0 +1,28 @@
+SONDE-015 Etappe 3, Nacharbeit 1 - Rotbeweis B-06 (§3.0)
+Stand:  2026-09-10 12:51
+Zusage: Der Candidate-Pfad fuehrt eigene Rampen aus seinem Programm.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+          auto& r = z.rampen;
+nachher:
+          auto& r = pfade[0].rampen;
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+227 geprueft, 2 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  candidate_fuehrt_eigene_rampen (§3.0, B-6)  [Candidate 0.250000 gegen 0.498816, Committed 0.250000]
+  FEHLER  candidate_auto_gain_aus_eigener_kurve (§3.0, B-6)  [Candidate -5.9970 dB, Committed 0.0000 dB, Candidate-Tap bei DC 0.250000 gegen 0.125340]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: candidate_fuehrt_eigene_rampen
+  erwartet: candidate_auto_gain_aus_eigener_kurve
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+227 geprueft, 0 Fehler
+DSP-GOLDEN OK

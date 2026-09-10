@@ -1,0 +1,29 @@
+SONDE-015 Etappe 3, Nacharbeit 1 - Rotbeweis B-03 (M-05, §3.0)
+Stand:  2026-09-10 12:50
+Zusage: EQ-aus und Hard-Bypass verlassen den Pfad vor der Hoermatrix, unabhaengig von ihrer Auswahl.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+          const bool committedRuht = nachPass && (zc.uebergang == Uebergang::keiner || vonPass);
+nachher:
+          const bool committedRuht = nachPass && (zc.uebergang == Uebergang::keiner || vonPass) && (wirksam == Hoermatrix::processed || wirksam == Hoermatrix::dry);
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+227 geprueft, 4 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  nach_dem_fade_schreibt_keine_hoermatrix_ein_sample (M-05, B-3): delta + eq_enabled aus  [Wachmarke und Signal bitgleich ueber 4 Bloecke]
+  FEHLER  nach_dem_fade_schreibt_keine_hoermatrix_ein_sample (M-05, B-3): delta + hard-bypass  [Wachmarke und Signal bitgleich ueber 4 Bloecke]
+  FEHLER  nach_dem_fade_schreibt_keine_hoermatrix_ein_sample (M-05, B-3): candidate + eq_enabled aus  [Wachmarke und Signal bitgleich ueber 4 Bloecke]
+  FEHLER  nach_dem_fade_schreibt_keine_hoermatrix_ein_sample (M-05, B-3): candidate + hard-bypass  [Wachmarke und Signal bitgleich ueber 4 Bloecke]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: nach_dem_fade_schreibt_keine_hoermatrix_ein_sample
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+227 geprueft, 0 Fehler
+DSP-GOLDEN OK

@@ -1,0 +1,26 @@
+SONDE-015 Etappe 3, Nacharbeit 1 - Rotbeweis B-13a (M-47)
+Stand:  2026-09-10 12:53
+Zusage: Der Sperrwrapper meldet jede Sperrnahme an den Sperrzaehler (Lebendigkeit).
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspRtWache.h
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+                  RtWache::meldeSperre();
+nachher:
+                  // RtWache::meldeSperre();
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+227 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  sperrzaehler_sieht_eine_sperre_im_audiopfad (M-47, B-13)  [ausserhalb 0, im Audiopfad 0]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: sperrzaehler_sieht_eine_sperre_im_audiopfad
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+227 geprueft, 0 Fehler
+DSP-GOLDEN OK

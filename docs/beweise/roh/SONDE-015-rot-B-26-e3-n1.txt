@@ -1,0 +1,21 @@
+SONDE-015 Etappe 3, Nacharbeit 1 - Nachweis B-26 (M-116)
+Stand:  2026-09-10 12:38
+Zusage: Die Runner-Behauptung zu B6 sagt nur, was der Test misst (Pruefliste E, M-116, §4.8).
+Bein:   keins - M-116 misst laut Testspalte mit einem git grep auf den Kernbegriff im Rundenabschnitt.
+Datei:  tools/beweise.ps1 (Eintrag B6)
+
+--- VORHER (Basis-SHA bc76e98c): die Behauptung nennt fuer Mix 0 keinen Output-Trim und behauptet Schreibverzicht ---
+$ git grep -n -o "Ausgeschaltet, hard-bypassed und bei Mix 0 wird kein Sample geschrieben (bitgleich)" bc76e98c -- tools/beweise.ps1
+bc76e98c:tools/beweise.ps1:688:Ausgeschaltet, hard-bypassed und bei Mix 0 wird kein Sample geschrieben (bitgleich)
+
+--- NACHHER (Arbeitsstand dieser Runde) ---
+$ grep -n -o "Ausgeschaltet und hard-bypassed wird bei jeder Hoermatrix-Auswahl kein Sample geschrieben (bitgleich); bei Mix 0 mit Output-Trim 0 dB ist der Ausgang wertgleich zum Eingang" tools/beweise.ps1
+688:Ausgeschaltet und hard-bypassed wird bei jeder Hoermatrix-Auswahl kein Sample geschrieben (bitgleich); bei Mix 0 mit Output-Trim 0 dB ist der Ausgang wertgleich zum Eingang
+
+$ grep -c "bei Mix 0 wird kein Sample geschrieben" tools/beweise.ps1   (die alte Behauptung ist weg)
+0
+
+--- WAS DER TEST DAZU MISST ---
+mix_null_ist_bitidentisch (M-33): Mix 0, Output-Trim 0 dB, +9 dB Input-Trim und +12-dB-Bell - Samplegleichheit, kein Schreibverbot.
+output_trim_liegt_hinter_mix (M-31, B-16): Mix 0 mit Output-Trim +6 dB veraendert den Ausgang um genau 10^(6/20).
+nach_dem_fade_schreibt_keine_hoermatrix_ein_sample (M-05, B-3): der Schreibverzicht ist nur fuer EQ-aus und Hard-Bypass behauptet - und dort mit einer Wachmarke gemessen.

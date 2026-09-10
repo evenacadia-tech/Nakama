@@ -1,0 +1,27 @@
+SONDE-015 Etappe 3, Nacharbeit 1 - Rotbeweis B-12 (R9 Feinheit 2)
+Stand:  2026-09-10 12:53
+Zusage: zuruecksetzen beruehrt den Generationszaehler nicht.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspBankPool.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+          // B-12: `generationsZaehler` bleibt stehen - Lebenszeit, nicht Ressource.
+nachher:
+          generationsZaehler.store (0, std::memory_order_relaxed);
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+227 geprueft, 2 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  generation_waechst_ueber_den_neuanlauf (R9 Feinheit 2, B-12)  [vor dem Neuanlauf 1, danach 1]
+  FEHLER  ack_einer_alten_generation_gibt_keine_bank_frei (B-12)  [alter ACK geerntet: 1 frei, eigener ACK: 0 frei]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: generation_waechst_ueber_den_neuanlauf
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+227 geprueft, 0 Fehler
+DSP-GOLDEN OK

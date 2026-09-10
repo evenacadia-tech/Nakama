@@ -1,0 +1,54 @@
+SONDE-015 Etappe 3, Nacharbeit 1 - Rotbeweis B-24a (R15 Feinheit 3)
+Stand:  2026-09-10 12:57
+Zusage: Das Golden-Gitter traegt je Pruefling Eck-/Mittenfrequenz und bei Shelves f/4 und 4f.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/tests/DspGoldenTestMain.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+          dazu (f0);
+          if (typ == Filtertyp::lowShelf || typ == Filtertyp::highShelf) { dazu (f0 / 4.0); dazu (f0 * 4.0); }
+nachher:
+          (void) typ; (void) f0; (void) dazu;
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+227 geprueft, 28 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @44100  [Eck-/Mittenfrequenz]
+  FEHLER  gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @44100  [Eck-/Mittenfrequenz]
+  FEHLER  gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_shelf 200 Hz @44100  [Eck-/Mittenfrequenz und f/4, 4f]
+  FEHLER  gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_shelf 5000 Hz @44100  [Eck-/Mittenfrequenz und f/4, 4f]
+  FEHLER  gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) notch 1000 Hz @44100  [Eck-/Mittenfrequenz]
+  FEHLER  gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_cut 100 Hz @44100  [Eck-/Mittenfrequenz]
+  FEHLER  gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_cut 8000 Hz @44100  [Eck-/Mittenfrequenz]
+  FEHLER  gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @48000  [Eck-/Mittenfrequenz]
+  FEHLER  gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @48000  [Eck-/Mittenfrequenz]
+  FEHLER  gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_shelf 200 Hz @48000  [Eck-/Mittenfrequenz und f/4, 4f]
+  FEHLER  gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_shelf 5000 Hz @48000  [Eck-/Mittenfrequenz und f/4, 4f]
+  FEHLER  gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) notch 1000 Hz @48000  [Eck-/Mittenfrequenz]
+  FEHLER  gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_cut 100 Hz @48000  [Eck-/Mittenfrequenz]
+  FEHLER  gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_cut 8000 Hz @48000  [Eck-/Mittenfrequenz]
+  FEHLER  gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @96000  [Eck-/Mittenfrequenz]
+  FEHLER  gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @96000  [Eck-/Mittenfrequenz]
+  FEHLER  gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_shelf 200 Hz @96000  [Eck-/Mittenfrequenz und f/4, 4f]
+  FEHLER  gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_shelf 5000 Hz @96000  [Eck-/Mittenfrequenz und f/4, 4f]
+  FEHLER  gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) notch 1000 Hz @96000  [Eck-/Mittenfrequenz]
+  FEHLER  gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_cut 100 Hz @96000  [Eck-/Mittenfrequenz]
+  FEHLER  gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_cut 8000 Hz @96000  [Eck-/Mittenfrequenz]
+  FEHLER  gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @192000  [Eck-/Mittenfrequenz]
+  FEHLER  gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @192000  [Eck-/Mittenfrequenz]
+  FEHLER  gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_shelf 200 Hz @192000  [Eck-/Mittenfrequenz und f/4, 4f]
+  FEHLER  gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_shelf 5000 Hz @192000  [Eck-/Mittenfrequenz und f/4, 4f]
+  FEHLER  gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) notch 1000 Hz @192000  [Eck-/Mittenfrequenz]
+  FEHLER  gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_cut 100 Hz @192000  [Eck-/Mittenfrequenz]
+  FEHLER  gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_cut 8000 Hz @192000  [Eck-/Mittenfrequenz]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: gitter_traegt_die_prueflingspunkte
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+227 geprueft, 0 Fehler
+DSP-GOLDEN OK

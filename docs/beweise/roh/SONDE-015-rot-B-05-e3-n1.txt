@@ -1,0 +1,27 @@
+SONDE-015 Etappe 3, Nacharbeit 1 - Rotbeweis B-05 (M-03, M-06)
+Stand:  2026-09-10 12:51
+Zusage: Ein Wechsel waehrend eines laufenden Uebergangs wartet dessen Ende ab (E-17) - kein Quellsprung.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+          if (z.uebergang != Uebergang::keiner) return;
+nachher:
+          // Mutation B-5: der laufende Uebergang wird nicht abgewartet
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+227 geprueft, 2 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  zweiter_wechsel_im_laufenden_fade_springt_nicht (M-03, M-06, B-5)  [max Sprung 0.4112671 gegen Fadeschritt 0.0021309]
+  FEHLER  candidate_ende_blendet_aus_und_gibt_beide_baenke_frei (M-46, B-8)  [geerntet 1, belegt 2, Candidate-Slots -1/-1, max Sprung 0.0975341 gegen Fadeschritt 0.0019224, danach gleich Processed: ja]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: zweiter_wechsel_im_laufenden_fade_springt_nicht
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+227 geprueft, 0 Fehler
+DSP-GOLDEN OK

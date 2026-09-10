@@ -1,0 +1,27 @@
+SONDE-015 Etappe 3, Nacharbeit 1 - Rotbeweis B-22 (M-48)
+Stand:  2026-09-10 12:57
+Zusage: Ein uebergrosser Block laeuft vollstaendig durch - verworfen wird nur der Tap.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+                  verarbeiteStueck (teil, numKanaele, n);
+nachher:
+                  if (versatz + n < numSamples) verarbeiteStueck (teil, numKanaele, n);
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+227 geprueft, 2 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  der_uebergrosse_block_gleicht_sample_exakt_dem_lauf_ohne_ueberlast (M-48, B-22)  [alle 1024 Samples beider Kanaele bitgleich zum Referenzlauf in 4 x 256]
+  FEHLER  uebernahme_nur_am_aeusseren_blockrand (M-25, R9, B-11)  [Haken 3 mal, Uebernahmen im Aufruf 0, groesste Abweichung im Block 0.545514882, naechster Aufruf endet bei 0.300000]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: der_uebergrosse_block_gleicht_sample_exakt_dem_lauf_ohne_ueberlast
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+227 geprueft, 0 Fehler
+DSP-GOLDEN OK

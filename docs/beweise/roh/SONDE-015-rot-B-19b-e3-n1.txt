@@ -1,0 +1,30 @@
+SONDE-015 Etappe 3, Nacharbeit 1 - Rotbeweis B-19b (M-30)
+Stand:  2026-09-10 12:56
+Zusage: Die M/S-Stufe rechnet in double und ist bei width 1,0 bitgenau reversibel.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+                  const double m = (L[i] + R[i]) * 0.5;
+nachher:
+                  const double m = (double) ((float) L[i] + (float) R[i]) * 0.5;
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+227 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  ms_stufe_ist_bei_width_eins_bitgenau_reversibel (M-30, B-19)  [Stufe lief, 71 Samples waeren in float anders, Samples ab Rampenende bitgleich]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: ms_stufe_ist_bei_width_eins_bitgenau_reversibel
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt):
+  ok      width_eins_rechnet_die_ms_stufe_nicht (M-30, B-19)  [M/S-Laeufe=0]
+  ok      width_eins_ist_bitidentisch (M-30)  [Ein- und Ausgang bitgleich ueber 10 Bloecke]
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+227 geprueft, 0 Fehler
+DSP-GOLDEN OK

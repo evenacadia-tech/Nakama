@@ -1,0 +1,30 @@
+SONDE-015 Etappe 3, Nacharbeit 1 - Rotbeweis B-04 (M-17, R8)
+Stand:  2026-09-10 12:51
+Zusage: Bandwerte mit wechsel = rampe laufen ueber eine Rampe der Koeffizienten, ohne Zustandsreset.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+                  const Biquad f = mitte ? mische (qb->statisch, b.statisch, t) : b.statisch;
+nachher:
+                  const Biquad f = b.statisch;
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+227 geprueft, 3 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  bandwert_gain_db_rampt_ohne_zustandsreset (M-17, R8, B-4)  [groesstes Residuum gegen die stetige Rampe 0.540543760171 (-100 dBFS = 1e-5)]
+  FEHLER  bandwert_freq_hz_rampt_ohne_zustandsreset (M-17, R8, B-4)  [groesstes Residuum gegen die stetige Rampe 0.114575303421 (-100 dBFS = 1e-5)]
+  FEHLER  bandwert_q_rampt_ohne_zustandsreset (M-17, R8, B-4)  [groesstes Residuum gegen die stetige Rampe 0.061657828829 (-100 dBFS = 1e-5)]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: bandwert_gain_db_rampt_ohne_zustandsreset
+  erwartet: bandwert_freq_hz_rampt_ohne_zustandsreset
+  erwartet: bandwert_q_rampt_ohne_zustandsreset
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+227 geprueft, 0 Fehler
+DSP-GOLDEN OK

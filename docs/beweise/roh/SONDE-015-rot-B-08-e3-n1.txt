@@ -1,0 +1,26 @@
+SONDE-015 Etappe 3, Nacharbeit 1 - Rotbeweis B-08 (M-46)
+Stand:  2026-09-10 12:52
+Zusage: beendeCandidate fuehrt Fade und Reclaim ueber den regulaeren Weg aus.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+          baenke.publiziereEnde (Pfad::candidate);
+nachher:
+          // Mutation B-8: nur das Flag wird geloescht
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+227 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  candidate_ende_blendet_aus_und_gibt_beide_baenke_frei (M-46, B-8)  [geerntet 1, belegt 2, Candidate-Slots 2/-1, max Sprung 0.0022975 gegen Fadeschritt 0.0019224, danach gleich Processed: ja]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: candidate_ende_blendet_aus_und_gibt_beide_baenke_frei
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+227 geprueft, 0 Fehler
+DSP-GOLDEN OK

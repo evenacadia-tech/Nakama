@@ -1,0 +1,30 @@
+SONDE-015 Etappe 3, Nacharbeit 1 - Rotbeweis B-10 (M-07)
+Stand:  2026-09-10 12:52
+Zusage: Ein Zustand mit eq_enabled = false reserviert und publiziert keine Bank.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+          if (! satz.werte[(size_t) param::kIndexEqEnabled].b)
+nachher:
+          if (false && ! satz.werte[(size_t) param::kIndexEqEnabled].b)
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+227 geprueft, 5 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  ausgeschaltet ist keine Bank belegt bei 44100 (M-01, M-07, B-10)  [belegt=1]
+  FEHLER  ausgeschaltet ist keine Bank belegt bei 48000 (M-01, M-07, B-10)  [belegt=1]
+  FEHLER  ausgeschaltet ist keine Bank belegt bei 96000 (M-01, M-07, B-10)  [belegt=1]
+  FEHLER  ausgeschaltet ist keine Bank belegt bei 192000 (M-01, M-07, B-10)  [belegt=1]
+  FEHLER  ausschalten_gibt_jede_bank_frei (M-07, B-10)  [eingeschaltet belegt=1, nach aus/Fade/Pflege belegt=1, audio_active=1]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: ausschalten_gibt_jede_bank_frei
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+227 geprueft, 0 Fehler
+DSP-GOLDEN OK

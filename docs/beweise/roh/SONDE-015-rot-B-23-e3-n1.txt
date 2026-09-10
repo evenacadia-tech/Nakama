@@ -1,0 +1,26 @@
+SONDE-015 Etappe 3, Nacharbeit 1 - Rotbeweis B-23 (M-54)
+Stand:  2026-09-10 12:57
+Zusage: Delta ist (Processed - Dry) mit festem Abgleich +12 dB.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+          const double makeup = dbInLinear (kDeltaMakeupDb);
+nachher:
+          const double makeup = 0.0;
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+227 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  delta_ist_differenz_mit_festem_abgleich (M-54, B-23)  [Verhaeltnis bei 0,1 und 0,5: 0.000000 / 0.000000 gegen Soll 3.962211]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: delta_ist_differenz_mit_festem_abgleich
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+227 geprueft, 0 Fehler
+DSP-GOLDEN OK

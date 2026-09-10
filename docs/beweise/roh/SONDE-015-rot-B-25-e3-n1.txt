@@ -1,0 +1,26 @@
+SONDE-015 Etappe 3, Nacharbeit 1 - Rotbeweis B-25 (M-47, M-41)
+Stand:  2026-09-10 12:59
+Zusage: Auch die Blockranduebernahme alloziert nicht - gemessen im Lauf mit Programmwechseln.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+          zaehlerUebernahmen.fetch_add (1, std::memory_order_relaxed);
+nachher:
+          zaehlerUebernahmen.fetch_add (1, std::memory_order_relaxed); delete new int (0);
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+227 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  null_allokationen_im_callback_samt_programmwechseln (M-41, M-47, B-25)  [4000 Bloecke, 4179358 Samples, 71 Blockrand-Uebernahmen, 50 Baenke geerntet, busy_retry 0, Testzaehler 71, Kernzaehler 71]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: null_allokationen_im_callback_samt_programmwechseln
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+227 geprueft, 0 Fehler
+DSP-GOLDEN OK

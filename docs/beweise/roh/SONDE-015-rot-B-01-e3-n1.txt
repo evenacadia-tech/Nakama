@@ -1,0 +1,26 @@
+SONDE-015 Etappe 3, Nacharbeit 1 - Rotbeweis B-01 (M-42, M-122)
+Stand:  2026-09-10 12:49
+Zusage: Der Audiothread uebernimmt einen Slot nur in genau der publizierten Generation.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspBankPool.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+          if (! wechsle (slot, zustandsWort (g, BankZustand::bereit), zustandsWort (g, BankZustand::audioAktiv)))
+nachher:
+          if (! wechsle (slot, zustandsWort (generation (slot), BankZustand::bereit), zustandsWort (generation (slot), BankZustand::audioAktiv)))
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+227 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  uebernahme_nur_in_der_publizierten_generation (M-42, B-1)  [verdraengt 0, neu belegt 0, Uebernahme mit alter Beobachtung 0, Committed 1, Candidate -1]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: uebernahme_nur_in_der_publizierten_generation
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+227 geprueft, 0 Fehler
+DSP-GOLDEN OK

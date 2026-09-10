@@ -1,0 +1,62 @@
+SONDE-015 Etappe 3, Nacharbeit 1 - Rotbeweis B-16 (M-31)
+Stand:  2026-09-10 12:55
+Zusage: Der Input-Trim liegt vor der Bank (Reihenfolge, nicht nur Gesamtgain).
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTATION (eine Verschiebung, ein zusammenhaengender Block) - Teil 1 von 2 ---
+vorher:
+          // --- Input-Trim ------------------------------------------------------
+          // M-31: 0 dB ist ein Unity-KURZSCHLUSS. Die Ruhepruefung fragt den
+          // Rampenzustand, nicht nur den Zielwert.
+          if (r.input.ruhtBei (1.0))
+          {
+              for (int i = 0; i < numSamples; ++i) r.input.tick();
+          }
+          else
+          {
+              for (int i = 0; i < numSamples; ++i)
+              {
+                  const double g = r.input.tick();
+                  L[i] *= g; R[i] *= g;
+              }
+          }
+nachher:
+
+
+--- MUTATION (eine Verschiebung, ein zusammenhaengender Block) - Teil 2 von 2 ---
+vorher:
+          // --- Auto-Gain, Mix, Output-Trim -------------------------------------
+nachher:
+          // Mutation B-16: der Input-Trim HINTER der Bank
+          if (r.input.ruhtBei (1.0))
+          {
+              for (int i = 0; i < numSamples; ++i) r.input.tick();
+          }
+          else
+          {
+              for (int i = 0; i < numSamples; ++i)
+              {
+                  const double g = r.input.tick();
+                  L[i] *= g; R[i] *= g;
+              }
+          }
+          // --- Auto-Gain, Mix, Output-Trim -------------------------------------
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+227 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  input_trim_liegt_vor_der_bank_der_detektor_hoert_ihn (M-31, B-16)  [Eingang -33 dBFS, Trim +6 dB, Threshold -30: Auslenkung 0.0000 dB (soll -3)]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: input_trim_liegt_vor_der_bank_der_detektor_hoert_ihn
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt):
+  ok      input_trim_wirkt_mit_seinem_gesamtgain (M-31)  [0.498816 gegen 0.498816]
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+227 geprueft, 0 Fehler
+DSP-GOLDEN OK

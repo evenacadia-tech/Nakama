@@ -1,0 +1,28 @@
+SONDE-015 Etappe 3, Nacharbeit 1 - Rotbeweis B-21 (M-113, R14)
+Stand:  2026-09-10 12:56
+Zusage: Eine nicht-endliche Auslenkung wird als exakt 0,0 gemeldet und gezaehlt.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+              gemeldet = 0.0;
+nachher:
+              gemeldet = 1.0;
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+227 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  nichtendliche_auslenkung_wird_null_und_gezaehlt (M-113, B-21)  [gemeldet 1.000000000000000, Zaehler +10 bei 10 Bloecken]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: nichtendliche_auslenkung_wird_null_und_gezaehlt
+
+Hinweis: Die Vorbedingung (ein NaN als Range der Kennlinie) stellt der Test selbst her; mutiert ist allein der Ersatzwert.
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+227 geprueft, 0 Fehler
+DSP-GOLDEN OK

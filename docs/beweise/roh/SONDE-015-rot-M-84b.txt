@@ -1,0 +1,39 @@
+SONDE-015 Etappe 4a - Rotbeweis M-84b
+Stand:  2026-09-10 21:28:03
+Zusage: Der Reload rekonstruiert denselben state_hash.
+Bein:   B7 EqCopTransactionTest
+Datei:  eq-copilot/plugin/state/NakamaTransaktion.cpp:254
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/state/NakamaTransaktion.cpp:254
+vorher:
+        committedHash = h;
+nachher:
+        // ROTBEWEIS M-84: committedHash = h; entfernt
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 21:28:03, mutierte Quelle 21:27:52, Binary juenger: ja
+Exitcode: 1
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 3 Fehler
+TRANSAKTION FEHLGESCHLAGEN
+
+Gefallene Pruefungen (3):
+  FEHLER  hash_kommt_aus_dem_bestandskanon (M-77): der Kern hasht jedes gueltige DTO-Fixture wie MANIFEST.json  [3/7]
+  FEHLER  prozessor_speichert_und_laedt_das_kind_dsp (M-89, Prozessorhaelfte): Revision, Belegung, Zonen, Undo-Ring und Cursor kommen an  [5895 Bytes]
+  FEHLER  reload_rekonstruiert_denselben_audioausgang (M-84): derselbe Hash und derselbe Ausgang (hier bitgleich)  [153600 Samples]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: reload_rekonstruiert_denselben_audioausgang
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/state/NakamaTransaktion.cpp bytegleich zurueckgespielt: ja (SHA-256 39CE1F8D046695A4798AD51772937CADD8534457DEB3B5B57874389E25FB6317)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 21:33:26 (gemeinsamer Gruenlauf nach der bytegleichen Ruecknahme aller Mutationen dieses Laufs)
+Bau: Exit 0; Binary 21:33:25, juengste zurueckgespielte Quelle 21:33:11, Binary juenger: ja
+Exitcode: 0
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 0 Fehler
+TRANSAKTION OK
+Gruen nach Ruecknahme: JA

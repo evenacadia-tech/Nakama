@@ -1,0 +1,45 @@
+SONDE-015 Etappe 4a - Rotbeweis M-14
+Stand:  2026-09-10 21:29:51
+Zusage: Ein Wert ausserhalb seines Bereichs wird in S2 abgelehnt, bevor ein Programm entsteht, nicht geklemmt.
+Bein:   B7 EqCopTransactionTest
+Datei:  eq-copilot/plugin/state/NakamaTransaktion.cpp:440
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/state/NakamaTransaktion.cpp:440
+vorher:
+                    ok = param::validiere (a.satz, grund, wo);
+nachher:
+                    ok = true;   // ROTBEWEIS M-14: die Nutzlast wird in S2 nicht validiert
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 21:29:51, mutierte Quelle 21:29:46, Binary juenger: ja
+Exitcode: 1
+  FEHLER  zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 7 Fehler
+TRANSAKTION FEHLGESCHLAGEN
+
+Gefallene Pruefungen (7):
+  FEHLER  T3 ungueltige_nutzlast_faellt_und_wird_nicht_gemerkt  [fehler @S4 rev=1 nicht-memo grund=kandidat_ungueltig bereich @ v1.band.0.gain_db, r danach 1, nicht im Register | soll fehler @S2 r=1 nicht-memo]
+  FEHLER  T3 der Grund kommt aus dem DTO-Vertrag  [kandidat_ungueltig bereich @ v1.band.0.gain_db]
+  FEHLER  zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+  FEHLER  neunte_zone_wird_abgewiesen (M-73)  [fehler @S4 rev=1 nicht-memo grund=kandidat_ungueltig zone_anzahl @ schutz_zonen]
+  FEHLER  doppelte_zonen_id_wird_abgewiesen (M-73)  [fehler @S4 rev=1 nicht-memo grund=kandidat_ungueltig zone_doppelt @ schutz_zonen[1].id]
+  FEHLER  apply_mit_bereichsverletzung_wird_abgewiesen (M-14): abgelehnt, nicht geklemmt  [fehler @S4 rev=1 nicht-memo grund=kandidat_ungueltig bereich @ v1.band.0.gain_db / fehler @S4 rev=1 nicht-memo grund=kandidat_ungueltig nichtendlich @ v1.band.0.gain_db / fehler @S4 rev=1 nicht-memo grund=kandidat_ungueltig bereich @ v1.band.0.q]
+  FEHLER  channel_mode_ist_diskret_und_ungekoppelt (M-28)  [fehler @S4 rev=2 nicht-memo grund=kandidat_ungueltig enum @ v1.band.0.channel_mode]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: apply_mit_bereichsverletzung_wird_abgewiesen
+
+Hinweis: S4 prueft den Kandidaten noch einmal und weist dort ab; die Zeile misst den Ort S2 (T3: ungueltige Nutzlast ist ein S2-Fehler).
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/state/NakamaTransaktion.cpp bytegleich zurueckgespielt: ja (SHA-256 39CE1F8D046695A4798AD51772937CADD8534457DEB3B5B57874389E25FB6317)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 21:33:26 (gemeinsamer Gruenlauf nach der bytegleichen Ruecknahme aller Mutationen dieses Laufs)
+Bau: Exit 0; Binary 21:33:25, juengste zurueckgespielte Quelle 21:33:11, Binary juenger: ja
+Exitcode: 0
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 0 Fehler
+TRANSAKTION OK
+Gruen nach Ruecknahme: JA

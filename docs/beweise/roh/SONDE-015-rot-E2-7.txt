@@ -1,0 +1,41 @@
+SONDE-015 Etappe 4a - Rotbeweis E2-7
+Stand:  2026-09-10 21:31:17
+Zusage: Der Bericht fuehrt hoechstens eine Klemmung je Slot (E2-7): die R7-Klemmung aus dsp_klemmung, auch wenn die Frequenz desselben Slots gekappt ist.
+Bein:   B7 EqCopTransactionTest
+Datei:  eq-copilot/plugin/state/NakamaTransaktion.cpp:804
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/state/NakamaTransaktion.cpp:804
+vorher:
+                if (b.geklemmtSidechain)
+                    aus.klemmungen.push_back ({ praefix + "sidechain_source", "priority_sidechain", "internal" });
+nachher:
+                if (b.geklemmtSidechain)
+                    aus.klemmungen.push_back ({ praefix + "sidechain_source", "priority_sidechain", "internal" });
+                if (b.gekapptFreq)   // ROTBEWEIS E2-7: die Nyquist-Kappung als zweite Klemmung desselben Slots
+                    aus.klemmungen.push_back ({ praefix + "freq_hz", juce::String (c.werte[(size_t) param::indexBandV1 (slot, param::kFreqHz)].zahl), juce::String (b.freqHzWirksam) });
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 21:31:16, mutierte Quelle 21:31:06, Binary juenger: ja
+Exitcode: 1
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 1 Fehler
+TRANSAKTION FEHLGESCHLAGEN
+
+Gefallene Pruefungen (1):
+  FEHLER  klemmliste_erscheint_im_bericht (M-23, E2-7): geklemmt auf internal, persistent weiter priority_sidechain; ein Eintrag je Slot, obwohl die Frequenz zusaetzlich gekappt ist  [2 Klemmung(en)]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: klemmliste_erscheint_im_bericht
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/state/NakamaTransaktion.cpp bytegleich zurueckgespielt: ja (SHA-256 39CE1F8D046695A4798AD51772937CADD8534457DEB3B5B57874389E25FB6317)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 21:33:26 (gemeinsamer Gruenlauf nach der bytegleichen Ruecknahme aller Mutationen dieses Laufs)
+Bau: Exit 0; Binary 21:33:25, juengste zurueckgespielte Quelle 21:33:11, Binary juenger: ja
+Exitcode: 0
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 0 Fehler
+TRANSAKTION OK
+Gruen nach Ruecknahme: JA

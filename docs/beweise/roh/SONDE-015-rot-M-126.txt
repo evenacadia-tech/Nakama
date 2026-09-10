@@ -1,0 +1,45 @@
+SONDE-015 Etappe 4a - Rotbeweis M-126
+Stand:  2026-09-10 21:26:27
+Zusage: Undo, Redo und Preset-Laden sind Ganzzustands-Wiederherstellungen und passieren den Zonenriegel nicht (T16).
+Bein:   B7 EqCopTransactionTest
+Datei:  eq-copilot/plugin/state/NakamaTransaktion.cpp:487
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/state/NakamaTransaktion.cpp:487
+vorher:
+            if (! istGanzzustand (a.art))
+nachher:
+            if (true || ! istGanzzustand (a.art))   // ROTBEWEIS M-126/T16
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 21:26:27, mutierte Quelle 21:26:22, Binary juenger: ja
+Exitcode: 1
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 4 Fehler
+TRANSAKTION FEHLGESCHLAGEN
+
+Gefallene Pruefungen (4):
+  FEHLER  T16 undo_unter_einer_zone_wird_nicht_abgewiesen_sondern_meldet_verletzung  [user_schutz @S3 rev=3 nicht-memo, r danach 3, nicht im Register | soll commit @S8 r=4 memo]
+  FEHLER  T16 das Band liegt wieder da und gilt als verletzt (M-68)
+  FEHLER  preset_laden_in_eine_zone_wird_nicht_abgewiesen_sondern_meldet_verletzung (M-126, T16)  [user_schutz @S3 rev=1 nicht-memo]
+  FEHLER  redo_in_eine_zone_wird_nicht_abgewiesen_sondern_meldet_verletzung (M-126, T16)  [commit @S8 rev=3 memo]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: T16 undo_unter_einer_zone_wird_nicht_abgewiesen
+  erwartet: preset_laden_in_eine_zone_wird_nicht_abgewiesen
+  erwartet: redo_in_eine_zone_wird_nicht_abgewiesen
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt):
+  ok      band_in_zone_ziehen_wird_abgewiesen (M-67)  [user_schutz @S3 rev=1 nicht-memo]
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/state/NakamaTransaktion.cpp bytegleich zurueckgespielt: ja (SHA-256 39CE1F8D046695A4798AD51772937CADD8534457DEB3B5B57874389E25FB6317)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 21:33:26 (gemeinsamer Gruenlauf nach der bytegleichen Ruecknahme aller Mutationen dieses Laufs)
+Bau: Exit 0; Binary 21:33:25, juengste zurueckgespielte Quelle 21:33:11, Binary juenger: ja
+Exitcode: 0
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 0 Fehler
+TRANSAKTION OK
+Gruen nach Ruecknahme: JA

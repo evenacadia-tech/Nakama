@@ -1,0 +1,48 @@
+SONDE-015 Etappe 4a - Rotbeweis M-39
+Stand:  2026-09-10 21:30:14
+Zusage: Der Auto-Gain-Ausgleich ist kein Teil des state_hash.
+Bein:   B7 EqCopTransactionTest
+Datei:  eq-copilot/plugin/state/NakamaTransaktion.cpp:600
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/state/NakamaTransaktion.cpp:600
+vorher:
+            const bool ok = einspritzung != Stufe::s6
+                         && param::stateHash (kandidat, hex, grund)
+                         && ausHex (hex, kandidatHash);
+nachher:
+            auto mitAbgeleitet = kandidat;   // ROTBEWEIS M-39: ein samplerateabhaengiger Wert im gehashten DTO
+            mitAbgeleitet.werte[(size_t) param::indexVonId ("v1.global.output_trim_db")].zahl += std::round (fs / 48000.0);
+            const bool ok = einspritzung != Stufe::s6
+                         && param::stateHash (mitAbgeleitet, hex, grund)
+                         && ausHex (hex, kandidatHash);
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 21:30:13, mutierte Quelle 21:30:08, Binary juenger: ja
+Exitcode: 1
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 4 Fehler
+TRANSAKTION FEHLGESCHLAGEN
+
+Gefallene Pruefungen (4):
+  FEHLER  register_ist_nicht_teil_des_zustands: Speichern schreibt es nicht, der Ladestart leert es, Hash und Revision bleiben  [5745 Bytes]
+  FEHLER  auto_gain_ist_nicht_im_hash (M-39): derselbe Hash bei verschiedenem abgeleitetem Wert  [44,1 kHz -1.093124 dB, 96 kHz -0.815437 dB]
+  FEHLER  prozessor_speichert_und_laedt_das_kind_dsp (M-89, Prozessorhaelfte): Revision, Belegung, Zonen, Undo-Ring und Cursor kommen an  [5895 Bytes]
+  FEHLER  reload_rekonstruiert_denselben_audioausgang (M-84): derselbe Hash und derselbe Ausgang (hier bitgleich)  [153600 Samples]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: auto_gain_ist_nicht_im_hash
+
+Hinweis: Der Bruch legt einen abgeleiteten, samplerateabhaengigen Wert in das gehashte DTO - so, wie ein persistierter Auto-Gain-Ausgleich darin laege.
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/state/NakamaTransaktion.cpp bytegleich zurueckgespielt: ja (SHA-256 39CE1F8D046695A4798AD51772937CADD8534457DEB3B5B57874389E25FB6317)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 21:33:26 (gemeinsamer Gruenlauf nach der bytegleichen Ruecknahme aller Mutationen dieses Laufs)
+Bau: Exit 0; Binary 21:33:25, juengste zurueckgespielte Quelle 21:33:11, Binary juenger: ja
+Exitcode: 0
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 0 Fehler
+TRANSAKTION OK
+Gruen nach Ruecknahme: JA

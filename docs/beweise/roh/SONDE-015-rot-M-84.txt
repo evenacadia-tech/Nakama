@@ -1,0 +1,41 @@
+SONDE-015 Etappe 4a - Rotbeweis M-84
+Stand:  2026-09-10 21:36:13
+Zusage: Der Reload rekonstruiert denselben Audioausgang: die Vorbereitung publiziert den geladenen Zustand.
+Bein:   B7 EqCopTransactionTest
+Datei:  eq-copilot/plugin/sonde/SondeProcessor.cpp:240
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/sonde/SondeProcessor.cpp:240
+vorher:
+            dspAusfuehrung->vergissLetztePublikation();
+            publikationOffen = ! dspAusfuehrung->publiziereWirksam (transaktion->wirksam(), true);
+nachher:
+            dspAusfuehrung->vergissLetztePublikation();
+            publikationOffen = ! dspAusfuehrung->publiziereWirksam (nakama::parameter::DspSatz {}, true);   // ROTBEWEIS M-84
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 21:36:12, mutierte Quelle 21:36:04, Binary juenger: ja
+Exitcode: 1
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 3 Fehler
+TRANSAKTION FEHLGESCHLAGEN
+
+Gefallene Pruefungen (3):
+  FEHLER  bank_wird_erst_beim_ersten_block_aktiv (M-08): nach Laden und Vorbereitung keine aktive Bank, nach dem ersten Block genau eine  [vor 0, nach 0]
+  FEHLER  freigabe_und_vorbereitung_sind_ein_paar (E4-22): releaseResources gibt den Kern frei, ohne Vorbereitung unberuehrt, danach klingt derselbe bestaetigte Zustand  [51200 Samples]
+  FEHLER  reload_rekonstruiert_denselben_audioausgang (M-84): derselbe Hash und derselbe Ausgang (hier bitgleich)  [153600 Samples]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: reload_rekonstruiert_denselben_audioausgang
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/sonde/SondeProcessor.cpp bytegleich zurueckgespielt: ja (SHA-256 9DCE2A67FFD6BDF69370592F059721AD4835D3617FCAB915E767186581D9ABA0)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 21:38:44 (gemeinsamer Gruenlauf nach der bytegleichen Ruecknahme aller Mutationen dieses Laufs)
+Bau: Exit 0; Binary 21:38:43, juengste zurueckgespielte Quelle 21:38:27, Binary juenger: ja
+Exitcode: 0
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 0 Fehler
+TRANSAKTION OK
+Gruen nach Ruecknahme: JA

@@ -3,15 +3,15 @@
 | Merkmal | Wert |
 |---|---|
 | Ticket | S26–28, `SONDE-015` (Phase P6), Leitungsname „Die Klangregelung in der Sonde sicher und speicherbar machen" |
-| Etappe | **NAK-245 geschlossen (10.09.2026, Matrixprüfung 7 PASS, §7.13); als Nächstes Etappe 4a — Prozessor und Transaktionskern (Bauplan §4.4, Auftrag `docs/beweise/roh/SONDE-015-etappe-4-auftrag.txt`; Etappe 4 ist in 4a und 4b geteilt, §7.13), danach 4b — Fernweg-Anteile und voller Kanon.** Etappe 1 (Matrix) nach sieben Matrixprüfungen, Konvergenzentscheid und NAK-245-Runde (§7); Etappe 2 (Verträge in drei Sprachen) nach Erstprüfung und zwei Nacharbeiten (§8); Etappe 3 (DSP-Kern als Bibliothek, B6 scharf) nach Erstprüfung und drei Nacharbeiten (§9). |
-| Phase | **Etappe 2 abgenommen auf `6f2baba6`; Etappe 3 abgenommen auf `156445a8` (Erstprüfung NEEDS_WORK → Nacharbeit 1 → Wiederprüfung 1 NEEDS_WORK → Nacharbeit 2 → Wiederprüfung 2 NEEDS_WORK → Nacharbeit 3 → Wiederprüfung 3 PASS; das Budget von drei Runden ist genau ausgeschöpft).** Etappe 4 steht aus; die Abschlussprüfung über den ganzen Ticketbereich und der volle Kanon folgen nach Etappe 4. |
+| Etappe | **Etappe 4a — Prozessor und Transaktionskern — gebaut (10.09.2026, §10); ihre Prüfung steht aus, danach 4b — Fernweg-Anteile und voller Kanon** (Auftrag `docs/beweise/roh/SONDE-015-etappe-4-auftrag.txt`; Etappe 4 ist in 4a und 4b geteilt, §7.13). NAK-245 ist geschlossen (Matrixprüfung 7 PASS, §7.13). Etappe 1 (Matrix) nach sieben Matrixprüfungen, Konvergenzentscheid und NAK-245-Runde (§7); Etappe 2 (Verträge in drei Sprachen) nach Erstprüfung und zwei Nacharbeiten (§8); Etappe 3 (DSP-Kern als Bibliothek, B6 scharf) nach Erstprüfung und drei Nacharbeiten (§9). |
+| Phase | **Etappe 2 abgenommen auf `6f2baba6`; Etappe 3 abgenommen auf `156445a8` (Erstprüfung NEEDS_WORK → Nacharbeit 1 → Wiederprüfung 1 NEEDS_WORK → Nacharbeit 2 → Wiederprüfung 2 NEEDS_WORK → Nacharbeit 3 → Wiederprüfung 3 PASS; das Budget von drei Runden ist genau ausgeschöpft).** Etappe 4a ist gebaut, ihre Prüfung steht aus (§10); Etappe 4b folgt. Die Abschlussprüfung über den ganzen Ticketbereich und der volle Kanon folgen nach Etappe 4b. |
 | Urteil | **Offen.** Weder T1 noch T2 vergeben. Etappe 1 baut nichts und behauptet deshalb kein gemessenes Produktverhalten; ihr einziger Gegenstand ist, ob §3 die Zusagen des Gate-Textes vollständig und widerspruchsfrei trägt. |
 | Prüfstufe | **T2 gefordert** (`docs/plan/plan.json`, Schritt S26–28, `"stufe": "T2"`). Heute vergeben: **keine**. |
 | Prüfmodell | Codex `gpt-6-astra`, Effort **max**, lesend — für Matrix-, Erst-, Wieder- und Abschlussprüfung. `gpt-5.6-sol` max nur als Gegenprüfer. |
-| Basis-SHA | **Etappe 1:** `e9dbf4b9c11d1cf72aebbecb835c9391a57a0532` — alle Zeilen- und Zeichenangaben in §1 und §2 gelten zu diesem Stand. **Etappe 2:** `2026031f0a8bb0baf12135020be654a82d354a6f`. **Nacharbeit 1:** `3df34963de3a887600f5f629fc637f52256ace78`. **Nacharbeit 2:** `c727e620c1d48bcee8ad698a27321980bbd7776e`. **Etappe 3:** `2672ed2bf9858c2c45a8ebbc5afbe0999fff6554`. **Etappe 3, Nacharbeit 1:** `bc76e98c3dc4a83b87c24bc81386ba8ca183863e`. **Etappe 3, Nacharbeit 2:** `5f4f72c804770534c0412735f277f5653b86de9f`. **Etappe 3, Nacharbeit 3:** `72851d299bd65429b6e99cba5fa9219a71b7b899`; jeweils beim Start gemessen, `git status --short` leer. |
+| Basis-SHA | **Etappe 1:** `e9dbf4b9c11d1cf72aebbecb835c9391a57a0532` — alle Zeilen- und Zeichenangaben in §1 und §2 gelten zu diesem Stand. **Etappe 2:** `2026031f0a8bb0baf12135020be654a82d354a6f`. **Nacharbeit 1:** `3df34963de3a887600f5f629fc637f52256ace78`. **Nacharbeit 2:** `c727e620c1d48bcee8ad698a27321980bbd7776e`. **Etappe 3:** `2672ed2bf9858c2c45a8ebbc5afbe0999fff6554`. **Etappe 3, Nacharbeit 1:** `bc76e98c3dc4a83b87c24bc81386ba8ca183863e`. **Etappe 3, Nacharbeit 2:** `5f4f72c804770534c0412735f277f5653b86de9f`. **Etappe 3, Nacharbeit 3:** `72851d299bd65429b6e99cba5fa9219a71b7b899`; jeweils beim Start gemessen, `git status --short` leer. **Etappe 4a:** `844b9c15935377e89d124ac33848e9cba1ecf4c2`. |
 | Kanon vorher | **GRÜN 62/62, Exit 0 auf `1867cac2`** (Abschlusskanon NAK-230, Rohausgabe `docs/beweise/roh/NAK-230-1867cac.md`). Eigene Messung in dieser Sitzung: `git diff --stat 1867cac2..e9dbf4b9 -- eq-copilot broker tools` ist **leer**. Der Codestand des Basis-SHA ist mit dem beglaubigten Kanonstand identisch; die Commits dazwischen berühren nur `docs/`. |
-| Kanon nachher | **Steht aus** — der volle abgekoppelte Kanon gehört an das Ende der Etappe 4. Etappe 2 fuhr die Beine ihres Bauplans einzeln (§8.4), Nacharbeit 1 die betroffenen (§8.9), Nacharbeit 2 die zwei Broker-Beine (§8.11), Etappe 3 die ihren (§9.4); alle grün laut Rohdateien. |
-| Ticketpfade | **Etappe 1:** diese eine Datei, `docs/beweise/SONDE-015.md`. **Etappe 2:** die Vertrags-, Plugin-, Broker- und Werkzeugpfade aus §4.5, ohne `eq-copilot/plugin/dsp/` (Etappe 3) und ohne `SondeProcessor.*` (Etappe 4). **Etappe 3:** `eq-copilot/plugin/dsp/` (neu), `eq-copilot/plugin/tests/DspGoldenTestMain.cpp` (neu), `eq-copilot/plugin/CMakeLists.txt`, `tools/beweise.ps1`, `tools/eq-copilot/pruefe_kern_identitaetsfrei.py` (A14-Objektliste, §9.6), dieses Manifest und die Rohdateien. Der Prozessor bleibt nach §4.1 unberührt; der Auftrag wird nicht angefasst. |
+| Kanon nachher | **Steht aus** — der volle abgekoppelte Kanon gehört an das Ende der Etappe 4b. Etappe 2 fuhr die Beine ihres Bauplans einzeln (§8.4), Nacharbeit 1 die betroffenen (§8.9), Nacharbeit 2 die zwei Broker-Beine (§8.11), Etappe 3 die ihren (§9.4); alle grün laut Rohdateien. Etappe 4a fuhr die Beine, deren Ziel eine geänderte Quelle übersetzt oder linkt, samt der gemessenen Bundles und Release-Broker (§10.4): 36 von 37 mit Exit 0; rot ist B28, seit dem Fassungsschritt der Etappe 2 und nicht durch 4a (§10.7 N-12). |
+| Ticketpfade | **Etappe 1:** diese eine Datei, `docs/beweise/SONDE-015.md`. **Etappe 2:** die Vertrags-, Plugin-, Broker- und Werkzeugpfade aus §4.5, ohne `eq-copilot/plugin/dsp/` (Etappe 3) und ohne `SondeProcessor.*` (Etappe 4). **Etappe 3:** `eq-copilot/plugin/dsp/` (neu), `eq-copilot/plugin/tests/DspGoldenTestMain.cpp` (neu), `eq-copilot/plugin/CMakeLists.txt`, `tools/beweise.ps1`, `tools/eq-copilot/pruefe_kern_identitaetsfrei.py` (A14-Objektliste, §9.6), dieses Manifest und die Rohdateien. Der Prozessor bleibt nach §4.1 unberührt; der Auftrag wird nicht angefasst. **Etappe 4a:** `eq-copilot/plugin/state/NakamaTransaktion.{h,cpp}` (neu), `eq-copilot/plugin/sonde/SondeProcessor.{h,cpp}`, `eq-copilot/plugin/dsp/DspKern.{h,cpp}` (Schnittstelle, §10.6 A-1), `eq-copilot/plugin/tests/TransactionTestMain.cpp` (neu), `eq-copilot/plugin/tests/SondeNullTestMain.cpp`, `eq-copilot/plugin/CMakeLists.txt`, `tools/beweise.ps1`, `tools/eq-copilot/pruefe_kern_identitaetsfrei.py` (A14-Liste, §10.6 A-2), dieses Manifest und die Rohdateien. |
 | Grenze | Etappe 2 baut ausschließlich, was §3 zusagt. Technikfragen ohne Quelle sind vom Dirigenten als R1 bis R15 entschieden (§5); meine Feinheiten stehen je Regel darunter, Abweichungen mit Begründung. Produktfragen werden benannt und einer Fläche zugeordnet, nie hier beantwortet (§5.16). |
 
 <!-- NAKAMA-URTEIL: OFFEN -->
@@ -3876,3 +3876,276 @@ Einzeln aus pwsh gebaut und gefahren, nach dem letzten Rotbeweislauf; jedes Bina
 | Etappenstand | **Etappe 3 abgeschlossen** auf `156445a8` nach Erstprüfung und drei Nacharbeitsrunden (Budget 3 genau ausgeschöpft, kein Konvergenzentscheid nötig). Offen aus dieser Etappe für die Abschlussprüfung: Nebenbefund N-18 (§9.11.2, vier weitere Klickproben mit Faktor 4 an M-06, B-3, M-55, B-8) wird vom Dirigenten dort eingeordnet — REGEL W-4 galt ausdrücklich nur für B-5 und B-7 |
 | Hygiene im Abschlussfenster | `py -3.13 tools/plan/gesundheit.py`: URTEIL alle Grenzen gehalten (Exit 0, drei nicht blockierende Ziele verfehlt); Worker `ea8fd935` (Bau), `65c35bbe` (Nacharbeit 1), `17561b95` (Nacharbeit 2, ausgefallen am 64k-Ausgabelimit) , `b913d829` (Nacharbeit 2, Fortsetzung), `8a8a61d4` (Nacharbeit 3) beendet und entfernt; kein Loop, kein Beobachter offen |
 | **Übergabe an eine frische Dirigenten-Session** | Die native Statuszeile misst den Kontext dieser Session mit 52 % des 1M-Fensters; über der 500k-Grenze (Skill §5) beginnt keine neue Etappe und keine neue Prüfrunde. Der Dirigent beendet deshalb an dieser sauberen Etappengrenze planmäßig (Markerdatei, Neustart durch den Starter). **Nächster Schritt:** Etappe 4 nach `docs/beweise/roh/SONDE-015-auftrag.txt` (Abschnitt ETAPPE 4; Bauplan §4.4, Matrix §3 Referenz, Entscheide §5 und §9.2) — **davor** NAK-245 schließen: ein Worker arbeitet die fünf Restwidersprüche der Transaktionstabelle §5.11.4 (M-76, M-125, §7.9) in die Matrix ein, ein lesender Codex-Thread (Astra max) prüft nur diese Stellen, erst dann startet der Bau-Worker (max, Aufsicht ENG, kleine Schritte: je Werkzeugaufruf rund 250 Zeilen — Lehre aus dem Ausfall `17561b95`). Danach Erstprüfung der Etappe 4 über deren Diff (Vorlage A), Abschlussprüfung über `e9dbf4b9...HEAD`, voller Kanon abgekoppelt |
+
+## 10. Bauetappe 4a — Prozessor und Transaktionskern (10.09.2026)
+
+| Merkmal | Wert |
+|---|---|
+| Etappe | **Etappe 4a — Prozessor und Transaktionskern**, nach Bauplan §4.4 und dem Zusatzauftrag `docs/beweise/roh/SONDE-015-etappe-4-auftrag.txt`. Matrix §3 und §5.11.4 sind die Referenz; die Fernweg-Anteile (Sender von `state_report.dsp`, Broker, Telemetrie, voller Kanon) gehören Etappe 4b und wurden nicht angefasst. |
+| Basis-SHA | `844b9c15935377e89d124ac33848e9cba1ecf4c2`, mit `git rev-parse HEAD` beim Start gemessen; `git status --short` war leer. |
+| Urteil | **Offen.** Die Prüfung dieser Teiletappe steht aus. Was hier steht, ist gemessen, nicht beurteilt. |
+| Beine | **37** einzeln gefahren, **36** mit Exit 0; Rohausgabe `docs/beweise/roh/SONDE-015-etappe4a-beine.txt` |
+| Rotbeweise | **221** (gezählt mit `ls docs/beweise/roh/SONDE-015-rot-* \| wc -l`); davon **85** aus dieser Teiletappe, je Datei Rot unter Mutation und Grün nach Rücknahme |
+| Kanon | **Nicht gefahren.** Der volle abgekoppelte Lauf gehört an das Ende von Etappe 4b (Zusatzauftrag). |
+| Prozessor | `eq-copilot/plugin/sonde/SondeProcessor.{h,cpp}` trägt jetzt den aktiven DSP-Kern, die 112 Host-Parameter und den Transaktionskern. A16 misst ihn als Nulltest, B7 als Transaktionsweg. |
+
+### 10.1 Was gebaut wurde
+
+**Der Transaktionskern `eq-copilot/plugin/state/NakamaTransaktion.{h,cpp}` (neu, 393 und 820 Zeilen), Teil von `NakamaKern`.** Er ist identitätsfrei: der Kernriegel steht am Anfang und am Ende der Quelle, es gibt keinen Prozessorbezug, und A14 führt `NakamaTransaktion.obj` in seiner Objektliste. Er kennt das DTO (`parameter::DspSatz`), den State (`state::Zustand`) und den DSP-Kern nur über die Schnittstelle `Ausfuehrung`.
+
+- **Typen** (`NakamaTransaktion.h`): `Stufe` S0 bis S8, `Art` (Apply, Revert, Neutralisieren, Remove, Undo, Redo, Preset-Laden, dazu Gestus und Band-Belegen als Formen des Apply), `Ausgang` (commit, gespeichertes Ergebnis, Konflikt, Fehler, User-Schutz, busy_retry), `Tid`, `Auftrag`, `Ergebnis`, `AutomationOverlay`, `PreviewOverlay`, `Transaktionskern`, `DspKernAusfuehrung`, `Klemmung`, `DspBericht`. Konstanten: `kRegisterPlaetze` gleich Undo-Tiefe gleich 32 mit `static_assert` (`:48-49`), `kHoechsteRevision` gleich größter `int64` (`:55`), `kAutomationsRuheSekunden` gleich 0,25 (`:62`).
+- **CommittedState** ist genau ein `DspSatz` (E-1, keine zweite Wahrheit); dazu `r`, `r0`, der Hash, der Undo-Ring mit Cursor, das Register und beide Overlays. Die Vorschau (`PreviewOverlay`) und die Hostautomation (`AutomationOverlay`) liegen daneben; `wirksam()` legt das Automationsoverlay über den bestätigten Zustand, `schreibeIn()` schreibt nur den bestätigten.
+- **Ladestart** `Transaktionskern::ladestart` (`NakamaTransaktion.cpp:234-270`): validiert DTO, Hash, Revision und Ring, setzt `r0 = r` gleich der gespeicherten Revision, leert das Register (`:263`) und beendet beide Overlays. Es entsteht keine Revision (T17).
+- **`DspKernAusfuehrung`** (`:711-770`) führt S5 und S8 auf dem `DspKern` aus: `baueVor` baut das Programm aus der Kernsicht (freie Slots auf Default, E4-18), `publiziereVorbau` legt es in eine Bank oder publiziert die ENDE-Marke. Host-Dirty und Berichtsbedarf merkt sie als Atomics.
+- **`baueBericht`** (`:773`) baut den Inhalt von `state_report.dsp`: `jcs` aus demselben Kanonisierer wie der Hash, `auto_gain_db` und Klemmliste aus dem Programm des bestätigten Zustands, verletzte Bänder aus dem wirksamen Zustand, Undo-Tiefe. Den Sender baut Etappe 4b.
+
+**Die Stufenfolge im Code** (`NakamaTransaktion.cpp`, `Transaktionskern::fuehreAus` ab `:404`):
+
+| Stufe | Datei:Zeile | Was dort geschieht | Ausgang ohne Commit |
+|---|---|---|---|
+| S0 | `:408`, Schleife `:409-422`, Fensterwache `:414` | Nachschlag der `tid` im vorallokierten Register; liest nur, alloziert nicht, scheitert nicht | gespeichertes Ergebnis (T1) |
+| S1 | `:427-429` | `base_revision` gegen `r`, **vor** der Validierung | Konflikt (T2, T8, T10) |
+| S2 | `:432-476` | Nutzlast gegen den DTO-Vertrag: Apply und Gestus mit `param::validiere`, Band-Belegen gegen die Slotvorlage, Remove mit Slotbereich, Revert mit Zielbereich, Preset-Laden liest in eine Kopie des bestätigten Zustands | Fehler (T3) |
+| S3 | `:482-504`; die Ausnahme für Undo, Redo und Preset-Laden steht in genau `:487` | Zonenriegel nur für Bedienänderungen: `zonenziel` (`:383`) liefert den Zielzustand, `zoneneintritt` prüft je Zone und je Slot | User-Schutz (T4) |
+| S4 | `:507-587`, Revisionswache `:511` | Kandidat vollständig bauen und gegen das DTO validieren | Fehler (T13) |
+| S5 | `:591-593` | Programm bauen, ohne eine Bank zu belegen (`DspKern::baueVor`); bankpflichtig nur mit `eq_enabled` true (E-18) | busy_retry (T5, T9) |
+| S6 | `:597-609` | `state_hash` über den Kandidaten | Fehler (T14) |
+| S7 | `:614-637`, Ringkapazität `:621-622` | Undo-Eintrag aus dem noch bestätigten Zustand vorbereiten | Fehler (T15) |
+| Commit-Punkt | `:639` | Ab hier scheitert nichts und nichts alloziert; B7 Abschnitt C misst 0 Allokationen ab S8 über 47 Commits | — |
+| S8 | `:643-707` | Tausch des Kandidaten `:647`, Ring `:650-680`, `r = e` `:682`, Automationsoverlay geleert `:686`, Registereintrag `:691-695`, Publikation und Dirty-Marke `:697-698` | commit (T6) |
+
+**Register.** 32 vorallokierte Plätze; der Eintrag entsteht ausschließlich in S8 auf Platz `(e − r0 − 1) mod 32` und verdrängt damit ab dem 33. Commit einer Sitzung genau den Eintrag, der das Fenster verlässt. S0 prüft `e > r0` und `r − e ≤ 31` zusätzlich als Wache (I2). Das Register wird nie gespeichert (B7 `register_ist_nicht_teil_des_zustands`).
+
+**Undo-Ring.** Persistent im Kind `Dsp`, Tiefe `parameter::kUndoTiefe` gleich 32, Kapazität im Konstruktor, beim Ladestart und in S7 reserviert. Eine neue Transaktion schneidet den Redo-Zweig ab (`:669-674`), der 33. Eintrag verdrängt den ältesten (`:675-677`); Undo und Redo tauschen den Zustand mit dem Eintrag am Cursor (`:652-667`, E4-6).
+
+**DSP-Kern.** `DspKern::uebernehmeZustand` (`DspKern.cpp:164`) ist jetzt `baueVor` (`:173`) gefolgt von `publiziereVorbau` (`:185`) — ein Publikationsweg, den S5 und S8 getrennt rufen (§10.6 A-1).
+
+**Der Prozessor** (`SondeProcessor.cpp`, 1260 Zeilen; `SondeProcessor.h`, 461 Zeilen):
+
+- **APVTS** `parameterBaum` (`:143`) aus `baueParameterLayout` (`:86`): die 112 Host-Parameter aus `parameter::tabelle()` in Vertragsreihenfolge, Kennung als `ParameterID` Version 1 und als Name, Bool, Float oder Choice nach Vertragstyp mit Grenzen und Default; Skew mit Zentrum am Default für `freq_hz`, `q`, `attack_ms` und `release_ms`. `occupied` steht nicht darin (M-64).
+- **Kern und Audiothread.** Der Konstruktor legt `DspKern`, `DspKernAusfuehrung` und `Transaktionskern` auf den Heap, meldet sich als Listener aller 112 Parameter an und setzt die Capability `sample_accurate_automation` auf false (`:155`, M-119); der Destruktor meldet die Listener als Erstes wieder ab (`:202`). `prepareToPlay` (`:212`) bereitet den Kern unter Callback- und Zustandsschloss vor und publiziert den wirksamen Zustand; die Bank wird erst am ersten Block aktiv. `releaseResources` (`:251`) gibt den Kern wieder frei (E4-22). `processBlock` ruft nur `dspKern->verarbeite` (`:342`); die Analyse liest den Tap `post_committed`.
+- **Transaktionen.** `fuehreTransaktionAus` (`:1009`): ein read-only gehaltener Stand nimmt keine an (`:1016`); nach einem Commit folgen außerhalb des Schlosses Hostparameterabgleich und Host-Dirty (`:1042`). `neueTid` (`:1004`) vergibt Transaktions-IDs.
+- **Automation und Gestus.** `parameterValueChanged` (`:1110`) schreibt nur Atomics und läuft auch im Audiothread; `dspKontrollTakt` (`:1227`) läuft im bestehenden Analyseworker, frühestens alle 5 ms und spätestens nach dessen 20-ms-Warten: ACK-Ernte (`:1232`), Hostereignisse ins Automationsoverlay, Ruhegrenze (`:1252`), Publikation des wirksamen Zustands. Der Herkunftstag (`:76`) trennt den eigenen Abgleich von Hostereignissen. `parameterGestureChanged` (`:1120`) und `gestusAbschliessen` (`:1138`) machen einen abgeschlossenen Gestus zu einer Transaktion. `zelleAusHost` (`:1174`) weist nicht-endliche Hostwerte ab (`:1188`, E4-10).
+- **Speichern und Laden.** `getStateInformation` (`:804`) schreibt `gehaltenerStand()` (`:816`): Common und Klassifikation aus dem gehaltenen State, die Dsp-Hälfte aus dem Kern (E4-14). `setStateInformation` (`:831`) lädt, klassifiziert, fährt den Ladestart (`:862`) oder lädt neutral, setzt die Hörmatrix auf Processed (`:872`) und gleicht die Hostparameter ab; Laden meldet kein Dirty.
+- **Status und Offline.** Der v3-Status meldet `stateRevision` und `stateHash` aus dem Kern (`:923`, `:925`). `setNonRealtime` (`:1101`) beendet beim Wechsel in den Offline-Betrieb die Vorschau und stellt die Hörmatrix auf Processed.
+
+**Die Beine.**
+
+- **B7** `eq-copilot/plugin/tests/TransactionTestMain.cpp` (neu, 2251 Zeilen), Ziel `EqCopTransactionTest` in `eq-copilot/plugin/CMakeLists.txt`, im Runner scharf (`AbPhase='jetzt'`). Fünfzehn Abschnitte: A Falltabelle, B Fehler je Stufe, C Commit-Punkt, D sieben Transaktionen, E 10.000 Eingaben, F Wiederholung und Ladestart, G Belegung, H Zonen, I Undo-Ring, J Overlays, K Vertragsweg, L Preset, M bis O am echten `SondeProcessor`. **167** Prüfungen.
+- **A16** `eq-copilot/plugin/tests/SondeNullTestMain.cpp`, umgeschrieben (734 Zeilen): M-01, M-51, M-50, M-02, M-05, M-04, M-33 und M-93 am Prozessor mit aktivem Kern, dazu die bestehenden Gate-7- und Bundleprüfungen. **57** Prüfungen. Die Runner-Behauptung ist neu geschrieben; „kein Hostparameter" ist gefallen (M-116).
+
+### 10.2 Entscheide dieser Teiletappe (Lücken, die der Bau sonst still gefüllt hätte)
+
+| Nr. | Lücke | Entschieden | Warum |
+|---|---|---|---|
+| E4-1 | Ort und Zuschnitt des Transaktionskerns | `state/NakamaTransaktion.{h,cpp}` in `NakamaKern`; der DSP-Kern hängt über die Schnittstelle `Ausfuehrung` daran | Der Auftrag verlangt eine identitätsfreie Einheit ohne Prozessorbezug. A14 misst genau das im Kern; die Schnittstelle lässt B7 den Kern mit dem echten `DspKern` fahren, ohne den Prozessor. |
+| E4-2 | Wann eine Bank belegt wird | S5 baut nur das Programm (`DspKern::baueVor`), S8 belegt und publiziert (`publiziereVorbau`) | Eine in S5 belegte Bank überlebte einen Fehler in S6 oder S7 im Zustand `vorbereitend`, und kein Audio-ACK gäbe sie je frei; nach vier solchen Fehlern wäre der Pool voll. Die Trennung hält §5.11.4 Teil 2 (nichts Fehlbares hinter dem Commit-Punkt) und E-18 (bankpflichtig nur mit `eq_enabled`). |
+| E4-3 | Was Revert herstellt | Genau den Zustand der referenzierten Revision: den bestätigten (Ziel gleich `r`) oder den Ring-Eintrag mit dieser Revision. Ein Ziel über `r` ist ein S2-Fehler `bereich`, ein nicht mehr gehaltenes ein S4-Fehler `revision_nicht_erreichbar`. Revert läuft als Bedienänderung durch den Zonenriegel | Der Undo-Ring ist die einzige Quelle früherer Zustände (M-78); ein nachgebauter Zwischenstand wäre eine zweite Wahrheit. Revert gehört nicht zu den Ganzzustands-Wiederherstellungen aus §5.6.3 Feinheit 3. |
+| E4-4 | Was Neutralisieren zurücksetzt | Alle Werte auf den Vertragsdefault; `eq_enabled` und die Schutz-Zonen bleiben | `eq_enabled` ist der Rollenschalter (R2), keine Klangeinstellung. Zonen schützen den User (R6); ein Neutralisieren, das sie löscht, öffnete still den Weg in geschützte Bereiche. M-80 misst beides. |
+| E4-5 | Unterscheidbare Fehlergründe | S4: `undo_leer`, `redo_leer`, `slot_frei` (Remove auf freiem Slot), `alle_slots_belegt` (M-62), `revision_nicht_erreichbar`, `revision_erschoepft`, `kandidat_ungueltig`; S2: der Grund des DTO-Vertrags, `bereich` für Slot und Zielrevision; im Prozessor `schreibgeschuetzt` | Jeder Ausgang ohne Commit ist unterscheidbar und nicht gemerkt (M-62, M-75); die Gründe kommen aus dem Vertrag, wo er einen hat. |
+| E4-6 | Wie Undo und Redo den Ring bewegen | Ein Ring, ein Cursor. Undo tauscht den bestätigten Zustand mit dem Eintrag über dem Cursor, Redo mit dem Eintrag darunter; `revision` eines Eintrags ist die Revision des Zustands, den er hält; Undo und Redo legen keinen Eintrag an | M-79 verlangt einen Cursor im selben Ring. Der Kommentar „der VOLLE Zustand VOR der Handlung" (`NakamaState.h:435`) gilt für die Handlung, die den Eintrag zuletzt geschrieben hat; die State-Datei blieb unberührt. |
+| E4-7 | Band-Belegen | Eigene Art `bandBelegen`: der erste freie Slot bekommt die dreizehn Werte und `occupied`; ohne freien Slot S4-Fehler `alle_slots_belegt`; S3 prüft das neue Band gegen jede eingeschaltete Zone; im Undo-Ring zählt die Handlung als Apply | M-62 („ein neuntes Band wird verlangt") braucht eine Handlung, die selbst einen Slot wählt; ein Apply mit vollständigem DTO wählt keinen. |
+| E4-8 | Zonenprädikat | Inklusiv (`low ≤ f ≤ high`). Mit bekannter Samplerate werden Bandfrequenz und beide Grenzen auf 0,45·fs gekappt. Je Zone und je Slot; nur ein Wechsel von `occupied`, `enabled` oder `freq_hz` kann einen Eintritt erzeugen | §5.6.3 Feinheit 3 und B-03. Dieselbe Kappung wie beim Programmbau (M-12, M-66): eine Zone über 0,45·fs verhielte sich sonst anders als das Band, das sie schützt. S3 und Bericht rufen dasselbe Prädikat. |
+| E4-9 | Woher der Bericht seine abgeleiteten Angaben nimmt | `auto_gain_db` und Klemmliste aus dem Programm des **bestätigten** Zustands in Kernsicht, verletzte Bänder aus dem **wirksamen** Zustand. Die Klemmliste führt nur die R7-Klemmung, höchstens eine je Slot | R4 und R13; M-70 verlangt dieselbe Verletzungsmeldung auch unter Automation. `dsp_klemmung` beschreibt die R7-Klemmung, E2-7 begrenzt die Liste auf eine je Slot; eine zweite Klemmart je Slot ergäbe bei acht Slots bis zu 16 Einträge gegen `maxItems` 8 (§10.7 N-3). |
+| E4-10 | Nicht-endlicher Hostwert | Ein NaN- oder Inf-Wert eines Hostparameters zählt als unverändert: er erreicht weder Overlay noch Gestus noch Programm | Der Automationsweg geht an S2 vorbei; ohne die Wache landete ein NaN im Programm und im Audio (§10.7 N-5). |
+| E4-11 | Automationsweg im Prozessor | `parameterValueChanged` zählt Hostereignisse in Atomics; der Kontrolltakt im Analyseworker (frühestens alle 5 ms, spätestens nach dessen 20-ms-Warten) schreibt sie ins Automationsoverlay. Die Epoche wechselt beim ersten Punkt und nach 0,25 s **verarbeiteten Audios** ohne neuen Punkt. Ein Commit leert das Overlay, die Hostparameter folgen dem neuen bestätigten Zustand; der eigene Abgleich trägt einen Herkunftstag und zählt nicht als Hostereignis | §44.3 und M-81. Die Ruhegrenze in Audiosamples statt Wandzeit hält Realtime und Offline gleich (M-120). Der VST3-Wrapper reicht keine Hostgeste an das Plugin weiter; ohne Ruhegrenze endete eine Automationsgeste nie. |
+| E4-12 | Topologische Automation | Bei `sample_accurate_automation` unsupported wird sie nicht angewandt; der Parameter folgt trotzdem | M-119; die Capability ist in `host-capabilities-fl-v1.json` gemessen. Kontinuierliche Werte wirken blockweise. |
+| E4-13 | Gestus | Nur die Gesten der eigenen Oberfläche (`beginChangeGesture` und `endChangeGesture`); Commit, wenn die letzte offene Geste endet; Nutzlast ist der bestätigte Zustand mit den Hostwerten der beteiligten Parameter; ein Gestus ohne Änderung erzeugt keine Revision; ein abgewiesener löst das Overlay und gleicht die Regler zurück | M-82. Ein Band-Drag bewegt Frequenz und Gain in zwei überlappenden Gesten und ist trotzdem eine Bedienung. |
+| E4-14 | Wer den gespeicherten Zustand hält | Nur der Kern: `getStateInformation` setzt die Dsp-Hälfte beim Schreiben aus dem Kern ein; nach einem Commit wird nichts gespiegelt | E-1. Die erste Fassung spiegelte den Undo-Ring nach jedem Commit in den gehaltenen State und allozierte damit hinter dem Commit-Punkt (§10.7 N-4). |
+| E4-15 | Laden eines read-only gehaltenen Stands | Der Kern lädt neutral (`eq_enabled` aus), der Stand bleibt mit Originalbytes gehalten, der Prozessor nimmt keine Transaktion an (`schreibgeschuetzt`) | §53.8 und M-92: audio-neutral und verlustfrei. Eine Transaktion auf einem nicht verstandenen Stand änderte einen Zustand, dessen Bytes der Host unverändert zurückbekommen muss. |
+| E4-16 | `stateRevision` und `stateHash` im v3-Status | Aus dem Kern | Bis Etappe 3 meldete der Status einen Ladezähler als Revision; die Revision ist jetzt die des Transaktionskerns (R11). |
+| E4-17 | Wo die Analyse misst | Am Tap `post_committed`, als `float`-Kopie; ohne gültigen Tap und bei ruhendem Passthrough am Puffer | §44.2 und M-57: gemessen wird der bestätigte Pfad, nie der Hörmatrix-Ausgang. |
+| E4-18 | Kernsicht | Freie Slots gehen mit Defaultwerten in den DSP-Kern | Der Kern rechnet freie Slots ohnehin nicht (M-58). Ohne Kernsicht löste aber jede Automation auf einem freien Slot eine Programmpublikation aus; B7 misst an M-63, dass keine entsteht. |
+| E4-19 | Namen und Wertverteilung der Hostparameter | Name gleich Vertragskennung, `ParameterID` Version 1; Skew mit Zentrum am Default für `freq_hz`, `q`, `attack_ms` und `release_ms` | Anzeigenamen sind Oberfläche (S31b). Ohne Skew läge der Default von `freq_hz` bei 4,9 % des Reglerwegs. |
+| E4-20 | Revisionsgrenze | `r` endet bei 2^63 − 1; S4 weist davor mit `revision_erschoepft` ab | `state_revision` persistiert als `int64`; hinter dem Commit-Punkt darf `r + 1` nicht überlaufen. |
+| E4-21 | Testzugänge | Kern: `setzeEinspritzung` (S1 bis S7) und `setzeStufenHaken`; Prozessor: `dspKernFuerTest`, `kontrollTaktFuerTest`, `zustandLesen` | M-75 verlangt einen Einspritzpunkt je Stufe; im Produkt sind beide Haken leer. `zustandLesen` liefert genau den Stand, den `getStateInformation` schreibt. |
+| E4-22 | Freigabe des Kerns | `releaseResources` gibt Blockpuffer und Bänke des Kerns frei; der bestätigte Zustand bleibt im Transaktionskern und klingt nach der nächsten Vorbereitung; ein Block ohne Vorbereitung läuft unberührt durch | Paarregel starten und stoppen. Vorher blieb `releaseResources` leer, obwohl `prepareToPlay` den Kern belegte (§10.7 N-6). |
+| E4-23 | Listener-Paar | Der Konstruktor meldet den Prozessor als Listener aller 112 Parameter an, der Destruktor meldet ihn als Erstes wieder ab | Keine Geste und kein Parameterereignis darf Kern oder Transaktionskern erreichen, während sie abgebaut werden (§10.7 N-11). |
+
+### 10.3 Messabdeckung
+
+Eine Tabelle über alle Matrixzeilen, die diese Teiletappe misst oder die der Zusatzauftrag ihr zuweist — dazu die Zeilen aus §9.3, die dort „Etappe 4" hießen, und die Nachbarzeilen aus §3.12 bis §3.14 mit ihrem Grund, wenn 4a sie nicht misst. Rotbeweise stehen unter `docs/beweise/roh/SONDE-015-rot-<ID>.txt`; die Spalte nennt nur die ID. Jede Datei trägt die mutierte Zeile, den roten Lauf mit den gefallenen Prüfungen und den grünen Lauf nach der bytegleichen Rücknahme.
+
+| ID | Prüfung (Bein, Fall) | Rotbeweis | Status |
+|---|---|---|---|
+| M-01 | A16 `default_ist_bitidentisch_ueber_1000_bloecke` bei 44,1 / 48 / 96 / 192 kHz, dazu `eq_enabled steht auf false, und nach dem Lauf ist keine Bank belegt` | M-01-e4 | **gemessen** |
+| M-02 | A16 `eq_an_bypass_aus_alles_neutral_ist_bitidentisch` bei 44,1 und 96 kHz | M-02-e4 | **gemessen** — den Unity-Kurzschluss selbst misst B6 (M-02, Etappe 3); §10.6 A-6 |
+| M-04 | A16 `nach_dem_fade_wieder_bitidentisch` | M-04-e4 | **gemessen** |
+| M-05 | A16 `eq_an_bypass_an_ist_bitidentisch` | M-05-e4 | **gemessen** |
+| M-08 | B7 `eq_enabled_ueberlebt_speichern_laden`, `bank_wird_erst_beim_ersten_block_aktiv` | M-08, M-08b | **gemessen** (aus §9.3) |
+| M-09 | B7 `ohne_callback_bleibt_gespeichert_und_wird_nachgeholt` | M-09 | **gemessen** (aus §9.3) |
+| M-14 | B7 `apply_mit_bereichsverletzung_wird_abgewiesen` | M-14-e4 | **gemessen** (Rest aus §9.3; die Prüfstufenfolge des DTO misst Etappe 2) |
+| M-23 | B7 `klemmliste_erscheint_im_bericht` (mit zusätzlich gekapptem Slot) | M-23-e4, E2-7 | **gemessen** (Rest aus §9.3) |
+| M-24 | B7 `dynamicwerte_ueberleben_aus_und_ein_bitgleich` | M-24-e4 | **gemessen** (Rest aus §9.3) |
+| M-28 | B7 `channel_mode_ist_diskret_und_ungekoppelt`, `kein_slot_erbt_den_modus` | M-28-e4 | **gemessen** (aus §9.3) |
+| M-33 | A16 `mix_null_ist_bitidentisch` mit Gegenprobe Mix 1 | M-33-e4 | **gemessen** |
+| M-39 | B7 `auto_gain_ist_nicht_im_hash` | M-39-e4 | **gemessen** (Rest aus §9.3) |
+| M-44 | B7 T5 `busy_retry_wird_nicht_gemerkt`, T7, T9 (drei Fälle, darunter der bankfreie bei vollem Pool) | M-44-e4, T5 | **gemessen** (Rest aus §9.3: nicht gemerkt, Bankpflicht E-18) |
+| M-50 | A16 `passthrough_sanitisiert_nichts` | M-50-e4 | **gemessen** |
+| M-51 | A16 `latenz_bleibt_null`, `kein_tail_im_passthrough` | M-51, M-51b | **gemessen** (aus §9.3) |
+| M-52 | B7 `nach_laden_immer_processed` | M-52-e4 | **gemessen** (Rest aus §9.3) |
+| M-58 | B7 `freier_slot_verarbeitet_nichts` am Kern selbst; am Prozessor M-63 | M-58 | **gemessen** |
+| M-59 | B7 `ausschalten_gibt_keinen_slot_frei` | M-59 | **gemessen** |
+| M-60 | B7 `remove_ist_eine_transaktion_und_eine_revision`, `remove_nummeriert_nicht_um` | M-60, M-60b | **gemessen** |
+| M-61 | B7 `undo_stellt_das_entfernte_band_als_ein_objekt_her` | M-61 | **gemessen** |
+| M-62 | B7 `acht_belegte_slots_ueberschreiben_nichts` | M-62 | **gemessen** |
+| M-63 | B7 `automation_auf_freien_slot_aendert_werte_nicht_klang` (Wert, Belegung, Programmübernahmen, Audio) | M-63, M-63b | **gemessen** |
+| M-64 | B7 `occupied_ist_kein_hostparameter` | M-64 | **gemessen** |
+| M-65 | B7 `altstand_v1_laedt_im_prozessor_verlustfrei` prüft das Ergebnis am Prozessor mit (Slot 4 belegt nach R5) | M-65 (Etappe 2) | **Etappe 2** (B2, A12); in B7 Regressionswache ohne eigenen Bruch |
+| M-66 | B7 `zone_dto_grenzen`, `zone_laufzeitkappung_aendert_nichts_persistentes` | M-66-e4, M-66b | **gemessen** |
+| M-67 | B7 `band_in_zone_ziehen_wird_abgewiesen`, `abweisung_laesst_hash_und_revision_unveraendert`, `einschalten_in_der_zone_wird_abgewiesen`, `von_zone_a_nach_zone_b_wird_abgewiesen` | M-67, M-67b | **gemessen** |
+| M-68 | B7 `zone_ueber_band_ist_erlaubt_und_meldet_verletzung` | M-68 | **gemessen** am lokal gebauten Bericht; gesendet wird er ab Etappe 4b |
+| M-69 | B7 `verletztes_band_bleibt_bedienbar` (Gain und Frequenz innerhalb der Zone) | M-69 | **gemessen** |
+| M-70 | B7 `automation_verletzt_und_meldet_denselben_zustand` | M-70 | **gemessen** |
+| M-71 | B7 `zone_deaktivieren_ist_eine_transaktion`, `zone_entfernen_ist_eine_transaktion` | M-71 | **gemessen** |
+| M-72 | B7 `zonen_sind_teil_von_hash_preset_bericht_und_state` | M-72-e4 | **gemessen** |
+| M-73 | B7 `neunte_zone_wird_abgewiesen`, `doppelte_zonen_id_wird_abgewiesen` | M-73-e4 | **gemessen** |
+| M-74 | B7 `apply_` bis `preset_laden_erzeugt_genau_eine_revision`, `alle_fehlbaren_stufen_liegen_vor_dem_commit_punkt` | M-74 | **gemessen** |
+| M-75 | B7 `fehler_in_S1` bis `fehler_in_S7_laesst_committed_und_hash_unveraendert`, `fehler_hinterlaesst_keinen_registereintrag`, `nachschlag_allokiert_nicht_und_schlaegt_nicht_fehl`, `hinter_dem_commit_punkt_wird_nicht_alloziert` | M-75 | **gemessen** |
+| M-76 | B7 `zehntausend_transaktionen_erzeugen_hoechstens_eine_revision` mit Wachen nach jeder Eingabe, Lauf nach einem Ladestart mit `r0` = 7 | M-76 | **gemessen** |
+| M-77 | B7 `hash_kommt_aus_dem_bestandskanon` (jedes gültige DTO-Fixture wie `MANIFEST.json`) | M-77-e4 | **gemessen**; die JCS-Vektoren selbst hält Etappe 2 (A12, B2) |
+| M-78 | B7 `undo_ring_haelt_tiefe_32` | M-78-e4 | **gemessen** |
+| M-79 | B7 `neue_transaktion_schneidet_den_redo_zweig_ab` | M-79 | **gemessen** |
+| M-80 | B7 `neutralisieren_loescht_die_historie_nicht` | M-80 | **gemessen** |
+| M-81 | B7 `automation_erzeugt_keine_revision` und `epoche_wechselt_genau_zweimal_je_geste`, je am Kern und am Prozessor | M-81, M-81b, M-81c | **gemessen** |
+| M-82 | B7 `abgeschlossener_gestus_ist_eine_revision` (zwei überlappende Gesten) | M-82 | **gemessen** |
+| M-83 | B7 `preview_wird_nie_serialisiert`, am Kern und am Prozessor | M-83, M-83b | **gemessen** |
+| M-84 | B7 `reload_rekonstruiert_denselben_audioausgang` (Hash gleich, Ausgang bitgleich) | M-84, M-84b | **gemessen**; die Reihenfolge bis zum ersten Block misst M-08 |
+| M-85 | B7 `angenommene_transaktion_meldet_dirty`, `abgewiesene_meldet_nicht` | M-85, M-85b | **gemessen**; dass Laden nicht meldet, steht im selben Fall als Regressionswache |
+| M-86 | — | M-86 (Etappe 2) | **Etappe 2** (A12, B2) |
+| M-87 | B7 `jede_v2_kennung_erklaert_ihren_ort` | M-87-e4 | **gemessen** an der Hostliste; der Vertrag selbst ist Etappe 2 |
+| M-88 | B7 `apvts_fuehrt_112_parameter_in_vertragsreihenfolge`, `v2_haengt_hinten_an` | M-88 | **gemessen** |
+| M-89 | B7 `prozessor_speichert_und_laedt_das_kind_dsp` | M-89-e4 | **gemessen** (Prozessorhälfte; Writer und flache Arrays sind Etappe 2) |
+| M-90 | B7 `altstand_v1_laedt_im_prozessor_verlustfrei` | M-90-e4 | **gemessen** (Prozessorhälfte) |
+| M-91 | — | M-91 (Etappe 2) | **Etappe 2** (B2) |
+| M-92 | B7 `fremdes_major_laedt_neutral_und_bleibt_schreibgeschuetzt`; A16 Gate-7-Kette (read-only mit Originalbytes) | M-92-e4, M-92b | **gemessen** (Prozessorhälfte) |
+| M-93 | A16 `speichern_laden_speichern_bytegleich_in_v2` | M-93-e4 | **gemessen** |
+| M-94 | — | M-94 (Etappe 2) | **Etappe 2** (A12) |
+| M-95 | B7 `preset_traegt_zwei_getrennte_versionen` | M-95-e4 | **gemessen** |
+| M-96 | B7 `preset_traegt_den_klanginhalt_vollstaendig` | M-96-e4 | **gemessen** |
+| M-97 | B7 `preset_hat_keine_identitaetsfelder`, `identitaetsfeld_wird_abgelehnt` | M-97-e4, M-97b | **gemessen** |
+| M-98 | B7 `unbekanntes_top_level_feld_wird_ignoriert` | M-98-e4 | **gemessen** |
+| M-99 | B7 `unbekanntes_preset_major_wird_abgelehnt` | M-99-e4 | **gemessen** |
+| M-100 | B7 `preset_laden_ist_eine_transaktion`, `undo_nach_preset_stellt_alles_her`, `preset_laesst_eq_enabled_unberuehrt` | M-100, M-100b | **gemessen** |
+| M-101 bis M-108 | — | — | **Etappe 4b.** Der Sender von `state_report.dsp` im ControlClient und das Halten im Broker fehlen noch; 4a baut nur den Inhalt (`baueBericht`). Die B7-„Sendepfade" aus M-103 und M-104 entstehen mit 4b. |
+| M-109 bis M-114, M-121 | — | Etappe 2 und 3 | **Etappe 2 und 3** für Vertrag und Quelle (§8, §9.3); Sender und Sendepfad (B10) sind **Etappe 4b** |
+| M-115 | — | — | **Etappe 4b**: die Kanonzahl steht erst im vollen Lauf |
+| M-116 | Runner-Behauptungen B7 und A16 in `tools/beweise.ps1`; `git grep "kein Hostparameter"` trifft nur noch die stillgelegte A15-Zeile und zwei Kommentare, die sagen, dass der Satz gefallen ist | — | **gemessen** am Text; eine Behauptung ist keine Prüfung und hat keinen Rotbeweis |
+| M-117 | die Rotbeweisdateien dieser Teiletappe | alle in dieser Spalte | **gemessen** — 85 Dateien |
+| M-118 | — | — | **Lücke, nicht 4a:** der Fall `worst_case_vier_baenke_laeuft` steht nicht in B6 (Etappe 3 führte §3.14 nicht in ihrer Abdeckung); für die Abschlussprüfung benannt (§10.7 N-9) |
+| M-119 | B7 `capability_entscheidet_den_automationspfad` mit Gegenprobe für kontinuierliche Werte; B3 unverändert | M-119, M-119b | **gemessen** (B7-Hälfte) |
+| M-120 | B7 `offline_render_nutzt_den_bestaetigten_zustand` | M-120, M-120b | **gemessen** (B7-Hälfte); **Lücke, nicht 4a:** `realtime_und_offline_gleich` fehlt in B6 (§10.7 N-9) |
+| M-123 | B7 T1, T11, `wiederholung_unter_einer_zone_bekommt_nicht_user_schutz` | M-123, M-123b | **gemessen** |
+| M-124 | B7 T2, T5, T7, T8, T9, `fehler_hinterlaesst_keinen_registereintrag` | M-124, M-124b | **gemessen** |
+| M-125 | B7 Abschnitt A: T1 bis T17 tabellengetrieben, alle vier Spalten, Wachen I1, I2 und I4 nach jeder Eingabe; `falltabelle_vollstaendig_gefahren`; Ladestart mit leerem Register | M-125, M-125b, T17 | **gemessen** |
+| M-126 | B7 T16, `preset_laden_in_eine_zone_wird_nicht_abgewiesen_sondern_meldet_verletzung`, `redo_in_eine_zone_wird_nicht_abgewiesen_sondern_meldet_verletzung` | M-126 | **gemessen** |
+| E2-7 | B7 `klemmliste_erscheint_im_bericht`: höchstens eine Klemmung je Slot | E2-7 | **gemessen** (Etappe-2-Entscheid am Berichtsbau) |
+| E4-10 | B7 `nichtendlicher_hostwert_erreicht_das_programm_nie` | E4-10 | **gemessen** (Entscheid dieser Teiletappe) |
+| E4-22 | B7 `freigabe_und_vorbereitung_sind_ein_paar` | E4-22 | **gemessen** (Entscheid dieser Teiletappe) |
+
+**Die Falltabelle T1 bis T17** (§5.11.4 Teil 4) läuft in B7 Abschnitt A tabellengetrieben; nach jeder Eingabe prüfen Wachen I1, I2 und I4, und `falltabelle_vollstaendig_gefahren` misst, dass jede Zeile genau einmal in Tabellenreihenfolge lief. Die letzte Spalte nennt den Rotbeweis, der für die Zeile gebaut ist, und jeden weiteren Rotbeweis dieser Teiletappe, unter dem die Zeilenprüfung ebenfalls fiel (aus den Rohdateien gelesen).
+
+| Zeile | B7-Fall | Gemessen: Ausgang, `r`, gemerkt | Rotbeweis |
+|---|---|---|---|
+| T1 | `wiederholung_im_fenster_liefert_dasselbe_ergebnis` | gespeichertes Ergebnis in S0, `r` unverändert, gemerkt | **M-123**; fällt auch unter M-74, M-125 |
+| T2 | `veraltete_base_revision_ist_konflikt_ohne_wirkung` | Konflikt in S1, nicht gemerkt; dieselbe `tid` mit aktueller Basis committet danach | **M-124b**; fällt auch unter M-74 |
+| T3 | `ungueltige_nutzlast_faellt_und_wird_nicht_gemerkt` | Fehler in S2 mit dem Grund des DTO-Vertrags, nicht gemerkt; dieselbe `tid` mit gültiger Nutzlast committet danach | **M-14-e4**; fällt auch unter M-74 |
+| T4 | `zonenriegel_weist_ab_und_merkt_nichts` | User-Schutz in S3, nicht gemerkt, das Band bleibt außerhalb der Zone | **M-67**; fällt auch unter M-74, M-76 |
+| T5 | `busy_retry_wird_nicht_gemerkt` | busy_retry in S5 bei wirklich vollem Pool, nicht gemerkt | **T5**; fällt auch unter M-74, M-124 |
+| T6 | `commit_erzeugt_genau_eine_revision_und_einen_eintrag` | commit in S8, `r` + 1, Registereintrag mit `tid`, `e` und neuem Hash | **M-125**; fällt auch unter M-74 |
+| T7 | `wiederholung_nach_bankfreigabe_committet` | nach einem Audio-ACK ohne Revision committet dieselbe `tid` | **M-124**; fällt auch unter M-74, M-125, T5 |
+| T8 | `retry_nach_zonenloesung_mit_alter_base_revision_ist_konflikt` | Konflikt in S1 | **M-124b**; fällt auch unter M-67, M-74, M-76 |
+| T9 | `retry_nach_zonenloesung_mit_aktueller_base_revision_committet`, `…bei_vollem_pool_ist_busy_retry`, `…bei_vollem_pool_ohne_bankpflicht_committet` | commit; busy_retry in S5 (bankpflichtig); commit (bankfrei, E-18) | **M-44-e4**; fällt auch unter M-67, M-71, M-74, M-76, M-124, M-125, T5 |
+| T10 | `fensterrand_erste_transaktion_ist_draussen` | nach 33 Commits: Konflikt in S1, nicht im Register | fällt unter M-74, M-124b |
+| T11 | `fensterrand_zweite_transaktion_ist_drinnen` | gespeichertes Ergebnis in S0 | **M-123b**; fällt auch unter M-74, M-123, M-125 |
+| T12 | `abweisungen_verdraengen_keinen_committeten_eintrag` | nach 31 Abweisungen gespeichertes Ergebnis in S0 | fällt unter M-74, M-123, M-124b, M-125 |
+| T13 | `fehler_in_S4_laesst_committed_und_hash_unveraendert` | Fehler in S4 (Einspritzung), Zustand, Hash und Ring unverändert | fällt unter M-74 |
+| T14 | `fehler_in_S6_laesst_committed_und_hash_unveraendert` | Fehler in S6 (Einspritzung), Zustand, Hash und Ring unverändert | fällt unter M-74 |
+| T15 | `fehler_in_S7_laesst_committed_und_hash_unveraendert` | Fehler in S7 (Einspritzung), Zustand, Hash und Ring unverändert | **M-75** |
+| T16 | `undo_unter_einer_zone_wird_nicht_abgewiesen_sondern_meldet_verletzung` | commit in S8; das Band liegt wieder da und gilt als verletzt | **M-126**; fällt auch unter M-61, M-68, M-76, M-125 |
+| T17 | `wiederholung_ueber_sitzungsgrenze_ist_neuer_versuch` | Ladestart mit `r0 = r` = 33 und leerem Register, danach commit in S8 | **T17**; fällt auch unter M-78-e4, M-125 |
+
+### 10.4 Die Beine dieser Teiletappe
+
+Einzeln gefahren, kein voller Kanon. Alle Ziele — dazu die Bundles `EqCopilot_VST3` und `NakamaProbeeq_VST3`, die B1 misst — wurden in einem Aufruf aus pwsh gebaut (`cmake` liegt nicht im Bash-`PATH`), die Release-Broker der Lastbeine wie im Runner mit `cargo build --release`. Die Rohdatei nennt beide Befehle, je C++-Bein den Zeitstempel des Binaries gegen die jüngste geänderte oder vom Rotskript zurückgespielte Quelle, den Stand der Broker-Binaries und die vollständige Ausgabe. Gefahren wurde jedes Bein, dessen Ziel eine geänderte Quelle übersetzt oder linkt — `NakamaKern` enthält jetzt `NakamaTransaktion` und den erweiterten `DspKern`, und jedes Plugin-Bein des Runners linkt ihn. A15 (`EqCopSunaNullTest`) ist seit 28.08.2026 stillgelegt und wurde nicht gefahren. Rohausgabe: `docs/beweise/roh/SONDE-015-etappe4a-beine.txt`.
+
+| Bein | Ziel | Exit | Binary jünger | Letzte Zeile | Warum es hier läuft |
+|---|---|---|---|---|---|
+| **B7** | `EqCopTransactionTest` | 0 | ja | TRANSAKTION OK | Neues Bein dieser Teiletappe: Transaktionskern und Prozessorseite. |
+| **A16** | `EqCopProbeeqNullTest` | 0 | ja | SONDE-NULLTEST OK - 57 Pruefungen ok, 0 Fehler | Umgeschrieben: Nulltest am Prozessor mit aktivem Kern. |
+| **B6** | `EqCopDspGoldenTest` | 0 | ja | DSP-GOLDEN OK | Die öffentliche Schnittstelle des DSP-Kerns ist erweitert (§10.6 A-1). |
+| **B5** | `EqCopAnalysisGoldenTest` | 0 | ja | Ergebnis: 248 bestanden, 0 Fehler. | Linkt `NakamaKern`; die FeatureEngine ist unberührt. |
+| **B2** | `EqCopStateMigrationTest` | 0 | ja | STATE-MIGRATION-TEST OK - 247 Pruefungen ok, 0 Fehler | Linkt `NakamaKern`; State, Parametertabelle und Preset sind unberührt. |
+| **B3c** | `EqCopSchemaTest` | 0 | ja | 152 bestanden, 0 gescheitert | Linkt `NakamaKern`; der v3-Vertrag ist unberührt. |
+| **A12** | `erzeuge_state_fixtures.py` | 0 | - | STATE-FIXTURES OK (64 Dateien bytegleich, keine verwaiste Datei) | Fixturekorpus der Etappe 2, im Auftrag genannt. |
+| **A14** | `pruefe_kern_identitaetsfrei.py` | 0 | - | 25 ok, 0 Fehler | Der Kern trägt `NakamaTransaktion.obj`; die Objektliste ist erweitert. |
+| **B1** | `EqCopIdentityTest` | 0 | ja | IDENTITY-TEST OK - 120 Pruefungen ok, 0 Fehler | Linkt `NakamaKern` und misst die gebauten Bundles `EqCopilot_VST3` und `NakamaProbeeq_VST3` (moduleinfo.json gegen `CMakeLists.txt`). |
+| **B3** | `EqCopHostContextTest` | 0 | NEIN | HOSTKONTEXT OK — 91/91 Pruefungen bestanden. | Gegenprobe ohne geänderte Quelle: das Ziel linkt `NakamaKern` nicht und übersetzt keine geänderte Datei; MSBuild baute es deshalb nicht neu. |
+| **B3b** | `EqCopHostProbeTest` | 0 | NEIN | HOSTPROBE OK - 85/85 Pruefungen bestanden. | Gegenprobe ohne geänderte Quelle: das Ziel linkt `NakamaKern` nicht und übersetzt keine geänderte Datei; MSBuild baute es deshalb nicht neu. |
+| **B4** | `EqCopQueueStressTest` | 0 | ja | QUEUE-STRESSTEST OK | Linkt `NakamaKern`. |
+| **B8** | `EqCopLebenslaufTest` | 0 | ja | LEBENSLAUF-TEST OK - 79 Pruefungen ok, 0 Fehler | Linkt `NakamaKern`. |
+| **B9** | `EqCopLoudnessGoldenTest` | 0 | NEIN | LOUDNESS-GOLDEN OK | Gegenprobe ohne geänderte Quelle: das Ziel linkt `NakamaKern` nicht und übersetzt keine geänderte Datei; MSBuild baute es deshalb nicht neu. |
+| **B10** | `EqCopIpcTest` | 0 | ja | ALLE PRUEFUNGEN GRUEN — 389 Pruefungen, 0 Fehler | Linkt `NakamaKern`. |
+| **B11** | `EqCopSonde012HostChannelContextTest` | 0 | ja | SONDE-012 HOST CHANNEL CONTEXT: 21 bestanden, 0 fehlgeschlagen | Übersetzt `SondeProcessor.cpp` und ruft `releaseResources`. |
+| **B12** | `EqCopSonde012LoudnessSourceTest` | 0 | ja | SONDE-012 LOUDNESS SOURCE: 4 bestanden, 0 fehlgeschlagen | Übersetzt `SondeProcessor.cpp`. |
+| **B13** | `EqCopSonde012SourcesModelTest` | 0 | ja | SONDE-012 SourcesModel: 85/85 gruen | Linkt `NakamaKern`. |
+| **B14** | `EqCopSonde012ProjectReloadTest` | 0 | ja | SONDE-012 ProjectReload: 12/12 gruen | Linkt `NakamaKern`. |
+| **B15** | `EqCopShot` | 0 | ja | SONDE-012 SHOTS 25/25 gruen | Linkt `NakamaKern`. |
+| **B16** | `EqCopSonde013EventWireTest` | 0 | ja | 153 bestanden, 0 gescheitert | Linkt `NakamaKern`. |
+| **B17** | `EqCopSonde013TruePeakGoldenTest` | 0 | ja | 23 bestanden, 0 gescheitert | Linkt `NakamaKern`. |
+| **B18** | `EqCopSonde013DynamicsTest` | 0 | ja | 46 bestanden, 0 gescheitert | Linkt `NakamaKern`. |
+| **B19** | `EqCopSonde013StereoGoldenTest` | 0 | ja | 91 bestanden, 0 gescheitert | Linkt `NakamaKern`. |
+| **B20** | `EqCopSonde013QualityClassTest` | 0 | ja | 24 bestanden, 0 gescheitert | Linkt `NakamaKern`. |
+| **B21** | `EqCopSonde013InterventionRingTest` | 0 | ja | 22 bestanden, 0 gescheitert | Linkt `NakamaKern`. |
+| **B22** | `EqCopSonde013FingerprintGoldenTest` | 0 | ja | 24 bestanden, 0 gescheitert | Linkt `NakamaKern`. |
+| **B23** | `EqCopSonde013PassageStateTest` | 0 | ja | 343 bestanden, 0 gescheitert | Linkt `NakamaKern`. |
+| **B24** | `EqCopSonde013PrePostGoldenTest` | 0 | ja | 30 bestanden, 0 gescheitert | Linkt `NakamaKern`. |
+| **B25** | `EqCopSonde013ExperimentGoldenTest` | 0 | ja | 27 bestanden, 0 gescheitert | Linkt `NakamaKern`. |
+| **B26** | `EqCopSonde013ExperimentUiTest` | 0 | ja | 52 bestanden, 0 gescheitert | Linkt `NakamaKern`. |
+| **B27** | `EqCopSonde014IntentTest` | 0 | ja | SONDE-014-INTENT-TEST OK - 210 Pruefungen ok, 0 Fehler | Linkt `NakamaKern`. |
+| **B28** | `EqCopSonde014BefundTest` | 1 | ja | SONDE-014 Befund und Maskierung: 78/80 gruen | Linkt `NakamaKern`; rot seit Etappe 2 an K-47, nicht durch 4a (§10.7 N-12). |
+| **B29** | `EqCopSonde014AssistentTest` | 0 | ja | SONDE-014 AssistantStep: 185/185 gruen | Linkt `NakamaKern`. |
+| **A22** | `pruefe_ipc_last.py` | 0 | - | GRUEN | Fährt `EqCopIpcLast`, das `NakamaKern` linkt, gegen den Release-Broker. |
+| **A23** | `pruefe_sonde012_sources_latency.py` | 0 | - | GRUEN - sechs p95-Grenzen und Anzeige-Revisionen | Fährt `EqCopSonde012SourcesLatencyTest`, das `NakamaKern` linkt, gegen den Release-Broker. |
+| **A24** | `pruefe_session_soak.py` | 0 | - | GRUEN | Fährt `EqCopSessionSoak`, das `SondeProcessor.cpp` übersetzt, gegen den Release-Broker. |
+
+### 10.5 Prüfliste `tools/dirigent/pruefliste.md`, abgehakt für die Etappe 4a
+
+| Zeile | Wo gemessen |
+|---|---|
+| **A** Rückstau und Prioritätsklassen | Voller Bankpool: S5 liefert `busy_retry`, nichts wird gemerkt, und die Wiederholung committet nach dem Audio-ACK (T5, T7, T9; Rotbeweise T5, M-44-e4, M-124). Hostereignisse stauen sich nicht: je Parameter ein Zähler und der jüngste Wert, der Kontrolltakt übernimmt den jüngsten Stand; findet ein Takt keine freie Bank, bleibt `publikationOffen` stehen und der nächste Takt wiederholt. Rückstau der Analyse verwirft weiter nur Analyse; der Kern schreibt vor ihr. |
+| **B** Lebenszyklus | `prepareToPlay` und `releaseResources` (E4-22, `freigabe_und_vorbereitung_sind_ein_paar`), Vorschau an und aus samt Offline-Wechsel (M-83, M-120), Automationsgeste Beginn und Ende über die Ruhegrenze (M-81), Gestus Beginn und Ende (M-82), Ladestart und Speichern mit leerem Register (T17, M-89, M-93), Parameter-Listener an und ab (E4-23). Der Kontrolltakt läuft im bestehenden Analyseworker; dessen Start und Stopp blieben unverändert (B11 grün). |
+| **C** Verträge und Längen | S1 vor S2: eine veraltete Nutzlast wird nicht validiert (T2, Stufenfolge in `alle_fehlbaren_stufen_liegen_vor_dem_commit_punkt`). S2 prüft jede Nutzlast gegen den DTO-Vertrag: NaN, Inf und Bereich (M-14, T3), Zonen 0 bis 8 mit Grenzen und eindeutigen IDs (M-66, M-73), Slot 0 bis 7 beim Remove, Presets mit Identitätsfeld oder fremdem Major (M-97, M-99). Die Klemmliste hält höchstens eine Klemmung je Slot (E2-7); ein nicht-endlicher Hostwert erreicht nie das Programm (E4-10); die Revision läuft als `uint64` ohne Überlauf (E4-20), das Fenster umfasst 32, die Undo-Tiefe kommt aus dem Vertrag. |
+| **D** Bau- und Prüfriegel | B7 ist im selben Änderungssatz gebaut (`EqCopTransactionTest` in `CMakeLists.txt`) und im Runner scharf; A14 führt `NakamaTransaktion.obj`. Die Beinrohdatei nennt je C++-Bein den Zeitstempel des Binaries gegen die jüngste geänderte oder zurückgespielte Quelle; das Rotskript prüft dasselbe je Rotbeweis. |
+| **E** Behauptung ≤ Messung | Die Runner-Behauptungen von B7 und A16 nennen nur, was die Tests messen (M-116). Die Zahlen dieses Abschnitts stammen aus den Rohdateien dieser Sitzung. Jede neue Prüfung wurde einmal gebrochen (85 Dateien, §10.3); was ohne eigenen Bruch mitläuft, heißt Regressionswache (M-65 am Prozessor, M-85 Laden). |
+| **F** Änderungssatz | Speichern und Laden (`gehaltenerStand` und Ladestart), Aktivieren und Abklingen (`eq_enabled` an und aus, M-02, M-04), Vorbereiten und Freigeben, Vorschau an und aus, Automation Beginn und Ende liegen je im selben Änderungssatz. Writer, Reader und Migration des Kinds `Dsp` sind Etappe 2 und blieben unberührt; der Prozessor nutzt sie. |
+
+### 10.6 Abweichungen dieser Teiletappe
+
+| Nr. | Wortlaut | Was gebaut wurde | Begründung |
+|---|---|---|---|
+| A-1 | Zusatzauftrag: `eq-copilot/plugin/dsp/**` nicht anfassen; eine kleine Ergänzung der öffentlichen Schnittstelle ist erlaubt, wird begründet, und B6 läuft mit | `DspKern::baueVor` und `DspKern::publiziereVorbau` sind neu und öffentlich; `uebernehmeZustand` ruft beide nacheinander. Der private Bauplatz `arbeitsProgramm` wurde zu `vorbau` je Pfad | S5 muss das Programm bauen, ohne eine Bank zu belegen, S8 muss nicht-fehlbar publizieren (E4-2). `uebernehmeZustand` verhält sich wie vorher; B6 lief mit (Exit 0, `DSP-GOLDEN OK`). |
+| A-2 | Ticketpfade: `tools/eq-copilot/pruefe_kern_identitaetsfrei.py` ist nicht genannt | Die A14-Objektliste führt `NakamaTransaktion.obj` | Der Auftrag verlangt A14 grün mit dem neuen Kern; die Liste wird von Hand geführt, damit ein neues Kernobjekt nie still durchrutscht (§9.6 A-2). |
+| A-3 | B7-Ziel „nach dem Muster von B6" | Das Ziel übersetzt zusätzlich `sonde/SondeProcessor.cpp`, `src/AnalyseEngine.cpp` und `core/ipc/PipeToken.cpp` und trägt die Sondendefinitionen wie A16 | B7 misst den echten Prozessor (M-63, M-81 bis M-85, M-88 bis M-92, M-119, M-120); B6 kennt nur den Kern. |
+| A-4 | Bestehende Prozessor-Schnittstelle | `SondeProcessor::zustandLesen` liefert den Stand als Wert statt als Referenz (E4-14); neu sind `dspKernFuerTest` und `kontrollTaktFuerTest`, und `releaseResources` ist nicht mehr leer (E4-22) | Die Dsp-Hälfte entsteht beim Lesen. A16 und B11 übersetzen unverändert und laufen grün. |
+| A-5 | §4.8: je Matrixzeile ein Rotbeweis | Zeilen mit mehreren Trägerzeilen tragen mehrere Rotbeweise (etwa M-60 und M-60b, M-81 bis M-81c); dazu Rotbeweise für T5, T17, E2-7, E4-10 und E4-22 | Wie §9.6 A-3: eine Zusage mit zwei Trägerzeilen braucht zwei Brüche. T5 und T17 sind Zeilen der Falltabelle mit eigener Trägerzeile; E2-7, E4-10 und E4-22 sind Entscheide, die B7 misst. |
+| A-6 | Rotbeweis „an der Zeile, die die Zusage trägt" für M-02 in A16 | Die Mutation liegt an der exakten Einheit des neutralen Input-Trims (`DspProgramm.cpp`), nicht am Unity-Kurzschluss im Audiopfad | Am Prozessor rechnet der Kern in `double` und schreibt `float` zurück; eine Multiplikation mit genau 1,0 wäre bitgleich, ein Bruch des Kurzschlusses deshalb am Prozessor unsichtbar. Den Kurzschluss selbst bricht B6 (Etappe 3, M-02). |
+| A-7 | Rotbeweis durch Mutation einer Produktzeile | M-125b mutiert die Falltabelle des Tests; M-08b, M-83b, M-97b und M-124 fügen die verbotene Handlung an der tragenden Stelle ein | M-125 ist eine Zusage an den Test selbst. Die vier anderen Zusagen sind Abwesenheiten — kein Block vor dem ersten Callback, keine Vorschau im geschriebenen Stand, kein Identitätsfeld im Preset, kein Registereintrag ohne Commit —, und ihr Bruch ist die Einfügung. |
+
+### 10.7 Nebenbefunde (nicht ins Register)
+
+| Nr. | Befund | Wo gefunden | Was geschah |
+|---|---|---|---|
+| N-1 | **Ein Rotbeweis ließ B7 abstürzen, statt es rot werden zu lassen.** Unter M-76 blieb die Zonenliste im bestätigten Zustand leer; der Test indizierte `zonen[0]` ungeschützt und endete mit einer Zugriffsverletzung, bevor die erwartete Prüfung lief. | Erster Rotlauf | Test gehärtet: kein ungeschützter Zonenindex mehr. M-76 fällt jetzt an `zehntausend_transaktionen_erzeugen_hoechstens_eine_revision`. |
+| N-2 | **M-63 maß die Programmpublikation nicht.** Der Rotbeweis M-63b (Kernsicht entfernt) blieb zweimal grün: zuerst fehlte die Messung, danach verdeckte eine noch nicht übernommene Publikation des Commits die zweite. | Erster und dritter Rotlauf | Die Prüfung vergleicht jetzt die Programmübernahmen nach einem Vorlauf; M-63b fällt. |
+| N-3 | **Matrix M-12 gegen Vertrag E2-7.** M-12 sagt, der gekappte Wert werde „als geklemmt gemeldet". `dsp_klemmung` beschreibt die R7-Klemmung, und E2-7 erlaubt höchstens eine Klemmung je Slot (`maxItems` 8). Die erste Fassung von `baueBericht` meldete beide Klemmarten und hätte bei acht gekappten Slots auf `priority_sidechain` 16 Einträge erzeugt. | Selbstaudit gegen `eq-ipc-v3.schema.json` (`$defs/dsp_bericht`) | Der Bericht folgt dem Vertrag (E4-9). Die Nyquist-Kappung steht im Programm (`gekapptFreq`, B6 M-12) und erreicht Gen heute nicht. Welche Fläche sie meldet, ist eine Vertragsfrage für die Abschlussprüfung. |
+| N-4 | **Allokation hinter dem Commit-Punkt im Prozessor.** Die erste Fassung spiegelte nach jedem Commit den bestätigten Zustand samt Undo-Ring in den gehaltenen State — nach dem Commit-Punkt des Kerns, und bei Speichermangel wäre der gespeicherte Stand vom bestätigten abgewichen. | Selbstaudit „keine Allokation hinter dem Commit-Punkt" | Behoben (E4-14): gespiegelt wird nichts, `getStateInformation` setzt die Dsp-Hälfte beim Schreiben ein. |
+| N-5 | **NaN über den Hostparameter.** `zelleAusHost` reichte einen nicht-endlichen normierten Wert über `convertFrom0to1` ins Automationsoverlay; der Automationsweg geht an S2 vorbei. | Selbstaudit „NaN/Inf an jedem Eingang" | Behoben (E4-10), mit Prüfung und Rotbeweis. |
+| N-6 | **`releaseResources` war leer.** Der Prozessor bereitete den Kern in `prepareToPlay` vor und gab ihn nie frei (Paarregel starten und stoppen). | Selbstaudit Prüfliste B | Behoben (E4-22), mit Prüfung und Rotbeweis. Ein Block nach der Freigabe läuft unberührt durch; B11 ruft `releaseResources` und blieb grün. |
+| N-7 | **B7 hat 2251 Zeilen.** `tools/plan/gesundheit.py` misst die Grenze von 2000 Zeilen nur unter `broker/src`, `eq-copilot/plugin/src` und `eq-copilot/plugin/core`; Testquellen liegen außerhalb. | Selbstaudit Codebase-Gesundheit | Nicht geteilt: Pflege läuft nie im Feature-Ticket. Benannt für den nächsten Pflegeschritt. |
+| N-8 | **Zeilenenden.** `git diff` meldet für sechs geänderte Dateien „LF will be replaced by CRLF"; der Index ist normalisiert, die Diffzahlen sind die echten. | `git diff --stat` | Keine Handlung; keine der Dateien liegt unter `schemas/` oder `fixtures/`. |
+| N-9 | **M-118 und die B6-Hälfte von M-120 fehlen.** `worst_case_vier_baenke_laeuft` und `realtime_und_offline_gleich` stehen in keinem Test; §9.3 führte §3.14 nicht. | Abgleich der Prüfspalte von §3.14 mit B6 | Nicht in 4a gebaut (Fälle des DSP-Kerns); für die Abschlussprüfung benannt. |
+| N-10 | **Rücknahme bei zwei Mutationen derselben Datei.** Das Rotskript spielte zunächst in Anwendungsreihenfolge zurück; bei zwei Mutationen derselben Datei hätte die zweite Rücknahme den Zwischenstand geschrieben. | Vor dem ersten betroffenen Rotbeweis (M-75) | Behoben, bevor M-75 lief: Rücknahme rückwärts, SHA-256 gegen die Ursprungsbytes; jede Datei nennt den Hash. |
+| N-11 | **Parameter-Listener blieben bis zum Abbau angemeldet.** Der Konstruktor meldete den Prozessor an allen 112 Parametern an, der Destruktor meldete ihn nicht ab; eine Geste während des Abbaus hätte `gestusAbschliessen` auf einen fallenden Transaktionskern geführt. | Selbstaudit Prüfliste B | Behoben (E4-23). Ohne eigene Prüfung und ohne Rotbeweis: der Wettlauf ist im Test nicht deterministisch herstellbar; B7, A16 und B11 bauen und laufen grün. |
+| N-12 | **B28 ist seit Etappe 2 rot.** `EqCopSonde014BefundTest` prüft unter K-47 (NAK-213), dass `nakama::ipc::kJsonSchemaMinor` auf 4 steht und ein Rahmen der Fassung 5 abgewiesen wird. Etappe 2 (`94a8a336`, 10.09.2026) hob C++ und Broker (`JSON_SCHEMA_MINOR_AKTIV` in `broker/src/coordinator/schema.rs:8`) auf Fassung 5; B28 lief in Etappe 2 und 3 nicht mit. Die beiden Prüfungen fallen deterministisch an Quellen, die 4a nicht berührt: `git diff HEAD --stat -- broker eq-copilot/plugin/core eq-copilot/plugin/vertrag eq-copilot/schemas eq-copilot/fixtures eq-copilot/plugin/tests/Sonde014BefundTest.cpp` ist leer. | Beinlauf dieser Teiletappe (§10.4) | Nicht in 4a behoben: der Fall gehört zum Fassungsschritt der Etappe 2 und zum vollen Kanon der Etappe 4b. Für den Dirigenten benannt. |
+| N-13 | **Der erste Beinlauf baute zwei gemessene Artefakte nicht mit.** Er baute die Beinziele, aber weder die Bundles `EqCopilot_VST3` und `NakamaProbeeq_VST3` noch die Release-Broker der Lastbeine: B1 fiel an der Frische von `moduleinfo.json` gegen die geänderte `CMakeLists.txt`, und A22 bis A24 liefen gegen Broker-Binaries vom 09.09.2026, älter als der Fassungsschritt der Etappe 2 (der Broker schloss 556 Verbindungen am Envelope). | Erster Beinlauf dieser Teiletappe | Das Beinskript baut jetzt wie `tools/beweise.ps1 -Bauen` die gemessenen Bundles und die drei Release-Broker mit; im zweiten Lauf sind B1 und A22 bis A24 grün. §10.4 zeigt nur den zweiten Lauf. |

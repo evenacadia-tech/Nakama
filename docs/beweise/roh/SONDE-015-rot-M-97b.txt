@@ -1,0 +1,48 @@
+SONDE-015 Etappe 4a - Rotbeweis M-97b
+Stand:  2026-09-10 21:31:37
+Zusage: Das geschriebene Preset hat keines der sechs Identitaetsfelder.
+Bein:   B7 EqCopTransactionTest
+Datei:  eq-copilot/plugin/state/NakamaPreset.cpp:79
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/state/NakamaPreset.cpp:79
+vorher:
+        wurzel.objektSetze ("parameters", std::move (parameters));
+nachher:
+        wurzel.objektSetze ("label", kanon::Wert::zeichen ("Bus 3"));   // ROTBEWEIS M-97: ein Identitaetsfeld im Preset
+        wurzel.objektSetze ("parameters", std::move (parameters));
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 21:31:37, mutierte Quelle 21:31:32, Binary juenger: ja
+Exitcode: 1
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 9 Fehler
+TRANSAKTION FEHLGESCHLAGEN
+
+Gefallene Pruefungen (9):
+  FEHLER  hinter_dem_commit_punkt_wird_nicht_alloziert  [Allokationen ab S8: 0 ueber 46 Commits (40 Apply mit Ringueberlauf und Registerverdraengung, Undo, Undo, Redo, Remove, Neutralisieren, Revert, Preset)]
+  FEHLER  preset_laden_erzeugt_genau_eine_revision  [fehler @S2 rev=7 nicht-memo grund=verbotenes_feld @ label, Ring 5, Register 7]
+  FEHLER  preset_laden_in_eine_zone_wird_nicht_abgewiesen_sondern_meldet_verletzung (M-126, T16)  [fehler @S2 rev=1 nicht-memo grund=verbotenes_feld @ label]
+  FEHLER  redo_in_eine_zone_wird_nicht_abgewiesen_sondern_meldet_verletzung (M-126, T16)  [commit @S8 rev=3 memo]
+  FEHLER  preset_hat_keine_identitaetsfelder (M-97): keines der sechs Felder existiert im geschriebenen Preset
+  FEHLER  preset_traegt_den_klanginhalt_vollstaendig (M-96): 119 Werte und Zonen kommen an  [fehler @S2 rev=1 nicht-memo grund=verbotenes_feld @ label]
+  FEHLER  preset_laden_ist_eine_transaktion (M-100): eine Revision, ein Undo-Eintrag; der bestehende Ring wird ergaenzt, nicht ersetzt
+  FEHLER  preset_laesst_eq_enabled_unberuehrt (M-100, R12): das Ziel bleibt engagiert, obwohl die Quelle des Presets es nicht war
+  FEHLER  undo_nach_preset_stellt_alles_her (M-100)
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: preset_hat_keine_identitaetsfelder
+
+Hinweis: Die Zusage ist eine Abwesenheit im Writer; der Bruch fuegt ein verbotenes Feld ein.
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/state/NakamaPreset.cpp bytegleich zurueckgespielt: ja (SHA-256 4D0681DF6B6BBCC302302D04600BE797066952097FD26421C0811952B1DD00D2)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 21:33:26 (gemeinsamer Gruenlauf nach der bytegleichen Ruecknahme aller Mutationen dieses Laufs)
+Bau: Exit 0; Binary 21:33:25, juengste zurueckgespielte Quelle 21:33:11, Binary juenger: ja
+Exitcode: 0
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 0 Fehler
+TRANSAKTION OK
+Gruen nach Ruecknahme: JA

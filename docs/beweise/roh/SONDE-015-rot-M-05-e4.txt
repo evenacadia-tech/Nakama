@@ -1,0 +1,35 @@
+SONDE-015 Etappe 4a - Rotbeweis M-05
+Stand:  2026-09-10 21:32:27
+Zusage: eq_enabled true mit bypass true ist bitidentisch am Prozessor.
+Bein:   A16 EqCopProbeeqNullTest
+Datei:  eq-copilot/plugin/dsp/DspProgramm.cpp:171
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/dsp/DspProgramm.cpp:171
+vorher:
+        aus.hardBypass   = w[0].b;
+nachher:
+        aus.hardBypass   = false && w[0].b;
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 21:32:27, mutierte Quelle 21:32:22, Binary juenger: ja
+Exitcode: 1
+SONDE-NULLTEST FEHLGESCHLAGEN - 54 Pruefungen ok, 3 Fehler
+
+Gefallene Pruefungen (3):
+  FEHLER  kein_tail_im_passthrough: nach Rauschen bleibt Stille bitgenau still - ausgeschaltet und im Hard-Bypass
+  FEHLER  passthrough_sanitisiert_nichts: NaN, +Inf und -Inf kommen bitgleich heraus, ausgeschaltet und im Hard-Bypass; kein Zaehler steigt  [Zaehler 3]
+  FEHLER  eq_an_bypass_an_ist_bitidentisch: +12-dB-Bell und Width 1,7 liegen hinter dem Hard-Bypass und schlagen nicht durch  [460000 Samples, 459999 abweichend]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: eq_an_bypass_an_ist_bitidentisch
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/dsp/DspProgramm.cpp bytegleich zurueckgespielt: ja (SHA-256 692F92C869051BC3392B621668FAF44821D2DC7F04FD5B4C3509FB883880B989)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 21:33:26 (gemeinsamer Gruenlauf nach der bytegleichen Ruecknahme aller Mutationen dieses Laufs)
+Bau: Exit 0; Binary 21:33:16, juengste zurueckgespielte Quelle 21:33:11, Binary juenger: ja
+Exitcode: 0
+SONDE-NULLTEST OK - 57 Pruefungen ok, 0 Fehler
+Gruen nach Ruecknahme: JA

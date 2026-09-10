@@ -1,0 +1,39 @@
+SONDE-015 Etappe 4a - Rotbeweis M-09
+Stand:  2026-09-10 21:29:46
+Zusage: Ohne Callback bleibt der bestaetigte Zustand gespeichert und wartend; der naechste Block uebernimmt ihn.
+Bein:   B7 EqCopTransactionTest
+Datei:  eq-copilot/plugin/state/NakamaTransaktion.cpp:728
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/state/NakamaTransaktion.cpp:728
+vorher:
+        kern.publiziereVorbau (dsp::Pfad::committed);
+nachher:
+        // ROTBEWEIS M-09: kern.publiziereVorbau (dsp::Pfad::committed); entfernt
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 21:29:46, mutierte Quelle 21:29:35, Binary juenger: ja
+Exitcode: 1
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 3 Fehler
+TRANSAKTION FEHLGESCHLAGEN
+
+Gefallene Pruefungen (3):
+  FEHLER  ohne_callback_bleibt_gespeichert_und_wird_nachgeholt (M-09): bestaetigt ohne Callback, uebernommen vom naechsten Block vor seiner Ausgabe  [Uebernahmen 1 -> 1 -> 1]
+  FEHLER  freigabe_und_vorbereitung_sind_ein_paar (E4-22): releaseResources gibt den Kern frei, ohne Vorbereitung unberuehrt, danach klingt derselbe bestaetigte Zustand  [51200 Samples]
+  FEHLER  reload_rekonstruiert_denselben_audioausgang (M-84): derselbe Hash und derselbe Ausgang (hier bitgleich)  [153600 Samples]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: ohne_callback_bleibt_gespeichert_und_wird_nachgeholt
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/state/NakamaTransaktion.cpp bytegleich zurueckgespielt: ja (SHA-256 39CE1F8D046695A4798AD51772937CADD8534457DEB3B5B57874389E25FB6317)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 21:33:26 (gemeinsamer Gruenlauf nach der bytegleichen Ruecknahme aller Mutationen dieses Laufs)
+Bau: Exit 0; Binary 21:33:25, juengste zurueckgespielte Quelle 21:33:11, Binary juenger: ja
+Exitcode: 0
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 0 Fehler
+TRANSAKTION OK
+Gruen nach Ruecknahme: JA

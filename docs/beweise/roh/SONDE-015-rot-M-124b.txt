@@ -1,0 +1,44 @@
+SONDE-015 Etappe 4a - Rotbeweis M-124b
+Stand:  2026-09-10 21:23:38
+Zusage: Nach I6 entscheidet die erste Stufe: eine Wiederholung mit veralteter base_revision ist Konflikt in S1 (T2, T8).
+Bein:   B7 EqCopTransactionTest
+Datei:  eq-copilot/plugin/state/NakamaTransaktion.cpp:428
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/state/NakamaTransaktion.cpp:428
+vorher:
+        if (einspritzung == Stufe::s1 || a.baseRevision != r)
+nachher:
+        if (einspritzung == Stufe::s1)   // ROTBEWEIS M-124: base_revision wird nicht gegen r geprueft
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 21:23:37, mutierte Quelle 21:23:33, Binary juenger: ja
+Exitcode: 1
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 7 Fehler
+TRANSAKTION FEHLGESCHLAGEN
+
+Gefallene Pruefungen (7):
+  FEHLER  T2 veraltete_base_revision_ist_konflikt_ohne_wirkung  [commit @S8 rev=2 memo, r danach 2, im Register | soll konflikt @S1 r=1 nicht-memo]
+  FEHLER  T2 der bestaetigte Zustand ist unberuehrt
+  FEHLER  T2 der Konflikt liegt nicht im Register: dieselbe tid mit aktueller base committet  [gespeichertes_ergebnis @S0 rev=2 memo]
+  FEHLER  T8 retry_nach_zonenloesung_mit_alter_base_revision_ist_konflikt  [user_schutz @S3 rev=2 nicht-memo, r danach 2, nicht im Register | soll konflikt @S1 r=2 nicht-memo]
+  FEHLER  T10 fensterrand_erste_transaktion_ist_draussen  [commit @S8 rev=34 memo, r danach 34, im Register | soll konflikt @S1 r=33 nicht-memo]
+  FEHLER  T12 Vorlauf: 31 Abweisungen wegen veralteter base_revision  [0]
+  FEHLER  T12 abweisungen_verdraengen_keinen_committeten_eintrag  [commit @S8 rev=35 memo, r danach 35, im Register | soll gespeichertes_ergebnis @S0 r=3 memo]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: T8 retry_nach_zonenloesung_mit_alter_base_revision_ist_konflikt
+  erwartet: T2 veraltete_base_revision_ist_konflikt_ohne_wirkung
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/state/NakamaTransaktion.cpp bytegleich zurueckgespielt: ja (SHA-256 39CE1F8D046695A4798AD51772937CADD8534457DEB3B5B57874389E25FB6317)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 21:33:26 (gemeinsamer Gruenlauf nach der bytegleichen Ruecknahme aller Mutationen dieses Laufs)
+Bau: Exit 0; Binary 21:33:25, juengste zurueckgespielte Quelle 21:33:11, Binary juenger: ja
+Exitcode: 0
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 0 Fehler
+TRANSAKTION OK
+Gruen nach Ruecknahme: JA

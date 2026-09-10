@@ -1,0 +1,33 @@
+SONDE-015 Etappe 4a - Rotbeweis M-51
+Stand:  2026-09-10 22:00:02
+Zusage: Der Prozessor meldet Tail 0,0 s.
+Bein:   A16 EqCopProbeeqNullTest
+Datei:  eq-copilot/plugin/sonde/SondeProcessor.h:161
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/sonde/SondeProcessor.h:161
+vorher:
+        double getTailLengthSeconds() const override        { return 0.0; }
+nachher:
+        double getTailLengthSeconds() const override        { return 0.5; }   // ROTBEWEIS M-51
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 22:00:02, mutierte Quelle 21:59:55, Binary juenger: ja
+Exitcode: 1
+SONDE-NULLTEST FEHLGESCHLAGEN - 56 Pruefungen ok, 1 Fehler
+
+Gefallene Pruefungen (1):
+  FEHLER  latenz_bleibt_null: 0 Samples gemeldet, Tail 0,0 s  [0 / 0.5]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: latenz_bleibt_null
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/sonde/SondeProcessor.h bytegleich zurueckgespielt: ja (SHA-256 2E29EFB2B5C52913564CD4E06E51B1A573ED96EF2344EC8B9CEAF98A842A3377)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 22:00:10 (gemeinsamer Gruenlauf nach der bytegleichen Ruecknahme aller Mutationen dieses Laufs)
+Bau: Exit 0; Binary 22:00:10, juengste zurueckgespielte Quelle 22:00:02, Binary juenger: ja
+Exitcode: 0
+SONDE-NULLTEST OK - 57 Pruefungen ok, 0 Fehler
+Gruen nach Ruecknahme: JA

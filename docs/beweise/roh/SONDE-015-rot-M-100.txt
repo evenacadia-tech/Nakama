@@ -1,0 +1,41 @@
+SONDE-015 Etappe 4a - Rotbeweis M-100
+Stand:  2026-09-10 21:31:55
+Zusage: Preset-Laden ist eine Transaktion mit einem Undo-Eintrag; der bestehende Ring wird ergaenzt, nicht ersetzt.
+Bein:   B7 EqCopTransactionTest
+Datei:  eq-copilot/plugin/state/NakamaTransaktion.cpp:523
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/state/NakamaTransaktion.cpp:523
+vorher:
+                    case Art::presetLaden:
+                        break;   // in S2 gelesen
+nachher:
+                    case Art::presetLaden:
+                        ring.clear(); cursor = 0;   // ROTBEWEIS M-100: das Preset ersetzt den Undo-Ring
+                        break;   // in S2 gelesen
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 21:31:54, mutierte Quelle 21:31:48, Binary juenger: ja
+Exitcode: 1
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 2 Fehler
+TRANSAKTION FEHLGESCHLAGEN
+
+Gefallene Pruefungen (2):
+  FEHLER  preset_laden_erzeugt_genau_eine_revision  [commit @S8 rev=8 memo, Ring 1, Register 8]
+  FEHLER  preset_laden_ist_eine_transaktion (M-100): eine Revision, ein Undo-Eintrag; der bestehende Ring wird ergaenzt, nicht ersetzt
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: preset_laden_ist_eine_transaktion (M-100)
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/state/NakamaTransaktion.cpp bytegleich zurueckgespielt: ja (SHA-256 39CE1F8D046695A4798AD51772937CADD8534457DEB3B5B57874389E25FB6317)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 21:33:26 (gemeinsamer Gruenlauf nach der bytegleichen Ruecknahme aller Mutationen dieses Laufs)
+Bau: Exit 0; Binary 21:33:25, juengste zurueckgespielte Quelle 21:33:11, Binary juenger: ja
+Exitcode: 0
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 0 Fehler
+TRANSAKTION OK
+Gruen nach Ruecknahme: JA

@@ -1,0 +1,42 @@
+SONDE-015 Etappe 4a - Rotbeweis M-61
+Stand:  2026-09-10 21:24:38
+Zusage: Der Undo-Ring traegt das entfernte Band als ein Objekt; Undo stellt es in einer Transaktion her.
+Bein:   B7 EqCopTransactionTest
+Datei:  eq-copilot/plugin/state/NakamaTransaktion.cpp:623
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/state/NakamaTransaktion.cpp:623
+vorher:
+        eintrag.zustand  = committed;
+nachher:
+        eintrag.zustand  = kandidat;   // ROTBEWEIS M-61: der Schnappschuss NACH der Handlung
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 21:24:37, mutierte Quelle 21:24:32, Binary juenger: ja
+Exitcode: 1
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 6 Fehler
+TRANSAKTION FEHLGESCHLAGEN
+
+Gefallene Pruefungen (6):
+  FEHLER  T16 das Band liegt wieder da und gilt als verletzt (M-68)
+  FEHLER    revert fuehrt exakt auf den Zustand der referenzierten Revision 1
+  FEHLER  undo_stellt_das_entfernte_band_als_ein_objekt_her (M-61): Slot 4, Typ, channel_mode, Dynamic und alle Werte in EINER Transaktion  [commit @S8 rev=3 memo]
+  FEHLER  redo_in_eine_zone_wird_nicht_abgewiesen_sondern_meldet_verletzung (M-126, T16)  [commit @S8 rev=4 memo]
+  FEHLER  neutralisieren_loescht_die_historie_nicht (M-80): alle Werte auf Default, Rollenschalter und Zonen bleiben, Undo fuehrt zurueck  [commit @S8 rev=2 memo]
+  FEHLER  undo_nach_preset_stellt_alles_her (M-100)
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: undo_stellt_das_entfernte_band_als_ein_objekt_her
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/state/NakamaTransaktion.cpp bytegleich zurueckgespielt: ja (SHA-256 39CE1F8D046695A4798AD51772937CADD8534457DEB3B5B57874389E25FB6317)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 21:33:26 (gemeinsamer Gruenlauf nach der bytegleichen Ruecknahme aller Mutationen dieses Laufs)
+Bau: Exit 0; Binary 21:33:25, juengste zurueckgespielte Quelle 21:33:11, Binary juenger: ja
+Exitcode: 0
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 0 Fehler
+TRANSAKTION OK
+Gruen nach Ruecknahme: JA

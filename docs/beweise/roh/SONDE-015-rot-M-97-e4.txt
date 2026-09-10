@@ -1,0 +1,40 @@
+SONDE-015 Etappe 4a - Rotbeweis M-97
+Stand:  2026-09-10 21:31:32
+Zusage: Ein Preset mit einem Identitaetsfeld wird beim Laden abgewiesen.
+Bein:   B7 EqCopTransactionTest
+Datei:  eq-copilot/plugin/state/NakamaPreset.cpp:127
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/state/NakamaPreset.cpp:127
+vorher:
+        for (const auto& name : verboteneFelder())
+            if (finde (wurzel, name) != nullptr)
+nachher:
+        for (const auto& name : verboteneFelder())
+            if (false && finde (wurzel, name) != nullptr)   // ROTBEWEIS M-97
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 21:31:32, mutierte Quelle 21:31:27, Binary juenger: ja
+Exitcode: 1
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 2 Fehler
+TRANSAKTION FEHLGESCHLAGEN
+
+Gefallene Pruefungen (2):
+  FEHLER  identitaetsfeld_wird_abgelehnt (M-97): je Feld ein Negativfixture, als Preset-Laden in S2 abgewiesen  [0/6]
+  FEHLER    jedes ungueltige Preset-Fixture faellt mit seinem Manifestgrund  [7/13]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: identitaetsfeld_wird_abgelehnt
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/state/NakamaPreset.cpp bytegleich zurueckgespielt: ja (SHA-256 4D0681DF6B6BBCC302302D04600BE797066952097FD26421C0811952B1DD00D2)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 21:33:26 (gemeinsamer Gruenlauf nach der bytegleichen Ruecknahme aller Mutationen dieses Laufs)
+Bau: Exit 0; Binary 21:33:25, juengste zurueckgespielte Quelle 21:33:11, Binary juenger: ja
+Exitcode: 0
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 0 Fehler
+TRANSAKTION OK
+Gruen nach Ruecknahme: JA

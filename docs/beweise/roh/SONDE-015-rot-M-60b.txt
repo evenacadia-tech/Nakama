@@ -1,0 +1,38 @@
+SONDE-015 Etappe 4a - Rotbeweis M-60b
+Stand:  2026-09-10 21:24:32
+Zusage: Remove nummeriert keinen anderen Slot um und beruehrt ihn nicht.
+Bein:   B7 EqCopTransactionTest
+Datei:  eq-copilot/plugin/state/NakamaTransaktion.cpp:546
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/state/NakamaTransaktion.cpp:546
+vorher:
+                            const int i = param::indexBandV1 (a.slot, f);
+nachher:
+                            const int i = param::indexBandV1 ((a.slot + 2) % param::kSlots, f);   // ROTBEWEIS M-60: ein anderer Slot
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 21:24:31, mutierte Quelle 21:24:27, Binary juenger: ja
+Exitcode: 1
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 2 Fehler
+TRANSAKTION FEHLGESCHLAGEN
+
+Gefallene Pruefungen (2):
+  FEHLER  remove_ist_eine_transaktion_und_eine_revision (M-60): occupied false UND alle 13 Werte auf Default  [commit @S8 rev=2 memo]
+  FEHLER  remove_nummeriert_nicht_um (M-60): Slot 5 bleibt Slot 5
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: remove_nummeriert_nicht_um
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/state/NakamaTransaktion.cpp bytegleich zurueckgespielt: ja (SHA-256 39CE1F8D046695A4798AD51772937CADD8534457DEB3B5B57874389E25FB6317)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 21:33:26 (gemeinsamer Gruenlauf nach der bytegleichen Ruecknahme aller Mutationen dieses Laufs)
+Bau: Exit 0; Binary 21:33:25, juengste zurueckgespielte Quelle 21:33:11, Binary juenger: ja
+Exitcode: 0
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 0 Fehler
+TRANSAKTION OK
+Gruen nach Ruecknahme: JA

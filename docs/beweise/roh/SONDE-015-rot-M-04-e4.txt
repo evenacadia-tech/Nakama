@@ -1,0 +1,35 @@
+SONDE-015 Etappe 4a - Rotbeweis M-04
+Stand:  2026-09-10 21:32:22
+Zusage: Nach eq_enabled true -> false ist der Ausgang nach dem Fade wieder bitidentisch.
+Bein:   A16 EqCopProbeeqNullTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp:193
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/dsp/DspKern.cpp:193
+vorher:
+            meldeProgramm (p, prog);
+            baenke.publiziereEnde (p);
+nachher:
+            meldeProgramm (p, prog);
+            // ROTBEWEIS M-04: baenke.publiziereEnde (p); entfernt
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 21:32:21, mutierte Quelle 21:32:16, Binary juenger: ja
+Exitcode: 1
+SONDE-NULLTEST FEHLGESCHLAGEN - 56 Pruefungen ok, 1 Fehler
+
+Gefallene Pruefungen (1):
+  FEHLER  nach_dem_fade_wieder_bitidentisch: nach 256 Fade-Samples bitgleich, keine Bank faehrt mehr  [eingeschaltet 91999 abweichende Samples (das Band war hoerbar); danach 183744 abweichend in 183744]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: nach_dem_fade_wieder_bitidentisch
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/dsp/DspKern.cpp bytegleich zurueckgespielt: ja (SHA-256 A3083DB5C1541AA75C92D01744C4FCC4D926BA8C9C491A9F35474D96002F6097)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 21:33:26 (gemeinsamer Gruenlauf nach der bytegleichen Ruecknahme aller Mutationen dieses Laufs)
+Bau: Exit 0; Binary 21:33:16, juengste zurueckgespielte Quelle 21:33:11, Binary juenger: ja
+Exitcode: 0
+SONDE-NULLTEST OK - 57 Pruefungen ok, 0 Fehler
+Gruen nach Ruecknahme: JA

@@ -1,0 +1,37 @@
+SONDE-015 Etappe 4a - Rotbeweis M-90
+Stand:  2026-09-10 21:37:06
+Zusage: Ein v1-Altstand laedt im Prozessor verlustfrei und wird der bestaetigte Zustand.
+Bein:   B7 EqCopTransactionTest
+Datei:  eq-copilot/plugin/sonde/SondeProcessor.cpp:861
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/sonde/SondeProcessor.cpp:861
+vorher:
+            const bool eigenerStand = ! zustand.nurLesen && zustand.hatParameters
+nachher:
+            const bool eigenerStand = ! zustand.nurLesen && zustand.hatParameters && ! zustand.layoutV1Migriert   // ROTBEWEIS M-90
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 21:37:06, mutierte Quelle 21:36:57, Binary juenger: ja
+Exitcode: 1
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 1 Fehler
+TRANSAKTION FEHLGESCHLAGEN
+
+Gefallene Pruefungen (1):
+  FEHLER  altstand_v1_laedt_im_prozessor_verlustfrei (M-90, R5, Prozessorhaelfte): der migrierte Stand wird der bestaetigte Zustand, Revision 0, gespeichert als v2  [3458 Bytes v1 -> 3556 Bytes]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: altstand_v1_laedt_im_prozessor_verlustfrei
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/sonde/SondeProcessor.cpp bytegleich zurueckgespielt: ja (SHA-256 9DCE2A67FFD6BDF69370592F059721AD4835D3617FCAB915E767186581D9ABA0)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 21:38:44 (gemeinsamer Gruenlauf nach der bytegleichen Ruecknahme aller Mutationen dieses Laufs)
+Bau: Exit 0; Binary 21:38:43, juengste zurueckgespielte Quelle 21:38:27, Binary juenger: ja
+Exitcode: 0
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 0 Fehler
+TRANSAKTION OK
+Gruen nach Ruecknahme: JA

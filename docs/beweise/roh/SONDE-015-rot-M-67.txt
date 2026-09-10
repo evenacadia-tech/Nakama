@@ -1,0 +1,48 @@
+SONDE-015 Etappe 4a - Rotbeweis M-67
+Stand:  2026-09-10 21:25:44
+Zusage: Eine Bedienaenderung, die ein Band neu in eine Zone fuehrt, wird mit User-Schutz abgewiesen.
+Bein:   B7 EqCopTransactionTest
+Datei:  eq-copilot/plugin/state/NakamaTransaktion.cpp:500
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/state/NakamaTransaktion.cpp:500
+vorher:
+                    sperre = sperre || zoneneintritt (committed, *ziel, fs) >= 0;
+nachher:
+                    sperre = sperre || ziel == nullptr;   // ROTBEWEIS M-67: kein Zonenriegel
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 21:25:43, mutierte Quelle 21:25:38, Binary juenger: ja
+Exitcode: 1
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 12 Fehler
+TRANSAKTION FEHLGESCHLAGEN
+
+Gefallene Pruefungen (12):
+  FEHLER  T4 zonenriegel_weist_ab_und_merkt_nichts  [commit @S8 rev=2 memo, r danach 2, im Register | soll user_schutz @S3 r=1 nicht-memo]
+  FEHLER  T4 das Band bleibt ausserhalb der Zone
+  FEHLER  T8 Vorlauf: das Loesen der Zone ist selbst eine Transaktion (M-71)  [commit @S8 rev=3 memo]
+  FEHLER  T8 retry_nach_zonenloesung_mit_alter_base_revision_ist_konflikt  [gespeichertes_ergebnis @S0 rev=2 memo, r danach 3, im Register | soll konflikt @S1 r=2 nicht-memo]
+  FEHLER  T9 retry_nach_zonenloesung_mit_aktueller_base_revision_committet  [gespeichertes_ergebnis @S0 rev=2 memo, r danach 3, im Register | soll commit @S8 r=3 memo]
+  FEHLER  T9 retry_nach_zonenloesung_bei_vollem_pool_ist_busy_retry (bankpflichtig, nach I6 Ausgang T5)  [gespeichertes_ergebnis @S0 rev=2 memo, r danach 3, im Register | soll busy_retry @S5 r=2 nicht-memo]
+  FEHLER  T9 retry_nach_zonenloesung_bei_vollem_pool_ohne_bankpflicht_committet  [gespeichertes_ergebnis @S0 rev=2 memo, r danach 3, im Register | soll commit @S8 r=3 memo]
+  FEHLER  band_in_zone_ziehen_wird_abgewiesen (M-67)  [commit @S8 rev=2 memo]
+  FEHLER  abweisung_laesst_hash_und_revision_unveraendert (M-67): keine halbe Anwendung
+  FEHLER  einschalten_in_der_zone_wird_abgewiesen (M-67)  [commit @S8 rev=2 memo]
+  FEHLER  von_zone_a_nach_zone_b_wird_abgewiesen (M-67, B-03): je Zone einzeln, kein Sammelzustand  [commit @S8 rev=3 memo]
+  FEHLER  abgewiesene_meldet_nicht (M-85): die Abweisung am Zonenriegel und das Laden melden kein Dirty  [commit @S8 rev=3 memo, Laden 0]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: band_in_zone_ziehen_wird_abgewiesen
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/state/NakamaTransaktion.cpp bytegleich zurueckgespielt: ja (SHA-256 39CE1F8D046695A4798AD51772937CADD8534457DEB3B5B57874389E25FB6317)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 21:33:26 (gemeinsamer Gruenlauf nach der bytegleichen Ruecknahme aller Mutationen dieses Laufs)
+Bau: Exit 0; Binary 21:33:25, juengste zurueckgespielte Quelle 21:33:11, Binary juenger: ja
+Exitcode: 0
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 0 Fehler
+TRANSAKTION OK
+Gruen nach Ruecknahme: JA

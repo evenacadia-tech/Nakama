@@ -1,0 +1,39 @@
+SONDE-015 Etappe 4a - Rotbeweis M-51b
+Stand:  2026-09-10 21:38:27
+Zusage: setLatencySamples wird nie mit einem Wert ungleich 0 gerufen.
+Bein:   A16 EqCopProbeeqNullTest
+Datei:  eq-copilot/plugin/sonde/SondeProcessor.cpp:216
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/sonde/SondeProcessor.cpp:216
+vorher:
+        jassert (getLatencySamples() == 0);
+        const double sichereRate
+nachher:
+        setLatencySamples (64);   // ROTBEWEIS M-51: Latenz ungleich 0
+        const double sichereRate
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 21:38:26, mutierte Quelle 21:38:17, Binary juenger: ja
+Exitcode: 1
+SONDE-NULLTEST FEHLGESCHLAGEN - 52 Pruefungen ok, 5 Fehler
+
+Gefallene Pruefungen (5):
+  FEHLER  default_ist_bitidentisch_ueber_1000_bloecke bei 44100 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 0 abweichend]
+  FEHLER  default_ist_bitidentisch_ueber_1000_bloecke bei 48000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 0 abweichend]
+  FEHLER  default_ist_bitidentisch_ueber_1000_bloecke bei 96000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 0 abweichend]
+  FEHLER  default_ist_bitidentisch_ueber_1000_bloecke bei 192000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 0 abweichend]
+  FEHLER  latenz_bleibt_null: 0 Samples gemeldet, Tail 0,0 s  [64 / 0]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: latenz_bleibt_null
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/sonde/SondeProcessor.cpp bytegleich zurueckgespielt: ja (SHA-256 9DCE2A67FFD6BDF69370592F059721AD4835D3617FCAB915E767186581D9ABA0)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 21:38:44 (gemeinsamer Gruenlauf nach der bytegleichen Ruecknahme aller Mutationen dieses Laufs)
+Bau: Exit 0; Binary 21:38:35, juengste zurueckgespielte Quelle 21:38:27, Binary juenger: ja
+Exitcode: 0
+SONDE-NULLTEST OK - 57 Pruefungen ok, 0 Fehler
+Gruen nach Ruecknahme: JA

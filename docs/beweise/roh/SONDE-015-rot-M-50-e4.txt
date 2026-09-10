@@ -1,0 +1,33 @@
+SONDE-015 Etappe 4a - Rotbeweis M-50
+Stand:  2026-09-10 21:32:38
+Zusage: Der Passthrough sanitisiert nichts, und kein Zaehler steigt.
+Bein:   A16 EqCopProbeeqNullTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp:856
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/dsp/DspKern.cpp:856
+vorher:
+        if (engagiert (pfade[0]) || (candRechnet && engagiert (pfade[1])))
+nachher:
+        if (true || engagiert (pfade[0]) || (candRechnet && engagiert (pfade[1])))   // ROTBEWEIS M-50: der Riegel laeuft auch im Passthrough
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 21:32:37, mutierte Quelle 21:32:33, Binary juenger: ja
+Exitcode: 1
+SONDE-NULLTEST FEHLGESCHLAGEN - 56 Pruefungen ok, 1 Fehler
+
+Gefallene Pruefungen (1):
+  FEHLER  passthrough_sanitisiert_nichts: NaN, +Inf und -Inf kommen bitgleich heraus, ausgeschaltet und im Hard-Bypass; kein Zaehler steigt  [Zaehler 6]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: passthrough_sanitisiert_nichts
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/dsp/DspKern.cpp bytegleich zurueckgespielt: ja (SHA-256 A3083DB5C1541AA75C92D01744C4FCC4D926BA8C9C491A9F35474D96002F6097)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 21:33:26 (gemeinsamer Gruenlauf nach der bytegleichen Ruecknahme aller Mutationen dieses Laufs)
+Bau: Exit 0; Binary 21:33:16, juengste zurueckgespielte Quelle 21:33:11, Binary juenger: ja
+Exitcode: 0
+SONDE-NULLTEST OK - 57 Pruefungen ok, 0 Fehler
+Gruen nach Ruecknahme: JA

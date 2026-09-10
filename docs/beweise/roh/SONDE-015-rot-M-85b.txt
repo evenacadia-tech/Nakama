@@ -1,0 +1,48 @@
+SONDE-015 Etappe 4a - Rotbeweis M-85b
+Stand:  2026-09-10 21:36:31
+Zusage: Eine abgewiesene Transaktion meldet kein Dirty.
+Bein:   B7 EqCopTransactionTest
+Datei:  eq-copilot/plugin/sonde/SondeProcessor.cpp:1040
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/sonde/SondeProcessor.cpp:1040
+vorher:
+            hostParameterAbgleichen (abgleich);
+            if (dspAusfuehrung->dirtyAbholen())
+                updateHostDisplay (juce::AudioProcessorListener::ChangeDetails().withNonParameterStateChanged (true));
+        }
+        return ergebnis;
+nachher:
+            hostParameterAbgleichen (abgleich);
+            dspAusfuehrung->dirtyAbholen();
+        }
+        updateHostDisplay (juce::AudioProcessorListener::ChangeDetails().withNonParameterStateChanged (true));   // ROTBEWEIS M-85: auch die Abweisung
+        return ergebnis;
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 21:36:31, mutierte Quelle 21:36:22, Binary juenger: ja
+Exitcode: 1
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 1 Fehler
+TRANSAKTION FEHLGESCHLAGEN
+
+Gefallene Pruefungen (1):
+  FEHLER  abgewiesene_meldet_nicht (M-85): die Abweisung am Zonenriegel und das Laden melden kein Dirty  [user_schutz @S3 rev=2 nicht-memo, Laden 0]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: abgewiesene_meldet_nicht
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt):
+  ok      angenommene_transaktion_meldet_dirty (M-85): je Commit genau eine nonParameterStateChanged-Meldung  [1 / 2]
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/sonde/SondeProcessor.cpp bytegleich zurueckgespielt: ja (SHA-256 9DCE2A67FFD6BDF69370592F059721AD4835D3617FCAB915E767186581D9ABA0)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 21:38:44 (gemeinsamer Gruenlauf nach der bytegleichen Ruecknahme aller Mutationen dieses Laufs)
+Bau: Exit 0; Binary 21:38:43, juengste zurueckgespielte Quelle 21:38:27, Binary juenger: ja
+Exitcode: 0
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 0 Fehler
+TRANSAKTION OK
+Gruen nach Ruecknahme: JA

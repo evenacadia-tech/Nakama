@@ -1,0 +1,41 @@
+SONDE-015 Etappe 4a - Rotbeweis M-123
+Stand:  2026-09-10 21:23:16
+Zusage: Eine committete Transaktion im Fenster liefert in S0 dasselbe Ergebnis, ohne zweite Revision (T1).
+Bein:   B7 EqCopTransactionTest
+Datei:  eq-copilot/plugin/state/NakamaTransaktion.cpp:411
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/state/NakamaTransaktion.cpp:411
+vorher:
+            if (! x.belegt || x.tid != a.tid) continue;
+nachher:
+            if (true) continue;   // ROTBEWEIS M-123: der Nachschlag findet nie etwas
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 21:23:16, mutierte Quelle 21:23:11, Binary juenger: ja
+Exitcode: 1
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 5 Fehler
+TRANSAKTION FEHLGESCHLAGEN
+
+Gefallene Pruefungen (5):
+  FEHLER  T1 wiederholung_im_fenster_liefert_dasselbe_ergebnis  [konflikt @S1 rev=3 nicht-memo, r danach 3, im Register | soll gespeichertes_ergebnis @S0 r=3 memo]
+  FEHLER  T11 fensterrand_zweite_transaktion_ist_drinnen  [konflikt @S1 rev=33 nicht-memo, r danach 33, im Register | soll gespeichertes_ergebnis @S0 r=33 memo]
+  FEHLER  T12 abweisungen_verdraengen_keinen_committeten_eintrag  [konflikt @S1 rev=3 nicht-memo, r danach 3, im Register | soll gespeichertes_ergebnis @S0 r=3 memo]
+  FEHLER  nachschlag_allokiert_nicht_und_schlaegt_nicht_fehl (10.000 Nachschlaege)  [Allokationen 0, Treffer 0]
+  FEHLER  wiederholung_unter_einer_zone_bekommt_nicht_user_schutz  [konflikt @S1 rev=4 nicht-memo]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: T1 wiederholung_im_fenster_liefert_dasselbe_ergebnis
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/state/NakamaTransaktion.cpp bytegleich zurueckgespielt: ja (SHA-256 39CE1F8D046695A4798AD51772937CADD8534457DEB3B5B57874389E25FB6317)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 21:33:26 (gemeinsamer Gruenlauf nach der bytegleichen Ruecknahme aller Mutationen dieses Laufs)
+Bau: Exit 0; Binary 21:33:25, juengste zurueckgespielte Quelle 21:33:11, Binary juenger: ja
+Exitcode: 0
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 0 Fehler
+TRANSAKTION OK
+Gruen nach Ruecknahme: JA

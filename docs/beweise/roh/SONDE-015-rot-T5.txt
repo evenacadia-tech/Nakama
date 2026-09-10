@@ -1,0 +1,41 @@
+SONDE-015 Etappe 4a - Rotbeweis T5
+Stand:  2026-09-10 21:24:11
+Zusage: Ein bankpflichtiger Kandidat bei vollem Pool endet in S5 mit busy_retry und wird nicht gemerkt (T5).
+Bein:   B7 EqCopTransactionTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp:182
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/dsp/DspKern.cpp:182
+vorher:
+        return ! pflicht || baenke.freieSlots() > 0;
+nachher:
+        return true || ! pflicht || baenke.freieSlots() > 0;   // ROTBEWEIS T5: der volle Pool wird nicht gesehen
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 21:24:10, mutierte Quelle 21:24:05, Binary juenger: ja
+Exitcode: 1
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 5 Fehler
+TRANSAKTION FEHLGESCHLAGEN
+
+Gefallene Pruefungen (5):
+  FEHLER  T5 busy_retry_wird_nicht_gemerkt  [commit @S8 rev=2 memo, r danach 2, im Register | soll busy_retry @S5 r=1 nicht-memo]
+  FEHLER  T7 Vorlauf: T endet in busy_retry (T5)  [commit @S8 rev=2 memo]
+  FEHLER  T7 ein Audio-ACK gibt eine Bank frei - ohne Revision  [frei 1, r=2]
+  FEHLER  T7 wiederholung_nach_bankfreigabe_committet  [gespeichertes_ergebnis @S0 rev=2 memo, r danach 2, im Register | soll commit @S8 r=2 memo]
+  FEHLER  T9 retry_nach_zonenloesung_bei_vollem_pool_ist_busy_retry (bankpflichtig, nach I6 Ausgang T5)  [commit @S8 rev=3 memo, r danach 3, im Register | soll busy_retry @S5 r=2 nicht-memo]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: T5 busy_retry_wird_nicht_gemerkt
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/dsp/DspKern.cpp bytegleich zurueckgespielt: ja (SHA-256 A3083DB5C1541AA75C92D01744C4FCC4D926BA8C9C491A9F35474D96002F6097)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 21:33:26 (gemeinsamer Gruenlauf nach der bytegleichen Ruecknahme aller Mutationen dieses Laufs)
+Bau: Exit 0; Binary 21:33:25, juengste zurueckgespielte Quelle 21:33:11, Binary juenger: ja
+Exitcode: 0
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 0 Fehler
+TRANSAKTION OK
+Gruen nach Ruecknahme: JA

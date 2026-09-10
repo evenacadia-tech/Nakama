@@ -1,0 +1,52 @@
+SONDE-015 Etappe 4a - Rotbeweis M-08b
+Stand:  2026-09-10 21:37:42
+Zusage: Nach Laden und Vorbereitung ist keine Bank aktiv; erst der erste Block uebernimmt sie.
+Bein:   B7 EqCopTransactionTest
+Datei:  eq-copilot/plugin/sonde/SondeProcessor.cpp:243
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/sonde/SondeProcessor.cpp:243
+vorher:
+                publikationOffen = true;
+        }
+    
+        workerWarte.notify_all();
+nachher:
+                publikationOffen = true;
+            {   // ROTBEWEIS M-08: die Vorbereitung faehrt einen stillen Block durch den Kern
+                std::vector<float> still ((size_t) maxBlock * 2, 0.0f);
+                float* zeiger[2] = { still.data(), still.data() + maxBlock };
+                dspKern->verarbeite (zeiger, 2, maxBlock);
+            }
+        }
+    
+        workerWarte.notify_all();
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 21:37:42, mutierte Quelle 21:37:33, Binary juenger: ja
+Exitcode: 1
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 3 Fehler
+TRANSAKTION FEHLGESCHLAGEN
+
+Gefallene Pruefungen (3):
+  FEHLER  bank_wird_erst_beim_ersten_block_aktiv (M-08): nach Laden und Vorbereitung keine aktive Bank, nach dem ersten Block genau eine  [vor 1, nach 1]
+  FEHLER  freigabe_und_vorbereitung_sind_ein_paar (E4-22): releaseResources gibt den Kern frei, ohne Vorbereitung unberuehrt, danach klingt derselbe bestaetigte Zustand  [51200 Samples]
+  FEHLER  reload_rekonstruiert_denselben_audioausgang (M-84): derselbe Hash und derselbe Ausgang (hier bitgleich)  [153600 Samples]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: bank_wird_erst_beim_ersten_block_aktiv
+
+Hinweis: Die Zusage ist eine Abwesenheit (kein Block vor dem ersten Callback); der Bruch fuegt ihn an der Stelle ein, an der die Vorbereitung publiziert.
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/sonde/SondeProcessor.cpp bytegleich zurueckgespielt: ja (SHA-256 9DCE2A67FFD6BDF69370592F059721AD4835D3617FCAB915E767186581D9ABA0)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 21:38:44 (gemeinsamer Gruenlauf nach der bytegleichen Ruecknahme aller Mutationen dieses Laufs)
+Bau: Exit 0; Binary 21:38:43, juengste zurueckgespielte Quelle 21:38:27, Binary juenger: ja
+Exitcode: 0
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 0 Fehler
+TRANSAKTION OK
+Gruen nach Ruecknahme: JA

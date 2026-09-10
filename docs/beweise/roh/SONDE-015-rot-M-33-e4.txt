@@ -1,0 +1,33 @@
+SONDE-015 Etappe 4a - Rotbeweis M-33
+Stand:  2026-09-10 21:32:33
+Zusage: Mix 0 ist bitidentisch: der Dry-Zweig ist pre_nakama, vor Input-Trim und Filterbank.
+Bein:   A16 EqCopProbeeqNullTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp:665
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/dsp/DspKern.cpp:665
+vorher:
+                if (mix == 0.0)      { l = dL[i]; rr = dR[i]; }
+nachher:
+                if (mix == 0.0)      { l = dL[i] * r.input.aktuell; rr = dR[i] * r.input.aktuell; }   // ROTBEWEIS M-33: Dry hinter dem Input-Trim
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 21:32:32, mutierte Quelle 21:32:27, Binary juenger: ja
+Exitcode: 1
+SONDE-NULLTEST FEHLGESCHLAGEN - 56 Pruefungen ok, 1 Fehler
+
+Gefallene Pruefungen (1):
+  FEHLER  mix_null_ist_bitidentisch: trotz +9 dB Input-Trim und +12-dB-Bell, Output-Trim 0 dB  [Mix 0: 459488 abweichend; Gegenprobe Mix 1: 459488 abweichend (das Band ist hoerbar)]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: mix_null_ist_bitidentisch
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/dsp/DspKern.cpp bytegleich zurueckgespielt: ja (SHA-256 A3083DB5C1541AA75C92D01744C4FCC4D926BA8C9C491A9F35474D96002F6097)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 21:33:26 (gemeinsamer Gruenlauf nach der bytegleichen Ruecknahme aller Mutationen dieses Laufs)
+Bau: Exit 0; Binary 21:33:16, juengste zurueckgespielte Quelle 21:33:11, Binary juenger: ja
+Exitcode: 0
+SONDE-NULLTEST OK - 57 Pruefungen ok, 0 Fehler
+Gruen nach Ruecknahme: JA

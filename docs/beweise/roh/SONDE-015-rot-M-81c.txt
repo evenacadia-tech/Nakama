@@ -1,0 +1,40 @@
+SONDE-015 Etappe 4a - Rotbeweis M-81c
+Stand:  2026-09-10 21:35:44
+Zusage: Am Prozessor endet die Hostgeste erst nach der Ruhegrenze von 0,25 s verarbeitetem Audio.
+Bein:   B7 EqCopTransactionTest
+Datei:  eq-copilot/plugin/sonde/SondeProcessor.cpp:1252
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/sonde/SondeProcessor.cpp:1252
+vorher:
+                   >= (std::uint64_t) (nakama::transaktion::kAutomationsRuheSekunden * fs))
+nachher:
+                   >= (std::uint64_t) 0)   // ROTBEWEIS M-81: keine Ruhegrenze
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 21:35:44, mutierte Quelle 21:35:36, Binary juenger: ja
+Exitcode: 1
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 1 Fehler
+TRANSAKTION FEHLGESCHLAGEN
+
+Gefallene Pruefungen (1):
+  FEHLER  epoche_wechselt_genau_zweimal_je_geste (M-81, Prozessor): Beginn, dann Ende nach 0,25 s verarbeitetem Audio  [0 -> 100 -> 100 -> 100]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: epoche_wechselt_genau_zweimal_je_geste (M-81, Prozessor)
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt):
+  ok      epoche_wechselt_genau_zweimal_je_geste (M-81)  [0 -> 1 -> 2 -> 2]
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/sonde/SondeProcessor.cpp bytegleich zurueckgespielt: ja (SHA-256 9DCE2A67FFD6BDF69370592F059721AD4835D3617FCAB915E767186581D9ABA0)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 21:38:44 (gemeinsamer Gruenlauf nach der bytegleichen Ruecknahme aller Mutationen dieses Laufs)
+Bau: Exit 0; Binary 21:38:43, juengste zurueckgespielte Quelle 21:38:27, Binary juenger: ja
+Exitcode: 0
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 0 Fehler
+TRANSAKTION OK
+Gruen nach Ruecknahme: JA

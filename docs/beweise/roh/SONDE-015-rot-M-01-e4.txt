@@ -1,0 +1,39 @@
+SONDE-015 Etappe 4a - Rotbeweis M-01
+Stand:  2026-09-10 21:32:11
+Zusage: Frische Instanz: eq_enabled steht auf false, keine Bank wird vorbereitet, der Default ist bitidentisch.
+Bein:   A16 EqCopProbeeqNullTest
+Datei:  eq-copilot/plugin/state/NakamaParameter.cpp:79
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/state/NakamaParameter.cpp:79
+vorher:
+        t[i++] = boolean    ("v2.global.eq_enabled", false, false, true, 2);
+nachher:
+        t[i++] = boolean    ("v2.global.eq_enabled", true, false, true, 2);   // ROTBEWEIS M-01
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 21:32:11, mutierte Quelle 21:32:00, Binary juenger: ja
+Exitcode: 1
+SONDE-NULLTEST FEHLGESCHLAGEN - 52 Pruefungen ok, 5 Fehler
+
+Gefallene Pruefungen (5):
+  FEHLER    eq_enabled steht auf false, und nach dem Lauf ist keine Bank belegt  [belegt 1]
+  FEHLER    eq_enabled steht auf false, und nach dem Lauf ist keine Bank belegt  [belegt 1]
+  FEHLER    eq_enabled steht auf false, und nach dem Lauf ist keine Bank belegt  [belegt 1]
+  FEHLER    eq_enabled steht auf false, und nach dem Lauf ist keine Bank belegt  [belegt 1]
+  FEHLER  passthrough_sanitisiert_nichts: NaN, +Inf und -Inf kommen bitgleich heraus, ausgeschaltet und im Hard-Bypass; kein Zaehler steigt  [Zaehler 6]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: eq_enabled steht auf false
+
+Hinweis: Der engagierte, neutrale Kern bleibt bitidentisch (M-02); fallen muss deshalb die Pruefung auf den Schalter und die Bank.
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/state/NakamaParameter.cpp bytegleich zurueckgespielt: ja (SHA-256 F6399135950D4DDD30790DE9F06B7C399816B9A631B7FA24008FBF813C29B5B7)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 21:33:26 (gemeinsamer Gruenlauf nach der bytegleichen Ruecknahme aller Mutationen dieses Laufs)
+Bau: Exit 0; Binary 21:33:16, juengste zurueckgespielte Quelle 21:33:11, Binary juenger: ja
+Exitcode: 0
+SONDE-NULLTEST OK - 57 Pruefungen ok, 0 Fehler
+Gruen nach Ruecknahme: JA

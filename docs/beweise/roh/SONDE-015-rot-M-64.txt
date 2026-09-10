@@ -1,0 +1,48 @@
+SONDE-015 Etappe 4a - Rotbeweis M-64
+Stand:  2026-09-10 21:35:18
+Zusage: occupied ist kein Host-Parameter und steht nicht in der APVTS.
+Bein:   B7 EqCopTransactionTest
+Datei:  eq-copilot/plugin/sonde/SondeProcessor.cpp:89
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/sonde/SondeProcessor.cpp:89
+vorher:
+        const auto& t = nakama::parameter::tabelle();
+        for (int i = 0; i < nakama::parameter::kHostParameter; ++i)
+        {
+            const auto& b = t[(size_t) i];
+            jassert (b.hostParameter);
+nachher:
+        const auto& t = nakama::parameter::tabelle();
+        for (int i = 0; i < nakama::parameter::kAnzahl;   /* ROTBEWEIS M-64 */ ++i)
+        {
+            const auto& b = t[(size_t) i];
+            jassert (b.hostParameter);
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 21:35:17, mutierte Quelle 21:35:09, Binary juenger: ja
+Exitcode: 1
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 4 Fehler
+TRANSAKTION FEHLGESCHLAGEN
+
+Gefallene Pruefungen (4):
+  FEHLER  apvts_fuehrt_112_parameter_in_vertragsreihenfolge (M-88): Kennung, Index, Typ, Grenzen und Default aus parameter::tabelle()  [120 Parameter, Reihenfolge 112, Typ/Grenzen 112]
+  FEHLER  v2_haengt_hinten_an (M-88): eq_enabled, mix und auto_gain auf 109, 110 und 111
+  FEHLER  occupied_ist_kein_hostparameter (M-64): nicht in der Hostliste, von aussen nicht automatisierbar
+  FEHLER  jede_v2_kennung_erklaert_ihren_ort (M-87): host_parameter genau dann, wenn sie in der Hostliste steht  [3/11]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: occupied_ist_kein_hostparameter
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/sonde/SondeProcessor.cpp bytegleich zurueckgespielt: ja (SHA-256 9DCE2A67FFD6BDF69370592F059721AD4835D3617FCAB915E767186581D9ABA0)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 21:38:44 (gemeinsamer Gruenlauf nach der bytegleichen Ruecknahme aller Mutationen dieses Laufs)
+Bau: Exit 0; Binary 21:38:43, juengste zurueckgespielte Quelle 21:38:27, Binary juenger: ja
+Exitcode: 0
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 0 Fehler
+TRANSAKTION OK
+Gruen nach Ruecknahme: JA

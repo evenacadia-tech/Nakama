@@ -1,0 +1,66 @@
+SONDE-015 Etappe 4a - Rotbeweis M-75
+Stand:  2026-09-10 21:23:06
+Zusage: Ein Fehler in einer fehlbaren Stufe laesst committed, Hash, r, Ring und Register unveraendert; alle fehlbaren Stufen liegen vor dem Commit-Punkt.
+Bein:   B7 EqCopTransactionTest
+Datei:  eq-copilot/plugin/state/NakamaTransaktion.cpp:614
+Datei:  eq-copilot/plugin/state/NakamaTransaktion.cpp:641
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/state/NakamaTransaktion.cpp:614
+vorher:
+        melde (Stufe::s7);
+        if (einspritzung == Stufe::s7)
+        {
+            auto e = ohneCommit (Ausgang::fehler, Stufe::s7);
+            e.grund = "einspritzung";
+            return e;
+        }
+nachher:
+        melde (Stufe::s7);
+eq-copilot/plugin/state/NakamaTransaktion.cpp:641
+vorher:
+        std::swap (committed, kandidat);   // Vektoren tauschen Puffer; das Wertefeld wird kopiert
+        committedHash = kandidatHash;
+nachher:
+        std::swap (committed, kandidat);   // Vektoren tauschen Puffer; das Wertefeld wird kopiert
+        committedHash = kandidatHash;
+        if (einspritzung == Stufe::s7)   // ROTBEWEIS M-75: die fehlbare Stufe S7 hinter dem Commit-Punkt
+        {
+            auto f = ohneCommit (Ausgang::fehler, Stufe::s7);
+            f.grund = "einspritzung";
+            return f;
+        }
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 21:23:05, mutierte Quelle 21:23:00, Binary juenger: ja
+Exitcode: 1
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 3 Fehler
+TRANSAKTION FEHLGESCHLAGEN
+
+Gefallene Pruefungen (3):
+  FEHLER  T15 bestaetigter Zustand, Hash und Undo-Ring unveraendert - kein halber Eintrag
+  FEHLER  fehler_in_S7_laesst_committed_und_hash_unveraendert (T15)  [fehler @S7 rev=1 nicht-memo grund=einspritzung]
+  FEHLER  alle_fehlbaren_stufen_liegen_vor_dem_commit_punkt  [Commit S0..S8 in Reihenfolge: ja, S8 ohne Commit erreicht: JA]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: fehler_in_S7
+  erwartet: alle_fehlbaren_stufen_liegen_vor_dem_commit_punkt
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt):
+  ok      T13 fehler_in_S4_laesst_committed_und_hash_unveraendert  [fehler @S4 rev=1 nicht-memo grund=einspritzung, r danach 1, nicht im Register | soll fehler @S4 r=1 nicht-memo]
+  ok      T14 fehler_in_S6_laesst_committed_und_hash_unveraendert  [fehler @S6 rev=1 nicht-memo grund=einspritzung, r danach 1, nicht im Register | soll fehler @S6 r=1 nicht-memo]
+
+Hinweis: Zwei Stellen derselben Datei, eine Mutation: der Ausgang von S7 wandert hinter Tausch und Hash. Die Ruecknahme laeuft rueckwaerts und prueft die Ursprungsbytes.
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/state/NakamaTransaktion.cpp bytegleich zurueckgespielt: ja (SHA-256 39CE1F8D046695A4798AD51772937CADD8534457DEB3B5B57874389E25FB6317)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 21:33:26 (gemeinsamer Gruenlauf nach der bytegleichen Ruecknahme aller Mutationen dieses Laufs)
+Bau: Exit 0; Binary 21:33:25, juengste zurueckgespielte Quelle 21:33:11, Binary juenger: ja
+Exitcode: 0
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 0 Fehler
+TRANSAKTION OK
+Gruen nach Ruecknahme: JA

@@ -1,0 +1,37 @@
+SONDE-015 Etappe 4a - Rotbeweis M-58
+Stand:  2026-09-10 21:24:16
+Zusage: Ein freier Slot verarbeitet nichts, gleich was seine Werte sagen: kein Filter, kein Detektor, kein Auto-Gain-Beitrag, keine Auslenkung.
+Bein:   B7 EqCopTransactionTest
+Datei:  eq-copilot/plugin/dsp/DspProgramm.cpp:205
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/dsp/DspProgramm.cpp:205
+vorher:
+            b.aktiv = occupied && enabled;
+nachher:
+            b.aktiv = (occupied || true) && enabled;   // ROTBEWEIS M-58
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 21:24:15, mutierte Quelle 21:24:11, Binary juenger: ja
+Exitcode: 1
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 1 Fehler
+TRANSAKTION FEHLGESCHLAGEN
+
+Gefallene Pruefungen (1):
+  FEHLER  freier_slot_verarbeitet_nichts (M-58): Slot 2 frei mit +12 dB, Dynamik und Auto-Gain an - Ausgang bitgleich, Auto-Gain gleich, keine Auslenkung  [Auto-Gain -1.427212 / -5.123741 dB, Auslenkung Slot 2 0.000000 dB]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: freier_slot_verarbeitet_nichts
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/dsp/DspProgramm.cpp bytegleich zurueckgespielt: ja (SHA-256 692F92C869051BC3392B621668FAF44821D2DC7F04FD5B4C3509FB883880B989)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 21:33:26 (gemeinsamer Gruenlauf nach der bytegleichen Ruecknahme aller Mutationen dieses Laufs)
+Bau: Exit 0; Binary 21:33:25, juengste zurueckgespielte Quelle 21:33:11, Binary juenger: ja
+Exitcode: 0
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 0 Fehler
+TRANSAKTION OK
+Gruen nach Ruecknahme: JA

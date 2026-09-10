@@ -1,0 +1,47 @@
+SONDE-015 Etappe 4a - Rotbeweis M-96
+Stand:  2026-09-10 21:31:27
+Zusage: Der Klanginhalt eines Presets kommt vollstaendig an.
+Bein:   B7 EqCopTransactionTest
+Datei:  eq-copilot/plugin/state/NakamaPreset.cpp:188
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/state/NakamaPreset.cpp:188
+vorher:
+        for (int i = 0; i < parameter::kAnzahl; ++i)
+        {
+            if (! gehoertInsPreset (i))
+                continue;
+            const auto& b = t[(size_t) i];
+            const auto* w = finde (*par, b.id);
+nachher:
+        for (int i = 0; i < parameter::kAnzahl; ++i)
+        {
+            if (! gehoertInsPreset (i) || i == parameter::kIndexMix)   // ROTBEWEIS M-96: Mix kommt nicht an
+                continue;
+            const auto& b = t[(size_t) i];
+            const auto* w = finde (*par, b.id);
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 21:31:27, mutierte Quelle 21:31:22, Binary juenger: ja
+Exitcode: 1
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 1 Fehler
+TRANSAKTION FEHLGESCHLAGEN
+
+Gefallene Pruefungen (1):
+  FEHLER  preset_traegt_den_klanginhalt_vollstaendig (M-96): 119 Werte und Zonen kommen an  [commit @S8 rev=2 memo]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: preset_traegt_den_klanginhalt_vollstaendig
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/state/NakamaPreset.cpp bytegleich zurueckgespielt: ja (SHA-256 4D0681DF6B6BBCC302302D04600BE797066952097FD26421C0811952B1DD00D2)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 21:33:26 (gemeinsamer Gruenlauf nach der bytegleichen Ruecknahme aller Mutationen dieses Laufs)
+Bau: Exit 0; Binary 21:33:25, juengste zurueckgespielte Quelle 21:33:11, Binary juenger: ja
+Exitcode: 0
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 0 Fehler
+TRANSAKTION OK
+Gruen nach Ruecknahme: JA

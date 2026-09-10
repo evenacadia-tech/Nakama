@@ -1,0 +1,44 @@
+SONDE-015 Etappe 4a - Rotbeweis T17
+Stand:  2026-09-10 21:23:27
+Zusage: I5: das Register ist transient; der Ladestart leert es und setzt r0 = r (T17).
+Bein:   B7 EqCopTransactionTest
+Datei:  eq-copilot/plugin/state/NakamaTransaktion.cpp:263
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/state/NakamaTransaktion.cpp:263
+vorher:
+        reg.fill (RegisterEintrag {});
+nachher:
+        // ROTBEWEIS I5/T17: reg.fill (RegisterEintrag {}); entfernt
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 21:23:27, mutierte Quelle 21:23:22, Binary juenger: ja
+Exitcode: 1
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 5 Fehler
+TRANSAKTION FEHLGESCHLAGEN
+
+Gefallene Pruefungen (5):
+  FEHLER  T17 Ladestart: r0 = r = 33, das Register ist leer
+  FEHLER    Wachen I1/I2/I4 nach T17 Ladestart  [belegt 32 soll 0, r=33 r0=33 I1-BRUCH I2-BRUCH I4-BRUCH]
+  FEHLER    Wachen I1/I2/I4 nach T17  [belegt 32 soll 1, r=34 r0=33 I1-BRUCH I2-BRUCH I4-BRUCH]
+  FEHLER  ladestart_hat_leeres_register_und_haelt_die_revision (dieselbe Instanz, vorher 32 Registereintraege)  [r=34 r0=34 belegt 32 -> 32, Cursor 1]
+  FEHLER  register_ist_nicht_teil_des_zustands: Speichern schreibt es nicht, der Ladestart leert es, Hash und Revision bleiben  [5745 Bytes]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: ladestart_hat_leeres_register_und_haelt_die_revision
+  erwartet: T17 Ladestart: r0 = r = 33, das Register ist leer
+
+Hinweis: S0 prueft zusaetzlich e > r0 als Wache (I2); der alte Eintrag waere deshalb kein falsches Ergebnis, aber das Register ist nicht leer. Genau das misst die Zeile.
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/state/NakamaTransaktion.cpp bytegleich zurueckgespielt: ja (SHA-256 39CE1F8D046695A4798AD51772937CADD8534457DEB3B5B57874389E25FB6317)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 21:33:26 (gemeinsamer Gruenlauf nach der bytegleichen Ruecknahme aller Mutationen dieses Laufs)
+Bau: Exit 0; Binary 21:33:25, juengste zurueckgespielte Quelle 21:33:11, Binary juenger: ja
+Exitcode: 0
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 0 Fehler
+TRANSAKTION OK
+Gruen nach Ruecknahme: JA

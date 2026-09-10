@@ -1,0 +1,41 @@
+SONDE-015 Etappe 4a - Rotbeweis M-63b
+Stand:  2026-09-10 21:24:54
+Zusage: Der Kern bekommt freie Slots neutral; Automation auf einem freien Slot erzeugt deshalb keinen Programmwechsel und keinen Klang.
+Bein:   B7 EqCopTransactionTest
+Datei:  eq-copilot/plugin/state/NakamaTransaktion.cpp:756
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/state/NakamaTransaktion.cpp:756
+vorher:
+        sichtWeg.werte = wirksam.werte;
+        setzeFreieSlotsNeutral (sichtWeg.werte);
+nachher:
+        sichtWeg.werte = wirksam.werte;
+        // ROTBEWEIS M-63: setzeFreieSlotsNeutral (sichtWeg.werte); entfernt
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 21:24:54, mutierte Quelle 21:24:48, Binary juenger: ja
+Exitcode: 1
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 1 Fehler
+TRANSAKTION FEHLGESCHLAGEN
+
+Gefallene Pruefungen (1):
+  FEHLER  automation_auf_freien_slot_aendert_werte_nicht_klang (M-63): der Parameter folgt; Belegung, Programm und Audio bleiben gleich  [51200 Samples verglichen, Programmuebernahmen 2 / 1]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: automation_auf_freien_slot_aendert_werte_nicht_klang
+
+Hinweis: Zweite Traegerzeile derselben Zusage im Prozessorweg: ohne Kernsicht wechselt das Programm bei jeder Automation auf einem freien Slot.
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/state/NakamaTransaktion.cpp bytegleich zurueckgespielt: ja (SHA-256 39CE1F8D046695A4798AD51772937CADD8534457DEB3B5B57874389E25FB6317)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 21:33:26 (gemeinsamer Gruenlauf nach der bytegleichen Ruecknahme aller Mutationen dieses Laufs)
+Bau: Exit 0; Binary 21:33:25, juengste zurueckgespielte Quelle 21:33:11, Binary juenger: ja
+Exitcode: 0
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 0 Fehler
+TRANSAKTION OK
+Gruen nach Ruecknahme: JA

@@ -1,0 +1,33 @@
+SONDE-015 Etappe 4a - Rotbeweis M-93
+Stand:  2026-09-10 21:33:11
+Zusage: Speichern, Laden, Speichern ist bytegleich in v2 - mit Kind Dsp, Zone, Undo-Ring und Cursor.
+Bein:   A16 EqCopProbeeqNullTest
+Datei:  eq-copilot/plugin/state/NakamaTransaktion.cpp:259
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/state/NakamaTransaktion.cpp:259
+vorher:
+        cursor = undoCursor;
+nachher:
+        cursor = 0;   // ROTBEWEIS M-93: der Cursor reist nicht durch den Ladestart
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 21:33:11, mutierte Quelle 21:33:00, Binary juenger: ja
+Exitcode: 1
+SONDE-NULLTEST FEHLGESCHLAGEN - 56 Pruefungen ok, 1 Fehler
+
+Gefallene Pruefungen (1):
+  FEHLER  speichern_laden_speichern_bytegleich_in_v2: Kind Dsp mit Revision, Zone und Undo-Ring  [5830 Bytes, Revision 3]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: speichern_laden_speichern_bytegleich_in_v2
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/state/NakamaTransaktion.cpp bytegleich zurueckgespielt: ja (SHA-256 39CE1F8D046695A4798AD51772937CADD8534457DEB3B5B57874389E25FB6317)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 21:33:26 (gemeinsamer Gruenlauf nach der bytegleichen Ruecknahme aller Mutationen dieses Laufs)
+Bau: Exit 0; Binary 21:33:16, juengste zurueckgespielte Quelle 21:33:11, Binary juenger: ja
+Exitcode: 0
+SONDE-NULLTEST OK - 57 Pruefungen ok, 0 Fehler
+Gruen nach Ruecknahme: JA

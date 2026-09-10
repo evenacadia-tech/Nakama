@@ -1,0 +1,38 @@
+SONDE-015 Etappe 4a - Rotbeweis M-52
+Stand:  2026-09-10 21:37:51
+Zusage: Nach dem Laden steht die Hoermatrix immer auf Processed.
+Bein:   B7 EqCopTransactionTest
+Datei:  eq-copilot/plugin/sonde/SondeProcessor.cpp:871
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/sonde/SondeProcessor.cpp:871
+vorher:
+            // R10: nach dem Laden steht die Hoermatrix IMMER auf Processed (M-52).
+            dspKern->setzeHoermatrix (nakama::dsp::Hoermatrix::processed);
+nachher:
+            // ROTBEWEIS M-52: dspKern->setzeHoermatrix (Processed) nach dem Laden entfernt
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 21:37:50, mutierte Quelle 21:37:42, Binary juenger: ja
+Exitcode: 1
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 1 Fehler
+TRANSAKTION FEHLGESCHLAGEN
+
+Gefallene Pruefungen (1):
+  FEHLER  nach_laden_immer_processed (M-52): die Auswahl ist transient und steht weder im State noch im DTO
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: nach_laden_immer_processed
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/sonde/SondeProcessor.cpp bytegleich zurueckgespielt: ja (SHA-256 9DCE2A67FFD6BDF69370592F059721AD4835D3617FCAB915E767186581D9ABA0)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 21:38:44 (gemeinsamer Gruenlauf nach der bytegleichen Ruecknahme aller Mutationen dieses Laufs)
+Bau: Exit 0; Binary 21:38:43, juengste zurueckgespielte Quelle 21:38:27, Binary juenger: ja
+Exitcode: 0
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 0 Fehler
+TRANSAKTION OK
+Gruen nach Ruecknahme: JA

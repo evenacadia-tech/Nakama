@@ -1,0 +1,41 @@
+SONDE-015 Etappe 4a - Rotbeweis M-66
+Stand:  2026-09-10 21:25:33
+Zusage: Die Zonengrenzen werden im DTO geprueft, in S2 der Transaktion.
+Bein:   B7 EqCopTransactionTest
+Datei:  eq-copilot/plugin/state/NakamaTransaktion.cpp:440
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/state/NakamaTransaktion.cpp:440
+vorher:
+                    ok = param::validiere (a.satz, grund, wo);
+nachher:
+                    ok = param::validiere (a.satz.werte, grund, wo);   // ROTBEWEIS M-66: die Zonen ungeprueft
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 21:25:32, mutierte Quelle 21:25:22, Binary juenger: ja
+Exitcode: 1
+  FEHLER  zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 3 Fehler
+TRANSAKTION FEHLGESCHLAGEN
+
+Gefallene Pruefungen (3):
+  FEHLER  zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+  FEHLER  neunte_zone_wird_abgewiesen (M-73)  [fehler @S4 rev=1 nicht-memo grund=kandidat_ungueltig zone_anzahl @ schutz_zonen]
+  FEHLER  doppelte_zonen_id_wird_abgewiesen (M-73)  [fehler @S4 rev=1 nicht-memo grund=kandidat_ungueltig zone_doppelt @ schutz_zonen[1].id]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: zone_dto_grenzen
+
+Hinweis: S4 prueft den Kandidaten noch einmal; die Zeile misst, dass die ungueltige Zone in S2 mit Grund bereich faellt.
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/state/NakamaTransaktion.cpp bytegleich zurueckgespielt: ja (SHA-256 39CE1F8D046695A4798AD51772937CADD8534457DEB3B5B57874389E25FB6317)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 21:33:26 (gemeinsamer Gruenlauf nach der bytegleichen Ruecknahme aller Mutationen dieses Laufs)
+Bau: Exit 0; Binary 21:33:25, juengste zurueckgespielte Quelle 21:33:11, Binary juenger: ja
+Exitcode: 0
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 0 Fehler
+TRANSAKTION OK
+Gruen nach Ruecknahme: JA

@@ -1,0 +1,56 @@
+SONDE-015 Etappe 4a - Rotbeweis M-124
+Stand:  2026-09-10 21:23:33
+Zusage: Eine Transaktion ohne Commit wird nicht gemerkt (I4); dieselbe tid ist danach ein neuer Versuch (T5, T7).
+Bein:   B7 EqCopTransactionTest
+Datei:  eq-copilot/plugin/state/NakamaTransaktion.cpp:592
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/state/NakamaTransaktion.cpp:592
+vorher:
+        if (einspritzung == Stufe::s5 || ! aus.baueVor (kandidat))
+            return ohneCommit (Ausgang::busyRetry, Stufe::s5);
+nachher:
+        if (einspritzung == Stufe::s5 || ! aus.baueVor (kandidat))
+        {
+            // ROTBEWEIS M-124: der Ausgang ohne Commit wird gemerkt
+            auto& m = reg[(size_t) ((r - r0) % (std::uint64_t) kRegisterPlaetze)];
+            m.belegt = true; m.tid = a.tid; m.e = r; m.hash = committedHash;
+            return ohneCommit (Ausgang::busyRetry, Stufe::s5);
+        }
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 21:23:32, mutierte Quelle 21:23:27, Binary juenger: ja
+Exitcode: 1
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 12 Fehler
+TRANSAKTION FEHLGESCHLAGEN
+
+Gefallene Pruefungen (12):
+  FEHLER  T5 busy_retry_wird_nicht_gemerkt  [busy_retry @S5 rev=1 nicht-memo, r danach 1, im Register | soll busy_retry @S5 r=1 nicht-memo]
+  FEHLER    Wachen I1/I2/I4 nach T5  [belegt 2 soll 1, r=1 r0=0 I1-BRUCH I4-BRUCH]
+  FEHLER  T7 wiederholung_nach_bankfreigabe_committet  [gespeichertes_ergebnis @S0 rev=1 memo, r danach 1, im Register | soll commit @S8 r=2 memo]
+  FEHLER    Wachen I1/I2/I4 nach T7  [belegt 2 soll 1, r=1 r0=0 I1-BRUCH I4-BRUCH]
+  FEHLER  T9 retry_nach_zonenloesung_bei_vollem_pool_ist_busy_retry (bankpflichtig, nach I6 Ausgang T5)  [busy_retry @S5 rev=2 nicht-memo, r danach 2, im Register | soll busy_retry @S5 r=2 nicht-memo]
+  FEHLER    Wachen I1/I2/I4 nach T9 bankpflichtig bei vollem Pool  [belegt 3 soll 2, r=2 r0=0 I1-BRUCH I4-BRUCH]
+  FEHLER  fehler_in_S5_laesst_committed_und_hash_unveraendert (T5)  [busy_retry @S5 rev=1 nicht-memo]
+  FEHLER  fehler_in_S6_laesst_committed_und_hash_unveraendert (T14)  [gespeichertes_ergebnis @S0 rev=1 memo]
+  FEHLER  fehler_in_S7_laesst_committed_und_hash_unveraendert (T15)  [gespeichertes_ergebnis @S0 rev=1 memo]
+  FEHLER    Wachen I1/I2/I4 nach den sieben Einspritzungen  [belegt 2 soll 1, r=1 r0=0 I1-BRUCH I4-BRUCH]
+  FEHLER  fehler_hinterlaesst_keinen_registereintrag: nach sieben Fehlern committet dieselbe tid  [gespeichertes_ergebnis @S0 rev=1 memo]
+  FEHLER  alle_fehlbaren_stufen_liegen_vor_dem_commit_punkt  [Commit S0..S8 in Reihenfolge: ja, S8 ohne Commit erreicht: JA]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: T7 wiederholung_nach_bankfreigabe_committet
+  erwartet: T5 busy_retry_wird_nicht_gemerkt
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/state/NakamaTransaktion.cpp bytegleich zurueckgespielt: ja (SHA-256 39CE1F8D046695A4798AD51772937CADD8534457DEB3B5B57874389E25FB6317)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 21:33:26 (gemeinsamer Gruenlauf nach der bytegleichen Ruecknahme aller Mutationen dieses Laufs)
+Bau: Exit 0; Binary 21:33:25, juengste zurueckgespielte Quelle 21:33:11, Binary juenger: ja
+Exitcode: 0
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+167 geprueft, 0 Fehler
+TRANSAKTION OK
+Gruen nach Ruecknahme: JA

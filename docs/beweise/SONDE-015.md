@@ -3453,3 +3453,20 @@ Einzeln aus pwsh gebaut und gefahren, nach dem letzten Rotbeweislauf; jedes Bina
 | **A16** | 0 | ja | SONDE-NULLTEST OK - 87 Pruefungen ok, 0 Fehler |
 | **B2** | 0 | ja | STATE-MIGRATION-TEST OK - 247 Pruefungen ok, 0 Fehler |
 | **B3c** | 0 | ja | 152 bestanden, 0 gescheitert |
+
+### 9.12 Wiederprüfung 2 Etappe 3 — NEEDS_WORK (Dirigent, 2026-09-10)
+
+| Merkmal | Wert |
+|---|---|
+| Prüfer | Codex `gpt-6-astra`, Effort max, lesend; Thread `01a08b85-b6a3-7301-add9-4aed2cfa2c36`; Lauf 15:33–15:42 |
+| Prüfbereich | Wiederprüfung (Vorlage B) über den Fixdiff `git diff 5f4f72c8...00627114 -- eq-copilot/plugin/dsp eq-copilot/plugin/tests/DspGoldenTestMain.cpp eq-copilot/plugin/CMakeLists.txt tools/beweise.ps1`; HEAD während des Laufs `fda96533` (trägt nur den Prüfauftrag), vorher und nachher identisch |
+| Auftrag und Urteil | `docs/beweise/roh/SONDE-015-etappe-3-wiederpruefung-2-auftrag.txt`; Urteil wörtlich `docs/beweise/roh/SONDE-015-etappe-3-wiederpruefung-2-0062711.txt` |
+| Urteil | **NEEDS_WORK** — W-1 bis W-4 geschlossen (je Beleg und Rotbeweis mit einer Mutation); W-5 schließt die ursprüngliche Reproduktion, lässt aber den Nullvergleich identischer Zustände beim Candidate-Abbruch offen; sonst nichts gebrochen |
+| Workerausfall dieser Runde | Der erste Nacharbeits-Worker `17561b95` endete nach 55 Minuten ohne Dateiänderung mit dem API-Fehler „response exceeded the 64000 output token maximum"; der Dirigent setzte ihn als Kopie `b913d829` mit demselben Auftrag und der Anweisung „kleine Schritte, je Aufruf rund 250 Zeilen" fort. Die Kopie erbte den gelesenen Kontext und lieferte in drei Commits (`8a8aa1b7`, `1018b746`, `00627114`) |
+| Quellencheck des Dirigenten | lesender Opus-Agent: **DEFEKT gegen M-55**, vorbestehend. Der Zweig `kEnde` in `blockrand` setzt den Candidate nach dem Abbruch auf einen Crossfade nach Dry, die Hörrückblende liest genau diesen wandernden Puffer; nachgerechnet Ausgang(j) = P + (D−P)·j·(63−j)/256², Spitze 0,0045189 bei j = 31 — Zahl des Prüfers exakt bestätigt. Derselbe Doppelfade liegt im alten Zweig (Abbruch nach abgeschlossenem Fade, Spitze 0,0746) schon auf `5f4f72c8`: der Fix hat den Bruch nicht eingeführt, aber nicht geschlossen. REGEL W-5 selbst (Sprung ≤ Fadeschritt) ist erfüllt; gebrochen ist M-55 „ein A/B-Wechsel zwischen zwei identischen Zuständen nullt innerhalb numerischer Toleranz". Lücke daneben: W-5-Test und M-55-Nulltest decken den Fall „Committed = Candidate" nicht ab |
+| Rundenbilanz Nacharbeit 2 | `5f4f72c8..00627114: Produkt 3 Datei(en) +96/-18 · Tests 1 Datei(en) +336/-9 · Doku 8 Datei(en) +1426/-3` — Runde mit Produktfortschritt, kein Konvergenz-Signal |
+| Nacharbeit | Etappe 3, Nacharbeit 3 (Runde 3 von 3, Budget erschöpft danach): `docs/beweise/roh/SONDE-015-etappe-3-nacharbeit-3-auftrag.txt` — der eine Defekt X-1 mit der schließenden Regel (Hörrückblende ist die einzige Blende, Bank erst danach ausgedient, Nullvergleich bei identischen Zuständen für beide Abbruchzeitpunkte); nur betroffene Beine (B6, A14, B5, A16, B2, B3c) |
+
+| Befund | Kurzform | Einordnung | Ansatzpunkt |
+|---|---|---|---|
+| X-1 | W-5: Candidate-Bank fadet beim Abbruch parallel nach Dry, während die Hörrückblende sie noch mischt; identische A/B-Zustände nullen nicht | DEFEKT (M-55, M-46, REGEL B-8), vorbestehend | `eq-copilot/plugin/dsp/DspKern.cpp:277-286`, `:858-866`, `:887`; B6 `:3636-3672` |

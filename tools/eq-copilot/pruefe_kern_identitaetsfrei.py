@@ -85,6 +85,11 @@ ERWARTETE_OBJEKTE = {
     "NakamaKanon.obj",
     "NakamaLebenslauf.obj",
     "NakamaParameter.obj",
+    # SONDE-015 Etappe 2: der Preset-Writer/Leser. Er stand seit dem
+    # 10.09.2026 in NAKAMA_KERN_QUELLEN, aber nicht hier - genau der Fall,
+    # fuer den diese Liste von Hand gefuehrt wird: [S6] war rot, bis die
+    # Zeile nachgezogen wurde.
+    "NakamaPreset.obj",
     "NakamaState.obj",
     "NakamaVertrag.obj",
     "NakamaTelemetrie.obj",
@@ -103,6 +108,13 @@ ERWARTETE_OBJEKTE = {
     "Nachrichten.obj",
     "Verbindung.obj",
     "TelemetryClient.obj",
+    # SONDE-015 Etappe 3: der aktive DSP-Kern. Er ist identitaetsfrei (er
+    # kennt nur das DTO aus state/NakamaParameter.h) und gehoert damit in
+    # dieselbe Menge wie State und Vertrag - Gen bekommt in S28b denselben
+    # Master-EQ, und zwei Apps duerfen nicht zwei Filterbaenke bauen.
+    "DspProgramm.obj",
+    "DspBankPool.obj",
+    "DspKern.obj",
 }
 
 # Die Werte, die im gebauten Gen-Bundle stehen MUESSEN (Gegenprobe). Die

@@ -188,7 +188,16 @@ target_include_directories(EqCopilot PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/hostbri
 # deshalb als Zeichenkette entgegen und rechnet ihn nie selbst aus. Die Quelle
 # bleibt EINE Datei; sie wird von den Zielen uebersetzt, die sie brauchen -
 # dieselbe Form wie src/PipeClient.cpp.
+# SONDE-015 Etappe 3: der aktive DSP-Kern kommt dazu. Er ist identitaetsfrei
+# (er kennt nur das DTO aus `state/NakamaParameter.h`, keine JucePlugin_*-
+# Konstante) und gehoert damit in dieselbe Menge wie State und Vertrag: Gen
+# bekommt in S28b denselben Master-EQ, und zwei Apps duerfen nicht zwei
+# Filterbaenke bauen. A14 fuehrt seine Objektliste unabhaengig; der Zuwachs
+# steht dort im selben Aenderungssatz.
 set(NAKAMA_KERN_QUELLEN
+    dsp/DspProgramm.cpp
+    dsp/DspBankPool.cpp
+    dsp/DspKern.cpp
     state/NakamaKanon.cpp
     state/NakamaLebenslauf.cpp
     state/NakamaParameter.cpp
@@ -228,7 +237,7 @@ target_compile_definitions(NakamaKernJuce INTERFACE
 add_library(NakamaKern STATIC ${NAKAMA_KERN_QUELLEN})
 target_include_directories(NakamaKern PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/state" "${CMAKE_CURRENT_SOURCE_DIR}/vertrag"
-    "${CMAKE_CURRENT_SOURCE_DIR}/core/ipc")
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/ipc" "${CMAKE_CURRENT_SOURCE_DIR}/dsp")
 target_link_libraries(NakamaKern PRIVATE NakamaKernJuce flatbuffers
     PUBLIC Advapi32 Bcrypt Crypt32 Wintrust)
 # T2-Befund 23.08.: Diese beiden hingen bis dahin NICHT am Kern. Vor S8 lagen
@@ -1080,6 +1089,25 @@ target_compile_definitions(EqCopAnalysisGoldenTest PRIVATE
 target_link_libraries(EqCopAnalysisGoldenTest PRIVATE juce::juce_audio_utils juce::juce_dsp
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
 nakama_kern_anbinden(EqCopAnalysisGoldenTest)
+
+# ── SONDE-015 Etappe 3: der aktive DSP-Kern ────────────────────────────────
+# Kanon B6. Misst `plugin/dsp/` gegen die Verhaltensmatrix §3.1-§3.6, §3.13.
+#
+# Zwei Ebenen in EINEM Ziel, wie bei B4 und B5:
+#   1. Der Bankpool pur - `busy_retry`, Reclaim-Overflow und jeder der sechs
+#      Ownership-Uebergaenge sind hier deterministisch herbeifuehrbar; im
+#      Prozessor waeren sie nur ueber echte Threads erreichbar.
+#   2. DERSELBE Kern am Audiopfad: Impulsantworten am Tap `post_committed`
+#      gegen eine im Test eigenstaendig ausgeschriebene RBJ-Formel, plus ein
+#      Stresslauf mit zwei echten Threads am Pool.
+# Kein juce_dsp und kein Prozessor: der Kern kennt nur das DTO.
+juce_add_console_app(EqCopDspGoldenTest PRODUCT_NAME "eqcop-dspgoldentest")
+target_sources(EqCopDspGoldenTest PRIVATE tests/DspGoldenTestMain.cpp)
+target_compile_definitions(EqCopDspGoldenTest PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
+target_link_libraries(EqCopDspGoldenTest
+    PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+nakama_kern_anbinden(EqCopDspGoldenTest)
 
 # ── S3b: Termin-B-Messgeraet (Wegwerfware wie SONDE-004a) ──────────────────
 # Erstes Ziel, das die Hostbruecke BENUTZT: sein Processor ist eine Senke.

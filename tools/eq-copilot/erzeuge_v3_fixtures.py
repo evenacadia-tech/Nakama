@@ -38,6 +38,7 @@ import sys
 
 WURZEL = pathlib.Path(__file__).resolve().parents[2]
 ZIEL = WURZEL / "eq-copilot" / "fixtures" / "v3"
+STATE_FIXTURES = WURZEL / "eq-copilot" / "fixtures" / "state"
 
 S = "#/$defs"
 
@@ -820,6 +821,36 @@ GRUND: dict[str, dict] = {
 
 # ------------------------------------------- zusaetzliche gueltige Sonderfaelle
 
+def dsp_nutzlast(datei: str = "gemischt") -> tuple[str, str]:
+    """(kanonischer DTO-Text, sein SHA-256) - aus dem STATE-Korpus.
+
+    Der Text wird NICHT hier gebaut: er kommt aus derselben Datei, an der
+    C++, Rust und Python ihren `state_hash` messen (SONDE-006). Ein zweiter,
+    hier gebauter DTO waere eine zweite Wahrheit ueber denselben Text - und
+    genau die Verbindung zwischen `dsp.jcs` und `state_hash` soll das Fixture
+    belegen (M-105).
+    """
+    import rfc8785  # nur der Erzeuger braucht ihn, nicht der Pruefer im Feld
+
+    roh = (STATE_FIXTURES / f"dto/gueltig/{datei}.json").read_text(encoding="utf-8")
+    kanon = rfc8785.dumps(json.loads(roh))
+    return kanon.decode("utf-8"), hashlib.sha256(kanon).hexdigest()
+
+
+def dsp_bericht(datei: str = "gemischt") -> dict:
+    jcs, _ = dsp_nutzlast(datei)
+    return {
+        "jcs": jcs,
+        "auto_gain_db": -1.5,
+        "klemmungen": [
+            {"id": "v1.band.2.sidechain_source",
+             "gemeldet": "priority_sidechain",
+             "wirksam": "internal"}
+        ],
+        "verletzte_baender": [0, 5],
+    }
+
+
 def zusatz_gueltig() -> list[tuple[str, dict, str]]:
     """(name, daten, warum) — Faelle, die ANGENOMMEN werden muessen."""
     faelle = []
@@ -1400,6 +1431,37 @@ def zusatz_gueltig() -> list[tuple[str, dict, str]]:
     uv["urteil"] = "enthaltung"
     faelle.append(("user-verdict-enthaltung-ohne-notiz", uv,
                    "Eine Enthaltung ohne Notiz und ohne Vorschlag ist ein regulaeres Urteil"))
+
+    # ── SONDE-015 (NAK-110): der bestaetigte DSP im state_report ──────────
+    jcs, hash_hex = dsp_nutzlast()
+    sr = copy.deepcopy(GRUND["state_report"])
+    sr["state_hash"] = hash_hex
+    sr["dsp"] = dsp_bericht()
+    faelle.append(("state-report-mit-dsp", sr,
+                   "Fassung 5: dsp traegt GENAU die RFC-8785-Zeichenkette, ueber die state_hash gebildet wurde; "
+                   "SHA-256(dsp.jcs) == state_hash ist damit nachrechenbar (M-103, M-105)"))
+
+    # Ein Bericht mit LEEREN abgeleiteten Listen: `nichts geklemmt` und
+    # `kein Band verletzt` sind Aussagen, keine Abwesenheit.
+    leer = copy.deepcopy(GRUND["state_report"])
+    leer["state_hash"] = hash_hex
+    leer["dsp"] = {"jcs": jcs, "auto_gain_db": 0.0,
+                   "klemmungen": [], "verletzte_baender": []}
+    faelle.append(("state-report-dsp-ohne-klemmung", leer,
+                   "leere Listen heissen `nichts geklemmt` und `kein Band verletzt` - beide sind Pflichtfelder"))
+
+    # SCHEMAGUELTIG, aber der Hash passt nicht: die Zeichenkette wurde
+    # veraendert, `state_hash` blieb stehen. Das Schema kann das nicht sehen -
+    # BEIDE Leser muessen es sehen und den Bericht GANZ abweisen (M-105). Das
+    # Fixture liegt deshalb bewusst unter `gueltig/`: der Unterschied zwischen
+    # Schemaurteil und Leserurteil IST die Zusage.
+    falsch = copy.deepcopy(GRUND["state_report"])
+    falsch["state_hash"] = hash_hex
+    falsch["dsp"] = dsp_bericht()
+    falsch["dsp"]["jcs"] = jcs.replace('"v1.global.width":1', '"v1.global.width":2', 1)
+    assert falsch["dsp"]["jcs"] != jcs, "die Mutation muss greifen"
+    faelle.append(("state-report-dsp-hash-passt-nicht", falsch,
+                   "schemagueltig, aber SHA-256(dsp.jcs) != state_hash - beide Leser weisen den Bericht GANZ ab (M-105)"))
     return faelle
 
 
@@ -1829,9 +1891,51 @@ UNGUELTIG: list[tuple] = [
         "additionalProperties")],
      "reservierter Name ohne Nutzlast; Empfaenger ist Gen, nicht eine Sondenklasse"),
 
-    ("reserviertes-feld-state-report-dsp", "state_report", [setze("dsp", {})],
-     [v("/dsp", f"{S}/state_report/additionalProperties", "additionalProperties")],
-     "reservierter Name fuer spaeter bestaetigten DSP"),
+    # SEITENWECHSEL (SONDE-015 M-101): `state_report.dsp` ist eingeloest. Der
+    # Negativplatz gehoert jetzt einem UNVOLLSTAENDIGEN Bericht - das leere
+    # Objekt faellt an `required`, nicht mehr an `additionalProperties`.
+    ("dsp-bericht-leer", "state_report", [setze("dsp", {})],
+     [v("/dsp", f"{S}/dsp_bericht/required/auto_gain_db", "required"),
+      v("/dsp", f"{S}/dsp_bericht/required/jcs", "required"),
+      v("/dsp", f"{S}/dsp_bericht/required/klemmungen", "required"),
+      v("/dsp", f"{S}/dsp_bericht/required/verletzte_baender", "required")],
+     "der bestaetigte DSP ist ganz oder gar nicht: alle vier Felder sind Pflicht"),
+
+    ("dsp-bericht-zusatzfeld", "state_report",
+     [setze("dsp", {"jcs": "{}", "auto_gain_db": 0.0, "klemmungen": [],
+                    "verletzte_baender": [], "extra": 1})],
+     [v("/dsp/extra", f"{S}/dsp_bericht/additionalProperties", "additionalProperties")],
+     "der Bericht ist strikt: ein unbekanntes Feld ist ein Senderfehler, keine Erweiterung"),
+
+    ("dsp-auto-gain-ausserhalb", "state_report",
+     [setze("dsp", {"jcs": "{}", "auto_gain_db": 120.5, "klemmungen": [],
+                    "verletzte_baender": []})],
+     [v("/dsp/auto_gain_db", f"{S}/dsp_bericht/properties/auto_gain_db/maximum", "maximum")],
+     "acht Baender zu je 12 dB erreichen hoechstens 96 dB; 120 ist die Reserve, 120.5 ist ein Fehler"),
+
+    ("dsp-verletztes-band-8", "state_report",
+     [setze("dsp", {"jcs": "{}", "auto_gain_db": 0.0, "klemmungen": [],
+                    "verletzte_baender": [8]})],
+     [v("/dsp/verletzte_baender/0",
+        f"{S}/dsp_bericht/properties/verletzte_baender/items/maximum", "maximum")],
+     "es gibt acht Slots 0..7; eine 8 ist keine Slotnummer"),
+
+    ("dsp-neunte-klemmung", "state_report",
+     [setze("dsp", {"jcs": "{}", "auto_gain_db": 0.0,
+                    "klemmungen": [{"id": "v1.band.0.sidechain_source",
+                                    "gemeldet": "priority_sidechain",
+                                    "wirksam": "internal"}] * 9,
+                    "verletzte_baender": []})],
+     [v("/dsp/klemmungen", f"{S}/dsp_bericht/properties/klemmungen/maxItems", "maxItems")],
+     "hoechstens eine Klemmung je Slot"),
+
+    ("dsp-klemmung-ohne-wirksam", "state_report",
+     [setze("dsp", {"jcs": "{}", "auto_gain_db": 0.0,
+                    "klemmungen": [{"id": "v1.band.0.sidechain_source",
+                                    "gemeldet": "priority_sidechain"}],
+                    "verletzte_baender": []})],
+     [v("/dsp/klemmungen/0", f"{S}/dsp_klemmung/required/wirksam", "required")],
+     "eine Klemmung ohne wirksamen Wert sagt nicht, was tatsaechlich gilt"),
 
     ("reserviertes-feld-command-ack-applied-dsp", "command_ack", [setze("applied_dsp", {})],
      [v("/applied_dsp", f"{S}/command_ack/oneOf/0/additionalProperties",

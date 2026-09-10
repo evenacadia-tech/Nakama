@@ -1,0 +1,50 @@
+SONDE-015 Etappe 2 - Rotbeweis M-14
+Zusage: Ein Wert ausserhalb des Vertragsbereichs wird ABGELEHNT, nicht geklemmt - und die Grenze ist +/-12 dB, nicht der Verlaufssatz +/-3 dB.
+Bruch:  eq-copilot/plugin/state/NakamaParameter.cpp
+        -                 if (z.zahl < b.min || z.zahl > b.max)   { grund = "bereich";      return false; }
+        +                 if (z.zahl < b.min * 100.0 || z.zahl > b.max * 100.0) { grund = "bereich"; return false; }
+------------------------------------------------------------------------------
+$ EqCopStateMigrationTest.exe
+  FEHLER  ungueltiges DTO: dto/ungueltig/zone-neunte.json  [Grund bereich (v1.band.0.freq_hz) soll zone_anzahl]
+  FEHLER  ungueltiges DTO: dto/ungueltig/zone-doppelte-id.json  [Grund bereich (v1.band.0.freq_hz) soll zone_doppelt]
+  FEHLER  ungueltiges DTO: dto/ungueltig/zone-unsortiert.json  [Grund bereich (v1.band.0.freq_hz) soll zone_sortierung]
+  FEHLER  ungueltiges DTO: dto/ungueltig/zone-zusatzfeld.json  [Grund bereich (v1.band.0.freq_hz) soll struktur]
+  FEHLER  ungueltiges DTO: dto/ungueltig/zone-enabled-als-string.json  [Grund bereich (v1.band.0.freq_hz) soll typ]
+  FEHLER  ungueltige DTOs mit dem erwarteten Grund abgelehnt  [20/26]
+  FEHLER  neunte Zone faellt vor dem Hash  [bereich]
+  FEHLER  doppelte Zonen-id faellt vor dem Hash  [bereich]
+  FEHLER  unsortierte Zonenliste faellt vor dem Hash  [bereich]
+  FEHLER  == DTO: 1 gueltige gehasht, 20 ungueltige vor dem Hash abgelehnt
+  FEHLER  gueltiges Preset abgelehnt: preset/gueltig/default.json  [bereich v1.band.0.freq_hz]
+  FEHLER  gueltiges Preset abgelehnt: preset/gueltig/gemischt.json  [bereich v1.band.0.freq_hz]
+  FEHLER  gueltiges Preset abgelehnt: preset/gueltig/unbekanntes-top-level-feld.json  [bereich v1.band.0.freq_hz]
+  FEHLER  gueltige Presets angenommen  [0/3]
+  FEHLER  ungueltiges Preset: preset/ungueltig/zone-unsortiert.json  [Grund bereich (v1.band.0.freq_hz) soll zone_sortierung]
+  FEHLER  ungueltige Presets mit dem erwarteten Grund abgelehnt  [12/13]
+  FEHLER  der Preset-Writer erzeugt preset/gueltig/default.json bytegleich  [bereich 0 Bytes]
+  FEHLER  ein geladenes Preset schaltet den eingeschalteten Rollenschalter nicht aus  [bereich]
+  FEHLER  und schaltet den ausgeschalteten nicht ein (nichts Ungefragtes)  [bereich]
+  FEHLER  der Klanginhalt kommt in beiden Faellen identisch an
+  FEHLER  Preset schreiben->lesen->schreiben ist bytegleich und feldgleich  [bereich ]
+  FEHLER  == Preset: 0 gueltige gelesen, 12 ungueltige mit Grund abgelehnt, Writer bytegleich
+  FEHLER  Dsp-Golden laedt normal  [Parameters: v1.band.0.freq_hz bereich]
+  FEHLER  und traegt Revision 12, zwei Zonen, einen Undo-Eintrag und Slot 2 belegt
+  FEHLER  ein v1-Stand laedt verlustfrei und wird als migriert gemeldet  [Parameters: v1.band.0.freq_hz bereich]
+  FEHLER  occupied := enabled ODER ein Wert weicht ab - das ausgeschaltete Band 4 ueberlebt
+  FEHLER  sechs nie beruehrte Slots bleiben frei  [8]
+  FEHLER  minus null gilt bitgenau als Abweichung vom Default (kein Epsilon)  [Parameters: v1.band.0.freq_hz bereich]
+  FEHLER  der gespeicherte Stand ist Layout v2 und migriert nicht erneut
+  FEHLER  die migrierte Belegung landet im Kind Dsp und ueberlebt
+  FEHLER  unbekannte Eigenschaft im Dsp-Kind macht den Stand NICHT read-only  [Parameters: v1.band.0.freq_hz bereich]
+  FEHLER  sie ueberlebt den Roundtrip, und die echte Aenderung kommt an
+  FEHLER  == Migration: 4 Rollen bytegleich zum Golden, idempotent
+  FEHLER  voller Undo-Ring (32 Eintraege, 8 Zonen) laedt und ist bytegleich  [45669 Bytes]
+  FEHLER  == Roundtrip: bytegleich, additive Eigenschaft erhalten, 120 Werte bit-exakt, voller Undo-Ring
+  FEHLER  Matrix Klasse=active_probe, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='Parameters: v1.band.0.freq_hz bereich', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  FEHLER  Matrix Klasse=active_probe, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='Parameters: v1.band.0.freq_hz bereich', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  FEHLER  Matrix Klasse=active_probe, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='Parameters: v1.band.0.freq_hz bereich', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  FEHLER  16 Kombinationen aus Klasse x Messposition wie Â§2.2 - post_fader_contribution fuer KEINE Klasse (contribution_aux unsupported)  [13]
+  FEHLER  == Positionsmatrix vollstaendig, jede Klasse in ihrem Bundle
+
+EXIT=1
+URTEIL: ROT

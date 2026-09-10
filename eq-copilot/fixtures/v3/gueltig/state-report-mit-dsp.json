@@ -1,0 +1,30 @@
+{
+  "type": "state_report",
+  "adresse": {
+    "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+    "project_binding_id": "11111111111111111111111111111111",
+    "session_epoch": "22222222222222222222222222222222",
+    "instance_id": "33333333333333333333333333333333",
+    "runtime_nonce": "44444444444444444444444444444444"
+  },
+  "dsp_schema_version": 2,
+  "state_revision": 13,
+  "state_hash": "508b7f1950d1a1f2f4df079ea63248fdffa4be8ab9b87afa99975f439732f218",
+  "record_state": {
+    "valid": true,
+    "recording": false
+  },
+  "undo_tiefe": 7,
+  "dsp": {
+    "jcs": "{\"dsp_schema_version\":2,\"parameters\":{\"v1.band.0.attack_ms\":10,\"v1.band.0.channel_mode\":\"stereo\",\"v1.band.0.dynamic_enabled\":false,\"v1.band.0.dynamic_range_db\":0,\"v1.band.0.enabled\":true,\"v1.band.0.freq_hz\":32.7,\"v1.band.0.gain_db\":0,\"v1.band.0.hold_ms\":0,\"v1.band.0.q\":0.7071067811865476,\"v1.band.0.release_ms\":100,\"v1.band.0.sidechain_source\":\"none\",\"v1.band.0.threshold_db\":-20,\"v1.band.0.type\":\"low_cut\",\"v1.band.1.attack_ms\":10,\"v1.band.1.channel_mode\":\"side\",\"v1.band.1.dynamic_enabled\":false,\"v1.band.1.dynamic_range_db\":0,\"v1.band.1.enabled\":true,\"v1.band.1.freq_hz\":1234.5678,\"v1.band.1.gain_db\":-2.25,\"v1.band.1.hold_ms\":0,\"v1.band.1.q\":0.15,\"v1.band.1.release_ms\":100,\"v1.band.1.sidechain_source\":\"none\",\"v1.band.1.threshold_db\":-20,\"v1.band.1.type\":\"bell\",\"v1.band.2.attack_ms\":0.1,\"v1.band.2.channel_mode\":\"stereo\",\"v1.band.2.dynamic_enabled\":true,\"v1.band.2.dynamic_range_db\":-6,\"v1.band.2.enabled\":true,\"v1.band.2.freq_hz\":1000,\"v1.band.2.gain_db\":0,\"v1.band.2.hold_ms\":12.5,\"v1.band.2.q\":1,\"v1.band.2.release_ms\":4999.9,\"v1.band.2.sidechain_source\":\"priority_sidechain\",\"v1.band.2.threshold_db\":-18.3,\"v1.band.2.type\":\"bell\",\"v1.band.3.attack_ms\":10,\"v1.band.3.channel_mode\":\"stereo\",\"v1.band.3.dynamic_enabled\":false,\"v1.band.3.dynamic_range_db\":0,\"v1.band.3.enabled\":false,\"v1.band.3.freq_hz\":1000,\"v1.band.3.gain_db\":0,\"v1.band.3.hold_ms\":0,\"v1.band.3.q\":1,\"v1.band.3.release_ms\":100,\"v1.band.3.sidechain_source\":\"none\",\"v1.band.3.threshold_db\":-20,\"v1.band.3.type\":\"bell\",\"v1.band.4.attack_ms\":10,\"v1.band.4.channel_mode\":\"stereo\",\"v1.band.4.dynamic_enabled\":false,\"v1.band.4.dynamic_range_db\":0,\"v1.band.4.enabled\":false,\"v1.band.4.freq_hz\":1000,\"v1.band.4.gain_db\":0,\"v1.band.4.hold_ms\":0,\"v1.band.4.q\":1,\"v1.band.4.release_ms\":100,\"v1.band.4.sidechain_source\":\"none\",\"v1.band.4.threshold_db\":-20,\"v1.band.4.type\":\"bell\",\"v1.band.5.attack_ms\":10,\"v1.band.5.channel_mode\":\"stereo\",\"v1.band.5.dynamic_enabled\":false,\"v1.band.5.dynamic_range_db\":0,\"v1.band.5.enabled\":false,\"v1.band.5.freq_hz\":1000,\"v1.band.5.gain_db\":0,\"v1.band.5.hold_ms\":0,\"v1.band.5.q\":1,\"v1.band.5.release_ms\":100,\"v1.band.5.sidechain_source\":\"none\",\"v1.band.5.threshold_db\":-20,\"v1.band.5.type\":\"bell\",\"v1.band.6.attack_ms\":10,\"v1.band.6.channel_mode\":\"stereo\",\"v1.band.6.dynamic_enabled\":false,\"v1.band.6.dynamic_range_db\":0,\"v1.band.6.enabled\":false,\"v1.band.6.freq_hz\":1000,\"v1.band.6.gain_db\":0,\"v1.band.6.hold_ms\":0,\"v1.band.6.q\":1,\"v1.band.6.release_ms\":100,\"v1.band.6.sidechain_source\":\"none\",\"v1.band.6.threshold_db\":-20,\"v1.band.6.type\":\"bell\",\"v1.band.7.attack_ms\":10,\"v1.band.7.channel_mode\":\"stereo\",\"v1.band.7.dynamic_enabled\":false,\"v1.band.7.dynamic_range_db\":0,\"v1.band.7.enabled\":false,\"v1.band.7.freq_hz\":20000,\"v1.band.7.gain_db\":0,\"v1.band.7.hold_ms\":0,\"v1.band.7.q\":24,\"v1.band.7.release_ms\":100,\"v1.band.7.sidechain_source\":\"none\",\"v1.band.7.threshold_db\":-20,\"v1.band.7.type\":\"high_cut\",\"v1.global.bypass\":false,\"v1.global.input_trim_db\":-3.5,\"v1.global.mono_bass_hz\":120.5,\"v1.global.output_trim_db\":0.1,\"v1.global.width\":1.25,\"v2.band.0.occupied\":true,\"v2.band.1.occupied\":true,\"v2.band.2.occupied\":true,\"v2.band.3.occupied\":false,\"v2.band.4.occupied\":false,\"v2.band.5.occupied\":false,\"v2.band.6.occupied\":false,\"v2.band.7.occupied\":true,\"v2.global.auto_gain\":true,\"v2.global.eq_enabled\":true,\"v2.global.mix\":0.30000000000000004},\"schutz_zonen\":[{\"enabled\":true,\"high_hz\":120.25,\"id\":0,\"low_hz\":40.5},{\"enabled\":false,\"high_hz\":1100,\"id\":5,\"low_hz\":900}]}",
+    "auto_gain_db": -1.5,
+    "klemmungen": [
+      {
+        "id": "v1.band.2.sidechain_source",
+        "gemeldet": "priority_sidechain",
+        "wirksam": "internal"
+      }
+    ],
+    "verletzte_baender": [0, 5]
+  }
+}

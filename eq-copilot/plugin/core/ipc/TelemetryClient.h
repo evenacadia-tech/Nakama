@@ -40,7 +40,12 @@ namespace nakama::ipc
 /// LUFS-I-Paar und seinen Gegenstatus (Feld-IDs 11..13) ein. Der echte
 /// P2-Sendepfad benutzt diese Konstante; Tests duerfen den Wert nicht am
 /// Envelope vorbei selbst einsetzen.
-inline constexpr std::uint8_t kFeatureBatchSchemaMinor = 1;
+///
+/// Minor 2 fuehrt Frame.band_dynamic_gain_db (Feld-ID 22) ein (SONDE-015 R14).
+/// Diese Zahl ist die FlatBuffers-Flaeche P2 und wird nie mit dem
+/// JSON-Wire-Envelope-Minor der Familie P1 verwechselt: die beiden zaehlen
+/// getrennt, weil sie zwei verschiedene Vertraege versionieren.
+inline constexpr std::uint8_t kFeatureBatchSchemaMinor = 2;
 
 /// Worker-seitige, allokierende Serialisierung eines Analyseframes. Der
 /// Audiothread ruft sie nicht; erst das fertige Bytefeld geht in die

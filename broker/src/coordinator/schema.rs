@@ -5,7 +5,14 @@
 
 use super::*;
 
-pub(super) const JSON_SCHEMA_MINOR_AKTIV: u8 = 4;
+pub(super) const JSON_SCHEMA_MINOR_AKTIV: u8 = 5;
+
+/// Die Definitionen, die die **Fassung 5** ausmachen (SONDE-015, NAK-110).
+///
+/// Sie stehen hier als DATEN, nicht als Kommentar: `v3_schema_minor_4_wurzel`
+/// baut daraus zurueck, und der Register-Riegel haelt dieselbe Liste gegen
+/// `wire_envelope_schema_minor.fassungen."5".neue_definitionen`.
+const FASSUNG_5_DEFS: [&str; 2] = ["dsp_bericht", "dsp_klemmung"];
 
 /// Die zwei Ausschlussgruende, die die **Fassung 4** ausmachen (NAK-213 R1/R3).
 ///
@@ -171,8 +178,35 @@ const FASSUNG_2_FEHLERCODES: [&str; 6] = [
 /// von `SESSION_CLIENT_CAP` (64) auf 32 zurueck. Ein Leser der Fassung 3 muss
 /// BEIDES ablehnen — den unbekannten Grund wie die zu lange Liste —, statt sie
 /// still durchzulassen (M-77: „jede Laengen- oder Enumgrenze").
-pub(super) fn v3_schema_minor_3_wurzel() -> Value {
+/// Baut aus der committeten **Fassung 5** die **Fassung 4** zurueck.
+///
+/// EIN Griff: `state_report.dsp` faellt weg, und mit ihm die zwei
+/// Definitionen, die nur dieses Feld braucht. Weil `state_report`
+/// `additionalProperties: false` traegt, LEHNT ein Leser der Fassung 4 einen
+/// Bericht mit `dsp` danach wirklich ab - der Rueckbau ist wirksam und nicht
+/// nur behauptet.
+pub(super) fn v3_schema_minor_4_wurzel() -> Value {
     let mut wurzel = v3_schema_wurzel();
+    {
+        let defs = wurzel["$defs"]
+            .as_object_mut()
+            .expect("v3-$defs ist ein Objekt");
+        defs["state_report"]["properties"]
+            .as_object_mut()
+            .expect("state_report-properties ist ein Objekt")
+            .remove("dsp");
+        for name in FASSUNG_5_DEFS {
+            defs.remove(name);
+        }
+    }
+    wurzel
+}
+
+pub(super) fn v3_schema_minor_3_wurzel() -> Value {
+    // Die Rueckbauten sind eine KETTE: stuende hier `v3_schema_wurzel()`,
+    // truege der Leser der Fassung 3 das Feld `state_report.dsp` der
+    // Fassung 5 mit - der Fehler, gegen den die Kette existiert.
+    let mut wurzel = v3_schema_minor_4_wurzel();
     {
         let defs = wurzel["$defs"]
             .as_object_mut()
@@ -346,6 +380,7 @@ pub(super) fn v3_schema(schema_minor: u8) -> Option<&'static crate::vertrag::Sch
     static MINOR_2: OnceLock<crate::vertrag::Schema> = OnceLock::new();
     static MINOR_3: OnceLock<crate::vertrag::Schema> = OnceLock::new();
     static MINOR_4: OnceLock<crate::vertrag::Schema> = OnceLock::new();
+    static MINOR_5: OnceLock<crate::vertrag::Schema> = OnceLock::new();
     match schema_minor {
         0 => Some(MINOR_0.get_or_init(|| {
             crate::vertrag::Schema::laden(v3_schema_minor_0_wurzel())
@@ -363,9 +398,13 @@ pub(super) fn v3_schema(schema_minor: u8) -> Option<&'static crate::vertrag::Sch
             crate::vertrag::Schema::laden(v3_schema_minor_3_wurzel())
                 .expect("eingefrorenes v3-Minor-3-Schema ist unterstuetzt")
         })),
-        JSON_SCHEMA_MINOR_AKTIV => Some(MINOR_4.get_or_init(|| {
-            crate::vertrag::Schema::laden(v3_schema_wurzel())
+        4 => Some(MINOR_4.get_or_init(|| {
+            crate::vertrag::Schema::laden(v3_schema_minor_4_wurzel())
                 .expect("eingefrorenes v3-Minor-4-Schema ist unterstuetzt")
+        })),
+        JSON_SCHEMA_MINOR_AKTIV => Some(MINOR_5.get_or_init(|| {
+            crate::vertrag::Schema::laden(v3_schema_wurzel())
+                .expect("eingefrorenes v3-Minor-5-Schema ist unterstuetzt")
         })),
         _ => None,
     }
@@ -449,8 +488,8 @@ mod fassungsleiter_tests {
         );
         // NAK-213: der Fassungsschritt 4 hebt beide Zahlen um eins. Sie stehen
         // hier, damit ein STILLES Heben faellt — nicht, weil 2/3 richtiger
-        // waere als 3/4.
-        assert_eq!(version["vorher"].as_u64(), Some(3));
+        // waere als 3/4. SONDE-015: der Fassungsschritt 5 ebenso.
+        assert_eq!(version["vorher"].as_u64(), Some(4));
 
         let fassung = &version["fassungen"]["3"];
         for familie in FASSUNG_3_FAMILIEN {
@@ -522,7 +561,11 @@ mod fassungsleiter_tests {
     #[test]
     fn fassung_3_kennt_die_neuen_gruende_nicht() {
         let alt = v3_schema(3).expect("Minor 3 ist bekannt");
-        let neu = v3_schema(JSON_SCHEMA_MINOR_AKTIV).expect("Minor 4 ist bekannt");
+        // SONDE-015: hier steht ausdruecklich `v3_schema(4)` und nicht die
+        // aktive Fassung. Die Zusage lautet „Fassung 3 lehnt die Neuerungen
+        // der Fassung 4 ab" — sie gegen die jeweils NEUESTE Fassung zu messen
+        // waere derselbe Fehler, den SONDE-013 an `MINOR_1` gefunden hat.
+        let neu = v3_schema(4).expect("Minor 4 ist bekannt");
 
         for name in [
             "finding-ausschlussgrund-screening-ueberboten-in-fassung-3",
@@ -723,6 +766,67 @@ mod fassungsleiter_tests {
         let alt_gueltig = fixture("evidence_snapshot");
         assert!(alt.gueltig(&alt_gueltig));
         assert!(neu.gueltig(&alt_gueltig));
+    }
+
+    /// SONDE-015 M-102: der ECHTE Leser der Fassung 4 lehnt `state_report.dsp`
+    /// ab — er kennt das Feld nicht, und `state_report` ist
+    /// `additionalProperties: false`. Die C++-Haelfte misst B3c, die
+    /// Python-Haelfte A5.
+    #[test]
+    fn fassung_4_kennt_state_report_dsp_nicht() {
+        let alt = v3_schema(4).expect("Minor 4 ist bekannt");
+        let neu = v3_schema(JSON_SCHEMA_MINOR_AKTIV).expect("Minor 5 ist bekannt");
+
+        let mit_dsp = fixture("state-report-mit-dsp");
+        assert!(neu.gueltig(&mit_dsp), "der Bericht mit dsp gilt in Fassung 5");
+        assert!(
+            !alt.gueltig(&mit_dsp),
+            "der Bericht mit dsp darf in Fassung 4 NICHT gelten"
+        );
+
+        // Ein Bericht OHNE `dsp` bleibt in beiden Fassungen gueltig: das Feld
+        // ist optional, und ein Altsender faellt nicht aus.
+        let ohne_dsp = fixture("state_report");
+        assert!(alt.gueltig(&ohne_dsp));
+        assert!(neu.gueltig(&ohne_dsp));
+
+        // Gegenprobe: der Rueckbau ist nicht einfach kaputt.
+        for name in ["session_snapshot", "heartbeat", "evidence_snapshot"] {
+            let wert = fixture(name);
+            assert!(alt.gueltig(&wert), "{name} muss in Fassung 4 weiter gelten");
+            assert!(neu.gueltig(&wert));
+        }
+    }
+
+    /// Die Rueckbauliste der Fassung 5 ist eine KOPIE der Wahrheit aus dem
+    /// Register. Laufen sie auseinander, faellt es hier.
+    #[test]
+    fn fassung_5_liste_deckt_sich_mit_dem_register() {
+        let reg = register();
+        let fassung = &reg["wire_envelope_schema_minor"]["fassungen"]["5"];
+        assert_eq!(fassung["state_report_dsp"].as_bool(), Some(true));
+        let genannt: Vec<&str> = fassung["neue_definitionen"]
+            .as_array()
+            .expect("neue_definitionen ist ein Array")
+            .iter()
+            .filter_map(Value::as_str)
+            .collect();
+        assert_eq!(genannt, FASSUNG_5_DEFS.to_vec());
+
+        // Und der Rueckbau setzt das Feld wirklich zurueck.
+        let alt = v3_schema_minor_4_wurzel();
+        assert!(alt["$defs"]["state_report"]["properties"]
+            .get("dsp")
+            .is_none());
+        for name in FASSUNG_5_DEFS {
+            assert!(alt["$defs"].get(name).is_none(), "{name} bleibt im Rueckbau stehen");
+        }
+        // Das Feld steht im aktiven Vertrag WIRKLICH (M-101, Seitenwechsel).
+        let jetzt = v3_schema_wurzel();
+        assert_eq!(
+            jetzt["$defs"]["state_report"]["properties"]["dsp"]["$ref"].as_str(),
+            Some("#/$defs/dsp_bericht")
+        );
     }
 
     /// Die Rueckbauten sind eine KETTE. Wer `v3_schema_minor_0_wurzel` auf die

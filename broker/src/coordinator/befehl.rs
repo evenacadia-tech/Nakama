@@ -1131,6 +1131,59 @@ mod tests {
     /// Gegenprobe im selben Beweis trägt ein `Some(vec![])` von Hand ein: die
     /// Vorbedingung schlägt an, und damit ist belegt, dass diese Zusicherung
     /// die beiden Fälle wirklich trennt.
+    /// SONDE-015 M-105: `dsp.jcs` traegt GENAU die Zeichenkette, ueber die
+    /// `state_hash` gebildet wurde - und der Empfaenger rechnet nach.
+    ///
+    /// Die Nutzlast kommt aus dem committeten v3-Korpus, nicht aus einer
+    /// hier gebauten Zeichenkette: das Fixture und dieser Test messen damit
+    /// denselben Text, den auch C++ und Python messen. Das Fixture
+    /// `state-report-dsp-hash-passt-nicht` liegt bewusst unter `gueltig/` -
+    /// es ist SCHEMAgueltig, und genau der Unterschied zwischen Schemaurteil
+    /// und Leserurteil ist die Zusage.
+    #[test]
+    fn state_report_dsp_wird_gegen_den_state_hash_nachgerechnet() {
+        let (c, _w, _o) = coordinator_mit_store("state_report_dsp_hash");
+        let a = adresse();
+        let link = "link-dsp";
+        main_anmelden(&c, link, &a);
+
+        let gut: Value = serde_json::from_str(include_str!(
+            "../../../eq-copilot/fixtures/v3/gueltig/state-report-mit-dsp.json"
+        ))
+        .expect("Fixture ist JSON");
+        let mut bericht = gut.clone();
+        bericht["adresse"] = serde_json::to_value(&a).unwrap();
+        assert!(
+            c.state_report_json(link, &serde_json::to_vec(&bericht).unwrap()),
+            "ein Bericht, dessen dsp.jcs zum state_hash passt, wird angenommen"
+        );
+
+        let schlecht: Value = serde_json::from_str(include_str!(
+            "../../../eq-copilot/fixtures/v3/gueltig/state-report-dsp-hash-passt-nicht.json"
+        ))
+        .expect("Fixture ist JSON");
+        let mut kaputt = schlecht.clone();
+        kaputt["adresse"] = serde_json::to_value(&a).unwrap();
+        // Das SCHEMA nimmt ihn an - es prueft eine Zeichenkette, keinen Hash.
+        assert!(
+            super::v3_nachricht_lesen(&serde_json::to_vec(&kaputt).unwrap(), "state_report")
+                .is_some(),
+            "das Fixture ist schemagueltig - sonst maesse der Test den Hash gar nicht"
+        );
+        assert!(
+            !c.state_report_json(link, &serde_json::to_vec(&kaputt).unwrap()),
+            "SHA-256(dsp.jcs) != state_hash: der Bericht wird GANZ abgewiesen"
+        );
+
+        // Und ein Bericht OHNE `dsp` bleibt gueltig (M-108, Altsender).
+        let mut ohne = bericht.clone();
+        ohne.as_object_mut().unwrap().remove("dsp");
+        assert!(
+            c.state_report_json(link, &serde_json::to_vec(&ohne).unwrap()),
+            "ein Bericht ohne dsp bleibt gueltig - Abwesenheit ist kein Fehler"
+        );
+    }
+
     #[test]
     fn ohne_sitzungseintrag_wird_das_urteil_abgewiesen() {
         let (c, writer, _ordner) = coordinator_mit_store("nak214-v34-none");

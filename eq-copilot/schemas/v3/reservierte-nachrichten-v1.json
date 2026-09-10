@@ -3,11 +3,11 @@
   "titel": "Reservierte v3-Nachrichtenfamilien",
   "zweck": "Entwurf §33.3 zaehlt nach dem SONDE-011-Entscheid 26 Nachrichtenfamilien auf. Der bindende SONDE-012-Entscheid E-L18/L04 vom 01.09.2026 belegt zusaetzlich `session_command`; der bindende SONDE-013-Entscheid E-02 vom 03.09.2026 definiert `experiment_manual_result` und `experiment_candidate` und holt `experiment_begin` und `experiment_abort` aus der Reserve. Der bindende SONDE-014-Entscheid E-09/E-10/E-11 vom 06.09.2026 belegt die reservierten Namen `draft_offer` und `user_verdict` und legt die zwei neuen Familien `intent_update` und `assistant_step_update` an. Damit umfasst das Register 31 Namen: 26 definierte und 5 reservierte. Die reservierten tragen weiterhin Nutzlasten aus spaeteren Phasen — sie jetzt zu erfinden waere ein Vorgriff, den eine spaetere Phase teuer zuruecknehmen muesste (Bauaufteilung §6.2 'Kein Vorgriff'). NACHGEZOGEN am 06.09.2026 (SONDE-014, Nebenbefund N-05): dieser Fliesstext rechnete bis dahin auf 28 Namen und hatte `experiment_candidate` nicht mitgezaehlt, waehrend `gesamt_erwartet` bereits 29 sagte. Die maschinenlesbare Zahl war richtig, die Prosa nicht.",
   "regel": "Ihre NAMEN sind trotzdem jetzt vergeben. Ein reservierter Discriminator wird vom v3-Parser ABGELEHNT (er steht nicht im oneOf des Schemas) und darf von keinem spaeteren Ticket fuer etwas anderes verwendet werden. Genau das ist der Vertragsanteil, der spaeter bricht, wenn man ihn heute offen laesst.",
-  "pruefung": "pruefe_v3_vertrag.py prueft, dass sich reservierte, belegte und definierte Namen konsistent verhalten, dass alle reservierten Namen ohne Nutzlast bleiben und dass die Summe 31 ergibt.",
+  "pruefung": "pruefe_v3_vertrag.py prueft, dass sich reservierte, belegte und definierte Namen konsistent verhalten, dass alle reservierten Namen ohne Nutzlast bleiben und dass die Summe 31 ergibt. SONDE-015 loest zusaetzlich die FELDreservierung `state_report.dsp` ein (NAK-110): sie wandert nach `belegte_felder`, das aktive Schema traegt sie wirklich, und die Fassungsleiter P1 4 -> 5 belegt, dass ein Leser der Fassung 4 sie ablehnt.",
   "wire_envelope_schema_minor": {
     "familie": "P1",
-    "vorher": 3,
-    "aktuell": 4,
+    "vorher": 4,
+    "aktuell": 5,
     "auswahlregel": "Der Empfaenger waehlt die JSON-Schemafassung anhand von message_family und schema_minor im Wire-Envelope; im Payload entsteht kein weiteres Versionsfeld.",
     "fassungen": {
       "0": {
@@ -80,6 +80,15 @@
         ],
         "session_finding_ausschluesse_max": 64,
         "begruendung": "R1 (M-18/M-87): der Kandidatendeckel schneidet seit NAK-213 VOR Stufe B, und jeder am Deckel Ausgeschiedene traegt `screening_ueberboten` - vorher verschwand er kommentarlos. R3: eine Quelle auf dem Mixerkanal des fuehrenden Mains misst das Mastersignal und faellt mit `master_duplikat`, statt zur starken Ursache des Masters zu werden. R6: weil die Ausschlussliste NIE gekappt wird, steigt `session_finding.ausschluesse.maxItems` in DERSELBEN Fassung von 32 auf SESSION_CLIENT_CAP = 64 - ein Main und bis zu 63 Sonden, also nie mehr Ausschluesse als Quellen der Sitzung. R6/R7: Enumwerte UND Laengengrenze sind an die eingehende Fassung gebunden, in Schema, Rust-Rueckbau, C++-Leser und Python-Pruefer (M-77)."
+      },
+      "5": {
+        "hinweis": "SONDE-015 (S26-28) hebt den Minor GENAU EINMAL. Jede P1-Vertragsaenderung dieses Tickets liegt in dieser einen Fassung; ein Leser der Fassung 4 lehnt sie ab, statt sie still auf einen bekannten Zweig abzubilden.",
+        "begruendung": "NAK-110 loest die Reservierung `state_report.dsp` ein. Das Feld traegt den bestaetigten DSP als RFC-8785-Zeichenkette samt den drei abgeleiteten Angaben. Ein Leser der Fassung 4 kennt es nicht und muss es ABLEHNEN - `state_report` ist additionalProperties:false, der Rueckbau ist damit wirksam und nicht nur behauptet.",
+        "state_report_dsp": true,
+        "neue_definitionen": [
+          "dsp_bericht",
+          "dsp_klemmung"
+        ]
       }
     }
   },
@@ -131,6 +140,11 @@
     }
   ],
   "belegte_felder": [
+    {
+      "name": "state_report.dsp",
+      "eigentuemer": "SONDE-015 (S26-28)",
+      "grund": "Seit Wire-Envelope-schema_minor 5 BELEGT (NAK-110): der bestaetigte DSP einer aktiven Sonde. `jcs` traegt GENAU die RFC-8785-Zeichenkette, ueber die `state_report.state_hash` gebildet wurde - als String, weil ein eingebettetes DTO am 15-Ziffern-Riegel des Schemawegs an einem GUELTIGEN Wert (q = 0.7071067811865476) gescheitert waere. Daneben stehen die drei abgeleiteten Angaben auto_gain_db, klemmungen und verletzte_baender; sie sind nicht gehasht. Das Feld ist OPTIONAL: ein Bericht ohne `dsp` bleibt gueltig. `command_ack.applied_dsp` und `state_report.eq_enabled` bleiben unangetastet reserviert."
+    },
     {
       "name": "probe_descriptor.host_bus_name",
       "eigentuemer": "SONDE-012 (S18-19)",
@@ -222,11 +236,6 @@
       "name": "session_snapshot.contribution_inputs",
       "eigentuemer": "SONDE-018",
       "grund": "Spaeter genau ein Deskriptor je diskretem Gen-Eingang. Empfaenger ist Gen; keine Sondenklasse traegt dadurch post_fader_contribution. Nur der Name ist reserviert."
-    },
-    {
-      "name": "state_report.dsp",
-      "eigentuemer": "S26-28",
-      "grund": "Bestaetigter DSP samt Schutzgrenzen; DTO und Nutzlast entstehen erst mit ihrem Eigentuemerticket."
     },
     {
       "name": "command_ack.applied_dsp",

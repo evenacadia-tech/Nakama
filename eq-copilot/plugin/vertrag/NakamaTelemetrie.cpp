@@ -527,6 +527,38 @@ void pruefeFrame (const fb::Frame& f, const juce::String& p, juce::Array<Verstos
         && std::isfinite (*tp) && std::isfinite (*sp) && *tp < *sp - 0.01f)
         hinzu (out, p + "/true_peak_db", "true_peak_unter_sample_peak");
 
+    /*  SONDE-015 R14 (M-110 bis M-113): die momentane dynamische Auslenkung
+        je Band-Slot.
+
+        Drei Regeln, wortgleich mit `broker/src/telemetrie.rs`:
+
+          1. ABWESENHEIT ist gueltig und heisst "der Erzeuger sagt es nicht" -
+             dieselbe Regel wie bei `integration_samples` (Feld-ID 14). Ein
+             Leser, der Abwesenheit als acht Nullen liest, erfindet eine
+             Messung.
+          2. Die Laenge ist GENAU 0 oder 8. Eine 3 ist ein Senderfehler, kein
+             Teilbestand: acht Werte treten immer gemeinsam auf.
+          3. Jeder Wert ist endlich. Der Sender heilt Nichtendliches schon
+             beim Erzeugen zu 0 und zaehlt es; der Leser prueft trotzdem
+             selbst - ein Leser, der sich auf den Sender verlaesst, ist kein
+             Riegel (Pruefliste C). */
+    if (const auto* dyn = f.band_dynamic_gain_db())
+    {
+        if (dyn->size() != 0u && dyn->size() != 8u)
+        {
+            hinzu (out, p + "/band_dynamic_gain_db", "band_dynamic_gain_laenge");
+        }
+        else
+        {
+            for (flatbuffers::uoffset_t i = 0; i < dyn->size(); ++i)
+                if (! std::isfinite (dyn->Get (i)))
+                {
+                    hinzu (out, p + "/band_dynamic_gain_db/" + juce::String ((int) i), "nicht_endlich");
+                    break;
+                }
+        }
+    }
+
     // Die Headroomverteilung ist als GANZES optional; ist sie da, muss sie
     // geordnet und belegt sein.
     if (const auto* h = f.headroom())

@@ -5851,12 +5851,12 @@ int main (int argc, char** argv)
         pruefe (geladen && ! schema.pruefe (neunterGrund).isEmpty(),
                 "vierter_befundzustand_faellt_an_der_cpp_engine");
 
-        // Und die Fassungswahl selbst: der Envelope traegt jetzt 4, und beide
-        // Seiten fuehren dieselbe Zahl. NAK-213 hebt sie um eins - die zwei
-        // Ausschlussgruende und die gehobene Laenge der Ausschlussliste reisen
-        // in dieser Fassung.
-        pruefe (nakama::ipc::kJsonSchemaMinor == 4,
-                "der_wire_envelope_traegt_die_fassung_vier");
+        // Und die Fassungswahl selbst: der Envelope traegt jetzt 5, und beide
+        // Seiten fuehren dieselbe Zahl. NAK-213 hob sie auf 4 (zwei
+        // Ausschlussgruende, gehobene Laenge der Ausschlussliste); SONDE-015
+        // hebt sie auf 5 - `state_report.dsp` reist in dieser Fassung.
+        pruefe (nakama::ipc::kJsonSchemaMinor == 5,
+                "der_wire_envelope_traegt_die_fassung_fuenf");
 
         TestServer server (testPipeName ("sonde014-fassung3"));
         server.commandAckArt.store (1);

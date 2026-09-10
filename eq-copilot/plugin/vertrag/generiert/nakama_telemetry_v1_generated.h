@@ -975,7 +975,8 @@ struct Frame FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
     VT_PLR_DB = 40,
     VT_LRA_LU = 42,
     VT_CREST_KURZ_DB = 44,
-    VT_HEADROOM = 46
+    VT_HEADROOM = 46,
+    VT_BAND_DYNAMIC_GAIN_DB = 48
   };
   const nakama::v3::Transportstempel *transport() const {
     return GetPointer<const nakama::v3::Transportstempel *>(VT_TRANSPORT);
@@ -1100,6 +1101,28 @@ struct Frame FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   const nakama::v3::Headroomverteilung *headroom() const {
     return GetPointer<const nakama::v3::Headroomverteilung *>(VT_HEADROOM);
   }
+  /// Momentane dynamische Verstaerkungsaenderung je Band-Slot in dB
+  /// (SONDE-015 R14, Abnahme 01.09.2026 "das band muss dynamisch mitschwingen").
+  ///
+  /// GENAU 8 Eintraege in Slotreihenfolge 0..7, oder leer - nichts dazwischen.
+  /// Ein Vektor der Laenge 3 ist ein Senderfehler, kein Teilbestand: acht
+  /// Einzelfelder haetten acht IDs fuer eine Groesse verbraucht, die immer
+  /// gemeinsam auftritt, und ein halb gefuellter Satz waere nicht als solcher
+  /// erkennbar.
+  ///
+  /// Der Wert ist die zuletzt gerechnete Auslenkung des Fensters, kein Mittel:
+  /// ein Mittelwert glaettete genau die Bewegung weg, die der User sehen soll.
+  /// Freie, ausgeschaltete oder nicht dynamische Slots tragen exakt 0.0; der
+  /// Wert wird NIE aus den Einstellwerten erfunden und ist auf
+  /// +/-|dynamic_range_db| begrenzt.
+  ///
+  /// ABWESENHEIT heisst wie bei `integration_samples` (Feld-ID 14) "der
+  /// Erzeuger sagt es nicht", NICHT "acht Nullen". Das Feld reist nur, wenn es
+  /// etwas zu melden gibt: mindestens ein Slot ist belegt, eingeschaltet und
+  /// dynamisch UND der EQ-Pfad ist engagiert.
+  const ::flatbuffers::Vector<float> *band_dynamic_gain_db() const {
+    return GetPointer<const ::flatbuffers::Vector<float> *>(VT_BAND_DYNAMIC_GAIN_DB);
+  }
   template <bool B = false>
   bool Verify(::flatbuffers::VerifierTemplate<B> &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -1129,6 +1152,8 @@ struct Frame FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
            VerifyField<float>(verifier, VT_CREST_KURZ_DB, 4) &&
            VerifyOffset(verifier, VT_HEADROOM) &&
            verifier.VerifyTable(headroom()) &&
+           VerifyOffset(verifier, VT_BAND_DYNAMIC_GAIN_DB) &&
+           verifier.VerifyVector(band_dynamic_gain_db()) &&
            verifier.EndTable();
   }
 };
@@ -1203,6 +1228,9 @@ struct FrameBuilder {
   void add_headroom(::flatbuffers::Offset<nakama::v3::Headroomverteilung> headroom) {
     fbb_.AddOffset(Frame::VT_HEADROOM, headroom);
   }
+  void add_band_dynamic_gain_db(::flatbuffers::Offset<::flatbuffers::Vector<float>> band_dynamic_gain_db) {
+    fbb_.AddOffset(Frame::VT_BAND_DYNAMIC_GAIN_DB, band_dynamic_gain_db);
+  }
   explicit FrameBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -1239,8 +1267,10 @@ inline ::flatbuffers::Offset<Frame> CreateFrame(
     ::flatbuffers::Optional<float> plr_db = ::flatbuffers::nullopt,
     ::flatbuffers::Optional<float> lra_lu = ::flatbuffers::nullopt,
     ::flatbuffers::Optional<float> crest_kurz_db = ::flatbuffers::nullopt,
-    ::flatbuffers::Offset<nakama::v3::Headroomverteilung> headroom = 0) {
+    ::flatbuffers::Offset<nakama::v3::Headroomverteilung> headroom = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<float>> band_dynamic_gain_db = 0) {
   FrameBuilder builder_(_fbb);
+  builder_.add_band_dynamic_gain_db(band_dynamic_gain_db);
   builder_.add_headroom(headroom);
   if(crest_kurz_db) { builder_.add_crest_kurz_db(*crest_kurz_db); }
   if(lra_lu) { builder_.add_lra_lu(*lra_lu); }
@@ -1270,6 +1300,59 @@ struct Frame::Traits {
   using type = Frame;
   static auto constexpr Create = CreateFrame;
 };
+
+inline ::flatbuffers::Offset<Frame> CreateFrameDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    ::flatbuffers::Offset<nakama::v3::Transportstempel> transport = 0,
+    ::flatbuffers::Offset<nakama::v3::Bandwerte> baender = 0,
+    uint32_t metrics_version = 0,
+    ::flatbuffers::Optional<float> aktivitaet = ::flatbuffers::nullopt,
+    ::flatbuffers::Optional<float> lufs_s = ::flatbuffers::nullopt,
+    ::flatbuffers::Optional<float> peak_db = ::flatbuffers::nullopt,
+    ::flatbuffers::Optional<float> crest_db = ::flatbuffers::nullopt,
+    ::flatbuffers::Optional<float> psr_db = ::flatbuffers::nullopt,
+    ::flatbuffers::Optional<float> breite = ::flatbuffers::nullopt,
+    ::flatbuffers::Optional<float> korrelation = ::flatbuffers::nullopt,
+    ::flatbuffers::Offset<nakama::v3::Bandwerte> band_stereo = 0,
+    ::flatbuffers::Optional<float> lufs_i = ::flatbuffers::nullopt,
+    ::flatbuffers::Optional<float> lufs_i_unsicherheit_lu = ::flatbuffers::nullopt,
+    ::flatbuffers::Optional<uint8_t> lufs_i_status = ::flatbuffers::nullopt,
+    ::flatbuffers::Optional<uint32_t> integration_samples = ::flatbuffers::nullopt,
+    ::flatbuffers::Optional<float> lufs_m = ::flatbuffers::nullopt,
+    ::flatbuffers::Optional<float> true_peak_db = ::flatbuffers::nullopt,
+    ::flatbuffers::Optional<float> true_peak_passage_db = ::flatbuffers::nullopt,
+    ::flatbuffers::Optional<float> plr_db = ::flatbuffers::nullopt,
+    ::flatbuffers::Optional<float> lra_lu = ::flatbuffers::nullopt,
+    ::flatbuffers::Optional<float> crest_kurz_db = ::flatbuffers::nullopt,
+    ::flatbuffers::Offset<nakama::v3::Headroomverteilung> headroom = 0,
+    const std::vector<float> *band_dynamic_gain_db = nullptr) {
+  auto band_dynamic_gain_db__ = band_dynamic_gain_db ? _fbb.CreateVector<float>(*band_dynamic_gain_db) : 0;
+  return nakama::v3::CreateFrame(
+      _fbb,
+      transport,
+      baender,
+      metrics_version,
+      aktivitaet,
+      lufs_s,
+      peak_db,
+      crest_db,
+      psr_db,
+      breite,
+      korrelation,
+      band_stereo,
+      lufs_i,
+      lufs_i_unsicherheit_lu,
+      lufs_i_status,
+      integration_samples,
+      lufs_m,
+      true_peak_db,
+      true_peak_passage_db,
+      plr_db,
+      lra_lu,
+      crest_kurz_db,
+      headroom,
+      band_dynamic_gain_db__);
+}
 
 /// Ein Eintrag des Batches: genau eine Quelle mit genau ihrem aktuellen Frame.
 struct QuellenEintrag FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {

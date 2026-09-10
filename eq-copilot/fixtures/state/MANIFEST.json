@@ -2,7 +2,15 @@
   "$id": "evenacadia.nakama.fixtures.state.v1",
   "titel": "State-Fixture-Korpus (SONDE-006): JCS, DSP-DTO, Schema-2-Goldens",
   "zweck": "Die dritte Partei zwischen C++ (NakamaKanon/NakamaParameter/NakamaState), Rust (serde_json_canonicalizer in contract_cross_language.rs) und Python (rfc8785). Die JCS-Erwartungen sind von Hand geschrieben bzw. aus dem RFC-Text uebernommen; rfc8785 hat sie bestaetigt. Die DTO-Kanonform liefert rfc8785 - die JCS-Korrektheit ist an dieser Stelle bereits durch die Handvektoren belegt.",
-  "vertrag": "../../schemas/state/nakama-parameter-v1.json",
+  "vertrag": "../../schemas/state/nakama-parameter-v2.json",
+  "vertrag_v1_eingefroren": "../../schemas/state/nakama-parameter-v1.json",
+  "vertrag_preset": "../../schemas/state/nakama-preset-v1.json",
+  "seitenwechsel": {
+    "ticket": "SONDE-015 (M-94)",
+    "datei": "dto/ungueltig/dsp-schema-version-2.json",
+    "war": "ungueltig (Layout v1 war der aktive Vertrag, 2 wurde abgelehnt)",
+    "ist": "entfallen - Layout v2 IST der aktive Vertrag; den Negativplatz nimmt dto/ungueltig/dsp-schema-version-1.json ein"
+  },
   "state_hash": "SHA-256-Hex des RFC-8785-kanonischen UTF-8 des validierten DTO (nakama-state-v2.md §4).",
   "gruende": [
     "kein_json",
@@ -14,7 +22,12 @@
     "typ",
     "nichtendlich",
     "bereich",
-    "enum"
+    "enum",
+    "zone_anzahl",
+    "zone_doppelt",
+    "zone_sortierung",
+    "verbotenes_feld",
+    "preset_schema_version"
   ],
   "jcs_zahlen": {
     "datei": "jcs/zahlen.json",
@@ -104,39 +117,45 @@
   "dto_gueltig": [
     {
       "datei": "dto/gueltig/default.json",
-      "kanon_sha256": "0701d0f24ee7e438464aa7d15604cfc5a034a85ad9a7fac9ca85c2caf9cbc1bb",
-      "kanon_bytes": 2976,
-      "state_hash": "0701d0f24ee7e438464aa7d15604cfc5a034a85ad9a7fac9ca85c2caf9cbc1bb"
+      "kanon_sha256": "67c7eed5cba0acf3030e4e36fd0d875042bed6093ac9069a9ea8b5caec01beda",
+      "kanon_bytes": 3285,
+      "state_hash": "67c7eed5cba0acf3030e4e36fd0d875042bed6093ac9069a9ea8b5caec01beda"
     },
     {
       "datei": "dto/gueltig/minima.json",
-      "kanon_sha256": "93923c82f9c6179096b5da041edf4a344c620e732b8c2141b1abc1d9feb1bb42",
-      "kanon_bytes": 3012,
-      "state_hash": "93923c82f9c6179096b5da041edf4a344c620e732b8c2141b1abc1d9feb1bb42"
+      "kanon_sha256": "7cea2e6e942ba19a32cc21314f6fcf9932df5792eccde010842367cf210ff9d3",
+      "kanon_bytes": 3321,
+      "state_hash": "7cea2e6e942ba19a32cc21314f6fcf9932df5792eccde010842367cf210ff9d3"
     },
     {
       "datei": "dto/gueltig/maxima.json",
-      "kanon_sha256": "ca0f9551b7dfbe6da7b142fe1f9f659ece6c7d19359e906b71366e646aa55dac",
-      "kanon_bytes": 3139,
-      "state_hash": "ca0f9551b7dfbe6da7b142fe1f9f659ece6c7d19359e906b71366e646aa55dac"
+      "kanon_sha256": "5467c402a043547d3b2b98383a06c63d142cd31548e6fb4f0b154f50499b0459",
+      "kanon_bytes": 3857,
+      "state_hash": "5467c402a043547d3b2b98383a06c63d142cd31548e6fb4f0b154f50499b0459"
     },
     {
       "datei": "dto/gueltig/gemischt.json",
-      "kanon_sha256": "f4b137a118606ef99ee5d0ae8dab347140615cd305f9f762511a920b2de167ff",
-      "kanon_bytes": 3044,
-      "state_hash": "f4b137a118606ef99ee5d0ae8dab347140615cd305f9f762511a920b2de167ff"
+      "kanon_sha256": "508b7f1950d1a1f2f4df079ea63248fdffa4be8ab9b87afa99975f439732f218",
+      "kanon_bytes": 3472,
+      "state_hash": "508b7f1950d1a1f2f4df079ea63248fdffa4be8ab9b87afa99975f439732f218"
     },
     {
       "datei": "dto/gueltig/minus-null.json",
-      "kanon_sha256": "0701d0f24ee7e438464aa7d15604cfc5a034a85ad9a7fac9ca85c2caf9cbc1bb",
-      "kanon_bytes": 2976,
-      "state_hash": "0701d0f24ee7e438464aa7d15604cfc5a034a85ad9a7fac9ca85c2caf9cbc1bb"
+      "kanon_sha256": "67c7eed5cba0acf3030e4e36fd0d875042bed6093ac9069a9ea8b5caec01beda",
+      "kanon_bytes": 3285,
+      "state_hash": "67c7eed5cba0acf3030e4e36fd0d875042bed6093ac9069a9ea8b5caec01beda"
     },
     {
       "datei": "dto/gueltig/ganzzahl-schreibweise.json",
-      "kanon_sha256": "0701d0f24ee7e438464aa7d15604cfc5a034a85ad9a7fac9ca85c2caf9cbc1bb",
-      "kanon_bytes": 2976,
-      "state_hash": "0701d0f24ee7e438464aa7d15604cfc5a034a85ad9a7fac9ca85c2caf9cbc1bb"
+      "kanon_sha256": "67c7eed5cba0acf3030e4e36fd0d875042bed6093ac9069a9ea8b5caec01beda",
+      "kanon_bytes": 3285,
+      "state_hash": "67c7eed5cba0acf3030e4e36fd0d875042bed6093ac9069a9ea8b5caec01beda"
+    },
+    {
+      "datei": "dto/gueltig/zone-einzeln.json",
+      "kanon_sha256": "e273b0d50395038ac842c72ca8a0519b7899c7b8effafddd93e58cd258d302b8",
+      "kanon_bytes": 3339,
+      "state_hash": "e273b0d50395038ac842c72ca8a0519b7899c7b8effafddd93e58cd258d302b8"
     }
   ],
   "dto_ungueltig": [
@@ -173,8 +192,52 @@
       "grund": "fehlender_schluessel"
     },
     {
-      "datei": "dto/ungueltig/dsp-schema-version-2.json",
+      "datei": "dto/ungueltig/dsp-schema-version-1.json",
       "grund": "dsp_schema_version"
+    },
+    {
+      "datei": "dto/ungueltig/zone-neunte.json",
+      "grund": "zone_anzahl"
+    },
+    {
+      "datei": "dto/ungueltig/zone-doppelte-id.json",
+      "grund": "zone_doppelt"
+    },
+    {
+      "datei": "dto/ungueltig/zone-unsortiert.json",
+      "grund": "zone_sortierung"
+    },
+    {
+      "datei": "dto/ungueltig/zone-low-gleich-high.json",
+      "grund": "bereich"
+    },
+    {
+      "datei": "dto/ungueltig/zone-unter-20-hz.json",
+      "grund": "bereich"
+    },
+    {
+      "datei": "dto/ungueltig/zone-ueber-20-khz.json",
+      "grund": "bereich"
+    },
+    {
+      "datei": "dto/ungueltig/zone-id-8.json",
+      "grund": "bereich"
+    },
+    {
+      "datei": "dto/ungueltig/zone-zusatzfeld.json",
+      "grund": "struktur"
+    },
+    {
+      "datei": "dto/ungueltig/zone-enabled-als-string.json",
+      "grund": "typ"
+    },
+    {
+      "datei": "dto/ungueltig/schutz-zonen-fehlt.json",
+      "grund": "struktur"
+    },
+    {
+      "datei": "dto/ungueltig/fehlende-v2-kennung.json",
+      "grund": "fehlender_schluessel"
     },
     {
       "datei": "dto/ungueltig/typ-bool-als-zahl.json",
@@ -199,6 +262,93 @@
     {
       "datei": "dto/ungueltig/struktur-array.json",
       "grund": "struktur"
+    }
+  ],
+  "preset_gueltig": [
+    {
+      "datei": "preset/gueltig/default.json",
+      "warum": "der neutrale Klanginhalt",
+      "sha256": "07a1befa6d6e3f7ae7f77d28c1ca63560d97abb504ec956f4247739c1df02c6a",
+      "bytes": 3282
+    },
+    {
+      "datei": "preset/gueltig/gemischt.json",
+      "warum": "ein belegtes Band, Mix, Auto-Gain und eine Zone",
+      "sha256": "0949b95e0095d9a0f899b5d08c958a6b124ff5fa1e2ca6c28537d87e9963514b",
+      "bytes": 3360
+    },
+    {
+      "datei": "preset/gueltig/unbekanntes-top-level-feld.json",
+      "warum": "additive Erweiterung: der Leser ignoriert sie und laedt",
+      "sha256": "06f618e13b1e86162648066f6a0cd788966b7e7db965cdf4708db196db4bd04e",
+      "bytes": 3949
+    }
+  ],
+  "preset_ungueltig": [
+    {
+      "datei": "preset/ungueltig/verboten-adresse.json",
+      "grund": "verbotenes_feld",
+      "warum": "Identitaet oder Betrieb: adresse hat kein Feld"
+    },
+    {
+      "datei": "preset/ungueltig/verboten-instance-id.json",
+      "grund": "verbotenes_feld",
+      "warum": "Identitaet oder Betrieb: instance_id hat kein Feld"
+    },
+    {
+      "datei": "preset/ungueltig/verboten-host-bus-name.json",
+      "grund": "verbotenes_feld",
+      "warum": "Identitaet oder Betrieb: host_bus_name hat kein Feld"
+    },
+    {
+      "datei": "preset/ungueltig/verboten-label.json",
+      "grund": "verbotenes_feld",
+      "warum": "Identitaet oder Betrieb: label hat kein Feld"
+    },
+    {
+      "datei": "preset/ungueltig/verboten-eq-enabled.json",
+      "grund": "verbotenes_feld",
+      "warum": "Identitaet oder Betrieb: eq_enabled hat kein Feld"
+    },
+    {
+      "datei": "preset/ungueltig/verboten-undo-ring.json",
+      "grund": "verbotenes_feld",
+      "warum": "Identitaet oder Betrieb: undo_ring hat kein Feld"
+    },
+    {
+      "datei": "preset/ungueltig/eq-enabled-in-parametern.json",
+      "grund": "unbekannter_schluessel",
+      "warum": "der Rollenschalter hat auch INNERHALB von parameters kein Feld"
+    },
+    {
+      "datei": "preset/ungueltig/preset-major-2.json",
+      "grund": "preset_schema_version",
+      "warum": "unbekannter Preset-Major wird abgelehnt, nicht read-only gehalten"
+    },
+    {
+      "datei": "preset/ungueltig/dsp-schema-version-1.json",
+      "grund": "dsp_schema_version",
+      "warum": "der Inhalt spricht ein Layout, das dieser Build nicht deutet"
+    },
+    {
+      "datei": "preset/ungueltig/fehlender-schluessel.json",
+      "grund": "fehlender_schluessel",
+      "warum": "parameters ist exakt, nicht additiv"
+    },
+    {
+      "datei": "preset/ungueltig/unbekannter-schluessel.json",
+      "grund": "unbekannter_schluessel",
+      "warum": "parameters ist exakt, nicht additiv"
+    },
+    {
+      "datei": "preset/ungueltig/bereich-gain.json",
+      "grund": "bereich",
+      "warum": "derselbe Bereichsriegel wie im DTO"
+    },
+    {
+      "datei": "preset/ungueltig/zone-unsortiert.json",
+      "grund": "zone_sortierung",
+      "warum": "dieselben Zonenregeln wie im DTO"
     }
   ],
   "schema2_goldens": [
@@ -231,6 +381,16 @@
       "datei": "schema2/main-intent-v1.bin",
       "sha256": "9b79f87dc3ae33daf2189e033d7e126e2bc628c1b2a5525a4fcedbc8a948b1ec",
       "bytes": 972
+    },
+    {
+      "datei": "schema2/dsp-v2-voll.bin",
+      "sha256": "b41c9260a12c3c3e68153ea46cd425e90891817f6421d1ad5c3e7e94d1fd7e95",
+      "bytes": 4802
+    },
+    {
+      "datei": "schema2/layout-v1.bin",
+      "sha256": "aca3b83d05d2230873617dd79a6a61e367e96dabb675a58760afc5d5662b0681",
+      "bytes": 3458
     }
   ],
   "referenz": {

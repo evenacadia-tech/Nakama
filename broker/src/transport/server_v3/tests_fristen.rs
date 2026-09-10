@@ -117,6 +117,9 @@ fn unbekannter_schema_minor_wird_vor_der_senke_abgewiesen() {
     // NAK-213: die Fassung 4 ist ab hier bekannt, die 3 bleibt lesbar.
     assert!(schema_minor_bekannt(Familie::P0, 4));
     assert!(schema_minor_bekannt(Familie::P1, 4));
+    // SONDE-015: die Fassung 5 (state_report.dsp) ebenso; die 4 bleibt lesbar.
+    assert!(schema_minor_bekannt(Familie::P0, 5));
+    assert!(schema_minor_bekannt(Familie::P1, 5));
     // P2 nicht: dort ist seit SONDE-013 nichts hinzugekommen, was eine
     // Fassung braeuchte - `integration_samples` ist ein optionales
     // FlatBuffers-Feld und damit der additive Fall, den das Format traegt.
@@ -124,8 +127,9 @@ fn unbekannter_schema_minor_wird_vor_der_senke_abgewiesen() {
     // Und die Gegenprobe nach oben: eine Fassung, die es nicht gibt,
     // wird auch bei P0/P1 abgewiesen.
     // NAK-213: derselbe Randwert eine Fassung weiter — aus 4 wird 5.
+    // SONDE-015: und weiter — aus 5 wird 6.
     for familie in [Familie::P0, Familie::P1, Familie::P2] {
-        assert!(!schema_minor_bekannt(familie, 5));
+        assert!(!schema_minor_bekannt(familie, 6));
         assert!(!schema_minor_bekannt(familie, 200));
     }
 }

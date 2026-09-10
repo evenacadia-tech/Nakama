@@ -1,0 +1,25 @@
+SONDE-015 Etappe 2 - Rotbeweis M-111
+Zusage: Ein Frame OHNE das Feld bleibt gueltig; Abwesenheit ist ausdruecklich KEINE 0.
+Bruch:  eq-copilot/schemas/v3/flatbuffers/nakama_telemetry_v1.fbs
+        -   band_dynamic_gain_db:[float] (id: 22);
+        +   band_dynamic_gain_db:[float] (id: 22, required);
+------------------------------------------------------------------------------
+$ py -3.13 tools/eq-copilot/pruefe_flatc_drift.py   (A9 pruefe_flatc_drift.py)
+Gepinnt: flatbuffers 25.12.19 @ 7e163021e59c
+  flatc: 25.12.19  (C:\Users\phili\Projekte\Nakama\eq-copilot\build\_deps\flatbuffers-build\Release\flatc.exe)
+  flatc-Beleg: Commit 7e163021e59cca4f8e1e35a7c828b5c6b7915953, sha256=9f9c82758ee9f3ad21ce70019716903431c70227219eae95fe1c06fa4cde43fe  (C:\Users\phili\Projekte\Nakama\eq-copilot\build\nakama-flatc-commit-Release.txt)
+  Rust-Crate: 25.12.19 (Cargo.lock; Anforderung 25.12.19)
+  Feld-IDs: 0 rot
+
+Codegen-Drift:
+  ROT: DRIFT in eq-copilot/plugin/vertrag/generiert/nakama_telemetry_v1_generated.h
+       committed  sha256=ecbd4e35a9ae5abd6aeee7dd97d3891460d0eebaa9bd80b4c6b654a9269fccd3
+       neu erzeugt sha256=2f18fe868628981e465aed26bea7813b6a00a39de634634108ef6af565cca478
+  ROT: DRIFT in broker/src/generiert/nakama_telemetry_v1_generated.rs
+       committed  sha256=1840a88ae679608e159bc57fb40848bca68607a264133893183b1fc6875233d4
+       neu erzeugt sha256=6fde5513eecd2f404755622dabbdc33bb743d7532112980b2ec36a96d1219dda
+
+Drift: 2 Datei(en) - die committete Fassung ist nicht die, die das Schema heute erzeugt.
+
+EXIT=2
+URTEIL: ROT

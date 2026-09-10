@@ -49,6 +49,14 @@ const juce::Identifier kMainIntentRev    ("intent_revision_v1");
 // EINE additive Eigenschaft mit Fassung im Namen — derselbe Weg wie der
 // Intent, und derselbe Grund: ein alter Build laesst sie unangetastet stehen.
 const juce::Identifier kMainAssistent    ("assistant_step_v1");
+// SONDE-015: der Inhalt des Kindes `Dsp`. Vier Listen tragen ihre Fassung im
+// Namen, `state_revision` und `undo_cursor` nicht - sie sind Skalare, deren
+// Bedeutung sich nicht additiv erweitern kann.
+const juce::Identifier kDspRevision  ("state_revision");
+const juce::Identifier kDspOccupied  ("occupied_v1");
+const juce::Identifier kDspZonen     ("schutz_zonen_v1");
+const juce::Identifier kDspUndoRing  ("undo_ring_v1");
+const juce::Identifier kDspUndoCursor("undo_cursor");
 // Schema 1
 const juce::Identifier kSensorId    ("sensor_id");
 const juce::Identifier kRole        ("role");
@@ -57,6 +65,14 @@ constexpr int kRootSchema   = 2;
 constexpr int kCommonSchema = 1;
 constexpr int kMainSchema   = 1;
 constexpr int kParamSchema  = 1;
+constexpr int kDspSchema    = 1;
+
+/*  Laenge eines Undo-Eintrags im Baum: Kopf (art, slot, revision) plus die
+    120 Werte plus vier Zahlen je Zone. Die Zonenzahl steht NICHT zusaetzlich
+    als Feld daneben - sie folgt aus der Laenge, und ein zweites Feld waere
+    eine zweite Wahrheit, die von der Laenge abweichen koennte. */
+constexpr int kUndoKopf = 3;
+constexpr int kUndoBasis = kUndoKopf + parameter::kAnzahl;   // 123
 
 // `ValueTree::readFromData()` ist absichtlich tolerant: es prueft weder EOF
 // noch einen abgebrochenen spaeten Kindbaum und `var::readFromStream()` glaubt
@@ -503,6 +519,42 @@ bool beziehungsartAusWort (const juce::String& w, Beziehungsart& aus)
     return false;
 }
 
+/*  SONDE-015: die geschlossene Menge der Undo-Arten. `undo` und `redo` fehlen
+    absichtlich - sie bewegen den Cursor im selben Ring, statt einen neuen
+    Eintrag abzulegen (§5.11 Feinheit 3). */
+const char* wort (UndoArt a) noexcept
+{
+    switch (a)
+    {
+        case UndoArt::apply:          return "apply";
+        case UndoArt::revert:         return "revert";
+        case UndoArt::neutralisieren: return "neutralisieren";
+        case UndoArt::remove:         return "remove";
+        case UndoArt::presetLaden:    return "preset_laden";
+        case UndoArt::gestus:         return "gestus";
+    }
+    return "apply";
+}
+
+bool undoArtAusWort (const juce::String& w, UndoArt& aus)
+{
+    if (w == "apply")          { aus = UndoArt::apply; return true; }
+    if (w == "revert")         { aus = UndoArt::revert; return true; }
+    if (w == "neutralisieren") { aus = UndoArt::neutralisieren; return true; }
+    if (w == "remove")         { aus = UndoArt::remove; return true; }
+    if (w == "preset_laden")   { aus = UndoArt::presetLaden; return true; }
+    if (w == "gestus")         { aus = UndoArt::gestus; return true; }
+    return false;
+}
+
+parameter::DspSatz Zustand::dspDto() const
+{
+    parameter::DspSatz d;
+    d.werte = parameters;
+    d.zonen = schutzZonen;
+    return d;
+}
+
 /*  E-01a, M-02: die ABGELEITETE Belegung.
 
     Der Vorschlagstext der Etappe 1 liess `prominence` fuer `geschuetzt` und
@@ -660,6 +712,58 @@ juce::ValueTree baueCommon (const Common& c)
     if (c.projectBindingId.isNotEmpty())
         t.setProperty (kBinding, c.projectBindingId, nullptr);
     return t;
+}
+
+/*  ── SONDE-015: das Kind `Dsp` schreiben ───────────────────────────────── */
+
+/** Traegt der Zustand ueberhaupt einen DSP-Inhalt? Nur dann entsteht das Kind. */
+bool dspTraegtEtwas (const Zustand& z)
+{
+    if (z.stateRevision != 0 || ! z.schutzZonen.empty() || ! z.undoRing.empty())
+        return true;
+    for (int slot = 0; slot < parameter::kSlots; ++slot)
+        if (z.parameters[(size_t) parameter::indexOccupied (slot)].b)
+            return true;
+    return false;
+}
+
+/** Zonen als flache Vierergruppen [id, low_hz, high_hz, enabled, ...]. */
+juce::Array<juce::var> zonenFlach (const std::vector<parameter::Schutzzone>& zonen)
+{
+    juce::Array<juce::var> flach;
+    for (const auto& e : zonen)
+    {
+        flach.add (e.id);
+        flach.add (e.lowHz);
+        flach.add (e.highHz);
+        flach.add (e.enabled);
+    }
+    return flach;
+}
+
+/** Ein Undo-Eintrag als EIGENES Array: [art, slot, revision, 120 Werte,
+    4 x z Zonenwerte]. Verschachtelt statt flach aneinandergereiht, weil die
+    Eintragsgrenze damit aus der Struktur folgt und nicht aus einer
+    mitgeschriebenen Zaehlung, die von ihr abweichen koennte. */
+juce::Array<juce::var> undoFlach (const UndoEintrag& e)
+{
+    juce::Array<juce::var> a;
+    a.add (juce::String (wort (e.art)));
+    a.add (e.slot);
+    a.add (juce::var (e.revision));
+    const auto& t = parameter::tabelle();
+    for (int i = 0; i < parameter::kAnzahl; ++i)
+    {
+        const auto& z = e.zustand.werte[(size_t) i];
+        switch (t[(size_t) i].typ)
+        {
+            case parameter::Typ::boolean:     a.add (z.b); break;
+            case parameter::Typ::gleitkomma:  a.add (z.zahl); break;
+            case parameter::Typ::aufzaehlung: a.add (z.enumIndex); break;
+        }
+    }
+    a.addArray (zonenFlach (e.zustand.zonen));
+    return a;
 }
 
 /** Schreibt die typisierten Felder in eine KOPIE des gehaltenen Baums -
@@ -889,6 +993,54 @@ juce::ValueTree synchronisiert (const Zustand& z)
         kopie.removeChild (parameters, nullptr);
     }
 
+    /*  SONDE-015: das Kind `Dsp`.
+
+        Es wird nur geschrieben, wenn es etwas zu sagen gibt - Revision,
+        Belegung, Zone oder Undo-Eintrag. Ein frischer, unberuehrter Stand
+        bleibt damit fuer einen Build lesbar, der `Dsp` noch nicht kennt.
+        Dieselbe Regel wie beim nie gesetzten `assistant_step_v1`: "noch nie
+        benutzt" und "mit leeren Feldern benutzt" waeren in den Bytes sonst
+        dasselbe. */
+    auto dsp = kopie.getChildWithName (kDsp);
+    if (z.hatParameters && dspTraegtEtwas (z))
+    {
+        if (! dsp.isValid())
+        {
+            dsp = juce::ValueTree (kDsp);
+            kopie.appendChild (dsp, nullptr);
+        }
+        dsp.setProperty (kSchema, kDspSchema, nullptr);
+        dsp.setProperty (kDspRevision, juce::var (z.stateRevision), nullptr);
+
+        juce::Array<juce::var> belegt;
+        for (int slot = 0; slot < parameter::kSlots; ++slot)
+            belegt.add (z.parameters[(size_t) parameter::indexOccupied (slot)].b);
+        dsp.setProperty (kDspOccupied, juce::var (belegt), nullptr);
+
+        if (z.schutzZonen.empty())
+            dsp.removeProperty (kDspZonen, nullptr);
+        else
+            dsp.setProperty (kDspZonen, juce::var (zonenFlach (z.schutzZonen)), nullptr);
+
+        if (z.undoRing.empty())
+        {
+            dsp.removeProperty (kDspUndoRing, nullptr);
+            dsp.removeProperty (kDspUndoCursor, nullptr);
+        }
+        else
+        {
+            juce::Array<juce::var> ring;
+            for (const auto& e : z.undoRing)
+                ring.add (juce::var (undoFlach (e)));
+            dsp.setProperty (kDspUndoRing, juce::var (ring), nullptr);
+            dsp.setProperty (kDspUndoCursor, z.undoCursor, nullptr);
+        }
+    }
+    else if (dsp.isValid())
+    {
+        kopie.removeChild (dsp, nullptr);
+    }
+
     return kopie;
 }
 
@@ -1010,6 +1162,32 @@ bool hatWriterHeadroom (const Zustand& eingang, const Bundle& bundle)
         Assistentenergebnis::keineAenderungEmpfohlen
     };
 
+    /*  SONDE-015: das Kind `Dsp` in seiner groessten erreichbaren Form -
+        Revision am `int64`-Rand, alle acht Slots belegt, acht Zonen und ein
+        VOLLER Undo-Ring aus 32 Schnappschuessen. Ohne diesen Zusatz
+        versprache der Headroomriegel etwas ueber einen Stand, den die
+        Produkt-API laengst uebertreffen kann - dieselbe Luecke, die M-69 fuer
+        die Passagen und SONDE-014 fuer den Intent geschlossen hat. Und genau
+        das misst M-78: der volle Ring reisst die 16-MiB-Grenze NICHT. */
+    kandidat.stateRevision = std::numeric_limits<juce::int64>::max();
+    for (int slot = 0; slot < parameter::kSlots; ++slot)
+        kandidat.parameters[(size_t) parameter::indexOccupied (slot)].b = true;
+    kandidat.schutzZonen.clear();
+    for (int i = 0; i < parameter::kMaxZonen; ++i)
+        kandidat.schutzZonen.push_back ({ i, 20.0 + (double) i, 19000.0 + (double) i, true });
+    kandidat.undoRing.clear();
+    for (int i = 0; i < parameter::kUndoTiefe; ++i)
+    {
+        UndoEintrag u;
+        u.art = UndoArt::presetLaden;   // laengstes Wort der geschlossenen Menge
+        u.slot = parameter::kSlots - 1;
+        u.revision = std::numeric_limits<juce::int64>::max() - i;
+        u.zustand.werte = kandidat.parameters;
+        u.zustand.zonen = kandidat.schutzZonen;
+        kandidat.undoRing.push_back (std::move (u));
+    }
+    kandidat.undoCursor = parameter::kUndoTiefe;
+
     // Eqcp kann zwischen main und legacy sowie allen heute erlaubten v2-
     // Positionen wechseln. Fuer Sonden ist die Menge kleiner; die Schleife
     // bleibt trotzdem die eine Wahrheit aus dem Bundlevertrag.
@@ -1029,6 +1207,197 @@ bool hatWriterHeadroom (const Zustand& eingang, const Bundle& bundle)
             if (! passt (kandidat))
                 return false;
         }
+    }
+    return true;
+}
+
+/*  ── SONDE-015: das Kind `Dsp` lesen ───────────────────────────────────────
+
+    Was der Schreiber garantiert, prueft der Leser NACH: Anzahl, Typ, Bereich,
+    doppelte Zonen-id, Sortierung, Ringtiefe, Eintragslaenge und Cursorlage.
+    Ein Leser, der weniger prueft als sein Schreiber zusagt, ist das Loch, durch
+    das eine von Hand veraenderte Projektdatei den Zustand vergiftet. Ein
+    Verstoss macht den GANZEN State read-only - kein Teilstate (§53.8). */
+bool leseZonenFlach (const juce::var& wert, std::vector<parameter::Schutzzone>& aus, juce::String& grund)
+{
+    const auto* flach = wert.getArray();
+    if (flach == nullptr || flach->size() % 4 != 0
+        || flach->size() > parameter::kMaxZonen * 4)
+    {
+        grund = "Dsp.schutz_zonen_v1 must be an array of quadruples with at most 8 entries";
+        return false;
+    }
+    aus.clear();
+    for (int i = 0; i < flach->size(); i += 4)
+    {
+        const auto idWert   = flach->getReference (i);
+        const auto lowWert  = flach->getReference (i + 1);
+        const auto highWert = flach->getReference (i + 2);
+        const auto anWert   = flach->getReference (i + 3);
+        if (! idWert.isInt() || ! lowWert.isDouble() || ! highWert.isDouble() || ! anWert.isBool())
+        {
+            grund = "Dsp.schutz_zonen_v1 quadruple must be int, double, double, bool";
+            return false;
+        }
+        parameter::Schutzzone z;
+        z.id      = (int) idWert;
+        z.lowHz   = (double) lowWert;
+        z.highHz  = (double) highWert;
+        z.enabled = (bool) anWert;
+        aus.push_back (z);
+    }
+    juce::String zoneGrund, wo;
+    if (! parameter::validiereZonen (aus, zoneGrund, wo))
+    {
+        grund = "Dsp.schutz_zonen_v1 " + zoneGrund + " at " + wo;
+        return false;
+    }
+    return true;
+}
+
+bool leseDspKind (const juce::ValueTree& d, parameter::Satz& satz, juce::int64& revision,
+                  std::vector<parameter::Schutzzone>& zonen, std::vector<UndoEintrag>& ring,
+                  int& cursor, juce::String& grund)
+{
+    // 1. `state_revision` ist PFLICHT. Ein `Dsp`-Kind ohne sie waere ein
+    //    Zustand ohne Zeitachse - und der Broker koennte einen verspaeteten
+    //    Bericht nicht von einem aktuellen unterscheiden (§44.4).
+    if (! d.hasProperty (kDspRevision)) { grund = "Dsp.state_revision is missing"; return false; }
+    {
+        const auto w = d.getProperty (kDspRevision);
+        if (! w.isInt() && ! w.isInt64()) { grund = "Dsp.state_revision is not an integer"; return false; }
+        revision = (juce::int64) w;
+        if (revision < 0) { grund = "Dsp.state_revision must not be negative"; return false; }
+    }
+
+    // 2. Die acht `occupied`. Fehlt die Eigenschaft, ist kein Slot belegt.
+    if (d.hasProperty (kDspOccupied))
+    {
+        const auto* flach = d.getProperty (kDspOccupied).getArray();
+        if (flach == nullptr || flach->size() != parameter::kSlots)
+        {
+            grund = "Dsp.occupied_v1 must be an array of exactly 8 booleans";
+            return false;
+        }
+        for (int slot = 0; slot < parameter::kSlots; ++slot)
+        {
+            const auto w = flach->getReference (slot);
+            if (! w.isBool()) { grund = "Dsp.occupied_v1 entry is not a bool"; return false; }
+            satz[(size_t) parameter::indexOccupied (slot)].b = (bool) w;
+        }
+    }
+
+    // 3. Die Schutz-Zonen.
+    zonen.clear();
+    if (d.hasProperty (kDspZonen) && ! leseZonenFlach (d.getProperty (kDspZonen), zonen, grund))
+        return false;
+
+    // 4. Der Undo-Ring. Jeder Eintrag ist ein eigenes Array
+    //    [art, slot, revision, 120 Werte, 4 x z Zonenwerte].
+    ring.clear();
+    cursor = 0;
+    if (d.hasProperty (kDspUndoRing))
+    {
+        const auto* eintraege = d.getProperty (kDspUndoRing).getArray();
+        if (eintraege == nullptr || eintraege->size() > parameter::kUndoTiefe)
+        {
+            grund = "Dsp.undo_ring_v1 must be an array of at most 32 entries";
+            return false;
+        }
+        const auto& t = parameter::tabelle();
+        for (int n = 0; n < eintraege->size(); ++n)
+        {
+            const auto* e = eintraege->getReference (n).getArray();
+            if (e == nullptr || e->size() < kUndoBasis
+                || (e->size() - kUndoBasis) % 4 != 0
+                || (e->size() - kUndoBasis) / 4 > parameter::kMaxZonen)
+            {
+                grund = "Dsp.undo_ring_v1 entry has an invalid length";
+                return false;
+            }
+            UndoEintrag u;
+            if (! e->getReference (0).isString()
+                || ! undoArtAusWort (e->getReference (0).toString(), u.art))
+            {
+                grund = "Dsp.undo_ring_v1 entry has an unknown art";
+                return false;
+            }
+            if (! e->getReference (1).isInt()) { grund = "Dsp.undo_ring_v1 slot is not an integer"; return false; }
+            u.slot = (int) e->getReference (1);
+            if (u.slot < -1 || u.slot >= parameter::kSlots)
+            {
+                grund = "Dsp.undo_ring_v1 slot is out of range";
+                return false;
+            }
+            const auto rw = e->getReference (2);
+            if (! rw.isInt() && ! rw.isInt64()) { grund = "Dsp.undo_ring_v1 revision is not an integer"; return false; }
+            u.revision = (juce::int64) rw;
+            if (u.revision < 0) { grund = "Dsp.undo_ring_v1 revision must not be negative"; return false; }
+
+            for (int i = 0; i < parameter::kAnzahl; ++i)
+            {
+                const auto w = e->getReference (kUndoKopf + i);
+                auto& z = u.zustand.werte[(size_t) i];
+                switch (t[(size_t) i].typ)
+                {
+                    case parameter::Typ::boolean:
+                        if (! w.isBool()) { grund = "Dsp.undo_ring_v1 value is not a bool"; return false; }
+                        z.b = (bool) w;
+                        break;
+                    case parameter::Typ::gleitkomma:
+                        if (! w.isDouble()) { grund = "Dsp.undo_ring_v1 value is not a double"; return false; }
+                        z.zahl = (double) w;
+                        break;
+                    case parameter::Typ::aufzaehlung:
+                        if (! w.isInt()) { grund = "Dsp.undo_ring_v1 value is not an enum index"; return false; }
+                        z.enumIndex = (int) w;
+                        break;
+                }
+            }
+            for (int i = kUndoBasis; i < e->size(); i += 4)
+            {
+                const auto idWert   = e->getReference (i);
+                const auto lowWert  = e->getReference (i + 1);
+                const auto highWert = e->getReference (i + 2);
+                const auto anWert   = e->getReference (i + 3);
+                if (! idWert.isInt() || ! lowWert.isDouble() || ! highWert.isDouble() || ! anWert.isBool())
+                {
+                    grund = "Dsp.undo_ring_v1 zone quadruple must be int, double, double, bool";
+                    return false;
+                }
+                u.zustand.zonen.push_back ({ (int) idWert, (double) lowWert, (double) highWert, (bool) anWert });
+            }
+            // Ein Undo-Eintrag ist ein ZUSTAND, den dieser Build wiederherstellen
+            // koennen muss. Er wird deshalb nach denselben Regeln geprueft wie
+            // der bestaetigte Zustand - sonst legte ein Undo einen Zustand her,
+            // den der eigene Validator ablehnt.
+            juce::String eGrund, wo;
+            if (! parameter::validiere (u.zustand, eGrund, wo))
+            {
+                grund = "Dsp.undo_ring_v1 entry " + eGrund + " at " + wo;
+                return false;
+            }
+            ring.push_back (std::move (u));
+        }
+
+        if (d.hasProperty (kDspUndoCursor))
+        {
+            const auto w = d.getProperty (kDspUndoCursor);
+            if (! w.isInt()) { grund = "Dsp.undo_cursor is not an integer"; return false; }
+            cursor = (int) w;
+            if (cursor < 0 || cursor > (int) ring.size())
+            {
+                grund = "Dsp.undo_cursor is out of range";
+                return false;
+            }
+        }
+    }
+    else if (d.hasProperty (kDspUndoCursor))
+    {
+        // Ein Cursor ohne Ring zeigt auf nichts. Ihn stumm auf 0 zu setzen
+        // hiesse, einen Rueckweg zu behaupten, den es nicht gibt.
+        grund = "Dsp.undo_cursor without undo_ring_v1";
+        return false;
     }
     return true;
 }
@@ -1056,7 +1425,9 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
     }
     if (nCommon != 1)  { grund = "Common is missing or duplicated"; return false; }
     if (nMain > 1 || nParam > 1 || nDsp > 1 || nPairing > 1) { grund = "duplicated child"; return false; }
-    if (nDsp > 0)      { grund = "child Dsp is not readable by this version (SONDE-015)"; return false; }
+    // SONDE-015: `Dsp` ist seit diesem Ticket lesbar - fuer `active_probe`.
+    // Die Klassenpruefung steht weiter unten bei der Kind-Matrix, weil die
+    // Klasse erst aus `Common` kommt.
     if (nPairing > 0)  { grund = "child Pairing is not readable by this version (SONDE-016)"; return false; }
 
     const auto common = v.getChildWithName (kCommon);
@@ -1113,6 +1484,9 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
     if (! istMain && nMain > 0)  { grund = juce::String ("MainProject is not allowed for ") + wort (c.klasse); return false; }
     if (istAktiv && nParam != 1) { grund = "active_probe requires exactly one Parameters"; return false; }
     if (! istAktiv && nParam > 0){ grund = juce::String ("Parameters is not allowed for ") + wort (c.klasse); return false; }
+    // SONDE-015: `Dsp` ist fuer `active_probe` optional und fuer jede andere
+    // Klasse verboten - der Zustand eines EQ-Kerns, den es dort nicht gibt.
+    if (! istAktiv && nDsp > 0)  { grund = juce::String ("Dsp is not allowed for ") + wort (c.klasse); return false; }
 
     if (istMain && ! schemaIst (v.getChildWithName (kMainProject), kMainSchema))
     {
@@ -1551,11 +1925,52 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
     }
 
     parameter::Satz satz {};
+    bool layoutV1 = false;
+    bool hatDsp = false;
+    juce::int64 stateRevision = 0;
+    std::vector<parameter::Schutzzone> zonen;
+    std::vector<UndoEintrag> undoRing;
+    int undoCursor = 0;
     if (istAktiv)
     {
         const auto p = v.getChildWithName (kParameters);
         if (! schemaIst (p, kParamSchema)) { grund = "Parameters schema is unknown to this version (it reads schema 1)"; return false; }
-        if (! parameter::leseAusBaum (p, satz, grund)) return false;
+        if (! parameter::leseAusBaum (p, satz, layoutV1, grund)) return false;
+
+        /*  SONDE-015: das Kind `Dsp`.
+
+            Es ist optional. Fehlt es, ist der Zustand frisch (Revision 0,
+            keine Zone, kein Undo) - und bei Layout v1 setzt die Migration
+            danach `occupied` aus `enabled` und den Werten (R5). Ein Stand im
+            Layout v2 OHNE `Dsp` heisst dagegen ausdruecklich "kein Slot
+            belegt": dort hat der Schreiber das Kind weggelassen, weil es
+            nichts zu sagen hatte. */
+        const auto d = v.getChildWithName (kDsp);
+        if (d.isValid())
+        {
+            /*  Ein Knoten OHNE `dsp_schema_version` stammt von einem Build,
+                der das Kind `Dsp` nicht kannte - er kann es nicht geschrieben
+                haben. Beides zusammen ist ein Widerspruch, und die Migration
+                unten wuerde die gelesene Belegung stumm ueberschreiben.
+                Read-only mit Originalbytes ist die ehrliche Antwort: kein
+                Teilstate, kein Raten (§53.8). */
+            if (layoutV1)
+            {
+                grund = "Parameters is layout 1 but a Dsp child is present";
+                return false;
+            }
+            hatDsp = true;
+            if (! schemaIst (d, kDspSchema)) { grund = "Dsp schema is unknown to this version (it reads schema 1)"; return false; }
+            if (! leseDspKind (d, satz, stateRevision, zonen, undoRing, undoCursor, grund)) return false;
+        }
+
+        if (layoutV1)
+        {
+            // R5, Migration v1 -> v2: occupied := enabled ODER mindestens ein
+            // Wert des Slots weicht BITGENAU vom Vertragsdefault ab. Ein
+            // v1-Stand verliert damit kein vom User gesetztes Band.
+            parameter::setzeOccupiedAusV1 (satz);
+        }
     }
 
     aus.baum = v;
@@ -1569,6 +1984,12 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
     aus.assistent = mainAssistent;
     aus.hatParameters = istAktiv;
     aus.parameters = satz;
+    aus.hatDsp = hatDsp;
+    aus.stateRevision = stateRevision;
+    aus.schutzZonen = std::move (zonen);
+    aus.undoRing = std::move (undoRing);
+    aus.undoCursor = undoCursor;
+    aus.layoutV1Migriert = layoutV1;
     aus.nurLesen = false;
     aus.originalBytes.reset();
     aus.grund.clear();

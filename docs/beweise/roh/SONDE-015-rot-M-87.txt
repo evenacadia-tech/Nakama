@@ -1,0 +1,12 @@
+SONDE-015 Etappe 2 - Rotbeweis M-87
+Zusage: Jede v2-Kennung sagt, ob sie Host-Parameter ist; occupied ist bewusst keiner.
+Bruch:  eq-copilot/schemas/state/nakama-parameter-v2.json
+        - "bedeutung": "Belegungszustand des Slots (SONDE-015 R5). Ein freier Slot verarbeitet nichts, gleichgueltig was seine dreizehn v1-Werte sagen; v1.band.
+        + "bedeutung": "Belegungszustand des Slots (SONDE-015 R5). Ein freier Slot verarbeitet nichts, gleichgueltig was seine dreizehn v1-Werte sagen; v1.band.
+------------------------------------------------------------------------------
+$ py -3.13 tools/eq-copilot/erzeuge_state_fixtures.py --pruefen   (A12 erzeuge_state_fixtures.py --pruefen)
+VERTRAG FEHLER: die Host-Parameter sind nicht das Praefix der ersten 112 Kennungen
+VERTRAG FEHLER: occupied darf kein Host-Parameter sein (R5: kein Weg an der Transaktion vorbei)
+
+EXIT=2
+URTEIL: ROT

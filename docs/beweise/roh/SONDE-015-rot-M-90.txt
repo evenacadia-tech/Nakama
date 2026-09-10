@@ -1,0 +1,17 @@
+SONDE-015 Etappe 2 - Rotbeweis M-90
+Zusage: Ein v1-Stand laedt VERLUSTFREI: die drei v2-Host-Parameter bekommen ihren Default, nichts wird erfunden.
+Bruch:  eq-copilot/plugin/state/NakamaParameter.cpp
+        -         layoutV1 = true;
+        +         layoutV1 = true;
+------------------------------------------------------------------------------
+$ EqCopStateMigrationTest.exe
+  FEHLER  ein v1-Stand laedt verlustfrei und wird als migriert gemeldet  [Parameters: v2.global.eq_enabled is missing]
+  FEHLER  occupied := enabled ODER ein Wert weicht ab - das ausgeschaltete Band 4 ueberlebt
+  FEHLER  sechs nie beruehrte Slots bleiben frei  [8]
+  FEHLER  minus null gilt bitgenau als Abweichung vom Default (kein Epsilon)  [Parameters: v2.global.eq_enabled is missing]
+  FEHLER  der gespeicherte Stand ist Layout v2 und migriert nicht erneut
+  FEHLER  die migrierte Belegung landet im Kind Dsp und ueberlebt
+  FEHLER  == Migration: 4 Rollen bytegleich zum Golden, idempotent
+
+EXIT=1
+URTEIL: ROT

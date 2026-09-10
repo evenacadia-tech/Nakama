@@ -346,6 +346,17 @@ State-Migrationsstand und den letzten Installationsbeweis prüfen.
 - Ein Pipe-Zeichen in einer Markdown-Tabellenzelle reißt
   `tools/plan/dokuriegel.py`; Zellinhalte mit `|` umschreiben, bevor der Riegel
   läuft (NAK-181, 06.09.2026).
+- `.gitattributes` hält `eq-copilot/schemas/**` und `eq-copilot/fixtures/**`
+  als `-text` bytegleich — der Baum darunter ist aber **gemischt**:
+  `nakama-parameter-v1.json`, `nakama_telemetry_v1.fbs`,
+  `reservierte-nachrichten-v1.json` und der ganze Fixture-Korpus liegen mit LF
+  im Index, `nakama-state-v2.md`, `eq-ipc-v3.schema.json` und `FELD-IDS.json`
+  mit CRLF. Ein Werkzeug, das mit `newline="
+"` schreibt, schreibt die drei
+  vollständig um; am 10.09.2026 zeigte der Diff 4739 statt 51 geänderten Zeilen
+  an `eq-ipc-v3.schema.json` (SONDE-015 Etappe 2, Nebenbefund N-5). Vor dem
+  Schreiben einer dieser Dateien `git ls-files --eol <datei>` lesen und
+  dieselben Zeilenenden zurückschreiben.
 - `Copy-Item` überträgt `LastWriteTime`: eine zurückgespielte Quelldatei kann
   ÄLTER sein als ihr Objektfile, MSBuild übersetzt dann nicht neu, meldet
   Exit 0, und der Lauf misst das alte Binary (NAK-230, 09.09.2026: fünf

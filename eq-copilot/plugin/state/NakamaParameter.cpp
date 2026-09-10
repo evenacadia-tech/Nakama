@@ -4,6 +4,7 @@
 #include "NakamaVertrag.h"
 
 #include <cmath>
+#include <cstring>
 
 namespace nakama::parameter
 {
@@ -11,19 +12,23 @@ namespace nakama::parameter
 namespace
 {
 
-Beschreibung boolean (const juce::String& id, bool standard, bool topologisch)
+Beschreibung boolean (const juce::String& id, bool standard, bool topologisch,
+                      bool hostParameter = true, int layout = 1)
 {
     Beschreibung b;
     b.id = id; b.typ = Typ::boolean; b.standardBool = standard;
     b.wechsel = Wechsel::blockrand; b.topologisch = topologisch;
+    b.hostParameter = hostParameter; b.layout = layout;
     return b;
 }
 
-Beschreibung gleitkomma (const juce::String& id, double min, double max, double standard)
+Beschreibung gleitkomma (const juce::String& id, double min, double max, double standard,
+                         bool hostParameter = true, int layout = 1)
 {
     Beschreibung b;
     b.id = id; b.typ = Typ::gleitkomma; b.min = min; b.max = max; b.standardZahl = standard;
     b.wechsel = Wechsel::rampe; b.topologisch = false;
+    b.hostParameter = hostParameter; b.layout = layout;
     return b;
 }
 
@@ -37,7 +42,8 @@ Beschreibung aufzaehlung (const juce::String& id, const juce::StringArray& werte
 
 std::array<Beschreibung, kAnzahl> baueTabelle()
 {
-    // Spiegel von nakama-parameter-v1.json - Reihenfolge und Werte sind Vertrag.
+    // Spiegel von nakama-parameter-v2.json - Reihenfolge und Werte sind
+    // Vertrag: 109 v1, dann die drei v2-Host-Parameter, dann acht occupied.
     std::array<Beschreibung, kAnzahl> t;
     int i = 0;
     t[i++] = boolean    ("v1.global.bypass", false, false);
@@ -67,6 +73,19 @@ std::array<Beschreibung, kAnzahl> baueTabelle()
         t[i++] = gleitkomma (p + "release_ms",         5.0, 5000.0,  100.0);
         t[i++] = aufzaehlung (p + "sidechain_source", sidechains, 0, true);
     }
+    jassert (i == kAnzahlV1);
+
+    // SONDE-015 R2/R3/R4: die drei v2-HOST-Parameter, hinten angehaengt.
+    t[i++] = boolean    ("v2.global.eq_enabled", false, false, true, 2);
+    t[i++] = gleitkomma ("v2.global.mix",   0.0, 1.0, 1.0, true, 2);
+    t[i++] = boolean    ("v2.global.auto_gain", false, false, true, 2);
+    jassert (i == kHostParameter);
+
+    // SONDE-015 R5: die acht `occupied` - persistenter Zustand im Kind `Dsp`,
+    // KEIN Host-Parameter. Topologisch: eine Belegung aendert die Bank.
+    for (int slot = 0; slot < kSlots; ++slot)
+        t[i++] = boolean ("v2.band." + juce::String (slot) + ".occupied", false, true, false, 2);
+
     jassert (i == kAnzahl);
     return t;
 }
@@ -106,6 +125,56 @@ Satz standardSatz()
     return s;
 }
 
+bool DspSatz::operator== (const DspSatz& a) const noexcept
+{
+    const auto& t = tabelle();
+    for (int i = 0; i < kAnzahl; ++i)
+    {
+        const auto& x = werte[(size_t) i];
+        const auto& y = a.werte[(size_t) i];
+        switch (t[(size_t) i].typ)
+        {
+            // Gleitkomma BITGENAU: 0.0 und -0.0 sind zwei verschiedene
+            // Zustaende dieses Vertrags (Migrationsregel R5).
+            case Typ::gleitkomma:  if (std::memcmp (&x.zahl, &y.zahl, sizeof (double)) != 0) return false; break;
+            case Typ::boolean:     if (x.b != y.b) return false; break;
+            case Typ::aufzaehlung: if (x.enumIndex != y.enumIndex) return false; break;
+        }
+    }
+    return zonen == a.zonen;
+}
+
+bool weichtVomDefaultAb (int index, const Zelle& z)
+{
+    if (index < 0 || index >= kAnzahl)
+        return false;
+    const auto& b = tabelle()[(size_t) index];
+    switch (b.typ)
+    {
+        case Typ::boolean:     return z.b != b.standardBool;
+        case Typ::aufzaehlung: return z.enumIndex != b.standardIndex;
+        case Typ::gleitkomma:
+            // BITGENAU (R5): ein Epsilonvergleich laese einen minimal
+            // verstellten Wert als unberuehrt und verloere ein Band.
+            return std::memcmp (&z.zahl, &b.standardZahl, sizeof (double)) != 0;
+    }
+    return false;
+}
+
+void setzeOccupiedAusV1 (Satz& s)
+{
+    for (int slot = 0; slot < kSlots; ++slot)
+    {
+        bool belegt = s[(size_t) indexBandV1 (slot, kEnabled)].b;
+        for (int feld = 0; feld < kJeSlot && ! belegt; ++feld)
+        {
+            const int i = indexBandV1 (slot, feld);
+            belegt = weichtVomDefaultAb (i, s[(size_t) i]);
+        }
+        s[(size_t) indexOccupied (slot)].b = belegt;
+    }
+}
+
 bool validiere (const Satz& s, juce::String& grund, juce::String& woId)
 {
     const auto& t = tabelle();
@@ -130,19 +199,84 @@ bool validiere (const Satz& s, juce::String& grund, juce::String& woId)
     return true;
 }
 
+bool validiereZonen (const std::vector<Schutzzone>& z, juce::String& grund, juce::String& woId)
+{
+    // 1. Anzahl. Die neunte Zone wird ABGEWIESEN, nicht stillschweigend
+    //    verworfen - und die Begrenzung sitzt hier, nicht erst in einer
+    //    Oberflaeche (R6, M-73).
+    if ((int) z.size() > kMaxZonen)
+    {
+        grund = "zone_anzahl";
+        woId = "schutz_zonen";
+        return false;
+    }
+
+    // 2. Werte je Zone.
+    for (size_t i = 0; i < z.size(); ++i)
+    {
+        const auto& e = z[i];
+        const juce::String wo = "schutz_zonen[" + juce::String ((int) i) + "]";
+        if (e.id < 0 || e.id >= kMaxZonen)      { grund = "bereich"; woId = wo + ".id";      return false; }
+        if (! std::isfinite (e.lowHz) || ! std::isfinite (e.highHz))
+        {
+            grund = "nichtendlich";
+            woId = wo + (std::isfinite (e.lowHz) ? ".high_hz" : ".low_hz");
+            return false;
+        }
+        // 20 <= low < high <= 20000. Gleichheit ist eine Zone ueber nichts.
+        // Die Nyquistkappung auf 0,45*fs macht die LAUFZEIT (R6, Abweichung 2):
+        // eine samplerateabhaengige DTO-Grenze machte einen bei 96 kHz
+        // gespeicherten Stand bei 44,1 kHz unlesbar.
+        if (e.lowHz < 20.0 || e.lowHz >= e.highHz) { grund = "bereich"; woId = wo + ".low_hz";  return false; }
+        if (e.highHz > 20000.0)                    { grund = "bereich"; woId = wo + ".high_hz"; return false; }
+    }
+
+    // 3. Doppelte id - zwei Zonen mit derselben Identitaet waeren zwei
+    //    Wahrheiten ueber dieselbe Zone.
+    for (size_t i = 0; i < z.size(); ++i)
+        for (size_t j = i + 1; j < z.size(); ++j)
+            if (z[i].id == z[j].id)
+            {
+                grund = "zone_doppelt";
+                woId = "schutz_zonen[" + juce::String ((int) j) + "].id";
+                return false;
+            }
+
+    // 4. Streng aufsteigend nach id. Eine Menge hat keine Reihenfolge; der
+    //    Vertrag legt eine fest, damit dieselbe Zonenmenge immer denselben
+    //    kanonischen Text und damit denselben state_hash ergibt.
+    for (size_t i = 1; i < z.size(); ++i)
+        if (z[i - 1].id >= z[i].id)
+        {
+            grund = "zone_sortierung";
+            woId = "schutz_zonen[" + juce::String ((int) i) + "].id";
+            return false;
+        }
+
+    woId.clear();
+    return true;
+}
+
+bool validiere (const DspSatz& s, juce::String& grund, juce::String& woId)
+{
+    if (! validiere (s.werte, grund, woId))
+        return false;
+    return validiereZonen (s.zonen, grund, woId);
+}
+
 // ── DTO ────────────────────────────────────────────────────────────────────
 
 namespace
 {
 
-kanon::Wert dtoWert (const Satz& s)
+kanon::Wert dtoWert (const DspSatz& s)
 {
     const auto& t = tabelle();
     auto parameters = kanon::Wert::leeresObjekt();
     for (int i = 0; i < kAnzahl; ++i)
     {
         const auto& b = t[(size_t) i];
-        const auto& z = s[(size_t) i];
+        const auto& z = s.werte[(size_t) i];
         kanon::Wert w;
         switch (b.typ)
         {
@@ -152,15 +286,30 @@ kanon::Wert dtoWert (const Satz& s)
         }
         parameters.objektSetze (b.id, std::move (w));
     }
+
+    auto zonen = kanon::Wert::leereListe();
+    for (const auto& e : s.zonen)
+    {
+        auto o = kanon::Wert::leeresObjekt();
+        // Einfuegereihenfolge ist gleichgueltig - RFC 8785 sortiert selbst
+        // (enabled < high_hz < id < low_hz nach UTF-16-Code-Units).
+        o.objektSetze ("enabled", kanon::Wert::boolean (e.enabled));
+        o.objektSetze ("high_hz", kanon::Wert::nummer (e.highHz));
+        o.objektSetze ("id",      kanon::Wert::nummer ((double) e.id));
+        o.objektSetze ("low_hz",  kanon::Wert::nummer (e.lowHz));
+        zonen.liste.push_back (std::move (o));
+    }
+
     auto dto = kanon::Wert::leeresObjekt();
     dto.objektSetze ("dsp_schema_version", kanon::Wert::nummer ((double) kDspSchemaVersion));
     dto.objektSetze ("parameters", std::move (parameters));
+    dto.objektSetze ("schutz_zonen", std::move (zonen));
     return dto;
 }
 
 } // namespace
 
-bool dtoKanon (const Satz& s, juce::MemoryBlock& utf8, juce::String& grund)
+bool dtoKanon (const DspSatz& s, juce::MemoryBlock& utf8, juce::String& grund)
 {
     juce::String wo;
     if (! validiere (s, grund, wo))
@@ -174,7 +323,7 @@ bool dtoKanon (const Satz& s, juce::MemoryBlock& utf8, juce::String& grund)
     return true;
 }
 
-bool stateHash (const Satz& s, juce::String& hex, juce::String& grund)
+bool stateHash (const DspSatz& s, juce::String& hex, juce::String& grund)
 {
     juce::MemoryBlock utf8;
     if (! dtoKanon (s, utf8, grund))
@@ -183,7 +332,98 @@ bool stateHash (const Satz& s, juce::String& hex, juce::String& grund)
     return true;
 }
 
-bool ausDtoText (const void* utf8, size_t laenge, Satz& aus, juce::String& grund, juce::String& detail)
+namespace
+{
+
+const kanon::Wert* finde (const kanon::Wert& o, const juce::String& k)
+{
+    for (size_t i = 0; i < o.objektSchluessel.size(); ++i)
+        if (o.objektSchluessel[i] == k)
+            return &o.objektWerte[i];
+    return nullptr;
+}
+
+/** Liest die Zonenliste aus dem geparsten DTO. Struktur- und Typfehler tragen
+    dieselben Manifestwoerter wie ueberall sonst; die INHALTLICHEN Regeln
+    (Anzahl, Bereich, doppelte id, Sortierung) prueft danach
+    `validiereZonen` - genau EINE Stelle, an der sie stehen. */
+bool leseZonen (const kanon::Wert& liste, std::vector<Schutzzone>& aus,
+                juce::String& grund, juce::String& detail)
+{
+    if (liste.art != kanon::Wert::Art::liste)
+    {
+        grund = "struktur"; detail = "schutz_zonen ist kein Array";
+        return false;
+    }
+    aus.clear();
+    aus.reserve (liste.liste.size());
+    for (size_t i = 0; i < liste.liste.size(); ++i)
+    {
+        const auto& e = liste.liste[i];
+        const juce::String wo = "schutz_zonen[" + juce::String ((int) i) + "]";
+        if (e.art != kanon::Wert::Art::objekt)
+        {
+            grund = "struktur"; detail = wo + " ist kein Objekt";
+            return false;
+        }
+        if (e.objektSchluessel.size() != 4)
+        {
+            grund = "struktur"; detail = wo + " braucht genau enabled, high_hz, id, low_hz";
+            return false;
+        }
+        const auto* enabled = finde (e, "enabled");
+        const auto* highHz  = finde (e, "high_hz");
+        const auto* id      = finde (e, "id");
+        const auto* lowHz   = finde (e, "low_hz");
+        if (enabled == nullptr || highHz == nullptr || id == nullptr || lowHz == nullptr)
+        {
+            grund = "struktur"; detail = wo + " braucht genau enabled, high_hz, id, low_hz";
+            return false;
+        }
+        if (enabled->art != kanon::Wert::Art::boolean) { grund = "typ"; detail = wo + ".enabled"; return false; }
+        if (id->art      != kanon::Wert::Art::zahl)    { grund = "typ"; detail = wo + ".id";      return false; }
+        if (lowHz->art   != kanon::Wert::Art::zahl)    { grund = "typ"; detail = wo + ".low_hz";  return false; }
+        if (highHz->art  != kanon::Wert::Art::zahl)    { grund = "typ"; detail = wo + ".high_hz"; return false; }
+
+        // Die `id` ist eine GANZE Zahl. JSON kennt den Unterschied nicht, der
+        // Vertrag schon: 3.5 ist keine Zonenidentitaet, sondern ein Fehler.
+        if (! std::isfinite (id->zahl) || id->zahl != std::floor (id->zahl))
+        {
+            grund = "bereich"; detail = wo + ".id";
+            return false;
+        }
+        Schutzzone z;
+        z.enabled = enabled->b;
+        z.id      = (int) id->zahl;
+        z.lowHz   = lowHz->zahl;
+        z.highHz  = highHz->zahl;
+        aus.push_back (z);
+    }
+    return true;
+}
+
+} // namespace
+
+bool berichtDtoPruefen (const juce::String& jcs, const juce::String& stateHashHex,
+                        DspSatz& aus, juce::String& grund, juce::String& detail)
+{
+    grund.clear(); detail.clear();
+    const auto* bytes = jcs.toRawUTF8();
+    const auto laenge = (size_t) jcs.getNumBytesAsUTF8();
+
+    // Der Hash ZUERST: eine Zeichenkette, deren Hash nicht stimmt, ist kein
+    // bestaetigter Zustand, und ihren Inhalt zu deuten waere gegenstandslos.
+    const auto ist = kanon::sha256Hex (bytes, laenge);
+    if (stateHashHex.isEmpty() || ist != stateHashHex)
+    {
+        grund = "state_hash";
+        detail = "SHA-256(dsp.jcs) = " + ist + ", state_report.state_hash = " + stateHashHex;
+        return false;
+    }
+    return ausDtoText (bytes, laenge, aus, grund, detail);
+}
+
+bool ausDtoText (const void* utf8, size_t laenge, DspSatz& aus, juce::String& grund, juce::String& detail)
 {
     grund.clear(); detail.clear();
 
@@ -218,24 +458,20 @@ bool ausDtoText (const void* utf8, size_t laenge, Satz& aus, juce::String& grund
         return false;
     }
 
-    // 3. Struktur: genau {dsp_schema_version, parameters}.
-    auto finde = [] (const kanon::Wert& o, const juce::String& k) -> const kanon::Wert*
-    {
-        for (size_t i = 0; i < o.objektSchluessel.size(); ++i)
-            if (o.objektSchluessel[i] == k)
-                return &o.objektWerte[i];
-        return nullptr;
-    };
+    // 3. Struktur: genau {dsp_schema_version, parameters, schutz_zonen}.
     if (wurzel.art != kanon::Wert::Art::objekt) { grund = "struktur"; detail = "Wurzel ist kein Objekt"; return false; }
     const auto* version = finde (wurzel, "dsp_schema_version");
     const auto* par     = finde (wurzel, "parameters");
-    if (wurzel.objektSchluessel.size() != 2 || version == nullptr || par == nullptr)
+    const auto* zonen   = finde (wurzel, "schutz_zonen");
+    if (wurzel.objektSchluessel.size() != 3 || version == nullptr || par == nullptr || zonen == nullptr)
     {
-        grund = "struktur"; detail = "Wurzel braucht genau dsp_schema_version und parameters";
+        grund = "struktur"; detail = "Wurzel braucht genau dsp_schema_version, parameters und schutz_zonen";
         return false;
     }
 
-    // 4. dsp_schema_version.
+    // 4. dsp_schema_version. Layout v1 ist Verlauf; dieser Leser nimmt es
+    //    nicht mehr an - ein v1-STAND migriert im State-Leser, ein v1-DTO auf
+    //    dem Draht ist eine andere Sprache.
     if (version->art != kanon::Wert::Art::zahl || version->zahl != (double) kDspSchemaVersion)
     {
         grund = "dsp_schema_version"; detail = "erwartet " + juce::String (kDspSchemaVersion);
@@ -261,12 +497,12 @@ bool ausDtoText (const void* utf8, size_t laenge, Satz& aus, juce::String& grund
         }
 
     // 7. Typ je Parameter - ALLE, bevor ein Wert geprueft wird.
-    Satz s;
+    DspSatz s;
     for (int i = 0; i < kAnzahl; ++i)
     {
         const auto& b = t[(size_t) i];
         const auto* w = finde (*par, b.id);
-        auto& z = s[(size_t) i];
+        auto& z = s.werte[(size_t) i];
         switch (b.typ)
         {
             case Typ::boolean:
@@ -284,23 +520,45 @@ bool ausDtoText (const void* utf8, size_t laenge, Satz& aus, juce::String& grund
         }
     }
 
-    // 8./9. Nichtendlich, Bereich, Enum.
+    // 8./9. Nichtendlich, Bereich, Enum - erst die Werte.
     juce::String wo;
-    if (! validiere (s, grund, wo))
+    if (! validiere (s.werte, grund, wo))
     {
         detail = wo;
         return false;
     }
-    aus = s;
+
+    // 10. Zonen: erst Struktur und Typ, dann die inhaltlichen Regeln.
+    if (! leseZonen (*zonen, s.zonen, grund, detail))
+        return false;
+    if (! validiereZonen (s.zonen, grund, wo))
+    {
+        detail = wo;
+        return false;
+    }
+
+    aus = std::move (s);
     return true;
 }
 
 // ── ValueTree ──────────────────────────────────────────────────────────────
 
+namespace
+{
+const juce::Identifier kDspSchemaVersionId ("dsp_schema_version");
+}
+
 void schreibeInBaum (const Satz& s, juce::ValueTree& parameters)
 {
+    // Die LAYOUTVERSION der Werte in diesem Knoten. Sie ist additiv - ein
+    // Build, der sie nicht kennt, liest die 109 v1-Eigenschaften weiter und
+    // ignoriert den Rest (nakama-state-v2.md §2.1). Ohne sie waere "Layout
+    // v1" von "Layout v2, in dem zufaellig alle v2-Werte fehlen" nicht zu
+    // unterscheiden, und die Migration muesste raten.
+    parameters.setProperty (kDspSchemaVersionId, kDspSchemaVersion, nullptr);
+
     const auto& t = tabelle();
-    for (int i = 0; i < kAnzahl; ++i)
+    for (int i = 0; i < kHostParameter; ++i)
     {
         const auto& b = t[(size_t) i];
         const auto& z = s[(size_t) i];
@@ -308,7 +566,39 @@ void schreibeInBaum (const Satz& s, juce::ValueTree& parameters)
         switch (b.typ)
         {
             case Typ::boolean:     parameters.setProperty (id, z.b, nullptr); break;
-            case Typ::gleitkomma:  parameters.setProperty (id, z.zahl, nullptr); break;
+            case Typ::gleitkomma:
+            {
+                /*  SONDE-015, am eigenen Diff gefunden: `ValueTree::setProperty`
+                    ueberspringt den Schreibvorgang, wenn der vorhandene Wert
+                    `var::operator==` erfuellt - und fuer `var` sind 0.0 und
+                    -0.0 GLEICH. Der Vertrag hier unterscheidet sie aber
+                    bitgenau: die Migrationsregel R5 liest "weicht vom Default
+                    ab" bitgenau, und `speichere(lade(x)) == x` soll fuer jeden
+                    Wert gelten, den dieser Schreiber selbst geschrieben hat.
+                    Ohne diesen Umweg verloere ein gespeicherter Stand das
+                    Vorzeichen der Null, und ein belegter Slot faende sich beim
+                    naechsten Laden als frei wieder.
+
+                    Der Umweg ueber einen leeren `var` erzwingt den
+                    Schreibvorgang, ohne die POSITION der Eigenschaft im Knoten
+                    zu aendern (`NamedValueSet::set` ersetzt an Ort und
+                    Stelle) - `removeProperty` haette sie ans Ende gehaengt und
+                    die Bytegleichheit gebrochen. */
+                const auto vorhanden = parameters.getProperty (id);
+                bool bitGleich = false;
+                if (vorhanden.isDouble())
+                {
+                    const double alt = (double) vorhanden;
+                    bitGleich = std::memcmp (&alt, &z.zahl, sizeof (double)) == 0;
+                }
+                if (! bitGleich)
+                {
+                    if (vorhanden.isDouble())
+                        parameters.setProperty (id, juce::var(), nullptr);
+                    parameters.setProperty (id, z.zahl, nullptr);
+                }
+                break;
+            }
             case Typ::aufzaehlung:
             {
                 const int idx = juce::jlimit (0, b.werte.size() - 1, z.enumIndex);
@@ -319,11 +609,42 @@ void schreibeInBaum (const Satz& s, juce::ValueTree& parameters)
     }
 }
 
-bool leseAusBaum (const juce::ValueTree& parameters, Satz& aus, juce::String& grund)
+bool leseAusBaum (const juce::ValueTree& parameters, Satz& aus, bool& layoutV1, juce::String& grund)
 {
+    layoutV1 = false;
+    int bis = kHostParameter;
+    if (! parameters.hasProperty (kDspSchemaVersionId))
+    {
+        // Kein Versionsfeld = Layout v1: dieser Knoten wurde von einem Build
+        // geschrieben, der die elf v2-Kennungen nicht kannte.
+        layoutV1 = true;
+        bis = kAnzahlV1;
+    }
+    else
+    {
+        const auto w = parameters.getProperty (kDspSchemaVersionId);
+        if (! w.isInt() && ! w.isInt64())
+        {
+            grund = "Parameters: dsp_schema_version is not an integer";
+            return false;
+        }
+        const auto version = (juce::int64) w;
+        if (version == kDspSchemaVersionV1)
+        {
+            layoutV1 = true;
+            bis = kAnzahlV1;
+        }
+        else if (version != kDspSchemaVersion)
+        {
+            grund = "Parameters dsp_schema_version " + juce::String (version)
+                  + " is unknown to this version (it reads layout 1 and 2)";
+            return false;
+        }
+    }
+
     const auto& t = tabelle();
-    Satz s;
-    for (int i = 0; i < kAnzahl; ++i)
+    Satz s = standardSatz();
+    for (int i = 0; i < bis; ++i)
     {
         const auto& b = t[(size_t) i];
         const juce::Identifier id (b.id);
@@ -350,6 +671,9 @@ bool leseAusBaum (const juce::ValueTree& parameters, Satz& aus, juce::String& gr
             }
         }
     }
+
+    // Die restlichen Kennungen behalten ihren Default: bei Layout v1 die drei
+    // v2-Host-Parameter, immer die acht `occupied` (sie stehen im Kind `Dsp`).
     juce::String wo;
     if (! validiere (s, grund, wo))
     {

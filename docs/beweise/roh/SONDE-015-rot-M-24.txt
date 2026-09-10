@@ -1,0 +1,15 @@
+SONDE-015 Etappe 2 - Rotbeweis M-24
+Zusage: Ausschalten aendert AUSSCHLIESSLICH dynamic_enabled - die fuenf Werte bleiben bitgleich erhalten.
+Bruch:  eq-copilot/plugin/state/NakamaParameter.cpp
+        - void schreibeInBaum (const Satz& s, juce::ValueTree& parameters)
+        + void schreibeInBaum (const Satz& sEingang, juce::ValueTree& parameters)
+------------------------------------------------------------------------------
+$ EqCopStateMigrationTest.exe
+  FEHLER  120 Parameterwerte bit-exakt durch den Roundtrip  [80]
+  FEHLER  state_hash ueberlebt den Roundtrip  [d7efcb6a2d98b93b6d345ede11d3fdc8bd374cc0ef0398800ac61e5d1b9b6924]
+  FEHLER  dynamicwerte_ueberleben_aus_und_ein_bitgleich: Ausschalten aendert nur dynamic_enabled
+  FEHLER  beim Wiedereinschalten stehen die fuenf Werte unveraendert bereit
+  FEHLER  == Roundtrip: bytegleich, additive Eigenschaft erhalten, 120 Werte bit-exakt, voller Undo-Ring
+
+EXIT=1
+URTEIL: ROT

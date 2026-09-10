@@ -1,0 +1,12 @@
+SONDE-015 Etappe 2 - Rotbeweis M-105
+Zusage: Beide Leser rechnen SHA-256(dsp.jcs) nach; ein abweichender Hash weist den Bericht GANZ ab.
+Bruch:  eq-copilot/plugin/state/NakamaParameter.cpp
+        -     if (! stateHashHex.isNotEmpty() || ist != stateHashHex)
+        +     if (false)
+------------------------------------------------------------------------------
+$ EqCopSchemaTest.exe
+[ROT]  abweichender_hash_wird_abgewiesen  [bereich v1.global.width]
+148 bestanden, 1 gescheitert
+
+EXIT=1
+URTEIL: ROT

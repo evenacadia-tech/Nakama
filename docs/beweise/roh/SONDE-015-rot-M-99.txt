@@ -1,0 +1,13 @@
+SONDE-015 Etappe 2 - Rotbeweis M-99
+Zusage: Ein unbekannter Preset-Major wird mit klarem Fehler ABGELEHNT, nicht read-only gehalten.
+Bruch:  eq-copilot/plugin/state/NakamaPreset.cpp
+        -     if (presetVersion == nullptr || presetVersion->art != kanon::Wert::Art::zahl
+        +     if (presetVersion == nullptr || presetVersion->art != kanon::Wert::Art::zahl)
+------------------------------------------------------------------------------
+$ EqCopStateMigrationTest.exe
+  FEHLER  ungueltiges Preset: preset/ungueltig/preset-major-2.json  [ANGENOMMEN soll preset_schema_version]
+  FEHLER  ungueltige Presets mit dem erwarteten Grund abgelehnt  [12/13]
+  FEHLER  == Preset: 3 gueltige gelesen, 12 ungueltige mit Grund abgelehnt, Writer bytegleich
+
+EXIT=1
+URTEIL: ROT

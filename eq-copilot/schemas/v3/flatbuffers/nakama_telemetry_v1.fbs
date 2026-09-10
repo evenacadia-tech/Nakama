@@ -316,6 +316,26 @@ table Frame {
   crest_kurz_db:float = null (id: 20);
   /// Headroom als VERTEILUNG ueber die Rahmen der Passage (SONDE-013 M-03).
   headroom:Headroomverteilung (id: 21);
+  /// Momentane dynamische Verstaerkungsaenderung je Band-Slot in dB
+  /// (SONDE-015 R14, Abnahme 01.09.2026 "das band muss dynamisch mitschwingen").
+  ///
+  /// GENAU 8 Eintraege in Slotreihenfolge 0..7, oder leer - nichts dazwischen.
+  /// Ein Vektor der Laenge 3 ist ein Senderfehler, kein Teilbestand: acht
+  /// Einzelfelder haetten acht IDs fuer eine Groesse verbraucht, die immer
+  /// gemeinsam auftritt, und ein halb gefuellter Satz waere nicht als solcher
+  /// erkennbar.
+  ///
+  /// Der Wert ist die zuletzt gerechnete Auslenkung des Fensters, kein Mittel:
+  /// ein Mittelwert glaettete genau die Bewegung weg, die der User sehen soll.
+  /// Freie, ausgeschaltete oder nicht dynamische Slots tragen exakt 0.0; der
+  /// Wert wird NIE aus den Einstellwerten erfunden und ist auf
+  /// +/-|dynamic_range_db| begrenzt.
+  ///
+  /// ABWESENHEIT heisst wie bei `integration_samples` (Feld-ID 14) "der
+  /// Erzeuger sagt es nicht", NICHT "acht Nullen". Das Feld reist nur, wenn es
+  /// etwas zu melden gibt: mindestens ein Slot ist belegt, eingeschaltet und
+  /// dynamisch UND der EQ-Pfad ist engagiert.
+  band_dynamic_gain_db:[float] (id: 22);
 }
 
 /// Ein Eintrag des Batches: genau eine Quelle mit genau ihrem aktuellen Frame.

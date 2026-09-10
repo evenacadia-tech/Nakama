@@ -531,8 +531,8 @@ fn dto_korpus_klassifiziert_wie_das_manifest() {
     // Der Bestand kommt aus dem Vertrag, nicht aus einer dritten Kopie.
     assert_eq!(
         eqcop_broker::dto::bestand().anzahl(),
-        109,
-        "Parameterbestand aus nakama-parameter-v1.json"
+        120,
+        "Parameterbestand aus nakama-parameter-v2.json (109 v1 + 11 v2)"
     );
 
     let mut ja = 0usize;

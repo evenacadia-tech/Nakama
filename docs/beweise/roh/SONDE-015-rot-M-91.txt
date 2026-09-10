@@ -1,0 +1,15 @@
+SONDE-015 Etappe 2 - Rotbeweis M-91
+Zusage: Eine unbekannte Eigenschaft im Kind Dsp macht den Stand NICHT read-only; ein unbekannter DTO-Schluessel faellt trotzdem.
+Bruch:  eq-copilot/plugin/state/NakamaParameter.cpp
+        -     if (wurzel.objektSchluessel.size() != 3 || version == nullptr || par == nullptr || zonen == nullptr)
+        +     if (version == nullptr || par == nullptr || zonen == nullptr)
+------------------------------------------------------------------------------
+$ EqCopStateMigrationTest.exe
+  FEHLER  ungueltiges DTO: dto/ungueltig/struktur-extra-wurzel.json  [ANGENOMMEN soll struktur]
+  FEHLER  ungueltige DTOs mit dem erwarteten Grund abgelehnt  [25/26]
+  FEHLER  == DTO: 7 gueltige gehasht, 25 ungueltige vor dem Hash abgelehnt
+  FEHLER  ein unbekannter Wurzelschluessel im DTO faellt  [ ]
+  FEHLER  == Migration: 4 Rollen bytegleich zum Golden, idempotent
+
+EXIT=1
+URTEIL: ROT

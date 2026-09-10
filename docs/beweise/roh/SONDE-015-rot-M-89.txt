@@ -1,0 +1,20 @@
+SONDE-015 Etappe 2 - Rotbeweis M-89
+Zusage: Das Kind Dsp fuehrt FLACHE Arrays; ein Kindknoten je Eintrag risse die 64-Knoten-Grenze des Byte-Riegels.
+Bruch:  eq-copilot/plugin/state/NakamaState.cpp
+        -         dsp.setProperty (kDspOccupied, juce::var (belegt), nullptr);
+        +         { auto k = juce::ValueTree ("Occupied"); k.setProperty (kDspOccupied, juce::var (belegt), nullptr); dsp.appendChild (k, nullptr); }
+------------------------------------------------------------------------------
+$ EqCopStateMigrationTest.exe
+  FEHLER  Dsp-Golden dsp-v2-voll.bin bytegleich zum Writer
+  FEHLER  und traegt Revision 12, zwei Zonen, einen Undo-Eintrag und Slot 2 belegt
+  FEHLER  Save nach Load des migrierten Standes ist bytegleich
+  FEHLER  die migrierte Belegung landet im Kind Dsp und ueberlebt
+  FEHLER  == Migration: 4 Rollen bytegleich zum Golden, idempotent
+  FEHLER  120 Parameterwerte bit-exakt durch den Roundtrip  [116]
+  FEHLER  Parameters- und Dsp-Roundtrip bytegleich
+  FEHLER  state_hash ueberlebt den Roundtrip  [d7efcb6a2d98b93b6d345ede11d3fdc8bd374cc0ef0398800ac61e5d1b9b6924]
+  FEHLER  voller Undo-Ring (32 Eintraege, 8 Zonen) laedt und ist bytegleich  [45682 Bytes]
+  FEHLER  == Roundtrip: bytegleich, additive Eigenschaft erhalten, 120 Werte bit-exakt, voller Undo-Ring
+
+EXIT=1
+URTEIL: ROT

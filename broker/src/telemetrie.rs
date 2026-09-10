@@ -277,6 +277,11 @@ fn strukturriegel(batch: &fb::FeatureBatch) -> bool {
             // `Headroomverteilung` trägt selbst nur Skalare — hier endet der
             // Ast, wie bei `AbgeleiteteGrenzen` weiter unten.
             || !offset_nicht_null(&f._tab, fb::Frame::VT_HEADROOM)
+            // SONDE-015 R14: `band_dynamic_gain_db` ist das vierte Offsetfeld.
+            // Ein Vektor aus Skalaren - der Ast endet hier, wie bei `headroom`.
+            // Ohne diese Zeile liefe das Feld still am Riegel vorbei, und die
+            // beiden Beine klassifizierten wieder verschieden (T2-Runde 4, BL-A).
+            || !offset_nicht_null(&f._tab, fb::Frame::VT_BAND_DYNAMIC_GAIN_DB)
         {
             return false;
         }
@@ -666,6 +671,31 @@ fn pruefe_frame(f: &fb::Frame, p: &str, out: &mut Vec<Verstoss>) {
     // Erzeuger nie herstellt. Sie stehen hier und nicht in der Anzeige, weil
     // ein Wert, den der Empfaenger erst beim Zeichnen als unmoeglich erkennt,
     // vorher schon gespeichert wurde.
+
+    /*  SONDE-015 R14 (M-110 bis M-113): die momentane dynamische Auslenkung
+        je Band-Slot. Drei Regeln, wortgleich mit `NakamaTelemetrie.cpp`:
+        Abwesenheit ist gueltig und KEINE acht Nullen; die Laenge ist genau 0
+        oder 8; jeder Wert ist endlich. Der Leser prueft die Endlichkeit
+        selbst, auch wenn der Sender sie schon heilt - ein Leser, der sich auf
+        den Sender verlaesst, ist kein Riegel. */
+    if let Some(dyn_gain) = f.band_dynamic_gain_db() {
+        if dyn_gain.len() != 0 && dyn_gain.len() != 8 {
+            out.push(Verstoss::neu(
+                &format!("{p}/band_dynamic_gain_db"),
+                "band_dynamic_gain_laenge",
+            ));
+        } else {
+            for (i, wert) in dyn_gain.iter().enumerate() {
+                if !wert.is_finite() {
+                    out.push(Verstoss::neu(
+                        &format!("{p}/band_dynamic_gain_db/{i}"),
+                        "nicht_endlich",
+                    ));
+                    break;
+                }
+            }
+        }
+    }
 
     // Eine negative Loudness Range gibt es nicht: LRA ist P95 minus P10 ueber
     // derselben Verteilung, also nie kleiner als null (EBU Tech 3342).

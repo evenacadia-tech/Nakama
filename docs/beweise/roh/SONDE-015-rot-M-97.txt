@@ -1,0 +1,18 @@
+SONDE-015 Etappe 2 - Rotbeweis M-97
+Zusage: Ein Preset mit einem Identitaetsfeld wird ABGEWIESEN - es wuerde die Sonde umverdrahten statt ihren Klang zu setzen.
+Bruch:  eq-copilot/plugin/state/NakamaPreset.cpp
+        -     for (const auto& name : verboteneFelder())
+        + (Zeile entfernt)
+------------------------------------------------------------------------------
+$ EqCopStateMigrationTest.exe
+  FEHLER  ungueltiges Preset: preset/ungueltig/verboten-adresse.json  [ANGENOMMEN soll verbotenes_feld]
+  FEHLER  ungueltiges Preset: preset/ungueltig/verboten-instance-id.json  [ANGENOMMEN soll verbotenes_feld]
+  FEHLER  ungueltiges Preset: preset/ungueltig/verboten-host-bus-name.json  [ANGENOMMEN soll verbotenes_feld]
+  FEHLER  ungueltiges Preset: preset/ungueltig/verboten-label.json  [ANGENOMMEN soll verbotenes_feld]
+  FEHLER  ungueltiges Preset: preset/ungueltig/verboten-eq-enabled.json  [ANGENOMMEN soll verbotenes_feld]
+  FEHLER  ungueltiges Preset: preset/ungueltig/verboten-undo-ring.json  [ANGENOMMEN soll verbotenes_feld]
+  FEHLER  ungueltige Presets mit dem erwarteten Grund abgelehnt  [7/13]
+  FEHLER  == Preset: 3 gueltige gelesen, 7 ungueltige mit Grund abgelehnt, Writer bytegleich
+
+EXIT=1
+URTEIL: ROT

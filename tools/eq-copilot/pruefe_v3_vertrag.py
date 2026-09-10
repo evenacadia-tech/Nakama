@@ -752,8 +752,9 @@ def pruefe_probe_descriptor(lauf: Lauf, schema: dict, reserviert: dict) -> None:
               # eins. Die Zahlen stehen hier, damit ein STILLES Heben faellt -
               # nicht, weil 1/2 richtiger waere als 2/3.
               # NAK-213: der Fassungsschritt 4 hebt beide Zahlen um eins.
-              and version.get("vorher") == 3
-              and version.get("aktuell") == 4
+              # SONDE-015: der Fassungsschritt 5 ebenso.
+              and version.get("vorher") == 4
+              and version.get("aktuell") == 5
               and fassungen.get("0", {}).get("probe_descriptor_hostfelder") == []
               and set(fassungen.get("1", {}).get("probe_descriptor_hostfelder", []))
                   == HOST_DESCRIPTOR_FELDER
@@ -1148,13 +1149,80 @@ def fassung_3_schema(schema: dict) -> dict:
     den zweiten Griff naehme der Leser der Fassung 3 einen Befund mit 33
     Ausschluessen an, den der C++-Leser abweist, und die Regel haenge wieder
     an nur einer Seite (R6/R7, Praezisierung 08.09.2026).
+
+    SONDE-015: die Kette beginnt eine Fassung hoeher. Stuende hier
+    `copy.deepcopy(schema)`, truege der Leser der Fassung 3 das Feld
+    `state_report.dsp` der Fassung 5 mit - genau der Fehler, gegen den die
+    Kette existiert.
     """
-    alt = copy.deepcopy(schema)
+    alt = fassung_4_schema(schema)
     grund = alt["$defs"]["ausschlussgrund"]
     grund["enum"] = [g for g in grund["enum"] if g not in FASSUNG_4_GRUENDE]
     alt["$defs"]["session_finding"]["properties"]["ausschluesse"]["maxItems"] = \
         FASSUNG_3_AUSSCHLUSS_MAX
     return alt
+
+
+# SONDE-015 (S26-28), Fassung 5: die Definitionen, die mit diesem
+# Fassungsschritt entstehen. Sie stehen hier als DATEN, nicht als Kommentar -
+# `fassung_4_schema()` baut daraus zurueck, und der Registereintrag
+# `wire_envelope_schema_minor.fassungen."5".neue_definitionen` wird gegen
+# dieselbe Liste gehalten.
+FASSUNG_5_DEFS = ["dsp_bericht", "dsp_klemmung"]
+
+
+def fassung_4_schema(schema: dict) -> dict:
+    """Baut die Fassung 4 des P1-Vertrags aus der committeten Fassung 5 zurueck.
+
+    EIN Griff: `state_report.dsp` faellt weg, und mit ihm die zwei
+    Definitionen, die nur dieses Feld braucht. Weil `state_report`
+    additionalProperties:false ist, LEHNT ein Leser der Fassung 4 einen
+    Bericht mit `dsp` danach wirklich ab - der Rueckbau ist wirksam und nicht
+    nur behauptet.
+    """
+    alt = copy.deepcopy(schema)
+    alt["$defs"]["state_report"]["properties"].pop("dsp", None)
+    for name in FASSUNG_5_DEFS:
+        alt["$defs"].pop(name, None)
+    return alt
+
+
+def pruefe_sonde015_fassung_5(lauf: Lauf, schema: dict, reserviert: dict) -> None:
+    """SONDE-015 M-101/M-102/M-103 - der Rueckbau auf die Fassung 4.
+
+    Derselbe Riegel wie in jedem Ticket davor, eine Fassung weiter: EIN
+    Fassungsschritt traegt alle P1-Vertragsaenderungen dieses Tickets, und ein
+    Leser der Fassung 4 LEHNT sie AB, statt sie still zu ignorieren.
+    """
+    fassung = reserviert.get("wire_envelope_schema_minor", {}).get("fassungen", {}).get("5", {})
+    lauf.wahr("fassung_5_nennt_jede_neuerung_dieses_tickets",
+              fassung.get("state_report_dsp") is True
+              and fassung.get("neue_definitionen") == FASSUNG_5_DEFS
+              and isinstance(fassung.get("hinweis"), str)
+              and isinstance(fassung.get("begruendung"), str))
+    lauf.wahr("fassung_5_hebt_den_minor_genau_einmal",
+              reserviert["wire_envelope_schema_minor"]["vorher"] == 4
+              and reserviert["wire_envelope_schema_minor"]["aktuell"] == 5
+              and sorted(reserviert["wire_envelope_schema_minor"]["fassungen"])
+                  == ["0", "1", "2", "3", "4", "5"])
+
+    pruefer_5 = jsonschema.Draft202012Validator(schema)
+    pruefer_4 = jsonschema.Draft202012Validator(fassung_4_schema(schema))
+
+    def lade(name: str) -> dict:
+        return json_laden_strikt((FIXTURES / f"gueltig/{name}.json").read_text(encoding="utf-8"))
+
+    mit_dsp = lade("state-report-mit-dsp")
+    lauf.wahr("fassung_4_leser_lehnt_state_report_dsp_ab",
+              pruefer_5.is_valid(mit_dsp) and not pruefer_4.is_valid(mit_dsp))
+    ohne_dsp = lade("state_report")
+    lauf.wahr("ein_bericht_ohne_dsp_bleibt_in_BEIDEN_fassungen_gueltig",
+              pruefer_5.is_valid(ohne_dsp) and pruefer_4.is_valid(ohne_dsp))
+
+    lauf.wahr("Gegenprobe: der Rueckbau auf Fassung 4 aendert das Schema wirklich",
+              fassung_4_schema(schema) != schema
+              and pruefer_4.is_valid(lade("session_snapshot"))
+              and pruefer_4.is_valid(lade("heartbeat")))
 
 
 def pruefe_nak213_fassung_4(lauf: Lauf, schema: dict, reserviert: dict) -> None:
@@ -1612,10 +1680,13 @@ def pruefe_namen(lauf: Lauf, schema: dict, reserviert: dict) -> None:
               all(set(f) == {"name", "eigentuemer", "grund"} for f in felder))
     lauf.wahr("belegtes_feld_folgt_der_gleichen_Regelform",
               all(set(f) == {"name", "eigentuemer", "grund"} for f in belegt))
+    # SONDE-015 (NAK-110): `state_report.dsp` ist EINGELOEST und steht
+    # deshalb nicht mehr hier, sondern unten bei den belegten Feldern. Die
+    # zwei DSP-Nachbarnamen bleiben unangetastet reserviert - genau das misst
+    # der Fall `applied_dsp_bleibt_reserviert`.
     erwartete_felder = {
         "Frame.band_dynamic_gain_db",
         "session_snapshot.contribution_inputs",
-        "state_report.dsp",
         "command_ack.applied_dsp",
         "state_report.eq_enabled",
     }
@@ -1639,6 +1710,8 @@ def pruefe_namen(lauf: Lauf, schema: dict, reserviert: dict) -> None:
         # SONDE-014 (P5), Fassung 3.
         "session_snapshot.findings",
         "experiment_begin.ziel",
+        # SONDE-015 (S26-28), Fassung 5.
+        "state_report.dsp",
     }
     lauf.wahr("SONDE-012-Minor-1-Felder sind als belegt fortgeschrieben",
               {f.get("name") for f in belegt} == erwartete_belegte
@@ -1695,13 +1768,46 @@ def pruefe_namen(lauf: Lauf, schema: dict, reserviert: dict) -> None:
 
     aktive_felder_fehlen = (
         feld_fehlt("session_snapshot", "contribution_inputs")
-        and feld_fehlt("state_report", "dsp")
         and feld_fehlt("state_report", "eq_enabled")
         and all("applied_dsp" not in z.get("properties", {})
                 for z in schema["$defs"]["command_ack"].get("oneOf", []))
     )
     lauf.wahr("reservierte Felder sind im aktiven Vertrag weiter abgelehnt",
               aktive_felder_fehlen)
+
+    # SONDE-015 M-101, der SEITENWECHSEL dieses Riegels: bis hierher prueften
+    # die drei Zeilen darueber, dass `state_report` KEIN `dsp` traegt. Jetzt
+    # muss es eines tragen - und zwar wirklich, denn `state_report` ist
+    # additionalProperties:false. Bliebe der alte Riegel stehen, waere der
+    # Vertrag gruen gegen sich selbst.
+    lauf.wahr("dsp_ist_belegt",
+              not feld_fehlt("state_report", "dsp")
+              and schema["$defs"]["state_report"]["properties"]["dsp"].get("$ref")
+                  == "#/$defs/dsp_bericht"
+              and "dsp" not in schema["$defs"]["state_report"]["required"]
+              and schema["$defs"]["state_report"]["additionalProperties"] is False)
+    lauf.wahr("applied_dsp_bleibt_reserviert",
+              all("applied_dsp" not in z.get("properties", {})
+                  for z in schema["$defs"]["command_ack"].get("oneOf", []))
+              and "command_ack.applied_dsp" in {f.get("name") for f in felder})
+    lauf.wahr("eq_enabled_bleibt_reserviert",
+              feld_fehlt("state_report", "eq_enabled")
+              and "state_report.eq_enabled" in {f.get("name") for f in felder})
+
+    # M-103/M-105: die Nutzlast ist eine ZEICHENKETTE, kein eingebettetes
+    # Objekt - sonst waere ein gueltiger bestaetigter Wert am 15-Ziffern-Riegel
+    # des Schemawegs gescheitert (q = 0.7071067811865476).
+    bericht = schema["$defs"]["dsp_bericht"]
+    lauf.wahr("dsp_nutzlast_ist_die_gehashte_zeichenkette",
+              bericht["properties"]["jcs"]["type"] == "string"
+              and bericht["properties"]["jcs"]["maxLength"] == 8192
+              and set(bericht["required"]) == {"jcs", "auto_gain_db", "klemmungen",
+                                               "verletzte_baender"}
+              and bericht["additionalProperties"] is False
+              and bericht["properties"]["auto_gain_db"]["type"] == "number"
+              and bericht["properties"]["klemmungen"]["maxItems"] == 8
+              and bericht["properties"]["verletzte_baender"]["maxItems"] == 8
+              and bericht["properties"]["verletzte_baender"]["items"]["maximum"] == 7)
     lauf.wahr("belegte Hostfelder stehen in jedem probe_descriptor-Zweig",
               all(not feld_fehlt(n, f) for n in KOPPLUNG
                   for f in HOST_DESCRIPTOR_FELDER))
@@ -2120,6 +2226,7 @@ def main(argv: list[str]) -> int:
     pruefe_sonde013_fassung_2(lauf, schema, reserviert)
     pruefe_sonde014_fassung_3(lauf, schema, reserviert)
     pruefe_nak213_fassung_4(lauf, schema, reserviert)
+    pruefe_sonde015_fassung_5(lauf, schema, reserviert)
     pruefe_probe_descriptor(lauf, schema, reserviert)
     pruefe_runtime_und_p2_reject(lauf, schema)
     pruefe_session_command_und_store(lauf, schema)

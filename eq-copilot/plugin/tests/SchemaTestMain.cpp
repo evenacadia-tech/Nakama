@@ -15,6 +15,7 @@
 */
 
 #include "../vertrag/NakamaVertrag.h"
+#include "../state/NakamaParameter.h"
 #include "../vertrag/NakamaTelemetrie.h"
 #include "../core/analysis/FeatureEngine.h"
 #include "../core/ipc/TelemetryClient.h"
@@ -1239,6 +1240,100 @@ void fahreRiegelproben()
     }
 }
 
+/*  SONDE-015 M-101 bis M-105: die C++-Haelfte des Fassungsschritts 5 und der
+    Nachrechnung des `state_hash`.
+
+    Zwei Zusagen, beide an DIESEM Bein:
+
+      1. Ein Leser der Fassung 4 LEHNT `state_report.dsp` ab. Der Rueckbau
+         entsteht hier aus der committeten Fassung 5 - dieselbe Kette wie in
+         `pruefe_v3_vertrag.py` und `broker/src/coordinator/schema.rs`. Ein
+         zweiter handgepflegter Schemastand waere die Drift, gegen die die
+         Kette existiert.
+      2. `SHA-256(dsp.jcs) == state_hash` wird NACHGERECHNET. Das Schema kann
+         das nicht sehen - es prueft eine Zeichenkette, keinen Hash. Genau
+         deshalb liegt das Gegenfixture unter `gueltig/`: der Unterschied
+         zwischen Schemaurteil und Leserurteil IST die Zusage. */
+void fahreFassung5UndDspBericht (const juce::var& schemaVar, bool schemaGelesen)
+{
+    if (! schemaGelesen)
+        return;
+
+    bool ok = false;
+    const auto mitDsp   = lies ("eq-copilot/fixtures/v3/gueltig/state-report-mit-dsp.json", ok);
+    bool ok2 = false;
+    const auto ohneDsp  = lies ("eq-copilot/fixtures/v3/gueltig/state_report.json", ok2);
+    bool ok3 = false;
+    const auto kaputt   = lies ("eq-copilot/fixtures/v3/gueltig/state-report-dsp-hash-passt-nicht.json", ok3);
+    if (! ok || ! ok2 || ! ok3)
+        return;
+
+    // ── Der Rueckbau auf die Fassung 4 ────────────────────────────────────
+    auto zurueck = schemaVar.clone();
+    {
+        auto* wurzel = zurueck.getDynamicObject();
+        auto* defs = wurzel != nullptr ? wurzel->getProperty ("$defs").getDynamicObject() : nullptr;
+        if (defs == nullptr)
+        {
+            pruefe (false, "Rueckbau auf Fassung 4: $defs nicht gefunden");
+            return;
+        }
+        if (auto* bericht = defs->getProperty ("state_report").getDynamicObject())
+            if (auto* props = bericht->getProperty ("properties").getDynamicObject())
+                props->removeProperty ("dsp");
+        defs->removeProperty ("dsp_bericht");
+        defs->removeProperty ("dsp_klemmung");
+    }
+
+    nakama::vertrag::Schema fassung5, fassung4;
+    juce::String f5, f4;
+    const bool geladen = nakama::vertrag::Schema::laden (schemaVar, fassung5, f5)
+                      && nakama::vertrag::Schema::laden (zurueck, fassung4, f4);
+    pruefe (geladen, "Fassung 5 und ihr Rueckbau auf Fassung 4 laden beide", f5 + " " + f4);
+    if (! geladen)
+        return;
+
+    pruefe (fassung5.gueltig (mitDsp) && ! fassung4.gueltig (mitDsp),
+            "fassung_4_leser_lehnt_state_report_dsp_ab");
+    pruefe (fassung5.gueltig (ohneDsp) && fassung4.gueltig (ohneDsp),
+            "ein Bericht OHNE dsp bleibt in beiden Fassungen gueltig (Altsender)");
+    // Gegenprobe: der Rueckbau ist nicht einfach kaputt.
+    pruefe (zurueck.toString() != schemaVar.toString(),
+            "Gegenprobe: der Rueckbau auf Fassung 4 aendert das Schema wirklich");
+
+    // ── Die Nachrechnung des Hashes ───────────────────────────────────────
+    auto jcsVon = [] (const juce::var& bericht) { return bericht["dsp"]["jcs"].toString(); };
+    auto hashVon = [] (const juce::var& bericht) { return bericht["state_hash"].toString(); };
+
+    {
+        nakama::parameter::DspSatz aus;
+        juce::String grund, detail;
+        const bool gut = nakama::parameter::berichtDtoPruefen (
+            jcsVon (mitDsp), hashVon (mitDsp), aus, grund, detail);
+        pruefe (gut, "hash_stimmt_mit_der_zeichenkette", grund + " " + detail);
+        // Und der gelesene Zustand ist wirklich ein DTO, kein Textrest: der
+        // Wert mit sechzehn signifikanten Ziffern kommt EXAKT zurueck - genau
+        // dafuer traegt `dsp` eine Zeichenkette und kein eingebettetes Objekt.
+        const double q = aus.werte[(size_t) nakama::parameter::indexBandV1 (0, nakama::parameter::kQ)].zahl;
+        const double soll = 0.7071067811865476;
+        pruefe (gut && std::memcmp (&q, &soll, sizeof (double)) == 0,
+                "q = 0.7071067811865476 kommt bitgenau durch den Wire-Weg zurueck",
+                juce::String (q, 17));
+    }
+    {
+        nakama::parameter::DspSatz aus;
+        juce::String grund, detail;
+        const bool gut = nakama::parameter::berichtDtoPruefen (
+            jcsVon (kaputt), hashVon (kaputt), aus, grund, detail);
+        pruefe (! gut && grund == "state_hash",
+                "abweichender_hash_wird_abgewiesen", grund + " " + detail);
+        // Und das Fixture ist wirklich SCHEMAgueltig - sonst maesse der Fall
+        // den Hash gar nicht, sondern nur das Schema.
+        pruefe (fassung5.gueltig (kaputt),
+                "das Gegenfixture ist schemagueltig: nur der Leser sieht den Bruch");
+    }
+}
+
 } // namespace
 
 int main (int, char*[])
@@ -1271,6 +1366,8 @@ int main (int, char*[])
             pruefe (false, "v3-Schema haelt die Engine-Teilmenge ein", ladefehler);
         }
     }
+
+    fahreFassung5UndDspBericht (schemaVar, ok);
 
     fahreBandgitter();
     fahreQuantisierung();

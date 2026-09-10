@@ -3,15 +3,15 @@
 | Merkmal | Wert |
 |---|---|
 | Ticket | S26–28, `SONDE-015` (Phase P6), Leitungsname „Die Klangregelung in der Sonde sicher und speicherbar machen" |
-| Etappe | **Etappe 1 — Spezifikation vor Code, nach der Matrix-Konvergenzrunde (10.09.2026).** Dieses Manifest trägt Gate-Text, Ist-Stand, Verhaltensmatrix, Bauplan und Entscheide. **Kein Produkt-, Test-, Schema-, Fixture- oder Werkzeugcode in diesem Änderungssatz.** Zwei Prüfrunden: **Matrixprüfung 1** NEEDS_WORK mit zwölf Defekten (§7), eingearbeitet als **Matrix-Nacharbeit 1** (§7.1) — zwölf Zeilen korrigiert, drei neue (M-121 bis M-123), sechs Feinheiten neu gefasst, Abweichung 3 zurückgenommen. **Matrixprüfung 2** (§7.3) schloss zehn davon und fand **B-05** und **B-09** weiter offen; die **Matrix-Nacharbeit 2** (§7.4) hat sie geschlossen: vier Zeilen korrigiert, eine neue (**M-124**), drei Feinheiten neu gefasst. **Matrixprüfung 3** (§7.5) bestätigte B-05 und B-09 als geschlossen, fand aber **zwei Folgewidersprüche** (**D-1**, **D-2**); die **Matrix-Nacharbeit 3** (§7.6) schloss sie mit einer Regel. **Matrixprüfung 4** (§7.7) schloss D-2, ließ D-1 als **K-1** offen und fand **K-2** — dritte Wiederprüfung ohne PASS. Der **Konvergenzentscheid** benannte die **Ursache**: die Transaktionssemantik war über drei Runden als Prosa nachgezogen und nie als geschlossene Spezifikation festgelegt worden. Die **Matrix-Konvergenzrunde** (§7.8) hat den Weg gewechselt: **§5.11.4 ist jetzt eine geschlossene Protokollspezifikation** mit Arithmetik, Stufenfolge S0 bis S8, sechs Invarianten und einer vollständigen Falltabelle T1 bis T12; **M-44, M-74, M-75, M-76, M-123, M-124 und M-125 leiten sich daraus ab** und tragen keine eigene Arithmetik mehr (§5.17, Abweichung 7). Etappen 2 bis 4 (Verträge, DSP-Kern, Integration) beginnen erst nach der Wiederprüfung und dem Fortsetzungsauftrag des Dirigenten. |
-| Phase | **Offen.** Etappe 1 abgeschlossen; Matrixprüfung 1 **NEEDS_WORK** (zwölf Defekte, §7) → Matrix-Nacharbeit 1 (§7.1); Matrixprüfung 2 **NEEDS_WORK** (zehn geschlossen, B-05 und B-09 offen, §7.3) → Matrix-Nacharbeit 2 (§7.4); Matrixprüfung 3 **NEEDS_WORK** (B-05 und B-09 geschlossen, zwei Folgewidersprüche D-1 und D-2, §7.5) → Matrix-Nacharbeit 3 (§7.6); Matrixprüfung 4 **NEEDS_WORK** (D-2 geschlossen, K-1 und K-2 offen, §7.7) → **Konvergenzentscheid** und **Matrix-Konvergenzrunde** (§7.8). Befundzahl je Runde: 12 → 2 → 2 → 2. Alle vier Runden ohne Produktfortschritt (Matrixrunden zählen strukturell null). Die **Matrixprüfung 5** steht aus; vor ihr beginnt kein Bau. Bleibt danach ein Defekt, wird er nach dem Konvergenzentscheid als eigener Registerpunkt ausgegliedert, und die Etappen 2 und 3 beginnen. |
+| Etappe | **Etappe 1 — Spezifikation vor Code, nach der Matrix-Konvergenzrunde (10.09.2026).** Dieses Manifest trägt Gate-Text, Ist-Stand, Verhaltensmatrix, Bauplan und Entscheide. **Kein Produkt-, Test-, Schema-, Fixture- oder Werkzeugcode in diesem Änderungssatz.** Zwei Prüfrunden: **Matrixprüfung 1** NEEDS_WORK mit zwölf Defekten (§7), eingearbeitet als **Matrix-Nacharbeit 1** (§7.1) — zwölf Zeilen korrigiert, drei neue (M-121 bis M-123), sechs Feinheiten neu gefasst, Abweichung 3 zurückgenommen. **Matrixprüfung 2** (§7.3) schloss zehn davon und fand **B-05** und **B-09** weiter offen; die **Matrix-Nacharbeit 2** (§7.4) hat sie geschlossen: vier Zeilen korrigiert, eine neue (**M-124**), drei Feinheiten neu gefasst. **Matrixprüfung 3** (§7.5) bestätigte B-05 und B-09 als geschlossen, fand aber **zwei Folgewidersprüche** (**D-1**, **D-2**); die **Matrix-Nacharbeit 3** (§7.6) schloss sie mit einer Regel. **Matrixprüfung 4** (§7.7) schloss D-2, ließ D-1 als **K-1** offen und fand **K-2** — dritte Wiederprüfung ohne PASS. Der **Konvergenzentscheid** benannte die **Ursache**: die Transaktionssemantik war über drei Runden als Prosa nachgezogen und nie als geschlossene Spezifikation festgelegt worden. Die **Matrix-Konvergenzrunde** (§7.8) hat den Weg gewechselt: **§5.11.4 ist jetzt eine geschlossene Protokollspezifikation** mit Arithmetik, Stufenfolge S0 bis S8, sechs Invarianten und einer vollständigen Falltabelle T1 bis T12; **M-44, M-74, M-75, M-76, M-123, M-124 und M-125 leiten sich daraus ab** und tragen keine eigene Arithmetik mehr (§5.17, Abweichung 7). Etappen 2 bis 4 (Verträge, DSP-Kern, Integration) beginnen erst nach der Wiederprüfung und dem Fortsetzungsauftrag des Dirigenten. **Etappe 2 (Verträge in drei Sprachen) ist seit dem 10.09.2026 gebaut; ihr Abschnitt ist §8.** |
+| Phase | **Etappe 2 gebaut, Erstprüfung steht aus.** Etappe 1 abgeschlossen nach fünf Matrixprüfungen und vier Nacharbeiten (§7 bis §7.9); die fünf Restwidersprüche der Transaktionstabelle sind als **NAK-245** ausgegliedert und gehören der Etappe 4. **Etappe 2 — Verträge in drei Sprachen** ist gebaut (§8): zwölf Beine grün, 32 Rotbeweise, kein Kanonlauf (der gehört an das Ende der Etappe 4). Die Erstprüfung der Etappe 2 durch einen frischen Codex-Thread steht aus; danach folgt Etappe 3 (DSP-Kern als Bibliothek). |
 | Urteil | **Offen.** Weder T1 noch T2 vergeben. Etappe 1 baut nichts und behauptet deshalb kein gemessenes Produktverhalten; ihr einziger Gegenstand ist, ob §3 die Zusagen des Gate-Textes vollständig und widerspruchsfrei trägt. |
 | Prüfstufe | **T2 gefordert** (`docs/plan/plan.json`, Schritt S26–28, `"stufe": "T2"`). Heute vergeben: **keine**. |
 | Prüfmodell | Codex `gpt-6-astra`, Effort **max**, lesend — für Matrix-, Erst-, Wieder- und Abschlussprüfung. `gpt-5.6-sol` max nur als Gegenprüfer. |
-| Basis-SHA | `e9dbf4b9c11d1cf72aebbecb835c9391a57a0532`, mit `git rev-parse HEAD` beim Start gemessen; `git status --short` war leer (sauberer Worktree, der Auftrag lag bereits committet unter `docs/beweise/roh/SONDE-015-auftrag.txt`). Alle Zeilen- und Zeichenangaben in §1 und §2 gelten zu diesem Stand. |
+| Basis-SHA | **Etappe 1:** `e9dbf4b9c11d1cf72aebbecb835c9391a57a0532` — alle Zeilen- und Zeichenangaben in §1 und §2 gelten zu diesem Stand. **Etappe 2:** `2026031f0a8bb0baf12135020be654a82d354a6f`, mit `git rev-parse HEAD` beim Start gemessen; `git status --short` war leer. |
 | Kanon vorher | **GRÜN 62/62, Exit 0 auf `1867cac2`** (Abschlusskanon NAK-230, Rohausgabe `docs/beweise/roh/NAK-230-1867cac.md`). Eigene Messung in dieser Sitzung: `git diff --stat 1867cac2..e9dbf4b9 -- eq-copilot broker tools` ist **leer**. Der Codestand des Basis-SHA ist mit dem beglaubigten Kanonstand identisch; die Commits dazwischen berühren nur `docs/`. |
-| Kanon nachher | **Steht aus.** Etappe 1 baut nicht und fährt keinen Kanon; der volle abgekoppelte Lauf gehört an das Ende von Etappe 4. |
-| Ticketpfade | Der Prüfbereich der Etappe 1 ist **diese eine Datei**: `docs/beweise/SONDE-015.md`. Der Auftrag `docs/beweise/roh/SONDE-015-auftrag.txt` liegt seit `e9dbf4b9` unverändert im Baum und wird nicht angefasst. Der Prüfbereich der Etappen 2 bis 4 steht in §4.5. |
+| Kanon nachher | **Steht aus.** Etappe 2 fährt die zwölf Beine ihres Bauplans einzeln (§8.4, alle grün); der volle abgekoppelte Lauf gehört an das Ende der Etappe 4. |
+| Ticketpfade | **Etappe 1:** diese eine Datei, `docs/beweise/SONDE-015.md`. **Etappe 2:** die Vertrags-, Plugin-, Broker- und Werkzeugpfade aus §4.5, ohne `eq-copilot/plugin/dsp/` (Etappe 3) und ohne `SondeProcessor.*` (Etappe 4) — der Prozessor bleibt nach §4.1 unberührt. Der Auftrag `docs/beweise/roh/SONDE-015-auftrag.txt` wird nicht angefasst. |
 | Grenze | Etappe 2 baut ausschließlich, was §3 zusagt. Technikfragen ohne Quelle sind vom Dirigenten als R1 bis R15 entschieden (§5); meine Feinheiten stehen je Regel darunter, Abweichungen mit Begründung. Produktfragen werden benannt und einer Fläche zugeordnet, nie hier beantwortet (§5.16). |
 
 <!-- NAKAMA-URTEIL: OFFEN -->
@@ -832,7 +832,9 @@ Stellen").
 Der Fixture-Korpus liegt unter `eq-copilot/fixtures/state/` mit `MANIFEST.json`,
 `jcs/`, `dto/` und `schema2/`. **`eq-copilot/fixtures/state/dto/ungueltig/dsp-schema-version-2.json`
 ist heute ein Negativfixture** — es misst, dass Version 2 abgelehnt wird. Mit
-R1 wechselt es die Seite.
+R1 wechselt es die Seite. *(Verlauf, Stand `e9dbf4b9`: die Datei ist mit der
+Etappe 2 entfallen; ihren Negativplatz nimmt seither
+`dto/ungueltig/dsp-schema-version-1.json` ein, §8.1.)*
 
 ### 2.7 (f) v3-Vertrag: `state_report` ohne DSP, zwei reservierte Namen
 
@@ -2497,3 +2499,262 @@ M-125 fällt genau daran, weil ein Fall ohne Tabellenzeile dort keinen Test hat.
 | Urteil | **NEEDS_WORK** — **K-1 und K-2 geschlossen** (§5.11.4 „0 ≤ r − e ≤ 31", 32 Plätze, T10/T11 mit beidseitigen Rotbeweisen; T8 Konflikt, T9 Commit); §3.15 stimmt mit 125 IDs. Fünf neue Widersprüche in der neuen Tabelle: Fehler in S4/S6/S7 ohne Zeile; T4 nicht auf Bedienänderungen begrenzt (gegen M-61); T9 gegen T5 (`busy_retry`); I1 gegen Ladestart (M-89/M-93/I5); M-76 mischt Tabellenlauf und Ein-Revisions-Stresstest |
 | Rundenbilanz | `73bc10b6..f636a09f: Doku 1 Datei(en) +282/-35 → OHNE PRODUKTFORTSCHRITT (Produkt+Tests = 0 Zeilen)` — Matrixrunde, strukturell null; kumuliert Etappe 1: `e9dbf4b9..f636a09f` nur Doku |
 | **Entscheid** | Die Ursachenrunde nach dem Konvergenzentscheid (§7.7) hat K-1/K-2 geschlossen; die fünf Restbefunde sind alle DEFEKT (innere Widersprüche der neuen Tabelle), betreffen ausschließlich §5.11.4/M-76/M-125 — den Transaktionskern der **Etappe 4** — und keine Zusage der Etappen 2 und 3. Nach Dirigent §3.4 wird die Ursache als eigener Registerpunkt ausgegliedert: **NAK-245** (`docs/offene-punkte.md`, Klasse [Planarbeit · S26–28]); die fünf Punkte werden vor dem Bau der Etappe 4 in derselben Tabelle geschlossen und von der Erstprüfung der Etappe 4 mitgeprüft. Die Matrix ist damit Referenz für **Etappe 2 (Verträge in drei Sprachen)**, die jetzt beginnt (User-Wort 30.08.2026: „voranschreiten ist das wichtigste"). Matrixrunden gesamt: fünf Prüfungen, vier Nacharbeiten, Konvergenzentscheid nach der dritten Wiederprüfung |
+
+---
+
+## 8. Bauetappe 2 — Verträge in drei Sprachen (10.09.2026)
+
+| Merkmal | Wert |
+|---|---|
+| Etappe | **Etappe 2 — Verträge in drei Sprachen**, nach dem Bauplan §4.2. Die Matrix (§3) ist die Referenz; NAK-245 (§7.9) gehört der Etappe 4 und wurde nicht angefasst. |
+| Basis-SHA | `2026031f0a8bb0baf12135020be654a82d354a6f`, mit `git rev-parse HEAD` beim Start gemessen; `git status --short` war leer. |
+| Urteil | **Offen.** Die Erstprüfung dieser Etappe steht aus. Was hier steht, ist gemessen, nicht beurteilt. |
+| Beine | zwölf gefahren, **alle grün**; Rohausgabe `docs/beweise/roh/SONDE-015-etappe2-beine.txt` (A4 grün erst im Wiederholungslauf, §8.7 N-1) |
+| Rotbeweise | **32**, je Matrixzeile einer, `docs/beweise/roh/SONDE-015-rot-<ID>.txt` (gezählt mit `ls docs/beweise/roh/SONDE-015-rot-*`) |
+| Kanon | **Nicht gefahren.** Der volle abgekoppelte Lauf gehört an das Ende der Etappe 4 (Bauplan §4.4); diese Etappe fährt die in §4.2 genannten Beine einzeln. |
+
+### 8.1 Was gebaut wurde
+
+**Stufe 1 — Layout v2 und Presetschema.**
+
+- `eq-copilot/schemas/state/nakama-parameter-v2.json` (neu): **120** Kennungen,
+  davon **112** Host-Parameter als Präfix der Vertragsreihenfolge. Die Datei
+  ist aus der eingefrorenen v1-Datei **abgeleitet**: jeder Eintrag mit
+  `layout: "v1"` ist der v1-Eintrag gleicher ID, wörtlich, ergänzt um genau
+  die zwei Schlüssel `layout` und `host_parameter`. Die Ableitungsregel steht
+  als `ableitung_aus_v1` in der Datei und wird von A12 und B2 bei jedem Lauf
+  nachgerechnet — daran fällt eine still geänderte v1-Kennung (M-86).
+  Dazu der Zonenvertrag (`schutz_zonen`) und die DTO-Form mit drei
+  Wurzelschlüsseln.
+- `eq-copilot/schemas/state/nakama-preset-v1.json` (neu): `preset_schema_version`
+  1, die mitgeführte `dsp_schema_version`, die **119** Kennungen des
+  Klanginhalts (alle außer `v2.global.eq_enabled`), die **sechs** verbotenen
+  Top-Level-Namen mit Grund, die Ablehnungsgründe und die Prüfreihenfolge.
+- `eq-copilot/schemas/state/nakama-state-v2.md`: das Kind `Dsp` ist definiert
+  (§2.0), die Kind-Matrix trägt `active_probe × Dsp = optional`, §4 beschreibt
+  das DTO des Layouts v2, §5 nennt die neuen read-only-Gründe, §8 ist um die
+  Punkte bereinigt, die jetzt im Schema liegen.
+
+**Stufe 2 — C++-Spiegel.**
+
+- `NakamaParameter.{h,cpp}`: 120 Beschreibungen in Vertragsreihenfolge mit
+  `hostParameter`- und `layout`-Attribut, drei `static_assert` auf 109/112/120,
+  `Schutzzone`, `DspSatz`, `validiereZonen`, DTO-Kanon und `state_hash` über
+  Werte **und** Zonen, `ausDtoText` mit den Zonenstufen, `setzeOccupiedAusV1`
+  (bitgenau), `berichtDtoPruefen` (Hash zuerst, dann DTO).
+- `NakamaState.{h,cpp}`: `UndoArt`, `UndoEintrag`, Schreiber und Leser des
+  Kindes `Dsp` (flache und verschachtelte Arrays), Layoutmigration v1→v2,
+  Kind-Matrix, `Zustand::dspDto()`, und der Headroomriegel deckt jetzt auch
+  den vollen Undo-Ring ab.
+- `NakamaPreset.{h,cpp}` (neu): Writer (RFC-8785-kanonisch) und Leser mit der
+  Stufenfolge aus dem Vertrag; `v2.global.eq_enabled` bleibt beim Laden
+  unberührt.
+- `eq-copilot/plugin/CMakeLists.txt`: `state/NakamaPreset.cpp` im Kern.
+
+**Stufe 3 — v3-Vertrag `state_report.dsp`.**
+
+- `eq-ipc-v3.schema.json`: `$defs/dsp_bericht` und `$defs/dsp_klemmung`,
+  `state_report.dsp` optional. Die Nutzlast ist die gehashte
+  RFC-8785-**Zeichenkette** (`jcs`), daneben `auto_gain_db`, `klemmungen` und
+  `verletzte_baender` als eigene Pflichtfelder.
+- `reservierte-nachrichten-v1.json`: Fassung P1 **4 → 5**, Eintrag
+  `fassungen."5"`, `state_report.dsp` von `reservierte_felder` nach
+  `belegte_felder` umgebucht. `command_ack.applied_dsp` und
+  `state_report.eq_enabled` bleiben unangetastet reserviert.
+- `pruefe_v3_vertrag.py`: der Riegel wechselt die Seite (`dsp_ist_belegt`
+  statt „reservierte Felder … abgelehnt"), `fassung_4_schema()` neu,
+  `fassung_3_schema()` setzt jetzt darauf auf (Kette),
+  `pruefe_sonde015_fassung_5()` neu.
+- `erzeuge_v3_fixtures.py`: drei gültige Fälle (`state-report-mit-dsp`,
+  `state-report-dsp-ohne-klemmung`, `state-report-dsp-hash-passt-nicht`) und
+  sechs Negativfälle; die alte Fixture `reserviertes-feld-state-report-dsp`
+  entfällt (Seitenwechsel). Die Nutzlast kommt aus dem **State**-Korpus
+  (`dto/gueltig/gemischt.json`), nicht aus einer zweiten Wahrheit.
+- Rust: `JSON_SCHEMA_MINOR_AKTIV` 4 → 5, `v3_schema_minor_4_wurzel()`,
+  `MINOR_5`, `P0_/P1_SCHEMA_MINOR` 5, `liveness.rs` rechnet `SHA-256(dsp.jcs)`
+  nach und weist bei Abweichung den **ganzen** Bericht ab, `ClientStand.dsp_jcs`
+  hält den bestätigten DSP je Sonde und erbt ihn über einen Reconnect.
+- C++: `kJsonSchemaMinor` 4 → 5; `berichtDtoPruefen` in `NakamaParameter`;
+  B3c baut den Fassung-4-Leser aus der committeten Fassung 5 zurück.
+- `broker/src/dto.rs`: liest jetzt `nakama-parameter-v2.json`, baut die 120
+  Einträge **über `ids`** (die Vertragsreihenfolge ist nicht mehr
+  `global` + `band_vorlage` × Slots), und `pruefe_zonen` trägt die Zonenleiter
+  mit den drei neuen Gründen.
+
+**Stufe 4 — FlatBuffers Feld 22.**
+
+- `nakama_telemetry_v1.fbs`: `band_dynamic_gain_db:[float] (id: 22)`.
+- `FELD-IDS.json`: ID 22 eingetragen, `erwartet_gesamt.felder` 63 → 64.
+- `flatc` regeneriert (C++ und Rust, beide committet); A9 meldet Drift 0.
+- `broker/src/telemetrie.rs`: die Funktion `strukturriegel` kennt
+  `Frame::VT_BAND_DYNAMIC_GAIN_DB` (ohne diese Zeile liefe das Offsetfeld
+  still an ihm vorbei — die Lücke aus T2-Runde 4).
+- Beide Leser prüfen Länge 0 oder 8 und Endlichkeit; Abwesenheit bleibt gültig.
+- `erzeuge_fb_fixtures.py`: drei gültige und sechs ungültige Fälle.
+- `kFeatureBatchSchemaMinor` (P2) 1 → 2.
+
+### 8.2 Entscheide dieser Etappe (Lücken, die der Bau sonst still gefüllt hätte)
+
+| Nr. | Lücke | Entschieden | Warum |
+|---|---|---|---|
+| E2-1 | Woran erkennt der State-Leser, ob `Parameters` im Layout v1 oder v2 steht? | Eine **additive Eigenschaft** `dsp_schema_version` am Knoten `Parameters`: fehlt sie, ist es Layout v1; 2 ist Layout v2; jede andere Zahl macht den Stand read-only. | Aus der Anwesenheit der `v2.*`-Eigenschaften zu schließen wäre implizit und bei einem halb geschriebenen Stand falsch. Die Eigenschaft ist additiv — ein Build, der sie nicht kennt, liest die 109 v1-Werte weiter (`nakama-state-v2.md` §2.1). |
+| E2-2 | Wird `Dsp` immer geschrieben? | **Nur wenn es etwas trägt**: `state_revision != 0` oder ein `occupied` oder eine Zone oder ein Undo-Eintrag. | Ein frischer, unberührter Stand bleibt damit für einen Build lesbar, der `Dsp` noch nicht kennt. Dieselbe Regel wie beim nie gesetzten `MainProject.assistant_step_v1`. |
+| E2-3 | Form eines Undo-Eintrags im Baum | Ein **eigenes verschachteltes Array** je Eintrag: `[art, slot, revision, 120 Werte, 4·z Zonenwerte]`, Länge `123 + 4·z`. | Die Eintragsgrenze folgt damit aus der Struktur statt aus einer mitgeschriebenen Zählung, die von ihr abweichen kann. Gemessen: der volle Ring aus 32 Einträgen bleibt weit unter 16 MiB und unter den 64 Baumknoten. |
+| E2-4 | Wörter der geschlossenen `art`-Menge | `apply`, `revert`, `neutralisieren`, `remove`, `preset_laden`, `gestus`. `undo` und `redo` fehlen absichtlich. | §5.11 Feinheit 3: Undo und Redo bewegen einen **Cursor** im selben Ring, sie legen keinen Eintrag ab. Zwei Ringe könnten auseinanderlaufen. |
+| E2-5 | Ablehnungsgründe der Zonen | Drei neue Wörter: `zone_anzahl`, `zone_doppelt`, `zone_sortierung`. Struktur, Typ, Bereich und Nichtendlichkeit nutzen die **bestehenden** Wörter. | Die drei neuen betreffen die **Liste**, nicht einen Wert — als `bereich` gemeldet wären sie in allen drei Beinen von einem Wertfehler nicht unterscheidbar. Die übrigen Fälle brauchen kein neues Wort. |
+| E2-6 | Reihenfolge der Zonenliste | **Streng aufsteigend nach `id`**, im DTO geprüft. | Eine Menge hat keine Reihenfolge; der Vertrag legt eine fest, damit dieselbe Zonenmenge immer denselben kanonischen Text und damit denselben `state_hash` ergibt (M-72, M-93). |
+| E2-7 | Obergrenzen der abgeleiteten Angaben in `state_report.dsp` | `jcs` höchstens **8192** Zeichen, `auto_gain_db` in **±120 dB**, `klemmungen` und `verletzte_baender` je höchstens **8**. | Gemessen: das größte kanonische DTO des Layouts v2 misst **3857** Bytes. Acht Bänder zu je 12 dB im selben Kanalmodus ergeben höchstens 96 dB Plateau; 120 ist die Reserve. Höchstens eine Klemmung und ein verletztes Band je Slot. |
+
+### 8.3 Rotbeweise
+
+Je Zeile wurde die **Zusage an ihrer Stelle** gebrochen, das Bein gefahren, die
+Rohausgabe abgelegt und die Quelle wiederhergestellt. Ein Bruch am
+Prüfwerkzeug statt am Vertrag zählt nicht: der erste Versuch für M-104 brach
+`pruefe_v3_vertrag.py` und blieb **grün** — er wurde verworfen und durch den
+Bruch am Schema ersetzt (ein Feld des reservierten Namens `eq_enabled` wirklich
+anlegen).
+
+| ID | Zusage, die gebrochen wurde | Gebrochene Stelle | Bein |
+|---|---|---|---|
+| M-14 | Wert außerhalb des Bereichs wird abgelehnt, nicht geklemmt | `NakamaParameter.cpp` Bereichsprüfung | B2 |
+| M-24 | Ausschalten ändert ausschließlich `dynamic_enabled` | `schreibeInBaum` setzt die fünf Werte „vorsorglich" zurück | B2 |
+| M-28 | `channel_mode` ist diskret aus genau fünf Werten | sechstes Enumwort im Vertrag | A12 |
+| M-65 | Migration bitgenau, nicht mit Epsilon | `weichtVomDefaultAb` mit 1e-9 | B2 |
+| M-66 | `low_hz < high_hz`, Gleichheit fällt | `>=` zu `>` gelockert | B2 |
+| M-72 | Zonen sind Teil des `state_hash` | leere Zonenliste im DTO-Kanon | B2 |
+| M-73 | Die neunte Zone wird abgewiesen | Grenze auf 12 gehoben | B2 |
+| M-77 | Hash aus dem Bestandskanon | `dsp_schema_version` im Kanon verfälscht | B2 |
+| M-78 | Undo-Ring hält Tiefe 32 | Grenze auf 128 gehoben | B2 |
+| M-86 | Die 109 v1-Kennungen bleiben unverändert | `v1.global.width` Default 1.0 → 1.5 | A12 |
+| M-87 | `occupied` ist kein Host-Parameter | `host_parameter: true` gesetzt | A12 |
+| M-89 | `Dsp` führt flache Arrays | `occupied` als Kindknoten | B2 |
+| M-90 | Ein v1-Stand lädt verlustfrei | Leser liest 112 statt 109 Eigenschaften | B2 |
+| M-91 | DTO exakt, Baum additiv | Wurzelschlüsselzahl nicht mehr geprüft | B2 |
+| M-92 | `Dsp` nur bei `active_probe` | Kind-Matrix-Zeile entfernt | B2 |
+| M-93 | Roundtrip bytegleich | Zonenliste unsortiert geschrieben | B2 |
+| M-94 | Korpus vom Writer, nicht von Hand | Fixture von Hand editiert | A12 |
+| M-95 | Zwei getrennte Versionen im Preset | `dsp_schema_version` weggelassen | B2 |
+| M-96 | Klanginhalt vollständig | `mix` aus dem Preset entfernt | B2 |
+| M-97 | Identitätsfeld wird abgewiesen | Riegel entfernt | B2 |
+| M-98 | Unbekanntes Top-Level-Feld wird ignoriert | exakte Wurzelschlüsselmenge erzwungen | B2 |
+| M-99 | Unbekannter Preset-Major wird abgelehnt | Versionsvergleich entfernt | B2 |
+| M-101 | `state_report.dsp` ist wirklich belegt | Feld im Schema umbenannt | A5 |
+| M-102 | Der Minor steigt genau einmal | `vorher` auf 3 gesetzt | A5 |
+| M-103 | Die Nutzlast ist eine Zeichenkette | als Objekt typisiert | A5 |
+| M-104 | `state_report.eq_enabled` bleibt reserviert | Feld wirklich angelegt | A5 |
+| M-105 | Der Empfänger rechnet den Hash nach | Vergleich abgeschaltet | B3c |
+| M-108 | Ein Bericht ohne `dsp` bleibt gültig | `dsp` zur Pflicht gemacht | A5 |
+| M-109 | Feld-ID 22 ist die nächste freie | ID auf 21 gesetzt | A9 |
+| M-110 | Genau acht Einträge in Slotreihenfolge | Fixture mit sieben Werten | A10 |
+| M-111 | Ein Frame ohne das Feld bleibt gültig | Feld als `required` deklariert | A9 |
+| M-112 | Länge ≠ 0 und ≠ 8 wird abgewiesen | Längenprüfung abgeschaltet | B3c |
+
+**M-88 fällt hier nicht** und ist keine Lücke: MN1 (B-11, §4.2) hat die Zeile
+ausdrücklich in die Pflichtmenge der **Etappe 4** verschoben — sie fordert 112
+tatsächlich exponierte APVTS-Parameter, und der Prozessor bleibt nach §4.1 in
+dieser Etappe unberührt. Die **Vertragsseite** derselben Frage liegt in M-86
+und M-87 und ist oben belegt.
+
+### 8.4 Die Beine dieser Etappe
+
+Alle Zahlen sind aus der Rohausgabe gelesen, nicht abgeschrieben
+(`docs/beweise/roh/SONDE-015-etappe2-beine.txt`).
+
+| Bein | Ergebnis |
+|---|---|
+| **A5** `pruefe_v3_vertrag.py --abdeckung` | GRÜN — 630 Prüfungen, 0 gescheitert; 115 Definitionen, 26 Nachrichtenfamilien, 401 Fixtures |
+| **A8** `erzeuge_v3_fixtures.py --pruefen` | GRÜN — 405 Dateien bytegleich, 111 gültige und 290 ungültige Fixtures |
+| **A9** `pruefe_flatc_drift.py` | GRÜN — Drift 0, Feld-IDs 0 rot, 9 Tabellen mit 64 Feldern |
+| **A10** `erzeuge_fb_fixtures.py --pruefen` | GRÜN — 129 Dateien bytegleich, 26 gültige und 102 ungültige Fixtures |
+| **A11** `pruefe_v2_schemas.py` | GRÜN — die fünf eingefrorenen v2-Verträge unberührt |
+| **A12** `erzeuge_state_fixtures.py --pruefen` | GRÜN — 64 Dateien bytegleich, keine verwaiste Datei; 120 Kennungen, 112 Host-Parameter, 109 v1-Einträge wörtlich abgeleitet; DTO 7 gültig / 26 ungültig, Preset 3 gültig / 13 ungültig |
+| **B2** `EqCopStateMigrationTest` | GRÜN — 243 Prüfungen, 0 Fehler |
+| **B3c** `EqCopSchemaTest` | GRÜN — 149 bestanden, 0 gescheitert |
+| **A16** `EqCopProbeeqNullTest` | GRÜN — 87 Prüfungen, 0 Fehler (der Prozessor ist unberührt; der Passthrough bleibt der bewiesene) |
+| **B10** `EqCopIpcTest` | GRÜN — 389 Prüfungen, 0 Fehler |
+| **A4** `cargo test` (Broker) | GRÜN — 20 Suiten, 0 Fehler, Exit 0. Ein früherer Lauf fiel einmal an einem Lastvektor, der keine Zeile dieser Etappe berührt; der Wiederholungslauf und der Abschlusslauf waren beide grün (§8.7 N-1). |
+| **A4-SI** `store_crash_matrix --ignored` | GRÜN |
+
+### 8.5 Prüfliste `tools/dirigent/pruefliste.md`, abgehakt für die Etappe 2
+
+| Zeile | Wo gemessen |
+|---|---|
+| **A. Rückstau und Prioritätsklassen** | Nicht berührt: diese Etappe ändert keine Queue-Politik. Der P1-Fassungsschritt reist über den bestehenden Weg; B10 (389 Prüfungen) misst ihn unverändert. |
+| **B. Lebenszyklus** | Nicht berührt. Der Reconnect-Pfad bekommt in `link.rs` nur ein weiteres geerbtes Feld (`dsp_jcs`), gemessen in `state_report_dsp_wird_gegen_den_state_hash_nachgerechnet`. |
+| **C. Verträge und Längen** | `jcs` (maxLength 8192), `dsp_klemmung.id/gemeldet/wirksam` (je 64), `verletzte_baender` (maxItems 8, items 0..7), `klemmungen` (maxItems 8) — jedes mit Negativfixture in `erzeuge_v3_fixtures.py`. Exakte Feldmenge: `dsp_bericht` und `dsp_klemmung` sind `additionalProperties:false` mit C++- (B3c) und Rust-Hälfte (A4). NaN/Inf: `band_dynamic_gain_db` in beiden Lesern, Zonen und Parameterwerte in allen drei DTO-Beinen. |
+| **D. Bau- und Prüfriegel** | A9 ist fail-closed: das neue Offsetfeld ohne Riegelzeile in `telemetrie.rs` war **rot**, bevor die Zeile stand (gemessen beim Bau, §8.7 N-2). A12 und A8 melden verwaiste Dateien — beide taten es für die zwei Fixtures, die die Seite gewechselt haben. |
+| **E. Behauptung ≤ Messung** | 32 Rotbeweise, je einer an der Zeile, die die Zusage trägt (§8.3). Alle Zahlen dieses Abschnitts sind aus der Rohausgabe gelesen. Der lebende Kopf ist nachgezogen; alles darunter bleibt Verlauf. **Writer-Fixtures statt Handschrift:** die zwei neuen Goldens `schema2/dsp-v2-voll.bin` und `schema2/layout-v1.bin` kommen aus `state::speichere`, der Presetkorpus aus `nakama::preset::schreibe` (B2 misst die Bytegleichheit), die v3-Nutzlast aus dem State-Korpus. |
+| **F. Änderungssatz** | speichern↔laden: Writer, Leser und Migration des Kindes `Dsp` sowie Writer und Leser des Presets liegen in **einem** Commit, jeder mit seinem Gegenpfad im selben Test. Writer, Reader, Migration, Fixtures und Cross-Language-Verbraucher des Layouts v2: `nakama-parameter-v2.json`, `NakamaParameter.cpp`, `broker/src/dto.rs`, `erzeuge_state_fixtures.py`, Fixtures — ebenfalls **ein** Änderungssatz. |
+
+### 8.6 Abweichungen dieser Etappe
+
+**Keine Abweichung von R1 bis R15.** Zwei Stellen sind Feinheiten, die die
+Regeln offen ließen und die §8.2 als E2-1 bis E2-7 benennt; sie widersprechen
+keiner Regel.
+
+Eine Stelle weicht vom **Bauplan §4.2** ab und ist hier benannt: die Stufe 3
+nennt „C++-Leser und Rust-Leser mit Fassungsleiter". Der C++-Leser des
+`state_report` ist die **Schema-Engine** (`nakama::vertrag::Schema`), die den
+committeten Vertrag liest — sie braucht keinen eigenen Handparser. Gebaut
+wurde deshalb nur, was sie **nicht** kann: die Nachrechnung des `state_hash`
+(`parameter::berichtDtoPruefen`) und der Rückbau auf die Fassung 4 im Bein B3c.
+Ein handgeschriebener zweiter `state_report`-Parser in C++ wäre die zweite
+Leserwahrheit, gegen die SONDE-005a die Engine überhaupt gebaut hat.
+
+### 8.7 Nebenbefunde (nicht ins Register)
+
+**N-1 — `cargo test` fiel einmal an einem Lastvektor, nicht an dieser Etappe.**
+Im ersten vollen Lauf fiel `security_vectors::zwei_listener_plus_96_worker_erhalten_cap_und_namensbesitz`
+an `warten(4000, || griff.aktive_worker() == MAX_VERBINDUNGEN)` — ein
+Zeitfenster von vier Sekunden für 96 Worker, gefahren parallel zu einem
+laufenden `cmake --build` derselben Maschine. Der Einzellauf desselben Tests
+war grün (0,60 s); der **volle Wiederholungslauf auf demselben Stand, ohne
+parallelen Bau, war grün mit Exit 0** (angehängt an dieselbe Rohdatei). Der
+Vektor liegt in `broker/tests/security_vectors.rs` und berührt keine Zeile
+dieser Etappe: der Diff dieses Commits fasst weder Listener noch Worker noch
+die Verbindungsobergrenze an. Kein Registerpunkt — der Vektor bindet eine
+Wanduhr an eine Maschine unter Last; er ist als Befund über den Lauf, nicht
+über das Produkt, hier festgehalten.
+
+**N-2 — der Feld-ID-Riegel greift beim Anlegen eines Offsetfeldes doppelt.**
+`pruefe_fbs_feldids.py` meldete beim ersten Lauf nach dem Anlegen von
+`band_dynamic_gain_db` zwei rote Zeilen: die fehlende Riegelzeile in
+der Funktion `strukturriegel` in `broker/src/telemetrie.rs` und die Feldzahl 63 gegen 64. Beides
+ist die zugesagte Wirkung (T2-Runde 4, BL-A), hier zum ersten Mal an einem
+Vektorfeld gemessen: der Riegel verlangt für **jedes** Offsetfeld eine Zeile,
+auch für einen Vektor aus Skalaren.
+
+**N-3 — `juce::var` hält 0.0 und −0.0 für gleich; `ValueTree::setProperty`
+überspringt den Schreibvorgang dann.** Gefunden beim Bau des
+Migrations-Rotbeweises M-65: der Wert −0.0 kam nach `speichere/lade` als 0.0
+zurück, und ein Slot, den die Migrationsregel R5 als belegt lesen muss, wäre
+beim nächsten Laden als frei zurückgekommen. `schreibeInBaum` erzwingt den
+Schreibvorgang jetzt über einen leeren `var`, **ohne** die Position der
+Eigenschaft im Knoten zu ändern (`removeProperty` hätte sie ans Ende gehängt
+und die Bytegleichheit gebrochen). B2 misst beide Hälften: dass der Writer das
+Vorzeichen hält und dass die Migration den Slot als belegt liest. Der Fund
+gehört in diese Etappe und ist hier behoben — kein Registerpunkt.
+
+**N-5 — drei `-text`-Dateien liegen im Index mit CRLF, ihre Nachbarn mit LF.**
+`.gitattributes` markiert `eq-copilot/schemas/**` und `eq-copilot/fixtures/**`
+als `-text`, damit keine Zeilenenden-Normalisierung sie still verändert. Der
+Baum ist darunter aber **gemischt**: `nakama-parameter-v1.json`,
+`nakama_telemetry_v1.fbs`, `reservierte-nachrichten-v1.json` und der ganze
+Fixture-Korpus liegen mit LF im Index, `nakama-state-v2.md`,
+`eq-ipc-v3.schema.json` und `FELD-IDS.json` mit CRLF. Ein Werkzeug, das mit
+`newline="
+"` schreibt, schreibt die drei damit vollständig um — der Diff
+zeigte 4739 statt 51 geänderte Zeilen an `eq-ipc-v3.schema.json`. Die
+Zeilenenden sind für diesen Commit wiederhergestellt und der Diff auf die
+echten Änderungen zurückgeschrumpft; ein Nachlauf auf dem Endstand (angehängt
+an dieselbe Rohdatei) hält A5, A8, A9, A12, B2, B3c und die Rust-Bibliothek
+grün. Kein Registerpunkt, aber eine Landmine für jedes Werkzeug, das eine
+dieser Dateien schreibt: **vor dem Schreiben `git ls-files --eol <datei>`
+lesen und dieselben Zeilenenden zurückschreiben.**
+
+**N-4 — die Vertragsreihenfolge ist nicht mehr `global` + `band_vorlage` × Slots.**
+Alle drei Beine bauten den Bestand bisher aus dieser Formel. Mit den drei
+v2-Globalen **hinter** allen v1-Slotfeldern stimmt sie nicht mehr; alle drei
+lesen die Reihenfolge jetzt aus `ids`. Ein Bein, das die Formel behalten hätte,
+wäre still in einer anderen Reihenfolge gelaufen — und die
+Reihenfolge entscheidet über den APVTS-Index (M-88, Etappe 4).

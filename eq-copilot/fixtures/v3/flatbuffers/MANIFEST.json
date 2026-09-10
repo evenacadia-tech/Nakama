@@ -6,13 +6,31 @@
   "erzeugung": "Die .bin-Dateien entstehen mit dem GEPINNTEN flatc aus einer JSON-Beschreibung (flatc -b). Ein eigener Encoder waere eine dritte Implementierung des Formats, die niemand prueft.",
   "byte_mutation_von": "Markiert einen Puffer, den flatc nicht erzeugen KANN (falsche Dateikennung, abgeschnitten, zerstoerter Wurzeloffset). Er entsteht als Byte-Mutation des genannten gueltigen Puffers.",
   "regeln": "Die geschlossene Liste der Regelnamen steht in eq-copilot/schemas/v3/flatbuffers/README.md. Ein Verstoss ist (pfad, regel); die Menge wird kanonisch nach (pfad, regel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
-  "anzahl_gueltig": 23,
-  "anzahl_ungueltig": 96,
+  "anzahl_gueltig": 26,
+  "anzahl_ungueltig": 102,
   "fixtures": [
     {
       "datei": "gueltig/alle-validity-bits.bin",
       "urteil": "gueltig",
       "warum": "alle sieben Bits gesetzt (§32.3). Die Latenz 0 ist hier GEMESSEN und nicht 'unbekannt' - genau die Unterscheidung, fuer die das eigene Bit existiert",
+      "verstoesse": []
+    },
+    {
+      "datei": "gueltig/band-dynamic-gain-acht-werte.bin",
+      "urteil": "gueltig",
+      "warum": "acht Auslenkungen in Slotreihenfolge: zwei Baender schwingen, die uebrigen sind frei, ausgeschaltet oder nicht dynamisch und tragen deshalb exakt 0.0 - nie einen aus den Einstellwerten erfundenen Wert",
+      "verstoesse": []
+    },
+    {
+      "datei": "gueltig/band-dynamic-gain-altsender-ohne-feld.bin",
+      "urteil": "gueltig",
+      "warum": "ein Frame OHNE das Feld bleibt gueltig: Abwesenheit heisst `der Erzeuger sagt es nicht`, ausdruecklich NICHT acht Nullen - dieselbe Regel wie bei integration_samples (Feld-ID 14)",
+      "verstoesse": []
+    },
+    {
+      "datei": "gueltig/band-dynamic-gain-leer.bin",
+      "urteil": "gueltig",
+      "warum": "der leere Vektor ist die zweite erlaubte Laenge (R14: genau 8 oder leer). Er ist etwas anderes als Abwesenheit, und beide sind gueltig",
       "verstoesse": []
     },
     {
@@ -166,6 +184,72 @@
       "verstoesse": [
         {
           "pfad": "/eintraege/0/frame/aktivitaet",
+          "regel": "nicht_endlich"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/band-dynamic-gain-inf.bin",
+      "urteil": "ungueltig",
+      "warum": "Plus unendlich verlaesst den Sender nie - der Leser prueft trotzdem. Der Sender heilt Nichtendliches beim Erzeugen zu 0 und zaehlt es; ein Leser, der sich darauf verlaesst, ist kein Riegel",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/band_dynamic_gain_db/5",
+          "regel": "nicht_endlich"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/band-dynamic-gain-laenge-1.bin",
+      "urteil": "ungueltig",
+      "warum": "genau 8 oder leer, nichts dazwischen: acht Auslenkungen treten immer gemeinsam auf, ein halber Satz waere nicht als solcher erkennbar",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/band_dynamic_gain_db",
+          "regel": "band_dynamic_gain_laenge"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/band-dynamic-gain-laenge-3.bin",
+      "urteil": "ungueltig",
+      "warum": "genau 8 oder leer, nichts dazwischen: acht Auslenkungen treten immer gemeinsam auf, ein halber Satz waere nicht als solcher erkennbar",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/band_dynamic_gain_db",
+          "regel": "band_dynamic_gain_laenge"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/band-dynamic-gain-laenge-7.bin",
+      "urteil": "ungueltig",
+      "warum": "genau 8 oder leer, nichts dazwischen: acht Auslenkungen treten immer gemeinsam auf, ein halber Satz waere nicht als solcher erkennbar",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/band_dynamic_gain_db",
+          "regel": "band_dynamic_gain_laenge"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/band-dynamic-gain-laenge-9.bin",
+      "urteil": "ungueltig",
+      "warum": "genau 8 oder leer, nichts dazwischen: acht Auslenkungen treten immer gemeinsam auf, ein halber Satz waere nicht als solcher erkennbar",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/band_dynamic_gain_db",
+          "regel": "band_dynamic_gain_laenge"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/band-dynamic-gain-nan.bin",
+      "urteil": "ungueltig",
+      "warum": "NaN ist keine Auslenkung. Der Sender heilt Nichtendliches beim Erzeugen zu 0 und zaehlt es; ein Leser, der sich darauf verlaesst, ist kein Riegel",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/band_dynamic_gain_db/5",
           "regel": "nicht_endlich"
         }
       ]

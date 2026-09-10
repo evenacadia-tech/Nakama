@@ -1,0 +1,17 @@
+SONDE-015 Etappe 2 - Rotbeweis M-94
+Zusage: Der Fixture-Korpus wird vom WRITER erzeugt; eine von Hand editierte Datei faellt am --pruefen.
+Bruch:  eq-copilot/fixtures/state/dto/gueltig/default.json
+        - "v1.global.width": 1.0
+        + "v1.global.width": 1.5
+------------------------------------------------------------------------------
+$ py -3.13 tools/eq-copilot/erzeuge_state_fixtures.py --pruefen   (A12 erzeuge_state_fixtures.py --pruefen)
+Parameterbestand v2: 120 Kennungen (112 Host-Parameter), 120 eindeutige IDs, 109 v1-Eintraege woertlich abgeleitet; Preset 119 Kennungen, 6 verbotene Felder
+RFC-8785-Tabelle: 24 Zahlen gegen den RFC-Text bestaetigt, 28 Handvektoren bestaetigt, 2 abgelehnt (NaN, Infinity)
+JCS-Dokumente: 13 Hand-Erwartungen von rfc8785 bestaetigt
+DTO: 7 gueltige gehasht, 26 ungueltige mit Grund
+Preset: 3 gueltige, 13 ungueltige mit Grund
+ABWEICHUNG: dto/gueltig/default.json
+STATE-FIXTURES ABWEICHEND (1)
+
+EXIT=2
+URTEIL: ROT

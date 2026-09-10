@@ -1,0 +1,13 @@
+SONDE-015 Etappe 2 - Rotbeweis M-98
+Zusage: Ein unbekanntes Top-Level-Feld wird IGNORIERT; das Preset laedt.
+Bruch:  eq-copilot/plugin/state/NakamaPreset.cpp
+        -     const auto* par   = finde (wurzel, "parameters");
+        +     if (wurzel.objektSchluessel.size() != 4) { grund = "struktur"; detail = "unbekanntes Feld"; return false; }
+------------------------------------------------------------------------------
+$ EqCopStateMigrationTest.exe
+  FEHLER  gueltiges Preset abgelehnt: preset/gueltig/unbekanntes-top-level-feld.json  [struktur unbekanntes Feld]
+  FEHLER  gueltige Presets angenommen  [2/3]
+  FEHLER  == Preset: 2 gueltige gelesen, 13 ungueltige mit Grund abgelehnt, Writer bytegleich
+
+EXIT=1
+URTEIL: ROT

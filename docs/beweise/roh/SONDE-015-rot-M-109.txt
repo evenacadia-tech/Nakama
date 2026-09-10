@@ -1,0 +1,22 @@
+SONDE-015 Etappe 2 - Rotbeweis M-109
+Zusage: Feld-ID 22 ist die naechste freie; der Drift-Riegel meldet 0 und keine ID wird verbrannt.
+Bruch:  eq-copilot/schemas/v3/flatbuffers/FELD-IDS.json
+        -         "band_dynamic_gain_db": 22
+        +         "band_dynamic_gain_db": 21
+------------------------------------------------------------------------------
+$ py -3.13 tools/eq-copilot/pruefe_flatc_drift.py   (A9 pruefe_flatc_drift.py)
+Gepinnt: flatbuffers 25.12.19 @ 7e163021e59c
+  flatc: 25.12.19  (C:\Users\phili\Projekte\Nakama\eq-copilot\build\_deps\flatbuffers-build\Release\flatc.exe)
+  flatc-Beleg: Commit 7e163021e59cca4f8e1e35a7c828b5c6b7915953, sha256=9f9c82758ee9f3ad21ce70019716903431c70227219eae95fe1c06fa4cde43fe  (C:\Users\phili\Projekte\Nakama\eq-copilot\build\nakama-flatc-commit-Release.txt)
+  Rust-Crate: 25.12.19 (Cargo.lock; Anforderung 25.12.19)
+  ROT: der Feld-ID-Riegel ist rot:
+    Schema:   eq-copilot\schemas\v3\flatbuffers\nakama_telemetry_v1.fbs
+    Tabellen: 9
+    Felder:   64
+    Felder ohne id: 0
+    Offsetfelder (string/Vektor/Tabelle) im Strukturriegel: 18
+      ROT: Frame: Schema und FELD-IDS.json weichen ab Ã¢â‚¬â€� im Schema {'band_dynamic_gain_db': 22}, eingefroren {'band_dynamic_gain_db': 21}
+    Pruefungen: 1 rot
+
+EXIT=2
+URTEIL: ROT

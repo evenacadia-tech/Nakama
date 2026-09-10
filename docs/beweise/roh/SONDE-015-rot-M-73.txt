@@ -1,0 +1,14 @@
+SONDE-015 Etappe 2 - Rotbeweis M-73
+Zusage: Die neunte Zone wird ABGEWIESEN, nicht stillschweigend verworfen.
+Bruch:  eq-copilot/plugin/state/NakamaParameter.cpp
+        -     if ((int) z.size() > kMaxZonen)
+        +     if ((int) z.size() > kMaxZonen + 4)
+------------------------------------------------------------------------------
+$ EqCopStateMigrationTest.exe
+  FEHLER  ungueltiges DTO: dto/ungueltig/zone-neunte.json  [Grund bereich (schutz_zonen[8].id) soll zone_anzahl]
+  FEHLER  ungueltige DTOs mit dem erwarteten Grund abgelehnt  [25/26]
+  FEHLER  neunte Zone faellt vor dem Hash  [bereich]
+  FEHLER  == DTO: 7 gueltige gehasht, 25 ungueltige vor dem Hash abgelehnt
+
+EXIT=1
+URTEIL: ROT

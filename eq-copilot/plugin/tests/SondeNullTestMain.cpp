@@ -216,7 +216,7 @@ int main()
         const auto status = connector.v3StatusFuerTest();
         juce::String sollHash, grund;
         const bool hashOk = nakama::parameter::stateHash (
-            gebunden.parameters, sollHash, grund);
+            gebunden.dspDto(), sollHash, grund);
 
         pruefe (hello.adresse.projectBindingId
                     == "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"

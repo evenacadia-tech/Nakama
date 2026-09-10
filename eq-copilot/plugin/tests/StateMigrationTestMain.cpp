@@ -18,6 +18,7 @@
 
 #include "NakamaKanon.h"
 #include "NakamaParameter.h"
+#include "NakamaPreset.h"
 #include "NakamaState.h"
 #include "ControlClient.h"
 #include "PluginProcessor.h"
@@ -25,6 +26,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
+#include <functional>
 #include <iostream>
 #include <limits>
 #include <memory>
@@ -372,33 +374,86 @@ int main (int argc, char* argv[])
         if (juce::String (argv[i]) == "--schreibe-goldens")
             schreibeGoldens = true;
 
-    const auto vertragDatei = finde ("eq-copilot/schemas/state/nakama-parameter-v1.json");
-    const auto fixtureOrdner = finde ("eq-copilot/fixtures/state");
+    const auto vertragDatei   = finde ("eq-copilot/schemas/state/nakama-parameter-v2.json");
+    const auto vertragV1Datei = finde ("eq-copilot/schemas/state/nakama-parameter-v1.json");
+    const auto presetDatei    = finde ("eq-copilot/schemas/state/nakama-preset-v1.json");
+    const auto fixtureOrdner  = finde ("eq-copilot/fixtures/state");
     std::cout << "Vertrag:  " << vertragDatei.getFullPathName() << std::endl
               << "Fixtures: " << fixtureOrdner.getFullPathName() << std::endl << std::endl;
 
     // ══════════════════════════════════════════════════════════════════════
-    // G4 · Parametertabelle deckungsgleich mit dem Vertrag
+    // G4 · Parametertabelle deckungsgleich mit dem Vertrag (Layout v2)
     // ══════════════════════════════════════════════════════════════════════
     {
         Abschnitt a;
-        bool ok = false;
-        const auto v = ladeJson (vertragDatei, ok);
-        pruefe (ok, "nakama-parameter-v1.json ist gueltiges JSON");
+        bool ok = false, okV1 = false;
+        const auto v   = ladeJson (vertragDatei, ok);
+        const auto v1  = ladeJson (vertragV1Datei, okV1);
+        pruefe (ok,   "nakama-parameter-v2.json ist gueltiges JSON");
+        pruefe (okV1, "nakama-parameter-v1.json ist gueltiges JSON");
         const auto& t = param::tabelle();
-        pruefe ((int) v["anzahl_parameter"] == param::kAnzahl, "anzahl_parameter == 109", v["anzahl_parameter"].toString());
+        pruefe ((int) v["anzahl_parameter"] == param::kAnzahl, "anzahl_parameter == 120", v["anzahl_parameter"].toString());
+        pruefe ((int) v["anzahl_parameter_v1"] == param::kAnzahlV1, "anzahl_parameter_v1 == 109", v["anzahl_parameter_v1"].toString());
+        pruefe ((int) v["anzahl_host_parameter"] == param::kHostParameter, "anzahl_host_parameter == 112", v["anzahl_host_parameter"].toString());
         pruefe ((int) v["slot_anzahl"] == param::kSlots, "slot_anzahl == 8");
-        pruefe ((int) v["dsp_schema_version"] == param::kDspSchemaVersion, "dsp_schema_version == 1");
+        pruefe ((int) v["dsp_schema_version"] == param::kDspSchemaVersion, "dsp_schema_version == 2");
+        pruefe ((int) v1["dsp_schema_version"] == param::kDspSchemaVersionV1, "v1-Datei bleibt bei dsp_schema_version 1");
+        pruefe ((int) v1["anzahl_parameter"] == param::kAnzahlV1, "v1-Datei bleibt bei 109 Kennungen");
 
         const auto* ids = v["ids"].getArray();
-        pruefe (ids != nullptr && ids->size() == param::kAnzahl, "ids-Liste hat 109 Eintraege");
+        pruefe (ids != nullptr && ids->size() == param::kAnzahl, "ids-Liste hat 120 Eintraege");
         if (ids != nullptr && ids->size() == param::kAnzahl)
         {
             int gleichIds = 0;
             for (int i = 0; i < param::kAnzahl; ++i)
                 if ((*ids)[i].toString() == t[(size_t) i].id) ++gleichIds;
-            pruefe (gleichIds == param::kAnzahl, "alle 109 IDs in Vertragsreihenfolge identisch", juce::String (gleichIds));
+            pruefe (gleichIds == param::kAnzahl, "alle 120 IDs in Vertragsreihenfolge identisch", juce::String (gleichIds));
         }
+
+        // M-86: die 109 v1-Kennungen stehen unveraendert VORNE, in genau der
+        // Reihenfolge der eingefrorenen v1-Datei. Ein neuer Wert bekommt nie
+        // einen freien Platz im Bestand.
+        {
+            const auto* idsV1 = v1["ids"].getArray();
+            int gleichV1 = 0;
+            if (idsV1 != nullptr && idsV1->size() == param::kAnzahlV1 && ids != nullptr)
+                for (int i = 0; i < param::kAnzahlV1; ++i)
+                    if ((*idsV1)[i].toString() == (*ids)[i].toString()) ++gleichV1;
+            pruefe (gleichV1 == param::kAnzahlV1,
+                    "die 109 v1-IDs stehen unveraendert am Anfang der v2-Reihenfolge", juce::String (gleichV1));
+        }
+
+        // M-88 (Vertragsseite): die 112 Host-Parameter sind das PRAEFIX der
+        // Reihenfolge, `occupied` steht dahinter und ist keiner.
+        {
+            int hostVorne = 0, occupiedHinten = 0;
+            for (int i = 0; i < param::kHostParameter; ++i)
+                if (t[(size_t) i].hostParameter) ++hostVorne;
+            for (int i = param::kHostParameter; i < param::kAnzahl; ++i)
+                if (! t[(size_t) i].hostParameter && t[(size_t) i].id.endsWith (".occupied")) ++occupiedHinten;
+            pruefe (hostVorne == param::kHostParameter && occupiedHinten == param::kSlots,
+                    "112 Host-Parameter als Praefix, acht occupied dahinter",
+                    juce::String (hostVorne) + "/" + juce::String (occupiedHinten));
+            pruefe (t[(size_t) param::kIndexEqEnabled].id == "v2.global.eq_enabled"
+                    && t[(size_t) param::kIndexMix].id == "v2.global.mix"
+                    && t[(size_t) param::kIndexAutoGain].id == "v2.global.auto_gain",
+                    "die drei v2-Host-Parameter haengen in R2/R3/R4-Reihenfolge hinten an");
+        }
+
+        /*  Die flache Vertragsliste: `global` + `band_vorlage` x Slots ergibt
+            NICHT die Vertragsreihenfolge (die v2-Globalen stehen hinter allen
+            v1-Slots). Deshalb wird ueber die ID gesucht - genau so, wie ein
+            Leser es tun muesste. */
+        struct Eintrag { juce::String id; juce::var wert; };
+        std::vector<Eintrag> flach;
+        if (const auto* global = v["global"].getArray())
+            for (const auto& g : *global)
+                flach.push_back ({ g["id"].toString(), g });
+        if (const auto* vorlage = v["band_vorlage"].getArray())
+            for (int slot = 0; slot < param::kSlots; ++slot)
+                for (const auto& b : *vorlage)
+                    flach.push_back ({ b["layout"].toString() + ".band."
+                                       + juce::String (slot) + "." + b["name"].toString(), b });
 
         auto vergleiche = [&] (const juce::var& e, int index, const juce::String& wo)
         {
@@ -426,29 +481,97 @@ int main (int argc, char* argv[])
             const auto wechsel = e["wechsel"].toString();
             gut = gut && ((wechsel == "rampe") == (b.wechsel == param::Wechsel::rampe));
             gut = gut && ((bool) e["topologisch"] == b.topologisch);
+            gut = gut && ((bool) e["host_parameter"] == b.hostParameter);
+            gut = gut && (e["layout"].toString() == "v" + juce::String (b.layout));
             if (! gut)
                 pruefe (false, "Eintrag weicht ab: " + wo, b.id);
             return gut;
         };
 
         int deckungsgleich = 0;
-        const auto* global = v["global"].getArray();
-        const auto* vorlage = v["band_vorlage"].getArray();
-        if (global != nullptr && vorlage != nullptr && global->size() == param::kGlobal && vorlage->size() == param::kJeSlot)
+        for (const auto& e : flach)
         {
-            for (int i = 0; i < param::kGlobal; ++i)
-                if (vergleiche ((*global)[i], i, (*global)[i]["id"].toString())) ++deckungsgleich;
-            for (int slot = 0; slot < param::kSlots; ++slot)
-                for (int k = 0; k < param::kJeSlot; ++k)
-                    if (vergleiche ((*vorlage)[k], param::kGlobal + slot * param::kJeSlot + k,
-                                    "Slot " + juce::String (slot) + " " + (*vorlage)[k]["name"].toString()))
-                        ++deckungsgleich;
+            const int index = param::indexVonId (e.id);
+            if (index < 0) { pruefe (false, "Vertrags-ID ohne Tabelleneintrag", e.id); continue; }
+            if (vergleiche (e.wert, index, e.id)) ++deckungsgleich;
         }
-        pruefe (deckungsgleich == param::kAnzahl, "109 Beschreibungen (Typ, Grenzen, Default, Enumwoerter, Wechsel, topologisch) deckungsgleich",
+        pruefe (deckungsgleich == param::kAnzahl,
+                "120 Beschreibungen (Typ, Grenzen, Default, Enumwoerter, Wechsel, topologisch, Host-Attribut) deckungsgleich",
                 juce::String (deckungsgleich));
+
+        /*  M-86/M-87, der Rotbeweis dieser Zeile: die v2-Datei ist aus der
+            EINGEFRORENEN v1-Datei ABGELEITET. Jeder Eintrag mit `layout` = v1
+            ist der v1-Eintrag gleicher ID plus genau die zwei Schluessel
+            `layout` und `host_parameter`. Aendert jemand einen v1-Default,
+            faellt diese Zeile - nicht ein Kommentar. */
+        {
+            auto schluessel = [] (const juce::var& o)
+            {
+                juce::StringArray namen;
+                if (auto* d = o.getDynamicObject())
+                    for (const auto& e : d->getProperties())
+                        namen.add (e.name.toString());
+                namen.sort (true);
+                return namen;
+            };
+            auto v1Eintrag = [&] (const juce::String& id) -> juce::var
+            {
+                if (const auto* global = v1["global"].getArray())
+                    for (const auto& g : *global)
+                        if (g["id"].toString() == id) return g;
+                if (const auto* vorlage = v1["band_vorlage"].getArray())
+                    for (const auto& b : *vorlage)
+                        if (id.endsWith ("." + b["name"].toString())) return b;
+                return {};
+            };
+            int abgeleitet = 0, erwartetAbgeleitet = 0;
+            for (const auto& e : flach)
+            {
+                if (e.wert["layout"].toString() != "v1") continue;
+                ++erwartetAbgeleitet;
+                const auto alt = v1Eintrag (e.id);
+                auto neuNamen = schluessel (e.wert);
+                const auto altNamen = schluessel (alt);
+                neuNamen.removeString ("layout");
+                neuNamen.removeString ("host_parameter");
+                bool gleich = neuNamen == altNamen && altNamen.size() > 0;
+                for (const auto& n : altNamen)
+                    if (e.wert[juce::Identifier (n)].toString() != alt[juce::Identifier (n)].toString())
+                        gleich = false;
+                if (gleich) ++abgeleitet;
+                else pruefe (false, "v1-Eintrag nicht woertlich uebernommen", e.id);
+            }
+            pruefe (abgeleitet == erwartetAbgeleitet && erwartetAbgeleitet == param::kAnzahlV1,
+                    "jeder v1-Eintrag ist woertlich uebernommen, nur um layout und host_parameter ergaenzt",
+                    juce::String (abgeleitet) + "/" + juce::String (erwartetAbgeleitet));
+        }
+
         pruefe (param::indexVonId ("v1.band.7.sidechain_source") == 108 && param::indexVonId ("v1.global.bypass") == 0
-                && param::indexVonId ("v1.band.8.enabled") < 0, "indexVonId: erste, letzte, nicht vorhandene ID");
-        a.schliesse ("Parametertabelle deckungsgleich mit nakama-parameter-v1.json");
+                && param::indexVonId ("v2.band.7.occupied") == 119 && param::indexVonId ("v1.band.8.enabled") < 0,
+                "indexVonId: erste, letzte v1, letzte v2, nicht vorhandene ID");
+
+        /*  M-95/M-97: das Presetschema. Die sechs verbotenen Namen stehen im
+            Vertrag und im C++-Leser; hier wird gemessen, dass sie dieselbe
+            Menge sind. Ein siebter Name im Vertrag faellt damit im Test. */
+        {
+            bool okP = false;
+            const auto pv = ladeJson (presetDatei, okP);
+            pruefe (okP, "nakama-preset-v1.json ist gueltiges JSON");
+            pruefe ((int) pv["preset_schema_version"] == nakama::preset::kPresetSchemaVersion,
+                    "preset_schema_version == 1");
+            pruefe ((int) pv["geschrieben_fuer_dsp_schema_version"] == param::kDspSchemaVersion,
+                    "das Preset nennt das Layout, fuer das es geschrieben ist");
+            juce::StringArray ausVertrag;
+            if (const auto* felder = pv["verbotene_felder"].getArray())
+                for (const auto& f : *felder)
+                    ausVertrag.add (f["name"].toString());
+            auto ausCode = nakama::preset::verboteneFelder();
+            ausVertrag.sort (true); ausCode.sort (true);
+            pruefe (ausVertrag == ausCode && ausCode.size() == 6,
+                    "die sechs verbotenen Presetfelder sind in Vertrag und Leser dieselbe Menge",
+                    ausVertrag.joinIntoString (","));
+        }
+        a.schliesse ("Parametertabelle deckungsgleich mit nakama-parameter-v2.json, v1 unveraendert abgeleitet");
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -555,7 +678,7 @@ int main (int argc, char* argv[])
                 const auto datei = fixtureOrdner.getChildFile (e["datei"].toString());
                 juce::MemoryBlock roh;
                 if (! datei.loadFileAsData (roh)) { pruefe (false, "DTO fehlt", datei.getFileName()); continue; }
-                param::Satz s; juce::String grund, detail;
+                param::DspSatz s; juce::String grund, detail;
                 if (! param::ausDtoText (roh.getData(), roh.getSize(), s, grund, detail))
                 {
                     pruefe (false, "gueltiges DTO abgelehnt: " + e["datei"].toString(), grund + " " + detail);
@@ -578,8 +701,8 @@ int main (int argc, char* argv[])
             if (const auto* gs = manifest["dto_gueltig"].getArray())
                 for (const auto& e : *gs)
                     if (e["datei"].toString().endsWith ("default.json")) soll = e["state_hash"].toString();
-            pruefe (param::stateHash (param::standardSatz(), hash, grund) && hash == soll,
-                    "standardSatz() hasht wie dto/gueltig/default.json", hash);
+            pruefe (param::stateHash (param::DspSatz{}, hash, grund) && hash == soll,
+                    "standardSatz() ohne Zone hasht wie dto/gueltig/default.json", hash);
         }
 
         if (const auto* us = manifest["dto_ungueltig"].getArray())
@@ -590,7 +713,7 @@ int main (int argc, char* argv[])
                 const auto datei = fixtureOrdner.getChildFile (e["datei"].toString());
                 juce::MemoryBlock roh;
                 if (! datei.loadFileAsData (roh)) { pruefe (false, "DTO fehlt", datei.getFileName()); continue; }
-                param::Satz s; juce::String grund, detail;
+                param::DspSatz s; juce::String grund, detail;
                 const bool angenommen = param::ausDtoText (roh.getData(), roh.getSize(), s, grund, detail);
                 if (! angenommen && grund == e["grund"].toString()) ++ungueltigOk;
                 else pruefe (false, "ungueltiges DTO: " + e["datei"].toString(),
@@ -601,18 +724,151 @@ int main (int argc, char* argv[])
 
         // Nichtendlich aus dem TYPISIERTEN Satz (nicht nur aus Text).
         {
-            auto s = param::standardSatz();
-            s[2].zahl = std::numeric_limits<double>::quiet_NaN();
+            param::DspSatz s;
+            s.werte[2].zahl = std::numeric_limits<double>::quiet_NaN();
             juce::String hash, grund;
             pruefe (! param::stateHash (s, hash, grund) && grund == "nichtendlich", "NaN im Satz faellt vor dem Hash", grund);
-            s[2].zahl = std::numeric_limits<double>::infinity();
+            s.werte[2].zahl = std::numeric_limits<double>::infinity();
             pruefe (! param::stateHash (s, hash, grund) && grund == "nichtendlich", "Inf im Satz faellt vor dem Hash", grund);
-            s[2].zahl = 24.000001;
+            s.werte[2].zahl = 24.000001;
             pruefe (! param::stateHash (s, hash, grund) && grund == "bereich", "Bereich im Satz faellt vor dem Hash", grund);
-            s[2].zahl = 0.0; s[6].enumIndex = 99;
+            s.werte[2].zahl = 0.0; s.werte[6].enumIndex = 99;
             pruefe (! param::stateHash (s, hash, grund) && grund == "enum", "Enumindex im Satz faellt vor dem Hash", grund);
+
+            // SONDE-015 R6, M-66/M-73: die Zonenregeln fallen an derselben
+            // Stelle wie ein Wertfehler - VOR dem Hash, nie erst in einer
+            // Oberflaeche.
+            param::DspSatz z;
+            for (int i = 0; i < param::kMaxZonen + 1; ++i)
+                z.zonen.push_back ({ i, 100.0, 200.0, true });
+            pruefe (! param::stateHash (z, hash, grund) && grund == "zone_anzahl", "neunte Zone faellt vor dem Hash", grund);
+            z.zonen.resize (2); z.zonen[0] = { 3, 100.0, 200.0, true }; z.zonen[1] = { 3, 300.0, 400.0, false };
+            pruefe (! param::stateHash (z, hash, grund) && grund == "zone_doppelt", "doppelte Zonen-id faellt vor dem Hash", grund);
+            z.zonen[1] = { 1, 300.0, 400.0, false };
+            pruefe (! param::stateHash (z, hash, grund) && grund == "zone_sortierung", "unsortierte Zonenliste faellt vor dem Hash", grund);
+            z.zonen.resize (1); z.zonen[0] = { 0, 200.0, 200.0, true };
+            pruefe (! param::stateHash (z, hash, grund) && grund == "bereich", "low == high faellt vor dem Hash", grund);
+            z.zonen[0] = { 0, 19.9, 200.0, true };
+            pruefe (! param::stateHash (z, hash, grund) && grund == "bereich", "low unter 20 Hz faellt vor dem Hash", grund);
+            z.zonen[0] = { 0, 100.0, 20000.1, true };
+            pruefe (! param::stateHash (z, hash, grund) && grund == "bereich", "high ueber 20 kHz faellt vor dem Hash", grund);
+            z.zonen[0] = { param::kMaxZonen, 100.0, 200.0, true };
+            pruefe (! param::stateHash (z, hash, grund) && grund == "bereich", "Zonen-id 8 faellt vor dem Hash", grund);
         }
         a.schliesse ("DTO: " + juce::String (gueltigOk) + " gueltige gehasht, " + juce::String (ungueltigOk) + " ungueltige vor dem Hash abgelehnt");
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // G6b · Preset (SONDE-015 R12, M-95 bis M-99)
+    // ══════════════════════════════════════════════════════════════════════
+    {
+        Abschnitt a;
+        bool ok = false;
+        const auto manifest = ladeJson (fixtureOrdner.getChildFile ("MANIFEST.json"), ok);
+        pruefe (ok, "MANIFEST.json ist gueltiges JSON");
+        int gueltigOk = 0, gueltigGesamt = 0, ungueltigOk = 0, ungueltigGesamt = 0;
+
+        if (const auto* gs = manifest["preset_gueltig"].getArray())
+        {
+            for (const auto& e : *gs)
+            {
+                ++gueltigGesamt;
+                const auto datei = fixtureOrdner.getChildFile (e["datei"].toString());
+                juce::MemoryBlock roh;
+                if (! datei.loadFileAsData (roh)) { pruefe (false, "Preset fehlt", datei.getFileName()); continue; }
+                param::DspSatz s; juce::String grund, detail;
+                if (! nakama::preset::lies (roh.getData(), roh.getSize(), s, grund, detail))
+                {
+                    pruefe (false, "gueltiges Preset abgelehnt: " + e["datei"].toString(), grund + " " + detail);
+                    continue;
+                }
+                ++gueltigOk;
+            }
+        }
+        pruefe (gueltigGesamt > 0 && gueltigOk == gueltigGesamt, "gueltige Presets angenommen",
+                juce::String (gueltigOk) + "/" + juce::String (gueltigGesamt));
+
+        if (const auto* us = manifest["preset_ungueltig"].getArray())
+        {
+            for (const auto& e : *us)
+            {
+                ++ungueltigGesamt;
+                const auto datei = fixtureOrdner.getChildFile (e["datei"].toString());
+                juce::MemoryBlock roh;
+                if (! datei.loadFileAsData (roh)) { pruefe (false, "Preset fehlt", datei.getFileName()); continue; }
+                param::DspSatz s; juce::String grund, detail;
+                const bool angenommen = nakama::preset::lies (roh.getData(), roh.getSize(), s, grund, detail);
+                if (! angenommen && grund == e["grund"].toString()) ++ungueltigOk;
+                else pruefe (false, "ungueltiges Preset: " + e["datei"].toString(),
+                             (angenommen ? juce::String ("ANGENOMMEN") : "Grund " + grund + " (" + detail + ")")
+                             + " soll " + e["grund"].toString());
+            }
+        }
+        pruefe (ungueltigGesamt > 0 && ungueltigOk == ungueltigGesamt,
+                "ungueltige Presets mit dem erwarteten Grund abgelehnt",
+                juce::String (ungueltigOk) + "/" + juce::String (ungueltigGesamt));
+
+        /*  M-95: der Writer erzeugt genau die Bytes des Fixtures. Ein
+            Probe-Datensatz "in der Form des Writers" kommt vom Writer
+            (Pruefliste E) - hier wird das gemessen, nicht behauptet. */
+        {
+            juce::MemoryBlock geschrieben;
+            juce::String grund;
+            param::DspSatz neutral;
+            const bool gut = nakama::preset::schreibe (neutral, geschrieben, grund);
+            const auto datei = fixtureOrdner.getChildFile ("preset/gueltig/default.json");
+            juce::MemoryBlock erwartet;
+            const bool gelesen = datei.existsAsFile() && datei.loadFileAsData (erwartet);
+            pruefe (gut && gelesen && gleich (geschrieben, erwartet),
+                    "der Preset-Writer erzeugt preset/gueltig/default.json bytegleich",
+                    grund + " " + juce::String ((int) geschrieben.getSize()) + " Bytes");
+        }
+
+        /*  M-97, die eigentliche Zusage: `eq_enabled` bleibt beim Laden
+            UNBERUEHRT. Das Preset hat kein Feld dafuer - also darf das Laden
+            den Rollenschalter weder ein- noch ausschalten. */
+        {
+            const auto datei = fixtureOrdner.getChildFile ("preset/gueltig/gemischt.json");
+            juce::MemoryBlock roh;
+            if (datei.existsAsFile() && datei.loadFileAsData (roh))
+            {
+                param::DspSatz an;
+                an.werte[(size_t) param::kIndexEqEnabled].b = true;
+                juce::String grund, detail;
+                const bool gut = nakama::preset::lies (roh.getData(), roh.getSize(), an, grund, detail);
+                pruefe (gut && an.werte[(size_t) param::kIndexEqEnabled].b,
+                        "ein geladenes Preset schaltet den eingeschalteten Rollenschalter nicht aus", grund);
+                param::DspSatz aus;
+                const bool gut2 = nakama::preset::lies (roh.getData(), roh.getSize(), aus, grund, detail);
+                pruefe (gut2 && ! aus.werte[(size_t) param::kIndexEqEnabled].b,
+                        "und schaltet den ausgeschalteten nicht ein (nichts Ungefragtes)", grund);
+                pruefe (gut && gut2 && an.zonen.size() == 1 && aus.zonen == an.zonen,
+                        "der Klanginhalt kommt in beiden Faellen identisch an");
+            }
+            else pruefe (false, "preset/gueltig/gemischt.json fehlt");
+        }
+
+        /*  Der Rueckweg: schreiben -> lesen -> schreiben ist bytegleich, und
+            der gelesene Klanginhalt ist derselbe. Speichern und Laden
+            gehoeren in denselben Aenderungssatz. */
+        {
+            param::DspSatz vorher;
+            vorher.werte[(size_t) param::indexBandV1 (0, param::kEnabled)].b = true;
+            vorher.werte[(size_t) param::indexBandV1 (0, param::kQ)].zahl = 0.7071067811865476;
+            vorher.werte[(size_t) param::indexOccupied (0)].b = true;
+            vorher.werte[(size_t) param::kIndexMix].zahl = 0.30000000000000004;
+            vorher.zonen = { { 1, 55.0, 220.0, true } };
+            juce::MemoryBlock a1, a2;
+            juce::String grund, detail;
+            const bool s1 = nakama::preset::schreibe (vorher, a1, grund);
+            param::DspSatz zurueck;
+            const bool l1 = s1 && nakama::preset::lies (a1.getData(), a1.getSize(), zurueck, grund, detail);
+            const bool s2 = l1 && nakama::preset::schreibe (zurueck, a2, grund);
+            pruefe (s1 && l1 && s2 && gleich (a1, a2) && zurueck == vorher,
+                    "Preset schreiben->lesen->schreiben ist bytegleich und feldgleich", grund + " " + detail);
+        }
+        a.schliesse ("Preset: " + juce::String (gueltigOk) + " gueltige gelesen, "
+                     + juce::String (ungueltigOk) + " ungueltige mit Grund abgelehnt, Writer bytegleich");
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -754,6 +1010,276 @@ int main (int argc, char* argv[])
             pruefe (gleich (bytes, nochmal), "Save nach Load des Intent-Goldens ist bytegleich");
         }
 
+        /*  SONDE-015 (M-89, M-90, M-93): zwei Writer-Goldens fuer das Kind
+            `Dsp` und fuer das Layout v1.
+
+            `dsp-v2-voll.bin` ist ein active_probe-Stand mit allem, was `Dsp`
+            tragen kann; `layout-v1.bin` ist ein Stand OHNE
+            `dsp_schema_version` - also genau das, was jeder heutige Build
+            schreibt. An ihm faellt die Migrationsregel R5, wenn sie sich
+            aendert. Beide kommen aus dem WRITER, nicht aus der Hand
+            (Pruefliste E). */
+        {
+            state::Zustand zv = state::frisch (juce::String::repeatedString ("7", 32));
+            zv.common.klasse = state::Klasse::active_probe;
+            zv.common.label = "Sonde mit DSP";
+            zv.hatParameters = true;
+            zv.stateRevision = 12;
+            zv.parameters[(size_t) param::indexBandV1 (2, param::kEnabled)].b = true;
+            zv.parameters[(size_t) param::indexBandV1 (2, param::kFreqHz)].zahl = 220.5;
+            zv.parameters[(size_t) param::indexOccupied (2)].b = true;
+            zv.parameters[(size_t) param::kIndexMix].zahl = 0.5;
+            zv.schutzZonen = { { 0, 40.0, 120.0, true }, { 3, 900.0, 1100.0, false } };
+            {
+                state::UndoEintrag u;
+                u.art = state::UndoArt::apply;
+                u.slot = 2;
+                u.revision = 11;
+                u.zustand.werte = param::standardSatz();
+                zv.undoRing.push_back (std::move (u));
+            }
+            juce::MemoryBlock bytes;
+            state::speichere (zv, bytes);
+            const auto datei = goldenOrdner.getChildFile ("dsp-v2-voll.bin");
+            if (schreibeGoldens)
+            {
+                datei.replaceWithData (bytes.getData(), bytes.getSize());
+                std::cout << "  geschrieben: " << datei.getFullPathName().toRawUTF8() << std::endl;
+            }
+            juce::MemoryBlock auf;
+            pruefe (datei.existsAsFile() && datei.loadFileAsData (auf) && gleich (auf, bytes),
+                    "Dsp-Golden dsp-v2-voll.bin bytegleich zum Writer");
+
+            state::Zustand zurueck;
+            pruefe (state::lade (bytes.getData(), bytes.getSize(), state::Bundle::nkac(), zurueck)
+                        == state::LadeErgebnis::geladen && ! zurueck.nurLesen,
+                    "Dsp-Golden laedt normal", zurueck.grund);
+            pruefe (zurueck.hatDsp && zurueck.stateRevision == 12
+                        && zurueck.schutzZonen == zv.schutzZonen
+                        && zurueck.undoRing == zv.undoRing
+                        && zurueck.parameters[(size_t) param::indexOccupied (2)].b,
+                    "und traegt Revision 12, zwei Zonen, einen Undo-Eintrag und Slot 2 belegt");
+        }
+
+        /*  M-65/M-90: ein Stand im LAYOUT V1 laedt verlustfrei nach v2.
+
+            Der Baum wird aus dem Writer erzeugt und danach genau um das
+            zurueckgebaut, was Layout v1 nicht hatte: die Eigenschaft
+            `dsp_schema_version` und die drei v2-Host-Parameter. Das ist der
+            einzige ehrliche Weg, einen v1-Stand mit einem v2-Writer zu
+            erzeugen - eine handgeschriebene Bytefolge waere kein Beweis
+            darueber, was frueher wirklich geschrieben wurde. */
+        {
+            state::Zustand zv = state::frisch (juce::String::repeatedString ("6", 32));
+            zv.common.klasse = state::Klasse::active_probe;
+            zv.common.label = "Sonde aus Layout v1";
+            zv.hatParameters = true;
+            // Slot 1: eingeschaltet. Slot 4: AUS, aber die Frequenz ist
+            // verstellt - genau der Fall, den R5 nicht verlieren darf.
+            zv.parameters[(size_t) param::indexBandV1 (1, param::kEnabled)].b = true;
+            zv.parameters[(size_t) param::indexBandV1 (4, param::kFreqHz)].zahl = 3150.0;
+            juce::MemoryBlock v2Bytes;
+            state::speichere (zv, v2Bytes);
+
+            auto baum = juce::ValueTree::readFromData (v2Bytes.getData(), v2Bytes.getSize());
+            auto p = baum.getChildWithName ("Parameters");
+            p.removeProperty ("dsp_schema_version", nullptr);
+            p.removeProperty ("v2.global.eq_enabled", nullptr);
+            p.removeProperty ("v2.global.mix", nullptr);
+            p.removeProperty ("v2.global.auto_gain", nullptr);
+            const auto bytes = alsBlock (baum);
+            const auto datei = goldenOrdner.getChildFile ("layout-v1.bin");
+            if (schreibeGoldens)
+            {
+                datei.replaceWithData (bytes.getData(), bytes.getSize());
+                std::cout << "  geschrieben: " << datei.getFullPathName().toRawUTF8() << std::endl;
+            }
+            juce::MemoryBlock auf;
+            pruefe (datei.existsAsFile() && datei.loadFileAsData (auf) && gleich (auf, bytes),
+                    "Layout-v1-Golden layout-v1.bin bytegleich");
+
+            state::Zustand z1;
+            const auto erg = state::lade (bytes.getData(), bytes.getSize(), state::Bundle::nkac(), z1);
+            pruefe (erg == state::LadeErgebnis::geladen && ! z1.nurLesen && z1.layoutV1Migriert,
+                    "ein v1-Stand laedt verlustfrei und wird als migriert gemeldet", z1.grund);
+            pruefe (! z1.parameters[(size_t) param::kIndexEqEnabled].b
+                        && z1.parameters[(size_t) param::kIndexMix].zahl == 1.0
+                        && ! z1.parameters[(size_t) param::kIndexAutoGain].b,
+                    "die drei v2-Host-Parameter bekommen ihren Default, nichts wird erfunden");
+            pruefe (z1.parameters[(size_t) param::indexOccupied (1)].b
+                        && z1.parameters[(size_t) param::indexOccupied (4)].b,
+                    "occupied := enabled ODER ein Wert weicht ab - das ausgeschaltete Band 4 ueberlebt");
+            int frei = 0;
+            for (int slot = 0; slot < param::kSlots; ++slot)
+                if (! z1.parameters[(size_t) param::indexOccupied (slot)].b) ++frei;
+            pruefe (frei == param::kSlots - 2, "sechs nie beruehrte Slots bleiben frei", juce::String (frei));
+            pruefe (! z1.hatDsp && z1.stateRevision == 0 && z1.schutzZonen.empty() && z1.undoRing.empty(),
+                    "ein v1-Stand bringt kein Dsp-Kind mit: Revision 0, keine Zone, kein Undo");
+
+            /*  Der bitgenaue Vergleich der Migrationsregel: ein Wert, der
+                sich nur im Vorzeichen der Null unterscheidet, gilt als
+                beruehrt. Der Wert wird ueber den PRODUKTSCHREIBER gesetzt,
+                nicht ueber `ValueTree::setProperty` am rohen Baum - `var`
+                haelt 0.0 und -0.0 fuer gleich und wuerde den Schreibvorgang
+                ueberspringen. Genau daran ist der Writer am 10.09.2026
+                gefallen; die Zeile misst jetzt beides. */
+            {
+                state::Zustand zm = state::frisch (juce::String::repeatedString ("3", 32));
+                zm.common.klasse = state::Klasse::active_probe;
+                zm.hatParameters = true;
+                zm.parameters[(size_t) param::indexBandV1 (6, param::kGainDb)].zahl = -0.0;
+                juce::MemoryBlock mb0;
+                state::speichere (zm, mb0);
+                {
+                    const auto v = juce::ValueTree::readFromData (mb0.getData(), mb0.getSize());
+                    const double geschrieben = (double) v.getChildWithName ("Parameters")
+                                                        .getProperty ("v1.band.6.gain_db");
+                    const double minusNull = -0.0;
+                    pruefe (std::memcmp (&geschrieben, &minusNull, sizeof (double)) == 0,
+                            "der Writer haelt das Vorzeichen der Null (var haelt 0.0 == -0.0)");
+                }
+                auto b2 = juce::ValueTree::readFromData (mb0.getData(), mb0.getSize());
+                auto p2 = b2.getChildWithName ("Parameters");
+                p2.removeProperty ("dsp_schema_version", nullptr);
+                p2.removeProperty ("v2.global.eq_enabled", nullptr);
+                p2.removeProperty ("v2.global.mix", nullptr);
+                p2.removeProperty ("v2.global.auto_gain", nullptr);
+                const auto mb = alsBlock (b2);
+                state::Zustand z6;
+                pruefe (state::lade (mb.getData(), mb.getSize(), state::Bundle::nkac(), z6)
+                            == state::LadeErgebnis::geladen && z6.layoutV1Migriert
+                            && z6.parameters[(size_t) param::indexOccupied (6)].b,
+                        "minus null gilt bitgenau als Abweichung vom Default (kein Epsilon)", z6.grund);
+            }
+
+            // Speichern schreibt den Stand im Layout v2 - und ein zweiter
+            // Roundtrip ist bytegleich (die Migration ist eine Einbahn, aber
+            // deterministisch).
+            juce::MemoryBlock nachher, nochmal;
+            state::speichere (z1, nachher);
+            state::Zustand z2;
+            pruefe (state::lade (nachher.getData(), nachher.getSize(), state::Bundle::nkac(), z2)
+                        == state::LadeErgebnis::geladen && ! z2.layoutV1Migriert,
+                    "der gespeicherte Stand ist Layout v2 und migriert nicht erneut");
+            state::speichere (z2, nochmal);
+            pruefe (gleich (nachher, nochmal), "Save nach Load des migrierten Standes ist bytegleich");
+            pruefe (z2.parameters[(size_t) param::indexOccupied (4)].b && z2.hatDsp,
+                    "die migrierte Belegung landet im Kind Dsp und ueberlebt");
+        }
+
+        /*  M-91/M-92: die zwei Regeln des Kindes `Dsp` nebeneinander.
+
+            Additiv ist der BAUM (eine unbekannte Eigenschaft in `Dsp`
+            ueberlebt), exakt ist das DTO. Und `Dsp` bei einer anderen Klasse
+            als `active_probe` ist ein Kind-Matrix-Verstoss - der ganze Stand
+            wird read-only mit Originalbytes. */
+        {
+            state::Zustand zv = state::frisch (juce::String::repeatedString ("5", 32));
+            zv.common.klasse = state::Klasse::active_probe;
+            zv.hatParameters = true;
+            zv.stateRevision = 3;
+            zv.parameters[(size_t) param::indexOccupied (0)].b = true;
+            juce::MemoryBlock bytes;
+            state::speichere (zv, bytes);
+
+            auto baum = juce::ValueTree::readFromData (bytes.getData(), bytes.getSize());
+            baum.getChildWithName ("Dsp").setProperty ("zukunft_feld", "bleibt", nullptr);
+            const auto mitZukunft = alsBlock (baum);
+            state::Zustand zz;
+            pruefe (state::lade (mitZukunft.getData(), mitZukunft.getSize(), state::Bundle::nkac(), zz)
+                        == state::LadeErgebnis::geladen,
+                    "unbekannte Eigenschaft im Dsp-Kind macht den Stand NICHT read-only", zz.grund);
+            zz.stateRevision = 4;
+            juce::MemoryBlock zurueckBytes;
+            state::speichere (zz, zurueckBytes);
+            const auto zurueck = juce::ValueTree::readFromData (zurueckBytes.getData(), zurueckBytes.getSize());
+            pruefe (zurueck.getChildWithName ("Dsp").getProperty ("zukunft_feld").toString() == "bleibt"
+                        && (juce::int64) zurueck.getChildWithName ("Dsp").getProperty ("state_revision") == 4,
+                    "sie ueberlebt den Roundtrip, und die echte Aenderung kommt an");
+
+            // Dieselbe Eigenschaft im DTO waere dagegen ein Fehler - additiv
+            // ist der Baum, exakt das DTO.
+            {
+                const juce::String dtoText =
+                    "{\"dsp_schema_version\":2,\"parameters\":{},\"schutz_zonen\":[],\"zukunft\":1}";
+                param::DspSatz s; juce::String g, d;
+                pruefe (! param::ausDtoText (dtoText.toRawUTF8(), (size_t) dtoText.getNumBytesAsUTF8(), s, g, d)
+                            && g == "struktur",
+                        "ein unbekannter Wurzelschluessel im DTO faellt", g + " " + d);
+            }
+
+            // Kind-Matrix: `Dsp` bei legacy.
+            {
+                auto v = schema2Baum ("legacy", "insert", false);
+                juce::ValueTree d ("Dsp");
+                d.setProperty ("schema", 1, nullptr);
+                d.setProperty ("state_revision", juce::var ((juce::int64) 1), nullptr);
+                v.appendChild (d, nullptr);
+                const auto b = alsBlock (v);
+                state::Zustand zl;
+                pruefe (state::lade (b.getData(), b.getSize(), state::Bundle::eqcp(), zl)
+                            == state::LadeErgebnis::nurLesen && zl.nurLesen
+                            && zl.originalBytes.getSize() == b.getSize(),
+                        "Dsp bei legacy: read-only mit Originalbytes", zl.grund);
+            }
+
+            /*  Ein Layout-v1-Knoten MIT Dsp-Kind ist ein Widerspruch: ein
+                Build, der das Kind nicht kannte, kann es nicht geschrieben
+                haben. Read-only statt raten - sonst ueberschriebe die
+                Migration die gelesene Belegung stumm. */
+            {
+                auto v = juce::ValueTree::readFromData (bytes.getData(), bytes.getSize());
+                auto p2 = v.getChildWithName ("Parameters");
+                p2.removeProperty ("dsp_schema_version", nullptr);
+                p2.removeProperty ("v2.global.eq_enabled", nullptr);
+                p2.removeProperty ("v2.global.mix", nullptr);
+                p2.removeProperty ("v2.global.auto_gain", nullptr);
+                const auto b = alsBlock (v);
+                state::Zustand zw;
+                pruefe (state::lade (b.getData(), b.getSize(), state::Bundle::nkac(), zw)
+                            == state::LadeErgebnis::nurLesen && zw.nurLesen
+                            && zw.originalBytes.getSize() == b.getSize(),
+                        "Layout v1 MIT Dsp-Kind ist ein Widerspruch: read-only mit Originalbytes", zw.grund);
+            }
+
+            // Ein `Dsp` OHNE state_revision ist kein Teilstate.
+            {
+                auto v = juce::ValueTree::readFromData (bytes.getData(), bytes.getSize());
+                v.getChildWithName ("Dsp").removeProperty ("state_revision", nullptr);
+                const auto b = alsBlock (v);
+                state::Zustand zo;
+                pruefe (state::lade (b.getData(), b.getSize(), state::Bundle::nkac(), zo)
+                            == state::LadeErgebnis::nurLesen && zo.nurLesen,
+                        "Dsp ohne state_revision macht den Stand read-only", zo.grund);
+            }
+
+            // Ein unbekanntes Layout-Major in `Parameters` ebenfalls.
+            {
+                auto v = juce::ValueTree::readFromData (bytes.getData(), bytes.getSize());
+                v.getChildWithName ("Parameters").setProperty ("dsp_schema_version", 3, nullptr);
+                const auto b = alsBlock (v);
+                state::Zustand zm;
+                pruefe (state::lade (b.getData(), b.getSize(), state::Bundle::nkac(), zm)
+                            == state::LadeErgebnis::nurLesen && zm.nurLesen
+                            && zm.originalBytes.getSize() == b.getSize(),
+                        "unbekanntes Layout-Major: read-only mit Originalbytes", zm.grund);
+            }
+
+            // Ein FRISCHER Stand traegt gar kein Dsp-Kind - "nichts zu sagen"
+            // und "mit leeren Feldern gesagt" waeren in den Bytes sonst
+            // dasselbe.
+            {
+                state::Zustand leer = state::frisch (juce::String::repeatedString ("4", 32));
+                leer.common.klasse = state::Klasse::active_probe;
+                leer.hatParameters = true;
+                juce::MemoryBlock b;
+                state::speichere (leer, b);
+                const auto v = juce::ValueTree::readFromData (b.getData(), b.getSize());
+                pruefe (! v.getChildWithName ("Dsp").isValid(),
+                        "ein frischer active_probe-Stand schreibt kein Dsp-Kind");
+            }
+        }
+
         // Reine Funktion direkt: unbekanntes Rollenwort ist nicht migrierbar.
         {
             juce::ValueTree alt ("EqCopilotState");
@@ -804,7 +1330,7 @@ int main (int argc, char* argv[])
                     "unbekannte Eigenschaften ueberleben den Roundtrip, die Aenderung kommt an");
         }
 
-        // Parameters: 109 Werte bit-exakt (active_probe-Bundle).
+        // Parameters + Dsp: 120 Werte bit-exakt (active_probe-Bundle).
         {
             // Jeder Gleitkomma-Parameter knapp unter seinem Maximum (ein double,
             // das keine kurze Dezimalform hat), dazu ein paar Schalter/Enums.
@@ -814,14 +1340,39 @@ int main (int argc, char* argv[])
                     s[(size_t) i].zahl = std::nextafter (param::tabelle()[(size_t) i].max, 0.0);
             s[3].zahl = 0.30000000000000004;   // width: der klassische Nicht-Dezimalwert
             s[5].b = true; s[6].enumIndex = 4; s[17].enumIndex = 2;
+            // SONDE-015: die drei v2-Host-Parameter und die acht occupied
+            // reisen im selben Roundtrip - `mix` traegt einen Wert ohne kurze
+            // Dezimalform, damit die bit-exakte Zusage etwas kostet.
+            s[(size_t) param::kIndexEqEnabled].b = true;
+            s[(size_t) param::kIndexAutoGain].b = true;
+            s[(size_t) param::kIndexMix].zahl = 0.30000000000000004;
+            for (int slot = 0; slot < param::kSlots; ++slot)
+                s[(size_t) param::indexOccupied (slot)].b = (slot % 2) == 0;
             state::Zustand za = state::frisch ("ffffffffffffffffffffffffffffffff");
             za.common.klasse = state::Klasse::active_probe;
             za.hatParameters = true;
             za.parameters = s;
+            za.stateRevision = 4711;
+            za.schutzZonen = { { 0, 40.5, 120.25, true }, { 5, 900.0, 1100.0, false } };
+            {
+                state::UndoEintrag u;
+                u.art = state::UndoArt::remove;
+                u.slot = 3;
+                u.revision = 4710;
+                u.zustand.werte = s;
+                u.zustand.zonen = za.schutzZonen;
+                za.undoRing.push_back (u);
+                u.art = state::UndoArt::gestus;
+                u.slot = -1;
+                u.revision = 4711;
+                u.zustand.zonen.clear();
+                za.undoRing.push_back (u);
+            }
+            za.undoCursor = 1;
             juce::MemoryBlock ba, bb;
             state::speichere (za, ba);
             state::Zustand zb;
-            pruefe (state::lade (ba.getData(), ba.getSize(), state::Bundle::nkac(), zb) == state::LadeErgebnis::geladen, "active_probe mit Parameters laedt (Bundle NkAc)");
+            pruefe (state::lade (ba.getData(), ba.getSize(), state::Bundle::nkac(), zb) == state::LadeErgebnis::geladen, "active_probe mit Parameters und Dsp laedt (Bundle NkAc)");
             int bitExakt = 0;
             for (int i = 0; i < param::kAnzahl; ++i)
             {
@@ -833,13 +1384,174 @@ int main (int argc, char* argv[])
                     case param::Typ::aufzaehlung: if (x.enumIndex == y.enumIndex) ++bitExakt; break;
                 }
             }
-            pruefe (bitExakt == param::kAnzahl, "109 Parameterwerte bit-exakt durch den Roundtrip", juce::String (bitExakt));
+            pruefe (bitExakt == param::kAnzahl, "120 Parameterwerte bit-exakt durch den Roundtrip", juce::String (bitExakt));
+            pruefe (zb.hatDsp && zb.stateRevision == 4711 && zb.schutzZonen == za.schutzZonen
+                    && zb.undoRing == za.undoRing && zb.undoCursor == 1 && ! zb.layoutV1Migriert,
+                    "Dsp-Kind feldgleich nach dem Roundtrip: Revision, Zonen, Undo-Ring, Cursor");
             state::speichere (zb, bb);
-            pruefe (gleich (ba, bb), "Parameters-Roundtrip bytegleich");
+            pruefe (gleich (ba, bb), "Parameters- und Dsp-Roundtrip bytegleich");
             juce::String h1, h2, g;
-            pruefe (param::stateHash (s, h1, g) && param::stateHash (zb.parameters, h2, g) && h1 == h2, "state_hash ueberlebt den Roundtrip", h1);
+            pruefe (param::stateHash (za.dspDto(), h1, g) && param::stateHash (zb.dspDto(), h2, g) && h1 == h2, "state_hash ueberlebt den Roundtrip", h1);
+
+            // M-89, gemessen statt behauptet: der Baum bleibt weit unter der
+            // 64-Knoten-Grenze des Byte-Riegels, weil `Dsp` flache bzw.
+            // verschachtelte Arrays fuehrt und keine Kindknoten.
+            {
+                const auto v = juce::ValueTree::readFromData (ba.getData(), ba.getSize());
+                std::function<int (const juce::ValueTree&)> knoten = [&] (const juce::ValueTree& k)
+                {
+                    int n = 1;
+                    for (int i = 0; i < k.getNumChildren(); ++i) n += knoten (k.getChild (i));
+                    return n;
+                };
+                pruefe (v.isValid() && knoten (v) <= 8, "Dsp nutzt flache Arrays: der Baum bleibt bei wenigen Knoten",
+                        juce::String (v.isValid() ? knoten (v) : -1));
+            }
         }
-        a.schliesse ("Roundtrip: bytegleich, additive Eigenschaft erhalten, 109 Werte bit-exakt");
+
+        /*  M-24 (Vertragshaelfte) und M-28 (Enumgrenze): die getrennten
+            Dynamic-Parameter und der Kanalmodus.
+
+            Ausschalten aendert AUSSCHLIESSLICH `dynamic_enabled`. Die fuenf
+            Werte `dynamic_range_db`, `threshold_db`, `attack_ms`, `hold_ms`
+            und `release_ms` bleiben BITGLEICH erhalten und stehen beim
+            Wiedereinschalten unveraendert bereit - ein Writer, der sie
+            "vorsorglich" zuruecksetzt, verliert Userarbeit, die niemand
+            geloescht hat. Gemessen ueber den echten Save/Load-Weg, nicht an
+            einem In-Memory-Satz: genau dort koennte der Verlust passieren. */
+        {
+            constexpr int slot = 4;
+            const int iDyn   = param::indexBandV1 (slot, param::kDynamicEnabled);
+            const int iRange = param::indexBandV1 (slot, param::kDynamicRangeDb);
+            const int iThr   = param::indexBandV1 (slot, param::kThresholdDb);
+            const int iAtt   = param::indexBandV1 (slot, param::kAttackMs);
+            const int iHold  = param::indexBandV1 (slot, param::kHoldMs);
+            const int iRel   = param::indexBandV1 (slot, param::kReleaseMs);
+            const int iMode  = param::indexBandV1 (slot, param::kChannelMode);
+            const int iTyp   = param::indexBandV1 (slot, param::kType);
+
+            state::Zustand z = state::frisch (juce::String::repeatedString ("2", 32));
+            z.common.klasse = state::Klasse::active_probe;
+            z.hatParameters = true;
+            z.parameters[(size_t) param::indexOccupied (slot)].b = true;
+            z.parameters[(size_t) iDyn].b = true;
+            z.parameters[(size_t) iRange].zahl = -6.25;
+            z.parameters[(size_t) iThr].zahl = -18.3;
+            z.parameters[(size_t) iAtt].zahl = 0.30000000000000004;
+            z.parameters[(size_t) iHold].zahl = 12.5;
+            z.parameters[(size_t) iRel].zahl = 4999.9;
+            z.parameters[(size_t) iMode].enumIndex = 4;   // side
+            const auto vorher = z.parameters;
+
+            auto durchDenState = [&] (const state::Zustand& ein, state::Zustand& aus)
+            {
+                juce::MemoryBlock b;
+                state::speichere (ein, b);
+                return state::lade (b.getData(), b.getSize(), state::Bundle::nkac(), aus)
+                           == state::LadeErgebnis::geladen;
+            };
+
+            state::Zustand an;
+            pruefe (durchDenState (z, an), "Slot mit eingeschaltetem Dynamic laedt");
+
+            // AUS - und nur das.
+            auto ausSatz = an;
+            ausSatz.parameters[(size_t) iDyn].b = false;
+            state::Zustand aus;
+            pruefe (durchDenState (ausSatz, aus), "Slot mit ausgeschaltetem Dynamic laedt");
+
+            auto bitgleich = [] (const param::Satz& a, const param::Satz& b, int i)
+            {
+                return std::memcmp (&a[(size_t) i].zahl, &b[(size_t) i].zahl, sizeof (double)) == 0;
+            };
+            const bool fuenfHalten = bitgleich (vorher, aus.parameters, iRange)
+                                  && bitgleich (vorher, aus.parameters, iThr)
+                                  && bitgleich (vorher, aus.parameters, iAtt)
+                                  && bitgleich (vorher, aus.parameters, iHold)
+                                  && bitgleich (vorher, aus.parameters, iRel);
+            pruefe (fuenfHalten && ! aus.parameters[(size_t) iDyn].b,
+                    "dynamicwerte_ueberleben_aus_und_ein_bitgleich: Ausschalten aendert nur dynamic_enabled");
+
+            // WIEDER AN - dieselben Werte stehen unveraendert bereit.
+            auto wiederAn = aus;
+            wiederAn.parameters[(size_t) iDyn].b = true;
+            state::Zustand zurueck;
+            pruefe (durchDenState (wiederAn, zurueck), "Slot mit wieder eingeschaltetem Dynamic laedt");
+            const bool wieVorher = bitgleich (vorher, zurueck.parameters, iRange)
+                                && bitgleich (vorher, zurueck.parameters, iThr)
+                                && bitgleich (vorher, zurueck.parameters, iAtt)
+                                && bitgleich (vorher, zurueck.parameters, iHold)
+                                && bitgleich (vorher, zurueck.parameters, iRel);
+            pruefe (wieVorher && zurueck.parameters[(size_t) iDyn].b,
+                    "beim Wiedereinschalten stehen die fuenf Werte unveraendert bereit");
+
+            // M-28: `channel_mode` ist nie mit Typ oder Dynamic gekoppelt, und
+            // kein anderer Slot erbt ihn.
+            pruefe (zurueck.parameters[(size_t) iMode].enumIndex == 4
+                        && zurueck.parameters[(size_t) iTyp].enumIndex == 0,
+                    "channel_mode_ist_diskret_und_ungekoppelt: der Typ bleibt bei bell");
+            int fremde = 0;
+            for (int s = 0; s < param::kSlots; ++s)
+                if (s != slot && zurueck.parameters[(size_t) param::indexBandV1 (s, param::kChannelMode)].enumIndex != 0)
+                    ++fremde;
+            pruefe (fremde == 0, "kein_slot_erbt_den_modus", juce::String (fremde));
+        }
+
+        /*  M-78 (Vertragsgrenze): der VOLLE Undo-Ring - 32 Schnappschuesse,
+            acht Zonen, alle acht Slots belegt - wird geschrieben, gelesen und
+            bytegleich zurueckgeschrieben, und der Stand bleibt weit unter der
+            16-MiB-Grenze des State-Lesers. Gemessen, nicht geschaetzt. */
+        {
+            state::Zustand zv = state::frisch ("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+            zv.common.klasse = state::Klasse::active_probe;
+            zv.hatParameters = true;
+            zv.stateRevision = 100000;
+            for (int slot = 0; slot < param::kSlots; ++slot)
+                zv.parameters[(size_t) param::indexOccupied (slot)].b = true;
+            for (int i = 0; i < param::kMaxZonen; ++i)
+                zv.schutzZonen.push_back ({ i, 20.0 + (double) i * 10.0, 5000.0 + (double) i, i % 2 == 0 });
+            for (int i = 0; i < param::kUndoTiefe; ++i)
+            {
+                state::UndoEintrag u;
+                u.art = state::UndoArt::presetLaden;
+                u.slot = i % param::kSlots;
+                u.revision = 100000 - i;
+                u.zustand.werte = zv.parameters;
+                u.zustand.zonen = zv.schutzZonen;
+                zv.undoRing.push_back (std::move (u));
+            }
+            zv.undoCursor = param::kUndoTiefe;
+            juce::MemoryBlock bv, bv2;
+            state::speichere (zv, bv);
+            state::Zustand zl;
+            const auto erg = state::lade (bv.getData(), bv.getSize(), state::Bundle::nkac(), zl);
+            state::speichere (zl, bv2);
+            pruefe (erg == state::LadeErgebnis::geladen && gleich (bv, bv2)
+                    && (int) zl.undoRing.size() == param::kUndoTiefe
+                    && (int) zl.schutzZonen.size() == param::kMaxZonen
+                    && zl.undoCursor == param::kUndoTiefe,
+                    "voller Undo-Ring (32 Eintraege, 8 Zonen) laedt und ist bytegleich",
+                    juce::String ((int) bv.getSize()) + " Bytes");
+            pruefe (bv.getSize() < 16u * 1024u * 1024u,
+                    "voller Dsp-Stand bleibt weit unter der 16-MiB-Grenze",
+                    juce::String ((int) bv.getSize()) + " Bytes");
+            // Der 33. Eintrag ist kein Teilbestand, sondern ein Fehler: der
+            // Ring waechst nie ueber seine Vertragsgrenze.
+            {
+                auto v = juce::ValueTree::readFromData (bv.getData(), bv.getSize());
+                auto dsp = v.getChildWithName ("Dsp");
+                auto ring = dsp.getProperty ("undo_ring_v1");
+                auto kopie = *ring.getArray();
+                kopie.add (kopie.getReference (0));
+                dsp.setProperty ("undo_ring_v1", juce::var (kopie), nullptr);
+                const auto zuViel = alsBlock (v);
+                state::Zustand zx;
+                pruefe (state::lade (zuViel.getData(), zuViel.getSize(), state::Bundle::nkac(), zx) == state::LadeErgebnis::nurLesen
+                        && zx.nurLesen,
+                        "33. Undo-Eintrag macht den Stand read-only", zx.grund);
+            }
+        }
+        a.schliesse ("Roundtrip: bytegleich, additive Eigenschaft erhalten, 120 Werte bit-exakt, voller Undo-Ring");
     }
 
     // ══════════════════════════════════════════════════════════════════════

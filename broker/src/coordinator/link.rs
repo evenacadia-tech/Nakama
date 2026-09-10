@@ -257,6 +257,10 @@ impl Coordinator {
             descriptor: None,
             state_revision: geerbt.as_ref().and_then(|c| c.state_revision),
             state_hash: geerbt.as_ref().and_then(|c| c.state_hash.clone()),
+            // SONDE-015: der gehaltene DSP wird wie Revision und Hash
+            // GEERBT. Ein Reconnect derselben Sonde faengt nicht bei "nichts
+            // gemeldet" an; erst ihr naechster Bericht setzt ihn neu.
+            dsp_jcs: geerbt.as_ref().and_then(|c| c.dsp_jcs.clone()),
             record_state_valid: geerbt.as_ref().is_some_and(|c| c.record_state_valid),
             recording: geerbt.as_ref().is_some_and(|c| c.recording),
         };

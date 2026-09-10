@@ -1,5 +1,5 @@
 {
- "dsp_schema_version": 1,
+ "dsp_schema_version": 2,
  "parameters": {
   "v1.global.bypass": false,
   "v1.global.input_trim_db": -3.5,
@@ -109,6 +109,31 @@
   "v1.band.7.attack_ms": 10.0,
   "v1.band.7.hold_ms": 0.0,
   "v1.band.7.release_ms": 100.0,
-  "v1.band.7.sidechain_source": "none"
- }
+  "v1.band.7.sidechain_source": "none",
+  "v2.global.eq_enabled": true,
+  "v2.global.mix": 0.30000000000000004,
+  "v2.global.auto_gain": true,
+  "v2.band.0.occupied": true,
+  "v2.band.1.occupied": true,
+  "v2.band.2.occupied": true,
+  "v2.band.3.occupied": false,
+  "v2.band.4.occupied": false,
+  "v2.band.5.occupied": false,
+  "v2.band.6.occupied": false,
+  "v2.band.7.occupied": true
+ },
+ "schutz_zonen": [
+  {
+   "enabled": true,
+   "high_hz": 120.25,
+   "id": 0,
+   "low_hz": 40.5
+  },
+  {
+   "enabled": false,
+   "high_hz": 1100.0,
+   "id": 5,
+   "low_hz": 900.0
+  }
+ ]
 }

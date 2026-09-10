@@ -1,6 +1,6 @@
 # State-Schema 2 — `NakamaState` (SONDE-006)
 
-- **Stand:** 2026-08-22 · **Ticket:** `SONDE-006` (S7) · **Vertragstext:** Entwurf §53.8, §33.5, §32.1/32.2, §53.5, §67
+- **Stand:** 2026-09-10 · **Ticket:** `SONDE-006` (S7), Kind `Dsp` definiert in `SONDE-015` (S26–28) · **Vertragstext:** Entwurf §53.8, §33.5, §32.1/32.2, §53.5, §67
 - **Leser/Schreiber:** `eq-copilot/plugin/state/NakamaState.*` (C++, JUCE-core, keine `JucePlugin_*`-Konstante — S8-tauglich)
 - **Beweis:** `EqCopStateMigrationTest` (Kanon B2), Goldens in `eq-copilot/fixtures/state/`, Python-Bein `tools/eq-copilot/erzeuge_state_fixtures.py --pruefen` (Kanon A12)
 - **Was das hier ist:** das Dateiformat, das in FL-Projekten reist. Wie die VST3-Identität (SONDE-001) ist es ab jetzt ein **Vertrag**: eine Änderung an Root-Major, Kind-Major oder Kind-Matrix ist eine Versionierung mit Beleg, kein Edit.
@@ -28,13 +28,60 @@ NakamaState                               schema = 2  (int)
 │     intent_relations_v1    array  optional; flach [quelle_a, quelle_b, art, ...], höchstens 256 Dreiergruppen (SONDE-014 M-06)
 │     intent_revision_v1     int64  optional; Revision des GANZEN Intent-Bestands, ab 1 (SONDE-014 M-86)
 ├── Parameters                            schema = 1  (int)   nur plugin_kind = active_probe (Pflicht dort)
-│     109 Eigenschaften mit den IDs aus nakama-parameter-v1.json, in Vertragsreihenfolge
-│     bool → bool · float → double (bit-exakt) · enum → string (Enumwort)
-├── Dsp                                   NAME RESERVIERT — Inhalt definiert SONDE-015 (Revision, Schutz, bestätigter DspState, Undo-Ring)
+│     dsp_schema_version   int      OPTIONAL; fehlt = Layout v1 (109 Kennungen), 2 = Layout v2 (112 Host-Parameter);
+│                                   jede andere Zahl ⇒ read-only (unbekanntes Layout-Major)
+│     109 bzw. 112 Eigenschaften mit den IDs aus nakama-parameter-v1.json bzw. nakama-parameter-v2.json,
+│     in Vertragsreihenfolge · bool → bool · float → double (bit-exakt) · enum → string (Enumwort)
+├── Dsp                                   schema = 1  (int)   nur plugin_kind = active_probe, OPTIONAL (SONDE-015)
+│     state_revision       int64    PFLICHT; ≥ 0, steigt mit jeder committeten Transaktion, sinkt nie
+│     occupied_v1          array    optional; flach [bool × 8] in Slotreihenfolge; fehlt = kein Slot belegt
+│     schutz_zonen_v1      array    optional; flach [id, low_hz, high_hz, enabled, …], höchstens 8 Vierergruppen,
+│                                   streng aufsteigend nach id
+│     undo_ring_v1         array    optional; höchstens 32 Einträge, jeder Eintrag ein VERSCHACHTELTES Array
+│                                   [art, slot, revision, 120 Werte …, 4·z Zonenwerte …] mit z = 0…8
+│     undo_cursor          int      optional; 0 = am jüngsten Eintrag, n = n Schritte zurückgenommen; ≤ Ringlänge
 └── Pairing                               NAME RESERVIERT — Inhalt definiert SONDE-016 (Ziel-IDs, DPAPI-Blobs; nie Klartext, nie im Hash)
 ```
 
-Reihenfolge beim Schreiben: für Stände, die **dieser Schreiber** erzeugt (frisch, migriert), Kinder Common, MainProject, Parameters und Eigenschaften in der Reihenfolge oben. Ein **geladener** Stand behält seine eigene Reihenfolge (der Schreiber editiert eine Kopie des gehaltenen Baums in place — unbekannte Eigenschaften eingeschlossen); fehlt einem geladenen Common das `label`, bekommt es beim Speichern eines. Damit ist `speichere(lade(x)) == x` **bytegleich** für jeden Stand, den dieser Schreiber selbst geschrieben hat (Goldens, Roundtrip-Test), und die Schema-1-Migration ist **deterministisch** (Golden-fähig).
+### 2.0 Das Kind `Dsp` (SONDE-015)
+
+**Was es trägt und was nicht.** `Dsp` hält `state_revision`, die acht
+`occupied`, die Schutz-Zonen, den Undo-Ring und seinen Cursor. Es hält **keine
+zweite Kopie der Parameterwerte**: die 112 Host-Parameter stehen in
+`Parameters`, und der bestätigte DspState ist die Vereinigung aus beiden
+Kindern. Zwei Kopien derselben Werte können auseinanderlaufen, und §33.5
+verbietet ausdrücklich eine zweite Wahrheit — ein Leser müsste bei Widerspruch
+raten.
+
+**Flache Arrays, keine Kindknoten.** Der Byte-Riegel (§5) erlaubt höchstens 64
+`ValueTree`-Knoten im ganzen Baum. Acht Zonen und 32 Undo-Einträge als Knoten
+wären allein 40. `Dsp` führt seine Listen deshalb als flache bzw.
+verschachtelte Variantenarrays, wie `MainProject` es seit SONDE-012 tut.
+
+**Wann `Dsp` überhaupt geschrieben wird.** Nur, wenn es etwas zu sagen gibt:
+`state_revision ≠ 0` **oder** mindestens ein `occupied` **oder** mindestens
+eine Zone **oder** mindestens ein Undo-Eintrag. Ein frischer, unberührter Stand
+schreibt das Kind **nicht** und bleibt damit für einen Build lesbar, der `Dsp`
+noch nicht kennt. Dieselbe Regel wie beim nie gesetzten
+`MainProject.assistant_step_v1`: „noch nie benutzt" und „mit leeren Feldern
+benutzt" wären in den Bytes sonst dasselbe.
+
+**Der Undo-Eintrag ist ein voller Schnappschuss, kein Delta.** Jeder Eintrag
+trägt einen Kopf (`art` als Wort aus der geschlossenen Menge `apply`, `revert`,
+`neutralisieren`, `remove`, `preset_laden`, `gestus`; die betroffene Slot-ID
+oder `-1`; die Revision, die er zurückgibt) und danach den vollständigen
+DTO-Zustand: 120 Werte in Vertragsreihenfolge und die Zonenliste als
+Vierergruppen. Seine Länge ist damit `123 + 4·z`; jede andere Länge ist ein
+Fehler. Grund für den Schnappschuss: ein Deltaformat braucht je Handlungsart
+einen eigenen Decoder, und ein falscher Decoder erzeugt lautlos einen halben
+Zustand. `undo` und `redo` erzeugen **keinen** Eintrag — sie bewegen den
+`undo_cursor` im selben Ring.
+
+**Größe, gemessen statt geschätzt.** 32 Einträge à höchstens `123 + 32` = 155
+Werte sind 4.960 Einträge — weit unter den 65.536 je Sammlung und den 262.144
+im gesamten Baum, und weit unter 16 MiB.
+
+Reihenfolge beim Schreiben: für Stände, die **dieser Schreiber** erzeugt (frisch, migriert), Kinder Common, MainProject, Parameters, Dsp und Eigenschaften in der Reihenfolge oben. Ein **geladener** Stand behält seine eigene Reihenfolge (der Schreiber editiert eine Kopie des gehaltenen Baums in place — unbekannte Eigenschaften eingeschlossen); fehlt einem geladenen Common das `label`, bekommt es beim Speichern eines. Damit ist `speichere(lade(x)) == x` **bytegleich** für jeden Stand, den dieser Schreiber selbst geschrieben hat (Goldens, Roundtrip-Test), und die Schema-1-Migration ist **deterministisch** (Golden-fähig).
 
 ### 2.1 Kind-Matrix (§53.8: „Unzulässige Ziel-/Kindkombinationen werden nicht teilweise interpretiert")
 
@@ -43,7 +90,7 @@ Reihenfolge beim Schreiben: für Stände, die **dieser Schreiber** erzeugt (fris
 | `main` | Pflicht | **Pflicht** | verboten | verboten | ab SONDE-016 (heute: nicht lesbar ⇒ read-only) |
 | `legacy` | Pflicht | verboten | verboten | verboten | verboten |
 | `passive_probe` | Pflicht | verboten | verboten | verboten | verboten |
-| `active_probe` | Pflicht | verboten | **Pflicht** | ab SONDE-015 (heute: nicht lesbar ⇒ read-only) | ab SONDE-016 (heute: nicht lesbar ⇒ read-only) |
+| `active_probe` | Pflicht | verboten | **Pflicht** | **optional** (seit SONDE-015 gelesen) | ab SONDE-016 (heute: nicht lesbar ⇒ read-only) |
 
 Ein Kind mit unbekanntem Namen ⇒ read-only (ein neues Kind ist eine Root-Versionierung, keine Minor-Erweiterung). Eine **unbekannte Eigenschaft** in einem bekannten Kind desselben Majors ⇒ additiv, wird erhalten.
 
@@ -169,8 +216,9 @@ Quelle: `EqCopilotState{schema=1, sensor_id, role, label, pair_id}` (Goldens `fi
 
 ## 4 · DSP-DTO und `state_hash` (§53.8)
 
-- DTO-Form: `{"dsp_schema_version":1,"parameters":{<id>:<Wert>,…}}` — genau die 109 IDs, physikalische Werte.
-- Validierung **vor** dem Hash (Reihenfolge fest, erster Fehler zählt): Textstufe doppelter Schlüssel → Typ/Struktur → `dsp_schema_version` → unbekannter Schlüssel → fehlender Schlüssel → Typ je Parameter → nichtendlich → Bereich/Enum.
+- DTO-Form seit SONDE-015: `{"dsp_schema_version":2,"parameters":{<id>:<Wert>,…},"schutz_zonen":[…]}` — genau die 120 IDs aus `nakama-parameter-v2.json`, physikalische Werte, dazu die Zonenliste (0 bis 8 Einträge, streng aufsteigend nach `id`). Genau **drei** Wurzelschlüssel; RFC 8785 sortiert sie nach UTF-16-Code-Units zu `dsp_schema_version` < `parameters` < `schutz_zonen`. Layout v1 (`dsp_schema_version:1`, zwei Wurzelschlüssel, 109 IDs) bleibt als **Verlauf** in `nakama-parameter-v1.json` beschrieben; der heutige DTO-Leser nimmt es nicht mehr an.
+- Validierung **vor** dem Hash (Reihenfolge fest, erster Fehler zählt): Textstufe doppelter Schlüssel → Typ/Struktur → `dsp_schema_version` → unbekannter Schlüssel → fehlender Schlüssel → Typ je Parameter → nichtendlich → Bereich/Enum → Zonenregeln (Anzahl, Typ, Bereich, doppelte `id`, Sortierung).
+- Was **nicht** im DTO steht und deshalb nicht im Hash: `state_revision`, der Undo-Ring, der `undo_cursor` und der aus dem Programm **abgeleitete** Auto-Gain-Betrag. Sie sind Zustand über den Zustand, nicht der Zustand selbst.
 - Kanon: **RFC 8785** (Schlüssel nach UTF-16-Code-Units sortiert, rekursiv; Zahlen nach ECMA-262 `Number::toString`; Strings mit `\b \t \n \f \r \" \\` und sonst `\u00xx` klein; kein Whitespace; UTF-8).
 - `state_hash` = SHA-256-Hex (64 Kleinbuchstaben) des kanonischen UTF-8 — das Format, das v3 `state_report.state_hash` verlangt.
 - Drei Beine gegen dieselben Fixtures (`fixtures/state/jcs/`, `fixtures/state/dto/`): C++ (`NakamaKanon`), Python (`rfc8785` 0.1.4, Trail of Bits), Rust (`serde_json_canonicalizer` 0.3.x + `sha2`). Die Zahlenvektoren aus RFC 8785 Anhang B stehen mit dem **vom RFC gedruckten** Erwartungstext im Erzeuger — die Python-Referenz wird damit selbst gegen den RFC gemessen, nicht nur gegen sich.
@@ -178,7 +226,9 @@ Quelle: `EqCopilotState{schema=1, sensor_id, role, label, pair_id}` (Goldens `fi
 
 ## 5 · Unbekanntes Major, read-only (§53.8, §33.5)
 
-Tritt ein, wenn: Root-`schema` ≠ 2 (oder `EqCopilotState` mit `schema` ≠ 1) · `Common` fehlt oder `Common.schema` ≠ 1 · unbekanntes Enumwort · Klasse nicht im Bundle · Kind-Matrix verletzt · unbekanntes Kind · `Dsp`/`Pairing` vorhanden, solange dieser Build sie nicht liest.
+Tritt ein, wenn: Root-`schema` ≠ 2 (oder `EqCopilotState` mit `schema` ≠ 1) · `Common` fehlt oder `Common.schema` ≠ 1 · unbekanntes Enumwort · Klasse nicht im Bundle · Kind-Matrix verletzt · unbekanntes Kind · `Parameters.dsp_schema_version` ist vorhanden und weder 1 noch 2 (unbekanntes Layout-Major) · `Dsp.schema` ≠ 1 oder sein Inhalt verletzt eine Regel aus §2.0 · `Pairing` vorhanden, solange dieser Build es nicht liest.
+
+Seit SONDE-015 ist `Dsp` für `active_probe` **kein** read-only-Grund mehr; für jede andere Klasse bleibt es einer (Kind-Matrix). Ein Build, der `Dsp` noch nicht liest, hält einen Stand mit diesem Kind weiterhin read-only mit Originalbytes — genau dafür schreibt der Writer das Kind nur, wenn es etwas trägt (§2.0).
 
 Verhalten: **audio-neutral** (Passthrough wie immer) · **read-only** (`setzeBindung`/`neueSensorId` werden verweigert, kein Host-Dirty) · `getStateInformation` liefert die **Originalbytes unverändert** zurück (nie ein Teilstate) · keine Pipe-Anmeldung (es gibt keine vertrauenswürdige Identität zu melden) · Editor zeigt den Zustand (Anzeige-Pflicht „Capability-Degradation", §0.4).
 
@@ -211,4 +261,4 @@ Zwei Instanzen aus denselben Bytes tragen dieselbe `instance_id` (Absicht: der S
 
 ## 8 · Was NICHT in diesem Schema liegt
 
-Undo-Ring, `state_revision`, bestätigter DspState, Schutzgrenzen (→ `Dsp`, SONDE-015) · Pairingsecret (→ `Pairing`, SONDE-016, DPAPI) · Evidenz/Findings/Experimente (→ SQLite, SONDE-011) · `runtime_nonce`, `session_epoch`, `broker_epoch`, `transport_epoch` (flüchtig, §32.1).
+Pairingsecret (→ `Pairing`, SONDE-016, DPAPI) · Evidenz/Findings/Experimente (→ SQLite, SONDE-011) · `runtime_nonce`, `session_epoch`, `broker_epoch`, `transport_epoch` (flüchtig, §32.1) · der abgeleitete Auto-Gain-Betrag (folgt aus dem bestätigten Programm, SONDE-015 R4) · die transiente Hörmatrixauswahl Dry/Processed/Delta/Candidate (nach Laden immer Processed, SONDE-015 R10) · das **Preset** (→ `nakama-preset-v1.json`): es trägt den Klanginhalt ohne Identität, ohne `eq_enabled` und ohne Undo-Ring und ist kein Projektzustand.

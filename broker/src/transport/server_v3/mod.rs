@@ -188,8 +188,8 @@ pub const CAP_WRITER: usize = 256;
 /// NAK-213 (08.09.2026) hebt **P0 und P1** auf 4: die zwei neuen
 /// Ausschlussgruende `screening_ueberboten` und `master_duplikat` und die von
 /// 32 auf `SESSION_CLIENT_CAP` gehobene Laenge der Ausschlussliste reisen dort.
-const P0_SCHEMA_MINOR: u8 = 4;
-const P1_SCHEMA_MINOR: u8 = 4;
+const P0_SCHEMA_MINOR: u8 = 5;
+const P1_SCHEMA_MINOR: u8 = 5;
 const P2_SCHEMA_MINOR: u8 = 1;
 
 fn schema_minor_bekannt(familie: Familie, schema_minor: u8) -> bool {

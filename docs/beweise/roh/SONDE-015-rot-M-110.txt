@@ -1,0 +1,12 @@
+SONDE-015 Etappe 2 - Rotbeweis M-110
+Zusage: Der Vektor traegt GENAU 8 Eintraege in Slotreihenfolge - freie Slots tragen exakt 0.0.
+Bruch:  tools/eq-copilot/erzeuge_fb_fixtures.py
+        -     e["frame"]["band_dynamic_gain_db"] = [-3.5, 0.0, 0.0, 2.25, 0.0, 0.0, -1.0, 0.0]
+        +     e["frame"]["band_dynamic_gain_db"] = [-3.5, 0.0, 0.0, 2.25, 0.0, 0.0, -1.0]
+------------------------------------------------------------------------------
+$ py -3.13 tools/eq-copilot/erzeuge_fb_fixtures.py --pruefen   (A10 erzeuge_fb_fixtures.py --pruefen)
+26 gueltige, 102 ungueltige Fixtures
+  ROT: eq-copilot\fixtures\v3\flatbuffers\gueltig\band-dynamic-gain-acht-werte.bin weicht ab
+
+EXIT=2
+URTEIL: ROT

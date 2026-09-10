@@ -78,7 +78,7 @@ inline constexpr std::uint8_t kSchemaMajor = 3u;
 /// AUSSERDEM diese Zahl gegen `wire_envelope_schema_minor.aktuell` im Register
 /// (Muster `metrics_version_bindet_schwellen`) — bis dahin war die C++-Zahl
 /// von keinem Bein gegen die Rust-Zahl gemessen (NB-3).
-inline constexpr std::uint8_t kJsonSchemaMinor = 4u;
+inline constexpr std::uint8_t kJsonSchemaMinor = 5u;
 
 /// Die Fassung, die die MITGLIEDSHUELLE des `session_snapshot` eingefuehrt hat
 /// (SONDE-012, Minor 1).

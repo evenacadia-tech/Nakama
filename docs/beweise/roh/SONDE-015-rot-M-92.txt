@@ -1,0 +1,15 @@
+SONDE-015 Etappe 2 - Rotbeweis M-92
+Zusage: Ein Dsp-Kind bei einer anderen Klasse als active_probe ist ein Kind-Matrix-Verstoss.
+Bruch:  eq-copilot/plugin/state/NakamaState.cpp
+        -     if (! istAktiv && nDsp > 0)  { grund = juce::String ("Dsp is not allowed for ") + wort (c.klasse); return false; }
+        + (Zeile entfernt)
+------------------------------------------------------------------------------
+$ EqCopStateMigrationTest.exe
+  FEHLER  Dsp bei legacy: read-only mit Originalbytes
+  FEHLER  == Migration: 4 Rollen bytegleich zum Golden, idempotent
+  FEHLER  read-only-Fall: Dsp vorhanden  [bib FALSCH proz FALSCH grund '']
+  FEHLER  21 Faelle read-only, Bytes unveraendert, Aenderungen verweigert  [20]
+  FEHLER  == Unbekanntes Major: 20 Faelle read-only, Originalbytes bytegleich zurueck
+
+EXIT=1
+URTEIL: ROT

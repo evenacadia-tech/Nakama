@@ -402,6 +402,45 @@ struct Assistentenzustand
     Assistentenergebnis ergebnis = Assistentenergebnis::schritt;
 };
 
+/*  ── SONDE-015: das Kind `Dsp` ─────────────────────────────────────────────
+
+    Was hier NICHT steht, und warum: die 112 Host-Parameterwerte. Sie liegen
+    in `Parameters`, und der bestaetigte DspState ist die VEREINIGUNG aus
+    beiden Kindern. Eine zweite Kopie derselben Werte kann auseinanderlaufen,
+    und §33.5 verbietet ausdruecklich eine zweite Wahrheit - ein Leser
+    muesste bei Widerspruch raten. */
+
+/** Die Handlung, die einen Undo-Eintrag erzeugt hat.
+
+    Geschlossene Menge (`nakama-state-v2.md` §2.0). `undo` und `redo` stehen
+    bewusst NICHT darin: sie bewegen den Cursor im selben Ring, statt einen
+    neuen Eintrag abzulegen - zwei Ringe koennten auseinanderlaufen und einen
+    Zustand herstellen, den es nie gab. */
+enum class UndoArt { apply, revert, neutralisieren, remove, presetLaden, gestus };
+
+const char* wort (UndoArt a) noexcept;
+bool undoArtAusWort (const juce::String& w, UndoArt& aus);
+
+/** Ein Eintrag des Undo-Rings: ein VOLLER Schnappschuss, kein Delta.
+
+    Ein Deltaformat braucht je Handlungsart einen eigenen Decoder, und ein
+    falscher Decoder erzeugt lautlos einen halben Zustand. Mit einem
+    einheitlichen Schnappschuss ist „Undo stellt es als EIN Objekt in EINER
+    Transaktion wieder her" (R5) durch die Konstruktion wahr. */
+struct UndoEintrag
+{
+    UndoArt              art = UndoArt::apply;
+    int                  slot = -1;        ///< betroffener Slot 0..7, sonst -1
+    juce::int64          revision = 0;     ///< die Revision, die dieser Eintrag zurueckgibt
+    parameter::DspSatz   zustand;          ///< der VOLLE Zustand VOR der Handlung
+
+    bool operator== (const UndoEintrag& a) const noexcept
+    {
+        return art == a.art && slot == a.slot && revision == a.revision && zustand == a.zustand;
+    }
+    bool operator!= (const UndoEintrag& a) const noexcept { return ! (*this == a); }
+};
+
 struct Zustand
 {
     /** Der gehaltene Baum (NakamaState). Traegt auch Eigenschaften, die dieser
@@ -443,8 +482,41 @@ struct Zustand
         Passthrough-Beweis fiel beim Gegenpfad speichern<->laden. Kein
         gespeicherter Stand aendert sich dadurch: `lade()` fuellt die Werte
         ohnehin aus dem Baum, und fuer `main`/`legacy` bleibt
-        `hatParameters` falsch. */
+        `hatParameters` falsch.
+        Seit SONDE-015 traegt der Satz 120 Werte: die 112 Host-Parameter aus
+        `Parameters` und die acht `occupied` aus dem Kind `Dsp`. */
     parameter::Satz parameters = parameter::standardSatz();
+
+    /*  ── SONDE-015: Inhalt des Kindes `Dsp` ────────────────────────────── */
+
+    /** Wurde beim Laden ein `Dsp`-Kind gefunden? Ein frischer oder aus
+        Layout v1 migrierter Stand traegt keines - und der Schreiber legt es
+        nur an, wenn es etwas zu sagen gibt (nakama-state-v2.md §2.0). */
+    bool         hatDsp = false;
+
+    /** Steigt mit jeder committeten Transaktion um genau 1 und sinkt nie
+        (§5.11.4 Teil 1). Frischer Zustand: 0. */
+    juce::int64  stateRevision = 0;
+
+    /** 0 bis 8 Schutz-Zonen, streng aufsteigend nach `id`. */
+    std::vector<parameter::Schutzzone> schutzZonen;
+
+    /** Hoechstens `parameter::kUndoTiefe` Eintraege, aeltester zuerst. */
+    std::vector<UndoEintrag> undoRing;
+
+    /** 0 = am juengsten Eintrag; n = n Schritte zurueckgenommen. Nie groesser
+        als die Ringlaenge. */
+    int          undoCursor = 0;
+
+    /** Wurde beim Laden ein `Parameters`-Knoten im Layout v1 gefunden und
+        nach v2 migriert (R5: `occupied` aus `enabled` und den Werten)? */
+    bool         layoutV1Migriert = false;
+
+    /** Der vollstaendige DSP-DTO-Inhalt: die 120 Werte plus die Zonen. Das
+        ist der Gegenstand des `state_hash` - Werte OHNE Zonen waeren ein
+        Zustand, den es nicht gibt. */
+    parameter::DspSatz dspDto() const;
+
     Herkunft herkunft = Herkunft::frisch;
 
     // read-only (§5 des Vertrags): gesetzt, wenn der State nicht interpretiert

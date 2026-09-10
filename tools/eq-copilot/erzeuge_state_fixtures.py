@@ -7,10 +7,14 @@ Erzeugt und prueft eq-copilot/fixtures/state/:
     jcs/dokumente/*.json     JCS-Dokumente (Eingabe) + Erwartung im MANIFEST
     dto/gueltig/*.json       DSP-DTOs, die gehasht werden
     dto/ungueltig/*.json     DSP-DTOs, die VOR dem Hash fallen (mit Grund)
+    preset/gueltig/*.json    Presets in der Form des Writers (RFC-8785-kanonisch)
+    preset/ungueltig/*.json  Presets, die der Leser abweist (mit Grund)
     MANIFEST.json            die dritte Partei zwischen C++, Rust und Python
 
-und prueft den Vertrag eq-copilot/schemas/state/nakama-parameter-v1.json
-(109 Parameter, eindeutige IDs, Defaults im Bereich).
+und prueft den Vertrag eq-copilot/schemas/state/nakama-parameter-v2.json
+(120 Kennungen, davon 112 Host-Parameter, eindeutige IDs, Defaults im
+Bereich) samt der ABLEITUNG aus der eingefrorenen v1-Datei sowie das
+Presetschema eq-copilot/schemas/state/nakama-preset-v1.json.
 
 WARUM DIE ERWARTUNGEN VON HAND GESCHRIEBEN SIND
 -----------------------------------------------
@@ -55,7 +59,9 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from pruefe_v3_vertrag import textriegel_bytes  # noqa: E402
 
 WURZEL = pathlib.Path(__file__).resolve().parents[2]
-VERTRAG = WURZEL / "eq-copilot" / "schemas" / "state" / "nakama-parameter-v1.json"
+VERTRAG = WURZEL / "eq-copilot" / "schemas" / "state" / "nakama-parameter-v2.json"
+VERTRAG_V1 = WURZEL / "eq-copilot" / "schemas" / "state" / "nakama-parameter-v1.json"
+PRESET = WURZEL / "eq-copilot" / "schemas" / "state" / "nakama-preset-v1.json"
 FIXTURES = WURZEL / "eq-copilot" / "fixtures" / "state"
 MANIFEST = FIXTURES / "MANIFEST.json"
 
@@ -79,42 +85,122 @@ def json_text(obj) -> str:
     return json.dumps(obj, ensure_ascii=False, indent=2, sort_keys=False) + "\n"
 
 
+def kanon_text(obj) -> str:
+    """RFC-8785-kanonisch - genau das, was `nakama::preset::schreibe` erzeugt."""
+    return rfc8785.dumps(obj).decode("utf-8")
+
+
 # ------------------------------------------------------------------ Vertrag
 
+# Die sechs Namen, die ein Preset NIE traegt (R12, nakama-preset-v1.json).
+# Nicht "Identitaetsfelder" allgemein, sondern genau diese sechs: die Regel
+# unterscheidet zwischen einem unbekannten Feld (ignorieren) und einem
+# verbotenen (ablehnen), und dieser Unterschied braucht eine geschlossene Menge.
+PRESET_VERBOTEN = ["adresse", "instance_id", "host_bus_name", "label",
+                   "eq_enabled", "undo_ring"]
+
+# Der Klanginhalt: alle Kennungen AUSSER dem Rollenschalter. Abgeleitet, nie
+# als zweite Liste gepflegt - zwei Listen driften.
+def PRESET_INHALT(v: dict) -> list[str]:
+    return [i for i in v["ids"] if i != "v2.global.eq_enabled"]
+
+
 def pruefe_vertrag() -> dict:
+    """Layout v2 (SONDE-015 R1) - und die Ableitung aus dem eingefrorenen v1.
+
+    Der teure Teil ist nicht die Zahl 120, sondern die Zusage, dass die 109
+    v1-Kennungen UNVERAENDERT sind. Sie wird hier ALGORITHMISCH gehalten:
+    jeder Eintrag mit layout=v1 muss - ohne die zwei neuen Schluessel `layout`
+    und `host_parameter` - dem Eintrag gleicher ID in der eingefrorenen
+    v1-Datei entsprechen. Aendert jemand einen v1-Default, faellt diese
+    Funktion, nicht ein Kommentar (M-86).
+    """
     v = json.loads(VERTRAG.read_text(encoding="utf-8"))
+    v1 = json.loads(VERTRAG_V1.read_text(encoding="utf-8"))
     fehler: list[str] = []
 
-    if v.get("dsp_schema_version") != 1:
-        fehler.append("dsp_schema_version muss 1 sein")
+    if v.get("dsp_schema_version") != 2:
+        fehler.append("dsp_schema_version muss 2 sein")
+    if v1.get("dsp_schema_version") != 1 or v1.get("anzahl_parameter") != 109:
+        fehler.append("die v1-Datei ist nicht mehr eingefroren (dsp_schema_version 1, 109 Kennungen)")
     slots = v.get("slot_anzahl")
     if slots != 8:
         fehler.append("slot_anzahl muss 8 sein (§53.8: Slots 0..7)")
 
-    erwartet_ids = [g["id"] for g in v["global"]]
+    # Vertragsreihenfolge: erst alle v1-Eintraege (global, dann je Slot), dann
+    # die v2-Globalen, dann die v2-Slotfelder. Genau diese Reihenfolge macht
+    # die 112 Host-Parameter zum PRAEFIX (M-88).
+    g1 = [g for g in v["global"] if g.get("layout") == "v1"]
+    g2 = [g for g in v["global"] if g.get("layout") == "v2"]
+    b1 = [p for p in v["band_vorlage"] if p.get("layout") == "v1"]
+    b2 = [p for p in v["band_vorlage"] if p.get("layout") == "v2"]
+    erwartet_ids = [g["id"] for g in g1]
     for slot in range(slots):
-        for p in v["band_vorlage"]:
+        for p in b1:
             erwartet_ids.append(f"v1.band.{slot}.{p['name']}")
+    erwartet_ids += [g["id"] for g in g2]
+    for slot in range(slots):
+        for p in b2:
+            erwartet_ids.append(f"v2.band.{slot}.{p['name']}")
     ids = v["ids"]
     if ids != erwartet_ids:
-        fehler.append("ids-Liste weicht von global + band_vorlage x slot_anzahl ab")
+        fehler.append("ids-Liste weicht von der Vertragsreihenfolge ab (109 v1, dann v2 global, dann v2 je Slot)")
     if len(ids) != len(set(ids)):
         fehler.append("IDs nicht eindeutig")
     if len(ids) != v.get("anzahl_parameter"):
         fehler.append(f"anzahl_parameter {v.get('anzahl_parameter')} != {len(ids)}")
-    if len(v["global"]) != 5 or len(v["band_vorlage"]) != 13:
-        fehler.append("§53.8 verlangt 5 globale und 13 Slot-Parameter")
-    if len(ids) != 5 + 8 * 13:
-        fehler.append("Summe muss 109 sein")
+    if len(g1) != 5 or len(b1) != 13:
+        fehler.append("§53.8 verlangt 5 globale und 13 Slot-Parameter im v1-Bestand")
+    if len(g2) != 3 or len(b2) != 1:
+        fehler.append("R1 verlangt drei v2-Globale (eq_enabled, mix, auto_gain) und ein v2-Slotfeld (occupied)")
+    if len(ids) != 120:
+        fehler.append("Summe muss 120 sein")
+    if v.get("anzahl_parameter_v1") != 109:
+        fehler.append("anzahl_parameter_v1 muss 109 sein")
+
+    # Die 109 v1-IDs stehen unveraendert VORNE.
+    if ids[:109] != v1["ids"]:
+        fehler.append("die 109 v1-IDs stehen nicht unveraendert am Anfang der v2-Reihenfolge")
+
+    # Host-Parameter: genau die ersten 112, occupied ist keiner.
+    nach_id_roh = {g["id"]: g for g in v["global"]}
+    for slot in range(slots):
+        for p in v["band_vorlage"]:
+            nach_id_roh[f"v{p['layout'][1:]}.band.{slot}.{p['name']}"] = p
+    host = [i for i in ids if nach_id_roh[i].get("host_parameter") is True]
+    if host != ids[:112]:
+        fehler.append("die Host-Parameter sind nicht das Praefix der ersten 112 Kennungen")
+    if v.get("anzahl_host_parameter") != 112:
+        fehler.append("anzahl_host_parameter muss 112 sein")
+    if any(nach_id_roh[i].get("host_parameter") is not False for i in ids[112:]):
+        fehler.append("occupied darf kein Host-Parameter sein (R5: kein Weg an der Transaktion vorbei)")
+
+    # Die ABLEITUNG: v1-Eintrag woertlich plus genau zwei Schluessel.
+    v1_nach_id = {g["id"]: g for g in v1["global"]}
+    v1_nach_name = {p["name"]: p for p in v1["band_vorlage"]}
+    for eintrag in v["global"] + v["band_vorlage"]:
+        if eintrag.get("layout") != "v1":
+            continue
+        alt = v1_nach_id.get(eintrag.get("id")) or v1_nach_name.get(eintrag.get("name"))
+        if alt is None:
+            fehler.append(f"v1-Eintrag ohne Gegenstueck in der eingefrorenen Datei: {eintrag}")
+            continue
+        ohne = {k: w for k, w in eintrag.items() if k not in ("layout", "host_parameter")}
+        if ohne != alt:
+            fehler.append(f"v1-Eintrag nicht woertlich uebernommen: {ohne.get('id') or ohne.get('name')}")
 
     namen = {"enabled", "type", "freq_hz", "q", "gain_db", "channel_mode", "dynamic_enabled",
              "dynamic_range_db", "threshold_db", "attack_ms", "hold_ms", "release_ms", "sidechain_source"}
-    if {p["name"] for p in v["band_vorlage"]} != namen:
+    if {p["name"] for p in b1} != namen:
         fehler.append("Slot-Parameternamen weichen von §53.8 ab")
+    if {p["name"] for p in b2} != {"occupied"}:
+        fehler.append("das einzige v2-Slotfeld heisst occupied (R5)")
     gl = {"v1.global.bypass", "v1.global.input_trim_db", "v1.global.output_trim_db",
           "v1.global.width", "v1.global.mono_bass_hz"}
-    if {g["id"] for g in v["global"]} != gl:
+    if {g["id"] for g in g1} != gl:
         fehler.append("globale IDs weichen von §53.8 ab")
+    if {g["id"] for g in g2} != {"v2.global.eq_enabled", "v2.global.mix", "v2.global.auto_gain"}:
+        fehler.append("die drei v2-Globalen sind eq_enabled, mix und auto_gain (R2/R3/R4)")
 
     def pruefe_eintrag(e: dict, wo: str) -> None:
         typ = e["typ"]
@@ -152,44 +238,96 @@ def pruefe_vertrag() -> dict:
     for p in v["band_vorlage"]:
         pruefe_eintrag(p, "band." + p["name"])
 
+    # §53.8 nennt vier topologische Slotparameter; R8 nimmt `occupied` dazu -
+    # eine Belegung aendert die Bank und wechselt deshalb am Blockrand.
     topo = {p["name"] for p in v["band_vorlage"] if p.get("topologisch")}
-    if topo != {"type", "channel_mode", "dynamic_enabled", "sidechain_source"}:
-        fehler.append("topologisch muss genau type/channel_mode/dynamic_enabled/sidechain_source markieren (§53.8)")
+    if topo != {"type", "channel_mode", "dynamic_enabled", "sidechain_source", "occupied"}:
+        fehler.append("topologisch muss genau type/channel_mode/dynamic_enabled/sidechain_source/occupied markieren (§53.8, R8)")
+    if any(g.get("topologisch") for g in v["global"]):
+        fehler.append("kein globaler Parameter ist topologisch (R2/R3/R4: nicht topologisch)")
     sc = next(p for p in v["band_vorlage"] if p["name"] == "sidechain_source")
     if sc["werte"] != ["none", "internal", "priority_sidechain"]:
         fehler.append("sidechain_source kennt nur none|internal|priority_sidechain (§53.8)")
+
+    # ── Schutz-Zonen (R6) ──────────────────────────────────────────────────
+    z = v.get("schutz_zonen", {})
+    if z.get("hoechstens") != 8:
+        fehler.append("hoechstens acht Schutz-Zonen (R6)")
+    zf = {f["name"]: f for f in z.get("felder", [])}
+    if set(zf) != {"id", "low_hz", "high_hz", "enabled"}:
+        fehler.append("eine Zone traegt genau id, low_hz, high_hz, enabled")
+    else:
+        if (zf["id"].get("min"), zf["id"].get("max")) != (0, 7):
+            fehler.append("Zonen-id laeuft von 0 bis 7")
+        for name in ("low_hz", "high_hz"):
+            if (zf[name].get("min"), zf[name].get("max")) != (20.0, 20000.0):
+                fehler.append(f"Zonengrenze {name} laeuft von 20 bis 20000 Hz (Nyquistkappung ist Laufzeit, R6 Abweichung 2)")
+
+    # ── DTO-Form ───────────────────────────────────────────────────────────
+    dto = v.get("dsp_dto", {})
+    for wort in ("mehr als acht Schutz-Zonen", "doppelte Zonen-id",
+                 "Zonenliste nicht streng aufsteigend nach id", "dsp_schema_version != 2"):
+        if wort not in dto.get("ablehnung_vor_dem_hash", []):
+            fehler.append(f"dsp_dto.ablehnung_vor_dem_hash nennt nicht: {wort}")
+
+    # ── Presetschema (R12) ─────────────────────────────────────────────────
+    pv = json.loads(PRESET.read_text(encoding="utf-8"))
+    if pv.get("preset_schema_version") != 1:
+        fehler.append("preset_schema_version muss 1 sein")
+    if pv.get("geschrieben_fuer_dsp_schema_version") != v.get("dsp_schema_version"):
+        fehler.append("das Preset nennt nicht das Layout, fuer das es geschrieben ist")
+    verboten = [f["name"] for f in pv.get("verbotene_felder", [])]
+    if sorted(verboten) != sorted(PRESET_VERBOTEN):
+        fehler.append(f"verbotene_felder weichen ab: {verboten}")
+    if any(not f.get("grund") for f in pv.get("verbotene_felder", [])):
+        fehler.append("jedes verbotene Feld nennt seinen Grund")
+    for wort in ("verbotenes_feld", "preset_schema_version", "zone_anzahl",
+                 "zone_doppelt", "zone_sortierung"):
+        if wort not in pv.get("ablehnungsgruende", []):
+            fehler.append(f"preset ablehnungsgruende nennt nicht: {wort}")
 
     if fehler:
         for f in fehler:
             print("VERTRAG FEHLER:", f)
         sys.exit(2)
-    print(f"Parameterbestand: {len(ids)} Parameter, {len(set(ids))} eindeutige IDs, "
-          f"{len(v['global'])} global + {len(v['band_vorlage'])} x {slots} Slots")
+    print(f"Parameterbestand v2: {len(ids)} Kennungen ({len(host)} Host-Parameter), "
+          f"{len(set(ids))} eindeutige IDs, 109 v1-Eintraege woertlich abgeleitet; "
+          f"Preset {len(PRESET_INHALT(v))} Kennungen, {len(verboten)} verbotene Felder")
     return v
 
 
 # ------------------------------------------------------------------ Parameter-Hilfen
 
 def parameter_liste(v: dict) -> list[dict]:
-    """Flache Liste aller 109 Parameter mit id + Beschreibung."""
-    aus = []
+    """Flache Liste aller 120 Parameter mit id + Beschreibung, in
+    VERTRAGSREIHENFOLGE (v["ids"]) - nicht in der Reihenfolge der Vorlagen:
+    die drei v2-Globalen stehen HINTER allen v1-Slotfeldern."""
+    nach_id: dict[str, dict] = {}
     for g in v["global"]:
-        aus.append(dict(g))
+        nach_id[g["id"]] = dict(g)
     for slot in range(v["slot_anzahl"]):
         for p in v["band_vorlage"]:
             e = dict(p)
-            e["id"] = f"v1.band.{slot}.{p['name']}"
-            aus.append(e)
-    return aus
+            e["id"] = f"{p['layout']}.band.{slot}.{p['name']}"
+            nach_id[e["id"]] = e
+    return [nach_id[i] for i in v["ids"]]
+
+
+# Acht Zonen an ihren Vertragsraendern, streng aufsteigend nach id.
+def zonen_maxima() -> list[dict]:
+    return [{"enabled": i % 2 == 0, "high_hz": 20000.0, "id": i, "low_hz": 20.0}
+            for i in range(8)]
 
 
 def dto_default(v: dict) -> dict:
-    return {"dsp_schema_version": 1,
-            "parameters": {p["id"]: p["default"] for p in parameter_liste(v)}}
+    return {"dsp_schema_version": 2,
+            "parameters": {p["id"]: p["default"] for p in parameter_liste(v)},
+            "schutz_zonen": []}
 
 
 def dto_grenze(v: dict, welche: str) -> dict:
-    d = {"dsp_schema_version": 1, "parameters": {}}
+    d = {"dsp_schema_version": 2, "parameters": {},
+         "schutz_zonen": zonen_maxima() if welche == "max" else []}
     for p in parameter_liste(v):
         if p["typ"] == "float":
             d["parameters"][p["id"]] = p[welche]
@@ -228,6 +366,17 @@ def dto_gemischt(v: dict) -> dict:
     p["v1.band.7.type"] = "high_cut"
     p["v1.band.7.freq_hz"] = 20000.0
     p["v1.band.7.q"] = 24.0
+    # SONDE-015: die v2-Werte gehoeren in denselben gemischten Fall - sonst
+    # haengt der teuerste Hash des Korpus nur am v1-Bestand.
+    p["v2.global.eq_enabled"] = True
+    p["v2.global.mix"] = 0.30000000000000004
+    p["v2.global.auto_gain"] = True
+    for slot in (0, 1, 2, 7):
+        p[f"v2.band.{slot}.occupied"] = True
+    d["schutz_zonen"] = [
+        {"enabled": True, "high_hz": 120.25, "id": 0, "low_hz": 40.5},
+        {"enabled": False, "high_hz": 1100.0, "id": 5, "low_hz": 900.0},
+    ]
     return d
 
 
@@ -268,12 +417,14 @@ def validiere_dto_python(v: dict, text: str) -> str | None:
         return "doppelter_schluessel"
     if not isinstance(obj, dict):
         return "struktur"
-    if set(obj.keys()) != {"dsp_schema_version", "parameters"}:
+    if set(obj.keys()) != {"dsp_schema_version", "parameters", "schutz_zonen"}:
         return "struktur"
-    if obj["dsp_schema_version"] != 1 or isinstance(obj["dsp_schema_version"], bool):
+    if obj["dsp_schema_version"] != 2 or isinstance(obj["dsp_schema_version"], bool):
         return "dsp_schema_version"
     par = obj["parameters"]
     if not isinstance(par, dict):
+        return "struktur"
+    if not isinstance(obj["schutz_zonen"], list):
         return "struktur"
     tabelle = {p["id"]: p for p in parameter_liste(v)}
     for k in par:
@@ -306,7 +457,114 @@ def validiere_dto_python(v: dict, text: str) -> str | None:
         elif p["typ"] == "enum":
             if w not in p["werte"]:
                 return "enum"
+    return validiere_zonen_python(obj["schutz_zonen"])
+
+
+def validiere_zonen_python(zonen) -> str | None:
+    """Die Zonenregeln aus R6 - dieselbe Reihenfolge wie NakamaParameter.cpp:
+    Struktur/Typ je Zone, dann Anzahl, Bereich, doppelte id, Sortierung."""
+    for z in zonen:
+        if not isinstance(z, dict) or set(z) != {"enabled", "high_hz", "id", "low_hz"}:
+            return "struktur"
+        if not isinstance(z["enabled"], bool):
+            return "typ"
+        for name in ("id", "low_hz", "high_hz"):
+            if isinstance(z[name], bool) or not isinstance(z[name], (int, float)):
+                return "typ"
+        if not float(z["id"]).is_integer():
+            return "bereich"
+    if len(zonen) > 8:
+        return "zone_anzahl"
+    for z in zonen:
+        if not (0 <= z["id"] <= 7):
+            return "bereich"
+        if not math.isfinite(z["low_hz"]) or not math.isfinite(z["high_hz"]):
+            return "nichtendlich"
+        if z["low_hz"] < 20.0 or z["low_hz"] >= z["high_hz"] or z["high_hz"] > 20000.0:
+            return "bereich"
+    ids = [z["id"] for z in zonen]
+    if len(ids) != len(set(ids)):
+        return "zone_doppelt"
+    if any(ids[i - 1] >= ids[i] for i in range(1, len(ids))):
+        return "zone_sortierung"
     return None
+
+
+def validiere_preset_python(v: dict, text: str) -> str | None:
+    """Kleiner Referenz-Validator fuer Presets - dieselbe Stufenfolge wie
+    `nakama::preset::lies` (nakama-preset-v1.json, reihenfolge_der_pruefung)."""
+    riegel = textriegel_bytes(text.encode("utf-8"), schema_ganzzahl_sichern=False)
+    if riegel is not None:
+        if riegel.startswith("Exponent ausserhalb") or riegel.startswith("Zahl ausserhalb"):
+            return "nichtendlich"
+        if riegel.startswith("Ganzzahl ausserhalb"):
+            return "bereich"
+        return "kein_json"
+
+    doppelt = False
+
+    def hook(paare):
+        nonlocal doppelt
+        schl = [k for k, _ in paare]
+        if len(schl) != len(set(schl)):
+            doppelt = True
+        return dict(paare)
+
+    try:
+        obj = json.loads(text, object_pairs_hook=hook, parse_constant=lambda s: float("nan"))
+    except ValueError:
+        return "kein_json"
+    if doppelt:
+        return "doppelter_schluessel"
+    if not isinstance(obj, dict):
+        return "struktur"
+
+    # Verbotene Felder FRUEH - bevor irgendein Inhalt gedeutet wird.
+    for name in PRESET_VERBOTEN:
+        if name in obj:
+            return "verbotenes_feld"
+
+    if obj.get("preset_schema_version") != 1 or isinstance(obj.get("preset_schema_version"), bool):
+        return "preset_schema_version"
+    if obj.get("dsp_schema_version") != v["dsp_schema_version"] or isinstance(obj.get("dsp_schema_version"), bool):
+        return "dsp_schema_version"
+    par = obj.get("parameters")
+    if not isinstance(par, dict):
+        return "struktur"
+    if not isinstance(obj.get("schutz_zonen"), list):
+        return "struktur"
+    # Jedes WEITERE Top-Level-Feld ist additiv und wird ignoriert.
+
+    inhalt = set(PRESET_INHALT(v))
+    tabelle = {p["id"]: p for p in parameter_liste(v) if p["id"] in inhalt}
+    for k in par:
+        if k not in tabelle:
+            return "unbekannter_schluessel"
+    for k in tabelle:
+        if k not in par:
+            return "fehlender_schluessel"
+    for k, p in tabelle.items():
+        w = par[k]
+        if p["typ"] == "bool":
+            if not isinstance(w, bool):
+                return "typ"
+        elif p["typ"] == "float":
+            if isinstance(w, bool) or not isinstance(w, (int, float)):
+                return "typ"
+        else:
+            if not isinstance(w, str):
+                return "typ"
+    for k, p in tabelle.items():
+        w = par[k]
+        if p["typ"] == "float":
+            if not math.isfinite(w):
+                return "nichtendlich"
+            if not (p["min"] <= w <= p["max"]):
+                return "bereich"
+        elif p["typ"] == "enum":
+            if w not in p["werte"]:
+                return "enum"
+    return validiere_zonen_python(obj["schutz_zonen"])
 
 
 # ------------------------------------------------------------------ JCS-Zahlen
@@ -528,8 +786,60 @@ def dto_ungueltige(v: dict) -> list[tuple[str, str, str]]:
     def f6(d): del d["parameters"]["v1.band.7.release_ms"]
     faelle.append(("fehlender-schluessel", text_mit(f6), "fehlender_schluessel"))
 
-    def f7(d): d["dsp_schema_version"] = 2
-    faelle.append(("dsp-schema-version-2", text_mit(f7), "dsp_schema_version"))
+    # SEITENWECHSEL (M-94): bis SONDE-015 war `dsp_schema_version: 2` der
+    # ungueltige Fall. Layout v2 ist jetzt der aktive Vertrag - die alte Fixture
+    # `dto/ungueltig/dsp-schema-version-2.json` faellt weg (der Erzeuger meldet
+    # sie sonst als VERWAIST), und die 1 nimmt ihren Platz ein.
+    def f7(d): d["dsp_schema_version"] = 1
+    faelle.append(("dsp-schema-version-1", text_mit(f7), "dsp_schema_version"))
+
+    # ── Schutz-Zonen (R6, M-66/M-72/M-73) ─────────────────────────────────
+    def z_neun(d): d["schutz_zonen"] = [
+        {"enabled": True, "high_hz": 200.0, "id": i, "low_hz": 100.0} for i in range(9)]
+    faelle.append(("zone-neunte", text_mit(z_neun), "zone_anzahl"))
+
+    def z_doppelt(d): d["schutz_zonen"] = [
+        {"enabled": True, "high_hz": 200.0, "id": 3, "low_hz": 100.0},
+        {"enabled": False, "high_hz": 400.0, "id": 3, "low_hz": 300.0}]
+    faelle.append(("zone-doppelte-id", text_mit(z_doppelt), "zone_doppelt"))
+
+    def z_sort(d): d["schutz_zonen"] = [
+        {"enabled": True, "high_hz": 200.0, "id": 5, "low_hz": 100.0},
+        {"enabled": True, "high_hz": 400.0, "id": 1, "low_hz": 300.0}]
+    faelle.append(("zone-unsortiert", text_mit(z_sort), "zone_sortierung"))
+
+    def z_gleich(d): d["schutz_zonen"] = [
+        {"enabled": True, "high_hz": 200.0, "id": 0, "low_hz": 200.0}]
+    faelle.append(("zone-low-gleich-high", text_mit(z_gleich), "bereich"))
+
+    def z_unter20(d): d["schutz_zonen"] = [
+        {"enabled": True, "high_hz": 200.0, "id": 0, "low_hz": 19.9}]
+    faelle.append(("zone-unter-20-hz", text_mit(z_unter20), "bereich"))
+
+    def z_ueber20k(d): d["schutz_zonen"] = [
+        {"enabled": True, "high_hz": 20000.1, "id": 0, "low_hz": 100.0}]
+    faelle.append(("zone-ueber-20-khz", text_mit(z_ueber20k), "bereich"))
+
+    def z_id8(d): d["schutz_zonen"] = [
+        {"enabled": True, "high_hz": 200.0, "id": 8, "low_hz": 100.0}]
+    faelle.append(("zone-id-8", text_mit(z_id8), "bereich"))
+
+    def z_feld(d): d["schutz_zonen"] = [
+        {"enabled": True, "high_hz": 200.0, "id": 0, "low_hz": 100.0, "extra": 1}]
+    faelle.append(("zone-zusatzfeld", text_mit(z_feld), "struktur"))
+
+    def z_typ(d): d["schutz_zonen"] = [
+        {"enabled": "ja", "high_hz": 200.0, "id": 0, "low_hz": 100.0}]
+    faelle.append(("zone-enabled-als-string", text_mit(z_typ), "typ"))
+
+    def z_fehlt(d): del d["schutz_zonen"]
+    faelle.append(("schutz-zonen-fehlt", text_mit(z_fehlt), "struktur"))
+
+    # Eine v2-Kennung fehlt: ein Stand des Layouts v1 auf dem DTO-Weg ist
+    # KEIN Teilstand, sondern ein fehlender Schluessel (M-90 gilt fuer den
+    # STATE-Weg, nicht fuer den Draht).
+    def v2_fehlt(d): del d["parameters"]["v2.band.4.occupied"]
+    faelle.append(("fehlende-v2-kennung", text_mit(v2_fehlt), "fehlender_schluessel"))
 
     def f8(d): d["parameters"]["v1.band.1.enabled"] = 1
     faelle.append(("typ-bool-als-zahl", text_mit(f8), "typ"))
@@ -575,7 +885,106 @@ def dto_gueltige(v: dict) -> list[tuple[str, str]]:
     # keinen int/float-Unterschied): "1000" == "1000.0".
     ganz = json.dumps(dto_default(v), ensure_ascii=False, indent=1).replace(": 1000.0", ": 1000") + chr(10)
     aus.append(("ganzzahl-schreibweise", ganz))
+    # SONDE-015: eine EINZELNE Zone am unteren Rand des Bestands - der Fall,
+    # den die Oberflaeche zuerst erzeugt, und der einzige mit genau einer.
+    eine = dto_default(v)
+    eine["schutz_zonen"] = [{"enabled": True, "high_hz": 120.25, "id": 0, "low_hz": 40.5}]
+    aus.append(("zone-einzeln", json.dumps(eine, ensure_ascii=False, indent=1) + chr(10)))
     return aus
+
+
+# ------------------------------------------------------------------ Preset
+
+def preset_default(v: dict) -> dict:
+    """Ein Preset in der Form des WRITERS: kanonisch, ohne eq_enabled."""
+    inhalt = set(PRESET_INHALT(v))
+    return {
+        "dsp_schema_version": v["dsp_schema_version"],
+        "parameters": {p["id"]: p["default"] for p in parameter_liste(v) if p["id"] in inhalt},
+        "preset_schema_version": 1,
+        "schutz_zonen": [],
+    }
+
+
+def preset_gemischt(v: dict) -> dict:
+    d = preset_default(v)
+    p = d["parameters"]
+    p["v1.band.0.enabled"] = True
+    p["v1.band.0.type"] = "low_shelf"
+    p["v1.band.0.freq_hz"] = 120.0
+    p["v1.band.0.q"] = 0.7071067811865476
+    p["v1.band.0.gain_db"] = -2.5
+    p["v2.band.0.occupied"] = True
+    p["v2.global.mix"] = 0.75
+    p["v2.global.auto_gain"] = True
+    d["schutz_zonen"] = [{"enabled": True, "high_hz": 120.25, "id": 0, "low_hz": 40.5}]
+    return d
+
+
+def preset_gueltige(v: dict) -> list[tuple[str, str, str]]:
+    """(name, text, warum) - Faelle, die ein Leser ANNEHMEN muss."""
+    aus = [
+        ("default", kanon_text(preset_default(v)), "der neutrale Klanginhalt"),
+        ("gemischt", kanon_text(preset_gemischt(v)), "ein belegtes Band, Mix, Auto-Gain und eine Zone"),
+    ]
+    # Ein unbekanntes Top-Level-Feld wird IGNORIERT (M-98) - der Unterschied zu
+    # den sechs verbotenen Namen ist Absicht.
+    zusatz = preset_default(v)
+    zusatz["autor"] = "ein spaeterer Schreiber"
+    aus.append(("unbekanntes-top-level-feld",
+                json.dumps(zusatz, ensure_ascii=False, indent=1, sort_keys=True) + chr(10),
+                "additive Erweiterung: der Leser ignoriert sie und laedt"))
+    return aus
+
+
+def preset_ungueltige(v: dict) -> list[tuple[str, str, str, str]]:
+    """(name, text, grund, warum) - Faelle, die ein Leser ABWEISEN muss."""
+    faelle = []
+
+    def mit(aenderung):
+        d = json.loads(json.dumps(preset_default(v)))
+        aenderung(d)
+        return json.dumps(d, ensure_ascii=False, indent=1, sort_keys=True) + chr(10)
+
+    # M-97: je verbotenem Namen ein eigenes Negativfixture. Auch mit leerem
+    # Wert - ein optionales, leeres Identitaetsfeld waere eine offene Tuer.
+    beispiel = {"adresse": {}, "instance_id": "", "host_bus_name": "Bus A",
+                "label": "", "eq_enabled": True, "undo_ring": []}
+    for name in PRESET_VERBOTEN:
+        def setze_verboten(d, n=name): d[n] = beispiel[n]
+        faelle.append((f"verboten-{name.replace('_', '-')}", mit(setze_verboten),
+                       "verbotenes_feld", f"Identitaet oder Betrieb: {name} hat kein Feld"))
+
+    def eq_in_parametern(d): d["parameters"]["v2.global.eq_enabled"] = True
+    faelle.append(("eq-enabled-in-parametern", mit(eq_in_parametern), "unbekannter_schluessel",
+                   "der Rollenschalter hat auch INNERHALB von parameters kein Feld"))
+
+    def falsche_preset_version(d): d["preset_schema_version"] = 2
+    faelle.append(("preset-major-2", mit(falsche_preset_version), "preset_schema_version",
+                   "unbekannter Preset-Major wird abgelehnt, nicht read-only gehalten"))
+
+    def falsche_dsp_version(d): d["dsp_schema_version"] = 1
+    faelle.append(("dsp-schema-version-1", mit(falsche_dsp_version), "dsp_schema_version",
+                   "der Inhalt spricht ein Layout, das dieser Build nicht deutet"))
+
+    def fehlt(d): del d["parameters"]["v1.band.3.q"]
+    faelle.append(("fehlender-schluessel", mit(fehlt), "fehlender_schluessel",
+                   "parameters ist exakt, nicht additiv"))
+
+    def unbekannt(d): d["parameters"]["v1.global.extra"] = 1
+    faelle.append(("unbekannter-schluessel", mit(unbekannt), "unbekannter_schluessel",
+                   "parameters ist exakt, nicht additiv"))
+
+    def bereich(d): d["parameters"]["v1.band.5.gain_db"] = 12.000001
+    faelle.append(("bereich-gain", mit(bereich), "bereich", "derselbe Bereichsriegel wie im DTO"))
+
+    def zone(d): d["schutz_zonen"] = [
+        {"enabled": True, "high_hz": 200.0, "id": 5, "low_hz": 100.0},
+        {"enabled": True, "high_hz": 400.0, "id": 1, "low_hz": 300.0}]
+    faelle.append(("zone-unsortiert", mit(zone), "zone_sortierung",
+                   "dieselben Zonenregeln wie im DTO"))
+
+    return faelle
 
 
 # ------------------------------------------------------------------ Schreiben / Pruefen
@@ -619,6 +1028,27 @@ def baue(v: dict) -> tuple[dict[str, bytes], dict]:
         dto_nein.append({"datei": pfad, "grund": grund_hand})
     print(f"DTO: {len(dto_ok)} gueltige gehasht, {len(dto_nein)} ungueltige mit Grund")
 
+    # ── Preset (SONDE-015 R12) ────────────────────────────────────────────
+    preset_ok = []
+    for name, text, warum in preset_gueltige(v):
+        grund = validiere_preset_python(v, text)
+        if grund is not None:
+            raise SystemExit(f"Preset {name} sollte gueltig sein, Python sagt {grund}")
+        pfad = f"preset/gueltig/{name}.json"
+        dateien[pfad] = text.encode("utf-8")
+        preset_ok.append({"datei": pfad, "warum": warum,
+                          "sha256": sha256_hex(text.encode("utf-8")),
+                          "bytes": len(text.encode("utf-8"))})
+    preset_nein = []
+    for name, text, grund_hand, warum in preset_ungueltige(v):
+        grund = validiere_preset_python(v, text)
+        if grund != grund_hand:
+            raise SystemExit(f"Preset {name}: Hand-Grund {grund_hand} != Python-Grund {grund}")
+        pfad = f"preset/ungueltig/{name}.json"
+        dateien[pfad] = text.encode("utf-8")
+        preset_nein.append({"datei": pfad, "grund": grund_hand, "warum": warum})
+    print(f"Preset: {len(preset_ok)} gueltige, {len(preset_nein)} ungueltige mit Grund")
+
     # Schema-2-Goldens schreibt EqCopStateMigrationTest --schreibe-goldens (JUCE-
     # Binaerformat). Hier werden sie nur registriert, damit eine stille Aenderung
     # am --pruefen faellt.
@@ -626,8 +1056,11 @@ def baue(v: dict) -> tuple[dict[str, bytes], dict]:
     # SONDE-014 Etappe A: `main-intent-v1.bin` kommt aus demselben Writer
     # (§5.5, "Writer-Fixtures statt Handschrift") und traegt die vier neuen
     # MainProject-Eigenschaften an ihren Raendern.
+    # SONDE-015: zwei weitere Writer-Goldens - ein Stand mit vollem Kind `Dsp`
+    # und ein Stand im LAYOUT V1 (kein `dsp_schema_version`, 109 Werte), an dem
+    # die Migration nach R5 gemessen wird.
     for datei in ("aus-schema1-sensor", "aus-schema1-hub", "aus-schema1-pre", "aus-schema1-post",
-                  "fremdes-major-3", "main-intent-v1"):
+                  "fremdes-major-3", "main-intent-v1", "dsp-v2-voll", "layout-v1"):
         pfad = FIXTURES / "schema2" / f"{datei}.bin"
         if pfad.exists():
             b = pfad.read_bytes()
@@ -640,15 +1073,32 @@ def baue(v: dict) -> tuple[dict[str, bytes], dict]:
         "$id": "evenacadia.nakama.fixtures.state.v1",
         "titel": "State-Fixture-Korpus (SONDE-006): JCS, DSP-DTO, Schema-2-Goldens",
         "zweck": "Die dritte Partei zwischen C++ (NakamaKanon/NakamaParameter/NakamaState), Rust (serde_json_canonicalizer in contract_cross_language.rs) und Python (rfc8785). Die JCS-Erwartungen sind von Hand geschrieben bzw. aus dem RFC-Text uebernommen; rfc8785 hat sie bestaetigt. Die DTO-Kanonform liefert rfc8785 - die JCS-Korrektheit ist an dieser Stelle bereits durch die Handvektoren belegt.",
-        "vertrag": "../../schemas/state/nakama-parameter-v1.json",
+        "vertrag": "../../schemas/state/nakama-parameter-v2.json",
+        "vertrag_v1_eingefroren": "../../schemas/state/nakama-parameter-v1.json",
+        "vertrag_preset": "../../schemas/state/nakama-preset-v1.json",
+        "seitenwechsel": {
+            "ticket": "SONDE-015 (M-94)",
+            "datei": "dto/ungueltig/dsp-schema-version-2.json",
+            "war": "ungueltig (Layout v1 war der aktive Vertrag, 2 wurde abgelehnt)",
+            "ist": "entfallen - Layout v2 IST der aktive Vertrag; den Negativplatz nimmt dto/ungueltig/dsp-schema-version-1.json ein",
+        },
         "state_hash": "SHA-256-Hex des RFC-8785-kanonischen UTF-8 des validierten DTO (nakama-state-v2.md §4).",
         "gruende": ["kein_json", "doppelter_schluessel", "struktur", "dsp_schema_version", "unbekannter_schluessel",
-                    "fehlender_schluessel", "typ", "nichtendlich", "bereich", "enum"],
+                    "fehlender_schluessel", "typ", "nichtendlich", "bereich", "enum",
+                    # SONDE-015 R6: die drei Zonenregeln, die kein bestehendes
+                    # Wort traegt. Anzahl, Identitaet und Reihenfolge sind
+                    # KEINE Bereichsfehler - sie betreffen die Liste, nicht
+                    # einen Wert.
+                    "zone_anzahl", "zone_doppelt", "zone_sortierung",
+                    # SONDE-015 R12: nur das Preset kennt ihn.
+                    "verbotenes_feld", "preset_schema_version"],
         "jcs_zahlen": {"datei": "jcs/zahlen.json", "anzahl": zahlen["anzahl"],
                        "abgelehnt": sum(1 for e in zahlen["vektoren"] if e.get("abgelehnt"))},
         "jcs_dokumente": dok_eintraege,
         "dto_gueltig": dto_ok,
         "dto_ungueltig": dto_nein,
+        "preset_gueltig": preset_ok,
+        "preset_ungueltig": preset_nein,
         "schema2_goldens": goldens,
         "referenz": {"python": "rfc8785 " + __import__("importlib.metadata").metadata.version("rfc8785")},
     }
@@ -671,7 +1121,9 @@ def main() -> int:
             elif pfad.read_bytes() != inhalt:
                 print("ABWEICHUNG:", rel); fehler += 1
         # Verwaiste Dateien in den von diesem Erzeuger verwalteten Ordnern.
-        for ordner in ("jcs", "dto"):
+        for ordner in ("jcs", "dto", "preset"):
+            if not (FIXTURES / ordner).exists():
+                continue
             for p in sorted((FIXTURES / ordner).rglob("*")):
                 if p.is_file():
                     rel = p.relative_to(FIXTURES).as_posix()

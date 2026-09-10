@@ -1,0 +1,12 @@
+SONDE-015 Etappe 2 - Rotbeweis M-78
+Zusage: Der Undo-Ring haelt Tiefe 32; der 33. Eintrag ist kein Teilbestand.
+Bruch:  eq-copilot/plugin/state/NakamaState.cpp
+        -         if (eintraege == nullptr || eintraege->size() > parameter::kUndoTiefe)
+        +         if (eintraege == nullptr || eintraege->size() > parameter::kUndoTiefe * 4)
+------------------------------------------------------------------------------
+$ EqCopStateMigrationTest.exe
+  FEHLER  33. Undo-Eintrag macht den Stand read-only
+  FEHLER  == Roundtrip: bytegleich, additive Eigenschaft erhalten, 120 Werte bit-exakt, voller Undo-Ring
+
+EXIT=1
+URTEIL: ROT

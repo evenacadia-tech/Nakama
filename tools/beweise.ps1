@@ -527,8 +527,8 @@ $kanon = @(
     # "Codegen-Drift ist 0" ist nur dann eine Aussage, wenn sie GEFAHREN wird.
     # A9 prueft zusaetzlich, dass flatc, C++-Header und Rust-Crate dieselbe
     # Version tragen - der erzeugte Code ruft in diese Laufzeit.
-    [pscustomobject]@{ Kuerzel='A9';  Name='pruefe_flatc_drift.py';  Art='python'; Argumente=@();            AbPhase='jetzt'; Behauptung='Codegen-Drift ist 0: die Neugenerierung aus dem .fbs ist bytegleich zum committeten C++- und Rust-Code; flatc, C++-Header und Rust-Crate tragen dieselbe gepinnte Version; jedes Tabellenfeld traegt eine explizite Feld-ID.' }
-    [pscustomobject]@{ Kuerzel='A10'; Name='erzeuge_fb_fixtures.py'; Art='python'; Argumente=@('--pruefen'); AbPhase='jetzt'; Behauptung='Binaerer Fixture-Korpus und sein MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei; sechs NAK-29-Transportrelationen, band_stereo ID 10 samt saturated-/Grenzfaellen und integration_samples ID 14 (voller Rahmen, duenner Rahmen, gesendete 0 als Senderfehler) sind in beiden Lesern gedeckt.' }
+    [pscustomobject]@{ Kuerzel='A9';  Name='pruefe_flatc_drift.py';  Art='python'; Argumente=@();            AbPhase='jetzt'; Behauptung='Codegen-Drift ist 0: die Neugenerierung aus dem .fbs ist bytegleich zum committeten C++- und Rust-Code; flatc, C++-Header und Rust-Crate tragen dieselbe gepinnte Version; jedes Tabellenfeld traegt eine explizite Feld-ID, keine ist verbrannt oder wiederverwendet, und jedes Offsetfeld steht im Rust-Strukturriegel.' }
+    [pscustomobject]@{ Kuerzel='A10'; Name='erzeuge_fb_fixtures.py'; Art='python'; Argumente=@('--pruefen'); AbPhase='jetzt'; Behauptung='Binaerer Fixture-Korpus und sein MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei; sechs NAK-29-Transportrelationen, band_stereo ID 10 samt saturated-/Grenzfaellen, integration_samples ID 14 (voller Rahmen, duenner Rahmen, gesendete 0 als Senderfehler) und seit SONDE-015 band_dynamic_gain_db ID 22 (acht Werte, leerer Vektor, Altsender ohne Feld, vier falsche Laengen, NaN und Inf) sind in beiden Lesern gedeckt.' }
 
     # --- v2-Vertraege (Kontext-Inventur 21.08.) --------------------------------
     #
@@ -539,11 +539,17 @@ $kanon = @(
 
     # --- SONDE-006: State-Vertrag und state_hash --------------------------------
     #
-    # Der Parameterbestand (109 IDs) und der RFC-8785-Korpus sind handgeschrieben;
+    # Der Parameterbestand und der RFC-8785-Korpus sind handgeschrieben;
     # A12 prueft den Vertrag, laesst die Python-Referenz (rfc8785) jede
     # Hand-Erwartung bestaetigen und haelt Korpus + MANIFEST bytegleich.
     # B2 (C++) und das Rust-Bein in A4 messen gegen dasselbe MANIFEST.
-    [pscustomobject]@{ Kuerzel='A12'; Name='erzeuge_state_fixtures.py'; Art='python'; Argumente=@('--pruefen'); AbPhase='jetzt'; Behauptung='Parameterbestand (109 IDs, §53.8) haelt den Vertrag; RFC-8785-Zahlenvektoren tragen den RFC-Text und werden von rfc8785 bestaetigt; State-Fixture-Korpus und MANIFEST bytegleich zur Neuerzeugung.' }
+    #
+    # SONDE-015: der aktive Vertrag ist das LAYOUT V2 (120 Kennungen, davon
+    # 112 Host-Parameter). Die v1-Datei bleibt eingefroren; A12 rechnet die
+    # Ableitung nach - jeder v1-Eintrag steht woertlich in v2, nur um die
+    # zwei Attribute `layout` und `host_parameter` ergaenzt. Dazu prueft es
+    # das Presetschema und seinen Writer-Korpus.
+    [pscustomobject]@{ Kuerzel='A12'; Name='erzeuge_state_fixtures.py'; Art='python'; Argumente=@('--pruefen'); AbPhase='jetzt'; Behauptung='Parameterbestand Layout v2 (120 Kennungen, 112 Host-Parameter als Praefix) haelt den Vertrag, und die 109 v1-Kennungen sind aus der eingefrorenen v1-Datei woertlich abgeleitet; Zonen-, Preset- und Ablehnungsregeln stimmen mit dem Vertrag ueberein; RFC-8785-Zahlenvektoren tragen den RFC-Text und werden von rfc8785 bestaetigt; State- und Presetkorpus samt MANIFEST bytegleich zur Neuerzeugung, keine verwaiste Datei.' }
 
     # --- SONDE-004 (S4): Capabilityreport aus FL-Termin A + B --------------------
     #
@@ -649,7 +655,7 @@ $kanon = @(
     # --- geplant: laufen automatisch mit, sobald sie gebaut sind -------------
     [pscustomobject]@{ Kuerzel='B1'; Name='EqCopIdentityTest';       Art='plugin'; Argumente=@(); AbPhase='P0'; Behauptung='Bundle-Identitaet (CIDs, JUCE_VST3_CAN_REPLACE_VST2=0) eingefroren.' }
     # B2 wurde in P1 gebaut (SONDE-006): Schema 2, Parameterbestand, Migration, state_hash.
-    [pscustomobject]@{ Kuerzel='B2'; Name='EqCopStateMigrationTest'; Art='plugin'; Argumente=@(); AbPhase='P1'; Behauptung='State-Schema 2: Roundtrip bytegleich, Schema-1-Migration rein und golden, unbekanntes Major read-only mit Originalbytes, Duplicate erkennbar und aufloesbar, Host-Dirty; alle vier Klassen sperren post_fader_contribution; NAK-40-Aliasvektoren adressieren die bytegleich erhaltene Legacy-instance_id ohne Alias im State; Parametertabelle und RFC-8785-state_hash sprachuebergreifend.' }
+    [pscustomobject]@{ Kuerzel='B2'; Name='EqCopStateMigrationTest'; Art='plugin'; Argumente=@(); AbPhase='P1'; Behauptung='State-Schema 2: Roundtrip bytegleich, Schema-1-Migration rein und golden, unbekanntes Major read-only mit Originalbytes, Duplicate erkennbar und aufloesbar, Host-Dirty; alle vier Klassen sperren post_fader_contribution; NAK-40-Aliasvektoren adressieren die bytegleich erhaltene Legacy-instance_id ohne Alias im State; Parametertabelle und RFC-8785-state_hash sprachuebergreifend. Seit SONDE-015 zusaetzlich das Kind Dsp: 120 Werte bit-exakt durch den Roundtrip, flache Arrays statt Kindknoten, voller Undo-Ring aus 32 Schnappschuessen bytegleich und unter 16 MiB, der 33. Eintrag read-only; die Layoutmigration v1 nach v2 setzt occupied bitgenau aus enabled und den Werten; das Preset traegt zwei getrennte Versionen, weist jedes der sechs verbotenen Identitaetsfelder ab, ignoriert unbekannte Top-Level-Felder und laesst eq_enabled beim Laden unberuehrt.' }
     # B3 wurde in P0 gebaut (SONDE-003, Bridge-Patch), nicht erst in P2 - die
     # Phase ist hier berichtigt, damit die Zeile nicht laenger "geplant" heisst,
     # waehrend das Ziel schon Pflicht ist.
@@ -658,7 +664,7 @@ $kanon = @(
     [pscustomobject]@{ Kuerzel='B3b'; Name='EqCopHostProbeTest';     Art='plugin'; Argumente=@(); AbPhase='P0'; Behauptung='Termin-B-Messgeraet: Passthrough bitgleich, Sprung-/Automations-/Latenzmessung inkl. Fehlalarm-Riegel, Bericht-Rueckweg, 0 Allokationen.' }
     # SONDE-005a: der v3-Vertrag. Das C++-Bein misst gegen dasselbe
     # handgeschriebene MANIFEST wie contract_cross_language auf der Rust-Seite.
-    [pscustomobject]@{ Kuerzel='B3c'; Name='EqCopSchemaTest';         Art='plugin'; Argumente=@(); AbPhase='P1'; Behauptung='v3-Vertrag: C++ klassifiziert JSON- und FlatBuffers-Korpus wie das Manifest (Urteil UND Verletzungsmenge), einschliesslich Boolean/RFC-6901-Discriminatoren, NAK-29 in beiden Darstellungen und band_stereo ID 10; Bandgitter und Quantisierung bitgleich. Seit SONDE-013 misst dasselbe Bein integration_samples ID 14 ueber Encoder und Leser: gesetzt kommt Bit UND Wert zurueck, Abwesenheit bleibt gueltig und ist KEINE 0, und eine gesendete 0 faellt als Senderfehler.' }
+    [pscustomobject]@{ Kuerzel='B3c'; Name='EqCopSchemaTest';         Art='plugin'; Argumente=@(); AbPhase='P1'; Behauptung='v3-Vertrag: C++ klassifiziert JSON- und FlatBuffers-Korpus wie das Manifest (Urteil UND Verletzungsmenge), einschliesslich Boolean/RFC-6901-Discriminatoren, NAK-29 in beiden Darstellungen und band_stereo ID 10; Bandgitter und Quantisierung bitgleich. Seit SONDE-013 misst dasselbe Bein integration_samples ID 14 ueber Encoder und Leser: gesetzt kommt Bit UND Wert zurueck, Abwesenheit bleibt gueltig und ist KEINE 0, und eine gesendete 0 faellt als Senderfehler. Seit SONDE-015 zusaetzlich der Fassungsschritt P1 5: der aus der committeten Fassung zurueckgebaute Leser der Fassung 4 lehnt state_report.dsp ab, ein Bericht ohne dsp bleibt in beiden Fassungen gueltig, und der Empfaenger rechnet SHA-256(dsp.jcs) gegen state_hash nach - ein schemagueltiger Bericht mit abweichendem Hash wird GANZ abgewiesen.' }
     # S10-11/SONDE-008: B4 wird Pflicht. Zwei Ebenen in einem Bein - Queue und
     # Quarantaene pur (dort sind Ueberlauf, Wrap und Oversize deterministisch
     # herbeifuehrbar) UND derselbe Weg verdrahtet im echten Prozessor, dort an

@@ -1,0 +1,576 @@
+SONDE-015 Etappe 2 - Beine der Etappe (Verträge in drei Sprachen)
+Lauf: 2026-09-10T04:17:26
+Kein Kanonlauf: der volle abgekoppelte Kanon gehoert an das Ende der Etappe 4.
+==============================================================================
+$ cmake --build eq-copilot/build --config Release   EXIT=0
+------------------------------------------------------------------------------
+### A5 - pruefe_v3_vertrag.py --abdeckung
+$ py -3.13 tools/eq-copilot/pruefe_v3_vertrag.py --abdeckung
+jsonschema 4.26.0 (draft 2020-12)
+115 Definitionen, 26 Nachrichtenfamilien, 401 Fixtures
+Pruefungen: 630 bestanden, 0 gescheitert
+
+Abdeckung je Schluesselwort (mit Negativfixture / vorhanden).
+HART sind nur enum und const: dort ist ein falscher Wert ein echtes
+Produktrisiko. Die uebrigen Quoten stehen hier VOLLSTAENDIG, damit
+Unterabdeckung sichtbar bleibt statt still zu sein.
+  additionalProperties     29 / 92  
+  const                    16 / 16   HART
+  enum                     50 / 50   HART
+  exclusiveMinimum          3 / 3   
+  items                     9 / 36  
+  maxItems                  6 / 36  
+  maxLength                 6 / 37  
+  maxProperties             2 / 3   
+  maximum                  15 / 61  
+  minItems                  5 / 36  
+  minLength                 8 / 30  
+  minimum                  14 / 103 
+  oneOf                    11 / 17  
+  pattern                   5 / 13  
+  required                 70 / 451 
+  type                     14 / 328 
+
+$defs ohne Negativfixture: keine
+C:\Users\phili\Projekte\Nakama\tools\eq-copilot\pruefe_v3_vertrag.py:2240: DeprecationWarning: Accessing jsonschema.__version__ is deprecated and will be removed in a future release. Use importlib.metadata directly to query for jsonschema's version.
+  print(f"jsonschema {jsonschema.__version__} (draft 2020-12)")
+EXIT=0  URTEIL=GRUEN
+------------------------------------------------------------------------------
+### A8 - erzeuge_v3_fixtures.py --pruefen
+$ py -3.13 tools/eq-copilot/erzeuge_v3_fixtures.py --pruefen
+111 gueltige, 290 ungueltige Fixtures
+  bytegleich: 405 Dateien, MANIFEST sha256=9c6a022d1299852e5e36f9dfb0a4f491939f50c3645e907ea47a540133e0d26d
+EXIT=0  URTEIL=GRUEN
+------------------------------------------------------------------------------
+### A9 - pruefe_flatc_drift.py
+$ py -3.13 tools/eq-copilot/pruefe_flatc_drift.py
+Gepinnt: flatbuffers 25.12.19 @ 7e163021e59c
+  flatc: 25.12.19  (C:\Users\phili\Projekte\Nakama\eq-copilot\build\_deps\flatbuffers-build\Release\flatc.exe)
+  flatc-Beleg: Commit 7e163021e59cca4f8e1e35a7c828b5c6b7915953, sha256=9f9c82758ee9f3ad21ce70019716903431c70227219eae95fe1c06fa4cde43fe  (C:\Users\phili\Projekte\Nakama\eq-copilot\build\nakama-flatc-commit-Release.txt)
+  Rust-Crate: 25.12.19 (Cargo.lock; Anforderung 25.12.19)
+  Feld-IDs: 0 rot
+
+Codegen-Drift:
+  ok:  eq-copilot/plugin/vertrag/generiert/nakama_telemetry_v1_generated.h  1547 Zeilen  sha256=ecbd4e35a9ae5abd...
+  ok:  broker/src/generiert/nakama_telemetry_v1_generated.rs  2482 Zeilen  sha256=1840a88ae679608e...
+
+Drift: 0 Dateien
+EXIT=0  URTEIL=GRUEN
+------------------------------------------------------------------------------
+### A10 - erzeuge_fb_fixtures.py --pruefen
+$ py -3.13 tools/eq-copilot/erzeuge_fb_fixtures.py --pruefen
+26 gueltige, 102 ungueltige Fixtures
+  bytegleich: 129 Dateien, MANIFEST sha256=342f9d9154678a06af7b238b06f8c393020a747ea9080b6012ff9dea96314916
+EXIT=0  URTEIL=GRUEN
+------------------------------------------------------------------------------
+### A11 - pruefe_v2_schemas.py
+$ py -3.13 tools/eq-copilot/pruefe_v2_schemas.py
+Datei                            $id                                        JSON  Metaschema
+eq-aggregat.schema.json          evenacadia.eq-copilot.aggregat.v1          ok    ok
+eq-ipc.schema.json               evenacadia.eq-copilot.ipc.v2               ok    ok
+eq-measurement.schema.json       evenacadia.eq-copilot.measurement.v1       ok    ok
+eq-report.schema.json            evenacadia.eq-copilot.report.v1            ok    ok
+eq-snapshot.schema.json          evenacadia.eq-copilot.snapshot.v3          ok    ok
+
+GRUEN â€” 5 v2-Vertraege: gueltiges JSON, gueltiges Schema, $id eingefroren.
+EXIT=0  URTEIL=GRUEN
+------------------------------------------------------------------------------
+### A12 - erzeuge_state_fixtures.py --pruefen
+$ py -3.13 tools/eq-copilot/erzeuge_state_fixtures.py --pruefen
+Parameterbestand v2: 120 Kennungen (112 Host-Parameter), 120 eindeutige IDs, 109 v1-Eintraege woertlich abgeleitet; Preset 119 Kennungen, 6 verbotene Felder
+RFC-8785-Tabelle: 24 Zahlen gegen den RFC-Text bestaetigt, 28 Handvektoren bestaetigt, 2 abgelehnt (NaN, Infinity)
+JCS-Dokumente: 13 Hand-Erwartungen von rfc8785 bestaetigt
+DTO: 7 gueltige gehasht, 26 ungueltige mit Grund
+Preset: 3 gueltige, 13 ungueltige mit Grund
+STATE-FIXTURES OK (64 Dateien bytegleich, keine verwaiste Datei)
+EXIT=0  URTEIL=GRUEN
+------------------------------------------------------------------------------
+### B2 - EqCopStateMigrationTest
+$ C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopStateMigrationTest_artefacts\Release\EqCopStateMigrationTest.exe
+e, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=passive_probe, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=passive_probe, Position=post_fader_contribution: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post_fader_contribution is not allowed for passive_probe', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=active_probe, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=active_probe, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=active_probe, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=active_probe, Position=post_fader_contribution: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post_fader_contribution is not allowed for active_probe', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      16 Kombinationen aus Klasse x Messposition wie Â§2.2 - post_fader_contribution fuer KEINE Klasse (contribution_aux unsupported)  [16]
+  ok      post_fader_contribution_bleibt_fuer_alle_sondenklassen_gesperrt
+  ok      == Positionsmatrix vollstaendig, jede Klasse in ihrem Bundle
+  ok      instance_address_alias_vectors  [6/6]
+  ok      instance_alias_target_recomputed_and_matched
+  ok      instance_alias_unknown_fail_closed
+  ok      instance_address_empty_uses_fresh_uuid  [2b22195374fe44a78723b6334d924b11]
+  ok      legacy_instance_id_save_load_bytegleich
+  ok      == NAK-40 Aliasvektoren, Zielvergleich und Save+Load
+  ok      21 Faelle read-only, Bytes unveraendert, Aenderungen verweigert  [21]
+  ok      fremder Baumtyp wird ignoriert, Zustand bleibt
+  ok      Muellbytes werden ignoriert
+  ok      ungueltiges UTF-8 im ValueTree faellt vor JUCEs tolerantem Stringleser
+  ok      gueltiger Praefix mit Suffix wird vollstaendig ignoriert
+  ok      abgeschnittener spaeter Kindbaum wird nicht als Teilstate uebernommen
+  ok      deklarierte Riesenvariante wird vor JUCE-Allokation verworfen
+  ok      zu tiefer ValueTree wird begrenzt und ignoriert
+  ok      zu tief geschachteltes Variantenarray wird begrenzt und ignoriert
+  ok      State oberhalb 16 MiB wird vor dem ersten Bytezugriff verworfen
+  ok      ValueTree-Tiefe 64 inklusive Wurzel passiert den Byte-Riegel
+  ok      63 verschachtelte Arrays plus Blatt passieren und laden
+  ok      65.536 Eintraege in einer Sammlung passieren den Byte-Riegel
+  ok      65.537 Eintraege in einer Sammlung werden verworfen
+  ok      262.144 Eintraege ueber mehrere Sammlungen passieren den Byte-Riegel
+  ok      262.145 Eintraege ueber mehrere Sammlungen werden verworfen
+  ok      Teststate trifft die schreibbare Bytegrenze exakt  [16638037]
+  ok      Writer bleibt mit maximalen bekannten Userfeldern innerhalb seiner Lesergrenze  [16672163]
+  ok      State ohne konkreten Writer-Headroom bleibt read-only bytegleich
+  ok      vollstaendiger bekannter State exakt bei 16 MiB bleibt read-only bytegleich
+  ok      nicht verlustfrei lesbarer Variantenmarker bleibt read-only bytegleich  [9]
+  ok      nicht verlustfrei lesbarer Variantenmarker bleibt read-only bytegleich  [10]
+  ok      additive Binaer- und Array-Properties bleiben bytegleich lesbar
+  ok      read-only gesetzt
+  ok      gueltiger Stand hebt read-only wieder auf
+  ok      == Unbekanntes Major: 21 Faelle read-only, Originalbytes bytegleich zurueck
+  ok      Duplikat: gleiche instance_id (der State IST der Messpunkt)  [11111111-2222-3333-4444-555555555555]
+  ok      Duplikat: verschiedene runtime_nonce
+  ok      neueSensorId loest auf
+  ok      neue instance_id: 32 Hex, verschieden von beiden  [7e38e5d6618b4b02833a6eeb681154a0]
+  ok      Label und Rolle bleiben bei der Aufloesung
+  ok      Aufloesung meldet genau einmal Host-Dirty  [1]
+  ok      neue instance_id wird gespeichert und geladen
+  ok      == Duplicate: gleiche instance_id, verschiedene runtime_nonce, Aufloesung mit Host-Dirty
+  ok      Laden + Migration melden NICHT dirty  [0]
+  ok      Herkunft schema1Migriert
+  ok      setzeBindung ohne Aenderung: keine Meldung
+  ok      setzeBindung mit Aenderung: genau eine Meldung  [0]
+  ok      Aenderung kam an
+  ok      Rollenwechsel zu hub: zweite Meldung
+  ok      hub speichert MainProject und kein pair_id
+  ok      getStateInformation meldet nichts
+  ok      unbekannte v2-Rolle wird verweigert, keine Meldung
+  ok      Writer-API erzwingt 120/60-Zeichen-Grenzen ohne Dirty oder Teilmutation
+  ok      read-only mit fremdem Major 9  [9]
+  ok      read-only verweigert setzeBindung und neueSensorId ohne Meldung
+  ok      == Host-Dirty: Aenderung meldet, Laden schweigt, read-only verweigert
+  ok      nie restauriert: Herkunft frisch
+  ok      frisch: legacy+insert = v2 'sensor', leeres Label
+  ok      frisch: instance_id ist hex32  [eb798251816a4104b2bc296ff1c549d3]
+  ok      frisch speichert NakamaState schema 2, legacy
+  ok      Recall: Schema-2-Golden laedt feldgleich in eine frische Instanz
+  ok      Recall: Save nach Recall ist bytegleich zum Golden
+  ok      == Frisch/Recall: Herkunft frisch, Recall in frische Instanz feldgleich
+
+STATE-MIGRATION-TEST OK - 243 Pruefungen ok, 0 Fehler
+EXIT=0  URTEIL=GRUEN
+------------------------------------------------------------------------------
+### B3c - EqCopSchemaTest
+$ C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSchemaTest_artefacts\Release\EqCopSchemaTest.exe
+ lehnt ab: ungueltig/nul-escape-im-label.json  [NUL-Escape in Zeichenkette an Position 1289]
+[ok]   Skalar-Wurzel wird schon im Parser abgelehnt: ungueltig/wurzel-ist-string.json
+[ok]   Textriegel lehnt ab: ungueltig/zahl-bruch-rundet-auf-2hoch53.json  [Zahl mit mehr als 15 signifikanten Dezimalziffern: 9007199254740992.1]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-bruch-rundet-nahe-2hoch53-ab.json  [Zahl mit mehr als 15 signifikanten Dezimalziffern: 9007199254740991.1]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-bruch-rundet-unter-2hoch53-auf.json  [Zahl mit mehr als 15 signifikanten Dezimalziffern: 4503599627370495.9]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-fuehrende-null.json  [fuehrende Null in "091" an Position 356]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-jenseits-u64.json  [Ganzzahl ausserhalb 2^53-1: 18446744073709552016]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-kleiner-bruch-rundet-auf-eins.json  [Zahl mit mehr als 15 signifikanten Dezimalziffern: 1.00000000000000001]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-nan-token.json  [unbekanntes Literal NaN an Position 1090]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-nicht-endlich.json  [Zahl ausserhalb +/-1e308: 1e400]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-ueber-2hoch53.json  [Ganzzahl ausserhalb 2^53-1: 9007199254740992]
+[ok]   Korpus klassifiziert wie das Manifest (401 Fixtures)
+[ok]   Korpus hat Substanz  [401 Fixtures]
+[ok]   Manifestzahlen passen zur Fixtureliste
+[ok]   Fassung 5 und ihr Rueckbau auf Fassung 4 laden beide  [ ]
+[ok]   fassung_4_leser_lehnt_state_report_dsp_ab
+[ok]   ein Bericht OHNE dsp bleibt in beiden Fassungen gueltig (Altsender)
+[ok]   Gegenprobe: der Rueckbau auf Fassung 4 aendert das Schema wirklich
+[ok]   hash_stimmt_mit_der_zeichenkette  [ ]
+[ok]   q = 0.7071067811865476 kommt bitgenau durch den Wire-Weg zurueck  [0.70710678118654757]
+[ok]   abweichender_hash_wird_abgewiesen  [state_hash SHA-256(dsp.jcs) = 597bcd135586415ca66104a1abafcb3f9cb0ccfcde0c81d7f43572ddb07221f6, state_report.state_hash = 508b7f1950d1a1f2f4df079ea63248fdffa4be8ab9b87afa99975f439732f218]
+[ok]   das Gegenfixture ist schemagueltig: nur der Leser sieht den Bruch
+[ok]   feines Gitter hat 221 Baender
+[ok]   222 Kanten, 221 Mitten  [222/221]
+[ok]   Kanten streng monoton
+[ok]   jede Mitte liegt echt zwischen ihren Kanten
+[ok]   keine Mitte ist NaN oder unendlich
+[ok]   alle Mitten liegen in 30 Hz .. 18 kHz
+[ok]   grobes Gitter hat 64 Gruppen
+[ok]   65 grobe Kanten
+[ok]   Gruppen sind lueckenlos und ueberlappungsfrei
+[ok]   keine leere Gruppe
+[ok]   Gruppen decken genau 221 feine Baender  [221]
+[ok]   grobe Kanten sind BITGLEICHE Kopien feiner Kanten
+[ok]   Quantisierung stimmt mit den Testvektoren (61)
+[ok]   genug Vektoren  [61]
+[ok]   N-18: -0 wird 0  [0]
+[ok]   N-18: ein Zehntel  [0.1]
+[ok]   N-18: ein Drittel, auf 15 Stellen gedeckelt  [0.333333333333333]
+[ok]   N-18: kleiner Exponent  [1e-7]
+[ok]   N-18: kleinster normaler float  [1.17549435082229e-38]
+[ok]   N-18: kleinster subnormaler float  [1.40129846432482e-45]
+[ok]   N-18: weit unten, aber ueber der Grenze  [1e-300]
+[ok]   N-18: der kleinste angenommene Betrag  [1e-307]
+[ok]   N-18: 2^53-1 als EXAKTE Ganzzahl  [9007199254740991]
+[ok]   N-18: eine Samplerate  [48000]
+[ok]   N-18/R4f: die Eingabe liegt ECHT unter 1e-307 (Wertvergleich)
+[ok]   N-18/R4f: ihr gedeckelter Wiretext lautet 1e-307  [1e-307]
+[ok]   N-18/R4f: die UNGEDECKELTE Form ist eine andere und faellt am Riegel
+[ok]   N-18b: verweigert Ã¢Â€Â” NaN
+[ok]   N-18b: verweigert Ã¢Â€Â” +Inf
+[ok]   N-18b: verweigert Ã¢Â€Â” -Inf
+[ok]   N-18b: verweigert Ã¢Â€Â” 2^53 â€” eine Ganzzahl ueber der Grenze
+[ok]   N-18b: verweigert Ã¢Â€Â” 1e21 an der ES6-Schreibweisengrenze
+[ok]   N-18b: verweigert Ã¢Â€Â” groesster normaler float â€” Ganzzahl ueber 2^53
+[ok]   N-18b: verweigert Ã¢Â€Â” 1e300 â€” Ganzzahl, nicht Betragsgrenze
+[ok]   N-18b: verweigert Ã¢Â€Â” -1e300
+[ok]   N-18b: verweigert Ã¢Â€Â” 1e308 an der Betragsgrenze
+[ok]   N-18b: verweigert Ã¢Â€Â” 2e-308 â€” GROESSER als 1e-308 und trotzdem drausen
+[ok]   N-18b: verweigert Ã¢Â€Â” 9.99e-308 â€” dez = -308
+[ok]   N-18b: verweigert Ã¢Â€Â” 1e-308
+[ok]   N-18b: verweigert Ã¢Â€Â” 4.9e-324, der kleinste subnormale double
+[ok]   N-18: der Deckel laesst exakte Ganzzahlen unangetastet
+[ok]   N-19: es6Zahl bleibt ungedeckelt (der state_hash laeuft durch keinen Riegel)
+[ok]   N-17: eine Komma-Locale ist verfuegbar
+[ok]   N-17: der Rueckwechsel auf die Ausgangs-Locale gelingt - ohne ihn maesse die Zeile darunter nicht die C-Seite  [C]
+[ok]   N-17: der Hello traegt die nichtganzzahlige Samplerate mit PUNKT  [{"type":"hello","connection_kind":"control","protocol":3,"plugin_version":"0.3.0","plugin_kind":"main","adresse":{"logon_sid":"S-1-5-21-1111111111-2222222222-3333333333-1001","project_binding_id":"11111111111111111111111111111111","session_epoch":"22222222222222222222222222222222","instance_id":"33333333333333333333333333333333","runtime_nonce":"44444444444444444444444444444444"},"audio":{"samplerate":44100.5,"block_size":512,"channels":2}}]
+[ok]   N-17: dieselbe Komma-Locale laesst sich nach dem Rueckwechsel ERNEUT setzen  [de-DE]
+[ok]   N-17: der Heartbeat ist unter Komma-Locale BYTEGLEICH  [771 Bytes]
+[ok]   N-17: und der HELLO-Text ebenso - bytegleich unter beiden Locales  [444 Bytes]
+[ok]   N-17: kein Komma-Dezimaltrenner im Hello - hier faellt der Rotbeweis, wenn `zahl` durch `std::to_string` ersetzt wird
+[ok]   N-17: juce::JSON liest die Samplerate unveraendert zurueck
+[ok]   N-17: und die Ausgangs-Locale steht am Ende wieder - sonst liefe der REST dieses Beins unter Komma
+[ok]   N-18d: audioGueltig weist eine riegelwidrige Samplerate ab Ã¢Â€Â” der Client verbindet gar nicht erst, statt ein null in ein Pflicht-number zu senden
+[ok]   N-18d: dasselbe fuer den kleinsten subnormalen double
+[ok]   N-18d: und nimmt die gewoehnliche Samplerate an
+[ok]   N-18d: auch eine nichtganzzahlige, die der Riegel traegt
+-----------------------------------------
+149 bestanden, 0 gescheitert
+EXIT=0  URTEIL=GRUEN
+------------------------------------------------------------------------------
+### A16 - EqCopProbeeqNullTest
+$ C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopProbeeqNullTest_artefacts\Release\EqCopProbeeqNullTest.exe
+SONDE-NULLTEST â€” nakama-sonde-testschale (Produktklasse active_probe)
+  ok      frischer Zustand traegt die Produktklasse des Bundles  [active_probe]
+  ok      der Bundlevertrag laesst die eigene Produktklasse zu
+  ok      der Bundlevertrag laesst 'main' NICHT zu
+  ok      der Bundlevertrag laesst 'legacy' NICHT zu
+  ok      das Bundle meldet dem Host keinen Parameter  [0]
+  ok      keine erfundene Oberflaeche (Gestaltung kommt aus Figma)
+  ok      frische Instanz ist neutral, trotz fester Produktklasse  [unclassified]
+  ok      eine Sonde darf den Broker nie starten
+  ok      bitgleich bei 44100 Hz, Block 1
+  ok      0 Samples Latenz bei 44100 Hz, Block 1  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 44100 Hz, Block 16
+  ok      0 Samples Latenz bei 44100 Hz, Block 16  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 44100 Hz, Block 64
+  ok      0 Samples Latenz bei 44100 Hz, Block 64  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 44100 Hz, Block 512
+  ok      0 Samples Latenz bei 44100 Hz, Block 512  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 44100 Hz, Block 4096
+  ok      0 Samples Latenz bei 44100 Hz, Block 4096  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 48000 Hz, Block 1
+  ok      0 Samples Latenz bei 48000 Hz, Block 1  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 48000 Hz, Block 16
+  ok      0 Samples Latenz bei 48000 Hz, Block 16  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 48000 Hz, Block 64
+  ok      0 Samples Latenz bei 48000 Hz, Block 64  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 48000 Hz, Block 512
+  ok      0 Samples Latenz bei 48000 Hz, Block 512  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 48000 Hz, Block 4096
+  ok      0 Samples Latenz bei 48000 Hz, Block 4096  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 96000 Hz, Block 1
+  ok      0 Samples Latenz bei 96000 Hz, Block 1  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 96000 Hz, Block 16
+  ok      0 Samples Latenz bei 96000 Hz, Block 16  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 96000 Hz, Block 64
+  ok      0 Samples Latenz bei 96000 Hz, Block 64  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 96000 Hz, Block 512
+  ok      0 Samples Latenz bei 96000 Hz, Block 512  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 96000 Hz, Block 4096
+  ok      0 Samples Latenz bei 96000 Hz, Block 4096  [0]
+  ok      kein MIDI erzeugt
+  ok      kein Tail  [0]
+  ok      Stille bleibt bitgenau still
+  ok      Zustand laesst sich speichern  [3537 Bytes]
+  ok      geladener Zustand ist derselbe (Instanz-ID, Klasse, Position, Label)
+  ok      der eigene Stand kommt NICHT als read-only zurueck
+  ok      nach gueltigem State traegt der Lebenslauf die Produktklasse  [active_probe]
+  ok      speichern -> laden -> speichern ist bytegleich  [3537 Bytes]
+  ok      Probeeq-Controlprovider erfindet keine eigene Session-Epoche
+  ok      Probeeq-Stateprovider meldet echten Parameterhash und keinen erfundenen Record-State
+  ok      Testschale belegt beide Connectoren; Probeeq besitzt keinen Startpfad
+  ok      Probeeq-ControlClient traegt seinen produktiven Statusprovider
+  ok      Probeeq startet produktiv beide v3-Connectoren, aber niemals einen Broker
+  ok      die Probebytes tragen wirklich measurement_position=post_fader_contribution  [post_fader_contribution]
+  ok      insert_probe_is_never_called_master_sum: der Stand kommt als read-only zurueck, nicht als eigener  [measurement_position post_fader_contribution is not allowed for active_probe]
+  ok      read-only nennt seinen Grund
+  ok      das Bundle FUEHRT die verbotene Position nicht  [insert]
+  ok      die Instanz klassifiziert NICHT auf die Produktklasse, sie bleibt neutral  [unclassified]
+  ok      eine read-only-Sonde darf den Broker nicht starten
+  ok      Vertrag 53.8: dieselben Originalbytes gehen unveraendert an den Host zurueck  [3554 Bytes]
+  ok      der Rueckweg waescht nichts: erneut geladen bleibt read-only  [measurement_position post_fader_contribution is not allowed for active_probe]
+  ok      und erneut geladen bleibt die Instanz neutral  [unclassified]
+  ok      Gegenprobe: derselbe Stand mit erlaubter Position laedt normal
+  ok      Gegenprobe: der geladene Common ist derselbe (Position insert)  [insert]
+  ok      Gegenprobe: nach gueltigem Stand traegt der Lebenslauf die Produktklasse  [active_probe]
+  ok      Nachreichen: die Instanz ist VOR dem verbotenen Stand klassifiziert  [active_probe]
+  ok      Nachreichen: der verbotene Stand kommt auch bei einer laufenden Instanz read-only  [measurement_position post_fader_contribution is not allowed for active_probe]
+  ok      Nachreichen: die Klassifikation faellt zurueck auf neutral, alte Rechte bleiben nicht  [unclassified]
+  ok      Nachreichen: der Host bekommt genau die Bytes zurueck, die er gab - kein stiller Tausch  [3554 Bytes]
+  ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'main'
+  ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'passive_probe'
+  ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'active_probe'
+  ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'legacy'
+  ok      Muellbytes lassen den gehaltenen Zustand unveraendert
+  ok      Nullzeiger/Laenge 0 lassen den gehaltenen Zustand unveraendert
+
+SONDE-NULLTEST OK - 87 Pruefungen ok, 0 Fehler
+EXIT=0  URTEIL=GRUEN
+------------------------------------------------------------------------------
+### B10 - EqCopIpcTest
+$ C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopIpcTest_artefacts\Release\EqCopIpcTest.exe
+eitig_aus  [65 im Register]
+  ok      kr01_der_erste_auftrag_wird_mit_frischem_kopf_wiederholt  [Text steht]
+  ok      kr01_erst_angewandt_gibt_den_ersten_auftrag_frei  [1 gemeldet, 64 bleiben]
+  ok      kr01_die_uebrigen_auftraege_bleiben_unberuehrt  [64 im Register, 0 endgueltig ohne Erfolg]
+  ok      NAK-180 R7: aufbaufilter_verwirft_nur_alte_berichte - genau der Bericht der alten Generation faellt, gemeldet mit seiner Marke  [1 gefallen]
+  ok      NAK-180 R7: das EREIGNIS bleibt - fuer P0-Ereignisse gilt 'nichts verwerfen' unveraendert (Paragraph 53.9)  [2]
+  ok      NAK-180 R7: und der Verwurf ist GEZAEHLT, nie stillschweigend  [1]
+  ok      NAK-180 R10: ein waehrend des Callbacks eingereihtes Replay traegt die NEUE Generation und wird ZUGESTELLT, nicht verworfen
+  ok      NAK-180 R12: der Aufbauzug SIEHT das Interventionsereignis aelterer Generation
+  ok      NAK-180 EP-09: ein persistenter P0-Befehl loest die Zustellpruefung NICHT aus - nur Interventionen tun das
+  ok      NAK-180 R12: zustellpruefung_stellt_das_replay_voran - auf dem neuen Link reist Begin VOR End, ohne dass ein Rennen noetig waere  [{"replaybegin":1}]
+  ok      NAK-180 R12: und das `end` folgt unmittelbar  [{"end":1}]
+  ok      NAK-180 R7: der Bericht ist entnommen und reserviert
+  ok      NAK-180 R7: bericht_wird_beim_write_fehler_fallen_gelassen - er geht NICHT zurueck in die Queue, und der Platz wird frei  [0/0]
+  ok      NAK-180 R7: ein Ereignis geht mit Klasse, Generation und Marke UNVERAENDERT zurueck - es reist auf dem neuen Link von selbst, und genau deshalb darf der Prozessor es nicht replayen (N-27)
+  ok      NAK-180 R13: aufraeumen_per_cas_verliert_kein_update - das CAS schlaegt fehl, und die Wirkung von G+1 bleibt stehen  [2]
+  ok      NAK-180 R13: und wenn niemand dazwischenschrieb, raeumt es auf
+  ok      NAK-180 N-26 (a): der Bericht von G1 ist eingereiht
+  ok      NAK-180 N-26 (a): und ein Interventionsereignis daneben
+  ok      NAK-180 N-26: der Aufbauzug vergibt die naechste Generation  [1 -> 2]
+  ok      NAK-180 N-26 (a): der Aufbaufilter verwirft GENAU den Bericht der alten Generation und meldet seine Marke - am echten Zug, nicht an einer isolierten Queue  [1]
+  ok      NAK-180 N-26 (b): das Replay wird IM Callback eingereiht
+  ok      NAK-180 N-26 (b): der Callback sieht bereits die NEUE Generation - die Vergabe liegt VOR ihm, sonst wuerfe der Filter das Replay des geweckten Workers weg (MP2-1/MP4-1)  [3 == 3]
+  ok      NAK-180 N-26 (b): und es wird ZUGESTELLT, nicht verworfen
+  ok      NAK-180 N-26 (a): das Interventionsereignis hat beide Wechsel ueberlebt - fuer Ereignisse gilt 'nichts verwerfen' unveraendert
+  ok      NAK-180 N-26 (c): der sterbende Link reiht noch einen Bericht ein
+  ok      NAK-180 N-26 (c): der Filter des naechsten Links ist zugleich die Generationspruefung fuer Queue-Inhalte - dafuer braucht es keinen Ende-Callback  [1]
+  ok      NAK-180 EP-07: der Aufbau-Heartbeat ist eingereiht
+  ok      NAK-180 EP-07: ein_markenraum - Heartbeat und Marker-Begin tragen VERSCHIEDENE Marken; zwei Folgen mit eigenem Nullpunkt liessen den Rueckruf des einen das andere als zugestellt buchen  [1 vs 2]
+  ok      NAK-180 EP-03: ein Urteil fuer eine TOTE Generation wird nicht angewendet  [0 (G1 gegen G2)]
+  ok      NAK-180 EP-03/R12: der erste Heartbeat von G+1 traegt SEIN Urteil - der veraltete Abschluss hat es nicht durch `false` ersetzt
+  ok      NAK-180 EP-05/N-37: der negative Callback bekommt die STERBENDE Generation, nicht die aktuelle  [1]
+  ok      NAK-180 N-34: der zweite Aufbau vergibt die naechste Generation  [1 -> 2]
+  ok      NAK-180 N-37: berichtOffen und replayFaellig tragen G2 - der ueberholte Callback von G1 hat sie nicht mitgenommen  [2/2]
+  ok      NAK-180 N-34: ueberholter_callback_praegt_keinen_spaeteren_link - der erste Heartbeat von G2 traegt dessen eigenes Urteil (`true`), nicht das `false`, das der Callback von G1 danach schrieb
+  ok      NAK-180 N-23: und die Aussage des toten Links reist nicht mit
+  ok      NAK-180 N-37: Ausgangslage - G2 haelt seine Zustaende
+  ok      NAK-180 N-37: G3 hat geschrieben  [3]
+  ok      NAK-180 EP-05/N-37 Fall 2: der festgehaltene negative Callback liest SEINE sterbende Generation, nicht die inzwischen aktuelle  [2 statt 3]
+  ok      NAK-180 EP-05/N-37 Fall 2: und er loescht die Wirkung von G3 NICHT - das CAS auf die sterbende Generation schlaegt fehl  [3/3]
+  ok      NAK-180 N-37: der erste Heartbeat von G3 traegt dessen E1-Urteil - ein verlorenes `neutralerNeuaufbau` waere D-01 in neuer Form
+  ok      NAK-180 EP-15/N-34 Fall 2: `stop()` fuehrt seinen negativen Callback mit der sterbenden Generation aus, waehrend der positive noch steht  [1]
+  ok      NAK-180 N-34 Fall 2: und `stop()` kehrt regulaer zurueck  [1 ms]
+  ok      NAK-180 N-37: nach `stop()`+`start()` tragen beide Zustaende die Generation des NEUEN Links  [2]
+  ok      NAK-180 N-34 Fall 2: der erste Heartbeat traegt das E1-Urteil von G2, nicht das `false`, das der ueberholte Callback danach schrieb
+  ok      NAK-180 EP-15/N-34 Fall 3: der reentrante negative Callback bekommt die Generation SEINES Links, nicht die aktuelle - und er verklemmt nicht (keine Serialisierung der Callbacks, E10)  [1]
+  ok      NAK-180 N-34 Fall 3: die spaete Wirkung traegt ihre eigene Generation  [1]
+  ok      NAK-180 N-34 Fall 3: G2 urteilt frisch - sein `false` reist, das `true` von G1 nicht  [1 -> 2]
+  ok      NAK-180 R6: der Testname liegt im Probe-Namensraum - ein produktiver v3-Name wird nie belegt
+  ok      NAK-180 R6: die feindliche Pipe steht (jedes lokale Konto darf das)
+  ok      NAK-180 R6: wartefrist_ist_unsere_nicht_die_des_servers - der Aufruf kehrt unter 1 s zurueck, obwohl der Pipe-Besitzer 0xFFFFFFFE als Default-Timeout gesetzt hat  [0 ms]
+  ok      NAK-180 R6: und eine belegte Instanz zaehlt weiter als erreichbar  [true]
+  ok      NAK-180 R6: ein nicht existierender Name bleibt nicht erreichbar und kehrt sofort zurueck  [0 ms]
+
+ALLE PRUEFUNGEN GRUEN â€” 389 Pruefungen, 0 Fehler
+EXIT=0  URTEIL=GRUEN
+------------------------------------------------------------------------------
+### A4 - cargo test (Broker)
+$ cargo test --manifest-path broker/Cargo.toml --color never
+d in 0.20s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: method `snapshot` is never used
+   --> tests\sonde014_gegenbeispiele.rs:409:8
+    |
+225 | impl Buehne {
+    | ----------- method in this implementation
+...
+409 |     fn snapshot(&self) -> Value {
+    |        ^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (test "sonde014_gegenbeispiele") generated 1 warning
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:2908:9
+     |
+2908 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+     |
+     = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:3893:9
+     |
+3893 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:3940:9
+     |
+3940 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: field `clock` is never read
+   --> tests\sonde013_verdrahtung.rs:280:5
+    |
+277 | struct HarnischMitStore {
+    |        ---------------- field in this struct
+...
+280 |     clock: Arc<ManualClock>,
+    |     ^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `sonde_mit_evidenz` is never used
+    --> tests\sonde013_verdrahtung.rs:1907:4
+     |
+1907 | fn sonde_mit_evidenz(h: &HarnischMitStore, anzahl: usize) -> HelloControl {
+     |    ^^^^^^^^^^^^^^^^^
+
+warning: `eqcop-broker` (test "sonde013_verdrahtung") generated 5 warnings (run `cargo fix --test "sonde013_verdrahtung" -p eqcop-broker` to apply 3 suggestions)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 7.87s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+     Running unittests src\main.rs (broker\target\debug\deps\eqcop_broker-ca9e718cafceb3fd.exe)
+     Running unittests src\bin\eqcop-broker-probe.rs (broker\target\debug\deps\eqcop_broker_probe-b88c4dea11911cba.exe)
+     Running unittests src\bin\eqcop-broker-sonde012-probe.rs (broker\target\debug\deps\eqcop_broker_sonde012_probe-c5b5f2436e1f9b1a.exe)
+     Running unittests src\bin\eqcop-broker-v3probe.rs (broker\target\debug\deps\eqcop_broker_v3probe-68d798019699ad16.exe)
+     Running unittests src\bin\eqcop-store-crash-worker.rs (broker\target\debug\deps\eqcop_store_crash_worker-59d4e14b92d5bd67.exe)
+     Running tests\broker_idle.rs (broker\target\debug\deps\broker_idle-335b469e8f1e1607.exe)
+     Running tests\contract_cross_language.rs (broker\target\debug\deps\contract_cross_language-c8ce76809755fc6f.exe)
+     Running tests\coordinator_model.rs (broker\target\debug\deps\coordinator_model-c22cf73cd241058f.exe)
+     Running tests\security_vectors.rs (broker\target\debug\deps\security_vectors-4a68d58de2e43d5b.exe)
+     Running tests\sonde012_sources_slice.rs (broker\target\debug\deps\sonde012_sources_slice-9ed9a59636c4c334.exe)
+     Running tests\sonde013_experiment.rs (broker\target\debug\deps\sonde013_experiment-994d32cd62e1b354.exe)
+     Running tests\sonde013_passage.rs (broker\target\debug\deps\sonde013_passage-1f134177ed15bbcd.exe)
+     Running tests\sonde013_prepost.rs (broker\target\debug\deps\sonde013_prepost-b89fd89ce4865d4e.exe)
+     Running tests\sonde013_taint.rs (broker\target\debug\deps\sonde013_taint-8f6252999ec5716d.exe)
+     Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)
+     Running tests\sonde014_befund.rs (broker\target\debug\deps\sonde014_befund-c35ffee8c5e9641a.exe)
+     Running tests\sonde014_gegenbeispiele.rs (broker\target\debug\deps\sonde014_gegenbeispiele-4e737afb3cd092a5.exe)
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+     Running tests\sonde014_maskierung.rs (broker\target\debug\deps\sonde014_maskierung-36a5a296083f6ed6.exe)
+     Running tests\sonde014_nacharbeit1.rs (broker\target\debug\deps\sonde014_nacharbeit1-207edf2a5c77e38c.exe)
+     Running tests\sonde014_nacharbeit2.rs (broker\target\debug\deps\sonde014_nacharbeit2-f8f5227563a8d0ca.exe)
+     Running tests\sonde014_nacharbeit3.rs (broker\target\debug\deps\sonde014_nacharbeit3-ef08965e24e527e8.exe)
+     Running tests\sonde014_p5_korpus.rs (broker\target\debug\deps\sonde014_p5_korpus-b59f509449eb57a8.exe)
+     Running tests\sonde014_proposal.rs (broker\target\debug\deps\sonde014_proposal-7c92fc847c987d9d.exe)
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+     Running tests\store_crash_matrix.rs (broker\target\debug\deps\store_crash_matrix-4ebee0ee77644d63.exe)
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-k07-27500-d19fd5d3d82b4fed96340aabeeddffb8\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-k06-27500-0dfe023e9ce2498a823116d62a26cea1\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-k04-27500-6040b95071354564ac9d3ce92787aca8\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-k09-27500-62fea9085b69411d932d21247c558785\nakama-broker.sqlite3
+     Running tests\transport_fuzz.rs (broker\target\debug\deps\transport_fuzz-e68c0b23ba7390d0.exe)
+   Doc-tests eqcop_broker
+EXIT=0  URTEIL=GRUEN
+------------------------------------------------------------------------------
+### A4-SI - cargo test store_crash_matrix --ignored
+$ cargo test --manifest-path broker/Cargo.toml --color never --test store_crash_matrix -- --ignored --test-threads=1
+running 22 tests
+test blockierter_store_writer_bestaetigt_nichts_und_p2_laeuft ... ok
+test blockierter_writer_haelt_coordinator_und_store_nicht ... ok
+test descriptor_setzen_verlangt_jedes_pflichtfeld ... ok
+test descriptor_setzen_weist_beitragsklasse_ab ... ok
+test eviction_cleanup_vor_push ... ok
+test jeder_resubscribe_liefert_aktuellen_absoluten_snapshot ... ok
+test kill_nach_commit_vor_command_ack_retry_antwortet_idempotent_wiederholt_ohne_wire_uuid ... phase_b_command_client result=idempotent_wiederholt connected=1 queued=1 answered=1 wire_uuid=0
+ok
+test kill_vor_persist_mit_echtem_cpp_client_antwortet_angewandt_ohne_wire_uuid ... phase_b_command_client result=angewandt connected=1 queued=1 answered=1 wire_uuid=0
+ok
+test kill_waehrend_commit_mit_echtem_cpp_client_antwortet_angewandt ... phase_b_command_client result=angewandt connected=1 queued=1 answered=1 wire_uuid=0
+ok
+test konfliktriegel_deckel_gilt_auch_im_reportpfad_des_verdraengten_links ... ok
+test nonce_verdraengung_cleanup_vor_altem_report ... ok
+test p1_snapshot_abfluss_ohne_reconnect_aber_writefehler_liefert_aktuellen_snapshot ... ok
+test persistenter_p0_trifft_den_lebenden_link_derselben_adresse ... ok
+test phase_b_hat_keinen_wire_consumer_fuer_nicht_koaleszierbare_events ... ok
+test reconnect_snapshot_enthaelt_committete_wirkung_genau_einmal ... ok
+test session_snapshot_koalesziert_nach_objektschluessel ... ok
+test session_snapshot_zeigt_join_kandidat_ohne_neue_familie ... ok
+test session_subscription_hat_nur_snapshot_push ... ok
+test session_subscription_sendet_nur_aktuellen_absoluten_snapshot ... ok
+test verlorenes_command_ack_retry_liefert_idempotent_wiederholt_ohne_wire_uuid ... phase_b_command_client result=idempotent_wiederholt connected=1 queued=1 answered=1 wire_uuid=0
+ok
+test volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen ... Verbindung erstellt f�r C:\Users\phili\AppData\Local\Temp\nakama-sonde011-toctou002-sqlite-handle-26204-a56704d326c84b8090f2cd347b6ecf59\verweis <<===>> C:\Users\phili\AppData\Local\Temp\nakama-sonde011-toctou002-sqlite-handle-26204-a56704d326c84b8090f2cd347b6ecf59\ziel-a
+Verbindung erstellt f�r C:\Users\phili\AppData\Local\Temp\nakama-sonde011-toctou002-sqlite-handle-26204-a56704d326c84b8090f2cd347b6ecf59\verweis <<===>> C:\Users\phili\AppData\Local\Temp\nakama-sonde011-toctou002-sqlite-handle-26204-a56704d326c84b8090f2cd347b6ecf59\ziel-b
+ok
+test wiederholter_snapshot_letzter_gewinnt_idempotent ... ok
+
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 67 filtered out; finished in 12.79s
+
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.07s
+     Running tests\store_crash_matrix.rs (broker\target\debug\deps\store_crash_matrix-4ebee0ee77644d63.exe)
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-nach_store_commit-26204-3246cc24bc634e679af6318624ddd66c\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-nach_store_commit-26204-3246cc24bc634e679af6318624ddd66c\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-vor_persist-26204-1c6f5be6d4b74cd5952fb0f0c525754e\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-vor_persist-26204-1c6f5be6d4b74cd5952fb0f0c525754e\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-vor_store_commit-26204-898a4195ce4f463e95c9f40bce3606fe\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-vor_store_commit-26204-898a4195ce4f463e95c9f40bce3606fe\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-nach_store_commit-26204-54c295caa44c41659f6901b657cd923e\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-nach_store_commit-26204-54c295caa44c41659f6901b657cd923e\nakama-broker.sqlite3
+EXIT=0  URTEIL=GRUEN
+------------------------------------------------------------------------------
+UEBERSICHT
+A5      GRUEN  print(f"jsonschema {jsonschema.__version__} (draft 2020-12)")
+A8      GRUEN  bytegleich: 405 Dateien, MANIFEST sha256=9c6a022d1299852e5e36f9dfb0a4f491939f50c3645e907ea47a540133e0d26d
+A9      GRUEN  Drift: 0 Dateien
+A10     GRUEN  bytegleich: 129 Dateien, MANIFEST sha256=342f9d9154678a06af7b238b06f8c393020a747ea9080b6012ff9dea96314916
+A11     GRUEN  GRUEN â€” 5 v2-Vertraege: gueltiges JSON, gueltiges Schema, $id eingefroren.
+A12     GRUEN  STATE-FIXTURES OK (64 Dateien bytegleich, keine verwaiste Datei)
+B2      GRUEN  STATE-MIGRATION-TEST OK - 243 Pruefungen ok, 0 Fehler
+B3c     GRUEN  149 bestanden, 0 gescheitert
+A16     GRUEN  SONDE-NULLTEST OK - 87 Pruefungen ok, 0 Fehler
+B10     GRUEN  ALLE PRUEFUNGEN GRUEN â€” 389 Pruefungen, 0 Fehler
+A4      GRUEN  Doc-tests eqcop_broker
+A4-SI   GRUEN  Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-nach_store_commit-26204-
+
+12/12 Beine gruen, 0 rot.
+
+==============================================================================
+### NACHLAUF auf dem ENDSTAND (nach Wiederherstellung der CRLF-Zeilenenden
+###  in den drei -text-Dateien mit CRLF im Index: nakama-state-v2.md,
+###  eq-ipc-v3.schema.json, FELD-IDS.json - siehe Nebenbefund N-5)
+Lauf: 2026-09-10T04:41:59
+A5        EXIT=0  print(f"jsonschema {jsonschema.__version__} (draft 2020-12)")
+A9        EXIT=0  Drift: 0 Dateien
+A12       EXIT=0  STATE-FIXTURES OK (64 Dateien bytegleich, keine verwaiste Datei)
+A8        EXIT=0  bytegleich: 405 Dateien, MANIFEST sha256=9c6a022d1299852e5e36f9dfb0a4f491939f50c3645e907ea47a540133e0d26d
+B3c       EXIT=0  149 bestanden, 0 gescheitert
+B2        EXIT=0  STATE-MIGRATION-TEST OK - 243 Pruefungen ok, 0 Fehler
+A4 (lib)  EXIT=0  Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+7/7 gruen.

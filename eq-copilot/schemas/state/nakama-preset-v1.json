@@ -1,0 +1,68 @@
+{
+  "$id": "evenacadia.nakama.preset.v1",
+  "titel": "Preset der aktiven Sonde (Nakama Probeeq) - Presetschema 1",
+  "ticket": "SONDE-015",
+  "stand": "2026-09-10",
+  "quelle": "SONDE-015 R12 (Dirigentenentscheid 09.09.2026); Antwort U18 vom 30.08.2026 ('eigene Kennungen und eine eigene Version, die nie mit der Zustandsversion vermischt wird'); Blueprint Paragraph 3.5.",
+
+  "was_das_hier_ist": "Der KLANGINHALT einer Sonde als eigene, transportierbare Datei - nicht ihr Projektzustand. Ein Preset traegt, was gehoert wird, und nichts, was die Sonde verdrahtet. Datei-Dialoge, Browser und das Kopieren von Sonde zu Sonde sind S31b; dieses Ticket liefert Schema, Writer, Leser und die Transaktion.",
+
+  "preset_schema_version": 1,
+  "geschrieben_fuer_dsp_schema_version": 2,
+
+  "zwei_versionen": {
+    "preset_schema_version": "Wie das PRESET gebaut ist. Steigt nur, wenn sich die Struktur dieser Datei aendert.",
+    "dsp_schema_version": "Welches PARAMETERLAYOUT sein Inhalt spricht. Reist mit, damit ein spaeteres Layout ein aelteres Preset einordnen kann, ohne dass die Presetversion steigen muesste.",
+    "regel": "Die beiden Zahlen werden NIE vermischt und nie voneinander abgeleitet."
+  },
+
+  "form": "{\"preset_schema_version\": 1, \"dsp_schema_version\": 2, \"parameters\": { <id>: <physikalischer Wert> ... }, \"schutz_zonen\": [ ... ]}",
+
+  "inhalt": {
+    "parameters": "Die 119 Kennungen des Layouts v2 OHNE v2.global.eq_enabled - also alle acht Baender einschliesslich occupied, v1.global.bypass, v2.global.mix, v2.global.auto_gain, Input- und Output-Trim, Width und Mono-Bass. Alle 119 sind Pflicht; ein unbekannter oder fehlender Schluessel innerhalb von parameters ist ein Fehler, genau wie im DSP-DTO.",
+    "schutz_zonen": "Dieselbe Liste und dieselben Regeln wie im DSP-DTO (nakama-parameter-v2.json, Abschnitt schutz_zonen): hoechstens acht Eintraege, streng aufsteigend nach id, 20 <= low_hz < high_hz <= 20000. Darf leer sein.",
+    "quelle_der_kennungen": "nakama-parameter-v2.json. Der Presetinhalt wird daraus ABGELEITET (alle ids ausser v2.global.eq_enabled), nie als zweite Liste gepflegt - zwei Listen driften."
+  },
+
+  "verbotene_felder": [
+    { "name": "adresse", "grund": "Zieladresse. Ein Preset, das eine Adresse traegt, wuerde beim Laden die Verdrahtung setzen statt den Klang." },
+    { "name": "instance_id", "grund": "Identitaet der Instanz. Sie ist der Messpunkt selbst (nakama-state-v2.md Abschnitt 7) und darf nie aus einer Datei kommen." },
+    { "name": "host_bus_name", "grund": "Bus-Name. Untrusted Hostwert des Messpunkts, keine Klangeigenschaft." },
+    { "name": "label", "grund": "User-Wort der INSTANZ, nicht des Presets. Ein Preset, das es traegt, benennt beim Laden fremde Instanzen um." },
+    { "name": "eq_enabled", "grund": "Betriebszustand des Sonden-EQ. Ein Preset schaltet die Rolle nie ein: Grundgesetz 'nichts Ungefragtes'. Der Schluessel fehlt deshalb AUCH in parameters (dort faellt v2.global.eq_enabled als unbekannter Schluessel)." },
+    { "name": "undo_ring", "grund": "Rueckweg des PROJEKTS. Ein Preset ersetzt ihn nie; sein Laden bekommt einen eigenen Eintrag im bestehenden Ring." }
+  ],
+
+  "regeln": [
+    "Fehlende Felder statt leerer Felder: die sechs Namen oben haben KEIN Feld. Ein optionales, leeres Identitaetsfeld waere eine offene Tuer - ein Schreiber koennte es fuellen, ein Leser es lesen.",
+    "Ein Preset, das einen dieser sechs Namen auf der obersten Ebene traegt, wird ABGELEHNT - auch mit leerem oder null-Wert. Je Name gibt es ein Negativfixture.",
+    "Ein UNBEKANNTES Top-Level-Feld (keiner der sechs verbotenen Namen) wird IGNORIERT; das Preset laedt. Der Unterschied ist Absicht: ein zusaetzliches Feld ist eine additive Erweiterung, ein verbotener Name ein Angriffsweg auf die Verdrahtung.",
+    "Ein unbekannter preset_schema_version-Major wird mit klarem Fehler ABGELEHNT. Die read-only-Haltung des Projektzustands gilt hier NICHT: ein Preset ist keine Nutzerarbeit, die verlustfrei bewahrt werden muesste, sondern eine Datei, die man neu laden kann.",
+    "Ein Preset mit einer dsp_schema_version, die dieser Build nicht kennt, wird ebenfalls abgelehnt - der Inhalt spricht dann ein Parameterlayout, das dieser Build nicht deuten kann.",
+    "Laden ist EINE Transaktion mit genau einer neuen state_revision und EINEM Undo-Eintrag. Der bestehende Undo-Ring wird ERGAENZT, nicht ersetzt; der Zustand vor dem Preset ist mit einem Undo vollstaendig zurueck.",
+    "Der Zonenriegel (SONDE-015 R6) greift beim Preset-Laden NICHT als Abweisung: das Laden ist eine Ganzzustands-Ersetzung, keine Bedienaenderung. Eine dabei entstehende Lage in einer Zone wird als Verletzung GEMELDET.",
+    "Das Preset traegt KEINEN state_hash und KEINE state_revision. Beide gehoeren dem Projektzustand; ein Preset ist keiner."
+  ],
+
+  "textriegel": "Wie jedes andere JSON dieses Projekts laeuft ein Preset zuerst durch den v3-Textriegel (eq-copilot/schemas/v3/README.md): hoechstens 16 MiB, kein BOM, kein rohes NUL, gueltiges UTF-8, keine fuehrende Null, Ganzzahlen innerhalb +/-(2^53-1), Betraege unter 1e308, keine einsamen Surrogate, kein leerer Objektschluessel. Der 15-Ziffern-Riegel des binary64-Schemawegs gilt hier NICHT - ein Preset traegt dieselben exakten Werte wie das DSP-DTO (zum Beispiel q = 0.7071067811865476).",
+
+  "ablehnungsgruende": [
+    "kein_json",
+    "doppelter_schluessel",
+    "struktur",
+    "preset_schema_version",
+    "dsp_schema_version",
+    "verbotenes_feld",
+    "unbekannter_schluessel",
+    "fehlender_schluessel",
+    "typ",
+    "nichtendlich",
+    "bereich",
+    "enum",
+    "zone_anzahl",
+    "zone_doppelt",
+    "zone_sortierung"
+  ],
+
+  "reihenfolge_der_pruefung": "Textriegel -> doppelte Schluessel -> Struktur (Wurzel ist ein Objekt) -> verbotenes Feld -> preset_schema_version -> dsp_schema_version -> parameters/schutz_zonen vorhanden und vom richtigen Typ -> unbekannter Schluessel in parameters -> fehlender Schluessel in parameters -> Typ je Parameter -> nichtendlich -> Bereich/Enum -> Zonenregeln. Der ERSTE Fehler zaehlt. Das verbotene Feld steht bewusst FRUEH: es wird abgewiesen, bevor irgendein Inhalt gedeutet wird."
+}

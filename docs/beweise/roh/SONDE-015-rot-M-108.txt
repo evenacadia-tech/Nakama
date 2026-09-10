@@ -1,0 +1,18 @@
+SONDE-015 Etappe 2 - Rotbeweis M-108
+Zusage: Gens Vertragsleser liest einen Bericht OHNE dsp weiter als gueltig - ein Altsender faellt nicht aus.
+Bruch:  eq-copilot/schemas/v3/eq-ipc-v3.schema.json
+        -       "required": ["type", "adresse", "dsp_schema_version", "state_revision", "state_hash", "record_state"],
+        +       "required": ["type", "adresse", "dsp_schema_version", "state_revision", "state_hash", "record_state", "dsp"],
+------------------------------------------------------------------------------
+$ py -3.13 tools/eq-copilot/pruefe_v3_vertrag.py   (A5 pruefe_v3_vertrag.py)
+jsonschema 4.26.0 (draft 2020-12)
+115 Definitionen, 26 Nachrichtenfamilien, 401 Fixtures
+Pruefungen: 627 bestanden, 3 gescheitert
+  ROT: dsp_ist_belegt
+  ROT: ein_bericht_ohne_dsp_bleibt_in_BEIDEN_fassungen_gueltig
+  ROT: gueltig/state_report.json: jsonschema sagt ungueltig: {'type': 'state_report', 'adresse': {'logon_sid': 'S-1-5-21-1111111111-2222222222-3333333333-1001', 'project_binding_id'
+C:\Users\phili\Projekte\Nakama\tools\eq-copilot\pruefe_v3_vertrag.py:2240: DeprecationWarning: Accessing jsonschema.__version__ is deprecated and will be removed in a future release. Use importlib.metadata directly to query for jsonschema's version.
+  print(f"jsonschema {jsonschema.__version__} (draft 2020-12)")
+
+EXIT=2
+URTEIL: ROT

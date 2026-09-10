@@ -192,6 +192,7 @@ set(NAKAMA_KERN_QUELLEN
     state/NakamaKanon.cpp
     state/NakamaLebenslauf.cpp
     state/NakamaParameter.cpp
+    state/NakamaPreset.cpp
     state/NakamaState.cpp
     vertrag/NakamaVertrag.cpp
     vertrag/NakamaTelemetrie.cpp

@@ -1,5 +1,5 @@
 {
- "dsp_schema_version": 1,
+ "dsp_schema_version": 2,
  "parameters": {
   "v1.global.bypass": false,
   "v1.global.input_trim_db": 0.0,
@@ -110,6 +110,18 @@
   "v1.band.7.hold_ms": 0.0,
   "v1.band.7.release_ms": 100.0,
   "v1.band.7.sidechain_source": "none",
+  "v2.global.eq_enabled": false,
+  "v2.global.mix": 1.0,
+  "v2.global.auto_gain": false,
+  "v2.band.0.occupied": false,
+  "v2.band.1.occupied": false,
+  "v2.band.2.occupied": false,
+  "v2.band.3.occupied": false,
+  "v2.band.4.occupied": false,
+  "v2.band.5.occupied": false,
+  "v2.band.6.occupied": false,
+  "v2.band.7.occupied": false,
   "v1.global.extra": 1
- }
+ },
+ "schutz_zonen": []
 }

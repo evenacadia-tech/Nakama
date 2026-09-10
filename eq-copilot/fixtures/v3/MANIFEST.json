@@ -6,8 +6,8 @@
   "wurzel_skalar": "Markiert ein Fixture, dessen Wurzel weder Objekt noch Array ist. JUCEs JSON-Leser folgt RFC 4627 und lehnt es schon im PARSER ab; serde_json und Python folgen RFC 8259 und lehnen es erst am Schema ab. Beide Wege sind eine Ablehnung, nur an verschiedenen Stellen - die Verletzungsmenge gilt daher nur fuer die Beine mit RFC-8259-Parser.",
   "sortierung": "Verletzungen sind kanonisch nach (instanz, schema, schluessel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
   "textriegel_lehnt_ab": "Markiert ein Fixture, das der TEXTRIEGEL abweist, BEVOR ein Parser es sieht. Diese Fixtures tragen keine Verletzungsmenge, weil sie das Schema nie erreichen — eine erfundene waere eine Luege ueber den Ort der Ablehnung. Regeln und Begruendung: schemas/v3/README.md.",
-  "anzahl_gueltig": 108,
-  "anzahl_ungueltig": 285,
+  "anzahl_gueltig": 111,
+  "anzahl_ungueltig": 290,
   "fixtures": [
     {
       "datei": "gueltig/assistant-step-ohne-bezug.json",
@@ -601,6 +601,24 @@
       "datei": "gueltig/session_snapshot.json",
       "urteil": "gueltig",
       "warum": "Grundform der Familie",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/state-report-dsp-hash-passt-nicht.json",
+      "urteil": "gueltig",
+      "warum": "schemagueltig, aber SHA-256(dsp.jcs) != state_hash - beide Leser weisen den Bericht GANZ ab (M-105)",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/state-report-dsp-ohne-klemmung.json",
+      "urteil": "gueltig",
+      "warum": "leere Listen heissen `nichts geklemmt` und `kein Band verletzt` - beide sind Pflichtfelder",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/state-report-mit-dsp.json",
+      "urteil": "gueltig",
+      "warum": "Fassung 5: dsp traegt GENAU die RFC-8785-Zeichenkette, ueber die state_hash gebildet wurde; SHA-256(dsp.jcs) == state_hash ist damit nachrechenbar (M-103, M-105)",
       "verletzungen": []
     },
     {
@@ -1402,6 +1420,93 @@
           "instanz": "/dringlichkeit",
           "schema": "#/$defs/draft_offer/additionalProperties",
           "schluessel": "additionalProperties"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/dsp-auto-gain-ausserhalb.json",
+      "urteil": "ungueltig",
+      "warum": "acht Baender zu je 12 dB erreichen hoechstens 96 dB; 120 ist die Reserve, 120.5 ist ein Fehler",
+      "verletzungen": [
+        {
+          "instanz": "/dsp/auto_gain_db",
+          "schema": "#/$defs/dsp_bericht/properties/auto_gain_db/maximum",
+          "schluessel": "maximum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/dsp-bericht-leer.json",
+      "urteil": "ungueltig",
+      "warum": "der bestaetigte DSP ist ganz oder gar nicht: alle vier Felder sind Pflicht",
+      "verletzungen": [
+        {
+          "instanz": "/dsp",
+          "schema": "#/$defs/dsp_bericht/required/auto_gain_db",
+          "schluessel": "required"
+        },
+        {
+          "instanz": "/dsp",
+          "schema": "#/$defs/dsp_bericht/required/jcs",
+          "schluessel": "required"
+        },
+        {
+          "instanz": "/dsp",
+          "schema": "#/$defs/dsp_bericht/required/klemmungen",
+          "schluessel": "required"
+        },
+        {
+          "instanz": "/dsp",
+          "schema": "#/$defs/dsp_bericht/required/verletzte_baender",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/dsp-bericht-zusatzfeld.json",
+      "urteil": "ungueltig",
+      "warum": "der Bericht ist strikt: ein unbekanntes Feld ist ein Senderfehler, keine Erweiterung",
+      "verletzungen": [
+        {
+          "instanz": "/dsp/extra",
+          "schema": "#/$defs/dsp_bericht/additionalProperties",
+          "schluessel": "additionalProperties"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/dsp-klemmung-ohne-wirksam.json",
+      "urteil": "ungueltig",
+      "warum": "eine Klemmung ohne wirksamen Wert sagt nicht, was tatsaechlich gilt",
+      "verletzungen": [
+        {
+          "instanz": "/dsp/klemmungen/0",
+          "schema": "#/$defs/dsp_klemmung/required/wirksam",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/dsp-neunte-klemmung.json",
+      "urteil": "ungueltig",
+      "warum": "hoechstens eine Klemmung je Slot",
+      "verletzungen": [
+        {
+          "instanz": "/dsp/klemmungen",
+          "schema": "#/$defs/dsp_bericht/properties/klemmungen/maxItems",
+          "schluessel": "maxItems"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/dsp-verletztes-band-8.json",
+      "urteil": "ungueltig",
+      "warum": "es gibt acht Slots 0..7; eine 8 ist keine Slotnummer",
+      "verletzungen": [
+        {
+          "instanz": "/dsp/verletzte_baender/0",
+          "schema": "#/$defs/dsp_bericht/properties/verletzte_baender/items/maximum",
+          "schluessel": "maximum"
         }
       ]
     },
@@ -3308,18 +3413,6 @@
         {
           "instanz": "/contribution_inputs",
           "schema": "#/$defs/session_snapshot/additionalProperties",
-          "schluessel": "additionalProperties"
-        }
-      ]
-    },
-    {
-      "datei": "ungueltig/reserviertes-feld-state-report-dsp.json",
-      "urteil": "ungueltig",
-      "warum": "reservierter Name fuer spaeter bestaetigten DSP",
-      "verletzungen": [
-        {
-          "instanz": "/dsp",
-          "schema": "#/$defs/state_report/additionalProperties",
           "schluessel": "additionalProperties"
         }
       ]

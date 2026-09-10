@@ -1,0 +1,16 @@
+SONDE-015 Etappe 2 - Rotbeweis M-112
+Zusage: Eine Laenge ungleich 0 und ungleich 8 wird ABGEWIESEN - eine 3 ist ein Senderfehler, kein Teilbestand.
+Bruch:  eq-copilot/plugin/vertrag/NakamaTelemetrie.cpp
+        -         if (dyn->size() != 0u && dyn->size() != 8u)
+        +         if (false)
+------------------------------------------------------------------------------
+$ EqCopSchemaTest.exe
+[ROT]  ungueltig/band-dynamic-gain-laenge-1.bin: Urteil ungueltig erwartet, Leser sagt gueltig
+[ROT]  ungueltig/band-dynamic-gain-laenge-3.bin: Urteil ungueltig erwartet, Leser sagt gueltig
+[ROT]  ungueltig/band-dynamic-gain-laenge-7.bin: Urteil ungueltig erwartet, Leser sagt gueltig
+[ROT]  ungueltig/band-dynamic-gain-laenge-9.bin: Urteil ungueltig erwartet, Leser sagt gueltig
+[ROT]  Binaerkorpus klassifiziert wie das Manifest (128 Fixtures)  [4 Abweichungen]
+148 bestanden, 1 gescheitert
+
+EXIT=1
+URTEIL: ROT

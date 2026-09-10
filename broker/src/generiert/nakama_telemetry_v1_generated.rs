@@ -1655,6 +1655,7 @@ impl<'a> Frame<'a> {
   pub const VT_LRA_LU: ::flatbuffers::VOffsetT = 42;
   pub const VT_CREST_KURZ_DB: ::flatbuffers::VOffsetT = 44;
   pub const VT_HEADROOM: ::flatbuffers::VOffsetT = 46;
+  pub const VT_BAND_DYNAMIC_GAIN_DB: ::flatbuffers::VOffsetT = 48;
 
   #[inline]
   pub unsafe fn init_from_table(table: ::flatbuffers::Table<'a>) -> Self {
@@ -1666,6 +1667,7 @@ impl<'a> Frame<'a> {
     args: &'args FrameArgs<'args>
   ) -> ::flatbuffers::WIPOffset<Frame<'bldr>> {
     let mut builder = FrameBuilder::new(_fbb);
+    if let Some(x) = args.band_dynamic_gain_db { builder.add_band_dynamic_gain_db(x); }
     if let Some(x) = args.headroom { builder.add_headroom(x); }
     if let Some(x) = args.crest_kurz_db { builder.add_crest_kurz_db(x); }
     if let Some(x) = args.lra_lu { builder.add_lra_lu(x); }
@@ -1903,6 +1905,32 @@ impl<'a> Frame<'a> {
     // which contains a valid value in this slot
     unsafe { self._tab.get::<::flatbuffers::ForwardsUOffset<Headroomverteilung>>(Frame::VT_HEADROOM, None)}
   }
+  /// Momentane dynamische Verstaerkungsaenderung je Band-Slot in dB
+  /// (SONDE-015 R14, Abnahme 01.09.2026 "das band muss dynamisch mitschwingen").
+  ///
+  /// GENAU 8 Eintraege in Slotreihenfolge 0..7, oder leer - nichts dazwischen.
+  /// Ein Vektor der Laenge 3 ist ein Senderfehler, kein Teilbestand: acht
+  /// Einzelfelder haetten acht IDs fuer eine Groesse verbraucht, die immer
+  /// gemeinsam auftritt, und ein halb gefuellter Satz waere nicht als solcher
+  /// erkennbar.
+  ///
+  /// Der Wert ist die zuletzt gerechnete Auslenkung des Fensters, kein Mittel:
+  /// ein Mittelwert glaettete genau die Bewegung weg, die der User sehen soll.
+  /// Freie, ausgeschaltete oder nicht dynamische Slots tragen exakt 0.0; der
+  /// Wert wird NIE aus den Einstellwerten erfunden und ist auf
+  /// +/-|dynamic_range_db| begrenzt.
+  ///
+  /// ABWESENHEIT heisst wie bei `integration_samples` (Feld-ID 14) "der
+  /// Erzeuger sagt es nicht", NICHT "acht Nullen". Das Feld reist nur, wenn es
+  /// etwas zu melden gibt: mindestens ein Slot ist belegt, eingeschaltet und
+  /// dynamisch UND der EQ-Pfad ist engagiert.
+  #[inline]
+  pub fn band_dynamic_gain_db(&self) -> Option<::flatbuffers::Vector<'a, f32>> {
+    // Safety:
+    // Created from valid Table for this object
+    // which contains a valid value in this slot
+    unsafe { self._tab.get::<::flatbuffers::ForwardsUOffset<::flatbuffers::Vector<'a, f32>>>(Frame::VT_BAND_DYNAMIC_GAIN_DB, None)}
+  }
 }
 
 impl ::flatbuffers::Verifiable for Frame<'_> {
@@ -1933,6 +1961,7 @@ impl ::flatbuffers::Verifiable for Frame<'_> {
      .visit_field::<f32>("lra_lu", Self::VT_LRA_LU, false)?
      .visit_field::<f32>("crest_kurz_db", Self::VT_CREST_KURZ_DB, false)?
      .visit_field::<::flatbuffers::ForwardsUOffset<Headroomverteilung>>("headroom", Self::VT_HEADROOM, false)?
+     .visit_field::<::flatbuffers::ForwardsUOffset<::flatbuffers::Vector<'_, f32>>>("band_dynamic_gain_db", Self::VT_BAND_DYNAMIC_GAIN_DB, false)?
      .finish();
     Ok(())
   }
@@ -1960,6 +1989,7 @@ pub struct FrameArgs<'a> {
     pub lra_lu: Option<f32>,
     pub crest_kurz_db: Option<f32>,
     pub headroom: Option<::flatbuffers::WIPOffset<Headroomverteilung<'a>>>,
+    pub band_dynamic_gain_db: Option<::flatbuffers::WIPOffset<::flatbuffers::Vector<'a, f32>>>,
 }
 impl<'a> Default for FrameArgs<'a> {
   #[inline]
@@ -1987,6 +2017,7 @@ impl<'a> Default for FrameArgs<'a> {
       lra_lu: None,
       crest_kurz_db: None,
       headroom: None,
+      band_dynamic_gain_db: None,
     }
   }
 }
@@ -2085,6 +2116,10 @@ impl<'a: 'b, 'b, A: ::flatbuffers::Allocator + 'a> FrameBuilder<'a, 'b, A> {
     self.fbb_.push_slot_always::<::flatbuffers::WIPOffset<Headroomverteilung>>(Frame::VT_HEADROOM, headroom);
   }
   #[inline]
+  pub fn add_band_dynamic_gain_db(&mut self, band_dynamic_gain_db: ::flatbuffers::WIPOffset<::flatbuffers::Vector<'b , f32>>) {
+    self.fbb_.push_slot_always::<::flatbuffers::WIPOffset<_>>(Frame::VT_BAND_DYNAMIC_GAIN_DB, band_dynamic_gain_db);
+  }
+  #[inline]
   pub fn new(_fbb: &'b mut ::flatbuffers::FlatBufferBuilder<'a, A>) -> FrameBuilder<'a, 'b, A> {
     let start = _fbb.start_table();
     FrameBuilder {
@@ -2126,6 +2161,7 @@ impl ::core::fmt::Debug for Frame<'_> {
       ds.field("lra_lu", &self.lra_lu());
       ds.field("crest_kurz_db", &self.crest_kurz_db());
       ds.field("headroom", &self.headroom());
+      ds.field("band_dynamic_gain_db", &self.band_dynamic_gain_db());
       ds.finish()
   }
 }

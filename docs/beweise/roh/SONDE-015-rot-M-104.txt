@@ -1,0 +1,18 @@
+SONDE-015 Etappe 2 - Rotbeweis M-104
+Zusage: Es entsteht KEIN Feld des reservierten Namens state_report.eq_enabled - S29-31 bleibt frei, ihn zu definieren.
+Bruch:  eq-copilot/schemas/v3/eq-ipc-v3.schema.json
+        -         "undo_tiefe": { "type": "integer", "minimum": 0, "maximum": 32 }
+        +         "eq_enabled": { "type": "boolean" },
+------------------------------------------------------------------------------
+$ py -3.13 tools/eq-copilot/pruefe_v3_vertrag.py   (A5 pruefe_v3_vertrag.py)
+jsonschema 4.26.0 (draft 2020-12)
+115 Definitionen, 26 Nachrichtenfamilien, 401 Fixtures
+Pruefungen: 627 bestanden, 3 gescheitert
+  ROT: reservierte Felder sind im aktiven Vertrag weiter abgelehnt
+  ROT: eq_enabled_bleibt_reserviert
+  ROT: ungueltig/reserviertes-feld-state-report-eq-enabled.json: jsonschema sagt gueltig, Manifest erwartet ungueltig
+C:\Users\phili\Projekte\Nakama\tools\eq-copilot\pruefe_v3_vertrag.py:2240: DeprecationWarning: Accessing jsonschema.__version__ is deprecated and will be removed in a future release. Use importlib.metadata directly to query for jsonschema's version.
+  print(f"jsonschema {jsonschema.__version__} (draft 2020-12)")
+
+EXIT=2
+URTEIL: ROT

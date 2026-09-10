@@ -1,0 +1,13 @@
+SONDE-015 Etappe 2 - Rotbeweis M-95
+Zusage: Ein Preset traegt ZWEI getrennte Versionen; eine allein macht seinen Inhalt uneinordenbar.
+Bruch:  eq-copilot/plugin/state/NakamaPreset.cpp
+        -     wurzel.objektSetze ("dsp_schema_version", kanon::Wert::nummer ((double) parameter::kDspSchemaVersion));
+        + (Zeile entfernt)
+------------------------------------------------------------------------------
+$ EqCopStateMigrationTest.exe
+  FEHLER  der Preset-Writer erzeugt preset/gueltig/default.json bytegleich  [ 3259 Bytes]
+  FEHLER  Preset schreiben->lesen->schreiben ist bytegleich und feldgleich  [dsp_schema_version erwartet 2]
+  FEHLER  == Preset: 3 gueltige gelesen, 13 ungueltige mit Grund abgelehnt, Writer bytegleich
+
+EXIT=1
+URTEIL: ROT

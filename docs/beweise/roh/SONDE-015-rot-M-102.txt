@@ -1,0 +1,17 @@
+SONDE-015 Etappe 2 - Rotbeweis M-102
+Zusage: Der Wire-Envelope-Minor der Familie P1 steigt GENAU EINMAL von 4 auf 5.
+Bruch:  eq-copilot/schemas/v3/reservierte-nachrichten-v1.json
+        -     "vorher": 4,
+        +     "vorher": 3,
+------------------------------------------------------------------------------
+$ py -3.13 tools/eq-copilot/pruefe_v3_vertrag.py   (A5 pruefe_v3_vertrag.py)
+jsonschema 4.26.0 (draft 2020-12)
+115 Definitionen, 26 Nachrichtenfamilien, 401 Fixtures
+Pruefungen: 628 bestanden, 2 gescheitert
+  ROT: fassung_5_hebt_den_minor_genau_einmal
+  ROT: host_channel_context_fields_are_optional_strict_and_versioned
+C:\Users\phili\Projekte\Nakama\tools\eq-copilot\pruefe_v3_vertrag.py:2240: DeprecationWarning: Accessing jsonschema.__version__ is deprecated and will be removed in a future release. Use importlib.metadata directly to query for jsonschema's version.
+  print(f"jsonschema {jsonschema.__version__} (draft 2020-12)")
+
+EXIT=2
+URTEIL: ROT

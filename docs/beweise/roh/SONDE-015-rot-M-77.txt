@@ -1,0 +1,20 @@
+SONDE-015 Etappe 2 - Rotbeweis M-77
+Zusage: Der state_hash kommt aus dem BESTANDSKANON (SONDE-006), nicht aus einem zweiten Kanonisierer.
+Bruch:  eq-copilot/plugin/state/NakamaParameter.cpp
+        -     dto.objektSetze ("dsp_schema_version", kanon::Wert::nummer ((double) kDspSchemaVersion));
+        +     dto.objektSetze ("dsp_schema_version", kanon::Wert::nummer ((double) kDspSchemaVersion + 0.5));
+------------------------------------------------------------------------------
+$ EqCopStateMigrationTest.exe
+  FEHLER  state_hash weicht ab: dto/gueltig/default.json  [ist edee0593aa3592ca55e291b9adf3953d33e118d27a925b88d284e7f7c05eb33e soll 67c7eed5cba0acf3030e4e36fd0d875042bed6093ac9069a9ea8b5caec01beda]
+  FEHLER  state_hash weicht ab: dto/gueltig/minima.json  [ist fb4d41148e31bc9771628cdd35b379885a1c08ff359d016bfcc816ad6106e51d soll 7cea2e6e942ba19a32cc21314f6fcf9932df5792eccde010842367cf210ff9d3]
+  FEHLER  state_hash weicht ab: dto/gueltig/maxima.json  [ist f3c865d26f86e66acd07a5bd91524d80271f7f3dae74e3b52729a51b872f3b00 soll 5467c402a043547d3b2b98383a06c63d142cd31548e6fb4f0b154f50499b0459]
+  FEHLER  state_hash weicht ab: dto/gueltig/gemischt.json  [ist d7bc3e1cc4759d22cfa5a9eeb1636bddebbcb53c7165c88fd83e933a0d6da45a soll 508b7f1950d1a1f2f4df079ea63248fdffa4be8ab9b87afa99975f439732f218]
+  FEHLER  state_hash weicht ab: dto/gueltig/minus-null.json  [ist edee0593aa3592ca55e291b9adf3953d33e118d27a925b88d284e7f7c05eb33e soll 67c7eed5cba0acf3030e4e36fd0d875042bed6093ac9069a9ea8b5caec01beda]
+  FEHLER  state_hash weicht ab: dto/gueltig/ganzzahl-schreibweise.json  [ist edee0593aa3592ca55e291b9adf3953d33e118d27a925b88d284e7f7c05eb33e soll 67c7eed5cba0acf3030e4e36fd0d875042bed6093ac9069a9ea8b5caec01beda]
+  FEHLER  state_hash weicht ab: dto/gueltig/zone-einzeln.json  [ist 696f8015a119b1c9bc9fcf2abc8e7c88ef4373442f3d712d2866e92f2454345a soll e273b0d50395038ac842c72ca8a0519b7899c7b8effafddd93e58cd258d302b8]
+  FEHLER  gueltige DTOs: state_hash wie im Manifest  [0/7]
+  FEHLER  standardSatz() ohne Zone hasht wie dto/gueltig/default.json  [edee0593aa3592ca55e291b9adf3953d33e118d27a925b88d284e7f7c05eb33e]
+  FEHLER  == DTO: 0 gueltige gehasht, 26 ungueltige vor dem Hash abgelehnt
+
+EXIT=1
+URTEIL: ROT

@@ -1,0 +1,11 @@
+SONDE-015 Etappe 2 - Rotbeweis M-28
+Zusage: channel_mode ist DISKRET aus genau fuenf Werten; ein sechster ist kein Kanalmodus.
+Bruch:  eq-copilot/schemas/state/nakama-parameter-v2.json
+        - "werte": [
+        + "werte": [
+------------------------------------------------------------------------------
+$ py -3.13 tools/eq-copilot/erzeuge_state_fixtures.py --pruefen   (A12 erzeuge_state_fixtures.py --pruefen)
+VERTRAG FEHLER: v1-Eintrag nicht woertlich uebernommen: channel_mode
+
+EXIT=2
+URTEIL: ROT

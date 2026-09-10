@@ -103,7 +103,8 @@
         "plr_db": 18,
         "lra_lu": 19,
         "crest_kurz_db": 20,
-        "headroom": 21
+        "headroom": 21,
+        "band_dynamic_gain_db": 22
       },
       "verbrannt": []
     },
@@ -124,6 +125,6 @@
 
   "erwartet_gesamt": {
     "tabellen": 9,
-    "felder": 63
+    "felder": 64
   }
 }

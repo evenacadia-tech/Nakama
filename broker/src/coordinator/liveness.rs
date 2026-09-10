@@ -562,6 +562,33 @@ impl Coordinator {
         let recording = wert
             .pointer("/record_state/recording")
             .and_then(Value::as_bool);
+
+        /*  SONDE-015 M-105: `dsp.jcs` traegt GENAU die Zeichenkette, ueber die
+            `state_hash` gebildet wurde. Der Empfaenger rechnet nach und
+            vergleicht; weichen sie ab, wird der Bericht GANZ abgewiesen - kein
+            halber Zustand, kein "Hash ignorieren, Inhalt nehmen".
+
+            Das Schema kann das nicht sehen: es prueft eine Zeichenkette, keinen
+            Hash. Ein Leser, der sich darauf verlaesst, ist kein Riegel. */
+        let dsp_jcs = match wert.pointer("/dsp/jcs") {
+            None => None,
+            Some(Value::String(jcs)) => {
+                let Some(erwartet) = state_hash.as_deref() else {
+                    return false;
+                };
+                let ist = {
+                    use sha2::{Digest, Sha256};
+                    let mut h = Sha256::new();
+                    h.update(jcs.as_bytes());
+                    format!("{:x}", h.finalize())
+                };
+                if ist != erwartet {
+                    return false;
+                }
+                Some(jcs.clone())
+            }
+            Some(_) => return false,
+        };
         {
             let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
             let Some(link) = stand.links.get(link_id).cloned() else {
@@ -578,6 +605,11 @@ impl Coordinator {
             }
             client.state_revision = revision;
             client.state_hash = state_hash;
+            // Ein Bericht OHNE `dsp` laesst den gehaltenen Stand stehen: die
+            // Abwesenheit heisst "diesmal nichts gemeldet", nie "geloescht".
+            if dsp_jcs.is_some() {
+                client.dsp_jcs = dsp_jcs;
+            }
             client.record_state_valid = record_valid == Some(true);
             client.recording = recording == Some(true);
         }

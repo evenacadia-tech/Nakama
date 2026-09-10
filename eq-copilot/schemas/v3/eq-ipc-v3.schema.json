@@ -2297,6 +2297,53 @@
       ]
     },
 
+    "dsp_klemmung": {
+      "description": "EIN geklemmter Parameter des bestaetigten Programms (SONDE-015 R7, §44.3 ACK-Klemmliste). `priority_sidechain` wird auf `internal` geklemmt, bis P8 den Nebenweg liefert - und die Klemmung ist SICHTBAR, nichts wird still umgedeutet. Der persistente Wert bleibt dabei stehen: geklemmt wird beim BAUEN des Programms, nicht beim Speichern.",
+      "type": "object",
+      "required": ["id", "gemeldet", "wirksam"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "gemeldet": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "wirksam": { "type": "string", "minLength": 1, "maxLength": 64 }
+      }
+    },
+
+    "dsp_bericht": {
+      "description": "Der bestaetigte DSP einer aktiven Sonde (SONDE-015 R13, NAK-110). `jcs` traegt GENAU die RFC-8785-Zeichenkette, ueber die `state_report.state_hash` gebildet wurde - als JSON-String, nicht als eingebettetes Objekt. Grund: der P1-Schemaweg fuehrt einen 15-Ziffern-Riegel auf Zahlenliteralen (README.md), und der Broker fuehrt den Textriegel VOR der Schemapruefung. Ein eingebettetes DTO waere damit an einem GUELTIGEN bestaetigten Wert gescheitert - `q = 0.7071067811865476` ist auf dem DTO-Weg ausdruecklich zulaessig. Als String passiert derselbe Text den Riegel unveraendert, und jeder Empfaenger kann SHA-256(jcs) gegen state_hash nachrechnen. Die drei abgeleiteten Angaben daneben sind NICHT gehasht: sie folgen aus dem DTO.",
+      "type": "object",
+      "required": ["jcs", "auto_gain_db", "klemmungen", "verletzte_baender"],
+      "additionalProperties": false,
+      "properties": {
+        "jcs": {
+          "$comment": "Obergrenze mit Reserve: das groesste kanonische DTO des Layouts v2 (120 Kennungen, acht Zonen) misst 3857 Bytes. 8192 laesst Raum fuer ein spaeteres Layout, ohne die 256-KiB-Rahmengrenze zu beruehren.",
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 8192
+        },
+        "auto_gain_db": {
+          "$comment": "ABGELEITET, nie persistent und nie im state_hash (R4). Er wird immer gerechnet, angewandt aber nur bei v2.global.auto_gain = true. Die Grenze folgt aus dem Erreichbaren: acht Baender zu je 12 dB im selben Kanalmodus ergeben hoechstens 96 dB Plateau; 120 ist die Reserve darueber.",
+          "type": "number",
+          "minimum": -120,
+          "maximum": 120
+        },
+        "klemmungen": {
+          "$comment": "Hoechstens eine je Slot. Eine LEERE Liste heisst ausdruecklich `nichts geklemmt` - sie ist Pflicht, damit `nichts geklemmt` und `nicht gemeldet` unterscheidbar bleiben.",
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 8,
+          "items": { "$ref": "#/$defs/dsp_klemmung" }
+        },
+        "verletzte_baender": {
+          "$comment": "Slot-Nummern der Baender, die in einer eingeschalteten Schutz-Zone liegen (R6). Sie klingen weiter, werden nicht verschoben und nicht stumm geschaltet - die Zone MELDET, sie verhindert am Automationsweg nicht.",
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 8,
+          "items": { "type": "integer", "minimum": 0, "maximum": 7 }
+        }
+      }
+    },
+
     "state_report": {
       "description": "Die Probe meldet ZUERST ihren Zustand; Main gleicht ab. Der Broker ist NICHT berechtigt, beim Reconnect blind seinen Cache auf die Probe zu druecken (§33.5).",
       "type": "object",
@@ -2308,6 +2355,10 @@
         "dsp_schema_version": { "type": "integer", "minimum": 1 },
         "state_revision": { "type": "integer", "minimum": 0 },
         "state_hash": { "$ref": "#/$defs/state_hash" },
+        "dsp": {
+          "$comment": "Seit Wire-Envelope-schema_minor 5 belegt (SONDE-015, NAK-110). OPTIONAL: ein Bericht OHNE `dsp` bleibt gueltig - eine Sonde ohne EQ-Kern und jeder Altsender melden weiter ihren Zustand. `state_report.eq_enabled` bleibt davon unberuehrt reserviert (S29-31); der Betriebszustand reist ausschliesslich INNERHALB der gehashten Zeichenkette und bekommt hier kein eigenes Feld.",
+          "$ref": "#/$defs/dsp_bericht"
+        },
         "record_state": {
           "$comment": "Remote-Preview und Remote-Apply sind nur erlaubt, wenn valid=true UND recording=false; ein UNBEKANNTER Aufnahmezustand blockiert sichtbar (§33.4). Deshalb ist `valid` Pflicht und nicht weglassbar.",
           "type": "object",

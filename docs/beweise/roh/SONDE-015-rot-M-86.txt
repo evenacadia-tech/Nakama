@@ -1,0 +1,11 @@
+SONDE-015 Etappe 2 - Rotbeweis M-86
+Zusage: Alle 109 v1-Kennungen bleiben unveraendert - ein geaenderter v1-Default faellt an der Ableitung.
+Bruch:  eq-copilot/schemas/state/nakama-parameter-v2.json
+        - "id": "v1.global.width",
+        + "id": "v1.global.width",
+------------------------------------------------------------------------------
+$ py -3.13 tools/eq-copilot/erzeuge_state_fixtures.py --pruefen   (A12 erzeuge_state_fixtures.py --pruefen)
+VERTRAG FEHLER: v1-Eintrag nicht woertlich uebernommen: v1.global.width
+
+EXIT=2
+URTEIL: ROT

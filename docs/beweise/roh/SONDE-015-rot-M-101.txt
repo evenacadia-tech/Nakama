@@ -1,0 +1,21 @@
+SONDE-015 Etappe 2 - Rotbeweis M-101
+Zusage: Der Riegel wechselt die Seite: state_report.dsp ist BELEGT, applied_dsp und eq_enabled bleiben reserviert.
+Bruch:  eq-copilot/schemas/v3/eq-ipc-v3.schema.json
+        -         "dsp": {
+        +         "dsp_XX": {
+------------------------------------------------------------------------------
+$ py -3.13 tools/eq-copilot/pruefe_v3_vertrag.py   (A5 pruefe_v3_vertrag.py)
+jsonschema 4.26.0 (draft 2020-12)
+115 Definitionen, 26 Nachrichtenfamilien, 401 Fixtures
+Pruefungen: 624 bestanden, 6 gescheitert
+  ROT: dsp_ist_belegt
+  ROT: fassung_4_leser_lehnt_state_report_dsp_ab
+  ROT: gueltig/state-report-dsp-hash-passt-nicht.json: jsonschema sagt ungueltig: {'type': 'state_report', 'adresse': {'logon_sid': 'S-1-5-21-1111111111-2222222222-3333333333-1001', 'project_binding_id'
+  ROT: gueltig/state-report-dsp-ohne-klemmung.json: jsonschema sagt ungueltig: {'type': 'state_report', 'adresse': {'logon_sid': 'S-1-5-21-1111111111-2222222222-3333333333-1001', 'project_binding_id'
+  ROT: gueltig/state-report-mit-dsp.json: jsonschema sagt ungueltig: {'type': 'state_report', 'adresse': {'logon_sid': 'S-1-5-21-1111111111-2222222222-3333333333-1001', 'project_binding_id'
+  ROT: jede der 273 deklarierten Eigenschaften steht in mindestens einem Fixture â€” dsp_XX
+C:\Users\phili\Projekte\Nakama\tools\eq-copilot\pruefe_v3_vertrag.py:2240: DeprecationWarning: Accessing jsonschema.__version__ is deprecated and will be removed in a future release. Use importlib.metadata directly to query for jsonschema's version.
+  print(f"jsonschema {jsonschema.__version__} (draft 2020-12)")
+
+EXIT=2
+URTEIL: ROT

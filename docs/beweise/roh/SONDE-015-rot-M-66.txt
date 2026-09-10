@@ -1,0 +1,14 @@
+SONDE-015 Etappe 2 - Rotbeweis M-66
+Zusage: Das DTO prueft 20 Hz <= low_hz < high_hz <= 20 kHz; low == high ist eine Zone ueber nichts.
+Bruch:  eq-copilot/plugin/state/NakamaParameter.cpp
+        -         if (e.lowHz < 20.0 || e.lowHz >= e.highHz) { grund = "bereich"; woId = wo + ".low_hz";  return false; }
+        +         if (e.lowHz < 20.0 || e.lowHz > e.highHz)  { grund = "bereich"; woId = wo + ".low_hz";  return false; }
+------------------------------------------------------------------------------
+$ EqCopStateMigrationTest.exe
+  FEHLER  ungueltiges DTO: dto/ungueltig/zone-low-gleich-high.json  [ANGENOMMEN soll bereich]
+  FEHLER  ungueltige DTOs mit dem erwarteten Grund abgelehnt  [25/26]
+  FEHLER  low == high faellt vor dem Hash  [zone_sortierung]
+  FEHLER  == DTO: 7 gueltige gehasht, 25 ungueltige vor dem Hash abgelehnt
+
+EXIT=1
+URTEIL: ROT

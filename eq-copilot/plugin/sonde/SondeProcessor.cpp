@@ -708,7 +708,7 @@ nakama::ipc::ControlStatus SondeProcessor::v3Status() const
         if (zustand.hatParameters && ! zustand.nurLesen)
         {
             juce::String hash, grund;
-            if (nakama::parameter::stateHash (zustand.parameters, hash, grund))
+            if (nakama::parameter::stateHash (zustand.dspDto(), hash, grund))
                 s.stateHash = hash.toStdString();
         }
 

@@ -288,6 +288,32 @@ def gueltige() -> list[tuple[str, dict, str]]:
                    "braucht 3 s, LRA rund 60 s, und keines der beiden wird "
                    "vorgetaeuscht. Abwesenheit ist hier die Aussage"))
 
+    # SONDE-015 R14, Feld-ID 22. Drei gueltige Faelle, die zusammen den Nutzen
+    # des Feldes belegen - acht Werte, ein leerer Vektor und ein Frame ganz
+    # ohne das Feld. Ohne den dritten waere nicht gezeigt, dass ein ALTSENDER
+    # weiter gelesen wird und Abwesenheit keine acht Nullen sind.
+    e = eintrag()
+    e["frame"]["band_dynamic_gain_db"] = [-3.5, 0.0, 0.0, 2.25, 0.0, 0.0, -1.0, 0.0]
+    faelle.append(("band-dynamic-gain-acht-werte", batch(e),
+                   "acht Auslenkungen in Slotreihenfolge: zwei Baender schwingen, "
+                   "die uebrigen sind frei, ausgeschaltet oder nicht dynamisch und "
+                   "tragen deshalb exakt 0.0 - nie einen aus den Einstellwerten "
+                   "erfundenen Wert"))
+
+    e = eintrag()
+    e["frame"]["band_dynamic_gain_db"] = []
+    faelle.append(("band-dynamic-gain-leer", batch(e),
+                   "der leere Vektor ist die zweite erlaubte Laenge (R14: genau 8 "
+                   "oder leer). Er ist etwas anderes als Abwesenheit, und beide "
+                   "sind gueltig"))
+
+    e = eintrag()
+    e["frame"]["integration_samples"] = 4800
+    faelle.append(("band-dynamic-gain-altsender-ohne-feld", batch(e),
+                   "ein Frame OHNE das Feld bleibt gueltig: Abwesenheit heisst `der "
+                   "Erzeuger sagt es nicht`, ausdruecklich NICHT acht Nullen - "
+                   "dieselbe Regel wie bei integration_samples (Feld-ID 14)"))
+
     e = eintrag()
     e["frame"]["peak_db"] = -6.02
     e["frame"]["true_peak_db"] = -6.02
@@ -766,6 +792,30 @@ def ungueltige() -> list[tuple[str, dict, list[dict], str]]:
             f"loudness-i-status-{status}", b,
             [v(f"{P}/lufs_i_status", "lufs_i_status")],
             "nur 1=collecting und 2=gated sind belegte Statuswerte"))
+
+    # SONDE-015 R14 (M-112, M-113): die zwei Regeln des neuen Vektors.
+    for laenge in (1, 3, 7, 9):
+        b = batch(eintrag())
+        b["eintraege"][0]["frame"]["band_dynamic_gain_db"] = [0.0] * laenge
+        faelle.append((
+            f"band-dynamic-gain-laenge-{laenge}", b,
+            [v(f"{P}/band_dynamic_gain_db", "band_dynamic_gain_laenge")],
+            "genau 8 oder leer, nichts dazwischen: acht Auslenkungen treten immer "
+            "gemeinsam auf, ein halber Satz waere nicht als solcher erkennbar"))
+
+    for name, wert, warum in [
+        ("nan", float("nan"), "NaN ist keine Auslenkung"),
+        ("inf", float("inf"), "Plus unendlich verlaesst den Sender nie - der Leser prueft trotzdem"),
+    ]:
+        b = batch(eintrag())
+        werte = [0.0] * 8
+        werte[5] = wert
+        b["eintraege"][0]["frame"]["band_dynamic_gain_db"] = werte
+        faelle.append((
+            f"band-dynamic-gain-{name}", b,
+            [v(f"{P}/band_dynamic_gain_db/5", "nicht_endlich")],
+            f"{warum}. Der Sender heilt Nichtendliches beim Erzeugen zu 0 und "
+            "zaehlt es; ein Leser, der sich darauf verlaesst, ist kein Riegel"))
 
     b = batch(eintrag())
     b["eintraege"][0]["frame"]["integration_samples"] = 0

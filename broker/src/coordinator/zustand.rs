@@ -79,6 +79,12 @@ pub(super) struct ClientStand {
     pub(super) descriptor: Option<Value>,
     pub(super) state_revision: Option<u64>,
     pub(super) state_hash: Option<String>,
+    /// SONDE-015 (NAK-110): der zuletzt gemeldete bestaetigte DSP dieser
+    /// Sonde - GENAU die RFC-8785-Zeichenkette, ueber die `state_hash`
+    /// gebildet wurde. Der Broker HAELT sie und drueckt sie nie auf die
+    /// Sonde: die Sonde ist Eigentuemerin ihres Zustands (Paragraph 44.4).
+    /// `None` heisst "diese Sonde hat keinen DSP gemeldet" - nicht "leer".
+    pub(super) dsp_jcs: Option<String>,
     pub(super) record_state_valid: bool,
     pub(super) recording: bool,
 }

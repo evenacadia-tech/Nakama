@@ -51,7 +51,12 @@ use serde_json::{Map, Value};
 
 /// Der Vertrag selbst — mitkompiliert, damit der Broker keine Datei zur
 /// Laufzeit braucht und keine zweite Wahrheit entsteht.
-const VERTRAG: &str = include_str!("../../eq-copilot/schemas/state/nakama-parameter-v1.json");
+const VERTRAG: &str = include_str!("../../eq-copilot/schemas/state/nakama-parameter-v2.json");
+
+/// Hoechstzahl der Schutz-Zonen (SONDE-015 R6). Sie steht auch im Vertrag;
+/// `Bestand::bauen` haelt beide gegeneinander, damit eine Aenderung dort
+/// hier sofort faellt.
+const MAX_ZONEN: usize = 8;
 
 /// Die Gruende, mit denen ein DTO abgelehnt wird.
 ///
@@ -69,6 +74,10 @@ pub enum Grund {
     NichtEndlich,
     Bereich,
     Enum,
+    // SONDE-015 R6: drei Gruende, die die LISTE betreffen, nicht einen Wert.
+    ZoneAnzahl,
+    ZoneDoppelt,
+    ZoneSortierung,
 }
 
 impl Grund {
@@ -84,6 +93,9 @@ impl Grund {
             Grund::NichtEndlich => "nichtendlich",
             Grund::Bereich => "bereich",
             Grund::Enum => "enum",
+            Grund::ZoneAnzahl => "zone_anzahl",
+            Grund::ZoneDoppelt => "zone_doppelt",
+            Grund::ZoneSortierung => "zone_sortierung",
         }
     }
 }
@@ -141,22 +153,50 @@ impl Bestand {
             }
         };
 
-        let mut eintraege = Vec::new();
+        /*  SONDE-015: die Vertragsreihenfolge steht in `ids` und ist NICHT
+            mehr `global` + `band_vorlage` x Slots - die drei v2-Globalen
+            stehen hinter allen v1-Slotfeldern. Der Bestand wird deshalb ueber
+            eine Zwischenkarte gebaut und danach nach `ids` sortiert; die
+            Reihenfolge ist Vertrag (siehe Kopf dieses Moduls). */
+        let mut nach_id: std::collections::HashMap<String, Art> = std::collections::HashMap::new();
         for g in v["global"].as_array().expect("global fehlt") {
             let id = g["id"].as_str().expect("global ohne id").to_string();
             let art = art_von(g, &id);
-            eintraege.push(Eintrag { id, art });
+            nach_id.insert(id, art);
         }
 
         let slots = v["slot_anzahl"].as_u64().expect("slot_anzahl fehlt");
         for slot in 0..slots {
             for p in v["band_vorlage"].as_array().expect("band_vorlage fehlt") {
                 let name = p["name"].as_str().expect("band_vorlage ohne name");
-                let id = format!("v1.band.{slot}.{name}");
+                let layout = p["layout"].as_str().expect("band_vorlage ohne layout");
+                let id = format!("{layout}.band.{slot}.{name}");
                 let art = art_von(p, &id);
-                eintraege.push(Eintrag { id, art });
+                nach_id.insert(id, art);
             }
         }
+
+        let mut eintraege = Vec::new();
+        for id in v["ids"].as_array().expect("ids fehlt") {
+            let id = id.as_str().expect("id ist kein String").to_string();
+            let art = nach_id
+                .remove(&id)
+                .unwrap_or_else(|| panic!("ids nennt {id}, global/band_vorlage nicht"));
+            eintraege.push(Eintrag { id, art });
+        }
+        assert!(
+            nach_id.is_empty(),
+            "global/band_vorlage tragen Kennungen, die ids nicht nennt: {:?}",
+            nach_id.keys().collect::<Vec<_>>()
+        );
+
+        // Die Zonengrenze steht im Vertrag; eine zweite Zahl hier waere die
+        // Drift, gegen die dieses Modul den Vertrag ueberhaupt liest.
+        assert_eq!(
+            v["schutz_zonen"]["hoechstens"].as_u64(),
+            Some(MAX_ZONEN as u64),
+            "nakama-parameter-v2.json nennt eine andere Zonengrenze"
+        );
 
         // Der Vertrag nennt seine eigene Zahl. Wenn die Konstruktion sie nicht
         // trifft, ist eine der beiden Seiten falsch — und zwar SOFORT, nicht
@@ -295,9 +335,13 @@ pub fn pruefe(roh: &[u8]) -> Result<(), Grund> {
         }
     };
 
-    // 3. Struktur: genau {dsp_schema_version, parameters}.
+    // 3. Struktur: genau {dsp_schema_version, parameters, schutz_zonen}.
     let obj = wurzel.as_object().ok_or(Grund::Struktur)?;
-    if obj.len() != 2 || !obj.contains_key("dsp_schema_version") || !obj.contains_key("parameters") {
+    if obj.len() != 3
+        || !obj.contains_key("dsp_schema_version")
+        || !obj.contains_key("parameters")
+        || !obj.contains_key("schutz_zonen")
+    {
         return Err(Grund::Struktur);
     }
 
@@ -311,6 +355,7 @@ pub fn pruefe(roh: &[u8]) -> Result<(), Grund> {
     }
 
     let par = obj["parameters"].as_object().ok_or(Grund::Struktur)?;
+    let zonen = obj["schutz_zonen"].as_array().ok_or(Grund::Struktur)?;
 
     // 5. Unbekannte Schluessel.
     for k in par.keys() {
@@ -383,6 +428,77 @@ pub fn pruefe(roh: &[u8]) -> Result<(), Grund> {
         }
     }
 
+    // 10. Schutz-Zonen (SONDE-015 R6) - dieselbe Stufenfolge wie in
+    //     `NakamaParameter.cpp` und im Python-Referenzvalidator: erst
+    //     Struktur und Typ je Zone, dann Anzahl, Bereich, doppelte id,
+    //     Sortierung.
+    pruefe_zonen(zonen)
+}
+
+/// Die Zonenregeln als eigene Leiter - EINE Stelle, an der sie stehen.
+fn pruefe_zonen(zonen: &[Value]) -> Result<(), Grund> {
+    let mut ids: Vec<i64> = Vec::with_capacity(zonen.len());
+    for z in zonen {
+        let o = z.as_object().ok_or(Grund::Struktur)?;
+        if o.len() != 4
+            || !o.contains_key("enabled")
+            || !o.contains_key("high_hz")
+            || !o.contains_key("id")
+            || !o.contains_key("low_hz")
+        {
+            return Err(Grund::Struktur);
+        }
+        if !o["enabled"].is_boolean() {
+            return Err(Grund::Typ);
+        }
+        for name in ["id", "low_hz", "high_hz"] {
+            if o[name].is_boolean() || !o[name].is_number() {
+                return Err(Grund::Typ);
+            }
+        }
+        // Die `id` ist eine GANZE Zahl. JSON kennt den Unterschied nicht, der
+        // Vertrag schon: 3.5 ist keine Zonenidentitaet, sondern ein Fehler.
+        let id = o["id"].as_f64().ok_or(Grund::Typ)?;
+        if !id.is_finite() || id.fract() != 0.0 {
+            return Err(Grund::Bereich);
+        }
+        ids.push(id as i64);
+    }
+
+    if zonen.len() > MAX_ZONEN {
+        return Err(Grund::ZoneAnzahl);
+    }
+
+    for (i, z) in zonen.iter().enumerate() {
+        if !(0..MAX_ZONEN as i64).contains(&ids[i]) {
+            return Err(Grund::Bereich);
+        }
+        let low = z["low_hz"].as_f64().ok_or(Grund::Typ)?;
+        let high = z["high_hz"].as_f64().ok_or(Grund::Typ)?;
+        if !low.is_finite() || !high.is_finite() {
+            return Err(Grund::NichtEndlich);
+        }
+        // 20 <= low < high <= 20000. Die Nyquistkappung auf 0,45*fs macht die
+        // LAUFZEIT, nicht das DTO (R6, Abweichung 2): eine samplerateabhaengige
+        // DTO-Grenze machte einen bei 96 kHz gespeicherten Stand bei 44,1 kHz
+        // unlesbar.
+        if low < 20.0 || low >= high || high > 20_000.0 {
+            return Err(Grund::Bereich);
+        }
+    }
+
+    for i in 0..ids.len() {
+        for j in (i + 1)..ids.len() {
+            if ids[i] == ids[j] {
+                return Err(Grund::ZoneDoppelt);
+            }
+        }
+    }
+    for i in 1..ids.len() {
+        if ids[i - 1] >= ids[i] {
+            return Err(Grund::ZoneSortierung);
+        }
+    }
     Ok(())
 }
 
@@ -391,8 +507,48 @@ mod tests {
     use super::*;
 
     #[test]
-    fn bestand_kommt_aus_dem_vertrag_und_hat_109_eintraege() {
-        assert_eq!(bestand().anzahl(), 109);
+    fn bestand_kommt_aus_dem_vertrag_und_hat_120_eintraege() {
+        assert_eq!(bestand().anzahl(), 120);
+        // Die 109 v1-Kennungen stehen VORNE und unveraendert: Layout v2 ist
+        // additiv, kein neuer Wert bekommt einen freien Platz im Bestand.
+        let b = bestand();
+        assert!(b.eintraege[..109].iter().all(|e| e.id.starts_with("v1.")));
+        assert!(b.eintraege[109..].iter().all(|e| e.id.starts_with("v2.")));
+        assert_eq!(b.eintraege[109].id, "v2.global.eq_enabled");
+        assert_eq!(b.eintraege[110].id, "v2.global.mix");
+        assert_eq!(b.eintraege[111].id, "v2.global.auto_gain");
+        assert_eq!(b.eintraege[112].id, "v2.band.0.occupied");
+        assert_eq!(b.eintraege[119].id, "v2.band.7.occupied");
+    }
+
+    /// SONDE-015 R6: die drei Zonengruende sind eigene Woerter, keine
+    /// Bereichsfehler - sie betreffen die LISTE, nicht einen Wert. Die
+    /// Reihenfolge der Leiter ist Vertrag, weil das Manifest je Fixture genau
+    /// EINEN Grund haelt.
+    #[test]
+    fn zonenleiter_meldet_denselben_ersten_grund_wie_die_anderen_beine() {
+        let zone = |id: i64, low: f64, high: f64| {
+            serde_json::json!({"enabled": true, "high_hz": high, "id": id, "low_hz": low})
+        };
+        let neun: Vec<Value> = (0..9).map(|i| zone(i, 100.0, 200.0)).collect();
+        assert_eq!(pruefe_zonen(&neun), Err(Grund::ZoneAnzahl));
+        assert_eq!(
+            pruefe_zonen(&[zone(3, 100.0, 200.0), zone(3, 300.0, 400.0)]),
+            Err(Grund::ZoneDoppelt)
+        );
+        assert_eq!(
+            pruefe_zonen(&[zone(5, 100.0, 200.0), zone(1, 300.0, 400.0)]),
+            Err(Grund::ZoneSortierung)
+        );
+        assert_eq!(pruefe_zonen(&[zone(0, 200.0, 200.0)]), Err(Grund::Bereich));
+        assert_eq!(pruefe_zonen(&[zone(0, 19.9, 200.0)]), Err(Grund::Bereich));
+        assert_eq!(pruefe_zonen(&[zone(0, 100.0, 20_000.1)]), Err(Grund::Bereich));
+        assert_eq!(pruefe_zonen(&[zone(8, 100.0, 200.0)]), Err(Grund::Bereich));
+        assert_eq!(pruefe_zonen(&[]), Ok(()));
+        assert_eq!(
+            pruefe_zonen(&[zone(0, 40.0, 120.0), zone(7, 900.0, 1100.0)]),
+            Ok(())
+        );
     }
 
     #[test]

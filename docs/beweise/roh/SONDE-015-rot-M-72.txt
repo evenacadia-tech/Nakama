@@ -1,0 +1,15 @@
+SONDE-015 Etappe 2 - Rotbeweis M-72
+Zusage: Zonen sind Teil des state_hash: zwei Staende mit verschiedenen Zonen duerfen nie denselben Hash liefern.
+Bruch:  eq-copilot/plugin/state/NakamaParameter.cpp
+        -     dto.objektSetze ("schutz_zonen", std::move (zonen));
+        +     dto.objektSetze ("schutz_zonen", kanon::Wert::leereListe());
+------------------------------------------------------------------------------
+$ EqCopStateMigrationTest.exe
+  FEHLER  state_hash weicht ab: dto/gueltig/maxima.json  [ist f3ce1aee44129147de135542a8bd0c054e559f0fe7e60d35ee874f70e5675d78 soll 5467c402a043547d3b2b98383a06c63d142cd31548e6fb4f0b154f50499b0459]
+  FEHLER  state_hash weicht ab: dto/gueltig/gemischt.json  [ist c012aef7fcb57bc5bf2592f68ac28f32f4f391a09d4eecf1f563f9a58657642c soll 508b7f1950d1a1f2f4df079ea63248fdffa4be8ab9b87afa99975f439732f218]
+  FEHLER  state_hash weicht ab: dto/gueltig/zone-einzeln.json  [ist 67c7eed5cba0acf3030e4e36fd0d875042bed6093ac9069a9ea8b5caec01beda soll e273b0d50395038ac842c72ca8a0519b7899c7b8effafddd93e58cd258d302b8]
+  FEHLER  gueltige DTOs: state_hash wie im Manifest  [4/7]
+  FEHLER  == DTO: 4 gueltige gehasht, 26 ungueltige vor dem Hash abgelehnt
+
+EXIT=1
+URTEIL: ROT

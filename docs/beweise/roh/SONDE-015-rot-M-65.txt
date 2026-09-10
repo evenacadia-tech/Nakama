@@ -1,0 +1,12 @@
+SONDE-015 Etappe 2 - Rotbeweis M-65
+Zusage: Migration v1 -> v2: occupied := enabled ODER ein Wert weicht BITGENAU vom Default ab. Ein Epsilonvergleich verloere ein Band.
+Bruch:  eq-copilot/plugin/state/NakamaParameter.cpp
+        -             return std::memcmp (&z.zahl, &b.standardZahl, sizeof (double)) != 0;
+        +             return std::abs (z.zahl - b.standardZahl) > 1e-9;
+------------------------------------------------------------------------------
+$ EqCopStateMigrationTest.exe
+  FEHLER  minus null gilt bitgenau als Abweichung vom Default (kein Epsilon)
+  FEHLER  == Migration: 4 Rollen bytegleich zum Golden, idempotent
+
+EXIT=1
+URTEIL: ROT

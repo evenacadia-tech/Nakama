@@ -1,0 +1,20 @@
+SONDE-015 Etappe 2 - Rotbeweis M-93
+Zusage: speichern -> laden -> speichern ist BYTEGLEICH, auch mit Dsp: die Zonenliste wird sortiert geschrieben.
+Bruch:  eq-copilot/plugin/state/NakamaState.cpp
+        -             dsp.setProperty (kDspZonen, juce::var (zonenFlach (z.schutzZonen)), nullptr);
+        +             { auto k = z.schutzZonen; std::reverse (k.begin(), k.end()); dsp.setProperty (kDspZonen, juce::var (zonenFlach (k)), nullptr); }
+------------------------------------------------------------------------------
+$ EqCopStateMigrationTest.exe
+  FEHLER  Dsp-Golden dsp-v2-voll.bin bytegleich zum Writer
+  FEHLER  Dsp-Golden laedt normal  [Dsp.schutz_zonen_v1 zone_sortierung at schutz_zonen[1].id]
+  FEHLER  und traegt Revision 12, zwei Zonen, einen Undo-Eintrag und Slot 2 belegt
+  FEHLER  == Migration: 4 Rollen bytegleich zum Golden, idempotent
+  FEHLER  active_probe mit Parameters und Dsp laedt (Bundle NkAc)
+  FEHLER  120 Parameterwerte bit-exakt durch den Roundtrip  [42]
+  FEHLER  Dsp-Kind feldgleich nach dem Roundtrip: Revision, Zonen, Undo-Ring, Cursor
+  FEHLER  state_hash ueberlebt den Roundtrip  [d7efcb6a2d98b93b6d345ede11d3fdc8bd374cc0ef0398800ac61e5d1b9b6924]
+  FEHLER  voller Undo-Ring (32 Eintraege, 8 Zonen) laedt und ist bytegleich  [45669 Bytes]
+  FEHLER  == Roundtrip: bytegleich, additive Eigenschaft erhalten, 120 Werte bit-exakt, voller Undo-Ring
+
+EXIT=1
+URTEIL: ROT

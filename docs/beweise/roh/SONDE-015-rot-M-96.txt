@@ -1,0 +1,13 @@
+SONDE-015 Etappe 2 - Rotbeweis M-96
+Zusage: Der Klanginhalt ist VOLLSTAENDIG: fehlt ein Feld, klingt ein geladenes Preset anders als das gespeicherte.
+Bruch:  eq-copilot/plugin/state/NakamaPreset.cpp
+        -         if (! gehoertInsPreset (i))
+        +         if (! gehoertInsPreset (i) || i == parameter::kIndexMix)
+------------------------------------------------------------------------------
+$ EqCopStateMigrationTest.exe
+  FEHLER  der Preset-Writer erzeugt preset/gueltig/default.json bytegleich  [ 3264 Bytes]
+  FEHLER  Preset schreiben->lesen->schreiben ist bytegleich und feldgleich  [fehlender_schluessel v2.global.mix]
+  FEHLER  == Preset: 3 gueltige gelesen, 13 ungueltige mit Grund abgelehnt, Writer bytegleich
+
+EXIT=1
+URTEIL: ROT

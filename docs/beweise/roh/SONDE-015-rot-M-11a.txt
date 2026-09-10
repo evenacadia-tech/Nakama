@@ -1,0 +1,29 @@
+SONDE-015 Etappe 3 - Rotbeweis M-11a
+Zusage: Der Filtertyp aus entwurfLowShelf liegt an der analytischen RBJ-Antwort (typisch 0,05 dB, Rand 0,1 dB).
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspFilter.h
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+      f.b0 =        A * ((A + 1.0) - (A - 1.0) * c + zwei) / a0;
+nachher:
+      f.b0 =        A * ((A + 1.0) - (A - 1.0) * c + zwei) * 1.002 / a0;
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 4 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  low_shelf_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 8.8844 dB bei 20.6 Hz, Rand 8.8853 dB, 240 Stellen]
+  FEHLER  low_shelf_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 9.8457 dB bei 20.6 Hz, Rand 9.8465 dB, 241 Stellen]
+  FEHLER  low_shelf_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 19.4140 dB bei 20.6 Hz, Rand 19.4144 dB, 241 Stellen]
+  FEHLER  low_shelf_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 30.6874 dB bei 20.6 Hz, Rand 30.6875 dB, 241 Stellen]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: low_shelf_gegen_analytische_antwort
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

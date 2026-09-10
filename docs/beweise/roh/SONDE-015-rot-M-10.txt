@@ -1,0 +1,38 @@
+SONDE-015 Etappe 3 - Rotbeweis M-10
+Zusage: Der Filtertyp aus entwurfBell liegt an der analytischen RBJ-Antwort (typisch 0,05 dB, Rand 0,1 dB).
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspFilter.h
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+      f.b0 = (1.0 + alpha * A) / a0;
+nachher:
+      f.b0 = (1.0 + alpha * A) * 1.002 / a0;
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 13 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  bell_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.8952 dB bei 20.6 Hz, Rand 0.8952 dB, 240 Stellen]
+  FEHLER  bell_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 2.9565 dB bei 931.6 Hz, Rand 2.9097 dB, 240 Stellen]
+  FEHLER  bell_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 1.0433 dB bei 20.6 Hz, Rand 1.0433 dB, 241 Stellen]
+  FEHLER  bell_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 3.4188 dB bei 931.6 Hz, Rand 3.3925 dB, 241 Stellen]
+  FEHLER  bell_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 3.4550 dB bei 20.6 Hz, Rand 3.4550 dB, 241 Stellen]
+  FEHLER  bell_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 9.7926 dB bei 931.6 Hz, Rand 10.2482 dB, 241 Stellen]
+  FEHLER  bell_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 9.2797 dB bei 20.6 Hz, Rand 9.2797 dB, 241 Stellen]
+  FEHLER  bell_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 19.9134 dB bei 931.6 Hz, Rand 21.2179 dB, 241 Stellen]
+  FEHLER  impulsantwort_misst_wie_ein_eingeschwungener_sinus (M-13)  [groesste Abweichung 1.0138 dB ueber drei Stellen]
+  FEHLER  kaskade_gegen_produkt_der_einzelantworten (M-15)  [gemessen 12.2730 dB, Produkt 12.0000 dB]
+  FEHLER  richtung_null_nach_sieben_gegen_geordnetes_golden (M-15)  [Abweichung vorwaerts 0.029724546327]
+  FEHLER  input_trim_wirkt_und_liegt_vor_der_bank (M-31)  [0.560927 gegen 0.498816]
+  FEHLER  neutraler_bell_ergibt_exakt_null_db (M-36)  [bitgenau +0,0: -0.552594443960122]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: bell_gegen_analytische_antwort
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

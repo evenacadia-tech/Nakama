@@ -1,0 +1,39 @@
+SONDE-015 Etappe 3 - Rotbeweis M-42
+Zusage: Der Ownership-Automat laeuft genau die Kette des Vertrags; ein anderer Uebergang scheitert.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspBankPool.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+      return zustaende[(size_t) slot].compare_exchange_strong (
+          erwartet, nach, std::memory_order_acq_rel, std::memory_order_acquire);
+nachher:
+      (void) erwartet;
+      zustaende[(size_t) slot].store (nach, std::memory_order_release);
+      return true;
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 11 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  fade_ist_in_samples_gezaehlt_nicht_in_bloecken (M-03)  [Blockgroesse 1 gegen 2048: 254 Abweichungen]
+  FEHLER  bypasswechsel_ist_klickfrei (M-06)  [max Sprung 0.72735319 gegen Fadeschritt 0.00284122]
+  FEHLER  dynamic_enabled_wechselt_nur_am_blockrand (M-25)  [zweite Differenz am Wechsel 0.744223297 gegen 0.023443103 im ruhigen Lauf]
+  FEHLER  channel_mode_wechselt_am_blockrand_klickfrei (M-29)  [zweite Differenz am Wechsel 0.787360311 gegen 0.024111748 im ruhigen Lauf]
+  FEHLER  ein_nicht_genannter_uebergang_scheitert (M-42)  [frei -> verblassend ist im Automaten nicht moeglich]
+  FEHLER  busy_retry_wenn_kein_slot_frei (M-44)  [der fuenfte Wunsch verdraengt keine aktive Bank]
+  FEHLER  der Ring droppt bei regulaerem Betrieb nie (M-45)  [der Ring fasst 8 Eintraege bei 4 Slots]
+  FEHLER  vier_baenke_im_schlimmsten_fall (M-46)  [beide Pfade mitten im Fade: vier lebende Baenke]
+  FEHLER  und der fuenfte Wunsch bekommt busy_retry (M-44/M-46)
+  FEHLER  bankpool_parallel_ohne_rennen (M-122)  [7044 Bloecke, 3000 Publikationen, 11178 Invariantenbrueche]
+  FEHLER  der Messlauf faehrt wirklich vier Baenke (R15)  [freie Slots 3]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: ein_nicht_genannter_uebergang_scheitert
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

@@ -1,0 +1,34 @@
+SONDE-015 Etappe 3 - Rotbeweis M-03
+Zusage: Der Crossfade beim Engagieren hat eine feste, in Samples gezaehlte Laenge.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+      lage.fadeRest = kFadeSamples;
+nachher:
+      lage.fadeRest = kFadeSamples * 8;
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 9 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  passthrough_sanitisiert_nichts (M-50)  [NaN und beide Inf kommen unveraendert heraus]
+  FEHLER  engagieren_ist_klickfrei_und_endet_deterministisch (M-03)  [max Sprung 0.41801 gegen Eigensprung 0.01440]
+  FEHLER  nach_dem_fade_wieder_bitidentisch (M-04)  [nicht nur numerisch nahe - bitgleich, auch im Fadeblock selbst]
+  FEHLER  bypasswechsel_ist_klickfrei (M-06)  [max Sprung 5.09147215 gegen Fadeschritt 0.00284122]
+  FEHLER  bypasswechsel_endet_bitgleich (M-06)
+  FEHLER  dynamic_enabled_wechselt_nur_am_blockrand (M-25)  [zweite Differenz am Wechsel 5.322600126 gegen 0.023443103 im ruhigen Lauf]
+  FEHLER  channel_mode_wechselt_am_blockrand_klickfrei (M-29)  [zweite Differenz am Wechsel 5.358490288 gegen 0.024111748 im ruhigen Lauf]
+  FEHLER  kein_nan_vergiftet_den_filterzustand (M-49)
+  FEHLER  der_pfad_bleibt_dauerhaft_endlich (M-49)  [100 Bloecke nach dem NaN]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: engagieren_ist_klickfrei
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

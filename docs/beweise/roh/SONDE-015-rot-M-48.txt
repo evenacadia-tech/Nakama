@@ -1,0 +1,28 @@
+SONDE-015 Etappe 3 - Rotbeweis M-48
+Zusage: Ueberlast verwirft Analyseframes, nie Audio.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+          int versatz = 0;
+          while (versatz < numSamples)
+nachher:
+          int versatz = numSamples;
+          while (versatz < numSamples)
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  und Audio laeuft unveraendert weiter (M-48)  [der Block wurde verarbeitet, nur der Tap fehlt]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: und Audio laeuft unveraendert weiter
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

@@ -1,0 +1,31 @@
+SONDE-015 Etappe 3 - Rotbeweis M-46
+Zusage: Reicht das Budget nicht, wird Candidate vor dem Wechsel neutral beendet.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+  void DspKern::beendeCandidate()
+  {
+      candidateAktiv.store (false, std::memory_order_release);
+  }
+nachher:
+  void DspKern::beendeCandidate()
+  {
+  }
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  candidate_endet_neutral (M-46)
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: candidate_endet_neutral
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

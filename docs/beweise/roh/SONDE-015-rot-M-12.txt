@@ -1,0 +1,30 @@
+SONDE-015 Etappe 3 - Rotbeweis M-12
+Zusage: Die Frequenz wird bei 0,45 fs gekappt und die Kappung gemeldet.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspFilter.h
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+      const double deckel = samplerate * kNyquistAnteil;
+      gekappt = freqHz > deckel;
+      return gekappt ? deckel : freqHz;
+nachher:
+      const double deckel = samplerate * kNyquistAnteil;
+      gekappt = false;
+      return freqHz > deckel ? deckel : freqHz;
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  nyquist_kappung_bei_045_fs (M-12)  [wirksam 19845.000 Hz statt 20000]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: nyquist_kappung_bei_045_fs
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

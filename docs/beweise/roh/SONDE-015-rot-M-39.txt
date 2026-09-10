@@ -1,0 +1,29 @@
+SONDE-015 Etappe 3 - Rotbeweis M-39
+Zusage: Der Ausgleich steht fest, bevor ein einziger Block gelaufen ist.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+          autoGainBericht.store (bank.programm.autoGainDb, std::memory_order_relaxed);
+nachher:
+          autoGainBericht.store (0.0, std::memory_order_relaxed);
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 4 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  shelf_plus_sechs_ergibt_minus_sechs (M-37)  [0.0000 dB]
+  FEHLER  und es wird NICHT wie der doppelte Gain kompensiert (M-37)  [das Doppelte waere 0.0000 dB]
+  FEHLER  auto_gain_aus_wirkt_nicht_und_ist_trotzdem_lesbar (M-35)  [abgeleitet 0.0000 dB]
+  FEHLER  auto_gain_wird_nicht_im_audiothread_gerechnet (M-39)  [vor dem ersten Block bereits 0.0000 dB]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: auto_gain_wird_nicht_im_audiothread_gerechnet
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

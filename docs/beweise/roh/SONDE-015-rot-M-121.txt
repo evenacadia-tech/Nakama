@@ -1,0 +1,31 @@
+SONDE-015 Etappe 3 - Rotbeweis M-121
+Zusage: Ein Remove oder Programmwechsel verwirft die alte Auslenkung statt sie weiterzumelden.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+      for (int i = 0; i < kSlots; ++i)
+      {
+          const auto& bp = bank.programm.baender[(size_t) i];
+          if (! (bp.aktiv && bp.nutztSvf))
+              auslenkungen[(size_t) i].store (0.0, std::memory_order_relaxed);
+      }
+nachher:
+      // Nullung entfernt
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  remove_verwirft_die_alte_auslenkung (M-121)  [vorher -9.0000 dB, nach dem Remove -9.000000000000000]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: verwirft_die_alte_auslenkung
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

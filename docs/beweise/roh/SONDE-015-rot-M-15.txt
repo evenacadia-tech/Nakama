@@ -1,0 +1,29 @@
+SONDE-015 Etappe 3 - Rotbeweis M-15
+Zusage: Die acht Slots wirken als Kaskade von Slot 0 nach Slot 7.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+      for (int slotIndex = 0; slotIndex < kSlots; ++slotIndex)
+          verarbeiteBand (bank, slotIndex, L, R, numSamples);
+nachher:
+      for (int slotIndex = kSlots - 1; slotIndex >= 0; --slotIndex)
+          verarbeiteBand (bank, slotIndex, L, R, numSamples);
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 2 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  richtung_null_nach_sieben_gegen_geordnetes_golden (M-15)  [Abweichung vorwaerts 0.006948964552]
+  FEHLER  ein_rueckwaertslauf_wuerde_das_golden_reissen (M-15)  [Abweichung rueckwaerts 0.000000000 - die Probe trennt die Richtung]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: richtung_null_nach_sieben_gegen_geordnetes_golden
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

@@ -1,0 +1,27 @@
+SONDE-015 Etappe 3 - Rotbeweis M-41
+Zusage: Der Pool haelt vier vorallokierte Baenke.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspBankPool.h
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+      static constexpr int kBaenke = 4;
+nachher:
+      static constexpr int kBaenke = 3;
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 2 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  vier_baenke_vorallokiert (M-41)  [3]
+  FEHLER  Candidate wechselt (vierte Bank)
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: vier_baenke_vorallokiert
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

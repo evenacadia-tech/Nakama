@@ -1,0 +1,30 @@
+SONDE-015 Etappe 3 - Rotbeweis M-04
+Zusage: Nach dem Fade ist der Passthrough wieder bitidentisch, nicht nur numerisch nahe.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+          if (lage.fadeRest <= 0) break;   // ab hier steht das Ziel allein - BITGENAU
+nachher:
+          if (lage.fadeRest <= 0) { nachL[i] = nachL[i] * 1.0000001; nachR[i] = nachR[i] * 1.0000001; continue; }
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 5 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  default_ist_bitidentisch bei 44100 Hz  [375 Samples]
+  FEHLER  default_ist_bitidentisch bei 48000 Hz  [375 Samples]
+  FEHLER  default_ist_bitidentisch bei 96000 Hz  [375 Samples]
+  FEHLER  default_ist_bitidentisch bei 192000 Hz  [375 Samples]
+  FEHLER  nach_dem_fade_wieder_bitidentisch (M-04)  [nicht nur numerisch nahe - bitgleich, auch im Fadeblock selbst]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: nach_dem_fade_wieder_bitidentisch
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

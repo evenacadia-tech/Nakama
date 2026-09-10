@@ -1,0 +1,32 @@
+SONDE-015 Etappe 3 - Rotbeweis M-57
+Zusage: Die Hoermatrix liegt hinter allen drei Taps; sie veraendert keinen Tap.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+              const double* w = (k == 0) ? arbeitL.data() : arbeitR.data();
+              std::memcpy (tapZeiger (Tap::postCommitted, k), w, n * sizeof (double));
+nachher:
+              const double* w  = (k == 0) ? arbeitL.data() : arbeitR.data();
+              const double* dq = (k == 0) ? dryL.data()    : dryR.data();
+              double* zt = tapZeiger (Tap::postCommitted, k);
+              for (size_t i = 0; i < n; ++i)
+                  zt[i] = (wirksam == Hoermatrix::delta)
+                          ? (w[i] - dq[i]) * dbInLinear (kDeltaMakeupDb) : w[i];
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  hoermatrix_liegt_hinter_den_taps (M-57)  [Tapenergie processed 185.814748 gegen delta 1093.298119]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: hoermatrix_liegt_hinter_den_taps
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

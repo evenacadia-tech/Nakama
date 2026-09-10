@@ -1,0 +1,38 @@
+SONDE-015 Etappe 3 - Rotbeweis M-45
+Zusage: Ein Ringueberlauf setzt die reclaim_pending_mask und haelt den Slot.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspBankPool.cpp, eq-copilot/plugin/dsp/DspBankPool.h
+
+--- MUTIERTE STELLE 1 von 2 in eq-copilot/plugin/dsp/DspBankPool.h (dieselbe Zusage) ---
+vorher:
+      static constexpr int kAckKapazitaet = 8;
+nachher:
+      static constexpr int kAckKapazitaet = 2;
+
+--- MUTIERTE STELLE 2 von 2 in eq-copilot/plugin/dsp/DspBankPool.cpp (dieselbe Zusage) ---
+vorher:
+          reclaimMaske.fetch_or ((std::uint64_t) (1ull << slot), std::memory_order_acq_rel);
+          verriegelungen.fetch_add (1, std::memory_order_relaxed);
+          ueberlaeufe.fetch_add (1, std::memory_order_relaxed);
+          return;
+nachher:
+          ueberlaeufe.fetch_add (1, std::memory_order_relaxed);
+          return;
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 3 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  der ACK-Ring fasst mehr Eintraege als es Slots gibt (M-45)  [2 > 4]
+  FEHLER  reclaim_pending_mask_haelt_den_slot (M-45)  [Ueberlaeufe=2, Verriegelungen=0]
+  FEHLER  der Ring droppt bei regulaerem Betrieb nie (M-45)  [der Ring fasst 2 Eintraege bei 4 Slots]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: reclaim_pending_mask_haelt_den_slot
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

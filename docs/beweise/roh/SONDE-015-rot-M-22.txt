@@ -1,0 +1,26 @@
+SONDE-015 Etappe 3 - Rotbeweis M-22
+Zusage: Bei sidechain_source none wird kein Detektor gebaut.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspProgramm.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+          const bool detektorGewuenscht = (quelle != Sidechain::none);
+nachher:
+          const bool detektorGewuenscht = true;
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  sidechain_none_liefert_keine_auslenkung (M-22)
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: sidechain_none_liefert_keine_auslenkung
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

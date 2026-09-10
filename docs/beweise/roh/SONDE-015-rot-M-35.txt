@@ -1,0 +1,57 @@
+SONDE-015 Etappe 3 - Rotbeweis M-35
+Zusage: Bei ausgeschaltetem Auto-Gain wirkt der Ausgleich nicht - lesbar ist er trotzdem.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+      rAutoGain  .setzeZiel (p.autoGainAn ? p.autoGainLin : 1.0);
+nachher:
+      rAutoGain  .setzeZiel (p.autoGainLin);
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 32 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  bell_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 1.4259 dB bei 69.2 Hz, Rand 1.4259 dB, 240 Stellen]
+  FEHLER  bell_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.6749 dB bei 1076.3 Hz, Rand 0.6749 dB, 240 Stellen]
+  FEHLER  low_shelf_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 2.8418 dB bei 26.7 Hz, Rand 2.8418 dB, 240 Stellen]
+  FEHLER  high_shelf_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.8133 dB bei 232.9 Hz, Rand 0.8133 dB, 240 Stellen]
+  FEHLER  notch_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.2321 dB bei 1015.9 Hz, Rand 0.2321 dB, 240 Stellen]
+  FEHLER  low_cut_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 1.1650 dB bei 27.5 Hz, Rand 1.1650 dB, 240 Stellen]
+  FEHLER  high_cut_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.6551 dB bei 18780.2 Hz, Rand 0.6551 dB, 240 Stellen]
+  FEHLER  bell_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 1.4272 dB bei 151.0 Hz, Rand 1.4272 dB, 241 Stellen]
+  FEHLER  bell_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.6751 dB bei 508.0 Hz, Rand 0.6751 dB, 241 Stellen]
+  FEHLER  low_shelf_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 2.8418 dB bei 32.7 Hz, Rand 2.8418 dB, 241 Stellen]
+  FEHLER  high_shelf_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.8134 dB bei 50.4 Hz, Rand 0.8134 dB, 241 Stellen]
+  FEHLER  notch_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.2322 dB bei 987.0 Hz, Rand 0.2322 dB, 241 Stellen]
+  FEHLER  low_cut_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 1.1650 dB bei 23.1 Hz, Rand 1.1650 dB, 241 Stellen]
+  FEHLER  high_cut_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.6532 dB bei 19330.5 Hz, Rand 0.6532 dB, 241 Stellen]
+  FEHLER  bell_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 1.4326 dB bei 1660.0 Hz, Rand 1.4326 dB, 241 Stellen]
+  FEHLER  bell_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.6759 dB bei 879.3 Hz, Rand 0.6759 dB, 241 Stellen]
+  FEHLER  low_shelf_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 2.8418 dB bei 23.1 Hz, Rand 2.8418 dB, 241 Stellen]
+  FEHLER  high_shelf_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.8134 dB bei 113.1 Hz, Rand 0.8134 dB, 241 Stellen]
+  FEHLER  notch_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.2330 dB bei 958.9 Hz, Rand 0.2330 dB, 241 Stellen]
+  FEHLER  low_cut_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 1.1650 dB bei 21.2 Hz, Rand 1.1650 dB, 241 Stellen]
+  FEHLER  high_cut_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.6422 dB bei 16731.3 Hz, Rand 0.6422 dB, 241 Stellen]
+  FEHLER  bell_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 1.4340 dB bei 479.5 Hz, Rand 1.4340 dB, 241 Stellen]
+  FEHLER  bell_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.6761 dB bei 854.3 Hz, Rand 0.6761 dB, 241 Stellen]
+  FEHLER  low_shelf_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 2.8418 dB bei 27.5 Hz, Rand 2.8418 dB, 241 Stellen]
+  FEHLER  high_shelf_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.8132 dB bei 931.6 Hz, Rand 0.8132 dB, 241 Stellen]
+  FEHLER  notch_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.2331 dB bei 958.9 Hz, Rand 0.2331 dB, 241 Stellen]
+  FEHLER  low_cut_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 1.1650 dB bei 21.2 Hz, Rand 1.1650 dB, 241 Stellen]
+  FEHLER  high_cut_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.6387 dB bei 658.8 Hz, Rand 0.6387 dB, 241 Stellen]
+  FEHLER  impulsantwort_misst_wie_ein_eingeschwungener_sinus (M-13)  [groesste Abweichung 1.4302 dB ueber drei Stellen]
+  FEHLER  kaskade_gegen_produkt_der_einzelantworten (M-15)  [gemessen 8.0928 dB, Produkt 12.0000 dB]
+  FEHLER  richtung_null_nach_sieben_gegen_geordnetes_golden (M-15)  [Abweichung vorwaerts 0.040616619581]
+  FEHLER  der_ausgleich_wirkt_bei_aus_nicht (M-35)  [erster IR-Sample 0.99989]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: der_ausgleich_wirkt_bei_aus_nicht
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

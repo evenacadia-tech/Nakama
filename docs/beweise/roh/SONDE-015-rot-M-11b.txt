@@ -1,0 +1,30 @@
+SONDE-015 Etappe 3 - Rotbeweis M-11b
+Zusage: Der Filtertyp aus entwurfHighShelf liegt an der analytischen RBJ-Antwort (typisch 0,05 dB, Rand 0,1 dB).
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspFilter.h
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+      f.b0 =        A * ((A + 1.0) + (A - 1.0) * c + zwei) / a0;
+nachher:
+      f.b0 =        A * ((A + 1.0) + (A - 1.0) * c + zwei) * 1.002 / a0;
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 5 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  high_shelf_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.1472 dB bei 20.6 Hz, Rand 0.1472 dB, 241 Stellen]
+  FEHLER  high_shelf_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.5094 dB bei 20.6 Hz, Rand 0.5094 dB, 241 Stellen]
+  FEHLER  shelf_plus_sechs_ergibt_minus_sechs (M-37)  [-41.1398 dB]
+  FEHLER  auto_gain_aus_wirkt_nicht_und_ist_trotzdem_lesbar (M-35)  [abgeleitet -41.1398 dB]
+  FEHLER  auto_gain_wird_nicht_im_audiothread_gerechnet (M-39)  [vor dem ersten Block bereits -41.1398 dB]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: high_shelf_gegen_analytische_antwort
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

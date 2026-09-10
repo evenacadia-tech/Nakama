@@ -1,0 +1,29 @@
+SONDE-015 Etappe 3 - Rotbeweis M-54
+Zusage: Das Delta traegt einen festen, materialunabhaengigen Lautheitsabgleich.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+                  l = (arbeitL[(size_t) i] - dryL[(size_t) i]) * makeup;
+                  r = (arbeitR[(size_t) i] - dryR[(size_t) i]) * makeup;
+nachher:
+                  { const double pegel = std::abs (dryL[(size_t) i]) + 1e-9;
+                    l = (arbeitL[(size_t) i] - dryL[(size_t) i]) * makeup / pegel;
+                    r = (arbeitR[(size_t) i] - dryR[(size_t) i]) * makeup / pegel; }
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  delta_ist_differenz_mit_festem_abgleich (M-54)  [Verhaeltnis bei 0,1 und 0,5: 39.622107 / 7.924421]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: delta_ist_differenz_mit_festem_abgleich
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

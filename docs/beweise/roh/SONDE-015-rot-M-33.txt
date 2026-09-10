@@ -1,0 +1,26 @@
+SONDE-015 Etappe 3 - Rotbeweis M-33
+Zusage: Bei Mix 0 ist der Ausgang bitidentisch zum Eingang (Dry ist der Tap pre_nakama).
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+              if (mix == 0.0)      { l = dL[i]; r = dR[i]; }
+nachher:
+              if (mix == 0.0)      { l = dL[i] * rInputTrim.aktuell; r = dR[i] * rInputTrim.aktuell; }
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  mix_null_ist_bitidentisch (M-33)  [trotz +9 dB Input-Trim und +12-dB-Bell]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: mix_null_ist_bitidentisch
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

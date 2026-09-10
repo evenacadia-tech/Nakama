@@ -1,0 +1,26 @@
+SONDE-015 Etappe 3 - Rotbeweis M-56
+Zusage: Candidate ohne Kandidat faellt sichtbar auf Processed zurueck.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+      if (wirksam == Hoermatrix::candidate && ! candDa) wirksam = Hoermatrix::processed;
+nachher:
+      if (false) wirksam = Hoermatrix::processed;
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  candidate_ohne_kandidat_faellt_sichtbar_zurueck (M-56)  [der Getter meldet den WIRKSAMEN Zustand]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: candidate_ohne_kandidat_faellt_sichtbar_zurueck
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

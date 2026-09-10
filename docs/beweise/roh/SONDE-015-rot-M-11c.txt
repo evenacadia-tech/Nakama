@@ -1,0 +1,29 @@
+SONDE-015 Etappe 3 - Rotbeweis M-11c
+Zusage: Der Filtertyp aus entwurfNotch liegt an der analytischen RBJ-Antwort (typisch 0,05 dB, Rand 0,1 dB).
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspFilter.h
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+      f.b0 =  1.0            / a0;
+nachher:
+      f.b0 =  1.002          / a0;
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 4 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  notch_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 15.7294 dB bei 1045.7 Hz, Rand 0.8178 dB, 240 Stellen]
+  FEHLER  notch_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 14.8542 dB bei 987.0 Hz, Rand 0.9606 dB, 241 Stellen]
+  FEHLER  notch_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 25.6235 dB bei 987.0 Hz, Rand 3.3300 dB, 241 Stellen]
+  FEHLER  notch_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 37.3132 dB bei 987.0 Hz, Rand 9.1530 dB, 241 Stellen]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: notch_gegen_analytische_antwort
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

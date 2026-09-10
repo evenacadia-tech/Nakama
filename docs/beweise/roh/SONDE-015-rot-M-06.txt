@@ -1,0 +1,28 @@
+SONDE-015 Etappe 3 - Rotbeweis M-06
+Zusage: Auch der Hard-Bypass wechselt am Blockrand mit Crossfade, nicht abrupt.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+      lage.fadeRest = kFadeSamples;
+nachher:
+      lage.fadeRest = 0;
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 3 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  bypasswechsel_ist_klickfrei (M-06)  [max Sprung 0.72735319 gegen Fadeschritt 0.00284122]
+  FEHLER  dynamic_enabled_wechselt_nur_am_blockrand (M-25)  [zweite Differenz am Wechsel 0.744343221 gegen 0.023443103 im ruhigen Lauf]
+  FEHLER  channel_mode_wechselt_am_blockrand_klickfrei (M-29)  [zweite Differenz am Wechsel 0.787360311 gegen 0.024111748 im ruhigen Lauf]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: bypasswechsel_ist_klickfrei
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

@@ -1,0 +1,35 @@
+SONDE-015 Etappe 3 - Rotbeweis M-30
+Zusage: Bei width 1,0 und mono_bass 0 wird die M/S-Matrix gar nicht gerechnet.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE STELLE 1 von 2 in eq-copilot/plugin/dsp/DspKern.cpp (dieselbe Zusage) ---
+vorher:
+      if (rWidth.ruhtBei (1.0) && ! monoBass)
+nachher:
+      if (false && rWidth.ruhtBei (1.0) && ! monoBass)
+
+--- MUTIERTE STELLE 2 von 2 in eq-copilot/plugin/dsp/DspKern.cpp (dieselbe Zusage) ---
+vorher:
+              const double m = (L[i] + R[i]) * 0.5;
+              double s       = (L[i] - R[i]) * 0.5;
+nachher:
+              const double m = (double) ((float) L[i] + (float) R[i]) * 0.5;
+              double s       = (double) ((float) L[i] - (float) R[i]) * 0.5;
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 2 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  unity_kurzschluss_statt_multiplikation (M-02)  [eq an, bypass aus, 120 Werte auf Default]
+  FEHLER  width_eins_ist_bitidentisch (M-30)  [die M/S-Matrix wird gar nicht gerechnet]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: width_eins_ist_bitidentisch
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

@@ -1,0 +1,33 @@
+SONDE-015 Etappe 3 - Rotbeweis M-44
+Zusage: Ist kein Slot frei, gibt es busy_retry - keine aktive Bank wird verdraengt.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspBankPool.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+      for (int i = 0; i < kBaenke; ++i)
+          if (wechsle (i, BankZustand::frei, BankZustand::vorbereitend))
+              return i;
+nachher:
+      for (int i = 0; i < kBaenke; ++i)
+          if (wechsle (i, BankZustand::frei, BankZustand::vorbereitend))
+              return i;
+      for (int i = 0; i < kBaenke; ++i)
+          if (wechsle (i, BankZustand::audioAktiv, BankZustand::vorbereitend))
+              return i;
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  und der fuenfte Wunsch bekommt busy_retry (M-44/M-46)
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: fuenfte Wunsch bekommt busy_retry
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

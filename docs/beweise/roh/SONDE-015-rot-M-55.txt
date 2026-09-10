@@ -1,0 +1,26 @@
+SONDE-015 Etappe 3 - Rotbeweis M-55
+Zusage: Der Wechsel zwischen zwei Hoermatrix-Zustaenden ist klickfrei.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+          hoerFadeRest  = kFadeSamples;
+nachher:
+          hoerFadeRest  = 0;
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  hoermatrixwechsel_ist_klickfrei (M-55)  [max Sprung 0.59621434 gegen Fadeschritt 0.00232896]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: hoermatrixwechsel_ist_klickfrei
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

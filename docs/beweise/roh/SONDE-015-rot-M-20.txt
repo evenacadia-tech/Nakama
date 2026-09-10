@@ -1,0 +1,26 @@
+SONDE-015 Etappe 3 - Rotbeweis M-20
+Zusage: Bei dynamic_range_db = 0 wird der Detektor gar nicht erst gerechnet.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspProgramm.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+          b.detektorLaeuft = b.nutztSvf && detektorGewuenscht && b.rangeDb != 0.0;
+nachher:
+          b.detektorLaeuft = b.nutztSvf && detektorGewuenscht;
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  range_null_rechnet_keinen_detektor (M-20)
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: range_null_rechnet_keinen_detektor
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

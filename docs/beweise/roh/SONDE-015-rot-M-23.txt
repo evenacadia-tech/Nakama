@@ -1,0 +1,26 @@
+SONDE-015 Etappe 3 - Rotbeweis M-23
+Zusage: priority_sidechain wird auf internal geklemmt und als geklemmt gemeldet.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspProgramm.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+          b.geklemmtSidechain = (quelle == Sidechain::prioritySidechain);
+nachher:
+          b.geklemmtSidechain = false;
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  priority_sidechain_wird_geklemmt_und_gemeldet (M-23)  [das Programm rechnet internal, die Klemmung steht im Bericht]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: priority_sidechain_wird_geklemmt_und_gemeldet
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

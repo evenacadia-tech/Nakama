@@ -1,0 +1,43 @@
+SONDE-015 Etappe 3 - Rotbeweis M-31
+Zusage: Der Input-Trim liegt vor der Filterbank, nicht dahinter.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE STELLE 1 von 2 in eq-copilot/plugin/dsp/DspKern.cpp (dieselbe Zusage) ---
+vorher:
+      if (rInputTrim.ruhtBei (1.0))
+      {
+          for (int i = 0; i < numSamples; ++i) rInputTrim.tick();
+      }
+      else
+      {
+          for (int i = 0; i < numSamples; ++i)
+          {
+              const double g = rInputTrim.tick();
+              L[i] *= g; R[i] *= g;
+          }
+      }
+nachher:
+      for (int i = 0; i < numSamples; ++i) rInputTrim.tick();
+
+--- MUTIERTE STELLE 2 von 2 in eq-copilot/plugin/dsp/DspKern.cpp (dieselbe Zusage) ---
+vorher:
+          const double ag  = rAutoGain.tick();
+nachher:
+          const double ag  = rAutoGain.tick() * rInputTrim.aktuell;
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  input_trim_wirkt_und_liegt_vor_der_bank (M-31)  [0.250000 gegen 0.498816]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: input_trim_wirkt_und_liegt_vor_der_bank
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

@@ -1,0 +1,29 @@
+SONDE-015 Etappe 3 - Rotbeweis M-19
+Zusage: Unter Threshold ist die dynamische Verstaerkung exakt 0,0.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspFilter.h
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+      const double ueber = pegelDb - thresholdDb;
+      if (! (ueber > 0.0)) return 0.0;
+nachher:
+      const double ueber = pegelDb - thresholdDb;
+      if (! (ueber > 0.0)) return rangeDb * 1e-9;
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 2 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  unter_threshold_steht_das_band_exakt_still (M-19)  [Auslenkung -0.000000009000000]
+  FEHLER  auslenkung_ist_gemessen_nicht_gerechnet (M-27)  [bei Stille meldet auch das dynamische Band exakt 0]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: unter_threshold_steht_das_band_exakt_still
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

@@ -1,0 +1,27 @@
+SONDE-015 Etappe 3 - Rotbeweis M-17
+Zusage: Ein kontinuierlicher Wert laeuft sample-genau ueber genau eine Rampe.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.h
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+              if (--rest == 0) aktuell = ziel;
+nachher:
+              if (--rest >= 0) aktuell = ziel;
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 2 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  zipperresiduen_unter_minus_100_dbfs (M-17)  [groesste Stufe 0.99526227 gegen Rampenschritt 0.00388774]
+  FEHLER  die_rampe_folgt_der_ausgeschriebenen_ideallinie (M-17)  [groesste Abweichung 0.991374522]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: zipperresiduen_unter_minus_100_dbfs
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

@@ -3,15 +3,15 @@
 | Merkmal | Wert |
 |---|---|
 | Ticket | S26–28, `SONDE-015` (Phase P6), Leitungsname „Die Klangregelung in der Sonde sicher und speicherbar machen" |
-| Etappe | **Etappe 2 abgeschlossen (10.09.2026, Wiederprüfung 2 PASS, §8.12); als Nächstes Etappe 3 — DSP-Kern als Bibliothek mit Goldens (Bauplan §4.3, Auftrag `docs/beweise/roh/SONDE-015-auftrag.txt` Abschnitt ETAPPE 3).** Etappe 1 (Matrix) nach fünf Matrixprüfungen und Konvergenzentscheid (§7), Rest NAK-245 der Etappe 4 zugeordnet; Etappe 2 (Verträge in drei Sprachen) nach Erstprüfung und zwei Nacharbeiten (§8). |
-| Phase | **Etappe 2 abgenommen auf `6f2baba6` (Erstprüfung NEEDS_WORK → Nacharbeit 1 → Wiederprüfung 1 NEEDS_WORK → Nacharbeit 2 → Wiederprüfung 2 PASS).** Etappen 3 und 4 stehen aus; die Abschlussprüfung über den ganzen Ticketbereich und der volle Kanon folgen nach Etappe 4. |
+| Etappe | **Etappe 3 gebaut (10.09.2026, §9) — DSP-Kern als Bibliothek mit Goldens; Erstprüfung steht aus.** Etappe 1 (Matrix) nach fünf Matrixprüfungen und Konvergenzentscheid (§7), Rest NAK-245 der Etappe 4 zugeordnet; Etappe 2 (Verträge in drei Sprachen) abgeschlossen nach Erstprüfung und zwei Nacharbeiten (§8). Als Nächstes: Erstprüfung der Etappe 3, danach Etappe 4 (Integration, Transaktion, Telemetrie, Nulltest). |
+| Phase | **Etappe 2 abgenommen auf `6f2baba6`; Etappe 3 gebaut auf Basis `2672ed2b` (§9).** Etappe 4 steht aus; die Abschlussprüfung über den ganzen Ticketbereich und der volle Kanon folgen nach Etappe 4. |
 | Urteil | **Offen.** Weder T1 noch T2 vergeben. Etappe 1 baut nichts und behauptet deshalb kein gemessenes Produktverhalten; ihr einziger Gegenstand ist, ob §3 die Zusagen des Gate-Textes vollständig und widerspruchsfrei trägt. |
 | Prüfstufe | **T2 gefordert** (`docs/plan/plan.json`, Schritt S26–28, `"stufe": "T2"`). Heute vergeben: **keine**. |
 | Prüfmodell | Codex `gpt-6-astra`, Effort **max**, lesend — für Matrix-, Erst-, Wieder- und Abschlussprüfung. `gpt-5.6-sol` max nur als Gegenprüfer. |
-| Basis-SHA | **Etappe 1:** `e9dbf4b9c11d1cf72aebbecb835c9391a57a0532` — alle Zeilen- und Zeichenangaben in §1 und §2 gelten zu diesem Stand. **Etappe 2:** `2026031f0a8bb0baf12135020be654a82d354a6f`. **Nacharbeit 1:** `3df34963de3a887600f5f629fc637f52256ace78`. **Nacharbeit 2:** `c727e620c1d48bcee8ad698a27321980bbd7776e`; jeweils beim Start gemessen, `git status --short` leer. |
+| Basis-SHA | **Etappe 1:** `e9dbf4b9c11d1cf72aebbecb835c9391a57a0532` — alle Zeilen- und Zeichenangaben in §1 und §2 gelten zu diesem Stand. **Etappe 2:** `2026031f0a8bb0baf12135020be654a82d354a6f`. **Nacharbeit 1:** `3df34963de3a887600f5f629fc637f52256ace78`. **Nacharbeit 2:** `c727e620c1d48bcee8ad698a27321980bbd7776e`. **Etappe 3:** `2672ed2bf9858c2c45a8ebbc5afbe0999fff6554`; jeweils beim Start gemessen, `git status --short` leer. |
 | Kanon vorher | **GRÜN 62/62, Exit 0 auf `1867cac2`** (Abschlusskanon NAK-230, Rohausgabe `docs/beweise/roh/NAK-230-1867cac.md`). Eigene Messung in dieser Sitzung: `git diff --stat 1867cac2..e9dbf4b9 -- eq-copilot broker tools` ist **leer**. Der Codestand des Basis-SHA ist mit dem beglaubigten Kanonstand identisch; die Commits dazwischen berühren nur `docs/`. |
-| Kanon nachher | **Steht aus** — der volle abgekoppelte Kanon gehört an das Ende der Etappe 4. Etappe 2 fuhr die Beine ihres Bauplans einzeln (§8.4), Nacharbeit 1 die betroffenen (§8.9), Nacharbeit 2 die zwei Broker-Beine (§8.11); alle grün laut Rohdateien. |
-| Ticketpfade | **Etappe 1:** diese eine Datei, `docs/beweise/SONDE-015.md`. **Etappe 2:** die Vertrags-, Plugin-, Broker- und Werkzeugpfade aus §4.5, ohne `eq-copilot/plugin/dsp/` (Etappe 3) und ohne `SondeProcessor.*` (Etappe 4) — der Prozessor bleibt nach §4.1 unberührt. Der Auftrag `docs/beweise/roh/SONDE-015-auftrag.txt` wird nicht angefasst. |
+| Kanon nachher | **Steht aus** — der volle abgekoppelte Kanon gehört an das Ende der Etappe 4. Etappe 2 fuhr die Beine ihres Bauplans einzeln (§8.4), Nacharbeit 1 die betroffenen (§8.9), Nacharbeit 2 die zwei Broker-Beine (§8.11), Etappe 3 die ihren (§9.4); alle grün laut Rohdateien. |
+| Ticketpfade | **Etappe 1:** diese eine Datei, `docs/beweise/SONDE-015.md`. **Etappe 2:** die Vertrags-, Plugin-, Broker- und Werkzeugpfade aus §4.5, ohne `eq-copilot/plugin/dsp/` (Etappe 3) und ohne `SondeProcessor.*` (Etappe 4). **Etappe 3:** `eq-copilot/plugin/dsp/` (neu), `eq-copilot/plugin/tests/DspGoldenTestMain.cpp` (neu), `eq-copilot/plugin/CMakeLists.txt`, `tools/beweise.ps1`, `tools/eq-copilot/pruefe_kern_identitaetsfrei.py` (A14-Objektliste, §9.6), dieses Manifest und die Rohdateien. Der Prozessor bleibt nach §4.1 unberührt; der Auftrag wird nicht angefasst. |
 | Grenze | Etappe 2 baut ausschließlich, was §3 zusagt. Technikfragen ohne Quelle sind vom Dirigenten als R1 bis R15 entschieden (§5); meine Feinheiten stehen je Regel darunter, Abweichungen mit Begründung. Produktfragen werden benannt und einer Fläche zugeordnet, nie hier beantwortet (§5.16). |
 
 <!-- NAKAMA-URTEIL: OFFEN -->
@@ -2968,3 +2968,229 @@ die übrigen Beine der Etappe messen unverändert den Stand aus §8.9.3.
 | Etappenstand | **Etappe 2 abgeschlossen** auf `6f2baba6` nach Erstprüfung und zwei Nacharbeitsrunden (Budget 3). Etappe 1 (Matrix) abgeschlossen mit Rest NAK-245 (Etappe 4). |
 | Hygiene im Abschlussfenster | `py -3.13 tools/plan/gesundheit.py`: URTEIL alle Grenzen gehalten (Exit 0); `MEMORY.md` 3,4 KB, `CLAUDE.md` 23 657 B, Dirigenten-Skill 35 901 B — alle unter den Schwellen; Planstand neu gerechnet (Quellstand `6588c290`) |
 | **Übergabe an eine frische Dirigenten-Session** | Die native Statuszeile misst den Kontext dieser Session mit 47 % des 1M-Fensters (rund 470k); eine ganze Etappe 3 mit Bau und bis zu drei Prüfrunden überschritte die 500k-Grenze (Skill §5) mitten in der Etappe. Der Dirigent beendet deshalb an dieser sauberen Etappengrenze planmäßig (Markerdatei, Neustart durch den Starter). **Nächster Schritt:** frischer Opus-Worker (max, Aufsicht ENG) für **Etappe 3** nach `docs/beweise/roh/SONDE-015-auftrag.txt` (Abschnitt ETAPPE 3; Matrix §3 Referenz, Bauplan §4.3, Entscheide §5, NAK-245 bleibt Etappe 4), Erstprüfung der Etappe über deren Diff (Astra max, Vorlage A wie `docs/beweise/roh/SONDE-015-etappe-2-erstpruefung-auftrag.txt`), danach Etappe 4 (vor deren Bau NAK-245 in §5.11.4 schließen), Abschlussprüfung über `e9dbf4b9...HEAD`, voller Kanon abgekoppelt. Worker dieser Session: `0b83e3c2`, `62c0d8d3`, `1c019f61`, `b7fded1d`, `18e7aa67` (Etappe 1), `a7b07100`, `433bbc2e`, `a429b027` (Etappe 2) — alle beendet und entfernt. |
+
+## 9. Bauetappe 3 — DSP-Kern als Bibliothek mit Goldens (10.09.2026)
+
+| Merkmal | Wert |
+|---|---|
+| Etappe | **Etappe 3 — DSP-Kern als Bibliothek mit Goldens**, nach dem Bauplan §4.3. Die Matrix (§3) ist die Referenz; NAK-245 (§7.9, §5.11.4) gehört der Etappe 4 und wurde nicht angefasst. |
+| Basis-SHA | `2672ed2bf9858c2c45a8ebbc5afbe0999fff6554`, mit `git rev-parse HEAD` beim Start gemessen; `git status --short` war leer. |
+| Urteil | **Offen.** Die Erstprüfung dieser Etappe steht aus. Was hier steht, ist gemessen, nicht beurteilt. |
+| Beine | **sechs** gefahren, alle grün; Rohausgabe `docs/beweise/roh/SONDE-015-etappe3-beine.txt` |
+| Rotbeweise | **98**, `docs/beweise/roh/SONDE-015-rot-<ID>.txt` (gezählt mit `ls docs/beweise/roh/SONDE-015-rot-*`; davon 59 aus dieser Etappe) |
+| Kanon | **Nicht gefahren.** Der volle abgekoppelte Lauf gehört an das Ende der Etappe 4 (Bauplan §4.4); diese Etappe fährt die in §4.3 genannten Beine einzeln. |
+| Prozessor | **Unberührt.** `eq-copilot/plugin/sonde/SondeProcessor.{h,cpp}` ist nicht im Diff — A16 misst weiter den heutigen Passthrough und bleibt damit der unabhängige Zeuge aus §4.1. |
+
+### 9.1 Was gebaut wurde
+
+**Das Modul `eq-copilot/plugin/dsp/` (neu, 9 Dateien, 2592 Zeilen).**
+
+- `DspFilter.h` — die Filterprimitiven in `double`: `Biquad` (Direct-Form-II
+  transponiert, dieselbe Klammerung wie `core/analysis/KGewichtung.h:39-49`,
+  weil Gleitkommaaddition nicht assoziativ ist), `BiquadZustand` getrennt von
+  den Koeffizienten, die sechs RBJ-Entwürfe der Vertragstypen, der
+  Detektor-Bandpass mit konstanter Spitzenverstärkung, `kappeNyquist`, die
+  Hüllkurve mit Attack, Hold und Release als drei getrennten Stufen, die
+  dynamische Kennlinie, der Denormal-Riegel und `dbInLinear`.
+- `DspSvf.h` — der topology-preserving State-Variable-Filter der dynamischen
+  Bänder (Cytomic-Form). Entwurf §44.2 nennt die Arbeitsteilung wörtlich:
+  RBJ-Biquads für **statische**, TPT-SVF für **dynamische** Bänder. Bei
+  Gain 0 ist er bitgenau neutral (`m0` = 1, `m1` = `m2` = 0).
+- `DspRtWache.h` — die Echtzeitwache. Thread-lokales Flag beim Betreten des
+  Audiopfads, zwei atomare Zähler. Der Test verdrahtet seinen globalen
+  `operator new` mit `RtWache::meldeAllokation`, damit der Zähler des Kerns
+  **echte** Allokationen sieht und kein strukturelles Null bleibt.
+- `DspProgramm.{h,cpp}` — `BandProgramm` und `DspProgramm`: alles, was der
+  Audiothread unveränderlich liest, samt Klemmliste je Slot. `baueProgramm`
+  leitet es außerhalb des Audiothreads aus dem DTO ab; `leiteAutoGainAb`
+  rechnet den Ausgleich über die 121 Gitterstellen mit dem Diagonalterm der
+  M/S-Matrix.
+- `DspBankPool.{h,cpp}` — `BandZustand`, `DspBank`, der Ownership-Automat mit
+  seinen sechs Zuständen, vier vorallokierte Bänke, der SPSC-ACK-Ring mit acht
+  Plätzen, `reclaim_pending_mask` und der Verriegelungszähler. **Jeder
+  Übergang ist ein `compare_exchange`** — die Zusage aus M-42 lautet „genau
+  die Kette", und ein `store()` könnte jeden Zustand in jeden anderen
+  überführen.
+- `DspKern.{h,cpp}` — der Audiopfad aus §3.0: Passthrough-Kurzschluss,
+  Nicht-Endlich-Riegel, Input-Trim, M/S-Stufe, acht Bänder in Slotreihenfolge,
+  Auto-Gain, Mix, Output-Trim, die drei Taps, die Hörmatrix, die Crossfades
+  beider Pfade, die fünf globalen Rampen und die fünf Zähler (nicht-endliche Eingänge, geheilte Filterzustände, verworfene Analyseframes, nicht-endliche Auslenkungen, geriegelte Denormale).
+
+**Die Signalkette, wie sie gebaut ist** (§3.0, eingefroren durch den Golden):
+
+```text
+Eingang
+  -> Tap pre_nakama
+     -> eq_enabled == false  ------------------> Ausgang (nichts geschrieben)
+     -> v1.global.bypass == true --------------> Ausgang (nichts geschrieben)
+     -> Nicht-Endlich-Riegel (nur im aktiven Pfad)
+        Input-Trim  (Rampe, Unity-Kurzschluss bei 0 dB)
+        M/S-Stufe   (Width, Mono-Bass; Kurzschluss bei width 1 und mono_bass 0)
+        8 Band-Slots in Reihenfolge 0 -> 7, je Kanalzuordnung
+        Auto-Gain   (abgeleitet, Rampe wie Output-Trim)
+        Mix         (linear gegen den Tap pre_nakama)
+        Output-Trim (Rampe, Unity-Kurzschluss bei 0 dB)
+        -> Tap post_committed
+           -> Hoermatrix (Dry / Processed / Delta / Candidate)
+              -> Ausgang
+```
+
+**Technikkonstanten — je mit Quelle oder als deklarierte Konstante mit Test.**
+
+| Konstante | Wert | Quelle | Wo gemessen |
+|---|---|---|---|
+| `kFadeSamples` | 256 Samples | §5.2 Feinheit 1 (Technikkonstante, der Entwurf nennt keine Länge) | B6 M-03, M-04, M-06 |
+| `kRampeSamples` | 256 Samples | §53.8 „genau eine definierte Rampe" | B6 M-17 |
+| `kDeltaMakeupDb` | +12 dB | §5.10 Feinheit 1 (fest heißt materialunabhängig) | B6 M-54 |
+| `kKniebreiteDb` | 12 dB | §5.7 Feinheit 1 (Technikkonstante mit Golden) | B6 M-18 |
+| `kDynamikSchritt` | 8 Samples | **neu, Entscheid E-6** — die Steuerrate der dynamischen Bänder | B6 M-18, M-26 |
+| `kAutoGainStellen` | 121 (20 Hz bis 20 kHz, 1/12 Oktave) | §5.4 Feinheit 1 | B6 M-36, M-37 |
+| `kNyquistAnteil` | 0,45 | §44.2 „20 Hz bis min(20 kHz, 0,45 fs)" | B6 M-12 |
+| `kBaenke` | 4 | §44.2 „vier vorallokierte Programmbänke" | B6 M-41, M-46 |
+| `kAckKapazitaet` | 8 | §5.9 Feinheit 1 (mehr Einträge als Slots) | B6 M-45 |
+| `kStilleDb` | −240 dB | **neu, Entscheid E-13** — die Untergrenze des Detektorpegels | B6 M-19 |
+| `kDenormalSchwelle` | 1e-300 | **neu, Entscheid E-14** — der Denormal-Riegel am Blockrand | B6 Abschnitt J, Zähler `geriegelteDenormale()` |
+| Gitter der Filtergoldens | 1/24 Oktave, 20 Hz bis min(20 kHz, 0,45 fs) | §5.15 Feinheit 3 | B6 Abschnitt C |
+| Detektorform | RMS über eine Ein-Pol-Hüllkurve, Koeffizient `exp(-1/(fs*tau))` | §5.7 Feinheit 3 | B6 M-26 |
+| Lautheitsabgleich Delta | fest, materialunabhängig | §30.1, §5.10 | B6 M-54 |
+
+### 9.2 Entscheide dieser Etappe (Lücken, die der Bau sonst still gefüllt hätte)
+
+| Nr. | Lücke | Entschieden | Warum |
+|---|---|---|---|
+| E-1 | Der Auftrag nennt `DspState` als eigenen Typ des Kerns | Es entsteht **kein** neuer Zustandstyp. `nakama::parameter::DspSatz` aus Etappe 2 IST der DspState; der Kern leitet daraus nur Programm-Größen ab. | R1 und §33.5 verbieten eine zweite Wahrheit für Parameter, Grenzen, Defaults und Reihenfolge. Ein eigener Kerntyp müsste bei jeder Vertragsänderung nachgezogen werden und könnte auseinanderlaufen; der Auftrag verlangt ausdrücklich „keine zweite Wahrheit". |
+| E-2 | Wo das Modul liegt — eigene Bibliothek oder Teil von `NakamaKern` | In **`NakamaKern`**. Die drei Quellen stehen in `NAKAMA_KERN_QUELLEN`, das Verzeichnis `dsp` ist ein PUBLIC-Include des Kerns, und A14 führt die drei Objekte in seiner Liste. | Der Kern ist identitätsfrei (er kennt nur das DTO, keine `JucePlugin_*`-Konstante) und gehört damit in dieselbe Menge wie State und Vertrag. Gen bekommt in S28b denselben Master-EQ; zwei Apps dürfen nicht zwei Filterbänke bauen. Eine zweite Static-Lib brächte eigene Riegelfragen mit, denn K2, K2b und K2c gelten nur für `NakamaKern`. |
+| E-3 | Was die dynamische Auslenkung bei `notch`, `low_cut` und `high_cut` tut | Sie ist dort **exakt 0,0**. Die Auslenkung wirkt nur bei `bell`, `low_shelf` und `high_shelf`. | M-18 sagt „wirkt **zusätzlich zu** `gain_db`". Bei den drei Typen ohne Gain lässt der Vertrag `gain_db` zwar stehen, es wirkt aber nicht — und was nicht wirkt, kann auch nicht dynamisch wirken. Jede andere Deutung müsste einen Angriffspunkt erfinden, den der Vertrag nicht hat. |
+| E-4 | Wo die M/S-Matrix der Signalkette liegt, wenn ein Band `left` und ein anderes `mid` ist | Die Stufe zwischen Input-Trim und Bändern ist **Width und Mono-Bass**; die Kanalzuordnung geschieht **je Band lokal**. | `left` und `mid` können im selben Programm vorkommen. Eine globale Hinmatrix vor allen Bändern müsste `left` im M/S-Bereich rekonstruieren; eine globale L/R-Kette müsste dasselbe für `mid`. Die lokale Zuordnung ist die einzige Lesart, in der beide Modi gleichzeitig definiert sind, und sie hält die Kaskadenreihenfolge aus M-15 unverändert. |
+| E-5 | Was der Detektor bei `channel_mode` = `stereo` hört | Die **mittlere Leistung beider Komponenten**, und **eine** Auslenkung wirkt auf beide. | Zwei getrennte Auslenkungen zögen das Stereobild auseinander, sobald sich L und R im Pegel trennen — der Kanalmodus `stereo` sagt gerade, dass das Band beide Seiten gleich behandelt. |
+| E-6 | Mit welcher Rate Detektorpegel, Kennlinie und SVF-Koeffizienten neu gerechnet werden | `kDynamikSchritt` = **8 Samples**; der Detektor selbst läuft mit voller Audiorate, dazwischen wird der Koeffizientensatz linear überblendet. | `log10` und `pow` je Sample und Band kosteten bei acht Bändern ein Vielfaches der Filterarbeit. 8 Samples sind 0,167 ms bei 48 kHz und damit feiner als die kürzeste Attack (0,1 ms); die lineare Überblendung dazwischen hält den Gain sample-genau stetig statt in Stufen zu springen. |
+| E-7 | Wie kontinuierliche Werte wirken, ohne den Bankpool leerlaufen zu lassen | Jede DTO-Änderung erzeugt eine **neue Bank mit Crossfade**; die fünf globalen Gains (Input-Trim, Width, Auto-Gain, Mix, Output-Trim) laufen **zusätzlich** über Rampen im Pfad, die beide Bänke eines Fades gemeinsam lesen. | R8 verlangt beides: topologische Wechsel mit Crossfade, kontinuierliche Werte über Rampen. Lägen die Gains in der Bank, sähen die zwei Durchläufe eines Crossfades zwei verschiedene Werte — die globale Stufe ist EINE Stufe. Der Rampenstand wird deshalb zwischen den Durchläufen gesichert und zurückgesetzt, billiger und exakter als fünf Vorabpuffer über die Blockgröße. |
+| E-8 | Ob eine neue Bank den Filterzustand der alten erbt | **Nein** — sie startet kalt, alle Zustände auf 0. | M-07 verlangt genau das („beim erneuten Einschalten starten alle Filter- und Hüllkurvenzustände auf 0"). Der Crossfade über 256 Samples deckt die Transiente ab; ein übertragener Zustand wäre ein geteilter Zustand zwischen zwei Bänken, und §44.2 verbietet das ausdrücklich. |
+| E-9 | Was mit einer verblassenden **Candidate**-Bank geschieht | Sie dient **sofort** aus; der Candidate blendet vom unveränderten Eingang her ein. | §44.2 nennt vier Bänke als schlechtesten Fall — zwei je Pfad. Eine zusätzlich gerechnete verblassende Candidate-Bank kostete eine fünfte. Der Candidate wird ohnehin nie Baseline. |
+| E-10 | In welcher Auflösung die drei Taps liegen | **`double`**, nicht `float`. | Der Kern rechnet in `double` (§44.2), und ein Tap ist eine Messung. Die Konvertierung für die bestehende Analyse gehört in Etappe 4, an den Rand — nicht in die Kette. Zugleich misst der Filtergolden damit ohne float-Quantisierung. |
+| E-11 | Was bei einem Block größer als `maxBlock` geschieht | Er läuft **in Stücken** durch; verworfen wird nur der Tap dieses Blocks, und der Zähler steigt. | „Überlast verwirft Analyseframes, nie Audio" (M-48). Ein Rückweg hier hieße, dass ein Host mit größerem Puffer als angekündigt Stille bekäme — ein Audioausfall. Der Fund kam aus dem Rotbeweis zu M-48 (§9.7 N-2). |
+| E-12 | Welche Antwort der Auto-Gain für ein **dynamisches** Band rechnet | Die **SVF-Ruheantwort** dieses Bandes, analytisch geschlossen — nicht die RBJ-Antwort einer Familie, die dieses Band gar nicht benutzt. | §5.4 sagt „die statische Kurve des bestätigten Programms". Die statische Kurve eines dynamischen Bandes ist sein Gang bei Auslenkung 0, und der läuft über den SVF. Dafür tragen die SVF-Koeffizienten `g` und `k` mit; sie aus `a1..a3` zurückzurechnen wäre bei `k` = 0 nicht eindeutig. |
+| E-14 | Was mit **denormalen** Filterzuständen geschieht (der Selbstaudit des Auftrags nennt sie ausdrücklich) | Ein Zustandswert unter `kDenormalSchwelle` = 1e-300 wird **am Blockrand** genullt, an derselben Stelle wie die Endlichkeitsprüfung, und der Treffer wird gezählt. | Ein abklingender Filterzustand läuft nach genügend Stille in den denormalen Bereich; auf x86 kostet jede Rechnung damit ein Vielfaches, und ein Kern, der im **Leerlauf** langsamer wird als unter Last, verletzt die Echtzeitfestigkeit aus §44.5. Der Riegel am Blockrand braucht keine Intrinsics und keine Plattformannahme — anders als FTZ/DAZ, die eine Entscheidung der Zielschicht sind und dem Prozessor in Etappe 4 offenstehen. 1e-300 liegt unter −6000 dBFS und trägt hörbar nichts. |
+| E-13 | Was der Detektorpegel bei Stille meldet | `kStilleDb` = **−240 dB**, endlich. | Ein `-inf` liefe durch die Kennlinie und machte den Nicht-Endlich-Riegel zum Dauergast. −240 dB liegt weit unter jedem Vertragsthreshold (Minimum −60 dB) und ist damit klanglich dasselbe wie Stille. |
+
+### 9.3 Messabdeckung
+
+Eine Tabelle über **alle** Matrixzeilen der Abschnitte §3.1 bis §3.6 und
+§3.13 — auch die, die diese Etappe nicht misst. Ein Bauer meldet nie „fertig"
+mit stillschweigend ungemessenen Zeilen.
+
+| ID | Testfunktion in B6 (sofern diese Etappe sie misst) | Rotbeweis | Status |
+|---|---|---|---|
+| M-01 | `default_ist_bitidentisch bei 44100 / 48000 / 96000 / 192000 Hz` (250 Blöcke wechselnder Größe je Rate) plus `ausgeschaltet ist keine Bank audio_active` | `SONDE-015-rot-M-01.txt` | **gemessen** — A16 misst dieselbe Zusage in Etappe 4 am Prozessor |
+| M-02 | `unity_kurzschluss_statt_multiplikation` — über eine Rampe, die auf 1,0 zuläuft | `SONDE-015-rot-M-02.txt` | **gemessen** |
+| M-03 | `engagieren_ist_klickfrei_und_endet_deterministisch`, `fade_ist_in_samples_gezaehlt_nicht_in_bloecken` | `SONDE-015-rot-M-03.txt` | **gemessen** |
+| M-04 | `nach_dem_fade_wieder_bitidentisch` — Blockgröße 300, der Fade endet mitten im Block | `SONDE-015-rot-M-04.txt` | **gemessen** |
+| M-05 | `hard_bypass_schreibt_nicht` — mit Width 1,7 und einem +12-dB-Bell am Eingang | `SONDE-015-rot-M-05.txt` | **gemessen** |
+| M-06 | `bypasswechsel_ist_klickfrei`, `bypasswechsel_endet_bitgleich` | `SONDE-015-rot-M-06.txt` | **gemessen** |
+| M-07 | `ausgeschaltet_rechnet_nichts_und_startet_kalt` | `SONDE-015-rot-M-07.txt` | **gemessen** |
+| M-08 | — | — | **Etappe 4**: der Schalter überlebt Speichern und Laden (B2) und die Bank wird beim ersten Block aktiv (B7). Beides braucht den Prozessor. |
+| M-09 | — | — | **Etappe 4**: Smart Disable und der wartende bestätigte Zustand liegen in der Transaktionsschicht (B7). |
+| M-10 | `bell_gegen_analytische_antwort` bei 44,1 / 48 / 96 / 192 kHz, 240 Gitterstellen | `SONDE-015-rot-M-10.txt` | **gemessen** |
+| M-11 | `low_shelf_`, `high_shelf_`, `notch_`, `low_cut_`, `high_cut_gegen_analytische_antwort`, je vier Sampleraten | `SONDE-015-rot-M-11a.txt` bis `-M-11e.txt` | **gemessen** — fünf getrennte Rotbeweise, weil M-11 jeden Typ einzeln verlangt (§9.6 A-3) |
+| M-12 | `nyquist_kappung_bei_045_fs`, `kappung_aendert_den_persistenten_wert_nicht`, `bei_96_khz_greift_der_deckel_nicht` | `SONDE-015-rot-M-12.txt` | **gemessen** |
+| M-13 | Der Aufbau des Goldens selbst plus `impulsantwort_misst_wie_ein_eingeschwungener_sinus` | `SONDE-015-rot-M-13.txt` | **gemessen** — die Mutation lässt den Audiopfad die Bank nicht anwenden; ein Golden gegen die eigene Formel bliebe dabei grün |
+| M-14 | — | — | **Etappe 2 und 4**: die Prüfstufenfolge des DTO liegt in `NakamaParameter::validiere` (A12, B2); die Abweisung eines Apply misst B7. |
+| M-15 | `kaskade_gegen_produkt_der_einzelantworten`, `richtung_null_nach_sieben_gegen_geordnetes_golden`, `ein_rueckwaertslauf_wuerde_das_golden_reissen` | `SONDE-015-rot-M-15.txt` | **gemessen** |
+| M-16 | `koeffizienten_und_zustaende_sind_double` | `SONDE-015-rot-M-16.txt` | **gemessen** — die Double-Capability wird nicht gemeldet (A13 unverändert) |
+| M-17 | `zipperresiduen_unter_minus_100_dbfs`, `die_rampe_folgt_der_ausgeschriebenen_ideallinie`, `rampe_endet_bitgenau_auf_dem_ziel` | `SONDE-015-rot-M-17.txt` | **gemessen** |
+| M-18 | `dynamische_kennlinie_golden_plateau`, `auslenkung_bleibt_innerhalb_range`, `kennlinie_im_knie_ist_linear` | `SONDE-015-rot-M-18.txt` | **gemessen** |
+| M-19 | `unter_threshold_steht_das_band_exakt_still` | `SONDE-015-rot-M-19.txt` | **gemessen** |
+| M-20 | `range_null_rechnet_keinen_detektor`, `range_null_ergibt_exakt_null_auslenkung` | `SONDE-015-rot-M-20.txt` | **gemessen** |
+| M-21 | `detektor_ist_bandbegrenzt`, `detektor_hoert_vor_dem_band` | `SONDE-015-rot-M-21.txt` | **gemessen** |
+| M-22 | `sidechain_none_liefert_keine_auslenkung` | `SONDE-015-rot-M-22.txt` | **gemessen** |
+| M-23 | `priority_sidechain_wird_geklemmt_und_gemeldet`, `der persistente Wert bleibt priority_sidechain` | `SONDE-015-rot-M-23.txt` | **gemessen** — die Klemmliste im Bericht ist Etappe 4 (B7) |
+| M-24 | `ausschalten_aendert_nur_dynamic_enabled` (die fünf Werte bitgleich am DTO) | — | **teilweise**: der Kern zeigt, dass er die fünf Werte unverändert liest. Dass sie Speichern und Laden bitgleich überleben, misst **B2** (Etappe 2, bereits grün); die Transaktion misst B7 (Etappe 4). Eine eigene Trägerzeile im Kern gibt es nicht. |
+| M-25 | `dynamic_enabled_wechselt_nur_am_blockrand` (zweite Differenz gegen den ruhigen Lauf) | `SONDE-015-rot-M-25.txt` | **gemessen** |
+| M-26 | `attack_hold_release_sind_drei_stufen` | `SONDE-015-rot-M-26.txt` | **gemessen** |
+| M-27 | `auslenkung_ist_gemessen_nicht_gerechnet` | `SONDE-015-rot-M-27.txt` | **gemessen** |
+| M-28 | — | — | **Etappe 4**: dass kein Slot den Modus eines anderen erbt, ist eine Zusage an den Zustand, nicht an den Audiopfad (B7); die Enumgrenze misst A12. |
+| M-29 | `channel_mode_wechselt_am_blockrand_klickfrei` | `SONDE-015-rot-M-29.txt` | **gemessen** |
+| M-30 | `width_eins_ist_bitidentisch`, `width_null_ist_mono` | `SONDE-015-rot-M-30.txt` | **gemessen** — `mono_bass_hz` = 0 schaltet die Stufe mit ab (dieselbe Bedingung) |
+| M-31 | `trims_auf_null_db_sind_kurzschluss` (in M-02 mitgemessen), `input_trim_wirkt_und_liegt_vor_der_bank` | `SONDE-015-rot-M-31.txt` | **gemessen** |
+| M-32 | `mix_eins_umgeht_den_dry_zweig` | `SONDE-015-rot-M-32.txt` | **gemessen** |
+| M-33 | `mix_null_ist_bitidentisch` — trotz +9 dB Input-Trim und +12-dB-Bell | `SONDE-015-rot-M-33.txt` | **gemessen** |
+| M-34 | `mix_ist_linear_nicht_equal_power` | `SONDE-015-rot-M-34.txt` | **gemessen** |
+| M-35 | `auto_gain_aus_wirkt_nicht_und_ist_trotzdem_lesbar`, `der_ausgleich_wirkt_bei_aus_nicht` | `SONDE-015-rot-M-35.txt` | **gemessen** |
+| M-36 | `flache_kurve_ergibt_exakt_null_db`, `neutraler_bell_ergibt_exakt_null_db` — bitgenau +0,0, nicht −0,0 | `SONDE-015-rot-M-36.txt` | **gemessen** |
+| M-37 | `shelf_plus_sechs_ergibt_minus_sechs`, `identisches_mid_side_paar_faellt_auf_stereo_zusammen`, `und es wird NICHT wie der doppelte Gain kompensiert` | `SONDE-015-rot-M-37.txt` | **gemessen** — Prüflingswahl in §9.6 A-4 |
+| M-38 | `dynamik_bewegt_den_auto_gain_nicht`, `und die Dynamik hat sich wirklich bewegt` | `SONDE-015-rot-M-38.txt` | **gemessen** |
+| M-39 | `auto_gain_wird_nicht_im_audiothread_gerechnet` | `SONDE-015-rot-M-39.txt` | **gemessen** — dass er nicht im `state_hash` steht, misst B7 (Etappe 4) |
+| M-40 | `auto_gain_und_output_trim_addieren_sich` | `SONDE-015-rot-M-40.txt` | **gemessen** |
+| M-41 | `vier_baenke_vorallokiert`, `alle vier Baenke reservierbar`, `null_allokationen_im_callback` | `SONDE-015-rot-M-41.txt` | **gemessen** |
+| M-42 | Sechs Fälle, je ein Übergang, plus `ein_nicht_genannter_uebergang_scheitert` | `SONDE-015-rot-M-42.txt` | **gemessen** |
+| M-43 | `reclaim_erst_nach_ack`, `nach dem ACK wird sie frei` | `SONDE-015-rot-M-43.txt` | **gemessen** |
+| M-44 | `busy_retry_wenn_kein_slot_frei`, `wiederholung_nach_bankfreigabe_gelingt`, `und der fuenfte Wunsch bekommt busy_retry` | `SONDE-015-rot-M-44.txt` | **gemessen** — dass die Wiederholung nicht memoisiert wird (§5.11.4 T5), misst B7 |
+| M-45 | `reclaim_pending_mask_haelt_den_slot`, `der Ring droppt bei regulaerem Betrieb nie`, `kein stiller Ringverlust unter Last` | `SONDE-015-rot-M-45.txt` | **gemessen als Wache** — der Ring fasst mehr Einträge als es Slots gibt und kann strukturell nicht überlaufen; gemessen wird die Kopplung Überläufe gleich Verriegelungen, und der Rotbeweis senkt dafür die Ringgröße unter die Slotzahl |
+| M-46 | `vier_baenke_im_schlimmsten_fall`, `candidate_endet_neutral` | `SONDE-015-rot-M-46.txt` | **gemessen** — die Vier-Bank-Hälfte teilt ihre Trägerzeile mit M-41 (`kBaenke`); eigenständig ist das neutrale Ende des Candidate |
+| M-47 | `null_allokationen_im_callback`, `null_sperren_im_callback`, `der_zaehler_trennt_worker_und_audiothread` (4000 Blöcke wechselnder Größe) | `SONDE-015-rot-M-47.txt` | **gemessen** |
+| M-48 | `ueberlast_verwirft_analyse`, `und Audio laeuft unveraendert weiter` | `SONDE-015-rot-M-48.txt` | **gemessen** — der Rotbeweis deckte einen echten Defekt auf (§9.7 N-2) |
+| M-49 | `nichtendlicher_eingang_wird_verriegelt_und_gezaehlt`, `kein_nan_vergiftet_den_filterzustand`, `der_pfad_bleibt_dauerhaft_endlich` | `SONDE-015-rot-M-49.txt` | **gemessen** |
+| M-50 | `passthrough_sanitisiert_nichts`, `passthrough zaehlt keinen nicht-endlichen Eingang` | `SONDE-015-rot-M-50.txt` | **gemessen** |
+| M-51 | — | — | **Etappe 4**: Latenz und Tail meldet der Prozessor an den Host, nicht die Bibliothek. A16 misst sie. Der Kern hat kein Lookahead und keine lineare Phase, weil er keinen Speicher über den Block hinaus hält außer den Filterzuständen. |
+| M-52 | `nach_dem_anlegen_immer_processed` | `SONDE-015-rot-M-52.txt` | **gemessen** — dass die Auswahl nicht persistiert, misst B2 und B7 (Etappe 4) |
+| M-53 | `hoermatrix_dry_ist_bitidentisch` | `SONDE-015-rot-M-53.txt` | **gemessen** |
+| M-54 | `delta_bei_gleichheit_ist_exakt_null`, `delta_ist_differenz_mit_festem_abgleich` | `SONDE-015-rot-M-54.txt` | **gemessen** |
+| M-55 | `hoermatrixwechsel_ist_klickfrei`, `identische_zustaende_nullen_beim_wechsel` | `SONDE-015-rot-M-55.txt` | **gemessen** — der Bau des eigenen Übergangs war ein Befund dieser Etappe (§9.7 N-3) |
+| M-56 | `candidate_ohne_kandidat_faellt_sichtbar_zurueck`, `mit_kandidat_greift_die_auswahl` | `SONDE-015-rot-M-56.txt` | **gemessen** |
+| M-57 | `taps_sind_kohaerent`, `hoermatrix_liegt_hinter_den_taps` | `SONDE-015-rot-M-57.txt` | **gemessen** |
+| M-109 | — | — | **Etappe 2, bereits grün**: Feld-ID 22, `FELD-IDS.json`, `flatc`-Regeneration, A9 Drift 0 (§8.1 Stufe 4). |
+| M-110 | Der Kern ist die **Quelle** der acht Werte: `auslenkung_ist_gemessen_nicht_gerechnet` (M-27) und die Slot-Reihenfolge in `auslenkungenDb` | — | **Quelle gemessen**, Wire-Form in Etappe 2 (A10, B3c, A4). Der Sender ist Etappe 4. |
+| M-111 | — | — | **Etappe 2, bereits grün**: Abwesenheit bleibt gültig und ist keine 0. |
+| M-112 | — | — | **Etappe 2, bereits grün**: Länge ungleich 0 und 8 wird abgewiesen. |
+| M-113 | `nichtendliche_auslenkung_wird_null_und_gezaehlt` | `SONDE-015-rot-M-113.txt` | **gemessen als Wache** — im regulären Betrieb kann keine nicht-endliche Auslenkung entstehen (`leistungInDb` klemmt auf `kStilleDb`); der Rotbeweis stellt den Fall her und nimmt den Riegel weg, dieselbe Form wie M-45 |
+| M-114 | `feld_reist_nur_bei_vorhandener_dynamik`, `mit dynamischem Band reist das Feld`, `bei ausgeschaltetem EQ reist es nicht` | `SONDE-015-rot-M-114.txt` | **gemessen** — der Sendepfad (B10) ist Etappe 4 |
+| M-121 | `remove_verwirft_die_alte_auslenkung`, `remove_mit_neubelegung_verwirft_die_alte_auslenkung` | `SONDE-015-rot-M-121.txt` | **gemessen** — der Rotbeweis deckte einen echten Defekt auf (§9.7 N-4) |
+| M-122 | `bankpool_parallel_ohne_rennen` (zwei echte Threads, Invarianten vor und nach jedem Block, 3000 Publikationen), `generationen_bleiben_streng_monoton`, `kein stiller Ringverlust unter Last` | `SONDE-015-rot-M-122.txt` | **gemessen** — die MSVC-Toolchain dieses Projekts trägt keinen ThreadSanitizer; der äquivalente Stresslauf **ist** der Nachweis (§44.5 „beziehungsweise äquivalente Stressläufe"), und diese Zeile sagt das statt ein Werkzeug zu behaupten, das es hier nicht gibt |
+
+### 9.4 Die Beine dieser Etappe
+
+Alle einzeln gefahren, aus pwsh gebaut (`cmake` liegt nicht im Bash-`PATH`;
+CLAUDE.md Maschinen-Landminen). Rohausgabe:
+`docs/beweise/roh/SONDE-015-etappe3-beine.txt`.
+
+| Bein | Ziel | Exit | Ergebnis | Warum es hier laeuft |
+|---|---|---|---|---|
+| **B6** | `EqCopDspGoldenTest` | 0 | DSP-GOLDEN OK | Der aktive DSP-Kern gegen die Matrix - das neue Bein dieser Etappe. |
+| **A14** | `pruefe_kern_identitaetsfrei.py` | 0 | 25 ok, 0 Fehler | Der gemeinsame Kern traegt keine Bundle-Identitaet; die drei neuen Dsp-Objekte stehen in der Liste. |
+| **B5** | `EqCopAnalysisGoldenTest` | 0 | Ergebnis: 248 bestanden, 0 Fehler. | Regressionswache: die FeatureEngine ist unberuehrt. |
+| **A16** | `EqCopProbeeqNullTest` | 0 | SONDE-NULLTEST OK - 87 Pruefungen ok, 0 Fehler | Regressionswache: der heutige Passthrough von Probeeq ist unberuehrt - der Prozessor liegt nicht im Diff. |
+| **B2** | `EqCopStateMigrationTest` | 0 | STATE-MIGRATION-TEST OK - 247 Pruefungen ok, 0 Fehler | Regressionswache: State, Parametertabelle und Preset aus Etappe 2 sind unberuehrt. |
+| **B3c** | `EqCopSchemaTest` | 0 | 152 bestanden, 0 gescheitert | Regressionswache: der v3-Vertrag aus Etappe 2 ist unberuehrt. |
+
+### 9.5 Prüfliste `tools/dirigent/pruefliste.md`, abgehakt für die Etappe 3
+
+| Zeile | Wo gemessen |
+|---|---|
+| **A** Rückstau und Prioritätsklassen | Der ACK-Ring hat eine ausdrückliche Politik bei *voll*: er verriegelt den Slot statt den ACK zu verwerfen (`DspBankPool::meldeAusgedient`). Der Zähler, der strukturell 0 sein muss, ist eine **Wache mit Test** — B6 misst die Kopplung `ackUeberlaeufe() == reclaimVerriegelungen()`, und der Rotbeweis M-45 senkt dafür die Ringgröße unter die Slotzahl. Derselbe Gedanke trägt den Denormal-Riegel (E-14) und den Endlichkeitsriegel der Auslenkung (M-113): beide zählen, was sie abfangen. |
+| **B** Lebenszyklus | `bereiteVor` ↔ `freigeben` im selben Änderungssatz; `reserviere` ↔ `ernteAcks`, `beginneVerblassen` ↔ `meldeAusgedient`, `uebernehmeZustand(candidate)` ↔ `beendeCandidate` je paarweise gebaut und gemessen (B6 Abschnitt I, M-46). |
+| **C** Verträge und Längen | Der Kern liest ausschließlich `nakama::parameter::DspSatz`; er prüft keine Längen selbst, sondern kappt samplerateabhängig (M-12) und klemmt, was der Vertrag heute nicht liefern kann (M-23). NaN/Inf an jedem Eingang: M-49, M-50, M-113. |
+| **D** Bau- und Prüfriegel | B6 ist im Runner **scharf** (`AbPhase` `jetzt`) und gebaut — beides im selben Änderungssatz, sonst ist der Kanon rot oder blind (§5.15 Feinheit 1). A14 führt die drei neuen Kernobjekte; ohne die Zeile wäre `[S6]` rot (§9.7 N-1). |
+| **E** Behauptung ≤ Messung | Die Runner-Behauptung zu B6 nennt genau, was der Test misst, und nicht mehr: keine Transaktion, kein Zustand, keine Telemetrie, kein Prozessor — die gehören zu B7 und A16. Zahlen in diesem Abschnitt sind gemessen (§9.4), nicht abgeschrieben. Jede neue Prüfung wurde **einmal absichtlich gebrochen** (§9.3, Spalte Rotbeweis). |
+| **F** Änderungssatz | Kern, Test, CMake-Ziel, Runner-Eintrag und A14-Objektliste liegen in demselben Änderungssatz. Speichern↔Laden und Apply↔Revert berührt diese Etappe nicht — sie sind Etappe 4. |
+
+### 9.6 Abweichungen dieser Etappe
+
+| Nr. | Wortlaut | Was gebaut wurde | Begründung |
+|---|---|---|---|
+| A-1 | **§5.15 Feinheit 2 / M-13:** „je Gitterstelle läuft ein eingeschwungener Sinus durch das echte `DspProgram`" | Je Prüfling läuft **ein Impuls** durch den echten `DspKern`, abgegriffen am Tap `post_committed`; die Übertragung an den 240 Gitterstellen entsteht als DFT dieser Impulsantwort. Ein **eingeschwungener Sinus** läuft zusätzlich an drei Stellen je Prüfling und bestätigt, dass beide Messarten denselben Wert liefern (Abschnitt C1). | Ein Sinuslauf je Gitterstelle bräuchte bei 20 Hz und 192 kHz rund 10<sup>6</sup> Samples je Stelle, mal 240 Stellen mal 28 Prüflinge — der Kanon liefe Stunden. Die Impulsantwort misst **denselben Audiopfad** (dieselbe Bank, dieselben Koeffizienten, dieselben Zustände) und ist genauer, weil sie am `double`-Tap abgegriffen wird. Die Zusage, dass beide dasselbe messen, wird nicht behauptet, sondern gemessen; damit bleibt die Messart selbst Gegenstand des Tests, wie M-13 es verlangt. |
+| A-2 | **Ticketpfade:** Etappe 3 fasst `tools/eq-copilot/pruefe_kern_identitaetsfrei.py` nicht an | Die A14-Objektliste wurde um **`DspProgramm.obj`, `DspBankPool.obj` und `DspKern.obj`** ergänzt — und um **`NakamaPreset.obj`**, das seit Etappe 2 fehlte. | Der Auftrag nennt A14 ausdrücklich als zu fahrendes Bein und verlangt, dass neue Kernquellen dort weiter grün sind. A14 führt seine Objektliste bewusst von Hand, „damit das Bein beim ersten Lauf spricht, statt still durchzurutschen" — genau das ist geschehen (§9.7 N-1). |
+| A-3 | **§4.8:** je Matrixzeile **ein** Rotbeweis | **M-11 trägt fünf** Rotbeweise (`M-11a` bis `M-11e`), je einen für `low_shelf`, `high_shelf`, `notch`, `low_cut` und `high_cut`. | M-11 sagt selbst: „Jeder der sechs Vertragstypen wird **einzeln** gemessen, nicht stellvertretend durch einen Nachbarn." Ein einziger Rotbeweis an einem Typ ließe die anderen vier ungeprüft — genau der Fehler, gegen den die Zeile gebaut ist. Fünf getrennte Dateien sind stärker als eine. |
+| A-4 | **M-37:** „ein +6-dB-Shelf, der das ganze Gitter überstreicht" | Der Referenzprüfling ist ein `high_shelf` bei 20 Hz mit **Q 1,0** statt 0,707. | Mit Q 0,707 liegen die ersten rund 16 % der Gitterstellen noch im Übergang, und der Energiemittelwert landet bei −5,86 dB — der Prüfling **überstreicht das Gitter nicht**. Das ist keine Toleranzfrage: 20 Hz ist die kleinste zulässige `freq_hz`, ein Shelf mit tieferer Ecke ist im Vertrag nicht baubar. Mit Q 1,0 erreicht das Plateau das Gitter praktisch vollständig (−5,997 dB). Die eigentliche Zusage von M-37 — dass ein identisches Mid/Side-Paar **auf den Stereo-Fall zusammenfällt** — wird zusätzlich direkt gegen den Stereo-Fall gemessen und hängt an keinem Prüfling. |
+
+### 9.7 Nebenbefunde (nicht ins Register)
+
+| Nr. | Befund | Wo gefunden | Was geschah |
+|---|---|---|---|
+| N-1 | **A14 war am Basis-SHA rot.** `state/NakamaPreset.cpp` steht seit Etappe 2 in `NAKAMA_KERN_QUELLEN`, aber nicht in der Objektliste von `pruefe_kern_identitaetsfrei.py`. Abschnitt `[3]` meldete „Archivmitglieder sind genau die 15 Kernobjekte" mit 16 gefundenen und endete mit Exit 2. | Erster Lauf dieser Etappe, noch vor der ersten Zeile Code. | Behoben: `NakamaPreset.obj` und die drei neuen `Dsp*.obj` stehen jetzt in der Liste, A14 meldet 19 Kernobjekte und Exit 0 (§9.6 A-2). Genau dafür führt das Bein seine Liste von Hand — es hat beim ersten Lauf gesprochen, statt still durchzurutschen. |
+| N-2 | **`verarbeite` verwarf Blöcke größer als `maxBlock` ganz.** Ein Host mit größerem Puffer als angekündigt hätte Stille bekommen — ein Audioausfall, wo nur die Analyse ausfallen darf. | Rotbeweis zu M-48: der Test fand, dass der Block gar nicht verarbeitet wurde. | Behoben: der Block läuft in Stücken durch, verworfen wird nur der Tap (Entscheid E-11). |
+| N-3 | **Die Hörmatrix wechselte hart.** Sie liegt hinter allen drei Taps und fährt bei keinem Bankwechsel mit; ein Wechsel Processed nach Dry sprang bei aktivem EQ um die volle Differenz beider Wege. M-55 sagt „Ein Wechsel ist klickfrei". | Beim Bau der M-55-Prüfung, die in der ersten Fassung dieser Etappe fehlte. | Behoben: die Hörmatrix hat einen **eigenen** Übergang über `kFadeSamples`, linear wie jeder andere Übergang des Kerns. |
+| N-4 | **Stale Auslenkung nach einem Remove.** `verarbeiteBand` kehrt bei einem freien Slot früh zurück und schrieb die Auslenkung nie; wurde ein dynamisches Band entfernt, meldete `auslenkungenDb` weiter den alten, endlichen Wert. Genau der Fall, gegen den M-121 gebaut ist: „acht **alte**, endliche Werte bestehen alle diese Prüfungen." | Rotbeweis zu M-121, nachdem der Test um den Remove-Fall erweitert wurde — die erste Fassung wechselte nur auf ein statisches Band und traf den Fall nicht. | Behoben: `verarbeiteBank` nullt vor der Bandschleife die Auslenkung jedes Slots, der keine erzeugt. |
+| N-5 | **Zwei Zusagen sind Wachen, nicht Wege.** Der Overflow-Zweig des ACK-Rings (M-45) und der Endlichkeitsriegel der Auslenkung (M-113) können im regulären Betrieb nicht auslösen: der Ring fasst mehr Einträge als es Slots gibt, und `leistungInDb` klemmt auf `kStilleDb`. Ein Zähler, der strukturell 0 bleibt, ist nach Prüfliste A eine Wache mit Test. | Beim Bau der beiden Rotbeweise, die zunächst nichts rot bekamen. | Gelöst: beide werden über eine **Kopplung** gemessen (Überläufe gleich Verriegelungen; jeder gemeldete Wert endlich), und der Rotbeweis stellt den unerreichbaren Fall her, bevor er die Zusage bricht. Die Rohdatei nennt beide Stellen getrennt. |
+| N-6 | **Vier Rotbeweise fielen zunächst an einem Nebeneffekt.** Ein Bypasswechsel, der mit einem High-Shelf bei 4 kHz an DC gemessen wird, ändert nichts; ein `dynamic_enabled`-Wechsel, der an DC gemessen wird, regt den Detektor nicht an; ein Mix-Kurzschluss, der bei laufender Rampe gemessen wird, ist gar nicht gefragt; ein Sprungdeckel, der den Eigensprung eines Sinus zulässt, deckt auch den Wechselsprung. | Systematisch beim Erzeugen der Rotbeweise — das Skript prüft, ob **die erwartete** Prüfung fällt, und meldet sonst einen Befund. | Alle vier Prüfungen wurden geschärft: DC nur, wo die Kette DC verändert; Sinus mit **zweiter Differenz** als Klickmaßstab; Messung bei ruhender Rampe. §4.8 verlangt genau das: der Rotbeweis fällt an der Zeile, die die Zusage trägt. |
+| N-7 | **Der Auto-Gain-Prüfling aus M-37 überstreicht das Gitter nicht.** Ein High-Shelf bei 20 Hz mit Q 0,707 erreicht sein Plateau erst deutlich über 20 Hz; der Energiemittelwert landet bei −5,86 dB statt −6,0 ± 0,1. 20 Hz ist die kleinste zulässige `freq_hz`, ein Shelf mit tieferer Ecke ist im Vertrag nicht baubar. | Erster Lauf des Auto-Gain-Abschnitts. | Prüflingswahl auf Q 1,0 geändert (§9.6 A-4) und die eigentliche B-04-Zusage direkt gegen den Stereo-Fall gemessen, wo sie an keinem Prüfling hängt. |
+| N-8 | **Denormals waren nicht behandelt.** Der Selbstaudit des Auftrags nennt sie ausdrücklich; ein abklingender Filterzustand läuft nach genügend Stille in den denormalen Bereich, und auf x86 kostet jede Rechnung damit ein Vielfaches — ein Kern, der im **Leerlauf** langsamer wird als unter Last, verletzt die Echtzeitfestigkeit aus §44.5. | Beim Durchgehen der Selbstaudit-Liste vor dem Commit. | Behoben: ein Riegel am Blockrand nullt Zustandswerte unter 1e-300 und zählt die Treffer (Entscheid E-14). B6 misst, **dass** er greift — ein Impuls, dann 200 000 Samples Stille, dann `geriegelteDenormale() > 0` — und dass er nichts Hörbares ändert. Die FTZ/DAZ-Schalter bleiben der Zielschicht überlassen; sie sind eine Entscheidung des Prozessors, nicht der Bibliothek. |

@@ -1,0 +1,29 @@
+SONDE-015 Etappe 3 - Rotbeweis M-34
+Zusage: Mix ist ein linearer Crossfade, keine equal-power-Kennlinie.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+              else if (mix != 1.0) { l = mix * l + (1.0 - mix) * dL[i];
+                                     r = mix * r + (1.0 - mix) * dR[i]; }
+nachher:
+              else if (mix != 1.0) { const double w = std::sqrt (mix), d = std::sqrt (1.0 - mix);
+                                     l = w * l + d * dL[i];
+                                     r = w * r + d * dR[i]; }
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  mix_ist_linear_nicht_equal_power (M-34)  [0,5*wet + 0,5*dry bei gleichem Signal = 0.70710677]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: mix_ist_linear_nicht_equal_power
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

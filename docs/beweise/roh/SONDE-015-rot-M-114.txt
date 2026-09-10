@@ -1,0 +1,29 @@
+SONDE-015 Etappe 3 - Rotbeweis M-114
+Zusage: Das Feld band_dynamic_gain_db reist nur, wenn wirklich ein Band dynamisch ist.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+          dynamikAktiv.store (bank.programm.eqEngagiert && ! bank.programm.hardBypass
+                              && bank.programm.irgendeinBandDynamisch(),
+                              std::memory_order_release);
+nachher:
+          dynamikAktiv.store (true, std::memory_order_release);
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 2 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  feld_reist_nur_bei_vorhandener_dynamik (M-114)  [kein dynamisches Band: keine Meldung]
+  FEHLER  bei ausgeschaltetem EQ reist es nicht (M-114)
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: feld_reist_nur_bei_vorhandener_dynamik
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

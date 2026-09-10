@@ -1,0 +1,59 @@
+SONDE-015 Etappe 3 - Rotbeweis M-52
+Zusage: Die Hoermatrix steht nach dem Anlegen immer auf Processed.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+      hoerLaufend  = Hoermatrix::processed;
+      hoerVorher   = Hoermatrix::processed;
+      hoerFadeRest = 0;
+      candidateAktiv.store (false, std::memory_order_relaxed);
+      dynamikAktiv  .store (false, std::memory_order_relaxed);
+      autoGainBericht
+nachher:
+      hoerwunsch .store (Hoermatrix::delta, std::memory_order_relaxed);
+      hoerwirksam.store (Hoermatrix::delta, std::memory_order_relaxed);
+      hoerLaufend  = Hoermatrix::delta;
+      hoerVorher   = Hoermatrix::delta;
+      hoerFadeRest = 0;
+      candidateAktiv.store (false, std::memory_order_relaxed);
+      dynamikAktiv  .store (false, std::memory_order_relaxed);
+      autoGainBericht
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 22 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  default_ist_bitidentisch bei 44100 Hz  [1 Samples]
+  FEHLER  default_ist_bitidentisch bei 48000 Hz  [1 Samples]
+  FEHLER  default_ist_bitidentisch bei 96000 Hz  [1 Samples]
+  FEHLER  default_ist_bitidentisch bei 192000 Hz  [1 Samples]
+  FEHLER  unity_kurzschluss_statt_multiplikation (M-02)  [eq an, bypass aus, 120 Werte auf Default]
+  FEHLER  hard_bypass_schreibt_nicht (M-05)  [width 1,7 und ein +12-dB-Bell liegen an und schlagen NICHT durch]
+  FEHLER  passthrough_sanitisiert_nichts (M-50)  [NaN und beide Inf kommen unveraendert heraus]
+  FEHLER  nach_dem_fade_wieder_bitidentisch (M-04)  [nicht nur numerisch nahe - bitgleich, auch im Fadeblock selbst]
+  FEHLER  bypasswechsel_endet_bitgleich (M-06)
+  FEHLER  die_rampe_folgt_der_ausgeschriebenen_ideallinie (M-17)  [groesste Abweichung 1.966948340]
+  FEHLER  rampe_endet_bitgenau_auf_dem_ziel (M-02)  [Ende 3.962210655 gegen Ziel 1.995262315]
+  FEHLER  width_eins_ist_bitidentisch (M-30)  [die M/S-Matrix wird gar nicht gerechnet]
+  FEHLER  width_null_ist_mono (M-30)  [groesste L/R-Differenz 3.184857368]
+  FEHLER  input_trim_wirkt_und_liegt_vor_der_bank (M-31)  [0.990553 gegen 0.498816]
+  FEHLER  mix_null_ist_bitidentisch (M-33)  [trotz +9 dB Input-Trim und +12-dB-Bell]
+  FEHLER  mix_eins_umgeht_den_dry_zweig (M-32)  [der NaN wird im Wet-Zweig verriegelt und kommt nicht ueber den Dry-Zweig zurueck]
+  FEHLER  mix_ist_linear_nicht_equal_power (M-34)  [0,5*wet + 0,5*dry bei gleichem Signal = 0.00000000]
+  FEHLER  auto_gain_und_output_trim_addieren_sich (M-40)  [Verhaeltnis -0.12125 gegen 1,99526]
+  FEHLER  kein_nan_vergiftet_den_filterzustand (M-49)
+  FEHLER  der_pfad_bleibt_dauerhaft_endlich (M-49)  [100 Bloecke nach dem NaN]
+  FEHLER  nach_dem_anlegen_immer_processed (M-52)
+  FEHLER  identische_zustaende_nullen_beim_wechsel (M-55)  [groesste Abweichung zum Eingang 0.473958940]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: nach_dem_anlegen_immer_processed
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

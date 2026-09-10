@@ -1,0 +1,32 @@
+SONDE-015 Etappe 3 - Rotbeweis M-26
+Zusage: Attack, Hold und Release wirken als drei getrennte Stufen.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspFilter.h
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+          else if (holdRest > 0)
+          {
+              --holdRest;
+          }
+nachher:
+          else if (false)
+          {
+              --holdRest;
+          }
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  attack_hold_release_sind_drei_stufen (M-26)  [ohne Hold 0.0000 dB, mit 400 ms Hold 0.0000 dB]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: attack_hold_release_sind_drei_stufen
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

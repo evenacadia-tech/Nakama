@@ -1,0 +1,29 @@
+SONDE-015 Etappe 3 - Rotbeweis M-18
+Zusage: Die dynamische Verstaerkung folgt der Kennlinie r * min(1, (e - t)/12).
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspFilter.h
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+      const double u = ueber >= kKniebreiteDb ? 1.0 : ueber / kKniebreiteDb;
+      return rangeDb * u;
+nachher:
+      const double u = ueber >= kKniebreiteDb ? 1.0 : ueber / kKniebreiteDb;
+      return rangeDb * u * 0.5;
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 2 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  dynamische_kennlinie_golden_plateau (M-18)  [Auslenkung -4.500000 gegen range -9.000000]
+  FEHLER  detektor_hoert_vor_dem_band (M-21)  [trotz -12 dB Absenkung bleibt die Auslenkung im Plateau: -6.000000 dB]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: dynamische_kennlinie_golden_plateau
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

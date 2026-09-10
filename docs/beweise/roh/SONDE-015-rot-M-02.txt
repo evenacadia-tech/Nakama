@@ -1,0 +1,28 @@
+SONDE-015 Etappe 3 - Rotbeweis M-02
+Zusage: 0 dB Trim laeuft als Unity-Kurzschluss, nicht als Multiplikation mit 1,0.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.h
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+              if (--rest == 0) aktuell = ziel;
+nachher:
+              if (--rest == 0) aktuell = ziel * 0.9999995;
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 3 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  unity_kurzschluss_statt_multiplikation (M-02)  [eq an, bypass aus, 120 Werte auf Default]
+  FEHLER  rampe_endet_bitgenau_auf_dem_ziel (M-02)  [Ende 1.995261312 gegen Ziel 1.995262315]
+  FEHLER  mix_eins_umgeht_den_dry_zweig (M-32)  [der NaN wird im Wet-Zweig verriegelt und kommt nicht ueber den Dry-Zweig zurueck]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: unity_kurzschluss_statt_multiplikation
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

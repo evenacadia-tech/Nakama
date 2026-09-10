@@ -1,0 +1,45 @@
+SONDE-015 Etappe 3 - Rotbeweis M-113
+Zusage: Eine nicht-endliche Auslenkung wird 0 und gezaehlt; sie verlaesst den Kern nie.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE STELLE 1 von 2 in eq-copilot/plugin/dsp/DspKern.cpp (dieselbe Zusage) ---
+vorher:
+                  z.auslenkungDb = gDyn;
+nachher:
+                  z.auslenkungDb = gDyn / (b.rangeDb - b.rangeDb);
+
+--- MUTIERTE STELLE 2 von 2 in eq-copilot/plugin/dsp/DspKern.cpp (dieselbe Zusage) ---
+vorher:
+      double gemeldet = z.auslenkungDb;
+      if (! std::isfinite (gemeldet))
+      {
+          gemeldet = 0.0;
+          zaehlerAuslenkung.fetch_add (1, std::memory_order_relaxed);
+      }
+nachher:
+      const double gemeldet = z.auslenkungDb;
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 9 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  unter_threshold_steht_das_band_exakt_still (M-19)  [Auslenkung -nan(ind)]
+  FEHLER  range_null_ergibt_exakt_null_auslenkung (M-20)  [-nan(ind)]
+  FEHLER  dynamische_kennlinie_golden_plateau (M-18)  [Auslenkung -inf gegen range -9.000000]
+  FEHLER  auslenkung_bleibt_innerhalb_range (M-18)
+  FEHLER  detektor_ist_bandbegrenzt (M-21)  [1000 Hz -inf dB, 60 Hz -inf dB]
+  FEHLER  detektor_hoert_vor_dem_band (M-21)  [trotz -12 dB Absenkung bleibt die Auslenkung im Plateau: -inf dB]
+  FEHLER  auslenkung_ist_gemessen_nicht_gerechnet (M-27)  [bei Stille meldet auch das dynamische Band exakt 0]
+  FEHLER  attack_hold_release_sind_drei_stufen (M-26)  [ohne Hold -nan(ind) dB, mit 400 ms Hold -nan(ind) dB]
+  FEHLER  nichtendliche_auslenkung_wird_null_und_gezaehlt (M-113)  [kein NaN verlaesst den Kern; Riegel griff 0 mal]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: nichtendliche_auslenkung_wird_null_und_gezaehlt
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

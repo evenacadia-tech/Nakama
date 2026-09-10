@@ -1,0 +1,26 @@
+SONDE-015 Etappe 3 - Rotbeweis M-40
+Zusage: Auto-Gain ersetzt den Output-Trim nicht; beide wirken.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+          if (! outRuht) { l *= out; r *= out; }
+nachher:
+          if (! outRuht && autoGainRuht) { l *= out; r *= out; }
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  auto_gain_und_output_trim_addieren_sich (M-40)  [Verhaeltnis 1.00000 gegen 1,99526]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: auto_gain_und_output_trim_addieren_sich
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

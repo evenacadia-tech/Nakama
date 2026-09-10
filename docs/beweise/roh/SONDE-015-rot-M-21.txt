@@ -1,0 +1,29 @@
+SONDE-015 Etappe 3 - Rotbeweis M-21
+Zusage: Der Detektor hoert das BANDGEFILTERTE Eingangssignal des Bandes vor dem Band.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspFilter.h
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+  inline Biquad entwurfBandpass (double samplerate, double freqHz, double q) noexcept
+  {
+nachher:
+  inline Biquad entwurfBandpass (double samplerate, double freqHz, double q) noexcept
+  {
+      if (freqHz > 0.0 && q > 0.0 && samplerate > 0.0) return Biquad {};
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  detektor_ist_bandbegrenzt (M-21)  [1000 Hz -9.0000 dB, 60 Hz -9.0000 dB]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: detektor_ist_bandbegrenzt
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

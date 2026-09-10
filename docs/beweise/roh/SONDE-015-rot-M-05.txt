@@ -1,0 +1,27 @@
+SONDE-015 Etappe 3 - Rotbeweis M-05
+Zusage: Der Hard-Bypass liegt vor M/S-Matrix und Filterbank und schreibt nicht.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspProgramm.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+      aus.hardBypass   = w[0].b;                                          // v1.global.bypass
+nachher:
+      aus.hardBypass   = false;                                           // v1.global.bypass
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 2 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  hard_bypass_schreibt_nicht (M-05)  [width 1,7 und ein +12-dB-Bell liegen an und schlagen NICHT durch]
+  FEHLER  bypasswechsel_endet_bitgleich (M-06)
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: hard_bypass_schreibt_nicht
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

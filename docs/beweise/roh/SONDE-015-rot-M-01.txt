@@ -1,0 +1,38 @@
+SONDE-015 Etappe 3 - Rotbeweis M-01
+Zusage: Ausgeschaltet schreibt processBlock keinen einzigen Sample in den Eingangsbereich.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+          // Ein nicht rechnender Pfad meldet exakt 0,0 Auslenkung (M-27).
+          for (auto& a : auslenkungen) a.store (0.0, std::memory_order_relaxed);
+          hoerLaufend = wirksam;
+          return;
+nachher:
+          for (auto& a : auslenkungen) a.store (0.0, std::memory_order_relaxed);
+          hoerLaufend = wirksam;
+          kanaele[0][0] = (float) ((double) kanaele[0][0] * 1.0000001);
+          return;
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 7 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  default_ist_bitidentisch bei 44100 Hz  [561 Samples]
+  FEHLER  default_ist_bitidentisch bei 48000 Hz  [561 Samples]
+  FEHLER  default_ist_bitidentisch bei 96000 Hz  [561 Samples]
+  FEHLER  default_ist_bitidentisch bei 192000 Hz  [561 Samples]
+  FEHLER  hard_bypass_schreibt_nicht (M-05)  [width 1,7 und ein +12-dB-Bell liegen an und schlagen NICHT durch]
+  FEHLER  nach_dem_fade_wieder_bitidentisch (M-04)  [nicht nur numerisch nahe - bitgleich, auch im Fadeblock selbst]
+  FEHLER  bypasswechsel_endet_bitgleich (M-06)
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: default_ist_bitidentisch
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

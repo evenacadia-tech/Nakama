@@ -1,0 +1,27 @@
+SONDE-015 Etappe 3 - Rotbeweis M-50
+Zusage: Der Passthrough sanitisiert nichts; ein NaN kommt unveraendert heraus.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+                  for (size_t i = 0; i < n; ++i) { pre[i] = (double) q[i]; post[i] = pre[i]; }
+nachher:
+                  for (size_t i = 0; i < n; ++i) { if (! std::isfinite (q[i])) const_cast<float*> (q)[i] = 0.0f;
+                                                   pre[i] = (double) q[i]; post[i] = pre[i]; }
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  passthrough_sanitisiert_nichts (M-50)  [NaN und beide Inf kommen unveraendert heraus]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: passthrough_sanitisiert_nichts
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

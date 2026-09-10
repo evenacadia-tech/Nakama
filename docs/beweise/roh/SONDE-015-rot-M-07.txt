@@ -1,0 +1,27 @@
+SONDE-015 Etappe 3 - Rotbeweis M-07
+Zusage: Beim Einschalten starten alle Filter- und Huellkurvenzustaende auf 0.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+      bank.zustaendeNullen();
+      for (int i = 0; i < kSlots; ++i)
+nachher:
+      for (int i = 0; i < kSlots; ++i)
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  ausgeschaltet_rechnet_nichts_und_startet_kalt (M-07)  [max nach Wiedereinschalten 0.001174922218]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: ausgeschaltet_rechnet_nichts_und_startet_kalt
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

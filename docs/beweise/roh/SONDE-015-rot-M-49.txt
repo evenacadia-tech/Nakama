@@ -1,0 +1,30 @@
+SONDE-015 Etappe 3 - Rotbeweis M-49
+Zusage: Ein nicht-endlicher Eingangssample wird vor jedem Filterzustand verriegelt und gezaehlt.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+          if (! std::isfinite (l)) { l = 0.0; zaehlerEingaenge.fetch_add (1, std::memory_order_relaxed); }
+          if (! std::isfinite (r)) { r = 0.0; zaehlerEingaenge.fetch_add (1, std::memory_order_relaxed); }
+nachher:
+          // Riegel entfernt
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 4 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  mix_eins_umgeht_den_dry_zweig (M-32)  [der NaN wird im Wet-Zweig verriegelt und kommt nicht ueber den Dry-Zweig zurueck]
+  FEHLER  nichtendlicher_eingang_wird_verriegelt_und_gezaehlt (M-49)  [Zaehler=0]
+  FEHLER  kein_nan_vergiftet_den_filterzustand (M-49)
+  FEHLER  der_pfad_bleibt_dauerhaft_endlich (M-49)  [100 Bloecke nach dem NaN]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: nichtendlicher_eingang_wird_verriegelt_und_gezaehlt
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

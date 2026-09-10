@@ -1,0 +1,35 @@
+SONDE-015 Etappe 3 - Rotbeweis M-47
+Zusage: Im Callback gibt es keine Allokation und keine Sperre.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+      RtWache::Bereich wache;
+  
+      if (kanaele == nullptr || numKanaele <= 0 || numSamples <= 0) return;
+  
+      // M-48
+nachher:
+      RtWache::Bereich wache;
+  
+      if (kanaele == nullptr || numKanaele <= 0 || numSamples <= 0) return;
+      { std::vector<double> vergeudung ((size_t) numSamples, 0.0); (void) vergeudung.size(); }
+  
+      // M-48
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  null_allokationen_im_callback (M-47)  [4000 Bloecke wechselnder Groesse, 4095248 Samples]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: null_allokationen_im_callback
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

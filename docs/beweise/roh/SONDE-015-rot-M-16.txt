@@ -1,0 +1,34 @@
+SONDE-015 Etappe 3 - Rotbeweis M-16
+Zusage: Koeffizienten und Filterzustaende sind 64 Bit, auch bei 32-Bit-Hostpuffer.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspFilter.h
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+  struct BiquadZustand
+  {
+      double z1 { 0.0 }, z2 { 0.0 };
+nachher:
+  struct BiquadZustand
+  {
+      float z1 { 0.0 }, z2 { 0.0 };
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 5 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  koeffizienten_und_zustaende_sind_double (M-16)  [je 8 Byte]
+  FEHLER  richtung_null_nach_sieben_gegen_geordnetes_golden (M-15)  [Abweichung vorwaerts 0.000000026830]
+  FEHLER  denormale_filterzustaende_werden_am_blockrand_geriegelt (E-14)  [Riegel griff 0 mal]
+  FEHLER  der_denormal_riegel_aendert_nichts_hoerbares (E-14)  [max 0.000000000000]
+  FEHLER  hoermatrix_liegt_hinter_den_taps (M-57)  [Tapenergie processed 185.814737 gegen delta 185.814735]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: koeffizienten_und_zustaende_sind_double
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

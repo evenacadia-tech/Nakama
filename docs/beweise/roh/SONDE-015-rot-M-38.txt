@@ -1,0 +1,30 @@
+SONDE-015 Etappe 3 - Rotbeweis M-38
+Zusage: Der dynamische Anteil geht in die Auto-Gain-Ableitung nicht ein.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+      auslenkungen[(size_t) slotIndex].store (gemeldet, std::memory_order_relaxed);
+  }
+nachher:
+      auslenkungen[(size_t) slotIndex].store (gemeldet, std::memory_order_relaxed);
+      autoGainBericht.store (autoGainBericht.load (std::memory_order_relaxed) - gemeldet * 0.001,
+                             std::memory_order_relaxed);
+  }
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  dynamik_bewegt_den_auto_gain_nicht (M-38)  [vorher 0.000000000, nachher 1.200000000]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: dynamik_bewegt_den_auto_gain_nicht
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

@@ -1,0 +1,36 @@
+SONDE-015 Etappe 3 - Rotbeweis M-32
+Zusage: Bei Mix 1,0 wird der Dry-Zweig nicht gerechnet.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE STELLE 1 von 2 in eq-copilot/plugin/dsp/DspKern.cpp (dieselbe Zusage) ---
+vorher:
+      const bool mixRuht      = rMix.ruhtBei (1.0);
+nachher:
+      const bool mixRuht      = false;
+
+--- MUTIERTE STELLE 2 von 2 in eq-copilot/plugin/dsp/DspKern.cpp (dieselbe Zusage) ---
+vorher:
+              else if (mix != 1.0) { l = mix * l + (1.0 - mix) * dL[i];
+                                     r = mix * r + (1.0 - mix) * dR[i]; }
+nachher:
+              else                 { l = mix * l + (1.0 - mix) * dL[i];
+                                     r = mix * r + (1.0 - mix) * dR[i]; }
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 3 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  mix_eins_umgeht_den_dry_zweig (M-32)  [der NaN wird im Wet-Zweig verriegelt und kommt nicht ueber den Dry-Zweig zurueck]
+  FEHLER  kein_nan_vergiftet_den_filterzustand (M-49)
+  FEHLER  der_pfad_bleibt_dauerhaft_endlich (M-49)  [100 Bloecke nach dem NaN]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: mix_eins_umgeht_den_dry_zweig
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

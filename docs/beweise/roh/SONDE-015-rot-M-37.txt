@@ -1,0 +1,30 @@
+SONDE-015 Etappe 3 - Rotbeweis M-37
+Zusage: Der Diagonalterm (H_M + H_S)/2 laesst ein identisches Mid/Side-Paar auf den Stereo-Fall fallen.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspProgramm.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+          const auto diagonal = (hMid + hSide) * 0.5;
+          const auto hL = hStereo * hLinks  * diagonal;
+          const auto hR = hStereo * hRechts * diagonal;
+nachher:
+          const auto hL = hStereo * hLinks  * hMid * hSide;
+          const auto hR = hStereo * hRechts * hMid * hSide;
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 2 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  identisches_mid_side_paar_faellt_auf_stereo_zusammen (M-37)  [stereo -5.860617 dB, mid+side -11.761481 dB]
+  FEHLER  und es wird NICHT wie der doppelte Gain kompensiert (M-37)  [das Doppelte waere -11.7212 dB]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: identisches_mid_side_paar_faellt_auf_stereo_zusammen
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

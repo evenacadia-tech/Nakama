@@ -1,0 +1,27 @@
+SONDE-015 Etappe 3 - Rotbeweis M-11e
+Zusage: Der Filtertyp aus entwurfHighCut liegt an der analytischen RBJ-Antwort (typisch 0,05 dB, Rand 0,1 dB).
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspFilter.h
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+      f.b0 =  (1.0 - c) * 0.5 / a0;
+nachher:
+      f.b0 =  (1.0 - c) * 0.501 / a0;
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 2 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  high_cut_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.1091 dB bei 19330.5 Hz, Rand 0.1703 dB, 240 Stellen]
+  FEHLER  high_cut_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0531 dB bei 19897.0 Hz, Rand 0.0563 dB, 241 Stellen]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: high_cut_gegen_analytische_antwort
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

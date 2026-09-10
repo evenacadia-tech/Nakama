@@ -1,0 +1,32 @@
+SONDE-015 Etappe 3 - Rotbeweis M-43
+Zusage: Erst nach dem Audio-ACK darf der Worker eine Bank ueberschreiben.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspBankPool.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+      int freigegeben = 0;
+      const auto maske = reclaimMaske.load (std::memory_order_acquire);
+nachher:
+      int freigegeben = 0;
+      const auto maske = reclaimMaske.load (std::memory_order_acquire);
+      for (int i = 0; i < kBaenke; ++i)
+          if (wechsle (i, BankZustand::verblassend, BankZustand::frei)) ++freigegeben;
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 3 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  reclaim_erst_nach_ack (M-43)  [ohne ACK bleibt die Bank verblassend und wird nie frei]
+  FEHLER  nach dem ACK wird sie frei (M-43)
+  FEHLER  bankpool_parallel_ohne_rennen (M-122)  [7582 Bloecke, 3000 Publikationen, 5169 Invariantenbrueche]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: reclaim_erst_nach_ack
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

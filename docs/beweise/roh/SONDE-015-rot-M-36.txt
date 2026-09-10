@@ -1,0 +1,33 @@
+SONDE-015 Etappe 3 - Rotbeweis M-36
+Zusage: Eine flache Kurve ergibt exakt 0,0 dB Auto-Gain.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspProgramm.cpp
+
+--- MUTIERTE STELLE 1 von 2 in eq-copilot/plugin/dsp/DspProgramm.cpp (dieselbe Zusage) ---
+vorher:
+      if (! p.irgendeinBandAktiv() || p.samplerate <= 0.0) return 0.0;
+nachher:
+      if (p.samplerate <= 0.0) return 0.0;
+
+--- MUTIERTE STELLE 2 von 2 in eq-copilot/plugin/dsp/DspProgramm.cpp (dieselbe Zusage) ---
+vorher:
+      if (mittel == 1.0) return 0.0;   // bitgenau flach: log10(1,0) ist 0, aber -0,0 ist es nicht
+nachher:
+      // Kurzschluss entfernt
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 2 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  flache_kurve_ergibt_exakt_null_db (M-36)  [bitgenau +0,0, nicht -0,0 aus einem Gitterlauf: -0.000000000000000]
+  FEHLER  neutraler_bell_ergibt_exakt_null_db (M-36)  [bitgenau +0,0: -0.000000000000000]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: flache_kurve_ergibt_exakt_null_db
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

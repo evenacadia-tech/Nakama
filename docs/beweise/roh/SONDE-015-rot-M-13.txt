@@ -1,0 +1,67 @@
+SONDE-015 Etappe 3 - Rotbeweis M-13
+Zusage: Der Golden misst den AUDIOPFAD, nicht die Koeffizientenformel.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+      for (int slotIndex = 0; slotIndex < kSlots; ++slotIndex)
+          verarbeiteBand (bank, slotIndex, L, R, numSamples);
+nachher:
+      for (int slotIndex = 0; slotIndex < 0; ++slotIndex)
+          verarbeiteBand (bank, slotIndex, L, R, numSamples);
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+144 geprueft, 40 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  bell_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 5.9955 dB bei 987.0 Hz, Rand 0.0026 dB, 240 Stellen]
+  FEHLER  bell_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 3.3820 dB bei 931.6 Hz, Rand 10.6630 dB, 240 Stellen]
+  FEHLER  low_shelf_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 5.9993 dB bei 20.6 Hz, Rand 5.9993 dB, 240 Stellen]
+  FEHLER  high_shelf_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 5.9998 dB bei 19330.5 Hz, Rand 5.9999 dB, 240 Stellen]
+  FEHLER  notch_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 19.6309 dB bei 987.0 Hz, Rand 0.0001 dB, 240 Stellen]
+  FEHLER  low_cut_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 27.4653 dB bei 20.6 Hz, Rand 27.9661 dB, 240 Stellen]
+  FEHLER  high_cut_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 36.0244 dB bei 19330.5 Hz, Rand 39.7422 dB, 240 Stellen]
+  FEHLER  bell_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 5.9955 dB bei 987.0 Hz, Rand 0.0026 dB, 241 Stellen]
+  FEHLER  bell_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 3.3842 dB bei 931.6 Hz, Rand 10.6641 dB, 241 Stellen]
+  FEHLER  low_shelf_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 5.9993 dB bei 20.6 Hz, Rand 5.9993 dB, 241 Stellen]
+  FEHLER  high_shelf_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 5.9995 dB bei 19897.0 Hz, Rand 5.9995 dB, 241 Stellen]
+  FEHLER  notch_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 19.6354 dB bei 987.0 Hz, Rand 0.0001 dB, 241 Stellen]
+  FEHLER  low_cut_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 27.4652 dB bei 20.6 Hz, Rand 27.9661 dB, 241 Stellen]
+  FEHLER  high_cut_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 31.9600 dB bei 19897.0 Hz, Rand 32.4229 dB, 241 Stellen]
+  FEHLER  bell_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 5.9956 dB bei 987.0 Hz, Rand 0.0118 dB, 241 Stellen]
+  FEHLER  bell_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 3.3928 dB bei 931.6 Hz, Rand 10.6689 dB, 241 Stellen]
+  FEHLER  low_shelf_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 5.9993 dB bei 20.6 Hz, Rand 5.9993 dB, 241 Stellen]
+  FEHLER  high_shelf_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 5.9857 dB bei 19897.0 Hz, Rand 5.9860 dB, 241 Stellen]
+  FEHLER  notch_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 19.6535 dB bei 987.0 Hz, Rand 0.0005 dB, 241 Stellen]
+  FEHLER  low_cut_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 27.4650 dB bei 20.6 Hz, Rand 27.9659 dB, 241 Stellen]
+  FEHLER  high_cut_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 18.2220 dB bei 19897.0 Hz, Rand 18.3415 dB, 241 Stellen]
+  FEHLER  bell_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 5.9956 dB bei 987.0 Hz, Rand 0.0151 dB, 241 Stellen]
+  FEHLER  bell_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 3.3950 dB bei 931.6 Hz, Rand 10.6700 dB, 241 Stellen]
+  FEHLER  low_shelf_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 5.9993 dB bei 20.6 Hz, Rand 5.9993 dB, 241 Stellen]
+  FEHLER  high_shelf_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 5.9774 dB bei 19897.0 Hz, Rand 5.9779 dB, 241 Stellen]
+  FEHLER  notch_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 19.6581 dB bei 987.0 Hz, Rand 0.0006 dB, 241 Stellen]
+  FEHLER  low_cut_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 27.4650 dB bei 20.6 Hz, Rand 27.9659 dB, 241 Stellen]
+  FEHLER  high_cut_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 16.4574 dB bei 19897.0 Hz, Rand 16.5516 dB, 241 Stellen]
+  FEHLER  impulsantwort_misst_wie_ein_eingeschwungener_sinus (M-13)  [groesste Abweichung 6.0000 dB ueber drei Stellen]
+  FEHLER  kaskade_gegen_produkt_der_einzelantworten (M-15)  [gemessen 0.0000 dB, Produkt 12.0000 dB]
+  FEHLER  richtung_null_nach_sieben_gegen_geordnetes_golden (M-15)  [Abweichung vorwaerts 0.019565368330]
+  FEHLER  dynamische_kennlinie_golden_plateau (M-18)  [Auslenkung 0.000000 gegen range -9.000000]
+  FEHLER  detektor_ist_bandbegrenzt (M-21)  [1000 Hz 0.0000 dB, 60 Hz 0.0000 dB]
+  FEHLER  detektor_hoert_vor_dem_band (M-21)  [trotz -12 dB Absenkung bleibt die Auslenkung im Plateau: 0.000000 dB]
+  FEHLER  attack_hold_release_sind_drei_stufen (M-26)  [ohne Hold 0.0000 dB, mit 400 ms Hold 0.0000 dB]
+  FEHLER  der_ausgleich_wirkt_bei_aus_nicht (M-35)  [erster IR-Sample 1.00000]
+  FEHLER  und die Dynamik hat sich wirklich bewegt (M-38)  [Auslenkung 0.0000 dB]
+  FEHLER  und Audio laeuft unveraendert weiter (M-48)  [der Block wurde verarbeitet, nur der Tap fehlt]
+  FEHLER  denormale_filterzustaende_werden_am_blockrand_geriegelt (E-14)  [Riegel griff 0 mal]
+  FEHLER  remove_verwirft_die_alte_auslenkung (M-121)  [vorher 0.0000 dB, nach dem Remove 0.000000000000000]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: bell_gegen_analytische_antwort
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+144 geprueft, 0 Fehler
+DSP-GOLDEN OK
+

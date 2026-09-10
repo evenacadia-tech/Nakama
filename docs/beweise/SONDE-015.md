@@ -2875,3 +2875,15 @@ Alle Zahlen sind aus der Rohausgabe gelesen, nicht abgeschrieben.
 | **B10** `EqCopIpcTest` | GRÜN — 389 Prüfungen, 0 Fehler |
 | **A16** `EqCopProbeeqNullTest` | GRÜN — 87 Prüfungen, 0 Fehler |
 | **A4** `cargo test` (Broker) | GRÜN — alle Suiten, 0 Fehler, Exit 0 |
+
+### 8.10 Wiederprüfung 1 Etappe 2 — NEEDS_WORK (Dirigent, 2026-09-10)
+
+| Merkmal | Wert |
+|---|---|
+| Prüfer | Codex `gpt-6-astra`, Effort max, lesend; Thread `01a089a4-db48-7973-860b-3ec74f4208dc`; Lauf 06:47–06:55 |
+| Prüfbereich | Wiederprüfung (Vorlage B) über den Fixdiff `git diff 3df34963...9306740d -- eq-copilot/schemas eq-copilot/fixtures eq-copilot/plugin broker/src broker/tests tools/eq-copilot tools/beweise.ps1`; HEAD während des Laufs `8ebcfa91` (trägt nur den Prüfauftrag), vorher und nachher identisch |
+| Auftrag und Urteil | `docs/beweise/roh/SONDE-015-etappe-2-wiederpruefung-1-auftrag.txt`; Urteil wörtlich `docs/beweise/roh/SONDE-015-etappe-2-wiederpruefung-1-9306740.txt` |
+| Urteil | **NEEDS_WORK** — **B-02, B-03, B-04, B-05 geschlossen** (je mit Beleg und Rotbeweis an der Zusage); **B-01 nicht vollständig**: Empfängergrenze 2, Annahme 2/Ablehnung 3 und Registerbindung umgesetzt, der von der Regel verlangte Verbindungs-Rotbeweis fehlt (der bestehende Test `tests_abonnement.rs:275-276` würde unter der Mutation `P2_SCHEMA_MINOR = 1` an fristlosem `ReadFile` hängen statt zu fallen); kein weiterer Bruch |
+| Quellencheck des Dirigenten | am Urteil und an der Rohdatei `SONDE-015-rot-B-01-n1.txt` (nur Koppeltest, Minor-Prädikat, Textriegel): **DEFEKT** des Rotbeweises zur B-01-Regel |
+| Rundenbilanz | `3df34963..9306740d: Produkt 12 Datei(en) +256/-17 | Tests 2 Datei(en) +123/-4 | Pruefwerkzeug 2 Datei(en) +114/-4 | Doku 8 Datei(en) +788/-5` — Runde mit Produktfortschritt |
+| Nacharbeit | Etappe 2, Nacharbeit 2 (Runde 2 von 3): `docs/beweise/roh/SONDE-015-etappe-2-nacharbeit-2-auftrag.txt` — nur der B-01-Rest: Broker-Test über den echten Transportweg mit begrenztem Warten, der unter der Mutation das Schließen der Quellverbindung sieht |

@@ -1,0 +1,5 @@
+URTEIL: PASS — Befund geschlossen, nichts gebrochen.
+
+Geprüft: B-01 ist am Zielstand geschlossen — `broker/src/transport/server_v3/tests_abonnement.rs:272–315` sendet Register-Minor 2 über den echten Transport, prüft „die Quellverbindung bleibt offen“ und die bytegleiche Zustellung; `tests_hilfe.rs:114–136,339–364` beobachtet die Quellpipe mit einer 2000-ms-Frist; `docs/beweise/roh/SONDE-015-rot-B-01-n2.txt:9–55` dokumentiert unter Mutation den Fehler genau an dieser Zusicherung in 0,51 s sowie Grün nach Rücknahme; der Fixdiff enthält ausschließlich Testergänzungen, lässt `lesen`, `frame_roh_lesen` und deren bisherigen Vertrag unverändert und zeigt keinen Bruch von Gate, Matrix oder Produktinvarianten; HEAD vor/nach identisch: `6588c2902084ebd7389feda902d8132464be6abe`, Git-Status ebenfalls unverändert.
+
+Nicht geprüft: keine eigenen Test-, Mutations- oder Buildläufe gemäß Leseauftrag; Rot/Grün und A4/A4-SI ausschließlich anhand der vorliegenden Rohbelege geprüft, übriger Ticketumfang und ausgeschlossene Bereiche nicht erneut bewertet.

@@ -3251,6 +3251,27 @@ CLAUDE.md Maschinen-Landminen). Rohausgabe:
 | B-25 | Zähler erst nach dem ersten Programmwechsel scharf; keine Wechsel, Fades, Reclaims, Transportkanten im Lauf | DEFEKT (M-47 „mit Transportkanten und Programmwechseln", M-41 „auch nicht beim ersten Programmwechsel") | B6 `:1910-1938` |
 | B-26 | Runner-Behauptung „bei Mix 0 wird kein Sample geschrieben (bitgleich)" nennt Output-Trim 0 dB nicht; Samples werden geschrieben | DEFEKT (M-116, §4.8 „nicht mehr, als der Test misst") | `tools/beweise.ps1:688` |
 
+### 9.10 Wiederprüfung 1 Etappe 3 — NEEDS_WORK (Dirigent, 2026-09-10)
+
+| Merkmal | Wert |
+|---|---|
+| Prüfer | Codex `gpt-6-astra`, Effort max, lesend; Thread `01a08afd-4ccf-78f3-a8c0-7b598dbe0cf5`; Lauf 13:04–13:18 |
+| Prüfbereich | Wiederprüfung (Vorlage B) über den Fixdiff `git diff bc76e98c...ca7e7c50 -- eq-copilot/plugin/dsp eq-copilot/plugin/tests/DspGoldenTestMain.cpp eq-copilot/plugin/CMakeLists.txt tools/beweise.ps1`; HEAD während des Laufs `fb269b99` (trägt nur den Prüfauftrag), vorher und nachher identisch |
+| Auftrag und Urteil | `docs/beweise/roh/SONDE-015-etappe-3-wiederpruefung-1-auftrag.txt`; Urteil wörtlich `docs/beweise/roh/SONDE-015-etappe-3-wiederpruefung-1-ca7e7c5.txt` |
+| Urteil | **NEEDS_WORK** — 21 von 26 Befunden geschlossen (B-1, B-2, B-6, B-9 bis B-26 je mit Beleg und Rotbeweis); offen B-3, B-4 (zwei Teilbefunde), B-5/B-7 (gemeinsam) und B-8; nichts gebrochen (keine neue Rennen-, Ownership- oder Reclaim-Verletzung, A14, CMake und Prozessor ohne Bruch) |
+| Quellencheck des Dirigenten | lesender Opus-Agent, jede zitierte Zeile geöffnet: **vier DEFEKTE, eine LÜCKE.** W-1 (B-3): `committedRuht` wird je Teilstück am Stückbeginn gebildet, nach Fade-Ende im selben Teilstück wird `(float)(double)Eingang` zurückgeschrieben — der Schreibverzicht aus REGEL B-3 bricht, die Bitidentität nicht (nur ein sNaN würde ruhiggestellt). W-2 (B-4): attack_ms, hold_ms, release_ms tragen im Vertrag `wechsel = rampe`, die Interpolation E-19 lässt sie aus — Knick statt Sprung, aber REGEL B-4 nicht erfüllt. W-3 (B-4): der interpolierte `rangeDb` wird am Flag `detektorLaeuft` des neuen Programms vorbeigeführt, bis 12 dB in 8 Samples — R8 und M-17 brechen; M-20 ist eine Ruhezusage, keine Übergangszusage. W-5 (B-8): beim Abbruch im laufenden Hörmatrix-Fade werden beide Seiten des Fades `processed`, der Mischwert fällt in einem Sample — REGEL B-8 „blendet klickfrei aus" bricht in der Hörmatrix, nicht im Bank-Lebenszyklus. W-4 (B-5/B-7): die Metrik `groessterSprung` ist das Maximum der Nachbarsample-Differenz über den ganzen Lauf; damit ist 1× Fadeschritt unerreichbar, weil die kalt startende Bank einschwingt (Beine: 0,0025299 gegen 0,0021309, Faktor 1,187; Gegenprobe N-12 ohne kalte Bank exakt 1×) — am Umschaltsample selbst entsteht kein Sprung, M-03/M-06 halten. REGEL B-5/B-7 sagte „≤ Fadeschritt", ohne die Messgröße festzulegen: **Lücke** |
+| Entscheid zur Lücke W-4 (Dirigent, Technik) | Der Sprung wird **am Umschaltsample** gemessen — die Nachbarsample-Differenz am ersten Sample des neuen Fades gegen die Fadeschrittweite plus begründete Rundungstoleranz (M-03 Rotbeweisspalte „am Umschaltsample"). Die Maximumsprüfung über den ganzen Lauf bleibt als Wache mit einer aus dem Einschwingen der kalten Bank begründeten Schranke, nie als unbegründeter Faktor. Die Regel geht als REGEL W-4 in den Nacharbeitsauftrag 2 und als Entscheid nach §9.2 |
+| Rundenbilanz Nacharbeit 1 | `bc76e98c..ca7e7c50: Produkt 8 Datei(en) +965/-539 · Tests 1 Datei(en) +1200/-55 · Pruefwerkzeug 1 Datei(en) +1/-1 · Doku 31 Datei(en) +2123/-3` — Runde mit Produktfortschritt, kein Konvergenz-Signal |
+| Nacharbeit | Etappe 3, Nacharbeit 2 (Runde 2 von 3): `docs/beweise/roh/SONDE-015-etappe-3-nacharbeit-2-auftrag.txt` — die vier Defekte W-1, W-2, W-3, W-5 mit je einer schließenden Regel und die entschiedene Regel W-4; nur betroffene Beine (B6, A14, B5, A16, B2, B3c) |
+
+| Befund | Kurzform | Einordnung | Ansatzpunkt |
+|---|---|---|---|
+| W-1 | B-3: nach Fade-Ende werden die Restsamples des Teilstücks zurückgeschrieben | DEFEKT (REGEL B-3, M-05 „schreibt keine Samples") | `eq-copilot/plugin/dsp/DspKern.cpp:743`, `:862-883` |
+| W-2 | B-4: attack_ms, hold_ms, release_ms nicht gerampt | DEFEKT (REGEL B-4, Vertrag `wechsel = rampe`, E-19 lückenhaft) | `eq-copilot/plugin/dsp/DspKern.cpp:394`, `:411`; `DspProgramm.cpp:154-156` |
+| W-3 | B-4: Range → 0 springt über `detektorLaeuft = false` in 8 Samples | DEFEKT (R8, M-17, REGEL B-4) | `eq-copilot/plugin/dsp/DspKern.cpp:425-430`; `DspProgramm.cpp:245` |
+| W-4 | B-5/B-7: Testtoleranz 4× Fadeschritt | LÜCKE, entschieden (Messung am Umschaltsample) | B6 `:469-474`, `:973-978`, `:3288-3292` |
+| W-5 | B-8: Candidate-Abbruch im laufenden Hörmatrix-Fade springt auf Processed | DEFEKT (REGEL B-8 „blendet klickfrei aus") | `eq-copilot/plugin/dsp/DspKern.cpp:192-193`, `:720-722`, `:811-821` |
+
 ### 9.9 Nacharbeit 1 — was eingearbeitet wurde (10.09.2026)
 
 | Merkmal | Wert |

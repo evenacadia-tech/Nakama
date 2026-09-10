@@ -1,0 +1,49 @@
+URTEIL: NEEDS_WORK — B-3, B-4, B-5, B-7 und B-8 bleiben offen; der neue Rampenpfad verliert insbesondere die Glättung der Hüllkurvenparameter und des Range-Übergangs auf null.
+
+Geprüft: ausschließlich der gebundene Fixdiff am Ziel ca7e7c505b697ab28458fc4687f1a500c0e9a162, Regeln, Assertions und protokollierte Einzelmutationen; DSP bezeichnet eq-copilot/plugin/dsp, T bezeichnet eq-copilot/plugin/tests/DspGoldenTestMain.cpp, Rot-ID bezeichnet docs/beweise/roh/SONDE-015-rot-B-<ID>-e3-n1.txt; „ja“ bedeutet Schließung anhand dieser Leseprüfung, keinen selbst ausgeführten Testlauf:
+B-1: ja — DSP/DspBankPool.cpp:230,257,186; T:2450,3623; „Übernahme und ACK generationsgebunden“; Rot-01
+B-2: ja — DSP/DspSvf.h:140; T:1137,1171; „m1=k·(1−A)·A“, Ruheantworten und −24-dB-Golden; Rot-02
+B-3: nein — DSP/DspKern.cpp:743,862–884; „nach dem Fade kein Sample geschrieben“ bleibt innerhalb des Übergangsblocks verletzt
+B-4: nein — DSP/DspKern.cpp:411,419–430; „alle Bandwerte mit wechsel=rampe“ nicht erfüllt
+B-5: nein — T:976; „maximaler Sprung ≤ Fadeschritt“ wird durch Faktor vier abgeschwächt
+B-6: ja — DSP/DspKern.cpp:297–305,480; T:3233,3255; „eigene Rampen und eigener Auto-Gain“; Rot-06
+B-7: nein — T:3292; „Sprung ≤ Fadeschritt“ ebenfalls abgeschwächt
+B-8: nein — DSP/DspKern.cpp:192–193,817–821; „Candidate blendet klickfrei aus“ scheitert bei laufendem Hörmatrix-Fade
+B-9: ja — DSP/DspKern.cpp:219–228,472,547; T:3379; „Auslenkungen je Pfad getrennt“; Rot-09
+B-10: ja — DSP/DspKern.cpp:155–161; T:589; „Aus-Zustand reserviert keine Bank, nach Pflege alle frei“; Rot-10
+B-11: ja — DSP/DspKern.cpp:679–680; T:2864; „Übernahme nur am äußeren Blockrand“ einschließlich Zwischenstück-Publikation; Rot-11
+B-12: ja — DSP/DspBankPool.cpp:70–85,185–186; T:2475,2489; „Generation überlebt Reset, alter ACK gibt nichts frei“; Rot-12
+B-13: ja — DSP/DspRtWache.h:84–85; T:2732,2766; „Wrapper meldet Sperre, Textriegel kontrolliert Umgehungen“; Rot-13a/13b
+B-14: ja — T:1615–1620; „Knie und Plateau wirken zusätzlich zu gain_db im Audiopfad“; Rot-14
+B-15: ja — T:1789–1865; „Attack/Hold/Release-Zeiten bei vier Sampleraten“; Rot-15
+B-16: ja — T:2027,2046; „Input-Trim vor Bank, Output-Trim hinter Mix“; Rot-16 verschiebt den Faktor ohne Gesamtgainverlust
+B-17: ja — DSP/DspBankPool.cpp:199–205,277; T:2592; „Maskenbit und Slotzustand bis zur Bestätigung“; Rot-17
+B-18: ja — DSP/DspProgramm.cpp:89; T:2344–2347; „Ableitungen im Audiopfad null, außerhalb mindestens zwei“; Rot-18
+B-19: ja — DSP/DspKern.cpp:516,522; T:1922,1964; „Kurzschluss und Bitidentität getrennt geprüft“; Rot-19a/19b
+B-20: ja — DSP/DspKern.cpp:320–324,682–686; T:2981; „Filterzustände vor Verarbeitung geheilt und exakt gezählt“; Rot-20
+B-21: ja — T:3038–3043; „exakt positive Null und Zähleranstieg um zehn“; Rot-21
+B-22: ja — T:2815–2827; „vollständiger übergroßer Block sample-exakt gegen Referenz“; Rot-22
+B-23: ja — T:3130–3134; „Delta gegen unabhängig berechneten Sollfaktor“; Rot-23
+B-24: ja — T:396–405,1035–1039; „Mitten-/Eckfrequenz und Shelf-Punkte im Prüflingsgitter“; Rot-24a/24b
+B-25: ja — T:2657–2719; „scharfe Zähler einschließlich erster Übernahme, Candidate, Reclaim und Transportkanten“; Rot-25
+B-26: ja — tools/beweise.ps1:688; „Mix 0 mit Output-Trim 0 dB wertgleich“, kein behaupteter Schreibverzicht; Nachweis-26
+Keine zusätzliche Rennen-, Ownership- oder Reclaim-Verletzung im Fixdiff gefunden; A14-Objektliste, CMake-Anbindung und unberührter Prozessor ohne erkennbaren neuen Bruch; HEAD vor/nach identisch fb269b997d198cad40e2fa37932f33b77d3d8de3, Worktree unverändert mit bereits vorhandener ungetrackter .claude/settings.local.json, Diff-Prüfung ohne Whitespace-Fehler.
+
+Nicht geprüft: keine Builds, Produktstarts, Python-Aufrufe, eigenen Testläufe oder Mutationen; die sechs protokollierten Exit-0-Beine wurden nur gelesen, übriger Erstprüfbereich sowie Etappen 2 und 4 nicht erneut bewertet.
+
+Full review comments:
+
+- [P2] Beende Schreibzugriffe exakt am Ausschaltfade-Ende — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/dsp/DspKern.cpp:743-743
+  B-3 bleibt offen: Bei `maxBlock=512`, eingeschwungenem EQ und anschließendem Ausschalten endet der Fade innerhalb des nächsten 512-Sample-Blocks. `committedRuht` bleibt jedoch für das gesamte Teilstück false; auch die Samples 256–511 werden über die Ausgabeschleife geschrieben. Die im Test verwendete sNaN-Wachmarke an Index 300 würde dabei durch den Float→Double→Float-Weg verändert. Der neue Test setzt seine Wachmarken erst in nachfolgenden Blöcken und übersieht diesen Fall. [REGEL B-3](docs/beweise/roh/SONDE-015-etappe-3-nacharbeit-1-auftrag.txt#L32) verlangt den Schreibverzicht bereits nach dem Fade; zusätzlich gilt die [Passthrough-Bitidentität](CLAUDE.md#L40-L42).
+
+- [P2] Rampe auch die Hüllkurvenparameter — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/dsp/DspKern.cpp:419-425
+  B-4 ist für Attack, Hold und Release nicht umgesetzt: Eine Änderung beispielsweise von `attack_ms=500` auf `0.1` während einer steigenden Hüllkurve wird als `rampenKompatibel` übernommen, aber `z.huelle.tick(b.huelle, ...)` verwendet sofort die neuen Zielkoeffizienten. Die neue Interpolation berücksichtigt diese drei Parameter nicht; mit dem entfallenen Programmcrossfade fehlt ihnen jetzt jede Parameterglättung. Alle drei sind ausdrücklich `wechsel=rampe` ([Parametervertrag](eq-copilot/schemas/state/nakama-parameter-v1.json#L40-L42)), und [REGEL B-4](docs/beweise/roh/SONDE-015-etappe-3-nacharbeit-1-auftrag.txt#L37) umfasst sämtliche so gekennzeichneten Bandwerte. Die drei neuen B-4-Testfälle messen nur Gain, Frequenz und Q.
+
+- [P2] Führe die Range-Rampe auch bis zum Zielwert null aus — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/dsp/DspKern.cpp:428-430
+  B-4 bleibt auch beim Übergang `dynamic_range_db=-12` → `0` offen: Beim eingeschwungenen Band oberhalb des Thresholds wird zwar `rangeDb` interpoliert, das neue Programm trägt aber bereits `detektorLaeuft=false`. Deshalb wird der interpolierte Wert hier ignoriert und `gDyn` beim nächsten Steuerschritt unmittelbar null; die Audiowirkung folgt nur noch dem acht Samples langen SVF-Übergang statt der vorgesehenen Parameterrampe. Der bisherige Crossfade entfällt in diesem neuen Pfad ebenfalls. [REGEL B-4](docs/beweise/roh/SONDE-015-etappe-3-nacharbeit-1-auftrag.txt#L37) und der [Range-Vertrag](eq-copilot/schemas/state/nakama-parameter-v1.json#L38) verlangen auch hierfür eine Rampe; ein Test mit von Anfang an gesetzter Range null prüft diesen Übergang nicht.
+
+- [P2] Prüfe B-5 und B-7 gegen die einfache Fadeschrittweite — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/tests/DspGoldenTestMain.cpp:974-978
+  Die neuen Tests lassen die vierfache Fadeschrittweite zu, hier und im Candidate-Test an Zeile 3292. Damit messen sie nicht die Grenzen aus [REGEL B-5](docs/beweise/roh/SONDE-015-etappe-3-nacharbeit-1-auftrag.txt#L42) und [REGEL B-7](docs/beweise/roh/SONDE-015-etappe-3-nacharbeit-1-auftrag.txt#L52). Bereits das gelesene Beineprotokoll weist für beide Fälle `0.0025299` gegen eine Fadeschrittweite von `0.0021309` als grün aus; lesbar mit `rg -n 'zweiter_wechsel|candidate_wechsel' docs/beweise/roh/SONDE-015-etappe3-nacharbeit1-beine.txt`. Die Einzelmutationen erzeugen deutlich größere Sprünge und fallen deshalb trotzdem, belegen aber nicht die verlangte Grenze. Hier braucht es die einfache Schrittweite mit begründeter Rundungstoleranz statt Faktor vier.
+
+- [P2] Blende Candidate-Abbrüche aus dem laufenden Hörmix zurück — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/dsp/DspKern.cpp:192-193
+  B-8 bleibt beim Abbruch während des ersten Einblendens offen: Committed neutral einschwingen, einen nichtneutralen Candidate publizieren, Candidate auswählen, 64 Samples verarbeiten und `beendeCandidate()` aufrufen. Das gelöschte Flag erzwingt Processed, während der Hörmatrix-Fade noch läuft. Dessen Zweig an Zeilen 817–821 setzt nun `hoerLaufend=processed`, während `hoerVorher` bereits Processed ist; der Ausgang springt sofort vom bisherigen Mischsignal auf vollständig Processed. Die Bank wird inzwischen korrekt ausgedient, aber der Rückwechsel bleibt hörbar abrupt. Der neue B-8-Test lässt den Hörmatrix-Fade vor dem Abbruch vollständig einschwingen. Das verletzt „blendet klickfrei aus“ aus [REGEL B-8](docs/beweise/roh/SONDE-015-etappe-3-nacharbeit-1-auftrag.txt#L57) und die geforderte [gekoppelte Lebenszyklusbehandlung](AGENTS.md#L48-L50).

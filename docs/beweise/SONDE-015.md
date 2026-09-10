@@ -2486,3 +2486,14 @@ M-125 fällt genau daran, weil ein Fall ohne Tabellenzeile dort keinen Test hat.
 | **D** Bau- und Prüfriegel | Nicht berührt. |
 | **E** Behauptung ≤ Messung | Die tragende Zeile. Jede Tabellenzeile nennt ihren B7-Fall **und** den Rotbeweis, und M-125 macht die Tabelle selbst prüfbar. Die Arithmetik ist vor dem Schreiben gerechnet worden; §3.15 ist neu **gezählt**. |
 | **F** Änderungssatz | Die Paare stehen jetzt beieinander statt verstreut: T5↔T7 (`busy_retry` und sein Retry), T8↔T9 (Retry nach Zonenlösung, beide Basisrevisionen), T10↔T11 (beide Seiten des Fensterrandes). Keines lässt sich einzeln ändern, ohne dass sein Partner in derselben Tabelle sichtbar mitwandert. |
+
+### 7.9 Matrixprüfung 5 — NEEDS_WORK; Restbefunde als NAK-245 ausgegliedert, Etappe 2 beginnt (Dirigent, 2026-09-10)
+
+| Merkmal | Wert |
+|---|---|
+| Prüfer | Codex `gpt-6-astra`, Effort max, lesend; Thread `01a088a5-018a-7f12-bc04-2832fcc71e1a`; Lauf 02:08–02:17 |
+| Prüfbereich | Wiederprüfung der Konvergenzrunde über `git diff 73bc10b6...f636a09f -- docs/beweise/SONDE-015.md`; HEAD während des Laufs `1ab5ec8a` (trägt nur den Prüfauftrag), vorher und nachher identisch |
+| Auftrag und Urteil | `docs/beweise/roh/SONDE-015-matrixpruefung-5-auftrag.txt`; Urteil wörtlich `docs/beweise/roh/SONDE-015-matrixpruefung-5-f636a09.txt` |
+| Urteil | **NEEDS_WORK** — **K-1 und K-2 geschlossen** (§5.11.4 „0 ≤ r − e ≤ 31", 32 Plätze, T10/T11 mit beidseitigen Rotbeweisen; T8 Konflikt, T9 Commit); §3.15 stimmt mit 125 IDs. Fünf neue Widersprüche in der neuen Tabelle: Fehler in S4/S6/S7 ohne Zeile; T4 nicht auf Bedienänderungen begrenzt (gegen M-61); T9 gegen T5 (`busy_retry`); I1 gegen Ladestart (M-89/M-93/I5); M-76 mischt Tabellenlauf und Ein-Revisions-Stresstest |
+| Rundenbilanz | `73bc10b6..f636a09f: Doku 1 Datei(en) +282/-35 → OHNE PRODUKTFORTSCHRITT (Produkt+Tests = 0 Zeilen)` — Matrixrunde, strukturell null; kumuliert Etappe 1: `e9dbf4b9..f636a09f` nur Doku |
+| **Entscheid** | Die Ursachenrunde nach dem Konvergenzentscheid (§7.7) hat K-1/K-2 geschlossen; die fünf Restbefunde sind alle DEFEKT (innere Widersprüche der neuen Tabelle), betreffen ausschließlich §5.11.4/M-76/M-125 — den Transaktionskern der **Etappe 4** — und keine Zusage der Etappen 2 und 3. Nach Dirigent §3.4 wird die Ursache als eigener Registerpunkt ausgegliedert: **NAK-245** (`docs/offene-punkte.md`, Klasse [Planarbeit · S26–28]); die fünf Punkte werden vor dem Bau der Etappe 4 in derselben Tabelle geschlossen und von der Erstprüfung der Etappe 4 mitgeprüft. Die Matrix ist damit Referenz für **Etappe 2 (Verträge in drei Sprachen)**, die jetzt beginnt (User-Wort 30.08.2026: „voranschreiten ist das wichtigste"). Matrixrunden gesamt: fünf Prüfungen, vier Nacharbeiten, Konvergenzentscheid nach der dritten Wiederprüfung |

@@ -270,8 +270,44 @@ fn broker_p2_push_nutzt_subscriber_telemetriepipe_und_aktive_minors() {
     // beim ersten Frame abweist. Faellt die Empfaengergrenze zurueck, schliesst
     // `verbindung.rs` die Verbindung und `expect` unten schlaegt zu.
     let sendeminor = p2_minor_aus_register();
+    let envelope_vorher = griff
+        .statistik
+        .geschlossen_envelope
+        .load(Ordering::SeqCst);
     assert!(source_telemetrie
         .schreiben(&envelope_schreiben(Familie::P2, sendeminor, payload).unwrap()));
+
+    /*  🔑 SONDE-015 B-01-Rest (Nacharbeit 2): der VERBINDUNGSABBRUCH wird
+        BEGRENZT beobachtet, BEVOR irgendwo blockierend gelesen wird.
+
+        Der erste Anlauf dieses Rotbeweises hing: faellt `P2_SCHEMA_MINOR`
+        zurueck, schliesst `verbindung.rs` die QUELLverbindung und der Test
+        wartete danach mit fristlosem `ReadFile` auf der weiterhin offenen
+        Main-Pipe. Ein Haenger ist kein Rot. `warte_auf_p2_entscheidung` kehrt
+        zurueck, sobald eines von beidem gilt - Frame zugestellt oder
+        Quellverbindung zu -, und die Zusicherung darunter faellt genau an der
+        Zusage. */
+    assert!(
+        warte_auf_p2_entscheidung(
+            &source_telemetrie,
+            &main_telemetrie,
+            FRIST_P2_ENTSCHIEDEN_MS
+        ),
+        "innerhalb der Frist ist weder ein Frame angekommen noch die Quellverbindung gefallen"
+    );
+    assert!(
+        source_telemetrie.verbindung_steht(),
+        "die Quellverbindung bleibt offen: der Broker kennt die Fassung {sendeminor} des Senders.          Ist sie zu, hat `verbindung.rs` den Rahmen als `schema_minor {sendeminor} fuer P2 unbekannt`          abgewiesen - ein Fassungsschritt, den nur eine Seite kennt"
+    );
+    assert_eq!(
+        griff
+            .statistik
+            .geschlossen_envelope
+            .load(Ordering::SeqCst),
+        envelope_vorher,
+        "kein Envelope-Abbruch: der Zaehler, den `verbindung.rs` beim Schliessen hochzaehlt, steht still"
+    );
+
     let weiter = frame_roh_lesen(&main_telemetrie)
         .expect("P2-Push an Main: der Broker nimmt die Fassung des Senders an");
     assert_eq!(weiter.kopf.familie, Familie::P2);

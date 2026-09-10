@@ -1,0 +1,57 @@
+SONDE-015 Etappe 2, Nacharbeit 2 - Rotbeweis B-01 (Rest): der Verbindungsabbruch
+Lauf: 2026-09-10T07:00:53
+
+Zusage: Ein P2-Frame mit der aktuellen Fassung laeuft ueber den ECHTEN Transportweg
+        (verbindung.rs); die Quellverbindung bleibt offen und der Frame wird dem
+        Abonnenten zugestellt. Faellt die Empfaengergrenze zurueck, sieht der Test
+        das Schliessen der Quellverbindung INNERHALB einer Frist - nicht durch
+        Haengen und nicht an einem Nebeneffekt.
+Bruch:  broker/src/transport/server_v3/mod.rs
+        - const P2_SCHEMA_MINOR: u8 = 2;
+        + const P2_SCHEMA_MINOR: u8 = 1;
+Zeitgrenze des Laufs: 180s (ein Haenger waere selbst ein Befund)
+==============================================================================
+$ cargo test --manifest-path broker/Cargo.toml --color never --lib tests_abonnement   (MUTATION eingebaut)
+running 5 tests
+test transport::server_v3::tests_abonnement::io_worker_uebergibt_validierte_bytes_ausschliesslich_an_den_coordinator ... ok
+test transport::server_v3::tests_abonnement::subscription_ist_an_eigenen_control_link_gebunden ... ok
+test transport::server_v3::tests_abonnement::broker_p2_push_nutzt_subscriber_telemetriepipe_und_aktive_minors ... FAILED
+test transport::server_v3::tests_abonnement::join_kandidat_laeuft_ueber_probe_pipe_ohne_join_candidate_nachrichtenfamilie ... ok
+test transport::server_v3::tests_abonnement::subscription_cleanup_vor_weiterem_push ... ok
+
+failures:
+
+---- transport::server_v3::tests_abonnement::broker_p2_push_nutzt_subscriber_telemetriepipe_und_aktive_minors stdout ----
+
+thread 'transport::server_v3::tests_abonnement::broker_p2_push_nutzt_subscriber_telemetriepipe_und_aktive_minors' (28320) panicked at src\transport\server_v3\tests_abonnement.rs:298:5:
+die Quellverbindung bleibt offen: der Broker kennt die Fassung 2 des Senders.          Ist sie zu, hat `verbindung.rs` den Rahmen als `schema_minor 2 fuer P2 unbekannt`          abgewiesen - ein Fassungsschritt, den nur eine Seite kennt
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    transport::server_v3::tests_abonnement::broker_p2_push_nutzt_subscriber_telemetriepipe_und_aktive_minors
+
+test result: FAILED. 4 passed; 1 failed; 0 ignored; 0 measured; 245 filtered out; finished in 0.51s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.18s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+error: test failed, to rerun pass `--lib`
+EXIT=101
+------------------------------------------------------------------------------
+$ cargo test --manifest-path broker/Cargo.toml --color never --lib tests_abonnement   (Mutation entfernt)
+running 5 tests
+test transport::server_v3::tests_abonnement::subscription_ist_an_eigenen_control_link_gebunden ... ok
+test transport::server_v3::tests_abonnement::broker_p2_push_nutzt_subscriber_telemetriepipe_und_aktive_minors ... ok
+test transport::server_v3::tests_abonnement::io_worker_uebergibt_validierte_bytes_ausschliesslich_an_den_coordinator ... ok
+test transport::server_v3::tests_abonnement::join_kandidat_laeuft_ueber_probe_pipe_ohne_join_candidate_nachrichtenfamilie ... ok
+test transport::server_v3::tests_abonnement::subscription_cleanup_vor_weiterem_push ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 245 filtered out; finished in 0.51s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.07s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+EXIT=0
+------------------------------------------------------------------------------
+URTEIL: ROT unter der Mutation, GRUEN ohne sie

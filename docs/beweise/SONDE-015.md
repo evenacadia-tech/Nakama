@@ -3,14 +3,14 @@
 | Merkmal | Wert |
 |---|---|
 | Ticket | S26–28, `SONDE-015` (Phase P6), Leitungsname „Die Klangregelung in der Sonde sicher und speicherbar machen" |
-| Etappe | **Etappe 1 — Spezifikation vor Code, nach der Matrix-Konvergenzrunde (10.09.2026).** Dieses Manifest trägt Gate-Text, Ist-Stand, Verhaltensmatrix, Bauplan und Entscheide. **Kein Produkt-, Test-, Schema-, Fixture- oder Werkzeugcode in diesem Änderungssatz.** Zwei Prüfrunden: **Matrixprüfung 1** NEEDS_WORK mit zwölf Defekten (§7), eingearbeitet als **Matrix-Nacharbeit 1** (§7.1) — zwölf Zeilen korrigiert, drei neue (M-121 bis M-123), sechs Feinheiten neu gefasst, Abweichung 3 zurückgenommen. **Matrixprüfung 2** (§7.3) schloss zehn davon und fand **B-05** und **B-09** weiter offen; die **Matrix-Nacharbeit 2** (§7.4) hat sie geschlossen: vier Zeilen korrigiert, eine neue (**M-124**), drei Feinheiten neu gefasst. **Matrixprüfung 3** (§7.5) bestätigte B-05 und B-09 als geschlossen, fand aber **zwei Folgewidersprüche** (**D-1**, **D-2**); die **Matrix-Nacharbeit 3** (§7.6) schloss sie mit einer Regel. **Matrixprüfung 4** (§7.7) schloss D-2, ließ D-1 als **K-1** offen und fand **K-2** — dritte Wiederprüfung ohne PASS. Der **Konvergenzentscheid** benannte die **Ursache**: die Transaktionssemantik war über drei Runden als Prosa nachgezogen und nie als geschlossene Spezifikation festgelegt worden. Die **Matrix-Konvergenzrunde** (§7.8) hat den Weg gewechselt: **§5.11.4 ist jetzt eine geschlossene Protokollspezifikation** mit Arithmetik, Stufenfolge S0 bis S8, sechs Invarianten und einer vollständigen Falltabelle T1 bis T12; **M-44, M-74, M-75, M-76, M-123, M-124 und M-125 leiten sich daraus ab** und tragen keine eigene Arithmetik mehr (§5.17, Abweichung 7). Etappen 2 bis 4 (Verträge, DSP-Kern, Integration) beginnen erst nach der Wiederprüfung und dem Fortsetzungsauftrag des Dirigenten. **Etappe 2 (Verträge in drei Sprachen) ist seit dem 10.09.2026 gebaut; ihr Abschnitt ist §8.** **Etappe 2 (Verträge in drei Sprachen) ist seit dem 10.09.2026 gebaut (§8), ihre Erstprüfung und die Nacharbeit 1 stehen in §8.8 und §8.9.** |
-| Phase | **Etappe 2 gebaut, Erstprüfung NEEDS_WORK, Nacharbeit 1 eingearbeitet.** Etappe 1 abgeschlossen nach fünf Matrixprüfungen und vier Nacharbeiten (§7 bis §7.9); die fünf Restwidersprüche der Transaktionstabelle sind als **NAK-245** ausgegliedert und gehören der Etappe 4. **Etappe 2 — Verträge in drei Sprachen** ist gebaut (§8); ihre **Erstprüfung** endete **NEEDS_WORK** mit fünf bestätigten Defekten (§8.8), die **Nacharbeit 1** hat sie geschlossen (§8.9): elf Beine grün, sechs Rotbeweise, Diff 16 Dateien +477/−25. Die Wiederprüfung der Nacharbeit 1 steht aus; danach folgt Etappe 3 (DSP-Kern als Bibliothek). |
+| Etappe | **Etappe 1 — Spezifikation vor Code, nach der Matrix-Konvergenzrunde (10.09.2026).** Dieses Manifest trägt Gate-Text, Ist-Stand, Verhaltensmatrix, Bauplan und Entscheide. **Kein Produkt-, Test-, Schema-, Fixture- oder Werkzeugcode in diesem Änderungssatz.** Zwei Prüfrunden: **Matrixprüfung 1** NEEDS_WORK mit zwölf Defekten (§7), eingearbeitet als **Matrix-Nacharbeit 1** (§7.1) — zwölf Zeilen korrigiert, drei neue (M-121 bis M-123), sechs Feinheiten neu gefasst, Abweichung 3 zurückgenommen. **Matrixprüfung 2** (§7.3) schloss zehn davon und fand **B-05** und **B-09** weiter offen; die **Matrix-Nacharbeit 2** (§7.4) hat sie geschlossen: vier Zeilen korrigiert, eine neue (**M-124**), drei Feinheiten neu gefasst. **Matrixprüfung 3** (§7.5) bestätigte B-05 und B-09 als geschlossen, fand aber **zwei Folgewidersprüche** (**D-1**, **D-2**); die **Matrix-Nacharbeit 3** (§7.6) schloss sie mit einer Regel. **Matrixprüfung 4** (§7.7) schloss D-2, ließ D-1 als **K-1** offen und fand **K-2** — dritte Wiederprüfung ohne PASS. Der **Konvergenzentscheid** benannte die **Ursache**: die Transaktionssemantik war über drei Runden als Prosa nachgezogen und nie als geschlossene Spezifikation festgelegt worden. Die **Matrix-Konvergenzrunde** (§7.8) hat den Weg gewechselt: **§5.11.4 ist jetzt eine geschlossene Protokollspezifikation** mit Arithmetik, Stufenfolge S0 bis S8, sechs Invarianten und einer vollständigen Falltabelle T1 bis T12; **M-44, M-74, M-75, M-76, M-123, M-124 und M-125 leiten sich daraus ab** und tragen keine eigene Arithmetik mehr (§5.17, Abweichung 7). Etappen 2 bis 4 (Verträge, DSP-Kern, Integration) beginnen erst nach der Wiederprüfung und dem Fortsetzungsauftrag des Dirigenten. **Etappe 2 (Verträge in drei Sprachen) ist seit dem 10.09.2026 gebaut; ihr Abschnitt ist §8.** **Etappe 2 (Verträge in drei Sprachen) ist seit dem 10.09.2026 gebaut (§8); Erstprüfung §8.8, Nacharbeit 1 §8.9, Wiederprüfung 1 §8.10, Nacharbeit 2 §8.11.** |
+| Phase | **Etappe 2 gebaut; Erstprüfung und Wiederprüfung 1 NEEDS_WORK, Nacharbeiten 1 und 2 eingearbeitet.** Etappe 1 abgeschlossen nach fünf Matrixprüfungen und vier Nacharbeiten (§7 bis §7.9); die fünf Restwidersprüche der Transaktionstabelle sind als **NAK-245** ausgegliedert und gehören der Etappe 4. **Etappe 2 — Verträge in drei Sprachen** ist gebaut (§8). Ihre **Erstprüfung** endete NEEDS_WORK mit fünf bestätigten Defekten (§8.8) → **Nacharbeit 1** (§8.9); die **Wiederprüfung 1** schloss B-02 bis B-05 und ließ den B-01-Verbindungsrotbeweis offen (§8.10) → **Nacharbeit 2** (§8.11), zwei Dateien +101/−0, A4 und A4-SI grün, Rotbeweis in 0,51 s an der Zusage. Die Wiederprüfung 2 steht aus (Runde 2 von 3); danach folgt Etappe 3 (DSP-Kern als Bibliothek). |
 | Urteil | **Offen.** Weder T1 noch T2 vergeben. Etappe 1 baut nichts und behauptet deshalb kein gemessenes Produktverhalten; ihr einziger Gegenstand ist, ob §3 die Zusagen des Gate-Textes vollständig und widerspruchsfrei trägt. |
 | Prüfstufe | **T2 gefordert** (`docs/plan/plan.json`, Schritt S26–28, `"stufe": "T2"`). Heute vergeben: **keine**. |
 | Prüfmodell | Codex `gpt-6-astra`, Effort **max**, lesend — für Matrix-, Erst-, Wieder- und Abschlussprüfung. `gpt-5.6-sol` max nur als Gegenprüfer. |
-| Basis-SHA | **Etappe 1:** `e9dbf4b9c11d1cf72aebbecb835c9391a57a0532` — alle Zeilen- und Zeichenangaben in §1 und §2 gelten zu diesem Stand. **Etappe 2:** `2026031f0a8bb0baf12135020be654a82d354a6f`. **Etappe 2, Nacharbeit 1:** `3df34963de3a887600f5f629fc637f52256ace78`; jeweils mit `git rev-parse HEAD` beim Start gemessen, `git status --short` leer. |
+| Basis-SHA | **Etappe 1:** `e9dbf4b9c11d1cf72aebbecb835c9391a57a0532` — alle Zeilen- und Zeichenangaben in §1 und §2 gelten zu diesem Stand. **Etappe 2:** `2026031f0a8bb0baf12135020be654a82d354a6f`. **Nacharbeit 1:** `3df34963de3a887600f5f629fc637f52256ace78`. **Nacharbeit 2:** `c727e620c1d48bcee8ad698a27321980bbd7776e`; jeweils beim Start gemessen, `git status --short` leer. |
 | Kanon vorher | **GRÜN 62/62, Exit 0 auf `1867cac2`** (Abschlusskanon NAK-230, Rohausgabe `docs/beweise/roh/NAK-230-1867cac.md`). Eigene Messung in dieser Sitzung: `git diff --stat 1867cac2..e9dbf4b9 -- eq-copilot broker tools` ist **leer**. Der Codestand des Basis-SHA ist mit dem beglaubigten Kanonstand identisch; die Commits dazwischen berühren nur `docs/`. |
-| Kanon nachher | **Steht aus.** Etappe 2 fährt die Beine ihres Bauplans einzeln (§8.4), die Nacharbeit 1 die davon betroffenen (§8.9.3) — alle grün; der volle abgekoppelte Lauf gehört an das Ende der Etappe 4. |
+| Kanon nachher | **Steht aus.** Etappe 2 fährt die Beine ihres Bauplans einzeln (§8.4), die Nacharbeit 1 die davon betroffenen (§8.9.3), die Nacharbeit 2 die zwei Broker-Beine (§8.11.2) — alle grün; der volle abgekoppelte Lauf gehört an das Ende der Etappe 4. |
 | Ticketpfade | **Etappe 1:** diese eine Datei, `docs/beweise/SONDE-015.md`. **Etappe 2:** die Vertrags-, Plugin-, Broker- und Werkzeugpfade aus §4.5, ohne `eq-copilot/plugin/dsp/` (Etappe 3) und ohne `SondeProcessor.*` (Etappe 4) — der Prozessor bleibt nach §4.1 unberührt. Der Auftrag `docs/beweise/roh/SONDE-015-auftrag.txt` wird nicht angefasst. |
 | Grenze | Etappe 2 baut ausschließlich, was §3 zusagt. Technikfragen ohne Quelle sind vom Dirigenten als R1 bis R15 entschieden (§5); meine Feinheiten stehen je Regel darunter, Abweichungen mit Begründung. Produktfragen werden benannt und einer Fläche zugeordnet, nie hier beantwortet (§5.16). |
 
@@ -2885,5 +2885,73 @@ Alle Zahlen sind aus der Rohausgabe gelesen, nicht abgeschrieben.
 | Auftrag und Urteil | `docs/beweise/roh/SONDE-015-etappe-2-wiederpruefung-1-auftrag.txt`; Urteil wörtlich `docs/beweise/roh/SONDE-015-etappe-2-wiederpruefung-1-9306740.txt` |
 | Urteil | **NEEDS_WORK** — **B-02, B-03, B-04, B-05 geschlossen** (je mit Beleg und Rotbeweis an der Zusage); **B-01 nicht vollständig**: Empfängergrenze 2, Annahme 2/Ablehnung 3 und Registerbindung umgesetzt, der von der Regel verlangte Verbindungs-Rotbeweis fehlt (der bestehende Test `tests_abonnement.rs:275-276` würde unter der Mutation `P2_SCHEMA_MINOR = 1` an fristlosem `ReadFile` hängen statt zu fallen); kein weiterer Bruch |
 | Quellencheck des Dirigenten | am Urteil und an der Rohdatei `SONDE-015-rot-B-01-n1.txt` (nur Koppeltest, Minor-Prädikat, Textriegel): **DEFEKT** des Rotbeweises zur B-01-Regel |
-| Rundenbilanz | `3df34963..9306740d: Produkt 12 Datei(en) +256/-17 | Tests 2 Datei(en) +123/-4 | Pruefwerkzeug 2 Datei(en) +114/-4 | Doku 8 Datei(en) +788/-5` — Runde mit Produktfortschritt |
+| Rundenbilanz | `3df34963..9306740d: Produkt 12 Datei(en) +256/-17 · Tests 2 Datei(en) +123/-4 · Pruefwerkzeug 2 Datei(en) +114/-4 · Doku 8 Datei(en) +788/-5` — Runde mit Produktfortschritt. *(Nacharbeit 2: dieselbe Landmine wie in §8.8 — rohe Pipe-Zeichen in der Zelle rissen `tools/plan/dokuriegel.py`. Ersetzt durch `·`; die Zahlen sind unverändert.)* |
 | Nacharbeit | Etappe 2, Nacharbeit 2 (Runde 2 von 3): `docs/beweise/roh/SONDE-015-etappe-2-nacharbeit-2-auftrag.txt` — nur der B-01-Rest: Broker-Test über den echten Transportweg mit begrenztem Warten, der unter der Mutation das Schließen der Quellverbindung sieht |
+
+### 8.11 Nacharbeit 2 — was eingearbeitet wurde (10.09.2026)
+
+| Merkmal | Wert |
+|---|---|
+| Auftrag | `docs/beweise/roh/SONDE-015-etappe-2-nacharbeit-2-auftrag.txt` — genau der eine Restdefekt **B-01 (Rest)**: der Verbindungs-Rotbeweis über den echten Transportweg mit begrenztem Warten |
+| Basis-SHA | `c727e620c1d48bcee8ad698a27321980bbd7776e`, mit `git pull --ff-only` geholt; `git status --short` war leer |
+| Umfang | **zwei Dateien, +101/−0** — beide im Rust-Transport. Kein Vertrag, kein C++-Ziel, kein Fixture, kein Prüfwerkzeug berührt; die Empfängergrenze selbst stand seit der Nacharbeit 1 richtig. |
+| Beine | **A4 und A4-SI, beide grün** (Exit 0); Rohausgabe `docs/beweise/roh/SONDE-015-etappe2-nacharbeit2-beine.txt` |
+| Rotbeweis | `docs/beweise/roh/SONDE-015-rot-B-01-n2.txt` |
+| Urteil | **Offen.** Die Wiederprüfung dieser Runde steht aus. |
+
+**Was fehlte.** Die Empfängergrenze, die Randwerte und die Registerbindung
+waren mit der Nacharbeit 1 umgesetzt und von der Wiederprüfung 1 bestätigt.
+Offen blieb der von der Regel ausdrücklich verlangte **Verbindungs**-Rotbeweis:
+ein Broker-Test, der unter der Mutation `P2_SCHEMA_MINOR = 1` das **Schließen
+der Quellverbindung** sieht. Der erste Anlauf war daran gescheitert, dass
+`frame_roh_lesen` ein synchrones `ReadFile` **ohne Frist** fährt: fällt die
+Grenze zurück, schließt `verbindung.rs` die *Quell*verbindung, und der Test
+wartete danach auf der weiterhin offenen *Main*-Pipe. Ein Hänger ist kein Rot —
+deshalb hatte die Nacharbeit 1 den vollen Weg aus dem Rotbeweis genommen und
+statt seiner die Gate-Funktion gemessen. Das war die halbe Zusage.
+
+**Wie es geschlossen ist.**
+
+| Teil | Datei:Zeile | Was |
+|---|---|---|
+| Beobachtung ohne Blockieren | `broker/src/transport/server_v3/tests_hilfe.rs:98-127` | `Testclient::zustand()` fragt mit `PeekNamedPipe` den Pipezustand ab, **ohne zu warten**: `None` = die Gegenseite hat geschlossen (`ERROR_BROKEN_PIPE` / `ERROR_PIPE_NOT_CONNECTED`), `Some(n)` = die Verbindung steht und `n` Bytes liegen bereit. Darauf `verbindung_steht()` und `bytes_verfuegbar()`. `lesen` bleibt unverändert — der Vertrag der bestehenden Tests ist nicht angefasst. |
+| Begrenztes Warten | `broker/src/transport/server_v3/tests_hilfe.rs:296-317` | `FRIST_P2_ENTSCHIEDEN_MS` = **2000 ms**, benannt und klein: beide Ausgänge fallen im Lesethread des Servers unmittelbar, die zwei Sekunden sind Reserve für eine belastete Maschine. `warte_auf_p2_entscheidung` kehrt zurück, sobald **eines** von beidem gilt — der Abonnent hat Bytes **oder** die Quellverbindung ist zu. `false` heißt „innerhalb der Frist ist gar nichts passiert" und ist selbst ein Befund, kein Hänger. |
+| Die Zusicherung | `broker/src/transport/server_v3/tests_abonnement.rs:275-306` | Der bestehende Test über den **echten** Transportweg beobachtet die Quellverbindung jetzt **vor** jedem blockierenden Lesen. Drei Zusicherungen in dieser Reihenfolge: die Entscheidung fällt innerhalb der Frist · **die Quellverbindung bleibt offen** · `geschlossen_envelope` steht still. Erst danach der Push an den Abonnenten. |
+
+**Warum die Reihenfolge tragend ist.** Stünde die bounded-Beobachtung hinter
+dem blockierenden Lesen, wäre nichts gewonnen: unter der Mutation käme der Test
+gar nicht bis dorthin. Sie steht deshalb **davor**, und die Zusicherung, die
+unter der Mutation fällt, ist genau die Zusage — `die Quellverbindung bleibt
+offen`. Der Zähler `geschlossen_envelope` steht als zweite, unabhängige
+Beobachtung daneben: er ist die Zahl, die `verbindung.rs` beim Schließen wegen
+eines unbekannten `schema_minor` selbst hochzählt.
+
+**Der Rotbeweis, gemessen.** Mit `P2_SCHEMA_MINOR = 1` fällt der Lauf in
+**0,51 s** an `tests_abonnement.rs:298` mit dem Text
+`die Quellverbindung bleibt offen: der Broker kennt die Fassung 2 des Senders …`;
+ohne die Mutation ist derselbe Lauf in **0,51 s** grün. Kein Hänger, kein
+Nebeneffekt. Der Rotlauf hat eine eigene Zeitgrenze von 180 s bekommen — hinge
+der Test statt zu fallen, stünde **das** als Befund in der Rohdatei, statt die
+Sitzung zu blockieren.
+
+#### 8.11.1 Prüfliste `tools/dirigent/pruefliste.md`, abgehakt für die Nacharbeit 2
+
+| Zeile | Wo gemessen |
+|---|---|
+| **A. Rückstau und Prioritätsklassen** | Nicht berührt: keine Politik, keine Queue, kein Zähler geändert. Der Zähler `geschlossen_envelope` wird nur **gelesen**. |
+| **B. Lebenszyklus** | Genau der Punkt dieser Runde. „Verbinden↔trennen" ist jetzt beidseitig gemessen: am Zielstand bleibt die Quellverbindung offen und der Frame kommt an, unter der Mutation fällt sie innerhalb der Frist. Beides an derselben Zeile, beides begrenzt. |
+| **C. Verträge und Längen** | Nicht berührt: kein Vertrag, kein Feld, keine Länge geändert. Die P2-Fassungszahl steht unverändert im Register aus der Nacharbeit 1. |
+| **D. Bau- und Prüfriegel** | Der Rotlauf ist fail-closed **auch gegen sich selbst**: ein Hänger wird nach 180 s abgebrochen und als „ABGEBROCHEN — der Test haengt, statt zu fallen. Ein Haenger ist kein Rot." in die Rohdatei geschrieben. Genau die Klasse, die diese Runde überhaupt ausgelöst hat, kann sich damit nicht als Grün tarnen. |
+| **E. Behauptung ≤ Messung** | Der Rotbeweis liegt vollständig bei (Mutation eingebaut → rot, Mutation entfernt → grün, beide Läufe im selben Dokument), und die Fallstelle ist die Zusage selbst. Die Frist steht als benannte Konstante mit Begründung, nicht als Zahl im Aufruf. |
+| **F. Änderungssatz** | Testhilfe und Zusicherung liegen in **einem** Commit; die Hilfe hat ohne den Test keinen Zweck und der Test ohne die Hilfe keine Frist. |
+
+#### 8.11.2 Die Beine dieser Runde
+
+Nur die Broker-Beine: der Restdefekt liegt vollständig im Rust-Transport und
+seinen Testhilfen. Kein Vertrag, kein C++-Ziel und kein Fixture ist berührt —
+die übrigen Beine der Etappe messen unverändert den Stand aus §8.9.3.
+
+| Bein | Ergebnis |
+|---|---|
+| **A4** `cargo test` (Broker, alle Suiten) | GRÜN — Exit 0, keine Suite mit `FAILED`, keine `failures:`-Zeile in der Rohausgabe |
+| **A4-SI** `store_crash_matrix --ignored` | GRÜN — Exit 0 |

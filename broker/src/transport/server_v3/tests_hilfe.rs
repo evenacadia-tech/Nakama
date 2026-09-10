@@ -95,6 +95,47 @@ impl Testclient {
         true
     }
 
+    /// Zustand der Verbindung, OHNE zu blockieren.
+    ///
+    /// `None` = die Gegenseite hat ihr Ende geschlossen; `Some(n)` = die
+    /// Verbindung steht und `n` Bytes liegen bereit.
+    ///
+    /// 🔑 SONDE-015 Etappe 2, Nacharbeit 2 (B-01-Rest): `lesen` ist ein
+    /// synchrones `ReadFile` OHNE Frist. Wer damit beobachten will, ob der
+    /// Broker eine Verbindung SCHLIESST, wartet im Zweifel ewig - ein Haenger
+    /// ist kein Rot, und genau daran ist der erste Verbindungs-Rotbeweis
+    /// gescheitert. `PeekNamedPipe` fragt den Zustand ab, ohne zu warten: es
+    /// meldet FALSE, sobald die Gegenseite ihr Ende geschlossen hat
+    /// (`ERROR_BROKEN_PIPE` 109 oder `ERROR_PIPE_NOT_CONNECTED` 233), und
+    /// nebenbei, wie viel schon anliegt.
+    ///
+    /// Der Vertrag der bestehenden Tests bleibt unberuehrt: das ist eine
+    /// zusaetzliche Methode, keine Aenderung an `lesen`.
+    pub(super) fn zustand(&self) -> Option<u32> {
+        let mut verfuegbar: u32 = 0;
+        // SAFETY: synchrones Handle; die uebrigen Ausgabezeiger sind laut
+        // Win32-Vertrag optional und werden als NULL uebergeben.
+        let ok = unsafe {
+            windows_sys::Win32::System::Pipes::PeekNamedPipe(
+                self.h,
+                std::ptr::null_mut(),
+                0,
+                std::ptr::null_mut(),
+                &mut verfuegbar,
+                std::ptr::null_mut(),
+            )
+        };
+        (ok != 0).then_some(verfuegbar)
+    }
+
+    pub(super) fn verbindung_steht(&self) -> bool {
+        self.zustand().is_some()
+    }
+
+    pub(super) fn bytes_verfuegbar(&self) -> u32 {
+        self.zustand().unwrap_or(0)
+    }
+
     pub(super) fn lesen(&self, ziel: &mut [u8]) -> usize {
         let mut n: u32 = 0;
         // SAFETY: synchrones Handle, gueltiger Puffer.
@@ -286,6 +327,30 @@ pub(super) fn p2_minor_aus_register() -> u8 {
     wert["wire_envelope_schema_minor"]["aktuell"]
         .as_u64()
         .expect("FELD-IDS.json fuehrt wire_envelope_schema_minor.aktuell") as u8
+}
+
+/// Die Frist, in der sich ein P2-Frame entschieden haben muss: entweder ist
+/// er beim Abonnenten, oder der Broker hat die Quellverbindung geschlossen.
+///
+/// SONDE-015 B-01-Rest: die Regel verlangt ausdruecklich "begrenztes Warten,
+/// kein fristloses `ReadFile`". Die Frist ist klein und benannt - beides
+/// passiert im Lesethread des Servers unmittelbar, nicht nach einer
+/// Zeitgrenze; zwei Sekunden sind Reserve fuer eine belastete Maschine.
+pub(super) const FRIST_P2_ENTSCHIEDEN_MS: u64 = 2_000;
+
+/// Wartet BEGRENZT, bis der gesendete P2-Frame entschieden ist.
+///
+/// Kehrt zurueck, sobald EINES von beidem gilt: der Abonnent hat Bytes, oder
+/// die Quellverbindung ist zu. `false` heisst "innerhalb der Frist ist gar
+/// nichts passiert" - auch das ist ein Befund und kein Haenger.
+pub(super) fn warte_auf_p2_entscheidung(
+    quelle: &Testclient,
+    abonnent: &Testclient,
+    millis: u64,
+) -> bool {
+    warte_auf(millis, || {
+        !quelle.verbindung_steht() || abonnent.bytes_verfuegbar() > 0
+    })
 }
 
 pub(super) fn warte_auf(millis: u64, mut bedingung: impl FnMut() -> bool) -> bool {

@@ -1,0 +1,202 @@
+SONDE-015 Etappe 2, Nacharbeit 2 - Beine der Runde
+Lauf: 2026-09-10T07:01:27
+Nur die Broker-Beine: der Restdefekt B-01 liegt vollstaendig im Rust-Transport
+und seinen Testhilfen. Kein Vertrag, kein C++-Ziel und kein Fixture beruehrt.
+==============================================================================
+### A4 - cargo test (Broker, alle Suiten)
+$ cargo test --manifest-path broker/Cargo.toml --color never
+entscheidet_vor_der_migration ... ok
+test kill_waehrend_migration_1 ... ok
+test schema_major_1_schreibt_und_major_plus_1_degradiert_read_only ... ok
+test store_pfad_bleibt_bei_nicht_utf8_zeichen_unveraendert ... ok
+test store_pfad_nutzt_folderid_localappdata ... ok
+test projektion_rebuild_nach_neustart_unter_testgrenze ... ok
+test projektion_rebuild_ist_deterministisch_und_unter_testgrenze ... ok
+Verbindung erstellt f�r C:\Users\phili\AppData\Local\Temp\nakama-sonde011-toctou002-27780-7be796a0e0d4430d99ff56fe94b3458d\verweis <<===>> C:\Users\phili\AppData\Local\Temp\nakama-sonde011-toctou002-27780-7be796a0e0d4430d99ff56fe94b3458d\echt
+test store_weist_reparse_punkt_im_pfad_ab ... ok
+test store_start_protokolliert_sqlite_version ... ok
+test sessions_projection_composite_key_ohne_fuehrungsrestore ... ok
+test verlorenes_command_ack_retry_liefert_idempotent_wiederholt_ohne_wire_uuid ... ignored, A4-SI: braucht das frisch gebaute echte EqCopIpcTest-Binary
+test volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen ... ignored, A4-SI: Junction-Umhaengen unter einer offenen SQLite-Datenbank
+test snapshot_outbox_kompaktierung_verliert_committete_wirkung_nicht ... ok
+test wiederholter_snapshot_letzter_gewinnt_idempotent ... ignored, A4-SI: absoluter Empfaengerzustand wird real aus Snapshots gesetzt
+test store_kanal_cap_und_naechster_trennt ... ok
+test produkt_coordinator_committet_alle_persistenten_p0_befehle_und_ackt_retries ... ok
+test volumenklassifikation_faellt_am_geoeffneten_objekt ... ok
+test subscriberkill_vor_und_nach_snapshot_anwendung_bleibt_idempotent ... ok
+test produkt_coordinator_ackt_keine_wirkung_die_nicht_stattfindet ... ok
+test store_writer_ist_alleiniger_write_connection_besitzer ... ok
+test truncate_nur_in_ruhelage ... ok
+test resubscribe_uebernimmt_live_bestaetigungsbedarf_waehrend_store_flush_blockiert ... ok
+test produkt_coordinator_legt_passage_und_experiment_aus_dem_wire_an ... ok
+test gescheiterter_leerlauf_checkpoint_wird_wiederholt ... ok
+test snapshot_commit_bleibt_bei_konkurrierenden_flushes_monoton ... ok
+
+test result: ok. 67 passed; 0 failed; 22 ignored; 0 measured; 0 filtered out; finished in 1.57s
+
+
+running 12 tests
+test ein_kaputter_frame_im_strom_beendet_den_strom ... ok
+test feindliche_laengen_enden_in_der_erwarteten_fehlerklasse ... ok
+test ingress_bytebudget_verwirft_p2_zuerst ... ok
+test ratengrenze_haelt_unter_flut ... ok
+test ingress_bytebudget_greift_am_produktionskonstruktor_vor_der_slotgrenze ... ok
+test zufallsbytes_bringen_den_pruefer_nie_aus_dem_tritt ... ok
+test jedes_gekippte_payloadbit_eines_p2_frames_faellt_an_der_crc ... ok
+test payload_an_der_paketgrenze_wird_angenommen_darueber_nicht ... ok
+test schreiben_und_pruefen_sind_zueinander_invers ... ok
+test fragmentierung_aendert_das_ergebnis_nie ... ok
+test einzelne_gekippte_bytes_werden_nie_still_angenommen ... ok
+test panik_im_verbindungsthread_wird_gezaehlt ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.20s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:2908:9
+     |
+2908 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+     |
+     = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:3893:9
+     |
+3893 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:3940:9
+     |
+3940 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: field `clock` is never read
+   --> tests\sonde013_verdrahtung.rs:280:5
+    |
+277 | struct HarnischMitStore {
+    |        ---------------- field in this struct
+...
+280 |     clock: Arc<ManualClock>,
+    |     ^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `sonde_mit_evidenz` is never used
+    --> tests\sonde013_verdrahtung.rs:1907:4
+     |
+1907 | fn sonde_mit_evidenz(h: &HarnischMitStore, anzahl: usize) -> HelloControl {
+     |    ^^^^^^^^^^^^^^^^^
+
+warning: method `snapshot` is never used
+   --> tests\sonde014_gegenbeispiele.rs:409:8
+    |
+225 | impl Buehne {
+    | ----------- method in this implementation
+...
+409 |     fn snapshot(&self) -> Value {
+    |        ^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (test "sonde014_gegenbeispiele") generated 1 warning
+warning: `eqcop-broker` (test "sonde013_verdrahtung") generated 5 warnings (run `cargo fix --test "sonde013_verdrahtung" -p eqcop-broker` to apply 3 suggestions)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 7.41s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+     Running unittests src\main.rs (broker\target\debug\deps\eqcop_broker-ca9e718cafceb3fd.exe)
+     Running unittests src\bin\eqcop-broker-probe.rs (broker\target\debug\deps\eqcop_broker_probe-b88c4dea11911cba.exe)
+     Running unittests src\bin\eqcop-broker-sonde012-probe.rs (broker\target\debug\deps\eqcop_broker_sonde012_probe-c5b5f2436e1f9b1a.exe)
+     Running unittests src\bin\eqcop-broker-v3probe.rs (broker\target\debug\deps\eqcop_broker_v3probe-68d798019699ad16.exe)
+     Running unittests src\bin\eqcop-store-crash-worker.rs (broker\target\debug\deps\eqcop_store_crash_worker-59d4e14b92d5bd67.exe)
+     Running tests\broker_idle.rs (broker\target\debug\deps\broker_idle-335b469e8f1e1607.exe)
+     Running tests\contract_cross_language.rs (broker\target\debug\deps\contract_cross_language-c8ce76809755fc6f.exe)
+     Running tests\coordinator_model.rs (broker\target\debug\deps\coordinator_model-c22cf73cd241058f.exe)
+     Running tests\security_vectors.rs (broker\target\debug\deps\security_vectors-4a68d58de2e43d5b.exe)
+     Running tests\sonde012_sources_slice.rs (broker\target\debug\deps\sonde012_sources_slice-9ed9a59636c4c334.exe)
+     Running tests\sonde013_experiment.rs (broker\target\debug\deps\sonde013_experiment-994d32cd62e1b354.exe)
+     Running tests\sonde013_passage.rs (broker\target\debug\deps\sonde013_passage-1f134177ed15bbcd.exe)
+     Running tests\sonde013_prepost.rs (broker\target\debug\deps\sonde013_prepost-b89fd89ce4865d4e.exe)
+     Running tests\sonde013_taint.rs (broker\target\debug\deps\sonde013_taint-8f6252999ec5716d.exe)
+     Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)
+     Running tests\sonde014_befund.rs (broker\target\debug\deps\sonde014_befund-c35ffee8c5e9641a.exe)
+     Running tests\sonde014_gegenbeispiele.rs (broker\target\debug\deps\sonde014_gegenbeispiele-4e737afb3cd092a5.exe)
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+     Running tests\sonde014_maskierung.rs (broker\target\debug\deps\sonde014_maskierung-36a5a296083f6ed6.exe)
+     Running tests\sonde014_nacharbeit1.rs (broker\target\debug\deps\sonde014_nacharbeit1-207edf2a5c77e38c.exe)
+     Running tests\sonde014_nacharbeit2.rs (broker\target\debug\deps\sonde014_nacharbeit2-f8f5227563a8d0ca.exe)
+     Running tests\sonde014_nacharbeit3.rs (broker\target\debug\deps\sonde014_nacharbeit3-ef08965e24e527e8.exe)
+     Running tests\sonde014_p5_korpus.rs (broker\target\debug\deps\sonde014_p5_korpus-b59f509449eb57a8.exe)
+     Running tests\sonde014_proposal.rs (broker\target\debug\deps\sonde014_proposal-7c92fc847c987d9d.exe)
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+     Running tests\store_crash_matrix.rs (broker\target\debug\deps\store_crash_matrix-4ebee0ee77644d63.exe)
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-k04-27780-5099c6d5db1a4df8803ffbbe03af66c0\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-k07-27780-df424d91ac724a2288652e1e25ca8721\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-k06-27780-98879397351748a58adc2492190cfe41\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-k09-27780-0b6ab0c9d8fd4efeb6008c938b3d65fd\nakama-broker.sqlite3
+     Running tests\transport_fuzz.rs (broker\target\debug\deps\transport_fuzz-e68c0b23ba7390d0.exe)
+   Doc-tests eqcop_broker
+EXIT=0  URTEIL=GRUEN
+------------------------------------------------------------------------------
+### A4-SI - cargo test store_crash_matrix --ignored
+$ cargo test --manifest-path broker/Cargo.toml --color never --test store_crash_matrix -- --ignored --test-threads=1
+running 22 tests
+test blockierter_store_writer_bestaetigt_nichts_und_p2_laeuft ... ok
+test blockierter_writer_haelt_coordinator_und_store_nicht ... ok
+test descriptor_setzen_verlangt_jedes_pflichtfeld ... ok
+test descriptor_setzen_weist_beitragsklasse_ab ... ok
+test eviction_cleanup_vor_push ... ok
+test jeder_resubscribe_liefert_aktuellen_absoluten_snapshot ... ok
+test kill_nach_commit_vor_command_ack_retry_antwortet_idempotent_wiederholt_ohne_wire_uuid ... phase_b_command_client result=idempotent_wiederholt connected=1 queued=1 answered=1 wire_uuid=0
+ok
+test kill_vor_persist_mit_echtem_cpp_client_antwortet_angewandt_ohne_wire_uuid ... phase_b_command_client result=angewandt connected=1 queued=1 answered=1 wire_uuid=0
+ok
+test kill_waehrend_commit_mit_echtem_cpp_client_antwortet_angewandt ... phase_b_command_client result=angewandt connected=1 queued=1 answered=1 wire_uuid=0
+ok
+test konfliktriegel_deckel_gilt_auch_im_reportpfad_des_verdraengten_links ... ok
+test nonce_verdraengung_cleanup_vor_altem_report ... ok
+test p1_snapshot_abfluss_ohne_reconnect_aber_writefehler_liefert_aktuellen_snapshot ... ok
+test persistenter_p0_trifft_den_lebenden_link_derselben_adresse ... ok
+test phase_b_hat_keinen_wire_consumer_fuer_nicht_koaleszierbare_events ... ok
+test reconnect_snapshot_enthaelt_committete_wirkung_genau_einmal ... ok
+test session_snapshot_koalesziert_nach_objektschluessel ... ok
+test session_snapshot_zeigt_join_kandidat_ohne_neue_familie ... ok
+test session_subscription_hat_nur_snapshot_push ... ok
+test session_subscription_sendet_nur_aktuellen_absoluten_snapshot ... ok
+test verlorenes_command_ack_retry_liefert_idempotent_wiederholt_ohne_wire_uuid ... phase_b_command_client result=idempotent_wiederholt connected=1 queued=1 answered=1 wire_uuid=0
+ok
+test volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen ... Verbindung erstellt f�r C:\Users\phili\AppData\Local\Temp\nakama-sonde011-toctou002-sqlite-handle-31704-42595df256ad499bba41f331d764729a\verweis <<===>> C:\Users\phili\AppData\Local\Temp\nakama-sonde011-toctou002-sqlite-handle-31704-42595df256ad499bba41f331d764729a\ziel-a
+Verbindung erstellt f�r C:\Users\phili\AppData\Local\Temp\nakama-sonde011-toctou002-sqlite-handle-31704-42595df256ad499bba41f331d764729a\verweis <<===>> C:\Users\phili\AppData\Local\Temp\nakama-sonde011-toctou002-sqlite-handle-31704-42595df256ad499bba41f331d764729a\ziel-b
+ok
+test wiederholter_snapshot_letzter_gewinnt_idempotent ... ok
+
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 67 filtered out; finished in 12.80s
+
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.08s
+     Running tests\store_crash_matrix.rs (broker\target\debug\deps\store_crash_matrix-4ebee0ee77644d63.exe)
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-nach_store_commit-31704-a707bee51f2f4702bf937ff65814377f\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-nach_store_commit-31704-a707bee51f2f4702bf937ff65814377f\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-vor_persist-31704-ce48e6f9845f4e3da7af52e561a3e3be\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-vor_persist-31704-ce48e6f9845f4e3da7af52e561a3e3be\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-vor_store_commit-31704-69d51c8bf91c451ebdd71c468a4ad26c\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-vor_store_commit-31704-69d51c8bf91c451ebdd71c468a4ad26c\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-nach_store_commit-31704-9825b5be54cc44a997295dbc373eab00\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-nach_store_commit-31704-9825b5be54cc44a997295dbc373eab00\nakama-broker.sqlite3
+EXIT=0  URTEIL=GRUEN
+------------------------------------------------------------------------------
+UEBERSICHT
+A4      GRUEN  Doc-tests eqcop_broker
+A4-SI   GRUEN  Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-nach_store_commit-31704-
+
+2/2 Beine gruen, 0 rot.

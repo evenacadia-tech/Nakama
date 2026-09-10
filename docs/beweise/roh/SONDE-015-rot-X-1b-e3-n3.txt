@@ -1,0 +1,40 @@
+SONDE-015 Etappe 3, Nacharbeit 3 - Rotbeweis X-1b (M-55, Entscheid E-34: Einblenden)
+Stand:  2026-09-10 16:21
+Zusage: Ein Candidate-Pfad, der aus der Ruhe einblendet, ist fuer die Hoermatrix noch nicht da; sie blendet erst danach auf Candidate, und identische A/B-Zustaende nullen auch beim Einblenden.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp:798
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+    const bool candEinblendend = zk.uebergang == Uebergang::crossfade && zk.quelle < 0;
+nachher:
+    const bool candEinblendend = false;
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 16:21:04, mutierte Quelle 16:20:59, Binary juenger: ja
+Exitcode: 1
+247 geprueft, 1 Fehler
+DSP-GOLDEN FEHLGESCHLAGEN
+
+Gefallene Pruefungen:
+  FEHLER  candidate_einblendung_bei_identischen_zustaenden_nullt (M-55, E-34)  [groesste Abweichung zu Processed 0.114533335 an Sample 403 von 2304, Auswahl am Ende wirksam: ja]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: candidate_einblendung_bei_identischen_zustaenden_nullt (M-55, E-34)
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt):
+  ok      candidate_abbruch_bei_identischen_zustaenden_nullt (M-55, X-1) (a) im Einblenden  [groesste Abweichung zu Processed 0.000000000 an Sample 0 von 2144, Toleranz 0.000000119]
+  ok      candidate_abbruch_bei_identischen_zustaenden_nullt (M-55, X-1) (b) nach abgeschlossenem Fade  [groesste Abweichung zu Processed 0.000000000 an Sample 0 von 3104, Toleranz 0.000000119]
+  ok      candidate_abbruch_bei_identischen_zustaenden_nullt (M-55, X-1) (c) im Ausblenden  [groesste Abweichung zu Processed 0.000000000 an Sample 0 von 3168, Toleranz 0.000000119]
+  ok      mit_kandidat_greift_die_auswahl (M-56)
+  ok      candidate_abbruch_im_hoermatrix_fade_blendet_vom_mischstand_zurueck (M-46, B-8, W-5)  [am Abbruchsample 0.000000000, max Sprung 0.002130926 gegen Fadeschritt 0.002130918, geerntet 1, belegt 1, Candidate-Slots -1/-1]
+  ok      candidate_ende_blendet_aus_und_gibt_beide_baenke_frei (M-46, B-8)  [geerntet 2, belegt 1, Candidate-Slots -1/-1, max Sprung 0.0022975 gegen Fadeschritt 0.0019224, danach gleich Processed: ja]
+
+Hinweis: Die Mutation laesst die Hoermatrix wieder sofort auf einen Candidate blenden, der selbst noch von Dry her einblendet: zwei Fades uebereinander, bei identischen Zustaenden eine Delle Richtung Dry.
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Quelle bytegleich zurueckgespielt: ja (SHA-256 B2A6D2F47F2167568DF08AA55465C5B4EFDF2FAD3860C1446CFA1776D5E0F75E)
+Bau: Exit 0; Binary 16:21:12, Quelle 16:21:08, Binary juenger: ja
+Exitcode: 0
+247 geprueft, 0 Fehler
+DSP-GOLDEN OK

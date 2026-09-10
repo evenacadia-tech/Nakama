@@ -1,0 +1,49 @@
+SONDE-015 Etappe 3, Nacharbeit 3 - Rotbeweis X-1 (M-55, M-46, REGEL X-1)
+Stand:  2026-09-10 16:17
+Zusage: Beim Candidate-Abbruch ist die Hoerrueckblende die einzige Blende: kein paralleler Fade der Candidate-Bank nach Dry, identische A/B-Zustaende nullen ueber den ganzen Lauf - im Einblenden, nach abgeschlossenem Fade und im Ausblenden.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp:315
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+        const bool hoerHalt = p == Pfad::candidate && hoermatrixMischtCandidate();
+nachher:
+        const bool hoerHalt = false;
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 16:17:33, mutierte Quelle 16:17:05, Binary juenger: ja
+Exitcode: 1
+247 geprueft, 4 Fehler
+DSP-GOLDEN FEHLGESCHLAGEN
+
+Gefallene Pruefungen:
+  FEHLER  candidate_abbruch_im_hoermatrix_fade_blendet_vom_mischstand_zurueck (M-46, B-8, W-5)  [am Abbruchsample 0.000000000, max Sprung 0.002647012 gegen Fadeschritt 0.002130918, geerntet 1, belegt 1, Candidate-Slots -1/-1]
+  FEHLER  candidate_abbruch_bei_identischen_zustaenden_nullt (M-55, X-1) (a) im Einblenden  [groesste Abweichung zu Processed 0.004519463 an Sample 95 von 2144, Toleranz 0.000000119]
+  FEHLER  candidate_abbruch_bei_identischen_zustaenden_nullt (M-55, X-1) (b) nach abgeschlossenem Fade  [groesste Abweichung zu Processed 0.074644625 an Sample 1152 von 3104, Toleranz 0.000000119]
+  FEHLER  candidate_abbruch_bei_identischen_zustaenden_nullt (M-55, X-1) (c) im Ausblenden  [groesste Abweichung zu Processed 0.041987598 an Sample 1184 von 3168, Toleranz 0.000000119]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: candidate_abbruch_bei_identischen_zustaenden_nullt (M-55, X-1) (a) im Einblenden
+  erwartet: candidate_abbruch_bei_identischen_zustaenden_nullt (M-55, X-1) (b) nach abgeschlossenem Fade
+  erwartet: candidate_abbruch_bei_identischen_zustaenden_nullt (M-55, X-1) (c) im Ausblenden
+
+Mitgefallen, weil sie dieselbe Zusage tragen (deklariert):
+  FEHLER  candidate_abbruch_im_hoermatrix_fade_blendet_vom_mischstand_zurueck (M-46, B-8, W-5)  [am Abbruchsample 0.000000000, max Sprung 0.002647012 gegen Fadeschritt 0.002130918, geerntet 1, belegt 1, Candidate-Slots -1/-1]
+      Grund: derselbe Doppelfade bei NICHT identischen Zustaenden: die Candidate-Bank wandert waehrend der Rueckblende nach Dry und hebt den Sprung je Sample ueber die Fadeschrittweite.
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt):
+  ok      candidate_bank_klingt_bis_zum_ende_der_rueckblende_und_dient_dann_aus (M-46, X-1) (a) im Einblenden  [in der Rueckblende gehalten: ja, ACK dort 0, danach geerntet 1, belegt 1, Candidate-Slots -1/-1]
+  ok      candidate_bank_klingt_bis_zum_ende_der_rueckblende_und_dient_dann_aus (M-46, X-1) (b) nach abgeschlossenem Fade  [in der Rueckblende gehalten: ja, ACK dort 0, danach geerntet 1, belegt 1, Candidate-Slots -1/-1]
+  ok      candidate_bank_klingt_bis_zum_ende_der_rueckblende_und_dient_dann_aus (M-46, X-1) (c) im Ausblenden  [in der Rueckblende gehalten: ja, ACK dort 0, danach geerntet 1, belegt 1, Candidate-Slots -1/-1]
+  ok      candidate_einblendung_bei_identischen_zustaenden_nullt (M-55, E-34)  [groesste Abweichung zu Processed 0.000000000 an Sample 0 von 2304, Auswahl am Ende wirksam: ja]
+  ok      candidate_ende_blendet_aus_und_gibt_beide_baenke_frei (M-46, B-8)  [geerntet 2, belegt 1, Candidate-Slots -1/-1, max Sprung 0.0022975 gegen Fadeschritt 0.0019224, danach gleich Processed: ja]
+  ok      identische_zustaende_nullen_beim_wechsel (M-55)  [groesste Abweichung zum Eingang 0.000000014]
+
+Hinweis: Die Mutation schaltet genau den parallelen Fade nach Dry wieder ein: die ENDE-Marke des Candidate nimmt immer den Crossfade in die Ruhe, auch wenn die Hoermatrix noch Candidate-Anteile mischt. Die Lebenszyklusfaelle bleiben gruen - auch der Crossfade haelt die Bank 256 Samples und gibt sie ueber den ACK frei -, gefallen ist der Nullvergleich.
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Quelle bytegleich zurueckgespielt: ja (SHA-256 B2A6D2F47F2167568DF08AA55465C5B4EFDF2FAD3860C1446CFA1776D5E0F75E)
+Bau: Exit 0; Binary 16:17:41, Quelle 16:17:37, Binary juenger: ja
+Exitcode: 0
+247 geprueft, 0 Fehler
+DSP-GOLDEN OK

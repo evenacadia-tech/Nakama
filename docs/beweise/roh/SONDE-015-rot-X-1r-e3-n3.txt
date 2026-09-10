@@ -1,0 +1,52 @@
+SONDE-015 Etappe 3, Nacharbeit 3 - Rotbeweis X-1r (M-46, REGEL X-1: Ausdienen nach der Rueckblende)
+Stand:  2026-09-10 16:20
+Zusage: Nach dem Ende der Hoerrueckblende dient die gehaltene Candidate-Bank ueber den regulaeren Weg aus (ACK, Reclaim); danach sind beide Candidate-Baenke frei und die ACKs geerntet.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp:274
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+    baenke.meldeAusgedient (z.quelle);
+nachher:
+    // baenke.meldeAusgedient (z.quelle);
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0; Binary 16:20:12, mutierte Quelle 16:20:07, Binary juenger: ja
+Exitcode: 1
+247 geprueft, 5 Fehler
+DSP-GOLDEN FEHLGESCHLAGEN
+
+Gefallene Pruefungen:
+  FEHLER  candidate_ende_blendet_aus_und_gibt_beide_baenke_frei (M-46, B-8)  [geerntet 1, belegt 2, Candidate-Slots -1/-1, max Sprung 0.0022975 gegen Fadeschritt 0.0019224, danach gleich Processed: ja]
+  FEHLER  candidate_abbruch_im_hoermatrix_fade_blendet_vom_mischstand_zurueck (M-46, B-8, W-5)  [am Abbruchsample 0.000000000, max Sprung 0.002130926 gegen Fadeschritt 0.002130918, geerntet 0, belegt 2, Candidate-Slots -1/-1]
+  FEHLER  candidate_bank_klingt_bis_zum_ende_der_rueckblende_und_dient_dann_aus (M-46, X-1) (a) im Einblenden  [in der Rueckblende gehalten: ja, ACK dort 0, danach geerntet 0, belegt 2, Candidate-Slots -1/-1]
+  FEHLER  candidate_bank_klingt_bis_zum_ende_der_rueckblende_und_dient_dann_aus (M-46, X-1) (b) nach abgeschlossenem Fade  [in der Rueckblende gehalten: ja, ACK dort 0, danach geerntet 0, belegt 2, Candidate-Slots -1/-1]
+  FEHLER  candidate_bank_klingt_bis_zum_ende_der_rueckblende_und_dient_dann_aus (M-46, X-1) (c) im Ausblenden  [in der Rueckblende gehalten: ja, ACK dort 0, danach geerntet 0, belegt 2, Candidate-Slots -1/-1]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: candidate_bank_klingt_bis_zum_ende_der_rueckblende_und_dient_dann_aus (M-46, X-1) (a) im Einblenden
+  erwartet: candidate_bank_klingt_bis_zum_ende_der_rueckblende_und_dient_dann_aus (M-46, X-1) (b) nach abgeschlossenem Fade
+  erwartet: candidate_bank_klingt_bis_zum_ende_der_rueckblende_und_dient_dann_aus (M-46, X-1) (c) im Ausblenden
+
+Mitgefallen, weil sie dieselbe Zusage tragen (deklariert):
+  FEHLER  candidate_abbruch_im_hoermatrix_fade_blendet_vom_mischstand_zurueck (M-46, B-8, W-5)  [am Abbruchsample 0.000000000, max Sprung 0.002130926 gegen Fadeschritt 0.002130918, geerntet 0, belegt 2, Candidate-Slots -1/-1]
+      Grund: traegt dieselbe ACK-Zusage (M-46): sein Abbruch liegt im Hoermatrix-Fade und laeuft deshalb ueber den Hoerhalt.
+  FEHLER  candidate_ende_blendet_aus_und_gibt_beide_baenke_frei (M-46, B-8)  [geerntet 1, belegt 2, Candidate-Slots -1/-1, max Sprung 0.0022975 gegen Fadeschritt 0.0019224, danach gleich Processed: ja]
+      Grund: traegt dieselbe ACK-Zusage (M-46): die Hoermatrix steht beim Abbruch auf Candidate, die zweite Candidate-Bank endet ueber den Hoerhalt.
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt):
+  ok      candidate_abbruch_bei_identischen_zustaenden_nullt (M-55, X-1) (a) im Einblenden  [groesste Abweichung zu Processed 0.000000000 an Sample 0 von 2144, Toleranz 0.000000119]
+  ok      candidate_abbruch_bei_identischen_zustaenden_nullt (M-55, X-1) (b) nach abgeschlossenem Fade  [groesste Abweichung zu Processed 0.000000000 an Sample 0 von 3104, Toleranz 0.000000119]
+  ok      candidate_abbruch_bei_identischen_zustaenden_nullt (M-55, X-1) (c) im Ausblenden  [groesste Abweichung zu Processed 0.000000000 an Sample 0 von 3168, Toleranz 0.000000119]
+  ok      candidate_einblendung_bei_identischen_zustaenden_nullt (M-55, E-34)  [groesste Abweichung zu Processed 0.000000000 an Sample 0 von 2304, Auswahl am Ende wirksam: ja]
+  ok      null_allokationen_im_callback_samt_programmwechseln (M-41, M-47, B-25)  [4000 Bloecke, 4179358 Samples, 71 Blockrand-Uebernahmen, 50 Baenke geerntet, busy_retry 0, Testzaehler 0, Kernzaehler 0]
+  ok      bankpool_parallel_ohne_rennen (M-122)  [115 Bloecke, 3000 Publikationen, 0 Invariantenbrueche]
+
+Hinweis: Ohne den ACK bleibt die gehaltene Bank nach der Rueckblende dauerhaft verblassend. Der Klang aendert sich nicht - der Nullvergleich bleibt gruen -, aber der Pool bekommt die Bank nie zurueck; gefallen ist die Zusage des regulaeren Wegs.
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Quelle bytegleich zurueckgespielt: ja (SHA-256 B2A6D2F47F2167568DF08AA55465C5B4EFDF2FAD3860C1446CFA1776D5E0F75E)
+Bau: Exit 0; Binary 16:20:21, Quelle 16:20:17, Binary juenger: ja
+Exitcode: 0
+247 geprueft, 0 Fehler
+DSP-GOLDEN OK

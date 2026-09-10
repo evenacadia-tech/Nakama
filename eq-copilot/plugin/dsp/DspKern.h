@@ -18,19 +18,35 @@
                    -> Hoermatrix (Dry / Processed / Delta / Candidate)
                       -> Ausgang
 
+    Der Candidate-Pfad ist derselbe Aufbau auf eigenen Baenken; sein Tap
+    heisst post_candidate.
+
     ZWEI ZUSAGEN, DIE DIE FORM BESTIMMEN:
 
     1. Ausgeschaltet wird NICHTS geschrieben. Nicht "mit 1,0 multipliziert",
        nicht "durch neutrale Biquads gerechnet" - der Puffer wird nicht
-       angefasst (M-01, M-05). Deshalb hat jede neutrale Stufe einen
-       Kurzschluss, und deshalb prueft der Kurzschluss den dB-Wert und nicht
-       den linearen Faktor.
+       angefasst (M-01, M-05), und zwar unabhaengig davon, was die
+       Hoermatrix gerade waehlt (B-3): die Hoermatrix liegt HINTER dem
+       engagierten Pfad, nicht vor dem Ausgang eines ausgeschalteten.
 
     2. Der Passthrough SANITISIERT NICHTS (M-50). Ein NaN im ausgeschalteten
-       Zustand kommt unveraendert heraus. Ein Passthrough, der Werte
-       repariert, waere eine Verarbeitung, die niemand eingeschaltet hat -
-       und der Nulltest waere keine Bitgleichheit mehr, sondern eine
-       Behauptung.
+       Zustand kommt unveraendert heraus.
+
+    DER LEBENSZYKLUS IST EIN GESCHLOSSENER AUTOMAT (Nacharbeit 1, Ursache
+    der Befunde B-1 und B-5 bis B-12):
+
+    - Die Uebernahme kennt die Generation (`DspBankPool`, B-1, B-12).
+    - Jeder Pfad fuehrt einen VOLLSTAENDIGEN eigenen Zustand (`PfadZustand`):
+      aktive Bank, Quellbank seines Uebergangs, Uebergangsart und -rest,
+      eigene fuenf Rampen und eigene acht Auslenkungen (B-6, B-7, B-9).
+    - Ein Uebergang endet IMMER: ein Wechsel, der waehrend eines laufenden
+      Uebergangs eintrifft, bleibt publiziert und wird am ersten Blockrand
+      NACH dessen Ende genommen (B-5, Entscheid E-17). Jeder Uebergang faengt
+      damit beim zuletzt ausgegebenen Signal an.
+    - Ausschalten und Candidate-Ende laufen ueber den regulaeren Weg: die
+      ENDE-Marke wird publiziert, am Blockrand genommen, die Bank blendet aus
+      und dient mit ACK aus; reserviert wird dafuer nichts (B-8, B-10, E-18).
+    - Uebernommen wird genau einmal je aeusserem `verarbeite`-Aufruf (B-11).
 
     WAS HIER NICHT LIEGT: Transaktionen, Revisionen, `state_hash`, Undo,
     Preset, APVTS, Telemetrie und die Schutz-Zonen. Der Kern nimmt einen
@@ -63,7 +79,8 @@ public:
         dieses Blocks gilt als verworfen und wird gezaehlt (M-48). */
     void bereiteVor (double samplerate, int maxBlock);
 
-    /** Gibt die Puffer frei und setzt alle Zustaende zurueck. */
+    /** Gibt die Puffer frei und setzt alle Zustaende zurueck. Der
+        Generationszaehler des Pools bleibt stehen (B-12). */
     void freigeben();
 
     double samplerate() const noexcept { return abtastrate; }
@@ -73,18 +90,25 @@ public:
     /** Baut aus dem (bereits validierten) DTO ein Programm, legt es in eine
         freie Bank und publiziert sie fuer den Pfad.
 
+        Ein Zustand mit `eq_enabled = false` reserviert KEINE Bank: er
+        publiziert die ENDE-Marke des Pfades (M-07, B-10). Der abgeleitete
+        Auto-Gain-Wert wird trotzdem gerechnet und ist lesbar (M-35).
+
         Liefert false, wenn keine Bank frei ist - das ist `busy_retry`
         (M-44). Der Aufrufer wiederholt; gepuffert oder erzwungen wird
         nichts. */
     bool uebernehmeZustand (const nakama::parameter::DspSatz& satz, Pfad p = Pfad::committed);
 
-    /** Beendet den Candidate-Pfad neutral: die Auswahl `Candidate` faellt
-        danach sichtbar auf Processed zurueck (M-46, M-56). */
+    /** Beendet den Candidate-Pfad als gekoppelte Lebenszyklusoperation
+        (M-46, B-8): die ENDE-Marke wird publiziert, der Pfad blendet am
+        naechsten Blockrand klickfrei aus, seine Baenke dienen ueber den ACK
+        aus. Die Auswahl `Candidate` faellt sofort sichtbar auf Processed
+        zurueck (M-56). */
     void beendeCandidate();
 
     /** Erntet die ACKs des Audiothreads und gibt Baenke frei. Ohne diesen
-        Aufruf laeuft der Pool nach vier Wechseln in `busy_retry` - genau
-        so, wie der Vertrag es will. */
+        Aufruf laeuft der Pool in `busy_retry` - genau so, wie der Vertrag es
+        will. */
     int pflege() noexcept;
 
     DspBankPool&       pool() noexcept       { return baenke; }
@@ -95,9 +119,22 @@ public:
     /** Verarbeitet einen Block in-place. `kanaele` zeigt auf 1 oder 2
         Kanaele. Schreibt bei ausgeschaltetem Kern KEINEN Sample.
 
-        Ein Block groesser als `maxBlock` laeuft in Stuecken durch: verworfen
-        wird die ANALYSE (der Tap dieses Blocks), nie Audio (M-48). */
+        Die Programmuebernahme beider Pfade laeuft genau EINMAL je Aufruf,
+        vor dem ersten Sample (B-11). Ein Block groesser als `maxBlock` laeuft
+        in Stuecken durch: die Stueckelung begrenzt nur den Puffer, sie
+        erzeugt keine Uebernahmegrenze; verworfen wird die ANALYSE, nie Audio
+        (M-48). */
     void verarbeite (float* const* kanaele, int numKanaele, int numSamples) noexcept;
+
+    /** NUR fuer B6 (B-11): wird zwischen zwei Teilstuecken eines
+        uebergrossen Blocks gerufen, damit der Test deterministisch eine
+        Publikation MITTEN in einen aeusseren Aufruf legen kann. Im Produkt
+        ist er nie gesetzt. */
+    void setzeTeilstueckHaken (void (*haken) (void*), void* kontext) noexcept
+    {
+        teilstueckHaken = haken;
+        teilstueckKontext = kontext;
+    }
 
     //== Hoermatrix (R10) ===================================================
 
@@ -108,8 +145,7 @@ public:
     Hoermatrix gewuenschteHoermatrix() const noexcept { return hoerwunsch.load (std::memory_order_acquire); }
 
     /** Der WIRKSAME Zustand - nicht der gewuenschte. `Candidate` ohne
-        Kandidat faellt hier sichtbar auf Processed zurueck (M-56); ein
-        Getter, der den Wunsch meldet, waere ein totes Element. */
+        Kandidat faellt hier sichtbar auf Processed zurueck (M-56). */
     Hoermatrix wirksameHoermatrix() const noexcept { return hoerwirksam.load (std::memory_order_acquire); }
 
     //== Taps ===============================================================
@@ -120,21 +156,18 @@ public:
     int tapLaenge() const noexcept { return tapGueltig; }
     int tapKanaele() const noexcept { return letzteKanaele; }
 
-    /** Liegt ueberhaupt ein Candidate-Programm an? */
+    /** Liegt ein Candidate-Programm an (Wunsch des Workers)? */
     bool candidateVorhanden() const noexcept { return candidateAktiv.load (std::memory_order_acquire); }
 
-    /** Die Slots, die der Audiothread gerade FAEHRT - je -1, wenn keiner.
-
-        Ohne sie ist die Zusage aus M-122 nicht pruefbar: dass kein Reclaim
-        vor dem ACK geschieht, zeigt sich daran, dass ein Slot, den der
-        Audiothread noch liest, nicht `frei` oder `vorbereitend` wird. Die
-        Zustandszaehlung allein sieht das nicht - vier Baenke bleiben vier
-        Baenke, gleichgueltig wer sie haelt. */
-    void gefahreneSlots (int& committed, int& verblassendSlot, int& candidate) const noexcept
+    /** Die Slots, die der Audiothread gerade FAEHRT - je -1, wenn keiner:
+        je Pfad die aktive Bank und die Quellbank des laufenden Uebergangs.
+        Ohne sie ist die Zusage aus M-122 nicht pruefbar. */
+    void gefahreneSlots (int& committed, int& committedQuelle, int& candidate, int& candidateQuelle) const noexcept
     {
-        committed       = lageCommitted.aktiv;
-        verblassendSlot = lageCommitted.verblassend;
-        candidate       = lageCandidate.aktiv;
+        committed       = pfade[0].aktiv;
+        committedQuelle = pfade[0].quelle;
+        candidate       = pfade[1].aktiv;
+        candidateQuelle = pfade[1].quelle;
     }
 
     //== Zaehler und abgeleitete Werte ======================================
@@ -144,36 +177,37 @@ public:
     std::uint64_t nichtEndlicheEingaenge() const noexcept
     { return zaehlerEingaenge.load (std::memory_order_relaxed); }
 
-    /** Am Blockrand geheilte Filterzustaende (§5.9 Feinheit 3 und 4). Zwei
-        Zaehler statt einem, weil ein gemeinsamer die beiden Ursachen nicht
-        trennen koennte. */
+    /** Am Blockrand geheilte Filterzustaende (§5.9 Feinheit 3 und 4), je
+        geheiltem Bandzustand bzw. Mono-Bass-Zustand einer. */
     std::uint64_t geheilteFilterzustaende() const noexcept
     { return zaehlerZustaende.load (std::memory_order_relaxed); }
 
-    /** Bloecke, deren Tap nicht gefuellt werden konnte, weil der Block
-        groesser als `maxBlock` war. Verworfen wird die ANALYSE, nie Audio
-        (M-48). */
+    /** Bloecke, deren Tap nicht gefuellt werden konnte (M-48). */
     std::uint64_t verworfeneAnalyseframes() const noexcept
     { return zaehlerVerworfen.load (std::memory_order_relaxed); }
 
-    /** Der abgeleitete Auto-Gain-Betrag des bestaetigten Programms in dB.
-        IMMER lesbar, auch wenn der Schalter aus ist (M-35). */
-    double autoGainDb() const noexcept { return autoGainBericht.load (std::memory_order_relaxed); }
+    /** Der abgeleitete Auto-Gain-Betrag des Committed-Programms in dB. IMMER
+        lesbar, auch wenn der Schalter aus ist (M-35). */
+    double autoGainDb() const noexcept { return autoGainBericht[0].load (std::memory_order_relaxed); }
 
-    /** Die Quelle fuer `Frame.band_dynamic_gain_db` (R14): acht Werte in
-        Slot-Reihenfolge, die MOMENTANE Auslenkung in dB. Freie,
-        ausgeschaltete und nicht dynamische Slots liefern exakt 0,0; ein
-        nicht-endlicher Wert wird zu 0 und gezaehlt. Nie aus Einstellwerten
-        hergeleitet. */
+    /** Derselbe Wert des Candidate-Programms, aus SEINER Kurve (B-6). */
+    double autoGainCandidateDb() const noexcept { return autoGainBericht[1].load (std::memory_order_relaxed); }
+
+    /** Die Quelle fuer `Frame.band_dynamic_gain_db` (R14): die acht
+        momentanen Auslenkungen des COMMITTED-Pfads in Slot-Reihenfolge,
+        kohaerent zu `post_committed` (B-9). Freie, ausgeschaltete und nicht
+        dynamische Slots liefern exakt 0,0; ein nicht-endlicher Wert wird zu
+        0 und gezaehlt. Nie aus Einstellwerten hergeleitet. */
     void auslenkungenDb (double* achtWerte) const noexcept;
 
-    /** Meldet mindestens ein Slot Dynamik? Bestimmt, ob das Feld ueberhaupt
-        reist (M-114). */
+    /** Dieselben acht Werte des Candidate-Pfads - getrennt gerechnet und
+        getrennt gehalten (B-9). */
+    void auslenkungenCandidateDb (double* achtWerte) const noexcept;
+
+    /** Meldet mindestens ein Slot des Committed-Programms Dynamik (M-114)? */
     bool dynamikVorhanden() const noexcept { return dynamikAktiv.load (std::memory_order_acquire); }
 
-    /** Am Blockrand genullte DENORMALE Zustandswerte. Der Selbstaudit
-        dieses Tickets nennt Denormals ausdruecklich; ein Zaehler macht den
-        Riegel messbar statt behauptet (Pruefliste A). */
+    /** Am Blockrand genullte DENORMALE Zustandswerte (E-14). */
     std::uint64_t geriegelteDenormale() const noexcept
     { return zaehlerDenormale.load (std::memory_order_relaxed); }
 
@@ -181,6 +215,17 @@ public:
         (M-113). */
     std::uint64_t nichtEndlicheAuslenkungen() const noexcept
     { return zaehlerAuslenkung.load (std::memory_order_relaxed); }
+
+    /** Bloecke beziehungsweise Teilstuecke, in denen die M/S-Stufe
+        GERECHNET wurde (M-30, B-19): bei width 1,0 und mono_bass 0 bleibt er
+        stehen. */
+    std::uint64_t msStufenLaeufe() const noexcept
+    { return zaehlerMsStufe.load (std::memory_order_relaxed); }
+
+    /** Am Blockrand genommene Publikationen (Bank oder ENDE-Marke), beide
+        Pfade zusammen (B-11). */
+    std::uint64_t uebernahmen() const noexcept
+    { return zaehlerUebernahmen.load (std::memory_order_relaxed); }
 
     void zaehlerZuruecksetzen() noexcept;
 
@@ -205,9 +250,7 @@ private:
             if (rest > 0)
             {
                 aktuell += schritt;
-                // Das letzte Sample setzt BITGENAU das Ziel. Ohne diese
-                // Zeile endete eine Rampe auf 1,0 bei 0,99999994 - und die
-                // Bitidentitaet aus M-02 waere keine.
+                // Das letzte Sample setzt BITGENAU das Ziel (M-02).
                 if (--rest == 0) aktuell = ziel;
             }
             return aktuell;
@@ -216,76 +259,97 @@ private:
         bool ruhtBei (double wert) const noexcept { return rest == 0 && aktuell == wert && ziel == wert; }
     };
 
-    struct PfadLage
+    struct Rampen
     {
-        int aktiv       { -1 };   ///< Slot in `audioAktiv`, oder -1 (Ruhe = Passthrough)
-        int verblassend { -1 };   ///< Slot in `verblassend`, oder -1
-        int fadeRest    { 0 };    ///< Samples bis Fadeende
+        Rampe input, output, mix, width, autoGain;
+        void setzeSofort (double z) noexcept { input.setzeSofort (z); output.setzeSofort (z); mix.setzeSofort (z); width.setzeSofort (z); autoGain.setzeSofort (z); }
+        void tick() noexcept { input.tick(); width.tick(); autoGain.tick(); mix.tick(); output.tick(); }
     };
 
-    /** Der eigentliche Weg fuer ein Stueck, das in `maxBlock` passt. */
+    enum class Uebergang { keiner = 0, crossfade, rampe };
+
+    /** Der vollstaendige Zustand EINES Pfades (B-6, B-7, B-9). Nur der
+        Audiothread schreibt; die Auslenkungen sind atomar, weil der Bericht
+        sie von aussen liest. */
+    struct PfadZustand
+    {
+        int       aktiv     { -1 };                 ///< Slot `audioAktiv`, -1 = Ruhe
+        int       quelle    { -1 };                 ///< Quellbank des Uebergangs, -1 = Ruhe
+        Uebergang uebergang { Uebergang::keiner };
+        int       rest      { 0 };                  ///< Samples bis Uebergangsende
+        Rampen    rampen    {};
+        std::array<std::atomic<double>, (size_t) kSlots> auslenkungen {};
+
+        void ruhe() noexcept;
+    };
+
+    void blockrand (Pfad p) noexcept;
+    void heileZustaende (int slot) noexcept;
     void verarbeiteStueck (float* const* kanaele, int numKanaele, int numSamples) noexcept;
 
-    void blockrand (Pfad p, PfadLage& lage) noexcept;
-    void setzeRampenziele (const DspProgramm& p) noexcept;
-    void heileZustaende (int slot) noexcept;
+    /** Rechnet EINE Bank eines Pfades auf `L`/`R` (in-place, bereits
+        verriegelter Eingang). `rampeQuelle` ist bei einem Rampenuebergang
+        die Quellbank, sonst -1; `rampeRest` der Uebergangsrest am Stueckbeginn. */
+    void verarbeiteBank (PfadZustand& z, int slot, int rampeQuelle, int rampeRest,
+                         double* L, double* R, int numSamples) noexcept;
+    void verarbeiteBand (PfadZustand& z, DspBank& bank, const DspBank* quelle, int rampeRest,
+                         int slotIndex, double* L, double* R, int numSamples) noexcept;
 
-    /*  Beide bekommen ihre ZIELPUFFER uebergeben. Committed, die
-        verblassende Bank und Candidate laufen sonst nacheinander auf
-        denselben Arbeitspuffern und ueberschrieben einander - der
-        Candidate-Pfad haette das Committed-Ergebnis verloren. */
-    void verarbeiteBank (int slot, double* L, double* R, int numSamples) noexcept;
-    void verarbeiteBand (DspBank& bank, int slotIndex, double* L, double* R, int numSamples) noexcept;
+    /** Rechnet den ganzen Pfad fuer ein Stueck: `nachL/R` traegt die aktive
+        Bank (oder Dry in Ruhe), `vonL/R` die Quellbank eines Crossfades
+        (oder Dry), `ausL/R` das gemischte Ergebnis; `gewicht` das
+        Crossfadegewicht je Sample (1,0 ausserhalb eines Crossfades). Fuehrt
+        den Uebergangsrest und das Ausdienen der Quellbank. */
+    void verarbeitePfad (Pfad p, const double* eingangL, const double* eingangR, int numSamples,
+                         double* vonL, double* vonR, double* nachL, double* nachR,
+                         double* ausL, double* ausR, double* gewicht) noexcept;
 
-    /** Linearer Crossfade `nach = (1-t)*von + t*nach`. Erreicht der
-        Fadezaehler 0, bricht die Schleife ab und der Rest des Blocks steht
-        BITGENAU auf dem Ziel - das ist der Unterschied zwischen
-        "bitidentisch" und "numerisch nahe" (M-04). */
-    void mischeFade (const double* vonL, const double* vonR,
-                     double* nachL, double* nachR, int numSamples, PfadLage& lage) noexcept;
-
+    bool istPassthrough (int slot) const noexcept;
+    bool pfadRechnet (Pfad p) const noexcept;
     double* tapZeiger (Tap t, int kanal) noexcept;
     const DspProgramm& programmVon (int slot) const noexcept;
+    void meldeProgramm (Pfad p, const DspProgramm& prog) noexcept;
 
     DspBankPool baenke;
 
     double abtastrate  { 0.0 };
     int    maxBlockGroesse { 0 };
 
-    // Arbeitspuffer, vorallokiert. `arbeitL/R` traegt den laufenden Pfad,
-    // `mischL/R` den zweiten waehrend eines Fades.
-    std::vector<double> arbeitL, arbeitR, mischL, mischR, dryL, dryR, candL, candR;
+    // Arbeitspuffer, vorallokiert.
+    std::vector<double> dryL, dryR, eingL, eingR;
+    std::vector<double> cVonL, cVonR, cNachL, cNachR, cAusL, cAusR, cGewicht;   ///< Committed
+    std::vector<double> kVonL, kVonR, kNachL, kNachR, kAusL, kAusR, kGewicht;   ///< Candidate
     std::vector<double> tapPuffer;   ///< 3 Taps x 2 Kanaele x maxBlock
 
-    PfadLage lageCommitted, lageCandidate;
+    std::array<PfadZustand, (size_t) kPfade> pfade {};
 
-    Rampe rInputTrim, rOutputTrim, rMix, rWidth, rAutoGain;
+    /** Nur der Worker schreibt: der Bauplatz fuer einen ausgeschalteten
+        Zustand, dessen abgeleitete Werte lesbar bleiben, ohne eine Bank zu
+        belegen (M-35, B-10). */
+    DspProgramm arbeitsProgramm {};
 
     std::atomic<Hoermatrix> hoerwunsch  { Hoermatrix::processed };
     std::atomic<Hoermatrix> hoerwirksam { Hoermatrix::processed };
 
-    /*  Der eigene Uebergang der Hoermatrix (M-55). Sie liegt HINTER allen
-        drei Taps und faehrt bei keinem Bankwechsel mit - ohne diesen Fade
-        spraenge der Ausgang beim Wechsel Processed -> Dry um die volle
-        Differenz beider Wege. Nur der Audiothread liest und schreibt sie;
-        deshalb sind es einfache Felder und keine Atomics. */
+    /*  Der eigene Uebergang der Hoermatrix (M-55). Nur der Audiothread liest
+        und schreibt ihn. */
     Hoermatrix hoerLaufend  { Hoermatrix::processed };
     Hoermatrix hoerVorher   { Hoermatrix::processed };
     int        hoerFadeRest { 0 };
     std::atomic<bool>       candidateAktiv { false };
     std::atomic<bool>       dynamikAktiv   { false };
 
-    std::atomic<std::uint64_t> zaehlerEingaenge  { 0 };
-    std::atomic<std::uint64_t> zaehlerZustaende  { 0 };
-    std::atomic<std::uint64_t> zaehlerVerworfen  { 0 };
-    std::atomic<std::uint64_t> zaehlerAuslenkung { 0 };
-    std::atomic<std::uint64_t> zaehlerDenormale  { 0 };
-    std::atomic<double>        autoGainBericht   { 0.0 };
+    std::atomic<std::uint64_t> zaehlerEingaenge   { 0 };
+    std::atomic<std::uint64_t> zaehlerZustaende   { 0 };
+    std::atomic<std::uint64_t> zaehlerVerworfen   { 0 };
+    std::atomic<std::uint64_t> zaehlerAuslenkung  { 0 };
+    std::atomic<std::uint64_t> zaehlerDenormale   { 0 };
+    std::atomic<std::uint64_t> zaehlerMsStufe     { 0 };
+    std::atomic<std::uint64_t> zaehlerUebernahmen { 0 };
+    std::array<std::atomic<double>, (size_t) kPfade> autoGainBericht {};
 
-    /*  Die acht Auslenkungen, lockfrei lesbar. `double` ist auf x64
-        lock-free; der `static_assert` in der .cpp haelt das fest, damit ein
-        anderer Zielrechner nicht still eine Sperre einzieht. */
-    std::array<std::atomic<double>, (size_t) kSlots> auslenkungen {};
+    void (*teilstueckHaken) (void*) { nullptr };
+    void* teilstueckKontext { nullptr };
 
     int tapGueltig    { 0 };
     int letzteKanaele { 0 };

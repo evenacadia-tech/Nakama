@@ -104,6 +104,7 @@ struct BandProgramm
         bei `dynamic_range_db` = 0 - dann wird gar nichts gerechnet (M-20,
         M-22), nicht nur multipliziert. */
     bool        detektorLaeuft { false };
+    Sidechain   quelle       { Sidechain::none };   ///< der persistente Vertragswert (topologisch)
     Biquad      detektor     {};
     HuellkurveKoeffizienten huelle {};
     double      thresholdDb  { 0.0 };
@@ -201,5 +202,18 @@ double leiteAutoGainAb (const DspProgramm& p);
 /** Die Gitterfrequenz einer Stelle 0..120. Oeffentlich, damit der Golden
     dieselben Stellen prueft, ohne sie abzuschreiben. */
 double autoGainGitterHz (int stelle) noexcept;
+
+/** Unterscheiden sich zwei Programme NUR in Werten, deren Vertragsspalte
+    `wechsel = rampe` sagt (R8, Nacharbeit 1 B-4)?
+
+    Dann rampt der Audiothread die laufende Bank auf die neuen Koeffizienten
+    und uebernimmt ihren Filter- und Huellkurvenzustand; sonst blendet er
+    ueber einen Crossfade zwischen zwei vollstaendigen Programmen. Topologisch
+    sind `eq_enabled`, `bypass` (beide `blockrand`), je Slot `occupied` und
+    `enabled` (blockrand), `type`, `channel_mode`, `dynamic_enabled` und
+    `sidechain_source`, dazu das Ein- und Ausschalten der Mono-Bass-Stufe
+    (Entscheid E-20). Laeuft im Audiothread: keine Allokation, keine
+    Ausnahme. */
+bool rampenKompatibel (const DspProgramm& alt, const DspProgramm& neu) noexcept;
 
 } // namespace nakama::dsp

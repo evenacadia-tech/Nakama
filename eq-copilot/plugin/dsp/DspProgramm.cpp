@@ -1,5 +1,6 @@
 #include "NakamaKernRiegel.h"   // S8/SONDE-007a: K1 - keine JucePlugin_*-Konstante im Kern
 #include "DspProgramm.h"
+#include "DspRtWache.h"
 
 #include <complex>
 
@@ -83,6 +84,10 @@ double autoGainGitterHz (int stelle) noexcept
 
 double leiteAutoGainAb (const DspProgramm& p)
 {
+    // M-39, B-18: der Rechenort wird GEZAEHLT, nicht behauptet. Laeuft diese
+    // Ableitung je im Audiopfad, steigt dort ein eigener Zaehler.
+    RtWache::meldeAbleitung();
+
     // M-36: flache Kurve ergibt EXAKT 0,0 dB. Traegt das Programm kein
     // aktives Band, ist der Gitterlauf ueberfluessig - und ein Lauf ueber
     // 121 Stellen, der 1,0 aufsummiert und dann durch 121 teilt, laendete
@@ -128,6 +133,29 @@ double leiteAutoGainAb (const DspProgramm& p)
     if (! (mittel > 0.0) || ! std::isfinite (mittel)) return 0.0;
     if (mittel == 1.0) return 0.0;   // bitgenau flach: log10(1,0) ist 0, aber -0,0 ist es nicht
     return -10.0 * std::log10 (mittel);
+}
+
+//==============================================================================
+bool rampenKompatibel (const DspProgramm& alt, const DspProgramm& neu) noexcept
+{
+    // Beide Programme muessen den Pfad OEFFNEN: ein Passthrough hat keine
+    // Filter, deren Zustand wandern koennte, und der Weg in ihn hinein oder
+    // aus ihm heraus ist `blockrand` mit Crossfade (R2, M-03, M-04, M-06).
+    if (! alt.eqEngagiert || ! neu.eqEngagiert || alt.hardBypass || neu.hardBypass) return false;
+    if (alt.samplerate != neu.samplerate) return false;
+    if ((alt.monoBassHz > 0.0) != (neu.monoBassHz > 0.0)) return false;   // E-20
+
+    for (int i = 0; i < kSlots; ++i)
+    {
+        const auto& a = alt.baender[(size_t) i];
+        const auto& n = neu.baender[(size_t) i];
+        if (a.aktiv != n.aktiv) return false;
+        if (! a.aktiv) continue;
+        if (a.typ != n.typ || a.modus != n.modus || a.dynamisch != n.dynamisch
+            || a.nutztSvf != n.nutztSvf || a.quelle != n.quelle)
+            return false;
+    }
+    return true;
 }
 
 //==============================================================================
@@ -207,6 +235,7 @@ void baueProgramm (const param::DspSatz& satz, double samplerate,
         // unwiederbringlich verloren, und P8 faende einen stillschweigend
         // umgedeuteten Bestand vor.
         const auto quelle = (Sidechain) bandZelle (w, slot, param::kSidechainSource).enumIndex;
+        b.quelle            = quelle;
         b.geklemmtSidechain = (quelle == Sidechain::prioritySidechain);
         const bool detektorGewuenscht = (quelle != Sidechain::none);
 

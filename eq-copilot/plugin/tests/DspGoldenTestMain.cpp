@@ -38,6 +38,7 @@
 #include "DspKern.h"
 #include "NakamaParameter.h"
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <cmath>
@@ -45,9 +46,13 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <iterator>
 #include <memory>
+#include <mutex>
 #include <new>
 #include <sstream>
 #include <string>
@@ -255,6 +260,18 @@ double refDb (const RefBiquad& r, double fs, double f)
     return betrag > 0.0 ? 20.0 * std::log10 (betrag) : -400.0;
 }
 
+/** Die dB-Abweichung einer Gitterstelle. An einer NULLSTELLE der Referenz -
+    der exakten Mittenfrequenz eines Notch (B-24 fuegt sie ins Gitter) - hat
+    ein dB-Abstand keinen Massstab: die Referenz liegt bei -300 dB, die
+    gemessene Impulsantwort an ihrem numerischen Boden. Unter -60 dB gilt
+    deshalb: gemessen muss ebenfalls unter -60 dB liegen (Entscheid E-27). */
+double abweichungDb (double gemessenDb, double sollDb)
+{
+    const double boden = -60.0;
+    if (sollDb < boden) return gemessenDb < boden ? 0.0 : std::abs (gemessenDb - boden);
+    return std::abs (gemessenDb - sollDb);
+}
+
 //==============================================================================
 // Der Messweg durch den ECHTEN Audiopfad.
 
@@ -373,6 +390,108 @@ std::vector<double> gitter (double fs)
     return g;
 }
 
+/** B-24, §5.15 Feinheit 3 woertlich: das Gitter JE PRUEFLING - zusaetzlich die
+    exakte Eck- oder Mittenfrequenz und bei Shelves die Plateaupunkte f/4 und
+    4f, soweit sie in 20 Hz..min(20 kHz, 0,45 fs) liegen. */
+std::vector<double> gitterFuer (double fs, Filtertyp typ, double f0)
+{
+    auto g = gitter (fs);
+    const double bis = std::min (20000.0, fs * kNyquistAnteil);
+    auto dazu = [&] (double f) { if (f >= 20.0 && f <= bis) g.push_back (f); };
+    dazu (f0);
+    if (typ == Filtertyp::lowShelf || typ == Filtertyp::highShelf) { dazu (f0 / 4.0); dazu (f0 * 4.0); }
+    std::sort (g.begin(), g.end());
+    g.erase (std::unique (g.begin(), g.end()), g.end());
+    return g;
+}
+
+/** Traegt das Gitter die Pflichtpunkte des Prueflings? */
+bool gitterEnthaelt (const std::vector<double>& g, double fs, Filtertyp typ, double f0)
+{
+    const double bis = std::min (20000.0, fs * kNyquistAnteil);
+    auto hat = [&] (double f) { return f < 20.0 || f > bis || std::find (g.begin(), g.end(), f) != g.end(); };
+    bool ok = hat (f0);
+    if (typ == Filtertyp::lowShelf || typ == Filtertyp::highShelf) ok = ok && hat (f0 / 4.0) && hat (f0 * 4.0);
+    return ok;
+}
+
+/** Faehrt einen STEREO-Ton durch den Kern: L = a*sin, R = a*cos. Nach dem
+    Detektor-Bandpass auf der Tonfrequenz ist die gemeinsame Leistung beider
+    Komponenten (E-5) damit KONSTANT a^2/2 - ohne die Welligkeit eines
+    einkanaligen Sinus, die jede Zeit- und Kniemessung verschmieren wuerde
+    (Entscheid E-25). `aufzeichnung` nimmt den Tap post_committed L auf. */
+void fahreStereoTon (DspKern& k, double fs, double f, double amplitude, long long& n0, int samples,
+                     int blockGroesse, std::vector<double>* aufzeichnung = nullptr,
+                     std::vector<double>* auslenkung = nullptr, int slot = 0)
+{
+    std::vector<float> a ((size_t) blockGroesse), b ((size_t) blockGroesse);
+    float* kan[2] = { a.data(), b.data() };
+    const double w = 2.0 * kPiRef * f / fs;
+    int rest = samples;
+    while (rest > 0)
+    {
+        const int m = rest < blockGroesse ? rest : blockGroesse;
+        for (int i = 0; i < m; ++i)
+        {
+            a[(size_t) i] = (float) (amplitude * std::sin (w * (double) (n0 + i)));
+            b[(size_t) i] = (float) (amplitude * std::cos (w * (double) (n0 + i)));
+        }
+        k.verarbeite (kan, 2, m);
+        if (aufzeichnung != nullptr)
+        {
+            const double* t = k.tap (Tap::postCommitted, 0);
+            for (int i = 0; i < m; ++i) aufzeichnung->push_back (t != nullptr ? t[i] : 0.0);
+        }
+        if (auslenkung != nullptr)
+        {
+            double werte[param::kSlots];
+            k.auslenkungenDb (werte);
+            for (int i = 0; i < m; ++i) auslenkung->push_back (werte[slot]);
+        }
+        n0 += m;
+        rest -= m;
+    }
+}
+
+/** Amplitude eines eingeschwungenen Tons aus den letzten `perioden` ganzen
+    Perioden einer Aufzeichnung. */
+double tonAmplitude (const std::vector<double>& x, double fs, double f, int perioden = 32)
+{
+    const size_t laenge = (size_t) std::llround ((double) perioden * fs / f);
+    if (x.size() < laenge) return 0.0;
+    double summe = 0.0;
+    for (size_t i = x.size() - laenge; i < x.size(); ++i) summe += x[i] * x[i];
+    return std::sqrt (2.0 * summe / (double) laenge);
+}
+
+/** Groesster Sprung zwischen zwei Folgesamples, einschliesslich des letzten
+    Werts VOR der Aufzeichnung. */
+double groessterSprung (double vorher, const std::vector<double>& x)
+{
+    double m = x.empty() ? 0.0 : std::abs (x[0] - vorher);
+    for (size_t i = 1; i < x.size(); ++i) m = std::max (m, std::abs (x[i] - x[i - 1]));
+    return m;
+}
+
+/** Faehrt DC durch den Kern und zeichnet den AUSGANG (float) auf. */
+std::vector<double> fahreDc (DspKern& k, double wert, int samples, int blockGroesse)
+{
+    std::vector<float> a ((size_t) blockGroesse), b ((size_t) blockGroesse);
+    float* kan[2] = { a.data(), b.data() };
+    std::vector<double> aus;
+    int rest = samples;
+    while (rest > 0)
+    {
+        const int m = rest < blockGroesse ? rest : blockGroesse;
+        std::fill (a.begin(), a.end(), (float) wert);
+        std::fill (b.begin(), b.end(), (float) wert);
+        k.verarbeite (kan, 2, m);
+        for (int i = 0; i < m; ++i) aus.push_back ((double) a[(size_t) i]);
+        rest -= m;
+    }
+    return aus;
+}
+
 std::unique_ptr<DspKern> neuerKern (double fs, int maxBlock = 2048)
 {
     // NAK-175: auf den HEAP. Vier Baenke mit acht Baendern in `double`
@@ -441,9 +560,35 @@ int main()
             }
             pruefe (bitgleich, std::string ("default_ist_bitidentisch bei ") + zahl (fs, 0) + " Hz",
                     std::to_string (summe) + " Samples");
-            pruefe (kern->pool().belegteSlots() <= 1,
-                    std::string ("ausgeschaltet ist keine Bank audio_active bei ") + zahl (fs, 0),
+            pruefe (kern->pool().belegteSlots() == 0,
+                    std::string ("ausgeschaltet ist keine Bank belegt bei ") + zahl (fs, 0) + " (M-01, M-07, B-10)",
                     "belegt=" + std::to_string (kern->pool().belegteSlots()));
+        }
+
+        // B-10 / M-07: Vorbereiten -> eingeschaltet -> Audio -> AUSgeschaltet
+        // -> Audio ueber den Fade hinaus -> Pflege: danach ist JEDE Bank frei.
+        // Die alte Toleranz `<= 1` liess genau die Bank durch, die ein
+        // ausgeschalteter Zustand reserviert und nie wieder hergegeben hat.
+        {
+            auto kern = neuerKern (48000.0, 512);
+            auto ein = machSatz (true);
+            belege (ein, 0, Filtertyp::bell, 1000.0, 1.0, 6.0);
+            kern->uebernehmeZustand (ein);
+            fahreStille (*kern, 2048, 512);
+            kern->pflege();
+            const int belegtEin = kern->pool().belegteSlots();
+
+            kern->uebernehmeZustand (machSatz (false));
+            fahreStille (*kern, kFadeSamples + 1024, 512);
+            kern->pflege();
+
+            int aktive = 0;
+            for (int i = 0; i < DspBankPool::kBaenke; ++i)
+                if (kern->pool().zustand (i) == BankZustand::audioAktiv) ++aktive;
+            pruefe (belegtEin == 1 && kern->pool().belegteSlots() == 0 && aktive == 0,
+                    "ausschalten_gibt_jede_bank_frei (M-07, B-10)",
+                    "eingeschaltet belegt=" + std::to_string (belegtEin) + ", nach aus/Fade/Pflege belegt="
+                    + std::to_string (kern->pool().belegteSlots()) + ", audio_active=" + std::to_string (aktive));
         }
 
         // M-02: eq an, bypass aus, alles neutral -> trotzdem BITIDENTISCH.
@@ -734,6 +879,108 @@ int main()
             pruefe (bitgleich, "bypasswechsel_endet_bitgleich (M-06)");
         }
 
+        // B-3 / M-05: EQ-aus und Hard-Bypass ueberbruecken JEDE Hoermatrix.
+        // Waehrend des Fades blenden auch Delta und Candidate klickfrei auf
+        // den unveraenderten Eingang; danach wird kein Sample geschrieben. Der
+        // Schreibnachweis ist eine WACHMARKE: ein signalisierender NaN mit
+        // Nutzlast ueberlebt jede float->double->float-Wandlung nicht (sie
+        // macht ihn ruhig) - bitgleich bleibt er nur, wenn niemand schreibt.
+        {
+            const float wachmarke = [] { std::uint32_t bits = 0x7F800001u; float f; std::memcpy (&f, &bits, 4); return f; }();
+            const char* namen[] = { "delta + eq_enabled aus", "delta + hard-bypass",
+                                    "candidate + eq_enabled aus", "candidate + hard-bypass" };
+            for (int fall = 0; fall < 4; ++fall)
+            {
+                const bool mitBypass = (fall % 2) == 1;
+                const Hoermatrix wahl = fall < 2 ? Hoermatrix::delta : Hoermatrix::candidate;
+
+                auto k = neuerKern (48000.0, 512);
+                auto ein = machSatz (true);
+                setzeGlobal (ein, "v1.global.output_trim_db", 6.0);
+                k->uebernehmeZustand (ein);
+                if (wahl == Hoermatrix::candidate)
+                {
+                    auto kand = machSatz (true);
+                    belege (kand, 0, Filtertyp::lowShelf, 8000.0, 0.707, 9.0);
+                    k->uebernehmeZustand (kand, Pfad::candidate);
+                }
+                fahreStille (*k, kRampeSamples + 2048, 512);
+                k->setzeHoermatrix (wahl);
+                const auto vorlauf = fahreDc (*k, 0.3, 2048, 512);
+                const double vorher = vorlauf.back();
+
+                auto aus = ein;
+                if (mitBypass) setzeGlobalBool (aus, "v1.global.bypass", true);
+                else           aus.werte[(size_t) param::kIndexEqEnabled].b = false;
+                k->uebernehmeZustand (aus);
+
+                const auto fade = fahreDc (*k, 0.3, kFadeSamples, 64);
+                const double sprung = groessterSprung (vorher, fade);
+                const double stufe  = std::abs (vorher - 0.3) / (double) kFadeSamples;
+                pruefe (std::abs (vorher - 0.3) > 0.1 && sprung <= 4.0 * stufe + 1e-9
+                        && std::abs (fade.back() - 0.3) <= 2.0 * stufe + 1e-6,
+                        std::string ("hoermatrix_blendet_bei_aus_klickfrei_auf_den_eingang (M-05, B-3): ") + namen[fall],
+                        "vorher " + zahl (vorher, 5) + ", max Sprung " + zahl (sprung, 7) + " gegen Fadeschritt "
+                        + zahl (stufe, 7) + ", Fadeende " + zahl (fade.back(), 6));
+
+                std::vector<float> l (512), r (512), lK, rK;
+                bool unberuehrt = true;
+                for (int blk = 0; blk < 4; ++blk)
+                {
+                    for (int i = 0; i < 512; ++i)
+                    {
+                        l[(size_t) i] = (float) (0.3 * std::sin (0.02 * (double) (blk * 512 + i)));
+                        r[(size_t) i] = l[(size_t) i];
+                    }
+                    l[7] = wachmarke; r[9] = wachmarke;
+                    lK = l; rK = r;
+                    float* kan[2] = { l.data(), r.data() };
+                    k->verarbeite (kan, 2, 512);
+                    if (std::memcmp (l.data(), lK.data(), 512 * sizeof (float)) != 0
+                     || std::memcmp (r.data(), rK.data(), 512 * sizeof (float)) != 0)
+                        unberuehrt = false;
+                }
+                pruefe (unberuehrt,
+                        std::string ("nach_dem_fade_schreibt_keine_hoermatrix_ein_sample (M-05, B-3): ") + namen[fall],
+                        "Wachmarke und Signal bitgleich ueber 4 Bloecke");
+            }
+        }
+
+        // B-5: ein zweiter Wechsel 64 Samples nach dem ersten, bei einem
+        // 256-Sample-Fade und drei verschiedenen Kurven. Beide Wechsel sind
+        // TOPOLOGISCH (Typ, dann Typ und Kanalmodus) und laufen deshalb als
+        // Crossfade zwischen zwei vollstaendigen Programmen - ein reiner
+        // Rampenwechsel (E-19) haette keine verblassende Bank. Der laufende Fade
+        // wird zu Ende gefuehrt, der neue Wechsel danach genommen (E-17): kein
+        // Sprung am Umschaltsample groesser als die Fadeschrittweite.
+        {
+            auto k = neuerKern (48000.0, 64);
+            auto sa = machSatz (true); belege (sa, 0, Filtertyp::lowShelf,  8000.0, 0.707, 9.0);
+            auto sb = machSatz (true); belege (sb, 0, Filtertyp::highShelf, 8000.0, 0.707, 9.0);
+            auto sc = machSatz (true); belege (sc, 0, Filtertyp::lowShelf,  8000.0, 0.707, 3.0, Kanalmodus::mid);
+            k->uebernehmeZustand (sa);
+            const auto vor = fahreDc (*k, 0.3, 2048, 64);
+            k->pflege();
+
+            k->uebernehmeZustand (sb);
+            auto lauf = fahreDc (*k, 0.3, 64, 64);
+            k->uebernehmeZustand (sc);
+            const auto rest = fahreDc (*k, 0.3, 1024, 64);
+            lauf.insert (lauf.end(), rest.begin(), rest.end());
+
+            const double A = vor.back();                          // Low-Shelf +9 dB bei DC
+            const double B = 0.3;                                 // ein High-Shelf traegt DC mit 0 dB
+            const double C = 0.3 * std::pow (10.0, 3.0 / 20.0);   // Low-Shelf +3 dB auf Mid, L = R
+            const double stufe  = std::max (std::abs (B - A), std::abs (C - B)) / (double) kFadeSamples;
+            const double sprung = groessterSprung (A, lauf);
+            pruefe (sprung <= 4.0 * stufe + 1e-9,
+                    "zweiter_wechsel_im_laufenden_fade_springt_nicht (M-03, M-06, B-5)",
+                    "max Sprung " + zahl (sprung, 7) + " gegen Fadeschritt " + zahl (stufe, 7));
+            pruefe (std::abs (lauf.back() - C) < 1e-4,
+                    "der_zweite_wechsel_wird_nach_dem_fade_uebernommen (B-5, E-17)",
+                    "Ende " + zahl (lauf.back(), 6) + " gegen " + zahl (C, 6));
+        }
+
         // M-07: ausgeschaltet rechnet NICHTS und startet kalt.
         {
             auto k = neuerKern (48000.0);
@@ -783,9 +1030,14 @@ int main()
 
         for (double fs : sampleraten)
         {
-            const auto g = gitter (fs);
             for (const auto& p : pruef)
             {
+                const auto g = gitterFuer (fs, p.typ, p.f);
+                pruefe (gitterEnthaelt (g, fs, p.typ, p.f),
+                        std::string ("gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) ") + typName (p.typ)
+                        + " " + zahl (p.f, 0) + " Hz @" + zahl (fs, 0),
+                        "Eck-/Mittenfrequenz" + std::string ((p.typ == Filtertyp::lowShelf || p.typ == Filtertyp::highShelf)
+                                                             ? " und f/4, 4f" : ""));
                 auto kern = neuerKern (fs, 512);
                 auto s = machSatz (true);
                 belege (s, 0, p.typ, p.f, p.q, p.gain);
@@ -801,7 +1053,7 @@ int main()
                     const double f = g[i];
                     const double gemessen = irDb (ir, fs, f);
                     const double soll     = refDb (ref, fs, f);
-                    const double abw      = std::abs (gemessen - soll);
+                    const double abw      = abweichungDb (gemessen, soll);
                     // Extrempunkte im Sinne der 0,1 dB: die Gitterstellen
                     // unmittelbar an beiden Enden und der Scheitel eines
                     // Bells mit Q >= 12 (§5.15 Feinheit 3).
@@ -846,6 +1098,77 @@ int main()
             }
             pruefe (maxAbw <= 0.05, "impulsantwort_misst_wie_ein_eingeschwungener_sinus (M-13)",
                     "groesste Abweichung " + zahl (maxAbw, 4) + " dB ueber drei Stellen");
+        }
+
+        // C2 - B-2 / M-19: die RUHEantwort eines dynamischen Bandes (Auslenkung
+        // exakt 0: kein Detektor) klingt wie sein statischer Zustand. Der
+        // TPT-SVF ist unter der bilinearen Abbildung derselbe Prototyp wie der
+        // RBJ-Entwurf, gemessen gegen dieselbe eigenstaendige Formel und
+        // dasselbe Gitter mit denselben Toleranzen wie M-10/M-11.
+        {
+            struct DynPruefling { Filtertyp typ; double f; double q; double gain; };
+            const DynPruefling dyn[] = {
+                { Filtertyp::highShelf, 1000.0, 0.707,   6.0 },
+                { Filtertyp::highShelf, 3000.0, 1.0,   -12.0 },
+                { Filtertyp::lowShelf,   300.0, 0.707,   6.0 },
+                { Filtertyp::bell,      1000.0, 2.0,    -9.0 },
+            };
+            for (double fs : sampleraten)
+                for (const auto& p : dyn)
+                {
+                    auto kern = neuerKern (fs, 512);
+                    auto s = machSatz (true);
+                    belege (s, 0, p.typ, p.f, p.q, p.gain);
+                    machDynamisch (s, 0, -12.0, -60.0, 1.0, 0.0, 20.0, Sidechain::none);
+                    kern->uebernehmeZustand (s);
+
+                    const auto ir  = impulsantwort (*kern, 32768, 0, 512, 2048);
+                    const auto ref = refEntwurf (p.typ, fs, p.f, p.q, p.gain);
+                    const auto g   = gitterFuer (fs, p.typ, p.f);
+
+                    double maxTypisch = 0.0, maxRand = 0.0;
+                    for (size_t i = 0; i < g.size(); ++i)
+                    {
+                        const double abw = abweichungDb (irDb (ir, fs, g[i]), refDb (ref, fs, g[i]));
+                        if (i == 0 || i + 1 >= g.size()) maxRand = std::max (maxRand, abw);
+                        else                             maxTypisch = std::max (maxTypisch, abw);
+                    }
+                    pruefe (maxTypisch <= 0.05 && maxRand <= 0.1,
+                            std::string ("dynamisches_") + typName (p.typ) + "_ruhe_gegen_rbj (M-19, B-2) "
+                            + zahl (p.gain, 0) + " dB @" + zahl (fs, 0),
+                            "typisch " + zahl (maxTypisch, 4) + " dB, Rand " + zahl (maxRand, 4) + " dB, "
+                            + std::to_string (g.size()) + " Stellen");
+                }
+
+            // -24 dB Gesamtgain (gain_db -12, Auslenkung -12): dort bricht ein
+            // falsches Vorzeichen des Mischterms am sichtbarsten. Der Detektor
+            // steht im Plateau (Pegel weit ueber Threshold), der Koeffizientensatz
+            // ist damit konstant, und der eingeschwungene Ton misst den Gang.
+            const double fs = 48000.0;
+            double maxAbw = 0.0;
+            bool plateau = true;
+            std::string detail;
+            for (double f : { 250.0, 1000.0, 4000.0 })
+            {
+                auto kern = neuerKern (fs, 512);
+                auto s = machSatz (true);
+                belege (s, 0, Filtertyp::highShelf, 1000.0, 0.707, -12.0);
+                machDynamisch (s, 0, -12.0, -60.0, 1.0, 0.0, 20.0);
+                kern->uebernehmeZustand (s);
+                long long n0 = 0;
+                std::vector<double> aufz;
+                fahreStereoTon (*kern, fs, f, 0.5, n0, 48000, 512);
+                fahreStereoTon (*kern, fs, f, 0.5, n0, 16384, 512, &aufz);
+                double w[param::kSlots];
+                kern->auslenkungenDb (w);
+                if (w[0] != -12.0) plateau = false;
+                const double gemessen = 20.0 * std::log10 (tonAmplitude (aufz, fs, f) / 0.5);
+                const double soll = refDb (refEntwurf (Filtertyp::highShelf, fs, 1000.0, 0.707, -24.0), fs, f);
+                maxAbw = std::max (maxAbw, std::abs (gemessen - soll));
+                detail += zahl (f, 0) + " Hz: " + zahl (gemessen, 3) + " gegen " + zahl (soll, 3) + " dB; ";
+            }
+            pruefe (plateau && maxAbw <= 0.05,
+                    "dynamischer_high_shelf_bei_minus_24_db_gegen_rbj (M-19, U15, B-2)", detail);
         }
 
         // M-12: Nyquist-Kappung bei 0,45 fs, und der PERSISTENTE Wert bleibt.
@@ -1050,6 +1373,78 @@ int main()
         const double letzter = aus.back();
         pruefe (std::abs (letzter - ziel) < 1e-6, "rampe_endet_bitgenau_auf_dem_ziel (M-02)",
                 "Ende " + zahl (letzter, 9) + " gegen Ziel " + zahl (ziel, 9));
+
+        // B-4 / M-17 / R8: Bandwerte mit `wechsel = rampe` laufen ueber EINE
+        // Rampe, ohne neue kalte Bank und ohne Zustandsreset. Die Referenz ist
+        // hier ausgeschrieben: ein DF2T-Biquad, dessen Zustand ueber den GANZEN
+        // Lauf stetig bleibt und dessen RBJ-Koeffizienten ab dem Blockrand des
+        // Wechsels ueber kRampeSamples linear laufen (das erste Sample traegt
+        // 1/256, das letzte 1). Ein Sprung auf den Zielwert, ein Crossfade
+        // oder ein kalter Neustart weichen davon um Groessenordnungen ab.
+        {
+            struct Sprung { const char* name; int feld; double von; double nach; };
+            const Sprung spruenge[] = {
+                { "gain_db", param::kGainDb, 3.0,    9.0 },
+                { "freq_hz", param::kFreqHz, 1000.0, 1400.0 },
+                { "q",       param::kQ,      1.0,    3.0 },
+            };
+            const double tonHz = 1100.0;
+            const int bg = 64, wechselBei = 2048, laenge = 4096;
+            for (const auto& sp : spruenge)
+            {
+                auto k = neuerKern (fs, bg);
+                auto sa = machSatz (true);
+                belege (sa, 0, Filtertyp::bell, 1000.0, 1.0, 3.0);
+                sa.werte[(size_t) param::indexBandV1 (0, sp.feld)].zahl = sp.von;
+                auto sb = sa;
+                sb.werte[(size_t) param::indexBandV1 (0, sp.feld)].zahl = sp.nach;
+                const auto wert = [] (const param::DspSatz& s, int feld)
+                { return s.werte[(size_t) param::indexBandV1 (0, feld)].zahl; };
+                const auto refA = refEntwurf (Filtertyp::bell, fs, wert (sa, param::kFreqHz), wert (sa, param::kQ), wert (sa, param::kGainDb));
+                const auto refB = refEntwurf (Filtertyp::bell, fs, wert (sb, param::kFreqHz), wert (sb, param::kQ), wert (sb, param::kGainDb));
+
+                k->uebernehmeZustand (sa);
+                std::vector<float> l ((size_t) bg), r ((size_t) bg);
+                float* kanR[2] = { l.data(), r.data() };
+                double z1 = 0.0, z2 = 0.0, maxRes = 0.0;
+                for (int n0 = 0; n0 < laenge; n0 += bg)
+                {
+                    if (n0 == wechselBei) { k->pflege(); k->uebernehmeZustand (sb); }
+                    for (int i = 0; i < bg; ++i)
+                    {
+                        l[(size_t) i] = (float) (0.5 * std::sin (2.0 * kPiRef * tonHz * (double) (n0 + i) / fs));
+                        r[(size_t) i] = l[(size_t) i];
+                    }
+                    k->verarbeite (kanR, 2, bg);
+                    const double* t = k->tap (Tap::postCommitted, 0);
+                    for (int i = 0; i < bg; ++i)
+                    {
+                        const int n = n0 + i;
+                        RefBiquad c = refA;
+                        if (n >= wechselBei)
+                        {
+                            const int m = n - wechselBei;
+                            const double w = (m + 1 >= kRampeSamples) ? 1.0 : (double) (m + 1) / (double) kRampeSamples;
+                            c.b0 = refA.b0 + (refB.b0 - refA.b0) * w;
+                            c.b1 = refA.b1 + (refB.b1 - refA.b1) * w;
+                            c.b2 = refA.b2 + (refB.b2 - refA.b2) * w;
+                            c.a1 = refA.a1 + (refB.a1 - refA.a1) * w;
+                            c.a2 = refA.a2 + (refB.a2 - refA.a2) * w;
+                        }
+                        const double x = (double) (float) (0.5 * std::sin (2.0 * kPiRef * tonHz * (double) n / fs));
+                        const double y = c.b0 * x + z1;
+                        z1 = c.b1 * x - c.a1 * y + z2;
+                        z2 = c.b2 * x - c.a2 * y;
+                        // Ab dem Ende des Einblend-Crossfades der ersten Bank
+                        // ist der Tap der reine Filterausgang.
+                        if (n >= kFadeSamples && t != nullptr) maxRes = std::max (maxRes, std::abs (t[i] - y));
+                    }
+                }
+                pruefe (maxRes < 1e-5,
+                        std::string ("bandwert_") + sp.name + "_rampt_ohne_zustandsreset (M-17, R8, B-4)",
+                        "groesstes Residuum gegen die stetige Rampe " + zahl (maxRes, 12) + " (-100 dBFS = 1e-5)");
+            }
+        }
     }
 
     //==========================================================================
@@ -1186,11 +1581,45 @@ int main()
             pruefe (std::abs (werte[0]) <= std::abs (range) + 1e-12,
                     "auslenkung_bleibt_innerhalb_range (M-18)");
 
-            // Und ein Punkt IM Knie: 6 dB ueber dem Threshold ergibt die
-            // halbe Auslenkung. Gerechnet wird hier unabhaengig.
-            const double halb = range * (6.0 / kKniebreiteDb);
-            pruefe (std::abs (halb + 4.5) < 1e-12, "kennlinie_im_knie_ist_linear (M-18)",
-                    "6 dB ueber Threshold = " + zahl (halb, 4) + " dB bei range -9");
+        }
+
+        // B-14 / M-18: der Kniepunkt wird ANGEREGT, und gemessen wird die
+        // WIRKUNG im Audiopfad - nicht nur der Berichtswert. Ein Stereoton auf
+        // der Bandmitte (L sin, R cos) haelt die Detektorleistung konstant auf
+        // a^2/2; Attack und Release 500 ms glaetten die Restwelligkeit. Bei
+        // 6 dB ueber Threshold muss die Auslenkung range/2 betragen, und der
+        // Bell auf der Mitte muss gain_db PLUS diese Auslenkung wirken.
+        {
+            const double range = -9.0, thresh = -30.0, g0 = 3.0, tonHz = 1000.0;
+            auto miss = [&] (double ueber, double& auslenkung, double& wirkungDb)
+            {
+                auto k = neuerKern (fs, 512);
+                auto s = machSatz (true);
+                belege (s, 0, Filtertyp::bell, tonHz, 1.0, g0);
+                machDynamisch (s, 0, range, thresh, 500.0, 0.0, 500.0);
+                k->uebernehmeZustand (s);
+                const double a = std::sqrt (2.0 * std::pow (10.0, (thresh + ueber) / 10.0));
+                long long n0 = 0;
+                std::vector<double> aufz;
+                fahreStereoTon (*k, fs, tonHz, a, n0, (int) (6.0 * fs), 512);
+                fahreStereoTon (*k, fs, tonHz, a, n0, 16384, 512, &aufz);
+                double w[param::kSlots];
+                k->auslenkungenDb (w);
+                auslenkung = w[0];
+                wirkungDb  = 20.0 * std::log10 (tonAmplitude (aufz, fs, tonHz) / a);
+            };
+            double knieAus = 0.0, knieWirk = 0.0, plateauAus = 0.0, plateauWirk = 0.0;
+            miss (6.0,  knieAus,    knieWirk);
+            miss (24.0, plateauAus, plateauWirk);
+            const double sollKnie = range * 0.5;
+            pruefe (std::abs (knieAus - sollKnie) < 0.02 && std::abs (knieWirk - (g0 + sollKnie)) < 0.05,
+                    "kennlinie_im_knie_wirkt_im_audiopfad (M-18, B-14)",
+                    "6 dB ueber Threshold: Auslenkung " + zahl (knieAus, 4) + " (soll " + zahl (sollKnie, 2)
+                    + "), Wirkung " + zahl (knieWirk, 4) + " dB (soll " + zahl (g0 + sollKnie, 2) + ")");
+            pruefe (std::abs (plateauAus - range) < 1e-9 && std::abs (plateauWirk - (g0 + range)) < 0.05,
+                    "plateau_wirkt_zusaetzlich_zu_gain_db_im_audiopfad (M-18, B-14)",
+                    "24 dB ueber Threshold: Auslenkung " + zahl (plateauAus, 4) + ", Wirkung "
+                    + zahl (plateauWirk, 4) + " dB (soll " + zahl (g0 + range, 2) + ")");
         }
 
         // M-21: der Detektor hoert das BANDGEFILTERTE Signal VOR dem Band.
@@ -1357,6 +1786,84 @@ int main()
                     "ohne Hold " + zahl (a1, 4) + " dB, mit 400 ms Hold " + zahl (a2, 4) + " dB");
         }
 
+        // B-15 / M-26: die SPRUNGANTWORT bei 44,1 / 48 / 96 / 192 kHz. Ein
+        // Stereoton auf der Bandmitte haelt die Detektorleistung konstant auf
+        // Pss = Threshold + 12 dB; mit range -12 dB bildet die Kennlinie im
+        // Knie jedes dB Leistung auf ein dB Auslenkung ab. Damit ist gemessen:
+        //   Attack  = Zeit ab Tonbeginn, bis die Leistung 1 - 1/e von Pss
+        //             erreicht (Auslenkung -10,013 dB);
+        //   Hold    = Zeit ab Tonende, bis die Auslenkung das Plateau um mehr
+        //             als 0,01 dB verlaesst;
+        //   Release = Zeit ab Holdende, bis die Leistung auf 1/e gefallen ist
+        //             (Auslenkung -7,657 dB).
+        // Toleranz 1 ms je Stufe (E-25): die Gruppenlaufzeit des Detektor-
+        // Bandpasses (Q 0,707 bei 1 kHz: 0,23 ms), die Steuerrate von acht
+        // Samples (hoechstens 0,18 ms) und die Schwellenaufloesung liegen
+        // darunter; eine auf 48 kHz festgeschriebene Umrechnung verfehlt jede
+        // andere Rate um mindestens 1,77 ms (44,1 kHz) und 96 kHz um 20 ms.
+        {
+            const double attackMs = 20.0, holdMs = 30.0, releaseMs = 50.0, toleranzMs = 1.0;
+            const double thresh = -30.0;
+            const double pss = std::pow (10.0, (thresh + 12.0) / 10.0);
+            const double amp = std::sqrt (2.0 * pss);
+            const double attackSchwelle  = -(12.0 + 10.0 * std::log10 (1.0 - std::exp (-1.0)));
+            const double releaseSchwelle = -(12.0 - 10.0 / std::log (10.0));
+            double zeiten[4][3] = {};
+            bool gefunden = true;
+            std::string detail;
+            for (int ri = 0; ri < 4; ++ri)
+            {
+                const double rate = sampleraten[ri];
+                auto k = neuerKern (rate, 512);
+                auto s = machSatz (true);
+                belege (s, 0, Filtertyp::bell, 1000.0, 0.707, 0.0);
+                machDynamisch (s, 0, -12.0, thresh, attackMs, holdMs, releaseMs);
+                k->uebernehmeZustand (s);
+                fahreStille (*k, 4096, 512);
+
+                long long n0 = 0;
+                std::vector<double> aus;
+                fahreStereoTon (*k, rate, 1000.0, amp, n0,
+                                (int) std::llround (10.0 * attackMs * 0.001 * rate), 1, nullptr, &aus);
+                const size_t stufe = aus.size();
+                fahreStereoTon (*k, rate, 1000.0, 0.0, n0,
+                                (int) std::llround ((holdMs + 5.0 * releaseMs) * 0.001 * rate), 1, nullptr, &aus);
+
+                size_t nAttack = aus.size(), nHold = aus.size(), nRelease = aus.size();
+                for (size_t i = 0; i < stufe; ++i)
+                    if (aus[i] <= attackSchwelle) { nAttack = i; break; }
+                const double plateauWert = aus[stufe - 1];
+                for (size_t i = stufe; i < aus.size(); ++i)
+                    if (aus[i] > plateauWert + 0.01) { nHold = i; break; }
+                for (size_t i = nHold; i < aus.size(); ++i)
+                    if (aus[i] >= releaseSchwelle) { nRelease = i; break; }
+                if (nAttack >= aus.size() || nHold >= aus.size() || nRelease >= aus.size()) gefunden = false;
+
+                zeiten[ri][0] = (double) nAttack * 1000.0 / rate;
+                zeiten[ri][1] = (double) (nHold - stufe) * 1000.0 / rate;
+                zeiten[ri][2] = (double) (nRelease - nHold) * 1000.0 / rate;
+                detail += zahl (rate / 1000.0, 1) + " kHz: A " + zahl (zeiten[ri][0], 2) + " H "
+                          + zahl (zeiten[ri][1], 2) + " R " + zahl (zeiten[ri][2], 2) + " ms; ";
+            }
+            const double soll[3] = { attackMs, holdMs, releaseMs };
+            bool innerhalb = gefunden, gleich = gefunden;
+            for (int st = 0; st < 3; ++st)
+            {
+                double lo = 1e9, hi = -1e9;
+                for (int ri = 0; ri < 4; ++ri)
+                {
+                    if (std::abs (zeiten[ri][st] - soll[st]) > toleranzMs) innerhalb = false;
+                    lo = std::min (lo, zeiten[ri][st]);
+                    hi = std::max (hi, zeiten[ri][st]);
+                }
+                if (hi - lo > toleranzMs) gleich = false;
+            }
+            pruefe (innerhalb, "attack_hold_release_als_sprungantwort_bei_vier_raten (M-26, B-15)",
+                    "soll A 20 H 30 R 50 ms +/- 1 ms; " + detail);
+            pruefe (gleich, "dieselbe_ms_angabe_ergibt_bei_jeder_rate_dieselbe_zeit (M-26, B-15)",
+                    "Spanne je Stufe ueber vier Raten <= 1 ms");
+        }
+
         // M-24-nahe Zusage im Kern: `dynamic_enabled` aus laesst die fuenf
         // Werte unberuehrt - der Kern liest sie beim Wiedereinschalten
         // unveraendert aus demselben DTO (die Persistenz misst B2).
@@ -1408,7 +1915,55 @@ int main()
                         bitgleich = false;
             }
             pruefe (bitgleich, "width_eins_ist_bitidentisch (M-30)",
-                    "die M/S-Matrix wird gar nicht gerechnet");
+                    "Ein- und Ausgang bitgleich ueber 10 Bloecke");
+            // B-19: der Unity-Kurzschluss als EIGENE Zusage. Die Bitgleichheit
+            // haelt in `double` auch ohne ihn; ob die Stufe laeuft, zeigt nur
+            // ihr Zaehler.
+            pruefe (kern->msStufenLaeufe() == 0, "width_eins_rechnet_die_ms_stufe_nicht (M-30, B-19)",
+                    "M/S-Laeufe=" + std::to_string (kern->msStufenLaeufe()));
+        }
+
+        // B-19: die zweite Zusage - die M/S-Stufe selbst ist bei width 1,0
+        // bitgenau reversibel, weil sie in `double` rechnet. Gemessen dort, wo
+        // die Stufe bei width 1,0 WIRKLICH laeuft: am Ende einer Width-Rampe
+        // von 1,5 auf 1,0. Ab dem 256. Rampensample ist w exakt 1,0, und die
+        // Stufe rechnet den ganzen Block. Die Vorbedingung haelt fest, dass
+        // `float`-Arithmetik an diesen Eingaengen NICHT bitgleich waere.
+        {
+            auto kern = neuerKern (fs, 512);
+            auto breit = machSatz (true);
+            setzeGlobal (breit, "v1.global.width", 1.5);
+            kern->uebernehmeZustand (breit);
+            fahreStille (*kern, kRampeSamples + 2048, 512);
+            kern->pflege();
+            kern->uebernehmeZustand (machSatz (true));
+            const std::uint64_t laeufeVorher = kern->msStufenLaeufe();
+
+            std::vector<float> a (512), b (512);
+            for (int i = 0; i < 512; ++i)
+            {
+                a[(size_t) i] = (float) (0.1 + 0.37 * std::sin (0.013 * (double) i));
+                b[(size_t) i] = (float) (0.3 * std::cos (0.029 * (double) i));
+            }
+            const std::vector<float> aK = a, bK = b;
+            int floatWaereAnders = 0;
+            for (int i = kRampeSamples - 1; i < 512; ++i)
+            {
+                const double m = (double) (aK[(size_t) i] + bK[(size_t) i]) * 0.5;
+                const double s = ((double) aK[(size_t) i] - (double) bK[(size_t) i]) * 0.5;
+                if ((float) (m + s) != aK[(size_t) i]) ++floatWaereAnders;
+            }
+            float* kan[2] = { a.data(), b.data() };
+            kern->verarbeite (kan, 2, 512);
+            bool bitgleich = true;
+            for (int i = kRampeSamples - 1; i < 512; ++i)
+                if (std::memcmp (&a[(size_t) i], &aK[(size_t) i], sizeof (float)) != 0
+                 || std::memcmp (&b[(size_t) i], &bK[(size_t) i], sizeof (float)) != 0)
+                    bitgleich = false;
+            pruefe (kern->msStufenLaeufe() > laeufeVorher && floatWaereAnders > 0 && bitgleich,
+                    "ms_stufe_ist_bei_width_eins_bitgenau_reversibel (M-30, B-19)",
+                    "Stufe lief, " + std::to_string (floatWaereAnders)
+                    + " Samples waeren in float anders, Samples ab Rampenende bitgleich");
         }
 
         // M-30: width 0 ist mono.
@@ -1445,8 +2000,51 @@ int main()
             kern->verarbeite (kan, 2, 512);
             const double erwartet = 0.25 * std::pow (10.0, 6.0 / 20.0);
             pruefe (std::abs ((double) a[500] - erwartet) < 1e-5,
-                    "input_trim_wirkt_und_liegt_vor_der_bank (M-31)",
+                    "input_trim_wirkt_mit_seinem_gesamtgain (M-31)",
                     zahl ((double) a[500], 6) + " gegen " + zahl (erwartet, 6));
+        }
+
+        // B-16 (a): die REIHENFOLGE mit unterscheidbaren Wegen. Ein
+        // dynamisches Band nahe Threshold: der Eingang liegt bei -33 dBFS und
+        // damit unter dem Threshold -30; nur ein Input-Trim VOR der Bank hebt
+        // ihn auf -27 dBFS, 3 dB darueber - die Auslenkung wird -3 dB. Hinter
+        // der Bank liesse derselbe Trim den Gesamtgain gleich und die
+        // Auslenkung bei 0.
+        {
+            const double tonHz = 1000.0;
+            auto kern = neuerKern (fs, 512);
+            auto s = machSatz (true);
+            setzeGlobal (s, "v1.global.input_trim_db", 6.0);
+            belege (s, 0, Filtertyp::bell, tonHz, 1.0, 0.0);
+            machDynamisch (s, 0, -12.0, -30.0, 500.0, 0.0, 500.0);
+            kern->uebernehmeZustand (s);
+            const double a = std::sqrt (2.0 * std::pow (10.0, -33.0 / 10.0));
+            long long n0 = 0;
+            fahreStereoTon (*kern, fs, tonHz, a, n0, (int) (6.0 * fs), 512);
+            double w[param::kSlots];
+            kern->auslenkungenDb (w);
+            pruefe (std::abs (w[0] - (-3.0)) < 0.02,
+                    "input_trim_liegt_vor_der_bank_der_detektor_hoert_ihn (M-31, B-16)",
+                    "Eingang -33 dBFS, Trim +6 dB, Threshold -30: Auslenkung " + zahl (w[0], 4) + " dB (soll -3)");
+        }
+
+        // B-16 (b): der Output-Trim liegt HINTER Mix - bei Mix 0 wirkt er
+        // trotzdem, auf den Dry-Zweig.
+        {
+            auto kern = neuerKern (fs, 512);
+            auto s = machSatz (true);
+            setzeGlobal (s, "v2.global.mix", 0.0);
+            setzeGlobal (s, "v1.global.output_trim_db", 6.0);
+            belege (s, 0, Filtertyp::bell, 1000.0, 1.0, 12.0);
+            kern->uebernehmeZustand (s);
+            fahreStille (*kern, kRampeSamples + 4096, 512);
+            std::vector<float> a (512, 0.25f), b (512, 0.25f);
+            float* kan[2] = { a.data(), b.data() };
+            kern->verarbeite (kan, 2, 512);
+            const double erwartet = 0.25 * std::pow (10.0, 6.0 / 20.0);
+            pruefe (std::abs ((double) a[500] - erwartet) < 1e-5,
+                    "output_trim_liegt_hinter_mix (M-31, B-16)",
+                    "Mix 0, Output-Trim +6 dB: " + zahl ((double) a[500], 6) + " gegen " + zahl (erwartet, 6));
         }
 
         // M-32/M-33/M-34: Mix.
@@ -1721,8 +2319,32 @@ int main()
             const double sofort = kern->autoGainDb();
             fahreStille (*kern, 4096, 512);
             pruefe (sofort == kern->autoGainDb() && std::abs (sofort + 6.0) <= 0.1,
-                    "auto_gain_wird_nicht_im_audiothread_gerechnet (M-39)",
+                    "auto_gain_steht_vor_dem_ersten_block_fest (M-39)",
                     "vor dem ersten Block bereits " + zahl (sofort, 4) + " dB");
+        }
+
+        // B-18 / M-39: der RECHENORT, threadbezogen gezaehlt. Die Ableitung
+        // meldet sich bei jeder Rechnung; im Audiopfad (RtWache-Bereich) steigt
+        // ein eigener Zaehler. Gefahren werden zwei Programmwechsel samt
+        // Blockrandubernahme, Fade und Pflege.
+        {
+            auto kern = neuerKern (fs, 512);
+            auto s = machSatz (true);
+            setzeGlobalBool (s, "v2.global.auto_gain", true);
+            belege (s, 0, Filtertyp::highShelf, 20.0, 1.0, 6.0);
+            RtWache::zuruecksetzen();
+            kern->uebernehmeZustand (s);
+            fahreStille (*kern, 4096, 512);
+            kern->pflege();
+            auto s2 = s;
+            belege (s2, 1, Filtertyp::bell, 2000.0, 2.0, -4.0);
+            kern->uebernehmeZustand (s2);
+            fahreStille (*kern, 4096, 512);
+            kern->pflege();
+            pruefe (RtWache::ableitungenAusserhalb() >= 2 && RtWache::ableitungenImAudiopfad() == 0,
+                    "auto_gain_wird_nicht_im_audiothread_gerechnet (M-39, B-18)",
+                    "Ableitungen ausserhalb " + std::to_string (RtWache::ableitungenAusserhalb())
+                    + ", im Audiopfad " + std::to_string (RtWache::ableitungenImAudiopfad()));
         }
 
         // M-40: Auto-Gain ersetzt den Output-Trim nicht - beide wirken.
@@ -1799,10 +2421,81 @@ int main()
                     "frei -> verblassend ist im Automaten nicht moeglich");
         }
 
+        // B-1 / M-42: das Interleaving aus dem Befund, deterministisch. Der
+        // Audiothread liest die Publikation A; bevor er uebernimmt, ersetzt der
+        // Worker A durch B, gibt A frei, belegt A neu und publiziert es fuer
+        // Candidate. Die Uebernahme mit der alten Beobachtung darf A NICHT
+        // nehmen; B wird Committed, A bleibt Candidate.
+        {
+            auto p = std::make_unique<DspBankPool>();
+            auto mitGeneration = [&] (int s) { p->bank (s).programm.generation = p->naechsteGeneration(); };
+
+            const int a = p->reserviere();
+            mitGeneration (a);
+            p->publiziere (Pfad::committed, a);
+            const std::uint64_t beobachtet = p->publikation (Pfad::committed);
+
+            const int b = p->reserviere();
+            mitGeneration (b);
+            const int verdraengt = p->publiziere (Pfad::committed, b);
+            const int wieder = p->reserviere();
+            mitGeneration (wieder);
+            p->publiziere (Pfad::candidate, wieder);
+
+            const int genommen    = p->uebernehme (Pfad::committed, beobachtet);
+            const bool aBleibt    = p->zustand (a) == BankZustand::bereit;
+            const int committed   = p->uebernehmeBereiten (Pfad::committed);
+            const int candidate   = p->uebernehmeBereiten (Pfad::candidate);
+            pruefe (verdraengt == a && wieder == a && genommen == -1 && aBleibt && committed == b && candidate == a,
+                    "uebernahme_nur_in_der_publizierten_generation (M-42, B-1)",
+                    "verdraengt " + std::to_string (verdraengt) + ", neu belegt " + std::to_string (wieder)
+                    + ", Uebernahme mit alter Beobachtung " + std::to_string (genommen) + ", Committed "
+                    + std::to_string (committed) + ", Candidate " + std::to_string (candidate));
+        }
+
+        // B-12 / R9 Feinheit 2: der Generationszaehler ueberlebt den Neuanlauf
+        // (freigeben -> bereiteVor), und ein ACK einer ALTEN Generation gibt
+        // danach keine Bank frei.
+        {
+            auto k = neuerKern (48000.0, 256);
+            auto s = machSatz (true);
+            belege (s, 0, Filtertyp::bell, 1000.0, 1.0, 6.0);
+            auto hoechsteGeneration = [&]
+            {
+                std::uint64_t g = 0;
+                for (int i = 0; i < DspBankPool::kBaenke; ++i) g = std::max (g, k->pool().generation (i));
+                return g;
+            };
+            k->uebernehmeZustand (s);
+            const std::uint64_t g1 = hoechsteGeneration();
+            k->freigeben();
+            k->bereiteVor (48000.0, 256);
+            k->uebernehmeZustand (s);
+            const std::uint64_t g2 = hoechsteGeneration();
+            pruefe (g1 > 0 && g2 > g1, "generation_waechst_ueber_den_neuanlauf (R9 Feinheit 2, B-12)",
+                    "vor dem Neuanlauf " + std::to_string (g1) + ", danach " + std::to_string (g2));
+
+            fahreStille (*k, 256, 256);
+            auto& kp = k->pool();
+            int s2 = -1;
+            for (int i = 0; i < DspBankPool::kBaenke; ++i)
+                if (kp.zustand (i) == BankZustand::audioAktiv && kp.generation (i) == g2) s2 = i;
+            bool ok = s2 >= 0 && kp.beginneVerblassen (s2) && kp.ackEinreihen (s2, g1);
+            kp.meldeAusgedient (s2);
+            const int ersteErnte = kp.ernteAcks (1);
+            const bool nochAusgedient = s2 >= 0 && kp.zustand (s2) == BankZustand::ausgedient;
+            const int zweiteErnte = kp.ernteAcks();
+            ok = ok && ersteErnte == 0 && nochAusgedient && zweiteErnte == 1 && kp.zustand (s2) == BankZustand::frei;
+            pruefe (ok, "ack_einer_alten_generation_gibt_keine_bank_frei (B-12)",
+                    "alter ACK geerntet: " + std::to_string (ersteErnte) + " frei, eigener ACK: "
+                    + std::to_string (zweiteErnte) + " frei");
+        }
+
         // M-43: Reclaim erst NACH dem ACK.
         {
             pool.zuruecksetzen();
             const int slot = pool.reserviere();
+            pool.bank (slot).programm.generation = pool.naechsteGeneration();
             pool.publiziere (Pfad::committed, slot);
             pool.uebernehmeBereiten (Pfad::committed);
             pool.beginneVerblassen (slot);
@@ -1825,6 +2518,7 @@ int main()
                     "der fuenfte Wunsch verdraengt keine aktive Bank");
 
             // Freigabe eines Slots -> der naechste Versuch kommt durch.
+            pool.bank (0).programm.generation = pool.naechsteGeneration();
             pool.publiziere (Pfad::committed, 0);
             pool.uebernehmeBereiten (Pfad::committed);
             pool.beginneVerblassen (0);
@@ -1848,19 +2542,64 @@ int main()
             {
                 const int slot = pool.reserviere();
                 if (slot < 0) { pool.ernteAcks(); continue; }
+                pool.bank (slot).programm.generation = pool.naechsteGeneration();
                 pool.publiziere (Pfad::committed, slot);
                 pool.uebernehmeBereiten (Pfad::committed);
                 pool.beginneVerblassen (slot);
                 pool.meldeAusgedient (slot);
             }
             pruefe (pool.ackUeberlaeufe() == pool.reclaimVerriegelungen(),
-                    "reclaim_pending_mask_haelt_den_slot (M-45)",
+                    "ueberlaeufe_und_verriegelungen_sind_gekoppelt (M-45)",
                     "Ueberlaeufe=" + std::to_string (pool.ackUeberlaeufe())
                     + ", Verriegelungen=" + std::to_string (pool.reclaimVerriegelungen()));
             pruefe (pool.ackUeberlaeufe() == 0,
                     "der Ring droppt bei regulaerem Betrieb nie (M-45)",
                     "der Ring fasst " + std::to_string (DspBankPool::kAckKapazitaet)
                     + " Eintraege bei " + std::to_string (DspBankPool::kBaenke) + " Slots");
+        }
+
+        // B-17 / M-45: ein ERZWUNGENER Ueberlauf an Maske und Slotzustand. Ein
+        // Pool mit Ringkapazitaet 2 dient drei Baenke ohne Ernte aus: der
+        // dritte ACK findet keinen Platz. Sein Slot muss verriegelt sein (Bit
+        // gesetzt, Zustand ausgedient), die Ernte darf ihn nicht freigeben,
+        // und erst die Bestaetigung des Workers gibt ihn frei und loescht das
+        // Bit. Eine Bestaetigung an einem Slot OHNE Bit gibt nichts frei (E-23).
+        {
+            auto p = std::make_unique<DspBankPool> (2);
+            auto ausdienen = [&]
+            {
+                const int s = p->reserviere();
+                p->bank (s).programm.generation = p->naechsteGeneration();
+                p->publiziere (Pfad::committed, s);
+                p->uebernehmeBereiten (Pfad::committed);
+                p->beginneVerblassen (s);
+                p->meldeAusgedient (s);
+                return s;
+            };
+            ausdienen();
+            ausdienen();
+            const int dritter = ausdienen();
+            const std::uint64_t bit = (std::uint64_t) (1ull << dritter);
+
+            const bool verriegelt = (p->reclaimPendingMask() & bit) != 0
+                                    && p->zustand (dritter) == BankZustand::ausgedient
+                                    && p->reclaimVerriegelungen() == 1;
+            const int geerntet   = p->ernteAcks();
+            const bool haelt     = p->zustand (dritter) == BankZustand::ausgedient;
+            const bool bestaetigt = p->bestaetigeReclaim (dritter);
+            const bool frei      = p->zustand (dritter) == BankZustand::frei && (p->reclaimPendingMask() & bit) == 0;
+            pruefe (verriegelt && geerntet == 2 && haelt && bestaetigt && frei,
+                    "erzwungener_ueberlauf_verriegelt_den_slot_bis_zur_bestaetigung (M-45, B-17)",
+                    std::string ("verriegelt=") + (verriegelt ? "ja" : "nein") + ", geerntet="
+                    + std::to_string (geerntet) + ", haelt=" + (haelt ? "ja" : "nein") + ", bestaetigt="
+                    + (bestaetigt ? "ja" : "nein") + ", danach frei=" + (frei ? "ja" : "nein"));
+
+            const int ohneBit = ausdienen();
+            const bool keineFreigabe = ! p->bestaetigeReclaim (ohneBit) && p->zustand (ohneBit) == BankZustand::ausgedient;
+            const int regulaer = p->ernteAcks();
+            pruefe (keineFreigabe && regulaer == 1 && p->zustand (ohneBit) == BankZustand::frei,
+                    "bestaetigung_ohne_verriegelung_gibt_nichts_frei (M-45, E-23)",
+                    "der regulaere ACK gibt ihn frei");
         }
 
         // M-46: vier Baenke im schlimmsten Fall; Candidate endet neutral.
@@ -1907,35 +2646,127 @@ int main()
         setzeGlobal (s, "v1.global.mono_bass_hz", 120.0);
         setzeGlobal (s, "v2.global.mix", 0.7);
         setzeGlobalBool (s, "v2.global.auto_gain", true);
-        kern->uebernehmeZustand (s);
-        fahreStille (*kern, 1024, 512);
-
+        // B-25 / M-47 / M-41: die Zaehler sind UEBER DEN GANZEN LAUF scharf -
+        // ab dem ERSTEN Programmwechsel. Im Lauf liegen: Wechsel mit Crossfade,
+        // reine Rampenwechsel, Ausschalten und Wiedereinschalten, Candidate-
+        // Uebernahmen, Candidate-Wechsel und Candidate-Ende samt Fade, Ernte und
+        // Reclaim, dazu die TRANSPORTKANTEN der Bibliothek (Entscheid E-26):
+        // eine Aufrufpause, in der der Worker publiziert oder erntet, die Kante
+        // Signal <-> Stille und der Wechsel der Blockgroesse zwischen 1,
+        // Bloecken bis maxBlock und einem uebergrossen, stueckelnden Block.
+        // Der Testzaehler zaehlt nur waehrend `verarbeite`; der Kernzaehler nur
+        // im RtWache-Bereich - Worker-Aufrufe liegen ausserhalb beider.
         RtWache::zuruecksetzen();
-        std::vector<float> a (2048), b (2048);
+        std::vector<float> a (4096), b (4096);
         float* kan[2] = { a.data(), b.data() };
 
-        zaehleAllokationen = true;
-        allokationen = 0;
-        std::uint64_t gesamt = 0;
+        auto rampe = s;
+        s.werte[(size_t) param::indexBandV1 (0, param::kGainDb)].zahl = 6.0;
+        rampe.werte[(size_t) param::indexBandV1 (0, param::kGainDb)].zahl = 2.0;
+        auto kand1 = s;
+        setzeGlobal (kand1, "v1.global.output_trim_db", -3.0);
+        belege (kand1, 5, Filtertyp::notch, 3000.0, 4.0, 0.0);
+        auto kand2 = kand1;
+        belege (kand2, 6, Filtertyp::highShelf, 6000.0, 0.707, -4.0, Kanalmodus::side);
+        auto aus = s;
+        aus.werte[(size_t) param::kIndexEqEnabled].b = false;
+
+        const std::uint64_t uebernahmenVorher = kern->uebernahmen();
+        std::uint64_t gesamt = 0, testAllokationen = 0;
+        int geerntet = 0, busy = 0;
+        kern->uebernehmeZustand (s);   // der ERSTE Programmwechsel - im Lauf
         for (int blk = 0; blk < 4000; ++blk)
         {
-            const int n = 1 + (blk * 61) % 2048;
+            bool ok = true;
+            switch (blk % 400)
+            {
+                case  40: ok = kern->uebernehmeZustand (rampe); break;
+                case  90: ok = kern->uebernehmeZustand (kand1, Pfad::candidate); break;
+                case 140: ok = kern->uebernehmeZustand (s); break;
+                case 190: ok = kern->uebernehmeZustand (kand2, Pfad::candidate); break;
+                case 240: kern->beendeCandidate(); break;
+                case 290: ok = kern->uebernehmeZustand (aus); break;
+                case 340: ok = kern->uebernehmeZustand (s); break;
+                default: break;
+            }
+            if (! ok) ++busy;
+            if (blk % 20 == 0) geerntet += kern->pflege();
+
+            int n = 1 + (blk * 61) % 2048;
+            if (blk % 97 == 13) n = 1;
+            if (blk % 97 == 14) n = 4096;
+            const bool still = (blk / 50) % 7 == 3;
             for (int i = 0; i < n; ++i)
             {
-                const double x = 0.5 * std::sin (0.013 * (double) (blk * 2048 + i));
+                const double x = still ? 0.0 : 0.5 * std::sin (0.013 * (double) (blk * 2048 + i));
                 a[(size_t) i] = (float) x;
                 b[(size_t) i] = (float) (x * 0.8);
             }
+            zaehleAllokationen = true;
+            allokationen = 0;
             kern->verarbeite (kan, 2, n);
+            zaehleAllokationen = false;
+            testAllokationen += allokationen;
             gesamt += (std::uint64_t) n;
         }
-        zaehleAllokationen = false;
+        const std::uint64_t uebernahmen = kern->uebernahmen() - uebernahmenVorher;
 
-        pruefe (allokationen == 0 && RtWache::allokationen() == 0,
-                "null_allokationen_im_callback (M-47)",
-                "4000 Bloecke wechselnder Groesse, " + std::to_string (gesamt) + " Samples");
+        pruefe (testAllokationen == 0 && RtWache::allokationen() == 0 && uebernahmen >= 60 && geerntet >= 30,
+                "null_allokationen_im_callback_samt_programmwechseln (M-41, M-47, B-25)",
+                "4000 Bloecke, " + std::to_string (gesamt) + " Samples, " + std::to_string (uebernahmen)
+                + " Blockrand-Uebernahmen, " + std::to_string (geerntet) + " Baenke geerntet, busy_retry "
+                + std::to_string (busy) + ", Testzaehler " + std::to_string (testAllokationen)
+                + ", Kernzaehler " + std::to_string (RtWache::allokationen()));
         pruefe (RtWache::sperren() == 0, "null_sperren_im_callback (M-47)",
                 "Sperrenzaehler=" + std::to_string (RtWache::sperren()));
+
+        // B-13: der Sperrzaehler ist VERDRAHTET. Lebendigkeit: eine Sperre ueber
+        // den Wrapper zaehlt im Audiopfad genau einmal, ausserhalb gar nicht.
+        {
+            std::mutex m;
+            RtWache::zuruecksetzen();
+            { RtWache::GemeldeteSperre<std::mutex> ausserhalb (m); }
+            const std::uint64_t ausserhalbGezaehlt = RtWache::sperren();
+            { RtWache::Bereich audio; RtWache::GemeldeteSperre<std::mutex> innen (m); }
+            pruefe (ausserhalbGezaehlt == 0 && RtWache::sperren() == 1,
+                    "sperrzaehler_sieht_eine_sperre_im_audiopfad (M-47, B-13)",
+                    "ausserhalb " + std::to_string (ausserhalbGezaehlt) + ", im Audiopfad "
+                    + std::to_string (RtWache::sperren()));
+            RtWache::zuruecksetzen();
+        }
+
+        // B-13: und VOLLSTAENDIG - kein Quelltext unter plugin/dsp nennt eine
+        // Sperrklasse oder einen Spin am Wrapper vorbei. Fail-closed: fehlt das
+        // Verzeichnis oder sind es weniger Dateien als der Kern hat, ist es rot.
+        {
+            namespace dateisystem = std::filesystem;
+            const dateisystem::path dsp = dateisystem::path (__FILE__).parent_path().parent_path() / "dsp";
+            const char* verboten[] = { "std::mutex", "std::recursive_mutex", "std::timed_mutex",
+                                       "std::shared_mutex", "std::lock_guard", "std::unique_lock",
+                                       "std::scoped_lock", "std::shared_lock", "std::condition_variable",
+                                       "CriticalSection", "SpinLock", "atomic_flag", "pthread_mutex",
+                                       "WaitForSingleObject", "SRWLOCK" };
+            int dateien = 0;
+            std::string treffer;
+            std::error_code fehlerCode;
+            if (dateisystem::is_directory (dsp, fehlerCode))
+            {
+                for (const auto& eintrag : dateisystem::directory_iterator (dsp, fehlerCode))
+                {
+                    if (! eintrag.is_regular_file()) continue;
+                    std::ifstream ein (eintrag.path(), std::ios::binary);
+                    const std::string text ((std::istreambuf_iterator<char> (ein)), std::istreambuf_iterator<char>());
+                    ++dateien;
+                    for (const char* v : verboten)
+                        if (text.find (v) != std::string::npos)
+                            treffer += eintrag.path().filename().string() + ": " + v + "; ";
+                }
+            }
+            pruefe (dateien >= 9 && treffer.empty(),
+                    "keine_sperre_am_wrapper_vorbei_im_kern (M-47, B-13)",
+                    std::to_string (dateien) + " Dateien unter " + dsp.string()
+                    + (treffer.empty() ? std::string (", kein Treffer") : ", Treffer: " + treffer));
+        }
 
         // Die Gegenprobe: der WORKER darf allozieren, und der Zaehler des
         // Kerns sieht das NICHT - sonst waere er global statt am Audiopfad.
@@ -1960,24 +2791,80 @@ int main()
             k->uebernehmeZustand (ein);
             fahreStille (*k, 1024, 256);
 
+            // B-22: der Referenzlauf - derselbe Kern, derselbe Zustand, derselbe
+            // Eingang, aber in Bloecken bis maxBlock, also OHNE Tap-Ueberlast.
+            auto referenz = neuerKern (48000.0, 256);
+            referenz->uebernehmeZustand (ein);
+            fahreStille (*referenz, 1024, 256);
+
             std::vector<float> gross (1024), grossR (1024);
             for (int i = 0; i < 1024; ++i)
-            { gross[(size_t) i] = 0.3f; grossR[(size_t) i] = 0.3f; }
-            std::vector<float> vorher = gross;
+            {
+                gross[(size_t) i]  = (float) (0.3 * std::sin (0.021 * (double) i));
+                grossR[(size_t) i] = (float) (0.2 * std::cos (0.017 * (double) i));
+            }
+            std::vector<float> refL = gross, refR = grossR;
             float* kanG[2] = { gross.data(), grossR.data() };
             const auto verworfenVorher = k->verworfeneAnalyseframes();
             k->verarbeite (kanG, 2, 1024);
 
-            bool audioGelaufen = false;
+            for (int versatz = 0; versatz < 1024; versatz += 256)
+            {
+                float* teil[2] = { refL.data() + versatz, refR.data() + versatz };
+                referenz->verarbeite (teil, 2, 256);
+            }
+            const bool gleich = std::memcmp (gross.data(), refL.data(), 1024 * sizeof (float)) == 0
+                             && std::memcmp (grossR.data(), refR.data(), 1024 * sizeof (float)) == 0;
+            bool veraendert = false;
             for (int i = 0; i < 1024; ++i)
-                if (gross[(size_t) i] != vorher[(size_t) i]) audioGelaufen = true;
+                if (gross[(size_t) i] != (float) (0.3 * std::sin (0.021 * (double) i))) veraendert = true;
 
-            pruefe (k->verworfeneAnalyseframes() == verworfenVorher + 1,
+            pruefe (k->verworfeneAnalyseframes() == verworfenVorher + 1 && k->tapLaenge() == 0,
                     "ueberlast_verwirft_analyse (M-48)",
-                    "Block 1024 > maxBlock 256: Tap verworfen");
-            pruefe (audioGelaufen && k->tapLaenge() == 0,
-                    "und Audio laeuft unveraendert weiter (M-48)",
-                    "der Block wurde verarbeitet, nur der Tap fehlt");
+                    "Block 1024 > maxBlock 256: Tap verworfen und gezaehlt");
+            pruefe (gleich && veraendert,
+                    "der_uebergrosse_block_gleicht_sample_exakt_dem_lauf_ohne_ueberlast (M-48, B-22)",
+                    "alle 1024 Samples beider Kanaele bitgleich zum Referenzlauf in 4 x 256");
+        }
+
+        // B-11 / M-25: die Uebernahme laeuft genau EINMAL je aeusserem Aufruf.
+        // Ein Testhaken publiziert ein neues Programm NACH dem ersten von vier
+        // Teilstuecken (1024 Samples, maxBlock 256): in diesem Aufruf darf es
+        // nicht wirken - der Ausgang bleibt ueber alle 1024 Samples konstant -,
+        // erst der naechste Aufruf nimmt es.
+        {
+            auto k = neuerKern (48000.0, 256);
+            auto ein = machSatz (true);
+            belege (ein, 0, Filtertyp::lowShelf, 8000.0, 0.707, 9.0);
+            k->uebernehmeZustand (ein);
+            fahreDc (*k, 0.3, 4096, 256);
+            k->pflege();
+
+            auto anders = machSatz (true);
+            belege (anders, 0, Filtertyp::lowShelf, 8000.0, 0.707, -9.0);
+            struct Haken { DspKern* kern; const param::DspSatz* satz; int aufrufe; };
+            Haken haken { k.get(), &anders, 0 };
+            k->setzeTeilstueckHaken ([] (void* c)
+            {
+                auto* h = static_cast<Haken*> (c);
+                if (h->aufrufe++ == 0) h->kern->uebernehmeZustand (*h->satz);
+            }, &haken);
+
+            const std::uint64_t vorher = k->uebernahmen();
+            const auto block = fahreDc (*k, 0.3, 1024, 1024);
+            const std::uint64_t nachErstem = k->uebernahmen();
+            double abweichung = 0.0;
+            for (double x : block) abweichung = std::max (abweichung, std::abs (x - block[0]));
+            k->setzeTeilstueckHaken (nullptr, nullptr);
+
+            const auto naechster = fahreDc (*k, 0.3, 1024, 1024);
+            const double ziel = 0.3 * std::pow (10.0, -9.0 / 20.0);
+            pruefe (haken.aufrufe == 3 && nachErstem == vorher && abweichung < 1e-6
+                    && k->uebernahmen() == vorher + 1 && std::abs (naechster.back() - ziel) < 1e-4,
+                    "uebernahme_nur_am_aeusseren_blockrand (M-25, R9, B-11)",
+                    "Haken " + std::to_string (haken.aufrufe) + " mal, Uebernahmen im Aufruf "
+                    + std::to_string (nachErstem - vorher) + ", groesste Abweichung im Block "
+                    + zahl (abweichung, 9) + ", naechster Aufruf endet bei " + zahl (naechster.back(), 6));
         }
 
         // Der Denormal-Riegel (Entscheid E-14, Selbstaudit des Auftrags).
@@ -2059,6 +2946,44 @@ int main()
         pruefe (ausgangEndlich, "der_pfad_bleibt_dauerhaft_endlich (M-49)",
                 "100 Bloecke nach dem NaN");
 
+        // B-20 / M-49: der ZWEITE Riegel, eigenstaendig vom Eingangsriegel.
+        // Zwei Filterzustaende einer aktiven Bank werden gezielt nicht-endlich
+        // gesetzt; der naechste Blockrand nullt sie, BEVOR ein Sample sie liest,
+        // der Zaehler steigt um genau zwei, der Ausgang bleibt endlich, und der
+        // Eingangszaehler bleibt stehen - es kam kein NaN ueber den Eingang.
+        {
+            auto k2 = neuerKern (48000.0, 512);
+            auto s2 = machSatz (true);
+            belege (s2, 0, Filtertyp::bell, 1000.0, 2.0, 6.0);
+            belege (s2, 2, Filtertyp::lowShelf, 200.0, 0.707, 4.0);
+            k2->uebernehmeZustand (s2);
+            fahreStille (*k2, 2048, 512);
+            int aktiv = -1, q1 = -1, q2 = -1, q3 = -1;
+            k2->gefahreneSlots (aktiv, q1, q2, q3);
+            if (aktiv >= 0)
+            {
+                auto& bank = k2->pool().bank (aktiv);
+                bank.baender[0].statisch[0].z1 = std::numeric_limits<double>::quiet_NaN();
+                bank.baender[2].statisch[1].z2 = std::numeric_limits<double>::infinity();
+            }
+            const auto geheiltVorher   = k2->geheilteFilterzustaende();
+            const auto eingaengeVorher = k2->nichtEndlicheEingaenge();
+            std::vector<float> e (512), f (512);
+            for (int i = 0; i < 512; ++i)
+            { e[(size_t) i] = (float) (0.3 * std::sin (0.02 * (double) i)); f[(size_t) i] = e[(size_t) i]; }
+            float* kanE[2] = { e.data(), f.data() };
+            k2->verarbeite (kanE, 2, 512);
+            bool endlich = true;
+            for (int i = 0; i < 512; ++i)
+                if (! std::isfinite (e[(size_t) i]) || ! std::isfinite (f[(size_t) i])) endlich = false;
+            pruefe (aktiv >= 0 && endlich && k2->geheilteFilterzustaende() == geheiltVorher + 2
+                    && k2->nichtEndlicheEingaenge() == eingaengeVorher,
+                    "nichtendlicher_filterzustand_wird_am_blockrand_geheilt (M-49, B-20)",
+                    "geheilt +" + std::to_string (k2->geheilteFilterzustaende() - geheiltVorher)
+                    + ", Eingangszaehler +" + std::to_string (k2->nichtEndlicheEingaenge() - eingaengeVorher)
+                    + ", Ausgang endlich: " + (endlich ? "ja" : "nein"));
+        }
+
         // M-113: eine nicht-endliche Auslenkung wird 0 und gezaehlt - der
         // Wert verlaesst den Kern nie nicht-endlich.
         {
@@ -2086,9 +3011,36 @@ int main()
             // die Pruefung ist damit eine Wache, und eine Wache, die
             // strukturell 0 bleibt, braucht einen Test (Pruefliste A). Der
             // Rotbeweis stellt den Fall her und nimmt den Riegel weg.
-            pruefe (alleEndlich, "nichtendliche_auslenkung_wird_null_und_gezaehlt (M-113)",
-                    "kein NaN verlaesst den Kern; Riegel griff "
-                    + std::to_string (kern->nichtEndlicheAuslenkungen()) + " mal");
+            pruefe (alleEndlich && kern->nichtEndlicheAuslenkungen() == 0,
+                    "im_regulaeren_betrieb_ist_jede_auslenkung_endlich (M-113)",
+                    "Riegel griff " + std::to_string (kern->nichtEndlicheAuslenkungen()) + " mal");
+
+            // B-21: der Fehlerfall EXAKT. Vorbedingung (keine Produktmutation):
+            // die Kennlinie des dynamischen Slots 4 bekommt einen NaN als Range,
+            // der Pegel liegt ueber dem Threshold - die gerechnete Auslenkung ist
+            // damit in jedem Block nicht-endlich. Gemeldet werden muss exakt 0,0,
+            // und der Zaehler steigt um genau einen je Block.
+            int aktiv = -1, q1 = -1, q2 = -1, q3 = -1;
+            kern->gefahreneSlots (aktiv, q1, q2, q3);
+            if (aktiv >= 0)
+                kern->pool().bank (aktiv).programm.baender[4].rangeDb = std::numeric_limits<double>::quiet_NaN();
+            const std::uint64_t vorher = kern->nichtEndlicheAuslenkungen();
+            const int bloecke = 10;
+            for (int blk = 0; blk < bloecke; ++blk)
+            {
+                for (int i = 0; i < 512; ++i)
+                { const double x = 0.9 * std::sin (2.0 * kPiRef * 2000.0 * (double) (blk * 512 + i) / 48000.0);
+                  c[(size_t) i] = (float) x; d[(size_t) i] = (float) x; }
+                kern->verarbeite (kanC, 2, 512);
+            }
+            double nachher[param::kSlots];
+            kern->auslenkungenDb (nachher);
+            pruefe (aktiv >= 0 && nachher[4] == 0.0 && ! std::signbit (nachher[4])
+                    && kern->nichtEndlicheAuslenkungen() == vorher + (std::uint64_t) bloecke,
+                    "nichtendliche_auslenkung_wird_null_und_gezaehlt (M-113, B-21)",
+                    "gemeldet " + zahl (nachher[4], 15) + ", Zaehler +"
+                    + std::to_string (kern->nichtEndlicheAuslenkungen() - vorher) + " bei "
+                    + std::to_string (bloecke) + " Bloecken");
         }
     }
 
@@ -2169,8 +3121,16 @@ int main()
                 return (double) a[500] / amplitude;
             };
             const double v1 = miss (0.1), v2 = miss (0.5);
-            pruefe (std::abs (v1 - v2) < 1e-5, "delta_ist_differenz_mit_festem_abgleich (M-54)",
-                    "Verhaeltnis bei 0,1 und 0,5: " + zahl (v1, 6) + " / " + zahl (v2, 6));
+            // B-23: gegen den UNABHAENGIG gerechneten Sollwert. Output-Trim
+            // +6 dB macht Processed = Dry * 10^(6/20); Delta ist
+            // (Processed - Dry) * 10^(12/20). Ein stummes, vertauschtes oder
+            // falsch skaliertes Delta faellt - und beide Amplituden treffen
+            // denselben Faktor, der Abgleich folgt dem Material nicht.
+            const double soll = (std::pow (10.0, 6.0 / 20.0) - 1.0) * std::pow (10.0, 12.0 / 20.0);
+            pruefe (std::abs (v1 - soll) < 1e-5 * soll && std::abs (v2 - soll) < 1e-5 * soll,
+                    "delta_ist_differenz_mit_festem_abgleich (M-54, B-23)",
+                    "Verhaeltnis bei 0,1 und 0,5: " + zahl (v1, 6) + " / " + zahl (v2, 6)
+                    + " gegen Soll " + zahl (soll, 6));
         }
 
         // M-55: der Wechsel zwischen zwei Hoermatrix-Zustaenden ist
@@ -2252,6 +3212,173 @@ int main()
             fahreStille (*k, 1024, 512);
             pruefe (k->wirksameHoermatrix() == Hoermatrix::candidate,
                     "mit_kandidat_greift_die_auswahl (M-56)");
+        }
+
+        // B-6 / §3.0: der Candidate-Pfad fuehrt EIGENE Rampen (hier der
+        // Output-Trim) und einen eigenen Auto-Gain aus SEINER Kurve.
+        {
+            auto k = neuerKern (fs, 512);
+            k->uebernehmeZustand (machSatz (true));
+            auto kand = machSatz (true);
+            setzeGlobal (kand, "v1.global.output_trim_db", 6.0);
+            k->uebernehmeZustand (kand, Pfad::candidate);
+            fahreStille (*k, kRampeSamples + 2048, 512);
+            std::vector<float> a (512, 0.25f), b (512, 0.25f);
+            float* kan[2] = { a.data(), b.data() };
+            k->verarbeite (kan, 2, 512);
+            const double* pc = k->tap (Tap::postCandidate, 0);
+            const double* pk = k->tap (Tap::postCommitted, 0);
+            const double sollTrim = 0.25 * std::pow (10.0, 6.0 / 20.0);
+            pruefe (pc != nullptr && pk != nullptr && std::abs (pc[500] - sollTrim) < 1e-6 && pk[500] == 0.25,
+                    "candidate_fuehrt_eigene_rampen (§3.0, B-6)",
+                    "Candidate " + zahl (pc != nullptr ? pc[500] : 0.0, 6) + " gegen " + zahl (sollTrim, 6)
+                    + ", Committed " + zahl (pk != nullptr ? pk[500] : 0.0, 6));
+
+            auto k2 = neuerKern (fs, 512);
+            auto neutral = machSatz (true);
+            setzeGlobalBool (neutral, "v2.global.auto_gain", true);
+            k2->uebernehmeZustand (neutral);
+            auto shelf = neutral;
+            belege (shelf, 0, Filtertyp::highShelf, 20.0, 1.0, 6.0);
+            k2->uebernehmeZustand (shelf, Pfad::candidate);
+            // DC lange genug, dass der 20-Hz-Shelf eingeschwungen ist.
+            fahreDc (*k2, 0.25, 32768, 512);
+            std::vector<float> c (512, 0.25f), d (512, 0.25f);
+            float* kan2[2] = { c.data(), d.data() };
+            k2->verarbeite (kan2, 2, 512);
+            const double* pc2 = k2->tap (Tap::postCandidate, 0);
+            // Bei DC traegt der High-Shelf 0 dB; am Tap bleibt allein der
+            // angewandte Ausgleich des Candidate.
+            const double sollAg = 0.25 * std::pow (10.0, k2->autoGainCandidateDb() / 20.0);
+            pruefe (std::abs (k2->autoGainCandidateDb() + 6.0) <= 0.1 && k2->autoGainDb() == 0.0
+                    && pc2 != nullptr && std::abs (pc2[500] - sollAg) < 1e-4,
+                    "candidate_auto_gain_aus_eigener_kurve (§3.0, B-6)",
+                    "Candidate " + zahl (k2->autoGainCandidateDb(), 4) + " dB, Committed "
+                    + zahl (k2->autoGainDb(), 4) + " dB, Candidate-Tap bei DC "
+                    + zahl (pc2 != nullptr ? pc2[500] : 0.0, 6) + " gegen " + zahl (sollAg, 6));
+        }
+
+        // B-7 / §44.2: ein Candidate-Wechsel blendet von der BISHERIGEN
+        // Candidate-Bank auf die neue, nicht vom Eingang. Beide Wechsel sind
+        // TOPOLOGISCH (Kanalmodus, dann Typ) und laufen damit als Crossfade
+        // zwischen zwei Candidate-Baenken; ein reiner Rampenwechsel (E-19)
+        // haette keine Quellbank, und die Probe maesse nichts. "Dieselbe Kurve"
+        // ist derselbe Low-Shelf auf Mid statt Stereo - bei L = R klingt er
+        // identisch.
+        {
+            auto k = neuerKern (fs, 64);
+            k->uebernehmeZustand (machSatz (true));
+            auto c1 = machSatz (true);
+            belege (c1, 0, Filtertyp::lowShelf, 8000.0, 0.707, 9.0);
+            k->uebernehmeZustand (c1, Pfad::candidate);
+            k->setzeHoermatrix (Hoermatrix::candidate);
+            const auto vor = fahreDc (*k, 0.3, 4096, 64);
+            k->pflege();
+
+            auto gleicheKurve = machSatz (true);
+            belege (gleicheKurve, 0, Filtertyp::lowShelf, 8000.0, 0.707, 9.0, Kanalmodus::mid);
+            k->uebernehmeZustand (gleicheKurve, Pfad::candidate);
+            const auto gleich = fahreDc (*k, 0.3, 1024, 64);
+            const double sprungGleich = groessterSprung (vor.back(), gleich);
+            k->pflege();
+
+            auto c2 = machSatz (true);
+            belege (c2, 0, Filtertyp::highShelf, 8000.0, 0.707, 9.0);
+            k->uebernehmeZustand (c2, Pfad::candidate);
+            const auto anders = fahreDc (*k, 0.3, 1024, 64);
+            const double B = 0.3;   // ein High-Shelf traegt DC mit 0 dB
+            const double stufe = std::abs (B - gleich.back()) / (double) kFadeSamples;
+            const double sprungAnders = groessterSprung (gleich.back(), anders);
+            pruefe (sprungGleich <= 0.01 && sprungAnders <= 4.0 * stufe + 1e-9 && std::abs (anders.back() - B) < 1e-4,
+                    "candidate_wechsel_blendet_aus_der_bisherigen_candidate_bank (§44.2, B-7)",
+                    "dieselbe Kurve: max Sprung " + zahl (sprungGleich, 7) + " (aus Dry waeren es "
+                    + zahl (vor.back() - 0.3, 4) + "); andere Kurve: " + zahl (sprungAnders, 7)
+                    + " gegen Fadeschritt " + zahl (stufe, 7));
+        }
+
+        // B-8 / M-46: Abbruch MITTEN im Candidate-Fade bei gewaehlter Hoermatrix
+        // Candidate. Danach sind beide Candidate-Baenke ueber den ACK frei, der
+        // Ausgang springt nicht und ist ab Fadeende gleich Processed.
+        {
+            auto k = neuerKern (fs, 64);
+            auto com = machSatz (true);
+            belege (com, 0, Filtertyp::lowShelf, 8000.0, 0.707, 6.0);
+            k->uebernehmeZustand (com);
+            auto c1 = machSatz (true);
+            belege (c1, 0, Filtertyp::lowShelf, 8000.0, 0.707, -9.0);
+            k->uebernehmeZustand (c1, Pfad::candidate);
+            k->setzeHoermatrix (Hoermatrix::candidate);
+            const auto vor = fahreDc (*k, 0.3, 4096, 64);
+            k->pflege();
+
+            auto c2 = machSatz (true);
+            belege (c2, 0, Filtertyp::highShelf, 8000.0, 0.707, 9.0);   // Typwechsel: ein echter Crossfade
+            k->uebernehmeZustand (c2, Pfad::candidate);
+            auto lauf = fahreDc (*k, 0.3, 128, 64);
+            k->beendeCandidate();
+            const auto rest = fahreDc (*k, 0.3, 2048, 64);
+            lauf.insert (lauf.end(), rest.begin(), rest.end());
+            const int geerntet = k->pflege();
+
+            std::vector<float> a (64, 0.3f), b (64, 0.3f);
+            float* kan[2] = { a.data(), b.data() };
+            k->verarbeite (kan, 2, 64);
+            const double* pk = k->tap (Tap::postCommitted, 0);
+            bool gleichProcessed = pk != nullptr;
+            for (int i = 0; i < 64 && pk != nullptr; ++i)
+                if (a[(size_t) i] != (float) pk[i]) gleichProcessed = false;
+            int cA = -1, cQ = -1, kA = -1, kQ = -1;
+            k->gefahreneSlots (cA, cQ, kA, kQ);
+
+            const double A  = vor.back();
+            const double C2 = 0.3;   // ein High-Shelf traegt DC mit 0 dB
+            const double P  = 0.3 * std::pow (10.0, 6.0 / 20.0);
+            const double stufe = std::max ({ std::abs (C2 - A), std::abs (P - C2), std::abs (P - A) }) / (double) kFadeSamples;
+            const double sprung = groessterSprung (A, lauf);
+            pruefe (geerntet >= 2 && k->pool().belegteSlots() == 1 && kA == -1 && kQ == -1
+                    && gleichProcessed && sprung <= 4.0 * stufe + 1e-9 && ! k->candidateVorhanden(),
+                    "candidate_ende_blendet_aus_und_gibt_beide_baenke_frei (M-46, B-8)",
+                    "geerntet " + std::to_string (geerntet) + ", belegt " + std::to_string (k->pool().belegteSlots())
+                    + ", Candidate-Slots " + std::to_string (kA) + "/" + std::to_string (kQ) + ", max Sprung "
+                    + zahl (sprung, 7) + " gegen Fadeschritt " + zahl (stufe, 7) + ", danach gleich Processed: "
+                    + (gleichProcessed ? "ja" : "nein"));
+        }
+
+        // B-9 / M-27 / R14: die Auslenkungen liegen JE PFAD. Ein Candidate mit
+        // freiem Slot nullt die bewegte Committed-Auslenkung nicht, und ein
+        // Candidate mit groesserer Range treibt sie nicht ueber die Grenze des
+        // Committed-Programms.
+        {
+            auto k = neuerKern (fs, 512);
+            auto com = machSatz (true);
+            belege (com, 3, Filtertyp::bell, 1000.0, 1.0, 0.0);
+            machDynamisch (com, 3, -3.0, -50.0, 1.0, 0.0, 20.0);
+            k->uebernehmeZustand (com);
+            auto kandFrei = machSatz (true);
+            belege (kandFrei, 0, Filtertyp::bell, 500.0, 1.0, 2.0);
+            k->uebernehmeZustand (kandFrei, Pfad::candidate);
+            long long n0 = 0;
+            fahreStereoTon (*k, fs, 1000.0, 0.9, n0, 48000, 512);
+            double wc[param::kSlots], wk[param::kSlots];
+            k->auslenkungenDb (wc);
+            k->auslenkungenCandidateDb (wk);
+            const bool freiNulltNicht = std::abs (wc[3] + 3.0) < 1e-9 && wk[3] == 0.0;
+            const double committed1 = wc[3];
+            k->pflege();
+
+            auto kandWeit = machSatz (true);
+            belege (kandWeit, 3, Filtertyp::bell, 1000.0, 1.0, 0.0);
+            machDynamisch (kandWeit, 3, -12.0, -50.0, 1.0, 0.0, 20.0);
+            k->uebernehmeZustand (kandWeit, Pfad::candidate);
+            fahreStereoTon (*k, fs, 1000.0, 0.9, n0, 48000, 512);
+            k->auslenkungenDb (wc);
+            k->auslenkungenCandidateDb (wk);
+            const bool grenzeHaelt = std::abs (wc[3]) <= 3.0 + 1e-12 && std::abs (wc[3] + 3.0) < 1e-9
+                                     && std::abs (wk[3] + 12.0) < 1e-9;
+            pruefe (freiNulltNicht && grenzeHaelt,
+                    "auslenkungen_liegen_je_pfad_getrennt (M-27, R14, B-9)",
+                    "Committed bei freiem Candidate-Slot " + zahl (committed1, 4) + " dB; mit Candidate-Range -12: Committed "
+                    + zahl (wc[3], 4) + " dB, Candidate " + zahl (wk[3], 4) + " dB");
         }
 
         // M-57: die drei Taps sind kohaerent, und die Hoermatrix liegt
@@ -2399,12 +3526,13 @@ int main()
         std::atomic<std::uint64_t> verletzungen { 0 }, uebergaenge { 0 };
         std::atomic<std::uint64_t> letzteGeneration { 0 };
         std::atomic<std::uint64_t> generationsBruch { 0 };
+        std::atomic<std::uint64_t> pfadKreuzungen { 0 };
 
         std::thread audio ([&]
         {
             std::vector<float> a (64), b (64);
             float* kan[2] = { a.data(), b.data() };
-            std::uint64_t vorige = 0;
+            std::uint64_t vorige[2] = { 0, 0 };
 
             // (1) Der Slot, den der Audiothread GERADE FAEHRT, gehoert ihm.
             //     Wird er `frei` oder `vorbereitend`, hat der Worker ihn vor
@@ -2416,15 +3544,19 @@ int main()
             //     Fenster nicht an der Blockgrenze verlorengeht.
             auto pruefeGefahrene = [&]
             {
-                int sC = -1, sV = -1, sK = -1;
-                kern->gefahreneSlots (sC, sV, sK);
-                for (int s : { sC, sV, sK })
+                int sC = -1, sV = -1, sK = -1, sKV = -1;
+                kern->gefahreneSlots (sC, sV, sK, sKV);
+                for (int s : { sC, sV, sK, sKV })
                 {
                     if (s < 0) continue;
                     const auto z = pool.zustand (s);
                     if (z == BankZustand::frei || z == BankZustand::vorbereitend)
                         verletzungen.fetch_add (1, std::memory_order_relaxed);
                 }
+                // B-1: keine Bank liegt je in ZWEI Pfaden.
+                for (int x : { sC, sV })
+                    for (int y : { sK, sKV })
+                        if (x >= 0 && x == y) pfadKreuzungen.fetch_add (1, std::memory_order_relaxed);
             };
 
             while (laeuft.load (std::memory_order_acquire))
@@ -2448,15 +3580,19 @@ int main()
                 if (aktive + vorbereitende > DspBankPool::kBaenke)
                     verletzungen.fetch_add (1, std::memory_order_relaxed);
 
-                // Generationen streng monoton.
-                for (int s = 0; s < DspBankPool::kBaenke; ++s)
-                    if (pool.zustand (s) == BankZustand::audioAktiv)
-                    {
-                        const auto g = pool.generation (s);
-                        if (g < vorige) generationsBruch.fetch_add (1, std::memory_order_relaxed);
-                        vorige = g;
-                        letzteGeneration.store (g, std::memory_order_relaxed);
-                    }
+                // Generationen je Pfad streng monoton - die beiden Pfade
+                // nehmen ihre Programme unabhaengig voneinander.
+                int gC = -1, gCQ = -1, gK = -1, gKQ = -1;
+                kern->gefahreneSlots (gC, gCQ, gK, gKQ);
+                const int aktivJePfad[2] = { gC, gK };
+                for (int p = 0; p < 2; ++p)
+                {
+                    if (aktivJePfad[p] < 0) continue;
+                    const auto g = pool.generation (aktivJePfad[p]);
+                    if (g < vorige[p]) generationsBruch.fetch_add (1, std::memory_order_relaxed);
+                    vorige[p] = g;
+                    letzteGeneration.store (g, std::memory_order_relaxed);
+                }
                 uebergaenge.fetch_add (1, std::memory_order_relaxed);
             }
         });
@@ -2467,7 +3603,13 @@ int main()
             auto v = s;
             belege (v, runde % param::kSlots, Filtertyp::bell,
                     200.0 + (double) (runde % 40) * 100.0, 1.0 + (double) (runde % 5), 3.0);
-            if (! kern->uebernehmeZustand (v)) kern->pflege();   // busy_retry: ernten und weiter
+            // B-1: BEIDE Pfade publizieren, dazu Candidate-Enden - erst dann
+            // kann ein verdraengter Slot fuer den anderen Pfad neu belegt werden.
+            bool ok = true;
+            if (runde % 7 == 3)      ok = kern->uebernehmeZustand (v, Pfad::candidate);
+            else if (runde % 7 == 5) kern->beendeCandidate();
+            else                     ok = kern->uebernehmeZustand (v);
+            if (! ok) kern->pflege();   // busy_retry: ernten und weiter
             kern->pflege();
         }
         laeuft.store (false, std::memory_order_release);
@@ -2477,7 +3619,10 @@ int main()
                 std::to_string (uebergaenge.load()) + " Bloecke, 3000 Publikationen, "
                 + std::to_string (verletzungen.load()) + " Invariantenbrueche");
         pruefe (generationsBruch.load() == 0, "generationen_bleiben_streng_monoton (M-122)",
-                "letzte Generation " + std::to_string (letzteGeneration.load()));
+                "je Pfad; letzte Generation " + std::to_string (letzteGeneration.load()));
+        pruefe (pfadKreuzungen.load() == 0, "keine_bank_liegt_je_in_zwei_pfaden (M-122, B-1)",
+                "Committed und Candidate publizieren parallel, " + std::to_string (pfadKreuzungen.load())
+                + " Kreuzungen");
         pruefe (pool.ackUeberlaeufe() == pool.reclaimVerriegelungen(),
                 "kein stiller Ringverlust unter Last (M-43, M-45)",
                 "Ueberlaeufe=" + std::to_string (pool.ackUeberlaeufe())

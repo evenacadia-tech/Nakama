@@ -23,10 +23,11 @@
     BITGENAU neutral: `m0 = 1`, `m1 = m2 = 0` ergibt `y = 1.0*x + 0.0*v1 +
     0.0*v2`. Darauf ruht M-19 ("das Band steht still").
 
-    NICHT gemessen wird der SVF gegen die analytische RBJ-Antwort - das
-    waere ein Vergleich zweier verschiedener Filterfamilien. M-10 bis M-13
-    messen den statischen Weg; der dynamische Weg wird gegen seine
-    KENNLINIE gemessen (M-18 bis M-20).
+    Die Ruheantwort (Auslenkung 0) der drei Typen mit Gain ist unter der
+    bilinearen Abbildung mit Prewarping IDENTISCH mit der RBJ-Antwort
+    desselben Typs, desselben Q und desselben Gains. B6 misst sie deshalb
+    gegen dieselbe eigenstaendig ausgeschriebene RBJ-Formel wie den
+    statischen Weg (Nacharbeit 1, B-2); die Kennlinie misst M-18.
 */
 
 #include "DspFilter.h"
@@ -131,7 +132,12 @@ inline SvfKoeffizienten svfHighShelf (double grundG, double q, double gainDb) no
     SvfKoeffizienten c;
     svfIntegratoren (c, g, k);
     c.m0 = A * A;
-    c.m1 = k * (A - 1.0) * A;
+    // Nacharbeit 1, B-2: `(1 - A)`, nicht `(A - 1)`. Das falsche Vorzeichen
+    // erzeugte im analogen Zaehler den linearen Term k*A*(2A-1) statt k*A:
+    // falsche Ruheantwort schon bei +6 dB und bei -24 dB Gesamtgain eine
+    // Nullstelle in der rechten Halbebene. Mit diesem Vorzeichen ist die
+    // Antwort die des RBJ-High-Shelf (B6 misst beides).
+    c.m1 = k * (1.0 - A) * A;
     c.m2 = 1.0 - A * A;
     return c;
 }

@@ -43,13 +43,54 @@ public:
         if (imAudiopfad()) allokationenZaehler().fetch_add (1, std::memory_order_relaxed);
     }
 
-    /** An jeder Stelle des Kerns zu rufen, die eine Sperre nimmt. Es gibt
-        im Audiopfad keine - und genau das ist die Zusage, die hier
-        MESSBAR wird statt behauptet zu bleiben. */
+    /** Gerufen von `GemeldeteSperre` - der EINZIGE zulaessige Weg, im Kern
+        eine Sperre zu nehmen (B-13). Es gibt im Audiopfad keine; der Zaehler
+        macht das messbar, und der Textriegel in B6 haelt jede Sperre
+        ausserhalb dieses Wrappers fern. */
     static void meldeSperre() noexcept
     {
         if (imAudiopfad()) sperrenZaehler().fetch_add (1, std::memory_order_relaxed);
     }
+
+    /** Gerufen von `leiteAutoGainAb` (B-18, M-39): die Ableitung zaehlt
+        getrennt nach Rechenort. Im Audiopfad bleibt der Zaehler 0; ausserhalb
+        steigt er mit jedem gebauten Programm - der Beleg, dass die Ableitung
+        wirklich lief und nicht nur nicht im Callback. */
+    static void meldeAbleitung() noexcept
+    {
+        if (imAudiopfad()) ableitungenAudioZaehler().fetch_add (1, std::memory_order_relaxed);
+        else               ableitungenWorkerZaehler().fetch_add (1, std::memory_order_relaxed);
+    }
+
+    static std::uint64_t ableitungenImAudiopfad() noexcept
+    {
+        return ableitungenAudioZaehler().load (std::memory_order_relaxed);
+    }
+
+    static std::uint64_t ableitungenAusserhalb() noexcept
+    {
+        return ableitungenWorkerZaehler().load (std::memory_order_relaxed);
+    }
+
+    /** Die gemeldete Sperre: ein RAII-Paar ueber einen beliebigen Lockable.
+        Bewusst ein Template ohne `<mutex>` - dieser Kopf nennt keine
+        Sperrklasse und bleibt damit selbst unter dem Textriegel. */
+    template <typename Lockable>
+    class GemeldeteSperre
+    {
+    public:
+        explicit GemeldeteSperre (Lockable& l) noexcept (noexcept (l.lock())) : sperre (l)
+        {
+            RtWache::meldeSperre();
+            sperre.lock();
+        }
+        ~GemeldeteSperre() { sperre.unlock(); }
+        GemeldeteSperre (const GemeldeteSperre&) = delete;
+        GemeldeteSperre& operator= (const GemeldeteSperre&) = delete;
+
+    private:
+        Lockable& sperre;
+    };
 
     static std::uint64_t allokationen() noexcept
     {
@@ -65,6 +106,8 @@ public:
     {
         allokationenZaehler().store (0, std::memory_order_relaxed);
         sperrenZaehler().store (0, std::memory_order_relaxed);
+        ableitungenAudioZaehler().store (0, std::memory_order_relaxed);
+        ableitungenWorkerZaehler().store (0, std::memory_order_relaxed);
     }
 
     /** RAII-Paar fuer den Audiopfad. */
@@ -93,6 +136,18 @@ private:
     }
 
     static std::atomic<std::uint64_t>& sperrenZaehler() noexcept
+    {
+        static std::atomic<std::uint64_t> z { 0 };
+        return z;
+    }
+
+    static std::atomic<std::uint64_t>& ableitungenAudioZaehler() noexcept
+    {
+        static std::atomic<std::uint64_t> z { 0 };
+        return z;
+    }
+
+    static std::atomic<std::uint64_t>& ableitungenWorkerZaehler() noexcept
     {
         static std::atomic<std::uint64_t> z { 0 };
         return z;

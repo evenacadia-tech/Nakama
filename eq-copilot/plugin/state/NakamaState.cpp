@@ -727,6 +727,40 @@ bool dspTraegtEtwas (const Zustand& z)
     return false;
 }
 
+/** Traegt der GEHALTENE `Dsp`-Knoten eine Eigenschaft ausserhalb der bekannten
+    Menge?
+
+    🔑 SONDE-015 Etappe 2, Nacharbeit 1 (Befund B-03): `dspTraegtEtwas` kennt
+    nur BEKANNTE Inhalte. Ein gueltiger Stand mit Revision 0, freien Slots,
+    leeren Listen und einer unbekannten Eigenschaft im Kind laed damit
+    schreibbar - und das Weglassen entfernte beim naechsten Speichern das ganze
+    Kind samt der unbekannten Eigenschaft. M-91 sagt aber ohne Einschraenkung
+    "der Leser ignoriert sie und ERHAELT sie beim Speichern", und `CLAUDE.md`
+    verlangt "State bleibt verlustfrei". Die Weglassregel gilt deshalb nur,
+    wenn auch nichts Unbekanntes dranhaengt. */
+bool dspTraegtUnbekanntes (const juce::ValueTree& dsp)
+{
+    if (! dsp.isValid())
+        return false;
+    static const juce::Identifier* const bekannt[] = {
+        &kSchema, &kDspRevision, &kDspOccupied, &kDspZonen, &kDspUndoRing, &kDspUndoCursor
+    };
+    for (int i = 0; i < dsp.getNumProperties(); ++i)
+    {
+        const auto name = dsp.getPropertyName (i);
+        bool gefunden = false;
+        for (const auto* b : bekannt)
+            if (name == *b)
+                gefunden = true;
+        if (! gefunden)
+            return true;
+    }
+    // Ein Kindknoten unter `Dsp` ist ebenfalls etwas, das dieser Build nicht
+    // kennt (§2.0: flache Arrays, keine Kindknoten) - und ihn wegzuwerfen
+    // waere derselbe Verlust.
+    return dsp.getNumChildren() > 0;
+}
+
 /** Zonen als flache Vierergruppen [id, low_hz, high_hz, enabled, ...]. */
 juce::Array<juce::var> zonenFlach (const std::vector<parameter::Schutzzone>& zonen)
 {
@@ -1000,9 +1034,14 @@ juce::ValueTree synchronisiert (const Zustand& z)
         bleibt damit fuer einen Build lesbar, der `Dsp` noch nicht kennt.
         Dieselbe Regel wie beim nie gesetzten `assistant_step_v1`: "noch nie
         benutzt" und "mit leeren Feldern benutzt" waeren in den Bytes sonst
-        dasselbe. */
+        dasselbe.
+
+        🔑 Nacharbeit 1 (B-03): weggelassen wird NUR, wenn auch der gehaltene
+        Knoten nichts Unbekanntes traegt. Sonst wird das Kind mit den bekannten
+        Werten zurueckgeschrieben und die unbekannte Eigenschaft bleibt stehen -
+        M-91 kennt dafuer keine Ausnahme. */
     auto dsp = kopie.getChildWithName (kDsp);
-    if (z.hatParameters && dspTraegtEtwas (z))
+    if (z.hatParameters && (dspTraegtEtwas (z) || dspTraegtUnbekanntes (dsp)))
     {
         if (! dsp.isValid())
         {

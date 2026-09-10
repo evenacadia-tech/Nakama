@@ -263,11 +263,19 @@ fn broker_p2_push_nutzt_subscriber_telemetriepipe_und_aktive_minors() {
 
     let payload =
         include_bytes!("../../../../eq-copilot/fixtures/v3/flatbuffers/gueltig/live-64-band.bin");
+    // 🔑 SONDE-015 B-01: gesendet wird mit der Zahl aus dem REGISTER - also
+    // mit derselben, die der C++-Sender auf den Draht schreibt. Mit
+    // `P2_SCHEMA_MINOR` hier folgte der Test einer zurueckgedrehten Konstante
+    // stumm nach unten und bliebe gruen, waehrend das Produkt jede echte Sonde
+    // beim ersten Frame abweist. Faellt die Empfaengergrenze zurueck, schliesst
+    // `verbindung.rs` die Verbindung und `expect` unten schlaegt zu.
+    let sendeminor = p2_minor_aus_register();
     assert!(source_telemetrie
-        .schreiben(&envelope_schreiben(Familie::P2, P2_SCHEMA_MINOR, payload).unwrap()));
-    let weiter = frame_roh_lesen(&main_telemetrie).expect("P2-Push an Main");
+        .schreiben(&envelope_schreiben(Familie::P2, sendeminor, payload).unwrap()));
+    let weiter = frame_roh_lesen(&main_telemetrie)
+        .expect("P2-Push an Main: der Broker nimmt die Fassung des Senders an");
     assert_eq!(weiter.kopf.familie, Familie::P2);
-    assert_eq!(weiter.kopf.schema_minor, P2_SCHEMA_MINOR);
+    assert_eq!(weiter.kopf.schema_minor, sendeminor);
     assert_eq!(weiter.payload, payload);
     assert_eq!(coordinator.p2_live_frames(), 1);
 

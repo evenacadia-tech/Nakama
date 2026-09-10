@@ -837,6 +837,21 @@ def dsp_nutzlast(datei: str = "gemischt") -> tuple[str, str]:
     return kanon.decode("utf-8"), hashlib.sha256(kanon).hexdigest()
 
 
+def dto_grund(text: str) -> str | None:
+    """Der Grund des DTO-Wegs fuer eine Zeichenkette, oder None (gueltig).
+
+    Kein zweiter Validator: das ist derselbe Referenzvalidator, den A12 gegen
+    C++ und Rust haelt (`erzeuge_state_fixtures.validiere_dto_python`). Er wird
+    hier gebraucht, weil ein Fixture, das AUSSCHLIESSLICH die Hashpruefung
+    messen soll, den DTO-Weg noch passieren muss - sonst faellt der Rotbeweis
+    an einem anderen Grund (SONDE-015 Etappe 2, Nacharbeit 1, Befund B-04).
+    """
+    import erzeuge_state_fixtures as sf   # zieht rfc8785 nach, wie dsp_nutzlast
+
+    vertrag = json.loads(sf.VERTRAG.read_text(encoding="utf-8"))
+    return sf.validiere_dto_python(vertrag, text)
+
+
 def dsp_bericht(datei: str = "gemischt") -> dict:
     jcs, _ = dsp_nutzlast(datei)
     return {
@@ -1455,13 +1470,41 @@ def zusatz_gueltig() -> list[tuple[str, dict, str]]:
     # BEIDE Leser muessen es sehen und den Bericht GANZ abweisen (M-105). Das
     # Fixture liegt deshalb bewusst unter `gueltig/`: der Unterschied zwischen
     # Schemaurteil und Leserurteil IST die Zusage.
+    #
+    # 🔑 Nacharbeit 1 (B-04): die Mutation bleibt INNERHALB der
+    # Vertragsgrenzen. Die vorige Fassung schob `width` von 1.25 auf 2.25 und
+    # riss damit die Obergrenze 2.0 - der Rotbeweis M-105 (Hashvergleich
+    # abgeschaltet) fiel danach am Bereichsgrund statt an der Annahme, und die
+    # Zusage "nur der Hash haelt ihn auf" war nicht gemessen. Die Zusicherung
+    # unten haelt das fest, statt es zu behaupten.
     falsch = copy.deepcopy(GRUND["state_report"])
     falsch["state_hash"] = hash_hex
     falsch["dsp"] = dsp_bericht()
-    falsch["dsp"]["jcs"] = jcs.replace('"v1.global.width":1', '"v1.global.width":2', 1)
-    assert falsch["dsp"]["jcs"] != jcs, "die Mutation muss greifen"
+    mutiert = jcs.replace('"v1.global.width":1.25', '"v1.global.width":1.5', 1)
+    assert mutiert != jcs, "die Mutation muss greifen"
+    grund = dto_grund(mutiert)
+    assert grund is None, (
+        f"die mutierte Zeichenkette muss den DTO-Weg PASSIEREN, sonst misst der "
+        f"Rotbeweis M-105 einen anderen Grund als die Hashpruefung (gelesen: {grund})")
+    falsch["dsp"]["jcs"] = mutiert
     faelle.append(("state-report-dsp-hash-passt-nicht", falsch,
-                   "schemagueltig, aber SHA-256(dsp.jcs) != state_hash - beide Leser weisen den Bericht GANZ ab (M-105)"))
+                   "schemagueltig UND DTO-gueltig - nur SHA-256(dsp.jcs) != state_hash. "
+                   "Beide Leser weisen den Bericht GANZ ab; faellt der Hashvergleich weg, "
+                   "wird er ANGENOMMEN (M-105)"))
+
+    # Der Gegenfall zu B-02: der Hash STIMMT, das DTO nicht. Ein Leser, der
+    # nach der Hashpruefung aufhoert, nimmt ihn an und speichert `{}` als
+    # bestaetigten DSP. R13 sagt aber "der Broker liest, VALIDIERT und haelt".
+    leeres_dto = "{}"
+    assert dto_grund(leeres_dto) is not None, "das Gegenfixture muss am DTO-Weg fallen"
+    dto_falsch = copy.deepcopy(GRUND["state_report"])
+    dto_falsch["state_hash"] = hashlib.sha256(leeres_dto.encode("utf-8")).hexdigest()
+    dto_falsch["dsp"] = dsp_bericht()
+    dto_falsch["dsp"]["jcs"] = leeres_dto
+    faelle.append(("state-report-dsp-dto-ungueltig", dto_falsch,
+                   "schemagueltig und der Hash STIMMT - aber die Zeichenkette ist kein DSP-DTO. "
+                   "Beide Leser pruefen nach dem Hash den exakten DTO-Weg und weisen ihn GANZ ab "
+                   "(M-105, R13 'liest, validiert und haelt')"))
     return faelle
 
 

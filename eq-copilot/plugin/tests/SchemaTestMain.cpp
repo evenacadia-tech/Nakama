@@ -1331,6 +1331,41 @@ void fahreFassung5UndDspBericht (const juce::var& schemaVar, bool schemaGelesen)
         // den Hash gar nicht, sondern nur das Schema.
         pruefe (fassung5.gueltig (kaputt),
                 "das Gegenfixture ist schemagueltig: nur der Leser sieht den Bruch");
+
+        /*  Nacharbeit 1 (B-04): und die mutierte Zeichenkette ist auch
+            DTO-GUELTIG. Sonst faellt dieser Fall am Bereichs- oder
+            Strukturgrund, und die Zusage "nur der Hash haelt ihn auf" waere
+            nicht gemessen - genau der Defekt, den die Erstpruefung fand. */
+        nakama::parameter::DspSatz ohneHash;
+        juce::String g2, d2;
+        const auto jcs = jcsVon (kaputt);
+        pruefe (nakama::parameter::ausDtoText (jcs.toRawUTF8(),
+                                               (size_t) jcs.getNumBytesAsUTF8(),
+                                               ohneHash, g2, d2),
+                "die mutierte Zeichenkette passiert den DTO-Weg: nur der Hash weist sie ab",
+                g2 + " " + d2);
+    }
+
+    /*  Nacharbeit 1 (B-02): der Gegenfall. Der Hash STIMMT, die Zeichenkette
+        ist trotzdem kein DSP-DTO. Ein Leser, der nach der Hashpruefung
+        aufhoert, speichert `{}` als bestaetigten DSP - R13 sagt aber "liest,
+        VALIDIERT und haelt". Rust misst denselben Fall an derselben Datei. */
+    {
+        bool ok4 = false;
+        const auto dtoKaputt = lies (
+            "eq-copilot/fixtures/v3/gueltig/state-report-dsp-dto-ungueltig.json", ok4);
+        if (ok4)
+        {
+            nakama::parameter::DspSatz aus;
+            juce::String grund, detail;
+            const bool gut = nakama::parameter::berichtDtoPruefen (
+                jcsVon (dtoKaputt), hashVon (dtoKaputt), aus, grund, detail);
+            pruefe (! gut && grund == "struktur",
+                    "hash_stimmt_aber_dto_faellt: der Bericht wird GANZ abgewiesen",
+                    grund + " " + detail);
+            pruefe (fassung5.gueltig (dtoKaputt),
+                    "auch dieses Gegenfixture ist schemagueltig: nur der Leser sieht den Bruch");
+        }
     }
 }
 

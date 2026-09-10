@@ -66,6 +66,15 @@ noch nicht kennt. Dieselbe Regel wie beim nie gesetzten
 `MainProject.assistant_step_v1`: „noch nie benutzt" und „mit leeren Feldern
 benutzt" wären in den Bytes sonst dasselbe.
 
+**Weggelassen wird nur, was auch nichts Unbekanntes trägt.** Trägt der
+**geladene** `Dsp`-Knoten eine Eigenschaft außerhalb der Menge oben — oder
+einen Kindknoten —, wird das Kind mit den bekannten Werten zurückgeschrieben,
+auch wenn die Weglassregel sonst greifen würde. Die additive Regel aus §2.1
+(„eine unbekannte Eigenschaft in einem bekannten Kind desselben Majors wird
+erhalten") kennt keine Ausnahme für einen leeren bekannten Inhalt; ein Kind
+wegzulassen, an dem etwas Unbekanntes hängt, wäre Datenverlust und kein
+Weglassen.
+
 **Der Undo-Eintrag ist ein voller Schnappschuss, kein Delta.** Jeder Eintrag
 trägt einen Kopf (`art` als Wort aus der geschlossenen Menge `apply`, `revert`,
 `neutralisieren`, `remove`, `preset_laden`, `gestus`; die betroffene Slot-ID

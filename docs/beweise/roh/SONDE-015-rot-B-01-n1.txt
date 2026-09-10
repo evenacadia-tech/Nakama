@@ -1,0 +1,68 @@
+SONDE-015 Etappe 2, Nacharbeit 1 - Rotbeweis B-01
+Zusage: Ein Fassungsschritt der Familie P2 ist erst vollstaendig, wenn Sender, Empfaenger und Transport ihn kennen.
+Bruch:  broker/src/transport/server_v3/mod.rs
+        - const P2_SCHEMA_MINOR: u8 = 2;
+        + const P2_SCHEMA_MINOR: u8 = 1;
+------------------------------------------------------------------------------
+$ cargo test --manifest-path broker/Cargo.toml --color never --lib transportfassung   (A4 cargo test transportfassung*)
+running 2 tests
+test transport::server_v3::tests_fristen::transportfassung_und_json_leser_stimmen_ueberein ... ok
+test transport::server_v3::tests_fristen::transportfassung_p2_bindet_den_sender ... FAILED
+
+failures:
+
+---- transport::server_v3::tests_fristen::transportfassung_p2_bindet_den_sender stdout ----
+
+thread 'transport::server_v3::tests_fristen::transportfassung_p2_bindet_den_sender' (33724) panicked at src\transport\server_v3\tests_fristen.rs:166:5:
+assertion `left == right` failed: P2-Fassung des Transports und des Registers laufen auseinander - ein Fassungsschritt, den nur eine Seite kennt, schliesst die Verbindung
+  left: 1
+ right: 2
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    transport::server_v3::tests_fristen::transportfassung_p2_bindet_den_sender
+
+test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 248 filtered out; finished in 0.00s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.71s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+error: test failed, to rerun pass `--lib`
+EXIT=101
+------------------------------------------------------------------------------
+$ cargo test --manifest-path broker/Cargo.toml --color never --lib unbekannter_schema_minor   (A4 cargo test unbekannter_schema_minor_wird_vor_der_senke_abgewiesen)
+running 1 test
+test transport::server_v3::tests_fristen::unbekannter_schema_minor_wird_vor_der_senke_abgewiesen ... FAILED
+
+failures:
+
+---- transport::server_v3::tests_fristen::unbekannter_schema_minor_wird_vor_der_senke_abgewiesen stdout ----
+
+thread 'transport::server_v3::tests_fristen::unbekannter_schema_minor_wird_vor_der_senke_abgewiesen' (11268) panicked at src\transport\server_v3\tests_fristen.rs:128:5:
+assertion failed: schema_minor_bekannt(Familie::P2, 2)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    transport::server_v3::tests_fristen::unbekannter_schema_minor_wird_vor_der_senke_abgewiesen
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 249 filtered out; finished in 0.00s
+
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.05s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+error: test failed, to rerun pass `--lib`
+EXIT=101
+------------------------------------------------------------------------------
+$ py -3.13 tools/eq-copilot/pruefe_fbs_feldids.py   (A9 pruefe_fbs_feldids.py)
+Schema:   eq-copilot\schemas\v3\flatbuffers\nakama_telemetry_v1.fbs
+Tabellen: 9
+Felder:   64
+Felder ohne id: 0
+Offsetfelder (string/Vektor/Tabelle) im Strukturriegel: 18
+P2-Wire-Envelope-Minor: 1 -> 2 (Sender und Empfaenger gegen dieses Register geprueft)
+  ROT: Rust-Empfaenger `P2_SCHEMA_MINOR` traegt 1, das Register sagt 2 - ein Fassungsschritt, den nur eine Seite kennt, schliesst die Verbindung.
+Pruefungen: 1 rot
+EXIT=2
+------------------------------------------------------------------------------
+URTEIL: ROT

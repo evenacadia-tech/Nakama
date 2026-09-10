@@ -1,0 +1,24 @@
+SONDE-015 Etappe 2, Nacharbeit 1 - Rotbeweis B-04
+Zusage: Das Hash-Negativfixture ist DTO-gueltig: nur der Hashvergleich haelt es auf, kein zweiter Grund.
+Bruch:  tools/eq-copilot/erzeuge_v3_fixtures.py
+        -     mutiert = jcs.replace('"v1.global.width":1.25', '"v1.global.width":1.5', 1)
+        +     mutiert = jcs.replace('"v1.global.width":1.25', '"v1.global.width":2.25', 1)
+------------------------------------------------------------------------------
+$ py -3.13 tools/eq-copilot/erzeuge_v3_fixtures.py --pruefen   (A8 erzeuge_v3_fixtures.py --pruefen)
+Traceback (most recent call last):
+  File "C:\Users\phili\Projekte\Nakama\tools\eq-copilot\erzeuge_v3_fixtures.py", line 3933, in <module>
+    sys.exit(main(sys.argv[1:]))
+             ~~~~^^^^^^^^^^^^^^
+  File "C:\Users\phili\Projekte\Nakama\tools\eq-copilot\erzeuge_v3_fixtures.py", line 3870, in main
+    manifest, dateien, rohdateien = baue()
+                                    ~~~~^^
+  File "C:\Users\phili\Projekte\Nakama\tools\eq-copilot\erzeuge_v3_fixtures.py", line 3465, in baue
+    for name, daten, warum in zusatz_gueltig():
+                              ~~~~~~~~~~~~~~^^
+  File "C:\Users\phili\Projekte\Nakama\tools\eq-copilot\erzeuge_v3_fixtures.py", line 1486, in zusatz_gueltig
+    assert grund is None, (
+           ^^^^^^^^^^^^^
+AssertionError: die mutierte Zeichenkette muss den DTO-Weg PASSIEREN, sonst misst der Rotbeweis M-105 einen anderen Grund als die Hashpruefung (gelesen: bereich)
+EXIT=1
+------------------------------------------------------------------------------
+URTEIL: ROT

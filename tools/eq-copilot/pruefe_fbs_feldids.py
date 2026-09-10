@@ -27,6 +27,10 @@ Sieben Pruefungen:
      und sind fuer immer unveraenderlich.
   6. Kein `include`: eine eingebundene Datei braechte Tabellen mit, die dieser
      Riegel nie sieht (T2-Runde 3, Befund 6).
+  8. Sender (`kFeatureBatchSchemaMinor`) und Empfaenger (`P2_SCHEMA_MINOR`)
+     tragen DIESELBE P2-Fassungszahl wie das Register `wire_envelope_schema_minor`
+     in dieser Datei - die Zahl steht genau einmal, beide Seiten werden gegen
+     sie geprueft (SONDE-015 Etappe 2, Nacharbeit 1, Befund B-01).
   7. JEDES Offsetfeld (string, Vektor, Tabelle) ist im Strukturriegel des
      Rust-Beins genannt — siehe unten, `pruefe_strukturriegel`.
   8. Die SONDE-012-Felder behalten IDs, Typen und `= null`-Praesenzsemantik.
@@ -48,6 +52,13 @@ IDS = WURZEL / "eq-copilot/schemas/v3/flatbuffers/FELD-IDS.json"
 # wenn jemand ein Offsetfeld ergaenzt und den Riegel vergisst — dafuer muss
 # sie die Riegelzeilen sehen, nicht das uebersetzte Verhalten.
 RIEGEL = WURZEL / "broker/src/telemetrie.rs"
+# Pruefung 8 (SONDE-015 Etappe 2, Nacharbeit 1, Befund B-01) liest die beiden
+# P2-Fassungszahlen als TEXT und haelt sie gegen das Register oben. Absicht:
+# sie soll rot werden, wenn eine Seite den Fassungsschritt macht und die andere
+# nicht - genau der Vorfall, den `server_v3/mod.rs` fuer P0/P1 vom 04.09.2026
+# festhaelt (der Server wies jeden Rahmen ab, bevor er die Senke erreichte).
+SENDER = WURZEL / "eq-copilot/plugin/core/ipc/TelemetryClient.h"
+EMPFAENGER = WURZEL / "broker/src/transport/server_v3/mod.rs"
 # Eine Zeile, die mit `}` in Spalte 0 beginnt, beendet in Rust eine Funktion
 # auf oberster Ebene. Als Konstante, weil ein Zeilenumbruch in einem
 # Heredoc-Literal auf diesem Rechner schon einmal verschwunden ist.
@@ -237,17 +248,67 @@ def pruefe_strukturriegel(tabellen, riegelquelle: str) -> list[str]:
     return fehler
 
 
+def pruefe_p2_fassung(frozen: dict, sender: Path, empfaenger: Path) -> list[str]:
+    """SONDE-015 B-01: Sender, Empfaenger und Register fuehren DIESELBE Zahl.
+
+    Ein Fassungsschritt ist erst vollstaendig, wenn Sender, Empfaenger und der
+    Transport dazwischen ihn kennen. Die Zahl steht genau EINMAL - im Register
+    `wire_envelope_schema_minor` dieser Datei; die zwei Quellen werden als Text
+    dagegen gehalten, nicht gegeneinander. Zwei handgepflegte Kopien waeren
+    genau die Drift, die am 04.09.2026 (P0/P1) und erneut am 10.09.2026 (P2)
+    zugeschlagen hat.
+    """
+    fehler: list[str] = []
+    version = frozen.get("wire_envelope_schema_minor")
+    if not isinstance(version, dict):
+        return ["FELD-IDS.json fuehrt kein `wire_envelope_schema_minor` - "
+                "ohne Register haengt die P2-Fassung wieder an zwei Kopien."]
+    if version.get("familie") != "P2":
+        fehler.append("`wire_envelope_schema_minor.familie` muss P2 sein - die JSON-Flaeche P1 "
+                      "wird in reservierte-nachrichten-v1.json gefuehrt und nie mit dieser Zahl vermischt.")
+    aktuell = version.get("aktuell")
+    vorher = version.get("vorher")
+    if not isinstance(aktuell, int) or not isinstance(vorher, int) or aktuell != vorher + 1:
+        fehler.append(f"`vorher`/`aktuell` muessen ganze Zahlen mit aktuell = vorher + 1 sein "
+                      f"(gelesen {vorher!r}/{aktuell!r}) - ein Fassungsschritt hebt genau einmal.")
+    fassungen = version.get("fassungen", {})
+    if str(aktuell) not in fassungen:
+        fehler.append(f"die Fassung {aktuell} hat keinen Eintrag in `fassungen` - "
+                      "ein Schritt ohne Begruendung ist ein stilles Heben.")
+
+    for datei, muster, was in (
+        (sender, r"^inline\s+constexpr\s+std::uint8_t\s+kFeatureBatchSchemaMinor\s*=\s*(\d+)u?\s*;",
+         "C++-Sender `kFeatureBatchSchemaMinor`"),
+        (empfaenger, r"^const\s+P2_SCHEMA_MINOR\s*:\s*u8\s*=\s*(\d+)\s*;",
+         "Rust-Empfaenger `P2_SCHEMA_MINOR`"),
+    ):
+        if not datei.exists():
+            fehler.append(f"{was}: Quelle fehlt ({datei})")
+            continue
+        treffer = re.search(muster, datei.read_text(encoding="utf-8"), re.MULTILINE)
+        if treffer is None:
+            fehler.append(f"{was}: Zahl nicht gefunden - der Riegel kann sie nicht mehr binden.")
+        elif int(treffer.group(1)) != aktuell:
+            fehler.append(f"{was} traegt {treffer.group(1)}, das Register sagt {aktuell} - "
+                          "ein Fassungsschritt, den nur eine Seite kennt, schliesst die Verbindung.")
+    return fehler
+
+
 def main() -> int:
     # Drei optionale Pfade, damit der Riegel an einer MUTIERTEN Kopie
     # vorgefuehrt werden kann, ohne den Vertrag anzufassen. Ein Riegel, den
     # niemand fallen gesehen hat, ist eine Behauptung.
-    global FBS, IDS, RIEGEL
+    global FBS, IDS, RIEGEL, SENDER, EMPFAENGER
     if len(sys.argv) >= 2:
         FBS = Path(sys.argv[1]).resolve()
     if len(sys.argv) >= 3:
         IDS = Path(sys.argv[2]).resolve()
     if len(sys.argv) >= 4:
         RIEGEL = Path(sys.argv[3]).resolve()
+    if len(sys.argv) >= 5:
+        SENDER = Path(sys.argv[4]).resolve()
+    if len(sys.argv) >= 6:
+        EMPFAENGER = Path(sys.argv[5]).resolve()
 
     for datei in (FBS, IDS):
         if not datei.exists():
@@ -356,6 +417,9 @@ def main() -> int:
     else:
         fehler.append(f"Strukturriegel-Quelle fehlt: {RIEGEL}")
 
+    # 8. Die P2-Fassungszahl (SONDE-015 B-01): Sender, Empfaenger, Register.
+    fehler.extend(pruefe_p2_fassung(frozen, SENDER, EMPFAENGER))
+
     # Die Gesamtzahlen sind eine billige Pruefsumme gegen einen Parser, der
     # still die Haelfte uebersieht.
     gesamt = frozen.get("erwartet_gesamt", {})
@@ -373,6 +437,9 @@ def main() -> int:
     print(f"Felder:   {felder_gesamt}")
     print(f"Felder ohne id: {ohne_id}")
     print(f"Offsetfelder (string/Vektor/Tabelle) im Strukturriegel: {offsetfelder}")
+    p2 = frozen.get("wire_envelope_schema_minor", {})
+    print(f"P2-Wire-Envelope-Minor: {p2.get('vorher')} -> {p2.get('aktuell')} "
+          f"(Sender und Empfaenger gegen dieses Register geprueft)")
     if not fehler:
         print("keine Luecke, keine Doppelung, keine Abweichung zur eingefrorenen Liste")
     for f in fehler:

@@ -1,0 +1,12 @@
+SONDE-015 Etappe 2, Nacharbeit 1 - Rotbeweis B-03
+Zusage: Eine unbekannte Eigenschaft im Kind Dsp ueberlebt das Speichern - auch wenn der bekannte Inhalt leer ist.
+Bruch:  eq-copilot/plugin/state/NakamaState.cpp
+        -     if (z.hatParameters && (dspTraegtEtwas (z) || dspTraegtUnbekanntes (dsp)))
+        +     if (z.hatParameters && dspTraegtEtwas (z))
+------------------------------------------------------------------------------
+$ EqCopStateMigrationTest.exe
+  FEHLER  leerer Dsp-Inhalt mit unbekannter Eigenschaft: das Kind bleibt, die Eigenschaft auch
+  FEHLER  == Migration: 4 Rollen bytegleich zum Golden, idempotent
+EXIT=1
+------------------------------------------------------------------------------
+URTEIL: ROT

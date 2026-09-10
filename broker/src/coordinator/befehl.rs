@@ -1182,6 +1182,60 @@ mod tests {
             c.state_report_json(link, &serde_json::to_vec(&ohne).unwrap()),
             "ein Bericht ohne dsp bleibt gueltig - Abwesenheit ist kein Fehler"
         );
+
+        /*  Nacharbeit 1 (B-02): der Hash ist nur die HALBE Zusage. Hier stimmt
+            er, und die Zeichenkette ist trotzdem kein DSP-DTO. Ein Leser, der
+            nach der Hashpruefung aufhoert, speichert `{}` als bestaetigten DSP -
+            R13 sagt aber "der Broker liest, VALIDIERT und haelt". Dasselbe
+            Fixture misst C++ in B3c; beide Sprachen weisen es ab. */
+        let dto_kaputt: Value = serde_json::from_str(include_str!(
+            "../../../eq-copilot/fixtures/v3/gueltig/state-report-dsp-dto-ungueltig.json"
+        ))
+        .expect("Fixture ist JSON");
+        let mut leer = dto_kaputt.clone();
+        leer["adresse"] = serde_json::to_value(&a).unwrap();
+        // Das SCHEMA nimmt ihn an, und der HASH stimmt - sonst maesse der Fall
+        // den DTO-Weg gar nicht.
+        assert!(
+            super::v3_nachricht_lesen(&serde_json::to_vec(&leer).unwrap(), "state_report")
+                .is_some(),
+            "das Fixture ist schemagueltig"
+        );
+        {
+            use sha2::{Digest, Sha256};
+            let jcs = leer["dsp"]["jcs"].as_str().expect("jcs ist ein String");
+            let mut h = Sha256::new();
+            h.update(jcs.as_bytes());
+            assert_eq!(
+                format!("{:x}", h.finalize()),
+                leer["state_hash"].as_str().unwrap(),
+                "der Hash muss STIMMEN - sonst faellt der Bericht schon am Hashvergleich"
+            );
+            assert!(
+                crate::dto::pruefe(jcs.as_bytes()).is_err(),
+                "und die Zeichenkette muss am DTO-Weg fallen"
+            );
+        }
+        assert!(
+            !c.state_report_json(link, &serde_json::to_vec(&leer).unwrap()),
+            "Hash stimmt, DTO nicht: der Bericht wird GANZ abgewiesen"
+        );
+
+        // Kein Teilzustand: der gehaltene DSP ist der aus dem GUELTIGEN
+        // Bericht von oben geblieben, nicht durch `{}` ersetzt worden.
+        {
+            let stand = c.stand.lock().unwrap_or_else(|e| e.into_inner());
+            let link_stand = stand.links.get(link).expect("Link steht");
+            let client = stand
+                .clients
+                .get(&link_stand.client_key)
+                .expect("Client steht");
+            assert_eq!(
+                client.dsp_jcs.as_deref(),
+                gut["dsp"]["jcs"].as_str(),
+                "ein abgewiesener Bericht laesst den gehaltenen DSP unveraendert"
+            );
+        }
     }
 
     #[test]

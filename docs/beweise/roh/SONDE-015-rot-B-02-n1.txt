@@ -1,0 +1,33 @@
+SONDE-015 Etappe 2, Nacharbeit 1 - Rotbeweis B-02
+Zusage: Der Broker liest, VALIDIERT und haelt den bestaetigten DSP: nach der Hashpruefung laeuft der exakte DTO-Weg.
+Bruch:  broker/src/coordinator/liveness.rs
+        -                 if crate::dto::pruefe(jcs.as_bytes()).is_err() {
+        + (Zeilen entfernt)
+------------------------------------------------------------------------------
+$ cargo test --manifest-path broker/Cargo.toml --color never --lib state_report_dsp   (A4 cargo test state_report_dsp_*)
+running 2 tests
+test coordinator::schema::fassungsleiter_tests::fassung_4_kennt_state_report_dsp_nicht ... ok
+test coordinator::befehl::tests::state_report_dsp_wird_gegen_den_state_hash_nachgerechnet ... FAILED
+
+failures:
+
+---- coordinator::befehl::tests::state_report_dsp_wird_gegen_den_state_hash_nachgerechnet stdout ----
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-befehl-state_report_dsp_hash-21740-b5a313ee33374ef8ba45ff42fa2eb1cb\nakama-broker.sqlite3
+
+thread 'coordinator::befehl::tests::state_report_dsp_wird_gegen_den_state_hash_nachgerechnet' (28900) panicked at src\coordinator\befehl.rs:1219:9:
+Hash stimmt, DTO nicht: der Bericht wird GANZ abgewiesen
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    coordinator::befehl::tests::state_report_dsp_wird_gegen_den_state_hash_nachgerechnet
+
+test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 248 filtered out; finished in 0.36s
+
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.52s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+error: test failed, to rerun pass `--lib`
+EXIT=101
+------------------------------------------------------------------------------
+URTEIL: ROT

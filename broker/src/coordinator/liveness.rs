@@ -563,13 +563,24 @@ impl Coordinator {
             .pointer("/record_state/recording")
             .and_then(Value::as_bool);
 
-        /*  SONDE-015 M-105: `dsp.jcs` traegt GENAU die Zeichenkette, ueber die
-            `state_hash` gebildet wurde. Der Empfaenger rechnet nach und
+        /*  SONDE-015 M-105/R13: `dsp.jcs` traegt GENAU die Zeichenkette, ueber
+            die `state_hash` gebildet wurde. Der Empfaenger rechnet nach und
             vergleicht; weichen sie ab, wird der Bericht GANZ abgewiesen - kein
             halber Zustand, kein "Hash ignorieren, Inhalt nehmen".
 
             Das Schema kann das nicht sehen: es prueft eine Zeichenkette, keinen
-            Hash. Ein Leser, der sich darauf verlaesst, ist kein Riegel. */
+            Hash. Ein Leser, der sich darauf verlaesst, ist kein Riegel.
+
+            🔑 Nacharbeit 1 (B-01/B-02, 10.09.2026): der Hash ist nur die HALBE
+            Zusage. R13 sagt „der Broker liest, VALIDIERT und haelt den
+            bestaetigten DSP"; ein Bericht mit `dsp.jcs = "{}"` und dem dazu
+            passenden SHA-256 kam vorher durch, weil niemand den Text als DTO
+            las. Die Reihenfolge ist dieselbe wie in C++
+            (`parameter::berichtDtoPruefen`): erst der Hash - eine Zeichenkette,
+            deren Hash nicht stimmt, ist kein bestaetigter Zustand und ihren
+            Inhalt zu deuten waere gegenstandslos -, danach der EXAKTE DTO-Weg
+            `crate::dto::pruefe` gegen `nakama-parameter-v2.json`. Beide
+            Sprachen klassifizieren damit dasselbe Fixture gleich. */
         let dsp_jcs = match wert.pointer("/dsp/jcs") {
             None => None,
             Some(Value::String(jcs)) => {
@@ -583,6 +594,9 @@ impl Coordinator {
                     format!("{:x}", h.finalize())
                 };
                 if ist != erwartet {
+                    return false;
+                }
+                if crate::dto::pruefe(jcs.as_bytes()).is_err() {
                     return false;
                 }
                 Some(jcs.clone())

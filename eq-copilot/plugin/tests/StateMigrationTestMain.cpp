@@ -1197,6 +1197,57 @@ int main (int argc, char* argv[])
                         && (juce::int64) zurueck.getChildWithName ("Dsp").getProperty ("state_revision") == 4,
                     "sie ueberlebt den Roundtrip, und die echte Aenderung kommt an");
 
+            /*  Nacharbeit 1 (B-03): derselbe Fall an seiner SCHWACHSTELLE -
+                ein Kind, das nach der Weglassregel gar nicht geschrieben
+                wuerde. Revision 0, kein Slot belegt, keine Zone, kein
+                Undo-Eintrag - und eine unbekannte Eigenschaft. Vor der
+                Nacharbeit entfernte das Speichern das ganze Kind samt der
+                Eigenschaft; M-91 sagt aber ohne Einschraenkung "der Leser
+                erhaelt sie beim Speichern". */
+            {
+                state::Zustand leer = state::frisch (juce::String::repeatedString ("8", 32));
+                leer.common.klasse = state::Klasse::active_probe;
+                leer.hatParameters = true;
+                leer.stateRevision = 1;          // damit das Kind ueberhaupt entsteht
+                juce::MemoryBlock mitKind;
+                state::speichere (leer, mitKind);
+
+                auto v = juce::ValueTree::readFromData (mitKind.getData(), mitKind.getSize());
+                auto d = v.getChildWithName ("Dsp");
+                d.setProperty ("state_revision", juce::var ((juce::int64) 0), nullptr);
+                d.setProperty ("zukunft_dsp", "bleibt", nullptr);
+                const auto b = alsBlock (v);
+
+                state::Zustand zl;
+                const auto erg = state::lade (b.getData(), b.getSize(), state::Bundle::nkac(), zl);
+                pruefe (erg == state::LadeErgebnis::geladen && ! zl.nurLesen
+                            && zl.hatDsp && zl.stateRevision == 0
+                            && zl.schutzZonen.empty() && zl.undoRing.empty(),
+                        "ein Dsp-Kind ohne bekannten Inhalt laedt schreibbar", zl.grund);
+                juce::MemoryBlock zurueckB;
+                state::speichere (zl, zurueckB);
+                const auto zurueck = juce::ValueTree::readFromData (zurueckB.getData(), zurueckB.getSize());
+                pruefe (zurueck.getChildWithName ("Dsp").isValid()
+                            && zurueck.getChildWithName ("Dsp")
+                                      .getProperty ("zukunft_dsp").toString() == "bleibt",
+                        "leerer Dsp-Inhalt mit unbekannter Eigenschaft: das Kind bleibt, die Eigenschaft auch");
+                // Und die Gegenprobe: OHNE unbekannte Eigenschaft faellt das
+                // Kind weiterhin weg - die Weglassregel ist nicht aufgehoben,
+                // nur praezisiert.
+                {
+                    auto v2 = juce::ValueTree::readFromData (b.getData(), b.getSize());
+                    v2.getChildWithName ("Dsp").removeProperty ("zukunft_dsp", nullptr);
+                    const auto b2 = alsBlock (v2);
+                    state::Zustand z2;
+                    state::lade (b2.getData(), b2.getSize(), state::Bundle::nkac(), z2);
+                    juce::MemoryBlock raus;
+                    state::speichere (z2, raus);
+                    const auto ohne = juce::ValueTree::readFromData (raus.getData(), raus.getSize());
+                    pruefe (! ohne.getChildWithName ("Dsp").isValid(),
+                            "ohne unbekannte Eigenschaft faellt das leere Dsp-Kind weiterhin weg");
+                }
+            }
+
             // Dieselbe Eigenschaft im DTO waere dagegen ein Fehler - additiv
             // ist der Baum, exakt das DTO.
             {
@@ -1393,18 +1444,51 @@ int main (int argc, char* argv[])
             juce::String h1, h2, g;
             pruefe (param::stateHash (za.dspDto(), h1, g) && param::stateHash (zb.dspDto(), h2, g) && h1 == h2, "state_hash ueberlebt den Roundtrip", h1);
 
-            // M-89, gemessen statt behauptet: der Baum bleibt weit unter der
-            // 64-Knoten-Grenze des Byte-Riegels, weil `Dsp` flache bzw.
-            // verschachtelte Arrays fuehrt und keine Kindknoten.
+            /*  M-89, STRUKTURELL gemessen (Nacharbeit 1, Befund B-05).
+
+                Die erste Fassung prueft nur die Knotenzahl `<= 8`. Die bleibt
+                wahr, wenn `Dsp` statt der flachen Eigenschaft einen
+                zusaetzlichen Kindknoten `Occupied` traegt - der Rotbeweis fiel
+                deshalb an Bytegleichheit und Belegung, nie an der Zusage
+                selbst. Gemessen wird jetzt, was die Zusage SAGT: `Dsp` hat
+                KEINE Kindknoten, und seine drei Listen sind Array-Eigenschaften
+                der erwarteten Form. Die Knotenobergrenze steht als zweite,
+                eigene Zusicherung daneben - sie bindet die Struktur an den
+                Grund (die 64-Knoten-Grenze des Byte-Riegels). */
             {
                 const auto v = juce::ValueTree::readFromData (ba.getData(), ba.getSize());
+                const auto d = v.isValid() ? v.getChildWithName ("Dsp") : juce::ValueTree();
+
+                auto istArray = [] (const juce::ValueTree& knoten, const char* name, int mindestens)
+                {
+                    if (! knoten.hasProperty (name))
+                        return false;
+                    const auto* a = knoten.getProperty (name).getArray();
+                    return a != nullptr && a->size() >= mindestens;
+                };
+
+                const bool flach = d.isValid()
+                                && d.getNumChildren() == 0
+                                && istArray (d, "occupied_v1", param::kSlots)
+                                && istArray (d, "schutz_zonen_v1", 4)
+                                && istArray (d, "undo_ring_v1", 1)
+                                // Und der Ring fuehrt seine Eintraege als
+                                // eigene Arrays, nicht als eine lange Kette:
+                                // daran haengt die Eintragsgrenze (§2.0).
+                                && d.getProperty ("undo_ring_v1").getArray() != nullptr
+                                && d.getProperty ("undo_ring_v1").getArray()->getReference (0).getArray() != nullptr;
+                pruefe (flach,
+                        "Dsp nutzt flache Arrays: kein Kindknoten, occupied_v1/schutz_zonen_v1/undo_ring_v1 sind Arrays",
+                        d.isValid() ? juce::String (d.getNumChildren()) + " Kindknoten" : "kein Dsp-Kind");
+
                 std::function<int (const juce::ValueTree&)> knoten = [&] (const juce::ValueTree& k)
                 {
                     int n = 1;
                     for (int i = 0; i < k.getNumChildren(); ++i) n += knoten (k.getChild (i));
                     return n;
                 };
-                pruefe (v.isValid() && knoten (v) <= 8, "Dsp nutzt flache Arrays: der Baum bleibt bei wenigen Knoten",
+                pruefe (v.isValid() && knoten (v) <= 8,
+                        "und der Baum bleibt weit unter der 64-Knoten-Grenze des Byte-Riegels",
                         juce::String (v.isValid() ? knoten (v) : -1));
             }
         }

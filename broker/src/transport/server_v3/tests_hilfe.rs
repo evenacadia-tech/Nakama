@@ -273,6 +273,21 @@ pub(super) fn p2(bytes: &[u8]) -> Vec<u8> {
     envelope_schreiben(Familie::P2, P2_SCHEMA_MINOR, bytes).unwrap()
 }
 
+/// Die P2-Fassungszahl aus dem REGISTER, nicht aus der Konstante des Servers.
+///
+/// 🔑 SONDE-015 B-01: ein Test, der mit `P2_SCHEMA_MINOR` sendet, folgt einer
+/// zurueckgedrehten Konstante stumm nach unten und bleibt gruen - er misst
+/// dann nur, dass der Server mit sich selbst uebereinstimmt. Gegen die
+/// GEGENSEITE (den C++-Sender) misst nur, wer dieselbe Quelle liest, die auch
+/// jene liest.
+pub(super) fn p2_minor_aus_register() -> u8 {
+    let roh = include_str!("../../../../eq-copilot/schemas/v3/flatbuffers/FELD-IDS.json");
+    let wert: serde_json::Value = serde_json::from_str(roh).expect("FELD-IDS.json ist JSON");
+    wert["wire_envelope_schema_minor"]["aktuell"]
+        .as_u64()
+        .expect("FELD-IDS.json fuehrt wire_envelope_schema_minor.aktuell") as u8
+}
+
 pub(super) fn warte_auf(millis: u64, mut bedingung: impl FnMut() -> bool) -> bool {
     let frist = Instant::now() + Duration::from_millis(millis);
     while Instant::now() < frist {

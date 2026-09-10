@@ -120,14 +120,18 @@ fn unbekannter_schema_minor_wird_vor_der_senke_abgewiesen() {
     // SONDE-015: die Fassung 5 (state_report.dsp) ebenso; die 4 bleibt lesbar.
     assert!(schema_minor_bekannt(Familie::P0, 5));
     assert!(schema_minor_bekannt(Familie::P1, 5));
-    // P2 nicht: dort ist seit SONDE-013 nichts hinzugekommen, was eine
-    // Fassung braeuchte - `integration_samples` ist ein optionales
-    // FlatBuffers-Feld und damit der additive Fall, den das Format traegt.
-    assert!(!schema_minor_bekannt(Familie::P2, 2));
+    // SONDE-015 (B-01): P2 traegt jetzt die Fassung 2. Das neue Feld ist zwar
+    // optional und damit formatseitig additiv - der Sender fuehrt die Fassung
+    // aber auf dem Draht, und eine Empfaengergrenze darunter schliesst die
+    // Verbindung beim ersten Frame. Die 1 bleibt lesbar (Altsender).
+    assert!(schema_minor_bekannt(Familie::P2, 1));
+    assert!(schema_minor_bekannt(Familie::P2, 2));
+    assert!(!schema_minor_bekannt(Familie::P2, 3));
     // Und die Gegenprobe nach oben: eine Fassung, die es nicht gibt,
     // wird auch bei P0/P1 abgewiesen.
     // NAK-213: derselbe Randwert eine Fassung weiter — aus 4 wird 5.
-    // SONDE-015: und weiter — aus 5 wird 6.
+    // SONDE-015: und weiter — aus 5 wird 6. P2 zaehlt eigenstaendig und ist
+    // schon bei 3 zu Ende (oben geprueft).
     for familie in [Familie::P0, Familie::P1, Familie::P2] {
         assert!(!schema_minor_bekannt(familie, 6));
         assert!(!schema_minor_bekannt(familie, 200));
@@ -145,4 +149,31 @@ fn transportfassung_und_json_leser_stimmen_ueberein() {
         crate::coordinator::JSON_SCHEMA_MINOR_AKTIV_FUER_TEST
     );
     assert_eq!(P0_SCHEMA_MINOR, P1_SCHEMA_MINOR);
+}
+
+/// SONDE-015 B-01: dieselbe Zusage fuer die FlatBuffers-Flaeche P2.
+///
+/// Die JSON-Familien P0/P1 binden ihre Fassung an den Coordinator; P2 hat
+/// keinen JSON-Leser, an den sie sich binden liesse - ihre Gegenseite ist der
+/// C++-SENDER. Beide werden deshalb gegen dieselbe Registerdatei geprueft:
+/// hier `P2_SCHEMA_MINOR`, in `tools/eq-copilot/pruefe_fbs_feldids.py`
+/// (Pruefung 8) zusaetzlich `kFeatureBatchSchemaMinor` aus `TelemetryClient.h`.
+/// Vor dieser Zeile war die C++-Zahl von KEINEM Bein gegen die Rust-Zahl
+/// gemessen - dieselbe Luecke, die NB-3 fuer P1 geschlossen hat, eine Flaeche
+/// daneben.
+#[test]
+fn transportfassung_p2_bindet_den_sender() {
+    assert_eq!(
+        P2_SCHEMA_MINOR,
+        p2_minor_aus_register(),
+        "P2-Fassung des Transports und des Registers laufen auseinander - \
+         ein Fassungsschritt, den nur eine Seite kennt, schliesst die Verbindung"
+    );
+    // Und die zwei Flaechen bleiben getrennt: P1 zaehlt JSON, P2 FlatBuffers.
+    // Eine gemeinsame Zahl waere die Verwechslung, gegen die Paragraph 2.12
+    // des Manifests geschrieben ist.
+    assert_ne!(
+        P1_SCHEMA_MINOR, P2_SCHEMA_MINOR,
+        "P1 und P2 versionieren zwei verschiedene Vertraege"
+    );
 }

@@ -11,6 +11,26 @@
   "handgeschrieben": true,
   "schema": "nakama_telemetry_v1.fbs",
 
+  "wire_envelope_schema_minor": {
+    "familie": "P2",
+    "vorher": 1,
+    "aktuell": 2,
+    "warum_hier": "Die Fassungszahl der FlatBuffers-Flaeche P2 steht GENAU EINMAL - hier, im Register ihrer eingefrorenen Feld-IDs. Sie ist eine ANDERE Zahl als der Wire-Envelope-Minor der JSON-Familie P1 (eq-copilot/schemas/v3/reservierte-nachrichten-v1.json); die beiden werden nie vermischt, weil sie zwei verschiedene Vertraege versionieren. Beide Seiten werden gegen DIESE Zahl geprueft: pruefe_fbs_feldids.py liest kFeatureBatchSchemaMinor aus TelemetryClient.h und P2_SCHEMA_MINOR aus dem Rust-Transport und haelt beide dagegen; der Rust-Test transportfassung_p2_bindet_den_sender liest dieselbe Datei. Eine zweite handgepflegte Kopie gibt es nicht.",
+    "auswahlregel": "Der Empfaenger prueft schema_minor <= aktuell je Familie im 16-Byte-Envelope. Ein Fassungsschritt ist erst vollstaendig, wenn Sender, Empfaenger UND der Transport dazwischen ihn kennen (gemessen 04.09.2026 an P0/P1: der Server wies jeden Rahmen ab, bevor er die Senke erreichte).",
+    "fassungen": {
+      "1": {
+        "hinweis": "SONDE-005b bis SONDE-013: die Ausgangsfassung samt Frame.band_stereo (Feld-ID 10), dem LUFS-I-Paar (11 bis 13) und integration_samples (14). Optionale FlatBuffers-Felder sind der additive Fall, den das Format traegt - sie hoben die Fassung nicht."
+      },
+      "2": {
+        "hinweis": "SONDE-015 (S26-28) hebt den Minor GENAU EINMAL. Frame.band_dynamic_gain_db (Feld-ID 22) reist in dieser Fassung.",
+        "begruendung": "Das Feld ist optional und damit formatseitig additiv. Der Minor steigt trotzdem, weil der SENDER ihn seit SONDE-015 auf dem Draht fuehrt (kFeatureBatchSchemaMinor): eine Empfaengergrenze, die darunter bleibt, schliesst die Telemetrieverbindung beim ersten Frame - genau der Vorfall, den der Kommentar in broker/src/transport/server_v3/mod.rs fuer P0/P1 festhaelt.",
+        "neue_felder": [
+          "Frame.band_dynamic_gain_db"
+        ]
+      }
+    }
+  },
+
   "tabellen": {
     "Adresse": {
       "felder": {

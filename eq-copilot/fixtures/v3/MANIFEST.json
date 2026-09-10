@@ -6,7 +6,7 @@
   "wurzel_skalar": "Markiert ein Fixture, dessen Wurzel weder Objekt noch Array ist. JUCEs JSON-Leser folgt RFC 4627 und lehnt es schon im PARSER ab; serde_json und Python folgen RFC 8259 und lehnen es erst am Schema ab. Beide Wege sind eine Ablehnung, nur an verschiedenen Stellen - die Verletzungsmenge gilt daher nur fuer die Beine mit RFC-8259-Parser.",
   "sortierung": "Verletzungen sind kanonisch nach (instanz, schema, schluessel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
   "textriegel_lehnt_ab": "Markiert ein Fixture, das der TEXTRIEGEL abweist, BEVOR ein Parser es sieht. Diese Fixtures tragen keine Verletzungsmenge, weil sie das Schema nie erreichen — eine erfundene waere eine Luege ueber den Ort der Ablehnung. Regeln und Begruendung: schemas/v3/README.md.",
-  "anzahl_gueltig": 111,
+  "anzahl_gueltig": 112,
   "anzahl_ungueltig": 290,
   "fixtures": [
     {
@@ -604,9 +604,15 @@
       "verletzungen": []
     },
     {
+      "datei": "gueltig/state-report-dsp-dto-ungueltig.json",
+      "urteil": "gueltig",
+      "warum": "schemagueltig und der Hash STIMMT - aber die Zeichenkette ist kein DSP-DTO. Beide Leser pruefen nach dem Hash den exakten DTO-Weg und weisen ihn GANZ ab (M-105, R13 'liest, validiert und haelt')",
+      "verletzungen": []
+    },
+    {
       "datei": "gueltig/state-report-dsp-hash-passt-nicht.json",
       "urteil": "gueltig",
-      "warum": "schemagueltig, aber SHA-256(dsp.jcs) != state_hash - beide Leser weisen den Bericht GANZ ab (M-105)",
+      "warum": "schemagueltig UND DTO-gueltig - nur SHA-256(dsp.jcs) != state_hash. Beide Leser weisen den Bericht GANZ ab; faellt der Hashvergleich weg, wird er ANGENOMMEN (M-105)",
       "verletzungen": []
     },
     {

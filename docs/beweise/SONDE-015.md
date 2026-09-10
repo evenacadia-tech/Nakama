@@ -3,14 +3,14 @@
 | Merkmal | Wert |
 |---|---|
 | Ticket | S26–28, `SONDE-015` (Phase P6), Leitungsname „Die Klangregelung in der Sonde sicher und speicherbar machen" |
-| Etappe | **Etappe 1 — Spezifikation vor Code, nach der Matrix-Konvergenzrunde (10.09.2026).** Dieses Manifest trägt Gate-Text, Ist-Stand, Verhaltensmatrix, Bauplan und Entscheide. **Kein Produkt-, Test-, Schema-, Fixture- oder Werkzeugcode in diesem Änderungssatz.** Zwei Prüfrunden: **Matrixprüfung 1** NEEDS_WORK mit zwölf Defekten (§7), eingearbeitet als **Matrix-Nacharbeit 1** (§7.1) — zwölf Zeilen korrigiert, drei neue (M-121 bis M-123), sechs Feinheiten neu gefasst, Abweichung 3 zurückgenommen. **Matrixprüfung 2** (§7.3) schloss zehn davon und fand **B-05** und **B-09** weiter offen; die **Matrix-Nacharbeit 2** (§7.4) hat sie geschlossen: vier Zeilen korrigiert, eine neue (**M-124**), drei Feinheiten neu gefasst. **Matrixprüfung 3** (§7.5) bestätigte B-05 und B-09 als geschlossen, fand aber **zwei Folgewidersprüche** (**D-1**, **D-2**); die **Matrix-Nacharbeit 3** (§7.6) schloss sie mit einer Regel. **Matrixprüfung 4** (§7.7) schloss D-2, ließ D-1 als **K-1** offen und fand **K-2** — dritte Wiederprüfung ohne PASS. Der **Konvergenzentscheid** benannte die **Ursache**: die Transaktionssemantik war über drei Runden als Prosa nachgezogen und nie als geschlossene Spezifikation festgelegt worden. Die **Matrix-Konvergenzrunde** (§7.8) hat den Weg gewechselt: **§5.11.4 ist jetzt eine geschlossene Protokollspezifikation** mit Arithmetik, Stufenfolge S0 bis S8, sechs Invarianten und einer vollständigen Falltabelle T1 bis T12; **M-44, M-74, M-75, M-76, M-123, M-124 und M-125 leiten sich daraus ab** und tragen keine eigene Arithmetik mehr (§5.17, Abweichung 7). Etappen 2 bis 4 (Verträge, DSP-Kern, Integration) beginnen erst nach der Wiederprüfung und dem Fortsetzungsauftrag des Dirigenten. **Etappe 2 (Verträge in drei Sprachen) ist seit dem 10.09.2026 gebaut; ihr Abschnitt ist §8.** |
-| Phase | **Etappe 2 gebaut, Erstprüfung steht aus.** Etappe 1 abgeschlossen nach fünf Matrixprüfungen und vier Nacharbeiten (§7 bis §7.9); die fünf Restwidersprüche der Transaktionstabelle sind als **NAK-245** ausgegliedert und gehören der Etappe 4. **Etappe 2 — Verträge in drei Sprachen** ist gebaut (§8): zwölf Beine grün, 32 Rotbeweise, kein Kanonlauf (der gehört an das Ende der Etappe 4). Die Erstprüfung der Etappe 2 durch einen frischen Codex-Thread steht aus; danach folgt Etappe 3 (DSP-Kern als Bibliothek). |
+| Etappe | **Etappe 1 — Spezifikation vor Code, nach der Matrix-Konvergenzrunde (10.09.2026).** Dieses Manifest trägt Gate-Text, Ist-Stand, Verhaltensmatrix, Bauplan und Entscheide. **Kein Produkt-, Test-, Schema-, Fixture- oder Werkzeugcode in diesem Änderungssatz.** Zwei Prüfrunden: **Matrixprüfung 1** NEEDS_WORK mit zwölf Defekten (§7), eingearbeitet als **Matrix-Nacharbeit 1** (§7.1) — zwölf Zeilen korrigiert, drei neue (M-121 bis M-123), sechs Feinheiten neu gefasst, Abweichung 3 zurückgenommen. **Matrixprüfung 2** (§7.3) schloss zehn davon und fand **B-05** und **B-09** weiter offen; die **Matrix-Nacharbeit 2** (§7.4) hat sie geschlossen: vier Zeilen korrigiert, eine neue (**M-124**), drei Feinheiten neu gefasst. **Matrixprüfung 3** (§7.5) bestätigte B-05 und B-09 als geschlossen, fand aber **zwei Folgewidersprüche** (**D-1**, **D-2**); die **Matrix-Nacharbeit 3** (§7.6) schloss sie mit einer Regel. **Matrixprüfung 4** (§7.7) schloss D-2, ließ D-1 als **K-1** offen und fand **K-2** — dritte Wiederprüfung ohne PASS. Der **Konvergenzentscheid** benannte die **Ursache**: die Transaktionssemantik war über drei Runden als Prosa nachgezogen und nie als geschlossene Spezifikation festgelegt worden. Die **Matrix-Konvergenzrunde** (§7.8) hat den Weg gewechselt: **§5.11.4 ist jetzt eine geschlossene Protokollspezifikation** mit Arithmetik, Stufenfolge S0 bis S8, sechs Invarianten und einer vollständigen Falltabelle T1 bis T12; **M-44, M-74, M-75, M-76, M-123, M-124 und M-125 leiten sich daraus ab** und tragen keine eigene Arithmetik mehr (§5.17, Abweichung 7). Etappen 2 bis 4 (Verträge, DSP-Kern, Integration) beginnen erst nach der Wiederprüfung und dem Fortsetzungsauftrag des Dirigenten. **Etappe 2 (Verträge in drei Sprachen) ist seit dem 10.09.2026 gebaut; ihr Abschnitt ist §8.** **Etappe 2 (Verträge in drei Sprachen) ist seit dem 10.09.2026 gebaut (§8), ihre Erstprüfung und die Nacharbeit 1 stehen in §8.8 und §8.9.** |
+| Phase | **Etappe 2 gebaut, Erstprüfung NEEDS_WORK, Nacharbeit 1 eingearbeitet.** Etappe 1 abgeschlossen nach fünf Matrixprüfungen und vier Nacharbeiten (§7 bis §7.9); die fünf Restwidersprüche der Transaktionstabelle sind als **NAK-245** ausgegliedert und gehören der Etappe 4. **Etappe 2 — Verträge in drei Sprachen** ist gebaut (§8); ihre **Erstprüfung** endete **NEEDS_WORK** mit fünf bestätigten Defekten (§8.8), die **Nacharbeit 1** hat sie geschlossen (§8.9): elf Beine grün, sechs Rotbeweise, Diff 16 Dateien +477/−25. Die Wiederprüfung der Nacharbeit 1 steht aus; danach folgt Etappe 3 (DSP-Kern als Bibliothek). |
 | Urteil | **Offen.** Weder T1 noch T2 vergeben. Etappe 1 baut nichts und behauptet deshalb kein gemessenes Produktverhalten; ihr einziger Gegenstand ist, ob §3 die Zusagen des Gate-Textes vollständig und widerspruchsfrei trägt. |
 | Prüfstufe | **T2 gefordert** (`docs/plan/plan.json`, Schritt S26–28, `"stufe": "T2"`). Heute vergeben: **keine**. |
 | Prüfmodell | Codex `gpt-6-astra`, Effort **max**, lesend — für Matrix-, Erst-, Wieder- und Abschlussprüfung. `gpt-5.6-sol` max nur als Gegenprüfer. |
-| Basis-SHA | **Etappe 1:** `e9dbf4b9c11d1cf72aebbecb835c9391a57a0532` — alle Zeilen- und Zeichenangaben in §1 und §2 gelten zu diesem Stand. **Etappe 2:** `2026031f0a8bb0baf12135020be654a82d354a6f`, mit `git rev-parse HEAD` beim Start gemessen; `git status --short` war leer. |
+| Basis-SHA | **Etappe 1:** `e9dbf4b9c11d1cf72aebbecb835c9391a57a0532` — alle Zeilen- und Zeichenangaben in §1 und §2 gelten zu diesem Stand. **Etappe 2:** `2026031f0a8bb0baf12135020be654a82d354a6f`. **Etappe 2, Nacharbeit 1:** `3df34963de3a887600f5f629fc637f52256ace78`; jeweils mit `git rev-parse HEAD` beim Start gemessen, `git status --short` leer. |
 | Kanon vorher | **GRÜN 62/62, Exit 0 auf `1867cac2`** (Abschlusskanon NAK-230, Rohausgabe `docs/beweise/roh/NAK-230-1867cac.md`). Eigene Messung in dieser Sitzung: `git diff --stat 1867cac2..e9dbf4b9 -- eq-copilot broker tools` ist **leer**. Der Codestand des Basis-SHA ist mit dem beglaubigten Kanonstand identisch; die Commits dazwischen berühren nur `docs/`. |
-| Kanon nachher | **Steht aus.** Etappe 2 fährt die zwölf Beine ihres Bauplans einzeln (§8.4, alle grün); der volle abgekoppelte Lauf gehört an das Ende der Etappe 4. |
+| Kanon nachher | **Steht aus.** Etappe 2 fährt die Beine ihres Bauplans einzeln (§8.4), die Nacharbeit 1 die davon betroffenen (§8.9.3) — alle grün; der volle abgekoppelte Lauf gehört an das Ende der Etappe 4. |
 | Ticketpfade | **Etappe 1:** diese eine Datei, `docs/beweise/SONDE-015.md`. **Etappe 2:** die Vertrags-, Plugin-, Broker- und Werkzeugpfade aus §4.5, ohne `eq-copilot/plugin/dsp/` (Etappe 3) und ohne `SondeProcessor.*` (Etappe 4) — der Prozessor bleibt nach §4.1 unberührt. Der Auftrag `docs/beweise/roh/SONDE-015-auftrag.txt` wird nicht angefasst. |
 | Grenze | Etappe 2 baut ausschließlich, was §3 zusagt. Technikfragen ohne Quelle sind vom Dirigenten als R1 bis R15 entschieden (§5); meine Feinheiten stehen je Regel darunter, Abweichungen mit Begründung. Produktfragen werden benannt und einer Fläche zugeordnet, nie hier beantwortet (§5.16). |
 
@@ -1318,6 +1318,20 @@ Broker-Crates.
 **Matrixzeilen, die hier fallen müssen:** M-14, M-24 (Vertragshälfte), M-28 (Enumgrenze), M-65, M-66, M-72 und M-73 (DTO-Hälfte), M-77, M-78 (Vertragsgrenze), **M-86, M-87, M-89 bis M-94** (die reinen Vertrags- und State-Zeilen), M-95 bis M-99, M-101 bis M-105, M-108 bis M-112.
 
 **MN1 (B-11): M-88 gehört nicht hierher, sondern in die Pflichtmenge der Etappe 4.** Die Zeile fordert **112 tatsächlich exponierte APVTS-Parameter im Sondenprozessor** und deren Reihenfolge. Die APVTS entsteht nach §4.4 erst in Etappe 4, und bis dahin bleibt der Prozessor nach §4.1 ausdrücklich unberührt — Etappe 2 könnte den Nachweis nur führen, indem sie ihre eigene Baugrenze verletzt. Getrennt ist damit: die **Vertragsseite** (welche elf `v2.*`-Kennungen es gibt, welche davon Host-Parameter sind, in welcher Reihenfolge der Vertrag sie listet) liegt in M-86 und M-87 und fällt in Etappe 2; die **Prozessorseite** (was die APVTS wirklich exponiert) liegt in M-88 und fällt in Etappe 4. Ebenso trägt die Prozessorseite von M-89 (Save/Load des Kinds `Dsp` **im Prozessor**) die Etappe 4; Etappe 2 belegt dort Writer, Leser und Migration an `NakamaState` selbst.
+
+**N1 (B-01): Punkt 4 nennt nur den Sender — die Empfängergrenze gehört dazu.**
+Die Bauanweisung oben schreibt „`kFeatureBatchSchemaMinor` 1 → 2" und lässt
+offen, dass ein Fassungsschritt der Familie P2 erst vollständig ist, wenn
+**Sender, Empfänger und der Transport dazwischen** ihn kennen. Gebaut wurde
+zunächst nur der Sender; `P2_SCHEMA_MINOR` im Rust-Transport blieb bei 1, und
+`verbindung.rs` schloss damit jede Telemetrieverbindung beim **ersten** Frame —
+derselbe Vorfall, den der Kommentar in `broker/src/transport/server_v3/mod.rs`
+für P0/P1 vom 04.09.2026 festhält. Punkt 4 lautet deshalb vollständig:
+`nakama_telemetry_v1.fbs` mit Feld 22, `FELD-IDS.json` **samt der P2-Fassungszahl
+als einziger Quelle**, `flatc`-Regeneration, `erzeuge_fb_fixtures.py`, beide
+Leser, `kFeatureBatchSchemaMinor` 1 → 2 **und `P2_SCHEMA_MINOR` 1 → 2 mit den
+Randwerten der Fassungsleiter**. Beine unverändert: **A9**, **A10**, **B3c**,
+**A4**.
 
 **Riegel dieser Etappe.** Drei Prüfwerkzeuge behaupten heute das Gegenteil
 dessen, was gebaut wird, und müssen im selben Änderungssatz mitwandern, sonst
@@ -2768,7 +2782,7 @@ Reihenfolge entscheidet über den APVTS-Index (M-88, Etappe 4).
 | Auftrag und Urteil | `docs/beweise/roh/SONDE-015-etappe-2-erstpruefung-auftrag.txt`; Urteil wörtlich `docs/beweise/roh/SONDE-015-etappe-2-erstpruefung-94a8a33.txt` |
 | Urteil | **NEEDS_WORK** — fünf Befunde: ein P1 (Telemetrie-Sender Minor 2 gegen Broker-Grenze 1 → Verbindung schließt beim ersten Frame), vier P2 |
 | Quellencheck des Dirigenten | lesender Opus-Agent, jede zitierte Zeile geöffnet: alle fünf **DEFEKT**. B-01 bricht Produktverhalten seit BASIS (`kFeatureBatchSchemaMinor` 1→2 im Diff, `P2_SCHEMA_MINOR` blieb 1, `tests_fristen.rs:126` sichert das Gegenteil zu); B-02 R13 „validiert" unerfüllt (`dto::pruefe` existiert, wird nicht gerufen; C++ prüft); B-03 M-91/R1/„State bleibt verlustfrei" (Weglassregel entfernt unbekannte Eigenschaft); B-04 und B-05 Rotbeweis nicht an der Zusage (M-105 fällt am Bereichsgrund, M-89-Zusicherung fällt gar nicht). Zusatzfund: §4.2 Punkt 4 nannte nur den Sender, nicht die Broker-Grenze |
-| Rundenbilanz | `2026031f..94a8a336: Produkt 101 Datei(en) +7053/-202 | Tests 5 Datei(en) +856/-47 | Pruefwerkzeug 5 Datei(en) +768/-49 | Doku 35 Datei(en) +1395/-6` — Bau mit Produktfortschritt |
+| Rundenbilanz | `2026031f..94a8a336: Produkt 101 Datei(en) +7053/-202 · Tests 5 Datei(en) +856/-47 · Pruefwerkzeug 5 Datei(en) +768/-49 · Doku 35 Datei(en) +1395/-6` — Bau mit Produktfortschritt. *(Nacharbeit 1: die vier Trenner standen als rohes Pipe-Zeichen in der Zelle und rissen `tools/plan/dokuriegel.py` — die bekannte Landmine aus `CLAUDE.md`. Ersetzt durch `·`; die Zahlen sind unverändert.)* |
 | Nebenbefund des Dirigenten | Der Bauer hat `CLAUDE.md` (Maschinen-Landmine „gemischte Zeilenenden unter `eq-copilot/schemas/**`") mitcommittet — außerhalb der Ticketpfade, inhaltlich richtig und behalten; die zerbrochene Code-Spanne darin hat der Dirigent in `8242fb13` repariert |
 | Nacharbeit | Etappe 2, Nacharbeit 1 (Runde 1 von 3): `docs/beweise/roh/SONDE-015-etappe-2-nacharbeit-1-auftrag.txt` — nur die fünf Defekte mit je einer schließenden Regel; nur betroffene Beine |
 
@@ -2779,3 +2793,85 @@ Reihenfolge entscheidet über den APVTS-Index (M-88, Etappe 4).
 | B-03 | Leeres `Dsp`-Kind verliert unbekannte Eigenschaften beim Speichern | DEFEKT (M-91, R1, State verlustfrei) | `eq-copilot/plugin/state/NakamaState.cpp:720-728`, `:1039-1041` |
 | B-04 | Hash-Negativfixture verletzt zusätzlich die Bereichsgrenze | DEFEKT des Rotbeweises (M-105) | `tools/eq-copilot/erzeuge_v3_fixtures.py:1461-1462` |
 | B-05 | M-89-Zusicherung misst Knotenzahl, nicht Array-Struktur | DEFEKT des Rotbeweises (M-89) | `eq-copilot/plugin/tests/StateMigrationTestMain.cpp:1406-1408` |
+
+### 8.9 Nacharbeit 1 — was eingearbeitet wurde (10.09.2026)
+
+| Merkmal | Wert |
+|---|---|
+| Auftrag | `docs/beweise/roh/SONDE-015-etappe-2-nacharbeit-1-auftrag.txt` — genau die fünf bestätigten Defekte B-01 bis B-05 mit je einer schließenden Regel |
+| Basis-SHA | `3df34963de3a887600f5f629fc637f52256ace78`, mit `git pull --ff-only` geholt; `git status --short` war leer |
+| Umfang | fünf Defekte geschlossen, **kein** weiterer Bau. Diff kompakt: 16 Dateien, +477/−25 |
+| Beine | **elf gefahren, alle grün** (A5, A8, A9, A9b, A10, A12, B2, B3c, B10, A16, A4); Rohausgabe `docs/beweise/roh/SONDE-015-etappe2-nacharbeit1-beine.txt` |
+| Rotbeweise | **sechs**, je an der Zeile, die die Zusage trägt: `SONDE-015-rot-B-01-n1.txt` bis `-B-05-n1.txt` plus `SONDE-015-rot-M-105-n1.txt` (die Gegenprobe zu B-04 am korrigierten Fixture) |
+| Urteil | **Offen.** Die Wiederprüfung dieser Runde steht aus. |
+
+| Befund | Geschlossen mit | Datei:Zeile | Test | Rotbeweis |
+|---|---|---|---|---|
+| **B-01** | Die P2-Fassungszahl steht **genau einmal**: im neuen Register `wire_envelope_schema_minor` von `FELD-IDS.json` (Familie P2, 1 → 2, mit Begründung je Fassung). `P2_SCHEMA_MINOR` steigt auf 2; **beide** Seiten werden gegen dieses Register geprüft — Rust im Test, C++ als Textriegel im Werkzeug. | `eq-copilot/schemas/v3/flatbuffers/FELD-IDS.json` (neuer Block), `broker/src/transport/server_v3/mod.rs:206`, `tools/eq-copilot/pruefe_fbs_feldids.py` (Prüfung 8) | `transportfassung_p2_bindet_den_sender` (neu), `unbekannter_schema_minor_wird_vor_der_senke_abgewiesen` (P2 1 und 2 bekannt, 3 nicht), `tests_abonnement` sendet jetzt mit der **Registerzahl** statt mit der Konstante, A9 `pruefe_fbs_feldids.py` Prüfung 8 | `SONDE-015-rot-B-01-n1.txt` |
+| **B-02** | Der Rust-Leser hält dieselbe Reihenfolge wie C++: erst `SHA-256`, dann der exakte DTO-Weg `crate::dto::pruefe`. Bei `Err` wird der Bericht **ganz** abgewiesen; `client.dsp_jcs` bleibt unverändert. | `broker/src/coordinator/liveness.rs:599-601` | `state_report_dsp_wird_gegen_den_state_hash_nachgerechnet` erweitert: Hash stimmt, DTO fällt → abgewiesen, und der gehaltene DSP ist **noch der alte**; C++ misst dasselbe Fixture in B3c | `SONDE-015-rot-B-02-n1.txt` |
+| **B-03** | Weggelassen wird das Kind `Dsp` nur, wenn `dspTraegtEtwas` falsch ist **und** der gehaltene Knoten nichts Unbekanntes trägt (`dspTraegtUnbekanntes`, das auch einen Kindknoten als unbekannt zählt). | `eq-copilot/plugin/state/NakamaState.cpp:731-763` und `:1013`, Vertrag `nakama-state-v2.md` §2.0 | **B2**, Fälle `ein Dsp-Kind ohne bekannten Inhalt lädt schreibbar`, `leerer Dsp-Inhalt mit unbekannter Eigenschaft: das Kind bleibt, die Eigenschaft auch` und die Gegenprobe `ohne unbekannte Eigenschaft fällt das leere Dsp-Kind weiterhin weg` | `SONDE-015-rot-B-03-n1.txt` |
+| **B-04** | Die Mutation bleibt **innerhalb** der Vertragsgrenzen (`width` 1.25 → 1.5), und der Erzeuger **sichert zu**, dass die mutierte Zeichenkette den DTO-Weg passiert — mit demselben Referenzvalidator, den A12 führt. | `tools/eq-copilot/erzeuge_v3_fixtures.py:1483-1489` (Zusicherung), `dto_grund()` | **A8** (der Erzeuger bricht ab, wenn die Mutation den DTO-Weg nicht passiert), **B3c** misst dasselbe an der Quelle: `die mutierte Zeichenkette passiert den DTO-Weg` | `SONDE-015-rot-B-04-n1.txt` und die Gegenprobe `SONDE-015-rot-M-105-n1.txt` |
+| **B-05** | Die M-89-Zusicherung ist **strukturell**: `Dsp` hat null Kindknoten, `occupied_v1`, `schutz_zonen_v1` und `undo_ring_v1` sind Array-Eigenschaften der erwarteten Form, und der Ring führt seine Einträge als eigene Arrays. Die Knotenobergrenze bleibt als **zweite** Zusicherung daneben. | `eq-copilot/plugin/tests/StateMigrationTestMain.cpp:1447-1494` | **B2**, Fälle `Dsp nutzt flache Arrays: kein Kindknoten, occupied_v1/schutz_zonen_v1/undo_ring_v1 sind Arrays` und `und der Baum bleibt weit unter der 64-Knoten-Grenze` | `SONDE-015-rot-B-05-n1.txt` |
+
+**Warum der Rotbeweis zu B-01 nicht durch `tests_abonnement` läuft.** Der volle
+Weg durch `verbindung.rs` ist der richtige *Test*, aber der falsche
+*Rotbeweis*: fällt die Empfängergrenze zurück, schließt der Broker die
+Quellverbindung, und der Test blockiert danach auf einer Pipe, die nie etwas
+liefert — ein Hänger ist kein Rot. Gemessen wird deshalb die **Gate-Funktion**,
+die `verbindung.rs` unmittelbar vor dem Schließen befragt
+(`schema_minor_bekannt`), zusammen mit dem Koppeltest und dem Werkzeugriegel.
+Der volle Weg bleibt als grüner Test im Bestand und sendet seither mit der
+Registerzahl statt mit der Serverkonstante — vorher folgte er einer
+zurückgedrehten Konstante stumm nach unten.
+
+**Was zu B-01 zusätzlich geprüft und für richtig befunden wurde.** Die dritte
+P2-Beteiligte ist Gens Empfänger: `SourcesModel::uebernehmeP2` weist einen
+Frame ab, dessen `schema_minor` **größer** ist als `kFeatureBatchSchemaMinor`.
+Da der Broker seine Pushes mit `P2_SCHEMA_MINOR` schreibt und beide Zahlen
+jetzt am selben Register hängen, sind Sender, Transport und Empfänger auf
+derselben Fassung. Gemessen an der Quelle
+(`eq-copilot/plugin/src/SourcesModel.cpp:1448`), nicht angenommen.
+
+**§4.2 Punkt 4 ist nachgezogen** (Eintrag **N1 (B-01)** dort): die
+Bauanweisung nannte nur den Sender; sie nennt jetzt Register, Sender **und**
+Empfängergrenze samt Randwerten der Fassungsleiter.
+
+#### 8.9.1 Prüfliste `tools/dirigent/pruefliste.md`, abgehakt für die Nacharbeit 1
+
+| Zeile | Wo gemessen |
+|---|---|
+| **A. Rückstau und Prioritätsklassen** | Nicht berührt: keine Queue-Politik geändert. B10 (`EqCopIpcTest`) misst den unveränderten Weg. |
+| **B. Lebenszyklus** | B-01 berührt genau den Punkt, an dem `verbindung.rs` eine Verbindung schließt. Gemessen wird die Gate-Funktion davor und der volle Weg danach (`tests_abonnement`, grün mit der Registerzahl). |
+| **C. Verträge und Längen** | B-02 macht den Rust-Leser **gleich streng** wie C++: Discriminator und Hülle prüft das Schema, den Inhalt der Zeichenkette der DTO-Weg. Beide Sprachen klassifizieren `state-report-dsp-dto-ungueltig` und `state-report-dsp-hash-passt-nicht` identisch (B3c und A4 an derselben Datei). |
+| **D. Bau- und Prüfriegel** | Prüfung 8 in `pruefe_fbs_feldids.py` ist fail-closed: fehlt das Register, fehlt eine der zwei Zahlen oder weicht sie ab, ist das **ROT** — kein Default, keine Heuristik. Sie war beim ersten Lauf nach dem Anlegen des Registers von selbst rot (der Rust-Wert stand noch auf 1); der Fix hat sie grün gemacht. |
+| **E. Behauptung ≤ Messung** | Sechs Rotbeweise, jeder an der Zeile, die die Zusage trägt (Tabelle oben). Die zwei Rotbeweise der Etappe 2, die die Erstprüfung als defekt benannt hat, sind ersetzt: `M-105` fällt jetzt mit **leerem** Grund („angenommen") statt mit `[bereich v1.global.width]`, `M-89` fällt an der Zeile `Dsp nutzt flache Arrays` mit der gemessenen Ursache `[1 Kindknoten]`. Die alten Dateien bleiben als Verlauf liegen; §8.8 zitiert sie. |
+| **F. Änderungssatz** | speichern↔laden: B-03 ändert Schreiber und Vertrag, und B2 misst beide Richtungen im selben Commit. Sender↔Empfänger: B-01 hebt beide Seiten und den Transport dazwischen in **einem** Änderungssatz — genau das war der Defekt. |
+
+#### 8.9.2 Nebenbefund dieser Runde
+
+**N1-1 — die Rundenbilanz in §8.8 riss den Dokuriegel.** Die Zelle trug ihre
+vier Abschnitte mit rohen Pipe-Zeichen getrennt; `tools/plan/dokuriegel.py`
+zählt sie als Spaltentrenner und meldete „7 Spaltentrenner statt 4". Das ist
+genau die Landmine, die `CLAUDE.md` führt („Ein Pipe-Zeichen in einer
+Markdown-Tabellenzelle reißt `tools/plan/dokuriegel.py`"). Die vier Trenner
+sind zu `·` geworden, die Zahlen sind unverändert; der Riegel ist danach mit
+0 Befunden grün. Kein Registerpunkt — eine Textkorrektur an einer fremden
+Zelle, hier benannt statt still gemacht.
+
+#### 8.9.3 Die Beine dieser Runde
+
+Alle Zahlen sind aus der Rohausgabe gelesen, nicht abgeschrieben.
+
+| Bein | Ergebnis |
+|---|---|
+| **A5** `pruefe_v3_vertrag.py --abdeckung` | GRÜN — 631 Prüfungen, 0 gescheitert (630 vor dieser Runde: die neue Prüfung stammt aus dem zusätzlichen Fixture) |
+| **A8** `erzeuge_v3_fixtures.py --pruefen` | GRÜN — 406 Dateien bytegleich (das neue Fixture `state-report-dsp-dto-ungueltig` dazu), 112 gültige und 290 ungültige |
+| **A9** `pruefe_flatc_drift.py` | GRÜN — Drift 0 |
+| **A9b** `pruefe_fbs_feldids.py` | GRÜN — 0 rot, darin die neue Prüfung 8: `P2-Wire-Envelope-Minor: 1 -> 2 (Sender und Empfaenger gegen dieses Register geprueft)` |
+| **A10** `erzeuge_fb_fixtures.py --pruefen` | GRÜN — 129 Dateien bytegleich |
+| **A12** `erzeuge_state_fixtures.py --pruefen` | GRÜN — 64 Dateien bytegleich, keine verwaiste Datei |
+| **B2** `EqCopStateMigrationTest` | GRÜN — 247 Prüfungen, 0 Fehler (243 vor dieser Runde: vier neue aus B-03 und B-05) |
+| **B3c** `EqCopSchemaTest` | GRÜN — 152 bestanden, 0 gescheitert (149 vor dieser Runde: drei neue aus B-02 und B-04) |
+| **B10** `EqCopIpcTest` | GRÜN — 389 Prüfungen, 0 Fehler |
+| **A16** `EqCopProbeeqNullTest` | GRÜN — 87 Prüfungen, 0 Fehler |
+| **A4** `cargo test` (Broker) | GRÜN — alle Suiten, 0 Fehler, Exit 0 |

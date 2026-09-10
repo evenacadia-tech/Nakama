@@ -1,0 +1,12 @@
+SONDE-015 Etappe 2, Nacharbeit 1 - Rotbeweis M-105
+Zusage: Nur der Hashvergleich haelt den manipulierten Bericht auf - faellt er weg, wird der Bericht ANGENOMMEN.
+Bruch:  eq-copilot/plugin/state/NakamaParameter.cpp
+        -     if (stateHashHex.isEmpty() || ist != stateHashHex)
+        +     if (false)
+------------------------------------------------------------------------------
+$ EqCopSchemaTest.exe
+[ROT]  abweichender_hash_wird_abgewiesen  [ ]
+151 bestanden, 1 gescheitert
+EXIT=1
+------------------------------------------------------------------------------
+URTEIL: ROT

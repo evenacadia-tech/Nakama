@@ -188,9 +188,22 @@ pub const CAP_WRITER: usize = 256;
 /// NAK-213 (08.09.2026) hebt **P0 und P1** auf 4: die zwei neuen
 /// Ausschlussgruende `screening_ueberboten` und `master_duplikat` und die von
 /// 32 auf `SESSION_CLIENT_CAP` gehobene Laenge der Ausschlussliste reisen dort.
+/// SONDE-015 (10.09.2026, Etappe-2-Erstpruefung B-01): P2 steigt auf 2.
+/// `Frame.band_dynamic_gain_db` (Feld-ID 22) ist zwar ein OPTIONALES
+/// FlatBuffers-Feld und damit formatseitig additiv - der C++-Sender fuehrt
+/// die Fassung aber seit SONDE-015 auf dem Draht (`kFeatureBatchSchemaMinor`).
+/// Blieb die Zahl hier bei 1, wies `verbindung.rs` jeden Telemetrierahmen ab
+/// und schloss die Verbindung beim ERSTEN Frame - genau der Vorfall, den der
+/// Absatz darueber fuer P0/P1 vom 04.09.2026 festhaelt.
+///
+/// Die Zahl steht GENAU EINMAL: im Register `wire_envelope_schema_minor` von
+/// `eq-copilot/schemas/v3/flatbuffers/FELD-IDS.json`. Zwei Riegel halten sie
+/// dagegen - `transportfassung_p2_bindet_den_sender` (Rust) und Pruefung 8 in
+/// `tools/eq-copilot/pruefe_fbs_feldids.py`, die AUSSERDEM den C++-Sender
+/// liest. Keine dritte handgepflegte Kopie.
 const P0_SCHEMA_MINOR: u8 = 5;
 const P1_SCHEMA_MINOR: u8 = 5;
-const P2_SCHEMA_MINOR: u8 = 1;
+const P2_SCHEMA_MINOR: u8 = 2;
 
 fn schema_minor_bekannt(familie: Familie, schema_minor: u8) -> bool {
     let hoechster = match familie {

@@ -2758,3 +2758,24 @@ v2-Globalen **hinter** allen v1-Slotfeldern stimmt sie nicht mehr; alle drei
 lesen die Reihenfolge jetzt aus `ids`. Ein Bein, das die Formel behalten hätte,
 wäre still in einer anderen Reihenfolge gelaufen — und die
 Reihenfolge entscheidet über den APVTS-Index (M-88, Etappe 4).
+
+### 8.8 Erstprüfung Etappe 2 — NEEDS_WORK (Dirigent, 2026-09-10)
+
+| Merkmal | Wert |
+|---|---|
+| Prüfer | Codex `gpt-6-astra`, Effort max, lesend; Thread `01a08939-cb7c-7543-bf7c-ce2733441a1f`; Lauf 04:51–05:09 |
+| Prüfbereich | Erstprüfung (Vorlage A) über `git diff 2026031f...94a8a336 -- eq-copilot/schemas eq-copilot/fixtures eq-copilot/plugin broker/src broker/tests tools/eq-copilot tools/beweise.ps1`; HEAD während des Laufs `8242fb13` (trägt nur den Prüfauftrag und die CLAUDE.md-Textkorrektur), vorher und nachher identisch |
+| Auftrag und Urteil | `docs/beweise/roh/SONDE-015-etappe-2-erstpruefung-auftrag.txt`; Urteil wörtlich `docs/beweise/roh/SONDE-015-etappe-2-erstpruefung-94a8a33.txt` |
+| Urteil | **NEEDS_WORK** — fünf Befunde: ein P1 (Telemetrie-Sender Minor 2 gegen Broker-Grenze 1 → Verbindung schließt beim ersten Frame), vier P2 |
+| Quellencheck des Dirigenten | lesender Opus-Agent, jede zitierte Zeile geöffnet: alle fünf **DEFEKT**. B-01 bricht Produktverhalten seit BASIS (`kFeatureBatchSchemaMinor` 1→2 im Diff, `P2_SCHEMA_MINOR` blieb 1, `tests_fristen.rs:126` sichert das Gegenteil zu); B-02 R13 „validiert" unerfüllt (`dto::pruefe` existiert, wird nicht gerufen; C++ prüft); B-03 M-91/R1/„State bleibt verlustfrei" (Weglassregel entfernt unbekannte Eigenschaft); B-04 und B-05 Rotbeweis nicht an der Zusage (M-105 fällt am Bereichsgrund, M-89-Zusicherung fällt gar nicht). Zusatzfund: §4.2 Punkt 4 nannte nur den Sender, nicht die Broker-Grenze |
+| Rundenbilanz | `2026031f..94a8a336: Produkt 101 Datei(en) +7053/-202 | Tests 5 Datei(en) +856/-47 | Pruefwerkzeug 5 Datei(en) +768/-49 | Doku 35 Datei(en) +1395/-6` — Bau mit Produktfortschritt |
+| Nebenbefund des Dirigenten | Der Bauer hat `CLAUDE.md` (Maschinen-Landmine „gemischte Zeilenenden unter `eq-copilot/schemas/**`") mitcommittet — außerhalb der Ticketpfade, inhaltlich richtig und behalten; die zerbrochene Code-Spanne darin hat der Dirigent in `8242fb13` repariert |
+| Nacharbeit | Etappe 2, Nacharbeit 1 (Runde 1 von 3): `docs/beweise/roh/SONDE-015-etappe-2-nacharbeit-1-auftrag.txt` — nur die fünf Defekte mit je einer schließenden Regel; nur betroffene Beine |
+
+| Befund | Kurzform | Einordnung | Ansatzpunkt |
+|---|---|---|---|
+| B-01 | P2-Empfängergrenze nicht mit dem Sender gehoben | DEFEKT (R14, Cross-Language, Bruch seit BASIS) | `broker/src/transport/server_v3/mod.rs:193`, `tests_fristen.rs:126` |
+| B-02 | Rust-Leser validiert das DSP-DTO nach der Hashprüfung nicht | DEFEKT (R13, M-105, gleich streng in beiden Sprachen) | `broker/src/coordinator/liveness.rs:585-590`, `broker/src/dto.rs:312` |
+| B-03 | Leeres `Dsp`-Kind verliert unbekannte Eigenschaften beim Speichern | DEFEKT (M-91, R1, State verlustfrei) | `eq-copilot/plugin/state/NakamaState.cpp:720-728`, `:1039-1041` |
+| B-04 | Hash-Negativfixture verletzt zusätzlich die Bereichsgrenze | DEFEKT des Rotbeweises (M-105) | `tools/eq-copilot/erzeuge_v3_fixtures.py:1461-1462` |
+| B-05 | M-89-Zusicherung misst Knotenzahl, nicht Array-Struktur | DEFEKT des Rotbeweises (M-89) | `eq-copilot/plugin/tests/StateMigrationTestMain.cpp:1406-1408` |

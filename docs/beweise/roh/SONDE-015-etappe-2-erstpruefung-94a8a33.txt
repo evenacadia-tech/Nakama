@@ -1,0 +1,22 @@
+URTEIL: NEEDS_WORK — drei Implementierungsdefekte und zwei Defekte der geforderten Negativtests.
+
+Geprüft: gebundener Zieldiff, Pflichtmatrix, Rotprotokolle und unveränderte v1-Vertragsdaten; HEAD 8242fb13c32793b0aba482fcc3770fd6f6387b49 sowie Worktree-Status blieben unverändert.
+
+Nicht geprüft durch Ausführung: Builds, Produktlaufzeit, Nulltest und erneute Rotläufe; vorhandene grüne Testprotokolle wurden ausschließlich gelesen.
+
+Full review comments:
+
+- [P1] Hebe die P2-Empfängergrenze zusammen mit dem Sender an — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/core/ipc/TelemetryClient.h:48-48
+  DEFEKT (R14/Bestandskompatibilität): Bereits ohne neue Dynamik-Nutzlast sendet `TelemetryClient.cpp:780` jeden Frame mit Minor 2. Der Broker erlaubt in `server_v3/mod.rs:193` weiterhin höchstens P2-Minor 1 und schließt deshalb in `verbindung.rs:665–672` die Telemetrie-Verbindung beim ersten Frame. Lesender Nachweis: `rg -n 'kFeatureBatchSchemaMinor|P2_SCHEMA_MINOR' eq-copilot/plugin/core/ipc broker/src/transport/server_v3`. Empfängergrenze und den weiterhin Minor 2 ablehnenden Test gemeinsam nachziehen ([AGENTS.md:51–52](AGENTS.md#L51-L52)).
+
+- [P2] Validiere das DSP-DTO nach erfolgreicher Hashprüfung — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/liveness.rs:585-588
+  DEFEKT (M-105/R13): Ein ansonsten gültiger Bericht mit `dsp.jcs = "{}"` und passendem SHA-256 wird angenommen und als bestätigter DSP gespeichert. Das äußere Schema prüft lediglich einen String; anders als C++ ruft dieser Leser anschließend keinen DTO-Validator auf. Damit passieren beispielsweise fehlende Parameter oder eine unbekannte DTO-Version die Prüfung. Lesender Nachweis: `rg -n 'dto::pruefe|jcs.clone' broker/src/coordinator/liveness.rs`. Vor der Übernahme den vorhandenen exakten DTO-Weg verwenden und einen Bericht mit korrektem Hash, aber ungültigem DTO testen ([AGENTS.md:51–52](AGENTS.md#L51-L52)).
+
+- [P2] Erhalte unbekannte Eigenschaften bei leerem DSP-Zustand — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/state/NakamaState.cpp:1039-1041
+  DEFEKT (M-91/R1): Ein gültiger Layout-v2-Stand mit einem `Dsp`-Kind, Revision 0, freien Slots, leeren Zonen/Undo und einer unbekannten Eigenschaft lädt schreibbar. Weil `dspTraegtEtwas` ausschließlich bekannte Inhalte berücksichtigt, entfernt das anschließende Speichern jedoch das gesamte Kind einschließlich der unbekannten Eigenschaft. Lesender Nachweis: `rg -n 'dspTraegtEtwas|removeChild \(dsp' eq-copilot/plugin/state/NakamaState.cpp`. Die Weglassregel muss vorhandene unbekannte Daten erhalten, statt sie als leeren Zustand zu behandeln ([CLAUDE.md:215–217](CLAUDE.md#L215-L217)).
+
+- [P2] Verwende einen gültigen Alternativwert im Hash-Negativfixture — C:/Users/phili/Projekte/Nakama/tools/eq-copilot/erzeuge_v3_fixtures.py:1461-1462
+  DEFEKT (M-105): Das Ausgangs-DTO enthält `width=1.25`; dieses Präfix-Replacement erzeugt `2.25` und verletzt zusätzlich die Obergrenze 2.0. Deshalb lehnt C++ das Fixture auch ohne Hashprüfung weiterhin ab: `cat docs/beweise/roh/SONDE-015-rot-M-105.txt` zeigt `[bereich v1.global.width]`. Der Rotlauf misst damit den geänderten Fehlergrund, nicht die geforderte Annahme eines manipulierten Berichts bei ausgeschaltetem Hash-Riegel. Einen weiterhin gültigen DTO-Wert einsetzen und dessen DTO-Gültigkeit separat absichern, damit das Negativfixture ausschließlich die Hashprüfung misst.
+
+- [P2] Prüfe für M-89 die Array-Struktur statt nur die Knotenzahl — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/tests/StateMigrationTestMain.cpp:1407-1408
+  DEFEKT (M-89): `knoten(v) <= 8` bleibt wahr, wenn `Dsp` statt der flachen Array-Eigenschaft einen zusätzlichen `Occupied`-Kindknoten enthält. Genau diese Mutation dokumentiert `cat docs/beweise/roh/SONDE-015-rot-M-89.txt`; die neue M-89-Zusicherung fällt dort nicht, sondern Bytegleichheits- und Belegungsprüfungen. Damit fehlt der verlangte Rotbeweis an „flache Arrays, keine Kindknoten“. Array-Typen und fehlende Kindknoten direkt prüfen und die entsprechende Zusicherung gezielt rot belegen.

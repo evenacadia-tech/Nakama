@@ -1094,7 +1094,7 @@ Der Candidate-Pfad ist derselbe Aufbau auf einer zweiten Bank; sein Tap heißt
 | M-41 | Der Pool wird angelegt | **Vier** Bänke, alle vorallokiert, je mit Double-Buffer für Committed und Candidate. Nach `prepareToPlay` findet keine weitere Allokation statt — auch nicht beim ersten Programmwechsel. | **BELEGT** · BAULÜCKE | **NEU** **B6**, Fall `vier_baenke_vorallokiert_und_null_allokationen_danach` | Der Allokationszähler steigt beim ersten Programmwechsel | §44.2; §60 „vier festen Ownership-Bänken" |
 | M-42 | Ein Programm wird vorbereitet | Der Ownership-Automat läuft genau die Kette `free → preparing → ready(generation) → audio_active/fading → retired → free`. Der Control-Worker schreibt **ausschließlich** `free`-Slots und veröffentlicht Index plus Generation mit Release-Semantik; der Audiothread übernimmt nur am Blockrand. | **BELEGT** · BAULÜCKE | **NEU** **B6**, Fall `ownership_automat_je_uebergang` (jeder der sechs Übergänge einzeln) | Ein Übergang ist im Automaten möglich, den der Vertrag nicht nennt; oder der Worker schreibt einen Slot, der nicht `free` ist | §44.2 wörtlich |
 | M-43 | Der Audiothread hat eine Bank ausgedient | Er meldet die ausgediente Generation über einen **vorallokierten Audio→Control-SPSC-Ring** zurück. **Erst nach diesem ACK** darf der Worker Filterzustand oder Koeffizienten überschreiben. Es gibt kein In-place-Überschreiben, keinen Heap-Reclaim, keinen `shared_ptr`-Destruktor und keine Deallokation im Callback. | **BELEGT** · BAULÜCKE | **NEU** **B6**, Fall `reclaim_erst_nach_ack` | Der Worker überschreibt eine Bank, die der Audiothread noch liest; oder ein Destruktor läuft im Callback | §44.2 wörtlich |
-| M-44 | Kein Slot ist `free`, ein Programm soll gebaut werden | Der Befehl erhält **`busy_retry`** — er wird nicht gepuffert, nicht verworfen und nicht mit Gewalt durchgesetzt. **Der Aufrufer wiederholt mit derselben Transaktions-ID:** `busy_retry` ist §5.11.4 **T5** — kein Commit, keine Revision, **nicht memoisiert**. Weil `r` dabei unverändert bleibt, ist die alte `base_revision` weiterhin gültig, und der nächste Versuch durchläuft die Stufen erneut; wann er committet, sagt §5.11.4 **T7**. Eine neue ID braucht der Aufrufer **nicht**. **MK:** die Zeile zitiert die Tabelle und rechnet nicht selbst. **MR:** bis zur NAK-245-Runde hieß es hier „die Wiederholung kommt durch“ — ohne die Bedingung, unter der T7 committet (Matrixprüfung 5). | **BELEGT** · **ENTSCHIEDEN (§5.11.4 T5, T7)** · BAULÜCKE · **MN3** · **MK** · **MR** | **NEU** **B6**, Fall `busy_retry_wenn_kein_slot_frei`; **NEU** **B7**, Fälle `busy_retry_wird_nicht_gemerkt` (T5) und `wiederholung_nach_bankfreigabe_committet` (T7) | Ein fünfter Programmwunsch verdrängt eine aktive Bank; oder er wird still verworfen und die Transaktion meldet Erfolg; oder die Wiederholung nach der Freigabe bekommt erneut `busy_retry` aus dem Register statt gebaut zu werden | §44.2 wörtlich; R9; §5.11.4 T5 und T7; Matrixprüfung 3 D-2; Matrixprüfung 5 |
+| M-44 | Kein Slot ist `free`, ein **bankpflichtiges** Programm soll gebaut werden | Der Befehl erhält **`busy_retry`** — er wird nicht gepuffert, nicht verworfen und nicht mit Gewalt durchgesetzt. **Der Aufrufer wiederholt mit derselben Transaktions-ID:** `busy_retry` ist §5.11.4 **T5** — kein Commit, keine Revision, **nicht memoisiert**. Weil `r` dabei unverändert bleibt, ist die alte `base_revision` weiterhin gültig, und der nächste Versuch durchläuft die Stufen erneut; wann er committet, sagt §5.11.4 **T7**. Eine neue ID braucht der Aufrufer **nicht**. Ein **bankfreier** Zustand (`eq_enabled = false`; Begriff in §5.11.4 Teil 2) bekommt dagegen kein `busy_retry`: er committet auch bei vollem Pool, wenn die übrigen Stufen bestehen (§5.11.4 T6 und T9), und wird nach E-18 als ENDE-Marke ohne Bank publiziert (§5.11.4 S8). **MK:** die Zeile zitiert die Tabelle und rechnet nicht selbst. **MR:** bis zur NAK-245-Runde hieß es hier „die Wiederholung kommt durch“ — ohne die Bedingung, unter der T7 committet (Matrixprüfung 5). **MR1:** bis zur Nacharbeit 1 der NAK-245-Runde nannte das Ereignis den vollen Pool ohne die Bankpflicht und sagte damit auch einem bankfreien Zustand `busy_retry` zu, obwohl der gebaute Kern ihn ohne Reservierung publiziert (Matrixprüfung 6). | **BELEGT** · **ENTSCHIEDEN (§5.11.4 Teil 2, T5, T6, T7, T9)** · BAULÜCKE · **MN3** · **MK** · **MR** · **MR1** | **NEU** **B6**, Fall `busy_retry_wenn_kein_slot_frei`; **NEU** **B7**, Fälle `busy_retry_wird_nicht_gemerkt` (T5), `wiederholung_nach_bankfreigabe_committet` (T7) und `retry_nach_zonenloesung_bei_vollem_pool_ohne_bankpflicht_committet` (T9, bankfrei bei vollem Pool) | Ein fünfter **bankpflichtiger** Programmwunsch verdrängt eine aktive Bank; oder er wird still verworfen und die Transaktion meldet Erfolg; oder die Wiederholung nach der Freigabe bekommt erneut `busy_retry` aus dem Register statt gebaut zu werden; oder **ein bankfreier Zustand bekommt bei vollem Pool `busy_retry` statt eines Commits** | §44.2 wörtlich; R9; §5.11.4 Teil 2, T5, T6, T7 und T9; E-18 (§9.2), `eq-copilot/plugin/dsp/DspKern.cpp:170-177`; Matrixprüfung 3 D-2; Matrixprüfung 5; Matrixprüfung 6 |
 | M-45 | Der ACK-Ring läuft trotz Überkapazität über | Der Ring **fasst mehr Einträge als es Slots gibt und droppt nie**. Ein dennoch erkannter Overflow setzt zusätzlich eine atomare `reclaim_pending_mask`; der betroffene Slot bleibt **dauerhaft nicht frei**, bis der Worker ihn bestätigt. Reclaim-Sicherheit gewinnt über Verfügbarkeit. | **BELEGT** · BAULÜCKE | **NEU** **B6**, Fall `reclaim_pending_mask_haelt_den_slot` | Nach einem erzwungenen Overflow wird der Slot wieder `free`, ohne dass der Worker ihn bestätigt hat | §44.2 wörtlich |
 | M-46 | Gleichzeitiger Topologiewechsel auf Committed und Candidate | Der Fall braucht für die begrenzte Fadezeit drei, im schlechtesten Fall vier Bänke. Reicht das Budget nicht, wird **Candidate vor dem Wechsel neutral beendet** — nie eine Bank und nie ein Filterzustand zwischen beiden Pfaden geteilt. | **BELEGT** · BAULÜCKE | **NEU** **B6**, Fall `vier_baenke_im_schlimmsten_fall_und_candidate_endet_neutral` | Committed und Candidate teilen sich eine Bank; oder der Wechsel scheitert statt Candidate zu beenden | §44.2 wörtlich |
 | M-47 | Ein voller Audioblock läuft | Im Callback gibt es **keine Sperre, keine Allokation, keinen Datei-, Pipe- oder Netzzugriff, kein Logging und keine geworfene Ausnahme**. Gemessen wird mit einem thread-lokalen Allokations- und einem Sperrzähler über mindestens 4000 Blöcke wechselnder Größe mit Transportkanten und Programmwechseln. | **BELEGT** · BAULÜCKE | **NEU** **B6**, Fall `null_allokationen_null_sperren_im_callback`; **B4** unverändert als Gegenprobe | Der Zähler steht auf 1; oder der Zähler ist global statt thread-lokal und kann Worker und Audiothread nicht trennen | §44.5; §49.2 Gate 2; `CLAUDE.md` |
@@ -1150,7 +1150,7 @@ Der Candidate-Pfad ist derselbe Aufbau auf einer zweiten Bank; sein Tap heißt
 | M-75 | Ein Fehler tritt in **irgendeiner** fehlbaren Stufe eines Apply auf | Der bestätigte Zustand bleibt **unverändert**, der `state_hash` bleibt **unverändert**, `r` steigt **nicht**, der Undo-Ring bekommt **keinen** Eintrag — **und das Register auch nicht** (§5.11.4 **I4**; die Fehlerausgänge der Falltabelle sind sämtlich „nicht memoisiert"). Gemessen wird mit **je einem Einspritzpunkt pro fehlbarer Stufe** aus §5.11.4 Teil 2, alle vor dem Commit-Punkt. Welchen Ausgang jeder Einspritzfall hat, sagt die Tabelle und nicht diese Zeile: **T2**, **T3**, **T4**, **T13**, **T5**, **T14** und **T15**, in der Reihenfolge der Stufen. **S0 ist bewusst nicht darunter:** der Nachschlag liest ein vorallokiertes Register fester Größe, allokiert nicht und kann nicht fehlschlagen — ein Treffer ist ein Ergebnis, ein Fehltreffer der Normalfall. Ein Einspritzpunkt dort wäre ein Fehler, den es nicht geben kann, und er stünde vor allen anderen. **MK:** die Stufennamen kommen aus §5.11.4 Teil 2, nicht aus dieser Zeile. **MR:** bis zur NAK-245-Runde zählte die Zeile die Stufen noch selbst auf, und für Fehler in S4, S6 und S7 hatte die Tabelle keine Zeile (Matrixprüfung 5); jetzt zitiert sie die Zeilen. | **BELEGT** · **ENTSCHIEDEN (§5.11.4 Teil 2, I4, T13, T14, T15)** · BAULÜCKE · **MN1** · **MN2** · **MN3** · **MK** · **MR** | **NEU** **B7**, sieben Fälle `fehler_in_S<n>_laesst_committed_und_hash_unveraendert` (je einer an der Tabellenzeile seiner Stufe), dazu `fehler_hinterlaesst_keinen_registereintrag` und `nachschlag_allokiert_nicht_und_schlaegt_nicht_fehl` (Allokationszähler über 10.000 Nachschläge) | Nach einem Fehler in S6 ist `r` erhöht und der Committed-Zustand getauscht; oder ein Fehler in S7 hinterlässt einen halben Ringeintrag; oder ein abgewiesener Ausgang landet im Register und blockiert die Wiederholung; oder der Nachschlag allokiert | R11; §44.3; §5.11.4; Matrixprüfung 5 |
 | M-76 | 10.000 doppelte, vertauschte und veraltete Transaktionen, **fernsteuerungsfrei** gegen den lokalen Transaktionskern | Sie erzeugen **höchstens eine** gültige Revision und **niemals** einen Mischzustand — und diese Zeile misst **nur** diesen Satz aus §44.5. Alle 10.000 Eingaben stammen aus **einer** logischen Transaktion T mit fester Nutzlast: dieselbe `tid` wiederholt (doppelt), in vertauschter Ankunftsreihenfolge (vertauscht), mit veralteter oder aktueller `base_revision` (veraltet). Der Lauf beginnt unmittelbar nach dem Ladestart eines Standes mit `r0 ≥ 1` (§5.11.4 Teil 1), damit es ältere Revisionen gibt, und für T bestehen S2 bis S7. Per Konstruktion kann der Lauf höchstens **einen** Commit erzeugen. Zugesagt ist: `r − r0 ≤ 1` am Ende, und der bestätigte Zustand ist entweder der Ausgangszustand oder genau der Zustand nach T, nie eine Mischung. Im Lauf kommen nur die Ausgänge dreier Tabellenzeilen vor: **T2** (veraltete `base_revision` vor dem Commit), **T6** (der eine Commit) und **T1** (jede Eingabe danach). Die Zeile fährt die Falltabelle **nicht**; die vollständige, tabellengetriebene Prüfung ist allein **M-125**. **MK:** die Zeile nennt keine Zahl selbst; Fenster und Kapazität stehen in §5.11.4 Teil 1. **MR:** bis zur NAK-245-Runde sollte dieser Lauf die ganze Falltabelle fahren und zugleich höchstens eine Revision erzeugen — T6, T7 und T9 committen aber je einmal, und ein korrekter Kern wäre am Rotbeweis dieser Zeile gefallen (Matrixprüfung 5). | **BELEGT** · **ENTSCHIEDEN (§5.11.4 T1, T2, T6)** · BAULÜCKE · **MN1** · **MN2** · **MN3** · **MK** · **MR** | **NEU** **B7**, Fall `zehntausend_transaktionen_erzeugen_hoechstens_eine_revision` (alle Eingaben aus einer logischen Transaktion; kein Tabellenlauf) | Zwei Revisionen entstehen; oder der bestätigte Zustand trägt Werte aus dem Ausgangszustand und aus T zugleich; oder der Beweis läuft über den Fernweg-ACK statt gegen den lokalen Kern und ist damit in P6 nicht fahrbar | §44.5 wörtlich; `CLAUDE.md` „Zustands- und Parameterhoheit bleibt in der Audio führenden Instanz"; §5.11.4; Matrixprüfung 5 |
 | M-123 | Eine **committete** Transaktion wird nach ihrem Abschluss erneut angeboten | Liegt ihre `tid` im Fenster, liefert **S0** sofort das gespeicherte Ergebnis — dieselbe Revision `e`, denselben Hash — **ohne** zweite Revision und ohne eine weitere Stufe (§5.11.4 **T1**). Fenster, Kapazität und Belegung stehen in §5.11.4 Teil 1 und in **I1** bis **I3**; die Zeile rechnet nicht selbst. Jenseits des Fensters ist die `tid` unbekannt, und die veraltete `base_revision` ergibt **Konflikt** (**T10**). Nach einem **Ladestart** ist das Register leer, die geladene Revision bleibt (`r0`, §5.11.4 Teil 1), und eine Wiederholung aus der vorigen Sitzung ist ein **neuer Versuch** (**T17**) — die Konsequenz aus I5, kein Fehler. Vier Pflichtfälle: der **Fensterrand als Paar** (T10 und T11), der **Mischfall** (T12 — Abweisungen verdrängen T nicht), die **Sitzungsgrenze** (Ladestart und T17) und der **Zonenablauf** aus MN2 (1000 Hz → T auf 1050 Hz → 500 Hz → T wiederholt → T's Ergebnis, kein „User-Schutz"). **MK:** die Zeile sagte bis zur Konvergenzrunde „höchstens 32 Revisionen hinter" **und** „nie mehr als 32 Einträge" — das ergab 33 gegen 32 und war K-1. **MR:** I1 und I2 zählten bis zur NAK-245-Runde ab Revision 0; ein geladener Stand mit hoher `state_revision` hätte sofort volle Belegung verlangt, obwohl das Register nach I5 leer ist (Matrixprüfung 5). Die Zeile zitiert beide jetzt in ihrer Fassung mit `r0`. | **ENTSCHIEDEN (§5.11.4 Teil 1, I1, I2, T1, T10, T11, T12, T17)** · BAULÜCKE · **MN1** · **MN2** · **MN3** · **MK** · **MR** | **NEU** **B7**, Fälle `wiederholung_im_fenster_liefert_dasselbe_ergebnis` (T1), `fensterrand_erste_transaktion_ist_draussen` (T10), `fensterrand_zweite_transaktion_ist_drinnen` (T11), `abweisungen_verdraengen_keinen_committeten_eintrag` (T12), `wiederholung_unter_einer_zone_bekommt_nicht_user_schutz`, `ladestart_hat_leeres_register_und_haelt_die_revision` (I1 mit `r0`, M-93) und `wiederholung_ueber_sitzungsgrenze_ist_neuer_versuch` (T17) | Die Wiederholung erzeugt eine zweite Revision; oder **am Fensterrand liegt die erste Transaktion der Sitzung noch im Register** (T10 — dann ist die Kapazität größer als die Undo-Tiefe und I1 verletzt); oder **die zweite ist verdrängt** (T11 — dann ist das Fenster kleiner als die Undo-Tiefe); oder der Mischfall endet mit Konflikt; oder die Wiederholung läuft in den Zonenriegel; oder **nach dem Laden liegen Einträge im Register** (es wurde mitgespeichert, I5 gebrochen); oder **das Laden setzt `r` auf 0 zurück** (M-93 gebrochen) | `eq-copilot/schemas/v3/eq-ipc-v3.schema.json:2372`; §44.5; §5.11.4; Matrixprüfung 4 K-1; Matrixprüfung 5 |
-| M-124 | Eine Transaktion endete **ohne Commit** und wird mit derselben `tid` erneut angeboten | Sie ist ein **neuer Versuch**: nichts wurde memoisiert (**I4**), also findet **S0** nichts, und die Eingabe durchläuft die volle Stufenfolge und erhält das Urteil des **aktuellen** Zustands; nach **I6** entscheidet die erste Stufe, die nicht besteht. **Der Ausgang hängt davon ab, ob sich `r` zwischenzeitlich bewegt hat** — und genau hier liegt der Unterschied, den die Konvergenzrunde festgeschrieben hat. Nach **`busy_retry`** hat sich nichts bewegt: die Bankfreigabe ist ein Audio-ACK und **keine** Transaktion, die alte `base_revision` gilt weiter, und die Wiederholung committet unter den Bedingungen von **T7**. Nach **User-Schutz** dagegen ist das Lösen der Zone **selbst eine Transaktion** und hat `r + 1` erzeugt (M-71): dieselbe `tid` mit der **alten** `base_revision` ergibt **Konflikt** — und das ist **richtiges** Verhalten nach M-76 (**T8**); mit **aktualisierter** `base_revision` committet sie unter den Bedingungen von **T9** — ist der Pool dann voll, ist der Ausgang **T5**. **MK:** der MN3-Rotbeweis „eine Wiederholung nach behobenem Zonenkonflikt wird weiter abgewiesen" hätte T8 als Fehler gewertet, obwohl T8 korrekt ist — das war K-2. Er ist auf T9 eingegrenzt, und T8 ist als eigener Fall dazugekommen. **MR:** T9 verlangte bis zur NAK-245-Runde nur die aktualisierte `base_revision` und widersprach bei vollem Pool T5 (Matrixprüfung 5); die Abgrenzung ist jetzt ein eigener Fall. | **ENTSCHIEDEN (§5.11.4 T5, T7, T8, T9, I4, I6)** · BAULÜCKE · **MN2** · **MN3** · **MK** · **MR** | **NEU** **B7**, Fälle `wiederholung_nach_bankfreigabe_committet` (T7), `retry_nach_zonenloesung_mit_alter_base_revision_ist_konflikt` (T8), `retry_nach_zonenloesung_mit_aktueller_base_revision_committet` (T9), `retry_nach_zonenloesung_bei_vollem_pool_ist_busy_retry` (Abgrenzung T9 gegen T5) und `register_ist_nicht_teil_des_zustands` (I5: Speichern schreibt es nicht, der Ladestart leert es, der Hash ändert sich nicht) | Eine Wiederholung nach `busy_retry` bekommt das gespeicherte `busy_retry` zurück; oder **T8 committet trotz veralteter `base_revision`** und umgeht M-76; oder T9 wird weiter mit User-Schutz abgewiesen; oder **T9 committet bei vollem Pool statt `busy_retry`**; oder das Register taucht im gespeicherten Zustand auf | §5.11.4 T5, T7 bis T9; M-71; M-76; Matrixprüfung 4 K-2; Matrixprüfung 5 |
+| M-124 | Eine Transaktion endete **ohne Commit** und wird mit derselben `tid` erneut angeboten | Sie ist ein **neuer Versuch**: nichts wurde memoisiert (**I4**), also findet **S0** nichts, und die Eingabe durchläuft die volle Stufenfolge und erhält das Urteil des **aktuellen** Zustands; nach **I6** entscheidet die erste Stufe, die nicht besteht. **Der Ausgang hängt davon ab, ob sich `r` zwischenzeitlich bewegt hat** — und genau hier liegt der Unterschied, den die Konvergenzrunde festgeschrieben hat. Nach **`busy_retry`** hat sich nichts bewegt: die Bankfreigabe ist ein Audio-ACK und **keine** Transaktion, die alte `base_revision` gilt weiter, und die Wiederholung committet unter den Bedingungen von **T7**. Nach **User-Schutz** dagegen ist das Lösen der Zone **selbst eine Transaktion** und hat `r + 1` erzeugt (M-71): dieselbe `tid` mit der **alten** `base_revision` ergibt **Konflikt** — und das ist **richtiges** Verhalten nach M-76 (**T8**); mit **aktualisierter** `base_revision` committet sie unter den Bedingungen von **T9** — ist der Pool dann voll und das Programm **bankpflichtig** (§5.11.4 Teil 2), ist der Ausgang **T5**; ein bankfreies Programm committet auch dann (T9). **MK:** der MN3-Rotbeweis „eine Wiederholung nach behobenem Zonenkonflikt wird weiter abgewiesen" hätte T8 als Fehler gewertet, obwohl T8 korrekt ist — das war K-2. Er ist auf T9 eingegrenzt, und T8 ist als eigener Fall dazugekommen. **MR:** T9 verlangte bis zur NAK-245-Runde nur die aktualisierte `base_revision` und widersprach bei vollem Pool T5 (Matrixprüfung 5); die Abgrenzung ist jetzt ein eigener Fall. **MR1:** bis zur Nacharbeit 1 der NAK-245-Runde nannte die Abgrenzung den vollen Pool ohne die Bankpflicht, und ihr Rotbeweis hätte den korrekten Commit eines bankfreien Programms (`eq_enabled = false`, E-18) als Fehler gewertet (Matrixprüfung 6); jetzt ist sie zweigeteilt. | **ENTSCHIEDEN (§5.11.4 Teil 2, T5, T7, T8, T9, I4, I6)** · BAULÜCKE · **MN2** · **MN3** · **MK** · **MR** · **MR1** | **NEU** **B7**, Fälle `wiederholung_nach_bankfreigabe_committet` (T7), `retry_nach_zonenloesung_mit_alter_base_revision_ist_konflikt` (T8), `retry_nach_zonenloesung_mit_aktueller_base_revision_committet` (T9), `retry_nach_zonenloesung_bei_vollem_pool_ist_busy_retry` (Abgrenzung T9 gegen T5, bankpflichtig), `retry_nach_zonenloesung_bei_vollem_pool_ohne_bankpflicht_committet` (T9, bankfrei bei vollem Pool) und `register_ist_nicht_teil_des_zustands` (I5: Speichern schreibt es nicht, der Ladestart leert es, der Hash ändert sich nicht) | Eine Wiederholung nach `busy_retry` bekommt das gespeicherte `busy_retry` zurück; oder **T8 committet trotz veralteter `base_revision`** und umgeht M-76; oder T9 wird weiter mit User-Schutz abgewiesen; oder **ein bankpflichtiges T9 committet bei vollem Pool statt `busy_retry`**; oder **ein bankfreies T9 bekommt bei vollem Pool `busy_retry` statt Commit**; oder das Register taucht im gespeicherten Zustand auf | §5.11.4 Teil 2, T5, T7 bis T9; M-71; M-76; Matrixprüfung 4 K-2; Matrixprüfung 5; Matrixprüfung 6 |
 | M-125 | Der Transaktionskern wird gegen die **ganze** Falltabelle gefahren | Für **jede** Zeile der Falltabelle aus §5.11.4 Teil 4 — ihre Zahl steht dort und nur dort — stellt der Test den beschriebenen Zustand her, gibt die beschriebene Eingabe und prüft **alle vier** Spalten: Ausgang, `r` danach, memoisiert ja/nein und — bei einem Treffer — die zurückgegebene Revision und den Hash. Dazu drei Invarianten aus §5.11.4 Teil 3 als Wachen **nach jeder Eingabe und nach jedem Ladestart**, in ihrer Fassung mit `r0`: die Belegung (**I1**), die Fensterzugehörigkeit (**I2**) und „kein Registereintrag ohne Commit" (**I4**). Der Lauf ist **tabellengetrieben**: fällt eine Zeile aus der Tabelle, fällt der Test, und eine neue Zeile ohne Fall ist ein Übersetzungsfehler. Jede Commit-Zeile erzeugt dabei genau eine Revision; die Zusage „höchstens eine Revision“ aus §44.5 misst dieser Lauf **nicht**, sie gehört M-76. **MK, neu:** ohne diese Zeile wäre die Tabelle eine Beschreibung; mit ihr ist sie eine Zusage. **MR:** bis zur NAK-245-Runde nannte die Zeile die Zeilenzahl und die Formeln von I1 und I2 selbst, und M-76 sollte dieselbe Tabelle fahren; jetzt zitiert sie beides nur (Matrixprüfung 5). | **ENTSCHIEDEN (§5.11.4 Teil 3, Teil 4)** · BAULÜCKE · **MK** · **MR** | **NEU** **B7**, Fall `falltabelle_vollstaendig_gefahren` (jede Zeile der Tabelle, vier Spalten je Zeile, drei Invariantenwachen) | Eine Tabellenzeile hat keinen Fall; oder ein Fall prüft nur den Ausgang und nicht `memoisiert`, sodass I4 unbemerkt brechen kann; oder die Invariantenwachen laufen nur am Ende statt nach jeder Eingabe; oder **die Wache I1 rechnet ohne `r0`** und verlangt nach dem Laden eines Standes volle Belegung, obwohl das Register nach I5 leer ist | §5.11.4 Teil 3 und Teil 4; `tools/dirigent/pruefliste.md` E; Matrixprüfung 5 |
 | M-77 | `state_hash` wird gebildet | SHA-256 über die **RFC-8785-Form des validierten DTO**, gebildet mit der bestehenden Implementierung aus SONDE-006 — nicht neu geschrieben. Die JCS-Zahlen- und Dokumentvektoren aus `eq-copilot/fixtures/state/jcs/` bleiben unverändert gültig, und die drei Sprachen bilden weiterhin denselben Hash über denselben Text. | **BELEGT** · **ENTSCHIEDEN (R11)** · BAULÜCKE | **A12**, **B2**, **A4** (Rust) gegen dieselben Fixtures; **NEU** **B7**, Fall `hash_kommt_aus_dem_bestandskanon` | Der Kanon wird für v2 neu geschrieben und ein RFC-Vektor kippt; oder C++ und Rust liefern für dasselbe DTO verschiedene Hashes | R11; `nakama-state-v2.md:170-176` |
 | M-78 | Der Undo-Ring wächst | Tiefe **höchstens 32** (Vertragsgrenze `undo_tiefe`), persistiert im Kind `Dsp`. Beim 33. Eintrag fällt der älteste heraus; der Ring wächst nie über seine Grenze und die Bytegrenzen des State-Lesers bleiben eingehalten. | **BELEGT** · BAULÜCKE | **NEU** **B7**, Fall `undo_ring_haelt_tiefe_32`; **B2** über den Save-Weg mit vollem Ring | Der 33. Eintrag verdrängt keinen und der State wächst; oder der volle Ring reißt die 16-MiB-Grenze und der Stand wird beim nächsten Laden read-only | `eq-ipc-v3.schema.json:2321` (`maximum: 32`); `nakama-state-v2.md:188-191` |
@@ -1225,7 +1225,7 @@ Der Candidate-Pfad ist derselbe Aufbau auf einer zweiten Bank; sein Tap heißt
 
 ### 3.15 Zählung nach Belegklasse
 
-Gezählt nach der NAK-245-Runde (10.09.2026), aus den Zeilen selbst, nicht abgeschrieben:
+Gezählt nach der Nacharbeit 1 der NAK-245-Runde (10.09.2026), aus den Zeilen selbst, nicht abgeschrieben:
 
 | Klasse | Zeilen | Anteil |
 |---|---:|---:|
@@ -1239,8 +1239,9 @@ Gezählt nach der NAK-245-Runde (10.09.2026), aus den Zeilen selbst, nicht abges
 | davon mit der Marke **MN3** (Nacharbeit 3) | 6 | 5 % |
 | davon mit der Marke **MK** (Konvergenzrunde) | 7 | 6 % |
 | davon mit der Marke **MR** (NAK-245-Runde) | 9 | 7 % |
+| davon mit der Marke **MR1** (Nacharbeit 1 der NAK-245-Runde) | 2 | 2 % |
 
-Mehrfachmarken sind normal: M-74, M-75, M-76 und M-123 tragen alle fünf; M-124 trägt MN2, MN3, MK und MR; M-44 trägt MN3, MK und MR; M-61 trägt MN1 und MR; M-125 trägt MK und MR; M-15 trägt MN1 und MN2; M-126 nur MR. Der Verlauf der Zeilenzahl: **120** nach Etappe 1 (BELEGT 73, ENTSCHIEDEN 72, nur entschieden 47) → **123** nach der Nacharbeit 1 (76 / 78 / 47) → **124** nach der Nacharbeit 2 (76 / 79 / 48) → **124** nach der Nacharbeit 3 (76 / 80 / 48) → **125** nach der Konvergenzrunde (76 / 81 / 49) → **126** nach NAK-245 (76 / 82 / 50). Die Konvergenzrunde fügte genau eine Zeile hinzu — **M-125**, die die Falltabelle aus §5.11.4 als ganze misst; ohne sie wäre die Tabelle eine Beschreibung und keine Zusage. Die NAK-245-Runde fügt ebenfalls genau eine hinzu — **M-126**, die die Zonenausnahme für Redo und Preset-Laden an T16 bindet; bis dahin trug nur Undo sie als Matrixzeile (M-61).
+Mehrfachmarken sind normal: M-74, M-75, M-76 und M-123 tragen MN1, MN2, MN3, MK und MR; M-124 trägt MN2, MN3, MK, MR und MR1; M-44 trägt MN3, MK, MR und MR1; M-61 trägt MN1 und MR; M-125 trägt MK und MR; M-15 trägt MN1 und MN2; M-126 nur MR. Der Verlauf der Zeilenzahl: **120** nach Etappe 1 (BELEGT 73, ENTSCHIEDEN 72, nur entschieden 47) → **123** nach der Nacharbeit 1 (76 / 78 / 47) → **124** nach der Nacharbeit 2 (76 / 79 / 48) → **124** nach der Nacharbeit 3 (76 / 80 / 48) → **125** nach der Konvergenzrunde (76 / 81 / 49) → **126** nach NAK-245 (76 / 82 / 50) → **126** nach der NAK-245-Nacharbeit 1 (76 / 82 / 50). Die Konvergenzrunde fügte genau eine Zeile hinzu — **M-125**, die die Falltabelle aus §5.11.4 als ganze misst; ohne sie wäre die Tabelle eine Beschreibung und keine Zusage. Die NAK-245-Runde fügt ebenfalls genau eine hinzu — **M-126**, die die Zonenausnahme für Redo und Preset-Laden an T16 bindet; bis dahin trug nur Undo sie als Matrixzeile (M-61). Die NAK-245-Nacharbeit 1 fügt keine Zeile hinzu; sie begrenzt M-44 und M-124 auf bankpflichtige Programme (Marke **MR1**).
 
 Die Prozentsätze summieren sich nicht auf 100, weil eine Zeile beide Klassen
 tragen kann: **BELEGT · ENTSCHIEDEN** heißt, dass die Quelle die Zusage
@@ -1886,11 +1887,11 @@ Genau eine Reihenfolge, hier definiert und nirgends sonst:
 | **S2** | DTO validieren (Typ, Bereich, Enum, Endlichkeit; Reihenfolge nach `nakama-state-v2.md:171`). | ja | ja |
 | **S3** | Zonenriegel, nur bei **Bedienänderungen** (§5.6.3 Feinheit 3). Ganzzustands-Wiederherstellungen — Undo, Redo, Preset-Laden — durchlaufen ihn nicht (Ausnahme dort; T16). | ja (User-Schutz) | nein |
 | **S4** | Kandidaten-DTO vollständig bauen. | ja | ja |
-| **S5** | Programm bauen, **ohne** eine Bank zu belegen; braucht das Programm eine Bank und ist keine frei ⇒ `busy_retry` (M-44). Ein Zustand mit `eq_enabled = false` braucht keine (E-18). | ja (**nur** `busy_retry`) | nein |
+| **S5** | Programm bauen, **ohne** eine Bank zu belegen; ist das Programm **bankpflichtig** (Begriff im Absatz „Bankpflichtig und bankfrei“ unter dieser Tabelle) und keine Bank frei ⇒ `busy_retry` (M-44). Ein bankfreies Programm scheitert in S5 nicht. | ja (**nur** `busy_retry`) | nein |
 | **S6** | `state_hash` über das Kandidaten-DTO bilden. | ja | ja |
 | **S7** | Undo-Eintrag vorbereiten (Schnappschuss des **noch** bestätigten Zustands). | ja | ja |
 | **— COMMIT-PUNKT —** | Ab hier kann nichts mehr fehlschlagen und nichts mehr allozieren. | — | — |
-| **S8** | `r` erhöhen, Committed tauschen — dabei das Programm aus S5 in eine freie Bank legen und publizieren —, Hash und Undo-Eintrag übernehmen, Host-Dirty melden, `state_report` senden, **Registereintrag anlegen**, gegebenenfalls einen Eintrag verdrängen. | nein | nein |
+| **S8** | `r` erhöhen, Committed tauschen — dabei ein **bankpflichtiges** Programm aus S5 in eine freie Bank legen und publizieren, ein **bankfreies** als ENDE-Marke ohne Bank publizieren (E-18); beides kann hier nicht scheitern —, Hash und Undo-Eintrag übernehmen, Host-Dirty melden, `state_report` senden, **Registereintrag anlegen**, gegebenenfalls einen Eintrag verdrängen. | nein | nein |
 
 **Warum `base_revision` (S1) vor der Validierung (S2) steht.** Eine veraltete
 `base_revision` heißt, dass die ganze Nutzlast gegen einen Zustand gebildet
@@ -1902,22 +1903,40 @@ beiden Fälle überlappten. An B-01 ändert das nichts: S1 ist weder fehlbar im
 Sinne einer Allokation noch teuer, und alle allozierenden Stufen liegen
 unverändert vor dem Commit-Punkt.
 
+**Bankpflichtig und bankfrei (NAK-245, Nacharbeit 1).** Ein Programm ist
+**bankpflichtig** genau dann, wenn der Kandidatenzustand — das Kandidaten-DTO
+aus S4 — `eq_enabled = true` trägt, auch bei eingeschaltetem Hard-Bypass: der
+Kern fragt vor der Reservierung nur `eq_enabled` ab
+(`eq-copilot/plugin/dsp/DspKern.cpp:170`, `:179`). Ein Zustand mit
+`eq_enabled = false` ist **bankfrei** und wird nach E-18 (§9.2) als ENDE-Marke
+ohne Bank publiziert (`:170-177`). Der Begriff ist nur hier definiert; er ist
+keine neue Stufe und keine neue Zahl. Er begrenzt, was an einer Bank hängt: die
+Abweisung bei vollem Pool in S5 und die Bankbelegung in S8 gelten nur für
+bankpflichtige Programme.
+
 **Warum S5 keine Bank belegt und nur einen Fehlerausgang hat (NAK-245).** Der
-gebaute Kern kennt beim Programmbau genau ein Scheitern: keine Bank frei.
-`DspKern::uebernehmeZustand` reserviert, baut und publiziert in einem Zug und
-liefert `false` nur dann (`eq-copilot/plugin/dsp/DspKern.cpp:179-196`); ein
-Zustand mit `eq_enabled = false` belegt keine Bank (`:170-177`). `baueProgramm`
+gebaute Kern kennt beim Programmbau genau ein Scheitern: für ein bankpflichtiges
+Programm ist keine Bank frei. `DspKern::uebernehmeZustand` reserviert, baut und
+publiziert dann in einem Zug und liefert `false` nur in diesem Fall
+(`eq-copilot/plugin/dsp/DspKern.cpp:179-196`); ein bankfreies Programm belegt
+keine Bank, und der Aufruf liefert immer `true` (`:170-177`). `baueProgramm`
 gibt nichts zurück und schreibt in ein `DspProgramm` fester Größe
 (`eq-copilot/plugin/dsp/DspProgramm.h:158`, `:183-184`). Einen zweiten
-Fehlerausgang bei freier Bank gibt es also nicht; S5 bekommt neben T5 keine
-eigene Fehlerzeile. Belegte S5 aber schon eine Bank, überlebte die Reservierung
-einen Fehler in S6 oder S7: der Pool führt einen Slot aus `vorbereitend` nur
-nach `bereit` (`eq-copilot/plugin/dsp/DspBankPool.cpp:143`), außer beim
-Zurücksetzen des ganzen Pools. Nach einigen solchen Fehlern wäre der Pool voll,
-ohne dass ein Audio-ACK ihn je leerte, und T7 wäre unerreichbar. Deshalb baut S5
-ohne Bank, und die Bank wird erst in S8 belegt. Dort kann das nicht mehr
-scheitern: Bänke belegt nur der Control-Worker (§44.2), und zwischen S5 und S8
-belegt er keine.
+Fehlerausgang bei freier Bank gibt es also nicht, und für ein bankfreies
+Programm gar keinen; S5 bekommt neben T5 keine eigene Fehlerzeile. Belegte S5
+aber schon eine Bank, überlebte die Reservierung einen Fehler in S6 oder S7: der
+Pool führt einen Slot aus `vorbereitend` nur nach `bereit`
+(`eq-copilot/plugin/dsp/DspBankPool.cpp:143`), außer beim Zurücksetzen des
+ganzen Pools. Nach einigen solchen Fehlern wäre der Pool voll, ohne dass ein
+Audio-ACK ihn je leerte, und T7 wäre unerreichbar. Deshalb baut S5 ohne Bank,
+und die Bank eines bankpflichtigen Programms wird erst in S8 belegt. Dort kann
+das nicht mehr scheitern: Bänke belegt nur der Control-Worker (§44.2), und
+zwischen S5 und S8 belegt er keine. Für ein bankfreies Programm publiziert S8 eine
+ENDE-Marke; auch das kann nicht scheitern und alloziert nicht:
+`DspBankPool::publiziereEnde` tauscht das Publikationswort des Pfades atomar aus
+und liefert nur einen dabei verdrängten, noch nicht übernommenen Slot oder −1
+zurück, keinen Fehler (`eq-copilot/plugin/dsp/DspBankPool.cpp:153-158`,
+`eq-copilot/plugin/dsp/DspBankPool.h:172-176`).
 
 ##### Teil 3 — Invarianten
 
@@ -1928,7 +1947,7 @@ belegt er keine.
 | **I3** | Kapazität von `R` = Fensterspanne = Tiefe des Undo-Rings = **32**. Eine Zahl. |
 | **I4** | Ein Registereintrag entsteht **ausschließlich** in S8 und nur für eine committete Transaktion. Kein Ausgang vor dem Commit-Punkt legt einen an. |
 | **I5** | `R` ist **transient**: es lebt im Prozessor, stirbt mit ihm, **wird beim Ladestart geleert**, steht nicht im Kind `Dsp`, nicht im DTO und nicht im `state_hash`. Begründung: eine Wiederholung kann nur von einem Aufrufer kommen, der die Transaktion noch für offen hält — und der stirbt mit derselben Sitzung. Kommt sie nach dem Ladestart trotzdem, ist sie ein neuer Versuch (T17). |
-| **I6** | Genau ein Ausgang je Eingabe. Die Stufen **S0 bis S7** werden in fester Reihenfolge geprüft; die **erste Stufe, die entscheidet**, bestimmt den Ausgang — S0 durch einen Treffer, S1 bis S7, indem sie nicht bestehen —, und entscheidet keine, committet **S8**. Jede Zeile in Teil 4 hat genau einen Ausgang und setzt voraus, dass keine Stufe vor ihrer ersten Stufe entscheidet; entscheidet in einem beschriebenen Ablauf eine frühere Stufe, gilt die Zeile dieser Stufe (T9 bei vollem Pool endet in T5). Jede fehlbare Stufe S1 bis S7 ist in mindestens einer Zeile erste Stufe. Zeilen mit derselben ersten Stufe tragen denselben Ausgang und unterscheiden sich nur im Vorlauf oder in der Art der Transaktion, die sie messen — zwei Zeilen, deren Bedingungen dieselbe Eingabe zulassen, haben deshalb nie verschiedene Ausgänge. |
+| **I6** | Genau ein Ausgang je Eingabe. Die Stufen **S0 bis S7** werden in fester Reihenfolge geprüft; die **erste Stufe, die entscheidet**, bestimmt den Ausgang — S0 durch einen Treffer, S1 bis S7, indem sie nicht bestehen —, und entscheidet keine, committet **S8**. Jede Zeile in Teil 4 hat genau einen Ausgang und setzt voraus, dass keine Stufe vor ihrer ersten Stufe entscheidet; entscheidet in einem beschriebenen Ablauf eine frühere Stufe, gilt die Zeile dieser Stufe (ein bankpflichtiges T9 bei vollem Pool endet in T5). Jede fehlbare Stufe S1 bis S7 ist in mindestens einer Zeile erste Stufe. Zeilen mit derselben ersten Stufe tragen denselben Ausgang und unterscheiden sich nur im Vorlauf oder in der Art der Transaktion, die sie messen — zwei Zeilen, deren Bedingungen dieselbe Eingabe zulassen, haben deshalb nie verschiedene Ausgänge. |
 
 ##### Teil 4 — Falltabelle: Zustand × Eingabe → Ausgang
 
@@ -1946,11 +1965,11 @@ Stufe.
 | **T2** | `tid` unbekannt | `base_revision ≠ r` | **S1** | **Konflikt** | `r` | nein | `veraltete_base_revision_ist_konflikt_ohne_wirkung`; `fehler_in_S1_laesst_committed_und_hash_unveraendert` (M-75) | Die Transaktion wird angewandt; oder der Konflikt landet in `R` und blockiert spätere Versuche |
 | **T3** | `tid` unbekannt | `base_revision = r`, Nutzlast ungültig | **S2** | **Fehler** (Grund aus dem DTO-Vertrag) | `r` | nein | `ungueltige_nutzlast_faellt_und_wird_nicht_gemerkt`; `fehler_in_S2_laesst_committed_und_hash_unveraendert` (M-75) | Ein Bereichs- oder Enumfehler wird geklemmt statt abgelehnt; oder der Fehler wird memoisiert |
 | **T4** | `tid` unbekannt; die Transaktion ist eine **Bedienänderung** nach §5.6.3 Feinheit 3: sie ändert `occupied`, `enabled` oder `freq_hz` eines Slots, und `P` kippt für ein Paar (Slot, Z) dieses Slots von falsch auf wahr | `base_revision = r`, Nutzlast gültig | **S3** | **User-Schutz** | `r` | nein | `zonenriegel_weist_ab_und_merkt_nichts`; `fehler_in_S3_laesst_committed_und_hash_unveraendert` (M-75) | Das Band landet in der Zone; oder die Abweisung wird memoisiert und sperrt jeden späteren Versuch |
-| **T5** | `tid` unbekannt, alle vier Bänke belegt, das Programm braucht eine (S5) | `base_revision = r`, Nutzlast gültig, Zone frei | **S5** | **`busy_retry`** (M-44) | `r` | nein | `busy_retry_wird_nicht_gemerkt`; `fehler_in_S5_laesst_committed_und_hash_unveraendert` (M-75) | Eine aktive Bank wird verdrängt; oder `busy_retry` wird memoisiert und kommt für immer zurück |
+| **T5** | `tid` unbekannt, alle vier Bänke belegt und das Programm ist **bankpflichtig** (Teil 2) | `base_revision = r`, Nutzlast gültig, Zone frei | **S5** | **`busy_retry`** (M-44) | `r` | nein | `busy_retry_wird_nicht_gemerkt`; `fehler_in_S5_laesst_committed_und_hash_unveraendert` (M-75) | Eine aktive Bank wird verdrängt; oder `busy_retry` wird memoisiert und kommt für immer zurück |
 | **T6** | `tid` unbekannt, alle Stufen bestanden | `base_revision = r`, Nutzlast gültig | **S8** | **Commit** | `r + 1` | **ja** (`tid`, `e = r+1`, Hash) | `commit_erzeugt_genau_eine_revision_und_einen_eintrag` | Zwei Revisionen; oder der Eintrag fehlt und die Wiederholung committet erneut |
 | **T7** | wie T5, danach hat ein Audio-ACK eine Bank freigegeben (**keine** Revision); alle übrigen Stufen **S2 bis S7** bestehen | **dieselbe** `tid`, `base_revision = r` — unverändert gültig, weil T5 keine Revision erzeugte | **S8** | **Commit** | `r + 1` | **ja** | `wiederholung_nach_bankfreigabe_committet` | Die Wiederholung bekommt erneut `busy_retry` aus dem Register und erreicht S5 nie |
 | **T8** | wie T4, danach wurde die Zone gelöst — **das ist selbst eine Transaktion** und hat `r + 1` erzeugt (M-71) | **dieselbe** `tid`, **alte** `base_revision = r` | **S1** | **Konflikt** — und das ist **richtig** | `r + 1` | nein | `retry_nach_zonenloesung_mit_alter_base_revision_ist_konflikt` | Die Transaktion committet trotz veralteter `base_revision` und umgeht damit M-76 |
-| **T9** | wie T8; alle übrigen Stufen **S2 bis S7** bestehen — S3, weil die Zone gelöst ist, und S5, weil eine Bank frei ist | **dieselbe** `tid`, **aktualisierte** `base_revision = r + 1` | **S8** | **Commit** | `r + 2` | **ja** | `retry_nach_zonenloesung_mit_aktueller_base_revision_committet`; Abgrenzung `retry_nach_zonenloesung_bei_vollem_pool_ist_busy_retry` (dieselbe Wiederholung bei vollem Pool endet nach I6 in T5, nicht memoisiert, danach der Weg aus T7) | Die Wiederholung wird weiter mit User-Schutz abgewiesen, obwohl die Zone gelöst ist; oder **T9 committet bei vollem Pool statt `busy_retry`** |
+| **T9** | wie T8; alle übrigen Stufen **S2 bis S7** bestehen — S3, weil die Zone gelöst ist, und S5, weil das Programm bankfrei ist oder eine Bank frei ist (Teil 2) | **dieselbe** `tid`, **aktualisierte** `base_revision = r + 1` | **S8** | **Commit** | `r + 2` | **ja** | `retry_nach_zonenloesung_mit_aktueller_base_revision_committet`; Abgrenzung bei vollem Pool, zweigeteilt: **bankpflichtig** → `retry_nach_zonenloesung_bei_vollem_pool_ist_busy_retry` (endet nach I6 in T5, nicht memoisiert, danach der Weg aus T7); **bankfrei** → `retry_nach_zonenloesung_bei_vollem_pool_ohne_bankpflicht_committet` (S5 besteht; Ausgang dieser Zeile) | Die Wiederholung wird weiter mit User-Schutz abgewiesen, obwohl die Zone gelöst ist; oder **ein bankpflichtiges T9 committet bei vollem Pool statt `busy_retry`**; oder **ein bankfreies T9 bekommt bei vollem Pool `busy_retry` statt Commit** |
 | **T10** | 33 **in dieser Sitzung** committete Transaktionen (`r − r0 = 33`) | Wiederholung der **ersten** dieser Sitzung (`e = r0 + 1`, `r − e = 32`) | **S1** (S0 findet nichts) | **Konflikt** | `r` | nein | `fensterrand_erste_transaktion_ist_draussen` | Die erste Transaktion liegt noch in `R` — dann wäre die Kapazität 33 und I1 verletzt |
 | **T11** | dieselbe Lage wie T10 | Wiederholung der **zweiten** (`e = r0 + 2`, `r − e = 31`) | **S0** | **Gespeichertes Ergebnis** | `r` | bleibt | `fensterrand_zweite_transaktion_ist_drinnen` | Die zweite Transaktion ist verdrängt — dann ist das Fenster kleiner als die Undo-Tiefe und die Vorhaltegarantie gebrochen |
 | **T12** | T committet in dieser Sitzung (`e`), U committet (`e+1`, also `r = e+1`), danach **31 Abweisungen** wegen veralteter `base_revision` | Wiederholung von **T** | **S0** | **Gespeichertes Ergebnis von T** | `r` | bleibt | `abweisungen_verdraengen_keinen_committeten_eintrag` | T ist verdrängt und die Wiederholung endet mit Konflikt, obwohl seit T nur **eine** Revision vergangen ist und Undo T noch erreicht |
@@ -1970,8 +1989,9 @@ dieselbe Lage in einer Zone wird bei einer Bedienänderung abgewiesen und bei
 einer Ganzzustands-Wiederherstellung committet und gemeldet. **T1 und T17**
 zeigen erst zusammen, dass das Register an die Sitzung gebunden ist: dieselbe
 Wiederholung bekommt innerhalb der Sitzung das gespeicherte Ergebnis und nach
-dem Ladestart einen neuen Versuch. T9 hat dazu eine Abgrenzung statt eines
-Partners: bei vollem Pool gilt nach I6 T5.
+dem Ladestart einen neuen Versuch. T9 hat dazu eine zweigeteilte Abgrenzung
+statt eines Partners: bei vollem Pool gilt für ein bankpflichtiges Programm nach
+I6 T5; ein bankfreies besteht S5 und committet nach T9 selbst (Teil 2, E-18).
 
 **Was die Tabelle nicht sagt.** Sie regelt den lokalen Transaktionskern. Das
 In-Flight-Register des `ControlClient` registriert **ausgehende**
@@ -2684,6 +2704,132 @@ gegen T5, T7, T14 und T15 — der gebaute Kern bietet beides schon an (Punkt 2).
 | Rundenbilanz | `4d769e43..f8f74880: Doku 1 Datei(en) +220/-63 → OHNE PRODUKTFORTSCHRITT (Produkt+Tests = 0 Zeilen)` — Matrixrunde, strukturell null |
 | Quellencheck des Dirigenten | S5 (Teil 2) und T5 tragen die Ausnahme („braucht das Programm eine Bank“); S8 sagt „das Programm aus S5 in eine freie Bank legen und publizieren“ ohne Ausnahme; T9 setzt „S5, weil eine Bank frei ist“ voraus, und der Rotbeweis „T9 committet bei vollem Pool statt `busy_retry`“ träfe einen korrekten bankfreien Commit; M-44 („kein Slot ist `free`, ein Programm soll gebaut werden“) und M-124 („ist der Pool dann voll, ist der Ausgang T5“) nennen den vollen Pool ohne Ausnahme; ebenso der Absatz unter der Tabelle („bei vollem Pool gilt nach I6 T5“). Einordnung: **DEFEKT** — innerer Widerspruch zwischen S5/T5 und S8/T9/M-44/M-124, und ein Rotbeweis, der richtiges Verhalten als Fehler wertet |
 | Entscheid | **Nacharbeit 1 der NAK-245-Runde (Runde 1 von 3)** mit genau diesem Defekt. Regel des Dirigenten: „bankpflichtig“ (`eq_enabled = true`) wird als Begriff in Teil 2 definiert; S8 publiziert ein bankfreies Programm als ENDE-Marke ohne Bank (E-18); Vollpool-Abweisung und Bankbedingung in T5, T7, T9 (Zustand, Abgrenzung, Rotbeweis), M-44, M-124 und im Absatz unter der Tabelle werden auf bankpflichtige Programme begrenzt; der bankfreie Retry bei vollem Pool ist ein eigener B7-Fall mit Ausgang Commit. Auftrag `docs/beweise/roh/SONDE-015-nak245-nacharbeit-1-auftrag.txt`; danach Matrixprüfung 7 über den Fixdiff (Vorlage B) |
+
+### 7.12 NAK-245-Runde, Nacharbeit 1 — was eingearbeitet wurde (10.09.2026)
+
+Auftrag wörtlich: `docs/beweise/roh/SONDE-015-nak245-nacharbeit-1-auftrag.txt`;
+Anlass ist das Urteil der Matrixprüfung 6
+(`docs/beweise/roh/SONDE-015-matrixpruefung-6-f8f7488.txt`, §7.11). Startstand
+`a7061af5`, Worktree sauber. **Kein Produkt-, Test-, Schema-, Fixture- oder
+Werkzeugcode**; einzige geänderte Datei ist dieses Manifest. Die Regeln der
+NAK-245-Runde (`docs/beweise/roh/SONDE-015-nak245-auftrag.txt`) gelten weiter.
+Der Kern ist nur als Quelle gelesen worden: `DspKern::uebernehmeZustand`
+(`eq-copilot/plugin/dsp/DspKern.cpp:164-200`), `DspBankPool::publiziereEnde`
+(`eq-copilot/plugin/dsp/DspBankPool.cpp:153-158`) und `baueProgramm`
+(`eq-copilot/plugin/dsp/DspProgramm.cpp:162-176`).
+
+**Der Defekt.** Matrixprüfung 6 hat D-245-3 nicht geschlossen (Urteil, Review
+comment [P2]): Die E-18-Ausnahme — ein Zustand mit `eq_enabled = false` braucht
+keine Bank — stand in S5 und T5, aber nicht in S8, nicht in Abgrenzung und
+Rotbeweis von T9, nicht in M-44 und nicht in M-124. Für einen Zonen-Retry mit
+aktueller `base_revision`, vollem Pool und `eq_enabled = false` verlangten T9
+und M-124 `busy_retry` und S8 eine freie Bank, T6 dagegen Commit; der gebaute
+Kern publiziert ohne Reservierung eine ENDE-Marke
+(`eq-copilot/plugin/dsp/DspKern.cpp:170-177`, E-18). Ein korrekter bankloser
+Commit wäre am Rotbeweis von T9 und M-124 gefallen, und die vorgeschriebene
+Bankbelegung in S8 wäre für ihn nicht ausführbar gewesen.
+
+**Die Regel des Dirigenten, kurz.** (1) Teil 2 definiert „bankpflichtig“ an
+genau einer Stelle: `eq_enabled = true` im Kandidatenzustand; ein Zustand mit
+`eq_enabled = false` ist bankfrei und wird nach E-18 als ENDE-Marke ohne Bank
+publiziert; keine neue Zahl, keine neue Stufe. (2) S8 legt ein bankpflichtiges
+Programm in eine freie Bank und publiziert ein bankfreies als ENDE-Marke; beides
+scheitert in S8 nicht. (3) T5 „bankpflichtig“; T7 bleibt über „wie T5“
+bankpflichtig; T9 mit „S5, weil das Programm bankfrei ist oder eine Bank frei
+ist“, zweigeteilter Abgrenzung, begrenztem Rotbeweis und Gegenstück. (4) M-44,
+M-124 und der Absatz unter der Tabelle nur für bankpflichtige Programme; M-125
+bleibt tabellengetrieben; eine neue T-Zeile nur, wenn eine Eingabe zwei Ausgänge
+hat. (5) `git grep` über §3 und §5.11.4.
+
+| Stelle | Änderung |
+|---|---|
+| §5.11.4 Teil 2, **S5** | `busy_retry` nur noch, wenn das Programm bankpflichtig und keine Bank frei ist; der Satz „Ein Zustand mit `eq_enabled = false` braucht keine (E-18)“ ist durch „Ein bankfreies Programm scheitert in S5 nicht“ ersetzt, damit `eq_enabled` in Teil 2 nur in der Definition steht |
+| §5.11.4 Teil 2, **S8** | bankpflichtig: in eine freie Bank legen und publizieren; bankfrei: ENDE-Marke ohne Bank (E-18); „beides kann hier nicht scheitern“ |
+| §5.11.4 Teil 2, neuer Absatz **„Bankpflichtig und bankfrei“** | die Definition, unmittelbar vor „Warum S5 keine Bank belegt“ |
+| §5.11.4 Teil 2, Absatz **„Warum S5 keine Bank belegt“** | das eine Scheitern gilt einem bankpflichtigen Programm; dessen Bank wird in S8 belegt; neu die Quelle, warum die ENDE-Marke in S8 nicht scheitert und nicht alloziert |
+| §5.11.4 Teil 3, **I6** | „(ein bankpflichtiges T9 bei vollem Pool endet in T5)“ — die Regel nennt I6 nicht; gefunden hat die Stelle der `git grep` aus Punkt 5 |
+| §5.11.4 Teil 4, **T5** | Zustand „alle vier Bänke belegt und das Programm ist bankpflichtig (Teil 2)“ |
+| §5.11.4 Teil 4, **T7** | ohne Textänderung: „wie T5“ trägt die Bankpflicht mit |
+| §5.11.4 Teil 4, **T9** | Zustand „S5, weil das Programm bankfrei ist oder eine Bank frei ist“; Abgrenzung zweigeteilt: bankpflichtig `retry_nach_zonenloesung_bei_vollem_pool_ist_busy_retry` (T5), bankfrei der neue Fall `retry_nach_zonenloesung_bei_vollem_pool_ohne_bankpflicht_committet` (Commit); Rotbeweis „ein bankpflichtiges T9 committet bei vollem Pool statt `busy_retry`“ und Gegenstück „ein bankfreies T9 bekommt bei vollem Pool `busy_retry` statt Commit“ |
+| §5.11.4, Absatz unter der Falltabelle | zweigeteilte Abgrenzung: bankpflichtig nach I6 T5, bankfrei Commit nach T9 |
+| **M-44** (§3.5) | Ereignis „ein bankpflichtiges Programm“; Satz zum bankfreien Zustand; B7-Fall an T9; Rotbeweis „Ein fünfter bankpflichtiger Programmwunsch …“ und neu „ein bankfreier Zustand bekommt bei vollem Pool `busy_retry` statt eines Commits“; Quelle E-18 und Matrixprüfung 6; Marke **MR1** |
+| **M-124** (§3.9) | T5 nur für ein bankpflichtiges Programm, ein bankfreies committet (T9); neuer B7-Fall; beide Rotbeweise der zweigeteilten Abgrenzung; Marke **MR1** |
+| §3.15 | Stand, Zeile MR1, Mehrfachmarken ausgeschrieben, Verlauf |
+
+**Entscheidungen innerhalb der Regel, begründet.**
+
+1. **Keine neue T-Zeile.** Geprüft ist jede Zeile, die S5 einschließt, gegen beide Programmarten bei vollem Pool. **Bankpflichtig:** S5 entscheidet, Ausgang T5; T6, T7, T9 und T14 bis T17 setzen ein Bestehen von S5 voraus und scheiden aus, und ein T9-, T16- oder T17-Ablauf endet nach I6 ebenfalls in T5 — „Zone frei“ in T5 heißt, dass S3 nicht entscheidet, und das gilt auch für eine Ganzzustands-Wiederherstellung, für die S3 nicht gilt. **Bankfrei:** S5 besteht, T5 scheidet aus, und der Ausgang ist der der Zeile, deren übrige Bedingungen zutreffen — T6 für eine neue Transaktion, T9 für den Zonen-Retry, T16 und T17 für ihre Abläufe, T14 und T15, wenn S6 oder S7 scheitert. T13 entscheidet in S4, vor jeder Bankfrage. Jede Eingabe hat damit genau einen Ausgang; die Zeilenzahl der Tabelle bleibt, und die beiden Fälle hängen an T5 und T9.
+2. **Die Bankpflicht gilt auch bei Hard-Bypass.** Der Kern prüft vor der Reservierung nur `eq_enabled` (`eq-copilot/plugin/dsp/DspKern.cpp:170`, `:179`); Hard-Bypass ist nur ein Wert des gebauten Programms (`eq-copilot/plugin/dsp/DspProgramm.cpp:171`), und ein eingeschalteter Zustand mit Hard-Bypass belegt deshalb eine Bank wie jeder andere. R9 und M-50 fassen „`eq_enabled` false oder Hard-Bypass“ als Passthrough zusammen; für die Bankfrage trennen sich beide, und die Definition sagt das, damit aus dem Passthrough keine Bankfreiheit abgeleitet wird.
+3. **`eq_enabled` steht in §5.11.4 nur in der Definition.** Die Regel verlangt den Begriff an genau einer Stelle. S5 trug die E-18-Ausnahme bisher als eigenen Satz mit `eq_enabled = false`; er verwendet jetzt den Begriff. M-44 nennt `eq_enabled = false` als Klammer, weil die Regel den Satz so vorgibt, und verweist für den Begriff auf Teil 2.
+4. **Die ENDE-Marke in S8 ist an der Quelle gemessen.** `DspBankPool::publiziereEnde` ist `noexcept`, tauscht das Publikationswort des Pfades atomar und liefert nur einen verdrängten, noch nicht übernommenen Slot oder −1 — keinen Fehler, keine Allokation (`eq-copilot/plugin/dsp/DspBankPool.cpp:153-158`, `eq-copilot/plugin/dsp/DspBankPool.h:172-176`). S8 behält deshalb „fehlbar: nein“ und „allokiert: nein“.
+5. **M-44 misst den bankfreien Satz am neuen B7-Fall, nicht an einem neuen B6-Fall.** Die Zusage ist ein Commit und damit eine Aussage des Transaktionskerns (B7); B6 kennt keine Transaktion, und Etappe 3 ist abgeschlossen (§9.14). Der Fall `retry_nach_zonenloesung_bei_vollem_pool_ohne_bankpflicht_committet` gibt dem Kern genau die Eingabe, um die es geht — unbekannte `tid`, weil T4 nichts memoisiert hat (I4), aktuelle `base_revision`, gültige bankfreie Nutzlast, voller Pool. Ein Kern, der ihr `busy_retry` gibt, fällt dort; das ist der Rotbeweis an M-44. M-44 nennt für die Zusage T6 und T9, weil T6 dieselbe Eingabe ohne den Zonen-Vorlauf trägt.
+6. **§1.3 und §5.17 bleiben unverändert.** Entwurf §44.2 sagt „Ist kein Slot frei, erhält der Befehl `busy_retry`“ im Zusammenhang des Control-Workers, der „ausschließlich `free`-Slots“ schreibt (§1.3); für einen bankfreien Zustand schreibt er keinen Slot (E-18). Die Begrenzung auf bankpflichtige Programme weicht deshalb von keinem Wortlaut ab und bekommt keine Zeile in §5.17.
+7. **Der MR-Vermerk in M-124 bleibt stehen.** „widersprach bei vollem Pool T5“ beschreibt den Stand vor der NAK-245-Runde und sagt nichts zu; der MR1-Vermerk dahinter nennt die zweigeteilte Abgrenzung.
+
+**Ergebnis des `git grep` (Punkt 5).** Befehl: `git grep -n -e "vollem Pool" -e
+"alle vier Bänke" -e "kein Slot" -e "Kein Slot" -e "keine Bank frei" -e "freie
+Bank" -- docs/beweise/SONDE-015.md`, gefahren nach dem Umschreiben und vor dem
+Einfügen dieses Abschnitts; die Zeilennummern gelten zu diesem Stand. Treffer:
+236, 1097, 1105, 1153, 1890, 1894, 1914, 1919, 1950, 1968, 1972, 1993, 2619,
+2628, 2630, 2664, 2687, 2703, 2705, 2706, 3325.
+
+| Zeile | Stelle | Urteil |
+|---|---|---|
+| 1097 | M-44 (§3.5) | Ereignis bankpflichtig; „vollem Pool“ nur im Satz und im Rotbeweis zum bankfreien Zustand |
+| 1105 | M-122 (§3.5) | keine Vollpool-Aussage („kein Slot gleichzeitig `audio_active` und `preparing`“) |
+| 1153 | M-124 (§3.9) | Zusage, Fälle und Rotbeweise zweigeteilt; der MR-Vermerk ist Verlauf (Punkt 7) |
+| 1890 | §5.11.4 **S5** | bankpflichtig |
+| 1894 | §5.11.4 **S8** | Bankbelegung nur für ein bankpflichtiges Programm |
+| 1914 | Absatz „Bankpflichtig und bankfrei“ | die Definition selbst |
+| 1919 | Absatz „Warum S5 keine Bank belegt“ | bankpflichtig |
+| 1950 | **I6** | bankpflichtig |
+| 1968 | **T5** | bankpflichtig |
+| 1972 | **T9** | beide Hälften |
+| 1993 | Absatz unter der Falltabelle | beide Hälften |
+| 236 | §1.3, Entwurf §44.2 wörtlich | Zitat, unverändert (Punkt 6) |
+| 2619 bis 2706 | §7.10 und §7.11 | Verlauf, unverändert |
+| 3325 | §9.3, M-28 | Verlauf, keine Vollpool-Aussage |
+
+Keine Stelle in §3 oder §5.11.4 nennt die Vollpool-Abweisung oder die
+Bankbelegung ohne die Bankpflicht. Varianten der Suchwörter („Pool voll“,
+„vollen Pool“, „eine Bank frei“, „freier Bank“, „Bänke belegt“) treffen dort
+zusätzlich nur Stellen ohne eine solche Aussage: „vollen Pool“ in den
+MR1-Vermerken von M-44 und M-124 (Verlauf); „wäre der Pool voll“ und „Bänke
+belegt nur der Control-Worker“ in der Begründung, warum S5 keine Bank reserviert;
+„bei freier Bank“ (kein zweiter Fehlerausgang); T7 „eine Bank freigegeben“
+(bankpflichtig über „wie T5“).
+
+**Zählung nach der Nacharbeit** (§3.15, aus den Zeilen gemessen): **126**
+Matrixzeilen, lückenlos M-01 bis M-126, jede mit sieben Spalten; 76 BELEGT, 82
+ENTSCHIEDEN (davon 50 allein), 126 BAULÜCKE, 0 OFFEN; 15 MN1, 6 MN2, 6 MN3, 7 MK,
+9 MR, **2 MR1** (M-44, M-124). Die Falltabelle trägt unverändert T1 bis T17, jede
+Zeile mit neun Spalten; alle Tabellen in §5.11.4 tragen je Zeile gleich viele
+Spalten.
+
+**Prüfliste `tools/dirigent/pruefliste.md`, abgehakt für diese Nacharbeit.**
+
+| Zeile | Wo gemessen |
+|---|---|
+| **A** Rückstau und Prioritätsklassen | Die Politik bei vollem Pool steht für beide Programmarten ausdrücklich: bankpflichtig `busy_retry`, nicht memoisiert, Abfluss über T7 (T5, M-44); bankfrei keine Abweisung, sondern Commit mit ENDE-Marke (S8, T9, M-44). Nichts Angenommenes wird still verworfen. |
+| **B** Lebenszyklus | aktivieren↔abklingen: der bankfreie Zustand ist der reguläre Weg in die Ruhe (E-18: ENDE-Marke, Fade, ACK). Hinge er am vollen Pool, bekäme das Ausschalten `busy_retry`, obwohl es keine Bank braucht; gemessen an T9 (bankfrei) und M-44. |
+| **C** Verträge und Längen | Kein Vertragsfeld und keine Zahl geändert; der Begriff hängt am bestehenden Parameter `eq_enabled` (`param::kIndexEqEnabled`, `eq-copilot/plugin/dsp/DspKern.cpp:170`) und an E-18. |
+| **D** Bau- und Prüfriegel | Nicht berührt. |
+| **E** Behauptung ≤ Messung | Die tragende Zeile. Jeder Rotbeweis fällt an der Zeile, die seine Zusage trägt: an T9 der bankpflichtige Vollpool-Commit (Abgrenzung) und der bankfreie `busy_retry` (Commit-Zusage von T9), an M-44 der bankfreie `busy_retry` (der neue Satz), an M-124 beide Hälften der Abgrenzung. „S8 kann nicht scheitern“ und „bankpflichtig auch bei Hard-Bypass“ sind an der Quelle gemessen (Punkte 2 und 4); §3.15 ist gezählt; der `git grep` nach den Kernbegriffen steht oben. |
+| **F** Änderungssatz | Bankbelegung (S8) und Vollpool-Abweisung (S5, T5) hängen am selben Begriff und sind im selben Änderungssatz begrenzt; die Abgrenzung von T9 trägt beide Seiten mit je einem Fall und Rotbeweis, und M-44 und M-124 ziehen im selben Commit nach. |
+
+**Selbstaudit.** Der Prüferfall ist an der neuen Fassung durchgegangen: ein
+Zonen-Retry mit aktueller `base_revision`, vollem Pool und `eq_enabled = false`
+besteht S5, committet nach T9 mit `r + 2` und wird memoisiert; derselbe Retry mit
+`eq_enabled = true` endet in T5 und nach dem Audio-ACK in T7. S8 ist für beide
+Wege ausführbar. Der Wortdiff über §3 und §5.11.4 zeigt nur die Stellen der
+Tabelle oben. Der `dokuriegel` läuft sauber.
+
+**Was offen bleibt.** Wie nach §7.10: Die Vollständigkeit der Tabelle ist
+konstruiert, nicht bewiesen; M-125 fällt in Etappe 4 an jedem Fall, den keine
+Zeile trägt. Dass S5 die Bankpflicht vor der Bankfrage prüft und S8 für ein
+bankfreies Programm die ENDE-Marke publiziert, ist Bauarbeit der Etappe 4; der
+gebaute Kern trifft dieselbe Unterscheidung schon
+(`eq-copilot/plugin/dsp/DspKern.cpp:170-177`).
 
 ---
 

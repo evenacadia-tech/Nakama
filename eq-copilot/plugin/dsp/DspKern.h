@@ -103,8 +103,31 @@ public:
 
         Liefert false, wenn keine Bank frei ist - das ist `busy_retry`
         (M-44). Der Aufrufer wiederholt; gepuffert oder erzwungen wird
-        nichts. */
+        nichts.
+
+        Seit Etappe 4a ist das genau `baueVor` gefolgt von
+        `publiziereVorbau` - EIN Publikationsweg, nicht zwei. */
     bool uebernehmeZustand (const nakama::parameter::DspSatz& satz, Pfad p = Pfad::committed);
+
+    /** S5 der Transaktion (Manifest SONDE-015 §5.11.4 Teil 2, Etappe 4a):
+        baut das Programm des Pfades aus dem DTO, OHNE eine Bank zu belegen.
+        Der Zustand ist BANKPFLICHTIG genau dann, wenn er `eq_enabled = true`
+        traegt; dann liefert der Aufruf false, wenn keine Bank frei ist
+        (`busy_retry`, M-44). Ein bankfreier Zustand scheitert hier nie.
+
+        Warum getrennt von der Publikation: eine hier belegte Bank ueberlebte
+        einen Fehler in S6 oder S7 - der Pool fuehrt `vorbereitend` nur nach
+        `bereit` weiter -, und nach einigen solchen Fehlern waere er voll,
+        ohne dass ein Audio-ACK ihn je leerte. */
+    bool baueVor (const nakama::parameter::DspSatz& satz, Pfad p = Pfad::committed);
+
+    /** S8: legt das Programm aus `baueVor` in eine freie Bank und publiziert
+        es (bankpflichtig) oder publiziert die ENDE-Marke (bankfrei, E-18).
+        Kann nicht scheitern und alloziert nicht - vorausgesetzt, zwischen
+        `baueVor` und diesem Aufruf belegt niemand eine Bank. Baenke belegt
+        nur der Control-Worker (§44.2); der Aufrufer haelt deshalb genau EINEN
+        Schreiber (in Probeeq das Zustandsschloss des Prozessors). */
+    void publiziereVorbau (Pfad p = Pfad::committed) noexcept;
 
     /** Beendet den Candidate-Pfad als gekoppelte Lebenszyklusoperation
         (M-46, B-8): die ENDE-Marke wird publiziert und am naechsten
@@ -349,10 +372,11 @@ private:
 
     std::array<PfadZustand, (size_t) kPfade> pfade {};
 
-    /** Nur der Worker schreibt: der Bauplatz fuer einen ausgeschalteten
-        Zustand, dessen abgeleitete Werte lesbar bleiben, ohne eine Bank zu
-        belegen (M-35, B-10). */
-    DspProgramm arbeitsProgramm {};
+    /** Nur der Worker schreibt: der Bauplatz je Pfad zwischen `baueVor` (S5)
+        und `publiziereVorbau` (S8). Ein ausgeschalteter Zustand bleibt hier
+        lesbar, ohne eine Bank zu belegen (M-35, B-10). */
+    std::array<DspProgramm, (size_t) kPfade> vorbau {};
+    std::array<bool, (size_t) kPfade>        vorbauBankpflichtig {};
 
     std::atomic<Hoermatrix> hoerwunsch  { Hoermatrix::processed };
     std::atomic<Hoermatrix> hoerwirksam { Hoermatrix::processed };

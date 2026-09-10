@@ -66,6 +66,67 @@ nakama::ipc::ServerErwartung brokerServerErwartung()
              nakama::ipc::installbindung::brokerSha256,
              nakama::ipc::installbindung::authenticodeThumbprint };
 }
+
+/*  SONDE-015 4a: der Herkunftstag des Parameterabgleichs. Entwurf §44.3:
+    "Ein Herkunftstag host|local_ui|remote_transaction|state_restore
+    verhindert Listener-/Revisionsschleifen." `setValueNotifyingHost` ruft die
+    Listener synchron im selben Thread - ein thread_local Zaehler trennt den
+    eigenen Abgleich deshalb sicher von einem Hostereignis, das zugleich auf
+    einem anderen Thread eintrifft. */
+thread_local int abgleichTiefe = 0;
+
+struct AbgleichHerkunft
+{
+    AbgleichHerkunft() noexcept  { ++abgleichTiefe; }
+    ~AbgleichHerkunft() noexcept { --abgleichTiefe; }
+};
+
+/** Die 112 Host-Parameter in Vertragsreihenfolge, aus `parameter::tabelle()`.
+    Name = Vertragskennung: eine Anzeigebezeichnung ist Oberflaeche (S31b). */
+juce::AudioProcessorValueTreeState::ParameterLayout baueParameterLayout()
+{
+    juce::AudioProcessorValueTreeState::ParameterLayout layout;
+    const auto& t = nakama::parameter::tabelle();
+    for (int i = 0; i < nakama::parameter::kHostParameter; ++i)
+    {
+        const auto& b = t[(size_t) i];
+        jassert (b.hostParameter);
+        const juce::ParameterID id { b.id, 1 };
+        switch (b.typ)
+        {
+            case nakama::parameter::Typ::boolean:
+                layout.add (std::make_unique<juce::AudioParameterBool> (id, b.id, b.standardBool));
+                break;
+            case nakama::parameter::Typ::gleitkomma:
+            {
+                juce::NormalisableRange<float> bereich ((float) b.min, (float) b.max);
+                // Logarithmisch empfundene Groessen: der Vertragsdefault liegt in
+                // der Mitte des Automationswegs (Manifest §10.2).
+                if (b.id.endsWith (".freq_hz") || b.id.endsWith (".q")
+                    || b.id.endsWith (".attack_ms") || b.id.endsWith (".release_ms"))
+                    bereich.setSkewForCentre ((float) b.standardZahl);
+                layout.add (std::make_unique<juce::AudioParameterFloat> (id, b.id, bereich, (float) b.standardZahl));
+                break;
+            }
+            case nakama::parameter::Typ::aufzaehlung:
+                layout.add (std::make_unique<juce::AudioParameterChoice> (id, b.id, b.werte, b.standardIndex));
+                break;
+        }
+    }
+    return layout;
+}
+
+/** Vertragszelle -> Hostwert (denormiert). */
+float hostWertAus (int index, const nakama::parameter::Zelle& z)
+{
+    switch (nakama::parameter::tabelle()[(size_t) index].typ)
+    {
+        case nakama::parameter::Typ::boolean:     return z.b ? 1.0f : 0.0f;
+        case nakama::parameter::Typ::gleitkomma:  return (float) z.zahl;
+        case nakama::parameter::Typ::aufzaehlung: return (float) z.enumIndex;
+    }
+    return 0.0f;
+}
 } // namespace
 
 SondeProcessor::SondeProcessor()
@@ -78,8 +139,31 @@ SondeProcessor::SondeProcessor()
       controlV3 ([this] { return v3Hello(); }, v3PipeName, {},
                  [this] { return v3Status(); }, {}, {}, brokerServerErwartung()),
       telemetryV3 ([this] { return v3TelemetryHello(); }, v3PipeName, {},
-                   brokerServerErwartung())
+                   brokerServerErwartung()),
+      parameterBaum (*this, nullptr, "NakamaProbeeqParameter", baueParameterLayout())
 {
+    // SONDE-015 4a: DSP-Kern und Transaktionskern entstehen VOR dem Worker,
+    // der ab seinem ersten Takt ihre Pflege uebernimmt.
+    dspKern        = std::make_unique<nakama::dsp::DspKern>();
+    dspAusfuehrung = std::make_unique<nakama::transaktion::DspKernAusfuehrung> (*dspKern);
+    transaktion    = std::make_unique<nakama::transaktion::Transaktionskern> (*dspAusfuehrung);
+
+    // M-119: FL meldet `sample_accurate_automation` = unsupported
+    // (identity/host-capabilities-fl-v1.json, Termin B), und ein samplegenauer
+    // Pfad ist nicht gebaut. Die Sonde rampt blockweise, und
+    // Topologieautomation wirkt nicht (§44.3 letzter Absatz).
+    transaktion->setzeSamplegenaueAutomation (false);
+
+    const auto& parameterListe = getParameters();
+    jassert (parameterListe.size() == nakama::parameter::kHostParameter);
+    for (int i = 0; i < nakama::parameter::kHostParameter && i < parameterListe.size(); ++i)
+    {
+        hostParameter[(size_t) i] = dynamic_cast<juce::RangedAudioParameter*> (parameterListe[i]);
+        hostWert[(size_t) i].store (parameterListe[i]->getValue());
+        parameterListe[i]->addListener (this);
+    }
+    tidHoch = (std::uint64_t) juce::Random::getSystemRandom().nextInt64();
+
     // Frische Instanz. `frisch()` legt `legacy` an - das ist die Vorgabe des
     // Main-Bundles und fuer eine Sonde falsch: ihr Bundle-Vertrag
     // (Bundle::nkpr/nkac) laesst `legacy` gar nicht zu, ein so gespeicherter
@@ -111,6 +195,12 @@ SondeProcessor::SondeProcessor()
 
 SondeProcessor::~SondeProcessor()
 {
+    // Gegenstueck zu addListener im Konstruktor: kein Parameterereignis und
+    // keine Geste erreicht mehr Kern oder Transaktionskern, waehrend sie
+    // abgebaut werden.
+    for (auto* p : getParameters())
+        p->removeListener (this);
+
     workerLaeuft.store (false);
     workerWarte.notify_all();
     if (worker.joinable())
@@ -133,9 +223,43 @@ void SondeProcessor::prepareToPlay (double samplerate, int maxBlock)
     }
     v3BlockSize.store (maxBlock >= 0 ? maxBlock : 0);
     v3Channels.store (getTotalNumInputChannels());
+
+    // SONDE-015 4a: der DSP-Kern wird hier vorallokiert (M-41) - unter dem
+    // Callback-Schloss, damit kein Block in die neuen Puffer faellt, und unter
+    // dem Zustandsschloss, weil der Worker dieselben Baenke pflegt. Danach
+    // bekommt er den wirksamen Zustand; die Bank wird erst am ersten Block
+    // aktiv (M-08, M-09).
+    if (sichereRate > 0.0 && maxBlock > 0)
+    {
+        const juce::ScopedLock callback (getCallbackLock());
+        const juce::ScopedLock l (zustandSchloss);
+        dspKern->bereiteVor (sichereRate, maxBlock);
+        analyseL.assign ((size_t) maxBlock, 0.0f);
+        analyseR.assign ((size_t) maxBlock, 0.0f);
+        transaktion->setzeSamplerate (sichereRate);
+        dspAusfuehrung->vergissLetztePublikation();
+        publikationOffen = ! dspAusfuehrung->publiziereWirksam (transaktion->wirksam(), true);
+        if (transaktion->preview().aktiv && ! dspAusfuehrung->publizierePreview (transaktion->preview().satz))
+            publikationOffen = true;
+    }
+
     workerWarte.notify_all();
     controlV3.reconnect();
     telemetryV3.reconnect();
+}
+
+void SondeProcessor::releaseResources()
+{
+    // Gegenstueck zu prepareToPlay (Beziehungen mitpruefen): der Kern gibt
+    // seine Blockpuffer frei und setzt seine Baenke zurueck. Ein Block ohne
+    // neue Vorbereitung laeuft dann unberuehrt durch (`verarbeiteStueck`).
+    // Der bestaetigte Zustand bleibt im Transaktionskern; die naechste
+    // Vorbereitung publiziert ihn wieder.
+    const juce::ScopedLock callback (getCallbackLock());
+    const juce::ScopedLock l (zustandSchloss);
+    dspKern->freigeben();
+    dspAusfuehrung->vergissLetztePublikation();
+    publikationOffen = false;
 }
 
 bool SondeProcessor::isBusesLayoutSupported (const BusesLayout& layout) const
@@ -210,15 +334,44 @@ void SondeProcessor::processBlock (juce::AudioBuffer<float>& puffer, juce::MidiB
             }
         }
 
+        // SONDE-015 4a: der aktive Kern (Manifest §3.0). Bei `eq_enabled` aus
+        // und beim Hard-Bypass schreibt er keinen Sample und sanitisiert nichts
+        // (M-01, M-05, M-50); ein neues Programm uebernimmt er am Blockrand.
+        float* kanalZeiger[2] = { puffer.getWritePointer (0),
+                                  kanaele > 1 ? puffer.getWritePointer (1) : nullptr };
+        dspKern->verarbeite (kanalZeiger, kanaele, samples);
+        verarbeiteteSamples.fetch_add ((std::uint64_t) samples, std::memory_order_relaxed);
+
+        // Die Analyse misst `post_committed` (§44.2: Session-Landkarte und
+        // Recall beziehen sich darauf), nie den Hoermatrix-Ausgang (M-57).
         AnalyseQueue::TapQuelle abgriff;
-        abgriff.links = puffer.getReadPointer (0);
-        abgriff.rechts = kanaele > 1 ? puffer.getReadPointer (1) : nullptr;
-        // Ganz oder gar nicht. Rueckstau verwirft Analyse, niemals Audio.
-        analyseQueue.veroeffentliche (&abgriff, 1, kanaele, samples, stempel);
+        const double* tapL = dspKern->tap (nakama::dsp::Tap::postCommitted, 0);
+        const double* tapR = dspKern->tap (nakama::dsp::Tap::postCommitted, 1);
+        if (tapL != nullptr && tapR != nullptr && dspKern->tapLaenge() == samples
+            && (size_t) samples <= analyseL.size())
+        {
+            for (int i = 0; i < samples; ++i) analyseL[(size_t) i] = (float) tapL[i];
+            if (kanaele > 1)
+                for (int i = 0; i < samples; ++i) analyseR[(size_t) i] = (float) tapR[i];
+            abgriff.links  = analyseL.data();
+            abgriff.rechts = kanaele > 1 ? analyseR.data() : nullptr;
+            // Ganz oder gar nicht. Rueckstau verwirft Analyse, niemals Audio.
+            analyseQueue.veroeffentliche (&abgriff, 1, kanaele, samples, stempel);
+        }
+        else if (committedRuhtImPassthrough())
+        {
+            // Ohne gueltigen Tap (unvorbereitet oder uebergrosser Block) ist der
+            // ruhende Passthrough-Ausgang der unberuehrte Eingang: die Analyse
+            // liest ihn wie bisher. Rechnet der Kern, ist der Tap dieses Blocks
+            // verworfen und gezaehlt (M-48) - die Analyse faellt, nie Audio.
+            abgriff.links  = puffer.getReadPointer (0);
+            abgriff.rechts = kanaele > 1 ? puffer.getReadPointer (1) : nullptr;
+            analyseQueue.veroeffentliche (&abgriff, 1, kanaele, samples, stempel);
+        }
     }
 
-    // Sampleidentischer Passthrough: die Analyse liest nur. Bei der erlaubten
-    // gleichen Busbelegung laeuft diese JUCE-Sicherheitsschleife null Mal.
+    // Bei der erlaubten gleichen Busbelegung laeuft diese
+    // JUCE-Sicherheitsschleife null Mal.
     for (int k = getTotalNumInputChannels(); k < getTotalNumOutputChannels(); ++k)
         puffer.clear (k, 0, puffer.getNumSamples());
 }
@@ -295,8 +448,18 @@ void SondeProcessor::workerLauf()
     quarantaene.vorbereiten();
     auto workerAnlauf = analyseQueue.aktuellerAnlauf();
 
+    double naechsterKontrollTakt = juce::Time::getMillisecondCounterHiRes();
     while (workerLaeuft.load())
     {
+        // SONDE-015 4a: der Takt des Control-Workers - ACKs ernten,
+        // Hostautomation uebernehmen, den wirksamen Zustand publizieren. Er
+        // nimmt das Zustandsschloss und NIE zugleich das Analyseschloss.
+        if (juce::Time::getMillisecondCounterHiRes() >= naechsterKontrollTakt)
+        {
+            dspKontrollTakt();
+            naechsterKontrollTakt = juce::Time::getMillisecondCounterHiRes() + 5.0;
+        }
+
         bool queueHatRest = false;
         {
             std::lock_guard<std::mutex> steuerung (analyseSchloss);
@@ -641,7 +804,28 @@ bool SondeProcessor::letzterProducerFrameFuerTest (
 void SondeProcessor::getStateInformation (juce::MemoryBlock& ziel)
 {
     const juce::ScopedLock l (zustandSchloss);
-    nakama::state::speichere (zustand, ziel);
+    nakama::state::speichere (gehaltenerStand(), ziel);
+}
+
+nakama::state::Zustand SondeProcessor::zustandLesen() const
+{
+    const juce::ScopedLock l (zustandSchloss);
+    return gehaltenerStand();
+}
+
+nakama::state::Zustand SondeProcessor::gehaltenerStand() const
+{
+    // E-1: der Transaktionskern ist die EINE Wahrheit des bestaetigten
+    // Zustands. `zustand` traegt Common, Klassifikation und bei read-only die
+    // Originalbytes; die Dsp-Haelfte setzt erst das Lesen aus dem Kern ein.
+    // Hinter dem Commit-Punkt kopiert deshalb niemand einen Undo-Ring
+    // (§5.11.4 Teil 2). Ein read-only gehaltener Stand geht unveraendert
+    // zurueck (§53.8); ein Stand, den `lade` angenommen hat, besteht auch den
+    // Ladestart - der Leser prueft DTO, Zonen, Ring, Cursor und Revision.
+    auto stand = zustand;
+    if (! stand.nurLesen && stand.hatParameters)
+        transaktion->schreibeIn (stand);
+    return stand;
 }
 
 void SondeProcessor::setStateInformation (const void* daten, int groesse)
@@ -658,6 +842,7 @@ void SondeProcessor::setStateInformation (const void* daten, int groesse)
     if (ergebnis == nakama::state::LadeErgebnis::ignoriert)
         return;
 
+    nakama::parameter::Satz abgleich;
     {
         const juce::ScopedLock l (zustandSchloss);
         // §53.5: erst der Restore klassifiziert. `read-only` faellt auf neutral
@@ -666,8 +851,36 @@ void SondeProcessor::setStateInformation (const void* daten, int groesse)
         // `std::move` laesst `geladen` sonst als Huelle zurueck.
         lebenslauf.stateRestauriert (ergebnis, geladen);
         zustand = std::move (geladen);
+
+        // SONDE-015 4a - der Ladestart (Manifest §5.11.4 Teil 1, I5, T17): keine
+        // Transaktion, keine Revision; r0 = r = die gespeicherte Revision, das
+        // Register ist leer, Preview und Automation enden. Ein read-only
+        // gehaltener Stand laedt NEUTRAL (§44.4) - `eq_enabled` aus, der
+        // Passthrough -, und seine Originalbytes bleiben im `zustand`.
+        juce::String grund;
+        const bool eigenerStand = ! zustand.nurLesen && zustand.hatParameters
+            && transaktion->ladestart (zustand.dspDto(), (std::uint64_t) zustand.stateRevision,
+                                       zustand.undoRing, zustand.undoCursor, grund);
+        if (! eigenerStand)
+        {
+            const bool neutral = transaktion->ladestart (nakama::parameter::DspSatz {}, 0, {}, 0, grund);
+            jassert (neutral);
+            juce::ignoreUnused (neutral);
+        }
+
+        // R10: nach dem Laden steht die Hoermatrix IMMER auf Processed (M-52).
+        dspKern->setzeHoermatrix (nakama::dsp::Hoermatrix::processed);
+        gesteOffen.fill (false);
+        gesteBeteiligt.fill (false);
+        abgleich = transaktion->bestaetigt().werte;
+        if (dspKern->samplerate() > 0.0)
+            publikationOffen = ! dspAusfuehrung->publiziereWirksam (transaktion->wirksam(), true);
     }
-    v3StateRevision.fetch_add (1);
+
+    // M-08, M-84: State lesen -> validieren -> Committed setzen ->
+    // Hostparameter synchronisieren -> der erste Block uebernimmt die Bank.
+    // Laden meldet kein Host-Dirty (M-85, Bestandsregel).
+    hostParameterAbgleichen (abgleich);
     controlV3.reconnect();
     telemetryV3.reconnect();
 }
@@ -702,15 +915,14 @@ nakama::ipc::ControlStatus SondeProcessor::v3Status() const
 {
     nakama::ipc::ControlStatus s;
     s.dspSchemaVersion = nakama::parameter::kDspSchemaVersion;
-    s.stateRevision = v3StateRevision.load();
     {
         const juce::ScopedLock l (zustandSchloss);
+        // SONDE-015 4a: Revision und Hash sind die des Transaktionskerns - EINE
+        // Wahrheit (§5.11.4 Teil 1). Die Nutzlast `dsp` und das Senden nach
+        // jeder Transaktion sind Etappe 4b.
+        s.stateRevision = transaktion->revision();
         if (zustand.hatParameters && ! zustand.nurLesen)
-        {
-            juce::String hash, grund;
-            if (nakama::parameter::stateHash (zustand.dspDto(), hash, grund))
-                s.stateHash = hash.toStdString();
-        }
+            s.stateHash = nakama::transaktion::alsText (transaktion->hash()).toStdString();
 
         // Read-only oder ein nicht erlaubter Messpunkt wird nicht als insert
         // synthetisiert. Ohne bekannten Messpunkt reist gar kein Runtimeblock.
@@ -784,6 +996,265 @@ nakama::ipc::TelemetryHello SondeProcessor::v3TelemetryHello() const
     h.pluginVersion = "0.3.0";
     controlV3.kopplung (h.linkId, h.challenge);
     return h;
+}
+
+//==============================================================================
+// SONDE-015 Etappe 4a: Transaktionskern, Hostparameter, Control-Worker
+
+nakama::transaktion::Tid SondeProcessor::neueTid() noexcept
+{
+    return { tidHoch, tidZaehler.fetch_add (1) + 1 };
+}
+
+nakama::transaktion::Ergebnis SondeProcessor::fuehreTransaktionAus (const nakama::transaktion::Auftrag& auftrag)
+{
+    nakama::transaktion::Ergebnis ergebnis;
+    nakama::parameter::Satz abgleich;
+    bool commit = false;
+    {
+        const juce::ScopedLock l (zustandSchloss);
+        if (zustand.nurLesen)
+        {
+            ergebnis.ausgang  = nakama::transaktion::Ausgang::fehler;
+            ergebnis.revision = transaktion->revision();
+            ergebnis.hash     = transaktion->hash();
+            ergebnis.grund    = "schreibgeschuetzt";
+            return ergebnis;
+        }
+        ergebnis = transaktion->fuehreAus (auftrag);
+        commit = ergebnis.ausgang == nakama::transaktion::Ausgang::commit;
+        if (commit)
+        {
+            // Nichts wird gespiegelt: Speichern liest den bestaetigten Zustand
+            // direkt aus dem Kern (`gehaltenerStand`, M-89, M-93).
+            abgleich = transaktion->bestaetigt().werte;
+            publikationOffen = false;
+        }
+    }
+
+    if (commit)
+    {
+        // §44.3: die exponierten Hostparameter folgen dem bestaetigten
+        // Zustand. Beides steht AUSSERHALB des Schlosses, weil es in den Host
+        // ruft (Muster `src/prozessor/State.cpp`).
+        hostParameterAbgleichen (abgleich);
+        if (dspAusfuehrung->dirtyAbholen())
+            updateHostDisplay (juce::AudioProcessorListener::ChangeDetails().withNonParameterStateChanged (true));
+    }
+    return ergebnis;
+}
+
+bool SondeProcessor::setzePreview (const nakama::parameter::DspSatz& satz, juce::String& grund)
+{
+    const juce::ScopedLock l (zustandSchloss);
+    return transaktion->setzePreview (satz, grund);
+}
+
+void SondeProcessor::beendePreview()
+{
+    const juce::ScopedLock l (zustandSchloss);
+    transaktion->beendePreview();
+}
+
+nakama::parameter::DspSatz SondeProcessor::bestaetigterZustand() const
+{
+    const juce::ScopedLock l (zustandSchloss);
+    return transaktion->bestaetigt();
+}
+
+nakama::parameter::DspSatz SondeProcessor::wirksamerZustand() const
+{
+    const juce::ScopedLock l (zustandSchloss);
+    return transaktion->wirksam();
+}
+
+std::uint64_t SondeProcessor::stateRevision() const
+{
+    const juce::ScopedLock l (zustandSchloss);
+    return transaktion->revision();
+}
+
+juce::String SondeProcessor::stateHashText() const
+{
+    const juce::ScopedLock l (zustandSchloss);
+    return nakama::transaktion::alsText (transaktion->hash());
+}
+
+std::uint64_t SondeProcessor::automationEpoche() const
+{
+    const juce::ScopedLock l (zustandSchloss);
+    return transaktion->automation().epoche;
+}
+
+bool SondeProcessor::previewAktiv() const
+{
+    const juce::ScopedLock l (zustandSchloss);
+    return transaktion->preview().aktiv;
+}
+
+bool SondeProcessor::dspBericht (nakama::transaktion::DspBericht& aus, juce::String& grund) const
+{
+    const juce::ScopedLock l (zustandSchloss);
+    return nakama::transaktion::baueBericht (*transaktion, aus, grund);
+}
+
+void SondeProcessor::setNonRealtime (bool offline) noexcept
+{
+    juce::AudioProcessor::setNonRealtime (offline);
+    if (! offline) return;
+    const juce::ScopedLock l (zustandSchloss);
+    transaktion->beendePreview();
+    dspKern->setzeHoermatrix (nakama::dsp::Hoermatrix::processed);
+}
+
+void SondeProcessor::parameterValueChanged (int index, float neuNormiert)
+{
+    // Laeuft auch im Audiothread: nur Atomics, kein Schloss, keine Allokation.
+    if (abgleichTiefe > 0 || index < 0 || index >= nakama::parameter::kHostParameter)
+        return;
+    hostWert[(size_t) index].store (neuNormiert, std::memory_order_relaxed);
+    hostEreignis[(size_t) index].fetch_add (1, std::memory_order_relaxed);
+    hostEreignisOffen.store (true, std::memory_order_relaxed);
+}
+
+void SondeProcessor::parameterGestureChanged (int index, bool beginnt)
+{
+    // Eine Geste beginnt nur die eigene Oberflaeche - der VST3-Wrapper reicht
+    // keine Hostgeste an das Plugin weiter. Ein abgeschlossener manueller
+    // Gestus ist EINE Transaktion (§44.3, M-82).
+    if (index < 0 || index >= nakama::parameter::kHostParameter) return;
+    bool abschliessen = false;
+    {
+        const juce::ScopedLock l (zustandSchloss);
+        gesteOffen[(size_t) index] = beginnt;
+        if (beginnt)
+            gesteBeteiligt[(size_t) index] = true;
+        else
+            abschliessen = std::none_of (gesteOffen.begin(), gesteOffen.end(), [] (bool offen) { return offen; });
+    }
+    if (abschliessen) gestusAbschliessen();
+}
+
+void SondeProcessor::gestusAbschliessen()
+{
+    nakama::transaktion::Auftrag auftrag;
+    std::array<bool, (size_t) nakama::parameter::kHostParameter> beteiligt {};
+    {
+        const juce::ScopedLock l (zustandSchloss);
+        beteiligt = gesteBeteiligt;
+        gesteBeteiligt.fill (false);
+        auftrag.art          = nakama::transaktion::Art::gestus;
+        auftrag.tid          = neueTid();
+        auftrag.baseRevision = transaktion->revision();
+        auftrag.satz         = transaktion->bestaetigt();
+        for (int i = 0; i < nakama::parameter::kHostParameter; ++i)
+            if (beteiligt[(size_t) i])
+                auftrag.satz.werte[(size_t) i] = zelleAusHost (i, hostParameter[(size_t) i]->getValue());
+        if (auftrag.satz == transaktion->bestaetigt())
+            return;   // ein Gestus ohne Aenderung erzeugt keine Revision
+    }
+
+    const auto ergebnis = fuehreTransaktionAus (auftrag);
+    if (ergebnis.ausgang == nakama::transaktion::Ausgang::commit)
+        return;
+
+    // Abgewiesen (etwa User-Schutz, M-67): Klang und Regler kehren zum
+    // bestaetigten Wert zurueck - keine halbe Anwendung.
+    nakama::parameter::Satz abgleich;
+    {
+        const juce::ScopedLock l (zustandSchloss);
+        for (int i = 0; i < nakama::parameter::kHostParameter; ++i)
+            if (beteiligt[(size_t) i]) transaktion->automationLoesen (i);
+        publikationOffen = true;
+        abgleich = transaktion->bestaetigt().werte;
+    }
+    hostParameterAbgleichen (abgleich);
+}
+
+nakama::parameter::Zelle SondeProcessor::zelleAusHost (int index, float normiert) const
+{
+    const auto& b = nakama::parameter::tabelle()[(size_t) index];
+    const auto* p = hostParameter[(size_t) index];
+    const auto& bestaetigt = transaktion->bestaetigt().werte[(size_t) index];
+
+    // Gleicht der Hostwert dem bestaetigten Wert in Hostgenauigkeit, ist es
+    // GENAU der bestaetigte Wert: ein float traegt q = 0.7071067811865476
+    // nicht, und ein Rundungsrest waere eine erfundene Aenderung.
+    if (p->convertTo0to1 (hostWertAus (index, bestaetigt)) == normiert)
+        return bestaetigt;
+
+    // Ein nicht-endlicher Hostwert erreicht nie Overlay, Gestus oder Programm:
+    // er zaehlt als unveraendert (Manifest SONDE-015 §10.2, E4-10).
+    if (! std::isfinite (normiert))
+        return bestaetigt;
+
+    const float wert = p->convertFrom0to1 (normiert);
+    nakama::parameter::Zelle z;
+    switch (b.typ)
+    {
+        case nakama::parameter::Typ::boolean:     z.b = wert >= 0.5f; break;
+        case nakama::parameter::Typ::gleitkomma:  z.zahl = juce::jlimit (b.min, b.max, (double) wert); break;
+        case nakama::parameter::Typ::aufzaehlung: z.enumIndex = juce::jlimit (0, b.werte.size() - 1, juce::roundToInt (wert)); break;
+    }
+    return z;
+}
+
+void SondeProcessor::hostParameterAbgleichen (const nakama::parameter::Satz& werte)
+{
+    const AbgleichHerkunft herkunft;
+    for (int i = 0; i < nakama::parameter::kHostParameter; ++i)
+    {
+        auto* p = hostParameter[(size_t) i];
+        const float soll = p->convertTo0to1 (hostWertAus (i, werte[(size_t) i]));
+        if (p->getValue() != soll)
+            p->setValueNotifyingHost (soll);
+    }
+}
+
+bool SondeProcessor::committedRuhtImPassthrough() const noexcept
+{
+    int aktiv = -1, quelle = -1, candidate = -1, candidateQuelle = -1;
+    dspKern->gefahreneSlots (aktiv, quelle, candidate, candidateQuelle);
+    const auto passthrough = [this] (int slot) noexcept
+    {
+        if (slot < 0) return true;
+        const auto& p = dspKern->pool().bank (slot).programm;
+        return ! p.eqEngagiert || p.hardBypass;
+    };
+    return passthrough (aktiv) && passthrough (quelle);
+}
+
+void SondeProcessor::dspKontrollTakt()
+{
+    const juce::ScopedLock l (zustandSchloss);
+
+    // §44.2: erst nach dem ACK des Audiothreads ist eine Bank wieder frei.
+    dspKern->pflege();
+
+    // Hostereignisse -> AutomationOverlay (M-81): keine Revision, kein Undo.
+    if (hostEreignisOffen.exchange (false, std::memory_order_relaxed))
+    {
+        for (int i = 0; i < nakama::parameter::kHostParameter; ++i)
+        {
+            const auto n = hostEreignis[(size_t) i].load (std::memory_order_relaxed);
+            if (n == hostEreignisGesehen[(size_t) i]) continue;
+            hostEreignisGesehen[(size_t) i] = n;
+            transaktion->automationSchreiben (i, zelleAusHost (i, hostWert[(size_t) i].load (std::memory_order_relaxed)));
+            samplesBeiLetzterAutomation = verarbeiteteSamples.load (std::memory_order_relaxed);
+            publikationOffen = true;
+        }
+    }
+
+    // Die Ruhegrenze, gezaehlt in verarbeiteten Audiosamples (§44.3, M-120).
+    const double fs = transaktion->samplerate();
+    if (transaktion->automation().laeuft && fs > 0.0
+        && verarbeiteteSamples.load (std::memory_order_relaxed) - samplesBeiLetzterAutomation
+               >= (std::uint64_t) (nakama::transaktion::kAutomationsRuheSekunden * fs))
+        transaktion->automationRuht();
+
+    // Den wirksamen Zustand publizieren; bei busy_retry im naechsten Takt.
+    if (publikationOffen && dspKern->samplerate() > 0.0)
+        publikationOffen = ! dspAusfuehrung->publiziereWirksam (transaktion->wirksam(), false);
 }
 
 } // namespace nakama::sonde

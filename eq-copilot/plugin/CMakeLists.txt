@@ -203,6 +203,7 @@ set(NAKAMA_KERN_QUELLEN
     state/NakamaParameter.cpp
     state/NakamaPreset.cpp
     state/NakamaState.cpp
+    state/NakamaTransaktion.cpp
     vertrag/NakamaVertrag.cpp
     vertrag/NakamaTelemetrie.cpp
     vertrag/NakamaEvidenz.cpp
@@ -1109,6 +1110,27 @@ target_link_libraries(EqCopDspGoldenTest
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
 nakama_kern_anbinden(EqCopDspGoldenTest)
 
+# ── SONDE-015 Etappe 4a: der Transaktionskern und seine Prozessorseite ─────
+# Kanon B7. Misst `state/NakamaTransaktion.*` gegen die Falltabelle §5.11.4
+# und die Matrixzeilen §3.7 bis §3.11 des Manifests, dazu die Prozessorseite
+# (112 Host-Parameter, Automation, Gestus, Save/Load, erster Block) am ECHTEN
+# `SondeProcessor` - dieselbe Quelle wie im Bundle, ohne Plugin-Wrapper und
+# ohne Produktpipe (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3).
+juce_add_console_app(EqCopTransactionTest PRODUCT_NAME "eqcop-transactiontest")
+target_sources(EqCopTransactionTest PRIVATE
+    tests/TransactionTestMain.cpp
+    sonde/SondeProcessor.cpp
+    src/AnalyseEngine.cpp
+    core/ipc/PipeToken.cpp)
+target_include_directories(EqCopTransactionTest PRIVATE sonde src core hostbridge
+    "${NAKAMA_BROKER_BINDING_DIR}")
+target_compile_definitions(EqCopTransactionTest PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0
+    NAKAMA_SONDE_AKTIV=1 NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3=1)
+target_link_libraries(EqCopTransactionTest PRIVATE juce::juce_audio_utils juce::juce_dsp Advapi32
+    PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+nakama_kern_anbinden(EqCopTransactionTest)
+
 # ── S3b: Termin-B-Messgeraet (Wegwerfware wie SONDE-004a) ──────────────────
 # Erstes Ziel, das die Hostbruecke BENUTZT: sein Processor ist eine Senke.
 # Eigener Plugin-Code NkHp — bewusst ausserhalb der eingefrorenen Identitaet
@@ -1289,7 +1311,7 @@ foreach(ziel NakamaKern
              EqCopSchemaTest EqCopStateMigrationTest EqCopSonde013PassageStateTest EqCopLebenslaufTest
              EqCopQueueStressTest EqCopLoudnessGoldenTest EqCopAnalysisGoldenTest
              EqCopHostProbe EqCopHostProbeTest
-             NakamaProbeeq EqCopProbeeqNullTest
+             NakamaProbeeq EqCopProbeeqNullTest EqCopTransactionTest
              EqCopSonde012HostChannelContextTest EqCopSonde012LoudnessSourceTest
              EqCopSonde012SourcesModelTest EqCopSonde012ProjectReloadTest
              EqCopSonde012SourcesLatencyTest EqCopSessionSoak)

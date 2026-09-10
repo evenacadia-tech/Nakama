@@ -31,16 +31,22 @@
     gelinkt. Der Umzug hinter die §53.4-Verzeichnisgrenzen bleibt
     inkrementell.
 
-    GRUNDGESETZ (CLAUDE.md, Wahrheitskern): Gen und Probeeq beraten nur -
-    Passthrough sampleidentisch, 0 Samples Latenz, kein Tail. `processBlock`
-    haelt keine Sperre, allokiert nicht, protokolliert nicht und fasst keine
-    Datei an. Seit SONDE-012 kopiert er Audio nur in die vorallokierte
-    Analysequeue; Auswertung, Serialisierung und I/O bleiben im Worker.
+    GRUNDGESETZ (CLAUDE.md, Wahrheitskern): nichts Ungefragtes. Solange
+    `v2.global.eq_enabled` aus ist - der Default -, ist Probeeq der
+    Passthrough von bisher: sampleidentisch, 0 Samples Latenz, kein Tail,
+    keine Bank (SONDE-015 R2, Bein A16). `processBlock` haelt keine Sperre,
+    allokiert nicht, protokolliert nicht und fasst keine Datei an: er ruft den
+    DSP-Kern (`dsp::DspKern::verarbeite`) und kopiert den Tap `post_committed`
+    in die vorallokierte Analysequeue. Programmbau, Transaktionen,
+    Auswertung und I/O bleiben ausserhalb des Audiothreads.
 
-    KEINE HOSTPARAMETER: Beide Bundles melden dem Host heute keinen einzigen
-    Parameter. Fuer Suna ist das dauerhaft so (Bauaufteilung: "Suna-Kachel,
-    null Hostparameter"). Fuer Probeeq gilt es, bis seine DSP da ist -
-    Parameter, die nichts tun, waeren eine Oberflaeche, die luegt.
+    HOSTPARAMETER (SONDE-015 R1): Probeeq meldet die 112 Host-Parameter des
+    Layouts v2 in Vertragsreihenfolge - die 109 v1-Kennungen, danach
+    `eq_enabled`, `mix` und `auto_gain`; `occupied` ist keiner (R5). Die Liste
+    kommt aus `nakama::parameter::tabelle()`, nie aus einer zweiten Liste.
+    Hostwerte wirken als fluechtiger AutomationOverlay ohne Revision (§44.3);
+    gespeichert wird ausschliesslich der bestaetigte Zustand des
+    Transaktionskerns (`state/NakamaTransaktion.h`).
 
     KEINE ERFUNDENE OBERFLAECHE: `hasEditor()` meldet false. Die Gestaltung
     kommt aus dem Figma-Stand des Users ueber design/ (CLAUDE.md: "Claude
@@ -53,6 +59,8 @@
 
 #include "NakamaLebenslauf.h"
 #include "NakamaState.h"
+#include "NakamaTransaktion.h"
+#include "DspKern.h"
 #include "AnalyseEngine.h"
 #include "ControlClient.h"
 #include "NakamaHostBridge.h"
@@ -60,11 +68,14 @@
 #include "TelemetryClient.h"
 #include "analysis/FeatureEngine.h"
 
+#include <array>
 #include <atomic>
 #include <condition_variable>
 #include <cstdint>
+#include <memory>
 #include <mutex>
 #include <thread>
+#include <vector>
 
 // Genau EINE Produktklasse je Ziel - gesetzt von der duennen Target-Schicht
 // in plugin/CMakeLists.txt. Der Riegel ist kein Zierrat: ohne ihn uebersetzte
@@ -113,14 +124,15 @@ inline nakama::state::Bundle bundleVertrag()
 }
 
 class SondeProcessor final : public juce::AudioProcessor,
-                             public eqcop::hostbruecke::Senke
+                             public eqcop::hostbruecke::Senke,
+                             private juce::AudioProcessorParameter::Listener
 {
 public:
     SondeProcessor();
     ~SondeProcessor() override;
 
     void prepareToPlay (double samplerate, int maxBlock) override;
-    void releaseResources() override {}
+    void releaseResources() override;
     bool isBusesLayoutSupported (const BusesLayout& layout) const override;
     void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
     void nakamaBlockEmpfangen (const eqcop::hostbruecke::Blockbefund&) noexcept override;
@@ -148,6 +160,12 @@ public:
     bool isMidiEffect() const override                  { return false; }
     double getTailLengthSeconds() const override        { return 0.0; }
 
+    /** Offline-Render laeuft mit dem bestaetigten Zustand, nie mit einer
+        Vorschau (§44.4, §49.2 Gate 3, M-120): der Wechsel in den
+        Offline-Betrieb beendet die Preview und stellt die Hoermatrix auf
+        Processed. */
+    void setNonRealtime (bool offline) noexcept override;
+
     int getNumPrograms() override                       { return 1; }
     int getCurrentProgram() override                    { return 0; }
     void setCurrentProgram (int) override               {}
@@ -157,8 +175,41 @@ public:
     void getStateInformation (juce::MemoryBlock& ziel) override;
     void setStateInformation (const void* daten, int groesse) override;
 
-    /** Fuer Tests: der gehaltene Zustand. Kein Hostweg. */
-    const nakama::state::Zustand& zustandLesen() const noexcept { return zustand; }
+    /** Fuer Tests: genau der Stand, den `getStateInformation` schreibt. Kein
+        Hostweg. Die Dsp-Haelfte kommt beim Lesen aus dem Transaktionskern -
+        es gibt keine zweite Kopie, die nachlaeuft. */
+    nakama::state::Zustand zustandLesen() const;
+
+    //== SONDE-015 Etappe 4a: der lokale Transaktionskern ======================
+    //
+    // Nicht fuer den Audiothread. Jeder Aufruf nimmt das Zustandsschloss; ein
+    // Hostaufruf (Parameterabgleich, Host-Dirty) folgt erst nach dem Loslassen.
+
+    /** Eine Transaktion durch S0 bis S8 (Manifest SONDE-015 §5.11.4). Ein
+        read-only gehaltener Stand nimmt keine an (Ausgang `fehler`, Grund
+        `schreibgeschuetzt`): beim Speichern gingen ohnehin die Originalbytes
+        zurueck. */
+    nakama::transaktion::Ergebnis fuehreTransaktionAus (const nakama::transaktion::Auftrag& auftrag);
+
+    /** Eine neue, in dieser Instanz eindeutige Transaktions-ID. */
+    nakama::transaktion::Tid neueTid() noexcept;
+
+    bool setzePreview (const nakama::parameter::DspSatz& satz, juce::String& grund);
+    void beendePreview();
+
+    nakama::parameter::DspSatz bestaetigterZustand() const;
+    nakama::parameter::DspSatz wirksamerZustand() const;
+    std::uint64_t stateRevision() const;
+    juce::String  stateHashText() const;
+    std::uint64_t automationEpoche() const;
+    bool          previewAktiv() const;
+
+    /** Die lokale Nutzlast von `state_report.dsp` (R13); der Sender ist 4b. */
+    bool dspBericht (nakama::transaktion::DspBericht& aus, juce::String& grund) const;
+
+    /** Die transiente Hoermatrix (R10): kein Parameter, nichts im Zustand. */
+    void setzeHoermatrix (nakama::dsp::Hoermatrix h) noexcept { dspKern->setzeHoermatrix (h); }
+    nakama::dsp::Hoermatrix gewuenschteHoermatrix() const noexcept { return dspKern->gewuenschteHoermatrix(); }
 
     /** §53.5, letzter Aufzaehlungspunkt: "die beiden neuen Bundles haben eine
         feste Produktklasse, bleiben aber bis gueltigem State neutral."
@@ -190,6 +241,13 @@ public:
 #if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
     nakama::ipc::ControlHello v3HelloFuerTest() const { return v3Hello(); }
     nakama::ipc::ControlStatus v3StatusFuerTest() const { return v3Status(); }
+
+    /** SONDE-015 4a: der DSP-Kern fuer Pool- und Zaehlerbeobachtung (B7, A16). */
+    nakama::dsp::DspKern& dspKernFuerTest() noexcept { return *dspKern; }
+
+    /** Ein Takt des Control-Workers, synchron - damit ein Bein nicht auf den
+        Worker wartet. Derselbe Code wie im Worker. */
+    void kontrollTaktFuerTest() { dspKontrollTakt(); }
     nakama::ipc::ControlClient::Snapshot controlV3FuerTest() const
     {
         return controlV3.snapshot();
@@ -272,6 +330,27 @@ private:
     nakama::ipc::ControlStatus v3Status() const;
     nakama::ipc::TelemetryHello v3TelemetryHello() const;
 
+    // ── SONDE-015 Etappe 4a ──────────────────────────────────────────────
+    void parameterValueChanged (int parameterIndex, float neuNormiert) override;
+    void parameterGestureChanged (int parameterIndex, bool beginnt) override;
+
+    /** Ein Takt des Control-Workers: ACKs ernten, Hostereignisse in den
+        AutomationOverlay, Ruhegrenze, wirksamen Zustand publizieren. */
+    void dspKontrollTakt();
+
+    /** Setzt die Hostparameter auf `werte` - mit Herkunftstag, damit der
+        eigene Listener den Abgleich nicht als Automation liest. */
+    void hostParameterAbgleichen (const nakama::parameter::Satz& werte);
+
+    /** Hostwert (normiert) -> Vertragszelle. Gleicht er dem bestaetigten Wert
+        in Hostgenauigkeit oder ist er nicht endlich, ist es GENAU der bestaetigte Wert. Unter Schloss. */
+    nakama::parameter::Zelle zelleAusHost (int index, float normiert) const;
+
+    void gestusAbschliessen();
+    bool committedRuhtImPassthrough() const noexcept;
+    /** Unter dem Zustandsschloss: `zustand` mit der Dsp-Haelfte aus dem Kern. */
+    nakama::state::Zustand gehaltenerStand() const;
+
     nakama::state::Zustand zustand;
     nakama::state::Lebenslauf lebenslauf { kProduktklasse };
     juce::CriticalSection zustandSchloss;   ///< nur Nachrichten-/Hostthread, nie processBlock
@@ -340,9 +419,41 @@ private:
     std::atomic<double> v3Samplerate { 0.0 };
     std::atomic<int> v3BlockSize { 0 };
     std::atomic<int> v3Channels { 0 };
-    std::atomic<std::uint64_t> v3StateRevision { 0 };
     nakama::ipc::ControlClient controlV3;
     nakama::ipc::TelemetryClient telemetryV3;
+
+    // ── SONDE-015 Etappe 4a: Parameter, DSP-Kern, Transaktionskern ─────────
+    //
+    // Die 112 Host-Parameter leben in der APVTS; gespeichert wird aber nicht
+    // die APVTS, sondern der bestaetigte Zustand des Transaktionskerns (Kinder
+    // `Parameters` und `Dsp`). DSP-Kern und Transaktionskern liegen auf dem
+    // Heap, weil Konsolenbeine Prozessoren im Rahmen anlegen und der
+    // MSVC-Standardstack 1 MiB fasst (NAK-175).
+    juce::AudioProcessorValueTreeState parameterBaum;
+    std::array<juce::RangedAudioParameter*, (size_t) nakama::parameter::kHostParameter> hostParameter {};
+    std::unique_ptr<nakama::dsp::DspKern>                    dspKern;
+    std::unique_ptr<nakama::transaktion::DspKernAusfuehrung> dspAusfuehrung;
+    std::unique_ptr<nakama::transaktion::Transaktionskern>   transaktion;
+
+    // Hostereignisse. Der Listener laeuft auch im Audiothread (VST3-Wrapper,
+    // `processParameterChanges`) und schreibt deshalb nur Atomics.
+    std::array<std::atomic<float>, (size_t) nakama::parameter::kHostParameter>         hostWert {};
+    std::array<std::atomic<std::uint32_t>, (size_t) nakama::parameter::kHostParameter> hostEreignis {};
+    std::array<std::uint32_t, (size_t) nakama::parameter::kHostParameter>              hostEreignisGesehen {};   ///< unter Zustandsschloss
+    std::atomic<bool>          hostEreignisOffen { false };
+    std::atomic<std::uint64_t> verarbeiteteSamples { 0 };   ///< Audiothread zaehlt, Worker liest (Ruhegrenze)
+    std::uint64_t samplesBeiLetzterAutomation = 0;          ///< unter Zustandsschloss
+    bool          publikationOffen = false;                 ///< unter Zustandsschloss
+
+    // Gesten der eigenen Oberflaeche (Message-Thread), unter Zustandsschloss.
+    std::array<bool, (size_t) nakama::parameter::kHostParameter> gesteOffen {};
+    std::array<bool, (size_t) nakama::parameter::kHostParameter> gesteBeteiligt {};
+
+    // Der Analysetap `post_committed` als float, vorallokiert in prepareToPlay.
+    std::vector<float> analyseL, analyseR;
+
+    std::uint64_t              tidHoch = 0;
+    std::atomic<std::uint64_t> tidZaehler { 0 };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SondeProcessor)
 };

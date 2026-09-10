@@ -91,6 +91,10 @@ ERWARTETE_OBJEKTE = {
     # Zeile nachgezogen wurde.
     "NakamaPreset.obj",
     "NakamaState.obj",
+    # SONDE-015 Etappe 4a: der lokale Transaktionskern (Stufen S0 bis S8,
+    # Register, Undo-Ring, Overlays). Identitaetsfrei wie State und DSP-Kern -
+    # er kennt nur das DTO und `dsp::DspKern`, keinen Prozessor.
+    "NakamaTransaktion.obj",
     "NakamaVertrag.obj",
     "NakamaTelemetrie.obj",
     # SONDE-013 M-05: der Erzeuger des evidence_snapshot. Er gehoert in den

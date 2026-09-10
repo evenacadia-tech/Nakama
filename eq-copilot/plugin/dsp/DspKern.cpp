@@ -163,24 +163,49 @@ void DspKern::meldeProgramm (Pfad p, const DspProgramm& prog) noexcept
 
 bool DspKern::uebernehmeZustand (const param::DspSatz& satz, Pfad p)
 {
-    // B-10 / M-07: ein ausgeschalteter Zustand belegt KEINE Bank. Er
-    // publiziert die ENDE-Marke; der Pfad blendet am Blockrand in die Ruhe
-    // und dient seine Bank ueber den ACK aus. Gerechnet wird trotzdem - im
-    // Bauplatz des Workers -, damit der abgeleitete Wert lesbar bleibt (M-35).
-    if (! satz.werte[(size_t) param::kIndexEqEnabled].b)
+    // Etappe 4a: EIN Publikationsweg. Die Transaktion ruft beide Haelften
+    // getrennt - S5 vor, S8 hinter ihrem Commit-Punkt (Manifest §5.11.4).
+    if (! baueVor (satz, p)) return false;   // busy_retry (M-44)
+    publiziereVorbau (p);
+    return true;
+}
+
+bool DspKern::baueVor (const param::DspSatz& satz, Pfad p)
+{
+    // B-10 / M-07: ein ausgeschalteter Zustand belegt KEINE Bank - er ist
+    // bankfrei und scheitert hier nie. Gerechnet wird trotzdem, damit der
+    // abgeleitete Wert lesbar bleibt (M-35).
+    auto& prog = vorbau[(size_t) p];
+    baueProgramm (satz, abtastrate, 0, prog);
+    const bool pflicht = satz.werte[(size_t) param::kIndexEqEnabled].b;
+    vorbauBankpflichtig[(size_t) p] = pflicht;
+    return ! pflicht || baenke.freieSlots() > 0;
+}
+
+void DspKern::publiziereVorbau (Pfad p) noexcept
+{
+    const auto& prog = vorbau[(size_t) p];
+
+    if (! vorbauBankpflichtig[(size_t) p])
     {
-        baueProgramm (satz, abtastrate, 0, arbeitsProgramm);
-        meldeProgramm (p, arbeitsProgramm);
+        // Bankfrei (E-18): die ENDE-Marke. Der Pfad blendet am Blockrand in
+        // die Ruhe und dient seine Bank ueber den ACK aus.
+        meldeProgramm (p, prog);
         baenke.publiziereEnde (p);
         if (p == Pfad::candidate) candidateAktiv.store (false, std::memory_order_release);
-        return true;
+        return;
     }
 
+    // Bankpflichtig: `baueVor` hat eine freie Bank gesehen, und zwischen
+    // beiden Aufrufen belegt kein anderer Schreiber eine (DspKern.h). Der
+    // Rueckweg darunter ist deshalb unerreichbar; er steht, damit ein
+    // Vertragsbruch des Aufrufers nie eine fremde Bank beschreibt.
     const int slot = baenke.reserviere();
-    if (slot < 0) return false;   // busy_retry (M-44)
+    if (slot < 0) { jassertfalse; return; }
 
     auto& bank = baenke.bank (slot);
-    baueProgramm (satz, abtastrate, baenke.naechsteGeneration(), bank.programm);
+    bank.programm = prog;
+    bank.programm.generation = baenke.naechsteGeneration();
 
     // M-07/E-8: die neue Bank startet KALT. Ist der Wechsel am Blockrand ein
     // reiner Rampenwechsel, uebernimmt der Audiothread dort den Zustand der
@@ -196,7 +221,6 @@ bool DspKern::uebernehmeZustand (const param::DspSatz& satz, Pfad p)
     baenke.publiziere (p, slot);
     meldeProgramm (p, bank.programm);
     if (p == Pfad::candidate) candidateAktiv.store (true, std::memory_order_release);
-    return true;
 }
 
 void DspKern::beendeCandidate()

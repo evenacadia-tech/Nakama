@@ -46,6 +46,13 @@
     - Ausschalten und Candidate-Ende laufen ueber den regulaeren Weg: die
       ENDE-Marke wird publiziert, am Blockrand genommen, die Bank blendet aus
       und dient mit ACK aus; reserviert wird dafuer nichts (B-8, B-10, E-18).
+    - Kein A/B-Wechsel laeuft ueber einen zweiten Fade nach Dry (M-55): mischt
+      die Hoermatrix beim Candidate-Ende noch Candidate-Anteile, ist IHRE
+      Rueckblende die einzige Blende - die Candidate-Bank klingt bis zu deren
+      Ende unveraendert und dient erst dann mit ACK aus, ohne eigene Blende,
+      weil keine Auswahl sie dann noch hoert (X-1, E-33); und auf
+      einen Candidate, der gerade aus der Ruhe einblendet, blendet die
+      Hoermatrix erst nach diesem Einblenden (E-34).
     - Uebernommen wird genau einmal je aeusserem `verarbeite`-Aufruf (B-11).
 
     WAS HIER NICHT LIEGT: Transaktionen, Revisionen, `state_hash`, Undo,
@@ -100,10 +107,13 @@ public:
     bool uebernehmeZustand (const nakama::parameter::DspSatz& satz, Pfad p = Pfad::committed);
 
     /** Beendet den Candidate-Pfad als gekoppelte Lebenszyklusoperation
-        (M-46, B-8): die ENDE-Marke wird publiziert, der Pfad blendet am
-        naechsten Blockrand klickfrei aus, seine Baenke dienen ueber den ACK
-        aus. Die Auswahl `Candidate` faellt sofort sichtbar auf Processed
-        zurueck (M-56). */
+        (M-46, B-8): die ENDE-Marke wird publiziert und am naechsten
+        Blockrand genommen, seine Baenke dienen ueber den ACK aus. Mischt die
+        Hoermatrix dann noch Candidate-Anteile, blendet nur SIE zurueck: die
+        Bank klingt bis zum Ende dieser Rueckblende unveraendert und dient
+        erst danach aus (X-1). Sonst blendet der Pfad klickfrei in die Ruhe.
+        Die Auswahl `Candidate` faellt sofort sichtbar auf Processed zurueck
+        (M-56). */
     void beendeCandidate();
 
     /** Erntet die ACKs des Audiothreads und gibt Baenke frei. Ohne diesen
@@ -145,7 +155,8 @@ public:
     Hoermatrix gewuenschteHoermatrix() const noexcept { return hoerwunsch.load (std::memory_order_acquire); }
 
     /** Der WIRKSAME Zustand - nicht der gewuenschte. `Candidate` ohne
-        Kandidat faellt hier sichtbar auf Processed zurueck (M-56). */
+        Kandidat faellt hier sichtbar auf Processed zurueck (M-56), ebenso
+        solange der Kandidat noch aus der Ruhe einblendet (E-34). */
     Hoermatrix wirksameHoermatrix() const noexcept { return hoerwirksam.load (std::memory_order_acquire); }
 
     //== Taps ===============================================================
@@ -266,7 +277,11 @@ private:
         void tick() noexcept { input.tick(); width.tick(); autoGain.tick(); mix.tick(); output.tick(); }
     };
 
-    enum class Uebergang { keiner = 0, crossfade, rampe };
+    /** `hoerHalt` (X-1, Entscheid E-33): die endende Candidate-Bank liegt in
+        `quelle` und klingt UNVERAENDERT - ohne Mischgewicht und ohne Rest -,
+        solange die Hoermatrix Candidate-Anteile mischt. Das Ende setzt
+        `beendeHoerHalt`, kein Samplezaehler. */
+    enum class Uebergang { keiner = 0, crossfade, rampe, hoerHalt };
 
     /** Der vollstaendige Zustand EINES Pfades (B-6, B-7, B-9). Nur der
         Audiothread schreibt; die Auslenkungen sind atomar, weil der Bericht
@@ -274,7 +289,7 @@ private:
     struct PfadZustand
     {
         int       aktiv     { -1 };                 ///< Slot `audioAktiv`, -1 = Ruhe
-        int       quelle    { -1 };                 ///< Quellbank des Uebergangs, -1 = Ruhe
+        int       quelle    { -1 };                 ///< Quellbank des Uebergangs (im Hoerhalt die endende Bank), -1 = Ruhe
         Uebergang uebergang { Uebergang::keiner };
         int       rest      { 0 };                  ///< Samples bis Uebergangsende
         Rampen    rampen    {};
@@ -285,6 +300,17 @@ private:
 
     void blockrand (Pfad p) noexcept;
     void heileZustaende (int slot) noexcept;
+
+    /** Mischt die Hoermatrix gerade Candidate-Anteile - als Ziel ODER als
+        noch nicht ausgeblendete Quelle ihres laufenden Fades? Nur der
+        Audiothread fragt (X-1). */
+    bool hoermatrixMischtCandidate() const noexcept;
+
+    /** Beendet den Hoerhalt des Candidate-Pfades, sobald die Hoermatrix keine
+        Candidate-Anteile mehr mischt: die Bank dient ueber den regulaeren Weg
+        aus (ACK, danach Reclaim durch den Worker). Gerufen, wenn der
+        Hoermatrix-Zustand eines Stuecks feststeht (X-1). */
+    void beendeHoerHalt() noexcept;
     void verarbeiteStueck (float* const* kanaele, int numKanaele, int numSamples) noexcept;
 
     /** Rechnet EINE Bank eines Pfades auf `L`/`R` (in-place, bereits

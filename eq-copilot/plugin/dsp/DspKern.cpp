@@ -257,6 +257,27 @@ double* DspKern::tapZeiger (Tap t, int kanal) noexcept
 }
 
 //==============================================================================
+bool DspKern::hoermatrixMischtCandidate() const noexcept
+{
+    return hoerLaufend == Hoermatrix::candidate
+        || (hoerFadeRest > 0 && hoerVorher == Hoermatrix::candidate);
+}
+
+void DspKern::beendeHoerHalt() noexcept
+{
+    auto& z = pfade[(size_t) Pfad::candidate];
+    if (z.uebergang != Uebergang::hoerHalt || hoermatrixMischtCandidate()) return;
+
+    // X-1: die Rueckblende ist zu Ende, keine Auswahl hoert die Bank mehr. Sie
+    // dient jetzt ueber den regulaeren Weg aus - ACK, danach Reclaim durch
+    // den Worker (M-43, M-46).
+    baenke.meldeAusgedient (z.quelle);
+    z.quelle    = -1;
+    z.uebergang = Uebergang::keiner;
+    z.rest      = 0;
+}
+
+//==============================================================================
 void DspKern::blockrand (Pfad p) noexcept
 {
     auto& z = pfade[(size_t) p];
@@ -281,12 +302,19 @@ void DspKern::blockrand (Pfad p) noexcept
         // auszublenden.
         if (alt < 0) return;
         baenke.beginneVerblassen (alt);
-        z.quelle    = alt;
-        z.aktiv     = -1;
-        z.uebergang = Uebergang::crossfade;
-        z.rest      = kFadeSamples;
+        z.quelle = alt;
+        z.aktiv  = -1;
         // Die Rampen behalten ihre Ziele: die ausblendende Bank klingt mit
         // IHREN Gains aus, genau wie beim Hard-Bypass-Wechsel (M-06).
+
+        // X-1 (Entscheid E-33): mischt die Hoermatrix noch Candidate-Anteile,
+        // ist IHRE Rueckblende die einzige Blende. Die Bank fadet dann nicht
+        // parallel nach Dry, sondern klingt unveraendert weiter und dient
+        // erst aus, wenn die Hoermatrix sie loslaesst (`beendeHoerHalt`) -
+        // sonst nullten zwei identische A/B-Zustaende nicht (M-55).
+        const bool hoerHalt = p == Pfad::candidate && hoermatrixMischtCandidate();
+        z.uebergang = hoerHalt ? Uebergang::hoerHalt : Uebergang::crossfade;
+        z.rest      = hoerHalt ? 0 : kFadeSamples;
         return;
     }
 
@@ -630,6 +658,7 @@ void DspKern::verarbeitePfad (Pfad p, const double* eingangL, const double* eing
 
     const bool crossfade = z.uebergang == Uebergang::crossfade && z.rest > 0;
     const bool rampe     = z.uebergang == Uebergang::rampe     && z.rest > 0;
+    const bool hoerHalt  = z.uebergang == Uebergang::hoerHalt;
 
     // --- die Quelle eines Crossfades -------------------------------------
     // Beide Durchlaeufe sehen dieselben Rampenwerte: die globalen Stufen des
@@ -655,11 +684,15 @@ void DspKern::verarbeitePfad (Pfad p, const double* eingangL, const double* eing
     }
 
     // --- die aktive Bank -------------------------------------------------
-    if (z.aktiv >= 0 && ! istPassthrough (z.aktiv))
+    // X-1: im Hoerhalt ist die endende Bank die EINZIGE, die klingt - sie
+    // rechnet wie eine aktive Bank weiter, mit ihren Rampen und ihren
+    // Auslenkungen, bis die Hoermatrix sie loslaesst.
+    const int klingend = hoerHalt ? z.quelle : z.aktiv;
+    if (klingend >= 0 && ! istPassthrough (klingend))
     {
         std::memcpy (nachL, eingangL, bytes);
         std::memcpy (nachR, eingangR, bytes);
-        verarbeiteBank (z, z.aktiv, rampe ? z.quelle : -1, rampe ? z.rest : 0, nachL, nachR, numSamples);
+        verarbeiteBank (z, klingend, rampe ? z.quelle : -1, rampe ? z.rest : 0, nachL, nachR, numSamples);
     }
     else
     {
@@ -696,7 +729,8 @@ void DspKern::verarbeitePfad (Pfad p, const double* eingangL, const double* eing
     z.rest = rest;
 
     // --- Uebergangsende: die Quelle dient ueber den ACK aus ---------------
-    if (z.uebergang != Uebergang::keiner && z.rest <= 0)
+    // Den Hoerhalt beendet nicht der Rest, sondern die Hoermatrix (X-1).
+    if (z.uebergang != Uebergang::keiner && ! hoerHalt && z.rest <= 0)
     {
         if (z.quelle >= 0) baenke.meldeAusgedient (z.quelle);
         z.quelle    = -1;
@@ -756,7 +790,13 @@ void DspKern::verarbeiteStueck (float* const* kanaele, int numKanaele, int numSa
     const size_t bytes = n * sizeof (double);
 
     // --- die WIRKSAME Hoermatrix (M-56) ----------------------------------
-    const bool candDa  = candidateAktiv.load (std::memory_order_acquire) && pfade[1].aktiv >= 0;
+    // E-34: ein Candidate-Pfad, der gerade AUS DER RUHE einblendet, ist fuer
+    // die Hoermatrix noch nicht da. Sie blendet erst nach seinem Einblenden
+    // auf Candidate; sonst liefe ihr Fade ueber seinen Fade von Dry her, und
+    // zwei identische A/B-Zustaende nullten nicht (M-55, Gegenstueck zu X-1).
+    const auto& zk = pfade[1];
+    const bool candEinblendend = zk.uebergang == Uebergang::crossfade && zk.quelle < 0;
+    const bool candDa  = candidateAktiv.load (std::memory_order_acquire) && zk.aktiv >= 0 && ! candEinblendend;
     Hoermatrix wirksam = hoerwunsch.load (std::memory_order_acquire);
     if (wirksam == Hoermatrix::candidate && ! candDa) wirksam = Hoermatrix::processed;
     hoerwirksam.store (wirksam, std::memory_order_release);
@@ -842,6 +882,7 @@ void DspKern::verarbeiteStueck (float* const* kanaele, int numKanaele, int numSa
         hoerLaufend  = wirksam;
         hoerVorher   = wirksam;
         hoerFadeRest = 0;
+        beendeHoerHalt();   // X-1: die Hoermatrix mischt jetzt keinen Candidate mehr
         return;
     }
 
@@ -951,6 +992,10 @@ void DspKern::verarbeiteStueck (float* const* kanaele, int numKanaele, int numSa
         hoerVorher   = wirksam;
         hoerFadeRest = 0;
     }
+
+    // X-1: der Hoermatrix-Zustand dieses Stuecks steht fest. Endete in ihm die
+    // Rueckblende, dient die gehaltene Candidate-Bank jetzt aus.
+    beendeHoerHalt();
 }
 
 } // namespace nakama::dsp

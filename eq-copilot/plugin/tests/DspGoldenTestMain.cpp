@@ -3635,9 +3635,12 @@ int main()
 
         // W-5 / B-8 / M-46: Abbruch des Candidate WAEHREND des Hoermatrix-
         // Fades. Committed neutral, Candidate (Low-Shelf +9 dB) publiziert und
-        // gewaehlt, 64 Samples, dann `beendeCandidate`: die Hoermatrix blendet
-        // vom aktuellen Mischstand zurueck (E-30). Am Abbruchsample kein Sprung
-        // ueber die Fadeschrittweite, danach ist die Candidate-Bank frei.
+        // eingeblendet, dann gewaehlt, 64 Samples, dann `beendeCandidate`: die
+        // Hoermatrix blendet vom aktuellen Mischstand zurueck (E-30). Am
+        // Abbruchsample kein Sprung ueber die Fadeschrittweite, danach ist die
+        // Candidate-Bank frei. Der Pfad blendet VOR der Wahl ein: aus der Ruhe
+        // heraus wirkt die Auswahl erst nach seinem Einblenden (E-34), und der
+        // Abbruch laege sonst gar nicht im Hoermatrix-Fade.
         {
             auto k = neuerKern (fs, 64);
             k->uebernehmeZustand (machSatz (true));
@@ -3647,6 +3650,7 @@ int main()
             auto kand = machSatz (true);
             belege (kand, 0, Filtertyp::lowShelf, 8000.0, 0.707, 9.0);
             k->uebernehmeZustand (kand, Pfad::candidate);
+            fahreDc (*k, 0.3, 1024, 64);
             k->setzeHoermatrix (Hoermatrix::candidate);
             auto lauf = fahreDc (*k, 0.3, 64, 64);
             k->beendeCandidate();
@@ -3669,6 +3673,106 @@ int main()
                     + " gegen Fadeschritt " + zahl (stufe, 9) + ", geerntet " + std::to_string (geerntet)
                     + ", belegt " + std::to_string (k->pool().belegteSlots()) + ", Candidate-Slots "
                     + std::to_string (kA) + "/" + std::to_string (kQ));
+        }
+
+        // X-1 / M-55 / M-46 / B-8: Candidate-Abbruch bei IDENTISCHEN A/B-
+        // Zustaenden. Committed und Candidate tragen beide Output-Trim +6 dB
+        // und sind eingeschwungen, die Hoermatrix waehlt Candidate; dann endet
+        // der Candidate zu drei Zeitpunkten: (a) 64 Samples in das Einblenden
+        // der Hoermatrix, (b) nach abgeschlossenem Fade, (c) 64 Samples in das
+        // Ausblenden zurueck auf Processed. Die Hoerrueckblende ist die EINZIGE
+        // Blende (Entscheid E-33): der Ausgang bleibt ueber den ganzen Lauf
+        // innerhalb der float-Rundung gleich Processed; die Candidate-Bank
+        // klingt bis zum Ende der Rueckblende unveraendert und dient erst
+        // danach ueber den ACK aus.
+        {
+            const char* namen[] = { "(a) im Einblenden", "(b) nach abgeschlossenem Fade", "(c) im Ausblenden" };
+            for (int fall = 0; fall < 3; ++fall)
+            {
+                auto k = neuerKern (fs, 64);
+                auto laut = machSatz (true);
+                setzeGlobal (laut, "v1.global.output_trim_db", 6.0);
+                k->uebernehmeZustand (laut);
+                k->uebernehmeZustand (laut, Pfad::candidate);
+                const auto vor = fahreDc (*k, 0.3, 4096, 64);
+                k->pflege();
+
+                k->setzeHoermatrix (Hoermatrix::candidate);
+                auto lauf = fahreDc (*k, 0.3, fall == 0 ? 64 : 1024, 64);
+                if (fall == 2)
+                {
+                    k->setzeHoermatrix (Hoermatrix::processed);
+                    const auto zurueck = fahreDc (*k, 0.3, 64, 64);
+                    lauf.insert (lauf.end(), zurueck.begin(), zurueck.end());
+                }
+                k->beendeCandidate();
+
+                // 32 Samples nach dem Abbruch laeuft die Rueckblende in allen
+                // drei Faellen noch (Rest 31, 224, 160): die Bank ist gehalten,
+                // verblasst und hat noch keinen ACK.
+                const auto mitte = fahreDc (*k, 0.3, 32, 64);
+                lauf.insert (lauf.end(), mitte.begin(), mitte.end());
+                int mA = -1, mQ = -1, mKA = -1, mKQ = -1;
+                k->gefahreneSlots (mA, mQ, mKA, mKQ);
+                const bool gehalten = mKA == -1 && mKQ >= 0
+                                      && k->pool().zustand (mKQ) == BankZustand::verblassend;
+                const int ernteMitte = k->pflege();
+
+                const auto rest = fahreDc (*k, 0.3, 2048, 64);
+                lauf.insert (lauf.end(), rest.begin(), rest.end());
+                const int geerntet = k->pflege();
+                int cA = -1, cQ = -1, kA = -1, kQ = -1;
+                k->gefahreneSlots (cA, cQ, kA, kQ);
+
+                const double P = vor.back();
+                double maxAbw = 0.0;
+                size_t anStelle = 0;
+                for (size_t i = 0; i < lauf.size(); ++i)
+                    if (std::abs (lauf[i] - P) > maxAbw) { maxAbw = std::abs (lauf[i] - P); anStelle = i; }
+                pruefe (maxAbw <= kRundungFloat,
+                        std::string ("candidate_abbruch_bei_identischen_zustaenden_nullt (M-55, X-1) ") + namen[fall],
+                        "groesste Abweichung zu Processed " + zahl (maxAbw, 9) + " an Sample " + std::to_string (anStelle)
+                        + " von " + std::to_string (lauf.size()) + ", Toleranz " + zahl (kRundungFloat, 9));
+                pruefe (gehalten && ernteMitte == 0 && geerntet == 1 && k->pool().belegteSlots() == 1
+                        && kA == -1 && kQ == -1 && ! k->candidateVorhanden(),
+                        std::string ("candidate_bank_klingt_bis_zum_ende_der_rueckblende_und_dient_dann_aus (M-46, X-1) ")
+                        + namen[fall],
+                        std::string ("in der Rueckblende gehalten: ") + (gehalten ? "ja" : "nein") + ", ACK dort "
+                        + std::to_string (ernteMitte) + ", danach geerntet " + std::to_string (geerntet) + ", belegt "
+                        + std::to_string (k->pool().belegteSlots()) + ", Candidate-Slots " + std::to_string (kA) + "/"
+                        + std::to_string (kQ));
+            }
+        }
+
+        // E-34 / M-55: das Gegenstueck zu X-1 beim EINBLENDEN. Die Hoermatrix
+        // steht auf Candidate, bevor es einen gibt (M-56: sie faellt sichtbar
+        // auf Processed zurueck); dann kommt ein Candidate, der dem Committed
+        // gleicht. Der Pfad blendet aus der Ruhe ein, und die Hoermatrix blendet
+        // erst DANACH auf Candidate - nie ueber seinen Fade von Dry her. Der
+        // Ausgang bleibt ueber den ganzen Lauf innerhalb der float-Rundung
+        // gleich Processed, und am Ende ist die Auswahl wirksam.
+        {
+            auto k = neuerKern (fs, 64);
+            auto laut = machSatz (true);
+            setzeGlobal (laut, "v1.global.output_trim_db", 6.0);
+            k->uebernehmeZustand (laut);
+            const auto vor = fahreDc (*k, 0.3, 4096, 64);
+            k->setzeHoermatrix (Hoermatrix::candidate);
+            auto lauf = fahreDc (*k, 0.3, 256, 64);
+            k->uebernehmeZustand (laut, Pfad::candidate);
+            const auto rest = fahreDc (*k, 0.3, 2048, 64);
+            lauf.insert (lauf.end(), rest.begin(), rest.end());
+
+            const double P = vor.back();
+            double maxAbw = 0.0;
+            size_t anStelle = 0;
+            for (size_t i = 0; i < lauf.size(); ++i)
+                if (std::abs (lauf[i] - P) > maxAbw) { maxAbw = std::abs (lauf[i] - P); anStelle = i; }
+            const bool wirksam = k->wirksameHoermatrix() == Hoermatrix::candidate;
+            pruefe (maxAbw <= kRundungFloat && wirksam,
+                    "candidate_einblendung_bei_identischen_zustaenden_nullt (M-55, E-34)",
+                    "groesste Abweichung zu Processed " + zahl (maxAbw, 9) + " an Sample " + std::to_string (anStelle)
+                    + " von " + std::to_string (lauf.size()) + ", Auswahl am Ende wirksam: " + (wirksam ? "ja" : "nein"));
         }
 
         // B-9 / M-27 / R14: die Auslenkungen liegen JE PFAD. Ein Candidate mit

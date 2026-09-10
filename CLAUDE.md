@@ -351,8 +351,7 @@ State-Migrationsstand und den letzten Installationsbeweis prüfen.
   `nakama-parameter-v1.json`, `nakama_telemetry_v1.fbs`,
   `reservierte-nachrichten-v1.json` und der ganze Fixture-Korpus liegen mit LF
   im Index, `nakama-state-v2.md`, `eq-ipc-v3.schema.json` und `FELD-IDS.json`
-  mit CRLF. Ein Werkzeug, das mit `newline="
-"` schreibt, schreibt die drei
+  mit CRLF. Ein Werkzeug, das mit LF-Zeilenende schreibt, schreibt die drei
   vollständig um; am 10.09.2026 zeigte der Diff 4739 statt 51 geänderten Zeilen
   an `eq-ipc-v3.schema.json` (SONDE-015 Etappe 2, Nebenbefund N-5). Vor dem
   Schreiben einer dieser Dateien `git ls-files --eol <datei>` lesen und

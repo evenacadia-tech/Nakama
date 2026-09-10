@@ -3,7 +3,7 @@
 | Merkmal | Wert |
 |---|---|
 | Ticket | S26–28, `SONDE-015` (Phase P6), Leitungsname „Die Klangregelung in der Sonde sicher und speicherbar machen" |
-| Etappe | **Etappe 3 abgeschlossen (10.09.2026, Wiederprüfung 3 PASS, §9.14); als Nächstes Etappe 4 — Integration, Transaktion, Telemetrie, Nulltest (Bauplan §4.4, Auftrag `docs/beweise/roh/SONDE-015-auftrag.txt` Abschnitt ETAPPE 4; vor dem Bau NAK-245 in §5.11.4 schließen).** Etappe 1 (Matrix) nach fünf Matrixprüfungen und Konvergenzentscheid (§7), Rest NAK-245 der Etappe 4 zugeordnet; Etappe 2 (Verträge in drei Sprachen) nach Erstprüfung und zwei Nacharbeiten (§8); Etappe 3 (DSP-Kern als Bibliothek, B6 scharf) nach Erstprüfung und drei Nacharbeiten (§9). |
+| Etappe | **NAK-245 geschlossen (10.09.2026, Matrixprüfung 7 PASS, §7.13); als Nächstes Etappe 4a — Prozessor und Transaktionskern (Bauplan §4.4, Auftrag `docs/beweise/roh/SONDE-015-etappe-4-auftrag.txt`; Etappe 4 ist in 4a und 4b geteilt, §7.13), danach 4b — Fernweg-Anteile und voller Kanon.** Etappe 1 (Matrix) nach sieben Matrixprüfungen, Konvergenzentscheid und NAK-245-Runde (§7); Etappe 2 (Verträge in drei Sprachen) nach Erstprüfung und zwei Nacharbeiten (§8); Etappe 3 (DSP-Kern als Bibliothek, B6 scharf) nach Erstprüfung und drei Nacharbeiten (§9). |
 | Phase | **Etappe 2 abgenommen auf `6f2baba6`; Etappe 3 abgenommen auf `156445a8` (Erstprüfung NEEDS_WORK → Nacharbeit 1 → Wiederprüfung 1 NEEDS_WORK → Nacharbeit 2 → Wiederprüfung 2 NEEDS_WORK → Nacharbeit 3 → Wiederprüfung 3 PASS; das Budget von drei Runden ist genau ausgeschöpft).** Etappe 4 steht aus; die Abschlussprüfung über den ganzen Ticketbereich und der volle Kanon folgen nach Etappe 4. |
 | Urteil | **Offen.** Weder T1 noch T2 vergeben. Etappe 1 baut nichts und behauptet deshalb kein gemessenes Produktverhalten; ihr einziger Gegenstand ist, ob §3 die Zusagen des Gate-Textes vollständig und widerspruchsfrei trägt. |
 | Prüfstufe | **T2 gefordert** (`docs/plan/plan.json`, Schritt S26–28, `"stufe": "T2"`). Heute vergeben: **keine**. |
@@ -2830,6 +2830,20 @@ Zeile trägt. Dass S5 die Bankpflicht vor der Bankfrage prüft und S8 für ein
 bankfreies Programm die ENDE-Marke publiziert, ist Bauarbeit der Etappe 4; der
 gebaute Kern trifft dieselbe Unterscheidung schon
 (`eq-copilot/plugin/dsp/DspKern.cpp:170-177`).
+
+---
+
+### 7.13 Matrixprüfung 7 — PASS; NAK-245 geschlossen, §5.11.4 ist Referenz für Etappe 4 (Dirigent, 2026-09-10)
+
+| Merkmal | Wert |
+|---|---|
+| Prüfer | Codex `gpt-6-astra`, Effort max, lesend; Thread `01a08c15-7c06-7620-9f66-a87b4fa214b2`; Lauf 18:10–18:17 |
+| Prüfbereich | Wiederprüfung (Vorlage B) über `git diff a7061af5...c07dc5f2 -- docs/beweise/SONDE-015.md`; HEAD während des Laufs `333c1594` (trägt nur den Prüfauftrag), vorher und nachher identisch |
+| Auftrag und Urteil | `docs/beweise/roh/SONDE-015-matrixpruefung-7-auftrag.txt`; Urteil wörtlich `docs/beweise/roh/SONDE-015-matrixpruefung-7-c07dc5f.txt` |
+| Urteil | **PASS** — Bankpflicht einmalig über `eq_enabled = true` definiert, übereinstimmend mit E-18 und `DspKern.cpp:170-180`; S8 publiziert bankpflichtig über eine freie Bank, bankfrei als ENDE-Marke ohne Bank; T5/T7/T9, M-44/M-124 und der Absatz unter der Tabelle begrenzen Vollpool-Abweisung und Bankbedingung entsprechend; eigener B7-Fall `retry_nach_zonenloesung_bei_vollem_pool_ohne_bankpflicht_committet`; nichts gebrochen (I6, Gate, Bauplan, Entscheide, Invarianten); 126 Matrix-IDs, 17 T-IDs ohne Umwidmung |
+| Rundenbilanz Nacharbeit 1 | `a7061af5..c07dc5f2: Doku 1 Datei(en) +170/-24 → OHNE PRODUKTFORTSCHRITT` — Matrixrunde, strukturell null; NAK-245-Runde gesamt: `4d769e43..c07dc5f2` nur Doku (zwei Matrixrunden, kein Konvergenz-Signal, weil Matrixrunden strukturell null zählen) |
+| Etappenstand | **NAK-245 geschlossen** (Register `docs/offene-punkte.md`, Geschlossen-Tabelle, 10.09.2026): die fünf Restwidersprüche der Konvergenzrunde und der Folgebefund zur Bankpflicht sind in §5.11.4 geschlossen; Matrixrunden gesamt: sieben Prüfungen, sechs Nacharbeiten (vier vor der Konvergenzrunde, die Konvergenzrunde, die NAK-245-Runde mit einer Nacharbeit). §5.11.4 (Teil 1 mit `r0`, Teil 2 S0–S8 mit Bankpflicht, Teil 3 I1–I6, Teil 4 T1–T17) ist ab hier die Referenz für den Transaktionskern der Etappe 4; die Erstprüfung der Etappe 4a prüft den Bau gegen sie |
+| Nächster Schritt | **Etappe 4a — Prozessor und Transaktionskern** nach `docs/beweise/roh/SONDE-015-etappe-4-auftrag.txt` (Dirigenten-Entscheid: Etappe 4 in 4a Prozessor/Transaktionskern/B7/A16 und 4b Fernweg-Anteile/Kanon geteilt, wegen der Threadlänge eines Bauers); danach Erstprüfung 4a (Vorlage A über den 4a-Diff), 4b, Erstprüfung 4b, Abschlussprüfung über `e9dbf4b9...HEAD`, voller Kanon abgekoppelt |
 
 ---
 
